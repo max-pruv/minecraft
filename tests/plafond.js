@@ -754,7 +754,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         const X = cx * CHUNK + lx, Z = cz * CHUNK + lz;
         const sc = w.solContinu(X + 0.5, Z + 0.5); centres++;
         // La cote de RÉFÉRENCE est celle de la grille du mailleur, pas le relief
-        // + 1 : sous une route (v299) la surface est au profil de la route, et
+        // + 1 : sous une route (v300) la surface est au profil de la route, et
         // c'est bien « contact = maillage » que ce témoin garde, pas
         // « contact = relief ».
         if (sc !== null && Math.abs(sc - g.cote[g.idx(lx, lz)]) < 1e-6) exacts++;
@@ -775,7 +775,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       a1.exacts === a1.centres && a1.moyennes === a1.milieux && colline.exacts === colline.centres && colline.moyennes === colline.milieux && a1.centres > 100,
       `campagne ${a1.exacts}/${a1.centres} centres, ${a1.moyennes}/${a1.milieux} mi-arêtes — colline ${colline.exacts}/${colline.centres}, ${colline.moyennes}/${colline.milieux}`);
     // un bloc posé rend sa colonne au voxel ; retiré, la cicatrice guérit —
-    // sur une colonne d'herbe HORS de l'A1 (le via de la v299 a mis le
+    // sur une colonne d'herbe HORS de l'A1 (le via de la v300 a mis le
     // couloir sur l'ancienne, (−108, −328) : posé sur une chaussée, rien ne
     // change, et le témoin rougissait sur du code sain)
     let X = -60, Z = -328;
@@ -813,7 +813,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     // borne de garde vaut trois fois la mesure, parce qu'un portail charge
     verifier('la surface coûte au plus quelques millisecondes par morceau de campagne',
       med(avec) - med(sans) < 4, `${med(avec).toFixed(1)} ms avec, ${med(sans).toFixed(1)} sans (médianes de neuf)`);
-    // LE PAYSAGE LOINTAIN NE REFERME PAS LE DÉBLAI (v299). `horizon.js` lisait
+    // LE PAYSAGE LOINTAIN NE REFERME PAS LE DÉBLAI (v300). `horizon.js` lisait
     // le relief au-dessus de la route : une dalle de terre flottait sur la
     // tranchée tant que le morceau n'était pas maillé (captures du pont et de
     // la porte de Paris). La cote qu'il dessine se demande au monde, et sous
@@ -1190,7 +1190,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     });
     verifier('et le maillage reçu du worker porte la surface', dessin.surface > 1000, JSON.stringify(dessin));
 
-    // --- AU VOLANT SUR L'A1 (v299) --------------------------------------------
+    // --- AU VOLANT SUR L'A1 (v300) --------------------------------------------
     //
     // Le couloir Paris–Lille : on se pose sur la chaussée de droite à
     // l'abscisse `s0`, cap le long de l'axe, dans une voiture invoquée pour

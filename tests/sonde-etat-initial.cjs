@@ -36,11 +36,11 @@ const VUES = [
   { nom: 'lille-centre', x: 35, z: -851, yaw: Math.PI / 2, pitch: 0.05, h: 1.6, rue: true },
   { nom: 'gare-paris', gare: 'paris', yaw: 0, pitch: 0.05, h: 1.6 },
   { nom: 'paris-nuit', dx: -0.8, dz: -0.9, yaw: Math.PI / 2, pitch: 0.05, h: 1.6, rue: true, heure: 0.0 },
-  // LE COULOIR PARIS–LILLE (v299) : sur la chaussée de droite de l'A1, à
+  // LE COULOIR PARIS–LILLE (v300) : sur la chaussée de droite de l'A1, à
   // l'abscisse `route` (négative : depuis Lille), cap le long de l'axe.
   { nom: 'a1-route', route: 300, pitch: 0.02, h: 1.6 },
   { nom: 'a1-ciel', route: 300, pitch: -0.55, h: 40 },
-  { nom: 'a1-pont', route: 528, pitch: 0.02, h: 1.6 },   // le pont est à s 530–542 (mesuré, via de la v299)
+  { nom: 'a1-pont', route: 528, pitch: 0.02, h: 1.6 },   // le pont est à s 530–542 (mesuré, via de la v300)
   { nom: 'a1-porte-paris', route: 30, dyaw: Math.PI, pitch: 0.02, h: 1.6 },
   { nom: 'a1-porte-lille', route: -30, pitch: 0.02, h: 1.6 },
 ];

@@ -337,7 +337,7 @@ export class Carte {
       if (id) return MAP_COLORS[id] || (id >= DECOR_START && decorMapColor(id)) || [150, 150, 150];
     }
 
-    // La route (v299) : le trait gris qui relie deux villes, son tablier plus
+    // La route (v300) : le trait gris qui relie deux villes, son tablier plus
     // clair sur l'eau. Avant le relief et l'eau, parce qu'un pont passe dessus.
     const piece = surLaRoute(wx, wz);
     if (piece && piece !== 'talus') return piece === 'tablier' ? [150, 150, 156] : [70, 72, 78];

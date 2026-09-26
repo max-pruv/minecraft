@@ -1,4 +1,4 @@
-# v299 — Le couloir Paris–Lille : l'autoroute A1
+# v300 — Le couloir Paris–Lille : l'autoroute A1
 
 Troisième livraison du programme « monde fidèle » (`programme.md`, § 5.3).
 Entre la porte nord de Paris (la gare du Nord) et l'entrée sud de Lille (la
@@ -6,7 +6,7 @@ rue de Paris), une autoroute écrite comme un ouvrage : un registre
 (`src/routes.js`), un profil, une section, un pont, une circulation, deux
 entrées de ville, et la carte.
 
-## Ce qui est mesuré sous node (`scratchpad/v299/harness*.mjs`)
+## Ce qui est mesuré sous node (`scratchpad/v300/harness*.mjs`)
 
 | grandeur | valeur |
 | --- | --- |
@@ -57,13 +57,13 @@ Nord, un repère posé après les colonnes (un chalet sur la chaussée). Le trac
 voiture butait, 60 images) et une chaussée abaissée à la cote de l'eau par la
 rampe d'épinglage (8 colonnes) — corrigés de même.
 
-## Captures (`tests/sonde-etat-initial.cjs … v299`)
+## Captures (`tests/sonde-etat-initial.cjs … v300`)
 
 Mêmes réglages que l'état initial (rendu logiciel, `rr 9`, `hd 6`, ombres,
-1280 × 720). Les vues de la route : `v299-a1-route.png` (s 300, à hauteur
-d'yeux), `v299-a1-ciel.png` (du ciel), `v299-a1-pont.png` (s 528, devant le
-premier pont), `v299-a1-porte-paris.png`, `v299-a1-porte-lille.png`. Les
-chiffres des vues et des deux parcours sont dans `captures/v299.json`.
+1280 × 720). Les vues de la route : `v300-a1-route.png` (s 300, à hauteur
+d'yeux), `v300-a1-ciel.png` (du ciel), `v300-a1-pont.png` (s 528, devant le
+premier pont), `v300-a1-porte-paris.png`, `v300-a1-porte-lille.png`. Les
+chiffres des vues et des deux parcours sont dans `captures/v300.json`.
 
 ## Ce qui reste déclaré (`TASKS.md`)
 

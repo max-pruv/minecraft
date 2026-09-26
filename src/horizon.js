@@ -45,7 +45,7 @@
 // - IL NE TOUCHE À RIEN. Il LIT `terrainHeight` et n'écrit pas un bloc : les
 //   deux empreintes de `plafond.js` ne bougent pas d'un octet, et l'invariant 1
 //   tient sans qu'on ait rien à déclarer.
-// - ET SOUS UNE ROUTE, IL LIT LA ROUTE (v299). `world.coteHorizon` rend le
+// - ET SOUS UNE ROUTE, IL LIT LA ROUTE (v300). `world.coteHorizon` rend le
 //   relief partout, sauf sous l'A1 où c'est la chaussée ou le talus : lu au
 //   relief, le paysage refermait le déblai d'une dalle de terre au-dessus de
 //   la route tant que le morceau n'était pas maillé.
@@ -208,7 +208,7 @@ export class Horizon {
       if (this.pret[i]) continue;
       const ix = (i / N) | 0, iz = i - ix * N;
       const x = (this.ox + ix) * PAS_HORIZON, z = (this.oz + iz) * PAS_HORIZON;
-      this.hauteurs[i] = this.world.coteHorizon(x, z);   // le relief, ou la route qui le creuse (v299)
+      this.hauteurs[i] = this.world.coteHorizon(x, z);   // le relief, ou la route qui le creuse (v300)
       this.ecrireSommet(i, x, z, this.hauteurs[i]);
       this.pret[i] = 1;
       faites++;

@@ -534,7 +534,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
   }
 
   const surface = grille ? emettreSolContinu(solid, world, cx, cz, CHUNK, grille) : null;
-  // les tabliers des ponts et le marquage des routes (v299), avec la surface
+  // les tabliers des ponts et le marquage des routes (v300), avec la surface
   const rubans = grille ? emettreRubans(solid, world, cx, cz, CHUNK) : 0;
 
   return {

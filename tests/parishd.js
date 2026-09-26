@@ -35,6 +35,34 @@ function verifier(nom, ok, detail = '') {
   const { World, CHUNK, HEIGHT } = await import('../src/world.js');
   const { buildChunkTampons } = await import('../src/mesher.js');
   const { adresseParis } = await import('../src/paris.js');
+  // ── LE DÉTAIL A UN BUDGET D'OCTETS (v299) — la règle pure, sous node ────────
+  //
+  // Un morceau de l'ouest de Paris porte onze mégaoctets de façades, et un rayon
+  // de six morceaux en fait cent soixante-neuf : c'est ce qui a tué l'iPhone de
+  // Max. `planDetail` (palier.js) dépense `hdMo` du plus proche au plus loin.
+  // Sur l'ancien code la fonction n'existe pas : on le dit, on ne s'effondre pas.
+  {
+    const PAL = await import('../src/palier.js');
+    const M = 1048576;
+    if (typeof PAL.planDetail !== 'function') {
+      verifier('le détail a un budget d’octets (planDetail, palier.js)', false, 'planDetail absent');
+    } else {
+      const a = PAL.planDetail({ tenus: [{ key: 'a', d: 1, octets: 60 * M }, { key: 'b', d: 3, octets: 60 * M }, { key: 'c', d: 5, octets: 60 * M }], budget: 128 * M, estimation: 2 * M });
+      const b = PAL.planDetail({ candidats: [{ key: 'n', d: 2 }], tenus: [{ key: 'a', d: 1, octets: 60 * M }, { key: 'c', d: 5, octets: 60 * M }], budget: 128 * M, estimation: 20 * M });
+      const c = PAL.planDetail({ candidats: [{ key: 'n', d: 6 }], tenus: [{ key: 'a', d: 1, octets: 60 * M }, { key: 'c', d: 5, octets: 60 * M }], budget: 128 * M, estimation: 20 * M });
+      const d = PAL.planDetail({ candidats: [{ key: 'n', d: 1 }, { key: 'm', d: 2 }], tenus: [], budget: 30 * M, estimation: 20 * M, attendus: 1 });
+      verifier('le détail a un budget d’octets : ce qui dépasse se rend du plus loin, un tenu plus loin cède sa place au plus proche',
+        JSON.stringify(a.rendre) === '["c"]' && a.demander.length === 0
+          && JSON.stringify(b.rendre) === '["c"]' && JSON.stringify(b.demander) === '["n"]'
+          && c.rendre.length === 0 && c.demander.length === 0
+          && d.demander.length === 0,
+        JSON.stringify({ a, b, c, d }));
+      verifier('chaque palier porte son budget de façades, et le palier bas n’en a aucun',
+        PAL.PALIERS.bas.hdMo === 0 && PAL.PALIERS.moyen.hdMo > 0 && PAL.PALIERS.haut.hdMo > 0
+          && PAL.reglageDe(null, true).hdMo === PAL.PALIERS.moyen.hdMo && PAL.PARAMS_FORCANTS.includes('facadesmo'),
+        JSON.stringify({ bas: PAL.PALIERS.bas.hdMo, moyen: PAL.PALIERS.moyen.hdMo, haut: PAL.PALIERS.haut.hdMo }));
+    }
+  }
   // Sur l'ancien code, le module n'existe pas : on le dit, on ne s'effondre pas.
   const HD = await import('../src/facadeshd.js').catch(() => null);
   verifier('la couche HD existe (src/facadeshd.js)', !!HD);
@@ -529,12 +557,57 @@ function verifier(nom, ok, detail = '') {
       return { attente: Math.round(performance.now() - t0), sousFacades: !!(sous && sous.facades), anciens, anciensAvecFacades,
         demandes: g.statsMaillage.detailsDemandes, rendus: g.statsMaillage.detailsRendus, morceaux: g.chunkMeshes.size };
     }, [px, pz]);
+    // `demandes` n'entre pas dans le verdict (v299) : il ne compte que les
+    // morceaux maillés AVANT le déplacement puis REDEMANDÉS avec leur détail.
+    // À trente-sept morceaux installés sur cent soixante-neuf, celui qui reçoit
+    // l'enfant arrive frais de la file, détail compris, sans redemande — et le
+    // témoin rendait rouge un relais juste. Il mesurait l'ordre de la file, pas
+    // le relais (v288). Le chiffre reste dans le message.
     verifier('en s\'éloignant, les façades quittées sont rendues et celles d\'arrivée fabriquées',
-      apres.sousFacades && apres.anciens > 0 && apres.anciensAvecFacades === 0 && apres.rendus > 0 && apres.demandes > 0,
+      apres.sousFacades && apres.anciens > 0 && apres.anciensAvecFacades === 0 && apres.rendus > 0,
       `en ${apres.attente} ms · ${JSON.stringify(apres)}`);
     verifier('l\'atlas HD est peint et le rayon forcé est celui de l\'adresse', res.atlas === true && res.rayon === 2, `atlas ${res.atlas}, rayon ${res.rayon}`);
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
     await tab.close();
+
+    // ── ET SUR LE SITE DU PLANTAGE, LE BUDGET TIENT (v299) ─────────────────────
+    //
+    // L'ouest de Paris, là où l'iPhone de Max est mort : ses morceaux portent
+    // onze mégaoctets de façades chacun. À rr 6 · hd 2, l'ancien code en
+    // fabrique vingt-cinq — 250 Mo ; le budget en tient 128. On attend que le
+    // disque soit installé (borné, la durée dans le message), puis on lit ce
+    // que les façades PÈSENT, et que le morceau sous l'enfant a bien reçu le
+    // sien : le budget se dépense du plus proche au plus loin.
+    const [ox, oz] = adresseParis(-6.67, 2.5);
+    const ouest = await banc.jouerSeul('Odile', { rr: 6, params: '&hd=2' });
+    const bud = await ouest.evaluate(async ([x, z]) => {
+      const g = window.__game;
+      const y = g.world.terrainHeight(x, z);
+      g.player.pos.set(x + 0.5, y + 2, z + 0.5); g.player.vel.set(0, 0, 0);
+      const dodo = (ms) => new Promise((r) => setTimeout(r, ms));
+      const cx = Math.floor(x / 16), cz = Math.floor(z / 16);
+      const octets = (m) => { if (!m) return 0; let n = 0; for (const a of Object.values(m.geometry.attributes)) n += a.array.byteLength; return n + (m.geometry.index ? m.geometry.index.array.byteLength : 0); };
+      const t0 = performance.now();
+      let n0 = -1, stable = 0;
+      while (performance.now() - t0 < 120000) {
+        await dodo(2000);
+        const n = g.chunkMeshes.size;
+        const sous = g.chunkMeshes.get(`${cx},${cz}`);
+        if (n === n0 && sous && sous.facades) { if (++stable >= 3) break; } else { stable = 0; n0 = n; }
+      }
+      let facadesMo = 0, avec = 0, hd = 0;
+      for (const e of g.chunkMeshes.values()) { if (e.hd) hd++; if (e.facades) { avec++; facadesMo += octets(e.facades); } }
+      const sous = g.chunkMeshes.get(`${cx},${cz}`);
+      return { attente: Math.round(performance.now() - t0), morceaux: g.chunkMeshes.size, hd, avec, facadesMo: +(facadesMo / 1048576).toFixed(1),
+        budgetMo: g.BUDGET_FACADES ? g.BUDGET_FACADES / 1048576 : null, sousFacades: !!(sous && sous.facades),
+        auBudget: g.statsMaillage.detailsBudget, tenu: g.detailTenu ? { n: g.detailTenu.n, Mo: +(g.detailTenu.octets / 1048576).toFixed(1) } : null };
+    }, [ox, oz]);
+    verifier('à l’ouest de Paris, les façades détaillées tiennent dans le budget du palier, et le morceau sous l’enfant a le sien',
+      bud.sousFacades && bud.hd > 0 && bud.avec > 0 && bud.budgetMo > 0 && bud.facadesMo <= bud.budgetMo * 1.05,
+      `${bud.facadesMo} Mo de façades pour ${bud.budgetMo} de budget, ${bud.avec} morceau(x) détaillé(s) sur ${bud.hd} HD, en ${bud.attente} ms · ${JSON.stringify(bud)}`);
+    verifier('le compte tenu par le jeu est celui des façades en scène', !!bud.tenu && bud.tenu.n === bud.avec && Math.abs(bud.tenu.Mo - bud.facadesMo) < 1,
+      JSON.stringify(bud.tenu) + ' contre ' + bud.avec + ' / ' + bud.facadesMo);
+    await ouest.close();
 
     const bas = await banc.jouerSeul('Firmin', { rr: 4, params: '&hd=0' });
     const res0 = await bas.evaluate(async ([x, z]) => {

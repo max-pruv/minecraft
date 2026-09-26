@@ -489,7 +489,7 @@ const VOIES = [
 // et une dimension de ville ne se recopie pas dans un banc d'essai.
 export const VOIES_PARIS = VOIES;
 
-// L'ENTRÉE DE L'A1 (v299) : de là où le corridor s'arrête dans le disque
+// L'ENTRÉE DE L'A1 (v300) : de là où le corridor s'arrête dans le disque
 // (`routes.js`, à vingt blocs du bord, où le relief de la ville est plat)
 // jusqu'à la Gare du Nord, en avenue à double sens. Elle est une voie comme
 // les autres pour le sol — chaussée, trottoir, les lots s'écartent — mais pas

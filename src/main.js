@@ -25,7 +25,7 @@ import { Carte, MAP_COLORS } from './carte.js';
 import { toast } from './bandeau.js';
 import { Horizon, rayonHorizon } from './horizon.js';
 import { PALIERS, PALIER_CLE, choisirPalier, VITESSE_JET,
-  ETENDUE_CLE, ETENDUE_PAR_DEFAUT, ETENDUES, palierRetenu, palierPropose, etendueRange, reglageDe,
+  ETENDUE_CLE, ETENDUE_PAR_DEFAUT, ETENDUES, palierRetenu, palierPropose, etendueRange, reglageDe, planDetail,
   PARAMS_FORCANTS } from './palier.js';
 import { Journal, suretePalier, PLANTAGES_SURETE } from './journal.js';
 import { liberer } from './liberer.js';
@@ -144,7 +144,9 @@ const ETENDUE_CHOISIE = (() => {
 // alors pour ce lancement seulement.
 const SURETE = (() => {
   if (PALIER_FORCE) return null;
-  const s = suretePalier(BILAN_JOURNAL.plantages);
+  // ET SOUS QUELLE ÉTENDUE ÇA A PLANTÉ (v299) : deux morts de suite sous
+  // « Loin » passent devant « Loin », et devant lui seul (`palierRetenu`).
+  const s = suretePalier(BILAN_JOURNAL.plantages, BILAN_JOURNAL.etendue);
   if (s && !PARAMS_FORCANTS.some((c) => new URLSearchParams(location.search).has(c))) {
     try { localStorage.setItem(PALIER_CLE, JSON.stringify(s)); } catch { /* mode privé */ }
   }
@@ -365,6 +367,19 @@ const ombresVoulues = () => (OMBRES_DEMANDEES != null ? OMBRES_DEMANDEES !== '0'
 const HD_FORCE = new URLSearchParams(location.search).get('hd');
 const RAYON_HD = HD_FORCE !== null ? Math.max(0, Number(HD_FORCE) || 0)
   : renduLogiciel() ? 0 : (PALIER ? PALIER.hd : SANS_PALIER.hd);
+// ── ET LE DÉTAIL A UN BUDGET D'OCTETS (v299) ────────────────────────────────
+//
+// La règle et sa raison sont dans `palier.js` (`planDetail`, `hdMo`) : un rayon
+// ne borne pas des octets, et un morceau de l'ouest de Paris pèse onze
+// mégaoctets de façades. `?facadesmo=` force le budget, pour mesurer.
+const FACADES_MO_FORCE = new URLSearchParams(location.search).get('facadesmo');
+const BUDGET_FACADES = (FACADES_MO_FORCE !== null ? Math.max(0, Number(FACADES_MO_FORCE) || 0)
+  : (PALIER ? PALIER.hdMo : SANS_PALIER.hdMo) || 0) * 1048576;
+// Ce qu'on suppose d'un morceau qu'on n'a pas encore maillé : la moyenne de
+// ce qu'on tient, jamais moins que deux mégaoctets (le centre de Paris en
+// pèse 1,6 à 5,7 par morceau, l'ouest onze).
+const ESTIMATION_FACADES_MIN = 2 * 1048576;
+const detailTenu = { octets: 0, n: 0 };   // ce que pèsent les façades détaillées en scène
 const OMBRES = ombresVoulues();
 renderer.shadowMap.enabled = OMBRES;
 renderer.shadowMap.type = THREE.PCFShadowMap;
@@ -590,7 +605,7 @@ world.loadEdits();
 // tampons prêts pour la carte graphique, plus les blocs pour les collisions.
 // Le fil principal ne fait plus que les installer. `?maillage=local` rend
 // l'ancien chemin, pour mesurer et pour les témoins.
-const statsMaillage = { principalMs: 0, locaux: 0, distants: 0, refuses: 0, recus: [], detailsDemandes: 0, detailsRendus: 0 };
+const statsMaillage = { principalMs: 0, locaux: 0, distants: 0, refuses: 0, recus: [], detailsDemandes: 0, detailsRendus: 0, detailsBudget: 0 };
 
 // ── CE QU'ON MESURE POUR CLASSER L'APPAREIL (v284) ───────────────────────────
 //
@@ -807,7 +822,13 @@ function rangerLePalier() {
 // comme en v283.
 const EN_ATTENTE_MAX = Number(new URLSearchParams(location.search).get('attente'))
   || (PALIER ? PALIER.file : SANS_PALIER.file);
-const enAttente = new Map();          // key -> { cx, cz, sale }
+const enAttente = new Map();          // key -> { cx, cz, sale, detail }
+// LE RÉGLAGE ENTRE DANS LA FICHE DU JOURNAL (v299) : ce que l'appareil joue,
+// pas seulement ce qu'il est. Écrit ici parce que la file est le dernier
+// réglage lu au démarrage.
+journal.regler({ rr: RENDER_RADIUS, file: EN_ATTENTE_MAX, hd: RAYON_HD, facadesMo: BUDGET_FACADES / 1048576,
+  palier: PALIER ? PALIER.nom : null, source: PALIER ? PALIER.source : null, etendue: ETENDUE_CHOISIE,
+  logiciel: renduLogiciel() });
 let generationDistante = 0;           // monte à chaque resynchronisation des blocs
 let maillageDistant = null;
 function synchroniserLeWorker() {
@@ -964,6 +985,7 @@ function rebuildQueue() {
 }
 
 function disposeChunkMesh(entry) {
+  if (entry.facades) { detailTenu.octets -= entry.octetsFacades || 0; detailTenu.n--; }
   for (const mesh of [entry.solid, entry.water, entry.lumineux, entry.sol, entry.facades, entry.plat, entry.platLumineux]) {
     if (!mesh) continue;
     scene.remove(mesh);
@@ -1032,6 +1054,7 @@ function installerMorceau(cx, cz, tampons) {
     for (const [nom, t] of [['sol', tampons.sol], ['facades', tampons.facades]]) {
       const g = geometrieHD(t);
       if (!g) continue;
+      if (nom === 'facades') { entry.octetsFacades = octetsDeTampons(t); detailTenu.octets += entry.octetsFacades; detailTenu.n++; }
       const m = new THREE.Mesh(g, materiau);
       m.position.set(cx * CHUNK, 0, cz * CHUNK);
       m.castShadow = ombre && nom === 'facades';
@@ -1106,6 +1129,52 @@ function installerMorceau(cx, cz, tampons) {
     scene.add(decor(group));
   }
   chunkMeshes.set(key, entry);
+  // un morceau plus lourd que son estimation peut faire déborder le budget :
+  // on rend alors les plus loin, tout de suite (v299)
+  if (entry.facades) appliquerLeBudget(pcx, pcz, []);
+}
+
+// Ce que pèsent des tampons HD, en octets — la grandeur que le budget borne.
+function octetsDeTampons(t) {
+  if (!t) return 0;
+  let n = 0;
+  for (const k of ['positions', 'normals', 'uvs', 'colors', 'tiles', 'matiere', 'lueur', 'indices']) if (t[k]) n += t[k].byteLength;
+  return n;
+}
+function estimationFacades() {
+  return Math.max(ESTIMATION_FACADES_MIN, detailTenu.n > 0 ? detailTenu.octets / detailTenu.n : 0);
+}
+function detailsAttendus() {
+  let n = 0;
+  for (const a of enAttente.values()) if (a.detail) n++;
+  return n;
+}
+// Reste-t-il de la place pour UN morceau de détail de plus ? (la file initiale)
+function budgetPermet() {
+  return detailTenu.octets + (detailsAttendus() + 1) * estimationFacades() <= BUDGET_FACADES;
+}
+// Rendre les façades détaillées d'un morceau à la carte graphique : il montre
+// alors sa tuile plate, quelle que soit la distance.
+function rendreLeDetail(entry) {
+  if (entry.facades) { scene.remove(entry.facades); entry.facades.geometry.dispose(); entry.facades = null; detailTenu.octets -= entry.octetsFacades || 0; detailTenu.n--; }
+  entry.detail = false; entry.octetsFacades = 0;
+  if (entry.plat) entry.plat.visible = true;
+  if (entry.platLumineux) entry.platLumineux.visible = true;
+}
+// LE BUDGET S'APPLIQUE DU PLUS PROCHE AU PLUS LOIN (v299, `planDetail`) : ce
+// qui dépasse se rend, les candidats les plus proches se demandent, un tenu
+// plus loin qu'un candidat lui cède sa place.
+function appliquerLeBudget(pcx, pcz, candidats) {
+  if (RAYON_HD <= 0) return;
+  const tenus = [];
+  for (const [key, e] of chunkMeshes) {
+    if (!e.detail || !e.facades) continue;
+    const [cx, cz] = key.split(',').map(Number);
+    tenus.push({ key, d: Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz)), octets: e.octetsFacades || 0 });
+  }
+  const plan = planDetail({ candidats, tenus, budget: BUDGET_FACADES, estimation: estimationFacades(), attendus: detailsAttendus() });
+  for (const key of plan.rendre) { const e = chunkMeshes.get(key); if (e) { rendreLeDetail(e); statsMaillage.detailsBudget++; } }
+  for (const key of plan.demander) { const c = candidats.find((x) => x.key === key); if (c) redemanderLeDetail(c.cx, c.cz, key); }
 }
 
 // Le relais entre le détail et la tuile plate d'une façade : à portée
@@ -1128,23 +1197,22 @@ function detailVoulu(cx, cz, pcx, pcz) {
 }
 // À chaque changement de morceau : ce qui entre à portée se REDEMANDE avec son
 // détail, ce qui en sort de deux morceaux rend ses façades à la carte graphique.
-function gererLeDetail(entry, key, cx, cz, pcx, pcz) {
+// Ce qui entre à portée n'est plus demandé ici mais NOTÉ (`candidats`) : c'est
+// le budget qui décide, du plus proche au plus loin (`appliquerLeBudget`, v299).
+function gererLeDetail(entry, key, cx, cz, pcx, pcz, candidats) {
   if (!entry.hd || RAYON_HD <= 0) return;
   const d = Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz));
   if (d <= RAYON_HD + MARGE_HD) {
-    if (!entry.detail && !enAttente.has(key)) redemanderLeDetail(cx, cz, key);
+    if (!entry.detail && !enAttente.has(key)) candidats.push({ key, d, cx, cz });
   } else if (d > RAYON_HD + MARGE_HD + 1 && entry.detail) {
-    if (entry.facades) { scene.remove(entry.facades); entry.facades.geometry.dispose(); entry.facades = null; }
-    entry.detail = false;
-    if (entry.plat) entry.plat.visible = true;
-    if (entry.platLumineux) entry.platLumineux.visible = true;
+    rendreLeDetail(entry);
     statsMaillage.detailsRendus++;
   }
 }
 function redemanderLeDetail(cx, cz, key) {
   statsMaillage.detailsDemandes++;
   if (maillageDistant && !world.maillageLocal(cx, cz)) {
-    enAttente.set(key, { cx, cz, sale: false });
+    enAttente.set(key, { cx, cz, sale: false, detail: true });
     maillageDistant.postMessage({ type: 'mailler', liste: [{ cx, cz, detail: true }], generation: generationDistante,
       pcx: Math.floor(player.pos.x / CHUNK), pcz: Math.floor(player.pos.z / CHUNK), rayon: RENDER_RADIUS + 2 });
   } else {
@@ -1193,6 +1261,7 @@ function updateChunks() {
   if (chunkKey !== lastPlayerChunk) {
     lastPlayerChunk = chunkKey;
     rebuildQueue();
+    const candidats = [];
     // Unload far chunks.
     for (const [key, entry] of chunkMeshes) {
       const [cx, cz] = key.split(',').map(Number);
@@ -1205,9 +1274,10 @@ function updateChunks() {
         if (entry.facades) entry.facades.castShadow = ombre;
         if (entry.plat) entry.plat.castShadow = ombre;
         montrerLeDetail(entry, cx, cz, pcx, pcz);
-        gererLeDetail(entry, key, cx, cz, pcx, pcz);
+        gererLeDetail(entry, key, cx, cz, pcx, pcz, candidats);
       }
     }
+    appliquerLeBudget(pcx, pcz, candidats);
     // ET LES BLOCS S'OUBLIENT AVEC LEUR MAILLAGE. Défaire le maillage rendait
     // la carte graphique ; les quatre-vingts kilo-octets de blocs, eux,
     // restaient dans `world.chunks` pour toujours. Voir `oublierLoinDe`.
@@ -1234,8 +1304,11 @@ function updateChunks() {
       const key = World.key(suivant.cx, suivant.cz);
       if (enAttente.has(key) || chunkMeshes.has(key)) continue;
       if (world.maillageLocal(suivant.cx, suivant.cz)) { meshChunk(suivant.cx, suivant.cz); continue; }
-      enAttente.set(key, { cx: suivant.cx, cz: suivant.cz, sale: false });
-      lot.push({ cx: suivant.cx, cz: suivant.cz, detail: detailVoulu(suivant.cx, suivant.cz, pcx, pcz) });
+      // le détail se demande à portée ET dans le budget (v299) — la file part
+      // du plus proche, donc c'est le proche qui le reçoit
+      const detail = detailVoulu(suivant.cx, suivant.cz, pcx, pcz) && budgetPermet();
+      enAttente.set(key, { cx: suivant.cx, cz: suivant.cz, sale: false, detail });
+      lot.push({ cx: suivant.cx, cz: suivant.cz, detail });
     }
     if (lot.length) {
       maillageDistant.postMessage({ type: 'mailler', liste: lot, generation: generationDistante,
@@ -1420,7 +1493,7 @@ function updateChunks() {
       for (let b = -demiLarg; b <= demiLarg + 1e-6; b += demiLarg) {
         const bx = Math.floor(x + ux * a + vx * b), bz = Math.floor(z + uz * a + vz * b);
         if (world.isSolid(bx, y0 - 1, bz) || world.isSolid(bx, y0, bz)) continue;  // un plancher : on roule
-        // LE TABLIER D'UN PONT EST UN PLANCHER QUI N'EST PAS UN BLOC (v299) :
+        // LE TABLIER D'UN PONT EST UN PLANCHER QUI N'EST PAS UN BLOC (v300) :
         // un ruban du mailleur, une cote dans `routes.js`. Sans cette ligne la
         // voiture voyait l'eau sous le pont et refusait d'y entrer — mesuré,
         // 60 images bloquées sur 78 à l'entrée du premier pont de l'A1.
@@ -1631,7 +1704,7 @@ function updateChunks() {
       nb: 5, vitesse, rames, pause, arretsIndex: t.arretsIndex,
     });
   }
-  // LA CIRCULATION INTERURBAINE (v299) : sur chaque corridor, une boucle de
+  // LA CIRCULATION INTERURBAINE (v300) : sur chaque corridor, une boucle de
   // voitures — aller sur la chaussée de droite, retour sur l'autre — qui entre
   // dans les deux villes par leur avenue d'entrée jusqu'à la première voie
   // nommée, à la cote de la ville (`coteRoulable`), et suit le PROFIL de la
@@ -1875,7 +1948,8 @@ function startGame() {
   // croire à un jeu cassé — et le message dit quoi faire.
   if (PALIER && PALIER.source === 'sûreté' && !sureteAnnoncee) {
     sureteAnnoncee = true;
-    setTimeout(() => toast(`🛟 Le jeu s'était arrêté ${PLANTAGES_SURETE} fois de suite : il passe en mode léger. Réglages → Étendue pour changer.`, 0xffc857, 7000), 1200);
+    const sous = PALIER.sousChoix ? ` en « ${(ETENDUES.find((e) => e.cle === PALIER.sousChoix) || {}).mot || PALIER.sousChoix} »` : '';
+    setTimeout(() => toast(`🛟 Le jeu s'était arrêté ${PLANTAGES_SURETE} fois de suite${sous} : il passe en mode léger. Réglages → Étendue pour changer.`, 0xffc857, 7000), 1200);
   }
   if (IS_TOUCH) {
     running = true;
@@ -2454,7 +2528,9 @@ function texteEtendue() {
       base = 'Auto : le jeu mesure ta tablette pendant une partie, puis choisit.';
     }
   } else {
-    base = `Tu as choisi « ${mot(choix)} ».`;
+    base = PALIER && PALIER.source === 'sûreté' && PALIER.sousChoix === choix
+      ? `« ${mot(choix)} » a arrêté le jeu ${PLANTAGES_SURETE} fois de suite sur cette tablette : il joue en « ${mot(PALIER.nom)} » par sûreté. Choisis une autre étendue.`
+      : `Tu as choisi « ${mot(choix)} ».`;
   }
   const prochain = palierRetenu({ choix, mesure: mesureRangee() });
   const a = reglageDe(prochain, IS_TOUCH);
@@ -2475,7 +2551,14 @@ function renderEtendue() {
       b.textContent = e.mot;
       b.title = e.aide;
       b.addEventListener('click', () => {
-        try { localStorage.setItem(ETENDUE_CLE, e.cle); } catch { /* mode privé */ }
+        try {
+          localStorage.setItem(ETENDUE_CLE, e.cle);
+          // CHOISIR UNE AUTRE ÉTENDUE LÈVE LA SÛRETÉ QUI VISAIT L'ANCIENNE (v299) :
+          // c'est la décision explicite qui rouvre la porte — l'enfant pourra
+          // rechoisir « Loin » plus tard, et le disjoncteur rejugera.
+          const deja = mesureRangee();
+          if (deja && deja.surete && deja.sousChoix && deja.sousChoix !== e.cle) localStorage.removeItem(PALIER_CLE);
+        } catch { /* mode privé */ }
         renderEtendue();
         // Le bandeau ne parle que si le choix change vraiment quelque chose :
         // rechoisir ce qui tourne déjà ne doit pas faire croire à une attente.
@@ -7142,7 +7225,8 @@ function updateHud(dt) {
         ? ` → ${mesurePalier.verdict.palier} (${mesurePalier.verdict.raison}, période ${(mesurePalier.verdict.msPeriode || 0).toFixed(1)} ms)${PALIER_SE_RANGE ? ' au prochain lancement' : ' — mesuré, non rangé (étendue choisie)'}`
         : ` · morceau ${mesurePalier.morceaux.length} relevé(s), travail ${mesurePalier.travaux.length}${PALIER_SE_RANGE ? '' : ' — non rangé'}`) + '\n'
     + `morceaux ${chunkMeshes.size} (${[...chunkMeshes.values()].filter((e) => e.detail).length} avec façades HD) · corps ${h.prets}/${h.total} · programmes chauffés ${programmesChauffes()} · ${myName() || ''} ${player.pos.x.toFixed(0)},${player.pos.z.toFixed(0)}\n`
-    + `journal : ${journal.doc.releves.length} relevé(s), ${journal.doc.erreurs} erreur(s), plantages de suite ${journal.plantages()}${PALIER && PALIER.source === 'sûreté' ? ' — SÛRETÉ' : ''}`;
+    + `journal : ${journal.doc.releves.length} relevé(s), ${journal.doc.erreurs} erreur(s), plantages de suite ${journal.plantages()}${PALIER && PALIER.source === 'sûreté' ? ' — SÛRETÉ' : ''}`
+    + ` · façades HD ${detailTenu.n} morceau(x), ${(detailTenu.octets / 1048576).toFixed(0)} / ${(BUDGET_FACADES / 1048576).toFixed(0)} Mo, ${statsMaillage.detailsBudget} rendu(s) au budget`;
 }
 
 // --- fun & social systems (breeding, riding, duels, souvenirs, records…) ---------
@@ -7212,7 +7296,7 @@ window.__lumiere = () => ({
 window.__proposerNotifs = proposerNotifs;
 window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
 window.__game = { villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage, PALIERS, choisirPalier, mesurePalier, journal,
-  RAYON_HD, get atlasHD() { return hd ? hd.atlas : null; },
+  RAYON_HD, BUDGET_FACADES, detailTenu, planDetail, get atlasHD() { return hd ? hd.atlas : null; },
   palierRetenu, palierPropose, etendueRange, reglageDe, PARAMS_FORCANTS,
   // CE QUE LE PALIER A RÉELLEMENT APPLIQUÉ, pas ce qu'il déclare : un témoin
   // qui lirait la TABLE vérifierait la table, pas le jeu. `rr` et la file sont
@@ -7221,7 +7305,7 @@ window.__game = { villeRealiste, renderer, world, player, fun, horizon, scene, c
   get reglageApplique() {
     const jet = MONTURES.find((m) => m.key === 'chasseur');
     return { palier: PALIER ? PALIER.nom : null, source: PALIER ? PALIER.source : null,
-      etendue: ETENDUE_CHOISIE, hd: RAYON_HD, rr: RENDER_RADIUS, file: EN_ATTENTE_MAX,
+      etendue: ETENDUE_CHOISIE, hd: RAYON_HD, facadesMo: BUDGET_FACADES / 1048576, rr: RENDER_RADIUS, file: EN_ATTENTE_MAX,
       ombres: renderer.shadowMap.enabled, jet: jet && jet.pilote ? jet.pilote.max : null,
       seRange: PALIER_SE_RANGE };
   }, get maillageDistant() { return !!maillageDistant; }, get avatarLocal() { return avatarLocal; }, get vehicules() { return vehicules; }, get passants() { return passants; }, get poissons() { return poissons; }, __archi: ARCHI, __paris: { PARIS: PARIS_ANCRE }, animalManager, edu, cloud, identity, admin, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), __presenceNow: presenceNow, __reprendreMonde: rememberWorld, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };

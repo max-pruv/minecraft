@@ -6,13 +6,23 @@
 
 export const NOUVEAUTES = [
   {
-    v: 299,
+    v: 300,
     titre: 'L\'autoroute Paris–Lille',
     puces: [
       'Une vraie autoroute relie Paris et Lille',
       'Un pont : on passe dessus et dessous',
       'Des voitures roulent dans les deux sens',
       'La carte montre la route',
+    ],
+  },
+  {
+    v: 299,
+    titre: 'Paris ne fait plus planter',
+    puces: [
+      'Le relief des façades a un budget',
+      'Le jeu ne meurt plus en vol',
+      'Deux plantages en Loin : mode léger',
+      'Le journal note ton réglage',
     ],
   },
   {

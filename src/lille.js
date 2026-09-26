@@ -286,7 +286,7 @@ export const VOIES_LILLE = [
 ];
 
 const VOIES = VOIES_LILLE;
-// L'ENTRÉE DE L'A1 (v299), comme à Paris : du bout du corridor au bout de la
+// L'ENTRÉE DE L'A1 (v300), comme à Paris : du bout du corridor au bout de la
 // rue de Paris, à la Porte de Paris.
 const ENTREES = entreesDe('lille').map((e) => ({
   nom: `Entrée ${e.route}`, l: a(1.0), t: TROTTOIR_AV,

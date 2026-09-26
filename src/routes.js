@@ -1,4 +1,4 @@
-// Les routes entre les villes — le REGISTRE des corridors (v299).
+// Les routes entre les villes — le REGISTRE des corridors (v300).
 //
 // Programme « monde fidèle », livraison 3. Une route interurbaine est un
 // corridor : deux portes de ville, un axe (une polyligne, jamais une droite
@@ -26,13 +26,13 @@ import { positionDe } from './mondes.js';
 // `via` : les points de passage ÉCRITS EN BLOCS DU MONDE, parce qu'ils sont
 // des résultats de mesure et non des adresses de ville. Celui de l'A1 est le
 // contournement de Roissy : l'axe direct Paris–Lille passe à 83 blocs du
-// centre de l'aérodrome, dont le disque fait 92 (mesuré sous node, v299) ; le
+// centre de l'aérodrome, dont le disque fait 92 (mesuré sous node, v300) ; le
 // point de passage est à l'est, à r + 12 + demi-emprise du centre — la
 // promesse des aérodromes (v223) — et le détour coûte 5 blocs contre 151 par
 // l'ouest. Le vrai A1 passe à l'ouest de Roissy ; le Roissy du jeu a été
 // déplacé (v223), et l'on contourne celui du jeu.
 export const ROUTES = [
-  // LE POINT DE PASSAGE SE MESURE (v223, v299) — CONTRE TOUS LES OBSTACLES.
+  // LE POINT DE PASSAGE SE MESURE (v223, v300) — CONTRE TOUS LES OBSTACLES.
   // L'axe direct Paris–Lille passe DANS la marge de Roissy et la maison
   // témoin de plafond.js (−100, −100) est de l'autre côté. Mon premier via
   // (−150, −50) tenait les deux — et traversait le PÔLE NORD (40, −690,

@@ -1063,7 +1063,7 @@ class Convoi {
     this.distance = opts.depart || 0;
     this.ecart = opts.ecart ?? 8;
     this.nom = opts.nom || 'véhicule';
-    this.route = opts.route || null;      // le corridor interurbain qu'il suit (v299), ou null
+    this.route = opts.route || null;      // le corridor interurbain qu'il suit (v300), ou null
     this.emoji = opts.emoji || '🚗';
     // À quelle hauteur, au-dessus du tracé, on est assis dedans.
     this.assise = opts.assise ?? 1.2;
@@ -1528,7 +1528,7 @@ export function createVehicules({ scene, player }) {
     const p = new Parcours(pts);
     const nb = options.nb ?? Math.max(6, Math.min(20, Math.round(p.longueur / 18)));
     const c = ajouter(pts, {
-      // UNE ROUTE INTERURBAINE ROULE PLUS VITE QU'UNE RUE (v299) : la vitesse
+      // UNE ROUTE INTERURBAINE ROULE PLUS VITE QU'UNE RUE (v300) : la vitesse
       // et le nombre se demandent, la rue garde ses chiffres.
       nb, ecart: p.longueur / nb, vitesse: options.vitesse ?? 4.2, freine: true, allureMin: 0.4, routier: true,
       route: options.route || null,

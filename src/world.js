@@ -1893,7 +1893,7 @@ export class World {
     // besoin de la hauteur du terrain BIEN AU-DELÀ de la colonne qu'on est
     // en train de bâtir. `trains.js` ne la connaît pas : on la lui donne.
     brancherSol((x, z) => this.terrainHeight(x, z));
-    // Et le profil d'une route, de la même façon (v299).
+    // Et le profil d'une route, de la même façon (v300).
     brancherSolRoutes((x, z) => this.terrainHeight(x, z));
   }
 
@@ -2169,7 +2169,7 @@ export class World {
 
   // Les villes dont le disque approche ce point à moins de `d` blocs : la
   // liste qu'un morceau garde pour ne poser la question qu'à elles (v297).
-  // LA ROUTE SOUS CETTE COLONNE (v299) — `routes.js` répond ; `world.js` ne
+  // LA ROUTE SOUS CETTE COLONNE (v300) — `routes.js` répond ; `world.js` ne
   // fait que le dire au sol continu, au mailleur et à la carte.
   routeEn(x, z) { return routeEn(x, z); }
   rubansDans(x0, z0, x1, z1) { return rubansDans(x0, z0, x1, z1); }
@@ -2178,7 +2178,7 @@ export class World {
     const r = routeEn(x, z);
     return r && r.ouvrage ? r.cote : null;
   }
-  // LA COTE QUE LE PAYSAGE LOINTAIN DESSINE (v299) : le relief, sauf sous une
+  // LA COTE QUE LE PAYSAGE LOINTAIN DESSINE (v300) : le relief, sauf sous une
   // route, où c'est le sommet de la chaussée ou du talus. `horizon.js` lisait
   // `terrainHeight` au-dessus d'un DÉBLAI et refermait la tranchée d'une dalle
   // de terre tant que le morceau n'était pas maillé — vu sur les captures du
@@ -2226,7 +2226,7 @@ export class World {
   treeAt(x, z) {
     if (dansUneCalotte(z)) return null;                             // rien ne pousse sur les calottes
     if (presDeLaVoie(x, z)) return null;                            // la voie ferrée reste dégagée
-    if (routeEn(x, z)) return null;                                  // et la route aussi, talus compris (v299)
+    if (routeEn(x, z)) return null;                                  // et la route aussi, talus compris (v300)
     if (Math.hypot(x - POLE.x, z - POLE.z) < POLE.r) return null;   // rien ne pousse sur la banquise
     if (versSeine(x, z) < 3) return null;                           // ni dans la Seine
     // Central Park compte vingt mille arbres : c'est le seul endroit d'une
@@ -2384,7 +2384,7 @@ export class World {
           continue;
         }
 
-        // LA ROUTE (v299) : le remblai et le déblai au profil de `routes.js`,
+        // LA ROUTE (v300) : le remblai et le déblai au profil de `routes.js`,
         // l'asphalte au sommet, et la surface continue par-dessus. Sous un
         // pont, seules les piles s'écrivent : le sol reste le sol, le tablier
         // est un ruban du mailleur. LA ROUTE A LE DERNIER MOT SUR SA COLONNE,

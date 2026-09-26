@@ -137,10 +137,12 @@ export const PALIERS = {
   // `hd` (v287) : la portée de la couche HD de Paris, en morceaux — 0 l'éteint.
   // Elle coûte un appel de dessin et quelques milliers de triangles par
   // morceau proche ; sur l'iPad de quatre ans, rien.
-  bas: { rr: 8, file: 6, hd: 0 },
+  // `hdMo` (v299) : ce que les façades DÉTAILLÉES peuvent peser, en mégaoctets
+  // — voir `planDetail` plus bas. Zéro : la couche est éteinte de toute façon.
+  bas: { rr: 8, file: 6, hd: 0, hdMo: 0 },
   // CE QUE LE JEU FAIT AUJOURD'HUI, au réglage près. Un appareil que la mesure
   // ne sait pas classer atterrit ici et ne perd rien.
-  moyen: { rr: 12, file: 8, hd: 3 },
+  moyen: { rr: 12, file: 8, hd: 3, hdMo: 128 },
   // ── ET CELUI-CI N'A JAMAIS TOURNÉ NULLE PART (v291) ───────────────────────
   //
   // Max, capture d'iPhone sur la production de la v290 : « A problem repeatedly
@@ -170,7 +172,7 @@ export const PALIERS = {
   // de dessin inchangé (1 541/1 574 contre 1 650/1 709). C'est du relief, et
   // c'est ce que Max a demandé de pouvoir choisir. Il reste donc offert — mais
   // SUR CHOIX SEULEMENT, voir `palierRetenu`.
-  haut: { rr: 16, file: 8, hd: 6, surChoixSeulement: true },
+  haut: { rr: 16, file: 8, hd: 6, hdMo: 128, surChoixSeulement: true },
 };
 
 export const PALIER_PAR_DEFAUT = 'moyen';
@@ -356,6 +358,17 @@ export const ETENDUES = [
 // propose à Max de choisir « Loin » lui-même. La mesure ne décide plus, elle
 // propose : c'est sa décision de la v290, appliquée au palier qu'elle a livré.
 export function palierRetenu({ choix = null, mesure = null } = {}) {
+  // LA SÛRETÉ PASSE DEVANT L'ÉTENDUE CHOISIE QUAND C'EST SOUS ELLE QUE LE JEU
+  // EST MORT (v299). La v296 faisait du choix la porte de sortie de tout
+  // réglage automatique — et c'est juste — mais l'iPhone de Max est mort deux
+  // fois de suite SOUS « Loin », et un enfant de sept ans n'ouvre pas les
+  // Réglages : sans cette ligne, la porte de sortie était devenue la boucle
+  // sans issue. Le verdict porte l'étendue sous laquelle ça a planté
+  // (`sousChoix`, journal.js) ; il ne s'applique qu'à CE choix-là, et choisir
+  // une autre étendue passe toujours devant.
+  if (mesure && mesure.surete && choix && choix !== 'auto' && mesure.sousChoix === choix && PALIERS[mesure.palier]) {
+    return { nom: mesure.palier, source: 'sûreté', sousChoix: choix, mesure, ...PALIERS[mesure.palier] };
+  }
   if (choix && choix !== 'auto' && PALIERS[choix]) {
     return { nom: choix, source: 'choix', ...PALIERS[choix] };
   }
@@ -400,7 +413,7 @@ export const etendueRange = (choix) => !choix || choix === 'auto';
 // Une liste qui décide d'une règle se range avec la règle : c'est la discipline
 // de `postesAvion` — deux tables qui décrivent la même chose finissent par
 // diverger — et c'est ce qui permet à un témoin de la lire sous node.
-export const PARAMS_FORCANTS = ['rr', 'attente', 'dpr', 'qualite', 'ombres', 'maillage', 'hd', 'palier'];
+export const PARAMS_FORCANTS = ['rr', 'attente', 'dpr', 'qualite', 'ombres', 'maillage', 'hd', 'palier', 'facadesmo'];
 
 // ── ET CE QUE VAUT « PAS DE PALIER » SE PUBLIE, IL NE SE RECOPIE PAS ─────────
 //
@@ -416,5 +429,48 @@ export const PARAMS_FORCANTS = ['rr', 'attente', 'dpr', 'qualite', 'ombres', 'ma
 // portable. Deux tables qui décrivent la même chose finissent par diverger —
 // discipline de `postesAvion`.
 export const reglageDe = (palier, tactile) => (palier
-  ? { rr: palier.rr, file: palier.file, hd: palier.hd }
-  : { rr: tactile ? 12 : 16, file: 8, hd: PALIERS[PALIER_PAR_DEFAUT].hd });
+  ? { rr: palier.rr, file: palier.file, hd: palier.hd, hdMo: palier.hdMo }
+  : { rr: tactile ? 12 : 16, file: 8, hd: PALIERS[PALIER_PAR_DEFAUT].hd, hdMo: PALIERS[PALIER_PAR_DEFAUT].hdMo });
+
+// ── LE DÉTAIL A UN BUDGET D'OCTETS, PAS SEULEMENT UN RAYON (v299) ───────────
+//
+// Max : « le jeu continue à planter sur la version 298, il crache au bout de
+// quelques secondes dès qu'on se déplace. » Le journal de son iPhone dit où :
+// en vol à l'ouest de Paris, 1 089 morceaux (« Loin »), 55 morceaux de façades
+// détaillées, zéro erreur — iOS a tué la page pour sa mémoire. Mesuré au banc
+// sur le site : un morceau des quartiers denses de l'ouest porte 146 000 à
+// 156 000 sommets de façades, ONZE mégaoctets, contre 1,6 au centre où la v296
+// avait mesuré ses 2,93 Mo. Un rayon de six morceaux en fait cent
+// soixante-neuf : plus d'un gigaoctet de façades là où la v296 en comptait
+// cent, et la fabrication « à portée seulement » ne peut rien contre un
+// morceau sept fois plus lourd que celui sur lequel elle a été réglée.
+//
+// Un rayon ne borne pas des octets. Le détail se dépense donc comme un
+// budget : du plus proche au plus loin, jusqu'à `hdMo` ; au-delà, le morceau
+// montre sa tuile plate, comme au-delà du rayon. La règle est PURE — lue sous
+// node par un témoin, appliquée par `main.js` à chaque changement de morceau
+// et à chaque arrivée de façades — et elle ne se fie qu'à ce qu'elle tient :
+// ce qu'un morceau pèsera avant d'être maillé se devine (`estimation`, la
+// moyenne de ce qu'on tient, plancher compris), ce qu'il pèse une fois arrivé
+// se mesure et corrige la dépense.
+//
+// `candidats` : [{ key, d }] les morceaux à portée sans détail, ni demandé.
+// `tenus`     : [{ key, d, octets }] ceux qui portent leur détail.
+// `attendus`  : combien de demandes de détail sont en route (comptées à
+//               l'estimation chacune, sinon un vol en commanderait cent).
+// Rend { rendre, demander, total } : ce qu'on rend à la carte graphique (les
+// plus loin d'abord), ce qu'on demande (les plus proches d'abord — un tenu
+// plus loin qu'un candidat lui cède sa place), et la dépense prévue.
+export function planDetail({ candidats = [], tenus = [], budget = 0, estimation = 0, attendus = 0 } = {}) {
+  const rendre = [], demander = [];
+  const restants = tenus.slice().sort((a, b) => a.d - b.d);   // le dernier est le plus loin
+  let total = restants.reduce((s, t) => s + (t.octets || 0), 0) + attendus * estimation;
+  while (total > budget && restants.length) { const t = restants.pop(); total -= t.octets || 0; rendre.push(t.key); }
+  for (const c of candidats.slice().sort((a, b) => a.d - b.d)) {
+    while (total + estimation > budget && restants.length && restants[restants.length - 1].d > c.d) {
+      const t = restants.pop(); total -= t.octets || 0; rendre.push(t.key);
+    }
+    if (total + estimation <= budget) { demander.push(c.key); total += estimation; }
+  }
+  return { rendre, demander, total };
+}

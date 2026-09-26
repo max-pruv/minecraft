@@ -750,6 +750,58 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Un rayon ne borne pas des octets (v299) — le détail se dépense comme un budget
+
+Max : « le jeu continue à planter sur la version 298, il crache au bout de
+quelques secondes dès qu'on se déplace. » Le journal de bord de la v296 a
+répondu en une requête : iPhone, en vol à l'ouest de Paris, 1 089 morceaux
+(« Loin »), 55 morceaux HD, zéro erreur — iOS a tué la page. Cinq règles.
+
+- **UNE FABRICATION « À PORTÉE SEULEMENT » NE VAUT QUE POUR LE POIDS SUR
+  LEQUEL ELLE A ÉTÉ RÉGLÉE.** La v296 avait mesuré 2,93 Mo par morceau HD au
+  CENTRE de Paris et ramené la ville de 1 171 à 98 Mo en ne fabriquant le
+  détail qu'à `RAYON_HD` + 1. Mesuré sur le site du plantage : un morceau des
+  quartiers denses de l'ouest porte 146 000 à 156 000 sommets de façades,
+  **onze mégaoctets**, contre 1,6 au centre. À « Loin » (rayon 6, 169
+  morceaux) c'est plus d'un gigaoctet ; à « Normal » (rayon 3, 49 morceaux),
+  quatre cents. Un rayon ne borne pas des octets. Le détail se dépense donc
+  comme un BUDGET (`hdMo` dans la fiche du palier, `planDetail` dans
+  palier.js, pure) : du plus proche au plus loin, ce qui dépasse montre sa
+  tuile plate, et un tenu plus loin qu'un candidat lui cède sa place. La
+  dépense d'un morceau qu'on n'a pas encore maillé s'ESTIME (la moyenne de ce
+  qu'on tient, deux mégaoctets au plancher) ; arrivé, il se mesure et le
+  budget se corrige tout de suite. Mesuré en vol sur le site, rr 16 · hd 6 :
+  façades 231 → 727 → 763 Mo avant, 124 → 97 → 127 après.
+- **LE POIDS SE MESURE PAR COUCHE, MORCEAU PAR MORCEAU — trois sondes, dans
+  cet ordre.** La première (tampons de la scène, quatre bras) a dit que ça
+  triple en vol avec la couche HD et pas sans ; la deuxième (vivants contre
+  orphelins) que rien n'est orphelin ; la troisième (par couche, les huit
+  plus lourds, la capacité des ArrayBuffers contre leurs vues) a nommé la
+  couche et l'endroit en une exécution. Devant une mémoire qui monte, on ne
+  cherche pas la fuite d'abord : on demande à la scène QUI tient les octets.
+- **LE RÉGLAGE ENTRE DANS LA FICHE DU JOURNAL.** Le journal disait 1 089
+  morceaux et 55 morceaux HD ; « rr 16 », donc « Loin », il a fallu le
+  DÉDUIRE. `journal.regler` note désormais rr, file, portée HD, budget,
+  palier, source, étendue et rendu logiciel. Une panne de réglage se lit dans
+  le réglage, pas dans ses effets.
+- **LA SÛRETÉ PASSE DEVANT L'ÉTENDUE SOUS LAQUELLE ÇA A PLANTÉ, ET DEVANT
+  ELLE SEULE.** La v296 avait fait du choix la porte de sortie de tout
+  réglage automatique — juste, et c'est resté vrai. Mais l'iPhone est mort
+  deux fois de suite SOUS « Loin », et un enfant de sept ans n'ouvre pas les
+  Réglages : la porte de sortie était devenue la boucle sans issue. Le
+  verdict porte `sousChoix` (l'étendue lue dans la fiche de la session
+  morte) ; `palierRetenu` ne l'oppose qu'à ce choix-là, « Normal » passe, et
+  choisir une autre étendue lève le verdict — c'est la décision explicite qui
+  rouvre la porte. Et le jeu le dit, avec le nom de l'étendue.
+- **UN BUDGET SE POSE SUR CE QU'ON A VU SURVIVRE, ET IL SE DIT.** 128 Mo :
+  au-dessus des 98 que le vieil iPad de la v296 a tenus au centre, très
+  au-dessous des cinq cents et plus sous lesquels l'iPhone est mort. Ce
+  n'est pas une mesure sur l'appareil — la fiche du journal la rendra
+  possible — et c'est déclaré dans `TASKS.md`, comme le vrai remède de fond :
+  une baie de façade coûte cinquante-six à soixante-neuf sommets par face,
+  et c'est le nombre de sommets, pas le rayon ni le budget, qui décidera un
+  jour de ce qu'un appareil peut montrer.
+
 ## Le journal de bord, et Paris qui pesait un gigaoctet (v296)
 
 Max : « un iPad d'ancienne génération, six ans peut-être, se connecte, ça ne
@@ -858,7 +910,7 @@ Trois règles.
   juger les ponts : je les ai vus et ne les ai pas mesurés. Une planche de
   captures se regarde en entier, pas seulement là où pointe la livraison.
 
-## Le couloir Paris–Lille (v299) — une route est un ouvrage, et elle se mesure sur le monde
+## Le couloir Paris–Lille (v300) — une route est un ouvrage, et elle se mesure sur le monde
 
 Troisième livraison du programme « monde fidèle » : l'autoroute A1, de la
 porte nord de Paris à l'entrée sud de Lille. Sept règles, et la première a

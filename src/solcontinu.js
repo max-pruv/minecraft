@@ -63,7 +63,7 @@ export const SOL_NATUREL = new Set([BLOCK.GRASS, BLOCK.DIRT, BLOCK.SAND, BLOCK.S
 const DESSUS_NATUREL = new Set([BLOCK.AIR, BLOCK.WATER, BLOCK.LOG, BLOCK.LEAVES]);
 const dessusNaturel = (id) => DESSUS_NATUREL.has(id) || isProp(id);
 
-// LE SOL D'UNE ROUTE (v299) : l'asphalte de la chaussée et de l'accotement,
+// LE SOL D'UNE ROUTE (v300) : l'asphalte de la chaussée et de l'accotement,
 // l'herbe du terre-plein et du talus, le sable d'un talus au bord de l'eau.
 // Une colonne de route est naturelle-par-la-route : sa cote vient du PROFIL
 // (`routes.js`), pas de `terrainHeight`, et son sommet voxel n'est que le
@@ -256,7 +256,7 @@ export function emettreSolContinu(buf, world, cx, cz, chunk, grille = grilleSol(
   return { cellules, couvertes: grille.couvertes, hauts: grille.hauts };
 }
 
-// --- LES RUBANS D'UNE ROUTE (v299) --------------------------------------------
+// --- LES RUBANS D'UNE ROUTE (v300) --------------------------------------------
 //
 // Ce que la surface ne sait pas dire colonne par colonne : le tablier d'un
 // pont (dessus, dessous, deux parapets) et le marquage au sol — une tuile n'a

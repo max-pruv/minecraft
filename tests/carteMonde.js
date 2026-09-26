@@ -485,7 +485,7 @@ const VRAIES_KM = [
       !rails.absent && rails.pas > 0 && rails.dedans === 0 && rails.viaduc >= 1,
       JSON.stringify(rails.absent ? rails : { dedans: rails.dedans, viaduc: rails.viaduc }));
 
-    // LA ROUTE PARIS–LILLE (v299) ---------------------------------------------
+    // LA ROUTE PARIS–LILLE (v300) ---------------------------------------------
     //
     // Programme « monde fidèle », livraison 3. Le corridor est un REGISTRE
     // (`routes.js`) : un profil continu à pente bornée épinglé au sol des deux

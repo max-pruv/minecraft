@@ -1,5 +1,32 @@
 # Ce qui est en cours
 
+- [ ] **LE BUDGET DE FAÇADES (v299) EST POSÉ, PAS MESURÉ SUR L'APPAREIL.**
+  128 Mo par palier : au-dessus des 98 Mo que le vieil iPad a tenus au centre
+  de Paris (v296), sous les 500 et plus qui ont tué l'iPhone (journal id 7).
+  La fiche du journal porte désormais le réglage : la première session de Max
+  à Paris en v299 dira ce que `journal_appareil` voit (façades HD, tas, fin).
+  Si ça meurt encore, `?facadesmo=64` puis `?palier=bas` sont les échelons ;
+  si ça tient large, le budget peut monter, avec le chiffre en commentaire.
+- [ ] **UNE BAIE DE FAÇADE COÛTE 56 À 69 SOMMETS PAR FACE — c'est le remède de
+  fond.** Mesuré sur les morceaux de l'ouest de Paris : 146 000 à 156 000
+  sommets de façades (`pierre-lisse` 68 000, `menuiserie` 61 000) pour 2 600 à
+  3 200 sommets de faces plates. Le budget borne ce qu'on tient ; ce qui
+  élargirait la portée à budget égal, c'est une baie moins bavarde (huisserie
+  en deux quads au lieu de moulures par sommet, volets sans épaisseur au-delà
+  de trois morceaux). À mesurer d'abord par tuile, avec
+  `sonde-facades-lourdes.mjs` (scratch de la session, à recopier dans
+  `tests/`).
+- [ ] **LES TEXTURES MONTENT DE 16 À 266 EN VINGT SECONDES DE VOL** (sonde
+  mémoire, tous les bras, hd 0 compris : 6 → 293). Ce sont les modèles de la
+  flotte qui se chargent à l'approche d'une ville (`Body_PrimaryPaint` dans
+  les gros maillages) — pas le sujet du jour, mais un poste de mémoire GPU à
+  mesurer sur la tablette avec `?diag=1`, et à borner s'il compte.
+- [ ] **LE COMPTEUR DE PLANTAGES RETOMBE À ZÉRO SUR UNE FERMETURE PROPRE — y
+  compris celle du rechargement de mise à jour.** Un appareil qui meurt, se
+  met à jour (fermeture propre), puis meurt encore repart à un. C'est voulu
+  pour une session qui a tenu ; pour un rechargement de quelques secondes,
+  c'est discutable. À trancher quand un journal le montrera.
+
 - [ ] **PROGRAMME « MONDE FIDÈLE » (kit de Max, septembre 2026) — livraison 2
   sur 6 faite.** Le cahier : terrain continu partagé par le rendu, les
   collisions et la navigation ; réseau routier entre les villes ; fidélité des
@@ -124,7 +151,7 @@
   bloc posé au sol, ou le fer de la tour, ou un toit du jeu, reste aussi — par
   construction. Si Max voit encore quelque chose en l'air après la v298, on
   relit d'abord le journal de bord (`blocs-suspendus`), qui dira combien et où.
-- [ ] **LE COULOIR PARIS–LILLE (v299) : CE QUI RESTE DÉCLARÉ.** (1) Une seule
+- [ ] **LE COULOIR PARIS–LILLE (v300) : CE QUI RESTE DÉCLARÉ.** (1) Une seule
   route, l'A1 ; les autres couloirs sont la livraison 5, avec la matrice de
   couverture. (2) Dans les vingt derniers blocs du disque de chaque ville, la
   route écrase la trame de la ville (asphalte sur la chaussée promise par
