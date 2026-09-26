@@ -99,6 +99,7 @@ const GARDIENS = {
   // reprend la main sur la qualité, `carte.js` la distance d'affichage vue de la
   // carte.
   'src/palier.js': ['monte.js', 'maj.js', 'reglages.js', 'carte.js', 'parishd.js'],
+  'src/journal.js': ['parent.js', 'reglages.js'],
   // La couche HD de Paris (v287) : ses tampons et son relais près/loin dans
   // `parishd.js` ; ce qu'elle coûte à la rue dans `monte.js`.
   'src/facadeshd.js': ['parishd.js', 'monte.js', 'plafond.js'],

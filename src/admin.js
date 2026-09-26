@@ -136,6 +136,17 @@ table.adm td:first-child .adm-dim { white-space: nowrap; }
 }
 .adm-note { color: var(--adm-doux); font-size: 11.5px; margin-top: 18px; line-height: 1.6; }
 #adm-msg { min-height: 18px; font-size: 12.5px; color: #7ee787; margin: 10px 2px 0; }
+/* Le journal de bord des appareils (v296) : une ligne par session, la fin en
+   couleur, le détail replié — c'est ce qu'on colle dans un message pour
+   comprendre une panne. */
+#adm-journal { margin-top: 22px; }
+#adm-journal h3 { font-size: 15px; margin: 0 0 6px; }
+#adm-journal .adm-jr { border: 1px solid var(--adm-trait); border-radius: 9px; padding: 8px 10px; margin: 6px 0; font-size: 12.5px; }
+#adm-journal .adm-jr b.fin-plantage { color: #ff9d95; }
+#adm-journal .adm-jr b.fin-fermeture { color: #7ee787; }
+#adm-journal .adm-jr summary { cursor: pointer; }
+#adm-journal pre { white-space: pre-wrap; word-break: break-all; font-size: 11px; max-height: 260px; overflow: auto; background: #0f141c; padding: 8px; border-radius: 6px; }
+#adm-journal .adm-dim { color: var(--adm-doux); }
 #adm-msg.err { color: #ff9d95; }
 
 /* Fenêtre maison plutôt que les boîtes du navigateur : celles-ci sont
@@ -221,6 +232,7 @@ const HTML = `
   </div>
   <div class="adm-hint">← fais glisser le tableau pour voir le reste →</div>
   <div id="adm-msg"></div>
+  <div id="adm-journal"></div>
   <p class="adm-note">
     Les empreintes de visage sont des suites de nombres : aucune photo n'est
     conservée nulle part. Les codes sont stockés hachés — même ici, personne
@@ -589,6 +601,48 @@ export class AdminPanel {
       const sub = this.el.querySelector('#adm-sub');
       sub.textContent += ` · ${fachees.map(([c]) => `${c} illisible (${lu[c].statut || 'hors ligne'})`).join(', ')}`;
     }
+    this.chargerJournal().catch(() => {});
+  }
+
+  // LE JOURNAL DE BORD DES APPAREILS (v296). Les trente dernières sessions
+  // remontées par les tablettes : quand elles ont fini, comment (au revoir, ou
+  // plantage présumé), et le dernier relevé — où l'enfant était, la cadence,
+  // ce que la page tenait. Le détail complet est replié, prêt à être copié.
+  async chargerJournal() {
+    const zone = this.el && this.el.querySelector('#adm-journal');
+    if (!zone) return;
+    let lignes = [];
+    try { lignes = await this.cloud.journalLire(30); } catch { lignes = []; }
+    this.journaux = lignes;
+    if (!lignes.length) {
+      zone.innerHTML = '<h3>Journal de bord des appareils</h3><div class="adm-dim">Aucune session remontée pour l\'instant — les tablettes envoient leur journal quand elles quittent le jeu, ou au lancement suivant si elles ont planté.</div>';
+      return;
+    }
+    const quand = (iso) => { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); };
+    const appareilCourt = (doc) => {
+      const ua = (doc && doc.fiche && doc.fiche.ua) || '';
+      const m = ua.match(/iPad|iPhone|Macintosh|Android|Windows|Linux/);
+      return m ? m[0] : 'appareil';
+    };
+    const mots = { plantage: 'PLANTAGE présumé', fermeture: 'au revoir', 'arriere-plan': 'arrière-plan' };
+    zone.innerHTML = '<h3>Journal de bord des appareils</h3>' + lignes.map((l) => {
+      const doc = l.doc || {};
+      const dernier = (doc.releves || []).slice(-1)[0] || {};
+      const erreurs = doc.erreurs || 0;
+      const suspendus = (doc.evenements || []).find((e) => e.type === 'blocs-suspendus');
+      const resume = [
+        dernier.ville ? `à ${esc(dernier.ville)}` : (dernier.x !== undefined ? `en (${dernier.x}, ${dernier.z})` : ''),
+        dernier.ips != null ? `${dernier.ips} i/s` : '', dernier.pire ? `pire image ${dernier.pire} ms` : '',
+        dernier.morceaux != null ? `${dernier.morceaux} morceaux (${dernier.hd || 0} HD)` : '',
+        dernier.tasMo ? `${dernier.tasMo} Mo de tas` : '', doc.duree != null ? `${Math.round(doc.duree)} s de session` : '',
+        erreurs ? `${erreurs} erreur(s)` : '',
+        suspendus && suspendus.d ? `${suspendus.d.n} bloc(s) suspendu(s) à ${(suspendus.d.villes || []).join(', ')}` : '',
+      ].filter(Boolean).join(' · ');
+      return `<details class="adm-jr"><summary><b class="fin-${esc(l.fin || 'inconnue')}">${esc(mots[l.fin] || l.fin || '?')}</b>
+        · ${esc(quand(l.created_at))} · ${esc(l.name || 'sans prénom')} · ${esc(appareilCourt(doc))} · ${esc(l.version || 'version ?')}
+        <span class="adm-dim">${resume}</span></summary>
+        <pre>${esc(JSON.stringify(doc, null, 1))}</pre></details>`;
+    }).join('');
   }
 
   // Depuis quel jour compte la période choisie (null = depuis toujours).

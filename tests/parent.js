@@ -223,6 +223,99 @@ async function panneau(p) {
       !ecran.err && ecran.cadence < 12 && ecran.part >= 0.9,
       JSON.stringify(ecran));
 
+    // ── LE JOURNAL DE BORD DE L'APPAREIL (v296) ────────────────────────────
+    //
+    // Max : un iPad de six ans plante après vingt secondes à Paris, et il n'en
+    // reste rien. Le journal s'écrit PENDANT, se relit au lancement suivant, et
+    // deux plantages de suite allègent le jeu tout seuls. La règle pure d'abord,
+    // sous node ; puis le trajet d'une tablette dont la session d'avant est
+    // morte sans dire au revoir ; puis ce que le parent en voit.
+    const J = await import('../src/journal.js');
+    const PAL = await import('../src/palier.js');
+    {
+      const b1 = J.bilanPrecedent({ drapeau: '1', journalBrut: JSON.stringify({ debut: 1, fiche: { ua: 'iPad' }, releves: [{ t: 19, ville: 'paris' }], evenements: [] }), plantages: 0 });
+      const b0 = J.bilanPrecedent({ drapeau: null, journalBrut: '{}', plantages: 1 });
+      verifier('une session qui n’a pas dit au revoir est un plantage présumé, et le compteur monte',
+        !!(b1.rapport && b1.rapport.fin === 'plantage' && b1.rapport.releves[0].ville === 'paris' && b1.plantages === 1
+          && b0.rapport === null && b0.plantages === 1), JSON.stringify({ b1, b0 }));
+      const s1 = J.suretePalier(1), s2 = J.suretePalier(2);
+      const r2 = PAL.palierRetenu({ choix: 'auto', mesure: s2 });
+      const rc = PAL.palierRetenu({ choix: 'moyen', mesure: s2 });
+      const rm = PAL.palierRetenu({ choix: 'auto', mesure: { palier: 'moyen' } });
+      verifier('deux plantages de suite déclenchent la sûreté : palier bas, que seul un choix d’étendue passe',
+        s1 === null && !!(s2 && s2.palier === 'bas' && s2.surete) && !!(r2 && r2.nom === 'bas' && r2.source === 'sûreté')
+          && !!(rc && rc.nom === 'moyen' && rc.source === 'choix') && !!(rm && rm.source === 'mesure'),
+        JSON.stringify({ s1, s2, r2, rc, rm }));
+      const gros = { fiche: {}, evenements: Array.from({ length: 500 }, (_, i) => ({ t: i, type: 'x', d: 'y'.repeat(100) })),
+        releves: Array.from({ length: 200 }, (_, i) => ({ t: i, ips: 30, pire: 40 })) };
+      const borne = J.borner(gros);
+      verifier('un journal se borne à ce qu’un envoi de fermeture accepte, en gardant le plus récent',
+        JSON.stringify(borne).length <= J.MAX_OCTETS && JSON.stringify(gros).length > J.MAX_OCTETS && borne.releves.slice(-1)[0].t === 199,
+        `${JSON.stringify(gros).length} → ${JSON.stringify(borne).length} octets, borne ${J.MAX_OCTETS}`);
+    }
+
+    // Le trajet : une tablette dont la session d'avant est morte — le drapeau
+    // encore là, un journal écrit à Paris, déjà un plantage au compteur.
+    const cles = { SESSION_CLE: J.SESSION_CLE, PLANTAGES_CLE: J.PLANTAGES_CLE, JOURNAL_CLE: J.JOURNAL_CLE };
+    const tab = await banc.joueur('Ipad', { portNuage: 9741 });
+    await tab.waitForFunction(() => window.__game, null, { timeout: 90000 });
+    // UN RECHARGEMENT EST UN AU REVOIR : `pagehide` ferme la session proprement
+    // et efface le drapeau. Mon premier jet semait les clés AVANT de recharger
+    // et mesurait donc une session propre (« plantages 0 »). On sème au
+    // `pagehide`, APRÈS le geste du jeu — les écouteurs se suivent dans l'ordre
+    // d'inscription — c'est la seule façon de laisser derrière soi ce qu'un
+    // plantage laisse : un drapeau, un journal, un compteur.
+    await tab.evaluate((c) => {
+      window.addEventListener('pagehide', () => {
+        localStorage.setItem(c.SESSION_CLE, String(Date.now()));
+        localStorage.setItem(c.PLANTAGES_CLE, '1');
+        localStorage.setItem(c.JOURNAL_CLE, JSON.stringify({ debut: Date.now() - 20000, fiche: { ua: navigator.userAgent, prenom: 'Ipad' },
+          evenements: [{ t: 0, type: 'jouer' }], releves: [{ t: 19.5, ville: 'paris', ips: 12, pire: 900, morceaux: 240, hd: 200 }], erreurs: 0 }));
+      });
+    }, cles);
+    await tab.reload({ waitUntil: 'load', timeout: 90000 });
+    await tab.waitForFunction(() => window.__game, null, { timeout: 90000 });
+    const tJ = Date.now();
+    let plantage = null;
+    while (Date.now() - tJ < 20000 && !plantage) {
+      await dormir(500);
+      plantage = nuage.journaux().find((r) => r.fin === 'plantage' && r.name === 'Ipad');
+    }
+    verifier('la session morte sans au revoir remonte au nuage comme plantage présumé, avec son dernier relevé',
+      !!(plantage && plantage.doc && plantage.doc.releves && plantage.doc.releves[0].ville === 'paris' && plantage.appareil),
+      plantage ? `en ${Date.now() - tJ} ms · ${JSON.stringify(plantage).slice(0, 240)}` : 'aucune ligne « plantage » en 20 s');
+    const etat = await tab.evaluate(() => ({ ...window.__game.reglageApplique, plantages: window.__journal.plantages(),
+      range: localStorage.getItem('web-minecraft-palier-v2') }));
+    // Sous `?rr=` (le banc), la sûreté s'applique mais ne se RANGE pas (v284).
+    verifier('au deuxième plantage de suite, le jeu passe en palier bas par sûreté — sans le ranger sous une adresse forcée',
+      etat.palier === 'bas' && etat.source === 'sûreté' && etat.hd === 0 && etat.plantages === 2 && etat.range === null,
+      JSON.stringify(etat));
+    // Et la session qui dit au revoir : le drapeau tombe, le compteur aussi.
+    await tab.evaluate(() => window.dispatchEvent(new Event('pagehide')));
+    const tF = Date.now();
+    let fermeture = null;
+    while (Date.now() - tF < 15000 && !fermeture) {
+      await dormir(500);
+      fermeture = nuage.journaux().find((r) => r.fin === 'fermeture');
+    }
+    const adieu = await tab.evaluate((c) => ({ drapeau: localStorage.getItem(c.SESSION_CLE), plantages: localStorage.getItem(c.PLANTAGES_CLE) }), cles);
+    verifier('une session qui dit au revoir remonte son journal, retire son drapeau et remet le compteur à zéro',
+      !!fermeture && adieu.drapeau === null && adieu.plantages === '0',
+      `${fermeture ? `fermeture en ${Date.now() - tF} ms (${fermeture.name})` : 'aucune ligne « fermeture » en 15 s'} · ${JSON.stringify(adieu)}`);
+    await tab.close();
+
+    // Ce que le parent en voit : le plantage en tête, avec la ville.
+    await p.evaluate(async () => { await window.__game.admin.chargerJournal(); });
+    const vuJournal = await p.evaluate(() => {
+      const z = window.__game.admin.el.querySelector('#adm-journal');
+      const texte = z.textContent.replace(/\s+/g, ' ');
+      return { lignes: z.querySelectorAll('.adm-jr').length, plantage: /PLANTAGE présumé/.test(texte), paris: /paris/.test(texte),
+        fermeture: /au revoir/.test(texte), debut: texte.slice(0, 200) };
+    });
+    verifier('l’espace parent montre le journal de bord, plantage présumé et fermeture, avec la ville',
+      vuJournal.lignes >= 2 && vuJournal.plantage && vuJournal.paris && vuJournal.fermeture,
+      JSON.stringify(vuJournal));
+
     verifier('aucune faute de page dans l’espace parent', p.erreurs.length === 0,
       JSON.stringify(p.erreurs));
   } catch (e) {

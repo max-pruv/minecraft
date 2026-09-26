@@ -20,6 +20,81 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v296 — Le journal de bord de l'appareil, et Paris ne pèse plus un gigaoctet
+
+**Pourquoi.** Max : « un iPad d'ancienne génération, six ans peut-être, se
+connecte, ça ne lague pas trop, et au bout de vingt secondes de jeu, quand je
+recharge complètement, il plante. Il faudrait collecter des logs pour
+comprendre les bugs, et déjà chercher la cause. » C'était en se promenant à
+Paris. Puis, la v296 en cours de validation : « le jeu plante aussi sur mon
+téléphone à moi, sur la version actuelle » — un iPhone récent, donc. Un
+plantage sur iOS ne laisse rien : Safari tue la page sans un mot, quel que
+soit l'appareil, et personne n'était devant avec un câble. Deux causes,
+mesurées, et la première ne dépend pas de l'âge de l'appareil.
+
+- **Paris pesait un gigaoctet.** Mesuré au banc, disque rempli au centre de
+  Paris, au réglage que reçoit un appareil jamais classé (rr 12 · hd 3) : la
+  scène tenait **1 171 Mo de tampons de géométrie**, 1 272 Mo de tas
+  JavaScript — contre 98 Mo et 203 Mo au palier bas. Un morceau HD de Paris
+  pèse 2,93 Mo, dont 1,6 Mo de façades détaillées, contre 0,16 Mo sans HD ;
+  et `world.hd` les faisait FABRIQUER pour tout le disque de la ville quand
+  `RAYON_HD` n'en MONTRE que quarante-neuf — la dette déclarée en v291. Un
+  iPad de trois gigaoctets meurt bien avant le gigaoctet ; les vingt secondes
+  sont le temps que les morceaux arrivent.
+- **Et il ne pouvait pas s'en sortir seul.** Le palier de l'appareil ne se
+  range qu'après trente secondes de jeu (v284) : un appareil qui meurt à
+  vingt secondes n'est JAMAIS classé, et chaque relance repart au réglage
+  « moyen » qui vient de le tuer. Une boucle sans issue — exactement ce que
+  la v291 interdit à tout réglage automatique.
+
+**Ce que ça change.**
+
+- **On fabrique ce qu'on montre.** Les façades détaillées de Paris ne sont
+  demandées au mailleur qu'à portée de `RAYON_HD` plus un morceau de marge,
+  et elles sont rendues à la carte graphique deux morceaux plus loin. Le sol
+  HD et les faces plates restent partout : le loin ne change pas d'un pixel.
+- **Le jeu tient un journal de bord** (`src/journal.js`) : la fiche de
+  l'appareil, un relevé toutes les cinq secondes (où l'enfant est, la
+  cadence, la pire image, ce que la page tient — morceaux, façades HD,
+  géométries, tas), les événements et les erreurs, écrits dans le stockage
+  de la tablette toutes les deux secondes. Une session qui n'a pas dit au
+  revoir est un plantage présumé : au lancement suivant, son journal part au
+  nuage avec la mention `plantage` ; une session qui se ferme part aussi.
+- **Deux plantages de suite, et le jeu s'allège tout seul** : palier bas par
+  sûreté, rangé, que la mesure suivante n'écrase pas, et que seule une
+  étendue choisie dans les Réglages passe. Le jeu le dit à l'enfant (« il
+  passe en mode léger — Réglages → Étendue pour changer »), et l'aide des
+  Réglages le répète.
+- **L'espace parent montre le journal de bord** : les trente dernières
+  sessions, plantage présumé en rouge, avec le dernier relevé et le document
+  complet replié, prêt à être copié.
+- **Et le journal compte les blocs suspendus.** Max a dit que la structure de
+  rondins vue dans le ciel de Paris (v295) n'est pas une construction des
+  enfants ; le relief d'avant ne l'explique pas non plus (huit blocs au plus).
+  Au démarrage d'une partie, le journal compte les blocs posés qui flottent à
+  plus de six blocs au-dessus du sol d'une ville — combien, lesquels, où — et
+  l'espace parent l'affiche. C'est l'instrument qui dira si ce sont des blocs
+  écrits ou un rendu de travers, avant toute hypothèse de plus.
+
+**Ce qui le prouve.** Cinq témoins neufs dans `parent.js` (la règle pure du
+bilan et de la sûreté, le trajet d'une tablette morte sans au revoir qui
+remonte son plantage et passe en palier bas, la session qui dit au revoir et
+remet le compteur à zéro, l'espace parent qui montre le plantage) et trois
+dans `parishd.js` (aucun morceau au-delà du rayon HD plus un ne porte de
+façades détaillées ; en s'éloignant, les façades quittées sont rendues et
+celles d'arrivée fabriquées ; le loin n'a plus de façades fabriquées). La
+sonde `sonde-memoire-paris.cjs` mesure la cause en octets, palier par
+palier, en ordre alterné, deux relevés par bras :
+
+| réglage | tampons avant | tampons après | tas avant | tas après |
+| --- | --- | --- | --- | --- |
+| moyen (rr 12 · hd 3) | 1 171 Mo | **352 · 352 Mo** | 1 272 Mo | 452 · 454 Mo |
+| bas (rr 8 · hd 0) | 98 Mo | 98 · 98 Mo | 203 Mo | 211 · 202 Mo |
+
+Trois fois moins au réglage d'un appareil jamais classé, et rien ne change au
+palier bas — ce qu'un témoin garde (« sans HD, les tampons sont ceux
+d'avant »). Ce qui reste à voir sur le vrai iPad est déclaré dans `TASKS.md`.
+
 ## v295 — La tour Eiffel ne laisse plus flotter de cubes
 
 **Pourquoi.** Max, capture d'iPad prise au centre de Paris : « Ya des trucs

@@ -223,6 +223,7 @@ src/aeroport.js src/circuit.js src/ville.js src/parc.js src/voies.js
 src/education.js  quiz bank, adaptive difficulty, stats, persistence
 src/identity.js   face signatures (never photos) and the hashed parent code
 src/admin.js      the parent space
+src/journal.js    the device's logbook: crash detection, safety tier, cloud reports
 
 vendor/           three.js r160 + GLTFLoader (MIT — see THREE_LICENSE),
                   voiture.glb — the drivable car's 3D model (VOITURE_LICENSE)

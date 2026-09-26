@@ -359,6 +359,14 @@ export function palierRetenu({ choix = null, mesure = null } = {}) {
   if (choix && choix !== 'auto' && PALIERS[choix]) {
     return { nom: choix, source: 'choix', ...PALIERS[choix] };
   }
+  // LA SÛRETÉ (v296) : un verdict écrit par le disjoncteur du journal de bord
+  // après deux plantages de suite (`suretePalier`, journal.js). Il passe devant
+  // la mesure — qui n'a jamais pu se faire, puisque l'appareil meurt avant
+  // ses trente secondes — et derrière le choix de l'étendue, qui reste la
+  // porte de sortie de tout réglage automatique (v290, v291).
+  if (mesure && mesure.surete && PALIERS[mesure.palier]) {
+    return { nom: mesure.palier, source: 'sûreté', mesure, ...PALIERS[mesure.palier] };
+  }
   if (mesure && PALIERS[mesure.palier] && !PALIERS[mesure.palier].surChoixSeulement) {
     return { nom: mesure.palier, source: 'mesure', mesure, ...PALIERS[mesure.palier] };
   }

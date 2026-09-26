@@ -27,6 +27,7 @@ import { Horizon, rayonHorizon } from './horizon.js';
 import { PALIERS, PALIER_CLE, choisirPalier, VITESSE_JET,
   ETENDUE_CLE, ETENDUE_PAR_DEFAUT, ETENDUES, palierRetenu, palierPropose, etendueRange, reglageDe,
   PARAMS_FORCANTS } from './palier.js';
+import { Journal, suretePalier, PLANTAGES_SURETE } from './journal.js';
 import { liberer } from './liberer.js';
 import { createEffects } from './effects.js';
 import { createSky } from './sky.js';
@@ -68,6 +69,30 @@ const contexteCarte = ctx => String(ctx).replace(/^manhattan-v1:/,'');
 
 const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 
+// ── LE JOURNAL DE BORD S'OUVRE AVANT TOUT RÉGLAGE (v296) ────────────────────
+//
+// Il relit ce que la session d'avant a laissé — un drapeau « session ouverte »
+// encore là, c'est un plantage présumé — et c'est son compteur qui décide de
+// la sûreté du palier, juste en dessous. Stockage BRUT de l'appareil : un
+// plantage est une affaire de tablette, pas d'enfant. Voir journal.js.
+const journal = new Journal({
+  stockage: window.__rawStorage || {
+    get: (k) => localStorage.getItem(k), set: (k, v) => localStorage.setItem(k, v), remove: (k) => localStorage.removeItem(k),
+  },
+  fiche: {
+    ua: navigator.userAgent, ecran: `${screen.width}×${screen.height}`, dpr: window.devicePixelRatio,
+    coeurs: navigator.hardwareConcurrency || null, memoireGo: navigator.deviceMemory || null,
+    tactile: IS_TOUCH, langue: navigator.language,
+    pwa: (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true,
+    adresse: location.search.slice(0, 160),
+  },
+});
+const BILAN_JOURNAL = journal.ouvrir();
+window.addEventListener('error', (e) => journal.erreur(e.message || (e.error && e.error.message) || 'erreur',
+  `${String(e.filename || '').split('/').pop()}:${e.lineno || 0}`));
+window.addEventListener('unhandledrejection', (e) => journal.erreur(
+  (e.reason && (e.reason.stack || e.reason.message)) || String(e.reason), 'promesse'));
+
 // ── LE PALIER DE L'APPAREIL (v284) ───────────────────────────────────────────
 //
 // Max, sur iPhone 18 Pro : « le unveil est late », puis « tu serais capable
@@ -105,6 +130,23 @@ const ETENDUE_CHOISIE = (() => {
   } catch { /* mode privé */ }
   return ETENDUE_PAR_DEFAUT;
 })();
+// ── LE DISJONCTEUR (v296) ─────────────────────────────────────────────────────
+//
+// Deux plantages de suite, et le jeu s'allège tout seul : un appareil qui
+// meurt avant ses trente secondes n'est jamais classé (v284), donc chaque
+// relance repartait au réglage « moyen » qui venait de le tuer — la boucle sans
+// issue que la v291 interdit à tout réglage automatique. Le verdict `bas` est
+// RANGÉ, sauf sous une configuration forcée par l'adresse (le banc force
+// toujours `rr` et ne doit rien laisser à la page suivante, v284) ; il tient
+// alors pour ce lancement seulement.
+const SURETE = (() => {
+  if (PALIER_FORCE) return null;
+  const s = suretePalier(BILAN_JOURNAL.plantages);
+  if (s && !PARAMS_FORCANTS.some((c) => new URLSearchParams(location.search).has(c))) {
+    try { localStorage.setItem(PALIER_CLE, JSON.stringify(s)); } catch { /* mode privé */ }
+  }
+  return s;
+})();
 const PALIER = (() => {
   if (PALIER_FORCE && PALIERS[PALIER_FORCE]) return { nom: PALIER_FORCE, source: 'adresse', ...PALIERS[PALIER_FORCE] };
   let mesure = null;
@@ -112,6 +154,7 @@ const PALIER = (() => {
     const brut = localStorage.getItem(PALIER_CLE);
     if (brut) mesure = JSON.parse(brut);
   } catch { /* mode privé, ou rangement abîmé : on garde le comportement d'avant */ }
+  if (SURETE) mesure = SURETE;
   // Ni choix ni mesure : rend null, c'est-à-dire la v283 au bit près.
   return palierRetenu({ choix: ETENDUE_CHOISIE, mesure });
 })();
@@ -147,6 +190,25 @@ const UNLOAD_RADIUS = RENDER_RADIUS + 2;
 // qu'un demi-tour ne réengendre pas ce qu'on vient de quitter (v236).
 const OUBLI_RADIUS = UNLOAD_RADIUS + 4;
 const RAYON_OMBRE = 6;   // en morceaux : l'emprise de la caméra d'ombre (95 blocs), v247
+// ── ON FABRIQUE CE QU'ON MONTRE (v296) ───────────────────────────────────────
+//
+// Max : un iPad de six ans « se connecte, ne lague pas trop, et plante au bout
+// de vingt secondes de jeu » à Paris. Mesuré au banc, disque rempli au centre
+// de Paris : au réglage d'un appareil jamais classé (rr 12 · hd 3) la scène
+// tenait **1 171 Mo** de tampons de géométrie (1 272 Mo de tas), contre 98 Mo
+// au palier bas. Un morceau HD pèse 2,93 Mo, dont 1,6 Mo de façades
+// détaillées, contre 0,16 Mo sans HD — et `world.hd` les faisait FABRIQUER
+// pour tout le disque de Paris quand `RAYON_HD` n'en MONTRE que
+// (2 × 3 + 1)² = 49 (la dette déclarée en v291). Safari tue une page de
+// trois gigaoctets bien avant le gigaoctet ; les vingt secondes sont le temps
+// que les morceaux arrivent.
+//
+// Le détail se demande donc PAR MORCEAU, à portée de `RAYON_HD` plus une marge
+// d'un morceau — prêt avant que l'enfant n'y entre — et il se REND à la carte
+// graphique deux morceaux plus loin (hystérésis : hésiter à la frontière ne
+// remaille pas à chaque pas). Le sol HD et les faces plates, eux, restent
+// partout : le loin ne change pas d'un pixel.
+const MARGE_HD = 1;
 // Les lampes de rue (v248) : la couleur des lanternes de Manhattan, une
 // portée de dix-huit blocs, et une intensité MESURÉE sur captures de nuit.
 const LAMPE_RUE = 0xffc989;
@@ -519,7 +581,7 @@ world.loadEdits();
 // tampons prêts pour la carte graphique, plus les blocs pour les collisions.
 // Le fil principal ne fait plus que les installer. `?maillage=local` rend
 // l'ancien chemin, pour mesurer et pour les témoins.
-const statsMaillage = { principalMs: 0, locaux: 0, distants: 0, refuses: 0, recus: [] };
+const statsMaillage = { principalMs: 0, locaux: 0, distants: 0, refuses: 0, recus: [], detailsDemandes: 0, detailsRendus: 0 };
 
 // ── CE QU'ON MESURE POUR CLASSER L'APPAREIL (v284) ───────────────────────────
 //
@@ -633,6 +695,11 @@ function rangerLePalier() {
   mesurePalier.range = true;
   mesurePalier.verdict = verdict;
   if (!PALIER_SE_RANGE) return;    // mesuré pour le dire, pas pour le garder
+  // UNE SÛRETÉ NE S'ÉCRASE PAS PAR UNE MESURE (v296) : la mesure dit ce que
+  // l'appareil fait en trente secondes, pas s'il survit à la minute. Seule
+  // l'étendue choisie dans les Réglages passe devant — c'est la porte de sortie.
+  const deja = mesureRangee();
+  if (deja && deja.surete) return;
   try { localStorage.setItem(PALIER_CLE, JSON.stringify({ ...verdict, le: Date.now() })); } catch { /* mode privé */ }
 }
 // COMBIEN DE MORCEAUX LE WORKER A-T-IL D'AVANCE — et c'est un TEMPS, pas un
@@ -771,6 +838,7 @@ function recevoirMorceau(m) {
     // UN WORKER QUI MEURT REND LA MAIN AU FIL PRINCIPAL : un navigateur sans
     // workers de module doit voir le monde quand même.
     w.onerror = (err) => {
+      journal.erreur(err && err.message, 'worker');
       console.warn('maillage hors fil principal indisponible, on maille ici :', err && err.message);
       maillageDistant = null;
       for (const a of enAttente.values()) meshQueue.push({ cx: a.cx, cz: a.cz, d: 0 });
@@ -916,7 +984,8 @@ function geometrieDepuisTampons(t) {
 // manque. `statsMaillage.principalMs` compte ce que cela coûte à l'image.
 function meshChunk(cx, cz) {
   const t0 = performance.now();
-  installerMorceau(cx, cz, buildChunkTampons(world, cx, cz));
+  const pcx = Math.floor(player.pos.x / CHUNK), pcz = Math.floor(player.pos.z / CHUNK);
+  installerMorceau(cx, cz, buildChunkTampons(world, cx, cz, { detail: detailVoulu(cx, cz, pcx, pcz) }));
   statsMaillage.principalMs += performance.now() - t0;
   statsMaillage.locaux++;
 }
@@ -930,7 +999,9 @@ function installerMorceau(cx, cz, tampons) {
   const solid = geometrieDepuisTampons(tampons.solid);
   const water = geometrieDepuisTampons(tampons.water);
   const lumineux = geometrieDepuisTampons(tampons.lumineux);
-  const entry = { solid: null, water: null, lumineux: null, props: null, sol: null, facades: null, plat: null, platLumineux: null };
+  const entry = { solid: null, water: null, lumineux: null, props: null, sol: null, facades: null, plat: null, platLumineux: null,
+    // ce morceau touche la couche HD, et il a été maillé AVEC ses façades détaillées (v296)
+    hd: !!tampons.hd, detail: !!tampons.detail };
   const pcx = Math.floor(player.pos.x / CHUNK), pcz = Math.floor(player.pos.z / CHUNK);
   const ombre = Math.abs(cx - pcx) <= RAYON_OMBRE && Math.abs(cz - pcz) <= RAYON_OMBRE;
   if (solid) {
@@ -1034,10 +1105,42 @@ function installerMorceau(cx, cz, tampons) {
 // plate au nu du mur cacherait la baie en retrait.
 function montrerLeDetail(entry, cx, cz, pcx, pcz) {
   if (!entry.facades && !entry.plat && !entry.platLumineux) return;
-  const pres = Math.abs(cx - pcx) <= RAYON_HD && Math.abs(cz - pcz) <= RAYON_HD;
+  // Sans façades détaillées — pas encore fabriquées, ou rendues (v296) — le
+  // morceau montre ses faces plates, quelle que soit la distance.
+  const pres = !!entry.facades && Math.abs(cx - pcx) <= RAYON_HD && Math.abs(cz - pcz) <= RAYON_HD;
   if (entry.facades) entry.facades.visible = pres;
   if (entry.plat) entry.plat.visible = !pres;
   if (entry.platLumineux) entry.platLumineux.visible = !pres;
+}
+
+// Faut-il fabriquer les façades détaillées de ce morceau ? (v296)
+function detailVoulu(cx, cz, pcx, pcz) {
+  return RAYON_HD > 0 && Math.abs(cx - pcx) <= RAYON_HD + MARGE_HD && Math.abs(cz - pcz) <= RAYON_HD + MARGE_HD;
+}
+// À chaque changement de morceau : ce qui entre à portée se REDEMANDE avec son
+// détail, ce qui en sort de deux morceaux rend ses façades à la carte graphique.
+function gererLeDetail(entry, key, cx, cz, pcx, pcz) {
+  if (!entry.hd || RAYON_HD <= 0) return;
+  const d = Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz));
+  if (d <= RAYON_HD + MARGE_HD) {
+    if (!entry.detail && !enAttente.has(key)) redemanderLeDetail(cx, cz, key);
+  } else if (d > RAYON_HD + MARGE_HD + 1 && entry.detail) {
+    if (entry.facades) { scene.remove(entry.facades); entry.facades.geometry.dispose(); entry.facades = null; }
+    entry.detail = false;
+    if (entry.plat) entry.plat.visible = true;
+    if (entry.platLumineux) entry.platLumineux.visible = true;
+    statsMaillage.detailsRendus++;
+  }
+}
+function redemanderLeDetail(cx, cz, key) {
+  statsMaillage.detailsDemandes++;
+  if (maillageDistant && !world.maillageLocal(cx, cz)) {
+    enAttente.set(key, { cx, cz, sale: false });
+    maillageDistant.postMessage({ type: 'mailler', liste: [{ cx, cz, detail: true }], generation: generationDistante,
+      pcx: Math.floor(player.pos.x / CHUNK), pcz: Math.floor(player.pos.z / CHUNK), rayon: RENDER_RADIUS + 2 });
+  } else {
+    world.dirty.add(key);     // le fil principal le remaille, avec le détail voulu
+  }
 }
 
 // De quel côté d'un réverbère est la rue : le cap (autour de y) qui tourne
@@ -1093,6 +1196,7 @@ function updateChunks() {
         if (entry.facades) entry.facades.castShadow = ombre;
         if (entry.plat) entry.plat.castShadow = ombre;
         montrerLeDetail(entry, cx, cz, pcx, pcz);
+        gererLeDetail(entry, key, cx, cz, pcx, pcz);
       }
     }
     // ET LES BLOCS S'OUBLIENT AVEC LEUR MAILLAGE. Défaire le maillage rendait
@@ -1122,7 +1226,7 @@ function updateChunks() {
       if (enAttente.has(key) || chunkMeshes.has(key)) continue;
       if (world.maillageLocal(suivant.cx, suivant.cz)) { meshChunk(suivant.cx, suivant.cz); continue; }
       enAttente.set(key, { cx: suivant.cx, cz: suivant.cz, sale: false });
-      lot.push({ cx: suivant.cx, cz: suivant.cz });
+      lot.push({ cx: suivant.cx, cz: suivant.cz, detail: detailVoulu(suivant.cx, suivant.cz, pcx, pcz) });
     }
     if (lot.length) {
       maillageDistant.postMessage({ type: 'mailler', liste: lot, generation: generationDistante,
@@ -1675,6 +1779,9 @@ window.addEventListener('beforeunload', () => { world.saveEdits(); savePosition(
 window.addEventListener('pagehide', () => {
   world.saveEdits();
   savePosition();
+  // LA SESSION DIT AU REVOIR (v296) : le drapeau tombe, le journal part au
+  // nuage avec `keepalive`, parce que la page n'attend plus personne.
+  envoyerJournal(journal.fermer('fermeture'), true);
   // On prévient les autres joueurs avant de disparaître. Sans ça, la
   // connexion mourait sans un mot et il fallait attendre que le réseau s'en
   // aperçoive : le compagnon restait planté là, puis s'évanouissait sans
@@ -1682,7 +1789,14 @@ window.addEventListener('pagehide', () => {
   if (net) { try { net.stop(); } catch { /* déjà parti */ } net = null; }
 });
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'hidden') { world.saveEdits(); savePosition(); }
+  if (document.visibilityState === 'hidden') {
+    world.saveEdits(); savePosition();
+    // iOS tue aussi les onglets cachés, et ce n'est pas un plantage que
+    // l'enfant a vu : la session se ferme proprement, elle rouvrira au retour.
+    journal.fermer('arriere-plan');
+  } else {
+    journal.rouvrir();
+  }
 });
 
 function scheduleSave() {
@@ -1690,10 +1804,53 @@ function scheduleSave() {
   saveTimer = setTimeout(() => world.saveEdits(), 800);
 }
 
+let sureteAnnoncee = false;
 function startGame() {
   // L'avertissement « tu es seul·e » attend d'être dans le monde pour se
   // montrer : c'est ici qu'on le lui redemande.
   setTimeout(updatePlayersBtn, 0);
+  journal.doc.fiche.prenom = myName();
+  journal.noter('jouer', { monde: world.ctx, x: Math.round(player.pos.x), z: Math.round(player.pos.z) });
+  // LES BLOCS SUSPENDUS (v296) : Max, capture au centre de Paris, « des trucs
+  // bizarres » — des rondins et de la laine bleue dans le ciel, que ni le
+  // générateur ne pose ni les enfants ne reconnaissent. Le journal compte donc
+  // une fois par partie, dans le monde de l'enfant, les blocs posés qui
+  // flottent au-dessus du sol d'une ville — combien, lesquels, où — pour que
+  // l'espace parent le dise. Quelques milliers de blocs : une fois, c'est rien.
+  // ET LE COMPTE NE PREND PAS L'IMAGE DU CLIC : mon premier jet balayait le
+  // journal des blocs DANS le geste « Jouer », et à Manhattan — des dizaines
+  // de milliers de blocs importés — `realisme.js` a vu le bouton bloqué trente
+  // secondes. Il se fait quatre secondes après, par tranches de trente
+  // millisecondes, et dit s'il est partiel.
+  setTimeout(() => {
+    try {
+      const cles = [...world.edits.keys()];
+      const parId = new Map(); let n = 0, ex = null, i = 0; const villes = new Set();
+      const tranche = () => {
+        const t0 = performance.now();
+        for (; i < cles.length && performance.now() - t0 < 30; i++) {
+          const k = cles[i];
+          const [x, y, z] = k.split(',').map(Number);
+          if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) continue;
+          const v = world.cityAt(x, z);
+          if (!v) continue;
+          const id = world.edits.get(k);
+          if (id === BLOCK.AIR || y <= world.terrainHeight(x, z) + 6) continue;
+          n++; villes.add(v.key); parId.set(id, (parId.get(id) || 0) + 1);
+          if (!ex) ex = [x, y, z];
+        }
+        if (i < cles.length && running) { setTimeout(tranche, 250); return; }
+        if (n) journal.noter('blocs-suspendus', { n, sur: cles.length, partiel: i < cles.length, villes: [...villes], ids: [...parId].sort((a, b) => b[1] - a[1]).slice(0, 5), ex });
+      };
+      tranche();
+    } catch { /* un journal ne fait jamais tomber une partie */ }
+  }, 4000);
+  // ET LA SÛRETÉ SE DIT (v296) : un réglage qui change sans un mot ferait
+  // croire à un jeu cassé — et le message dit quoi faire.
+  if (PALIER && PALIER.source === 'sûreté' && !sureteAnnoncee) {
+    sureteAnnoncee = true;
+    setTimeout(() => toast(`🛟 Le jeu s'était arrêté ${PLANTAGES_SURETE} fois de suite : il passe en mode léger. Réglages → Étendue pour changer.`, 0xffc857, 7000), 1200);
+  }
   if (IS_TOUCH) {
     running = true;
     overlay.style.display = 'none';
@@ -2261,7 +2418,9 @@ function texteEtendue() {
     // qu'il l'a mesurée et n'en fait rien. On le nomme, et on l'invite à le
     // demander : la mesure propose, il décide (v290, sa décision).
     const propose = palierPropose(mesureRangee());
-    if (PALIER && PALIER.source === 'mesure') {
+    if (PALIER && PALIER.source === 'sûreté') {
+      base = `Auto : le jeu s'était arrêté ${PLANTAGES_SURETE} fois de suite sur cette tablette, il joue en « ${mot(PALIER.nom)} » par sûreté. Choisis une étendue pour passer outre.`;
+    } else if (PALIER && PALIER.source === 'mesure') {
       base = `Auto : ta tablette a été mesurée, le jeu joue en « ${mot(PALIER.nom)} ».`;
     } else if (propose) {
       base = `Auto : ta tablette pourrait aller jusqu'à « ${mot(propose)} », que le jeu ne donne pas tout seul. Choisis-le si tu le veux.`;
@@ -4208,6 +4367,7 @@ function showOnlineUI() {
 // Leaves any session (local or online) and restores the full main menu.
 // Used by the home button and by the duplicate-player guard.
 function leaveToMainMenu() {
+  journal.noter('menu');
   savePosition(); // remember exactly where we were in this world
   if (net) { net.stop(); net = null; }
   for (const k of ['monde-reco', 'signal', 'monde-perdu', 'monde-seul']) alerte(k, false);
@@ -4952,6 +5112,22 @@ const deviceId = (() => {
   }
   return id;
 })();
+
+// LE JOURNAL PART AU NUAGE (v296) : à la fermeture, et au lancement pour la
+// session d'avant si elle est morte sans dire au revoir. Rien ne bloque, rien
+// ne casse sans nuage ; la version est celle que le badge a lue.
+function envoyerJournal(doc, keepalive = false) {
+  if (!doc) return;
+  cloud.journalPousser({
+    appareil: deviceId, name: (doc.fiche && doc.fiche.prenom) || myName() || null,
+    version: typeof versionEnCours === 'string' ? versionEnCours : null, fin: doc.fin, doc,
+  }, keepalive).catch(() => {});
+}
+if (BILAN_JOURNAL.rapport) {
+  journal.noter('plantage-precedent', { plantages: BILAN_JOURNAL.plantages, surete: !!SURETE });
+  setTimeout(() => envoyerJournal(BILAN_JOURNAL.rapport), 2500);
+}
+window.__journal = journal;
 
 function pushPlayTime(keepalive = false) {
   if (!playerProfile.name || !cloud.configured) return;
@@ -6883,6 +7059,29 @@ function motDuPalier() {
   return 'pas encore mesuré';
 }
 
+// LE RELEVÉ DU JOURNAL DE BORD (v296) : toutes les cinq secondes, ce qu'il
+// faut pour relire une panne — où l'enfant est, ce que la page rend, ce
+// qu'elle tient. Pas de parcours de scène : ce qui coûte ne se relève pas.
+let pireImageJournal = 0;
+function releverLeJournal() {
+  const periode = mesurePalier.images.length ? mesurePalier.images[mesurePalier.images.length - 1] : 0;
+  if (periode > pireImageJournal) pireImageJournal = periode;
+  if (journal.maintenant() - journal.dernierReleve < 5000) return;
+  const info = renderer.info;
+  const ips = fpsSamples.length ? Math.round(fpsSamples.reduce((a, b) => a + b, 0) / fpsSamples.length) : null;
+  const ville = world.cityAt ? world.cityAt(player.pos.x, player.pos.z) : null;
+  const h = humainsPrets();
+  const mem = performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576) : null;
+  journal.relever({
+    x: Math.round(player.pos.x), y: Math.round(player.pos.y), z: Math.round(player.pos.z), ville: ville ? ville.key : null,
+    ips, pire: Math.round(pireImageJournal), appels: info.render.calls, ktri: Math.round(info.render.triangles / 1000),
+    morceaux: chunkMeshes.size, monde: world.chunks.size, hd: [...chunkMeshes.values()].reduce((n, e) => n + (e.detail ? 1 : 0), 0),
+    geometries: info.memory.geometries, textures: info.memory.textures, tasMo: mem, corps: `${h.prets}/${h.total}`,
+    monture: player.pilote ? 'avion' : (player.gabarit > 1 ? 'voiture' : null), vol: !!player.flying, prog: info.programs ? info.programs.length : null,
+  });
+  pireImageJournal = 0;
+}
+
 function updateHud(dt) {
   const eye = player.eyePosition();
   const eyeBlock = world.getBlock(Math.floor(eye.x), Math.floor(eye.y), Math.floor(eye.z));
@@ -6916,7 +7115,8 @@ function updateHud(dt) {
     + (mesurePalier.verdict
         ? ` → ${mesurePalier.verdict.palier} (${mesurePalier.verdict.raison}, période ${(mesurePalier.verdict.msPeriode || 0).toFixed(1)} ms)${PALIER_SE_RANGE ? ' au prochain lancement' : ' — mesuré, non rangé (étendue choisie)'}`
         : ` · morceau ${mesurePalier.morceaux.length} relevé(s), travail ${mesurePalier.travaux.length}${PALIER_SE_RANGE ? '' : ' — non rangé'}`) + '\n'
-    + `morceaux ${chunkMeshes.size} · corps ${h.prets}/${h.total} · programmes chauffés ${programmesChauffes()} · ${myName() || ''} ${player.pos.x.toFixed(0)},${player.pos.z.toFixed(0)}`;
+    + `morceaux ${chunkMeshes.size} (${[...chunkMeshes.values()].filter((e) => e.detail).length} avec façades HD) · corps ${h.prets}/${h.total} · programmes chauffés ${programmesChauffes()} · ${myName() || ''} ${player.pos.x.toFixed(0)},${player.pos.z.toFixed(0)}\n`
+    + `journal : ${journal.doc.releves.length} relevé(s), ${journal.doc.erreurs} erreur(s), plantages de suite ${journal.plantages()}${PALIER && PALIER.source === 'sûreté' ? ' — SÛRETÉ' : ''}`;
 }
 
 // --- fun & social systems (breeding, riding, duels, souvenirs, records…) ---------
@@ -6985,7 +7185,7 @@ window.__lumiere = () => ({
 // pour les tests : déclencher la proposition d'alertes sans attendre la minute
 window.__proposerNotifs = proposerNotifs;
 window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
-window.__game = { villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage, PALIERS, choisirPalier, mesurePalier,
+window.__game = { villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage, PALIERS, choisirPalier, mesurePalier, journal,
   RAYON_HD, get atlasHD() { return hd ? hd.atlas : null; },
   palierRetenu, palierPropose, etendueRange, reglageDe, PARAMS_FORCANTS,
   // CE QUE LE PALIER A RÉELLEMENT APPLIQUÉ, pas ce qu'il déclare : un témoin
@@ -7113,6 +7313,7 @@ function frame(now) {
   seasonPoints.visible=!renduDansManhattan;
   if (!renduDansManhattan) updateSeasons(dt);
   updateHud(dt);
+  releverLeJournal();
   updateCreatureLabel();
   updateRemotePlayers(dt);
   // LE MODE ÉDUCATIF REÇOIT DU TEMPS RÉEL, PAS LE `dt` DE LA PHYSIQUE (v234).
