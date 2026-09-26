@@ -942,6 +942,29 @@ Et le premier verdict de marche exigeait « voxel < 10 blocs » quand la
 première marche est à 10,2 : ce qui distingue les deux bras, c'est le
 BLOCAGE (60 images le pied contre un bloc), pas une distance ronde.
 
+**ET LE PORTAIL COMPLET A RENDU CE QUE LA SONDE NE POUVAIT PAS VOIR : UN
+PIÉTON ET UNE VOITURE N'ONT PAS LE MÊME NEZ.** « Une voiture roule dans la
+nature au lieu de buter sur une marche » (`monte.js`) est tombé rouge sur la
+branche : bloquée à 13,4 blocs, quarante secondes, sur le couloir de
+(−600, −520) à une marche par bloc. Le premier jet de `blocSousLaSurface` ne
+taisait que le SOMMET d'une colonne couverte. Un piéton, large de 0,6, n'a
+jamais dans sa boîte que la colonne d'à côté — dont le sommet est tu — et la
+sonde de la v297 marchait et roulait sur une pente de huit marches étalées.
+Une voiture fait 2,26 blocs : son nez est DEUX colonnes devant son centre,
+et sur une pente d'un bloc par bloc le cube SOUS le sommet de cette
+colonne-là a son dessus à la hauteur de la surface au centre de la colonne
+d'avant — sous la surface partout, et pourtant solide. La boîte butait
+dessus, et `franchirEnRoulant` (v286) ne pouvait plus rien : le sommet qu'il
+aurait escaladé n'arrête rien, donc la voiture n'était jamais « bloquée par
+un bloc » au sens du franchissement. La règle est géométrique, pas un
+réglage : entre deux colonnes couvertes le relief change d'au plus un bloc,
+la surface passe donc à un demi-bloc au plus sous le sommet, et TOUT cube
+sous le sommet est sous la surface en tout point de sa colonne. Un témoin
+pur de `plafond.js` le garde sur une pente à deux marches consécutives.
+**Ce qu'une sonde éprouve sur un piéton ne vaut pas pour une voiture ; ce
+qui se mesure « au volant » se mesure avec le gabarit d'une voiture** — et
+c'est la voie longue, une fois de plus, qui l'a dit.
+
 **Et deux leçons de sonde, payées dans la même livraison.** Une capture
 « après » de la campagne montrait QUATRE morceaux et le paysage lointain à la
 place du proche : la sonde d'état initial tenait le monde pour chargé dès que

@@ -592,6 +592,33 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     !suivi.absent && suivi.paris && suivi.apparition && suivi.neuf && suivi.archive && suivi.idempotent,
     suivi.absent ? 'la migration de carte 3 n\'existe pas' : suivi.bilan);
 
+  // TOUT CUBE D'UNE COLONNE COUVERTE EST SOUS SA SURFACE, pas seulement le
+  // sommet (v297, portail) : une voiture de 2,26 blocs de large a le nez deux
+  // colonnes devant son centre, et sur une pente d'un bloc par bloc le cube
+  // sous le sommet de cette colonne-là — solide au premier jet — la bloquait
+  // net (13,4 blocs en quarante secondes). On cherche une pente couverte à
+  // deux marches consécutives, et l'on demande au monde ce qu'il tait.
+  const sousSurface = (() => {
+    if (!w.blocSousLaSurface || !w.solContinu) return { absent: true };
+    for (let x = -300; x <= 300; x += 3) {
+      for (let z = -300; z <= 300; z += 3) {
+        const t0 = w.terrainHeight(x, z), t1 = w.terrainHeight(x + 1, z), t2 = w.terrainHeight(x + 2, z);
+        if (t1 !== t0 + 1 || t2 !== t1 + 1) continue;
+        if (w.solContinu(x + 0.5, z + 0.5) === null || w.solContinu(x + 2.5, z + 0.5) === null) continue;
+        return {
+          x, z, t0, t1, t2,
+          sommet: w.blocSousLaSurface(x + 2, t2, z), dessous: w.blocSousLaSurface(x + 2, t2 - 1, z),
+          plusBas: w.blocSousLaSurface(x + 2, t2 - 2, z), air: w.blocSousLaSurface(x + 2, t2 + 1, z),
+        };
+      }
+    }
+    return { introuvable: true };
+  })();
+  verifier('sur une pente couverte, le cube sous le sommet est sous la surface, et n\'arrête plus une voiture',
+    !sousSurface.absent && !sousSurface.introuvable && sousSurface.sommet && sousSurface.dessous
+      && sousSurface.plusBas && !sousSurface.air,
+    sousSurface.absent ? 'pas de sol continu' : JSON.stringify(sousSurface));
+
   const trop = [];
   for (let x = -700; x <= 700; x += 7) {
     for (let z = -700; z <= 700; z += 7) {

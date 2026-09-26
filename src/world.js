@@ -2939,13 +2939,28 @@ export class World {
     return solContinuDe(this, x, z, (a, b) => this.ficheMemo(a, b));
   }
 
-  // Ce bloc est-il le sommet d'une colonne COUVERTE — dessiné par la surface,
-  // et donc traversable pour une boîte de collision ? Le sol sous lui reste
-  // solide ; la surface, elle, est un plancher que `solContinu` donne.
+  // Ce bloc est-il SOUS la surface d'une colonne COUVERTE — dessiné par elle,
+  // et donc traversable pour une boîte de collision ? La surface, elle, est un
+  // plancher que `solContinu` donne et que `accrocherAuSol` fait respecter.
+  //
+  // TOUS LES CUBES DE LA COLONNE, PAS SEULEMENT SON SOMMET. Le premier jet ne
+  // taisait que le sommet (`by === cote − 1`) ; le portail de la v297 a rendu
+  // rouge « une voiture roule dans la nature au lieu de buter sur une marche » :
+  // bloquée à 13,4 blocs sur une pente d'un bloc par bloc, quarante secondes.
+  // Une voiture fait 2,26 blocs de large : son nez est DEUX colonnes devant
+  // son centre, et dans cette colonne-là le cube sous le sommet a son dessus
+  // à la hauteur de la surface au centre de la colonne d'avant — sous la
+  // surface partout, et pourtant solide. La boîte butait dessus, et le
+  // franchissement de marche (v286) ne pouvait plus l'aider : le sommet qu'il
+  // aurait escaladé n'arrête rien. Un piéton, large de 0,6, n'atteint jamais
+  // cette colonne — c'est pour cela que la marche allait bien. La règle est
+  // géométrique : entre deux colonnes couvertes le relief change d'au plus un
+  // bloc, donc la surface passe à un demi-bloc au plus sous le sommet, et
+  // tout cube SOUS le sommet est sous la surface en tout point de sa colonne.
   blocSousLaSurface(bx, by, bz) {
     if (this.sansSolContinu) return false;
     const f = this.ficheMemo(bx, bz);
-    if (!f.nat || by !== f.cote - 1) return false;
+    if (!f.nat || by >= f.cote) return false;
     return colonneCouverte(this, bx, bz, (a, b) => this.ficheMemo(a, b));
   }
 

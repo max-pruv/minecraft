@@ -49,7 +49,7 @@ bloc d'écart on garde le cube), et le palier bas a le même sol que les
 autres. Captures avant/après aux mêmes points de vue :
 `docs/monde-fidele/captures/avant-campagne-a1*.png` et `v297-campagne-a1*.png`.
 
-**Ce qui le prouve.** Treize témoins neufs dans `plafond.js` (41 verts, rejouée seule) :
+**Ce qui le prouve.** Quatorze témoins neufs dans `plafond.js` (rejouée seule) :
 la surface existe hors des villes et tait le cube qu'elle remplace (zéro face
 voxel de trop) ; deux morceaux cousent leurs cotes à l'identique ; le contact
 lit la même triangulation que le maillage (exact au centre des colonnes,
@@ -59,7 +59,14 @@ d'avant jusque dans le worker ; le coût est borné (+1,2 ms par morceau de
 campagne, médiane de neuf) ; et en jouant, l'A/B sur la même page — voxel
 puis surface, même pente, même cap — plus une vache posée sur la pente qui
 se tient sur la même surface, et le palier bas qui la dessine aussi. Les deux
-empreintes du relief, inchangées, sont la preuve de l'invariant 1.
+empreintes du relief, inchangées, sont la preuve de l'invariant 1. **Et le
+portail complet a attrapé ce que la sonde n'avait pas vu** : « une voiture
+roule dans la nature au lieu de buter sur une marche » (`monte.js`) est tombé
+rouge — bloquée à 13,4 blocs sur une pente d'un bloc par bloc. Le premier
+jet ne taisait que le SOMMET d'une colonne couverte ; le nez d'une voiture
+de 2,26 blocs est deux colonnes devant son centre, où le cube sous le sommet
+restait solide sous la surface. Tout cube d'une colonne couverte est
+désormais sous sa surface (un témoin pur le garde), et la voiture regrimpe.
 
 ---
 
