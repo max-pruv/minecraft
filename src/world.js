@@ -2,6 +2,7 @@
 
 import { BLOCK, CITY_BLOCK, DECOR_START, PROP_START, ARCHI, ROUTE_BLOCK, RUE, isSolid as blockIsSolid } from './blocks.js';
 import { buildVillandry } from './villandry.js';
+import { aUnModeleHD, porteeHD } from './paris-monuments-hd.js';
 import { carrefoursDeVoies } from './voies.js';
 import { buildAeroport, buildAerodrome, AEROPORTS } from './aeroport.js';
 import {
@@ -206,7 +207,14 @@ function buildEiffelTower(set) {
         if (y < 3) { set(sx - Math.sign(sx), y, sz, FER); set(sx, y, sz - Math.sign(sz), FER); }
       }
     }
-    if (y % PANNEAU === 0) {                                                   // les ceintures
+    // ET LA CEINTURE DU SOL EST RETIRÉE (v292). Un anneau plein de treize blocs
+    // de côté au niveau de la rue FERMAIT le dessous de la tour : un enfant ne
+    // pouvait pas passer sous les quatre piliers, alors que c'est exactement ce
+    // qu'on fait au Champ-de-Mars. Et le modèle en relief n'en dessine aucun —
+    // mesuré à la sonde, vingt-huit cellules de voxel restaient en cubes autour
+    // de lui. La vraie tour est OUVERTE en dessous ; les quatre montants
+    // suffisent à la porter.
+    if (y % PANNEAU === 0 && y > 0) {                                          // les ceintures
       for (let d = -r; d <= r; d++) {
         set(d, y, -r, FER); set(d, y, r, FER); set(-r, y, d, FER); set(r, y, d, FER);
       }
@@ -381,11 +389,24 @@ function buildArch(set) {
   }
   // Les hauts-reliefs des quatre piliers : un liseré de pierre claire qui
   // casse la face nue — sans lui l'arc reste un bloc lisse de treize mètres.
+  // ET LE LISERÉ NE SE POSE PAS DANS LE PASSAGE (v292). Il était écrit APRÈS la
+  // boucle qui creuse les deux voûtes, sans leur garde : trois blocs de grès
+  // clair barraient la bouche de chaque passage, de quatre à neuf blocs de
+  // haut. Vu en capture de rue et du ciel — une dalle sable suspendue au milieu
+  // de l'arche — et il était SOLIDE, donc l'enfant s'y cognait en entrant.
+  const dansUnPassage = (dx, dz, y) => (Math.abs(dz) <= PASSAGE
+      && y < VOUTE + Math.sqrt(Math.max(0, PASSAGE * PASSAGE - dz * dz)) * 1.4)
+    || (Math.abs(dx) <= PASSAGE
+      && y < VOUTE + Math.sqrt(Math.max(0, PASSAGE * PASSAGE - dx * dx)) * 1.4);
   for (const dx of [-R, R]) {
-    for (let y = 4; y <= 9; y++) for (const dz of [-1, 0, 1]) set(dx, y, dz, BLOCK.SANDSTONE);
+    for (let y = 4; y <= 9; y++) for (const dz of [-1, 0, 1]) {
+      if (!dansUnPassage(dx, dz, y)) set(dx, y, dz, BLOCK.SANDSTONE);
+    }
   }
   for (const dz of [-D, D]) {
-    for (let y = 4; y <= 9; y++) for (const dx of [-1, 0, 1]) set(dx, y, dz, BLOCK.SANDSTONE);
+    for (let y = 4; y <= 9; y++) for (const dx of [-1, 0, 1]) {
+      if (!dansUnPassage(dx, dz, y)) set(dx, y, dz, BLOCK.SANDSTONE);
+    }
   }
 }
 
@@ -1282,6 +1303,37 @@ const LANDMARKS = [
 // La même liste, sans les constructeurs : ce que la carte a le droit de lire.
 export const REPERES = LANDMARKS.map(({ name, x, z, box, seuil }) => ({ name, x, z, box, seuil }));
 
+// LES REPÈRES QUI ONT UN MODÈLE EN RELIEF (v292). Le mailleur ne balaie pas
+// les quatre cents repères du monde à chaque morceau : il lit cette liste-là,
+// qui en compte huit. Le filtre est le NOM — la table de `paris-monuments-hd.js`
+// fait foi — et non une condition sur la ville, pour qu'un monument ajouté
+// demain entre ici sans qu'on touche à la règle.
+//
+// ET LE FILTRE EST LE NOM **DANS PARIS**, pas le nom tout court. Mesuré au
+// premier jet : « Panthéon » est aussi un repère de ROME, et la liste en
+// comptait NEUF — le Panthéon de Rome recevait la coupole du Quartier latin,
+// à deux mille blocs de là. Un nom de monument n'est pas unique sur une carte
+// du monde ; une PLACE l'est.
+//
+// `portee` est la plus grande des deux emprises : la boîte du repère, qui dit
+// quels morceaux le bâtisseur visite, et celle du MODÈLE, mesurée sur ses
+// sommets. Un morceau qui touche l'une ou l'autre émet sa part du modèle,
+// sinon une aile du monument est coupée net à la frontière.
+export const REPERES_HD = LANDMARKS
+  .filter((lm) => aUnModeleHD(lm.name) && Math.hypot(lm.x - PARIS.x, lm.z - PARIS.z) < PARIS.r)
+  .map((lm) => ({ ...lm, portee: Math.max(lm.box, porteeHD(lm.name)) }));
+
+// « Ce monument a-t-il été touché ? » se demande à un INDEX, jamais au journal
+// des blocs : le mailleur est le chemin le plus chaud du jeu, et le journal
+// d'un enfant compte des milliers d'entrées. La marge de deux blocs est celle
+// de la boîte du repère — le bâtisseur peut poser un parvis un cran dehors.
+export function monumentSousLeBloc(x, z) {
+  for (const lm of REPERES_HD) {
+    if (Math.abs(x - lm.x) <= lm.portee + 2 && Math.abs(z - lm.z) <= lm.portee + 2) return lm;
+  }
+  return null;
+}
+
 // --- world ----------------------------------------------------------------
 
 // Three themed city districts, each with its own architecture, street
@@ -1634,6 +1686,7 @@ export class World {
     this.tops = new Map();        // "cx,cz" -> y du bloc le plus haut (plafond de maillage)
     this.dirty = new Set();       // chunk keys needing a remesh
     this.edits = new Map();       // "x,y,z" -> block id (player modifications)
+    this.monumentsTouches = new Set();  // les monuments HD qu'un enfant a modifiés (v292)
     this.editTimes = new Map();   // "x,y,z" -> ms timestamp, for multiplayer merge
     this.onOp = null;             // hook(k, id, ts) — net layer broadcasts local edits
     this.onBloc = null;           // hook(x, y, z, id) — TOUT bloc écrit, local ou reçu (v251)
@@ -2772,11 +2825,58 @@ export class World {
       else if (y >= top) this.tops.delete(ck);
     }
 
+    // UN MONUMENT DÉTAILLÉ REDEVIENT ÉDITABLE EN BLOCS DÈS QU'ON LE TOUCHE, et
+    // son emprise ENTIÈRE est invalidée : un demi-monument en relief à côté
+    // d'un demi-monument en cubes serait pire que pas de relief du tout.
+    this.noterMonumentTouche(x, z);
+
     this.dirty.add(World.key(cx, cz));
     if (lx === 0) this.dirty.add(World.key(cx - 1, cz));
     if (lx === CHUNK - 1) this.dirty.add(World.key(cx + 1, cz));
     if (lz === 0) this.dirty.add(World.key(cx, cz - 1));
     if (lz === CHUNK - 1) this.dirty.add(World.key(cx, cz + 1));
+  }
+
+  // --- les monuments en relief : l'index de ce qu'un enfant a touché (v292) ---
+
+  // Appelé par TOUT chemin qui écrit un bloc — `setBlock` ici, le worker de
+  // maillage pour un bloc reçu. Rend vrai si le monument était neuf, pour que
+  // l'appelant sache qu'il faut remailler son emprise.
+  noterMonumentTouche(x, z) {
+    const lm = monumentSousLeBloc(x, z);
+    if (!lm) return false;
+    const neuf = !this.monumentsTouches.has(lm.name);
+    this.monumentsTouches.add(lm.name);
+    if (neuf) {
+      for (let a = Math.floor((lm.x - lm.portee - 2) / CHUNK); a <= Math.floor((lm.x + lm.portee + 2) / CHUNK); a++) {
+        for (let b = Math.floor((lm.z - lm.portee - 2) / CHUNK); b <= Math.floor((lm.z + lm.portee + 2) / CHUNK); b++) {
+          this.dirty.add(World.key(a, b));
+        }
+      }
+    }
+    return neuf;
+  }
+
+  // Un journal installé d'un bloc — chargement local, fusion du nuage,
+  // changement de monde, resynchronisation du worker. L'index se REFAIT : le
+  // tenir à jour bloc par bloc ne peut pas voir un journal remplacé.
+  installerEdits(edits, temps, ctx) {
+    this.edits = edits instanceof Map ? edits : new Map(edits);
+    this.editTimes = temps instanceof Map ? temps : new Map(temps || []);
+    if (ctx) this.ctx = ctx;
+    this.chunks.clear();
+    this.tops.clear();
+    this.indexerMonumentsTouches();
+  }
+
+  indexerMonumentsTouches() {
+    this.monumentsTouches.clear();
+    if (REPERES_HD.length === 0) return;
+    for (const k of this.edits.keys()) {
+      const virgule = k.indexOf(','), derniere = k.lastIndexOf(',');
+      const lm = monumentSousLeBloc(+k.slice(0, virgule), +k.slice(derniere + 1));
+      if (lm) this.monumentsTouches.add(lm.name);
+    }
   }
 
   // --- multiplayer sync: last-writer-wins merge of timestamped edit logs ----
@@ -2875,6 +2975,7 @@ export class World {
       this.edits.set(k, entry[0]);
       this.editTimes.set(k, entry[1] || 0);
     }
+    this.indexerMonumentsTouches();
   }
 
   saveEdits() {
@@ -2894,6 +2995,7 @@ export class World {
     this.tops.clear();
     this.edits.clear();
     this.editTimes.clear();
+    this.monumentsTouches.clear();
     this.loadEdits();
     this.allDirty = true;
   }
@@ -2906,6 +3008,7 @@ export class World {
     World.saveAll(all);
     this.edits.clear();
     this.editTimes.clear();
+    this.monumentsTouches.clear();
     this.chunks.clear();
     this.tops.clear();
     this.allDirty = true;

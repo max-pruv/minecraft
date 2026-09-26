@@ -750,6 +750,81 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les monuments de Paris sont des modèles, le voxel reste le squelette (v292)
+
+Quatrième livraison du programme. Sept règles, et cinq viennent d'une mesure qui
+m'a contredit.
+
+- **CE QU'ON MASQUE EST CE QUE LE MODÈLE COUVRE, PAS CE QUE LE BÂTISSEUR A
+  ÉCRIT.** Mon premier jet — celui du prototype reçu — masquait toutes les
+  cellules du bâtisseur dès qu'un monument avait un modèle. Mesuré à la sonde
+  (`tests/sonde-monuments-hd.cjs`) : **325 cellules exposées sans rien devant
+  elles aux Invalides, 128 à Notre-Dame**, dont les soixante-dix-neuf du PARVIS.
+  L'enfant se cogne à rien et une dalle pavée disparaît sous ses pieds — c'est
+  « un bouton qui ne fait rien est pire qu'un bouton qui refuse » (v228), à
+  l'échelle d'un mur. La couverture du modèle se RASTÉRISE une fois par monument
+  (`cellulesCouvertes`, dilatée d'un bloc) et c'est elle qui décide : zéro mur
+  invisible sur les huit, par construction ET mesuré. Le prix est l'inverse, et
+  il se déclare : des cubes qui dépassent d'un modèle lisse — honnêtes, et qui
+  arrêtent ce qu'ils ont l'air d'arrêter.
+- **UN MODÈLE D'AUTEUR SUIT LES COTES DU VOXEL, parce que c'est le voxel qui
+  arrête l'enfant.** Le modèle des Invalides posait la coque générique au MILIEU
+  du repère : 25 % de sa surface tombait dans le vide, dont 7 097 points à
+  hauteur d'enfant. Le voxel n'est pas centré — une longue façade au nord
+  (x ±10, z −5..−2), l'église du Dôme au sud (x ±5, z 0..8). Réécrit sur ses
+  cotes : 0,0 %. **Un modèle ne se dessine pas d'après le monument réel, il se
+  dessine d'après le bloc qu'il remplace** ; le monument réel décide de la
+  FORME, le voxel des COTES.
+- **ET PARFOIS C'EST LE VOXEL QUI A TORT — et alors on le corrige.** La tour
+  Eiffel portait une ceinture de fer PLEINE au niveau de la rue : un anneau de
+  treize blocs de côté qui fermait le dessous de la tour. On ne pouvait pas
+  passer entre les piliers, ce qui est pourtant tout ce qu'on fait au
+  Champ-de-Mars. Un bâtisseur de monument n'écrit pas `terrainHeight` : le
+  changer ne touche NI l'une NI l'autre des empreintes de `plafond.js`, et les
+  blocs des enfants sont réappliqués par-dessus. C'est la seule famille de
+  blocs du jeu qu'on peut corriger sans rien déclarer.
+- **UN NOM DE MONUMENT N'EST PAS UNIQUE SUR UNE CARTE DU MONDE.** Filtrer les
+  quatre cents repères par leur NOM rendait NEUF monuments pour huit modèles :
+  « Panthéon » est aussi un repère de ROME, qui recevait la coupole du Quartier
+  latin à deux mille blocs de là. Une PLACE est unique, un nom ne l'est pas :
+  `REPERES_HD` filtre sur le nom **et** le disque de Paris, et un témoin compte
+  huit noms distincts.
+- **LE MAILLEUR EST LE CHEMIN LE PLUS CHAUD DU JEU : RIEN NE S'Y BALAIE.** Le
+  prototype relançait le bâtisseur du monument et parcourait TOUT le journal des
+  blocs (`[...world.edits.keys()]`) à chaque morceau. Les cellules du bâtisseur
+  sont mémoïsées PAR MORCEAU — il est déterministe — et « ce monument a-t-il été
+  touché ? » est un INDEX tenu par `World` (`monumentsTouches`), refait quand un
+  journal est installé d'un bloc. **Le worker remplace `edits` en entier à chaque
+  resynchronisation** : il passe donc par `installerEdits`, jamais par une
+  écriture directe des deux cartes, et un témoin garde ce chemin-là.
+- **LE COÛT SE MESURE EN ORDRE ALTERNÉ, ET CE QUI COMPTE EST CE QUE LE PALIER
+  LIT.** +12,7 ms par morceau de monument au banc (1,36×), zéro sur un morceau
+  de Paris qui n'en porte pas. La question n'est pas « est-ce cher » mais « cela
+  déclasse-t-il l'appareil » : `rangerLePalier` prend une **médiane** sur des
+  centaines de morceaux, et huit d'entre eux ne la déplacent pas. Une
+  fonctionnalité qui alourdit un morceau sur cinquante doit se poser cette
+  question-là, parce qu'un appareil déclassé perd la couche HD ENTIÈRE (v291).
+- **UN TÉMOIN QUI CHERCHE SON TERRAIN DOIT ÉCARTER CE QUI N'EST PAS SON SUJET.**
+  Le portail a rendu rouge « chaque quartier a son registre » : Marais enduit 0,
+  volets 0, pierre 64 — sur un registre parfaitement en place. Ce témoin CHERCHE
+  (v285) « un morceau du Marais qui porte des façades » ; le modèle de
+  Notre-Dame ajoute plus de deux mille sommets de PIERRE aux trois morceaux de
+  l'île, et le témoin a donc retenu (−13, 13) au lieu de (−13, 12). Mesuré sur
+  `origin/main`, le MÊME témoin rend 4 516 · 8 320 sur l'autre morceau : c'était
+  bien ma livraison, et la correction est dans le témoin. **La règle « un témoin
+  qui écrit son terrain se trompe de terrain » a un revers : un témoin qui
+  CHERCHE son terrain peut le trouver ailleurs le jour où l'on ajoute du contenu**
+  — et le critère de recherche doit exclure ce contenu-là par son nom
+  (`monumentsDetailles`), pas par un seuil de sommets.
+- **UNE CAMÉRA DE CAPTURE SE PLACE, ET « SE PLACER » VEUT DIRE VOIR.** Mes deux
+  premières planches ont photographié un plafond haussmannien, puis un mur
+  haussmannien à trois mètres : la caméra était posée à `terrainHeight + h`, puis
+  sur une colonne dégagée — mais avec un immeuble entre elle et le monument. Une
+  sonde de captures cherche un poste D'OÙ L'ON VOIT : elle balaie les caps, elle
+  MARCHE jusqu'au monument en vérifiant que rien ne dépasse du sol, et le cap
+  retenu entre dans le message. C'est « un témoin qui écrit son terrain se trompe
+  de terrain » (v285), appliqué à un objectif.
+
 ## Les toits de Paris sont un champ de hauteurs (v289)
 
 Troisième livraison du programme. Quatre règles, et la première a coûté trois

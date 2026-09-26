@@ -155,6 +155,13 @@ function verifier(nom, ok, detail = '') {
       const i = infoFacadeParis(kx * CHUNK + CHUNK / 2, kz * CHUNK + CHUNK / 2);
       if (!i || i.quartier !== 'Marais') continue;
       const t = tampons(1, kx, kz);
+      // ET UN MORCEAU QUI PORTE UN MONUMENT N'EST PAS UN TÉMOIN DE QUARTIER
+      // (v292). Notre-Dame couvre trois morceaux de l'île, et son modèle y
+      // ajoute plus de deux mille sommets de PIERRE : le témoin l'a choisi et
+      // a rendu « enduit 0 · volets 0 » sur un registre du Marais parfaitement
+      // en place. Un témoin qui CHERCHE son terrain doit écarter ce qui n'est
+      // pas son sujet.
+      if ((t.t.monumentsDetailles || []).length) continue;
       if (nb(t.t.facades) > 2000) { marais = t; ou = [kx, kz]; break boucleM; }
     }
     if (!marais) marais = tampons(1, Math.floor(mx / CHUNK), Math.floor(mz / CHUNK));
@@ -273,6 +280,105 @@ function verifier(nom, ok, detail = '') {
     verifier('des bancs, des colonnes Morris et des corbeilles meublent les trottoirs',
       affiche > 0 && lattes > 0 && corbeilles > 0,
       `${affiche} sommets d'affiche, ${lattes} de lattes, ${corbeilles} de fil de corbeille, sur 25 morceaux`);
+  }
+
+  // --- les huit monuments en relief (v292) ------------------------------------------
+
+  {
+    const MH = await import('../src/paris-monuments-hd.js').catch(() => null);
+    const W = await import('../src/world.js');
+    const REPERES_HD = W.REPERES_HD || [];
+    verifier('les huit monuments de Paris ont un modèle en relief, et un seul chacun',
+      !!MH && REPERES_HD.length === 8 && new Set(REPERES_HD.map((l) => l.name)).size === 8,
+      `${REPERES_HD.length} repère(s) : ${REPERES_HD.map((l) => l.name).join(', ')}`);
+
+    if (MH && REPERES_HD.length) {
+      // 1. LE MODÈLE NE POSE AUCUN BLOC — invariant 1, mesuré à l'octet près sur
+      //    le morceau de la tour Eiffel, celui qui porte le plus de géométrie.
+      const eiffel = REPERES_HD.find((l) => l.name === 'Tour Eiffel');
+      const ecx = Math.floor(eiffel.x / CHUNK), ecz = Math.floor(eiffel.z / CHUNK);
+      const sansM = tampons(0, ecx, ecz), avecM = tampons(1, ecx, ecz);
+      let memes = sansM.data.length === avecM.data.length;
+      for (let i = 0; memes && i < sansM.data.length; i++) if (sansM.data[i] !== avecM.data[i]) memes = false;
+      verifier('un monument en relief ne pose aucun bloc : le morceau est identique à l\'octet près', memes);
+
+      // 2. IL EST ÉMIS DANS CHAQUE MORCEAU QU'IL TOUCHE, découpé aux frontières :
+      //    un monument ne disparaît pas quand son centre sort du champ.
+      const morceaux = [];
+      for (let a = Math.floor((eiffel.x - eiffel.portee) / CHUNK); a <= Math.floor((eiffel.x + eiffel.portee) / CHUNK); a++) {
+        for (let b = Math.floor((eiffel.z - eiffel.portee) / CHUNK); b <= Math.floor((eiffel.z + eiffel.portee) / CHUNK); b++) {
+          const t = tampons(1, a, b).t;
+          morceaux.push({ a, b, nomme: (t.monumentsDetailles || []).includes('Tour Eiffel'), sommets: nb(t.facades) });
+        }
+      }
+      verifier('la tour Eiffel est émise dans chacun des morceaux qu\'elle touche, découpée à leurs frontières',
+        morceaux.length > 1 && morceaux.every((m) => m.nomme && m.sommets > 0),
+        morceaux.map((m) => `${m.a},${m.b}:${m.nomme ? m.sommets : 'absent'}`).join(' '));
+
+      // 3. LE LOIN GARDE SON VOXEL : les faces du monument partent dans `plat`,
+      //    pas dans `solid`. À cinq morceaux, on voit la tour d'avant, à
+      //    l'identique — c'est ce qui rend le relais près/loin gratuit.
+      verifier('le voxel du monument part dans le loin, jamais dans le proche',
+        nb(avecM.t.plat) > nb(sansM.t.plat) * 0.5 && nb(avecM.t.solid) < nb(sansM.t.solid),
+        `solid ${nb(sansM.t.solid)} → ${nb(avecM.t.solid)}, plat ${nb(avecM.t.plat)}`);
+
+      // 4. AUCUN MUR INVISIBLE À HAUTEUR D'ENFANT. On ne masque une cellule que
+      //    si le modèle la COUVRE (mesuré : la règle « masquer tout ce que le
+      //    bâtisseur écrit » laissait 325 cellules nues aux Invalides et le
+      //    parvis de Notre-Dame sous les pieds de personne). Le témoin garde la
+      //    règle : ce que le mailleur masque, le modèle le dessine.
+      const { BLOCK } = await import('../src/blocks.js');
+      const nues = [];
+      for (const lm of REPERES_HD) {
+        const cel = new Map();
+        lm.build((x, y, z, id) => cel.set(`${x},${y},${z}`, id));
+        const solide = new Set();
+        for (const [k, id] of cel) if (id !== BLOCK.AIR) solide.add(k);
+        const couvre = MH.cellulesCouvertes(lm.name);
+        let n = 0;
+        for (const k of solide) {
+          const [x, y, z] = k.split(',').map(Number);
+          if (y < 0 || y > 3 || !couvre.has(k)) continue;           // non masquée : elle reste en cubes
+          const expose = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]]
+            .some(([dx, dy, dz]) => !solide.has(`${x + dx},${y + dy},${z + dz}`));
+          if (!expose) continue;
+          let vu = false;
+          for (let dx = -1; !vu && dx <= 1; dx++) for (let dy = -1; !vu && dy <= 1; dy++) for (let dz = -1; !vu && dz <= 1; dz++) {
+            if (couvre.has(`${x + dx},${y + dy},${z + dz}`)) vu = true;
+          }
+          if (!vu) n++;
+        }
+        if (n) nues.push(`${lm.name}:${n}`);
+      }
+      verifier('aucun mur invisible à hauteur d\'enfant : ce qu\'on masque, le modèle le dessine',
+        nues.length === 0, nues.length ? nues.join(' ') : 'huit monuments, zéro cellule masquée sans géométrie devant elle');
+
+      // 5. UNE ÉDITION REND LE MONUMENT ÉDITABLE EN CUBES — et son emprise
+      //    ENTIÈRE : un demi-monument lisse contre un demi-monument en cubes
+      //    serait pire que pas de relief du tout.
+      const w = new World();
+      w.hd = 1;
+      buildChunkTampons(w, ecx, ecz);
+      w.dirty.clear();
+      w.setBlock(eiffel.x + 2, w.terrainHeight(eiffel.x, eiffel.z) + 4, eiffel.z + 2, BLOCK.STONE);
+      const salis = w.dirty.size;
+      w.chunks.clear(); w.tops.clear();
+      const apres = buildChunkTampons(w, ecx, ecz);
+      verifier('un bloc posé dans l\'emprise rend le monument éditable en cubes, sur toute son emprise',
+        w.monumentsTouches.has('Tour Eiffel') && (apres.monumentsDetailles || []).length === 0
+        && nb(apres.solid) > nb(avecM.t.solid) && salis >= 4,
+        `${salis} morceau(x) à remailler, solid ${nb(avecM.t.solid)} → ${nb(apres.solid)}`);
+
+      // 6. UN JOURNAL INSTALLÉ D'UN BLOC REFAIT L'INDEX. Le worker de maillage
+      //    remplace `edits` en entier à chaque resynchronisation : un index tenu
+      //    bloc par bloc ne peut pas voir un journal remplacé.
+      const w2 = new World();
+      w2.hd = 1;
+      w2.installerEdits([[`${eiffel.x},${w2.terrainHeight(eiffel.x, eiffel.z) + 4},${eiffel.z}`, BLOCK.STONE]], [], 'local');
+      verifier('un journal installé d\'un bloc refait l\'index des monuments touchés',
+        w2.monumentsTouches.has('Tour Eiffel')
+        && (buildChunkTampons(w2, ecx, ecz).monumentsDetailles || []).length === 0);
+    }
   }
 
   const campagne = tampons(1, Math.floor(30000 / CHUNK), Math.floor(30000 / CHUNK));

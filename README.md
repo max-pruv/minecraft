@@ -43,7 +43,12 @@ rendering budgets, licensing and limitations.
   (plaster and shutters in the Marais, ashlar and running balconies in the
   west), trees are meshed up close, and sidewalks carry bollards, café
   terraces and street-name plates — all read from the blocks, never written
-  into them.
+  into them. Eight landmarks have an authored model in the same layer — the
+  Eiffel Tower's open lattice (you walk under it), the Arc de Triomphe's two
+  vaulted passages, the Louvre pyramid's glass lattice, Notre-Dame's rose
+  window and flying buttresses, Sacré-Cœur, the Panthéon, the golden dome of
+  Les Invalides and the Opéra Garnier. Place a block inside one and it turns
+  back into editable cubes.
 - **Day/night cycle** with sky, fog and light level transitions.
 - **Synthesized sound** — nothing is downloaded: engines (a filtered noise bed
   plus harmonics that track the throttle), jet spool-up, block and chime sounds
@@ -188,6 +193,7 @@ src/player.js     movement, collision, swimming, flying, voxel raycast
 src/blocks.js     block ids and metadata
 src/textures.js   procedural texture atlas
 src/facadeshd.js  Paris HD layer: facade relief and street surfaces, as buffers
+src/paris-monuments-hd.js  its eight authored landmarks, clipped per chunk
 src/matierehd.js  its single PBR material, 1024-px atlas and environment
 src/bandeau.js    the game's passing message, the one voice everything speaks with
 
