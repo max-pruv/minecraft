@@ -48,7 +48,7 @@
 //
 // Aucun import de three, aucun DOM : ce module tourne dans le worker et sous
 // node. Il ne lit le monde que par `terrainHeight`, `getBlock` et `cityAt`.
-import { BLOCK, BLOCK_INFO, isProp } from './blocks.js';
+import { BLOCK, BLOCK_INFO, CITY_BLOCK, isProp } from './blocks.js';
 import { tileRect } from './tuiles.js';
 
 // Les blocs qui font un sol naturel. `STONE` y est pour le volcan et les
@@ -62,6 +62,18 @@ export const SOL_NATUREL = new Set([BLOCK.GRASS, BLOCK.DIRT, BLOCK.SAND, BLOCK.S
 // fleur des prés laissait une colonne voxel au milieu du champ lissé.
 const DESSUS_NATUREL = new Set([BLOCK.AIR, BLOCK.WATER, BLOCK.LOG, BLOCK.LEAVES]);
 const dessusNaturel = (id) => DESSUS_NATUREL.has(id) || isProp(id);
+
+// LE SOL D'UNE ROUTE (v299) : l'asphalte de la chaussée et de l'accotement,
+// l'herbe du terre-plein et du talus, le sable d'un talus au bord de l'eau.
+// Une colonne de route est naturelle-par-la-route : sa cote vient du PROFIL
+// (`routes.js`), pas de `terrainHeight`, et son sommet voxel n'est que le
+// remblai que la surface recouvre.
+export const SOL_ROUTE = new Set([CITY_BLOCK.ASPHALT, BLOCK.GRASS, BLOCK.DIRT, BLOCK.SAND]);
+export function colonneRoute(world, x, z, r) {
+  const t = Math.floor(r.cote) - 1;
+  if (!SOL_ROUTE.has(world.getBlock(x, t, z))) return false;
+  return dessusNaturel(world.getBlock(x, t + 1, z));
+}
 
 // Une falaise reste une falaise : au-delà d'un bloc d'écart dans une cellule,
 // on rend la main au voxel. Mesuré sur le couloir Paris–Lille : 98 marches
@@ -85,8 +97,16 @@ export function colonneNaturelle(world, x, z, h = world.terrainHeight(x, z), vil
 // La fiche d'une colonne telle que la physique la mémoïse : naturelle ou non,
 // et sa cote (le sommet praticable).
 export function ficheColonne(world, x, z) {
+  // La route d'abord : sous un corridor, la cote est celle du profil, en
+  // ville comme en campagne (l'entrée de ville traverse le raccord du relief).
+  // Sous un TABLIER, le sol reste le sol : la fiche garde la cote du terrain
+  // et note celle du tablier, que `accrocherAuSol` choisit par proximité.
+  const r = world.routeEn ? world.routeEn(x, z) : null;
+  if (r && !r.ouvrage) return { nat: colonneRoute(world, x, z, r), cote: r.cote, route: r.piece };
   const h = world.terrainHeight(x, z);
-  return { nat: colonneNaturelle(world, x, z, h), cote: h + 1 };
+  const f = { nat: colonneNaturelle(world, x, z, h), cote: h + 1 };
+  if (r) f.tablier = r.cote;
+  return f;
 }
 
 // LA CELLULE (x, z) est le carré entre les centres des colonnes (x, z),
@@ -151,6 +171,12 @@ export function grilleSol(world, cx, cz, chunk) {
   const villes = world.villesProches ? world.villesProches(baseX + chunk / 2, baseZ + chunk / 2, chunk) : null;
   for (let lz = -1; lz < chunk + 1; lz++) for (let lx = -1; lx < chunk + 1; lx++) {
     const x = baseX + lx, z = baseZ + lz;
+    const r = world.routeEn ? world.routeEn(x, z) : null;
+    if (r && !r.ouvrage) {
+      cote[idx(lx, lz)] = r.cote;
+      nat[idx(lx, lz)] = colonneRoute(world, x, z, r) ? 1 : 0;
+      continue;
+    }
     const h = world.terrainHeight(x, z);
     cote[idx(lx, lz)] = h + 1;
     nat[idx(lx, lz)] = colonneNaturelle(world, x, z, h, villes) ? 1 : 0;
@@ -171,7 +197,7 @@ export function grilleSol(world, cx, cz, chunk) {
   const couvertes = new Uint8Array(chunk * chunk);
   const hauts = new Int16Array(chunk * chunk);
   for (let lz = 0; lz < chunk; lz++) for (let lx = 0; lx < chunk; lx++) {
-    hauts[lx + lz * chunk] = cote[idx(lx, lz)] - 1;
+    hauts[lx + lz * chunk] = Math.floor(cote[idx(lx, lz)]) - 1;
     couvertes[lx + lz * chunk] = dessinee[cid(lx - 1, lz - 1)] && dessinee[cid(lx, lz - 1)]
       && dessinee[cid(lx - 1, lz)] && dessinee[cid(lx, lz)] ? 1 : 0;
   }
@@ -208,7 +234,7 @@ export function emettreSolContinu(buf, world, cx, cz, chunk, grille = grilleSol(
   let cellules = 0;
   for (let lz = 0; lz < chunk; lz++) for (let lx = 0; lx < chunk; lx++) {
     if (!dessinee[cid(lx, lz)]) continue;
-    const h = cote[idx(lx, lz)] - 1;
+    const h = Math.floor(cote[idx(lx, lz)]) - 1;
     const tile = BLOCK_INFO[world.getBlock(baseX + lx, h, baseZ + lz)].tiles[0];
     const rect = tileRect(tile);
     const coins = [[lx, lz], [lx + 1, lz], [lx, lz + 1], [lx + 1, lz + 1]];   // a, b, c, d
@@ -228,4 +254,65 @@ export function emettreSolContinu(buf, world, cx, cz, chunk, grille = grilleSol(
     cellules++;
   }
   return { cellules, couvertes: grille.couvertes, hauts: grille.hauts };
+}
+
+// --- LES RUBANS D'UNE ROUTE (v299) --------------------------------------------
+//
+// Ce que la surface ne sait pas dire colonne par colonne : le tablier d'un
+// pont (dessus, dessous, deux parapets) et le marquage au sol — une tuile n'a
+// pas d'orientation, un trait qui suit un axe oblique est de la géométrie
+// (leçon des rails, v281). `world.rubansDans` (routes.js) donne les quads en
+// coordonnées du monde ; on les émet en coordonnées du morceau, dans `solid`.
+function quad(buf, p, tile, versLeHaut, ox, oz) {
+  const rect = tileRect(tile);
+  // p : quatre coins [x, y, z] — a, b, c, d comme une cellule (a–d diagonale)
+  const n = normale(p[0], p[2], p[3]);
+  let ordre = [0, 2, 3, 0, 3, 1];
+  const vers = versLeHaut;
+  if (n[0] * vers[0] + n[1] * vers[1] + n[2] * vers[2] < 0) { ordre = [0, 3, 2, 0, 1, 3]; n[0] = -n[0]; n[1] = -n[1]; n[2] = -n[2]; }
+  const l = Math.hypot(n[0], n[1], n[2]) || 1;
+  const base = buf.positions.length / 3;
+  const uv = [[0, 0], [1, 0], [0, 1], [1, 1]];
+  for (let i = 0; i < 4; i++) {
+    buf.positions.push(p[i][0] - ox, p[i][1], p[i][2] - oz);
+    buf.normals.push(n[0] / l, n[1] / l, n[2] / l);
+    buf.uvs.push(uv[i][0], uv[i][1]);
+    buf.tiles.push(rect[0], rect[1], rect[2], rect[3]);
+    buf.colors.push(1, 1, 1);
+  }
+  for (const k of ordre) buf.indices.push(base + k);
+}
+
+export function emettreRubans(buf, world, cx, cz, chunk) {
+  if (!world.rubansDans) return 0;
+  const baseX = cx * chunk, baseZ = cz * chunk;
+  const rubans = world.rubansDans(baseX, baseZ, baseX + chunk, baseZ + chunk);
+  const BLANC = BLOCK_INFO[BLOCK.SNOW].tiles[0];
+  const BITUME = BLOCK_INFO[CITY_BLOCK.ASPHALT].tiles[0];
+  const PIERRE = BLOCK_INFO[BLOCK.STONEBRICK].tiles[0];
+  const HAUT = [0, 1, 0], BAS = [0, -1, 0];
+  for (const r of rubans) {
+    const rx = -r.fz, rz = r.fx;   // la droite du sens de marche
+    const coin = (o, y, aOuB) => (aOuB === 0
+      ? [r.ax + rx * o, y, r.az + rz * o]
+      : [r.bx + rx * o, y, r.bz + rz * o]);
+    if (r.genre === 'ligne') {
+      quad(buf, [coin(r.o0, r.ya + r.dy, 0), coin(r.o1, r.ya + r.dy, 0), coin(r.o0, r.yb + r.dy, 1), coin(r.o1, r.yb + r.dy, 1)], BLANC, HAUT, baseX, baseZ);
+    } else if (r.genre === 'tablier') {
+      const EP = 0.8, GARDE = 0.9;
+      // le dessus, le dessous
+      quad(buf, [coin(r.o0, r.ya, 0), coin(r.o1, r.ya, 0), coin(r.o0, r.yb, 1), coin(r.o1, r.yb, 1)], BITUME, HAUT, baseX, baseZ);
+      quad(buf, [coin(r.o0, r.ya - EP, 0), coin(r.o1, r.ya - EP, 0), coin(r.o0, r.yb - EP, 1), coin(r.o1, r.yb - EP, 1)], PIERRE, BAS, baseX, baseZ);
+      // les deux flancs (de l'épaisseur jusqu'au garde-corps), tournés vers l'extérieur
+      for (const [o, dehors] of [[r.o0, [-rx, 0, -rz]], [r.o1, [rx, 0, rz]]]) {
+        quad(buf, [coin(o, r.ya - EP, 0), coin(o, r.ya + GARDE, 0), coin(o, r.yb - EP, 1), coin(o, r.yb + GARDE, 1)], PIERRE, dehors, baseX, baseZ);
+        // et la face intérieure du garde-corps, vue de la route
+        const dedans = [-dehors[0], 0, -dehors[2]];
+        const oi = o + (dehors[0] * rx + dehors[2] * rz > 0 ? -0.3 : 0.3);
+        quad(buf, [coin(oi, r.ya, 0), coin(oi, r.ya + GARDE, 0), coin(oi, r.yb, 1), coin(oi, r.yb + GARDE, 1)], PIERRE, dedans, baseX, baseZ);
+        quad(buf, [coin(Math.min(o, oi), r.ya + GARDE, 0), coin(Math.max(o, oi), r.ya + GARDE, 0), coin(Math.min(o, oi), r.yb + GARDE, 1), coin(Math.max(o, oi), r.yb + GARDE, 1)], PIERRE, HAUT, baseX, baseZ);
+      }
+    }
+  }
+  return rubans.length;
 }

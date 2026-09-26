@@ -49,6 +49,7 @@ const ASSETS = [
   './src/bandeau.js',
   './src/journal.js',
   './src/solcontinu.js',
+  './src/routes.js',
   './src/palier.js',
   './src/liberer.js',
   './src/couches.js',

@@ -1063,6 +1063,7 @@ class Convoi {
     this.distance = opts.depart || 0;
     this.ecart = opts.ecart ?? 8;
     this.nom = opts.nom || 'véhicule';
+    this.route = opts.route || null;      // le corridor interurbain qu'il suit (v299), ou null
     this.emoji = opts.emoji || '🚗';
     // À quelle hauteur, au-dessus du tracé, on est assis dedans.
     this.assise = opts.assise ?? 1.2;
@@ -1525,9 +1526,12 @@ export function createVehicules({ scene, player }) {
   ];
   function circulation(pts, graine = 0, options = {}) {
     const p = new Parcours(pts);
-    const nb = Math.max(6, Math.min(20, Math.round(p.longueur / 18)));
+    const nb = options.nb ?? Math.max(6, Math.min(20, Math.round(p.longueur / 18)));
     const c = ajouter(pts, {
-      nb, ecart: p.longueur / nb, vitesse: 4.2, freine: true, allureMin: 0.4, routier: true,
+      // UNE ROUTE INTERURBAINE ROULE PLUS VITE QU'UNE RUE (v299) : la vitesse
+      // et le nombre se demandent, la rue garde ses chiffres.
+      nb, ecart: p.longueur / nb, vitesse: options.vitesse ?? 4.2, freine: true, allureMin: 0.4, routier: true,
+      route: options.route || null,
       // QUARANTE-CINQ BLOCS, ET C'EST UNE MESURE, PAS UNE INTUITION. Une
       // voiture coûte TRENTE-DEUX MAILLAGES — trois fois un personnage, et
       // personne ne l'avait jamais compté. À cent dix blocs de portée, les
@@ -1915,7 +1919,7 @@ export function createVehicules({ scene, player }) {
     // QUEL convoi il parle ni à quelle hauteur il roule — c'est précisément ce
     // qu'il fallait pour prouver que le métro est passé sous terre.
     etat: () => convois.map((c) => ({
-      nom: c.nom,
+      nom: c.nom, route: c.route || null,
       // La LONGUEUR du tour, et le nombre d'arrêts marqués. C'est ce qui
       // permet à un témoin de dire combien de temps un enfant attend sur un
       // quai — et de le dire sur l'ANCIEN code comme sur le neuf, puisque la

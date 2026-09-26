@@ -36,6 +36,7 @@
 import { BLOCK, CITY_BLOCK, DECOR_START, ARCHI } from './blocks.js';
 import { rangerVoies, solDesVoies, fabriqueCircuits, contournerBlocs } from './voies.js';
 import { positionDe } from './mondes.js';
+import { entreesDe } from './routes.js';
 
 const uni = (c) => DECOR_START + c * 10;
 const brique = (c) => DECOR_START + c * 10 + 1;
@@ -285,7 +286,15 @@ export const VOIES_LILLE = [
 ];
 
 const VOIES = VOIES_LILLE;
-const BANDES = rangerVoies(VOIES);
+// L'ENTRÉE DE L'A1 (v299), comme à Paris : du bout du corridor au bout de la
+// rue de Paris, à la Porte de Paris.
+const ENTREES = entreesDe('lille').map((e) => ({
+  nom: `Entrée ${e.route}`, l: a(1.0), t: TROTTOIR_AV,
+  pts: [[Math.round(e.x - LILLE.x), Math.round(e.z - LILLE.z)], de(0.34375, 0.6875)],
+}));
+export const ENTREES_LILLE = ENTREES.map((v) => v.pts.map(([u, w]) => [LILLE.x + u, LILLE.z + w]));
+
+const BANDES = rangerVoies([...VOIES, ...ENTREES]);
 
 // LES CIRCUITS SE MESURENT, ILS NE SE DEVINENT PAS. Toutes les combinaisons de
 // deux à cinq avenues voisines ont été éprouvées contre `solLille`, et l'on

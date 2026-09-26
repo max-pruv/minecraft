@@ -33,6 +33,7 @@
 import { BLOCK, CITY_BLOCK, DECOR_START, ARCHI } from './blocks.js';
 import { rangerVoies, solDesVoies, fabriqueCircuits, contournerRonds, contournerBlocs } from './voies.js';
 import { positionDe } from './mondes.js';
+import { entreesDe } from './routes.js';
 
 const uni = (couleur) => DECOR_START + couleur * 10;
 
@@ -488,7 +489,19 @@ const VOIES = [
 // et une dimension de ville ne se recopie pas dans un banc d'essai.
 export const VOIES_PARIS = VOIES;
 
-const BANDES = rangerVoies(VOIES);
+// L'ENTRÉE DE L'A1 (v299) : de là où le corridor s'arrête dans le disque
+// (`routes.js`, à vingt blocs du bord, où le relief de la ville est plat)
+// jusqu'à la Gare du Nord, en avenue à double sens. Elle est une voie comme
+// les autres pour le sol — chaussée, trottoir, les lots s'écartent — mais pas
+// pour les circuits : ce sont les voitures de la route qui l'empruntent, et
+// `CIRCUITS_PARIS` ne la connaît pas.
+const ENTREES = entreesDe('paris').map((e) => ({
+  nom: `Entrée ${e.route}`, l: a(1.2), t: TROTTOIR_AV,
+  pts: [[Math.round(e.x - PARIS.x), Math.round(e.z - PARIS.z)], pt('Gare du Nord')],
+}));
+export const ENTREES_PARIS = ENTREES.map((v) => v.pts.map(([u, w]) => [PARIS.x + u, PARIS.z + w]));
+
+const BANDES = rangerVoies([...VOIES, ...ENTREES]);
 
 
 // --- où roulent les voitures -------------------------------------------------

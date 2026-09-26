@@ -36,6 +36,13 @@ const VUES = [
   { nom: 'lille-centre', x: 35, z: -851, yaw: Math.PI / 2, pitch: 0.05, h: 1.6, rue: true },
   { nom: 'gare-paris', gare: 'paris', yaw: 0, pitch: 0.05, h: 1.6 },
   { nom: 'paris-nuit', dx: -0.8, dz: -0.9, yaw: Math.PI / 2, pitch: 0.05, h: 1.6, rue: true, heure: 0.0 },
+  // LE COULOIR PARIS–LILLE (v299) : sur la chaussée de droite de l'A1, à
+  // l'abscisse `route` (négative : depuis Lille), cap le long de l'axe.
+  { nom: 'a1-route', route: 300, pitch: 0.02, h: 1.6 },
+  { nom: 'a1-ciel', route: 300, pitch: -0.55, h: 40 },
+  { nom: 'a1-pont', route: 712, pitch: 0.02, h: 1.6 },
+  { nom: 'a1-porte-paris', route: 30, dyaw: Math.PI, pitch: 0.02, h: 1.6 },
+  { nom: 'a1-porte-lille', route: -30, pitch: 0.02, h: 1.6 },
 ];
 
 // Un échantillonneur DANS la page : les périodes réelles entre images pendant
@@ -86,6 +93,14 @@ const echantillonner = (page, ms) => page.evaluate(async (ms) => {
             const at = (QUAI_DEDANS + QUAI_DEHORS) / 2;
             x = Math.round(gare.x - gare.ux * 6 - gare.uz * at); z = Math.round(gare.z - gare.uz * 6 + gare.ux * at);
             v.yaw = Math.atan2(-gare.ux, -gare.uz);
+          } else if (v.route !== undefined) {
+            const R = await import('./src/routes.js');
+            const seg = R.segmentsDeRoute()[0];
+            const sr = v.route >= 0 ? v.route : seg.longueur + v.route;
+            const q = R.pointA(seg, sr), L = R.largeurA(seg, sr);
+            const o = L.terrePlein + L.demiChaussee / 2;
+            x = Math.round(q.x + (-q.fz) * o); z = Math.round(q.z + q.fx * o);
+            v.yaw = Math.atan2(-q.fx, -q.fz) + (v.dyaw || 0);
           } else if (v.x !== undefined) { x = v.x; z = v.z; } else { [x, z] = adresseParis(v.dx, v.dz); }
           if (v.rue) {
             cherche: for (let r = 0; r < 12; r++) for (let dx = -r; dx <= r; dx++) for (let dz = -r; dz <= r; dz++) {

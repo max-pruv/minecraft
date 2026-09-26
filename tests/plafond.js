@@ -1123,6 +1123,95 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     });
     verifier('et le maillage reçu du worker porte la surface', dessin.surface > 1000, JSON.stringify(dessin));
 
+    // --- AU VOLANT SUR L'A1 (v299) --------------------------------------------
+    //
+    // Le couloir Paris–Lille : on se pose sur la chaussée de droite à
+    // l'abscisse `s0`, cap le long de l'axe, dans une voiture invoquée pour
+    // cela (les bêtes retirées d'abord — l'idiome de la v284), et l'on roule
+    // jusqu'au RÉSULTAT, borné : tant de blocs, ou soixante images bloquées,
+    // ou une minute. Chaque image compare la hauteur de la voiture à la cote
+    // du PROFIL sous elle — c'est ce qui distingue « je roule sur la route »
+    // de « je roule sur les blocs qui la portent ». Le second départ est posé
+    // devant le premier pont : on doit le franchir SUR son tablier.
+    const rouler = (s0, blocsVoulus) => tab.evaluate(async ({ s0, blocsVoulus }) => {
+      const g = window.__game, p = g.player;
+      let R; try { R = await import('./src/routes.js'); } catch { return { echec: 'pas de routes.js' }; }
+      const seg = R.segmentsDeRoute()[0];
+      const q = R.pointA(seg, s0), L = R.largeurA(seg, s0);
+      const o = L.terrePlein + L.demiChaussee / 2;
+      const X = q.x + (-q.fz) * o, Z = q.z + q.fx * o;
+      const yaw = Math.atan2(-q.fx, -q.fz);
+      g.world.sansSolContinu = false;
+      p.flying = false; p.pos.set(X, R.coteA(seg, s0) + 1.5, Z); p.vel.set(0, 0, 0); p.yaw = yaw; p.pitch = 0;
+      for (const a of [...g.animalManager.animals]) if (a.def.key !== 'poisson') { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); }
+      const dodo = (ms) => new Promise((r) => setTimeout(r, ms));
+      await dodo(3000);
+      g.animalManager.invoquer('voiture', X - Math.sin(yaw) * 3, Z - Math.cos(yaw) * 3);
+      await dodo(1500);
+      const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+      for (let e = 0; e < 6 && !auVolant(); e++) { const b = document.getElementById('ride-btn'); if (b) b.click(); await dodo(1000); }
+      if (!auVolant()) return { echec: 'pas monté' };
+      const out = { images: 0, bloque: 0, marches: 0, chutes: 0, surTablier: 0, horsTablier: 0, ecartMax: 0, blocs: 0, ms: 0 };
+      let xa = p.pos.x, za = p.pos.z, ya = p.pos.y;
+      const x0 = p.pos.x, z0 = p.pos.z, t0 = performance.now();
+      p.touchMove.f = 1;
+      await new Promise((fin) => {
+        const tour = () => {
+          out.images++;
+          const r = R.routeEn(Math.round(p.pos.x), Math.round(p.pos.z));
+          if (r) {
+            const ecart = p.pos.y - r.cote;
+            if (r.ouvrage) { out.surTablier++; if (ecart < -0.3) out.horsTablier++; }
+            else if (ecart < -0.5) out.chutes++;
+            out.ecartMax = Math.max(out.ecartMax, Math.abs(ecart));
+          }
+          const dh = Math.hypot(p.pos.x - xa, p.pos.z - za), dy = Math.abs(p.pos.y - ya);
+          if (dh < 0.01) out.bloque++;
+          if (dy > 0.3 && dy > dh) out.marches++;
+          xa = p.pos.x; za = p.pos.z; ya = p.pos.y;
+          out.blocs = Math.hypot(p.pos.x - x0, p.pos.z - z0);
+          out.ms = Math.round(performance.now() - t0);
+          if (out.blocs >= blocsVoulus || out.bloque >= 60 || out.ms > 60000) fin(); else requestAnimationFrame(tour);
+        };
+        requestAnimationFrame(tour);
+      });
+      p.touchMove.f = 0;
+      out.blocs = +out.blocs.toFixed(1); out.ecartMax = +out.ecartMax.toFixed(2);
+      out.x = +p.pos.x.toFixed(1); out.z = +p.pos.z.toFixed(1);
+      return out;
+    }, { s0, blocsVoulus });
+    const a1 = await rouler(120, 80);
+    verifier('au volant sur l\'A1, quatre-vingts blocs à la cote du profil, sans une marche ni une chute',
+      !a1.echec && a1.blocs >= 72 && a1.marches === 0 && a1.chutes === 0 && a1.bloque < a1.images / 10 && a1.ecartMax < 0.6,
+      JSON.stringify(a1));
+    const pont = await tab.evaluate(async () => {
+      const R = await import('./src/routes.js');
+      const seg = R.segmentsDeRoute()[0], p = R.profilDe(seg);
+      return p.spans.length ? { s0: Math.round(p.spans[0].s0), s1: Math.round(p.spans[0].s1) } : null;
+    });
+    const dessus = pont ? await rouler(pont.s0 - 12, (pont.s1 - pont.s0) + 24) : { echec: 'aucun pont sur la route' };
+    verifier('le premier pont se franchit sur son tablier, d\'un bout à l\'autre',
+      !dessus.echec && dessus.surTablier >= 3 && dessus.horsTablier === 0 && dessus.chutes === 0 && dessus.blocs >= (pont ? (pont.s1 - pont.s0) + 20 : 999),
+      JSON.stringify({ pont, ...dessus }));
+    // et dessous : posé sur le sol sous le tablier, on y reste — deux parcours
+    const dessous = await tab.evaluate(async ({ pont }) => {
+      const g = window.__game, p = g.player;
+      const R = await import('./src/routes.js');
+      const seg = R.segmentsDeRoute()[0];
+      if (!pont) return { echec: 'aucun pont' };
+      // descendre de la voiture
+      for (let e = 0; e < 4 && g.fun.montureConduite && g.fun.montureConduite(); e++) { const b = document.getElementById('ride-btn'); if (b) b.click(); await new Promise((r) => setTimeout(r, 800)); }
+      const s = (pont.s0 + pont.s1) / 2, q = R.pointA(seg, s);
+      const x = Math.round(q.x), z = Math.round(q.z);
+      const tablier = g.world.tablierEn(x + 0.5, z + 0.5), sol = g.world.terrainHeight(x, z) + 1;
+      p.flying = false; p.pos.set(x + 0.5, sol + 0.5, z + 0.5); p.vel.set(0, 0, 0);
+      await new Promise((r) => setTimeout(r, 2500));
+      return { tablier: tablier === null ? null : +tablier.toFixed(2), sol, y: +p.pos.y.toFixed(2) };
+    }, { pont });
+    verifier('et sous le tablier, on reste en bas : deux parcours, jamais téléporté dessus',
+      !dessous.echec && dessous.tablier !== null && dessous.tablier - dessous.sol >= 3 && dessous.y < dessous.tablier - 1,
+      JSON.stringify(dessous));
+
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0,
       JSON.stringify(tab.erreurs));
 

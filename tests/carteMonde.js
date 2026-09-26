@@ -485,6 +485,90 @@ const VRAIES_KM = [
       !rails.absent && rails.pas > 0 && rails.dedans === 0 && rails.viaduc >= 1,
       JSON.stringify(rails.absent ? rails : { dedans: rails.dedans, viaduc: rails.viaduc }));
 
+    // LA ROUTE PARIS–LILLE (v299) ---------------------------------------------
+    //
+    // Programme « monde fidèle », livraison 3. Le corridor est un REGISTRE
+    // (`routes.js`) : un profil continu à pente bornée épinglé au sol des deux
+    // villes, une section, des ponts là où le profil quitte le terrain. Ce que
+    // ces témoins mesurent, c'est le monde : le bloc au sommet de chaque
+    // colonne de route, le contact au sol (`solContinu`) contre le profil, le
+    // sol resté libre sous chaque tablier — et que l'axe ne traverse ni ville,
+    // ni aérodrome, ni ce que les enfants ont bâti. Sur l'ancien code le module
+    // n'existe pas, et les témoins le disent au lieu de planter.
+    const a1 = await tab.evaluate(async () => {
+      let m;
+      try { m = await import('./src/routes.js'); } catch { return { absent: true }; }
+      const b = await import('./src/blocks.js');
+      const { AEROPORTS } = await import('./src/aeroport.js');
+      const g = window.__game, w = g.world;
+      const SANCT = [[0, 0], [26, -14], [-34, 40], [-100, -100]];
+      const out = { segments: 0, penteMax: 0, bouts: [], remblaiMax: 0, deblaiMax: 0, ponts: 0, pontsBlocs: 0,
+        pasSol: 0, asphalte: 0, contact: 0, contactMax: 0, pasTablier: 0, libreSousTablier: 0,
+        villes: 0, aero: 0, sanct: Infinity, longueur: 0 };
+      for (const s of m.segmentsDeRoute()) {
+        out.segments++; out.longueur += s.longueur;
+        const p = m.profilDe(s);
+        for (let k = 1; k <= p.n; k++) out.penteMax = Math.max(out.penteMax, Math.abs(p.cote[k] - p.cote[k - 1]) / p.pas);
+        out.bouts.push(+(p.cote[0] - p.terr[0]).toFixed(2), +(p.cote[p.n] - p.terr[p.n]).toFixed(2));
+        for (let k = 0; k <= p.n; k++) if (!p.ouvrage[k]) { out.remblaiMax = Math.max(out.remblaiMax, p.cote[k] - p.terr[k]); out.deblaiMax = Math.max(out.deblaiMax, p.terr[k] - p.cote[k]); }
+        out.ponts += p.spans.length;
+        for (const sp of p.spans) out.pontsBlocs += Math.round(sp.s1 - sp.s0) + 1;
+        for (let sa = 0; sa <= s.longueur; sa += 4) {
+          const q = m.pointA(s, sa);
+          // L'axe pour la géographie (villes, aérodromes, sanctuaires) ; UNE
+          // VOIE pour la chaussée : l'axe est le terre-plein, qui est de
+          // l'herbe — mon premier témoin y comptait 18 colonnes d'asphalte
+          // sur 208 et accusait un ouvrage juste.
+          const ax = Math.round(q.x), az = Math.round(q.z);
+          const c = w.cityAt(ax, az);
+          if (c && Math.hypot(ax - c.x, az - c.z) < c.r - m.BORD_VILLE - 2) out.villes++;
+          if (AEROPORTS.some((a) => Math.hypot(ax - a.x, az - a.z) < a.r + 12)) out.aero++;
+          out.sanct = Math.min(out.sanct, ...SANCT.map(([sx, sz]) => Math.hypot(ax - sx, az - sz)));
+          const La = m.largeurA(s, sa), off = La.terrePlein + La.demiChaussee / 2;
+          const x = Math.round(q.x - q.fz * off), z = Math.round(q.z + q.fx * off);
+          const r = m.routeEn(x, z);
+          if (!r) { out.horsRuban = (out.horsRuban || 0) + 1; continue; }
+          if (r.ouvrage) {
+            out.pasTablier++;
+            const t = Math.floor(r.cote) - 1;
+            const id = w.getBlock(x, t, z);
+            if (id === b.BLOCK.AIR || id === b.BLOCK.WATER) out.libreSousTablier++;
+          } else {
+            out.pasSol++;
+            const t = Math.floor(r.cote) - 1;
+            if (w.getBlock(x, t, z) === b.CITY_BLOCK.ASPHALT && w.getBlock(x, t + 1, z) === b.BLOCK.AIR) out.asphalte++;
+            const sc = w.solContinu(x + 0.5, z + 0.5);
+            if (sc !== null) { out.contact++; out.contactMax = Math.max(out.contactMax, Math.abs(sc - m.coteA(s, sa))); }
+          }
+        }
+      }
+      out.sanct = Math.round(out.sanct);
+      out.contactMax = +out.contactMax.toFixed(2);
+      out.convoi = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A1') || null;
+      return out;
+    });
+    verifier('la route Paris–Lille a un profil continu, à six pour cent au plus, épinglé au sol des deux villes',
+      !a1.absent && a1.segments >= 1 && a1.penteMax <= 0.07 && a1.bouts.every((v) => Math.abs(v) < 0.05)
+      && a1.remblaiMax <= 4.01 && a1.deblaiMax <= 9.01,
+      JSON.stringify(a1.absent ? a1 : { longueur: Math.round(a1.longueur), penteMax: +a1.penteMax.toFixed(3), bouts: a1.bouts, remblaiMax: +a1.remblaiMax.toFixed(1), deblaiMax: +a1.deblaiMax.toFixed(1) }));
+    // LA BARRE DES SANCTUAIRES SE CALCULE : l'emprise fait 8,5 blocs de demi-
+    // largeur et un talus au plus 12,9 (déblai 9 sur une pente de 0,7), soit
+    // 21,4 depuis l'axe ; on exige huit blocs de plus. L'axe direct est à 45
+    // de la maison témoin mais DANS la marge de Roissy ; le point de passage
+    // retenu (routes.js) tient 37 et 2,7 : mesuré, pas choisi.
+    verifier('elle ne traverse ni ville, ni aérodrome, ni ce que les enfants ont bâti',
+      !a1.absent && a1.villes === 0 && a1.aero === 0 && a1.sanct >= 30,
+      JSON.stringify(a1.absent ? a1 : { villes: a1.villes, aero: a1.aero, sanctuaireLePlusProche: a1.sanct }));
+    verifier('sous chaque colonne de route, l\'asphalte au sommet du remblai, et le contact au sol est celui du profil',
+      !a1.absent && a1.pasSol > 100 && a1.asphalte >= a1.pasSol * 0.95 && a1.contact >= a1.pasSol * 0.95 && a1.contactMax < 0.6,
+      JSON.stringify(a1.absent ? a1 : { colonnes: a1.pasSol, asphalte: a1.asphalte, contact: a1.contact, ecartMax: a1.contactMax }));
+    verifier('ses ponts franchissent l\'eau sur un tablier, et le sol reste le sol dessous',
+      !a1.absent && a1.ponts >= 1 && a1.pasTablier > 0 && a1.libreSousTablier === a1.pasTablier,
+      JSON.stringify(a1.absent ? a1 : { ponts: a1.ponts, blocs: a1.pontsBlocs, colonnesSousTablier: a1.pasTablier, libres: a1.libreSousTablier }));
+    verifier('et des voitures roulent sur l\'A1, de Paris à Lille et retour',
+      !a1.absent && !!a1.convoi && a1.convoi.routier && (a1.convoi.modeles || []).length >= 10,
+      JSON.stringify(a1.absent ? a1 : (a1.convoi ? { nom: a1.convoi.nom, route: a1.convoi.route, voitures: (a1.convoi.modeles || []).length, visibles: a1.convoi.visibles } : 'aucun convoi de route')));
+
     // DE VRAIS RAILS, EN RELIEF, ET DEUX VOIES (v281) ------------------------
     //
     // Max, deux captures d'iPad : « les rails ne sont pas des rails, les trains

@@ -81,6 +81,7 @@ import {
 import { positionDe, lieuxDuMonde, cielDe, zDeLatitude } from './mondes.js';
 import { BORNES as BORNES_MANHATTAN } from './manhattan-plan.js';
 import { surLaVoie, presDeLaVoie, voieEn, brancherSol, gareEn, pieceDeVoie } from './trains.js';
+import { routeEn, rubansDans, brancherSol as brancherSolRoutes } from './routes.js';
 
 // LES CALOTTES POLAIRES. Le planisphère déclare « terre » tout ce qui passe
 // le cercle arctique (78°) et l'Antarctique (−63°) — pour que le monde n'ait
@@ -1892,6 +1893,8 @@ export class World {
     // besoin de la hauteur du terrain BIEN AU-DELÀ de la colonne qu'on est
     // en train de bâtir. `trains.js` ne la connaît pas : on la lui donne.
     brancherSol((x, z) => this.terrainHeight(x, z));
+    // Et le profil d'une route, de la même façon (v299).
+    brancherSolRoutes((x, z) => this.terrainHeight(x, z));
   }
 
   static key(cx, cz) { return cx + ',' + cz; }
@@ -2166,6 +2169,16 @@ export class World {
 
   // Les villes dont le disque approche ce point à moins de `d` blocs : la
   // liste qu'un morceau garde pour ne poser la question qu'à elles (v297).
+  // LA ROUTE SOUS CETTE COLONNE (v299) — `routes.js` répond ; `world.js` ne
+  // fait que le dire au sol continu, au mailleur et à la carte.
+  routeEn(x, z) { return routeEn(x, z); }
+  rubansDans(x0, z0, x1, z1) { return rubansDans(x0, z0, x1, z1); }
+  // La cote du tablier d'un pont au-dessus de ce point, ou null.
+  tablierEn(x, z) {
+    const r = routeEn(x, z);
+    return r && r.ouvrage ? r.cote : null;
+  }
+
   villesProches(x, z, d) {
     const out = [];
     for (const c of CITIES) if (Math.hypot(x - c.x, z - c.z) < c.r + d) out.push(c);
@@ -2202,6 +2215,7 @@ export class World {
   treeAt(x, z) {
     if (dansUneCalotte(z)) return null;                             // rien ne pousse sur les calottes
     if (presDeLaVoie(x, z)) return null;                            // la voie ferrée reste dégagée
+    if (routeEn(x, z)) return null;                                  // et la route aussi, talus compris (v299)
     if (Math.hypot(x - POLE.x, z - POLE.z) < POLE.r) return null;   // rien ne pousse sur la banquise
     if (versSeine(x, z) < 3) return null;                           // ni dans la Seine
     // Central Park compte vingt mille arbres : c'est le seul endroit d'une
@@ -2357,6 +2371,31 @@ export class World {
           // de ville, qui laissaient la trame générique repasser derrière.
           // Trois blocs de large sur quatre mille : la ville ne perd rien.
           continue;
+        }
+
+        // LA ROUTE (v299) : le remblai et le déblai au profil de `routes.js`,
+        // l'asphalte au sommet, et la surface continue par-dessus. Sous un
+        // pont, seules les piles s'écrivent : le sol reste le sol, le tablier
+        // est un ruban du mailleur. LA ROUTE A LE DERNIER MOT SUR SA COLONNE,
+        // comme la voie ferrée — jusque dans le raccord d'une ville, où c'est
+        // l'entrée de la ville.
+        const route = routeEn(wx, wz);
+        if (route) {
+          if (route.ouvrage) {
+            if (route.pile) {
+              for (let wy = Math.max(0, h); wy < Math.floor(route.cote) && wy < HEIGHT; wy++) data[World.index(x, wy, z)] = BLOCK.STONEBRICK;
+            }
+          } else {
+            const t = Math.floor(route.cote) - 1;
+            for (let wy = Math.max(0, Math.min(h, WATER_LEVEL)); wy < t && wy < HEIGHT; wy++) data[World.index(x, wy, z)] = BLOCK.STONE;
+            for (let wy = t + 1; wy <= t + 6 && wy < HEIGHT; wy++) data[World.index(x, wy, z)] = BLOCK.AIR;
+            if (t >= 0 && t < HEIGHT) {
+              data[World.index(x, t, z)] = route.piece === 'talus' ? (t > WATER_LEVEL ? BLOCK.GRASS : BLOCK.SAND)
+                : route.piece === 'terreplein' ? BLOCK.GRASS : CITY_BLOCK.ASPHALT;
+              if (t - 1 >= 0 && t - 1 > h) data[World.index(x, t - 1, z)] = BLOCK.DIRT;
+            }
+            continue;
+          }
         }
 
         // LA GARE (v214). Max : « no end stations ». Le train marquait l'arrêt
@@ -3118,7 +3157,10 @@ export class World {
   blocSousLaSurface(bx, by, bz) {
     if (this.sansSolContinu) return false;
     const f = this.ficheMemo(bx, bz);
-    if (!f.nat || by >= f.cote || by < f.cote - SOUS_SURFACE) return false;
+    // Une cote de route est fractionnaire (le profil lissé) : la bande se
+    // compte depuis le cube entier qu'elle remplace.
+    const cote = Math.floor(f.cote);
+    if (!f.nat || by >= cote || by < cote - SOUS_SURFACE) return false;
     return colonneCouverte(this, bx, bz, (a, b) => this.ficheMemo(a, b));
   }
 
@@ -3195,9 +3237,19 @@ export class World {
   // Rend la hauteur de surface (ou null), pour que l'appelant sache.
   accrocherAuSol(pos, vel, { etaitAuSol, pasH = 0, half, hauteur, vole = false }) {
     if (this.sansSolContinu) return null;
+    const eps = 1e-4;
+    // SOUS UN PONT, DEUX SURFACES : le tablier et le sol. On prend celle qui
+    // est à portée du contact PRÉCÉDENT — sur le tablier on y reste, dessous
+    // on y reste — jamais la plus haute d'office, qui téléporterait sous un
+    // pont (cahier de Max, « contrat physique »).
+    const tab = this.tablierEn(pos.x, pos.z);
+    if (tab !== null && pos.y >= tab - 0.6 && pos.y < tab + ACCROCHE_SOL + pasH) {
+      if (pos.y < tab + eps) { pos.y = tab + eps; if (vel.y < 0) vel.y = 0; return { s: tab, auSol: vel.y <= 0 }; }
+      if (!vole && etaitAuSol && vel.y <= 0) { pos.y = tab + eps; vel.y = 0; return { s: tab, auSol: true }; }
+      return { s: tab, auSol: false };
+    }
     const s = this.solContinu(pos.x, pos.z);
     if (s === null) return null;
-    const eps = 1e-4;
     // On ne remonte sur la surface que ce qui est DANS la bande qu'elle
     // remplace : un enfant dans un tunnel de train, neuf blocs sous la
     // colline, y reste — le premier jet le téléportait sur l'herbe.

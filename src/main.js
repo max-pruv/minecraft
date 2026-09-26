@@ -43,6 +43,9 @@ import { tracesCirculation, tracesCirculationMain } from './villesmonde.js';
 import { createPassants } from './passants.js';
 import { createPoissons } from './poissons.js';
 import { segmentsDeTrain, traceSegment } from './trains.js';
+import { segmentsDeRoute, traceRoute } from './routes.js';
+import { ENTREES_PARIS } from './paris.js';
+import { ENTREES_LILLE } from './lille.js';
 import { Player, raycastBlocks } from './player.js';
 import { actualiserPresence } from './presence.js';
 import { animerHumain, chargerHumains, humainsCharges, humainsPrets } from './humains.js';
@@ -1622,6 +1625,18 @@ function updateChunks() {
       emoji: seg.ligne.emoji, teinte: seg.ligne.teinte,
       nb: 5, vitesse, rames, pause, arretsIndex: t.arretsIndex,
     });
+  }
+  // LA CIRCULATION INTERURBAINE (v299) : sur chaque corridor, une boucle de
+  // voitures — aller sur la chaussée de droite, retour sur l'autre — qui entre
+  // dans les deux villes par leur avenue d'entrée jusqu'à la première voie
+  // nommée, à la cote de la ville (`coteRoulable`), et suit le PROFIL de la
+  // route entre les deux, jamais un bloc arrondi. Vingt voitures sur mille
+  // sept cents blocs : une place ne se fabrique qu'en entrant dans le champ.
+  const ENTREES = { paris: ENTREES_PARIS, lille: ENTREES_LILLE };
+  for (const seg of segmentsDeRoute()) {
+    const avant = (ENTREES[seg.de] || [])[0], apres = (ENTREES[seg.vers] || [])[0];
+    const pts = traceRoute(seg, { avant, apres, coteDe: (x, z) => world.coteRoulable(x, z) + 1 });
+    vehicules.circulation(pts, 41, { ville: seg.de, vitesse: 12, nb: 20, route: seg.route.nom });
   }
 })();
 

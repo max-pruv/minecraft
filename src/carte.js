@@ -30,6 +30,7 @@ import { couleurCarteLondres, lieuxDeLondres } from './londres.js';
 import { couleurCarteVillesMonde, lieuxDesVillesMonde } from './villesmonde.js';
 import { zDeLatitude } from './mondes.js';
 import { surLaVoie } from './trains.js';
+import { surLaRoute } from './routes.js';
 
 // CE QUE LA PRÉPARATION DU FOND PREND DANS CHAQUE IMAGE (v276).
 //
@@ -335,6 +336,11 @@ export class Carte {
       const id = this.blocDeSurface(wx, wz);
       if (id) return MAP_COLORS[id] || (id >= DECOR_START && decorMapColor(id)) || [150, 150, 150];
     }
+
+    // La route (v299) : le trait gris qui relie deux villes, son tablier plus
+    // clair sur l'eau. Avant le relief et l'eau, parce qu'un pont passe dessus.
+    const piece = surLaRoute(wx, wz);
+    if (piece && piece !== 'talus') return piece === 'tablier' ? [150, 150, 156] : [70, 72, 78];
 
     // Les domaines se reconnaissent à leur couleur — la carte lit la hauteur
     // du terrain, pas les blocs : sans cette règle, le plateau martien
