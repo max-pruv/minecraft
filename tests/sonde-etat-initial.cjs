@@ -75,9 +75,13 @@ const echantillonner = (page, ms) => page.evaluate(async (ms) => {
           const { ARCHI } = await import('./src/blocks.js');
           let x, z;
           if (v.gare) {
-            const { garesDeTrain } = await import('./src/trains.js');
+            // Sur le QUAI, pas sur la voie : la gare est un ouvrage posé
+            // au-dessus du terrain, et une caméra à `terrainHeight` sur l'axe
+            // regardait le dessous du remblai (première sonde, vue inutilisable).
+            const { garesDeTrain, QUAI_DEDANS, QUAI_DEHORS } = await import('./src/trains.js');
             const gare = garesDeTrain().find((q) => q.ville === v.gare);
-            x = Math.round(gare.x - gare.ux * 6); z = Math.round(gare.z - gare.uz * 6);
+            const at = (QUAI_DEDANS + QUAI_DEHORS) / 2;
+            x = Math.round(gare.x - gare.ux * 6 - gare.uz * at); z = Math.round(gare.z - gare.uz * 6 + gare.ux * at);
             v.yaw = Math.atan2(-gare.ux, -gare.uz);
           } else if (v.x !== undefined) { x = v.x; z = v.z; } else { [x, z] = adresseParis(v.dx, v.dz); }
           if (v.rue) {
@@ -85,7 +89,19 @@ const echantillonner = (page, ms) => page.evaluate(async (ms) => {
               if (solParis(x + dx, z + dz) === ARCHI.PAVE && solParis(x + dx, z + dz - 3) === null) { x += dx; z += dz; break cherche; }
             }
           }
-          const y = g.world.terrainHeight(x, z);
+          // UNE CAMÉRA DE CAPTURE SE PLACE, ET « SE PLACER » VEUT DIRE VOIR
+          // (v292) : on cherche autour du point une colonne dont le sommet
+          // solide a deux blocs d'air au-dessus — l'entrée sud de Lille
+          // tombait DANS un tronc, et la première planche montrait de l'écorce.
+          const { BLOCK } = await import('./src/blocks.js');
+          const degage = (px, pz) => { const s = g.world.sommetColonne(px, pz); return g.world.getBlock(px, s + 1, pz) === BLOCK.AIR && g.world.getBlock(px, s + 2, pz) === BLOCK.AIR ? s : null; };
+          let y = degage(x, z);
+          if (y === null) {
+            cherche2: for (let r = 1; r < 8; r++) for (let dx = -r; dx <= r; dx++) for (let dz = -r; dz <= r; dz++) {
+              const s = degage(x + dx, z + dz); if (s !== null) { x += dx; z += dz; y = s; break cherche2; }
+            }
+          }
+          if (y === null) y = g.world.terrainHeight(x, z);
           g.player.flying = true;
           g.player.pos.set(x + 0.5, y + 1 + v.h, z + 0.5); g.player.vel.set(0, 0, 0);
           g.player.yaw = v.yaw; g.player.pitch = v.pitch;
@@ -151,7 +167,18 @@ const echantillonner = (page, ms) => page.evaluate(async (ms) => {
       console.log('parcours au volant', JSON.stringify(rapport.parcours.voiture));
     }
   } finally {
-    fs.writeFileSync(path.join(dossier, `${tag}.json`), JSON.stringify(rapport, null, 1));
+    // Un rejeu PARTIEL (une liste de vues) complète le compte rendu existant
+    // au lieu de l'écraser : repointer deux vues ne doit pas perdre les huit
+    // autres ni les deux parcours.
+    const fichier = path.join(dossier, `${tag}.json`);
+    let final = rapport;
+    if (seules && fs.existsSync(fichier)) {
+      try {
+        const avant = JSON.parse(fs.readFileSync(fichier, 'utf8'));
+        final = { ...avant, vues: { ...avant.vues, ...rapport.vues }, parcours: { ...avant.parcours, ...rapport.parcours } };
+      } catch { final = rapport; }
+    }
+    fs.writeFileSync(fichier, JSON.stringify(final, null, 1));
     await banc.fermer();
     process.exit(0);
   }
