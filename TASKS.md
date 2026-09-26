@@ -124,6 +124,20 @@
   bloc posé au sol, ou le fer de la tour, ou un toit du jeu, reste aussi — par
   construction. Si Max voit encore quelque chose en l'air après la v298, on
   relit d'abord le journal de bord (`blocs-suspendus`), qui dira combien et où.
+- [ ] **LE COULOIR PARIS–LILLE (v299) : CE QUI RESTE DÉCLARÉ.** (1) Une seule
+  route, l'A1 ; les autres couloirs sont la livraison 5, avec la matrice de
+  couverture. (2) Dans les vingt derniers blocs du disque de chaque ville, la
+  route écrase la trame de la ville (asphalte sur la chaussée promise par
+  `solParis` / `solLille`) : le raccord est propre au sol mais les façades
+  des îlots traversés ne sont pas remaniées — à regarder en capture, et c'est
+  la même famille que la caserne de Paris (v293). (3) Les voitures de l'A1
+  s'arrêtent à la porte et repartent : pas de continuité avec les circuits de
+  la ville (« de la rue de Rivoli à la Grand-Place ») — la couture des convois
+  est la livraison 4 avec le rail. (4) Le tablier des ponts n'a pas de
+  parapet solide : une voiture qui sort de la voie tombe (mesuré : elle reste
+  sur le tablier à vitesse de croisière, témoin `plafond.js`). (5) Les
+  passants et les bêtes ne traversent pas l'autoroute : rien ne les en
+  empêche non plus.
 - [ ] **L'IPHONE DE MAX (iOS 18.7) MEURT ENCORE À PARIS EN v296 — mesuré dans
   le journal de bord, pas supposé.** Deux sessions de suite finies en
   `plantage` le 26 septembre (15:44:17 UTC après un relevé, 15:45:13 après

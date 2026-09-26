@@ -753,10 +753,14 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         if (!g.couvertes[lx + lz * CHUNK]) continue;
         const X = cx * CHUNK + lx, Z = cz * CHUNK + lz;
         const sc = w.solContinu(X + 0.5, Z + 0.5); centres++;
-        if (sc !== null && Math.abs(sc - (w.terrainHeight(X, Z) + 1)) < 1e-6) exacts++;
+        // La cote de RÉFÉRENCE est celle de la grille du mailleur, pas le relief
+        // + 1 : sous une route (v299) la surface est au profil de la route, et
+        // c'est bien « contact = maillage » que ce témoin garde, pas
+        // « contact = relief ».
+        if (sc !== null && Math.abs(sc - g.cote[g.idx(lx, lz)]) < 1e-6) exacts++;
         if (g.couvertes[lx + 1 + lz * CHUNK]) {
           const m = w.solContinu(X + 1, Z + 0.5); milieux++;
-          if (m !== null && Math.abs(m - (w.terrainHeight(X, Z) + w.terrainHeight(X + 1, Z) + 2) / 2) < 1e-6) moyennes++;
+          if (m !== null && Math.abs(m - (g.cote[g.idx(lx, lz)] + g.cote[g.idx(lx + 1, lz)]) / 2) < 1e-6) moyennes++;
         }
       }
       return { cellules: t.cellulesSol, couvertes, sommetsSurface, fautes, ecarts, centres, exacts, milieux, moyennes };
@@ -1171,13 +1175,17 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
           xa = p.pos.x; za = p.pos.z; ya = p.pos.y;
           out.blocs = Math.hypot(p.pos.x - x0, p.pos.z - z0);
           out.ms = Math.round(performance.now() - t0);
-          if (out.blocs >= blocsVoulus || out.bloque >= 60 || out.ms > 60000) fin(); else requestAnimationFrame(tour);
+          // Borné à deux minutes, la durée dans le message : près du pont la
+          // page rend 0,75 s par image au banc (81 images en 60 s), et la
+          // borne d'une minute coupait la voiture à 31,6 blocs sur 36.
+          if (out.blocs >= blocsVoulus || out.bloque >= 60 || out.ms > 120000) fin(); else requestAnimationFrame(tour);
         };
         requestAnimationFrame(tour);
       });
       p.touchMove.f = 0;
       out.blocs = +out.blocs.toFixed(1); out.ecartMax = +out.ecartMax.toFixed(2);
       out.x = +p.pos.x.toFixed(1); out.z = +p.pos.z.toFixed(1);
+      out.sFin = +R.projeter(seg, p.pos.x, p.pos.z).s.toFixed(1);
       return out;
     }, { s0, blocsVoulus });
     const a1 = await rouler(120, 80);
@@ -1191,7 +1199,10 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     });
     const dessus = pont ? await rouler(pont.s0 - 12, (pont.s1 - pont.s0) + 24) : { echec: 'aucun pont sur la route' };
     verifier('le premier pont se franchit sur son tablier, d\'un bout à l\'autre',
-      !dessus.echec && dessus.surTablier >= 3 && dessus.horsTablier === 0 && dessus.chutes === 0 && dessus.blocs >= (pont ? (pont.s1 - pont.s0) + 20 : 999),
+      // « d'un bout à l'autre » se lit à l'ABSCISSE d'arrivée, pas à une distance
+      // parcourue : la voiture part douze blocs avant le pont et doit finir
+      // au-delà de son autre bout.
+      !dessus.echec && dessus.surTablier >= 3 && dessus.horsTablier === 0 && dessus.chutes === 0 && dessus.sFin >= (pont ? pont.s1 + 4 : 1e9),
       JSON.stringify({ pont, ...dessus }));
     // et dessous : posé sur le sol sous le tablier, on y reste — deux parcours
     const dessous = await tab.evaluate(async ({ pont }) => {

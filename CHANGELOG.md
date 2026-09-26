@@ -20,6 +20,48 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v299 — Le couloir Paris–Lille : l'autoroute A1
+
+**Pourquoi.** Troisième livraison du programme « monde fidèle » (kit de Max,
+septembre 2026) : « la voiture roule de la rue de Rivoli à la Grand-Place de
+Lille sans s'arrêter à une frontière de morceau, un pont se traverse dessus
+et dessous ». Entre les deux villes il n'y avait rien qu'un relief lissé
+(v297) : aucune route, aucun raccord, et une voiture qui sortait de Paris
+tombait dans les champs. Mesuré sur l'axe direct : 810 colonnes hors villes,
+47 tronçons de dix blocs sur 81 à plus de 6 % de pente, 37 colonnes sous
+l'eau.
+
+**Ce que ça change.** Une autoroute A1 relie la porte nord de Paris (la gare
+du Nord) à l'entrée sud de Lille (la rue de Paris) : 851 blocs, deux voies
+par sens, un terre-plein, des accotements, en remblai ou en déblai au profil
+lissé (pente au plus 6,4 %, les deux bouts collés au sol des villes), avec
+deux ponts là où le remblai dépasserait quatre blocs — on roule dessus, on
+passe dessous. L'axe direct passait dans la marge de Roissy, et la maison témoin
+de `plafond.js` est de l'autre côté, à huit blocs de couloir : le point de
+passage retenu a été cherché sous node — 37 blocs de la maison (l'emprise et
+le talus en prennent 21 au plus), 2,7 blocs au-delà de la marge de Roissy,
+un seul coude de 5°, un demi-bloc de détour.
+Vingt voitures y roulent dans les deux sens, sur la voie de droite, et
+entrent dans chaque ville par une avenue de raccord ; la carte du monde
+dessine la chaussée et ses tabliers. Le sol continu recouvre les talus, la
+chaussée est de l'asphalte, les rubans blancs du marquage vivent dans le
+mailleur. **Le relief ne bouge pas** : la route est un ouvrage écrit en
+blocs, comme la voie ferrée, et les deux empreintes de `plafond.js` sont
+intactes.
+
+**Ce qui le prouve.** Sept témoins neufs. Dans `carteMonde.js` : le profil
+tient sa pente (≤ 0,07), ses bouts et ses bornes de remblai (≤ 4) et de
+déblai (≤ 9) ; l'emprise ne touche ni ville, ni aérodrome, ni sanctuaire à
+moins de trente blocs de l'axe (l'emprise et le talus en font 21,4, calculé) ; le sommet est de l'asphalte et le contact suit la
+chaussée (95 % au moins, écart < 0,6) ; les ponts ont des colonnes libres
+sous leur tablier ; un convoi porte `route: 'A1'` et au moins dix modèles.
+Dans `plafond.js` : on roule quatre-vingts blocs sur la chaussée sans marche,
+sans chute, sans blocage ; le premier pont se franchit sur son tablier ; et
+sous le tablier on reste dessous. Mesuré sous node : 522 points de tracé sans
+saut, `routeEn` à 5,8 µs près de la route et 0,03 µs loin.
+
+---
+
 ## v298 — Le ciel de Paris est nettoyé
 
 **Pourquoi.** Max, trois captures d'iPhone au-dessus de Paris, « Bizarre »,

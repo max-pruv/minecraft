@@ -219,6 +219,8 @@ src/washington.js  the capital: L'Enfant's plan, the Mall, and the Metro
 src/dcmonuments.js its 32 landmarks — real interiors, you walk in — and 3 bridges
 src/chine.js src/pole.js src/espace.js src/gaulois.js src/villandry.js
 src/aeroport.js src/circuit.js src/ville.js src/parc.js src/voies.js
+src/routes.js     the interurban roads (the A1 Paris–Lille: profile, section, bridges, traffic)
+src/solcontinu.js the continuous ground outside the cities (v297), and the road surface on it
 
   learning and parents
 src/education.js  quiz bank, adaptive difficulty, stats, persistence

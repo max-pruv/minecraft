@@ -858,6 +858,105 @@ Trois règles.
   juger les ponts : je les ai vus et ne les ai pas mesurés. Une planche de
   captures se regarde en entier, pas seulement là où pointe la livraison.
 
+## Le couloir Paris–Lille (v299) — une route est un ouvrage, et elle se mesure sur le monde
+
+Troisième livraison du programme « monde fidèle » : l'autoroute A1, de la
+porte nord de Paris à l'entrée sud de Lille. Sept règles, et la première a
+été payée le jour de la livraison.
+
+- **UNE PROJECTION SUR UN AXE SE BORNE AU TRONÇON, ET C'EST LA DISTANCE QUI
+  DÉCIDE, PAS L'ÉCART PERPENDICULAIRE.** `routeEn` jugeait « sur la
+  chaussée » à `|d|`, l'écart à la DROITE de l'axe : un point sur le
+  prolongement de l'axe, au-delà d'un bout, avait d ≈ 0 et passait pour de la
+  route. Le centre de Paris est exactement sur ce prolongement (la porte est
+  posée sur la ligne du centre vers le premier point de passage) : 112
+  colonnes « A1 » à 150 blocs de la porte, 62 cellules de surface dans le
+  morceau du témoin « dans une ville, rien ne change ». Trois harnais l'avaient
+  mesuré vert parce qu'ils ne regardaient que le long de la route. La grandeur
+  juste est la distance au point PROJETÉ PUIS BORNÉ (`dist`) : dans le tronçon
+  elle vaut |d|, au-delà elle compte le dépassement. **Un témoin de v297 sur
+  un tout autre sujet l'a attrapé** — c'est ce qu'un portail garde, et ce
+  qu'un harnais qui suit son propre tracé ne peut pas voir.
+- **UNE ROUTE EST UN OUVRAGE ÉCRIT EN BLOCS, JAMAIS UN RELIEF.** Comme la
+  voie ferrée (v213) et les pistes (v280) : remblai et déblai au profil de
+  `routes.js`, asphalte au sommet, piles sous les ponts ; `terrainHeight` ne
+  bouge pas, les deux empreintes de `plafond.js` sont intactes, l'invariant 1
+  tient sans rien déclarer. Le profil est un filtre en cône (`PENTE` 0,06),
+  les deux bouts épinglés au sol des portes par une rampe linéaire, et là où
+  le remblai dépasserait `VIADUC` (4) c'est un pont — deux sur l'A1, 726–737
+  et 815–822 — dont le tablier est un RUBAN du mailleur, pas un bloc.
+- **UN EMPLACEMENT SE MESURE (v223), UN TRACÉ AUSSI — ET MON PREMIER CHIFFRE
+  ÉTAIT FAUX.** J'avais écrit « la maison témoin à 54 blocs » ; le témoin de
+  `carteMonde.js` a rendu 32. L'axe direct Paris–Lille passe DANS la marge de
+  Roissy (5 blocs à l'intérieur de r + 12) et la maison témoin de `plafond.js`
+  (−100, −100) est de l'autre côté : entre les deux, huit blocs de couloir.
+  Cherché sous node (`cherche-via3.mjs`, un et deux points de passage, coude
+  ≤ 30°) : aucun tracé ne tient à la fois quarante blocs de la maison et la
+  marge de Roissy. Le point retenu tient 37 et 2,7, avec un coude de 5° et un
+  demi-bloc de détour ; **et la barre du témoin se calcule au lieu de se
+  recopier de la règle des aérodromes** : l'emprise fait 8,5 de demi-largeur
+  et le talus 12,9 au plus (déblai 9 sur une pente de 0,7), soit 21,4 depuis
+  l'axe, plus huit blocs — trente. Une route n'aplanit rien, elle écrit des
+  blocs : sa distance de sûreté est celle de son emprise, pas celle d'un
+  disque qu'on aplanit.
+- **UN TÉMOIN DE CHAUSSÉE ÉCHANTILLONNE UNE VOIE, PAS L'AXE.** L'axe d'une
+  autoroute est le terre-plein, qui est de l'herbe : mon premier témoin y
+  comptait 18 colonnes d'asphalte sur 208 et accusait un ouvrage juste. La
+  géographie se juge sur l'axe, la chaussée à `terrePlein + demiChaussee / 2`
+  de côté — c'est « un témoin qui écrit son terrain se trompe de terrain »
+  (v285), pour une section de route.
+- **LE COULOIR S'ARRÊTE À `BORD_VILLE` DANS LE DISQUE, LÀ OÙ LE RELIEF EST
+  PLAT, ET L'ENTRÉE DE VILLE PREND LE RELAIS.** Vingt blocs après le bord du
+  disque le fondu du relief est fini ; le profil s'y épingle, et une avenue de
+  raccord (`ENTREES_PARIS`, `ENTREES_LILLE`, hors de `VOIES` pour ne pas
+  entrer dans la couverture des circuits) mène de la porte à la gare du Nord
+  et à la rue de Paris. **Dans ce raccord, la route a le dernier mot sur sa
+  colonne**, comme la voie ferrée dans une ville engendrée.
+- **UNE SEULE SECTION, TROIS LECTEURS** (discipline de `postesAvion`) :
+  `routeEn(x, z)` rend le tronçon, l'abscisse, l'écart, la cote et la PIÈCE
+  (terre-plein, chaussée, accotement, talus, tablier) ; le générateur pose les
+  blocs, le sol continu prend la cote et la pièce (`colonneRoute`), la carte
+  colorie. Le talus se raccorde au terrain de SA colonne (`terr + ecart × (1 −
+  u/w)`) : c'est ce qui garde la cellule dessinable et la couture avec la
+  colonne d'à côté.
+- **LA CIRCULATION LIT LE MÊME TRACÉ QUE L'OUVRAGE.** `traceRoute` construit
+  l'aller et le retour sur les voies intérieures, décalés à droite (v271),
+  cousus aux avenues de raccord, points dédoublonnés (un segment de longueur
+  nulle rendait NaN au parcours) ; `vehicules.circulation(pts, 41, { nb: 20,
+  vitesse: 12, route: 'A1' })` publie `route` dans `etat()` pour qu'un témoin
+  le trouve par son nom et non par sa longueur.
+- **LE COÛT D'UNE QUESTION POSÉE PAR COLONNE SE MESURE LOIN DE LA ROUTE.**
+  `routeEn` est appelée pour chaque colonne de chaque morceau : un index
+  spatial par cases de 512 rend 0,03 µs loin de la route et 5,8 µs près —
+  vingt mille appels en 0,6 ms là où le monde n'a pas de route.
+
+- **UNE COTE QUI TRAVERSE UNE `Float32Array` N'EST PLUS LA MÊME COTE.** Le
+  portail a rendu une erreur du mailleur (« reading 'tiles' ») et un écart
+  contact/maillage (183 centres exacts sur 196) sur le morceau témoin de la
+  campagne, que la route traverse désormais. Mesuré à la colonne : un talus à
+  34,999999 en double précision, rangé dans la grille du mailleur en simple
+  précision, y vaut 35 tout rond ; le générateur posait l'herbe à 33 et le
+  mailleur cherchait une tuile à 34, dans l'air. Toute cote de route est un
+  soixante-quatrième de bloc (`q64`, routes.js), exact dans les deux
+  précisions : 138 morceaux du couloir maillés sans erreur, 256 centres sur
+  256 exacts. **Une grandeur qui vit dans deux représentations se quantifie
+  là où elle naît**, pas là où elle se compare.
+- **UN PLANCHER QUI N'EST PAS UN BLOC SE DÉCLARE À CHAQUE MÉCANISME QUI
+  CHERCHE UN PLANCHER.** `eauDevant` (v272) demande « y a-t-il un bloc sous
+  les roues ? » avant de chercher l'eau ; le tablier est un ruban, il voyait
+  l'eau du fleuve et refusait le pont — 60 images bloquées sur 78 à l'entrée
+  du premier pont. Le contact avait été prévenu (`accrocherAuSol` lit
+  `tablierEn`), pas l'obstacle. C'est la leçon des trois règles du sol continu,
+  un ouvrage plus loin : ce qui remplace un bloc le dit à TOUS ceux qui lisaient
+  le bloc.
+
+**Et le tablier est une seconde surface.** `accrocherAuSol` prend le
+tablier quand le contact PRÉCÉDENT en est à portée (`pos.y ≥ tab − 0,6`),
+sinon le sol : sur le pont on y reste, dessous on y reste — jamais la plus
+haute d'office, qui téléporterait sous un pont (cahier de Max, « contrat
+physique »). Deux témoins de `plafond.js` roulent le premier pont dessus, et
+passent dessous.
+
 ## Le ménage du ciel de Paris (v298) — ce qui flotte se définit par l'APPUI, pas par la hauteur
 
 Max, trois captures d'iPhone : « Bizarre », puis « clean les trucs bizarres ».
