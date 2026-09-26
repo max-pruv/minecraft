@@ -24,17 +24,17 @@ self.onmessage = (e) => {
     // Resynchronisation COMPLÈTE : changement de monde, fusion du nuage,
     // premier lancement. Les morceaux engendrés sont jetés : ils portaient
     // les anciens blocs.
-    monde.edits = new Map(m.edits);
-    monde.editTimes = new Map(m.temps || []);
-    monde.ctx = m.ctx || 'local';
+    // Par l'API du monde, pas en écrivant les deux cartes : c'est elle qui
+    // refait l'index des monuments touchés (v292). Un journal installé à la
+    // main laisserait le worker dessiner un monument qu'un enfant a creusé.
     monde.hd = m.hd || 0;
-    monde.chunks.clear();
-    monde.tops.clear();
+    monde.installerEdits(m.edits, m.temps, m.ctx || 'local');
     return;
   }
   if (m.type === 'bloc') {
     // Un bloc posé ou retiré : dans le journal, et dans le morceau s'il est là.
     monde.edits.set(`${m.x},${m.y},${m.z}`, m.id);
+    monde.noterMonumentTouche(m.x, m.z);
     const cx = Math.floor(m.x / CHUNK), cz = Math.floor(m.z / CHUNK);
     const cle = World.key(cx, cz);
     const data = monde.chunks.get(cle);

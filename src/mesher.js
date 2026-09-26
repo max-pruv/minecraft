@@ -19,7 +19,8 @@ const ARBRE_HD = new Set([BLOCK.LOG, BLOCK.LEAVES]);
 // Rectangle neutre des faces non fusionnées : leurs UV sont déjà absolues,
 // le shader les reprend telles quelles.
 const NEUTRE = [0, 0, 1, 1];
-import { CHUNK, HEIGHT } from './world.js';
+import { CHUNK, HEIGHT, REPERES_HD } from './world.js';
+import { emettreMonument, cellulesDuMorceau } from './paris-monuments-hd.js';
 
 // Faces: corner positions (CCW from outside), normal, tile slot (0 top / 1 side / 2 bottom), shade.
 //
@@ -240,6 +241,29 @@ export function buildChunkTampons(world, cx, cz) {
   const source = world.ensureChunk(cx, cz);
   const data = world.visualChunk ? world.visualChunk(cx,cz,source) : source;
 
+  // LES MONUMENTS EN RELIEF (v292). Ce qu'on masque est ce que le BÂTISSEUR du
+  // voxel a écrit, et seulement là où le bloc du morceau est ENCORE le sien :
+  // un bloc qu'un enfant ajoute contre le monument reste visible. Un monument
+  // qu'un enfant a touché n'a plus de modèle du tout — `monumentsTouches` est
+  // un index tenu par `World`, jamais un balayage du journal.
+  const monuments = hd ? REPERES_HD.filter((lm) => !world.monumentsTouches?.has(lm.name)
+    && lm.x + lm.portee >= baseX && lm.x - lm.portee < baseX + CHUNK
+    && lm.z + lm.portee >= baseZ && lm.z - lm.portee < baseZ + CHUNK) : [];
+  const cellulesMonument = new Set();
+  const detailles = [];
+  for (const lm of monuments) {
+    const by = world.terrainHeight(lm.x, lm.z);
+    const liste = cellulesDuMorceau(lm, baseX, baseZ, by, CHUNK, HEIGHT);
+    for (let i = 0; i < liste.length; i += 2) {
+      if (data[liste[i]] === liste[i + 1]) cellulesMonument.add(liste[i]);
+    }
+    emettreMonument(facades, lm.name, lm.x - baseX, by, lm.z - baseZ, CHUNK);
+    detailles.push(lm.name);
+  }
+  const estMonument = cellulesMonument.size === 0
+    ? () => false
+    : (x, y, z) => cellulesMonument.has(x + z * CHUNK + y * CHUNK * CHUNK);
+
   // inutile de monter plus haut que le bloc le plus haut du chunk :
   // au-dessus, c'est de l'air, qui n'émet aucune face
   const topY = Math.min(world.visualTop ? world.visualTop(cx,cz) : world.chunkTop(cx, cz), HEIGHT - 1);
@@ -326,14 +350,17 @@ export function buildChunkTampons(world, cx, cz) {
           // Le sol HD : la face du dessus d'un sol de ville. La façade HD :
           // une face latérale d'un bloc de façade — elle va dans `plat`, et
           // son détail est émis plus bas, bloc par bloc.
-          const solHD = hd && face.slot === 0 ? SOL_HD.get(id) : undefined;
+          const monumentHd = hd && estMonument(x, y, z);
+          const solHD = hd && !monumentHd && face.slot === 0 ? SOL_HD.get(id) : undefined;
           // Le dessus d'un bloc de toit part dans `plat` : de près, la couche
           // le remplace par son champ de hauteurs (v289, `toitDessusHD`).
           const toitHd = hd && face.slot === 0 && TOIT_HD.has(id);
-          const facadeHd = hd && ((face.slot === 1 && FACADE_HD.has(id)) || ARBRE_HD.has(id) || toitHd);
+          // La face d'un bloc de monument part dans le LOIN : de près, le
+          // modèle d'auteur la remplace ; de loin, elle est le monument.
+          const facadeHd = monumentHd || (hd && ((face.slot === 1 && FACADE_HD.has(id)) || ARBRE_HD.has(id) || toitHd));
           const cle = (bloqueV || !uniforme)
             ? `@${u},${v}`
-            : `${id}|${yTop}|${ao ? ao[0] : '-'}|${allume ? 'A' : ''}`;
+            : `${id}|${yTop}|${ao ? ao[0] : '-'}|${allume ? 'A' : ''}|${monumentHd ? 'M' : ''}`;
           masque[u + v * nU] = { cle, id, yTop, ao, tile: BLOCK_INFO[id].tiles[face.slot], isWater, allume, x, y, z, solHD, facadeHd };
           vide = false;
         }
@@ -395,7 +422,7 @@ export function buildChunkTampons(world, cx, cz) {
         for (let z = 0; z < CHUNK; z++) {
           for (let x = 0; x < CHUNK; x++) {
             const id = data[x + z * CHUNK + y * CHUNK * CHUNK];
-            if (!FACADE_HD.has(id)) continue;
+            if (!FACADE_HD.has(id) || estMonument(x, y, z)) continue;
             const neighbor = localGet(x + face.dir[0], y, z + face.dir[2]);
             if (!shouldRenderFace(id, neighbor)) continue;
             facadeHD(facades, face, x, y, z, ox + x, y, oz + z, id, faceAO(localGet, face, x, y, z), localGet(x, y - 1, z), localGet(x, y + 1, z), localGet);
@@ -412,6 +439,7 @@ export function buildChunkTampons(world, cx, cz) {
     for (let y = 0; y <= topY; y++) {
       for (let z = 0; z < CHUNK; z++) {
         for (let x = 0; x < CHUNK; x++) {
+          if (estMonument(x, y, z)) continue;
           const id = data[x + z * CHUNK + y * CHUNK * CHUNK];
           if (id === ARCHI.PAVE) {
             if (localGet(x, y + 1, z) === BLOCK.AIR) marquageHD(sol, x, y, z, ox + x, oz + z);
@@ -491,5 +519,6 @@ export function buildChunkTampons(world, cx, cz) {
     plat: plat ? plat.toTampons() : null,
     platLumineux: platLumineux ? platLumineux.toTampons() : null,
     facadesDetaillees,
+    monumentsDetailles: detailles,
   };
 }

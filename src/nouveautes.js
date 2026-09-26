@@ -6,6 +6,17 @@
 
 export const NOUVEAUTES = [
   {
+    v: 292,
+    titre: 'Les monuments de Paris',
+    puces: [
+      'La tour Eiffel est un vrai treillis',
+      'On passe dessous, entre les piliers',
+      'Notre-Dame a sa rosace',
+      'Le dôme d\'or des Invalides',
+      'Huit monuments en vrai relief',
+    ],
+  },
+  {
     v: 291,
     titre: 'Le jeu ne s\'arrête plus',
     puces: [

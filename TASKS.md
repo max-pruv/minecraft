@@ -1,5 +1,59 @@
 # Ce qui est en cours
 
+- [ ] **LES SIX ROUGES DU PORTAIL DE LA v292 — DEUX ÉTAIENT DE MOI, DEUX SE
+  REJOUENT VERTS SEULS, DEUX SONT DES DETTES DÉJÀ MESURÉES.** Le `grep` dans ce
+  fichier a de nouveau fait le tri en dix secondes.
+
+  **Les deux miens, corrigés dans la livraison :**
+  - **Le témoin du registre du Marais choisissait un morceau de NOTRE-DAME.**
+    `parishd.js` cherche « un morceau du Marais qui porte des façades » ; le
+    modèle en relief de Notre-Dame ajoute plus de deux mille sommets de PIERRE
+    aux trois morceaux de l'île, et le témoin a retenu (−13, 13) au lieu de
+    (−13, 12). Il a rendu « enduit 0 · volets 0 » sur un registre parfaitement
+    en place — mesuré sur `origin/main`, le MÊME témoin rend 4 516 · 8 320. Il
+    écarte désormais tout morceau qui porte un monument. **Un témoin qui CHERCHE
+    son terrain doit écarter ce qui n'est pas son sujet.**
+  - **Le badge de version contre la tête du journal.** L'entrée v292 était
+    écrite et `CACHE_VERSION` valait encore v291 : le témoin de `maj.js` compare
+    les deux, et il a raison. Corrigé par le bump, rejoué : vert.
+
+  **Les deux qui se rejouent VERTS SEULS** — le fait le plus fort (v218, v219) :
+  `sauvegarde.js` (« Execution context was destroyed », la relance de page de la
+  v196) et `reglages.js` (la seconde tablette, ❌ à 20 s et 45 s). Les deux
+  suites sont vertes de bout en bout rejouées seules sur la branche.
+
+  **Les deux dettes déjà déclarées**, avec leur double mesure dans le tableau
+  ci-dessous : `manhattan.js:282` (💥 Timeout, 2/2 des deux côtés) et les deux de
+  `monte.js` — les voitures qui se traversent (86 · **46,5 %**, le TIRAGE de la
+  v277 qui va de 0 à 53) et le gel à l'arrivée dans une ville (3 850 ms ·
+  **42,5 %**, dans l'étendue 34,3–44,7 % relevée des deux côtés). Plus le fond de
+  carte de `maj.js`, rouge sur SIX portails d'affilée désormais.
+
+  **Et ce qui n'est PAS couvert, dit au lieu d'être glissé sous le tapis** : la
+  v292 ajoute **+12,6 ms par morceau de monument** (1,35×, mesuré en ordre
+  alterné), et le gel de `monte.js` se mesure en ARRIVANT dans Paris. Huit
+  morceaux sur plusieurs centaines ne devraient pas peser — et 42,5 % tombe dans
+  l'étendue déjà relevée sans qu'une ligne du jeu ait bougé — mais **ce lien-là
+  n'est pas mesuré**. Ce qu'il faudrait : le même témoin, avec les huit
+  monuments désarmés (`world.monumentsTouches` rempli), sur la même page, en
+  ordre alterné.
+
+- [ ] **`RAYON_HD` DÉCIDE DE CE QU'ON MONTRE, `world.hd` DE CE QU'ON FABRIQUE — et
+  les monuments en héritent.** Un appareil au palier haut fabrique le relief de
+  cinq cents morceaux et en montre cent soixante-neuf (dette de la v291). Les
+  huit monuments suivent la même règle : leur modèle est maillé dès que le
+  morceau est couvert par la couche, qu'on le voie ou non.
+
+- [ ] **LES CUBES QUI DÉPASSENT, MONUMENT PAR MONUMENT** (v292, mesurés par
+  `tests/sonde-monuments-hd.cjs`). Ce sont les cellules de voxel exposées que le
+  modèle ne couvre pas : elles restent en cubes, ce qui est le prix DÉCLARÉ du
+  choix « on ne masque que ce que le modèle dessine ». Zéro aux Invalides, au
+  Louvre et à l'Arc ; 4 au Panthéon, 9 à l'Opéra, 15 au Sacré-Cœur, **16 à la
+  tour Eiffel** (huit à hauteur d'enfant : des diagonales isolées du treillis) et
+  **34 à Notre-Dame** (vingt-quatre à hauteur d'enfant, tous au BORD du parvis —
+  la sonde les compte parce qu'elle ignore le terrain autour). Aucun n'est un mur
+  invisible : ils arrêtent ce qu'ils ont l'air d'arrêter.
+
 - [ ] **LES CINQ ROUGES DU PORTAIL DE LA v291 — DEUX ÉTAIENT DE MOI, TROIS SONT
   DES DETTES DÉJÀ MESURÉES.** Et c'est un `grep` de dix secondes dans ce fichier
   qui a fait le tri, exactement comme la règle de la v291 le demande (« avant

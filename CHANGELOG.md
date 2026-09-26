@@ -20,6 +20,62 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v292 — Les huit monuments de Paris, en relief et sans mur invisible
+
+**Pourquoi.** Max : « les monuments reconnaissables ne suffisent pas ». Un bloc
+de Paris fait quarante-deux mètres au sol : de près, la tour Eiffel est un
+échafaudage de cubes, l'Arc de Triomphe une caisse percée, et la coupole du
+Panthéon un escalier. La couche de relief de la v287 ne lisait que les façades
+ordinaires — les monuments, eux, étaient restés en voxel.
+
+**Ce que ça change.** Huit monuments ont désormais un modèle d'auteur que la
+couche HD dessine quand l'enfant s'en approche : la tour Eiffel et son treillis
+ajouré, l'Arc de Triomphe et ses deux passages voûtés, la pyramide du Louvre et
+sa résille de verre, Notre-Dame avec sa rosace et ses arcs-boutants, le
+Sacré-Cœur, le Panthéon et sa couronne de colonnes, les Invalides et leur dôme
+d'or, l'Opéra Garnier. De loin, on voit exactement la silhouette d'avant : le
+voxel reste le squelette, donc les collisions, les sauvegardes et le lointain ne
+changent pas d'un octet. **Et l'on passe enfin SOUS la tour Eiffel** : une
+ceinture de fer pleine au niveau de la rue en fermait le dessous.
+
+Un enfant qui pose un bloc dans l'emprise d'un monument le rend éditable en
+cubes, sur toute son emprise : ce qu'il construit passe toujours avant ce qu'on
+lui montre.
+
+**Ce qui le prouve.** Neuf témoins neufs dans `parishd.js`, et deux sondes qui
+mesurent ce qu'aucun d'eux ne peut raconter.
+
+- **Aucun mur invisible, et c'est une MESURE qui a imposé la règle.** Le premier
+  jet masquait tout ce que le bâtisseur du voxel écrit ; mesuré à la sonde, cela
+  laissait **325 cellules exposées sans rien devant elles aux Invalides, 128 à
+  Notre-Dame** — dont les soixante-dix-neuf du parvis. L'enfant se cogne à rien,
+  et une dalle disparaît sous ses pieds. On ne masque donc que ce que le modèle
+  COUVRE : zéro mur invisible sur les huit, mesuré, et le prix déclaré est
+  l'inverse — des cubes qui dépassent (Eiffel 64, Notre-Dame 58, zéro aux
+  Invalides et au Louvre), honnêtes, qui arrêtent ce qu'ils ont l'air d'arrêter.
+- **Les Invalides étaient à côté de leur voxel.** Le premier jet y posait la
+  coque générique au milieu du repère : 25 % du modèle tombait dans le vide, dont
+  7 097 points à hauteur d'enfant. Le voxel n'est pas centré — une longue façade
+  au nord, l'église du Dôme au sud — et le modèle suit désormais ses cotes :
+  0,0 %.
+- **Le coût est mesuré, en ordre alterné.** +12,7 ms par morceau de monument au
+  banc (1,36×), et zéro sur un morceau de Paris qui n'en porte pas. Le palier de
+  la v284 lit une MÉDIANE sur des centaines de morceaux : huit d'entre eux ne la
+  déplacent pas.
+- Et le reste : le modèle ne pose aucun bloc (identité à l'octet près), il est
+  découpé dans chacun des morceaux qu'il touche, le lointain garde son voxel, une
+  édition désarme l'emprise entière, et un journal installé d'un bloc — ce que le
+  worker de maillage fait à chaque resynchronisation — refait l'index.
+- **Et le portail a trouvé un témoin qui cherchait son terrain.** « Chaque
+  quartier a son registre » retenait un morceau de NOTRE-DAME pour juger le
+  Marais, parce que le modèle du monument y ajoute deux mille sommets de pierre.
+  Il écarte désormais tout morceau qui porte un monument.
+
+Portail complet : seize suites, six rouges, tous classés — deux corrigés ici,
+deux verts rejoués seuls (`sauvegarde.js`, `reglages.js`), deux dettes déjà
+mesurées des deux côtés (`manhattan.js:282`, les deux tirages de `monte.js`),
+plus le fond de carte de `maj.js`. Détail dans `TASKS.md`.
+
 ## v291 — Le jeu ne se donne plus un réglage que personne n'a jamais essayé
 
 **Pourquoi.** Capture d'iPhone de Max sur la production : « A problem repeatedly
