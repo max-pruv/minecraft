@@ -21,15 +21,30 @@ function verifier(nom, ok, detail = '') {
   if (!ok) echecs.push(nom + (detail ? ` — ${detail}` : ''));
 }
 
-const PARIS = { x: -240, z: 200 };
-const RAYON = 38;
+// L'ANNEAU SE DEMANDE, IL NE S'ÉCRIT PAS (v293). Ces deux constantes étaient
+// l'adresse de la caserne en BLOCS — `{ x: -240, z: 200 }`, le cœur de Paris —
+// et son rayon recopié. Le jour où le village a déménagé en banlieue, le témoin
+// a continué de creuser au même endroit et a rendu « 14 points dégagés sur
+// 180 » sur un tunnel parfaitement creusé, ailleurs. C'est « un témoin qui
+// porte une dimension de ville ne l'écrit pas, il la demande » (v203, v271,
+// v274, v279, v281), pour une ADRESSE.
+let PARIS = { x: -240, z: 200 };     // repli : l'ancienne adresse, si le module est trop ancien
+let RAYON = 38;
 
 (async () => {
   const banc = new Banc({ portJeu: 8391, portPairs: 9391 });
   await banc.ouvrir();
   try {
     const tab = await banc.jouerSeul('Camille');
-    // On amène l'enfant à Paris : sans cela le monde autour n'est jamais bâti
+    // L'adresse du village et le rayon de son anneau viennent des modules.
+    const ou = await tab.evaluate(async () => {
+      const [w, v] = await Promise.all([import('./src/world.js'), import('./src/ville.js')]);
+      return { x: w.VILLE && w.VILLE.x, z: w.VILLE && w.VILLE.z, r: v.ANNEAU && v.ANNEAU.rayon };
+    }).catch(() => null);
+    if (ou && Number.isFinite(ou.x) && Number.isFinite(ou.z)) PARIS = { x: ou.x, z: ou.z };
+    if (ou && Number.isFinite(ou.r)) RAYON = ou.r;
+    console.log(`   📍 l'anneau du village : (${PARIS.x}, ${PARIS.z}), rayon ${RAYON}`);
+    // On amène l'enfant sur place : sans cela le monde autour n'est jamais bâti
     // et l'on éprouverait des morceaux de terrain qui n'existent pas.
     await tab.evaluate((p) => {
       window.__game.player.pos.x = p.x;

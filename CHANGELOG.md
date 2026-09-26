@@ -20,6 +20,64 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v293 — Le cœur de Paris rendu à Paris
+
+**Pourquoi.** Max veut pouvoir marcher dans des rues crédibles, monter dans une
+voiture et rouler dans la ville sans couture. Mesuré pour la première fois d'un
+bout à l'autre : **deux des huit circuits de voitures de Paris ne roulaient sur
+la chaussée que sur 47 % et 65 % de leur longueur.** Le reste du temps, ils
+traversaient les murs d'un village.
+
+Ce village, c'est « Caserne & Commissariat » — une caserne de pompiers et un
+commissariat, bâtis par le bâtisseur générique d'avant Paris, posés au bloc près
+sur l'ancre de la capitale. Emprise : quatre-vingt-treize blocs de côté.
+`buildVille` y écrit 3 241 colonnes, dont **1 547 sur la chaussée du plan** et
+834 sur son trottoir : trois quarts de son emprise tombent sur la trame des
+avenues. Et le plan, lui, déclarait ces circuits à 100 % — c'est le piège des
+ormes du Mall (v205) et des feux de Paris (v274), à l'échelle d'un village : un
+repère se pose APRÈS les colonnes et pave la rue que `solParis` promettait.
+
+**Ce que ça change.** La caserne et le commissariat déménagent en proche
+banlieue, à huit kilomètres et demi à l'ouest et neuf au sud de Notre-Dame — on
+y va toujours par la carte, et on peut maintenant y aller EN VOITURE. Le cœur
+de Paris redevient Paris : les avenues se rejoignent, et deux circuits de plus
+roulent vraiment dans la rue.
+
+**Ce qui le prouve.**
+
+- **Un témoin neuf, et c'est son absence qui avait laissé passer la chose :**
+  « les circuits de Paris roulent sur la chaussée **DANS LE MONDE**, pas
+  seulement dans le plan ». Mesuré sur `origin/main` : pire circuit **47 %**,
+  quand le plan annonce 100 %. Ici : **88 %**, et 94,9 % sur l'ensemble des
+  huit. La barre est à 80 % — elle sépare les deux régimes avec de la marge des
+  deux côtés (65 → 80 → 88).
+- **L'emplacement se MESURE** (v223). Une sonde a balayé l'anneau autour de
+  Paris avec les cinq promesses des aérodromes : au sec (0 colonne d'eau sur
+  2 209), à douze blocs au moins de toute ville, de tout aérodrome et de toute
+  voie ferrée, à cent cinquante blocs de ce que les enfants ont bâti, et le plus
+  plat possible. Le site retenu a **sept blocs d'écart de relief, contre onze
+  sur son ancien site** au cœur de Paris : il y est mieux posé qu'avant.
+- **L'adresse est en kilomètres, pas en blocs** : la caserne suit Paris à la
+  prochaine remise à l'échelle, et c'était toute la raison d'être de l'ancienne
+  ligne. Le témoin qui exigeait « au centre de Paris » exige désormais « à son
+  écart de Paris ».
+- Et le relief ne bouge pas : `VILLE` n'entre pas dans `terrainHeight`, donc les
+  deux empreintes de `plafond.js` sont intactes et l'invariant 1 tient sans
+  qu'on ait rien à déclarer.
+
+Captures de la même caméra, à la même heure, des deux côtés : la cour de terre
+battue et la halle rouge ont disparu du premier arrondissement.
+
+Et le portail a trouvé un second témoin qui écrivait une adresse en blocs :
+`metro.js` sondait l'anneau du village à `{ x: −240, z: 200 }`, l'ancien cœur de
+Paris. Il demande maintenant l'adresse au module — tunnel 180 points sur 180,
+quais 12 sur 12.
+
+Portail complet (seize suites, depuis zéro) : cinq rouges, tous classés — un
+corrigé ici (`metro.js`), un vert rejoué seul (`reseau.js`), trois dettes déjà
+mesurées des deux côtés (`maj.js`, `manhattan.js`, les deux tirages de
+`monte.js`). Détail dans `TASKS.md`.
+
 ## v292 — Les huit monuments de Paris, en relief et sans mur invisible
 
 **Pourquoi.** Max : « les monuments reconnaissables ne suffisent pas ». Un bloc

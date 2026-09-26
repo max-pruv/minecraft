@@ -52,7 +52,7 @@ import {
   VOIES_LILLE,
 } from './lille.js';
 import {
-  PARIS, BUTTE, CITE, zCite, hauteurParis, solParis, lotParisLibre, batirColonneParis, versSeine,
+  PARIS, adresseParis, BUTTE, CITE, zCite, hauteurParis, solParis, lotParisLibre, batirColonneParis, versSeine,
   LIEUX, buildNotreDame, buildSacreCoeur, buildPantheon, buildInvalides, buildOpera,
   buildMontparnasse, buildColonneBastille, buildMoulinRouge,
   VOIES_PARIS,
@@ -634,10 +634,38 @@ export const ESPACE = { name: 'Base spatiale', x: 450, z: 420, r: 82 };
 // Les coordonnées de Paris sont recopiées ici parce que CITIES est déclaré
 // plus bas dans le fichier ; le test de cohérence les compare à chaque
 // démarrage, elles ne peuvent donc pas se mettre à diverger en silence.
-// La caserne et le commissariat sont AU CŒUR de Paris : ils suivent la ville,
-// ils ne vivent pas à une adresse à eux. Les laisser sur des coordonnées écrites
-// à la main, c'était les voir rester en rase campagne le jour où Paris bouge.
-export const VILLE = { name: 'Caserne & Commissariat', ...positionDe('paris'), r: 50 };
+// LA CASERNE ET LE COMMISSARIAT SORTENT DU CŒUR DE PARIS (v293).
+//
+// Ils y étaient posés au bloc près sur l'ancre de la ville — « ils suivent
+// Paris, ils ne vivent pas à une adresse à eux » — et cela réglait bien le
+// défaut de l'époque : les laisser sur des coordonnées écrites à la main, c'eût
+// été les voir rester en rase campagne le jour où Paris bouge. Ce que personne
+// n'avait mesuré, c'est ce que leur emprise de quatre-vingt-treize blocs pose
+// SUR le plan de la capitale.
+//
+// Mesuré : `buildVille` écrit 3 241 colonnes, dont **1 547 sur la chaussée** du
+// plan et 834 sur son trottoir — trois quarts de son emprise tombent sur la
+// trame des avenues. Conséquence, mesurée elle aussi, sur les huit circuits de
+// voitures de Paris : DEUX d'entre eux ne roulent sur la chaussée que sur 45 %
+// et 64 % de leur longueur, et le reste du temps ils traversent les murs de la
+// caserne. C'est le piège des ormes du Mall (v205) et des feux de Paris (v274)
+// à l'échelle d'un village entier : un repère se pose APRÈS les colonnes et
+// pave la rue que `solParis` promettait.
+//
+// Le village part donc en proche banlieue, à son écart réel de Notre-Dame — et
+// L'EMPLACEMENT SE MESURE, IL NE S'ÉCRIT PAS (v223). Une sonde a balayé
+// l'anneau autour de Paris en exigeant les cinq promesses des aérodromes : au
+// sec (0 colonne d'eau sur 2 209), à douze blocs au moins de toute ville, de
+// tout aérodrome et de toute voie ferrée, loin de ce que les enfants ont bâti
+// (cent cinquante blocs), et le plus plat possible — relief 32 à 39, sept
+// blocs d'écart, contre ONZE sur son ancien site au cœur de Paris. Il reste à
+// dix-huit blocs du Village gaulois, son plus proche voisin.
+//
+// L'adresse est en KILOMÈTRES (`adresseParis`), jamais en blocs : c'est ce qui
+// lui fait suivre Paris à la prochaine remise à l'échelle, et c'était toute la
+// raison d'être de l'ancienne ligne.
+export const VILLE = { name: 'Caserne & Commissariat', r: 50,
+  ...(() => { const [x, z] = adresseParis(-8.64, 9.25); return { x, z }; })() };
 export const CIRCUIT = { name: 'Circuit de F1', x: 400, z: 110, r: 88 };
 
 // Profondeur d'un cratère à la distance d de son centre. Bord relevé, fond

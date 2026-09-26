@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 293,
+    titre: 'Le cœur de Paris',
+    puces: [
+      'Les avenues du centre sont rendues',
+      'On roule sans traverser les murs',
+      'La caserne a déménagé en banlieue',
+      'On peut y aller en voiture',
+    ],
+  },
+  {
     v: 292,
     titre: 'Les monuments de Paris',
     puces: [
