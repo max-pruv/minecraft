@@ -26,7 +26,10 @@
   côtés) ; et les deux de `reglages.js` (« l'autre tablette ne le défait pas »,
   « elle s'aligne même dessus », serveur « fr » — la fragilité de charge que ce
   témoin documente lui-même, verte des deux côtés rejouée seule en v281 et
-  v292, rejouée seule des deux côtés à cette livraison aussi).
+  v292). **Double mesure de cette livraison** : rejouée SEULE, la suite est
+  VERTE sur la branche et ROUGE sur `origin/main` aux mêmes deux verdicts
+  (serveur « fr ») — le défaut est en production et la branche ne l'aggrave
+  pas. Et `realisme.js` rejouée seule après la correction du compte : verte.
 
 - [ ] **LE VIEIL IPAD, APRÈS LA v296 — CE QUI RESTE À VOIR SUR L'APPAREIL.** La
   cause mesurée au banc (1 171 Mo de tampons à rr 12 · hd 3) et la boucle du
