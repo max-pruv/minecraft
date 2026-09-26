@@ -1,5 +1,61 @@
 # Ce qui est en cours
 
+- [ ] **LES CINQ ROUGES DU PORTAIL DE LA v293 — UN ÉTAIT DE MOI, UN SE REJOUE
+  VERT SEUL, TROIS SONT DES DETTES DÉJÀ MESURÉES.**
+
+  **Le mien, corrigé dans la livraison :** `metro.js` écrivait l'adresse de
+  l'anneau du village EN BLOCS (`{ x: -240, z: 200 }`) et son rayon recopié. Le
+  village ayant déménagé, le témoin a continué de sonder l'ancien endroit et a
+  rendu « 14 points dégagés sur 180 » et « 0 point praticable sur 12 » sur un
+  tunnel parfaitement creusé, ailleurs. Il demande désormais l'adresse à
+  `world.js` et le rayon à `ville.js` ; rejoué : **180 points sur 180, 12 quais
+  sur 12**, toute la suite verte.
+
+  **Celui qui se rejoue vert seul :** `reseau.js` (« un départ propre nettoie
+  tout le monde », « un joueur endormi n'est pas éjecté ») — la suite entière est
+  verte rejouée seule sur la branche, ce qui est le fait le plus fort (v218,
+  v219).
+
+  **Les trois dettes déjà déclarées**, avec leur double mesure plus bas : le fond
+  de carte de `maj.js` (rouge sur SEPT portails d'affilée maintenant), le délai
+  de `manhattan.js:282` (💥, 2/2 des deux côtés) et les deux tirages de
+  `monte.js` — les voitures qui se traversent (122 · **50,6 %**, le tirage de la
+  v277 qui va de 0 à 53) et le gel à l'arrivée (**31,1 %**, en dessous de toute
+  l'étendue 34,3–44,7 % relevée jusqu'ici, et rouge quand même : la barre de ce
+  témoin est sous son propre plancher mesuré).
+
+- [ ] **LA LARGEUR DES RUES DE PARIS : UN DIXIÈME DU TRAJET EST UNE RUE À PEINE
+  PLUS LARGE QUE LA VOITURE** (mesuré en v293, à reprendre). Max : « revoir
+  l'échelle comprimée — les rues doivent accueillir les gens et les voitures
+  naturellement ». Relevé sous les huit circuits de Paris, 150 mesures
+  perpendiculaires de la largeur de chaussée : **minimum 0,5 bloc · 10ᵉ centile
+  2,5 · médiane 4,5 · 90ᵉ 10 · maximum 16.** Une voiture fait 2,26 blocs de
+  large : au 10ᵉ centile il reste **douze centièmes de bloc de marge par côté**,
+  et le minimum n'est pas une rue du tout.
+
+  Conséquence mesurée à la sonde (`tests/sonde-traversee-paris.cjs`), au volant
+  sur le MEILLEUR circuit (100 % de chaussée), douze secondes de temps de JEU :
+  **19,8 blocs parcourus, soit 1,65 bloc par seconde** pour une voiture dont la
+  classe permet onze à vingt-cinq — et **148 refus du crochet d'obstacle**, dont
+  60 de la circulation et 88 des trois autres familles (mobilier, piéton, eau).
+  La voiture avance en frottant.
+
+  La v271 a déjà fait cette passe pour les **villes engendrées** (chaussée 3,4 →
+  5,6, pas de trame 3,00 → 3,75) et `CLAUDE.md` déclare explicitement que
+  « les six villes bâties à la main gardent leurs largeurs relevées sur de vrais
+  plans : leur élargissement est une passe à part ». C'est cette passe-là. Elle
+  touche `solParis` — donc le SOL, pas le relief : les deux empreintes de
+  `plafond.js` ne bougent pas. Ce qu'il faudra mesurer avant/après : la largeur
+  de chaussée (les cinq quantiles ci-dessus), la tenue de rue des huit circuits
+  dans le MONDE, la part d'îlot qui reste, et les blocs par seconde au volant.
+
+- [ ] **ET LE MOBILIER DE RUE EST AU BORD DE LA CHAUSSÉE.** Les 88 refus « hors
+  circulation » ci-dessus ne sont pas séparés plus finement : il faudrait
+  distinguer le mobilier, le piéton et l'eau (le crochet de `main.js` les juge
+  chez elles, mais ne dit pas laquelle a parlé). La sonde sait déjà envelopper
+  `player.obstacleVehicule` ; il reste à redemander les trois familles une par
+  une, comme elle le fait déjà pour la circulation.
+
 - [ ] **LES SIX ROUGES DU PORTAIL DE LA v292 — DEUX ÉTAIENT DE MOI, DEUX SE
   REJOUENT VERTS SEULS, DEUX SONT DES DETTES DÉJÀ MESURÉES.** Le `grep` dans ce
   fichier a de nouveau fait le tri en dix secondes.

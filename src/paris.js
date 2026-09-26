@@ -21,9 +21,12 @@
 //
 // Restait le tissu. Un plan juste posé sur une prairie n'est pas une ville :
 // entre les percées, Paris n'avait littéralement aucun immeuble ordinaire — la
-// trame générique en pose un par lot de douze blocs, mais elle écarte tout lot
-// voisin d'un repère, et le repère « Caserne & Commissariat » couvre Paris
-// entière. Le pâté haussmannien n'a donc jamais été bâti une seule fois.
+// trame générique en pose un par lot de douze blocs, mais elle écartait tout
+// lot voisin d'un repère, et le repère « Caserne & Commissariat » couvrait
+// Paris entière. Le pâté haussmannien n'a donc jamais été bâti une seule fois.
+// (Ce repère-là a quitté le cœur de la ville en v293 : son emprise de
+// quatre-vingt-treize blocs pavait 1 547 colonnes de chaussée, et deux des huit
+// circuits de voitures traversaient ses murs. Voir `VILLE`, world.js.)
 // Paris se construit maintenant colonne par colonne, comme les quatre autres
 // villes, avec ses îlots, ses cours et sa ligne de corniche.
 

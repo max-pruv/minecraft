@@ -180,13 +180,22 @@ const VRAIES_KM = [
         sf: [sf.SF.x, sf.SF.z], ny: [mh.NY.x, mh.NY.z],
         paris: [paris.PARIS.x, paris.PARIS.z],
         washington: [dc.WASHINGTON.x, dc.WASHINGTON.z],
-        // La caserne vit au cœur de Paris : elle doit l'avoir suivi.
+        // LA CASERNE A QUITTÉ LE CŒUR DE PARIS (v293) : son emprise de
+        // quatre-vingt-treize blocs pavait 1 547 colonnes de chaussée. Elle
+        // reste liée à la ville — son adresse est en KILOMÈTRES depuis
+        // Notre-Dame — donc elle la SUIT toujours, à son écart près. C'est ce
+        // que le témoin garde : pas « au centre », mais « à son écart ».
         caserne: [w.VILLE.x, w.VILLE.z],
+        caserneAttendue: paris.adresseParis(-8.64, 9.25),
       };
     });
     const perdus = [];
+    if (suivi.caserne[0] !== suivi.caserneAttendue[0] || suivi.caserne[1] !== suivi.caserneAttendue[1]) {
+      perdus.push(`caserne en (${suivi.caserne}) au lieu de (${suivi.caserneAttendue})`);
+    }
+    delete suivi.caserne; delete suivi.caserneAttendue;
     for (const [cle, xy] of Object.entries(suivi)) {
-      const attendu = pos[cle === 'caserne' ? 'paris' : cle];
+      const attendu = pos[cle];
       if (!attendu) continue;
       if (xy[0] !== attendu.x || xy[1] !== attendu.z) {
         perdus.push(`${cle} en (${xy}) au lieu de (${attendu.x},${attendu.z})`);
@@ -2198,6 +2207,36 @@ const VRAIES_KM = [
     verifier('aucune voiture ne traverse un monument de Paris',
       !monuments.absent && monuments.circuits === 8 && monuments.dur === 0,
       JSON.stringify(monuments));
+
+    // ET LES CIRCUITS ROULENT SUR LA CHAUSSÉE **DANS LE MONDE**, PAS DANS LE
+    // PLAN (v293). Le témoin d'au-dessus ne regarde que les monuments DÉCLARÉS
+    // par `paris.js` ; `circuitSurRue`, lui, mesure `solParis`, c'est-à-dire ce
+    // que la ville PROMET. Or un repère se pose APRÈS les colonnes et pave la
+    // rue promise — c'est le piège des ormes du Mall (v205) et des feux de
+    // Paris (v274). Mesuré avant la v293 : la caserne posée au cœur de Paris
+    // écrivait 1 547 de ses colonnes sur la chaussée du plan, et DEUX des huit
+    // circuits n'y roulaient plus que sur **45 % et 64 %** de leur longueur —
+    // le plan, lui, les déclarait à 100 %. La barre est à 80 % : elle sépare
+    // les deux régimes avec de la marge des deux côtés (64 → 80 → 88).
+    const parisRoule = await tab.evaluate(async () => {
+      const g = window.__game;
+      const [pa, wo] = await Promise.all([import('./src/paris.js'), import('./src/world.js')]);
+      if (typeof pa.circuitsParis !== 'function' || !wo.CHAUSSEE) return { absent: true };
+      const cs = pa.circuitsParis((x, z) => g.world.coteRoulable(x, z));
+      return { liste: cs.map((c) => {
+        let bons = 0;
+        for (const p of c.pts) {
+          const x = Math.round(p.x), z = Math.round(p.z);
+          if (wo.CHAUSSEE.has(g.world.getBlock(x, g.world.sommetColonne(x, z), z))) bons++;
+        }
+        return { part: Math.round(100 * bons / c.pts.length), plan: Math.round(c.part) };
+      }) };
+    });
+    const pireParis = parisRoule.absent ? 0 : Math.min(...parisRoule.liste.map((c) => c.part));
+    verifier('les circuits de Paris roulent sur la chaussée DANS LE MONDE, pas seulement dans le plan',
+      !parisRoule.absent && parisRoule.liste.length === 8 && pireParis >= 80,
+      parisRoule.absent ? 'module absent'
+        : `pire ${pireParis} % — ${parisRoule.liste.map((c) => `${c.part}% (plan ${c.plan}%)`).join(' · ')}`);
 
     // ET LILLE, LE JOUR MÊME OÙ ELLE GAGNE DES CIRCUITS (v223) — pas quatre
     // versions plus tard comme Paris.

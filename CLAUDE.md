@@ -750,6 +750,51 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Un circuit se mesure sur le MONDE, pas sur le plan (v293)
+
+Max veut rouler dans Paris sans couture. Mesuré pour la première fois d'un bout
+à l'autre : **deux des huit circuits de voitures ne roulaient sur la chaussée
+que sur 47 % et 65 % de leur longueur** — le reste du temps ils traversaient les
+murs de la caserne posée au cœur de la ville. Cinq règles.
+
+- **`circuitSurRue` MESURE LE PLAN, ET LE PLAN N'EST PAS LE MONDE.** Il lit
+  `solParis`, c'est-à-dire ce que la ville PROMET ; les repères, eux, se posent
+  APRÈS les colonnes et pavent la rue promise. C'est le piège des ormes du Mall
+  (v205) et des feux de Paris (v274), à l'échelle d'un village de
+  quatre-vingt-treize blocs — et il a tenu des dizaines de versions parce
+  qu'**aucun témoin ne lisait le monde**. Celui de `carteMonde.js` (« aucune
+  voiture ne traverse un monument de Paris ») ne regarde que les monuments
+  DÉCLARÉS par `paris.js` : la caserne n'en est pas un. Le témoin neuf lit
+  `world.getBlock` sur chaque point de chaque circuit, et il est rouge sur
+  `origin/main` (47 %) comme il est vert ici (88 %).
+- **UN REPÈRE GÉNÉRIQUE N'A RIEN À FAIRE AU MILIEU D'UNE VILLE BÂTIE À LA MAIN.**
+  `buildVille` écrit 3 241 colonnes ; 1 547 tombent sur la chaussée du plan et
+  834 sur son trottoir. Trois quarts de son emprise sont sur la trame des
+  avenues — ce n'est pas un bâtiment qui croise une rue, c'est un village posé
+  sur une capitale. Laisser la rue gagner (le `continue` de la v213) aurait
+  retiré 73 % de ses colonnes : on déplace le village, on ne le déchire pas.
+- **ET LE DÉMÉNAGEMENT SE MESURE, IL NE S'ÉCRIT PAS** (v223). Les cinq
+  promesses des aérodromes, telles quelles : au sec, à douze blocs de toute
+  ville, de tout aérodrome et de toute voie ferrée, loin de ce que les enfants
+  ont bâti, le plus plat possible. Le site retenu a **sept blocs d'écart de
+  relief contre onze sur son ancien site** : la caserne est mieux posée en
+  banlieue qu'elle ne l'était au cœur de Paris.
+- **UNE ADRESSE DE VILLE S'ÉCRIT EN KILOMÈTRES.** `adresseParis(-8,64 ; 9,25)`,
+  jamais un décalage en blocs : c'est ce qui la fait SUIVRE Paris à la prochaine
+  remise à l'échelle, et c'était toute la raison d'être de la ligne d'avant
+  (« ils suivent la ville, ils ne vivent pas à une adresse à eux »). Le témoin
+  qui exigeait « au centre de Paris » exige maintenant « à son écart de Paris » :
+  **on repointe un témoin, on ne le supprime pas** (v285).
+- **ET MA SONDE A CHOISI LE PIRE TRAJET DE LA VILLE ET L'A APPELÉ « LA
+  TRAVERSÉE ».** Elle prenait le circuit le plus LONG ; mesuré, celui-là est à
+  47 % de chaussée quand deux de ses voisins sont à 100 %. Elle a aussi marché
+  TOUT DROIT sur une avenue qui tourne — vingt et un relevés « ailleurs » sur
+  vingt-quatre, dans les jardins. Et elle a d'abord cherché un alignement de
+  chaussée le long des axes du MONDE, alors que les avenues de Paris sont
+  obliques : zéro couloir trouvé. Trois fois de suite, c'est « un témoin qui
+  écrit son terrain se trompe de terrain » (v285), du côté d'une sonde. On
+  publie donc la TABLE des huit et l'on roule sur celui qu'on a mesuré.
+
 ## Les monuments de Paris sont des modèles, le voxel reste le squelette (v292)
 
 Quatrième livraison du programme. Sept règles, et cinq viennent d'une mesure qui
