@@ -1420,6 +1420,11 @@ function updateChunks() {
       for (let b = -demiLarg; b <= demiLarg + 1e-6; b += demiLarg) {
         const bx = Math.floor(x + ux * a + vx * b), bz = Math.floor(z + uz * a + vz * b);
         if (world.isSolid(bx, y0 - 1, bz) || world.isSolid(bx, y0, bz)) continue;  // un plancher : on roule
+        // LE TABLIER D'UN PONT EST UN PLANCHER QUI N'EST PAS UN BLOC (v299) :
+        // un ruban du mailleur, une cote dans `routes.js`. Sans cette ligne la
+        // voiture voyait l'eau sous le pont et refusait d'y entrer — mesuré,
+        // 60 images bloquées sur 78 à l'entrée du premier pont de l'A1.
+        if (world.tablierEn) { const tab = world.tablierEn(bx + 0.5, bz + 0.5); if (tab !== null && Math.abs(tab - player.pos.y) < 1.5) continue; }
         const sol = world.sommetColonne(bx, bz);
         if (world.getBlock(bx, sol + 1, bz) === BLOCK.WATER) return true;
       }

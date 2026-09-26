@@ -261,6 +261,8 @@ export function largeurA(seg, s) {
 //   cote  : la cote CONTINUE de la surface ici (talus : raccordé au terrain)
 //   ouvrage : vrai sous un pont — le sol reste le sol, le tablier est un ruban
 //   pile  : vrai sur une colonne de pile
+const q64 = (v) => Math.round(v * 64) / 64;
+
 export function routeEn(x, z) {
   let best = null;
   for (const seg of pres(x, z)) {
@@ -282,7 +284,13 @@ export function routeEn(x, z) {
   // distance au point borné : dans le tronçon elle vaut |d|, au-delà elle
   // compte le dépassement, et un point hors du ruban est refusé.
   const ad = pr.dist;
-  const cote = coteA(seg, pr.s);
+  // UNE COTE SE RANGE EN SIMPLE PRÉCISION DANS LA GRILLE DU MAILLEUR
+  // (`Float32Array`, solcontinu.js) : 34,999999 y devient 35 tout rond, le
+  // générateur posait l'herbe à 33 et le mailleur cherchait une tuile à 34,
+  // dans l'air — une erreur par morceau de talus, et le contact (double
+  // précision) ne lisait plus la triangulation du maillage. Toute cote de
+  // route est donc un soixante-quatrième de bloc, exact dans les deux.
+  const cote = q64(coteA(seg, pr.s));
   const ouvrage = ouvrageA(seg, pr.s);
   if (ouvrage) {
     if (ad > L.demiEmprise) return null;
@@ -303,7 +311,7 @@ export function routeEn(x, z) {
   const w = Math.min(Math.abs(ecart), DEBLAI_MAX) / TALUS_PENTE;
   const u = ad - L.demiEmprise;
   if (u >= w) return null;
-  return { seg, s: pr.s, d: pr.d, cote: terr + ecart * (1 - u / w), piece: 'talus', ouvrage: false };
+  return { seg, s: pr.s, d: pr.d, cote: q64(terr + ecart * (1 - u / w)), piece: 'talus', ouvrage: false };
 }
 
 // Pour la carte : la route sous ce pixel ?

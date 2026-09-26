@@ -1185,7 +1185,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       !a1.echec && a1.blocs >= 72 && a1.marches === 0 && a1.chutes === 0 && a1.bloque < a1.images / 10 && a1.ecartMax < 0.6,
       JSON.stringify(a1));
     const pont = await tab.evaluate(async () => {
-      const R = await import('./src/routes.js');
+      let R; try { R = await import('./src/routes.js'); } catch { return { echec: 'pas de routes.js' }; }
       const seg = R.segmentsDeRoute()[0], p = R.profilDe(seg);
       return p.spans.length ? { s0: Math.round(p.spans[0].s0), s1: Math.round(p.spans[0].s1) } : null;
     });
@@ -1196,7 +1196,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     // et dessous : posé sur le sol sous le tablier, on y reste — deux parcours
     const dessous = await tab.evaluate(async ({ pont }) => {
       const g = window.__game, p = g.player;
-      const R = await import('./src/routes.js');
+      let R; try { R = await import('./src/routes.js'); } catch { return { echec: 'pas de routes.js' }; }
       const seg = R.segmentsDeRoute()[0];
       if (!pont) return { echec: 'aucun pont' };
       // descendre de la voiture
