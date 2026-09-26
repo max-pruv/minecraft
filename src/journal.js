@@ -56,22 +56,30 @@ export const CADENCE_RELEVE_MS = 5000;
 // `drapeau` : le drapeau « session ouverte » était-il encore là ?
 // `journalBrut` : le journal qu'elle avait écrit, tel quel (chaîne ou null).
 // `plantages` : le compteur de plantages consécutifs avant cette lecture.
-// Rend le rapport à envoyer (ou null) et le nouveau compteur.
+// Rend le rapport à envoyer (ou null), le nouveau compteur, et `etendue` :
+// l'étendue choisie sous laquelle la session morte jouait (fiche.reglage,
+// v299), pour que la sûreté sache à quel choix elle s'oppose.
 export function bilanPrecedent({ drapeau, journalBrut, plantages = 0 }) {
-  if (!drapeau) return { rapport: null, plantages: plantages || 0 };
+  if (!drapeau) return { rapport: null, plantages: plantages || 0, etendue: null };
   let journal = null;
   try { journal = journalBrut ? JSON.parse(journalBrut) : null; } catch { journal = null; }
   const rapport = journal && typeof journal === 'object'
     ? { ...journal, fin: 'plantage' }
     : { fin: 'plantage', sansJournal: true };
-  return { rapport, plantages: (plantages || 0) + 1 };
+  const reglage = journal && journal.fiche && journal.fiche.reglage;
+  const etendue = reglage && typeof reglage.etendue === 'string' ? reglage.etendue : null;
+  return { rapport, plantages: (plantages || 0) + 1, etendue };
 }
 
 // Le disjoncteur : au-delà de `PLANTAGES_SURETE`, un verdict `bas` marqué
 // `surete`, dans la forme que `palierRetenu` lit (palier.js).
-export function suretePalier(plantages) {
+// `sousChoix` (v299) : l'étendue CHOISIE sous laquelle ça a planté, si ce n'est
+// pas `auto` — le verdict passe alors devant ce choix-là (`palierRetenu`).
+export function suretePalier(plantages, sousChoix = null) {
   if (!(plantages >= PLANTAGES_SURETE)) return null;
-  return { palier: 'bas', raison: `${plantages} plantages de suite`, surete: true, le: Date.now() };
+  const v = { palier: 'bas', raison: `${plantages} plantages de suite`, surete: true, le: Date.now() };
+  if (sousChoix && sousChoix !== 'auto') v.sousChoix = sousChoix;
+  return v;
 }
 
 // Un document borné : on retire le plus ancien jusqu'à tenir dans MAX_OCTETS.
@@ -122,6 +130,16 @@ export class Journal {
   }
 
   plantages() { return Number(this.lire(PLANTAGES_CLE)) || 0; }
+
+  // CE QUE LE JEU A RÉGLÉ SE NOTE DANS LA FICHE (v299) : la distance
+  // d'affichage, la file, la portée HD, son budget, le palier et d'où il
+  // vient, l'étendue choisie. Le journal de l'iPhone de Max disait 1 089
+  // morceaux et 55 morceaux HD, et il a fallu le DÉDUIRE : rr 16, donc
+  // « Loin ». Une panne de réglage se lit dans le réglage, pas dans ses effets.
+  regler(reglage) {
+    this.doc.fiche.reglage = reglage;
+    this.persister(true);
+  }
 
   noter(type, detail = null) {
     const e = { t: this.secondes(), type };

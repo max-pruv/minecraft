@@ -246,6 +246,23 @@ async function panneau(p) {
         s1 === null && !!(s2 && s2.palier === 'bas' && s2.surete) && !!(r2 && r2.nom === 'bas' && r2.source === 'sûreté')
           && !!(rc && rc.nom === 'moyen' && rc.source === 'choix') && !!(rm && rm.source === 'mesure'),
         JSON.stringify({ s1, s2, r2, rc, rm }));
+      // ET LA SÛRETÉ PASSE DEVANT L'ÉTENDUE SOUS LAQUELLE ÇA A PLANTÉ (v299) :
+      // l'iPhone de Max est mort deux fois de suite sous « Loin », et un choix
+      // qui passait devant tout était devenu la boucle sans issue. Le journal de
+      // la session morte dit sous quelle étendue elle jouait (fiche.reglage) ;
+      // le verdict la porte, et ne s'oppose qu'à elle : « Normal » passe.
+      const bh = J.bilanPrecedent({ drapeau: '1', journalBrut: JSON.stringify({ fiche: { reglage: { rr: 16, hd: 6, etendue: 'haut' } }, releves: [], evenements: [] }), plantages: 1 });
+      const sh = J.suretePalier(bh.plantages, bh.etendue);
+      const rh = PAL.palierRetenu({ choix: 'haut', mesure: sh });
+      const rn = PAL.palierRetenu({ choix: 'moyen', mesure: sh });
+      const ra = PAL.palierRetenu({ choix: 'auto', mesure: sh });
+      const sa = J.suretePalier(2, 'auto');
+      verifier('deux plantages sous « Loin » : la sûreté passe devant « Loin », et devant lui seul',
+        bh.etendue === 'haut' && bh.plantages === 2 && !!(sh && sh.sousChoix === 'haut')
+          && !!(rh && rh.nom === 'bas' && rh.source === 'sûreté' && rh.sousChoix === 'haut')
+          && !!(rn && rn.nom === 'moyen' && rn.source === 'choix') && !!(ra && ra.source === 'sûreté')
+          && !!(sa && !('sousChoix' in sa)),
+        JSON.stringify({ etendue: bh.etendue, sh, rh: rh && { nom: rh.nom, source: rh.source, sousChoix: rh.sousChoix }, rn: rn && rn.source, ra: ra && ra.source, sa }));
       const gros = { fiche: {}, evenements: Array.from({ length: 500 }, (_, i) => ({ t: i, type: 'x', d: 'y'.repeat(100) })),
         releves: Array.from({ length: 200 }, (_, i) => ({ t: i, ips: 30, pire: 40 })) };
       const borne = J.borner(gros);

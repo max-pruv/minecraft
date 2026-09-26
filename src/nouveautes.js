@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 299,
+    titre: 'Paris ne fait plus planter',
+    puces: [
+      'Le relief des façades a un budget',
+      'Le jeu ne meurt plus en vol',
+      'Deux plantages en Loin : mode léger',
+      'Le journal note ton réglage',
+    ],
+  },
+  {
     v: 298,
     titre: 'Le ciel de Paris nettoyé',
     puces: [

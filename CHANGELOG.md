@@ -20,6 +20,47 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v299 — Le détail de Paris a un budget, et l'iPhone ne meurt plus en vol
+
+**Pourquoi.** Max : « le jeu continue à planter sur la version 298, il crache
+au bout de quelques secondes dès qu'on se déplace. » Le journal de bord de son
+iPhone (v296) a dit où et comment : en vol à l'ouest de Paris, 1 089 morceaux
+chargés — l'étendue « Loin » —, 55 morceaux de façades détaillées, zéro erreur
+JavaScript. iOS a tué la page pour sa mémoire. Rejoué au banc sur le site :
+avec la couche HD, les tampons de la scène TRIPLENT en vingt secondes de vol
+(406 → 872 Mo) pendant que le nombre de morceaux baisse ; sans HD, rien ne
+bouge. Ce ne sont pas des orphelins (zéro maillage retiré de la table et
+resté en scène) : ce sont les façades détaillées elles-mêmes. Un morceau des
+quartiers denses de l'ouest de Paris en porte 146 000 à 156 000 sommets, ONZE
+mégaoctets, contre 1,6 Mo au centre, là où la v296 avait mesuré 2,93 et réglé
+« on fabrique ce qu'on montre ». Un rayon de six morceaux en fait cent
+soixante-neuf : plus d'un gigaoctet. Un rayon ne borne pas des octets.
+
+**Ce que ça change.** Le détail des façades se dépense comme un budget
+(128 Mo par palier, zéro au palier bas), du plus proche au plus loin : ce qui
+dépasse montre sa tuile plate, comme au-delà du rayon, et un morceau lointain
+cède sa place à un plus proche quand l'enfant avance. Au centre de Paris, où
+la portée 3 tenait déjà dans le budget, rien ne change. Le journal de bord
+note désormais le RÉGLAGE de l'appareil (distance, file, portée HD, budget,
+palier, étendue) — il a fallu déduire « Loin » de 1 089 morceaux. Et deux
+plantages de suite SOUS une étendue choisie passent devant cette étendue-là,
+et devant elle seule : le disjoncteur de la v296 ne pouvait rien contre un
+choix, et un enfant de sept ans n'ouvre pas les Réglages. Choisir une autre
+étendue rouvre la porte, et le jeu dit pourquoi (bandeau, aide des Réglages,
+`?diag=1`, qui affiche aussi ce que pèsent les façades tenues).
+
+**Ce qui le prouve.** Quatre témoins neufs, tous rouges sur l'ancien code. Le
+budget, règle pure (`planDetail`, palier.js) sous node ; à l'écran, posé à
+l'ouest de Paris à rr 6 · hd 2, les façades tiennent dans le budget et le
+morceau sous l'enfant a le sien (l'ancien code en fabrique 250 Mo) ; la
+sûreté sous choix (parent.js) ; et le compte tenu par le jeu est celui de la
+scène. Mesuré en vol sur le site du plantage, rr 16 · hd 6 : façades 231 →
+727 → 763 Mo avant, **124 → 97 → 127 Mo** après ; scène entière 406 → 878 Mo
+avant, 300 → 240 après. Le portail complet (seize suites) est vert, moins les
+dettes déclarées avec leur double mesure dans `TASKS.md`.
+
+---
+
 ## v298 — Le ciel de Paris est nettoyé
 
 **Pourquoi.** Max, trois captures d'iPhone au-dessus de Paris, « Bizarre »,
