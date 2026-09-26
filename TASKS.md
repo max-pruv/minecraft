@@ -137,7 +137,14 @@
   parapet solide : une voiture qui sort de la voie tombe (mesuré : elle reste
   sur le tablier à vitesse de croisière, témoin `plafond.js`). (5) Les
   passants et les bêtes ne traversent pas l'autoroute : rien ne les en
-  empêche non plus.
+  empêche non plus. (6) Au franchissement du premier pont, le témoin
+  de `plafond.js` compte 3 « marches » (dénivelée > avance) aux culées, pour
+  un écart max d'un bloc au profil — il passe (0 image bloquée, 0 chute),
+  mais une voiture y tressaute : à mesurer image par image et à lisser
+  (la berge creusée d'un bloc sous le tablier, ou le raccord chaussée /
+  ruban). (7) Deux coudes de 15° et 29° sur l'axe : `projeter` joint deux
+  droites, l'extérieur du virage est un angle vif ; un arc de raccordement
+  est la suite naturelle, à mesurer en capture d'abord.
 - [ ] **L'IPHONE DE MAX (iOS 18.7) MEURT ENCORE À PARIS EN v296 — mesuré dans
   le journal de bord, pas supposé.** Deux sessions de suite finies en
   `plantage` le 26 septembre (15:44:17 UTC après un relevé, 15:45:13 après

@@ -883,8 +883,8 @@ porte nord de Paris à l'entrée sud de Lille. Sept règles, et la première a
   bouge pas, les deux empreintes de `plafond.js` sont intactes, l'invariant 1
   tient sans rien déclarer. Le profil est un filtre en cône (`PENTE` 0,06),
   les deux bouts épinglés au sol des portes par une rampe linéaire, et là où
-  le remblai dépasserait `VIADUC` (4) c'est un pont — deux sur l'A1, 726–737
-  et 815–822 — dont le tablier est un RUBAN du mailleur, pas un bloc.
+  le remblai dépasserait `VIADUC` (4) c'est un pont — un sur l'A1, 530–542 —
+  dont le tablier est un RUBAN du mailleur, pas un bloc.
 - **UN EMPLACEMENT SE MESURE (v223), UN TRACÉ AUSSI — ET MON PREMIER CHIFFRE
   ÉTAIT FAUX.** J'avais écrit « la maison témoin à 54 blocs » ; le témoin de
   `carteMonde.js` a rendu 32. L'axe direct Paris–Lille passe DANS la marge de
@@ -892,8 +892,9 @@ porte nord de Paris à l'entrée sud de Lille. Sept règles, et la première a
   (−100, −100) est de l'autre côté : entre les deux, huit blocs de couloir.
   Cherché sous node (`cherche-via3.mjs`, un et deux points de passage, coude
   ≤ 30°) : aucun tracé ne tient à la fois quarante blocs de la maison et la
-  marge de Roissy. Le point retenu tient 37 et 2,7, avec un coude de 5° et un
-  demi-bloc de détour ; **et la barre du témoin se calcule au lieu de se
+  marge de Roissy. Le point retenu tenait 37 et 2,7, avec un coude de 5° —
+  et il traversait le Pôle Nord, voir plus bas ; le tracé livré tient 35 et
+  9, à deux coudes ; **et la barre du témoin se calcule au lieu de se
   recopier de la règle des aérodromes** : l'emprise fait 8,5 de demi-largeur
   et le talus 12,9 au plus (déblai 9 sur une pente de 0,7), soit 21,4 depuis
   l'axe, plus huit blocs — trente. Une route n'aplanit rien, elle écrit des
@@ -956,6 +957,58 @@ sinon le sol : sur le pont on y reste, dessous on y reste — jamais la plus
 haute d'office, qui téléporterait sous un pont (cahier de Max, « contrat
 physique »). Deux témoins de `plafond.js` roulent le premier pont dessus, et
 passent dessous.
+
+**ET LES CAPTURES ONT TROUVÉ TROIS CHOSES QUI FLOTTAIENT AU-DESSUS DE LA
+ROUTE, QU'AUCUN TÉMOIN NE GARDAIT.** Une dalle de terre au-dessus de la
+chaussée, sur la vue du pont et sur celle de la porte de Paris. Cinq règles.
+
+- **UNE SONDE QUI REND ZÉRO SE VÉRIFIE AVANT D'ÊTRE CRUE.** Ma première sonde
+  comptait les blocs pleins au-dessus des colonnes de route et rendait ZÉRO
+  sur 5 177 colonnes — elle lisait `HEIGHT` de `blocs.js`, qui ne l'exporte
+  pas, et sa boucle `y < undefined` ne tournait jamais. J'ai alors accusé le
+  paysage lointain, corrigé, repris les captures : la dalle était toujours là,
+  au pixel près. C'est « une sonde qui interroge la mauvaise liste ne peut rien
+  voir » (v273) par la variable d'arrêt, et le signe était sous les yeux : un
+  zéro tout rond sur une grandeur qu'une capture montre. Avant de conclure
+  d'après un zéro, on fait rendre à la sonde une colonne qu'elle a lue.
+- **LE DÉBLAI DÉGAGE JUSQU'AU RELIEF, PAS SIX BLOCS.** Le générateur ne
+  dégageait que six blocs au-dessus de la chaussée — le gabarit — et le déblai
+  va jusqu'à sept : la couche d'herbe du relief restait en l'air, une dalle
+  d'un bloc d'épaisseur au-dessus de la route (122 colonnes). Un gabarit est un
+  MINIMUM ; ce qu'on creuse, c'est jusqu'au relief. Deux cousines dans la même
+  passe : la nappe d'un lac restait à sa cote au-dessus d'un talus creusé sous
+  elle (131 colonnes — un talus sous un lac est SOUS l'eau), et la rampe
+  d'épinglage des bouts pouvait abaisser une chaussée en déblai à la cote de
+  l'eau (huit colonnes à l'approche du pont) — le profil ne passe jamais sous
+  `NIVEAU_EAU + 1`, même après l'épinglage.
+- **UN TRACÉ SE CHERCHE CONTRE TOUS LES OBSTACLES, LES REPÈRES COMPRIS.** Le
+  chalet sur la chaussée à s ≈ 750 n'était ni la voie ferrée ni la gare de
+  Lille (`voieEn` et `gareEn` y rendent null, mesuré) : c'était le PÔLE NORD
+  (40, −690), un repère de `LANDMARKS` posé APRÈS les colonnes, dont la
+  banquise de soixante blocs touche presque le disque de Lille. Ma sonde de
+  via ne connaissait que les sanctuaires, les villes et les aérodromes. Elle
+  connaît désormais les 283 repères (boîte + 7, la banquise en disque), la voie
+  ferrée (aucun croisement) et la largeur du couloir ; aucun via UNIQUE ne
+  tient — la porte de Lille doit passer à l'ouest de la banquise, ce qu'un seul
+  coude ≤ 30° ne fait pas — et 94 tracés à deux vias tiennent. Celui livré
+  maximise la plus petite marge (5 blocs) avec un seul pont.
+- **LA CULÉE SE CREUSE.** Le pont est décidé sur l'AXE (l'eau sous lui) ;
+  trois blocs de côté, la berge montait à 33 pour un tablier à 31, et la
+  voiture butait dessus (60 images bloquée, `plafond.js`). Une berge qui
+  dépasse se dégage d'un bloc sous le tablier jusqu'au relief ; l'eau et le lit
+  restent. Une décision prise sur l'axe se vérifie sur toute la largeur.
+- **ET LE PAYSAGE LOINTAIN LIT LA ROUTE.** `horizon.js` lisait `terrainHeight`
+  au-dessus du déblai et refermait la tranchée tant que le morceau n'était pas
+  maillé — ce n'était PAS la dalle des captures, mais c'est vrai quand même,
+  mesuré : 42 colonnes sur 1 298 à la cote de la route sans `coteHorizon`,
+  1 572 sur 1 572 avec. Un remède écrit pour la mauvaise cause reste s'il a été
+  mesuré juste sur la sienne.
+
+**Et le témoin « un bloc posé sur l'herbe » s'est retrouvé SUR la route** :
+(−108, −328) est une chaussée du nouveau tracé, et poser un bloc sur une
+chaussée ne rend rien au voxel. Il cherche désormais une colonne d'herbe hors
+de tout `routeEn` — un témoin qui écrit son terrain se trompe de terrain
+(v285), y compris quand c'est une livraison plus tard qui déplace le terrain.
 
 ## Le ménage du ciel de Paris (v298) — ce qui flotte se définit par l'APPUI, pas par la hauteur
 

@@ -774,8 +774,13 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     verifier('le contact lit la même triangulation que le maillage : exact au centre des colonnes, moyenne à mi-arête',
       a1.exacts === a1.centres && a1.moyennes === a1.milieux && colline.exacts === colline.centres && colline.moyennes === colline.milieux && a1.centres > 100,
       `campagne ${a1.exacts}/${a1.centres} centres, ${a1.moyennes}/${a1.milieux} mi-arêtes — colline ${colline.exacts}/${colline.centres}, ${colline.moyennes}/${colline.milieux}`);
-    // un bloc posé rend sa colonne au voxel ; retiré, la cicatrice guérit
-    const X = -108, Z = -328, h = w.terrainHeight(X, Z);
+    // un bloc posé rend sa colonne au voxel ; retiré, la cicatrice guérit —
+    // sur une colonne d'herbe HORS de l'A1 (le via de la v299 a mis le
+    // couloir sur l'ancienne, (−108, −328) : posé sur une chaussée, rien ne
+    // change, et le témoin rougissait sur du code sain)
+    let X = -60, Z = -328;
+    while (X < 0 && (w.routeEn(X, Z) || w.solContinu(X + 0.5, Z + 0.5) === null)) X++;
+    const h = w.terrainHeight(X, Z);
     const avant = w.solContinu(X + 0.5, Z + 0.5), couvAvant = w.blocSousLaSurface(X, h, Z);
     w.setBlock(X, h + 1, Z, 11);
     const apres = w.solContinu(X + 0.5, Z + 0.5), couvApres = w.blocSousLaSurface(X, h, Z);
@@ -808,6 +813,64 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     // borne de garde vaut trois fois la mesure, parce qu'un portail charge
     verifier('la surface coûte au plus quelques millisecondes par morceau de campagne',
       med(avec) - med(sans) < 4, `${med(avec).toFixed(1)} ms avec, ${med(sans).toFixed(1)} sans (médianes de neuf)`);
+    // LE PAYSAGE LOINTAIN NE REFERME PAS LE DÉBLAI (v299). `horizon.js` lisait
+    // le relief au-dessus de la route : une dalle de terre flottait sur la
+    // tranchée tant que le morceau n'était pas maillé (captures du pont et de
+    // la porte de Paris). La cote qu'il dessine se demande au monde, et sous
+    // une route c'est le sommet de la chaussée ou du talus.
+    {
+      let R = null; try { R = await import('../src/routes.js'); } catch { /* pas de routes.js : le témoin le dit */ }
+      if (!R || !w.coteHorizon) {
+        verifier('le paysage lointain ne referme pas le déblai de l\'A1 : sa cote est celle de la route', false, !R ? 'pas de routes.js' : 'pas de coteHorizon');
+        verifier('rien ne flotte au-dessus de l\'A1 : ni relief, ni nappe, ni repère posé après les colonnes', false, !R ? 'pas de routes.js' : 'pas de coteHorizon');
+      } else {
+        const seg = R.segmentsDeRoute()[0];
+        let route = 0, deblai = 0, justes = 0, pire = 0, horsRoute = 0, horsJustes = 0;
+        for (let s0 = 0; s0 < seg.longueur; s0 += 8) {
+          const q = R.pointA(seg, s0);
+          for (let d = -30; d <= 30; d += 2) {
+            const x = Math.round(q.x + (-q.fz) * d), z = Math.round(q.z + q.fx * d);
+            const r = R.routeEn(x, z), c = w.coteHorizon(x, z), h = w.terrainHeight(x, z);
+            if (!r || r.ouvrage) { horsRoute++; if (c === h) horsJustes++; continue; }
+            route++;
+            const t = Math.floor(r.cote) - 1;
+            if (h > t) { deblai++; pire = Math.max(pire, h - t); }
+            if (c === t) justes++;
+          }
+        }
+        verifier('le paysage lointain ne referme pas le déblai de l\'A1 : sa cote est celle de la route',
+          route > 500 && deblai > 50 && justes === route && horsJustes === horsRoute,
+          `${justes}/${route} colonnes de route à la cote du profil, dont ${deblai} en déblai (jusqu'à ${pire} blocs sous le relief) ; ${horsJustes}/${horsRoute} hors route au relief`);
+        // RIEN NE FLOTTE AU-DESSUS DE LA ROUTE. Trois choses y flottaient, et
+        // aucune ne se voyait en relisant : la couche d'herbe d'un relief à
+        // sept blocs (le déblai ne dégageait que six), la nappe d'un lac sur
+        // un talus creusé sous elle, et le chalet du Pôle Nord — un repère
+        // posé APRÈS les colonnes, que le premier via traversait. La première
+        // sonde rendait zéro sur les trois : elle lisait `HEIGHT` d'un module
+        // qui ne l'exporte pas, et sa boucle ne tournait jamais.
+        const t0 = performance.now();
+        let colonnes = 0, fautes = 0, exemple = null;
+        for (let s0 = 0; s0 < seg.longueur; s0 += 4) {
+          const q = R.pointA(seg, s0);
+          for (let d = -30; d <= 30; d++) {
+            const x = Math.round(q.x + (-q.fz) * d), z = Math.round(q.z + q.fx * d);
+            const r = R.routeEn(x, z); if (!r || r.ouvrage) continue;
+            colonnes++;
+            const t = Math.floor(r.cote) - 1; let faute = null;
+            for (let y = t + 1; y < HEIGHT; y++) {
+              const b = w.getBlock(x, y, z);
+              if (b === 0 || b === 6) continue;                       // l'air, et la couronne d'un arbre voisin
+              if (b === 7 && y <= 30 && r.piece === 'talus') continue; // un talus sous un lac
+              faute = `${b} à y=${y}`; break;
+            }
+            if (faute) { fautes++; if (!exemple) exemple = `s ${s0}, ${r.piece} (${x}, ${z}), sommet ${t}, relief ${w.terrainHeight(x, z)} : bloc ${faute}`; }
+          }
+        }
+        verifier('rien ne flotte au-dessus de l\'A1 : ni relief, ni nappe, ni repère posé après les colonnes',
+          colonnes > 2000 && fautes === 0,
+          `${fautes} colonne(s) en faute sur ${colonnes}${exemple ? ` — ${exemple}` : ''} (${((performance.now() - t0) / 1000).toFixed(1)} s)`);
+      }
+    }
   }
 
   // --- ce qui se vérifie en jouant ------------------------------------------

@@ -2178,6 +2178,17 @@ export class World {
     const r = routeEn(x, z);
     return r && r.ouvrage ? r.cote : null;
   }
+  // LA COTE QUE LE PAYSAGE LOINTAIN DESSINE (v299) : le relief, sauf sous une
+  // route, où c'est le sommet de la chaussée ou du talus. `horizon.js` lisait
+  // `terrainHeight` au-dessus d'un DÉBLAI et refermait la tranchée d'une dalle
+  // de terre tant que le morceau n'était pas maillé — vu sur les captures du
+  // pont et de la porte de Paris, jamais par un témoin. Sous un tablier, le
+  // sol reste le sol.
+  coteHorizon(x, z) {
+    const r = routeEn(x, z);
+    if (r && !r.ouvrage) return Math.floor(r.cote) - 1;
+    return this.terrainHeight(x, z);
+  }
 
   villesProches(x, z, d) {
     const out = [];
@@ -2382,13 +2393,30 @@ export class World {
         const route = routeEn(wx, wz);
         if (route) {
           if (route.ouvrage) {
+            // LA CULÉE SE CREUSE. Le pont est décidé sur l'AXE (l'eau sous
+            // lui) ; à trois blocs de côté, la berge peut monter au-dessus du
+            // tablier — mesuré au premier pont : relief 33 pour un tablier à
+            // 31, et la voiture butait dessus (60 images bloquée). Une berge
+            // qui dépasse se dégage d'un bloc sous le tablier (son dessous est
+            // à 0,8) jusqu'au relief ; l'eau et le lit, eux, restent.
+            const t = Math.floor(route.cote) - 1;
+            if (h >= t - 1) for (let wy = Math.max(0, t - 1); wy <= Math.max(t + 6, h + 2) && wy < HEIGHT; wy++) data[World.index(x, wy, z)] = BLOCK.AIR;
             if (route.pile) {
               for (let wy = Math.max(0, h); wy < Math.floor(route.cote) && wy < HEIGHT; wy++) data[World.index(x, wy, z)] = BLOCK.STONEBRICK;
             }
           } else {
             const t = Math.floor(route.cote) - 1;
             for (let wy = Math.max(0, Math.min(h, WATER_LEVEL)); wy < t && wy < HEIGHT; wy++) data[World.index(x, wy, z)] = BLOCK.STONE;
-            for (let wy = t + 1; wy <= t + 6 && wy < HEIGHT; wy++) data[World.index(x, wy, z)] = BLOCK.AIR;
+            // LE DÉBLAI DÉGAGE JUSQU'AU RELIEF, PAS SIX BLOCS. Borné à six, un
+            // relief à sept blocs au-dessus de la chaussée laissait sa couche
+            // d'herbe EN L'AIR — une dalle au-dessus de la route, vue sur les
+            // captures du pont et de la porte de Paris (déblai mesuré jusqu'à
+            // sept blocs). Six reste le gabarit minimal sous un relief bas.
+            for (let wy = t + 1; wy <= Math.max(t + 6, h + 2) && wy < HEIGHT; wy++) data[World.index(x, wy, z)] = BLOCK.AIR;
+            // Un talus qui descend dans un lac reste SOUS l'eau : sans ce
+            // remplissage, la nappe restait à sa cote et flottait au-dessus du
+            // sable (131 colonnes mesurées sur le couloir).
+            if (route.piece === 'talus') for (let wy = t + 1; wy <= WATER_LEVEL && wy < HEIGHT; wy++) data[World.index(x, wy, z)] = BLOCK.WATER;
             if (t >= 0 && t < HEIGHT) {
               data[World.index(x, t, z)] = route.piece === 'talus' ? (t > WATER_LEVEL ? BLOCK.GRASS : BLOCK.SAND)
                 : route.piece === 'terreplein' ? BLOCK.GRASS : CITY_BLOCK.ASPHALT;

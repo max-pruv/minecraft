@@ -1,0 +1,174 @@
+{
+ "tag": "v299",
+ "date": "2026-09-26T20:05:38.125Z",
+ "banc": "rendu logiciel, rr 9, hd 6, ombres, 1280×720, dpr 1",
+ "vues": {
+  "paris-rue": {
+   "x": -236,
+   "z": 195,
+   "y": 34,
+   "appels": 775,
+   "ktri": 918,
+   "morceaux": 35,
+   "attente": 19782
+  },
+  "paris-carrefour": {
+   "x": -253,
+   "z": 234,
+   "y": 34,
+   "appels": 413,
+   "ktri": 551,
+   "morceaux": 59,
+   "attente": 10047
+  },
+  "paris-monument": {
+   "x": -322,
+   "z": 248,
+   "y": 34,
+   "appels": 629,
+   "ktri": 766,
+   "morceaux": 107,
+   "attente": 9223
+  },
+  "paris-sortie-nord": {
+   "x": -240,
+   "z": 24,
+   "y": 35,
+   "appels": 103,
+   "ktri": 219,
+   "morceaux": 130,
+   "attente": 40336
+  },
+  "campagne-a1": {
+   "x": -110,
+   "z": -330,
+   "y": 31,
+   "appels": 229,
+   "ktri": 198,
+   "morceaux": 286,
+   "attente": 40048
+  },
+  "campagne-a1-ciel": {
+   "x": -110,
+   "z": -330,
+   "y": 31,
+   "appels": 242,
+   "ktri": 213,
+   "morceaux": 361,
+   "attente": 10009
+  },
+  "lille-entree-sud": {
+   "x": 35,
+   "z": -752,
+   "y": 44,
+   "appels": 1144,
+   "ktri": 468,
+   "morceaux": 223,
+   "attente": 40213
+  },
+  "lille-centre": {
+   "x": 35,
+   "z": -851,
+   "y": 42,
+   "appels": 777,
+   "ktri": 650,
+   "morceaux": 346,
+   "attente": 40489
+  },
+  "gare-paris": {
+   "x": -349,
+   "z": 36,
+   "y": 36,
+   "appels": 185,
+   "ktri": 873,
+   "morceaux": 31,
+   "attente": 15912
+  },
+  "paris-nuit": {
+   "x": -236,
+   "z": 195,
+   "y": 34,
+   "appels": 904,
+   "ktri": 1202,
+   "morceaux": 69,
+   "attente": 21579
+  },
+  "a1-route": {
+   "x": -116,
+   "z": -245,
+   "y": 32,
+   "appels": 323,
+   "ktri": 291,
+   "morceaux": 413,
+   "attente": 19532
+  },
+  "a1-ciel": {
+   "x": -116,
+   "z": -245,
+   "y": 32,
+   "appels": 350,
+   "ktri": 326,
+   "morceaux": 413,
+   "attente": 8005
+  },
+  "a1-pont": {
+   "x": -91,
+   "z": -472,
+   "y": 30,
+   "appels": 266,
+   "ktri": 354,
+   "morceaux": 413,
+   "attente": 37021
+  },
+  "a1-porte-paris": {
+   "x": -167,
+   "z": 19,
+   "y": 35,
+   "appels": 210,
+   "ktri": 930,
+   "morceaux": 27,
+   "attente": 15783
+  },
+  "a1-porte-lille": {
+   "x": -20,
+   "z": -765,
+   "y": 35,
+   "appels": 1037,
+   "ktri": 419,
+   "morceaux": 172,
+   "attente": 40190
+  }
+ },
+ "parcours": {
+  "pied": {
+   "images": 19,
+   "p50": 3299.8,
+   "p95": 4849.8,
+   "p99": 4849.8,
+   "pire": 4850,
+   "blocs": 3.1,
+   "morceaux": 80,
+   "appels": 1091,
+   "ktri": 2094,
+   "tasMo": 496,
+   "x": -231,
+   "z": 197,
+   "y": 35
+  },
+  "voiture": {
+   "images": 11,
+   "p50": 6199.8,
+   "p95": 7066.4,
+   "p99": 7066.4,
+   "pire": 7066,
+   "blocs": 2.5,
+   "morceaux": 128,
+   "appels": 1317,
+   "ktri": 2998,
+   "tasMo": 811,
+   "x": -228,
+   "z": 215,
+   "y": 29.5
+  }
+ }
+}

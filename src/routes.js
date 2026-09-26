@@ -32,17 +32,21 @@ import { positionDe } from './mondes.js';
 // l'ouest. Le vrai A1 passe à l'ouest de Roissy ; le Roissy du jeu a été
 // déplacé (v223), et l'on contourne celui du jeu.
 export const ROUTES = [
-  // LE POINT DE PASSAGE SE MESURE (v223, v299). L'axe direct Paris–Lille
-  // passe DANS la marge de Roissy (5 blocs à l'intérieur de r + 12) et la
-  // maison témoin de plafond.js (−100, −100) est de l'autre côté : le couloir
-  // entre les deux fait huit blocs. Cherché sous node (scratchpad
-  // cherche-via3.mjs, un et deux points de passage, angle ≤ 30°) : aucun
-  // tracé ne tient à la fois quarante blocs de la maison et la marge de
-  // Roissy. Celui-ci tient 37 blocs de la maison (l'emprise et le talus en
-  // prennent au plus 21) et 2,7 blocs au-delà de la marge de Roissy, avec un
-  // seul coude de 5°, un détour d'un demi-bloc, la même pente (0,064), le
-  // même remblai (4,0) et les mêmes deux ponts que l'axe direct.
-  { nom: 'A1', villes: ['paris', 'lille'], via: [[-150, -50]] },
+  // LE POINT DE PASSAGE SE MESURE (v223, v299) — CONTRE TOUS LES OBSTACLES.
+  // L'axe direct Paris–Lille passe DANS la marge de Roissy et la maison
+  // témoin de plafond.js (−100, −100) est de l'autre côté. Mon premier via
+  // (−150, −50) tenait les deux — et traversait le PÔLE NORD (40, −690,
+  // banquise de 60 blocs) à quarante blocs de son centre : les repères posés
+  // après les colonnes n'étaient pas dans la sonde, et un chalet s'est
+  // retrouvé sur la chaussée (vu en capture). Cherché sous node (scratchpad
+  // cherche-via5.mjs : sanctuaires ≥ 30, Roissy ≥ 2 au-delà de r + 12,
+  // villes et repères hors du couloir de 24 blocs, aucun croisement de voie
+  // ferrée, coudes ≤ 30°) : aucun via unique ne tient, parce que la banquise
+  // touche presque le disque de Lille et que la porte doit passer à
+  // l'ouest ; deux vias, 94 tracés admissibles. Celui-ci : 35 blocs de la
+  // maison, 9 au-delà de la marge de Roissy, 32 de la banquise, deux coudes
+  // (15° et 29°), pente 0,06, remblai 3,6, déblai 7,2, UN pont (s 530–542).
+  { nom: 'A1', villes: ['paris', 'lille'], via: [[-140, -60], [-70, -700]] },
 ];
 
 // --- la section -----------------------------------------------------------------
@@ -208,6 +212,12 @@ export function profilDe(seg) {
   for (let k = 0; k <= n; k++) cote[k] = (bas[k] + haut[k]) / 2;
   const d0 = terr[0] - cote[0], d1 = terr[n] - cote[n];
   for (let k = 0; k <= n; k++) cote[k] += d0 * (1 - k / n) + d1 * (k / n);
+  // ET JAMAIS SOUS LES FLOTS, MÊME APRÈS L'ÉPINGLAGE : la rampe qui ramène
+  // les bouts au sol des portes peut abaisser tout le profil de quelques
+  // dixièmes, et une chaussée en déblai au bord d'un lac passait à 30 — la
+  // nappe se posait dessus (mesuré : huit colonnes de chaussée sous l'eau à
+  // l'approche du pont).
+  for (let k = 0; k <= n; k++) if (cote[k] < NIVEAU_EAU + 1) cote[k] = NIVEAU_EAU + 1;
   // LES OUVRAGES : là où le remblai dépasse `VIADUC`, ou sur l'eau, un pont.
   // Une seule colonne d'eau isolée se remblaie (une buse), pas un pont.
   const ouvrage = new Uint8Array(n + 1);

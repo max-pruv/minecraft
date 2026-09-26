@@ -40,7 +40,7 @@ const VUES = [
   // l'abscisse `route` (négative : depuis Lille), cap le long de l'axe.
   { nom: 'a1-route', route: 300, pitch: 0.02, h: 1.6 },
   { nom: 'a1-ciel', route: 300, pitch: -0.55, h: 40 },
-  { nom: 'a1-pont', route: 712, pitch: 0.02, h: 1.6 },
+  { nom: 'a1-pont', route: 528, pitch: 0.02, h: 1.6 },   // le pont est à s 530–542 (mesuré, via de la v299)
   { nom: 'a1-porte-paris', route: 30, dyaw: Math.PI, pitch: 0.02, h: 1.6 },
   { nom: 'a1-porte-lille', route: -30, pitch: 0.02, h: 1.6 },
 ];
