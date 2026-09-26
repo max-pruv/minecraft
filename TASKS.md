@@ -19,6 +19,17 @@
   et de compter les rondins à plus de six blocs au-dessus du sol dans le
   disque de Paris ; s'il confirme que c'en est une, il n'y a rien à faire.
 
+- [ ] **LES TROIS ROUGES DU PORTAIL DE LA v295 — LES TROIS DETTES DÉJÀ MESURÉES,
+  AUCUN NEUF.** Dix suites (`world.js` touché), 44 min, un seul rouge par
+  suite fautive et chacun à sa place : le fond de carte de `maj.js` à la
+  libération (`carte: false`, 48,7 s — neuvième portail d'affilée, double
+  mesure plus bas), le délai de `manhattan.js:282` (`waitForFunction` 60 s,
+  démonté 3/3 des deux côtés en v269), et le gel de `monte.js` à l'arrivée
+  sur une ville (34,6 % d'images au-delà de 300 ms, contre 34,4 % au portail
+  de la v294 et pire sur `origin/main`). Le témoin neuf de la tour Eiffel est
+  vert (zéro cellule hors du modèle), et les deux empreintes de `plafond.js`
+  n'ont pas bougé. Aucune de ces trois suites ne lit une cellule de la tour.
+
 - [ ] **LES SIX ROUGES DU PORTAIL DE LA v294 — TROIS ÉTAIENT DE MOI, UN SE
   REJOUE VERT SEUL DES DEUX CÔTÉS, DEUX SONT DES DETTES DÉJÀ MESURÉES.**
 
