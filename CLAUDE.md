@@ -858,6 +858,76 @@ Trois règles.
   juger les ponts : je les ai vus et ne les ai pas mesurés. Une planche de
   captures se regarde en entier, pas seulement là où pointe la livraison.
 
+## Le ménage du ciel de Paris (v298) — ce qui flotte se définit par l'APPUI, pas par la hauteur
+
+Max, trois captures d'iPhone : « Bizarre », puis « clean les trucs bizarres ».
+Une spirale de planches et de verre dans le ciel à côté de la tour Eiffel, la
+tour rouge sombre à longue flèche, une masse noire au-dessus d'une rue. Six
+règles, et la première dit pourquoi le journal de bord existe.
+
+- **UN INSTRUMENT POSÉ À LA PLACE D'UNE HYPOTHÈSE SERT LE JOUR OÙ LA QUESTION
+  REVIENT.** La v295 avait balayé le générateur (rien en l'air), la lecture des
+  profils était refusée, et Max disait que ce n'était pas les enfants ; la v296
+  a posé un compteur dans le journal de bord au lieu d'une hypothèse de plus.
+  Deux semaines plus tard, la table `journal_appareil` — des données
+  d'APPAREIL, pas d'enfant, faites pour être lues — a rendu la réponse en une
+  requête : à la session des captures (iPhone, iOS 18.7, 15:45 UTC), **505
+  blocs POSÉS suspendus dans Paris**, 318 planches, 101 verre, 73 grès, 7
+  feuilles, 3 planches sombres, dans un journal de 83 780 blocs. Des blocs du
+  journal, posés en vol — et j'avais écrit à Max l'inverse de ce qu'il disait
+  sans pouvoir le prouver ; le journal l'a prouvé.
+- **CE QUI EST BIZARRE, C'EST CE QUI FLOTTE — ET CELA SE DÉFINIT SANS
+  HAUTEUR.** Mon premier jet retirait tout ce qui dépassait le plus haut toit
+  ordinaire de Paris (treize blocs, mesuré sur les 94 000 colonnes : 12 371 à
+  neuf, 57 à treize, au-dessus rien qui ne soit un monument). L'exemple du
+  journal est à DOUZE blocs du sol : la règle en aurait laissé la moitié en
+  l'air. La grandeur juste est l'appui : les blocs posés du disque qui ne sont
+  pas SUR le sol (`y > relief + 1`), groupés par contact à six voisins, et un
+  groupe part s'il ne touche ni un bloc posé au sol, ni un bloc que le jeu
+  écrit. Une maison, un drapeau sur un toit, un radeau sur la Seine, un bloc
+  collé au fer de la tour, un balcon restent ; une spirale suspendue part d'un
+  seul tenant. **Et une règle de retrait se prouve d'abord par ce qu'elle NE
+  retire PAS** : c'est le second témoin de `plafond.js`, neuf cas gardés pour
+  deux retirés.
+- **UN RETRAIT DE BLOCS D'ENFANT EST UNE MARCHE DE LA CHAÎNE DE MIGRATION, ET
+  RIEN D'AUTRE.** Même forme que `migrerCarte3`, pour la même raison : la
+  fusion est une union, une tablette restée sur l'ancienne version
+  republierait la spirale. La règle est pure (`menagerCielParis`), appliquée
+  au stockage une fois (marche 3 → 4, `CARTE_VERSION` 4) et à chaque document
+  reçu du nuage ; la DATE la borne (`DATE_MENAGE_PARIS`) : un bloc posé après
+  reste, quelle que soit sa hauteur — un ménage est un geste d'un jour, pas
+  une interdiction de bâtir en vol. Et la copie d'avant se prend sur le NUAGE,
+  une fois, sur son propre document (`~avant-menage-paris`), **seulement si le
+  ménage a quelque chose à retirer** : un enfant sans rien dans le ciel ne
+  coûte ni une lecture ni un document.
+- **UNE PASSE QUI SE REJOUE À CHAQUE FUSION SE MESURE CONTRE CE QUE LA FUSION
+  PAIE DÉJÀ.** Le nuage se pousse toutes les quarante-cinq secondes et chaque
+  poussée fusionne. Premier jet en clés de chaînes : 200 ms sur quarante-quatre
+  mille blocs de maisons dans Paris, le double de la migration de carte. En
+  clés numériques (x, y, z dans 18 · 8 · 18 bits), la boîte avant le disque,
+  le relief mémoïsé par colonne d'une fusion à l'autre, la carte rendue sans
+  copie quand rien ne part : **50 ms sur quatre-vingt mille blocs hors de
+  Paris (la carte 3 en coûte 65), 100 ms sur les maisons**. Le générateur n'est
+  interrogé que pour un groupe sans appui posé, les plus bas d'abord, sur un
+  monde sans blocs d'enfant qui se jette au-delà de quarante-huit morceaux, et
+  la décision se retient par la signature du groupe.
+- **LA TOUR N'EST PAS UN DÉFAUT, ET ON LE DIT AVANT DE LA CHANGER.** La tour
+  rouge sombre à longue flèche est `buildEiffelTower` : 639 briques sombres, du
+  parvis au phare, 70 blocs. C'est le squelette voxel de la v292, seul à
+  l'écran quand le morceau n'est pas fabriqué en détail — de loin, en vol, ou
+  sur un appareil dont la couche HD est éteinte. Le journal dit que l'iPhone de
+  Max avait la couche (79 morceaux HD) et qu'il a été TUÉ deux fois de suite à
+  Paris ce jour-là (15:44:17 et 15:45:13 UTC, 630 morceaux, pire image
+  686 ms) : la sûreté de la v296 l'a donc passé au palier bas, où la couche
+  s'éteint. Deux dettes déclarées dans `TASKS.md`, pas un remède de plus dans
+  cette livraison : l'iPhone qui meurt encore à Paris en v296, et la couleur du
+  fer, qui est une décision de Max.
+- **ET LE NOM SOUS LE RÉTICULE DIT LE BLOC EN MAIN.** Max tenait de
+  l'obsidienne ; rien dans le jeu ne lui dit ce qu'il VISE, ni qui l'a posé.
+  Le monde le sait (`world.edits`). C'est la dette la plus utile de cette
+  livraison : un `?diag=1` qui nomme le bloc visé et son origine aurait répondu
+  à « qui l'a posé ? » depuis sa tablette.
+
 ## Le sol continu (v297) — le bloc reste le squelette des données, plus la forme du sol
 
 Première livraison de code du programme « monde fidèle » (kit de Max,

@@ -1553,7 +1553,7 @@ export function hauteurBase(x, z, mondeId = 'terre') {
 // la date de la refonte, pour qu'aucune passe ne le redéplace et pour qu'il
 // l'emporte sur sa copie d'avant. C'est la règle du receveur qui cède :
 // l'ancienne version ne peut pas apprendre la règle neuve.
-export const CARTE_VERSION = 3;
+export const CARTE_VERSION = 4;   // 4 : le ménage du ciel de Paris (v298)
 const CLE_CARTE = 'web-minecraft-carte-v1';
 const ECART_MAX = 24;          // au-delà, on ne déplace plus : on laisse et on dit
 // L'heure de la refonte ×2. Un bloc daté d'avant a été posé sur la carte de
@@ -1684,6 +1684,144 @@ export function migrerPositionsCarte3(pos) {
   return { pos: out, deplaces };
 }
 
+// LE MÉNAGE DU CIEL DE PARIS (v298). Décision de Max, sur trois captures
+// d'iPhone : « clean les trucs bizarres ». Une spirale de planches et de
+// verre montait dans le ciel à côté de la tour Eiffel. Le journal de bord de
+// son iPhone (v296) a tranché ce que personne ne pouvait lire : à la session
+// des captures, 505 blocs POSÉS flottaient au-dessus du sol de Paris — 318
+// planches, 101 verre, 73 grès, 7 feuilles, 3 planches sombres — dans un
+// journal de 83 780 blocs. Ce sont des blocs du journal d'un enfant (ou une
+// pièce de la bibliothèque posée en vol), pas un artefact de maillage.
+//
+// CE QUI EST BIZARRE, C'EST CE QUI FLOTTE — et cela se définit sans hauteur.
+// Un premier jet retirait tout ce qui dépassait le plus haut toit ordinaire de
+// Paris (treize blocs, mesuré) ; l'exemple du journal est à DOUZE blocs du
+// sol, et la règle en aurait laissé la moitié en l'air. La grandeur juste est
+// l'APPUI : on prend les blocs posés dans le disque de Paris qui ne sont pas
+// SUR le sol (`y > relief + 1`), on les groupe par contact (six voisins), et
+// un groupe est retiré s'il ne touche NI un bloc posé qui, lui, est au sol
+// (le mur d'une maison), NI un bloc que le jeu écrit — un toit, un trottoir,
+// le fer de la tour, l'eau de la Seine. Un drapeau sur un toit, une maison,
+// un radeau, une cabane dans un arbre, un balcon en encorbellement restent ;
+// une spirale suspendue dans le vide part, d'un seul tenant.
+//
+// Elle suit mot pour mot la forme de `migrerCarte3`, et pour la même raison :
+// la fusion est une UNION, et une tablette restée sur l'ancienne version
+// republierait la spirale dans le nuage pour toujours. La règle est donc PURE,
+// appliquée au stockage de l'appareil une fois (la marche 3 → 4 de
+// `migrerLesBlocs`) et à CHAQUE document reçu du nuage avant la fusion
+// (`sync.js`). Ce qui la borne, c'est la DATE : un bloc posé APRÈS
+// `DATE_MENAGE_PARIS` reste, quelle que soit sa hauteur — le ménage est un
+// geste d'un jour, pas une interdiction de bâtir en vol. Le prix se déclare :
+// une tablette qui jouerait encore sur l'ancienne version après cette heure
+// poserait des blocs que le ménage ne touchera pas. Une copie du document du
+// nuage se prend AVANT (`mettreALAbriAvantMenage`, sync.js), une seule fois.
+//
+// Ce que ça coûte : un parcours du journal (déjà payé par `migrerCarte3` à
+// chaque fusion), et le générateur n'est interrogé que pour un groupe qui ne
+// touche aucun bloc posé au sol — les plus bas d'abord, c'est là qu'est
+// l'appui — sur un monde SANS blocs d'enfant, jeté après la passe.
+export const DATE_MENAGE_PARIS = Date.UTC(2026, 8, 26, 19, 0, 0);
+const SUR_LE_SOL = 1;                 // y = relief + 1 : posé sur le bloc de surface
+const VOISINS = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+let mondeDuRelief = null;
+let generateur = null;
+const reliefs = new Map();            // x * 262144 + z -> relief : une colonne se calcule une fois, d'une fusion à l'autre
+const decisions = new Map();          // signature d'un groupe -> a-t-il un appui du jeu ?
+const reliefDe = (x, z) => (mondeDuRelief || (mondeDuRelief = new World())).terrainHeight(x, z);
+
+// Sur UNE carte de blocs { "x,y,z": [id, date, ...] }. Pure : rend une carte
+// neuve et le bilan. Les marques d'import (`@…`) et les blocs d'air (un trou
+// creusé) ne sont jamais touchés.
+export function menagerCielParis(map) {
+  const neuf = {};
+  let retires = 0, gardes = 0;
+  // Les clés sont des NOMBRES ici (x, y, z dans 18, 8 et 18 bits) : sur un
+  // journal de quarante mille blocs, six voisins par bloc en chaînes de
+  // caractères coûtaient le double d'une migration de carte à chaque fusion.
+  const cle3 = (x, y, z) => ((x + 131072) * 256 + y) * 262144 + (z + 131072);
+  const candidats = new Map();      // clé -> [x, y, z] : dans Paris, pas sur le sol, d'avant la date
+  const poses = new Set();          // toute clé d'un bloc posé (non-air), candidat ou non
+  const R = PARIS.r;
+  let nb = 0;
+  for (const k in map || {}) {
+    const e = map[k];
+    if (!Array.isArray(e) || e[0] === BLOCK.AIR || k.charCodeAt(0) === 64) continue;   // '@' : une marque
+    const c1 = k.indexOf(','), c2 = k.indexOf(',', c1 + 1);
+    if (c1 < 0 || c2 < 0) continue;
+    const x = +k.slice(0, c1), y = +k.slice(c1 + 1, c2), z = +k.slice(c2 + 1);
+    if (x !== x || y !== y || z !== z || y < 0 || y > 255) continue;                    // NaN, ou hors du monde
+    nb++;
+    poses.add(cle3(x, y, z));
+    // La boîte avant le disque, et la date avant tout : sur un gros journal
+    // hors de Paris, c'est ce parcours-là qui coûte à chaque fusion.
+    if (x - PARIS.x > R || PARIS.x - x > R || z - PARIS.z > R || PARIS.z - z > R) continue;
+    if (!(num(e[1]) < DATE_MENAGE_PARIS) || Math.hypot(x - PARIS.x, z - PARIS.z) > R) continue;
+    const col = x * 262144 + z;
+    let h = reliefs.get(col);
+    if (h === undefined) { h = reliefDe(x, z); if (reliefs.size > 200000) reliefs.clear(); reliefs.set(col, h); }
+    if (y > h + SUR_LE_SOL) candidats.set(cle3(x, y, z), [x, y, z]);
+  }
+  // Rien à juger : la carte est rendue telle quelle, sans copie.
+  if (!candidats.size) return { carte: map || {}, retires: 0, gardes: nb };
+  const aRetirer = [];
+  const leJeuEcrit = (x, y, z) => (generateur || (generateur = new World())).getBlock(x, y, z) !== BLOCK.AIR;
+  const vus = new Set();
+  for (const [k0, p0] of candidats) {
+    if (vus.has(k0)) continue;
+    const groupe = [p0]; vus.add(k0);
+    let appui = false;
+    for (let i = 0; i < groupe.length; i++) {
+      const [x, y, z] = groupe[i];
+      for (let v = 0; v < 6; v++) {
+        const kv = cle3(x + VOISINS[v][0], y + VOISINS[v][1], z + VOISINS[v][2]);
+        const c = candidats.get(kv);
+        if (c !== undefined) { if (!vus.has(kv)) { vus.add(kv); groupe.push(c); } }
+        else if (poses.has(kv)) appui = true;   // un bloc posé au sol, hors de Paris, ou d'après la date
+      }
+    }
+    if (!appui) {
+      // Le générateur ne se redemande pas à chaque fusion pour le même
+      // groupe : la décision se retient par sa signature (bornée), parce
+      // qu'un jardin sur un toit du jeu reviendrait sinon engendrer ses
+      // morceaux à chaque sauvegarde. Les plus bas d'abord : c'est là
+      // qu'est l'appui.
+      groupe.sort((a, b) => a[1] - b[1] || a[0] - b[0] || a[2] - b[2]);
+      const signature = groupe.map((p) => p.join(',')).join(';');
+      appui = decisions.get(signature);
+      if (appui === undefined) {
+        appui = groupe.some(([x, y, z]) => VOISINS.some(([dx, dy, dz]) => leJeuEcrit(x + dx, y + dy, z + dz)));
+        if (decisions.size >= 4096) decisions.clear();
+        decisions.set(signature, appui);
+      }
+    }
+    if (!appui) for (const p of groupe) aRetirer.push(`${p[0]},${p[1]},${p[2]}`);
+  }
+  // Le monde sans blocs d'enfant garde ses morceaux d'une fusion à l'autre
+  // tant qu'ils sont peu nombreux (moins de quatre mégaoctets), sinon il se jette.
+  if (generateur && generateur.chunks.size > 48) generateur = null;
+  if (!aRetirer.length) return { carte: map, retires: 0, gardes: nb };
+  const retire = new Set(aRetirer);
+  for (const k in map) {
+    if (retire.has(k)) { retires++; continue; }
+    neuf[k] = map[k]; gardes++;
+  }
+  return { carte: neuf, retires, gardes };
+}
+
+// Toutes les cartes d'un document { contexte: carte } — les archives (« : »)
+// ont leur propre repère et ne sont jamais touchées, comme pour la carte 3.
+export function menagerBlocsCielParis(tout) {
+  const out = {};
+  let retires = 0, gardes = 0;
+  for (const [ctx, map] of Object.entries(tout || {})) {
+    if (ctx.includes(':') || !map || typeof map !== 'object' || Array.isArray(map)) { out[ctx] = map; continue; }
+    const r = menagerCielParis(map);
+    out[ctx] = r.carte; retires += r.retires; gardes += r.gardes;
+  }
+  return { tout: out, retires, gardes };
+}
+
 // La migration du STOCKAGE DE L'APPAREIL, une fois par version de carte.
 // `lire`/`ecrire` portent les blocs, `lirePos`/`ecrirePos` les positions.
 export function migrerLesBlocs(lire, ecrire, lirePos = null, ecrirePos = null) {
@@ -1691,7 +1829,7 @@ export function migrerLesBlocs(lire, ecrire, lirePos = null, ecrirePos = null) {
   try { version = Number(localStorage.getItem(CLE_CARTE)) || 0; } catch { /* ignore */ }
   if (version >= CARTE_VERSION) return null;
   let tout = lire() || {};
-  let deplaces = 0, laisses = 0, intacts = 0;
+  let deplaces = 0, laisses = 0, intacts = 0, retires = 0;
 
   // 1 → 2 : la migration de v199, en hauteur seulement.
   if (version < 2) {
@@ -1722,13 +1860,17 @@ export function migrerLesBlocs(lire, ecrire, lirePos = null, ecrirePos = null) {
   // 2 → 3 : un bloc suit sa ville.
   const r = migrerBlocsCarte3(tout);
   tout = r.tout; deplaces += r.deplaces; laisses += r.laisses; intacts += r.intacts;
+
+  // 3 → 4 : le ménage du ciel de Paris (v298). Idempotent par la date.
+  const m = menagerBlocsCielParis(tout);
+  tout = m.tout; retires += m.retires;
   ecrire(tout);
   if (lirePos && ecrirePos) {
     const p = migrerPositionsCarte3(lirePos() || {});
     if (p.deplaces) ecrirePos(p.pos);
   }
   try { localStorage.setItem(CLE_CARTE, String(CARTE_VERSION)); } catch { /* ignore */ }
-  return { deplaces, laisses, intacts };
+  return { deplaces, laisses, intacts, retires };
 }
 
 export class World {

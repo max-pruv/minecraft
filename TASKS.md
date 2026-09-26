@@ -109,41 +109,40 @@
   trente jours qui ne sont pas des plantages (SQL, ou au lancement par une
   tablette).
 
-- [ ] **LA STRUCTURE DE RONDINS DANS LE CIEL DE PARIS (v295) — MAX DIT QUE CE
-  N'EST PAS UNE CONSTRUCTION DES ENFANTS ; DONC UN DÉFAUT, ET IL RESTE À VOIR
-  D'OÙ IL VIENT.** Ce qui est écarté depuis : la migration de la carte ne peut
-  pas l'expliquer par la hauteur — le relief naturel sous l'anneau de Paris
-  (55 à 185 blocs du centre) vaut 23 à 42 sur les trois cartes, pour un sol de
-  ville à 34 : une maison posée là avant que Paris ne s'élargisse (v187)
-  flotterait de huit blocs au plus, pas au-dessus des toits. La v296 pose un
-  INSTRUMENT à la place d'une hypothèse de plus : au démarrage d'une partie, le
-  journal de bord compte les blocs posés qui flottent à plus de six blocs
-  au-dessus du sol d'une ville — combien, quels identifiants, où — et l'espace
-  parent l'affiche (« N bloc(s) suspendu(s) à paris »). Si le compte est nul
-  sur les deux profils, ce ne sont pas des blocs posés (donc pas une
-  construction, ni d'enfant ni d'ami), et la piste est un maillage : un tampon
-  de morceau installé au mauvais endroit, ou un modèle rendu avec l'atlas des
-  blocs. S'il n'est pas nul, les identifiants disent qui les a écrits
-  (bibliothèque de bâtiments — `DARKPLANK`, `PLANK` —, ou palette de l'enfant).
-  La lecture directe des profils dans le nuage a été refusée à cette session ;
-  Max peut l'autoriser, ou lire le compte dans l'espace parent. Sa
-  capture d'iPad montre, au-dessus des toits au centre de Paris, une grande
-  structure de rondins et de planches sombres avec des blocs de laine bleue,
-  en forme de grue ou de bateau. Ce qui est MESURÉ : le générateur ne la
-  produit pas (balayage sous node des 94 000 colonnes du disque, aucun
-  rondin, aucune planche sombre, aucune laine bleue en l'air — les seuls
-  « flottants » du générateur sont les combles au-dessus d'immeubles creux et
-  les seize cubes de la tour Eiffel, corrigés) ; aucun bâtisseur de Paris
-  n'écrit ces trois blocs ; le nom sous le réticule est celui du bloc EN
-  MAIN (`#block-name`, main.js:5512), une « Cheminée de pierre », un meuble ;
-  et l'enfant est en selle (« Descendre »), donc en vol. Ce qui N'A PAS pu
-  être mesuré : les blocs sauvegardés dans le nuage (`player_state`,
-  `editsz`) — la lecture a été refusée depuis cette session. **On ne retire
-  pas un bloc d'enfant sur une présomption** : si Max confirme que ce n'est
-  ni Marlon ni Alice, la piste suivante est de lire `editsz` des deux profils
-  et de compter les rondins à plus de six blocs au-dessus du sol dans le
-  disque de Paris ; s'il confirme que c'en est une, il n'y a rien à faire.
-
+- [x] **LA STRUCTURE DE RONDINS DANS LE CIEL DE PARIS — TRANCHÉE EN v298 PAR LE
+  JOURNAL DE BORD.** La session de l'iPhone de Max du 26 septembre (15:45 UTC,
+  celle des captures) compte 505 blocs POSÉS suspendus dans Paris (318
+  planches, 101 verre, 73 grès, 7 feuilles, 3 planches sombres, exemple en
+  (−90, 46, 92)), dans un journal de 83 780 blocs sous le profil « Max ». Ce
+  sont des blocs du journal, posés en vol — pas un artefact de maillage. Max a
+  tranché (« clean les trucs bizarres ») : le ménage de la v298 retire ce qui
+  flotte, sur la tablette et à chaque fusion, copie d'avant sur le nuage.
+- [ ] **CE QUE LE MÉNAGE DU CIEL DE PARIS NE TOUCHE PAS (v298).** Un bloc posé
+  APRÈS `DATE_MENAGE_PARIS` (26 septembre 2026, 19 h UTC) reste, même en
+  l'air : une tablette qui jouerait encore sur la v297 après cette heure
+  pose des blocs que le ménage laissera. Et un groupe suspendu qui touche un
+  bloc posé au sol, ou le fer de la tour, ou un toit du jeu, reste aussi — par
+  construction. Si Max voit encore quelque chose en l'air après la v298, on
+  relit d'abord le journal de bord (`blocs-suspendus`), qui dira combien et où.
+- [ ] **L'IPHONE DE MAX (iOS 18.7) MEURT ENCORE À PARIS EN v296 — mesuré dans
+  le journal de bord, pas supposé.** Deux sessions de suite finies en
+  `plantage` le 26 septembre (15:44:17 UTC après un relevé, 15:45:13 après
+  onze) : téléporté en (−179, 90), 630 morceaux chargés, 79 morceaux HD, pire
+  image 686 ms à l'arrivée puis 19 à 55 ms — le jeu tournait bien quand Safari
+  l'a tué. La v296 avait ramené Paris de 1 171 à 98 Mo de tampons au banc ;
+  ce n'est donc pas (plus) le gigaoctet. La sûreté a fait son travail (palier
+  bas au lancement suivant). À mesurer sur SON appareil, `?diag=1` : le tas et
+  les tampons au moment où le disque de Paris est plein — le relevé du journal
+  n'a pas de `tas` sur iOS (`performance.memory` absent).
+- [ ] **LE BLOC VISÉ SE NOMME, ET DIT QUI L'A POSÉ.** Le nom sous le réticule
+  est celui du bloc EN MAIN. En `?diag=1`, afficher le bloc sous le réticule
+  et son origine — « posé par le jeu », ou « posé à la main » avec la date que
+  `world.editTimes` connaît. C'est ce qui aurait répondu à « qui l'a posé ? »
+  depuis la tablette de Max, sans lire aucun profil.
+- [ ] **LA COULEUR DE LA TOUR EIFFEL EN VOXEL.** Brique sombre (rouge) pour un
+  fer brun ; c'est ce qu'on voit de loin, en vol, et sur tout appareil sans
+  couche HD. Changer le bloc ne touche à aucune empreinte (un bâtisseur de
+  monument n'écrit pas le relief, v292). Décision de Max.
 - [ ] **LES TROIS ROUGES DU PORTAIL DE LA v295 — LES TROIS DETTES DÉJÀ MESURÉES,
   AUCUN NEUF.** Dix suites (`world.js` touché), 44 min, un seul rouge par
   suite fautive et chacun à sa place : le fond de carte de `maj.js` à la

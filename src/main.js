@@ -572,6 +572,7 @@ scene.add(decor(horizon.objet()));
     console.log(`carte agrandie : ${bilan.deplaces} blocs suivis, `
       + `${bilan.laisses} laissés, ${bilan.intacts} intacts`);
   }
+  if (bilan && bilan.retires) console.log(`ciel de Paris : ${bilan.retires} blocs retirés (v298)`);
 }
 world.loadEdits();
 
