@@ -20,7 +20,21 @@
     sur Londres–Paris) ; le profil lissé reste, la cote du convoi et des gares
     devient continue ; la gare de Paris n'a ni parvis ni rue qui y mène.
   - [ ] 5. Les autres couloirs et villes, par lots.
-  - [ ] 6. La fidélité architecturale : registre unifié des quartiers.
+  - [ ] 6. La fidélité architecturale : registre unifié des quartiers — ET
+    la bibliothèque du kit v3 (330 GLB originaux, 46 Mo, en mètres), évaluée
+    dans `programme.md` § 6. **Décision à prendre par Max avant une ligne** :
+    la bibliothèque n'entre dans une ville qu'à UN BLOC POUR UN MÈTRE (joueur
+    1,8, voiture 4,4 × 2,26 — le kit refuse toute autre échelle), et aucune
+    parcelle actuelle ne la reçoit sans étirer (un haussmannien fait 18 × 12 ×
+    22,5 blocs ; un îlot de l'Étoile 12,6, un immeuble 6). Deux voies : un
+    quartier témoin de Paris RETRAMÉ à 1 m/bloc dans une zone bornée (neuvième
+    casse déclarée de l'invariant 1, double empreinte, copie et migration des
+    blocs), puis Lille avec les familles bruxelloises ; ou Paris garde sa trame
+    et la fidélité passe par la couche HD. Quoi qu'il arrive : une famille se
+    charge à l'entrée du quartier, dans le cache immuable, jamais les 330 au
+    démarrage ; variante par identifiant stable de parcelle ; provenance dans
+    `vendor/` (les modèles sont des conceptions originales, sans géométrie
+    tierce).
   - **Ce que la v297 laisse voxel, et qui se reprendra** : le liseré d'un bloc
     au bord de toute zone voxel (une voiture y monte d'un bloc, mesuré au bord
     d'un lac : bloquée 25 images, montée de 1,0, une chute) — la piste est un

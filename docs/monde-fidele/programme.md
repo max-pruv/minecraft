@@ -61,6 +61,13 @@ des versions (`CHANGELOG.md`) dit ce que chaque livraison apporte ;
    déclare ses quartiers, la couche HD les lit.
 6. **Aucun asset propriétaire, provenance écrite.** Les modèles ajoutés (s'il
    y en a) vont dans `vendor/` avec leur licence, comme la flotte et les corps.
+7. **Un bâtiment de la bibliothèque se place à l'échelle du JOUEUR, et cette
+   échelle est UN BLOC POUR UN MÈTRE** — voir la section 6 : c'est ce que le
+   kit v3 exige (« `unitsPerMeter` calibrée sur le joueur et les véhicules »),
+   et c'est ce que le dépôt mesure déjà (joueur 1,8 bloc, voiture 4,4 × 2,26).
+   Le prix, chiffré plus bas, est que la trame actuelle des villes ne peut pas
+   l'accueillir : la bibliothèque impose une retrame, ville par ville, dans une
+   zone bornée — jamais un étirement du modèle ni une échelle intermédiaire.
 
 ## 3. La zone pilote : Paris nord → A1 → Lille
 
@@ -127,7 +134,110 @@ Les vues fixes et les deux parcours (à pied, au volant) sont pris par
 4. **Le rail continu et la gare accessible** : cote continue, quai à niveau.
 5. **Les autres couloirs et villes**, par lots, avec la matrice de couverture.
 6. **La fidélité architecturale** : registre unifié des quartiers, grammaires
-   par ville, mobilier, végétation.
+   par ville, mobilier, végétation — et, depuis le kit v3, la bibliothèque de
+   modèles (section 6), avec un quartier témoin AVANT toute généralisation.
 
 Ce qui reste conceptuel tant qu'une livraison ne l'a pas prouvé : tout ce qui
 est au-dessous de la ligne 1.
+
+## 6. La bibliothèque architecturale (kit v3, 26 septembre 2026)
+
+Max a livré une troisième version du kit, dont la nouveauté est une
+bibliothèque de modèles : **32 familles × 3 variantes × 3 niveaux de détail =
+288 bâtiments, plus 42 objets et composants de monument, 330 GLB, 46 Mo**.
+Unité le mètre, +Y en haut, façade vers −Z, pivot au centre de la façade au
+sol. Avec elle : `data/assets.json` (96 variantes : `boundsM`, colliders,
+entrée, fichiers par LOD avec triangles, appels de dessin, octets),
+`data/cities.json` (278 fiches de ville : quartiers `baseline`,
+`heritage_candidate`, `contemporary`, `industrial`, `placementMode`, liste
+`never`), `data/recipes.json`, `data/families.json`, des guides par famille et
+par ville, et `integration/library.mjs` (`chooseBuilding` déterministe par
+identifiant de parcelle, `createBuildingLoader` à cache partagé). Rien n'est
+branché au jeu (`DELIVERY.json` : `integratedIntoGame: false`,
+`browserValidated: false`), et le kit le dit lui-même : « no browser or mobile
+FPS benchmark, not an architectural survey ».
+
+### Ce qui est utilisable tel quel
+
+- **Les modèles sont des conceptions originales**, sans géométrie, texture ni
+  photographie tierce (`SOURCES-ET-STATUT.md`) — l'invariant 4 tient. Ils sont
+  en aplats PBR sans UV ni textures ; latéraux et arrières simplifiés ; portes
+  fermées ; pas d'intérieurs. Le kit annonce lui-même la passe suivante :
+  angles, UV, patine, accès.
+- **Le poids est raisonnable PAR FAMILLE, pas en bloc** : les trois familles de
+  Paris font 5,0 Mo, les trois de Bruxelles (celles que la fiche de Lille
+  demande) 3,3 Mo. Un immeuble haussmannien au LOD 0 coûte 7 162 triangles et
+  6 appels de dessin, 507 Ko ; au LOD 2, 2 230 triangles, 160 Ko. Rien de tout
+  cela ne va dans la liste versionnée de `sw.js` (la leçon des 8,2 Mo de la
+  v245) : une famille se charge à l'entrée du quartier qui la demande, dans le
+  cache IMMUABLE (`isStaticAsset`), et jamais les 330 fichiers au démarrage —
+  c'est écrit dans le mandat du kit et c'est ce que le dépôt fait déjà pour la
+  flotte et les corps.
+- **La discipline du choix** est celle du dépôt : famille par quartier (jamais
+  par latitude), variante par identifiant STABLE de parcelle (jamais par
+  morceau, sinon le tirage change au remaillage — c'est la leçon des fenêtres
+  allumées, tirées en coordonnées du monde pour cette raison), aucun étirement, collider identique à tous les LODs.
+- **Le chargeur** est le `GLTFLoader` r160 déjà dans `vendor/`, et le cache
+  partagé du kit marque ses ressources `userData.partagee` — la règle de
+  `liberer.js` (v238) est respectée par construction.
+
+### Ce qui ne colle pas, et se chiffre : l'échelle
+
+Le kit exige une échelle uniforme « calibrée sur le joueur et les véhicules »
+et refuse la projection kilomètres/bloc comme échelle de bâtiment. Mesuré dans
+le dépôt : le joueur fait **1,8 bloc**, une voiture **4,4 × 2,26 blocs**. À
+l'échelle du joueur, **un bloc vaut un mètre**, et c'est la seule valeur de
+`unitsPerMeter` qui satisfasse le mandat.
+
+Or les villes ont été bâties sur DEUX échelles (règle « deux échelles dans la
+même ville » de `CLAUDE.md`) : au sol un bloc vaut 40 m à Paris (24 blocs par
+kilomètre), en hauteur un bloc vaut un étage. Ce que cela donne pour un
+immeuble haussmannien de la bibliothèque (18 × 12 m, 22,55 m, six niveaux) :
+
+| grandeur | ville actuelle (Étoile) | bibliothèque à 1 bloc = 1 m |
+| --- | --- | --- |
+| hauteur d'un immeuble de six niveaux | 6 blocs (`etages: 6`) | 22,5 blocs |
+| façade | épaisseur de lot 4,4 blocs, pas d'îlot 21,4 | 18 × 12 blocs |
+| îlot | 12,6 blocs (= 500 m au sol) | un vrai îlot fait 60 à 100 m, donc 60 à 100 blocs |
+| disque de Paris (r = 185) | tout Paris intra-muros | 370 m de côté, un quartier |
+
+**Aucune parcelle actuelle ne peut recevoir un modèle sans l'étirer**, et un
+modèle placé à cette échelle serait quatre fois plus haut que ses voisins en
+voxel. Une échelle intermédiaire (un bloc par étage, `unitsPerMeter` ≈ 0,27)
+ferait entrer la bibliothèque dans la trame d'aujourd'hui — mais elle
+enfreindrait le mandat, et surtout elle mettrait des portes de 0,75 bloc
+devant un enfant de 1,8 : c'est exactement le monde « maquette » que Max a
+refusé à Washington en v161. On ne la retient pas.
+
+**Ce que la bibliothèque impose donc, et c'est une décision de Max, pas de
+rendu** : une ville qui la reçoit se RETRAME à un bloc pour un mètre, dans une
+zone bornée (comme `ZONE_WASHINGTON`), avec des îlots de 40 à 100 blocs et des
+rues de 8 à 25. À cette échelle, le disque de Paris ne contient plus la ville
+entière mais un quartier de 370 m : c'est le choix de tout jeu à monde ouvert
+(une capitale comprimée, des bâtiments vrais, des monuments rapprochés). La
+retrame d'une ville bâtie à la main est une casse de l'invariant 1 — la
+neuvième — qui se déclare, se borne et se prouve par la double empreinte,
+avec la copie et la migration des blocs des enfants (v199, v242).
+
+### Le quartier témoin, et l'ordre proposé
+
+1. **Un quartier de Paris, borné**, retramé à 1 bloc = 1 m sur le vrai plan
+   (l'Étoile ou Monceau : `paris_haussmann` seul, six niveaux, îlots réguliers,
+   c'est la famille la mieux définie du kit). La zone se déclare
+   (`ZONE_TEMOIN`), le reste de Paris ne bouge pas, la couture entre les deux
+   échelles est visible et DITE. Captures aux mêmes points de vue avant/après,
+   appels de dessin, triangles, mémoire, sur l'iPad de la maison — c'est le
+   rapport que le kit demande.
+2. **Lille en second**, avec les familles bruxelloises que sa fiche demande
+   (`brussels_townhouse`, `brussels_neoclassical`, `brussels_eclectic`) : plus
+   petite, bâtie à la main, à l'échelle du dépôt depuis la v204.
+3. **La généralisation** ne se décide qu'après ces deux-là, sur mesure : coût
+   par morceau, cadence sur tablette, part du disque retramée.
+
+Ce qui reste conceptuel tant que le quartier témoin n'est pas livré : tout ce
+qui est au-dessus. Et une chose que ce document ne tranche pas, parce qu'elle
+n'est pas à lui : **si Max préfère garder Paris entier à sa trame actuelle,
+la bibliothèque ne s'y place pas, et la fidélité architecturale passe par la
+couche HD (`facadeshd.js`) comme depuis la v287.** Les deux voies sont
+écrites ; une seule sera bâtie.
+
