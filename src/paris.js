@@ -161,8 +161,15 @@ const LARGEUR_SEINE = 4;
 // cent vingt mètres. C'est large — les quais de Seine en font trente — mais
 // c'est la promenade la plus fréquentée de la ville, et un enfant doit
 // pouvoir y courir.
+//
+// ET LA VOIE SUR BERGE PORTE UN CONVOI (v294). Entre `QUAI_BAS + 1,2` et
+// `QUAI_HAUT` la chaussée ne faisait que 2,1 blocs — les « Quais de la rive
+// droite » y roulent, et une voiture en fait 2,26. `QUAI_HAUT` passe de 5,5 à
+// 7,5 : la chaussée fait 4,1 blocs. `hauteurParis` ne lit que `QUAI_BAS`, donc
+// le relief ne bouge pas ; ce qu'on perd, c'est une rangée de lots à deux blocs
+// de la Seine, qui n'avait pas les pieds au sec de toute façon.
 const QUAI_BAS = 2.2;
-const QUAI_HAUT = 5.5;
+const QUAI_HAUT = 7.5;
 // `CITE` est déclarée plus bas — la portée se calcule donc au premier appel,
 // une seule fois, plutôt que d'imposer un ordre de déclaration au fichier.
 let porteeCite = 0;
@@ -339,12 +346,15 @@ const SOCLES = LIEUX.filter((p) => p.socle)
   .map((p) => ({ u: p.u, v: p.v, bu: p.socle[0] + 1, bv: p.socle[1] + 1, tour: !p.sansTour }));
 
 // La largeur de la rue qui fait le tour d'un monument, et l'écart auquel la
-// voiture y roule. Trois blocs, c'est une chaussée et ses deux bordures — la
-// mesure : à trois blocs la tenue de rue des huit circuits est 94 · 100 · 100 ·
-// 100 · 96 · 100 · 100 · 100, et l'anneau ne prend que 423 colonnes de lot sur
-// les 2 382 qu'il couvre (18 %), le reste étant déjà du parvis ou de la rue.
-const LARGE_TOUR = 3;
-export const AXE_TOUR = 1.5;
+// voiture y roule. Trois blocs (v221), c'était une chaussée et ses deux
+// bordures : la voiture y roulait à 1,5 bloc du socle, donc à trente-sept
+// centièmes de bloc du mur du monument ET du trottoir d'en face. Quatre blocs
+// depuis la v294 — la même règle que les rues des quartiers, la voiture au
+// milieu avec près d'un bloc de chaque côté. À trois blocs la tenue de rue des
+// huit circuits était 94 · 100 · 100 · 100 · 96 · 100 · 100 · 100 ; elle se
+// remesure à quatre dans `carteMonde.js`, sur le monde et non sur le plan.
+const LARGE_TOUR = 4;
+export const AXE_TOUR = LARGE_TOUR / 2;
 export const ETOILE = lieu('Arc de Triomphe');
 export const CONCORDE = lieu('Concorde');
 
@@ -379,9 +389,25 @@ const pk = (u, v) => [k(u), k(v)];
 // boulevard : à Paris la rue est aussi large que les façades sont hautes, et
 // c'est précisément ce rapport-là qu'on reconnaît. On multiplie donc la
 // hiérarchie par une largeur d'avenue, et le trottoir suit.
-const AVENUE = 2.6;
-const a = (l) => l * AVENUE;
-const TROTTOIR_AV = 1.4;
+//
+// ET AUCUNE AVENUE SOUS DEUX VOITURES (v294). Max : « les rues de Paris sont
+// trop étroites ». Mesuré sur le plan avant d'y toucher : les raccords à
+// `a(0.6)` faisaient 3,1 blocs de chaussée pour une voiture de 2,26 — quarante
+// centièmes de bloc de marge par côté —, et ce sont des avenues où ROULENT les
+// convois, donc où l'enfant les croise de face. Deux voitures côte à côte
+// font 4 × 1,13 + 0,6 = 5,12 blocs (la barre du témoin des villes engendrées,
+// v271) : c'est le plancher, et la hiérarchie d'Haussmann monte au-dessus.
+// Rivoli 7,5, les Champs-Élysées 8,2, un boulevard 6,1, un raccord 5,2.
+// Le trottoir d'avenue passe à deux blocs : un passant, un réverbère et une
+// terrasse y tiennent. C'est du SOL, jamais du relief — `hauteurParis` ne lit
+// aucun de ces nombres, et les deux empreintes de `plafond.js` ne bougent pas.
+const AVENUE = 3.4;
+const PLANCHER_AVENUE = 2.6;
+const a = (l) => Math.max(l * AVENUE, PLANCHER_AVENUE);
+const TROTTOIR_AV = 2.0;
+// Ce que la ville promet à ses avenues, publié pour les témoins : une
+// dimension de ville se demande, elle ne se recopie pas (v203, v271, v281).
+export const LARGEURS_AVENUES_PARIS = { plancher: 2 * PLANCHER_AVENUE, trottoir: TROTTOIR_AV };
 
 const VOIES = [
   // rive droite
@@ -516,12 +542,13 @@ const BANDES = rangerVoies(VOIES);
 // couverture gloutonne réutilisait les grands axes dans presque tous les
 // circuits — à Paris, la rue de Rivoli en portait trois, superposés.
 //
-// Une voiture fait 2,26 blocs de large pour une chaussée qui en fait 2,86 :
-// il n'y a pas la place pour deux files, et décaler latéralement ne pouvait
+// Une voiture fait 2,26 blocs de large pour une chaussée qui en faisait 2,86 :
+// il n'y avait pas la place pour deux files, et décaler latéralement ne pouvait
 // donc rien. Les circuits sont désormais choisis sous une contrainte de
 // PARTAGE : deux d'entre eux ne peuvent avoir plus de VINGT blocs de chaussée
 // en commun — la taille d'un carrefour. Ils se croisent, ils ne se suivent
-// pas.
+// pas. (Depuis la v294 une avenue tient deux voitures ; la contrainte reste,
+// parce qu'elle sépare « se croiser » de « se suivre », pas deux files.)
 //
 // Le prix est déclaré dans `TASKS.md` : quelques avenues perdent leurs
 // voitures, faute d'une boucle à elles. Les rues qu'un enfant nomme sont
@@ -572,7 +599,12 @@ const ROULANT = new Set([BITUME, PAVE, QUAI]);
 // (`solParis`) : c'est l'anneau du rond-point, et c'est lui que suit la
 // voiture. On contourne un demi-bloc en dedans du bord, donc au milieu de
 // cette couronne.
-const RONDS = LIEUX.filter((p) => p.r).map((p) => ({ u: p.u, v: p.v, r: p.r - 0.5 }));
+// La largeur de l'anneau de bitume d'une place ronde, lue par `solParis` (qui
+// le pave) et par `RONDS` (qui y fait rouler la voiture, au milieu) : une seule
+// règle, deux lecteurs.
+export const ANNEAU_PLACE = 3;
+const anneauDe = (p) => Math.min(ANNEAU_PLACE, p.r * 0.5);
+const RONDS = LIEUX.filter((p) => p.r).map((p) => ({ u: p.u, v: p.v, r: p.r - anneauDe(p) / 2 }));
 
 // Et le tour des monuments, qui vient APRÈS les places : l'anneau d'une place
 // est DANS le socle du monument qu'elle porte (c'est le défaut de la v220, et
@@ -592,7 +624,33 @@ export const circuitsParis = fabriqueCircuits({
 const PONTS = [-28, -22, -19, -10, 3, 11, 17, 22, 30].map(kr);
 // La largeur d'un pont, en absolu : deux voies et deux trottoirs. À l'ancienne
 // échelle un pont faisait trois blocs de large et on le manquait en marchant.
-const DEMI_PONT = 2.5;
+// Depuis la v294 le tablier a une CHAUSSÉE au milieu (cinq blocs, deux voies)
+// et un trottoir de chaque côté : on traverse la Seine en voiture, pas
+// seulement à pied.
+const DEMI_PONT = 3.5;
+const DEMI_CHAUSSEE_PONT = 2.0;
+// UN PONT DE PARIS ÉTAIT AU FOND DE LA SEINE (v294). `solParis` rendait bien
+// du pavé sur le tablier, mais `world.js` l'écrivait à la cote du TERRAIN —
+// le lit, six blocs sous la ville, deux sous le niveau de l'eau — et l'on ne
+// traversait le fleuve qu'en nageant. Mesuré sous node : terrain 28, eau à
+// 30, le pavé du pont à 28. C'est le piège de la Tamise (v208), mot pour mot,
+// et le remède est le même : le tablier s'écrit à la cote de la ville, l'eau
+// reste dessous, le relief ne bouge pas. `pontParis` dit à `world.js` et à
+// `coteRoulable` quelles colonnes portent un tablier — l'eau ET la berge
+// basse, pour que le pont rejoigne la voie sur berge de plain-pied.
+export function pontParis(x, z) {
+  const u = x - PARIS.x;
+  if (versSeine(x, z) >= QUAI_BAS) return false;
+  for (const pu of PONTS) if (Math.abs(u - pu) <= DEMI_PONT) return true;
+  return false;
+}
+const solDuPont = (u) => {
+  for (const pu of PONTS) {
+    const e = Math.abs(u - pu);
+    if (e <= DEMI_PONT) return e <= DEMI_CHAUSSEE_PONT ? BITUME : PAVE;
+  }
+  return null;
+};
 
 // --- le tissu : les îlots, les cours et le gabarit -------------------------------
 //
@@ -654,8 +712,8 @@ const Q = (nom, dx, dz, r0, t) => {
 // l'entorse assumée de cette ville : l'îlot haussmannien fait ici douze
 // blocs, soit cinq cents mètres, quatre fois sa taille vraie.
 //
-// Ce qu'on achète avec : une chaussée de trois blocs, deux trottoirs, et
-// deux bandes de bâti de trois blocs de profondeur autour d'une cour. Un
+// Ce qu'on achète avec : une chaussée où une voiture passe, deux trottoirs,
+// et deux bandes de bâti de trois blocs de profondeur autour d'une cour. Un
 // enfant peut traverser la rue, entrer dans la cour, voir le ciel entre les
 // corniches. C'est ce qui n'existait pas.
 // LA RUE APPARTIENT AU QUARTIER, ET C'EST NEUF.
@@ -674,23 +732,53 @@ const Q = (nom, dx, dz, r0, t) => {
 // escalier, et il est inévitable : à l'échelle du sol une rue de vingt mètres
 // tient dans un bloc, et une ville dont les rues font un bloc est une ville
 // où l'on ne marche pas. On choisit donc la rue praticable, et l'îlot suit.
+//
+// LES RUES S'ÉLARGISSENT, ET LE PAS SUIT (v294). Max : « les rues de Paris sont
+// trop étroites ». Mesuré sur le plan, sur tout le disque : la chaussée d'une
+// rue de quartier faisait 2,0 blocs (médiane mesurée 2,5) pour une voiture de
+// 2,26 — l'enfant au volant y frottait les deux trottoirs — et le trottoir
+// 0,55 bloc, où ni un passant ni un réverbère ne tiennent. Trois largeurs
+// désormais, et chacune est un résultat :
+//
+//   · une rue à SENS UNIQUE (Haussmann, Saint-Germain, le Faubourg) : 3,6 de
+//     chaussée — la voiture au milieu avec 0,67 de chaque côté ;
+//   · une RUELLE héritée (Marais, Quartier latin, Montmartre, Belleville) : 3,0,
+//     la voiture passe et c'est tout, comme dans la vraie ville ;
+//   · un BOULEVARD à double sens (Monceau, l'Étoile, Passy) : 5,2, deux
+//     voitures côte à côte (4 × 1,13 + 0,6 — la barre de la v271).
+//
+// Le trottoir fait 1,45 (0,95 dans les ruelles) après la bordure de 0,35 :
+// un passant, un potelet et un arbre. Et LE PAS SUIT L'EMPRISE : `pas` monte
+// exactement de deux fois ce que `face` gagne, si bien que l'îlot — ce qui
+// reste, `pas − 2·face` — garde sa largeur d'avant au dixième près. C'est la
+// méthode de la v271 : moins de rues, plus larges, et pas un îlot de perdu.
+// La table candidate (chaussée à sens unique 3,2 · 3,6 · 4,0) a rendu 24,0 ·
+// 23,2 · 22,0 % de colonnes de lot pour 35,9 avant ; on prend 3,6, la plus
+// petite qui laisse plus d'un demi-bloc de chaque côté de la voiture.
 const QUARTIERS = [
   // le tissu hérité : ruelles tordues, îlots serrés, pas de cour
-  Q('Marais', 0.9, -0.35, 8, { rive: 'd', ang: 0.30, pas: 10, rue: 0.7, face: 1.4, cour: 0, etages: 5, desordre: 3.2 }),
-  Q('Quartier latin', 0.15, 0.85, 8, { rive: 'g', ang: -0.24, pas: 9.5, rue: 0.7, face: 1.4, cour: 0, etages: 5, desordre: 3.6 }),
-  Q('Montmartre', -1.6, -3.4, 7, { ang: 0.5, pas: 9, rue: 0.6, face: 1.3, cour: 0, etages: 3, desordre: 4.4 }),
-  Q('Belleville', 2.7, -1.6, 9, { rive: 'd', ang: -0.38, pas: 12, rue: 0.9, face: 1.7, cour: 0, etages: 4, desordre: 3.4 }),
-  Q('Faubourg Saint-Antoine', 2.3, 0.25, 8, { rive: 'd', ang: 0.12, pas: 14, rue: 1.0, face: 1.8, cour: 0.22, etages: 5, desordre: 2.1 }),
+  Q('Marais', 0.9, -0.35, 8, { rive: 'd', ang: 0.30, pas: 12.8, rue: 1.5, face: 2.8, cour: 0, etages: 5, desordre: 3.2 }),
+  Q('Quartier latin', 0.15, 0.85, 8, { rive: 'g', ang: -0.24, pas: 12.3, rue: 1.5, face: 2.8, cour: 0, etages: 5, desordre: 3.6 }),
+  Q('Montmartre', -1.6, -3.4, 7, { ang: 0.5, pas: 12, rue: 1.5, face: 2.8, cour: 0, etages: 3, desordre: 4.4 }),
+  Q('Belleville', 2.7, -1.6, 9, { rive: 'd', ang: -0.38, pas: 14.2, rue: 1.5, face: 2.8, cour: 0, etages: 4, desordre: 3.4 }),
+  Q('Faubourg Saint-Antoine', 2.3, 0.25, 8, { rive: 'd', ang: 0.12, pas: 17.6, rue: 1.8, face: 3.6, cour: 0.22, etages: 5, desordre: 2.1 }),
   // et le tissu voulu : de grands îlots réguliers, chacun sa cour
-  Q('Saint-Germain', -1.7, 0.8, 8, { rive: 'g', ang: 0.06, pas: 15, rue: 1.0, face: 1.9, cour: 0.42, etages: 5, desordre: 0.9 }),
-  Q('Monceau', -3.2, -2.2, 9, { ang: -0.2, pas: 16, rue: 1.2, face: 2.1, cour: 0.38, etages: 6, desordre: 0.25 }),
-  Q('Étoile', -5.3, -1.4, 11, { ang: 0, pas: 17, rue: 1.2, face: 2.2, cour: 0.38, etages: 6, desordre: 0 }),
-  Q('Passy', -6.2, 0.35, 9, { ang: 0.33, pas: 16, rue: 1.2, face: 2.1, cour: 0.38, etages: 6, desordre: 0.3 }),
+  Q('Saint-Germain', -1.7, 0.8, 8, { rive: 'g', ang: 0.06, pas: 18.4, rue: 1.8, face: 3.6, cour: 0.42, etages: 5, desordre: 0.9 }),
+  Q('Monceau', -3.2, -2.2, 9, { ang: -0.2, pas: 20.6, rue: 2.6, face: 4.4, cour: 0.38, etages: 6, desordre: 0.25 }),
+  Q('Étoile', -5.3, -1.4, 11, { ang: 0, pas: 21.4, rue: 2.6, face: 4.4, cour: 0.38, etages: 6, desordre: 0 }),
+  Q('Passy', -6.2, 0.35, 9, { ang: 0.33, pas: 20.6, rue: 2.6, face: 4.4, cour: 0.38, etages: 6, desordre: 0.3 }),
 ];
 
 // Partout ailleurs : la ville d'Haussmann ordinaire, un peu moins réglée que
 // l'ouest, un peu moins tordue que le Marais.
-const HAUSSMANN = { nom: 'Haussmann', ang: 0.09, pas: 15, rue: 1.0, face: 1.9, cour: 0.38, etages: 6, desordre: 1.3 };
+const HAUSSMANN = { nom: 'Haussmann', ang: 0.09, pas: 18.4, rue: 1.8, face: 3.6, cour: 0.38, etages: 6, desordre: 1.3 };
+
+// La table des quartiers, publiée pour les témoins : la largeur d'une rue de
+// Paris se DEMANDE à cette table, elle ne se recopie pas dans un banc.
+export const QUARTIERS_PARIS = [...QUARTIERS, HAUSSMANN];
+// Une rue à double sens porte une ligne axiale (`marquageParis`) : c'est celle
+// dont la chaussée tient deux voitures, le plancher des avenues.
+const DOUBLE_SENS = PLANCHER_AVENUE - 0.05;
 
 function trameDeParis(u, v) {
   let q = HAUSSMANN, meilleur = Infinity;
@@ -760,7 +848,8 @@ export function infoFacadeParis(x, z) {
 // centimètres espacées de cinquante, dans le sens de la marche des voitures —
 // et, juste avant lui, la ligne d'effet des feux : un pointillé EN TRAVERS de la
 // chaussée. La ligne axiale ne reste qu'aux boulevards à double sens (les
-// quartiers dont la chaussée fait 2,4 blocs : Monceau, l'Étoile, Passy).
+// quartiers dont la chaussée tient deux voitures — 5,2 blocs depuis la v294 :
+// Monceau, l'Étoile, Passy).
 //
 // Rend null hors des rues de la trame (les avenues nommées, l'Étoile et les
 // places n'en ont pas encore), ou { type: 'axe' | 'passage' | 'ligne', long,
@@ -792,7 +881,7 @@ export function marquageParis(x, z) {
     const apres = (dansRueQ ? g.eq : g.ep) - t.rue;
     return { type: 'ligne', long, sens: apres < versCarrefour ? 1 : -1 };
   }
-  if (ecartAxe < 0.36 && t.rue >= 1.2) return { type: 'axe', long, sens: 0 };
+  if (ecartAxe < 0.36 && t.rue >= DOUBLE_SENS) return { type: 'axe', long, sens: 0 };
   return null;
 }
 
@@ -811,9 +900,13 @@ export function solParis(x, z) {
   if (d < 0) {
     // Les ponts passent par-dessus l'eau : sans eux, les deux rives ne se
     // rejoignaient qu'en nageant.
-    for (const pu of PONTS) if (Math.abs(u - pu) <= DEMI_PONT) return PAVE;
+    const pont = solDuPont(u);
+    if (pont !== null) return pont;
     return BLOCK.WATER;
   }
+  // La culée : le tablier continue par-dessus la berge basse, sinon la voiture
+  // descendrait d'un bloc sur le quai bas avant de remonter sur le pont.
+  if (d < QUAI_BAS) { const pont = solDuPont(u); if (pont !== null) return pont; }
   // Les quais. En bas, la pierre au ras de l'eau ; au-dessus, la voie qui longe
   // le fleuve d'un bout à l'autre de la ville. Cette bande haute restait en
   // herbe : on ne bâtit pas à quatre blocs de la Seine — c'est la règle qui
@@ -882,7 +975,11 @@ export function solParis(x, z) {
     if (!p.r) continue;
     if (du > p.r || du < -p.r || dv > p.r || dv < -p.r) continue;
     const dp = Math.sqrt(du * du + dv * dv);
-    if (dp < p.r) return dp > p.r - 1 ? BITUME : p.sol;
+    // L'anneau du rond-point, où roulent les voitures (`RONDS`). Il faisait UN
+    // bloc de large pour une voiture qui en fait 2,26 : la moitié de la
+    // carrosserie sur le pavé de la place. Trois blocs depuis la v294, ou la
+    // moitié du rayon sur les petites places — l'Opéra fait 2,2 de rayon.
+    if (dp < p.r) return dp > p.r - anneauDe(p) ? BITUME : p.sol;
   }
 
   // La place de l'Étoile et ses douze avenues rayonnantes : la figure la plus
@@ -896,8 +993,9 @@ export function solParis(x, z) {
     // l'Étoile fait quarante mètres, et elle doit se voir comme un rayon
     // franc jusqu'au bout, pas comme un fil qui s'épaissit avec la distance.
     const ecart = Math.abs(secteur - Math.round(secteur)) * de2 * (Math.PI * 2 / 12);
-    if (ecart < 1.5) return BITUME;
-    if (ecart < 2.4) return PAVE;
+    // Deux voies et un trottoir de deux blocs, comme toute avenue (v294).
+    if (ecart < PLANCHER_AVENUE) return BITUME;
+    if (ecart < PLANCHER_AVENUE + TROTTOIR_AV) return PAVE;
   }
 
   // Les Champs-Élysées : de l'Étoile à la Concorde, larges et plantés d'arbres.
@@ -909,12 +1007,14 @@ export function solParis(x, z) {
   if (t >= 0 && t <= 1) {
     const axe = ETOILE.v + (CONCORDE.v - ETOILE.v) * t;
     const dv = Math.abs(v - axe);
-    if (dv <= 2) return BITUME;
-    if (dv <= 3.2) return PAVE;
+    // Neuf colonnes de chaussée depuis la v294 : la plus large avenue de la
+    // ville doit le rester quand Rivoli passe à sept blocs et demi.
+    if (dv <= 4) return BITUME;
+    if (dv <= 5.2) return PAVE;
     // Un marronnier sur trois : depuis que l'arbre est un VRAI arbre (un fût
     // et une couronne, cf. world.js), une colonne sur deux faisait une haie
     // pleine de cinq blocs de haut qui bouchait l'avenue. On les espace.
-    if (dv <= 4.4) return (((Math.round(u) % 3) + 3) % 3) === 0 ? ARBRE : PAVE;
+    if (dv <= 6.4) return (((Math.round(u) % 3) + 3) % 3) === 0 ? ARBRE : PAVE;
   }
 
   const percee = solDesVoies(BANDES, u, v, BITUME, PAVE);

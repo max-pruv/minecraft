@@ -1,5 +1,48 @@
 # Ce qui est en cours
 
+- [ ] **LES SIX ROUGES DU PORTAIL DE LA v294 — TROIS ÉTAIENT DE MOI, UN SE
+  REJOUE VERT SEUL DES DEUX CÔTÉS, DEUX SONT DES DETTES DÉJÀ MESURÉES.**
+
+  **Les trois miens, corrigés dans la livraison, tous les trois des TÉMOINS qui
+  portaient une dimension de ville :**
+  - `carteMonde.js`, le tablier des ponts : le témoin comptait le REBORD du
+    disque comme deux ponts mouillés (« 11 ponts, 51 au sec sur 60 ») — hors
+    du disque `solParis` rend `null`, qui n'est pas de l'eau. Corrigé ; rejoué
+    seul : 9 ponts, 51 colonnes, 51 au sec, 51 roulables à 34.
+  - `parishd.js`, le registre du Marais : le premier morceau à plus de deux
+    mille sommets de façade n'était qu'un coin d'îlot (« enduit 100 · volets
+    0 »), et le morceau qui en porte le plus avait un coin dans Haussmann
+    (« pierre 1200 »). Le témoin exige désormais un morceau dont le centre et
+    les quatre coins sont du Marais, et garde celui qui porte le plus de
+    façades : (−13, 12), 25 322 sommets, enduit 1 924 · volets 3 680 · pierre 0
+    (mesuré sous node).
+  - `carte.js`, « Paris est bâtie de pierre de taille et de zinc » : `bati >
+    700` était un compte absolu relevé quand une rue faisait deux blocs ; les
+    rues élargies en laissent 669 dans le même disque. Le témoin demande
+    désormais au plan combien de lots il promet et exige que quatre sur cinq
+    soient bâtis : 669 bâties pour 603 lots.
+
+  **Celui qui se rejoue vert seul, des deux côtés :** « et l'on ne marche pas
+  dans une rue vide » (`monte.js`), rouge au portail avec `[25, 22, 9, 6, 0, 1,
+  1, 0]` — vingt-cinq passants dans le cadre au premier arrêt, ce qu'aucune rue
+  ne rend sur une page neuve, puis plus personne : la troupe de quatre-vingt-
+  huit (v241) avait été consommée par les témoins d'avant et laissée derrière.
+  Rejoué SEUL sur une page neuve, avec la taille de la troupe dans le message
+  (`tests/sonde-rue-vide.cjs`) : branche `[6, 4, 6, 7, 5, 6, 5, 4]`,
+  `origin/main` `[6, 9, 8, 5, 4, 6, 5, 4]`, zéro arrêt vide des deux côtés, la
+  troupe passant de 8 à 42 ; et `monte.js` entière rejouée seule sur la
+  branche : `[4, 5, 13, 7, 4, 4, 5, 10]`, vert. C'est « la situation de départ
+  d'un témoin est ce que le témoin d'avant a laissé » (v279), et le remède
+  n'est pas un seuil : ce témoin doit vider la troupe avant de mesurer, comme
+  les témoins de monte vident les bêtes.
+
+  **Les deux dettes déjà déclarées**, avec leur double mesure plus bas : le fond
+  de carte de `maj.js` (rouge sur HUIT portails d'affilée), le délai de
+  `manhattan.js:282` (💥, ligne 282, 2/2 des deux côtés) ; et le gel de
+  `monte.js` à l'arrivée dans une ville (**34,4 %** au portail, **31,9 %**
+  seule — dans l'étendue 31,1–44,7 relevée jusqu'ici, « mesuré PIRE sur
+  `origin/main` »).
+
 - [ ] **LES CINQ ROUGES DU PORTAIL DE LA v293 — UN ÉTAIT DE MOI, UN SE REJOUE
   VERT SEUL, TROIS SONT DES DETTES DÉJÀ MESURÉES.**
 
@@ -24,30 +67,17 @@
   l'étendue 34,3–44,7 % relevée jusqu'ici, et rouge quand même : la barre de ce
   témoin est sous son propre plancher mesuré).
 
-- [ ] **LA LARGEUR DES RUES DE PARIS : UN DIXIÈME DU TRAJET EST UNE RUE À PEINE
-  PLUS LARGE QUE LA VOITURE** (mesuré en v293, à reprendre). Max : « revoir
-  l'échelle comprimée — les rues doivent accueillir les gens et les voitures
-  naturellement ». Relevé sous les huit circuits de Paris, 150 mesures
-  perpendiculaires de la largeur de chaussée : **minimum 0,5 bloc · 10ᵉ centile
-  2,5 · médiane 4,5 · 90ᵉ 10 · maximum 16.** Une voiture fait 2,26 blocs de
-  large : au 10ᵉ centile il reste **douze centièmes de bloc de marge par côté**,
-  et le minimum n'est pas une rue du tout.
-
-  Conséquence mesurée à la sonde (`tests/sonde-traversee-paris.cjs`), au volant
-  sur le MEILLEUR circuit (100 % de chaussée), douze secondes de temps de JEU :
-  **19,8 blocs parcourus, soit 1,65 bloc par seconde** pour une voiture dont la
-  classe permet onze à vingt-cinq — et **148 refus du crochet d'obstacle**, dont
-  60 de la circulation et 88 des trois autres familles (mobilier, piéton, eau).
-  La voiture avance en frottant.
-
-  La v271 a déjà fait cette passe pour les **villes engendrées** (chaussée 3,4 →
-  5,6, pas de trame 3,00 → 3,75) et `CLAUDE.md` déclare explicitement que
-  « les six villes bâties à la main gardent leurs largeurs relevées sur de vrais
-  plans : leur élargissement est une passe à part ». C'est cette passe-là. Elle
-  touche `solParis` — donc le SOL, pas le relief : les deux empreintes de
-  `plafond.js` ne bougent pas. Ce qu'il faudra mesurer avant/après : la largeur
-  de chaussée (les cinq quantiles ci-dessus), la tenue de rue des huit circuits
-  dans le MONDE, la part d'îlot qui reste, et les blocs par seconde au volant.
+- [x] **LA LARGEUR DES RUES DE PARIS** — remboursée en v294 (voir `CHANGELOG.md`) :
+  rue de quartier 2,0 → 3,6 blocs (ruelles 3,0, boulevards 5,2), aucune avenue
+  sous 5,2, quais 2,1 → 4,1, ponts 5 → 7 avec une chaussée, et le tablier des
+  neuf ponts au-dessus de la Seine. Ce qui reste, et se déclare : les points de
+  circuit HORS chaussée (33 sur 772, sur le plan) sont des ARCS de raccord qui
+  coupent le coin d'une place ou d'un trottoir d'avenue entre deux voies —
+  `chainerVoies` joint deux avenues par une corde, et un trottoir de deux
+  blocs en prend un peu plus qu'un de 1,4. Le circuit de la Porte Maillot n'a
+  que vingt-quatre points, dont quatre hors chaussée (83 % pour une barre à
+  80 %) : c'est un tracé à reprendre par un arc au carrefour, pas un seuil à
+  baisser.
 
 - [ ] **ET LE MOBILIER DE RUE EST AU BORD DE LA CHAUSSÉE.** Les 88 refus « hors
   circulation » ci-dessus ne sont pas séparés plus finement : il faudrait

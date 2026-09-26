@@ -52,7 +52,7 @@ import {
   VOIES_LILLE,
 } from './lille.js';
 import {
-  PARIS, adresseParis, BUTTE, CITE, zCite, hauteurParis, solParis, lotParisLibre, batirColonneParis, versSeine,
+  PARIS, adresseParis, BUTTE, CITE, zCite, hauteurParis, solParis, lotParisLibre, batirColonneParis, versSeine, pontParis,
   LIEUX, buildNotreDame, buildSacreCoeur, buildPantheon, buildInvalides, buildOpera,
   buildMontparnasse, buildColonneBastille, buildMoulinRouge,
   VOIES_PARIS,
@@ -1758,6 +1758,8 @@ export class World {
     // surface roulable »), et elle ne s'appliquait qu'à Londres.
     const pvm = pontVillesMonde(x, z);
     if (pvm) return h > pvm.cote ? h : pvm.cote;
+    // Et les neuf ponts de Paris, à la cote de la ville (v294).
+    if (c && c.key === 'paris' && pontParis(x, z)) return h > c.base ? h : c.base;
     return h;
   }
 
@@ -2312,8 +2314,14 @@ export class World {
             // le trottoir et son feu tricolore sont posés (v274)
           } else if (lampadaireDeVille(data, x, z, h, wx, wz, solParis, sp)) {
             // le trottoir et son réverbère sont posés (v248)
-          } else if (sp !== null) data[World.index(x, h, z)] = sp;
-          else if (lotParisLibre(wx, wz)) {
+          } else if (sp !== null) {
+            // LE TABLIER D'UN PONT VA À LA COTE DE LA VILLE, PAS AU FOND DU
+            // LIT (v294) — la leçon de la Tamise (v208), que Paris n'avait
+            // jamais reçue : ses neuf ponts étaient pavés deux blocs sous
+            // l'eau. L'eau reste dessous, le relief ne bouge pas.
+            const surEau = h < city.base && pontParis(wx, wz);
+            data[World.index(x, surEau ? city.base : h, z)] = sp;
+          } else if (lotParisLibre(wx, wz)) {
             batirColonneParis(wx, wz, (dy, id) => {
               const wy = h + dy - 1;
               if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id;

@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 294,
+    titre: 'Les rues de Paris s\'élargissent',
+    puces: [
+      'Une voiture passe dans chaque rue',
+      'Deux voitures se croisent sur les avenues',
+      'Les trottoirs ont de la place',
+      'Les ponts sont au-dessus de la Seine',
+    ],
+  },
+  {
     v: 293,
     titre: 'Le cœur de Paris',
     puces: [

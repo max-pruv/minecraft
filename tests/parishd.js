@@ -150,19 +150,30 @@ function verifier(nom, ok, detail = '') {
     const { infoFacadeParis } = await import('../src/paris.js');
     const [mx, mz] = adresseParis(0.9, -0.35);
     let marais = null, ou = null;
-    boucleM: for (let r = 0; r <= 6; r++) for (let dz = -r; dz <= r; dz++) for (let dx = -r; dx <= r; dx++) {
+    for (let r = 0; r <= 6; r++) for (let dz = -r; dz <= r; dz++) for (let dx = -r; dx <= r; dx++) {
       const kx = Math.floor(mx / CHUNK) + dx, kz = Math.floor(mz / CHUNK) + dz;
-      const i = infoFacadeParis(kx * CHUNK + CHUNK / 2, kz * CHUNK + CHUNK / 2);
-      if (!i || i.quartier !== 'Marais') continue;
+      // UN MORCEAU À CHEVAL SUR DEUX QUARTIERS N'EST PAS UN TÉMOIN DE QUARTIER
+      // (v294) : le morceau qui porte le plus de façades autour du centre du
+      // Marais avait un coin dans Haussmann, et rendait « enduit 692 · volets
+      // 480 · pierre 1200 » — deux registres à la fois, ce qui n'accuse ni
+      // l'un ni l'autre. Le centre ET les quatre coins du morceau sont du
+      // Marais, ou le morceau n'est pas retenu.
+      const coins = [[CHUNK / 2, CHUNK / 2], [0, 0], [CHUNK - 1, 0], [0, CHUNK - 1], [CHUNK - 1, CHUNK - 1]];
+      if (!coins.every(([cx, cz]) => { const i = infoFacadeParis(kx * CHUNK + cx, kz * CHUNK + cz); return i && i.quartier === 'Marais'; })) continue;
       const t = tampons(1, kx, kz);
-      // ET UN MORCEAU QUI PORTE UN MONUMENT N'EST PAS UN TÉMOIN DE QUARTIER
-      // (v292). Notre-Dame couvre trois morceaux de l'île, et son modèle y
-      // ajoute plus de deux mille sommets de PIERRE : le témoin l'a choisi et
-      // a rendu « enduit 0 · volets 0 » sur un registre du Marais parfaitement
-      // en place. Un témoin qui CHERCHE son terrain doit écarter ce qui n'est
-      // pas son sujet.
-      if ((t.t.monumentsDetailles || []).length) continue;
-      if (nb(t.t.facades) > 2000) { marais = t; ou = [kx, kz]; break boucleM; }
+      // (La v292 écartait tout morceau qu'un monument ATTEINT : celui de
+      // Notre-Dame, (−13, 13), avait un coin dans le Quartier latin et deux
+      // mille sommets de pierre. Le critère des cinq points le rejette déjà ;
+      // et « atteint » n'est pas « écrit » — le vrai morceau du Marais,
+      // (−13, 12), est à portée du modèle sans en recevoir un sommet. Ce que
+      // le verdict exige — pas de pierre — reste exigé.)
+      // ET ON GARDE LE MORCEAU QUI PORTE LE PLUS DE FAÇADES, pas le premier
+      // qui en porte deux mille (v294) : les rues élargies laissent à un
+      // morceau de seize blocs un coin d'îlot, et le premier venu a rendu
+      // « enduit 100 · volets 0 » sur un registre parfaitement en place.
+      // Mesuré sous node : (−13, 12) porte 25 322 sommets de façade, enduit
+      // 1 924 · volets 3 680 · pierre 0.
+      if (nb(t.t.facades) > (marais ? nb(marais.t.facades) : 0)) { marais = t; ou = [kx, kz]; }
     }
     if (!marais) marais = tampons(1, Math.floor(mx / CHUNK), Math.floor(mz / CHUNK));
     console.log(`   🔎 morceau du Marais : ${ou ? ou.join(',') : 'aucun avec façades'}`);

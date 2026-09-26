@@ -750,6 +750,68 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les rues de Paris s'élargissent, et le pas suit (v294)
+
+Max : « les rues de Paris sont trop étroites, élargis-les ». C'est la passe que
+la v271 avait laissée de côté (« les six villes bâties à la main gardent leurs
+largeurs relevées sur de vrais plans : leur élargissement est une passe à
+part ») et que la v293 avait mesurée sans la faire. Six règles.
+
+- **ON MESURE TOUT LE DISQUE, PAS SEULEMENT LE TRAJET.** La v293 avait relevé
+  cent cinquante largeurs SOUS les circuits — c'est-à-dire sous les avenues,
+  les rues les plus larges de la ville — et conclu « un dixième du trajet ».
+  Mesuré sur les 94 000 colonnes du disque (la plus courte traversée de
+  chaussée sur douze directions), la chaussée d'une rue de QUARTIER faisait
+  **2,0 blocs pour une voiture de 2,26** — médiane 2,5 sur toute la ville, et
+  Montmartre à 2,0 partout — et le trottoir 0,55 bloc, où ni un passant ni un
+  réverbère ne tiennent. Le trajet mesuré était le meilleur de la ville.
+- **UNE LARGEUR EST UN RÉSULTAT, ET IL Y EN A TROIS.** Une rue à sens unique
+  3,6 (la voiture au milieu, 0,67 de chaque côté), une ruelle héritée 3,0, un
+  boulevard à double sens 5,2 — deux voitures côte à côte, `4 × 1,13 + 0,6`,
+  la barre de la v271 — et aucune avenue en dessous : `a(l)` a un PLANCHER
+  (`PLANCHER_AVENUE`), parce qu'un raccord à `a(0.6)` faisait 3,1 blocs et
+  qu'un convoi y croise l'enfant de face. La table candidate (3,2 · 3,6 · 4,0)
+  a rendu 24,0 · 23,2 · 22,0 % de colonnes de lot pour 35,9 avant ; on prend
+  la plus petite qui laisse plus d'un demi-bloc de chaque côté.
+- **LE PAS SUIT L'EMPRISE, ET L'ÎLOT NE PERD RIEN.** `pas` monte exactement de
+  deux fois ce que `face` gagne : l'îlot, qui est ce qui reste (`pas − 2·face`),
+  garde sa largeur au dixième. C'est la méthode de la v271 — moins de rues,
+  plus larges — appliquée à une trame qui n'est pas la sienne. Le prix se
+  déclare : la part de lot passe de 35,9 à 23,2 % du disque, celle du trottoir
+  de 17,5 à 24,8.
+- **CE QUI SE ROULE SE DEMANDE À LA MÊME RÈGLE QUI LE PAVE.** L'anneau d'une
+  place ronde faisait UN bloc (`dp > r − 1`) pendant que `RONDS` y faisait
+  rouler la voiture à `r − 0,5` : la moitié de la carrosserie sur le pavé de la
+  place. `anneauDe(p)` décide désormais des deux — trois blocs, ou la moitié du
+  rayon sur les petites places. Même discipline pour le tour des monuments
+  (`LARGE_TOUR` 3 → 4, `AXE_TOUR` en dérive) et pour la ligne axiale de
+  `marquageParis`, qui lit `DOUBLE_SENS` au lieu du chiffre 1,2 qu'elle
+  recopiait de la table des quartiers.
+- **ET LES PONTS DE PARIS ÉTAIENT AU FOND DE LA SEINE.** Trouvé en relisant
+  `solParis` pour élargir les ponts : il rendait bien du pavé sur le tablier,
+  mais `world.js` l'écrivait à la cote du TERRAIN, c'est-à-dire le lit —
+  mesuré sous node, terrain 28, eau à 30, le pavé du pont à 28, et l'on
+  traversait à la nage. C'est le piège de la Tamise (v208), que Paris n'avait
+  jamais reçu — sixième occurrence du verre dans les murs. `pontParis` dit à
+  `world.js` et à `coteRoulable` quelles colonnes portent un tablier (l'eau et
+  la berge basse, pour rejoindre la voie sur berge de plain-pied), à la cote
+  de la ville. Deux sujets dans la livraison, deux lignes au journal, deux
+  témoins (v279).
+- **C'EST DU SOL, ET ÇA SE VÉRIFIE.** `hauteurParis` ne lit que `QUAI_BAS` et
+  la butte ; aucun des nombres qui changent n'y entre, et les deux empreintes
+  de `plafond.js` ne bougent pas. La preuve n'est pas ce raisonnement, c'est
+  la suite `plafond.js` verte au portail.
+- **UN TÉMOIN DE LARGEUR LIT LE MONDE, EN COLONNES, ET SES BARRES SONT DES
+  MILIEUX.** Trois témoins dans `carteMonde.js` : la rue de quartier (fenêtre
+  de soixante blocs au nord du centre : médiane 2 → 4, part sous trois blocs
+  56 → 19 %), les avenues sous les circuits (dixième centile 3 → 5, part des
+  points où deux voitures tiennent 65 → 92 %), et le tablier des ponts (sommet
+  de colonne au-dessus de l'eau, `coteRoulable` à la cote de la ville). Les
+  barres sont posées au milieu des deux régimes mesurés des deux côtés, et le
+  premier jet de la mesure a compté le REBORD du disque comme des rues d'un
+  bloc — une rue coupée par le cercle n'est pas une rue étroite, et la mesure
+  s'arrête à douze blocs du bord.
+
 ## Un circuit se mesure sur le MONDE, pas sur le plan (v293)
 
 Max veut rouler dans Paris sans couture. Mesuré pour la première fois d'un bout
@@ -6187,7 +6249,8 @@ que la v211 avait mesuré pour écarter la conduite à droite. Cinq règles.
   lit ni `pu`, ni `pv`, ni `w`, ni `s`, donc les deux empreintes de
   `plafond.js` ne bougent pas — même raison que la passe de rues de Londres
   (v206). Les six villes bâties à la main gardent leurs largeurs relevées sur
-  de vrais plans : leur élargissement est une passe à part.
+  de vrais plans : leur élargissement est une passe à part — faite pour Paris
+  en v294, à faire pour les cinq autres.
 
 ### Une voiture cède le passage pour elle-même, et tourne sur son empattement (v244)
 

@@ -2238,6 +2238,106 @@ const VRAIES_KM = [
       parisRoule.absent ? 'module absent'
         : `pire ${pireParis} % — ${parisRoule.liste.map((c) => `${c.part}% (plan ${c.plan}%)`).join(' · ')}`);
 
+    // --- LES RUES DE PARIS S'ÉLARGISSENT (v294) ------------------------------
+    //
+    // Max : « les rues de Paris sont trop étroites ». Mesuré sur le plan avant
+    // d'y toucher : la chaussée d'une rue de quartier faisait 2,0 blocs pour
+    // une voiture de 2,26, et un dixième des points de circuit tombaient sur
+    // une avenue de 3 blocs. Trois témoins, et les trois lisent le MONDE
+    // (`getBlock` au sommet de la colonne), jamais le plan : un repère pave la
+    // rue promise (v205, v274, v293). La largeur est la plus courte traversée
+    // de chaussée sur douze directions, en colonnes — c'est ce qu'une voiture
+    // a de chaque côté d'elle.
+    //
+    // LES BARRES SONT DES MILIEUX ENTRE LES DEUX RÉGIMES (v237), mesurés sur le
+    // plan des deux côtés : rue de quartier (fenêtre de 60 blocs au nord du
+    // centre) médiane 2 → 4, part sous trois blocs 56 % → 19 % ; sous les
+    // circuits, part des points où deux voitures tiennent (cinq colonnes,
+    // 4 × 1,13 + 0,6 = 5,12) 65 % → 92 %, dixième centile 3 → 5.
+    const largeursParis = await tab.evaluate(async () => {
+      const g = window.__game;
+      const [pa, wo] = await Promise.all([import('./src/paris.js'), import('./src/world.js')]);
+      if (typeof pa.circuitsParis !== 'function' || !wo.CHAUSSEE) return { absent: true };
+      const solDe = (x, z) => g.world.getBlock(x, g.world.sommetColonne(x, z), z);
+      const estCh = (x, z) => wo.CHAUSSEE.has(solDe(x, z));
+      const DIRS = []; for (let i = 0; i < 12; i++) DIRS.push([Math.cos(i * Math.PI / 12), Math.sin(i * Math.PI / 12)]);
+      const run = (x, z, dx, dz) => { let a = 0; for (let t = 1; t <= 30; t++) { if (estCh(Math.round(x + dx * t), Math.round(z + dz * t))) a = t; else break; } return a; };
+      const largeur = (x, z, dirs) => Math.min(...dirs.map(([dx, dz]) => run(x, z, dx, dz) + run(x, z, -dx, -dz) + 1));
+      const q = (arr, p) => { const s = [...arr].sort((a, b) => a - b); return s.length ? s[Math.min(s.length - 1, Math.floor(p * s.length))] : NaN; };
+      // (a) les rues de quartier, au nord du centre — un morceau que la page
+      // n'a pas forcément chargé : `getBlock` engendre à la demande.
+      const cx = pa.PARIS.x - 30, cz = pa.PARIS.z - 60, ws = [];
+      for (let x = cx - 30; x <= cx + 30; x++) for (let z = cz - 30; z <= cz + 30; z++) {
+        if (!estCh(x, z)) continue;
+        ws.push(largeur(x, z, DIRS));
+      }
+      // (b) sous les huit circuits, perpendiculairement à la marche
+      const cs = pa.circuitsParis((x, z) => g.world.coteRoulable(x, z)), perp = [];
+      for (const c of cs) for (let i = 0; i < c.pts.length; i++) {
+        const a = c.pts[i], b = c.pts[(i + 1) % c.pts.length];
+        const dx = b.x - a.x, dz = b.z - a.z, l = Math.hypot(dx, dz) || 1;
+        if (!estCh(Math.round(a.x), Math.round(a.z))) continue;
+        perp.push(largeur(a.x, a.z, [[-dz / l, dx / l]]));
+      }
+      // La largeur vient du JEU, pas du banc (v271) : `vehicules.js` la publie.
+      const demiLarg = (await import('./src/vehicules.js')).DEMI_LARG_VOITURE || 1.13;
+      // Deux voitures, en COLONNES entières : 4 × 1,13 = 4,52 → cinq colonnes.
+      // Le premier jet prenait `ceil(4 × 1,13 + 0,6)` = 6 et sa barre avait été
+      // calibrée à cinq sur le plan — une marge écrite deux fois (v294).
+      const deuxVoitures = Math.ceil(4 * demiLarg);
+      return { quartier: { n: ws.length, med: q(ws, 0.5), p10: q(ws, 0.1), sousTrois: +(100 * ws.filter((w) => w < 3).length / ws.length).toFixed(1) },
+        circuits: { n: perp.length, p10: q(perp, 0.1), med: q(perp, 0.5), deuxVoitures,
+          partDeux: +(100 * perp.filter((w) => w >= deuxVoitures).length / perp.length).toFixed(1) } };
+    });
+    verifier('une rue de quartier de Paris est plus large que la voiture, et pas seulement au milieu',
+      !largeursParis.absent && largeursParis.quartier.n > 500 && largeursParis.quartier.med >= 3
+      && largeursParis.quartier.sousTrois <= 35,
+      largeursParis.absent ? 'module absent'
+        : `${largeursParis.quartier.n} colonnes de chaussée · médiane ${largeursParis.quartier.med} · 10ᵉ centile`
+        + ` ${largeursParis.quartier.p10} · ${largeursParis.quartier.sousTrois} % sous trois blocs`);
+    verifier('et sur les avenues où roulent les convois, deux voitures tiennent côte à côte',
+      !largeursParis.absent && largeursParis.circuits.n > 500 && largeursParis.circuits.p10 >= 4
+      && largeursParis.circuits.partDeux >= 78,
+      largeursParis.absent ? 'module absent'
+        : `${largeursParis.circuits.n} points · 10ᵉ centile ${largeursParis.circuits.p10} · médiane ${largeursParis.circuits.med}`
+        + ` · ${largeursParis.circuits.partDeux} % des points à ${largeursParis.circuits.deuxVoitures} colonnes ou plus`);
+
+    // ET LES PONTS DE PARIS ONT UN TABLIER AU-DESSUS DE L'EAU (v294). Mesuré
+    // sous node avant d'y toucher : terrain 28, eau à 30, le pavé du pont à 28
+    // — les neuf ponts étaient au fond de la Seine, et l'on traversait à la
+    // nage. Le témoin cherche les colonnes de pont par le PLAN (du pavé là où
+    // `versSeine` dit « eau »), ce qui existe sur l'ancien code, puis lit le
+    // MONDE : le sommet de la colonne est au-dessus de l'eau, et c'est la cote
+    // où roule une voiture (`coteRoulable`), celle de la ville.
+    const pontsParis = await tab.evaluate(async () => {
+      const g = window.__game;
+      const [pa, wo, bl] = await Promise.all([import('./src/paris.js'), import('./src/world.js'), import('./src/blocks.js')]);
+      const ville = wo.CITIES.find((c) => c.key === 'paris');
+      let colonnes = 0, secs = 0, roulables = 0, groupes = 0, dedans = false;
+      for (let u = -pa.PARIS.r; u <= pa.PARIS.r; u++) {
+        const x = pa.PARIS.x + u, z = Math.round(pa.zSeine(x));
+        // Hors du disque `solParis` rend null : le premier jet comptait le
+        // REBORD comme deux ponts de plus, mouillés (11 ponts, 51 colonnes au
+        // sec sur 60) — une rue coupée par le cercle n'est pas une rue, et un
+        // bord de carte n'est pas un pont.
+        const sol = pa.solParis(x, z);
+        const pont = pa.versSeine(x, z) < 0 && sol !== null && sol !== bl.BLOCK.WATER;
+        if (pont && !dedans) groupes++;
+        dedans = pont;
+        if (!pont) continue;
+        colonnes++;
+        const top = g.world.sommetColonne(x, z);
+        if (top > wo.WATER_LEVEL) secs++;
+        if (g.world.coteRoulable(x, z) >= ville.base && g.world.coteRoulable(x, z) === top) roulables++;
+      }
+      return { colonnes, secs, roulables, groupes, base: ville.base, eau: wo.WATER_LEVEL };
+    });
+    verifier('les ponts de Paris ont leur tablier au-dessus de la Seine, à la cote de la ville',
+      pontsParis.groupes >= 9 && pontsParis.colonnes > 0 && pontsParis.secs === pontsParis.colonnes
+      && pontsParis.roulables === pontsParis.colonnes,
+      `${pontsParis.groupes} ponts, ${pontsParis.colonnes} colonnes de tablier sur l'axe du fleuve : ${pontsParis.secs} au sec,`
+      + ` ${pontsParis.roulables} roulables à la cote ${pontsParis.base} (eau à ${pontsParis.eau})`);
+
     // ET LILLE, LE JOUR MÊME OÙ ELLE GAGNE DES CIRCUITS (v223) — pas quatre
     // versions plus tard comme Paris.
     //

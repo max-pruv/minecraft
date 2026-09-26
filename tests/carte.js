@@ -655,15 +655,17 @@ const position = (p) => p.evaluate(() => ({
         : [M.PARIS.x, M.PARIS.z];
       return { x, z };
     });
-    const tissu = await tab.evaluate((P) => {
+    const tissu = await tab.evaluate(async (P) => {
       const w = window.__game.world;
+      const { lotParisLibre } = await import('./src/paris.js');
       const PIERRE = 560, ZINC = 561, PAVE_DE_COUR = 9, HERBE = 1, TERRE = 2;
-      let bati = 0, cours = 0, nu = 0, total = 0;
+      let bati = 0, cours = 0, nu = 0, total = 0, lots = 0;
       for (let u = -40; u <= 40; u++) {
         for (let v = -40; v <= 40; v++) {
           if (Math.hypot(u, v) > 40) continue;
           total++;
           const x = P.x + u, z = P.z + v;
+          if (lotParisLibre(x, z)) lots++;
           const h = w.terrainHeight(x, z);
           const sol = w.getBlock(x, h, z);
           if (sol === PAVE_DE_COUR) cours++;
@@ -682,11 +684,17 @@ const position = (p) => p.evaluate(() => ({
           if (rien && (sol === HERBE || sol === TERRE)) nu++;
         }
       }
-      return { bati, cours, nu, total };
+      return { bati, cours, nu, total, lots };
     }, CŒUR);
-    verifier('Paris est bâtie de pierre de taille et de zinc',
-      tissu.bati > 700,
-      `${tissu.bati} colonnes sur ${tissu.total}`);
+    // LA BARRE SE DEMANDE AU PLAN, ELLE NE S'ÉCRIT PAS (v294). `bati > 700`
+    // était un compte absolu relevé quand une rue faisait deux blocs : les rues
+    // élargies de la v294 laissent 669 colonnes bâties dans le même disque —
+    // moins de rues, plus larges, et la ville n'est pas moins bâtie pour
+    // autant. Ce que le témoin garde, c'est que le bâtisseur ÉCRIT ce que le
+    // plan promet : quatre lots sur cinq portent de la pierre ou du zinc.
+    verifier('Paris est bâtie de pierre de taille et de zinc, partout où le plan promet un lot',
+      tissu.lots > 300 && tissu.bati >= tissu.lots * 0.8,
+      `${tissu.bati} colonnes bâties pour ${tissu.lots} lots du plan, sur ${tissu.total} colonnes`);
     verifier('ses îlots ont une cour', tissu.cours > 40,
       `${tissu.cours} pavés de cour`);
     verifier('et on ne la traverse plus dans l\'herbe', tissu.nu < 400,
