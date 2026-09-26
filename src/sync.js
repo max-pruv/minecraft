@@ -15,7 +15,7 @@
 // mécanique — c'est là qu'on saura pourquoi elle horodate. Ici on l'applique,
 // comme les autres fusions de ce fichier.
 import { fusionnerGarages } from './garages.js';
-import { migrerBlocsCarte3, migrerPositionsCarte3 } from './world.js';
+import { migrerBlocsCarte3, migrerPositionsCarte3, menagerBlocsCielParis } from './world.js';
 
 const STATE_TS = '_t'; // when the pushing device last wrote this document
 
@@ -54,6 +54,7 @@ const nomPhotos = (nom) => `${nom}~photos`;
 const nomAvantCarte = (nom) => `${nom}~avant-carte`;
 // La copie d'avant le SECOND agrandissement (v242), sur son propre document.
 const nomAvantCarte3 = (nom) => `${nom}~avant-carte-2`;
+const nomAvantMenage = (nom) => `${nom}~avant-menage-paris`;
 
 const MAX_PHOTOS = 8;
 
@@ -323,7 +324,9 @@ export class ProfileSync {
     // fantôme là où New York était. La migration est pure et idempotente
     // (un bloc déplacé prend la date de la refonte) : la repasser à chaque
     // lecture ne coûte qu'un parcours, et c'est le receveur qui cède.
-    const editsRecus = migrerBlocsCarte3(normalizeEdits(remote.edits)).tout;
+    // ET PAR LE MÉNAGE DU CIEL DE PARIS (v298), pour la même raison : une
+    // tablette restée sur l'ancienne version republierait la spirale.
+    const editsRecus = menagerBlocsCielParis(migrerBlocsCarte3(normalizeEdits(remote.edits)).tout).tout;
     const posRecues = migrerPositionsCarte3(remote.pos).pos;
     out.pos = filtrerParMonde(mergePos(local.pos, posRecues), vivant);
     out.edits = filtrerParMonde(mergeAllEdits(local.edits, editsRecus), vivant);
@@ -471,6 +474,27 @@ export class ProfileSync {
     } catch { return 'échec'; }             // réessayé à la lecture suivante
   }
 
+  // LA COPIE D'AVANT LE MÉNAGE DU CIEL DE PARIS (v298) — même forme que celle
+  // du monde ×2 : prise sur le document du nuage TEL QU'IL EST, avant d'y
+  // pousser quoi que ce soit, une seule fois, sur son propre document. Et
+  // seulement si le ménage a quelque chose à retirer : un enfant qui n'a rien
+  // bâti dans le ciel de Paris ne coûte ni une lecture ni un document.
+  async mettreALAbriAvantMenage(nom, remote) {
+    if (this.copieMenage || !remote || !this.cloud.configured) return this.copieMenage || 'rien';
+    const edits = remote.edits;
+    if (!edits || typeof edits !== 'object' || !Object.keys(edits).length) return 'rien à sauver';
+    if (!menagerBlocsCielParis(normalizeEdits(edits)).retires) return (this.copieMenage = 'rien à retirer');
+    try {
+      const deja = await this.cloud.statePull(nomAvantMenage(nom));
+      if (deja && (deja.editsz || deja.edits)) return (this.copieMenage = 'déjà sauvé');
+    } catch { return 'nuage muet'; }        // on ne réécrit pas dans le doute
+    const paquet = await this.resserrer({ edits, pos: remote.pos || {}, menage: 1, at: Date.now() });
+    try {
+      await this.cloud.statePush(nomAvantMenage(nom), paquet, false);
+      return (this.copieMenage = 'sauvé');
+    } catch { return 'échec'; }             // réessayé à la lecture suivante
+  }
+
   // Et la relire, si un jour il faut rendre à un enfant ce qu'il avait bâti.
   async lireAvantLaRefonte() {
     const nom = this.getName();
@@ -521,6 +545,7 @@ export class ProfileSync {
     if (!remote) { await this.push(); return { changed: false }; } // first device: seed it
     remote = await this.dilater(remote);
     await this.mettreALAbriAvantCarte3(name, remote);
+    await this.mettreALAbriAvantMenage(name, remote);
     const { state, changed } = this.merge(this.snapshot(), remote);
     this.apply(state);
     // Cette lecture-ci arrive APRÈS que le jeu a chargé son monde depuis le
@@ -551,6 +576,7 @@ export class ProfileSync {
         const remote = await this.dilater(await this.cloud.statePull(name));
         if (remote) {
           await this.mettreALAbriAvantCarte3(name, remote);
+          await this.mettreALAbriAvantMenage(name, remote);
           const { state: merged, changed } = this.merge(local, remote);
           local = merged;
           if (changed) {

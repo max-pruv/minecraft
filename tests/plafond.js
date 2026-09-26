@@ -646,6 +646,62 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     !tunnel.absent && !tunnel.introuvable && tunnel.plancher && tunnel.reste,
     tunnel.absent ? 'pas de sol continu' : JSON.stringify(tunnel));
 
+  // LE MÉNAGE DU CIEL DE PARIS (v298) — PUR, sur un document fabriqué.
+  //
+  // Décision de Max (« clean les trucs bizarres ») : une spirale de planches
+  // et de verre flottait à côté de la tour Eiffel, et le journal de son iPhone
+  // a compté 505 blocs posés suspendus dans Paris. La règle retire ce qui
+  // FLOTTE — un groupe de blocs posés qui ne touche ni le sol, ni un bloc du
+  // jeu, ni un bloc posé au sol — et c'est le « rien d'autre » qui se prouve :
+  // une maison (mur au sol, bloc dessus), un drapeau sur un toit du jeu, un
+  // bloc collé au fer de la tour, un bloc posé APRÈS la date, un trou creusé,
+  // une tour au point d'apparition, une marque d'import, une archive restent.
+  const menage = await (async () => {
+    const W = await import('../src/world.js');
+    const P = await import('../src/paris.js');
+    if (!W.menagerBlocsCielParis || !W.DATE_MENAGE_PARIS) return { absent: true };
+    const te = P.adresseParis(-4.4, 0.5);                    // la tour Eiffel
+    const x = te[0] + 12, z = te[1];
+    const h = w.terrainHeight(x, z), hs = w.terrainHeight(10, 10);
+    const t = W.DATE_MENAGE_PARIS - 86400000;
+    // un toit du jeu : la première colonne bâtie à l'est de la tour
+    let xt = te[0] + 14; while (xt < te[0] + 60 && w.sommetColonne(xt, z) <= w.terrainHeight(xt, z) + 3) xt++;
+    const toitJeu = w.sommetColonne(xt, z);
+    // le fer de la tour : un montant, à y = 10 au-dessus du parvis
+    const parvis = w.terrainHeight(te[0], te[1]);
+    let fer = null;
+    for (let dx = -8; dx <= 8 && !fer; dx++) for (let dz = -8; dz <= 8 && !fer; dz++) {
+      if (w.getBlock(te[0] + dx, parvis + 10, te[1] + dz) !== 0 && w.getBlock(te[0] + dx + 1, parvis + 10, te[1] + dz) === 0) fer = [te[0] + dx + 1, parvis + 10, te[1] + dz];
+    }
+    const ciel1 = `${x},${h + 30},${z}`, ciel2 = `${x},${h + 31},${z}`;
+    const mur = `${x + 3},${h + 1},${z}`, dessus = `${x + 3},${h + 2},${z}`;
+    const drapeau = `${xt},${toitJeu + 1},${z}`, colle = fer ? fer.join(',') : null;
+    const apres = `${x + 6},${h + 30},${z}`, trou = `${x + 8},${h + 30},${z}`, loin = `10,${hs + 40},10`;
+    const doc = { local: {
+      [ciel1]: [8, t], [ciel2]: [10, t], [mur]: [1, t], [dessus]: [1, t], [drapeau]: [23, t],
+      ...(colle ? { [colle]: [23, t] } : {}),
+      [apres]: [5, W.DATE_MENAGE_PARIS + 1000], [trou]: [0, t], [loin]: [5, t], '@manhattan-v240:1,2,3': [3, t, 1, 2],
+    }, 'manhattan-v1:local': { [ciel1]: [3, t] } };
+    const t0 = Date.now();
+    const un = W.menagerBlocsCielParis(doc), deux = W.menagerBlocsCielParis(un.tout);
+    const ms = Date.now() - t0;
+    const L = un.tout.local;
+    return {
+      retire: !L[ciel1] && !L[ciel2], mur: !!L[mur], dessus: !!L[dessus], drapeau: !!L[drapeau],
+      colle: colle ? !!L[colle] : 'pas de fer trouvé', apres: !!L[apres], trou: !!L[trou],
+      loin: !!L[loin], marque: !!L['@manhattan-v240:1,2,3'], archive: !!un.tout['manhattan-v1:local'][ciel1],
+      idempotent: JSON.stringify(deux.tout) === JSON.stringify(un.tout),
+      bilan: `${un.retires} retiré(s), ${un.gardes} gardé(s), ${ms} ms, toit du jeu à ${toitJeu - w.terrainHeight(xt, z)}, fer ${colle}`,
+    };
+  })();
+  verifier('le ménage du ciel de Paris retire ce qui flotte, d\'un seul tenant',
+    !menage.absent && menage.retire && menage.bilan.startsWith('2 '),
+    menage.absent ? 'le ménage du ciel de Paris n\'existe pas' : menage.bilan);
+  verifier('et ne touche ni à une maison, ni à un drapeau sur un toit, ni au fer de la tour, ni à ce qui est posé après, ni hors de Paris',
+    !menage.absent && menage.mur && menage.dessus && menage.drapeau && menage.colle === true && menage.apres
+      && menage.trou && menage.loin && menage.marque && menage.archive && menage.idempotent,
+    menage.absent ? 'le ménage du ciel de Paris n\'existe pas' : JSON.stringify(menage));
+
   const trop = [];
   for (let x = -700; x <= 700; x += 7) {
     for (let z = -700; z <= 700; z += 7) {

@@ -191,6 +191,39 @@ const BLOCS = 40000;
       copie2Faite ? 'la copie d\'avant reste la copie d\'avant'
         : 'pas de copie à comparer — voir le verdict précédent');
 
+    // LE MÉNAGE DU CIEL DE PARIS PASSE PAR LA FUSION, ET SA COPIE D'AVANT SE
+    // PREND SUR LE NUAGE (v298). Un document tel qu'une tablette restée sur
+    // l'ancienne version l'écrirait — la spirale dans le ciel, une brique au
+    // sol — et l'on regarde ce que la fusion en garde : le sol, pas le ciel.
+    const menage = await tab.evaluate(async () => {
+      const ps = window.__game.profileSync;
+      const W = await import('./src/world.js');
+      const P = await import('./src/paris.js');
+      if (!W.menagerBlocsCielParis || !ps.mettreALAbriAvantMenage) return { absent: true };
+      const te = P.adresseParis(-4.4, 0.5);
+      const x = te[0] + 12, z = te[1], h = window.__game.world.terrainHeight(x, z);
+      const ciel = `${x},${h + 30},${z}`, ciel2 = `${x},${h + 31},${z}`, sol = `${x},${h + 1},${z}`;
+      const t = W.DATE_MENAGE_PARIS - 86400000;
+      const local = ps.snapshot();
+      const remote = { ...JSON.parse(JSON.stringify(local)), edits: { local: { [ciel]: [8, t], [ciel2]: [10, t], [sol]: [1, t] } } };
+      ps.copieMenage = null;   // comme une tablette qui vient de s'ouvrir
+      const copie = await ps.mettreALAbriAvantMenage(ps.getName(), remote);
+      const r = ps.merge(local, remote);
+      const e = (r.state.edits || {}).local || {};
+      return { copie, ciel: !!e[ciel] || !!e[ciel2], sol: e[sol]?.[0] === 1 };
+    });
+    verifier('un bloc du ciel de Paris reçu du nuage ne revient pas par la fusion, et la brique au sol, si',
+      !menage.absent && !menage.ciel && menage.sol,
+      menage.absent ? 'le ménage du ciel de Paris n\'existe pas' : JSON.stringify(menage));
+    const departCopieM = Date.now();
+    const copieMFaite = !menage.absent && await jusqua(async () => {
+      const a = nuage.etatDe('Marlon~avant-menage-paris');
+      return !!(a && (a.editsz || a.edits) && a.menage === 1);
+    }, 60000);
+    verifier('et le document du nuage a été mis à l\'abri avant, sur son propre document',
+      copieMFaite, menage.absent ? 'le ménage du ciel de Paris n\'existe pas'
+        : `${menage.copie} · ${Date.now() - departCopieM} ms`);
+
     // CE QUI VIENT DU NUAGE PASSE PAR LA MIGRATION DE CARTE AVANT LA FUSION.
     //
     // La fusion est une union. Une tablette restée sur la v240 republie les

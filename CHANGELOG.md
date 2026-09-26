@@ -20,6 +20,51 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v298 — Le ciel de Paris est nettoyé
+
+**Pourquoi.** Max, trois captures d'iPhone au-dessus de Paris, « Bizarre »,
+puis « clean les trucs bizarres » : une spirale de planches et de verre
+montait dans le ciel à côté de la tour Eiffel. Le générateur ne la produit
+pas (mesuré sous node sur les 94 000 colonnes du disque : le seul bois du
+jeu à Paris, ce sont les planchers d'îlot et les troncs, tous à moins de dix
+blocs du sol), et personne ne pouvait lire les profils des enfants. C'est le
+**journal de bord de son iPhone** (v296) qui a tranché : à la session des
+captures, **505 blocs posés flottaient au-dessus du sol de Paris** — 318
+planches, 101 verre, 73 grès, 7 feuilles, 3 planches sombres — dans un
+journal de 83 780 blocs. Des blocs du journal, donc, posés en vol.
+
+**Ce que ça change.** Tout ce qui FLOTTE au-dessus de Paris est retiré, d'un
+seul tenant : un groupe de blocs posés qui ne touche ni le sol, ni un bloc
+du jeu (un toit, un trottoir, le fer de la tour, l'eau de la Seine), ni un
+bloc posé au sol. Une maison, un drapeau sur un toit, un radeau, un balcon,
+une cabane dans un arbre restent où ils sont ; ce qui est posé après le
+26 septembre à 19 h (UTC) reste aussi, quelle que soit sa hauteur — c'est un
+ménage d'un jour, pas une interdiction de bâtir en vol. Le ménage se fait
+sur la tablette au premier lancement, et sur chaque document reçu du nuage,
+pour qu'une tablette restée sur l'ancienne version ne rapporte pas la
+spirale. Une copie du document d'avant est gardée dans le nuage, sur son
+propre document, une seule fois, et seulement si le ménage avait quelque
+chose à retirer. Ce qui n'est PAS changé : la tour Eiffel rouge sombre à
+longue flèche des captures est le squelette voxel du jeu, seul à l'écran
+quand la couche en relief est éteinte ou de loin — c'est le jeu, pas un
+défaut, et sa couleur est une décision à part.
+
+**Ce qui le prouve.** Quatre témoins neufs, rouges sur l'ancien code parce
+que la règle n'existe pas — et ils le disent. `plafond.js` éprouve la règle
+PURE sur un document fabriqué : deux blocs suspendus partent, une maison, un
+drapeau sur un toit du jeu, un bloc collé au fer de la tour, un bloc posé
+après la date, un trou creusé, une tour au point d'apparition, une marque
+d'import et une archive restent, et repasser ne change rien.
+`sauvegarde.js` éprouve le chemin de l'enfant : un document du nuage tel
+qu'une vieille tablette l'écrirait perd ses blocs suspendus à la fusion et
+garde sa brique au sol, et la copie d'avant existe. Mesuré aussi, parce
+qu'une fusion se paie toutes les quarante-cinq secondes : sur un journal de
+quatre-vingt mille blocs hors de Paris, 50 ms (la migration de carte déjà en
+place en coûte 65) ; sur quarante-quatre mille blocs de maisons dans Paris,
+100 ms.
+
+---
+
 ## v297 — Le sol continu : la campagne n'est plus en marches
 
 **Pourquoi.** Le cahier de Max (kit « monde fidèle », septembre 2026) ouvre
