@@ -26,8 +26,11 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 connecte, ça ne lague pas trop, et au bout de vingt secondes de jeu, quand je
 recharge complètement, il plante. Il faudrait collecter des logs pour
 comprendre les bugs, et déjà chercher la cause. » C'était en se promenant à
-Paris. Un plantage sur iPad ne laisse rien : Safari tue la page sans un mot,
-personne n'était devant avec un câble. Deux causes, mesurées.
+Paris. Puis, la v296 en cours de validation : « le jeu plante aussi sur mon
+téléphone à moi, sur la version actuelle » — un iPhone récent, donc. Un
+plantage sur iOS ne laisse rien : Safari tue la page sans un mot, quel que
+soit l'appareil, et personne n'était devant avec un câble. Deux causes,
+mesurées, et la première ne dépend pas de l'âge de l'appareil.
 
 - **Paris pesait un gigaoctet.** Mesuré au banc, disque rempli au centre de
   Paris, au réglage que reçoit un appareil jamais classé (rr 12 · hd 3) : la
