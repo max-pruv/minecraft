@@ -71,10 +71,11 @@ mesurent ce qu'aucun d'eux ne peut raconter.
   Marais, parce que le modèle du monument y ajoute deux mille sommets de pierre.
   Il écarte désormais tout morceau qui porte un monument.
 
-Portail complet : seize suites, six rouges, tous classés — deux corrigés ici,
-deux verts rejoués seuls (`sauvegarde.js`, `reglages.js`), deux dettes déjà
-mesurées des deux côtés (`manhattan.js:282`, les deux tirages de `monte.js`),
-plus le fond de carte de `maj.js`. Détail dans `TASKS.md`.
+Portail complet rejoué depuis zéro après correction : **quatorze suites vertes
+sur seize**. Les deux restantes sont les dettes déjà mesurées des deux côtés —
+le délai de `manhattan.js` et le gel de `monte.js` à l'arrivée dans une ville
+(39,1 %, dans l'étendue 34,3–44,7 % relevée sur `origin/main` comme ici).
+Détail dans `TASKS.md`.
 
 ## v291 — Le jeu ne se donne plus un réglage que personne n'a jamais essayé
 

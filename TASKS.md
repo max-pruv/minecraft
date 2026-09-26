@@ -29,6 +29,15 @@
   **42,5 %**, dans l'étendue 34,3–44,7 % relevée des deux côtés). Plus le fond de
   carte de `maj.js`, rouge sur SIX portails d'affilée désormais.
 
+  **SECOND PORTAIL, `--depuis-zero`, après les deux corrections : QUATORZE
+  SUITES VERTES SUR SEIZE.** `parishd.js`, `maj.js`, `sauvegarde.js` et
+  `reglages.js` sont passées au vert — les quatre que la première exécution
+  accusait. Il ne reste que les deux dettes : `manhattan.js` (💥 le même délai de
+  60 s) et `monte.js` (le gel à l'arrivée, **39,1 %** et une pire image de
+  **2 300 ms**, contre 4 933 ms relevés sur `origin/main`). Et « les voitures ne
+  se traversent plus » est VERTE cette fois, sur le même code qu'au portail
+  précédent où elle rendait 46,5 % : le tirage de la v277, une fois de plus.
+
   **Et ce qui n'est PAS couvert, dit au lieu d'être glissé sous le tapis** : la
   v292 ajoute **+12,6 ms par morceau de monument** (1,35×, mesuré en ordre
   alterné), et le gel de `monte.js` se mesure en ARRIVANT dans Paris. Huit
