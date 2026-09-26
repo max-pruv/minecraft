@@ -60,13 +60,18 @@ campagne, médiane de neuf) ; et en jouant, l'A/B sur la même page — voxel
 puis surface, même pente, même cap — plus une vache posée sur la pente qui
 se tient sur la même surface, et le palier bas qui la dessine aussi. Les deux
 empreintes du relief, inchangées, sont la preuve de l'invariant 1. **Et le
-portail complet a attrapé ce que la sonde n'avait pas vu** : « une voiture
-roule dans la nature au lieu de buter sur une marche » (`monte.js`) est tombé
-rouge — bloquée à 13,4 blocs sur une pente d'un bloc par bloc. Le premier
-jet ne taisait que le SOMMET d'une colonne couverte ; le nez d'une voiture
-de 2,26 blocs est deux colonnes devant son centre, où le cube sous le sommet
-restait solide sous la surface. Tout cube d'une colonne couverte est
-désormais sous sa surface (un témoin pur le garde), et la voiture regrimpe.
+portail complet a attrapé deux choses que la sonde n'avait pas vues.** « Une
+voiture roule dans la nature au lieu de buter sur une marche » (`monte.js`)
+est tombé rouge — bloquée à 13,4 blocs sur une pente d'un bloc par bloc : le
+premier jet ne taisait que le SOMMET d'une colonne couverte, et le nez d'une
+voiture de 2,26 blocs est deux colonnes devant son centre, où le cube sous
+le sommet restait solide sous la surface. Et « quand la rame arrive, on
+propose de monter à bord » : l'enfant posé sur un tracé de train à neuf
+blocs sous une colline — un tunnel — était REMONTÉ sur l'herbe par le
+contact. Ce que la surface tait, et où elle accroche, est désormais une
+BANDE de deux cubes sous elle, ni plus ni moins : la voiture regrimpe, et un
+tunnel garde son plancher et son enfant. Deux témoins purs de `plafond.js`
+le gardent (une pente à deux marches, un vide sous une colonne naturelle).
 
 ---
 

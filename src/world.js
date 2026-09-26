@@ -97,6 +97,13 @@ import { ficheColonne, colonneCouverte, solContinu as solContinuDe } from './sol
 // L'accroche au sol continu : jusqu'où l'on redescend sur la surface sans
 // avoir « décollé » (v297). Un demi-bloc plus le pas horizontal de l'image.
 const ACCROCHE_SOL = 0.5;
+// LA BANDE SOUS LA SURFACE : les cubes d'une colonne couverte que la surface
+// remplace, et où le contact la fait respecter. Deux blocs — le sommet et le
+// cube dessous —, jamais toute la colonne : un tunnel de train sous une
+// colline, une grotte, une station de métro sont SOUS une colonne naturelle,
+// et l'enfant qui y est doit y rester, avec son plancher solide. Voir
+// `blocSousLaSurface` et `accrocherAuSol`.
+const SOUS_SURFACE = 2;
 
 export const CHUNK = 16;
 
@@ -2955,12 +2962,21 @@ export class World {
   // aurait escaladé n'arrête rien. Un piéton, large de 0,6, n'atteint jamais
   // cette colonne — c'est pour cela que la marche allait bien. La règle est
   // géométrique : entre deux colonnes couvertes le relief change d'au plus un
-  // bloc, donc la surface passe à un demi-bloc au plus sous le sommet, et
-  // tout cube SOUS le sommet est sous la surface en tout point de sa colonne.
+  // bloc, donc la surface passe à un demi-bloc au plus sous le sommet, et le
+  // cube SOUS le sommet est sous la surface en tout point de sa colonne.
+  //
+  // MAIS PAS TOUTE LA COLONNE — c'est le second rouge du même portail qui l'a
+  // dit : « quand la rame arrive, on propose de monter à bord » pose l'enfant
+  // sur le tracé d'un train, à y 28 sous une colline dont la surface est à
+  // 37,8 : un TUNNEL. Une colonne naturelle a une surface au-dessus et peut
+  // avoir un vide en dessous — tunnel de train, grotte, station de métro —,
+  // dont le plancher et les parois sont des cubes de la même colonne. On ne
+  // tait donc que la BANDE que la surface remplace (`SOUS_SURFACE`, deux
+  // cubes), et `accrocherAuSol` n'y remonte que ce qui est DANS cette bande.
   blocSousLaSurface(bx, by, bz) {
     if (this.sansSolContinu) return false;
     const f = this.ficheMemo(bx, bz);
-    if (!f.nat || by >= f.cote) return false;
+    if (!f.nat || by >= f.cote || by < f.cote - SOUS_SURFACE) return false;
     return colonneCouverte(this, bx, bz, (a, b) => this.ficheMemo(a, b));
   }
 
@@ -3004,11 +3020,15 @@ export class World {
     const s = this.solContinu(pos.x, pos.z);
     if (s === null) return null;
     const eps = 1e-4;
-    if (pos.y < s + eps) {
+    // On ne remonte sur la surface que ce qui est DANS la bande qu'elle
+    // remplace : un enfant dans un tunnel de train, neuf blocs sous la
+    // colline, y reste — le premier jet le téléportait sur l'herbe.
+    if (pos.y < s + eps && pos.y > s - SOUS_SURFACE) {
       pos.y = s + eps;
       if (vel.y < 0) vel.y = 0;
       return { s, auSol: vel.y <= 0 };
     }
+    if (pos.y <= s - SOUS_SURFACE) return null;   // sous la bande : le voxel décide, comme avant
     if (!vole && etaitAuSol && vel.y <= 0 && pos.y - s < ACCROCHE_SOL + pasH
         && this.boiteLibre(pos.x, s + eps, pos.z, half, hauteur)) {
       pos.y = s + eps; vel.y = 0;

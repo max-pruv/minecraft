@@ -958,12 +958,32 @@ dessus, et `franchirEnRoulant` (v286) ne pouvait plus rien : le sommet qu'il
 aurait escaladé n'arrête rien, donc la voiture n'était jamais « bloquée par
 un bloc » au sens du franchissement. La règle est géométrique, pas un
 réglage : entre deux colonnes couvertes le relief change d'au plus un bloc,
-la surface passe donc à un demi-bloc au plus sous le sommet, et TOUT cube
+la surface passe donc à un demi-bloc au plus sous le sommet, et le cube
 sous le sommet est sous la surface en tout point de sa colonne. Un témoin
 pur de `plafond.js` le garde sur une pente à deux marches consécutives.
 **Ce qu'une sonde éprouve sur un piéton ne vaut pas pour une voiture ; ce
 qui se mesure « au volant » se mesure avec le gabarit d'une voiture** — et
 c'est la voie longue, une fois de plus, qui l'a dit.
+
+**ET MON PREMIER REMÈDE TAISAIT TOUTE LA COLONNE — le second rouge du même
+portail a dit pourquoi c'est faux.** « Quand la rame arrive, on propose de
+monter à bord » (`monte.js`) pose l'enfant sur le tracé d'un train, en
+(−403, 472) : y 28,1, sous une colline dont la surface est à 37,8 — un
+TUNNEL. Mesuré à la sonde : `pos.y` = 37,8 dès la première image, le contact
+l'avait remonté sur l'herbe, et la rame ne l'a jamais trouvé. Une colonne
+NATURELLE a une surface au-dessus et peut avoir un vide en dessous — un
+tunnel de train, une grotte, une station de métro — dont le plancher et les
+parois sont des cubes de la même colonne : les taire, c'est faire tomber
+l'enfant à travers ; le remonter dès qu'il est « sous la surface », c'est le
+téléporter hors du tunnel. Ce que la surface tait et où elle accroche est
+donc une BANDE (`SOUS_SURFACE`, deux cubes) : le sommet et le cube dessous —
+ce qu'il faut à une voiture sur une pente d'un bloc par bloc, et rien de
+plus. Sous la bande, le voxel décide, comme avant. **Une règle de contact se
+formule par ce qu'elle REMPLACE, jamais par « au-dessus » ou « en dessous »
+d'une cote** : la surface remplace deux cubes, pas la colonne. Deux témoins
+purs de `plafond.js` — une pente à deux marches, un vide sous une colonne
+naturelle — et les deux rouges du portail se rejouent SEULS avant de
+fusionner.
 
 **Et deux leçons de sonde, payées dans la même livraison.** Une capture
 « après » de la campagne montrait QUATRE morceaux et le paysage lointain à la

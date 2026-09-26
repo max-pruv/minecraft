@@ -616,8 +616,35 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   })();
   verifier('sur une pente couverte, le cube sous le sommet est sous la surface, et n\'arrête plus une voiture',
     !sousSurface.absent && !sousSurface.introuvable && sousSurface.sommet && sousSurface.dessous
-      && sousSurface.plusBas && !sousSurface.air,
+      && !sousSurface.plusBas && !sousSurface.air,
     sousSurface.absent ? 'pas de sol continu' : JSON.stringify(sousSurface));
+
+  // ET UN TUNNEL SOUS UNE COLLINE GARDE SON PLANCHER, ET SON ENFANT (v297,
+  // portail) : « quand la rame arrive, on propose de monter à bord » posait
+  // l'enfant sur un tracé de train à neuf blocs sous la surface, et le premier
+  // jet du contact le remontait sur l'herbe. On CHERCHE un vide sous une
+  // colonne naturelle couverte (un tunnel, une grotte), et l'on demande au
+  // monde : le plancher du vide est-il solide, et un pied posé dedans y
+  // reste-t-il ?
+  const tunnel = (() => {
+    if (!w.blocSousLaSurface || !w.accrocherAuSol) return { absent: true };
+    for (let x = -700; x <= 700; x += 2) {
+      for (let z = -700; z <= 700; z += 2) {
+        const t = w.terrainHeight(x, z);
+        if (w.solContinu(x + 0.5, z + 0.5) === null) continue;
+        let vide = -1;
+        for (let y = t - 3; y > Math.max(2, t - 20); y--) if (w.getBlock(x, y, z) === 0 && w.getBlock(x, y + 1, z) === 0 && w.getBlock(x, y - 1, z) !== 0) { vide = y; break; }
+        if (vide < 0) continue;
+        const pos = { x: x + 0.5, y: vide + 0.05, z: z + 0.5 }, vel = { x: 0, y: 0, z: 0 };
+        const r = w.accrocherAuSol(pos, vel, { etaitAuSol: true, pasH: 0, half: 0.3, hauteur: 1.8 });
+        return { x, z, t, vide, plancher: !w.blocSousLaSurface(x, vide - 1, z), reste: Math.abs(pos.y - (vide + 0.05)) < 1e-6, contact: r };
+      }
+    }
+    return { introuvable: true };
+  })();
+  verifier('et un tunnel sous une colline garde son plancher, et l\'enfant qui y est n\'est pas remonté sur l\'herbe',
+    !tunnel.absent && !tunnel.introuvable && tunnel.plancher && tunnel.reste,
+    tunnel.absent ? 'pas de sol continu' : JSON.stringify(tunnel));
 
   const trop = [];
   for (let x = -700; x <= 700; x += 7) {
