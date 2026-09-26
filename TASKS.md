@@ -1,5 +1,35 @@
 # Ce qui est en cours
 
+- [ ] **LA STRUCTURE DE RONDINS DANS LE CIEL DE PARIS (v295) — PROBABLEMENT
+  UNE CONSTRUCTION DES ENFANTS, ET CELA RESTE À CONFIRMER PAR MAX.** Sa
+  capture d'iPad montre, au-dessus des toits au centre de Paris, une grande
+  structure de rondins et de planches sombres avec des blocs de laine bleue,
+  en forme de grue ou de bateau. Ce qui est MESURÉ : le générateur ne la
+  produit pas (balayage sous node des 94 000 colonnes du disque, aucun
+  rondin, aucune planche sombre, aucune laine bleue en l'air — les seuls
+  « flottants » du générateur sont les combles au-dessus d'immeubles creux et
+  les seize cubes de la tour Eiffel, corrigés) ; aucun bâtisseur de Paris
+  n'écrit ces trois blocs ; le nom sous le réticule est celui du bloc EN
+  MAIN (`#block-name`, main.js:5512), une « Cheminée de pierre », un meuble ;
+  et l'enfant est en selle (« Descendre »), donc en vol. Ce qui N'A PAS pu
+  être mesuré : les blocs sauvegardés dans le nuage (`player_state`,
+  `editsz`) — la lecture a été refusée depuis cette session. **On ne retire
+  pas un bloc d'enfant sur une présomption** : si Max confirme que ce n'est
+  ni Marlon ni Alice, la piste suivante est de lire `editsz` des deux profils
+  et de compter les rondins à plus de six blocs au-dessus du sol dans le
+  disque de Paris ; s'il confirme que c'en est une, il n'y a rien à faire.
+
+- [ ] **LES TROIS ROUGES DU PORTAIL DE LA v295 — LES TROIS DETTES DÉJÀ MESURÉES,
+  AUCUN NEUF.** Dix suites (`world.js` touché), 44 min, un seul rouge par
+  suite fautive et chacun à sa place : le fond de carte de `maj.js` à la
+  libération (`carte: false`, 48,7 s — neuvième portail d'affilée, double
+  mesure plus bas), le délai de `manhattan.js:282` (`waitForFunction` 60 s,
+  démonté 3/3 des deux côtés en v269), et le gel de `monte.js` à l'arrivée
+  sur une ville (34,6 % d'images au-delà de 300 ms, contre 34,4 % au portail
+  de la v294 et pire sur `origin/main`). Le témoin neuf de la tour Eiffel est
+  vert (zéro cellule hors du modèle), et les deux empreintes de `plafond.js`
+  n'ont pas bougé. Aucune de ces trois suites ne lit une cellule de la tour.
+
 - [ ] **LES SIX ROUGES DU PORTAIL DE LA v294 — TROIS ÉTAIENT DE MOI, UN SE
   REJOUE VERT SEUL DES DEUX CÔTÉS, DEUX SONT DES DETTES DÉJÀ MESURÉES.**
 

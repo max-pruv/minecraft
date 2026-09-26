@@ -20,6 +20,46 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v295 — La tour Eiffel ne laisse plus flotter de cubes
+
+**Pourquoi.** Max, capture d'iPad prise au centre de Paris : « Ya des trucs
+bizarres dans Paris ». Deux choses sur l'image, et une seule vient du jeu.
+Mesuré à la sonde des monuments en relief (`tests/sonde-monuments-hd.cjs`),
+la tour Eiffel gardait **seize cellules de voxel que son modèle ne couvre
+pas** — et le mailleur les laisse volontairement en cubes (règle de la
+v292 : ce que le modèle ne dessine pas reste honnête et solide). Douze
+d'entre elles étaient l'arche entre les jambes, écrite `P1 − 4 − creux` :
+une arche À L'ENVERS, un ventre pendu qui descend au milieu et finit aux
+quatre coins (±6, 12, ±6), à deux blocs de tout montant. Ce sont les cubes
+noirs qu'on voyait flotter à côté de la tour depuis les Invalides, sur
+`origin/main` comme sur la branche, depuis la v292. Les quatre autres
+étaient une diagonale posée dans la travée du sol, que la vraie tour n'a
+pas et que le modèle ne dessine pas non plus.
+
+L'autre chose sur l'image — une grande structure de rondins et de laine
+bleue, dans le ciel, au-dessus des toits — ne sort d'aucun bâtisseur :
+balayé sous node sur les 94 000 colonnes du disque de Paris, le générateur
+ne pose ni rondin, ni planche sombre, ni laine bleue en l'air ; le nom sous
+le réticule (« Cheminée de pierre ») est celui du bloc EN MAIN, un meuble ;
+et l'enfant est en selle, donc en vol. Tout désigne une construction des
+enfants, et **on ne touche pas aux blocs des enfants** (invariant 1). La
+copie de sauvegarde du nuage, qui l'aurait confirmé, n'a pas pu être lue
+depuis cette session ; c'est déclaré dans `TASKS.md`, et c'est à Max de
+dire s'il veut qu'on la retire.
+
+**Ce que ça change.** La tour Eiffel n'a plus un cube en trop : son arche
+monte au milieu et naît au pied des jambes, comme celle du modèle et comme
+la vraie, et la baie entre les jambes est ouverte — on passe dessous sans
+qu'une diagonale la barre. De loin, la silhouette en voxel suit la même
+courbe.
+
+**Ce qui le prouve.** Un témoin neuf dans `parishd.js` compte les cellules
+de la tour hors du modèle : seize sur l'ancien code, zéro ici, barre à huit.
+La sonde des monuments rend « cubes qui dépassent 0 = 0,0 % » pour la tour
+(2,5 % avant), et les deux empreintes de `plafond.js` ne bougent pas : un
+bâtisseur de monument n'écrit pas le relief. Captures prises des deux côtés
+depuis les Invalides et le Champ-de-Mars.
+
 ## v294 — Les rues de Paris s'élargissent, et les ponts sortent de l'eau
 
 **Pourquoi.** Max : « les rues de Paris sont trop étroites, élargis-les ». La

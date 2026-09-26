@@ -364,6 +364,29 @@ function verifier(nom, ok, detail = '') {
       verifier('aucun mur invisible à hauteur d\'enfant : ce qu\'on masque, le modèle le dessine',
         nues.length === 0, nues.length ? nues.join(' ') : 'huit monuments, zéro cellule masquée sans géométrie devant elle');
 
+      // 4 bis. ET LE VOXEL DE LA TOUR EIFFEL SUIT SON MODÈLE (v295). Max, capture
+      //    d'iPad : « des trucs bizarres dans Paris ». Les cubes noirs qui
+      //    flottaient à côté de la tour étaient les seize cellules du voxel que
+      //    le modèle ne couvre pas — l'arche écrite à l'envers (un ventre pendu
+      //    entre les jambes, fini aux quatre coins à deux blocs de tout montant)
+      //    et une diagonale dans la travée du sol, que la vraie tour n'a pas.
+      //    Ce que le modèle ne couvre pas reste en cubes, c'est la règle de la
+      //    v292 ; ici le voxel avait tort, et c'est lui qu'on corrige. Mesuré :
+      //    seize cubes sur l'ancien code, zéro ici ; la barre est au milieu.
+      {
+        const cel = new Map();
+        eiffel.build((x, y, z, id) => cel.set(`${x},${y},${z}`, id));
+        const couvre = MH.cellulesCouvertes('Tour Eiffel');
+        const restes = [];
+        for (const [k, id] of cel) {
+          const y = +k.split(',')[1];
+          if (id === BLOCK.AIR || y < 0 || couvre.has(k)) continue;
+          restes.push(k);
+        }
+        verifier('la tour Eiffel ne laisse aucun cube de voxel flotter à côté de son modèle',
+          restes.length <= 8, `${restes.length} cellule(s) hors du modèle${restes.length ? ' : ' + restes.slice(0, 8).join(' ') : ''}`);
+      }
+
       // 5. UNE ÉDITION REND LE MONUMENT ÉDITABLE EN CUBES — et son emprise
       //    ENTIÈRE : un demi-monument lisse contre un demi-monument en cubes
       //    serait pire que pas de relief du tout.

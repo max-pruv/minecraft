@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 295,
+    titre: 'La tour Eiffel sans cubes',
+    puces: [
+      'Plus de cubes noirs qui flottent à côté',
+      'Son arche monte au milieu, comme la vraie',
+      'On passe entre ses jambes',
+    ],
+  },
+  {
     v: 294,
     titre: 'Les rues de Paris s\'élargissent',
     puces: [
