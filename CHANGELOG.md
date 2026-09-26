@@ -84,7 +84,16 @@ dans `parishd.js` (aucun morceau au-delà du rayon HD plus un ne porte de
 façades détaillées ; en s'éloignant, les façades quittées sont rendues et
 celles d'arrivée fabriquées ; le loin n'a plus de façades fabriquées). La
 sonde `sonde-memoire-paris.cjs` mesure la cause en octets, palier par
-palier. Ce qui reste à voir sur le vrai iPad est déclaré dans `TASKS.md`.
+palier, en ordre alterné, deux relevés par bras :
+
+| réglage | tampons avant | tampons après | tas avant | tas après |
+| --- | --- | --- | --- | --- |
+| moyen (rr 12 · hd 3) | 1 171 Mo | **352 · 352 Mo** | 1 272 Mo | 452 · 454 Mo |
+| bas (rr 8 · hd 0) | 98 Mo | 98 · 98 Mo | 203 Mo | 211 · 202 Mo |
+
+Trois fois moins au réglage d'un appareil jamais classé, et rien ne change au
+palier bas — ce qu'un témoin garde (« sans HD, les tampons sont ceux
+d'avant »). Ce qui reste à voir sur le vrai iPad est déclaré dans `TASKS.md`.
 
 ## v295 — La tour Eiffel ne laisse plus flotter de cubes
 
