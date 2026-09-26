@@ -50,7 +50,9 @@ quand la couche en relief est éteinte ou de loin — c'est le jeu, pas un
 défaut, et sa couleur est une décision à part.
 
 **Ce qui le prouve.** Quatre témoins neufs, rouges sur l'ancien code parce
-que la règle n'existe pas — et ils le disent. `plafond.js` éprouve la règle
+que la règle n'existe pas — et ils le disent (`plafond.js` 45 verts et
+`sauvegarde.js` 21 verts rejouées seules sur la branche ; contre
+`origin/main`, les quatre rouges attendus et rien d'autre). `plafond.js` éprouve la règle
 PURE sur un document fabriqué : deux blocs suspendus partent, une maison, un
 drapeau sur un toit du jeu, un bloc collé au fer de la tour, un bloc posé
 après la date, un trou creusé, une tour au point d'apparition, une marque

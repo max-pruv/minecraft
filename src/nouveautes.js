@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 298,
+    titre: 'Le ciel de Paris nettoyé',
+    puces: [
+      'Ce qui flottait au-dessus de Paris est parti',
+      'Tes maisons, drapeaux et radeaux restent',
+      'Une copie est gardée dans le nuage',
+      'Bâtir en vol reste permis',
+    ],
+  },
+  {
     v: 297,
     titre: 'La campagne devient douce',
     puces: [

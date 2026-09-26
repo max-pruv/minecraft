@@ -260,10 +260,18 @@ const BLOCS = 40000;
     // C'est le témoin qui compte pour l'enfant — pas le contenu du document,
     // mais ce qu'il retrouve en ouvrant le jeu sur la tablette de la maison.
     const autre = await banc.jouerSeul('Marlon', { ...AVEC_NUAGE, memePrenom: true });
-    const retrouves = await jusqua(async () => (await autre.evaluate(
-      () => Object.keys(window.__game.world.exportEdits()).length,
-    )) >= BLOCS * 0.99, 120000);
-    const compte = await autre.evaluate(() => Object.keys(window.__game.world.exportEdits()).length);
+    // UNE PAGE QUI SE RELANCE N'EST PAS UNE PANNE (v196) : la fusion qui
+    // rapporte la construction relance la page, et une lecture de plus après
+    // l'attente tombait dedans (« Execution context was destroyed », v298 —
+    // le ménage du ciel de Paris déplace la relance de quelques dizaines de
+    // millisecondes, et c'est la seconde lecture qui a lâché). Le compte se
+    // prend DANS l'attente, et une lecture traversée par la relance se refait.
+    let compte = 0;
+    const retrouves = await jusqua(async () => {
+      try { compte = await autre.evaluate(() => Object.keys(window.__game.world.exportEdits()).length); }
+      catch { return false; }
+      return compte >= BLOCS * 0.99;
+    }, 120000);
     verifier('un second appareil retrouve la construction entière',
       retrouves, `${compte} blocs sur ${BLOCS}`);
 
