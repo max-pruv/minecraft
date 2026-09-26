@@ -38,6 +38,7 @@ function servirLeNuage(port) {
   };
 
   const identites = new Map();
+  const journaux = [];
 
   const serveur = http.createServer(async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -75,6 +76,18 @@ function servirLeNuage(port) {
           t.magasin.set(t.cle(r), table === 'player_prefs' ? r.prefs
             : table === 'player_state' ? r.state : r);
         }
+        res.writeHead(201); return res.end('');
+      }
+    }
+
+    // Le journal de bord de l'appareil (v296) : une ligne par session ou par
+    // plantage présumé, numéros croissants, les plus récents d'abord.
+    if (table.startsWith('journal_appareil')) {
+      if (req.method === 'GET') {
+        return json(res, [...journaux].reverse());
+      }
+      if (req.method === 'POST') {
+        for (const r of await lire(req)) journaux.push({ id: journaux.length + 1, created_at: new Date().toISOString(), ...r });
         res.writeHead(201); return res.end('');
       }
     }
@@ -187,6 +200,8 @@ function servirLeNuage(port) {
     // bien quitté le profil, au lieu de le déduire de ce que la tablette
     // croit avoir envoyé.
     etatDe: (nom) => etats.get(nom),
+    // Les journaux de bord remontés (v296), dans l'ordre d'arrivée.
+    journaux: () => journaux,
     // Semer du temps de jeu jour par jour : c'est la matière première des
     // filtres de période de l'espace parent.
     poserTemps: (r) => temps.set(`${r.name}|${r.device_id}|${r.day}`, r),

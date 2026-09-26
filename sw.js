@@ -47,6 +47,7 @@ const ASSETS = [
   './src/carte.js',
   './src/horizon.js',
   './src/bandeau.js',
+  './src/journal.js',
   './src/palier.js',
   './src/liberer.js',
   './src/couches.js',

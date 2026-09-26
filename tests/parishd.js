@@ -473,12 +473,65 @@ function verifier(nom, ok, detail = '') {
         loinDetail: loin && loin.facades ? loin.facades.visible : null, loinPlat: loin && loin.plat ? loin.plat.visible : null,
         atlas: !!g.atlasHD, rayon: g.RAYON_HD, appels: g.renderer.info.render.calls,
         morceaux: g.chunkMeshes.size, morceauxHD: [...g.chunkMeshes.values()].filter((e) => e.facades).length,
+        // ON FABRIQUE CE QU'ON MONTRE (v296) : au-delà du rayon HD plus une
+        // marge, aucun morceau ne doit PORTER de façades détaillées — elles
+        // pesaient 1,6 Mo par morceau pour tout le disque, ce qui tuait un iPad
+        // de trois gigaoctets à Paris. On compte les morceaux fautifs et les
+        // octets de façades tenus, avant et après un déplacement.
+        ...((() => {
+          const octets = (m) => { if (!m) return 0; let n = 0; for (const a of Object.values(m.geometry.attributes)) n += a.array.byteLength; return n + (m.geometry.index ? m.geometry.index.array.byteLength : 0); };
+          let fautifs = 0, facadesMo = 0, chargesHD = 0;
+          for (const [k, e] of g.chunkMeshes) {
+            const [a, b] = k.split(',').map(Number);
+            const d = Math.max(Math.abs(a - cx), Math.abs(b - cz));
+            if (e.hd) chargesHD++;
+            if (e.facades) { facadesMo += octets(e.facades); if (d > g.RAYON_HD + 1) fautifs++; }
+          }
+          return { fautifs, facadesMo: +(facadesMo / 1048576).toFixed(1), chargesHD };
+        })()),
       };
     }, [px, pz]);
     verifier('sous l\'enfant, le détail est visible et la tuile plate cachée',
       res.iciDetail === true && res.iciPlat === false, JSON.stringify(res));
-    verifier('au-delà du rayon HD, la tuile plate est visible et le détail caché',
-      res.loinPlat === true && res.loinDetail === false, `${res.cleLoin} (≥ ${res.loinDe} morceaux) en ${res.attente} ms · ${JSON.stringify(res)}`);
+    verifier('au-delà du rayon HD, la tuile plate est visible et aucune façade détaillée n\'est fabriquée',
+      res.loinPlat === true && res.loinDetail === null, `${res.cleLoin} (≥ ${res.loinDe} morceaux) en ${res.attente} ms · ${JSON.stringify(res)}`);
+    // Sur l'ancien code, TOUS les morceaux HD portaient leurs façades — dont
+    // `loin`, à deux morceaux au-delà du rayon, qui est donc fautif par
+    // construction ; ici, seuls ceux à portée + 1 en ont. Le garde est que le
+    // morceau lointain EXISTE (on ne juge pas un disque vide).
+    verifier('aucun morceau au-delà du rayon HD plus un ne porte de façades détaillées',
+      res.fautifs === 0 && !!res.cleLoin && res.chargesHD > 0,
+      `${res.fautifs} fautif(s) sur ${res.chargesHD} morceaux HD chargés, ${res.facadesMo} Mo de façades tenus`);
+
+    // ET CE QU'ON QUITTE SE REND. L'enfant part cinq morceaux à l'est — assez
+    // pour sortir de la marge, pas assez pour décharger les morceaux d'avant —
+    // et l'on attend, borné, que le morceau sous lui ait ses façades ; les
+    // anciennes ont alors dû être rendues à la carte graphique.
+    const apres = await tab.evaluate(async ([x, z]) => {
+      const g = window.__game;
+      const dodo = (ms) => new Promise((r) => setTimeout(r, ms));
+      const cx = Math.floor(x / 16), cz = Math.floor(z / 16);
+      const nx = x + 16 * 5;
+      g.player.pos.set(nx + 0.5, g.world.terrainHeight(nx, z) + 2, z + 0.5); g.player.vel.set(0, 0, 0);
+      const ncx = cx + 5;
+      const t0 = performance.now();
+      let sous = null;
+      while (performance.now() - t0 < 90000) {
+        await dodo(500);
+        sous = g.chunkMeshes.get(`${ncx},${cz}`);
+        if (sous && sous.facades && g.statsMaillage.detailsRendus > 0) break;
+      }
+      let anciensAvecFacades = 0, anciens = 0;
+      for (const [k, e] of g.chunkMeshes) {
+        const [a, b] = k.split(',').map(Number);
+        if (Math.max(Math.abs(a - cx), Math.abs(b - cz)) <= g.RAYON_HD && Math.abs(a - ncx) > g.RAYON_HD + 2 && e.hd) { anciens++; if (e.facades) anciensAvecFacades++; }
+      }
+      return { attente: Math.round(performance.now() - t0), sousFacades: !!(sous && sous.facades), anciens, anciensAvecFacades,
+        demandes: g.statsMaillage.detailsDemandes, rendus: g.statsMaillage.detailsRendus, morceaux: g.chunkMeshes.size };
+    }, [px, pz]);
+    verifier('en s\'éloignant, les façades quittées sont rendues et celles d\'arrivée fabriquées',
+      apres.sousFacades && apres.anciens > 0 && apres.anciensAvecFacades === 0 && apres.rendus > 0 && apres.demandes > 0,
+      `en ${apres.attente} ms · ${JSON.stringify(apres)}`);
     verifier('l\'atlas HD est peint et le rayon forcé est celui de l\'adresse', res.atlas === true && res.rayon === 2, `atlas ${res.atlas}, rayon ${res.rayon}`);
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
     await tab.close();

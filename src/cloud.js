@@ -282,6 +282,42 @@ export class CloudSave {
   // client sums every device's rows to get the true total for that child,
   // so switching between an iPad and a phone never loses (or resets) time.
 
+  // ---- le journal de bord de l'appareil (v296) --------------------------
+  // Une ligne par session terminée ou par plantage présumé : `journal.js` dit
+  // ce qu'elle contient, et pourquoi elle est bornée. `keepalive` pour la
+  // fermeture, où la page n'attend personne. Sans nuage, rien ne part et rien
+  // ne casse.
+  //
+  //   create table journal_appareil (
+  //     id bigint generated always as identity primary key,
+  //     appareil text not null, name text, version text, fin text,
+  //     doc jsonb not null, created_at timestamptz default now()
+  //   );
+  //   alter table journal_appareil enable row level security;
+  //   create policy "anon read"  on journal_appareil for select using (true);
+  //   create policy "anon write" on journal_appareil for insert with check (true);
+  async journalPousser({ appareil, name, version, fin, doc }, keepalive = false) {
+    if (!this.configured || !appareil || !doc) return false;
+    const res = await fetch(`${this.url}/rest/v1/journal_appareil`, {
+      method: 'POST',
+      headers: this.headers({ Prefer: 'return=minimal' }),
+      body: JSON.stringify([{ appareil, name: name || null, version: version || null, fin: fin || null, doc }]),
+      keepalive,
+    });
+    return res.ok;
+  }
+
+  // Les derniers journaux, les plus récents d'abord — pour l'espace parent.
+  async journalLire(limite = 30) {
+    if (!this.configured) return [];
+    const res = await fetch(
+      `${this.url}/rest/v1/journal_appareil?select=id,appareil,name,version,fin,doc,created_at&order=id.desc&limit=${limite}`,
+      { headers: this.headers() },
+    );
+    if (!res.ok) return [];
+    return res.json();
+  }
+
   async timePush(name, deviceId, day, stats, keepalive = false) {
     if (!this.configured || !name) return;
     await fetch(`${this.url}/rest/v1/play_time`, {

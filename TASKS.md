@@ -1,5 +1,35 @@
 # Ce qui est en cours
 
+- [ ] **LE VIEIL IPAD, APRÈS LA v296 — CE QUI RESTE À VOIR SUR L'APPAREIL.** La
+  cause mesurée au banc (1 171 Mo de tampons à rr 12 · hd 3) et la boucle du
+  palier jamais classé expliquent un plantage à vingt secondes dans Paris, mais
+  **aucune des deux n'a été mesurée sur l'iPad lui-même**. Le journal de bord
+  est là pour ça : au prochain plantage, l'espace parent montrera la fiche
+  (`ua`, écran, cœurs), le dernier relevé (ville, cadence, morceaux, façades
+  HD, tas) et la fin de session. Trois choses à lire dedans, dans l'ordre :
+  la ligne `plantage` existe-t-elle (sinon Safari ne relance pas la page et
+  le drapeau n'est relu qu'au lancement suivant — c'est prévu) ; `hd` du
+  dernier relevé (combien de morceaux portaient des façades — au plus 49
+  désormais) ; et si la sûreté a pris (`surete: true` dans l'événement
+  `plantage-precedent`, puis `PALIER bas (sûreté)` dans `?diag=1`). Si l'iPad
+  plante ENCORE en palier bas, la mémoire n'est pas dans la couche HD et la
+  piste suivante est les neuf corps réalisables (8,2 Mo compressés, bien plus
+  décodés) et les textures : à mesurer avec `sonde-memoire-paris.cjs` élargie
+  aux textures.
+- [ ] **`sol` ET `plat` RESTENT FABRIQUÉS POUR TOUT LE DISQUE** (v296). Le sol
+  HD (marquages, bordures, trottoir relevé) et les faces plates pèsent 0,02 à
+  0,06 Mo par morceau, soit 10 à 30 Mo pour la ville entière : gardés partout
+  pour que le loin ne change pas d'un pixel. Si un appareil le paie encore, la
+  piste est de ne fabriquer `sol` qu'à `RAYON_HD × 2` et de laisser le voxel
+  de rue au-delà — au prix d'une couture visible sur la chaussée.
+- [ ] **UN JOURNAL S'ENVOIE À CHAQUE FERMETURE — il faudra le tailler.** Une
+  ligne par session, jusqu'à 24 Ko : à quatre sessions par jour et par
+  tablette, c'est un mégaoctet par semaine dans `journal_appareil`. Rien ne
+  l'efface aujourd'hui ; l'espace parent n'en lit que trente. À faire quand la
+  table dépassera quelques milliers de lignes : une purge des lignes de plus de
+  trente jours qui ne sont pas des plantages (SQL, ou au lancement par une
+  tablette).
+
 - [ ] **LA STRUCTURE DE RONDINS DANS LE CIEL DE PARIS (v295) — PROBABLEMENT
   UNE CONSTRUCTION DES ENFANTS, ET CELA RESTE À CONFIRMER PAR MAX.** Sa
   capture d'iPad montre, au-dessus des toits au centre de Paris, une grande
@@ -163,8 +193,9 @@
   monuments désarmés (`world.monumentsTouches` rempli), sur la même page, en
   ordre alterné.
 
-- [ ] **`RAYON_HD` DÉCIDE DE CE QU'ON MONTRE, `world.hd` DE CE QU'ON FABRIQUE — et
-  les monuments en héritent.** Un appareil au palier haut fabrique le relief de
+- [x] **`RAYON_HD` DÉCIDE DE CE QU'ON MONTRE, `world.hd` DE CE QU'ON FABRIQUE — et
+  les monuments en héritent.** (Payée en v296 : le détail se demande par
+  morceau à portée de `RAYON_HD` + 1, monuments compris, et se rend au-delà.) Un appareil au palier haut fabrique le relief de
   cinq cents morceaux et en montre cent soixante-neuf (dette de la v291). Les
   huit monuments suivent la même règle : leur modèle est maillé dès que le
   morceau est couvert par la couche, qu'on le voie ou non.
@@ -281,9 +312,10 @@
   appareils de la maison (59 i/s), ce que la règle rend — et qui rougit si une
   fonctionnalité neuve atterrit dans un palier qui l'éteint.
 
-- [ ] **`RAYON_HD` DÉCIDE DE CE QU'ON MONTRE, `world.hd` DE CE QU'ON FABRIQUE —
+- [x] **`RAYON_HD` DÉCIDE DE CE QU'ON MONTRE, `world.hd` DE CE QU'ON FABRIQUE —
   et un appareil fabrique le relief de cinq cents morceaux pour en montrer cent
-  soixante-neuf.** Mesuré en ordre alterné au centre de Paris : le nombre de
+  soixante-neuf.** (Payée en v296, et mesurée avant d'écrire, comme demandé
+  ci-dessous : 2,93 Mo par morceau HD, 1 171 Mo pour la ville à rr 12.) Mesuré en ordre alterné au centre de Paris : le nombre de
   morceaux porteurs de tampons HD est le MÊME aux portées 3 et 6 (248 et 256
   contre 236 et 238), parce que `world.hd` vaut 1 dès que `RAYON_HD > 0` et que
   `couvreHD` couvre tout le disque de Paris ; `montrerLeDetail` ne fait que

@@ -215,7 +215,15 @@ class GeomBuffer {
 // que DANS un appel, et il est effacé au début de chaque tranche.
 const masqueReserve = [];
 
-export function buildChunkTampons(world, cx, cz) {
+// ON FABRIQUE CE QU'ON MONTRE (v296). `options.detail === false` rend un
+// morceau HD SANS ses façades détaillées (ni monuments, ni mobilier, ni
+// arbres, ni toits en relief) : le sol HD et les faces plates restent, pour
+// que le loin ne change pas d'un pixel. Mesuré au centre de Paris : un morceau
+// HD pèse 2,93 Mo de tampons, dont 1,6 Mo de façades, contre 0,16 Mo sans HD ;
+// à rr 12, la ville entière en tenait 1 171 Mo — ce qui tue une page sur un
+// iPad de trois gigaoctets. Le fil principal ne demande le détail qu'à portée
+// de `RAYON_HD`, et le redemande quand un morceau y entre.
+export function buildChunkTampons(world, cx, cz, options = {}) {
   if (world.hasVisualEdits && !world.hasVisualEdits(cx, cz)) {
     return { solid: null, water: null, lumineux: null, props: [], sol: null, facades: null, plat: null, platLumineux: null };
   }
@@ -229,8 +237,9 @@ export function buildChunkTampons(world, cx, cz) {
   // près). Rien d'autre ne change — un palier sans HD rend exactement les
   // tampons d'avant, et c'est un témoin qui le dit.
   const hd = !!world.hd && couvreHD(cx, cz, CHUNK);
+  const detail = hd && options.detail !== false;
   const sol = hd ? new GeomBufferHD() : null;
-  const facades = hd ? new GeomBufferHD() : null;
+  const facades = detail ? new GeomBufferHD() : null;
   const plat = hd ? new GeomBuffer() : null;
   const platLumineux = hd ? new GeomBuffer() : null;
   // le tirage des vitres allumées se fait en coordonnées du MONDE : en
@@ -246,7 +255,7 @@ export function buildChunkTampons(world, cx, cz) {
   // un bloc qu'un enfant ajoute contre le monument reste visible. Un monument
   // qu'un enfant a touché n'a plus de modèle du tout — `monumentsTouches` est
   // un index tenu par `World`, jamais un balayage du journal.
-  const monuments = hd ? REPERES_HD.filter((lm) => !world.monumentsTouches?.has(lm.name)
+  const monuments = detail ? REPERES_HD.filter((lm) => !world.monumentsTouches?.has(lm.name)
     && lm.x + lm.portee >= baseX && lm.x - lm.portee < baseX + CHUNK
     && lm.z + lm.portee >= baseZ && lm.z - lm.portee < baseZ + CHUNK) : [];
   const cellulesMonument = new Set();
@@ -416,7 +425,9 @@ export function buildChunkTampons(world, cx, cz) {
   // qui a reçu une face plate dans `plat`. Un témoin compare les deux comptes.
   let facadesDetaillees = 0;
   if (hd) {
-    for (const face of FACES) {
+    // Les façades détaillées sont du DÉTAIL (v296) ; la rue, juste en dessous,
+    // n'en est pas : elle se lit à toute distance et reste dans `sol`.
+    if (detail) for (const face of FACES) {
       if (face.dir[1] !== 0) continue;
       for (let y = 0; y <= topY; y++) {
         for (let z = 0; z < CHUNK; z++) {
@@ -453,6 +464,7 @@ export function buildChunkTampons(world, cx, cz) {
             const ouvert = (dx, dz) => !RELEVES.has(localGet(x + dx, y, z + dz)) && localGet(x + dx, y + 1, z + dz) === BLOCK.AIR;
             const o = { px: ouvert(1, 0), mx: ouvert(-1, 0), pz: ouvert(0, 1), mz: ouvert(0, -1) };
             if (o.px || o.mx || o.pz || o.mz) trottoirHD(sol, x, y, z, ox + x, oz + z, o);
+            if (!detail) continue;                       // le mobilier est du DÉTAIL
             // LE MOBILIER DU TROTTOIR (v288), dans `facades` : un potelet tous
             // les deux blocs au bord du caniveau, une terrasse devant une
             // devanture sur trois. Le monde répond tout seul : on lit le sol
@@ -483,10 +495,10 @@ export function buildChunkTampons(world, cx, cz) {
           } else if (TOIT_HD.has(id)) {
             // LE TOIT (v289) : une colonne de toit dont le dessus est à l'air
             // dessine son quad du champ de hauteurs
-            if (localGet(x, y + 1, z) === BLOCK.AIR) toitDessusHD(facades, x, y, z, ox + x, oz + z, localGet);
+            if (detail && localGet(x, y + 1, z) === BLOCK.AIR) toitDessusHD(facades, x, y, z, ox + x, oz + z, localGet);
           } else if (id === BLOCK.TERRACOTTA) {
-            if (localGet(x, y + 1, z) === BLOCK.AIR && localGet(x, y - 1, z) === BLOCK.TERRACOTTA) mitresHD(facades, x, y, z);
-          } else if (id === BLOCK.LOG && localGet(x, y - 1, z) !== BLOCK.LOG) {
+            if (detail && localGet(x, y + 1, z) === BLOCK.AIR && localGet(x, y - 1, z) === BLOCK.TERRACOTTA) mitresHD(facades, x, y, z);
+          } else if (detail && id === BLOCK.LOG && localGet(x, y - 1, z) !== BLOCK.LOG) {
             // UN ARBRE PAR TRONC : la base du fût, et la boîte des feuilles
             // au-dessus, mesurée sur les blocs (débord compris, dans les
             // morceaux voisins aussi).
@@ -520,5 +532,7 @@ export function buildChunkTampons(world, cx, cz) {
     platLumineux: platLumineux ? platLumineux.toTampons() : null,
     facadesDetaillees,
     monumentsDetailles: detailles,
+    hd,
+    detail,
   };
 }

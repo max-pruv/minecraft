@@ -750,6 +750,74 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Le journal de bord, et Paris qui pesait un gigaoctet (v296)
+
+Max : « un iPad d'ancienne génération, six ans peut-être, se connecte, ça ne
+lague pas trop, et au bout de vingt secondes de jeu il plante. Il faudrait
+collecter des logs pour comprendre les bugs. » C'était à Paris. Six règles, et
+la première est celle qui a trouvé la cause.
+
+- **QUAND LE BANC NE PEUT PAS SUBIR LA PANNE, ON MESURE LA CAUSE EN OCTETS — et
+  la cause était ÉNORME.** Safari tue une page sans un mot, le banc a de la
+  mémoire à revendre (v236). `sonde-memoire-paris.cjs` compte ce que la scène
+  TIENT une fois le disque rempli, au réglage d'un appareil jamais classé
+  (rr 12 · hd 3) et au palier bas : **1 171 Mo de tampons contre 98**, 1 272 Mo
+  de tas contre 203. Un morceau HD pèse 2,93 Mo dont 1,6 de façades détaillées,
+  contre 0,16 sans HD ; `world.hd` les faisait fabriquer pour tout le disque de
+  Paris quand `RAYON_HD` en montre quarante-neuf. C'était la dette déclarée en
+  v291 (« `RAYON_HD` décide de ce qu'on montre, `world.hd` de ce qu'on
+  fabrique »), avec sa consigne « à mesurer avant d'écrire : ce que pèsent les
+  tampons HD ». Mesuré, c'est un gigaoctet. **Une dette qui dit « à mesurer »
+  se mesure le jour où un appareil meurt, pas plus tard.**
+- **ON FABRIQUE CE QU'ON MONTRE.** Le détail se demande PAR MORCEAU
+  (`buildChunkTampons(…, { detail })`, le drapeau voyage dans le message
+  `mailler`) à portée de `RAYON_HD` plus une marge d'un morceau — prêt avant que
+  l'enfant n'y entre — et il se REND deux morceaux plus loin (hystérésis).
+  `montrerLeDetail` tient l'invariant visuel : sans façades fabriquées, les
+  faces plates restent visibles quelle que soit la distance, sinon un morceau
+  proche en attente de son détail serait un trou. Le sol HD et `plat` restent
+  fabriqués partout : le loin ne change pas d'un pixel (0,02 à 0,06 Mo par
+  morceau). Et mon premier `if (detail)` a avalé la boucle du SOL avec celle des
+  façades — le sol était tombé de 60 à 20 Ko sur un morceau — parce que les
+  deux vivaient sous le même `if (hd)`. Une mesure de chaque tampon, mode par
+  mode, l'a dit ; la relecture ne l'aurait pas vu.
+- **UN RÉGLAGE AUTOMATIQUE QUI NE PEUT PAS SE RANGER EST UNE BOUCLE SANS
+  ISSUE.** Le palier ne se range qu'après trente secondes de jeu (v284) : un
+  appareil qui meurt à vingt secondes n'est JAMAIS classé, et chaque relance
+  repart au réglage « moyen » qui vient de le tuer. La v291 exigeait qu'un
+  réglage automatique garde sa porte de sortie ; celle-ci était les Réglages,
+  qu'un enfant de sept ans n'ouvre pas. Le disjoncteur (`suretePalier`,
+  journal.js) écrit après DEUX plantages de suite un verdict `bas` marqué
+  `surete`, que `palierRetenu` place devant la mesure et derrière le choix, et
+  que `rangerLePalier` n'écrase pas. Un seul plantage ne suffit pas : un onglet
+  tué pour une raison sans rapport dégraderait l'appareil pour rien. Et le jeu
+  le DIT (bandeau, aide des Réglages, `?diag=1`).
+- **CE QU'ON VEUT SAVOIR D'UN PLANTAGE S'ÉCRIT AVANT, ET SE RELIT APRÈS.** Le
+  journal (`src/journal.js`, pur, lu sous node) pose un drapeau « session
+  ouverte » et écrit toutes les deux secondes : fiche, relevés toutes les cinq
+  secondes (position, ville, cadence, pire image, morceaux, façades HD,
+  géométries, tas), événements, erreurs (`error`, `unhandledrejection`, le
+  worker). Au lancement suivant, drapeau encore là = plantage présumé, journal
+  au nuage (`journal_appareil`). Deux subtilités : **iOS tue aussi les onglets
+  cachés**, et ce n'est pas un plantage que l'enfant a vu — `visibilitychange`
+  ferme donc la session proprement et la rouvre au retour ; et la fermeture
+  part en `keepalive`, borné à 24 Ko, parce que la page n'attend plus personne.
+  Le stockage est BRUT (`__rawStorage`) : un plantage est une affaire de
+  tablette, pas d'enfant.
+- **LA TABLE DU NUAGE S'EST CRÉÉE DEPUIS LA SESSION, ET C'EST DÉCLARÉ.** Le
+  connecteur Supabase atteint le projet de la famille (`minecraft-marlon`) ; la
+  migration `journal_appareil` y est appliquée (lecture et écriture anonymes,
+  comme les six autres tables), et le SQL est recopié dans `cloud.js` pour
+  qu'une réinstallation la retrouve. Les LECTURES de données d'enfants restent
+  refusées à cette session (v295) ; l'espace parent, lui, les montre à Max.
+- **ET UNE CHAÎNE `&&` A AVALÉ UNE ÉDITION SANS UN MOT.** `grep … && python3 …`
+  : le grep n'a rien trouvé, le python n'a pas tourné, et le `node --check &&
+  echo OK` d'après a imprimé OK sur le fichier INCHANGÉ. La suite est passée
+  verte sans mes témoins, et c'est le compte `grep -c` du titre du bloc qui l'a
+  dit — zéro. C'est « un code de sortie lu à travers une enveloppe n'est pas le
+  sien » (v285), du côté de l'ÉDITION : ce qui prouve qu'une édition a eu lieu,
+  c'est le fichier, jamais le message d'après.
+
 ## « Des trucs bizarres dans Paris » — on mesure d'abord d'où ils viennent (v295)
 
 Max, capture d'iPad au centre de Paris : de grandes structures de rondins et

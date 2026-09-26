@@ -45,7 +45,7 @@ self.onmessage = (e) => {
     return;
   }
   if (m.type === 'mailler') {
-    for (const { cx, cz } of m.liste) {
+    for (const { cx, cz, detail } of m.liste) {
       // CE QUE COÛTE UN MORCEAU, MESURÉ LÀ OÙ IL SE PAIE (v284). Le fil
       // principal ne peut pas le savoir : il reçoit des tampons déjà prêts. Et
       // c'est ce coût-là qui dit ce que l'APPAREIL peut porter — combien de
@@ -55,7 +55,10 @@ self.onmessage = (e) => {
       // machine et l'on en déduit un palier qui ne bouge plus.
       const t0 = performance.now();
       const data = monde.ensureChunk(cx, cz);
-      const t = buildChunkTampons(monde, cx, cz);
+      // ON FABRIQUE CE QU'ON MONTRE (v296) : le fil principal dit, morceau
+      // par morceau, s'il veut les façades détaillées — à portée de RAYON_HD
+      // seulement. Un message sans le drapeau (ancien format) reçoit tout.
+      const t = buildChunkTampons(monde, cx, cz, { detail: detail !== false });
       const ms = performance.now() - t0;
       // Le fil principal garde les BLOCS pour les collisions et les sondes de
       // sol : on lui en donne une copie, transférée, pas recopiée.
@@ -68,7 +71,7 @@ self.onmessage = (e) => {
       }
       self.postMessage({ type: 'morceau', cx, cz, generation: m.generation, data: copie, ms,
         top: monde.chunkTop(cx, cz), solid: t.solid, water: t.water, lumineux: t.lumineux, props: t.props,
-        sol: t.sol, facades: t.facades, plat: t.plat, platLumineux: t.platLumineux }, transfert);
+        sol: t.sol, facades: t.facades, plat: t.plat, platLumineux: t.platLumineux, hd: t.hd, detail: t.detail }, transfert);
     }
     // et l'on oublie ce qu'on a dépassé, comme le fil principal (v236)
     monde.oublierLoinDe(m.pcx, m.pcz, m.rayon);
