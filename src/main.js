@@ -1817,20 +1817,34 @@ function startGame() {
   // une fois par partie, dans le monde de l'enfant, les blocs posés qui
   // flottent au-dessus du sol d'une ville — combien, lesquels, où — pour que
   // l'espace parent le dise. Quelques milliers de blocs : une fois, c'est rien.
-  try {
-    const parId = new Map(); let n = 0, ex = null, villes = new Set();
-    for (const k of world.edits.keys()) {
-      const [x, y, z] = k.split(',').map(Number);
-      if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) continue;
-      const v = world.cityAt(x, z);
-      if (!v) continue;
-      const id = world.edits.get(k);
-      if (id === BLOCK.AIR || y <= world.terrainHeight(x, z) + 6) continue;
-      n++; villes.add(v.key); parId.set(id, (parId.get(id) || 0) + 1);
-      if (!ex) ex = [x, y, z];
-    }
-    if (n) journal.noter('blocs-suspendus', { n, villes: [...villes], ids: [...parId].sort((a, b) => b[1] - a[1]).slice(0, 5), ex });
-  } catch { /* un journal ne fait jamais tomber une partie */ }
+  // ET LE COMPTE NE PREND PAS L'IMAGE DU CLIC : mon premier jet balayait le
+  // journal des blocs DANS le geste « Jouer », et à Manhattan — des dizaines
+  // de milliers de blocs importés — `realisme.js` a vu le bouton bloqué trente
+  // secondes. Il se fait quatre secondes après, par tranches de trente
+  // millisecondes, et dit s'il est partiel.
+  setTimeout(() => {
+    try {
+      const cles = [...world.edits.keys()];
+      const parId = new Map(); let n = 0, ex = null, i = 0; const villes = new Set();
+      const tranche = () => {
+        const t0 = performance.now();
+        for (; i < cles.length && performance.now() - t0 < 30; i++) {
+          const k = cles[i];
+          const [x, y, z] = k.split(',').map(Number);
+          if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) continue;
+          const v = world.cityAt(x, z);
+          if (!v) continue;
+          const id = world.edits.get(k);
+          if (id === BLOCK.AIR || y <= world.terrainHeight(x, z) + 6) continue;
+          n++; villes.add(v.key); parId.set(id, (parId.get(id) || 0) + 1);
+          if (!ex) ex = [x, y, z];
+        }
+        if (i < cles.length && running) { setTimeout(tranche, 250); return; }
+        if (n) journal.noter('blocs-suspendus', { n, sur: cles.length, partiel: i < cles.length, villes: [...villes], ids: [...parId].sort((a, b) => b[1] - a[1]).slice(0, 5), ex });
+      };
+      tranche();
+    } catch { /* un journal ne fait jamais tomber une partie */ }
+  }, 4000);
   // ET LA SÛRETÉ SE DIT (v296) : un réglage qui change sans un mot ferait
   // croire à un jeu cassé — et le message dit quoi faire.
   if (PALIER && PALIER.source === 'sûreté' && !sureteAnnoncee) {

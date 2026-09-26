@@ -816,7 +816,11 @@ la première est celle qui a trouvé la cause.
   verte sans mes témoins, et c'est le compte `grep -c` du titre du bloc qui l'a
   dit — zéro. C'est « un code de sortie lu à travers une enveloppe n'est pas le
   sien » (v285), du côté de l'ÉDITION : ce qui prouve qu'une édition a eu lieu,
-  c'est le fichier, jamais le message d'après.
+  c'est le fichier, jamais le message d'après. **Et un `&` en fin de ligne
+  met TOUTE la liste `a && b && c` en arrière-plan**, pas seulement `c` : les
+  contrôles d'avant se sont exécutés sans que je voie leur sortie, deux fois
+  dans la même livraison. Ce qui doit être VU s'exécute dans un appel à lui ;
+  ce qui doit tourner en fond part seul, avec `run_in_background`.
 
 ## « Des trucs bizarres dans Paris » — on mesure d'abord d'où ils viennent (v295)
 

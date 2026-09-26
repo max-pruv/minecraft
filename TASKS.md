@@ -1,5 +1,33 @@
 # Ce qui est en cours
 
+- [ ] **LES NEUF ROUGES DU PORTAIL DE LA v296 — DEUX DE MOI, CORRIGÉS ; SEPT
+  DETTES DÉJÀ MESURÉES.** Seize suites, 77 min, 742 verts.
+
+  **Les deux miens :**
+  - `maj.js`, « il couvre toutes les versions du journal, en quelques mots par
+    puce » : le titre v296 faisait huit mots (barre six), deux puces dix (barre
+    huit). Réécrits ; vérifié sous node avec la règle même du témoin : 6 mots,
+    puces 7 · 7 · 7 · 8.
+  - `realisme.js`, morte au clic sur « Jouer » (`locator.click: Timeout 30000ms`,
+    bouton visible et stable) : c'est la page de MANHATTAN, et mon compte des
+    blocs suspendus balayait tout le journal des blocs — des dizaines de
+    milliers de blocs importés — DANS le geste du clic. Il se fait désormais
+    quatre secondes après, par tranches de trente millisecondes, et se déclare
+    partiel s'il n'a pas fini. Rejouée seule après correction (voir le journal
+    de la livraison). C'est « on n'exécute rien de lourd dans le geste de
+    l'enfant » — la leçon de la v258 (la minicarte dans le clic) par un autre
+    bout.
+
+  **Les sept dettes**, toutes avec leur double mesure plus bas : le fond de
+  carte de `maj.js` (onzième portail d'affilée, `carte: false`, 51,8 s) ; le
+  délai de `manhattan.js:282` ; les deux de `monte.js` (chevauchements 41,1 %,
+  gel à l'arrivée 35,5 %) ; les deux de `reseau.js` (« un départ propre nettoie
+  tout le monde », « un joueur endormi n'est pas éjecté », identiques des deux
+  côtés) ; et les deux de `reglages.js` (« l'autre tablette ne le défait pas »,
+  « elle s'aligne même dessus », serveur « fr » — la fragilité de charge que ce
+  témoin documente lui-même, verte des deux côtés rejouée seule en v281 et
+  v292, rejouée seule des deux côtés à cette livraison aussi).
+
 - [ ] **LE VIEIL IPAD, APRÈS LA v296 — CE QUI RESTE À VOIR SUR L'APPAREIL.** La
   cause mesurée au banc (1 171 Mo de tampons à rr 12 · hd 3) et la boucle du
   palier jamais classé expliquent un plantage à vingt secondes dans Paris, mais
