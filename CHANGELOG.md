@@ -20,6 +20,66 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v297 — Le sol continu : la campagne n'est plus en marches
+
+**Pourquoi.** Le cahier de Max (kit « monde fidèle », septembre 2026) ouvre
+sur le terrain : « remplace le terrain visible en blocs par des surfaces
+continues ; fais partager la même géométrie au rendu, aux collisions et à la
+navigation ; supprime marches et sauts ; un shader qui masque les blocs sans
+corriger la physique ne répond pas à la demande. » Mesuré avant d'y toucher
+(`docs/monde-fidele/etat-initial.md`) : sur l'axe Paris–Lille, 98 marches
+d'un bloc sur 810 colonnes, une tous les huit pas. Et un enfant à pied ne
+saute pas tout seul : devant la première marche, il s'arrête. Sur une pente
+de huit marches relevée sur cet axe, le voxel d'avant le laisse faire **dix
+blocs en trente secondes, 452 images sur 521 le pied contre un bloc**.
+
+**Ce que ça change.** Hors des villes, hors des blocs posés, hors des
+falaises, le sol n'est plus une suite de cubes : une surface passe par le
+sommet de chaque colonne, en son centre, et c'est elle que l'on voit, que
+l'on foule, et sur laquelle marchent les passants et les bêtes. Sur la même
+pente : **73,7 blocs à pied, zéro image bloquée, zéro marche, jamais les
+pieds sous la surface ni en l'air** ; au volant, 5 marches et 4 chutes
+deviennent 0 et 1 (le bord d'une falaise, qui reste un bord). Les villes, les
+monuments, les ouvrages, les arbres et tout ce que les enfants ont bâti
+restent en cubes, exactement — un bloc posé sur l'herbe rend sa colonne au
+voxel, retiré, elle redevient continue. **Le sol n'a pas bougé** : la surface
+passe là où l'enfant marchait déjà, les deux empreintes de `plafond.js` sont
+identiques, aucune migration. Une falaise reste une falaise (au-delà d'un
+bloc d'écart on garde le cube), et le palier bas a le même sol que les
+autres. Captures avant/après aux mêmes points de vue :
+`docs/monde-fidele/captures/avant-campagne-a1*.png` et `v297-campagne-a1*.png`.
+
+**Ce qui le prouve.** Quatorze témoins neufs dans `plafond.js` (rejouée seule) :
+la surface existe hors des villes et tait le cube qu'elle remplace (zéro face
+voxel de trop) ; deux morceaux cousent leurs cotes à l'identique ; le contact
+lit la même triangulation que le maillage (exact au centre des colonnes,
+moyenne à mi-arête, 196/196) ; un bloc posé rend sa colonne au voxel et la
+cicatrice guérit ; en ville rien ne change ; `?solcontinu=0` rejoue le voxel
+d'avant jusque dans le worker ; le coût est borné (+1,2 ms par morceau de
+campagne, médiane de neuf) ; et en jouant, l'A/B sur la même page — voxel
+puis surface, même pente, même cap — plus une vache posée sur la pente qui
+se tient sur la même surface, et le palier bas qui la dessine aussi. Les deux
+empreintes du relief, inchangées, sont la preuve de l'invariant 1. **Et le
+portail complet a attrapé deux choses que la sonde n'avait pas vues.** « Une
+voiture roule dans la nature au lieu de buter sur une marche » (`monte.js`)
+est tombé rouge — bloquée à 13,4 blocs sur une pente d'un bloc par bloc : le
+premier jet ne taisait que le SOMMET d'une colonne couverte, et le nez d'une
+voiture de 2,26 blocs est deux colonnes devant son centre, où le cube sous
+le sommet restait solide sous la surface. Et « quand la rame arrive, on
+propose de monter à bord » : l'enfant posé sur un tracé de train à neuf
+blocs sous une colline — un tunnel — était REMONTÉ sur l'herbe par le
+contact. Ce que la surface tait, et où elle accroche, est désormais une
+BANDE de deux cubes sous elle, ni plus ni moins, et le franchissement d'une
+marche compte « un bloc » depuis le niveau VOXEL sous la voiture, pas depuis
+la cote de la surface qui la porte : un tunnel garde son plancher et son
+enfant (« Monter à bord » à 7,3 s, jamais en vingt secondes avant), et la
+voiture regrimpe — 90 et 101 blocs sur le couloir de (−600, −520) contre
+13,4, franchissement désarmé 13,4 des deux côtés. Deux témoins purs de
+`plafond.js` le gardent (une pente à deux marches, un vide sous une colonne
+naturelle).
+
+---
+
 ## v296 — Le journal de bord de l'appareil, et Paris ne pèse plus un gigaoctet
 
 **Pourquoi.** Max : « un iPad d'ancienne génération, six ans peut-être, se

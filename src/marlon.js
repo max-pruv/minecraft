@@ -197,9 +197,18 @@ export class BaseNPC {
     this.vel.y -= GRAVITY * dt;
     this.vel.y = Math.max(this.vel.y, -30);
 
+    const etaitAuSol = this.onGround;
+    const avantX = this.pos.x, avantZ = this.pos.z;
     const blockedX = this.sweep(0, this.vel.x * dt);
     this.sweep(1, this.vel.y * dt);
     const blockedZ = this.sweep(2, this.vel.z * dt);
+    // Un passant marche sur la même surface que l'enfant (sol continu, v297).
+    if (this.world.accrocherAuSol) {
+      const r = this.world.accrocherAuSol(this.pos, this.vel, {
+        etaitAuSol, pasH: Math.hypot(this.pos.x - avantX, this.pos.z - avantZ), half: this.largeur / 2, hauteur: this.hauteur,
+      });
+      if (r && r.auSol) this.onGround = true;
+    }
     // LE SAUT CONSOMME L'APPUI AU SOL, SINON LE PERSONNAGE ESCALADE LA FAÇADE.
     // `onGround` ne se remet à faux que dans `sweep` sur une descente SANS
     // collision — une montée (`delta > 0`) ne l'efface pas, et l'atterrissage
@@ -256,6 +265,7 @@ export class BaseNPC {
         for (let bx = minX; bx <= maxX; bx++) {
           const id = by < 0 ? BLOCK.STONE : this.world.getBlock(bx, by, bz);
           if (!blockIsSolid(id)) continue;
+          if (this.world.blocSousLaSurface && this.world.blocSousLaSurface(bx, by, bz)) continue;   // sol continu (v297)
           const topY = by + (isSlab(id) ? 0.5 : 1);
           if (this.pos.y >= topY - eps && (axis !== 1 || delta < 0)) continue;
           if (axis === 0) this.pos.x = delta > 0 ? bx - half - eps : bx + 1 + half + eps;

@@ -21,6 +21,7 @@ const ARBRE_HD = new Set([BLOCK.LOG, BLOCK.LEAVES]);
 const NEUTRE = [0, 0, 1, 1];
 import { CHUNK, HEIGHT, REPERES_HD } from './world.js';
 import { emettreMonument, cellulesDuMorceau } from './paris-monuments-hd.js';
+import { grilleSol, emettreSolContinu } from './solcontinu.js';
 
 // Faces: corner positions (CCW from outside), normal, tile slot (0 top / 1 side / 2 bottom), shade.
 //
@@ -250,6 +251,16 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
   const source = world.ensureChunk(cx, cz);
   const data = world.visualChunk ? world.visualChunk(cx,cz,source) : source;
 
+  // LE SOL CONTINU (v297, solcontinu.js). Hors des villes, hors des blocs
+  // posés, hors des falaises, le sommet des colonnes n'est plus un cube : une
+  // surface triangulée passe par le centre de chaque colonne. La grille dit
+  // quelles colonnes sont COUVERTES — leur bloc de sommet ne s'émet plus, ni
+  // dessus ni de côté, la surface le recouvre — et la surface part dans
+  // `solid`, même matériau, même tuile que le bloc qu'elle remplace.
+  const grille = world.sansSolContinu ? null : grilleSol(world, cx, cz, CHUNK);
+  const couvertes = grille ? grille.couvertes : null;
+  const hauts = grille ? grille.hauts : null;
+
   // LES MONUMENTS EN RELIEF (v292). Ce qu'on masque est ce que le BÂTISSEUR du
   // voxel a écrit, et seulement là où le bloc du morceau est ENCORE le sien :
   // un bloc qu'un enfant ajoute contre le monument reste visible. Un monument
@@ -325,6 +336,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
           const [x, y, z] = cellule;
           const id = data[x + z * CHUNK + y * CHUNK * CHUNK];
           if (id === BLOCK.AIR || isProp(id)) continue;
+          if (couvertes && couvertes[x + z * CHUNK] && y === hauts[x + z * CHUNK]) continue;
 
           const isWater = id === BLOCK.WATER;
           const slab = isSlab(id);
@@ -521,11 +533,14 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
     }
   }
 
+  const surface = grille ? emettreSolContinu(solid, world, cx, cz, CHUNK, grille) : null;
+
   return {
     solid: solid.toTampons(),
     water: water.toTampons(),
     lumineux: lumineux.toTampons(),
     props,
+    cellulesSol: surface ? surface.cellules : 0,
     sol: sol ? sol.toTampons() : null,
     facades: facades ? facades.toTampons() : null,
     plat: plat ? plat.toTampons() : null,

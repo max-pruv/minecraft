@@ -858,6 +858,169 @@ Trois règles.
   juger les ponts : je les ai vus et ne les ai pas mesurés. Une planche de
   captures se regarde en entier, pas seulement là où pointe la livraison.
 
+## Le sol continu (v297) — le bloc reste le squelette des données, plus la forme du sol
+
+Première livraison de code du programme « monde fidèle » (kit de Max,
+septembre 2026 ; les décisions et l'état initial mesuré sont dans
+`docs/monde-fidele/`). Hors des villes, hors des blocs posés, hors des
+falaises, le sommet des colonnes n'est plus un cube : une surface triangulée
+passe par le centre de chaque colonne à `terrainHeight + 1`, et c'est elle
+qui se voit, qui porte l'enfant, les passants et les bêtes. Huit règles.
+
+- **LE SOL N'A PAS BOUGÉ, PAR CONSTRUCTION — et l'empreinte le dit quand
+  même.** `solcontinu.js` n'écrit aucun bloc et ne lit `terrainHeight` que
+  pour placer ses sommets : les deux empreintes de `plafond.js` sont
+  identiques à la v296, sans rien déclarer. La surface passe EXACTEMENT là où
+  l'enfant marchait (le centre du sommet de chaque colonne), donc un bloc posé
+  sur l'herbe repose où il reposait et aucune migration n'a lieu. Le prix
+  déclaré : entre deux centres, la surface s'écarte d'au plus un demi-bloc du
+  sommet voxel voisin, sur une pente.
+- **TROIS NOTIONS, DANS CET ORDRE, ET MON PREMIER JET EN CONFONDAIT DEUX.** Une
+  colonne NATURELLE (pas de ville, un bloc de terrain au sommet, rien d'autre
+  qu'un arbre, de l'eau ou une fleur dessus) ; une cellule DESSINÉE (ses quatre
+  colonnes naturelles et leurs sommets dans UN bloc — une falaise reste une
+  falaise, « deux blocs, c'est un mur », v261) ; une colonne COUVERTE (ses
+  quatre cellules dessinées), dont le cube de sommet disparaît du rendu et de
+  la physique. J'avais retiré le cube dès que la colonne était « convertie »
+  sans exiger ses quatre cellules : un TROU dans le sol au bord de chaque bloc
+  posé. Ce qu'on tait doit être ce que la surface recouvre, ni plus ni moins —
+  c'est la règle des monuments HD (v292), une couche plus bas.
+- **LA RÈGLE LIT CE QUE LA COLONNE EST, JAMAIS SON HISTOIRE.** Mon premier jet
+  tenait un index des colonnes ÉDITÉES (posées ou retirées) qui restaient voxel
+  pour toujours : un bloc posé puis retiré laissait une cicatrice de 3 × 3
+  cubes dans le champ. Retiré, l'index : une colonne dont le sommet est de
+  l'herbe et le dessus de l'air est naturelle, quoi qu'il s'y soit passé, et
+  la cicatrice guérit — c'est un témoin qui le mesure. Ce qui reste, c'est un
+  cache par colonne (`ficheMemo`), invalidé autour de chaque bloc écrit
+  (`solTouche`, appelé par `setBlock` ET par le worker pour un bloc reçu).
+- **UNE SEULE TRIANGULATION, TROIS LECTEURS — et le contact est un geste du
+  MONDE.** `sommetsDeCellule` et la diagonale a–d sont les mêmes pour
+  `emettreSolContinu` (le mailleur) et `solContinu` (le contact) ; un témoin
+  exige l'égalité au centre des colonnes et à mi-arête. L'accrochage au sol
+  (`world.accrocherAuSol`) et la boîte libre (`world.boiteLibre`) vivent dans
+  `World`, et `player.js`, `marlon.js` (les passants) et `animals.js` (les
+  bêtes) les appellent après leurs balayages voxel : le sommet d'une colonne
+  couverte n'arrête plus rien (`blocSousLaSurface`), et l'on se pose sur la
+  surface. Deux copies de ce geste finiraient par diverger, et un enfant et sa
+  vache marcheraient sur deux sols.
+- **ON S'ACCROCHE EN DESCENDANT DE CE QU'ON A AVANCÉ, PAS D'UN CHIFFRE ROND.**
+  Une pente d'un bloc par bloc descendue à trois images par seconde fait 0,7
+  bloc de dénivelée en une image ; une accroche fixe d'un demi-bloc laissait
+  la voiture décoller à chaque image et retomber. L'accroche vaut un demi-bloc
+  PLUS le pas horizontal de l'image — et seulement si la boîte est libre à
+  l'arrivée, parce qu'au bord d'une zone voxel la surface passe SOUS le
+  sommet des cubes voisins.
+- **UNE MARCHE SE COMPTE EN PENTE, PAS EN DÉNIVELÉE.** Ma première sonde
+  comptait « saut » toute variation de hauteur de plus de 0,3 entre deux
+  images : elle en trouvait quatre au volant sur la surface, qui étaient la
+  voiture descendant une pente à la cadence du banc. Une marche, c'est une
+  dénivelée PLUS GRANDE que l'avance horizontale ; un blocage, c'est moins
+  d'un centième de bloc d'avance joystick en avant ; une chute, un
+  atterrissage un demi-bloc sous le décollage. Avec ces trois grandeurs :
+  voxel 10,2 blocs et 452 images bloquées, surface 73,7 et zéro.
+- **LE COÛT SE MESURE EN MÉDIANE DE PASSAGES ALTERNÉS, ET LA QUESTION « EST-CE
+  UNE VILLE ? » SE POSE PAR MORCEAU.** Premier chiffre : +3,4 à +5,7 ms par
+  morceau, un seul passage, dont `cityAt` sur les 280 villes du registre pour
+  chacune des 400 colonnes de la grille. `villesProches` (une liste par
+  morceau, souvent vide) et une seule lecture de `terrainHeight` par colonne :
+  **+1,2 ms** (4,9 contre 3,7 en campagne, médiane de neuf). Le témoin garde
+  une borne à trois fois la mesure, parce qu'un portail charge.
+- **CE QUI RESTE VOXEL SE DÉCLARE.** Les falaises ; un liseré d'un bloc au
+  bord de toute zone voxel (ville, bloc posé, falaise) — une voiture y monte
+  d'un bloc comme avant (`franchirEnRoulant`), et c'est ce que la sonde a vu
+  au bord d'un lac : c'est le bord, pas la surface ; l'eau, qui garde ses
+  cubes (la surface passe sous le lac) ; les arbres ; et Manhattan, qui a son
+  propre sol. Le voxel d'avant se rejoue par `?solcontinu=0`, jusque dans le
+  worker (le drapeau voyage avec le journal des blocs), pour mesurer — jamais
+  un réglage, et aucun palier ne le pose : un sol qui changerait de forme avec
+  la qualité changerait la hauteur des pieds d'une tablette à l'autre.
+
+**Et j'ai redemandé `invoquer('vache')` — la clé est `cow`.** C'est mot pour
+mot « une clé d'espèce n'est pas son nom français » (v285), payée une seconde
+fois par le même témoin de bête ; le refus se dit désormais dans le message.
+Et le premier verdict de marche exigeait « voxel < 10 blocs » quand la
+première marche est à 10,2 : ce qui distingue les deux bras, c'est le
+BLOCAGE (60 images le pied contre un bloc), pas une distance ronde.
+
+**ET LE PORTAIL COMPLET A RENDU CE QUE LA SONDE NE POUVAIT PAS VOIR : UN
+PIÉTON ET UNE VOITURE N'ONT PAS LE MÊME NEZ.** « Une voiture roule dans la
+nature au lieu de buter sur une marche » (`monte.js`) est tombé rouge sur la
+branche : bloquée à 13,4 blocs, quarante secondes, sur le couloir de
+(−600, −520) à une marche par bloc. Le premier jet de `blocSousLaSurface` ne
+taisait que le SOMMET d'une colonne couverte. Un piéton, large de 0,6, n'a
+jamais dans sa boîte que la colonne d'à côté — dont le sommet est tu — et la
+sonde de la v297 marchait et roulait sur une pente de huit marches étalées.
+Une voiture fait 2,26 blocs : son nez est DEUX colonnes devant son centre,
+et sur une pente d'un bloc par bloc le cube SOUS le sommet de cette
+colonne-là a son dessus à la hauteur de la surface au centre de la colonne
+d'avant — sous la surface partout, et pourtant solide. La boîte butait
+dessus, et `franchirEnRoulant` (v286) ne pouvait plus rien : le sommet qu'il
+aurait escaladé n'arrête rien, donc la voiture n'était jamais « bloquée par
+un bloc » au sens du franchissement. La règle est géométrique, pas un
+réglage : entre deux colonnes couvertes le relief change d'au plus un bloc,
+la surface passe donc à un demi-bloc au plus sous le sommet, et le cube
+sous le sommet est sous la surface en tout point de sa colonne. Un témoin
+pur de `plafond.js` le garde sur une pente à deux marches consécutives.
+**Ce qu'une sonde éprouve sur un piéton ne vaut pas pour une voiture ; ce
+qui se mesure « au volant » se mesure avec le gabarit d'une voiture** — et
+c'est la voie longue, une fois de plus, qui l'a dit.
+
+**ET MON PREMIER REMÈDE TAISAIT TOUTE LA COLONNE — le second rouge du même
+portail a dit pourquoi c'est faux.** « Quand la rame arrive, on propose de
+monter à bord » (`monte.js`) pose l'enfant sur le tracé d'un train, en
+(−403, 472) : y 28,1, sous une colline dont la surface est à 37,8 — un
+TUNNEL. Mesuré à la sonde : `pos.y` = 37,8 dès la première image, le contact
+l'avait remonté sur l'herbe, et la rame ne l'a jamais trouvé. Une colonne
+NATURELLE a une surface au-dessus et peut avoir un vide en dessous — un
+tunnel de train, une grotte, une station de métro — dont le plancher et les
+parois sont des cubes de la même colonne : les taire, c'est faire tomber
+l'enfant à travers ; le remonter dès qu'il est « sous la surface », c'est le
+téléporter hors du tunnel. Ce que la surface tait et où elle accroche est
+donc une BANDE (`SOUS_SURFACE`, deux cubes) : le sommet et le cube dessous —
+ce qu'il faut à une voiture sur une pente d'un bloc par bloc, et rien de
+plus. Sous la bande, le voxel décide, comme avant. **Une règle de contact se
+formule par ce qu'elle REMPLACE, jamais par « au-dessus » ou « en dessous »
+d'une cote** : la surface remplace deux cubes, pas la colonne. Deux témoins
+purs de `plafond.js` — une pente à deux marches, un vide sous une colonne
+naturelle — et les deux rouges du portail se rejouent SEULS avant de
+fusionner.
+
+**ET LA BANDE NE SUFFISAIT PAS : « UN BLOC » SE COMPTE DEPUIS LE NIVEAU
+VOXEL SOUS LA BOÎTE, PAS DEPUIS LA SURFACE QUI LA PORTE.** Rejouée à la
+sonde (`tests/sonde-marche.cjs`), la voiture restait à 13,4 blocs, bande ou
+pas, franchissement armé ou désarmé — quatre bras identiques, ce qui dit
+déjà que le franchissement n'y était pour rien. Mesuré sous node au point
+d'arrêt : la colonne devant (T40) n'est PAS couverte, parce qu'en diagonale
+sa voisine fait deux blocs de plus — une falaise en travers du couloir, que
+le témoin ne voit pas puisqu'il ne lit le profil que le long de son axe.
+Ses cubes sont solides, à bon droit. Mais la surface porte la voiture à
+39,4 là où le voxel la poserait à 41 (le plus haut cube sous son emprise,
+au coin), et le saut d'un bloc depuis 39,4 restait sous le cube à franchir.
+`World.niveauVoxel` rend le sol voxel sous une boîte — la cote d'une colonne
+couverte, ou le dessus du plus haut cube solide non tu sous les pieds — et
+`franchirEnRoulant` vise UN bloc au-dessus de ce niveau ; c'est depuis ce
+niveau que « deux blocs, c'est un mur » se juge (sur du plat, niveau 26 pour
+des pieds à 26,05, cible 27, un mur à 28 reste un mur). Mesuré à la sonde
+après : **90,1 et 101,4 blocs armé, 13,4 et 13,4 désarmé.** Trois règles
+pour une seule livraison de sol, et la leçon commune : **une surface qui
+remplace des cubes doit dire, à chaque mécanisme qui lisait ces cubes, ce
+qu'il lit à la place** — la boîte (la bande), le contact (la bande), le
+franchissement (le niveau voxel). Le premier jet n'en avait servi qu'un.
+
+**Et deux leçons de sonde, payées dans la même livraison.** Une capture
+« après » de la campagne montrait QUATRE morceaux et le paysage lointain à la
+place du proche : la sonde d'état initial tenait le monde pour chargé dès que
+deux relevés du nombre de morceaux se ressemblaient, à une demi-seconde
+d'écart — c'est le worker qui n'avait pas rendu son premier lot. Elle attend
+désormais huit secondes puis quatre relevés stables ; **et la planche
+« avant » avait le même défaut**, ce qui l'aurait fait comparer deux images
+également fausses. Ensuite, deux vues sur dix de l'état initial étaient
+inutilisables — la caméra DANS un tronc à Lille, SOUS le remblai à la gare —
+parce qu'elle se posait à `terrainHeight`, qui est le relief, pas le sol. Une
+caméra de capture cherche une colonne dégagée (v292), et c'est un TOIT qu'elle
+a trouvé dans les deux cas : au sol, ni la gare ni cette entrée de Lille n'ont
+un endroit d'où l'on voit — un fait de l'état initial, écrit comme tel.
+
 ## Les rues de Paris s'élargissent, et le pas suit (v294)
 
 Max : « les rues de Paris sont trop étroites, élargis-les ». C'est la passe que

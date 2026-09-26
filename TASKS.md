@@ -1,5 +1,53 @@
 # Ce qui est en cours
 
+- [ ] **PROGRAMME « MONDE FIDÈLE » (kit de Max, septembre 2026) — livraison 2
+  sur 6 faite.** Le cahier : terrain continu partagé par le rendu, les
+  collisions et la navigation ; réseau routier entre les villes ; fidélité des
+  villes ; corrections proactives ; performances sur les vieux appareils.
+  Décisions, hypothèses, état initial et ordre des livraisons dans
+  `docs/monde-fidele/programme.md` ; captures avant/après aux mêmes points de
+  vue par `tests/sonde-etat-initial.cjs` (tag `avant`, `v297`, …).
+  - [x] 1. État initial mesuré (`etat-initial.md`).
+  - [x] 2. Le sol continu (v297, `src/solcontinu.js`).
+  - [ ] 3. **Le couloir Paris–Lille** : registre des routes (`routes.js`), profil
+    vertical à pente bornée (module `fitProfile` du kit, à adapter), section
+    (`roadSection`), ouvrages là où le profil quitte le terrain (remblai,
+    déblai, pont, tunnel), circulation interurbaine, entrées de ville, carte.
+    Le sol continu LIT ce registre : sous un corridor, la surface est celle du
+    profil, raccordée au terrain par un talus.
+  - [ ] 4. Le rail continu et la gare accessible : `traceSegment` rend une cote
+    ARRONDIE au bloc (767 cotes entières sur 768 points, 272 sauts d'un bloc
+    sur Londres–Paris) ; le profil lissé reste, la cote du convoi et des gares
+    devient continue ; la gare de Paris n'a ni parvis ni rue qui y mène.
+  - [ ] 5. Les autres couloirs et villes, par lots.
+  - [ ] 6. La fidélité architecturale : registre unifié des quartiers — ET
+    la bibliothèque du kit v3 (330 GLB originaux, 46 Mo, en mètres), évaluée
+    dans `programme.md` § 6. **Décision à prendre par Max avant une ligne** :
+    la bibliothèque n'entre dans une ville qu'à UN BLOC POUR UN MÈTRE (joueur
+    1,8, voiture 4,4 × 2,26 — le kit refuse toute autre échelle), et aucune
+    parcelle actuelle ne la reçoit sans étirer (un haussmannien fait 18 × 12 ×
+    22,5 blocs ; un îlot de l'Étoile 12,6, un immeuble 6). Deux voies : un
+    quartier témoin de Paris RETRAMÉ à 1 m/bloc dans une zone bornée (neuvième
+    casse déclarée de l'invariant 1, double empreinte, copie et migration des
+    blocs), puis Lille avec les familles bruxelloises ; ou Paris garde sa trame
+    et la fidélité passe par la couche HD. Quoi qu'il arrive : une famille se
+    charge à l'entrée du quartier, dans le cache immuable, jamais les 330 au
+    démarrage ; variante par identifiant stable de parcelle ; provenance dans
+    `vendor/` (les modèles sont des conceptions originales, sans géométrie
+    tierce).
+  - **Ce que la v297 laisse voxel, et qui se reprendra** : le liseré d'un bloc
+    au bord de toute zone voxel (une voiture y monte d'un bloc, mesuré au bord
+    d'un lac : bloquée 25 images, montée de 1,0, une chute) — la piste est un
+    raccord par une cellule à pente forte MAIS non praticable, à séparer du
+    rendu ; l'eau, qui garde ses cubes (la surface passe sous le lac) ; les
+    passants de Manhattan (`piedPieton`) et les convois des villes
+    (`coteRoulable`), qui ne lisent pas la surface parce qu'ils sont en ville
+    ; les arbres. Et la surface n'a ni herbe haute ni variation de tuile : la
+    tuile est celle du bloc de sommet, répétée par cellule.
+  - **Ce qui n'est PAS mesuré** : le coût de la surface sur une tablette (le
+    +1,2 ms par morceau est celui du banc) — `?diag=1` et le journal de bord
+    le diront ; et le rendu de la surface sur un vrai GPU (au banc, SwiftShader).
+
 - [ ] **LES NEUF ROUGES DU PORTAIL DE LA v296 — DEUX DE MOI, CORRIGÉS ; SEPT
   DETTES DÉJÀ MESURÉES.** Seize suites, 77 min, 742 verts.
 

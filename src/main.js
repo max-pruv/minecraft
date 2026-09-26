@@ -538,6 +538,11 @@ activerTuilage(litMaterial);
 
 const world = new urbain.TerreUrbaine();
 world.hd = RAYON_HD > 0 ? 1 : 0;
+// `?solcontinu=0` : le voxel d'avant, pour MESURER (A/B au banc). Ce n'est pas
+// un réglage et aucun palier ne le pose : le sol continu vaut pour tous les
+// appareils, parce qu'un sol qui change de forme avec le palier changerait la
+// hauteur des pieds de l'enfant d'une tablette à l'autre (v297).
+world.sansSolContinu = new URLSearchParams(location.search).get('solcontinu') === '0';
 // Le matériau HD se fabrique à la demande (son environnement préfiltré coûte
 // une PMREM) : la première fois qu'un morceau de Paris arrive avec du détail.
 let hd = null;
@@ -805,7 +810,7 @@ function synchroniserLeWorker() {
   if (!maillageDistant) return;
   generationDistante++;
   enAttente.clear();
-  maillageDistant.postMessage({ type: 'edits', edits: world.edits, temps: world.editTimes, ctx: world.ctx, hd: world.hd });
+  maillageDistant.postMessage({ type: 'edits', edits: world.edits, temps: world.editTimes, ctx: world.ctx, hd: world.hd, sansSolContinu: world.sansSolContinu });
 }
 function recevoirMorceau(m) {
   const key = World.key(m.cx, m.cz);

@@ -189,6 +189,7 @@ CLAUDE.md         invariants, release procedure, and the traps that cost time
 src/main.js       scene setup, chunk streaming, input, HUD, game loop
 src/world.js      noise, terrain/tree generation, chunk storage, edits + saving
 src/mesher.js     chunk geometry builder (visible faces only, water surface)
+src/solcontinu.js continuous natural ground: one triangulation for rendering, contact and NPCs (v297)
 src/player.js     movement, collision, swimming, flying, voxel raycast
 src/blocks.js     block ids and metadata
 src/textures.js   procedural texture atlas

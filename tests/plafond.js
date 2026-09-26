@@ -592,6 +592,60 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     !suivi.absent && suivi.paris && suivi.apparition && suivi.neuf && suivi.archive && suivi.idempotent,
     suivi.absent ? 'la migration de carte 3 n\'existe pas' : suivi.bilan);
 
+  // TOUT CUBE D'UNE COLONNE COUVERTE EST SOUS SA SURFACE, pas seulement le
+  // sommet (v297, portail) : une voiture de 2,26 blocs de large a le nez deux
+  // colonnes devant son centre, et sur une pente d'un bloc par bloc le cube
+  // sous le sommet de cette colonne-là — solide au premier jet — la bloquait
+  // net (13,4 blocs en quarante secondes). On cherche une pente couverte à
+  // deux marches consécutives, et l'on demande au monde ce qu'il tait.
+  const sousSurface = (() => {
+    if (!w.blocSousLaSurface || !w.solContinu) return { absent: true };
+    for (let x = -300; x <= 300; x += 3) {
+      for (let z = -300; z <= 300; z += 3) {
+        const t0 = w.terrainHeight(x, z), t1 = w.terrainHeight(x + 1, z), t2 = w.terrainHeight(x + 2, z);
+        if (t1 !== t0 + 1 || t2 !== t1 + 1) continue;
+        if (w.solContinu(x + 0.5, z + 0.5) === null || w.solContinu(x + 2.5, z + 0.5) === null) continue;
+        return {
+          x, z, t0, t1, t2,
+          sommet: w.blocSousLaSurface(x + 2, t2, z), dessous: w.blocSousLaSurface(x + 2, t2 - 1, z),
+          plusBas: w.blocSousLaSurface(x + 2, t2 - 2, z), air: w.blocSousLaSurface(x + 2, t2 + 1, z),
+        };
+      }
+    }
+    return { introuvable: true };
+  })();
+  verifier('sur une pente couverte, le cube sous le sommet est sous la surface, et n\'arrête plus une voiture',
+    !sousSurface.absent && !sousSurface.introuvable && sousSurface.sommet && sousSurface.dessous
+      && !sousSurface.plusBas && !sousSurface.air,
+    sousSurface.absent ? 'pas de sol continu' : JSON.stringify(sousSurface));
+
+  // ET UN TUNNEL SOUS UNE COLLINE GARDE SON PLANCHER, ET SON ENFANT (v297,
+  // portail) : « quand la rame arrive, on propose de monter à bord » posait
+  // l'enfant sur un tracé de train à neuf blocs sous la surface, et le premier
+  // jet du contact le remontait sur l'herbe. On CHERCHE un vide sous une
+  // colonne naturelle couverte (un tunnel, une grotte), et l'on demande au
+  // monde : le plancher du vide est-il solide, et un pied posé dedans y
+  // reste-t-il ?
+  const tunnel = (() => {
+    if (!w.blocSousLaSurface || !w.accrocherAuSol) return { absent: true };
+    for (let x = -700; x <= 700; x += 2) {
+      for (let z = -700; z <= 700; z += 2) {
+        const t = w.terrainHeight(x, z);
+        if (w.solContinu(x + 0.5, z + 0.5) === null) continue;
+        let vide = -1;
+        for (let y = t - 3; y > Math.max(2, t - 20); y--) if (w.getBlock(x, y, z) === 0 && w.getBlock(x, y + 1, z) === 0 && w.getBlock(x, y - 1, z) !== 0) { vide = y; break; }
+        if (vide < 0) continue;
+        const pos = { x: x + 0.5, y: vide + 0.05, z: z + 0.5 }, vel = { x: 0, y: 0, z: 0 };
+        const r = w.accrocherAuSol(pos, vel, { etaitAuSol: true, pasH: 0, half: 0.3, hauteur: 1.8 });
+        return { x, z, t, vide, plancher: !w.blocSousLaSurface(x, vide - 1, z), reste: Math.abs(pos.y - (vide + 0.05)) < 1e-6, contact: r };
+      }
+    }
+    return { introuvable: true };
+  })();
+  verifier('et un tunnel sous une colline garde son plancher, et l\'enfant qui y est n\'est pas remonté sur l\'herbe',
+    !tunnel.absent && !tunnel.introuvable && tunnel.plancher && tunnel.reste,
+    tunnel.absent ? 'pas de sol continu' : JSON.stringify(tunnel));
+
   const trop = [];
   for (let x = -700; x <= 700; x += 7) {
     for (let z = -700; z <= 700; z += 7) {
@@ -601,6 +655,100 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   }
   verifier('et aucune montagne n\'a poussé dans le ciel neuf', trop.length === 0,
     JSON.stringify(trop.slice(0, 3)));
+
+  // --- LE SOL CONTINU (v297) : le rendu, le contact et la couture lisent la ---
+  // --- même triangulation, et le sol N'A PAS BOUGÉ pour autant --------------
+  //
+  // Les empreintes ci-dessus tiennent parce que `solcontinu.js` n'écrit aucun
+  // bloc et ne touche pas `terrainHeight` : la surface passe par le sommet de
+  // chaque colonne EN SON CENTRE, exactement là où l'enfant marchait. Ce qui
+  // se vérifie ici, sous node, sans navigateur : que la surface existe hors
+  // des villes, qu'elle tait le cube qu'elle remplace, qu'elle coud deux
+  // morceaux à l'identique, que le contact et le maillage sont la même
+  // triangulation, qu'un bloc posé rend sa colonne au voxel et qu'un bloc
+  // retiré la rend à la surface, et qu'en ville rien ne change.
+  {
+    const { buildChunkTampons } = await import('../src/mesher.js');
+    const { grilleSol } = await import('../src/solcontinu.js');
+    const { CHUNK } = await import('../src/world.js');
+    const mesurer = (x, z) => {
+      const cx = Math.floor(x / CHUNK), cz = Math.floor(z / CHUNK);
+      const t = buildChunkTampons(w, cx, cz);
+      const g = grilleSol(w, cx, cz, CHUNK);
+      const couvertes = g.couvertes.reduce((a, b) => a + b, 0);
+      let fautes = 0, sommetsSurface = 0;
+      if (t.solid) {
+        const P = t.solid.positions, Nn = t.solid.normals, I = t.solid.indices;
+        for (let i = 0; i < P.length; i += 3) if (P[i] % 1 === 0.5) sommetsSurface++;
+        for (let q = 0; q < I.length; q += 6) {
+          const v = [I[q], I[q + 1], I[q + 2], I[q + 4]];
+          if (!(Nn[v[0] * 3 + 1] === 1 && v.every((k) => P[k * 3] % 1 === 0 && P[k * 3 + 2] % 1 === 0))) continue;
+          const xs = v.map((k) => P[k * 3]), zs = v.map((k) => P[k * 3 + 2]), y = P[v[0] * 3 + 1];
+          for (let lz = Math.min(...zs); lz < Math.max(...zs); lz++) for (let lx = Math.min(...xs); lx < Math.max(...xs); lx++) {
+            if (g.couvertes[lx + lz * CHUNK] && g.hauts[lx + lz * CHUNK] + 1 === y) fautes++;
+          }
+        }
+      }
+      const gE = grilleSol(w, cx + 1, cz, CHUNK);
+      let ecarts = 0;
+      for (let lz = 0; lz < CHUNK; lz++) if (g.cote[g.idx(CHUNK, lz)] !== gE.cote[gE.idx(0, lz)]) ecarts++;
+      let centres = 0, exacts = 0, milieux = 0, moyennes = 0;
+      for (let lz = 1; lz < CHUNK - 1; lz++) for (let lx = 1; lx < CHUNK - 1; lx++) {
+        if (!g.couvertes[lx + lz * CHUNK]) continue;
+        const X = cx * CHUNK + lx, Z = cz * CHUNK + lz;
+        const sc = w.solContinu(X + 0.5, Z + 0.5); centres++;
+        if (sc !== null && Math.abs(sc - (w.terrainHeight(X, Z) + 1)) < 1e-6) exacts++;
+        if (g.couvertes[lx + 1 + lz * CHUNK]) {
+          const m = w.solContinu(X + 1, Z + 0.5); milieux++;
+          if (m !== null && Math.abs(m - (w.terrainHeight(X, Z) + w.terrainHeight(X + 1, Z) + 2) / 2) < 1e-6) moyennes++;
+        }
+      }
+      return { cellules: t.cellulesSol, couvertes, sommetsSurface, fautes, ecarts, centres, exacts, milieux, moyennes };
+    };
+    const a1 = mesurer(-110, -330), colline = mesurer(400, -600);
+    verifier('hors des villes, le sol naturel est une surface continue, et le cube qu\'elle remplace n\'est plus dessiné',
+      a1.cellules > 200 && colline.cellules > 200 && a1.fautes === 0 && colline.fautes === 0,
+      `campagne ${a1.cellules} cellules · ${a1.couvertes} colonnes couvertes · ${a1.fautes} face(s) voxel de trop — colline ${colline.cellules} · ${colline.couvertes} · ${colline.fautes}`);
+    verifier('deux morceaux voisins cousent leurs cotes à l\'identique — par construction, et mesuré',
+      a1.ecarts === 0 && colline.ecarts === 0, `${a1.ecarts} · ${colline.ecarts} écart(s) sur 16 colonnes de couture`);
+    verifier('le contact lit la même triangulation que le maillage : exact au centre des colonnes, moyenne à mi-arête',
+      a1.exacts === a1.centres && a1.moyennes === a1.milieux && colline.exacts === colline.centres && colline.moyennes === colline.milieux && a1.centres > 100,
+      `campagne ${a1.exacts}/${a1.centres} centres, ${a1.moyennes}/${a1.milieux} mi-arêtes — colline ${colline.exacts}/${colline.centres}, ${colline.moyennes}/${colline.milieux}`);
+    // un bloc posé rend sa colonne au voxel ; retiré, la cicatrice guérit
+    const X = -108, Z = -328, h = w.terrainHeight(X, Z);
+    const avant = w.solContinu(X + 0.5, Z + 0.5), couvAvant = w.blocSousLaSurface(X, h, Z);
+    w.setBlock(X, h + 1, Z, 11);
+    const apres = w.solContinu(X + 0.5, Z + 0.5), couvApres = w.blocSousLaSurface(X, h, Z);
+    const cellulesApres = buildChunkTampons(w, Math.floor(X / CHUNK), Math.floor(Z / CHUNK)).cellulesSol;
+    w.setBlock(X, h + 1, Z, 0);
+    const retrait = w.solContinu(X + 0.5, Z + 0.5);
+    const cellulesRetrait = buildChunkTampons(w, Math.floor(X / CHUNK), Math.floor(Z / CHUNK)).cellulesSol;
+    verifier('un bloc posé sur l\'herbe rend sa colonne au voxel — et retiré, la cicatrice guérit',
+      avant === h + 1 && couvAvant && apres === null && !couvApres && cellulesApres < a1.cellules && retrait === h + 1 && cellulesRetrait === a1.cellules,
+      `surface ${avant} → posé ${apres} (${cellulesApres} cellules) → retiré ${retrait} (${cellulesRetrait})`);
+    w.sansSolContinu = true;
+    const voxel = buildChunkTampons(w, Math.floor(-110 / CHUNK), Math.floor(-330 / CHUNK));
+    const voxelContact = w.solContinu(-109.5, -329.5);
+    w.sansSolContinu = false;
+    verifier('le voxel d\'avant se rejoue à la demande (?solcontinu=0), pour mesurer — pas une cellule, le voxel décide',
+      voxel.cellulesSol === 0 && voxelContact === null, `${voxel.cellulesSol} cellule(s), contact ${voxelContact}`);
+    const paris = buildChunkTampons(w, Math.floor(-240 / CHUNK), Math.floor(200 / CHUNK));
+    verifier('et dans une ville, rien ne change : pas une cellule, le voxel décide',
+      paris.cellulesSol === 0 && w.solContinu(-239.5, 200.5) === null && !w.blocSousLaSurface(-240, w.terrainHeight(-240, 200), 200),
+      `Paris ${paris.cellulesSol} cellule(s)`);
+    // ce que la surface coûte au mailleur : médiane de neuf passages alternés
+    const med = (a) => { const b = [...a].sort((p, q) => p - q); return b[b.length >> 1]; };
+    const avec = [], sans = [];
+    const cx = Math.floor(-110 / CHUNK), cz = Math.floor(-330 / CHUNK);
+    for (let i = 0; i < 9; i++) {
+      let t0 = performance.now(); buildChunkTampons(w, cx, cz); avec.push(performance.now() - t0);
+      w.sansSolContinu = true; t0 = performance.now(); buildChunkTampons(w, cx, cz); sans.push(performance.now() - t0); w.sansSolContinu = false;
+    }
+    // mesuré seul : +1,2 ms par morceau de campagne (4,9 contre 3,7) ; la
+    // borne de garde vaut trois fois la mesure, parce qu'un portail charge
+    verifier('la surface coûte au plus quelques millisecondes par morceau de campagne',
+      med(avec) - med(sans) < 4, `${med(avec).toFixed(1)} ms avec, ${med(sans).toFixed(1)} sans (médianes de neuf)`);
+  }
 
   // --- ce qui se vérifie en jouant ------------------------------------------
   const banc = new Banc({ portJeu: 8327, portPairs: 9327 });
@@ -842,8 +990,111 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         `clarté moyenne ${carte.clarte.toFixed(0)}/255`);
     }
 
+    // --- LE SOL CONTINU SOUS LES PIEDS (v297) --------------------------------
+    //
+    // Un enfant à pied ne saute pas tout seul : devant une marche d'un bloc
+    // il s'arrête, et c'était la campagne entière — 98 marches sur 810
+    // colonnes entre Paris et Lille. Sur la même page, le même départ (une
+    // pente de huit marches d'un bloc sur quarante, relevée sur l'axe
+    // Paris–Lille) et le même cap : le voxel d'avant (`sansSolContinu`, la
+    // physique seule) puis la surface. On attend le RÉSULTAT, borné (v270) :
+    // vingt blocs parcourus ou soixante images bloquées, et la durée entre
+    // dans le message.
+    const marcher = async (sans) => tab.evaluate(async ({ sans }) => {
+      const g = window.__game, p = g.player;
+      const X = -165, Z = -85;
+      g.world.sansSolContinu = sans;
+      p.flying = false; p.pos.set(X + 0.5, g.world.terrainHeight(X, Z) + 2, Z + 0.5); p.vel.set(0, 0, 0);
+      p.yaw = -0.256; p.pitch = 0;
+      for (const a of [...g.animalManager.animals]) if (a.def.key !== 'poisson') { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); }
+      await new Promise((r) => setTimeout(r, 3000));
+      const out = { images: 0, bloque: 0, sous: 0, flotte: 0, marches: 0, blocs: 0, ms: 0 };
+      let xa = p.pos.x, za = p.pos.z, ya = p.pos.y, sola = p.onGround;
+      const x0 = p.pos.x, z0 = p.pos.z, t0 = performance.now();
+      p.touchMove.f = 1;
+      await new Promise((fin) => {
+        const tour = () => {
+          out.images++;
+          const sc = g.world.solContinu(p.pos.x, p.pos.z);
+          if (sc !== null) {
+            if (p.pos.y - sc < -0.01) out.sous++;
+            if (p.onGround && p.pos.y - sc > 0.05) out.flotte++;
+          }
+          const dh = Math.hypot(p.pos.x - xa, p.pos.z - za), dy = Math.abs(p.pos.y - ya);
+          if (sola && p.onGround) { if (dh < 0.01) out.bloque++; if (dy > 0.3 && dy > dh) out.marches++; }
+          xa = p.pos.x; za = p.pos.z; ya = p.pos.y; sola = p.onGround;
+          out.blocs = Math.hypot(p.pos.x - x0, p.pos.z - z0);
+          out.ms = Math.round(performance.now() - t0);
+          if (out.blocs >= 20 || out.bloque >= 60 || out.ms > 60000) fin(); else requestAnimationFrame(tour);
+        };
+        requestAnimationFrame(tour);
+      });
+      p.touchMove.f = 0; g.world.sansSolContinu = false;
+      out.blocs = +out.blocs.toFixed(1);
+      return out;
+    }, { sans });
+    const voxelMarche = await marcher(true);
+    const surfaceMarche = await marcher(false);
+    verifier('sur une pente de huit marches, le voxel d\'avant arrête l\'enfant au premier bloc — la surface le laisse marcher',
+      voxelMarche.bloque >= 60 && surfaceMarche.blocs >= 20 && surfaceMarche.bloque < surfaceMarche.images / 10 && voxelMarche.blocs < surfaceMarche.blocs,
+      `voxel ${voxelMarche.blocs} bloc(s), ${voxelMarche.bloque} image(s) bloquée(s) en ${voxelMarche.ms} ms — surface ${surfaceMarche.blocs} bloc(s), ${surfaceMarche.bloque} bloquée(s) en ${surfaceMarche.ms} ms`);
+    verifier('et sur la surface, les pieds ne passent jamais dessous ni ne flottent, sans une marche',
+      surfaceMarche.sous === 0 && surfaceMarche.flotte === 0 && surfaceMarche.marches === 0,
+      `${surfaceMarche.sous} image(s) sous la surface, ${surfaceMarche.flotte} flottante(s), ${surfaceMarche.marches} marche(s) sur ${surfaceMarche.images} images`);
+    // une bête lit la même surface que l'enfant
+    const bete = await tab.evaluate(async () => {
+      const g = window.__game;
+      const X = -160, Z = -100;
+      // la clé d'une espèce n'est pas son nom français (v285) : `cow`, pas « vache »
+      const a = g.animalManager.invoquer('cow', X + 0.3, Z + 0.7);
+      if (!a) return { echec: 'pas de vache (clé cow inconnue)' };
+      await new Promise((r) => setTimeout(r, 2500));
+      const sc = g.world.solContinu(a.pos.x, a.pos.z);
+      return { y: +a.pos.y.toFixed(2), surface: sc === null ? null : +sc.toFixed(2), ecart: sc === null ? null : +(a.pos.y - sc).toFixed(2) };
+    });
+    verifier('une bête posée sur la pente se tient sur la même surface que l\'enfant',
+      bete.surface !== null && bete.ecart !== null && bete.ecart >= -0.01 && bete.ecart < 0.3, JSON.stringify(bete));
+    // ce que la page dessine : des cellules de surface (sommets à x + 0,5)
+    const dessin = await tab.evaluate(() => {
+      const g = window.__game; let surface = 0, total = 0;
+      for (const e of g.chunkMeshes.values()) {
+        if (!e.solid) continue;
+        const pos = e.solid.geometry.attributes.position.array;
+        for (let i = 0; i < pos.length; i += 3) if (pos[i] % 1 === 0.5) surface++;
+        total += pos.length / 3;
+      }
+      return { surface, total, morceaux: g.chunkMeshes.size };
+    });
+    verifier('et le maillage reçu du worker porte la surface', dessin.surface > 1000, JSON.stringify(dessin));
+
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0,
       JSON.stringify(tab.erreurs));
+
+    // Deux pages de plus, courtes. `?solcontinu=0` doit rendre le voxel d'avant
+    // jusque dans le worker (le drapeau voyage avec le journal des blocs) ;
+    // et le palier BAS a la MÊME surface — le cahier de Max refuse un sol qui
+    // change de forme avec la qualité, et la hauteur des pieds de l'enfant ne
+    // doit pas dépendre de sa tablette.
+    const compterSurface = (page) => page.evaluate(() => {
+      const g = window.__game; let surface = 0;
+      for (const e of g.chunkMeshes.values()) {
+        if (!e.solid) continue;
+        const pos = e.solid.geometry.attributes.position.array;
+        for (let i = 0; i < pos.length; i += 3) if (pos[i] % 1 === 0.5) surface++;
+      }
+      return { surface, morceaux: g.chunkMeshes.size, sans: !!g.world.sansSolContinu };
+    });
+    await tab.close();
+    const voxelPage = await banc.jouerSeul('Solb', { rr: 2, params: '&solcontinu=0' });
+    await dormir(4000);
+    const voxelDessin = await compterSurface(voxelPage);
+    verifier('avec ?solcontinu=0, le worker maille le voxel d\'avant — pas un sommet de surface', voxelDessin.sans && voxelDessin.surface === 0, JSON.stringify(voxelDessin));
+    await voxelPage.close();
+    const basPage = await banc.jouerSeul('Solc', { rr: 2, params: '&palier=bas' });
+    await dormir(4000);
+    const basDessin = await compterSurface(basPage);
+    verifier('et le palier bas a le même sol continu que les autres', !basDessin.sans && basDessin.surface > 0, JSON.stringify(basDessin));
+    await basPage.close();
   } finally {
     await banc.fermer();
   }

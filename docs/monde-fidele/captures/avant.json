@@ -1,0 +1,129 @@
+{
+ "tag": "avant",
+ "date": "2026-09-26T15:28:16.961Z",
+ "banc": "rendu logiciel, rr 9, hd 6, ombres, 1280×720, dpr 1",
+ "vues": {
+  "paris-rue": {
+   "x": -236,
+   "z": 195,
+   "y": 34,
+   "appels": 716,
+   "ktri": 791,
+   "morceaux": 25,
+   "attente": 12899
+  },
+  "paris-carrefour": {
+   "x": -253,
+   "z": 234,
+   "y": 34,
+   "appels": 289,
+   "ktri": 415,
+   "morceaux": 45,
+   "attente": 6959
+  },
+  "paris-monument": {
+   "x": -322,
+   "z": 248,
+   "y": 34,
+   "appels": 616,
+   "ktri": 761,
+   "morceaux": 99,
+   "attente": 9430
+  },
+  "paris-sortie-nord": {
+   "x": -240,
+   "z": 24,
+   "y": 35,
+   "appels": 125,
+   "ktri": 217,
+   "morceaux": 100,
+   "attente": 40906
+  },
+  "campagne-a1": {
+   "x": -110,
+   "z": -330,
+   "y": 35,
+   "appels": 250,
+   "ktri": 161,
+   "morceaux": 361,
+   "attente": 34857
+  },
+  "campagne-a1-ciel": {
+   "x": -110,
+   "z": -330,
+   "y": 35,
+   "appels": 252,
+   "ktri": 178,
+   "morceaux": 361,
+   "attente": 8006
+  },
+  "lille-entree-sud": {
+   "x": 35,
+   "z": -752,
+   "y": 44,
+   "appels": 1126,
+   "ktri": 404,
+   "morceaux": 221,
+   "attente": 40382
+  },
+  "lille-centre": {
+   "x": 35,
+   "z": -851,
+   "y": 34,
+   "appels": 537,
+   "ktri": 482,
+   "morceaux": 97,
+   "attente": 4316
+  },
+  "gare-paris": {
+   "x": -349,
+   "z": 36,
+   "y": 36,
+   "appels": 213,
+   "ktri": 578,
+   "morceaux": 14,
+   "attente": 7885
+  },
+  "paris-nuit": {
+   "x": -236,
+   "z": 195,
+   "y": 34,
+   "appels": 437,
+   "ktri": 1197,
+   "morceaux": 27,
+   "attente": 3005
+  }
+ },
+ "parcours": {
+  "pied": {
+   "images": 22,
+   "p50": 3016.6,
+   "p95": 3866.5,
+   "p99": 3933.2,
+   "pire": 3933,
+   "blocs": 3.6,
+   "morceaux": 128,
+   "appels": 871,
+   "ktri": 1311,
+   "tasMo": 593,
+   "x": -231,
+   "z": 197,
+   "y": 35
+  },
+  "voiture": {
+   "images": 13,
+   "p50": 5083.1,
+   "p95": 6599.6,
+   "p99": 6599.6,
+   "pire": 6600,
+   "blocs": 2.2,
+   "morceaux": 178,
+   "appels": 1180,
+   "ktri": 2668,
+   "tasMo": 928,
+   "x": -228,
+   "z": 215,
+   "y": 29.3
+  }
+ }
+}
