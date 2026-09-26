@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 299,
+    titre: 'L\'autoroute Paris–Lille',
+    puces: [
+      'Une vraie autoroute relie Paris et Lille',
+      'Deux ponts : on passe dessus et dessous',
+      'Des voitures roulent dans les deux sens',
+      'La carte montre la route',
+    ],
+  },
+  {
     v: 298,
     titre: 'Le ciel de Paris nettoyé',
     puces: [
