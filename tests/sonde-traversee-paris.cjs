@@ -199,6 +199,10 @@ const { Banc, souffler } = require('./banc.js');
         if (bouton()) bouton().click();
       }
 
+      // Ce qui est mesuré est publié tout de suite : une étape qui meurt plus
+      // loin ne doit pas emporter les précédentes.
+      window.__travPartiel = { couloir, marche, conduite };
+
       // --- 3. les passants -----------------------------------------------------
       let gens = { err: 'aucun site peuplé' };
       const site = g.passants && g.passants.sites && g.passants.sites.find((s) => s.peuple && s.peuple.length);
@@ -206,7 +210,12 @@ const { Banc, souffler } = require('./banc.js');
         const avant = site.peuple.map((h) => ({ x: h.pos.x, z: h.pos.z }));
         await tenir(8);
         let animes = 0, surTrottoir = 0, surChaussee = 0, ailleurs = 0, vus = 0;
+        // LA TROUPE GRANDIT PENDANT LA MESURE (v241 : la population s'ouvre
+        // progressivement) : un passant né entre les deux relevés n'a pas
+        // d'« avant », et le lire a tué la sonde entière — marche et conduite
+        // comprises, mesurées mais jamais publiées (v294).
         site.peuple.forEach((h, i) => {
+          if (!avant[i]) return;
           if (Math.hypot(h.pos.x - avant[i].x, h.pos.z - avant[i].z) > 0.4) animes++;
           if (estTrottoir(h.pos.x, h.pos.z)) surTrottoir++;
           else if (estChaussee(h.pos.x, h.pos.z)) surChaussee++;
@@ -235,7 +244,7 @@ const { Banc, souffler } = require('./banc.js');
     let r = null;
     while (Date.now() - t0 < 20 * 60 * 1000) {
       const etat = await page.evaluate(() => ({ r: window.__trav, e: window.__travErr }));
-      if (etat.e) { r = { err: etat.e }; break; }
+      if (etat.e) { r = { err: etat.e, partiel: await page.evaluate(() => window.__travPartiel || null) }; break; }
       if (etat.r) { r = etat.r; break; }
       await new Promise((res) => setTimeout(res, 5000));
     }

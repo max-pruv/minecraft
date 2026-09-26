@@ -49,6 +49,12 @@ const VUES = [
   { nom: 'toit-pres-3', x: -209, z: 210, yaw: -Math.PI / 2, pitch: 0.12, h: 8.5 },
   { nom: 'toit-plateau', x: -200, z: 200, yaw: Math.PI / 2, pitch: -0.6, h: 13 },
   { nom: 'toit-bord', x: -200, z: 206, yaw: 0, pitch: -0.35, h: 10 },
+  // v294 : les rues élargies — une rue de quartier au nord du centre (la
+  // fenêtre du témoin de carteMonde.js), et un pont vu depuis la voie sur berge
+  { nom: 'rue-quartier', x: -270, z: 140, yaw: Math.PI / 2, pitch: 0.08, h: 1.6, rue: true },
+  { nom: 'rue-quartier-ciel', x: -270, z: 140, yaw: Math.PI / 2, pitch: -0.7, h: 22, rue: true },
+  { nom: 'pont', x: -299, z: 214, yaw: Math.PI, pitch: 0.05, h: 1.6 },
+  { nom: 'pont-ciel', x: -299, z: 221, yaw: Math.PI / 2, pitch: -0.6, h: 20 },
 ];
 
 (async () => {

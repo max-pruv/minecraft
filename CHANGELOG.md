@@ -20,6 +20,91 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v294 — Les rues de Paris s'élargissent, et les ponts sortent de l'eau
+
+**Pourquoi.** Max : « les rues de Paris sont trop étroites, élargis-les ». La
+v293 l'avait mesuré sous les huit circuits de voitures — donc sous les
+avenues, les rues les plus larges de la ville — et déclaré comme dette.
+Mesuré cette fois sur TOUT le disque, 94 000 colonnes, la plus courte
+traversée de chaussée sur douze directions : **la chaussée d'une rue de
+quartier faisait 2,0 blocs pour une voiture de 2,26** (médiane 2,5 sur la
+ville, Montmartre à 2,0 partout), le trottoir 0,55 bloc — un passant n'y
+tient pas, un réverbère non plus —, les raccords d'avenue 3,1 blocs là où un
+convoi croise l'enfant de face, l'anneau des places rondes UN bloc pour une
+voiture qu'on y fait rouler, et la voie sur berge 2,1. L'enfant au volant
+frottait les deux trottoirs.
+
+Et en relisant `solParis` pour élargir les ponts : **les neuf ponts de Paris
+étaient au fond de la Seine.** Le plan rendait bien du pavé sur le tablier,
+mais `world.js` l'écrivait à la cote du terrain — le lit. Mesuré sous node :
+terrain 28, eau à 30, le pavé du pont à 28. On traversait le fleuve à la nage.
+C'est le piège de la Tamise (v208), que Paris n'avait jamais reçu.
+
+**Ce que ça change.** Trois largeurs, et chacune est un résultat : une rue à
+sens unique fait **3,6 blocs** de chaussée (la voiture au milieu, 0,67 de
+chaque côté), une ruelle du Marais, du Quartier latin, de Montmartre ou de
+Belleville **3,0**, un boulevard de Monceau, de l'Étoile ou de Passy **5,2** —
+deux voitures côte à côte. Aucune avenue ne descend sous 5,2 : Rivoli fait
+7,5, les Champs-Élysées 9 colonnes, un boulevard 6,1. Le trottoir passe à
+1,45 bloc (0,95 dans les ruelles), deux sur les avenues. L'anneau des places
+rondes fait trois blocs, la rue qui fait le tour d'un monument quatre, la voie
+sur berge 4,1, et un pont sept blocs avec une chaussée au milieu — **posé
+au-dessus de l'eau, à la cote de la ville, de plain-pied avec la voie sur
+berge : on traverse la Seine en voiture.** Le pas des îlots monte de deux fois
+ce que la façade recule, si bien que l'îlot garde sa largeur au dixième :
+moins de rues, plus larges, pas un îlot de perdu (la méthode de la v271). Le
+sol change, le relief non.
+
+Mesuré sur le plan, des deux côtés, à douze blocs du bord du disque :
+
+| | avant | après |
+| --- | --- | --- |
+| chaussée, toute la ville : 10ᵉ centile · médiane | 2 · 2,5 | 3,5 · 4,5 |
+| rues de quartier au nord du centre : médiane · part sous 3 blocs | 2 · 56 % | 4 · 19 % |
+| avenues sous les circuits : 10ᵉ centile · points où deux voitures tiennent | 3 · 65 % | 5 · 92 % |
+| tablier des ponts, au-dessus d'une eau à 30 | 28 | 34 |
+| colonnes de lot · de trottoir (part du disque) | 35,9 % · 17,5 % | 23,2 % · 24,8 % |
+
+La table candidate (rue à sens unique 3,2 · 3,6 · 4,0) rendait 24,0 · 23,2 ·
+22,0 % de lot : on prend 3,6, la plus petite qui laisse plus d'un demi-bloc
+de chaque côté de la voiture.
+
+Et au volant, sur le même trajet que la v293 (`tests/sonde-traversee-paris.cjs`,
+douze secondes de temps de jeu sur le meilleur circuit) : **les 88 refus du
+crochet d'obstacle qui ne venaient pas de la circulation — mobilier, piéton,
+eau — tombent à ZÉRO** ; il en reste 110, tous de la circulation, parce que
+la sonde suit le tracé du convoi et roule derrière lui. 23 blocs parcourus au
+lieu de 19,8. La voiture n'avance plus en frottant : elle attend celle de
+devant, ce qui est une autre affaire (`cederLePassage`, v244).
+
+**Ce qui le prouve.** Trois témoins neufs dans `carteMonde.js`, tous trois
+lisant le MONDE et non le plan, rouges sur `origin/main` :
+
+- « une rue de quartier de Paris est plus large que la voiture, et pas
+  seulement au milieu » — fenêtre de soixante blocs au nord du centre, médiane
+  et part sous trois blocs ;
+- « sur les avenues où roulent les convois, deux voitures tiennent côte à
+  côte » — largeur perpendiculaire à la marche sous les huit circuits, la
+  barre calculée depuis la demi-largeur que `vehicules.js` publie ;
+- « les ponts de Paris ont leur tablier au-dessus de la Seine, à la cote de
+  la ville » — neuf ponts trouvés par le plan, chaque colonne lue dans le
+  monde, et `coteRoulable` d'accord avec le sommet de la colonne.
+
+Les barres sont des milieux entre les deux régimes, mesurés des deux côtés.
+Portail : dix suites ; trois rouges étaient des témoins qui portaient une
+dimension de ville en dur (le rebord du disque compté comme un pont, le
+morceau du Marais à cheval sur Haussmann, `bati > 700`), repointés et rejoués
+verts ; « on ne marche pas dans une rue vide » est un héritage de suite,
+rejoué vert seul des deux côtés ; les deux autres sont des dettes déjà
+mesurées (`TASKS.md`). Le témoin de la v293 (« les circuits roulent sur la chaussée DANS LE MONDE »)
+et les deux empreintes de `plafond.js` gardent le reste : le relief n'a pas
+bougé d'un bloc. Et ce que la livraison laisse, déclaré dans `TASKS.md` : les
+arcs de raccord entre deux avenues coupent encore le coin d'un trottoir — le
+triangle de la Porte Maillot n'a que vingt-quatre points, dont quatre hors
+chaussée.
+
+---
+
 ## v293 — Le cœur de Paris rendu à Paris
 
 **Pourquoi.** Max veut pouvoir marcher dans des rues crédibles, monter dans une
