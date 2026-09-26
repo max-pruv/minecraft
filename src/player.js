@@ -263,10 +263,20 @@ export class Player {
   // voiture n'est pas une bonne idée — elle tiendrait dans le mur — c'est la
   // profondeur d'une case qui compte, et 0,7 la couvre. Le chiffre se remesure
   // le jour où une voiture lurche à basse vitesse : le témoin publie la distance.
+  // ET « UN BLOC » SE COMPTE DEPUIS LE NIVEAU VOXEL SOUS LA BOÎTE (v297) :
+  // sur la surface continue la voiture est portée entre deux cotes, et devant
+  // une colonne que la surface ne couvre pas, un saut d'un bloc depuis sa
+  // cote restait sous le cube à franchir (`world.niveauVoxel`). La cible est
+  // UN bloc au-dessus de ce niveau — c'est là que « deux blocs, c'est un mur »
+  // se juge, depuis le sol voxel sous la boîte —, et la surface peut porter la
+  // voiture jusqu'à un bloc et demi sous ce sol (mesuré : 39,4 pour un niveau
+  // à 41 au bord d'une falaise en travers), d'où une borne de trois.
   franchirEnRoulant(dx, dz) {
     const y = this.pos.y, x = this.pos.x + dx, z = this.pos.z + dz;
-    if (!this.boiteLibre(x, y + 1, z)) return false;
-    this.pos.x = x; this.pos.z = z; this.pos.y = y + 1;
+    const base = this.world.niveauVoxel ? this.world.niveauVoxel(this.pos.x, this.pos.z, y, this.gabarit / 2) : y;
+    const cible = Math.max(y, base) + 1;
+    if (cible - y > 3 || !this.boiteLibre(x, cible, z)) return false;
+    this.pos.x = x; this.pos.z = z; this.pos.y = cible;
     return true;
   }
 

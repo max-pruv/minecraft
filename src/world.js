@@ -2980,6 +2980,42 @@ export class World {
     return colonneCouverte(this, bx, bz, (a, b) => this.ficheMemo(a, b));
   }
 
+  // LE NIVEAU VOXEL SOUS UNE BOÎTE (v297) : d'où part « un bloc » quand on
+  // franchit une marche en roulant. Sur la surface continue, une voiture est
+  // portée entre deux cotes — à 39,4 là où le voxel la mettrait à 40 —, et
+  // devant une colonne que la surface ne couvre pas (une falaise en travers,
+  // un liseré) son saut d'un bloc depuis 39,4 restait sous le cube à 41 :
+  // bloquée à 13,4 blocs sur le couloir de (−600, −520), mesuré à la sonde
+  // avec et sans franchissement. Le niveau d'où l'on monte est le plus haut
+  // de : la cote d'une colonne couverte (ce sur quoi le voxel poserait la
+  // roue), ou le dessus du plus haut cube solide non tu sous la hauteur des
+  // pieds. « Un bloc » se compte depuis là — et jamais deux depuis le voxel,
+  // ce qui garde « deux blocs, c'est un mur ».
+  niveauVoxel(x, z, y, half) {
+    const eps = 1e-4;
+    const minX = Math.floor(x - half + eps), maxX = Math.floor(x + half - eps);
+    const minZ = Math.floor(z - half + eps), maxZ = Math.floor(z + half - eps);
+    let base = -Infinity;
+    for (let bz = minZ; bz <= maxZ; bz++) {
+      for (let bx = minX; bx <= maxX; bx++) {
+        const f = this.sansSolContinu ? null : this.ficheMemo(bx, bz);
+        if (f && f.nat && colonneCouverte(this, bx, bz, (a, b) => this.ficheMemo(a, b))) {
+          if (f.cote > base) base = f.cote;
+          continue;
+        }
+        for (let by = Math.floor(y + 1e-3); by >= 0; by--) {
+          const id = this.getBlock(bx, by, bz);
+          if (!blockIsSolid(id) || this.blocSousLaSurface(bx, by, bz)) continue;
+          const dessus = by + (isSlab(id) ? 0.5 : 1);
+          if (dessus > y + 1e-3) continue;
+          if (dessus > base) base = dessus;
+          break;
+        }
+      }
+    }
+    return base === -Infinity ? Math.floor(y + 1e-3) : base;
+  }
+
   // UNE BOÎTE EST-ELLE LIBRE ICI ? La géométrie de `sweepAxis` (player.js),
   // de `BaseNPC.sweep` (marlon.js) et de `Animal.sweep` (animals.js), posée en
   // question : largeur `half × 2`, hauteur `hauteur`, dalles à mi-hauteur, et
