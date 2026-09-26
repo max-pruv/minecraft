@@ -557,8 +557,14 @@ function verifier(nom, ok, detail = '') {
       return { attente: Math.round(performance.now() - t0), sousFacades: !!(sous && sous.facades), anciens, anciensAvecFacades,
         demandes: g.statsMaillage.detailsDemandes, rendus: g.statsMaillage.detailsRendus, morceaux: g.chunkMeshes.size };
     }, [px, pz]);
+    // `demandes` n'entre pas dans le verdict (v299) : il ne compte que les
+    // morceaux maillés AVANT le déplacement puis REDEMANDÉS avec leur détail.
+    // À trente-sept morceaux installés sur cent soixante-neuf, celui qui reçoit
+    // l'enfant arrive frais de la file, détail compris, sans redemande — et le
+    // témoin rendait rouge un relais juste. Il mesurait l'ordre de la file, pas
+    // le relais (v288). Le chiffre reste dans le message.
     verifier('en s\'éloignant, les façades quittées sont rendues et celles d\'arrivée fabriquées',
-      apres.sousFacades && apres.anciens > 0 && apres.anciensAvecFacades === 0 && apres.rendus > 0 && apres.demandes > 0,
+      apres.sousFacades && apres.anciens > 0 && apres.anciensAvecFacades === 0 && apres.rendus > 0,
       `en ${apres.attente} ms · ${JSON.stringify(apres)}`);
     verifier('l\'atlas HD est peint et le rayon forcé est celui de l\'adresse', res.atlas === true && res.rayon === 2, `atlas ${res.atlas}, rayon ${res.rayon}`);
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
