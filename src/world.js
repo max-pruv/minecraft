@@ -218,7 +218,12 @@ function buildEiffelTower(set) {
       for (let d = -r; d <= r; d++) {
         set(d, y, -r, FER); set(d, y, r, FER); set(-r, y, d, FER); set(r, y, d, FER);
       }
-    } else if (r >= 2) {
+    } else if (r >= 2 && y > PANNEAU) {
+      // PAS DE DIAGONALE DANS LA TRAVÉE DU SOL (v295). Entre les jambes, sous le
+      // premier étage, la vraie tour n'a que ses arcs : une diagonale posée là
+      // barrait la baie ouverte, et le modèle en relief — qui ne dessine ses
+      // croix qu'à partir de la première ceinture — la laissait en cubes bruns
+      // accrochés à rien. Mesuré à la sonde : huit cellules à hauteur d'enfant.
       diagonale(y, r, y % PANNEAU);
     }
   }
@@ -239,10 +244,16 @@ function buildEiffelTower(set) {
 
   // La grande arche entre les jambes : c'est ce qu'on voit du Trocadéro, et
   // c'est le seul détail qui distingue la tour d'un pylône à haute tension.
+  // ET ELLE MONTE AU MILIEU (v295). Écrite `P1 - 4 - creux`, elle DESCENDAIT
+  // au milieu — une arche à l'envers, un ventre pendu entre les jambes, qui
+  // finissait aux quatre coins (±6, 12, ±6) à deux blocs de tout montant : ce
+  // sont les cubes noirs qu'on voyait flotter à côté de la tour depuis les
+  // Invalides. Le modèle en relief (`paris-monuments-hd.js`, les quatre arcs
+  // concaves) et la vraie tour ont leur clé de voûte sous le premier étage et
+  // leurs naissances au pied des jambes : le voxel suit la MÊME courbe, pour
+  // que le modèle le couvre cellule par cellule.
   for (let d = -6; d <= 6; d++) {
-    const creux = Math.round(Math.sqrt(Math.max(0, 36 - d * d)) * 0.55);
-    const y = P1 - 4 - creux;
-    if (y < 1) continue;
+    const y = 3 + Math.round(Math.sqrt(Math.max(0, 36 - d * d)) * 1.45);
     for (const c of [-6, 6]) { set(d, y, c, FER); set(c, y, d, FER); }
   }
 

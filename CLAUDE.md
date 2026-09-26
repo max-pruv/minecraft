@@ -750,6 +750,42 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## « Des trucs bizarres dans Paris » — on mesure d'abord d'où ils viennent (v295)
+
+Max, capture d'iPad au centre de Paris : de grandes structures de rondins et
+de laine bleue dans le ciel, et un cube noir ou deux près de la tour Eiffel.
+Trois règles.
+
+- **DEVANT UN BLOC QUI FLOTTE, LA PREMIÈRE QUESTION EST « QUI L'A POSÉ ? », ET
+  ELLE SE MESURE SOUS NODE.** Un bloc du jeu a deux origines possibles : le
+  générateur (déterministe, balayable en une seconde et demie sur tout le
+  disque de Paris) ou le journal des enfants. Le balayage a rendu la réponse en
+  une exécution : le générateur ne pose ni rondin, ni planche sombre, ni laine
+  bleue en l'air, et aucun bâtisseur de Paris n'écrit ces blocs. Ce qui reste
+  est donc une construction d'enfant — Marlon vole, et il bâtit en volant — et
+  **on ne retire pas un bloc d'enfant sur une présomption** : c'est l'invariant
+  1 par un autre bout. On le dit à Max, et c'est lui qui tranche. Le nom sous
+  le réticule, au passage, est celui du bloc EN MAIN (`#block-name`), jamais
+  celui qu'on vise : « Cheminée de pierre » disait ce que l'enfant tenait, pas
+  ce qu'il regardait.
+- **CE QUE LE MODÈLE NE COUVRE PAS RESTE EN CUBES — ET QUAND CES CUBES
+  FLOTTENT, C'EST LE VOXEL QUI A TORT.** La v292 avait déclaré le prix de son
+  masquage : des cubes qui dépassent d'un modèle lisse, « honnêtes, et qui
+  arrêtent ce qu'ils ont l'air d'arrêter ». Seize sur la tour Eiffel, et douze
+  d'entre eux étaient l'ARCHE entre les jambes, écrite à l'envers — un ventre
+  qui descend au milieu et finit aux quatre coins à deux blocs de tout montant.
+  Ils étaient en production depuis la v292, visibles sur MES captures de la
+  v294 (je les avais notés « artefacts HD existants ? » sans aller voir). Un
+  voxel et son modèle suivent la MÊME courbe, écrite une fois ; sinon le
+  masquage laisse exactement les cellules où les deux divergent, et elles
+  flottent. La sonde `sonde-monuments-hd.cjs` compte ces cubes monument par
+  monument — Notre-Dame 34, Sacré-Cœur 15, Opéra 9, Panthéon 4 —, et c'est là
+  qu'on regarde avant d'accuser autre chose.
+- **UNE CAPTURE QU'ON PREND POUR AUTRE CHOSE SE RELIT.** Les cubes noirs
+  étaient sur `avant-pont.png` ET `apres-pont.png` de la v294, prises pour
+  juger les ponts : je les ai vus et ne les ai pas mesurés. Une planche de
+  captures se regarde en entier, pas seulement là où pointe la livraison.
+
 ## Les rues de Paris s'élargissent, et le pas suit (v294)
 
 Max : « les rues de Paris sont trop étroites, élargis-les ». C'est la passe que

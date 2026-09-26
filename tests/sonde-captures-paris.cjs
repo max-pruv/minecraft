@@ -19,7 +19,9 @@ const VUES = [
   { nom: 'quai', dx: 0.0, dz: -0.35, yaw: Math.PI, pitch: 0.05, h: 1.6 },
   { nom: 'ciel', dx: -1.2, dz: -0.5, yaw: Math.PI / 2, pitch: -0.5, h: 45 },
   { nom: 'nuit-rue', dx: -0.8, dz: -0.9, yaw: Math.PI / 2, pitch: 0.05, h: 1.6, heure: 0.0 },
-  { nom: 'eiffel', dx: -3.6, dz: 0.9, yaw: Math.PI / 2, pitch: 0.15, h: 1.6 },
+  // v295 : la tour depuis le Champ-de-Mars, dix-huit blocs au sud, le nez levé sur
+  // l'arche. L'ancienne vue (dx −3,6, dz 0,9) posait la caméra DANS une jambe.
+  { nom: 'eiffel', x: -322, z: 248, yaw: 0, pitch: 0.28, h: 1.6 },
   // v288 : les quartiers, les arbres, le mobilier (adresses ABSOLUES, mesurées
   // par le témoin de parishd.js — le centre d'un quartier est une place)
   { nom: 'marais', x: -200, z: 200, yaw: Math.PI / 2, pitch: 0.12, h: 1.6, rue: true },
