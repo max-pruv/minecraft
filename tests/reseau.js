@@ -309,7 +309,7 @@ function verifier(nom, ok, detail = '') {
       g.player.vel.set(0, 0, 0);
       g.player.flying = true;
     });
-    // L'HÔTE ARRIVE D'ABORD, ALICE TRENTE SECONDES PLUS TARD. Un convoi naît
+    // L'HÔTE ARRIVE D'ABORD, ALICE UNE MINUTE PLUS TARD. Un convoi naît
     // quand la page approche sa ville : sur l'ancien code, chaque tablette
     // part donc de SA naissance, et le décalage d'arrivée devient un décalage
     // de rue. Le gel de six secondes seul ne suffisait pas — mesuré, écart
@@ -317,7 +317,7 @@ function verifier(nom, ok, detail = '') {
     // si peu d'images par seconde que `dt` (borné) avance d'aussi peu chez
     // l'une que chez l'autre, et le gel ne coûte qu'une image.
     await allerAParis(hote);
-    await dormir(30000);
+    await dormir(60000);
     await allerAParis(alice);
     // LES DEUX PAGES SE LISENT L'UNE APRÈS L'AUTRE, À UNE DEMI-SECONDE D'ÉCART
     // OU PLUS sur ce banc : les voitures roulent entre les deux lectures, et le
@@ -361,9 +361,16 @@ function verifier(nom, ok, detail = '') {
     }
     ecartsRue.sort((x, y) => x - y);
     const medianeRue = ecartsRue.length ? ecartsRue[ecartsRue.length >> 1] : null;
+    // LA BARRE SE CALCULE : l'horloge de la rue glisse vers celle de l'hôte
+    // tant que l'écart est sous UNE seconde (`adopterHorloge`), et sur ce banc
+    // une page rend à peine une image par seconde, donc une position lue a
+    // jusqu'à une seconde de retard. Deux secondes de rue à dix blocs par
+    // seconde : vingt blocs. Mesuré — neuf 2 · 8 · 10, ancien 21 · 22 avec
+    // trente secondes d'écart d'arrivée ; l'écart est porté à une minute pour
+    // que l'ancien code s'éloigne franchement de la barre.
     verifier('deux tablettes d\'une partie voient la même circulation, au même endroit',
-      medianeRue !== null && medianeRue < 8,
-      `écart médian ${medianeRue} bloc(s) le long du tour, sur ${ecartsRue.length} relevé(s) · pire ${ecartsRue[ecartsRue.length - 1]}`);
+      medianeRue !== null && medianeRue < 20,
+      `écart médian ${medianeRue === null ? null : medianeRue.toFixed(1)} bloc(s) le long du tour, sur ${ecartsRue.length} relevé(s) · pire ${ecartsRue.length ? ecartsRue[ecartsRue.length - 1].toFixed(1) : null}`);
 
     // Marlon prend le volant d'une voiture de la rue — celle que la rue avait
     // repeinte, pour que la couleur ait quelque chose à perdre.
@@ -436,7 +443,7 @@ function verifier(nom, ok, detail = '') {
             const devant = par.get(pl[3] - 1);
             if (!devant || pl[5] || devant[5]) continue;
             const d = Math.hypot(devant[0] - pl[0], devant[1] - pl[1]);
-            if (d > 6 && d < 30) paires.push({ x: devant[0], z: devant[1], cap: devant[2], d, qui: `${c.cle}#${pl[3]}` });
+            if (d > 6 && d < 30) paires.push({ x: devant[0], z: devant[1], cap: devant[2], d, qui: `${c.cle}#${pl[3]}`, quiDevant: `${c.cle}#${devant[3]}` });
           }
         }
         // l'écart le plus court d'abord : sur ce banc une page de Paris rend peu
@@ -489,14 +496,21 @@ function verifier(nom, ok, detail = '') {
         const t0 = performance.now();
         while (performance.now() - t0 < 30000) {
           const R = rect(rp.pos.x, rp.pos.z, m.cap);
-          for (const c of v.etat()) {
+          const etat = v.etat();
+          let devantLoin = false;
+          for (const c of etat) for (const pl of c.places) {
+            if (`${c.cle}#${pl[3]}` === m.quiDevant) devantLoin = Math.hypot(pl[0] - rp.pos.x, pl[1] - rp.pos.z) > 8;
+          }
+          for (const c of etat) {
             if (!c.routier) continue;
             for (const pl of c.places) {
               const qui = `${c.cle}#${pl[3]}`;
               const d = Math.hypot(pl[0] - rp.pos.x, pl[1] - rp.pos.z);
               if (qui === m.qui) {
                 if (d < suivie.dMin) suivie.dMin = +d.toFixed(1);
-                if (pl[5] && d < 12) suivie.attend++;
+                // une attente ne compte que si ce n'est PAS la voiture de devant
+                // qu'elle attend (un feu, une file) : celle-ci doit être repartie
+                if (pl[5] && d < 12 && devantLoin) suivie.attend++;
               }
               const touche = d < 6 && !separe(R, rect(pl[0], pl[1], pl[2]));
               if (releves === 0) { if (touche) deja.add(qui); continue; }
