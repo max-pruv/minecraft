@@ -713,7 +713,15 @@ function verifier(nom, ok, detail = '') {
       const x = A.x + (B.x - A.x) * 0.4, z = A.z + (B.z - A.z) * 0.4;
       g.player.pos.set(x, g.world.sommetColonne(Math.floor(x), Math.floor(z)) + 1, z);
       g.player.vel.set(0, 0, 0);
-      for (let i = 0; i < 400; i++) {
+      // ON ATTEND LE RÉSULTAT, BORNÉ, ET LA DURÉE ENTRE DANS LE MESSAGE (v300).
+      // Mesuré à la sonde des deux côtés : un bus marque son arrêt à 4,5 blocs
+      // de ce point pendant trente-deux secondes, trois voitures font la queue
+      // derrière lui, et la première n'arrive qu'à 36-44 s — quarante secondes
+      // de borne rendaient ce témoin vert ou rouge selon la charge, sur le même
+      // code. La file du bus est une dette déclarée (TASKS.md) ; ce témoin
+      // garde qu'on PREND le volant, pas la longueur de la file.
+      const t0 = performance.now();
+      for (let i = 0; i < 1200; i++) {
         await new Promise((r) => setTimeout(r, 100));
         const v = window.__vehicules;
         const place = v && v.placeProche(g.player.pos, 5);
@@ -738,11 +746,11 @@ function verifier(nom, ok, detail = '') {
           // `volInterdit` n'est posé que par la monte d'un véhicule : c'est la
           // preuve la plus directe qu'on tient le volant.
           auVolant: !!g.player.volInterdit,
-          prise: avant - apres,
+          prise: avant - apres, attente: Math.round(performance.now() - t0),
           modele: auto && auto.mesh ? auto.mesh.userData.flotte || null : null,
         };
       }
-      return { aucuneVoiture: true };
+      return { aucuneVoiture: true, attente: Math.round(performance.now() - t0) };
     });
     verifier('on prend le volant d\'une voiture vue dans la rue',
       volant.auVolant === true && volant.prise === 1, JSON.stringify(volant));

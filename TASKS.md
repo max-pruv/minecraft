@@ -1,5 +1,18 @@
 # Ce qui est en cours
 
+- [ ] **UN BUS ET TROIS VOITURES SE BLOQUENT TRENTE SECONDES À L'OUEST DE PARIS**
+  (v300, mesuré des deux côtés). Au point du témoin de la fumée (−277, 199 :
+  circuit 0 de Paris, 40 % entre ses points 2 et 3), le bus du premier anneau
+  reste à 4,5 blocs avec `attend` levé pendant trente-deux secondes, trois
+  voitures du circuit font la queue derrière lui (`attend` 2 à 5), et la
+  première ne passe qu'à 36-44 s — sur la branche COMME sur `origin/main`,
+  relevé toutes les quatre secondes (`sonde-volant-fumee.cjs`, scratch de la
+  session). C'est « pas si l'on est déjà dedans » entre un bus et des voitures :
+  la paire mutuelle de `cederLePassage` (v244, « la plus engagée passe »)
+  ne tranche pas quand l'un des deux est un bus à l'arrêt. À mesurer AVANT
+  d'écrire : la durée d'un arrêt de bus, et qui attend qui, image par image.
+  Le témoin de la fumée attend désormais deux minutes, la durée dans le message.
+
 - [ ] **LE BUDGET DE FAÇADES (v299) EST POSÉ, PAS MESURÉ SUR L'APPAREIL.**
   128 Mo par palier : au-dessus des 98 Mo que le vieil iPad a tenus au centre
   de Paris (v296), sous les 500 et plus qui ont tué l'iPhone (journal id 7).
