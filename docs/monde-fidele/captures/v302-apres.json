@@ -1,0 +1,62 @@
+{
+ "tag": "v302",
+ "date": "2026-09-27T13:02:29.127Z",
+ "banc": "rendu logiciel, rr 9, hd 6, ombres, 1280×720, dpr 1",
+ "vues": {
+  "a1-pont": {
+   "x": -91,
+   "z": -472,
+   "y": 30,
+   "appels": 299,
+   "ktri": 394,
+   "morceaux": 328,
+   "attente": 40289
+  },
+  "rail-tgv": {
+   "x": 83,
+   "z": 811,
+   "y": 30,
+   "appels": 203,
+   "ktri": 209,
+   "morceaux": 361,
+   "attente": 30784
+  },
+  "rail-tgv-cote": {
+   "x": 72,
+   "z": 817,
+   "y": 31,
+   "appels": 249,
+   "ktri": 240,
+   "morceaux": 398,
+   "attente": 8331
+  },
+  "rail-tranchee": {
+   "x": 257,
+   "z": 1140,
+   "y": 40,
+   "appels": 266,
+   "ktri": 302,
+   "morceaux": 370,
+   "attente": 37107
+  },
+  "rail-remblai": {
+   "x": 250,
+   "z": 1162,
+   "y": 46,
+   "appels": 255,
+   "ktri": 265,
+   "morceaux": 398,
+   "attente": 8013
+  },
+  "gare-lyon": {
+   "x": 682,
+   "z": 1959,
+   "y": 33,
+   "appels": 1910,
+   "ktri": 486,
+   "morceaux": 222,
+   "attente": 40290
+  }
+ },
+ "parcours": {}
+}

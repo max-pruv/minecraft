@@ -136,14 +136,33 @@ Les vues fixes et les deux parcours (à pied, au volant) sont pris par
    circulation interurbaine (vingt voitures, aller et retour, `route: 'A1'`),
    entrées de ville (gare du Nord, rue de Paris), carte. Mesuré : 851 blocs,
    0,03 µs par colonne loin de la route ; le relief ne bouge pas.
-4. **Le rail continu et la gare accessible** : cote continue, quai à niveau.
+4. **Le rail continu** — FAIT (v302, `src/trains.js`, kit transport
+   `transport-v298` priorité 1) : un profil flottant (`coteContinue`) pour
+   les quatre lecteurs — plate-forme voxel (générateur), rails et traverses en
+   prismes du mailleur (`rubansVoieDans`), sol continu à la cote (ballast et
+   talus, par `world.corridorEn`, le point unique où la surface demande un
+   corridor), gare, convoi sur le dessus des rails. Neuf segments, dix-huit
+   gares, 11 667 blocs de voie, 17 188 colonnes de talus. Mesuré : marche du
+   train 2,0 → 1,344 (la pente), obsidienne 1 441 → 0, surface juste en
+   tranchée ou remblai 0/439 → 261/261 ; le relief ne bouge pas. **Ce qui
+   reste, et se déclare** (`TASKS.md`) : pente 1/3, pas de viaduc sur piles,
+   talus borné à treize blocs, gare en voxel, textures du kit non branchées,
+   demi-tour en diagonale aux terminus.
 5. **Les autres couloirs et villes**, par lots, avec la matrice de couverture.
 6. **La fidélité architecturale** : registre unifié des quartiers, grammaires
    par ville, mobilier, végétation — et, depuis le kit v3, la bibliothèque de
    modèles (section 6), avec un quartier témoin AVANT toute généralisation.
 
 Ce qui reste conceptuel tant qu'une livraison ne l'a pas prouvé : tout ce qui
-est au-dessous de la ligne 1.
+est au-dessous de la ligne 4.
+
+**Le kit v4 (26 septembre, « le dernier zip adresse le monde, pas Paris
+seulement »)** ajoute `transport-v298/` (rails, routes et terrains continus,
+priorité déclarée) et consolide `architecture/`. Il ne change pas l'ordre
+ci-dessus : il le confirme — rail d'abord (fait, v302), puis raccords
+ville/campagne et routes interurbaines pour TOUTE la carte, puis falaises et
+eau, puis matériaux. Ce qui reste est tenu dans `TASKS.md` (« Le kit v4 vise
+le monde entier »).
 
 ## 6. La bibliothèque architecturale (kit v3, 26 septembre 2026)
 

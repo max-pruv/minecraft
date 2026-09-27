@@ -451,6 +451,9 @@ const VRAIES_KM = [
           pas++;
           if (prec !== null && Math.abs(v.cote - prec) > marche) marche = Math.abs(v.cote - prec);
           prec = v.cote;
+          // LA COTE FLOTTANTE ET LE BLOC (v302) : `voieEn` publie les deux,
+          // et ce qui se lit dans le monde, c'est le bloc.
+          const bloc = v.bloc ?? v.cote;
           // LE TÉMOIN DEMANDE LA COTE DU RAIL, IL NE L'ÉCRIT PAS (v281). Il
           // cherchait l'obsidienne À LA COTE DU BALLAST, ce qui était juste
           // tant que la voie était peinte à plat. Les files dépassent
@@ -459,15 +462,26 @@ const VRAIES_KM = [
           // regarde donc les DEUX niveaux — c'est ce qui lui permet de
           // mesurer « il y a des rails » sur les deux arbres, au lieu de
           // mesurer la version du code.
-          for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-            const id = w.getBlock(x + dx, v.cote, z + dz);
-            const dessus = w.getBlock(x + dx, v.cote + 1, z + dz);
-            if (id === b.BLOCK.OBSIDIAN || dessus === b.BLOCK.OBSIDIAN) { avecRail++; break; }
+          // ET DEPUIS LA v302 LES RAILS SONT DES PRISMES DU MAILLEUR, pas des
+          // blocs : « il y a des rails » se demande à `rubansVoieDans` — quatre
+          // files au pas de cette colonne — et à l'obsidienne sur l'ancien code.
+          if (m2.rubansVoieDans) {
+            const ax = s.x0 + (s.x1 - s.x0) * q, az = s.z0 + (s.z1 - s.z0) * q;
+            const kk = Math.floor(k * s.longueur / n);
+            const rb = m2.rubansVoieDans(Math.floor(ax) - 1, Math.floor(az) - 1, Math.floor(ax) + 2, Math.floor(az) + 2)
+              .filter((r) => r.tuile === 'rail' && Math.abs(r.s - kk) <= 1);
+            if (rb.length >= 4) avecRail++;
+          } else {
+            for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+              const id = w.getBlock(x + dx, bloc, z + dz);
+              const dessus = w.getBlock(x + dx, bloc + 1, z + dz);
+              if (id === b.BLOCK.OBSIDIAN || dessus === b.BLOCK.OBSIDIAN) { avecRail++; break; }
+            }
           }
-          // Et le gabarit du train commence AU-DESSUS des files : sur le code
-          // neuf, le rail occupe `cote + 1` et il serait compté comme un
-          // obstacle sur sa propre voie.
-          const plancher = v.cote + (m2.ENTRAXE ? 2 : 1);
+          // Et le gabarit du train commence AU-DESSUS des files : le rail
+          // en blocs occupait `cote + 1` et serait compté comme un obstacle
+          // sur sa propre voie ; le prisme, lui, n'est pas un bloc.
+          const plancher = bloc + (m2.rubansVoieDans ? 1 : m2.ENTRAXE ? 2 : 1);
           if (dur(w.getBlock(x, plancher, z)) || dur(w.getBlock(x, plancher + 1, z))) dedans++;
           if (w.terrainHeight(x, z) < 30) viaduc++;
         }
@@ -611,7 +625,14 @@ const VRAIES_KM = [
             }
             const v = T.voieEn(x, z);
             pas++;
-            if (!v || w.getBlock(x, v.cote + 1, z) !== BLOCK.OBSIDIAN) {
+            // LES FILES SONT DES PRISMES (v302) : au pas `k` de cette ligne, le
+            // mailleur émet une pièce de rail à l'offset `o`, ou la file a un
+            // trou. Sur l'ancien code, c'est l'obsidienne au-dessus du ballast.
+            const rail = T.rubansVoieDans
+              ? T.rubansVoieDans(Math.floor(seg.x0 + ux * k) - 1, Math.floor(seg.z0 + uz * k) - 1, Math.floor(seg.x0 + ux * k) + 2, Math.floor(seg.z0 + uz * k) + 2)
+                .some((r) => r.tuile === 'rail' && r.s === k && Math.abs((r.o0 + r.o1) / 2 - o) < 0.01)
+              : (v && w.getBlock(x, v.cote + 1, z) === BLOCK.OBSIDIAN);
+            if (!rail) {
               manque++; trou++; pireTrou = Math.max(pireTrou, trou);
             } else trou = 0;
           }
@@ -686,7 +707,8 @@ const VRAIES_KM = [
           const ga = T.gareEn(x, z);
           if (!ga || ga.quoi !== 'quai') continue;
           n++;
-          if (T.voieEn(x, z)) surVoie++;
+          const v = T.voieEn(x, z);
+          if (v && v.piece !== 'talus') surVoie++;   // le talus (v302) cède au quai
         }
         colonnes += n;
         if (!n) sans++;
@@ -731,7 +753,7 @@ const VRAIES_KM = [
       for (const g of bouts) {
         // la cote des rails au droit de la gare
         const v = typeof m2.voieEn === 'function' ? m2.voieEn(Math.round(g.x), Math.round(g.z)) : null;
-        const cote = v ? v.cote : Math.max(w.terrainHeight(Math.round(g.x), Math.round(g.z)), 30) + 1;
+        const cote = v ? (v.bloc ?? v.cote) : Math.max(w.terrainHeight(Math.round(g.x), Math.round(g.z)), 30) + 1;
         let quai = 0, auvent = 0, bati = 0, praticable = 0;
         for (let dl = -6; dl <= 6; dl++) {
           for (const dt of tQuai) {

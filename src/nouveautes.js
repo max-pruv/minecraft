@@ -6,6 +6,17 @@
 
 export const NOUVEAUTES = [
   {
+    v: 302,
+    titre: 'Les trains ont de vrais rails',
+    puces: [
+      'Les rails suivent la pente, sans marches',
+      'Les remblais ont des talus d\'herbe',
+      'Le train ne passe plus sous le sol',
+      'Neuf lignes, dix-huit gares',
+      'Plus de trou au pont de l\'autoroute',
+    ],
+  },
+  {
     v: 301,
     titre: 'Paris prend de la hauteur',
     puces: [

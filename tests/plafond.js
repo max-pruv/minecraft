@@ -942,6 +942,76 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
           `${fautes} colonne(s) en faute sur ${colonnes}${exemple ? ` — ${exemple}` : ''} (${((performance.now() - t0) / 1000).toFixed(1)} s)`);
       }
     }
+
+    // LE RAIL CONTINU (v302, livraison 4 du programme « monde fidèle »). Les
+    // quatre lecteurs de la voie — le ballast que le générateur écrit, les
+    // rails que le mailleur émet, la gare, le convoi — lisent la MÊME cote
+    // flottante (`coteContinue`). Sur l'ancien code : le train montait par
+    // marches d'UN BLOC (la cote arrondie plus 2,05), les rails étaient des
+    // blocs d'obsidienne, et le sol continu passait au relief AU-DESSUS des
+    // tranchées : la surface refermait le déblai d'une dalle d'herbe, le
+    // train roulait dessous. LES TROIS TÉMOINS MESURENT LE MÊME DÉFAUT DES
+    // DEUX CÔTÉS, jamais l'absence d'un export : sur `origin/main` ils
+    // rendent marche 2,0 · 1 441 blocs d'obsidienne · 53 colonnes de surface
+    // justes sur 274.
+    {
+      let T = null; try { T = await import('../src/trains.js'); } catch { /* le témoin le dit */ }
+      const { BLOCK } = await import('../src/blocks.js');
+      const t0 = performance.now();
+      const seg = T.segmentsDeTrain().find((q) => q.de === 'paris' && q.vers === 'lyon');
+      const L = seg.longueur, ux = (seg.x1 - seg.x0) / L, uz = (seg.z1 - seg.z0) / L, nx = -uz, nz = ux;
+      const continu = !!(T.coteContinue && T.rubansVoieDans && T.PAS_TRACE && T.PENTE_VOIE);
+      // 1. le convoi : chaque pas de l'aller à `cote + RAIL_HAUT + ROUES`,
+      //    et d'un pas au suivant, au plus la pente du profil (1/3 × 4 blocs)
+      const tr = T.traceSegment(seg, (x, z) => w.terrainHeight(x, z), 30);
+      const aller = tr.pts.slice(0, tr.arretsIndex[1] + 1);
+      let marche = 0, ecart = 0;
+      for (let i = 0; i < aller.length; i++) {
+        const q = aller[i];
+        if (i) marche = Math.max(marche, Math.abs(q.y - aller[i - 1].y));
+        const t = ((q.x - seg.x0) * ux + (q.z - seg.z0) * uz) / L;
+        if (continu) ecart = Math.max(ecart, Math.abs(q.y - (T.coteContinue(seg, t) + T.RAIL_HAUT + T.ROUES)));
+      }
+      verifier('le train roule sur le dessus de ses rails, sans une marche : la cote est continue',
+        continu && aller.length > 100 && marche <= T.PAS_TRACE * T.PENTE_VOIE + 0.02 && ecart < 1e-6,
+        `${aller.length} pas · marche max ${marche.toFixed(3)} bloc · ${continu ? `écart au rail ${ecart.toFixed(4)}` : 'pas de cote continue (code d\'avant la v302)'}`);
+      // 2. sur quatre cents blocs de ligne : les blocs de la plate-forme, les
+      //    rubans du mailleur (quatre files par pas), et la surface à la cote
+      let obs = 0, planches = 0, colonnes = 0, surface = 0, ecartSurf = 0, tranchee = 0, tranchJuste = 0, sansRail = 0, pas = 0, talus = 0;
+      for (let k = 300; k < 700; k++) {
+        const ax = seg.x0 + ux * k, az = seg.z0 + uz * k;
+        pas++;
+        if (continu) {
+          const rb = T.rubansVoieDans(Math.floor(ax), Math.floor(az), Math.floor(ax) + 1, Math.floor(az) + 1)
+            .filter((r) => r.s === k && r.tuile === 'rail');
+          if (rb.length !== 4) sansRail++;
+        } else sansRail++;
+        for (let o = -20; o <= 20; o++) {
+          const x = Math.round(ax + nx * o), z = Math.round(az + nz * o);
+          const v = T.voieEn(x, z);
+          if (!v) continue;
+          // l'ancien `voieEn` rendait le BLOC de ballast : la surface où l'on
+          // marche est un bloc plus haut
+          const bloc = v.bloc !== undefined ? v.bloc : v.cote;
+          const cote = v.bloc !== undefined ? v.cote : v.cote + 1;
+          colonnes++; if (v.piece === 'talus') talus++;
+          for (let dy = -1; dy <= 2; dy++) {
+            const id = w.getBlock(x, bloc + dy, z);
+            if (id === BLOCK.OBSIDIAN) obs++;
+            if (id === BLOCK.DARKPLANK) planches++;
+          }
+          const sc = w.solContinu(x + 0.5, z + 0.5);
+          if (sc !== null) { surface++; ecartSurf = Math.max(ecartSurf, Math.abs(sc - cote)); }
+          if (v.piece !== 'talus' && Math.abs(cote - (w.terrainHeight(x, z) + 1)) >= 2) { tranchee++; if (sc !== null && Math.abs(sc - cote) < 1e-6) tranchJuste++; }
+        }
+      }
+      verifier('les rails sont des prismes continus, plus un bloc d\'obsidienne ni de planche sur la voie',
+        continu && pas === 400 && sansRail === 0 && obs === 0 && planches === 0,
+        `${pas} pas, ${sansRail} sans ses quatre files de prismes · ${obs} obsidienne, ${planches} planche(s) sur ${colonnes} colonnes`);
+      verifier('le sol continu suit le profil de la voie, dans la tranchée comme sur le remblai',
+        continu && colonnes > 3000 && talus > 200 && surface >= colonnes * 0.85 && ecartSurf < 1e-6 && tranchee > 200 && tranchJuste === tranchee,
+        `${surface} colonnes de surface sur ${colonnes} (${talus} de talus), écart max à la cote ${ecartSurf.toFixed(4)} · en tranchée ou remblai de deux blocs et plus : ${tranchJuste}/${tranchee} (${((performance.now() - t0) / 1000).toFixed(1)} s)`);
+    }
   }
 
   // --- ce qui se vérifie en jouant ------------------------------------------
@@ -1356,6 +1426,47 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     verifier('et sous le tablier, on reste en bas : deux parcours, jamais téléporté dessus',
       !dessous.echec && dessous.tablier !== null && dessous.tablier - dessous.sol >= 3 && dessous.y < dessous.tablier - 1,
       JSON.stringify(dessous));
+
+    // --- LE JOINT DU PONT (v302) ---------------------------------------------
+    //
+    // Max, capture d'iPad : « trou dans l'autoroute ». La route est oblique
+    // sur la grille : la dernière colonne de chaussée finit en escalier, le
+    // tablier (un ruban) commence à un pas d'abscisse droit, et entre les deux
+    // restaient des triangles ouverts sur la rivière. On échantillonne la
+    // chaussée de part et d'autre de chaque bout de pont, tous les dixièmes de
+    // bloc : chaque point doit avoir sous lui soit le cube de sa colonne, soit
+    // un ruban de tablier. Mesuré sous node : 464 points sur 6 500 sans rien
+    // dessous sur `origin/main`, zéro ici.
+    const joint = await tab.evaluate(async () => {
+      const g = window.__game;
+      let R; try { R = await import('./src/routes.js'); } catch { return { echec: 'pas de routes.js' }; }
+      const seg = R.segmentsDeRoute()[0], pr = R.profilDe(seg);
+      if (!pr.spans.length) return { echec: 'aucun pont' };
+      const rub = [];
+      for (const sp of pr.spans) {
+        const a = R.pointA(seg, sp.s0 - 4), b = R.pointA(seg, sp.s1 + 4);
+        rub.push(...g.world.rubansDans(Math.min(a.x, b.x) - 20, Math.min(a.z, b.z) - 20, Math.max(a.x, b.x) + 20, Math.max(a.z, b.z) + 20)
+          .filter((q) => q.genre === 'tablier'));
+      }
+      const sur = (x, z) => rub.some((q) => {
+        const L = Math.hypot(q.bx - q.ax, q.bz - q.az);
+        const t = (x - q.ax) * q.fx + (z - q.az) * q.fz, o = (x - q.ax) * -q.fz + (z - q.az) * q.fx;
+        return t >= -1e-6 && t <= L + 1e-6 && o >= Math.min(q.o0, q.o1) - 1e-6 && o <= Math.max(q.o0, q.o1) + 1e-6;
+      });
+      let total = 0, trous = 0; const ex = [];
+      for (const sp of pr.spans) for (const bout of [sp.s0, sp.s1]) {
+        for (let s = bout - 2.5; s <= bout + 2.5; s += 0.1) for (let d = -8; d <= 8; d += 0.25) {
+          const a = R.pointA(seg, s), x = a.x - a.fz * d, z = a.z + a.fx * d;
+          const X = Math.floor(x), Z = Math.floor(z), c = R.routeEn(X + 0.5, Z + 0.5);
+          const cube = c && !c.ouvrage && g.world.isSolid(X, Math.floor(c.cote) - 1, Z);
+          total++;
+          if (!cube && !sur(x, z)) { trous++; if (ex.length < 4) ex.push([+x.toFixed(1), +z.toFixed(1)]); }
+        }
+      }
+      return { total, trous, ex, tabliers: rub.length };
+    });
+    verifier('la chaussée ne s\'ouvre pas au joint du pont : un cube ou le tablier sous chaque point',
+      !joint.echec && joint.total > 1000 && joint.trous === 0, JSON.stringify(joint));
 
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0,
       JSON.stringify(tab.erreurs));

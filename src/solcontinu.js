@@ -68,7 +68,9 @@ const dessusNaturel = (id) => DESSUS_NATUREL.has(id) || isProp(id);
 // Une colonne de route est naturelle-par-la-route : sa cote vient du PROFIL
 // (`routes.js`), pas de `terrainHeight`, et son sommet voxel n'est que le
 // remblai que la surface recouvre.
-export const SOL_ROUTE = new Set([CITY_BLOCK.ASPHALT, BLOCK.GRASS, BLOCK.DIRT, BLOCK.SAND]);
+// Et le ballast d'une voie ferrée (v302), dont les rails sont des prismes
+// posés SUR la surface.
+export const SOL_ROUTE = new Set([CITY_BLOCK.ASPHALT, BLOCK.GRASS, BLOCK.DIRT, BLOCK.SAND, BLOCK.GRAVEL]);
 export function colonneRoute(world, x, z, r) {
   const t = Math.floor(r.cote) - 1;
   if (!SOL_ROUTE.has(world.getBlock(x, t, z))) return false;
@@ -97,11 +99,12 @@ export function colonneNaturelle(world, x, z, h = world.terrainHeight(x, z), vil
 // La fiche d'une colonne telle que la physique la mémoïse : naturelle ou non,
 // et sa cote (le sommet praticable).
 export function ficheColonne(world, x, z) {
-  // La route d'abord : sous un corridor, la cote est celle du profil, en
-  // ville comme en campagne (l'entrée de ville traverse le raccord du relief).
+  // Le corridor d'abord — une route (v300) ou une voie ferrée (v302) : sous
+  // lui, la cote est celle du profil, en ville comme en campagne (l'entrée
+  // de ville traverse le raccord du relief).
   // Sous un TABLIER, le sol reste le sol : la fiche garde la cote du terrain
   // et note celle du tablier, que `accrocherAuSol` choisit par proximité.
-  const r = world.routeEn ? world.routeEn(x, z) : null;
+  const r = world.corridorEn ? world.corridorEn(x, z) : null;
   if (r && !r.ouvrage) return { nat: colonneRoute(world, x, z, r), cote: r.cote, route: r.piece };
   const h = world.terrainHeight(x, z);
   const f = { nat: colonneNaturelle(world, x, z, h), cote: h + 1 };
@@ -171,7 +174,7 @@ export function grilleSol(world, cx, cz, chunk) {
   const villes = world.villesProches ? world.villesProches(baseX + chunk / 2, baseZ + chunk / 2, chunk) : null;
   for (let lz = -1; lz < chunk + 1; lz++) for (let lx = -1; lx < chunk + 1; lx++) {
     const x = baseX + lx, z = baseZ + lz;
-    const r = world.routeEn ? world.routeEn(x, z) : null;
+    const r = world.corridorEn ? world.corridorEn(x, z) : null;
     if (r && !r.ouvrage) {
       cote[idx(lx, lz)] = r.cote;
       nat[idx(lx, lz)] = colonneRoute(world, x, z, r) ? 1 : 0;
@@ -290,6 +293,8 @@ export function emettreRubans(buf, world, cx, cz, chunk) {
   const BLANC = BLOCK_INFO[BLOCK.SNOW].tiles[0];
   const BITUME = BLOCK_INFO[CITY_BLOCK.ASPHALT].tiles[0];
   const PIERRE = BLOCK_INFO[BLOCK.STONEBRICK].tiles[0];
+  // la peau des prismes d'une voie : l'acier sombre du rail, le bois de la traverse
+  const TUILES = { rail: BLOCK_INFO[BLOCK.OBSIDIAN].tiles[0], traverse: BLOCK_INFO[BLOCK.DARKPLANK].tiles[0] };
   const HAUT = [0, 1, 0], BAS = [0, -1, 0];
   for (const r of rubans) {
     const rx = -r.fz, rz = r.fx;   // la droite du sens de marche
@@ -298,6 +303,18 @@ export function emettreRubans(buf, world, cx, cz, chunk) {
       : [r.bx + rx * o, y, r.bz + rz * o]);
     if (r.genre === 'ligne') {
       quad(buf, [coin(r.o0, r.ya + r.dy, 0), coin(r.o1, r.ya + r.dy, 0), coin(r.o0, r.yb + r.dy, 1), coin(r.o1, r.yb + r.dy, 1)], BLANC, HAUT, baseX, baseZ);
+    } else if (r.genre === 'prisme') {
+      // UN RAIL, UNE TRAVERSE (v302) : le dessus, les deux flancs tournés
+      // vers l'extérieur, et les bouts si la pièce en a. Jamais le dessous.
+      const tuile = TUILES[r.tuile] || PIERRE;
+      quad(buf, [coin(r.o0, r.ya + r.dy1, 0), coin(r.o1, r.ya + r.dy1, 0), coin(r.o0, r.yb + r.dy1, 1), coin(r.o1, r.yb + r.dy1, 1)], tuile, HAUT, baseX, baseZ);
+      for (const [o, dehors] of [[r.o0, [-rx, 0, -rz]], [r.o1, [rx, 0, rz]]]) {
+        quad(buf, [coin(o, r.ya + r.dy0, 0), coin(o, r.ya + r.dy1, 0), coin(o, r.yb + r.dy0, 1), coin(o, r.yb + r.dy1, 1)], tuile, dehors, baseX, baseZ);
+      }
+      if (r.bouts) {
+        quad(buf, [coin(r.o0, r.ya + r.dy0, 0), coin(r.o1, r.ya + r.dy0, 0), coin(r.o0, r.ya + r.dy1, 0), coin(r.o1, r.ya + r.dy1, 0)], tuile, [-r.fx, 0, -r.fz], baseX, baseZ);
+        quad(buf, [coin(r.o0, r.yb + r.dy0, 1), coin(r.o1, r.yb + r.dy0, 1), coin(r.o0, r.yb + r.dy1, 1), coin(r.o1, r.yb + r.dy1, 1)], tuile, [r.fx, 0, r.fz], baseX, baseZ);
+      }
     } else if (r.genre === 'tablier') {
       const EP = 0.8, GARDE = 0.9;
       // le dessus, le dessous

@@ -539,7 +539,10 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
 
   const surface = grille ? emettreSolContinu(solid, world, cx, cz, CHUNK, grille) : null;
   // les tabliers des ponts et le marquage des routes (v300), avec la surface
-  const rubans = grille ? emettreRubans(solid, world, cx, cz, CHUNK) : 0;
+  // Les rubans (marquage, tabliers, rails) sont de la géométrie pure : ils
+  // s'émettent même sans sol continu (`?solcontinu=0`), sinon les rails
+  // disparaîtraient avec la surface (v302).
+  const rubans = emettreRubans(solid, world, cx, cz, CHUNK);
 
   return {
     solid: solid.toTampons(),

@@ -20,6 +20,73 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v302 — Le rail continu : les neuf lignes de train roulent sur un profil flottant, et le pont de l'A1 n'a plus de trou
+
+**Pourquoi.** Quatrième livraison du programme « monde fidèle », et la
+première du kit transport de Max (`transport-v298`, priorité 1 : « remplace
+les rails voxel par une géométrie orientée continue ; partage le profil
+flottant avec le train, les gares et les contacts »). Mesuré sur le TGV
+Paris–Lyon avant d'écrire une ligne : le train montait par MARCHES D'UN BLOC
+(sa cote était le profil arrondi, plus 2,05 — marche max 2,0 entre deux pas
+de tracé), les quatre files de rail étaient 1 441 blocs d'obsidienne posés
+sur une chaîne arrondie, et le sol continu de la v297 ne connaissait pas la
+voie : il passait au RELIEF au-dessus des tranchées et refermait le déblai
+d'une dalle d'herbe sous laquelle le train roulait — 53 colonnes de surface
+justes sur 274, zéro sur les 439 colonnes en tranchée ou en remblai. Le
+remblai était un mur de pierre vertical, la tranchée un puits.
+
+**Ce que ça change.** Les neuf lignes (Eurostar, TGV, Shinkansen, AVE,
+Frecciarossa, ICE — 11 667 blocs de voie, dix-huit gares) roulent sur UN
+SEUL profil flottant, `coteContinue`, lu par les quatre lecteurs : le
+générateur n'écrit plus que la plate-forme (remblai de pierre, ballast de
+gravier, gabarit dégagé jusqu'au relief), le mailleur émet les quatre files de
+rail et les traverses comme des prismes continus qui suivent la pente (les
+rubans de l'A1, v300, une pièce de plus), le sol continu passe à la cote du
+profil sur le ballast comme sur un TALUS neuf d'un bloc par bloc de chaque
+côté (17 188 colonnes, treize blocs de large au plus, aucune dans un
+aérodrome, la plus proche de ce que les enfants ont bâti à 191 blocs), la
+gare pose son quai un bloc au-dessus du ballast, et le train roule sur le
+dessus des rails — `cote + 0,3 + 0,05`, plus jamais « plus deux ». Plus un
+bloc d'obsidienne ni de planche sur la voie ; les rails restent visibles avec
+`?solcontinu=0` (ils sont de la géométrie, pas de la surface). **Le relief ne
+bouge pas** : la voie est un ouvrage écrit en blocs depuis la v213, et les
+deux empreintes de `plafond.js` sont intactes.
+
+**Ce qui le prouve.** Trois témoins purs de `plafond.js` (node, sans
+navigateur), rouges sur l'ancien code EN MESURANT LE MÊME DÉFAUT : « le train
+roule sur le dessus de ses rails, sans une marche » (marche max 1,344 = la
+pente du profil sur un pas de tracé, contre 2,0 ; écart au rail 0,0000 sur
+451 pas), « les rails sont des prismes continus, plus un bloc d'obsidienne »
+(400 pas à quatre files, 0 obsidienne sur 4 376 colonnes, contre 1 441),
+« le sol continu suit le profil de la voie, dans la tranchée comme sur le
+remblai » (3 932 colonnes de surface sur 4 376, écart 0,0000, 261/261 en
+déblai ou remblai de deux blocs et plus, contre 0/439). Quatre témoins de
+`carteMonde.js` re-pointés — on repointe, on ne supprime pas (v285) : « de
+vrais rails, pas une marche de plus d'un bloc », « les quatre files dépassent
+du ballast, sans un trou » (lues dans les rubans du mailleur), « le quai à
+côté des voies, jamais dessus » (le talus cède au quai), « les dix-huit gares
+ont leur quai ». Les vingt-deux essais node du kit passent tels quels ;
+captures avant/après aux mêmes coordonnées, cap, heure et réglages (la voie,
+la voie de côté, la tranchée, le remblai, la gare de Lyon, l'entrée du pont de
+l'A1) dans `docs/monde-fidele/captures/v302-{avant,apres}-*.png` ; le coût
+du mailleur, quatre morceaux de la voie Paris–Lyon en ordre alterné sous
+node : médiane 5,7 à 6,6 ms contre 5,4 à 7,9 sur `origin/main`, dans le bruit
+(une quarantaine de prismes par morceau de voie).
+
+**Et le trou dans l'autoroute (second sujet de la livraison).** Max, capture
+d'iPad à l'entrée du pont de l'A1 : « trou dans l'autoroute ». **Pourquoi** :
+la route est OBLIQUE sur la grille ; la dernière colonne de chaussée finissait
+en escalier, le tablier du pont (un ruban, v300) commençait à un pas
+d'abscisse droit, et entre les deux restaient des triangles ouverts sur la
+rivière — mesuré sous node, 464 points de chaussée sur 6 500 aux deux joints
+du pont sans rien dessous. **Ce que ça change** : le tablier déborde de deux
+pas sur la route à chaque bout (`CULEE`, `routes.js`), un centième au-dessus
+de la chaussée qu'il recouvre ; le contact n'avait pas de trou (il lit
+`tablierEn`), seul le dessin en avait. **Ce qui le prouve** : un témoin de
+`plafond.js`, « la chaussée ne s'ouvre pas au joint du pont », qui
+échantillonne la chaussée tous les dixièmes de bloc de part et d'autre des
+deux bouts — 464 trous sur `origin/main`, zéro ici.
+
 ## v301 — Paris prend de la hauteur : un étage fait trois blocs
 
 **Pourquoi.** Max, capture d'une rue de Paris à l'appui : « on a vraiment une

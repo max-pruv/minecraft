@@ -750,6 +750,87 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Le rail continu (v302) — quatre lecteurs, une cote flottante
+
+Quatrième livraison du programme « monde fidèle », la première du kit
+transport de Max (`transport-v298`, priorité 1). Cinq règles, et la première
+est celle que la v297 avait ratée sans le savoir.
+
+- **UN CORRIDOR QUE LE SOL CONTINU NE CONNAÎT PAS EST UN COUVERCLE.** La
+  surface de la v297 lisait `terrainHeight` partout hors des villes ; la voie
+  ferrée est un OUVRAGE (v213) dont la cote est un profil lissé, tantôt sous
+  le relief (tranchée), tantôt dessus (remblai). Sur toute tranchée, la
+  surface passait donc au relief, un couvercle d'herbe AU-DESSUS des rails, et
+  le train roulait dessous — mesuré sur le TGV Paris–Lyon : 0 colonne juste
+  sur 439 en déblai ou remblai. La v300 avait branché la route dans
+  `ficheColonne` et `grilleSol` ; la voie ferrée, bien plus vieille (v213),
+  n'y était pas. C'est le piège du verre dans les murs — la PORTÉE du remède,
+  jamais la règle — et il vaut pour tout ouvrage à venir : **`world.corridorEn`
+  est le seul point où le sol continu demande « y a-t-il un corridor ici ? »**,
+  route ou rail, et un ouvrage neuf s'y déclare ou n'existe pas pour la
+  surface.
+- **UNE COTE, QUATRE LECTEURS — ET LE GÉNÉRATEUR GARDE SON ENTIER.** Le kit
+  le dit (« ne pas retirer `Math.round` de `voieEn` tant que `world.js` s'en
+  sert comme indice de tableau voxel ») : `voieEn` publie `cote`, flottante,
+  la surface où l'on marche, ET `bloc`, entière, le bloc de ballast que le
+  générateur écrit (`floor(cote) − 1`). Le mailleur (`rubansVoieDans`), la
+  gare (`gareEn`) et le convoi (`traceSegment`) lisent `coteContinue` ; un
+  témoin de `plafond.js` exige que le train soit à `cote + RAIL_HAUT + ROUES`
+  sur chaque pas, à 10⁻⁶ près. Le `+ 2.05` de la v179 est parti avec la
+  marche d'un bloc qu'il portait.
+- **CE QU'ON RETIRE DU VOXEL EST CE QUE LE MAILLEUR REMPLACE, ET RIEN DE
+  PLUS.** Les blocs d'obsidienne (les files) et de planche sombre (les
+  traverses) partent parce que les prismes les remplacent, dans le même
+  passage du mailleur, sur toute colonne de ballast ; le gravier, la pierre
+  du remblai et le gabarit d'air restent des blocs. Et les rubans s'émettent
+  même sans sol continu (`?solcontinu=0`) : ce sont de la géométrie, pas de
+  la surface — sinon la mesure A/B montrerait une voie sans rails.
+- **UN TALUS DE VOIE EST CELUI D'UNE ROUTE, UNE PIÈCE PLUS LOIN.** Le remblai
+  était un mur de pierre vertical, la tranchée un puits ; `voieEn` rend
+  désormais `piece: 'talus'` de la cote du ballast à celle du terrain, un
+  bloc par bloc, herbe au sommet — la formule de `routeEn` (v300), recopiée
+  parce que `trains.js` et `routes.js` ne s'importent pas. Mesuré sur les
+  neuf lignes : 17 188 colonnes, treize blocs de large au plus, AUCUNE dans un
+  disque d'aérodrome, 191 blocs de ce que les enfants ont bâti. **Et la gare
+  passe avant le talus** : le quai commence où le ballast finit, exactement
+  là où le talus commencerait ; sans cet ordre dans `world.js`, dix-huit
+  gares perdaient leur quai sous un talus d'herbe.
+- **UN TÉMOIN NEUF MESURE LE MÊME DÉFAUT DES DEUX CÔTÉS, PAS L'ABSENCE D'UN
+  EXPORT.** Mon premier jet rendait « pas de coteContinue » sur
+  `origin/main`, ce qui ne dit rien du fond. Les trois témoins purs lisent
+  l'ancien `voieEn` (un bloc) comme le neuf (une cote et un bloc) et rendent
+  sur l'ancien code : marche 2,0 · 1 441 obsidienne · 53 colonnes de surface
+  justes sur 3 603. C'est la règle de la v214 (« un témoin doit échouer
+  PROPREMENT, avec un message vrai »), appliquée avant de livrer.
+
+**Ce que la livraison ne fait PAS, et qui se déclare** (`TASKS.md`) : la
+pente du profil reste un tiers (les candidats du kit à 2,5 % creusent jusqu'à
+vingt-deux blocs et ne sont pas approuvés) ; sur la mer la voie reste une
+chaussée au ras des flots, pas un viaduc sur piles ; au-delà de treize blocs
+d'écart le talus s'arrête et la paroi reste raide ; la gare reste en voxel ;
+les textures du kit ne sont pas branchées ; les rails n'arrêtent rien.
+
+**ET LE PONT DE L'A1 AVAIT UN TROU À CHAQUE BOUT (v302), vu par Max et par
+aucun témoin.** Un ruban (tablier) commence à un pas d'abscisse DROIT ; une
+route oblique finit ses cubes en ESCALIER ; entre les deux, des triangles
+ouverts sur la rivière — 464 points de chaussée sur 6 500 aux deux joints. Le
+contact lisait `tablierEn` et n'avait pas de trou : seul le dessin en avait,
+et les témoins de la v300 ne regardaient que le contact (« le pont se
+franchit sur son tablier »). **Là où une géométrie continue rencontre des
+cubes sur un axe oblique, elle DÉBORDE sur les cubes** (`CULEE`, deux pas, un
+centième au-dessus pour ne pas se disputer le plan) — et le témoin
+échantillonne ce que l'on VOIT, point par point, pas ce qui porte la voiture.
+La même règle vaudra pour le rail le jour où il aura ses viaducs.
+
+**Et le dernier kit de Max vise le monde, pas Paris** (« le dernier zip
+adresse le monde pas Paris seulement ») : la v301 n'avait traité que Paris.
+Le kit v4 place les rails, les raccords ville/campagne et les routes
+interurbaines AVANT le décor, pour toute la carte. Le rail est fait ; le reste
+est écrit dans `TASKS.md` dans l'ordre du kit, et une livraison du programme
+se juge désormais à la COUVERTURE qu'elle ajoute (combien de villes, combien
+de segments), pas à la beauté d'un seul quartier.
+
+
 ## Un étage fait trois blocs (v301) — une ville se met à l'échelle des personnes, et ses toits emportent ce qu'on a bâti dessus
 
 Max, capture d'une rue : « Paris est beaucoup trop compressé. » Mesuré avant

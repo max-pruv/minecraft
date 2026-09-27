@@ -1,5 +1,41 @@
 # Ce qui est en cours
 
+- [ ] **LE RAIL CONTINU (v302) : CE QUI RESTE, DÉCLARÉ.** (1) La pente du
+  profil reste un tiers : les candidats du kit à 2,5 %
+  (`transport-v298/examples/rail-profile-candidates.json`) creusent jusqu'à
+  vingt-deux blocs et ne sont pas approuvés ; une pente réaliste se décide
+  avec la mesure des terrassements (le profil est un cône, `PENTE` dans
+  `trains.js`). (2) Sur la mer, la voie est une chaussée au ras des flots (v179),
+  pas un viaduc sur piles : le mécanisme d'ouvrage de l'A1 (tablier en ruban,
+  `tablierEn`) existe et n'est pas branché au rail. (3) Au-delà de
+  `DEBLAI_MAX` (13) le talus s'arrête et la paroi reste raide — mesuré, remblai
+  19,2 sur Madrid–Barcelone (k 1 804), 15,3 sur Londres–Paris (k 533) ; un
+  remblai de dix-neuf blocs est un viaduc dans la vraie vie. (4) La gare reste
+  en voxel (quai un bloc au-dessus du ballast) ; « quai au niveau du plancher
+  de la rame » n'est pas mesuré. (5) Les treize familles de textures du kit ne
+  sont pas branchées : les prismes prennent l'obsidienne et la planche sombre
+  de l'atlas. (6) Les rails n'arrêtent rien, ce qui est voulu (kit : « pas une
+  barrière d'un mètre pour une voiture ») ; aucune route ne croise une voie,
+  donc aucun passage à niveau n'est nécessaire aujourd'hui. (7) Avec
+  `?solcontinu=0`, le ballast voxel a son sommet à `floor(cote)` et les rails
+  à `cote` — jusqu'à un bloc au-dessus : une mesure, pas un réglage. (8) Le
+  demi-tour du train aux terminus reste une diagonale entre les deux voies
+  (`traceSegment`) ; le kit demande un tiroir ou un retournement.
+- [ ] **LE KIT v4 VISE LE MONDE ENTIER, PAS PARIS (Max, 27 septembre).** Ce qui
+  est intégré au jeu : le sol continu hors villes (v297), l'A1 Paris–Lille
+  (v300), le rail continu sur les neuf segments (v302). Ce qui reste, dans
+  l'ordre du kit (`transport-v298/README.md`) : (a) le raccord ville/campagne
+  pour TOUTES les villes (le liseré voxel d'un bloc au bord de chaque disque,
+  v297) ; (b) les autres routes interurbaines — le kit propose 23 corridors
+  candidats (`examples/road-candidates.json`), à instruire un par un contre
+  l'eau, les aérodromes, les repères et les sanctuaires comme l'A1 ; (c) les
+  falaises et l'eau (surface rocheuse au lieu de marches, berges) ; (d) les
+  textures par usage et climat ; (e) la bibliothèque architecturale (96
+  variantes, 278 profils de ville) — elle exige une retrame à un bloc pour un
+  mètre (`docs/monde-fidele/programme.md`, section 6), décision de Max ; (f) la
+  matrice de couverture ville par ville (convertie, exclue, bloquée) et les
+  mesures sur l'iPad de la maison.
+
 - [ ] **LES MONUMENTS DE PARIS SONT PLUS BAS QUE LES IMMEUBLES (v301).** Un
   étage fait trois blocs : les immeubles montent à 21-24 blocs (six-sept
   niveaux, comble compris), et les monuments n'ont pas suivi. Mesuré sous
