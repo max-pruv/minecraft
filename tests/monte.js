@@ -584,6 +584,79 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       Math.hypot(apresDescente.x - laisse.x, apresDescente.z - laisse.z) < 3,
       JSON.stringify({ laisse, apresDescente }));
 
+    // --- le train ne passe pas au travers de la voiture de l'enfant (v304) ---
+    //
+    // Max, trois captures d'iPhone : sa voiture garée sur la voie ferrée, et
+    // le train qui la traverse — l'intérieur noir de la rame plein l'écran
+    // quand la caméra se retrouve dedans. Les trains ne cédaient à personne
+    // (`routier` faux). Le témoin SE PLACE (v279) : il vide les bêtes, pose une
+    // voiture, monte, et se téléporte sur la voie d'un train de SURFACE, trente
+    // blocs devant sa motrice ; puis il relève, vingt secondes au plus, si une
+    // voiture de la rame touche la sienne (rectangles orientés), et si la rame
+    // s'est bien approchée — un train qui n'est jamais venu ne prouve rien.
+    await tab.evaluate(() => {
+      const g = window.__game;
+      for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+      g.animalManager.animals.length = 0;
+    });
+    await poserDevant(tab, 'voiture');
+    await dormir(700);
+    await tab.evaluate(() => document.getElementById('ride-btn').click());
+    await dormir(700);
+    const surLaVoie = await tab.evaluate(async () => {
+      const g = window.__game, V = window.__vehicules;
+      const etat = V.etat();
+      const ci = etat.findIndex((c) => /^train /.test(c.nom) && c.attente === 0 && c.y > 20);
+      if (ci < 0) return { err: 'aucun train de surface' };
+      const pt = V.point(ci, 30);
+      if (!g.fun.montureConduite || !g.fun.montureConduite()) return { err: 'pas au volant' };
+      g.player.flying = false;
+      g.player.pos.set(pt.x, pt.y - 1.1 + 0.2, pt.z);
+      g.player.vel.set(0, 0, 0);
+      g.player.yaw = -pt.cap + Math.PI / 2;           // en travers de la voie, comme sur la capture
+      const DL = 3.7, DW = 0.9, dlJ = 2.2, dwJ = 1.13;
+      const rect = (x, z, cap, dl, dw) => {
+        const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux;
+        return [[x + ux * dl + vx * dw, z + uz * dl + vz * dw], [x + ux * dl - vx * dw, z + uz * dl - vz * dw],
+          [x - ux * dl - vx * dw, z - uz * dl - vz * dw], [x - ux * dl + vx * dw, z - uz * dl + vz * dw]];
+      };
+      const touche = (P, Q) => {
+        for (const R of [P, Q]) for (let k = 0; k < 4; k++) {
+          const ax = -(R[(k + 1) % 4][1] - R[k][1]), az = R[(k + 1) % 4][0] - R[k][0];
+          let p0 = Infinity, p1 = -Infinity, q0 = Infinity, q1 = -Infinity;
+          for (let j = 0; j < 4; j++) {
+            const a = P[j][0] * ax + P[j][1] * az, b = Q[j][0] * ax + Q[j][1] * az;
+            p0 = Math.min(p0, a); p1 = Math.max(p1, a); q0 = Math.min(q0, b); q1 = Math.max(q1, b);
+          }
+          if (p1 < q0 || q1 < p0) return false;
+        }
+        return true;
+      };
+      const t0 = performance.now();
+      let releves = 0, dedans = 0, bloque = 0, plusPres = Infinity;
+      while (performance.now() - t0 < 20000) {
+        await new Promise((r) => setTimeout(r, 250));
+        const c = V.etat()[ci];
+        const p = g.player.pos, moi = rect(p.x, p.z, g.player.yaw + Math.PI, dlJ, dwJ);
+        releves++;
+        if (c.bloque) bloque++;
+        let ici = false;
+        for (const [x, z, cap] of c.places) {
+          plusPres = Math.min(plusPres, Math.hypot(x - p.x, z - p.z));
+          if (touche(rect(x, z, cap, DL, DW), moi)) ici = true;
+        }
+        if (ici) dedans++;
+        if (bloque > 12) break;                       // arrêté devant nous trois secondes : acquis
+      }
+      return { ci, nom: V.etat()[ci].nom, releves, dedans, bloque, plusPres: +plusPres.toFixed(1),
+        secondes: +((performance.now() - t0) / 1000).toFixed(1) };
+    });
+    verifier('un train s\'arrête devant la voiture de l\'enfant posée sur sa voie, au lieu de la traverser',
+      !surLaVoie.err && surLaVoie.dedans === 0 && surLaVoie.plusPres < 12 && surLaVoie.bloque > 0,
+      JSON.stringify(surLaVoie));
+    await tab.evaluate(() => { if (window.__game.fun.montureConduite && window.__game.fun.montureConduite()) document.getElementById('ride-btn').click(); });
+    await dormir(600);
+
     // --- la monoplace freine dans les virages -------------------------------
     //
     // Demandé par Max : « je n'arrive pas à monter sur la formule un parce

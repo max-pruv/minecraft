@@ -14,6 +14,7 @@ import { COUCHE_CARROSSERIE, voirLeDecor } from './couches.js';
 import { SIGNATURES_GLB, SIGNATURES_JEU, EST_PEINTURE } from './signatures.js';
 import { construireTaxi } from './taxis.js';
 import { Atelier } from './modeles.js';
+import { liberer } from './liberer.js';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
 
 // --- les reflets --------------------------------------------------------------
@@ -1084,6 +1085,11 @@ class Convoi {
     // Un métro et un train roulent sur des rails : ils ne font ni l'un ni
     // l'autre. `routier` déclare la voiture, le bus, la monoplace.
     this.routier = !!opts.routier;
+    // UN TRAIN S'ARRÊTE DEVANT L'ENFANT (v304). Il ne cède à personne d'autre
+    // — un train ne fait pas la queue au carrefour — mais il ne passe pas au
+    // travers de ce qui est sur sa voie : `cederLePassage` pose `bloque`.
+    this.rail = !!opts.rail;
+    this.bloque = false;
     // CHAQUE VOITURE CÈDE POUR ELLE-MÊME, ET LE CONVOI EST ÉLASTIQUE. Un convoi
     // n'a qu'une distance pour toutes ses voitures ; arrêter le convoi entier
     // laissait celle qui était déjà dans le carrefour en travers de la voie de
@@ -1175,8 +1181,109 @@ class Convoi {
     return { x: p.x, y: p.y + this.assise, z: p.z, cap: p.cap };
   }
 
-  update(dt, joueur) {
+  // LA GRILLE HORAIRE DU CONVOI (v305). Max, en ligne : « les utilisateurs ne
+  // voient pas les mêmes voitures en même temps ». Chaque tablette faisait
+  // avancer ses convois de son propre `dt`, depuis sa propre naissance du
+  // convoi — l'hôte et l'invité avaient donc deux circulations sans rapport,
+  // et la voiture de Marlon, garée sur la rue chez lui, était au milieu d'un
+  // convoi chez Alice.
+  //
+  // La position d'un convoi n'est plus une SOMME de pas, c'est une FONCTION
+  // d'une horloge : `distanceA(h)`. Deux tablettes qui ont la même horloge
+  // ont la même circulation, et l'hôte la donne avec l'heure du ciel
+  // (`adopterHorloge`). La grille se calcule une fois : à vitesse constante,
+  // une droite ; avec des arrêts, des paliers de `pause` secondes à chaque
+  // quai ; avec `freine`, la marche d'avant — la consigne du virage et son
+  // inertie — SIMULÉE sur un tour au pas d'un vingtième de seconde, pour que
+  // la monoplace et la voiture de ville freinent exactement comme avant.
+  horaire() {
+    if (this._horaire !== undefined) return this._horaire;
+    const L = this.parcours.longueur;
+    if (!(L > 0) || !(this.vitesse > 0)) { this._horaire = null; return null; }
+    const ts = [0], ds = [0];
+    if (this.freine) {
+      const h = 0.05;
+      const vise = (d) => this.vitesse * Math.max(this.allureMin,
+        1 - (this.parcours.virageDevant(d) / (Math.PI / 3)) * (1 - this.allureMin));
+      // un premier tour pour que l'inertie oublie son point de départ, le
+      // second enregistré — c'est le régime établi, périodique
+      let v = this.vitesse, d = 0, t = 0;
+      while (d < L) { v += (vise(d) - v) * Math.min(1, h * 2.2); d += v * h; t += h; }
+      const t0 = t - (d - L) / v;
+      while (d < 2 * L) {
+        v += (vise(d) - v) * Math.min(1, h * 2.2); d += v * h; t += h;
+        if (d < 2 * L) { ts.push(t - t0); ds.push(d - L); }
+      }
+      ts.push(t - (d - 2 * L) / v - t0); ds.push(L);
+    } else {
+      const v = this.vitesse, pause = this.pause;
+      let t = 0, prec = 0;
+      // un quai à zéro se prend en fin de tour : c'est là que la rame arrive
+      const quais = this.arrets.map((q) => (((q % L) + L) % L) || L).sort((x, y) => x - y);
+      for (const q of quais) {
+        if (q < prec) continue;
+        t += (q - prec) / v; ts.push(t); ds.push(q);
+        t += pause; ts.push(t); ds.push(q);
+        prec = q;
+      }
+      if (prec < L) { t += (L - prec) / v; ts.push(t); ds.push(L); }
+    }
+    const P = ts[ts.length - 1];
+    this._horaire = { ts: Float64Array.from(ts), ds: Float64Array.from(ds), P, L };
+    // la phase : à l'horloge zéro, le convoi est là où il naissait avant
+    this.phase = this.tempsA(this.distance);
+    return this._horaire;
+  }
+
+  // Le temps de grille où la tête ARRIVE à la distance d (avant sa pause).
+  tempsA(d) {
+    const { ts, ds, P, L } = this._horaire;
+    const n = Math.floor(d / L), r = d - n * L;
+    let lo = 0, hi = ds.length - 1;
+    while (lo < hi) { const m = (lo + hi) >> 1; if (ds[m] < r) lo = m + 1; else hi = m; }
+    if (lo === 0 || ds[lo] === r) return n * P + ts[lo];
+    const k = lo - 1;
+    return n * P + ts[k] + (ts[lo] - ts[k]) * (r - ds[k]) / (ds[lo] - ds[k]);
+  }
+
+  // Où est la tête à l'horloge h, sa vitesse, et ce qu'il reste de pause.
+  distanceA(h) {
+    const { ts, ds, P, L } = this._horaire;
+    const tau = h + this.phase;
+    const n = Math.floor(tau / P), r = tau - n * P;
+    let lo = 0, hi = ts.length - 1;
+    while (hi - lo > 1) { const m = (lo + hi) >> 1; if (ts[m] <= r) lo = m; else hi = m; }
+    const dt = ts[hi] - ts[lo], dd = ds[hi] - ds[lo];
+    const u = dt > 0 ? (r - ts[lo]) / dt : 0;
+    return { d: n * L + ds[lo] + dd * u, v: dt > 0 ? dd / dt : 0, pause: dd === 0 ? ts[hi] - r : 0 };
+  }
+
+  update(dt, joueur, horloge = null) {
     this.dernierDt = dt;
+    const avantTout = this.distance;
+    const grille = horloge !== null ? this.horaire() : null;
+    if (grille) {
+      // devant l'enfant, un train attend comme à quai — sans limite (v304) —
+      // et le temps qu'il a perdu se déduit de sa grille : il repart d'où il
+      // s'était arrêté, il ne saute pas à l'heure.
+      if (this.bloque) this.decalage = (this.decalage || 0) + dt;
+      const pos = this.distanceA(horloge - (this.decalage || 0));
+      this.attente = pos.pause;
+      this.vitesseActuelle = pos.v;
+      // UN SAUT D'HORLOGE N'EST PAS UNE AVANCE. L'invité qui adopte l'heure de
+      // l'hôte, ou une tablette qui se réveille : on se POSE à la bonne place,
+      // et ce que chaque voiture avait laissé filer en cédant le passage
+      // repart de zéro — sinon un saut de cent blocs deviendrait cent blocs de
+      // retard pour la voiture qui attendait.
+      const saut = Math.abs(pos.d - avantTout) > Math.max(20, this.vitesse * 3);
+      this.distance = pos.d;
+      if (saut || pos.d <= avantTout) {
+        if (saut && this.retard) this.retard.fill(0);
+        if (this.routier) this.rapport.fill(0);
+        this.montrer(joueur);
+        return;
+      }
+    } else {
     if (this.attente > 0) {
       // à quai : on ne bouge pas, mais on continue de se montrer ou de se
       // cacher selon la distance au joueur
@@ -1184,7 +1291,8 @@ class Convoi {
       this.montrer(joueur);
       return;
     }
-    const avantTout = this.distance;
+    // devant l'enfant, un train attend comme à quai — sans limite (v304)
+    if (this.bloque) { this.montrer(joueur); return; }
     if (this.freine) {
       // Un demi-tour complet (π/2 sur vingt mètres) ramène à l'allure minimale ;
       // la ligne droite rend toute la vitesse. L'inertie — on ne rejoint la
@@ -1221,6 +1329,7 @@ class Convoi {
           break;
         }
       }
+    }
     }
     // Ce que le convoi vient d'avancer ; une voiture qui attend le laisse
     // filer, une voiture en retard le rattrape à une fois et demie l'allure.
@@ -1305,6 +1414,7 @@ class Convoi {
     }
     const portee2 = portee * portee;
     for (let i = 0; i < this.nb; i++) {
+      if (this.pris && this.pris.has(i)) continue;
       const p = this.parcours.a(this.dElement(i));
       const dedans = (p.x - joueur.x) ** 2 + (p.z - joueur.z) ** 2 < portee2;
       // Hors du champ : on ne fabrique rien, et l'on cache ce qui existe déjà.
@@ -1355,11 +1465,33 @@ class Convoi {
   }
 }
 
+// REPEINDRE UNE VOITURE DE LA FLOTTE (v305) — une seule règle, lue par la rue
+// (`voitureDeVille`) et par la monture (montures.js) : sans elle, la voiture
+// qu'on prend dans la rue changeait de couleur sous l'enfant. La berline de
+// New York se peint par son matériau `Paint_NYC` ; les autres par leur
+// laque seule — vitres, chromes et carbone gardent leur rendu.
+export function repeindre(modele, fichier, teinte) {
+  modele.traverse((o) => {
+    if (!o.isMesh || !o.material) return;
+    const nom = o.material.name || '';
+    if (fichier === 'berline-citadine' ? nom !== 'Paint_NYC' : !EST_LAQUE.test(nom)) return;
+    o.material = o.material.clone(); o.material.userData.partagee = false;
+    o.material.color.set(teinte);
+  });
+}
+
 export function createVehicules({ scene, player }) {
   const convois = [];
 
   function ajouter(points, opts) {
     const c = new Convoi(scene, new Parcours(points), opts);
+    // UNE CLÉ QUI NE DÉPEND QUE DU TRACÉ (v305). Le RANG d'un convoi dans la
+    // liste dépend de l'ordre où l'enfant a approché les villes : il n'est pas
+    // le même d'une tablette à l'autre. Pour dire « Marlon a pris la voiture
+    // 7 de CE convoi », il faut un nom que les deux calculent pareil.
+    const p0 = points[0] || { x: 0, z: 0 };
+    c.cle = `${opts.nom}|${points.length}|${Math.round(p0.x)},${Math.round(p0.z)}|${Math.round(opts.depart || 0)}`;
+    c.pris = new Set();
     convois.push(c);
     return c;
   }
@@ -1393,7 +1525,7 @@ export function createVehicules({ scene, player }) {
       ajouter(points, {
         nb: opts.nb ?? 4, ecart: 7.6, vitesse: opts.vitesse ?? 7,
         depart: (k * p.longueur) / rames, nom, emoji: opts.emoji || '🚇', assise: 1.1,
-        arrets, pause: opts.pause, souterrain: opts.souterrain, decouvert: opts.decouvert,
+        arrets, pause: opts.pause, souterrain: opts.souterrain, decouvert: opts.decouvert, rail: true,
         modele: (i) => construireRame(i === 0, teintes[k % teintes.length]),
       });
     }
@@ -1462,11 +1594,6 @@ export function createVehicules({ scene, player }) {
           if (membre) g.remove(membre);
         }
         const modele = proto.clone(true);
-        if(entree.fichier==='berline-citadine')modele.traverse(o=>{
-          if(o.isMesh&&o.material.name==='Paint_NYC'){
-            o.material=o.material.clone();o.material.userData.partagee=false;o.material.color.set(teinte);
-          }
-        });
         // UNE LAQUE PAR VOITURE (v246). Max : « assure-toi que toutes les
         // villes ont de la diversité dans les voitures ». Un modèle de la
         // flotte arrivait toujours dans SA couleur cuite dans le fichier :
@@ -1475,14 +1602,12 @@ export function createVehicules({ scene, player }) {
         // d'origine — une voiture dont la couleur fait l'identité (un taxi,
         // une Ferrari rouge) ne doit pas disparaître de la rue. La laque
         // seule est repeinte : vitres, chromes et carbone gardent leur rendu.
-        if (entree.fichier !== 'berline-citadine' && ville !== 'ny' && n % 3 !== 0) {
-          modele.traverse((o) => {
-            if (!o.isMesh || !o.material || !EST_LAQUE.test(o.material.name || '')) return;
-            o.material = o.material.clone(); o.material.userData.partagee = false;
-            o.material.color.set(teinte);
-          });
-        }
-        g.userData.laque = entree.fichier !== 'berline-citadine' && ville !== 'ny' && n % 3 !== 0 ? teinte : null;
+        const laque = entree.fichier !== 'berline-citadine' && ville !== 'ny' && n % 3 !== 0;
+        g.userData.laque = laque ? teinte : null;
+        // ce que la rue a réellement peint, quelle que soit la règle : c'est
+        // ce qui part avec la voiture quand l'enfant la prend (v305)
+        g.userData.peinture = laque || entree.fichier === 'berline-citadine' ? teinte : null;
+        if (g.userData.peinture != null) repeindre(modele, entree.fichier, teinte);
         g.add(modele);
         const roues = [];
         modele.traverse((o) => { if (/^Wheel_/i.test(o.name || '')) roues.push(o); });
@@ -1606,15 +1731,22 @@ export function createVehicules({ scene, player }) {
   // se comparer à chaque image.
   const PORTEE_CEDE = 90, DEMI_LONG = DEMI_LONG_VOITURE, DEMI_LARG = DEMI_LARG_VOITURE;
   const PAS_BALAYAGE = [0.5, 2, 3.5, 5, 6.5, 8];
-  const rectangle = (x, z, ux, uz) => {
+  const rectangle = (x, z, ux, uz, dl = DEMI_LONG, dw = DEMI_LARG) => {
     const vx = uz, vz = -ux;
     return [
-      [x + ux * DEMI_LONG + vx * DEMI_LARG, z + uz * DEMI_LONG + vz * DEMI_LARG],
-      [x + ux * DEMI_LONG - vx * DEMI_LARG, z + uz * DEMI_LONG - vz * DEMI_LARG],
-      [x - ux * DEMI_LONG - vx * DEMI_LARG, z - uz * DEMI_LONG - vz * DEMI_LARG],
-      [x - ux * DEMI_LONG + vx * DEMI_LARG, z - uz * DEMI_LONG + vz * DEMI_LARG],
+      [x + ux * dl + vx * dw, z + uz * dl + vz * dw],
+      [x + ux * dl - vx * dw, z + uz * dl - vz * dw],
+      [x - ux * dl - vx * dw, z - uz * dl - vz * dw],
+      [x - ux * dl + vx * dw, z - uz * dl + vz * dw],
     ];
   };
+  // LA VOITURE D'UN TRAIN (`construireRame` : 7,2 blocs de long, 1,5 de large,
+  // plus les bogies et le chanfrein) — sa boîte, pour la voiture de l'enfant
+  // qui ne doit pas y entrer et pour le train qui ne doit pas la traverser.
+  // Deux voies à `ENTRAXE` deux blocs de la ligne : une rame sur l'une ne
+  // touche pas une voiture centrée sur l'autre (4 − 0,9 − 1,13 = 2 blocs).
+  const DEMI_LONG_RAME = 3.7, DEMI_LARG_RAME = 0.9;
+  const PAS_TRAIN = [0.5, 1.5, 2.5, 3.5];   // on s'arrête près : RAYON_BORD (9) doit encore voir la motrice
   // Deux rectangles se touchent-ils ? Séparation d'axes : les quatre arêtes de
   // chacun servent d'axe ; s'il en est un où les projections ne se recouvrent
   // pas, ils sont disjoints.
@@ -1639,7 +1771,11 @@ export function createVehicules({ scene, player }) {
   // feux et connaît leur état. Comme `obstaclePieton` et `vehiculeApproche`,
   // la règle vit là où elle se calcule, et la circulation la DEMANDE.
   let feuRouge = null;
+  let amis = null;
   const CLE_ENFANT = -1;
+  // les amis (v305) : des clés négatives, loin de celles des trains
+  // (−2 − rang × 1000 − wagon), pour que la patience infinie les couvre aussi
+  const CLE_AMI = -1e9;
   function cederLePassage(dt) {
     const px = player.pos.x, pz = player.pos.z;
     const voitures = [];
@@ -1661,6 +1797,65 @@ export function createVehicules({ scene, player }) {
         : [[px - demi, pz - demi], [px + demi, pz - demi], [px + demi, pz + demi], [px - demi, pz + demi]],
       balayage: null, veut: null,
     });
+    // LES TRAINS AUSSI (v304). Max, captures d'iPhone : sa voiture sur la
+    // voie, et le train qui la traverse — l'intérieur noir de la rame plein
+    // l'écran quand la caméra se retrouve dedans. Un train ne cède à personne
+    // et ne fait pas la queue, mais il ne passe pas au travers de l'enfant :
+    // si ce que sa motrice va balayer touche l'enfant (à pied ou au volant),
+    // la rame s'arrête, sans limite, comme à quai ; et chacune de ses
+    // voitures entre dans la liste, pour que la voiture de l'enfant bute
+    // dessus (`obstacleDevant`) et que la circulation d'un passage à niveau
+    // l'attende. Un train qui touche DÉJÀ l'enfant continue — y rester, c'est
+    // y rester pour toujours (v245) — et celui où l'enfant est assis aussi.
+    // LES AMIS AUSSI (v305). Max, capture en ligne : la voiture de Marlon au
+    // milieu d'un convoi de Paris. Sur SA tablette la rue lui cède le passage ;
+    // sur celle d'Alice il n'était qu'un avatar, et la circulation lui passait
+    // au travers. Chaque ami entre dans la liste comme l'enfant — sa voiture
+    // s'il conduit, un carré à sa carrure s'il marche — et la rue attend devant
+    // lui, sans limite, sur toutes les tablettes : c'est aussi ce qui garde la
+    // même circulation partout, puisque tout le monde cède aux mêmes joueurs.
+    if (amis) {
+      let k = 0;
+      for (const a of amis()) {
+        if ((a.x - px) ** 2 + (a.z - pz) ** 2 > PORTEE_CEDE * PORTEE_CEDE) continue;
+        const ux = Math.sin(a.cap), uz = Math.cos(a.cap), dm = (a.gabarit || 0.6) / 2;
+        voitures.push({
+          c: null, i: -1, cle: CLE_AMI - k++, x: a.x, y: a.y, z: a.z, ux, uz, enfant: true, ami: true,
+          vehicule: a.gabarit > 1,
+          rect: a.gabarit > 1 ? rectangle(a.x, a.z, ux, uz)
+            : [[a.x - dm, a.z - dm], [a.x + dm, a.z - dm], [a.x + dm, a.z + dm], [a.x - dm, a.z + dm]],
+          balayage: null, veut: null,
+        });
+      }
+    }
+    const rectEnfant = voitures[0].rect;
+    for (let ci = 0; ci < convois.length; ci++) {
+      const c = convois[ci];
+      if (!c.rail) continue;
+      c.bloque = false;
+      const tete = c.parcours.a(c.dElement(0));
+      if (Math.hypot(tete.x - px, tete.z - pz) > PORTEE_CEDE + c.ecart * c.nb) continue;
+      let dedans = false;
+      for (let i = 0; i < c.nb; i++) {
+        const d = c.dElement(i);
+        const q = c.parcours.a(d);
+        if ((q.x - px) ** 2 + (q.z - pz) ** 2 > PORTEE_CEDE * PORTEE_CEDE) continue;
+        const cap = c.parcours.capLisse(d), ux = Math.sin(cap), uz = Math.cos(cap);
+        const rect = rectangle(q.x, q.z, ux, uz, DEMI_LONG_RAME, DEMI_LARG_RAME);
+        if (Math.abs(q.y - player.pos.y) < 2.5 && seTouchent(rect, rectEnfant)) dedans = true;
+        voitures.push({ c, ci, i, cle: -2 - ci * 1000 - i, d, x: q.x, y: q.y, z: q.z, ux, uz,
+          rect, balayage: null, veut: null, rail: true });
+      }
+      if (dedans || c.attente > 0) continue;
+      const d0 = c.dElement(0), q0 = c.parcours.a(d0);
+      if (Math.abs(q0.y - player.pos.y) > 3) continue;
+      for (const pas of PAS_TRAIN) {
+        const q = c.parcours.a(d0 + pas), cap = c.parcours.capLisse(d0 + pas);
+        if (seTouchent(rectangle(q.x, q.z, Math.sin(cap), Math.cos(cap), DEMI_LONG_RAME, DEMI_LARG_RAME), rectEnfant)) {
+          c.bloque = true; break;
+        }
+      }
+    }
     for (let ci = 0; ci < convois.length; ci++) {
       const c = convois[ci];
       if (!c.routier) continue;
@@ -1668,6 +1863,7 @@ export function createVehicules({ scene, player }) {
       const trainee = c.ecart * (c.nb - 1) + c.retardMax();
       if (Math.hypot(tete.x - px, tete.z - pz) > PORTEE_CEDE + trainee) { c.attend.fill(0); continue; }
       for (let i = 0; i < c.nb; i++) {
+        if (c.pris.has(i)) { c.attend[i] = 0; continue; }       // prise par un enfant (v305)
         const d = c.dElement(i);
         const q = c.parcours.a(d);
         if ((q.x - px) ** 2 + (q.z - pz) ** 2 > PORTEE_CEDE * PORTEE_CEDE) { c.attend[i] = 0; continue; }
@@ -1678,14 +1874,14 @@ export function createVehicules({ scene, player }) {
     }
     // le balayage de chaque voiture : ses rectangles un peu plus loin sur son tracé
     for (const a of voitures) {
-      if (a.enfant) continue;
+      if (a.enfant || a.rail) continue;
       a.balayage = PAS_BALAYAGE.map((pas) => {
         const q = a.c.parcours.a(a.d + pas), cap = a.c.parcours.capLisse(a.d + pas);
         return rectangle(q.x, q.z, Math.sin(cap), Math.cos(cap));
       });
     }
     for (const a of voitures) {
-      if (a.enfant) continue;
+      if (a.enfant || a.rail) continue;
       for (const b of voitures) {
         if (a === b || Math.abs(a.y - b.y) > 2.5) continue;
         const ex = b.x - a.x, ez = b.z - a.z;
@@ -1709,7 +1905,7 @@ export function createVehicules({ scene, player }) {
     const parCle = new Map(voitures.map((v) => [v.cle, v]));
     dernieres = voitures; enMarcheCache = null;
     for (const a of voitures) {
-      if (a.enfant) continue;
+      if (a.enfant || a.rail) continue;
       let attend = false;
       if (a.veut) {
         for (const [cle, devantMoi] of a.veut) {
@@ -1738,7 +1934,8 @@ export function createVehicules({ scene, player }) {
       // patience de douze secondes la faisait revenir au bout de douze
       // secondes. La rue attend que l'enfant reparte ; les autres voitures
       // gardent leurs quatre secondes entre elles.
-      const patience = a.veut && a.veut.size === 1 && a.veut.has(CLE_ENFANT) ? Infinity : 4;
+      // …et devant un train (v304) : on ne force pas un passage à niveau.
+      const patience = a.veut && [...a.veut.keys()].every((k) => k < 0) ? Infinity : 4;
       if (c.repart[i] > 0) { c.repart[i] -= dt; attend = false; }          // on vient de décider d'y aller
       else if (attend) {
         c.attenteDepuis[i] += dt;
@@ -1758,7 +1955,7 @@ export function createVehicules({ scene, player }) {
     const ux = Math.sin(cap), uz = Math.cos(cap);
     const moi = rectangle(x, z, ux, uz);
     for (const b of dernieres) {
-      if (b.enfant) continue;
+      if (b.enfant && !b.ami) continue;
       if ((b.x - x) ** 2 + (b.z - z) ** 2 > 8 * 8 || Math.abs(b.y - player.pos.y) > 2.5) continue;
       if (seTouchent(moi, b.rect)) return true;
     }
@@ -1774,7 +1971,7 @@ export function createVehicules({ scene, player }) {
   // n'est pas une voiture : on passe à côté de lui comme avant.
   function voitureA(x, z, y) {
     for (const b of dernieres) {
-      if (b.enfant && !(player.gabarit > 1)) continue;
+      if (b.enfant && !(b.ami ? b.vehicule : player.gabarit > 1)) continue;
       if ((b.x - x) ** 2 + (b.z - z) ** 2 > 6 * 6 || Math.abs(b.y - y) > 2.5) continue;
       if (dansRectangle(b.rect, x, z)) return true;
     }
@@ -1797,7 +1994,7 @@ export function createVehicules({ scene, player }) {
     if (enMarcheCache) return enMarcheCache;
     const out = [];
     for (const b of dernieres) {
-      if (b.enfant) continue;
+      if (b.enfant || b.rail) continue;
       const c = b.c;
       if (c.attend[b.i]) continue;                       // à l'arrêt : personne ne s'en écarte
       // ce qu'elle a OBTENU, pas ce qu'elle demandait (v283) : un piéton ne
@@ -1822,9 +2019,23 @@ export function createVehicules({ scene, player }) {
     return true;
   }
 
-  function update(dt) {
+  // L'HORLOGE DE LA RUE (v305), en secondes RÉELLES — comme les feux (v273),
+  // et pour la même raison : ce qu'elle décide doit être le même sur une
+  // tablette qui rame et sur celle d'à côté. `dtReel` est borné par l'appelant
+  // (deux secondes, `chronoReel`) ; l'hôte donne la sienne avec l'heure du ciel.
+  let horloge = 0;
+  function update(dt, dtReel = dt) {
+    horloge += dtReel;
     cederLePassage(dt);
-    for (const c of convois) c.update(dt, player.pos);
+    for (const c of convois) c.update(dtReel, player.pos, horloge);
+  }
+  // On glisse vers l'heure de l'hôte quand l'écart est petit, on saute quand
+  // il est grand — la règle du ciel (`adopterCiel`) : une seconde de rue, ce
+  // sont quatre blocs de voiture, et c'est ce qu'on accepte de voir glisser.
+  function adopterHorloge(t) {
+    if (typeof t !== 'number' || !isFinite(t)) return;
+    const e = t - horloge;
+    horloge = Math.abs(e) > 1 ? t : horloge + e * 0.5;
   }
 
   // La place libre la plus proche d'un point donné : c'est elle qui décide si
@@ -1854,6 +2065,7 @@ export function createVehicules({ scene, player }) {
       const trainee = c.ecart * (c.elements.length - 1) + c.retardMax();
       if (Math.hypot(tete.x - pos.x, tete.z - pos.z) > rayon + trainee) return;
       c.elements.forEach((m, i) => {
+        if (c.pris.has(i)) return;
         const p = c.place(i);
         const d = Math.hypot(p.x - pos.x, p.z - pos.z);
         if (d > meilleureD || Math.abs(p.y - pos.y) > 2.5) return;
@@ -1878,23 +2090,43 @@ export function createVehicules({ scene, player }) {
   function emprunter(id) {
     const [ci, i] = String(id).split(':').map(Number);
     const c = convois[ci];
-    if (!c || !c.elements[i]) return null;
+    if (!c || !c.elements[i] || c.pris.has(i)) return null;
     const p = c.place(i);
     const mesh = c.elements[i];
     const flotte = mesh.userData ? mesh.userData.flotte : null;
     const nom = mesh.userData ? mesh.userData.nomVoiture : null;
+    // LA COULEUR PART AVEC LA VOITURE (v305). Max : « quand on monte dans une
+    // voiture, elle change de couleur ». Le modèle partait avec elle depuis la
+    // v194, pas sa laque : la monture neuve reprenait la couleur cuite dans le
+    // fichier. `peinture` est la teinte que la rue lui avait posée, ou null
+    // pour une voiture restée dans sa livrée d'origine.
+    const peinture = mesh.userData ? (mesh.userData.peinture ?? null) : null;
     scene.remove(mesh);
-    c.elements.splice(i, 1);
-    // ET LE COMPTE SUIT LA PLACE RETIRÉE (v235). Depuis que les voitures
-    // naissent à la demande, `nb` dit combien de places le convoi a ; sans
-    // cette ligne il en resterait une de trop, et le convoi se fabriquerait
-    // une voiture neuve pour remplacer celle que l'enfant vient de prendre.
-    // La circulation perd une voiture, et c'est honnête : il vient de la
-    // prendre (v194).
-    c.nb = c.elements.length;
-    // Un convoi vidé de tous ses éléments n'a plus rien à animer ; on le
-    // laisse en place, `place()` rendra null et l'appelant descendra proprement.
-    return { x: p.x, y: p.y, z: p.z, cap: p.cap, flotte, nom };
+    c.elements[i] = null;
+    // LA PLACE RESTE, VIDE (v305). Depuis la v194 on RETIRAIT la place du
+    // convoi (`splice`) : toutes les voitures de derrière avançaient d'un rang,
+    // donc d'un écart — elles sautaient en avant sous les yeux de l'enfant —
+    // et le rang d'une voiture cessait d'être le même d'une tablette à
+    // l'autre. La place est marquée prise : le convoi ne la refabrique pas, ne
+    // la dessine pas et ne la fait pas céder. La circulation perd une voiture,
+    // et c'est honnête : l'enfant vient de la prendre (v194).
+    c.pris.add(i);
+    return { x: p.x, y: p.y, z: p.z, cap: p.cap, flotte, nom, peinture, origine: `${c.cle}#${i}` };
+  }
+
+  // CE QU'UN AMI A PRIS NE ROULE PLUS CHEZ NOUS NON PLUS (v305). Sa position
+  // porte l'origine de sa voiture (`clé du convoi#rang`) : on vide la même
+  // place ici, sinon on verrait la voiture deux fois — dans la rue ET sous
+  // lui.
+  function retirer(origine) {
+    const k = String(origine || '').lastIndexOf('#');
+    if (k < 0) return false;
+    const cle = origine.slice(0, k), i = Number(origine.slice(k + 1));
+    const c = convois.find((x) => x.cle === cle);
+    if (!c || !(i >= 0 && i < c.nb) || c.pris.has(i)) return false;
+    c.pris.add(i);
+    if (c.elements[i]) { scene.remove(c.elements[i]); liberer(c.elements[i]); c.elements[i] = null; }
+    return true;
   }
 
   // Où en est la place qu'on occupe. Renvoie null si le convoi a disparu —
@@ -1908,9 +2140,13 @@ export function createVehicules({ scene, player }) {
   }
 
   return {
-    metro, course, chaine, circulation, bus, update, placeProche, place, emprunter, obstacleDevant, voitureA, dansRectangle, enMarche,
+    metro, course, chaine, circulation, bus, update, placeProche, place, emprunter, retirer, obstacleDevant, voitureA, dansRectangle, enMarche,
+    adopterHorloge, horloge: () => horloge,
     // le crochet des feux tricolores (v273), branché par main.js
     brancherFeux: (f) => { feuRouge = f; },
+    // les amis de la partie (v305), branchés par main.js : où ils sont, leur cap,
+    // et s'ils conduisent
+    brancherAmis: (f) => { amis = f; },
     // pour les tests : un point du tracé, en avant de la tête du convoi, là
     // où l'on peut aller attendre son passage
     point: (ci, avance = 0) => (convois[ci] ? convois[ci].place(0, avance) : null),
@@ -1930,15 +2166,19 @@ export function createVehicules({ scene, player }) {
       vitesse: Math.round((c.freine ? c.vitesseActuelle : c.vitesse) * 10) / 10,
       distance: Math.round(c.distance),
       attente: Math.round((c.attente || 0) * 10) / 10,
+      bloque: !!c.bloque,                    // un train arrêté devant l'enfant (v304)
       // Une place encore VIDE (v235) n'est ni visible ni peinte : depuis que
       // les voitures naissent à la demande, `elements` porte des trous.
       visibles: c.elements.filter((m) => m && m.visible).length,
-      total: c.elements.length,
+      total: c.elements.length - c.pris.size,
+      cle: c.cle, pris: [...c.pris],
       // Où sont les voitures visibles, et vers où elles vont (v244) : c'est ce
       // qui permet à une sonde de dire QUI chevauche QUI — même convoi, ou deux.
       places: c.elements.map((m, i) => (m && m.visible
         ? [Math.round(m.position.x * 10) / 10, Math.round(m.position.z * 10) / 10, Math.round((m.rotation.y - Math.PI) * 100) / 100, i,
-          c.retard ? Math.round(c.retard[i]) : 0, c.attend ? c.attend[i] : 0]
+          c.retard ? Math.round(c.retard[i]) : 0, c.attend ? c.attend[i] : 0,
+          // la teinte que la rue lui a posée (v305), null pour une livrée d'origine
+          m.userData.peinture ?? null]
         : null)).filter(Boolean),
       retards: c.retard ? Array.from(c.retard).map((r) => Math.round(r)) : [],
       // L'ÉCART RÉEL ENTRE DEUX VOISINES LE LONG DU TRACÉ (v283), au centième.

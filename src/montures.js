@@ -12,7 +12,7 @@
 
 import * as THREE from 'three';
 import { MODELES_AVION } from './avions.js';
-import { construireVoitureRoute, chargerVraieVoiture, chargerVoitureFlotte, FLOTTE } from './vehicules.js';
+import { construireVoitureRoute, chargerVraieVoiture, chargerVoitureFlotte, FLOTTE, repeindre } from './vehicules.js';
 
 function box(w, h, d, color, x = 0, y = 0, z = 0) {
   const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({ color }));
@@ -344,6 +344,11 @@ function voitureNeuve(voeu) {
       ? FLOTTE[Math.floor(Math.random() * FLOTTE.length)] : null);
   g.userData.flotte = enFlotte ? enFlotte.fichier : 'voiture.glb';
   g.userData.nomVoiture = enFlotte ? enFlotte.nom : 'Bugatti Chiron';
+  // ET SA COULEUR (v305) : la teinte que la rue lui avait posée voyage avec
+  // le vœu, sinon la voiture prise dans la rue changeait de couleur sous
+  // l'enfant — et chez l'ami qui le regarde conduire.
+  const peinture = enFlotte && voeu && typeof voeu.peinture === 'number' ? voeu.peinture : null;
+  g.userData.peinture = peinture;
   const chargement = enFlotte ? chargerVoitureFlotte(enFlotte) : chargerVraieVoiture();
   if (chargement) {
     chargement.then((proto) => {
@@ -354,6 +359,7 @@ function voitureNeuve(voeu) {
       }
       if (enFlotte) g.remove(cockpit);
       const modele = proto.clone(true);
+      if (peinture != null) repeindre(modele, enFlotte.fichier, peinture);
       g.add(modele);
       // Les roues du clone, retrouvées par leur nom : le bestiaire les fera
       // tourner à la distance parcourue (animals.js). Les références ne se

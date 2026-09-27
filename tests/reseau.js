@@ -287,6 +287,167 @@ function verifier(nom, ok, detail = '') {
       (await vu(hote)).compteur === 2 && (await vu(alice)).compteur === 2
       && !(await nomsVus(hote)).includes('Nina') && !(await nomsVus(alice)).includes('Nina'),
       `hôte ${JSON.stringify(await nomsVus(hote))} · Alice ${JSON.stringify(await nomsVus(alice))}`);
+    // --- une seule rue pour tout le monde (v305) ------------------------------
+    //
+    // Max, en ligne : « les utilisateurs ne voient pas les mêmes voitures en
+    // même temps. Et quand on monte dans une voiture, elle change de couleur. »
+    // Chaque tablette faisait rouler SA circulation, depuis l'instant où SA page
+    // avait créé le convoi : deux enfants au même carrefour voyaient deux rues.
+    // On emmène Marlon et Alice au même endroit de Paris et l'on compare, convoi
+    // par convoi, où en est la tête — sur l'ancien code, n'importe où sur le
+    // tour. Le convoi se reconnaît à ce qui ne dépend que de son tracé (nom,
+    // longueur, graine) : son RANG dans la liste dépend de l'ordre où la page
+    // a approché les villes, et n'est pas le même d'une tablette à l'autre.
+    const departRue = { hote: await hote.evaluate(() => { const p = window.__game.player.pos; return { x: p.x, y: p.y, z: p.z }; }),
+      alice: await alice.evaluate(() => { const p = window.__game.player.pos; return { x: p.x, y: p.y, z: p.z }; }) };
+    const allerAParis = (page) => page.evaluate(async () => {
+      const g = window.__game;
+      const { PARIS } = await import('./src/paris.js');
+      for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+      g.animalManager.animals.length = 0;
+      g.player.pos.set(PARIS.x, g.world.terrainHeight(PARIS.x, PARIS.z) + 30, PARIS.z);
+      g.player.vel.set(0, 0, 0);
+      g.player.flying = true;
+    });
+    await allerAParis(hote); await allerAParis(alice);
+    const convoisDe = (page) => page.evaluate(() => {
+      const out = {};
+      for (const c of (window.__vehicules.etat() || [])) {
+        if (!c.routier || c.nom !== 'voiture') continue;
+        out[`${c.nom}|${c.longueur}|${c.graine}`] = { d: c.distance, L: c.longueur };
+      }
+      return out;
+    });
+    await jusqua(async () => {
+      const a = await convoisDe(hote), b = await convoisDe(alice);
+      return Object.keys(a).filter((k) => b[k]).length >= 3;
+    }, 60000);
+    // l'hôte donne son heure avec celle du ciel, toutes les trois secondes
+    await dormir(7000);
+    const ecartsRue = [];
+    for (let k = 0; k < 5; k++) {
+      const a = await convoisDe(hote), b = await convoisDe(alice);
+      for (const cle of Object.keys(a)) {
+        if (!b[cle]) continue;
+        const L = a[cle].L || 1;
+        const e = Math.abs((((a[cle].d - b[cle].d) % L) + L) % L);
+        ecartsRue.push(Math.min(e, L - e));
+      }
+      await dormir(600);
+    }
+    ecartsRue.sort((x, y) => x - y);
+    const medianeRue = ecartsRue.length ? ecartsRue[ecartsRue.length >> 1] : null;
+    verifier('deux tablettes d\'une partie voient la même circulation, au même endroit',
+      medianeRue !== null && medianeRue < 8,
+      `écart médian ${medianeRue} bloc(s) le long du tour, sur ${ecartsRue.length} relevé(s) · pire ${ecartsRue[ecartsRue.length - 1]}`);
+
+    // Marlon prend le volant d'une voiture de la rue — celle que la rue avait
+    // repeinte, pour que la couleur ait quelque chose à perdre.
+    const prise = await hote.evaluate(async () => {
+      const g = window.__game, v = window.__vehicules; const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      g.player.flying = false;
+      for (let essai = 0; essai < 40; essai++) {
+        for (const c of v.etat()) {
+          if (!c.routier || c.nom !== 'voiture') continue;
+          for (const pl of c.places) {
+            const peinture = pl[6];
+            if (peinture === null) continue;              // livrée d'origine : rien à perdre
+            g.player.pos.set(pl[0] + 0.5, g.world.terrainHeight(pl[0], pl[1]) + 1.2, pl[1]);
+            g.player.vel.set(0, 0, 0);
+            await dodo(150);
+            document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyM' }));
+            await dodo(1500);
+            const a = g.fun.montureConduite && g.fun.montureConduite();
+            if (!a || !a.mesh) continue;
+            const couleurs = [];
+            a.mesh.traverse((o) => { if (o.isMesh && o.material && o.material.color) couleurs.push(o.material.color.getHex()); });
+            return { auVolant: true, rue: peinture === undefined ? null : peinture, monture: a.mesh.userData.peinture ?? null,
+              peinte: peinture !== undefined && couleurs.includes(peinture), flotte: a.mesh.userData.flotte,
+              x: a.pos.x, z: a.pos.z, cap: a.yaw };
+          }
+        }
+        await dodo(500);
+      }
+      return { auVolant: false };
+    });
+    const marlonChezAlice2 = await idDe(alice, 'Marlon');
+    const vueAlice = () => alice.evaluate((id) => {
+      const rp = window.__game.remotePlayers.get(id);
+      if (!rp || !rp.vehicule) return null;
+      const couleurs = [];
+      rp.vehicule.mesh.traverse((o) => { if (o.isMesh && o.material && o.material.color) couleurs.push(o.material.color.getHex()); });
+      return { peinture: rp.vehicule.mesh.userData.peinture ?? null, couleurs };
+    }, marlonChezAlice2);
+    await jusqua(async () => { const v = await vueAlice(); return !!v && v.couleurs.includes(prise.rue); }, 15000);
+    const chezAlice = await vueAlice();
+    verifier('la voiture qu\'on prend dans la rue garde sa couleur, chez soi et chez l\'ami',
+      prise.auVolant && prise.rue !== null && prise.peinte && prise.monture === prise.rue
+      && !!chezAlice && chezAlice.couleurs.includes(prise.rue),
+      JSON.stringify({ prise, chezAlice: chezAlice && { peinture: chezAlice.peinture, laTeinte: chezAlice.couleurs.includes(prise.rue) } }));
+
+    // Et chez Alice, la rue ne passe plus AU TRAVERS de la voiture de Marlon,
+    // garée où il l'a prise : la voiture prise quitte aussi SA circulation, et
+    // les suivantes attendent derrière lui comme chez lui. On compte, douze
+    // secondes, les voitures de la rue d'Alice dont le rectangle touche celui de
+    // la voiture de Marlon — et l'on vérifie qu'il en est bien venu une.
+    const traversee = await alice.evaluate(async (m) => {
+      const v = window.__vehicules; const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      const rect = (x, z, cap, dl = 2.2, dw = 1.13) => {
+        const ux = Math.sin(cap), uz = Math.cos(cap), lx = uz, lz = -ux;
+        return [[x + ux * dl + lx * dw, z + uz * dl + lz * dw], [x + ux * dl - lx * dw, z + uz * dl - lz * dw],
+          [x - ux * dl - lx * dw, z - uz * dl - lz * dw], [x - ux * dl + lx * dw, z - uz * dl + lz * dw]];
+      };
+      const separe = (A, B) => {
+        for (const P of [A, B]) for (let k = 0; k < 4; k++) {
+          const a = P[k], b = P[(k + 1) % 4], nx = b[1] - a[1], nz = a[0] - b[0];
+          const pa = A.map((p) => p[0] * nx + p[1] * nz), pb = B.map((p) => p[0] * nx + p[1] * nz);
+          if (Math.max(...pa) < Math.min(...pb) || Math.max(...pb) < Math.min(...pa)) return true;
+        }
+        return false;
+      };
+      const R = rect(m.x, m.z, m.cap + Math.PI);
+      let dedans = 0, plusPres = Infinity, releves = 0;
+      const t0 = performance.now();
+      while (performance.now() - t0 < 12000) {
+        for (const c of v.etat()) {
+          if (!c.routier) continue;
+          for (const pl of c.places) {
+            const d = Math.hypot(pl[0] - m.x, pl[1] - m.z);
+            if (d < plusPres) plusPres = d;
+            if (d < 6 && !separe(R, rect(pl[0], pl[1], pl[2]))) dedans++;
+          }
+        }
+        releves++;
+        await dodo(250);
+      }
+      return { dedans, plusPres: +plusPres.toFixed(1), releves };
+    }, prise);
+    verifier('et chez l\'ami, la circulation ne traverse plus la voiture de l\'enfant',
+      prise.auVolant && traversee.dedans === 0 && traversee.plusPres < 12,
+      JSON.stringify(traversee));
+
+    // Max : « en multijoueur, la position sur la carte n'est pas toujours à
+    // jour ». Un ami au volant est ASSIS dans le maillage de sa voiture (v253) :
+    // la carte lisait la position de ce maillage — celle du siège, à un bloc de
+    // zéro — et le montrait figé près du point d'apparition tant qu'il
+    // conduisait. Marlon est au volant : le point de la carte d'Alice doit être
+    // là où Marlon est vraiment.
+    const pointAmi = await alice.evaluate((id) => {
+      const g = window.__game, rp = g.remotePlayers.get(id);
+      const pt = window.__carte && window.__carte.autres ? window.__carte.autres().find((a) => a.nom === 'Marlon') : null;
+      if (!rp || !pt) return { absent: true };
+      return { carte: [Math.round(pt.x), Math.round(pt.z)], vrai: [Math.round(rp.pos.x), Math.round(rp.pos.z)],
+        ecart: +Math.hypot(pt.x - rp.pos.x, pt.z - rp.pos.z).toFixed(1), assis: !!(rp.vehicule && rp.mesh.parent === rp.vehicule.mesh) };
+    }, marlonChezAlice2);
+    const marlonVrai = await hote.evaluate(() => { const p = window.__game.player.pos; return [Math.round(p.x), Math.round(p.z)]; });
+    verifier('sur la carte de l\'ami, l\'enfant au volant est là où il est vraiment',
+      !pointAmi.absent && pointAmi.assis && pointAmi.ecart < 1
+      && Math.hypot(pointAmi.carte[0] - marlonVrai[0], pointAmi.carte[1] - marlonVrai[1]) < 4,
+      JSON.stringify({ ...pointAmi, marlonChezLui: marlonVrai }));
+    await hote.evaluate(() => { const g = window.__game; if (g.fun.montureConduite && g.fun.montureConduite()) document.getElementById('ride-btn').click(); });
+    for (const [page, p] of [[hote, departRue.hote], [alice, departRue.alice]]) {
+      await page.evaluate((p) => { const g = window.__game; g.player.flying = false; g.player.pos.set(p.x, p.y, p.z); g.player.vel.set(0, 0, 0); }, p);
+    }
 
     // --- l'enfant passe à une autre application, puis revient -----------------
     // Le cas le plus courant, et celui qui coupait la partie : les minuteurs
