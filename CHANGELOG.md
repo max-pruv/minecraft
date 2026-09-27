@@ -66,8 +66,9 @@ vrais rails, pas une marche de plus d'un bloc », « les quatre files dépassent
 du ballast, sans un trou » (lues dans les rubans du mailleur), « le quai à
 côté des voies, jamais dessus » (le talus cède au quai), « les dix-huit gares
 ont leur quai ». Les vingt-deux essais node du kit passent tels quels ;
-captures avant/après aux mêmes coordonnées (voie, ciel, côté, tranchée,
-remblai, viaduc, gare de Lyon) dans `docs/monde-fidele/captures/` ; le coût
+captures avant/après aux mêmes coordonnées, cap, heure et réglages (la voie,
+la voie de côté, la tranchée, le remblai, la gare de Lyon, l'entrée du pont de
+l'A1) dans `docs/monde-fidele/captures/v302-{avant,apres}-*.png` ; le coût
 du mailleur, quatre morceaux de la voie Paris–Lyon en ordre alterné sous
 node : médiane 5,7 à 6,6 ms contre 5,4 à 7,9 sur `origin/main`, dans le bruit
 (une quarantaine de prismes par morceau de voie).
