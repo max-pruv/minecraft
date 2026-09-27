@@ -456,17 +456,23 @@ function verifier(nom, ok, detail = '') {
           }
           return false;
         };
-        // la voiture de Marlon telle qu'Alice la voit : sa position réseau
-        await dodo(800);
+        // la voiture de Marlon telle qu'Alice la voit : sa position RÉSEAU, qu'on
+        // attend ARRIVÉE là où Marlon s'est posé. Le premier jet figeait le
+        // rectangle 800 ms après, sur une position encore en route : une
+        // voiture à 0,8 bloc de Marlon ne « touchait » donc jamais ce rectangle
+        // resté en arrière, sur l'ancien code comme sur le neuf.
         const rp = window.__game.remotePlayers.get(id);
         if (!rp) return { absent: true };
-        const R = rect(rp.pos.x, rp.pos.z, m.cap);
+        const t00 = performance.now();
+        while (performance.now() - t00 < 8000 && Math.hypot(rp.pos.x - m.x, rp.pos.z - m.z) > 1.5) await dodo(100);
+        const arrive = +Math.hypot(rp.pos.x - m.x, rp.pos.z - m.z).toFixed(1);
         // qui chevauche AU PREMIER RELEVÉ ne rend aucun verdict (v279) : une
         // voiture déjà dedans ne peut rien dire, ni dans un sens ni dans l'autre
         const deja = new Set();
         let dedans = 0, plusPres = Infinity, releves = 0;
         const t0 = performance.now();
         while (performance.now() - t0 < 12000) {
+          const R = rect(rp.pos.x, rp.pos.z, m.cap);
           for (const c of v.etat()) {
             if (!c.routier) continue;
             for (const pl of c.places) {
@@ -482,7 +488,7 @@ function verifier(nom, ok, detail = '') {
           releves++;
           await dodo(250);
         }
-        return { dedans, plusPres: +plusPres.toFixed(1), releves, deja: deja.size };
+        return { dedans, plusPres: +plusPres.toFixed(1), releves, deja: deja.size, arrive };
       }, { id: idMarlon2, m: cible });
       traversee = { ...r, essais: essai + 1 };
       if (r.dedans > 0 || r.plusPres < 3) break;     // une voiture est venue : la situation a eu lieu
