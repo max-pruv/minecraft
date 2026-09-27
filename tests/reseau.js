@@ -427,44 +427,35 @@ function verifier(nom, ok, detail = '') {
     const idMarlon2 = marlonChezAlice2;
     let traversee = { dedans: 0, plusPres: Infinity, releves: 0, essais: 0, suivie: null };
     for (let essai = 0; essai < 5; essai++) {
-      // SUR LE TRAJET, PAS « DOUZE BLOCS DEVANT » EN LIGNE DROITE : sur une rue
-      // qui tourne, ce point n'est pas sur le tracé, et l'ancien code rendait
-      // VERT (la voiture est passée à 4,4 blocs sans jamais toucher). Marlon se
-      // pose là où est la voiture de DEVANT dans le même convoi : c'est un
-      // point du tracé que la voiture d'après va forcément atteindre. Celle de
-      // devant, qui le chevauche au premier relevé, ne compte pas (v279).
-      // CINQ BLOCS DEVANT LE NEZ D'UNE VOITURE QUI ROULE. Une voiture fait 4,4
-      // blocs : posé là, Marlon est à soixante centièmes de son pare-chocs.
-      // Sur l'ancien code elle le traverse forcément dès qu'elle avance ; sur
-      // le neuf elle reste derrière, et c'est son RETARD dans le convoi qui le
-      // dit (elle voulait avancer et ne l'a pas fait). Les jets d'avant
-      // attendaient qu'une voiture « vienne » : elle ne venait pas, ou
-      // attendait autre chose — un feu, la voiture de devant — et le témoin
-      // était vert sur l'ancien code.
-      const cible = await alice.evaluate((k) => {
-        const v = window.__vehicules;
-        const toutes = [], cands = [];
-        for (const c of v.etat()) {
-          if (!c.routier) continue;
-          for (const pl of c.places) {
-            toutes.push(pl);
-            if (c.nom === 'voiture' && !pl[5]) cands.push({ pl, qui: `${c.cle}#${pl[3]}` });
-          }
+      // L'ORDRE COMPTE, ET C'EST CE QUI A COÛTÉ QUATRE JETS. On choisissait une
+      // voiture, on posait Marlon devant elle, puis on attendait qu'Alice le
+      // voie arrivé (une à deux secondes de réseau) : pendant ce temps la
+      // voiture l'avait rejoint, et au premier relevé elle était « déjà
+      // dedans », donc exclue du compte — vert ou rouge au hasard, des deux
+      // côtés. Désormais Marlon se pose d'abord sur le tracé (là où est une
+      // voiture de la rue, qui repart), et c'est UNE FOIS QU'ALICE LE VOIT
+      // ARRIVÉ qu'on choisit la voiture qui arrive derrière lui : dans sa voie,
+      // entre 4,5 et 14 blocs de son pare-chocs. Sur l'ancien code elle le
+      // traverse ; sur le neuf elle reste derrière, et son RETARD dans le
+      // convoi grandit. Quarante secondes : sur ce banc l'ancien code fait
+      // rouler ses voitures au rythme des images (`dt` borné), donc lentement.
+      const pose = await alice.evaluate((k) => {
+        const cands = [];
+        for (const c of window.__vehicules.etat()) {
+          if (!c.routier || c.nom !== 'voiture') continue;
+          for (const pl of c.places) if (!pl[5]) cands.push(pl);
         }
-        for (let j = 0; j < cands.length; j++) {
-          const { pl, qui } = cands[(k * 5 + j) % cands.length];
-          const x = pl[0] + 5 * Math.sin(pl[2]), z = pl[1] + 5 * Math.cos(pl[2]);
-          if (toutes.every((q) => q === pl || Math.hypot(q[0] - x, q[1] - z) > 6)) return { x, z, cap: pl[2], qui, retard0: pl[4] };
-        }
-        return null;
+        if (!cands.length) return null;
+        const pl = cands[(k * 7) % cands.length];
+        return { x: pl[0], z: pl[1], cap: pl[2] };
       }, essai);
-      if (!cible) { await dormir(1000); continue; }
+      if (!pose) { await dormir(1000); continue; }
       await hote.evaluate((c) => {
         const g = window.__game;
         g.player.pos.set(c.x, g.world.terrainHeight(Math.floor(c.x), Math.floor(c.z)) + 1.2, c.z);
         g.player.vel.set(0, 0, 0);
         g.player.yaw = c.cap + Math.PI;
-      }, cible);
+      }, pose);
       const r = await alice.evaluate(async ({ id, m }) => {
         const v = window.__vehicules; const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
         const rect = (x, z, cap, dl = 2.2, dw = 1.13) => {
@@ -480,41 +471,44 @@ function verifier(nom, ok, detail = '') {
           }
           return false;
         };
-        // la voiture de Marlon telle qu'Alice la voit : sa position RÉSEAU, qu'on
-        // attend ARRIVÉE là où Marlon s'est posé. Le premier jet figeait le
-        // rectangle 800 ms après, sur une position encore en route : une
-        // voiture à 0,8 bloc de Marlon ne « touchait » donc jamais ce rectangle
-        // resté en arrière, sur l'ancien code comme sur le neuf.
         const rp = window.__game.remotePlayers.get(id);
         if (!rp) return { absent: true };
+        // Marlon tel qu'Alice le voit : sa position RÉSEAU, attendue ARRIVÉE
         const t00 = performance.now();
         while (performance.now() - t00 < 8000 && Math.hypot(rp.pos.x - m.x, rp.pos.z - m.z) > 1.5) await dodo(100);
         const arrive = +Math.hypot(rp.pos.x - m.x, rp.pos.z - m.z).toFixed(1);
-        // qui chevauche AU PREMIER RELEVÉ ne rend aucun verdict (v279) : une
-        // voiture déjà dedans ne peut rien dire, ni dans un sens ni dans l'autre
+        // la voiture qui arrive derrière lui, dans sa voie
+        let suivie = null;
+        const t01 = performance.now();
+        while (!suivie && performance.now() - t01 < 15000) {
+          for (const c of v.etat()) {
+            if (!c.routier || c.nom !== 'voiture') continue;
+            for (const pl of c.places) {
+              const dx = rp.pos.x - pl[0], dz = rp.pos.z - pl[1];
+              const devant = dx * Math.sin(pl[2]) + dz * Math.cos(pl[2]);
+              const cote = Math.abs(dx * Math.cos(pl[2]) - dz * Math.sin(pl[2]));
+              if (devant > 4.5 && devant < 14 && cote < 1.5 && (!suivie || devant < suivie.devant)) {
+                suivie = { qui: `${c.cle}#${pl[3]}`, devant: +devant.toFixed(1), retard0: pl[4], retard: 0, dMin: Infinity, vue: 0 };
+              }
+            }
+          }
+          if (!suivie) await dodo(200);
+        }
+        if (!suivie) return { arrive, personne: true };
         const deja = new Set();
         let dedans = 0, plusPres = Infinity, releves = 0;
-        // LA VOITURE DE DERRIÈRE, SUIVIE PAR SON NOM : sur le code neuf elle
-        // s'arrête DEVANT Marlon (à neuf blocs, mesuré : elle regarde huit
-        // blocs de son tracé), sur l'ancien elle le traverse. Le verdict lit
-        // donc « elle est venue » par l'un OU l'autre : arrivée tout près, ou
-        // arrêtée en attente à moins de douze blocs.
-        let suivie = { dMin: Infinity, vue: 0, retard: null };
         const t0 = performance.now();
-        // vingt-cinq secondes : plus qu'un cycle entier de feu (vingt-deux),
-        // pour qu'une voiture arrêtée au rouge ait le temps de repartir
-        while (performance.now() - t0 < 25000) {
+        while (performance.now() - t0 < 40000) {
           const R = rect(rp.pos.x, rp.pos.z, m.cap);
-          const etat = v.etat();
-          for (const c of etat) {
+          for (const c of v.etat()) {
             if (!c.routier) continue;
             for (const pl of c.places) {
               const qui = `${c.cle}#${pl[3]}`;
               const d = Math.hypot(pl[0] - rp.pos.x, pl[1] - rp.pos.z);
-              if (qui === m.qui) {
+              if (qui === suivie.qui) {
                 if (d < suivie.dMin) suivie.dMin = +d.toFixed(1);
                 suivie.vue++;
-                suivie.retard = pl[4] - (m.retard0 || 0);
+                suivie.retard = pl[4] - (suivie.retard0 || 0);
               }
               const touche = d < 6 && !separe(R, rect(pl[0], pl[1], pl[2]));
               if (releves === 0) { if (touche) deja.add(qui); continue; }
@@ -524,14 +518,15 @@ function verifier(nom, ok, detail = '') {
             }
           }
           releves++;
-          if (dedans > 0) break;    // la voiture est passée au travers : le verdict est acquis
+          if (dedans > 0) break;                                   // traversée : verdict acquis
+          if (suivie.retard > 6 && performance.now() - t0 > 10000) break;  // retenue : verdict acquis
           await dodo(250);
         }
         return { dedans, plusPres: +plusPres.toFixed(1), releves, deja: deja.size, arrive, suivie,
           ms: Math.round(performance.now() - t0) };
-      }, { id: idMarlon2, m: cible });
+      }, { id: idMarlon2, m: pose });
       traversee = { ...r, essais: essai + 1 };
-      if (r.dedans > 0 || (r.suivie && r.suivie.vue > 20)) break;     // la voiture suivie est restée en vue : la situation a eu lieu
+      if (r.dedans > 0 || (r.suivie && r.suivie.vue > 20)) break;     // la situation a eu lieu
     }
     verifier('et chez l\'ami, la circulation ne traverse plus la voiture de l\'enfant',
       prise.auVolant && traversee.dedans === 0 && !!traversee.suivie
