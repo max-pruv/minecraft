@@ -810,6 +810,18 @@ chaussée au ras des flots, pas un viaduc sur piles ; au-delà de treize blocs
 d'écart le talus s'arrête et la paroi reste raide ; la gare reste en voxel ;
 les textures du kit ne sont pas branchées ; les rails n'arrêtent rien.
 
+**ET LE PONT DE L'A1 AVAIT UN TROU À CHAQUE BOUT (v302), vu par Max et par
+aucun témoin.** Un ruban (tablier) commence à un pas d'abscisse DROIT ; une
+route oblique finit ses cubes en ESCALIER ; entre les deux, des triangles
+ouverts sur la rivière — 464 points de chaussée sur 6 500 aux deux joints. Le
+contact lisait `tablierEn` et n'avait pas de trou : seul le dessin en avait,
+et les témoins de la v300 ne regardaient que le contact (« le pont se
+franchit sur son tablier »). **Là où une géométrie continue rencontre des
+cubes sur un axe oblique, elle DÉBORDE sur les cubes** (`CULEE`, deux pas, un
+centième au-dessus pour ne pas se disputer le plan) — et le témoin
+échantillonne ce que l'on VOIT, point par point, pas ce qui porte la voiture.
+La même règle vaudra pour le rail le jour où il aura ses viaducs.
+
 **Et le dernier kit de Max vise le monde, pas Paris** (« le dernier zip
 adresse le monde pas Paris seulement ») : la v301 n'avait traité que Paris.
 Le kit v4 place les rails, les raccords ville/campagne et les routes

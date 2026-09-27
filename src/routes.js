@@ -254,6 +254,13 @@ function ouvrageA(seg, s) {
   return p.ouvrage[Math.max(0, Math.min(p.n, Math.round(s / p.pas)))] === 1;
 }
 
+// Un tablier à moins de `CULEE` pas de cette abscisse (sans en être un).
+export const CULEE = 2;
+function ouvrageProche(seg, s) {
+  for (let k = 1; k <= CULEE; k++) if (ouvrageA(seg, s - k) || ouvrageA(seg, s + k)) return true;
+  return false;
+}
+
 // La section à l'abscisse `s` : pleine en rase campagne, resserrée sur les
 // raccords de ville.
 export function largeurA(seg, s) {
@@ -422,9 +429,22 @@ export function rubansDans(x0, z0, x1, z1) {
       if (a.x < x0 || a.x >= x1 || a.z < z0 || a.z >= z1) continue;
       const L = largeurA(seg, s), ya = coteA(seg, s), yb = coteA(seg, s + 1);
       const base = { seg, s, ax: a.x, az: a.z, bx: b.x, bz: b.z, ya, yb, fx: a.fx, fz: a.fz };
-      if (ouvrageA(seg, s)) {
-        out.push({ ...base, genre: 'tablier', o0: -L.demiEmprise, o1: L.demiEmprise, dy: 0 });
-      } else {
+      const pont = ouvrageA(seg, s);
+      // LE TABLIER DÉBORDE SUR LA ROUTE À CHAQUE BOUT (v302). Max, capture
+      // d'iPad : « trou dans l'autoroute ». La route est OBLIQUE sur la
+      // grille : la dernière colonne de chaussée s'arrête en escalier, le
+      // tablier commence à un pas d'abscisse droit, et entre les deux restaient
+      // des triangles ouverts sur la rivière — mesuré, 464 points de chaussée
+      // sur 6 500 aux deux joints du pont sans rien dessous. Le tablier
+      // commence donc `CULEE` pas plus tôt et finit `CULEE` pas plus tard,
+      // posé un centième au-dessus de la chaussée qu'il recouvre (sinon les
+      // deux faces se disputeraient le même plan).
+      const culee = !pont && ouvrageProche(seg, s);
+      if (pont || culee) {
+        const lift = culee ? 0.01 : 0;
+        out.push({ ...base, ya: ya + lift, yb: yb + lift, genre: 'tablier', o0: -L.demiEmprise, o1: L.demiEmprise, dy: 0 });
+      }
+      if (!pont) {
         // le bord de chaque chaussée, continu ; entre les deux voies d'un sens, pointillé (3 sur 6)
         for (const o of [-(L.terrePlein + L.demiChaussee), L.terrePlein + L.demiChaussee]) {
           out.push({ ...base, genre: 'ligne', o0: o - 0.08, o1: o + 0.08, dy: 0.02 });

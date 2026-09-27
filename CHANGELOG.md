@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v302 — Le rail continu : les neuf lignes de train roulent sur un profil flottant
+## v302 — Le rail continu : les neuf lignes de train roulent sur un profil flottant, et le pont de l'A1 n'a plus de trou
 
 **Pourquoi.** Quatrième livraison du programme « monde fidèle », et la
 première du kit transport de Max (`transport-v298`, priorité 1 : « remplace
@@ -71,6 +71,20 @@ remblai, viaduc, gare de Lyon) dans `docs/monde-fidele/captures/` ; le coût
 du mailleur, quatre morceaux de la voie Paris–Lyon en ordre alterné sous
 node : médiane 5,7 à 6,6 ms contre 5,4 à 7,9 sur `origin/main`, dans le bruit
 (une quarantaine de prismes par morceau de voie).
+
+**Et le trou dans l'autoroute (second sujet de la livraison).** Max, capture
+d'iPad à l'entrée du pont de l'A1 : « trou dans l'autoroute ». **Pourquoi** :
+la route est OBLIQUE sur la grille ; la dernière colonne de chaussée finissait
+en escalier, le tablier du pont (un ruban, v300) commençait à un pas
+d'abscisse droit, et entre les deux restaient des triangles ouverts sur la
+rivière — mesuré sous node, 464 points de chaussée sur 6 500 aux deux joints
+du pont sans rien dessous. **Ce que ça change** : le tablier déborde de deux
+pas sur la route à chaque bout (`CULEE`, `routes.js`), un centième au-dessus
+de la chaussée qu'il recouvre ; le contact n'avait pas de trou (il lit
+`tablierEn`), seul le dessin en avait. **Ce qui le prouve** : un témoin de
+`plafond.js`, « la chaussée ne s'ouvre pas au joint du pont », qui
+échantillonne la chaussée tous les dixièmes de bloc de part et d'autre des
+deux bouts — 464 trous sur `origin/main`, zéro ici.
 
 ## v301 — Paris prend de la hauteur : un étage fait trois blocs
 

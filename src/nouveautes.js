@@ -13,6 +13,7 @@ export const NOUVEAUTES = [
       'Les remblais ont des talus d\'herbe',
       'Le train ne passe plus sous le sol',
       'Neuf lignes, dix-huit gares',
+      'Plus de trou au pont de l\'autoroute',
     ],
   },
   {
