@@ -919,6 +919,19 @@ temps ; quand on monte dans une voiture, elle change de couleur ». Cinq règles
   bloc de zéro — Max : « la position sur la carte n'est pas toujours à jour ».
   La position vraie est `rp.pos`, et c'est la seule qu'on lit hors du rendu.
   Quand on reparente un objet, on cherche le jour même qui lisait sa position.
+- **UN TÉMOIN À DEUX TABLETTES LIT LES DEUX AU MÊME INSTANT, ET IL PROVOQUE
+  LA RENCONTRE.** Trois des quatre témoins étaient VERTS sur l'ancien code au
+  premier jet. L'écart de rue lisait Marlon puis Alice, deux `evaluate` à la
+  suite, sur un banc qui rend deux images par seconde : il mesurait la cadence
+  (on horodate désormais chaque relevé et l'on ramène à la même heure). Celui
+  de la traversée a eu SIX versions : posé en ligne droite, Marlon ne croisait
+  personne ; posé devant une voiture, elle était déjà dedans. La sixième pose
+  Marlon SUR la voie d'une voiture qui roule, attend qu'Alice le voie arrivé,
+  et suit la voiture d'après — 0 s de retard sur l'ancien code, 19 s sur le
+  neuf. **Et un compte qui vaut 1 des deux côtés sort du verdict et reste
+  dans le message** : une autre voiture entre encore une fois dans celle de
+  l'ami, sur les deux codes. Un témoin annonce ce qu'il mesure ; ce qu'il ne
+  prouve pas va dans `TASKS.md`, avec ses pistes.
 
 ## Le son robotique de la visio (v304) — le contexte audio suit le mode de la tablette
 

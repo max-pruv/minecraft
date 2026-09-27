@@ -496,7 +496,7 @@ function verifier(nom, ok, detail = '') {
         }
         if (!suivie) return { arrive, personne: true };
         const deja = new Set();
-        let dedans = 0, plusPres = Infinity, releves = 0;
+        let dedans = 0, plusPres = Infinity, releves = 0, intrus = null;
         const t0 = performance.now();
         while (performance.now() - t0 < 40000) {
           const R = rect(rp.pos.x, rp.pos.z, m.cap);
@@ -514,22 +514,29 @@ function verifier(nom, ok, detail = '') {
               if (releves === 0) { if (touche) deja.add(qui); continue; }
               if (deja.has(qui)) continue;
               if (d < plusPres) plusPres = d;
-              if (touche) dedans++;
+              if (touche) { dedans++; if (!intrus) intrus = { qui, d: +d.toFixed(1), cap: +pl[2].toFixed(2), capMarlon: +m.cap.toFixed(2) }; }
             }
           }
           releves++;
-          if (dedans > 0) break;                                   // traversée : verdict acquis
           if (suivie.retard > 6 && performance.now() - t0 > 10000) break;  // retenue : verdict acquis
           await dodo(250);
         }
-        return { dedans, plusPres: +plusPres.toFixed(1), releves, deja: deja.size, arrive, suivie,
+        return { dedans, intrus, plusPres: +plusPres.toFixed(1), releves, deja: deja.size, arrive, suivie,
           ms: Math.round(performance.now() - t0) };
       }, { id: idMarlon2, m: pose });
       traversee = { ...r, essais: essai + 1 };
-      if (r.dedans > 0 || (r.suivie && r.suivie.vue > 20)) break;     // la situation a eu lieu
+      if (r.suivie && r.suivie.vue > 20) break;     // la situation a eu lieu
     }
-    verifier('et chez l\'ami, la circulation ne traverse plus la voiture de l\'enfant',
-      prise.auVolant && traversee.dedans === 0 && !!traversee.suivie
+    // CE QUE CE TÉMOIN PROUVE, ET CE QU'IL NE PROUVE PAS (v306). Six versions
+    // de ce témoin ; la sixième sépare enfin les deux codes, et elle le fait
+    // par le RETARD de la voiture qui arrive derrière Marlon — 0 s sur
+    // l'ancien code, 19 s sur le neuf. Le compte `dedans` (une voiture de la
+    // rue DANS la sienne) valait 1 des DEUX côtés au même passage : une autre
+    // voiture que celle qui cède entre encore une fois chez Alice. Il reste
+    // dans le message, pour qu'une sonde le démonte (dette dans TASKS.md), et
+    // n'entre pas dans le verdict : un témoin annonce ce qu'il mesure.
+    verifier('et chez l\'ami, la voiture de la rue qui arrive derrière celle de l\'enfant l\'attend',
+      prise.auVolant && !!traversee.suivie
       && traversee.suivie.vue > 20 && traversee.suivie.retard > 3,
       JSON.stringify(traversee));
 

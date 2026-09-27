@@ -135,12 +135,26 @@ voitures qui la suivaient ne font plus un bond en avant (sa place reste, vide).
 Et chaque ami entre dans la liste de ceux à qui la rue cède le passage — à
 pied ou au volant —, comme l'enfant depuis la v245.
 
-**Ce qui le prouve.** Trois témoins de `reseau.js`, Marlon et Alice emmenés au
-même endroit de Paris : la tête de chaque convoi est au même point du tour sur
-les deux tablettes (écart médian sous huit blocs) ; la voiture prise dans la
-rue garde sa teinte, chez Marlon et chez Alice ; et chez Alice, aucune voiture
-de la rue ne passe au travers de celle de Marlon, garée où il l'a prise, alors
-qu'il en vient. Rouges tous les trois sur l'ancien code.
+**Ce qui le prouve.** Quatre témoins de `reseau.js`, Marlon et Alice emmenés à
+Paris, chacun rejoué sur l'ancien code dans le même passage de banc :
+
+| témoin | ancien code | code neuf |
+| --- | --- | --- |
+| les deux tablettes voient la même rue (écart médian, lu au même instant) | 37 blocs | 5 blocs |
+| la voiture prise garde sa couleur, chez soi et chez l'ami | teinte perdue | gardée |
+| chez l'ami, la voiture qui arrive derrière celle de l'enfant l'attend | 0 s | 19 s |
+| sur la carte de l'ami, l'enfant au volant est là où il est | 300 blocs d'écart | sous un bloc |
+
+Trois témoins ont d'abord été VERTS sur l'ancien code, et il a fallu six
+versions du troisième pour qu'il sépare les deux : lu en deux temps sur deux
+pages, l'écart de rue mesurait la cadence du banc ; posé sur une ligne droite,
+Marlon ne croisait personne. On lit désormais les deux tablettes au même
+instant, et l'on se pose sur la voie d'une voiture qui roule.
+
+**Et ce que le témoin ne prouve pas, il le dit.** Sur les deux codes, une AUTRE
+voiture que celle qui cède est entrée une fois dans celle de Marlon chez Alice.
+Ce n'est pas dans le verdict, c'est dans le message et dans `TASKS.md`, avec
+trois pistes à séparer par une sonde.
 
 **Ce qui reste, et qui se dit.** Une tablette cède le passage à ce qu'ELLE voit
 de l'enfant et de ses amis : à un instant près, deux tablettes ne font pas
