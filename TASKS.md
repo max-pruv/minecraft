@@ -20,6 +20,25 @@
   (le compte des colonnes protégées se lit dans `world.colonnesParisAvant`).
   (5) Un bloc de l'ancienne version reçu du nuage APRÈS que son morceau a été
   engendré ne protège sa colonne qu'au prochain chargement.
+- [ ] **LE PORTAIL DE LA v303 : TROIS ROUGES DANS `monte.js` ET `manhattan.js`,
+  AUCUN ATTEIGNABLE PAR LA LIVRAISON.** Tout ce que la v303 change dans le code
+  du jeu est borné au disque de Paris (`dansParisAvant`, `PARIS_V302`, le choix
+  de trame par colonne) ; les trois rouges se jouent ailleurs — preuve
+  STRUCTURELLE (v291). (1) `manhattan.js:282`, le délai déjà démonté 3/3 des
+  deux côtés (v269). (2) « l'écran ne se fige pas en arrivant sur une ville » :
+  23,5 % et 28,2 % aux deux portails, contre 36 à 44 % aux mesures d'avant — la
+  dette de l'arrivée en ville. (3) NEUF : « la voiture de l'enfant freine devant
+  un piéton, qui s'écarte, et elle repart sans lui passer au travers », à ROME —
+  vert au portail 2 (`candidats 27, traverses 0, avance 19,3`), rouge au
+  portail 3 (`candidats 400, traverses 18, ecartes 256, avance 13,7`), code du
+  jeu identique hors Paris entre les deux. C'est une INTERMITTENCE, et elle
+  mérite d'être démontée pour elle-même : dix-huit relevés où un passant est
+  DANS la voiture de l'enfant, c'est la panne que Max a signalée en v259. Le
+  couloir a été trouvé après quatre cents candidats (contre vingt-sept) — un
+  couloir inhabituel ; la sonde à écrire imprime le passant qui traverse, son
+  état (`ecart`, `repos`), la vitesse de la voiture à ce moment, et rejoue le
+  même couloir dix fois pour avoir la DISTRIBUTION (v269). Et le tirage des
+  passants sur la chaussée (0,24 pour une barre à 0,2) est la dette de la v291.
 - [ ] **LE RAIL CONTINU (v302) : CE QUI RESTE, DÉCLARÉ.** (1) La pente du
   profil reste un tiers : les candidats du kit à 2,5 %
   (`transport-v298/examples/rail-profile-candidates.json`) creusent jusqu'à
