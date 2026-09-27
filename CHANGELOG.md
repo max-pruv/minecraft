@@ -20,6 +20,52 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v303 — Les rues de Paris suivent la règle du kit : deux voies partout, quatre sur les grands boulevards
+
+**Pourquoi.** Max : « Les rues de Paris sont encore beaucoup trop étroites. Je
+comprends pas. T'as pas appliqué le code à la règle. » Il avait raison. Le kit
+livre `road-section.mjs`, qui CALCULE la section d'une rue à partir de son
+type et du véhicule qui y roule, à un bloc pour un mètre ; la v294 avait choisi
+ses largeurs à la main pour qu'une seule voiture passe — 3,6 blocs de chaussée
+et des trottoirs de 1,8 dans la ville d'Haussmann. Depuis que la v301 a donné
+trois blocs à un étage, ces rues de sept blocs couraient entre des façades de
+vingt-quatre : des canyons.
+
+**Ce que ça change.** La section d'une rue se demande désormais à `voirie.js`,
+le `roadSection` du kit recopié sans une valeur changée : une voie vaut la
+largeur d'une voiture plus quarante centimètres de chaque côté. Les rues de
+quartier d'Haussmann, de Saint-Germain, de Monceau, de l'Étoile et de Passy
+sont des rues COLLECTRICES — deux voies de 3,2 m, trottoirs de 2,5 m, 11,4
+blocs d'emprise contre 7,2 ; les ruelles du Marais, du Quartier latin, de
+Montmartre, de Belleville et du Faubourg des rues LOCALES (une voie, trottoirs
+de 2 m) ; les neuf percées de premier rang (Rivoli, les Grands Boulevards,
+Sébastopol, Voltaire, la Grande Armée, Saint-Germain, Saint-Michel,
+Montparnasse, Haussmann) des BOULEVARDS à quatre voies et trottoirs de 4 m,
+21 blocs ; les Champs-Élysées gardent en plus le stationnement des deux côtés,
+25,4. Les îlots grandissent dans la même proportion que les rues — le kit :
+« si l'élargissement mange les bâtiments, recompose les lots » — si bien que
+Paris garde sa part bâtie (22,6 % du disque → 21,6) et ses huit circuits de
+voitures, tous à 94-100 % sur la chaussée. **Ce que les enfants ont bâti ne
+bouge pas** : une colonne où un bloc a été posé ou creusé avant la v303 garde
+la ville d'avant (`paris-v302.js`, la trame figée) — une maison posée sur une
+ancienne rue n'est pas enfermée dans un immeuble neuf, une cabane sur un
+ancien toit garde son toit. Et le relevé des toits de la v301 lit cette trame
+figée, sans quoi il déplacerait des blocs qui n'ont jamais été sur un toit.
+
+**Ce qui le prouve.** Trois témoins de `carteMonde.js` : la rue de quartier
+mesurée sur le MONDE (plus courte traversée de chaussée sur douze directions,
+même fenêtre que la v294) a la chaussée d'une rue collectrice — médiane 4 sur
+`origin/main`, 6 ici ; la part bâtie du disque ne s'effondre pas (barre 17 %,
+au milieu de mon premier jet à 12,7 et du livré à 21,6) ; la règle connaît la
+vraie largeur d'une voiture de la flotte. Deux témoins purs de `plafond.js` :
+une maison posée sur une ancienne rue avant la date garde sa rue, et la même
+colonne sans elle, ou avec un bloc posé après, reçoit l'immeuble neuf ; le
+témoin du relevé des toits (v301) repointé sur la trame figée, et vérifié dans
+un monde où la cabane est au journal. Mesuré avant d'écrire la règle finale,
+et écarté : la section de boulevard pour toute « avenue » ou tout
+« boulevard » (vingt-sept dans un disque de 370 blocs) faisait perdre 40 % des
+immeubles, et l'îlot gardé tel quel un tiers.
+
 ## v302 — Le rail continu : les neuf lignes de train roulent sur un profil flottant, et le pont de l'A1 n'a plus de trou
 
 **Pourquoi.** Quatrième livraison du programme « monde fidèle », et la

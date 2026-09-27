@@ -750,6 +750,49 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les rues de Paris à la règle du kit (v303) — une largeur se calcule, et la ville d'avant se fige
+
+Max : « Les rues de Paris sont encore beaucoup trop étroites. Je comprends pas.
+T'as pas appliqué le code à la règle. » Le kit livrait `roadSection` ; j'avais
+lu le kit, mesuré l'état initial, et laissé Paris sur les largeurs choisies à
+la main en v294. Six règles.
+
+- **QUAND LE KIT LIVRE UNE RÈGLE EXÉCUTABLE, ON L'EXÉCUTE — ON NE LA
+  RÉINTERPRÈTE PAS À LA MAIN.** `voirie.js` est `roadSection` recopié sans une
+  valeur changée, pur, sans import ; `paris.js` lui DEMANDE ses sections. Une
+  largeur écrite à côté de la règle finit par la contredire, et c'est
+  exactement ce que Max a vu.
+- **LE TYPE D'UNE RUE SE LIT À SA FONCTION, PAS À SON NOM.** Mon premier jet
+  donnait quatre voies à tout ce qui s'appelle boulevard ou avenue : vingt-sept
+  boulevards de 21 blocs dans un disque de 370, et Paris perdait 40 % de ses
+  immeubles (Saint-Germain de 9,5 % de lots à 0,4, l'Étoile à zéro). Le kit
+  classe par NOMBRE DE VOIES : quatre pour les neuf percées de premier rang
+  (`PREMIER_RANG`), deux pour les autres rues, une pour les ruelles héritées.
+- **SI L'ÉLARGISSEMENT MANGE LES BÂTIMENTS, ON RECOMPOSE LES LOTS — la trame
+  entière suit.** Garder l'îlot tel quel (la méthode de la v294) coûtait un
+  tiers des immeubles : onze blocs d'îlot pour onze de rue. Le pas grandit dans
+  le rapport des emprises (`aLaRegle`), la part bâtie reste à 21,6 % contre
+  22,6, et un témoin la garde (barre 17). Moins de rues, plus larges, des îlots
+  plus grands — c'est l'échelle 1 bloc = 1 m qui s'installe.
+- **UNE MIGRATION QUI SE REJOUE LIT LA VILLE OÙ LE BLOC A ÉTÉ POSÉ.** Le relevé
+  des toits (v301) se rejoue à chaque fusion du nuage et demandait
+  `lotParisLibre` et `gabaritParis` à la trame COURANTE : retramer Paris lui
+  aurait fait déplacer des blocs qui n'ont jamais été sur un toit. La trame
+  d'avant est figée dans `paris-v302.js`, recopiée à l'octet et jamais
+  modifiée — la discipline de `MONDES.terreAvant` (v199). **Toute règle de
+  migration qui lit le générateur doit dire QUELLE version du générateur
+  elle lit** ; la prochaine refonte de Paris fige `paris.js` à son tour.
+- **LA VILLE CÈDE À CE QUE L'ENFANT A BÂTI, COLONNE PAR COLONNE.** Une colonne
+  où un bloc a été posé ou creusé avant `DATE_RUES_PARIS` garde la ville
+  d'avant (`colonnesParisAvant`, refait avec l'index des monuments touchés,
+  tenu par `setBlock`) : une maison sur une ancienne rue n'est pas enfermée
+  dans un immeuble neuf, une cabane sur un ancien toit garde son toit. Aucun
+  bloc d'enfant ne bouge. Le prix se déclare : un morceau de l'ancienne ville
+  au milieu de la neuve autour de chaque construction.
+- **UNE BARRE SUR UNE LARGEUR EN COLONNES SE CALCULE AVEC SA QUANTIFICATION.**
+  Une chaussée de 6,4 blocs se traverse en six ou sept colonnes : la barre du
+  témoin est `floor(6,4)`, et la mesure vaut 6 ici contre 4 sur `origin/main`.
+
 ## Le rail continu (v302) — quatre lecteurs, une cote flottante
 
 Quatrième livraison du programme « monde fidèle », la première du kit

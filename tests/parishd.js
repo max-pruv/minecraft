@@ -71,8 +71,31 @@ function verifier(nom, ok, detail = '') {
   const RELEVE = HD.RELEVE ?? 0;
   const { BLOCK, isTransparent, isSlab } = await import('../src/blocks.js');
 
-  const [px, pz] = adresseParis(-0.8, -0.9);
-  const cx = Math.floor(px / CHUNK), cz = Math.floor(pz / CHUNK);
+  // LE MORCEAU TÉMOIN SE CHERCHE (v285, v288) — et la v303 l'a prouvé une fois
+  // de plus : l'adresse (−0,8 ; −0,9) tombait sur un îlot de façades, elle tombe
+  // sur une rue depuis que les rues suivent la règle du kit, et neuf témoins
+  // rendaient « 0 façade » sans rien mesurer. On prend, autour de l'adresse, le
+  // morceau qui porte le plus de colonnes de façade (un lot au bord de son îlot),
+  // et l'on se pose dans la rue la plus proche de son centre.
+  const P0 = await import('../src/paris.js');
+  const [ax, az] = adresseParis(-0.8, -0.9);
+  let meilleur = null;
+  for (let kx = Math.floor(ax / CHUNK) - 3; kx <= Math.floor(ax / CHUNK) + 3; kx++) {
+    for (let kz = Math.floor(az / CHUNK) - 3; kz <= Math.floor(az / CHUNK) + 3; kz++) {
+      let n = 0;
+      for (let lx = 0; lx < CHUNK; lx++) for (let lz = 0; lz < CHUNK; lz++) {
+        const x = kx * CHUNK + lx, z = kz * CHUNK + lz;
+        if (P0.solParis(x, z) === null && P0.lotParisLibre(x, z) && !P0.gabaritParis(x, z).dedans) n++;
+      }
+      if (!meilleur || n > meilleur.n) meilleur = { kx, kz, n };
+    }
+  }
+  const cx = meilleur.kx, cz = meilleur.kz;
+  let px = cx * CHUNK + 8, pz = cz * CHUNK + 8;
+  for (let d = 0, trouve = false; d < 12 && !trouve; d++) for (let dx = -d; dx <= d && !trouve; dx++) for (const dz of [-d, d]) {
+    if (P0.solParis(cx * CHUNK + 8 + dx, cz * CHUNK + 8 + dz) !== null) { px = cx * CHUNK + 8 + dx; pz = cz * CHUNK + 8 + dz; trouve = true; break; }
+  }
+  console.log(`   morceau témoin (${cx}, ${cz}) : ${meilleur.n} colonnes de façade ; l'enfant en (${px}, ${pz})`);
 
   const tampons = (hd, x, z) => {
     const w = new World();

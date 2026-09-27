@@ -231,7 +231,9 @@ const BLOCS = 40000;
     const releve = await tab.evaluate(async () => {
       const ps = window.__game.profileSync;
       const W = await import('./src/world.js');
-      const P = await import('./src/paris.js');
+      // la trame où la cabane a été posée : figée depuis la v303, et c'est elle
+      // que le relevé lit ; sur l'ancien code, la trame courante l'est encore
+      let P; try { P = await import('./src/paris-v302.js'); } catch { P = await import('./src/paris.js'); }
       if (!W.releverBlocsToitsParis || !ps.mettreALAbriAvantReleve || !P.gabaritParis) return { absent: true };
       const [x0, z0] = P.adresseParis(-0.8, -0.9);
       let col = null;

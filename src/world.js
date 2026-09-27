@@ -80,6 +80,7 @@ import {
 } from './manhattan.js';
 import { positionDe, lieuxDuMonde, cielDe, zDeLatitude } from './mondes.js';
 import { BORNES as BORNES_MANHATTAN } from './manhattan-plan.js';
+import * as PARIS_V302 from './paris-v302.js';
 import { surLaVoie, presDeLaVoie, voieEn, brancherSol, gareEn, rubansVoieDans } from './trains.js';
 import { routeEn, rubansDans, brancherSol as brancherSolRoutes } from './routes.js';
 
@@ -1863,14 +1864,41 @@ export function menagerBlocsCielParis(tout) {
 // encore sur l'ancienne version après cette heure poserait sur les anciens
 // toits des blocs que le relevé ne suivra pas.
 export const DATE_RELEVE_PARIS = Date.UTC(2026, 8, 27, 4, 0, 0);
+
+// LES RUES DE PARIS À LA RÈGLE DU KIT (v303) — et ce qu'un enfant avait bâti
+// dans l'ancienne ville. Les rues s'élargissent, le pas des îlots suit : les
+// immeubles se DÉPLACENT. Une maison posée sur une ancienne rue se
+// retrouverait enfermée dans un immeuble neuf ; une cabane posée sur un ancien
+// toit (relevée en v301) se retrouverait en l'air au-dessus d'un boulevard.
+// Aucun bloc d'enfant ne bouge pour autant : c'est la VILLE qui garde, colonne
+// par colonne, sa forme d'avant là où un enfant a posé ou creusé quelque chose
+// avant `DATE_RUES_PARIS` — la trame figée de `paris-v302.js`. Le prix se
+// déclare : autour de ses constructions, l'enfant voit un morceau de l'ancienne
+// ville au milieu de la neuve. Rien de ce qu'il a fait ne se perd, rien n'est
+// enterré ; c'est la règle « dans le doute, le travail de l'enfant l'emporte ».
+export const DATE_RUES_PARIS = Date.UTC(2026, 8, 27, 16, 0, 0);
+const cleColonneParis = (x, z) => x * 262144 + z;
+function dansParisAvant(x, z, t) {
+  return t < DATE_RUES_PARIS && (x - PARIS.x) * (x - PARIS.x) + (z - PARIS.z) * (z - PARIS.z) <= PARIS.r * PARIS.r;
+}
+// La ville d'aujourd'hui et celle d'avant, sous la même forme : le générateur
+// choisit l'une ou l'autre par colonne.
+const PARIS_NEUF = { solParis, lotParisLibre, batirColonneParis, pontParis, VOIES: VOIES_PARIS, cle: 'paris' };
+const PARIS_AVANT = {
+  solParis: PARIS_V302.solParis, lotParisLibre: PARIS_V302.lotParisLibre, batirColonneParis: PARIS_V302.batirColonneParis,
+  pontParis: PARIS_V302.pontParis, VOIES: PARIS_V302.VOIES_PARIS, cle: 'paris-v302',
+};
 const gabarits = new Map();           // x * 262144 + z -> { sommet, ancien } d'une colonne de lot, ou null
 function releveDe(x, z) {
   const cle = x * 262144 + z;
   let g = gabarits.get(cle);
   if (g !== undefined) return g;
   g = null;
-  if (Math.hypot(x - PARIS.x, z - PARIS.z) <= PARIS.r && solParis(x, z) === null && lotParisLibre(x, z)) {
-    const gb = gabaritParis(x, z);
+  // LA TRAME OÙ LE BLOC A ÉTÉ POSÉ, PAS LA TRAME D'AUJOURD'HUI (v303) : le
+  // relevé juge « était-il sur un toit ? », et les toits d'avant la v303 ne
+  // sont plus ceux de `paris.js` depuis que les rues suivent la règle du kit.
+  if (Math.hypot(x - PARIS.x, z - PARIS.z) <= PARIS.r && PARIS_V302.solParis(x, z) === null && PARIS_V302.lotParisLibre(x, z)) {
+    const gb = PARIS_V302.gabaritParis(x, z);
     // le bâtisseur écrit à h + dy − 1 : le dernier bloc du jeu est à h + sommet − 1
     g = { ancien: reliefDe(x, z) + gb.ancien - 1, monte: gb.sommet - gb.ancien };
   }
@@ -2001,6 +2029,7 @@ export class World {
     this.dirty = new Set();       // chunk keys needing a remesh
     this.edits = new Map();       // "x,y,z" -> block id (player modifications)
     this.monumentsTouches = new Set();  // les monuments HD qu'un enfant a modifiés (v292)
+    this.colonnesParisAvant = new Set();  // les colonnes de Paris où un enfant a bâti avant la v303
     this.cacheSol = new Map();          // "x,z" -> { nat, cote } : la fiche d'une colonne (sol continu, v297)
     this.sansSolContinu = false;        // ?solcontinu=0 : la mesure A/B, jamais un réglage
     this.editTimes = new Map();   // "x,y,z" -> ms timestamp, for multiplayer merge
@@ -2663,15 +2692,18 @@ export class World {
         // générique ne s'applique pas ici : ses lots carrés de douze blocs
         // faisaient un lotissement, pas une ville.
         if (city && city.key === 'paris') {
-          const sp = solParis(wx, wz);
+          // la ville d'avant la v303 là où un enfant y a bâti, celle
+          // d'aujourd'hui partout ailleurs (`DATE_RUES_PARIS`)
+          const PV = this.colonnesParisAvant.size && this.colonnesParisAvant.has(cleColonneParis(wx, wz)) ? PARIS_AVANT : PARIS_NEUF;
+          const sp = PV.solParis(wx, wz);
           // La couronne déborde d'un bloc sur les quatre côtés : un arbre
           // large d'un seul bloc est un poteau vert, pas un arbre — trois
           // captures de rue pour s'en convaincre. On ne pose la question que
           // pour les colonnes qui peuvent être AU PIED d'un arbre (trottoir,
           // pelouse), jamais pour une chaussée ou une façade.
           const souche = (sp === CITY_BLOCK.SIDEWALK || sp === BLOCK.GRASS)
-            && (solParis(wx + 1, wz) === BLOCK.LEAVES || solParis(wx - 1, wz) === BLOCK.LEAVES
-              || solParis(wx, wz + 1) === BLOCK.LEAVES || solParis(wx, wz - 1) === BLOCK.LEAVES);
+            && (PV.solParis(wx + 1, wz) === BLOCK.LEAVES || PV.solParis(wx - 1, wz) === BLOCK.LEAVES
+              || PV.solParis(wx, wz + 1) === BLOCK.LEAVES || PV.solParis(wx, wz - 1) === BLOCK.LEAVES);
           if (souche) {
             data[World.index(x, h, z)] = sp;
             for (const dy of [3, 4]) {
@@ -2692,19 +2724,19 @@ export class World {
               if (wy < HEIGHT) data[World.index(x, wy, z)] = dy <= 2 ? BLOCK.LOG : BLOCK.LEAVES;
             }
           } else if (feuDeVille(data, x, z, h, wx, wz, sp,
-            feuxDeVille('paris', PARIS, VOIES_PARIS, solParis))) {
+            feuxDeVille(PV.cle, PARIS, PV.VOIES, PV.solParis))) {
             // le trottoir et son feu tricolore sont posés (v274)
-          } else if (lampadaireDeVille(data, x, z, h, wx, wz, solParis, sp)) {
+          } else if (lampadaireDeVille(data, x, z, h, wx, wz, PV.solParis, sp)) {
             // le trottoir et son réverbère sont posés (v248)
           } else if (sp !== null) {
             // LE TABLIER D'UN PONT VA À LA COTE DE LA VILLE, PAS AU FOND DU
             // LIT (v294) — la leçon de la Tamise (v208), que Paris n'avait
             // jamais reçue : ses neuf ponts étaient pavés deux blocs sous
             // l'eau. L'eau reste dessous, le relief ne bouge pas.
-            const surEau = h < city.base && pontParis(wx, wz);
+            const surEau = h < city.base && PV.pontParis(wx, wz);
             data[World.index(x, surEau ? city.base : h, z)] = sp;
-          } else if (lotParisLibre(wx, wz)) {
-            batirColonneParis(wx, wz, (dy, id) => {
+          } else if (PV.lotParisLibre(wx, wz)) {
+            PV.batirColonneParis(wx, wz, (dy, id) => {
               const wy = h + dy - 1;
               if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id;
             });
@@ -3233,6 +3265,7 @@ export class World {
     const t = ts !== undefined ? ts : Date.now();
     this.edits.set(k, id);
     this.editTimes.set(k, t);
+    if (dansParisAvant(x, z, t)) this.colonnesParisAvant.add(cleColonneParis(x, z));
     if (!remote && this.onOp) this.onOp(k, id, t);
     if (this.onBloc) this.onBloc(x, y, z, id);
 
@@ -3467,6 +3500,15 @@ export class World {
   }
 
   indexerMonumentsTouches() {
+    // l'index des colonnes de Paris bâties avant la v303 se refait avec lui :
+    // les deux sont appelés partout où un journal s'installe d'un bloc
+    this.colonnesParisAvant.clear();
+    for (const [k, t] of this.editTimes) {
+      if (!(t < DATE_RUES_PARIS)) continue;
+      const virgule = k.indexOf(','), derniere = k.lastIndexOf(',');
+      const x = +k.slice(0, virgule), z = +k.slice(derniere + 1);
+      if (dansParisAvant(x, z, t)) this.colonnesParisAvant.add(cleColonneParis(x, z));
+    }
     this.monumentsTouches.clear();
     if (REPERES_HD.length === 0) return;
     for (const k of this.edits.keys()) {
@@ -3594,6 +3636,7 @@ export class World {
     this.edits.clear();
     this.editTimes.clear();
     this.monumentsTouches.clear();
+    this.colonnesParisAvant.clear();
     this.loadEdits();
     this.allDirty = true;
   }
@@ -3607,6 +3650,7 @@ export class World {
     this.edits.clear();
     this.editTimes.clear();
     this.monumentsTouches.clear();
+    this.colonnesParisAvant.clear();
     this.chunks.clear();
     this.tops.clear();
     this.allDirty = true;

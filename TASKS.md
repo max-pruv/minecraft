@@ -1,5 +1,21 @@
 # Ce qui est en cours
 
+- [ ] **LES RUES DE PARIS À LA RÈGLE (v303) : CE QUI RESTE, DÉCLARÉ.** (1) Les
+  quartiers les plus petits (Saint-Germain, le Marais, le Faubourg, l'Étoile :
+  1 500 à 3 000 colonnes, bordés par la Seine et les percées) n'ont presque
+  plus de lots — ils en avaient déjà peu (168, 41, 91, 55 colonnes) et une trame
+  de 15 à 29 blocs n'y loge plus un îlot entier ; leur rayon (`Q(…, r0)`) est
+  en kilomètres du plan, pas à l'échelle d'un mètre. (2) Les PLACES gardent
+  leurs rayons (Concorde 4,5, l'Étoile 8) : un boulevard de 21 blocs y arrive
+  plus large que la place. (3) Les autres villes bâties à la main (Londres,
+  Nice, Lille, San Francisco, Washington) et les villes engendrées n'ont pas
+  encore la règle — même geste, ville par ville, avec la trame figée et la
+  protection des constructions. (4) Une colonne protégée de l'ancienne ville
+  peut se trouver au milieu d'une rue neuve : les circuits de voitures,
+  mesurés sur le plan, la traverseraient. Mesure à faire sur un vrai journal
+  (le compte des colonnes protégées se lit dans `world.colonnesParisAvant`).
+  (5) Un bloc de l'ancienne version reçu du nuage APRÈS que son morceau a été
+  engendré ne protège sa colonne qu'au prochain chargement.
 - [ ] **LE RAIL CONTINU (v302) : CE QUI RESTE, DÉCLARÉ.** (1) La pente du
   profil reste un tiers : les candidats du kit à 2,5 %
   (`transport-v298/examples/rail-profile-candidates.json`) creusent jusqu'à

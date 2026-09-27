@@ -2408,6 +2408,49 @@ const VRAIES_KM = [
         : `${largeursParis.circuits.n} points · 10ᵉ centile ${largeursParis.circuits.p10} · médiane ${largeursParis.circuits.med}`
         + ` · ${largeursParis.circuits.partDeux} % des points à ${largeursParis.circuits.deuxVoitures} colonnes ou plus`);
 
+    // --- LES RUES DE PARIS À LA RÈGLE DU KIT (v303) ---------------------------
+    //
+    // Max : « les rues de Paris sont encore beaucoup trop étroites… t'as pas
+    // appliqué le code à la règle ». La largeur d'une rue se DEMANDE à
+    // `voirie.js` (le `roadSection` du kit, à un bloc pour un mètre) : ce
+    // témoin lit la règle, puis le MONDE, et exige que la rue de quartier
+    // mesurée ait au moins la chaussée d'une rue collectrice (deux voies de
+    // 3,2 m). Mesuré dans la même fenêtre : médiane 4 sur `origin/main`, 6 ici
+    // (une chaussée de 6,4 blocs se traverse en six ou sept colonnes).
+    // Et la part bâtie de Paris ne doit pas s'effondrer en échange : mon premier
+    // jet (îlot gardé tel quel, tout boulevard nommé à quatre voies) tombait de
+    // 22,6 % du disque à 12,7 ; la barre est au milieu, 17.
+    const regle = await tab.evaluate(async () => {
+      const g = window.__game;
+      let vo; try { vo = await import('./src/voirie.js'); } catch { return { absent: true }; }
+      const [pa, wo, ve] = await Promise.all([import('./src/paris.js'), import('./src/world.js'), import('./src/vehicules.js')]);
+      const col = vo.sectionDeRue('collecteur');
+      const solDe = (x, z) => g.world.getBlock(x, g.world.sommetColonne(x, z), z);
+      const estCh = (x, z) => wo.CHAUSSEE.has(solDe(x, z));
+      const DIRS = []; for (let i = 0; i < 12; i++) DIRS.push([Math.cos(i * Math.PI / 12), Math.sin(i * Math.PI / 12)]);
+      const run = (x, z, dx, dz) => { let a = 0; for (let t = 1; t <= 40; t++) { if (estCh(Math.round(x + dx * t), Math.round(z + dz * t))) a = t; else break; } return a; };
+      const largeur = (x, z) => Math.min(...DIRS.map(([dx, dz]) => run(x, z, dx, dz) + run(x, z, -dx, -dz) + 1));
+      const cx = pa.PARIS.x - 30, cz = pa.PARIS.z - 60, ws = [];
+      for (let x = cx - 30; x <= cx + 30; x += 2) for (let z = cz - 30; z <= cz + 30; z += 2) if (estCh(x, z)) ws.push(largeur(x, z));
+      ws.sort((a, b) => a - b);
+      let n = 0, lots = 0;
+      const P = pa.PARIS;
+      for (let x = P.x - P.r; x <= P.x + P.r; x++) for (let z = P.z - P.r; z <= P.z + P.r; z++) {
+        const u = x - P.x, v = z - P.z; if (u * u + v * v > P.r * P.r) continue;
+        n++; if (pa.lotParisLibre(x, z)) lots++;
+      }
+      return { chausseeRegle: col.chaussee, med: ws[ws.length >> 1], n: ws.length, bati: +(100 * lots / n).toFixed(1),
+        voiture: vo.LARGEUR_VOITURE, voitureJeu: 2 * (ve.DEMI_LARG_VOITURE || 0) };
+    });
+    verifier('les rues de Paris ont la section de la règle du kit : deux voies de 3,2 m au moins',
+      !regle.absent && regle.n > 200 && regle.med >= Math.floor(regle.chausseeRegle),
+      regle.absent ? 'voirie.js absent' : `médiane ${regle.med} sur ${regle.n} colonnes, règle ${regle.chausseeRegle}`);
+    verifier('et Paris garde ses immeubles : la part bâtie du disque ne s\'effondre pas',
+      !regle.absent && regle.bati >= 17, regle.absent ? 'voirie.js absent' : `${regle.bati} % du disque en lots`);
+    verifier('la règle de voirie connaît la vraie largeur d\'une voiture de la flotte',
+      !regle.absent && Math.abs(regle.voiture - regle.voitureJeu) < 1e-9,
+      regle.absent ? 'voirie.js absent' : `voirie ${regle.voiture} · flotte ${regle.voitureJeu}`);
+
     // ET LES PONTS DE PARIS ONT UN TABLIER AU-DESSUS DE L'EAU (v294). Mesuré
     // sous node avant d'y toucher : terrain 28, eau à 30, le pavé du pont à 28
     // — les neuf ponts étaient au fond de la Seine, et l'on traversait à la

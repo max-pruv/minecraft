@@ -1,3 +1,20 @@
+// LA TRAME DE PARIS D'AVANT LA v303, FIGÉE POUR TOUJOURS.
+//
+// C'est `paris.js` tel qu'il était en v302, recopié à l'octet près sous ce
+// nom — et il ne se modifie JAMAIS. Deux lecteurs en ont besoin, et aucun ne
+// peut lire la trame courante sans se tromper :
+//
+//   · le RELEVÉ DES TOITS (v301, `world.js`) est une migration pure qui se
+//     rejoue sur chaque document reçu du nuage : il juge « ce bloc était-il
+//     sur un toit ? » d'après la ville OÙ LE BLOC A ÉTÉ POSÉ. Lu dans la trame
+//     neuve, il déplacerait des blocs qui n'ont jamais été sur un toit ;
+//   · une colonne où un enfant a bâti AVANT la v303 garde la ville d'avant
+//     (`colonneAncienneParis`, world.js) : sa maison, posée sur une ancienne
+//     rue, ne se retrouve pas enfermée dans un immeuble neuf, et sa cabane,
+//     posée sur un ancien toit, garde son toit.
+//
+// C'est la discipline de `MONDES.terreAvant` (v199) : la carte d'avant se
+// fige, elle ne se recalcule pas.
 // Paris.
 //
 // Le quartier existait déjà — pierre de taille, toits de zinc, la Tour Eiffel,
@@ -34,7 +51,6 @@ import { BLOCK, CITY_BLOCK, DECOR_START, ARCHI } from './blocks.js';
 import { rangerVoies, solDesVoies, fabriqueCircuits, contournerRonds, contournerBlocs } from './voies.js';
 import { positionDe } from './mondes.js';
 import { entreesDe } from './routes.js';
-import { sectionDeRue } from './voirie.js';
 
 const uni = (couleur) => DECOR_START + couleur * 10;
 
@@ -403,80 +419,49 @@ const pk = (u, v) => [k(u), k(v)];
 // Le trottoir d'avenue passe à deux blocs : un passant, un réverbère et une
 // terrasse y tiennent. C'est du SOL, jamais du relief — `hauteurParis` ne lit
 // aucun de ces nombres, et les deux empreintes de `plafond.js` ne bougent pas.
-//
-// ET LA LARGEUR SE CALCULE, ELLE NE SE CHOISIT PLUS (v303). Max : « les rues
-// de Paris sont encore beaucoup trop étroites… t'as pas appliqué le code à la
-// règle. » Les chiffres ci-dessus étaient des choix de la v294, réglés pour
-// qu'UNE voiture passe. La section d'une rue se demande désormais à la règle
-// du kit (`voirie.js`, `roadSection`), à un bloc pour un mètre — l'échelle des
-// hauteurs de Paris depuis la v301 : un BOULEVARD (quatre voies de 3,25 m,
-// trottoirs de 4 m) pour tout ce qui s'appelle boulevard ou avenue, une rue
-// COLLECTRICE (deux voies de 3,2 m, trottoirs de 2,5 m) pour les rues et les
-// quais, et les Champs-Élysées gardent en plus le stationnement des deux
-// côtés. L'ancien `a(l)` de chaque ligne a disparu : une largeur écrite à côté
-// de la règle finirait par la contredire.
-const BOULEVARD = sectionDeRue('boulevard');
-const COLLECTRICE = sectionDeRue('collecteur');
-const LOCALE = sectionDeRue('locale');
-const CHAMPS = sectionDeRue('boulevard', { stationnement: 2 });
-export const SECTIONS_PARIS = { boulevard: BOULEVARD, collecteur: COLLECTRICE, locale: LOCALE, champs: CHAMPS };
-// LE TYPE SE LIT À LA FONCTION, PAS AU NOM. Mon premier jet donnait la
-// section de boulevard (21 blocs d'emprise) à tout ce qui s'appelle boulevard
-// ou avenue : vingt-sept boulevards dans un disque de 370 blocs. Mesuré, Paris
-// perdait 40 % de ses immeubles et des quartiers entiers — Saint-Germain de
-// 9,5 % de lots à 0,4, le Faubourg de 6,1 à 0,2, l'Étoile à zéro. Le kit
-// classe une rue par son NOMBRE DE VOIES ; les quatre voies sont les percées
-// de premier rang, celles que la v294 plaçait déjà en tête de la hiérarchie
-// d'Haussmann. Les autres avenues sont des rues collectrices : deux voies,
-// trottoirs de 2,5 m — déjà plus larges que tout Paris d'avant.
-const PREMIER_RANG = new Set(['Rue de Rivoli', 'Grands Boulevards', 'Boulevard de Sébastopol', 'Boulevard Voltaire',
-  'Avenue de la Grande Armée', 'Boulevard Saint-Germain', 'Boulevard Saint-Michel', 'Boulevard du Montparnasse',
-  'Boulevard Haussmann']);
-export function sectionDeVoie(nom) {
-  if (nom === 'Avenue des Champs-Élysées') return CHAMPS;
-  return PREMIER_RANG.has(nom) || nom.startsWith('Entrée') ? BOULEVARD : COLLECTRICE;
-}
-const PLANCHER_AVENUE = COLLECTRICE.chaussee / 2;
-const TROTTOIR_AV = COLLECTRICE.trottoir;
+const AVENUE = 3.4;
+const PLANCHER_AVENUE = 2.6;
+const a = (l) => Math.max(l * AVENUE, PLANCHER_AVENUE);
+const TROTTOIR_AV = 2.0;
 // Ce que la ville promet à ses avenues, publié pour les témoins : une
 // dimension de ville se demande, elle ne se recopie pas (v203, v271, v281).
 export const LARGEURS_AVENUES_PARIS = { plancher: 2 * PLANCHER_AVENUE, trottoir: TROTTOIR_AV };
 
 const VOIES = [
   // rive droite
-  { nom: 'Rue de Rivoli', pts: [pt('Concorde'), pt('Tuileries'), pt('Louvre'), pt("Hôtel de Ville"), pt('Bastille')] },
-  { nom: 'Grands Boulevards', pts: [pt('Madeleine'), pt('Opéra'), pk(-2, -9), pt('République'), pk(20, -1), pt('Bastille')] },
-  { nom: "Avenue de l'Opéra", pts: [pk(-7, 0), pt('Opéra')] },
-  { nom: 'Boulevard de Sébastopol', pts: [pt('Châtelet'), pk(5, -6), pk(4, -14)] },
-  { nom: 'Boulevard de Magenta', pts: [pt('République'), pt('Gare du Nord')] },
-  { nom: 'Rue La Fayette', pts: [pt('Gare du Nord'), pk(-4, -11), pt('Opéra')] },
-  { nom: 'Boulevard de Clichy', pts: [pk(-17, -19), pt('Moulin Rouge'), pk(-2, -19)] },
-  { nom: 'Boulevard Voltaire', pts: [pt('République'), pt('Nation')] },
-  { nom: 'Faubourg Saint-Antoine', pts: [pt('Bastille'), pt('Nation')] },
-  { nom: 'Rue de Belleville', pts: [pt('République'), pt('Buttes-Chaumont')] },
-  { nom: 'Avenue de la Grande Armée', pts: [pt('Arc de Triomphe'), pk(-46, -9)] },
+  { nom: 'Rue de Rivoli', l: a(1.1), t: TROTTOIR_AV, pts: [pt('Concorde'), pt('Tuileries'), pt('Louvre'), pt("Hôtel de Ville"), pt('Bastille')] },
+  { nom: 'Grands Boulevards', l: a(1.0), t: TROTTOIR_AV, pts: [pt('Madeleine'), pt('Opéra'), pk(-2, -9), pt('République'), pk(20, -1), pt('Bastille')] },
+  { nom: "Avenue de l'Opéra", l: a(0.8), t: TROTTOIR_AV, pts: [pk(-7, 0), pt('Opéra')] },
+  { nom: 'Boulevard de Sébastopol', l: a(0.9), t: TROTTOIR_AV, pts: [pt('Châtelet'), pk(5, -6), pk(4, -14)] },
+  { nom: 'Boulevard de Magenta', l: a(0.8), t: TROTTOIR_AV, pts: [pt('République'), pt('Gare du Nord')] },
+  { nom: 'Rue La Fayette', l: a(0.8), t: TROTTOIR_AV, pts: [pt('Gare du Nord'), pk(-4, -11), pt('Opéra')] },
+  { nom: 'Boulevard de Clichy', l: a(0.8), t: TROTTOIR_AV, pts: [pk(-17, -19), pt('Moulin Rouge'), pk(-2, -19)] },
+  { nom: 'Boulevard Voltaire', l: a(0.9), t: TROTTOIR_AV, pts: [pt('République'), pt('Nation')] },
+  { nom: 'Faubourg Saint-Antoine', l: a(0.8), t: TROTTOIR_AV, pts: [pt('Bastille'), pt('Nation')] },
+  { nom: 'Rue de Belleville', l: a(0.8), t: TROTTOIR_AV, pts: [pt('République'), pt('Buttes-Chaumont')] },
+  { nom: 'Avenue de la Grande Armée', l: a(1.0), t: TROTTOIR_AV, pts: [pt('Arc de Triomphe'), pk(-46, -9)] },
   // rive gauche
-  { nom: 'Boulevard Saint-Germain', pts: [pk(-18, 11), pk(-12, 13), pk(-2, 14), pk(8, 13), pk(15, 11), pk(18, 10)] },
-  { nom: 'Boulevard Saint-Michel', pts: [pk(6, 11), pt('Luxembourg'), pk(1, 22), pk(-1, 27)] },
-  { nom: 'Rue de Rennes', pts: [pt('Montparnasse'), pk(-3, 13)] },
-  { nom: 'Boulevard du Montparnasse', pts: [pk(-18, 19), pt('Montparnasse'), pk(4, 23)] },
-  { nom: 'Boulevard Raspail', pts: [pk(-4, 12), pk(-7, 20), pk(-8, 26)] },
-  { nom: 'Avenue des Gobelins', pts: [pk(10, 15), pk(14, 25)] },
-  { nom: "Avenue de la Motte-Picquet", pts: [pt('Tour Eiffel'), pt('Invalides')] },
+  { nom: 'Boulevard Saint-Germain', l: a(1.0), t: TROTTOIR_AV, pts: [pk(-18, 11), pk(-12, 13), pk(-2, 14), pk(8, 13), pk(15, 11), pk(18, 10)] },
+  { nom: 'Boulevard Saint-Michel', l: a(0.9), t: TROTTOIR_AV, pts: [pk(6, 11), pt('Luxembourg'), pk(1, 22), pk(-1, 27)] },
+  { nom: 'Rue de Rennes', l: a(0.8), t: TROTTOIR_AV, pts: [pt('Montparnasse'), pk(-3, 13)] },
+  { nom: 'Boulevard du Montparnasse', l: a(0.9), t: TROTTOIR_AV, pts: [pk(-18, 19), pt('Montparnasse'), pk(4, 23)] },
+  { nom: 'Boulevard Raspail', l: a(0.7), t: TROTTOIR_AV, pts: [pk(-4, 12), pk(-7, 20), pk(-8, 26)] },
+  { nom: 'Avenue des Gobelins', l: a(0.7), t: TROTTOIR_AV, pts: [pk(10, 15), pk(14, 25)] },
+  { nom: "Avenue de la Motte-Picquet", l: a(0.7), t: TROTTOIR_AV, pts: [pt('Tour Eiffel'), pt('Invalides')] },
   // LES RACCORDS (v209). Huit avenues n'étaient sur aucune boucle faute de se
   // rencontrer. On ne rabote pas le seuil : on trace les rues qui manquent —
   // et ce sont de VRAIES rues de Paris, pas des traits de raccommodage. Chaque
   // bout est posé SUR la chaussée d'une autre voie (leçon de Nice).
-  { nom: 'Avenue des Champs-Élysées', pts: [pt('Arc de Triomphe'), pt('Concorde')] },
-  { nom: 'Boulevard Haussmann', pts: [pt('Arc de Triomphe'), pk(-21, -10), pt('Opéra')] },
-  { nom: 'Avenue de Wagram', pts: [pt('Arc de Triomphe'), pk(-32, -10), pk(-28, -13)] },
-  { nom: 'Boulevard des Batignolles', pts: [pk(-28, -13), pk(-23, -16), pk(-17, -19)] },
-  { nom: 'Avenue des Ternes', pts: [pk(-32, -10), pk(-39, -10), pk(-46, -9)] },
-  { nom: 'Boulevard de Rochechouart', pts: [pk(-2, -19), pk(1, -17), pt('Gare du Nord')] },
-  { nom: 'Boulevard de Ménilmontant', pts: [pt('Buttes-Chaumont'), pk(31, -11), pk(31, -3), pk(31, 4), pt('Nation')] },
-  { nom: 'Boulevard de Port-Royal', pts: [pk(10, 15), pk(6, 17), pk(2.5, 17)] },
-  { nom: 'Boulevard Arago', pts: [pk(14, 25), pk(3, 26), pk(-8, 26)] },
-  { nom: 'Avenue de Suffren', pts: [pt('Tour Eiffel'), pk(-29, 14), pk(-28, 19), pk(-18, 19)] },
+  { nom: 'Avenue des Champs-Élysées', l: a(1.2), t: TROTTOIR_AV, pts: [pt('Arc de Triomphe'), pt('Concorde')] },
+  { nom: 'Boulevard Haussmann', l: a(0.9), t: TROTTOIR_AV, pts: [pt('Arc de Triomphe'), pk(-21, -10), pt('Opéra')] },
+  { nom: 'Avenue de Wagram', l: a(0.8), t: TROTTOIR_AV, pts: [pt('Arc de Triomphe'), pk(-32, -10), pk(-28, -13)] },
+  { nom: 'Boulevard des Batignolles', l: a(0.8), t: TROTTOIR_AV, pts: [pk(-28, -13), pk(-23, -16), pk(-17, -19)] },
+  { nom: 'Avenue des Ternes', l: a(0.8), t: TROTTOIR_AV, pts: [pk(-32, -10), pk(-39, -10), pk(-46, -9)] },
+  { nom: 'Boulevard de Rochechouart', l: a(0.8), t: TROTTOIR_AV, pts: [pk(-2, -19), pk(1, -17), pt('Gare du Nord')] },
+  { nom: 'Boulevard de Ménilmontant', l: a(0.8), t: TROTTOIR_AV, pts: [pt('Buttes-Chaumont'), pk(31, -11), pk(31, -3), pk(31, 4), pt('Nation')] },
+  { nom: 'Boulevard de Port-Royal', l: a(0.8), t: TROTTOIR_AV, pts: [pk(10, 15), pk(6, 17), pk(2.5, 17)] },
+  { nom: 'Boulevard Arago', l: a(0.7), t: TROTTOIR_AV, pts: [pk(14, 25), pk(3, 26), pk(-8, 26)] },
+  { nom: 'Avenue de Suffren', l: a(0.8), t: TROTTOIR_AV, pts: [pt('Tour Eiffel'), pk(-29, 14), pk(-28, 19), pk(-18, 19)] },
   // LES RACCORDS (v216). La contrainte de partage de la v211 — deux circuits ne
   // partagent pas plus de vingt blocs de chaussée — avait laissé trois avenues
   // sans voitures : l'avenue de l'Opéra, le Faubourg Saint-Antoine et le
@@ -495,29 +480,26 @@ const VOIES = [
   // vers le centre faisait un demi-tour de 175°. Le tour se fait donc comme
   // dans la vraie ville — par Diderot, les quais de la rive droite et Bourdon,
   // qui ramène à la Bastille par le SUD.
-  { nom: 'Boulevard Beaumarchais', pts: [pt('Bastille'), de(1.25, -0.917), pt('République')] },
-  { nom: 'Rue de Turbigo', pts: [pt('République'), de(0.292, -1.083), pt('Châtelet')] },
-  { nom: 'Quais de la rive droite', pts: [pt('Gare de Lyon'), de(1.583, 0.083), de(1, -0.042), de(0.5, -0.292), pt('Hôtel de Ville')] },
-  { nom: 'Boulevard Diderot', pts: [pt('Nation'), de(2.5, 0.125), pt('Gare de Lyon')] },
-  { nom: 'Boulevard Bourdon', pts: [pt('Bastille'), de(1.625, 0.083)] },
-  { nom: 'Avenue Ledru-Rollin', pts: [de(1.75, -0.792), de(1.833, -0.083), de(1.875, 0)] },
+  { nom: 'Boulevard Beaumarchais', l: a(0.8), t: TROTTOIR_AV, pts: [pt('Bastille'), de(1.25, -0.917), pt('République')] },
+  { nom: 'Rue de Turbigo', l: a(0.7), t: TROTTOIR_AV, pts: [pt('République'), de(0.292, -1.083), pt('Châtelet')] },
+  { nom: 'Quais de la rive droite', l: a(0.8), t: TROTTOIR_AV, pts: [pt('Gare de Lyon'), de(1.583, 0.083), de(1, -0.042), de(0.5, -0.292), pt('Hôtel de Ville')] },
+  { nom: 'Boulevard Diderot', l: a(0.8), t: TROTTOIR_AV, pts: [pt('Nation'), de(2.5, 0.125), pt('Gare de Lyon')] },
+  { nom: 'Boulevard Bourdon', l: a(0.6), t: TROTTOIR_AV, pts: [pt('Bastille'), de(1.625, 0.083)] },
+  { nom: 'Avenue Ledru-Rollin', l: a(0.7), t: TROTTOIR_AV, pts: [de(1.75, -0.792), de(1.833, -0.083), de(1.875, 0)] },
   // Le centre, pour l'avenue de l'Opéra. La rue du Louvre et le
   // Quatre-Septembre lui donnent le triangle Rivoli / Bourse / Opéra, et la
   // rue de la Paix par la place Vendôme la seconde boucle, celle qui
   // redescend sur les Tuileries.
-  { nom: 'Rue du Louvre', pts: [pt('Louvre'), de(-1.5, -1.167), de(-1.417, -1.833)] },
-  { nom: 'Rue du Quatre-Septembre', pts: [pt('Opéra'), de(-1.833, -1.583), de(-1.458, -1.458)] },
-  { nom: 'Rue de la Paix', pts: [pt('Opéra'), de(-2.417, -1.25)] },
-  { nom: 'Rue de Castiglione', pts: [de(-2.417, -1.25), de(-2.375, -0.75)] },
+  { nom: 'Rue du Louvre', l: a(0.6), t: TROTTOIR_AV, pts: [pt('Louvre'), de(-1.5, -1.167), de(-1.417, -1.833)] },
+  { nom: 'Rue du Quatre-Septembre', l: a(0.6), t: TROTTOIR_AV, pts: [pt('Opéra'), de(-1.833, -1.583), de(-1.458, -1.458)] },
+  { nom: 'Rue de la Paix', l: a(0.6), t: TROTTOIR_AV, pts: [pt('Opéra'), de(-2.417, -1.25)] },
+  { nom: 'Rue de Castiglione', l: a(0.6), t: TROTTOIR_AV, pts: [de(-2.417, -1.25), de(-2.375, -0.75)] },
   // L'ouest, pour Haussmann. Tronchet le referme sur la Madeleine ; Malesherbes
   // lui donne sa seconde boucle vers les Batignolles, sans reprendre Wagram,
   // qui roule déjà pour la Grande Armée.
-  { nom: 'Rue Tronchet', pts: [pt('Madeleine'), de(-3.167, -1.917)] },
-  { nom: 'Boulevard Malesherbes', pts: [pt('Madeleine'), de(-3.417, -2.125), de(-3.875, -2.75)] },
+  { nom: 'Rue Tronchet', l: a(0.6), t: TROTTOIR_AV, pts: [pt('Madeleine'), de(-3.167, -1.917)] },
+  { nom: 'Boulevard Malesherbes', l: a(0.8), t: TROTTOIR_AV, pts: [pt('Madeleine'), de(-3.417, -2.125), de(-3.875, -2.75)] },
 ];
-
-// La section de chaque voie, demandée à la règle par son nom (v303).
-for (const v of VOIES) { const sec = sectionDeVoie(v.nom); v.l = sec.chaussee / 2; v.t = sec.trottoir; v.type = sec.type; }
 
 // Les circuits ont besoin de savoir QUELLES avenues ils couvrent : le témoin
 // de `carteMonde.js` compare la liste des voies à ce que les trajets touchent,
@@ -531,13 +513,12 @@ export const VOIES_PARIS = VOIES;
 // pour les circuits : ce sont les voitures de la route qui l'empruntent, et
 // `CIRCUITS_PARIS` ne la connaît pas.
 const ENTREES = entreesDe('paris').map((e) => ({
-  nom: `Entrée ${e.route}`, l: BOULEVARD.chaussee / 2, t: BOULEVARD.trottoir,
+  nom: `Entrée ${e.route}`, l: a(1.2), t: TROTTOIR_AV,
   pts: [[Math.round(e.x - PARIS.x), Math.round(e.z - PARIS.z)], pt('Gare du Nord')],
 }));
 export const ENTREES_PARIS = ENTREES.map((v) => v.pts.map(([u, w]) => [PARIS.x + u, PARIS.z + w]));
 
 const BANDES = rangerVoies([...VOIES, ...ENTREES]);
-const chausseeCroisee = (u, v) => solDesVoies(BANDES, u, v, BITUME, PAVE) === BITUME;
 
 
 // --- où roulent les voitures -------------------------------------------------
@@ -740,25 +721,7 @@ const solDuPont = (u) => {
 // Notre-Dame — se retrouvait au milieu de l'eau. Sans cette correction, les
 // quartiers hérités n'existaient tout simplement pas : le vieux Paris était
 // sous la Seine, et il ne restait à voir que l'ouest d'Haussmann.
-// LA RUE DE QUARTIER À LA RÈGLE (v303). La largeur de la rue et du trottoir
-// se demande au type — une ruelle héritée est une rue LOCALE (une voie de
-// 3,1 m, trottoirs de 2 m), toute autre rue une COLLECTRICE (deux voies,
-// trottoirs de 2,5 m) —, et LA TRAME ENTIÈRE SUIT L'EMPRISE : le pas grandit
-// dans le rapport des emprises, l'îlot aussi, et la part bâtie du quartier
-// reste celle de la v294. Garder l'îlot tel quel (la méthode de la v294) est
-// mesuré et écarté : onze blocs d'îlot pour onze de rue, c'est un tiers des
-// immeubles de Paris de moins — 24,3 % de lots à 15,2 dans la ville
-// d'Haussmann. Le kit le dit : « si l'élargissement mange les bâtiments,
-// recompose les lots ». Moins de rues, plus larges, des îlots plus grands.
-// Les valeurs `pas`, `rue` et `face` écrites plus bas sont celles de la v294 :
-// elles ne servent plus qu'à donner le rapport.
-const aLaRegle = (t) => {
-  const sec = t.desordre >= 2 ? LOCALE : COLLECTRICE;
-  const rue = sec.chaussee / 2, face = rue + sec.trottoir;
-  return { ...t, type: sec.type, rue, face, pas: t.pas * face / t.face };
-};
-const Q = (nom, dx, dz, r0, t0) => {
-  const t = aLaRegle(t0);
+const Q = (nom, dx, dz, r0, t) => {
   const [u, v0] = de(dx, dz);
   const r = k(r0);          // le rayon du quartier suit la carte
   let v = v0;
@@ -838,7 +801,7 @@ const QUARTIERS = [
 
 // Partout ailleurs : la ville d'Haussmann ordinaire, un peu moins réglée que
 // l'ouest, un peu moins tordue que le Marais.
-const HAUSSMANN = aLaRegle({ nom: 'Haussmann', ang: 0.09, pas: 18.4, rue: 1.8, face: 3.6, cour: 0.38, etages: 6, desordre: 1.3 });
+const HAUSSMANN = { nom: 'Haussmann', ang: 0.09, pas: 18.4, rue: 1.8, face: 3.6, cour: 0.38, etages: 6, desordre: 1.3 };
 
 // La table des quartiers, publiée pour les témoins : la largeur d'une rue de
 // Paris se DEMANDE à cette table, elle ne se recopie pas dans un banc.
@@ -1060,15 +1023,9 @@ export function solParis(x, z) {
     // l'Étoile fait quarante mètres, et elle doit se voir comme un rayon
     // franc jusqu'au bout, pas comme un fil qui s'épaissit avec la distance.
     const ecart = Math.abs(secteur - Math.round(secteur)) * de2 * (Math.PI * 2 / 12);
-    // Une avenue de l'Étoile est une rue COLLECTRICE de la règle (v303) :
-    // douze boulevards de quatre voies ne laisseraient rien de l'Étoile.
-    if (ecart < COLLECTRICE.chaussee / 2) return BITUME;
-    // UN TROTTOIR NE RECOUVRE PAS LA CHAUSSÉE D'UNE VOIE QUI LE CROISE (v303) :
-    // ces deux figures sont écrites AVANT les percées, et leurs trottoirs, plus
-    // larges depuis la règle, mangeaient la Grande Armée à l'Étoile et Rivoli à
-    // la Concorde — mesuré, deux circuits de voitures de 83 à 71 % et de 89 à
-    // 82 % de chaussée dans le monde.
-    if (ecart < COLLECTRICE.chaussee / 2 + COLLECTRICE.trottoir) return chausseeCroisee(u, v) ? BITUME : PAVE;
+    // Deux voies et un trottoir de deux blocs, comme toute avenue (v294).
+    if (ecart < PLANCHER_AVENUE) return BITUME;
+    if (ecart < PLANCHER_AVENUE + TROTTOIR_AV) return PAVE;
   }
 
   // Les Champs-Élysées : de l'Étoile à la Concorde, larges et plantés d'arbres.
@@ -1082,14 +1039,12 @@ export function solParis(x, z) {
     const dv = Math.abs(v - axe);
     // Neuf colonnes de chaussée depuis la v294 : la plus large avenue de la
     // ville doit le rester quand Rivoli passe à sept blocs et demi.
-    // La règle (v303) : un boulevard, plus le stationnement des deux côtés.
-    const demi = CHAMPS.chaussee / 2, bord = demi + CHAMPS.trottoir;
-    if (dv <= demi) return BITUME;
-    if (dv <= bord) return chausseeCroisee(u, v) ? BITUME : PAVE;
+    if (dv <= 4) return BITUME;
+    if (dv <= 5.2) return PAVE;
     // Un marronnier sur trois : depuis que l'arbre est un VRAI arbre (un fût
     // et une couronne, cf. world.js), une colonne sur deux faisait une haie
     // pleine de cinq blocs de haut qui bouchait l'avenue. On les espace.
-    if (dv <= bord + 1.2) return (((Math.round(u) % 3) + 3) % 3) === 0 ? ARBRE : PAVE;
+    if (dv <= 6.4) return (((Math.round(u) % 3) + 3) % 3) === 0 ? ARBRE : PAVE;
   }
 
   const percee = solDesVoies(BANDES, u, v, BITUME, PAVE);

@@ -718,7 +718,11 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   // `sync.js`, et l'on regarde ce qu'il en reste : tout, sur le toit neuf.
   const releve = await (async () => {
     const W = await import('../src/world.js');
-    const P = await import('../src/paris.js');
+    // LA TRAME OÙ LA CABANE A ÉTÉ POSÉE (v303) : depuis que les rues suivent la
+    // règle du kit, les toits d'avant vivent dans la trame figée, et c'est elle
+    // que le relevé lit. Sur l'ancien code elle n'existe pas : la trame
+    // courante EST celle d'avant.
+    let P; try { P = await import('../src/paris-v302.js'); } catch { P = await import('../src/paris.js'); }
     if (!W.releverBlocsToitsParis || !W.DATE_RELEVE_PARIS || !P.gabaritParis) return { absent: true };
     const [x0, z0] = P.adresseParis(-0.8, -0.9);
     let col = null;
@@ -734,9 +738,13 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     // le bâtisseur écrit à h + dy − 1 : le dernier bloc de l'ancien immeuble,
     // et celui du neuf — vérifié sur le MONDE, pas seulement sur le gabarit
     const toitAncien = h + g.ancien - 1, toitNeuf = h + g.sommet - 1;
-    const monde = w.getBlock(x, toitNeuf, z) !== 0 && w.getBlock(x, toitNeuf + 1, z) === 0;
     const monte = g.sommet - g.ancien;
     const t = W.DATE_RELEVE_PARIS - 86400000;
+    // le monde d'un enfant qui a bâti là : sa cabane dans le journal, et la
+    // colonne garde l'immeuble sur lequel elle a été posée (v303)
+    const wc = new W.World();
+    wc.installerEdits(new Map([[`${x},${toitAncien + 1},${z}`, 8]]), new Map([[`${x},${toitAncien + 1},${z}`, t]]));
+    const monde = wc.getBlock(x, toitNeuf, z) !== 0 && wc.getBlock(x, toitNeuf + 1, z) === 0;
     let rue = null;
     for (let d = 1; d < 20 && !rue; d++) for (const [dx, dz] of [[d, 0], [-d, 0], [0, d], [0, -d]]) if (P.solParis(x + dx, z + dz) !== null) { rue = [x + dx, z + dz]; break; }
     const hr = w.terrainHeight(rue[0], rue[1]);
@@ -772,6 +780,46 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     !releve.absent && releve.facade && releve.tour && releve.apres && releve.loin && releve.marque && releve.archive
       && releve.idempotent && releve.chaine && releve.pos,
     releve.absent ? 'le relevé des toits de Paris n\'existe pas' : JSON.stringify(releve));
+
+  // --- LES RUES DE PARIS À LA RÈGLE DU KIT (v303) : ce qu'un enfant avait ------
+  // --- bâti dans l'ancienne ville n'est ni enterré ni suspendu ---------------
+  //
+  // Les rues s'élargissent et les îlots suivent : les immeubles se DÉPLACENT.
+  // Une maison posée sur une ancienne rue se retrouverait enfermée dans un
+  // immeuble neuf. La colonne où un enfant a posé un bloc avant
+  // `DATE_RUES_PARIS` garde la ville d'avant (`paris-v302.js`) ; sans ce bloc,
+  // ou avec un bloc posé après la date, c'est la ville neuve. On cherche une
+  // colonne qui était une RUE et devient un immeuble, et on regarde le monde.
+  const rues = await (async () => {
+    const W = await import('../src/world.js');
+    const P = await import('../src/paris.js');
+    let A; try { A = await import('../src/paris-v302.js'); } catch { return { absent: true }; }
+    if (!W.DATE_RUES_PARIS) return { absent: true };
+    const [x0, z0] = P.adresseParis(-0.8, -0.9);
+    let col = null;
+    for (let d = 0; d < 60 && !col; d++) for (let dx = -d; dx <= d && !col; dx++) for (const dz of [-d, d]) {
+      const x = x0 + dx, z = z0 + dz;
+      if (A.solParis(x, z) === null || !P.lotParisLibre(x, z) || P.gabaritParis(x, z).dedans) continue;
+      col = { x, z }; break;
+    }
+    if (!col) return { absent: false, colonne: false };
+    const { x, z } = col, h = w.terrainHeight(x, z);
+    const k = `${x},${h + 1},${z}`, t = W.DATE_RUES_PARIS - 86400000;
+    const monde = (temps) => {
+      const m = new W.World();
+      if (temps !== null) m.installerEdits(new Map([[k, 5]]), new Map([[k, temps]]));
+      return [2, 3, 4, 6].map((dy) => m.getBlock(x, h + dy, z));
+    };
+    const neuf = monde(null), avant = monde(t), apres = monde(W.DATE_RUES_PARIS + 1000);
+    return { absent: false, colonne: true, x, z,
+      neufBati: neuf.some((id) => id !== 0), avantLibre: avant.every((id) => id === 0), apresBati: apres.some((id) => id !== 0) };
+  })();
+  verifier('une maison bâtie sur une ancienne rue de Paris n\'est pas enfermée dans un immeuble neuf',
+    !rues.absent && rues.colonne && rues.neufBati && rues.avantLibre,
+    rues.absent ? 'les rues de Paris ne suivent pas encore la règle' : JSON.stringify(rues));
+  verifier('et ce qu\'on bâtit après la date voit la ville neuve',
+    !rues.absent && rues.colonne && rues.apresBati,
+    rues.absent ? 'les rues de Paris ne suivent pas encore la règle' : JSON.stringify(rues));
 
   const trop = [];
   for (let x = -700; x <= 700; x += 7) {
