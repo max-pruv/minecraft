@@ -66,6 +66,30 @@ et écarté : la section de boulevard pour toute « avenue » ou tout
 « boulevard » (vingt-sept dans un disque de 370 blocs) faisait perdre 40 % des
 immeubles, et l'îlot gardé tel quel un tiers.
 
+**Le prix déclaré, et ce que le portail a démonté.** Les quartiers nommés du
+jeu sont de petits disques d'un kilomètre, et les percées à la règle (vingt et
+un blocs d'emprise) les traversent : le Marais garde deux colonnes de lot (41
+en v302), Saint-Germain deux (168), le Faubourg Saint-Antoine dix (91) — mesuré
+quartier par quartier ; les agrandir de trois quarts n'y change rien, ce sont
+Rivoli, les Grands Boulevards et le boulevard Saint-Germain qui les occupent.
+Le registre « ancien » (enduit et volets) reste au Quartier latin, et Paris
+doublé (la livraison décidée par Max) rendra leurs immeubles aux trois. Le
+portail complet a rendu cinq rouges de la livraison, tous démontés sous node :
+le ménage du ciel jugeait « en l'air » un bloc collé à un immeuble de la ville
+d'avant, parce que son générateur ne savait pas quelles colonnes le jeu garde
+dans l'ancienne trame — il le sait désormais (`colonnesParisAvant`, la même
+règle que le jeu) ; ce qui a montré qu'un bloc collé à une façade (dans la
+colonne de la rue) perdait le mur qui le portait si l'immeuble passait à la
+ville neuve : la ville d'avant se garde désormais sur les huit colonnes
+voisines de toute construction, et un témoin de plus le prouve ; et quatre témoins mesuraient à côté — le morceau le plus
+bâti de l'ouest n'a plus un carrefour (on cherche le plus proche qui porte une
+rue), le Marais n'a plus d'immeubles (on garde le registre au Quartier latin,
+modèles de monuments écartés par leur nom), un immeuble creux de la v301 a son
+toit à vingt-quatre blocs quand le témoin du tissu ne lisait que vingt (176
+lots « vides »), et la fenêtre de la rue était centrée sur la Seine et la Cité
+(dix bordures de granit, toutes les rues de quartier y ayant cédé aux percées ;
+elle vise désormais le quartier haussmannien du témoin du tissu).
+
 ## v302 — Le rail continu : les neuf lignes de train roulent sur un profil flottant, et le pont de l'A1 n'a plus de trou
 
 **Pourquoi.** Quatrième livraison du programme « monde fidèle », et la

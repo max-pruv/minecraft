@@ -792,6 +792,37 @@ la main en v294. Six règles.
 - **UNE BARRE SUR UNE LARGEUR EN COLONNES SE CALCULE AVEC SA QUANTIFICATION.**
   Une chaussée de 6,4 blocs se traverse en six ou sept colonnes : la barre du
   témoin est `floor(6,4)`, et la mesure vaut 6 ici contre 4 sur `origin/main`.
+- **UNE VILLE FIGÉE SOUS UNE COLONNE SE DÉCLARE À TOUT CE QUI ENGENDRE LA
+  VILLE, PAS SEULEMENT AU JEU.** Le ménage du ciel (v298) juge l'appui d'un
+  bloc sur un monde SANS blocs d'enfant qu'il engendre lui-même ; ce monde-là
+  ignorait `colonnesParisAvant` et montrait la ville NEUVE sous une colonne où
+  le jeu montre l'ancienne. Mesuré sur le témoin du relevé : le bloc collé à
+  la façade d'une cabane, et celui posé contre le mur voisin, jugés « en
+  l'air » et retirés. Le générateur du ménage reçoit désormais les colonnes
+  d'avant du document (même règle, `dansParisAvant`), et se refait quand elles
+  changent. C'est la leçon du sol continu (« ce qui remplace un bloc le dit à
+  TOUS ceux qui lisaient le bloc ») appliquée à une trame.
+- **ET CE QUI PORTAIT UN BLOC N'EST PAS DANS SA COLONNE.** Un escalier contre
+  un mur, un balcon : le bloc est dans la colonne de la RUE, l'immeuble dans
+  celle d'à côté. Garder la seule colonne du bloc laissait l'immeuble passer à
+  la ville neuve, où il pouvait devenir une rue — le bloc flottait, et le
+  ménage le retirait. La ville d'avant se garde donc sur les huit colonnes
+  voisines (`marquerParisAvant`), au jeu comme au ménage ; un témoin de
+  `plafond.js` colle un bloc contre une façade d'avant qui devient une rue, et
+  lit le mur (rouge sans la règle : de l'air).
+- **UN QUARTIER PLUS PETIT QUE SES PERCÉES N'A PLUS D'IMMEUBLES, ET CELA SE
+  COMPTE QUARTIER PAR QUARTIER.** La part bâtie de la ville (22,6 → 21,6 %)
+  cachait que le Marais passe de 41 colonnes de lot à 2, Saint-Germain de 168
+  à 2 : un disque d'un kilomètre traversé par deux percées de vingt et un
+  blocs. Agrandir leurs disques de trois quarts n'y change rien (mesuré). Le
+  prix est déclaré et Paris doublé le rend ; un total de ville ne dit jamais ce
+  qu'un quartier a perdu.
+- **ET QUATRE TÉMOINS MESURAIENT À CÔTÉ, POUR UNE MÊME RAISON : ILS ÉCRIVAIENT
+  LEUR TERRAIN** (v285). Le morceau le plus bâti n'a plus de carrefour, donc
+  plus de passage piéton ; le Marais n'a plus d'immeubles ; un immeuble creux
+  de la v301 a son toit à vingt-quatre blocs pour un témoin qui lisait vingt ;
+  la fenêtre de la rue était centrée sur la Seine. Chacun cherche désormais ce
+  qu'il éprouve, et dit où il l'a trouvé.
 
 ## Le rail continu (v302) — quatre lecteurs, une cote flottante
 

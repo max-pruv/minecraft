@@ -228,19 +228,35 @@ function verifier(nom, ok, detail = '') {
   // `RELEVE`, et un trottoir d'asphalte (0,95) dont la face est à `RELEVE`
   // au-dessus du bloc — dans le tampon du sol, jamais dans les blocs.
   {
-    const g = avec.t.sol;
-    let marquage = 0, bordure = 0, trottoir = 0, trottoirBas = 0;
-    const haut = (i) => Math.abs((g.positions[i * 3 + 1] % 1) - RELEVE) < 0.02;
-    for (let i = 0; i < nb(g); i++) {
-      const rug = g.matiere[i * 2], met = g.matiere[i * 2 + 1];
-      if (met !== 0) continue;
-      if (Math.abs(rug - 0.7) < 0.01) marquage++;
-      if (Math.abs(rug - 0.75) < 0.01 && haut(i)) bordure++;
-      if (Math.abs(rug - 0.95) < 0.01 && g.normals[i * 3 + 1] > 0.5) { if (haut(i)) trottoir++; else trottoirBas++; }
+    // LE MORCEAU DE LA RUE SE CHERCHE (v303) : le morceau témoin est choisi pour
+    // ses FAÇADES, et depuis que les rues suivent la règle du kit les îlots sont
+    // plus grands — le plus bâti de l'ouest n'a plus un carrefour, donc plus un
+    // passage piéton (0 sommet de marquage sur un marquage parfaitement en
+    // place : 33 morceaux sur 49 en portent autour de lui). On prend le plus
+    // proche qui porte une rue, et il entre dans le message.
+    const compter = (g) => {
+      let marquage = 0, bordure = 0, trottoir = 0, trottoirBas = 0;
+      if (!g) return { marquage, bordure, trottoir, trottoirBas };
+      const haut = (i) => Math.abs((g.positions[i * 3 + 1] % 1) - RELEVE) < 0.02;
+      for (let i = 0; i < nb(g); i++) {
+        const rug = g.matiere[i * 2], met = g.matiere[i * 2 + 1];
+        if (met !== 0) continue;
+        if (Math.abs(rug - 0.7) < 0.01) marquage++;
+        if (Math.abs(rug - 0.75) < 0.01 && haut(i)) bordure++;
+        if (Math.abs(rug - 0.95) < 0.01 && g.normals[i * 3 + 1] > 0.5) { if (haut(i)) trottoir++; else trottoirBas++; }
+      }
+      return { marquage, bordure, trottoir, trottoirBas };
+    };
+    let c = compter(avec.t.sol), rueEn = [cx, cz];
+    for (let r = 1; r <= 3 && !c.marquage; r++) for (let dz = -r; dz <= r && !c.marquage; dz++) for (let dx = -r; dx <= r && !c.marquage; dx++) {
+      if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
+      const essai = compter(tampons(1, cx + dx, cz + dz).t.sol);
+      if (essai.marquage) { c = essai; rueEn = [cx + dx, cz + dz]; }
     }
+    const { marquage, bordure, trottoir, trottoirBas } = c;
     verifier('la rue porte son marquage, sa bordure de granit et son trottoir relevé',
       marquage > 0 && bordure > 0 && trottoir > 0 && trottoirBas === 0,
-      `${marquage} sommets de marquage, ${bordure} de bordure en relief, trottoir relevé ${trottoir} (à plat ${trottoirBas})`);
+      `${marquage} sommets de marquage, ${bordure} de bordure en relief, trottoir relevé ${trottoir} (à plat ${trottoirBas}) — morceau (${rueEn.join(', ')})`);
   }
 
   // --- v288 : les quartiers, les arbres, le mobilier -----------------------------
@@ -264,8 +280,26 @@ function verifier(nom, ok, detail = '') {
     // une place, et un morceau sans façade ne prouverait rien (v285 : un témoin
     // qui écrit son terrain se trompe de terrain).
     const { infoFacadeParis } = await import('../src/paris.js');
-    const [mx, mz] = adresseParis(0.9, -0.35);
+    // LE REGISTRE « ANCIEN » SE CHERCHE DANS SES DEUX QUARTIERS (v303). Le
+    // Marais du jeu est un disque d'un kilomètre que Rivoli et les Grands
+    // Boulevards traversent ; à la règle du kit (vingt et un blocs d'emprise)
+    // ils n'y laissent que deux colonnes de lot, mesuré — 41 en v302. C'est le
+    // prix déclaré de la v303, que Paris doublé rendra. Le registre, lui, vit
+    // aussi au Quartier latin (122 colonnes de lot), et c'est le registre que
+    // ce verdict garde, pas un nom de quartier.
+    // ET LES MODÈLES DE MONUMENTS SONT ÉCARTÉS PAR LEUR NOM (v292) : le morceau
+    // du Quartier latin porte le Panthéon, 376 sommets de PIERRE qui ne disent
+    // rien du registre des immeubles. Un monde où tous les monuments sont
+    // « touchés » les rend en cubes, hors des façades.
+    const sansModeles = (x, z) => {
+      const w = new World();
+      w.hd = 1;
+      w.monumentsTouches = { has: () => true, add() {}, clear() {} };
+      return { t: buildChunkTampons(w, x, z) };
+    };
     let marais = null, ou = null;
+    for (const [nomQ, qx, qz] of [['Marais', 0.9, -0.35], ['Quartier latin', 0.15, 0.85]]) {
+    const [mx, mz] = adresseParis(qx, qz);
     for (let r = 0; r <= 6; r++) for (let dz = -r; dz <= r; dz++) for (let dx = -r; dx <= r; dx++) {
       const kx = Math.floor(mx / CHUNK) + dx, kz = Math.floor(mz / CHUNK) + dz;
       // UN MORCEAU À CHEVAL SUR DEUX QUARTIERS N'EST PAS UN TÉMOIN DE QUARTIER
@@ -273,33 +307,26 @@ function verifier(nom, ok, detail = '') {
       // Marais avait un coin dans Haussmann, et rendait « enduit 692 · volets
       // 480 · pierre 1200 » — deux registres à la fois, ce qui n'accuse ni
       // l'un ni l'autre. Le centre ET les quatre coins du morceau sont du
-      // Marais, ou le morceau n'est pas retenu.
+      // quartier, ou le morceau n'est pas retenu.
       const coins = [[CHUNK / 2, CHUNK / 2], [0, 0], [CHUNK - 1, 0], [0, CHUNK - 1], [CHUNK - 1, CHUNK - 1]];
-      if (!coins.every(([cx, cz]) => { const i = infoFacadeParis(kx * CHUNK + cx, kz * CHUNK + cz); return i && i.quartier === 'Marais'; })) continue;
-      const t = tampons(1, kx, kz);
-      // (La v292 écartait tout morceau qu'un monument ATTEINT : celui de
-      // Notre-Dame, (−13, 13), avait un coin dans le Quartier latin et deux
-      // mille sommets de pierre. Le critère des cinq points le rejette déjà ;
-      // et « atteint » n'est pas « écrit » — le vrai morceau du Marais,
-      // (−13, 12), est à portée du modèle sans en recevoir un sommet. Ce que
-      // le verdict exige — pas de pierre — reste exigé.)
+      if (!coins.every(([cx, cz]) => { const i = infoFacadeParis(kx * CHUNK + cx, kz * CHUNK + cz); return i && i.quartier === nomQ; })) continue;
+      const t = sansModeles(kx, kz);
       // ET ON GARDE LE MORCEAU QUI PORTE LE PLUS DE FAÇADES, pas le premier
       // qui en porte deux mille (v294) : les rues élargies laissent à un
       // morceau de seize blocs un coin d'îlot, et le premier venu a rendu
       // « enduit 100 · volets 0 » sur un registre parfaitement en place.
-      // Mesuré sous node : (−13, 12) porte 25 322 sommets de façade, enduit
-      // 1 924 · volets 3 680 · pierre 0.
-      if (nb(t.t.facades) > (marais ? nb(marais.t.facades) : 0)) { marais = t; ou = [kx, kz]; }
+      if (nb(t.t.facades) > (marais ? nb(marais.t.facades) : 0)) { marais = t; ou = [kx, kz, nomQ]; }
     }
-    if (!marais) marais = tampons(1, Math.floor(mx / CHUNK), Math.floor(mz / CHUNK));
-    console.log(`   🔎 morceau du Marais : ${ou ? ou.join(',') : 'aucun avec façades'}`);
+    }
+    if (!marais) { const [mx, mz] = adresseParis(0.9, -0.35); marais = tampons(1, Math.floor(mx / CHUNK), Math.floor(mz / CHUNK)); }
+    console.log(`   🔎 morceau du registre ancien : ${ou ? ou.join(',') : 'aucun avec façades'}`);
     const enduitM = compteTuile(marais.t.facades, 'enduit'), voletM = compteTuile(marais.t.facades, 'volet');
     const pierreM = compteTuile(marais.t.facades, 'pierre');
     const enduitH = compteTuile(avec.t.facades, 'enduit'), voletH = compteTuile(avec.t.facades, 'volet');
     const pierreH = compteTuile(avec.t.facades, 'pierre');
-    verifier('chaque quartier a son registre : enduit et volets au Marais, pierre de taille à Haussmann',
+    verifier('chaque quartier a son registre : enduit et volets dans le Paris ancien, pierre de taille à Haussmann',
       enduitM > 100 && voletM > 50 && pierreM === 0 && pierreH > 100 && enduitH === 0 && voletH === 0,
-      `Marais enduit ${enduitM} · volets ${voletM} · pierre ${pierreM} — Haussmann pierre ${pierreH} · enduit ${enduitH} · volets ${voletH}`);
+      `${ou ? ou[2] : 'Marais'} enduit ${enduitM} · volets ${voletM} · pierre ${pierreM} — Haussmann pierre ${pierreH} · enduit ${enduitH} · volets ${voletH}`);
     // La plaque de rue, au coin de l'immeuble, sur le premier chaînage.
     verifier('les coins portent une plaque de rue', compteTuile(avec.t.facades, 'plaque') > 0,
       `${compteTuile(avec.t.facades, 'plaque')} sommets de plaque`);

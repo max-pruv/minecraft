@@ -5,7 +5,11 @@
   1 500 à 3 000 colonnes, bordés par la Seine et les percées) n'ont presque
   plus de lots — ils en avaient déjà peu (168, 41, 91, 55 colonnes) et une trame
   de 15 à 29 blocs n'y loge plus un îlot entier ; leur rayon (`Q(…, r0)`) est
-  en kilomètres du plan, pas à l'échelle d'un mètre. (2) Les PLACES gardent
+  en kilomètres du plan, pas à l'échelle d'un mètre. Mesuré au portail : 41 → 2
+  au Marais, 168 → 2 à Saint-Germain, 91 → 10 au Faubourg ; leurs disques
+  agrandis de trois quarts n'en rendent presque rien (ce sont Rivoli, les
+  Grands Boulevards et le boulevard Saint-Germain qui les occupent). Le remède
+  est Paris doublé, décidé par Max. (2) Les PLACES gardent
   leurs rayons (Concorde 4,5, l'Étoile 8) : un boulevard de 21 blocs y arrive
   plus large que la place. (3) Les autres villes bâties à la main (Londres,
   Nice, Lille, San Francisco, Washington) et les villes engendrées n'ont pas

@@ -1728,6 +1728,7 @@ const SUR_LE_SOL = 1;                 // y = relief + 1 : posé sur le bloc de s
 const VOISINS = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
 let mondeDuRelief = null;
 let generateur = null;
+let signatureAvant = '';            // les colonnes d'avant que le générateur a reçues
 const reliefs = new Map();            // x * 262144 + z -> relief : une colonne se calcule une fois, d'une fusion à l'autre
 const decisions = new Map();          // signature d'un groupe -> a-t-il un appui du jeu ?
 const reliefDe = (x, z) => (mondeDuRelief || (mondeDuRelief = new World())).terrainHeight(x, z);
@@ -1746,13 +1747,23 @@ export function menagerCielParis(map) {
   const poses = new Set();          // toute clé d'un bloc posé (non-air), candidat ou non
   const R = PARIS.r;
   let nb = 0;
+  // LES COLONNES OÙ LE JEU MONTRE LA VILLE D'AVANT (v303). Le générateur du
+  // jeu garde la trame de la v302 sous toute colonne de Paris où un enfant a
+  // bâti avant la date des rues (`colonnesParisAvant`) ; celui du ménage doit
+  // voir la MÊME ville, sinon il juge « en l'air » un bloc collé à un immeuble
+  // que le jeu dessine bel et bien — mesuré : la cabane du témoin du relevé
+  // perdait le bloc posé contre sa façade, et celui posé contre le mur voisin.
+  const avant = new Set();
   for (const k in map || {}) {
     const e = map[k];
-    if (!Array.isArray(e) || e[0] === BLOCK.AIR || k.charCodeAt(0) === 64) continue;   // '@' : une marque
+    if (!Array.isArray(e) || k.charCodeAt(0) === 64) continue;   // '@' : une marque
     const c1 = k.indexOf(','), c2 = k.indexOf(',', c1 + 1);
     if (c1 < 0 || c2 < 0) continue;
     const x = +k.slice(0, c1), y = +k.slice(c1 + 1, c2), z = +k.slice(c2 + 1);
     if (x !== x || y !== y || z !== z || y < 0 || y > 255) continue;                    // NaN, ou hors du monde
+    // un trou creusé compte comme un bloc posé, exactement comme `setBlock`
+    if (dansParisAvant(x, z, num(e[1]))) marquerParisAvant(avant, x, z);
+    if (e[0] === BLOCK.AIR) continue;
     nb++;
     poses.add(cle3(x, y, z));
     // La boîte avant le disque, et la date avant tout : sur un gros journal
@@ -1767,7 +1778,16 @@ export function menagerCielParis(map) {
   // Rien à juger : la carte est rendue telle quelle, sans copie.
   if (!candidats.size) return { carte: map || {}, retires: 0, gardes: nb };
   const aRetirer = [];
-  const leJeuEcrit = (x, y, z) => (generateur || (generateur = new World())).getBlock(x, y, z) !== BLOCK.AIR;
+  // Le générateur se garde d'une fusion à l'autre TANT QUE la ville d'avant
+  // couvre les mêmes colonnes ; sinon ses morceaux et ses décisions mentent.
+  let somme = avant.size;
+  for (const c of avant) somme = (somme + (Math.imul((c % 4294967296) | 0, 2654435761) ^ Math.imul(Math.floor(c / 4294967296) | 0, 40503))) >>> 0;
+  const sigAvant = `${avant.size}:${somme}`;
+  if (sigAvant !== signatureAvant) { generateur = null; decisions.clear(); signatureAvant = sigAvant; }
+  const leJeuEcrit = (x, y, z) => {
+    if (!generateur) { generateur = new World(); for (const c of avant) generateur.colonnesParisAvant.add(c); }
+    return generateur.getBlock(x, y, z) !== BLOCK.AIR;
+  };
   const vus = new Set();
   for (const [k0, p0] of candidats) {
     if (vus.has(k0)) continue;
@@ -1880,6 +1900,16 @@ export const DATE_RUES_PARIS = Date.UTC(2026, 8, 27, 16, 0, 0);
 const cleColonneParis = (x, z) => x * 262144 + z;
 function dansParisAvant(x, z, t) {
   return t < DATE_RUES_PARIS && (x - PARIS.x) * (x - PARIS.x) + (z - PARIS.z) * (z - PARIS.z) <= PARIS.r * PARIS.r;
+}
+// ET LES COLONNES VOISINES AUSSI. Un bloc collé à une façade (un escalier
+// contre un mur, un balcon) est posé dans la colonne de la RUE, pas dans celle
+// de l'immeuble : garder la seule colonne du bloc laissait l'immeuble d'à côté
+// passer à la ville neuve — il pouvait devenir une rue, et le bloc flottait
+// (puis le ménage du ciel le retirait). La ville d'avant se garde donc sur les
+// huit colonnes voisines de toute colonne où un enfant a bâti : ce qui le
+// portait reste là.
+function marquerParisAvant(ens, x, z) {
+  for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) ens.add(cleColonneParis(x + dx, z + dz));
 }
 // La ville d'aujourd'hui et celle d'avant, sous la même forme : le générateur
 // choisit l'une ou l'autre par colonne.
@@ -3265,7 +3295,7 @@ export class World {
     const t = ts !== undefined ? ts : Date.now();
     this.edits.set(k, id);
     this.editTimes.set(k, t);
-    if (dansParisAvant(x, z, t)) this.colonnesParisAvant.add(cleColonneParis(x, z));
+    if (dansParisAvant(x, z, t)) marquerParisAvant(this.colonnesParisAvant, x, z);
     if (!remote && this.onOp) this.onOp(k, id, t);
     if (this.onBloc) this.onBloc(x, y, z, id);
 
@@ -3507,7 +3537,7 @@ export class World {
       if (!(t < DATE_RUES_PARIS)) continue;
       const virgule = k.indexOf(','), derniere = k.lastIndexOf(',');
       const x = +k.slice(0, virgule), z = +k.slice(derniere + 1);
-      if (dansParisAvant(x, z, t)) this.colonnesParisAvant.add(cleColonneParis(x, z));
+      if (dansParisAvant(x, z, t)) marquerParisAvant(this.colonnesParisAvant, x, z);
     }
     this.monumentsTouches.clear();
     if (REPERES_HD.length === 0) return;

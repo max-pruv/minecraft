@@ -670,7 +670,11 @@ const position = (p) => p.evaluate(() => ({
           const sol = w.getBlock(x, h, z);
           if (sol === PAVE_DE_COUR) cours++;
           let pierre = false, rien = true;
-          for (let y = h + 1; y < h + 20; y++) {
+          // JUSQU'AU TOIT D'UN IMMEUBLE DE LA v301 (vingt-quatre blocs) : un
+          // immeuble est CREUX, et sous son toit une colonne intérieure n'a
+          // qu'un plancher. Lue jusqu'à vingt, elle comptait « rien » — 176
+          // lots vides sur 657 en v303, dont les îlots sont plus grands.
+          for (let y = h + 1; y < h + 30; y++) {
             const id = w.getBlock(x, y, z);
             if (!id) continue;
             rien = false;
@@ -1587,14 +1591,20 @@ const position = (p) => p.evaluate(() => ({
       !facades.err && facades.rythmees > facades.piles * 0.5,
       `${facades.rythmees}/${facades.piles} travées rythmées`);
 
-    const rue = await tab.evaluate(() => {
+    // LA FENÊTRE DE LA RUE SUIT LA VILLE, COMME CELLE DU TISSU (v303). Centrée
+    // sur Notre-Dame, elle mesurait la Seine, la Cité, les quais et les
+    // percées : quand les percées ont pris leur largeur de règle, les rues de
+    // quartier — les seules à porter une bordure de granit — n'y ont laissé
+    // que dix bordures (68 en v302). Elle vise le même quartier haussmannien
+    // ordinaire que le témoin du tissu.
+    const rue = await tab.evaluate(async (C) => {
       const w = window.__game.world;
       const { PARIS } = window.__game.__paris || {};
       const A = window.__game.__archi;
       if (!A || !PARIS) return { err: 'modules non exposés' };
       let paves = 0, bordures = 0, mansardes = 0, chainages = 0;
-      for (let x = PARIS.x - 40; x <= PARIS.x + 40; x += 1) {
-        for (let z = PARIS.z - 40; z <= PARIS.z + 40; z += 1) {
+      for (let x = C.x - 40; x <= C.x + 40; x += 1) {
+        for (let z = C.z - 40; z <= C.z + 40; z += 1) {
           const y = w.terrainHeight(x, z);
           const sol = w.getBlock(x, y, z);
           if (sol === A.PAVE) paves++;
@@ -1607,7 +1617,7 @@ const position = (p) => p.evaluate(() => ({
         }
       }
       return { paves, bordures, mansardes, chainages };
-    });
+    }, CŒUR);
     verifier('la chaussée est pavée et bordée de granit',
       !rue.err && rue.paves > 200 && rue.bordures > 60,
       JSON.stringify(rue));

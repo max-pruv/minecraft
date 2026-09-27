@@ -811,8 +811,30 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       return [2, 3, 4, 6].map((dy) => m.getBlock(x, h + dy, z));
     };
     const neuf = monde(null), avant = monde(t), apres = monde(W.DATE_RUES_PARIS + 1000);
+    // ET CE QUI PORTAIT LE BLOC RESTE LÀ. Un bloc collé à une façade d'avant —
+    // un escalier contre un mur — est posé dans la colonne de la RUE : si
+    // l'immeuble d'à côté passait à la ville neuve et y devenait une rue, le
+    // bloc flotterait, et le ménage du ciel le retirerait. On cherche une
+    // colonne de façade d'avant, voisine d'une rue d'avant, qui est une RUE dans
+    // la ville neuve ; on colle un bloc contre elle, dans la rue, à six blocs
+    // de haut, et l'on regarde si le mur est encore là.
+    let mur = null;
+    for (let d = 0; d < 80 && !mur; d++) for (let dx = -d; dx <= d && !mur; dx++) for (const dz of [-d, d]) {
+      const mx = x0 + dx, mz = z0 + dz;
+      if (A.solParis(mx, mz) !== null || !A.lotParisLibre(mx, mz) || P.solParis(mx, mz) === null) continue;
+      const v = [[1, 0], [-1, 0], [0, 1], [0, -1]].find(([ax, az]) => A.solParis(mx + ax, mz + az) !== null);
+      if (v) { mur = { mx, mz, rx: mx + v[0], rz: mz + v[1] }; break; }
+    }
+    let colle = null;
+    if (mur) {
+      const hm = w.terrainHeight(mur.mx, mur.mz), kc = `${mur.rx},${hm + 6},${mur.rz}`;
+      const m = new W.World();
+      m.installerEdits(new Map([[kc, 5]]), new Map([[kc, t]]));
+      const sansBloc = new W.World();
+      colle = { mur: [mur.mx, mur.mz], avecBloc: m.getBlock(mur.mx, hm + 6, mur.mz), sansBloc: sansBloc.getBlock(mur.mx, hm + 6, mur.mz) };
+    }
     return { absent: false, colonne: true, x, z,
-      neufBati: neuf.some((id) => id !== 0), avantLibre: avant.every((id) => id === 0), apresBati: apres.some((id) => id !== 0) };
+      neufBati: neuf.some((id) => id !== 0), avantLibre: avant.every((id) => id === 0), apresBati: apres.some((id) => id !== 0), colle };
   })();
   verifier('une maison bâtie sur une ancienne rue de Paris n\'est pas enfermée dans un immeuble neuf',
     !rues.absent && rues.colonne && rues.neufBati && rues.avantLibre,
@@ -820,6 +842,9 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   verifier('et ce qu\'on bâtit après la date voit la ville neuve',
     !rues.absent && rues.colonne && rues.apresBati,
     rues.absent ? 'les rues de Paris ne suivent pas encore la règle' : JSON.stringify(rues));
+  verifier('et un bloc collé à une façade d\'avant garde le mur qui le portait',
+    !rues.absent && !!rues.colle && rues.colle.avecBloc !== 0 && rues.colle.sansBloc === 0,
+    rues.absent ? 'les rues de Paris ne suivent pas encore la règle' : JSON.stringify(rues.colle));
 
   const trop = [];
   for (let x = -700; x <= 700; x += 7) {
