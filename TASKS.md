@@ -1,5 +1,13 @@
 # Ce qui est en cours
 
+- [ ] **LE GPS (v306) : CE QU'IL NE FAIT PAS ENCORE.** (1) La MINICARTE ne
+  montre pas la destination — seulement la grande carte (drapeau et trait) et
+  la flèche en haut de l'écran. (2) On ne vise qu'à l'appui long : toucher un
+  lieu nommé ou choisir un résultat de recherche emmène toujours en voyage,
+  sans proposer « S'y rendre ». (3) La destination ne se partage pas avec un
+  ami en ligne ; ce sera un message de plus, à son nom. (4) La transition CSS de
+  la flèche prend le chemin long quand l'angle passe de +π à −π (un tour presque
+  complet, 0,15 s) : cosmétique, à régler en tournant par l'écart le plus court.
 - [ ] **PARIS DOUBLÉ (v306) : CE QUI RESTE, DÉCLARÉ.** (1) Une tablette qui
   jouerait encore sur l'ancienne version APRÈS la publication poserait dans
   l'ancien Paris des blocs datés d'après `DATE_PARIS_DOUBLE` : la marche 5 → 6

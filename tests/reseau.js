@@ -309,7 +309,16 @@ function verifier(nom, ok, detail = '') {
       g.player.vel.set(0, 0, 0);
       g.player.flying = true;
     });
-    await allerAParis(hote); await allerAParis(alice);
+    // L'HÔTE ARRIVE D'ABORD, ALICE TRENTE SECONDES PLUS TARD. Un convoi naît
+    // quand la page approche sa ville : sur l'ancien code, chaque tablette
+    // part donc de SA naissance, et le décalage d'arrivée devient un décalage
+    // de rue. Le gel de six secondes seul ne suffisait pas — mesuré, écart
+    // médian 5 sur l'ancien code contre 3 sur le neuf : les deux pages rendent
+    // si peu d'images par seconde que `dt` (borné) avance d'aussi peu chez
+    // l'une que chez l'autre, et le gel ne coûte qu'une image.
+    await allerAParis(hote);
+    await dormir(30000);
+    await allerAParis(alice);
     const convoisDe = (page) => page.evaluate(() => {
       const out = {};
       for (const c of (window.__vehicules.etat() || [])) {
@@ -404,26 +413,26 @@ function verifier(nom, ok, detail = '') {
     const idMarlon2 = marlonChezAlice2;
     let traversee = { dedans: 0, plusPres: Infinity, releves: 0, essais: 0 };
     for (let essai = 0; essai < 5; essai++) {
+      // SUR LE TRAJET, PAS « DOUZE BLOCS DEVANT » EN LIGNE DROITE : sur une rue
+      // qui tourne, ce point n'est pas sur le tracé, et l'ancien code rendait
+      // VERT (la voiture est passée à 4,4 blocs sans jamais toucher). Marlon se
+      // pose là où est la voiture de DEVANT dans le même convoi : c'est un
+      // point du tracé que la voiture d'après va forcément atteindre. Celle de
+      // devant, qui le chevauche au premier relevé, ne compte pas (v279).
       const cible = await alice.evaluate((k) => {
         const v = window.__vehicules;
-        const cands = [];
+        const paires = [];
         for (const c of v.etat()) {
           if (!c.routier || c.nom !== 'voiture') continue;
-          for (const pl of c.places) if (pl[5] === 0 || pl[5] === false) cands.push(pl);
+          const par = new Map(c.places.map((pl) => [pl[3], pl]));
+          for (const pl of c.places) {
+            const devant = par.get(pl[3] - 1);
+            if (!devant || pl[5] || devant[5]) continue;
+            const d = Math.hypot(devant[0] - pl[0], devant[1] - pl[1]);
+            if (d > 8 && d < 30) paires.push({ x: devant[0], z: devant[1], cap: devant[2] });
+          }
         }
-        if (!cands.length) return null;
-        // UNE PLACE OÙ AUCUNE VOITURE N'EST DÉJÀ : douze blocs devant une
-        // voiture, c'est souvent là qu'est celle d'avant, et une voiture déjà
-        // dans celle de l'ami continue pour en sortir (v245) — on la
-        // compterait « au travers » sans qu'elle ait rien traversé.
-        const toutes = [];
-        for (const c of v.etat()) if (c.routier) for (const q of c.places) toutes.push(q);
-        for (let j = 0; j < cands.length; j++) {
-          const pl = cands[(k * 7 + j) % cands.length];
-          const x = pl[0] + 12 * Math.sin(pl[2]), z = pl[1] + 12 * Math.cos(pl[2]);
-          if (toutes.every((q) => Math.hypot(q[0] - x, q[1] - z) > 8)) return { x, z, cap: pl[2] };
-        }
-        return null;
+        return paires.length ? paires[(k * 7) % paires.length] : null;
       }, essai);
       if (!cible) { await dormir(1000); continue; }
       await hote.evaluate((c) => {
@@ -476,7 +485,7 @@ function verifier(nom, ok, detail = '') {
         return { dedans, plusPres: +plusPres.toFixed(1), releves, deja: deja.size };
       }, { id: idMarlon2, m: cible });
       traversee = { ...r, essais: essai + 1 };
-      if (r.dedans > 0 || r.plusPres < 8) break;     // une voiture est venue : la situation a eu lieu
+      if (r.dedans > 0 || r.plusPres < 3) break;     // une voiture est venue : la situation a eu lieu
     }
     verifier('et chez l\'ami, la circulation ne traverse plus la voiture de l\'enfant',
       prise.auVolant && traversee.dedans === 0 && traversee.plusPres < 8,

@@ -843,6 +843,36 @@ atteindre la famille. Neuf règles.
   huit marches, une colonne couverte, les colonnes au bord d'une falaise
   comptées à part — et le dit (v285, une fois de plus).
 
+## Le GPS (v306) — l'appui long propose, il ne décide plus
+
+Max : « soit on se téléporte, soit on fait GPS ; au clic long, deux boutons ».
+Quatre règles.
+
+- **UN GESTE QUI AVAIT UN SEUL EFFET ET EN GAGNE DEUX POSE LA QUESTION.**
+  L'appui long téléportait d'office ; il ouvre désormais `#map-choix` sous le
+  doigt, et c'est l'enfant qui choisit. Tout témoin qui éprouvait l'ancien
+  geste passe par le bouton (« un appui long dépose n'importe où » clique
+  « Téléporter ») — un témoin qui appellerait `surTeleport` en direct ne
+  garderait plus le trajet de l'enfant. Et un doigt reposé ailleurs retire la
+  question : une question qui reste affichée est un piège au geste suivant.
+- **LA FLÈCHE LIT LA CONVENTION DE CAP DU CADRAN, ELLE NE LA RÉÉCRIT PAS.**
+  `gps.js` est pur et importe `capVers` et `ecartDeCap` de `cap.js` (v263) :
+  deux conventions de cap finiraient par diverger, et une flèche à l'envers
+  passe toute mesure d'amplitude. Le témoin regarde les TROIS cas — face à la
+  cible, cible à droite, cible à gauche — et lit l'angle APRÈS la transition
+  CSS de la flèche : lu pendant, il rend l'image d'avant (mon premier jet).
+- **L'ARRIVÉE SE JUGE SUR LE SEGMENT PARCOURU, PAS SUR UN INSTANTANÉ.** Un avion
+  à cent vingt blocs par seconde sur une tablette à cinq images avance de
+  vingt-quatre blocs d'une image à l'autre : il enjambe un disque de douze sans
+  qu'aucune image ne l'y trouve, et la flèche se retournerait pour le renvoyer
+  en arrière. `arriveEntre` mesure la distance de la cible au segment. C'est
+  « un minimum échantillonné est une propriété de la cadence » (v279), côté jeu.
+- **UN TRAJET VIT DANS LA SESSION, PAS DANS LE PROFIL.** La destination n'est
+  ni sauvegardée ni envoyée au réseau : c'est un trajet en cours, pas une
+  donnée de l'enfant, et elle s'efface en revenant au menu. Le jour où l'on
+  voudra la partager avec un ami, ce sera un message de plus, avec son nom à
+  lui — le receveur cède (v256).
+
 ## En ligne, une seule rue (v305) — la position d'un convoi est une fonction de l'heure
 
 Max, à plusieurs : « les utilisateurs ne voient pas les mêmes voitures en même

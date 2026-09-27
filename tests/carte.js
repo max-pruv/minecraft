@@ -432,6 +432,9 @@ const position = (p) => p.evaluate(() => ({
         const lire = async (yaw) => {
           p.yaw = yaw;
           await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+          // la flèche TOURNE en 0,15 s (transition CSS) : on lit ce que
+          // l'enfant voit une fois qu'elle s'est posée, pas l'image du milieu
+          await new Promise((r) => setTimeout(r, 450));
           const t = getComputedStyle(document.getElementById('gps-fleche')).transform;
           const m = t.match(/matrix\(([^,]+),\s*([^,]+)/);
           const ang = m ? Math.atan2(parseFloat(m[2]), parseFloat(m[1])) : null;

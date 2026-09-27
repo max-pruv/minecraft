@@ -82,6 +82,30 @@ construction de campagne dont le sol a bougé de plus de vingt-quatre blocs
 (une colline recouverte par la ville) reste où elle est. Détail dans
 `TASKS.md`.
 
+### Et dans la même fusion : le GPS — s'y rendre au lieu de s'y téléporter
+
+**Pourquoi.** Max : « une forme de GPS quand on veut se rendre dans une
+destination. Soit on se téléporte, soit on fait GPS. Au clic long, deux
+boutons : téléporter ou s'y rendre. » L'appui long sur la carte téléportait
+d'office : on ne pouvait choisir un endroit que pour y sauter, jamais pour y
+aller par ses propres moyens — à pied, en voiture, en avion.
+
+**Ce que ça change.** L'appui long sur la carte pose la question sous le doigt :
+« ✨ Téléporter » fait ce qu'il faisait, « 🧭 S'y rendre » laisse l'enfant où il
+est, ferme la carte et allume en haut de l'écran une flèche qui tourne vers la
+destination, son nom (la ville où tombe le point) et la distance, avec un mot —
+« tout droit », « à droite », « à gauche », « fais demi-tour ». Sur la carte, un
+drapeau et un trait pointillé depuis l'enfant. À douze blocs, le GPS s'éteint et
+le dit (« Tu es arrivé ! ») ; ✕ l'arrête à tout moment. Le trajet survit à la
+montée en voiture, au décollage et à une téléportation.
+
+**Ce qui le prouve.** Quatre témoins de `carte.js` : l'appui long propose les
+deux boutons sans partir tout seul, « S'y rendre » laisse l'enfant sur place et
+montre le GPS vers le point visé, la flèche pointe du bon côté (face à la
+cible, cible à droite, cible à gauche — un signe se regarde, v231), et le GPS
+s'éteint à l'arrivée. Le témoin d'appui long d'avant choisit désormais
+« Téléporter », comme l'enfant.
+
 ## v305 — En ligne, tout le monde voit la même rue
 
 *Livrée avec la v306, dans la même fusion.*
