@@ -21,7 +21,7 @@ const ARBRE_HD = new Set([BLOCK.LOG, BLOCK.LEAVES]);
 const NEUTRE = [0, 0, 1, 1];
 import { CHUNK, HEIGHT, REPERES_HD } from './world.js';
 import { emettreMonument, cellulesDuMorceau } from './paris-monuments-hd.js';
-import { grilleSol, emettreSolContinu } from './solcontinu.js';
+import { grilleSol, emettreSolContinu, emettreRubans } from './solcontinu.js';
 
 // Faces: corner positions (CCW from outside), normal, tile slot (0 top / 1 side / 2 bottom), shade.
 //
@@ -534,6 +534,8 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
   }
 
   const surface = grille ? emettreSolContinu(solid, world, cx, cz, CHUNK, grille) : null;
+  // les tabliers des ponts et le marquage des routes (v300), avec la surface
+  const rubans = grille ? emettreRubans(solid, world, cx, cz, CHUNK) : 0;
 
   return {
     solid: solid.toTampons(),
@@ -541,6 +543,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
     lumineux: lumineux.toTampons(),
     props,
     cellulesSol: surface ? surface.cellules : 0,
+    rubans,
     sol: sol ? sol.toTampons() : null,
     facades: facades ? facades.toTampons() : null,
     plat: plat ? plat.toTampons() : null,

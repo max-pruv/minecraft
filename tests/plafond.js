@@ -753,10 +753,14 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         if (!g.couvertes[lx + lz * CHUNK]) continue;
         const X = cx * CHUNK + lx, Z = cz * CHUNK + lz;
         const sc = w.solContinu(X + 0.5, Z + 0.5); centres++;
-        if (sc !== null && Math.abs(sc - (w.terrainHeight(X, Z) + 1)) < 1e-6) exacts++;
+        // La cote de RÉFÉRENCE est celle de la grille du mailleur, pas le relief
+        // + 1 : sous une route (v300) la surface est au profil de la route, et
+        // c'est bien « contact = maillage » que ce témoin garde, pas
+        // « contact = relief ».
+        if (sc !== null && Math.abs(sc - g.cote[g.idx(lx, lz)]) < 1e-6) exacts++;
         if (g.couvertes[lx + 1 + lz * CHUNK]) {
           const m = w.solContinu(X + 1, Z + 0.5); milieux++;
-          if (m !== null && Math.abs(m - (w.terrainHeight(X, Z) + w.terrainHeight(X + 1, Z) + 2) / 2) < 1e-6) moyennes++;
+          if (m !== null && Math.abs(m - (g.cote[g.idx(lx, lz)] + g.cote[g.idx(lx + 1, lz)]) / 2) < 1e-6) moyennes++;
         }
       }
       return { cellules: t.cellulesSol, couvertes, sommetsSurface, fautes, ecarts, centres, exacts, milieux, moyennes };
@@ -770,8 +774,13 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     verifier('le contact lit la même triangulation que le maillage : exact au centre des colonnes, moyenne à mi-arête',
       a1.exacts === a1.centres && a1.moyennes === a1.milieux && colline.exacts === colline.centres && colline.moyennes === colline.milieux && a1.centres > 100,
       `campagne ${a1.exacts}/${a1.centres} centres, ${a1.moyennes}/${a1.milieux} mi-arêtes — colline ${colline.exacts}/${colline.centres}, ${colline.moyennes}/${colline.milieux}`);
-    // un bloc posé rend sa colonne au voxel ; retiré, la cicatrice guérit
-    const X = -108, Z = -328, h = w.terrainHeight(X, Z);
+    // un bloc posé rend sa colonne au voxel ; retiré, la cicatrice guérit —
+    // sur une colonne d'herbe HORS de l'A1 (le via de la v300 a mis le
+    // couloir sur l'ancienne, (−108, −328) : posé sur une chaussée, rien ne
+    // change, et le témoin rougissait sur du code sain)
+    let X = -60, Z = -328;
+    while (X < 0 && (w.routeEn(X, Z) || w.solContinu(X + 0.5, Z + 0.5) === null)) X++;
+    const h = w.terrainHeight(X, Z);
     const avant = w.solContinu(X + 0.5, Z + 0.5), couvAvant = w.blocSousLaSurface(X, h, Z);
     w.setBlock(X, h + 1, Z, 11);
     const apres = w.solContinu(X + 0.5, Z + 0.5), couvApres = w.blocSousLaSurface(X, h, Z);
@@ -804,6 +813,64 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     // borne de garde vaut trois fois la mesure, parce qu'un portail charge
     verifier('la surface coûte au plus quelques millisecondes par morceau de campagne',
       med(avec) - med(sans) < 4, `${med(avec).toFixed(1)} ms avec, ${med(sans).toFixed(1)} sans (médianes de neuf)`);
+    // LE PAYSAGE LOINTAIN NE REFERME PAS LE DÉBLAI (v300). `horizon.js` lisait
+    // le relief au-dessus de la route : une dalle de terre flottait sur la
+    // tranchée tant que le morceau n'était pas maillé (captures du pont et de
+    // la porte de Paris). La cote qu'il dessine se demande au monde, et sous
+    // une route c'est le sommet de la chaussée ou du talus.
+    {
+      let R = null; try { R = await import('../src/routes.js'); } catch { /* pas de routes.js : le témoin le dit */ }
+      if (!R || !w.coteHorizon) {
+        verifier('le paysage lointain ne referme pas le déblai de l\'A1 : sa cote est celle de la route', false, !R ? 'pas de routes.js' : 'pas de coteHorizon');
+        verifier('rien ne flotte au-dessus de l\'A1 : ni relief, ni nappe, ni repère posé après les colonnes', false, !R ? 'pas de routes.js' : 'pas de coteHorizon');
+      } else {
+        const seg = R.segmentsDeRoute()[0];
+        let route = 0, deblai = 0, justes = 0, pire = 0, horsRoute = 0, horsJustes = 0;
+        for (let s0 = 0; s0 < seg.longueur; s0 += 8) {
+          const q = R.pointA(seg, s0);
+          for (let d = -30; d <= 30; d += 2) {
+            const x = Math.round(q.x + (-q.fz) * d), z = Math.round(q.z + q.fx * d);
+            const r = R.routeEn(x, z), c = w.coteHorizon(x, z), h = w.terrainHeight(x, z);
+            if (!r || r.ouvrage) { horsRoute++; if (c === h) horsJustes++; continue; }
+            route++;
+            const t = Math.floor(r.cote) - 1;
+            if (h > t) { deblai++; pire = Math.max(pire, h - t); }
+            if (c === t) justes++;
+          }
+        }
+        verifier('le paysage lointain ne referme pas le déblai de l\'A1 : sa cote est celle de la route',
+          route > 500 && deblai > 50 && justes === route && horsJustes === horsRoute,
+          `${justes}/${route} colonnes de route à la cote du profil, dont ${deblai} en déblai (jusqu'à ${pire} blocs sous le relief) ; ${horsJustes}/${horsRoute} hors route au relief`);
+        // RIEN NE FLOTTE AU-DESSUS DE LA ROUTE. Trois choses y flottaient, et
+        // aucune ne se voyait en relisant : la couche d'herbe d'un relief à
+        // sept blocs (le déblai ne dégageait que six), la nappe d'un lac sur
+        // un talus creusé sous elle, et le chalet du Pôle Nord — un repère
+        // posé APRÈS les colonnes, que le premier via traversait. La première
+        // sonde rendait zéro sur les trois : elle lisait `HEIGHT` d'un module
+        // qui ne l'exporte pas, et sa boucle ne tournait jamais.
+        const t0 = performance.now();
+        let colonnes = 0, fautes = 0, exemple = null;
+        for (let s0 = 0; s0 < seg.longueur; s0 += 4) {
+          const q = R.pointA(seg, s0);
+          for (let d = -30; d <= 30; d++) {
+            const x = Math.round(q.x + (-q.fz) * d), z = Math.round(q.z + q.fx * d);
+            const r = R.routeEn(x, z); if (!r || r.ouvrage) continue;
+            colonnes++;
+            const t = Math.floor(r.cote) - 1; let faute = null;
+            for (let y = t + 1; y < HEIGHT; y++) {
+              const b = w.getBlock(x, y, z);
+              if (b === 0 || b === 6) continue;                       // l'air, et la couronne d'un arbre voisin
+              if (b === 7 && y <= 30 && r.piece === 'talus') continue; // un talus sous un lac
+              faute = `${b} à y=${y}`; break;
+            }
+            if (faute) { fautes++; if (!exemple) exemple = `s ${s0}, ${r.piece} (${x}, ${z}), sommet ${t}, relief ${w.terrainHeight(x, z)} : bloc ${faute}`; }
+          }
+        }
+        verifier('rien ne flotte au-dessus de l\'A1 : ni relief, ni nappe, ni repère posé après les colonnes',
+          colonnes > 2000 && fautes === 0,
+          `${fautes} colonne(s) en faute sur ${colonnes}${exemple ? ` — ${exemple}` : ''} (${((performance.now() - t0) / 1000).toFixed(1)} s)`);
+      }
+    }
   }
 
   // --- ce qui se vérifie en jouant ------------------------------------------
@@ -1122,6 +1189,102 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       return { surface, total, morceaux: g.chunkMeshes.size };
     });
     verifier('et le maillage reçu du worker porte la surface', dessin.surface > 1000, JSON.stringify(dessin));
+
+    // --- AU VOLANT SUR L'A1 (v300) --------------------------------------------
+    //
+    // Le couloir Paris–Lille : on se pose sur la chaussée de droite à
+    // l'abscisse `s0`, cap le long de l'axe, dans une voiture invoquée pour
+    // cela (les bêtes retirées d'abord — l'idiome de la v284), et l'on roule
+    // jusqu'au RÉSULTAT, borné : tant de blocs, ou soixante images bloquées,
+    // ou une minute. Chaque image compare la hauteur de la voiture à la cote
+    // du PROFIL sous elle — c'est ce qui distingue « je roule sur la route »
+    // de « je roule sur les blocs qui la portent ». Le second départ est posé
+    // devant le premier pont : on doit le franchir SUR son tablier.
+    const rouler = (s0, blocsVoulus) => tab.evaluate(async ({ s0, blocsVoulus }) => {
+      const g = window.__game, p = g.player;
+      let R; try { R = await import('./src/routes.js'); } catch { return { echec: 'pas de routes.js' }; }
+      const seg = R.segmentsDeRoute()[0];
+      const q = R.pointA(seg, s0), L = R.largeurA(seg, s0);
+      const o = L.terrePlein + L.demiChaussee / 2;
+      const X = q.x + (-q.fz) * o, Z = q.z + q.fx * o;
+      const yaw = Math.atan2(-q.fx, -q.fz);
+      g.world.sansSolContinu = false;
+      p.flying = false; p.pos.set(X, R.coteA(seg, s0) + 1.5, Z); p.vel.set(0, 0, 0); p.yaw = yaw; p.pitch = 0;
+      for (const a of [...g.animalManager.animals]) if (a.def.key !== 'poisson') { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); }
+      const dodo = (ms) => new Promise((r) => setTimeout(r, ms));
+      await dodo(3000);
+      g.animalManager.invoquer('voiture', X - Math.sin(yaw) * 3, Z - Math.cos(yaw) * 3);
+      await dodo(1500);
+      const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+      for (let e = 0; e < 6 && !auVolant(); e++) { const b = document.getElementById('ride-btn'); if (b) b.click(); await dodo(1000); }
+      if (!auVolant()) return { echec: 'pas monté' };
+      const out = { images: 0, bloque: 0, marches: 0, chutes: 0, surTablier: 0, horsTablier: 0, ecartMax: 0, blocs: 0, ms: 0 };
+      let xa = p.pos.x, za = p.pos.z, ya = p.pos.y;
+      const x0 = p.pos.x, z0 = p.pos.z, t0 = performance.now();
+      p.touchMove.f = 1;
+      await new Promise((fin) => {
+        const tour = () => {
+          out.images++;
+          const r = R.routeEn(Math.round(p.pos.x), Math.round(p.pos.z));
+          if (r) {
+            const ecart = p.pos.y - r.cote;
+            if (r.ouvrage) { out.surTablier++; if (ecart < -0.3) out.horsTablier++; }
+            else if (ecart < -0.5) out.chutes++;
+            out.ecartMax = Math.max(out.ecartMax, Math.abs(ecart));
+          }
+          const dh = Math.hypot(p.pos.x - xa, p.pos.z - za), dy = Math.abs(p.pos.y - ya);
+          if (dh < 0.01) out.bloque++;
+          if (dy > 0.3 && dy > dh) out.marches++;
+          xa = p.pos.x; za = p.pos.z; ya = p.pos.y;
+          out.blocs = Math.hypot(p.pos.x - x0, p.pos.z - z0);
+          out.ms = Math.round(performance.now() - t0);
+          // Borné à deux minutes, la durée dans le message : près du pont la
+          // page rend 0,75 s par image au banc (81 images en 60 s), et la
+          // borne d'une minute coupait la voiture à 31,6 blocs sur 36.
+          if (out.blocs >= blocsVoulus || out.bloque >= 60 || out.ms > 120000) fin(); else requestAnimationFrame(tour);
+        };
+        requestAnimationFrame(tour);
+      });
+      p.touchMove.f = 0;
+      out.blocs = +out.blocs.toFixed(1); out.ecartMax = +out.ecartMax.toFixed(2);
+      out.x = +p.pos.x.toFixed(1); out.z = +p.pos.z.toFixed(1);
+      out.sFin = +R.projeter(seg, p.pos.x, p.pos.z).s.toFixed(1);
+      return out;
+    }, { s0, blocsVoulus });
+    const a1 = await rouler(120, 80);
+    verifier('au volant sur l\'A1, quatre-vingts blocs à la cote du profil, sans une marche ni une chute',
+      !a1.echec && a1.blocs >= 72 && a1.marches === 0 && a1.chutes === 0 && a1.bloque < a1.images / 10 && a1.ecartMax < 0.6,
+      JSON.stringify(a1));
+    const pont = await tab.evaluate(async () => {
+      let R; try { R = await import('./src/routes.js'); } catch { return { echec: 'pas de routes.js' }; }
+      const seg = R.segmentsDeRoute()[0], p = R.profilDe(seg);
+      return p.spans.length ? { s0: Math.round(p.spans[0].s0), s1: Math.round(p.spans[0].s1) } : null;
+    });
+    const dessus = pont ? await rouler(pont.s0 - 12, (pont.s1 - pont.s0) + 24) : { echec: 'aucun pont sur la route' };
+    verifier('le premier pont se franchit sur son tablier, d\'un bout à l\'autre',
+      // « d'un bout à l'autre » se lit à l'ABSCISSE d'arrivée, pas à une distance
+      // parcourue : la voiture part douze blocs avant le pont et doit finir
+      // au-delà de son autre bout.
+      !dessus.echec && dessus.surTablier >= 3 && dessus.horsTablier === 0 && dessus.chutes === 0 && dessus.sFin >= (pont ? pont.s1 + 4 : 1e9),
+      JSON.stringify({ pont, ...dessus }));
+    // et dessous : posé sur le sol sous le tablier, on y reste — deux parcours
+    const dessous = await tab.evaluate(async ({ pont }) => {
+      const g = window.__game, p = g.player;
+      let R; try { R = await import('./src/routes.js'); } catch { return { echec: 'pas de routes.js' }; }
+      const seg = R.segmentsDeRoute()[0];
+      if (!pont) return { echec: 'aucun pont' };
+      // descendre de la voiture
+      for (let e = 0; e < 4 && g.fun.montureConduite && g.fun.montureConduite(); e++) { const b = document.getElementById('ride-btn'); if (b) b.click(); await new Promise((r) => setTimeout(r, 800)); }
+      const s = (pont.s0 + pont.s1) / 2, q = R.pointA(seg, s);
+      const x = Math.round(q.x), z = Math.round(q.z);
+      const tablier = g.world.tablierEn(x + 0.5, z + 0.5), sol = g.world.terrainHeight(x, z) + 1;
+      p.flying = false; p.pos.set(x + 0.5, sol + 0.5, z + 0.5); p.vel.set(0, 0, 0);
+      await new Promise((r) => setTimeout(r, 2500));
+      return { tablier: tablier === null ? null : +tablier.toFixed(2), sol, y: +p.pos.y.toFixed(2) };
+    }, { pont });
+    verifier('et sous le tablier, on reste en bas : deux parcours, jamais téléporté dessus',
+      !dessous.echec && dessous.tablier !== null && dessous.tablier - dessous.sol >= 3 && dessous.y < dessous.tablier - 1,
+      JSON.stringify(dessous));
 
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0,
       JSON.stringify(tab.erreurs));

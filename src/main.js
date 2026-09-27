@@ -43,6 +43,9 @@ import { tracesCirculation, tracesCirculationMain } from './villesmonde.js';
 import { createPassants } from './passants.js';
 import { createPoissons } from './poissons.js';
 import { segmentsDeTrain, traceSegment } from './trains.js';
+import { segmentsDeRoute, traceRoute } from './routes.js';
+import { ENTREES_PARIS } from './paris.js';
+import { ENTREES_LILLE } from './lille.js';
 import { Player, raycastBlocks } from './player.js';
 import { actualiserPresence } from './presence.js';
 import { animerHumain, chargerHumains, humainsCharges, humainsPrets } from './humains.js';
@@ -1071,12 +1074,6 @@ function installerMorceau(cx, cz, tampons) {
     scene.add(decor(m));
   }
   montrerLeDetail(entry, cx, cz, pcx, pcz);
-  // Ce qui est un MORCEAU DE MONDE se déclare : un témoin qui compte les
-  // objets de la scène (« la touche Q n'ajoute rien ») exclut ce qu'un
-  // morceau arrivé entre deux images y ajoute — six maillages désormais.
-  for (const m of [entry.solid, entry.water, entry.lumineux, entry.sol, entry.facades, entry.plat, entry.platLumineux, entry.props]) {
-    if (m) m.userData.morceau = true;
-  }
   if (water) {
     entry.water = new THREE.Mesh(water, waterMaterial);
     entry.water.position.set(cx * CHUNK, 0, cz * CHUNK);
@@ -1124,6 +1121,14 @@ function installerMorceau(cx, cz, tampons) {
     if (lanternes.length) entry.lanternes = lanternes;
     if (feux.length) entry.feux = feux;
     scene.add(decor(group));
+  }
+  // Ce qui est un MORCEAU DE MONDE se déclare : un témoin qui compte les
+  // objets de la scène (« la touche Q n'ajoute rien ») exclut ce qu'un
+  // morceau arrivé entre deux images y ajoute. APRÈS l'eau, les vitres et les
+  // props : cette boucle passait avant leur création, et l'eau d'un morceau
+  // arrivé entre deux images comptait pour une balle (fumée rouge, v300).
+  for (const m of [entry.solid, entry.water, entry.lumineux, entry.sol, entry.facades, entry.plat, entry.platLumineux, entry.props]) {
+    if (m) m.userData.morceau = true;
   }
   chunkMeshes.set(key, entry);
   // un morceau plus lourd que son estimation peut faire déborder le budget :
@@ -1490,6 +1495,11 @@ function updateChunks() {
       for (let b = -demiLarg; b <= demiLarg + 1e-6; b += demiLarg) {
         const bx = Math.floor(x + ux * a + vx * b), bz = Math.floor(z + uz * a + vz * b);
         if (world.isSolid(bx, y0 - 1, bz) || world.isSolid(bx, y0, bz)) continue;  // un plancher : on roule
+        // LE TABLIER D'UN PONT EST UN PLANCHER QUI N'EST PAS UN BLOC (v300) :
+        // un ruban du mailleur, une cote dans `routes.js`. Sans cette ligne la
+        // voiture voyait l'eau sous le pont et refusait d'y entrer — mesuré,
+        // 60 images bloquées sur 78 à l'entrée du premier pont de l'A1.
+        if (world.tablierEn) { const tab = world.tablierEn(bx + 0.5, bz + 0.5); if (tab !== null && Math.abs(tab - player.pos.y) < 1.5) continue; }
         const sol = world.sommetColonne(bx, bz);
         if (world.getBlock(bx, sol + 1, bz) === BLOCK.WATER) return true;
       }
@@ -1695,6 +1705,18 @@ function updateChunks() {
       emoji: seg.ligne.emoji, teinte: seg.ligne.teinte,
       nb: 5, vitesse, rames, pause, arretsIndex: t.arretsIndex,
     });
+  }
+  // LA CIRCULATION INTERURBAINE (v300) : sur chaque corridor, une boucle de
+  // voitures — aller sur la chaussée de droite, retour sur l'autre — qui entre
+  // dans les deux villes par leur avenue d'entrée jusqu'à la première voie
+  // nommée, à la cote de la ville (`coteRoulable`), et suit le PROFIL de la
+  // route entre les deux, jamais un bloc arrondi. Vingt voitures sur mille
+  // sept cents blocs : une place ne se fabrique qu'en entrant dans le champ.
+  const ENTREES = { paris: ENTREES_PARIS, lille: ENTREES_LILLE };
+  for (const seg of segmentsDeRoute()) {
+    const avant = (ENTREES[seg.de] || [])[0], apres = (ENTREES[seg.vers] || [])[0];
+    const pts = traceRoute(seg, { avant, apres, coteDe: (x, z) => world.coteRoulable(x, z) + 1 });
+    vehicules.circulation(pts, 41, { ville: seg.de, vitesse: 12, nb: 20, route: seg.route.nom });
   }
 })();
 

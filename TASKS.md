@@ -1,5 +1,18 @@
 # Ce qui est en cours
 
+- [ ] **UN BUS ET TROIS VOITURES SE BLOQUENT TRENTE SECONDES À L'OUEST DE PARIS**
+  (v300, mesuré des deux côtés). Au point du témoin de la fumée (−277, 199 :
+  circuit 0 de Paris, 40 % entre ses points 2 et 3), le bus du premier anneau
+  reste à 4,5 blocs avec `attend` levé pendant trente-deux secondes, trois
+  voitures du circuit font la queue derrière lui (`attend` 2 à 5), et la
+  première ne passe qu'à 36-44 s — sur la branche COMME sur `origin/main`,
+  relevé toutes les quatre secondes (`sonde-volant-fumee.cjs`, scratch de la
+  session). C'est « pas si l'on est déjà dedans » entre un bus et des voitures :
+  la paire mutuelle de `cederLePassage` (v244, « la plus engagée passe »)
+  ne tranche pas quand l'un des deux est un bus à l'arrêt. À mesurer AVANT
+  d'écrire : la durée d'un arrêt de bus, et qui attend qui, image par image.
+  Le témoin de la fumée attend désormais deux minutes, la durée dans le message.
+
 - [ ] **LE BUDGET DE FAÇADES (v299) EST POSÉ, PAS MESURÉ SUR L'APPAREIL.**
   128 Mo par palier : au-dessus des 98 Mo que le vieil iPad a tenus au centre
   de Paris (v296), sous les 500 et plus qui ont tué l'iPhone (journal id 7).
@@ -151,6 +164,27 @@
   bloc posé au sol, ou le fer de la tour, ou un toit du jeu, reste aussi — par
   construction. Si Max voit encore quelque chose en l'air après la v298, on
   relit d'abord le journal de bord (`blocs-suspendus`), qui dira combien et où.
+- [ ] **LE COULOIR PARIS–LILLE (v300) : CE QUI RESTE DÉCLARÉ.** (1) Une seule
+  route, l'A1 ; les autres couloirs sont la livraison 5, avec la matrice de
+  couverture. (2) Dans les vingt derniers blocs du disque de chaque ville, la
+  route écrase la trame de la ville (asphalte sur la chaussée promise par
+  `solParis` / `solLille`) : le raccord est propre au sol mais les façades
+  des îlots traversés ne sont pas remaniées — à regarder en capture, et c'est
+  la même famille que la caserne de Paris (v293). (3) Les voitures de l'A1
+  s'arrêtent à la porte et repartent : pas de continuité avec les circuits de
+  la ville (« de la rue de Rivoli à la Grand-Place ») — la couture des convois
+  est la livraison 4 avec le rail. (4) Le tablier des ponts n'a pas de
+  parapet solide : une voiture qui sort de la voie tombe (mesuré : elle reste
+  sur le tablier à vitesse de croisière, témoin `plafond.js`). (5) Les
+  passants et les bêtes ne traversent pas l'autoroute : rien ne les en
+  empêche non plus. (6) Au franchissement du premier pont, le témoin
+  de `plafond.js` compte 3 « marches » (dénivelée > avance) aux culées, pour
+  un écart max d'un bloc au profil — il passe (0 image bloquée, 0 chute),
+  mais une voiture y tressaute : à mesurer image par image et à lisser
+  (la berge creusée d'un bloc sous le tablier, ou le raccord chaussée /
+  ruban). (7) Deux coudes de 15° et 29° sur l'axe : `projeter` joint deux
+  droites, l'extérieur du virage est un angle vif ; un arc de raccordement
+  est la suite naturelle, à mesurer en capture d'abord.
 - [ ] **L'IPHONE DE MAX (iOS 18.7) MEURT ENCORE À PARIS EN v296 — mesuré dans
   le journal de bord, pas supposé.** Deux sessions de suite finies en
   `plantage` le 26 septembre (15:44:17 UTC après un relevé, 15:45:13 après

@@ -20,6 +20,64 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v300 — Le couloir Paris–Lille : l'autoroute A1
+
+**Pourquoi.** Troisième livraison du programme « monde fidèle » (kit de Max,
+septembre 2026) : « la voiture roule de la rue de Rivoli à la Grand-Place de
+Lille sans s'arrêter à une frontière de morceau, un pont se traverse dessus
+et dessous ». Entre les deux villes il n'y avait rien qu'un relief lissé
+(v297) : aucune route, aucun raccord, et une voiture qui sortait de Paris
+tombait dans les champs. Mesuré sur l'axe direct : 810 colonnes hors villes,
+47 tronçons de dix blocs sur 81 à plus de 6 % de pente, 37 colonnes sous
+l'eau.
+
+**Ce que ça change.** Une autoroute A1 relie la porte nord de Paris (la gare
+du Nord) à l'entrée sud-ouest de Lille (la rue de Paris) : 869 blocs, deux
+voies par sens, un terre-plein, des accotements, en remblai ou en déblai au
+profil lissé (pente au plus 6 %, les deux bouts collés au sol des villes,
+jamais sous le niveau de l'eau), avec un pont sur le lac de mi-parcours — on
+roule dessus, on passe dessous. Le tracé se cherche sous node CONTRE TOUS LES
+OBSTACLES : l'axe direct passait dans la marge de Roissy, la maison témoin de
+`plafond.js` est de l'autre côté, et mon premier point de passage traversait
+le Pôle Nord — sa banquise touche presque le disque de Lille. Deux points de
+passage tiennent tout : 35 blocs de la maison (l'emprise et le talus en
+prennent 21 au plus), 9 au-delà de la marge de Roissy, 32 de la banquise,
+aucune voie ferrée croisée, deux coudes de 15° et 29°.
+Vingt voitures y roulent dans les deux sens, sur la voie de droite, et
+entrent dans chaque ville par une avenue de raccord ; la carte du monde
+dessine la chaussée et son tablier. Le sol continu recouvre les talus, la
+chaussée est de l'asphalte, les rubans blancs du marquage vivent dans le
+mailleur, et le paysage lointain dessine la tranchée de la route au lieu du
+relief qu'elle creuse. **Le relief ne bouge pas** : la route est un ouvrage
+écrit en blocs, comme la voie ferrée, et les deux empreintes de `plafond.js`
+sont intactes.
+
+Les captures ont trouvé ce qu'aucun témoin ne gardait, et les trois se
+corrigent ici : une dalle d'herbe flottait au-dessus de la route partout où
+le relief la dominait de sept blocs (le déblai n'en dégageait que six) ; la
+nappe d'un lac restait en l'air sur un talus creusé sous elle ; et la berge
+d'un pont, décidé sur l'axe, montait au-dessus du tablier trois blocs plus
+loin et arrêtait la voiture. Le déblai dégage jusqu'au relief, un talus sous
+un lac est sous l'eau, une culée se creuse.
+
+**Ce qui le prouve.** Neuf témoins neufs. Dans `carteMonde.js` : le profil
+tient sa pente (≤ 0,07), ses bouts et ses bornes de remblai (≤ 4) et de
+déblai (≤ 9) ; l'emprise ne touche ni ville, ni aérodrome, ni sanctuaire à
+moins de trente blocs de l'axe (l'emprise et le talus en font 21,4, calculé) ;
+le sommet est de l'asphalte et le contact suit la chaussée (95 % au moins,
+écart < 0,6) ; le pont a des colonnes libres sous son tablier ; un convoi
+porte `route: 'A1'` et au moins dix modèles. Dans `plafond.js` : on roule
+quatre-vingts blocs sur la chaussée sans marche, sans chute, sans blocage ;
+le premier pont se franchit sur son tablier ; sous le tablier on reste
+dessous ; **rien ne flotte au-dessus des 6 269 colonnes du couloir** — ni
+relief, ni nappe, ni repère posé après les colonnes (0 en faute, contre 122
+couches d'herbe, 131 nappes et un chalet avant) ; et le paysage lointain est
+à la cote de la route sur 1 572 colonnes (42 sans la correction). Mesuré
+sous node : 0 croisement de voie ferrée, `routeEn` à 5,8 µs près de la route
+et 0,03 µs loin.
+
+---
+
 ## v299 — Le détail de Paris a un budget, et l'iPhone ne meurt plus en vol
 
 **Pourquoi.** Max : « le jeu continue à planter sur la version 298, il crache

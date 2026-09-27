@@ -129,8 +129,13 @@ Les vues fixes et les deux parcours (à pied, au volant) sont pris par
    d'un bloc d'écart dans une cellule), un liseré d'un bloc au bord de toute
    zone voxel (ville, bloc posé, falaise), l'eau (la surface passe sous le
    lac, l'eau garde ses cubes), les arbres.
-3. **Le couloir Paris–Lille** : registre des routes, profil, section,
-   ouvrages, circulation interurbaine, entrées de ville, carte.
+3. **Le couloir Paris–Lille** — FAIT (v300, `src/routes.js`) : registre des
+   routes (`ROUTES`), profil lissé (pente ≤ 0,064, bouts épinglés au sol des
+   portes, remblai ≤ 3,9, déblai ≤ 6,8), section autoroute (2 × 2 voies,
+   terre-plein, accotements, talus), deux ponts (s 726–737 et 815–822),
+   circulation interurbaine (vingt voitures, aller et retour, `route: 'A1'`),
+   entrées de ville (gare du Nord, rue de Paris), carte. Mesuré : 851 blocs,
+   0,03 µs par colonne loin de la route ; le relief ne bouge pas.
 4. **Le rail continu et la gare accessible** : cote continue, quai à niveau.
 5. **Les autres couloirs et villes**, par lots, avec la matrice de couverture.
 6. **La fidélité architecturale** : registre unifié des quartiers, grammaires
