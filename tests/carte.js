@@ -1526,11 +1526,21 @@ const position = (p) => p.evaluate(() => ({
     // façade parisienne, de bas en haut, selon la règle du Second Empire :
     // devanture, entresol, étage noble à balcon, étages courants, second
     // balcon, corniche, puis le zinc.
-    const facades = await tab.evaluate(() => {
+    // v301 : UN ÉTAGE FAIT TROIS BLOCS, ET LE TÉMOIN DEMANDE LES HAUTEURS AU
+    // JEU. Il cherchait la base à VITRINE ou PORTE, empilait douze blocs et
+    // exigeait l'entresol au deuxième rang, l'étage noble au troisième : c'était
+    // l'ancien registre, écrit en dur, et il a rendu « 0/0 » sur des façades
+    // justes. Les rangs se déduisent de `HAUT_RDC` et `HAUT_ENTRESOL`
+    // (paris.js), la base est une bande de devanture ou de porte, et la pile
+    // monte jusqu'à la corniche (vingt-quatre blocs, sept niveaux et le comble).
+    const facades = await tab.evaluate(async () => {
       const w = window.__game.world;
       const { PARIS } = window.__game.__paris || {};
       const A = window.__game.__archi;
       if (!A || !PARIS) return { err: 'modules non exposés' };
+      const P = await import('./src/paris.js');
+      if (!A.VITRINE_BAS || !P.HAUT_RDC) return { err: 'bandes d’étage absentes (avant la v301)' };
+      const rdc = P.HAUT_RDC, ent = P.HAUT_ENTRESOL;
       // On balaie le quartier et on relève, pour chaque colonne de façade,
       // l'empilement des registres.
       const compte = {};
@@ -1543,11 +1553,11 @@ const position = (p) => p.evaluate(() => ({
           let y0 = null;
           for (let d = -1; d <= 2 && y0 === null; d++) {
             const b = w.getBlock(x, sol + d, z);
-            if (b === A.VITRINE || b === A.PORTE) y0 = sol + d - 1;
+            if (b === A.VITRINE_BAS || b === A.PORTE_BAS) y0 = sol + d - 1;
           }
           if (y0 === null) continue;
           const pile = [];
-          for (let y = y0 + 1; y <= y0 + 12; y++) pile.push(w.getBlock(x, y, z));
+          for (let y = y0 + 1; y <= y0 + 24; y++) pile.push(w.getBlock(x, y, z));
           piles++;
           for (const id of pile) compte[id] = (compte[id] || 0) + 1;
           // La règle : entresol juste au-dessus, étage noble encore au-dessus,
@@ -1558,8 +1568,10 @@ const position = (p) => p.evaluate(() => ({
           // c'est ainsi qu'un immeuble se construit, et l'oublier faisait
           // passer un tiers des colonnes pour fautives.
           const corniche = pile.includes(A.CORNICHE);
-          const registre = pile[1] === A.ENTRESOL && pile[2] === A.NOBLE;
-          const chaine = pile[1] === A.CHAINAGE && pile[2] === A.CHAINAGE;
+          // pile[i] est le bloc à y0 + 1 + i : l'entresol commence au rang `rdc`,
+          // le premier étage noble au rang `rdc + ent`
+          const registre = pile[rdc] === A.ENTRESOL_BAS && pile[rdc + ent - 1] === A.ENTRESOL_HAUT && pile[rdc + ent] === A.NOBLE_BAS;
+          const chaine = pile[rdc] === A.CHAINAGE && pile[rdc + ent] === A.CHAINAGE;
           if (corniche && (registre || chaine)) correctes++;
           if (corniche && registre) rythmees++;
         }
@@ -1587,7 +1599,7 @@ const position = (p) => p.evaluate(() => ({
           const sol = w.getBlock(x, y, z);
           if (sol === A.PAVE) paves++;
           if (sol === A.BORDURE) bordures++;
-          for (let h = y + 1; h <= y + 12; h++) {
+          for (let h = y + 1; h <= y + 24; h++) {   // v301 : le comble est à vingt blocs
             const b = w.getBlock(x, h, z);
             if (b === A.MANSARDE) mansardes++;
             if (b === A.CHAINAGE) chainages++;
