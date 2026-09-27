@@ -162,8 +162,12 @@ function verifier(nom, ok, detail = '') {
       // Et les deux touches ne font plus rien. Sur l'ancien code, Q lance une
       // balle — un maillage de plus dans la scène — et B ouvre le panneau.
       // Sans les morceaux de monde : un morceau maillé entre deux images
-      // ajoute ses maillages à la scène, et ce n'est pas une balle.
-      const enfants = () => g.scene.children.filter((o) => !o.userData.morceau).length;
+      // ajoute ses maillages à la scène, et ce n'est pas une balle. ET SANS LES
+      // GROUPES (v300) : un passant, une bête, une voiture de l'A1 naissent
+      // entre deux images, en Group — mesuré à la sonde, une dizaine en une
+      // seconde au point d'apparition. Une balle est un maillage nu, comme
+      // l'était celle de l'attrape : on ne compte que ceux-là.
+      const enfants = () => g.scene.children.filter((o) => o.isMesh && !o.userData.morceau).length;
       const avant = enfants();
       for (const code of ['KeyQ', 'KeyB']) {
         document.dispatchEvent(new KeyboardEvent('keydown', { code, bubbles: true }));

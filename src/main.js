@@ -1074,12 +1074,6 @@ function installerMorceau(cx, cz, tampons) {
     scene.add(decor(m));
   }
   montrerLeDetail(entry, cx, cz, pcx, pcz);
-  // Ce qui est un MORCEAU DE MONDE se déclare : un témoin qui compte les
-  // objets de la scène (« la touche Q n'ajoute rien ») exclut ce qu'un
-  // morceau arrivé entre deux images y ajoute — six maillages désormais.
-  for (const m of [entry.solid, entry.water, entry.lumineux, entry.sol, entry.facades, entry.plat, entry.platLumineux, entry.props]) {
-    if (m) m.userData.morceau = true;
-  }
   if (water) {
     entry.water = new THREE.Mesh(water, waterMaterial);
     entry.water.position.set(cx * CHUNK, 0, cz * CHUNK);
@@ -1127,6 +1121,14 @@ function installerMorceau(cx, cz, tampons) {
     if (lanternes.length) entry.lanternes = lanternes;
     if (feux.length) entry.feux = feux;
     scene.add(decor(group));
+  }
+  // Ce qui est un MORCEAU DE MONDE se déclare : un témoin qui compte les
+  // objets de la scène (« la touche Q n'ajoute rien ») exclut ce qu'un
+  // morceau arrivé entre deux images y ajoute. APRÈS l'eau, les vitres et les
+  // props : cette boucle passait avant leur création, et l'eau d'un morceau
+  // arrivé entre deux images comptait pour une balle (fumée rouge, v300).
+  for (const m of [entry.solid, entry.water, entry.lumineux, entry.sol, entry.facades, entry.plat, entry.platLumineux, entry.props]) {
+    if (m) m.userData.morceau = true;
   }
   chunkMeshes.set(key, entry);
   // un morceau plus lourd que son estimation peut faire déborder le budget :
