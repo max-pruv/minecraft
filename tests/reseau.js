@@ -433,23 +433,30 @@ function verifier(nom, ok, detail = '') {
       // pose là où est la voiture de DEVANT dans le même convoi : c'est un
       // point du tracé que la voiture d'après va forcément atteindre. Celle de
       // devant, qui le chevauche au premier relevé, ne compte pas (v279).
+      // CINQ BLOCS DEVANT LE NEZ D'UNE VOITURE QUI ROULE. Une voiture fait 4,4
+      // blocs : posé là, Marlon est à soixante centièmes de son pare-chocs.
+      // Sur l'ancien code elle le traverse forcément dès qu'elle avance ; sur
+      // le neuf elle reste derrière, et c'est son RETARD dans le convoi qui le
+      // dit (elle voulait avancer et ne l'a pas fait). Les jets d'avant
+      // attendaient qu'une voiture « vienne » : elle ne venait pas, ou
+      // attendait autre chose — un feu, la voiture de devant — et le témoin
+      // était vert sur l'ancien code.
       const cible = await alice.evaluate((k) => {
         const v = window.__vehicules;
-        const paires = [];
+        const toutes = [], cands = [];
         for (const c of v.etat()) {
-          if (!c.routier || c.nom !== 'voiture') continue;
-          const par = new Map(c.places.map((pl) => [pl[3], pl]));
+          if (!c.routier) continue;
           for (const pl of c.places) {
-            const devant = par.get(pl[3] - 1);
-            if (!devant || pl[5] || devant[5]) continue;
-            const d = Math.hypot(devant[0] - pl[0], devant[1] - pl[1]);
-            if (d > 6 && d < 30) paires.push({ x: devant[0], z: devant[1], cap: devant[2], d, qui: `${c.cle}#${pl[3]}`, quiDevant: `${c.cle}#${devant[3]}` });
+            toutes.push(pl);
+            if (c.nom === 'voiture' && !pl[5]) cands.push({ pl, qui: `${c.cle}#${pl[3]}` });
           }
         }
-        // l'écart le plus court d'abord : sur ce banc une page de Paris rend peu
-        // d'images, et la voiture de derrière doit arriver pendant la fenêtre
-        paires.sort((p, q) => p.d - q.d);
-        return paires.length ? paires[k % paires.length] : null;
+        for (let j = 0; j < cands.length; j++) {
+          const { pl, qui } = cands[(k * 5 + j) % cands.length];
+          const x = pl[0] + 5 * Math.sin(pl[2]), z = pl[1] + 5 * Math.cos(pl[2]);
+          if (toutes.every((q) => q === pl || Math.hypot(q[0] - x, q[1] - z) > 6)) return { x, z, cap: pl[2], qui, retard0: pl[4] };
+        }
+        return null;
       }, essai);
       if (!cible) { await dormir(1000); continue; }
       await hote.evaluate((c) => {
@@ -492,15 +499,13 @@ function verifier(nom, ok, detail = '') {
         // blocs de son tracé), sur l'ancien elle le traverse. Le verdict lit
         // donc « elle est venue » par l'un OU l'autre : arrivée tout près, ou
         // arrêtée en attente à moins de douze blocs.
-        let suivie = { dMin: Infinity, attend: 0 };
+        let suivie = { dMin: Infinity, vue: 0, retard: null };
         const t0 = performance.now();
-        while (performance.now() - t0 < 30000) {
+        // vingt-cinq secondes : plus qu'un cycle entier de feu (vingt-deux),
+        // pour qu'une voiture arrêtée au rouge ait le temps de repartir
+        while (performance.now() - t0 < 25000) {
           const R = rect(rp.pos.x, rp.pos.z, m.cap);
           const etat = v.etat();
-          let devantLoin = false;
-          for (const c of etat) for (const pl of c.places) {
-            if (`${c.cle}#${pl[3]}` === m.quiDevant) devantLoin = Math.hypot(pl[0] - rp.pos.x, pl[1] - rp.pos.z) > 8;
-          }
           for (const c of etat) {
             if (!c.routier) continue;
             for (const pl of c.places) {
@@ -508,9 +513,8 @@ function verifier(nom, ok, detail = '') {
               const d = Math.hypot(pl[0] - rp.pos.x, pl[1] - rp.pos.z);
               if (qui === m.qui) {
                 if (d < suivie.dMin) suivie.dMin = +d.toFixed(1);
-                // une attente ne compte que si ce n'est PAS la voiture de devant
-                // qu'elle attend (un feu, une file) : celle-ci doit être repartie
-                if (pl[5] && d < 12 && devantLoin) suivie.attend++;
+                suivie.vue++;
+                suivie.retard = pl[4] - (m.retard0 || 0);
               }
               const touche = d < 6 && !separe(R, rect(pl[0], pl[1], pl[2]));
               if (releves === 0) { if (touche) deja.add(qui); continue; }
@@ -520,18 +524,18 @@ function verifier(nom, ok, detail = '') {
             }
           }
           releves++;
-          if (dedans > 0 || suivie.attend >= 8) break;    // le verdict est acquis
+          if (dedans > 0) break;    // la voiture est passée au travers : le verdict est acquis
           await dodo(250);
         }
         return { dedans, plusPres: +plusPres.toFixed(1), releves, deja: deja.size, arrive, suivie,
           ms: Math.round(performance.now() - t0) };
       }, { id: idMarlon2, m: cible });
       traversee = { ...r, essais: essai + 1 };
-      if (r.dedans > 0 || (r.suivie && (r.suivie.dMin < 3 || r.suivie.attend >= 8))) break;     // une voiture est venue : la situation a eu lieu
+      if (r.dedans > 0 || (r.suivie && r.suivie.vue > 20)) break;     // la voiture suivie est restée en vue : la situation a eu lieu
     }
     verifier('et chez l\'ami, la circulation ne traverse plus la voiture de l\'enfant',
       prise.auVolant && traversee.dedans === 0 && !!traversee.suivie
-      && (traversee.suivie.attend >= 8 || traversee.suivie.dMin < 3),
+      && traversee.suivie.vue > 20 && traversee.suivie.retard > 3,
       JSON.stringify(traversee));
 
 
