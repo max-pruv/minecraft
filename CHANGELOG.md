@@ -20,6 +20,55 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v301 — Paris prend de la hauteur : un étage fait trois blocs
+
+**Pourquoi.** Max, capture d'une rue de Paris à l'appui : « on a vraiment une
+problématique de proportion où Paris est beaucoup trop compressé. » Mesuré :
+une personne fait 1,8 bloc, un étage haussmannien faisait UN bloc (3,2 m dans
+la vraie ville), et un immeuble de six niveaux culminait à dix blocs, toit et
+cheminée compris — médiane sur 6 043 colonnes de lot. La femme sur le trottoir
+de sa capture touchait le plafond du premier étage. Trois échelles vivaient
+dans la même rue : le plan à vingt-quatre blocs par kilomètre, les personnes et
+les voitures à un bloc pour un mètre, les étages entre les deux. Deux remèdes
+lui ont été proposés, chiffrés ; il a tranché pour la verticale seule (« je
+suis tes recommandations, augmente ») — l'horizontale multiplierait par neuf le
+nombre de morceaux de Paris, ce que son iPhone, qui vient de mourir à 1 089
+morceaux (v299), ne tiendrait pas.
+
+**Ce que ça change.** Un étage courant fait trois blocs, le rez-de-chaussée
+commerçant trois, l'entresol deux : un immeuble de six niveaux monte à
+dix-sept blocs de façade, vingt et un avec la corniche et le comble — contre
+six et dix. Une baie fait 1,7 bloc de haut : une personne passe la tête à la
+fenêtre, ce qu'elle ne pouvait pas faire. Chaque niveau se lit de bas en haut
+en bandes — l'allège et son appui, le bas de la baie et son garde-corps, le
+haut de la baie et son linteau ; la dalle et la ferronnerie du balcon filant
+aux étages nobles ; la devanture sur trois blocs, l'entresol sur deux — de
+près en relief, de loin en tuiles, donc aussi sur un appareil sans couche HD.
+Le plan ne bouge pas, les rues non plus, ni le relief : les deux empreintes de
+`plafond.js` sont intactes. Ce qu'un enfant avait bâti SUR un toit de Paris
+monte avec le toit, d'un seul tenant, sur l'appareil comme dans le nuage, une
+copie d'avant prise sur le nuage ; ce qui est dans la rue, collé à une façade
+ou hors de Paris ne bouge pas. Et Paris pèse MOINS : le châssis d'une fenêtre
+est un seul quad ajouré au lieu de six boîtes de menuiserie — un morceau dense
+de l'ouest passe de 10,9 à 9,2 mégaoctets avec des façades trois fois plus
+hautes, ce qui garde le budget de la v299. Les monuments, eux, n'ont pas bougé
+dans cette livraison : l'Opéra (19 blocs) et les Invalides (22) sont désormais
+plus bas que les immeubles d'à côté (21 à 24), et leur remise à l'échelle,
+avec leurs modèles en relief, est la prochaine livraison — déclarée dans
+`TASKS.md` avec les hauteurs mesurées.
+
+**Ce qui le prouve.** Sept témoins neufs, tous rouges sur l'ancien code. Dans
+`parishd.js` : la façade se lit en bandes, dans l'ordre, à la hauteur que le
+gabarit déclare ; le haut d'une baie s'allume avec son bas, jamais à moitié ;
+un morceau dense de l'ouest pèse moins de dix mégaoctets de façades (10,88
+avant). Dans `plafond.js` : une cabane sur un toit monte avec le toit, de ce
+que le gabarit déclare et vérifié sur le monde ; rien d'autre ne bouge, la
+passe est idempotente, la position de l'enfant suit, et la chaîne entière
+(relever, puis ménager) la laisse sur le toit neuf. Dans `sauvegarde.js` : une
+cabane reçue du nuage revient sur le toit neuf, et le nuage a été mis à l'abri
+avant. Et les deux empreintes du relief de `plafond.js`, inchangées. Captures
+avant et après dans `docs/monde-fidele/captures/v301-*.png`.
+
 ## v300 — Le couloir Paris–Lille : l'autoroute A1
 
 **Pourquoi.** Troisième livraison du programme « monde fidèle » (kit de Max,

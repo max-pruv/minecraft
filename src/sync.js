@@ -15,7 +15,7 @@
 // mécanique — c'est là qu'on saura pourquoi elle horodate. Ici on l'applique,
 // comme les autres fusions de ce fichier.
 import { fusionnerGarages } from './garages.js';
-import { migrerBlocsCarte3, migrerPositionsCarte3, menagerBlocsCielParis } from './world.js';
+import { migrerBlocsCarte3, migrerPositionsCarte3, menagerBlocsCielParis, releverBlocsToitsParis, releverPositionsParis } from './world.js';
 
 const STATE_TS = '_t'; // when the pushing device last wrote this document
 
@@ -55,6 +55,7 @@ const nomAvantCarte = (nom) => `${nom}~avant-carte`;
 // La copie d'avant le SECOND agrandissement (v242), sur son propre document.
 const nomAvantCarte3 = (nom) => `${nom}~avant-carte-2`;
 const nomAvantMenage = (nom) => `${nom}~avant-menage-paris`;
+const nomAvantReleve = (nom) => `${nom}~avant-releve-paris`;
 
 const MAX_PHOTOS = 8;
 
@@ -326,8 +327,11 @@ export class ProfileSync {
     // lecture ne coûte qu'un parcours, et c'est le receveur qui cède.
     // ET PAR LE MÉNAGE DU CIEL DE PARIS (v298), pour la même raison : une
     // tablette restée sur l'ancienne version republierait la spirale.
-    const editsRecus = menagerBlocsCielParis(migrerBlocsCarte3(normalizeEdits(remote.edits)).tout).tout;
-    const posRecues = migrerPositionsCarte3(remote.pos).pos;
+    // ET PAR LE RELEVÉ DES TOITS DE PARIS (v301), AVANT le ménage : une cabane
+    // bâtie sur un toit monte avec lui, puis seulement on demande si elle
+    // touche encore quelque chose (voir `releverToitsParis`, world.js).
+    const editsRecus = menagerBlocsCielParis(releverBlocsToitsParis(migrerBlocsCarte3(normalizeEdits(remote.edits)).tout).tout).tout;
+    const posRecues = releverPositionsParis(migrerPositionsCarte3(remote.pos).pos).pos;
     out.pos = filtrerParMonde(mergePos(local.pos, posRecues), vivant);
     out.edits = filtrerParMonde(mergeAllEdits(local.edits, editsRecus), vivant);
     // Les garages suivent les blocs : rangés par monde, et emportés quand le
@@ -495,6 +499,25 @@ export class ProfileSync {
     } catch { return 'échec'; }             // réessayé à la lecture suivante
   }
 
+  // LA COPIE D'AVANT LE RELEVÉ DES TOITS DE PARIS (v301) — même forme que celle
+  // du ménage : sur le document du nuage tel qu'il est, une fois, sur son
+  // propre document, et seulement si le relevé a quelque chose à déplacer.
+  async mettreALAbriAvantReleve(nom, remote) {
+    if (this.copieReleve || !remote || !this.cloud.configured) return this.copieReleve || 'rien';
+    const edits = remote.edits;
+    if (!edits || typeof edits !== 'object' || !Object.keys(edits).length) return 'rien à sauver';
+    if (!releverBlocsToitsParis(normalizeEdits(edits)).deplaces) return (this.copieReleve = 'rien à relever');
+    try {
+      const deja = await this.cloud.statePull(nomAvantReleve(nom));
+      if (deja && (deja.editsz || deja.edits)) return (this.copieReleve = 'déjà sauvé');
+    } catch { return 'nuage muet'; }        // on ne réécrit pas dans le doute
+    const paquet = await this.resserrer({ edits, pos: remote.pos || {}, releve: 1, at: Date.now() });
+    try {
+      await this.cloud.statePush(nomAvantReleve(nom), paquet, false);
+      return (this.copieReleve = 'sauvé');
+    } catch { return 'échec'; }             // réessayé à la lecture suivante
+  }
+
   // Et la relire, si un jour il faut rendre à un enfant ce qu'il avait bâti.
   async lireAvantLaRefonte() {
     const nom = this.getName();
@@ -545,6 +568,7 @@ export class ProfileSync {
     if (!remote) { await this.push(); return { changed: false }; } // first device: seed it
     remote = await this.dilater(remote);
     await this.mettreALAbriAvantCarte3(name, remote);
+    await this.mettreALAbriAvantReleve(name, remote);
     await this.mettreALAbriAvantMenage(name, remote);
     const { state, changed } = this.merge(this.snapshot(), remote);
     this.apply(state);
@@ -576,6 +600,7 @@ export class ProfileSync {
         const remote = await this.dilater(await this.cloud.statePull(name));
         if (remote) {
           await this.mettreALAbriAvantCarte3(name, remote);
+          await this.mettreALAbriAvantReleve(name, remote);
           await this.mettreALAbriAvantMenage(name, remote);
           const { state: merged, changed } = this.merge(local, remote);
           local = merged;

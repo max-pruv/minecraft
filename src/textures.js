@@ -85,6 +85,18 @@ function fenetre(ctx, ox, oy, y0, haut, clair) {
   for (let x = 4; x <= 11; x++) px(ctx, ox, oy, x, mi, 226, 220, 202);
 }
 
+// Une BANDE de baie (v301) : le verre de la rangée `y0` à la rangée `y1`, les
+// deux montants de l'encadrement, le meneau ; `haut` ferme la baie par son
+// linteau, `bas` par son appui — une baie de deux blocs est ouverte en haut
+// sur la tuile du bas, ouverte en bas sur celle du haut.
+function baieBande(ctx, ox, oy, y0, y1, haut, bas) {
+  for (let y = y0; y <= y1; y++) for (let x = 4; x <= 11; x++) px(ctx, ox, oy, x, y, ...VITRE);
+  for (let y = y0 - (haut ? 1 : 0); y <= y1; y++) { px(ctx, ox, oy, 3, y, 238, 231, 212); px(ctx, ox, oy, 12, y, 238, 231, 212); }
+  if (haut) for (let x = 3; x <= 12; x++) px(ctx, ox, oy, x, y0 - 1, 238, 231, 212);
+  if (bas) for (let x = 3; x <= 12; x++) px(ctx, ox, oy, x, y1, 210, 202, 182);
+  for (let y = y0; y <= y1 - (bas ? 1 : 0); y++) px(ctx, ox, oy, 7, y, 226, 220, 202);
+}
+
 // Le balcon filant : deux lisses et les barreaux entre elles. C'est la
 // signature de l'étage noble, celle qu'on reconnaît de l'autre bout du
 // boulevard.
@@ -206,6 +218,97 @@ const peintresArchi = {
     for (let y = 4; y <= 5; y++) for (let x = 5; x <= 10; x++) px(ctx, ox, oy, x, y, ...VITRE_CLAIRE);
     for (let y = 4; y < TILE_PX; y++) px(ctx, ox, oy, 8, y, 34, 24, 18);
     for (const [cx, cy] of [[5, 8], [11, 8], [5, 12], [11, 12]]) px(ctx, ox, oy, cx, cy, 168, 132, 62);
+  },
+
+  // LES BANDES D'UN ÉTAGE DE TROIS BLOCS (v301). Une baie de deux blocs se
+  // dessine sur deux tuiles qui se raccordent bord à bord : le bas de la baie
+  // (ETAGE_MI) est ouvert en haut, son haut (ETAGE_HAUT) est ouvert en bas, et
+  // le verre file de l'une à l'autre. L'allège (ETAGE_BAS) porte l'appui sur
+  // son bord haut, le balcon (NOBLE_BAS) sa dalle. De loin — c'est le loin
+  // qu'elles servent, et TOUT l'écran d'un appareil sans couche HD —, une
+  // façade se lit alors comme une façade : des baies hautes, une allège, un
+  // linteau, et non trois fenêtres empilées par étage.
+  [ARCHI_TILE.ETAGE_BAS](ctx, ox, oy) {
+    const rng = mulberry32(7020);
+    pierreDeTaille(ctx, ox, oy, rng);
+    for (let x = 0; x < TILE_PX; x++) { px(ctx, ox, oy, x, 0, 244, 238, 222); px(ctx, ox, oy, x, 1, 210, 202, 182); }
+  },
+  [ARCHI_TILE.ETAGE_MI](ctx, ox, oy) {
+    const rng = mulberry32(7021);
+    pierreDeTaille(ctx, ox, oy, rng);
+    baieBande(ctx, ox, oy, 0, 15, false, true);
+    ferronnerie(ctx, ox, oy, 1);
+  },
+  [ARCHI_TILE.ETAGE_HAUT](ctx, ox, oy) {
+    const rng = mulberry32(7022);
+    pierreDeTaille(ctx, ox, oy, rng);
+    for (let x = 0; x < TILE_PX; x++) px(ctx, ox, oy, x, 2, 238, 231, 212);   // le bandeau d'étage
+    baieBande(ctx, ox, oy, 5, 15, true, false);
+  },
+  [ARCHI_TILE.NOBLE_BAS](ctx, ox, oy) {
+    const rng = mulberry32(7023);
+    pierreDeTaille(ctx, ox, oy, rng);
+    for (let x = 0; x < TILE_PX; x++) {
+      px(ctx, ox, oy, x, 0, 246, 240, 224); px(ctx, ox, oy, x, 1, 240, 234, 216);
+      px(ctx, ox, oy, x, 2, 232, 225, 205); px(ctx, ox, oy, x, 3, 196, 188, 168);
+    }
+    for (const x0 of [2, 12]) for (let y = 4; y <= 6; y++) { px(ctx, ox, oy, x0, y, 236, 229, 209); px(ctx, ox, oy, x0 + 1, y, 220, 212, 192); }
+  },
+  [ARCHI_TILE.ENTRESOL_BAS](ctx, ox, oy) {
+    const rng = mulberry32(7024);
+    pierreDeTaille(ctx, ox, oy, rng);
+    for (let y = 5; y <= 13; y++) for (let x = 5; x <= 10; x++) px(ctx, ox, oy, x, y, ...VITRE);
+    for (let y = 4; y <= 14; y++) { px(ctx, ox, oy, 4, y, 238, 231, 212); px(ctx, ox, oy, 11, y, 238, 231, 212); }
+    for (let x = 4; x <= 11; x++) { px(ctx, ox, oy, x, 4, 238, 231, 212); px(ctx, ox, oy, x, 14, 210, 202, 182); }
+    for (let x = 0; x < TILE_PX; x++) px(ctx, ox, oy, x, 15, 238, 231, 212);   // l'assise sur le commerce
+  },
+  [ARCHI_TILE.ENTRESOL_HAUT](ctx, ox, oy) {
+    const rng = mulberry32(7025);
+    pierreDeTaille(ctx, ox, oy, rng);
+    for (let y = 8; y <= 15; y++) for (let x = 5; x <= 10; x++) px(ctx, ox, oy, x, y, ...VITRE);
+    for (let y = 7; y <= 15; y++) { px(ctx, ox, oy, 4, y, 238, 231, 212); px(ctx, ox, oy, 11, y, 238, 231, 212); }
+    for (let x = 4; x <= 11; x++) px(ctx, ox, oy, x, 7, 238, 231, 212);
+  },
+  [ARCHI_TILE.VITRINE_BAS](ctx, ox, oy) {
+    const rng = mulberry32(7026);
+    noisyFill(ctx, ox, oy, [74, 70, 64], 6, rng);
+    for (let y = 0; y <= 11; y++) for (let x = 1; x <= 14; x++) px(ctx, ox, oy, x, y, ...VITRE_CLAIRE);
+    for (const x of [0, 7, 15]) for (let y = 0; y <= 11; y++) px(ctx, ox, oy, x, y, 62, 44, 34);
+    for (let x = 0; x < TILE_PX; x++) px(ctx, ox, oy, x, 12, 62, 44, 34);
+  },
+  [ARCHI_TILE.VITRINE_MI](ctx, ox, oy) {
+    const rng = mulberry32(7027);
+    noisyFill(ctx, ox, oy, [206, 197, 176], 5, rng);
+    for (let y = 0; y < TILE_PX; y++) for (let x = 1; x <= 14; x++) px(ctx, ox, oy, x, y, ...VITRE_CLAIRE);
+    for (const x of [0, 7, 15]) for (let y = 0; y < TILE_PX; y++) px(ctx, ox, oy, x, y, 62, 44, 34);
+  },
+  [ARCHI_TILE.VITRINE_HAUT](ctx, ox, oy) {
+    const rng = mulberry32(7028);
+    pierreDeTaille(ctx, ox, oy, rng);
+    for (let x = 0; x < TILE_PX; x++) {
+      const rouge = (x >> 1) & 1;
+      for (let y = 4; y <= 7; y++) px(ctx, ox, oy, x, y, rouge ? 150 : 226, rouge ? 44 : 216, rouge ? 44 : 200);
+      px(ctx, ox, oy, x, 8, 62, 44, 34);
+      for (let y = 9; y <= 14; y++) px(ctx, ox, oy, x, y, 44, 40, 44);
+      if (x % 3 === 1) px(ctx, ox, oy, x, 11, 168, 132, 62);   // les lettres dorées de l'enseigne
+      px(ctx, ox, oy, x, 15, 62, 44, 34);
+    }
+  },
+  [ARCHI_TILE.PORTE_BAS](ctx, ox, oy) {
+    const rng = mulberry32(7029);
+    pierreDeTaille(ctx, ox, oy, rng);
+    for (let y = 0; y < TILE_PX; y++) for (let x = 3; x <= 12; x++) px(ctx, ox, oy, x, y, 52, 38, 30);
+    for (let y = 0; y < TILE_PX; y++) px(ctx, ox, oy, 8, y, 34, 24, 18);
+    for (const [cx, cy] of [[5, 4], [11, 4], [5, 11], [11, 11]]) px(ctx, ox, oy, cx, cy, 168, 132, 62);
+  },
+  [ARCHI_TILE.PORTE_HAUT](ctx, ox, oy) {
+    const rng = mulberry32(7030);
+    pierreDeTaille(ctx, ox, oy, rng);
+    for (let x = 2; x <= 13; x++) px(ctx, ox, oy, x, 1, 238, 231, 212);      // l'arc de pierre
+    for (let y = 2; y <= 5; y++) for (let x = 4; x <= 11; x++) px(ctx, ox, oy, x, y, ...VITRE_CLAIRE);
+    for (let y = 2; y <= 5; y++) { px(ctx, ox, oy, 3, y, 62, 44, 34); px(ctx, ox, oy, 12, y, 62, 44, 34); px(ctx, ox, oy, 8, y, 62, 44, 34); }
+    for (let y = 6; y < TILE_PX; y++) for (let x = 3; x <= 12; x++) px(ctx, ox, oy, x, y, 52, 38, 30);
+    for (let y = 6; y < TILE_PX; y++) px(ctx, ox, oy, 8, y, 34, 24, 18);
   },
 
   // Les pavés de Paris : posés en éventail, pas en damier. C'est ce qui les

@@ -391,7 +391,35 @@ export const ARCHI = {
   VITRAIL: 635,        // losanges de verre coloré sertis de plomb
   SHOJI: 636,          // le panneau japonais : papier sur treillis de bois
   TUILE_GRISE: 637,    // les rangs ronds des toits de Kyoto et de Séoul
+  // v301 — UN ÉTAGE DE PARIS FAIT TROIS BLOCS, ET UN REGISTRE SE COUPE EN
+  // BANDES. Décision de Max (« augmente ») : à un bloc par étage, une personne
+  // de 1,8 bloc faisait la hauteur d'un étage haussmannien, et Paris était
+  // une maquette. Un étage fait désormais trois blocs (3,2 m), le
+  // rez-de-chaussée commerçant trois, l'entresol deux. Une fenêtre reste UN
+  // DESSIN, jamais un trou : une baie de deux blocs se dessine donc sur DEUX
+  // tuiles qui se raccordent (le bas de la baie, puis son haut et le linteau),
+  // et l'allège sous elle sur une troisième. Les anciens blocs (ETAGE, NOBLE…)
+  // restent ce qu'ils sont : des enfants les ont posés, et ils ont un nom.
+  // Les bandes, elles, n'entrent pas dans la palette (`cache`) — « Étage
+  // haussmannien (haut de baie) » n'est pas un bloc qu'un enfant choisit.
+  VITRINE_BAS: 638,    // le soubassement de granit et le bas de la devanture
+  VITRINE_MI: 639,     // le vitrage de la devanture, à mi-hauteur
+  VITRINE_HAUT: 640,   // le bandeau d'enseigne et le store
+  PORTE_BAS: 641,      // les vantaux de la porte cochère
+  PORTE_HAUT: 642,     // le haut des vantaux, l'imposte et l'arc
+  ENTRESOL_BAS: 643,   // l'assise du commerce et le bas de la petite baie
+  ENTRESOL_HAUT: 644,  // le haut de la petite baie de l'entresol
+  ETAGE_BAS: 645,      // l'allège et l'appui de fenêtre
+  ETAGE_MI: 646,       // le bas de la baie et son garde-corps
+  ETAGE_HAUT: 647,     // le haut de la baie, le linteau et le bandeau
+  NOBLE_BAS: 648,      // le balcon filant de l'étage noble
 };
+// Les bandes de l'étage, pour ceux qui doivent les reconnaître ensemble : le
+// mailleur (une bande de baie s'allume la nuit avec sa jumelle), la couche HD.
+export const ARCHI_BANDES = new Set([
+  ARCHI.VITRINE_BAS, ARCHI.VITRINE_MI, ARCHI.VITRINE_HAUT, ARCHI.PORTE_BAS, ARCHI.PORTE_HAUT,
+  ARCHI.ENTRESOL_BAS, ARCHI.ENTRESOL_HAUT, ARCHI.ETAGE_BAS, ARCHI.ETAGE_MI, ARCHI.ETAGE_HAUT, ARCHI.NOBLE_BAS,
+]);
 
 const ARCHI_NOMS = {
   VITRINE: 'Devanture de commerce',
@@ -412,12 +440,31 @@ const ARCHI_NOMS = {
   VITRAIL: 'Vitrail',
   SHOJI: 'Panneau shoji',
   TUILE_GRISE: 'Tuile grise',
+  VITRINE_BAS: 'Devanture (soubassement)',
+  VITRINE_MI: 'Devanture (vitrage)',
+  VITRINE_HAUT: 'Devanture (enseigne)',
+  PORTE_BAS: 'Porte cochère (vantaux)',
+  PORTE_HAUT: 'Porte cochère (imposte)',
+  ENTRESOL_BAS: 'Entresol (bas)',
+  ENTRESOL_HAUT: 'Entresol (haut)',
+  ETAGE_BAS: 'Étage haussmannien (allège)',
+  ETAGE_MI: 'Étage haussmannien (baie)',
+  ETAGE_HAUT: 'Étage haussmannien (linteau)',
+  NOBLE_BAS: 'Étage noble (balcon)',
 };
 
 // L'ordre de cet objet fixe l'ordre des tuiles : le premier bloc prend la
 // première case neuve, et ainsi de suite.
 export const ARCHI_TILE = {};
-Object.keys(ARCHI).forEach((nom, i) => { ARCHI_TILE[nom] = ARCHI_TILE_START + i; });
+// Les dix-huit premières tuiles vivent en 360..377 ; les trois tuiles de route
+// (v300) sont juste derrière, en 378..380. Les bandes d'étage (v301) prennent
+// donc une SECONDE plage, après les routes : insérer ici décalerait les tuiles
+// de route, et une chaussée deviendrait une devanture.
+export const ARCHI_BANDES_TILE_START = 381;
+const ARCHI_PREMIERES = 18;
+Object.keys(ARCHI).forEach((nom, i) => {
+  ARCHI_TILE[nom] = i < ARCHI_PREMIERES ? ARCHI_TILE_START + i : ARCHI_BANDES_TILE_START + (i - ARCHI_PREMIERES);
+});
 
 for (const [nom, id] of Object.entries(ARCHI)) {
   const tuile = ARCHI_TILE[nom];
@@ -431,6 +478,8 @@ for (const [nom, id] of Object.entries(ARCHI)) {
     name: ARCHI_NOMS[nom],
     tiles: [dessus, tuile, dessus],
     solid: true, transparent: false,
+    // une bande d'étage n'entre pas dans la palette des enfants
+    ...(ARCHI_BANDES.has(id) ? { cache: true } : {}),
   };
 }
 
@@ -439,4 +488,4 @@ for (const [nom, id] of Object.entries(ARCHI)) {
 // blocs d'architecture, et les façades haussmanniennes seraient restées
 // réservées au générateur de ville au lieu de rejoindre l'inventaire.
 export const PLACEABLE_BLOCKS = Object.keys(BLOCK_INFO).map(Number)
-  .filter((id) => id !== BLOCK.WATER && (id < DECOR_START || id >= CITY_START));
+  .filter((id) => id !== BLOCK.WATER && (id < DECOR_START || id >= CITY_START) && !BLOCK_INFO[id].cache);

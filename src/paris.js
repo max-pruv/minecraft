@@ -1126,29 +1126,66 @@ function autourDUnSocle(u, v) {
 // le toit de zinc à deux pentes percé de lucarnes, avec ses souches de cheminée
 // en terre cuite.
 
-export function batirColonneParis(x, z, poser) {
+// UN ÉTAGE FAIT TROIS BLOCS (v301). Décision de Max : « augmente ». Mesuré
+// avant : un immeuble de Paris culminait à dix blocs (médiane sur 6 043
+// colonnes de lot, toit et cheminée compris), un étage faisait UN bloc, et une
+// personne de 1,8 bloc avait la hauteur d'un étage haussmannien — la femme sur
+// le trottoir de la capture de Max touchait le plafond du premier. Un étage
+// courant fait 3,2 m ; à un bloc pour un mètre (l'échelle des personnes et des
+// voitures), c'est trois blocs. Le rez-de-chaussée commerçant, à haut plafond,
+// en fait trois ; l'entresol, bas, deux. Un immeuble de six niveaux monte donc
+// à dix-sept blocs de façade — vingt et un avec la corniche et le comble — au
+// lieu de six et dix.
+//
+// Ce qui ne change PAS : le plan (les rues restent à leur largeur, l'îlot à
+// sa trame), le relief (`hauteurParis` ne lit rien de ceci ; les deux
+// empreintes de `plafond.js` sont intactes), le comble (ses marches et son
+// brisis, v289), le gabarit `bh`, qui compte toujours des NIVEAUX et se tire
+// une fois par îlot. Ce qui change, c'est qu'un niveau se dépense en BANDES :
+// une baie de deux blocs se dessine sur deux tuiles qui se raccordent, et la
+// couche HD (`facadeshd.js`) lit la bande pour savoir quel bout de la baie elle
+// dessine. Les monuments, eux, ne bougent pas dans cette livraison : ils
+// deviennent plus bas que les immeubles voisins, ce qui est mesuré et déclaré
+// dans TASKS.md — les remettre à l'échelle est une livraison à part, avec ses
+// modèles HD.
+export const BLOCS_PAR_ETAGE = 3;   // un étage courant : 3,2 m
+export const HAUT_RDC = 3;          // le rez-de-chaussée commerçant, à haut plafond
+export const HAUT_ENTRESOL = 2;     // l'entresol, coincé sous l'étage noble
+
+// Le gabarit d'une colonne de lot, tel que le bâtisseur le lit — publié pour
+// la migration des blocs des enfants (`releverToitsParis`, world.js), qui doit
+// savoir de combien un toit est monté sous une maison bâtie dessus.
+//   bh        le nombre de niveaux (RDC, entresol, puis les étages), par îlot
+//   facade    la hauteur de la façade en blocs (la corniche est juste au-dessus)
+//   ancienne  ce que la même façade faisait avant la v301 : un bloc par niveau
+//   sommet    le dernier bloc que le bâtisseur écrit dans la colonne (dy, où
+//             dy = 1 est le bloc de surface) — le faîte, ou la souche de cheminée
+//   ancien    le même sommet avant la v301
+export function gabaritParis(x, z) {
   const u = x - PARIS.x, v = z - PARIS.z;
   const f = formeParis(u, v);
   const t = f.t;
   const r = tirageParis(f.ai, f.bi, 611);
-
-  // Le gabarit. La hauteur est tirée une fois par ÎLOT — tous les immeubles
-  // d'un même pâté montent donc exactement à la même corniche, et c'est
-  // précisément ce qui fait le ciel de Paris. Un tirage par colonne aurait
-  // donné une dentelure : joli nulle part, faux ici.
   const bh = t.etages + (r > 0.72 ? 1 : 0);
-
   const oE = lotParisLibre(x + 1, z), oO = lotParisLibre(x - 1, z);
   const oS = lotParisLibre(x, z + 1), oN = lotParisLibre(x, z - 1);
   const dedans = oE && oO && oS && oN;
-  // La travée : on compte le long de la façade, pas en travers, pour que les
-  // fenêtres d'un même immeuble s'alignent à la verticale.
   const face = (!oE || !oO) ? v : u;
-
-  // Le coin de l'immeuble : il est en façade dans les DEUX directions. C'est
-  // là que se pose le chaînage d'angle, ces grands blocs de pierre alternés
-  // sans lesquels un immeuble a l'air d'une boîte posée sur le trottoir.
   const angle = (!oE || !oO) && (!oS || !oN);
+  const prof = Math.max(0, Math.min(2, Math.round(f.d - f.t.face)));
+  const toit = dedans ? 3 : 1 + prof;
+  const cheminee = !dedans && tirageParis(f.ai, f.bi, 612) > 0.45 && (face & 7) === 3 ? 2 : 0;
+  const facade = HAUT_RDC + HAUT_ENTRESOL + Math.max(0, bh - 2) * BLOCS_PAR_ETAGE;
+  return {
+    bh, dedans, face, angle, prof, facade, ancienne: bh,
+    sommet: facade + 1 + toit + cheminee,
+    ancien: bh + 1 + toit + cheminee,
+  };
+}
+
+export function batirColonneParis(x, z, poser) {
+  const g = gabaritParis(x, z);
+  const { bh, dedans, face, angle, prof, facade } = g;
 
   if (dedans) {
     // Le cœur de l'îlot bâti : un plancher, et rien de plus. Les immeubles sont
@@ -1163,44 +1200,53 @@ export function batirColonneParis(x, z, poser) {
     // courants, un second balcon filant au dernier, la corniche, puis le
     // comble. Six niveaux, jamais plus.
     //
-    // Avant, chacun de ces registres était un cube uni — pierre crème ou verre
-    // plein. Une fenêtre était donc un bloc de verre d'un mètre de côté. C'est
-    // ce qui faisait grossier, et aucune forme n'y pouvait rien : le défaut
-    // n'était pas dans le volume, il était dans la surface.
-    for (let y = 1; y <= bh; y++) {
-      let id;
-      if (y === 1) {
-        // Une porte cochère par immeuble, le reste en devantures. Une rue où
-        // chaque travée serait une boutique n'existe nulle part.
-        id = (face & 7) === 2 ? ARCHI.PORTE : ARCHI.VITRINE;
-      } else if (y === 2) {
-        id = ARCHI.ENTRESOL;
-      } else if (y === 3 || y === bh) {
-        id = ARCHI.NOBLE;          // les deux balcons filants
-      } else {
-        id = ARCHI.ETAGE;
-      }
-      // L'angle prime sur le registre : la pierre de taille monte d'un seul
-      // tenant, du trottoir à la corniche. C'est ainsi que ça se construit.
-      poser(y, angle && y > 1 ? ARCHI.CHAINAGE : id);
+    // Une fenêtre est un DESSIN, jamais un trou (v195, v202) ; et depuis la
+    // v301 un niveau fait plusieurs blocs, chacun sa bande : le bas d'une baie,
+    // son haut, l'allège sous elle. Le registre d'un niveau s'écrit donc en
+    // bandes, dans l'ordre où l'on lève la tête.
+    let y = 1;
+    // Le rez-de-chaussée : une porte cochère par immeuble, le reste en
+    // devantures. Une rue où chaque travée serait une boutique n'existe nulle
+    // part. Le bandeau d'enseigne couronne l'une et l'autre.
+    const cochere = (face & 7) === 2;
+    poser(y++, cochere ? ARCHI.PORTE_BAS : ARCHI.VITRINE_BAS);
+    poser(y++, cochere ? ARCHI.PORTE_HAUT : ARCHI.VITRINE_MI);
+    poser(y++, ARCHI.VITRINE_HAUT);
+    // L'entresol, sur deux blocs.
+    poser(y++, ARCHI.ENTRESOL_BAS);
+    poser(y++, ARCHI.ENTRESOL_HAUT);
+    // Les étages : le premier au-dessus de l'entresol et le dernier sont
+    // NOBLES — les deux balcons filants — et chaque étage se lit allège,
+    // baie, linteau.
+    const etages = Math.max(0, bh - 2);
+    for (let k = 0; k < etages; k++) {
+      const noble = k === 0 || k === etages - 1;
+      poser(y++, noble ? ARCHI.NOBLE_BAS : ARCHI.ETAGE_BAS);
+      poser(y++, ARCHI.ETAGE_MI);
+      poser(y++, ARCHI.ETAGE_HAUT);
     }
-    poser(bh + 1, ARCHI.CORNICHE);
+    // L'angle prime sur le registre : la pierre de taille monte d'un seul
+    // tenant, du dessus des devantures à la corniche. C'est ainsi que ça se
+    // construit — et c'est sur le premier chaînage que se pose la plaque de rue.
+    if (angle) for (let yy = HAUT_RDC + 1; yy <= facade; yy++) poser(yy, ARCHI.CHAINAGE);
+    poser(facade + 1, ARCHI.CORNICHE);
   }
 
   // Le toit. Il monte en marchant vers l'intérieur de l'îlot : la colonne de
   // façade ne porte que le premier rang de zinc, celle d'un pas en arrière deux,
-  // et ainsi de suite — c'est le brisis du comble à la Mansart.
-  const prof = Math.max(0, Math.min(2, Math.round(f.d - f.t.face)));
-  const faite = bh + 1 + (dedans ? 3 : 1 + prof);
-  for (let y = bh + 2; y <= faite; y++) poser(y, ARCHI.ZINC_LISSE);
+  // et ainsi de suite — c'est le brisis du comble à la Mansart. Le comble ne
+  // change pas d'échelle avec les étages : trois blocs de zinc au cœur de
+  // l'îlot, c'est déjà un comble de trois mètres.
+  const faite = facade + 1 + (dedans ? 3 : 1 + prof);
+  for (let yy = facade + 2; yy <= faite; yy++) poser(yy, ARCHI.ZINC_LISSE);
 
   if (!dedans) {
     // Le chien-assis : sa lucarne est DESSINÉE dans le zinc, elle n'est plus un
     // cube de verre planté dans la pente. Une travée sur trois, au premier rang
     // du comble — c'est ce qu'on voit en levant la tête depuis le trottoir.
-    if ((face % 3) === 0) poser(bh + 2, ARCHI.MANSARDE);
+    if ((face % 3) === 0) poser(facade + 2, ARCHI.MANSARDE);
     // Et les souches de cheminée, en terre cuite, une par immeuble.
-    if (tirageParis(f.ai, f.bi, 612) > 0.45 && (face & 7) === 3) {
+    if (g.sommet > faite) {
       poser(faite + 1, BLOCK.TERRACOTTA);
       poser(faite + 2, BLOCK.TERRACOTTA);
     }

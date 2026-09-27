@@ -9,7 +9,7 @@
 
 import { BLOCK, BLOCK_INFO, isTransparent, isSlab, isProp, CITY_BLOCK, ARCHI } from './blocks.js';
 import { tileUV, tileRect } from './tuiles.js';
-import { GeomBufferHD, SOL_HD, FACADE_HD, TOIT_HD, facadeHD, couvreHD, rectHD, vitreAllumee, marquageHD, bordureHD, trottoirHD, arbreHD, poteletHD, terrasseHD, mitresHD, morrisHD, bancHD, corbeilleHD, toitDessusHD, tirageHD } from './facadeshd.js';
+import { GeomBufferHD, SOL_HD, FACADE_HD, TOIT_HD, facadeHD, couvreHD, rectHD, vitreAllumee, yBaie, marquageHD, bordureHD, trottoirHD, arbreHD, poteletHD, terrasseHD, mitresHD, morrisHD, bancHD, corbeilleHD, toitDessusHD, tirageHD } from './facadeshd.js';
 
 // LES ARBRES EN HD (v288) : de loin, leurs blocs (dans `plat`) ; de près, un
 // arbre maillé (`arbreHD`, dans `facades`). Toutes leurs faces partent donc
@@ -91,6 +91,10 @@ const WATER_SURFACE_Y = 0.875; // water sits slightly below the block top
 const VITRES = new Set([
   BLOCK.GLASS, CITY_BLOCK.CURTAIN,
   ARCHI.VITRINE, ARCHI.ENTRESOL, ARCHI.ETAGE, ARCHI.NOBLE, ARCHI.VITRAIL, ARCHI.SHOJI,
+  // les bandes d'étage qui portent du verre (v301) ; le bas et le haut d'une
+  // même baie s'allument ENSEMBLE — le tirage se fait sur le bloc de base de
+  // la baie (`yBaie`), sinon une fenêtre serait éclairée à moitié
+  ARCHI.VITRINE_BAS, ARCHI.VITRINE_MI, ARCHI.ENTRESOL_BAS, ARCHI.ENTRESOL_HAUT, ARCHI.ETAGE_MI, ARCHI.ETAGE_HAUT,
 ]);
 // `vitreAllumee` vit dans `facadeshd.js` depuis la v287 : la couche HD et la
 // tuile plate doivent allumer la MÊME fenêtre.
@@ -367,7 +371,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
           //   et laisse les bords intacts, au pixel près.
           const uniforme = !ao || (ao[0] === ao[1] && ao[1] === ao[2] && ao[2] === ao[3]);
           const bloqueV = vAxis === 1 && yTop !== 1;
-          const allume = VITRES.has(id) && vitreAllumee(ox + x, y, oz + z);
+          const allume = VITRES.has(id) && vitreAllumee(ox + x, yBaie(id, y), oz + z);
           // Le sol HD : la face du dessus d'un sol de ville. La façade HD :
           // une face latérale d'un bloc de façade — elle va dans `plat`, et
           // son détail est émis plus bas, bloc par bloc.
