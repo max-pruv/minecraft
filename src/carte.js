@@ -739,7 +739,12 @@ export class Carte {
       // que quatre cents pixels de côté : montrer Paris en entier y demande
       // presque UN bloc par pixel, d'où 1,3 et non 1,0 — c'est le petit écran
       // qui fixe la barre, pas le grand.
-      ...lieuxDeParis().map((c) => ({ c, fort: false, seuil: 1.3 })),
+      //
+      // v306 : PARIS DOUBLÉ fait sept cent quarante blocs de bord à bord, et le
+      // même calcul donne 1,7 bloc par pixel au zoom qui la montre entière sur
+      // un téléphone : le seuil passe à 2,2, et celui de ses monuments aussi
+      // (world.js), sinon la tour Eiffel s'effaçait du plan de Paris.
+      ...lieuxDeParis().map((c) => ({ c, fort: false, seuil: 2.2 })),
       ...lieuxDuParc().map((c) => ({ c, fort: false, seuil: 0.55 })),
       // Et les quartiers et collines de San Francisco — MÊME RAISON QUE PARIS,
       // huit lignes plus haut, et le même remède. Depuis la v192 la ville fait

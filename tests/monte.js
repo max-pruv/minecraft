@@ -2440,7 +2440,11 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const g = window.__game;
       const cam = g.player.camera;
       const demi = Math.atan(Math.tan(((cam.fov * Math.PI) / 180) / 2) * cam.aspect);
-      const trajets = [['Rivoli', [-53, -4], [60, 13]], ['Voltaire', [46, -18], [96, 25]]];
+      // en KILOMÈTRES depuis Notre-Dame (v306) : écrites en blocs, ces adresses
+      // valaient à vingt-quatre blocs par kilomètre et tombaient à mi-chemin
+      // dans Paris doublé — un témoin qui porte une adresse de ville la demande
+      const rel = (dx, dz) => { const [x, z] = m.adresseParis(dx, dz); return [x - m.PARIS.x, z - m.PARIS.z]; };
+      const trajets = [['Rivoli', rel(-3.2, -0.9), rel(1.5, -0.2)], ['Voltaire', rel(0.9, -1.5), rel(3.0, 0.3)]];
       const vus = [];
       const attentes = [];
       // COMBIEN DE PASSANTS SONT DANS LE CADRE, ICI, MAINTENANT.
@@ -2461,7 +2465,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         const L = Math.hypot(b[0] - a[0], b[1] - a[1]);
         const yaw = Math.atan2(-(b[0] - a[0]), -(b[1] - a[1]));
         const dx = -Math.sin(yaw), dz = -Math.cos(yaw);
-        for (let d = 0; d <= L; d += 25) {
+        for (let d = 0; d <= L; d += 50) {   // cinquante blocs depuis Paris doublé (v306) : les mêmes arrêts qu'à vingt-cinq
           const f = d / L;
           const x = Math.round(m.PARIS.x + a[0] + (b[0] - a[0]) * f);
           const z = Math.round(m.PARIS.z + a[1] + (b[1] - a[1]) * f);

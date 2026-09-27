@@ -49,8 +49,6 @@
 
 import { BLOCK, CITY_BLOCK, DECOR_START, ARCHI } from './blocks.js';
 import { rangerVoies, solDesVoies, fabriqueCircuits, contournerRonds, contournerBlocs } from './voies.js';
-import { positionDe } from './mondes.js';
-import { entreesDe } from './routes.js';
 
 const uni = (couleur) => DECOR_START + couleur * 10;
 
@@ -74,7 +72,10 @@ const COUR = BLOCK.COBBLE;       // les pavés du fond des cours
 // (`r: 55`) et il masquait celui de `mondes.js` : la ville a triplé dans le
 // registre et paris.js a continué de croire à son ancien disque — tout ce qui
 // dépassait cinquante-cinq blocs n'était ni bâti ni pavé.
-export const PARIS = positionDe('paris');
+// FIGÉE À SA PLACE (v306). Paris a doublé et s'est déplacé ; la trame d'avant
+// sert à juger des blocs posés dans l'ANCIENNE ville, à ses anciennes
+// coordonnées. Elle ne demande donc plus sa place au registre, qui a changé.
+export const PARIS = { x: -240, z: 200, r: 185, nom: 'Paris' };
 
 // L'ÉCHELLE, ET SA REFONTE.
 //
@@ -512,7 +513,9 @@ export const VOIES_PARIS = VOIES;
 // les autres pour le sol — chaussée, trottoir, les lots s'écartent — mais pas
 // pour les circuits : ce sont les voitures de la route qui l'empruntent, et
 // `CIRCUITS_PARIS` ne la connaît pas.
-const ENTREES = entreesDe('paris').map((e) => ({
+// L'entrée de l'A1 telle qu'elle était, pour la même raison : le couloir se
+// retrace avec Paris (v306).
+const ENTREES = [{ x: -180.7684519140366, z: 45.997974976495186, route: 'A1', vers: 'lille' }].map((e) => ({
   nom: `Entrée ${e.route}`, l: a(1.2), t: TROTTOIR_AV,
   pts: [[Math.round(e.x - PARIS.x), Math.round(e.z - PARIS.z)], pt('Gare du Nord')],
 }));

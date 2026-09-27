@@ -198,10 +198,14 @@ const BLOCS = 40000;
     const menage = await tab.evaluate(async () => {
       const ps = window.__game.profileSync;
       const W = await import('./src/world.js');
-      const P = await import('./src/paris.js');
+      // L'ANCIEN PARIS (v306) : un document d'avant porte des blocs posés dans
+      // la ville d'avant, sur le relief d'avant. Sur l'ancien code, la ville et
+      // le monde courants SONT ceux d'avant.
+      let P; try { P = await import('./src/paris-v302.js'); } catch { P = await import('./src/paris.js'); }
+      const wa = new W.World({ avant: true });
       if (!W.menagerBlocsCielParis || !ps.mettreALAbriAvantMenage) return { absent: true };
       const te = P.adresseParis(-4.4, 0.5);
-      const x = te[0] + 12, z = te[1], h = window.__game.world.terrainHeight(x, z);
+      const x = te[0] + 12, z = te[1], h = wa.terrainHeight(x, z);
       const ciel = `${x},${h + 30},${z}`, ciel2 = `${x},${h + 31},${z}`, sol = `${x},${h + 1},${z}`;
       const t = W.DATE_MENAGE_PARIS - 86400000;
       const local = ps.snapshot();
@@ -210,7 +214,10 @@ const BLOCS = 40000;
       const copie = await ps.mettreALAbriAvantMenage(ps.getName(), remote);
       const r = ps.merge(local, remote);
       const e = (r.state.edits || {}).local || {};
-      return { copie, ciel: !!e[ciel] || !!e[ciel2], sol: e[sol]?.[0] === 1 };
+      // la brique au sol a pu SUIVRE Paris doublé (v306) : on la cherche par ce
+      // qu'elle est, pas par son ancienne adresse
+      const ids = Object.values(e).map((v) => v && v[0]);
+      return { copie, ciel: ids.includes(8) || ids.includes(10), sol: ids.includes(1) };
     });
     verifier('un bloc du ciel de Paris reçu du nuage ne revient pas par la fusion, et la brique au sol, si',
       !menage.absent && !menage.ciel && menage.sol,
@@ -244,7 +251,8 @@ const BLOCS = 40000;
         if (!g.dedans) col = { x, z, g };
       }
       const { x, z, g } = col;
-      const h = window.__game.world.terrainHeight(x, z);
+      // le relief d'avant Paris doublé (v306), celui où la cabane a été posée
+      const h = new W.World({ avant: true }).terrainHeight(x, z);
       const toitAncien = h + g.ancien - 1, monte = g.sommet - g.ancien;
       const cabane = `${x},${toitAncien + 1},${z}`, haut = `${x},${toitAncien + 1 + monte},${z}`;
       const t = W.DATE_RELEVE_PARIS - 86400000;
@@ -254,7 +262,16 @@ const BLOCS = 40000;
       const copie = await ps.mettreALAbriAvantReleve(ps.getName(), remote);
       const r = ps.merge(local, remote);
       const e = (r.state.edits || {}).local || {};
-      return { copie, monte, ancienne: !!e[cabane], neuve: e[haut]?.[0] === 8 };
+      // Depuis Paris doublé (v306), la cabane relevée ne reste pas sur le toit
+      // neuf de l'ANCIENNE ville : elle suit son quartier jusqu'au nouveau
+      // Paris, où ce toit n'existe plus, et s'y pose au sol. Ce qui se garde
+      // de la v301, c'est qu'elle ne revient JAMAIS à l'ancienne hauteur ; ce
+      // que la v306 ajoute, c'est qu'elle arrive une fois, datée de sa marche.
+      const cabanes = Object.entries(e).filter(([, v]) => v && v[0] === 8);
+      const neuve = W.DATE_PARIS_DOUBLE
+        ? cabanes.length === 1 && cabanes[0][1][1] === W.DATE_PARIS_DOUBLE
+        : e[haut]?.[0] === 8;
+      return { copie, monte, ancienne: !!e[cabane], neuve, ou: cabanes.map(([k]) => k) };
     });
     verifier('une cabane sur un toit de Paris reçue du nuage revient par la fusion SUR LE TOIT NEUF, plus jamais à l\'ancienne hauteur',
       !releve.absent && releve.neuve && !releve.ancienne && releve.monte >= 5,
@@ -267,6 +284,44 @@ const BLOCS = 40000;
     verifier('et le document du nuage a été mis à l\'abri avant le relevé, sur son propre document',
       copieRFaite, releve.absent ? 'le relevé des toits de Paris n\'existe pas'
         : `${releve.copie} · ${Date.now() - departCopieR} ms`);
+
+    // ET PAR PARIS DOUBLÉ (v306), EN DERNIER. Un document d'avant porte une
+    // maison dans l'ancien Paris : la fusion la pose dans le nouveau, là où le
+    // plan doublé met le même quartier, et nulle part ailleurs — sans fantôme à
+    // l'ancienne adresse. Et le nuage a été mis à l'abri avant, sur son propre
+    // document, parce que c'est la seule marche qui déplace des maisons
+    // entières.
+    const double = await tab.evaluate(async () => {
+      const ps = window.__game.profileSync;
+      const W = await import('./src/world.js');
+      if (!W.migrerBlocsParisDouble || !ps.mettreALAbriAvantParisDouble) return { absent: true };
+      const A = await import('./src/paris-v302.js'), N = await import('./src/paris.js');
+      const wa = new W.World({ avant: true }), wn = new W.World();
+      const [mx, mz] = A.adresseParis(-2.5, 1.5);
+      const g = wa.terrainHeight(mx, mz);
+      const vieux = `${mx},${g + 1},${mz}`;
+      const nx = Math.round(N.PARIS.x + 2 * (mx - A.PARIS.x)), nz = Math.round(N.PARIS.z + 2 * (mz - A.PARIS.z));
+      const neuf = `${nx},${wn.terrainHeight(nx, nz) + 1},${nz}`;
+      const t = W.DATE_PARIS_DOUBLE - 86400000;
+      const local = ps.snapshot();
+      const remote = { ...JSON.parse(JSON.stringify(local)), edits: { local: { [vieux]: [9, t] } } };
+      ps.copieParisDouble = null;   // comme une tablette qui vient de s'ouvrir
+      const copie = await ps.mettreALAbriAvantParisDouble(ps.getName(), remote);
+      const r = ps.merge(local, remote);
+      const e = (r.state.edits || {}).local || {};
+      return { copie, vieux: !!e[vieux], neuf: e[neuf]?.[0] === 9, ou: Object.keys(e).filter((k) => e[k][0] === 9) };
+    });
+    verifier('une maison de l\'ancien Paris reçue du nuage arrive dans le nouveau, à son quartier, sans fantôme',
+      !double.absent && double.neuf && !double.vieux,
+      double.absent ? 'Paris n\'a pas doublé' : JSON.stringify(double));
+    const departCopieD = Date.now();
+    const copieDFaite = !double.absent && await jusqua(async () => {
+      const a = nuage.etatDe('Marlon~avant-paris-double');
+      return !!(a && (a.editsz || a.edits) && a.parisDouble === 1);
+    }, 60000);
+    verifier('et le document du nuage a été mis à l\'abri avant Paris doublé, sur son propre document',
+      copieDFaite, double.absent ? 'Paris n\'a pas doublé'
+        : `${double.copie} · ${Date.now() - departCopieD} ms`);
 
     // CE QUI VIENT DU NUAGE PASSE PAR LA MIGRATION DE CARTE AVANT LA FUSION.
     //

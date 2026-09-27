@@ -1,5 +1,29 @@
 # Ce qui est en cours
 
+- [ ] **PARIS DOUBLÉ (v306) : CE QUI RESTE, DÉCLARÉ.** (1) Une tablette qui
+  jouerait encore sur l'ancienne version APRÈS la publication poserait dans
+  l'ancien Paris des blocs datés d'après `DATE_PARIS_DOUBLE` : la marche 5 → 6
+  ne les suivra pas (même limite que la carte 3). (2) Un GARAGE posé dans
+  l'ancien Paris : ses blocs partent avec leur quartier, sa fiche
+  (`garages.js`, rangée par position) reste à l'ancienne adresse — la voiture
+  garée ressortirait là. Remède : migrer la fiche avec le groupe qui contient
+  son origine, et changer son identifiant. Rien ne dit qu'un garage y existe (la
+  lecture des profils d'enfants est refusée à la session) ; à mesurer dans
+  l'espace parent. (3) Une construction de campagne dans le nouveau disque (ou
+  sur un ancien aérodrome) dont le sol a bougé de plus de vingt-quatre blocs
+  reste où elle est. (4) Le monde d'avant (`CONF_AVANT`) porte tout ce que la
+  v306 a déplacé SAUF les ouvrages globaux : l'ancienne A1 près de l'ancienne
+  porte nord et l'ancienne ligne Paris–Lyon n'y sont plus, si bien qu'un bloc
+  d'avant le ménage collé au talus de l'ancienne A1, DANS l'ancien disque (les
+  vingt derniers blocs avant la porte), serait jugé sans son appui. Mesuré :
+  les deux mondes diffèrent sur 4 991 blocs autour de l'ancienne porte, 0 dans
+  les seize morceaux de l'ancien centre. (5) Au volant sur le premier pont de
+  l'A1 retracée, un passage a relevé deux marches et 0,97 bloc d'écart au profil
+  (`plafond.js`, avant que le témoin plat ne soit sorti du pont) ; le témoin du
+  pont (v300) ne mesure ni les marches ni l'écart, donc l'ancien pont ne l'a
+  jamais été non plus. À mesurer des deux côtés, sur le franchissement.
+  (6) `?diag=1` et la carte ne disent pas encore à l'enfant « ta maison a suivi
+  son quartier » ; le journal le dit, le jeu non.
 - [ ] **LES RUES DE PARIS À LA RÈGLE (v303) : CE QUI RESTE, DÉCLARÉ.** (1) Les
   quartiers les plus petits (Saint-Germain, le Marais, le Faubourg, l'Étoile :
   1 500 à 3 000 colonnes, bordés par la Seine et les percées) n'ont presque
@@ -11,7 +35,8 @@
   Grands Boulevards et le boulevard Saint-Germain qui les occupent). Le remède
   est Paris doublé, décidé par Max. (2) Les PLACES gardent
   leurs rayons (Concorde 4,5, l'Étoile 8) : un boulevard de 21 blocs y arrive
-  plus large que la place. (3) Les autres villes bâties à la main (Londres,
+  plus large que la place — Paris doublé (v306) ne les agrandit pas, à dessein.
+  (3) Les autres villes bâties à la main (Londres,
   Nice, Lille, San Francisco, Washington) et les villes engendrées n'ont pas
   encore la règle — même geste, ville par ville, avec la trame figée et la
   protection des constructions. (4) Une colonne protégée de l'ancienne ville

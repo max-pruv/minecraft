@@ -80,7 +80,12 @@ export const PARIS = positionDe('paris');
 // Les LARGEURS, elles, se redonnent en absolu : une chaussée, un trottoir, un
 // pas d'îlot ne triplent pas parce que la carte triple, ils se règlent sur le
 // pas d'un enfant. C'est exactement la recette de Manhattan.
-const BLOCS_PAR_KM = 24;
+// v306 : VINGT-QUATRE deviennent QUARANTE-HUIT. Les rues à la règle du kit
+// (v303) faisaient vingt et un blocs pour les boulevards, dans un disque de
+// cent quatre-vingt-cinq : Saint-Germain passait de 168 colonnes de lot à 2,
+// le Marais de 41 à 2. Le plan double, les largeurs restent celles du kit — ce
+// sont les îlots qui doublent, et les quartiers retrouvent leurs immeubles.
+const BLOCS_PAR_KM = 48;
 // Le facteur de projection de l'ancien plan. Tout ce qui était écrit en blocs
 // de v186 passe par là — et par là seulement.
 const K = BLOCS_PAR_KM / 8;
@@ -158,7 +163,9 @@ export function zSeine(x) {
 // font cinq blocs : le fleuve peut enfin être dessiné À SA VRAIE LARGEUR, et
 // c'est la première chose que la nouvelle échelle rend gratuitement.
 // Il s'élargit encore autour des îles, comme dans la réalité.
-const LARGEUR_SEINE = 4;
+// À quarante-huit blocs par kilomètre (v306), la même Seine en fait huit : le
+// fleuve reste à sa vraie largeur, c'est-à-dire qu'il double avec le plan.
+const LARGEUR_SEINE = 8;
 // La berge basse en pierre, puis la voie sur berge : cinq blocs en tout, soit
 // cent vingt mètres. C'est large — les quais de Seine en font trente — mais
 // c'est la promenade la plus fréquentée de la ville, et un enfant doit
@@ -179,7 +186,7 @@ function largeurSeine(u) {
   if (!porteeCite) porteeCite = CITE.long + k(2);
   const d = Math.abs(u - CITE.u);
   return d >= porteeCite ? LARGEUR_SEINE
-    : LARGEUR_SEINE + (11 - LARGEUR_SEINE) * (1 - d / porteeCite);
+    : LARGEUR_SEINE + (22 - LARGEUR_SEINE) * (1 - d / porteeCite);
 }
 // L'axe du fleuve en coordonnées locales : ce dont les adresses ont besoin
 // pour savoir de quel côté elles tombent.
@@ -191,8 +198,10 @@ const vSeine = filSeine;
 // L'île de la Cité fait un kilomètre de long sur trois cents mètres : à la
 // nouvelle échelle, elle les fait pour de vrai. Saint-Louis, en amont, est
 // plus petite — sept cents mètres sur deux cents.
-export const CITE = { u: ND.u, long: 12, large: 5 };
-const SAINT_LOUIS = { u: ND.u + 21, long: 8, large: 3 };
+// Les deux îles doublent avec le plan (v306) : ce sont des longueurs de
+// géographie, pas des largeurs de rue.
+export const CITE = { u: ND.u, long: 24, large: 10 };
+const SAINT_LOUIS = { u: ND.u + 42, long: 16, large: 6 };
 // Le centre de l'île, là où se pose Notre-Dame. On le calcule plutôt que de le
 // recopier : la courbe du fleuve déplace l'île avec elle.
 export const zCite = () => Math.round(zSeine(PARIS.x + CITE.u));
@@ -223,7 +232,9 @@ export function versSeine(x, z) {
 
 // La butte Montmartre : la seule vraie colline de Paris, celle qui porte le
 // Sacré-Cœur et d'où l'on voit toute la ville.
-export const BUTTE = { u: de(-1.6, -3.5)[0], v: de(-1.6, -3.5)[1], r: 30 };
+// Son emprise double avec le plan (v306) ; sa HAUTEUR, non — une hauteur suit
+// l'étage, jamais le plan (« deux échelles dans la même ville »).
+export const BUTTE = { u: de(-1.6, -3.5)[0], v: de(-1.6, -3.5)[1], r: 60 };
 
 export function hauteurParis(x, z, h, base) {
   const d = versSeine(x, z);
@@ -272,29 +283,35 @@ const L = (nom, dx, dz, reste = {}) => {
 };
 
 // `sol` : ce que la place pose au sol. `r` : son rayon.
+//
+// v306 : LES JARDINS DOUBLENT, LES PLACES NON. Un jardin est une étendue de
+// géographie (le Luxembourg fait ses vingt-cinq hectares dans la vraie ville
+// comme dans celle-ci) ; une place est un carrefour dimensionné sur ce qui y
+// roule — son anneau, ses avenues à la règle du kit (v303) —, et doubler son
+// rayon n'ajouterait que du pavé.
 export const LIEUX = [
   L('Notre-Dame', 0, 0),
   L("Hôtel de Ville", 0.2, -0.35, { discret: true, rive: 'd', r: 2.2, sol: PAVE }),
   L('Châtelet', -0.2, -0.45, { discret: true, rive: 'd', r: 2, sol: PAVE }),
   L('Louvre', -1.6, -0.6, { rive: 'd', r: 5, sol: PAVE, socle: [5, 5] }),
-  L('Tuileries', -2.3, -0.75, { rive: 'd', ru: 11, rv: 3.6, jardin: true }),
+  L('Tuileries', -2.3, -0.75, { rive: 'd', ru: 22, rv: 7.2, jardin: true }),
   L('Concorde', -3.2, -0.9, { r: 4.5, sol: PAVE }),
   L('Madeleine', -2.9, -1.4, { discret: true, r: 1.6, sol: PAVE }),
   L('Opéra', -2.2, -1.7, { r: 2.2, sol: PAVE, socle: [7, 6] }),
   L('Arc de Triomphe', -5.4, -1.6, { r: 8, sol: PAVE, socle: [10, 8] }),
   L('Trocadéro', -4.7, -0.6, { rive: 'd', r: 3.5, sol: PAVE }),
   L('Tour Eiffel', -4.4, 0.5, { rive: 'g', r: 3, sol: PAVE, socle: [9, 9] }),
-  L('Champ-de-Mars', -4.35, 0.95, { rive: 'g', ru: 3, rv: 10, jardin: true }),
-  L('Invalides', -3.3, 0.6, { rive: 'g', ru: 4, rv: 6, jardin: true, socle: [10, 9] }),
+  L('Champ-de-Mars', -4.35, 0.95, { rive: 'g', ru: 6, rv: 20, jardin: true }),
+  L('Invalides', -3.3, 0.6, { rive: 'g', ru: 8, rv: 12, jardin: true, socle: [10, 9] }),
   L('Montparnasse', -1.7, 1.9, { r: 2.2, sol: PAVE, socle: [3, 2] }),
-  L('Luxembourg', -0.6, 1.1, { rive: 'g', ru: 6, rv: 4.2, jardin: true }),
+  L('Luxembourg', -0.6, 1.1, { rive: 'g', ru: 12, rv: 8.4, jardin: true }),
   L('Panthéon', 0.1, 0.9, { rive: 'g', r: 2.2, sol: PAVE, socle: [6, 7] }),
   L('Bastille', 1.5, -0.2, { rive: 'd', r: 3, sol: PAVE, socle: [2, 2] }),
-  L('Place des Vosges', 0.9, -0.3, { discret: true, rive: 'd', ru: 1.8, rv: 1.8, jardin: true }),
+  L('Place des Vosges', 0.9, -0.3, { discret: true, rive: 'd', ru: 3.6, rv: 3.6, jardin: true }),
   L('République', 0.9, -1.5, { r: 3, sol: PAVE }),
   L('Nation', 3.0, 0.5, { rive: 'd', r: 2.6, sol: PAVE }),
-  L('Père-Lachaise', 3.3, -0.6, { ru: 8.5, rv: 7, jardin: true }),
-  L('Buttes-Chaumont', 2.8, -2.8, { ru: 7, rv: 5.5, jardin: true }),
+  L('Père-Lachaise', 3.3, -0.6, { ru: 17, rv: 14, jardin: true }),
+  L('Buttes-Chaumont', 2.8, -2.8, { ru: 14, rv: 11, jardin: true }),
   // LA BUTTE N'A PAS DE RUE DE CEINTURE, ET C'EST MESURÉ. L'anneau de
   // chaussée qui fait le tour d'un monument (`autourDUnSocle`) suppose un sol
   // qui puisse le porter. Sur l'anneau du Sacré-Cœur le terrain va de 37 à 49
@@ -316,8 +333,8 @@ export const LIEUX = [
   // Les deux bois sont les poumons de Paris et se voient du ciel avant tout le
   // reste. Ils débordent l'un et l'autre le disque de la ville : on les montre
   // aux deux tiers de leur étendue vraie plutôt que de les couper en deux.
-  L('Bois de Boulogne', -7.0, -0.2, { rive: 'd', ru: 30, rv: 19, jardin: true }),
-  L('Bois de Vincennes', 5.0, 0.7, { rive: 'd', ru: 30, rv: 22, jardin: true }),
+  L('Bois de Boulogne', -7.0, -0.2, { rive: 'd', ru: 60, rv: 38, jardin: true }),
+  L('Bois de Vincennes', 5.0, 0.7, { rive: 'd', ru: 60, rv: 44, jardin: true }),
 ];
 
 const lieu = (nom) => LIEUX.find((p) => p.nom === nom);

@@ -87,11 +87,12 @@ rendering budgets, licensing and limitations.
   fills whatever shape the screen gives it — wide on a phone held sideways,
   tall when held upright.
 - **Real places, at real proportions** — six cities, each drawn from its own
-  plan rather than from a random-building generator: **Haussmann Paris at 24
-  blocks/km** — every place at its true distance from Notre-Dame, the Étoile's
-  twelve avenues, the Champs-Élysées lined with real chestnut trees, streets
-  wide enough to walk down between six-storey stone facades (three blocks a
-  storey, so a person is half a storey tall, as in life), and a different
+  plan rather than from a random-building generator: **Haussmann Paris at 48
+  blocks/km**, a disc of 370 blocks — every place at its true distance from
+  Notre-Dame, the Étoile's twelve avenues, the Champs-Élysées lined with real
+  chestnut trees, streets sized by the kit's road-section rule (two lanes,
+  four on the great boulevards) between six-storey stone facades (three blocks
+  a storey, so a person is half a storey tall, as in life), and a different
   street width per quarter (a Marais alley is not a Monceau avenue) —
   the island of Manhattan on the 1811 commissioners' grid, San
   Francisco's two clashing street grids across thirteen named hills, Nice,

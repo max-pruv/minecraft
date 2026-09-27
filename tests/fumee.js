@@ -643,8 +643,12 @@ function verifier(nom, ok, detail = '') {
     const traversee = await tab.evaluate(async () => {
       const m = await import('./src/paris.js');
       const g = window.__game;
-      // Concorde → Nation, cent cinquante blocs de ville, par bonds de vingt-cinq.
-      const a = [-53, -4], b = [96, 25];
+      // Concorde → Nation, en sept arrêts. En KILOMÈTRES depuis Notre-Dame
+      // (v306) : écrites en blocs, ces deux adresses valaient à vingt-quatre
+      // blocs par kilomètre ; Paris doublé les rend à trois cents blocs l'une
+      // de l'autre, et le pas suit la longueur pour garder sept arrêts.
+      const rel = (dx, dz) => { const [x, z] = m.adresseParis(dx, dz); return [x - m.PARIS.x, z - m.PARIS.z]; };
+      const a = rel(-3.2, -0.9), b = rel(3.0, 0.3);
       const L = Math.hypot(b[0] - a[0], b[1] - a[1]);
       const compte = [];
       // COMBIEN DE TEMPS LA VILLE MET-ELLE À SE PEUPLER À L'ARRIVÉE. Le témoin
@@ -665,8 +669,8 @@ function verifier(nom, ok, detail = '') {
         }
         if (n >= 3) { arrivee = (t + 1) * 0.5; break; }
       }
-      for (let d = 0; d <= L; d += 25) {
-        const f = d / L;
+      for (let d = 0; d <= L + 0.5; d += L / 6) {
+        const f = Math.min(1, d / L);
         const x = Math.round(m.PARIS.x + a[0] + (b[0] - a[0]) * f);
         const z = Math.round(m.PARIS.z + a[1] + (b[1] - a[1]) * f);
         g.player.pos.set(x + 0.5, g.world.terrainHeight(x, z) + 1.2, z + 0.5);

@@ -66,6 +66,18 @@ travail est irrattrapable.
    décale chaque bloc de la différence de sol sous sa colonne, bornée à
    vingt-quatre blocs ; et le témoin ci-dessus.
 
+   **Elle a servi une NEUVIÈME fois, en v306, pour doubler Paris et le
+   déplacer** — décision de Max, « Doubler Paris, déplacé », parce que les rues
+   à la règle du kit (v303) vidaient ses quartiers. Et elle se BORNE, ce qui
+   la range avec v187, v200 et v204 et non avec v199 et v242 : l'empreinte du
+   relief change, et avec une découpe qui retire l'ancien ET le nouveau Paris,
+   les sites d'avant ET d'après de Roissy, d'Orly, de Saint-Dizier, du village
+   gaulois et du volcan, le reste vaut `2aeceaa1…` sur `origin/main`, sur la
+   v305 et sur la branche — 154 158 colonnes. Ce qui est NEUF et fait règle :
+   **les marches qui jugent un bloc d'avant le jugent sur le monde où il a été
+   posé** (`new World({ avant: true })`, `CONF_AVANT`), et ce monde se prouve
+   au bloc près contre la production. Voir « Paris doublé et déplacé (v306) ».
+
    **Elle a servi une HUITIÈME fois, en v242, pour doubler le monde encore**
    — Max : « la ville de New York touche quasiment Montréal ». Manhattan,
    refaite en v240, est un rectangle de 480 × 2 300 blocs qui laissait 41
@@ -750,6 +762,158 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Paris doublé et déplacé (v306) — un bloc se juge sur le monde où il a été posé
+
+Décision de Max, entre trois propositions chiffrées : « Doubler Paris,
+déplacé ». Les rues à la règle du kit (v303) faisaient vingt et un blocs pour un
+boulevard dans un disque de cent quatre-vingt-cinq : Saint-Germain passait de
+168 colonnes d'immeubles à 2. Livré dans la MÊME fusion que les v303, v304 et
+v305 (« attends et fais un méga merge ») : la rive gauche vide ne devait jamais
+atteindre la famille. Neuf règles.
+
+- **ON N'AGRANDIT PAS SUR PLACE CE QUI RECOUVRIRAIT LES ENFANTS : ON DÉPLACE, ET
+  LA PLACE SE MESURE.** Doublé sur place, le disque couvrait le point
+  d'apparition, le musée et le quartier des enfants. Le centre part de cent
+  soixante-dix blocs vers le sud-ouest, là où le disque de 370 en reste à 50
+  (musée), 108 (point d'apparition), 121 (maison témoin) et 124 (quartier).
+  C'est la seule ville dont la place n'est pas sa latitude : la surcharge vit
+  dans SA fiche du registre (`terre: { r, dx, dz }`) et ne vaut que pour la
+  carte courante — `terreV3` garde la carte telle qu'elle était, pour la
+  marche 2 → 3, qui aurait sinon pris Paris pour une ville qui bouge en v242.
+- **CE QU'ON DÉPLACE SE CHERCHE DANS TOUTES LES LISTES, PAS SEULEMENT CELLES QU'ON
+  A EN TÊTE.** Mon plan, annoncé à Max, comptait trois aérodromes à reloger et
+  les sanctuaires ; l'inventaire du dépôt (un agent de recherche, avant d'écrire)
+  a trouvé DANS le nouveau disque le village gaulois et le volcan, qui ne sont
+  ni des villes ni des aérodromes mais des `PLACES`, et la caserne, dont
+  l'adresse en kilomètres l'emmenait à deux fois sa distance. Chacun a été
+  relogé par la sonde des aérodromes (v223) ; le village est parti à Erquy, en
+  Armorique, où son commentaire l'avait toujours voulu.
+- **UNE ADRESSE QUI SUIT LA VILLE GARDE LE LIEN, PAS LA QUALITÉ DU SITE.** La
+  caserne (v293) est en kilomètres pour suivre Paris : doublée, son adresse
+  tombait sur 5,9 % d'eau et dix-huit blocs d'écart. Un site qui suit une ville
+  qui change d'échelle se remesure.
+- **LE PLAN DOUBLE, LES LARGEURS NON — ET UN JARDIN EST DU PLAN, UNE PLACE NON.**
+  `BLOCS_PAR_KM` passe à 48 : tout ce qui est en kilomètres suit. Les rues
+  gardent la section du kit (v303) ; la Seine, les îles, la butte (en emprise,
+  pas en hauteur) et les jardins doublent, parce que ce sont des étendues de
+  géographie ; les places gardent leur rayon, parce qu'elles sont dimensionnées
+  sur ce qui y roule. Mesuré quartier par quartier : tous au-dessus de la v302.
+- **UN BLOC SE JUGE SUR LE MONDE OÙ IL A ÉTÉ POSÉ — et c'était déjà faux en
+  v303.** Le ménage du ciel (v298) et le relevé des toits (v301) se rejouent sur
+  chaque document du nuage ; ils lisaient `new World()`, c'est-à-dire le relief
+  et les monuments d'AUJOURD'HUI. Paris déplacé, une maison posée au sol de
+  l'ancienne butte se trouvait « en l'air » au-dessus du relief neuf, et le
+  ménage la retirait — vérifié : zéro bloc arrivé avec un ménage sur le monde
+  neuf, trois avec le monde d'avant. `CONF_AVANT` (world.js) porte TOUT ce que la
+  v306 a déplacé — disque, relief et trame de Paris, monuments, aérodromes,
+  sites — et `new World({ avant: true })` l'engendre ; deux empreintes relevées
+  sur `origin/main` prouvent qu'il rend la production au bloc près. Il ne se met
+  JAMAIS à jour, comme `MONDES.terreAvant`. Et `dansUneZoneATerre` a un index
+  par monde : `hauteurBase`, que lisent les marches 1 → 2 et 2 → 3, juge avec
+  les zones d'avant, sinon un bloc d'avant la carte 3 resté à sa place serait
+  redéplacé le jour où sa colonne sort d'une zone.
+- **UN BLOC SUIT SA VILLE, MÊME QUAND ELLE SE DILATE.** La marche 5 → 6
+  (`migrerParisDouble`) groupe les blocs d'avant la date (six voisins) ; un
+  groupe de l'ancien Paris va là où le plan doublé met le même endroit de la
+  vraie ville (`C' + 2 × (ancre − C)`), à la même hauteur au-dessus du sol, et
+  ce qui était perché sur un ancien toit se pose au sol ; un groupe d'un site
+  déménagé le suit d'un seul tenant ; ailleurs, il suit le relief (≤ 24 blocs).
+  Un trou creusé dans un ancien immeuble part avec l'immeuble. Pure, idempotente
+  par la date, appliquée au stockage une fois et à chaque document du nuage,
+  EN DERNIER dans la chaîne ; sa copie d'avant se prend sur le nuage
+  (`~avant-paris-double`).
+- **LA VILLE CÈDE — ET CELA REMPLACE LA VILLE D'AVANT DE LA v303.** La v303
+  gardait l'ancienne trame sous les colonnes bâties ; Paris déplacé, l'ancienne
+  ville n'a plus de place où se garder. Là où un groupe arrive (colonne et huit
+  voisines, `colonnesCedees`), le nouveau Paris garde sa rue, son trottoir, son
+  jardin, et fait d'un lot une cour pavée. Un bloc posé APRÈS la date ne fait
+  pas céder la ville : poser un bloc contre une façade ne démolit pas
+  l'immeuble.
+- **UN BOUT DE ROUTE NE SE POSE PAS SUR L'EAU.** L'A1 retracée — mon premier
+  choix, la plus grande plus petite marge — finissait par un pont à quinze
+  blocs de la porte de Lille, que le témoin du joint (v302) a trouvé ouvert sur
+  1 180 points. La sonde de tracé écarte désormais l'eau à moins de
+  quatre-vingts blocs des deux portes, et l'on garde, parmi les meilleurs, un
+  tracé dont les trois ponts ont leurs joints fermés.
+- **QUAND UN SITE DÉMÉNAGE, LES TÉMOINS POSÉS SUR SON ANCIEN SOL MESURENT AUTRE
+  CHOSE.** La pente « relevée sur l'axe Paris–Lille » du sol continu (v297)
+  était le bord aplani de l'ancien Roissy ; la fenêtre de la ligne Paris–Lyon
+  longe désormais un lac ; la première pente couverte trouvée tombait sur l'A1
+  retracée. Chacun CHERCHE maintenant ce qu'il éprouve — une pente qui MONTE de
+  huit marches, une colonne couverte, les colonnes au bord d'une falaise
+  comptées à part — et le dit (v285, une fois de plus).
+
+## En ligne, une seule rue (v305) — la position d'un convoi est une fonction de l'heure
+
+Max, à plusieurs : « les utilisateurs ne voient pas les mêmes voitures en même
+temps ; quand on monte dans une voiture, elle change de couleur ». Cinq règles.
+
+- **CE QUI DOIT ÊTRE PAREIL SUR DEUX TABLETTES NE S'ACCUMULE PAS, IL SE
+  CALCULE.** Un convoi faisait `distance += vitesse × dt` depuis que SA page
+  l'avait créé — c'est-à-dire depuis que l'enfant avait approché la ville :
+  deux enfants au même carrefour avaient deux rues. La position est désormais
+  `distanceA(horloge)`, une grille horaire calculée une fois (droite, paliers
+  aux quais, et pour `freine` la marche d'avant simulée sur un tour au pas d'un
+  vingtième — la monoplace freine exactement comme avant). L'hôte donne l'heure
+  de la rue avec celle du ciel (`rue` dans le message `ciel`) ; l'invité glisse
+  ou saute, la règle d'`adopterCiel`. Un saut d'horloge n'est pas une avance :
+  on se pose, et les retards de ceux qui cédaient repartent de zéro.
+- **L'HEURE DE LA RUE EST RÉELLE, et les feux la lisent.** Les feux étaient déjà
+  en temps réel (v273), chacun sur SA `performance.now()` : deux amis voyaient
+  deux feux. Une grandeur que deux tablettes doivent partager ne se lit jamais
+  sur une horloge locale.
+- **UN RANG DANS UNE LISTE PARESSEUSE N'EST PAS UN NOM.** Les convois naissent
+  quand l'enfant approche une ville : `convois[ci]` n'est pas le même d'une
+  tablette à l'autre. Ce qui voyage sur le réseau se nomme par ce qui ne dépend
+  que du tracé (`c.cle`), et une voiture prise par `clé#rang`.
+- **ON NE RETIRE PAS UNE PLACE D'UN CONVOI.** `emprunter` faisait un `splice` :
+  toutes les voitures de derrière avançaient d'un écart sous les yeux de
+  l'enfant, et les rangs cessaient d'être les mêmes. La place reste, marquée
+  prise (`c.pris`) — ni refabriquée, ni dessinée, ni prise en compte pour céder.
+- **UNE PROPRIÉTÉ QUI SE VOIT VOYAGE AVEC CE QUI LA PORTE, ET SE PEINT PAR UNE
+  SEULE RÈGLE.** La rue repeignait sa voiture ; la monture neuve reprenait la
+  teinte du fichier. `repeindre(modele, fichier, teinte)` est lue par la rue et
+  par la monture, `peinture` passe de l'une à l'autre et part dans `p.v.c` ;
+  c'est la leçon de la v194 (« le modèle part avec elle ») appliquée à la
+  couleur, trente versions plus tard.
+- **ET TOUT JOUEUR EST UN OBSTACLE POUR LA RUE, PAS SEULEMENT L'ENFANT
+  D'ICI.** `cederLePassage` ne connaissait que le joueur local (v245) : sur la
+  tablette d'Alice, la voiture de Marlon était traversée. Les amis entrent dans
+  la liste (`brancherAmis`), avec la même patience infinie que l'enfant — et
+  c'est aussi ce qui rend la circulation la même partout, puisque chacun cède
+  aux mêmes joueurs. Ce qui reste local, et se déclare : l'instant exact où
+  une voiture cède, et un train arrêté devant un enfant.
+- **UN MAILLAGE ENFANT N'A PLUS DE POSITION DU MONDE.** Depuis la v253 l'avatar
+  d'un ami au volant vit dans le maillage de la voiture ; tout ce qui lisait
+  `rp.mesh.position` (la minicarte, la carte du monde) lisait le siège, à un
+  bloc de zéro — Max : « la position sur la carte n'est pas toujours à jour ».
+  La position vraie est `rp.pos`, et c'est la seule qu'on lit hors du rendu.
+  Quand on reparente un objet, on cherche le jour même qui lisait sa position.
+
+## Le son robotique de la visio (v304) — le contexte audio suit le mode de la tablette
+
+Max : « Alice… entend un son hyper robotique de son côté sur son iPad. Ça
+n'arrive pas avec tous les appareils. » Trois règles.
+
+- **UN CONTEXTE AUDIO NE SURVIT PAS À UN CHANGEMENT DE MODE D'iOS.** Un appel
+  qui porte du son (le micro ouvert, ou la voix d'un ami) fait passer la
+  session audio en mode appel, et sur certains iPad à une autre fréquence
+  d'échantillonnage. Le contexte Web Audio du jeu, ouvert avant, reste à
+  l'ancienne et se rééchantillonne mal : c'est le robot. `appelEnCours`
+  (sons.js) ferme le contexte et en ouvre un neuf à chaque bascule, dans les
+  deux sens, et relance le moteur et la radio qui jouaient. `sons.js` reste le
+  SEUL propriétaire du contexte (v268) : c'est ce qui rend ce geste possible
+  en un endroit. `visio.js` dit quand un appel porte du son (`micOuvert`, et les
+  voix d'amis qu'il joue).
+- **PENDANT UN APPEL, LE JEU PARLE PLUS BAS.** L'annulation d'écho ne connaît
+  que la voix que la tablette joue ; une radio pleine puissance dans le
+  haut-parleur est un écho qu'elle découpe. `GAIN_APPEL` (un quart) ne coupe
+  rien : l'enfant entend encore son jeu.
+- **CE QUE LE BANC PROUVE, ET CE QU'IL NE PEUT PAS.** Chromium n'a pas de mode
+  appel : le banc éprouve le GESTE (un contexte neuf, l'ancien fermé, un niveau
+  de sortie qui baisse puis revient, lu sur la sortie comme en v268), jamais
+  l'oreille. La correction se juge sur l'iPad d'Alice, et on le dit.
+
 ## Les rues de Paris à la règle du kit (v303) — une largeur se calcule, et la ville d'avant se fige
 
 Max : « Les rues de Paris sont encore beaucoup trop étroites. Je comprends pas.
@@ -782,7 +946,8 @@ la main en v294. Six règles.
   modifiée — la discipline de `MONDES.terreAvant` (v199). **Toute règle de
   migration qui lit le générateur doit dire QUELLE version du générateur
   elle lit** ; la prochaine refonte de Paris fige `paris.js` à son tour.
-- **LA VILLE CÈDE À CE QUE L'ENFANT A BÂTI, COLONNE PAR COLONNE.** Une colonne
+- *(Remplacée dans la même fusion par la v306 : Paris déplacé, c'est la ville
+  NEUVE qui cède. Le raisonnement reste.)* **LA VILLE CÈDE À CE QUE L'ENFANT A BÂTI, COLONNE PAR COLONNE.** Une colonne
   où un bloc a été posé ou creusé avant `DATE_RUES_PARIS` garde la ville
   d'avant (`colonnesParisAvant`, refait avec l'index des monuments touchés,
   tenu par `setBlock`) : une maison sur une ancienne rue n'est pas enfermée
@@ -792,7 +957,8 @@ la main en v294. Six règles.
 - **UNE BARRE SUR UNE LARGEUR EN COLONNES SE CALCULE AVEC SA QUANTIFICATION.**
   Une chaussée de 6,4 blocs se traverse en six ou sept colonnes : la barre du
   témoin est `floor(6,4)`, et la mesure vaut 6 ici contre 4 sur `origin/main`.
-- **UNE VILLE FIGÉE SOUS UNE COLONNE SE DÉCLARE À TOUT CE QUI ENGENDRE LA
+- *(Depuis la v306 le ménage juge sur le monde d'avant tout entier, `CONF_AVANT`.)*
+  **UNE VILLE FIGÉE SOUS UNE COLONNE SE DÉCLARE À TOUT CE QUI ENGENDRE LA
   VILLE, PAS SEULEMENT AU JEU.** Le ménage du ciel (v298) juge l'appui d'un
   bloc sur un monde SANS blocs d'enfant qu'il engendre lui-même ; ce monde-là
   ignorait `colonnesParisAvant` et montrait la ville NEUVE sous une colonne où

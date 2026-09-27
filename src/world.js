@@ -4,7 +4,7 @@ import { BLOCK, CITY_BLOCK, DECOR_START, PROP_START, ARCHI, ROUTE_BLOCK, RUE, is
 import { buildVillandry } from './villandry.js';
 import { aUnModeleHD, porteeHD } from './paris-monuments-hd.js';
 import { carrefoursDeVoies } from './voies.js';
-import { buildAeroport, buildAerodrome, AEROPORTS } from './aeroport.js';
+import { buildAeroport, buildAerodrome, AEROPORTS, AEROPORTS_AVANT_V306 } from './aeroport.js';
 import {
   USINE, hauteurUsine, solUsine, buildUsine, buildParcUsine, dansLUsine,
 } from './usine.js';
@@ -622,7 +622,10 @@ export const PARK = { name: "Parc d'attractions", x: PARC_ATTRACTIONS.x, z: PARC
 
 // Special biome zones stamped over the base terrain.
 export const DESERT = { name: 'Désert', x: 60, z: -190, r: 70 };
-export const VOLCANO = { name: 'Volcan', x: -140, z: 420, r: 45 };
+// Paris doublé (v306) recouvrait l'ancien volcan, posé en (−140, 420) : il
+// descend de 368 blocs plein sud, premier site au sec qu'a trouvé la sonde des
+// aérodromes (règle v223), loin de toute ville, voie et aérodrome.
+export const VOLCANO = { name: 'Volcan', x: -140, z: 788, r: 45 };
 // Le château médiéval : douves, pont-levis, donjon et jardins. Il lui faut
 // une esplanade plate — une douve creusée dans une colline se viderait d'un
 // côté et déborderait de l'autre.
@@ -646,8 +649,12 @@ export const VILLANDRY = { name: 'Château de Villandry', x: 250, z: 205, r: 92 
 // le terrain le plus aplani de toute la carte — et il lui faut de la place.
 
 // Le village gaulois et, à portée de vue, le camp romain qui le surveille.
-// Posés sur la côte ouest, comme en Armorique.
-export const GAULOIS = { name: 'Village gaulois', x: -420, z: 300, r: 76 };
+// Posés sur la côte ouest, comme en Armorique — et depuis la v306 pour de bon :
+// Paris doublé recouvrait leur ancienne place, à deux cents blocs de Notre-Dame.
+// Ils sont à Erquy, au bord de la Manche, le village que la bande dessinée
+// revendique ; mesuré par la sonde des aérodromes (règle v223) : eau 4 %,
+// écart de relief 7, loin de toute voie, ville et aérodrome.
+export const GAULOIS = { name: 'Village gaulois', x: -2124, z: 335, r: 76 };
 
 // La base spatiale, sur une planète de sable à l'autre bout de la carte : un
 // astroport, sa flotte au sol et sa cantina.
@@ -689,8 +696,15 @@ export const ESPACE = { name: 'Base spatiale', x: 450, z: 420, r: 82 };
 // L'adresse est en KILOMÈTRES (`adresseParis`), jamais en blocs : c'est ce qui
 // lui fait suivre Paris à la prochaine remise à l'échelle, et c'était toute la
 // raison d'être de l'ancienne ligne.
+//
+// ET LA v306 L'A RAPPELÉE À LA RÈGLE. Paris doublé a recouvert son site, et
+// l'adresse en kilomètres l'a bien suivi — mais à deux fois la distance, sur
+// un terrain que personne n'avait mesuré : 5,9 % d'eau et dix-huit blocs
+// d'écart. Une adresse qui suit la ville garde le LIEN, pas la QUALITÉ du
+// site. Même sonde, même promesses : à l'ouest de Paris doublé, 436 blocs du
+// centre, 3,3 % d'eau, QUATRE blocs d'écart de relief.
 export const VILLE = { name: 'Caserne & Commissariat', r: 50,
-  ...(() => { const [x, z] = adresseParis(-8.64, 9.25); return { x, z }; })() };
+  ...(() => { const [x, z] = adresseParis(-10.08, -0.44); return { x, z }; })() };
 export const CIRCUIT = { name: 'Circuit de F1', x: 400, z: 110, r: 88 };
 
 // Profondeur d'un cratère à la distance d de son centre. Bord relevé, fond
@@ -1159,9 +1173,12 @@ const LANDMARKS = [
     return {
       name: nom === 'Louvre' ? 'Pyramide du Louvre' : nom,
       x: PARIS.x + p.u, z: PARIS.z + p.v, box: Math.max(p.socle[0], p.socle[1]), build,
+      // v306 : Paris doublé se lit à 1,7 bloc par pixel quand il tient entier
+      // sur un téléphone ; ses monuments restent sur le plan (carte.js)
+      seuil: 2.2,
     };
   }),
-  { name: 'Notre-Dame', x: PARIS.x + CITE.u, z: zCite(), box: 9, build: buildNotreDame },
+  { name: 'Notre-Dame', x: PARIS.x + CITE.u, z: zCite(), box: 9, build: buildNotreDame, seuil: 2.2 },
   // New York : chacun à son adresse réelle, ramenée à la grille de manhattan.js.
   // La Statue de la Liberté était plantée en pleine ville, sur ce qui est
   // devenu l'Upper East Side ; elle retrouve son île, dans la baie au sud.
@@ -1393,7 +1410,7 @@ export function monumentSousLeBloc(x, z) {
 // pattern and landmarks: Haussmann Paris, skyscraper New York, and
 // pastel-hilled San Francisco.
 export const CITIES = [
-  { key: 'paris', name: 'Paris', ...positionDe('paris'), r: 185, cell: 12, base: 34, street: 3 },
+  { key: 'paris', name: 'Paris', ...positionDe('paris'), cell: 12, base: 34, street: 3 },   // le rayon vient du registre (370 depuis la v306)
   // New York n'est plus un disque : c'est l'île de Manhattan, longue et
   // étroite, dessinée par src/manhattan.js. Le rayon ne sert plus qu'à
   // délimiter grossièrement sa zone d'influence — la forme, elle, est donnée
@@ -1413,6 +1430,53 @@ export const CITIES = [
   // vraies coordonnées. Cf. src/londres.js.
   { key: 'londres', name: 'Londres', x: LONDRES.x, z: LONDRES.z, r: LONDRES.r, cell: 11, base: 33, street: 3 },
 ];
+
+// --- LE MONDE D'AUJOURD'HUI ET CELUI D'AVANT PARIS DOUBLÉ (v306) ---------------
+//
+// Paris a doublé et s'est déplacé ; Roissy, Orly, Saint-Dizier, le village
+// gaulois, le volcan et la caserne ont dû lui laisser la place. Un bloc posé
+// par un enfant AVANT cela doit être jugé contre le monde où il a été posé — le
+// relief sous lui, la ville autour, le monument qui le portait —, sinon la
+// migration se trompe de sol : c'est ce qui rend le ménage du ciel (v298) et le
+// relevé des toits (v301) sûrs, eux qui se rejouent sur chaque document du
+// nuage. `CONF_AVANT` est ce monde-là, figé comme `MONDES.terreAvant` : il ne se
+// met JAMAIS à jour. `new World({ avant: true })` l'engendre.
+//
+// Ce que la configuration porte, c'est TOUT ce que la v306 a déplacé et rien
+// d'autre : la ville de Paris (sa place, son disque, son relief, sa trame
+// d'avant la v303, ses monuments), les trois aérodromes, les trois sites.
+const PARIS_AVANT_POS = PARIS_V302.PARIS;
+const CITIES_AVANT = CITIES.map((c) => (c.key === 'paris'
+  ? { ...c, x: PARIS_AVANT_POS.x, z: PARIS_AVANT_POS.z, r: PARIS_AVANT_POS.r } : c));
+const GAULOIS_AVANT = { ...GAULOIS, x: -420, z: 300 };
+const VOLCANO_AVANT = { ...VOLCANO, x: -140, z: 420 };
+const VILLE_AVANT = (() => { const [x, z] = PARIS_V302.adresseParis(-8.64, 9.25); return { ...VILLE, x, z }; })();
+const PLACES_AVANT = PLACES.map((p) => (p === GAULOIS ? GAULOIS_AVANT : p === VOLCANO ? VOLCANO_AVANT
+  : p.name === 'Caserne & Commissariat' ? { ...p, x: VILLE_AVANT.x, z: VILLE_AVANT.z + 14 } : p));
+const NOMS_MONUMENTS_PARIS = new Set(['Tour Eiffel', 'Arc de Triomphe', 'Pyramide du Louvre', 'Panthéon',
+  'Invalides', 'Opéra', 'Montparnasse', 'Bastille', 'Moulin Rouge', 'Sacré-Cœur', 'Notre-Dame']);
+const AEROPORT_AVANT = new Map(AEROPORTS_AVANT_V306.map((a) => [a.nom, a]));
+function repereAvant(lm) {
+  if (NOMS_MONUMENTS_PARIS.has(lm.name) && Math.hypot(lm.x - PARIS.x, lm.z - PARIS.z) < PARIS.r) {
+    if (lm.name === 'Notre-Dame') return { ...lm, x: PARIS_AVANT_POS.x + PARIS_V302.CITE.u, z: PARIS_V302.zCite() };
+    const p = PARIS_V302.LIEUX.find((q) => q.nom === (lm.name === 'Pyramide du Louvre' ? 'Louvre' : lm.name));
+    return { ...lm, x: PARIS_AVANT_POS.x + p.u, z: PARIS_AVANT_POS.z + p.v };
+  }
+  if (lm.name === 'Village gaulois') return { ...lm, x: GAULOIS_AVANT.x, z: GAULOIS_AVANT.z };
+  if (lm.name === 'Caserne & Commissariat') return { ...lm, x: VILLE_AVANT.x, z: VILLE_AVANT.z };
+  const a = AEROPORT_AVANT.get(lm.name);
+  if (a && (a.x !== lm.x || a.z !== lm.z)) return { ...lm, x: a.x, z: a.z };
+  return lm;
+}
+export const CONF_NEUF = {
+  cle: 'neuf', villes: CITIES, aeroports: AEROPORTS, gaulois: GAULOIS, volcan: VOLCANO,
+  places: PLACES, reperes: LANDMARKS, hauteurParis, parisAvant: false,
+};
+export const CONF_AVANT = {
+  cle: 'avant-v306', villes: CITIES_AVANT, aeroports: AEROPORTS_AVANT_V306, gaulois: GAULOIS_AVANT,
+  volcan: VOLCANO_AVANT, places: PLACES_AVANT, reperes: LANDMARKS.map(repereAvant),
+  hauteurParis: PARIS_V302.hauteurParis, parisAvant: true,
+};
 
 // SF painted-lady facades reuse the plain decor blocks (Uni pattern).
 // Mêmes tons rompus que `sanfrancisco.js` : le citron, le vert clair et le
@@ -1439,9 +1503,15 @@ const NICE_WARM = [1, 2, 16, 15, 28, 20].map((ci) => DECOR_START + ci * 10);
 // milliers de colonnes par rendu, s'est mise à laguer. Une zone tient dans
 // un disque borné : on la range dans les cases de 512 blocs qu'elle touche,
 // et une colonne ne regarde plus que sa case — presque toujours vide.
-let zonesIndex = null;
+//
+// UN INDEX PAR MONDE (v306) : le monde d'aujourd'hui et celui d'avant Paris
+// doublé n'ont pas les mêmes zones — Paris, trois aérodromes, le village
+// gaulois, le volcan et la caserne ont bougé —, et la migration des blocs
+// d'avant doit juger avec les zones d'avant (`CONF_AVANT`, plus bas).
+const zonesIndexes = new Map();
 const CASE_ZONE = 512;
-function dansUneZoneATerre(x, z) {
+function dansUneZoneATerre(x, z, conf = CONF_NEUF) {
+  let zonesIndex = zonesIndexes.get(conf.cle);
   if (!zonesIndex) {
     const zones = [
       { x: 0, z: 0, r: 320 },                    // le continent du départ
@@ -1449,11 +1519,12 @@ function dansUneZoneATerre(x, z) {
       // une marge de +60 faisait déborder le renflement de Londres jusque sur
       // le détroit de Douvres — la Manche disparaissait à l'endroit exact où
       // elle est la plus célèbre.
-      ...CITIES.map((c) => ({ x: c.x, z: c.z, r: c.r + 24 })),
-      ...PLACES.filter((p) => p.r > 0).map((p) => ({ x: p.x, z: p.z, r: p.r + 40 })),
-      ...LANDMARKS.map((l) => ({ x: l.x, z: l.z, r: (l.box || 10) + 30 })),
+      ...conf.villes.map((c) => ({ x: c.x, z: c.z, r: c.r + 24 })),
+      ...conf.places.filter((p) => p.r > 0).map((p) => ({ x: p.x, z: p.z, r: p.r + 40 })),
+      ...conf.reperes.map((l) => ({ x: l.x, z: l.z, r: (l.box || 10) + 30 })),
     ];
     zonesIndex = new Map();
+    zonesIndexes.set(conf.cle, zonesIndex);
     for (const zone of zones) {
       for (let cx = Math.floor((zone.x - zone.r) / CASE_ZONE); cx <= Math.floor((zone.x + zone.r) / CASE_ZONE); cx++) {
         for (let cz = Math.floor((zone.z - zone.r) / CASE_ZONE); cz <= Math.floor((zone.z + zone.r) / CASE_ZONE); cz++) {
@@ -1472,20 +1543,20 @@ function dansUneZoneATerre(x, z) {
   return false;
 }
 
-function hauteurTerre(x, z, h, mondeId = 'terre') {
+function hauteurTerre(x, z, h, mondeId = 'terre', conf = CONF_NEUF) {
   const ciel = cielDe(x, z, mondeId);
   // Une côte au cordeau fait maquette : un léger tremblé la rend naturelle,
   // déterministe pour que deux tablettes engendrent le même rivage.
   const lat = ciel.lat + 0.05 * Math.sin(x * 0.021 + z * 0.013) + 0.02 * Math.sin(x * 0.11);
   const lon = ciel.lon + 0.05 * Math.sin(z * 0.019 - x * 0.011) + 0.02 * Math.sin(z * 0.13);
   if (!surTerreReelle(lat, lon)) {
-    if (dansUneZoneATerre(x, z)) return h;
+    if (dansUneZoneATerre(x, z, conf)) return h;
     const fond = WATER_LEVEL - 6 + Math.sin(x * 0.05) * 1.5 + Math.sin(z * 0.043) * 1.5;
     return Math.min(h, Math.round(fond));
   }
   // à terre : le relief réel s'ajoute, plafonné sous le toit du terrain
   const delta = reliefReel(lat, lon);
-  if (delta && !dansUneZoneATerre(x, z)) {
+  if (delta && !dansUneZoneATerre(x, z, conf)) {
     h = Math.min(SOMMET_TERRAIN - 2, Math.max(2, Math.round(h + delta)));
   }
   return h;
@@ -1504,7 +1575,13 @@ export function hauteurBase(x, z, mondeId = 'terre') {
   let h = 24 + hills * 14 + Math.pow(mountains, 3) * 48;
   const lake = fbm(x * 0.03, z * 0.03, SEED + 601);
   if (lake > 0.72) h = Math.min(h, WATER_LEVEL - 2 - (lake - 0.72) * 30);
-  return Math.round(hauteurTerre(x, z, h, mondeId));
+  // AVEC LES ZONES D'AVANT PARIS DOUBLÉ (v306). Cette hauteur ne sert qu'aux
+  // marches 1 → 2 et 2 → 3, qui se rejouent sur chaque document du nuage : un
+  // bloc d'avant la carte 3 resté à sa place (écart nul) serait redéplacé le
+  // jour où sa colonne sortirait d'une zone — l'ancien site de Roissy, du
+  // volcan, du village gaulois. Ces marches jugent donc avec les zones du monde
+  // où elles ont été écrites, figées dans `CONF_AVANT`.
+  return Math.round(hauteurTerre(x, z, h, mondeId, CONF_AVANT));
 }
 
 // SUIVRE LES BLOCS QUAND LE SOL BOUGE.
@@ -1555,7 +1632,7 @@ export function hauteurBase(x, z, mondeId = 'terre') {
 // la date de la refonte, pour qu'aucune passe ne le redéplace et pour qu'il
 // l'emporte sur sa copie d'avant. C'est la règle du receveur qui cède :
 // l'ancienne version ne peut pas apprendre la règle neuve.
-export const CARTE_VERSION = 5;   // 4 : le ménage du ciel de Paris (v298) ; 5 : les toits de Paris relevés (v301)
+export const CARTE_VERSION = 6;   // 4 : le ménage du ciel de Paris (v298) ; 5 : les toits de Paris relevés (v301) ; 6 : Paris doublé (v306)
 const CLE_CARTE = 'web-minecraft-carte-v1';
 const ECART_MAX = 24;          // au-delà, on ne déplace plus : on laisse et on dit
 // L'heure de la refonte ×2. Un bloc daté d'avant a été posé sur la carte de
@@ -1574,7 +1651,10 @@ function lesVillesQuiBougent() {
   if (villesQuiBougent) return villesQuiBougent;
   villesQuiBougent = [];
   for (const l of lieuxDuMonde('terreV2')) {
-    const apres = positionDe(l.cle, 'terre');
+    // la carte 3 telle qu'elle était jusqu'à la v305 : Paris doublé (v306) a
+    // déplacé Paris sur la carte courante, et la marche 2 → 3 ne doit pas le
+    // prendre pour une ville qui bouge entre la carte 2 et la carte 3
+    const apres = positionDe(l.cle, 'terreV3');
     const dx = apres.x - l.x, dz = apres.z - l.z;
     if (!dx && !dz) continue;
     if (l.cle === 'ny') {
@@ -1594,7 +1674,7 @@ function lesVillesQuiBougent() {
 // Sur la carte COURANTE, une colonne dont le sol est décidé par une ville ne
 // se compare pas : la ville aplanit, la projection n'y change rien.
 function solDecideParUneVille(x, z) {
-  if (dansUneZoneATerre(x, z)) return true;
+  if (dansUneZoneATerre(x, z, CONF_AVANT)) return true;
   const ny = positionDe('ny');
   return x >= ny.x + BORNES_MANHATTAN.x0 && x < ny.x + BORNES_MANHATTAN.x1
     && z >= ny.z + BORNES_MANHATTAN.z0 && z < ny.z + BORNES_MANHATTAN.z1;
@@ -1728,10 +1808,16 @@ const SUR_LE_SOL = 1;                 // y = relief + 1 : posé sur le bloc de s
 const VOISINS = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
 let mondeDuRelief = null;
 let generateur = null;
-let signatureAvant = '';            // les colonnes d'avant que le générateur a reçues
 const reliefs = new Map();            // x * 262144 + z -> relief : une colonne se calcule une fois, d'une fusion à l'autre
 const decisions = new Map();          // signature d'un groupe -> a-t-il un appui du jeu ?
-const reliefDe = (x, z) => (mondeDuRelief || (mondeDuRelief = new World())).terrainHeight(x, z);
+// LE RELIEF ET LA VILLE OÙ LES BLOCS ONT ÉTÉ POSÉS (v306). Le ménage et le
+// relevé jugent des blocs d'AVANT leur date, donc d'avant Paris doublé : ils
+// lisent le monde d'avant (`CONF_AVANT`) — l'ancien disque, l'ancien relief,
+// la trame de la v302 partout et les monuments à leur ancienne place. Lus sur
+// le monde d'aujourd'hui, une maison posée au bord de l'ancienne Seine se
+// retrouverait « en l'air » au-dessus de la nouvelle, et le ménage la
+// retirerait : c'est exactement la perte que l'invariant 1 interdit.
+const reliefDe = (x, z) => (mondeDuRelief || (mondeDuRelief = new World({ avant: true }))).terrainHeight(x, z);
 
 // Sur UNE carte de blocs { "x,y,z": [id, date, ...] }. Pure : rend une carte
 // neuve et le bilan. Les marques d'import (`@…`) et les blocs d'air (un trou
@@ -1745,15 +1831,10 @@ export function menagerCielParis(map) {
   const cle3 = (x, y, z) => ((x + 131072) * 256 + y) * 262144 + (z + 131072);
   const candidats = new Map();      // clé -> [x, y, z] : dans Paris, pas sur le sol, d'avant la date
   const poses = new Set();          // toute clé d'un bloc posé (non-air), candidat ou non
-  const R = PARIS.r;
+  // L'ANCIEN disque : le ménage juge des blocs posés avant sa date, donc dans
+  // le Paris d'avant la v306 (voir `reliefDe`).
+  const P = PARIS_AVANT_POS, R = P.r;
   let nb = 0;
-  // LES COLONNES OÙ LE JEU MONTRE LA VILLE D'AVANT (v303). Le générateur du
-  // jeu garde la trame de la v302 sous toute colonne de Paris où un enfant a
-  // bâti avant la date des rues (`colonnesParisAvant`) ; celui du ménage doit
-  // voir la MÊME ville, sinon il juge « en l'air » un bloc collé à un immeuble
-  // que le jeu dessine bel et bien — mesuré : la cabane du témoin du relevé
-  // perdait le bloc posé contre sa façade, et celui posé contre le mur voisin.
-  const avant = new Set();
   for (const k in map || {}) {
     const e = map[k];
     if (!Array.isArray(e) || k.charCodeAt(0) === 64) continue;   // '@' : une marque
@@ -1761,15 +1842,13 @@ export function menagerCielParis(map) {
     if (c1 < 0 || c2 < 0) continue;
     const x = +k.slice(0, c1), y = +k.slice(c1 + 1, c2), z = +k.slice(c2 + 1);
     if (x !== x || y !== y || z !== z || y < 0 || y > 255) continue;                    // NaN, ou hors du monde
-    // un trou creusé compte comme un bloc posé, exactement comme `setBlock`
-    if (dansParisAvant(x, z, num(e[1]))) marquerParisAvant(avant, x, z);
     if (e[0] === BLOCK.AIR) continue;
     nb++;
     poses.add(cle3(x, y, z));
     // La boîte avant le disque, et la date avant tout : sur un gros journal
     // hors de Paris, c'est ce parcours-là qui coûte à chaque fusion.
-    if (x - PARIS.x > R || PARIS.x - x > R || z - PARIS.z > R || PARIS.z - z > R) continue;
-    if (!(num(e[1]) < DATE_MENAGE_PARIS) || Math.hypot(x - PARIS.x, z - PARIS.z) > R) continue;
+    if (x - P.x > R || P.x - x > R || z - P.z > R || P.z - z > R) continue;
+    if (!(num(e[1]) < DATE_MENAGE_PARIS) || Math.hypot(x - P.x, z - P.z) > R) continue;
     const col = x * 262144 + z;
     let h = reliefs.get(col);
     if (h === undefined) { h = reliefDe(x, z); if (reliefs.size > 200000) reliefs.clear(); reliefs.set(col, h); }
@@ -1778,14 +1857,13 @@ export function menagerCielParis(map) {
   // Rien à juger : la carte est rendue telle quelle, sans copie.
   if (!candidats.size) return { carte: map || {}, retires: 0, gardes: nb };
   const aRetirer = [];
-  // Le générateur se garde d'une fusion à l'autre TANT QUE la ville d'avant
-  // couvre les mêmes colonnes ; sinon ses morceaux et ses décisions mentent.
-  let somme = avant.size;
-  for (const c of avant) somme = (somme + (Math.imul((c % 4294967296) | 0, 2654435761) ^ Math.imul(Math.floor(c / 4294967296) | 0, 40503))) >>> 0;
-  const sigAvant = `${avant.size}:${somme}`;
-  if (sigAvant !== signatureAvant) { generateur = null; decisions.clear(); signatureAvant = sigAvant; }
+  // Le monde d'avant, sans blocs d'enfant (v306) : c'est lui qui dit si le
+  // jeu écrivait un bloc à côté — la ville de la v302 et ses monuments à leur
+  // ancienne place. La v303 n'y montrait la ville d'avant que sous les
+  // colonnes bâties ; le monde d'avant la montre partout, ce qui rend inutile
+  // la signature de ces colonnes.
   const leJeuEcrit = (x, y, z) => {
-    if (!generateur) { generateur = new World(); for (const c of avant) generateur.colonnesParisAvant.add(c); }
+    if (!generateur) generateur = new World({ avant: true });
     return generateur.getBlock(x, y, z) !== BLOCK.AIR;
   };
   const vus = new Set();
@@ -1885,39 +1963,217 @@ export function menagerBlocsCielParis(tout) {
 // toits des blocs que le relevé ne suivra pas.
 export const DATE_RELEVE_PARIS = Date.UTC(2026, 8, 27, 4, 0, 0);
 
-// LES RUES DE PARIS À LA RÈGLE DU KIT (v303) — et ce qu'un enfant avait bâti
-// dans l'ancienne ville. Les rues s'élargissent, le pas des îlots suit : les
-// immeubles se DÉPLACENT. Une maison posée sur une ancienne rue se
-// retrouverait enfermée dans un immeuble neuf ; une cabane posée sur un ancien
-// toit (relevée en v301) se retrouverait en l'air au-dessus d'un boulevard.
-// Aucun bloc d'enfant ne bouge pour autant : c'est la VILLE qui garde, colonne
-// par colonne, sa forme d'avant là où un enfant a posé ou creusé quelque chose
-// avant `DATE_RUES_PARIS` — la trame figée de `paris-v302.js`. Le prix se
-// déclare : autour de ses constructions, l'enfant voit un morceau de l'ancienne
-// ville au milieu de la neuve. Rien de ce qu'il a fait ne se perd, rien n'est
-// enterré ; c'est la règle « dans le doute, le travail de l'enfant l'emporte ».
-export const DATE_RUES_PARIS = Date.UTC(2026, 8, 27, 16, 0, 0);
+// PARIS DOUBLÉ ET DÉPLACÉ (v306) — et ce qu'un enfant avait bâti autour.
+//
+// Décision de Max : le disque de Paris passe de 185 à 370 blocs, la ville de
+// vingt-quatre à quarante-huit blocs par kilomètre, et son centre part de cent
+// soixante-dix blocs vers le sud-ouest pour ne recouvrir ni le point
+// d'apparition, ni le musée, ni le quartier des enfants. Roissy, Orly,
+// Saint-Dizier, le village gaulois, le volcan et la caserne lui laissent la
+// place. C'est la quatrième exception à l'invariant 1 qui ne se BORNE pas
+// (après la v199 et la v242) : le sol change partout sous l'ancien et le
+// nouveau disque.
+//
+// Ce qui la rend acceptable, c'est la même règle qu'en v242 : UN BLOC SUIT SA
+// VILLE, et la migration est pure, appliquée au stockage une fois et à chaque
+// document reçu du nuage (`migrerParisDouble`, la marche 5 → 6). Un groupe de
+// blocs (six voisins) posé avant `DATE_PARIS_DOUBLE`…
+//   · dans l'ancien Paris suit son quartier : son point d'ancrage passe là où
+//     le plan doublé met le même endroit de la vraie ville, à deux fois sa
+//     distance au centre ; il garde sa hauteur au-dessus du sol, et ce qui
+//     était perché sur un ancien toit se pose au sol (le toit n'est plus là) ;
+//   · dans un site qui a déménagé (un aérodrome, le village, le volcan, la
+//     caserne) le suit d'un seul tenant, à la hauteur de son nouveau sol ;
+//   · ailleurs, se décale de ce que le relief a bougé sous lui (≤ 24 blocs).
+// Et un trou creusé dans un immeuble de l'ancien Paris disparaît avec
+// l'immeuble : il ne suit rien, puisque l'immeuble n'est plus là.
+//
+// LA VILLE CÈDE À CE QUE L'ENFANT A BÂTI. Là où un groupe se pose dans le
+// nouveau Paris, la ville n'élève pas d'immeuble : les colonnes (et leurs huit
+// voisines) marquées par un bloc d'avant la date gardent la rue, le trottoir
+// ou le jardin que la ville y met, mais un lot n'y devient qu'une cour pavée.
+// C'est la règle de la v303 (« dans le doute, le travail de l'enfant
+// l'emporte »), qui gardait l'ANCIENNE ville sous ces colonnes : Paris doublé
+// déplace tout, l'ancienne ville n'a plus de place où se garder.
+export const DATE_PARIS_DOUBLE = Date.UTC(2026, 8, 27, 16, 0, 0);
 const cleColonneParis = (x, z) => x * 262144 + z;
-function dansParisAvant(x, z, t) {
-  return t < DATE_RUES_PARIS && (x - PARIS.x) * (x - PARIS.x) + (z - PARIS.z) * (z - PARIS.z) <= PARIS.r * PARIS.r;
+function dansParisCede(x, z, t) {
+  return t <= DATE_PARIS_DOUBLE && (x - PARIS.x) * (x - PARIS.x) + (z - PARIS.z) * (z - PARIS.z) <= PARIS.r * PARIS.r;
 }
-// ET LES COLONNES VOISINES AUSSI. Un bloc collé à une façade (un escalier
-// contre un mur, un balcon) est posé dans la colonne de la RUE, pas dans celle
-// de l'immeuble : garder la seule colonne du bloc laissait l'immeuble d'à côté
-// passer à la ville neuve — il pouvait devenir une rue, et le bloc flottait
-// (puis le ménage du ciel le retirait). La ville d'avant se garde donc sur les
-// huit colonnes voisines de toute colonne où un enfant a bâti : ce qui le
-// portait reste là.
-function marquerParisAvant(ens, x, z) {
+// ET LES COLONNES VOISINES AUSSI (v303). Un bloc collé à ce que l'enfant a
+// bâti est dans la colonne d'à côté ; la ville y cède aussi, sinon un immeuble
+// neuf viendrait se coller au mur de sa maison.
+function marquerParisCede(ens, x, z) {
   for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) ens.add(cleColonneParis(x + dx, z + dz));
 }
-// La ville d'aujourd'hui et celle d'avant, sous la même forme : le générateur
-// choisit l'une ou l'autre par colonne.
+// La ville d'aujourd'hui et celle d'avant, sous la même forme : le monde
+// d'avant (`CONF_AVANT`) engendre la seconde partout dans l'ancien disque.
 const PARIS_NEUF = { solParis, lotParisLibre, batirColonneParis, pontParis, VOIES: VOIES_PARIS, cle: 'paris' };
 const PARIS_AVANT = {
   solParis: PARIS_V302.solParis, lotParisLibre: PARIS_V302.lotParisLibre, batirColonneParis: PARIS_V302.batirColonneParis,
   pontParis: PARIS_V302.pontParis, VOIES: PARIS_V302.VOIES_PARIS, cle: 'paris-v302',
 };
+
+// Ce qui a déménagé en v306, d'où, vers où. Paris se DILATE autour de son
+// centre (le plan double) ; le reste se TRANSLATE d'un seul tenant.
+const ECHELLE_PARIS_DOUBLE = 2;
+const SITES_DEMENAGES = (() => {
+  const l = [{ cle: 'paris', dilate: true, x0: PARIS_AVANT_POS.x, z0: PARIS_AVANT_POS.z, r: PARIS_AVANT_POS.r, x1: PARIS.x, z1: PARIS.z }];
+  for (const a of AEROPORTS_AVANT_V306) {
+    const b = AEROPORTS.find((q) => q.cle === a.cle);
+    if (b && (b.x !== a.x || b.z !== a.z)) l.push({ cle: a.cle, x0: a.x, z0: a.z, r: a.r + 8, x1: b.x, z1: b.z });
+  }
+  for (const [cle, av, ap] of [['gaulois', GAULOIS_AVANT, GAULOIS], ['volcan', VOLCANO_AVANT, VOLCANO], ['caserne', VILLE_AVANT, VILLE]]) {
+    l.push({ cle, x0: av.x, z0: av.z, r: av.r + 8, x1: ap.x, z1: ap.z });
+  }
+  return l;
+})();
+// Là où le relief a pu bouger : les sites d'avant ET d'après, et le nouveau
+// disque de Paris avec son fondu. Hors de ces disques, rien ne change sous un
+// bloc, et un journal de cent mille blocs ne paie qu'un test de boîte.
+const DISQUES_V306 = [
+  ...SITES_DEMENAGES.map((s) => ({ x: s.x0, z: s.z0, r: s.r })),
+  ...SITES_DEMENAGES.map((s) => ({ x: s.x1, z: s.z1, r: s.cle === 'paris' ? PARIS.r + 4 : s.r })),
+];
+const BOITE_V306 = DISQUES_V306.reduce((b, d) => ({
+  x0: Math.min(b.x0, d.x - d.r), x1: Math.max(b.x1, d.x + d.r), z0: Math.min(b.z0, d.z - d.r), z1: Math.max(b.z1, d.z + d.r),
+}), { x0: Infinity, x1: -Infinity, z0: Infinity, z1: -Infinity });
+const touchePeutEtreV306 = (x, z) => x >= BOITE_V306.x0 && x <= BOITE_V306.x1 && z >= BOITE_V306.z0 && z <= BOITE_V306.z1
+  && DISQUES_V306.some((d) => (x - d.x) * (x - d.x) + (z - d.z) * (z - d.z) <= d.r * d.r);
+let mondeNeuf = null;
+const reliefsAvant = new Map(), reliefsNeufs = new Map();
+function reliefAvantV306(x, z) {
+  const c = x * 262144 + z;
+  let h = reliefsAvant.get(c);
+  if (h === undefined) { h = reliefDe(x, z); if (reliefsAvant.size > 200000) reliefsAvant.clear(); reliefsAvant.set(c, h); }
+  return h;
+}
+function reliefNeufV306(x, z) {
+  const c = x * 262144 + z;
+  let h = reliefsNeufs.get(c);
+  if (h === undefined) {
+    h = (mondeNeuf || (mondeNeuf = new World())).terrainHeight(x, z);
+    if (reliefsNeufs.size > 200000) reliefsNeufs.clear();
+    reliefsNeufs.set(c, h);
+  }
+  return h;
+}
+function siteDe(x, z) {
+  for (const s of SITES_DEMENAGES) if ((x - s.x0) * (x - s.x0) + (z - s.z0) * (z - s.z0) <= s.r * s.r) return s;
+  return null;
+}
+// Où va un groupe dont le point d'ancrage est (ax, az) et le bloc le plus bas
+// à `ymin` (null : que du vide creusé) ? `null` : il reste ; `{ jete }` : il
+// disparaît ; sinon { dx, dy, dz }.
+function destinationV306(ax, az, ymin) {
+  const s = siteDe(ax, az);
+  if (s && s.dilate) {
+    if (ymin === null) return { jete: true };
+    const nx = Math.round(s.x1 + ECHELLE_PARIS_DOUBLE * (ax - s.x0)), nz = Math.round(s.z1 + ECHELLE_PARIS_DOUBLE * (az - s.z0));
+    const gA = reliefAvantV306(ax, az), gN = reliefNeufV306(nx, nz);
+    const dy = ymin <= gA + 1 ? gN - gA : gN + 1 - ymin;
+    return { dx: nx - ax, dy, dz: nz - az };
+  }
+  if (s) {
+    const dx = s.x1 - s.x0, dz = s.z1 - s.z0;
+    return { dx, dy: reliefNeufV306(ax + dx, az + dz) - reliefAvantV306(ax, az), dz };
+  }
+  const dy = reliefNeufV306(ax, az) - reliefAvantV306(ax, az);
+  if (!dy || Math.abs(dy) > ECART_MAX) return null;
+  return { dx: 0, dy, dz: 0 };
+}
+
+// Sur UNE carte de blocs. Pure : rend une carte neuve et le bilan ; la carte
+// est rendue telle quelle, sans copie, quand rien ne bouge.
+export function migrerParisDouble(map) {
+  const cle3 = (x, y, z) => ((x + 131072) * 256 + y) * 262144 + (z + 131072);
+  const candidats = new Map();      // clé -> [x, y, z, k] : touchable, d'avant la date
+  for (const k in map || {}) {
+    const e = map[k];
+    if (!Array.isArray(e) || k.charCodeAt(0) === 64 || !(num(e[1]) < DATE_PARIS_DOUBLE)) continue;
+    const c1 = k.indexOf(','), c2 = k.indexOf(',', c1 + 1);
+    if (c1 < 0 || c2 < 0) continue;
+    const x = +k.slice(0, c1), y = +k.slice(c1 + 1, c2), z = +k.slice(c2 + 1);
+    if (x !== x || y !== y || z !== z || y < 0 || y > 255) continue;
+    if (!touchePeutEtreV306(x, z)) continue;
+    candidats.set(cle3(x, y, z), [x, y, z, k]);
+  }
+  if (!candidats.size) return { carte: map || {}, deplaces: 0, jetes: 0, laisses: 0 };
+  let neuf = null, deplaces = 0, jetes = 0, laisses = 0;
+  const poser = (k, e) => {
+    const p = neuf[k];
+    if (!p || num(e[1]) > num(p[1]) || (num(e[1]) === num(p[1]) && e[0] > p[0])) neuf[k] = e;
+  };
+  const deplacements = [];
+  const vus = new Set();
+  for (const [k0, p0] of candidats) {
+    if (vus.has(k0)) continue;
+    const groupe = [p0]; vus.add(k0);
+    for (let i = 0; i < groupe.length; i++) {
+      const [x, y, z] = groupe[i];
+      for (let v = 0; v < 6; v++) {
+        const kv = cle3(x + VOISINS[v][0], y + VOISINS[v][1], z + VOISINS[v][2]);
+        const c = candidats.get(kv);
+        if (c !== undefined && !vus.has(kv)) { vus.add(kv); groupe.push(c); }
+      }
+    }
+    let sx = 0, sz = 0, ymin = null;
+    for (const [x, y, z, k] of groupe) {
+      sx += x; sz += z;
+      if (map[k][0] !== BLOCK.AIR && (ymin === null || y < ymin)) ymin = y;
+    }
+    const d = destinationV306(Math.round(sx / groupe.length), Math.round(sz / groupe.length), ymin);
+    if (!d) continue;
+    if (!d.jete && groupe.some(([, y]) => y + d.dy < 1 || y + d.dy > 254)) { laisses += groupe.length; continue; }
+    deplacements.push([groupe, d]);
+  }
+  if (!deplacements.length) return { carte: map, deplaces: 0, jetes: 0, laisses };
+  neuf = {};
+  const partis = new Set();
+  for (const [groupe] of deplacements) for (const p of groupe) partis.add(p[3]);
+  for (const k in map) if (!partis.has(k)) neuf[k] = map[k];
+  for (const [groupe, d] of deplacements) {
+    if (d.jete) { jetes += groupe.length; continue; }
+    for (const [x, y, z, k] of groupe) {
+      poser(`${x + d.dx},${y + d.dy},${z + d.dz}`, [map[k][0], DATE_PARIS_DOUBLE, ...map[k].slice(2)]);
+      deplaces++;
+    }
+  }
+  return { carte: neuf, deplaces, jetes, laisses };
+}
+
+// Toutes les cartes d'un document { contexte: carte } — les archives (« : »)
+// ont leur propre repère et ne sont jamais touchées, comme pour la carte 3.
+export function migrerBlocsParisDouble(tout) {
+  const out = {};
+  let deplaces = 0, jetes = 0, laisses = 0;
+  for (const [ctx, map] of Object.entries(tout || {})) {
+    if (ctx.includes(':') || !map || typeof map !== 'object' || Array.isArray(map)) { out[ctx] = map; continue; }
+    const r = migrerParisDouble(map);
+    out[ctx] = r.carte; deplaces += r.deplaces; jetes += r.jetes; laisses += r.laisses;
+  }
+  return { tout: out, deplaces, jetes, laisses };
+}
+
+// Et la position où l'enfant s'était arrêté : elle suit son quartier comme un
+// bloc posé au sol. Endormi sur un toit de l'ancien Paris, il se réveille dans
+// la rue du nouveau — le toit n'est plus là.
+export function migrerPositionsParisDouble(pos) {
+  const out = {};
+  let deplaces = 0;
+  for (const [ctx, p] of Object.entries(pos || {})) {
+    out[ctx] = p;
+    if (ctx.includes(':') || !p || ![p.x, p.y, p.z].every(Number.isFinite) || !(num(p.t) < DATE_PARIS_DOUBLE)) continue;
+    const x = Math.floor(p.x), z = Math.floor(p.z);
+    if (!touchePeutEtreV306(x, z)) continue;
+    const d = destinationV306(x, z, Math.floor(p.y) - 1);
+    if (!d || d.jete) continue;
+    out[ctx] = { ...p, x: p.x + d.dx, y: p.y + d.dy, z: p.z + d.dz, t: DATE_PARIS_DOUBLE };
+    deplaces++;
+  }
+  return { pos: out, deplaces };
+}
+
 const gabarits = new Map();           // x * 262144 + z -> { sommet, ancien } d'une colonne de lot, ou null
 function releveDe(x, z) {
   const cle = x * 262144 + z;
@@ -1927,7 +2183,9 @@ function releveDe(x, z) {
   // LA TRAME OÙ LE BLOC A ÉTÉ POSÉ, PAS LA TRAME D'AUJOURD'HUI (v303) : le
   // relevé juge « était-il sur un toit ? », et les toits d'avant la v303 ne
   // sont plus ceux de `paris.js` depuis que les rues suivent la règle du kit.
-  if (Math.hypot(x - PARIS.x, z - PARIS.z) <= PARIS.r && PARIS_V302.solParis(x, z) === null && PARIS_V302.lotParisLibre(x, z)) {
+  // Et le DISQUE où il a été posé (v306) : l'ancien, avec le relief d'avant.
+  const P = PARIS_AVANT_POS;
+  if (Math.hypot(x - P.x, z - P.z) <= P.r && PARIS_V302.solParis(x, z) === null && PARIS_V302.lotParisLibre(x, z)) {
     const gb = PARIS_V302.gabaritParis(x, z);
     // le bâtisseur écrit à h + dy − 1 : le dernier bloc du jeu est à h + sommet − 1
     g = { ancien: reliefDe(x, z) + gb.ancien - 1, monte: gb.sommet - gb.ancien };
@@ -1940,7 +2198,7 @@ function releveDe(x, z) {
 // Sur UNE carte de blocs. Pure : rend une carte neuve et le bilan ; la carte
 // est rendue telle quelle, sans copie, quand rien ne monte.
 export function releverToitsParis(map) {
-  const R = PARIS.r;
+  const P = PARIS_AVANT_POS, R = P.r;
   let deplaces = 0;
   let neuf = null;
   const poser = (k, e) => {
@@ -1954,7 +2212,7 @@ export function releverToitsParis(map) {
     if (c1 < 0 || c2 < 0) continue;
     const x = +k.slice(0, c1), y = +k.slice(c1 + 1, c2), z = +k.slice(c2 + 1);
     if (x !== x || y !== y || z !== z) continue;
-    if (x - PARIS.x > R || PARIS.x - x > R || z - PARIS.z > R || PARIS.z - z > R) continue;
+    if (x - P.x > R || P.x - x > R || z - P.z > R || P.z - z > R) continue;
     const g = releveDe(x, z);
     if (!g || y <= g.ancien) continue;
     if (!neuf) { neuf = {}; for (const kk in map) neuf[kk] = map[kk]; }
@@ -2042,24 +2300,32 @@ export function migrerLesBlocs(lire, ecrire, lirePos = null, ecrirePos = null) {
   // 3 → 4 : le ménage du ciel de Paris (v298). Idempotent par la date.
   const m = menagerBlocsCielParis(tout);
   tout = m.tout; retires += m.retires;
+  // 5 → 6 : Paris doublé (v306), EN DERNIER — les trois marches d'avant
+  // jugent sur le monde où les blocs ont été posés, celle-ci les emmène.
+  const pd = migrerBlocsParisDouble(tout);
+  tout = pd.tout; deplaces += pd.deplaces; laisses += pd.laisses; retires += pd.jetes;
   ecrire(tout);
   if (lirePos && ecrirePos) {
     const p = migrerPositionsCarte3(lirePos() || {});
     const q = releverPositionsParis(p.pos);
-    if (p.deplaces || q.deplaces) ecrirePos(q.pos);
+    const r = migrerPositionsParisDouble(q.pos);
+    if (p.deplaces || q.deplaces || r.deplaces) ecrirePos(r.pos);
   }
   try { localStorage.setItem(CLE_CARTE, String(CARTE_VERSION)); } catch { /* ignore */ }
   return { deplaces, laisses, intacts, retires };
 }
 
 export class World {
-  constructor() {
+  // `avant` : le monde d'avant Paris doublé (v306, `CONF_AVANT`) — pour juger
+  // les blocs posés dedans, jamais pour jouer.
+  constructor({ avant = false } = {}) {
+    this.conf = avant ? CONF_AVANT : CONF_NEUF;
     this.chunks = new Map();      // "cx,cz" -> Uint8Array
     this.tops = new Map();        // "cx,cz" -> y du bloc le plus haut (plafond de maillage)
     this.dirty = new Set();       // chunk keys needing a remesh
     this.edits = new Map();       // "x,y,z" -> block id (player modifications)
     this.monumentsTouches = new Set();  // les monuments HD qu'un enfant a modifiés (v292)
-    this.colonnesParisAvant = new Set();  // les colonnes de Paris où un enfant a bâti avant la v303
+    this.colonnesCedees = new Set();    // les colonnes de Paris où la ville cède à ce qu'un enfant a bâti (v306)
     this.cacheSol = new Map();          // "x,z" -> { nat, cote } : la fiche d'une colonne (sol continu, v297)
     this.sansSolContinu = false;        // ?solcontinu=0 : la mesure A/B, jamais un réglage
     this.editTimes = new Map();   // "x,y,z" -> ms timestamp, for multiplayer merge
@@ -2132,11 +2398,11 @@ export class World {
     // La vraie Terre : les océans du planisphère et les grandes chaînes.
     // Après les lacs — la mer a le dernier mot sur le bruit — et avant les
     // villes, qui gardent la main sur leur propre relief.
-    h = hauteurTerre(x, z, h);
+    h = hauteurTerre(x, z, h, 'terre', this.conf);
 
     // city districts: Paris and New York are flat plateaus; San Francisco
     // keeps its rolling hills so its streets climb like the real thing
-    for (const c of CITIES) {
+    for (const c of this.conf.villes) {
       // Quatre reliefs à part, chacun dans son module : cf. plus bas.
       if (c.key === 'ny' || c.key === 'sf' || c.key === 'nice' || c.key === 'lille' || c.key === 'dc' || c.key === 'londres') continue;
       const cd = Math.hypot(x - c.x, z - c.z);
@@ -2149,7 +2415,7 @@ export class World {
 
     // Paris : la Seine se creuse dans la base plate, et la butte Montmartre s'y
     // relève. Une ville née autour d'un fleuve ne pouvait pas rester une table.
-    h = hauteurParis(x, z, h, 34);
+    h = this.conf.hauteurParis(x, z, h, 34);
 
     // San Francisco : ses treize collines nommées, chacune à sa hauteur réelle,
     // et la mer sur trois côtés. L'ancienne version se contentait d'ajouter du
@@ -2261,7 +2527,7 @@ export class World {
     // 2 982 nanosecondes par colonne (+29 %), et le témoin de vie de rue est
     // tombé de six piétons au pire creux à deux. Deux comparaisons sur x et z
     // écartent dix-huit aérodromes sur dix-neuf sans une multiplication.
-    for (const a of AEROPORTS) {
+    for (const a of this.conf.aeroports) {
       if (x < a.x - a.r || x > a.x + a.r || z < a.z - a.r || z > a.z + a.r) continue;
       const dx = x - a.x, dz = z - a.z;
       const d2 = dx * dx + dz * dz;
@@ -2273,9 +2539,10 @@ export class World {
     // Le village gaulois et le camp romain : une clairière plate au bord de la
     // mer. Le raccord se fait sur vingt-cinq blocs, assez pour que la côte
     // reste une côte au lieu d'une falaise.
-    const gd = Math.hypot(x - GAULOIS.x, z - GAULOIS.z);
-    if (gd < GAULOIS.r) {
-      const m = Math.min(1, (GAULOIS.r - gd) / 25);
+    const G = this.conf.gaulois;
+    const gd = Math.hypot(x - G.x, z - G.z);
+    if (gd < G.r) {
+      const m = Math.min(1, (G.r - gd) / 25);
       h = h * (1 - m) + 34 * m;
     }
 
@@ -2333,18 +2600,19 @@ export class World {
     }
 
     // the volcano: a tall cone with a lava crater at the top
-    const vd = Math.hypot(x - VOLCANO.x, z - VOLCANO.z);
-    if (vd < VOLCANO.r) {
-      const m = Math.min(1, (VOLCANO.r - vd) / 10);
-      let cone = 34 + (1 - vd / VOLCANO.r) * 34;
-      if (vd < 7) cone = 34 + (1 - 7 / VOLCANO.r) * 34 - (7 - vd) - 2; // crater bowl
+    const V = this.conf.volcan;
+    const vd = Math.hypot(x - V.x, z - V.z);
+    if (vd < V.r) {
+      const m = Math.min(1, (V.r - vd) / 10);
+      let cone = 34 + (1 - vd / V.r) * 34;
+      if (vd < 7) cone = 34 + (1 - 7 / V.r) * 34 - (7 - vd) - 2; // crater bowl
       h = h * (1 - m) + cone * m;
     }
 
     return Math.max(2, Math.min(SOMMET_TERRAIN, Math.floor(h)));
   }
 
-  cityAt(x, z) { return this.cityAtParmi(x, z, CITIES); }
+  cityAt(x, z) { return this.cityAtParmi(x, z, this.conf.villes); }
 
   // Les villes dont le disque approche ce point à moins de `d` blocs : la
   // liste qu'un morceau garde pour ne poser la question qu'à elles (v297).
@@ -2385,7 +2653,7 @@ export class World {
 
   villesProches(x, z, d) {
     const out = [];
-    for (const c of CITIES) if (Math.hypot(x - c.x, z - c.z) < c.r + d) out.push(c);
+    for (const c of this.conf.villes) if (Math.hypot(x - c.x, z - c.z) < c.r + d) out.push(c);
     return out;
   }
 
@@ -2438,16 +2706,16 @@ export class World {
     if (dansVilleMonde(x, z)) return null;
     if (Math.hypot(x - PARK.x, z - PARK.z) < PARK.r) return null; // park is kept open
     if (Math.hypot(x - DESERT.x, z - DESERT.z) < DESERT.r) return null; // cactuses only
-    if (Math.hypot(x - VOLCANO.x, z - VOLCANO.z) < VOLCANO.r) return null; // bare rock
+    if (Math.hypot(x - this.conf.volcan.x, z - this.conf.volcan.z) < this.conf.volcan.r) return null; // bare rock
     if (Math.hypot(x - MARS.x, z - MARS.z) < MARS.r) return null; // rien ne pousse sur Mars
     if (Math.hypot(x - VILLANDRY.x, z - VILLANDRY.z) < VILLANDRY.r) return null; // les jardins sont dessinés, pas sauvages
     // même rejet par la boîte que dans `terrainHeight` : c'est aussi une
     // fonction appelée par colonne
-    if (AEROPORTS.some((a) => x >= a.x - a.r && x <= a.x + a.r && z >= a.z - a.r
+    if (this.conf.aeroports.some((a) => x >= a.x - a.r && x <= a.x + a.r && z >= a.z - a.r
       && z <= a.z + a.r && (x - a.x) ** 2 + (z - a.z) ** 2 < a.r * a.r)) return null;
     if (dansLUsine(x, z)) return null;                                            // ni sur la chaîne, ni sur le parc
     // au village, les arbres sont plantés par le constructeur, pas au hasard
-    if (Math.hypot(x - GAULOIS.x, z - GAULOIS.z) < 52) return null;
+    if (Math.hypot(x - this.conf.gaulois.x, z - this.conf.gaulois.z) < 52) return null;
     if (Math.hypot(x - ESPACE.x, z - ESPACE.z) < ESPACE.r) return null;   // rien ne pousse ici
     // en Chine, la végétation est composée : bambouseraie plantée, karsts
     // coiffés d'herbe — pas de forêt sauvage par-dessus
@@ -2500,8 +2768,8 @@ export class World {
         if (Math.hypot(wx - MARS.x, wz - MARS.z) < MARS.r - 2) {
           top = BLOCK.MARS_SOL; filler = BLOCK.MARS_ROCHE;
         }
-        const vd = Math.hypot(wx - VOLCANO.x, wz - VOLCANO.z);
-        if (vd < VOLCANO.r - 2 && h > 36) {
+        const vd = Math.hypot(wx - this.conf.volcan.x, wz - this.conf.volcan.z);
+        if (vd < this.conf.volcan.r - 2 && h > 36) {
           filler = BLOCK.STONE;
           top = hash2i(wx, wz, SEED + 891) < 0.18 ? BLOCK.OBSIDIAN : BLOCK.STONE;
           if (vd < 5.5) top = hash2i(wx, wz, SEED + 892) < 0.3 ? LAVA_HOT : LAVA; // the lava lake
@@ -2722,9 +2990,11 @@ export class World {
         // générique ne s'applique pas ici : ses lots carrés de douze blocs
         // faisaient un lotissement, pas une ville.
         if (city && city.key === 'paris') {
-          // la ville d'avant la v303 là où un enfant y a bâti, celle
-          // d'aujourd'hui partout ailleurs (`DATE_RUES_PARIS`)
-          const PV = this.colonnesParisAvant.size && this.colonnesParisAvant.has(cleColonneParis(wx, wz)) ? PARIS_AVANT : PARIS_NEUF;
+          // la ville d'avant la v306 dans le monde d'avant (`CONF_AVANT`),
+          // celle d'aujourd'hui dans le jeu — qui cède, sans bâtir, là où un
+          // enfant avait bâti avant la date (`DATE_PARIS_DOUBLE`)
+          const PV = this.conf.parisAvant ? PARIS_AVANT : PARIS_NEUF;
+          const cede = !this.conf.parisAvant && this.colonnesCedees.size > 0 && this.colonnesCedees.has(cleColonneParis(wx, wz));
           const sp = PV.solParis(wx, wz);
           // La couronne déborde d'un bloc sur les quatre côtés : un arbre
           // large d'un seul bloc est un poteau vert, pas un arbre — trois
@@ -2754,7 +3024,7 @@ export class World {
               if (wy < HEIGHT) data[World.index(x, wy, z)] = dy <= 2 ? BLOCK.LOG : BLOCK.LEAVES;
             }
           } else if (feuDeVille(data, x, z, h, wx, wz, sp,
-            feuxDeVille(PV.cle, PARIS, PV.VOIES, PV.solParis))) {
+            feuxDeVille(PV.cle, this.conf.parisAvant ? PARIS_AVANT_POS : PARIS, PV.VOIES, PV.solParis))) {
             // le trottoir et son feu tricolore sont posés (v274)
           } else if (lampadaireDeVille(data, x, z, h, wx, wz, PV.solParis, sp)) {
             // le trottoir et son réverbère sont posés (v248)
@@ -2766,7 +3036,10 @@ export class World {
             const surEau = h < city.base && PV.pontParis(wx, wz);
             data[World.index(x, surEau ? city.base : h, z)] = sp;
           } else if (PV.lotParisLibre(wx, wz)) {
-            PV.batirColonneParis(wx, wz, (dy, id) => {
+            // LA VILLE CÈDE (v306) : pas d'immeuble sur ce qu'un enfant a
+            // bâti ni contre, une cour pavée à la place.
+            if (cede) data[World.index(x, h, z)] = BLOCK.COBBLE;
+            else PV.batirColonneParis(wx, wz, (dy, id) => {
               const wy = h + dy - 1;
               if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id;
             });
@@ -3022,7 +3295,7 @@ export class World {
     };
     // Landmarks get an open plaza — no buildings on top of them.
     const nearLandmark = (ccx, ccz) =>
-      LANDMARKS.some((lm) => Math.abs(ccx - lm.x) < lm.box + 7 && Math.abs(ccz - lm.z) < lm.box + 7);
+      this.conf.reperes.some((lm) => Math.abs(ccx - lm.x) < lm.box + 7 && Math.abs(ccz - lm.z) < lm.box + 7);
 
     // Fill from the build level down to the terrain so hillside houses
     // never float (essential on San Francisco's slopes).
@@ -3031,7 +3304,7 @@ export class World {
       for (let y = by - 1; y > th; y--) stamp(wx, y, wz, id);
     };
 
-    for (const city of CITIES) {
+    for (const city of this.conf.villes) {
       // Six villes se bâtissent colonne par colonne, cf. leurs modules. Oublier
       // Washington dans cette liste ne se voyait pas tout de suite : la trame
       // générique posait par-dessus des maisons pastel de San Francisco, pleines
@@ -3173,7 +3446,7 @@ export class World {
     }
 
     // Landmarks (fixed world positions, deterministic base height).
-    for (const lm of LANDMARKS) {
+    for (const lm of this.conf.reperes) {
       if (lm.x + lm.box < baseX || lm.x - lm.box >= baseX + CHUNK ||
           lm.z + lm.box < baseZ || lm.z - lm.box >= baseZ + CHUNK) continue;
       let baseY = this.terrainHeight(lm.x, lm.z);
@@ -3295,7 +3568,7 @@ export class World {
     const t = ts !== undefined ? ts : Date.now();
     this.edits.set(k, id);
     this.editTimes.set(k, t);
-    if (dansParisAvant(x, z, t)) marquerParisAvant(this.colonnesParisAvant, x, z);
+    if (dansParisCede(x, z, t)) marquerParisCede(this.colonnesCedees, x, z);
     if (!remote && this.onOp) this.onOp(k, id, t);
     if (this.onBloc) this.onBloc(x, y, z, id);
 
@@ -3530,14 +3803,14 @@ export class World {
   }
 
   indexerMonumentsTouches() {
-    // l'index des colonnes de Paris bâties avant la v303 se refait avec lui :
-    // les deux sont appelés partout où un journal s'installe d'un bloc
-    this.colonnesParisAvant.clear();
+    // l'index des colonnes où Paris cède (v306) se refait avec lui : les
+    // deux sont appelés partout où un journal s'installe d'un bloc
+    this.colonnesCedees.clear();
     for (const [k, t] of this.editTimes) {
-      if (!(t < DATE_RUES_PARIS)) continue;
+      if (!(t <= DATE_PARIS_DOUBLE)) continue;
       const virgule = k.indexOf(','), derniere = k.lastIndexOf(',');
       const x = +k.slice(0, virgule), z = +k.slice(derniere + 1);
-      if (dansParisAvant(x, z, t)) marquerParisAvant(this.colonnesParisAvant, x, z);
+      if (dansParisCede(x, z, t)) marquerParisCede(this.colonnesCedees, x, z);
     }
     this.monumentsTouches.clear();
     if (REPERES_HD.length === 0) return;
@@ -3666,7 +3939,7 @@ export class World {
     this.edits.clear();
     this.editTimes.clear();
     this.monumentsTouches.clear();
-    this.colonnesParisAvant.clear();
+    this.colonnesCedees.clear();
     this.loadEdits();
     this.allDirty = true;
   }
@@ -3680,7 +3953,7 @@ export class World {
     this.edits.clear();
     this.editTimes.clear();
     this.monumentsTouches.clear();
-    this.colonnesParisAvant.clear();
+    this.colonnesCedees.clear();
     this.chunks.clear();
     this.tops.clear();
     this.allDirty = true;

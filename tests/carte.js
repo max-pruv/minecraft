@@ -389,7 +389,10 @@ const position = (p) => p.evaluate(() => ({
         }
         return n / total;
       };
-      c2.vue.cx = -240; c2.vue.cz = 200; c2.vue.bpp = 3;
+      // le centre de PARIS, demandé à la ville (v306 : elle a déménagé ; écrit
+      // en dur, ce témoin aurait mesuré la densité de rue en rase campagne)
+      const PV = (window.__game.world.cityAt && window.__game.world.cityAt(-360, 320)) || { x: -240, z: 200 };
+      c2.vue.cx = PV.key === 'paris' ? PV.x : -240; c2.vue.cz = PV.key === 'paris' ? PV.z : 200; c2.vue.bpp = 3;
       c2.rendreFond();
       const loin = bitume();
       c2.vue.bpp = 0.35;
@@ -608,7 +611,10 @@ const position = (p) => p.evaluate(() => ({
       const out = {};
       for (const [nom, x, z] of noms) {
         const fil = [];
-        for (let zz = p.z - 45; zz <= p.z + 45; zz++) if (w.getBlock(x, 30, zz) === EAU) fil.push(zz);
+        // la Seine s'écarte du centre avec le plan : ±45 blocs à vingt-quatre par
+        // kilomètre, ±90 à quarante-huit (v306) — la portée se lit dans le rayon
+        const P = Math.round(p.r * 45 / 185);
+        for (let zz = p.z - P; zz <= p.z + P; zz++) if (w.getBlock(x, 30, zz) === EAU) fil.push(zz);
         const axe = fil.length ? fil.reduce((a, b) => a + b, 0) / fil.length : null;
         const sol = w.terrainHeight(x, z);
         out[nom] = { axe, rive: axe === null ? '?' : (z < axe ? 'droite' : 'gauche'), sec: sol > 31 };

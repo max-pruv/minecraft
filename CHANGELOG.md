@@ -20,7 +20,173 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v306 — Paris double, et déménage : les quartiers retrouvent leurs immeubles
+
+*Livrée en une seule fusion avec les v303, v304 et v305 — décision de Max :
+« attends et fais un méga merge ». Les rues à la règle du kit (v303) vidaient
+la rive gauche ; elles ne partent qu'avec la ville qui leur fait de la place.*
+
+**Pourquoi.** Les rues de la v303 sont à la règle du kit — deux voies partout,
+quatre sur les grands boulevards — et dans un disque de cent quatre-vingt-cinq
+blocs elles mangeaient les quartiers : Saint-Germain passait de 168 colonnes
+d'immeubles à 2, le Marais de 41 à 2, le Faubourg Saint-Antoine de 91 à 10.
+Max a choisi, parmi trois propositions chiffrées : « Doubler Paris, déplacé ».
+Doublé sur place, le disque aurait recouvert le point d'apparition, le musée et
+le quartier des enfants.
+
+**Ce que ça change.** Paris passe de 185 à 370 blocs de rayon et de
+vingt-quatre à quarante-huit blocs par kilomètre ; son centre part de cent
+soixante-dix blocs vers le sud-ouest. Les rues gardent leurs largeurs de la
+v303 : ce sont les îlots, la Seine, les îles, la butte et les jardins qui
+doublent — et chaque quartier retrouve plus d'immeubles qu'en production
+(Saint-Germain 9,5 % du quartier → 12,8 %, le Marais 2,6 → 3,9, l'Étoile 1,8 →
+12,1). Ce qu'il recouvrait déménage, chaque fois à l'endroit qu'une sonde a
+MESURÉ (au sec, plat, loin des villes, des voies et de ce que les enfants ont
+bâti) : Roissy au nord-ouest, Orly au sud, la base de Saint-Dizier à l'est, le
+volcan plein sud, la caserne à l'ouest — et le village gaulois en Armorique, à
+Erquy, au bord de la Manche. L'autoroute A1 est retracée jusqu'à la nouvelle
+porte nord.
+
+**Ce que les enfants ont bâti suit sa ville.** Une maison posée dans l'ancien
+Paris part avec son quartier : elle se retrouve là où le plan doublé met le
+même endroit de la vraie ville, posée sur son sol ; ce qui était perché sur un
+ancien toit se pose dans la rue (le toit n'est plus là) ; une maison sur
+l'ancien tarmac de Roissy suit l'aérodrome ; un trou creusé dans un ancien
+immeuble part avec l'immeuble. Et là où une construction arrive, la ville
+n'élève pas d'immeuble : elle laisse une cour pavée. Le document du nuage est
+recopié tel qu'il était, sur son propre document, avant qu'on y touche.
+
+**Ce qui le prouve.** Le sol, d'abord, et la casse se BORNE : avec la même
+découpe (l'ancien et le nouveau Paris, les sites d'avant et d'après des trois
+aérodromes, du village et du volcan), l'empreinte du paysage vaut
+`2aeceaa1…` sur `origin/main`, sur la v305 et sur la branche — 154 158
+colonnes, identiques. Le « monde d'avant », contre lequel la migration juge les
+blocs d'avant, rend au bloc près le monde de la production : relief de l'ancien
+Paris (40 401 colonnes) et blocs de seize morceaux autour de l'ancienne
+Notre-Dame (253 952), deux empreintes relevées sur `origin/main`. Cinq témoins
+purs de `plafond.js` : la maison suit son quartier et se pose sur son sol ;
+l'ancien tarmac suit Roissy, le trou part avec l'immeuble, rien ne bouge au
+point d'apparition ni après la date, la marche est idempotente ; la chaîne
+entière ne perd pas une maison d'avant le ménage posée là où le relief a
+changé (vérifié rouge avec un ménage jugé sur le monde neuf : zéro bloc
+arrivé) ; le nouveau Paris ne bâtit pas sur ce qu'un enfant avait bâti mais
+bâtit sous ce qu'on pose après. Deux témoins de `sauvegarde.js` : une maison de
+l'ancien Paris reçue du nuage arrive dans le nouveau, sans fantôme, et le nuage
+est mis à l'abri avant.
+
+**Ce qui reste, et qui se dit.** Une tablette qui jouerait encore sur l'ancienne
+version après la publication poserait dans l'ancien Paris des blocs que la
+marche ne suivra pas. Un garage posé dans l'ancien Paris voit ses blocs partir
+avec la ville, mais sa place de parking reste à l'ancienne adresse. Une
+construction de campagne dont le sol a bougé de plus de vingt-quatre blocs
+(une colline recouverte par la ville) reste où elle est. Détail dans
+`TASKS.md`.
+
+## v305 — En ligne, tout le monde voit la même rue
+
+*Livrée avec la v306, dans la même fusion.*
+
+**Pourquoi.** Max, en jouant à plusieurs : « les utilisateurs ne voient pas les
+mêmes voitures en même temps. Et quand on monte dans une voiture, elle change
+de couleur. Il n'y a pas de consistance entre les voitures et la scène dans les
+mondes en ligne. » Sa capture montrait la voiture de Marlon au milieu d'un
+convoi de Paris. Trois causes, et aucune n'était dans le réseau lui-même :
+chaque tablette faisait rouler SA circulation, depuis l'instant où SA page avait
+créé le convoi — deux enfants au même carrefour voyaient deux rues sans
+rapport ; la voiture prise dans la rue emportait son modèle mais pas sa
+couleur, et la monture neuve reprenait la teinte d'usine du fichier ; et pour
+la tablette d'Alice, Marlon au volant n'était qu'un avatar, que la rue
+traversait sans le voir.
+
+**Ce que ça change.** La position d'un convoi n'est plus une somme de pas :
+c'est une GRILLE HORAIRE, une fonction de l'heure de la rue — droite à vitesse
+constante, paliers aux quais, et pour les voitures qui freinent dans les
+virages, la marche d'avant simulée une fois sur un tour, si bien qu'elles
+freinent exactement comme avant. L'hôte donne l'heure de la rue avec celle du
+ciel, toutes les trois secondes, et les feux tricolores la lisent aussi : deux
+amis au même carrefour voient le même feu arrêter les mêmes voitures. La
+voiture qu'on prend garde sa couleur, sous l'enfant et chez l'ami qui le
+regarde conduire ; elle quitte la circulation de TOUTES les tablettes, et les
+voitures qui la suivaient ne font plus un bond en avant (sa place reste, vide).
+Et chaque ami entre dans la liste de ceux à qui la rue cède le passage — à
+pied ou au volant —, comme l'enfant depuis la v245.
+
+**Ce qui le prouve.** Trois témoins de `reseau.js`, Marlon et Alice emmenés au
+même endroit de Paris : la tête de chaque convoi est au même point du tour sur
+les deux tablettes (écart médian sous huit blocs) ; la voiture prise dans la
+rue garde sa teinte, chez Marlon et chez Alice ; et chez Alice, aucune voiture
+de la rue ne passe au travers de celle de Marlon, garée où il l'a prise, alors
+qu'il en vient. Rouges tous les trois sur l'ancien code.
+
+**Ce qui reste, et qui se dit.** Une tablette cède le passage à ce qu'ELLE voit
+de l'enfant et de ses amis : à un instant près, deux tablettes ne font pas
+attendre exactement la même voiture, et un train arrêté devant un enfant ne
+l'est que chez ceux qui l'ont vu — il reprend sa grille là où il s'était
+arrêté. Une voiture qu'un ami a prise puis laissée garée ne se voit que chez
+lui. Et une partie rejointe en cours de route ne sait pas quelles voitures ont
+déjà été prises avant son arrivée.
+
+**Et la carte montre l'ami là où il est.** Max : « en multijoueur, la position
+sur la carte n'est pas toujours à jour ». Depuis la v253 un ami au volant, ou
+passager, est assis DANS le maillage de sa voiture ; la minicarte et la carte du
+monde lisaient la position de ce maillage — celle du siège, à un bloc de zéro —
+et le montraient figé près du point d'apparition tant qu'il conduisait. Elles
+lisent désormais sa position vraie. Un quatrième témoin de `reseau.js` : Marlon
+au volant, son point sur la carte d'Alice est à moins d'un bloc de là où il est.
+
+## v304 — Le son de la visio n'est plus robotique, et un train s'arrête devant la voiture
+
+*Livrée avec la v306, dans la même fusion.*
+
+**Pourquoi.** Max : « Alice, quand elle utilise la fonctionnalité audio et
+vidéo, elle entend un son hyper robotique de son côté sur son iPad. Ça n'arrive
+pas avec tous les appareils, mais avec le sien, oui. » Dès qu'un appel porte du
+son — le micro de l'enfant ouvert, ou la voix d'un ami qui arrive —, iOS passe
+la session audio de la tablette en mode APPEL : traitement de la voix,
+annulation d'écho, et sur certains iPad une autre fréquence d'échantillonnage
+que la lecture ordinaire. Le contexte Web Audio du jeu, ouvert avant l'appel
+(la radio, le moteur, les bruits de blocs), restait à l'ancienne fréquence et
+passait par un rééchantillonnage de mauvaise qualité — le son robotique que
+Safari connaît, et qui dépend du matériel, d'où « pas avec tous les
+appareils ». Et la radio à pleine puissance dans le haut-parleur, l'annulation
+d'écho la découpait en morceaux.
+
+**Ce que ça change.** Quand un appel se met à porter du son, et quand il
+cesse, le jeu ferme son contexte audio et en ouvre un neuf, qui prend le mode de
+la tablette ; le moteur et la radio qui jouaient reprennent dessus, sans que
+l'enfant touche à rien. Pendant l'appel, le jeu parle quatre fois plus bas, pour
+laisser la place aux voix. Rien ne change pour qui ne passe pas d'appel.
+
+**Ce qui le prouve.** Trois témoins de `visio.js`, sur le trajet des deux
+enfants (Alice allume sa caméra et son micro, Marlon l'entend) : le micro
+ouvert, le jeu joue sur un contexte audio NEUF et l'ancien est fermé ; pendant
+l'appel la radio du jeu parle plus bas sans se taire (niveau mesuré sur la
+sortie, pas sur un drapeau) ; caméra éteinte, le jeu reprend sa voix normale
+sur un contexte neuf. Rouges tous les trois sur l'ancien code. Ce que le banc
+ne peut pas prouver, et qui se dit : Chromium n'a pas de mode appel, donc le
+banc éprouve le GESTE (le contexte change, la voix baisse), pas l'oreille
+d'Alice — c'est sur son iPad que la correction se juge.
+
+**Et le train ne traverse plus la voiture de l'enfant.** Max, trois captures
+d'iPhone : « d'autres défauts de overlap » — sa voiture garée sur la voie
+ferrée, le train qui passe au travers, et l'intérieur noir de la rame qui
+remplit l'écran quand la caméra se retrouve dedans. Les trains et les métros
+ne cédaient à personne : seule la circulation des rues (`routier`) regardait
+l'enfant depuis la v245. Désormais, si ce que la motrice va balayer dans les
+quatre blocs suivants touche l'enfant — à pied ou au volant —, la rame
+s'arrête comme à quai, sans limite, et repart dès que la voie est libre ; ses
+voitures entrent dans la liste des obstacles, si bien que la voiture de
+l'enfant bute sur un train au lieu d'y entrer, et qu'une voiture de la rue
+attend à un passage à niveau. Un train qui touche DÉJÀ l'enfant continue (y
+rester, c'est y rester pour toujours), celui où il est assis aussi, et la
+rame s'arrête assez près pour que « Monter à bord » la voie encore. Un témoin
+de `monte.js` pose la voiture de l'enfant sur la voie d'un train de surface,
+trente blocs devant la motrice : le train s'approche, s'arrête, et aucune de
+ses voitures ne touche la sienne — sur l'ancien code, il passe au travers.
+
 ## v303 — Les rues de Paris suivent la règle du kit : deux voies partout, quatre sur les grands boulevards
+
+*Livrée avec la v306, dans la même fusion.*
 
 **Pourquoi.** Max : « Les rues de Paris sont encore beaucoup trop étroites. Je
 comprends pas. T'as pas appliqué le code à la règle. » Il avait raison. Le kit
@@ -45,12 +211,12 @@ Montparnasse, Haussmann) des BOULEVARDS à quatre voies et trottoirs de 4 m,
 25,4. Les îlots grandissent dans la même proportion que les rues — le kit :
 « si l'élargissement mange les bâtiments, recompose les lots » — si bien que
 Paris garde sa part bâtie (22,6 % du disque → 21,6) et ses huit circuits de
-voitures, tous à 94-100 % sur la chaussée. **Ce que les enfants ont bâti ne
-bouge pas** : une colonne où un bloc a été posé ou creusé avant la v303 garde
-la ville d'avant (`paris-v302.js`, la trame figée) — une maison posée sur une
-ancienne rue n'est pas enfermée dans un immeuble neuf, une cabane sur un
-ancien toit garde son toit. Et le relevé des toits de la v301 lit cette trame
-figée, sans quoi il déplacerait des blocs qui n'ont jamais été sur un toit.
+voitures, tous à 94-100 % sur la chaussée. Le relevé des toits de la v301
+lit la trame d'avant, figée (`paris-v302.js`), sans quoi il déplacerait des
+blocs qui n'ont jamais été sur un toit. *(La règle qui gardait la ville
+d'avant sous ce qu'un enfant avait bâti n'est pas partie telle quelle : la v306,
+livrée dans la même fusion, déplace tout Paris, et c'est la ville neuve qui
+cède à ses constructions.)*
 
 **Ce qui le prouve.** Trois témoins de `carteMonde.js` : la rue de quartier
 mesurée sur le MONDE (plus courte traversée de chaussée sur douze directions,

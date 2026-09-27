@@ -46,7 +46,21 @@ export const ROUTES = [
   // l'ouest ; deux vias, 94 tracés admissibles. Celui-ci : 35 blocs de la
   // maison, 9 au-delà de la marge de Roissy, 32 de la banquise, deux coudes
   // (15° et 29°), pente 0,06, remblai 3,6, déblai 7,2, UN pont (s 530–542).
-  { nom: 'A1', villes: ['paris', 'lille'], via: [[-140, -60], [-70, -700]] },
+  //
+  // RETRACÉE EN v306, PARCE QUE PARIS A DOUBLÉ ET BOUGÉ. La porte nord est
+  // cent soixante blocs plus à l'ouest, et Roissy est parti au nord-ouest de
+  // la ville : le couloir entre l'aérodrome et la maison témoin n'existe plus.
+  // Même sonde, même règle (scratchpad cherche-via6.mjs) : 102 140 tracés
+  // tiennent les coudes, 43 508 les repères. MON PREMIER CHOIX — la plus
+  // grande plus petite marge — finissait par un pont à quinze blocs de la
+  // porte de Lille, que le témoin du joint (v302) a trouvé ouvert sur 1 180
+  // points : la route s'y arrête avant que le tablier n'ait rejoint une
+  // chaussée. Un bout de route ne se pose pas sur l'eau. On garde donc les
+  // tracés sans eau à moins de quatre-vingts blocs des deux portes (8 690),
+  // et parmi eux celui qui ne laisse aucun trou aux joints de ses trois ponts
+  // — le premier, cinq blocs au-dessus de son lit, se franchit dessus et
+  // dessous : 22 blocs de marge au-delà de toutes les barres, coudes ≤ 27°.
+  { nom: 'A1', villes: ['paris', 'lille'], via: [[-200, -280], [-90, -710]] },
 ];
 
 // --- la section -----------------------------------------------------------------
