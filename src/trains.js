@@ -146,51 +146,39 @@ export const ENTRAXE = 2;        // du milieu de la ligne à l'axe de chaque voi
 export const DEMI_RAIL = 1;      // de l'axe d'une voie à chacun de ses rails
 export const EMPRISE = 4.5;      // demi-largeur de la plate-forme ferroviaire
 
-// LA PIÈCE DE VOIE SOUS UNE COLONNE — publiée ici, lue par `world.js` qui la
-// pose et par les témoins qui la mesurent. Deux tables qui décrivent la même
-// section finiraient par diverger, et le train roulerait à côté de ses rails.
+// --- LE RAIL CONTINU (v302) --------------------------------------------------
 //
-// `d` est la distance à l'axe de la LIGNE ; `c` celle à l'axe de la voie la
-// plus proche. Le rail se prend sur l'ARRONDI et non sur une bande : sur une
-// ligne oblique, une bande de largeur fixe rend une file tantôt épaisse tantôt
-// trouée, alors que l'arrondi donne une chaîne d'un bloc, continue en
-// diagonale — ce qu'on lit comme un rail.
-export function pieceDeVoie(s, x, z) {
-  const lx = s.x1 - s.x0, lz = s.z1 - s.z0, ll = Math.hypot(lx, lz) || 1;
-  const ux = lx / ll, uz = lz / ll, nx = -uz, nz = ux;
-  const ax = x - s.x0, az = z - s.z0;
-  const d = ax * nx + az * nz;                 // l'écart SIGNÉ à l'axe de la ligne
-  if (Math.abs(d) > EMPRISE) return null;
-  // UNE FILE DE RAIL SE RASTÉRISE, ELLE NE SE SEUILLE PAS. Mon premier jet
-  // classait « rail » toute colonne dont l'écart tombait dans une bande d'un
-  // bloc autour de l'offset. Sur une ligne oblique, une bande de largeur fixe
-  // rend tantôt deux colonnes, tantôt zéro : mesuré, 229 pas sur 2 700 où une
-  // voie n'avait pas ses deux files, et cinq colonnes de rail en moyenne là où
-  // il en faut quatre. Une droite se trace sur une grille en parcourant son
-  // AXE DOMINANT et en arrondissant l'autre coordonnée — une colonne par pas,
-  // chaîne continue en diagonale. C'est la seule façon d'obtenir une file.
-  const surLaFile = (o) => {
-    if (Math.abs(ux) >= Math.abs(uz)) {
-      const t = (x - s.x0 - o * nx) / ux;
-      return Math.round(s.z0 + uz * t + o * nz) === z;
-    }
-    const t = (z - s.z0 - o * nz) / uz;
-    return Math.round(s.x0 + ux * t + o * nx) === x;
-  };
-  for (const o of [-ENTRAXE - DEMI_RAIL, -ENTRAXE + DEMI_RAIL,
-    ENTRAXE - DEMI_RAIL, ENTRAXE + DEMI_RAIL]) {
-    if (surLaFile(o)) return 'rail';
-  }
-  // Entre les deux files d'une voie : les traverses, une case sur deux, tirées
-  // en coordonnées du MONDE — en coordonnées locales le motif se répéterait
-  // dans chaque morceau et sauterait au remaillage.
-  if (Math.abs(Math.abs(d) - ENTRAXE) < DEMI_RAIL) {
-    return (((x + z) % 2) + 2) % 2 === 0 ? 'traverse' : 'ballast';
-  }
-  return 'ballast';
-}
+// Quatrième livraison du programme « monde fidèle » (kit transport de Max).
+// Les rails ne sont plus des blocs d'obsidienne posés sur une chaîne
+// arrondie : ce sont quatre PRISMES continus qui suivent le profil FLOTTANT
+// de la voie, avec leurs traverses, émis par le mailleur comme les rubans
+// d'une route (v300). Le ballast reste du voxel (le remblai que la surface
+// recouvre), le sol continu passe à la cote du profil, le train roule sur le
+// dessus des rails — et les quatre lisent LA MÊME cote : `coteContinue`.
+//
+// La règle du kit, appliquée : « ne pas retirer `Math.round` de `voieEn` tant
+// que `world.js` s'en sert comme indice de tableau voxel ». `voieEn` publie
+// donc DEUX cotes — `cote`, flottante, la surface où l'on marche ; `bloc`,
+// entière, le bloc de ballast que le générateur écrit (`floor(cote) − 1`).
+export const RAIL_HAUT = 0.3;                  // le champignon, au-dessus du ballast
+export const RAIL_LARG = 0.18;
+export const TRAVERSE_LARG = 2 * DEMI_RAIL + 0.6;
+export const TRAVERSE_EP = 0.32;               // le long de la voie
+export const TRAVERSE_HAUT = 0.1;
+export const ROUES = 0.05;                     // la garde des roues au-dessus du rail
+// LE TALUS (v302) : de la cote de la voie à celle du terrain, un bloc par
+// bloc, comme celui d'une route (routes.js) — le remblai n'est plus un mur de
+// pierre vertical, la tranchée n'est plus un puits. Un déblai plus profond
+// que `DEBLAI_MAX` garde des parois verticales (c'est une falaise).
+export const TALUS_PENTE = 1;
+export const DEBLAI_MAX = 13;
+// Toute cote de rail est un soixante-quatrième de bloc : exacte en simple
+// précision (la grille du mailleur) comme en double (le contact) — v300.
+const q64 = (v) => Math.round(v * 64) / 64;
 
 const PENTE = 1 / 3;        // un tiers de bloc par bloc, comme le métro de DC
+export const PENTE_VOIE = PENTE;   // publiée pour les témoins : une barre se calcule
+export const PAS_TRACE = PAS;
 
 // Le monde donne sa hauteur de terrain : `trains.js` ne la connaît pas, et le
 // profil ne peut se calculer sans elle.
@@ -235,22 +223,87 @@ function tSegment(s, x, z) {
   return Math.max(0, Math.min(1, ((x - s.x0) * dx + (z - s.z0) * dz) / l2));
 }
 
-// La voie sous cette colonne : sa distance à l'axe et la COTE du rail, ou
-// null si l'on est ailleurs. C'est ce que `world.js` pose et ce que le convoi
-// suit — les deux lisent la même chose, sans quoi le train roulerait à côté
-// de ses rails.
+// La cote CONTINUE de la voie à l'abscisse relative `t` (0 au départ, 1 à
+// l'arrivée) : le profil interpolé, jamais arrondi. C'est ce que lisent les
+// quatre lecteurs — le ballast (`voieEn`), les rails (`rubansVoieDans`), la
+// gare (`gareEn`) et le convoi (`traceSegment`).
+export function coteContinue(s, t) {
+  const p = profilDe(s);
+  if (!p || !Number.isFinite(t)) return null;
+  const q = Math.max(0, Math.min(1, t)) * (p.length - 1);
+  const k = Math.min(p.length - 2, Math.floor(q));
+  return q64(p[k] + (p[k + 1] - p[k]) * (q - k));
+}
+
+// La voie sous cette colonne, ou null. `world.js` pose le ballast et le
+// talus, `solcontinu.js` en fait la surface et le contact, la carte la
+// dessine, les témoins la mesurent — une seule règle, quatre lecteurs.
+//
+//   piece : 'ballast' (la plate-forme, rails compris) | 'talus'
+//   cote  : la cote CONTINUE de la surface ici (talus : raccordée au terrain)
+//   bloc  : le bloc que le générateur écrit au sommet (`floor(cote) − 1`)
+//   d     : la distance à l'axe de la ligne
 export function voieEn(x, z) {
   let best = null;
   for (const s of pres(x, z)) {
     const d = dSegment(s, x, z);
-    if (d >= EMPRISE || (best && d >= best.d)) continue;
-    const p = profilDe(s);
-    if (!p) continue;
-    const t = tSegment(s, x, z) * (p.length - 1);
-    const k = Math.min(p.length - 2, Math.floor(t));
-    best = { d, seg: s, cote: Math.round(p[k] + (p[k + 1] - p[k]) * (t - k)) };
+    if (d >= EMPRISE + DEBLAI_MAX / TALUS_PENTE || (best && d >= best.d)) continue;
+    const cote = coteContinue(s, tSegment(s, x, z));
+    if (cote === null) continue;
+    if (d < EMPRISE) { best = { d, seg: s, cote, bloc: Math.floor(cote) - 1, piece: 'ballast' }; continue; }
+    // LE TALUS se raccorde au terrain de CETTE colonne : au bout, la surface
+    // est le sol naturel, et la couture avec la colonne voisine tient.
+    const terr = SOL(x, z) + 1;
+    const ecart = cote - terr;
+    const w = Math.min(Math.abs(ecart), DEBLAI_MAX) / TALUS_PENTE;
+    const u = d - EMPRISE;
+    if (u >= w) continue;
+    const c = q64(terr + ecart * (1 - u / w));
+    best = { d, seg: s, cote: c, bloc: Math.floor(c) - 1, piece: 'talus' };
   }
   return best;
+}
+
+// LES RUBANS D'UNE VOIE (v302) : les quatre files de rail et les traverses,
+// en coordonnées du monde, pour les morceaux qui touchent la boîte donnée.
+// Un pas d'ABSCISSE MONDIALE par bloc le long de la ligne : la fin d'un pas
+// est le début du suivant, et le morceau qui possède le point de départ du
+// pas est le seul à l'émettre — pas de couture, pas de doublon.
+//
+// Une pièce est un PRISME : `o0..o1` de côté (à droite du sens de marche),
+// `dy0..dy1` au-dessus de la cote, la tuile d'un bloc du jeu pour sa peau ;
+// `bouts` demande les deux faces d'extrémité (une traverse se voit par le
+// bout, un rail est continu).
+export function rubansVoieDans(x0, z0, x1, z1) {
+  const out = [];
+  const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
+  const portee = Math.hypot(x1 - x0, z1 - z0) / 2 + EMPRISE + 2;
+  for (const s of pres(cx, cz)) {
+    if (!profilDe(s)) continue;
+    const lx = s.x1 - s.x0, lz = s.z1 - s.z0, L = Math.hypot(lx, lz) || 1;
+    const ux = lx / L, uz = lz / L;
+    const sc = (cx - s.x0) * ux + (cz - s.z0) * uz;
+    const dp = Math.abs((cx - s.x0) * -uz + (cz - s.z0) * ux);
+    if (dp > portee + 1 || sc < -portee - 1 || sc > L + portee + 1) continue;
+    const kA = Math.max(0, Math.floor(sc - portee - 2)), kB = Math.min(Math.floor(L) - 1, Math.ceil(sc + portee + 2));
+    for (let k = kA; k < kB; k++) {
+      const ax = s.x0 + ux * k, az = s.z0 + uz * k;
+      if (ax < x0 || ax >= x1 || az < z0 || az >= z1) continue;
+      const bx = ax + ux, bz = az + uz;
+      const ya = coteContinue(s, k / L), yb = coteContinue(s, (k + 1) / L);
+      const base = { seg: s, s: k, ax, az, bx, bz, ya, yb, fx: ux, fz: uz, genre: 'prisme' };
+      for (const o of [-ENTRAXE - DEMI_RAIL, -ENTRAXE + DEMI_RAIL, ENTRAXE - DEMI_RAIL, ENTRAXE + DEMI_RAIL]) {
+        out.push({ ...base, tuile: 'rail', o0: o - RAIL_LARG / 2, o1: o + RAIL_LARG / 2, dy0: 0, dy1: RAIL_HAUT, bouts: false });
+      }
+      // une traverse par bloc, au milieu du pas, sous chaque voie
+      const f0 = 0.5 - TRAVERSE_EP / 2, f1 = 0.5 + TRAVERSE_EP / 2;
+      const tr = { ax: ax + ux * f0, az: az + uz * f0, bx: ax + ux * f1, bz: az + uz * f1, ya: ya + (yb - ya) * f0, yb: ya + (yb - ya) * f1 };
+      for (const o of [-ENTRAXE, ENTRAXE]) {
+        out.push({ ...base, ...tr, tuile: 'traverse', o0: o - TRAVERSE_LARG / 2, o1: o + TRAVERSE_LARG / 2, dy0: 0.01, dy1: TRAVERSE_HAUT, bouts: true });
+      }
+    }
+  }
+  return out;
 }
 
 // --- LES GARES : le train s'arrêtait devant rien (v214) ----------------------
@@ -311,7 +364,9 @@ export function gareEn(x, z) {
     // que le quai soit PLAT — un quai qui suivrait la pente serait un talus.
     const k = Math.min(p.length - 1, Math.max(0, Math.round(
       ((g.x === g.s.x0 && g.z === g.s.z0) ? 0 : p.length - 1))));
-    const cote = Math.round(p[k]);
+    // le bloc de ballast au bout de la ligne : la cote CONTINUE, tronquée
+    // comme `voieEn` le fait — le quai est un bloc au-dessus des rails.
+    const cote = Math.floor(q64(p[k])) - 1;
     if (at < QUAI_DEDANS) return null;                 // la voie garde sa colonne
     if (at <= QUAI_DEHORS) return { quoi: 'quai', cote, l, bord: at > QUAI_DEHORS - 0.6 };
     if (t > 0 && l >= -5 && l <= 5) return { quoi: 'bati', cote, l };
@@ -361,14 +416,10 @@ export function traceSegment(s, solDe, niveauEau) {
     // LE TRAIN ROULE SUR SES RAILS, pas sur le terrain. C'est le même profil
     // que `world.js` pose : lu ailleurs, le convoi flotterait au-dessus des
     // remblais et s'enfoncerait dans les tranchées.
-    let y;
-    if (p) {
-      const q = t * (p.length - 1);
-      const j = Math.min(p.length - 2, Math.floor(q));
-      y = Math.round(p[j] + (p[j + 1] - p[j]) * (q - j)) + 2.05;
-    } else {
-      y = Math.max(solDe(x, z), niveauEau) + 2.05;
-    }
+    // ET IL ROULE SUR LE DESSUS DES RAILS (v302) : la cote continue, plus
+    // le champignon, plus la garde des roues — plus jamais un bloc arrondi
+    // plus deux (`+ 2.05`), qui faisait monter la rame par marches d'un bloc.
+    const y = (p ? coteContinue(s, t) : Math.max(solDe(x, z), niveauEau) + 1) + RAIL_HAUT + ROUES;
     alle.push({ x, y, z });
   }
   // Le retour longe l'AUTRE bord : on reprend les points de l'aller et on les

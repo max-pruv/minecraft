@@ -43,6 +43,18 @@ const VUES = [
   { nom: 'a1-pont', route: 528, pitch: 0.02, h: 1.6 },   // le pont est à s 530–542 (mesuré, via de la v300)
   { nom: 'a1-porte-paris', route: 30, dyaw: Math.PI, pitch: 0.02, h: 1.6 },
   { nom: 'a1-porte-lille', route: -30, pitch: 0.02, h: 1.6 },
+  // LE RAIL CONTINU (v302) : sur le ballast du TGV Paris–Lyon, à l'abscisse
+  // `k` depuis Paris, décalé de `o` à droite du sens de marche ; `regard:
+  // 'ligne'` tourne la caméra vers la voie (vue de côté). Les abscisses sont
+  // mesurées sous node : la tranchée la plus profonde (8,6 blocs), le remblai
+  // le plus haut (12,5), la première traversée d'eau (viaduc au ras des flots).
+  { nom: 'rail-tgv', rail: { seg: 'paris-lyon', k: 500 }, pitch: 0.02, h: 1.6 },
+  { nom: 'rail-tgv-ciel', rail: { seg: 'paris-lyon', k: 500 }, pitch: -0.55, h: 40 },
+  { nom: 'rail-tgv-cote', rail: { seg: 'paris-lyon', k: 500, o: 12, regard: 'ligne' }, pitch: 0.08, h: 1.6 },
+  { nom: 'rail-tranchee', rail: { seg: 'paris-lyon', k: 872 }, pitch: 0.02, h: 1.6 },
+  { nom: 'rail-remblai', rail: { seg: 'paris-lyon', k: 889, o: 16, regard: 'ligne' }, pitch: 0.12, h: 1.6 },
+  { nom: 'rail-mer', rail: { seg: 'paris-lyon', k: 209, o: 0 }, pitch: 0.02, h: 1.6 },
+  { nom: 'gare-lyon', gare: 'lyon', yaw: 0, pitch: 0.05, h: 1.6 },
 ];
 
 // Un échantillonneur DANS la page : les périodes réelles entre images pendant
@@ -93,6 +105,14 @@ const echantillonner = (page, ms) => page.evaluate(async (ms) => {
             const at = (QUAI_DEDANS + QUAI_DEHORS) / 2;
             x = Math.round(gare.x - gare.ux * 6 - gare.uz * at); z = Math.round(gare.z - gare.uz * 6 + gare.ux * at);
             v.yaw = Math.atan2(-gare.ux, -gare.uz);
+          } else if (v.rail) {
+            const T = await import('./src/trains.js');
+            const seg = T.segmentsDeTrain().find((q) => q.de + '-' + q.vers === v.rail.seg);
+            const L = seg.longueur, ux = (seg.x1 - seg.x0) / L, uz = (seg.z1 - seg.z0) / L;
+            const o = v.rail.o || 0;
+            x = Math.round(seg.x0 + ux * v.rail.k + (-uz) * o); z = Math.round(seg.z0 + uz * v.rail.k + ux * o);
+            const fw = v.rail.regard === 'ligne' ? [uz, -ux] : [ux, uz];
+            v.yaw = Math.atan2(-fw[0], -fw[1]) + (v.dyaw || 0);
           } else if (v.route !== undefined) {
             const R = await import('./src/routes.js');
             const seg = R.segmentsDeRoute()[0];

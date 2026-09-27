@@ -80,7 +80,7 @@ import {
 } from './manhattan.js';
 import { positionDe, lieuxDuMonde, cielDe, zDeLatitude } from './mondes.js';
 import { BORNES as BORNES_MANHATTAN } from './manhattan-plan.js';
-import { surLaVoie, presDeLaVoie, voieEn, brancherSol, gareEn, pieceDeVoie } from './trains.js';
+import { surLaVoie, presDeLaVoie, voieEn, brancherSol, gareEn, rubansVoieDans } from './trains.js';
 import { routeEn, rubansDans, brancherSol as brancherSolRoutes } from './routes.js';
 
 // LES CALOTTES POLAIRES. Le planisphère déclare « terre » tout ce qui passe
@@ -2292,7 +2292,21 @@ export class World {
   // LA ROUTE SOUS CETTE COLONNE (v300) — `routes.js` répond ; `world.js` ne
   // fait que le dire au sol continu, au mailleur et à la carte.
   routeEn(x, z) { return routeEn(x, z); }
-  rubansDans(x0, z0, x1, z1) { return rubansDans(x0, z0, x1, z1); }
+  // LE CORRIDOR SOUS UNE COLONNE (v302) : une route ou une voie ferrée, avec
+  // la même fiche — `cote` continue, `piece`, `ouvrage`. C'est ce que lit le
+  // sol continu (surface et contact) et le paysage lointain ; les deux
+  // registres restent séparés pour le générateur, qui pose des blocs
+  // différents.
+  corridorEn(x, z) {
+    const r = routeEn(x, z);
+    if (r) return r;
+    const v = voieEn(x, z);
+    return v ? { seg: v.seg, d: v.d, cote: v.cote, piece: v.piece, ouvrage: false, rail: true } : null;
+  }
+  rubansDans(x0, z0, x1, z1) {
+    const r = rubansDans(x0, z0, x1, z1), v = rubansVoieDans(x0, z0, x1, z1);
+    return v.length ? (r.length ? r.concat(v) : v) : r;
+  }
   // La cote du tablier d'un pont au-dessus de ce point, ou null.
   tablierEn(x, z) {
     const r = routeEn(x, z);
@@ -2305,7 +2319,7 @@ export class World {
   // pont et de la porte de Paris, jamais par un témoin. Sous un tablier, le
   // sol reste le sol.
   coteHorizon(x, z) {
-    const r = routeEn(x, z);
+    const r = this.corridorEn(x, z);
     if (r && !r.ouvrage) return Math.floor(r.cote) - 1;
     return this.terrainHeight(x, z);
   }
@@ -2345,7 +2359,7 @@ export class World {
 
   treeAt(x, z) {
     if (dansUneCalotte(z)) return null;                             // rien ne pousse sur les calottes
-    if (presDeLaVoie(x, z)) return null;                            // la voie ferrée reste dégagée
+    if (presDeLaVoie(x, z) || voieEn(x, z)) return null;            // la voie ferrée reste dégagée, talus compris (v302)
     if (routeEn(x, z)) return null;                                  // et la route aussi, talus compris (v300)
     if (Math.hypot(x - POLE.x, z - POLE.z) < POLE.r) return null;   // rien ne pousse sur la banquise
     if (versSeine(x, z) < 3) return null;                           // ni dans la Seine
@@ -2466,41 +2480,46 @@ export class World {
         // voit la Manche passer sous ses fenêtres. Les rails s'arrêtent aux
         // portes des villes, donc aucune rue n'est jamais éventrée.
         const voie = voieEn(wx, wz);
-        if (voie) {
-          // DE VRAIS RAILS, PAS UNE BANDE DE GRAVIER. Max : « train no
-          // rails ». Deux files sombres continues, des traverses au milieu,
-          // le ballast en bordure : c'est à ça qu'on reconnaît une voie
-          // ferrée, et cela tient dans les trois blocs de large qu'elle fait.
-          const y = voie.cote;
-          // Le REMBLAI et la TRANCHÉE. Le profil ne suit plus le terrain
-          // bloc à bloc — il est lissé — donc il passe tantôt au-dessus,
-          // tantôt en dessous. On comble sous les rails et l'on dégage
-          // au-dessus, sur le gabarit d'un train.
-          for (let wy = Math.max(0, Math.min(h, WATER_LEVEL) ); wy < y; wy++) {
+        // LA GARE PASSE AVANT LE TALUS DE LA VOIE (v302) : le quai commence
+        // où le ballast finit, là où le talus commencerait. La plate-forme,
+        // elle, garde le dernier mot sur sa colonne.
+        const gare = (!voie || voie.piece === 'talus') ? gareEn(wx, wz) : null;
+        if (voie && voie.piece === 'ballast') {
+          // LE RAIL CONTINU (v302). Le générateur n'écrit plus que la
+          // PLATE-FORME : le remblai de pierre, le ballast de gravier au
+          // sommet, et l'air du gabarit au-dessus. Les files de rail et les
+          // traverses sont des prismes émis par le mailleur au profil FLOTTANT
+          // (`rubansVoieDans`), le sol continu passe à la cote du profil, et le
+          // train roule sur le dessus des rails — les quatre lisent la même
+          // cote. Plus un bloc d'obsidienne ni de planche sur la voie.
+          const y = voie.bloc;
+          for (let wy = Math.max(0, Math.min(h, WATER_LEVEL)); wy < y; wy++) {
             if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = BLOCK.STONEBRICK;
           }
-          for (let wy = y + 2; wy <= y + 7 && wy < HEIGHT; wy++) data[World.index(x, wy, z)] = BLOCK.AIR;
-          if (y >= 0 && y < HEIGHT) {
-            // UN RAIL SE RECONNAÎT À SON RELIEF, PAS À SA COULEUR (v281).
-            // Max, capture d'iPad : « les rails ne sont pas des rails ». La
-            // section était PEINTE À PLAT — gravier, obsidienne, planche, tout
-            // à la même cote — et se lisait comme un damier au fond d'une
-            // tranchée. Le ballast et les traverses restent au sol ; les deux
-            // files de chaque voie montent d'un bloc, et ce sont elles qu'on
-            // voit de loin. La section est publiée par `trains.js`, elle ne se
-            // recopie pas ici : le train suit le même plan.
-            const piece = pieceDeVoie(voie.seg, wx, wz);
-            data[World.index(x, y, z)] = piece === 'traverse' ? BLOCK.DARKPLANK : BLOCK.GRAVEL;
-            if (piece === 'rail' && y + 1 < HEIGHT) {
-              data[World.index(x, y + 1, z)] = BLOCK.OBSIDIAN;
-            }
-          }
+          if (y >= 0 && y < HEIGHT) data[World.index(x, y, z)] = BLOCK.GRAVEL;
+          // LE DÉBLAI DÉGAGE JUSQU'AU RELIEF, PAS SEPT BLOCS (leçon de l'A1,
+          // v300) : sous un relief plus haut, la couche d'herbe resterait en
+          // l'air au-dessus de la tranchée.
+          for (let wy = y + 1; wy <= Math.max(y + 7, h + 2) && wy < HEIGHT; wy++) data[World.index(x, wy, z)] = BLOCK.AIR;
           // LA VOIE A LE DERNIER MOT SUR SA COLONNE. Sans ce `continue`, une
           // ville engendrée traversée par la ligne rebâtissait par-dessus les
           // rails : vingt-sept colonnes d'immeuble en travers du Shinkansen,
           // mesurées entre Tokyo et Kyoto. C'est le même piège que les arbres
           // de ville, qui laissaient la trame générique repasser derrière.
-          // Trois blocs de large sur quatre mille : la ville ne perd rien.
+          continue;
+        }
+        if (!gare && voie) {
+          // LE TALUS DE LA VOIE (v302) : de la cote du ballast à celle du
+          // terrain, un bloc par bloc, herbe au sommet — le même geste que le
+          // talus d'une route, et le sol continu le recouvre.
+          const t = voie.bloc;
+          for (let wy = Math.max(0, Math.min(h, WATER_LEVEL)); wy < t && wy < HEIGHT; wy++) data[World.index(x, wy, z)] = BLOCK.STONE;
+          for (let wy = t + 1; wy <= Math.max(t + 6, h + 2) && wy < HEIGHT; wy++) data[World.index(x, wy, z)] = BLOCK.AIR;
+          for (let wy = t + 1; wy <= WATER_LEVEL && wy < HEIGHT; wy++) data[World.index(x, wy, z)] = BLOCK.WATER;
+          if (t >= 0 && t < HEIGHT) {
+            data[World.index(x, t, z)] = t > WATER_LEVEL ? BLOCK.GRASS : BLOCK.SAND;
+            if (t - 1 >= 0 && t - 1 > h) data[World.index(x, t - 1, z)] = BLOCK.DIRT;
+          }
           continue;
         }
 
@@ -2550,7 +2569,6 @@ export class World {
         // aux deux bouts de chaque ligne depuis la v179, mais on l'attendait
         // debout dans l'herbe. Un quai un bloc au-dessus des rails, un auvent
         // quatre blocs plus haut sur ses piliers, et un bâtiment derrière.
-        const gare = gareEn(wx, wz);
         if (gare) {
           const y = gare.cote;
           const pose = (dy, id) => {
