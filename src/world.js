@@ -52,7 +52,7 @@ import {
   VOIES_LILLE,
 } from './lille.js';
 import {
-  PARIS, adresseParis, BUTTE, CITE, zCite, hauteurParis, solParis, lotParisLibre, batirColonneParis, versSeine, pontParis,
+  PARIS, adresseParis, BUTTE, CITE, zCite, hauteurParis, solParis, lotParisLibre, batirColonneParis, gabaritParis, versSeine, pontParis,
   LIEUX, buildNotreDame, buildSacreCoeur, buildPantheon, buildInvalides, buildOpera,
   buildMontparnasse, buildColonneBastille, buildMoulinRouge,
   VOIES_PARIS,
@@ -1554,7 +1554,7 @@ export function hauteurBase(x, z, mondeId = 'terre') {
 // la date de la refonte, pour qu'aucune passe ne le redéplace et pour qu'il
 // l'emporte sur sa copie d'avant. C'est la règle du receveur qui cède :
 // l'ancienne version ne peut pas apprendre la règle neuve.
-export const CARTE_VERSION = 4;   // 4 : le ménage du ciel de Paris (v298)
+export const CARTE_VERSION = 5;   // 4 : le ménage du ciel de Paris (v298) ; 5 : les toits de Paris relevés (v301)
 const CLE_CARTE = 'web-minecraft-carte-v1';
 const ECART_MAX = 24;          // au-delà, on ne déplace plus : on laisse et on dit
 // L'heure de la refonte ×2. Un bloc daté d'avant a été posé sur la carte de
@@ -1823,6 +1823,119 @@ export function menagerBlocsCielParis(tout) {
   return { tout: out, retires, gardes };
 }
 
+// LE RELEVÉ DES TOITS DE PARIS (v301). Un étage de Paris fait trois blocs au
+// lieu d'un (décision de Max, « augmente ») : un immeuble de six niveaux monte
+// à vingt et un blocs au lieu de dix. Ce n'est pas le RELIEF qui bouge — le sol
+// des rues, des places et des cours est identique, les deux empreintes de
+// `plafond.js` le disent — mais un enfant qui avait bâti SUR un toit de Paris
+// (une cabane, un drapeau, un jardin suspendu) se retrouverait avec sa
+// construction ENFERMÉE dans l'immeuble neuf, entre le plancher du
+// rez-de-chaussée et le comble, sans recours. C'est l'invariant 1 par un autre
+// bout : ce qu'un enfant a posé se repère par rapport à ce qui le portait.
+//
+// LA RÈGLE : un bloc posé avant `DATE_RELEVE_PARIS`, dans le disque de Paris,
+// sur une colonne de LOT (là où le bâtisseur écrit un immeuble), et AU-DESSUS
+// du dernier bloc que l'ancien bâtisseur écrivait dans cette colonne (le faîte,
+// ou la souche de cheminée), monte de ce que le toit a monté — `gabaritParis`
+// publie le sommet d'avant et celui d'après, et la différence est CONSTANTE
+// sur un îlot (le gabarit se tire par îlot), donc une maison sur un toit monte
+// d'un seul tenant. Un bloc dans la rue, un bloc collé à une façade sous
+// l'ancien toit, un bloc hors de Paris, un bloc posé après la date : rien ne
+// bouge. Un bloc déplacé prend la date du relevé, ce qui rend la passe
+// idempotente et lui fait l'emporter sur sa copie d'avant dans une fusion.
+//
+// ET ELLE PASSE AVANT LE MÉNAGE DU CIEL, dans la chaîne. Le ménage (v298)
+// garde un groupe de blocs qui touche « un bloc que le jeu écrit » — un toit,
+// par exemple. Avec le toit monté de onze blocs, la cabane posée dessus ne
+// touche plus rien : jouée d'abord, la passe de ménage l'aurait RETIRÉE. Le
+// relevé la remonte sur le toit neuf et la redate ; le ménage, borné par sa
+// propre date, ne la regarde plus. L'ordre est donc relever, puis ménager, au
+// stockage comme au nuage — et un témoin de `plafond.js` fait passer une
+// cabane de toit par la chaîne entière.
+//
+// Même forme que `migrerCarte3` et `menagerCielParis`, pour la même raison :
+// la fusion est une union, une tablette restée sur l'ancienne version
+// republierait la cabane à son ancienne hauteur. La règle est PURE, appliquée
+// au stockage de l'appareil une fois (la marche 4 → 5) et à chaque document
+// reçu du nuage avant la fusion (`sync.js`). La copie d'avant se prend sur le
+// nuage, une fois, seulement si le relevé a quelque chose à déplacer
+// (`mettreALAbriAvantReleve`). Le prix déclaré : une tablette qui jouerait
+// encore sur l'ancienne version après cette heure poserait sur les anciens
+// toits des blocs que le relevé ne suivra pas.
+export const DATE_RELEVE_PARIS = Date.UTC(2026, 8, 27, 4, 0, 0);
+const gabarits = new Map();           // x * 262144 + z -> { sommet, ancien } d'une colonne de lot, ou null
+function releveDe(x, z) {
+  const cle = x * 262144 + z;
+  let g = gabarits.get(cle);
+  if (g !== undefined) return g;
+  g = null;
+  if (Math.hypot(x - PARIS.x, z - PARIS.z) <= PARIS.r && solParis(x, z) === null && lotParisLibre(x, z)) {
+    const gb = gabaritParis(x, z);
+    // le bâtisseur écrit à h + dy − 1 : le dernier bloc du jeu est à h + sommet − 1
+    g = { ancien: reliefDe(x, z) + gb.ancien - 1, monte: gb.sommet - gb.ancien };
+  }
+  if (gabarits.size > 200000) gabarits.clear();
+  gabarits.set(cle, g);
+  return g;
+}
+
+// Sur UNE carte de blocs. Pure : rend une carte neuve et le bilan ; la carte
+// est rendue telle quelle, sans copie, quand rien ne monte.
+export function releverToitsParis(map) {
+  const R = PARIS.r;
+  let deplaces = 0;
+  let neuf = null;
+  const poser = (k, e) => {
+    const p = neuf[k];
+    if (!p || num(e[1]) > num(p[1]) || (num(e[1]) === num(p[1]) && e[0] > p[0])) neuf[k] = e;
+  };
+  for (const k in map || {}) {
+    const e = map[k];
+    if (!Array.isArray(e) || k.charCodeAt(0) === 64 || !(num(e[1]) < DATE_RELEVE_PARIS)) continue;
+    const c1 = k.indexOf(','), c2 = k.indexOf(',', c1 + 1);
+    if (c1 < 0 || c2 < 0) continue;
+    const x = +k.slice(0, c1), y = +k.slice(c1 + 1, c2), z = +k.slice(c2 + 1);
+    if (x !== x || y !== y || z !== z) continue;
+    if (x - PARIS.x > R || PARIS.x - x > R || z - PARIS.z > R || PARIS.z - z > R) continue;
+    const g = releveDe(x, z);
+    if (!g || y <= g.ancien) continue;
+    if (!neuf) { neuf = {}; for (const kk in map) neuf[kk] = map[kk]; }
+    delete neuf[k];
+    poser(`${x},${y + g.monte},${z}`, [e[0], DATE_RELEVE_PARIS, ...e.slice(2)]);
+    deplaces++;
+  }
+  return { carte: neuf || map || {}, deplaces };
+}
+
+// Toutes les cartes d'un document { contexte: carte } — les archives (« : »)
+// ont leur propre repère et ne sont jamais touchées, comme pour la carte 3.
+export function releverBlocsToitsParis(tout) {
+  const out = {};
+  let deplaces = 0;
+  for (const [ctx, map] of Object.entries(tout || {})) {
+    if (ctx.includes(':') || !map || typeof map !== 'object' || Array.isArray(map)) { out[ctx] = map; continue; }
+    const r = releverToitsParis(map);
+    out[ctx] = r.carte; deplaces += r.deplaces;
+  }
+  return { tout: out, deplaces };
+}
+
+// Et la position où l'enfant s'était arrêté : endormi sur un toit de Paris, il
+// se réveille sur le toit neuf, pas dans la cage d'escalier.
+export function releverPositionsParis(pos) {
+  const out = {};
+  let deplaces = 0;
+  for (const [ctx, p] of Object.entries(pos || {})) {
+    out[ctx] = p;
+    if (ctx.includes(':') || !p || ![p.x, p.y, p.z].every(Number.isFinite) || !(num(p.t) < DATE_RELEVE_PARIS)) continue;
+    const g = releveDe(Math.floor(p.x), Math.floor(p.z));
+    if (!g || p.y <= g.ancien + 1) continue;
+    out[ctx] = { ...p, y: p.y + g.monte, t: DATE_RELEVE_PARIS };
+    deplaces++;
+  }
+  return { pos: out, deplaces };
+}
+
 // La migration du STOCKAGE DE L'APPAREIL, une fois par version de carte.
 // `lire`/`ecrire` portent les blocs, `lirePos`/`ecrirePos` les positions.
 export function migrerLesBlocs(lire, ecrire, lirePos = null, ecrirePos = null) {
@@ -1862,13 +1975,20 @@ export function migrerLesBlocs(lire, ecrire, lirePos = null, ecrirePos = null) {
   const r = migrerBlocsCarte3(tout);
   tout = r.tout; deplaces += r.deplaces; laisses += r.laisses; intacts += r.intacts;
 
+  // 4 → 5 : les toits de Paris relevés (v301), AVANT le ménage — voir
+  // `releverToitsParis` : une cabane sur un toit doit monter avant qu'on
+  // demande si elle touche encore quelque chose.
+  const rl = releverBlocsToitsParis(tout);
+  tout = rl.tout; deplaces += rl.deplaces;
+
   // 3 → 4 : le ménage du ciel de Paris (v298). Idempotent par la date.
   const m = menagerBlocsCielParis(tout);
   tout = m.tout; retires += m.retires;
   ecrire(tout);
   if (lirePos && ecrirePos) {
     const p = migrerPositionsCarte3(lirePos() || {});
-    if (p.deplaces) ecrirePos(p.pos);
+    const q = releverPositionsParis(p.pos);
+    if (p.deplaces || q.deplaces) ecrirePos(q.pos);
   }
   try { localStorage.setItem(CLE_CARTE, String(CARTE_VERSION)); } catch { /* ignore */ }
   return { deplaces, laisses, intacts, retires };

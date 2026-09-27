@@ -152,6 +152,31 @@ const PEINTRES = {
       p(x, y, 236 + n, 232 + n, 222 + n);
     });
   },
+  // Le châssis d'une fenêtre, en alpha (v301) : le bois peint des montants,
+  // du meneau et de la traverse, les petits bois plus fins, et du vide entre
+  // eux — la vitre est derrière, dans le fond du creux. Un seul quad remplace
+  // six boîtes de menuiserie ; c'est ce qui rend un étage de trois blocs
+  // moins cher qu'un étage d'un bloc. La traverse est haute (les deux
+  // cinquièmes), comme sur une croisée haussmannienne.
+  croisee(p, rempli, N) {
+    rempli((x, y) => p(x, y, 0, 0, 0, 0));
+    const bois = (x, y) => {
+      if (x < 0 || y < 0 || x >= N || y >= N) return;
+      const n = (bruit(x, y, 13) - 0.5) * 6 + bruitLisse(x, y * 0.2, 9, 14) * 8 - 4;
+      p(x, y, 236 + n, 232 + n, 222 + n, 255);
+    };
+    const large = 7, fin = 3, mi = N >> 1, trav = Math.round(N * 0.4);
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+      const montant = x < large || x >= N - large || Math.abs(x - mi) < large / 2;
+      const traverse = y < large || y >= N - large || Math.abs(y - trav) < large / 2;
+      if (montant || traverse) { bois(x, y); continue; }
+      // les petits bois : un par carreau, au tiers et aux deux tiers de chaque vantail
+      const dansVantail = x < mi ? x : x - mi;
+      const carreau = Math.abs(dansVantail - mi / 2) < fin / 2;
+      const carreauH = (y > trav ? Math.abs(y - (trav + N) / 2) < fin / 2 : Math.abs(y - trav / 2) < fin / 2);
+      if (carreau || carreauH) bois(x, y);
+    }
+  },
   // La porte cochère : un vert-de-gris profond, des planches, deux panneaux.
   bois(p, rempli, N) {
     rempli((x, y) => {

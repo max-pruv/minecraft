@@ -90,7 +90,8 @@ rendering budgets, licensing and limitations.
   plan rather than from a random-building generator: **Haussmann Paris at 24
   blocks/km** — every place at its true distance from Notre-Dame, the Étoile's
   twelve avenues, the Champs-Élysées lined with real chestnut trees, streets
-  wide enough to walk down between six-storey stone facades, and a different
+  wide enough to walk down between six-storey stone facades (three blocks a
+  storey, so a person is half a storey tall, as in life), and a different
   street width per quarter (a Marais alley is not a Monceau avenue) —
   the island of Manhattan on the 1811 commissioners' grid, San
   Francisco's two clashing street grids across thirteen named hills, Nice,

@@ -38,7 +38,7 @@
 // HD s'assombrit au ras du sol et sous ses voisins exactement comme le voxel
 // d'à côté.
 
-import { BLOCK, CITY_BLOCK, ARCHI } from './blocks.js';
+import { BLOCK, CITY_BLOCK, ARCHI, ARCHI_BANDES } from './blocks.js';
 import { PARIS, infoFacadeParis, marquageParis } from './paris.js';
 
 // --- l'atlas HD : huit tuiles par huit, cent vingt-huit pixels ------------------
@@ -75,6 +75,8 @@ export const TUILES_HD = [
   // la PR2, suite (v289) : le comble et le mobilier
   'affiche',       // les affiches d'une colonne Morris, deux par hauteur
   'lattes',        // les lattes de bois d'un banc Davioud
+  // v301 : un étage de trois blocs, et la baie qui coûte moins cher
+  'croisee',       // le châssis d'une fenêtre (alpha) : montants, meneau, traverse, petits bois
 ];
 export const COLS_HD = 8;
 export const PX_HD = 128;
@@ -125,7 +127,17 @@ export const SOL_HD = new Map([
 export const FACADE_HD = new Set([
   ARCHI.VITRINE, ARCHI.ENTRESOL, ARCHI.ETAGE, ARCHI.NOBLE, ARCHI.CORNICHE,
   ARCHI.MANSARDE, ARCHI.ZINC_LISSE, ARCHI.CHAINAGE, ARCHI.PORTE, ARCHI.MUR_NU,
+  ...ARCHI_BANDES,
 ]);
+
+// UNE BAIE DE DEUX BLOCS S'ALLUME D'UN SEUL TENANT (v301). Le tirage des vitres
+// allumées se fait par bloc ; le haut d'une baie (ETAGE_HAUT, ENTRESOL_HAUT, le
+// vitrage d'une devanture) tire donc sur le bloc de BASE de sa baie, sinon une
+// fenêtre serait éclairée à moitié. Le mailleur (la tuile plate) et la couche
+// (le relief) lisent la même règle.
+export function yBaie(id, y) {
+  return (id === ARCHI.ETAGE_HAUT || id === ARCHI.ENTRESOL_HAUT || id === ARCHI.VITRINE_MI) ? y - 1 : y;
+}
 
 // LE TOIT (v289) : les blocs de comble sont dessinés par la couche comme un
 // CHAMP DE HAUTEURS lissé sur les colonnes (`toitDessusHD`), avec un brisis
@@ -181,6 +193,7 @@ const M = {
   rotin: [0.8, 0.0],
   affiche: [0.75, 0.0],
   lattes: [0.7, 0.0],
+  croisee: [0.62, 0.0],
 };
 
 // --- le tampon HD ------------------------------------------------------------------
@@ -355,9 +368,12 @@ class Face {
 
   // Un trou dans le mur : les quatre ébrasements, de la profondeur `dr` (< 0)
   // au nu du mur, puis le fond à `dr`.
-  creux(s0, s1, t0, t1, dr, tuileBord, tuileFond, ombreFond = 1, lueur = 0) {
-    this.quad([[s0, t1, dr], [s1, t1, dr], [s1, t1, 0], [s0, t1, 0]], [0, -1, 0], tuileBord, 0.6);   // linteau
-    this.quad([[s0, t0, 0], [s1, t0, 0], [s1, t0, dr], [s0, t0, dr]], [0, 1, 0], tuileBord, 0.9);    // appui
+  // `bords` : un trou qui continue sur le bloc du dessus n'a pas de linteau
+  // (`haut: false`), un trou qui vient du bloc du dessous n'a pas d'appui
+  // (`bas: false`) — c'est ainsi qu'une baie de deux blocs se raccorde (v301).
+  creux(s0, s1, t0, t1, dr, tuileBord, tuileFond, ombreFond = 1, lueur = 0, bords = null) {
+    if (!bords || bords.haut !== false) this.quad([[s0, t1, dr], [s1, t1, dr], [s1, t1, 0], [s0, t1, 0]], [0, -1, 0], tuileBord, 0.6);   // linteau
+    if (!bords || bords.bas !== false) this.quad([[s0, t0, 0], [s1, t0, 0], [s1, t0, dr], [s0, t0, dr]], [0, 1, 0], tuileBord, 0.9);    // appui
     this.quad([[s0, t0, 0], [s0, t0, dr], [s0, t1, dr], [s0, t1, 0]], [1, 0, 0], tuileBord, 0.8);   // ébrasement gauche
     this.quad([[s1, t0, dr], [s1, t0, 0], [s1, t1, 0], [s1, t1, dr]], [-1, 0, 0], tuileBord, 0.8);  // ébrasement droit
     this.plan(s0, s1, t0, t1, dr, tuileFond, ombreFond, lueur);
@@ -379,18 +395,29 @@ class Face {
       [[s1, 0], [s0, 0], [s0, 1], [s1, 1]]);
   }
 
-  // Une baie : le trou, le châssis (meneau et traverse), et la vitre.
+  // Le châssis d'une baie : UN quad ajouré (alpha), la tuile `croisee` — les
+  // montants, le meneau, la traverse et les petits bois y sont dessinés. Il a
+  // remplacé six boîtes de menuiserie (trente quads, cent vingt sommets par
+  // fenêtre) : mesuré avant la v301, la menuiserie faisait 61 000 des 146 000
+  // sommets d'un morceau dense de l'ouest, et un étage de trois blocs aurait
+  // triplé ce poids. `v0`/`v1` : quelle tranche de la tuile — une baie de deux
+  // blocs montre le bas du châssis sur son bloc du bas, le haut sur l'autre.
+  croisee(s0, s1, t0, t1, v0 = 0, v1 = 1) {
+    this.quad([[s0, t0, -0.06], [s1, t0, -0.06], [s1, t1, -0.06], [s0, t1, -0.06]], [0, 0, 1], 'croisee', 1, 0,
+      [[0, v0], [1, v0], [1, v1], [0, v1]]);
+  }
+
+  // Une baie d'un bloc : le trou, le châssis, et la vitre.
   baie(s0, s1, t0, t1, allumee) {
     this.creux(s0, s1, t0, t1, -0.12, 'pierre-lisse', 'verre', 1, allumee ? 1 : 0);
-    const dm = -0.06;
-    const sm = (s0 + s1) / 2, tm = t0 + (t1 - t0) * 0.58;
-    this.boite(sm - 0.018, sm + 0.018, t0, t1, -0.1, dm, 'menuiserie');
-    this.boite(s0, s1, tm - 0.015, tm + 0.015, -0.1, dm, 'menuiserie');
-    // le cadre, tout autour
-    this.boite(s0, s0 + 0.022, t0, t1, -0.1, dm, 'menuiserie');
-    this.boite(s1 - 0.022, s1, t0, t1, -0.1, dm, 'menuiserie');
-    this.boite(s0, s1, t1 - 0.022, t1, -0.1, dm, 'menuiserie');
-    this.boite(s0, s1, t0, t0 + 0.022, -0.1, dm, 'menuiserie');
+    this.croisee(s0, s1, t0, t1);
+  }
+
+  // Une BANDE de baie (v301) : le bas d'une baie de deux blocs (ouvert en
+  // haut) ou son haut (ouvert en bas), le châssis découpé à la même tranche.
+  bandeDeBaie(s0, s1, t0, t1, allumee, bords, v0, v1, dr = -0.12, bord = 'pierre-lisse') {
+    this.creux(s0, s1, t0, t1, dr, bord, 'verre', 1, allumee ? 1 : 0, bords);
+    this.croisee(s0, s1, t0, t1, v0, v1);
   }
 }
 
@@ -438,8 +465,124 @@ export function styleDuQuartier(nom) {
 // boîtes minces au nu du mur, la persienne dessinée dans la tuile.
 function volets(f, s0, s1, t0, t1) {
   const l = Math.min(0.14, s0 - 0.02);
-  f.boite(s0 - l, s0 - 0.01, t0, t1, 0, 0.03, 'volet', 0.95);
-  f.boite(s1 + 0.01, s1 + l, t0, t1, 0, 0.03, 'volet', 0.95);
+  // deux plans à trois centièmes du mur : l'épaisseur d'une boîte ne se voyait
+  // pas, et elle coûtait dix quads par bloc (v301)
+  f.plan(s0 - l, s0 - 0.01, t0, t1, 0.03, 'volet', 0.95);
+  f.plan(s1 + 0.01, s1 + l, t0, t1, 0.03, 'volet', 0.95);
+}
+
+// --- les bandes d'un étage de trois blocs (v301) -----------------------------------
+//
+// Un niveau se lit de bas en haut : l'ALLÈGE (le mur sous la fenêtre, l'appui
+// qui saille — ou, à l'étage noble, la dalle du balcon filant et ses
+// consoles), le BAS DE LA BAIE (le trou ouvert vers le haut, le garde-corps
+// devant, ou la ferronnerie du balcon), le HAUT DE LA BAIE (le trou fermé par
+// son linteau, le bandeau d'étage au-dessus). La baie fait donc 1,7 bloc, à
+// peu près 1,8 m : une personne de 1,8 bloc passe la tête à la fenêtre, ce
+// qu'elle ne faisait pas quand la baie tenait dans les sept dixièmes d'un bloc.
+const HAUT_BAIE = 0.7;                    // où le linteau ferme la baie, sur le bloc du haut
+const PART_BAS = 1 / (1 + HAUT_BAIE);     // la part du châssis qui revient au bloc du bas
+
+function etageBas(f, st) {
+  f.plan(0, 1, 0, 1, 0, st.mur);
+  const [s0, s1] = st.baie;
+  f.boite(s0 - 0.04, s1 + 0.04, 0.93, 1.0, 0, 0.05, 'pierre-lisse');   // l'appui, en saillie
+}
+
+function nobleBas(f, st) {
+  if (!st.filant) { etageBas(f, st); return; }
+  f.plan(0, 1, 0, 1, 0, st.mur);
+  // LE BALCON FILANT : la dalle sur toute la largeur, et ses consoles.
+  f.boite(0, 1, 0.86, 1.0, 0, 0.22, 'pierre-lisse');
+  f.boite(0.12, 0.2, 0.7, 0.86, 0, 0.18, 'pierre-lisse');
+  f.boite(0.8, 0.88, 0.7, 0.86, 0, 0.18, 'pierre-lisse');
+}
+
+function etageMi(f, allumee, st, bas) {
+  const [s0, s1] = st.baie;
+  f.murAutour(s0, s1, 0, 1, st.mur);
+  f.bandeDeBaie(s0, s1, 0, 1, allumee, { haut: false }, 0, PART_BAS);
+  if (bas === ARCHI.NOBLE_BAS && st.filant) f.ferronnerie(0, 1, 0, 0.3, 0.22);        // la ferronnerie du balcon
+  else f.ferronnerie(s0 - 0.02, s1 + 0.02, 0, 0.24, 0.06);                            // le garde-corps de la baie
+  if (st.volets) volets(f, s0, s1, 0, 1);
+}
+
+function etageHaut(f, allumee, st) {
+  const [s0, s1] = st.baie;
+  f.murAutour(s0, s1, 0, HAUT_BAIE, st.mur);
+  f.bandeDeBaie(s0, s1, 0, HAUT_BAIE, allumee, { bas: false }, PART_BAS, 1);
+  if (st.volets) volets(f, s0, s1, 0, HAUT_BAIE);
+  if (st.filant) f.boite(0, 1, 0.94, 1.0, 0, 0.03, 'pierre-lisse');                   // le bandeau d'étage
+}
+
+function entresolBas(f, allumee, st) {
+  const s0 = 0.33, s1 = 0.67, t0 = 0.3;
+  f.murAutour(s0, s1, t0, 1, st.mur);
+  f.bandeDeBaie(s0, s1, t0, 1, allumee, { haut: false }, 0, 0.5);
+  f.boite(s0 - 0.03, s1 + 0.03, t0 - 0.03, t0, 0, 0.04, 'pierre-lisse');
+  if (st.volets) volets(f, s0, s1, t0, 1);
+  f.boite(0, 1, 0.0, 0.06, 0, 0.06, 'pierre-lisse');   // l'assise qui sépare le commerce de l'immeuble
+}
+
+function entresolHaut(f, allumee, st) {
+  const s0 = 0.33, s1 = 0.67, t1 = 0.5;
+  f.murAutour(s0, s1, 0, t1, st.mur);
+  f.bandeDeBaie(s0, s1, 0, t1, allumee, { bas: false }, 0.5, 1);
+  if (st.volets) volets(f, s0, s1, 0, t1);
+}
+
+// La devanture sur trois blocs : le soubassement de granit et le bas du
+// vitrage, le vitrage, puis le bandeau d'enseigne et le store.
+function vitrineBas(f, allumee, st) {
+  const s0 = 0.08, s1 = 0.92, t0 = 0.25;
+  f.murAutour(s0, s1, t0, 1, st.mur);
+  f.creux(s0, s1, t0, 1, -0.14, 'menuiserie', 'verre', 1, allumee ? 1.2 : 0.35, { haut: false });
+  for (const [a, b] of [[s0, s0 + 0.04], [s1 - 0.04, s1], [0.49, 0.51]]) f.plan(a, b, t0, 1, -0.06, 'menuiserie');
+  f.boite(0, 1, 0, t0, 0, 0.03, 'granit');
+}
+
+function vitrineMi(f, allumee, st) {
+  const s0 = 0.08, s1 = 0.92;
+  f.murAutour(s0, s1, 0, 1, st.mur);
+  f.creux(s0, s1, 0, 1, -0.14, 'menuiserie', 'verre', 1, allumee ? 1.2 : 0.35, { haut: false, bas: false });
+  for (const [a, b] of [[s0, s0 + 0.04], [s1 - 0.04, s1], [0.49, 0.51]]) f.plan(a, b, 0, 1, -0.06, 'menuiserie');
+}
+
+function vitrineHaut(f, r, allumee, st, bas) {
+  const s0 = 0.08, s1 = 0.92, t1 = 0.35;
+  const porte = bas === ARCHI.PORTE_HAUT;
+  if (porte) f.plan(0, 1, 0, 1, 0, st.mur);
+  else {
+    f.murAutour(s0, s1, 0, t1, st.mur);
+    f.creux(s0, s1, 0, t1, -0.14, 'menuiserie', 'verre', 1, allumee ? 1.2 : 0.35, { bas: false });
+    for (const [a, b] of [[s0, s0 + 0.04], [s1 - 0.04, s1], [0.49, 0.51]]) f.plan(a, b, 0, t1, -0.06, 'menuiserie');
+  }
+  // le bandeau d'enseigne, et le store au-dessus de la vitrine — pas au-dessus
+  // d'une porte cochère
+  f.boite(0.02, 0.98, t1 + 0.02, 0.7, 0, 0.05, 'enseigne');
+  if (!porte && st.store && r > 0.35) {
+    const dt = 0.13, t = 0.72;
+    f.quad([[0.94, t, 0], [0.06, t, 0], [0.06, t - dt, 0.42], [0.94, t - dt, 0.42]], [0, 0.42, dt], 'store', 1);
+    f.quad([[0.06, t, 0], [0.94, t, 0], [0.94, t - dt, 0.42], [0.06, t - dt, 0.42]], [0, -0.42, -dt], 'store', 0.7);
+  }
+}
+
+function porteBas(f, st) {
+  const s0 = 0.28, s1 = 0.72;
+  f.murAutour(s0, s1, 0, 1, st.mur);
+  f.creux(s0, s1, 0, 1, -0.16, 'pierre-lisse', 'bois', 0.9, 0, { haut: false });
+  f.boite(s0 - 0.05, s0, 0, 1, 0, 0.05, 'pierre-lisse');
+  f.boite(s1, s1 + 0.05, 0, 1, 0, 0.05, 'pierre-lisse');
+}
+
+function porteHaut(f, st) {
+  const s0 = 0.28, s1 = 0.72, t1 = 0.84;
+  f.murAutour(s0, s1, 0, t1, st.mur);
+  f.creux(s0, s1, 0, t1, -0.16, 'pierre-lisse', 'bois', 0.9, 0, { bas: false });
+  f.plan(s0, s1, t1 - 0.3, t1, -0.15, 'verre', 1, 0);                    // l'imposte vitrée
+  f.boite(s0 - 0.05, s0, 0, t1 + 0.05, 0, 0.05, 'pierre-lisse');
+  f.boite(s1, s1 + 0.05, 0, t1 + 0.05, 0, 0.05, 'pierre-lisse');
+  f.boite(s0 - 0.05, s1 + 0.05, t1, t1 + 0.06, 0, 0.06, 'pierre-lisse');  // l'encadrement, et sa clé
 }
 
 function etage(f, r, allumee, noble, st) {
@@ -515,8 +658,10 @@ function chainage(f, st, plaque) {
   // les carreaux et boutisses alternés du chaînage d'angle
   f.plan(0, 1, 0, 1, 0, st.mur === 'pierre' ? 'pierre-lisse' : st.mur);
   if (st.mur === 'pierre') {
-    for (let i = 0; i < 4; i++) {
-      const t0 = i / 4, t1 = (i + 1) / 4 - 0.02;
+    // deux assises par bloc : un carreau de chaînage fait un demi-mètre, et
+    // quatre boîtes par bloc sur vingt blocs d'angle pesaient trop (v301)
+    for (let i = 0; i < 2; i++) {
+      const t0 = i / 2, t1 = (i + 1) / 2 - 0.02;
       if (i % 2 === 0) f.boite(0, 0.62, t0, t1, 0, 0.035, 'pierre-lisse');
       else f.boite(0.38, 1, t0, t1, 0, 0.035, 'pierre-lisse');
     }
@@ -717,8 +862,21 @@ export function facadeHD(buf, face, x, y, z, wx, wy, wz, id, ao, bas = BLOCK.AIR
   const courant = face.dir[0] !== 0 ? (face.dir[0] > 0 ? -wz : wz) : (face.dir[2] > 0 ? wx : -wx);
   const f = new Face(buf, face.dir, x, y, z, ao, teinte, courant);
   const r = tirage(wx, wz, 811);
-  const allumee = vitreAllumee(wx, wy, wz);
+  const allumee = vitreAllumee(wx, yBaie(id, wy), wz);
   switch (id) {
+    // les bandes d'un étage de trois blocs (v301)
+    case ARCHI.ETAGE_BAS: etageBas(f, st); break;
+    case ARCHI.NOBLE_BAS: nobleBas(f, st); break;
+    case ARCHI.ETAGE_MI: etageMi(f, allumee, st, bas); break;
+    case ARCHI.ETAGE_HAUT: etageHaut(f, allumee, st); break;
+    case ARCHI.ENTRESOL_BAS: entresolBas(f, allumee, st); break;
+    case ARCHI.ENTRESOL_HAUT: entresolHaut(f, allumee, st); break;
+    case ARCHI.VITRINE_BAS: vitrineBas(f, allumee, st); break;
+    case ARCHI.VITRINE_MI: vitrineMi(f, allumee, st); break;
+    case ARCHI.VITRINE_HAUT: vitrineHaut(f, graine, allumee, st, bas); break;
+    case ARCHI.PORTE_BAS: porteBas(f, st); break;
+    case ARCHI.PORTE_HAUT: porteHaut(f, st); break;
+    // les registres d'un bloc, pour les blocs que les enfants posent
     case ARCHI.ETAGE: etage(f, r, allumee, false, st); break;
     case ARCHI.NOBLE: etage(f, r, allumee, true, st); break;
     case ARCHI.ENTRESOL: entresol(f, r, allumee, st); break;

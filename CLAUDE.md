@@ -750,6 +750,67 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Un étage fait trois blocs (v301) — une ville se met à l'échelle des personnes, et ses toits emportent ce qu'on a bâti dessus
+
+Max, capture d'une rue : « Paris est beaucoup trop compressé. » Mesuré avant
+d'écrire une ligne : une personne 1,8 bloc, un étage UN bloc, un immeuble de
+six niveaux dix blocs de haut (médiane sur 6 043 colonnes de lot). Deux
+remèdes chiffrés, et Max a pris la verticale seule (« je suis tes
+recommandations, augmente ») : l'horizontale multiplierait par neuf les
+morceaux de Paris. Six règles.
+
+- **UNE FENÊTRE RESTE UN DESSIN, ET UN NIVEAU SE DÉPENSE EN BANDES.** Un
+  étage de trois blocs ne se fait pas en répétant trois fois la tuile d'un
+  étage — ce serait trois rangées de fenêtres par niveau, et le LOIN (la tuile
+  plate, tout l'écran d'un appareil sans couche HD) le montrerait. Un niveau
+  est donc trois BLOCS DISTINCTS — l'allège, le bas de la baie, le haut de la
+  baie — chacun sa tuile de seize pixels qui se raccorde bord à bord, chacun
+  son registre HD qui dessine SA part du trou (`creux` sans linteau, sans
+  appui). Les anciens blocs (`ETAGE`, `NOBLE`…) restent ce qu'ils sont : des
+  enfants les ont posés, ils ont un nom ; les bandes portent `cache` et
+  n'entrent pas dans la palette. Et le haut d'une baie s'allume AVEC son bas
+  (`yBaie`) : le tirage des vitres est par bloc, et sans cette règle une
+  fenêtre sur deux serait éclairée à moitié — le mailleur et la couche lisent
+  la même fonction.
+- **CE QUI PÈSE, C'EST LE CHÂSSIS, PAS LA HAUTEUR.** Un morceau dense de
+  l'ouest portait 61 000 sommets de menuiserie sur 146 000 : six boîtes par
+  fenêtre, trente quads, cent vingt sommets. Tripler la façade aurait triplé
+  ce poids et fait rendre le budget de la v299 à quatre morceaux. Le châssis
+  est UN quad ajouré (tuile `croisee`, alpha) : les mêmes morceaux passent de
+  10,9 · 11,3 · 11,6 à 9,2 · 9,5 · 10,3 Mo avec des façades trois fois plus
+  hautes, et un témoin garde la barre à dix. **Avant d'ajouter de la
+  géométrie, on demande à la sonde par tuile qui tient les sommets** — la
+  réponse était déjà dans la mesure de la v299.
+- **UN IMMEUBLE QUI MONTE EMPORTE CE QU'ON A BÂTI DESSUS.** Le relief ne bouge
+  pas (deux empreintes intactes, sans rien déclarer), mais une cabane posée
+  sur un toit de dix blocs se retrouverait ENFERMÉE dans l'immeuble de vingt
+  et un — c'est l'invariant 1 par un autre bout : ce qu'un enfant a posé se
+  repère par rapport à ce qui le portait. `releverToitsParis` est une marche
+  de la chaîne (4 → 5), pure, datée, appliquée à l'appareil et à chaque
+  document du nuage, avec sa copie d'avant ; `gabaritParis` publie le sommet
+  d'avant et d'après — la différence est CONSTANTE sur un îlot, donc une
+  maison monte d'un seul tenant. Sa position aussi : endormi sur un toit, on
+  se réveille sur le toit neuf.
+- **ET L'ORDRE DES MARCHES EST UNE RÈGLE, PAS UN DÉTAIL.** Le ménage du ciel
+  (v298) garde ce qui touche « un bloc que le jeu écrit » ; avec le toit monté
+  de onze blocs, la cabane ne touche plus rien, et jouée d'abord la passe de
+  ménage l'aurait RETIRÉE. On relève, PUIS on ménage — au stockage comme au
+  nuage — et le témoin fait passer une cabane par la chaîne entière, dans
+  l'ordre de `sync.js`. Quand deux passes lisent le générateur, celle qui le
+  suit passe avant celle qui le juge.
+- **REMETTRE UNE VILLE À L'ÉCHELLE, C'EST AUSSI REFAIRE SES MONUMENTS — et on
+  le mesure avant de le remettre à plus tard.** Opéra 19 blocs, Invalides 22,
+  Sacré-Cœur 23, Notre-Dame 31 (ses murs de nef à 13), Panthéon 32,
+  Montparnasse 38, contre des immeubles à 21-24 : l'Opéra est plus bas que ses
+  voisins, ce qui n'est pas la vraie ville. Ils ont leurs modèles HD (v292)
+  qui suivent les cotes du voxel ; les remettre à l'échelle est une livraison
+  à elle, déclarée avec ces chiffres — pas un « à voir ».
+- **UNE LIVRAISON S'ÉCRIT DANS UN ARBRE DÉTACHÉ PENDANT QUE LE PORTAIL JOUE.**
+  « Ne jamais modifier `src/` pendant qu'une suite tourne » interdisait
+  d'avancer ; `git worktree add --detach` dans le scratchpad donne un arbre où
+  écrire, mesurer sous node et vérifier, sans toucher aux fichiers que le
+  serveur du banc lit. Les sondes y tournent (node) ; les navigateurs, non.
+
 ## Un rayon ne borne pas des octets (v299) — le détail se dépense comme un budget
 
 Max : « le jeu continue à planter sur la version 298, il crache au bout de

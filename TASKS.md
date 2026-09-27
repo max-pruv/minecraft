@@ -1,5 +1,30 @@
 # Ce qui est en cours
 
+- [ ] **LES MONUMENTS DE PARIS SONT PLUS BAS QUE LES IMMEUBLES (v301).** Un
+  étage fait trois blocs : les immeubles montent à 21-24 blocs (six-sept
+  niveaux, comble compris), et les monuments n'ont pas suivi. Mesuré sous
+  node en appelant les bâtisseurs : Opéra 19, Moulin Rouge 17, Bastille 20,
+  Invalides 22, Sacré-Cœur 23, Notre-Dame 31 (murs de nef à 13), Panthéon 32,
+  Montparnasse 38, tour Eiffel 70. Dans la vraie ville, à un bloc pour un
+  mètre : Opéra 73, Invalides 107 (dôme), Sacré-Cœur 83, Notre-Dame 69 (tours)
+  et 35 (nef), Panthéon 83, Montparnasse 210, Arc de Triomphe 50, Eiffel 330.
+  Le ciel au-dessus de Paris tient 125 blocs (HEIGHT 160, sol à 35) : tout y
+  passe sauf la tour (déjà à 70, décision de la v292) et Montparnasse (à
+  borner). Chaque monument refait entraîne SON modèle HD (`paris-monuments-hd.js`,
+  « un modèle suit les cotes du voxel », v292) et sa sonde
+  (`sonde-monuments-hd.cjs` : les cubes qui dépassent). Captures pour Max
+  avant de fusionner. C'est la prochaine livraison, pas un réglage.
+- [ ] **CE QUE LE RELEVÉ DES TOITS NE SUIT PAS (v301), déclaré.** (1) Une
+  tablette restée sur l'ancienne version après `DATE_RELEVE_PARIS` pose sur
+  les anciens toits des blocs que le relevé laissera où ils sont — la même
+  limite que la carte 3 et le ménage. (2) Une construction à cheval sur un
+  toit ET la rue (une passerelle) monte du côté du toit et reste du côté de la
+  rue : le relevé juge par colonne. (3) Un bloc collé à une façade SOUS
+  l'ancien toit reste à sa hauteur, donc change de registre (un balcon posé
+  au niveau de l'ancien étage noble se retrouve devant l'entresol). Aucun des
+  trois n'a de témoin ; s'ils se voient un jour, c'est le journal des blocs
+  (`~avant-releve-paris`) qui permet de rendre.
+
 - [ ] **UN BUS ET TROIS VOITURES SE BLOQUENT TRENTE SECONDES À L'OUEST DE PARIS**
   (v300, mesuré des deux côtés). Au point du témoin de la fumée (−277, 199 :
   circuit 0 de Paris, 40 % entre ses points 2 et 3), le bus du premier anneau

@@ -93,6 +93,71 @@ function verifier(nom, ok, detail = '') {
   for (let i = 0; identiques && i < sans.data.length; i++) if (sans.data[i] !== avec.data[i]) identiques = false;
   verifier('la couche HD ne pose aucun bloc : le morceau est identique à l\'octet près', identiques);
 
+  // ── UN ÉTAGE FAIT TROIS BLOCS (v301) ─────────────────────────────────────────
+  //
+  // Décision de Max : « augmente ». Une personne de 1,8 bloc faisait la hauteur
+  // d'un étage. Ce qui se garde : la façade d'un immeuble se lit de bas en haut
+  // en BANDES — devanture (soubassement, vitrage, enseigne), entresol (deux
+  // blocs), puis des étages de trois (allège, baie, linteau), les nobles au
+  // premier et au dernier, la corniche au-dessus — et sa hauteur est celle que
+  // `gabaritParis` déclare. Sur l'ancien code les bandes n'existent pas.
+  {
+    const P = await import('../src/paris.js');
+    const { ARCHI } = await import('../src/blocks.js');
+    if (!P.gabaritParis || !ARCHI.ETAGE_MI) {
+      verifier('un étage de Paris fait trois blocs : la façade se lit en bandes', false, 'gabaritParis ou les bandes d’étage absents');
+    } else {
+      let col = null;
+      for (let dx = -30; dx < 30 && !col; dx++) for (let dz = -30; dz < 30 && !col; dz++) {
+        const x = px + dx, z = pz + dz;
+        if (P.solParis(x, z) !== null || !P.lotParisLibre(x, z)) continue;
+        const g = P.gabaritParis(x, z);
+        if (!g.dedans && !g.angle && g.bh >= 5) col = { x, z, g };
+      }
+      const ids = [];
+      if (col) P.batirColonneParis(col.x, col.z, (y, id) => { ids[y] = id; });
+      const g = col ? col.g : null;
+      const attendu = [];
+      if (g) {
+        attendu.push(null, ids[1] === ARCHI.PORTE_BAS ? ARCHI.PORTE_BAS : ARCHI.VITRINE_BAS, ids[1] === ARCHI.PORTE_BAS ? ARCHI.PORTE_HAUT : ARCHI.VITRINE_MI, ARCHI.VITRINE_HAUT, ARCHI.ENTRESOL_BAS, ARCHI.ENTRESOL_HAUT);
+        const n = g.bh - 2;
+        for (let k = 0; k < n; k++) attendu.push((k === 0 || k === n - 1) ? ARCHI.NOBLE_BAS : ARCHI.ETAGE_BAS, ARCHI.ETAGE_MI, ARCHI.ETAGE_HAUT);
+        attendu.push(ARCHI.CORNICHE);
+      }
+      const facadeOk = !!g && ids.slice(1, g.facade + 2).every((id, i) => id === attendu[i + 1]);
+      verifier('un étage de Paris fait trois blocs : la façade se lit en bandes, devanture, entresol, étages nobles et courants, corniche',
+        facadeOk && g.facade === P.HAUT_RDC + P.HAUT_ENTRESOL + (g.bh - 2) * P.BLOCS_PAR_ETAGE && P.BLOCS_PAR_ETAGE === 3 && g.facade >= 14,
+        col ? `colonne (${col.x}, ${col.z}), ${g.bh} niveaux, façade ${g.facade} blocs (avant : ${g.ancienne}), corniche à ${g.facade + 1}` : 'aucune colonne de façade trouvée');
+      // ET LE HAUT D'UNE BAIE S'ALLUME AVEC SON BAS. Le tirage des vitres est par
+      // bloc ; sans `yBaie`, une baie de deux blocs serait éclairée à moitié une
+      // fois sur deux. On compte, sur le morceau, les baies où le tirage naïf
+      // DIFFÈRE entre les deux blocs (il y en a), et celles où la règle diffère
+      // (il ne doit pas y en avoir).
+      const data = avec.data;
+      let baies = 0, naif = 0, regle = 0;
+      for (let y = 1; y < HEIGHT - 1; y++) for (let z = 0; z < CHUNK; z++) for (let x = 0; x < CHUNK; x++) {
+        if (data[x + z * CHUNK + y * CHUNK * CHUNK] !== ARCHI.ETAGE_MI || data[x + z * CHUNK + (y + 1) * CHUNK * CHUNK] !== ARCHI.ETAGE_HAUT) continue;
+        baies++;
+        const wx = cx * CHUNK + x, wz = cz * CHUNK + z;
+        if (HD.vitreAllumee(wx, y, wz) !== HD.vitreAllumee(wx, y + 1, wz)) naif++;
+        if (HD.vitreAllumee(wx, HD.yBaie(ARCHI.ETAGE_MI, y), wz) !== HD.vitreAllumee(wx, HD.yBaie(ARCHI.ETAGE_HAUT, y + 1), wz)) regle++;
+      }
+      verifier('le haut d\'une baie s\'allume avec son bas, jamais à moitié', baies > 20 && naif > 0 && regle === 0,
+        `${baies} baies, ${naif} éclairées à moitié par un tirage par bloc, ${regle} par la règle`);
+      // ET UN MORCEAU DENSE DE L'OUEST NE PÈSE PAS PLUS QU'AVANT, avec des façades
+      // trois fois plus hautes : mesuré, 10,9 Mo avant (146 150 sommets, dont
+      // 61 200 de menuiserie), 9,2 après — le châssis d'une baie est UN quad
+      // ajouré au lieu de six boîtes. La barre à dix mégaoctets sépare les deux ;
+      // c'est le budget de la v299 qui en dépend (128 Mo pour tout le détail).
+      const ouest = tampons(1, -25, 16);
+      const f = ouest.t.facades;
+      const n = f ? f.positions.length / 3 : 0;
+      const octets = f ? (f.positions.length + f.normals.length + f.uvs.length + f.colors.length + f.tiles.length + f.matiere.length + f.lueur.length) * 4 + f.indices.length * (n > 65535 ? 4 : 2) : 0;
+      verifier('un morceau dense de l\'ouest pèse moins de dix mégaoctets de façades, avec des étages trois fois plus hauts',
+        n > 50000 && octets < 10 * 1048576, `${n} sommets, ${(octets / 1048576).toFixed(2)} Mo (avant la v301 : 146 150, 10,88 Mo)`);
+    }
+  }
+
   // Le compte indépendant des faces de façade exposées : la règle du mailleur
   // (`shouldRenderFace`), réécrite ici pour ne pas lui faire confiance.
   const data = avec.data;

@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 301,
+    titre: 'Paris prend de la hauteur',
+    puces: [
+      'Un étage fait trois blocs',
+      'Les immeubles sont deux fois plus hauts',
+      'Tes cabanes sur les toits montent aussi',
+      'Paris pèse moins lourd',
+    ],
+  },
+  {
     v: 300,
     titre: 'L\'autoroute Paris–Lille',
     puces: [

@@ -702,6 +702,77 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       && menage.trou && menage.loin && menage.marque && menage.archive && menage.idempotent,
     menage.absent ? 'le ménage du ciel de Paris n\'existe pas' : JSON.stringify(menage));
 
+  // --- LE RELEVÉ DES TOITS DE PARIS (v301) : un étage fait trois blocs, et ce ---
+  // --- qu'un enfant avait bâti sur un toit monte avec le toit ------------------
+  //
+  // Le relief ne bouge pas (les deux empreintes ci-dessus le disent) ; ce sont
+  // les IMMEUBLES qui montent, de dix à vingt et un blocs. Une cabane posée sur
+  // un toit d'avant serait enfermée dans l'immeuble neuf. La règle est pure et
+  // se juge sur un document fabriqué : la cabane monte d'un seul tenant, et de
+  // ce que `gabaritParis` déclare ; un bloc collé à la façade sous l'ancien
+  // toit, une tour dans la rue, un bloc posé après la date, un bloc hors de
+  // Paris, une marque d'import, une archive : rien ne bouge. Elle est
+  // idempotente. ET ELLE PASSE AVANT LE MÉNAGE : jouée après, la cabane —
+  // qui ne touche plus rien à onze blocs sous le toit neuf — aurait été
+  // retirée. On fait passer la cabane par la chaîne entière, dans l'ordre de
+  // `sync.js`, et l'on regarde ce qu'il en reste : tout, sur le toit neuf.
+  const releve = await (async () => {
+    const W = await import('../src/world.js');
+    const P = await import('../src/paris.js');
+    if (!W.releverBlocsToitsParis || !W.DATE_RELEVE_PARIS || !P.gabaritParis) return { absent: true };
+    const [x0, z0] = P.adresseParis(-0.8, -0.9);
+    let col = null;
+    for (let dx = -30; dx < 30 && !col; dx++) for (let dz = -30; dz < 30 && !col; dz++) {
+      const x = x0 + dx, z = z0 + dz;
+      if (P.solParis(x, z) !== null || !P.lotParisLibre(x, z)) continue;
+      const g = P.gabaritParis(x, z);
+      if (!g.dedans) col = { x, z, g };
+    }
+    if (!col) return { absent: false, colonne: false };
+    const { x, z, g } = col;
+    const h = w.terrainHeight(x, z);
+    // le bâtisseur écrit à h + dy − 1 : le dernier bloc de l'ancien immeuble,
+    // et celui du neuf — vérifié sur le MONDE, pas seulement sur le gabarit
+    const toitAncien = h + g.ancien - 1, toitNeuf = h + g.sommet - 1;
+    const monde = w.getBlock(x, toitNeuf, z) !== 0 && w.getBlock(x, toitNeuf + 1, z) === 0;
+    const monte = g.sommet - g.ancien;
+    const t = W.DATE_RELEVE_PARIS - 86400000;
+    let rue = null;
+    for (let d = 1; d < 20 && !rue; d++) for (const [dx, dz] of [[d, 0], [-d, 0], [0, d], [0, -d]]) if (P.solParis(x + dx, z + dz) !== null) { rue = [x + dx, z + dz]; break; }
+    const hr = w.terrainHeight(rue[0], rue[1]);
+    const cabane = `${x},${toitAncien + 1},${z}`, cabane2 = `${x},${toitAncien + 2},${z}`;
+    const facade = `${x},${h + 4},${z}`, tour = `${rue[0]},${hr + 15},${rue[1]}`;
+    const apres = `${x},${toitAncien + 3},${z}`, loin = `${x + 900},${h + 20},${z}`;
+    const doc = { local: {
+      [cabane]: [8, t], [cabane2]: [10, t], [facade]: [1, t], [tour]: [5, t],
+      [apres]: [5, W.DATE_RELEVE_PARIS + 1000], [loin]: [5, t], '@manhattan-v240:1,2,3': [3, t, 1, 2],
+    }, 'manhattan-v1:local': { [cabane]: [3, t] } };
+    const t0 = Date.now();
+    const un = W.releverBlocsToitsParis(doc), deux = W.releverBlocsToitsParis(un.tout);
+    const chaine = W.menagerBlocsCielParis(un.tout);          // l'ordre de sync.js : relever, puis ménager
+    const ms = Date.now() - t0;
+    const L = un.tout.local, C = chaine.tout.local;
+    const haut1 = `${x},${toitAncien + 1 + monte},${z}`, haut2 = `${x},${toitAncien + 2 + monte},${z}`;
+    const pos = W.releverPositionsParis({ 1: { x: x + 0.5, y: toitAncien + 2, z: z + 0.5, t }, 2: { x: rue[0] + 0.5, y: hr + 2, z: rue[1] + 0.5, t } });
+    return {
+      absent: false, colonne: true, monde, monte, deplaces: un.deplaces,
+      cabane: !!L[haut1] && !!L[haut2] && !L[cabane] && !L[cabane2] && L[haut1][1] === W.DATE_RELEVE_PARIS,
+      facade: !!L[facade], tour: !!L[tour], apres: !!L[apres], loin: !!L[loin],
+      marque: !!L['@manhattan-v240:1,2,3'], archive: !!un.tout['manhattan-v1:local'][cabane],
+      idempotent: deux.deplaces === 0 && JSON.stringify(deux.tout) === JSON.stringify(un.tout),
+      chaine: !!C[haut1] && !!C[haut2] && chaine.retires === 0,
+      pos: pos.pos[1].y === toitAncien + 2 + monte && pos.pos[2].y === hr + 2 && pos.deplaces === 1,
+      bilan: `colonne (${x}, ${z}), toit ${toitAncien} → ${toitNeuf} (+${monte}), ${un.deplaces} déplacé(s), ${ms} ms`,
+    };
+  })();
+  verifier('un étage de Paris fait trois blocs, et une cabane bâtie sur un toit monte avec le toit, d\'un seul tenant',
+    !releve.absent && releve.colonne && releve.monde && releve.monte >= 5 && releve.deplaces === 2 && releve.cabane,
+    releve.absent ? 'le relevé des toits de Paris n\'existe pas' : releve.bilan);
+  verifier('et ne touche ni à la façade, ni à la rue, ni à ce qui est posé après, ni hors de Paris — puis le ménage la laisse sur le toit neuf',
+    !releve.absent && releve.facade && releve.tour && releve.apres && releve.loin && releve.marque && releve.archive
+      && releve.idempotent && releve.chaine && releve.pos,
+    releve.absent ? 'le relevé des toits de Paris n\'existe pas' : JSON.stringify(releve));
+
   const trop = [];
   for (let x = -700; x <= 700; x += 7) {
     for (let z = -700; z <= 700; z += 7) {

@@ -224,6 +224,48 @@ const BLOCS = 40000;
       copieMFaite, menage.absent ? 'le ménage du ciel de Paris n\'existe pas'
         : `${menage.copie} · ${Date.now() - departCopieM} ms`);
 
+    // ET PAR LE RELEVÉ DES TOITS DE PARIS (v301), avant le ménage : un
+    // document tel que l'ancienne version l'écrirait porte une cabane sur un
+    // toit d'AVANT ; la fusion la rend sur le toit neuf, et le nuage a été mis
+    // à l'abri avant, sur son propre document.
+    const releve = await tab.evaluate(async () => {
+      const ps = window.__game.profileSync;
+      const W = await import('./src/world.js');
+      const P = await import('./src/paris.js');
+      if (!W.releverBlocsToitsParis || !ps.mettreALAbriAvantReleve || !P.gabaritParis) return { absent: true };
+      const [x0, z0] = P.adresseParis(-0.8, -0.9);
+      let col = null;
+      for (let dx = -30; dx < 30 && !col; dx++) for (let dz = -30; dz < 30 && !col; dz++) {
+        const x = x0 + dx, z = z0 + dz;
+        if (P.solParis(x, z) !== null || !P.lotParisLibre(x, z)) continue;
+        const g = P.gabaritParis(x, z);
+        if (!g.dedans) col = { x, z, g };
+      }
+      const { x, z, g } = col;
+      const h = window.__game.world.terrainHeight(x, z);
+      const toitAncien = h + g.ancien - 1, monte = g.sommet - g.ancien;
+      const cabane = `${x},${toitAncien + 1},${z}`, haut = `${x},${toitAncien + 1 + monte},${z}`;
+      const t = W.DATE_RELEVE_PARIS - 86400000;
+      const local = ps.snapshot();
+      const remote = { ...JSON.parse(JSON.stringify(local)), edits: { local: { [cabane]: [8, t] } } };
+      ps.copieReleve = null;   // comme une tablette qui vient de s'ouvrir
+      const copie = await ps.mettreALAbriAvantReleve(ps.getName(), remote);
+      const r = ps.merge(local, remote);
+      const e = (r.state.edits || {}).local || {};
+      return { copie, monte, ancienne: !!e[cabane], neuve: e[haut]?.[0] === 8 };
+    });
+    verifier('une cabane sur un toit de Paris reçue du nuage revient par la fusion SUR LE TOIT NEUF, plus jamais à l\'ancienne hauteur',
+      !releve.absent && releve.neuve && !releve.ancienne && releve.monte >= 5,
+      releve.absent ? 'le relevé des toits de Paris n\'existe pas' : JSON.stringify(releve));
+    const departCopieR = Date.now();
+    const copieRFaite = !releve.absent && await jusqua(async () => {
+      const a = nuage.etatDe('Marlon~avant-releve-paris');
+      return !!(a && (a.editsz || a.edits) && a.releve === 1);
+    }, 60000);
+    verifier('et le document du nuage a été mis à l\'abri avant le relevé, sur son propre document',
+      copieRFaite, releve.absent ? 'le relevé des toits de Paris n\'existe pas'
+        : `${releve.copie} · ${Date.now() - departCopieR} ms`);
+
     // CE QUI VIENT DU NUAGE PASSE PAR LA MIGRATION DE CARTE AVANT LA FUSION.
     //
     // La fusion est une union. Une tablette restée sur la v240 republie les
