@@ -17,6 +17,7 @@ import { aeroportPres, postesAvion } from './aeroport.js';
 import { cadence, chronoReel } from './cadence.js';
 import { axeDuFeu, axeDuCap, etatFeu } from './feux.js';
 import { cadran } from './cap.js';
+import { guidage, arriveEntre, nomDestination } from './gps.js';
 import { POLE } from './pole.js';
 import { LIGNES as LIGNES_DC, traceLigneMetro, arretsDeLigne, circuitsWashington } from './washington.js';
 import { buildChunkTampons } from './mesher.js';
@@ -2427,6 +2428,58 @@ function majBoutonsVehicule() {
 }
 window.__majBoutonsVehicule = majBoutonsVehicule;
 
+// LE GPS (v306). Une destination choisie sur la carte (« 🧭 S'y rendre »), une
+// flèche qui dit où tourner et combien il reste. Le calcul est pur (`gps.js`,
+// même convention de cap que le cadran), et le DOM ne s'écrit que quand ce
+// qu'il dit change — sauf la flèche, dont la rotation est une propriété de
+// style qui ne déplace rien dans la page.
+//
+// La destination vit dans la session, pas dans le profil : c'est un trajet en
+// cours, pas une donnée de l'enfant. Elle survit à la montée dans une voiture,
+// à la téléportation et au vol — c'est tout l'intérêt : on la choisit à pied,
+// on la rejoint en avion.
+const gpsEl = document.getElementById('gps');
+const gpsFleche = document.getElementById('gps-fleche');
+const gpsTexte = document.getElementById('gps-texte');
+let gpsCible = null;          // { x, z, nom }
+let gpsTexteAvant = '';
+let gpsPrec = null;           // la position de l'image d'avant (arrivée entre deux images)
+function demarrerGPS(x, z) {
+  gpsCible = { x, z, nom: nomDestination(x, z) };
+  gpsTexteAvant = ''; gpsPrec = null;
+  document.body.classList.add('gps-actif');
+  majGPS();
+  toast(`🧭 GPS : en route vers ${gpsCible.nom} (${guidage(player.pos.x, player.pos.z, player.yaw, gpsCible).lisible})`, 0x6ee7b7);
+}
+function arreterGPS() {
+  gpsCible = null; gpsPrec = null;
+  document.body.classList.remove('gps-actif');
+}
+function majGPS() {
+  if (!gpsCible) return;
+  const x = player.pos.x, z = player.pos.z;
+  const g = guidage(x, z, player.yaw, gpsCible);
+  if (g.arrive || (gpsPrec && arriveEntre(gpsPrec.x, gpsPrec.z, x, z, gpsCible))) {
+    const nom = gpsCible.nom;
+    arreterGPS();
+    toast(nom === 'le point choisi' ? '🏁 Tu es arrivé !' : `🏁 Tu es arrivé à ${nom} !`, 0x6ee7b7);
+    return;
+  }
+  gpsPrec = { x, z };
+  gpsFleche.style.transform = `rotate(${g.rotation.toFixed(3)}rad)`;
+  const texte = `${gpsCible.nom}|${g.lisible}|${g.consigne}`;
+  if (texte !== gpsTexteAvant) {
+    gpsTexteAvant = texte;
+    gpsTexte.innerHTML = `${gpsCible.nom === 'le point choisi' ? 'Destination' : gpsCible.nom} · ${g.lisible}<br><small>${g.consigne}</small>`;
+  }
+}
+document.getElementById('gps-stop').addEventListener('click', (e) => {
+  e.preventDefault(); e.stopPropagation();
+  arreterGPS();
+  toast('🧭 GPS arrêté.', 0xcfd8e8);
+});
+window.__gps = () => (gpsCible ? { ...gpsCible, ...guidage(player.pos.x, player.pos.z, player.yaw, gpsCible) } : null);
+
 // LE CADRAN DE CAP (v263). Le calcul est pur (`cap.js`), le DOM ne s'écrit
 // que quand ce qu'il dit change : deux cent soixante distances par image
 // ne coûtent rien, une réécriture de texte par image coûte un reflow.
@@ -4504,6 +4557,7 @@ function showOnlineUI() {
 // Used by the home button and by the duplicate-player guard.
 function leaveToMainMenu() {
   journal.noter('menu');
+  arreterGPS();   // un trajet appartient à la partie qu'on quitte (v306)
   savePosition(); // remember exactly where we were in this world
   if (net) { net.stop(); net = null; }
   for (const k of ['monde-reco', 'signal', 'monde-perdu', 'monde-seul']) alerte(k, false);
@@ -6459,6 +6513,12 @@ const carte = new Carte({
     fermerCarte();
     toast(`🧳 Voyage vers ${lieu.name} !`, 0xffd75e);
   },
+  // « 🧭 S'y rendre » : on ne bouge pas, on reçoit une flèche (v306).
+  surGPS: (wx, wz) => {
+    fermerCarte();
+    demarrerGPS(wx, wz);
+  },
+  destination: () => gpsCible,
   surTeleport: (wx, wz) => {
     const { dansEau } = deposerA(wx, wz);
     fermerCarte();
@@ -7477,6 +7537,7 @@ function frame(now) {
   edu.update(dtEcran(), running);
   fun.update(dt);
   majBoutonsVehicule();
+  if (running) majGPS();   // à pied comme au volant (v306)
   asseoirLeConducteur(dt);
   effects.update(dt);
 

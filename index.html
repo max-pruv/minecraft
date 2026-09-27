@@ -790,6 +790,24 @@
       pointer-events: none; font-weight: bold;
     }
     body.en-avion #cap-avion { display: block; }
+    /* LE GPS (v306) : quand une destination est choisie, une flèche qui dit
+       où tourner, le nom et la distance, et ✕ pour arrêter. En haut au
+       milieu ; aux commandes d'un avion, sous le cadran de cap. */
+    #gps {
+      display: none; position: fixed; top: calc(52px + var(--safe-top)); left: 50%; transform: translateX(-50%);
+      align-items: center; gap: 10px; color: #fff; text-shadow: 1px 1px 0 #000;
+      background: rgba(10,60,44,0.62); border-radius: 12px; padding: 5px 8px 5px 12px; z-index: 7;
+      font-weight: bold;
+    }
+    body.gps-actif #gps { display: flex; }
+    body.en-avion #gps { top: calc(126px + var(--safe-top)); }
+    #gps-fleche { font-size: 30px; line-height: 1; transition: transform 0.15s linear; display: inline-block; }
+    #gps-texte { font-size: 15px; line-height: 1.2; }
+    #gps-texte small { font-size: 13px; font-weight: normal; opacity: 0.92; }
+    #gps-stop {
+      width: 32px; height: 32px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.5);
+      background: rgba(0,0,0,0.3); color: #fff; font-size: 15px; cursor: pointer;
+    }
     #cap-degres { font-size: 13px; letter-spacing: 1px; opacity: 0.85; }
     #cap-ville { font-size: 17px; line-height: 1.25; }
     #cap-ville small { font-size: 13px; font-weight: normal; opacity: 0.9; }
@@ -1317,6 +1335,20 @@
       transition: transform 0.5s linear;
     }
     #map-cible.arme { transform: scale(1); }
+    /* LES DEUX BOUTONS DE L'APPUI LONG (v306) : se téléporter, ou s'y rendre
+       avec le GPS. Posés sous le doigt, dans la carte, assez grands pour un
+       pouce d'enfant. */
+    #map-choix {
+      position: absolute; display: none; gap: 8px; z-index: 3;
+      padding: 6px; border-radius: 12px; background: rgba(16,22,38,0.88);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+    }
+    #map-choix button {
+      font-weight: bold; font-size: 15px; font-family: inherit; color: #fff; cursor: pointer;
+      border: none; border-radius: 9px; padding: 11px 14px; white-space: nowrap;
+    }
+    #map-choix-tp { background: #7a5cc9; }
+    #map-choix-gps { background: #0E9268; }
 
     /* settings */
     #settings-btn {
@@ -2054,6 +2086,10 @@
       <div id="map-zone">
         <canvas id="map-modal-canvas" width="560" height="560"></canvas>
         <div id="map-cible"></div>
+        <div id="map-choix">
+          <button id="map-choix-tp">✨ Téléporter</button>
+          <button id="map-choix-gps">🧭 S'y rendre</button>
+        </div>
       </div>
       <div id="map-outils">
         <button id="map-moins" class="zoom" title="Dézoomer">−</button>
@@ -2062,7 +2098,7 @@
         <button id="map-tout" title="Voir tout le monde">🌍 tout</button>
       </div>
       <div id="map-legend">🔺 toi · 🟦 joueurs · ⬜ personnages · 🟨 animaux</div>
-      <div id="map-astuce">✊ Appui long <b>n'importe où</b> pour t'y téléporter</div>
+      <div id="map-astuce">✊ Appui long <b>n'importe où</b> : t'y téléporter, ou t'y rendre avec le GPS</div>
     </div>
   </div>
 
@@ -2083,6 +2119,7 @@
   <div id="link-banner"><span id="link-banner-txt"></span><button class="fermer-msg" id="link-banner-close" aria-label="Masquer">✕</button></div>
   <div id="edu-timer"><span id="edu-timer-txt"></span><button class="fermer-msg" id="edu-timer-close" aria-label="Masquer">✕</button></div>
   <!-- Le cadran de cap (v263) : ce que l'enfant lit aux commandes. -->
+  <div id="gps"><span id="gps-fleche">⬆</span><div id="gps-texte"></div><button id="gps-stop" title="Arrêter le GPS">✕</button></div>
   <div id="cap-avion"><div id="cap-degres"></div><div id="cap-ville"></div><div id="cap-regle"><div id="cap-repere"></div></div></div>
   <div id="notif-carte">
     <button class="fermer-msg" id="notif-carte-close" aria-label="Fermer">✕</button>

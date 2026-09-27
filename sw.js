@@ -83,6 +83,7 @@ const ASSETS = [
   './src/aeroport.js',
   './src/cadence.js',
   './src/cap.js',
+  './src/gps.js',
   './src/feux.js',
   './src/gaulois.js',
   './src/espace.js',

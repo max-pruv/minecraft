@@ -13,6 +13,7 @@ export const NOUVEAUTES = [
       'Tes maisons suivent leur quartier',
       'Roissy, Orly et le volcan déménagent',
       'Le village gaulois part en Bretagne',
+      'Un GPS pour aller où tu veux',
     ],
   },
   {

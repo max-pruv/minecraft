@@ -176,7 +176,8 @@ const GARDIENS = {
   // la liste, sinon un changement d'horloge ne réveille pas l'espace parent.
   'src/cadence.js': ['monte.js', 'maj.js', 'carte.js', 'parent.js', 'reglages.js'],
   // Le cadran de cap lit le registre et s'affiche aux commandes : la monte le garde.
-  'src/cap.js': ['monte.js'],
+  'src/cap.js': ['monte.js', 'carte.js'],
+  'src/gps.js': ['carte.js'],
   'src/fun.js': ['monte.js', 'carte.js', 'reglages.js', 'reseau.js'],
   // Le hub : presque toute livraison y passe. Deux suites larges le couvrent —
   // la carte traverse l'interface entière, la monte traverse la boucle de jeu.

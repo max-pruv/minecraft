@@ -334,6 +334,7 @@ const position = (p) => p.evaluate(() => ({
     let pose = await position(tab);
     let arrive = false;
     const appuis = [];
+    const questions = [];
     for (let essai = 0; essai < 4 && !arrive; essai++) {
       if (essai) {
         await souffler();
@@ -344,6 +345,21 @@ const position = (p) => p.evaluate(() => ({
       await tab.mouse.down();
       await dormir(900);
       await tab.mouse.up();
+      await dormir(300);
+      // DEPUIS LA v306, L'APPUI LONG POSE UNE QUESTION : « Téléporter » ou
+      // « S'y rendre ». On note ce qu'on voit AVANT de choisir — la carte
+      // ouverte, l'enfant pas encore parti — puis l'on choisit comme l'enfant.
+      const q = await tab.evaluate(() => {
+        const b = document.getElementById('map-choix');
+        const vis = !!b && getComputedStyle(b).display !== 'none';
+        const tp = document.getElementById('map-choix-tp');
+        const r = tp && tp.getBoundingClientRect();
+        return { vis, tp: r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null,
+          ouverte: getComputedStyle(document.getElementById('map-modal')).display !== 'none',
+          pos: { x: Math.floor(window.__game.player.pos.x), z: Math.floor(window.__game.player.pos.z) } };
+      });
+      questions.push({ vis: q.vis, ouverte: q.ouverte, parti: Math.hypot(q.pos.x - pose.x, q.pos.z - pose.z) > 6 });
+      if (q.vis && q.tp) { await tab.mouse.click(q.tp.x, q.tp.y); }
       await dormir(600);
       pose = await position(tab);
       arrive = Math.hypot(pose.x - attendu.monde.x, pose.z - attendu.monde.z) < 6
@@ -353,7 +369,96 @@ const position = (p) => p.evaluate(() => ({
       appuis.push(await tab.evaluate(() => (window.__carte && window.__carte.dernierAppui) || null).catch(() => null));
     }
     verifier('un appui long dépose n\'importe où', arrive,
-      JSON.stringify({ voulu: [Math.round(attendu.monde.x), Math.round(attendu.monde.z)], obtenu: [pose.x, pose.z], appuis }));
+      JSON.stringify({ voulu: [Math.round(attendu.monde.x), Math.round(attendu.monde.z)], obtenu: [pose.x, pose.z], appuis, questions }));
+    // Le GPS (v306) : l'appui long propose, il ne part pas tout seul. Sur
+    // l'ancien code l'enfant était déjà parti et la carte fermée quand on
+    // regardait — pas de question, rien à choisir.
+    const posee = questions.filter((q) => q.vis);
+    verifier('l\'appui long propose « Téléporter » ou « S\'y rendre », sans partir tout seul',
+      posee.length > 0 && posee.every((q) => q.ouverte && !q.parti),
+      JSON.stringify(questions));
+
+    // « 🧭 S'y rendre » : on reste où l'on est, la carte se ferme, et une
+    // flèche dit où aller. Le point visé est à trois cents blocs (le même
+    // cadrage), donc loin de toute arrivée immédiate.
+    {
+      let g = null, reste = null, choix = [];
+      for (let essai = 0; essai < 4 && !g; essai++) {
+        if (essai) await souffler();
+        if (!(await carteOuverte(tab))) await banc.ouvrirLaCarte(tab);
+        const vise = await tab.evaluate(() => {
+          const c2 = window.__carte;
+          const j = window.__game.player.pos;
+          c2.vue.cx = j.x + 150; c2.vue.cz = j.z - 150; c2.vue.bpp = 1.2;
+          c2.limiter(); c2.peindre();
+          const r = document.getElementById('map-modal-canvas').getBoundingClientRect();
+          const l = r.width, h = r.height;
+          return { ecran: { x: r.left + l / 2, y: r.top + h / 2 }, monde: c2.versMonde(l / 2, h / 2) };
+        });
+        await dormir(400);
+        const avant = await position(tab);
+        await tab.mouse.move(vise.ecran.x, vise.ecran.y);
+        await tab.mouse.down(); await dormir(900); await tab.mouse.up(); await dormir(300);
+        const b = await tab.evaluate(() => {
+          const e = document.getElementById('map-choix-gps');
+          if (!e || getComputedStyle(document.getElementById('map-choix')).display === 'none') return null;
+          const r = e.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+        });
+        choix.push(!!b);
+        if (!b) continue;
+        await tab.mouse.click(b.x, b.y);
+        await dormir(500);
+        reste = { avant, apres: await position(tab), ouverte: await carteOuverte(tab) };
+        g = await tab.evaluate(() => (window.__gps ? window.__gps() : null));
+        if (g) g.voulu = vise.monde;
+      }
+      const hud = await tab.evaluate(() => {
+        const e = document.getElementById('gps');
+        return e ? getComputedStyle(e).display : 'absent';
+      });
+      verifier('« S\'y rendre » laisse l\'enfant sur place, ferme la carte et montre le GPS',
+        !!g && !!reste && !reste.ouverte && reste.avant.x === reste.apres.x && reste.avant.z === reste.apres.z
+        && hud !== 'none' && hud !== 'absent'
+        && Math.hypot(g.x - g.voulu.x, g.z - g.voulu.z) < 3 && g.distance > 100,
+        JSON.stringify({ choix, reste, hud, g: g && { x: Math.round(g.x), z: Math.round(g.z), d: Math.round(g.distance), nom: g.nom } }));
+
+      // LA FLÈCHE TOURNE DU BON CÔTÉ. Un signe se regarde (v231) : face à la
+      // cible, elle pointe devant ; la cible à droite de l'enfant, la flèche
+      // tourne vers la droite (angle positif), et le mot le dit.
+      const sens = g ? await tab.evaluate(async () => {
+        const p = window.__game.player, c = window.__gps();
+        const dx = c.x - p.pos.x, dz = c.z - p.pos.z;
+        const face = Math.atan2(-dx, -dz);
+        const lire = async (yaw) => {
+          p.yaw = yaw;
+          await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+          const t = getComputedStyle(document.getElementById('gps-fleche')).transform;
+          const m = t.match(/matrix\(([^,]+),\s*([^,]+)/);
+          const ang = m ? Math.atan2(parseFloat(m[2]), parseFloat(m[1])) : null;
+          return { ang: ang == null ? null : +ang.toFixed(2), mot: document.getElementById('gps-texte').textContent };
+        };
+        return { face: await lire(face), droite: await lire(face + Math.PI / 2), gauche: await lire(face - Math.PI / 2) };
+      }) : null;
+      verifier('la flèche du GPS pointe vers la destination',
+        !!sens && Math.abs(sens.face.ang) < 0.2 && /tout droit/.test(sens.face.mot)
+        && sens.droite.ang > 1.2 && /droite/.test(sens.droite.mot)
+        && sens.gauche.ang < -1.2 && /gauche/.test(sens.gauche.mot),
+        JSON.stringify(sens));
+
+      // ARRIVÉ, LE GPS S'ÉTEINT TOUT SEUL — on s'y pose comme en voyage.
+      let fin = null;
+      if (g) {
+        await tab.evaluate(({ x, z }) => window.__carte.surTeleport(x + 3, z - 2), { x: g.x, z: g.z });
+        const t0 = Date.now();
+        while (Date.now() - t0 < 8000) {
+          fin = await tab.evaluate(() => ({ gps: window.__gps(), hud: getComputedStyle(document.getElementById('gps')).display }));
+          if (!fin.gps) break;
+          await dormir(200);
+        }
+        fin.ms = Date.now() - t0;
+      }
+      verifier('arrivé à destination, le GPS s\'éteint', !!fin && !fin.gps && fin.hud === 'none', JSON.stringify(fin));
+    }
 
     // --- plus on s'approche, plus la carte montre ----------------------------
     await banc.ouvrirLaCarte(tab);
