@@ -319,17 +319,23 @@ function verifier(nom, ok, detail = '') {
     await allerAParis(hote);
     await dormir(30000);
     await allerAParis(alice);
+    // LES DEUX PAGES SE LISENT L'UNE APRÈS L'AUTRE, À UNE DEMI-SECONDE D'ÉCART
+    // OU PLUS sur ce banc : les voitures roulent entre les deux lectures, et le
+    // premier jet comptait ce trajet comme un désaccord (écart médian 8 sur le
+    // code neuf pour une barre à 8). Chaque relevé porte donc l'heure de la
+    // MACHINE (`Date.now`, la même pour les deux pages) et la vitesse du
+    // convoi, et l'on ramène la première lecture à l'instant de la seconde.
     const convoisDe = (page) => page.evaluate(() => {
-      const out = {};
+      const out = { t: Date.now() };
       for (const c of (window.__vehicules.etat() || [])) {
         if (!c.routier || c.nom !== 'voiture') continue;
-        out[`${c.nom}|${c.longueur}|${c.graine}`] = { d: c.distance, L: c.longueur };
+        out[`${c.nom}|${c.longueur}|${c.graine}`] = { d: c.distance, L: c.longueur, v: c.vitesse || 0, arret: !!c.attente };
       }
       return out;
     });
     await jusqua(async () => {
       const a = await convoisDe(hote), b = await convoisDe(alice);
-      return Object.keys(a).filter((k) => b[k]).length >= 3;
+      return Object.keys(a).filter((k) => k !== 't' && b[k]).length >= 3;
     }, 60000);
     // ON PROVOQUE LA DIVERGENCE, ON NE L'ATTEND PAS (v233, v266). Deux pages
     // ouvertes presque ensemble ont des circulations presque en phase par
@@ -344,10 +350,11 @@ function verifier(nom, ok, detail = '') {
     const ecartsRue = [];
     for (let k = 0; k < 5; k++) {
       const a = await convoisDe(hote), b = await convoisDe(alice);
+      const dt = (b.t - a.t) / 1000;
       for (const cle of Object.keys(a)) {
-        if (!b[cle]) continue;
+        if (cle === 't' || !b[cle] || a[cle].arret || b[cle].arret) continue;
         const L = a[cle].L || 1;
-        const e = Math.abs((((a[cle].d - b[cle].d) % L) + L) % L);
+        const e = Math.abs((((a[cle].d + a[cle].v * dt - b[cle].d) % L) + L) % L);
         ecartsRue.push(Math.min(e, L - e));
       }
       await dormir(600);
@@ -411,7 +418,7 @@ function verifier(nom, ok, detail = '') {
     // n'était venue en douze secondes) : une mesure où personne ne vient n'est
     // pas une mesure.
     const idMarlon2 = marlonChezAlice2;
-    let traversee = { dedans: 0, plusPres: Infinity, releves: 0, essais: 0 };
+    let traversee = { dedans: 0, plusPres: Infinity, releves: 0, essais: 0, suivie: null };
     for (let essai = 0; essai < 5; essai++) {
       // SUR LE TRAJET, PAS « DOUZE BLOCS DEVANT » EN LIGNE DROITE : sur une rue
       // qui tourne, ce point n'est pas sur le tracé, et l'ancien code rendait
@@ -429,10 +436,13 @@ function verifier(nom, ok, detail = '') {
             const devant = par.get(pl[3] - 1);
             if (!devant || pl[5] || devant[5]) continue;
             const d = Math.hypot(devant[0] - pl[0], devant[1] - pl[1]);
-            if (d > 8 && d < 30) paires.push({ x: devant[0], z: devant[1], cap: devant[2] });
+            if (d > 6 && d < 30) paires.push({ x: devant[0], z: devant[1], cap: devant[2], d, qui: `${c.cle}#${pl[3]}` });
           }
         }
-        return paires.length ? paires[(k * 7) % paires.length] : null;
+        // l'écart le plus court d'abord : sur ce banc une page de Paris rend peu
+        // d'images, et la voiture de derrière doit arriver pendant la fenêtre
+        paires.sort((p, q) => p.d - q.d);
+        return paires.length ? paires[k % paires.length] : null;
       }, essai);
       if (!cible) { await dormir(1000); continue; }
       await hote.evaluate((c) => {
@@ -470,14 +480,24 @@ function verifier(nom, ok, detail = '') {
         // voiture déjà dedans ne peut rien dire, ni dans un sens ni dans l'autre
         const deja = new Set();
         let dedans = 0, plusPres = Infinity, releves = 0;
+        // LA VOITURE DE DERRIÈRE, SUIVIE PAR SON NOM : sur le code neuf elle
+        // s'arrête DEVANT Marlon (à neuf blocs, mesuré : elle regarde huit
+        // blocs de son tracé), sur l'ancien elle le traverse. Le verdict lit
+        // donc « elle est venue » par l'un OU l'autre : arrivée tout près, ou
+        // arrêtée en attente à moins de douze blocs.
+        let suivie = { dMin: Infinity, attend: 0 };
         const t0 = performance.now();
-        while (performance.now() - t0 < 12000) {
+        while (performance.now() - t0 < 30000) {
           const R = rect(rp.pos.x, rp.pos.z, m.cap);
           for (const c of v.etat()) {
             if (!c.routier) continue;
             for (const pl of c.places) {
               const qui = `${c.cle}#${pl[3]}`;
               const d = Math.hypot(pl[0] - rp.pos.x, pl[1] - rp.pos.z);
+              if (qui === m.qui) {
+                if (d < suivie.dMin) suivie.dMin = +d.toFixed(1);
+                if (pl[5] && d < 12) suivie.attend++;
+              }
               const touche = d < 6 && !separe(R, rect(pl[0], pl[1], pl[2]));
               if (releves === 0) { if (touche) deja.add(qui); continue; }
               if (deja.has(qui)) continue;
@@ -486,15 +506,18 @@ function verifier(nom, ok, detail = '') {
             }
           }
           releves++;
+          if (dedans > 0 || suivie.attend >= 8) break;    // le verdict est acquis
           await dodo(250);
         }
-        return { dedans, plusPres: +plusPres.toFixed(1), releves, deja: deja.size, arrive };
+        return { dedans, plusPres: +plusPres.toFixed(1), releves, deja: deja.size, arrive, suivie,
+          ms: Math.round(performance.now() - t0) };
       }, { id: idMarlon2, m: cible });
       traversee = { ...r, essais: essai + 1 };
-      if (r.dedans > 0 || r.plusPres < 3) break;     // une voiture est venue : la situation a eu lieu
+      if (r.dedans > 0 || (r.suivie && (r.suivie.dMin < 3 || r.suivie.attend >= 8))) break;     // une voiture est venue : la situation a eu lieu
     }
     verifier('et chez l\'ami, la circulation ne traverse plus la voiture de l\'enfant',
-      prise.auVolant && traversee.dedans === 0 && traversee.plusPres < 8,
+      prise.auVolant && traversee.dedans === 0 && !!traversee.suivie
+      && (traversee.suivie.attend >= 8 || traversee.suivie.dMin < 3),
       JSON.stringify(traversee));
 
 
