@@ -3674,10 +3674,12 @@ const VRAIES_KM = [
         rel.set(cle, { cols, hist, n: cols.length });
       }
       const cles = [...rel.keys()];
-      let pireDist = 0, pireDistP = '', pireCol = 0, pireColP = '', paires = 0;
+      let pireDist = 0, pireDistP = '', pireCol = 0, pireColP = '', paires = 0, inter = 0;
+      const typoDe = (cle) => String(VILLES_MONDE.find((v) => v.cle === cle).typo);
       for (let i = 0; i < cles.length; i++) {
         for (let j = i + 1; j < cles.length; j++) {
           const A = rel.get(cles[i]), B = rel.get(cles[j]);
+          const memeTissu = typoDe(cles[i]) === typoDe(cles[j]);
           let l1 = 0;
           for (const k of new Set([...A.hist.keys(), ...B.hist.keys()])) {
             l1 += Math.abs((A.hist.get(k) || 0) / A.n - (B.hist.get(k) || 0) / B.n);
@@ -3687,7 +3689,19 @@ const VRAIES_KM = [
           for (let k = 0; k < A.n; k++) if (A.cols[k] === B.cols[k]) eg++;
           const c = eg / A.n;
           paires++;
-          if (d > pireDist) { pireDist = d; pireDistP = `${cles[i]}/${cles[j]}`; }
+          // LA DISTRIBUTION SE COMPARE ENTRE TISSUS DIFFÉRENTS (v307). Deux
+          // villes du MÊME tissu ont, par construction, les mêmes matières
+          // dans les mêmes proportions : mesuré, leur pire paire va de 0,988
+          // à 0,994 sur `origin/main` et de 0,990 à 0,996 ici selon la seule
+          // taille de la fenêtre (30 à 45 blocs) — une barre à 0,995 tombait
+          // DANS son étendue naturelle, c'était un tirage (v277). Entre tissus
+          // différents la pire paire vaut 0,960 à 0,976 des deux côtés, et le
+          // plan unique d'avant la v280 rendait 1,000. L'identité colonne par
+          // colonne, elle, se compare sur toutes les paires.
+          if (!memeTissu) {
+            inter++;
+            if (d > pireDist) { pireDist = d; pireDistP = `${cles[i]}/${cles[j]}`; }
+          }
           if (c > pireCol) { pireCol = c; pireColP = `${cles[i]}/${cles[j]}`; }
         }
       }
@@ -3759,7 +3773,7 @@ const VRAIES_KM = [
         }
         arcades.push({ cle, typo: String(f.typo), cols, sous, part: sous / Math.max(1, cols) });
       }
-      return { paires, pireDist, pireDistP, pireCol, pireColP, batis,
+      return { paires, inter, pireDist, pireDistP, pireCol, pireColP, batis,
         formes: formes.size, pirePlace, villes: trame.length, sansPlace, centreDehors, arcades };
     });
 
@@ -3767,10 +3781,14 @@ const VRAIES_KM = [
     // tombe de 1,000 (Accra/Kiev — le même sol dans les mêmes proportions) à
     // 0,988, et la pire identité colonne par colonne de 95,9 % (Varsovie/
     // Budapest) à 77,5 %. Les barres sont posées un cran au-delà des mesures,
-    // pas sur elles.
+    // pas sur elles. Depuis la v307 la distribution se compare entre TISSUS
+    // DIFFÉRENTS (voir plus haut) : pire 0,976 mesuré, barre 0,985 ; sur le
+    // plan unique d'avant la v280 il n'y a aucune paire de tissus différents,
+    // et le témoin le dit.
     verifier('deux villes engendrées ne sont plus la même ville',
-      tissus.paires > 100 && tissus.pireDist < 0.995 && tissus.pireCol < 0.88,
-      `pire similarité de distribution ${tissus.pireDist.toFixed(3)} (${tissus.pireDistP})`
+      tissus.paires > 100 && tissus.inter > 50 && tissus.pireDist < 0.985 && tissus.pireCol < 0.88,
+      `pire similarité de distribution entre tissus différents ${tissus.pireDist.toFixed(3)}`
+      + ` (${tissus.pireDistP}, ${tissus.inter} paires)`
       + ` · pire identité colonne ${(100 * tissus.pireCol).toFixed(1)} % (${tissus.pireColP})`
       + ` · ${tissus.paires} paires`);
 

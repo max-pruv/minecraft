@@ -54,7 +54,14 @@ chaussée médiane 5,25 → 6,25 pour une barre de 5,9, trottoir 2,02 → 2,50, 
 centrale 7,05 → 13,05, coins coupés de Barcelone 0/132 → 119/122 (Rome 0 des
 deux côtés). Le quatrième est vert des deux côtés à dessein — il garde une
 capacité qu'on vient de frôler : la part bâtie tient sa barre de 17, que le
-premier jet (pas seul agrandi, 14,5) cassait. Les témoins d'avant — deux voitures côte à côte, îlot
+premier jet (pas seul agrandi, 14,5) cassait. Et un témoin de la v280 est
+repointé, pas assoupli : « deux villes ne sont plus la même ville » comparait
+la distribution du sol de TOUTES les paires, et deux villes du même tissu
+l'ont par construction — leur pire paire va de 0,988 à 0,996 selon la seule
+taille de la fenêtre, des deux côtés, pour une barre à 0,995 : un tirage. La
+distribution se compare désormais entre tissus différents (pire 0,972, barre
+0,985 ; le plan unique d'avant la v280 n'en a aucune paire), l'identité
+colonne par colonne toujours sur toutes. Les témoins d'avant — deux voitures côte à côte, îlot
 de cinq blocs, voie de droite, partage de rue, mobilier hors du couloir, une
 voiture visible du centre — restent verts.
 
