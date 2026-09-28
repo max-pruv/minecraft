@@ -116,10 +116,22 @@ const VRAIES_KM = [
     // distances, à l'échelle près. Sauf l'Atlantique, resserré par décision de
     // Max — donc Paris/New York est volontairement plus court.
     const pos = Object.fromEntries(monde.lieux.map((l) => [l.cle, l]));
+    // PARIS VIT À CÔTÉ DE SA LATITUDE, ET C'EST DÉCLARÉ (v306). Doublé, son
+    // disque aurait recouvert ce que les enfants ont bâti : son centre part de
+    // cent soixante-dix blocs vers le sud-ouest, et la surcharge vit dans SA
+    // fiche du registre (`terre: { dx, dz }`). La géographie — distances et
+    // points cardinaux — se juge donc sur la position que la latitude donne ;
+    // ce que le JEU fait de Paris se juge plus bas, sur la position déplacée,
+    // et l'on garde que le décalage reste celui qu'on a déclaré.
+    const geo = Object.fromEntries(monde.lieux.map((l) => [l.cle,
+      l.terre ? { ...l, x: l.x - l.terre.dx, z: l.z - l.terre.dz } : l]));
+    const decales = monde.lieux.filter((l) => l.terre).map((l) => `${l.cle} ${Math.round(Math.hypot(l.terre.dx, l.terre.dz))}`);
+    verifier('une seule ville vit à côté de sa latitude, Paris, et de moins de deux cents blocs',
+      decales.length === 1 && /^paris /.test(decales[0]) && Number(decales[0].split(' ')[1]) < 200, decales.join(' · '));
     const ecarts = [];
     for (const [a, b, km, tolerance] of VRAIES_KM) {
-      if (!pos[a] || !pos[b]) { ecarts.push(`${a}/${b} absent`); continue; }
-      const blocs = Math.hypot(pos[a].x - pos[b].x, pos[a].z - pos[b].z);
+      if (!geo[a] || !geo[b]) { ecarts.push(`${a}/${b} absent`); continue; }
+      const blocs = Math.hypot(geo[a].x - geo[b].x, geo[a].z - geo[b].z);
       const attendu = km / monde.kmParBloc;
       const err = Math.abs(blocs - attendu) / attendu;
       if (err > tolerance) {
@@ -156,7 +168,7 @@ const VRAIES_KM = [
     ];
     const fauxCaps = [];
     for (const [a, ref, attendus] of boussole) {
-      const dx = pos[a].x - pos[ref].x, dz = pos[a].z - pos[ref].z;
+      const dx = geo[a].x - geo[ref].x, dz = geo[a].z - geo[ref].z;
       const vus = [];
       if (dz < 0) vus.push('nord'); if (dz > 0) vus.push('sud');
       if (dx > 0) vus.push('est'); if (dx < 0) vus.push('ouest');
@@ -186,7 +198,10 @@ const VRAIES_KM = [
         // Notre-Dame — donc elle la SUIT toujours, à son écart près. C'est ce
         // que le témoin garde : pas « au centre », mais « à son écart ».
         caserne: [w.VILLE.x, w.VILLE.z],
-        caserneAttendue: paris.adresseParis(-8.64, 9.25),
+        // Et Paris doublé (v306) a doublé son écart : l'ancienne adresse
+        // tombait sur 5,9 % d'eau, et le site a été remesuré par la sonde des
+        // aérodromes (world.js, `VILLE`). Le lien reste en kilomètres.
+        caserneAttendue: paris.adresseParis(-10.08, -0.44),
       };
     });
     const perdus = [];
