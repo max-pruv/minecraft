@@ -14,6 +14,7 @@ export const NOUVEAUTES = [
       'Roissy, Orly et le volcan déménagent',
       'Le village gaulois part en Bretagne',
       'Un GPS pour aller où tu veux',
+      'Prendre une voiture marche à chaque fois',
     ],
   },
   {

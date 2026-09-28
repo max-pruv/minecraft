@@ -2090,9 +2090,19 @@ export function createVehicules({ scene, player }) {
   function emprunter(id) {
     const [ci, i] = String(id).split(':').map(Number);
     const c = convois[ci];
-    if (!c || !c.elements[i] || c.pris.has(i)) return null;
+    if (!c || !(i >= 0 && i < c.nb) || c.pris.has(i)) return null;
+    // UNE PLACE VIDE SE PREND AUSSI (v306). `placeProche` rend à dessein les
+    // places qu'aucun maillage n'occupe encore (v235 : « c'est ce qui permet
+    // de monter dans un convoi qu'on rejoint ») ; `emprunter`, lui, refusait
+    // une place sans maillage, et `embarquer` retombait alors sur le chemin du
+    // métro — « 🚙 Tu montes dans le voiture ! Il t'emmène », l'enfant
+    // passager d'une voiture sans conducteur, vu au banc à 2,8 blocs. On
+    // fabrique la voiture à sa place : c'est celle que le convoi y aurait
+    // dessinée. Sa laque, elle, se pose au chargement du modèle : prise dans
+    // l'instant, elle garde sa livrée d'origine — personne ne l'avait encore
+    // vue d'une autre couleur.
     const p = c.place(i);
-    const mesh = c.elements[i];
+    const mesh = c.element(i);
     const flotte = mesh.userData ? mesh.userData.flotte : null;
     const nom = mesh.userData ? mesh.userData.nomVoiture : null;
     // LA COULEUR PART AVEC LA VOITURE (v305). Max : « quand on monte dans une

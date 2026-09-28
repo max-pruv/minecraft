@@ -106,6 +106,27 @@ cible, cible à droite, cible à gauche — un signe se regarde, v231), et le GP
 s'éteint à l'arrivée. Le témoin d'appui long d'avant choisit désormais
 « Téléporter », comme l'enfant.
 
+### Et dans la même fusion : prendre une voiture marche à chaque fois
+
+**Pourquoi.** Le portail de la v306 a rendu rouge « on prend le volant d'une
+voiture vue dans la rue », vert sur toutes les versions jusqu'à la v303. Deux
+défauts empilés. Le témoin appelait le raccourci de page avec la mauvaise
+signature et visait la voiture la plus proche DU MONDE (139 blocs) : il passait
+par chance, jusqu'à ce que Paris doublé déplace son circuit. Et une fois visé
+juste, le jeu répondait « 🚙 Tu montes dans le voiture ! Il t'emmène » : la place
+la plus proche n'avait pas encore de voiture fabriquée, `emprunter` la refusait,
+et l'enfant devenait passager comme dans un métro.
+
+**Ce que ça change.** Une place de convoi se prend même quand sa voiture n'est
+pas encore dessinée : elle se fabrique à l'instant, à sa place. Ce défaut est
+aussi celui de la production.
+
+**Ce qui le prouve.** Le témoin de `fumee.js`, rouge sur le code d'avant
+(« Tu montes dans le voiture », à 2,8 blocs), vert après (« Tu prends le volant
+de la Rimac Nevera », à 1,6 bloc) ; il publie désormais le bouton, le bandeau et
+la place visée. Pourquoi une place à moins de trois blocs n'avait pas de
+voiture dessinée reste ouvert, et c'est déclaré dans `TASKS.md`.
+
 ## v305 — En ligne, tout le monde voit la même rue
 
 *Livrée avec la v306, dans la même fusion.*

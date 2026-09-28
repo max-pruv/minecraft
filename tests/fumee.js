@@ -735,6 +735,10 @@ function verifier(nom, ok, detail = '') {
         const place = v && v.placeProche(5);
         if (!place || place.nom !== 'voiture') continue;
         const avant = v.etat().filter((k) => k.nom === 'voiture').reduce((s, k) => s + k.total, 0);
+        // CE QUE L'ENFANT VOIT, dans le message : sans lui, un rouge « pas au
+        // volant » ne distingue pas un bouton qui dit autre chose d'un clic
+        // qui ne prend rien (v306).
+        const bouton = document.getElementById('board-btn').textContent;
         document.getElementById('board-btn').click();
         // Le bouton ne change qu'au tour d'affichage suivant : on attend le
         // RÉSULTAT, on ne le lit pas dans la foulée du clic.
@@ -755,6 +759,8 @@ function verifier(nom, ok, detail = '') {
           // preuve la plus directe qu'on tient le volant.
           auVolant: !!g.player.volInterdit,
           prise: avant - apres, attente: Math.round(performance.now() - t0),
+          bouton, bandeau: (document.getElementById('toast') || {}).textContent || null,
+          place: { id: place.id, d: +place.d.toFixed(1) },
           modele: auto && auto.mesh ? auto.mesh.userData.flotte || null : null,
         };
       }

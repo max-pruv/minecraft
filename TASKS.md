@@ -1,5 +1,15 @@
 # Ce qui est en cours
 
+- [ ] **UNE PLACE DE VOITURE À MOINS DE TROIS BLOCS, SANS VOITURE DESSINÉE (vu
+  en v306).** Au témoin « on prend le volant » de `fumee.js`, `placeProche(5)`
+  rendait une place à 2,8 puis 1,6 bloc de l'enfant, et `elements[i]` y était
+  VIDE — donc rien de dessiné, et le bouton de bord caché. `montrer`
+  fabrique pourtant toute place à portée, et `update` appelle `montrer` sur
+  tous les convois à chaque image : la contradiction n'est pas expliquée. Le
+  remède (`emprunter` fabrique la voiture) tient sans la cause, mais un enfant
+  pourrait voir une rue où une voiture DEVRAIT être. Sonde à écrire : à
+  l'instant où `placeProche` rend la place, relever `c.vu`, la distance de la
+  tête, `retardMax()` et ce que `montrer` calcule pour cette place.
 - [ ] **LES QUAIS DE LA SEINE MONTRENT UN MUR DE TERRE (vu en v306, capture
   `apres-quai`).** Sous la margelle de pierre du quai, la paroi qui descend à
   l'eau est en blocs de TERRE sur toute sa hauteur : c'est le relief nu, pas un
