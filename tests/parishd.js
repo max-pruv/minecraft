@@ -172,12 +172,29 @@ function verifier(nom, ok, detail = '') {
       // 61 200 de menuiserie), 9,2 après — le châssis d'une baie est UN quad
       // ajouré au lieu de six boîtes. La barre à dix mégaoctets sépare les deux ;
       // c'est le budget de la v299 qui en dépend (128 Mo pour tout le détail).
-      const ouest = tampons(1, -25, 16);
+      // LE MORCEAU SE CHERCHE (v306). Il était écrit en dur, (-25, 16) : l'ouest
+      // dense de l'ANCIEN Paris. Paris déplacé et doublé, ce morceau tombait
+      // sur une rue et rendait 5 139 sommets — rouge sans rien mesurer. On
+      // prend, à trois kilomètres à l'ouest de Notre-Dame, le morceau qui
+      // porte le plus de colonnes de façade (la mesure du morceau témoin plus
+      // haut) ; mesuré : 110 000 à 124 000 sommets, 8,2 à 9,2 Mo.
+      const [ox, oz] = adresseParis(-3, 0);
+      let dense = null;
+      for (let kx = Math.floor(ox / CHUNK) - 5; kx <= Math.floor(ox / CHUNK) + 5; kx++)
+        for (let kz = Math.floor(oz / CHUNK) - 5; kz <= Math.floor(oz / CHUNK) + 5; kz++) {
+          let nf = 0;
+          for (let lx = 0; lx < CHUNK; lx++) for (let lz = 0; lz < CHUNK; lz++) {
+            const x = kx * CHUNK + lx, z = kz * CHUNK + lz;
+            if (P0.solParis(x, z) === null && P0.lotParisLibre(x, z) && !P0.gabaritParis(x, z).dedans) nf++;
+          }
+          if (!dense || nf > dense.nf) dense = { kx, kz, nf };
+        }
+      const ouest = tampons(1, dense.kx, dense.kz);
       const f = ouest.t.facades;
       const n = f ? f.positions.length / 3 : 0;
       const octets = f ? (f.positions.length + f.normals.length + f.uvs.length + f.colors.length + f.tiles.length + f.matiere.length + f.lueur.length) * 4 + f.indices.length * (n > 65535 ? 4 : 2) : 0;
       verifier('un morceau dense de l\'ouest pèse moins de dix mégaoctets de façades, avec des étages trois fois plus hauts',
-        n > 50000 && octets < 10 * 1048576, `${n} sommets, ${(octets / 1048576).toFixed(2)} Mo (avant la v301 : 146 150, 10,88 Mo)`);
+        n > 50000 && octets < 10 * 1048576, `morceau (${dense.kx}, ${dense.kz}), ${dense.nf} colonnes de façade : ${n} sommets, ${(octets / 1048576).toFixed(2)} Mo (avant la v301 : 146 150, 10,88 Mo)`);
     }
   }
 
