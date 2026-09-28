@@ -1,5 +1,15 @@
 # Ce qui est en cours
 
+- [ ] **« ON PREND LE VOLANT D'UNE VOITURE VUE DANS LA RUE » (fumee.js) A
+  ATTENDU 124 S SANS VOITURE, UNE FOIS (portail de la v306, commit 1c40488).**
+  Rejouée seule dans la foulée : verte deux fois, une voiture prise en 132 ms
+  à 4,3 et 1,8 bloc. Depuis la v305 la position d'un convoi est une fonction
+  de l'HEURE RÉELLE : au point du témoin (circuit 0, entre ses points 2 et 3),
+  une file qui attend derrière un bus ou un feu peut ne pas passer pendant
+  deux minutes, selon l'heure où le banc tourne. Non mesuré : combien de temps
+  une place reste hors de portée de ce point sur un tour complet d'horloge. À
+  faire : balayer `distanceA(t)` sur un tour, relever le plus long trou, et
+  poser le témoin là où il est le plus court — ou attendre sur deux points.
 - [ ] **DEUX OU TROIS PROGRAMMES SE COMPILENT ENCORE À L'ARRIVÉE À PARIS
   (mesuré en v306).** Voitures et feux chauffés, `sonde-programmes-paris.cjs`
   rend 2 · 2 · 3 programmes neufs (`3,srgb` et `131075,srgb` en fin de clé),
