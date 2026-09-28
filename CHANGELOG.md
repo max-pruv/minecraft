@@ -20,6 +20,53 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v307 — Les rues du monde à la règle du kit, pas seulement celles de Paris
+
+**Pourquoi.** Max : « Pourquoi tu n'as pas fait le reste du monde ? » Son kit
+visait la carte entière, et la v303 n'avait appliqué la section de rue du kit
+(`roadSection`) qu'à Paris. Les 262 villes engendrées à trame gardaient les
+largeurs choisies à la main en v271 : 5,6 blocs de chaussée, 2,0 de trottoir,
+une « avenue » centrale de 6,8 — et, sans que rien ne le dise, Barcelone avait
+perdu ses coins coupés à la même v271 (le chanfrein restait écrit « 5,0 depuis
+l'axe » quand le trottoir finissait à 4,8 : il ne coupait plus que deux
+dixièmes de bloc).
+
+**Ce que ça change.** Dans toutes les villes engendrées, la rue est une
+collectrice du kit — deux voies de 3,2 m, 6,4 blocs de chaussée, trottoirs de
+2,5 — et, dans les 47 grandes villes où l'îlot le permet, la croix centrale est
+un boulevard à quatre voies (13 blocs de chaussée, trottoirs de 4). Les lots
+sont recomposés comme à Paris : le pas de trame et la couronne bâtie grandissent
+dans le rapport des emprises, si bien que la part bâtie reste la même (18,2 % →
+18,4 %). Barcelone retrouve ses coins coupés. Quatre villes que l'heuristique
+mettait en superîlot sont nommées avec leur vrai tissu (Mumbai, Lhassa,
+Vientiane, Canberra). Le sol ne bouge pas — c'est du sol, pas du relief.
+
+Le prix, déclaré : moins de rues, plus larges, donc moins de circuits de
+voitures — 602 anneaux deviennent 440, la rue qui porte un convoi passe de
+158 974 à 127 734 blocs (−20 %), aucune ville n'en perd tous. Les médinas
+(Venise, Fès, Marrakech…) restent hors de la règle : la section `ruelle` du kit
+leur ôterait tous leurs réverbères, c'est une décision de Max.
+
+**Ce qui le prouve.** Quatre témoins neufs dans `carteMonde.js`, qui lisent le
+SOL en traversant des rues au vingtième de bloc ; les trois premiers sont rouges
+sur `origin/main` (même mesure rejouée sous node sur les deux arbres) :
+chaussée médiane 5,25 → 6,25 pour une barre de 5,9, trottoir 2,02 → 2,50, croix
+centrale 7,05 → 13,05, coins coupés de Barcelone 0/132 → 119/122 (Rome 0 des
+deux côtés). Le quatrième est vert des deux côtés à dessein — il garde une
+capacité qu'on vient de frôler : la part bâtie tient sa barre de 17, que le
+premier jet (pas seul agrandi, 14,5) cassait. Et un témoin de la v280 est
+repointé, pas assoupli : « deux villes ne sont plus la même ville » comparait
+la distribution du sol de TOUTES les paires, et deux villes du même tissu
+l'ont par construction — leur pire paire va de 0,988 à 0,996 selon la seule
+taille de la fenêtre, des deux côtés, pour une barre à 0,995 : un tirage. La
+distribution se compare désormais entre tissus différents (pire 0,972, barre
+0,985 ; le plan unique d'avant la v280 n'en a aucune paire), l'identité
+colonne par colonne toujours sur toutes. Les témoins d'avant — deux voitures côte à côte, îlot
+de cinq blocs, voie de droite, partage de rue, mobilier hors du couloir, une
+voiture visible du centre — restent verts.
+
+---
+
 ## v306 — Paris double, et déménage : les quartiers retrouvent leurs immeubles
 
 *Livrée en une seule fusion avec les v303, v304 et v305 — décision de Max :

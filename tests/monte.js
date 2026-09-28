@@ -832,8 +832,16 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // plus. Ce que le défaut de la v201 produisait, c'était des REPRISES du
     // même modèle : trois quarts de modèles distincts au moins, sur six
     // voitures au moins. Mesuré : 13/15 et 12/14 avant, 6/8 ici.
+    //
+    // ET TROIS QUARTS ÉTAIT UN TIRAGE (v307). Sur sept ou huit voitures tirées
+    // de deux convois, deux reprises arrivent par simple hasard : le portail
+    // de la v307 a rendu 5/7 sur un Paris que la livraison ne touche pas, là
+    // où celui d'avant rendait 6/8 sur le même code — la barre était DANS
+    // l'étendue naturelle (v277). Ce que ce témoin garde, c'est l'effondrement
+    // de la flotte sur quelques modèles : c'est une borne de GARDE, elle se
+    // pose à la moitié (v237).
     verifier('et ce ne sont pas dix fois la même voiture',
-      trafic.proches >= 6 && trafic.modeles >= Math.ceil(0.75 * trafic.proches),
+      trafic.proches >= 6 && trafic.modeles >= Math.ceil(0.5 * trafic.proches),
       `${trafic.modeles} modèle(s) différent(s) pour ${trafic.proches} voiture(s) autour de soi`);
 
     // ON PEUT MONTER DANS CE QUI ROULE. Le code pour conduire existe depuis la

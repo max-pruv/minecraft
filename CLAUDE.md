@@ -762,6 +762,49 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les rues du monde à la règle du kit (v307) — une règle écrite pour une ville se cherche dans toutes
+
+Max : « Pourquoi tu n'as pas fait le reste du monde ? » Son kit visait la carte
+entière ; la v303 n'avait passé que Paris à `roadSection`. Cinq règles.
+
+- **UNE RÈGLE DU KIT APPLIQUÉE À UNE VILLE EST UNE DETTE POUR LES AUTRES, ET
+  ELLE SE DIT LE JOUR MÊME.** C'est le verre dans les murs une septième fois —
+  la PORTÉE du remède, jamais la règle — et cette fois c'est Max qui l'a vue.
+  Les 262 villes à trame lisent désormais `voirie.js` (`RUE_VILLE` collectrice,
+  `BOULEVARD_VILLE` pour la croix) ; restent hors règle, DÉCLARÉES : les médinas
+  (la section `ruelle` leur ôterait leurs réverbères — décision de Max) et les
+  cinq villes bâties à la main (une passe par ville, trame figée, comme Paris).
+- **ON RECOMPOSE LES LOTS, ET LA COURONNE SUIT LE PAS.** Mesuré sur les 262
+  villes : pas seul agrandi 18,2 → 14,5 % de part bâtie (la cour grandit), pas
+  gardé et îlot à sa largeur (méthode v294) 14,7 %, pas ET couronne dans le
+  rapport des emprises 18,4 %. Les valeurs de `TYPOS` sont en unités de la
+  v271 et ne donnent plus que le rapport, comme les `pas` de `paris.js`.
+- **LE TYPE D'UNE RUE SE LIT À SA FONCTION, ET LA CROIX CENTRALE AUSSI.** Un
+  boulevard à quatre voies dans une ville de moins de soixante-dix blocs de
+  rayon coûtait un tiers des immeubles du faubourg (15,3 → 10,6 %) : la croix
+  n'est un boulevard (`t.axe`) que dans une grande ville ET là où le lot qui la
+  borde garde cinq blocs. Tout ce qui lit un lot le lit depuis son FRONT BÂTI
+  (`auFront`) ; le mobilier lit la section de CHAQUE direction.
+- **UN CHIFFRE ÉCRIT « DEPUIS L'AXE » MEURT QUAND LE TROTTOIR BOUGE.** Le
+  chanfrein de l'Eixample valait 5,0 depuis l'axe de la rue : trois blocs de
+  coin coupé quand le trottoir finissait à 2,55 (v172), deux dixièmes quand la
+  v271 l'a porté à 4,8. Barcelone a vécu trente-six versions sans ses coins
+  coupés, et aucun témoin ne regardait. Une cote se donne depuis ce qu'elle
+  touche — ici le bord du trottoir.
+- **UN ÉLARGISSEMENT DE PAS SE PAIE EN ANNEAUX, ET LE PRIX SE MESURE VILLE PAR
+  VILLE.** Les candidats d'anneau sont des fractions du rayon arrondies au pas :
+  un pas plus grand les fait tomber sur les mêmes rectangles. 602 → 440
+  anneaux, et QUATRE villes n'en avaient plus aucun — trois superîlots de 47
+  blocs de rayon (le coin d'un anneau d'un pas à 45,3 blocs pour 45 permis) et
+  Mumbai, presqu'île. Le remède est double : les quatre sont nommées dans
+  `TISSU` avec leur vrai tissu (la raison de la v280, pas un réglage), et un
+  DERNIER RECOURS essaie les petits anneaux posés sur les nœuds de la trame
+  pour une ville sans anneau. **Étendre ce recours à toutes les villes est un
+  non-résultat mesuré** (440 → 451) : on ne le réessaie pas. Et ma première
+  idée — « pas de superîlot dans une ville moyenne » — changeait 49 villes
+  (Doha, Houston, Dallas…) pour en sauver trois : une règle se mesure à ce
+  qu'elle touche AVANT de s'écrire.
+
 ## Paris doublé et déplacé (v306) — un bloc se juge sur le monde où il a été posé
 
 Décision de Max, entre trois propositions chiffrées : « Doubler Paris,

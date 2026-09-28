@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 307,
+    titre: 'De vraies rues partout',
+    puces: [
+      'Rues plus larges dans toutes les villes',
+      'Un grand boulevard au centre',
+      'Barcelone retrouve ses coins coupés',
+      'Autant d\'immeubles qu\'avant',
+    ],
+  },
+  {
     v: 306,
     titre: 'Paris devient deux fois plus grand',
     puces: [
