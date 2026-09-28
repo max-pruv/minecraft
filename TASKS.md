@@ -1,5 +1,12 @@
 # Ce qui est en cours
 
+- [ ] **LES QUAIS DE LA SEINE MONTRENT UN MUR DE TERRE (vu en v306, capture
+  `apres-quai`).** Sous la margelle de pierre du quai, la paroi qui descend à
+  l'eau est en blocs de TERRE sur toute sa hauteur : c'est le relief nu, pas un
+  mur de quai. Non mesuré : ni sur `origin/main` (la Seine d'avant avait-elle
+  le même défaut ?), ni l'étendue (tout le linéaire ou un tronçon ?). À faire
+  sous node : balayer les colonnes de berge de `solParis` et compter la
+  matière posée entre l'eau et la margelle, des deux côtés.
 - [ ] **EN LIGNE, UNE VOITURE DE LA RUE ENTRE ENCORE UNE FOIS DANS CELLE D'UN
   AMI (v305, mesuré en v306).** Le témoin de `reseau.js` pose Marlon au volant
   dans la rue de Paris et regarde chez Alice. Ce qui est PROUVÉ : la voiture
