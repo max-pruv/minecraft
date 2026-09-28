@@ -762,6 +762,46 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Le raccord ville/campagne (v308) — le sol d'une ville rejoint la surface là où le relief change
+
+Max : « Improve all cities ». Premier point du kit v4 après le rail. Quatre
+règles.
+
+- **ON MESURE CE QUE L'ENFANT RENCONTRE EN MARCHANT, PAS UNE CLASSE DE
+  COLONNE.** Ma première sonde comptait les transitions « naturelle ↔ voxel »
+  avec une dénivelée ; elle confondait le seuil de la ville, les murets et les
+  falaises du fondu. La grandeur juste est la hauteur où l'on POSE LE PIED —
+  la surface continue, ou le dessus du cube que rien ne tait — tous les
+  dixièmes de bloc le long d'un rayon, et un seuil traversé par un bâtiment ou
+  par l'eau ne compte pas. C'est elle qui a dit « un seuil sur trois » et qui
+  garde le témoin.
+- **LE RACCORD NE VAUT QUE LÀ OÙ LE RELIEF CHANGE, SUR DEUX RANGS.** Une rue
+  à plat passée à la surface perdrait son occlusion au pied des murs et
+  décalerait ses marquages d'un demi-bloc (une cellule prend la tuile de UNE
+  colonne). À un seul rang de part et d'autre du ressaut, la colonne du haut
+  n'est pas COUVERTE : son cube garde son flanc et la rampe passe dessous, un
+  demi-bloc de mur au milieu de la pente. Deux rangs (`RAYON_RACCORD`), et une
+  différence de cote d'un ou deux blocs dans la fenêtre — le reste est une
+  falaise, que `MARCHE_MAX` garde.
+- **LE SOL DE VILLE DOIT ÊTRE À `terrainHeight`.** C'est ce qui garde
+  l'invariant 1 par construction : la surface passe au centre de la colonne, à
+  la cote où l'enfant marchait déjà. Un sol surélevé (un plancher, un quai)
+  reste voxel. Rien n'est écrit, `terrainHeight` n'est pas touché : les deux
+  empreintes de `plafond.js` ne bougent pas, sans rien déclarer.
+- **CE QUI A SA COUCHE HD NE PASSE PAS À LA SURFACE.** Le mailleur tait le
+  cube d'une colonne couverte ET son sol HD : dans Paris, 12 288 colonnes de
+  pourtour auraient perdu leur asphalte HD pour la tuile plate. Paris est
+  exclu en entier (`world.raccordInterdit`) — et son seuil n'avait pas de
+  marche, son fondu est DANS le disque. La règle lit la GÉOGRAPHIE, jamais le
+  palier : un sol qui changerait de forme avec la qualité changerait la
+  hauteur des pieds d'une tablette à l'autre (v297).
+
+**Ce qui reste, déclaré** (`TASKS.md`) : les fondus plus raides qu'un bloc par
+bloc — une ville posée dix-huit à vingt-huit blocs sous son pays (Salvador,
+Bari, Jakarta, Busan…), 4 % des seuils. La surface ne peut pas y dessiner
+(deux blocs dans une cellule, c'est un mur), et les adoucir élargit le fondu
+hors du disque : c'est le relief qui bouge, donc une décision de Max.
+
 ## Les rues du monde à la règle du kit (v307) — une règle écrite pour une ville se cherche dans toutes
 
 Max : « Pourquoi tu n'as pas fait le reste du monde ? » Son kit visait la carte

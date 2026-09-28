@@ -48,7 +48,7 @@
 //
 // Aucun import de three, aucun DOM : ce module tourne dans le worker et sous
 // node. Il ne lit le monde que par `terrainHeight`, `getBlock` et `cityAt`.
-import { BLOCK, BLOCK_INFO, CITY_BLOCK, isProp } from './blocks.js';
+import { BLOCK, BLOCK_INFO, CITY_BLOCK, ARCHI, ROUTE_BLOCK, isProp } from './blocks.js';
 import { tileRect } from './tuiles.js';
 
 // Les blocs qui font un sol naturel. `STONE` y est pour le volcan et les
@@ -87,13 +87,71 @@ export function coteNaturelle(world, x, z) {
   return world.terrainHeight(x, z) + 1;
 }
 
+// LE RACCORD VILLE/CAMPAGNE (v308). Une ville est du voxel ; au bord de son
+// disque, là où le relief rejoint celui du pays, et sur ses collines, la
+// chaussée descend donc par MARCHES d'un bloc — mesuré sur 54 villes
+// engendrées, 48 rayons chacune : 1 234 marches d'un bloc, et un rayon sur
+// sept qui entre en ville par un mur d'un bloc entre la campagne lissée et
+// l'asphalte. Le sol d'une ville — chaussée, trottoir, pavé, marquage, granit
+// — rejoint la surface continue LÀ OÙ LE RELIEF CHANGE, et là seulement :
+//   · sur le plat, une rue reste en voxel, avec son occlusion au pied des
+//     murs et ses marquages calés sur le bloc (la surface prend la tuile
+//     d'une colonne et la décale d'un demi-bloc : un passage piéton y serait
+//     de travers) ;
+//   · près d'un changement de cote d'un ou deux blocs (fenêtre de
+//     `RAYON_RACCORD`), la colonne devient naturelle-pour-la-surface. Deux
+//     rangs de part et d'autre de la marche, c'est ce qu'il faut pour que les
+//     colonnes du ressaut soient COUVERTES (leurs quatre cellules dessinées) :
+//     à un seul rang, le cube du haut garde son flanc et la rampe passe
+//     dessous, un demi-bloc de mur au milieu de la pente.
+// Rien n'est écrit, `terrainHeight` n'est pas lu autrement : le sol ne bouge
+// pas (invariant 1), et un bloc posé sur la chaussée rend sa colonne au voxel
+// comme partout ailleurs. Ce qui reste voxel se déclare : les falaises (deux
+// blocs dans une cellule, `MARCHE_MAX`), une ville dont le sol est surélevé
+// au-dessus du relief (le bloc de sol doit être À `terrainHeight`), et
+// Paris (`world.raccordInterdit`), qui a sa couche de sol HD.
+export const SOL_VILLE = new Set([
+  CITY_BLOCK.ASPHALT, CITY_BLOCK.ROADLINE, CITY_BLOCK.SIDEWALK, CITY_BLOCK.GRANITE, CITY_BLOCK.CROSSWALK,
+  ROUTE_BLOCK.LIGNE_NS, ROUTE_BLOCK.LIGNE_EO, ROUTE_BLOCK.PASSAGE_NS,
+  ARCHI.PAVE, ARCHI.BORDURE, BLOCK.COBBLE,
+]);
+export const RAYON_RACCORD = 2;
+// Le relief change-t-il (d'un ou deux blocs) à moins de `RAYON_RACCORD` de
+// cette colonne ? `hEn` rend `terrainHeight` (mémoïsé chez le mailleur).
+export function prochePente(x, z, h, hEn) {
+  for (let dz = -RAYON_RACCORD; dz <= RAYON_RACCORD; dz++) {
+    for (let dx = -RAYON_RACCORD; dx <= RAYON_RACCORD; dx++) {
+      if (!dx && !dz) continue;
+      const e = Math.abs(hEn(x + dx, z + dz) - h);
+      if (e >= 1 && e <= 2) return true;
+    }
+  }
+  return false;
+}
+// Le sol de ville d'une colonne, s'il est À `terrainHeight` et que rien
+// d'autre qu'un décor ne le surmonte.
+export function solDeVille(world, x, z, h) {
+  const id = world.getBlock(x, h, z);
+  if (!SOL_VILLE.has(id) && !SOL_NATUREL.has(id)) return false;   // le square d'une ville en pente aussi
+  return dessusNaturel(world.getBlock(x, h + 1, z));
+}
+function raccordable(world, x, z, h, hEn) {
+  if (world.raccordInterdit && world.raccordInterdit(x, z)) return false;
+  return solDeVille(world, x, z, h) && prochePente(x, z, h, hEn);
+}
+
 // Une colonne est-elle naturelle ? `h` peut être donné (la grille du mailleur
 // l'a déjà) ; `villes` est la liste des villes à portée quand on la connaît
-// (`world.villesProches`), sinon on demande à `cityAt`.
-export function colonneNaturelle(world, x, z, h = world.terrainHeight(x, z), villes = null) {
-  if (villes ? (villes.length && world.cityAtParmi(x, z, villes)) : (world.cityAt && world.cityAt(x, z))) return false;
-  if (!SOL_NATUREL.has(world.getBlock(x, h, z))) return false;
-  return dessusNaturel(world.getBlock(x, h + 1, z));
+// (`world.villesProches`), sinon on demande à `cityAt`. `hEn` rend le relief
+// d'une colonne voisine (le raccord le lit) — mémoïsé chez le mailleur.
+export function colonneNaturelle(world, x, z, h = world.terrainHeight(x, z), villes = null, hEn = (a, b) => world.terrainHeight(a, b)) {
+  const enVille = villes ? (villes.length && world.cityAtParmi(x, z, villes)) : (world.cityAt && world.cityAt(x, z));
+  const haut = world.getBlock(x, h, z);
+  if (!enVille && SOL_NATUREL.has(haut)) return dessusNaturel(world.getBlock(x, h + 1, z));
+  // en ville, ou un sol de ville (les villes engendrées ne sont pas dans
+  // `cityAt` : c'est leur asphalte qui les dit) — le raccord seulement
+  if (!enVille && !SOL_VILLE.has(haut)) return false;
+  return raccordable(world, x, z, h, hEn);
 }
 
 // La fiche d'une colonne telle que la physique la mémoïse : naturelle ou non,
@@ -172,6 +230,19 @@ export function grilleSol(world, cx, cz, chunk) {
   // ne demander « est-ce une ville ? » qu'aux villes à portée du morceau : sur
   // les 280 du registre, la question par colonne coûtait autant que le reste
   const villes = world.villesProches ? world.villesProches(baseX + chunk / 2, baseZ + chunk / 2, chunk) : null;
+  // le relief sur la fenêtre du raccord (v308), lu une fois par colonne et
+  // seulement si une colonne de sol de ville le demande
+  const R = RAYON_RACCORD + 1, NR = chunk + 2 * R;
+  let reliefs = null;
+  const hEn = (x, z) => {
+    const lx = x - baseX + R, lz = z - baseZ + R;
+    if (lx < 0 || lz < 0 || lx >= NR || lz >= NR) return world.terrainHeight(x, z);
+    if (!reliefs) reliefs = new Float64Array(NR * NR).fill(NaN);
+    const i = lx + lz * NR;
+    let v = reliefs[i];
+    if (v !== v) v = reliefs[i] = world.terrainHeight(x, z);
+    return v;
+  };
   for (let lz = -1; lz < chunk + 1; lz++) for (let lx = -1; lx < chunk + 1; lx++) {
     const x = baseX + lx, z = baseZ + lz;
     const r = world.corridorEn ? world.corridorEn(x, z) : null;
@@ -180,9 +251,9 @@ export function grilleSol(world, cx, cz, chunk) {
       nat[idx(lx, lz)] = colonneRoute(world, x, z, r) ? 1 : 0;
       continue;
     }
-    const h = world.terrainHeight(x, z);
+    const h = hEn(x, z);
     cote[idx(lx, lz)] = h + 1;
-    nat[idx(lx, lz)] = colonneNaturelle(world, x, z, h, villes) ? 1 : 0;
+    nat[idx(lx, lz)] = colonneNaturelle(world, x, z, h, villes, hEn) ? 1 : 0;
   }
   // dessinée : par cellule (lx, lz) de -1 à chunk-1 → tableau (chunk+1)²
   const M = chunk + 1;

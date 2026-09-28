@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 308,
+    titre: 'On sort des villes en douceur',
+    puces: [
+      'Plus de marche au bord des villes',
+      'Les rues en pente deviennent des rampes',
+      'Paris ne change pas',
+    ],
+  },
+  {
     v: 307,
     titre: 'De vraies rues partout',
     puces: [

@@ -169,12 +169,26 @@
   à `cote` — jusqu'à un bloc au-dessus : une mesure, pas un réglage. (8) Le
   demi-tour du train aux terminus reste une diagonale entre les deux voies
   (`traceSegment`) ; le kit demande un tiroir ou un retournement.
+- [ ] **LE FONDU RAIDE AU BORD DES VILLES (v308) — DÉCISION DE MAX.** Une
+  ville engendrée aplanit son disque à sa cote (`f.sol`, 33 le plus souvent)
+  et raccorde le pays sur QUATORZE blocs hors du disque (`hauteurVillesMonde`).
+  Quand le pays est dix-huit à vingt-huit blocs plus haut, ce fondu fait plus
+  d'un bloc par bloc : des marches de deux, que la surface continue ne dessine
+  pas (`MARCHE_MAX`), et la ville est au fond d'une fosse à gradins. Mesuré,
+  64 rayons par ville : 653 rayons sur 15 434 au-delà d'un bloc par bloc,
+  27 villes à plus d'un huitième (Salvador 46/64, Jakarta 34, Ushuaïa 33,
+  Bari 32, Busan 29…). Le remède est un fondu proportionnel à l'écart (un
+  bloc par bloc au plus, 0,7 visé) : il déplace le relief HORS du disque, sur
+  une couronne de quatorze à quarante blocs — invariant 1, donc décision de
+  Max, avec la forme bornée (double empreinte, découpe hors villes élargie à
+  la couronne, migration des blocs posés dans la couronne, ≤ 24 blocs).
 - [ ] **LE KIT v4 VISE LE MONDE ENTIER, PAS PARIS (Max, 27 septembre).** Ce qui
   est intégré au jeu : le sol continu hors villes (v297), l'A1 Paris–Lille
   (v300), le rail continu sur les neuf segments (v302). Ce qui reste, dans
   l'ordre du kit (`transport-v298/README.md`) : (a) le raccord ville/campagne
-  pour TOUTES les villes (le liseré voxel d'un bloc au bord de chaque disque,
-  v297) ; (b) les autres routes interurbaines — le kit propose 23 corridors
+  pour TOUTES les villes — FAIT en v308 là où le fondu est à un bloc par bloc
+  au plus (seuils à marche 33,7 % → 14,5 %) ; reste le fondu RAIDE, ligne
+  suivante ; (b) les autres routes interurbaines — le kit propose 23 corridors
   candidats (`examples/road-candidates.json`), à instruire un par un contre
   l'eau, les aérodromes, les repères et les sanctuaires comme l'A1 ; (c) les
   falaises et l'eau (surface rocheuse au lieu de marches, berges) ; (d) les
