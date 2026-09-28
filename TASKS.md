@@ -115,9 +115,15 @@
   leurs rayons (Concorde 4,5, l'Étoile 8) : un boulevard de 21 blocs y arrive
   plus large que la place — Paris doublé (v306) ne les agrandit pas, à dessein.
   (3) Les autres villes bâties à la main (Londres,
-  Nice, Lille, San Francisco, Washington) et les villes engendrées n'ont pas
-  encore la règle — même geste, ville par ville, avec la trame figée et la
-  protection des constructions. (4) Une colonne protégée de l'ancienne ville
+  Nice, Lille, San Francisco, Washington) n'ont pas encore la règle — même
+  geste, ville par ville, avec la trame figée et la protection des
+  constructions. Les villes ENGENDRÉES l'ont depuis la v307 (collectrice, et
+  boulevard central dans 47 grandes villes), SAUF les médinas : la section
+  `ruelle` du kit (3 m, sans trottoir) leur ôterait tous leurs réverbères —
+  décision de Max. Prix déclaré de la v307 : 602 → 440 anneaux, 158 974 →
+  127 734 blocs de rue portant un convoi ; la piste, si Max le demande, est un
+  jeu de candidats d'anneau en PAS de trame et non en fraction du rayon (le
+  recours sur les nœuds étendu à toutes les villes ne rend que 11 anneaux). (4) Une colonne protégée de l'ancienne ville
   peut se trouver au milieu d'une rue neuve : les circuits de voitures,
   mesurés sur le plan, la traverseraient. Mesure à faire sur un vrai journal
   (le compte des colonnes protégées se lit dans `world.colonnesParisAvant`).

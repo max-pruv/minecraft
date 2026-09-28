@@ -3518,6 +3518,117 @@ const VRAIES_KM = [
       `${rues.place}/${rues.place + rues.serre} relevé(s) avec la place`
       + ` (${(100 * rues.place / (rues.place + rues.serre)).toFixed(1)} %)`);
 
+    // --- LES RUES DES VILLES ENGENDRÉES À LA RÈGLE DU KIT (v307) -------------
+    //
+    // Max, après Paris : « Pourquoi tu n'as pas fait le reste du monde ? » La
+    // v303 avait appliqué `roadSection` à Paris seul. Ces témoins lisent le SOL
+    // — ce que l'enfant voit — et non une constante de la trame : on traverse
+    // des rues à mi-chemin entre deux carrefours, au vingtième de bloc, et l'on
+    // compte la chaussée et le trottoir. La section attendue se DEMANDE à
+    // `voirie.js`, jamais ne se recopie, et la barre est posée avec sa
+    // quantification (v303) : une chaussée de 6,4 blocs se traverse en six ou
+    // sept colonnes. Mesuré sur `origin/main` : chaussée 5,25, trottoir 2,02,
+    // croix centrale 7,05, coins coupés de Barcelone 0 sur 132 ; ici 6,25,
+    // 2,50, 13,05 et 119 sur 122.
+    const kit = await tab.evaluate(async () => {
+      try {
+        const m = await import('./src/villesmonde.js');
+        const { sectionDeRue } = await import('./src/voirie.js');
+        const { CITY_BLOCK, ROUTE_BLOCK } = await import('./src/blocks.js');
+        const ROULE = new Set([CITY_BLOCK.ASPHALT, CITY_BLOCK.ROADLINE, CITY_BLOCK.CROSSWALK,
+          ROUTE_BLOCK.LIGNE_NS, ROUTE_BLOCK.LIGNE_EO, ROUTE_BLOCK.PASSAGE_NS]);
+        const med = (a) => { const b = [...a].sort((x, y) => x - y); return b.length ? b[Math.floor(b.length / 2)] : -1; };
+        const solA = (f, A, B) => {
+          const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
+          const u = A * co + B * si, v = -A * si + B * co;
+          return m.solVillesMonde(Math.round(f.ancre.x + u), Math.round(f.ancre.z + v));
+        };
+        // Une coupe n'est gardée que si elle traverse UNE rue : trottoir,
+        // chaussée, trottoir — ni place, ni eau, ni esplanade.
+        const coupe = (f, A0, B0, portee) => {
+          const pas = 0.05, seq = [];
+          let roule = 0, trottoir = 0;
+          for (let d = -portee; d <= portee; d += pas) {
+            const s = solA(f, A0 + d, B0);
+            const k = ROULE.has(s) ? 'r' : s === CITY_BLOCK.SIDEWALK ? 't' : 'x';
+            seq.push(k);
+            if (k === 'r') roule += pas; else if (k === 't') trottoir += pas;
+          }
+          if (!/^x*t+r+t+x*$/.test(seq.join('').replace(/(.)\1*/g, '$1'))) return null;
+          return { roule, trottoir: trottoir / 2 };
+        };
+        const rues = [], trots = [], axes = [];
+        for (const cle of ['rome', 'zurich', 'berlin', 'tokyo', 'buenosaires', 'munich', 'madrid', 'vienne']) {
+          const f = m.VILLES_MONDE.find((v) => v.cle === cle);
+          if (!f || !f.trame) continue;
+          const t = f.trame;
+          for (let i = -3; i <= 3; i++) for (let j = -3; j <= 3; j++) {
+            if (!i || !j) continue;
+            const c = coupe(f, i * t.pu, (j + 0.5) * t.pv, t.pu / 2 - 0.5);
+            if (c) { rues.push(c.roule); trots.push(c.trottoir); }
+          }
+          for (const j of [-3, -2, 2, 3]) {
+            const c = coupe(f, 0, (j + 0.5) * t.pv, t.pu / 2 - 0.5);
+            if (c) axes.push(c.roule);
+          }
+        }
+        // Le coin d'un carrefour, un bloc au-delà des deux trottoirs : coupé à
+        // Barcelone, bâti ailleurs.
+        const coins = (cle) => {
+          const f = m.VILLES_MONDE.find((v) => v.cle === cle), t = f.trame;
+          let n = 0, coupes = 0;
+          for (let i = -3; i <= 3; i++) for (let j = -3; j <= 3; j++) {
+            if (!i || !j) continue;
+            for (const [sa, sb] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+              const s = solA(f, i * t.pu + sa * (t.s + 1), j * t.pv + sb * (t.s + 1));
+              if (s == null) continue;
+              n++; if (s === CITY_BLOCK.SIDEWALK) coupes++;
+            }
+          }
+          return { n, coupes };
+        };
+        // La part bâtie, sur les 262 villes à trame, un point sur deux.
+        let lots = 0, tot = 0;
+        for (const f of m.VILLES_MONDE) {
+          if (!f.trame || f.trame.ruelles) continue;
+          const R = f.rayon;
+          for (let dx = -R; dx <= R; dx += 2) for (let dz = -R; dz <= R; dz += 2) {
+            if (dx * dx + dz * dz > R * R) continue;
+            tot++;
+            if (m.solVillesMonde(Math.round(f.ancre.x + dx), Math.round(f.ancre.z + dz)) === 'lot') lots++;
+          }
+        }
+        return {
+          coll: sectionDeRue('collecteur'), boul: sectionDeRue('boulevard'),
+          rues: rues.length, chaussee: med(rues), trottoir: med(trots), axes: axes.length, axe: med(axes),
+          barcelone: coins('barcelone'), rome: coins('rome'), bati: 100 * lots / tot,
+        };
+      } catch (e) { return { err: String(e) }; }
+    });
+    const f2 = (x) => (typeof x === 'number' ? x.toFixed(2) : String(x));
+    verifier('la rue d\'une ville engendrée a la section du kit — deux voies et leurs trottoirs',
+      !kit.err && kit.rues > 50 && kit.chaussee >= kit.coll.chaussee - 0.5
+      && kit.trottoir >= kit.coll.trottoir - 0.25,
+      kit.err || `chaussée médiane ${f2(kit.chaussee)} (kit ${kit.coll.chaussee}, barre`
+      + ` ${f2(kit.coll.chaussee - 0.5)}) · trottoir ${f2(kit.trottoir)} (kit ${kit.coll.trottoir})`
+      + ` · ${kit.rues} coupes`);
+    verifier('et la croix centrale d\'une grande ville est un boulevard',
+      !kit.err && kit.axes > 5 && kit.axe >= kit.boul.chaussee - 1,
+      kit.err || `chaussée médiane de la croix ${f2(kit.axe)} (kit ${kit.boul.chaussee}) · ${kit.axes} coupes`);
+    // Les coins coupés de l'Eixample avaient disparu en v271 sans que rien ne
+    // le dise : le chanfrein restait écrit « 5,0 depuis l'axe » quand le
+    // trottoir finissait à 4,8. Rome, sans chanfrein, est la contre-épreuve.
+    verifier('Barcelone a retrouvé ses coins coupés, et Rome n\'en a pas',
+      !kit.err && kit.barcelone.coupes >= 0.8 * kit.barcelone.n && kit.rome.coupes <= 0.1 * kit.rome.n,
+      kit.err || `Barcelone ${kit.barcelone.coupes}/${kit.barcelone.n} coins coupés`
+      + ` · Rome ${kit.rome.coupes}/${kit.rome.n}`);
+    // Le kit : « si l'élargissement mange les bâtiments, recompose les lots ».
+    // Mesuré : 18,2 % sur `origin/main`, 14,5 % avec le pas seul agrandi,
+    // 18,4 % avec la couronne qui suit — la barre est celle de la v303 (17).
+    verifier('et les villes gardent leurs immeubles : les lots suivent l\'élargissement',
+      !kit.err && kit.bati >= 17,
+      kit.err || `${f2(kit.bati)} % du disque des villes à trame est bâtissable (barre 17)`);
+
     // --- CHAQUE VILLE A SON TISSU, ET DEUX VILLES NE SONT PLUS LA MÊME (v280) -
     //
     // Max : « que ce soit beaucoup plus réaliste… que je me prenne à Barcelone,

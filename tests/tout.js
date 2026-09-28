@@ -127,7 +127,7 @@ const GARDIENS = {
   // Londres, ville entière du tour du monde.
   'src/londres.js': ['carte.js', 'carteMonde.js', 'plafond.js'],
   // La machine à villes : les cinquante grandes du tour du monde.
-  'src/villesmonde.js': ['carteMonde.js', 'carte.js', 'plafond.js'],
+  'src/villesmonde.js': ['carteMonde.js', 'carte.js', 'plafond.js', 'monte.js'],
   // Les deux cents villes : des données pures, jugées par les mêmes témoins
   // que la machine qui les lit.
   'src/villes200.js': ['carteMonde.js', 'carte.js', 'plafond.js'],

@@ -48,6 +48,31 @@ import { positionDe, K_VILLES, MONDES } from './mondes.js';
 import { monumentBati } from './monuments.js';
 import { surTerreReelle } from './terre.js';
 import { VILLES_GENEREES } from './villes200.js';
+import { sectionDeRue } from './voirie.js';
+
+// LES RUES DES VILLES ENGENDRÉES À LA RÈGLE DU KIT (v307). Max, après Paris :
+// « Pourquoi tu n'as pas fait le reste du monde ? » La v303 avait appliqué
+// `roadSection` à Paris seul, et les deux cent soixante-sept villes gardaient
+// les largeurs choisies à la main en v271 — 5,6 blocs de chaussée, 2,0 de
+// trottoir. C'est la règle de la v303 elle-même : quand le kit livre une règle
+// exécutable, on l'exécute, et partout où la même rue existe.
+//
+// Deux sections, lues à `voirie.js` et jamais recopiées : la rue de la trame
+// est une COLLECTRICE — deux voies, parce que les convois roulent dans les
+// deux sens depuis la v271 (6,4 blocs de chaussée, trottoirs de 2,5) — et la
+// croix centrale, qui structure le plan de chaque ville, est un BOULEVARD
+// (13 blocs de chaussée, trottoirs de 4). Une médina (`ruelles`) reste hors de
+// la règle, et c'est déclaré : la section `ruelle` du kit (trois mètres, sans
+// trottoir) ôterait tous leurs réverbères à Venise, Fès et Marrakech — une
+// décision de Max, pas un réglage.
+export const RUE_VILLE = sectionDeRue('collecteur');
+export const BOULEVARD_VILLE = sectionDeRue('boulevard');
+// La demi-emprise de la v271 (`t.s` = 4,8) : c'est elle qui donne le RAPPORT
+// des emprises, donc de combien le pas de trame grandit.
+const FACE_V271 = 4.8;
+// L'îlot le plus mince qu'on accepte (v271 : « plus un seul îlot sous cinq
+// blocs »). Un boulevard ne passe que là où il le laisse.
+const ILOT_MIN = 5;
 
 const uni = (c) => DECOR_START + c * 10;
 const brique = (c) => DECOR_START + c * 10 + 1;
@@ -289,6 +314,16 @@ export const TISSU = {
   dubrovnik: ['organique', 'ville close, ruelles en escalier'],
   sarajevo:  ['organique', 'Baščaršija, tissu ottoman'],
   tirana:    ['organique', 'vieux centre sans trame'],
+  // (v307) Quatre villes que l'heuristique mettait en superîlot parce qu'elles
+  // ont des tours. Le pas de 27 les tenait à peine ; porté à 32 par la règle
+  // du kit, il ne laissait plus un seul anneau de circulation — Colaba est une
+  // presqu'île, et dans un disque de 47 blocs le coin d'un anneau d'un pas est
+  // à 45,3 du centre pour 45 permis. Mais la raison de les nommer est la
+  // v280 : leur centre n'a jamais été un superîlot.
+  mumbai:    ['organique', 'le Fort et Colaba, tracé colonial serré entre deux mers'],
+  lhassa:    ['organique', 'le Barkhor, vieille ville tibétaine autour du Jokhang'],
+  vientiane: ['organique', 'petite capitale le long du Mékong, sans centre à tours'],
+  canberra:  ['organique', 'ville-jardin de Griffin, basse et verte, pas de superîlots'],
 
   // GRILLES FINES D'ASIE ORIENTALE — des trames RÉGULIÈRES à petites parcelles,
   // ce que `organique` produit en effet (petit pas, îlots pleins) même si son nom
@@ -413,8 +448,16 @@ function fabrique(cle, fiche) {
       // ne bougent pas, et l'invariant 1 tient sans rien avoir à déclarer.
       // Même raison que la passe de rues de Londres (v206).
       t.pu = Math.round(t.pu * 3.75); t.pv = Math.round(t.pv * 3.75);
-      t.w = 2.8; t.s = 4.8;
-      if (t.chanfrein) t.chanfrein = 5.0;                    // l'Eixample garde ses coins coupés
+      // LA SECTION VIENT DU KIT (v307) — la chaussée et le trottoir de la
+      // COLLECTRICE. Le pas, lui, est recomposé plus bas, APRÈS la typologie.
+      t.w = RUE_VILLE.chaussee / 2; t.s = t.w + RUE_VILLE.trottoir;
+      // LE CHANFREIN EST UNE COUPE, PAS UNE DISTANCE AU CENTRE DE LA RUE. Écrit
+      // « 5,0 depuis l'axe », il coupait trois blocs de coin quand le trottoir
+      // finissait à 2,55 (v172) et DEUX DIXIÈMES quand la v271 l'a porté à
+      // 4,8 : l'Eixample avait perdu ses coins coupés sans que rien ne le dise.
+      // Il se mesure désormais depuis le bord du trottoir : trois blocs, ce que
+      // la v172 donnait.
+      if (t.chanfrein) t.chanfrein = 3;
       // ET LA TYPOLOGIE PASSE APRÈS LA NORMALISATION (v280) : elle surcharge le
       // pas et pose la cour, sur un gabarit de rue déjà porté aux deux voies de
       // la v271. Dans l'autre ordre, le facteur 3,75 effacerait le pas choisi.
@@ -428,6 +471,35 @@ function fabrique(cle, fiche) {
         Object.assign(t, choix);
         if (typo === 'perimetre' && petite) f.typo = 'faubourg';
       }
+      // SI L'ÉLARGISSEMENT MANGE LES BÂTIMENTS, ON RECOMPOSE LES LOTS (v303, et
+      // v307 pour le monde). Le pas grandit dans le rapport des emprises, donc
+      // l'îlot aussi, et la part bâtie du tissu reste celle que la typologie a
+      // choisie (v280) — les valeurs de `TYPOS` sont en unités de la v271 et ne
+      // servent plus qu'à donner le rapport, exactement comme les `pas` de
+      // `paris.js`. Garder le pas et élargir la rue rendait l'îlot `organique`
+      // à 3,6 blocs : une cloison.
+      //
+      // ET LA COURONNE BÂTIE SUIT LE PAS. Mesuré sur les 262 villes à trame :
+      // le pas seul agrandi laissait la couronne à trois blocs, la cour
+      // grandissait et la part bâtie tombait de 18,2 à 14,5 % ; le pas gardé et
+      // l'îlot à sa largeur (la méthode de la v294, « l'îlot ne perd rien »)
+      // la faisait tomber à 14,7. Les deux ensemble la rendent : 18,5 %.
+      const kEmprise = t.s / FACE_V271;
+      t.pu = Math.round(t.pu * kEmprise); t.pv = Math.round(t.pv * kEmprise);
+      if (t.couronne) t.couronne *= kEmprise;
+      // LA CROIX CENTRALE EST UN BOULEVARD DANS UNE GRANDE VILLE, ET LÀ OÙ
+      // ELLE LAISSE UN ÎLOT. Le type d'une rue se lit à sa FONCTION (v303) :
+      // une ville moyenne — le seuil de soixante-dix blocs de rayon qui fait
+      // déjà d'un îlot à périmètre un faubourg — n'a pas de percée à quatre
+      // voies, et mesuré, vingt et un blocs d'emprise en croix y coûtaient un
+      // tiers des immeubles du faubourg (15,3 → 10,6 %). Et le lot qui borde
+      // le boulevard va de son trottoir à celui de la rue suivante : s'il tombe
+      // sous cinq blocs, la croix reste une rue de la trame — la barre de la
+      // v271. `axe` porte la demi-chaussée et la demi-emprise du boulevard ;
+      // tout ce qui lit la trame le demande là.
+      const bw = BOULEVARD_VILLE.chaussee / 2, bs = bw + BOULEVARD_VILLE.trottoir;
+      const grande = (ancre.r || f.rayon || 0) >= 70;
+      if (grande && Math.min(t.pu, t.pv) - t.s - bs >= ILOT_MIN) t.axe = { w: bw, s: bs };
     }
     // LE MARQUAGE NE SE PEINT QUE S'IL RESTE NET. Vu sur la capture de
     // Moscou : sur une trame en diagonale, pointillés et zèbres se
@@ -1909,6 +1981,17 @@ export function hauteurVillesMonde(x, z, h) {
 // `ra`/`rb` sont les écarts à la ligne de trame la plus proche : la rue est au
 // PETIT |ra|, le cœur du lot au grand. La couronne bâtie va donc de `s` (le bord
 // du trottoir) à `s + cour`.
+// L'ÉCART D'UNE COLONNE DE LOT À SA RUE, RAPPORTÉ AU FRONT BÂTI (v307). Le
+// long de la croix centrale le trottoir finit à `axe.s` et non à `s` : on
+// retranche la différence, et tout ce qui lit un lot — premier rang, cour,
+// porte, cheminée — le lit comme n'importe quel autre. `i` est l'indice de la
+// ligne de trame (0 : la croix).
+export function auFront(t, r, i) {
+  if (!t.axe || i !== 0) return r;
+  const d = t.axe.s - t.s;
+  return Math.sign(r) * Math.max(0, Math.abs(r) - d);
+}
+
 export function coeurDIlot(t, ra, rb) {
   if (!t || !t.couronne) return false;
   // `couronne` EST LA PROFONDEUR DU BÂTI DEPUIS LE TROTTOIR, pas la taille de
@@ -2028,11 +2111,13 @@ export function solVillesMonde(x, z) {
 
     // LES AVENUES : la croix centrale de la ville, deux fois plus large que
     // les rues, avec sa ligne médiane pointillée — c'est elle qui structure
-    // le plan, comme dans toute vraie ville.
-    if (!t.ruelles) {
+    // le plan, comme dans toute vraie ville. Depuis la v307 c'est un
+    // BOULEVARD du kit (`t.axe`), et là où il ne laisserait pas d'îlot la
+    // croix n'est qu'une rue de la trame, qui la dessine déjà.
+    if (!t.ruelles && t.axe) {
       const dAxe = Math.min(Math.abs(a), Math.abs(b));
-      if (dAxe < 5.6) {
-        if (dAxe < 3.4) {
+      if (dAxe < t.axe.s) {
+        if (dAxe < t.axe.w) {
           // la ligne médiane vit dans la texture : des tirets à l'échelle
           // d'une vraie bande, continus le long de l'avenue
           if (t.net && dAxe < 0.4) {
@@ -2044,31 +2129,38 @@ export function solVillesMonde(x, z) {
       }
     }
 
-    const ra = a - Math.round(a / t.pu) * t.pu, rb = b - Math.round(b / t.pv) * t.pv;
-    const dRue = Math.min(Math.abs(ra), Math.abs(rb));
+    const ia = Math.round(a / t.pu), ib = Math.round(b / t.pv);
+    const ra0 = a - ia * t.pu, rb0 = b - ib * t.pv;
+    const dRue = Math.min(Math.abs(ra0), Math.abs(rb0));
     if (dRue < t.w) {
-      const pres = Math.abs(ra) < Math.abs(rb);
-      const travers = pres ? ra : rb;
+      const pres = Math.abs(ra0) < Math.abs(rb0);
+      const travers = pres ? ra0 : rb0;
       const ns = pres ? nsDeA : !nsDeA;
-      const versCarrefour = Math.max(Math.abs(ra), Math.abs(rb));
+      const versCarrefour = Math.max(Math.abs(ra0), Math.abs(rb0));
+      // Ce qu'on croise au carrefour peut être le boulevard : le passage se
+      // peint avant SA chaussée, pas avant celle d'une rue (v307).
+      const wX = t.axe && (pres ? ib : ia) === 0 ? t.axe.w : t.w;
       // le passage piéton à l'abord de chaque carrefour : les bandes sont
       // peintes dans la texture, dans l'axe de la circulation
-      if (!t.ruelles && t.net && versCarrefour < t.w + 2.1 && versCarrefour > t.w + 0.4) {
+      if (!t.ruelles && t.net && versCarrefour < wX + 2.1 && versCarrefour > wX + 0.4) {
         return ns ? PASSAGE_NS : PASSAGE_EO;
       }
       // la ligne médiane en tirets, qui s'interrompt avant le passage piéton
       // comme sur une vraie chaussée
-      if (!t.ruelles && t.net && Math.abs(travers) < 0.4 && versCarrefour > t.w + 2.1) {
+      if (!t.ruelles && t.net && Math.abs(travers) < 0.4 && versCarrefour > wX + 2.1) {
         return ns ? LIGNE_NS : LIGNE_EO;
       }
       return BITUME;
     }
     if (dRue < t.s) return TROTTOIR;
+    // Au-delà, l'écart se lit depuis le FRONT BÂTI : le long du boulevard, le
+    // lot commence à `axe.s`, pas à `s` (v307). Sans ce report, la cour du lot
+    // qui borde la croix s'ouvrait sur son trottoir.
+    const ra = auFront(t, ra0, ia), rb = auFront(t, rb0, ib);
     // Les chanfreins de l'Eixample : aux carrefours, le coin est coupé —
     // c'est CE dessin-là qu'on voit du ciel à Barcelone, et nulle part
-    // ailleurs au monde.
-    if (t.chanfrein && Math.abs(ra) < t.chanfrein && Math.abs(rb) < t.chanfrein
-      && Math.abs(ra) + Math.abs(rb) < t.chanfrein * 1.7) return TROTTOIR;
+    // ailleurs au monde. `chanfrein` est la coupe depuis le bord du trottoir.
+    if (t.chanfrein && Math.abs(ra) + Math.abs(rb) < 2 * t.s + t.chanfrein) return TROTTOIR;
     // La cour : plantée ou pavée selon la ville, et un arbre de temps en temps.
     // Le motif se tire en coordonnées du MONDE, sinon il se répète à l'identique
     // dans chaque morceau et change au remaillage.
@@ -2109,11 +2201,14 @@ export function batirColonneVillesMonde(x, z, poser) {
 
     // Où est cette colonne DANS son lot ? C'est ce qui décide de la façade.
     const A = u * co - v * si, B = u * si + v * co;
-    const ra = A - a * t.pu, rb = B - b * t.pv;
-    const dRue = Math.min(Math.abs(ra), Math.abs(rb));
     // La façade donne sur la petite rue — OU sur l'avenue : dans une vraie
-    // ville, ce sont les avenues que les boutiques bordent en premier.
-    const dAxe = Math.min(Math.abs(A), Math.abs(B));
+    // ville, ce sont les avenues que les boutiques bordent en premier. Le long
+    // du boulevard l'écart se lit depuis son front bâti (`auFront`, v307) :
+    // le premier rang du lot y est le premier rang de n'importe quelle rue, et
+    // la bande à part de la vieille avenue (5,6 à 6,8 blocs de l'axe) n'a plus
+    // de raison d'être.
+    const ra = auFront(t, A - a * t.pu, a), rb = auFront(t, B - b * t.pv, b);
+    const dRue = Math.min(Math.abs(ra), Math.abs(rb));
     // LES PORTIQUES (v280) — Bologne, Turin, Madrid, Innsbruck. J'avais nommé
     // ces quatre villes « arcades » et il n'y avait AUCUNE arcade : la
     // typologie ne changeait que le pas de trame et la forme de la place.
@@ -2144,9 +2239,7 @@ export function batirColonneVillesMonde(x, z, poser) {
     // fenêtre, trottoirs et chaussée comprises — « une sonde qui interroge la
     // mauvaise liste ne peut rien voir » (v273), par l'autre bout : elle voit ce
     // qui n'existe pas. Toute sonde de façade filtre donc sur `'lot'`.
-    const bord = t.portiques
-      ? (dRue >= t.s + 1.15 && dRue < t.s + 2.15) || (!t.ruelles && dAxe >= 5.6 && dAxe < 6.8)
-      : rangUn || (!t.ruelles && dAxe >= 5.6 && dAxe < 6.8);
+    const bord = t.portiques ? dRue >= t.s + 1.15 && dRue < t.s + 2.15 : rangUn;
 
     // ET RIEN NE SE BÂTIT DANS UNE COUR (v280). La MÊME fonction que le sol,
     // jamais un second test : c'est ce qui garantit qu'une cour peinte en herbe
@@ -2376,18 +2469,28 @@ export function mobilierVillesMonde(x, z, poser) {
     const A = u * co - v * si, B = u * si + v * co;
     const a = Math.round(A / t.pu), b = Math.round(B / t.pv);
     const ra = A - a * t.pu, rb = B - b * t.pv;
-    const dRue = Math.min(Math.abs(ra), Math.abs(rb));
-    if (dRue < t.w || dRue >= t.s) return;                        // pas sur ce trottoir
+    // CHAQUE RUE A SA SECTION (v307) : la croix centrale est un boulevard, et
+    // son trottoir va de `axe.w` à `axe.s`. On lit les deux directions avec
+    // leur propre section, et la colonne est sur le trottoir de celle dont elle
+    // est le plus près du caniveau.
+    const secA = t.axe && a === 0 ? t.axe : t, secB = t.axe && b === 0 ? t.axe : t;
+    const surA = Math.abs(ra) >= secA.w && Math.abs(ra) < secA.s;
+    const surB = Math.abs(rb) >= secB.w && Math.abs(rb) < secB.s;
+    if (Math.abs(ra) < secA.w || Math.abs(rb) < secB.w) return;   // sur une chaussée
+    if (!surA && !surB) return;                                   // pas sur ce trottoir
+    const leLongDeA = surA && (!surB || Math.abs(ra) - secA.w <= Math.abs(rb) - secB.w);
+    const sec = leLongDeA ? secA : secB;
+    const dRue = leLongDeA ? Math.abs(ra) : Math.abs(rb);
 
     // L'AUVENT : la bande rayée de la boutique, au-dessus de la tête. Le
     // trottoir et son lot partagent le même index (a, b), donc le même
     // tirage : l'auvent est de la couleur de l'enseigne qu'il prolonge.
     const commerce = tirage(a, b, 131) < 0.5;
-    if (commerce && t.s - dRue < 1.15) {
+    if (commerce && sec.s - dRue < 1.15) {
       // Par SEGMENTS, pas d'un seul tenant : un vrai store couvre une
       // devanture, pas tout le pâté de maisons — trois blocs d'auvent, deux
       // de vide, et la rue respire.
-      const longA = Math.abs(ra) < Math.abs(rb) ? B : A;
+      const longA = leLongDeA ? B : A;
       if (((Math.round(longA) % 5) + 5) % 5 < 3) {
         poser(3, ENSEIGNES[Math.floor(tirage(a, b, 173) * ENSEIGNES.length)]);
       }
@@ -2395,7 +2498,7 @@ export function mobilierVillesMonde(x, z, poser) {
     }
     // LE LAMPADAIRE : au bord du caniveau, un tous les neuf blocs le long de
     // la rue. `long` est la coordonnée LE LONG de la rue la plus proche.
-    const long = Math.abs(ra) < Math.abs(rb) ? B : A;
+    const long = leLongDeA ? B : A;
     const cran = ((Math.round(long) % 9) + 9) % 9;
     // La bande du mobilier : elle commence au-delà du couloir de la voiture,
     // et elle fait un bloc et demi de large — décalée, pas rognée.
@@ -2423,8 +2526,10 @@ export function mobilierVillesMonde(x, z, poser) {
     // formule exigeait. Le mobilier doit être au-delà de cela, débord de la
     // case compris : 3,24 blocs, pour un trottoir qui va de 2,8 à 4,8. La
     // bande garde 1,56 bloc, plus large qu'avant.
-    const degage = t.ruelles ? t.w
-      : Math.max(t.w, t.w / 2 + DEGAGEMENT_VOITURE + debord);
+    // Le convoi roule à `t.w / 2` de l'axe de TOUTE rue, boulevard compris
+    // (`tracesCirculation`) : sur un boulevard le caniveau est déjà plus loin.
+    const degageDe = (x) => (t.ruelles ? x.w : Math.max(x.w, t.w / 2 + DEGAGEMENT_VOITURE + debord));
+    const degage = degageDe(sec);
     // Dans une médina, la bande est TOUT le trottoir : il ne fait qu'un bloc
     // et un dixième, rien n'y roule, et le mesurer au centre de la case en
     // écartait un tiers pour rien.
@@ -2435,8 +2540,9 @@ export function mobilierVillesMonde(x, z, poser) {
       // fenêtre la largeur de toute la bande : Zurich passait de 110 feux à
       // 277, Rome de 235 à 563 — un carrefour hérissé. La fenêtre garde donc
       // les 0,9 bloc qu'elle avait, décalée avec le reste.
-      if (!t.ruelles && Math.abs(ra) > degage && Math.abs(ra) < degage + 0.9
-        && Math.abs(rb) > degage && Math.abs(rb) < degage + 0.9) {
+      const dA = degageDe(secA), dB = degageDe(secB);
+      if (!t.ruelles && Math.abs(ra) > dA && Math.abs(ra) < dA + 0.9
+        && Math.abs(rb) > dB && Math.abs(rb) < dB + 0.9) {
         poser(1, RUE.FEUX);
         return;
       }
@@ -2620,11 +2726,13 @@ export function anneauxDeVille(f) {
     // la phase 1 : elle réclame en plus que l'anneau passe à portée de vue du
     // centre. La condition est testée AVANT l'eau, parce qu'elle coûte mille
     // fois moins — la règle que cette même livraison a payée plus haut.
-    const valider = ([part, decU, decV, ku, kv], exigerProche) => {
-      const cU = Math.round((f.rayon * decU) / t.pu) * t.pu;
-      const cV = Math.round((f.rayon * decV) / t.pv) * t.pv;
-      const Ru = Math.max(t.pu, Math.round((f.rayon * part * ku) / t.pu) * t.pu);
-      const Rv = Math.max(t.pv, Math.round((f.rayon * part * kv) / t.pv) * t.pv);
+    const valider = ([part, decU, decV, ku, kv, noeud], exigerProche) => {
+      // Un candidat « nœud » (le dernier recours, plus bas) donne son centre
+      // et ses demi-côtés en PAS de trame, pas en fraction du rayon.
+      const cU = noeud ? decU * t.pu : Math.round((f.rayon * decU) / t.pu) * t.pu;
+      const cV = noeud ? decV * t.pv : Math.round((f.rayon * decV) / t.pv) * t.pv;
+      const Ru = noeud ? ku * t.pu : Math.max(t.pu, Math.round((f.rayon * part * ku) / t.pu) * t.pu);
+      const Rv = noeud ? kv * t.pv : Math.max(t.pv, Math.round((f.rayon * part * kv) / t.pv) * t.pv);
       const candidat = { cU, cV, Ru, Rv };
       if (exigerProche && distanceAuCentre(candidat) > VU_ANNEAU) return null;
       // LE PARTAGE SE JUGE AVANT L'EAU, parce qu'il coûte mille fois moins.
@@ -2716,6 +2824,30 @@ export function anneauxDeVille(f) {
       if (gardes.length >= MAX_ANNEAUX) break;
       const c = valider(spec, false);
       if (c) retenir(c);
+    }
+    // LE DERNIER RECOURS : LES NŒUDS DE LA TRAME (v307). Les candidats
+    // ci-dessus sont des FRACTIONS du rayon arrondies au pas ; plus le pas est
+    // grand, plus ils tombent sur les mêmes rectangles. Porté de 27 à 32 par
+    // la règle du kit, le pas de Mumbai n'en laissait plus un seul au sec —
+    // 285 candidats mouillés, la ville est une presqu'île. On essaie alors
+    // les petits anneaux posés sur chaque nœud de la trame, un ou deux pas de
+    // côté. Ce passage ne tourne QUE pour une ville sans anneau : partout
+    // ailleurs le résultat est celui d'avant, au rectangle près.
+    if (!gardes.length) {
+      const n = Math.ceil(f.rayon / Math.min(t.pu, t.pv));
+      const noeuds = [];
+      for (let i = -n; i <= n; i++) for (let j = -n; j <= n; j++) {
+        for (const [ku, kv] of [[2, 2], [2, 1], [1, 2], [1, 1]]) noeuds.push([0, i, j, ku, kv, true]);
+      }
+      // du plus grand au plus petit, puis du plus proche du centre au plus loin
+      noeuds.sort((p, q) => (q[3] * q[4] - p[3] * p[4]) || (Math.hypot(p[1], p[2]) - Math.hypot(q[1], q[2])));
+      for (const exiger of [true, false]) {
+        for (const spec of noeuds) {
+          if (gardes.length) break;
+          const c = valider(spec, exiger);
+          if (c) retenir(c);
+        }
+      }
     }
     const out = { formes, ponts };
     ANNEAUX.set(f, out);
