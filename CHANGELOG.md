@@ -100,6 +100,23 @@ construction de campagne dont le sol a bougé de plus de vingt-quatre blocs
 (une colline recouverte par la ville) reste où elle est. Détail dans
 `TASKS.md`.
 
+**Et ce que le déménagement a révélé dans la préparation.** Arrivé à Paris, le
+jeu compilait cinq à neuf programmes de dessin sur place — le gel de la v246 —
+parce que le tirage de la flotte, qui dépend de la place de la ville, met
+désormais une berline citadine à portée. Elle se FABRIQUE au lieu de se charger
+d'un fichier, et la préparation de l'accueil ne chauffait que les fichiers : le
+trou existait en production dans toutes les villes, une voiture sur six.
+L'accueil la compile désormais aussi. Mesuré par
+`sonde-programmes-paris.cjs` : quatre programmes neufs à l'arrivée (les feux,
+comme sur `origin/main`), contre cinq à neuf avant. Trois témoins de
+`monte.js` mesuraient encore l'ancien Paris : le train se cherche à sa hauteur
+de tracé et non sur une voiture pas encore fabriquée, le cadran de cap lit
+« le nez perd 90° » au lieu de « 152° → 062° » (Paris a bougé, le cap de
+départ aussi), et la variété des voitures se compte en proportion (trois
+modèles sur quatre) plutôt qu'en nombre absolu — **le prix se dit** : sur la
+rive gauche, huit voitures à portée au lieu de quatorze, les huit circuits se
+partageant un Paris quatre fois plus grand (dette dans `TASKS.md`).
+
 ### Et dans la même fusion : le GPS — s'y rendre au lieu de s'y téléporter
 
 **Pourquoi.** Max : « une forme de GPS quand on veut se rendre dans une

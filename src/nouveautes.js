@@ -16,6 +16,7 @@ export const NOUVEAUTES = [
       'Un GPS pour aller où tu veux',
       'Prendre une voiture marche à chaque fois',
       'Des feux aux grands carrefours de Paris',
+      'Moins de gel en arrivant en ville',
     ],
   },
   {

@@ -43,7 +43,7 @@ const { Banc, souffler } = require('./banc.js');
       });
       return { avant: avant.size, neufs, qui };
     });
-    console.log(JSON.stringify(out, null, 1));
+    console.log(JSON.stringify({ avant: out.avant, neufs: out.neufs.length, noms: out.neufs.map((p) => p.nom + " " + p.cle.split(",").slice(-3, -1).join(",")), qui: out.qui }, null, 1));
     await tab.close();
   } finally { await banc.fermer(); process.exit(0); }
 })();

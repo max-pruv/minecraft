@@ -606,7 +606,13 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     const surLaVoie = await tab.evaluate(async () => {
       const g = window.__game, V = window.__vehicules;
       const etat = V.etat();
-      const ci = etat.findIndex((c) => /^train /.test(c.nom) && c.attente === 0 && c.y > 20);
+      // LA HAUTEUR SE DEMANDE AU TRACÉ, PAS À LA PREMIÈRE VOITURE (v306).
+      // `etat().y` lit `elements[0]`, qui n'est fabriquée qu'à portée de
+      // l'enfant (v235) : le témoin d'avant le laisse à Washington, loin de
+      // toute ligne, et chaque train rendait y = 0 — « aucun train de
+      // surface » sur un réseau de neuf lignes.
+      const ci = etat.findIndex((c, i) => /^train /.test(c.nom) && c.attente === 0
+        && (V.point(i, 0) || { y: 0 }).y > 20);
       if (ci < 0) return { err: 'aucun train de surface' };
       const pt = V.point(ci, 30);
       if (!g.fun.montureConduite || !g.fun.montureConduite()) return { err: 'pas au volant' };
@@ -818,8 +824,17 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // montraient que vingt sur cinquante, et le pas de 13 revient sur ses pas
     // au bout de cinquante — 13 × 50 ≡ 0. Le pas est premier avec la flotte
     // désormais, et il y a assez de voitures pour que cela se voie.
+    //
+    // ET LA BARRE SE POSE EN PROPORTION, PAS EN NOMBRE (v306). « Au moins
+    // huit modèles » supposait quatorze voitures autour de soi ; Paris doublé
+    // étale ses huit circuits sur quatre fois la surface, et l'attente rend
+    // la main dès six voitures en vue — huit mesurées, donc huit modèles au
+    // plus. Ce que le défaut de la v201 produisait, c'était des REPRISES du
+    // même modèle : trois quarts de modèles distincts au moins, sur six
+    // voitures au moins. Mesuré : 13/15 et 12/14 avant, 6/8 ici.
     verifier('et ce ne sont pas dix fois la même voiture',
-      trafic.modeles >= 8, `${trafic.modeles} modèle(s) différent(s) autour de soi`);
+      trafic.proches >= 6 && trafic.modeles >= Math.ceil(0.75 * trafic.proches),
+      `${trafic.modeles} modèle(s) différent(s) pour ${trafic.proches} voiture(s) autour de soi`);
 
     // ON PEUT MONTER DANS CE QUI ROULE. Le code pour conduire existe depuis la
     // v194 et il marchait ; c'est ATTRAPER qui ne marchait pas — cinq blocs
@@ -4890,7 +4905,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         const depart = { ...lire(), x: +g.player.pos.x.toFixed(1), z: +g.player.pos.z.toFixed(1) };
         await tenirSecondes(3);
         const apres = { ...lire(), x: +g.player.pos.x.toFixed(1), z: +g.player.pos.z.toFixed(1) };
-        // un quart de tour à droite : le nez passe de 152° à 62°
+        // un quart de tour à droite : le nez perd 90° (148° → 58° depuis Paris doublé)
         g.player.yaw = yawLyon + Math.PI / 2;
         await deuxImages();
         const tourne = lire();
@@ -4916,7 +4931,14 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       `${capAvion.err || ''} départ ${JSON.stringify(capAvion.depart)} · après ${JSON.stringify(capAvion.apres)} · parcouru ${capAvion.parcouru}`);
     verifier('un quart de tour à droite : le cap avance de 90° et une autre ville passe devant ; vers +x le cadran dit l\'est',
       !capAvion.err && cadranOk(capAvion.tourne) && capAvion.tourne.cle !== 'lyon'
-        && /^152°/.test(capAvion.depart.degres) && /^062°/.test(capAvion.tourne.degres)
+        // LE CAP DE DÉPART SE LIT, IL NE S'ÉCRIT PAS (v306). « 152° » était le
+        // cap de Paris vers Lyon depuis l'ANCIEN centre de Paris ; déplacé de
+        // cent soixante-dix blocs, il vaut 148°. Ce que le témoin garde, c'est
+        // le quart de tour : le cap tourné vaut le cap de départ moins 90°.
+        && (() => {
+          const d = parseInt(capAvion.depart.degres, 10), t = parseInt(capAvion.tourne.degres, 10);
+          return d > 135 && d < 165 && ((d - 90 + 360) % 360) === t;
+        })()
         && /^090° E/.test(capAvion.est.degres),
       `${capAvion.err || ''} départ ${capAvion.depart && capAvion.depart.degres} · tourné ${JSON.stringify(capAvion.tourne)} · est ${JSON.stringify(capAvion.est)}`);
     verifier('à pied, le cadran de cap est caché',

@@ -224,8 +224,37 @@ export function chaufferLesProgrammes(renderer, scene, camera) {
       scene.add(m);
       try { renderer.compile(scene, camera); } finally { scene.remove(m); }
     } while (k < liste.length && performance.now() - t0 < budget);
+    if (k >= liste.length) chaufferLesFabriquees(renderer, scene, camera);
     return k < liste.length;
   };
+}
+// UNE VOITURE FABRIQUÉE EST AUSSI UNE SIGNATURE (v306). La table des
+// signatures se lit dans les FICHIERS de la flotte ; la berline citadine n'en a
+// pas — elle se fabrique (`construireTaxi`), et elle roule une voiture sur six
+// dans toute ville hors New York. Ses programmes se compilaient donc à
+// l'arrivée : cinq à neuf mesurés à Paris par `sonde-programmes-paris.cjs`,
+// quatre sur `origin/main` où le tirage de la flotte n'en mettait aucune à
+// portée. C'est le gel de la v246 par la porte qu'elle n'avait pas fermée. On
+// compile le prototype LUI-MÊME, celui que la rue clonera — repeindre clone un
+// matériau aux mêmes réglages, donc au même programme —, et il n'entre pas
+// dans le compte affiché : c'est une voiture, pas une ligne de la table.
+let fabriqueesChauffees = false;
+function chaufferLesFabriquees(renderer, scene, camera) {
+  if (fabriqueesChauffees) return;
+  fabriqueesChauffees = true;
+  for (const entree of FLOTTE) {
+    if (!entree.fabrique) continue;
+    const chargement = chargerVoitureFlotte(entree);
+    if (!chargement) continue;
+    chargement.then((proto) => {
+      if (!proto) return;
+      const porte = new THREE.Group();
+      porte.add(proto.clone(true));
+      porte.position.set(camera.position.x, -500, camera.position.z);
+      scene.add(porte);
+      try { renderer.compile(scene, camera); } finally { scene.remove(porte); }
+    });
+  }
 }
 export const programmesChauffes = () => temoinsProgrammes.length;
 export const programmesAChauffer = () => signaturesAChauffer().length;

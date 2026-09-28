@@ -1,5 +1,16 @@
 # Ce qui est en cours
 
+- [ ] **LA RIVE GAUCHE A DEUX FOIS MOINS DE VOITURES DEPUIS PARIS DOUBLÉ
+  (mesuré en v306).** Au témoin de variété de `monte.js`, huit voitures à
+  portée (60 blocs) contre quatorze à quinze avant : les huit circuits
+  couvrent un disque quatre fois plus grand, et `nb` plafonne à vingt voitures
+  par circuit (`Math.max(6, Math.min(20, round(longueur / 18)))`). Deux
+  leviers à mesurer, pas à deviner : relever le plafond de `nb` pour les
+  circuits de Paris (coût en appels de dessin à mesurer, la v201 dit trente-deux
+  maillages par voiture) ou ajouter des circuits sur la rive gauche (la
+  couverture gloutonne de `voies.js`, seuil de partage inchangé). Le témoin
+  de variété, lui, compte désormais une proportion (trois modèles sur quatre)
+  et ne voit plus cette baisse : c'est cette ligne qui la garde.
 - [ ] **LE TÉMOIN « AUCUNE VOITURE NE TRAVERSE UN MONUMENT DE PARIS » NE MESURE
   PLUS RIEN (vu en v306, vrai aussi sur `origin/main`).** Il ne juge que les
   points de circuit tombés dans la boîte d'un socle (± socle + 1) ; depuis que

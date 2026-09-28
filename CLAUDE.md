@@ -835,6 +835,15 @@ atteindre la famille. Neuf règles.
   1 180 points. La sonde de tracé écarte désormais l'eau à moins de
   quatre-vingts blocs des deux portes, et l'on garde, parmi les meilleurs, un
   tracé dont les trois ponts ont leurs joints fermés.
+- **UNE VOITURE FABRIQUÉE EST AUSSI UNE SIGNATURE DE PROGRAMME.** La table de
+  chauffe (`signatures.js`) se lit dans les FICHIERS de la flotte ; la berline
+  citadine se fabrique et n'y figurait pas, donc ses programmes se compilaient
+  à l'arrivée dans chaque ville où le tirage en mettait une à portée — une
+  voiture sur six, en production depuis toujours. Déplacer Paris a changé le
+  tirage (`graineDeVille` lit la position) et l'a rendu visible. La chauffe
+  compile désormais le PROTOTYPE fabriqué lui-même (`chaufferLesFabriquees`) :
+  tout modèle qui entre dans la flotte par `fabrique` y passe sans une ligne de
+  plus, et le compte affiché ne bouge pas.
 - **QUAND UN SITE DÉMÉNAGE, LES TÉMOINS POSÉS SUR SON ANCIEN SOL MESURENT AUTRE
   CHOSE.** La pente « relevée sur l'axe Paris–Lille » du sol continu (v297)
   était le bord aplani de l'ancien Roissy ; la fenêtre de la ligne Paris–Lyon
