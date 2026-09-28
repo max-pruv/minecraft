@@ -74,6 +74,24 @@ bâtit sous ce qu'on pose après. Deux témoins de `sauvegarde.js` : une maison 
 l'ancien Paris reçue du nuage arrive dans le nouveau, sans fantôme, et le nuage
 est mis à l'abri avant.
 
+**Et ce que le doublement cassait sans bruit — trouvé par le portail, pas par
+une relecture.** Un circuit de voitures de l'est parisien (Voltaire,
+Belleville, Ménilmontant, Diderot) disparaissait : il tenait par un raccord
+entre Diderot et le Faubourg Saint-Antoine qui n'existait que par un hasard
+d'arrondi, et Nation tombe un bloc plus loin dans le plan doublé. Il passe
+désormais par la gare de Lyon, où Diderot finit vraiment : huit circuits sur
+huit, douze blocs de partage au pire, aucun pas dans la Seine. Et douze
+carrefours sur quarante-quatre n'avaient plus un seul feu tricolore depuis
+les rues de la v303 : un boulevard a treize à dix-sept blocs de chaussée, et
+le jeu cherchait les coins d'un carrefour à sept blocs du croisement. La
+portée se déduit désormais de la plus large section de Paris (quinze blocs) :
+mesuré dans le monde, 14 carrefours sans feu avant, 3 après — 2 sur 42 en
+production, des coins qu'un monument recouvre. Le Paris d'avant, qui doit
+rendre la production au bloc près, garde ses sept blocs. Trois témoins de
+`carteMonde.js` mesuraient encore l'ancien Paris (la fenêtre des feux, le
+compte des ponts sur l'axe, la place de la caserne) : repointés, avec leur
+mesure.
+
 **Ce qui reste, et qui se dit.** Une tablette qui jouerait encore sur l'ancienne
 version après la publication poserait dans l'ancien Paris des blocs que la
 marche ne suivra pas. Un garage posé dans l'ancien Paris voit ses blocs partir

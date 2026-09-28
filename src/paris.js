@@ -437,6 +437,14 @@ const COLLECTRICE = sectionDeRue('collecteur');
 const LOCALE = sectionDeRue('locale');
 const CHAMPS = sectionDeRue('boulevard', { stationnement: 2 });
 export const SECTIONS_PARIS = { boulevard: BOULEVARD, collecteur: COLLECTRICE, locale: LOCALE, champs: CHAMPS };
+// OÙ L'ON CHERCHE LES COINS D'UN CARREFOUR (v306). `world.js` les cherchait
+// à sept blocs du croisement des axes, chiffre des rues d'avant : un boulevard
+// de la règle du kit a treize blocs de chaussée, les Champs-Élysées dix-sept,
+// et le coin de deux boulevards qui se croisent est à √2 × (demi-chaussée
+// + un bloc et demi) — quatorze et demi. Mesuré sur le plan : à sept blocs,
+// DOUZE carrefours sur quarante-quatre n'avaient plus un seul feu ; à quinze,
+// aucun. La portée se déduit de la plus large section, elle ne s'écrit pas.
+export const PORTEE_FEUX_PARIS = Math.ceil(Math.SQRT2 * (CHAMPS.chaussee / 2 + 1.5));
 // LE TYPE SE LIT À LA FONCTION, PAS AU NOM. Mon premier jet donnait la
 // section de boulevard (21 blocs d'emprise) à tout ce qui s'appelle boulevard
 // ou avenue : vingt-sept boulevards dans un disque de 370 blocs. Mesuré, Paris
@@ -637,9 +645,21 @@ const CIRCUITS = [
   // faisait un demi-tour de 175° — Bastille, Nation et le retour sont presque
   // alignés.
   ['Rue de Rivoli', 'Rue de Turbigo', 'Boulevard Beaumarchais', 'Faubourg Saint-Antoine', 'Avenue Ledru-Rollin', 'Quais de la rive droite', 'Boulevard Bourdon'],
-  // 96 % (199 blocs, virage max 117°) — le Faubourg, second tour, par l'est :
+  // 94 % (412 blocs, virage max 117°) — l'est : Voltaire, Belleville,
   // Ménilmontant, Diderot et les quais.
-  ['Boulevard Voltaire', 'Rue de Belleville', 'Boulevard de Ménilmontant', 'Boulevard Diderot', 'Faubourg Saint-Antoine', 'Quais de la rive droite', 'Avenue Ledru-Rollin'],
+  //
+  // UN RACCORD QUI TENAIT PAR L'ARRONDI NE SURVIT PAS AU DOUBLEMENT (v306).
+  // Ce tour passait de Diderot au Faubourg Saint-Antoine en un point où le
+  // premier segment de Diderot était EXACTEMENT sur le Faubourg — (84, 21)
+  // est sur la droite (60, 13)–(96, 25), par un hasard d'arrondi. Paris
+  // doublé, Nation tombe en (192, 49) et non (192, 50) : les deux avenues ne
+  // se touchent plus qu'à Nation, qu'on quittait par où l'on y était entré,
+  // et `chainerVoies` refusait l'impasse. Le circuit disparaissait sans un mot
+  // (huit déclarés, sept gardés). Diderot rejoint désormais les quais à la
+  // gare de Lyon, où il finit vraiment ; le Faubourg garde ses voitures par le
+  // tour d'au-dessus. Mesuré : partage 12 blocs au pire avec les sept autres,
+  // aucun pas dans la Seine ni au milieu d'une place.
+  ['Boulevard Voltaire', 'Rue de Belleville', 'Boulevard de Ménilmontant', 'Boulevard Diderot', 'Quais de la rive droite', 'Avenue Ledru-Rollin'],
   // 100 % (86 blocs, virage max 135°) — le triangle de la Porte Maillot.
   ['Avenue de la Grande Armée', 'Avenue de Wagram', 'Avenue des Ternes'],
   // 100 % (181 blocs, virage max 107°) — la rive gauche par le sud.

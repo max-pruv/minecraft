@@ -842,6 +842,25 @@ atteindre la famille. Neuf règles.
   retracée. Chacun CHERCHE maintenant ce qu'il éprouve — une pente qui MONTE de
   huit marches, une colonne couverte, les colonnes au bord d'une falaise
   comptées à part — et le dit (v285, une fois de plus).
+- **UNE CONSTANTE DE RECHERCHE ÉCRITE POUR LES RUES D'AVANT NE TROUVE PLUS RIEN
+  DANS LES RUES D'APRÈS.** `world.js` cherchait les coins d'un carrefour à
+  sept blocs du croisement (v274) ; les boulevards de la v303 ont treize à
+  dix-sept blocs de chaussée, et DOUZE carrefours de Paris sur quarante-quatre
+  n'avaient plus un feu. Aucun témoin ne l'a vu en v303 : celui des feux
+  comptait une fenêtre de quarante blocs autour du centre, qui tombait sur des
+  rues étroites. La portée se DÉDUIT de la plus large section de la ville
+  (`PORTEE_FEUX_PARIS`), et un témoin compte les carrefours sans feu. Quand
+  une largeur change, on cherche TOUT ce qui cherche quelque chose « à n blocs
+  de la rue » — c'est le verre dans les murs, une fois de plus, du côté d'un
+  rayon de recherche.
+- **UN RACCORD QUI TIENT PAR UN ARRONDI TOMBE AU PREMIER CHANGEMENT
+  D'ÉCHELLE.** Un circuit passait de Diderot au Faubourg Saint-Antoine parce
+  que le point (84, 21) de l'un était pile sur la droite de l'autre ; doublé,
+  Nation tombe en (192, 49) au lieu de (192, 50), le raccord devient une
+  impasse et `chainerVoies` jette le circuit sans un mot. Le témoin de
+  couverture l'a vu (« huit déclarés, sept gardés ») — ce que garde un compte
+  déclaré contre un compte rendu. Un circuit se raccorde là où deux voies se
+  croisent ou finissent, jamais sur une coïncidence de coordonnées.
 
 ## Le GPS (v306) — l'appui long propose, il ne décide plus
 

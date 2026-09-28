@@ -15,6 +15,7 @@ export const NOUVEAUTES = [
       'Le village gaulois part en Bretagne',
       'Un GPS pour aller où tu veux',
       'Prendre une voiture marche à chaque fois',
+      'Des feux aux grands carrefours de Paris',
     ],
   },
   {

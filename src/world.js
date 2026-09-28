@@ -55,7 +55,7 @@ import {
   PARIS, adresseParis, BUTTE, CITE, zCite, hauteurParis, solParis, lotParisLibre, batirColonneParis, gabaritParis, versSeine, pontParis,
   LIEUX, buildNotreDame, buildSacreCoeur, buildPantheon, buildInvalides, buildOpera,
   buildMontparnasse, buildColonneBastille, buildMoulinRouge,
-  VOIES_PARIS,
+  VOIES_PARIS, PORTEE_FEUX_PARIS,
 } from './paris.js';
 import {
   WASHINGTON, WASHINGTON_R, surTerreWashington, dansEauWashington, hauteurWashington, solWashington,
@@ -1097,7 +1097,7 @@ const PORTEE_CARREFOUR = 7;   // le rayon où l'on cherche les coins d'un carref
 // les trois autres inchangées.
 const MEME_CARREFOUR = 3;
 const ECART_FEUX = 3;         // deux feux ne se touchent pas (voir plus bas)
-function feuxDeVille(cle, ancre, voies, sol) {
+function feuxDeVille(cle, ancre, voies, sol, portee = PORTEE_CARREFOUR) {
   let table = FEUX_VILLE.get(cle);
   if (table) return table;
   table = new Set();
@@ -1108,11 +1108,11 @@ function feuxDeVille(cle, ancre, voies, sol) {
     if (pris.some(([px, pz]) => Math.hypot(px - cx, pz - cz) < MEME_CARREFOUR)) continue;
     pris.push([cx, cz]);
     const meilleur = [null, null, null, null];
-    for (let dx = -PORTEE_CARREFOUR; dx <= PORTEE_CARREFOUR; dx++) {
-      for (let dz = -PORTEE_CARREFOUR; dz <= PORTEE_CARREFOUR; dz++) {
+    for (let dx = -portee; dx <= portee; dx++) {
+      for (let dz = -portee; dz <= portee; dz++) {
         if (!dx || !dz) continue;         // un feu est à un COIN, pas sur l'axe
         const d2 = dx * dx + dz * dz;
-        if (d2 > PORTEE_CARREFOUR * PORTEE_CARREFOUR) continue;
+        if (d2 > portee * portee) continue;
         const x = cx + dx, z = cz + dz;
         if (sol(x, z) !== CITY_BLOCK.SIDEWALK) continue;
         if (!((estRue(x + 1, z) || estRue(x - 1, z))
@@ -2012,7 +2012,11 @@ function marquerParisCede(ens, x, z) {
 }
 // La ville d'aujourd'hui et celle d'avant, sous la même forme : le monde
 // d'avant (`CONF_AVANT`) engendre la seconde partout dans l'ancien disque.
-const PARIS_NEUF = { solParis, lotParisLibre, batirColonneParis, pontParis, VOIES: VOIES_PARIS, cle: 'paris' };
+// La ville neuve a des boulevards de la règle du kit, donc des coins de
+// carrefour plus loin du croisement (`PORTEE_FEUX_PARIS`) ; celle d'avant
+// garde la portée d'avant, sinon le monde d'avant ne rendrait plus la
+// production au bloc près.
+const PARIS_NEUF = { solParis, lotParisLibre, batirColonneParis, pontParis, VOIES: VOIES_PARIS, cle: 'paris', porteeFeux: PORTEE_FEUX_PARIS };
 const PARIS_AVANT = {
   solParis: PARIS_V302.solParis, lotParisLibre: PARIS_V302.lotParisLibre, batirColonneParis: PARIS_V302.batirColonneParis,
   pontParis: PARIS_V302.pontParis, VOIES: PARIS_V302.VOIES_PARIS, cle: 'paris-v302',
@@ -3028,7 +3032,7 @@ export class World {
               if (wy < HEIGHT) data[World.index(x, wy, z)] = dy <= 2 ? BLOCK.LOG : BLOCK.LEAVES;
             }
           } else if (feuDeVille(data, x, z, h, wx, wz, sp,
-            feuxDeVille(PV.cle, this.conf.parisAvant ? PARIS_AVANT_POS : PARIS, PV.VOIES, PV.solParis))) {
+            feuxDeVille(PV.cle, this.conf.parisAvant ? PARIS_AVANT_POS : PARIS, PV.VOIES, PV.solParis, PV.porteeFeux))) {
             // le trottoir et son feu tricolore sont posés (v274)
           } else if (lampadaireDeVille(data, x, z, h, wx, wz, PV.solParis, sp)) {
             // le trottoir et son réverbère sont posés (v248)

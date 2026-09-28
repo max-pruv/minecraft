@@ -1,5 +1,13 @@
 # Ce qui est en cours
 
+- [ ] **LE TÉMOIN « AUCUNE VOITURE NE TRAVERSE UN MONUMENT DE PARIS » NE MESURE
+  PLUS RIEN (vu en v306, vrai aussi sur `origin/main`).** Il ne juge que les
+  points de circuit tombés dans la boîte d'un socle (± socle + 1) ; depuis que
+  les circuits font le tour des socles à `AXE_TOUR` (v221), aucun point n'y
+  tombe — `pas: 0` des deux côtés, donc vert sans rien lire. Il faut le
+  repointer sur la bande que le tour emprunte (socle + AXE_TOUR ± la
+  demi-largeur d'une voiture) et le vérifier rouge en désarmant
+  `contournerBlocs`.
 - [ ] **UNE PLACE DE VOITURE À MOINS DE TROIS BLOCS, SANS VOITURE DESSINÉE (vu
   en v306).** Au témoin « on prend le volant » de `fumee.js`, `placeProche(5)`
   rendait une place à 2,8 puis 1,6 bloc de l'enfant, et `elements[i]` y était

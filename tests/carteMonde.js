@@ -1414,8 +1414,14 @@ const VRAIES_KM = [
       for (const cle of ['paris', 'londres', 'nice', 'lille', 'sf', 'washington']) {
         const p = positionDe(cle);
         const pos = [];
-        for (let du = -40; du <= 40; du++) {
-          for (let dv = -40; dv <= 40; dv++) {
+        // LA FENÊTRE SUIT LA VILLE (v306). Quarante blocs était le quart du
+        // rayon de Paris ; doublé, le même carré ne couvrait plus que la Seine
+        // et les îles autour de Notre-Dame — trois feux. Elle vaut désormais
+        // 0,22 rayon, plancher quarante : les cinq autres villes gardent la
+        // leur à un bloc près.
+        const F = Math.max(40, Math.round(p.r * 0.22));
+        for (let du = -F; du <= F; du++) {
+          for (let dv = -F; dv <= F; dv++) {
             const x = Math.round(p.x) + du, z = Math.round(p.z) + dv;
             const sol = w.sommetColonne(x, z);
             if (w.getBlock(x, sol + 1, z) === RUE.FEUX) pos.push([x, z]);
@@ -1442,12 +1448,45 @@ const VRAIES_KM = [
         }
         out[cle] = { feux: pos.length, auCoin, colles };
       }
+      // ET CHAQUE CARREFOUR DE PARIS A SON FEU (v306). Le compte d'une
+      // fenêtre ne voyait pas le vrai défaut : les boulevards de la règle du
+      // kit (v303) ont treize à dix-sept blocs de chaussée, et `world.js`
+      // cherchait les coins d'un carrefour à sept blocs du croisement — douze
+      // carrefours sur quarante-quatre sans un feu dans le plan. Mesuré dans
+      // le monde, un feu à seize blocs au plus : 14 sans feu sur 44 avant la
+      // correction, 3 après, 2 sur 42 en production (des coins qu'un monument
+      // recouvre, déclarés en v274). La barre, quinze pour cent, est entre
+      // les deux régimes.
+      const pa = await import('./src/paris.js');
+      const vo = await import('./src/voies.js');
+      if (typeof vo.carrefoursDeVoies === 'function') {
+        const P = pa.PARIS, pris = [], sans = [];
+        for (const q of vo.carrefoursDeVoies(pa.VOIES_PARIS)) {
+          const cx = Math.round(P.x + q.u), cz = Math.round(P.z + q.v);
+          if (pris.some(([a, b]) => Math.hypot(a - cx, b - cz) < 3)) continue;
+          pris.push([cx, cz]);
+          let vu = false;
+          for (let dx = -16; dx <= 16 && !vu; dx++) {
+            for (let dz = -16; dz <= 16 && !vu; dz++) {
+              if (dx * dx + dz * dz > 256) continue;
+              const x = cx + dx, z = cz + dz;
+              if (w.getBlock(x, w.sommetColonne(x, z) + 1, z) === RUE.FEUX) vu = true;
+            }
+          }
+          if (!vu) sans.push([Math.round(q.u), Math.round(q.v)]);
+        }
+        out.carrefoursParis = { carrefours: pris.length, sans };
+      }
       return out;
     });
     const villesFeux = ['paris', 'londres', 'nice', 'lille', 'sf', 'washington'];
     verifier('les six villes bâties à la main ont enfin leurs feux tricolores',
       !feuxMain.err && villesFeux.every((v) => feuxMain[v] && feuxMain[v].feux >= 8),
       `${feuxMain.err || ''} ${JSON.stringify(feuxMain)}`);
+    const cp = feuxMain.carrefoursParis;
+    verifier('chaque carrefour de Paris a ses feux, même entre deux boulevards',
+      !!cp && cp.carrefours >= 30 && cp.sans.length <= cp.carrefours * 0.15,
+      cp ? `${cp.sans.length} carrefour(s) sans feu sur ${cp.carrefours} : ${JSON.stringify(cp.sans)}` : 'carrefoursDeVoies absent');
     // ET LA BARRE SE POSE SUR LA VILLE, PAS SUR LA FENÊTRE. Premier jet à
     // quatre-vingt-dix pour cent : rouge sur Paris seul, onze sur quatorze. La
     // sonde a nommé les trois accusés — tous dans l'emprise de la Caserne &
@@ -2496,8 +2535,15 @@ const VRAIES_KM = [
       }
       return { colonnes, secs, roulables, groupes, base: ville.base, eau: wo.WATER_LEVEL };
     });
+    // SEPT PONTS SUR L'AXE, PAS NEUF (v306). Deux des neuf ponts franchissent
+    // les îles : ils passent sur les DEUX bras, hors de l'axe du fleuve, et
+    // l'axe ne les voit pas. Sur `origin/main` le compte faisait neuf parce
+    // que deux colonnes isolées au bord de l'île Saint-Louis passaient pour
+    // des ponts (un et deux blocs de long) ; les îles doublées, elles n'y
+    // sont plus. Les deux ponts de l'île sont là, mesurés sous node sur les
+    // deux bras (huit et quatre colonnes de tablier de chaque côté).
     verifier('les ponts de Paris ont leur tablier au-dessus de la Seine, à la cote de la ville',
-      pontsParis.groupes >= 9 && pontsParis.colonnes > 0 && pontsParis.secs === pontsParis.colonnes
+      pontsParis.groupes >= 7 && pontsParis.colonnes > 0 && pontsParis.secs === pontsParis.colonnes
       && pontsParis.roulables === pontsParis.colonnes,
       `${pontsParis.groupes} ponts, ${pontsParis.colonnes} colonnes de tablier sur l'axe du fleuve : ${pontsParis.secs} au sec,`
       + ` ${pontsParis.roulables} roulables à la cote ${pontsParis.base} (eau à ${pontsParis.eau})`);
