@@ -173,7 +173,15 @@ function verifier(nom, ok, detail = '') {
 // Les dix-huit colonnes de référence et le Mall gardent leur cote au bloc
 // près, et la maison sauvegardée avant le changement repose toujours sur le sol.
 // v240 (avant le monde ×2) : 47fbedd47c47973c9eab0e6b479218f4ac3bd269
-const EMPREINTE_RELIEF = 'aea20fdad3a5c1672e23177dfe28a6bee9f5ae3c';
+//
+// **v306 : PARIS DOUBLÉ ET DÉPLACÉ.** Décision de Max : le disque de Paris
+// passe de 185 à 370 blocs et son centre part de cent soixante-dix blocs vers
+// le sud-ouest ; Roissy, Orly, Saint-Dizier, le village gaulois et le volcan
+// lui cèdent la place. Le relief change sous l'ancien et le nouveau disque et
+// sous ces cinq sites — et SEULEMENT là : c'est l'empreinte du dessous qui le
+// prouve, mesurée avec la MÊME découpe sur `origin/main` et sur la branche.
+// v305 : aea20fdad3a5c1672e23177dfe28a6bee9f5ae3c
+const EMPREINTE_RELIEF = '85c89a216e6ecea71187f3f630477f7f68830ee8';
 
 // ET CELLE-CI, ELLE, N'A PAS LE DROIT DE BOUGER.
 //
@@ -260,7 +268,25 @@ const EMPREINTE_RELIEF = 'aea20fdad3a5c1672e23177dfe28a6bee9f5ae3c';
 // Paris, la carte d'AVANT et celle d'APRÈS rendent le même sol, colonne pour
 // colonne — mesuré à la livraison, zéro déplacée.
 // v223 → v240 : b2566e0ec8e4df10aa1b218d01a52791267d911b
-const EMPREINTE_HORS_VILLES = '23e5ce82956ab83322ef7b56dd1f9a5b68cc92b7';
+//
+// v306 : PARIS DOUBLÉ SE BORNE, et c'est la forme canonique (v187, v200,
+// v204) : la découpe retire l'ancien ET le nouveau disque de Paris, et les
+// sites d'avant ET d'après des trois aérodromes, du village gaulois et du
+// volcan. Mesurée avec cette même découpe sur `origin/main` (v302), sur la
+// v305 et sur la branche : 154 158 colonnes, 2aeceaa1… des trois côtés.
+// v242 → v305 : 23e5ce82956ab83322ef7b56dd1f9a5b68cc92b7
+const EMPREINTE_HORS_VILLES = '2aeceaa10b2009e081d6bdb0a03586ae4022e1fb';
+
+// LE MONDE D'AVANT PARIS DOUBLÉ (v306), MESURÉ SUR LA PRODUCTION. La migration
+// juge les blocs d'avant contre ce monde-là (`new World({ avant: true })`) :
+// s'il s'écartait de celui où les enfants ont bâti, le ménage du ciel
+// retirerait une maison « en l'air » au-dessus d'une Seine qui n'y était pas.
+// Ces deux empreintes ont été relevées sur `origin/main` (v302), avec un
+// `World()` ordinaire : le relief de l'ancien Paris et de ses alentours
+// (40 401 colonnes) et les blocs de seize morceaux autour de l'ancienne
+// Notre-Dame (253 952 blocs). Elles ne se mettent JAMAIS à jour.
+const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
+const EMPREINTE_AVANT_BLOCS = 'b402b639d759d0586f32149aac4d3165edf0d10d';
 
 // La marge de fondu que le terrain applique autour d'une ville : au-delà, plus
 // rien de la ville ne déteint sur le relief.
@@ -269,7 +295,10 @@ const MARGE_VILLE = 40;
 // Quelques colonnes nommées, pour que l'échec dise quelque chose de lisible.
 const COLONNES = [
   [0, 0, 33], [40, -20, 42], [-240, 200, 34], [400, 110, 35], [112, 210, 34],
-  [-140, 420, 53], [60, -190, 35], [620, 80, 37], [250, 205, 34], [-140, 80, 34],
+  // (-140, 420) : l'ancien cône du volcan, 53. Paris doublé l'a recouvert
+  // (v306) : il est dans la ville, à sa base plate de 34 ; le volcan est parti
+  // plein sud, en (−140, 788), où son sommet est à 53.
+  [-140, 420, 34], [-140, 788, 53], [60, -190, 35], [620, 80, 37], [250, 205, 34], [-140, 80, 34],
   [-420, 300, 34], [450, 420, 36], [-520, -480, 41],
   // (-140, 80) : l'ancien tarmac de Roissy l'aplanissait à 35. L'aéroport est
   // parti plein nord en v223, et la colonne a RETROUVÉ sa cote naturelle, 34 —
@@ -343,6 +372,24 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     { x: -140, z: 80, portee: 92 + 24 },   // Roissy avant v223
     ...AEROPORTS.map((a) => ({ x: a.x, z: a.z, portee: a.r + 24 })),
   ];
+  // ET CE QUE PARIS DOUBLÉ A DÉPLACÉ (v306), d'où ET vers où : l'ancien disque
+  // de Paris, les trois aérodromes, le village gaulois et le volcan à leur
+  // ancienne place — le déménagement leur a rendu leur relief, un changement
+  // voulu. Sur l'ancien code ces listes n'existent pas : la découpe y retire
+  // les mêmes disques, écrits ici en dur, pour que la MÊME découpe se mesure
+  // des deux côtés.
+  const WV = await import('../src/world.js');
+  let AV_AERO, AV = [];
+  try { ({ AEROPORTS_AVANT_V306: AV_AERO } = await import('../src/aeroport.js')); } catch { /* ancien code */ }
+  if (!AV_AERO) AV_AERO = [{ x: -250, z: -91, r: 92 }, { x: -322, z: 504, r: 62 }, { x: 33, z: 300, r: 56 }];
+  for (const a of AV_AERO) AERO_POS.push({ x: a.x, z: a.z, portee: a.r + 24 });
+  AV = [
+    { x: -240, z: 200, portee: 185 + MARGE_VILLE },                 // l'ancien Paris
+    { x: -360, z: 320, portee: 370 + MARGE_VILLE },                 // le nouveau
+    { x: -420, z: 300, portee: 76 + 30 }, { x: WV.GAULOIS.x, z: WV.GAULOIS.z, portee: WV.GAULOIS.r + 30 },
+    { x: -140, z: 420, portee: 45 + 30 }, { x: WV.VOLCANO.x, z: WV.VOLCANO.z, portee: WV.VOLCANO.r + 30 },
+  ];
+  AERO_POS.push(...AV);
   // Dans une ville, ou dans le fondu qui la borde ?
   const dansUneVille = (x, z) => {
     if (x >= Z.x0 - MARGE_VILLE && x <= Z.x1 + MARGE_VILLE
@@ -405,7 +452,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   const PARIS_CITE = CITIES.find((c) => c.key === 'paris');
   const prochesDeParis = SANCTUAIRES.filter(([, x, z, r]) =>
     Math.hypot(x - PARIS_CITE.x, z - PARIS_CITE.z) < PARIS_CITE.r + MARGE_VILLE + r);
-  verifier('et Paris non plus, malgré son emprise triplée',
+  verifier('et Paris non plus, malgré son emprise doublée et son déménagement',
     prochesDeParis.length === 0,
     prochesDeParis.length ? prochesDeParis.map((a) => a[0]).join(', ')
       : `le plus proche est à ${Math.round(Math.min(...SANCTUAIRES.map(([, x, z, r]) =>
@@ -519,7 +566,10 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const W = await import('../src/world.js');
     const M = await import('../src/mondes.js');
     if (!W.hauteurBase) return { absent: true };
-    const P = M.positionDe('paris');
+    // L'ANCIEN Paris, celui où les enfants ont bâti : depuis la v306 la ville
+    // est ailleurs sur la carte courante, et c'est sous l'ancien disque que ce
+    // témoin a toujours mesuré (la carte 3 d'avant Paris doublé, `terreV3`).
+    const P = M.MONDES.terreV3 ? M.positionDe('paris', 'terreV3') : M.positionDe('paris');
     const zones = [['apparition', 0, 0, 90], ['Paris', P.x, P.z, 200]];
     const bouge = [];
     let n = 0;
@@ -604,7 +654,16 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       for (let z = -300; z <= 300; z += 3) {
         const t0 = w.terrainHeight(x, z), t1 = w.terrainHeight(x + 1, z), t2 = w.terrainHeight(x + 2, z);
         if (t1 !== t0 + 1 || t2 !== t1 + 1) continue;
+        // une pente NATURELLE, pas le talus d'une route : sous un corridor la
+        // cote vient du profil et les cubes sont ceux de l'ouvrage (v300) — l'A1
+        // retracée avec Paris doublé (v306) passe désormais dans cette fenêtre
+        if (w.corridorEn && [0, 1, 2].some((k) => w.corridorEn(x + k, z))) continue;
         if (w.solContinu(x + 0.5, z + 0.5) === null || w.solContinu(x + 2.5, z + 0.5) === null) continue;
+        // et la colonne du haut COUVERTE — ses quatre cellules dessinées : un
+        // arbre ou un bord de lac à côté la laisse au voxel, à bon droit, et le
+        // témoin ne mesurerait plus ce qu'il annonce (v306 : la première pente
+        // trouvée a changé quand l'A1 retracée a pris l'ancienne)
+        if ([[0.2, 0.2], [0.8, 0.2], [0.2, 0.8], [0.8, 0.8]].some(([a, b]) => w.solContinu(x + 2 + a, z + b) === null)) continue;
         return {
           x, z, t0, t1, t2,
           sommet: w.blocSousLaSurface(x + 2, t2, z), dessous: w.blocSousLaSurface(x + 2, t2 - 1, z),
@@ -658,7 +717,12 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   // une tour au point d'apparition, une marque d'import, une archive restent.
   const menage = await (async () => {
     const W = await import('../src/world.js');
-    const P = await import('../src/paris.js');
+    // L'ANCIEN PARIS (v306) : le ménage juge des blocs posés avant sa date,
+    // donc dans la ville et sur le relief d'avant Paris doublé — la trame figée
+    // et le monde d'avant. Sur l'ancien code, ce sont la ville et le monde
+    // courants, qui SONT ceux d'avant.
+    let P; try { P = await import('../src/paris-v302.js'); } catch { P = await import('../src/paris.js'); }
+    const w = new W.World({ avant: true });
     if (!W.menagerBlocsCielParis || !W.DATE_MENAGE_PARIS) return { absent: true };
     const te = P.adresseParis(-4.4, 0.5);                    // la tour Eiffel
     const x = te[0] + 12, z = te[1];
@@ -718,7 +782,13 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   // `sync.js`, et l'on regarde ce qu'il en reste : tout, sur le toit neuf.
   const releve = await (async () => {
     const W = await import('../src/world.js');
-    const P = await import('../src/paris.js');
+    // LA TRAME OÙ LA CABANE A ÉTÉ POSÉE (v303) : depuis que les rues suivent la
+    // règle du kit, les toits d'avant vivent dans la trame figée, et c'est elle
+    // que le relevé lit. Sur l'ancien code elle n'existe pas : la trame
+    // courante EST celle d'avant.
+    let P; try { P = await import('../src/paris-v302.js'); } catch { P = await import('../src/paris.js'); }
+    // et le MONDE où elle a été posée (v306) : celui d'avant Paris doublé
+    const w = new W.World({ avant: true });
     if (!W.releverBlocsToitsParis || !W.DATE_RELEVE_PARIS || !P.gabaritParis) return { absent: true };
     const [x0, z0] = P.adresseParis(-0.8, -0.9);
     let col = null;
@@ -734,9 +804,13 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     // le bâtisseur écrit à h + dy − 1 : le dernier bloc de l'ancien immeuble,
     // et celui du neuf — vérifié sur le MONDE, pas seulement sur le gabarit
     const toitAncien = h + g.ancien - 1, toitNeuf = h + g.sommet - 1;
-    const monde = w.getBlock(x, toitNeuf, z) !== 0 && w.getBlock(x, toitNeuf + 1, z) === 0;
     const monte = g.sommet - g.ancien;
     const t = W.DATE_RELEVE_PARIS - 86400000;
+    // le monde d'un enfant qui a bâti là : sa cabane dans le journal, et la
+    // colonne garde l'immeuble sur lequel elle a été posée (v303)
+    const wc = new W.World({ avant: true });
+    wc.installerEdits(new Map([[`${x},${toitAncien + 1},${z}`, 8]]), new Map([[`${x},${toitAncien + 1},${z}`, t]]));
+    const monde = wc.getBlock(x, toitNeuf, z) !== 0 && wc.getBlock(x, toitNeuf + 1, z) === 0;
     let rue = null;
     for (let d = 1; d < 20 && !rue; d++) for (const [dx, dz] of [[d, 0], [-d, 0], [0, d], [0, -d]]) if (P.solParis(x + dx, z + dz) !== null) { rue = [x + dx, z + dz]; break; }
     const hr = w.terrainHeight(rue[0], rue[1]);
@@ -772,6 +846,134 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     !releve.absent && releve.facade && releve.tour && releve.apres && releve.loin && releve.marque && releve.archive
       && releve.idempotent && releve.chaine && releve.pos,
     releve.absent ? 'le relevé des toits de Paris n\'existe pas' : JSON.stringify(releve));
+
+  // --- PARIS DOUBLÉ ET DÉPLACÉ (v306) : le monde d'avant est celui de la ----
+  // --- production, un bloc suit sa ville, et la ville cède à ce qu'on a bâti --
+  //
+  // Trois choses se prouvent ici, sous node.
+  //  1. Le monde d'avant (`new World({ avant: true })`), contre lequel la
+  //     migration juge les blocs d'avant, rend AU BLOC PRÈS le monde de la
+  //     production v302 — ses deux empreintes ont été relevées sur
+  //     `origin/main`. Sans lui, le ménage du ciel jugerait une maison de
+  //     l'ancien Paris sur le relief du nouveau.
+  //  2. La marche 5 → 6 (`migrerParisDouble`) emmène une maison bâtie au sol
+  //     dans l'ancien Paris là où le plan doublé met le même endroit de la
+  //     vraie ville, à la même hauteur au-dessus du sol ; une maison posée sur
+  //     l'ancien tarmac de Roissy suit l'aérodrome ; un trou creusé dans un
+  //     ancien immeuble disparaît avec lui ; rien ne bouge au point
+  //     d'apparition, ni ce qui est posé après la date ; elle est idempotente.
+  //     Et LA CHAÎNE ENTIÈRE, dans l'ordre de `sync.js`, ne perd pas une maison
+  //     posée avant le ménage là où le relief a changé : c'est ce qu'un ménage
+  //     jugé sur le monde neuf aurait retiré.
+  //  3. Le nouveau Paris CÈDE : autour de la maison emmenée, aucun immeuble ;
+  //     et un bloc posé après la date n'empêche pas la ville de bâtir.
+  const double = await (async () => {
+    const W = await import('../src/world.js');
+    if (!W.migrerParisDouble || !W.DATE_PARIS_DOUBLE) return { absent: true };
+    const A = await import('../src/paris-v302.js');
+    const N = await import('../src/paris.js');
+    const av = new W.World({ avant: true }), nf = new W.World();
+    // 1. le monde d'avant, contre la production
+    const rel = [];
+    for (let x = -440; x <= -40; x += 2) for (let z = 0; z <= 400; z += 2) rel.push(av.terrainHeight(x, z));
+    const blocs = [];
+    for (let cx = -15; cx <= -12; cx++) for (let cz = 12; cz <= 15; cz++) {
+      for (let x = cx * 16; x < cx * 16 + 16; x++) for (let z = cz * 16; z < cz * 16 + 16; z++) for (let y = 28; y < 90; y++) blocs.push(av.getBlock(x, y, z));
+    }
+    const hRel = createHash('sha1').update(rel.join(',')).digest('hex');
+    const hBlocs = createHash('sha1').update(blocs.join(',')).digest('hex');
+    // 2. la marche, sur un document fabriqué
+    const t = W.DATE_PARIS_DOUBLE - 86400000, tM = W.DATE_MENAGE_PARIS - 86400000;
+    const [mx, mz] = A.adresseParis(-2.5, 1.5);                  // une maison rive gauche, ancien Paris
+    const gA = av.terrainHeight(mx, mz);
+    const doc = { local: {} };
+    const L0 = doc.local;
+    for (let dx = 0; dx < 3; dx++) for (let dz = 0; dz < 3; dz++) for (let dy = 1; dy <= 3; dy++) L0[`${mx + dx},${gA + dy},${mz + dz}`] = [5, t];
+    // un trou dans un ancien immeuble, loin de la maison
+    const [tx, tz] = A.adresseParis(0.8, -1.2);
+    L0[`${tx},${av.terrainHeight(tx, tz) + 4},${tz}`] = [0, t];
+    // sur l'ancien tarmac de Roissy
+    const gR = av.terrainHeight(-250, -91);
+    L0[`-250,${gR + 1},-91`] = [5, t]; L0[`-250,${gR + 2},-91`] = [5, t];
+    // au point d'apparition, et après la date
+    L0['10,40,10'] = [6, t];
+    L0[`${mx},${gA + 9},${mz}`] = [7, W.DATE_PARIS_DOUBLE + 1000];
+    // Une maison d'avant le ménage, posée au sol dans l'ancien Paris LÀ OÙ LE
+    // RELIEF D'AUJOURD'HUI EST PLUS BAS (l'ancienne butte, une rive) : jugée
+    // sur le monde neuf elle serait « en l'air » et le ménage la retirerait —
+    // vérifié : zéro bloc arrivé avec un ménage sur le monde neuf, trois ici.
+    // On cherche une rue où les deux mondes diffèrent d'au moins trois blocs.
+    let bord = null;
+    for (let bx = A.PARIS.x - 150; bx <= A.PARIS.x + 150 && !bord; bx += 3) {
+      for (let bz = A.PARIS.z - 150; bz <= A.PARIS.z + 150 && !bord; bz += 3) {
+        if (A.solParis(bx, bz) === null) continue;                   // une rue, pas un immeuble
+        const ha = av.terrainHeight(bx, bz), hn = nf.terrainHeight(bx, bz);
+        if (ha >= 33 && hn <= ha - 3) bord = { bx, bz, ha, hn };
+      }
+    }
+    if (bord) for (let dy = 1; dy <= 3; dy++) L0[`${bord.bx},${bord.ha + dy},${bord.bz}`] = [11, tM];
+    const un = W.migrerBlocsParisDouble(doc), deux = W.migrerBlocsParisDouble(un.tout);
+    const L = un.tout.local;
+    const P2 = N.PARIS, P1 = A.PARIS;
+    const ax = Math.round(mx + 1), az = Math.round(mz + 1);
+    const nx = Math.round(P2.x + 2 * (ax - P1.x)), nz = Math.round(P2.z + 2 * (az - P1.z));
+    const gN = nf.terrainHeight(nx, nz);
+    const maison = Object.keys(L).filter((k) => L[k][0] === 5 && L[k][1] === W.DATE_PARIS_DOUBLE).map((k) => k.split(',').map(Number))
+      .filter(([x, , z]) => Math.hypot(x - nx, z - nz) < 4);
+    const bas = maison.length ? Math.min(...maison.map((p) => p[1])) : null;
+    const roissy = Object.keys(L).filter((k) => L[k][0] === 5 && L[k][1] === W.DATE_PARIS_DOUBLE)
+      .map((k) => k.split(',').map(Number)).filter(([x, , z]) => Math.hypot(x - (-697), z - (-17)) < 3);
+    const chaine = W.migrerBlocsParisDouble(W.menagerBlocsCielParis(W.releverBlocsToitsParis(W.migrerBlocsCarte3(doc).tout).tout).tout).tout.local;
+    const bordArrive = bord ? Object.keys(chaine).filter((k) => chaine[k][0] === 11 && chaine[k][1] === W.DATE_PARIS_DOUBLE).length : 0;
+    // 3. la ville cède
+    const monde = (carte) => {
+      const m = new W.World();
+      const ed = new Map(), tm = new Map();
+      for (const [k, e] of Object.entries(carte)) if (!k.startsWith('@')) { ed.set(k, e[0]); tm.set(k, e[1]); }
+      m.installerEdits(ed, tm);
+      return m;
+    };
+    const mc = monde(L);
+    let bati = 0;
+    for (let dx = -1; dx <= 3; dx++) for (let dz = -1; dz <= 3; dz++) for (let y = gN + 1; y < gN + 25; y++) {
+      const k = `${nx - 1 + dx},${y},${nz - 1 + dz}`;
+      if (!L[k] && mc.getBlock(nx - 1 + dx, y, nz - 1 + dz) !== 0) bati++;
+    }
+    // un bloc posé APRÈS la date, sur un lot du nouveau Paris : la ville y bâtit
+    let lot = null;
+    for (let d = 0; d < 80 && !lot; d++) for (let dx = -d; dx <= d && !lot; dx++) for (const dz of [-d, d]) {
+      const x = P2.x + 60 + dx, z = P2.z + 40 + dz;
+      if (N.solParis(x, z) === null && N.lotParisLibre(x, z)) { lot = [x, z]; break; }
+    }
+    const hl = nf.terrainHeight(lot[0], lot[1]);
+    const kl = `${lot[0]},${hl + 30},${lot[1]}`;
+    const apres = monde({ [kl]: [5, W.DATE_PARIS_DOUBLE + 1000] });
+    const lotBati = [2, 3, 4, 6].some((dy) => apres.getBlock(lot[0], hl + dy, lot[1]) !== 0);
+    return {
+      absent: false, hRel, hBlocs,
+      maison: maison.length === 27 && bas === gN + 1, bas, gN, ou: [nx, nz],
+      trou: !Object.keys(L).some((k) => L[k][0] === 0), roissy: roissy.length === 2,
+      apparition: L['10,40,10'] && L['10,40,10'][1] === t, apres: !!L[`${mx},${gA + 9},${mz}`],
+      idempotent: deux.deplaces === 0 && JSON.stringify(deux.tout) === JSON.stringify(un.tout),
+      bord: bord ? { ...bord, arrives: bordArrive } : null, bati, lotBati,
+      bilan: `${un.deplaces} déplacé(s), ${un.jetes} jeté(s), ${un.laisses} laissé(s)`,
+    };
+  })();
+  verifier('le monde d\'avant Paris doublé est, au bloc près, celui de la production',
+    !double.absent && double.hRel === EMPREINTE_AVANT_RELIEF && double.hBlocs === EMPREINTE_AVANT_BLOCS,
+    double.absent ? 'Paris n\'a pas doublé' : `relief ${double.hRel.slice(0, 12)} · blocs ${double.hBlocs.slice(0, 12)}`);
+  verifier('une maison de l\'ancien Paris suit son quartier dans le nouveau, posée sur son sol',
+    !double.absent && double.maison,
+    double.absent ? 'Paris n\'a pas doublé' : `${double.bilan} · bas ${double.bas}, sol ${double.gN}, en (${double.ou})`);
+  verifier('et l\'ancien tarmac de Roissy suit l\'aérodrome ; un trou d\'immeuble part avec l\'immeuble ; rien d\'autre ne bouge',
+    !double.absent && double.roissy && double.trou && double.apparition && double.apres && double.idempotent,
+    double.absent ? 'Paris n\'a pas doublé' : JSON.stringify(double));
+  verifier('et la chaîne entière ne perd pas une maison d\'avant le ménage, posée là où le sol d\'avant n\'est plus celui d\'aujourd\'hui',
+    !double.absent && !!double.bord && double.bord.arrives >= 3,
+    double.absent ? 'Paris n\'a pas doublé' : JSON.stringify(double.bord));
+  verifier('et le nouveau Paris ne bâtit pas d\'immeuble sur ce qu\'un enfant avait bâti — mais bâtit sous ce qu\'on pose après',
+    !double.absent && double.bati === 0 && double.lotBati,
+    double.absent ? 'Paris n\'a pas doublé' : `autour de la maison : ${double.bati} bloc(s) de ville · lot après la date bâti : ${double.lotBati}`);
 
   const trop = [];
   for (let x = -700; x <= 700; x += 7) {
@@ -977,7 +1179,21 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         `${aller.length} pas · marche max ${marche.toFixed(3)} bloc · ${continu ? `écart au rail ${ecart.toFixed(4)}` : 'pas de cote continue (code d\'avant la v302)'}`);
       // 2. sur quatre cents blocs de ligne : les blocs de la plate-forme, les
       //    rubans du mailleur (quatre files par pas), et la surface à la cote
-      let obs = 0, planches = 0, colonnes = 0, surface = 0, ecartSurf = 0, tranchee = 0, tranchJuste = 0, sansRail = 0, pas = 0, talus = 0;
+      let obs = 0, planches = 0, colonnes = 0, surface = 0, ecartSurf = 0, tranchee = 0, tranchJuste = 0, sansRail = 0, pas = 0, talus = 0, falaise = 0;
+      // UNE FALAISE RESTE UNE FALAISE (v297) : au bord d'une paroi naturelle
+      // (le relief saute de huit blocs ou plus autour de la colonne — la rive
+      // d'un lac), le talus descend d'un côté et monte de l'autre, la cellule
+      // dépasse un bloc d'écart et le voxel reprend la main, à bon droit. La
+      // ligne Paris–Lyon a bougé avec Paris doublé (v306) et sa fenêtre de
+      // mesure longe désormais un lac : ces colonnes se comptent à part, et le
+      // message le dit.
+      const auBordDUneFalaise = (x, z) => {
+        let bas = Infinity, haut = -Infinity;
+        for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
+          const t = w.terrainHeight(x + dx, z + dz); if (t < bas) bas = t; if (t > haut) haut = t;
+        }
+        return haut - bas >= 8;
+      };
       for (let k = 300; k < 700; k++) {
         const ax = seg.x0 + ux * k, az = seg.z0 + uz * k;
         pas++;
@@ -1002,7 +1218,10 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
           }
           const sc = w.solContinu(x + 0.5, z + 0.5);
           if (sc !== null) { surface++; ecartSurf = Math.max(ecartSurf, Math.abs(sc - cote)); }
-          if (v.piece !== 'talus' && Math.abs(cote - (w.terrainHeight(x, z) + 1)) >= 2) { tranchee++; if (sc !== null && Math.abs(sc - cote) < 1e-6) tranchJuste++; }
+          if (v.piece !== 'talus' && Math.abs(cote - (w.terrainHeight(x, z) + 1)) >= 2) {
+            if (auBordDUneFalaise(x, z)) { falaise++; continue; }
+            tranchee++; if (sc !== null && Math.abs(sc - cote) < 1e-6) tranchJuste++;
+          }
         }
       }
       verifier('les rails sont des prismes continus, plus un bloc d\'obsidienne ni de planche sur la voie',
@@ -1010,7 +1229,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         `${pas} pas, ${sansRail} sans ses quatre files de prismes · ${obs} obsidienne, ${planches} planche(s) sur ${colonnes} colonnes`);
       verifier('le sol continu suit le profil de la voie, dans la tranchée comme sur le remblai',
         continu && colonnes > 3000 && talus > 200 && surface >= colonnes * 0.85 && ecartSurf < 1e-6 && tranchee > 200 && tranchJuste === tranchee,
-        `${surface} colonnes de surface sur ${colonnes} (${talus} de talus), écart max à la cote ${ecartSurf.toFixed(4)} · en tranchée ou remblai de deux blocs et plus : ${tranchJuste}/${tranchee} (${((performance.now() - t0) / 1000).toFixed(1)} s)`);
+        `${surface} colonnes de surface sur ${colonnes} (${talus} de talus), écart max à la cote ${ecartSurf.toFixed(4)} · en tranchée ou remblai de deux blocs et plus : ${tranchJuste}/${tranchee}, et ${falaise} au bord d'une falaise (${((performance.now() - t0) / 1000).toFixed(1)} s)`);
     }
   }
 
@@ -1264,9 +1483,36 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     // physique seule) puis la surface. On attend le RÉSULTAT, borné (v270) :
     // vingt blocs parcourus ou soixante images bloquées, et la durée entre
     // dans le message.
-    const marcher = async (sans) => tab.evaluate(async ({ sans }) => {
+    // LA PENTE SE CHERCHE (v285, v306). Elle était écrite en (−165, −85),
+    // « relevée sur l'axe Paris–Lille » : c'était le bord du disque aplani de
+    // l'ancien Roissy, et Roissy parti au nord-ouest avec Paris doublé, ce sol
+    // a retrouvé son relief naturel — un autre terrain, et un témoin qui
+    // écrirait encore son terrain mesurerait autre chose que ce qu'il annonce.
+    // On cherche donc, sur le cap du témoin, quarante blocs de surface continue
+    // dont le profil porte au moins huit marches d'un bloc et aucune de deux.
+    const pente = await tab.evaluate(() => {
+      const g = window.__game, w = g.world;
+      const yaw = -0.256, fx = -Math.sin(yaw), fz = -Math.cos(yaw);
+      for (let X = -600; X <= 600; X += 11) for (let Z = -600; Z <= 600; Z += 11) {
+        if (w.cityAt(X, Z)) continue;
+        let marches = 0, ok = true, prec = null;
+        for (let k = 0; k <= 40 && ok; k++) {
+          const x = Math.floor(X + 0.5 + fx * k), z = Math.floor(Z + 0.5 + fz * k);
+          const h = w.terrainHeight(x, z);
+          if (h <= 31 || w.solContinu(x + 0.5, z + 0.5) === null) ok = false;
+          for (let dy = 1; dy <= 3 && ok; dy++) if (w.getBlock(x, h + dy, z) !== 0) ok = false;
+          // des marches qui MONTENT : en descendant, le voxel n'arrête personne
+          if (prec !== null) { const d = h - prec; if (d > 1 || d < 0) ok = false; if (d === 1) marches++; }
+          prec = h;
+        }
+        if (ok && marches >= 8) return { X, Z, marches };
+      }
+      return null;
+    });
+    verifier('on trouve une pente de huit marches d\'un bloc pour éprouver le sol continu', !!pente, JSON.stringify(pente));
+    const marcher = async (sans) => tab.evaluate(async ({ sans, pente }) => {
       const g = window.__game, p = g.player;
-      const X = -165, Z = -85;
+      const X = pente ? pente.X : -165, Z = pente ? pente.Z : -85;
       g.world.sansSolContinu = sans;
       p.flying = false; p.pos.set(X + 0.5, g.world.terrainHeight(X, Z) + 2, Z + 0.5); p.vel.set(0, 0, 0);
       p.yaw = -0.256; p.pitch = 0;
@@ -1296,7 +1542,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       p.touchMove.f = 0; g.world.sansSolContinu = false;
       out.blocs = +out.blocs.toFixed(1);
       return out;
-    }, { sans });
+    }, { sans, pente });
     const voxelMarche = await marcher(true);
     const surfaceMarche = await marcher(false);
     verifier('sur une pente de huit marches, le voxel d\'avant arrête l\'enfant au premier bloc — la surface le laisse marcher',
@@ -1306,16 +1552,17 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       surfaceMarche.sous === 0 && surfaceMarche.flotte === 0 && surfaceMarche.marches === 0,
       `${surfaceMarche.sous} image(s) sous la surface, ${surfaceMarche.flotte} flottante(s), ${surfaceMarche.marches} marche(s) sur ${surfaceMarche.images} images`);
     // une bête lit la même surface que l'enfant
-    const bete = await tab.evaluate(async () => {
+    const bete = await tab.evaluate(async (pente) => {
       const g = window.__game;
-      const X = -160, Z = -100;
+      // sur la pente trouvée, dix blocs plus loin sur son cap
+      const X = pente ? Math.round(pente.X + 0.5 - Math.sin(-0.256) * 10) : -160, Z = pente ? Math.round(pente.Z + 0.5 - Math.cos(-0.256) * 10) : -100;
       // la clé d'une espèce n'est pas son nom français (v285) : `cow`, pas « vache »
       const a = g.animalManager.invoquer('cow', X + 0.3, Z + 0.7);
       if (!a) return { echec: 'pas de vache (clé cow inconnue)' };
       await new Promise((r) => setTimeout(r, 2500));
       const sc = g.world.solContinu(a.pos.x, a.pos.z);
       return { y: +a.pos.y.toFixed(2), surface: sc === null ? null : +sc.toFixed(2), ecart: sc === null ? null : +(a.pos.y - sc).toFixed(2) };
-    });
+    }, pente);
     verifier('une bête posée sur la pente se tient sur la même surface que l\'enfant',
       bete.surface !== null && bete.ecart !== null && bete.ecart >= -0.01 && bete.ecart < 0.3, JSON.stringify(bete));
     // ce que la page dessine : des cellules de surface (sommets à x + 0,5)
@@ -1392,7 +1639,15 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       out.sFin = +R.projeter(seg, p.pos.x, p.pos.z).s.toFixed(1);
       return out;
     }, { s0, blocsVoulus });
-    const a1 = await rouler(120, 80);
+    // Quatre-vingts blocs de CHAUSSÉE, sans pont : de l'abscisse 120 sur l'A1
+    // d'avant, de 220 sur celle de Paris doublé (v306), dont le premier pont est
+    // à 185 — le franchissement se mesure à part, juste en dessous.
+    let s0A1 = 120;
+    try {
+      const pr = await tab.evaluate(async () => { const R = await import('./src/routes.js'); const p = R.profilDe(R.segmentsDeRoute()[0]); return p.spans.map((sp) => [sp.s0, sp.s1]); });
+      if (pr.some(([a, b]) => b >= 110 && a <= 210)) s0A1 = 220;
+    } catch { /* ancien code sans routes.js */ }
+    const a1 = await rouler(s0A1, 80);
     verifier('au volant sur l\'A1, quatre-vingts blocs à la cote du profil, sans une marche ni une chute',
       !a1.echec && a1.blocs >= 72 && a1.marches === 0 && a1.chutes === 0 && a1.bloque < a1.images / 10 && a1.ecartMax < 0.6,
       JSON.stringify(a1));

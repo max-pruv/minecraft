@@ -643,8 +643,12 @@ function verifier(nom, ok, detail = '') {
     const traversee = await tab.evaluate(async () => {
       const m = await import('./src/paris.js');
       const g = window.__game;
-      // Concorde → Nation, cent cinquante blocs de ville, par bonds de vingt-cinq.
-      const a = [-53, -4], b = [96, 25];
+      // Concorde → Nation, en sept arrêts. En KILOMÈTRES depuis Notre-Dame
+      // (v306) : écrites en blocs, ces deux adresses valaient à vingt-quatre
+      // blocs par kilomètre ; Paris doublé les rend à trois cents blocs l'une
+      // de l'autre, et le pas suit la longueur pour garder sept arrêts.
+      const rel = (dx, dz) => { const [x, z] = m.adresseParis(dx, dz); return [x - m.PARIS.x, z - m.PARIS.z]; };
+      const a = rel(-3.2, -0.9), b = rel(3.0, 0.3);
       const L = Math.hypot(b[0] - a[0], b[1] - a[1]);
       const compte = [];
       // COMBIEN DE TEMPS LA VILLE MET-ELLE À SE PEUPLER À L'ARRIVÉE. Le témoin
@@ -665,8 +669,8 @@ function verifier(nom, ok, detail = '') {
         }
         if (n >= 3) { arrivee = (t + 1) * 0.5; break; }
       }
-      for (let d = 0; d <= L; d += 25) {
-        const f = d / L;
+      for (let d = 0; d <= L + 0.5; d += L / 6) {
+        const f = Math.min(1, d / L);
         const x = Math.round(m.PARIS.x + a[0] + (b[0] - a[0]) * f);
         const z = Math.round(m.PARIS.z + a[1] + (b[1] - a[1]) * f);
         g.player.pos.set(x + 0.5, g.world.terrainHeight(x, z) + 1.2, z + 0.5);
@@ -724,9 +728,17 @@ function verifier(nom, ok, detail = '') {
       for (let i = 0; i < 1200; i++) {
         await new Promise((r) => setTimeout(r, 100));
         const v = window.__vehicules;
-        const place = v && v.placeProche(g.player.pos, 5);
+        // `window.__vehicules.placeProche` prend UN RAYON : la position est
+        // celle de l'enfant, fournie par la page. Appelé (pos, 5), il prenait
+        // le vecteur pour rayon, `d > rayon` rendait toujours faux, et l'on
+        // cliquait pour une voiture à 139 blocs (v306).
+        const place = v && v.placeProche(5);
         if (!place || place.nom !== 'voiture') continue;
         const avant = v.etat().filter((k) => k.nom === 'voiture').reduce((s, k) => s + k.total, 0);
+        // CE QUE L'ENFANT VOIT, dans le message : sans lui, un rouge « pas au
+        // volant » ne distingue pas un bouton qui dit autre chose d'un clic
+        // qui ne prend rien (v306).
+        const bouton = document.getElementById('board-btn').textContent;
         document.getElementById('board-btn').click();
         // Le bouton ne change qu'au tour d'affichage suivant : on attend le
         // RÉSULTAT, on ne le lit pas dans la foulée du clic.
@@ -747,6 +759,8 @@ function verifier(nom, ok, detail = '') {
           // preuve la plus directe qu'on tient le volant.
           auVolant: !!g.player.volInterdit,
           prise: avant - apres, attente: Math.round(performance.now() - t0),
+          bouton, bandeau: (document.getElementById('toast') || {}).textContent || null,
+          place: { id: place.id, d: +place.d.toFixed(1) },
           modele: auto && auto.mesh ? auto.mesh.userData.flotte || null : null,
         };
       }

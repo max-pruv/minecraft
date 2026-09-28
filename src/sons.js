@@ -27,6 +27,13 @@
 let ctx = null;
 let maitre = null;          // le gain général, qu'un réglage peut fermer
 let actif = true;
+let enAppel = false;        // un appel de visio porte du son (v304)
+let generation = 0;         // combien de contextes ont vécu — une sonde le lit
+let veilleArmee = false;
+// Pendant un appel, le jeu parle plus bas : l'annulation d'écho de la
+// tablette n'a pas à se battre contre la radio et le moteur.
+const GAIN_APPEL = 0.25;
+const gainVoulu = () => (actif ? (enAppel ? GAIN_APPEL : 1) : 0);
 
 // Le contexte se crée au PREMIER BESOIN, jamais au chargement : les
 // navigateurs mobiles refusent le son tant que l'enfant n'a rien touché, et
@@ -39,8 +46,9 @@ export function contexteAudio() {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return null;
     ctx = new AC();
+    generation++;
     maitre = ctx.createGain();
-    maitre.gain.value = actif ? 1 : 0;
+    maitre.gain.value = gainVoulu();
     maitre.connect(ctx.destination);
     // Son coupé AVANT que le contexte n'existe (le réglage de l'appareil, ou
     // `?son=0`) : on le crée quand même — le graphe se monte, et rallumer
@@ -50,11 +58,15 @@ export function contexteAudio() {
     // L'ONGLET QUI PART EMPORTE SON SON. Une radio qui continue de jouer
     // pendant que l'enfant est ailleurs, c'est le genre de chose qu'on ne
     // pardonne pas à une application.
-    document.addEventListener('visibilitychange', () => {
-      if (!ctx) return;
-      if (document.visibilityState === 'hidden') ctx.suspend().catch(() => {});
-      else if (actif) ctx.resume().catch(() => {});
-    });
+    // Un seul écouteur pour tous les contextes : un appel en recrée un.
+    if (!veilleArmee) {
+      veilleArmee = true;
+      document.addEventListener('visibilitychange', () => {
+        if (!ctx) return;
+        if (document.visibilityState === 'hidden') ctx.suspend().catch(() => {});
+        else if (actif) ctx.resume().catch(() => {});
+      });
+    }
   } catch { ctx = null; }
   return ctx;
 }
@@ -73,12 +85,54 @@ export function sortieAudio() { contexteAudio(); return maitre; }
 export function reglerSon(oui) {
   actif = !!oui;
   if (!ctx) return;
-  if (maitre) maitre.gain.setTargetAtTime(actif ? 1 : 0, ctx.currentTime, 0.05);
+  if (maitre) maitre.gain.setTargetAtTime(gainVoulu(), ctx.currentTime, 0.05);
   if (actif) { if (ctx.state === 'suspended') ctx.resume().catch(() => {}); return; }
   // on laisse le fondu s'achever avant de couper le fil, sinon ça claque
   setTimeout(() => { if (!actif && ctx && ctx.state === 'running') ctx.suspend().catch(() => {}); }, 200);
 }
 export function sonActif() { return actif; }
+
+// --- la visio : un contexte neuf quand l'iPad passe en mode appel (v304) ------
+//
+// Max : « Alice, quand elle utilise l'audio et la vidéo, entend un son hyper
+// robotique de son côté sur son iPad. Pas avec tous les appareils, mais avec le
+// sien. » Dès qu'un appel porte du son — son micro ouvert, ou la voix d'un ami
+// qui arrive —, iOS bascule la session audio en mode APPEL, avec le traitement
+// de la voix, et sur certains iPad à une autre fréquence d'échantillonnage que
+// la lecture ordinaire. Un contexte Web Audio créé AVANT reste à l'ancienne
+// fréquence et passe par un rééchantillonnage de mauvaise qualité : c'est le
+// son robotique, connu de Safari, qui dépend du matériel — d'où « pas avec
+// tous les appareils ». Le remède est de fermer le contexte du jeu et d'en
+// ouvrir un neuf, qui prend la fréquence de la session en cours ; et de même à
+// la fin de l'appel, quand iOS revient au mode lecture. Le moteur et la radio
+// qui jouaient reprennent sur le contexte neuf.
+//
+// Et pendant l'appel le jeu parle plus bas (`GAIN_APPEL`) : l'annulation d'écho
+// de la tablette ne connaît que la voix qu'elle joue elle-même, pas la radio ;
+// une radio pleine puissance dans le haut-parleur, c'est un écho qu'elle
+// découpe en morceaux, et c'est l'ami qui entend un robot.
+export function appelEnCours(oui) {
+  oui = !!oui;
+  if (oui === enAppel) return;
+  enAppel = oui;
+  if (!ctx) return;              // le contexte naîtra à la bonne fréquence au premier besoin
+  const typeMoteur = moteur ? moteur.type : null;
+  const station = radio ? STATIONS.indexOf(radio.station) : -1;
+  if (moteur) { try { moteur.source.stop(); moteur.osc1.stop(); moteur.osc2.stop(); if (moteur.siffle) moteur.siffle.stop(); } catch { /* déjà */ } moteur = null; }
+  if (radio) { clearInterval(radio.minuteur); radio = null; }
+  const vieux = ctx;
+  ctx = null; maitre = null; bruitTampon = null;   // un tampon vit à la fréquence de son contexte
+  vieux.close().catch(() => {});
+  if (typeMoteur) moteurDemarre(typeMoteur);
+  if (station >= 0) radioDemarre(station);
+  // Hors d'un geste de l'enfant (après l'autorisation du micro), iOS peut
+  // créer le contexte endormi : le premier contact avec l'écran le réveille.
+  if (ctx && ctx.state === 'suspended') {
+    const reveil = () => { if (ctx && actif && ctx.state === 'suspended') ctx.resume().catch(() => {}); };
+    document.addEventListener('pointerdown', reveil, { once: true, capture: true });
+  }
+}
+export function generationAudio() { return generation; }
 
 // --- le bruit de fond d'un moteur -------------------------------------------
 
@@ -309,7 +363,7 @@ export function radioEnCours() { return radio ? radio.station.nom : null; }
 // drapeau. Il sert à la mise au point et aux captures.
 export function etatSon() {
   return {
-    contexte: ctx ? ctx.state : null, actif,
+    contexte: ctx ? ctx.state : null, actif, appel: enAppel, generation,
     moteur: moteur ? moteur.type : null,
     radio: radio ? radio.station.nom : null,
   };

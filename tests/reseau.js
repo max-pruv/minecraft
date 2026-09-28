@@ -287,6 +287,282 @@ function verifier(nom, ok, detail = '') {
       (await vu(hote)).compteur === 2 && (await vu(alice)).compteur === 2
       && !(await nomsVus(hote)).includes('Nina') && !(await nomsVus(alice)).includes('Nina'),
       `hôte ${JSON.stringify(await nomsVus(hote))} · Alice ${JSON.stringify(await nomsVus(alice))}`);
+    // --- une seule rue pour tout le monde (v305) ------------------------------
+    //
+    // Max, en ligne : « les utilisateurs ne voient pas les mêmes voitures en
+    // même temps. Et quand on monte dans une voiture, elle change de couleur. »
+    // Chaque tablette faisait rouler SA circulation, depuis l'instant où SA page
+    // avait créé le convoi : deux enfants au même carrefour voyaient deux rues.
+    // On emmène Marlon et Alice au même endroit de Paris et l'on compare, convoi
+    // par convoi, où en est la tête — sur l'ancien code, n'importe où sur le
+    // tour. Le convoi se reconnaît à ce qui ne dépend que de son tracé (nom,
+    // longueur, graine) : son RANG dans la liste dépend de l'ordre où la page
+    // a approché les villes, et n'est pas le même d'une tablette à l'autre.
+    const departRue = { hote: await hote.evaluate(() => { const p = window.__game.player.pos; return { x: p.x, y: p.y, z: p.z }; }),
+      alice: await alice.evaluate(() => { const p = window.__game.player.pos; return { x: p.x, y: p.y, z: p.z }; }) };
+    const allerAParis = (page) => page.evaluate(async () => {
+      const g = window.__game;
+      const { PARIS } = await import('./src/paris.js');
+      for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+      g.animalManager.animals.length = 0;
+      g.player.pos.set(PARIS.x, g.world.terrainHeight(PARIS.x, PARIS.z) + 30, PARIS.z);
+      g.player.vel.set(0, 0, 0);
+      g.player.flying = true;
+    });
+    // L'HÔTE ARRIVE D'ABORD, ALICE UNE MINUTE PLUS TARD. Un convoi naît
+    // quand la page approche sa ville : sur l'ancien code, chaque tablette
+    // part donc de SA naissance, et le décalage d'arrivée devient un décalage
+    // de rue. Le gel de six secondes seul ne suffisait pas — mesuré, écart
+    // médian 5 sur l'ancien code contre 3 sur le neuf : les deux pages rendent
+    // si peu d'images par seconde que `dt` (borné) avance d'aussi peu chez
+    // l'une que chez l'autre, et le gel ne coûte qu'une image.
+    await allerAParis(hote);
+    await dormir(60000);
+    await allerAParis(alice);
+    // LES DEUX PAGES SE LISENT L'UNE APRÈS L'AUTRE, À UNE DEMI-SECONDE D'ÉCART
+    // OU PLUS sur ce banc : les voitures roulent entre les deux lectures, et le
+    // premier jet comptait ce trajet comme un désaccord (écart médian 8 sur le
+    // code neuf pour une barre à 8). Chaque relevé porte donc l'heure de la
+    // MACHINE (`Date.now`, la même pour les deux pages) et la vitesse du
+    // convoi, et l'on ramène la première lecture à l'instant de la seconde.
+    const convoisDe = (page) => page.evaluate(() => {
+      const out = { t: Date.now() };
+      for (const c of (window.__vehicules.etat() || [])) {
+        if (!c.routier || c.nom !== 'voiture') continue;
+        out[`${c.nom}|${c.longueur}|${c.graine}`] = { d: c.distance, L: c.longueur, v: c.vitesse || 0, arret: !!c.attente };
+      }
+      return out;
+    });
+    await jusqua(async () => {
+      const a = await convoisDe(hote), b = await convoisDe(alice);
+      return Object.keys(a).filter((k) => k !== 't' && b[k]).length >= 3;
+    }, 60000);
+    // ON PROVOQUE LA DIVERGENCE, ON NE L'ATTEND PAS (v233, v266). Deux pages
+    // ouvertes presque ensemble ont des circulations presque en phase par
+    // hasard : sur l'ancien code ce témoin était VERT (écart médian 1 bloc),
+    // sans rien prouver. On gèle donc la page d'Alice six secondes — une
+    // tablette qui rame, un onglet qui dort : sur l'ancien code sa rue garde six
+    // secondes de retard pour toujours ; sur le neuf, l'heure de l'hôte, qui
+    // voyage avec celle du ciel toutes les trois secondes, la rattrape.
+    await alice.evaluate(() => { setTimeout(() => { const t = performance.now(); while (performance.now() - t < 6000) { /* gel */ } }, 50); });
+    await dormir(6500);
+    await dormir(7000);
+    const ecartsRue = [];
+    for (let k = 0; k < 5; k++) {
+      const a = await convoisDe(hote), b = await convoisDe(alice);
+      const dt = (b.t - a.t) / 1000;
+      for (const cle of Object.keys(a)) {
+        if (cle === 't' || !b[cle] || a[cle].arret || b[cle].arret) continue;
+        const L = a[cle].L || 1;
+        const e = Math.abs((((a[cle].d + a[cle].v * dt - b[cle].d) % L) + L) % L);
+        ecartsRue.push(Math.min(e, L - e));
+      }
+      await dormir(600);
+    }
+    ecartsRue.sort((x, y) => x - y);
+    const medianeRue = ecartsRue.length ? ecartsRue[ecartsRue.length >> 1] : null;
+    // LA BARRE SE CALCULE : l'horloge de la rue glisse vers celle de l'hôte
+    // tant que l'écart est sous UNE seconde (`adopterHorloge`), et sur ce banc
+    // une page rend à peine une image par seconde, donc une position lue a
+    // jusqu'à une seconde de retard. Deux secondes de rue à dix blocs par
+    // seconde : vingt blocs. Mesuré — neuf 2 · 8 · 10, ancien 21 · 22 avec
+    // trente secondes d'écart d'arrivée ; l'écart est porté à une minute pour
+    // que l'ancien code s'éloigne franchement de la barre.
+    verifier('deux tablettes d\'une partie voient la même circulation, au même endroit',
+      medianeRue !== null && medianeRue < 20,
+      `écart médian ${medianeRue === null ? null : medianeRue.toFixed(1)} bloc(s) le long du tour, sur ${ecartsRue.length} relevé(s) · pire ${ecartsRue.length ? ecartsRue[ecartsRue.length - 1].toFixed(1) : null}`);
+
+    // Marlon prend le volant d'une voiture de la rue — celle que la rue avait
+    // repeinte, pour que la couleur ait quelque chose à perdre.
+    const prise = await hote.evaluate(async () => {
+      const g = window.__game, v = window.__vehicules; const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      g.player.flying = false;
+      for (let essai = 0; essai < 40; essai++) {
+        for (const c of v.etat()) {
+          if (!c.routier || c.nom !== 'voiture') continue;
+          for (const pl of c.places) {
+            const peinture = pl[6];
+            if (peinture === null) continue;              // livrée d'origine : rien à perdre
+            g.player.pos.set(pl[0] + 0.5, g.world.terrainHeight(pl[0], pl[1]) + 1.2, pl[1]);
+            g.player.vel.set(0, 0, 0);
+            await dodo(150);
+            document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyM' }));
+            await dodo(1500);
+            const a = g.fun.montureConduite && g.fun.montureConduite();
+            if (!a || !a.mesh) continue;
+            const couleurs = [];
+            a.mesh.traverse((o) => { if (o.isMesh && o.material && o.material.color) couleurs.push(o.material.color.getHex()); });
+            return { auVolant: true, rue: peinture === undefined ? null : peinture, monture: a.mesh.userData.peinture ?? null,
+              peinte: peinture !== undefined && couleurs.includes(peinture), flotte: a.mesh.userData.flotte,
+              x: a.pos.x, z: a.pos.z, cap: a.yaw };
+          }
+        }
+        await dodo(500);
+      }
+      return { auVolant: false };
+    });
+    const marlonChezAlice2 = await idDe(alice, 'Marlon');
+    const vueAlice = () => alice.evaluate((id) => {
+      const rp = window.__game.remotePlayers.get(id);
+      if (!rp || !rp.vehicule) return null;
+      const couleurs = [];
+      rp.vehicule.mesh.traverse((o) => { if (o.isMesh && o.material && o.material.color) couleurs.push(o.material.color.getHex()); });
+      return { peinture: rp.vehicule.mesh.userData.peinture ?? null, couleurs };
+    }, marlonChezAlice2);
+    await jusqua(async () => { const v = await vueAlice(); return !!v && v.couleurs.includes(prise.rue); }, 15000);
+    const chezAlice = await vueAlice();
+    verifier('la voiture qu\'on prend dans la rue garde sa couleur, chez soi et chez l\'ami',
+      prise.auVolant && prise.rue !== null && prise.peinte && prise.monture === prise.rue
+      && !!chezAlice && chezAlice.couleurs.includes(prise.rue),
+      JSON.stringify({ prise, chezAlice: chezAlice && { peinture: chezAlice.peinture, laTeinte: chezAlice.couleurs.includes(prise.rue) } }));
+
+    // Et chez Alice, la rue ne passe plus AU TRAVERS de la voiture de Marlon.
+    // ON POSE LA SITUATION (v252, v279) : Marlon se gare DANS la voie, douze
+    // blocs devant une voiture de la rue d'Alice qui arrive, et l'on regarde
+    // chez Alice. Sur l'ancien code la voiture le traverse ; sur le neuf elle
+    // s'arrête derrière lui. Attendre qu'une voiture passe « par hasard » à
+    // côté d'une voiture garée rendait ce témoin VERT sur l'ancien code (aucune
+    // n'était venue en douze secondes) : une mesure où personne ne vient n'est
+    // pas une mesure.
+    const idMarlon2 = marlonChezAlice2;
+    let traversee = { dedans: 0, plusPres: Infinity, releves: 0, essais: 0, suivie: null };
+    for (let essai = 0; essai < 5; essai++) {
+      // L'ORDRE COMPTE, ET C'EST CE QUI A COÛTÉ QUATRE JETS. On choisissait une
+      // voiture, on posait Marlon devant elle, puis on attendait qu'Alice le
+      // voie arrivé (une à deux secondes de réseau) : pendant ce temps la
+      // voiture l'avait rejoint, et au premier relevé elle était « déjà
+      // dedans », donc exclue du compte — vert ou rouge au hasard, des deux
+      // côtés. Désormais Marlon se pose d'abord sur le tracé (là où est une
+      // voiture de la rue, qui repart), et c'est UNE FOIS QU'ALICE LE VOIT
+      // ARRIVÉ qu'on choisit la voiture qui arrive derrière lui : dans sa voie,
+      // entre 4,5 et 14 blocs de son pare-chocs. Sur l'ancien code elle le
+      // traverse ; sur le neuf elle reste derrière, et son RETARD dans le
+      // convoi grandit. Quarante secondes : sur ce banc l'ancien code fait
+      // rouler ses voitures au rythme des images (`dt` borné), donc lentement.
+      const pose = await alice.evaluate((k) => {
+        const cands = [];
+        for (const c of window.__vehicules.etat()) {
+          if (!c.routier || c.nom !== 'voiture') continue;
+          for (const pl of c.places) if (!pl[5]) cands.push(pl);
+        }
+        if (!cands.length) return null;
+        const pl = cands[(k * 7) % cands.length];
+        return { x: pl[0], z: pl[1], cap: pl[2] };
+      }, essai);
+      if (!pose) { await dormir(1000); continue; }
+      await hote.evaluate((c) => {
+        const g = window.__game;
+        g.player.pos.set(c.x, g.world.terrainHeight(Math.floor(c.x), Math.floor(c.z)) + 1.2, c.z);
+        g.player.vel.set(0, 0, 0);
+        g.player.yaw = c.cap + Math.PI;
+      }, pose);
+      const r = await alice.evaluate(async ({ id, m }) => {
+        const v = window.__vehicules; const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+        const rect = (x, z, cap, dl = 2.2, dw = 1.13) => {
+          const ux = Math.sin(cap), uz = Math.cos(cap), lx = uz, lz = -ux;
+          return [[x + ux * dl + lx * dw, z + uz * dl + lz * dw], [x + ux * dl - lx * dw, z + uz * dl - lz * dw],
+            [x - ux * dl - lx * dw, z - uz * dl - lz * dw], [x - ux * dl + lx * dw, z - uz * dl + lz * dw]];
+        };
+        const separe = (A, B) => {
+          for (const P of [A, B]) for (let k = 0; k < 4; k++) {
+            const a = P[k], b = P[(k + 1) % 4], nx = b[1] - a[1], nz = a[0] - b[0];
+            const pa = A.map((p) => p[0] * nx + p[1] * nz), pb = B.map((p) => p[0] * nx + p[1] * nz);
+            if (Math.max(...pa) < Math.min(...pb) || Math.max(...pb) < Math.min(...pa)) return true;
+          }
+          return false;
+        };
+        const rp = window.__game.remotePlayers.get(id);
+        if (!rp) return { absent: true };
+        // Marlon tel qu'Alice le voit : sa position RÉSEAU, attendue ARRIVÉE
+        const t00 = performance.now();
+        while (performance.now() - t00 < 8000 && Math.hypot(rp.pos.x - m.x, rp.pos.z - m.z) > 1.5) await dodo(100);
+        const arrive = +Math.hypot(rp.pos.x - m.x, rp.pos.z - m.z).toFixed(1);
+        // la voiture qui arrive derrière lui, dans sa voie
+        let suivie = null;
+        const t01 = performance.now();
+        while (!suivie && performance.now() - t01 < 15000) {
+          for (const c of v.etat()) {
+            if (!c.routier || c.nom !== 'voiture') continue;
+            for (const pl of c.places) {
+              const dx = rp.pos.x - pl[0], dz = rp.pos.z - pl[1];
+              const devant = dx * Math.sin(pl[2]) + dz * Math.cos(pl[2]);
+              const cote = Math.abs(dx * Math.cos(pl[2]) - dz * Math.sin(pl[2]));
+              if (devant > 4.5 && devant < 14 && cote < 1.5 && (!suivie || devant < suivie.devant)) {
+                suivie = { qui: `${c.cle}#${pl[3]}`, devant: +devant.toFixed(1), retard0: pl[4], retard: 0, dMin: Infinity, vue: 0 };
+              }
+            }
+          }
+          if (!suivie) await dodo(200);
+        }
+        if (!suivie) return { arrive, personne: true };
+        const deja = new Set();
+        let dedans = 0, plusPres = Infinity, releves = 0, intrus = null;
+        const t0 = performance.now();
+        while (performance.now() - t0 < 40000) {
+          const R = rect(rp.pos.x, rp.pos.z, m.cap);
+          for (const c of v.etat()) {
+            if (!c.routier) continue;
+            for (const pl of c.places) {
+              const qui = `${c.cle}#${pl[3]}`;
+              const d = Math.hypot(pl[0] - rp.pos.x, pl[1] - rp.pos.z);
+              if (qui === suivie.qui) {
+                if (d < suivie.dMin) suivie.dMin = +d.toFixed(1);
+                suivie.vue++;
+                suivie.retard = pl[4] - (suivie.retard0 || 0);
+              }
+              const touche = d < 6 && !separe(R, rect(pl[0], pl[1], pl[2]));
+              if (releves === 0) { if (touche) deja.add(qui); continue; }
+              if (deja.has(qui)) continue;
+              if (d < plusPres) plusPres = d;
+              if (touche) { dedans++; if (!intrus) intrus = { qui, d: +d.toFixed(1), cap: +pl[2].toFixed(2), capMarlon: +m.cap.toFixed(2) }; }
+            }
+          }
+          releves++;
+          if (suivie.retard > 6 && performance.now() - t0 > 10000) break;  // retenue : verdict acquis
+          await dodo(250);
+        }
+        return { dedans, intrus, plusPres: +plusPres.toFixed(1), releves, deja: deja.size, arrive, suivie,
+          ms: Math.round(performance.now() - t0) };
+      }, { id: idMarlon2, m: pose });
+      traversee = { ...r, essais: essai + 1 };
+      if (r.suivie && r.suivie.vue > 20) break;     // la situation a eu lieu
+    }
+    // CE QUE CE TÉMOIN PROUVE, ET CE QU'IL NE PROUVE PAS (v306). Six versions
+    // de ce témoin ; la sixième sépare enfin les deux codes, et elle le fait
+    // par le RETARD de la voiture qui arrive derrière Marlon — 0 s sur
+    // l'ancien code, 19 s sur le neuf. Le compte `dedans` (une voiture de la
+    // rue DANS la sienne) valait 1 des DEUX côtés au même passage : une autre
+    // voiture que celle qui cède entre encore une fois chez Alice. Il reste
+    // dans le message, pour qu'une sonde le démonte (dette dans TASKS.md), et
+    // n'entre pas dans le verdict : un témoin annonce ce qu'il mesure.
+    verifier('et chez l\'ami, la voiture de la rue qui arrive derrière celle de l\'enfant l\'attend',
+      prise.auVolant && !!traversee.suivie
+      && traversee.suivie.vue > 20 && traversee.suivie.retard > 3,
+      JSON.stringify(traversee));
+
+
+    // Max : « en multijoueur, la position sur la carte n'est pas toujours à
+    // jour ». Un ami au volant est ASSIS dans le maillage de sa voiture (v253) :
+    // la carte lisait la position de ce maillage — celle du siège, à un bloc de
+    // zéro — et le montrait figé près du point d'apparition tant qu'il
+    // conduisait. Marlon est au volant : le point de la carte d'Alice doit être
+    // là où Marlon est vraiment.
+    const pointAmi = await alice.evaluate((id) => {
+      const g = window.__game, rp = g.remotePlayers.get(id);
+      const pt = window.__carte && window.__carte.autres ? window.__carte.autres().find((a) => a.nom === 'Marlon') : null;
+      if (!rp || !pt) return { absent: true };
+      return { carte: [Math.round(pt.x), Math.round(pt.z)], vrai: [Math.round(rp.pos.x), Math.round(rp.pos.z)],
+        ecart: +Math.hypot(pt.x - rp.pos.x, pt.z - rp.pos.z).toFixed(1), assis: !!(rp.vehicule && rp.mesh.parent === rp.vehicule.mesh) };
+    }, marlonChezAlice2);
+    const marlonVrai = await hote.evaluate(() => { const p = window.__game.player.pos; return [Math.round(p.x), Math.round(p.z)]; });
+    verifier('sur la carte de l\'ami, l\'enfant au volant est là où il est vraiment',
+      !pointAmi.absent && pointAmi.assis && pointAmi.ecart < 1
+      && Math.hypot(pointAmi.carte[0] - marlonVrai[0], pointAmi.carte[1] - marlonVrai[1]) < 4,
+      JSON.stringify({ ...pointAmi, marlonChezLui: marlonVrai }));
+    await hote.evaluate(() => { const g = window.__game; if (g.fun.montureConduite && g.fun.montureConduite()) document.getElementById('ride-btn').click(); });
+    for (const [page, p] of [[hote, departRue.hote], [alice, departRue.alice]]) {
+      await page.evaluate((p) => { const g = window.__game; g.player.flying = false; g.player.pos.set(p.x, p.y, p.z); g.player.vel.set(0, 0, 0); }, p);
+    }
 
     // --- l'enfant passe à une autre application, puis revient -----------------
     // Le cas le plus courant, et celui qui coupait la partie : les minuteurs

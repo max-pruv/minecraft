@@ -584,6 +584,85 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       Math.hypot(apresDescente.x - laisse.x, apresDescente.z - laisse.z) < 3,
       JSON.stringify({ laisse, apresDescente }));
 
+    // --- le train ne passe pas au travers de la voiture de l'enfant (v304) ---
+    //
+    // Max, trois captures d'iPhone : sa voiture garée sur la voie ferrée, et
+    // le train qui la traverse — l'intérieur noir de la rame plein l'écran
+    // quand la caméra se retrouve dedans. Les trains ne cédaient à personne
+    // (`routier` faux). Le témoin SE PLACE (v279) : il vide les bêtes, pose une
+    // voiture, monte, et se téléporte sur la voie d'un train de SURFACE, trente
+    // blocs devant sa motrice ; puis il relève, vingt secondes au plus, si une
+    // voiture de la rame touche la sienne (rectangles orientés), et si la rame
+    // s'est bien approchée — un train qui n'est jamais venu ne prouve rien.
+    await tab.evaluate(() => {
+      const g = window.__game;
+      for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+      g.animalManager.animals.length = 0;
+    });
+    await poserDevant(tab, 'voiture');
+    await dormir(700);
+    await tab.evaluate(() => document.getElementById('ride-btn').click());
+    await dormir(700);
+    const surLaVoie = await tab.evaluate(async () => {
+      const g = window.__game, V = window.__vehicules;
+      const etat = V.etat();
+      // LA HAUTEUR SE DEMANDE AU TRACÉ, PAS À LA PREMIÈRE VOITURE (v306).
+      // `etat().y` lit `elements[0]`, qui n'est fabriquée qu'à portée de
+      // l'enfant (v235) : le témoin d'avant le laisse à Washington, loin de
+      // toute ligne, et chaque train rendait y = 0 — « aucun train de
+      // surface » sur un réseau de neuf lignes.
+      const ci = etat.findIndex((c, i) => /^train /.test(c.nom) && c.attente === 0
+        && (V.point(i, 0) || { y: 0 }).y > 20);
+      if (ci < 0) return { err: 'aucun train de surface' };
+      const pt = V.point(ci, 30);
+      if (!g.fun.montureConduite || !g.fun.montureConduite()) return { err: 'pas au volant' };
+      g.player.flying = false;
+      g.player.pos.set(pt.x, pt.y - 1.1 + 0.2, pt.z);
+      g.player.vel.set(0, 0, 0);
+      g.player.yaw = -pt.cap + Math.PI / 2;           // en travers de la voie, comme sur la capture
+      const DL = 3.7, DW = 0.9, dlJ = 2.2, dwJ = 1.13;
+      const rect = (x, z, cap, dl, dw) => {
+        const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux;
+        return [[x + ux * dl + vx * dw, z + uz * dl + vz * dw], [x + ux * dl - vx * dw, z + uz * dl - vz * dw],
+          [x - ux * dl - vx * dw, z - uz * dl - vz * dw], [x - ux * dl + vx * dw, z - uz * dl + vz * dw]];
+      };
+      const touche = (P, Q) => {
+        for (const R of [P, Q]) for (let k = 0; k < 4; k++) {
+          const ax = -(R[(k + 1) % 4][1] - R[k][1]), az = R[(k + 1) % 4][0] - R[k][0];
+          let p0 = Infinity, p1 = -Infinity, q0 = Infinity, q1 = -Infinity;
+          for (let j = 0; j < 4; j++) {
+            const a = P[j][0] * ax + P[j][1] * az, b = Q[j][0] * ax + Q[j][1] * az;
+            p0 = Math.min(p0, a); p1 = Math.max(p1, a); q0 = Math.min(q0, b); q1 = Math.max(q1, b);
+          }
+          if (p1 < q0 || q1 < p0) return false;
+        }
+        return true;
+      };
+      const t0 = performance.now();
+      let releves = 0, dedans = 0, bloque = 0, plusPres = Infinity;
+      while (performance.now() - t0 < 20000) {
+        await new Promise((r) => setTimeout(r, 250));
+        const c = V.etat()[ci];
+        const p = g.player.pos, moi = rect(p.x, p.z, g.player.yaw + Math.PI, dlJ, dwJ);
+        releves++;
+        if (c.bloque) bloque++;
+        let ici = false;
+        for (const [x, z, cap] of c.places) {
+          plusPres = Math.min(plusPres, Math.hypot(x - p.x, z - p.z));
+          if (touche(rect(x, z, cap, DL, DW), moi)) ici = true;
+        }
+        if (ici) dedans++;
+        if (bloque > 12) break;                       // arrêté devant nous trois secondes : acquis
+      }
+      return { ci, nom: V.etat()[ci].nom, releves, dedans, bloque, plusPres: +plusPres.toFixed(1),
+        secondes: +((performance.now() - t0) / 1000).toFixed(1) };
+    });
+    verifier('un train s\'arrête devant la voiture de l\'enfant posée sur sa voie, au lieu de la traverser',
+      !surLaVoie.err && surLaVoie.dedans === 0 && surLaVoie.plusPres < 12 && surLaVoie.bloque > 0,
+      JSON.stringify(surLaVoie));
+    await tab.evaluate(() => { if (window.__game.fun.montureConduite && window.__game.fun.montureConduite()) document.getElementById('ride-btn').click(); });
+    await dormir(600);
+
     // --- la monoplace freine dans les virages -------------------------------
     //
     // Demandé par Max : « je n'arrive pas à monter sur la formule un parce
@@ -745,8 +824,17 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // montraient que vingt sur cinquante, et le pas de 13 revient sur ses pas
     // au bout de cinquante — 13 × 50 ≡ 0. Le pas est premier avec la flotte
     // désormais, et il y a assez de voitures pour que cela se voie.
+    //
+    // ET LA BARRE SE POSE EN PROPORTION, PAS EN NOMBRE (v306). « Au moins
+    // huit modèles » supposait quatorze voitures autour de soi ; Paris doublé
+    // étale ses huit circuits sur quatre fois la surface, et l'attente rend
+    // la main dès six voitures en vue — huit mesurées, donc huit modèles au
+    // plus. Ce que le défaut de la v201 produisait, c'était des REPRISES du
+    // même modèle : trois quarts de modèles distincts au moins, sur six
+    // voitures au moins. Mesuré : 13/15 et 12/14 avant, 6/8 ici.
     verifier('et ce ne sont pas dix fois la même voiture',
-      trafic.modeles >= 8, `${trafic.modeles} modèle(s) différent(s) autour de soi`);
+      trafic.proches >= 6 && trafic.modeles >= Math.ceil(0.75 * trafic.proches),
+      `${trafic.modeles} modèle(s) différent(s) pour ${trafic.proches} voiture(s) autour de soi`);
 
     // ON PEUT MONTER DANS CE QUI ROULE. Le code pour conduire existe depuis la
     // v194 et il marchait ; c'est ATTRAPER qui ne marchait pas — cinq blocs
@@ -2367,7 +2455,11 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const g = window.__game;
       const cam = g.player.camera;
       const demi = Math.atan(Math.tan(((cam.fov * Math.PI) / 180) / 2) * cam.aspect);
-      const trajets = [['Rivoli', [-53, -4], [60, 13]], ['Voltaire', [46, -18], [96, 25]]];
+      // en KILOMÈTRES depuis Notre-Dame (v306) : écrites en blocs, ces adresses
+      // valaient à vingt-quatre blocs par kilomètre et tombaient à mi-chemin
+      // dans Paris doublé — un témoin qui porte une adresse de ville la demande
+      const rel = (dx, dz) => { const [x, z] = m.adresseParis(dx, dz); return [x - m.PARIS.x, z - m.PARIS.z]; };
+      const trajets = [['Rivoli', rel(-3.2, -0.9), rel(1.5, -0.2)], ['Voltaire', rel(0.9, -1.5), rel(3.0, 0.3)]];
       const vus = [];
       const attentes = [];
       // COMBIEN DE PASSANTS SONT DANS LE CADRE, ICI, MAINTENANT.
@@ -2388,7 +2480,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         const L = Math.hypot(b[0] - a[0], b[1] - a[1]);
         const yaw = Math.atan2(-(b[0] - a[0]), -(b[1] - a[1]));
         const dx = -Math.sin(yaw), dz = -Math.cos(yaw);
-        for (let d = 0; d <= L; d += 25) {
+        for (let d = 0; d <= L; d += 50) {   // cinquante blocs depuis Paris doublé (v306) : les mêmes arrêts qu'à vingt-cinq
           const f = d / L;
           const x = Math.round(m.PARIS.x + a[0] + (b[0] - a[0]) * f);
           const z = Math.round(m.PARIS.z + a[1] + (b[1] - a[1]) * f);
@@ -4813,7 +4905,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         const depart = { ...lire(), x: +g.player.pos.x.toFixed(1), z: +g.player.pos.z.toFixed(1) };
         await tenirSecondes(3);
         const apres = { ...lire(), x: +g.player.pos.x.toFixed(1), z: +g.player.pos.z.toFixed(1) };
-        // un quart de tour à droite : le nez passe de 152° à 62°
+        // un quart de tour à droite : le nez perd 90° (148° → 58° depuis Paris doublé)
         g.player.yaw = yawLyon + Math.PI / 2;
         await deuxImages();
         const tourne = lire();
@@ -4839,7 +4931,14 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       `${capAvion.err || ''} départ ${JSON.stringify(capAvion.depart)} · après ${JSON.stringify(capAvion.apres)} · parcouru ${capAvion.parcouru}`);
     verifier('un quart de tour à droite : le cap avance de 90° et une autre ville passe devant ; vers +x le cadran dit l\'est',
       !capAvion.err && cadranOk(capAvion.tourne) && capAvion.tourne.cle !== 'lyon'
-        && /^152°/.test(capAvion.depart.degres) && /^062°/.test(capAvion.tourne.degres)
+        // LE CAP DE DÉPART SE LIT, IL NE S'ÉCRIT PAS (v306). « 152° » était le
+        // cap de Paris vers Lyon depuis l'ANCIEN centre de Paris ; déplacé de
+        // cent soixante-dix blocs, il vaut 148°. Ce que le témoin garde, c'est
+        // le quart de tour : le cap tourné vaut le cap de départ moins 90°.
+        && (() => {
+          const d = parseInt(capAvion.depart.degres, 10), t = parseInt(capAvion.tourne.degres, 10);
+          return d > 135 && d < 165 && ((d - 90 + 360) % 360) === t;
+        })()
         && /^090° E/.test(capAvion.est.degres),
       `${capAvion.err || ''} départ ${capAvion.depart && capAvion.depart.degres} · tourné ${JSON.stringify(capAvion.tourne)} · est ${JSON.stringify(capAvion.est)}`);
     verifier('à pied, le cadran de cap est caché',

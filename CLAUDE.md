@@ -66,6 +66,18 @@ travail est irrattrapable.
    décale chaque bloc de la différence de sol sous sa colonne, bornée à
    vingt-quatre blocs ; et le témoin ci-dessus.
 
+   **Elle a servi une NEUVIÈME fois, en v306, pour doubler Paris et le
+   déplacer** — décision de Max, « Doubler Paris, déplacé », parce que les rues
+   à la règle du kit (v303) vidaient ses quartiers. Et elle se BORNE, ce qui
+   la range avec v187, v200 et v204 et non avec v199 et v242 : l'empreinte du
+   relief change, et avec une découpe qui retire l'ancien ET le nouveau Paris,
+   les sites d'avant ET d'après de Roissy, d'Orly, de Saint-Dizier, du village
+   gaulois et du volcan, le reste vaut `2aeceaa1…` sur `origin/main`, sur la
+   v305 et sur la branche — 154 158 colonnes. Ce qui est NEUF et fait règle :
+   **les marches qui jugent un bloc d'avant le jugent sur le monde où il a été
+   posé** (`new World({ avant: true })`, `CONF_AVANT`), et ce monde se prouve
+   au bloc près contre la production. Voir « Paris doublé et déplacé (v306) ».
+
    **Elle a servi une HUITIÈME fois, en v242, pour doubler le monde encore**
    — Max : « la ville de New York touche quasiment Montréal ». Manhattan,
    refaite en v240, est un rectangle de 480 × 2 300 blocs qui laissait 41
@@ -749,6 +761,322 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   la sonde qui distingue les cas » (v223), et cette fois le rouge était sur un
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
+
+## Paris doublé et déplacé (v306) — un bloc se juge sur le monde où il a été posé
+
+Décision de Max, entre trois propositions chiffrées : « Doubler Paris,
+déplacé ». Les rues à la règle du kit (v303) faisaient vingt et un blocs pour un
+boulevard dans un disque de cent quatre-vingt-cinq : Saint-Germain passait de
+168 colonnes d'immeubles à 2. Livré dans la MÊME fusion que les v303, v304 et
+v305 (« attends et fais un méga merge ») : la rive gauche vide ne devait jamais
+atteindre la famille. Neuf règles.
+
+- **ON N'AGRANDIT PAS SUR PLACE CE QUI RECOUVRIRAIT LES ENFANTS : ON DÉPLACE, ET
+  LA PLACE SE MESURE.** Doublé sur place, le disque couvrait le point
+  d'apparition, le musée et le quartier des enfants. Le centre part de cent
+  soixante-dix blocs vers le sud-ouest, là où le disque de 370 en reste à 50
+  (musée), 108 (point d'apparition), 121 (maison témoin) et 124 (quartier).
+  C'est la seule ville dont la place n'est pas sa latitude : la surcharge vit
+  dans SA fiche du registre (`terre: { r, dx, dz }`) et ne vaut que pour la
+  carte courante — `terreV3` garde la carte telle qu'elle était, pour la
+  marche 2 → 3, qui aurait sinon pris Paris pour une ville qui bouge en v242.
+- **CE QU'ON DÉPLACE SE CHERCHE DANS TOUTES LES LISTES, PAS SEULEMENT CELLES QU'ON
+  A EN TÊTE.** Mon plan, annoncé à Max, comptait trois aérodromes à reloger et
+  les sanctuaires ; l'inventaire du dépôt (un agent de recherche, avant d'écrire)
+  a trouvé DANS le nouveau disque le village gaulois et le volcan, qui ne sont
+  ni des villes ni des aérodromes mais des `PLACES`, et la caserne, dont
+  l'adresse en kilomètres l'emmenait à deux fois sa distance. Chacun a été
+  relogé par la sonde des aérodromes (v223) ; le village est parti à Erquy, en
+  Armorique, où son commentaire l'avait toujours voulu.
+- **UNE ADRESSE QUI SUIT LA VILLE GARDE LE LIEN, PAS LA QUALITÉ DU SITE.** La
+  caserne (v293) est en kilomètres pour suivre Paris : doublée, son adresse
+  tombait sur 5,9 % d'eau et dix-huit blocs d'écart. Un site qui suit une ville
+  qui change d'échelle se remesure.
+- **LE PLAN DOUBLE, LES LARGEURS NON — ET UN JARDIN EST DU PLAN, UNE PLACE NON.**
+  `BLOCS_PAR_KM` passe à 48 : tout ce qui est en kilomètres suit. Les rues
+  gardent la section du kit (v303) ; la Seine, les îles, la butte (en emprise,
+  pas en hauteur) et les jardins doublent, parce que ce sont des étendues de
+  géographie ; les places gardent leur rayon, parce qu'elles sont dimensionnées
+  sur ce qui y roule. Mesuré quartier par quartier : tous au-dessus de la v302.
+- **UN BLOC SE JUGE SUR LE MONDE OÙ IL A ÉTÉ POSÉ — et c'était déjà faux en
+  v303.** Le ménage du ciel (v298) et le relevé des toits (v301) se rejouent sur
+  chaque document du nuage ; ils lisaient `new World()`, c'est-à-dire le relief
+  et les monuments d'AUJOURD'HUI. Paris déplacé, une maison posée au sol de
+  l'ancienne butte se trouvait « en l'air » au-dessus du relief neuf, et le
+  ménage la retirait — vérifié : zéro bloc arrivé avec un ménage sur le monde
+  neuf, trois avec le monde d'avant. `CONF_AVANT` (world.js) porte TOUT ce que la
+  v306 a déplacé — disque, relief et trame de Paris, monuments, aérodromes,
+  sites — et `new World({ avant: true })` l'engendre ; deux empreintes relevées
+  sur `origin/main` prouvent qu'il rend la production au bloc près. Il ne se met
+  JAMAIS à jour, comme `MONDES.terreAvant`. Et `dansUneZoneATerre` a un index
+  par monde : `hauteurBase`, que lisent les marches 1 → 2 et 2 → 3, juge avec
+  les zones d'avant, sinon un bloc d'avant la carte 3 resté à sa place serait
+  redéplacé le jour où sa colonne sort d'une zone.
+- **UN BLOC SUIT SA VILLE, MÊME QUAND ELLE SE DILATE.** La marche 5 → 6
+  (`migrerParisDouble`) groupe les blocs d'avant la date (six voisins) ; un
+  groupe de l'ancien Paris va là où le plan doublé met le même endroit de la
+  vraie ville (`C' + 2 × (ancre − C)`), à la même hauteur au-dessus du sol, et
+  ce qui était perché sur un ancien toit se pose au sol ; un groupe d'un site
+  déménagé le suit d'un seul tenant ; ailleurs, il suit le relief (≤ 24 blocs).
+  Un trou creusé dans un ancien immeuble part avec l'immeuble. Pure, idempotente
+  par la date, appliquée au stockage une fois et à chaque document du nuage,
+  EN DERNIER dans la chaîne ; sa copie d'avant se prend sur le nuage
+  (`~avant-paris-double`).
+- **LA VILLE CÈDE — ET CELA REMPLACE LA VILLE D'AVANT DE LA v303.** La v303
+  gardait l'ancienne trame sous les colonnes bâties ; Paris déplacé, l'ancienne
+  ville n'a plus de place où se garder. Là où un groupe arrive (colonne et huit
+  voisines, `colonnesCedees`), le nouveau Paris garde sa rue, son trottoir, son
+  jardin, et fait d'un lot une cour pavée. Un bloc posé APRÈS la date ne fait
+  pas céder la ville : poser un bloc contre une façade ne démolit pas
+  l'immeuble.
+- **UN BOUT DE ROUTE NE SE POSE PAS SUR L'EAU.** L'A1 retracée — mon premier
+  choix, la plus grande plus petite marge — finissait par un pont à quinze
+  blocs de la porte de Lille, que le témoin du joint (v302) a trouvé ouvert sur
+  1 180 points. La sonde de tracé écarte désormais l'eau à moins de
+  quatre-vingts blocs des deux portes, et l'on garde, parmi les meilleurs, un
+  tracé dont les trois ponts ont leurs joints fermés.
+- **UNE VOITURE FABRIQUÉE EST AUSSI UNE SIGNATURE DE PROGRAMME.** La table de
+  chauffe (`signatures.js`) se lit dans les FICHIERS de la flotte ; la berline
+  citadine se fabrique et n'y figurait pas, donc ses programmes se compilaient
+  à l'arrivée dans chaque ville où le tirage en mettait une à portée — une
+  voiture sur six, en production depuis toujours. Déplacer Paris a changé le
+  tirage (`graineDeVille` lit la position) et l'a rendu visible. La chauffe
+  compile désormais le PROTOTYPE fabriqué lui-même (`chaufferLesFabriquees`) :
+  tout modèle qui entre dans la flotte par `fabrique` y passe sans une ligne de
+  plus, et le compte affiché ne bouge pas. Même trou pour les FEUX : aucun
+  n'est à portée du point d'apparition, leurs lentilles se compilaient à la
+  première ville. **Et `renderer.compile(t, camera, n)` compile les matériaux
+  de `t` avec les lumières de `n`** dans cette version de three : j'ai
+  d'abord passé la scène en premier et le feu en troisième — rien compilé,
+  et vingt-sept programmes de plus vers la cible des reflets. C'est une sonde
+  qui comparait les deux clés d'un même matériau qui l'a dit : on lit la
+  ligne de la bibliothèque avant de croire une signature de mémoire.
+- **QUAND UN SITE DÉMÉNAGE, LES TÉMOINS POSÉS SUR SON ANCIEN SOL MESURENT AUTRE
+  CHOSE.** La pente « relevée sur l'axe Paris–Lille » du sol continu (v297)
+  était le bord aplani de l'ancien Roissy ; la fenêtre de la ligne Paris–Lyon
+  longe désormais un lac ; la première pente couverte trouvée tombait sur l'A1
+  retracée. Chacun CHERCHE maintenant ce qu'il éprouve — une pente qui MONTE de
+  huit marches, une colonne couverte, les colonnes au bord d'une falaise
+  comptées à part — et le dit (v285, une fois de plus).
+- **UNE CONSTANTE DE RECHERCHE ÉCRITE POUR LES RUES D'AVANT NE TROUVE PLUS RIEN
+  DANS LES RUES D'APRÈS.** `world.js` cherchait les coins d'un carrefour à
+  sept blocs du croisement (v274) ; les boulevards de la v303 ont treize à
+  dix-sept blocs de chaussée, et DOUZE carrefours de Paris sur quarante-quatre
+  n'avaient plus un feu. Aucun témoin ne l'a vu en v303 : celui des feux
+  comptait une fenêtre de quarante blocs autour du centre, qui tombait sur des
+  rues étroites. La portée se DÉDUIT de la plus large section de la ville
+  (`PORTEE_FEUX_PARIS`), et un témoin compte les carrefours sans feu. Quand
+  une largeur change, on cherche TOUT ce qui cherche quelque chose « à n blocs
+  de la rue » — c'est le verre dans les murs, une fois de plus, du côté d'un
+  rayon de recherche.
+- **UN RACCORD QUI TIENT PAR UN ARRONDI TOMBE AU PREMIER CHANGEMENT
+  D'ÉCHELLE.** Un circuit passait de Diderot au Faubourg Saint-Antoine parce
+  que le point (84, 21) de l'un était pile sur la droite de l'autre ; doublé,
+  Nation tombe en (192, 49) au lieu de (192, 50), le raccord devient une
+  impasse et `chainerVoies` jette le circuit sans un mot. Le témoin de
+  couverture l'a vu (« huit déclarés, sept gardés ») — ce que garde un compte
+  déclaré contre un compte rendu. Un circuit se raccorde là où deux voies se
+  croisent ou finissent, jamais sur une coïncidence de coordonnées.
+
+## Le GPS (v306) — l'appui long propose, il ne décide plus
+
+Max : « soit on se téléporte, soit on fait GPS ; au clic long, deux boutons ».
+Quatre règles.
+
+- **UN GESTE QUI AVAIT UN SEUL EFFET ET EN GAGNE DEUX POSE LA QUESTION.**
+  L'appui long téléportait d'office ; il ouvre désormais `#map-choix` sous le
+  doigt, et c'est l'enfant qui choisit. Tout témoin qui éprouvait l'ancien
+  geste passe par le bouton (« un appui long dépose n'importe où » clique
+  « Téléporter ») — un témoin qui appellerait `surTeleport` en direct ne
+  garderait plus le trajet de l'enfant. Et un doigt reposé ailleurs retire la
+  question : une question qui reste affichée est un piège au geste suivant.
+- **LA FLÈCHE LIT LA CONVENTION DE CAP DU CADRAN, ELLE NE LA RÉÉCRIT PAS.**
+  `gps.js` est pur et importe `capVers` et `ecartDeCap` de `cap.js` (v263) :
+  deux conventions de cap finiraient par diverger, et une flèche à l'envers
+  passe toute mesure d'amplitude. Le témoin regarde les TROIS cas — face à la
+  cible, cible à droite, cible à gauche — et lit l'angle APRÈS la transition
+  CSS de la flèche : lu pendant, il rend l'image d'avant (mon premier jet).
+- **L'ARRIVÉE SE JUGE SUR LE SEGMENT PARCOURU, PAS SUR UN INSTANTANÉ.** Un avion
+  à cent vingt blocs par seconde sur une tablette à cinq images avance de
+  vingt-quatre blocs d'une image à l'autre : il enjambe un disque de douze sans
+  qu'aucune image ne l'y trouve, et la flèche se retournerait pour le renvoyer
+  en arrière. `arriveEntre` mesure la distance de la cible au segment. C'est
+  « un minimum échantillonné est une propriété de la cadence » (v279), côté jeu.
+- **UN TRAJET VIT DANS LA SESSION, PAS DANS LE PROFIL.** La destination n'est
+  ni sauvegardée ni envoyée au réseau : c'est un trajet en cours, pas une
+  donnée de l'enfant, et elle s'efface en revenant au menu. Le jour où l'on
+  voudra la partager avec un ami, ce sera un message de plus, avec son nom à
+  lui — le receveur cède (v256).
+
+## En ligne, une seule rue (v305) — la position d'un convoi est une fonction de l'heure
+
+Max, à plusieurs : « les utilisateurs ne voient pas les mêmes voitures en même
+temps ; quand on monte dans une voiture, elle change de couleur ». Cinq règles.
+
+- **CE QUI DOIT ÊTRE PAREIL SUR DEUX TABLETTES NE S'ACCUMULE PAS, IL SE
+  CALCULE.** Un convoi faisait `distance += vitesse × dt` depuis que SA page
+  l'avait créé — c'est-à-dire depuis que l'enfant avait approché la ville :
+  deux enfants au même carrefour avaient deux rues. La position est désormais
+  `distanceA(horloge)`, une grille horaire calculée une fois (droite, paliers
+  aux quais, et pour `freine` la marche d'avant simulée sur un tour au pas d'un
+  vingtième — la monoplace freine exactement comme avant). L'hôte donne l'heure
+  de la rue avec celle du ciel (`rue` dans le message `ciel`) ; l'invité glisse
+  ou saute, la règle d'`adopterCiel`. Un saut d'horloge n'est pas une avance :
+  on se pose, et les retards de ceux qui cédaient repartent de zéro.
+- **L'HEURE DE LA RUE EST RÉELLE, et les feux la lisent.** Les feux étaient déjà
+  en temps réel (v273), chacun sur SA `performance.now()` : deux amis voyaient
+  deux feux. Une grandeur que deux tablettes doivent partager ne se lit jamais
+  sur une horloge locale.
+- **UN RANG DANS UNE LISTE PARESSEUSE N'EST PAS UN NOM.** Les convois naissent
+  quand l'enfant approche une ville : `convois[ci]` n'est pas le même d'une
+  tablette à l'autre. Ce qui voyage sur le réseau se nomme par ce qui ne dépend
+  que du tracé (`c.cle`), et une voiture prise par `clé#rang`.
+- **ON NE RETIRE PAS UNE PLACE D'UN CONVOI.** `emprunter` faisait un `splice` :
+  toutes les voitures de derrière avançaient d'un écart sous les yeux de
+  l'enfant, et les rangs cessaient d'être les mêmes. La place reste, marquée
+  prise (`c.pris`) — ni refabriquée, ni dessinée, ni prise en compte pour céder.
+- **UNE PROPRIÉTÉ QUI SE VOIT VOYAGE AVEC CE QUI LA PORTE, ET SE PEINT PAR UNE
+  SEULE RÈGLE.** La rue repeignait sa voiture ; la monture neuve reprenait la
+  teinte du fichier. `repeindre(modele, fichier, teinte)` est lue par la rue et
+  par la monture, `peinture` passe de l'une à l'autre et part dans `p.v.c` ;
+  c'est la leçon de la v194 (« le modèle part avec elle ») appliquée à la
+  couleur, trente versions plus tard.
+- **ET TOUT JOUEUR EST UN OBSTACLE POUR LA RUE, PAS SEULEMENT L'ENFANT
+  D'ICI.** `cederLePassage` ne connaissait que le joueur local (v245) : sur la
+  tablette d'Alice, la voiture de Marlon était traversée. Les amis entrent dans
+  la liste (`brancherAmis`), avec la même patience infinie que l'enfant — et
+  c'est aussi ce qui rend la circulation la même partout, puisque chacun cède
+  aux mêmes joueurs. Ce qui reste local, et se déclare : l'instant exact où
+  une voiture cède, et un train arrêté devant un enfant.
+- **UN MAILLAGE ENFANT N'A PLUS DE POSITION DU MONDE.** Depuis la v253 l'avatar
+  d'un ami au volant vit dans le maillage de la voiture ; tout ce qui lisait
+  `rp.mesh.position` (la minicarte, la carte du monde) lisait le siège, à un
+  bloc de zéro — Max : « la position sur la carte n'est pas toujours à jour ».
+  La position vraie est `rp.pos`, et c'est la seule qu'on lit hors du rendu.
+  Quand on reparente un objet, on cherche le jour même qui lisait sa position.
+- **UN TÉMOIN À DEUX TABLETTES LIT LES DEUX AU MÊME INSTANT, ET IL PROVOQUE
+  LA RENCONTRE.** Trois des quatre témoins étaient VERTS sur l'ancien code au
+  premier jet. L'écart de rue lisait Marlon puis Alice, deux `evaluate` à la
+  suite, sur un banc qui rend deux images par seconde : il mesurait la cadence
+  (on horodate désormais chaque relevé et l'on ramène à la même heure). Celui
+  de la traversée a eu SIX versions : posé en ligne droite, Marlon ne croisait
+  personne ; posé devant une voiture, elle était déjà dedans. La sixième pose
+  Marlon SUR la voie d'une voiture qui roule, attend qu'Alice le voie arrivé,
+  et suit la voiture d'après — 0 s de retard sur l'ancien code, 19 s sur le
+  neuf. **Et un compte qui vaut 1 des deux côtés sort du verdict et reste
+  dans le message** : une autre voiture entre encore une fois dans celle de
+  l'ami, sur les deux codes. Un témoin annonce ce qu'il mesure ; ce qu'il ne
+  prouve pas va dans `TASKS.md`, avec ses pistes.
+- **UN RACCOURCI DE PAGE N'A PAS LA SIGNATURE DE LA FONCTION QU'IL ENVELOPPE.**
+  `window.__vehicules.placeProche(rayon)` fournit lui-même la position de
+  l'enfant ; la fumée l'appelait `(g.player.pos, 5)`, comme le vrai
+  `vehicules.placeProche(pos, rayon)`. Le vecteur devenait le rayon, `d > rayon`
+  rendait toujours faux, et le témoin « on prend le volant » cliquait pour la
+  voiture la plus proche DU MONDE — vert pendant des dizaines de versions parce
+  qu'une voiture passait par chance à portée du premier circuit de Paris, rouge
+  le jour où Paris doublé a déplacé ce circuit. Une sonde (`place.d` = 139 pour
+  un rayon de 5) l'a dit en une exécution. Devant un appel à `window.__…`, on
+  lit la ligne qui l'expose, jamais la fonction qu'on croit derrière.
+
+## Le son robotique de la visio (v304) — le contexte audio suit le mode de la tablette
+
+Max : « Alice… entend un son hyper robotique de son côté sur son iPad. Ça
+n'arrive pas avec tous les appareils. » Trois règles.
+
+- **UN CONTEXTE AUDIO NE SURVIT PAS À UN CHANGEMENT DE MODE D'iOS.** Un appel
+  qui porte du son (le micro ouvert, ou la voix d'un ami) fait passer la
+  session audio en mode appel, et sur certains iPad à une autre fréquence
+  d'échantillonnage. Le contexte Web Audio du jeu, ouvert avant, reste à
+  l'ancienne et se rééchantillonne mal : c'est le robot. `appelEnCours`
+  (sons.js) ferme le contexte et en ouvre un neuf à chaque bascule, dans les
+  deux sens, et relance le moteur et la radio qui jouaient. `sons.js` reste le
+  SEUL propriétaire du contexte (v268) : c'est ce qui rend ce geste possible
+  en un endroit. `visio.js` dit quand un appel porte du son (`micOuvert`, et les
+  voix d'amis qu'il joue).
+- **PENDANT UN APPEL, LE JEU PARLE PLUS BAS.** L'annulation d'écho ne connaît
+  que la voix que la tablette joue ; une radio pleine puissance dans le
+  haut-parleur est un écho qu'elle découpe. `GAIN_APPEL` (un quart) ne coupe
+  rien : l'enfant entend encore son jeu.
+- **CE QUE LE BANC PROUVE, ET CE QU'IL NE PEUT PAS.** Chromium n'a pas de mode
+  appel : le banc éprouve le GESTE (un contexte neuf, l'ancien fermé, un niveau
+  de sortie qui baisse puis revient, lu sur la sortie comme en v268), jamais
+  l'oreille. La correction se juge sur l'iPad d'Alice, et on le dit.
+
+## Les rues de Paris à la règle du kit (v303) — une largeur se calcule, et la ville d'avant se fige
+
+Max : « Les rues de Paris sont encore beaucoup trop étroites. Je comprends pas.
+T'as pas appliqué le code à la règle. » Le kit livrait `roadSection` ; j'avais
+lu le kit, mesuré l'état initial, et laissé Paris sur les largeurs choisies à
+la main en v294. Six règles.
+
+- **QUAND LE KIT LIVRE UNE RÈGLE EXÉCUTABLE, ON L'EXÉCUTE — ON NE LA
+  RÉINTERPRÈTE PAS À LA MAIN.** `voirie.js` est `roadSection` recopié sans une
+  valeur changée, pur, sans import ; `paris.js` lui DEMANDE ses sections. Une
+  largeur écrite à côté de la règle finit par la contredire, et c'est
+  exactement ce que Max a vu.
+- **LE TYPE D'UNE RUE SE LIT À SA FONCTION, PAS À SON NOM.** Mon premier jet
+  donnait quatre voies à tout ce qui s'appelle boulevard ou avenue : vingt-sept
+  boulevards de 21 blocs dans un disque de 370, et Paris perdait 40 % de ses
+  immeubles (Saint-Germain de 9,5 % de lots à 0,4, l'Étoile à zéro). Le kit
+  classe par NOMBRE DE VOIES : quatre pour les neuf percées de premier rang
+  (`PREMIER_RANG`), deux pour les autres rues, une pour les ruelles héritées.
+- **SI L'ÉLARGISSEMENT MANGE LES BÂTIMENTS, ON RECOMPOSE LES LOTS — la trame
+  entière suit.** Garder l'îlot tel quel (la méthode de la v294) coûtait un
+  tiers des immeubles : onze blocs d'îlot pour onze de rue. Le pas grandit dans
+  le rapport des emprises (`aLaRegle`), la part bâtie reste à 21,6 % contre
+  22,6, et un témoin la garde (barre 17). Moins de rues, plus larges, des îlots
+  plus grands — c'est l'échelle 1 bloc = 1 m qui s'installe.
+- **UNE MIGRATION QUI SE REJOUE LIT LA VILLE OÙ LE BLOC A ÉTÉ POSÉ.** Le relevé
+  des toits (v301) se rejoue à chaque fusion du nuage et demandait
+  `lotParisLibre` et `gabaritParis` à la trame COURANTE : retramer Paris lui
+  aurait fait déplacer des blocs qui n'ont jamais été sur un toit. La trame
+  d'avant est figée dans `paris-v302.js`, recopiée à l'octet et jamais
+  modifiée — la discipline de `MONDES.terreAvant` (v199). **Toute règle de
+  migration qui lit le générateur doit dire QUELLE version du générateur
+  elle lit** ; la prochaine refonte de Paris fige `paris.js` à son tour.
+- *(Remplacée dans la même fusion par la v306 : Paris déplacé, c'est la ville
+  NEUVE qui cède. Le raisonnement reste.)* **LA VILLE CÈDE À CE QUE L'ENFANT A BÂTI, COLONNE PAR COLONNE.** Une colonne
+  où un bloc a été posé ou creusé avant `DATE_RUES_PARIS` garde la ville
+  d'avant (`colonnesParisAvant`, refait avec l'index des monuments touchés,
+  tenu par `setBlock`) : une maison sur une ancienne rue n'est pas enfermée
+  dans un immeuble neuf, une cabane sur un ancien toit garde son toit. Aucun
+  bloc d'enfant ne bouge. Le prix se déclare : un morceau de l'ancienne ville
+  au milieu de la neuve autour de chaque construction.
+- **UNE BARRE SUR UNE LARGEUR EN COLONNES SE CALCULE AVEC SA QUANTIFICATION.**
+  Une chaussée de 6,4 blocs se traverse en six ou sept colonnes : la barre du
+  témoin est `floor(6,4)`, et la mesure vaut 6 ici contre 4 sur `origin/main`.
+- *(Depuis la v306 le ménage juge sur le monde d'avant tout entier, `CONF_AVANT`.)*
+  **UNE VILLE FIGÉE SOUS UNE COLONNE SE DÉCLARE À TOUT CE QUI ENGENDRE LA
+  VILLE, PAS SEULEMENT AU JEU.** Le ménage du ciel (v298) juge l'appui d'un
+  bloc sur un monde SANS blocs d'enfant qu'il engendre lui-même ; ce monde-là
+  ignorait `colonnesParisAvant` et montrait la ville NEUVE sous une colonne où
+  le jeu montre l'ancienne. Mesuré sur le témoin du relevé : le bloc collé à
+  la façade d'une cabane, et celui posé contre le mur voisin, jugés « en
+  l'air » et retirés. Le générateur du ménage reçoit désormais les colonnes
+  d'avant du document (même règle, `dansParisAvant`), et se refait quand elles
+  changent. C'est la leçon du sol continu (« ce qui remplace un bloc le dit à
+  TOUS ceux qui lisaient le bloc ») appliquée à une trame.
+- **ET CE QUI PORTAIT UN BLOC N'EST PAS DANS SA COLONNE.** Un escalier contre
+  un mur, un balcon : le bloc est dans la colonne de la RUE, l'immeuble dans
+  celle d'à côté. Garder la seule colonne du bloc laissait l'immeuble passer à
+  la ville neuve, où il pouvait devenir une rue — le bloc flottait, et le
+  ménage le retirait. La ville d'avant se garde donc sur les huit colonnes
+  voisines (`marquerParisAvant`), au jeu comme au ménage ; un témoin de
+  `plafond.js` colle un bloc contre une façade d'avant qui devient une rue, et
+  lit le mur (rouge sans la règle : de l'air).
+- **UN QUARTIER PLUS PETIT QUE SES PERCÉES N'A PLUS D'IMMEUBLES, ET CELA SE
+  COMPTE QUARTIER PAR QUARTIER.** La part bâtie de la ville (22,6 → 21,6 %)
+  cachait que le Marais passe de 41 colonnes de lot à 2, Saint-Germain de 168
+  à 2 : un disque d'un kilomètre traversé par deux percées de vingt et un
+  blocs. Agrandir leurs disques de trois quarts n'y change rien (mesuré). Le
+  prix est déclaré et Paris doublé le rend ; un total de ville ne dit jamais ce
+  qu'un quartier a perdu.
+- **ET QUATRE TÉMOINS MESURAIENT À CÔTÉ, POUR UNE MÊME RAISON : ILS ÉCRIVAIENT
+  LEUR TERRAIN** (v285). Le morceau le plus bâti n'a plus de carrefour, donc
+  plus de passage piéton ; le Marais n'a plus d'immeubles ; un immeuble creux
+  de la v301 a son toit à vingt-quatre blocs pour un témoin qui lisait vingt ;
+  la fenêtre de la rue était centrée sur la Seine. Chacun cherche désormais ce
+  qu'il éprouve, et dit où il l'a trouvé.
 
 ## Le rail continu (v302) — quatre lecteurs, une cote flottante
 

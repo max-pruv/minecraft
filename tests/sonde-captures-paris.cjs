@@ -57,6 +57,12 @@ const VUES = [
   { nom: 'rue-quartier-ciel', x: -270, z: 140, yaw: Math.PI / 2, pitch: -0.7, h: 22, rue: true },
   { nom: 'pont', x: -299, z: 214, yaw: Math.PI, pitch: 0.05, h: 1.6 },
   { nom: 'pont-ciel', x: -299, z: 221, yaw: Math.PI / 2, pitch: -0.6, h: 20 },
+  // v306 : Paris doublé. Les vues en kilomètres suivent la ville toutes
+  // seules (adresseParis) ; celles en blocs absolus visent l'ANCIEN Paris et
+  // ne servent plus qu'à comparer. Deux vues de plus : le Marais par son
+  // adresse, et la ville entière vue de haut, pour juger les îlots.
+  { nom: 'marais-km', dx: 0.9, dz: -0.5, yaw: Math.PI / 2, pitch: 0.12, h: 1.6, rue: true },
+  { nom: 'paris-haut', dx: -1.0, dz: 0.6, yaw: 0, pitch: -1.0, h: 110 },
 ];
 
 (async () => {

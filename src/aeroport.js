@@ -98,8 +98,8 @@ export const AEROPORTS = [
   // tombait dans l'eau (Dubaï à 89 % dans le golfe, Francfort 14 %, Yokota
   // 12 %) ou sur une voisine. Le chiffre `sol` est REMESURÉ partout : c'est
   // la médiane du relief, et le relief a changé.
-  { cle: 'cdg', nom: 'Aéroport Charles-de-Gaulle', x: -250, z: -91, r: 92, sol: 34, profil: 'roissy' },  // Paris (l'ancre, ne bouge pas), vrai cap 43° NE → 0° N (le NE est le quartier des enfants), 291 blocs
-  { cle: 'orly', nom: 'Paris–Orly', x: -322, z: 504, r: 62, sol: 41, profil: 'ville' },               // Paris, cap 195° S — exact, 315 blocs
+  { cle: 'cdg', nom: 'Aéroport Charles-de-Gaulle', x: -697, z: -17, r: 92, sol: 33, profil: 'roissy' },  // v306, Paris doublé : le nord de la ville est semé de lacs (9 à 23 % d'eau), le nord-est est le quartier des enfants → cap 315° NO, 476 blocs · eau 2 %, écart 8  // Paris (l'ancre, ne bouge pas), vrai cap 43° NE → 0° N (le NE est le quartier des enfants), 291 blocs
+  { cle: 'orly', nom: 'Paris–Orly', x: -582, z: 705, r: 62, sol: 37, profil: 'ville' },               // v306, Paris doublé : l'ancien site est DANS la ville ; vrai cap 195° → 210°, 444 blocs · eau 3,5 %, écart 7               // Paris, cap 195° S — exact, 315 blocs
   { cle: 'lhr', nom: 'Londres–Heathrow', x: -1410, z: -1344, r: 78, sol: 40, profil: 'hub' },         // Londres, cap 262° O — même écart qu'en v223, 204 blocs
   { cle: 'jfk', nom: 'New York–JFK', x: -19708, z: 4747, r: 84, sol: 38, profil: 'hub' },             // New York, vrai cap 115° SE → 50° NE (la baie de Jamaica est de l'eau, et le SE est le rectangle de Manhattan), 440 blocs · 13 blocs du rectangle
   { cle: 'mad', nom: 'Madrid–Barajas', x: -2409, z: 4974, r: 78, sol: 36, profil: 'hub' },            // Madrid, cap 40° NE — exact, 302 blocs · eau 5 %
@@ -114,11 +114,23 @@ export const AEROPORTS = [
   { cle: 'lax', nom: 'Los Angeles', x: -37536, z: 9087, r: 78, sol: 38, profil: 'hub' },              // Los Angeles, cap 245° SO — exact, 254 blocs · 14 blocs du disque de la ville
   { cle: 'ist', nom: 'Istanbul', x: 9945, z: 4500, r: 78, sol: 33, profil: 'hub' },                   // Istanbul, cap 330° NNO — exact, 409 blocs · eau 5 %
   // Les bases militaires : c'est de là que partent les chasseurs.
-  { cle: 'bas-sd', nom: 'Base aérienne de Saint-Dizier', x: 33, z: 300, r: 56, sol: 33, profil: 'base' },      // à l'est de Paris, cap 110° — exact
+  { cle: 'bas-sd', nom: 'Base aérienne de Saint-Dizier', x: 57, z: 472, r: 56, sol: 34, profil: 'base' },      // à l'est de Paris, cap 110° — exact ; v306, Paris doublé la recouvrait : 444 blocs du centre, eau 0,5 %, écart 6
   { cle: 'bas-adw', nom: "Base aérienne d'Andrews", x: -21126, z: 6381, r: 56, sol: 36, profil: 'base' },      // au sud de Washington, cap 160° — même écart qu'en v223
   { cle: 'bas-llv', nom: 'Base aérienne de Nellis', x: -37017, z: 8813, r: 56, sol: 42, profil: 'base' },      // au nord-est de Los Angeles, cap 60° — même écart qu'en v223
   { cle: 'bas-ykt', nom: 'Base aérienne de Yokota', x: 52871, z: 7878, r: 56, sol: 51, profil: 'base' },       // à l'ouest de Tokyo, cap 285° — exact, 525 blocs (le même écart qu'avant tombait à 12 % dans la baie)
 ];
+
+// LES TROIS QUI ONT BOUGÉ EN v306, À LEUR PLACE D'AVANT — figée pour toujours.
+// La migration des blocs d'un enfant a besoin du monde tel qu'il était quand il
+// les a posés : un avion de Lego garé sur l'ancien tarmac de Roissy suit son
+// aéroport, et pour le savoir il faut savoir où était l'aéroport. Même règle que
+// `MONDES.terreAvant` : cette table ne se met jamais à jour.
+const AVANT_V306 = {
+  cdg: { x: -250, z: -91, sol: 34 },
+  orly: { x: -322, z: 504, sol: 41 },
+  'bas-sd': { x: 33, z: 300, sol: 33 },
+};
+export const AEROPORTS_AVANT_V306 = AEROPORTS.map((a) => (AVANT_V306[a.cle] ? { ...a, ...AVANT_V306[a.cle] } : a));
 
 // L'aéroport le plus proche d'un point, s'il est à portée.
 export function aeroportPres(x, z, portee = 140) {

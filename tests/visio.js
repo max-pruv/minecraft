@@ -71,6 +71,34 @@ async function allumerLaCamera(p) {
     const alice = await banc.rejoindre('Alice', code);
     await jusqua(async () => (await marlon.evaluate(() => window.__game.net.conns.size)) >= 1);
 
+    // LE SON ROBOTIQUE D'ALICE (v304). Avant l'appel, la radio du jeu joue sur
+    // la tablette d'Alice : on retient son contexte audio et le niveau de ce
+    // qui sort, lu dans les ÉCHANTILLONS (un analyseur accroché à la sortie du
+    // jeu), jamais dans un drapeau.
+    const avantAppel = await alice.evaluate(async () => {
+      if (!window.__sons) return { absent: true };
+      const S = await import('./src/sons.js');
+      window.__niveauSon = async (ms) => {
+        const c = window.__sons.contexte(), sortie = window.__sons.sortie();
+        if (!c || !sortie) return 0;
+        if (c.state === 'suspended') await c.resume().catch(() => {});
+        const an = c.createAnalyser(); an.fftSize = 2048; sortie.connect(an);
+        const buf = new Float32Array(an.fftSize); let pire = 0;
+        const t0 = performance.now();
+        while (performance.now() - t0 < ms) {
+          an.getFloatTimeDomainData(buf);
+          let s2 = 0; for (const v of buf) s2 += v * v;
+          pire = Math.max(pire, Math.sqrt(s2 / buf.length));
+          await new Promise((r) => setTimeout(r, 50));
+        }
+        try { sortie.disconnect(an); } catch { /* déjà */ }
+        return pire;
+      };
+      S.radioDemarre(0);
+      window.__ctxAvantAppel = window.__sons.contexte();
+      return { niveau: await window.__niveauSon(1500) };
+    });
+
     await allumerLaCamera(alice);
 
     // Alice se voit elle-même : c'est la partie qui marchait déjà, et qui doit
@@ -113,6 +141,24 @@ async function allumerLaCamera(p) {
     verifier('et le son n’est ni en pause ni muet',
       sonChezMarlon.length === 1 && !sonChezMarlon[0].arrete && !sonChezMarlon[0].muet,
       JSON.stringify(sonChezMarlon));
+
+    // LE CONTEXTE AUDIO DU JEU SUIT LE MODE APPEL D'iOS (v304). Micro ouvert,
+    // l'iPad passe en mode appel ; un contexte créé avant garde l'ancienne
+    // fréquence et sonne « robotique ». On exige un contexte NEUF (l'ancien
+    // fermé), la radio qui continue, et le jeu plus bas pendant l'appel.
+    const pendantAppel = await alice.evaluate(async () => {
+      if (!window.__niveauSon) return { absent: true };
+      const c = window.__sons.contexte();
+      return { neuf: c !== window.__ctxAvantAppel, ancien: window.__ctxAvantAppel ? window.__ctxAvantAppel.state : null,
+        radio: window.__sons.station(), niveau: await window.__niveauSon(1500) };
+    });
+    verifier('micro ouvert, le jeu joue sur un contexte audio neuf, et l’ancien est fermé',
+      !avantAppel.absent && pendantAppel.neuf === true && pendantAppel.ancien === 'closed' && !!pendantAppel.radio,
+      JSON.stringify({ avantAppel, pendantAppel }));
+    verifier('et pendant l’appel la radio du jeu parle plus bas, sans se taire',
+      !avantAppel.absent && avantAppel.niveau > 0.005 && pendantAppel.niveau > 0
+        && pendantAppel.niveau < 0.6 * avantAppel.niveau,
+      `avant ${(+avantAppel.niveau || 0).toFixed(4)} · pendant ${(+pendantAppel.niveau || 0).toFixed(4)}`);
 
     // --- l'invitation --------------------------------------------------------
     const invite = await marlon.evaluate(() => {
@@ -182,6 +228,22 @@ async function allumerLaCamera(p) {
     const sonApres = await sons(marlon);
     verifier('quand Alice éteint, sa vignette part', apres.length === 0, JSON.stringify(apres));
     verifier('et son filet de voix aussi', sonApres.length === 0, JSON.stringify(sonApres));
+    // Et le jeu d'Alice revient en mode lecture : un contexte neuf encore, et
+    // le volume d'avant l'appel. L'appel ne finit pour elle que quand PLUS
+    // AUCUNE voix n'arrive : Marlon a allumé sa caméra plus haut, sa voix
+    // joue encore chez Alice tant qu'il ne l'éteint pas — c'est juste, et le
+    // témoin éteint donc les deux avant de mesurer.
+    await marlon.evaluate(() => { if (window.__game.net.camOn) document.getElementById('cam-btn').click(); });
+    await jusqua(async () => (await vignettes(alice)).length === 0 && (await sons(alice)).length === 0, 20000);
+    const apresAppel = await alice.evaluate(async () => {
+      if (!window.__niveauSon) return { absent: true };
+      const c = window.__sons.contexte();
+      return { neuf: c !== window.__ctxAvantAppel && c.state !== 'closed', radio: window.__sons.station(),
+        niveau: await window.__niveauSon(1500) };
+    });
+    verifier('caméra éteinte, le jeu reprend sa voix normale sur un contexte neuf',
+      !avantAppel.absent && apresAppel.neuf === true && !!apresAppel.radio && apresAppel.niveau > 0.8 * avantAppel.niveau,
+      `avant ${(+avantAppel.niveau || 0).toFixed(4)} · après ${(+apresAppel.niveau || 0).toFixed(4)} · ${JSON.stringify(apresAppel)}`);
 
     verifier('aucune faute de page pendant la visio',
       fautes(marlon).length === 0 && fautes(alice).length === 0,

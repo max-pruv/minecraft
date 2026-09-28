@@ -28,7 +28,7 @@ const { Banc, souffler } = require('./banc.js');
           const places = voitures.flatMap((k) => k.places || []);
           let dmin = Infinity;
           for (const p of places) dmin = Math.min(dmin, Math.hypot(p.x - g.player.pos.x, p.z - g.player.pos.z));
-          const place = v.placeProche(g.player.pos, 5);
+          const place = v.placeProche(5);
           releves.push({ s: i + 1, convois: voitures.length, total: voitures.reduce((s, k) => s + k.total, 0), visibles: voitures.reduce((s, k) => s + (k.visibles || 0), 0), dmin: Math.round(dmin * 10) / 10, place: place ? place.nom : null, images: g.renderer.info.render.frame - f0, morceaux: g.chunkMeshes.size });
           if (place && place.nom === 'voiture') break;
         }

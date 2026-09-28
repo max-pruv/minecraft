@@ -187,8 +187,10 @@ export const MONDES = {
       // monde ×2 », et Paris d'abord pour ce qui suit. L'ancre ne bouge
       // toujours pas ; le monde passe de 43 000 à 86 000 blocs.
       kmParBloc: 0.1875,
-      // Paris ne bouge PAS. C'est là que les enfants ont le plus construit, et
-      // ancrer la projection sur sa position actuelle épargne leurs blocs.
+      // L'ANCRE ne bouge pas. C'est là que les enfants ont le plus construit,
+      // et ancrer la projection sur leur Paris épargne leurs blocs. La ville,
+      // elle, a déménagé en v306 (Paris doublé) : sa surcharge est dans sa
+      // fiche, plus bas, et la projection du reste du monde n'a pas bougé.
       ancre: { x: -240, z: 200 },
       compressions: [{ de: -74, a: -10, k: 0.6 }],   // l'Atlantique
     },
@@ -200,7 +202,19 @@ export const MONDES = {
       // Paris intra-muros, le bois de Boulogne à l'ouest et celui de Vincennes
       // à l'est. Depuis la carte doublée (v199), 544 blocs séparent Paris de
       // Lille : les deux disques laissent 267 blocs entre eux.
-      { cle: 'paris', nom: 'Paris', lat: 48.8566, lon: 2.3522, r: 185 },
+      //
+      // PARIS DOUBLÉ ET DÉPLACÉ (v306). Décision de Max : le disque passe de
+      // 185 à 370 blocs, la ville de vingt-quatre à quarante-huit blocs par
+      // kilomètre — ses îlots doublent, et les rues à la règle du kit (v303)
+      // ne mangent plus les quartiers. Doublé sur place, le disque aurait
+      // recouvert le point d'apparition, le musée et le quartier des enfants :
+      // son centre part donc de cent soixante-dix blocs vers le sud-ouest.
+      // C'est la seule ville dont la place n'est pas sa latitude : elle vit
+      // trente kilomètres à côté de la vraie, et la carte le montre ainsi.
+      // La surcharge ne vaut que pour la carte COURANTE (`terre`) : les cartes
+      // figées gardent le Paris où les blocs ont été posés.
+      { cle: 'paris', nom: 'Paris', lat: 48.8566, lon: 2.3522, r: 185,
+        terre: { r: 370, dx: -120, dz: 120 } },
       // Lille double d'emprise en v204 : trente-deux blocs par kilomètre, et
       // ses 92 blocs vont de la Citadelle à Euralille. Ce qui la borne, c'est
       // Bruxelles (villesmonde), à 107 blocs de marge une fois les disques
@@ -367,6 +381,14 @@ for (const l of MONDES.terre.lieux) {
 // Le même registre sur la carte d'avant : un seul tableau, jamais recopié.
 MONDES.terreV2.lieux = MONDES.terre.lieux;
 
+// LA TROISIÈME CARTE TELLE QU'ELLE ÉTAIT JUSQU'À LA v305 : même projection, même
+// registre, mais sans la surcharge de Paris doublé (`terre` dans la fiche de
+// Paris). La marche 2 → 3 compare la carte 2 à celle-ci — pas à la courante —
+// pour qu'un Paris qui bouge en v306 ne soit pas pris pour une ville qui a
+// bougé en v242. Jamais proposée à l'enfant, jamais mise à jour.
+MONDES.terreV3 = { id: 'terreV3', nom: 'La Terre (v242–v305)', emoji: '🌍',
+  projection: MONDES.terre.projection, lieux: MONDES.terre.lieux };
+
 // --- ce que le reste du jeu appelle ------------------------------------------
 
 const cache = new Map();
@@ -387,6 +409,8 @@ export function positionDe(cle, mondeId = 'terre') {
   const lieu = (m.lieux || []).find((l) => l.cle === cle);
   if (!lieu) throw new Error(`lieu inconnu sur ${mondeId} : ${cle}`);
   const { x, z } = projeteur(mondeId).versBlocs(lieu.lat, lieu.lon);
+  const s = mondeId === 'terre' ? lieu.terre : null;
+  if (s) return { x: x + s.dx, z: z + s.dz, r: s.r, nom: lieu.nom };
   return { x, z, r: lieu.r, nom: lieu.nom };
 }
 

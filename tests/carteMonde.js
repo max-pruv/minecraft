@@ -116,10 +116,22 @@ const VRAIES_KM = [
     // distances, à l'échelle près. Sauf l'Atlantique, resserré par décision de
     // Max — donc Paris/New York est volontairement plus court.
     const pos = Object.fromEntries(monde.lieux.map((l) => [l.cle, l]));
+    // PARIS VIT À CÔTÉ DE SA LATITUDE, ET C'EST DÉCLARÉ (v306). Doublé, son
+    // disque aurait recouvert ce que les enfants ont bâti : son centre part de
+    // cent soixante-dix blocs vers le sud-ouest, et la surcharge vit dans SA
+    // fiche du registre (`terre: { dx, dz }`). La géographie — distances et
+    // points cardinaux — se juge donc sur la position que la latitude donne ;
+    // ce que le JEU fait de Paris se juge plus bas, sur la position déplacée,
+    // et l'on garde que le décalage reste celui qu'on a déclaré.
+    const geo = Object.fromEntries(monde.lieux.map((l) => [l.cle,
+      l.terre ? { ...l, x: l.x - l.terre.dx, z: l.z - l.terre.dz } : l]));
+    const decales = monde.lieux.filter((l) => l.terre).map((l) => `${l.cle} ${Math.round(Math.hypot(l.terre.dx, l.terre.dz))}`);
+    verifier('une seule ville vit à côté de sa latitude, Paris, et de moins de deux cents blocs',
+      decales.length === 1 && /^paris /.test(decales[0]) && Number(decales[0].split(' ')[1]) < 200, decales.join(' · '));
     const ecarts = [];
     for (const [a, b, km, tolerance] of VRAIES_KM) {
-      if (!pos[a] || !pos[b]) { ecarts.push(`${a}/${b} absent`); continue; }
-      const blocs = Math.hypot(pos[a].x - pos[b].x, pos[a].z - pos[b].z);
+      if (!geo[a] || !geo[b]) { ecarts.push(`${a}/${b} absent`); continue; }
+      const blocs = Math.hypot(geo[a].x - geo[b].x, geo[a].z - geo[b].z);
       const attendu = km / monde.kmParBloc;
       const err = Math.abs(blocs - attendu) / attendu;
       if (err > tolerance) {
@@ -156,7 +168,7 @@ const VRAIES_KM = [
     ];
     const fauxCaps = [];
     for (const [a, ref, attendus] of boussole) {
-      const dx = pos[a].x - pos[ref].x, dz = pos[a].z - pos[ref].z;
+      const dx = geo[a].x - geo[ref].x, dz = geo[a].z - geo[ref].z;
       const vus = [];
       if (dz < 0) vus.push('nord'); if (dz > 0) vus.push('sud');
       if (dx > 0) vus.push('est'); if (dx < 0) vus.push('ouest');
@@ -186,7 +198,10 @@ const VRAIES_KM = [
         // Notre-Dame — donc elle la SUIT toujours, à son écart près. C'est ce
         // que le témoin garde : pas « au centre », mais « à son écart ».
         caserne: [w.VILLE.x, w.VILLE.z],
-        caserneAttendue: paris.adresseParis(-8.64, 9.25),
+        // Et Paris doublé (v306) a doublé son écart : l'ancienne adresse
+        // tombait sur 5,9 % d'eau, et le site a été remesuré par la sonde des
+        // aérodromes (world.js, `VILLE`). Le lien reste en kilomètres.
+        caserneAttendue: paris.adresseParis(-10.08, -0.44),
       };
     });
     const perdus = [];
@@ -1399,8 +1414,14 @@ const VRAIES_KM = [
       for (const cle of ['paris', 'londres', 'nice', 'lille', 'sf', 'washington']) {
         const p = positionDe(cle);
         const pos = [];
-        for (let du = -40; du <= 40; du++) {
-          for (let dv = -40; dv <= 40; dv++) {
+        // LA FENÊTRE SUIT LA VILLE (v306). Quarante blocs était le quart du
+        // rayon de Paris ; doublé, le même carré ne couvrait plus que la Seine
+        // et les îles autour de Notre-Dame — trois feux. Elle vaut désormais
+        // 0,22 rayon, plancher quarante : les cinq autres villes gardent la
+        // leur à un bloc près.
+        const F = Math.max(40, Math.round(p.r * 0.22));
+        for (let du = -F; du <= F; du++) {
+          for (let dv = -F; dv <= F; dv++) {
             const x = Math.round(p.x) + du, z = Math.round(p.z) + dv;
             const sol = w.sommetColonne(x, z);
             if (w.getBlock(x, sol + 1, z) === RUE.FEUX) pos.push([x, z]);
@@ -1427,12 +1448,45 @@ const VRAIES_KM = [
         }
         out[cle] = { feux: pos.length, auCoin, colles };
       }
+      // ET CHAQUE CARREFOUR DE PARIS A SON FEU (v306). Le compte d'une
+      // fenêtre ne voyait pas le vrai défaut : les boulevards de la règle du
+      // kit (v303) ont treize à dix-sept blocs de chaussée, et `world.js`
+      // cherchait les coins d'un carrefour à sept blocs du croisement — douze
+      // carrefours sur quarante-quatre sans un feu dans le plan. Mesuré dans
+      // le monde, un feu à seize blocs au plus : 14 sans feu sur 44 avant la
+      // correction, 3 après, 2 sur 42 en production (des coins qu'un monument
+      // recouvre, déclarés en v274). La barre, quinze pour cent, est entre
+      // les deux régimes.
+      const pa = await import('./src/paris.js');
+      const vo = await import('./src/voies.js');
+      if (typeof vo.carrefoursDeVoies === 'function') {
+        const P = pa.PARIS, pris = [], sans = [];
+        for (const q of vo.carrefoursDeVoies(pa.VOIES_PARIS)) {
+          const cx = Math.round(P.x + q.u), cz = Math.round(P.z + q.v);
+          if (pris.some(([a, b]) => Math.hypot(a - cx, b - cz) < 3)) continue;
+          pris.push([cx, cz]);
+          let vu = false;
+          for (let dx = -16; dx <= 16 && !vu; dx++) {
+            for (let dz = -16; dz <= 16 && !vu; dz++) {
+              if (dx * dx + dz * dz > 256) continue;
+              const x = cx + dx, z = cz + dz;
+              if (w.getBlock(x, w.sommetColonne(x, z) + 1, z) === RUE.FEUX) vu = true;
+            }
+          }
+          if (!vu) sans.push([Math.round(q.u), Math.round(q.v)]);
+        }
+        out.carrefoursParis = { carrefours: pris.length, sans };
+      }
       return out;
     });
     const villesFeux = ['paris', 'londres', 'nice', 'lille', 'sf', 'washington'];
     verifier('les six villes bâties à la main ont enfin leurs feux tricolores',
       !feuxMain.err && villesFeux.every((v) => feuxMain[v] && feuxMain[v].feux >= 8),
       `${feuxMain.err || ''} ${JSON.stringify(feuxMain)}`);
+    const cp = feuxMain.carrefoursParis;
+    verifier('chaque carrefour de Paris a ses feux, même entre deux boulevards',
+      !!cp && cp.carrefours >= 30 && cp.sans.length <= cp.carrefours * 0.15,
+      cp ? `${cp.sans.length} carrefour(s) sans feu sur ${cp.carrefours} : ${JSON.stringify(cp.sans)}` : 'carrefoursDeVoies absent');
     // ET LA BARRE SE POSE SUR LA VILLE, PAS SUR LA FENÊTRE. Premier jet à
     // quatre-vingt-dix pour cent : rouge sur Paris seul, onze sur quatorze. La
     // sonde a nommé les trois accusés — tous dans l'emprise de la Caserne &
@@ -2408,6 +2462,49 @@ const VRAIES_KM = [
         : `${largeursParis.circuits.n} points · 10ᵉ centile ${largeursParis.circuits.p10} · médiane ${largeursParis.circuits.med}`
         + ` · ${largeursParis.circuits.partDeux} % des points à ${largeursParis.circuits.deuxVoitures} colonnes ou plus`);
 
+    // --- LES RUES DE PARIS À LA RÈGLE DU KIT (v303) ---------------------------
+    //
+    // Max : « les rues de Paris sont encore beaucoup trop étroites… t'as pas
+    // appliqué le code à la règle ». La largeur d'une rue se DEMANDE à
+    // `voirie.js` (le `roadSection` du kit, à un bloc pour un mètre) : ce
+    // témoin lit la règle, puis le MONDE, et exige que la rue de quartier
+    // mesurée ait au moins la chaussée d'une rue collectrice (deux voies de
+    // 3,2 m). Mesuré dans la même fenêtre : médiane 4 sur `origin/main`, 6 ici
+    // (une chaussée de 6,4 blocs se traverse en six ou sept colonnes).
+    // Et la part bâtie de Paris ne doit pas s'effondrer en échange : mon premier
+    // jet (îlot gardé tel quel, tout boulevard nommé à quatre voies) tombait de
+    // 22,6 % du disque à 12,7 ; la barre est au milieu, 17.
+    const regle = await tab.evaluate(async () => {
+      const g = window.__game;
+      let vo; try { vo = await import('./src/voirie.js'); } catch { return { absent: true }; }
+      const [pa, wo, ve] = await Promise.all([import('./src/paris.js'), import('./src/world.js'), import('./src/vehicules.js')]);
+      const col = vo.sectionDeRue('collecteur');
+      const solDe = (x, z) => g.world.getBlock(x, g.world.sommetColonne(x, z), z);
+      const estCh = (x, z) => wo.CHAUSSEE.has(solDe(x, z));
+      const DIRS = []; for (let i = 0; i < 12; i++) DIRS.push([Math.cos(i * Math.PI / 12), Math.sin(i * Math.PI / 12)]);
+      const run = (x, z, dx, dz) => { let a = 0; for (let t = 1; t <= 40; t++) { if (estCh(Math.round(x + dx * t), Math.round(z + dz * t))) a = t; else break; } return a; };
+      const largeur = (x, z) => Math.min(...DIRS.map(([dx, dz]) => run(x, z, dx, dz) + run(x, z, -dx, -dz) + 1));
+      const cx = pa.PARIS.x - 30, cz = pa.PARIS.z - 60, ws = [];
+      for (let x = cx - 30; x <= cx + 30; x += 2) for (let z = cz - 30; z <= cz + 30; z += 2) if (estCh(x, z)) ws.push(largeur(x, z));
+      ws.sort((a, b) => a - b);
+      let n = 0, lots = 0;
+      const P = pa.PARIS;
+      for (let x = P.x - P.r; x <= P.x + P.r; x++) for (let z = P.z - P.r; z <= P.z + P.r; z++) {
+        const u = x - P.x, v = z - P.z; if (u * u + v * v > P.r * P.r) continue;
+        n++; if (pa.lotParisLibre(x, z)) lots++;
+      }
+      return { chausseeRegle: col.chaussee, med: ws[ws.length >> 1], n: ws.length, bati: +(100 * lots / n).toFixed(1),
+        voiture: vo.LARGEUR_VOITURE, voitureJeu: 2 * (ve.DEMI_LARG_VOITURE || 0) };
+    });
+    verifier('les rues de Paris ont la section de la règle du kit : deux voies de 3,2 m au moins',
+      !regle.absent && regle.n > 200 && regle.med >= Math.floor(regle.chausseeRegle),
+      regle.absent ? 'voirie.js absent' : `médiane ${regle.med} sur ${regle.n} colonnes, règle ${regle.chausseeRegle}`);
+    verifier('et Paris garde ses immeubles : la part bâtie du disque ne s\'effondre pas',
+      !regle.absent && regle.bati >= 17, regle.absent ? 'voirie.js absent' : `${regle.bati} % du disque en lots`);
+    verifier('la règle de voirie connaît la vraie largeur d\'une voiture de la flotte',
+      !regle.absent && Math.abs(regle.voiture - regle.voitureJeu) < 1e-9,
+      regle.absent ? 'voirie.js absent' : `voirie ${regle.voiture} · flotte ${regle.voitureJeu}`);
+
     // ET LES PONTS DE PARIS ONT UN TABLIER AU-DESSUS DE L'EAU (v294). Mesuré
     // sous node avant d'y toucher : terrain 28, eau à 30, le pavé du pont à 28
     // — les neuf ponts étaient au fond de la Seine, et l'on traversait à la
@@ -2438,8 +2535,15 @@ const VRAIES_KM = [
       }
       return { colonnes, secs, roulables, groupes, base: ville.base, eau: wo.WATER_LEVEL };
     });
+    // SEPT PONTS SUR L'AXE, PAS NEUF (v306). Deux des neuf ponts franchissent
+    // les îles : ils passent sur les DEUX bras, hors de l'axe du fleuve, et
+    // l'axe ne les voit pas. Sur `origin/main` le compte faisait neuf parce
+    // que deux colonnes isolées au bord de l'île Saint-Louis passaient pour
+    // des ponts (un et deux blocs de long) ; les îles doublées, elles n'y
+    // sont plus. Les deux ponts de l'île sont là, mesurés sous node sur les
+    // deux bras (huit et quatre colonnes de tablier de chaque côté).
     verifier('les ponts de Paris ont leur tablier au-dessus de la Seine, à la cote de la ville',
-      pontsParis.groupes >= 9 && pontsParis.colonnes > 0 && pontsParis.secs === pontsParis.colonnes
+      pontsParis.groupes >= 7 && pontsParis.colonnes > 0 && pontsParis.secs === pontsParis.colonnes
       && pontsParis.roulables === pontsParis.colonnes,
       `${pontsParis.groupes} ponts, ${pontsParis.colonnes} colonnes de tablier sur l'axe du fleuve : ${pontsParis.secs} au sec,`
       + ` ${pontsParis.roulables} roulables à la cote ${pontsParis.base} (eau à ${pontsParis.eau})`);

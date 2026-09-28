@@ -17,6 +17,7 @@ import { aeroportPres, postesAvion } from './aeroport.js';
 import { cadence, chronoReel } from './cadence.js';
 import { axeDuFeu, axeDuCap, etatFeu } from './feux.js';
 import { cadran } from './cap.js';
+import { guidage, arriveEntre, nomDestination } from './gps.js';
 import { POLE } from './pole.js';
 import { LIGNES as LIGNES_DC, traceLigneMetro, arretsDeLigne, circuitsWashington } from './washington.js';
 import { buildChunkTampons } from './mesher.js';
@@ -35,7 +36,7 @@ import { createSiege } from './siege.js';
 import { createVie } from './vie.js';
 import { createVehicules, lancerReflets, avancerReflets, refletsVoiture, chaufferLesProgrammes, programmesChauffes, programmesAChauffer, graineDeVille } from './vehicules.js';
 import { decor, voirTout } from './couches.js';
-import { contexteAudio, sortieAudio, reglerSon, sonActif, etatSon, radioEnCours } from './sons.js';
+import { contexteAudio, sortieAudio, reglerSon, sonActif, etatSon, radioEnCours, generationAudio } from './sons.js';
 import { traceAnneau } from './ville.js';
 import { traceCourse } from './circuit.js';
 import { USINE, PARC, traceChaine } from './usine.js';
@@ -59,7 +60,7 @@ import { NetSession, randomCode } from './net.js';
 import { CloudSave } from './cloud.js';
 import { EducationMode, GRADES, todayKey } from './education.js';
 import { lienDuJeu, dessinerQR, partagerLien, lienWhatsApp, lienSMS } from './partage.js';
-import { jouerLeSon, arreterLeSon, surSonEnAttente, Photographe } from './visio.js';
+import { jouerLeSon, arreterLeSon, surSonEnAttente, Photographe, micOuvert } from './visio.js';
 
 // New York appartient à la Terre. Les anciennes adresses deviennent un lieu de départ.
 const VISITE_MANHATTAN = ['manhattan'].includes(new URLSearchParams(location.search).get('lieu')) || new URLSearchParams(location.search).get('carte') === 'manhattan';
@@ -1406,6 +1407,18 @@ function updateChunks() {
   vehicules = createVehicules({ scene, player });
   // et la circulation s'arrête aux feux (v273)
   vehicules.brancherFeux(feuRougeDevant);
+  // les amis de la partie cèdent la rue comme l'enfant (v305) : leur vraie
+  // position, leur cap (celui de l'enfant : le regard plus un demi-tour), et
+  // la largeur de ce qu'ils conduisent
+  vehicules.brancherAmis(() => {
+    const out = [];
+    for (const rp of remotePlayers.values()) {
+      if (rp.passager) continue;                  // assis chez quelqu'un : sa voiture suffit
+      const g = rp.vehicule && rp.vehicule.def ? rp.vehicule.def.gabarit || 0 : 0;
+      out.push({ x: rp.pos.x, y: rp.pos.y, z: rp.pos.z, cap: (rp.yaw || 0) + Math.PI, gabarit: g > 1 ? g : 0.6 });
+    }
+    return out;
+  });
   // la voiture de l'enfant s'arrête devant la circulation (player.js, v245)
   // ET LE MOBILIER NON PLUS (v252). Un réverbère, une jardinière, un banc,
   // une table de Times Square sont des props NON SOLIDES pour la marche —
@@ -2415,6 +2428,58 @@ function majBoutonsVehicule() {
 }
 window.__majBoutonsVehicule = majBoutonsVehicule;
 
+// LE GPS (v306). Une destination choisie sur la carte (« 🧭 S'y rendre »), une
+// flèche qui dit où tourner et combien il reste. Le calcul est pur (`gps.js`,
+// même convention de cap que le cadran), et le DOM ne s'écrit que quand ce
+// qu'il dit change — sauf la flèche, dont la rotation est une propriété de
+// style qui ne déplace rien dans la page.
+//
+// La destination vit dans la session, pas dans le profil : c'est un trajet en
+// cours, pas une donnée de l'enfant. Elle survit à la montée dans une voiture,
+// à la téléportation et au vol — c'est tout l'intérêt : on la choisit à pied,
+// on la rejoint en avion.
+const gpsEl = document.getElementById('gps');
+const gpsFleche = document.getElementById('gps-fleche');
+const gpsTexte = document.getElementById('gps-texte');
+let gpsCible = null;          // { x, z, nom }
+let gpsTexteAvant = '';
+let gpsPrec = null;           // la position de l'image d'avant (arrivée entre deux images)
+function demarrerGPS(x, z) {
+  gpsCible = { x, z, nom: nomDestination(x, z) };
+  gpsTexteAvant = ''; gpsPrec = null;
+  document.body.classList.add('gps-actif');
+  majGPS();
+  toast(`🧭 GPS : en route vers ${gpsCible.nom} (${guidage(player.pos.x, player.pos.z, player.yaw, gpsCible).lisible})`, 0x6ee7b7);
+}
+function arreterGPS() {
+  gpsCible = null; gpsPrec = null;
+  document.body.classList.remove('gps-actif');
+}
+function majGPS() {
+  if (!gpsCible) return;
+  const x = player.pos.x, z = player.pos.z;
+  const g = guidage(x, z, player.yaw, gpsCible);
+  if (g.arrive || (gpsPrec && arriveEntre(gpsPrec.x, gpsPrec.z, x, z, gpsCible))) {
+    const nom = gpsCible.nom;
+    arreterGPS();
+    toast(nom === 'le point choisi' ? '🏁 Tu es arrivé !' : `🏁 Tu es arrivé à ${nom} !`, 0x6ee7b7);
+    return;
+  }
+  gpsPrec = { x, z };
+  gpsFleche.style.transform = `rotate(${g.rotation.toFixed(3)}rad)`;
+  const texte = `${gpsCible.nom}|${g.lisible}|${g.consigne}`;
+  if (texte !== gpsTexteAvant) {
+    gpsTexteAvant = texte;
+    gpsTexte.innerHTML = `${gpsCible.nom === 'le point choisi' ? 'Destination' : gpsCible.nom} · ${g.lisible}<br><small>${g.consigne}</small>`;
+  }
+}
+document.getElementById('gps-stop').addEventListener('click', (e) => {
+  e.preventDefault(); e.stopPropagation();
+  arreterGPS();
+  toast('🧭 GPS arrêté.', 0xcfd8e8);
+});
+window.__gps = () => (gpsCible ? { ...gpsCible, ...guidage(player.pos.x, player.pos.z, player.yaw, gpsCible) } : null);
+
 // LE CADRAN DE CAP (v263). Le calcul est pur (`cap.js`), le DOM ne s'écrit
 // que quand ce qu'il dit change : deux cent soixante distances par image
 // ne coûtent rien, une réécriture de texte par image coûte un reflow.
@@ -2616,7 +2681,7 @@ if (sonToggle) {
 // oscillateur n'était branché. C'est la leçon de `__lumiere()`, morte deux
 // fois pour avoir publié un mécanisme au lieu de ce qui s'entend.
 window.__sons = { etat: etatSon, contexte: contexteAudio, sortie: sortieAudio,
-  station: radioEnCours, regler: reglerSon, actif: sonActif };
+  station: radioEnCours, regler: reglerSon, actif: sonActif, generation: generationAudio };
 
 // iOS only delivers orientation events after an explicit permission request,
 // and the request must come from a user gesture.
@@ -4033,7 +4098,8 @@ function syncRemotePlayers(list) {
 // on l'assied dedans comme l'avatar de l'enfant (`asseoir`, siège de la
 // fiche), et quand il descend on le remet debout à côté.
 function synchroniserVehiculeDistant(rp, v) {
-  const cle = v ? `${v.k}|${v.f || ''}` : '';
+  if (v && v.o && vehicules) vehicules.retirer(v.o);
+  const cle = v ? `${v.k}|${v.f || ''}|${typeof v.c === 'number' ? v.c : ''}` : '';
   if ((rp.vehicule ? rp.vehicule.cle : '') === cle) return;
   if (rp.vehicule) {
     poserDebout(rp);
@@ -4045,7 +4111,7 @@ function synchroniserVehiculeDistant(rp, v) {
   const fabrique = MODELES_MONTURE[v.k];
   const def = MONTURES.find((d) => d.key === v.k);
   if (!fabrique || !def || !def.siege) return;
-  const mesh = fabrique(v.f ? { flotte: v.f } : undefined);
+  const mesh = fabrique(v.f ? { flotte: v.f, peinture: typeof v.c === 'number' ? v.c : null } : undefined);
   mesh.position.copy(rp.pos);
   scene.add(mesh);
   rp.vehicule = { cle, mesh, def };
@@ -4183,7 +4249,14 @@ function startNetSession(code, isHost, patience) {
     // était vu à pied, glissant à toute vitesse (Max). Le modèle de flotte
     // voyage aussi, pour que ce soit SA voiture qu'on voit.
     const a = fun.montureConduite ? fun.montureConduite() : null;
-    if (a && a.def && a.def.siege) p.v = { k: a.def.key, f: (a.mesh && a.mesh.userData && a.mesh.userData.flotte) || null };
+    if (a && a.def && a.def.siege) {
+      const u = (a.mesh && a.mesh.userData) || {};
+      p.v = { k: a.def.key, f: u.flotte || null };
+      // SA COULEUR ET SON ORIGINE (v305) : l'ami la voit dans la teinte que la
+      // rue lui avait donnée, et retire de SA rue la voiture qu'on a prise
+      if (typeof u.peinture === 'number') p.v.c = u.peinture;
+      if (u.origine) p.v.o = u.origine;
+    }
     const pa = fun.passagerDe ? fun.passagerDe() : null;
     if (pa) p.p = { de: pa.de, s: pa.s };
     return p;
@@ -4419,7 +4492,12 @@ function showOnlineUI() {
   net.onRemoteVideoClosed = (id) => removeRemoteTile(id);
   net.onPhoto = (id, img, nom) => addPhotoTile(id, img, nom);
   net.onPhotoFin = (id) => removePhotoTile(id);
-  net.onCamChange = () => majVisio();
+  net.onCamChange = () => {
+    majVisio();
+    // le micro porte le son de l'appel : le contexte audio du jeu doit suivre
+    // le mode d'iOS (v304, le son robotique d'Alice)
+    micOuvert(!!(net.camOn && net.videoStream && net.videoStream.getAudioTracks().length));
+  };
   net.onChat = (name, msg) => {
     addChatMsg(name, msg, false);
     chatDing();
@@ -4479,6 +4557,7 @@ function showOnlineUI() {
 // Used by the home button and by the duplicate-player guard.
 function leaveToMainMenu() {
   journal.noter('menu');
+  arreterGPS();   // un trajet appartient à la partie qu'on quitte (v306)
   savePosition(); // remember exactly where we were in this world
   if (net) { net.stop(); net = null; }
   for (const k of ['monde-reco', 'signal', 'monde-perdu', 'monde-seul']) alerte(k, false);
@@ -6073,6 +6152,9 @@ let refletsHorloge = 0;   // la cadence des reflets de carrosserie (voir frame)
 // ici c'est exprès. Deux secondes laissent passer en entier l'image la plus
 // lente qu'on ait mesurée (2 im/s à l'arrivée dans Paris).
 const dtEcran = chronoReel(2);
+// l'horloge de la rue (v305) : ce qu'elle décide doit être le même sur toutes
+// les tablettes d'une partie, donc en secondes réelles, pas en temps de jeu
+const dtRue = chronoReel(2);
 
 
 // La hauteur à laquelle l'ombrage de la carte a été réglé, du temps où le
@@ -6312,12 +6394,18 @@ function drawMap(mapCanvas, radius) {
   ctx.fillStyle = '#4ac9ff'; // the other players, bright blue
   let flechesAmis = 0;
   for (const rp of remotePlayers.values()) {
-    const [mx, my] = toMap(rp.mesh.position.x, rp.mesh.position.z);
+    // LA POSITION VRAIE, PAS CELLE DU MAILLAGE (v305). Max : « en multijoueur,
+    // la position sur la carte n'est pas toujours à jour ». Depuis la v253 un
+    // ami au volant ou passager est ASSIS dans le maillage d'une voiture : sa
+    // `mesh.position` est alors celle du siège, en coordonnées de la voiture —
+    // à un bloc de zéro —, et la carte le montrait figé près du point
+    // d'apparition tant qu'il conduisait. `rp.pos` est la position vraie.
+    const [mx, my] = toMap(rp.pos.x, rp.pos.z);
     if (mx < 0 || mx > size || my < 0 || my > size) {
       // L'ami est hors du cadre : une flèche à son bord montre la direction.
       // Les enfants passaient leur temps à se chercher — « t'es où ?? » crié
       // d'une pièce à l'autre — alors que la minicarte savait répondre.
-      const a = Math.atan2(rp.mesh.position.z - player.pos.z, rp.mesh.position.x - player.pos.x);
+      const a = Math.atan2(rp.pos.z - player.pos.z, rp.pos.x - player.pos.x);
       const ex = size / 2 + Math.cos(a) * (size / 2 - 9);
       const ey = size / 2 + Math.sin(a) * (size / 2 - 9);
       ctx.save();
@@ -6410,7 +6498,7 @@ const carte = new Carte({
   // en cours de présentation n'a pas de nom pendant une seconde ou deux, et
   // c'est un cas normal, pas une raison de montrer de la mécanique à un enfant.
   autres: () => [...remotePlayers.values()].map((rp) => ({
-    x: rp.mesh.position.x, z: rp.mesh.position.z, nom: rp.name,
+    x: rp.pos.x, z: rp.pos.z, nom: rp.name,        // la position vraie (v305)
   })),
   // Habitants et bêtes : la liste n'est construite que si la carte est assez
   // rapprochée pour les montrer — dessinés de loin, ils couvraient les villes de
@@ -6425,6 +6513,12 @@ const carte = new Carte({
     fermerCarte();
     toast(`🧳 Voyage vers ${lieu.name} !`, 0xffd75e);
   },
+  // « 🧭 S'y rendre » : on ne bouge pas, on reçoit une flèche (v306).
+  surGPS: (wx, wz) => {
+    fermerCarte();
+    demarrerGPS(wx, wz);
+  },
+  destination: () => gpsCible,
   surTeleport: (wx, wz) => {
     const { dansEau } = deposerA(wx, wz);
     fermerCarte();
@@ -6727,7 +6821,9 @@ scene.add(rainPoints);
 // soleil ne se met pas à sauter d'un quart d'heure toutes les cinq secondes.
 // Il ne décide simplement plus rien.
 const invite = () => !!(net && net.active && !net.isHost);
-const cielDuMonde = () => ({ temps: dayTime, meteo: weather });
+// et l'heure de la RUE (v305) : les convois roulent sur une grille horaire, et
+// deux tablettes à la même heure ont la même circulation
+const cielDuMonde = () => ({ temps: dayTime, meteo: weather, rue: vehicules ? vehicules.horloge() : undefined });
 
 // ON VOIT LE PERSONNAGE CONDUIRE (v249). Max : « fais en sorte qu'on voie le
 // personnage conduire quand on conduit une voiture ». La vue de poursuite
@@ -6886,7 +6982,9 @@ const feuxPrets = cadence(500);
 let feuxProches = [];
 function reglerLesFeux() {
   if (renduDansManhattan || !feuxPrets()) return;
-  const t = performance.now();
+  // l'heure de la rue, pas celle de la page (v305) : deux amis au même
+  // carrefour voient le même feu, et les voitures qu'il arrête sont les mêmes
+  const t = vehicules ? vehicules.horloge() * 1000 : performance.now();
   const px = player.pos.x, pz = player.pos.z;
   const pcx = Math.floor(px / CHUNK), pcz = Math.floor(pz / CHUNK);
   const proches = [];
@@ -6944,7 +7042,8 @@ window.__feux = () => feuxProches.map((f) => ({ x: Math.round(f.x), z: Math.roun
 const CIEL_MS = 3;
 let annonceCiel = 0;   // compte à rebours de l'hôte, en secondes
 
-function adopterCiel({ temps, meteo }) {
+function adopterCiel({ temps, meteo, rue }) {
+  if (vehicules && typeof rue === 'number') vehicules.adopterHorloge(rue);
   if (typeof temps === 'number' && isFinite(temps)) {
     // On glisse vers l'heure de l'hôte quand l'écart est petit, on saute quand
     // il est grand : un invité qui se réveille ne doit pas voir le soleil
@@ -7395,7 +7494,7 @@ function frame(now) {
     }
     siege?.update(dt);
     vie?.update(dt);
-    vehicules?.update(dt);
+    vehicules?.update(dt, dtRue());
     majPastilleSiege();
   } else {
     player.syncCamera();
@@ -7438,6 +7537,7 @@ function frame(now) {
   edu.update(dtEcran(), running);
   fun.update(dt);
   majBoutonsVehicule();
+  if (running) majGPS();   // à pied comme au volant (v306)
   asseoirLeConducteur(dt);
   effects.update(dt);
 
@@ -7539,7 +7639,32 @@ requestAnimationFrame(() => {
   // téléportation.
   const chauffe = chaufferLesProgrammes(renderer, scene, camera);
   let chauffeFinie = false;
-  const pas = () => { if (chauffe()) requestAnimationFrame(pas); else chauffeFinie = true; };
+  // ET LES FEUX TRICOLORES (v306). Aucun feu n'est à portée du point
+  // d'apparition pendant l'accueil : leurs programmes se compilaient au premier
+  // feu rencontré, c'est-à-dire à l'arrivée en ville — trois à cinq mesurés à
+  // Paris par `sonde-programmes-paris.cjs`, les seuls qui restaient une fois la
+  // berline chauffée. On compile un feu seul, vers l'écran puis vers la cible
+  // cubique des reflets (qui voit le décor, avec son propre espace de couleur).
+  // ATTENTION À L'ORDRE DES ARGUMENTS dans cette version de three :
+  // `compile(t, camera, n)` compile les matériaux de `t` avec les lumières et
+  // le brouillard de `n`. Mon premier jet passait la scène entière en premier
+  // et recompilait vingt-sept programmes de plus vers la cible des reflets.
+  const chaufferLesFeux = () => {
+    const feu = buildPropMesh(RUE.FEUX);
+    if (!feu) return;
+    const ici = new THREE.Scene();
+    ici.add(feu);
+    const cible = refletsVoiture(), avant = renderer.getRenderTarget();
+    try {
+      renderer.compile(ici, camera, scene);
+      if (cible) { renderer.setRenderTarget(cible); renderer.compile(ici, camera, scene); }
+    } finally { renderer.setRenderTarget(avant); }
+  };
+  const pas = () => {
+    if (chauffe()) { requestAnimationFrame(pas); return; }
+    try { chaufferLesFeux(); } catch (e) { console.warn('chauffe des feux', e); }
+    chauffeFinie = true;
+  };
   requestAnimationFrame(pas);
 
   // LE JEU SE PRÉPARE AVANT « JOUER », ET LE BOUTON ATTEND (v258).

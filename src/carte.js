@@ -204,7 +204,7 @@ const melange = (a, b, t) => [
 ];
 
 export class Carte {
-  // opts : { canvas, world, joueur(), autres(), mobiles(), surVoyage(lieu), surTeleport(x, z) }
+  // opts : { canvas, world, joueur(), autres(), mobiles(), surVoyage(lieu), surTeleport(x, z), surGPS(x, z), destination() }
   constructor(opts) {
     Object.assign(this, opts);
     this.vue = { cx: 0, cz: 0, bpp: 3 };
@@ -739,7 +739,12 @@ export class Carte {
       // que quatre cents pixels de côté : montrer Paris en entier y demande
       // presque UN bloc par pixel, d'où 1,3 et non 1,0 — c'est le petit écran
       // qui fixe la barre, pas le grand.
-      ...lieuxDeParis().map((c) => ({ c, fort: false, seuil: 1.3 })),
+      //
+      // v306 : PARIS DOUBLÉ fait sept cent quarante blocs de bord à bord, et le
+      // même calcul donne 1,7 bloc par pixel au zoom qui la montre entière sur
+      // un téléphone : le seuil passe à 2,2, et celui de ses monuments aussi
+      // (world.js), sinon la tour Eiffel s'effaçait du plan de Paris.
+      ...lieuxDeParis().map((c) => ({ c, fort: false, seuil: 2.2 })),
       ...lieuxDuParc().map((c) => ({ c, fort: false, seuil: 0.55 })),
       // Et les quartiers et collines de San Francisco — MÊME RAISON QUE PARIS,
       // huit lignes plus haut, et le même remède. Depuis la v192 la ville fait
@@ -851,6 +856,23 @@ export class Carte {
         ctx.fillStyle = m.couleur;
         ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
       }
+    }
+
+    // La destination du GPS (v306) : un drapeau, et un trait fin depuis
+    // l'enfant — de loin, c'est ce trait qui dit dans quelle direction partir.
+    const dest = this.destination && this.destination();
+    if (dest) {
+      const pj = this.versEcran(this.joueur().x, this.joueur().z);
+      const pd = this.versEcran(dest.x, dest.z);
+      ctx.save();
+      ctx.setLineDash([6, 5]); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255,215,94,0.9)';
+      ctx.beginPath(); ctx.moveTo(pj.x, pj.y); ctx.lineTo(pd.x, pd.y); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#ffd75e'; ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(pd.x, pd.y); ctx.lineTo(pd.x, pd.y - 22); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(pd.x, pd.y - 22); ctx.lineTo(pd.x + 14, pd.y - 17); ctx.lineTo(pd.x, pd.y - 12); ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.restore();
     }
 
     // Le joueur, flèche pointée là où il regarde.
@@ -983,6 +1005,7 @@ export class Carte {
     this.ouverte = false;
     cancelAnimationFrame(this.boucle);
     this.annulerAppui();
+    this.retirerProposition();
   }
 
   // --- les gestes ------------------------------------------------------------
@@ -996,10 +1019,24 @@ export class Carte {
   _brancher() {
     const cv = this.canvas;
     this.cible = document.getElementById('map-cible');
+    this.choix = document.getElementById('map-choix');
+    const choisir = (quoi) => (e) => {
+      e.preventDefault(); e.stopPropagation();
+      const p = this.proposition;
+      this.retirerProposition();
+      if (!p) return;
+      if (quoi === 'gps') this.surGPS(p.x, p.z);
+      else this.surTeleport(p.x, p.z);
+    };
+    // `click` et non `pointerup` : sur l'iPad, un doigt qui glisse hors du
+    // bouton ne doit rien déclencher, et c'est ce que `click` garantit.
+    document.getElementById('map-choix-tp')?.addEventListener('click', choisir('tp'));
+    document.getElementById('map-choix-gps')?.addEventListener('click', choisir('gps'));
 
     cv.addEventListener('pointerdown', (e) => {
       cv.setPointerCapture?.(e.pointerId);
       this.pointeurs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (this.proposition) this.retirerProposition();
       if (this.pointeurs.size === 1) {
         this.depart = { x: e.clientX, y: e.clientY, t: performance.now() };
         this.aBouge = false;
@@ -1124,9 +1161,44 @@ export class Carte {
         this.dernierAppui.decline = null;
         this.annulerAppui();
         this.teleporte = true;
-        this.surTeleport(m.x, m.z);
+        this._proposer(m, e);
       });
     }, 550);
+  }
+
+  // DEUX BOUTONS AU BOUT DE L'APPUI LONG (v306). Max : « soit on se téléporte,
+  // soit on fait GPS ». L'appui long ne décide plus rien tout seul : il pose
+  // la question là où le doigt s'est levé, et c'est l'enfant qui choisit. Un
+  // doigt reposé ailleurs sur la carte retire la question — le geste de
+  // l'enfant qui a changé d'avis.
+  _proposer(m, e) {
+    const box = this.choix;
+    if (!box || !this.surGPS) { this.surTeleport(m.x, m.z); return; }   // page sans le panneau : l'ancien geste
+    this.proposition = { x: m.x, z: m.z };
+    const parent = box.offsetParent || this.canvas.offsetParent;
+    if (parent) {
+      const pr = parent.getBoundingClientRect();
+      box.style.display = 'flex';
+      // Le panneau reste DANS la carte : posé au bord droit, il déborderait
+      // de la modale et un bouton sur deux serait hors de l'écran.
+      const lx = Math.max(6, Math.min(pr.width - box.offsetWidth - 6, e.clientX - pr.left - box.offsetWidth / 2));
+      const ly = Math.max(6, Math.min(pr.height - box.offsetHeight - 6, e.clientY - pr.top + 18));
+      box.style.left = `${lx}px`;
+      box.style.top = `${ly}px`;
+    }
+    if (this.cible && parent) {
+      const pr = parent.getBoundingClientRect();
+      this.cible.style.left = `${e.clientX - pr.left}px`;
+      this.cible.style.top = `${e.clientY - pr.top}px`;
+      this.cible.style.display = 'block';
+      this.cible.classList.add('arme');
+    }
+  }
+
+  retirerProposition() {
+    this.proposition = null;
+    if (this.choix) this.choix.style.display = 'none';
+    if (this.cible) { this.cible.classList.remove('arme'); this.cible.style.display = 'none'; }
   }
 
   // Un appui bref : sur une étiquette on voyage, ailleurs on rapproche.

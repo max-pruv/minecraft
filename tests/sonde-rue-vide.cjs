@@ -15,7 +15,8 @@ const { Banc, souffler } = require('./banc.js');
       const g = window.__game;
       const cam = g.player.camera;
       const demi = Math.atan(Math.tan(((cam.fov * Math.PI) / 180) / 2) * cam.aspect);
-      const trajets = [['Rivoli', [-53, -4], [60, 13]], ['Voltaire', [46, -18], [96, 25]]];
+      const rel = (dx, dz) => { const [x, z] = m.adresseParis(dx, dz); return [x - m.PARIS.x, z - m.PARIS.z]; };
+      const trajets = [['Rivoli', rel(-3.2, -0.9), rel(1.5, -0.2)], ['Voltaire', rel(0.9, -1.5), rel(3.0, 0.3)]];
       const out = [];
       const cadre = (dx, dz) => {
         let n = 0, portee = 0, caches = 0;

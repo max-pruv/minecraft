@@ -390,13 +390,16 @@ export function initFun(ctx) {
     if (!v || !v.emprunter) return false;
     const pris = v.emprunter(place.id);
     if (!pris) return false;
-    const auto = animalManager.invoquer('voiture', pris.x, pris.z, false, { flotte: pris.flotte });
+    const auto = animalManager.invoquer('voiture', pris.x, pris.z, false, { flotte: pris.flotte, peinture: pris.peinture });
     if (!auto) return false;
     // À SA PLACE EXACTE, pas au sommet de la colonne — la leçon du garage.
     auto.pos.set(pris.x, pris.y, pris.z);
     auto.yaw = pris.cap || 0;
     auto.mesh.position.copy(auto.pos);
     auto.mesh.rotation.y = auto.yaw + Math.PI;
+    // d'où elle vient : la position la porte aux amis, qui la retirent de LEUR
+    // rue (v305)
+    auto.mesh.userData.origine = pris.origine || null;
     toggleRide(auto);
     toast(`🚗 Tu prends le volant ${pris.nom ? `de la ${pris.nom}` : 'de la voiture'} !`, 0xa8d8ff);
     return true;

@@ -21,6 +21,19 @@
 //    télévision, mais on se voit, on se reconnaît, on se fait coucou. Le son,
 //    lui, ne passe pas : on le dit franchement au lieu de laisser croire.
 
+import { appelEnCours } from './sons.js';
+
+// ---- l'appel qui porte du son (v304) ---------------------------------------
+//
+// Le jeu doit savoir quand un appel porte du son — le micro de l'enfant ouvert,
+// ou la voix d'un ami qui joue — parce qu'iOS change alors de mode audio, et
+// que le contexte Web Audio du jeu doit suivre (`appelEnCours`, sons.js : le son
+// « robotique » d'Alice).
+let micLocal = false;
+const sonsDistants = new Set();
+const majAppel = () => appelEnCours(micLocal || sonsDistants.size > 0);
+export function micOuvert(oui) { micLocal = !!oui; majAppel(); }
+
 // ---- le son qui attend une touche ------------------------------------------
 
 const enAttenteDeSon = new Set();
@@ -60,6 +73,8 @@ export function jouerLeSon(flux, nom) {
   audio.srcObject = flux;
   audio.style.display = 'none';
   document.body.appendChild(audio);
+  sonsDistants.add(audio);
+  majAppel();
   audio.play().catch(() => {
     // Refusé faute de geste : on ne renonce pas, on attend le premier contact.
     enAttenteDeSon.add(audio);
@@ -75,6 +90,8 @@ export function arreterLeSon(audio) {
   try { audio.pause(); } catch { /* déjà arrêté */ }
   audio.srcObject = null;
   audio.remove();
+  sonsDistants.delete(audio);
+  majAppel();
 }
 
 // ---- la caméra lente, par le nuage -----------------------------------------

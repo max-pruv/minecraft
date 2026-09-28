@@ -1,5 +1,147 @@
 # Ce qui est en cours
 
+- [ ] **« ON PREND LE VOLANT D'UNE VOITURE VUE DANS LA RUE » (fumee.js) A
+  ATTENDU 124 S SANS VOITURE, UNE FOIS (portail de la v306, commit 1c40488).**
+  Rejouée seule dans la foulée : verte deux fois, une voiture prise en 132 ms
+  à 4,3 et 1,8 bloc. Depuis la v305 la position d'un convoi est une fonction
+  de l'HEURE RÉELLE : au point du témoin (circuit 0, entre ses points 2 et 3),
+  une file qui attend derrière un bus ou un feu peut ne pas passer pendant
+  deux minutes, selon l'heure où le banc tourne. Non mesuré : combien de temps
+  une place reste hors de portée de ce point sur un tour complet d'horloge. À
+  faire : balayer `distanceA(t)` sur un tour, relever le plus long trou, et
+  poser le témoin là où il est le plus court — ou attendre sur deux points.
+- [ ] **DEUX OU TROIS PROGRAMMES SE COMPILENT ENCORE À L'ARRIVÉE À PARIS
+  (mesuré en v306).** Voitures et feux chauffés, `sonde-programmes-paris.cjs`
+  rend 2 · 2 · 3 programmes neufs (`3,srgb` et `131075,srgb` en fin de clé),
+  et AUCUN objet de la scène ne les porte comme programme courant — donc des
+  variantes : probablement la cible cubique des reflets qui voit un décor
+  nouveau (façades HD de Paris ?). Sous la barre du témoin (4), mais c'est
+  encore un gel sur la tablette. Sonde à écrire : parcourir
+  `renderer.properties` de chaque matériau de la scène et lister ceux dont
+  `programs` contient une clé neuve.
+- [ ] **LA RIVE GAUCHE A DEUX FOIS MOINS DE VOITURES DEPUIS PARIS DOUBLÉ
+  (mesuré en v306).** Au témoin de variété de `monte.js`, huit voitures à
+  portée (60 blocs) contre quatorze à quinze avant : les huit circuits
+  couvrent un disque quatre fois plus grand, et `nb` plafonne à vingt voitures
+  par circuit (`Math.max(6, Math.min(20, round(longueur / 18)))`). Deux
+  leviers à mesurer, pas à deviner : relever le plafond de `nb` pour les
+  circuits de Paris (coût en appels de dessin à mesurer, la v201 dit trente-deux
+  maillages par voiture) ou ajouter des circuits sur la rive gauche (la
+  couverture gloutonne de `voies.js`, seuil de partage inchangé). Le témoin
+  de variété, lui, compte désormais une proportion (trois modèles sur quatre)
+  et ne voit plus cette baisse : c'est cette ligne qui la garde.
+- [ ] **LE TÉMOIN « AUCUNE VOITURE NE TRAVERSE UN MONUMENT DE PARIS » NE MESURE
+  PLUS RIEN (vu en v306, vrai aussi sur `origin/main`).** Il ne juge que les
+  points de circuit tombés dans la boîte d'un socle (± socle + 1) ; depuis que
+  les circuits font le tour des socles à `AXE_TOUR` (v221), aucun point n'y
+  tombe — `pas: 0` des deux côtés, donc vert sans rien lire. Il faut le
+  repointer sur la bande que le tour emprunte (socle + AXE_TOUR ± la
+  demi-largeur d'une voiture) et le vérifier rouge en désarmant
+  `contournerBlocs`.
+- [ ] **UNE PLACE DE VOITURE À MOINS DE TROIS BLOCS, SANS VOITURE DESSINÉE (vu
+  en v306).** Au témoin « on prend le volant » de `fumee.js`, `placeProche(5)`
+  rendait une place à 2,8 puis 1,6 bloc de l'enfant, et `elements[i]` y était
+  VIDE — donc rien de dessiné, et le bouton de bord caché. `montrer`
+  fabrique pourtant toute place à portée, et `update` appelle `montrer` sur
+  tous les convois à chaque image : la contradiction n'est pas expliquée. Le
+  remède (`emprunter` fabrique la voiture) tient sans la cause, mais un enfant
+  pourrait voir une rue où une voiture DEVRAIT être. Sonde à écrire : à
+  l'instant où `placeProche` rend la place, relever `c.vu`, la distance de la
+  tête, `retardMax()` et ce que `montrer` calcule pour cette place.
+- [ ] **LES QUAIS DE LA SEINE MONTRENT UN MUR DE TERRE (vu en v306, capture
+  `apres-quai`).** Sous la margelle de pierre du quai, la paroi qui descend à
+  l'eau est en blocs de TERRE sur toute sa hauteur : c'est le relief nu, pas un
+  mur de quai. Non mesuré : ni sur `origin/main` (la Seine d'avant avait-elle
+  le même défaut ?), ni l'étendue (tout le linéaire ou un tronçon ?). À faire
+  sous node : balayer les colonnes de berge de `solParis` et compter la
+  matière posée entre l'eau et la margelle, des deux côtés.
+- [ ] **EN LIGNE, UNE VOITURE DE LA RUE ENTRE ENCORE UNE FOIS DANS CELLE D'UN
+  AMI (v305, mesuré en v306).** Le témoin de `reseau.js` pose Marlon au volant
+  dans la rue de Paris et regarde chez Alice. Ce qui est PROUVÉ : la voiture
+  qui arrive derrière lui dans sa voie l'attend (retard 19 s sur le code neuf,
+  0 s sur l'ancien, même passage de banc). Ce qui ne l'est PAS : sur les deux
+  codes, une AUTRE voiture est entrée une fois dans la sienne pendant la
+  fenêtre (`dedans: 1`, centre à 1,6 bloc sur le neuf, 3,7 sur l'ancien). Le
+  message du témoin publie désormais l'intrus (`intrus` : clé, distance, cap de
+  l'intrus et cap posé de Marlon). Trois pistes à séparer par une sonde, pas
+  par une relecture : (1) le rectangle de l'ami est orienté par `rp.yaw + π`,
+  qui est le regard de Marlon et pas le cap de sa voiture ; (2) la position
+  réseau de Marlon arrive en retard chez Alice, et la voiture qui cède cède à
+  l'endroit d'AVANT ; (3) une voiture d'un convoi voisin arrivée de travers au
+  carrefour. Six versions de ce témoin avant qu'il sépare les deux codes : les
+  cinq premières sont dans `git log tests/reseau.js`.
+- [ ] **LE GPS (v306) : CE QU'IL NE FAIT PAS ENCORE.** (1) La MINICARTE ne
+  montre pas la destination — seulement la grande carte (drapeau et trait) et
+  la flèche en haut de l'écran. (2) On ne vise qu'à l'appui long : toucher un
+  lieu nommé ou choisir un résultat de recherche emmène toujours en voyage,
+  sans proposer « S'y rendre ». (3) La destination ne se partage pas avec un
+  ami en ligne ; ce sera un message de plus, à son nom. (4) La transition CSS de
+  la flèche prend le chemin long quand l'angle passe de +π à −π (un tour presque
+  complet, 0,15 s) : cosmétique, à régler en tournant par l'écart le plus court.
+- [ ] **PARIS DOUBLÉ (v306) : CE QUI RESTE, DÉCLARÉ.** (1) Une tablette qui
+  jouerait encore sur l'ancienne version APRÈS la publication poserait dans
+  l'ancien Paris des blocs datés d'après `DATE_PARIS_DOUBLE` : la marche 5 → 6
+  ne les suivra pas (même limite que la carte 3). (2) Un GARAGE posé dans
+  l'ancien Paris : ses blocs partent avec leur quartier, sa fiche
+  (`garages.js`, rangée par position) reste à l'ancienne adresse — la voiture
+  garée ressortirait là. Remède : migrer la fiche avec le groupe qui contient
+  son origine, et changer son identifiant. Rien ne dit qu'un garage y existe (la
+  lecture des profils d'enfants est refusée à la session) ; à mesurer dans
+  l'espace parent. (3) Une construction de campagne dans le nouveau disque (ou
+  sur un ancien aérodrome) dont le sol a bougé de plus de vingt-quatre blocs
+  reste où elle est. (4) Le monde d'avant (`CONF_AVANT`) porte tout ce que la
+  v306 a déplacé SAUF les ouvrages globaux : l'ancienne A1 près de l'ancienne
+  porte nord et l'ancienne ligne Paris–Lyon n'y sont plus, si bien qu'un bloc
+  d'avant le ménage collé au talus de l'ancienne A1, DANS l'ancien disque (les
+  vingt derniers blocs avant la porte), serait jugé sans son appui. Mesuré :
+  les deux mondes diffèrent sur 4 991 blocs autour de l'ancienne porte, 0 dans
+  les seize morceaux de l'ancien centre. (5) Au volant sur le premier pont de
+  l'A1 retracée, un passage a relevé deux marches et 0,97 bloc d'écart au profil
+  (`plafond.js`, avant que le témoin plat ne soit sorti du pont) ; le témoin du
+  pont (v300) ne mesure ni les marches ni l'écart, donc l'ancien pont ne l'a
+  jamais été non plus. À mesurer des deux côtés, sur le franchissement.
+  (6) `?diag=1` et la carte ne disent pas encore à l'enfant « ta maison a suivi
+  son quartier » ; le journal le dit, le jeu non.
+- [ ] **LES RUES DE PARIS À LA RÈGLE (v303) : CE QUI RESTE, DÉCLARÉ.** (1) Les
+  quartiers les plus petits (Saint-Germain, le Marais, le Faubourg, l'Étoile :
+  1 500 à 3 000 colonnes, bordés par la Seine et les percées) n'ont presque
+  plus de lots — ils en avaient déjà peu (168, 41, 91, 55 colonnes) et une trame
+  de 15 à 29 blocs n'y loge plus un îlot entier ; leur rayon (`Q(…, r0)`) est
+  en kilomètres du plan, pas à l'échelle d'un mètre. Mesuré au portail : 41 → 2
+  au Marais, 168 → 2 à Saint-Germain, 91 → 10 au Faubourg ; leurs disques
+  agrandis de trois quarts n'en rendent presque rien (ce sont Rivoli, les
+  Grands Boulevards et le boulevard Saint-Germain qui les occupent). Le remède
+  est Paris doublé, décidé par Max. (2) Les PLACES gardent
+  leurs rayons (Concorde 4,5, l'Étoile 8) : un boulevard de 21 blocs y arrive
+  plus large que la place — Paris doublé (v306) ne les agrandit pas, à dessein.
+  (3) Les autres villes bâties à la main (Londres,
+  Nice, Lille, San Francisco, Washington) et les villes engendrées n'ont pas
+  encore la règle — même geste, ville par ville, avec la trame figée et la
+  protection des constructions. (4) Une colonne protégée de l'ancienne ville
+  peut se trouver au milieu d'une rue neuve : les circuits de voitures,
+  mesurés sur le plan, la traverseraient. Mesure à faire sur un vrai journal
+  (le compte des colonnes protégées se lit dans `world.colonnesParisAvant`).
+  (5) Un bloc de l'ancienne version reçu du nuage APRÈS que son morceau a été
+  engendré ne protège sa colonne qu'au prochain chargement.
+- [ ] **LE PORTAIL DE LA v303 : TROIS ROUGES DANS `monte.js` ET `manhattan.js`,
+  AUCUN ATTEIGNABLE PAR LA LIVRAISON.** Tout ce que la v303 change dans le code
+  du jeu est borné au disque de Paris (`dansParisAvant`, `PARIS_V302`, le choix
+  de trame par colonne) ; les trois rouges se jouent ailleurs — preuve
+  STRUCTURELLE (v291). (1) `manhattan.js:282`, le délai déjà démonté 3/3 des
+  deux côtés (v269). (2) « l'écran ne se fige pas en arrivant sur une ville » :
+  23,5 % et 28,2 % aux deux portails, contre 36 à 44 % aux mesures d'avant — la
+  dette de l'arrivée en ville. (3) NEUF : « la voiture de l'enfant freine devant
+  un piéton, qui s'écarte, et elle repart sans lui passer au travers », à ROME —
+  vert au portail 2 (`candidats 27, traverses 0, avance 19,3`), rouge au
+  portail 3 (`candidats 400, traverses 18, ecartes 256, avance 13,7`), code du
+  jeu identique hors Paris entre les deux. C'est une INTERMITTENCE, et elle
+  mérite d'être démontée pour elle-même : dix-huit relevés où un passant est
+  DANS la voiture de l'enfant, c'est la panne que Max a signalée en v259. Le
+  couloir a été trouvé après quatre cents candidats (contre vingt-sept) — un
+  couloir inhabituel ; la sonde à écrire imprime le passant qui traverse, son
+  état (`ecart`, `repos`), la vitesse de la voiture à ce moment, et rejoue le
+  même couloir dix fois pour avoir la DISTRIBUTION (v269). Et le tirage des
+  passants sur la chaussée (0,24 pour une barre à 0,2) est la dette de la v291.
 - [ ] **LE RAIL CONTINU (v302) : CE QUI RESTE, DÉCLARÉ.** (1) La pente du
   profil reste un tiers : les candidats du kit à 2,5 %
   (`transport-v298/examples/rail-profile-candidates.json`) creusent jusqu'à

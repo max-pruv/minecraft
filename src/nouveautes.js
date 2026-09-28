@@ -6,6 +6,48 @@
 
 export const NOUVEAUTES = [
   {
+    v: 306,
+    titre: 'Paris devient deux fois plus grand',
+    puces: [
+      'Des quartiers pleins d\'immeubles',
+      'Tes maisons suivent leur quartier',
+      'Roissy, Orly et le volcan déménagent',
+      'Le village gaulois part en Bretagne',
+      'Un GPS pour aller où tu veux',
+      'Prendre une voiture marche à chaque fois',
+      'Des feux aux grands carrefours de Paris',
+      'Moins de gel en arrivant en ville',
+    ],
+  },
+  {
+    v: 305,
+    titre: 'La même rue pour tous',
+    puces: [
+      'En ligne, les mêmes voitures partout',
+      'Ta voiture garde sa couleur',
+      'Les voitures s\'arrêtent devant tes amis',
+      'La carte montre où sont tes amis',
+    ],
+  },
+  {
+    v: 304,
+    titre: 'Un son clair en visio',
+    puces: [
+      'Plus de voix de robot en appel',
+      'Le jeu parle plus bas en appel',
+      'Le train s\'arrête devant ta voiture',
+    ],
+  },
+  {
+    v: 303,
+    titre: 'Les rues de Paris s\'élargissent',
+    puces: [
+      'Deux voies dans chaque rue',
+      'Quatre voies sur les grands boulevards',
+      'De vrais trottoirs, larges',
+    ],
+  },
+  {
     v: 302,
     titre: 'Les trains ont de vrais rails',
     puces: [
