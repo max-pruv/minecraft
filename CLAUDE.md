@@ -843,7 +843,14 @@ atteindre la famille. Neuf règles.
   tirage (`graineDeVille` lit la position) et l'a rendu visible. La chauffe
   compile désormais le PROTOTYPE fabriqué lui-même (`chaufferLesFabriquees`) :
   tout modèle qui entre dans la flotte par `fabrique` y passe sans une ligne de
-  plus, et le compte affiché ne bouge pas.
+  plus, et le compte affiché ne bouge pas. Même trou pour les FEUX : aucun
+  n'est à portée du point d'apparition, leurs lentilles se compilaient à la
+  première ville. **Et `renderer.compile(t, camera, n)` compile les matériaux
+  de `t` avec les lumières de `n`** dans cette version de three : j'ai
+  d'abord passé la scène en premier et le feu en troisième — rien compilé,
+  et vingt-sept programmes de plus vers la cible des reflets. C'est une sonde
+  qui comparait les deux clés d'un même matériau qui l'a dit : on lit la
+  ligne de la bibliothèque avant de croire une signature de mémoire.
 - **QUAND UN SITE DÉMÉNAGE, LES TÉMOINS POSÉS SUR SON ANCIEN SOL MESURENT AUTRE
   CHOSE.** La pente « relevée sur l'axe Paris–Lille » du sol continu (v297)
   était le bord aplani de l'ancien Roissy ; la fenêtre de la ligne Paris–Lyon

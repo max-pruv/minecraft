@@ -1,5 +1,14 @@
 # Ce qui est en cours
 
+- [ ] **DEUX OU TROIS PROGRAMMES SE COMPILENT ENCORE À L'ARRIVÉE À PARIS
+  (mesuré en v306).** Voitures et feux chauffés, `sonde-programmes-paris.cjs`
+  rend 2 · 2 · 3 programmes neufs (`3,srgb` et `131075,srgb` en fin de clé),
+  et AUCUN objet de la scène ne les porte comme programme courant — donc des
+  variantes : probablement la cible cubique des reflets qui voit un décor
+  nouveau (façades HD de Paris ?). Sous la barre du témoin (4), mais c'est
+  encore un gel sur la tablette. Sonde à écrire : parcourir
+  `renderer.properties` de chaque matériau de la scène et lister ceux dont
+  `programs` contient une clé neuve.
 - [ ] **LA RIVE GAUCHE A DEUX FOIS MOINS DE VOITURES DEPUIS PARIS DOUBLÉ
   (mesuré en v306).** Au témoin de variété de `monte.js`, huit voitures à
   portée (60 blocs) contre quatorze à quinze avant : les huit circuits

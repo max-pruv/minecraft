@@ -106,9 +106,12 @@ parce que le tirage de la flotte, qui dépend de la place de la ville, met
 désormais une berline citadine à portée. Elle se FABRIQUE au lieu de se charger
 d'un fichier, et la préparation de l'accueil ne chauffait que les fichiers : le
 trou existait en production dans toutes les villes, une voiture sur six.
-L'accueil la compile désormais aussi. Mesuré par
-`sonde-programmes-paris.cjs` : quatre programmes neufs à l'arrivée (les feux,
-comme sur `origin/main`), contre cinq à neuf avant. Trois témoins de
+L'accueil la compile désormais aussi, et les feux tricolores avec elle :
+aucun feu n'est à portée du point d'apparition, leurs lentilles se
+compilaient donc à la première ville — y compris en production. Mesuré par
+`sonde-programmes-paris.cjs` : deux ou trois programmes neufs à l'arrivée,
+qu'aucun objet de la scène n'utilise plus, contre quatre (les feux) sur
+`origin/main` et cinq à neuf sur la branche avant. Trois témoins de
 `monte.js` mesuraient encore l'ancien Paris : le train se cherche à sa hauteur
 de tracé et non sur une voiture pas encore fabriquée, le cadran de cap lit
 « le nez perd 90° » au lieu de « 152° → 062° » (Paris a bougé, le cap de

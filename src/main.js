@@ -7639,7 +7639,32 @@ requestAnimationFrame(() => {
   // téléportation.
   const chauffe = chaufferLesProgrammes(renderer, scene, camera);
   let chauffeFinie = false;
-  const pas = () => { if (chauffe()) requestAnimationFrame(pas); else chauffeFinie = true; };
+  // ET LES FEUX TRICOLORES (v306). Aucun feu n'est à portée du point
+  // d'apparition pendant l'accueil : leurs programmes se compilaient au premier
+  // feu rencontré, c'est-à-dire à l'arrivée en ville — trois à cinq mesurés à
+  // Paris par `sonde-programmes-paris.cjs`, les seuls qui restaient une fois la
+  // berline chauffée. On compile un feu seul, vers l'écran puis vers la cible
+  // cubique des reflets (qui voit le décor, avec son propre espace de couleur).
+  // ATTENTION À L'ORDRE DES ARGUMENTS dans cette version de three :
+  // `compile(t, camera, n)` compile les matériaux de `t` avec les lumières et
+  // le brouillard de `n`. Mon premier jet passait la scène entière en premier
+  // et recompilait vingt-sept programmes de plus vers la cible des reflets.
+  const chaufferLesFeux = () => {
+    const feu = buildPropMesh(RUE.FEUX);
+    if (!feu) return;
+    const ici = new THREE.Scene();
+    ici.add(feu);
+    const cible = refletsVoiture(), avant = renderer.getRenderTarget();
+    try {
+      renderer.compile(ici, camera, scene);
+      if (cible) { renderer.setRenderTarget(cible); renderer.compile(ici, camera, scene); }
+    } finally { renderer.setRenderTarget(avant); }
+  };
+  const pas = () => {
+    if (chauffe()) { requestAnimationFrame(pas); return; }
+    try { chaufferLesFeux(); } catch (e) { console.warn('chauffe des feux', e); }
+    chauffeFinie = true;
+  };
   requestAnimationFrame(pas);
 
   // LE JEU SE PRÉPARE AVANT « JOUER », ET LE BOUTON ATTEND (v258).
