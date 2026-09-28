@@ -728,7 +728,11 @@ function verifier(nom, ok, detail = '') {
       for (let i = 0; i < 1200; i++) {
         await new Promise((r) => setTimeout(r, 100));
         const v = window.__vehicules;
-        const place = v && v.placeProche(g.player.pos, 5);
+        // `window.__vehicules.placeProche` prend UN RAYON : la position est
+        // celle de l'enfant, fournie par la page. Appelé (pos, 5), il prenait
+        // le vecteur pour rayon, `d > rayon` rendait toujours faux, et l'on
+        // cliquait pour une voiture à 139 blocs (v306).
+        const place = v && v.placeProche(5);
         if (!place || place.nom !== 'voiture') continue;
         const avant = v.etat().filter((k) => k.nom === 'voiture').reduce((s, k) => s + k.total, 0);
         document.getElementById('board-btn').click();

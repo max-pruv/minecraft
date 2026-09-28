@@ -932,6 +932,16 @@ temps ; quand on monte dans une voiture, elle change de couleur ». Cinq règles
   dans le message** : une autre voiture entre encore une fois dans celle de
   l'ami, sur les deux codes. Un témoin annonce ce qu'il mesure ; ce qu'il ne
   prouve pas va dans `TASKS.md`, avec ses pistes.
+- **UN RACCOURCI DE PAGE N'A PAS LA SIGNATURE DE LA FONCTION QU'IL ENVELOPPE.**
+  `window.__vehicules.placeProche(rayon)` fournit lui-même la position de
+  l'enfant ; la fumée l'appelait `(g.player.pos, 5)`, comme le vrai
+  `vehicules.placeProche(pos, rayon)`. Le vecteur devenait le rayon, `d > rayon`
+  rendait toujours faux, et le témoin « on prend le volant » cliquait pour la
+  voiture la plus proche DU MONDE — vert pendant des dizaines de versions parce
+  qu'une voiture passait par chance à portée du premier circuit de Paris, rouge
+  le jour où Paris doublé a déplacé ce circuit. Une sonde (`place.d` = 139 pour
+  un rayon de 5) l'a dit en une exécution. Devant un appel à `window.__…`, on
+  lit la ligne qui l'expose, jamais la fonction qu'on croit derrière.
 
 ## Le son robotique de la visio (v304) — le contexte audio suit le mode de la tablette
 
