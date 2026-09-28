@@ -1995,7 +1995,11 @@ export const DATE_RELEVE_PARIS = Date.UTC(2026, 8, 27, 4, 0, 0);
 // C'est la règle de la v303 (« dans le doute, le travail de l'enfant
 // l'emporte »), qui gardait l'ANCIENNE ville sous ces colonnes : Paris doublé
 // déplace tout, l'ancienne ville n'a plus de place où se garder.
-export const DATE_PARIS_DOUBLE = Date.UTC(2026, 8, 27, 16, 0, 0);
+// La date est celle de la PUBLICATION, relevée sur le journal de bord : la
+// dernière tablette sur la v302 a fermé à 19 h 21 UTC le 27 ; une date plus
+// tôt (le 27 à 16 h, celle du premier jet) aurait laissé à leur place les
+// blocs posés sur l'ancienne carte cet après-midi-là.
+export const DATE_PARIS_DOUBLE = Date.UTC(2026, 8, 28, 0, 10, 0);
 const cleColonneParis = (x, z) => x * 262144 + z;
 function dansParisCede(x, z, t) {
   return t <= DATE_PARIS_DOUBLE && (x - PARIS.x) * (x - PARIS.x) + (z - PARIS.z) * (z - PARIS.z) <= PARIS.r * PARIS.r;
