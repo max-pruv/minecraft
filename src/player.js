@@ -347,6 +347,18 @@ export class Player {
     );
   }
 
+  // LE TOIT DU CIEL SE TIENT SUR LE PAS, PAS SUR LA POSITION (v309). On ne
+  // bornait la vitesse qu'une fois le toit ATTEINT : une image lente (un
+  // vingtième de seconde à vingt blocs par seconde) emportait l'enfant d'un
+  // bloc au-dessus — 159 pour un toit à 158, vu au portail. La montée de
+  // l'image se borne donc à ce qui reste jusqu'au toit, quelle que soit la
+  // cadence.
+  sousLeToit(dt) {
+    if (this.vel.y <= 0) return;
+    const reste = PLAFOND_VOL - this.pos.y;
+    this.vel.y = reste <= 0 || !(dt > 0) ? 0 : Math.min(this.vel.y, reste / dt);
+  }
+
   update(dt) {
     const k = this.keys;
     const forward = (k.has('KeyW') ? 1 : 0) - (k.has('KeyS') ? 1 : 0) + this.touchMove.f;
@@ -525,8 +537,8 @@ export class Player {
         || (etat === 'vol' && this.trainVoulu === true);
       this.trainSorti = Math.max(0, Math.min(1,
         this.trainSorti + (trainDehors ? 1 : -1) * dt / TRAIN_SECONDES));
-      // Le ciel a le même toit que pour tout le monde.
-      if (this.pos.y >= PLAFOND_VOL) this.vel.y = Math.min(this.vel.y, 0);
+      // Le ciel a le même toit que pour tout le monde — voir `sousLeToit`.
+      this.sousLeToit(dt);
       const vol = this.vel.clone().multiplyScalar(dt);
       const pas = Math.max(1, Math.ceil(vol.length() / MAX_STEP));
       const vx0 = this.vel.x, vz0 = this.vel.z;
@@ -653,7 +665,7 @@ export class Player {
       // n'existe et où poser un bloc ne fait rien du tout — le jeu finissait
       // par le reposer au sol sans un mot, comme s'il avait triché. On bute
       // désormais contre le plafond, ce qui se comprend tout seul.
-      if (this.pos.y >= PLAFOND_VOL) this.vel.y = Math.min(this.vel.y, 0);
+      this.sousLeToit(dt);
     } else if (this.inWater) {
       this.vel.y -= GRAVITY * 0.25 * dt;
       this.vel.y *= Math.pow(0.02, dt); // heavy drag

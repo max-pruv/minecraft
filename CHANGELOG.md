@@ -20,6 +20,50 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v309 — Les villes engendrées sortent de leur fosse, et le vol ne passe plus le toit du ciel
+
+**Pourquoi.** La v308 avait déclaré ce qu'elle ne pouvait pas faire : une ville
+engendrée aplanit son disque à sa cote et raccordait le pays sur quatorze blocs,
+quel que soit l'écart. Là où le pays est vingt blocs plus haut, cela fait deux
+blocs de dénivelée par bloc — une fosse à gradins que la surface continue ne
+dessine pas. Mesuré, soixante-quatre rayons par ville : **651 rayons sur 15 434
+plus raides qu'un bloc par bloc**, 27 villes à plus d'un huitième (Salvador
+46/64, Jakarta 34, Ushuaïa 33, Bari 32, Busan 29), tous dans le même sens — la
+ville sous son pays. Max : « Fait tout, arrête d'attendre. » Et le portail a
+rendu, sur un témoin qui ne regardait pas la carte, un second défaut : le vol
+dépassait son toit d'un bloc quand une image était lente (159 pour un toit à
+158).
+
+**Ce que ça change.** Hors du disque, le pays ne dépasse plus la cote de la
+ville plus 0,7 bloc par bloc d'éloignement : autour de 149 villes, les gradins
+deviennent une pente qu'on descend en marchant ou en roulant. Le cône ne fait
+qu'abaisser, et seulement là où le fondu d'avant était trop raide — une ville
+sur un plateau garde son pays, la mer garde son fond. C'est du RELIEF, donc
+l'invariant 1, sous la forme bornée : 393 000 colonnes abaissées de 21 blocs au
+plus, jusqu'à 64 blocs hors du disque, AUCUNE dans la fenêtre d'empreinte, près
+d'une ville bâtie à la main, d'un aérodrome ou d'un repère — les deux empreintes
+de `plafond.js` n'ont pas bougé. Les blocs posés dans ces couronnes descendent
+avec leur sol, d'un seul tenant (marche 6 → 7 de la migration, appliquée à la
+tablette et à chaque document du nuage), et le nuage est mis à l'abri avant
+(`~avant-fondu-doux`). Ce qui ne suit pas, déclaré : la voie ferrée et ses gares
+près de Barcelone, d'Amsterdam et de Florence descendent d'un bloc avec leur
+profil. Et le vol s'arrête au toit du ciel quelle que soit la cadence.
+
+**Ce qui le prouve.** Cinq témoins neufs dans `plafond.js` et deux dans
+`sauvegarde.js`. Les rayons raides passent de 651 à 2 (barre 65, rouge sur
+`origin/main`) ; le monde de la v308 (`new World({ v308: true })`), contre lequel
+la migration juge, rend au bloc près le relief de la production autour de cinq
+villes touchées (empreinte relevée sur `origin/main`) ; le cône n'a fait
+qu'abaisser, seulement dans la couronne ; une maison de la couronne de Salvador
+descend de quatre blocs d'un seul tenant, le reste ne bouge pas, la marche est
+idempotente et la chaîne entière rend la même chose ; aucune couronne n'atteint
+ce que les enfants ont bâti (la plus proche, Bruxelles, à 939 blocs) ; une
+cabane reçue du nuage arrive sur le sol neuf sans fantôme, et la copie d'avant
+est écrite. Le témoin du seuil des villes de la v308 passe de 14,5 % à 4,0 % de
+rayons à marche. Le toit du vol : le témoin existant (« on ne sort plus du monde
+par le haut »), rouge au portail sur une image lente, se tient désormais par
+construction.
+
 ## v308 — Le raccord ville/campagne : on sort d'une ville sans marche
 
 **Pourquoi.** Max : « Improve all cities ». Le kit v4 place le raccord

@@ -169,26 +169,41 @@
   à `cote` — jusqu'à un bloc au-dessus : une mesure, pas un réglage. (8) Le
   demi-tour du train aux terminus reste une diagonale entre les deux voies
   (`traceSegment`) ; le kit demande un tiroir ou un retournement.
-- [ ] **LE FONDU RAIDE AU BORD DES VILLES (v308) — DÉCISION DE MAX.** Une
-  ville engendrée aplanit son disque à sa cote (`f.sol`, 33 le plus souvent)
-  et raccorde le pays sur QUATORZE blocs hors du disque (`hauteurVillesMonde`).
-  Quand le pays est dix-huit à vingt-huit blocs plus haut, ce fondu fait plus
-  d'un bloc par bloc : des marches de deux, que la surface continue ne dessine
-  pas (`MARCHE_MAX`), et la ville est au fond d'une fosse à gradins. Mesuré,
-  64 rayons par ville : 653 rayons sur 15 434 au-delà d'un bloc par bloc,
-  27 villes à plus d'un huitième (Salvador 46/64, Jakarta 34, Ushuaïa 33,
-  Bari 32, Busan 29…). Le remède est un fondu proportionnel à l'écart (un
-  bloc par bloc au plus, 0,7 visé) : il déplace le relief HORS du disque, sur
-  une couronne de quatorze à quarante blocs — invariant 1, donc décision de
-  Max, avec la forme bornée (double empreinte, découpe hors villes élargie à
-  la couronne, migration des blocs posés dans la couronne, ≤ 24 blocs).
+- [x] **LE FONDU RAIDE AU BORD DES VILLES (v308) — FAIT EN v309** (« Fait
+  tout »). Cône de pente 0,7 hors du disque, qui n'abaisse que : 651 rayons
+  raides → 2 (les deux sont des villes AU-DESSUS de leur pays, que le cône ne
+  relève pas, à dessein). Seuils à marche de la v308 : 14,5 % → 4,0 %.
+- [ ] **LE PORTAIL DE LA v309, DOUBLE MESURE (règle de la v195).** Rouges au
+  portail, rejoués SEULS : `monte.js` sur la branche → 3 rouges (un train
+  Eurostar qui traverse la voiture, 12 relevés « dedans » ; l'écran figé en
+  arrivant sur une ville, 76 % d'images au-delà de 300 ms ; le vol d'une
+  demi-minute, 422 blocs pour une borne à 500) ; sur `origin/main` → 3 rouges
+  (compilation à l'arrivée à Paris, 3 programmes neufs ; écran figé, 81 % ;
+  vol, 466 blocs). Les deux derniers sont identiques des deux côtés : ce sont
+  des défauts de production, et le vol mesure la CADENCE (30 s d'horloge, `dt`
+  borné) — à reformuler en blocs de jeu, comme la v224 l'a fait pour la
+  montée. Le train et la compilation vont et viennent d'un côté à l'autre :
+  intermittences (v269). Les trois autres rouges de `monte.js` au portail
+  (monoplace à 9,0 pour < 9, reflets 8 tours pour > 8, réverbère « parcouru
+  0 ») sont VERTS seuls. `washington.js` (la porte de l'îlot, mêmes
+  coordonnées qu'en v250) : vert seul. `maj.js` : le fond de carte (dette
+  ci-dessous, ligne « corps, programmes et fond de carte »). `manhattan.js:282` :
+  dette déclarée (v269).
+- [ ] **LA VOIE FERRÉE NE SUIT PAS LE FONDU DOUX (v309).** Près de Barcelone,
+  d'Amsterdam et de Florence, le profil lissé de la voie (et le quai de leurs
+  gares) descend d'un bloc avec le relief abaissé ; la marche 6 → 7 décale un
+  bloc d'enfant du RELIEF sous sa colonne, pas du quai. Un bloc posé sur l'un de
+  ces trois quais avant la v309 flotte d'un bloc. Remède s'il le faut : une
+  marche qui lit `voieEn`/`gareEn` du monde v308 contre celui d'aujourd'hui.
+- [ ] **LES 2 RAYONS DE VILLE « SUR SON PAYS » (v309).** Le cône ne relève
+  jamais le pays (il inonderait des côtes) : deux rayons restent plus raides
+  qu'un bloc par bloc, ville au-dessus. À mesurer si Max les voit.
 - [ ] **LE KIT v4 VISE LE MONDE ENTIER, PAS PARIS (Max, 27 septembre).** Ce qui
   est intégré au jeu : le sol continu hors villes (v297), l'A1 Paris–Lille
   (v300), le rail continu sur les neuf segments (v302). Ce qui reste, dans
   l'ordre du kit (`transport-v298/README.md`) : (a) le raccord ville/campagne
-  pour TOUTES les villes — FAIT en v308 là où le fondu est à un bloc par bloc
-  au plus (seuils à marche 33,7 % → 14,5 %) ; reste le fondu RAIDE, ligne
-  suivante ; (b) les autres routes interurbaines — le kit propose 23 corridors
+  pour TOUTES les villes — FAIT en v308 et v309 (seuils à marche 33,7 % →
+  14,5 % → 4,0 %, le fondu raide adouci) ; (b) les autres routes interurbaines — le kit propose 23 corridors
   candidats (`examples/road-candidates.json`), à instruire un par un contre
   l'eau, les aérodromes, les repères et les sanctuaires comme l'A1 ; (c) les
   falaises et l'eau (surface rocheuse au lieu de marches, berges) ; (d) les

@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 309,
+    titre: 'Les villes sortent de leur fosse',
+    puces: [
+      'Le pays descend doucement vers les villes',
+      'Plus de gradins autour de Salvador',
+      'Tes maisons suivent le sol',
+      'Le vol ne dépasse plus le ciel',
+    ],
+  },
+  {
     v: 308,
     titre: 'On sort des villes en douceur',
     puces: [

@@ -286,6 +286,10 @@ const EMPREINTE_HORS_VILLES = '2aeceaa10b2009e081d6bdb0a03586ae4022e1fb';
 // (40 401 colonnes) et les blocs de seize morceaux autour de l'ancienne
 // Notre-Dame (253 952 blocs). Elles ne se mettent JAMAIS à jour.
 const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
+// Le relief de la production v308 autour de Salvador, Jakarta, Bari, Busan et
+// Oslo (disque + 80 blocs, un point sur trois), relevé sur `origin/main` :
+// c'est ce que `new World({ v308: true })` doit rendre au bloc près (v309).
+const EMPREINTE_V308_RELIEF = 'e92db9d7ae703856de1cfb7e00dc4abce156c490';
 const EMPREINTE_AVANT_BLOCS = 'b402b639d759d0586f32149aac4d3165edf0d10d';
 
 // La marge de fondu que le terrain applique autour d'une ville : au-delà, plus
@@ -974,6 +978,126 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   verifier('et le nouveau Paris ne bâtit pas d\'immeuble sur ce qu\'un enfant avait bâti — mais bâtit sous ce qu\'on pose après',
     !double.absent && double.bati === 0 && double.lotBati,
     double.absent ? 'Paris n\'a pas doublé' : `autour de la maison : ${double.bati} bloc(s) de ville · lot après la date bâti : ${double.lotBati}`);
+
+  // --- LE FONDU DOUX DES VILLES (v309) : le pays descend à un bloc par bloc --
+  // --- au plus, le monde d'avant reste celui de la production, un bloc suit --
+  //
+  // Quatre choses, sous node.
+  //  1. La dette de la v308, mesurée comme elle l'a été : soixante-quatre
+  //     rayons par ville, du bord du disque à quinze blocs dehors ; ROUGE sur
+  //     `origin/main` (651 rayons plus raides qu'un bloc par bloc).
+  //  2. Le monde de la v308 (`new World({ v308: true })`), contre lequel la
+  //     marche 6 → 7 juge les blocs d'avant, rend au bloc près le relief de la
+  //     production autour de cinq villes touchées (empreinte relevée sur
+  //     `origin/main`).
+  //  3. Le cône n'a fait qu'ABAISSER, et seulement dans la couronne : jamais
+  //     dans un disque, jamais au-delà de `FONDU_PORTEE`, jamais plus de
+  //     vingt-quatre blocs (`ECART_MAX` de la migration).
+  //  4. La marche 6 → 7 : une maison posée au sol dans la couronne de Salvador
+  //     descend avec son sol d'un seul tenant ; un bloc posé après la date, un
+  //     bloc dans le disque et un bloc au point d'apparition ne bougent pas ; la
+  //     position de l'enfant suit ; elle est idempotente, et la chaîne entière
+  //     dans l'ordre de `sync.js` rend la même chose.
+  //  Et le cône n'atteint aucun des endroits où les enfants ont bâti.
+  const fondu = await (async () => {
+    const W = await import('../src/world.js');
+    const VM = await import('../src/villesmonde.js');
+    let raides = 0, rayons = 0;
+    for (const f of VILLES_MONDE) for (let k = 0; k < 64; k++) {
+      const a = 2 * Math.PI * k / 64;
+      const hIn = w.terrainHeight(Math.round(f.ancre.x + Math.cos(a) * (f.rayon - 1)), Math.round(f.ancre.z + Math.sin(a) * (f.rayon - 1)));
+      const hOut = w.terrainHeight(Math.round(f.ancre.x + Math.cos(a) * (f.rayon + 15)), Math.round(f.ancre.z + Math.sin(a) * (f.rayon + 15)));
+      if (hOut < 29 || hIn < 29) continue;
+      rayons++;
+      if (Math.abs(hOut - hIn) / 15 > 1) raides++;
+    }
+    if (!W.migrerFonduDoux || !VM.FONDU_PORTEE) return { absent: true, raides, rayons };
+    const v8 = new W.World({ v308: true }), nf = new W.World();
+    // 2. le monde de la v308, contre la production
+    const rel = [];
+    for (const cle of ['salvador', 'jakarta', 'bari', 'busan', 'oslo']) {
+      const f = VILLES_MONDE.find((v) => v.cle === cle);
+      for (let x = Math.round(f.ancre.x - f.rayon - 80); x <= f.ancre.x + f.rayon + 80; x += 3)
+        for (let z = Math.round(f.ancre.z - f.rayon - 80); z <= f.ancre.z + f.rayon + 80; z += 3) rel.push(v8.terrainHeight(x, z));
+    }
+    const hRel = createHash('sha1').update(rel.join(',')).digest('hex');
+    // 3. seulement abaisser, seulement dans la couronne
+    const fautes = [];
+    let abaissees = 0, pire = 0;
+    for (const f of VILLES_MONDE) for (let k = 0; k < 90; k++) {
+      const a = k * 2.399, d = f.rayon - 30 + (k * 7) % (VM.FONDU_PORTEE + 60);
+      const x = Math.round(f.ancre.x + Math.cos(a) * d), z = Math.round(f.ancre.z + Math.sin(a) * d);
+      const h8 = v8.terrainHeight(x, z), h9 = nf.terrainHeight(x, z);
+      if (h9 === h8) continue;
+      abaissees++; pire = Math.max(pire, h8 - h9);
+      const dd = Math.hypot(x - f.ancre.x, z - f.ancre.z);
+      if (h9 > h8 || h8 - h9 > 24 || !VM.aPorteeDuFondu(x, z) || VILLES_MONDE.some((g) => Math.hypot(x - g.ancre.x, z - g.ancre.z) <= g.rayon)) {
+        if (fautes.length < 4) fautes.push({ x, z, h8, h9, dd: Math.round(dd - f.rayon) });
+      }
+    }
+    // 4. la marche 6 → 7, sur un document fabriqué
+    const sal = VILLES_MONDE.find((v) => v.cle === 'salvador');
+    let site = null;
+    for (let k = 0; k < 64 && !site; k++) {
+      const a = 2 * Math.PI * k / 64;
+      for (let d = sal.rayon + 4; d <= sal.rayon + 30 && !site; d += 2) {
+        const x = Math.round(sal.ancre.x + Math.cos(a) * d), z = Math.round(sal.ancre.z + Math.sin(a) * d);
+        let ok = true, ga = null, gn = null;
+        for (let dx = 0; dx < 3 && ok; dx++) for (let dz = 0; dz < 3 && ok; dz++) {
+          const a8 = v8.terrainHeight(x + dx, z + dz), a9 = nf.terrainHeight(x + dx, z + dz);
+          if (dx === 1 && dz === 1) { ga = a8; gn = a9; }
+          if (a8 - a9 < 4) ok = false;
+        }
+        if (ok) site = { x, z, ga, gn };
+      }
+    }
+    if (!site) return { absent: false, raides, rayons, hRel, abaissees, pire, fautes, site: null };
+    const t = W.DATE_FONDU_DOUX - 86400000;
+    const doc = { local: {} };
+    const L0 = doc.local;
+    for (let dx = 0; dx < 3; dx++) for (let dz = 0; dz < 3; dz++) for (let dy = 1; dy <= 3; dy++) L0[`${site.x + dx},${site.ga + dy},${site.z + dz}`] = [5, t];
+    L0[`${site.x},${site.ga + 12},${site.z}`] = [7, W.DATE_FONDU_DOUX + 1000];       // après la date
+    const hc = v8.terrainHeight(sal.ancre.x, sal.ancre.z);
+    L0[`${sal.ancre.x},${hc + 1},${sal.ancre.z}`] = [6, t];                           // dans le disque
+    L0['10,40,10'] = [6, t];                                                          // au point d'apparition
+    const un = W.migrerBlocsFonduDoux(doc), deux = W.migrerBlocsFonduDoux(un.tout);
+    const L = un.tout.local;
+    const maison = Object.keys(L).filter((k) => L[k][0] === 5).map((k) => k.split(',').map(Number));
+    const dy = nf.terrainHeight(site.x + 1, site.z + 1) - site.ga;
+    const bas = maison.length ? Math.min(...maison.map((p) => p[1])) : null;
+    const pos = W.migrerPositionsFonduDoux({ local: { x: site.x + 1.5, y: site.ga + 1, z: site.z + 1.5, t } }).pos.local;
+    const chaine = W.migrerBlocsFonduDoux(W.migrerBlocsParisDouble(W.menagerBlocsCielParis(W.releverBlocsToitsParis(W.migrerBlocsCarte3(doc).tout).tout).tout).tout).tout.local;
+    return {
+      absent: false, raides, rayons, hRel, abaissees, pire, fautes, site,
+      maison: maison.length === 27 && maison.every((p) => L[p.join(',')][1] === W.DATE_FONDU_DOUX) && bas === site.ga + 1 + dy,
+      bas, dy,
+      reste: !!L[`${site.x},${site.ga + 12},${site.z}`] && !!L[`${sal.ancre.x},${hc + 1},${sal.ancre.z}`] && !!L['10,40,10'],
+      pos: Math.abs(pos.y - (site.ga + 1 + dy)) < 1e-9,
+      idempotent: deux.deplaces === 0 && JSON.stringify(deux.tout) === JSON.stringify(un.tout),
+      chaine: JSON.stringify(chaine) === JSON.stringify(L),
+      bilan: `${un.deplaces} déplacé(s), ${un.laisses} laissé(s)`,
+    };
+  })();
+  verifier('autour des villes engendrées, le pays descend à un bloc par bloc au plus — plus de fosse à gradins',
+    fondu.raides < 65,
+    `${fondu.raides} rayon(s) raide(s) sur ${fondu.rayons} (651 sur origin/main)`);
+  verifier('le monde de la v308 est, au bloc près, celui de la production',
+    !fondu.absent && fondu.hRel === EMPREINTE_V308_RELIEF,
+    fondu.absent ? 'pas de fondu doux' : `relief ${fondu.hRel.slice(0, 12)}`);
+  verifier('le fondu doux n\'a fait qu\'abaisser, et seulement dans la couronne des villes',
+    !fondu.absent && fondu.fautes.length === 0 && fondu.abaissees > 0 && fondu.pire <= 24,
+    fondu.absent ? 'pas de fondu doux' : `${fondu.abaissees} colonne(s) abaissée(s) sur l'échantillon, ${fondu.pire} bloc(s) au plus · ${JSON.stringify(fondu.fautes)}`);
+  verifier('une maison posée dans la couronne de Salvador descend avec son sol, d\'un seul tenant — et rien d\'autre ne bouge',
+    !fondu.absent && !!fondu.site && fondu.maison && fondu.reste && fondu.pos && fondu.idempotent && fondu.chaine,
+    fondu.absent ? 'pas de fondu doux' : JSON.stringify({ ...fondu, fautes: undefined }));
+  {
+    const VMf = await import('../src/villesmonde.js');
+    const portee = VMf.FONDU_PORTEE || 14;
+    const pres = VILLES_MONDE.map((f) => ({ cle: f.cle, marge: Math.round(Math.min(...SANCTUAIRES_PLUS.map(([, x, z, r]) =>
+      Math.hypot(f.ancre.x - x, f.ancre.z - z) - f.rayon - portee - r))) })).sort((p1, p2) => p1.marge - p2.marge);
+    verifier('et le fondu doux n\'atteint rien de ce que les enfants ont bâti',
+      pres[0].marge > 0, `la couronne la plus proche est celle de ${pres[0].cle}, à ${pres[0].marge} blocs`);
+  }
 
   const trop = [];
   for (let x = -700; x <= 700; x += 7) {
