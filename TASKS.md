@@ -2466,7 +2466,10 @@ l'embarquement a eu lieu, pas par une hypothèse.
   ci-dessus, qui dira si la file peut remonter sans les gels.
 
 - [ ] **`maj.js` : « corps, programmes et fond de carte sont vraiment là » —
-  ROUGE DES DEUX CÔTÉS, REJOUÉE SEULE (v267).** Vert jusqu'au portail de la
+  ROUGE DES DEUX CÔTÉS, REJOUÉE SEULE (v267).** Portail de la v308 : rouge
+  (personnages 5/9 à 47 s, carte prête) ; rejouée SEULE, verte sur la branche
+  (9/9, carte prête) et ROUGE sur `origin/main` v307 (8/9, carte absente) —
+  une intermittence de la préparation, pas le raccord. Vert jusqu'au portail de la
   v263, rouge à ceux de la v265, v266 et v267 : c'est donc EN PRODUCTION
   depuis la v265 (le portail de la v264 ne l'a pas jouée). Rejouée SEULE le
   même jour, `maj.js` entière, dans les deux arbres :
