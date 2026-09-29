@@ -2622,6 +2622,22 @@ export class World {
 
   cityAt(x, z) { return this.cityAtParmi(x, z, this.conf.villes); }
 
+  // LE RACCORD VILLE/CAMPAGNE (v308, solcontinu.js) ne touche pas Paris : sa
+  // chaussée a sa couche de sol HD (asphalte, trottoir relevé, marquage),
+  // qu'une surface continue remplacerait par la tuile plate. Mesuré avant de
+  // trancher : sur les morceaux du pourtour, 12 288 colonnes de sol de ville
+  // seraient passées à la surface — un quart, parce que le relief de Paris
+  // rejoint le pays sur les seize derniers blocs DU disque, en pente sur tout
+  // le tour. Et le seuil de Paris n'a pas de marche : ce fondu intérieur finit
+  // à la cote du pays. Le disque est celui du monde (CONF_AVANT a son Paris).
+  raccordInterdit(x, z) {
+    if (this._parisRaccord === undefined) this._parisRaccord = this.conf.villes.find((c) => c.key === 'paris') || null;
+    const c = this._parisRaccord;
+    if (!c) return false;
+    const dx = x - c.x, dz = z - c.z, r = c.r + 2;
+    return dx * dx + dz * dz < r * r;
+  }
+
   // Les villes dont le disque approche ce point à moins de `d` blocs : la
   // liste qu'un morceau garde pour ne poser la question qu'à elles (v297).
   // LA ROUTE SOUS CETTE COLONNE (v300) — `routes.js` répond ; `world.js` ne

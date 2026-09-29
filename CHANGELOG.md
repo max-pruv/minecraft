@@ -20,6 +20,36 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v308 — Le raccord ville/campagne : on sort d'une ville sans marche
+
+**Pourquoi.** Max : « Improve all cities ». Le kit v4 place le raccord
+ville/campagne juste après le rail, pour TOUTE la carte. Mesuré avant d'écrire
+une ligne, sur les 276 villes, 48 rayons chacune, en marchant au dixième de
+bloc de r − 4 à r + 3 : **un seuil de ville sur trois (1 666 sur 5 011) a une
+marche** — la chaussée voxel domine d'un bloc la campagne que le sol continu
+(v297) a lissée. Et dans les villes à collines (San Francisco, Rio, Le Cap), la
+rue en pente descend par marches d'un bloc.
+
+**Ce que ça change.** Le sol d'une ville — chaussée, trottoir, pavé, marquage,
+granit, square — rejoint la surface continue là où le relief change d'un ou deux
+blocs, sur deux rangs de part et d'autre du ressaut : la marche du seuil devient
+une pente, et une rue de colline devient une rampe. Sur le plat, la rue reste en
+voxel (son ombre au pied des murs, ses marquages calés sur le bloc). Paris ne
+change pas : sa chaussée a sa couche de sol HD, et son seuil n'avait pas de
+marche. Rien n'est écrit, le relief ne bouge pas (les deux empreintes de
+`plafond.js` sont intactes), un bloc posé sur la rue la rend au voxel comme
+partout.
+
+**Ce qui le prouve.** Trois témoins neufs dans `plafond.js`, dont deux rouges
+sur `origin/main` : le seuil des villes (33,7 % des rayons à marche → 14,5 %, à
+24 rayons ; barre 23 %), le seuil de Vilnius parcouru sur la surface continue
+(16 points sans surface → 0), et une rue à plat qui reste en voxel (0 colonne
+sur 1 624, vert des deux côtés à dessein : il garde la borne de la règle).
+Captures avant/après au seuil de Vilnius et de Koweït. Ce qui reste, déclaré :
+les seuils où le fondu est plus raide qu'un bloc par bloc (4 % des rayons, 129
+marches de deux blocs, Salvador, Bari, Jakarta…) — les adoucir déplace le
+relief hors des villes, c'est une décision de Max.
+
 ## v307 — Les rues du monde à la règle du kit, pas seulement celles de Paris
 
 **Pourquoi.** Max : « Pourquoi tu n'as pas fait le reste du monde ? » Son kit

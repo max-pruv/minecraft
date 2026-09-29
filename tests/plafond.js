@@ -1071,9 +1071,85 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     verifier('le voxel d\'avant se rejoue à la demande (?solcontinu=0), pour mesurer — pas une cellule, le voxel décide',
       voxel.cellulesSol === 0 && voxelContact === null, `${voxel.cellulesSol} cellule(s), contact ${voxelContact}`);
     const paris = buildChunkTampons(w, Math.floor(-240 / CHUNK), Math.floor(200 / CHUNK));
-    verifier('et dans une ville, rien ne change : pas une cellule, le voxel décide',
+    verifier('et dans Paris, rien ne change : pas une cellule, le voxel décide (sa couche de sol HD)',
       paris.cellulesSol === 0 && w.solContinu(-239.5, 200.5) === null && !w.blocSousLaSurface(-240, w.terrainHeight(-240, 200), 200),
       `Paris ${paris.cellulesSol} cellule(s)`);
+    // LE RACCORD VILLE/CAMPAGNE (v308). Au bord du disque d'une ville, la
+    // chaussée voxel dominait d'un bloc la campagne lissée : un mur d'un bloc
+    // pour sortir de la ville, sur un rayon sur trois. On mesure ce que
+    // l'enfant rencontre en MARCHANT : la hauteur où l'on pose le pied (la
+    // surface continue ou le dessus du cube que rien ne tait), tous les
+    // dixièmes de bloc, de r − 4 à r + 3, sur toutes les villes. Un seuil
+    // traversé par un bâtiment ou par l'eau n'est pas un seuil de sol, il ne
+    // compte pas. Mesuré : 1 666 rayons à marche sur 5 011 avant (33 %), 695
+    // après (14 %), à 48 rayons ; les marches de deux blocs (le fondu trop
+    // raide, 129) ne bougent pas, et c'est déclaré. La barre est au milieu.
+    {
+      const { VILLES_MONDE } = await import('../src/villesmonde.js');
+      const pied = (x, z) => {
+        const bx = Math.floor(x), bz = Math.floor(z);
+        const h = w.terrainHeight(bx, bz), s = w.sommetColonne(bx, bz);
+        if (s - h >= 1 || s < 29) return null;
+        const sc = w.solContinu(x, z);
+        const cube = w.blocSousLaSurface(bx, s, bz) ? -Infinity : s + 1;
+        return Math.max(sc === null ? -Infinity : sc, cube);
+      };
+      const villes = [...w.conf.villes.map((c) => ({ x: c.x, z: c.z, r: c.r })),
+        ...VILLES_MONDE.map((f) => ({ x: f.ancre.x, z: f.ancre.z, r: f.rayon }))];
+      let rayons = 0, marches = 0, murs = 0;
+      for (const c of villes) for (let k = 0; k < 24; k++) {
+        const a = 2 * Math.PI * (k + 0.37) / 24, ux = Math.cos(a), uz = Math.sin(a);
+        let prev = null, pire = 0, trou = false;
+        for (let d = c.r - 4; d <= c.r + 3; d += 0.1) {
+          const y = pied(c.x + ux * d, c.z + uz * d);
+          if (y === null) { trou = true; break; }
+          if (prev !== null) pire = Math.max(pire, Math.abs(y - prev));
+          prev = y;
+        }
+        if (trou) continue;
+        rayons++;
+        if (pire >= 0.5) marches++;
+        if (pire >= 1.5) murs++;
+      }
+      verifier('on sort d\'une ville sans marche : au seuil du disque, la chaussée rejoint la campagne en pente',
+        rayons > 1000 && marches / rayons < 0.23,
+        `${marches} seuil(s) à marche sur ${rayons} (${(100 * marches / rayons).toFixed(1)} %), dont ${murs} de deux blocs ou plus`);
+      // le seuil de Vilnius, relevé à la sonde : sur `origin/main` la
+      // chaussée est un bloc au-dessus de l'herbe, et le contact rend `null`
+      // en ville — le voxel décide, marche comprise
+      const f = VILLES_MONDE.find((v) => (v.cle || v.nom) === 'vilnius');
+      const a = 3.19, ux = Math.cos(a), uz = Math.sin(a);
+      let nuls = 0, saut = 0, prev = null, pas = 0;
+      // de r − 2 (le raccord : deux rangs de part et d'autre du ressaut ; en deçà
+      // la rue est à plat et reste en voxel, à la même cote) à r + 4
+      for (let d = f.rayon - 2; d <= f.rayon + 4; d += 0.1) {
+        const sc = w.solContinu(f.ancre.x + ux * d, f.ancre.z + uz * d);
+        pas++;
+        if (sc === null) { nuls++; prev = null; continue; }
+        if (prev !== null) saut = Math.max(saut, Math.abs(sc - prev));
+        prev = sc;
+      }
+      verifier('au seuil de Vilnius, le pied passe de l\'herbe à la chaussée sur la surface continue',
+        nuls === 0 && saut < 0.2, `${nuls} point(s) sans surface sur ${pas}, plus grand écart d'un dixième de bloc à l'autre ${saut.toFixed(2)}`);
+      // et le raccord ne vaut QUE là où le relief change : une rue à plat
+      // reste en voxel (son occlusion au pied des murs, ses marquages calés
+      // sur le bloc). Le centre de Dallas est plat ; vert des deux côtés à
+      // dessein, il garde la borne de la règle.
+      const { SOL_VILLE } = await import('../src/solcontinu.js').catch(() => ({}));
+      const dal = VILLES_MONDE.find((v) => (v.cle || v.nom) === 'dallas');
+      let plats = 0, plateRaccordee = 0;
+      for (let dz = -24; dz <= 24; dz++) for (let dx = -24; dx <= 24; dx++) {
+        const x = Math.round(dal.ancre.x) + dx, z = Math.round(dal.ancre.z) + dz;
+        const h = w.terrainHeight(x, z);
+        let plat = true;
+        for (let j = -2; j <= 2 && plat; j++) for (let i = -2; i <= 2; i++) if (w.terrainHeight(x + i, z + j) !== h) { plat = false; break; }
+        if (!plat || (SOL_VILLE && !SOL_VILLE.has(w.getBlock(x, h, z)))) continue;
+        plats++;
+        if (w.ficheMemo(x, z).nat) plateRaccordee++;
+      }
+      verifier('une rue à plat reste en voxel : le raccord ne touche que le sol en pente',
+        plats > 200 && plateRaccordee === 0, `${plateRaccordee} colonne(s) de rue à plat passée(s) à la surface sur ${plats}`);
+    }
     // ce que la surface coûte au mailleur : médiane de neuf passages alternés
     const med = (a) => { const b = [...a].sort((p, q) => p - q); return b[b.length >> 1]; };
     const avec = [], sans = [];
