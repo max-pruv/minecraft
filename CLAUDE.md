@@ -789,7 +789,11 @@ dessinée. Quatre règles.
 - **UNE ENTRÉE SE TERMINE SUR UNE VOIE NOMMÉE, JAMAIS SUR UN LIEU.** Mon
   premier jet visait Euralille, et l'avenue finissait dans la tour de Lille.
   Un lieu porte souvent un monument ; un carrefour de deux voies nommées,
-  jamais.
+  jamais. **Et le témoin qui le garde lit les BLOCS à hauteur de
+  carrosserie, pas la boîte du repère** : ma première version accusait
+  l'entrée de l'A1, qui finit sur la rue du pourtour de la Porte de Paris (le
+  socle plein fait ±3, la boîte ±7) — la leçon de la v223, que j'avais écrite
+  moi-même, oubliée le jour où j'ai écrit un témoin neuf.
 - **UNE LISTE QUI N'AVAIT QU'UN ÉLÉMENT CACHE UN `[0]`.** `main.js` prenait la
   première entrée de chaque ville : juste tant que chaque ville avait une
   route, faux dès la deuxième. Quand on ajoute le second élément d'une liste,

@@ -577,23 +577,27 @@ const VRAIES_KM = [
       out.convoiE429 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'E429') || null;
       // LES ENTRÉES DE VILLE ÉVITENT LES MONUMENTS (v310) : l'avenue d'entrée
       // de l'E429 à Lille visait d'abord Euralille et finissait dans la tour
-      // de Lille. Chaque entrée publiée (`entreesDe`) mène quelque part : on
-      // lit, le long de l'avenue d'entrée de Lille, qu'aucun point n'est dans
-      // l'emprise d'un repère, et, à Bruxelles, qu'elle arrive sur la rue de
-      // l'axe (de la chaussée sur les trente blocs qui suivent le port).
+      // de Lille. On lit, le long de chaque avenue d'entrée de Lille, les BLOCS
+      // à hauteur de carrosserie (deux blocs au-dessus de la cote roulable) —
+      // pas la boîte déclarée du repère : mon premier témoin accusait l'entrée
+      // de l'A1, qui finit à 5,2 blocs du centre de la Porte de Paris, sur la
+      // rue de son pourtour, quand le socle plein ne fait que ±3 (la leçon de
+      // la v223 : on mesure le bloc que pose le bâtisseur). Rejoué sur le
+      // premier jet : un bloc de la tour en (86, −863). Et à Bruxelles, on lit
+      // que l'entrée arrive sur la rue de l'axe (trente blocs de chaussée).
       try {
         const L = await import('./src/lille.js');
-        const W = await import('./src/world.js');
         const ents = m.entreesDe('lille'), E = L.ENTREES_LILLE || [];
         out.entreesLille = ents.map((e, i) => {
           const pts = E[i] || [];
-          let dans = null;
+          let dans = null, vus = 0;
           for (let k = 0; k + 1 < pts.length && !dans; k++) for (let t = 0; t <= 1; t += 0.02) {
-            const x = pts[k][0] + (pts[k + 1][0] - pts[k][0]) * t, z = pts[k][1] + (pts[k + 1][1] - pts[k][1]) * t;
-            const r = W.REPERES.find((q) => Math.abs(x - q.x) < (q.box || 8) && Math.abs(z - q.z) < (q.box || 8));
-            if (r) { dans = r.name; break; }
+            const X = Math.floor(pts[k][0] + (pts[k + 1][0] - pts[k][0]) * t), Z = Math.floor(pts[k][1] + (pts[k + 1][1] - pts[k][1]) * t);
+            if (m.routeEn(X, Z)) continue;                     // le corridor a sa propre cote
+            const h = w.coteRoulable(X, Z); vus++;
+            if (w.isSolid(X, h + 1, Z) || w.isSolid(X, h + 2, Z)) { dans = [X, Z, w.getBlock(X, h + 1, Z)]; break; }
           }
-          return { route: e.route, dans };
+          return { route: e.route, dans, vus };
         });
         const VM = await import('./src/villesmonde.js');
         const f = VM.VILLES_MONDE.find((v) => v.cle === 'bruxelles'), eb = m.entreesDe('bruxelles')[0];
@@ -635,7 +639,7 @@ const VRAIES_KM = [
       !a1.absent && a1.segments >= 2 && !!a1.convoiE429 && a1.convoiE429.routier && (a1.convoiE429.modeles || []).length >= 10,
       JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiE429 ? { nom: a1.convoiE429.nom, voitures: (a1.convoiE429.modeles || []).length } : 'aucun convoi E429' }));
     verifier('et ses entrées de ville ne traversent aucun monument, et arrivent sur une rue',
-      !a1.absent && !a1.entreesErreur && (a1.entreesLille || []).length >= 2 && a1.entreesLille.every((e) => !e.dans)
+      !a1.absent && !a1.entreesErreur && (a1.entreesLille || []).length >= 2 && a1.entreesLille.every((e) => !e.dans && e.vus > 20)
       && !!a1.entreeBruxelles && a1.entreeBruxelles.rue >= a1.entreeBruxelles.n * 0.7,
       JSON.stringify(a1.absent ? a1 : { lille: a1.entreesLille, bruxelles: a1.entreeBruxelles, erreur: a1.entreesErreur }));
 
