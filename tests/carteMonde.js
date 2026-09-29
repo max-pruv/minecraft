@@ -574,6 +574,36 @@ const VRAIES_KM = [
       out.sanct = Math.round(out.sanct);
       out.contactMax = +out.contactMax.toFixed(2);
       out.convoi = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A1') || null;
+      out.convoiE429 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'E429') || null;
+      // LES ENTRÉES DE VILLE ÉVITENT LES MONUMENTS (v310) : l'avenue d'entrée
+      // de l'E429 à Lille visait d'abord Euralille et finissait dans la tour
+      // de Lille. Chaque entrée publiée (`entreesDe`) mène quelque part : on
+      // lit, le long de l'avenue d'entrée de Lille, qu'aucun point n'est dans
+      // l'emprise d'un repère, et, à Bruxelles, qu'elle arrive sur la rue de
+      // l'axe (de la chaussée sur les trente blocs qui suivent le port).
+      try {
+        const L = await import('./src/lille.js');
+        const W = await import('./src/world.js');
+        const ents = m.entreesDe('lille'), E = L.ENTREES_LILLE || [];
+        out.entreesLille = ents.map((e, i) => {
+          const pts = E[i] || [];
+          let dans = null;
+          for (let k = 0; k + 1 < pts.length && !dans; k++) for (let t = 0; t <= 1; t += 0.02) {
+            const x = pts[k][0] + (pts[k + 1][0] - pts[k][0]) * t, z = pts[k][1] + (pts[k + 1][1] - pts[k][1]) * t;
+            const r = W.REPERES.find((q) => Math.abs(x - q.x) < (q.box || 8) && Math.abs(z - q.z) < (q.box || 8));
+            if (r) { dans = r.name; break; }
+          }
+          return { route: e.route, dans };
+        });
+        const VM = await import('./src/villesmonde.js');
+        const f = VM.VILLES_MONDE.find((v) => v.cle === 'bruxelles'), eb = m.entreesDe('bruxelles')[0];
+        if (f && eb) {
+          const dx = f.ancre.x - eb.x, dz = f.ancre.z - eb.z, l = Math.hypot(dx, dz);
+          let rue = 0, n = 0;
+          for (let d = 0; d <= 30; d += 2) { n++; const v = VM.solVillesMonde(Math.round(eb.x + dx / l * d), Math.round(eb.z + dz / l * d)); if (v !== null && v !== 'lot') rue++; }
+          out.entreeBruxelles = { rue, n };
+        }
+      } catch (e) { out.entreesErreur = String(e); }
       return out;
     });
     verifier('la route Paris–Lille a un profil continu, à six pour cent au plus, épinglé au sol des deux villes',
@@ -597,6 +627,17 @@ const VRAIES_KM = [
     verifier('et des voitures roulent sur l\'A1, de Paris à Lille et retour',
       !a1.absent && !!a1.convoi && a1.convoi.routier && (a1.convoi.modeles || []).length >= 10,
       JSON.stringify(a1.absent ? a1 : (a1.convoi ? { nom: a1.convoi.nom, route: a1.convoi.route, voitures: (a1.convoi.modeles || []).length, visibles: a1.convoi.visibles } : 'aucun convoi de route')));
+
+    // L'E429 (v310) : Lille–Bruxelles, la première autoroute vers une ville
+    // ENGENDRÉE. Ses voitures roulent de l'entrée de Lille (au carrefour
+    // Carnot / Willy-Brandt) jusqu'au centre de Bruxelles, par la rue de l'axe.
+    verifier('l\'E429 relie Lille à Bruxelles, et des voitures y roulent',
+      !a1.absent && a1.segments >= 2 && !!a1.convoiE429 && a1.convoiE429.routier && (a1.convoiE429.modeles || []).length >= 10,
+      JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiE429 ? { nom: a1.convoiE429.nom, voitures: (a1.convoiE429.modeles || []).length } : 'aucun convoi E429' }));
+    verifier('et ses entrées de ville ne traversent aucun monument, et arrivent sur une rue',
+      !a1.absent && !a1.entreesErreur && (a1.entreesLille || []).length >= 2 && a1.entreesLille.every((e) => !e.dans)
+      && !!a1.entreeBruxelles && a1.entreeBruxelles.rue >= a1.entreeBruxelles.n * 0.7,
+      JSON.stringify(a1.absent ? a1 : { lille: a1.entreesLille, bruxelles: a1.entreeBruxelles, erreur: a1.entreesErreur }));
 
     // DE VRAIS RAILS, EN RELIEF, ET DEUX VOIES (v281) ------------------------
     //

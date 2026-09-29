@@ -40,11 +40,11 @@ import { contexteAudio, sortieAudio, reglerSon, sonActif, etatSon, radioEnCours,
 import { traceAnneau } from './ville.js';
 import { traceCourse } from './circuit.js';
 import { USINE, PARC, traceChaine } from './usine.js';
-import { tracesCirculation, tracesCirculationMain } from './villesmonde.js';
+import { tracesCirculation, tracesCirculationMain, VILLES_MONDE } from './villesmonde.js';
 import { createPassants } from './passants.js';
 import { createPoissons } from './poissons.js';
 import { segmentsDeTrain, traceSegment } from './trains.js';
-import { segmentsDeRoute, traceRoute } from './routes.js';
+import { segmentsDeRoute, traceRoute, entreesDe } from './routes.js';
 import { ENTREES_PARIS } from './paris.js';
 import { ENTREES_LILLE } from './lille.js';
 import { Player, raycastBlocks } from './player.js';
@@ -1725,9 +1725,26 @@ function updateChunks() {
   // nommée, à la cote de la ville (`coteRoulable`), et suit le PROFIL de la
   // route entre les deux, jamais un bloc arrondi. Vingt voitures sur mille
   // sept cents blocs : une place ne se fabrique qu'en entrant dans le champ.
+  // UNE VILLE PEUT AVOIR PLUSIEURS ENTRÉES (v310) : Lille reçoit l'A1 au sud et
+  // l'E429 à l'est. `ENTREES_*` suit l'ordre de `entreesDe`, et l'on prend
+  // celle de CETTE route — le `[0]` d'avant aurait fait entrer les voitures de
+  // Bruxelles par la porte de Paris.
   const ENTREES = { paris: ENTREES_PARIS, lille: ENTREES_LILLE };
+  // Une ville ENGENDRÉE n'a pas d'avenue d'entrée dessinée : le corridor y
+  // arrive dans l'axe de sa trame (le point de passage est choisi pour cela),
+  // donc sur la rue qui mène au centre. Les voitures la suivent jusqu'à douze
+  // blocs de l'ancre — la place centrale — puis font demi-tour.
+  const entree = (cle, route) => {
+    const i = entreesDe(cle).findIndex((e) => e.route === route);
+    if (i < 0) return undefined;
+    if (ENTREES[cle]) return ENTREES[cle][i];
+    const f = VILLES_MONDE.find((v) => v.cle === cle), e = entreesDe(cle)[i];
+    if (!f) return undefined;
+    const dx = f.ancre.x - e.x, dz = f.ancre.z - e.z, l = Math.hypot(dx, dz) || 1, k = Math.max(0, (l - 12) / l);
+    return [[e.x, e.z], [e.x + dx * k, e.z + dz * k]];
+  };
   for (const seg of segmentsDeRoute()) {
-    const avant = (ENTREES[seg.de] || [])[0], apres = (ENTREES[seg.vers] || [])[0];
+    const avant = entree(seg.de, seg.route.nom), apres = entree(seg.vers, seg.route.nom);
     const pts = traceRoute(seg, { avant, apres, coteDe: (x, z) => world.coteRoulable(x, z) + 1 });
     vehicules.circulation(pts, 41, { ville: seg.de, vitesse: 12, nb: 20, route: seg.route.nom });
   }

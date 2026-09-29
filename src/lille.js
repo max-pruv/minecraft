@@ -287,10 +287,14 @@ export const VOIES_LILLE = [
 
 const VOIES = VOIES_LILLE;
 // L'ENTRÉE DE L'A1 (v300), comme à Paris : du bout du corridor au bout de la
-// rue de Paris, à la Porte de Paris.
+// rue de Paris, à la Porte de Paris. ET CELLE DE L'E429 (v310), qui arrive de
+// Bruxelles par l'est : au carrefour du boulevard Carnot et de l'avenue
+// Willy-Brandt, devant Euralille. Pas à Euralille même — mon premier jet y
+// visait le lieu, et l'avenue finissait DANS la tour de Lille (mesuré : à
+// zéro bloc de son emprise). Une entrée se termine sur une voie nommée.
 const ENTREES = entreesDe('lille').map((e) => ({
   nom: `Entrée ${e.route}`, l: a(1.0), t: TROTTOIR_AV,
-  pts: [[Math.round(e.x - LILLE.x), Math.round(e.z - LILLE.z)], de(0.34375, 0.6875)],
+  pts: [[Math.round(e.x - LILLE.x), Math.round(e.z - LILLE.z)], e.vers === 'bruxelles' ? de(1.3125, -0.75) : de(0.34375, 0.6875)],
 }));
 export const ENTREES_LILLE = ENTREES.map((v) => v.pts.map(([u, w]) => [LILLE.x + u, LILLE.z + w]));
 

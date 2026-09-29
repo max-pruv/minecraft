@@ -770,6 +770,33 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## L'E429 Lille–Bruxelles (v310) — une route vers une ville engendrée arrive dans l'axe de sa trame
+
+Deuxième route du registre, première vers une ville sans avenue d'entrée
+dessinée. Quatre règles.
+
+- **ON INSTRUIT TOUS LES CANDIDATS AVANT D'EN CHOISIR UN.** Les 23 corridors
+  du kit ont été mesurés d'un coup sur l'axe direct (longueur, eau, rail,
+  villes, aérodromes, repères). Le moins cher et le plus utile sortait de la
+  mesure : 409 blocs, rien sur l'axe, et il prolonge l'A1. Le tableau est dans
+  `TASKS.md`, pour les suivants.
+- **UNE VILLE ENGENDRÉE SE REJOINT PAR L'AXE DE SA TRAME.** Elle n'a pas
+  d'avenue d'entrée, mais la rue qui passe par l'ancre va jusqu'au bord. Le
+  point de passage se pose sur cet axe, et la porte tombe alors sur la rue.
+  Et la profondeur de la porte (`bord`, par ville, dans la fiche de la route)
+  se MESURE : à vingt blocs du bord, l'axe de Bruxelles est un anneau de
+  verdure et de lots, où les voitures auraient fini dans un parc.
+- **UNE ENTRÉE SE TERMINE SUR UNE VOIE NOMMÉE, JAMAIS SUR UN LIEU.** Mon
+  premier jet visait Euralille, et l'avenue finissait dans la tour de Lille.
+  Un lieu porte souvent un monument ; un carrefour de deux voies nommées,
+  jamais.
+- **UNE LISTE QUI N'AVAIT QU'UN ÉLÉMENT CACHE UN `[0]`.** `main.js` prenait la
+  première entrée de chaque ville : juste tant que chaque ville avait une
+  route, faux dès la deuxième. Quand on ajoute le second élément d'une liste,
+  on cherche le jour même qui lisait le premier (`grep -n "\[0\]"` autour de
+  la liste). Les témoins de route qui lisent `segmentsDeRoute()[0]` éprouvent
+  l'A1, à dessein ; ceux qui bouclent éprouvent toutes les routes.
+
 ## Le fondu doux (v309) — on mesure dans quel SENS un défaut va avant de choisir le remède
 
 La dette de la v308, remboursée sur « Fait tout ». Quatre règles.
