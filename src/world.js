@@ -2206,7 +2206,11 @@ export function migrerPositionsParisDouble(pos) {
 // près de Barcelone, d'Amsterdam et de Florence descendent d'un bloc avec leur
 // profil lissé, qui n'est pas le relief ; un bloc posé sur un quai de ces trois
 // gares suit le relief, pas le quai.
-export const DATE_FONDU_DOUX = Date.UTC(2026, 8, 29, 15, 0, 0);
+// La date est celle de la FUSION (29 septembre, 14 h UTC), un peu AVANT la
+// publication, jamais après : cette marche se rejoue à chaque fusion du nuage,
+// et une date postérieure déplacerait une seconde fois ce qu'un enfant pose
+// sur le monde neuf entre les deux.
+export const DATE_FONDU_DOUX = Date.UTC(2026, 8, 29, 14, 0, 0);
 let mondeV308 = null, mondeV309 = null;
 const reliefsV308 = new Map(), reliefsV309 = new Map();
 function reliefMemo(cache, monde, x, z) {

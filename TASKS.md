@@ -173,6 +173,22 @@
   tout »). Cône de pente 0,7 hors du disque, qui n'abaisse que : 651 rayons
   raides → 2 (les deux sont des villes AU-DESSUS de leur pays, que le cône ne
   relève pas, à dessein). Seuils à marche de la v308 : 14,5 % → 4,0 %.
+- [ ] **LE PORTAIL DE LA v309, DOUBLE MESURE (règle de la v195).** Rouges au
+  portail, rejoués SEULS : `monte.js` sur la branche → 3 rouges (un train
+  Eurostar qui traverse la voiture, 12 relevés « dedans » ; l'écran figé en
+  arrivant sur une ville, 76 % d'images au-delà de 300 ms ; le vol d'une
+  demi-minute, 422 blocs pour une borne à 500) ; sur `origin/main` → 3 rouges
+  (compilation à l'arrivée à Paris, 3 programmes neufs ; écran figé, 81 % ;
+  vol, 466 blocs). Les deux derniers sont identiques des deux côtés : ce sont
+  des défauts de production, et le vol mesure la CADENCE (30 s d'horloge, `dt`
+  borné) — à reformuler en blocs de jeu, comme la v224 l'a fait pour la
+  montée. Le train et la compilation vont et viennent d'un côté à l'autre :
+  intermittences (v269). Les trois autres rouges de `monte.js` au portail
+  (monoplace à 9,0 pour < 9, reflets 8 tours pour > 8, réverbère « parcouru
+  0 ») sont VERTS seuls. `washington.js` (la porte de l'îlot, mêmes
+  coordonnées qu'en v250) : vert seul. `maj.js` : le fond de carte (dette
+  ci-dessous, ligne « corps, programmes et fond de carte »). `manhattan.js:282` :
+  dette déclarée (v269).
 - [ ] **LA VOIE FERRÉE NE SUIT PAS LE FONDU DOUX (v309).** Près de Barcelone,
   d'Amsterdam et de Florence, le profil lissé de la voie (et le quai de leurs
   gares) descend d'un bloc avec le relief abaissé ; la marche 6 → 7 décale un
