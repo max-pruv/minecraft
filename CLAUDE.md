@@ -78,6 +78,14 @@ travail est irrattrapable.
    posé** (`new World({ avant: true })`, `CONF_AVANT`), et ce monde se prouve
    au bloc près contre la production. Voir « Paris doublé et déplacé (v306) ».
 
+   **Elle a servi une DIXIÈME fois, en v309, pour adoucir le fondu des villes
+   engendrées** — Max : « Fait tout, arrête d'attendre ». Et c'est la forme
+   la plus bornée de toutes : le cône abaisse 393 000 colonnes autour de 149
+   villes, mais AUCUNE dans la fenêtre d'empreinte — les deux empreintes de
+   `plafond.js` sont intactes sans rien déclarer — et le monde d'où l'on part
+   se garde et se prouve (`CONF_V308`, empreinte relevée sur `origin/main`).
+   Voir « Le fondu doux (v309) ».
+
    **Elle a servi une HUITIÈME fois, en v242, pour doubler le monde encore**
    — Max : « la ville de New York touche quasiment Montréal ». Manhattan,
    refaite en v240, est un rectangle de 480 × 2 300 blocs qui laissait 41
@@ -761,6 +769,42 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   la sonde qui distingue les cas » (v223), et cette fois le rouge était sur un
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
+
+## Le fondu doux (v309) — on mesure dans quel SENS un défaut va avant de choisir le remède
+
+La dette de la v308, remboursée sur « Fait tout ». Quatre règles.
+
+- **UN DÉFAUT QUI VA DANS UN SEUL SENS APPELLE UN REMÈDE À SENS UNIQUE.** Sur
+  les 653 rayons raides, 651 étaient une ville SOUS son pays, deux au-dessus.
+  Un fondu symétrique aurait remonté la mer au bord des villes côtières (une
+  rampe dans l'eau, une côte déplacée) pour régler deux rayons. Le cône
+  n'abaisse donc que (`coneDesVilles`, villesmonde.js), et là où le fondu
+  d'avant tenait déjà la pente il ne change rien au bloc près. Les deux
+  rayons restants sont déclarés, pas « à régler plus tard ».
+- **LA PENTE D'UN FONDU EST UN RÉSULTAT, ET ON LE MESURE EN MARCHES, PAS EN
+  COLONNES.** Marches de deux blocs dans la couronne : 46 856 avant ; 22 152 à
+  0,7 ; 23 611 à 0,85 ; 25 311 à 1,0 — le reste est la montagne elle-même, qui
+  en a autant avant qu'après. Compter les colonnes touchées (393 000 contre
+  118 000) aurait choisi 1,0 pour la mauvaise raison : la casse est bornée
+  par la GÉOGRAPHIE (rien dans la fenêtre, rien près des sanctuaires), pas par
+  un nombre.
+- **UNE CONFIGURATION DE MONDE SE FIGE À CHAQUE CASSE, ET LA MARCHE D'AVANT
+  ATTERRIT SUR ELLE.** `CONF_V308` est `CONF_NEUF` sans le fondu doux, figé ;
+  la marche 5 → 6 (Paris doublé) lit désormais le relief de ce monde-là, sinon
+  un bloc emmené par Paris doublé dans une couronne serait décalé une seconde
+  fois par la 6 → 7. **Quand une marche s'ajoute, la précédente cesse de viser
+  « aujourd'hui »** : elle vise le monde où elle a été jouée.
+- **LA DATE D'UNE MARCHE QUI SE REJOUE AU NUAGE NE SE MET PAS EN AVANCE.** Un
+  bloc daté d'avant `DATE_FONDU_DOUX` est déplacé à CHAQUE fusion ; une date
+  postérieure à la publication déplacerait deux fois ce qu'un enfant pose sur
+  le monde neuf entre les deux. Elle s'écrit à l'heure de la fusion, jamais
+  avant d'écrire la PR.
+
+**Et le toit du vol se tient sur le PAS.** On ne bornait la montée qu'une fois
+le toit atteint : une image lente emportait l'enfant d'un bloc au-dessus (159
+pour 158). `sousLeToit` borne la vitesse à ce qui reste jusqu'au toit —
+« un minimum échantillonné est une propriété de la cadence » (v279), côté jeu,
+une fois de plus.
 
 ## Le raccord ville/campagne (v308) — le sol d'une ville rejoint la surface là où le relief change
 

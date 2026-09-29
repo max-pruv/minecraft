@@ -16,7 +16,7 @@
 // comme les autres fusions de ce fichier.
 import { fusionnerGarages } from './garages.js';
 import { migrerBlocsCarte3, migrerPositionsCarte3, menagerBlocsCielParis, releverBlocsToitsParis, releverPositionsParis,
-  migrerBlocsParisDouble, migrerPositionsParisDouble } from './world.js';
+  migrerBlocsParisDouble, migrerPositionsParisDouble, migrerBlocsFonduDoux, migrerPositionsFonduDoux } from './world.js';
 
 const STATE_TS = '_t'; // when the pushing device last wrote this document
 
@@ -58,6 +58,7 @@ const nomAvantCarte3 = (nom) => `${nom}~avant-carte-2`;
 const nomAvantMenage = (nom) => `${nom}~avant-menage-paris`;
 const nomAvantReleve = (nom) => `${nom}~avant-releve-paris`;
 const nomAvantParisDouble = (nom) => `${nom}~avant-paris-double`;
+const nomAvantFonduDoux = (nom) => `${nom}~avant-fondu-doux`;
 
 const MAX_PHOTOS = 8;
 
@@ -334,8 +335,8 @@ export class ProfileSync {
     // touche encore quelque chose (voir `releverToitsParis`, world.js).
     // ET PAR PARIS DOUBLÉ (v306), EN DERNIER : les trois marches d'avant
     // jugent sur le monde où les blocs ont été posés, celle-ci les emmène.
-    const editsRecus = migrerBlocsParisDouble(menagerBlocsCielParis(releverBlocsToitsParis(migrerBlocsCarte3(normalizeEdits(remote.edits)).tout).tout).tout).tout;
-    const posRecues = migrerPositionsParisDouble(releverPositionsParis(migrerPositionsCarte3(remote.pos).pos).pos).pos;
+    const editsRecus = migrerBlocsFonduDoux(migrerBlocsParisDouble(menagerBlocsCielParis(releverBlocsToitsParis(migrerBlocsCarte3(normalizeEdits(remote.edits)).tout).tout).tout).tout).tout;
+    const posRecues = migrerPositionsFonduDoux(migrerPositionsParisDouble(releverPositionsParis(migrerPositionsCarte3(remote.pos).pos).pos).pos).pos;
     out.pos = filtrerParMonde(mergePos(local.pos, posRecues), vivant);
     out.edits = filtrerParMonde(mergeAllEdits(local.edits, editsRecus), vivant);
     // Les garages suivent les blocs : rangés par monde, et emportés quand le
@@ -525,6 +526,28 @@ export class ProfileSync {
     } catch { return 'échec'; }             // réessayé à la lecture suivante
   }
 
+  // LA COPIE D'AVANT LE FONDU DOUX (v309) — même forme : sur le document du
+  // nuage tel qu'il est, une fois, sur son propre document, et seulement si
+  // la marche 6 → 7 a quelque chose à déplacer. Elle migre d'abord les
+  // marches d'avant, parce que c'est APRÈS elles que la 6 → 7 s'applique.
+  async mettreALAbriAvantFonduDoux(nom, remote) {
+    if (this.copieFonduDoux || !remote || !this.cloud.configured) return this.copieFonduDoux || 'rien';
+    const edits = remote.edits;
+    if (!edits || typeof edits !== 'object' || !Object.keys(edits).length) return 'rien à sauver';
+    const avant = migrerBlocsParisDouble(menagerBlocsCielParis(releverBlocsToitsParis(migrerBlocsCarte3(normalizeEdits(edits)).tout).tout).tout).tout;
+    const b = migrerBlocsFonduDoux(avant);
+    if (!b.deplaces) return (this.copieFonduDoux = 'rien à déplacer');
+    try {
+      const deja = await this.cloud.statePull(nomAvantFonduDoux(nom));
+      if (deja && (deja.editsz || deja.edits)) return (this.copieFonduDoux = 'déjà sauvé');
+    } catch { return 'nuage muet'; }        // on ne réécrit pas dans le doute
+    const paquet = await this.resserrer({ edits, pos: remote.pos || {}, fonduDoux: 1, at: Date.now() });
+    try {
+      await this.cloud.statePush(nomAvantFonduDoux(nom), paquet, false);
+      return (this.copieFonduDoux = 'sauvé');
+    } catch { return 'échec'; }             // réessayé à la lecture suivante
+  }
+
   // LA COPIE D'AVANT LE RELEVÉ DES TOITS DE PARIS (v301) — même forme que celle
   // du ménage : sur le document du nuage tel qu'il est, une fois, sur son
   // propre document, et seulement si le relevé a quelque chose à déplacer.
@@ -597,6 +620,7 @@ export class ProfileSync {
     await this.mettreALAbriAvantReleve(name, remote);
     await this.mettreALAbriAvantMenage(name, remote);
     await this.mettreALAbriAvantParisDouble(name, remote);
+    await this.mettreALAbriAvantFonduDoux(name, remote);
     const { state, changed } = this.merge(this.snapshot(), remote);
     this.apply(state);
     // Cette lecture-ci arrive APRÈS que le jeu a chargé son monde depuis le
@@ -630,6 +654,7 @@ export class ProfileSync {
           await this.mettreALAbriAvantReleve(name, remote);
           await this.mettreALAbriAvantMenage(name, remote);
           await this.mettreALAbriAvantParisDouble(name, remote);
+          await this.mettreALAbriAvantFonduDoux(name, remote);
           const { state: merged, changed } = this.merge(local, remote);
           local = merged;
           if (changed) {

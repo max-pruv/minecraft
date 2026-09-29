@@ -40,7 +40,7 @@ import {
   VOIES_LONDRES,
 } from './londres.js';
 import {
-  hauteurVillesMonde, solVillesMonde, batirColonneVillesMonde, mobilierVillesMonde,
+  hauteurVillesMonde, aPorteeDuFondu, solVillesMonde, batirColonneVillesMonde, mobilierVillesMonde,
   pontVillesMonde,
   landmarksVillesMonde, placesVillesMonde, dansVilleMonde,
 } from './villesmonde.js';
@@ -1470,12 +1470,18 @@ function repereAvant(lm) {
 }
 export const CONF_NEUF = {
   cle: 'neuf', villes: CITIES, aeroports: AEROPORTS, gaulois: GAULOIS, volcan: VOLCANO,
-  places: PLACES, reperes: LANDMARKS, hauteurParis, parisAvant: false,
+  places: PLACES, reperes: LANDMARKS, hauteurParis, parisAvant: false, fonduDoux: true,
 };
+// LE MONDE DE LA v306 À LA v308 — celui d'aujourd'hui sans le fondu doux des
+// villes (v309). La marche 6 → 7 juge sur lui ce qui y a été posé, et la marche
+// 5 → 6 y emmène ce qu'elle déplace : c'est là que Paris doublé a été joué. Il
+// ne se met JAMAIS à jour. Même clé que `CONF_NEUF` : ses zones à terre sont
+// les mêmes.
+export const CONF_V308 = { ...CONF_NEUF, fonduDoux: false };
 export const CONF_AVANT = {
   cle: 'avant-v306', villes: CITIES_AVANT, aeroports: AEROPORTS_AVANT_V306, gaulois: GAULOIS_AVANT,
   volcan: VOLCANO_AVANT, places: PLACES_AVANT, reperes: LANDMARKS.map(repereAvant),
-  hauteurParis: PARIS_V302.hauteurParis, parisAvant: true,
+  hauteurParis: PARIS_V302.hauteurParis, parisAvant: true, fonduDoux: false,
 };
 
 // SF painted-lady facades reuse the plain decor blocks (Uni pattern).
@@ -1632,7 +1638,7 @@ export function hauteurBase(x, z, mondeId = 'terre') {
 // la date de la refonte, pour qu'aucune passe ne le redéplace et pour qu'il
 // l'emporte sur sa copie d'avant. C'est la règle du receveur qui cède :
 // l'ancienne version ne peut pas apprendre la règle neuve.
-export const CARTE_VERSION = 6;   // 4 : le ménage du ciel de Paris (v298) ; 5 : les toits de Paris relevés (v301) ; 6 : Paris doublé (v306)
+export const CARTE_VERSION = 7;   // 4 : le ménage du ciel de Paris (v298) ; 5 : les toits de Paris relevés (v301) ; 6 : Paris doublé (v306) ; 7 : le fondu doux des villes (v309)
 const CLE_CARTE = 'web-minecraft-carte-v1';
 const ECART_MAX = 24;          // au-delà, on ne déplace plus : on laisse et on dit
 // L'heure de la refonte ×2. Un bloc daté d'avant a été posé sur la carte de
@@ -2060,7 +2066,10 @@ function reliefNeufV306(x, z) {
   const c = x * 262144 + z;
   let h = reliefsNeufs.get(c);
   if (h === undefined) {
-    h = (mondeNeuf || (mondeNeuf = new World())).terrainHeight(x, z);
+    // Le monde où Paris doublé a été JOUÉ (v306 à v308), pas celui
+    // d'aujourd'hui : le fondu doux de la v309 est la marche suivante, et
+    // l'appliquer ici déplacerait deux fois le même bloc.
+    h = (mondeNeuf || (mondeNeuf = new World({ v308: true }))).terrainHeight(x, z);
     if (reliefsNeufs.size > 200000) reliefsNeufs.clear();
     reliefsNeufs.set(c, h);
   }
@@ -2177,6 +2186,118 @@ export function migrerPositionsParisDouble(pos) {
     const d = destinationV306(x, z, Math.floor(p.y) - 1);
     if (!d || d.jete) continue;
     out[ctx] = { ...p, x: p.x + d.dx, y: p.y + d.dy, z: p.z + d.dz, t: DATE_PARIS_DOUBLE };
+    deplaces++;
+  }
+  return { pos: out, deplaces };
+}
+
+// --- LA MARCHE 6 → 7 : le fondu doux des villes engendrées (v309) -----------
+//
+// Le cône de `hauteurVillesMonde` abaisse le pays autour de 149 villes, de
+// vingt et un blocs au plus. Même règle qu'aux marches d'avant : un groupe de
+// blocs (six voisins) posé avant `DATE_FONDU_DOUX` se décale d'un seul tenant
+// de ce que le relief a bougé sous son point d'ancrage — une maison reste une
+// maison, posée sur le sol qui a descendu sous elle. Jugé sur le monde où il a
+// été posé (`CONF_V308`) contre celui d'aujourd'hui. Hors de portée d'une ville
+// engendrée (`aPorteeDuFondu`), rien n'a bougé : un journal de cent mille
+// blocs n'y paie qu'une recherche dans une case de 512 blocs.
+//
+// Ce que la marche ne suit PAS, et qui se déclare : la voie ferrée et ses gares
+// près de Barcelone, d'Amsterdam et de Florence descendent d'un bloc avec leur
+// profil lissé, qui n'est pas le relief ; un bloc posé sur un quai de ces trois
+// gares suit le relief, pas le quai.
+export const DATE_FONDU_DOUX = Date.UTC(2026, 8, 29, 15, 0, 0);
+let mondeV308 = null, mondeV309 = null;
+const reliefsV308 = new Map(), reliefsV309 = new Map();
+function reliefMemo(cache, monde, x, z) {
+  const c = x * 262144 + z;
+  let h = cache.get(c);
+  if (h === undefined) { h = monde().terrainHeight(x, z); if (cache.size > 200000) cache.clear(); cache.set(c, h); }
+  return h;
+}
+function ecartFonduDoux(x, z) {
+  const a = reliefMemo(reliefsV308, () => mondeV308 || (mondeV308 = new World({ v308: true })), x, z);
+  const b = reliefMemo(reliefsV309, () => mondeV309 || (mondeV309 = new World()), x, z);
+  return b - a;
+}
+
+// Sur UNE carte de blocs. Pure, idempotente par la date ; la carte est rendue
+// telle quelle, sans copie, quand rien ne bouge.
+export function migrerFonduDoux(map) {
+  const cle3 = (x, y, z) => ((x + 131072) * 256 + y) * 262144 + (z + 131072);
+  const candidats = new Map();
+  for (const k in map || {}) {
+    const e = map[k];
+    if (!Array.isArray(e) || k.charCodeAt(0) === 64 || !(num(e[1]) < DATE_FONDU_DOUX)) continue;
+    const c1 = k.indexOf(','), c2 = k.indexOf(',', c1 + 1);
+    if (c1 < 0 || c2 < 0) continue;
+    const x = +k.slice(0, c1), y = +k.slice(c1 + 1, c2), z = +k.slice(c2 + 1);
+    if (x !== x || y !== y || z !== z || y < 0 || y > 255) continue;
+    if (!aPorteeDuFondu(x, z)) continue;
+    candidats.set(cle3(x, y, z), [x, y, z, k]);
+  }
+  if (!candidats.size) return { carte: map || {}, deplaces: 0, laisses: 0 };
+  const deplacements = [];
+  const vus = new Set();
+  let laisses = 0;
+  for (const [k0, p0] of candidats) {
+    if (vus.has(k0)) continue;
+    const groupe = [p0]; vus.add(k0);
+    for (let i = 0; i < groupe.length; i++) {
+      const [x, y, z] = groupe[i];
+      for (let v = 0; v < 6; v++) {
+        const kv = cle3(x + VOISINS[v][0], y + VOISINS[v][1], z + VOISINS[v][2]);
+        const c = candidats.get(kv);
+        if (c !== undefined && !vus.has(kv)) { vus.add(kv); groupe.push(c); }
+      }
+    }
+    let sx = 0, sz = 0;
+    for (const [x, , z] of groupe) { sx += x; sz += z; }
+    const dy = ecartFonduDoux(Math.round(sx / groupe.length), Math.round(sz / groupe.length));
+    if (!dy) continue;
+    if (Math.abs(dy) > ECART_MAX || groupe.some(([, y]) => y + dy < 1 || y + dy > 254)) { laisses += groupe.length; continue; }
+    deplacements.push([groupe, dy]);
+  }
+  if (!deplacements.length) return { carte: map, deplaces: 0, laisses };
+  const neuf = {};
+  const partis = new Set();
+  for (const [groupe] of deplacements) for (const p of groupe) partis.add(p[3]);
+  for (const k in map) if (!partis.has(k)) neuf[k] = map[k];
+  let deplaces = 0;
+  for (const [groupe, dy] of deplacements) {
+    for (const [x, y, z, k] of groupe) {
+      const cle = `${x},${y + dy},${z}`, e = [map[k][0], DATE_FONDU_DOUX, ...map[k].slice(2)];
+      const p = neuf[cle];
+      if (!p || num(e[1]) > num(p[1]) || (num(e[1]) === num(p[1]) && e[0] > p[0])) neuf[cle] = e;
+      deplaces++;
+    }
+  }
+  return { carte: neuf, deplaces, laisses };
+}
+
+export function migrerBlocsFonduDoux(tout) {
+  const out = {};
+  let deplaces = 0, laisses = 0;
+  for (const [ctx, map] of Object.entries(tout || {})) {
+    if (ctx.includes(':') || !map || typeof map !== 'object' || Array.isArray(map)) { out[ctx] = map; continue; }
+    const r = migrerFonduDoux(map);
+    out[ctx] = r.carte; deplaces += r.deplaces; laisses += r.laisses;
+  }
+  return { tout: out, deplaces, laisses };
+}
+
+// La position de l'enfant descend avec le sol sous elle.
+export function migrerPositionsFonduDoux(pos) {
+  const out = {};
+  let deplaces = 0;
+  for (const [ctx, p] of Object.entries(pos || {})) {
+    out[ctx] = p;
+    if (ctx.includes(':') || !p || ![p.x, p.y, p.z].every(Number.isFinite) || !(num(p.t) < DATE_FONDU_DOUX)) continue;
+    const x = Math.floor(p.x), z = Math.floor(p.z);
+    if (!aPorteeDuFondu(x, z)) continue;
+    const dy = ecartFonduDoux(x, z);
+    if (!dy || Math.abs(dy) > ECART_MAX) continue;
+    out[ctx] = { ...p, y: p.y + dy, t: DATE_FONDU_DOUX };
     deplaces++;
   }
   return { pos: out, deplaces };
@@ -2312,12 +2433,17 @@ export function migrerLesBlocs(lire, ecrire, lirePos = null, ecrirePos = null) {
   // jugent sur le monde où les blocs ont été posés, celle-ci les emmène.
   const pd = migrerBlocsParisDouble(tout);
   tout = pd.tout; deplaces += pd.deplaces; laisses += pd.laisses; retires += pd.jetes;
+  // 6 → 7 : le fondu doux des villes (v309), après Paris doublé — elle juge
+  // sur le monde où Paris doublé a posé ce qu'il a emmené.
+  const fd = migrerBlocsFonduDoux(tout);
+  tout = fd.tout; deplaces += fd.deplaces; laisses += fd.laisses;
   ecrire(tout);
   if (lirePos && ecrirePos) {
     const p = migrerPositionsCarte3(lirePos() || {});
     const q = releverPositionsParis(p.pos);
     const r = migrerPositionsParisDouble(q.pos);
-    if (p.deplaces || q.deplaces || r.deplaces) ecrirePos(r.pos);
+    const f = migrerPositionsFonduDoux(r.pos);
+    if (p.deplaces || q.deplaces || r.deplaces || f.deplaces) ecrirePos(f.pos);
   }
   try { localStorage.setItem(CLE_CARTE, String(CARTE_VERSION)); } catch { /* ignore */ }
   return { deplaces, laisses, intacts, retires };
@@ -2326,8 +2452,9 @@ export function migrerLesBlocs(lire, ecrire, lirePos = null, ecrirePos = null) {
 export class World {
   // `avant` : le monde d'avant Paris doublé (v306, `CONF_AVANT`) — pour juger
   // les blocs posés dedans, jamais pour jouer.
-  constructor({ avant = false } = {}) {
-    this.conf = avant ? CONF_AVANT : CONF_NEUF;
+  // `v308` : le monde d'avant le fondu doux (v309, `CONF_V308`), même usage.
+  constructor({ avant = false, v308 = false } = {}) {
+    this.conf = avant ? CONF_AVANT : v308 ? CONF_V308 : CONF_NEUF;
     this.chunks = new Map();      // "cx,cz" -> Uint8Array
     this.tops = new Map();        // "cx,cz" -> y du bloc le plus haut (plafond de maillage)
     this.dirty = new Set();       // chunk keys needing a remesh
@@ -2458,7 +2585,7 @@ export class World {
     // grille chanfreinée de Barcelone, l'Arno de Pise, le plateau de Gizeh,
     // la Yamuna d'Agra, le port de Sydney, la baie de Rio et ses mornes, la
     // baie d'Elliott de Seattle. Cf. src/villesmonde.js.
-    h = hauteurVillesMonde(x, z, h);
+    h = hauteurVillesMonde(x, z, h, this.conf.fonduDoux);
 
     // La Giga-usine d'Austin : son disque est plat — une chaîne de production
     // qui ondule n'assemble rien du tout. Cf. src/usine.js.

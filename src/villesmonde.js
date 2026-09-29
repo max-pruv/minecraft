@@ -1841,6 +1841,81 @@ function villesPres(x, z) {
   return INDEX_VILLES.get(Math.floor(x / CASE) * 100000 + Math.floor(z / CASE)) || RIEN;
 }
 
+// LE FONDU DOUX (v309) — une ville posée sous son pays n'est plus au fond
+// d'une fosse à gradins.
+//
+// Le disque d'une ville est aplani à sa cote (`f.sol`, 33 le plus souvent) et
+// le pays s'y raccordait sur QUATORZE blocs, quel que soit l'écart. Quand le
+// pays est vingt blocs plus haut, cela fait deux blocs de dénivelée par bloc :
+// des marches que la surface continue ne dessine pas (`MARCHE_MAX`, v297), et
+// que le raccord de la v308 ne pouvait pas adoucir. Mesuré, soixante-quatre
+// rayons par ville : 651 rayons sur 15 434 plus raides qu'un bloc par bloc,
+// TOUS dans le même sens — la ville sous son pays (deux seulement à l'envers).
+//
+// Le remède ne fait donc qu'ABAISSER : hors du disque, le pays ne dépasse plus
+// la cote de la ville plus `FONDU_PENTE` bloc par bloc d'éloignement. Là où le
+// fondu d'avant tenait déjà cette pente, rien ne change, au bloc près ; le cône
+// ne mord que sur les fondus raides, et il ne relève jamais rien — une ville
+// sur un plateau garde son pays, la mer garde son fond.
+//
+// La pente est un résultat : 0,7 enlève 24 700 marches de deux blocs sur les
+// 46 856 de la couronne (le reste est la montagne elle-même, qui en a autant
+// avant qu'après), 0,85 en enlève 23 200, 1,0 en enlève 21 500 et laisse des
+// pentes que l'arrondi rend encore à deux. On prend 0,7, la valeur visée par
+// la dette de la v308 — au prix de 393 000 colonnes abaissées, vingt et un
+// blocs au plus, jusqu'à soixante-quatre blocs hors du disque, autour de 149
+// villes ; aucune dans la fenêtre d'empreinte de `plafond.js`, aucune près
+// d'une ville bâtie à la main, d'un aérodrome ou d'un repère.
+//
+// C'est du RELIEF, donc l'invariant 1 : décision de Max (« fais tout »), sous
+// la forme bornée — `CONF_V308` (world.js) garde le relief d'avant pour juger
+// les blocs qui y ont été posés, et la marche 6 → 7 les emmène.
+export const FONDU_PENTE = 0.7;
+export const FONDU_PORTEE = 80;         // au-delà, aucun écart de pays ne demande de cône
+const INDEX_CONES = new Map();
+for (const f of VILLES_MONDE) {
+  const portee = f.rayon + FONDU_PORTEE;
+  for (let cx = Math.floor((f.ancre.x - portee) / CASE); cx <= Math.floor((f.ancre.x + portee) / CASE); cx++) {
+    for (let cz = Math.floor((f.ancre.z - portee) / CASE); cz <= Math.floor((f.ancre.z + portee) / CASE); cz++) {
+      const cle2 = cx * 100000 + cz;
+      if (!INDEX_CONES.has(cle2)) INDEX_CONES.set(cle2, []);
+      INDEX_CONES.get(cle2).push(f);
+    }
+  }
+}
+function conesPres(x, z) {
+  return INDEX_CONES.get(Math.floor(x / CASE) * 100000 + Math.floor(z / CASE)) || RIEN;
+}
+// Le plafond du pays en (x, z) : `h` lui-même hors de toute couronne, et
+// jamais rien dans un disque de ville — le disque est à sa ville.
+function coneDesVilles(x, z, h) {
+  const vs = conesPres(x, z);
+  if (!vs.length) return h;
+  for (const f of vs) {
+    const u = x - f.ancre.x, v = z - f.ancre.z;
+    if (u * u + v * v <= f.rayon * f.rayon) return h;
+  }
+  for (const f of vs) {
+    const u = x - f.ancre.x, v = z - f.ancre.z;
+    const d = Math.hypot(u, v);
+    if (d > f.rayon + FONDU_PORTEE) continue;
+    // La colline de la fiche compte : sans elle le cône couperait le coteau
+    // qu'une ville a au bord de son disque, et ferait une marche à la lisière.
+    const plafond = (f.sol || 33) + collineDeVille(f, u / f.K, v / f.K) + FONDU_PENTE * (d - f.rayon);
+    if (h > plafond) h = plafond;
+  }
+  return h;
+}
+// Pour la migration : une colonne à portée du fondu d'une ville, DISQUE
+// COMPRIS — une maison à cheval sur la lisière se regroupe entière, et c'est
+// son point d'ancrage qui dit si elle bouge.
+export function aPorteeDuFondu(x, z) {
+  for (const f of conesPres(x, z)) {
+    if ((x - f.ancre.x) ** 2 + (z - f.ancre.z) ** 2 <= (f.rayon + FONDU_PORTEE) ** 2) return true;
+  }
+  return false;
+}
+
 // Cette colonne est-elle dans une ville de la machine ? La forêt sauvage
 // s'arrête là (treeAt, dans world.js) : une ville plante ses parcs elle-même,
 // et un chêne au milieu d'un carrefour n'est pas de la nature, c'est un bug.
@@ -1927,7 +2002,9 @@ function collineDeVille(f, u, v) {
 
 // --- ce que world.js appelle -------------------------------------------------
 
-export function hauteurVillesMonde(x, z, h) {
+// `doux` : le fondu de la v309 (le monde d'aujourd'hui) ; sans lui, le relief
+// d'avant, que `CONF_V308` et les mondes plus anciens gardent pour toujours.
+export function hauteurVillesMonde(x, z, h, doux = false) {
   for (const f of villesPres(x, z)) {
     const u = x - f.ancre.x, v = z - f.ancre.z;
     const d = Math.hypot(u, v);
@@ -1938,9 +2015,10 @@ export function hauteurVillesMonde(x, z, h) {
     let cible = f.sol || 33;                                       // le Machu Picchu vit a 52
     if (eauDeVille(f, U, V)) cible = 26;
     else cible += collineDeVille(f, U, V);
-    return h * (1 - marge) + cible * marge;
+    const out = h * (1 - marge) + cible * marge;
+    return doux && d > f.rayon ? coneDesVilles(x, z, out) : out;
   }
-  return h;
+  return doux ? coneDesVilles(x, z, h) : h;
 }
 
 // LE CŒUR D'ÎLOT (v280) — ce qui manquait pour que deux villes ne se

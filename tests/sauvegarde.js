@@ -323,6 +323,49 @@ const BLOCS = 40000;
       copieDFaite, double.absent ? 'Paris n\'a pas doublé'
         : `${double.copie} · ${Date.now() - departCopieD} ms`);
 
+    // ET PAR LE FONDU DOUX DES VILLES (v309), APRÈS PARIS DOUBLÉ. Une cabane
+    // posée au sol dans la couronne de Salvador, là où le pays a descendu : la
+    // fusion la pose sur le sol neuf, d'un seul tenant, sans fantôme à la cote
+    // d'avant ; et le nuage a été mis à l'abri avant, sur son propre document.
+    const fonduD = await tab.evaluate(async () => {
+      const ps = window.__game.profileSync;
+      const W = await import('./src/world.js');
+      if (!W.migrerBlocsFonduDoux || !ps.mettreALAbriAvantFonduDoux) return { absent: true };
+      const { VILLES_MONDE } = await import('./src/villesmonde.js');
+      const w8 = new W.World({ v308: true }), w9 = new W.World();
+      const f = VILLES_MONDE.find((v) => v.cle === 'salvador');
+      let site = null;
+      for (let k = 0; k < 64 && !site; k++) {
+        const a = 2 * Math.PI * k / 64;
+        for (let d = f.rayon + 4; d <= f.rayon + 30 && !site; d += 2) {
+          const x = Math.round(f.ancre.x + Math.cos(a) * d), z = Math.round(f.ancre.z + Math.sin(a) * d);
+          const g8 = w8.terrainHeight(x, z), g9 = w9.terrainHeight(x, z);
+          if (g8 - g9 >= 4) site = { x, z, g8, g9 };
+        }
+      }
+      if (!site) return { absent: false, site: null };
+      const t = W.DATE_FONDU_DOUX - 86400000;
+      const vieux = `${site.x},${site.g8 + 1},${site.z}`, neuf = `${site.x},${site.g9 + 1},${site.z}`;
+      const local = ps.snapshot();
+      const remote = { ...JSON.parse(JSON.stringify(local)), edits: { local: { [vieux]: [9, t] } } };
+      ps.copieFonduDoux = null;     // comme une tablette qui vient de s'ouvrir
+      const copie = await ps.mettreALAbriAvantFonduDoux(ps.getName(), remote);
+      const r = ps.merge(local, remote);
+      const e = (r.state.edits || {}).local || {};
+      return { copie, site, vieux: !!e[vieux], neuf: e[neuf]?.[0] === 9, ou: Object.keys(e).filter((k) => e[k][0] === 9) };
+    });
+    verifier('une cabane de la couronne de Salvador reçue du nuage arrive sur le sol neuf, sans fantôme',
+      !fonduD.absent && !!fonduD.site && fonduD.neuf && !fonduD.vieux,
+      fonduD.absent ? 'pas de fondu doux' : JSON.stringify(fonduD));
+    const departCopieF = Date.now();
+    const copieFFaite = !fonduD.absent && await jusqua(async () => {
+      const a = nuage.etatDe('Marlon~avant-fondu-doux');
+      return !!(a && (a.editsz || a.edits) && a.fonduDoux === 1);
+    }, 60000);
+    verifier('et le document du nuage a été mis à l\'abri avant le fondu doux, sur son propre document',
+      copieFFaite, fonduD.absent ? 'pas de fondu doux'
+        : `${fonduD.copie} · ${Date.now() - departCopieF} ms`);
+
     // CE QUI VIENT DU NUAGE PASSE PAR LA MIGRATION DE CARTE AVANT LA FUSION.
     //
     // La fusion est une union. Une tablette restée sur la v240 republie les
