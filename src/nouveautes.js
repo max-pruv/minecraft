@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 312,
+    titre: 'L\'autoroute Montréal–Québec',
+    puces: [
+      'De Montréal à Québec en voiture',
+      'La première autoroute en Amérique',
+      'Les voitures s\'arrêtent avant les maisons',
+    ],
+  },
+  {
     v: 311,
     titre: 'L\'autoroute jusqu\'à Amsterdam',
     puces: [

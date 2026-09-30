@@ -576,6 +576,7 @@ const VRAIES_KM = [
       out.convoi = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A1') || null;
       out.convoiE429 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'E429') || null;
       out.convoiE19 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'E19') || null;
+      out.convoiA20 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A20') || null;
       // LES ENTRÉES DE VILLE ÉVITENT LES MONUMENTS (v310) : l'avenue d'entrée
       // de l'E429 à Lille visait d'abord Euralille et finissait dans la tour
       // de Lille. On lit, le long de chaque avenue d'entrée de Lille, les BLOCS
@@ -615,8 +616,12 @@ const VRAIES_KM = [
           for (const e of m.entreesDe(cle)) {
             const dx = f.ancre.x - e.x, dz = f.ancre.z - e.z, l = Math.hypot(dx, dz);
             let rue = 0, n = 0, vus = 0, dans = null, eau = 0;
-            for (let d = 0; d <= 30; d += 2) { n++; const v = VM.solVillesMonde(Math.round(e.x + dx / l * d), Math.round(e.z + dz / l * d)); if (v !== null && v !== 'lot') rue++; }
-            for (let d = 0; d <= l - 12 && !dans; d += 0.5) {
+            // L'avenue s'arrête là où le jeu l'arrête (v312) : au premier îlot
+            // que l'axe traverse, ou à douze blocs du centre.
+            const av = VM.avenueDEntree ? VM.avenueDEntree(cle, e.x, e.z) : null;
+            const fin = av ? Math.hypot(av[1][0] - e.x, av[1][1] - e.z) : l - 12;
+            for (let d = 0; d <= Math.min(30, fin); d += 2) { n++; const v = VM.solVillesMonde(Math.round(e.x + dx / l * d), Math.round(e.z + dz / l * d)); if (v !== null && v !== 'lot') rue++; }
+            for (let d = 0; d <= fin && !dans; d += 0.5) {
               const X = Math.floor(e.x + dx / l * d), Z = Math.floor(e.z + dz / l * d);
               if (m.routeEn(X, Z)) continue;
               const h = w.coteRoulable(X, Z); vus++;
@@ -674,6 +679,17 @@ const VRAIES_KM = [
       && (a1.entreesEngendrees || []).some((e) => e.ville === 'amsterdam' && e.route === 'E19' && !e.dans && e.eau === 0 && e.rue >= e.n * 0.7),
       JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiE19 ? { nom: a1.convoiE19.nom, voitures: (a1.convoiE19.modeles || []).length } : 'aucun convoi E19',
         amsterdam: (a1.entreesEngendrees || []).filter((e) => e.ville === 'amsterdam') }));
+
+    // L'A20 (v312) : Montréal–Québec, la première route du Nouveau Monde. Québec
+    // a une trame organique qui pose ses îlots sur l'axe : l'avenue d'entrée
+    // s'arrête au premier îlot, et le témoin des entrées (plus haut) lit
+    // jusqu'où le jeu fait rouler les voitures — ici, on exige qu'il en reste
+    // au moins dix blocs.
+    verifier('l\'A20 relie Montréal à Québec, et des voitures entrent dans les deux villes',
+      !a1.absent && a1.segments >= 4 && !!a1.convoiA20 && a1.convoiA20.routier && (a1.convoiA20.modeles || []).length >= 10
+      && ['montreal', 'quebec'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'A20' && !e.dans && e.eau === 0 && e.vus >= 20)),
+      JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiA20 ? { nom: a1.convoiA20.nom, voitures: (a1.convoiA20.modeles || []).length } : 'aucun convoi A20',
+        entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'A20') }));
 
     // DE VRAIS RAILS, EN RELIEF, ET DEUX VOIES (v281) ------------------------
     //

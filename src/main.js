@@ -40,7 +40,7 @@ import { contexteAudio, sortieAudio, reglerSon, sonActif, etatSon, radioEnCours,
 import { traceAnneau } from './ville.js';
 import { traceCourse } from './circuit.js';
 import { USINE, PARC, traceChaine } from './usine.js';
-import { tracesCirculation, tracesCirculationMain, VILLES_MONDE } from './villesmonde.js';
+import { tracesCirculation, tracesCirculationMain, avenueDEntree } from './villesmonde.js';
 import { createPassants } from './passants.js';
 import { createPoissons } from './poissons.js';
 import { segmentsDeTrain, traceSegment } from './trains.js';
@@ -1733,15 +1733,14 @@ function updateChunks() {
   // Une ville ENGENDRÉE n'a pas d'avenue d'entrée dessinée : le corridor y
   // arrive dans l'axe de sa trame (le point de passage est choisi pour cela),
   // donc sur la rue qui mène au centre. Les voitures la suivent jusqu'à douze
-  // blocs de l'ancre — la place centrale — puis font demi-tour.
+  // blocs de l'ancre — la place centrale — ou jusqu'au premier îlot que l'axe
+  // traverse (`avenueDEntree`, v312), puis font demi-tour.
   const entree = (cle, route) => {
     const i = entreesDe(cle).findIndex((e) => e.route === route);
     if (i < 0) return undefined;
     if (ENTREES[cle]) return ENTREES[cle][i];
-    const f = VILLES_MONDE.find((v) => v.cle === cle), e = entreesDe(cle)[i];
-    if (!f) return undefined;
-    const dx = f.ancre.x - e.x, dz = f.ancre.z - e.z, l = Math.hypot(dx, dz) || 1, k = Math.max(0, (l - 12) / l);
-    return [[e.x, e.z], [e.x + dx * k, e.z + dz * k]];
+    const e = entreesDe(cle)[i];
+    return avenueDEntree(cle, e.x, e.z) || undefined;
   };
   for (const seg of segmentsDeRoute()) {
     const avant = entree(seg.de, seg.route.nom), apres = entree(seg.vers, seg.route.nom);

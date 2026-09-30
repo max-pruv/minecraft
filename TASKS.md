@@ -173,6 +173,14 @@
   tout »). Cône de pente 0,7 hors du disque, qui n'abaisse que : 651 rayons
   raides → 2 (les deux sont des villes AU-DESSUS de leur pays, que le cône ne
   relève pas, à dessein). Seuils à marche de la v308 : 14,5 % → 4,0 %.
+- [ ] **LE PORTAIL DE LA v312 (règle de la v195).** Verts : `carteMonde.js` (le
+  témoin de l'A20, rouge sur `origin/main`), `plafond.js`, `carte.js`,
+  `washington.js`. Rouges, tous déjà déclarés : `maj.js`, « corps, programmes et
+  fond de carte » (au portail 14/25 programmes ; rejouée SEULE, personnages 5/9 —
+  ce qui manque varie, le témoin rougit) ; `manhattan.js:282` (délai, v269) ;
+  `monte.js`, la monoplace à 9,1 pour < 9 et l'écran figé (2 967 ms · 23,8 %,
+  sous l'étendue d'`origin/main`). La livraison ne touche ni l'accueil, ni
+  Manhattan, ni les circuits.
 - [ ] **LE PORTAIL DE LA v311 (règle de la v195).** Verts : `carteMonde.js`
   (le témoin de l'E19 et celui des entrées, élargi à toutes les villes
   engendrées — rouges sur `origin/main`, pas d'E19 ni d'entrée à Amsterdam),
@@ -220,14 +228,14 @@
   14,5 % → 4,0 %, le fondu raide adouci) ; (b) les autres routes interurbaines
   — FAITES : A1 (v300), E429 Lille–Bruxelles (v310), E19 Bruxelles–Amsterdam
   (v311, par l'ouest d'Amsterdam et l'est de Bruxelles : le relief ne laisse
-  pas d'autre entrée sous neuf blocs de déblai). INSTRUITES en v310 sur
+  pas d'autre entrée sous neuf blocs de déblai), A20 Montréal–Québec (v312). INSTRUITES en v310 sur
   l'axe direct (longueur · eau · rail parallèle · obstacles) : Bruxelles–
   Amsterdam 790 · 56 · 0 · aucun ; Montréal–Québec 873 · 18 · 0 ; São Paulo–
   Rio 611 · 28 · 0 ; Nagoya–Kyoto 314 · 0 · 107 (le Shinkansen le long) ;
   Cologne–Francfort 739 · 6 · 349 ; Madrid–Séville 1 835 · 42 · 0 ; Nairobi–
   Mombasa 1 906 · 20 · 0 ; Florence–Rome et Tokyo–Nagoya ont un aérodrome sur
   l'axe ; NY–Washington traverse DC ; SF–LA passe sur SFO et deux repères.
-  Les suivants, dans cet ordre : Montréal–Québec, São Paulo–Rio. Le kit propose 23 corridors
+  Les suivants, dans cet ordre : São Paulo–Rio. Le kit propose 23 corridors
   candidats (`examples/road-candidates.json`), à instruire un par un contre
   l'eau, les aérodromes, les repères et les sanctuaires comme l'A1 ; (c) les
   falaises et l'eau (surface rocheuse au lieu de marches, berges) ; (d) les

@@ -20,6 +20,33 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v312 — L'autoroute Montréal–Québec : la première route du Nouveau Monde
+
+**Pourquoi.** Troisième corridor de l'ordre fixé en v310, après Lille–Bruxelles
+et Bruxelles–Amsterdam : Montréal–Québec, la rive nord du Saint-Laurent. Les
+routes n'existaient qu'en Europe.
+
+**Ce que ça change.** L'A20 relie Montréal à Québec : 1 000 blocs de deux fois
+deux voies, sans un pont, et vingt voitures qui font l'aller-retour.
+
+- **Rien à contourner** : aucune ville, aucun aérodrome, aucun monument à moins
+  de deux mille blocs, et un pays bas aux deux sorties. Tranchée de 2,1 blocs
+  au plus.
+- **À Québec**, la trame organique pose des immeubles SUR l'axe, à neuf blocs
+  du centre. Les voitures y seraient entrées. L'avenue d'entrée d'une ville
+  engendrée s'arrête désormais au premier immeuble qu'elle rencontre. Pour les
+  trois villes déjà reliées, l'avenue est inchangée.
+
+Rien n'est écrit dans le relief : les deux empreintes de `plafond.js` ne
+bougent pas.
+
+**Ce qui le prouve.** Dans `carteMonde.js`, un témoin neuf, rouge sur
+`origin/main` (pas d'A20) : la route existe, porte un convoi de vingt voitures,
+et entre dans les deux villes sans eau ni bloc sur l'avenue. Le témoin des
+entrées lit désormais l'avenue telle que le jeu la fait rouler
+(`avenueDEntree`, une seule règle pour la circulation et pour le témoin). Les
+témoins de route de la v300 lisent les quatre segments.
+
 ## v311 — L'autoroute Bruxelles–Amsterdam : le relief dessine le tracé
 
 **Pourquoi.** Le kit v4 de Max demande les routes interurbaines pour toute la

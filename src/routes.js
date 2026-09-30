@@ -98,6 +98,19 @@ export const ROUTES = [
   // avenues d'entrée sur la rue de bout en bout (75 et 93 colonnes, aucune
   // dans un bloc, aucune sur l'eau).
   { nom: 'E19', villes: ['bruxelles', 'amsterdam'], via: [[620, -970], [648, -981], [667, -1004], [720, -1175], [612, -1831], [613, -1851], [628, -1875], [641, -1882]], bord: { bruxelles: 34 } },
+  // L'A20 (v312), MONTRÉAL–QUÉBEC : la rive nord du Saint-Laurent, sur le
+  // Nouveau Monde. Rien à contourner — aucune ville, aucun aérodrome, aucun
+  // repère à moins de deux mille blocs — et un pays bas, 34 à 40 blocs à la
+  // sortie est de Montréal comme à l'entrée ouest-sud-ouest de Québec : le
+  // relief ne pose ici aucune des contraintes de l'E19. Deux coudes à chaque
+  // bout ramènent les axes des deux trames sur la ligne droite.
+  // Mesuré sous node (scratchpad trace.mjs, 72 260 tracés, tous admissibles) :
+  // 998 blocs, aucun pont, déblai 2,1, remblai 1,6. Québec a une trame
+  // ORGANIQUE qui pose ses îlots SUR l'axe à neuf blocs du centre : l'avenue
+  // d'entrée s'arrête au premier îlot (`avenueDEntree`, villesmonde.js). Et la
+  // porte, à vingt blocs du bord, tombait SUR un îlot (34 blocs du centre) :
+  // à vingt-deux, elle est sur la rue, et l'avenue fait quinze blocs.
+  { nom: 'A20', villes: ['montreal', 'quebec'], via: [[-19825, 2190], [-19781, 2167], [-19767, 2146], [-19745, 1840], [-19605, 1566], [-19551, 1494], [-19511, 1463]], bord: { quebec: 22 } },
 ];
 
 // --- la section -----------------------------------------------------------------

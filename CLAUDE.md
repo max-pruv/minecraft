@@ -770,6 +770,23 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## L'A20 Montréal–Québec (v312) — une avenue d'entrée s'arrête au premier îlot
+
+Première route du Nouveau Monde. Deux règles.
+
+- **UN AXE DE TRAME ORGANIQUE PORTE DES ÎLOTS.** Québec pose ses îlots SUR
+  l'axe à neuf blocs du centre ; l'avenue d'entrée « jusqu'à douze blocs de
+  l'ancre » (v310) y faisait entrer les voitures dans les immeubles.
+  `avenueDEntree` (villesmonde.js) s'arrête au premier îlot, et c'est la même
+  fonction que lisent la circulation et le témoin : un témoin qui recalculerait
+  l'avenue à sa façon mesurerait une autre avenue que celle où l'on roule.
+- **LA PORTE SE POSE SUR LA RUE, ET CELA SE MESURE COLONNE PAR COLONNE.** À
+  vingt blocs du bord, la porte de Québec tombait sur un îlot (34 blocs du
+  centre, le bloc arrondi vers le bas) : l'avenue s'arrêtait avant d'avoir
+  commencé, zéro colonne. `bord: { quebec: 22 }` la pose sur la rue — la
+  même règle que Bruxelles en v310, et le chiffre sort du relevé de l'axe,
+  pas d'un essai.
+
 ## L'E19 Bruxelles–Amsterdam (v311) — le relief autour d'une ville décide par où l'on entre
 
 Troisième route du registre, la première entre deux villes engendrées. Quatre
