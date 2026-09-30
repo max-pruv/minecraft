@@ -173,6 +173,16 @@
   tout »). Cône de pente 0,7 hors du disque, qui n'abaisse que : 651 rayons
   raides → 2 (les deux sont des villes AU-DESSUS de leur pays, que le cône ne
   relève pas, à dessein). Seuils à marche de la v308 : 14,5 % → 4,0 %.
+- [ ] **LE PORTAIL DE LA v315 (règle de la v195), DOUBLE MESURE FAITE.** Le
+  premier portail a trouvé un vrai défaut (l'avenue de Mombasa, 19 pas pour
+  20), corrigé. Le second : `carteMonde.js`, `plafond.js` (onze ponts, 71 164
+  points, zéro trou), `carte.js` verts. `maj.js` a rendu deux rouges NEUFS, les
+  deux témoins du palier (« range son verdict », « se décide sur le TRAVAIL ») :
+  23 images seulement au portail, aucun verdict. REJOUÉE SEULE : verts des DEUX
+  côtés — branche 62 images, `origin/main` 61 — et le seul rouge restant est le
+  fond de carte, identique des deux côtés (personnages 5/9). C'est la charge du
+  portail : ces deux témoins exigent une fenêtre de jeu qu'un portail chargé ne
+  leur donne pas toujours. `monte.js` : l'écran figé (3 833 ms · 32,6 %).
 - [ ] **LE PORTAIL DE LA v314 (règle de la v195).** Verts : `carteMonde.js` (le
   témoin de l'A-4, rouge sur `origin/main`), `plafond.js` (joint des neuf ponts,
   58 099 points, zéro trou), `carte.js`. Rouges, déjà déclarés : `maj.js`
