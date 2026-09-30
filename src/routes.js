@@ -61,6 +61,24 @@ export const ROUTES = [
   // — le premier, cinq blocs au-dessus de son lit, se franchit dessus et
   // dessous : 22 blocs de marge au-delà de toutes les barres, coudes ≤ 27°.
   { nom: 'A1', villes: ['paris', 'lille'], via: [[-200, -280], [-90, -710]] },
+  // L'E429 (v310), LILLE–BRUXELLES : la première vers une ville ENGENDRÉE.
+  // Une ville engendrée n'a pas d'avenue d'entrée dessinée ; on arrive donc
+  // DANS L'AXE DE SA TRAME, sur la rue qui mène au centre — le point de
+  // passage est sur cet axe (angle 0,15 + π, à r + 49 du centre), et c'est ce
+  // qui fait tomber la porte sur la rue. Et l'autoroute entre jusqu'à la
+  // première rue de l'axe (`bord`, 34 blocs sous le bord du disque, soit 27
+  // du centre) : entre 30 et 39 blocs du centre, un anneau de verdure et de
+  // lots coupe l'axe, et une porte à vingt blocs du bord (la règle de l'A1)
+  // laissait les voitures finir dans un parc. L'emprise de l'autoroute (8,5
+  // de demi-largeur) est celle de la rue de l'axe (chaussée 3,2 + trottoir
+  // 5,7) : elle la remplace sans mordre les lots.
+  // Mesuré sous node (scratchpad routes/) : 420 blocs, un coude de 29°, deux
+  // ponts (s 62–74 et 329–360), joints fermés (0 / 13 065 points), remblai
+  // 8,2 et déblai 4,5 au plus, zéro rail, zéro repère, aucun aérodrome, le
+  // premier sanctuaire à 802 blocs. Le point de passage a été choisi parmi
+  // cinq sur l'axe (r + 29 à r + 69) : les plus proches mettaient un pont de
+  // deux blocs sur le coude, dont le joint s'ouvrait (153 trous).
+  { nom: 'E429', villes: ['lille', 'bruxelles'], via: [[431, -998]], bord: { bruxelles: 34 } },
 ];
 
 // --- la section -----------------------------------------------------------------
@@ -119,9 +137,9 @@ export function brancherSol(fn) { SOL = fn; PROFILS.clear(); }
 
 // --- les segments ---------------------------------------------------------------
 
-function porte(C, vers) {
+function porte(C, vers, bord = BORD_VILLE) {
   const vx = vers[0] - C.x, vz = vers[1] - C.z, l = Math.hypot(vx, vz) || 1;
-  const r = C.r - BORD_VILLE;
+  const r = C.r - bord;
   return [C.x + vx / l * r, C.z + vz / l * r];
 }
 
@@ -133,8 +151,9 @@ export function segmentsDeRoute() {
     for (let i = 0; i < route.villes.length - 1; i++) {
       const A = positionDe(route.villes[i]), B = positionDe(route.villes[i + 1]);
       const via = i === 0 ? route.via || [] : [];
-      const pA = porte(A, via[0] || [B.x, B.z]);
-      const pB = porte(B, via[via.length - 1] || [A.x, A.z]);
+      const bord = route.bord || {};
+      const pA = porte(A, via[0] || [B.x, B.z], bord[route.villes[i]]);
+      const pB = porte(B, via[via.length - 1] || [A.x, A.z], bord[route.villes[i + 1]]);
       const pts = [pA, ...via, pB];
       const cumul = [0];
       for (let k = 1; k < pts.length; k++) cumul.push(cumul[k - 1] + Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]));

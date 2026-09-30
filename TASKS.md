@@ -173,6 +173,15 @@
   tout »). Cône de pente 0,7 hors du disque, qui n'abaisse que : 651 rayons
   raides → 2 (les deux sont des villes AU-DESSUS de leur pays, que le cône ne
   relève pas, à dessein). Seuils à marche de la v308 : 14,5 % → 4,0 %.
+- [ ] **LE PORTAIL DE LA v310, RIEN DE NEUF (règle de la v195).** Verts :
+  `carteMonde.js` (les deux témoins de l'E429, rouges sur `origin/main` par
+  construction — un seul segment, aucune entrée à Bruxelles), `plafond.js`,
+  `carte.js`, `washington.js`. Rouges, tous déjà déclarés avec leur double
+  mesure : `maj.js` (le fond de carte), `manhattan.js` (la géométrie de façade
+  9 203 → 51 734, le taxi au tactile 0,7 bloc, `PeerJS: Lost connection`),
+  `monte.js` (l'écran figé à l'arrivée : pire image 3 783 ms, 33,8 %, dans
+  l'étendue relevée sur `origin/main`, 3 517 ms · 41,4 % et 4 933 ms · 36,4 %).
+  La livraison ne touche ni Manhattan, ni l'accueil, ni l'arrivée à Paris.
 - [ ] **LE PORTAIL DE LA v309, DOUBLE MESURE (règle de la v195).** Rouges au
   portail, rejoués SEULS : `monte.js` sur la branche → 3 rouges (un train
   Eurostar qui traverse la voiture, 12 relevés « dedans » ; l'écran figé en
@@ -203,7 +212,16 @@
   (v300), le rail continu sur les neuf segments (v302). Ce qui reste, dans
   l'ordre du kit (`transport-v298/README.md`) : (a) le raccord ville/campagne
   pour TOUTES les villes — FAIT en v308 et v309 (seuils à marche 33,7 % →
-  14,5 % → 4,0 %, le fondu raide adouci) ; (b) les autres routes interurbaines — le kit propose 23 corridors
+  14,5 % → 4,0 %, le fondu raide adouci) ; (b) les autres routes interurbaines
+  — FAITES : A1 (v300), E429 Lille–Bruxelles (v310). INSTRUITES en v310 sur
+  l'axe direct (longueur · eau · rail parallèle · obstacles) : Bruxelles–
+  Amsterdam 790 · 56 · 0 · aucun ; Montréal–Québec 873 · 18 · 0 ; São Paulo–
+  Rio 611 · 28 · 0 ; Nagoya–Kyoto 314 · 0 · 107 (le Shinkansen le long) ;
+  Cologne–Francfort 739 · 6 · 349 ; Madrid–Séville 1 835 · 42 · 0 ; Nairobi–
+  Mombasa 1 906 · 20 · 0 ; Florence–Rome et Tokyo–Nagoya ont un aérodrome sur
+  l'axe ; NY–Washington traverse DC ; SF–LA passe sur SFO et deux repères.
+  Les suivants, dans cet ordre : Bruxelles–Amsterdam (prolonge l'E429),
+  Montréal–Québec, São Paulo–Rio. Le kit propose 23 corridors
   candidats (`examples/road-candidates.json`), à instruire un par un contre
   l'eau, les aérodromes, les repères et les sanctuaires comme l'A1 ; (c) les
   falaises et l'eau (surface rocheuse au lieu de marches, berges) ; (d) les

@@ -20,6 +20,46 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v310 — L'autoroute Lille–Bruxelles : la première route vers une ville engendrée
+
+**Pourquoi.** Le kit v4 de Max place les routes interurbaines juste après le
+rail et les raccords de ville, pour toute la carte. Seule l'A1 Paris–Lille
+existait (v300). Les vingt-trois corridors candidats du kit
+(`road-candidates.json`) ont été instruits d'un coup sous node, sur l'axe
+direct : longueur, eau, voie ferrée, villes, aérodromes, repères. Lille–
+Bruxelles sort en tête : 409 blocs, zéro eau, zéro rail, aucun obstacle. Et
+elle prolonge l'A1 : de Paris, on roule désormais jusqu'à Bruxelles.
+
+**Ce que ça change.** L'E429 relie Lille à Bruxelles : deux fois deux voies,
+deux ponts, un profil continu, et vingt voitures qui font l'aller-retour.
+
+- **À Lille**, elle entre par l'est, au carrefour du boulevard Carnot et de
+  l'avenue Willy-Brandt, devant Euralille.
+- **À Bruxelles**, ville engendrée sans avenue d'entrée dessinée, elle arrive
+  dans l'axe de la trame, sur la rue qui mène à la place centrale. Le point de
+  passage est choisi pour cela. L'autoroute entre jusqu'à la première rue de
+  l'axe, parce qu'un anneau de verdure coupait l'axe à vingt blocs du bord.
+- **Les voitures** d'une ville à deux entrées prennent celle de leur route.
+  L'ancien code prenait toujours la première entrée : les voitures de
+  Bruxelles seraient entrées par la porte de Paris.
+
+Rien n'est écrit dans le relief : les deux empreintes de `plafond.js` ne
+bougent pas.
+
+**Ce qui le prouve.** Deux témoins neufs dans `carteMonde.js`, rouges sur
+`origin/main` :
+
+- l'E429 existe et porte un convoi de vingt voitures ;
+- ses entrées de ville ne traversent aucun monument (le premier jet finissait
+  dans la tour de Lille) et arrivent sur une rue à Bruxelles.
+
+Les témoins de route de la v300 bouclent déjà sur tous les segments (pente,
+épinglage, remblai, asphalte, contact au sol, ponts au-dessus de l'eau) :
+l'E429 y passe. Le joint des ponts a été mesuré sous node sur les deux routes :
+aucun point ouvert sur 13 065 pour l'E429. Les points de passage plus proches
+de Bruxelles mettaient un pont de deux blocs sur le coude, dont le joint
+s'ouvrait (153 points).
+
 ## v309 — Les villes engendrées sortent de leur fosse, et le vol ne passe plus le toit du ciel
 
 **Pourquoi.** La v308 avait déclaré ce qu'elle ne pouvait pas faire : une ville
