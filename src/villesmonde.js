@@ -2080,6 +2080,25 @@ export function coeurDIlot(t, ra, rb) {
   return Math.abs(ra) > bord && Math.abs(rb) > bord;
 }
 
+// L'AVENUE D'ENTRÉE D'UNE VILLE ENGENDRÉE (v312) : de la porte du corridor
+// vers l'ancre, dans l'axe de la trame, jusqu'à douze blocs du centre — ou
+// jusqu'au premier îlot, si l'axe en traverse un avant. Une trame organique
+// (Québec) pose ses îlots SUR l'axe à neuf blocs du centre : les voitures
+// seraient entrées dans les immeubles. Une seule règle, lue par la
+// circulation (main.js) et par le témoin (carteMonde.js).
+export function avenueDEntree(cle, x, z) {
+  const f = VILLES_MONDE.find((v) => v.cle === cle);
+  if (!f) return null;
+  const dx = f.ancre.x - x, dz = f.ancre.z - z, l = Math.hypot(dx, dz) || 1;
+  let fin = 0;
+  for (let d = 0; d <= l - 12; d += 0.5) {
+    const s = solVillesMonde(Math.floor(x + dx / l * d), Math.floor(z + dz / l * d));
+    if (s === 'lot' || (s === null && Math.hypot(x + dx / l * d - f.ancre.x, z + dz / l * d - f.ancre.z) < f.rayon)) break;
+    fin = d;
+  }
+  return [[x, z], [x + dx / l * fin, z + dz / l * fin]];
+}
+
 export function solVillesMonde(x, z) {
   for (const f of villesPres(x, z)) {
     const u = x - f.ancre.x, v = z - f.ancre.z;
