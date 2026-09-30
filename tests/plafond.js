@@ -1895,30 +1895,39 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const joint = await tab.evaluate(async () => {
       const g = window.__game;
       let R; try { R = await import('./src/routes.js'); } catch { return { echec: 'pas de routes.js' }; }
-      const seg = R.segmentsDeRoute()[0], pr = R.profilDe(seg);
-      if (!pr.spans.length) return { echec: 'aucun pont' };
-      const rub = [];
-      for (const sp of pr.spans) {
-        const a = R.pointA(seg, sp.s0 - 4), b = R.pointA(seg, sp.s1 + 4);
-        rub.push(...g.world.rubansDans(Math.min(a.x, b.x) - 20, Math.min(a.z, b.z) - 20, Math.max(a.x, b.x) + 20, Math.max(a.z, b.z) + 20)
-          .filter((q) => q.genre === 'tablier'));
-      }
-      const sur = (x, z) => rub.some((q) => {
-        const L = Math.hypot(q.bx - q.ax, q.bz - q.az);
-        const t = (x - q.ax) * q.fx + (z - q.az) * q.fz, o = (x - q.ax) * -q.fz + (z - q.az) * q.fx;
-        return t >= -1e-6 && t <= L + 1e-6 && o >= Math.min(q.o0, q.o1) - 1e-6 && o <= Math.max(q.o0, q.o1) + 1e-6;
-      });
-      let total = 0, trous = 0; const ex = [];
-      for (const sp of pr.spans) for (const bout of [sp.s0, sp.s1]) {
-        for (let s = bout - 2.5; s <= bout + 2.5; s += 0.1) for (let d = -8; d <= 8; d += 0.25) {
-          const a = R.pointA(seg, s), x = a.x - a.fz * d, z = a.z + a.fx * d;
-          const X = Math.floor(x), Z = Math.floor(z), c = R.routeEn(X + 0.5, Z + 0.5);
-          const cube = c && !c.ouvrage && g.world.isSolid(X, Math.floor(c.cote) - 1, Z);
-          total++;
-          if (!cube && !sur(x, z)) { trous++; if (ex.length < 4) ex.push([+x.toFixed(1), +z.toFixed(1)]); }
+      // TOUTES LES ROUTES (v313), et dans la largeur RÉELLE de la section :
+      // un pont de la BR-116 tombe dans le raccord où la chaussée se resserre
+      // en avenue, et une fenêtre fixe de ±8 blocs y comptait comme « trous »
+      // des points hors de la route (397, tous au-delà de l'accotement).
+      let total = 0, trous = 0, ponts = 0; const ex = [];
+      for (const seg of R.segmentsDeRoute()) {
+        const pr = R.profilDe(seg);
+        if (!pr.spans.length) continue;
+        ponts += pr.spans.length;
+        const rub = [];
+        for (const sp of pr.spans) {
+          const a = R.pointA(seg, sp.s0 - 4), b = R.pointA(seg, sp.s1 + 4);
+          rub.push(...g.world.rubansDans(Math.min(a.x, b.x) - 20, Math.min(a.z, b.z) - 20, Math.max(a.x, b.x) + 20, Math.max(a.z, b.z) + 20)
+            .filter((q) => q.genre === 'tablier'));
+        }
+        const sur = (x, z) => rub.some((q) => {
+          const L = Math.hypot(q.bx - q.ax, q.bz - q.az);
+          const t = (x - q.ax) * q.fx + (z - q.az) * q.fz, o = (x - q.ax) * -q.fz + (z - q.az) * q.fx;
+          return t >= -1e-6 && t <= L + 1e-6 && o >= Math.min(q.o0, q.o1) - 1e-6 && o <= Math.max(q.o0, q.o1) + 1e-6;
+        });
+        for (const sp of pr.spans) for (const bout of [sp.s0, sp.s1]) {
+          for (let s = bout - 2.5; s <= bout + 2.5; s += 0.1) for (let d = -8; d <= 8; d += 0.25) {
+            if (R.largeurA && Math.abs(d) > R.largeurA(seg, s).demiEmprise - 0.5) continue;
+            const a = R.pointA(seg, s), x = a.x - a.fz * d, z = a.z + a.fx * d;
+            const X = Math.floor(x), Z = Math.floor(z), c = R.routeEn(X + 0.5, Z + 0.5);
+            const cube = c && !c.ouvrage && g.world.isSolid(X, Math.floor(c.cote) - 1, Z);
+            total++;
+            if (!cube && !sur(x, z)) { trous++; if (ex.length < 4) ex.push([+x.toFixed(1), +z.toFixed(1)]); }
+          }
         }
       }
-      return { total, trous, ex, tabliers: rub.length };
+      if (!ponts) return { echec: 'aucun pont' };
+      return { total, trous, ex, ponts };
     });
     verifier('la chaussée ne s\'ouvre pas au joint du pont : un cube ou le tablier sous chaque point',
       !joint.echec && joint.total > 1000 && joint.trous === 0, JSON.stringify(joint));

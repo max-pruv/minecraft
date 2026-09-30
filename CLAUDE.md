@@ -770,6 +770,25 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## La BR-116 São Paulo–Rio (v313) — une sonde de largeur fixe mesure hors de la route
+
+Quatrième route du registre. Deux règles.
+
+- **UNE FICHE DE VILLE PEUT MENTIR SUR SA TRAME, ET L'ENTRÉE SE CHERCHE PAR
+  L'ANGLE.** Sur les axes de `trame.ang` de São Paulo, l'avenue d'entrée
+  tombait sur des îlots (zéro colonne), puis sur un banc de trottoir (une
+  planche à hauteur de carrosserie). On balaie l'angle d'entrée, et l'on garde
+  celui dont l'avenue (`avenueDEntree`) est la plus longue, sur la chaussée,
+  sans un bloc à hauteur de carrosserie : c'est la grandeur que le témoin
+  mesure, donc celle qu'on optimise.
+- **UNE SECTION QUI SE RESSERRE SE MESURE DANS SA LARGEUR.** Le pont de Rio
+  tombe dans le raccord, où la chaussée devient une avenue. Ma sonde de joint
+  et le témoin de la v302 échantillonnaient ±8 blocs quelle que soit la
+  section : 397 « trous » hors de la route, sur un joint fermé. Le témoin lit
+  désormais `largeurA` et toutes les routes — il ne lisait que
+  `segmentsDeRoute()[0]`, à dessein en v310 ; un témoin écrit pour un cas se
+  réécrit le jour où un cas neuf sort de son hypothèse.
+
 ## L'A20 Montréal–Québec (v312) — une avenue d'entrée s'arrête au premier îlot
 
 Première route du Nouveau Monde. Deux règles.
