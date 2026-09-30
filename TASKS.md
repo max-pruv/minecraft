@@ -173,6 +173,11 @@
   tout »). Cône de pente 0,7 hors du disque, qui n'abaisse que : 651 rayons
   raides → 2 (les deux sont des villes AU-DESSUS de leur pays, que le cône ne
   relève pas, à dessein). Seuils à marche de la v308 : 14,5 % → 4,0 %.
+- [ ] **LE PORTAIL DE LA v311 (règle de la v195).** Verts : `carteMonde.js`
+  (le témoin de l'E19 et celui des entrées, élargi à toutes les villes
+  engendrées — rouges sur `origin/main`, pas d'E19 ni d'entrée à Amsterdam),
+  `plafond.js`, `maj.js`, `carte.js`. Un rouge, déjà déclaré : `monte.js`,
+  l'écran figé à l'arrivée (3 833 ms · 31 %, dans l'étendue d'`origin/main`).
 - [ ] **LE PORTAIL DE LA v310, RIEN DE NEUF (règle de la v195).** Verts :
   `carteMonde.js` (les deux témoins de l'E429, rouges sur `origin/main` par
   construction — un seul segment, aucune entrée à Bruxelles), `plafond.js`,
