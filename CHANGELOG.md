@@ -20,6 +20,34 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v315 — L'autoroute Nairobi–Mombasa : la première route d'Afrique
+
+**Pourquoi.** Dernier corridor du relevé de la v310 sans voie ferrée ni
+aérodrome sur l'axe : Nairobi–Mombasa, la route du port. L'Afrique n'avait
+pas une route.
+
+**Ce que ça change.** L'A109 relie Nairobi à Mombasa : 1 999 blocs de deux fois
+deux voies — la plus longue du jeu —, deux ponts, et vingt voitures qui font
+l'aller-retour.
+
+- **Elle sort de Nairobi par l'est** : au sud, le pays est semé de mares, et
+  chaque mare isolée aurait été comblée sur sept blocs de haut, ou coupée par
+  deux ponts trop proches.
+- **Mombasa est petite** : l'avenue d'entrée fait vingt et un blocs, par l'angle
+  où elle est propre (−110°) et une porte à quatorze blocs du bord. À vingt,
+  l'avenue était trop courte pour le témoin des entrées (19 pas pour 20) : c'est
+  le premier portail qui l'a dit.
+
+Rien n'est écrit dans le relief : les deux empreintes de `plafond.js` ne
+bougent pas.
+
+**Ce qui le prouve.** Dans `carteMonde.js`, un témoin neuf, rouge sur
+`origin/main` (pas d'A109). Les témoins de route (profil, remblai ≤ 4, déblai
+≤ 9) et le joint des ponts de `plafond.js` lisent toutes les routes. La sonde
+de tracé recopie désormais les deux règles qui avaient fait échouer ses
+premiers résultats : une suite d'ouvrage de moins de trois colonnes se comble,
+et deux ponts doivent être séparés de huit blocs de sol.
+
 ## v314 — L'autoroute Madrid–Séville : la plus longue route du jeu
 
 **Pourquoi.** Les trois corridors choisis en v310 étaient faits. Parmi les

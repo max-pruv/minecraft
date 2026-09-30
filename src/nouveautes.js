@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 315,
+    titre: 'L\'autoroute Nairobi–Mombasa',
+    puces: [
+      'De Nairobi à Mombasa en voiture',
+      'La première autoroute d\'Afrique',
+      'Jusqu\'au port de Mombasa',
+    ],
+  },
+  {
     v: 314,
     titre: 'L\'autoroute Madrid–Séville',
     puces: [

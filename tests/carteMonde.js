@@ -579,6 +579,7 @@ const VRAIES_KM = [
       out.convoiA20 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A20') || null;
       out.convoiBR116 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'BR-116') || null;
       out.convoiA4 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A-4') || null;
+      out.convoiA109 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A109') || null;
       // LES ENTRÉES DE VILLE ÉVITENT LES MONUMENTS (v310) : l'avenue d'entrée
       // de l'E429 à Lille visait d'abord Euralille et finissait dans la tour
       // de Lille. On lit, le long de chaque avenue d'entrée de Lille, les BLOCS
@@ -711,6 +712,15 @@ const VRAIES_KM = [
       && ['madrid', 'seville'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'A-4' && !e.dans && e.eau === 0 && e.vus >= 20)),
       JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiA4 ? { nom: a1.convoiA4.nom, voitures: (a1.convoiA4.modeles || []).length } : 'aucun convoi A-4',
         entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'A-4') }));
+
+    // L'A109 (v315) : Nairobi–Mombasa, la première route d'Afrique. Mombasa est
+    // petite : son avenue fait vingt et un blocs (porte à quatorze du bord), et
+    // le témoin des entrées exige au moins dix blocs hors de l'autoroute.
+    verifier('l\'A109 relie Nairobi à Mombasa, et des voitures entrent dans les deux villes',
+      !a1.absent && a1.segments >= 7 && !!a1.convoiA109 && a1.convoiA109.routier && (a1.convoiA109.modeles || []).length >= 10
+      && ['nairobi', 'mombasa'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'A109' && !e.dans && e.eau === 0 && e.vus >= 20)),
+      JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiA109 ? { nom: a1.convoiA109.nom, voitures: (a1.convoiA109.modeles || []).length } : 'aucun convoi A109',
+        entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'A109') }));
 
     // DE VRAIS RAILS, EN RELIEF, ET DEUX VOIES (v281) ------------------------
     //
