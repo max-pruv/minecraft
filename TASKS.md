@@ -234,7 +234,12 @@
   — FAITES : A1 (v300), E429 Lille–Bruxelles (v310), E19 Bruxelles–Amsterdam
   (v311, par l'ouest d'Amsterdam et l'est de Bruxelles : le relief ne laisse
   pas d'autre entrée sous neuf blocs de déblai), A20 Montréal–Québec (v312), BR-116 São
-  Paulo–Rio (v313). INSTRUITES en v310 sur
+  Paulo–Rio (v313), A-4 Madrid–Séville (v314). **Florence–Rome, NON FAITE à
+  dessein** : Fiumicino (3655, 3967, r 72) est posé AU NORD de Rome, sur la seule
+  entrée nord propre de sa trame (−100° à −103°) — 79 819 tracés, tous refusés
+  par sa marge ; l'autre entrée propre (−175°, −192°) arrive par la mer, deux
+  cents blocs de viaduc. Déplacer un aérodrome est une décision de Max
+  (invariant 1) ; un viaduc en mer aussi. Nairobi–Mombasa reste à instruire. INSTRUITES en v310 sur
   l'axe direct (longueur · eau · rail parallèle · obstacles) : Bruxelles–
   Amsterdam 790 · 56 · 0 · aucun ; Montréal–Québec 873 · 18 · 0 ; São Paulo–
   Rio 611 · 28 · 0 ; Nagoya–Kyoto 314 · 0 · 107 (le Shinkansen le long) ;

@@ -578,6 +578,7 @@ const VRAIES_KM = [
       out.convoiE19 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'E19') || null;
       out.convoiA20 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A20') || null;
       out.convoiBR116 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'BR-116') || null;
+      out.convoiA4 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A-4') || null;
       // LES ENTRÉES DE VILLE ÉVITENT LES MONUMENTS (v310) : l'avenue d'entrée
       // de l'E429 à Lille visait d'abord Euralille et finissait dans la tour
       // de Lille. On lit, le long de chaque avenue d'entrée de Lille, les BLOCS
@@ -701,6 +702,15 @@ const VRAIES_KM = [
       && ['saopaulo', 'rio'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'BR-116' && !e.dans && e.eau === 0 && e.vus >= 20)),
       JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiBR116 ? { nom: a1.convoiBR116.nom, voitures: (a1.convoiBR116.modeles || []).length } : 'aucun convoi BR-116',
         entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'BR-116') }));
+
+    // L'A-4 (v314) : Madrid–Séville, la plus longue du registre (1 908 blocs).
+    // Le profil, les ponts et le joint sont gardés par les témoins de l'A1 et
+    // par celui de plafond.js, qui lisent toutes les routes.
+    verifier('l\'A-4 relie Madrid à Séville, et des voitures entrent dans les deux villes',
+      !a1.absent && a1.segments >= 6 && !!a1.convoiA4 && a1.convoiA4.routier && (a1.convoiA4.modeles || []).length >= 10
+      && ['madrid', 'seville'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'A-4' && !e.dans && e.eau === 0 && e.vus >= 20)),
+      JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiA4 ? { nom: a1.convoiA4.nom, voitures: (a1.convoiA4.modeles || []).length } : 'aucun convoi A-4',
+        entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'A-4') }));
 
     // DE VRAIS RAILS, EN RELIEF, ET DEUX VOIES (v281) ------------------------
     //
