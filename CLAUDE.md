@@ -770,6 +770,37 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## L'E19 Bruxelles–Amsterdam (v311) — le relief autour d'une ville décide par où l'on entre
+
+Troisième route du registre, la première entre deux villes engendrées. Quatre
+règles.
+
+- **UNE VILLE ASSISE SOUS SON PAYS NE S'ENTRE QUE PAR SON CÔTÉ BAS.** Le
+  fondu doux (v309) descend à 0,7 bloc par bloc ; une route monte à 0,06. Là où
+  le pays est à 50 pour une ville à 33, aucun point de passage ne tient le
+  plafond de déblai : l'axe direct creusait dix-huit blocs au sud d'Amsterdam,
+  et TOUS les candidats de l'axe sud rendaient 17 au mieux. On relève d'abord
+  le relief en couronne autour de la ville (`ring.mjs` : une ligne par angle,
+  la hauteur de r − 20 à r + 260), puis l'on cherche le tracé depuis le côté
+  bas — ici l'ouest, 42 à r + 25.
+- **UN AXE DE TRAME N'EST PAS UNE RUE CONTINUE, ET L'AVENUE D'ENTRÉE SE LIT
+  JUSQU'AU BOUT.** L'axe sud d'Amsterdam coupe quatre canaux sans pont ; l'axe
+  ouest les franchit. Le témoin de la v310 ne lisait que trente blocs depuis
+  la porte : il aurait été vert sur des voitures qui roulent sur l'eau. Il lit
+  maintenant chaque entrée de ville engendrée jusqu'à douze blocs du centre,
+  le bloc à hauteur de carrosserie ET la cote roulable (`h < 30`).
+- **UNE RECHERCHE QUI REND ZÉRO CANDIDAT DIT POURQUOI.** Mes deux premières
+  recherches par l'ouest rendaient « 0 » ; il a fallu compter les refus par
+  obstacle pour voir que Schiphol en prenait 53 000 sur 58 000 — l'aérodrome
+  est exactement entre les deux villes. Une sonde de tracé publie le compte de
+  refus de chaque contrainte, comme le témoin des passants sépare ses trois
+  pannes (v223).
+- **UNE BARRE FRÔLÉE SUR TOUS LES CANDIDATS EST UNE CONTRAINTE DE GÉOGRAPHIE,
+  PAS UN RÉGLAGE.** Par la sortie nord de Bruxelles, la colline de l'Atomium
+  rendait 9,04 de déblai pour un plafond à 9, et le minimum sur trente-deux
+  mille tracés valait 8,93. On n'a pas monté la barre : on a changé de sortie
+  (l'est, basse), et le déblai tombe à 8,4.
+
 ## L'E429 Lille–Bruxelles (v310) — une route vers une ville engendrée arrive dans l'axe de sa trame
 
 Deuxième route du registre, première vers une ville sans avenue d'entrée
