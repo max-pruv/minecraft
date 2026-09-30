@@ -770,6 +770,20 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## L'A109 Nairobi–Mombasa (v315) — une sonde de tracé recopie les règles du profil
+
+Sixième route. Une règle.
+
+- **CE QUE LE PROFIL FAIT D'UN TRACÉ, LA SONDE DOIT LE FAIRE AUSSI.** Mes
+  premiers tracés sortaient « admissibles » et échouaient au premier relevé
+  exact : une mare isolée comblée sur sept blocs (la buse de `profilDe`), puis
+  deux ponts à deux blocs l'un de l'autre, joint ouvert. La sonde
+  (`trace-vite.mjs`) recopie maintenant le retour au remblai des ouvrages de
+  moins de trois colonnes et exige huit blocs de sol entre deux ponts — et le
+  tracé retenu passe le relevé exact du premier coup. Une sonde qui ne connaît
+  pas une règle du générateur trouve des tracés que le générateur refuse ; on
+  la corrige, on ne trie pas ses résultats à la main.
+
 ## L'A-4 Madrid–Séville (v314) — un ravin trop étroit pour un pont se comble
 
 Cinquième route, la plus longue. Deux règles.

@@ -139,6 +139,18 @@ export const ROUTES = [
   // (il faut trois colonnes), donc COMBLÉ — dix blocs de remblai pour une
   // barre à quatre. Le profil exact se relit sur chaque variante.
   { nom: 'A-4', villes: ['madrid', 'seville'], via: [[-2550, 5401], [-2559, 5440], [-2599, 5485], [-2881, 6073], [-3391, 6930]] },
+  // L'A109 (v315), NAIROBI–MOMBASA : la première route d'Afrique, et la plus
+  // longue (2 005 blocs). Au sud de Nairobi, là où le cap mène, le pays est
+  // semé de mares : chaque colonne d'eau isolée se COMBLE (une buse, règle de
+  // `profilDe`) jusqu'à sept blocs de haut, et deux mares voisines font deux
+  // ponts à deux blocs l'un de l'autre, dont le joint s'ouvre (150 points).
+  // On sort donc par l'EST, puis trois coudes tournent vers la côte. Mombasa
+  // est petite (rayon 47) : son avenue d'entrée fait quinze blocs au plus, et
+  // −110° est l'angle où elle est propre. Mesuré sous node (sondes/
+  // trace-vite.mjs, qui recopie désormais la règle de la buse et exige huit
+  // blocs de sol entre deux ponts) : deux ponts, déblai 7,3, remblai 3,5,
+  // pente 0,061, joint fermé (0 / 13 065), zéro rail, zéro repère.
+  { nom: 'A109', villes: ['nairobi', 'mombasa'], via: [[13300, 29941], [13335, 29961], [13368, 30011], [13929, 31249], [14169, 31426], [14227, 31440], [14294, 31501]] },
 ];
 
 // --- la section -----------------------------------------------------------------
