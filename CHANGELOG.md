@@ -20,6 +20,48 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v311 — L'autoroute Bruxelles–Amsterdam : le relief dessine le tracé
+
+**Pourquoi.** Le kit v4 de Max demande les routes interurbaines pour toute la
+carte. La v310 avait instruit les candidats et fixé l'ordre : Bruxelles–
+Amsterdam d'abord, parce qu'elle prolonge l'E429. Sur l'axe direct, elle
+arrivait par le sud d'Amsterdam, où le pays est à 47-52 blocs pour une ville à
+33 : un profil à six pour cent y creusait une tranchée de dix-huit blocs, un
+canyon.
+
+**Ce que ça change.** L'E19 relie Bruxelles à Amsterdam : 1 041 blocs de deux
+fois deux voies, sans un pont, et vingt voitures qui font l'aller-retour. De
+Paris, on roule maintenant jusqu'à Amsterdam.
+
+- **À Amsterdam**, elle entre par l'ouest, le seul côté bas de la ville. La
+  rue de l'axe ouest franchit les canaux sur des ponts ; l'axe sud les coupe
+  sans pont, les voitures y auraient roulé sur l'eau.
+- **Schiphol** est exactement entre les deux villes. La route le contourne par
+  l'est, à quatre-vingt-cinq blocs de son disque, puis trois virages la
+  tournent vers l'entrée ouest.
+- **À Bruxelles**, elle sort par l'est. La sortie nord montait sur la colline
+  de l'Atomium : 9,04 blocs de tranchée pour un plafond à 9, sur tous les
+  tracés essayés.
+
+Rien n'est écrit dans le relief : les deux empreintes de `plafond.js` ne
+bougent pas.
+
+**Ce qui le prouve.** Dans `carteMonde.js`, un témoin neuf et un témoin
+élargi, rouges sur `origin/main` (un seul segment, aucune entrée à Bruxelles
+ni à Amsterdam) :
+
+- l'E19 existe, porte un convoi de vingt voitures, et l'entrée d'Amsterdam
+  arrive sur la rue, sans eau ni bloc sur l'avenue ;
+- le témoin des entrées lit désormais TOUTES les entrées des villes
+  engendrées (Bruxelles deux fois, Amsterdam une), jusqu'au bout de l'avenue,
+  et non plus la seule première entrée de Bruxelles sur trente blocs.
+
+Les témoins de route de la v300 lisent tous les segments : pente 0,063,
+déblai 8,4, remblai 2,2, épinglage aux deux portes, aucun aérodrome, aucune
+ville traversée. Le tracé a été cherché sous node parmi 32 000 candidats, dont
+6 400 écartés par Schiphol ; aucun ne passait sous le plafond de déblai par
+la sortie nord de Bruxelles.
+
 ## v310 — L'autoroute Lille–Bruxelles : la première route vers une ville engendrée
 
 **Pourquoi.** Le kit v4 de Max place les routes interurbaines juste après le

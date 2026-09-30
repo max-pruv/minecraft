@@ -79,6 +79,25 @@ export const ROUTES = [
   // cinq sur l'axe (r + 29 à r + 69) : les plus proches mettaient un pont de
   // deux blocs sur le coude, dont le joint s'ouvrait (153 trous).
   { nom: 'E429', villes: ['lille', 'bruxelles'], via: [[431, -998]], bord: { bruxelles: 34 } },
+  // L'E19 (v311), BRUXELLES–AMSTERDAM : deux villes engendrées, et c'est le
+  // RELIEF qui a dessiné le tracé, pas la carte. L'axe direct arrive par le
+  // sud d'Amsterdam, où le pays est à 47-52 pour une ville à 33 : un profil à
+  // six pour cent y creuse DIX-HUIT blocs (mesuré 18,3), un canyon. Le sud et
+  // l'est d'Amsterdam sont pareils ; seul l'ouest est bas (42 à r + 25, puis
+  // la mer) — on y entre donc par l'axe ouest, dont la rue franchit les
+  // canaux sur des ponts (l'axe sud, lui, les coupe sans pont). Et Schiphol
+  // (502, −1519, r 74) est exactement entre les deux : on le contourne par
+  // l'est, puis trois coudes de trente degrés tournent vers l'ouest juste
+  // avant le disque. À Bruxelles, la sortie nord monte sur la colline de
+  // l'Atomium (49 à 150 blocs) : déblai 9,04 pour une barre à 9, sur tous les
+  // tracés qui la prennent. La sortie EST, basse (34 à 40), puis deux coudes
+  // vers le nord, la tient à 8,4.
+  // Mesuré sous node (scratchpad ams/, cherche9.mjs) : 1 041 blocs, aucun
+  // pont, déblai 8,4, remblai 2,2, pente 0,063, zéro rail, zéro repère,
+  // Schiphol à 85 blocs au-delà de son disque, l'Atomium à 146, et les deux
+  // avenues d'entrée sur la rue de bout en bout (75 et 93 colonnes, aucune
+  // dans un bloc, aucune sur l'eau).
+  { nom: 'E19', villes: ['bruxelles', 'amsterdam'], via: [[620, -970], [648, -981], [667, -1004], [720, -1175], [612, -1831], [613, -1851], [628, -1875], [641, -1882]], bord: { bruxelles: 34 } },
 ];
 
 // --- la section -----------------------------------------------------------------

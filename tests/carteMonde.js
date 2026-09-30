@@ -575,6 +575,7 @@ const VRAIES_KM = [
       out.contactMax = +out.contactMax.toFixed(2);
       out.convoi = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A1') || null;
       out.convoiE429 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'E429') || null;
+      out.convoiE19 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'E19') || null;
       // LES ENTRÉES DE VILLE ÉVITENT LES MONUMENTS (v310) : l'avenue d'entrée
       // de l'E429 à Lille visait d'abord Euralille et finissait dans la tour
       // de Lille. On lit, le long de chaque avenue d'entrée de Lille, les BLOCS
@@ -599,13 +600,31 @@ const VRAIES_KM = [
           }
           return { route: e.route, dans, vus };
         });
+        // TOUTE ENTRÉE DE VILLE ENGENDRÉE (v311) : Bruxelles en a deux,
+        // Amsterdam une. Chacune doit arriver sur la rue (trente blocs depuis
+        // la porte) et, jusqu'au bout de l'avenue (douze blocs du centre), ne
+        // traverser aucun bloc à hauteur de carrosserie ni rouler sur l'eau —
+        // l'axe sud d'Amsterdam coupe quatre canaux sans pont, l'axe ouest les
+        // franchit.
         const VM = await import('./src/villesmonde.js');
-        const f = VM.VILLES_MONDE.find((v) => v.cle === 'bruxelles'), eb = m.entreesDe('bruxelles')[0];
-        if (f && eb) {
-          const dx = f.ancre.x - eb.x, dz = f.ancre.z - eb.z, l = Math.hypot(dx, dz);
-          let rue = 0, n = 0;
-          for (let d = 0; d <= 30; d += 2) { n++; const v = VM.solVillesMonde(Math.round(eb.x + dx / l * d), Math.round(eb.z + dz / l * d)); if (v !== null && v !== 'lot') rue++; }
-          out.entreeBruxelles = { rue, n };
+        const cles = new Set(m.segmentsDeRoute().flatMap((sg) => [sg.de, sg.vers]));
+        out.entreesEngendrees = [];
+        for (const cle of cles) {
+          const f = VM.VILLES_MONDE.find((v) => v.cle === cle);
+          if (!f) continue;
+          for (const e of m.entreesDe(cle)) {
+            const dx = f.ancre.x - e.x, dz = f.ancre.z - e.z, l = Math.hypot(dx, dz);
+            let rue = 0, n = 0, vus = 0, dans = null, eau = 0;
+            for (let d = 0; d <= 30; d += 2) { n++; const v = VM.solVillesMonde(Math.round(e.x + dx / l * d), Math.round(e.z + dz / l * d)); if (v !== null && v !== 'lot') rue++; }
+            for (let d = 0; d <= l - 12 && !dans; d += 0.5) {
+              const X = Math.floor(e.x + dx / l * d), Z = Math.floor(e.z + dz / l * d);
+              if (m.routeEn(X, Z)) continue;
+              const h = w.coteRoulable(X, Z); vus++;
+              if (h < 30) eau++;
+              if (w.isSolid(X, h + 1, Z) || w.isSolid(X, h + 2, Z)) dans = [X, Z, w.getBlock(X, h + 1, Z)];
+            }
+            out.entreesEngendrees.push({ ville: cle, route: e.route, rue, n, vus, dans, eau });
+          }
         }
       } catch (e) { out.entreesErreur = String(e); }
       return out;
@@ -640,8 +659,21 @@ const VRAIES_KM = [
       JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiE429 ? { nom: a1.convoiE429.nom, voitures: (a1.convoiE429.modeles || []).length } : 'aucun convoi E429' }));
     verifier('et ses entrées de ville ne traversent aucun monument, et arrivent sur une rue',
       !a1.absent && !a1.entreesErreur && (a1.entreesLille || []).length >= 2 && a1.entreesLille.every((e) => !e.dans && e.vus > 20)
-      && !!a1.entreeBruxelles && a1.entreeBruxelles.rue >= a1.entreeBruxelles.n * 0.7,
-      JSON.stringify(a1.absent ? a1 : { lille: a1.entreesLille, bruxelles: a1.entreeBruxelles, erreur: a1.entreesErreur }));
+      && (a1.entreesEngendrees || []).some((e) => e.ville === 'bruxelles')
+      && a1.entreesEngendrees.every((e) => e.rue >= e.n * 0.7 && !e.dans && e.eau === 0 && e.vus > 20),
+      JSON.stringify(a1.absent ? a1 : { lille: a1.entreesLille, engendrees: a1.entreesEngendrees, erreur: a1.entreesErreur }));
+
+    // L'E19 (v311) : Bruxelles–Amsterdam, deux villes engendrées. Le tracé
+    // contourne Schiphol et entre par l'axe ouest d'Amsterdam, le seul côté
+    // bas (routes.js) ; le profil, les ponts, les aérodromes et les
+    // sanctuaires sont gardés par les témoins de l'A1, qui lisent TOUS les
+    // segments. Ici : la route existe, ses voitures roulent, et Amsterdam a
+    // son entrée sur la rue — sans eau ni bloc sur l'avenue.
+    verifier('l\'E19 relie Bruxelles à Amsterdam, et des voitures y roulent jusqu\'au centre',
+      !a1.absent && a1.segments >= 3 && !!a1.convoiE19 && a1.convoiE19.routier && (a1.convoiE19.modeles || []).length >= 10
+      && (a1.entreesEngendrees || []).some((e) => e.ville === 'amsterdam' && e.route === 'E19' && !e.dans && e.eau === 0 && e.rue >= e.n * 0.7),
+      JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiE19 ? { nom: a1.convoiE19.nom, voitures: (a1.convoiE19.modeles || []).length } : 'aucun convoi E19',
+        amsterdam: (a1.entreesEngendrees || []).filter((e) => e.ville === 'amsterdam') }));
 
     // DE VRAIS RAILS, EN RELIEF, ET DEUX VOIES (v281) ------------------------
     //
