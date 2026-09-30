@@ -20,6 +20,35 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v313 — L'autoroute São Paulo–Rio, et le témoin des ponts lit toutes les routes
+
+**Pourquoi.** Dernier des trois corridors instruits en v310 : São Paulo–Rio, la
+Via Dutra. Les routes n'existaient pas encore dans l'hémisphère sud.
+
+**Ce que ça change.** La BR-116 relie São Paulo à Rio : 701 blocs de deux fois
+deux voies, un pont juste avant Rio, et vingt voitures qui font l'aller-retour.
+
+- **À São Paulo**, la ville n'a pas ses rues sur les axes que sa fiche déclare :
+  dans l'axe, l'avenue d'entrée tombait sur des immeubles, puis sur un banc de
+  trottoir. L'entrée a été choisie parmi tous les angles de −30° à 0° : celle
+  dont l'avenue est la plus longue sur la chaussée (46 blocs, 97 %).
+- **À Rio**, de l'eau borde la ville à l'ouest : tous les tracés ont un pont,
+  celui-ci à vingt-cinq blocs de l'entrée.
+
+Rien n'est écrit dans le relief : les deux empreintes de `plafond.js` ne
+bougent pas.
+
+**Ce qui le prouve.**
+
+- `carteMonde.js` : un témoin neuf, rouge sur `origin/main` (pas de BR-116) — la
+  route existe, porte vingt voitures, et entre dans les deux villes sans eau ni
+  bloc sur l'avenue.
+- `plafond.js` : le témoin du joint des ponts (v302) ne lisait que l'A1, dans
+  une fenêtre fixe de ±8 blocs. Il lit désormais les ponts de TOUTES les
+  routes, dans la largeur réelle de la section. Ma première sonde, à ±8 blocs,
+  comptait 397 « trous » au pont de Rio — tous hors de la route, là où la
+  chaussée se resserre en avenue ; dans la largeur réelle, zéro sur 5 644.
+
 ## v312 — L'autoroute Montréal–Québec : la première route du Nouveau Monde
 
 **Pourquoi.** Troisième corridor de l'ordre fixé en v310, après Lille–Bruxelles

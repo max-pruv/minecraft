@@ -577,6 +577,7 @@ const VRAIES_KM = [
       out.convoiE429 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'E429') || null;
       out.convoiE19 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'E19') || null;
       out.convoiA20 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A20') || null;
+      out.convoiBR116 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'BR-116') || null;
       // LES ENTRÉES DE VILLE ÉVITENT LES MONUMENTS (v310) : l'avenue d'entrée
       // de l'E429 à Lille visait d'abord Euralille et finissait dans la tour
       // de Lille. On lit, le long de chaque avenue d'entrée de Lille, les BLOCS
@@ -690,6 +691,16 @@ const VRAIES_KM = [
       && ['montreal', 'quebec'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'A20' && !e.dans && e.eau === 0 && e.vus >= 20)),
       JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiA20 ? { nom: a1.convoiA20.nom, voitures: (a1.convoiA20.modeles || []).length } : 'aucun convoi A20',
         entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'A20') }));
+
+    // LA BR-116 (v313) : São Paulo–Rio. São Paulo n'a pas sa trame sur les axes
+    // de sa fiche : l'entrée a été choisie par l'angle où l'avenue est la plus
+    // longue sur la chaussée ; et un pont tombe dans le raccord de Rio (le
+    // témoin du joint, dans plafond.js, lit désormais toutes les routes).
+    verifier('la BR-116 relie São Paulo à Rio, et des voitures entrent dans les deux villes',
+      !a1.absent && a1.segments >= 5 && !!a1.convoiBR116 && a1.convoiBR116.routier && (a1.convoiBR116.modeles || []).length >= 10
+      && ['saopaulo', 'rio'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'BR-116' && !e.dans && e.eau === 0 && e.vus >= 20)),
+      JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiBR116 ? { nom: a1.convoiBR116.nom, voitures: (a1.convoiBR116.modeles || []).length } : 'aucun convoi BR-116',
+        entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'BR-116') }));
 
     // DE VRAIS RAILS, EN RELIEF, ET DEUX VOIES (v281) ------------------------
     //

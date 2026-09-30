@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 313,
+    titre: 'L\'autoroute São Paulo–Rio',
+    puces: [
+      'De São Paulo à Rio en voiture',
+      'Un pont juste avant Rio',
+      'Des voitures sur la nouvelle autoroute',
+    ],
+  },
+  {
     v: 312,
     titre: 'L\'autoroute Montréal–Québec',
     puces: [

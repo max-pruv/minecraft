@@ -228,14 +228,16 @@
   14,5 % → 4,0 %, le fondu raide adouci) ; (b) les autres routes interurbaines
   — FAITES : A1 (v300), E429 Lille–Bruxelles (v310), E19 Bruxelles–Amsterdam
   (v311, par l'ouest d'Amsterdam et l'est de Bruxelles : le relief ne laisse
-  pas d'autre entrée sous neuf blocs de déblai), A20 Montréal–Québec (v312). INSTRUITES en v310 sur
+  pas d'autre entrée sous neuf blocs de déblai), A20 Montréal–Québec (v312), BR-116 São
+  Paulo–Rio (v313). INSTRUITES en v310 sur
   l'axe direct (longueur · eau · rail parallèle · obstacles) : Bruxelles–
   Amsterdam 790 · 56 · 0 · aucun ; Montréal–Québec 873 · 18 · 0 ; São Paulo–
   Rio 611 · 28 · 0 ; Nagoya–Kyoto 314 · 0 · 107 (le Shinkansen le long) ;
   Cologne–Francfort 739 · 6 · 349 ; Madrid–Séville 1 835 · 42 · 0 ; Nairobi–
   Mombasa 1 906 · 20 · 0 ; Florence–Rome et Tokyo–Nagoya ont un aérodrome sur
   l'axe ; NY–Washington traverse DC ; SF–LA passe sur SFO et deux repères.
-  Les suivants, dans cet ordre : São Paulo–Rio. Le kit propose 23 corridors
+  Les trois corridors instruits en v310 sont faits ; les suivants sont à
+  instruire parmi les candidats du kit. Le kit propose 23 corridors
   candidats (`examples/road-candidates.json`), à instruire un par un contre
   l'eau, les aérodromes, les repères et les sanctuaires comme l'A1 ; (c) les
   falaises et l'eau (surface rocheuse au lieu de marches, berges) ; (d) les

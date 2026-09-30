@@ -111,6 +111,20 @@ export const ROUTES = [
   // porte, à vingt blocs du bord, tombait SUR un îlot (34 blocs du centre) :
   // à vingt-deux, elle est sur la rue, et l'avenue fait quinze blocs.
   { nom: 'A20', villes: ['montreal', 'quebec'], via: [[-19825, 2190], [-19781, 2167], [-19767, 2146], [-19745, 1840], [-19605, 1566], [-19551, 1494], [-19511, 1463]], bord: { quebec: 22 } },
+  // LA BR-116 (v313), SÃO PAULO–RIO, la Via Dutra. Deux leçons de mesure.
+  // São Paulo n'a pas sa trame là où sa fiche la déclare : sur les axes de
+  // `trame.ang`, l'avenue d'entrée tombe sur des îlots (zéro colonne) et, un
+  // peu de biais, sur un banc de trottoir. On a donc balayé l'ANGLE d'entrée
+  // de −30° à 0° et gardé celui dont l'avenue est la plus longue, sur la
+  // chaussée (97 %) et sans aucun bloc à hauteur de carrosserie : −15°,
+  // 46 blocs. Et Rio a de l'eau juste à l'ouest de son disque : tous les
+  // tracés ont un pont, celui-ci à 25 blocs de la porte, dans le RACCORD où
+  // la chaussée se resserre en avenue — ma première sonde de joint mesurait
+  // à ±8 blocs quelle que soit la largeur et y comptait 397 « trous » hors
+  // de la route ; dans la largeur réelle, zéro sur 5 644.
+  // Mesuré sous node : 701 blocs, un pont (s 664–676), déblai 7,4, remblai
+  // 2,9, zéro rail, zéro repère, avenue de Rio 87 colonnes sur la rue.
+  { nom: 'BR-116', villes: ['saopaulo', 'rio'], via: [[-13532, 43112], [-13442, 43112], [-13343, 43061], [-13122, 42756], [-13100, 42745]] },
 ];
 
 // --- la section -----------------------------------------------------------------
