@@ -173,6 +173,14 @@
   tout »). Cône de pente 0,7 hors du disque, qui n'abaisse que : 651 rayons
   raides → 2 (les deux sont des villes AU-DESSUS de leur pays, que le cône ne
   relève pas, à dessein). Seuils à marche de la v308 : 14,5 % → 4,0 %.
+- [ ] **LE PORTAIL DE LA v312 (règle de la v195).** Verts : `carteMonde.js` (le
+  témoin de l'A20, rouge sur `origin/main`), `plafond.js`, `carte.js`,
+  `washington.js`. Rouges, tous déjà déclarés : `maj.js`, « corps, programmes et
+  fond de carte » (au portail 14/25 programmes ; rejouée SEULE, personnages 5/9 —
+  ce qui manque varie, le témoin rougit) ; `manhattan.js:282` (délai, v269) ;
+  `monte.js`, la monoplace à 9,1 pour < 9 et l'écran figé (2 967 ms · 23,8 %,
+  sous l'étendue d'`origin/main`). La livraison ne touche ni l'accueil, ni
+  Manhattan, ni les circuits.
 - [ ] **LE PORTAIL DE LA v311 (règle de la v195).** Verts : `carteMonde.js`
   (le témoin de l'E19 et celui des entrées, élargi à toutes les villes
   engendrées — rouges sur `origin/main`, pas d'E19 ni d'entrée à Amsterdam),
