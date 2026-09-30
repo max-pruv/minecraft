@@ -20,6 +20,34 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v314 — L'autoroute Madrid–Séville : la plus longue route du jeu
+
+**Pourquoi.** Les trois corridors choisis en v310 étaient faits. Parmi les
+suivants du relevé, Madrid–Séville n'a ni voie ferrée ni aérodrome sur l'axe :
+l'Autovía del Sur, la première route d'Espagne.
+
+**Ce que ça change.** L'A-4 relie Madrid à Séville : 1 908 blocs de deux fois
+deux voies — la plus longue du jeu —, trois ponts, et vingt voitures qui font
+l'aller-retour.
+
+- **Les deux entrées** sont choisies par l'angle, comme à São Paulo : 75° à
+  Madrid, −35° à Séville, là où l'avenue est la plus longue sur la chaussée.
+- **Le tracé a été déplacé de trente blocs** au quatrième point de passage :
+  une variante mettait deux ponts à un bloc l'un de l'autre, une autre comblait
+  un ravin de deux colonnes sur dix blocs de haut.
+
+Rien n'est écrit dans le relief : les deux empreintes de `plafond.js` ne
+bougent pas.
+
+**Ce qui le prouve.** Dans `carteMonde.js`, un témoin neuf, rouge sur
+`origin/main` (pas d'A-4) : la route porte vingt voitures et entre dans les
+deux villes sans eau ni bloc sur l'avenue. Les témoins de route (profil,
+remblai ≤ 4, déblai ≤ 9) et le témoin du joint des ponts de `plafond.js`
+lisent toutes les routes. Et **Florence–Rome n'est pas faite, à dessein** :
+Fiumicino est posé au nord de Rome, sur la seule entrée nord propre, et
+l'entrée ouest arrive par la mer — deux cents blocs de viaduc. Déclaré dans
+`TASKS.md`.
+
 ## v313 — L'autoroute São Paulo–Rio, et le témoin des ponts lit toutes les routes
 
 **Pourquoi.** Dernier des trois corridors instruits en v310 : São Paulo–Rio, la

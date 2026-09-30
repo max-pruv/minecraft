@@ -770,6 +770,24 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## L'A-4 Madrid–Séville (v314) — un ravin trop étroit pour un pont se comble
+
+Cinquième route, la plus longue. Deux règles.
+
+- **UN OUVRAGE PLUS COURT QUE TROIS COLONNES N'EST PAS UN PONT.** `profilDe`
+  rend au remblai toute suite d'ouvrage de moins de trois colonnes (« une buse,
+  pas un pont ») — juste pour une colonne d'eau isolée, faux pour un ravin
+  étroit et profond : une variante y mettait dix blocs de remblai pour une
+  barre à quatre. Le témoin de la v300 l'aurait vu ; la sonde de tracé, qui
+  recopie la règle des ponts sans ce retour au remblai, ne le voyait pas. Le
+  profil EXACT (`profilDe`) se relit sur chaque variante retenue, avant le
+  joint.
+- **UNE RECHERCHE QUI NE FINIT PAS SE FAIT GROSSIÈRE D'ABORD.** La grille fine
+  de la v311 sur deux mille blocs n'a pas fini en trente minutes ; une grille
+  quatre fois plus lâche et deux virages au lieu de huit ont trouvé en neuf
+  minutes, puis l'on affine à la main le point de passage qui compte, en
+  mesurant chaque variante (joint, profil, entrées).
+
 ## La BR-116 São Paulo–Rio (v313) — une sonde de largeur fixe mesure hors de la route
 
 Quatrième route du registre. Deux règles.

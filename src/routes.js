@@ -125,6 +125,20 @@ export const ROUTES = [
   // Mesuré sous node : 701 blocs, un pont (s 664–676), déblai 7,4, remblai
   // 2,9, zéro rail, zéro repère, avenue de Rio 87 colonnes sur la rue.
   { nom: 'BR-116', villes: ['saopaulo', 'rio'], via: [[-13532, 43112], [-13442, 43112], [-13343, 43061], [-13122, 42756], [-13100, 42745]] },
+  // L'A-4 (v314), MADRID–SÉVILLE, l'Autovía del Sur : la plus longue du
+  // registre. L'entrée de chaque ville se choisit par l'ANGLE (la règle de
+  // São Paulo, v313) : 75° à Madrid, où l'axe de la trame vers le sud porte des
+  // îlots, et −35° à Séville — l'avenue la plus longue sur la chaussée, sans
+  // bloc ni eau. Mesuré sous node (scratchpad sondes/trace-vite.mjs, grille
+  // grossière : la fine ne finit pas en trente minutes sur deux mille blocs) :
+  // 1 908 blocs, trois ponts, déblai 6,2, remblai 3,3, zéro rail, zéro repère,
+  // Madrid–Barajas hors du couloir. Le quatrième point de passage a été
+  // déplacé de trente blocs, et c'est une mesure : le premier tracé mettait
+  // deux ponts à UN bloc l'un de l'autre (deux points ouverts au joint) ; un
+  // voisin franchissait un ravin de deux colonnes, trop étroit pour un pont
+  // (il faut trois colonnes), donc COMBLÉ — dix blocs de remblai pour une
+  // barre à quatre. Le profil exact se relit sur chaque variante.
+  { nom: 'A-4', villes: ['madrid', 'seville'], via: [[-2550, 5401], [-2559, 5440], [-2599, 5485], [-2881, 6073], [-3391, 6930]] },
 ];
 
 // --- la section -----------------------------------------------------------------

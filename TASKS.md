@@ -173,6 +173,11 @@
   tout »). Cône de pente 0,7 hors du disque, qui n'abaisse que : 651 rayons
   raides → 2 (les deux sont des villes AU-DESSUS de leur pays, que le cône ne
   relève pas, à dessein). Seuils à marche de la v308 : 14,5 % → 4,0 %.
+- [ ] **LE PORTAIL DE LA v314 (règle de la v195).** Verts : `carteMonde.js` (le
+  témoin de l'A-4, rouge sur `origin/main`), `plafond.js` (joint des neuf ponts,
+  58 099 points, zéro trou), `carte.js`. Rouges, déjà déclarés : `maj.js`
+  (corps, programmes et fond de carte — personnages 6/9 cette fois), `monte.js`
+  (l'écran figé : 3 400 ms · 28,9 %, dans l'étendue d'`origin/main`).
 - [ ] **LE PORTAIL DE LA v313 (règle de la v195).** Verts : `carteMonde.js` (le
   témoin de la BR-116, rouge sur `origin/main`), `plafond.js` (le joint des
   ponts lit désormais les six ponts de toutes les routes : 38 339 points, zéro
@@ -234,7 +239,12 @@
   — FAITES : A1 (v300), E429 Lille–Bruxelles (v310), E19 Bruxelles–Amsterdam
   (v311, par l'ouest d'Amsterdam et l'est de Bruxelles : le relief ne laisse
   pas d'autre entrée sous neuf blocs de déblai), A20 Montréal–Québec (v312), BR-116 São
-  Paulo–Rio (v313). INSTRUITES en v310 sur
+  Paulo–Rio (v313), A-4 Madrid–Séville (v314). **Florence–Rome, NON FAITE à
+  dessein** : Fiumicino (3655, 3967, r 72) est posé AU NORD de Rome, sur la seule
+  entrée nord propre de sa trame (−100° à −103°) — 79 819 tracés, tous refusés
+  par sa marge ; l'autre entrée propre (−175°, −192°) arrive par la mer, deux
+  cents blocs de viaduc. Déplacer un aérodrome est une décision de Max
+  (invariant 1) ; un viaduc en mer aussi. Nairobi–Mombasa reste à instruire. INSTRUITES en v310 sur
   l'axe direct (longueur · eau · rail parallèle · obstacles) : Bruxelles–
   Amsterdam 790 · 56 · 0 · aucun ; Montréal–Québec 873 · 18 · 0 ; São Paulo–
   Rio 611 · 28 · 0 ; Nagoya–Kyoto 314 · 0 · 107 (le Shinkansen le long) ;
