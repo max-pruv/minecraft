@@ -714,8 +714,8 @@ const VRAIES_KM = [
         entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'A-4') }));
 
     // L'A109 (v315) : Nairobi–Mombasa, la première route d'Afrique. Mombasa est
-    // petite : son avenue fait quinze blocs, et le témoin des entrées exige
-    // qu'elle en ait au moins dix (vus ≥ 20 pas d'un demi-bloc).
+    // petite : son avenue fait vingt et un blocs (porte à quatorze du bord), et
+    // le témoin des entrées exige au moins dix blocs hors de l'autoroute.
     verifier('l\'A109 relie Nairobi à Mombasa, et des voitures entrent dans les deux villes',
       !a1.absent && a1.segments >= 7 && !!a1.convoiA109 && a1.convoiA109.routier && (a1.convoiA109.modeles || []).length >= 10
       && ['nairobi', 'mombasa'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'A109' && !e.dans && e.eau === 0 && e.vus >= 20)),
