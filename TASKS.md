@@ -173,6 +173,15 @@
   tout »). Cône de pente 0,7 hors du disque, qui n'abaisse que : 651 rayons
   raides → 2 (les deux sont des villes AU-DESSUS de leur pays, que le cône ne
   relève pas, à dessein). Seuils à marche de la v308 : 14,5 % → 4,0 %.
+- [ ] **LE PORTAIL DE LA v310, RIEN DE NEUF (règle de la v195).** Verts :
+  `carteMonde.js` (les deux témoins de l'E429, rouges sur `origin/main` par
+  construction — un seul segment, aucune entrée à Bruxelles), `plafond.js`,
+  `carte.js`, `washington.js`. Rouges, tous déjà déclarés avec leur double
+  mesure : `maj.js` (le fond de carte), `manhattan.js` (la géométrie de façade
+  9 203 → 51 734, le taxi au tactile 0,7 bloc, `PeerJS: Lost connection`),
+  `monte.js` (l'écran figé à l'arrivée : pire image 3 783 ms, 33,8 %, dans
+  l'étendue relevée sur `origin/main`, 3 517 ms · 41,4 % et 4 933 ms · 36,4 %).
+  La livraison ne touche ni Manhattan, ni l'accueil, ni l'arrivée à Paris.
 - [ ] **LE PORTAIL DE LA v309, DOUBLE MESURE (règle de la v195).** Rouges au
   portail, rejoués SEULS : `monte.js` sur la branche → 3 rouges (un train
   Eurostar qui traverse la voiture, 12 relevés « dedans » ; l'écran figé en
