@@ -173,6 +173,11 @@
   tout »). Cône de pente 0,7 hors du disque, qui n'abaisse que : 651 rayons
   raides → 2 (les deux sont des villes AU-DESSUS de leur pays, que le cône ne
   relève pas, à dessein). Seuils à marche de la v308 : 14,5 % → 4,0 %.
+- [ ] **LE PORTAIL DE LA v314 (règle de la v195).** Verts : `carteMonde.js` (le
+  témoin de l'A-4, rouge sur `origin/main`), `plafond.js` (joint des neuf ponts,
+  58 099 points, zéro trou), `carte.js`. Rouges, déjà déclarés : `maj.js`
+  (corps, programmes et fond de carte — personnages 6/9 cette fois), `monte.js`
+  (l'écran figé : 3 400 ms · 28,9 %, dans l'étendue d'`origin/main`).
 - [ ] **LE PORTAIL DE LA v313 (règle de la v195).** Verts : `carteMonde.js` (le
   témoin de la BR-116, rouge sur `origin/main`), `plafond.js` (le joint des
   ponts lit désormais les six ponts de toutes les routes : 38 339 points, zéro
