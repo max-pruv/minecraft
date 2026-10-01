@@ -48,13 +48,13 @@
   pourrait voir une rue où une voiture DEVRAIT être. Sonde à écrire : à
   l'instant où `placeProche` rend la place, relever `c.vu`, la distance de la
   tête, `retardMax()` et ce que `montrer` calcule pour cette place.
-- [ ] **LES QUAIS DE LA SEINE MONTRENT UN MUR DE TERRE (vu en v306, capture
-  `apres-quai`).** Sous la margelle de pierre du quai, la paroi qui descend à
-  l'eau est en blocs de TERRE sur toute sa hauteur : c'est le relief nu, pas un
-  mur de quai. Non mesuré : ni sur `origin/main` (la Seine d'avant avait-elle
-  le même défaut ?), ni l'étendue (tout le linéaire ou un tronçon ?). À faire
-  sous node : balayer les colonnes de berge de `solParis` et compter la
-  matière posée entre l'eau et la margelle, des deux côtés.
+- [x] **LES QUAIS DE LA SEINE MONTRENT UN MUR DE TERRE — FAIT EN v316.**
+  Mesuré : sur les colonnes qui touchent l'eau, deux blocs de terre au-dessus
+  de la Seine sous la margelle de granit, des deux rives ET au bord des îles
+  (639 faces de terre sur `origin/main`). `murDeQuaiParis` (paris.js) : pierre
+  haussmannienne de `WATER_LEVEL − 2` au sommet, matière seule, relief
+  intact. Reste : six faces d'HERBE au sommet de quelques colonnes du quai bas
+  (un jardin qui touche l'eau), laissées telles quelles.
 - [ ] **EN LIGNE, UNE VOITURE DE LA RUE ENTRE ENCORE UNE FOIS DANS CELLE D'UN
   AMI (v305, mesuré en v306).** Le témoin de `reseau.js` pose Marlon au volant
   dans la rue de Paris et regarde chez Alice. Ce qui est PROUVÉ : la voiture
@@ -173,6 +173,19 @@
   tout »). Cône de pente 0,7 hors du disque, qui n'abaisse que : 651 rayons
   raides → 2 (les deux sont des villes AU-DESSUS de leur pays, que le cône ne
   relève pas, à dessein). Seuils à marche de la v308 : 14,5 % → 4,0 %.
+- [ ] **LE PORTAIL DE LA v316 (règle de la v195), DOUBLE MESURE FAITE.** Verts :
+  `carteMonde.js` (le témoin des quais, rouge sur `origin/main` : 639 faces de
+  terre ; ici 0 sur 935), `plafond.js` (empreintes intactes), `carte.js`,
+  `parishd.js`, `metro.js`, `washington.js`. `maj.js` : un rouge DE MOI, le
+  titre du journal à sept mots, corrigé et rejoué seul. `manhattan.js` : le trou
+  de façade (9 203 → 51 734, dette de la v291) et `#ride-btn` qui expire
+  (intermittence vue des deux côtés, v279/v291). `monte.js` : l'écran figé
+  (3 050 ms · 25,4 %) et « se téléporter à Paris ne compile plus les
+  programmes » à 5 pour une barre à 4 — rejoué SEUL par
+  `sonde-programmes-paris.cjs`, trois fois de chaque côté en alternance :
+  branche 3 · 3 · 2, `origin/main` 3 · 3 · 3. Même distribution ; le 5 est un
+  tirage sous la charge du portail, et la dette de la v306 (deux ou trois
+  programmes à l'arrivée) reste ouverte telle quelle.
 - [ ] **LE PORTAIL DE LA v315 (règle de la v195), DOUBLE MESURE FAITE.** Le
   premier portail a trouvé un vrai défaut (l'avenue de Mombasa, 19 pas pour
   20), corrigé. Le second : `carteMonde.js`, `plafond.js` (onze ponts, 71 164

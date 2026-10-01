@@ -52,7 +52,7 @@ import {
   VOIES_LILLE,
 } from './lille.js';
 import {
-  PARIS, adresseParis, BUTTE, CITE, zCite, hauteurParis, solParis, lotParisLibre, batirColonneParis, gabaritParis, versSeine, pontParis,
+  PARIS, adresseParis, BUTTE, CITE, zCite, hauteurParis, solParis, lotParisLibre, batirColonneParis, gabaritParis, versSeine, pontParis, murDeQuaiParis,
   LIEUX, buildNotreDame, buildSacreCoeur, buildPantheon, buildInvalides, buildOpera,
   buildMontparnasse, buildColonneBastille, buildMoulinRouge,
   VOIES_PARIS, PORTEE_FEUX_PARIS,
@@ -2022,7 +2022,7 @@ function marquerParisCede(ens, x, z) {
 // carrefour plus loin du croisement (`PORTEE_FEUX_PARIS`) ; celle d'avant
 // garde la portée d'avant, sinon le monde d'avant ne rendrait plus la
 // production au bloc près.
-const PARIS_NEUF = { solParis, lotParisLibre, batirColonneParis, pontParis, VOIES: VOIES_PARIS, cle: 'paris', porteeFeux: PORTEE_FEUX_PARIS };
+const PARIS_NEUF = { solParis, lotParisLibre, batirColonneParis, pontParis, murDeQuai: murDeQuaiParis, VOIES: VOIES_PARIS, cle: 'paris', porteeFeux: PORTEE_FEUX_PARIS };
 const PARIS_AVANT = {
   solParis: PARIS_V302.solParis, lotParisLibre: PARIS_V302.lotParisLibre, batirColonneParis: PARIS_V302.batirColonneParis,
   pontParis: PARIS_V302.pontParis, VOIES: PARIS_V302.VOIES_PARIS, cle: 'paris-v302',
@@ -3151,6 +3151,12 @@ export class World {
           const PV = this.conf.parisAvant ? PARIS_AVANT : PARIS_NEUF;
           const cede = !this.conf.parisAvant && this.colonnesCedees.size > 0 && this.colonnesCedees.has(cleColonneParis(wx, wz));
           const sp = PV.solParis(wx, wz);
+          // Le mur du quai en pierre sous la margelle (v316). Le monde d'avant
+          // (`PARIS_AVANT`) n'a pas cette règle et n'en a pas besoin : la
+          // terre et la pierre arrêtent un bloc de la même façon.
+          if (PV.murDeQuai && PV.murDeQuai(wx, wz)) {
+            for (let y = WATER_LEVEL - 2; y < h; y++) data[World.index(x, y, z)] = CITY_BLOCK.HAUSSMANN;
+          }
           // La couronne déborde d'un bloc sur les quatre côtés : un arbre
           // large d'un seul bloc est un poteau vert, pas un arbre — trois
           // captures de rue pour s'en convaincre. On ne pose la question que

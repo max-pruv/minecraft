@@ -770,6 +770,22 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les quais de la Seine en pierre (v316) — sous la surface, c'est encore le monde qu'on voit
+
+Une règle.
+
+- **AU BORD DE L'EAU, LE REMPLISSAGE DU MONDE EST UNE FAÇADE.** Une ville
+  n'écrit que son SOL ; tout ce qui est dessous reste la terre et la pierre du
+  générateur. Partout ailleurs c'est invisible — et contre un fleuve c'est un
+  mur qu'on regarde d'un pont : deux blocs de terre sous la margelle des quais
+  de Paris, 639 faces, vus en capture en v306 et restés dix versions dans
+  `TASKS.md`. `murDeQuaiParis` change la MATIÈRE de la colonne entre l'eau et
+  la margelle, jamais sa hauteur : les empreintes de `plafond.js` ne bougent
+  pas, et le monde d'avant (`CONF_AVANT`) n'a pas besoin de la règle — la terre
+  et la pierre arrêtent un bloc de la même façon. Toute ville au bord de l'eau
+  (Londres et la Tamise, Lille et la Deûle) porte probablement le même défaut :
+  la sonde est une boucle de dix lignes sur les colonnes qui touchent l'eau.
+
 ## L'A109 Nairobi–Mombasa (v315) — une sonde de tracé recopie les règles du profil
 
 Sixième route. Une règle.

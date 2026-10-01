@@ -724,6 +724,25 @@ const DEMI_CHAUSSEE_PONT = 2.0;
 // reste dessous, le relief ne bouge pas. `pontParis` dit à `world.js` et à
 // `coteRoulable` quelles colonnes portent un tablier — l'eau ET la berge
 // basse, pour que le pont rejoigne la voie sur berge de plain-pied.
+// LE MUR DU QUAI EST EN PIERRE, PAS EN TERRE (v316). Le quai bas porte sa
+// margelle de granit, et sous elle `world.js` laissait le remplissage général
+// du monde : deux blocs de TERRE au-dessus de l'eau, sur tout le linéaire des
+// deux rives et au bord des deux îles — mesuré sur les colonnes qui touchent
+// l'eau, 200 faces de terre pour 94 de granit. Les murs de la Seine sont en
+// pierre calcaire, et c'est la première chose qu'on voit d'un pont. On ne
+// change que la MATIÈRE sous la surface : `hauteurParis` n'est pas lu ici, le
+// sommet de la colonne reste où il est, les deux empreintes de `plafond.js` ne
+// bougent pas. Vrai pour le quai bas, et pour le bord d'une île (`versSeine`
+// y rend 3, d'où le test du voisin).
+export function murDeQuaiParis(x, z) {
+  const d = versSeine(x, z);
+  if (d < 0) return false;
+  if (d < QUAI_BAS) return true;
+  if (!surLIle(x, z)) return false;
+  return versSeine(x + 1, z) < 0 || versSeine(x - 1, z) < 0
+    || versSeine(x, z + 1) < 0 || versSeine(x, z - 1) < 0;
+}
+
 export function pontParis(x, z) {
   const u = x - PARIS.x;
   if (versSeine(x, z) >= QUAI_BAS) return false;
