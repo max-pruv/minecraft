@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 316,
+    titre: 'Les quais de la Seine en pierre',
+    puces: [
+      'Les murs des quais sont en pierre',
+      'Plus de terre au bord de l\'eau',
+      'Aussi autour des deux îles',
+    ],
+  },
+  {
     v: 315,
     titre: 'L\'autoroute Nairobi–Mombasa',
     puces: [

@@ -2672,6 +2672,41 @@ const VRAIES_KM = [
       `${pontsParis.groupes} ponts, ${pontsParis.colonnes} colonnes de tablier sur l'axe du fleuve : ${pontsParis.secs} au sec,`
       + ` ${pontsParis.roulables} roulables à la cote ${pontsParis.base} (eau à ${pontsParis.eau})`);
 
+    // ET LE MUR DU QUAI EST EN PIERRE (v316). Sous la margelle de granit, la
+    // paroi qui descend à l'eau était le remplissage général du monde : deux
+    // blocs de TERRE au-dessus de la Seine, des deux rives et au bord des îles
+    // (sonde sous node : 200 faces de terre pour 94 de granit sur `origin/main`).
+    // Le témoin lit le MONDE : toute face de bloc au-dessus de l'eau, sur une
+    // colonne qui touche le fleuve, et qui donne sur l'eau ou sur l'air.
+    const quaisParis = await tab.evaluate(async () => {
+      const g = window.__game;
+      const [pa, wo, bl] = await Promise.all([import('./src/paris.js'), import('./src/world.js'), import('./src/blocks.js')]);
+      const P = pa.PARIS, faces = {};
+      let colonnes = 0;
+      for (let u = -P.r + 2; u < P.r - 2; u += 3) {
+        const x = P.x + u, zs = Math.round(pa.zSeine(x));
+        for (let z = zs - 40; z <= zs + 40; z++) {
+          if ((x - P.x) ** 2 + (z - P.z) ** 2 > (P.r - 2) ** 2) continue;
+          if (pa.versSeine(x + 0.5, z + 0.5) < 0) continue;
+          const eau = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([a, b]) => pa.versSeine(x + a + 0.5, z + b + 0.5) < 0);
+          if (!eau.length) continue;
+          colonnes++;
+          for (const [a, b] of eau) for (let y = wo.WATER_LEVEL + 1; y <= wo.WATER_LEVEL + 10; y++) {
+            const id = g.world.getBlock(x, y, z); if (!id) continue;
+            const n = g.world.getBlock(x + a, y, z + b);
+            if (n === 0 || n === bl.BLOCK.WATER) faces[id] = (faces[id] || 0) + 1;
+          }
+        }
+      }
+      const terre = faces[bl.BLOCK.DIRT] || 0;
+      const pierre = (faces[bl.CITY_BLOCK.HAUSSMANN] || 0) + (faces[bl.CITY_BLOCK.GRANITE] || 0);
+      const total = Object.values(faces).reduce((s, n) => s + n, 0);
+      return { colonnes, terre, pierre, total };
+    });
+    verifier('les murs des quais de la Seine sont en pierre, pas en terre',
+      quaisParis.colonnes > 100 && quaisParis.terre === 0 && quaisParis.pierre > quaisParis.total * 0.9,
+      `${quaisParis.colonnes} colonnes au bord de l'eau : ${quaisParis.terre} faces de terre, ${quaisParis.pierre} de pierre sur ${quaisParis.total}`);
+
     // ET LILLE, LE JOUR MÊME OÙ ELLE GAGNE DES CIRCUITS (v223) — pas quatre
     // versions plus tard comme Paris.
     //

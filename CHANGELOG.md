@@ -20,6 +20,27 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v316 — Les quais de la Seine sont en pierre
+
+**Pourquoi.** Sous la margelle de granit des quais de Paris, la paroi qui
+descend à la Seine était de la TERRE : deux blocs brun-vert au-dessus de l'eau,
+sur les deux rives et tout autour de l'île de la Cité et de l'île Saint-Louis.
+C'était le remplissage ordinaire du monde, que personne n'avait remplacé. Vu en
+capture en v306 et noté dans `TASKS.md` sans être mesuré.
+
+**Ce que ça change.** Les murs des quais et le bord des deux îles sont en
+pierre de Paris, de l'eau jusqu'à la margelle. Rien d'autre ne bouge : le sol,
+les ponts, la voie sur berge et tout ce que les enfants ont bâti restent où ils
+étaient.
+
+**Ce qui le prouve.** Un témoin neuf dans `carteMonde.js` lit le monde sur
+toutes les colonnes qui touchent la Seine et compte les faces visibles
+au-dessus de l'eau : sur `origin/main`, 639 faces de terre ; ici zéro, et 94 %
+de pierre. Les deux empreintes du relief de `plafond.js` sont intactes : seule
+la matière SOUS la surface change, jamais la hauteur d'une colonne.
+
+---
+
 ## v315 — L'autoroute Nairobi–Mombasa : la première route d'Afrique
 
 **Pourquoi.** Dernier corridor du relevé de la v310 sans voie ferrée ni
