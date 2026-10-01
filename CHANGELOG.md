@@ -20,6 +20,32 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v317 — Des quais en pierre dans toutes les villes
+
+**Pourquoi.** La v316 avait rendu leurs murs de pierre aux quais de la Seine,
+et seulement à eux. La même mesure faite ensuite sur toutes les rives de ville
+rendait la terre comme face la plus vue partout : Londres 399 faces, Lille 392,
+Amsterdam 364, Rome 190, Lyon 134, Stockholm 112, et jusqu'aux canaux de
+Venise. Une ville n'écrit que son sol ; ce qui est dessous reste le remplissage
+du monde, et contre l'eau c'est un mur qu'on regarde.
+
+**Ce que ça change.** Dans toutes les villes — les six bâties à la main et les
+villes engendrées —, une colonne qui borde l'eau et la domine d'au moins deux
+blocs reçoit un mur maçonné entre l'eau et son sommet. Les plages restent en
+sable. Rien ne change de hauteur, et rien de ce qu'un bâtisseur ou un enfant a
+posé n'est touché.
+
+**Ce qui le prouve.** Un témoin neuf dans `carteMonde.js` lit les rives de
+Londres, Lille, Amsterdam, Rome et Lyon sur un monde engendré pour l'occasion :
+zéro face de terre, contre 1 137 sur `origin/main` (Londres 199, Lille 250,
+Amsterdam 364, Rome 190, Lyon 134). Le témoin de la Seine
+(v316) reste vert. Les empreintes du relief de `plafond.js` ne bougent pas, et
+les mondes figés (`CONF_V308`, `CONF_AVANT`) n'ont pas la règle. Le coût par
+morceau ne se distingue pas du bruit (2,4 à 2,9 ms contre 2,5 à 2,7 sur
+`origin/main`, six villes au bord de l'eau, ordre alterné).
+
+---
+
 ## v316 — Les quais de la Seine sont en pierre
 
 **Pourquoi.** Sous la margelle de granit des quais de Paris, la paroi qui

@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 317,
+    titre: 'Des quais en pierre partout',
+    puces: [
+      'Londres, Lille, Amsterdam, Rome : quais maçonnés',
+      'Toutes les villes au bord de l\'eau',
+      'Les plages restent en sable',
+    ],
+  },
+  {
     v: 316,
     titre: 'Des quais de Seine en pierre',
     puces: [

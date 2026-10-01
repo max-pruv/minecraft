@@ -55,6 +55,12 @@
   haussmannienne de `WATER_LEVEL − 2` au sommet, matière seule, relief
   intact. Reste : six faces d'HERBE au sommet de quelques colonnes du quai bas
   (un jardin qui touche l'eau), laissées telles quelles.
+  **Et en v317 pour TOUTES les villes** (Londres, Lille, Amsterdam, Rome…) :
+  passe générale dans `generateChunk`. Reste, déclaré : les berges du Potomac à
+  Washington (hors du disque de la ville, naturelles, surtout de la pierre),
+  et trente-sept colonnes au bord du disque de Paris, où le relief du fondu
+  passe sous l'eau à côté d'un trottoir — elles sont désormais maçonnées
+  aussi, mais leur forme reste un bord de disque, pas un quai.
 - [ ] **EN LIGNE, UNE VOITURE DE LA RUE ENTRE ENCORE UNE FOIS DANS CELLE D'UN
   AMI (v305, mesuré en v306).** Le témoin de `reseau.js` pose Marlon au volant
   dans la rue de Paris et regarde chez Alice. Ce qui est PROUVÉ : la voiture
