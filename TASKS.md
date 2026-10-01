@@ -173,6 +173,19 @@
   tout »). Cône de pente 0,7 hors du disque, qui n'abaisse que : 651 rayons
   raides → 2 (les deux sont des villes AU-DESSUS de leur pays, que le cône ne
   relève pas, à dessein). Seuils à marche de la v308 : 14,5 % → 4,0 %.
+- [ ] **LE PORTAIL DE LA v316 (règle de la v195), DOUBLE MESURE FAITE.** Verts :
+  `carteMonde.js` (le témoin des quais, rouge sur `origin/main` : 639 faces de
+  terre ; ici 0 sur 935), `plafond.js` (empreintes intactes), `carte.js`,
+  `parishd.js`, `metro.js`, `washington.js`. `maj.js` : un rouge DE MOI, le
+  titre du journal à sept mots, corrigé et rejoué seul. `manhattan.js` : le trou
+  de façade (9 203 → 51 734, dette de la v291) et `#ride-btn` qui expire
+  (intermittence vue des deux côtés, v279/v291). `monte.js` : l'écran figé
+  (3 050 ms · 25,4 %) et « se téléporter à Paris ne compile plus les
+  programmes » à 5 pour une barre à 4 — rejoué SEUL par
+  `sonde-programmes-paris.cjs`, trois fois de chaque côté en alternance :
+  branche 3 · 3 · 2, `origin/main` 3 · 3 · 3. Même distribution ; le 5 est un
+  tirage sous la charge du portail, et la dette de la v306 (deux ou trois
+  programmes à l'arrivée) reste ouverte telle quelle.
 - [ ] **LE PORTAIL DE LA v315 (règle de la v195), DOUBLE MESURE FAITE.** Le
   premier portail a trouvé un vrai défaut (l'avenue de Mombasa, 19 pas pour
   20), corrigé. Le second : `carteMonde.js`, `plafond.js` (onze ponts, 71 164
