@@ -785,6 +785,16 @@ Une règle.
   et la pierre arrêtent un bloc de la même façon. Toute ville au bord de l'eau
   (Londres et la Tamise, Lille et la Deûle) porte probablement le même défaut :
   la sonde est une boucle de dix lignes sur les colonnes qui touchent l'eau.
+- **ET LA v317 A FAIT LA SONDE AU LIEU DE L'ÉCRIRE : TOUTES LES RIVES PORTAIENT
+  LE DÉFAUT.** Londres 399 faces de terre, Lille 392, Amsterdam 364, Rome 190,
+  Lyon 134 — c'est le verre dans les murs une huitième fois, la PORTÉE du
+  remède. La règle vit donc UNE fois, dans `generateChunk` (passe après les
+  colonnes, drapeau `mursDeQuai` de `CONF_NEUF` seule) : colonne de ville ou de
+  ville engendrée, sommet à deux blocs au moins au-dessus de l'eau, voisin d'eau
+  ouverte lu dans le morceau (au bord, dans le relief) — et l'on ne remplace que
+  la terre, l'herbe, le sable et la pierre naturelle. Manhattan a son propre sol
+  et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
+  dans le disque de la ville.
 
 ## L'A109 Nairobi–Mombasa (v315) — une sonde de tracé recopie les règles du profil
 

@@ -1471,13 +1471,14 @@ function repereAvant(lm) {
 export const CONF_NEUF = {
   cle: 'neuf', villes: CITIES, aeroports: AEROPORTS, gaulois: GAULOIS, volcan: VOLCANO,
   places: PLACES, reperes: LANDMARKS, hauteurParis, parisAvant: false, fonduDoux: true,
+  mursDeQuai: true,
 };
 // LE MONDE DE LA v306 À LA v308 — celui d'aujourd'hui sans le fondu doux des
 // villes (v309). La marche 6 → 7 juge sur lui ce qui y a été posé, et la marche
 // 5 → 6 y emmène ce qu'elle déplace : c'est là que Paris doublé a été joué. Il
 // ne se met JAMAIS à jour. Même clé que `CONF_NEUF` : ses zones à terre sont
 // les mêmes.
-export const CONF_V308 = { ...CONF_NEUF, fonduDoux: false };
+export const CONF_V308 = { ...CONF_NEUF, fonduDoux: false, mursDeQuai: false };
 export const CONF_AVANT = {
   cle: 'avant-v306', villes: CITIES_AVANT, aeroports: AEROPORTS_AVANT_V306, gaulois: GAULOIS_AVANT,
   volcan: VOLCANO_AVANT, places: PLACES_AVANT, reperes: LANDMARKS.map(repereAvant),
@@ -2901,6 +2902,9 @@ export class World {
     // 16-bit: block ids go beyond 255 with the decorative set
     const data = new Uint16Array(CHUNK * CHUNK * HEIGHT);
     const baseX = cx * CHUNK, baseZ = cz * CHUNK;
+    // les colonnes de ville qui POURRAIENT porter un mur de quai (v317) : leur
+    // relief, ou zéro — la passe d'après ne regarde que celles-là
+    const quais = this.conf.mursDeQuai ? new Uint8Array(CHUNK * CHUNK) : null;
 
     for (let z = 0; z < CHUNK; z++) {
       for (let x = 0; x < CHUNK; x++) {
@@ -2934,6 +2938,7 @@ export class World {
         const caveTunnel = Math.abs(fbm(wx * 0.02, wz * 0.02, SEED + 882) - 0.5);
         const caveY = 8 + fbm(wx * 0.01, wz * 0.01, SEED + 881) * 18;
         const city = this.cityAt(wx, wz);
+        if (quais && h >= WATER_LEVEL + 2 && (city ? city.key !== 'ny' : dansVilleMonde(wx, wz))) quais[x + z * CHUNK] = h;
         // rare open shafts let explorers climb in from the surface
         const entrance = !city && caveTunnel < 0.015 && h > WATER_LEVEL + 2 && h < 50 && caveY > h - 12;
 
@@ -3373,6 +3378,40 @@ export class World {
               id = CITY_BLOCK.ROADLINE;
             }
             data[World.index(x, h, z)] = id;
+          }
+        }
+      }
+    }
+
+    // LES MURS DE QUAI SONT MAÇONNÉS, DANS TOUTES LES VILLES (v317). La v316
+    // avait rendu ses murs de pierre à la Seine seule ; mesuré ensuite sur les
+    // colonnes qui touchent l'eau, la terre était la face la plus vue de TOUTES
+    // les rives de ville — Amsterdam 364 faces, Londres 399, Lille 392, Rome
+    // 190, Lyon 134. Une ville n'écrit que son sol ; ce qui est dessous reste le
+    // remplissage du monde, et contre l'eau c'est un mur qu'on regarde. On
+    // n'y change que la MATIÈRE, entre deux blocs sous l'eau et le sommet de
+    // la colonne, et seulement la terre, l'herbe, le sable et la pierre
+    // naturelle : jamais ce qu'un bâtisseur a posé, jamais la hauteur. Une
+    // plage (sommet à un bloc de l'eau) n'est pas un quai et reste du sable.
+    // Le voisin d'eau se lit dans le morceau ; au bord, dans le relief.
+    if (quais) {
+      const EAU_OUVERTE = (lx, lz, wx, wz) => {
+        if (lx >= 0 && lx < CHUNK && lz >= 0 && lz < CHUNK) {
+          return data[World.index(lx, WATER_LEVEL, lz)] === BLOCK.WATER
+            && data[World.index(lx, WATER_LEVEL + 1, lz)] === BLOCK.AIR;
+        }
+        return this.terrainHeight(wx, wz) < WATER_LEVEL;
+      };
+      for (let z = 0; z < CHUNK; z++) {
+        for (let x = 0; x < CHUNK; x++) {
+          const h = quais[x + z * CHUNK];
+          if (!h) continue;
+          const wx = baseX + x, wz = baseZ + z;
+          if (!EAU_OUVERTE(x + 1, z, wx + 1, wz) && !EAU_OUVERTE(x - 1, z, wx - 1, wz)
+            && !EAU_OUVERTE(x, z + 1, wx, wz + 1) && !EAU_OUVERTE(x, z - 1, wx, wz - 1)) continue;
+          for (let y = WATER_LEVEL - 2; y < h; y++) {
+            const i = World.index(x, y, z), id = data[i];
+            if (id === BLOCK.DIRT || id === BLOCK.GRASS || id === BLOCK.SAND || id === BLOCK.STONE) data[i] = BLOCK.STONEBRICK;
           }
         }
       }

@@ -55,6 +55,12 @@
   haussmannienne de `WATER_LEVEL − 2` au sommet, matière seule, relief
   intact. Reste : six faces d'HERBE au sommet de quelques colonnes du quai bas
   (un jardin qui touche l'eau), laissées telles quelles.
+  **Et en v317 pour TOUTES les villes** (Londres, Lille, Amsterdam, Rome…) :
+  passe générale dans `generateChunk`. Reste, déclaré : les berges du Potomac à
+  Washington (hors du disque de la ville, naturelles, surtout de la pierre),
+  et trente-sept colonnes au bord du disque de Paris, où le relief du fondu
+  passe sous l'eau à côté d'un trottoir — elles sont désormais maçonnées
+  aussi, mais leur forme reste un bord de disque, pas un quai.
 - [ ] **EN LIGNE, UNE VOITURE DE LA RUE ENTRE ENCORE UNE FOIS DANS CELLE D'UN
   AMI (v305, mesuré en v306).** Le témoin de `reseau.js` pose Marlon au volant
   dans la rue de Paris et regarde chez Alice. Ce qui est PROUVÉ : la voiture
@@ -173,6 +179,19 @@
   tout »). Cône de pente 0,7 hors du disque, qui n'abaisse que : 651 rayons
   raides → 2 (les deux sont des villes AU-DESSUS de leur pays, que le cône ne
   relève pas, à dessein). Seuils à marche de la v308 : 14,5 % → 4,0 %.
+- [ ] **LE PORTAIL DE LA v317 (règle de la v195), DOUBLE MESURE FAITE.** Verts :
+  `carteMonde.js` (le témoin des quais de toutes les villes : 0 face de terre,
+  1 137 sur `origin/main`), `plafond.js`, `maj.js`, `carte.js`, `washington.js`,
+  `metro.js`. `manhattan.js` : le délai de la ligne 282 (dette de la v269).
+  `monte.js` au portail : cinq rouges — la monoplace (9,1), les programmes à
+  l'arrivée à Paris (8), l'écran figé, et DEUX qui s'enchaînent (« un avion se
+  repousse au sol », `lance 0` ; puis « une voiture roule dans la nature »,
+  `pas au volant`) derrière une marche arrière en voiture qui avait pris 90 s.
+  REJOUÉE SEULE des deux côtés : branche ET `origin/main` n'ont que l'écran figé
+  (3 467 ms · 28,4 % contre 2 833 ms · 24 %) ; les quatre autres sont verts des
+  deux côtés. Ce sont des rouges de charge, la famille « un témoin hérite de
+  l'état du précédent » (v279) — et la livraison ne change que la matière sous
+  la surface des quais, ni hauteur ni solidité.
 - [ ] **LE PORTAIL DE LA v316 (règle de la v195), DOUBLE MESURE FAITE.** Verts :
   `carteMonde.js` (le témoin des quais, rouge sur `origin/main` : 639 faces de
   terre ; ici 0 sur 935), `plafond.js` (empreintes intactes), `carte.js`,

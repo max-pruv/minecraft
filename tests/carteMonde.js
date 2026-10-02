@@ -2703,6 +2703,41 @@ const VRAIES_KM = [
       const total = Object.values(faces).reduce((s, n) => s + n, 0);
       return { colonnes, terre, pierre, total };
     });
+    // ET DANS TOUTES LES VILLES AU BORD DE L'EAU (v317). La v316 n'avait traité
+    // que la Seine ; la même sonde sur les autres rives rendait la terre comme
+    // face la plus vue partout — Londres 399, Lille 392, Amsterdam 364, Rome
+    // 190, Lyon 134 sur `origin/main`. Un monde NEUF, engendré ici, pour lire
+    // ce que le générateur écrit et rien d'autre.
+    const quaisMonde = await tab.evaluate(async () => {
+      const [wo, bl, vm] = await Promise.all([import('./src/world.js'), import('./src/blocks.js'), import('./src/villesmonde.js')]);
+      const w = new wo.World(), W = wo.WATER_LEVEL, EAU = bl.BLOCK.WATER;
+      const out = {};
+      const villes = [
+        ...['londres', 'lille'].map((k) => { const c = wo.CITIES.find((v) => v.key === k); return [k, c.x, c.z, c.r]; }),
+        ...['amsterdam', 'rome', 'lyon'].map((k) => { const f = vm.VILLES_MONDE.find((v) => v.cle === k); return [k, f.ancre.x, f.ancre.z, f.rayon]; }),
+      ];
+      for (const [k, cx, cz, r] of villes) {
+        let colonnes = 0, terre = 0, total = 0;
+        for (let x = Math.floor(cx - r); x < cx + r; x += 3) for (let z = Math.floor(cz - r); z < cz + r; z += 3) {
+          if ((x - cx) ** 2 + (z - cz) ** 2 > (r - 3) ** 2) continue;
+          if (w.getBlock(x, W, z) === EAU || w.getBlock(x, W + 1, z) === 0) continue;
+          const v = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([a, b]) => w.getBlock(x + a, W, z + b) === EAU && w.getBlock(x + a, W + 1, z + b) === 0);
+          if (!v.length) continue;
+          colonnes++;
+          for (const [a, b] of v) for (let y = W + 1; y <= W + 10; y++) {
+            const id = w.getBlock(x, y, z); if (!id) continue;
+            const n = w.getBlock(x + a, y, z + b);
+            if (n === 0 || n === EAU) { total++; if (id === bl.BLOCK.DIRT) terre++; }
+          }
+        }
+        out[k] = { colonnes, terre, total };
+      }
+      return out;
+    });
+    verifier('dans toutes les villes au bord de l\'eau, le mur du quai est maçonné, pas en terre',
+      Object.values(quaisMonde).every((q) => q.colonnes >= 10 && q.terre === 0),
+      Object.entries(quaisMonde).map(([k, q]) => `${k} ${q.terre} terre / ${q.total} faces (${q.colonnes} col.)`).join(' · '));
+
     verifier('les murs des quais de la Seine sont en pierre, pas en terre',
       quaisParis.colonnes > 100 && quaisParis.terre === 0 && quaisParis.pierre > quaisParis.total * 0.9,
       `${quaisParis.colonnes} colonnes au bord de l'eau : ${quaisParis.terre} faces de terre, ${quaisParis.pierre} de pierre sur ${quaisParis.total}`);
