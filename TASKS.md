@@ -179,6 +179,19 @@
   tout »). Cône de pente 0,7 hors du disque, qui n'abaisse que : 651 rayons
   raides → 2 (les deux sont des villes AU-DESSUS de leur pays, que le cône ne
   relève pas, à dessein). Seuils à marche de la v308 : 14,5 % → 4,0 %.
+- [ ] **LE PORTAIL DE LA v317 (règle de la v195), DOUBLE MESURE FAITE.** Verts :
+  `carteMonde.js` (le témoin des quais de toutes les villes : 0 face de terre,
+  1 137 sur `origin/main`), `plafond.js`, `maj.js`, `carte.js`, `washington.js`,
+  `metro.js`. `manhattan.js` : le délai de la ligne 282 (dette de la v269).
+  `monte.js` au portail : cinq rouges — la monoplace (9,1), les programmes à
+  l'arrivée à Paris (8), l'écran figé, et DEUX qui s'enchaînent (« un avion se
+  repousse au sol », `lance 0` ; puis « une voiture roule dans la nature »,
+  `pas au volant`) derrière une marche arrière en voiture qui avait pris 90 s.
+  REJOUÉE SEULE des deux côtés : branche ET `origin/main` n'ont que l'écran figé
+  (3 467 ms · 28,4 % contre 2 833 ms · 24 %) ; les quatre autres sont verts des
+  deux côtés. Ce sont des rouges de charge, la famille « un témoin hérite de
+  l'état du précédent » (v279) — et la livraison ne change que la matière sous
+  la surface des quais, ni hauteur ni solidité.
 - [ ] **LE PORTAIL DE LA v316 (règle de la v195), DOUBLE MESURE FAITE.** Verts :
   `carteMonde.js` (le témoin des quais, rouge sur `origin/main` : 639 faces de
   terre ; ici 0 sur 935), `plafond.js` (empreintes intactes), `carte.js`,
