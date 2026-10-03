@@ -2578,6 +2578,14 @@ l'embarquement a eu lieu, pas par une hypothèse.
 
 - [ ] **`maj.js` : « corps, programmes et fond de carte sont vraiment là » —
   ROUGE DES DEUX CÔTÉS, REJOUÉE SEULE (v267).** Portail de la v308 : rouge
+  **Portail de la v318 (témoins seuls, diff de `src/` = une entrée de
+  `nouveautes.js` + le numéro de cache) :** rouge, et rejouée SEULE — branche
+  `libération null` + « ne floute rien » rouge (le second DÉPEND du premier :
+  « une fois prêt : ? ») ; `origin/main` v317 rouge avec une libération lue
+  (personnages 6/9, programmes 18/25), « ne floute rien » vert. C'est la paire
+  déjà mesurée identique sur `origin/main` (tableau ci-dessus, « libération
+  `null` · la page ne floute rien ») : la même intermittence, et aucun chemin
+  de la préparation ne lit `nouveautes.js` (importé au clic sur le badge).
   (personnages 5/9 à 47 s, carte prête) ; rejouée SEULE, verte sur la branche
   (9/9, carte prête) et ROUGE sur `origin/main` v307 (8/9, carte absente) —
   une intermittence de la préparation, pas le raccord. Vert jusqu'au portail de la
