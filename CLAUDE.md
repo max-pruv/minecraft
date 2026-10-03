@@ -857,6 +857,25 @@ Une règle.
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
 
+## L'A3 Cologne–Francfort (v320) — un rail le long de l'axe choisit le côté
+
+Septième route. Deux règles.
+
+- **QUAND UN RAIL SUIT L'AXE, ON CHOISIT UN CÔTÉ ET L'ON N'EN CHANGE PLUS.**
+  L'ICE va droit de gare à gare : toute route qui passe d'un côté à l'autre le
+  croise, et le remblai s'écrirait sur le ballast. Le côté se décide sur ce qui
+  borde le rail — ici l'aérodrome de Francfort, au nord, à 108 blocs de l'axe
+  du rail : sa marge et l'emprise ne tiennent pas ensemble. Au sud, l'axe de la
+  route ne s'approche jamais à moins de 37 blocs de celui du rail. Un témoin de
+  `carteMonde.js` lit désormais TOUTES les routes : aucune colonne d'emprise sur
+  `voieEn` ou `gareEn`.
+- **UNE SONDE DE TRACÉ APPELLE LE PROFIL, ELLE NE LE RECOPIE PAS.** La v315
+  avait corrigé sa sonde en y recopiant deux règles de `profilDe` ; il en
+  manquera toujours une. `profilDe` est pur et prend un segment fabriqué : la
+  sonde (scratchpad `tourne.mjs`) l'appelle sur chaque candidat — 4 852 tracés
+  en 23 secondes — et le tracé retenu est exactement celui que le jeu bâtit.
+  Elle publie ses refus par contrainte (v311).
+
 ## L'A109 Nairobi–Mombasa (v315) — une sonde de tracé recopie les règles du profil
 
 Sixième route. Une règle.

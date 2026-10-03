@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 320,
+    titre: 'L\'autoroute Cologne–Francfort',
+    puces: [
+      'De Cologne à Francfort en voiture',
+      'Elle longe le train ICE',
+      'Sans jamais traverser les rails',
+    ],
+  },
+  {
     v: 319,
     titre: 'Plus de gel en arrivant',
     puces: [

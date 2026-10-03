@@ -237,6 +237,23 @@
   branche 3 · 3 · 2, `origin/main` 3 · 3 · 3. Même distribution ; le 5 est un
   tirage sous la charge du portail, et la dette de la v306 (deux ou trois
   programmes à l'arrivée) reste ouverte telle quelle.
+- [ ] **LE PORTAIL DE LA v319 (règle de la v195), DOUBLE MESURE FAITE.**
+  `carteMonde.js` (le témoin de l'A3, rouge sur `origin/main` : « aucun convoi
+  A3 », sept segments, aucune route sur un rail), `plafond.js`, `carte.js`
+  verts. `monte.js` : deux rouges, tous deux déjà déclarés. « Les passants ne
+  sont plus plantés au milieu de la chaussée » (29 % à Rome) — le tirage de la
+  v291 ; rejouée SEULE, vert sur la branche. « L'écran ne se fige pas en
+  arrivant sur une ville » — rouge seul des DEUX côtés : branche 4 366 ms ·
+  59,1 %, `origin/main` 4 433 ms · 54,7 %.
+  SECOND PORTAIL, après rebase sur la v318 : `carteMonde.js` rouge sur le tour
+  des monuments de Paris (`dur 6 · lus 597 · Tour Eiffel 4 · Invalides 2`, au
+  pas près le chiffre que la v318 a déclaré des deux côtés) ; `monte.js` l'écran
+  figé et « la téléportation ne compile plus les programmes » (3 neufs pour une
+  barre à 4 dépassée par tirage, dette de la v306, vert rejoué seul des deux
+  côtés plus haut) ; `maj.js` la libération (`null`) et « ne floute rien » (le
+  second dépend du premier) — REJOUÉE SEULE : branche ces deux-là, `origin/main`
+  v318 la libération (programmes 17/25). Même intermittence de préparation des
+  deux côtés, déjà déclarée (v267).
 - [ ] **LE PORTAIL DE LA v315 (règle de la v195), DOUBLE MESURE FAITE.** Le
   premier portail a trouvé un vrai défaut (l'avenue de Mombasa, 19 pas pour
   20), corrigé. Le second : `carteMonde.js`, `plafond.js` (onze ponts, 71 164
@@ -318,7 +335,7 @@
   entrée nord propre de sa trame (−100° à −103°) — 79 819 tracés, tous refusés
   par sa marge ; l'autre entrée propre (−175°, −192°) arrive par la mer, deux
   cents blocs de viaduc. Déplacer un aérodrome est une décision de Max
-  (invariant 1) ; un viaduc en mer aussi. A109 Nairobi–Mombasa faite en v315. Restent à instruire les autres
+  (invariant 1) ; un viaduc en mer aussi. A109 Nairobi–Mombasa faite en v315. A3 Cologne–Francfort faite en v320 (au sud de l'ICE : au nord, l'aérodrome de Francfort ne laisse pas la place d'une emprise). Restent à instruire les autres
   candidats du kit (liste hors dépôt), un par un. INSTRUITES en v310 sur
   l'axe direct (longueur · eau · rail parallèle · obstacles) : Bruxelles–
   Amsterdam 790 · 56 · 0 · aucun ; Montréal–Québec 873 · 18 · 0 ; São Paulo–

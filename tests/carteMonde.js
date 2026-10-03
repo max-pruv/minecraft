@@ -580,6 +580,28 @@ const VRAIES_KM = [
       out.convoiBR116 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'BR-116') || null;
       out.convoiA4 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A-4') || null;
       out.convoiA109 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A109') || null;
+      out.convoiA3 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A3') || null;
+      // AUCUNE ROUTE NE CROISE NI NE LONGE UNE VOIE FERRÉE (v320) : l'A3 est la
+      // première dont l'axe a un rail le long (l'ICE). On lit, pour TOUTES les
+      // routes, chaque colonne de leur emprise (`routeEn` non nul) et l'on
+      // demande au rail s'il y est — ballast, talus de voie ou gare.
+      try {
+        const TR = await import('./src/trains.js');
+        out.surRail = {};
+        for (const s of m.segmentsDeRoute()) {
+          let n = 0, sur = 0;
+          for (let sa = 0; sa <= s.longueur; sa += 2) {
+            const q = m.pointA(s, sa), La = m.largeurA(s, sa);
+            for (let d = -La.demiEmprise; d <= La.demiEmprise; d += 1) {
+              const x = Math.round(q.x - q.fz * d), z = Math.round(q.z + q.fx * d);
+              if (!m.routeEn(x, z)) continue;
+              n++;
+              if (TR.voieEn(x, z) || TR.gareEn(x, z)) sur++;
+            }
+          }
+          out.surRail[s.route.nom] = [n, sur];
+        }
+      } catch (e) { out.railErreur = String(e); }
       // LES ENTRÉES DE VILLE ÉVITENT LES MONUMENTS (v310) : l'avenue d'entrée
       // de l'E429 à Lille visait d'abord Euralille et finissait dans la tour
       // de Lille. On lit, le long de chaque avenue d'entrée de Lille, les BLOCS
@@ -721,6 +743,18 @@ const VRAIES_KM = [
       && ['nairobi', 'mombasa'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'A109' && !e.dans && e.eau === 0 && e.vus >= 20)),
       JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiA109 ? { nom: a1.convoiA109.nom, voitures: (a1.convoiA109.modeles || []).length } : 'aucun convoi A109',
         entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'A109') }));
+
+    // L'A3 (v320) : Cologne–Francfort, la première route qui a un rail le long
+    // de son axe (l'ICE, de gare à gare). Elle passe tout entière au sud du
+    // rail : au nord, l'aérodrome de Francfort ne laisse pas la place d'une
+    // emprise entre sa marge et le ballast. Et le témoin lit TOUTES les routes :
+    // aucune colonne d'emprise ne porte de rail, de talus de voie ou de gare.
+    verifier('l\'A3 relie Cologne à Francfort sans toucher l\'ICE, et des voitures entrent dans les deux villes',
+      !a1.absent && !a1.railErreur && a1.segments >= 8 && !!a1.convoiA3 && a1.convoiA3.routier && (a1.convoiA3.modeles || []).length >= 10
+      && !!a1.surRail && !!a1.surRail.A3 && Object.values(a1.surRail).every(([n, sur]) => n > 100 && sur === 0)
+      && ['cologne', 'francfort'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'A3' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7)),
+      JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiA3 ? { nom: a1.convoiA3.nom, voitures: (a1.convoiA3.modeles || []).length } : 'aucun convoi A3',
+        surRail: a1.surRail, erreur: a1.railErreur, entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'A3') }));
 
     // DE VRAIS RAILS, EN RELIEF, ET DEUX VOIES (v281) ------------------------
     //
