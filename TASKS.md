@@ -245,6 +245,15 @@
   v291 ; rejouée SEULE, vert sur la branche. « L'écran ne se fige pas en
   arrivant sur une ville » — rouge seul des DEUX côtés : branche 4 366 ms ·
   59,1 %, `origin/main` 4 433 ms · 54,7 %.
+  SECOND PORTAIL, après rebase sur la v318 : `carteMonde.js` rouge sur le tour
+  des monuments de Paris (`dur 6 · lus 597 · Tour Eiffel 4 · Invalides 2`, au
+  pas près le chiffre que la v318 a déclaré des deux côtés) ; `monte.js` l'écran
+  figé et « la téléportation ne compile plus les programmes » (3 neufs pour une
+  barre à 4 dépassée par tirage, dette de la v306, vert rejoué seul des deux
+  côtés plus haut) ; `maj.js` la libération (`null`) et « ne floute rien » (le
+  second dépend du premier) — REJOUÉE SEULE : branche ces deux-là, `origin/main`
+  v318 la libération (programmes 17/25). Même intermittence de préparation des
+  deux côtés, déjà déclarée (v267).
 - [ ] **LE PORTAIL DE LA v315 (règle de la v195), DOUBLE MESURE FAITE.** Le
   premier portail a trouvé un vrai défaut (l'avenue de Mombasa, 19 pas pour
   20), corrigé. Le second : `carteMonde.js`, `plafond.js` (onze ponts, 71 164
