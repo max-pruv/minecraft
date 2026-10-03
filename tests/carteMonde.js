@@ -2469,27 +2469,53 @@ const VRAIES_KM = [
         .map((p) => ({ nom: p.nom, u: p.u, v: p.v, bu: p.socle[0] + 1, bv: p.socle[1] + 1 }));
       const solDe = (x, z) => (w.coteRoulable ? w.coteRoulable(x, z) : w.terrainHeight(x, z));
       const circuits = m.circuitsParis(solDe);
+      // LE TÉMOIN LIT LA BANDE QUE LE TOUR EMPRUNTE, PAS LE SOCLE (v318). Il
+      // ne jugeait que les points de circuit tombés DANS la boîte d'un socle ;
+      // depuis que les circuits font le tour à `AXE_TOUR` (v221), aucun n'y
+      // tombait — `pas: 0` sur la branche ET sur `origin/main`, donc vert sans
+      // avoir rien lu. La bande est le socle élargi de l'axe du tour et de la
+      // demi-largeur d'une voiture ; le tracé se parcourt tous les demi-blocs
+      // (un circuit densifié à deux blocs en a quatre fois moins, et les coins
+      // de `tourDuBloc` sont des points isolés) ; le bloc se lit en
+      // `Math.floor`, la colonne que la carrosserie occupe vraiment, sur cinq
+      // points en travers de la marche, aux deux hauteurs d'une voiture. Et un
+      // compte de pas lus nul est ROUGE : c'est toute la panne d'avant.
       const DEMI = 1.13;                       // la demi-largeur d'une voiture
-      const par = {};
-      let dur = 0, pas = 0;
-      for (const c of circuits) for (const p of c.pts) {
-        const u = Math.round(p.x - m.PARIS.x), v = Math.round(p.z - m.PARIS.z);
-        const s = socles.find((q) => Math.abs(u - q.u) <= q.bu && Math.abs(v - q.v) <= q.bv);
-        if (!s) continue;
-        pas++;
-        let bloque = false;
-        for (const dx of [-DEMI, 0, DEMI]) for (const dz of [-DEMI, 0, DEMI]) for (const dy of [0, 1]) {
-          const id = w.getBlock(Math.round(p.x + dx), Math.round(p.y + dy), Math.round(p.z + dz));
-          if (id && b.isSolid(id)) bloque = true;
+      const AXE = typeof m.AXE_TOUR === 'number' ? m.AXE_TOUR : 2;
+      const par = {}, lusPar = {}, exemples = [];
+      let dur = 0, lus = 0;
+      for (const c of circuits) {
+        const P = c.pts, n = P.length;
+        for (let k = 0; k < n; k++) {
+          const a = P[k], q = P[(k + 1) % n];
+          const L = Math.hypot(q.x - a.x, q.z - a.z);
+          if (!(L > 1e-6)) continue;
+          const lx = -(q.z - a.z) / L, lz = (q.x - a.x) / L;   // le travers de la marche
+          for (let s = 0; s < L; s += 0.5) {
+            const t = s / L;
+            const x = a.x + (q.x - a.x) * t, z = a.z + (q.z - a.z) * t, y = a.y + (q.y - a.y) * t;
+            const u = x - m.PARIS.x, v = z - m.PARIS.z;
+            const so = socles.find((o) => Math.abs(u - o.u) <= o.bu + AXE + DEMI && Math.abs(v - o.v) <= o.bv + AXE + DEMI);
+            if (!so) continue;
+            lus++;
+            lusPar[so.nom] = (lusPar[so.nom] || 0) + 1;
+            let bloque = null;
+            for (const d of [-DEMI, -DEMI / 2, 0, DEMI / 2, DEMI]) for (const dy of [0, 1]) {
+              const bx = Math.floor(x + lx * d), by = Math.floor(y + dy), bz = Math.floor(z + lz * d);
+              const id = w.getBlock(bx, by, bz);
+              if (!bloque && id && b.isSolid(id)) bloque = [bx, by, bz, id];
+            }
+            if (!bloque) continue;
+            dur++;
+            par[so.nom] = (par[so.nom] || 0) + 1;
+            if (exemples.length < 6) exemples.push([so.nom, ...bloque]);
+          }
         }
-        if (!bloque) continue;
-        dur++;
-        par[s.nom] = (par[s.nom] || 0) + 1;
       }
-      return { dur, pas, par, circuits: circuits.length, parts: circuits.map((c) => c.part) };
+      return { dur, lus, par, lusPar, exemples, circuits: circuits.length };
     });
     verifier('aucune voiture ne traverse un monument de Paris',
-      !monuments.absent && monuments.circuits === 8 && monuments.dur === 0,
+      !monuments.absent && monuments.circuits === 8 && monuments.lus > 0 && monuments.dur === 0,
       JSON.stringify(monuments));
 
     // ET LES CIRCUITS ROULENT SUR LA CHAUSSÉE **DANS LE MONDE**, PAS DANS LE

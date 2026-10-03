@@ -770,6 +770,32 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Deux témoins repointés (v318) — un témoin qui ne lit rien, et un enfant posé sur la voie
+
+Deux règles.
+
+- **UN TÉMOIN DE GÉOMÉTRIE COMPTE CE QU'IL A LU, ET ZÉRO EST ROUGE.** « Aucune
+  voiture ne traverse un monument » jugeait les points de circuit DANS un
+  socle ; le tour (v221) les en a sortis, et le témoin rendait `pas: 0` des
+  deux côtés pendant des dizaines de versions. Il lit désormais la BANDE du
+  tour, le tracé parcouru tous les demi-blocs (les coins de `tourDuBloc` sont
+  des points isolés), le bloc en `Math.floor` — la colonne que la carrosserie
+  occupe, `Math.round` en rate la moitié — et il exige `lus > 0`. Et une boîte
+  jugée sur des colonnes (`|u − c| ≤ b`) couvre le monde de `c − b` à
+  `c + b + 1` : tout ce qui se pose « à `b + n` du centre » est d'un bloc plus
+  près côté +. C'est ce que ce témoin a trouvé dans le tour des monuments
+  (dette dans `TASKS.md`).
+- **UN TÉMOIN QUI POSE L'ENFANT SUR UNE VOIE MESURE LA PATIENCE DE LA RUE.**
+  Devant l'enfant, une voiture attend sans limite (v245) : elle s'arrête à huit
+  ou dix blocs, la file derrière elle, et un témoin qui attend une voiture à
+  cinq blocs n'en voit jamais. Ce qui doit voir passer la circulation se pose À
+  CÔTÉ de la voie, à plus de 2,8 blocs de tout circuit, sur un sol à la cote de
+  la chaussée — à deux blocs on tombe dans un arbre, et `placeProche` refuse
+  une voiture à plus de 2,5 blocs de hauteur. Et la position d'un convoi étant
+  une fonction de l'heure (v305), l'attente se mesure sur un TOUR D'HORLOGE,
+  sous node, avec la vraie circulation (`sonde-attente-volant.cjs`) : une
+  attente lue à une seule heure est un tirage.
+
 ## Les quais de la Seine en pierre (v316) — sous la surface, c'est encore le monde qu'on voit
 
 Une règle.

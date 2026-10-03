@@ -20,6 +20,42 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v318 — Des contrôles plus justes
+
+**Pourquoi.** Deux témoins du portail ne prouvaient rien, et `TASKS.md` le
+disait. « Aucune voiture ne traverse un monument de Paris » ne lisait que les
+points de circuit tombés DANS un socle ; depuis que les voitures font le tour
+des monuments (v221), aucun n'y tombe : zéro pas lu, sur la branche comme sur
+`origin/main`, donc vert sans avoir rien regardé. « On prend le volant d'une
+voiture vue dans la rue » a attendu 124 secondes sans voiture au portail de la
+v306 : il posait l'enfant SUR la voie, et devant l'enfant la rue attend sans
+limite (v245) — la première voiture s'arrêtait à huit ou dix blocs, hors des
+cinq où l'on peut monter, avec toute la file et le bus derrière elle.
+
+**Ce que ça change.** Rien dans le jeu : ce sont des contrôles. Le premier lit
+désormais la bande que le tour emprunte, tous les demi-blocs, sur toute la
+largeur de la voiture, et il est rouge s'il n'a rien lu. Le second pose
+l'enfant sur le sol à côté de la voie, loin de tout circuit, là où les voitures
+passent sans s'arrêter pour lui ; la durée de l'attente entre dans son message.
+**Et le premier a trouvé un vrai défaut** : côté nord et est des socles, le
+tour passe à un bloc du socle au lieu de deux, et l'aile d'une voiture mord de
+0,13 bloc dans la dernière rangée — des troncs d'arbre au pied de la Tour
+Eiffel et des Invalides. Déclaré dans `TASKS.md` avec sa cause et son remède
+probable, pour la session qui tient `paris.js` ; le témoin reste rouge en
+attendant, parce qu'il dit vrai.
+
+**Ce qui le prouve.** Le témoin des monuments lit 597 pas et en trouve 6 dans
+un tronc ; avec `contournerBlocs` désarmé dans une copie de `src`, il en
+trouve 166 (Opéra 29, Louvre 28, Invalides 38, Bastille 31…) — il sait rougir.
+Mesuré à l'identique sur `origin/main`. Pour le volant, une sonde rejoue la
+vraie circulation de Paris sous node, cession comprise, pour cent heures de
+départ sur un tour d'horloge : posé sur la voie, 90e centile 68 s et pire
+113 s ; à trois blocs de côté, 90e centile 0,5 s et pire 3,5 s. Deux sondes
+neuves (`sonde-tour-monuments.cjs`, `sonde-attente-volant.cjs`) rejouent ces
+mesures.
+
+---
+
 ## v317 — Des quais en pierre dans toutes les villes
 
 **Pourquoi.** La v316 avait rendu leurs murs de pierre aux quais de la Seine,

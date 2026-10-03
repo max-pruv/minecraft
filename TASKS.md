@@ -1,15 +1,5 @@
 # Ce qui est en cours
 
-- [ ] **« ON PREND LE VOLANT D'UNE VOITURE VUE DANS LA RUE » (fumee.js) A
-  ATTENDU 124 S SANS VOITURE, UNE FOIS (portail de la v306, commit 1c40488).**
-  Rejouée seule dans la foulée : verte deux fois, une voiture prise en 132 ms
-  à 4,3 et 1,8 bloc. Depuis la v305 la position d'un convoi est une fonction
-  de l'HEURE RÉELLE : au point du témoin (circuit 0, entre ses points 2 et 3),
-  une file qui attend derrière un bus ou un feu peut ne pas passer pendant
-  deux minutes, selon l'heure où le banc tourne. Non mesuré : combien de temps
-  une place reste hors de portée de ce point sur un tour complet d'horloge. À
-  faire : balayer `distanceA(t)` sur un tour, relever le plus long trou, et
-  poser le témoin là où il est le plus court — ou attendre sur deux points.
 - [ ] **DEUX OU TROIS PROGRAMMES SE COMPILENT ENCORE À L'ARRIVÉE À PARIS
   (mesuré en v306).** Voitures et feux chauffés, `sonde-programmes-paris.cjs`
   rend 2 · 2 · 3 programmes neufs (`3,srgb` et `131075,srgb` en fin de clé),
@@ -30,14 +20,28 @@
   couverture gloutonne de `voies.js`, seuil de partage inchangé). Le témoin
   de variété, lui, compte désormais une proportion (trois modèles sur quatre)
   et ne voit plus cette baisse : c'est cette ligne qui la garde.
-- [ ] **LE TÉMOIN « AUCUNE VOITURE NE TRAVERSE UN MONUMENT DE PARIS » NE MESURE
-  PLUS RIEN (vu en v306, vrai aussi sur `origin/main`).** Il ne juge que les
-  points de circuit tombés dans la boîte d'un socle (± socle + 1) ; depuis que
-  les circuits font le tour des socles à `AXE_TOUR` (v221), aucun point n'y
-  tombe — `pas: 0` des deux côtés, donc vert sans rien lire. Il faut le
-  repointer sur la bande que le tour emprunte (socle + AXE_TOUR ± la
-  demi-largeur d'une voiture) et le vérifier rouge en désarmant
-  `contournerBlocs`.
+- [ ] **CÔTÉ +u ET +v, LE TOUR DES MONUMENTS DE PARIS N'EST QU'À UN BLOC DU
+  SOCLE — L'AILE MORD DE 0,13 BLOC DANS SA DERNIÈRE RANGÉE (trouvé en v318 par
+  le témoin repointé de `carteMonde.js`, identique sur `origin/main`).** La
+  boîte d'un socle se juge sur des COLONNES entières (`|u − p.u| ≤ bu`) : elle
+  couvre donc le monde de `p.u − bu` à `p.u + bu + 1`, un bloc de plus côté +.
+  `TOURS` (paris.js) pose l'axe du tour à `p.u ± (bu + AXE_TOUR)`, symétrique
+  autour de la colonne centrale : côté −, la voiture est à deux blocs du socle
+  et au milieu de la rue du tour (colonnes `−bu−4 … −bu−1`) ; côté +, à UN bloc,
+  et son flanc (demi-largeur 1,13) entre de 0,13 bloc dans la dernière rangée du
+  socle. Là où cette rangée porte un tronc d'arbre, la carrosserie le traverse :
+  six pas sur 597 lus — quatre au coin nord-est de la Tour Eiffel (tronc en
+  (−514, 390) et (−513, 388)), deux aux Invalides (−478, 395). Mesuré par
+  `node tests/sonde-tour-monuments.cjs` (dépôt : 6 ; `contournerBlocs` désarmé :
+  166, Opéra 29, Louvre 28, Invalides 38…). Remède probable, à mesurer avant
+  d'écrire : centrer `TOURS` sur `p.u + 0,5` (même chose pour `v`), ou poser
+  l'axe à `bu + AXE_TOUR + 1` côté + — et remesurer la tenue de rue des huit
+  circuits, puisque le tour change de tracé. Zone de `paris.js`, pas de ce
+  témoin. Le témoin reste ROUGE en attendant : il dit vrai.
+  **Double mesure (v195)** : `carteMonde.js` rejouée SEULE sur la branche et
+  sur `origin/main` (fa2f55c, avec le témoin repointé) — 124 verts et ce seul
+  rouge des deux côtés, `dur 6 · lus 597 · Tour Eiffel 4 · Invalides 2`, au
+  pas près. Le portail complet a rendu le même chiffre.
 - [ ] **UNE PLACE DE VOITURE À MOINS DE TROIS BLOCS, SANS VOITURE DESSINÉE (vu
   en v306).** Au témoin « on prend le volant » de `fumee.js`, `placeProche(5)`
   rendait une place à 2,8 puis 1,6 bloc de l'enfant, et `elements[i]` y était
@@ -2607,6 +2611,14 @@ l'embarquement a eu lieu, pas par une hypothèse.
   grisés sont la promesse faite à Max en v258, et la tenir est la
   correction.
 
+  **Portail de la v318 (témoins seuls, diff de `src/` = une entrée de
+  `nouveautes.js` + le numéro de cache) :** rouge, et rejouée SEULE — branche
+  `libération null` + « ne floute rien » rouge (le second DÉPEND du premier :
+  « une fois prêt : ? ») ; `origin/main` v317 rouge avec une libération lue
+  (personnages 6/9, programmes 18/25), « ne floute rien » vert. C'est la paire
+  déjà mesurée identique sur `origin/main` (tableau ci-dessus, « libération
+  `null` · la page ne floute rien ») : la même intermittence, et aucun chemin
+  de la préparation ne lit `nouveautes.js` (importé au clic sur le badge).
 - [ ] **`reglages.js` : « elle s'aligne même dessus » va et vient (v266).**
   Rouge au portail complet de la v265 ET de la v266, VERTE rejouée seule sur
   la branche ET sur `origin/main` le même jour. Rien de `reglages.js` ni de
