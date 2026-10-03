@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 321,
+    titre: 'Le GPS partout',
+    puces: [
+      'La minicarte montre où tu vas',
+      'Toucher une ville : téléporter ou y aller',
+      'La flèche ne fait plus de grand tour',
+    ],
+  },
+  {
     v: 320,
     titre: 'L\'autoroute Cologne–Francfort',
     puces: [

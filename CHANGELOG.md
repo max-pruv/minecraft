@@ -20,6 +20,42 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v321 — Le GPS partout
+
+**Pourquoi.** Le GPS de la v306 avait laissé quatre trous, déclarés : la
+minicarte ne montrait pas la destination ; toucher le nom d'une ville sur la
+carte, ou choisir un résultat de la recherche, emmenait d'office, sans
+proposer « S'y rendre » — seul l'appui long posait la question ; la flèche du
+haut faisait un tour presque complet quand la cible passait derrière
+l'enfant ; et la destination ne se partageait pas avec un ami.
+
+**Ce que ça change.**
+
+- **La minicarte montre où l'on va** : un rond vert à la place de la
+  destination quand elle est dans la vignette, une flèche verte au bord, du
+  côté où aller, quand elle est plus loin — comme pour un ami.
+- **Toucher un lieu ou choisir un résultat pose la question** « ✨ Téléporter »
+  ou « 🧭 S'y rendre », comme l'appui long. Plus aucun voyage d'office. Le
+  résultat de recherche centre d'abord la carte sur le lieu. Et le GPS garde
+  le nom du lieu touché (« Tour Eiffel », « Rome »).
+- **Partout** : villes bâties à la main, villes du registre, campagne.
+- **La flèche tourne par le chemin le plus court**, plus jamais un grand tour.
+- **Le partage avec un ami en ligne n'est pas livré** : il demande un message
+  réseau neuf relayé par l'hôte et par le nuage, et un témoin à deux
+  tablettes. Il est décrit dans `TASKS.md`, avec son témoin.
+
+**Ce qui le prouve.** Six témoins neufs ou repointés dans `carte.js`, tous
+vérifiés ROUGES sur `origin/main` avec la même suite : toucher un lieu propose
+puis Téléporter y emmène ; toucher Rome (ville engendrée) puis « S'y rendre »
+garde l'enfant sur place et nomme Rome ; la flèche ne saute que de 0,3 radian
+au passage de ±π (le témoin lit le style écrit — la matrice calculée replie
+l'angle et ne peut pas voir le tour) ; la minicarte dessine la flèche de bord
+du bon côté et le repère au bon pixel, lus à la couleur ; toucher un résultat
+de recherche pose la question sans partir. Les témoins de la v306 (appui long,
+« S'y rendre », arrivée) restent verts.
+
+---
+
 ## v320 — L'autoroute Cologne–Francfort, à côté de l'ICE
 
 **Pourquoi.** Candidat suivant du relevé de la v310 : Cologne–Francfort, 739

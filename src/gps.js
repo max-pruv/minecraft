@@ -68,3 +68,42 @@ export function arriveEntre(ax, az, bx, bz, cible) {
   const t = l2 > 0 ? Math.max(0, Math.min(1, ((cible.x - ax) * vx + (cible.z - az) * vz) / l2)) : 0;
   return Math.hypot(ax + vx * t - cible.x, az + vz * t - cible.z) <= ARRIVEE;
 }
+
+// LA FLÈCHE TOURNE PAR L'ÉCART LE PLUS COURT (v321). `guidage` rend un angle
+// dans ]−π, π] ; écrit tel quel dans le style, une cible qui passe derrière
+// l'enfant fait sauter l'angle de +3,1 à −3,1 et la transition CSS de la
+// flèche fait un tour presque complet pour aller de l'un à l'autre. On garde
+// donc l'angle AFFICHÉ et l'on n'y ajoute que l'écart le plus court jusqu'au
+// nouveau : la flèche ne tourne jamais de plus d'un demi-tour d'une image à
+// l'autre. `precedente` nul (premier affichage) rend l'angle tel quel.
+export function rotationContinue(precedente, nouvelle) {
+  if (precedente == null || !Number.isFinite(precedente)) return nouvelle;
+  let d = (nouvelle - precedente) % (2 * Math.PI);
+  if (d > Math.PI) d -= 2 * Math.PI;
+  else if (d <= -Math.PI) d += 2 * Math.PI;
+  return precedente + d;
+}
+
+// LA DESTINATION SUR LA MINICARTE (v321). La minicarte est orientée nord en
+// haut et centrée sur l'enfant ; `radius` blocs de chaque côté tiennent dans
+// `size` pixels. Une cible dans le cadre est un REPÈRE à son pixel ; hors du
+// cadre, une FLÈCHE posée au bord, du côté de la cible — la même règle que les
+// amis hors cadre, qui marche depuis toujours. `marge` garde la flèche
+// entière dans la vignette. Pur : le témoin l'interroge sous node, `main.js`
+// dessine ce qu'il rend.
+export function repereMinicarte(px, pz, cible, radius, size, marge = 9) {
+  const pcx = Math.floor(px), pcz = Math.floor(pz);
+  const n = radius * 2 + 1;
+  const x = ((cible.x - pcx + radius) / n) * size;
+  const y = ((cible.z - pcz + radius) / n) * size;
+  if (x >= marge && x <= size - marge && y >= marge && y <= size - marge) {
+    return { dedans: true, x, y };
+  }
+  const angle = Math.atan2(cible.z - pz, cible.x - px);
+  return {
+    dedans: false,
+    angle,
+    x: size / 2 + Math.cos(angle) * (size / 2 - marge),
+    y: size / 2 + Math.sin(angle) * (size / 2 - marge),
+  };
+}

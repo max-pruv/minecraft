@@ -204,7 +204,7 @@ const melange = (a, b, t) => [
 ];
 
 export class Carte {
-  // opts : { canvas, world, joueur(), autres(), mobiles(), surVoyage(lieu), surTeleport(x, z), surGPS(x, z), destination() }
+  // opts : { canvas, world, joueur(), autres(), mobiles(), surVoyage(lieu), surTeleport(x, z), surGPS(x, z, nom), destination() }
   constructor(opts) {
     Object.assign(this, opts);
     this.vue = { cx: 0, cz: 0, bpp: 3 };
@@ -1025,7 +1025,11 @@ export class Carte {
       const p = this.proposition;
       this.retirerProposition();
       if (!p) return;
-      if (quoi === 'gps') this.surGPS(p.x, p.z);
+      // Un lieu nommé (étiquette, recherche) garde son nom et son voyage
+      // d'avant — la trame des rues, « Voyage vers Nice » ; un point de la
+      // carte est un point (v321).
+      if (quoi === 'gps') this.surGPS(p.x, p.z, p.lieu ? p.lieu.name : undefined);
+      else if (p.lieu && this.surVoyage) this.surVoyage(p.lieu);
       else this.surTeleport(p.x, p.z);
     };
     // `click` et non `pointerup` : sur l'iPad, un doigt qui glisse hors du
@@ -1171,10 +1175,13 @@ export class Carte {
   // la question là où le doigt s'est levé, et c'est l'enfant qui choisit. Un
   // doigt reposé ailleurs sur la carte retire la question — le geste de
   // l'enfant qui a changé d'avis.
-  _proposer(m, e) {
+  _proposer(m, e, lieu) {
     const box = this.choix;
-    if (!box || !this.surGPS) { this.surTeleport(m.x, m.z); return; }   // page sans le panneau : l'ancien geste
-    this.proposition = { x: m.x, z: m.z };
+    if (!box || !this.surGPS) {   // page sans le panneau : l'ancien geste
+      if (lieu && this.surVoyage) this.surVoyage(lieu); else this.surTeleport(m.x, m.z);
+      return;
+    }
+    this.proposition = { x: m.x, z: m.z, lieu: lieu || null };
     const parent = box.offsetParent || this.canvas.offsetParent;
     if (parent) {
       const pr = parent.getBoundingClientRect();
@@ -1201,14 +1208,27 @@ export class Carte {
     if (this.cible) { this.cible.classList.remove('arme'); this.cible.style.display = 'none'; }
   }
 
-  // Un appui bref : sur une étiquette on voyage, ailleurs on rapproche.
+  // UN LIEU CHOISI SANS LE DOIGT — un résultat de la recherche (v321). La
+  // carte se centre sur lui, puis pose la même question que l'appui long,
+  // au milieu de la carte, là où le lieu est maintenant.
+  proposerLieu(lieu) {
+    this.vue.cx = lieu.x; this.vue.cz = lieu.z;
+    this.limiter();
+    this.peindre();
+    const r = this.canvas.getBoundingClientRect();
+    const ec = this.versEcran(lieu.x, lieu.z);
+    this._proposer({ x: lieu.x, z: lieu.z }, { clientX: r.left + ec.x, clientY: r.top + ec.y }, lieu);
+  }
+
+  // Un appui bref : sur une étiquette on PROPOSE le voyage (v321 — plus
+  // jamais d'office, comme l'appui long), ailleurs on rapproche.
   _tap(e) {
     const r = this.canvas.getBoundingClientRect();
     const px = e.clientX - r.left, py = e.clientY - r.top;
     for (const et of this.etiquettes) {
       const q = et.rect;
       if (px >= q.x0 - 6 && px <= q.x1 + 6 && py >= q.y0 - 6 && py <= q.y1 + 6) {
-        this.surVoyage(et.lieu);
+        this._proposer({ x: et.lieu.x, z: et.lieu.z }, e, et.lieu);
         return;
       }
     }
