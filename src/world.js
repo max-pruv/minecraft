@@ -3,6 +3,7 @@
 import { BLOCK, CITY_BLOCK, DECOR_START, PROP_START, ARCHI, ROUTE_BLOCK, RUE, isSolid as blockIsSolid, isSlab } from './blocks.js';
 import { buildVillandry } from './villandry.js';
 import { aUnModeleHD, porteeHD } from './paris-monuments-hd.js';
+import { echelleDe, etirerBatisseur } from './echelle-monuments.js';
 import { carrefoursDeVoies } from './voies.js';
 import { buildAeroport, buildAerodrome, AEROPORTS, AEROPORTS_AVANT_V306 } from './aeroport.js';
 import {
@@ -42,7 +43,7 @@ import {
 import {
   hauteurVillesMonde, aPorteeDuFondu, solVillesMonde, batirColonneVillesMonde, mobilierVillesMonde,
   pontVillesMonde,
-  landmarksVillesMonde, placesVillesMonde, dansVilleMonde,
+  landmarksVillesMonde, placesVillesMonde, dansVilleMonde, VILLES_MONDE,
 } from './villesmonde.js';
 import {
   LILLE, adresseLille, hauteurLille, solLille, lotLilleLibre, batirColonneLille,
@@ -1152,7 +1153,7 @@ function feuDeVille(data, x, z, h, wx, wz, ss, feux) {
   return true;
 }
 
-const LANDMARKS = [
+const LANDMARKS_V317 = [
   // Paris
   // Paris : chacun à son écart réel à Notre-Dame, calculé par paris.js. La
   // Tour Eiffel se dressait sur la rive droite et le Louvre sur la rive
@@ -1370,6 +1371,28 @@ const LANDMARKS = [
   ...landmarksVillesMonde(),
 ];
 
+// LES MONUMENTS À LA HAUTEUR DE LEUR VILLE. La liste ci-dessus garde
+// les cotes d'auteur ; celle du monde d'aujourd'hui passe chaque repère par
+// sa table de paliers (`echelle-monuments.js`), qui l'étire SANS rien changer
+// à son emprise. `CONF_AVANT` et `CONF_V308` lisent la liste d'avant : un bloc
+// posé avant cette version se juge sur le monde où il a été posé (v306).
+// La ville d'un repère est le disque qui le contient — la même lecture que le
+// témoin, pour que la clé « Ville|Nom » soit la même des deux côtés.
+const VILLES_DES_REPERES = [
+  ['Paris', PARIS], ['New York', { ...NY, r: 152 }], ['San Francisco', SF], ['Nice', NICE],
+  ['Lille', LILLE], ['Washington', { x: WASHINGTON.x, z: WASHINGTON.z, r: WASHINGTON_R }],
+  ['Londres', LONDRES],
+  ...VILLES_MONDE.map((f) => [f.ancre.nom, { x: f.ancre.x, z: f.ancre.z, r: f.rayon }]),
+];
+export function villeDuRepere(lm) {
+  const v = VILLES_DES_REPERES.find(([, c]) => Math.hypot(lm.x - c.x, lm.z - c.z) < c.r);
+  return v ? v[0] : null;
+}
+const LANDMARKS = LANDMARKS_V317.map((lm) => {
+  const e = echelleDe(villeDuRepere(lm), lm.name);
+  return e ? { ...lm, build: etirerBatisseur(lm.build, e.paliers), echelle: e } : lm;
+});
+
 // La même liste, sans les constructeurs : ce que la carte a le droit de lire.
 export const REPERES = LANDMARKS.map(({ name, x, z, box, seuil }) => ({ name, x, z, box, seuil }));
 
@@ -1478,10 +1501,10 @@ export const CONF_NEUF = {
 // 5 → 6 y emmène ce qu'elle déplace : c'est là que Paris doublé a été joué. Il
 // ne se met JAMAIS à jour. Même clé que `CONF_NEUF` : ses zones à terre sont
 // les mêmes.
-export const CONF_V308 = { ...CONF_NEUF, fonduDoux: false, mursDeQuai: false, falaises: false };
+export const CONF_V308 = { ...CONF_NEUF, reperes: LANDMARKS_V317, fonduDoux: false, mursDeQuai: false, falaises: false };
 export const CONF_AVANT = {
   cle: 'avant-v306', villes: CITIES_AVANT, aeroports: AEROPORTS_AVANT_V306, gaulois: GAULOIS_AVANT,
-  volcan: VOLCANO_AVANT, places: PLACES_AVANT, reperes: LANDMARKS.map(repereAvant),
+  volcan: VOLCANO_AVANT, places: PLACES_AVANT, reperes: LANDMARKS_V317.map(repereAvant),
   hauteurParis: PARIS_V302.hauteurParis, parisAvant: true, fonduDoux: false,
 };
 

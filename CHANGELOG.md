@@ -20,6 +20,42 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v335 — Les monuments de Paris dominent les toits
+
+**Pourquoi.** Un étage fait trois blocs depuis la v301 : les immeubles de Paris
+montent à vingt et un, vingt-quatre blocs, et les monuments n'avaient pas suivi.
+Mesuré sous node en appelant les bâtisseurs, l'Opéra faisait dix-neuf blocs au
+milieu d'immeubles à vingt, les Invalides vingt-deux, le Sacré-Cœur vingt-trois,
+Notre-Dame trente et un. Dans la vraie ville ils dominent les toits ; dans le
+jeu, l'Opéra était plus bas que ses voisins. Et la même mesure sur toutes les
+villes du monde rendait quatre-vingt-treize monuments plus bas que les immeubles
+autour d'eux.
+
+**Ce que ça change.** Les monuments de Paris passent au-dessus des toits, dans
+l'ordre du vrai ciel de Paris : Montparnasse 60, les Invalides et Notre-Dame 48,
+le Panthéon et le Sacré-Cœur 47, l'Opéra 41, la Bastille 36, l'Arc de Triomphe
+35, sous la tour Eiffel qui reste à soixante-neuf. Un premier jet les posait à
+leur vraie hauteur, à un bloc pour un mètre : les captures aériennes ont montré
+les Invalides, Notre-Dame et le Sacré-Cœur au-dessus de la tour Eiffel, en
+aiguilles. La règle garde donc un bloc pour un mètre jusqu'à la corniche, puis
+une courbe qui mène la tour Eiffel à soixante-neuf. Les coupoles s'étirent par
+leur pied, qui devient un tambour, les portes gardent la taille d'un enfant, et
+les modèles en relief suivent leurs voxels. Rien ne change d'emprise : aucune
+rue, aucun circuit de voiture n'est touché.
+
+**Ce qui le prouve.** Trois témoins neufs dans `plafond.js`. Le premier boucle
+sur toutes les villes — 215 monuments mesurés contre la médiane des immeubles
+autour d'eux — et n'admet un monument plus bas que s'il est déclaré, avec sa
+raison : rouge sur `origin/main` (l'Opéra 19/20, et 92 autres non déclarés). Le
+deuxième vérifie que chaque exception nomme un monument mesuré. Le troisième
+exige les huit hauteurs de Paris et qu'aucune ne dépasse la tour Eiffel : rouge
+sur `origin/main` (l'Opéra 19 pour 41…). La sonde des monuments en relief rend
+zéro mur invisible et moins de cubes qui dépassent qu'avant (Notre-Dame 34 → 32,
+Sacré-Cœur 15 → 0). Les deux empreintes du relief ne bougent pas : un bâtisseur
+de monument n'écrit pas `terrainHeight`.
+
+---
+
 ## v334 — L'autoroute Berlin–Hambourg
 
 **Pourquoi.** Berlin–Hambourg est le candidat suivant du relevé de la v323 :
