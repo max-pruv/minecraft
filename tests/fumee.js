@@ -714,8 +714,44 @@ function verifier(nom, ok, detail = '') {
       const c = P.circuitsParis((x, z) => g.world.terrainHeight(x, z))[0];
       if (!c) return { pasDeCircuit: true };
       const A = c.pts[2], B = c.pts[3];
-      const x = A.x + (B.x - A.x) * 0.4, z = A.z + (B.z - A.z) * 0.4;
-      g.player.pos.set(x, g.world.sommetColonne(Math.floor(x), Math.floor(z)) + 1, z);
+      // L'ENFANT SE POSE À CÔTÉ DE LA VOIE, PAS DESSUS (v318). Posé SUR le
+      // tracé, il est sur le chemin des voitures, et devant l'enfant la rue
+      // attend SANS LIMITE (v245) : la première qui le voit s'arrête à huit ou
+      // dix blocs — hors des cinq de `placeProche` — et toute la file avec
+      // elle, le bus de ce circuit compris. Le témoin ne passait que si une
+      // voiture était déjà à portée au moment de la pose. Mesuré sous node
+      // (la vraie circulation de Paris, cession comprise, cent heures de
+      // départ sur un tour d'horloge, une toutes les trois secondes) :
+      //   sur la voie   médiane 0 s · 90e centile 68 s · pire 113 s
+      //   à +3 blocs    médiane 0 s · 90e centile 0,5 s · pire 3,5 s
+      //   à −3 blocs    médiane 0,6 s · 90e centile 4 s · pire 5,4 s
+      // Et pas plus près : à 2 et 2,5 blocs on tombe dans un arbre, les pieds
+      // à quatre blocs au-dessus de la chaussée, et `placeProche` refuse toute
+      // voiture à plus de 2,5 blocs de hauteur — cent échecs sur cent. Le
+      // point se CHERCHE donc (v285) : du sol à la cote de la voie, à au moins
+      // 2,8 blocs de TOUT circuit de Paris, et le décalage retenu entre dans le
+      // message.
+      const L = Math.hypot(B.x - A.x, B.z - A.z) || 1;
+      const nx = -(B.z - A.z) / L, nz = (B.x - A.x) / L;
+      const tous = P.circuitsParis((x2, z2) => g.world.terrainHeight(x2, z2));
+      const dSeg = (x2, z2, p, q) => {
+        const dx = q.x - p.x, dz = q.z - p.z, l2 = dx * dx + dz * dz;
+        const t = l2 ? Math.max(0, Math.min(1, ((x2 - p.x) * dx + (z2 - p.z) * dz) / l2)) : 0;
+        return Math.hypot(x2 - p.x - dx * t, z2 - p.z - dz * t);
+      };
+      const loinDesVoies = (x2, z2) => tous.every((k) => k.pts.every((p, i) =>
+        dSeg(x2, z2, p, k.pts[(i + 1) % k.pts.length]) >= 2.8));
+      let pose = null;
+      for (const lat of [3, -3, 3.5, -3.5, 4, -4]) {
+        const x2 = A.x + (B.x - A.x) * 0.4 + nx * lat, z2 = A.z + (B.z - A.z) * 0.4 + nz * lat;
+        const y2 = g.world.sommetColonne(Math.floor(x2), Math.floor(z2)) + 1;
+        if (Math.abs(y2 - A.y) > 1.5 || !loinDesVoies(x2, z2)) continue;
+        pose = { lat, x: x2, y: y2, z: z2 };
+        break;
+      }
+      if (!pose) return { pasDePose: true, voie: [+A.x.toFixed(1), +A.y.toFixed(1), +A.z.toFixed(1)] };
+      const x = pose.x, z = pose.z;
+      g.player.pos.set(x, pose.y, z);
       g.player.vel.set(0, 0, 0);
       // ON ATTEND LE RÉSULTAT, BORNÉ, ET LA DURÉE ENTRE DANS LE MESSAGE (v300).
       // Mesuré à la sonde des deux côtés : un bus marque son arrêt à 4,5 blocs
@@ -760,11 +796,11 @@ function verifier(nom, ok, detail = '') {
           auVolant: !!g.player.volInterdit,
           prise: avant - apres, attente: Math.round(performance.now() - t0),
           bouton, bandeau: (document.getElementById('toast') || {}).textContent || null,
-          place: { id: place.id, d: +place.d.toFixed(1) },
+          place: { id: place.id, d: +place.d.toFixed(1) }, decalage: pose.lat,
           modele: auto && auto.mesh ? auto.mesh.userData.flotte || null : null,
         };
       }
-      return { aucuneVoiture: true, attente: Math.round(performance.now() - t0) };
+      return { aucuneVoiture: true, decalage: pose.lat, attente: Math.round(performance.now() - t0) };
     });
     verifier('on prend le volant d\'une voiture vue dans la rue',
       volant.auVolant === true && volant.prise === 1, JSON.stringify(volant));
