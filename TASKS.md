@@ -108,14 +108,16 @@
   l'endroit d'AVANT ; (3) une voiture d'un convoi voisin arrivée de travers au
   carrefour. Six versions de ce témoin avant qu'il sépare les deux codes : les
   cinq premières sont dans `git log tests/reseau.js`.
-- [ ] **LE GPS (v306) : CE QU'IL NE FAIT PAS ENCORE.** (1) La MINICARTE ne
-  montre pas la destination — seulement la grande carte (drapeau et trait) et
-  la flèche en haut de l'écran. (2) On ne vise qu'à l'appui long : toucher un
-  lieu nommé ou choisir un résultat de recherche emmène toujours en voyage,
-  sans proposer « S'y rendre ». (3) La destination ne se partage pas avec un
-  ami en ligne ; ce sera un message de plus, à son nom. (4) La transition CSS de
-  la flèche prend le chemin long quand l'angle passe de +π à −π (un tour presque
-  complet, 0,15 s) : cosmétique, à régler en tournant par l'écart le plus court.
+- [ ] **LE GPS : LE PARTAGE AVEC UN AMI EN LIGNE (v321, déclaré).** Les trois
+  autres points de la dette v306 sont faits (minicarte, question sur les lieux
+  et les résultats, flèche par l'écart le plus court). Partager la destination
+  n'est pas « simple » : un message `gps_de` (au nom de l'émetteur) à envoyer
+  par `net.js`, à RELAYER par l'hôte comme `ciel`, à faire passer par
+  `relaisnuage.js`, ignoré sans casse par une tablette restée en arrière (le
+  receveur cède) ; côté receveur, un bandeau « Marlon va à Rome — 🧭 y aller
+  aussi ? » qui ne remplace jamais un GPS déjà en cours sans qu'on le demande.
+  Témoin : deux pages dans `reseau.js`, Marlon choisit Rome, Alice voit la
+  proposition et, si elle accepte, `__gps().nom === 'Rome'` chez elle.
 - [ ] **PARIS DOUBLÉ (v306) : CE QUI RESTE, DÉCLARÉ.** (1) Une tablette qui
   jouerait encore sur l'ancienne version APRÈS la publication poserait dans
   l'ancien Paris des blocs datés d'après `DATE_PARIS_DOUBLE` : la marche 5 → 6

@@ -770,6 +770,36 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Le GPS complet (v321) — plus aucun voyage d'office, et un angle affiché reste continu
+
+La dette de la v306, remboursée. Quatre règles.
+
+- **UNE QUESTION POSÉE PAR UN GESTE SE POSE PAR TOUS LES GESTES QUI MÈNENT AU
+  MÊME ENDROIT.** La v306 avait fait poser « Téléporter » ou « S'y rendre » à
+  l'appui long, et laissé l'étiquette touchée et le résultat de recherche
+  emmener d'office : trois gestes vers le même voyage, un seul qui demandait.
+  Les trois passent désormais par `_proposer` (carte.js) ; un lieu nommé garde
+  son nom et son voyage (`surVoyage`, la trame des rues), un point reste un
+  point. Le résultat de recherche CENTRE la carte sur le lieu avant de poser
+  la question (`proposerLieu`) : l'enfant voit où c'est avant de choisir.
+  Tout témoin qui éprouvait l'ancien geste clique « Téléporter ».
+- **UN ANGLE AFFICHÉ QUI SUIT UN ANGLE REPLIÉ SE GARDE CONTINU.** `guidage`
+  rend un écart dans ]−π, π] ; écrit tel quel dans un style animé, il fait
+  faire un tour presque complet à la flèche quand la cible passe derrière.
+  `rotationContinue` (gps.js, pur) n'ajoute à l'angle AFFICHÉ que l'écart le
+  plus court. **Et le témoin lit le style ÉCRIT, pas la matrice calculée** :
+  `getComputedStyle` replie tout dans ]−π, π] et rend le même angle pour le
+  bon et pour le mauvais chemin — il ne pouvait pas voir ce défaut.
+- **CE QUI CHANGE SANS QUE L'ENFANT BOUGE SE REDESSINE TOUT DE SUITE.** La
+  minicarte ne se refait qu'au déplacement (v233) ; une destination posée ou
+  effacée la redessine sur-le-champ (`majMinicarteGPS`). Le repère et la
+  flèche de bord sont la règle des amis hors cadre, rendue pure
+  (`repereMinicarte`) ; le témoin lit la COULEUR à l'endroit annoncé.
+- **UN MESSAGE RÉSEAU NEUF N'EST « SIMPLE » QUE S'IL NE TOUCHE NI AU RELAIS NI
+  AU NUAGE.** Partager la destination demande `net.js` (envoi, relais de
+  l'hôte), `relaisnuage.js` et un témoin à deux tablettes dans `reseau.js` :
+  déclaré dans `TASKS.md` au lieu d'être livré à moitié.
+
 ## Les programmes à l'arrivée, dans toutes les villes (v319) — une sonde de gel se fait sur l'échantillon, pas sur la ville signalée
 
 Max : « lance sur toutes les villes, pas juste celle-là ». Cinq règles.

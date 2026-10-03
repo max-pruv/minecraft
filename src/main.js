@@ -17,7 +17,7 @@ import { aeroportPres, postesAvion } from './aeroport.js';
 import { cadence, chronoReel } from './cadence.js';
 import { axeDuFeu, axeDuCap, etatFeu } from './feux.js';
 import { cadran } from './cap.js';
-import { guidage, arriveEntre, nomDestination } from './gps.js';
+import { guidage, arriveEntre, nomDestination, rotationContinue, repereMinicarte } from './gps.js';
 import { POLE } from './pole.js';
 import { LIGNES as LIGNES_DC, traceLigneMetro, arretsDeLigne, circuitsWashington } from './washington.js';
 import { buildChunkTampons } from './mesher.js';
@@ -2460,16 +2460,23 @@ const gpsTexte = document.getElementById('gps-texte');
 let gpsCible = null;          // { x, z, nom }
 let gpsTexteAvant = '';
 let gpsPrec = null;           // la position de l'image d'avant (arrivée entre deux images)
-function demarrerGPS(x, z) {
-  gpsCible = { x, z, nom: nomDestination(x, z) };
-  gpsTexteAvant = ''; gpsPrec = null;
+let gpsRot = null;            // l'angle AFFICHÉ de la flèche, continu (v321)
+// `nom` : le lieu touché sur la carte ou choisi dans la recherche (v321) — la
+// Tour Eiffel se dit « Tour Eiffel », pas « Paris ». Sans nom, celui de la
+// ville dont le disque contient le point, ou « le point choisi ».
+function demarrerGPS(x, z, nom) {
+  gpsCible = { x, z, nom: nom || nomDestination(x, z) };
+  gpsTexteAvant = ''; gpsPrec = null; gpsRot = null;
   document.body.classList.add('gps-actif');
   majGPS();
+  majMinicarteGPS();
   toast(`🧭 GPS : en route vers ${gpsCible.nom} (${guidage(player.pos.x, player.pos.z, player.yaw, gpsCible).lisible})`, 0x6ee7b7);
 }
 function arreterGPS() {
-  gpsCible = null; gpsPrec = null;
+  const avait = !!gpsCible;
+  gpsCible = null; gpsPrec = null; gpsRot = null;
   document.body.classList.remove('gps-actif');
+  if (avait) majMinicarteGPS();
 }
 function majGPS() {
   if (!gpsCible) return;
@@ -2482,7 +2489,9 @@ function majGPS() {
     return;
   }
   gpsPrec = { x, z };
-  gpsFleche.style.transform = `rotate(${g.rotation.toFixed(3)}rad)`;
+  // PAR L'ÉCART LE PLUS COURT (v321) : passer de +π à −π n'est pas un tour.
+  gpsRot = rotationContinue(gpsRot, g.rotation);
+  gpsFleche.style.transform = `rotate(${gpsRot.toFixed(3)}rad)`;
   const texte = `${gpsCible.nom}|${g.lisible}|${g.consigne}`;
   if (texte !== gpsTexteAvant) {
     gpsTexteAvant = texte;
@@ -2495,6 +2504,11 @@ document.getElementById('gps-stop').addEventListener('click', (e) => {
   toast('🧭 GPS arrêté.', 0xcfd8e8);
 });
 window.__gps = () => (gpsCible ? { ...gpsCible, ...guidage(player.pos.x, player.pos.z, player.yaw, gpsCible) } : null);
+// Une destination neuve ou effacée se montre TOUT DE SUITE sur la minicarte :
+// elle ne se redessine d'elle-même que quand l'enfant a bougé.
+function majMinicarteGPS() {
+  if (minimapVisible) drawMap(minimapCanvas, 96);
+}
 
 // LE CADRAN DE CAP (v263). Le calcul est pur (`cap.js`), le DOM ne s'écrit
 // que quand ce qu'il dit change : deux cent soixante distances par image
@@ -6469,6 +6483,34 @@ function drawMap(mapCanvas, radius) {
     }
   }
 
+  // LA DESTINATION DU GPS (v321). Dans le cadre, un repère — un rond vert
+  // cerclé de blanc, la couleur du bouton « S'y rendre » ; hors du cadre, une
+  // flèche verte au bord, du côté de la cible, comme celle d'un ami. Le calcul
+  // est pur (`repereMinicarte`, gps.js) ; le banc lit ce qui a été dessiné.
+  window.__repereGPS = null;
+  if (gpsCible) {
+    const r = repereMinicarte(player.pos.x, player.pos.z, gpsCible, radius, size);
+    ctx.save();
+    ctx.fillStyle = '#10b981';
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    if (r.dedans) {
+      ctx.beginPath();
+      ctx.arc(r.x, r.y, 6, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(r.x - 1, r.y - 1, 2, 2);
+    } else {
+      ctx.translate(r.x, r.y);
+      ctx.rotate(r.angle);
+      ctx.beginPath();
+      ctx.moveTo(8, 0); ctx.lineTo(-5, -6); ctx.lineTo(-2, 0); ctx.lineTo(-5, 6); ctx.closePath();
+      ctx.fill(); ctx.stroke();
+    }
+    ctx.restore();
+    window.__repereGPS = { dedans: r.dedans, x: r.x, y: r.y, angle: r.angle ?? null, size };
+  }
+
   // player arrow, pointing where the camera looks
   ctx.save();
   ctx.translate(size / 2, size / 2);
@@ -6525,14 +6567,19 @@ const carte = new Carte({
     ...animalManager.animals.map((a) => ({ x: a.pos.x, z: a.pos.z, couleur: '#ffd75e' })),
   ],
   surVoyage: (lieu) => {
+    // La carte se recentre AVANT le voyage : si l'enfant la rouvre, il est là
+    // où il vient d'arriver, pas là d'où il est parti.
+    carte.vue.cx = lieu.x; carte.vue.cz = lieu.z;
+    carte.limiter();
     deposerA(lieu.x + 1.5, lieu.z + 1.5);   // sur la trame des rues, pas dans une maison
     fermerCarte();
     toast(`🧳 Voyage vers ${lieu.name} !`, 0xffd75e);
   },
-  // « 🧭 S'y rendre » : on ne bouge pas, on reçoit une flèche (v306).
-  surGPS: (wx, wz) => {
+  // « 🧭 S'y rendre » : on ne bouge pas, on reçoit une flèche (v306). Un lieu
+  // nommé (étiquette, recherche) garde son nom (v321).
+  surGPS: (wx, wz, nom) => {
     fermerCarte();
-    demarrerGPS(wx, wz);
+    demarrerGPS(wx, wz, nom);
   },
   destination: () => gpsCible,
   surTeleport: (wx, wz) => {
@@ -6657,17 +6704,15 @@ function montrerResultats() {
   listeLieux.style.display = 'block';
 }
 
+// UN RÉSULTAT PROPOSE, IL NE DÉCIDE PLUS (v321). Choisir « Tokyo » dans la
+// liste emmenait d'office ; c'est désormais la question de l'appui long
+// (« Téléporter » ou « S'y rendre »), posée sur le lieu, que la carte vient de
+// centrer : l'enfant voit où c'est avant de choisir comment y aller.
 function allerAuLieu(lieu) {
   champLieu.value = '';
   listeLieux.style.display = 'none';
   champLieu.blur();
-  // La carte se recentre AVANT le voyage : si l'enfant rouvre la carte, il est
-  // là où il vient d'arriver, pas là d'où il est parti.
-  carte.vue.cx = lieu.x; carte.vue.cz = lieu.z;
-  carte.limiter();
-  deposerA(lieu.x + 1.5, lieu.z + 1.5);
-  fermerCarte();
-  toast(`🧳 Voyage vers ${lieu.name} !`, 0xffd75e);
+  carte.proposerLieu(lieu);
 }
 
 champLieu.addEventListener('input', montrerResultats);

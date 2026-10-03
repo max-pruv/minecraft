@@ -38,6 +38,15 @@ const cadre = (p) => p.evaluate(() => {
   return { x: r.left, y: r.top, w: r.width };
 });
 const lieuxVus = (p) => p.evaluate(() => window.__carte.etiquettes.map((e) => e.lieu.name));
+// La question « Téléporter / S'y rendre » (v306, v321) : visible ? carte
+// ouverte ? où sont ses deux boutons ?
+const questionPosee = (p) => p.evaluate(() => {
+  const b = document.getElementById('map-choix');
+  const vis = !!b && getComputedStyle(b).display !== 'none';
+  const centre = (id) => { const e = document.getElementById(id); if (!e) return null; const r = e.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; };
+  return { vis, tp: vis ? centre('map-choix-tp') : null, gps: vis ? centre('map-choix-gps') : null,
+    ouverte: getComputedStyle(document.getElementById('map-modal')).display !== 'none' };
+});
 const carteOuverte = (p) => p.evaluate(() =>
   getComputedStyle(document.getElementById('map-modal')).display !== 'none');
 const position = (p) => p.evaluate(() => ({
@@ -287,12 +296,61 @@ const position = (p) => p.evaluate(() => ({
     });
     if (!cible) verifier('Nice est repérable sur la carte du monde', false);
     else {
+      // DEPUIS LA v321, TOUCHER UN LIEU PROPOSE — comme l'appui long. On note
+      // ce qu'on voit AVANT de choisir (la question posée, la carte ouverte,
+      // l'enfant pas encore parti), puis on choisit « Téléporter » comme lui.
+      // Sur l'ancien code l'enfant était déjà à Nice, carte fermée.
+      const avantTap = await position(tab);
       await tab.mouse.click(cible.x, cible.y);
+      await dormir(500);
+      const q = await questionPosee(tab);
+      const restePlace = (await position(tab)).x === avantTap.x;
+      if (q.vis && q.tp) await tab.mouse.click(q.tp.x, q.tp.y);
       await dormir(700);
       const arrive = await position(tab);
-      verifier('toucher un lieu emmène en voyage',
-        Math.hypot(arrive.x - cible.lieu.x, arrive.z - cible.lieu.z) < 6 && !(await carteOuverte(tab)),
-        JSON.stringify(arrive));
+      verifier('toucher un lieu propose « Téléporter » ou « S\'y rendre », et Téléporter y emmène',
+        q.vis && q.ouverte && restePlace
+        && Math.hypot(arrive.x - cible.lieu.x, arrive.z - cible.lieu.z) < 6 && !(await carteOuverte(tab)),
+        JSON.stringify({ q: { vis: q.vis, ouverte: q.ouverte }, restePlace, arrive }));
+    }
+
+    // LE GPS VA PARTOUT, VILLES ENGENDRÉES COMPRISES (v321). On touche « Rome »
+    // — une ville du registre que personne n'a bâtie à la main — et l'on
+    // choisit « S'y rendre » : l'enfant reste où il est, la flèche vise Rome
+    // et la nomme. Sur l'ancien code, toucher Rome y emmenait d'office.
+    {
+      await banc.ouvrirLaCarte(tab);
+      const rome = await tab.evaluate(async () => {
+        const m = await import('./src/mondes.js');
+        const R = m.positionDe('rome');
+        const c2 = window.__carte;
+        c2.vue.cx = R.x; c2.vue.cz = R.z; c2.vue.bpp = 2.5;
+        c2.limiter(); c2.peindre();
+        const e = c2.etiquettes.find((x) => x.lieu.name === 'Rome');
+        if (!e) return { noms: c2.etiquettes.map((x) => x.lieu.name).slice(0, 12) };
+        const r = document.getElementById('map-modal-canvas').getBoundingClientRect();
+        return { x: r.left + (e.rect.x0 + e.rect.x1) / 2, y: r.top + (e.rect.y0 + e.rect.y1) / 2,
+          lieu: { x: e.lieu.x, z: e.lieu.z } };
+      });
+      let g = null, q = null, avant = null, apres = null;
+      if (rome.lieu) {
+        avant = await position(tab);
+        await tab.mouse.click(rome.x, rome.y);
+        await dormir(500);
+        q = await questionPosee(tab);
+        if (q.vis && q.gps) await tab.mouse.click(q.gps.x, q.gps.y);
+        await dormir(500);
+        apres = await position(tab);
+        g = await tab.evaluate(() => (window.__gps ? window.__gps() : null));
+      }
+      verifier('toucher Rome puis « S\'y rendre » : on reste là, la flèche vise Rome et la nomme',
+        !!g && !!q && q.vis && avant.x === apres.x && avant.z === apres.z
+        && g.nom === 'Rome' && Math.hypot(g.x - rome.lieu.x, g.z - rome.lieu.z) < 3
+        && !(await carteOuverte(tab)),
+        JSON.stringify({ rome: rome.noms || rome.lieu, q: q && q.vis, avant, apres,
+          g: g && { nom: g.nom, x: Math.round(g.x), z: Math.round(g.z), d: Math.round(g.distance) } }));
+      await tab.evaluate(() => document.getElementById('gps-stop')?.click());
+      await dormir(200);
     }
 
     // --- appui long n'importe où ---------------------------------------------
@@ -447,6 +505,71 @@ const position = (p) => p.evaluate(() => ({
         && sens.droite.ang > 1.2 && /droite/.test(sens.droite.mot)
         && sens.gauche.ang < -1.2 && /gauche/.test(sens.gauche.mot),
         JSON.stringify(sens));
+
+      // PAR L'ÉCART LE PLUS COURT (v321). La cible passe derrière l'enfant :
+      // l'écart saute de +3,0 à −3,0 radians. Ce que la flèche reçoit (le
+      // style écrit, pas la matrice calculée, qui replie tout dans ]−π, π])
+      // ne doit bouger que de trois dixièmes, pas d'un tour presque complet
+      // — l'ancien code écrivait −3,0 et la transition CSS faisait le tour.
+      const tour = g ? await tab.evaluate(async () => {
+        const p = window.__game.player, c = window.__gps();
+        const face = Math.atan2(-(c.x - p.pos.x), -(c.z - p.pos.z));
+        const lire = async (yaw) => {
+          p.yaw = yaw;
+          await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+          await new Promise((r) => setTimeout(r, 120));
+          const m = document.getElementById('gps-fleche').style.transform.match(/rotate\((-?[\d.]+)rad\)/);
+          return m ? parseFloat(m[1]) : null;
+        };
+        const a = await lire(face + 3.0), b = await lire(face + 3.3);
+        return { a, b, saut: a == null || b == null ? null : +Math.abs(b - a).toFixed(2) };
+      }) : null;
+      verifier('la flèche du GPS tourne par l\'écart le plus court (pas de tour au passage de ±π)',
+        !!tour && tour.saut != null && tour.saut < 0.6, JSON.stringify(tour));
+
+      // LA MINICARTE MONTRE LA DESTINATION (v321). Loin (deux cents blocs pour
+      // une vignette de quatre-vingt-seize de rayon), une flèche au BORD, du
+      // côté de la cible ; tout près, un repère à son pixel. On lit ce que la
+      // vignette a dessiné (sa couleur, à l'endroit annoncé), pas une variable.
+      const mini = g ? await tab.evaluate(async () => {
+        const p = window.__game.player;
+        const btn = document.getElementById('map-btn');
+        const cv = document.getElementById('minimap');
+        const allumee = () => getComputedStyle(cv).display !== 'none';
+        if (!allumee()) btn.click();
+        const vert = (r) => {
+          if (!r) return null;
+          const k = r.dedans ? [r.x + 3.5, r.y] : [r.x + Math.cos(r.angle) * 2, r.y + Math.sin(r.angle) * 2];
+          const d = cv.getContext('2d').getImageData(Math.round(k[0]), Math.round(k[1]), 1, 1).data;
+          return Math.hypot(d[0] - 16, d[1] - 185, d[2] - 129) < 45;
+        };
+        const lire = async () => {
+          await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+          const r = window.__repereGPS || null;
+          return r && { ...r, vert: vert(r) };
+        };
+        const c = window.__gps();
+        const loin = await lire();
+        const attendu = Math.atan2(c.z - p.pos.z, c.x - p.pos.x);
+        // tout près : trente blocs à l'est
+        window.__carte.surGPS(p.pos.x + 30, p.pos.z);
+        const pres = await lire();
+        document.getElementById('gps-stop')?.click();
+        const apres = await lire();
+        if (allumee()) btn.click();
+        return { loin, attendu: +attendu.toFixed(2), pres, apres };
+      }) : null;
+      verifier('la minicarte montre la destination : une flèche au bord, du côté de la cible',
+        !!mini && !!mini.loin && mini.loin.dedans === false && mini.loin.vert
+        && Math.abs(Math.atan2(Math.sin(mini.loin.angle - mini.attendu), Math.cos(mini.loin.angle - mini.attendu))) < 0.1,
+        JSON.stringify(mini && { loin: mini.loin, attendu: mini.attendu }));
+      verifier('la minicarte montre la destination : un repère quand elle est dans le cadre, rien sans GPS',
+        !!mini && !!mini.pres && mini.pres.dedans === true && mini.pres.vert
+        && mini.pres.x > mini.pres.size / 2 + 10 && Math.abs(mini.pres.y - mini.pres.size / 2) < 4
+        && mini.apres === null,
+        JSON.stringify(mini && { pres: mini.pres, apres: mini.apres }));
+      // le GPS de la suite : celui du point visé, rétabli
+      if (g) await tab.evaluate(({ x, z }) => window.__carte.surGPS(x, z), { x: g.x, z: g.z });
 
       // ARRIVÉ, LE GPS S'ÉTEINT TOUT SEUL — on s'y pose comme en voyage.
       let fin = null;
@@ -2050,10 +2173,19 @@ const position = (p) => p.evaluate(() => ({
       sansAccents.some((t) => /Tour Eiffel/i.test(t)),
       sansAccents.join(' · ') || 'aucun résultat');
 
-    // Le raccourci, c'est le voyage : toucher un résultat DÉPOSE l'enfant.
+    // UN RÉSULTAT PROPOSE, IL NE DÉCIDE PLUS (v321) : toucher un résultat
+    // centre la carte sur le lieu et pose la question de l'appui long. On la
+    // voit, carte ouverte et enfant sur place, puis l'on choisit Téléporter.
     await chercher('washington');
     await dormir(500);
+    const avantRes = await couche.evaluate(() => Math.round(window.__game.player.pos.x));
     await couche.click('#map-resultats button');
+    await dormir(600);
+    const qRes = await questionPosee(couche);
+    const resteRes = (await couche.evaluate(() => Math.round(window.__game.player.pos.x))) === avantRes;
+    verifier('toucher un résultat propose « Téléporter » ou « S\'y rendre », sans partir tout seul',
+      qRes.vis && qRes.ouverte && resteRes, JSON.stringify({ vis: qRes.vis, ouverte: qRes.ouverte, resteRes }));
+    if (qRes.vis && qRes.tp) await couche.mouse.click(qRes.tp.x, qRes.tp.y);
     await dormir(1500);
     const arrivee = await couche.evaluate(async () => {
       const m = await import('./src/mondes.js');
@@ -2064,7 +2196,7 @@ const position = (p) => p.evaluate(() => ({
         fermee: getComputedStyle(document.getElementById('map-modal')).display === 'none',
       };
     });
-    verifier('et toucher un résultat emmène vraiment là-bas', arrivee.loin < 8 && arrivee.fermee,
+    verifier('et « Téléporter » emmène vraiment là-bas', arrivee.loin < 8 && arrivee.fermee,
       JSON.stringify(arrivee));
 
     verifier('aucune erreur JavaScript sur le téléphone couché', couche.erreurs.length === 0,
