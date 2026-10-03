@@ -770,6 +770,41 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les programmes à l'arrivée, dans toutes les villes (v319) — une sonde de gel se fait sur l'échantillon, pas sur la ville signalée
+
+Max : « lance sur toutes les villes, pas juste celle-là ». Cinq règles.
+
+- **UNE DETTE MESURÉE DANS UNE VILLE SE MESURE DANS TOUTES LE JOUR OÙ ON LA
+  REPREND.** Celle de la v306 disait « deux ou trois programmes à Paris » ;
+  `sonde-programmes-villes.cjs` (seize lieux, une page neuve chacun) a rendu
+  0 à 4 partout et **34 à New York**, que personne n'avait mesuré. Le verre
+  dans les murs une neuvième fois, du côté d'une sonde.
+- **UN PROGRAMME SE NOMME PAR LA CASE DE SA CLÉ QUI DIFFÈRE, PAS PAR LE
+  MATÉRIAU COURANT.** La sonde de Paris ne lisait que `currentProgram` et ne
+  trouvait personne. On lit TOUS les programmes d'un matériau
+  (`renderer.properties.get(m).programs`) et l'on compare chaque clé neuve à
+  la clé ancienne la plus proche : `basic→phong, envMap 301` a nommé la coque
+  d'attente des voitures en une exécution, `shadowMapEnabled` les 22 de
+  Manhattan. Un programme qu'aucun objet ne porte vingt secondes après est
+  celui d'un objet REMPLACÉ (la coque, par le modèle de la flotte).
+- **`shadowMapEnabled` FAIT PARTIE DE LA CLÉ DE TOUT PROGRAMME.** Une ville
+  qui allume les ombres sur un appareil qui ne les a pas (Manhattan sur la
+  tablette, v257) recompile tout ce qu'on voit à l'entrée. Se chauffe en
+  basculant les ombres le temps d'un appel, dans la même tâche.
+- **`compile` NE CHAUFFE PAS LA PASSE D'OMBRE, ET CELLE-CI LIT LES LAMPES DE
+  L'IMAGE PRÉCÉDENTE.** Les variantes de profondeur ne naissent qu'au RENDU :
+  un pixel de l'écran (la cible compte dans la clé), le décor caché, les
+  lampes gardées. Et le matériau de profondeur est partagé et ne se recompile
+  que quand la forme change : deux rendus encadrant une AUTRE forme, sinon la
+  seconde variante (« une ombre portée » contre « zéro ») ne naît jamais —
+  trois sondes pour le voir, chacune réfutant la précédente.
+- **UNE CHAUFFE QUI NE SERT QU'À UNE VILLE NE GRISE PAS « JOUER ».** Sur
+  l'iPad une compilation coûte des centaines de millisecondes (v257) : celle de
+  New York tourne après la préparation, à l'accueil et au menu, et s'arrête en
+  jeu. Le témoin attend qu'elle finisse, comme l'enfant qui lit l'accueil ; le
+  cas de l'enfant pressé est déclaré dans `TASKS.md`, avec l'alternative qui
+  est une décision de Max (Manhattan qui respecte les ombres de l'appareil).
+
 ## Deux témoins repointés (v318) — un témoin qui ne lit rien, et un enfant posé sur la voie
 
 Deux règles.

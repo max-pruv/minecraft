@@ -1,14 +1,42 @@
 # Ce qui est en cours
 
-- [ ] **DEUX OU TROIS PROGRAMMES SE COMPILENT ENCORE À L'ARRIVÉE À PARIS
-  (mesuré en v306).** Voitures et feux chauffés, `sonde-programmes-paris.cjs`
-  rend 2 · 2 · 3 programmes neufs (`3,srgb` et `131075,srgb` en fin de clé),
-  et AUCUN objet de la scène ne les porte comme programme courant — donc des
-  variantes : probablement la cible cubique des reflets qui voit un décor
-  nouveau (façades HD de Paris ?). Sous la barre du témoin (4), mais c'est
-  encore un gel sur la tablette. Sonde à écrire : parcourir
-  `renderer.properties` de chaque matériau de la scène et lister ceux dont
-  `programs` contient une clé neuve.
+- [x] **DEUX OU TROIS PROGRAMMES SE COMPILENT ENCORE À L'ARRIVÉE À PARIS
+  (mesuré en v306) — ÉLARGI À TOUTES LES VILLES ET FAIT EN v319.**
+  `sonde-programmes-villes.cjs` (seize lieux, page neuve par lieu) rendait sur
+  `origin/main` 0 à 4 partout et 34 à New York ; 0 partout ensuite. Causes
+  nommées : la coque d'attente des voitures de ville (deux Phong à reflets),
+  le chien en fondu (`Lambert+alpha`), un `Basic` uni (Lille), et à New York
+  les ombres que Manhattan allume (22) plus ses matériaux (12).
+- [ ] **LA CHAUFFE DE NEW YORK N'EST PAS UNE BARRIÈRE DE « JOUER » (v319,
+  décision de prudence, pas de Max).** Elle tourne après la préparation, tant
+  que l'accueil ou le menu de pause est à l'écran : 320 étapes, quatre à six
+  secondes au banc. Un enfant qui appuie sur « Jouer » avant qu'elle ait fini
+  retrouve à New York les compilations d'avant (jamais plus). Sur l'iPad, son
+  coût réel est À MESURER (`?diag=1`, et `?chauffeny=0` pour la couper) : la
+  grande majorité des étapes sont des programmes déjà compilés, la trentaine
+  restante coûte des centaines de millisecondes chacune sous Safari (v257).
+  **Une alternative est une décision de Max** : que Manhattan respecte le
+  réglage d'ombres de l'appareil (éteintes sur tablette depuis v257) — 22
+  programmes de moins ET une passe d'ombre de moins par image dans la ville la
+  plus lourde du jeu, au prix des ombres de New York sur l'iPad.
+- [ ] **AU PORTAIL DE LA v319, LES DEUX ROUGES SONT DES DETTES DÉJÀ
+  DÉCLARÉES.** `manhattan.js` « le trou enlève aussi la géométrie visible de la
+  façade » 17 102 → 51 734 (mêmes nombres qu'au tableau plus bas) ; `monte.js`
+  « l'écran ne se fige pas en arrivant sur une ville » 3 283 ms · 27,3 %
+  au-delà de 300 ms, sous les 3 517 ms · 41,4 % relevés sur `origin/main` — la
+  chauffe ne l'a pas aggravé, sans le régler : ce témoin mesure la cadence
+  d'arrivée, pas les compilations (qui sont à zéro). Au second portail
+  (après rebase sur la v318) : mêmes deux rouges (gel 3 583 ms · 29 %), plus
+  `washington.js` « on entre chez les gens » avec le message exact de la v250
+  et de la v272 (« façade 0,1, plafond à −1, 1 mur ») — rejouée SEULE, verte
+  sur la branche ET sur `origin/main` : l'intermittence de charge déjà
+  déclarée plus bas.
+- [ ] **LA PASSE D'OMBRE DE THREE LIT LES LAMPES DE L'IMAGE PRÉCÉDENTE (vu en
+  v319).** À la bascule des ombres, la première image compile une variante de
+  profondeur « zéro ombre portée », les suivantes « une » ; et le matériau de
+  profondeur, partagé, ne se recompile que quand la forme du maillage change.
+  La chauffe compile les deux variantes en alternant les formes. Si une
+  version future de three change cet ordre, la sonde le dira (clé `depth`).
 - [ ] **LA RIVE GAUCHE A DEUX FOIS MOINS DE VOITURES DEPUIS PARIS DOUBLÉ
   (mesuré en v306).** Au témoin de variété de `monte.js`, huit voitures à
   portée (60 blocs) contre quatorze à quinze avant : les huit circuits

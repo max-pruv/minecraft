@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 319,
+    titre: 'Plus de gel en arrivant',
+    puces: [
+      'Toutes les villes testées, une par une',
+      'New York se prépare pendant l\'accueil',
+      'Arriver en ville ne fige plus l\'écran',
+    ],
+  },
+  {
     v: 318,
     titre: 'Des contrôles plus justes',
     puces: [
