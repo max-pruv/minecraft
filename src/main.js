@@ -34,7 +34,7 @@ import { createEffects } from './effects.js';
 import { createSky } from './sky.js';
 import { createSiege } from './siege.js';
 import { createVie } from './vie.js';
-import { createVehicules, lancerReflets, avancerReflets, refletsVoiture, chaufferLesProgrammes, programmesChauffes, programmesAChauffer, graineDeVille } from './vehicules.js';
+import { createVehicules, lancerReflets, avancerReflets, refletsVoiture, chaufferLesProgrammes, programmesChauffes, programmesAChauffer, graineDeVille, construireVoitureRoute, signaturesAChauffer, materielDeSignature, FLOTTE, chargerVoitureFlotte } from './vehicules.js';
 import { decor, voirTout } from './couches.js';
 import { contexteAudio, sortieAudio, reglerSon, sonActif, etatSon, radioEnCours, generationAudio } from './sons.js';
 import { traceAnneau } from './ville.js';
@@ -7676,12 +7676,220 @@ requestAnimationFrame(() => {
       if (cible) { renderer.setRenderTarget(cible); renderer.compile(ici, camera, scene); }
     } finally { renderer.setRenderTarget(avant); }
   };
+  // ET LA VOITURE D'ATTENTE (v319). Toute voiture de ville naît en coque
+  // sculptée (`construireVoitureRoute`) le temps que son modèle de la flotte
+  // arrive : laque et verrière en Phong, qui lisent la cible des reflets. Ce
+  // sont les deux programmes que `sonde-programmes-villes.cjs` a trouvés dans
+  // DOUZE villes sur seize — Paris, Londres, San Francisco, Nice, Lille,
+  // Mendoza, Kyoto, Shanghai, Barcelone, Zurich… —, et qu'aucun matériau de la
+  // scène ne portait plus vingt secondes après : la coque était déjà remplacée.
+  // Elle se fabrique, elle n'est pas une ligne de `signatures.js` ; on compile
+  // la coque elle-même, comme les feux.
+  const chaufferLaCoque = () => {
+    const ici = new THREE.Scene();
+    ici.add(construireVoitureRoute(0xb02020));
+    renderer.compile(ici, camera, scene);
+  };
   const pas = () => {
     if (chauffe()) { requestAnimationFrame(pas); return; }
     try { chaufferLesFeux(); } catch (e) { console.warn('chauffe des feux', e); }
+    try { chaufferLaCoque(); } catch (e) { console.warn('chauffe de la coque', e); }
     chauffeFinie = true;
+    requestAnimationFrame(pasNY);
   };
   requestAnimationFrame(pas);
+
+  // LA CHAUFFE DE NEW YORK (v319) — EN FOND, ET SEULEMENT À L'ACCUEIL.
+  //
+  // La sonde de toutes les villes a rendu 0 à 4 programmes neufs partout, et
+  // TRENTE-QUATRE à New York. Deux causes, mesurées séparément (même page,
+  // `?ombres=1` pour retirer la première) :
+  //   22  Manhattan ALLUME LES OMBRES (manhattan-render.js) sur un appareil qui
+  //       les a éteintes — la tablette, depuis la v257, et le banc. Or
+  //       `shadowMapEnabled` fait partie de la clé de TOUT programme : chaque
+  //       matériau à l'écran se recompile à l'entrée de la ville.
+  //   12  ses propres matériaux (`manhattan-pbr-*`, instanciés), qui n'existent
+  //       nulle part ailleurs.
+  // On les compile ici avec les ombres allumées le temps de l'appel — le
+  // soleil et le rendu reprennent leur état dans le `finally`, dans la même
+  // tâche, donc aucune image ne les voit autrement. Trois sources : les
+  // matériaux de Manhattan (sur un maillage instancié ET un maillage simple,
+  // c'est la forme qui décide de la clé), la table des signatures (relue, pas
+  // recopiée), et les matériaux du décor déjà dans la scène.
+  //
+  // CE N'EST PAS UNE BARRIÈRE DE « JOUER ». Sur l'iPad Safari compile un
+  // programme en centaines de millisecondes (v257) : une trentaine de plus
+  // derrière le bouton grisé, c'est dix secondes d'accueil pour une ville où
+  // l'enfant n'ira peut-être pas. La chauffe avance donc pendant que l'accueil
+  // est à l'écran (et au menu de pause), au même budget et au même étalement
+  // que la première, et s'arrête dès que la partie tourne : un enfant qui
+  // appuie sur « Jouer » tout de suite retrouve à New York exactement ce qu'il
+  // avait avant, jamais pire.
+  const ombresNY = [];
+  let etapesNY = null, kNY = 0;
+  const chauffeNY = { faites: 0, total: 0, finie: false };
+  window.__chauffeNY = () => ({ ...chauffeNY });
+  // UN RENDU D'UN PIXEL, PAS UNE COMPILATION. `renderer.compile` ne compile que
+  // la passe de couleur ; la passe d'OMBRE a ses propres programmes (une
+  // variante de profondeur par forme : instanciée, à squelette, double face,
+  // découpée), et la sonde en a trouvé cinq à New York une fois toute la
+  // couleur chauffée. On rend donc vraiment : le décor caché le temps d'un
+  // appel (les lampes restent, leur nombre fait partie de la clé), le maillage
+  // témoin seul, qui porte son ombre, dans un pixel de l'écran — la cible
+  // compte aussi (l'écran est en sRGB, une cible hors écran ne l'est pas).
+  const vueAvant = new THREE.Vector4(), ciseauxAvant = new THREE.Vector4();
+  // Mais un rendu par témoin coûtait vingt secondes d'accueil au banc pour
+  // trois cents témoins presque tous déjà compilés : on ne rend que la PREMIÈRE
+  // fois qu'une forme d'ombre se présente (ce qui décide de la variante de
+  // profondeur : instanciée, à squelette, faces, découpe), et l'on se contente
+  // de compiler la couleur pour les autres.
+  const formesDOmbre = new Set();
+  const formeDOmbre = (o, m) => [o.isInstancedMesh ? (o.instanceColor ? 'Ic' : 'I') : '', o.isSkinnedMesh ? 'S' : '',
+    m.side, m.shadowSide, m.alphaTest > 0, !!m.map, !!m.alphaMap, !!m.displacementMap, !!m.alphaHash].join('|');
+  const compilerAvecOmbres = (objet) => {
+    let neuve = false;
+    objet.traverse((o) => {
+      for (const m of [].concat(o.material || [])) {
+        const f = formeDOmbre(o, m);
+        if (!formesDOmbre.has(f)) { formesDOmbre.add(f); neuve = true; }
+      }
+    });
+    const ici = new THREE.Scene();
+    ici.add(objet);
+    const ombres = renderer.shadowMap.enabled, soleil = sunLight.castShadow;
+    renderer.shadowMap.enabled = true;
+    sunLight.castShadow = true;
+    try { renderer.compile(ici, camera, scene); } finally {
+      renderer.shadowMap.enabled = ombres;
+      sunLight.castShadow = soleil;
+    }
+    if (!neuve) return;
+    // l'état des lampes « sans ombre portée », celui de la dernière image du
+    // jeu quand l'appareil n'a pas d'ombres (voir les deux rendus plus bas)
+    renderer.compile(ici, camera, scene);
+    const autre = new THREE.Group();
+    objet.traverse((o) => {
+      if (!o.isMesh) return;
+      const m = o.material;
+      autre.add(o.isInstancedMesh || o.isSkinnedMesh ? new THREE.Mesh(boite, m) : new THREE.InstancedMesh(boite, m, 1));
+    });
+    autre.traverse((o) => { o.castShadow = true; o.frustumCulled = false; });
+    const caches = [];
+    for (const c of scene.children) if (c.visible && !c.isLight) { c.visible = false; caches.push(c); }
+    objet.traverse((o) => { o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false; });
+    scene.add(objet);
+    const ciseaux = renderer.getScissorTest();
+    renderer.getViewport(vueAvant);
+    renderer.getScissor(ciseauxAvant);
+    renderer.shadowMap.enabled = true;
+    sunLight.castShadow = true;
+    try {
+      renderer.setViewport(0, 0, 1, 1);
+      renderer.setScissor(0, 0, 1, 1);
+      renderer.setScissorTest(true);
+      // DEUX RENDUS, ET C'EST LA PASSE D'OMBRE DE THREE QUI LE VEUT. Elle se
+      // rend AVANT que l'image ne relise ses lampes, donc avec celles de
+      // l'image précédente. À l'entrée de Manhattan, la première image rend
+      // ses ombres avec un soleil qui n'en portait pas encore (zéro ombre
+      // portée dans la clé), les suivantes avec un (mesuré : la sonde gardait
+      // l'une ou l'autre selon ce qu'on chauffait). Le premier rendu part de
+      // l'état sans ombre que le `compile` ci-dessus vient de poser, le second
+      // de celui que le premier a posé : les deux variantes sont compilées.
+      // ET ENTRE LES DEUX, UNE AUTRE FORME. Le matériau de profondeur est
+      // PARTAGÉ par tous les maillages, et three ne lui recalcule son
+      // programme que lorsque la forme change (instancié ou non, squelette) :
+      // rendre deux fois le même maillage aurait gardé la première variante.
+      // `autre` porte les mêmes matériaux sous l'autre forme.
+      renderer.render(scene, camera);
+      scene.remove(objet);
+      scene.add(autre);
+      renderer.render(scene, camera);
+      scene.remove(autre);
+      scene.add(objet);
+      renderer.render(scene, camera);
+    } finally {
+      scene.remove(autre);
+      renderer.setScissorTest(ciseaux);
+      renderer.setScissor(ciseauxAvant);
+      renderer.setViewport(vueAvant);
+      renderer.shadowMap.enabled = ombres;
+      sunLight.castShadow = soleil;
+      scene.remove(objet);
+      for (const c of caches) c.visible = true;
+    }
+  };
+  const boite = new THREE.BoxGeometry(0.01, 0.01, 0.01);
+  const etapesDeNewYork = () => {
+    const out = [];
+    const vus = new Set();
+    const surDeuxFormes = (m) => {
+      if (!m || !m.isMaterial || vus.has(m)) return;
+      vus.add(m);
+      out.push(() => compilerAvecOmbres(new THREE.Mesh(boite, m)));
+      out.push(() => {
+        const inst = new THREE.InstancedMesh(boite, m, 1);
+        inst.setColorAt(0, new THREE.Color(1, 1, 1));
+        compilerAvecOmbres(inst);
+      });
+    };
+    for (const m of Object.values(villeRealiste.mats || {})) surDeuxFormes(m);
+    surDeuxFormes(villeRealiste.signage && villeRealiste.signage.material);   // les enseignes
+    if (villeRealiste.root) villeRealiste.root.traverse((o) => { for (const m of [].concat(o.material || [])) surDeuxFormes(m); });
+    const uni = new THREE.DataTexture(new Uint8Array([200, 200, 200, 255]), 1, 1);
+    uni.needsUpdate = true;
+    const normale = new THREE.DataTexture(new Uint8Array([128, 128, 255, 255]), 1, 1);
+    normale.needsUpdate = true;
+    for (const sig of signaturesAChauffer()) {
+      out.push(() => {
+        const m = materielDeSignature(sig, refletsVoiture(), uni, normale);
+        ombresNY.push(m.material);
+        compilerAvecOmbres(m);
+      });
+    }
+    // le décor déjà là : blocs, eau, vitres, paysage lointain, ciel, coque…
+    scene.traverse((o) => {
+      if (!o.isMesh || o.isSkinnedMesh) return;
+      for (const m of [].concat(o.material || [])) {
+        if (vus.has(m)) continue;
+        vus.add(m);
+        out.push(() => {
+          const copie = o.isInstancedMesh ? new THREE.InstancedMesh(o.geometry, m, 1) : new THREE.Mesh(o.geometry, m);
+          if (o.isInstancedMesh && o.instanceColor) copie.setColorAt(0, new THREE.Color(1, 1, 1));
+          copie.layers.mask = o.layers.mask;
+          compilerAvecOmbres(copie);
+        });
+      }
+    });
+    out.push(() => compilerAvecOmbres(construireVoitureRoute(0x2a4e9c)));
+    // et les voitures FABRIQUÉES — dont les taxis jaunes et les berlines de
+    // New York (taxis.js : volant, phares en verre vernis) —, telles que la
+    // flotte les livre, reflets compris. Leur chargement est déjà fait : la
+    // première chauffe l'a demandé.
+    for (const entree of FLOTTE) {
+      if (!entree.fabrique) continue;
+      const chargement = chargerVoitureFlotte(entree);
+      if (!chargement) continue;
+      let proto = null;
+      chargement.then((p) => { proto = p; });
+      out.push(() => { if (proto) compilerAvecOmbres(proto.clone(true)); });
+    }
+    return out;
+  };
+  const budgetNY = Number(PARAMS_JEU.get('chauffems')) || 100;
+  const pasNY = () => {
+    if (PARAMS_JEU.get('chauffeny') === '0') return;
+    // ni pendant la partie, ni avant que « Jouer » soit libéré : elle ne prend
+    // pas une image à la préparation (le fond de carte avance par image, v276)
+    if (running || !prepPrete) { requestAnimationFrame(pasNY); return; }
+    try {
+      if (!etapesNY) { etapesNY = etapesDeNewYork(); chauffeNY.total = etapesNY.length; }
+      const t0 = performance.now();
+      do { etapesNY[kNY++](); } while (kNY < etapesNY.length && performance.now() - t0 < budgetNY);
+    } catch (e) { console.warn('chauffe de New York', e); if (!etapesNY) etapesNY = []; }
+    chauffeNY.faites = kNY;
+    if (kNY < etapesNY.length) requestAnimationFrame(pasNY);
+    else chauffeNY.finie = true;
+  };
 
   // LE JEU SE PRÉPARE AVANT « JOUER », ET LE BOUTON ATTEND (v258).
   //

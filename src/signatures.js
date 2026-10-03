@@ -50,7 +50,15 @@ export const SIGNATURES_GLB = [
 // la signature ne tient pas à elles, elle tient au chien. Les autres matériaux
 // du jeu (blocs, personnages sculptés, vitres) sont déjà rendus au point
 // d'apparition.
-export const SIGNATURES_JEU = ['Lambert'];
+//
+// ET LA SONDE DE TOUTES LES VILLES (v319) EN A TROUVÉ DEUX DE PLUS, partout :
+// le chien passe en fondu (`presence.js`), donc en `transparent` — un programme
+// à part, comme les humains (`Lambert+alpha`) ; et un `MeshBasicMaterial` uni
+// sous brouillard, vu à Lille (`Basic`). Les deux Phong de la voiture d'attente
+// (`construireVoitureRoute`, la coque posée avant que le modèle de la flotte
+// n'arrive) ne sont pas une ligne de cette table : ils se fabriquent, et
+// `main.js` compile la coque elle-même, comme les feux.
+export const SIGNATURES_JEU = ['Lambert', 'Lambert+alpha', 'Basic'];
 
 // La laque reçoit la sonde des reflets (`refleter`, vehicules.js) : c'est la
 // seule chose qui distingue une signature de fichier d'une signature rendue,

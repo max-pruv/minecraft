@@ -2875,28 +2875,70 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // on se téléporte à Paris, on compte vingt secondes plus tard — et l'on
     // vérifie que le RENDU a tourné : une boucle morte rend zéro programme
     // neuf et ne prouve rien (vu au banc, sur une erreur de ma livraison).
+    //
+    // ET CE N'ÉTAIT PAS QUE PARIS (v319). Max : « lance sur toutes les villes,
+    // pas juste celle-là ». `sonde-programmes-villes.cjs`, seize lieux, une page
+    // neuve par lieu, sur `origin/main` : Paris 3, Londres 3, San Francisco 3,
+    // Nice 3, Lille 3-4, Shanghai 3, Mendoza, Kyoto, Barcelone, Zurich 2,
+    // Marrakech 1 — et NEW YORK 34. Les causes, nommées par la sonde : la coque
+    // d'attente des voitures (deux Phong), le chien en fondu (Lambert
+    // transparent), et à New York les ombres que Manhattan allume (22) plus ses
+    // propres matériaux (12). Le témoin fait donc LE TOUR — une page, cinq lieux
+    // qui portent chacun une cause, et chaque lieu ne compte que ce que les
+    // précédents n'ont pas déjà compilé.
+    //
+    // ET IL ATTEND LA CHAUFFE DE FOND AVANT « JOUER », comme l'enfant qui lit
+    // l'accueil. La chauffe de New York ne grise pas le bouton (une trentaine de
+    // compilations de plus, dix secondes d'accueil sur l'iPad) : un enfant qui
+    // appuie tout de suite retrouve New York comme avant. C'est déclaré dans
+    // TASKS.md ; ce que le témoin garde, c'est que l'accueil, lui, couvre tout.
     await souffler();
-    const arrivee = await banc.jouerSeul('MonteArrivee', { rr: 6 });
-    const programmes = await arrivee.evaluate(async () => {
-      const g = window.__game;
-      const info = g.renderer.info;
-      const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
-      let n = info.programs.length, stable = 0;
+    const arrivee = await banc.joueur('MonteArrivee', { rr: 6 });
+    const chauffeNY = await arrivee.evaluate(async () => {
       const t0 = performance.now();
-      while (stable < 3 && performance.now() - t0 < 40000) {
-        await dodo(1000);
-        if (info.programs.length === n) stable++; else { stable = 0; n = info.programs.length; }
+      while (performance.now() - t0 < 60000) {
+        const c = window.__chauffeNY && window.__chauffeNY();
+        if (!c || c.finie) return { ...(c || { absente: true }), ms: Math.round(performance.now() - t0) };
+        await new Promise((f) => setTimeout(f, 250));
       }
-      const avant = info.programs.length;
-      const { positionDe } = await import('./src/mondes.js');
-      const P = positionDe('paris');
-      const f0 = info.render.frame;
-      window.__carte.surTeleport(P.x + 20, P.z - 30);
-      await dodo(20000);
-      return { avant, neufs: info.programs.length - avant, images: info.render.frame - f0,
-        chunks: g.world.chunks.size, arrive: Math.hypot(g.player.pos.x - P.x, g.player.pos.z - P.z) < 60 };
+      return { expire: true, ...window.__chauffeNY() };
     });
+    await arrivee.evaluate(() => { window.__game.edu.today().libreJusqua = 86400; document.getElementById('play-btn').click(); });
+    await arrivee.waitForFunction(() => window.__game.running, null, { timeout: 30000 });
+    const TOUR = [
+      { cle: 'paris', dx: 20, dz: -30 },   // la coque d'attente, le chien en fondu
+      { cle: 'ny' },                       // les ombres de Manhattan, ses matériaux
+      { cle: 'lille' },
+      { cle: 'marrakech' },                // une médina
+      { cle: 'kyoto' },                    // un tissu organique
+    ];
+    const tour = [];
+    for (const l of TOUR) {
+      tour.push(await arrivee.evaluate(async (l) => {
+        const g = window.__game;
+        const info = g.renderer.info;
+        const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+        let n = info.programs.length, stable = 0;
+        const t0 = performance.now();
+        while (stable < 3 && performance.now() - t0 < 40000) {
+          await dodo(1000);
+          if (info.programs.length === n) stable++; else { stable = 0; n = info.programs.length; }
+        }
+        const avant = new Set(info.programs.map((p) => p.cacheKey));
+        const { positionDe } = await import('./src/mondes.js');
+        const P = positionDe(l.cle);
+        const x = P.x + (l.dx || 0), z = P.z + (l.dz || 0);
+        const f0 = info.render.frame;
+        window.__carte.surTeleport(x, z);
+        await dodo(20000);
+        const neufs = info.programs.filter((p) => !avant.has(p.cacheKey));
+        return { lieu: l.cle, neufs: neufs.length, images: info.render.frame - f0,
+          arrive: Math.hypot(g.player.pos.x - x, g.player.pos.z - z) < 60,
+          cles: neufs.slice(0, 4).map((p) => { const k = p.cacheKey.split(','); return [k[0]].concat(k.slice(-4, -1)).join(','); }) };
+      }, l));
+    }
     await arrivee.close();
+    const programmes = { chauffeNY, tour };
     // ET LA BORNE DE GARDE ÉTAIT AU-DESSUS DE CE QU'ON MESURE — QUATRIÈME FOIS
     // DANS CE FICHIER (v282). `images > 30` disait « la boucle de rendu vit »,
     // parce qu'une sonde de fluidité doit d'abord vérifier que le jeu tourne
@@ -2916,8 +2958,15 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // 74 : toutes entre 0,41 et 0,69 de la mesure, donc à leur place. C'est la
     // consigne de la v237, qui avait coûté deux portails pour avoir corrigé une
     // borne en laissant ses deux voisines intactes.
-    verifier('se téléporter à Paris ne compile plus les programmes des voitures sur place',
-      programmes.arrive && programmes.images > 10 && programmes.neufs <= 4,
+    // LA BARRE SE POSE À LA MOITIÉ (v237), LIEU PAR LIEU : ce code rend 0 dans
+    // les seize lieux de la sonde, `origin/main` rend 3 à Paris et 34 à New
+    // York. Un programme au plus par lieu, et deux sur tout le tour — la marge
+    // d'un modèle de la flotte qu'un tirage met à portée pour la première fois.
+    // (La garde `images > 10` vaut pour chaque lieu : une page morte rend zéro
+    // programme et ne prouve rien.)
+    verifier('se téléporter dans une ville ne compile plus de programmes sur place — Paris, New York, Lille, une médina, Kyoto',
+      tour.every((t) => t.arrive && t.images > 10 && t.neufs <= 1)
+        && tour.reduce((a, t) => a + t.neufs, 0) <= 2,
       JSON.stringify(programmes));
 
     // ET LA TABLE DES SIGNATURES DIT CE QUE LES FICHIERS CONTIENNENT. La

@@ -139,7 +139,7 @@ export function signaturesAChauffer() {
   }
   return out.concat(SIGNATURES_JEU);
 }
-function materielDeSignature(sig, rt, uni, normale) {
+export function materielDeSignature(sig, rt, uni, normale) {
   const f = new Set(sig.split('+'));
   const params = {};
   if (f.has('map')) params.map = uni;

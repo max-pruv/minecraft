@@ -20,6 +20,33 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v319 — Arriver dans une ville ne compile plus rien
+
+**Pourquoi.** Chaque programme de la carte graphique compilé à l'arrivée dans
+une ville est une image figée sur la tablette — des centaines de millisecondes
+chacun sous Safari. La v306 avait laissé deux ou trois programmes à l'arrivée à
+Paris, sans savoir à qui ils étaient. Max : « lance sur toutes les villes, pas
+juste celle-là ». Mesuré sur seize lieux, une page neuve par lieu : Paris 3,
+Londres 3, San Francisco 3, Nice 3, Lille 3 ou 4, Shanghai 3, Mendoza, Kyoto,
+Barcelone et Zurich 2, Marrakech 1 — et **New York 34**.
+
+**Ce que ça change.** L'accueil compile aussi ce qui manquait : la coque que
+porte une voiture de la rue en attendant son vrai modèle, le chien des passants
+quand il apparaît en fondu, et un matériau uni vu à Lille. Et pendant qu'il
+reste à l'écran, une fois « Jouer » libéré, il prépare New York : Manhattan
+allume les ombres que la tablette n'a pas, ce qui recompilait tout ce qu'on
+voit, et elle a ses propres façades. Cette seconde chauffe ne grise pas le
+bouton : un enfant qui appuie tout de suite retrouve New York comme avant.
+
+**Ce qui le prouve.** `sonde-programmes-villes.cjs` rend zéro programme neuf
+dans les seize lieux — six villes bâties à la main, Manhattan, sept tissus de
+villes engendrées, l'aérodrome de Francfort et la gare de Lyon. Le témoin de
+`monte.js` fait désormais le tour (Paris, New York, Lille, Marrakech, Kyoto) :
+0 · 0 · 0 · 0 · 0 sur la branche, 3 · 34 · 1 · 0 · 0 sur `origin/main`, barre à
+un par lieu et deux sur le tour.
+
+---
+
 ## v318 — Des contrôles plus justes
 
 **Pourquoi.** Deux témoins du portail ne prouvaient rien, et `TASKS.md` le
