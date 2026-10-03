@@ -153,6 +153,24 @@ export const ROUTES = [
   // blocs de sol entre deux ponts) : deux ponts, déblai 7,3, remblai 3,5,
   // pente 0,061, joint fermé (0 / 13 065), zéro rail, zéro repère.
   { nom: 'A109', villes: ['nairobi', 'mombasa'], via: [[13300, 29941], [13335, 29961], [13368, 30011], [13929, 31249], [14169, 31426], [14227, 31440], [14294, 31501]], bord: { mombasa: 14 } },
+  // L'A3 (v318), COLOGNE–FRANCFORT : la première route qui a une VOIE FERRÉE
+  // le long de son axe — l'ICE va droit de gare à gare (36°), et la route ne
+  // doit ni le croiser ni le longer dans son emprise. Elle passe donc tout
+  // entière à sa DROITE, au sud : au nord, l'aérodrome de Francfort (1734,
+  // −1040, r 74) n'est qu'à 108 blocs de l'axe du rail, et entre sa marge et
+  // le ballast il ne reste que quatre ou cinq blocs pour dix-sept d'emprise.
+  // L'entrée se choisit par l'ANGLE (v313) : à Cologne, 104° (avenue de
+  // vingt-deux blocs sur la rue, sans bloc ni eau), à Francfort 186° (vingt-
+  // sept blocs) ; trois coudes de vingt-cinq degrés font tourner le tracé de
+  // la sortie sud de Cologne vers l'est-nord-est, deux autres l'amènent dans
+  // l'axe ouest de Francfort. Mesuré sous node (scratchpad tourne.mjs, qui lit
+  // `profilDe` lui-même — la sonde ne recopie plus les règles du profil, elle
+  // les appelle) : 4 852 tracés, refus 1 691 remblai · 626 déblai · 382 ponts
+  // proches · 891 pont près d'une porte · 0 rail · 0 aérodrome ; celui-ci :
+  // 804 blocs, aucun pont, déblai 4,8, remblai 1,4, pente 0,063, zéro colonne
+  // d'emprise ou de talus sur le rail, la gare ou son quai, l'aérodrome à 118
+  // blocs au-delà de son disque, zéro repère.
+  { nom: 'A3', villes: ['cologne', 'francfort'], via: [[1540, -961], [1544, -942], [1555, -925], [1572, -915], [2118, -573], [2152, -552]] },
 ];
 
 // --- la section -----------------------------------------------------------------
