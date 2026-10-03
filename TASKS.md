@@ -19,6 +19,13 @@
   réglage d'ombres de l'appareil (éteintes sur tablette depuis v257) — 22
   programmes de moins ET une passe d'ombre de moins par image dans la ville la
   plus lourde du jeu, au prix des ombres de New York sur l'iPad.
+- [ ] **AU PORTAIL DE LA v319, LES DEUX ROUGES SONT DES DETTES DÉJÀ
+  DÉCLARÉES.** `manhattan.js` « le trou enlève aussi la géométrie visible de la
+  façade » 17 102 → 51 734 (mêmes nombres qu'au tableau plus bas) ; `monte.js`
+  « l'écran ne se fige pas en arrivant sur une ville » 3 283 ms · 27,3 %
+  au-delà de 300 ms, sous les 3 517 ms · 41,4 % relevés sur `origin/main` — la
+  chauffe ne l'a pas aggravé, sans le régler : ce témoin mesure la cadence
+  d'arrivée, pas les compilations (qui sont à zéro).
 - [ ] **LA PASSE D'OMBRE DE THREE LIT LES LAMPES DE L'IMAGE PRÉCÉDENTE (vu en
   v319).** À la bascule des ombres, la première image compile une variante de
   profondeur « zéro ombre portée », les suivantes « une » ; et le matériau de
