@@ -20,6 +20,34 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v320 — L'autoroute Cologne–Francfort, à côté de l'ICE
+
+**Pourquoi.** Candidat suivant du relevé de la v310 : Cologne–Francfort, 739
+blocs sur l'axe direct — et le premier corridor qui a une voie ferrée le long
+de son axe : l'ICE va tout droit de gare à gare. Une route qui croise ou longe
+le rail dans son emprise écrirait son remblai sur le ballast.
+
+**Ce que ça change.** L'A3 relie Cologne à Francfort : 804 blocs de deux fois
+deux voies, aucun pont, et vingt voitures qui font l'aller-retour.
+
+- **Elle passe tout entière au sud du rail.** Au nord, l'aérodrome de Francfort
+  (posé près de Cologne) n'est qu'à 108 blocs de l'axe de l'ICE : entre sa marge
+  et le ballast il restait quatre ou cinq blocs pour dix-sept d'emprise.
+- **Elle sort de Cologne par le sud et entre dans Francfort par l'ouest**, deux
+  entrées choisies par l'angle où l'avenue est propre (22 et 27 blocs sur la
+  rue, sans bloc ni eau).
+
+Rien n'est écrit dans le relief : les deux empreintes de `plafond.js` ne
+bougent pas.
+
+**Ce qui le prouve.** Dans `carteMonde.js`, un témoin neuf, rouge sur
+`origin/main` (pas d'A3) : la route, ses voitures, ses deux entrées — et pour
+TOUTES les routes, aucune colonne d'emprise sur un rail, un talus de voie ou une
+gare (0 sur 14 047 pour l'A3, 0 partout ailleurs). La sonde de tracé appelle
+désormais `profilDe` elle-même au lieu d'en recopier les règles : 4 852 tracés,
+les refus comptés par contrainte (1 691 remblai, 891 pont près d'une porte, 626
+déblai, 382 ponts trop proches, zéro rail une fois le tracé au sud).
+
 ## v319 — Arriver dans une ville ne compile plus rien
 
 **Pourquoi.** Chaque programme de la carte graphique compilé à l'arrivée dans
@@ -46,6 +74,7 @@ villes engendrées, l'aérodrome de Francfort et la gare de Lyon. Le témoin de
 un par lieu et deux sur le tour.
 
 ---
+
 
 ## v318 — Des contrôles plus justes
 
@@ -82,6 +111,7 @@ neuves (`sonde-tour-monuments.cjs`, `sonde-attente-volant.cjs`) rejouent ces
 mesures.
 
 ---
+
 
 ## v317 — Des quais en pierre dans toutes les villes
 

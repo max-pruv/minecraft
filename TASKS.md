@@ -318,7 +318,7 @@
   entrée nord propre de sa trame (−100° à −103°) — 79 819 tracés, tous refusés
   par sa marge ; l'autre entrée propre (−175°, −192°) arrive par la mer, deux
   cents blocs de viaduc. Déplacer un aérodrome est une décision de Max
-  (invariant 1) ; un viaduc en mer aussi. A109 Nairobi–Mombasa faite en v315. Restent à instruire les autres
+  (invariant 1) ; un viaduc en mer aussi. A109 Nairobi–Mombasa faite en v315. A3 Cologne–Francfort faite en v320 (au sud de l'ICE : au nord, l'aérodrome de Francfort ne laisse pas la place d'une emprise). Restent à instruire les autres
   candidats du kit (liste hors dépôt), un par un. INSTRUITES en v310 sur
   l'axe direct (longueur · eau · rail parallèle · obstacles) : Bruxelles–
   Amsterdam 790 · 56 · 0 · aucun ; Montréal–Québec 873 · 18 · 0 ; São Paulo–
