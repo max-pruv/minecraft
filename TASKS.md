@@ -255,6 +255,32 @@
   branche 3 · 3 · 2, `origin/main` 3 · 3 · 3. Même distribution ; le 5 est un
   tirage sous la charge du portail, et la dette de la v306 (deux ou trois
   programmes à l'arrivée) reste ouverte telle quelle.
+- [ ] **LE PORTAIL DE LA v321 (règle de la v195), DOUBLE MESURE FAITE — premier
+  portail, sur la base v317.** Dix suites. Verts : `carteMonde.js` (le témoin des 268 villes, rouge sur
+  `origin/main`), `plafond.js`, `parishd.js`, `carte.js`, `washington.js`,
+  `metro.js`. Rouges, rejoués SEULS des deux côtés :
+  · `maj.js`, le badge — attendu, la version ne monte qu'à la fusion ;
+  · `maj.js`, « corps, programmes et fond de carte » — la dette déclarée :
+    branche 4 rouges sur 5 (libérée à 45–47 s, carte 8–9 pas ; le vert à
+    41,9 s), `origin/main` 1 rouge sur 4 (48,2 s, carte 8 ; les verts à 40–43).
+    Les deux issues des deux côtés, à la borne des 45 s ; la branche tombe plus
+    souvent. Mesuré à part (`sonde-prep-carte.cjs`, page seule, alterné) : 2,0
+    à 3,0 s des deux côtés, aucun écart ; et la page voisine en jeu au point
+    d'apparition est IDENTIQUE (`sonde-cout-spawn.cjs` : 87 convois, 140
+    voitures, aucune dessinée, des deux côtés). Le seul surcoût de démarrage
+    de la branche — le tracé des douze tours, ~140 ms — est désormais calculé à
+    la naissance du convoi (43 ms au démarrage) ;
+  · `maj.js`, les deux témoins du palier (16 images au portail) — rouges au
+    portail seulement, verts rejoués seuls des deux côtés, comme en v315 ;
+  · `manhattan.js` — « le trou enlève la géométrie » (14 460 branche, 11 684
+    `origin/main`) et le `locator.tap` à 30 s, identiques des deux côtés ;
+  · `monte.js` — l'écran figé (3 300 · 3 333 ms branche, 3 416 `origin/main`) ;
+    « les programmes à Paris » rouge au portail sur sa garde (10 images), vert
+    seul des deux côtés (17 images neufs 4 ; 21 images neufs −2) ; « le bouton
+    Conduire s'offre » vert au portail, rouge rejoué seul sur la branche (60 s
+    sans voiture à neuf blocs), vert sur `origin/main` — rejoué sur page neuve
+    (`sonde-bouton-rive.cjs`) : 3,9 · 1,9 · 2,9 s sur la branche, trois sur
+    trois. Une intermittence de l'état que les témoins d'avant laissent (v279).
 - [ ] **LE PORTAIL DE LA v319 (règle de la v195), DOUBLE MESURE FAITE.**
   `carteMonde.js` (le témoin de l'A3, rouge sur `origin/main` : « aucun convoi
   A3 », sept segments, aucune route sur un rail), `plafond.js`, `carte.js`

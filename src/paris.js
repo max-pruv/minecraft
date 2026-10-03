@@ -752,8 +752,13 @@ export function circuitsQuartiersParis(solDe) {
     // blocs, ne serait jamais né pour l'enfant qui y arrive.
     let cu = 0, cv = 0;
     for (const [u, v] of pts) { cu += u; cv += v; }
+    // Le tracé posé sur le sol se calcule à la NAISSANCE du convoi, pas au
+    // démarrage : cent millisecondes pour les douze tours, que l'accueil
+    // n'a pas à payer pour des rues que l'enfant ne verra peut-être jamais.
+    let dense = null;
     out.push({ cle: 'paris', x: PARIS.x + cu / pts.length, z: PARIS.z + cv / pts.length, rang: 100 + out.length,
-      part: Math.round(verdict.part * 100), quartier: true, pts: densifierCircuit(pts, PARIS, solDe) });
+      part: Math.round(verdict.part * 100), quartier: true,
+      get pts() { return dense || (dense = densifierCircuit(pts, PARIS, solDe)); } });
   }
   return out;
 }
