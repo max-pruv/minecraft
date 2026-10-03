@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 318,
+    titre: 'Des contrôles plus justes',
+    puces: [
+      'Deux vérifications du jeu réparées',
+      'Elles ont trouvé un petit défaut',
+      'Rien ne change dans ta partie',
+    ],
+  },
+  {
     v: 317,
     titre: 'Des quais en pierre partout',
     puces: [
