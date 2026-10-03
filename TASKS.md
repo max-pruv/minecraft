@@ -237,6 +237,14 @@
   branche 3 · 3 · 2, `origin/main` 3 · 3 · 3. Même distribution ; le 5 est un
   tirage sous la charge du portail, et la dette de la v306 (deux ou trois
   programmes à l'arrivée) reste ouverte telle quelle.
+- [ ] **LE PORTAIL DE LA v319 (règle de la v195), DOUBLE MESURE FAITE.**
+  `carteMonde.js` (le témoin de l'A3, rouge sur `origin/main` : « aucun convoi
+  A3 », sept segments, aucune route sur un rail), `plafond.js`, `carte.js`
+  verts. `monte.js` : deux rouges, tous deux déjà déclarés. « Les passants ne
+  sont plus plantés au milieu de la chaussée » (29 % à Rome) — le tirage de la
+  v291 ; rejouée SEULE, vert sur la branche. « L'écran ne se fige pas en
+  arrivant sur une ville » — rouge seul des DEUX côtés : branche 4 366 ms ·
+  59,1 %, `origin/main` 4 433 ms · 54,7 %.
 - [ ] **LE PORTAIL DE LA v315 (règle de la v195), DOUBLE MESURE FAITE.** Le
   premier portail a trouvé un vrai défaut (l'avenue de Mombasa, 19 pas pour
   20), corrigé. Le second : `carteMonde.js`, `plafond.js` (onze ponts, 71 164

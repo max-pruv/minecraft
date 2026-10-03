@@ -581,7 +581,7 @@ const VRAIES_KM = [
       out.convoiA4 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A-4') || null;
       out.convoiA109 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A109') || null;
       out.convoiA3 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A3') || null;
-      // AUCUNE ROUTE NE CROISE NI NE LONGE UNE VOIE FERRÉE (v318) : l'A3 est la
+      // AUCUNE ROUTE NE CROISE NI NE LONGE UNE VOIE FERRÉE (v320) : l'A3 est la
       // première dont l'axe a un rail le long (l'ICE). On lit, pour TOUTES les
       // routes, chaque colonne de leur emprise (`routeEn` non nul) et l'on
       // demande au rail s'il y est — ballast, talus de voie ou gare.
@@ -744,7 +744,7 @@ const VRAIES_KM = [
       JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiA109 ? { nom: a1.convoiA109.nom, voitures: (a1.convoiA109.modeles || []).length } : 'aucun convoi A109',
         entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'A109') }));
 
-    // L'A3 (v318) : Cologne–Francfort, la première route qui a un rail le long
+    // L'A3 (v320) : Cologne–Francfort, la première route qui a un rail le long
     // de son axe (l'ICE, de gare à gare). Elle passe tout entière au sud du
     // rail : au nord, l'aérodrome de Francfort ne laisse pas la place d'une
     // emprise entre sa marge et le ballast. Et le témoin lit TOUTES les routes :

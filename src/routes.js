@@ -153,7 +153,7 @@ export const ROUTES = [
   // blocs de sol entre deux ponts) : deux ponts, déblai 7,3, remblai 3,5,
   // pente 0,061, joint fermé (0 / 13 065), zéro rail, zéro repère.
   { nom: 'A109', villes: ['nairobi', 'mombasa'], via: [[13300, 29941], [13335, 29961], [13368, 30011], [13929, 31249], [14169, 31426], [14227, 31440], [14294, 31501]], bord: { mombasa: 14 } },
-  // L'A3 (v318), COLOGNE–FRANCFORT : la première route qui a une VOIE FERRÉE
+  // L'A3 (v320), COLOGNE–FRANCFORT : la première route qui a une VOIE FERRÉE
   // le long de son axe — l'ICE va droit de gare à gare (36°), et la route ne
   // doit ni le croiser ni le longer dans son emprise. Elle passe donc tout
   // entière à sa DROITE, au sud : au nord, l'aérodrome de Francfort (1734,
