@@ -38,6 +38,10 @@
   l'axe à `bu + AXE_TOUR + 1` côté + — et remesurer la tenue de rue des huit
   circuits, puisque le tour change de tracé. Zone de `paris.js`, pas de ce
   témoin. Le témoin reste ROUGE en attendant : il dit vrai.
+  **Double mesure (v195)** : `carteMonde.js` rejouée SEULE sur la branche et
+  sur `origin/main` (fa2f55c, avec le témoin repointé) — 124 verts et ce seul
+  rouge des deux côtés, `dur 6 · lus 597 · Tour Eiffel 4 · Invalides 2`, au
+  pas près. Le portail complet a rendu le même chiffre.
 - [ ] **UNE PLACE DE VOITURE À MOINS DE TROIS BLOCS, SANS VOITURE DESSINÉE (vu
   en v306).** Au témoin « on prend le volant » de `fumee.js`, `placeProche(5)`
   rendait une place à 2,8 puis 1,6 bloc de l'enfant, et `elements[i]` y était
