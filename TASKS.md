@@ -25,7 +25,12 @@
   « l'écran ne se fige pas en arrivant sur une ville » 3 283 ms · 27,3 %
   au-delà de 300 ms, sous les 3 517 ms · 41,4 % relevés sur `origin/main` — la
   chauffe ne l'a pas aggravé, sans le régler : ce témoin mesure la cadence
-  d'arrivée, pas les compilations (qui sont à zéro).
+  d'arrivée, pas les compilations (qui sont à zéro). Au second portail
+  (après rebase sur la v318) : mêmes deux rouges (gel 3 583 ms · 29 %), plus
+  `washington.js` « on entre chez les gens » avec le message exact de la v250
+  et de la v272 (« façade 0,1, plafond à −1, 1 mur ») — rejouée SEULE, verte
+  sur la branche ET sur `origin/main` : l'intermittence de charge déjà
+  déclarée plus bas.
 - [ ] **LA PASSE D'OMBRE DE THREE LIT LES LAMPES DE L'IMAGE PRÉCÉDENTE (vu en
   v319).** À la bascule des ombres, la première image compile une variante de
   profondeur « zéro ombre portée », les suivantes « une » ; et le matériau de
