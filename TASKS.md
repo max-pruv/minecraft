@@ -108,6 +108,14 @@
   l'endroit d'AVANT ; (3) une voiture d'un convoi voisin arrivée de travers au
   carrefour. Six versions de ce témoin avant qu'il sépare les deux codes : les
   cinq premières sont dans `git log tests/reseau.js`.
+- [ ] **`carteMonde.js` : « aucune voiture ne traverse un monument de Paris » —
+  ROUGE EN PRODUCTION (v321, double mesure).** Rejoué SEUL sur la branche
+  `claude/gps-complet` ET sur `origin/main` (v320, arbre séparé) : verdict
+  identique au chiffre près, `{"dur":6,"lus":597,"par":{"Tour Eiffel":4,
+  "Invalides":2}}`, premier exemple `["Tour Eiffel",-514,35,390,5]`. Le témoin
+  est pur (circuits de `voies.js`/`paris.js`), la v321 n'y touche pas. Piste :
+  le tour des monuments signalé par la v318 (une boîte jugée sur des colonnes
+  couvre `c − b` à `c + b + 1`, un bloc plus près côté +). Zone voitures.
 - [ ] **LE GPS : LE PARTAGE AVEC UN AMI EN LIGNE (v321, déclaré).** Les trois
   autres points de la dette v306 sont faits (minicarte, question sur les lieux
   et les résultats, flèche par l'écart le plus court). Partager la destination
