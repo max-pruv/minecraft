@@ -2582,6 +2582,115 @@ const VRAIES_KM = [
       parisRoule.absent ? 'module absent'
         : `pire ${pireParis} % — ${parisRoule.liste.map((c) => `${c.part}% (plan ${c.plan}%)`).join(' · ')}`);
 
+    // --- DES VOITURES DANS TOUTES LES RUES DE TOUTES LES VILLES (v322) ---------
+    //
+    // Paris doublé (v306) avait laissé ses huit circuits d'avenues au milieu
+    // d'un disque quatre fois plus grand, et le plafond de vingt voitures par
+    // circuit faisait des grands anneaux des rues presque vides — Max : « lance
+    // sur toutes les villes, pas juste celle-là ». Ce témoin boucle sur TOUTES
+    // les villes qui ont des voitures (les médinas et les sites sans trame n'en
+    // ont pas, par décision) et mesure ce que l'enfant voit :
+    //   · la COUVERTURE — la part de la ville (colonnes de terre qui lui
+    //     appartiennent, une sur six) à moins de quarante-cinq blocs, la portée
+    //     d'une voiture, d'un tracé qui porte un convoi ;
+    //   · la DENSITÉ — voitures pour mille blocs de rue roulée.
+    // Mesuré sur `origin/main` : Paris 38,8 %, la rive gauche 38,3 %, et Rome
+    // 25 voitures pour mille blocs. Après : Paris 96,4 %, la pire ville 59,9 %
+    // (Nice), la densité la plus basse 54,3. Les barres sont au milieu : la
+    // couverture de Paris à 67, celle de toute ville à 50, la densité à 40.
+    // Et les tours de quartier de Paris se lisent DANS LE MONDE (v293) : la
+    // chaussée sous chaque point, et rien de plein à hauteur de carrosserie.
+    const flotteVilles = await tab.evaluate(async () => {
+      const g = window.__game, W = g.world;
+      const [wo, vm, ve, blk] = await Promise.all([import('./src/world.js'), import('./src/villesmonde.js'),
+        import('./src/vehicules.js'), import('./src/blocks.js')]);
+      const solDe = (x, z) => W.coteRoulable(x, z);
+      const nbDe = ve.voituresDuCircuit || ((L) => Math.max(6, Math.min(20, Math.round(L / 18))));
+      const sources = [['paris', './src/paris.js', 'circuitsParis'], ['londres', './src/londres.js', 'circuitsLondres'],
+        ['sf', './src/sanfrancisco.js', 'circuitsSF'], ['nice', './src/nice.js', 'circuitsNice'],
+        ['lille', './src/lille.js', 'circuitsLille'], ['dc', './src/washington.js', 'circuitsWashington']];
+      const villes = [];
+      let quartiers = [];
+      for (const [cle, f, fn] of sources) {
+        const m = await import(f);
+        const tr = m[fn](solDe);
+        if (cle === 'paris' && m.circuitsQuartiersParis) { quartiers = m.circuitsQuartiersParis(solDe); tr.push(...quartiers); }
+        const c = wo.CITIES.find((c) => c.key === cle);
+        villes.push({ cle, x: c.x, z: c.z, r: c.r, main: true, traces: tr });
+      }
+      const gen = vm.tracesCirculation(solDe);
+      for (const f of vm.VILLES_MONDE) {
+        if (!f.trame || f.trame.ruelles) continue;
+        villes.push({ cle: f.cle, x: f.ancre.x, z: f.ancre.z, r: f.rayon, traces: gen.filter((t) => t.cle === f.cle) });
+      }
+      const VU = 45, out = [];
+      for (const v of villes) {
+        const ech = [];
+        let L = 0, N = 0;
+        for (const t of v.traces) {
+          let l = 0;
+          for (let i = 0; i < t.pts.length; i++) { const a = t.pts[i], b = t.pts[(i + 1) % t.pts.length]; l += Math.hypot(b.x - a.x, b.z - a.z); }
+          L += l; N += nbDe(l);
+          // un anneau de ville engendrée n'a que ses quatre coins : on le
+          // parcourt au pas de deux blocs, comme la voiture
+          for (let i = 0; i < t.pts.length; i++) {
+            const a = t.pts[i], b = t.pts[(i + 1) % t.pts.length];
+            const n = Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.z - a.z) / 2));
+            for (let k = 0; k < n; k++) ech.push({ x: a.x + ((b.x - a.x) * k) / n, z: a.z + ((b.z - a.z) * k) / n });
+          }
+        }
+        const cases = new Map();
+        for (const e of ech) { const k = Math.floor(e.x / VU) + ',' + Math.floor(e.z / VU); (cases.get(k) || cases.set(k, []).get(k)).push(e); }
+        let tot = 0, cou = 0;
+        const R = v.r * 0.9;
+        for (let dx = -R; dx <= R; dx += 6) for (let dz = -R; dz <= R; dz += 6) {
+          if (dx * dx + dz * dz > R * R) continue;
+          const x = Math.floor(v.x + dx), z = Math.floor(v.z + dz);
+          if (W.terrainHeight(x, z) < wo.WATER_LEVEL) continue;
+          if (v.main) { const c = W.cityAt(x, z); if (!c || c.key !== v.cle) continue; }
+          else if (vm.solVillesMonde(x, z) === null) continue;
+          tot++;
+          const cx = Math.floor(x / VU), cz = Math.floor(z / VU);
+          let vu = false;
+          for (let i = -1; i <= 1 && !vu; i++) for (let j = -1; j <= 1 && !vu; j++) {
+            for (const e of cases.get((cx + i) + ',' + (cz + j)) || []) if ((e.x - x) ** 2 + (e.z - z) ** 2 < VU * VU) { vu = true; break; }
+          }
+          if (vu) cou++;
+        }
+        out.push({ cle: v.cle, couverture: tot ? Math.round(1000 * cou / tot) / 10 : 0, densite: L ? Math.round(10000 * N / L) / 10 : 0,
+          circuits: v.traces.length });
+      }
+      // les tours de quartier de Paris, lus dans le monde
+      let pts = 0, chaussee = 0, plein = 0;
+      for (const c of quartiers) for (const p of c.pts) {
+        pts++;
+        const x = Math.round(p.x), z = Math.round(p.z);
+        if (wo.CHAUSSEE.has(W.getBlock(x, W.sommetColonne(x, z), z))) chaussee++;
+        let bl = false;
+        for (const dx of [-1.13, 0, 1.13]) for (const dz of [-1.13, 0, 1.13]) {
+          const id = W.getBlock(Math.round(p.x + dx), Math.round(p.y) + 1, Math.round(p.z + dz));
+          if (id && blk.isSolid(id)) bl = true;
+        }
+        if (bl) plein++;
+      }
+      return { out, quartiers: quartiers.length, pts, chaussee: pts ? Math.round(100 * chaussee / pts) : 0, plein };
+    });
+    {
+      const l = flotteVilles.out;
+      const paris = l.find((v) => v.cle === 'paris');
+      const sans = l.filter((v) => !v.circuits).map((v) => v.cle);
+      const pireCouv = [...l].sort((a, b) => a.couverture - b.couverture).slice(0, 4);
+      const pireDens = [...l].filter((v) => v.circuits).sort((a, b) => a.densite - b.densite).slice(0, 4);
+      verifier('toutes les villes ont des voitures dans leurs rues, Paris doublé compris',
+        paris.couverture >= 67 && sans.length === 0 && pireCouv[0].couverture >= 50 && pireDens[0].densite >= 40
+          && flotteVilles.plein === 0 && (flotteVilles.quartiers === 0 || flotteVilles.chaussee >= 90),
+        `${l.length} villes · Paris ${paris.couverture} % (${paris.circuits} circuits) · moins couvertes `
+          + pireCouv.map((v) => `${v.cle} ${v.couverture} %`).join(', ')
+          + ` · densité la plus basse ${pireDens.map((v) => `${v.cle} ${v.densite}`).join(', ')} voit./1000 blocs`
+          + (sans.length ? ` · SANS circuit : ${sans.join(', ')}` : '')
+          + ` · tours de quartier ${flotteVilles.quartiers} : chaussée ${flotteVilles.chaussee} %, ${flotteVilles.plein} pas dans du plein`);
+    }
+
     // --- LES RUES DE PARIS S'ÉLARGISSENT (v294) ------------------------------
     //
     // Max : « les rues de Paris sont trop étroites ». Mesuré sur le plan avant

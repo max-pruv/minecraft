@@ -273,23 +273,29 @@ export function fabriqueCircuits({ cle, ancre, voies, roulant, chaines, seuil = 
       // de cette cote de trente-deux blocs à San Francisco, quatorze à Nice,
       // et les voitures s'enfonçaient dans le relief sur 27 % et 12 % de leur
       // trajet. Max, sur capture : « les voitures rentrent dans les murs ».
-      const dense = [];
-      for (let i = 0; i < pts.length; i++) {
-        const a = pts[i], b = pts[(i + 1) % pts.length];
-        const n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / PAS_COTE));
-        for (let k = 0; k < n; k++) {
-          const u = a[0] + ((b[0] - a[0]) * k) / n, v = a[1] + ((b[1] - a[1]) * k) / n;
-          const x = ancre.x + u, z = ancre.z + v;
-          dense.push({ x, y: coteEn(solDe, Math.round(x), Math.round(z)) + 1.05, z });
-        }
-      }
       out.push({
         cle, x: ancre.x, z: ancre.z, rang: out.length, part: Math.round(verdict.part * 100),
-        pts: dense,
+        pts: densifierCircuit(pts, ancre, solDe),
       });
     }
     return out;
   };
+}
+
+// Le tracé d'un circuit, densifié au pas de cote et posé sur le sol — la même
+// règle pour les avenues chaînées et pour le tour d'un pâté de quartier (v322).
+export function densifierCircuit(pts, ancre, solDe) {
+  const dense = [];
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i], b = pts[(i + 1) % pts.length];
+    const n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / PAS_COTE));
+    for (let k = 0; k < n; k++) {
+      const u = a[0] + ((b[0] - a[0]) * k) / n, v = a[1] + ((b[1] - a[1]) * k) / n;
+      const x = ancre.x + u, z = ancre.z + v;
+      dense.push({ x, y: coteEn(solDe, Math.round(x), Math.round(z)) + 1.05, z });
+    }
+  }
+  return dense;
 }
 
 // --- contourner une place ronde ---------------------------------------------

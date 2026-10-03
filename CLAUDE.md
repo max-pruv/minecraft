@@ -770,6 +770,37 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Des voitures dans toutes les rues (v322) — un plafond par circuit rend la densité inverse de la longueur
+
+Max : « lance sur toutes les villes, pas juste celle-là ». Quatre règles.
+
+- **« RUE VIDE » SE MESURE EN COUVERTURE ET EN DENSITÉ, VILLE PAR VILLE.** La
+  part de la ville à moins de `VU_VOITURE` (45 blocs) d'un tracé qui porte un
+  convoi, et les voitures pour mille blocs de rue. Paris doublé : 38,8 %. Un
+  compte de circuits ou de voitures par ville ne l'aurait pas dit — Paris en
+  avait cent quarante-quatre. Le témoin de `carteMonde.js` boucle sur les 268
+  villes qui ont des voitures.
+- **ON N'AJOUTE PAS DE RUES POUR AJOUTER DES VOITURES.** La trame ordinaire de
+  Paris est pleine de chaussée ; ce qui manquait, ce sont des boucles qui la
+  suivent. `tourDeTrameParis` roule sur l'AXE des rues de la trame en
+  inversant exactement le gauchissement (`trameVersPlan` : `p` reçoit une onde
+  de `q` d'origine, `q` une onde du `p` gauchi — l'inverse est explicite). Le
+  sol ne change pas d'un bloc. Les tours se cherchent sous node (18 225
+  rectangles, partage ≤ 16 blocs, chaussée ≥ 97 %), puis se lisent DANS LE
+  MONDE : un tour qui a un bloc plein à hauteur de carrosserie est écarté.
+- **UN PLAFOND PAR CIRCUIT REND LA DENSITÉ INVERSE DE LA LONGUEUR.** `nb`
+  plafonnait à vingt : les grands anneaux de Rome avaient une voiture tous les
+  quarante blocs, Londres (circuits courts) une tous les quatorze. Une voiture
+  tous les dix-huit blocs partout (`voituresDuCircuit`), et le prix se mesure
+  en voitures EN VUE d'un point, pas en voitures par ville : le maximum du
+  monde ne bouge pas (72,7, Washington). Et un convoi naît quand l'enfant
+  passe à 220 blocs de son `x, z` (main.js) : un circuit loin du centre porte
+  SON centre, pas celui de la ville.
+- **UNE PLACE LUE ENTRE DEUX IMAGES N'A PAS ENCORE ÉTÉ MONTRÉE.** `placeProche`
+  lit la position d'aujourd'hui, `montrer` a vu celle de la dernière image :
+  après une téléportation, un témoin qui interroge par minuteur trouve des
+  places vides — 47 sur 2 400 relevés, toutes ce cas-là (`diagPlace`). Un
+  témoin de place attend une image après s'être posé.
 ## Le GPS complet (v321) — plus aucun voyage d'office, et un angle affiché reste continu
 
 La dette de la v306, remboursée. Quatre règles.

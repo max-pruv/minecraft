@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 322,
+    titre: 'Des voitures dans toutes les rues',
+    puces: [
+      'Tout Paris a ses voitures',
+      'Plus de voitures dans les grandes villes',
+      'Rome, Rio, Tokyo : rues bien remplies',
+    ],
+  },
+  {
     v: 321,
     titre: 'Le GPS partout',
     puces: [

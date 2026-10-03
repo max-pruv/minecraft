@@ -1434,6 +1434,9 @@ class Convoi {
   // que `placeProche`, et elle garde le calcul bon marché pour les mille
   // circuits du monde.
   montrer(joueur) {
+    // D'où l'on regardait au dernier tour : c'est ce que `diagPlace` compare
+    // à la position d'aujourd'hui (v322). Trois nombres, aucune allocation.
+    this.vuX = joueur.x; this.vuZ = joueur.z; this.vuT = performance.now();
     const tete = this.parcours.a(this.distance);
     const portee = (this.decouvert && this.decouvert(tete)) ? VU : this.vu;
     const trainee = this.ecart * (this.nb - 1) + this.retardMax();
@@ -1507,6 +1510,24 @@ export function repeindre(modele, fichier, teinte) {
     o.material = o.material.clone(); o.material.userData.partagee = false;
     o.material.color.set(teinte);
   });
+}
+
+// UNE VOITURE TOUS LES DIX-HUIT BLOCS, SUR TOUT LE TOUR (v322). Le
+// plafond de vingt par circuit rendait la densité INVERSE de la longueur :
+// les grands anneaux de Rome n'avaient plus qu'une voiture tous les
+// quarante blocs (25 pour mille blocs de rue, contre 72 à Londres, dont
+// les circuits sont courts), et un tour de quartier de Paris de 885 blocs
+// en aurait eu vingt. Le prix se mesure en voitures EN VUE — la portée se
+// teste voiture par voiture, à quarante-cinq blocs (v201) — et il est
+// nul là où il compte : sur les 275 villes, le point du monde qui voit le
+// plus de voitures en voit 72,7 avant comme après (Washington, dont les
+// circuits sont courts et ne touchaient pas le plafond) ; la moyenne de
+// Rome passe de 4,1 à 9,0, sous les 15,7 de Londres. Soixante reste une
+// borne de sûreté, qu'aucun circuit n'atteint (le plus long en a 49).
+// Publiée pour le témoin de `carteMonde.js`, qui compte les voitures d'une
+// ville sans en fabriquer une seule.
+export function voituresDuCircuit(longueur) {
+  return Math.max(6, Math.min(60, Math.round(longueur / 18)));
 }
 
 export function createVehicules({ scene, player }) {
@@ -1680,7 +1701,7 @@ export function createVehicules({ scene, player }) {
   ];
   function circulation(pts, graine = 0, options = {}) {
     const p = new Parcours(pts);
-    const nb = options.nb ?? Math.max(6, Math.min(20, Math.round(p.longueur / 18)));
+    const nb = options.nb ?? voituresDuCircuit(p.longueur);
     const c = ajouter(pts, {
       // UNE ROUTE INTERURBAINE ROULE PLUS VITE QU'UNE RUE (v300) : la vitesse
       // et le nombre se demandent, la rue garde ses chiffres.
@@ -2105,6 +2126,36 @@ export function createVehicules({ scene, player }) {
     return meilleur;
   }
 
+  // CE QUE `montrer` A DÉCIDÉ POUR LA PLACE LA PLUS PROCHE (v322) — la sonde
+  // de « une place à trois blocs sans voiture dessinée » (vu en v306). Rend la
+  // portée du convoi, la tête, la traînée, et ce que `montrer` calcule pour
+  // cette place depuis la position qu'il a VUE à son dernier tour et depuis
+  // celle d'aujourd'hui : un écart entre les deux sépare « pas encore repassé
+  // dans `montrer` » d'un vrai défaut de la règle.
+  function diagPlace(pos, rayon = 5) {
+    const p = placeProche(pos, rayon);
+    if (!p) return null;
+    const [ci, i] = p.id.split(':').map(Number);
+    const c = convois[ci];
+    const tete = c.parcours.a(c.distance);
+    const q = c.parcours.a(c.dElement(i));
+    const portee = (c.decouvert && c.decouvert(tete)) ? VU : c.vu;
+    const trainee = c.ecart * (c.nb - 1) + c.retardMax();
+    const regle = (x, z) => ({
+      prefiltre: Math.hypot(tete.x - x, tete.z - z) <= portee + trainee,
+      dedans: (q.x - x) ** 2 + (q.z - z) ** 2 < portee * portee,
+    });
+    const m = c.elements[i];
+    return {
+      id: p.id, d: +p.d.toFixed(2), maillage: !!m, visible: !!(m && m.visible), pris: c.pris.has(i),
+      vu: c.vu, portee, tete: +Math.hypot(tete.x - pos.x, tete.z - pos.z).toFixed(1), trainee: +trainee.toFixed(1),
+      retardMax: +c.retardMax().toFixed(1),
+      depuisMontrer: c.vuT === undefined ? null : Math.round(performance.now() - c.vuT),
+      ecartVu: c.vuX === undefined ? null : +Math.hypot(c.vuX - pos.x, c.vuZ - pos.z).toFixed(1),
+      regleVue: c.vuX === undefined ? null : regle(c.vuX, c.vuZ), regleIci: regle(pos.x, pos.z),
+    };
+  }
+
   // PRENDRE LE VOLANT D'UNE VOITURE QU'ON VOIT PASSER.
   //
   // Max : « je veux que l'on puisse conduire n'importe quel type de voiture
@@ -2179,7 +2230,7 @@ export function createVehicules({ scene, player }) {
   }
 
   return {
-    metro, course, chaine, circulation, bus, update, placeProche, place, emprunter, retirer, obstacleDevant, voitureA, dansRectangle, enMarche,
+    metro, course, chaine, circulation, bus, update, placeProche, diagPlace, place, emprunter, retirer, obstacleDevant, voitureA, dansRectangle, enMarche,
     adopterHorloge, horloge: () => horloge,
     // le crochet des feux tricolores (v273), branché par main.js
     brancherFeux: (f) => { feuRouge = f; },

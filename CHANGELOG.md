@@ -20,6 +20,38 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v322 — Des voitures dans toutes les rues
+
+**Pourquoi.** Paris doublé (v306) avait laissé ses huit circuits d'avenues au
+milieu d'un disque quatre fois plus grand : mesuré ville par ville, 35 à 39 %
+de Paris seulement était à moins de quarante-cinq blocs — la portée d'une
+voiture — d'une rue où roule un convoi, rive gauche comme rive droite, et l'on
+y voyait 2,8 voitures en moyenne, contre 15,7 à Londres. Tout l'anneau du
+dehors, de Montmartre à la Porte d'Orléans, était une ville de rues vides. Et
+partout ailleurs, le plafond de vingt voitures par circuit rendait les grands
+anneaux presque déserts : Rome 25 voitures pour mille blocs de rue, Rio 30,
+Barcelone 34, contre 72 à Londres, dont les circuits sont courts. Max : « lance
+sur toutes les villes, pas juste celle-là ».
+
+**Ce que ça change.** Paris gagne douze tours de quartier qui suivent les rues
+de sa trame ordinaire, sur leur axe : 96 % de la ville a désormais des voitures
+en vue (la rive gauche 94 %), dix à douze en moyenne. Aucune rue n'a été
+ajoutée, aucune maison n'est devenue une rue. Et dans toutes les villes, il y a
+une voiture tous les dix-huit blocs sur tout le tour : la ville la moins dense
+en a 54 pour mille blocs (Rome passe de 25 à 55). Le point du monde qui voit le
+plus de voitures en voit autant qu'avant.
+
+**Ce qui le prouve.** Un témoin neuf de `carteMonde.js` boucle sur les 268
+villes qui ont des voitures : couverture et densité, plus les tours de quartier
+de Paris lus dans le monde (chaussée sous 99 % des points, rien de plein à
+hauteur de carrosserie). Rouge sur `origin/main` (Paris 38,8 %, Rome 25), vert
+ici.
+
+Et la dette « une place de voiture à trois blocs sans voiture dessinée » (vue
+en v306) est expliquée, pas corrigée : une sonde neuve (`sonde-place-vide.cjs`)
+relève 47 cas sur 2 400, tous lus entre la téléportation et la première image
+qui la suit — `montrer` n'avait pas encore vu l'enfant à sa nouvelle place.
+Rien ne change pour la famille.
 ## v321 — Le GPS partout
 
 **Pourquoi.** Le GPS de la v306 avait laissé quatre trous, déclarés : la
