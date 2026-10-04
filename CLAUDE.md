@@ -770,6 +770,38 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les falaises et les berges (v326) — sous le gazon, c'est encore le monde qu'on voit
+
+Le point (c) du kit « monde fidèle », sur toute la carte. Trois règles.
+
+- **LÀ OÙ LE SOL CONTINU S'ARRÊTE, LE REMPLISSAGE DU MONDE EST UNE PAROI.**
+  C'est la leçon des quais (v316, v317) sortie des villes : le sol continu
+  laisse le voxel à toute cellule de deux blocs ou plus (`MARCHE_MAX`), et ce
+  voxel montrait trois blocs de terre sous l'herbe — 2 863 faces de terre et
+  1 164 d'herbe sur les falaises de 500 morceaux, 1 130 de terre sur les
+  berges (`sonde-falaises.cjs`). `matiereDuBord` (world.js, pure) lit la
+  cote des quatre voisines et la DÉNIVELÉE VUE (l'eau compte à sa surface) :
+  roche sous le gazon dès deux blocs (`FALAISE_ROCHE`), crête de roche dès
+  quatre (`FALAISE_CRETE`), et au bord de l'eau ouverte sable au ras, gravier
+  dessous, sommet de sable pour une rive basse. Seulement une colonne de
+  campagne herbe-sur-terre : ni ville, ni désert, ni banquise, ni Mars, ni
+  volcan. Drapeau `falaises` de `CONF_NEUF` seule, comme `mursDeQuai`.
+- **ON CHANGE LA MATIÈRE, JAMAIS LA FORME — ET UN TÉMOIN LE PROUVE PAR LE
+  MONDE SANS LA RÈGLE.** Les deux empreintes de `plafond.js` disent que
+  `terrainHeight` n'a pas bougé ; elles ne disent rien d'un bloc creusé ou
+  comblé. Le troisième témoin engendre les mêmes morceaux avec
+  `falaises: false` et compare la SOLIDITÉ bloc pour bloc (0 de différence,
+  691 blocs de matière). Les grottes se creusent dans la pierre
+  (`id === STONE`) : un flanc devenu roche pourrait les ouvrir dans la
+  falaise. Mesuré sur 1 600 morceaux, cela n'arrive pas (elles passent à huit
+  à vingt-six blocs, sous le flanc), mais on creuse quand même sur ce que le
+  monde avait AVANT la règle (`roc`) : une garantie par construction vaut
+  mieux qu'un hasard de géographie, et le témoin la garde.
+- **CE QUI RESTE, DÉCLARÉ** : la marche elle-même (une falaise reste un
+  escalier de cubes de roche — l'adoucir, c'est bouger le relief, décision de
+  Max) ; une berge de trois blocs garde sa couronne d'herbe ; le paysage
+  lointain (`horizon.js`) ne connaît pas la règle et garde ses couleurs.
+
 ## Des voitures dans toutes les rues (v322) — un plafond par circuit rend la densité inverse de la longueur
 
 Max : « lance sur toutes les villes, pas juste celle-là ». Quatre règles.

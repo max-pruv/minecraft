@@ -1471,14 +1471,14 @@ function repereAvant(lm) {
 export const CONF_NEUF = {
   cle: 'neuf', villes: CITIES, aeroports: AEROPORTS, gaulois: GAULOIS, volcan: VOLCANO,
   places: PLACES, reperes: LANDMARKS, hauteurParis, parisAvant: false, fonduDoux: true,
-  mursDeQuai: true,
+  mursDeQuai: true, falaises: true,
 };
 // LE MONDE DE LA v306 À LA v308 — celui d'aujourd'hui sans le fondu doux des
 // villes (v309). La marche 6 → 7 juge sur lui ce qui y a été posé, et la marche
 // 5 → 6 y emmène ce qu'elle déplace : c'est là que Paris doublé a été joué. Il
 // ne se met JAMAIS à jour. Même clé que `CONF_NEUF` : ses zones à terre sont
 // les mêmes.
-export const CONF_V308 = { ...CONF_NEUF, fonduDoux: false, mursDeQuai: false };
+export const CONF_V308 = { ...CONF_NEUF, fonduDoux: false, mursDeQuai: false, falaises: false };
 export const CONF_AVANT = {
   cle: 'avant-v306', villes: CITIES_AVANT, aeroports: AEROPORTS_AVANT_V306, gaulois: GAULOIS_AVANT,
   volcan: VOLCANO_AVANT, places: PLACES_AVANT, reperes: LANDMARKS.map(repereAvant),
@@ -2454,6 +2454,51 @@ export function migrerLesBlocs(lire, ecrire, lirePos = null, ecrirePos = null) {
   return { deplaces, laisses, intacts, retires };
 }
 
+// LES FALAISES ET LES BERGES (v326, point (c) du kit « monde fidèle »).
+//
+// Le sol continu (v297) laisse en voxel toute cellule où le relief saute de
+// deux blocs ou plus — « deux blocs, c'est un mur » — et c'est juste. Mais ce
+// mur était le REMPLISSAGE du monde : sous l'herbe, trois blocs de terre. Mesuré
+// par `sonde-falaises.cjs` sur 120 morceaux de campagne tirés sur toute la
+// carte : sur les faces de falaise que l'on voit, 590 de terre et 238 d'herbe
+// (le flanc du bloc de sommet) pour 1 278 de pierre ; sur les berges, 268 faces
+// de terre au ras de l'eau. Un escalier de terre, pas une paroi ni une rive.
+//
+// Le remède est celui des quais (v316, v317) : on change la MATIÈRE, jamais la
+// hauteur — `terrainHeight` n'est pas lu autrement, les deux empreintes de
+// `plafond.js` ne bougent pas, et la règle ne vit que dans `CONF_NEUF`. On ne
+// la donne qu'à une colonne de campagne au sol d'herbe sur terre : jamais une
+// ville, jamais le désert, la banquise, Mars ou le volcan, qui ont leur
+// matière à eux. Elle lit la cote de ses quatre voisines (une face ne se voit
+// que de côté) et la DÉNIVELÉE VUE, où l'eau compte pour sa surface :
+//   · une marche de deux blocs ou plus montre de la ROCHE sous le gazon ;
+//   · à quatre blocs ou plus, la crête aussi est de la roche — une paroi ;
+//   · au bord de l'eau ouverte, la rive est de sable au ras de l'eau, de
+//     gravier dessous, et une berge basse (deux blocs au-dessus de l'eau au
+//     plus) a son sommet de sable : une grève, pas un talus d'herbe.
+// Le sable, le gravier et la pierre sont des sols NATURELS du sol continu
+// (`SOL_NATUREL`) : une colonne qui l'était le reste, seule sa tuile change.
+export const FALAISE_ROCHE = 2;   // dénivelée vue à partir de laquelle le flanc est de roche
+export const FALAISE_CRETE = 4;   // … et la crête aussi
+export function matiereDuBord(h, ...voisins) {
+  let chute = 0, eau = false;
+  for (const hv of voisins) {
+    if (hv < WATER_LEVEL) eau = true;
+    chute = Math.max(chute, h - Math.max(hv, WATER_LEVEL));
+  }
+  if (!eau && chute < FALAISE_ROCHE) return null;
+  const roche = chute >= FALAISE_ROCHE;
+  const top = eau && h <= WATER_LEVEL + 2 ? BLOCK.SAND : chute >= FALAISE_CRETE ? BLOCK.STONE : BLOCK.GRASS;
+  return {
+    top, chute, eau,
+    sous: (y) => {
+      if (eau && y <= WATER_LEVEL - 1) return BLOCK.GRAVEL;
+      if (eau && y <= WATER_LEVEL + 1) return BLOCK.SAND;
+      return roche ? BLOCK.STONE : BLOCK.DIRT;
+    },
+  };
+}
+
 export class World {
   // `avant` : le monde d'avant Paris doublé (v306, `CONF_AVANT`) — pour juger
   // les blocs posés dedans, jamais pour jouer.
@@ -2905,11 +2950,20 @@ export class World {
     // les colonnes de ville qui POURRAIENT porter un mur de quai (v317) : leur
     // relief, ou zéro — la passe d'après ne regarde que celles-là
     const quais = this.conf.mursDeQuai ? new Uint8Array(CHUNK * CHUNK) : null;
+    // le relief du morceau ET d'une colonne de marge : les falaises et les
+    // berges (v326) lisent la cote des quatre voisines de chaque colonne
+    const N2 = CHUNK + 2;
+    const reliefs = this.conf.falaises ? new Int16Array(N2 * N2) : null;
+    if (reliefs) {
+      for (let z = -1; z <= CHUNK; z++) {
+        for (let x = -1; x <= CHUNK; x++) reliefs[(x + 1) + (z + 1) * N2] = this.terrainHeight(baseX + x, baseZ + z);
+      }
+    }
 
     for (let z = 0; z < CHUNK; z++) {
       for (let x = 0; x < CHUNK; x++) {
         const wx = baseX + x, wz = baseZ + z;
-        const h = this.terrainHeight(wx, wz);
+        const h = reliefs ? reliefs[(x + 1) + (z + 1) * N2] : this.terrainHeight(wx, wz);
 
         let top = BLOCK.GRASS;
         let filler = BLOCK.DIRT;
@@ -2942,12 +2996,25 @@ export class World {
         // rare open shafts let explorers climb in from the surface
         const entrance = !city && caveTunnel < 0.015 && h > WATER_LEVEL + 2 && h < 50 && caveY > h - 12;
 
+        // LES FALAISES ET LES BERGES (v326) : la MATIÈRE d'une colonne de
+        // campagne qui borde une marche ou de l'eau, jamais sa hauteur.
+        let rive = null;
+        if (reliefs && top === BLOCK.GRASS && filler === BLOCK.DIRT && !city && !dansVilleMonde(wx, wz)) {
+          const i0 = (x + 1) + (z + 1) * N2;
+          rive = matiereDuBord(h, reliefs[i0 + 1], reliefs[i0 - 1], reliefs[i0 + N2], reliefs[i0 - N2]);
+        }
+        const sommet = rive ? rive.top : top;
+
         for (let y = 0; y <= h; y++) {
           let id;
           if (y === h) id = top;
           else if (y >= h - 3) id = filler;
           else id = BLOCK.STONE;
-          if (caveTunnel < 0.05 && y > 3 && (id === BLOCK.STONE || entrance)) {
+          // les grottes se creusent dans ce que le monde avait AVANT la
+          // falaise : la roche d'un flanc ne doit pas ouvrir de trou neuf
+          const roc = id === BLOCK.STONE;
+          if (rive) id = y === h ? sommet : y >= h - 3 ? rive.sous(y) : id;
+          if (caveTunnel < 0.05 && y > 3 && (roc || entrance)) {
             const dy = Math.abs(y - caveY);
             if (dy < 2.2 || (entrance && y > caveY && y <= h)) id = BLOCK.AIR;
             else if (dy < 3.4) {

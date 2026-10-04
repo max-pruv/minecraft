@@ -131,6 +131,11 @@
   l'endroit d'AVANT ; (3) une voiture d'un convoi voisin arrivée de travers au
   carrefour. Six versions de ce témoin avant qu'il sépare les deux codes : les
   cinq premières sont dans `git log tests/reseau.js`.
+- [ ] **`carte.js` : l'appui long refusé au portail de la v326 (« pointeurs 0 »,
+  quatre appuis, 8 rouges en cascade) — la dette de la v258, double mesure.**
+  Rejouée SEULE : branche verte au premier appui ; `origin/main` (v321) verte
+  au TROISIÈME, les deux premiers refusés pareil (`decline: "pointeurs 0"`).
+  Même mécanisme des deux côtés ; la v326 ne touche ni la carte ni l'entrée.
 - [ ] **`carteMonde.js` : « aucune voiture ne traverse un monument de Paris » —
   ROUGE EN PRODUCTION (v321, double mesure).** Rejoué SEUL sur la branche
   `claude/gps-complet` ET sur `origin/main` (v320, arbre séparé) : verdict
@@ -461,7 +466,15 @@
   instruire parmi les candidats du kit. Le kit propose 23 corridors
   candidats (`examples/road-candidates.json`), à instruire un par un contre
   l'eau, les aérodromes, les repères et les sanctuaires comme l'A1 ; (c) les
-  falaises et l'eau (surface rocheuse au lieu de marches, berges) ; (d) les
+  falaises et l'eau — FAIT en v326 pour la MATIÈRE (roche sous le gazon dès
+  deux blocs, crête de roche dès quatre, grève de sable et de gravier au bord
+  de l'eau ; `matiereDuBord`, world.js). Reste, déclaré : la FORME — une
+  falaise reste un escalier de cubes de roche, et l'adoucir (une surface
+  rocheuse inclinée au-delà de `MARCHE_MAX`) toucherait au contact et au
+  franchissement, ou au relief (décision de Max) ; les berges de trois blocs
+  gardent leur couronne d'herbe ; `horizon.js` ne connaît pas la règle (le
+  lointain garde le vert là où la roche est) ; les arbres poussent encore sur
+  une crête de roche ou une grève basse (`treeAt` ne lit que la cote) ; (d) les
   textures par usage et climat ; (e) la bibliothèque architecturale (96
   variantes, 278 profils de ville) — elle exige une retrame à un bloc pour un
   mètre (`docs/monde-fidele/programme.md`, section 6), décision de Max ; (f) la

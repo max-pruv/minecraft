@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 326,
+    titre: 'Falaises de roche, berges de sable',
+    puces: [
+      'Les falaises sont en pierre',
+      'Les rives ont du sable et du gravier',
+      'Le sol n\'a pas bougé d\'un bloc',
+    ],
+  },
+  {
     v: 325,
     titre: 'Sydney, Rome et Tokyo plus animées',
     puces: [
