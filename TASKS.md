@@ -498,6 +498,18 @@
   second dépend du premier) — REJOUÉE SEULE : branche ces deux-là, `origin/main`
   v318 la libération (programmes 17/25). Même intermittence de préparation des
   deux côtés, déjà déclarée (v267).
+- [ ] **LE PORTAIL DE LA v335 (Dallas–Houston), DEUX FOIS.** Le premier a
+  trouvé un VRAI trou (le joint du premier pont de l'I-45, dans un coude :
+  402 points), corrigé dans `rubansDans` ; le second : `parishd.js`,
+  `carteMonde.js`, `plafond.js` (joint 0 trou sur 90 794 points, quatorze
+  ponts), `carte.js`, `washington.js` verts. Rouges, déjà déclarés : `maj.js`
+  les deux témoins du palier (26 images, aucun verdict — la charge, v315) ;
+  `manhattan.js` « le trou enlève aussi la géométrie visible de la façade »
+  (9 203 → 51 734, le témoin qui compte TOUS les immeubles, v291) ; `monte.js`
+  l'arrivée figée (3 750 ms · 33,9 %) et la téléportation qui compile (chauffe
+  de New York expirée, 54/321), rouges à l'identique des deux côtés (v332).
+  Le comblement ne s'émet que dans un coude d'un pont ; il n'y en avait aucun
+  avant l'I-45.
 - [ ] **LE PORTAIL DE LA v334 (Berlin–Hambourg) : CINQ ROUGES, TOUS DÉJÀ
   MESURÉS DES DEUX CÔTÉS.** `carteMonde.js` (le témoin de l'A24 compris) et
   `plafond.js` verts. `maj.js` : la libération (personnages 6/9, programmes
