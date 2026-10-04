@@ -20,6 +20,26 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v344 — Les amis voient les dégâts
+
+**Pourquoi.** Depuis la v343 la voiture de l'enfant s'abîme, fume et brûle —
+mais seulement sur SA tablette. À plusieurs, l'ami qui le regarde conduire
+voyait une voiture neuve foncer dans un mur et repartir intacte : la moitié de
+la scène manquait (« une voiture conduite doit se voir en ligne », CLAUDE.md).
+
+**Ce que ça change.** La position du conducteur emporte désormais les dégâts
+de sa voiture, en un champ court (`p.v.d` : les impacts et l'état du feu).
+L'ami rejoue les mêmes impacts sur la voiture qu'il dessine : la même tôle
+enfoncée, la même fumée, les mêmes flammes. Une tablette restée sur l'ancienne
+version ignore le champ et voit la voiture comme avant.
+
+**Ce qui le prouve.** Deux témoins à deux tablettes dans `tests/degats.js`,
+ROUGES sur la v343 (santé 1 et aucune pièce froissée chez Alice ; pas de
+flammes) et verts ici (santé 0,7 et quinze pièces froissées chez Alice ; puis
+le feu, des flammes chez elle aussi, avant que Marlon ne soit déposé).
+
+---
+
 ## v343 — La voiture s'abîme
 
 **Pourquoi.** Max : « Comme dans GTA, quand tu crashes ton véhicule, il
