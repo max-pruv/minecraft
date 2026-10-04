@@ -797,14 +797,14 @@ Max : « lance sur toutes les villes, pas juste celle-là ». Quatre règles.
   passe à 220 blocs de son `x, z` (main.js) : un circuit loin du centre porte
   SON centre, pas celui de la ville.
 - **UNE RÈGLE DE CHOIX QUI NE REGARDE PAS OÙ LA VILLE EST VIDE SE COMPLÈTE PAR
-  UNE PHASE QUI LE REGARDE (v324).** Les anneaux d'une ville engendrée se
+  UNE PHASE QUI LE REGARDE (v325).** Les anneaux d'une ville engendrée se
   prennent du plus grand au plus petit, quatre au plus : Sydney laissait tout
   le North Shore vide. `ANNEAUX_EN_PLUS` (villesmonde.js) porte, ville par
   ville, des anneaux de quartier cherchés sous node par couverture gloutonne,
   AU SEC (un anneau qui franchit l'eau pose un tablier, donc change le sol) et
   validés par la même règle que les autres. Un témoin qui exige « aucune ville
   engendrée sous les trois quarts » garde la table.
-- **UNE CORRECTION GÉOMÉTRIQUE PEUT DÉPLACER UNE ÉGALITÉ (v324).**
+- **UNE CORRECTION GÉOMÉTRIQUE PEUT DÉPLACER UNE ÉGALITÉ (v325).**
   `contournerBlocs` prend le côté le plus court d'un socle ; recentrer le tour
   des monuments d'un demi-bloc a fait basculer un circuit du sud au nord de
   Montparnasse, et deux circuits se suivaient sur 25 blocs. Élargir le tour

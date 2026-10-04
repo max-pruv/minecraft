@@ -46,7 +46,7 @@
   (`voituresDuCircuit`, une voiture tous les dix-huit blocs) : densité la plus
   basse 25,1 (Rome) → 54,3, maximum de voitures en vue d'un point du monde
   inchangé (72,7, Washington). Témoin « toutes les villes ont des voitures »
-  de `carteMonde.js`. **En v324** : Sydney 60,5 → 95,3 %, Rome 88,3 → 94,6 %,
+  de `carteMonde.js`. **En v325** : Sydney 60,5 → 95,3 %, Rome 88,3 → 94,6 %,
   Tokyo 88,7 → 95,7 % (phase 3 des anneaux, `ANNEAUX_EN_PLUS`). **Reste,
   déclaré** : Nice 59,8 % et San Francisco 69,1 % — leurs rues de trame font
   deux blocs de chaussée pour une voiture de 2,26 (`w` 1,0, une passe
@@ -64,7 +64,7 @@
   garde davantage dans le graphe — coût de parcours des matrices à mesurer
   sur la tablette avant de les détacher.
 - [x] **CÔTÉ +u ET +v, LE TOUR DES MONUMENTS DE PARIS N'EST QU'À UN BLOC DU
-  SOCLE — FAIT EN v324** : demi-côté du tour + 0,5 des deux côtés (`TOURS`,
+  SOCLE — FAIT EN v325** : demi-côté du tour + 0,5 des deux côtés (`TOURS`,
   paris.js), 6 pas → 0, partage inchangé. Le recentrage proposé ci-dessous a
   été mesuré et retiré (un partage à 25 autour de Montparnasse).
   Ce qui suit est la note d'origine.
@@ -270,7 +270,7 @@
   branche 3 · 3 · 2, `origin/main` 3 · 3 · 3. Même distribution ; le 5 est un
   tirage sous la charge du portail, et la dette de la v306 (deux ou trois
   programmes à l'arrivée) reste ouverte telle quelle.
-- [ ] **LE PORTAIL DE LA v324 (règle de la v195), DOUBLE MESURE FAITE.** Huit
+- [ ] **LE PORTAIL DE LA v325 (règle de la v195), DOUBLE MESURE FAITE.** Huit
   suites. Verts : `carteMonde.js` — ENTIÈRE, le tour des monuments compris
   (rouge sur `origin/main`, `dur 6`) —, `plafond.js`, `parishd.js`, `carte.js`,
   `metro.js`. Rouges : `maj.js` le badge (la version monte à la fusion) et les
@@ -279,7 +279,6 @@
   de la v319 au portail (chauffe expirée à 56/320) et l'écran figé — rejouée
   SEULE : l'écran figé seul, des deux côtés (3 533 ms · 30 % branche, 3 633 ms
   · 26 % `origin/main`).
-- [ ] **LE PORTAIL DE LA v324 (règle de la v195), DOUBLE MESURE FAITE.**
 - [ ] **LE PORTAIL DE LA v324.** `plafond.js`, `maj.js`, `carte.js` verts ;
   `carteMonde.js` : le témoin de l'Autosole vert (rouge sur `origin/main` :
   « aucun convoi Autosole », neuf segments), seul rouge le tour des monuments

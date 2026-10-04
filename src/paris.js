@@ -697,7 +697,7 @@ const RONDS = LIEUX.filter((p) => p.r).map((p) => ({ u: p.u, v: p.v, r: p.r - an
 // il vaut pour les dix), donc on l'en ressort. Le tour suit le périmètre du
 // socle, à la moitié de la rue qui le longe — là où le sol est du bitume.
 //
-// ET LE TOUR PASSE UN DEMI-BLOC PLUS LOIN, DES DEUX CÔTÉS (v324). La rue du
+// ET LE TOUR PASSE UN DEMI-BLOC PLUS LOIN, DES DEUX CÔTÉS (v325). La rue du
 // tour (`autourDUnSocle`) se juge sur des COLONNES entières : dans le monde,
 // elle va de `p.u − bu − 4` à `p.u + bu + 5`, un bloc de plus côté +. Axé à
 // `bu + AXE_TOUR`, le tour était au milieu de la rue côté −, à UN bloc du socle

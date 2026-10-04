@@ -2954,7 +2954,7 @@ export function anneauxDeVille(f) {
         }
       }
     }
-    // PHASE 3 — LES QUARTIERS QU'AUCUN ANNEAU NE VOIT (v324). Les phases
+    // PHASE 3 — LES QUARTIERS QU'AUCUN ANNEAU NE VOIT (v325). Les phases
     // d'avant ne regardent pas OÙ la ville est vide : quatre anneaux au plus,
     // du plus grand au plus petit. Mesuré ville par ville (part de la ville à
     // moins de quarante-cinq blocs, la portée d'une voiture, d'un anneau) :

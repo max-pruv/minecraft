@@ -2704,7 +2704,7 @@ const VRAIES_KM = [
       const sans = l.filter((v) => !v.circuits).map((v) => v.cle);
       const pireCouv = [...l].sort((a, b) => a.couverture - b.couverture).slice(0, 4);
       const pireDens = [...l].filter((v) => v.circuits).sort((a, b) => a.densite - b.densite).slice(0, 4);
-      // LES VILLES ENGENDRÉES : AUCUNE SOUS LES TROIS QUARTS (v324). Les phases
+      // LES VILLES ENGENDRÉES : AUCUNE SOUS LES TROIS QUARTS (v325). Les phases
       // d'anneaux ne regardent pas où la ville est vide ; la phase 3 pose les
       // anneaux de quartier (`ANNEAUX_EN_PLUS`). Mesuré avant : Sydney 60,5 %
       // — tout le North Shore — ; après : la pire est Las Vegas, 79,9 %.

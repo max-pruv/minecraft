@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v324 — Le North Shore de Sydney a ses voitures
+## v325 — Le North Shore de Sydney a ses voitures
 
 **Pourquoi.** La v322 a mesuré la couverture de toutes les villes : après elle,
 les villes engendrées les moins couvertes étaient Sydney (60,5 % — tout le
