@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v340 — Les rues de Nice à la règle du kit
+## v341 — Les rues de Nice à la règle du kit
 
 **Pourquoi.** La deuxième des cinq villes bâties à la main restées sur leurs
 largeurs relevées à la main (dette v271). La ruelle du Vieux-Nice faisait 1,2
@@ -55,6 +55,37 @@ même fonction. Les trois circuits de Nice restent à 99-100 % sur la rue.
 
 ---
 
+## v340 — Les arbres et les falaises
+
+**Pourquoi.** La v326 a donné à la campagne des falaises de roche et des grèves
+de sable, et elle a déclaré ce qu'elle ne faisait pas : les arbres poussaient
+encore sur une crête de roche ou sur une grève (`treeAt` ne lisait que la
+cote), et le paysage lointain gardait le vert de la carte là où le monde proche
+montre la roche. Mesuré sur `origin/main` (`sonde-arbres-bord.cjs`, 4 000
+morceaux de campagne, deux tirages) : 135 et 168 arbres sur de la roche, 6 sur
+du sable, et 3 qui flottaient au-dessus d'un puits de grotte, sur 12 700 à
+12 900.
+
+**Ce que ça change.** Un arbre ne pousse plus que sur l'herbe : ni sur une
+crête de roche, ni sur une grève, ni au-dessus d'un puits. Le reste de la forêt
+ne bouge pas d'un tronc. Et vu d'avion, au-delà du monde chargé, les falaises
+sont grises et les grèves blondes, comme de près.
+
+Le paysage lointain pose le relief d'abord, à la même vitesse qu'avant, puis
+la roche et le sable dans le temps qui reste (deux millisecondes par image au
+plus, et seulement en jeu — jamais pendant la préparation de l'accueil) : la règle coûte quatre cotes de plus par sommet, et posée dans le
+remplissage elle aurait fait arriver le paysage trois fois plus tard après une
+téléportation. Rien n'est écrit dans le relief : les deux empreintes de
+`plafond.js` ne bougent pas.
+
+**Ce qui le prouve.** Quatre témoins neufs dans `plafond.js`, deux rouges sur
+`origin/main` : aucun arbre ailleurs que sur l'herbe sur 600 morceaux (16 sur
+de la roche avant, 0 ici) ; tout arbre d'herbe du monde sans la règle est
+encore là (1 632 sur 1 632) ; vu de loin, les 674 sommets de roche ou de sable
+de quatre sites ont la couleur que la règle du générateur leur donne (0 sur
+674 avant) ; et les 48 876 autres gardent leur herbe, le relief rempli dans le
+même nombre d'images. Le témoin « même forme, bloc pour bloc » des falaises
+compare le relief sans les arbres, qui ne sont pas du sol.
 ## v339 — Les rues de Londres à la règle du kit
 
 **Pourquoi.** Paris est passé à la section de rue du kit (`roadSection`) en

@@ -83,7 +83,7 @@ import { positionDe, lieuxDuMonde, cielDe, zDeLatitude } from './mondes.js';
 import { BORNES as BORNES_MANHATTAN } from './manhattan-plan.js';
 import * as PARIS_V302 from './paris-v302.js';
 import * as LONDRES_V332 from './londres-v332.js';
-import * as NICE_V339 from './nice-v339.js';
+import * as NICE_V340 from './nice-v340.js';
 import { surLaVoie, presDeLaVoie, voieEn, brancherSol, gareEn, rubansVoieDans } from './trains.js';
 import { routeEn, rubansDans, brancherSol as brancherSolRoutes } from './routes.js';
 
@@ -1508,7 +1508,7 @@ export const CONF_NEUF = {
 // ne se met JAMAIS à jour. Même clé que `CONF_NEUF` : ses zones à terre sont
 // les mêmes.
 // Et ces deux mondes-là ont les villes d'avant leur passe au kit (Londres
-// v339, `londres-v332.js` ; Nice v340, `nice-v339.js`) : c'est celles qu'on y
+// v339, `londres-v332.js` ; Nice v341, `nice-v340.js`) : c'est celles qu'on y
 // voyait (`villesAvant`).
 export const CONF_V308 = { ...CONF_NEUF, reperes: LANDMARKS_V317, fonduDoux: false, mursDeQuai: false, falaises: false, villesAvant: true };
 export const CONF_AVANT = {
@@ -2059,7 +2059,7 @@ function marquerParisCede(ens, x, z) {
 // une ancienne rue n'est pas enfermée dans un immeuble neuf, une cabane contre
 // un ancien mur garde son mur. La date est celle de la publication.
 export const DATE_RUES_LONDRES = Date.UTC(2026, 9, 4, 15, 0, 0);
-// Nice suit la même règle à la v340 (`nice-v339.js`), avec sa propre date.
+// Nice suit la même règle à la v341 (`nice-v340.js`), avec sa propre date.
 export const DATE_RUES_NICE = Date.UTC(2026, 9, 4, 13, 0, 0);
 const VILLES_FIGEES = [
   { ancre: LONDRES, date: DATE_RUES_LONDRES },
@@ -2569,7 +2569,7 @@ export class World {
     this.edits = new Map();       // "x,y,z" -> block id (player modifications)
     this.monumentsTouches = new Set();  // les monuments HD qu'un enfant a modifiés (v292)
     this.colonnesCedees = new Set();    // les colonnes de Paris où la ville cède à ce qu'un enfant a bâti (v306)
-    this.colonnesVilleAvant = new Set();  // celles de Londres et de Nice où la ville d'avant le kit reste (v339, v340)
+    this.colonnesVilleAvant = new Set();  // celles de Londres et de Nice où la ville d'avant le kit reste (v339, v341)
     this.cacheSol = new Map();          // "x,z" -> { nat, cote } : la fiche d'une colonne (sol continu, v297)
     this.sansSolContinu = false;        // ?solcontinu=0 : la mesure A/B, jamais un réglage
     this.editTimes = new Map();   // "x,y,z" -> ms timestamp, for multiplayer merge
@@ -2987,6 +2987,8 @@ export class World {
       if (di > ISLAND.r - 14 || hash2i(x, z, SEED + 785) >= 0.05) return null;
       const hi = this.terrainHeight(x, z);
       if (hi <= WATER_LEVEL) return null;
+      // un palmier pousse sur la grève, pas sur une crête de roche
+      if (this.solDeLArbre(x, z, hi) === BLOCK.STONE) return null;
       return { h: hi, trunk: 6 + Math.floor(hash2i(x, z, SEED + 786) * 3), kind: 3 };
     }
     // forests are dense, plains nearly bare
@@ -2995,11 +2997,31 @@ export class World {
     if (hash2i(x, z, SEED + 777) >= density) return null;
     const h = this.terrainHeight(x, z);
     if (h <= WATER_LEVEL + 1 || h >= 58) return null; // only on grass
+    // LES ARBRES AU BORD (v340) : la v326 a fait de la crête d'une falaise
+    // une paroi de roche et du bord d'une berge basse une grève de sable — un
+    // chêne n'y pousse pas. Même règle, même lecture que le générateur.
+    if (this.solDeLArbre(x, z, h) !== BLOCK.GRASS) return null;
+    // ni au-dessus d'un puits de grotte : le générateur y creuse jusqu'au
+    // sommet, et l'arbre flottait sur le vide (trois sur douze mille, mesuré)
+    if (Math.abs(fbm(x * 0.02, z * 0.02, SEED + 882) - 0.5) < 0.015 && h > WATER_LEVEL + 2 && h < 50
+      && 8 + fbm(x * 0.01, z * 0.01, SEED + 881) * 18 > h - 12) return null;
     const trunk = 4 + Math.floor(hash2i(x, z, SEED + 778) * 3); // 4..6
     // three silhouettes: oak, pine, birch
     const roll = hash2i(x, z, SEED + 779);
     const kind = roll < 0.55 ? 0 : roll < 0.85 ? 1 : 2;
     return { h, trunk: kind === 2 ? trunk + 1 : trunk, kind };
+  }
+
+  // Le sommet que la règle des falaises et des berges (v326) donne à une
+  // colonne de campagne au sol d'herbe : herbe, roche ou sable. Hors de
+  // `CONF_NEUF` la règle n'existe pas, et c'est de l'herbe. `treeAt` ne
+  // l'appelle qu'APRÈS le tirage de densité — quatre cotes de plus pour un
+  // arbre sur quinze colonnes de forêt, rien pour la plaine.
+  solDeLArbre(x, z, h) {
+    if (!this.conf.falaises) return BLOCK.GRASS;
+    const r = matiereDuBord(h, this.terrainHeight(x + 1, z), this.terrainHeight(x - 1, z),
+      this.terrainHeight(x, z + 1), this.terrainHeight(x, z - 1));
+    return r ? r.top : BLOCK.GRASS;
   }
 
   generateChunk(cx, cz) {
@@ -3343,15 +3365,15 @@ export class World {
         // Market Street entre les deux, la plage, les quais et les parcs.
         // Nice et Lille : chacune sa trame, ses places et ses maisons. Comme à
         // San Francisco, la trame générique ne s'applique pas par-dessus.
-        // Londres (v339) et Nice (v340) d'avant le kit dans les mondes d'avant,
+        // Londres (v339) et Nice (v341) d'avant le kit dans les mondes d'avant,
         // et sous les colonnes où un enfant a bâti avant leur date.
         const villeAvant = city && (city.key === 'londres' || city.key === 'nice') && (this.conf.villesAvant
           || (this.colonnesVilleAvant.size > 0 && this.colonnesVilleAvant.has(cleColonneParis(wx, wz))));
         const londresAvant = villeAvant && city.key === 'londres';
         for (const [cle, sol, libre, batir, pont, ancre, voies, cleFeux, portee] of [
           villeAvant && city.key === 'nice'
-            ? ['nice', NICE_V339.solNice, NICE_V339.lotNiceLibre, NICE_V339.batirColonneNice, null, NICE,
-              NICE_V339.VOIES_NICE, 'nice-v339']
+            ? ['nice', NICE_V340.solNice, NICE_V340.lotNiceLibre, NICE_V340.batirColonneNice, null, NICE,
+              NICE_V340.VOIES_NICE, 'nice-v340']
             : ['nice', solNice, lotNiceLibre, batirColonneNice, null, NICE, VOIES_NICE, 'nice', PORTEE_FEUX_NICE],
           ['lille', solLille, lotLilleLibre, batirColonneLille, null, LILLE, VOIES_LILLE, 'lille'],
           londresAvant

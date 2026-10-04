@@ -6,12 +6,21 @@
 
 export const NOUVEAUTES = [
   {
-    v: 340,
+    v: 341,
     titre: 'Les rues de Nice s\'élargissent',
     puces: [
       'La Promenade à deux voies',
       'Des îlots plus grands dans la ville neuve',
       'Londres garde encore plus d\'immeubles',
+    ],
+  },
+  {
+    v: 340,
+    titre: 'Les arbres et les falaises',
+    puces: [
+      'Plus d\'arbre sur une falaise de roche',
+      'Ni sur le sable au bord de l\'eau',
+      'Les falaises se voient de loin',
     ],
   },
   {
@@ -78,7 +87,7 @@ export const NOUVEAUTES = [
     ],
   },
   {
-    v: 340,
+    v: 332,
     titre: 'L\'autoroute Vienne–Budapest',
     puces: [
       'De Vienne à Budapest en voiture',
@@ -87,7 +96,7 @@ export const NOUVEAUTES = [
     ],
   },
   {
-    v: 339,
+    v: 331,
     titre: 'Les villes se voient de loin',
     puces: [
       'En avion, les villes ont leurs immeubles',

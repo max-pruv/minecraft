@@ -770,14 +770,14 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Les rues de Nice à la règle du kit (v340) — une règle partagée se corrige pour toutes les villes qui la lisent
+## Les rues de Nice à la règle du kit (v341) — une règle partagée se corrige pour toutes les villes qui la lisent
 
 Deux règles.
 
 - **LA MÉTHODE DE LONDRES SE REPREND TELLE QUELLE, ET ELLE VIT DANS `voies.js`.**
   `reculDesAvenues(voies, artère, trame)` est la règle « une trame ne double pas
   ses avenues », partagée par Londres, Nice et les suivantes. La ville d'avant
-  se fige (`nice-v339.js`) et `colonnesVilleAvant` (world.js) sert toutes les
+  se fige (`nice-v340.js`) et `colonnesVilleAvant` (world.js) sert toutes les
   villes passées au kit, chacune avec sa date (`VILLES_FIGEES`). Le témoin de
   `plafond.js` est une fonction jouée ville par ville.
 - **UN RECUL SE COMPTE D'EMPRISE À EMPRISE.** La v339 posait le recul à la
@@ -912,8 +912,61 @@ Le point (c) du kit « monde fidèle », sur toute la carte. Trois règles.
   mieux qu'un hasard de géographie, et le témoin la garde.
 - **CE QUI RESTE, DÉCLARÉ** : la marche elle-même (une falaise reste un
   escalier de cubes de roche — l'adoucir, c'est bouger le relief, décision de
-  Max) ; une berge de trois blocs garde sa couronne d'herbe ; le paysage
-  lointain (`horizon.js`) ne connaît pas la règle et garde ses couleurs.
+  Max) ; une berge de trois blocs garde sa couronne d'herbe. *(Le paysage
+  lointain et les arbres ont reçu la règle en v340.)*
+
+## Les arbres au bord, et les falaises vues de loin (v340) — une règle de matière se dit à TOUT ce qui pose quelque chose dessus
+
+La dette déclarée par la v326, remboursée. Trois règles.
+
+- **UNE RÈGLE QUI CHANGE LA MATIÈRE D'UN SOL SE DIT À CE QUI POUSSE DESSUS.**
+  La v326 avait fait de la crête d'une falaise une paroi de roche et du bord
+  d'une berge basse une grève, et `treeAt` continuait de juger « de l'herbe »
+  à la cote seule : 135 à 168 chênes sur la roche pour 12 800 arbres
+  (`sonde-arbres-bord.cjs`, 4 000 morceaux). `solDeLArbre` (world.js) lit
+  `matiereDuBord` sur la même colonne, APRÈS le tirage de densité (quatre
+  cotes pour un arbre, rien pour la plaine), et un palmier refuse la roche
+  mais garde sa grève. C'est la leçon du sol continu (« ce qui remplace un
+  bloc le dit à TOUS ceux qui lisaient le bloc ») appliquée à une matière. Et
+  un arbre ne flotte plus au-dessus d'un puits de grotte (trois sur douze
+  mille) : `treeAt` refait le test d'entrée du générateur.
+- **UN ARBRE N'EST PAS LE RELIEF.** Le témoin « même forme, bloc pour bloc »
+  de la v326 compare le monde à celui SANS la règle ; un arbre retiré y
+  comptait comme un bloc de forme différente. Il compare désormais le sol,
+  troncs (chêne ET bouleau, `BIRCH` — mon premier témoin l'oubliait et
+  comptait 247 bouleaux « ailleurs que sur l'herbe ») et feuilles à part. Et
+  un second témoin garde ce qu'on ne veut pas perdre : tout arbre d'herbe du
+  monde sans la règle est encore là, tronc pour tronc.
+- **UNE RÈGLE QUI COÛTE QUATRE COTES PASSE APRÈS LE RELIEF, PAS DEDANS.** Le
+  paysage lointain lit la même `matiereDuBord` sur la colonne de chaque
+  sommet d'herbe de campagne (`couleurDuBord`, horizon.js, pure). Mesuré :
+  +6 µs sur 3 par sommet — dans la boucle de remplissage, le paysage
+  arrivait trois fois plus tard après une téléportation. Elle vit donc dans
+  une seconde passe (`raffiner`), sur le budget qui reste et deux
+  millisecondes au plus par image, et ne coûte plus rien une fois tout lu
+  (`aRaffiner`). Le relief se remplit dans le même nombre d'images qu'avant
+  (16-17 contre 16-17, quatre sites) ; la roche et le sable suivent en une
+  soixantaine d'images. Un filtre lu sur la grille du paysage (huit blocs)
+  aurait coûté moins, et il est mesuré : il interroge 17 % des sommets et
+  n'attrape que 82 % de ceux que la règle touche — on ne le réessaie pas.
+- **ET UNE PASSE DE FOND NE PREND RIEN À L'ACCUEIL.** `horizon.maj` tourne
+  aussi pendant la préparation, et le témoin de `maj.js` « corps, programmes
+  et fond de carte sont vraiment là » est rouge 2 fois sur 2 sur la branche
+  (personnages 7/9, 8/9) contre 1 sur 2 sur `origin/main`, rejouée seule.
+  Plutôt que de plaider l'intermittence, la règle des bords ne passe qu'EN
+  JEU (`raffinerPermis = running`, main.js) : la préparation redevient celle
+  de la v332 au calcul près. Quand on ne peut pas trancher sur deux
+  passages, on retire la cause possible par construction.
+
+- **`node --check` NE VOIT RIEN SUR UN `.js` DE CE DÉPÔT.** Mon rebase a
+  recollé `nouveautes.js` en perdant une accolade : le journal ne se lisait
+  plus (« Unexpected token ':' », `maj.js`), et `node --check
+  src/nouveautes.js` rendait ZÉRO. Vérifié sur un fichier à l'erreur
+  évidente : un `.js` hors d'un package `"type": "module"` passe, le même en
+  `.mjs` est refusé. Tout « `node --check` OK » écrit sur un `src/*.js` était
+  aveugle. Ce qui prouve qu'un module se charge, c'est de l'IMPORTER
+  (`node -e "import('./src/x.js')"`), ou de le vérifier sous un nom `.mjs` —
+  et après un rebase qui a recollé un fichier de données, on l'importe.
 
 ## Des voitures dans toutes les rues (v322) — un plafond par circuit rend la densité inverse de la longueur
 

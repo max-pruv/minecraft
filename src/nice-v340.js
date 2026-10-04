@@ -1,10 +1,10 @@
-// NICE TELLE QU'ELLE ÉTAIT JUSQU'À LA v339 — FIGÉE, ET JAMAIS MODIFIÉE.
+// NICE TELLE QU'ELLE ÉTAIT JUSQU'À LA v340 — FIGÉE, ET JAMAIS MODIFIÉE.
 //
-// La v340 passe Nice à la règle du kit (`voirie.js`). Un bloc qu'un enfant a
+// La v341 passe Nice à la règle du kit (`voirie.js`). Un bloc qu'un enfant a
 // posé avant cette date l'a été contre CETTE ville-ci : là où il y en a un (sa
 // colonne et ses huit voisines), le monde garde la ville d'avant (`world.js`,
 // `colonnesVilleAvant`) — la discipline de `londres-v332.js` (v339). Recopié à
-// l'octet depuis `nice.js` (inchangé jusqu'à la v339), seul cet en-tête est neuf.
+// l'octet depuis `nice.js` (inchangé jusqu'à la v340), seul cet en-tête est neuf.
 //
 // Nice.
 //
