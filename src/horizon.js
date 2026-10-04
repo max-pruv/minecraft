@@ -55,6 +55,7 @@ import { WATER_LEVEL, DESERT, MARS, VOLCANO, dansUneCalotte, CHUNK } from './wor
 import { BLOCK } from './blocks.js';
 import { decor } from './couches.js';
 import { MAP_COLORS } from './carte.js';
+import { villeMondeEn } from './villesmonde.js';
 
 export const PAS_HORIZON = 8;   // un sommet tous les huit blocs
 
@@ -113,6 +114,75 @@ const BIOMES = [
   { x: VOLCANO.x, z: VOLCANO.z, r: VOLCANO.r, id: BLOCK.STONE },
 ];
 
+// LES VILLES SE RECONNAISSENT AU LOIN (v326). `terrainHeight` ne sait rien des
+// immeubles : au-delà des morceaux maillés, Paris, Londres, New York et les
+// deux cent soixante-neuf villes engendrées étaient de la PRAIRIE vue d'avion.
+// Deux choses, et aucune n'écrit un bloc ni ne touche au relief :
+//
+// - UNE TEINTE URBAINE PAR SOMMET : le gris des rues mêlé à la couleur des
+//   toits de la ville (`couleurToits` de sa fiche, la même que la carte 2D).
+// - UNE SILHOUETTE DE BÂTI : un pavé par case de huit blocs, six de côté (les
+//   deux qui restent sont la rue), à la hauteur PROPRE de la ville. UN SEUL
+//   appel de dessin (`InstancedMesh`) pour tout le paysage.
+//
+// LA QUESTION « EST-CE UNE VILLE ? » NE SE POSE PAS À 280 VILLES PAR COLONNE.
+// Les villes engendrées ont leur index de cases de 512 blocs (`villeMondeEn`) ;
+// les sept villes bâties à la main se filtrent par une BOÎTE avant toute racine
+// (`villesMainPres`), et `world.cityAt` — qui connaît la vraie forme de
+// Manhattan (`TerreUrbaine`), de San Francisco, de Nice et de Washington — n'est
+// interrogé que si la boîte touche.
+
+// La hauteur d'un immeuble vu de loin, en blocs, et la couleur de ses toits.
+// Les villes bâties à la main ont leurs chiffres relevés dans CLAUDE.md : Paris
+// à trois blocs l'étage (v301), New York et ses tours, Washington basse.
+const VILLES_MAIN = {
+  paris: { h: [14, 24], tours: 0, toit: [122, 128, 138] },     // le zinc
+  ny: { h: [12, 30], tours: 0.35, toit: [128, 126, 124] },
+  londres: { h: [10, 18], tours: 0.05, toit: [134, 104, 88] },
+  sf: { h: [8, 14], tours: 0.1, toit: [196, 190, 178] },
+  nice: { h: [10, 18], tours: 0, toit: [190, 116, 84] },
+  lille: { h: [8, 14], tours: 0, toit: [150, 86, 70] },
+  dc: { h: [6, 12], tours: 0, toit: [196, 192, 182] },
+};
+const GRIS_RUE = [96, 97, 101];
+
+// Un tirage par case, en coordonnées du MONDE (sinon le motif changerait au
+// défilement) : la ville a des hauteurs variées, pas un plateau.
+function hacher(x, z) {
+  let h = Math.imul(x | 0, 374761393) + Math.imul(z | 0, 668265263);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+
+// Ce que la ville met sur cette case : sa hauteur de bâti (0 = rien, une rue,
+// un parc) et la couleur de ses toits. `null` hors de toute ville.
+export function urbainEn(world, x, z, villesMain) {
+  let h, tours, toit, cle;
+  const f = villeMondeEn(x, z);
+  if (f) {
+    const hm = f.hMaison || [4, 6];
+    h = hm; tours = (f.trame && f.trame.tours) || 0; toit = f.couleurToits || [150, 140, 130]; cle = f.cle;
+  } else {
+    if (!villesMain(x, z)) return null;
+    const c = world.cityAt(x, z);
+    if (!c) return null;
+    const m = VILLES_MAIN[c.key] || { h: [8, 14], tours: 0, toit: [150, 140, 130] };
+    h = m.h; tours = m.tours; toit = m.toit; cle = c.key;
+  }
+  const t = hacher(x, z), t2 = hacher(z + 7, x - 3);
+  // Une case sur cinq est une rue, une cour, une place : la ville se lit en
+  // îlots, pas en tapis.
+  let haut = 0;
+  if (t2 > 0.2) {
+    // La hauteur de la grammaire à travées (villesmonde.js) : trois blocs par
+    // étage plus le rez-de-chaussée ; `hMaison` est en étages-blocs.
+    const etages = Math.max(1, Math.round((h[0] + t * (h[1] - h[0]) + 1) / 3));
+    haut = 3 + etages * 3;
+    if (tours && t2 > 1 - tours * 0.3) haut = Math.round(haut * (2 + t));   // une tour
+  }
+  return { haut, toit, cle };
+}
+
 export class Horizon {
   constructor(world, rayon) {
     this.world = world;
@@ -123,6 +193,22 @@ export class Horizon {
     this.hauteurs = new Float32Array(N * N);
     this.pret = new Uint8Array(N * N);
     this.curseur = 0;                        // où reprendre le remplissage
+    // La ville sous chaque sommet : la hauteur de bâti (0 = aucun) et la
+    // couleur des toits. Elles DÉFILENT avec les hauteurs, comme tout le reste.
+    this.bati = new Float32Array(N * N);
+    this.toits = new Float32Array(N * N * 3);
+    this.estNY = new Uint8Array(N * N);
+    this.sansNY = false;                     // Manhattan dessine ses propres silhouettes
+    // Le filtre des sept villes bâties à la main, par BOÎTE. Manhattan déborde
+    // de son disque du registre (TerreUrbaine la tient dans 1 300 blocs).
+    this.boitesMain = (world.conf?.villes || []).map((c) => {
+      const r = (c.key === 'ny' ? Math.max(c.r, 1300) : c.r) + 2;
+      return [c.x - r, c.x + r, c.z - r, c.z + r];
+    });
+    this.villesMain = (x, z) => {
+      for (const b of this.boitesMain) if (x >= b[0] && x <= b[1] && z >= b[2] && z <= b[3]) return true;
+      return false;
+    };
 
     const positions = new Float32Array(N * N * 3);
     const couleurs = new Float32Array(N * N * 3);
@@ -154,6 +240,24 @@ export class Horizon {
     // tout le reste, il n'est peint QUE là où rien d'autre ne l'a été.
     this.mesh.renderOrder = 1;
     this.mesh.name = 'horizon';
+
+    // LE BÂTI LOINTAIN : un pavé unitaire, posé, étiré et teint par instance.
+    // La capacité est un plafond, pas une prévision : au-dessus de Paris à
+    // `rr=12`, le cône de vision en garde quelques milliers.
+    this.capacite = Math.min(16000, this.CASES * this.CASES);
+    const boite = new THREE.BoxGeometry(1, 1, 1);
+    boite.translate(0.5, 0.5, 0.5);          // l'origine au coin bas, comme une case
+    this.materiauBati = new THREE.MeshLambertMaterial({ fog: true });
+    this.bat = new THREE.InstancedMesh(boite, this.materiauBati, this.capacite);
+    this.bat.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.bat.setColorAt(0, new THREE.Color(1, 1, 1));
+    this.bat.instanceColor.setUsage(THREE.DynamicDrawUsage);
+    this.bat.count = 0;
+    this.bat.frustumCulled = false;
+    this.bat.renderOrder = 1;                // même raison que le sol lointain
+    this.bat.name = 'horizon-bati';
+    decor(this.bat);
+    this.mesh.add(this.bat);                 // il suit le paysage dans la scène
   }
 
   objet() { return this.mesh; }
@@ -175,6 +279,9 @@ export class Horizon {
       else {
         decaler(this.hauteurs, N, 1, dix, diz);
         decaler(this.pret, N, 1, dix, diz);
+        decaler(this.bati, N, 1, dix, diz);
+        decaler(this.toits, N, 3, dix, diz);
+        decaler(this.estNY, N, 1, dix, diz);
         // LES SOMMETS DÉFILENT AUSSI, et c'est ce qui rend l'affaire tenable.
         // Mon premier jet réécrivait les 25 921 sommets — position, couleur,
         // biome — à CHAQUE image où quelque chose bougeait : huit millisecondes
@@ -234,7 +341,18 @@ export class Horizon {
     pos[o] = x;
     pos[o + 1] = id === BLOCK.WATER ? WATER_LEVEL + 0.4 : h + 0.5;
     pos[o + 2] = z;
-    const c = MAP_COLORS[id] || [140, 140, 140];
+    let c = MAP_COLORS[id] || [140, 140, 140];
+    // Sous une ville, hors de l'eau : le gris des rues mêlé aux toits.
+    const u = id === BLOCK.WATER ? null : urbainEn(this.world, x, z, this.villesMain);
+    if (u) {
+      c = [(GRIS_RUE[0] + u.toit[0]) / 2, (GRIS_RUE[1] + u.toit[1]) / 2, (GRIS_RUE[2] + u.toit[2]) / 2];
+      this.bati[i] = u.haut;
+      this.toits[o] = u.toit[0] / 255; this.toits[o + 1] = u.toit[1] / 255; this.toits[o + 2] = u.toit[2] / 255;
+      this.estNY[i] = u.cle === 'ny' ? 1 : 0;
+    } else {
+      this.bati[i] = 0;
+      this.estNY[i] = 0;
+    }
     // Le relief lit plus clair en altitude, comme sur la carte 2D — sans cela
     // un massif et une plaine ont exactement la même teinte.
     const teinte = 0.72 + Math.min(Math.max(h, 0), 70) / 70 * 0.38;
@@ -266,6 +384,8 @@ export class Horizon {
     const N = this.N, CASES = this.CASES;
     const idx = this.geo.index.array;
     let n = 0;
+    const mat = this.bat.instanceMatrix.array, col = this.bat.instanceColor.array, cap = this.capacite;
+    let nb = 0;
     for (let ix = 0; ix < CASES; ix++) {
       const wx = (this.ox + ix) * PAS_HORIZON;
       const cxA = Math.floor(wx / CHUNK);
@@ -286,6 +406,20 @@ export class Horizon {
         //   (b−a) × (c−a) = (0,0,8) × (8,0,0) = (0, +64, 0)  → vers le haut
         //   (d−b) × (c−b) = (8,0,0) × (8,0,−8) = (0, +64, 0) → vers le haut
         const a = ix * N + iz, b = a + 1, c = a + N, d = c + 1;
+        if (this.bati[a] > 0 && nb < cap && !(this.sansNY && this.estNY[a])) {
+          // Le pavé repose sur le PLUS BAS des quatre coins de sa case, pour
+          // ne jamais flotter au-dessus d'une pente ; six blocs sur huit, les
+          // deux qui restent sont la rue.
+          const pos = this.geo.attributes.position.array;
+          const y0 = Math.min(pos[a * 3 + 1], pos[b * 3 + 1], pos[c * 3 + 1], pos[d * 3 + 1]) - 0.5;
+          const m = mat, k = nb * 16;
+          m[k] = 6; m[k + 1] = 0; m[k + 2] = 0; m[k + 3] = 0;
+          m[k + 4] = 0; m[k + 5] = this.bati[a] + 0.5; m[k + 6] = 0; m[k + 7] = 0;
+          m[k + 8] = 0; m[k + 9] = 0; m[k + 10] = 6; m[k + 11] = 0;
+          m[k + 12] = wx + 1; m[k + 13] = y0; m[k + 14] = wz + 1; m[k + 15] = 1;
+          col[nb * 3] = this.toits[a * 3]; col[nb * 3 + 1] = this.toits[a * 3 + 1]; col[nb * 3 + 2] = this.toits[a * 3 + 2];
+          nb++;
+        }
         idx[n] = a; idx[n + 1] = b; idx[n + 2] = c;
         idx[n + 3] = b; idx[n + 4] = d; idx[n + 5] = c;
         n += 6;
@@ -293,6 +427,12 @@ export class Horizon {
     }
     this.geo.index.needsUpdate = true;
     this.geo.setDrawRange(0, n);
+    this.bat.count = nb;
+    if (nb > 0) {
+      this.bat.instanceMatrix.clearUpdateRanges?.();
+      this.bat.instanceMatrix.needsUpdate = true;
+      this.bat.instanceColor.needsUpdate = true;
+    }
     return n / 6;
   }
 
@@ -301,6 +441,6 @@ export class Horizon {
     let manquantes = 0;
     for (let i = 0; i < this.pret.length; i++) if (!this.pret[i]) manquantes++;
     return { pas: PAS_HORIZON, rayon: this.rayon, colonnes: this.N * this.N, manquantes,
-      triangles: this.geo.drawRange.count / 3 };
+      triangles: this.geo.drawRange.count / 3, bati: this.bat.count };
   }
 }

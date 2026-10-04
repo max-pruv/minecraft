@@ -1512,6 +1512,76 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const tab = await banc.joueur('Marlon');
     const contexte = await tab.evaluate(() => window.__game.world.ctx);
 
+    // LES VILLES SE RECONNAISSENT AU LOIN (v326). Au-delà des morceaux
+    // maillés, `horizon.js` ne dessinait que le relief : Paris, Londres, New
+    // York et les villes engendrées étaient de la prairie vue d'avion. On
+    // construit un paysage lointain à la portée de l'iPad (rr=12, 632 blocs)
+    // au-dessus de quatre villes, sur le VRAI monde de la page (TerreUrbaine,
+    // qui connaît la forme de Manhattan), et l'on lit ses attributs : la
+    // couleur des sommets sous la ville, et les pavés de bâti instanciés. Rien
+    // n'est maillé dans cet essai (`estDessine` rend faux), sauf pour le
+    // dernier verdict, qui vérifie que le bâti lointain se retire devant le
+    // vrai monde.
+    {
+      const r = await tab.evaluate(async () => {
+        const { Horizon } = await import('./src/horizon.js');
+        const VM = await import('./src/villesmonde.js');
+        const w = window.__game.world;
+        const rome = VM.VILLES_MONDE.find((f) => f.cle === 'rome');
+        const villes = w.conf.villes;
+        const ou = {
+          paris: villes.find((c) => c.key === 'paris'),
+          londres: villes.find((c) => c.key === 'londres'),
+          ny: { x: -20045, z: 5030, r: 152 },
+          rome: { x: rome.ancre.x, z: rome.ancre.z, r: rome.rayon },
+        };
+        const out = {};
+        for (const [nom, c] of Object.entries(ou)) {
+          const h = new Horizon(w, 632);
+          while (h.maj(c.x, c.z, 1e9) > 0 && h.etat().manquantes > 0) { /* tout remplir */ }
+          // vers le centre de la ville : le joueur est dessus, il regarde au nord
+          h.majDecoupe(() => false, c.x, c.z, 0, -1);
+          const N = h.N, col = h.geo.attributes.color.array, pos = h.geo.attributes.position.array;
+          let sous = 0, vertes = 0, eau = 0;
+          for (let i = 0; i < N * N; i++) {
+            const x = pos[i * 3], z = pos[i * 3 + 2];
+            const dx = x - c.x, dz = z - c.z;
+            if (dx * dx + dz * dz > (c.r * 0.8) ** 2) continue;
+            if (!w.cityAt(x, z) && !VM.dansVilleMonde(x, z)) continue;
+            if (pos[i * 3 + 1] < 30.5) { eau++; continue; }
+            sous++;
+            const R = col[i * 3], G = col[i * 3 + 1], B = col[i * 3 + 2];
+            if (G > R * 1.15 && G > B * 1.15) vertes++;   // l'herbe : le vert domine
+          }
+          // les pavés de bâti : combien, et combien dans la ville
+          const bat = h.mesh.children.find((o) => o.isInstancedMesh);
+          let n = 0, dedans = 0, hors = 0, hmax = 0;
+          if (bat) {
+            const m = bat.instanceMatrix.array;
+            n = bat.count;
+            for (let k = 0; k < n; k++) {
+              const x = m[k * 16 + 12] + 3, z = m[k * 16 + 14] + 3;
+              hmax = Math.max(hmax, m[k * 16 + 5]);
+              if (w.cityAt(x, z) || VM.dansVilleMonde(x, z) || w.cityAt(x - 4, z - 4) || VM.dansVilleMonde(x - 4, z - 4)) dedans++; else hors++;
+            }
+          }
+          // et devant le vrai monde il se retire : tous les morceaux « maillés »
+          h.majDecoupe(() => true, c.x, c.z, 0, -1);
+          const retires = bat ? bat.count : -1;
+          out[nom] = { sous, vertes, eau, n, dedans, hors, hmax: Math.round(hmax), retires };
+          h.geo.dispose();
+        }
+        return out;
+      });
+      const txt = (o) => Object.entries(o).map(([k, v]) => `${k} ${v.sous - v.vertes}/${v.sous} sommets urbains (${v.eau} d'eau), ${v.n} pavés dont ${v.dedans} en ville, ${v.hors} hors, jusqu'à ${v.hmax} blocs`).join(' ; ');
+      verifier('vu de loin, le sol d\'une ville n\'est pas de la prairie (Paris, Londres, New York, Rome)',
+        Object.values(r).every((v) => v.sous > 100 && v.vertes / v.sous < 0.1), txt(r));
+      verifier('vu de loin, une ville a des immeubles : un pavé instancié par îlot, dans la ville et nulle part ailleurs',
+        Object.values(r).every((v) => v.n > 50 && v.hors === 0 && v.hmax >= 9), txt(r));
+      verifier('le bâti lointain se retire devant le vrai monde maillé',
+        Object.values(r).every((v) => v.retires === 0), Object.entries(r).map(([k, v]) => `${k} ${v.retires}`).join(', '));
+    }
+
     // La maison d'avant, écrite comme l'ancienne version l'aurait laissée.
     //
     // On la sème AVANT le chargement de la page, et pas après : en quittant,
