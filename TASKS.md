@@ -498,6 +498,11 @@
   second dépend du premier) — REJOUÉE SEULE : branche ces deux-là, `origin/main`
   v318 la libération (programmes 17/25). Même intermittence de préparation des
   deux côtés, déjà déclarée (v267).
+- [ ] **LE PORTAIL DE LA v338 (Madrid–Barcelone) : UN SEUL ROUGE, DÉJÀ
+  MESURÉ DES DEUX CÔTÉS.** `carteMonde.js` (l'AP-2 comprise), `plafond.js`
+  (joint : 0 trou sur 136 879 points), `maj.js`, `carte.js` verts.
+  `monte.js` : l'arrivée figée (3 333 ms · 27,7 %), rouge à l'identique des
+  deux côtés (v332).
 - [ ] **LE PORTAIL DE LA v337 (Lyon–Marseille) : TROIS ROUGES, TOUS DÉJÀ
   MESURÉS DES DEUX CÔTÉS.** `carteMonde.js` (l'A7 comprise), `plafond.js`
   (joint : 0 trou sur 110 554 points) et `maj.js` verts. `carte.js` : la
