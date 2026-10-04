@@ -547,7 +547,12 @@
   le délai de la ligne 282 (dette v269). `monte.js` : Paris compile quatre
   programmes `physical` à l'arrivée et l'écran figé (3 583 ms · 28,3 %), tous
   deux déclarés. `reseau.js` : « sans courtier » `[[],[]]` (intermittence
-  déclarée, verte seule). La livraison n'ajoute aucun matériau ni aucune
+  déclarée) — REJOUÉES SEULES : `plafond.js` verte ; `maj.js` badge vert,
+  reste la préparation (programmes 19/27, intermittence déclarée) ;
+  `manhattan.js` le délai de la ligne 282 ; `reseau.js` « un hôte sans
+  courtier est trouvé » `[[],[]]` sur la branche, et sur `origin/main` v343
+  rejoué seul la même famille (« deux enfants se retrouvent sans courtier du
+  tout » `[[],[]]`, plus la voiture de la rue chez l'ami). La livraison n'ajoute aucun matériau ni aucune
   lampe, seulement une couleur de sommet et des blocs de campagne loin de
   tout point que ces témoins visitent.
 - [ ] **LE PORTAIL DE LA v341 (les déserts) : TOUS LES ROUGES DÉJÀ
