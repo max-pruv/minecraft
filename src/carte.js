@@ -460,6 +460,9 @@ export class Carte {
     if (h >= 58) return [242, 250, 250];                            // les neiges
     if (h >= 48) return melange([140, 136, 126], [200, 202, 200], (h - 48) / 10);
 
+    // Le désert chaud réel (v341) : le sable que le générateur pose.
+    if (w.aride && w.aride(wx, wz)) return melange([226, 210, 160], [204, 184, 130], borne((h - 31) / 17, 0, 1));
+
     // Prairie, puis bois. Les forêts sont peintes d'après le bruit qui les
     // sème, jamais d'après les arbres posés : elles couvrent ainsi toute la
     // carte, et non le seul carré de monde chargé autour du joueur — c'est ce

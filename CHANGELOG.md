@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v340 — Conduire comme au cinéma
+## v344 — Conduire comme au cinéma
 
 **Pourquoi.** Max (4 octobre 2026) : « une grosse refonte de la façon de
 conduire… comme GTA ». Au volant, la caméra restait rivée à six blocs quatre
@@ -53,6 +53,142 @@ choc 0,90 contre 0,073, secousse 0,23 bloc, caméra du côté de la voiture. Le 
 se mesure en ordre alterné sur la même page (`?sensations=0` rejoue l'ancienne
 conduite) : aucun appel de dessin ni programme de shader de plus (67 des deux
 côtés).
+
+---
+
+## v343 — La voiture s'abîme
+
+**Pourquoi.** Max : « Comme dans GTA, quand tu crashes ton véhicule, il
+s'abîme, tu vois vraiment les défauts de carrosserie… La voiture perd son sens,
+à un moment elle ne marche plus, potentiellement elle prend feu, on se retrouve
+à sortir de la voiture. » Jusqu'ici une voiture lancée à pleine vitesse dans un
+mur s'arrêtait net et repartait comme neuve : rien ne se voyait, rien ne
+comptait.
+
+**Ce que ça change.** La voiture que l'enfant conduit a une santé, zone par
+zone (avant, arrière, flancs, toit). Un choc enfonce la tôle là où il a eu
+lieu : le nez se froisse, le pare-chocs s'affaisse, les phares s'éteignent, le
+pare-brise s'étoile, l'aileron se détache. Le moteur touché fume (gris, puis
+noir), la voiture va moins vite, la direction tire du côté abîmé ; sous un
+seuil elle cale et ne repart plus. Sous le seuil critique elle prend feu — des
+flammes orange, aucune lampe de plus —, le jeu dit « descends vite ! », et
+trois secondes et demie plus tard l'enfant est déposé à côté, debout, sain et
+sauf. La voiture brûle quatorze secondes, puis reste une carcasse noire qui
+fume, qu'on ne peut plus prendre, et qui s'en va au bout d'une minute et demie.
+Une voiture neuve est intacte ; garer la sienne au garage la répare. Personne
+n'est jamais blessé, et s'arrêter devant un piéton ou au bord de l'eau n'est
+jamais un choc.
+
+**Ce qui le prouve.** Une suite neuve, `tests/degats.js` (une minute) : sept
+témoins de la règle sous node (la santé suit la force, les zones à tous les
+caps, la panne, le feu, le repli de détection, le réseau) et treize dans le
+jeu, tous vérifiés ROUGES sur `origin/main`. Les plus importants : foncer dans
+un mur à 20,5 blocs/s abîme l'AVANT ; les sommets lus dans la géométrie
+s'enfoncent de 0,9 à l'avant et de 0 à l'arrière ; l'autre voiture du même
+modèle garde la géométrie commune, intacte ; pleins gaz, la voiture en panne
+ne bouge plus ; le feu dépose l'enfant à 2,4 blocs, hors de tout mur ; ni
+lampe ni programme de shader de plus (94 → 96 si l'on désarme la chauffe,
+96 → 96 armée) ; la carcasse partie rend ses géométries clonées au pilote.
+Enfoncer coûte 12 ms au premier choc, 6 ensuite, rien par image. Captures de
+jour et de nuit : neuve, avant enfoncé qui fume, flanc, feu, carcasse.
+
+---
+
+## v342 — Les monuments du monde dominent leurs villes
+
+**Pourquoi.** La v335 a remis Paris à l'échelle de son ciel, et la même mesure,
+lancée sur toutes les villes, a rendu quarante-sept monuments des villes
+engendrées plus bas que les immeubles autour d'eux : St-Pierre de Rome à douze
+blocs pour des toits à treize, le palais d'Hiver et la Hofburg à cinq, le
+Parthénon à six, Sainte-Sophie, Saint-Basile et le Duomo de Florence noyés dans
+la ville. Ils étaient déclarés en dette dans le témoin, « lot 3 ».
+
+**Ce que ça change.** Chaque ville a désormais son ciel : un bloc pour un mètre
+jusqu'à la corniche de SES immeubles (mesurée, de huit blocs à Jérusalem à vingt
+à Los Angeles), puis la courbe de Paris posée sur cette corniche. St-Pierre
+monte à trente-huit blocs, le Duomo de Florence à trente-six, le Berliner Dom à
+trente-cinq, Saint-Sauveur-sur-le-Sang à trente et un, Saint-Basile à
+vingt-sept, la gare Victoria de Bombay à vingt-six. L'emprise ne bouge pas d'un
+bloc : on étire le corps (le tambour d'une coupole, les murs d'un palais), la
+couronne s'étire moins. Et le ciel garde son ordre : là où un repère plus haut
+dans la vraie ville est un fût d'un bloc (la Westerkerk, la tour de Galata, la
+Torre Latino), la courbe de la ville passe SOUS lui ; un fût ne monte jamais
+au-delà d'une fois et demie sa hauteur. Cinq monuments sortent de la dette parce
+qu'ils sont bas dans la vraie ville aussi : la colonne de Marie, Topkapi, le
+Templo Mayor, le Pavillon d'or et Wat Pho.
+
+**Ce qui le prouve.** Deux témoins neufs dans `plafond.js` : plus aucun monument
+du lot 3 en dette (quarante-sept sur l'ancien code), et l'ordre du vrai ciel
+gardé ville par ville, contre les monuments étirés ET les repères fixes (tour de
+Pise, Westerkerk, Fernsehturm, CN Tower…) — rouge quand on retire un repère de
+la table. Le témoin des monuments mesure toujours 215 monuments contre la
+médiane de leurs immeubles, sans une faute. Captures de rue et de ciel : elles
+ont démonté trois premiers jets — des coupoles en obus (le corps étirait le bas
+de la calotte), des minarets en aiguilles (Santa Justa à vingt-six blocs,
+Galata montée pour l'ordre) et les tours d'angle du Kremlin et du Grand Palais,
+poteaux d'un bloc étirés jusqu'à trente.
+
+
+---
+
+## v341 — Les déserts
+
+**Pourquoi.** Le planisphère savait la terre, la mer et les grandes chaînes de
+montagnes ; il ne savait pas le climat. Le cœur du Sahara, le Rub al-Khali,
+l'intérieur australien, l'Atacama étaient des prairies boisées : mesuré sur
+`origin/main`, 14 colonnes de sable sur 4 309 au cœur de cinq déserts, et 49
+arbres. C'est le point (d) du kit « monde fidèle », les textures par climat,
+dans sa plus petite tranche utile.
+
+**Ce que ça change.** Les grands déserts chauds du monde réel — Sahara,
+Arabie, Iran, Thar, Taklamakan et Gobi, Kalahari et Namib, intérieur
+australien, Atacama, Mojave et Sonora — sont de sable, sans un arbre, avec un
+bord qui tremble comme une côte. Autour de Las Vegas, de Phoenix, de Riyad,
+d'Ispahan ou de Tombouctou, la campagne est blonde ; le delta du Nil, le
+littoral méditerranéen et le Maroc restent verts. Le paysage lointain et la
+carte du monde disent la même chose que le sol. Seule la matière change : la
+forme du monde est identique bloc pour bloc, et les deux empreintes de
+`plafond.js` ne bougent pas.
+
+**Ce qui le prouve.** Trois témoins neufs, deux rouges sur `origin/main` : au
+cœur de cinq déserts réels, 4 309 colonnes de sable sur 4 309 et aucun arbre
+(14 de sable et 49 arbres avant) ; au Kansas, dans l'Iowa, la Pampa et en
+Ukraine, zéro bloc différent du monde sans la règle, et dans les déserts zéro
+bloc de forme différente ; vu de loin et sur la carte, le Sahara est blond et
+le Kansas vert (`plafond.js`, dans la page). Mesuré sous node : 8 546 colonnes
+passent de l'herbe au sable autour de douze villes, coût par morceau inchangé.
+
+## v340 — Les arbres et les falaises
+
+**Pourquoi.** La v326 a donné à la campagne des falaises de roche et des grèves
+de sable, et elle a déclaré ce qu'elle ne faisait pas : les arbres poussaient
+encore sur une crête de roche ou sur une grève (`treeAt` ne lisait que la
+cote), et le paysage lointain gardait le vert de la carte là où le monde proche
+montre la roche. Mesuré sur `origin/main` (`sonde-arbres-bord.cjs`, 4 000
+morceaux de campagne, deux tirages) : 135 et 168 arbres sur de la roche, 6 sur
+du sable, et 3 qui flottaient au-dessus d'un puits de grotte, sur 12 700 à
+12 900.
+
+**Ce que ça change.** Un arbre ne pousse plus que sur l'herbe : ni sur une
+crête de roche, ni sur une grève, ni au-dessus d'un puits. Le reste de la forêt
+ne bouge pas d'un tronc. Et vu d'avion, au-delà du monde chargé, les falaises
+sont grises et les grèves blondes, comme de près.
+
+Le paysage lointain pose le relief d'abord, à la même vitesse qu'avant, puis
+la roche et le sable dans le temps qui reste (deux millisecondes par image au
+plus, et seulement en jeu — jamais pendant la préparation de l'accueil) : la règle coûte quatre cotes de plus par sommet, et posée dans le
+remplissage elle aurait fait arriver le paysage trois fois plus tard après une
+téléportation. Rien n'est écrit dans le relief : les deux empreintes de
+`plafond.js` ne bougent pas.
+
+**Ce qui le prouve.** Quatre témoins neufs dans `plafond.js`, deux rouges sur
+`origin/main` : aucun arbre ailleurs que sur l'herbe sur 600 morceaux (16 sur
+de la roche avant, 0 ici) ; tout arbre d'herbe du monde sans la règle est
+encore là (1 632 sur 1 632) ; vu de loin, les 674 sommets de roche ou de sable
+de quatre sites ont la couleur que la règle du générateur leur donne (0 sur
+674 avant) ; et les 48 876 autres gardent leur herbe, le relief rempli dans le
+même nombre d'images. Le témoin « même forme, bloc pour bloc » des falaises
+compare le relief sans les arbres, qui ne sont pas du sol.
 
 ---
 

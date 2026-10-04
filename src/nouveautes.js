@@ -6,13 +6,50 @@
 
 export const NOUVEAUTES = [
   {
-    v: 340,
+    v: 344,
     titre: 'Conduire comme au cinéma',
     puces: [
       'La caméra recule quand on accélère',
       'La voiture penche dans les virages',
       'Les roues avant tournent avec toi',
       'Les pneus crissent, les chocs s\'entendent',
+    ],
+  },
+  {
+    v: 343,
+    titre: 'La voiture s\'abîme',
+    puces: [
+      'Un choc froisse la carrosserie',
+      'Le moteur fume, puis tombe en panne',
+      'Elle peut brûler : tu sors à temps',
+      'Le garage répare ta voiture',
+    ],
+  },
+  {
+    v: 342,
+    titre: 'Les monuments du monde grandissent',
+    puces: [
+      'Saint-Pierre domine Rome, le Duomo Florence',
+      'Chaque ville a son propre ciel',
+      'Les plus hauts restent les plus hauts',
+    ],
+  },
+  {
+    v: 341,
+    titre: 'Les déserts',
+    puces: [
+      'Le Sahara est enfin de sable',
+      'Et l\'Arabie, l\'Australie, l\'Atacama',
+      'Pas un arbre dans le désert',
+    ],
+  },
+  {
+    v: 340,
+    titre: 'Les arbres et les falaises',
+    puces: [
+      'Plus d\'arbre sur une falaise de roche',
+      'Ni sur le sable au bord de l\'eau',
+      'Les falaises se voient de loin',
     ],
   },
   {

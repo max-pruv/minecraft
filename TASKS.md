@@ -1,5 +1,43 @@
 # Ce qui est en cours
 
+- [ ] **LES DÉGÂTS (v343) : CE QUI RESTE, DÉCLARÉ.**
+  - **Le coût sur l'iPad n'est pas mesuré.** Au banc : enfoncer 12 ms au
+    premier choc, 6 ensuite ; pendant un feu, jusqu'à cinquante-quatre carrés
+    de fumée et de flammes, donc autant d'appels de dessin. À mesurer sur la
+    tablette (`?diag=1`, une voiture qu'on fait brûler) ; le levier est
+    `MAX_FUMEE`/`MAX_FLAMMES` (degats3d.js), ou un seul `Points`.
+  - **La carcasse n'est vue que par celui qui conduisait.** Chez l'ami, la
+    voiture disparaît avec le champ `p.v` dès que le conducteur est déposé.
+  - **Les voitures de la rue ne s'abîment pas** — seule celle de l'enfant.
+  - **Le passage au garage répare** (`rangerAuGarage` → `reparer`) : le témoin
+    éprouve `reparer` directement, pas le trajet complet garage compris.
+  - **Le contrat avec la physique** (`player.choc`, `player.physiqueLitEtat`)
+    attend la session « conduite-physique » : tant qu'elle ne publie rien, le
+    repli de vitesse décide, et les effets s'appliquent par `player.boost`.
+  - **Les avions ne s'abîment pas** (`pilote` est écarté) : une décision, pas
+    un oubli — un atterrissage manqué n'a pas de « choc » dans `player.js`.
+
+- [ ] **AU PORTAIL DE LA v343 (les dégâts), CINQ SUITES ROUGES — aucune causée
+  par la livraison, double mesure faite (chaque suite rejouée SEULE sur la
+  branche, puis sur `origin/main` v339 dans un arbre détaché).**
+  - `visio.js` « pendant l'appel la radio parle plus bas » (avant 0,0000) :
+    rouge au portail seulement, VERTE seule des deux côtés — intermittence.
+  - `maj.js` : rouge des deux côtés, jamais le même témoin — portail : le
+    loader d'installation ; branche seule : « corps, programmes et fond de
+    carte » (personnages 6/9, déjà déclaré) et le flou ; `origin/main` seul :
+    le loader et le palier (période médiane 1 817 ms, machine chargée).
+  - `manhattan.js` : le délai de la ligne 282 tue la suite DES DEUX CÔTÉS
+    rejouée seule (v269). Au portail, « le taxi roule » (1,06 bloc) : sonde à
+    part de la seule scène du taxi, trois essais — ZÉRO choc compté, santé 1,
+    allure de classe intacte (`boost` 4,4) ; il rampe à une image toutes les
+    trois secondes (v259). Les dégâts n'y sont pour rien, par la mesure.
+  - `monte.js` : « l'écran ne se fige pas en arrivant sur une ville » et « se
+    téléporter… ne compile plus » (14 à New York, chauffe expirée) — les deux
+    rouges sur `origin/main` rejoué seul (plus les passants de Rome).
+  - `reseau.js` : « un hôte sans courtier est trouvé » et « il le REJOINT » —
+    rouges à l'identique sur `origin/main` seul ; la branche seule rend « deux
+    enfants sans courtier du tout ». Famille des parties par le nuage,
+    intermittente, en production.
 - [x] **DEUX OU TROIS PROGRAMMES SE COMPILENT ENCORE À L'ARRIVÉE À PARIS
   (mesuré en v306) — ÉLARGI À TOUTES LES VILLES ET FAIT EN v319.**
   `sonde-programmes-villes.cjs` (seize lieux, page neuve par lieu) rendait sur
@@ -498,7 +536,7 @@
   second dépend du premier) — REJOUÉE SEULE : branche ces deux-là, `origin/main`
   v318 la libération (programmes 17/25). Même intermittence de préparation des
   deux côtés, déjà déclarée (v267).
-- [ ] **LE PORTAIL DE LA v340 (sensations au volant) : UN ROUGE DE MOI, CORRIGÉ,
+- [ ] **LE PORTAIL DE LA v344 (sensations au volant) : UN ROUGE DE MOI, CORRIGÉ,
   ET TROIS DETTES DÉJÀ DÉCLARÉES, REJOUÉES SEULES DES DEUX CÔTÉS.**
   `monte.js` « la caméra suit la voiture de derrière » (7,07 pour une borne
   fixe de 6,5) : à moi, la caméra recule désormais avec la vitesse — le
@@ -513,6 +551,32 @@
   (« element is not stable »), sur la branche le bouton reste caché quinze
   secondes (une bête) : la même intermittence, vue des deux côtés. `maj.js` :
   le loader qui compte les fichiers, intermittent (ci-dessous).
+- [ ] **LE PORTAIL DE LA v341 (les déserts) : TOUS LES ROUGES DÉJÀ
+  DÉCLARÉS.** `plafond.js` (les trois témoins des déserts, celui de la page
+  compris), `carteMonde.js`, `carte.js`, `metro.js`, `washington.js` verts.
+  `maj.js` : le loader et le fond de carte (personnages 5/9), intermittence de
+  la v340 ci-dessous. `manhattan.js` : le trou de façade (11 684). `monte.js` :
+  la chauffe de New York expirée (55/321) et l'écran figé (3 683 ms · 32,5 %).
+  La livraison ne change que la matière de la campagne des déserts réels,
+  qu'aucun de ces témoins n'approche.
+- [ ] **LES PORTAILS DE LA v340 (les arbres et les falaises, préparée comme v333, v337 puis v339), QUATRE FOIS.**
+  `plafond.js` (les quatre témoins neufs), `carteMonde.js`, `metro.js`,
+  `washington.js` verts à chaque passage. `maj.js` : le témoin « corps,
+  programmes et fond de carte » rouge 2 fois sur 2 sur la branche rejouée
+  SEULE (personnages 7/9, 8/9) et 1 sur 2 sur `origin/main` (v332) — la
+  seconde passe du paysage lointain (2 ms par image) tournait aussi à
+  l'accueil : elle ne passe plus qu'en jeu (`raffinerPermis`), et le témoin
+  est resté rouge ensuite (6/9) : c'est l'intermittence déclarée, pas la
+  livraison. Le palier, vert seul des deux côtés (charge du portail). Au
+  troisième portail, un VRAI rouge, à moi : `nouveautes.js` recollé au rebase
+  sans son accolade, et `node --check` muet (règle écrite dans `CLAUDE.md`) ;
+  corrigé, `maj.js` VERTE au quatrième. `manhattan.js` : le délai de la
+  ligne 282 (v269). `monte.js` : l'écran figé (3 833 à 4 250 ms, ~50 %, des
+  deux côtés), « se téléporter ne compile plus de programmes » (zéro
+  programme neuf dans les cinq villes, Paris à huit images — v326), et une
+  fois « la monoplace ralentit assez » (9,0 pour une barre à 9 : un minimum
+  échantillonné toutes les 300 ms sur une allure qui est une fonction de
+  l'heure, v279 et v305), vert à tous les autres passages.
 - [ ] **LE PORTAIL DE LA v338 (Madrid–Barcelone) : UN SEUL ROUGE, DÉJÀ
   MESURÉ DES DEUX CÔTÉS.** `carteMonde.js` (l'AP-2 comprise), `plafond.js`
   (joint : 0 trou sur 136 879 points), `maj.js`, `carte.js` verts.
@@ -670,10 +734,13 @@
   falaise reste un escalier de cubes de roche, et l'adoucir (une surface
   rocheuse inclinée au-delà de `MARCHE_MAX`) toucherait au contact et au
   franchissement, ou au relief (décision de Max) ; les berges de trois blocs
-  gardent leur couronne d'herbe ; `horizon.js` ne connaît pas la règle (le
-  lointain garde le vert là où la roche est) ; les arbres poussent encore sur
-  une crête de roche ou une grève basse (`treeAt` ne lit que la cote) ; (d) les
-  textures par usage et climat ; (e) la bibliothèque architecturale (96
+  gardent leur couronne d'herbe. `horizon.js` et les arbres lisent la règle
+  depuis la v340 (`couleurDuBord`, `solDeLArbre`) ; (d) les
+  textures par usage et climat — PREMIÈRE TRANCHE en v341 : les déserts chauds
+  réels (`DESERTS`, terre.js) sont de sable, sans arbre, au sol, au loin et sur
+  la carte ; restent les steppes, la toundra, les tropiques humides (une teinte
+  d'herbe par climat demande une couleur par colonne dans le mailleur, le sol
+  continu, le paysage lointain et la carte — à mesurer avant) ; (e) la bibliothèque architecturale (96
   variantes, 278 profils de ville) — elle exige une retrame à un bloc pour un
   mètre (`docs/monde-fidele/programme.md`, section 6), décision de Max ; (f) la
   matrice de couverture ville par ville (convertie, exclue, bloquée) et les
@@ -690,31 +757,54 @@
 - [ ] **LES MONUMENTS DES AUTRES VILLES PLUS BAS QUE LEURS IMMEUBLES** (v335,
   mesuré, élargi par Max : « lance sur toutes les villes »). Le témoin de
   `plafond.js` mesure 215 monuments dans leurs villes contre la médiane des
-  immeubles autour (colonnes à moins de trente blocs de la boîte, hors de toute
-  autre boîte, sommet à six blocs au moins au-dessus du relief, feuillage
-  exclu). `BAS_DECLARES` en nomme 94 : 37 réellement bas (ponts, places,
-  statues, fontaines, palais de plain-pied — ils restent) et 57 en DETTE, à
-  rayer de la liste en les remettant à l'échelle. **Lot 2, les villes bâties à
-  la main** : Arche de Washington (NY) 12/13, Opéra de Lille 6/7, Buckingham
-  7/8, et à Washington le Trésor 8/13, les Archives 11/13, le Théâtre Ford
-  8/11, l'Histoire américaine 9/10, l'Indien d'Amérique 8/9. **Lot 3, les villes
-  engendrées** (hauteur/médiane) : St-Pierre 12/13, Duomo et Baptistère de Pise
-  10/12 et 9/12, fort d'Agra 6/10, Palais royal et porte d'Alcalá de Madrid 5/13
-  et 10/13, São Jorge 7/12, Santa Justa 11/13, palais du Dam 5/13, Rijksmuseum
-  5/10, Brandebourg et Reichstag 10/13, colonne de Marie 6/13, Hofburg 5/13,
-  château de Prague 5/10, Duomo de Florence 11/13, Parthénon, temple de Zeus et
-  Parlement d'Athènes 6, 6 et 5 pour 12, Sainte-Sophie 12/13, Mosquée bleue
-  11/13, Topkapi 7/13, Saint-Basile 11/13, Kremlin 8/13, Bolchoï 6/13, palais
-  d'Hiver 5/10, Saint-Sauveur 11/12, Kazan 6/12, Palais royal et Storkyrkan de
-  Stockholm 5/13 et 11/13, Amalienborg 5/13, Rundetaarn 11/13, Pavillon d'or
-  10/12, Supertrees 8/13, Grand Palais et Wat Pho de Bangkok 7/10 et 4/10, mur
-  des Lamentations 6/8, Taj Mahal Palace 5/10, gare Victoria 10/12, porte de
-  l'Inde 13/15, Jantar Mantar 4/12, Disney Hall 10/15, Rogers Centre 11/13,
-  ancien hôtel de ville de Toronto 13/15, cathédrale, Templo Mayor et Bellas
-  Artes de Mexico 10/13, Casa Rosada 5/12, Cabildo 7/12. La règle à appliquer
-  par ville : l'échelle du ciel de la ville (un bloc pour un mètre jusqu'à la
-  corniche de SES immeubles, puis une courbe sous son plus haut repère), par la
-  même table de paliers — la courbe de Paris est `blocsDuCiel`.
+  immeubles autour. **Lot 3, les villes engendrées : FAIT en v342** — chaque
+  ville a son ciel (`CIELS`, corniche mesurée), quarante-deux monuments remis à
+  l'échelle, treize repères montés pour garder l'ordre du vrai ciel, cinq
+  reclassés `vrai` (colonne de Marie, Topkapi, Templo Mayor, Pavillon d'or, Wat
+  Pho). **Reste le lot 2, les villes bâties à la main** (une autre session) :
+  Arche de Washington (NY) 12/13, Opéra de Lille 6/7, Buckingham 7/8, et à
+  Washington le Trésor 8/13, les Archives 11/13, le Théâtre Ford 8/11,
+  l'Histoire américaine 9/10, l'Indien d'Amérique 8/9.
+- [ ] **LE PORTAIL DE LA v342 (monuments du lot 3) : TROIS SUITES ROUGES, LA DOUBLE
+  MESURE EN MAIN.** Sept suites vertes (fumée, métro, parishd, carteMonde,
+  plafond, carte, washington). Rejouées SEULES des deux côtés :
+
+  | témoin | branche | `origin/main` (v335) |
+  | --- | --- | --- |
+  | `manhattan.js` le trou enlève la géométrie de la façade | ❌ 17 102 → 51 734 | ❌ 25 316 → 51 734 |
+  | `manhattan.js` le taxi roule aux contrôles tactiles | ❌ 1,06 bloc en 83 s | ❌ 1,06 bloc en 85 s |
+  | `monte.js` l'écran ne se fige pas à l'arrivée | ❌ 21,6 % au-delà de 300 ms | ❌ 27,5 % |
+  | `monte.js` se téléporter ne compile plus de programmes | ❌ au portail (6 `physical` à Paris) | dette v324–v327, rouge seul des deux côtés |
+  | `maj.js` le loader dit combien de fichiers sont rangés | ❌ 2 fois (portail, 1er rejeu), ✅ 3 fois | ✅ 4 fois |
+  | `maj.js` le loader ne s'efface qu'une fois les corps prêts | ❌ au 1er portail, ✅ 4 fois seule | ❌ 1 fois sur 4 |
+
+  `maj.js` rejouée seule trois fois de suite est ENTIÈREMENT verte sur la
+  branche. Tous sont des dettes déjà déclarées plus haut, sauf les deux lignes
+  de `maj.js`, des INTERMITTENCES vues des deux côtés (règle v269 : la distribution, pas un passage) : le témoin lit le
+  loader dix fois par seconde pendant une installation qui range 105 fichiers,
+  et il ne voit parfois que la phrase fixe. Preuve STRUCTURELLE en plus : la
+  v342 ne touche ni `sw.js` (hors version), ni `index.html`, ni le loader — une
+  table de hauteurs, un témoin, une sonde. Le badge de version (« version
+  servie v335 » au premier portail) était le bump manquant, réglé.
+- [ ] **LA GRANDE ROUE DU PRATER SOUS LA HOFBURG (v342), déclaré.** La roue (65 m)
+  reste à seize blocs et la Hofburg (30 m) monte à vingt et un : une roue ne
+  s'étire pas, elle deviendrait une ellipse. Le témoin d'ordre ne la compte pas.
+  Si on veut la garder au-dessus, c'est son bâtisseur (`buildGrandeRoue`) qui
+  doit grandir d'un rayon, pas une table de paliers. Même cas pour Tivoli.
+- [ ] **UNE COUPOLE SANS SA NEF DEVIENT UNE TOUR (v342), vu en capture.** Les
+  bâtisseurs partagés (`dome`, `minaret`, `palaisLong`) sont des gabarits : St-
+  Pierre est une coupole de treize blocs de large SANS la basilique autour.
+  Remise à sa hauteur (38 blocs), elle garde les proportions vraies du tambour
+  et de la calotte, mais sans nef sa silhouette est élancée. Le premier jet
+  étirait aussi les premières couches de la calotte (même rayon que le tambour,
+  couleur de la calotte) : un obus d'ardoise, corrigé (le corps s'arrête au
+  tambour). Le remède de fond est un bâtisseur par monument, avec sa nef — pas
+  une table de paliers.
+- [ ] **LES VILLES ENGENDRÉES HORS DU LOT 3 N'ONT PAS LEUR CIEL (v342).** Seules
+  les vingt-cinq villes qui portaient une dette ont une corniche dans `CIELS` ;
+  ailleurs les repères sont au-dessus de leurs immeubles mais pas à l'échelle de
+  leur vraie hauteur (l'hôtel de ville de Bruxelles, minaret de 22 blocs pour
+  96 m ; la Frauenkirche de Munich à 15 pour 99 m). Même règle, même table.
 - [ ] **UNE CABANE SUR UN ANCIEN TOIT DE MONUMENT SE RETROUVE DEDANS (v335),
   déclaré.** Le relevé des toits (v301) emporte ce qu'on a bâti sur un
   immeuble ; rien n'emporte ce qu'on a bâti sur un monument étiré. Le bloc

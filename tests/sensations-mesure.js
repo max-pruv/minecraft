@@ -1,4 +1,4 @@
-// LA MESURE DES SENSATIONS AU VOLANT (v340), partagée par le témoin de
+// LA MESURE DES SENSATIONS AU VOLANT (v344), partagée par le témoin de
 // `monte.js` et la sonde `sonde-sensations.cjs` : une seule fonction, évaluée
 // DANS la page, pour que la sonde et le témoin mesurent la même chose (deux
 // copies d'une mesure finissent par diverger, v320).

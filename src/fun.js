@@ -25,6 +25,7 @@ import { monumentBati } from './monuments.js';
 import { garagesDe, garageAutour, inscrireGarage, garer, sortir } from './garages.js';
 import { allureDe } from './vehicules.js';
 import { moteurDemarre, moteurRegime, moteurCoupe, radioDemarre, radioCoupe } from './sons.js';
+import { creerDegats } from './degats3d.js';
 import { sensationsAuVolant, sensationsAPied, reposerVoiture } from './sensations.js';
 
 // Le sac (`web-minecraft-bag-v1`), la quête (`web-minecraft-quest-v1`), le
@@ -33,7 +34,7 @@ import { sensationsAuVolant, sensationsAPied, reposerVoiture } from './sensation
 // v255 ; leurs clés restent en place, et sync.js continue de faire voyager le
 // sac et la quête tels quels. On n'efface rien.
 // La caméra de poursuite et son retard (`?camlag=`, v278) vivent dans
-// `sensations.js` depuis la v340.
+// `sensations.js` depuis la v344.
 const RECORDS_KEY = 'web-minecraft-records-v1';
 const PHOTOS_KEY = 'web-minecraft-photos-v1';
 
@@ -229,7 +230,18 @@ export function initFun(ctx) {
   // ne demande donc plus de penser à revenir modifier ce fichier — l'oubli
   // qui, pendant des mois, a laissé le cheval, le cerf et le loup seuls
   // montables alors que le bestiaire s'était étoffé.
-  const montable = (a) => !!(a && a.def && a.def.montable && !a.baby);
+  const montable = (a) => !!(a && a.def && a.def.montable && !a.baby && !a.horsService);
+
+  // LES DÉGÂTS DE LA VOITURE (v343) — tout vit dans degats.js (la règle) et
+  // degats3d.js (ce qui se voit) ; ici, quatre crochets : chaque image au
+  // volant, la descente, le garage qui répare, et chaque image pour la fumée.
+  // `retirer` : une carcasse s'en va (v238 : ce qu'on retire se rend).
+  const degats = creerDegats({ scene, world, player,
+    lumiere: () => (isNight && isNight() ? 0.3 : 1),
+    retirer: (a) => {
+      scene.remove(a.mesh); liberer(a.mesh);
+      animalManager.animals = animalManager.animals.filter((o) => o !== a);
+    } });
 
   function toggleRide(a) {
     if (riding) {
@@ -258,6 +270,7 @@ export function initFun(ctx) {
       // régime pour toujours (v264, le même piège que les flammes).
       moteurCoupe(); radioCoupe();
       quitte.montee = false;
+      degats.descend();   // dégâts (v343) : plus d'état publié à pied
       if (!rangerAuGarage(quitte)) toast('🐴 Tu es descendu·e.', 0xd8c9a4);
       return;
     }
@@ -935,6 +948,8 @@ export function initFun(ctx) {
       x: monture.pos.x, y: monture.pos.y, z: monture.pos.z, yaw: monture.yaw,
     });
     monture.garage = g.id;
+    // LE GARAGE RÉPARE (v343) : une voiture garée ressort neuve.
+    degats.reparer(monture.mesh);
     toast(`🅿️ ${nom} est garée — tu la retrouveras ici, même demain.`, 0xa8d8ff);
     emojiBurst(['🅿️', '🚗'], 8);
     return true;
@@ -1006,9 +1021,19 @@ export function initFun(ctx) {
       player.interdireVol(false);
       if (player.prendreGabarit) player.prendreGabarit(0);
       moteurCoupe(); radioCoupe();
+      degats.descend();
       return;
     }
     player.boost = allureMonture(riding);
+    // DÉGÂTS (v343) : le choc, l'allure réduite, la direction qui tire ; et
+    // quand le feu a pris, passé le temps de lire le bandeau, on DÉPOSE
+    // l'enfant à côté de sa voiture, debout et sain et sauf.
+    if (degats.auVolant(riding, dt) === 'sortir') {
+      const enFeu = riding;
+      toggleRide(null);
+      degats.deposer(enFeu);
+      return;
+    }
     // PILOTER : la fiche de l'espèce décide, jamais ce fichier. `player.js`
     // remplace alors la marche par la physique de vol — poussée, roulis,
     // assiette — et l'avion reste collé au joueur comme toute monture. C'est
@@ -1120,7 +1145,7 @@ export function initFun(ctx) {
     // voiture et la caméra, elle avance devant lui plutôt que d'entrer
     // dans la roche.
     if (a.def.poursuite) {
-      // LA POURSUITE ET LA CAISSE QUI VIT (v340) : la caméra qui recule et
+      // LA POURSUITE ET LA CAISSE QUI VIT (v344) : la caméra qui recule et
       // ouvre son champ avec la vitesse, qui ne traverse pas les murs, qui
       // regarde dans le virage et tremble au choc ; la caisse qui penche et
       // plonge ; les roues qui braquent ; le son des rapports et des pneus.
@@ -1235,7 +1260,8 @@ export function initFun(ctx) {
       loadSigns(ctxKey);
     }
     updateRide(dt);
-    // CE QU'ON QUITTE SE REPOSE (v340) : la voiture garée reprend son
+    degats.update(dt, player.camera, animalManager.animals);   // fumée, feu, carcasses (v343)
+    // CE QU'ON QUITTE SE REPOSE (v344) : la voiture garée reprend son
     // assiette et ses roues droites, et le champ de la caméra revient.
     if (riding !== derniereMonture) { reposerVoiture(derniereMonture); derniereMonture = riding; }
     if (!riding) sensationsAPied(player, dt);
@@ -1282,6 +1308,9 @@ export function initFun(ctx) {
     // La monture que l'enfant est en train de conduire (ou null) : main.js
     // y assied son avatar quand la fiche déclare un `siege` (v249).
     montureConduite: () => riding,
+    // les dégâts de la voiture (v343) : main.js les chauffe et les envoie aux
+    // amis, les témoins les lisent
+    degats,
     // Chez qui l'enfant est passager (ou null) : la position réseau
     // l'emporte, et main.js l'assied sur le siège de la voiture de l'ami.
     passagerDe: () => passager,

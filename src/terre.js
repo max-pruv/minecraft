@@ -156,6 +156,56 @@ export function surTerreReelle(lat, lon) {
   return false;
 }
 
+// LES DÉSERTS CHAUDS (v341, point (d) du kit « monde fidèle », la plus petite
+// tranche des « textures par climat »). Le planisphère savait la terre, la mer
+// et les montagnes ; il ne savait pas le climat, et le Sahara était une
+// prairie. Ces contours sont ceux des grands déserts chauds — les régions où il
+// tombe moins de deux cent cinquante millimètres d'eau par an, relevés au degré
+// comme les côtes : Sahara, Arabie, Iran, Thar, Taklamakan et Gobi, Kalahari et
+// Namib, l'intérieur australien, l'Atacama, le Mojave et le Sonora. Les
+// steppes et la toundra sont une autre tranche. Des FAITS géographiques,
+// [lon, lat] comme `CONTOURS`.
+const DESERTS = [
+  ['sahara', [-17, 21, -16, 27.5, -10, 29, -4, 30.5, 2, 31.5, 9, 31.5, 11, 32.2, 15, 31,
+    19, 30.5, 25, 30.5, 29, 30.2, 32, 29.5, 33.5, 27, 35, 24, 37.5, 18, 34, 15.5,
+    25, 15, 15, 15.5, 5, 16, -5, 16, -16, 16]],
+  ['arabie', [35, 29.5, 38, 32.5, 43, 33, 47, 30, 50, 28.5, 56, 26.5, 57, 24, 59, 22, 55.5, 17.5,
+    45, 15.5, 43, 17, 39, 22, 36.5, 26]],
+  ['iran', [51, 35.5, 56, 36, 61, 34.5, 63, 30, 61.5, 27, 57, 27.5, 52, 30]],
+  ['thar', [68.5, 24.5, 70, 29.5, 74, 30, 75.5, 27, 72.5, 24]],
+  ['taklamakan-gobi', [76, 40, 84, 42, 90, 42.5, 100, 43, 110, 45, 113, 44, 111, 41,
+    104, 39.5, 98, 39, 90, 37.5, 80, 36.5, 76, 38]],
+  ['kalahari-namib', [11.8, -17, 13.5, -23, 15.5, -28, 20, -28.5, 24.5, -26.5, 24, -21,
+    21, -18.5, 15, -16.5]],
+  ['australie', [114.5, -22, 119, -20, 125, -18.5, 133, -18, 139, -20.5, 142, -25,
+    142, -29, 137, -31.5, 130, -31.5, 124, -30.5, 117, -28.5]],
+  ['atacama', [-71.3, -17.5, -69, -17.5, -68.5, -23, -69, -28.5, -71.3, -28.5]],
+  ['mojave-sonora', [-117.4, 34.5, -115.5, 37.5, -113, 37, -111.5, 34, -109.5, 31.5,
+    -110.5, 28, -112.5, 28.5, -114.5, 30.5, -116.2, 32.8]],
+];
+const FORMES_DESERT = DESERTS.map(([nom, pts]) => {
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for (let i = 0; i < pts.length; i += 2) {
+    x0 = Math.min(x0, pts[i]); x1 = Math.max(x1, pts[i]);
+    y0 = Math.min(y0, pts[i + 1]); y1 = Math.max(y1, pts[i + 1]);
+  }
+  return { nom, pts, x0, x1, y0, y1 };
+});
+// La boîte de tous les déserts : le rejet d'une seule comparaison pour
+// l'Europe, l'Amérique du Nord humide et les tropiques.
+const LA0 = Math.min(...FORMES_DESERT.map((f) => f.y0)), LA1 = Math.max(...FORMES_DESERT.map((f) => f.y1));
+
+// Ce point du globe est-il dans un désert chaud ? Le nom du désert, ou null.
+export function desertReel(lat, lon) {
+  if (lat < LA0 || lat > LA1) return null;
+  for (const f of FORMES_DESERT) {
+    if (lon < f.x0 || lon > f.x1 || lat < f.y0 || lat > f.y1) continue;
+    if (dedans(f.pts, lon, lat)) return f.nom;
+  }
+  return null;
+}
+export function desertsDeLaTerre() { return FORMES_DESERT.map((f) => ({ nom: f.nom, pts: f.pts.slice() })); }
+
 // La liste des formes, pour qui veut les vérifier une à une.
 export function contoursDeLaTerre() {
   return FORMES.map((f) => f.nom);

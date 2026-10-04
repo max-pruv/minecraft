@@ -374,7 +374,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const reperes = W.CONF_NEUF.reperes.filter((l) => !/mobilier/.test(l.name));
     const wm = new World();
     const feuillage = new Set([BLOCK.LEAVES, BLOCK.LOG]);
-    const fautes = [], mesures = [], paris = [];
+    const fautes = [], mesures = [], paris = [], hauteurs = {};
     let declaresVus = 0;
     for (const lm of reperes) {
       const v = villeDe(lm.x, lm.z);
@@ -399,6 +399,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       hs.sort((a, b) => a - b);
       const med = hs.length >= 40 ? hs[hs.length >> 1] : null;
       const cle = `${v.nom}|${lm.name}`;
+      hauteurs[cle] = h;
       if (v.nom === 'Paris') {
         paris.push({ nom: lm.name, h, med, sol: wm.terrainHeight(lm.x, lm.z), echelle: EM ? EM.echelleDe('Paris', lm.name) : null });
       }
@@ -419,6 +420,51 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     verifier('chaque exception déclarée nomme un monument mesuré',
       introuvables.length === 0,
       introuvables.length ? `introuvables : ${introuvables.join(' · ')}` : `${Object.keys(declares).length} exceptions`);
+
+    // LE LOT 3, LES VILLES ENGENDRÉES (v342) : plus aucune dette déclarée. Sur
+    // l'ancien code `BAS_DECLARES` en porte quarante-sept, de St-Pierre au
+    // Cabildo ; remis à l'échelle du ciel de leur ville, ils en sortent tous.
+    const lot3 = Object.entries(declares).filter(([, d]) => /lot 3/.test(d.lot || '')).map(([k]) => k);
+    verifier('les monuments des villes engendrées ne sont plus une dette',
+      lot3.length === 0, lot3.length ? `${lot3.length} encore en dette : ${lot3.slice(0, 6).join(' · ')}…` : 'aucune');
+
+    // ET LE CIEL GARDE SON ORDRE — le piège du premier jet de la v335 (les
+    // Invalides au-dessus de la tour Eiffel). Dans chaque ville remise à son
+    // ciel, un monument PLUS BAS dans la vraie ville ne dépasse jamais un plus
+    // haut : ni un autre monument remis à l'échelle, ni un repère que la
+    // livraison n'a pas touché. Les hauteurs vraies des repères fixes sont
+    // écrites ici (mètres) ; celles des monuments étirés viennent du module.
+    // La grande roue du Prater (65 m, 16 blocs) n'y est pas : une roue ne
+    // s'étire pas, et la Hofburg (30 m, 21 blocs) la dépasse — déclaré dans
+    // `TASKS.md`.
+    const FIXES = { 'Rome|Colisée': 48, 'Pise|Tour de Pise': 56, 'Agra|Taj Mahal': 73,
+      'Berlin|Fernsehturm': 368, 'Vienne|Stephansdom': 136, 'Florence|Palazzo Vecchio': 94,
+      'Toronto|La CN Tower': 553,
+      // Les fûts d'un bloc qui ne montent pas : la courbe de leur ville passe
+      // dessous (le `k` de `CIELS`). Et ceux qui montent pour l'ordre, écrits
+      // ici aussi : en retirer un de la table fait rougir l'inversion.
+      'Amsterdam|Westerkerk': 85, 'Prague|Saint-Guy': 99, 'Prague|L\'horloge astronomique': 70,
+      'Istanbul|La tour de Galata': 67, 'Stockholm|L\'hôtel de ville': 106,
+      'Jérusalem|Le dôme du Rocher': 35, 'Jérusalem|La tour de David': 30,
+      'Los Angeles|L\'hôtel de ville': 138, 'Mexico|La Torre Latino': 183, 'Buenos Aires|L\'Obélisque': 68,
+      'Berlin|Berliner Dom': 98, 'Singapour|Marina Bay Sands': 200, 'Bangkok|Wat Arun': 82,
+      'Delhi|Rashtrapati Bhavan': 55 };
+    const EV = EM && EM.ECHELLES_VILLES ? EM.ECHELLES_VILLES : {};
+    const ciel = [...new Map([...Object.entries(EV).map(([k, e]) => [k, e.vraie]), ...Object.entries(FIXES)])]
+      .filter(([k]) => hauteurs[k] != null);
+    const inversions = [];
+    for (const [a, va] of ciel) for (const [b, vb] of ciel) {
+      if (a.split('|')[0] !== b.split('|')[0] || va >= vb) continue;
+      if (hauteurs[a] > hauteurs[b]) inversions.push(`${a} (${va} m) ${hauteurs[a]} > ${b.split('|')[1]} (${vb} m) ${hauteurs[b]}`);
+    }
+    const ecartsCible = Object.keys(EV).filter((k) => hauteurs[k] != null)
+      .map((k) => [k, EM.echelleDe(...k.split('|')).cible]).filter(([k, c]) => hauteurs[k] !== c)
+      .map(([k, c]) => `${k} ${hauteurs[k]} pour ${c}`);
+    verifier('chaque ville engendrée garde l\'ordre de son vrai ciel',
+      Object.keys(EV).length > 40 && inversions.length === 0 && ecartsCible.length === 0,
+      `${Object.keys(EV).length} monuments à l'échelle de leur ville`
+      + (inversions.length ? ` — INVERSÉS : ${inversions.join(' · ')}` : '')
+      + (ecartsCible.length ? ` — HORS CIBLE : ${ecartsCible.join(' · ')}` : ''));
 
     // PARIS À L'ÉCHELLE DU CIEL : un bloc pour un mètre jusqu'à la corniche,
     // puis la courbe qui mène la tour Eiffel (330 m) à soixante-neuf. Les
@@ -835,7 +881,11 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         if (enVille(x, z)) continue;
         const h = w.terrainHeight(x, z);
         for (let y = Math.max(0, W.WATER_LEVEL - 4); y <= h + 1; y++) {
-          const id = w.getBlock(x, y, z), id0 = sans.getBlock(x, y, z);
+          // un arbre n'est pas la forme du sol : depuis la v340 il ne pousse
+          // plus sur une crête de roche ni sur une grève, et le monde « sans »
+          // la règle le garde — on compare le relief, troncs et feuilles à part
+          const arbre = (q) => q === BLOCK.LOG || q === BLOCK.BIRCH || q === BLOCK.LEAVES ? BLOCK.AIR : q;
+          const id = arbre(w.getBlock(x, y, z)), id0 = arbre(sans.getBlock(x, y, z));
           if ((BLOCK_INFO[id]?.solid ?? false) !== (BLOCK_INFO[id0]?.solid ?? false)) r.forme++;
           else if (id !== id0) r.matiere++;
         }
@@ -871,6 +921,112 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   verifier('et la règle ne change que la matière : même forme, bloc pour bloc',
     falaises.forme === 0 && falaises.matiere > 500,
     `${falaises.forme} blocs de forme différente, ${falaises.matiere} blocs de matière différente`);
+
+  // LES ARBRES AU BORD (v340) — sous node, six cents morceaux de campagne
+  // tirés comme ci-dessus. Sur `origin/main` (v332), `sonde-arbres-bord.cjs`
+  // rend 135 et 168 arbres sur de la roche, 6 sur du sable et 3 au-dessus d'un
+  // puits de grotte, sur 12 700 à 12 900 arbres de 4 000 morceaux : la v326
+  // avait changé la matière de la crête sans le dire à `treeAt`. Le second
+  // verdict garde ce qu'on ne veut pas perdre : tout arbre sur l'herbe du monde
+  // SANS la règle est encore là, au tronc près.
+  const arbresAuBord = await (async () => {
+    const { BLOCK } = await import('../src/blocks.js');
+    const { dansVilleMonde } = await import('../src/villesmonde.js');
+    const { lieuxDuMonde } = await import('../src/mondes.js');
+    const W = await import('../src/world.js');
+    const sans = new W.World();
+    sans.conf = { ...W.CONF_NEUF, falaises: false };
+    const lieux = lieuxDuMonde().filter((l) => Number.isFinite(l.x));
+    let g = 23; const alea = () => (g = (g * 1103515245 + 12345) % 2147483648) / 2147483648;
+    const enVille = (x, z) => !!w.cityAt(x, z) || dansVilleMonde(x, z);
+    const r = { morceaux: 0, arbres: 0, surHerbe: 0, ailleurs: {}, avant: 0, gardes: 0 };
+    while (r.morceaux < 600) {
+      const l = lieux[Math.floor(alea() * lieux.length)];
+      const a = alea() * Math.PI * 2, d = 120 + alea() * 780;
+      const bx = Math.floor((l.x + Math.cos(a) * d) / 16) * 16, bz = Math.floor((l.z + Math.sin(a) * d) / 16) * 16;
+      if (enVille(bx + 8, bz + 8)) continue;
+      r.morceaux++;
+      for (let z = bz; z < bz + 16; z++) for (let x = bx; x < bx + 16; x++) {
+        const t = w.treeAt(x, z), t0 = sans.treeAt(x, z);
+        if (t && t.kind !== 3) {
+          r.arbres++;
+          const id = w.getBlock(x, t.h, z);
+          const tronc = w.getBlock(x, t.h + 1, z);
+          if (id === BLOCK.GRASS && (tronc === BLOCK.LOG || tronc === BLOCK.BIRCH)) r.surHerbe++;
+          else r.ailleurs[id] = (r.ailleurs[id] || 0) + 1;
+        }
+        // un arbre du monde sans la règle, sur l'herbe du monde AVEC la règle
+        if (t0 && t0.kind !== 3 && w.getBlock(x, t0.h, z) === BLOCK.GRASS && w.getBlock(x, t0.h - 1, z) !== BLOCK.AIR) {
+          r.avant++;
+          if (t && t.h === t0.h && t.trunk === t0.trunk) r.gardes++;
+        }
+      }
+      if (r.morceaux % 100 === 0) { w.oublierLoinDe?.(1e6, 1e6, 1); sans.oublierLoinDe?.(1e6, 1e6, 1); }
+    }
+    return r;
+  })();
+  verifier('un arbre ne pousse ni sur une crête de roche, ni sur une grève, ni au-dessus d\'un puits',
+    arbresAuBord.arbres > 1000 && arbresAuBord.surHerbe === arbresAuBord.arbres,
+    `${arbresAuBord.arbres - arbresAuBord.surHerbe} arbres ailleurs que sur l'herbe (${JSON.stringify(arbresAuBord.ailleurs)}) sur ${arbresAuBord.arbres}, ${arbresAuBord.morceaux} morceaux`);
+  verifier('et la forêt sur l\'herbe reste où elle était, tronc pour tronc',
+    arbresAuBord.avant > 1000 && arbresAuBord.gardes === arbresAuBord.avant,
+    `${arbresAuBord.gardes} gardés sur ${arbresAuBord.avant}`);
+
+  // LES DÉSERTS CHAUDS (v341) — sous node. Le planisphère savait la terre et
+  // les montagnes, pas le climat : le cœur du Sahara était une prairie boisée.
+  // On pose quatre morceaux au cœur de cinq déserts réels (le point se
+  // retrouve par la projection, jamais en blocs écrits) et de quatre
+  // campagnes tempérées, et l'on compare au même monde SANS la règle.
+  const deserts = await (async () => {
+    const { BLOCK } = await import('../src/blocks.js');
+    const { cielDe, zDeLatitude } = await import('../src/mondes.js');
+    const W = await import('../src/world.js');
+    const sans = new W.World();
+    sans.conf = { ...W.CONF_NEUF, climat: false };
+    // le x d'une longitude, par dichotomie : `cielDe` est croissant en x
+    const point = (lat, lon) => {
+      const z = Math.round(zDeLatitude(lat));
+      let a = -80000, b = 80000;
+      for (let k = 0; k < 40; k++) { const m = (a + b) / 2; if (cielDe(m, z).lon < lon) a = m; else b = m; }
+      return { x: Math.round(a), z };
+    };
+    const lire = (sites) => {
+      const r = { colonnes: 0, sable: 0, herbe: 0, arbres: 0, forme: 0, differents: 0 };
+      for (const [lat, lon] of sites) {
+        const p = point(lat, lon);
+        for (let cx = 0; cx < 2; cx++) for (let cz = 0; cz < 2; cz++) {
+          const bx = Math.floor(p.x / 16) + cx, bz = Math.floor(p.z / 16) + cz;
+          for (let z = bz * 16; z < bz * 16 + 16; z++) for (let x = bx * 16; x < bx * 16 + 16; x++) {
+            const h = w.terrainHeight(x, z);
+            for (let y = Math.max(0, h - 4); y <= h + 8; y++) {
+              const a = w.getBlock(x, y, z), b = sans.getBlock(x, y, z);
+              if (a !== b) r.differents++;
+              const sol = (q) => q !== BLOCK.AIR && q !== BLOCK.WATER && q !== BLOCK.LOG && q !== BLOCK.BIRCH && q !== BLOCK.LEAVES;
+              if (y <= h && sol(a) !== sol(b)) r.forme++;
+            }
+            if (h <= W.WATER_LEVEL + 1 || h >= 58 || w.cityAt(x, z)) continue;
+            r.colonnes++;
+            const top = w.getBlock(x, h, z);
+            if (top === BLOCK.SAND) r.sable++; else if (top === BLOCK.GRASS) r.herbe++;
+            const t = w.getBlock(x, h + 1, z);
+            if (t === BLOCK.LOG || t === BLOCK.BIRCH) r.arbres++;
+          }
+        }
+      }
+      return r;
+    };
+    // Tamanrasset, le Rub al-Khali, Alice Springs, le Taklamakan, l'Atacama
+    const d = lire([[23, 6], [20.5, 50], [-23.7, 133.9], [39, 83], [-24, -69.4]]);
+    // le Kansas, l'Iowa, la Pampa, l'Ukraine
+    const v = lire([[38.5, -98.5], [42, -93.5], [-35, -61], [49, 32]]);
+    return { d, v };
+  })();
+  verifier('au cœur d\'un vrai désert, la campagne est de sable et sans arbre (Sahara, Arabie, Australie, Taklamakan, Atacama)',
+    deserts.d.colonnes > 1000 && deserts.d.sable >= deserts.d.colonnes * 0.95 && deserts.d.arbres === 0,
+    `${deserts.d.sable} de sable, ${deserts.d.herbe} d'herbe sur ${deserts.d.colonnes} colonnes, ${deserts.d.arbres} arbres`);
+  verifier('et ailleurs rien ne change ; dans le désert, la matière seule : même forme, bloc pour bloc',
+    deserts.v.colonnes > 1000 && deserts.v.differents === 0 && deserts.d.forme === 0 && deserts.v.herbe > deserts.v.colonnes * 0.5,
+    `campagnes tempérées : ${deserts.v.differents} blocs différents, ${deserts.v.herbe} colonnes d'herbe sur ${deserts.v.colonnes} ; déserts : ${deserts.d.forme} blocs de forme différente`);
 
   // LE MÉNAGE DU CIEL DE PARIS (v298) — PUR, sur un document fabriqué.
   //
@@ -1737,6 +1893,122 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         Object.values(r).every((v) => v.n > 50 && v.hors === 0 && v.hmax >= 9), txt(r));
       verifier('le bâti lointain se retire devant le vrai monde maillé',
         Object.values(r).every((v) => v.retires === 0), Object.entries(r).map(([k, v]) => `${k} ${v.retires}`).join(', '));
+    }
+
+    // LES FALAISES ET LES BERGES, VUES DE LOIN (v340). Le monde proche montre
+    // la roche d'une falaise et le sable d'une grève depuis la v326 ;
+    // `horizon.js` gardait le vert de la carte partout. On remplit un paysage
+    // lointain à la portée de l'iPad sur quatre sites de campagne (relief,
+    // côte, lacs) jusqu'au bout — relief PUIS règle des bords — et l'on
+    // compare chaque sommet de campagne à ce que la règle du générateur
+    // (`matiereDuBord`) dit de sa colonne : la couleur attendue est recalculée
+    // ICI, depuis la palette de la carte, pas lue dans le module.
+    {
+      const r = await tab.evaluate(async () => {
+        const { Horizon } = await import('./src/horizon.js');
+        const W = await import('./src/world.js');
+        const { MAP_COLORS } = await import('./src/carte.js');
+        const { BLOCK } = await import('./src/blocks.js');
+        const VM = await import('./src/villesmonde.js');
+        const w = window.__game.world;
+        const herbe = MAP_COLORS[BLOCK.GRASS], roc = MAP_COLORS[BLOCK.STONE];
+        const sites = [[600, 1400], [-3000, 2500], [4000, -800], [1500, 3500]];
+        const out = { regle: 0, justes: 0, herbe: 0, vertes: 0, appels: 0, rempliA: 0, exemple: null };
+        for (const [sx, sz] of sites) {
+          const h = new Horizon(w, 632);
+          let appels = 0, rempli = 0;
+          for (;;) {
+            appels++; h.maj(sx, sz, 6);
+            const e = h.etat();
+            if (!rempli && e.manquantes === 0) rempli = appels;
+            if ((e.manquantes === 0 && !(e.aRaffiner > 0)) || appels > 2000) break;
+          }
+          out.appels = Math.max(out.appels, appels); out.rempliA = Math.max(out.rempliA, rempli);
+          const N = h.N, col = h.geo.attributes.color.array, pos = h.geo.attributes.position.array;
+          for (let i = 0; i < N * N; i++) {
+            const x = pos[i * 3], z = pos[i * 3 + 2], y = h.hauteurs[i];
+            if (y <= W.WATER_LEVEL + 1 || y >= 58 || W.dansUneCalotte(z) || w.cityAt(x, z) || VM.dansVilleMonde(x, z) || h.bati[i] > 0) continue;
+            if (Math.abs(pos[i * 3 + 1] - (y + 0.5)) > 1e-3) continue;
+            // les biomes ronds ont leur sol à eux
+            if (Math.hypot(x - W.DESERT.x, z - W.DESERT.z) < W.DESERT.r || Math.hypot(x - W.MARS.x, z - W.MARS.z) < W.MARS.r
+              || Math.hypot(x - W.VOLCANO.x, z - W.VOLCANO.z) < W.VOLCANO.r) continue;
+            const th = (a, b) => w.terrainHeight(a, b);
+            const m = W.matiereDuBord(y, th(x + 1, z), th(x - 1, z), th(x, z + 1), th(x, z - 1));
+            let c = null;
+            if (m && m.top !== BLOCK.GRASS) c = MAP_COLORS[m.top];
+            else if (m && m.chute >= 2) c = [(herbe[0] + roc[0]) / 2, (herbe[1] + roc[1]) / 2, (herbe[2] + roc[2]) / 2];
+            const t = 0.72 + Math.min(Math.max(y, 0), 70) / 70 * 0.38;
+            const ecart = (q) => Math.max(...[0, 1, 2].map((k) => Math.abs(col[i * 3 + k] - Math.min(1, q[k] / 255 * t))));
+            if (c) {
+              out.regle++;
+              if (ecart(c) < 0.01) out.justes++;
+              else if (!out.exemple) out.exemple = { x, z, y, top: m.top, chute: m.chute, lu: [0, 1, 2].map((k) => +col[i * 3 + k].toFixed(3)) };
+            } else {
+              out.herbe++;
+              if (ecart(herbe) < 0.01) out.vertes++;
+            }
+          }
+          h.geo.dispose();
+        }
+        return out;
+      });
+      verifier('vu de loin, une falaise montre sa roche et une grève son sable, comme le monde proche',
+        r.regle > 50 && r.justes === r.regle,
+        `${r.justes}/${r.regle} sommets de roche ou de sable justes${r.exemple ? ', ex. ' + JSON.stringify(r.exemple) : ''}`);
+      verifier('et le reste de la campagne lointaine garde son herbe, et le relief arrive aussi vite',
+        r.herbe > 10000 && r.vertes === r.herbe && r.rempliA <= 40,
+        `${r.vertes}/${r.herbe} sommets d'herbe, relief rempli en ${r.rempliA} images de six millisecondes, règle finie en ${r.appels}`);
+    }
+
+    // LE DÉSERT, VU DE LOIN ET SUR LA CARTE (v341). Le générateur, le
+    // paysage lointain et la carte du monde lisent la MÊME question
+    // (`world.aride`) : au cœur du Sahara, un sommet lointain et un pixel de
+    // carte sont blonds ; au Kansas, verts.
+    {
+      const r = await tab.evaluate(async () => {
+        const { Horizon } = await import('./src/horizon.js');
+        const { cielDe, zDeLatitude } = await import('./src/mondes.js');
+        const w = window.__game.world, carte = window.__carte;
+        const point = (lat, lon) => {
+          const z = Math.round(zDeLatitude(lat));
+          let a = -80000, b = 80000;
+          for (let k = 0; k < 40; k++) { const m = (a + b) / 2; if (cielDe(m, z).lon < lon) a = m; else b = m; }
+          return { x: Math.round(a), z };
+        };
+        const blond = (c) => c[0] > c[1] && c[1] > c[2] * 1.1;     // le sable : R > G > B
+        const vert = (c) => c[1] > c[0] * 1.15 && c[1] > c[2] * 1.15;
+        const out = {};
+        for (const [nom, lat, lon] of [['sahara', 23, 6], ['kansas', 38.5, -98.5]]) {
+          const p = point(lat, lon);
+          const h = new Horizon(w, 200);
+          let n = 0;
+          while (n++ < 400 && h.maj(p.x, p.z, 1e9) > 0) { /* tout remplir */ }
+          const col = h.geo.attributes.color.array, N = h.N;
+          let blonds = 0, verts = 0, tous = 0;
+          for (let i = 0; i < N * N; i++) {
+            const y = h.hauteurs[i];
+            if (y <= 31 || y >= 58) continue;
+            tous++;
+            const c = [col[i * 3], col[i * 3 + 1], col[i * 3 + 2]];
+            if (blond(c)) blonds++; else if (vert(c)) verts++;
+          }
+          h.geo.dispose();
+          let cb = 0, cv = 0, ct = 0;
+          for (let k = 0; k < 64; k++) {
+            const x = p.x + (k % 8) * 23 - 80, z = p.z + Math.floor(k / 8) * 23 - 80, hh = w.terrainHeight(x, z);
+            if (hh <= 31 || hh >= 48 || !carte) continue;
+            ct++;
+            const c = carte.couleur(x, z, hh, false, false);
+            if (blond(c)) cb++; else if (vert(c)) cv++;
+          }
+          out[nom] = { tous, blonds, verts, ct, cb, cv };
+        }
+        return out;
+      });
+      verifier('vu de loin et sur la carte, le désert est de sable et le Kansas vert',
+        r.sahara.tous > 500 && r.sahara.blonds >= r.sahara.tous * 0.9 && r.sahara.ct > 20 && r.sahara.cb >= r.sahara.ct * 0.9
+          && r.kansas.verts >= r.kansas.tous * 0.8 && r.kansas.cv >= r.kansas.ct * 0.8,
+        JSON.stringify(r));
     }
 
     // La maison d'avant, écrite comme l'ancienne version l'aurait laissée.
