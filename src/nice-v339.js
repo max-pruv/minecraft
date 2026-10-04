@@ -1,3 +1,11 @@
+// NICE TELLE QU'ELLE ÉTAIT JUSQU'À LA v339 — FIGÉE, ET JAMAIS MODIFIÉE.
+//
+// La v340 passe Nice à la règle du kit (`voirie.js`). Un bloc qu'un enfant a
+// posé avant cette date l'a été contre CETTE ville-ci : là où il y en a un (sa
+// colonne et ses huit voisines), le monde garde la ville d'avant (`world.js`,
+// `colonnesVilleAvant`) — la discipline de `londres-v332.js` (v339). Recopié à
+// l'octet depuis `nice.js` (inchangé jusqu'à la v339), seul cet en-tête est neuf.
+//
 // Nice.
 //
 // C'était un disque de maisons posé au bord de rien. Or Nice se reconnaît à
@@ -19,9 +27,8 @@
 // largeurs, elles, ne se projettent pas, elles se REDONNENT en blocs.
 
 import { BLOCK, CITY_BLOCK, DECOR_START, ARCHI } from './blocks.js';
-import { rangerVoies, solDesVoies, fabriqueCircuits, reculDesAvenues } from './voies.js';
+import { rangerVoies, solDesVoies, fabriqueCircuits } from './voies.js';
 import { positionDe } from './mondes.js';
-import { sectionDeRue } from './voirie.js';
 
 const uni = (c) => DECOR_START + c * 10;
 const damier = (c) => DECOR_START + c * 10 + 3;
@@ -55,11 +62,6 @@ export const BLOCS_PAR_KM = 30;
 const K = BLOCS_PAR_KM / 10;
 const k = (n) => n * K;
 const pk = ([u, v]) => [k(u), k(v)];
-// La section des rues, demandée au kit (v340) — voir `ARTERES` plus bas.
-const COLLECTRICE = sectionDeRue('collecteur');
-const LOCALE = sectionDeRue('locale');
-export const SECTIONS_NICE = { collecteur: COLLECTRICE, locale: LOCALE };
-export const PORTEE_FEUX_NICE = Math.ceil(Math.SQRT2 * (COLLECTRICE.chaussee / 2 + 1.5));
 // La place Masséna : le point où tout se croise, et d'où tout se mesure.
 const MASSENA = { u: 0, v: 0 };
 const de = (dx, dz) => [
@@ -226,23 +228,11 @@ export const lieuxDeNice = () => LIEUX_NICE
 // fait un bloc de chaussée, une rue de la ville neuve deux, et les îlots
 // passent de deux blocs et demi à cinq — de quoi poser une façade ET une
 // maison derrière.
-//
-// À LA RÈGLE DU KIT (v340) : la rue de la ville neuve et de Cimiez est une
-// COLLECTRICE, la ruelle du Vieux-Nice une LOCALE — « une ruelle héritée est
-// une rue locale » (Paris, v303) —, et le pas grandit dans le rapport des
-// emprises : SI L'ÉLARGISSEMENT MANGE LES BÂTIMENTS, ON RECOMPOSE LES LOTS.
-// Les valeurs écrites ici sont celles de la v203 et ne donnent plus que le
-// rapport.
-const trameALaRegle = (t, sec) => {
-  const w = sec.chaussee / 2, s = w + sec.trottoir;
-  return { ...t, type: sec.type, w, s, pu: t.pu * s / t.s, pv: t.pv * s / t.s };
-};
 const TRAMES = {
-  vieux: trameALaRegle({ ang: 0.34, pu: 5, pv: 4.5, cu: k(5), cv: k(3), w: 0.6, s: 1.1 }, LOCALE),
-  neuve: trameALaRegle({ ang: 0, pu: 9, pv: 8, cu: k(-6), cv: k(-4), w: 1.0, s: 1.8 }, COLLECTRICE),
-  cimiez: trameALaRegle({ ang: 0.15, pu: 11, pv: 10, cu: k(3), cv: k(-17), w: 0.9, s: 1.6 }, COLLECTRICE),
+  vieux: { ang: 0.34, pu: 5, pv: 4.5, cu: k(5), cv: k(3), w: 0.6, s: 1.1 },
+  neuve: { ang: 0, pu: 9, pv: 8, cu: k(-6), cv: k(-4), w: 1.0, s: 1.8 },
+  cimiez: { ang: 0.15, pu: 11, pv: 10, cu: k(3), cv: k(-17), w: 0.9, s: 1.6 },
 };
-export const TRAMES_NICE = TRAMES;
 
 // Les frontières entre quartiers sont du plan, elles aussi.
 const LIMITE_CIMIEZ = k(-10);
@@ -257,25 +247,13 @@ function trameDeNice(u, v) {
 const pt = (nom) => [lieu(nom).u, lieu(nom).v];
 const lieu = (nom) => LIEUX_NICE.find((p) => p.nom === nom);
 
-// LES LARGEURS NE SE PROJETTENT PAS, ELLES SE REDONNENT — ET DEPUIS LA v340
-// ELLES SE DEMANDENT AU KIT (`voirie.js`, `roadSection`, un bloc pour un
-// mètre), comme Paris (v303), les villes engendrées (v307) et Londres (v339).
-// Le type se lit à la FONCTION : deux voies (COLLECTRICE) pour les artères de
-// la vraie ville — la Promenade, les boulevards de la ville neuve, Jean-Médecin
-// —, une (LOCALE, 3,1 m et trottoirs de 2 m) pour la rue de France, à sens
-// unique, et les rues de quartier. Les valeurs `a(l)` d'avant donnaient 2,9 à
-// 5,8 blocs de chaussée ; l'ancien `l` de chaque ligne a disparu, une largeur
-// écrite à côté de la règle finirait par la contredire.
-const ARTERES = new Set([
-  'Promenade des Anglais', 'Quai des États-Unis', 'Boulevard Dubouchage', 'Boulevard Victor-Hugo',
-  'Avenue Jean-Médecin', 'Avenue Thiers', 'Boulevard Gambetta', 'Avenue de la Californie',
-  'Boulevard René-Cassin', 'Boulevard de Cimiez', 'Avenue Malausséna', 'Boulevard Carabacel',
-]);
-export const sectionDeVoieNice = (nom) => (ARTERES.has(nom) ? COLLECTRICE : LOCALE);
-const aLaRegle = (voie) => {
-  const sec = sectionDeVoieNice(voie.nom);
-  return { ...voie, type: sec.type, l: sec.chaussee / 2, t: sec.trottoir };
-};
+// LES LARGEURS NE SE PROJETTENT PAS, ELLES SE REDONNENT. `l` est la
+// demi-largeur de la chaussée en blocs, `t` le trottoir de chaque côté ; la
+// Promenade est la plus large, et son trottoir côté mer est le plus large de
+// la ville — c'est lui, la promenade.
+const AVENUE = 2.4;
+const a = (l) => l * AVENUE;
+const TROTTOIR_AV = 1.2;
 // La chaussée de la Promenade passe à dix blocs derrière le rivage : quatre
 // de galets, trois de trottoir planté de palmiers, puis la route. La rue de
 // France court parallèle, douze blocs plus haut — entre les deux, la rangée
@@ -296,32 +274,32 @@ const VOIES = [
   // Le front de mer, d'ouest en est : la Promenade des Anglais, le quai des
   // États-Unis sous la colline, puis Rauba-Capeu qui contourne le cap jusqu'au
   // port.
-  { nom: 'Promenade des Anglais', pts: [-114, -78, -42, -12, 12].map(surPromenade) },
-  { nom: 'Quai des États-Unis', pts: [surPromenade(12), [27, 16], [39, 22]] },
-  { nom: 'Quai Rauba-Capeu', pts: [[39, 22], [42, 18], [40, -4]] },
+  { nom: 'Promenade des Anglais', l: a(1.2), t: 2.2, pts: [-114, -78, -42, -12, 12].map(surPromenade) },
+  { nom: 'Quai des États-Unis', l: a(0.9), t: 1.6, pts: [surPromenade(12), [27, 16], [39, 22]] },
+  { nom: 'Quai Rauba-Capeu', l: a(0.6), t: 1.2, pts: [[39, 22], [42, 18], [40, -4]] },
   // Le boulevard Carabacel descend du nord vers le port, et Dubouchage puis
   // Victor-Hugo traversent la ville neuve d'est en ouest, au nord de Masséna.
-  { nom: 'Boulevard Carabacel', pts: [[27, -15], [36, -8], [40, -4]] },
-  { nom: 'Boulevard Dubouchage', pts: [[-4, -15], [6, -15], [27, -15]] },
-  { nom: 'Boulevard Victor-Hugo', pts: [[-48, -15], [-4, -15]] },
+  { nom: 'Boulevard Carabacel', l: a(0.6), t: TROTTOIR_AV, pts: [[27, -15], [36, -8], [40, -4]] },
+  { nom: 'Boulevard Dubouchage', l: a(0.7), t: TROTTOIR_AV, pts: [[-4, -15], [6, -15], [27, -15]] },
+  { nom: 'Boulevard Victor-Hugo', l: a(0.7), t: TROTTOIR_AV, pts: [[-48, -15], [-4, -15]] },
   // Jean-Médecin monte de Masséna à la gare ; Thiers longe la gare vers
   // l'ouest ; Gambetta et Verdun redescendent vers la mer.
-  { nom: 'Avenue Jean-Médecin', pts: [[-4, -9], [-4, -30]] },
-  { nom: 'Avenue Thiers', pts: [[-4, -30], [-21, -30], [-48, -30]] },
-  { nom: 'Boulevard Gambetta', pts: [surPromenade(-48), [-48, -15], [-48, -30]] },
-  { nom: 'Avenue de Verdun', pts: [surPromenade(-12), [-9, -9]] },
+  { nom: 'Avenue Jean-Médecin', l: a(0.9), t: TROTTOIR_AV, pts: [[-4, -9], [-4, -30]] },
+  { nom: 'Avenue Thiers', l: a(0.7), t: TROTTOIR_AV, pts: [[-4, -30], [-21, -30], [-48, -30]] },
+  { nom: 'Boulevard Gambetta', l: a(0.6), t: TROTTOIR_AV, pts: [surPromenade(-48), [-48, -15], [-48, -30]] },
+  { nom: 'Avenue de Verdun', l: a(0.7), t: TROTTOIR_AV, pts: [surPromenade(-12), [-9, -9]] },
   // La rue de France, puis l'avenue de la Californie qui la prolonge vers
   // l'aéroport ; René-Cassin referme la boucle sur la Promenade à l'ouest.
-  { nom: 'Rue de France', pts: [[-9, -7], [-30, surFrance(-30)[1]], surFrance(-48)] },
-  { nom: 'Avenue de la Californie', pts: [surFrance(-48), surFrance(-84), surFrance(-114)] },
-  { nom: 'Boulevard René-Cassin', pts: [surFrance(-114), surPromenade(-114)] },
+  { nom: 'Rue de France', l: a(0.6), t: TROTTOIR_AV, pts: [[-9, -7], [-30, surFrance(-30)[1]], surFrance(-48)] },
+  { nom: 'Avenue de la Californie', l: a(0.6), t: TROTTOIR_AV, pts: [surFrance(-48), surFrance(-84), surFrance(-114)] },
+  { nom: 'Boulevard René-Cassin', l: a(0.6), t: TROTTOIR_AV, pts: [surFrance(-114), surPromenade(-114)] },
   // Le boulevard de Cimiez grimpe la colline depuis Dubouchage ; l'avenue des
   // Arènes en redescend vers Libération, et Malausséna — le prolongement de
   // Jean-Médecin au nord de la gare — ramène en ville.
-  { nom: 'Boulevard de Cimiez', pts: [[6, -15], [9, -33], [9, -51]] },
-  { nom: 'Avenue des Arènes de Cimiez', pts: [[9, -51], [-4, -51]] },
-  { nom: 'Avenue Malausséna', pts: [[-4, -51], [-4, -30]] },
-].map(aLaRegle);
+  { nom: 'Boulevard de Cimiez', l: a(0.7), t: TROTTOIR_AV, pts: [[6, -15], [9, -33], [9, -51]] },
+  { nom: 'Avenue des Arènes de Cimiez', l: a(0.6), t: TROTTOIR_AV, pts: [[9, -51], [-4, -51]] },
+  { nom: 'Avenue Malausséna', l: a(0.8), t: TROTTOIR_AV, pts: [[-4, -51], [-4, -30]] },
+];
 
 const BANDES = rangerVoies(VOIES);
 
@@ -448,18 +426,14 @@ export function solNice(x, z) {
   const c = Math.cos(t.ang), s = Math.sin(t.ang);
   const du = u - t.cu, dv = v - t.cv;
   const a = du * c - dv * s, b = du * s + dv * c;
-  // Une rue de la trame qui DOUBLE une avenue n'est pas tracée (v340) : la
-  // règle de Londres (v339, `reculDesAvenues` dans `voies.js`).
-  let d = Infinity;
-  const ra = Math.abs(a - Math.round(a / t.pu) * t.pu);
-  if (ra < t.s && !doubleUneAvenue(u, v, s, c)) d = ra;
-  const rb = Math.abs(b - Math.round(b / t.pv) * t.pv);
-  if (rb < t.s && rb < d && !doubleUneAvenue(u, v, c, -s)) d = rb;
+  const d = Math.min(
+    Math.abs(a - Math.round(a / t.pu) * t.pu),
+    Math.abs(b - Math.round(b / t.pv) * t.pv),
+  );
   if (d < t.w) return BITUME;
   if (d < t.s) return TROTTOIR;
   return null;
 }
-const doubleUneAvenue = reculDesAvenues(VOIES, COLLECTRICE);
 
 export function lotNiceLibre(x, z) {
   if (!surTerreNice(x, z)) return false;

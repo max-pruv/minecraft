@@ -2948,10 +2948,17 @@ l'embarquement a eu lieu, pas par une hypothèse.
   arrivent EN BIAIS (35° à 90°) restent — à mesurer en capture si l'une
   finit en impasse contre un îlot.
 
+- [ ] **NICE À LA RÈGLE DU KIT : CE QUI RESTE (v340).** Masséna 13,2 → 8,6 % de
+  lots, les Musiciens 20,4 → 14,5, le port 21,8 → 16,4 : les avenues du
+  centre se serrent autour de la place. Le Vieux-Nice passe aux rues LOCALES
+  (3,1 m, trottoirs de 2 m), comme les ruelles héritées de Paris ; ses vraies
+  ruelles sont piétonnes et plus étroites — la section `ruelle` du kit (sans
+  trottoir) ôterait ses réverbères, décision de Max comme pour les médinas.
+
 - [ ] **LES CINQ AUTRES VILLES BÂTIES À LA MAIN N'ONT PAS ÉTÉ ÉLARGIES (v271).**
-  Londres est faite en v339 (au-dessus). Restent, dans l'ordre : Nice, San
-  Francisco, Washington, Lille (dans la fenêtre d'empreinte). La méthode de
-  Londres se reprend telle quelle : figer la ville d'avant (`<ville>-vNNN.js`),
+  Londres est faite en v339, Nice en v340 (au-dessus). Restent, dans l'ordre :
+  San Francisco, Washington, Lille (dans la fenêtre d'empreinte). La méthode de
+  Londres se reprend telle quelle : figer la ville d'avant (`<ville>-v339.js`),
   type par fonction, trame recomposée et en recul des avenues, mobilier sur la
   section, la ville d'avant sous ce qu'un enfant a bâti.
   *(Entrée d'origine :)* Paris,

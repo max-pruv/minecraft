@@ -35,7 +35,7 @@
 //    butte de Primrose Hill d'où l'on voit toute la ville.
 
 import { BLOCK, CITY_BLOCK, DECOR_START, ARCHI } from './blocks.js';
-import { rangerVoies, solDesVoies, fabriqueCircuits } from './voies.js';
+import { rangerVoies, solDesVoies, fabriqueCircuits, reculDesAvenues } from './voies.js';
 import { positionDe } from './mondes.js';
 import { monumentBati } from './monuments.js';
 import { sectionDeRue } from './voirie.js';
@@ -682,38 +682,9 @@ export function solLondres(x, z) {
 // rue de la trame. Une rue de la trame qui COUPE une avenue reste : c'est par
 // elle qu'on y arrive. Mesuré sur tout le disque : 26,1 % de lots avant, 19,5
 // avec la règle du kit seule, 26,6 avec ce recul.
-const ILOT_MIN = 5;
-export const RECUL_TRAME = COLLECTRICE.emprise / 2 + ILOT_MIN + COLLECTRICE.chaussee / 2;
-const BANDE_RECUL = 8;
-const SEGS_RECUL = new Map();
-for (const voie of VOIES) {
-  for (let i = 0; i < voie.pts.length - 1; i++) {
-    const [u0, v0] = voie.pts[i], [u1, v1] = voie.pts[i + 1];
-    const lg = Math.hypot(u1 - u0, v1 - v0) || 1;
-    const seg = { u0, v0, u1, v1, du: (u1 - u0) / lg, dv: (v1 - v0) / lg,
-      uMin: Math.min(u0, u1) - RECUL_TRAME, uMax: Math.max(u0, u1) + RECUL_TRAME };
-    const b0 = Math.floor((Math.min(v0, v1) - RECUL_TRAME) / BANDE_RECUL);
-    const b1 = Math.floor((Math.max(v0, v1) + RECUL_TRAME) / BANDE_RECUL);
-    for (let b = b0; b <= b1; b++) {
-      if (!SEGS_RECUL.has(b)) SEGS_RECUL.set(b, []);
-      SEGS_RECUL.get(b).push(seg);
-    }
-  }
-}
-const COS_PARALLELE = Math.cos(35 * Math.PI / 180);
-function doubleUneAvenue(u, v, eu, ev) {
-  const segs = SEGS_RECUL.get(Math.floor(v / BANDE_RECUL));
-  if (!segs) return false;
-  for (const g of segs) {
-    if (u < g.uMin || u > g.uMax) continue;
-    if (Math.abs(g.du * eu + g.dv * ev) < COS_PARALLELE) continue;
-    const lu = g.u1 - g.u0, lv = g.v1 - g.v0, l2 = lu * lu + lv * lv || 1;
-    let k = ((u - g.u0) * lu + (v - g.v0) * lv) / l2;
-    k = k < 0 ? 0 : k > 1 ? 1 : k;
-    if (Math.hypot(u - g.u0 - k * lu, v - g.v0 - k * lv) < RECUL_TRAME) return true;
-  }
-  return false;
-}
+// La règle vit dans `voies.js` depuis que Nice la partage (v340).
+const doubleUneAvenue = reculDesAvenues(VOIES, COLLECTRICE);
+export const RECUL_TRAME = doubleUneAvenue.recul;
 
 // Les emprises des monuments : aucune maison ne pousse dans la cour de
 // Buckingham ni sous le dôme de St Paul.

@@ -770,6 +770,24 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les rues de Nice à la règle du kit (v340) — une règle partagée se corrige pour toutes les villes qui la lisent
+
+Deux règles.
+
+- **LA MÉTHODE DE LONDRES SE REPREND TELLE QUELLE, ET ELLE VIT DANS `voies.js`.**
+  `reculDesAvenues(voies, artère, trame)` est la règle « une trame ne double pas
+  ses avenues », partagée par Londres, Nice et les suivantes. La ville d'avant
+  se fige (`nice-v339.js`) et `colonnesVilleAvant` (world.js) sert toutes les
+  villes passées au kit, chacune avec sa date (`VILLES_FIGEES`). Le témoin de
+  `plafond.js` est une fonction jouée ville par ville.
+- **UN RECUL SE COMPTE D'EMPRISE À EMPRISE.** La v339 posait le recul à la
+  demi-emprise de l'artère, plus `ILOT_MIN`, plus la demi-CHAUSSÉE de la rue de
+  la trame (13,9) : le lot entre les deux trottoirs n'avait alors que trois
+  blocs et demi. Le relevé ASCII du Sunset de San Francisco l'a montré (une
+  rue de la trame à seize blocs d'une avenue). Un îlot se mesure de trottoir à
+  trottoir : demi-emprise + `ILOT_MIN` + demi-emprise, 16,4. Corrigé dans la
+  règle partagée, Londres remesurée avec (26,6 → 28,7 %).
+
 ## Les rues de Londres à la règle du kit (v339) — un plan deux fois plus serré ne porte pas les mêmes rues
 
 La première des cinq villes bâties à la main restées hors règle (dette v271).

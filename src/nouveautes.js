@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 340,
+    titre: 'Les rues de Nice s\'élargissent',
+    puces: [
+      'La Promenade à deux voies',
+      'Des îlots plus grands dans la ville neuve',
+      'Londres garde encore plus d\'immeubles',
+    ],
+  },
+  {
     v: 339,
     titre: 'Les rues de Londres s\'élargissent',
     puces: [
@@ -69,7 +78,7 @@ export const NOUVEAUTES = [
     ],
   },
   {
-    v: 332,
+    v: 340,
     titre: 'L\'autoroute Vienne–Budapest',
     puces: [
       'De Vienne à Budapest en voiture',
@@ -78,7 +87,7 @@ export const NOUVEAUTES = [
     ],
   },
   {
-    v: 331,
+    v: 339,
     titre: 'Les villes se voient de loin',
     puces: [
       'En avion, les villes ont leurs immeubles',
