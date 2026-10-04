@@ -20,6 +20,39 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v340 — Conduire comme au cinéma
+
+**Pourquoi.** Max (4 octobre 2026) : « une grosse refonte de la façon de
+conduire… comme GTA ». Au volant, la caméra restait rivée à six blocs quatre
+derrière la voiture quelle que soit l'allure, le champ ne bougeait pas, la
+caisse ne penchait pas, les roues avant restaient droites, et l'on n'entendait
+ni les pneus ni un choc. Pire : dos à un mur collé au pare-chocs arrière, la
+caméra se posait DE L'AUTRE CÔTÉ du mur — l'ancienne recherche ne regardait
+qu'à partir de 3,2 blocs, par pas de 0,6.
+
+**Ce que ça change.** La caméra recule et s'abaisse un peu quand on prend de
+la vitesse, et son champ s'ouvre (75° à l'arrêt, 84° à vingt-six blocs par
+seconde, jusqu'à 89° à soixante) ; elle suit avec un retard élastique, regarde
+la voiture et un peu dans le virage, ne traverse plus les murs, et tremble au
+choc. La voiture vit : la caisse penche vers l'extérieur du virage, le nez se
+lève à l'accélération et plonge au freinage, les roues avant braquent, les
+roues roulent à la vitesse vraie (elles se figeaient au-delà de deux blocs par
+image). Le moteur passe ses rapports et gronde quand il tire ; les pneus
+crissent en dérive, au freinage fort et dans un virage trop vite ; un choc
+s'entend ; un moteur abîmé tousse, en panne il se tait, en feu il crépite —
+ces trois-là attendent les champs que publieront la physique et les dégâts.
+Les avions gardent leur caméra à l'identique.
+
+**Ce qui le prouve.** Sept témoins neufs dans `monte.js`, une seule mesure
+partagée avec la sonde (`sensations-mesure.js`) sur une plate-forme posée dans
+le ciel. Sur `origin/main` : champ 75 → 75, recul 6,4 → 6,4, caisse 0, roue 0,
+pneus ×1,6, choc 0,022 contre 0,022, caméra immobile, et la caméra derrière le
+mur. Ici : champ 75 → 83,8, recul 6,4 → 7,4, caisse −0,070 vers l'extérieur
+(lue dans la matrice monde), roue +0,50 rad vers l'intérieur, pneus ×370, choc
+0,27 contre 0,027, secousse 0,23 bloc, caméra du côté de la voiture. Le coût
+se mesure en ordre alterné sur la même page (`?sensations=0` rejoue l'ancienne
+conduite) : aucun appel de dessin ni programme de shader de plus (67 des deux
+côtés).
 ## v339 — Les rues de Londres à la règle du kit
 
 **Pourquoi.** Paris est passé à la section de rue du kit (`roadSection`) en

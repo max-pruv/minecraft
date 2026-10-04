@@ -118,7 +118,7 @@ export function appelEnCours(oui) {
   if (!ctx) return;              // le contexte naîtra à la bonne fréquence au premier besoin
   const typeMoteur = moteur ? moteur.type : null;
   const station = radio ? STATIONS.indexOf(radio.station) : -1;
-  if (moteur) { try { moteur.source.stop(); moteur.osc1.stop(); moteur.osc2.stop(); if (moteur.siffle) moteur.siffle.stop(); } catch { /* déjà */ } moteur = null; }
+  if (moteur) { arreterMoteur(moteur); moteur = null; }
   if (radio) { clearInterval(radio.minuteur); radio = null; }
   const vieux = ctx;
   ctx = null; maitre = null; bruitTampon = null;   // un tampon vit à la fréquence de son contexte
@@ -181,14 +181,20 @@ export function moteurDemarre(type = 'voiture') {
   filtre.Q.value = r.q;
   const gainS = c.createGain();
   gainS.gain.value = 0.0001;
-  source.connect(filtre).connect(gainS).connect(sortie);
+  // LA TOUX ET LA PANNE (v340) passent par un robinet commun au souffle et aux
+  // harmoniques : un moteur qui tousse se tait tout entier un instant, il ne
+  // garde pas son souffle pendant que ses harmoniques s'éteignent.
+  const toux = c.createGain();
+  toux.gain.value = 1;
+  toux.connect(sortie);
+  source.connect(filtre).connect(gainS).connect(toux);
   source.start();
 
   const osc1 = c.createOscillator(); osc1.type = 'sawtooth'; osc1.frequency.value = r.base;
   const osc2 = c.createOscillator(); osc2.type = 'sawtooth'; osc2.frequency.value = r.base * r.harmo;
   const gainH = c.createGain(); gainH.gain.value = 0.0001;
   const doux = c.createBiquadFilter(); doux.type = 'lowpass'; doux.frequency.value = 1400;
-  osc1.connect(doux); osc2.connect(doux); doux.connect(gainH).connect(sortie);
+  osc1.connect(doux); osc2.connect(doux); doux.connect(gainH).connect(toux);
   osc1.start(); osc2.start();
 
   let siffle = null, gainSif = null;
@@ -198,17 +204,143 @@ export function moteurDemarre(type = 'voiture') {
     siffle.connect(gainSif).connect(sortie);
     siffle.start();
   }
-  moteur = { type, r, source, filtre, gainS, osc1, osc2, gainH, siffle, gainSif };
+  // LES PNEUS (v340), montés UNE fois avec le moteur d'une voiture et
+  // silencieux tant qu'ils ne glissent pas : un souffle serré autour de trois
+  // kilohertz et un sifflement tonal qui tremble — c'est le tremblement qui
+  // fait un crissement plutôt qu'une bouilloire.
+  let pneus = null;
+  if (type === 'voiture') {
+    const sp = c.createBufferSource(); sp.buffer = tamponDeBruit(c); sp.loop = true;
+    const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2900; bp.Q.value = 4;
+    const sif = c.createOscillator(); sif.type = 'triangle'; sif.frequency.value = 1850;
+    const trem = c.createOscillator(); trem.frequency.value = 17;
+    const tremG = c.createGain(); tremG.gain.value = 60;
+    trem.connect(tremG).connect(sif.frequency);
+    const gainSifP = c.createGain(); gainSifP.gain.value = 0.35;
+    const gain = c.createGain(); gain.gain.value = 0.0001;
+    sp.connect(bp).connect(gain);
+    sif.connect(gainSifP).connect(gain);
+    gain.connect(sortie);
+    sp.start(); sif.start(); trem.start();
+    pneus = { sp, sif, trem, gain };
+  }
+  moteur = { type, r, source, filtre, gainS, osc1, osc2, gainH, siffle, gainSif, toux, pneus,
+    prochaineToux: 0, feu: null };
   moteurRegime(0);
   return true;
+}
+
+// LA VOITURE EN ENTIER (v340), appelée à chaque image depuis `sensations.js` :
+// tout se règle par `setTargetAtTime` ou se PROGRAMME contre l'horloge du
+// contexte audio — rien ne se crée par image, sauf une étincelle de feu
+// programmée à l'avance, comme une note de radio.
+//
+//   regime      0..1, rapports compris (la vitesse de la voiture)
+//   charge      0..1, ce que le moteur tire (l'accélération)
+//   crissement  0..1, les pneus qui glissent
+//   sante       0..1, le moteur abîmé tousse d'autant plus souvent
+//   panne       le moteur se tait
+//   feu         le crépitement des flammes
+export function voitureSons({ regime = 0, charge = 0, crissement = 0, sante = 1, panne = false, feu = false } = {}) {
+  if (!moteur || !ctx) return;
+  moteurRegime(regime, charge);
+  const t = ctx.currentTime;
+  if (moteur.pneus) moteur.pneus.gain.gain.setTargetAtTime(0.0001 + 0.11 * Math.max(0, Math.min(1, crissement)), t, 0.05);
+  // LA PANNE TAIT LE MOTEUR, LA TOUX LE COUPE PAR À-COUPS. Un moteur à moitié
+  // mort tousse toutes les une à deux secondes ; à peine touché, presque
+  // jamais. Chaque toux est une coupure de deux dixièmes, programmée.
+  if (panne) {
+    moteur.toux.gain.cancelScheduledValues(t);
+    moteur.toux.gain.setTargetAtTime(0.0001, t, 0.12);
+    moteur.enPanne = true;
+  } else {
+    if (moteur.enPanne) { moteur.toux.gain.cancelScheduledValues(t); moteur.toux.gain.setTargetAtTime(1, t, 0.1); moteur.enPanne = false; }
+    if (sante < 0.6 && t >= moteur.prochaineToux) {
+      const g = moteur.toux.gain;
+      g.setValueAtTime(1, t + 0.02);
+      g.linearRampToValueAtTime(0.08, t + 0.06);
+      g.linearRampToValueAtTime(0.9, t + 0.18);
+      g.linearRampToValueAtTime(0.15, t + 0.24);
+      g.linearRampToValueAtTime(1, t + 0.4);
+      const ecart = 0.5 + 3.5 * Math.max(0, sante) / 0.6;
+      moteur.prochaineToux = t + ecart * (0.6 + 0.8 * Math.random());
+    }
+  }
+  // LE FEU : un souffle grave continu et des étincelles sèches, programmées un
+  // tiers de seconde d'avance. Le graphe se monte la première fois qu'il brûle.
+  if (feu) {
+    if (!moteur.feu) {
+      const s = ctx.createBufferSource(); s.buffer = tamponDeBruit(ctx); s.loop = true;
+      const f = ctx.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 900;
+      const g = ctx.createGain(); g.gain.value = 0.0001;
+      const sg = ctx.createBufferSource(); sg.buffer = tamponDeBruit(ctx); sg.loop = true;
+      const fg = ctx.createBiquadFilter(); fg.type = 'lowpass'; fg.frequency.value = 220;
+      const gg = ctx.createGain(); gg.gain.value = 0.0001;
+      s.connect(f).connect(g).connect(sortieAudio());
+      sg.connect(fg).connect(gg).connect(sortieAudio());
+      s.start(); sg.start();
+      moteur.feu = { s, sg, g, gg, prochain: t };
+    }
+    const F = moteur.feu;
+    F.gg.gain.setTargetAtTime(0.09, t, 0.3);
+    while (F.prochain < t + 0.33) {
+      const d = Math.max(F.prochain, t + 0.01), fort = 0.06 + 0.2 * Math.random();
+      F.g.gain.setValueAtTime(0.0001, d);
+      F.g.gain.exponentialRampToValueAtTime(fort, d + 0.004);
+      F.g.gain.exponentialRampToValueAtTime(0.0001, d + 0.03 + 0.05 * Math.random());
+      F.prochain = d + 0.04 + 0.16 * Math.random();
+    }
+  } else if (moteur.feu) {
+    moteur.feu.gg.gain.setTargetAtTime(0.0001, t, 0.3);
+    moteur.feu.prochain = t;
+  }
+}
+
+// LE CHOC (v340) : un coup sourd qui descend, un froissement de tôle, et pour
+// un choc fort une résonance métallique. C'est un ÉVÉNEMENT, pas une image :
+// il crée ses nœuds, les programme et les laisse s'éteindre, comme une note.
+export function bruitDeChoc(force = 0.5) {
+  const c = contexteAudio();
+  if (!c) return;
+  const f = Math.max(0.05, Math.min(1, force));
+  const t = c.currentTime, sortie = sortieAudio();
+  const o = c.createOscillator(); o.type = 'sine';
+  o.frequency.setValueAtTime(95, t); o.frequency.exponentialRampToValueAtTime(32, t + 0.25);
+  const go = c.createGain();
+  go.gain.setValueAtTime(0.0001, t);
+  go.gain.exponentialRampToValueAtTime(0.9 * f, t + 0.008);
+  go.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+  o.connect(go).connect(sortie);
+  o.start(t); o.stop(t + 0.4);
+  const s = c.createBufferSource(); s.buffer = tamponDeBruit(c);
+  const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 700 + 1800 * f;
+  const gs = c.createGain();
+  gs.gain.setValueAtTime(0.0001, t);
+  gs.gain.exponentialRampToValueAtTime(0.7 * f, t + 0.006);
+  gs.gain.exponentialRampToValueAtTime(0.0001, t + 0.22 + 0.2 * f);
+  s.connect(lp).connect(gs).connect(sortie);
+  s.start(t); s.stop(t + 0.5);
+  if (f > 0.35) {
+    const m = c.createOscillator(); m.type = 'square'; m.frequency.value = 1300 + 500 * Math.random();
+    const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1700; bp.Q.value = 9;
+    const gm = c.createGain();
+    gm.gain.setValueAtTime(0.0001, t);
+    gm.gain.exponentialRampToValueAtTime(0.12 * f, t + 0.01);
+    gm.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+    m.connect(bp).connect(gm).connect(sortie);
+    m.start(t); m.stop(t + 0.55);
+  }
 }
 
 // `regime` va de 0 (moteur au ralenti) à 1 (pleins gaz). Tout se fait par
 // `setTargetAtTime` : l'interpolation vit dans le fil audio, et appeler cette
 // fonction à chaque image ne coûte rien au fil principal.
-export function moteurRegime(regime) {
+export function moteurRegime(regime, charge = null) {
   if (!moteur || !ctx) return;
   const g = Math.max(0, Math.min(1, regime));
+  // LA CHARGE (v340) : un moteur qui tire gronde, un moteur sur sa lancée
+  // s'adoucit. Sans charge donnée (l'avion), on garde le dosage d'avant.
+  const ch = charge == null ? null : Math.max(0, Math.min(1, charge));
   const t = ctx.currentTime, k = 0.09;
   const r = moteur.r;
   // Le régime monte la fondamentale d'une octave et demie, pas plus : au-delà
@@ -216,12 +348,20 @@ export function moteurRegime(regime) {
   const f = r.base * (1 + 1.6 * g);
   moteur.osc1.frequency.setTargetAtTime(f, t, k);
   moteur.osc2.frequency.setTargetAtTime(f * r.harmo, t, k);
-  moteur.gainH.gain.setTargetAtTime(r.gainH * (0.35 + 0.65 * g), t, k);
+  moteur.gainH.gain.setTargetAtTime(r.gainH * (ch == null ? 0.35 + 0.65 * g : 0.3 + 0.45 * g + 0.45 * ch), t, k);
   moteur.filtre.frequency.setTargetAtTime(r.filtre * (1 + 1.1 * g), t, k);
   moteur.gainS.gain.setTargetAtTime(r.gainS * (0.4 + 0.6 * g), t, k);
   if (moteur.siffle) {
     moteur.siffle.frequency.setTargetAtTime(1200 + 1800 * g, t, k);
     moteur.gainSif.gain.setTargetAtTime(r.siffle * g * g, t, k);
+  }
+}
+
+function arreterMoteur(m) {
+  for (const n of [m.source, m.osc1, m.osc2, m.siffle,
+    m.pneus && m.pneus.sp, m.pneus && m.pneus.sif, m.pneus && m.pneus.trem,
+    m.feu && m.feu.s, m.feu && m.feu.sg]) {
+    if (n) { try { n.stop(); } catch { /* déjà arrêté */ } }
   }
 }
 
@@ -233,9 +373,9 @@ export function moteurCoupe() {
   }
   const m = moteur;
   moteur = null;
-  setTimeout(() => {
-    try { m.source.stop(); m.osc1.stop(); m.osc2.stop(); if (m.siffle) m.siffle.stop(); } catch { /* déjà arrêtés */ }
-  }, 400);
+  if (m.pneus) m.pneus.gain.gain.setTargetAtTime(0.0001, t, 0.06);
+  if (m.feu) { m.feu.g.gain.cancelScheduledValues(t); m.feu.g.gain.setTargetAtTime(0.0001, t, 0.06); m.feu.gg.gain.setTargetAtTime(0.0001, t, 0.06); }
+  setTimeout(() => arreterMoteur(m), 400);
 }
 
 // --- la radio ----------------------------------------------------------------
