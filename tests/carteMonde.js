@@ -841,7 +841,7 @@ const VRAIES_KM = [
       JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiA24 ? { nom: a1.convoiA24.nom, voitures: (a1.convoiA24.modeles || []).length } : 'aucun convoi A24',
         surRail: a1.surRail && a1.surRail.A24, entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'A24') }));
 
-    // L'I-45 (v335) : Dallas–Houston, la première route des États-Unis. Elle
+    // L'I-45 (v336) : Dallas–Houston, la première route des États-Unis. Elle
     // contourne Houston par l'est et y entre par le sud : au nord, la butte
     // de Houston faisait creuser chaque tracé au-delà de neuf blocs. Ses trois
     // ponts sont gardés par le témoin du joint (plafond.js), qui lit toutes

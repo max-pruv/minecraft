@@ -274,7 +274,7 @@ export const ROUTES = [
   // admissibles, UN sans pont — celui-ci : 1 317 blocs, déblai 3,9, remblai
   // 1,3, pente 0,061, zéro rail, zéro aérodrome.
   { nom: 'A24', villes: ['berlin', 'hambourg'], via: [[3932, -2036], [3560, -2192], [3189, -2348], [2858, -2584], [2819, -2595]], bord: { hambourg: 24 } },
-  // L'I-45 (v335), DALLAS–HOUSTON : la première route des États-Unis. Le
+  // L'I-45 (v336), DALLAS–HOUSTON : la première route des États-Unis. Le
   // pays entre les deux est ondulé — des croupes de dix à quinze blocs tous
   // les quelques centaines de blocs — et Houston est assise au pied d'une
   // butte au nord (44 à 57 blocs à quarante blocs de son bord, pour une ville
@@ -687,7 +687,7 @@ export function rubansDans(x0, z0, x1, z1) {
       if (pont || culee) {
         const lift = culee ? 0.01 : 0;
         out.push({ ...base, ya: ya + lift, yb: yb + lift, genre: 'tablier', o0: -L.demiEmprise, o1: L.demiEmprise, dy: 0 });
-        // UN PONT DANS UN COUDE (v335). Le ruban suit la direction du tronçon
+        // UN PONT DANS UN COUDE (v336). Le ruban suit la direction du tronçon
         // où le pas commence : au sommet d'une polyligne, entre la fin d'un
         // tronçon et le début du suivant, le côté EXTÉRIEUR du virage restait
         // un coin ouvert sur le vide — mesuré au premier pont de l'I-45, 402
