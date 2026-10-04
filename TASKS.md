@@ -498,6 +498,13 @@
   second dépend du premier) — REJOUÉE SEULE : branche ces deux-là, `origin/main`
   v318 la libération (programmes 17/25). Même intermittence de préparation des
   deux côtés, déjà déclarée (v267).
+- [ ] **LE PORTAIL DE LA v337 (Lyon–Marseille) : TROIS ROUGES, TOUS DÉJÀ
+  MESURÉS DES DEUX CÔTÉS.** `carteMonde.js` (l'A7 comprise), `plafond.js`
+  (joint : 0 trou sur 110 554 points) et `maj.js` verts. `carte.js` : la
+  flèche du GPS, gauche à 1,92 rad — la valeur de `origin/main` rejoué seul
+  (v327). `monte.js` : la téléportation (chauffe de New York expirée, 44/321)
+  et l'arrivée figée (3 850 ms · 30 %), rouges à l'identique des deux côtés
+  (v332).
 - [ ] **LE PORTAIL DE LA v336 (Dallas–Houston), DEUX FOIS.** Le premier a
   trouvé un VRAI trou (le joint du premier pont de l'I-45, dans un coude :
   402 points), corrigé dans `rubansDans` ; le second : `parishd.js`,
