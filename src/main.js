@@ -576,6 +576,17 @@ function materiauDeParis() {
 // morceaux par seconde quand voler en réclame cent soixante-cinq.
 const horizon = new Horizon(world, RAYON_HORIZON);
 scene.add(decor(horizon.objet()));
+// LE BÂTI LOINTAIN SE COUPE EN RENDU LOGICIEL, COMME LES OMBRES ET LA COUCHE
+// HD (v331). Mesuré en A/B sur la même page, en vol vers Paris à rr=12, ordre
+// alterné : 4,8 · 5,8 · 5,7 images par seconde avec, 15,0 · 17,6 · 11,6 sans
+// — du REMPLISSAGE de grands pavés que SwiftShader paie au processeur. Sur
+// une carte graphique, 3 000 pavés font 36 000 triangles dans un seul appel.
+// La teinte urbaine, elle, reste partout (elle ne coûte rien au rendu).
+// `?batiloin=1` le force, pour mesurer et pour les captures.
+{
+  const voulu = new URLSearchParams(location.search).get('batiloin');
+  horizon.bat.visible = voulu != null ? voulu !== '0' : !renduLogiciel();
+}
 
 // LA MIGRATION AVANT LE CHARGEMENT, jamais après : `loadEdits` lit ce que le
 // disque contient, et il doit déjà contenir les blocs remis à leur hauteur.
@@ -7568,6 +7579,7 @@ function frame(now) {
   // Le remplissage est borné en temps, comme le maillage ; la découpe — les
   // cases qu'on retire parce que le vrai monde les couvre — se refait à une
   // cadence en TEMPS RÉEL, jamais en `dt` (leçon de la v226).
+  horizon.sansNY = renduDansManhattan;   // Manhattan dessine ses propres silhouettes (v331)
   horizon.maj(player.pos.x, player.pos.z, 6);
   // La découpe se refait à une cadence en TEMPS RÉEL, et tout de suite si le
   // joueur a franchement tourné la tête — sinon le cône de vision découvrirait

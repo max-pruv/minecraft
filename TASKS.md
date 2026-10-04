@@ -19,6 +19,27 @@
   réglage d'ombres de l'appareil (éteintes sur tablette depuis v257) — 22
   programmes de moins ET une passe d'ombre de moins par image dans la ville la
   plus lourde du jeu, au prix des ombres de New York sur l'iPad.
+- [ ] **AU PORTAIL DE LA v331 (les villes au loin), TROIS ROUGES DÉJÀ
+  DÉCLARÉS, rejoués SEULS des deux côtés.** `monte.js` « l'écran ne se fige
+  pas en arrivant sur une ville » : branche 2 967 ms · 21,9 % (bâti lointain
+  coupé en rendu logiciel), `origin/main` 3 183 ms · 24,6 % — avant cette
+  coupure la branche rendait 3 683 ms · 45,6 %, et l'A/B (bâti visible 5 im/s,
+  caché 15) a nommé la cause. `manhattan.js` « le trou enlève aussi la
+  géométrie visible de la façade » 11 684 → 51 734 sur la branche, 14 460 →
+  51 734 sur `origin/main` ; « le taxi roule avec les contrôles tactiles »
+  rouge des deux côtés (`#ride-btn` caché, une bête). `carte.js` « la flèche
+  du GPS pointe vers la destination » rouge au portail, VERTE rejouée seule
+  sur la branche ET sur `origin/main` : intermittence à démonter.
+  Rebasé sur la v330, trois rouges de `monte.js` VONT ET VIENNENT d'un passage
+  à l'autre, jamais deux fois : « se téléporter dans une ville ne compile plus
+  de programmes » (chauffe de New York expirée, 163/321 au portail, 68/320 sur
+  `origin/main` rejoué seul — deux programmes `physical` de Manhattan, pas le
+  Lambert du paysage), « les passants ne sont plus plantés au milieu de la
+  chaussée » (Rome 4/18, portail seul), « le bouton Conduire s'offre tout
+  seul » (branche seule, le bouton disait « Monter à bord » : un métro à
+  portée). Preuve STRUCTURELLE (v291) : sur le banc, le bâti lointain est coupé
+  (rendu logiciel) et la livraison n'y ajoute qu'un test « est-ce une ville ? »
+  par sommet du paysage lointain (+0,05 µs).
 - [ ] **AU PORTAIL DE LA v319, LES DEUX ROUGES SONT DES DETTES DÉJÀ
   DÉCLARÉES.** `manhattan.js` « le trou enlève aussi la géométrie visible de la
   façade » 17 102 → 51 734 (mêmes nombres qu'au tableau plus bas) ; `monte.js`
@@ -3292,7 +3313,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   est intact. À reprendre : le faire voler au-dessus d'une ville, et remesurer
   les vitesses des avions sur le VRAI débit (42 morceaux/s, pas 154).
 
-- [ ] **Le paysage lointain montre le relief, pas les villes.** `terrainHeight`
+- [x] **Le paysage lointain montre le relief, pas les villes.** *(fait en v331 : teinte urbaine et bâti instancié, `horizon.js`)* `terrainHeight`
   ne sait rien des immeubles : au-delà des morceaux chargés, Paris apparaît en
   prairie. `cityAt` pourrait teinter les cases d'une ville en gris urbain pour
   quelques microsecondes par colonne — non mesuré, non fait.
