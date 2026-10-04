@@ -450,6 +450,21 @@
   second dépend du premier) — REJOUÉE SEULE : branche ces deux-là, `origin/main`
   v318 la libération (programmes 17/25). Même intermittence de préparation des
   deux côtés, déjà déclarée (v267).
+- [ ] **LE PORTAIL DE LA v331 (Vienne–Budapest), DOUBLE MESURE FAITE.** Six
+  suites aiguillées ; `carteMonde.js`, `plafond.js`, `carte.js` verts. Rouges :
+  `maj.js` (le fond de carte à la libération, personnages 6/9) et `monte.js`
+  (l'arrivée figée, 3 183 ms · 28,7 % ; la téléportation, chauffe de New York
+  à 59,9 s). REJOUÉES SEULES dans un arbre séparé : `monte.js` rouge à
+  l'identique des deux côtés (branche 3 783 ms · 31,6 %, chauffe expirée 44/320 ;
+  `origin/main` 3 467 ms · 28,8 %, chauffe expirée 68/320) ; `maj.js` : le fond
+  de carte rouge sur `origin/main`, vert sur la branche — l'intermittence
+  déclarée. Rejouées seules, la branche a rendu trois rouges de plus, verts au
+  portail et déjà déclarés comme dépendant de la cadence : le loader qui compte
+  ses fichiers (intermittent des deux côtés, ci-dessous), les deux témoins du
+  palier (10 images seulement, aucun verdict — même cause qu'en v315), et « la
+  voiture freine devant un piéton » (`voituresRue: 0`, la situation n'a pas eu
+  lieu). Preuve structurelle en plus : la livraison n'ajoute qu'une entrée au
+  registre des routes en Hongrie, qu'aucun de ces témoins n'approche.
 - [ ] **LE PORTAIL DE LA v315 (règle de la v195), DOUBLE MESURE FAITE.** Le
   premier portail a trouvé un vrai défaut (l'avenue de Mombasa, 19 pas pour
   20), corrigé. Le second : `carteMonde.js`, `plafond.js` (onze ponts, 71 164
