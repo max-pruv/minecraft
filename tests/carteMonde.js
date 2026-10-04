@@ -590,6 +590,7 @@ const VRAIES_KM = [
       out.convoiA1Nord = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A1 Nord') || null;
       out.convoiA24 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A24') || null;
       out.convoiI45 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'I-45') || null;
+      out.convoiA7 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A7') || null;
       // AUCUNE ROUTE NE CROISE NI NE LONGE UNE VOIE FERRÉE (v320) : l'A3 est la
       // première dont l'axe a un rail le long (l'ICE). On lit, pour TOUTES les
       // routes, chaque colonne de leur emprise (`routeEn` non nul) et l'on
@@ -852,6 +853,16 @@ const VRAIES_KM = [
       && ['dallas', 'houston'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'I-45' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7)),
       JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiI45 ? { nom: a1.convoiI45.nom, voitures: (a1.convoiI45.modeles || []).length } : 'aucun convoi I-45',
         surRail: a1.surRail && a1.surRail['I-45'], entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'I-45') }));
+
+    // L'A7 (v337) : Lyon–Marseille, l'autoroute du Soleil, à l'ouest du TGV
+    // qu'elle ne croise jamais. Ses trois ponts sont gardés par le témoin du
+    // joint (plafond.js).
+    verifier('l\'A7 relie Lyon à Marseille sans toucher le TGV, et des voitures entrent dans les deux villes par une rue propre',
+      !a1.absent && a1.segments >= 18 && !!a1.convoiA7 && a1.convoiA7.routier && (a1.convoiA7.modeles || []).length >= 10
+      && !!a1.surRail && !!a1.surRail.A7 && a1.surRail.A7[0] > 100 && a1.surRail.A7[1] === 0
+      && ['lyon', 'marseille'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'A7' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7)),
+      JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiA7 ? { nom: a1.convoiA7.nom, voitures: (a1.convoiA7.modeles || []).length } : 'aucun convoi A7',
+        surRail: a1.surRail && a1.surRail.A7, entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'A7') }));
 
     // DE VRAIS RAILS, EN RELIEF, ET DEUX VOIES (v281) ------------------------
     //
