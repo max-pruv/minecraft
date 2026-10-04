@@ -260,6 +260,20 @@ export const ROUTES = [
   // admissibles, sept sans pont ; celui-ci : 969 blocs, aucun pont, déblai
   // 3,6, remblai 1,4, pente 0,062, aucune colonne d'emprise sur le rail.
   { nom: 'A1 Nord', villes: ['milan', 'bologne'], via: [[2511, 2188], [2550, 2194], [2584, 2215], [2811, 2374], [3018, 2555], [3206, 2759]] },
+  // L'A24 (v334), BERLIN–HAMBOURG : la plaine de l'Elbe, basse et semée de
+  // mares, sans rail ni aérodrome sur l'axe. Hambourg a de l'eau qui touche
+  // son disque au nord-est (entre 20° et 50°, l'Alster et ses bras, à r − 10
+  // et r + 30) : par là, tout tracé posait un pont dans les quatre-vingts
+  // blocs de la porte. On entre donc par l'EST (−8°), où le relief est sec, et
+  // la porte se pose à vingt-quatre blocs du bord, là où l'avenue tient seize
+  // relevés sur seize sur la rue (à vingt, −8° n'en avait pas : la profondeur
+  // de la porte se MESURE, v310). Berlin par −156° (trente-huit blocs). Mesuré
+  // sous node (scratchpad cherche.mjs, qui appelle `profilDe` sur les points
+  // arrondis, v333) : 2 904 tracés, refus 2 249 coude · 346 remblai · 122 trop
+  // de ponts · 103 pont près d'une porte · 50 ponts proches ; trente-quatre
+  // admissibles, UN sans pont — celui-ci : 1 317 blocs, déblai 3,9, remblai
+  // 1,3, pente 0,061, zéro rail, zéro aérodrome.
+  { nom: 'A24', villes: ['berlin', 'hambourg'], via: [[3932, -2036], [3560, -2192], [3189, -2348], [2858, -2584], [2819, -2595]], bord: { hambourg: 24 } },
 ];
 
 // --- la section -----------------------------------------------------------------
