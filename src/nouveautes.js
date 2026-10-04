@@ -13,6 +13,9 @@ export const NOUVEAUTES = [
       'La voiture penche dans les virages',
       'Les roues avant tournent avec toi',
       'Les pneus crissent, les chocs s\'entendent',
+    ],
+  },
+  {
     v: 339,
     titre: 'Les rues de Londres s\'élargissent',
     puces: [

@@ -53,6 +53,9 @@ choc 0,90 contre 0,073, secousse 0,23 bloc, caméra du côté de la voiture. Le 
 se mesure en ordre alterné sur la même page (`?sensations=0` rejoue l'ancienne
 conduite) : aucun appel de dessin ni programme de shader de plus (67 des deux
 côtés).
+
+---
+
 ## v339 — Les rues de Londres à la règle du kit
 
 **Pourquoi.** Paris est passé à la section de rue du kit (`roadSection`) en
