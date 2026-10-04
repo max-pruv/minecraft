@@ -811,7 +811,7 @@ const VRAIES_KM = [
       JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiA1Sud ? { nom: a1.convoiA1Sud.nom, voitures: (a1.convoiA1Sud.modeles || []).length } : 'aucun convoi A1 Sud',
         surRail: a1.surRail && a1.surRail['A1 Sud'], entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'A1 Sud') }));
 
-    // LA M1 (v331) : Vienne–Budapest, la plaine du Danube.
+    // LA M1 (v332) : Vienne–Budapest, la plaine du Danube.
     verifier('la M1 relie Vienne à Budapest, et des voitures entrent dans les deux villes par une rue propre',
       !a1.absent && a1.segments >= 14 && !!a1.convoiM1 && a1.convoiM1.routier && (a1.convoiM1.modeles || []).length >= 10
       && !!a1.surRail && !!a1.surRail.M1 && a1.surRail.M1[0] > 100 && a1.surRail.M1[1] === 0
