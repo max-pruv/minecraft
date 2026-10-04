@@ -171,6 +171,22 @@ export const ROUTES = [
   // d'emprise ou de talus sur le rail, la gare ou son quai, l'aérodrome à 118
   // blocs au-delà de son disque, zéro repère.
   { nom: 'A3', villes: ['cologne', 'francfort'], via: [[1540, -961], [1544, -942], [1555, -925], [1572, -915], [2118, -573], [2152, -552]] },
+  // L'E1 (v323), KYOTO–NAGOYA, la Meishin : la seconde route qui a un rail le
+  // long de son axe — le Shinkansen va droit de Kyoto à Tokyo et traverse
+  // Nagoya à douze blocs de son centre, presque dans l'axe de la route (−14°
+  // contre −13°). On choisit un côté et l'on n'en change plus (v320) : le SUD,
+  // parce que les deux trames y ont une entrée propre — Kyoto par son axe est
+  // (0°, avenue de quatre-vingt-neuf blocs sur la rue), Nagoya par son axe
+  // ouest-sud-ouest (150°, vingt-huit blocs) — et qu'au nord du rail, Nagoya
+  // n'a qu'une avenue de dix blocs. Un étang coupe le sud de l'axe direct
+  // (52 130–52 150, z ≥ 8 384) : le second point de passage le contourne par
+  // le nord, et le tracé n'a aucun pont. Mesuré sous node (scratchpad
+  // nk3.mjs, qui appelle `profilDe` et `largeurA`) : 4 845 tracés admissibles
+  // sans pont à coudes ≤ 25° ; celui-ci : 327 blocs, coudes de 19°, déblai
+  // 5,4, remblai 0,8, pente 0,067, aucune colonne d'emprise ou de talus à
+  // moins de dix-neuf blocs du rail, aucun aérodrome à moins de 732 blocs,
+  // le premier repère à 77.
+  { nom: 'E1', villes: ['kyoto', 'nagoya'], via: [[52034, 8412], [52185, 8362]] },
 ];
 
 // --- la section -----------------------------------------------------------------

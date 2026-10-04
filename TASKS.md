@@ -255,6 +255,27 @@
   branche 3 · 3 · 2, `origin/main` 3 · 3 · 3. Même distribution ; le 5 est un
   tirage sous la charge du portail, et la dette de la v306 (deux ou trois
   programmes à l'arrivée) reste ouverte telle quelle.
+- [ ] **LE PORTAIL DE LA v323 (règle de la v195), DOUBLE MESURE FAITE.**
+  `plafond.js`, `maj.js`, `carte.js` verts ; `carteMonde.js` : le témoin de
+  l'E1 vert (rouge sur `origin/main` : « aucun convoi E1 », huit segments), et
+  le seul rouge est le tour des monuments de Paris déjà déclaré, au pas près
+  (`dur 6 · lus 597 · Tour Eiffel 4 · Invalides 2`). `monte.js` REJOUÉE SEULE
+  des deux côtés : « le bouton « Conduire cette voiture » s'offre tout seul »
+  rouge au portail (`🚇 Monter à bord` — la bouche de métro de la rive gauche
+  passe avant la voiture), VERT seul sur la branche ET sur `origin/main` : une
+  intermittence. « L'écran ne se fige pas en arrivant sur une ville » rouge
+  des deux côtés (branche 3 467 ms · 28,3 %, `origin/main` 2 817 · 22,2 %),
+  dette déjà déclarée. NEUF ET DÉCLARÉ : « et elle ralentit assez pour qu'on
+  puisse la rejoindre » rouge des deux côtés à l'identique (9,1 m/s sur la
+  branche, 9,0 sur `origin/main` au plus lent) — en production, sans rapport
+  avec une route au Japon ; à démonter (quel convoi, quelle cadence).
+  SECOND PORTAIL, après rebase sur la v321 (le GPS) : `carte.js` rouge en
+  cascade (l'appui long décliné « retard » puis « pointeurs 0 », tous les
+  témoins du GPS à `null` derrière lui — la famille de charge de la v269) et
+  `monte.js` « se téléporter ne compile plus de programmes » : REJOUÉES SEULES,
+  `carte.js` VERTE sur la branche ET sur `origin/main` (v321), le témoin de
+  compilation vert des deux côtés ; seul reste « l'écran se fige », rouge des
+  deux côtés (branche 2 950 ms · 20,8 %, `origin/main` 3 217 · 25,4 %).
 - [ ] **LE PORTAIL DE LA v322, SECOND, APRÈS REBASE SUR LA v320.** Dix suites.
   Verts : `maj.js` (cette fois), `plafond.js`, `parishd.js`, `carte.js`,
   `washington.js`, `metro.js`. Rouges, rejoués SEULS des deux côtés sur la
@@ -393,7 +414,7 @@
   entrée nord propre de sa trame (−100° à −103°) — 79 819 tracés, tous refusés
   par sa marge ; l'autre entrée propre (−175°, −192°) arrive par la mer, deux
   cents blocs de viaduc. Déplacer un aérodrome est une décision de Max
-  (invariant 1) ; un viaduc en mer aussi. A109 Nairobi–Mombasa faite en v315. A3 Cologne–Francfort faite en v320 (au sud de l'ICE : au nord, l'aérodrome de Francfort ne laisse pas la place d'une emprise). Restent à instruire les autres
+  (invariant 1) ; un viaduc en mer aussi. A109 Nairobi–Mombasa faite en v315. A3 Cologne–Francfort faite en v320 (au sud de l'ICE : au nord, l'aérodrome de Francfort ne laisse pas la place d'une emprise). E1 Kyoto–Nagoya faite en v323 (au sud du Shinkansen, où les deux trames ont une entrée propre ; un étang contourné par le nord, aucun pont). INSTRUITES en v323 sur l'axe direct, faute de la liste du kit (hors dépôt) — longueur · eau · rail à douze blocs · villes · aérodromes · repères : Manchester–Liverpool 222 · 11 · 0 · 0 · 0 · 0 ; Bologne–Florence 342 · 0 · 0 · 0 · 0 · 0 ; Milan–Turin 530 · 10 · 0 ; Delhi–Agra 656 · 41 · 0 (le Taj Mahal) ; Rome–Naples 683 · 81 · 0 ; Los Angeles–San Diego 718 · 25 · 0 ; Londres–Birmingham 767 · 29 · 0 ; Milan–Bologne 924 · 24 · 3 ; Vienne–Budapest 957 · 33 · 0 ; Tokyo–Nagoya 961 · 142 · 941 (Shinkansen) · Haneda sur l'axe ; New York–Boston 1 020 · 135 · 0 ; Berlin–Hambourg 1 293 · 42 · 0 ; New York–Washington 1 297 · 150 · 0 ; Lyon–Marseille 1 363 · 77 · 1 328 (TGV) ; Séoul–Busan 1 471 · 2 · 0 ; Paris–Lyon 1 625 · 54 · 1 588 (TGV) ; Dallas–Houston 1 781 · 44 · 0 ; Hambourg–Cologne 1 858 · 137 · 0 ; Madrid–Barcelone 2 068 · 199 · 2 033 (AVE) ; Toronto–Montréal 2 305 · 144 · 0 ; San Francisco–Los Angeles 2 403 · 131 · 0 · SFO et deux repères ; Marseille–Nice 596 · 401 · 0 · la Promenade des Anglais (l'axe direct est en mer). Ordre retenu : les courts sans rail ni eau d'abord. Restent à instruire les autres
   candidats du kit (liste hors dépôt), un par un. INSTRUITES en v310 sur
   l'axe direct (longueur · eau · rail parallèle · obstacles) : Bruxelles–
   Amsterdam 790 · 56 · 0 · aucun ; Montréal–Québec 873 · 18 · 0 ; São Paulo–

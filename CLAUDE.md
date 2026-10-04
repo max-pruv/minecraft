@@ -918,6 +918,20 @@ Une règle.
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
 
+## L'E1 Kyoto–Nagoya (v323) — le côté du rail se choisit aux entrées de ville
+
+Huitième route. Une règle.
+
+- **QUAND UN RAIL TRAVERSE UNE DES DEUX VILLES, LE CÔTÉ SE DÉCIDE AUX
+  ENTRÉES.** Le Shinkansen passe à douze blocs du centre de Nagoya : la porte
+  de la route doit être du même côté du rail que toute la route, sinon elle le
+  croise dans le raccord. On balaie donc l'angle d'entrée des DEUX villes
+  d'abord (`entrees.mjs` : avenue, rue, bloc, eau), et le côté est celui où
+  les deux ont une avenue propre — ici le sud (Kyoto 0°, quatre-vingt-neuf
+  blocs ; Nagoya 150°, vingt-huit), quand le nord n'offrait à Nagoya que dix
+  blocs. La sonde de rail est conservatrice (emprise + talus + deux blocs, lus
+  sur `profilDe`) et le témoin relit le vrai `routeEn` : 0 colonne sur 2 749.
+
 ## L'A3 Cologne–Francfort (v320) — un rail le long de l'axe choisit le côté
 
 Septième route. Deux règles.

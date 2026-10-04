@@ -581,6 +581,7 @@ const VRAIES_KM = [
       out.convoiA4 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A-4') || null;
       out.convoiA109 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A109') || null;
       out.convoiA3 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A3') || null;
+      out.convoiE1 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'E1') || null;
       // AUCUNE ROUTE NE CROISE NI NE LONGE UNE VOIE FERRÉE (v320) : l'A3 est la
       // première dont l'axe a un rail le long (l'ICE). On lit, pour TOUTES les
       // routes, chaque colonne de leur emprise (`routeEn` non nul) et l'on
@@ -755,6 +756,17 @@ const VRAIES_KM = [
       && ['cologne', 'francfort'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'A3' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7)),
       JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiA3 ? { nom: a1.convoiA3.nom, voitures: (a1.convoiA3.modeles || []).length } : 'aucun convoi A3',
         surRail: a1.surRail, erreur: a1.railErreur, entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'A3') }));
+
+    // L'E1 (v323) : Kyoto–Nagoya, la Meishin, la seconde route qui a un rail le
+    // long de son axe — le Shinkansen, qui traverse Nagoya. Elle reste tout
+    // entière au SUD du rail, où les deux trames ont une entrée propre ; le
+    // témoin du rail ci-dessus la lit avec toutes les autres.
+    verifier('l\'E1 relie Kyoto à Nagoya au sud du Shinkansen, et des voitures entrent dans les deux villes',
+      !a1.absent && !a1.railErreur && a1.segments >= 9 && !!a1.convoiE1 && a1.convoiE1.routier && (a1.convoiE1.modeles || []).length >= 10
+      && !!a1.surRail && !!a1.surRail.E1 && a1.surRail.E1[0] > 100 && a1.surRail.E1[1] === 0
+      && ['kyoto', 'nagoya'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'E1' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7)),
+      JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiE1 ? { nom: a1.convoiE1.nom, voitures: (a1.convoiE1.modeles || []).length } : 'aucun convoi E1',
+        surRail: a1.surRail && a1.surRail.E1, entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'E1') }));
 
     // DE VRAIS RAILS, EN RELIEF, ET DEUX VOIES (v281) ------------------------
     //
