@@ -4828,7 +4828,13 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         x: +(g.player.pos.x - x0).toFixed(1),
         immobile, arret, expire: arret >= 45000,
       };
-      // on lâche le mur : la voiture doit repartir en arrière
+      // on lâche le mur : la voiture doit repartir en arrière.
+      // DEPUIS LA v345 LE MUR EST UN CHOC, ET LES DÉGÂTS (v343) LE COMPTENT :
+      // pris à 19,5 blocs/s il met la voiture en panne (allure 15,7 au portail,
+      // reculé 0,02) — c'est juste, une voiture en panne ne repart plus. Ce
+      // témoin éprouve la vitesse ANNONCÉE contre un mur (v272), pas les
+      // dégâts : on passe au garage avant de reculer.
+      { const m = g.fun.montureConduite && g.fun.montureConduite(); if (m && g.fun.degats && g.fun.degats.reparer) g.fun.degats.reparer(m.mesh); }
       g.player.keys.delete('KeyW'); g.player.keys.add('KeyS');
       const t2 = performance.now();
       let recule = 0;
