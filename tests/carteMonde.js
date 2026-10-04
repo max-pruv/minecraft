@@ -758,7 +758,7 @@ const VRAIES_KM = [
       JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiA3 ? { nom: a1.convoiA3.nom, voitures: (a1.convoiA3.modeles || []).length } : 'aucun convoi A3',
         surRail: a1.surRail, erreur: a1.railErreur, entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'A3') }));
 
-    // L'E1 (v323) : Kyoto–Nagoya, la Meishin, la seconde route qui a un rail le
+    // L'E1 (v324) : Kyoto–Nagoya, la Meishin, la seconde route qui a un rail le
     // long de son axe — le Shinkansen, qui traverse Nagoya. Elle reste tout
     // entière au SUD du rail, où les deux trames ont une entrée propre ; le
     // témoin du rail ci-dessus la lit avec toutes les autres.
@@ -2680,8 +2680,8 @@ const VRAIES_KM = [
           }
           if (vu) cou++;
         }
-        out.push({ cle: v.cle, couverture: tot ? Math.round(1000 * cou / tot) / 10 : 0, densite: L ? Math.round(10000 * N / L) / 10 : 0,
-          circuits: v.traces.length });
+        out.push({ cle: v.cle, main: !!v.main, couverture: tot ? Math.round(1000 * cou / tot) / 10 : 0,
+          densite: L ? Math.round(10000 * N / L) / 10 : 0, circuits: v.traces.length });
       }
       // les tours de quartier de Paris, lus dans le monde
       let pts = 0, chaussee = 0, plein = 0;
@@ -2704,11 +2704,18 @@ const VRAIES_KM = [
       const sans = l.filter((v) => !v.circuits).map((v) => v.cle);
       const pireCouv = [...l].sort((a, b) => a.couverture - b.couverture).slice(0, 4);
       const pireDens = [...l].filter((v) => v.circuits).sort((a, b) => a.densite - b.densite).slice(0, 4);
+      // LES VILLES ENGENDRÉES : AUCUNE SOUS LES TROIS QUARTS (v325). Les phases
+      // d'anneaux ne regardent pas où la ville est vide ; la phase 3 pose les
+      // anneaux de quartier (`ANNEAUX_EN_PLUS`). Mesuré avant : Sydney 60,5 %
+      // — tout le North Shore — ; après : la pire est Las Vegas, 79,9 %.
+      const pireGen = [...l].filter((v) => !v.main).sort((a, b) => a.couverture - b.couverture)[0];
       verifier('toutes les villes ont des voitures dans leurs rues, Paris doublé compris',
         paris.couverture >= 67 && sans.length === 0 && pireCouv[0].couverture >= 50 && pireDens[0].densite >= 40
+          && pireGen.couverture >= 75
           && flotteVilles.plein === 0 && (flotteVilles.quartiers === 0 || flotteVilles.chaussee >= 90),
         `${l.length} villes · Paris ${paris.couverture} % (${paris.circuits} circuits) · moins couvertes `
           + pireCouv.map((v) => `${v.cle} ${v.couverture} %`).join(', ')
+          + ` · ville engendrée la moins couverte ${pireGen.cle} ${pireGen.couverture} %`
           + ` · densité la plus basse ${pireDens.map((v) => `${v.cle} ${v.densite}`).join(', ')} voit./1000 blocs`
           + (sans.length ? ` · SANS circuit : ${sans.join(', ')}` : '')
           + ` · tours de quartier ${flotteVilles.quartiers} : chaussée ${flotteVilles.chaussee} %, ${flotteVilles.plein} pas dans du plein`);

@@ -696,8 +696,22 @@ const RONDS = LIEUX.filter((p) => p.r).map((p) => ({ u: p.u, v: p.v, r: p.r - an
 // est DANS le socle du monument qu'elle porte (c'est le défaut de la v220, et
 // il vaut pour les dix), donc on l'en ressort. Le tour suit le périmètre du
 // socle, à la moitié de la rue qui le longe — là où le sol est du bitume.
+//
+// ET LE TOUR PASSE UN DEMI-BLOC PLUS LOIN, DES DEUX CÔTÉS (v325). La rue du
+// tour (`autourDUnSocle`) se juge sur des COLONNES entières : dans le monde,
+// elle va de `p.u − bu − 4` à `p.u + bu + 5`, un bloc de plus côté +. Axé à
+// `bu + AXE_TOUR`, le tour était au milieu de la rue côté −, à UN bloc du socle
+// côté +, et l'aile d'une voiture (1,13) mordait de 0,13 bloc dans la dernière
+// rangée du socle : six pas dans les troncs du coin de la Tour Eiffel et des
+// Invalides (trouvé en v318 par le témoin repointé). À `bu + AXE_TOUR + 0,5`,
+// l'aile reste à 0,37 bloc du socle côté + et à 1,37 côté −. Le RECENTRAGE,
+// la première idée (centre sur le milieu de la colonne), réglait aussi le
+// défaut mais déplaçait une égalité de longueur : autour de Montparnasse, un
+// circuit passait par le nord au lieu du sud, et deux circuits de la rive
+// gauche partageaient 25 blocs au lieu de 14 — au-delà des vingt de la v211.
+// Mesuré, écrit, retiré. Symétrique, le tour garde ses choix de côté.
 const TOURS = SOCLES.filter((p) => p.tour)
-  .map((p) => ({ u: p.u, v: p.v, hu: p.bu + AXE_TOUR, hv: p.bv + AXE_TOUR }));
+  .map((p) => ({ u: p.u, v: p.v, hu: p.bu + AXE_TOUR + 0.5, hv: p.bv + AXE_TOUR + 0.5 }));
 export const contournerPlaces = (pts) => contournerBlocs(contournerRonds(pts, RONDS), TOURS);
 
 export const circuitsParis = fabriqueCircuits({
