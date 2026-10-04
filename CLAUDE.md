@@ -810,9 +810,14 @@ sur un débit d'avant le worker (v237 → v251). Quatre règles.
   JavaScript) a montré que le JavaScript ne bouge presque pas (2,3 s contre
   1,9 à 2,0 de tâches longues sur 18 s, 10 ms de rendu JS des deux côtés) :
   c'est SwiftShader qui dessine enfin la ville. `?file=cone` force l'ordre
-  neuf, `?file=regard` l'ancien ; le témoin de `monte.js` joue les DEUX dans le
-  même passage et juge l'ÉCART des parts (0,31 seul, barre 0,13) — sous la
-  charge du portail une part absolue (0,73 pour 0,77) ne voulait rien dire.
+  neuf, `?file=regard` l'ancien, `__game.fileMaillage` les bascule sur une
+  page ouverte. Le témoin de `monte.js` joue les DEUX ordres dans la MÊME page
+  (`ciel`), en ABBA, et juge l'écart des parts moyennes (0,29 ici, −0,04 sur
+  `origin/main`, barre 0,13). Trois leçons de banc, payées en trois portails :
+  une part absolue ne tient pas sous la charge (0,73 pour 0,77) ; une page
+  ouverte de plus à côté de `tab` et `ciel` n'a jamais chargé son disque en
+  quarante secondes ; et deux passages IDENTIQUES rendent 0,43 puis 0,57 —
+  le premier passage n'est pas le second, d'où l'ABBA.
 
 ## Les rues de Londres à la règle du kit (v339) — un plan deux fois plus serré ne porte pas les mêmes rues
 

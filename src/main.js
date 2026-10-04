@@ -1011,8 +1011,11 @@ function suivreLeDeplacement(dt) {
 // ne se transpose pas à une vraie carte graphique, pour qui cent appels sont
 // moins que Paris à l'arrêt (394). `?file=cone` force l'ordre neuf : c'est ce
 // que demandent ses témoins et la sonde du plafond.
-const FILE_DEMANDEE = new URLSearchParams(location.search).get('file');
-const FILE_AU_REGARD = FILE_DEMANDEE === 'regard' || (FILE_DEMANDEE !== 'cone' && renduLogiciel());
+// `__game.fileMaillage('cone' | 'regard' | null)` fait la même chose sur une
+// page déjà ouverte : un témoin compare les deux ordres sans ouvrir une page de
+// plus (deux pages vivantes divisent la cadence du banc, v220).
+let fileDemandee = new URLSearchParams(location.search).get('file');
+const fileAuRegardVoulue = () => fileDemandee === 'regard' || (fileDemandee !== 'cone' && renduLogiciel());
 let fileRapide = false;   // le régime avec lequel la file a été faite
 // Un quart d'hystérésis : une vitesse qui hésite autour du seuil ne refait pas
 // la file à chaque image.
@@ -1037,7 +1040,7 @@ function rebuildQueue() {
   // Ce qui compte : le déplacement quand on en a un, le regard sinon — ce
   // qui est dans le dos peut attendre quelques images sans que ça se voie.
   fileRapide = regimeRapide();
-  if (FILE_AU_REGARD) { fileAuRegard(pcx, pcz); return; }
+  if (fileAuRegardVoulue()) { fileAuRegard(pcx, pcz); return; }
   const dir = fileRapide
     ? { x: deplacement.vx / deplacement.v, z: deplacement.vz / deplacement.v }
     : { x: -Math.sin(player.yaw), z: -Math.cos(player.yaw) };
@@ -7524,7 +7527,7 @@ window.__lumiere = () => ({
 // pour les tests : déclencher la proposition d'alertes sans attendre la minute
 window.__proposerNotifs = proposerNotifs;
 window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
-window.__game = { villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage, PALIERS, choisirPalier, mesurePalier, journal,
+window.__game = { fileMaillage: (m) => { fileDemandee = m; lastPlayerChunk = null; }, villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage, PALIERS, choisirPalier, mesurePalier, journal,
   RAYON_HD, BUDGET_FACADES, detailTenu, planDetail, get atlasHD() { return hd ? hd.atlas : null; },
   palierRetenu, palierPropose, etendueRange, reglageDe, PARAMS_FORCANTS,
   // CE QUE LE PALIER A RÉELLEMENT APPLIQUÉ, pas ce qu'il déclare : un témoin

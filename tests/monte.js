@@ -3768,18 +3768,22 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // UNE PART SOUS CHARGE N'EST PAS LA PART SEULE : au portail de la v337 le
     // neuf a rendu 0,73 (le débit divisé par deux, 146 morceaux au lieu de
     // 266) pour une barre absolue de 0,77. Le témoin joue donc les DEUX ordres
-    // dans le même passage, une page à la fois — `?file=cone` (le neuf, que le
-    // jeu coupe en rendu logiciel comme les ombres) et `?file=regard`
-    // (l'ancien) — et juge l'ÉCART, que la charge du banc touche des deux
-    // côtés. Sur l'ancien code les deux paramètres sont ignorés : même ordre,
-    // écart nul, rouge. Barre : la moitié de l'écart mesuré seul (0,27 → 0,13).
+    // dans le même passage, sur la même page — l'ordre neuf (que le jeu coupe
+    // en rendu logiciel comme les ombres) puis l'ancien — et juge l'ÉCART, que
+    // la charge du banc touche des deux côtés. Sur l'ancien code le crochet
+    // n'existe pas : même ordre deux fois, écart nul, rouge. Barre : la moitié de l'écart mesuré seul (0,27 → 0,13).
     // La position est une fonction du TEMPS RÉEL : on mesure le chargement,
     // pas la voiture, et la vitesse ne dépend pas de la cadence du banc (v270).
-    const rouler = async (params) => {
+    // UNE PAGE DE PLUS EST UNE MESURE DE MOINS : ouvertes à côté de `tab` et
+    // de `ciel`, mes deux pages n'ont jamais chargé leur disque en quarante
+    // secondes au portail (56 à 68 morceaux installés). Les deux ordres se
+    // jouent donc dans `ciel`, par `__game.fileMaillage`.
+    const rouler = async (mode) => {
       await souffler();
-      const pg = await banc.jouerSeul(`Rapide${params.replace(/\W/g, '')}`, { rr: 12, params });
-      const r = await pg.evaluate(async () => {
+      const r = await ciel.evaluate(async (mode) => {
         const g = window.__game;
+        const crochet = typeof g.fileMaillage === 'function';
+        if (crochet) g.fileMaillage(mode);
         const { positionDe } = await import('./src/mondes.js');
         const CHUNK = 16, R = 12, v = 60;
         const P = positionDe('paris');
@@ -3832,16 +3836,24 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
           if (!g.chunkMeshes.has(`${pcx + dx},${pcz + dz}`)) champ = Math.min(champ, len);
         }
         roule = false;
-        return { charge, parcouru: Math.round(p.pos.x - x0), installes, dansCone,
+        p.flying = false;
+        if (crochet) g.fileMaillage(null);
+        return { crochet, charge, parcouru: Math.round(p.pos.x - x0), installes, dansCone,
           part: +(dansCone / (installes || 1)).toFixed(2), champ: Math.round(champ * CHUNK) };
-      });
-      await pg.context().close();
+      }, mode);
       return r;
     };
-    const ordreNeuf = await rouler('&file=cone');
-    const ordreAvant = await rouler('&file=regard');
+    // EN ABBA, PARCE QUE LE PREMIER PASSAGE N'EST PAS LE SECOND : sur l'ancien
+    // code, deux passages identiques ont rendu 0,43 puis 0,57. L'ordre
+    // neuf, l'ancien, l'ancien, le neuf — et l'on compare les MOYENNES.
+    const n1 = await rouler('cone'), a1 = await rouler('regard');
+    const a2 = await rouler('regard'), n2 = await rouler('cone');
+    const moyenne = (x, y) => ({ ...x, part: +((x.part + y.part) / 2).toFixed(2),
+      installes: Math.min(x.installes, y.installes), dansCone: x.dansCone + y.dansCone,
+      parcouru: Math.min(x.parcouru, y.parcouru), champ: Math.min(x.champ, y.champ), charge: Math.max(x.charge, y.charge) });
+    const ordreNeuf = moyenne(n1, n2), ordreAvant = moyenne(a1, a2);
     const ecartParts = +(ordreNeuf.part - ordreAvant.part).toFixed(2);
-    const dit = (r) => `part ${r.part} (${r.dansCone}/${r.installes}) · champ maillé jusqu'à ${r.champ} blocs · ${r.parcouru} blocs roulés · disque en ${r.charge} ms`;
+    const dit = (r) => `${r.crochet ? '' : '(crochet absent) '}part moyenne ${r.part} · champ maillé jusqu'à ${r.champ} blocs · ${r.parcouru} blocs roulés · disque en ${r.charge} ms`;
     verifier('à soixante blocs par seconde dans Paris, le monde se maille dans le champ de la caméra',
       ordreNeuf.parcouru > 300 && ordreAvant.parcouru > 300 && ordreNeuf.installes > 40 && ordreAvant.installes > 40
         && ecartParts >= 0.13,

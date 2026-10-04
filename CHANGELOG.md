@@ -50,8 +50,8 @@ dans `monte.js`, tous deux rouges sur `origin/main` : l'ordre de la file (le
 morceau de l'axe à douze avant celui de côté à sept, rien derrière — 250
 morceaux derrière sur l'ancienne), et à 60 b/s dans Paris l'écart de la part
 des morceaux maillés dans le champ de la caméra entre l'ordre neuf et l'ordre
-d'avant, joués dans le même passage (0,31 ici, 0,02 sur `origin/main`, barre
-0,13).
+d'avant, joués dans la même page en alternance (0,29 ici, −0,04 sur
+`origin/main`, barre 0,13).
 
 ---
 
