@@ -366,12 +366,20 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         if (d < 0.5) continue;                       // la caméra n'est pas encore posée
         const bx = Math.sin(g.player.yaw), bz = Math.cos(g.player.yaw);
         const beta = Math.atan2(bx * (dz / d) - bz * (dx / d), bx * (dx / d) + bz * (dz / d));
+        const vv = g.player.vitesseVoiture;
+        const choc = g.player.choc;
         releves.push({ beta: +(beta * 180 / Math.PI).toFixed(1), recul: +d.toFixed(2),
-          v: +Math.hypot(g.player.vel.x, g.player.vel.z).toFixed(1) });
+          v: +Math.hypot(g.player.vel.x, g.player.vel.z).toFixed(1),
+          avant: vv === undefined || vv > 1,
+          rebond: !!(choc && performance.now() - choc.t < 1500) });
       }
       // ON NE JUGE QUE CE QUI ROULE : à l'arrêt le volant ne fait rien (v262),
       // donc il n'y a pas de virage et l'angle ne veut rien dire.
-      const roule = releves.filter((r) => r.v > 1);
+      // ET QUE CE QUI ROULE EN AVANT, LOIN D'UN CHOC (v345) : sans cap dégagé
+      // la voiture tape un mur, rebondit (v345) et recule un instant — et en
+      // marche arrière le même volant tourne de l'autre côté. Le portail a
+      // rendu les deux signes, médiane 25°, là où le virage tenu n'en a qu'un.
+      const roule = releves.filter((r) => r.v > 1 && r.avant && !r.rebond);
       const abs = roule.map((r) => Math.abs(r.beta)).sort((x, y) => x - y);
       const images = g.renderer.info.render.frame - f0;
       return { n: releves.length, enMouvement: roule.length,
