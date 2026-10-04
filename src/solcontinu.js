@@ -313,7 +313,7 @@ export function emettreSolContinu(buf, world, cx, cz, chunk, grille = grilleSol(
     const sommet = world.getBlock(baseX + lx, h, baseZ + lz);
     const tile = BLOCK_INFO[sommet].tiles[0];
     const rect = tileRect(tile);
-    // la teinte du climat (v342), celle de la colonne a, sur l'herbe seule —
+    // la teinte du climat (v344), celle de la colonne a, sur l'herbe seule —
     // la même que le dessus du cube qu'elle remplace (mesher.js)
     const it = teintes && sommet === BLOCK.GRASS ? teintes[lx + lz * chunk] : 0;
     const tr = it ? TEINTE_HERBE[it][0] : 1, tg = it ? TEINTE_HERBE[it][1] : 1, tb = it ? TEINTE_HERBE[it][2] : 1;

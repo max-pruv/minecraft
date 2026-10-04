@@ -106,7 +106,7 @@ function blocDeSurface(x, z, h, world) {
   }
   if (h <= WATER_LEVEL + 1) return BLOCK.SAND;
   if (h >= 58) return BLOCK.SNOW;
-  // le climat (v341, v342), la même question que le générateur : le désert
+  // le climat (v341, v344), la même question que le générateur : le désert
   // est de sable, la toundra de neige là où le relief monte
   const cl = world && world.climat ? world.climat(x, z) : null;
   if (cl === 'desert') return BLOCK.SAND;
@@ -114,7 +114,7 @@ function blocDeSurface(x, z, h, world) {
   return BLOCK.GRASS;
 }
 
-// LA COULEUR DE L'HERBE D'UN CLIMAT, VUE DE LOIN (v342). L'herbe de la carte
+// LA COULEUR DE L'HERBE D'UN CLIMAT, VUE DE LOIN (v344). L'herbe de la carte
 // sous la teinte du climat — la même que le mailleur pose sur le bloc — et,
 // pour la taïga, mêlée à moitié au feuillage sombre qui la couvre presque
 // partout. Pure et exportée : le témoin la lit, la carte dit la même chose.
@@ -261,7 +261,7 @@ export class Horizon {
     this.bati = new Float32Array(N * N);
     this.toits = new Float32Array(N * N * 3);   // la couleur des MURS du bâti
     this.estNY = new Uint8Array(N * N);
-    // le climat de chaque sommet d'herbe (v342) : la règle des bords le relit
+    // le climat de chaque sommet d'herbe (v344) : la règle des bords le relit
     this.climats = new Uint8Array(N * N);
     this.sansNY = false;                     // Manhattan dessine ses propres silhouettes
     // Le filtre des sept villes bâties à la main, par BOÎTE. Manhattan déborde
@@ -421,7 +421,7 @@ export class Horizon {
     let c = MAP_COLORS[id] || [140, 140, 140];
     // Sous une ville, hors de l'eau : le gris des rues mêlé aux toits.
     const u = id === BLOCK.WATER ? null : urbainEn(this.world, x, z, this.villesMain);
-    // l'herbe de la toundra et de la taïga (v342), hors des villes
+    // l'herbe de la toundra et de la taïga (v344), hors des villes
     const it = id === BLOCK.GRASS && !u && this.world.climat ? (INDICE_CLIMAT[this.world.climat(x, z)] || 0) : 0;
     this.climats[i] = it;
     if (it) c = herbeDuClimat(it);
