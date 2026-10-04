@@ -2559,6 +2559,64 @@ l'embarquement a eu lieu, pas par une hypothèse.
 
 ## En cours
 
+### Embarquement (v355) — ce qui reste dans la zone
+- **Le passager d'un ami (v253) monte sans séquence.** `monterAvec` colle encore
+  l'enfant au siège d'un coup. La séquence sait sortir par la portière droite
+  (`cote: 1`, déjà fabriquée) : la faire entrer par là est l'étape suivante, à
+  condition que l'ami — sur SA tablette — voie aussi la portière s'ouvrir, ce
+  qui demande un message réseau (`net.js`, hors zone).
+- **Les bords de la découpe sont en dents de scie** là où un triangle chevauche
+  le bord du volume (mesuré : 0 sur la plupart des modèles, 21 % de la surface
+  sur la Lucid Gravity, 36-38 % sur les taxis, qui s'en passent). Remède
+  possible : couper les triangles au plan du bord (une passe de découpe), pas
+  agrandir le volume.
+- **Une portière ouverte vue de dos est invisible** sur les modèles qui n'ont
+  pas meublé son revers (faces simples). `DoubleSide` changerait la clé de
+  programme (v246) : il faudrait le chauffer (`signatures.js`) avant de le
+  livrer.
+- **La séquence ne se juge qu'au banc.** Durées (1,1 s de marche au plus, 2,4 s
+  en tout) et caméra de trois quarts arrière : à confirmer sur l'iPad.
+- **Les avions** gardent leur montée instantanée (on ne marche pas jusqu'au
+  cockpit d'un Concorde) : une passerelle serait un second palier.
+- [ ] **LE PORTAIL DE LA v355 APRÈS REBASE SUR LA v348, DOUBLE MESURE FAITE.**
+  Quinze suites vertes. Rouges, rejoués SEULS des deux côtés :
+  `manhattan.js` — le trou de façade (9 203 branche · 11 684 `origin/main` →
+  51 734, dette v291) ; le taxi tactile (1,06 bloc, seul sur la branche :
+  dette v291 déjà vue des deux côtés). `monte.js` — la téléportation qui
+  compile (chauffe NY expirée, 7 et 12 programmes neufs), le trou en vol
+  (chasseur 58 · Concorde 58 pour une barre à 60, l'un ou l'autre selon le
+  passage, des deux côtés), l'écran figé à l'arrivée (1 467 et 2 083 ms) :
+  rouges à l'identique sur la branche et sur `origin/main`. **Et un rouge
+  était à moi** : « descendre vite » rejouée seule sortait l'enfant par
+  l'ARRIÈRE (côté conducteur refusé « mur », un obstacle de la prairie ;
+  passager « circulation » une fois sur trois, sonde `sonde-presse`) — sortie
+  juste, témoin trop étroit (il n'acceptait que les flancs) : il accepte
+  désormais toute place hors de l'emprise et publie les refus. À creuser : ce
+  qui rend « circulation » en pleine prairie à soixante blocs de toute route.
+- [ ] **LE PORTAIL DE LA v355 (embarquement), DOUBLE MESURE FAITE.** Deux
+  portails complets (le second après rebase sur la v339). Les huit témoins de
+  l'embarquement verts aux deux. Rouges, tous rejoués SEULS des deux côtés :
+  `monte.js` — la téléportation qui compile (chauffe de New York expirée) et
+  l'écran figé à l'arrivée (3 600 à 3 733 ms) : rouges à l'identique seule sur
+  la branche ET sur `origin/main` ; « une voiture roule dans la nature » (`pas
+  au volant`) rouge au premier portail, verte au second et seule : la
+  dépendance au témoin d'avant de la v317. `maj.js` — le loader de
+  l'installation : rouge au portail 1 et seule sur la branche, vert au
+  portail 2 et seul sur `origin/main` (qui rend en plus « la libération » et
+  « le flou pendant la préparation », dette de charge de la v327) :
+  l'intermittence déjà mesurée des deux côtés. `visio.js` — la radio pendant
+  l'appel (0,0054 pour une barre à 0,0046) : verte seule des DEUX côtés, un
+  tirage. `carte.js` — la flèche GPS (1,92 rad, la dette de la v327) au
+  portail 2 ; seules, les deux rendent « la faire glisser, bridé ×4 » (439 et
+  408 ms pour 400). `manhattan.js` — le délai de la ligne 282 au portail (dette
+  v269) ; seules, les deux rendent le trou de façade et le taxi tactile
+  (dettes v291). La livraison ne touche ni la carte, ni la visio, ni
+  Manhattan, et le banc saute la séquence (`embarq=0`) partout ailleurs.
+  **Et un rouge était à moi** : rejouée seule, la descente tombait sur
+  « circulation » des deux côtés de la voiture et se faisait sans animation —
+  le témoin remonte et redescend désormais quand la situation n'a pas eu lieu.
+
+
 - [x] **(FAIT en v354 : `trottoirA` lit `ruePietonne` à Manhattan, témoin de débit dans `manhattan.js`.) LES PASSANTS DE MANHATTAN N'ONT PAS REÇU LA MARCHE AU LONG CAP (v278,
   déclaré en v279).** `passants.js` pose `h.surTrottoir = !site.urbain && …` :
   dans un site URBAIN — New York est le seul — le drapeau reste faux, donc

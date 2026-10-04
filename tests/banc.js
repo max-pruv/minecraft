@@ -478,7 +478,11 @@ class Banc {
     // sur un défaut.
     // `ombres: 1` force les ombres du soleil : le jeu les coupe de lui-même en
     // rendu logiciel (v247), et seuls les témoins du regard en ont besoin.
-    await p.goto(adresse(this.portJeu, this.portPairs, opts.portNuage || this.opts.portNuage, opts.rr, !!opts.prep, opts.dpr) + (opts.carte ? `&carte=${encodeURIComponent(opts.carte)}&qualite=tablette` : '') + (opts.ombres ? '&ombres=1' : '') + (opts.params || ''),
+    // `embarq: 1` joue la séquence d'embarquement (v355) — marcher à la
+    // portière, l'ouvrir, s'asseoir. Le banc la saute partout ailleurs
+    // (`embarq=0`), comme il saute la préparation : les témoins de conduite ne
+    // la mesurent pas, et ils retrouvent ainsi l'ancien geste au bit près.
+    await p.goto(adresse(this.portJeu, this.portPairs, opts.portNuage || this.opts.portNuage, opts.rr, !!opts.prep, opts.dpr) + (opts.embarq ? '' : '&embarq=0') + (opts.carte ? `&carte=${encodeURIComponent(opts.carte)}&qualite=tablette` : '') + (opts.ombres ? '&ombres=1' : '') + (opts.params || ''),
       { waitUntil: 'load', timeout: 90000 });
     await p.waitForFunction(() => window.__game, null, { timeout: 90000 });
     this.pages.push(p);

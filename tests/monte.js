@@ -5997,8 +5997,251 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !nature.err && nature.auVolant && nature.d >= 30,
       `barre 30 blocs (mesuré désarmé : 0,4 et 17,9 · armé : 59 et 116) · ${JSON.stringify(nature)}`);
 
+    // MONTER EN VOITURE COMME DANS UN VRAI JEU (v355). Max : « on voit le
+    // personnage qui avance et qui rentre dans la voiture avec la porte qui
+    // s'ouvre ». Une page à part qui JOUE la séquence (`embarq: 1`) : partout
+    // ailleurs le banc la saute (`embarq=0`) et les témoins d'au-dessus gardent
+    // l'ancien geste au bit près. Le couloir vide de la v237, une voiture d'un
+    // modèle connu posée DE TRAVERS devant l'enfant : il arrive par le flanc
+    // passager, donc il doit CONTOURNER pour rejoindre la portière conducteur.
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0,
       JSON.stringify(tab.erreurs));
+    await tab.close();
+    const emb = await banc.jouerSeul('MonteEmbarq', { embarq: 1 });
+    // UN TÉMOIN CHERCHE SON TERRAIN (v285) : le couloir vide de la v237 est
+    // SOUS L'EAU — sans importance pour un mur, rédhibitoire pour une descente
+    // qui refuse l'eau. On cherche une prairie sèche et plate, hors de toute
+    // ville, de toute route et de toute voie ferrée.
+    const embLieu = await emb.evaluate(async () => {
+      const g = window.__game, w = g.world;
+      const { WATER_LEVEL } = await import('./src/world.js');
+      let lieu = null;
+      for (let k = 0; k < 20000 && !lieu; k++) {
+        const x = -600 + ((k % 140) - 70) * 29, z = -520 + (Math.floor(k / 140) - 70) * 29;
+        const h = w.terrainHeight(x, z);
+        if (h < WATER_LEVEL + 2 || (w.cityAt && w.cityAt(x, z))) continue;
+        let plat = true;
+        for (let dx = -8; dx <= 8 && plat; dx += 2) for (let dz = -8; dz <= 8 && plat; dz += 2) if (w.terrainHeight(x + dx, z + dz) !== h) plat = false;
+        // et rien de posé dessus (une route, un rail, un arbre) : le sommet est le relief
+        if (!plat || w.sommetColonne(x, z) !== h || w.sommetColonne(x, z - 4) !== h) continue;
+        // ET LOIN DE TOUTE ROUTE ET DE TOUT RAIL : la descente refuse à bon droit
+        // une place dans le couloir d'une voiture qui arrive (v259), et un
+        // rejeu seul de la suite est tombé sur l'A-quelque-chose, deux côtés
+        // refusés pour « circulation » (v355)
+        let loin = true;
+        for (let dx = -60; dx <= 60 && loin; dx += 6) for (let dz = -60; dz <= 60 && loin; dz += 6) if (w.corridorEn && w.corridorEn(x + dx, z + dz)) loin = false;
+        // et des villes, dont les voitures roulent jusqu'au bord du disque
+        for (let a = 0; a < 16 && loin; a++) for (const r of [60, 120]) if (w.cityAt && w.cityAt(x + Math.cos(a * Math.PI / 8) * r, z + Math.sin(a * Math.PI / 8) * r)) loin = false;
+        if (loin) lieu = { x: x + 0.5, z: z + 0.5, h };
+      }
+      return lieu;
+    });
+    await emb.evaluate(async (lieu) => {
+      const g = window.__game;
+      const x = lieu.x, z = lieu.z;
+      g.player.pos.set(x, g.world.terrainHeight(x, z) + 1, z); g.player.vel.set(0, 0, 0); g.player.yaw = 0;
+      await new Promise((r) => setTimeout(r, 4000));
+      g.player.pos.y = g.world.sommetColonne(x, z) + 1;
+      for (const a of [...g.animalManager.animals]) { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); }
+      const a = g.animalManager.invoquer('voiture', x, z - 4, false, { flotte: 'amg-gt-black-series.glb' });
+      a.yaw = Math.PI / 2; a.mesh.rotation.y = a.yaw + Math.PI;
+      for (let i = 0; i < 80 && !(a.mesh.userData.roues || []).length; i++) await new Promise((r) => setTimeout(r, 100));
+      // et le monde a rendu quelques images autour d'elle (sur ce banc, une
+      // arrivée lointaine fige l'affichage le temps que les morceaux viennent)
+      const f0 = g.renderer.info.render.frame, t0 = performance.now();
+      while (g.renderer.info.render.frame - f0 < 20 && performance.now() - t0 < 30000) await new Promise((r) => setTimeout(r, 100));
+    }, embLieu);
+    // L'ÉTAT SE LIT DANS LE JEU (v252), relevé par relevé : la phase publiée,
+    // la position de l'enfant DANS LE REPÈRE DE LA VOITURE (nez en −z), l'arête
+    // arrière de la portière gauche lue dans sa MATRICE (v249 : un signe se lit
+    // dans la matrice), l'état « au volant », le parent de l'avatar.
+    const etatEmb = () => emb.evaluate(async () => {
+      const THREE = await import('three');
+      const g = window.__game;
+      const a = g.animalManager.animals.find((x) => x.def.key === 'voiture' && x.mesh.userData.flotte === 'amg-gt-black-series.glb');
+      if (!a) return { err: 'pas de voiture' };
+      const eq = a.mesh.userData.portieres;
+      let arriere = null;
+      if (eq) { eq['-1'].updateMatrixWorld(true); arriere = a.mesh.worldToLocal(new THREE.Vector3(0, 0.8, eq['-1'].userData.longueur).applyMatrix4(eq['-1'].matrixWorld)).x; }
+      let avatar = null;
+      a.mesh.traverse((o) => { if (o.userData && o.userData.arms && o !== a.mesh) avatar = o; });
+      a.mesh.updateMatrixWorld(true);
+      const loc = a.mesh.worldToLocal(g.player.pos.clone());
+      const e = g.player.embarquement;
+      // les programmes NÉS depuis le début : un compte peut baisser (des
+      // morceaux qu'on libère), seule l'apparition d'un identifiant neuf compte
+      const ids = g.renderer.info.programs.map((p) => p.id);
+      if (!window.__progsAvantEmb) window.__progsAvantEmb = new Set(ids);
+      const neufs = ids.filter((i) => !window.__progsAvantEmb.has(i)).length;
+      return { ph: e ? e.phase : null, x: loc.x, z: loc.z, arriere, volant: g.fun.montureConduite() === a,
+        avatar: avatar ? { x: avatar.position.x, z: avatar.position.z, visible: avatar.visible } : null,
+        progs: neufs, siege: a.def.siege, cx: a.pos.x, cz: a.pos.z };
+    });
+    const suivreEmb = async (max = 40000) => {
+      const t0 = Date.now(), rel = [];
+      let vu = false;
+      while (Date.now() - t0 < max) {
+        const e = await etatEmb();
+        rel.push(e);
+        if (e.ph) vu = true;
+        if (vu && !e.ph) break;
+        await new Promise((r) => setTimeout(r, 120));
+      }
+      return { rel, ms: Date.now() - t0 };
+    };
+    const embAvant = await etatEmb();
+    await emb.evaluate(() => document.getElementById('ride-btn').click());
+    const embMontee = await suivreEmb();
+    const embFin = embMontee.rel[embMontee.rel.length - 1];
+    const embApproche = embMontee.rel.filter((e) => e.ph === 'approche');
+    // la portière, là où l'approche s'arrête (la première image d'ouverture)
+    const embPorte = embMontee.rel.find((e) => e.ph === 'ouverture') || { x: -1.52, z: -0.42 };
+    const embDPorte = (e) => Math.hypot(e.x - embPorte.x, e.z - embPorte.z);
+    // 1. IL MARCHE JUSQU'À LA PORTIÈRE, en contournant : parti du flanc DROIT
+    // (x > 0), il passe au flanc gauche (x < 0) et la distance à la portière
+    // conducteur se réduit — et il n'est PAS au volant pendant ce temps.
+    const embDMin = embApproche.length ? Math.min(...embApproche.map(embDPorte)) : null;
+    verifier('après « Monter », l\'enfant marche jusqu\'à la portière (en contournant)',
+      embAvant.x > 1 && embApproche.length >= 3 && embDPorte(embApproche[0]) > 2.5 && embDMin < 0.5
+        && embApproche.some((e) => e.x > 0.5) && embApproche.some((e) => e.x < -1) && embApproche.every((e) => !e.volant),
+      `lieu ${JSON.stringify(embLieu)} · départ (${embAvant.x.toFixed(2)}, ${embAvant.z.toFixed(2)}) · ${embApproche.length} relevés d'approche · distance à la portière ${embApproche.length ? embDPorte(embApproche[0]).toFixed(2) : '?'} → ${embDMin === null ? '?' : embDMin.toFixed(2)} · ${embMontee.ms} ms · phases ${[...new Set(embMontee.rel.map((e) => e.ph))].join(',')}`);
+    // 2. LA PORTIÈRE S'OUVRE VERS L'EXTÉRIEUR, PUIS SE REFERME. Le flanc
+    // gauche est en −x : l'arête arrière doit partir vers les x négatifs.
+    const embFermee = embAvant.arriere != null ? embAvant.arriere : embFin.arriere;
+    const embOuverte = Math.min(...embMontee.rel.filter((e) => e.arriere != null).map((e) => e.arriere));
+    verifier('la portière conducteur s\'ouvre vers l\'extérieur, puis se referme',
+      embFin.arriere != null && embOuverte < embFin.arriere - 0.8 && Math.abs(embFin.arriere - (embFermee ?? embFin.arriere)) < 0.05,
+      `arête arrière (repère voiture) fermée ${embFin.arriere == null ? 'pas de portière' : embFin.arriere.toFixed(2)} · ouverte ${Number.isFinite(embOuverte) ? embOuverte.toFixed(2) : '?'}`);
+    // 3. IL FINIT ASSIS AU VOLANT : l'état, et l'avatar sur le siège de la fiche.
+    verifier('la séquence finie, l\'enfant est assis au volant, la voiture n\'a pas bougé',
+      embFin.volant && !embFin.ph && embFin.avatar && Math.abs(embFin.avatar.x - embFin.siege.x) < 0.05 && Math.abs(embFin.avatar.z - embFin.siege.z) < 0.05
+        && Math.hypot(embFin.x, embFin.z) < 0.05 && Math.hypot(embFin.cx - embAvant.cx, embFin.cz - embAvant.cz) < 0.05,
+      JSON.stringify({ volant: embFin.volant, ph: embFin.ph, avatar: embFin.avatar, siege: embFin.siege, enfant: [embFin.x, embFin.z],
+        voitureDeplacee: +Math.hypot(embFin.cx - embAvant.cx, embFin.cz - embAvant.cz).toFixed(2) }));
+    // 4. AUCUN PROGRAMME NE NAÎT (v246, v319) : la portière se dessine avec le
+    // matériau de la carrosserie, l'avatar avec le sien.
+    verifier('aucun programme de shader compilé à la montée ni à la descente', embFin.progs === 0,
+      `${embFin.progs} programme(s) né(s) pendant la montée`);
+    // 5. LA DESCENTE : debout À CÔTÉ, hors de la voiture, sur un embSol libre ;
+    // plus au volant dès le embPremier appui.
+    await new Promise((r) => setTimeout(r, 800));
+    // UNE SITUATION QUI N'A PAS EU LIEU NE REND PAS DE VERDICT (v252). Une
+    // voiture qui roule à portée fait refuser, à bon droit, la place dans son
+    // couloir (« circulation ») : la descente se fait alors sans animation,
+    // et le témoin n'a rien mesuré de la séquence. Il remonte et redescend,
+    // trois fois au plus, et le nombre d'essais entre dans le message.
+    let embPremier, embDescente, embApres, embSol, embEssais = 0;
+    for (; embEssais < 3; embEssais++) {
+      if (embEssais) {
+        await new Promise((r) => setTimeout(r, 3000));
+        await emb.evaluate(() => {
+          const g = window.__game;
+          const a = g.animalManager.animals.find((x) => x.def.key === 'voiture' && x.mesh.userData.flotte === 'amg-gt-black-series.glb');
+          g.player.yaw = Math.atan2(-(a.pos.x - g.player.pos.x), -(a.pos.z - g.player.pos.z));
+        });
+        await emb.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+        await emb.evaluate(() => { document.getElementById('ride-btn').click(); document.getElementById('ride-btn').click(); });
+        await new Promise((r) => setTimeout(r, 800));
+      }
+      await emb.evaluate(() => document.getElementById('ride-btn').click());
+      embPremier = await etatEmb();
+      embDescente = await suivreEmb();
+      embApres = embDescente.rel[embDescente.rel.length - 1];
+      embSol = await emb.evaluate(() => {
+        const g = window.__game, p = g.player.pos;
+        return { libre: g.world.boiteLibre(p.x, p.y, p.z, 0.3, 1.8), refus: g.fun.refusSortie ? g.fun.refusSortie() : null,
+          eau: g.world.getBlock(Math.floor(p.x), Math.floor(p.y), Math.floor(p.z)) === 7 };
+      });
+      const refuseCirculation = embSol.refus && Object.values(embSol.refus).some((r) => /circulation/.test(r));
+      if (embDescente.rel.some((e) => e.ph === 'sortie') || !refuseCirculation) break;
+    }
+    verifier('à la descente, l\'enfant se pose debout à côté de la voiture, sur un sol libre',
+      !embPremier.volant && !embApres.volant && !embApres.ph && !embApres.avatar && Math.abs(embApres.x) > 1.3 && embSol.libre && !embSol.eau
+        && embDescente.rel.some((e) => e.ph === 'sortie'),
+      `essais ${embEssais + 1} · au premier relevé volant=${embPremier.volant} · fin (${embApres.x.toFixed(2)}, ${embApres.z.toFixed(2)}) · ${JSON.stringify(embSol)} · phases ${[...new Set(embDescente.rel.map((e) => e.ph))].join(',')} · ${embDescente.ms} ms`);
+    // 6. LA GÉOMÉTRIE DE LA FLOTTE EST PARTAGÉE (v238) : la voiture dans
+    // laquelle on est monté a ses portières, un AUTRE exemplaire du même
+    // modèle garde la géométrie du prototype, intacte.
+    const embPartage = await emb.evaluate(async () => {
+      const g = window.__game;
+      const V = await import('./src/vehicules.js');
+      const proto = await V.chargerVoitureFlotte(V.FLOTTE.find((f) => f.fichier === 'amg-gt-black-series.glb'));
+      const geos = new Set(); proto.traverse((o) => { if (o.isMesh) geos.add(o.geometry); });
+      const a = g.animalManager.animals.find((x) => x.mesh.userData.portieres);
+      if (!a) return { err: 'aucune voiture n\'a de portière' };
+      const b = g.animalManager.invoquer('voiture', g.player.pos.x + 9, g.player.pos.z + 9, false, { flotte: 'amg-gt-black-series.glb' });
+      for (let i = 0; i < 50 && !(b.mesh.userData.roues || []).length; i++) await new Promise((r) => setTimeout(r, 100));
+      const compte = (m) => { let n = 0, protoN = 0, idx = 0; m.traverse((o) => { if (!o.isMesh || (o.parent && o.parent.userData.estPortiere)) return; if (o.userData && o.userData.arms) return; n++; if (geos.has(o.geometry)) protoN++; }); return { n, protoN }; };
+      const ia = compte(a.mesh), ib = compte(b.mesh);
+      let idxProto = 0; proto.traverse((o) => { if (o.isMesh) idxProto += o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count; });
+      const r = { equipee: ia, autre: ib, autrePortieres: !!b.mesh.userData.portieres, idxProto };
+      g.animalManager.scene.remove(b.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(b), 1);
+      return r;
+    });
+    verifier('un autre exemplaire du même modèle garde la géométrie partagée intacte',
+      !embPartage.err && embPartage.equipee && embPartage.equipee.protoN < embPartage.equipee.n && embPartage.autre.n > 0
+        && embPartage.autre.protoN === embPartage.autre.n && !embPartage.autrePortieres,
+      JSON.stringify(embPartage));
+    // 7. UN SECOND APPUI TERMINE TOUT DE SUITE : un enfant pressé est assis à
+    // l'image suivante, portière fermée.
+    await emb.evaluate(() => {
+      const g = window.__game;
+      const a = g.animalManager.animals.find((x) => x.mesh.userData.portieres)
+        || g.animalManager.animals.find((x) => x.def.key === 'voiture');
+      if (g.fun.montureConduite()) document.getElementById('ride-btn').click();
+      // face à la voiture : « Monter » prend la monture DEVANT soi
+      g.player.yaw = Math.atan2(-(a.pos.x - g.player.pos.x), -(a.pos.z - g.player.pos.z));
+    });
+    // la caméra ne prend le cap qu'à l'image suivante
+    await emb.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    await emb.evaluate(() => document.getElementById('ride-btn').click());
+    await new Promise((r) => setTimeout(r, 400));
+    const embEnCours = await etatEmb();
+    await emb.evaluate(() => document.getElementById('ride-btn').click());
+    await new Promise((r) => setTimeout(r, 400));
+    const embPresse = await etatEmb();
+    verifier('un second appui pendant la séquence la termine tout de suite',
+      !!embEnCours.ph && !embEnCours.volant && embPresse.volant && !embPresse.ph && embPresse.arriere != null && Math.abs(embPresse.arriere - embFin.arriere) < 0.05,
+      `pendant : ${embEnCours.ph}/${embEnCours.volant} · après le second appui : ${embPresse.ph}/${embPresse.volant} · arête ${embPresse.arriere}`);
+    // 8. `descendre({ presse: true })` (la voiture qui prend feu, chantier
+    // « dégâts ») : à côté tout de suite, sans animation.
+    const embFeu = await emb.evaluate(() => {
+      const g = window.__game;
+      if (!g.fun.descendre) return { err: 'pas de descente rapide' };
+      g.fun.descendre({ presse: true });
+      const a = g.animalManager.animals.find((x) => x.mesh.userData.portieres)
+        || g.animalManager.animals.find((x) => x.def.key === 'voiture');
+      const loc = a.mesh.worldToLocal(g.player.pos.clone());
+      return { volant: !!g.fun.montureConduite(), ph: g.player.embarquement, x: +loc.x.toFixed(2), z: +loc.z.toFixed(2), refus: g.fun.refusSortie ? g.fun.refusSortie() : null,
+        libre: g.world.boiteLibre(g.player.pos.x, g.player.pos.y, g.player.pos.z, 0.3, 1.8) };
+    });
+    verifier('« descendre vite » pose l\'enfant à côté sans animation', !embFeu.err && !embFeu.volant && !embFeu.ph && (Math.abs(embFeu.x) > 1.3 || Math.abs(embFeu.z) > 2.6) && embFeu.libre,
+      JSON.stringify(embFeu));
+    // 9. UNE VOITURE DÉJÀ FROISSÉE NE PREND PAS DE PORTIÈRE (v355). Les
+    // dégâts (v343) clonent la géométrie de la pièce touchée ; l'équiper
+    // remplacerait ce froissé par « la caisse sans les portières ». On simule
+    // le choc (une pièce de laque prend une géométrie à elle) et l'on demande
+    // la portière : refusée, froissé gardé.
+    const embAbimee = await emb.evaluate(async () => {
+      const g = window.__game;
+      let P;
+      try { P = await import('./src/portieres.js'); } catch { return { err: 'pas de portières' }; }
+      const b = g.animalManager.invoquer('voiture', g.player.pos.x + 12, g.player.pos.z + 12, false, { flotte: 'amg-gt-black-series.glb' });
+      for (let i = 0; i < 50 && !b.mesh.userData.modele; i++) await new Promise((r) => setTimeout(r, 100));
+      let m = null;
+      if (b.mesh.userData.modele) b.mesh.userData.modele.traverse((o) => { if (!m && o.isMesh && /paint_primary/i.test((o.material && o.material.name) || '')) m = o; });
+      if (!m) return { err: 'pas de laque' };
+      const froissee = m.geometry.clone();
+      m.geometry = froissee;
+      const r = P.equiperPortieres(b.mesh);
+      const res = { equipee: !!r, gardee: m.geometry === froissee, refus: P.refus.get('amg-gt-black-series.glb#instance') || null };
+      g.animalManager.scene.remove(b.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(b), 1);
+      return res;
+    });
+    verifier('une voiture déjà froissée ne prend pas de portière, et garde son froissé',
+      !embAbimee.err && !embAbimee.equipee && embAbimee.gardee, JSON.stringify(embAbimee));
+    verifier('aucune erreur JavaScript pendant l\'embarquement', emb.erreurs.length === 0, JSON.stringify(emb.erreurs));
+    await emb.close();
   } finally {
     await banc.fermer();
   }

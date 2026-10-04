@@ -7007,7 +7007,8 @@ function plafondAuSiege(a, siege) {
     if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return;
     // ni l'avatar de l'enfant, ni celui d'un ami assis là (v253) : une tête
     // n'est pas un toit — reconnu à ses bras articulés (`buildKidMesh`)
-    for (let p = o; p && p !== a.mesh; p = p.parent) if (p === avatarLocal || (p.userData && p.userData.arms)) return;
+    // ni une portière (v355) : ouverte, elle n'est pas le toit
+    for (let p = o; p && p !== a.mesh; p = p.parent) if (p === avatarLocal || (p.userData && (p.userData.arms || p.userData.estPortiere))) return;
     const pos = o.geometry.attributes.position;
     _plafondM.multiplyMatrices(_plafondInv, o.matrixWorld);
     let haut = -Infinity;
@@ -7023,9 +7024,11 @@ function plafondAuSiege(a, siege) {
   return y;
 }
 function asseoirLeConducteur(dt) {
+  avatarTemps += dt;
+  // PENDANT QU'IL MONTE OU DESCEND (v355), c'est la séquence qui tient l'avatar
+  if (fun.avatarEnSequence && fun.avatarEnSequence()) return;
   const a = fun.montureConduite ? fun.montureConduite() : null;
   const siege = a && a.def && a.def.siege;
-  avatarTemps += dt;
   if (!siege || !a.mesh) {
     // PASSAGER CHEZ UN AMI (v253) : assis sur le siège de SA voiture
     const pa = fun.passagerDe ? fun.passagerDe() : null;
@@ -7046,6 +7049,19 @@ function asseoirLeConducteur(dt) {
 // véhicule (`plafondAuSiege`).
 function asseoir(av, a, siege, temps) {
   if (av.parent !== a.mesh) a.mesh.add(av);
+  const c = placeAssise(a, siege);
+  av.scale.setScalar(c.echelle);
+  av.position.set(c.x, c.y, c.z);
+  av.rotation.y = 0;                             // visage en −z, comme le nez de la voiture
+  av.userData.legs.forEach((l) => { l.rotation.x = POSE_AU_VOLANT.cuisses; });
+  av.userData.arms.forEach((b) => { b.rotation.x = POSE_AU_VOLANT.bras; });
+  animerHumain(av, temps, 0, POSE_AU_VOLANT);
+}
+// OÙ L'ON EST ASSIS, sans y poser personne : la séquence d'embarquement
+// (embarquement.js, v355) y fait arriver l'avatar, et c'est le MÊME calcul
+// que celui qui l'y tient ensuite — sinon il sauterait d'un cran à l'instant
+// où il s'assied.
+function placeAssise(a, siege) {
   // LA TÊTE RESTE SOUS LE TOIT (Max : « le personnage passe à travers la
   // carrosserie »). Le siège de la fiche vaut pour une berline ; une voiture
   // basse a son toit plus bas, et le sommet du crâne — 0,71 au-dessus des
@@ -7058,13 +7074,8 @@ function asseoir(av, a, siege, temps) {
     if (hanches + 0.706 > plafond - 0.06) hanches = Math.max(0.3, plafond - 0.06 - 0.706);
     if (hanches + 0.706 > plafond - 0.06) echelle = Math.max(0.7, Math.min(1, (plafond - 0.06 - hanches) / 0.706));
   }
-  av.scale.setScalar(echelle);
   // les hanches sur l'assise : le modèle a ses hanches à H.hanche × 0,84
-  av.position.set(siege.x, hanches - 0.77 * echelle, siege.z);
-  av.rotation.y = 0;                             // visage en −z, comme le nez de la voiture
-  av.userData.legs.forEach((l) => { l.rotation.x = POSE_AU_VOLANT.cuisses; });
-  av.userData.arms.forEach((b) => { b.rotation.x = POSE_AU_VOLANT.bras; });
-  animerHumain(av, temps, 0, POSE_AU_VOLANT);
+  return { x: siege.x, y: hanches - 0.77 * echelle, z: siege.z, echelle };
 }
 
 // LES RÉVERBÈRES ÉCLAIRENT VRAIMENT LA RUE, LA NUIT (v248). Manhattan pose
@@ -7489,6 +7500,10 @@ const fun = initFun({
     tirer: () => profileSync.photosTirer().catch(() => []),
   },
 });
+
+// LA SÉQUENCE D'EMBARQUEMENT (v355) prend l'avatar que main.js possède, et la
+// place assise que main.js calcule : un seul corps, une seule assise.
+fun.brancherAvatar({ obtenir: obtenirAvatarLocal, placeAssise, pose: POSE_AU_VOLANT });
 
 // --- main loop -------------------------------------------------------------------------
 
