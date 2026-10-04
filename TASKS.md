@@ -91,6 +91,22 @@
     rouges à l'identique sur `origin/main` seul ; la branche seule rend « deux
     enfants sans courtier du tout ». Famille des parties par le nuage,
     intermittente, en production.
+- [ ] **LA CONDUITE À LA GTA, PALIER 1 LIVRÉ (conduite-physique) — CE QUI
+  RESTE, DÉCLARÉ.** (1) Le PLAFOND DE LA TABLETTE n'est pas mesuré : 60
+  blocs/s tient au banc (trou de 125 blocs à rr=12, Paris compris, la
+  position avancée en temps réel — `sonde-plafond-voiture.cjs`), mais le fil
+  principal de l'iPad installe les morceaux à SA cadence ; à mesurer avec
+  `?diag=1` en hypercar (55 blocs/s) dans Paris. (2) Le CHOC contre une
+  voiture de la rue prend la normale du mouvement (de face) : la position de
+  l'autre voiture n'est pas lue, et le témoin pose la famille « voiture » à la
+  main (le crochet réel est éprouvé par « la circulation s'arrête devant la
+  voiture de l'enfant »). (3) La normale d'un MUR se lit sur les axes du
+  monde : contre une façade oblique en escalier (Paris), la glisse alterne
+  les axes. (4) La ROUE LIBRE dure quelques secondes (frein moteur 3,5
+  blocs/s² plus l'air) là où l'ancienne voiture s'arrêtait en 0,4 s : c'est
+  voulu (GTA), à juger sur la tablette avec Marlon. (5) Les réseaux : la
+  dérive et le braquage ne voyagent pas — l'ami voit la caisse au cap du
+  conducteur, pas le volant.
 - [x] **DEUX OU TROIS PROGRAMMES SE COMPILENT ENCORE À L'ARRIVÉE À PARIS
   (mesuré en v306) — ÉLARGI À TOUTES LES VILLES ET FAIT EN v319.**
   `sonde-programmes-villes.cjs` (seize lieux, page neuve par lieu) rendait sur
