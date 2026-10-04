@@ -1601,7 +1601,7 @@ function updateChunks() {
   // LES FAMILLES SE JUGENT L'UNE APRÈS L'AUTRE, ET LA PLUS CHÈRE EN DERNIER
   // (leçon de la contrainte de partage, v270) : `eauDevant` descend une
   // colonne, les autres lisent des listes déjà figées.
-  // ET LE CROCHET DIT QUELLE FAMILLE ARRÊTE LA VOITURE (v349) : un choc
+  // ET LE CROCHET DIT QUELLE FAMILLE ARRÊTE LA VOITURE (v350) : un choc
   // contre une voiture de la rue ou du mobilier rebondit, un piéton et l'eau
   // arrêtent net, sans choc — personne n'est jamais touché (v259).
   player.obstacleVehicule = (x, z, cap, x0 = x, z0 = z) => {

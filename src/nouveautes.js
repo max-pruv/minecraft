@@ -6,12 +6,21 @@
 
 export const NOUVEAUTES = [
   {
-    v: 349,
+    v: 350,
     titre: 'Des voitures pour de vrai',
     puces: [
       'Les voitures vont beaucoup plus vite',
       'Elles tournent et glissent pour de vrai',
       'Contre un mur, on glisse ou on rebondit',
+    ],
+  },
+  {
+    v: 349,
+    titre: 'Les forêts tropicales',
+    puces: [
+      'L\'Amazonie est une vraie jungle',
+      'Des palmiers au Congo, à Bornéo',
+      'L\'herbe d\'un vert profond',
     ],
   },
   {

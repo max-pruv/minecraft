@@ -122,7 +122,8 @@ export function herbeDuClimat(it, herbe = MAP_COLORS[BLOCK.GRASS]) {
   if (!it) return herbe;
   const t = TEINTE_HERBE[it];
   const c = [herbe[0] * t[0], herbe[1] * t[1], herbe[2] * t[2]];
-  if (it !== INDICE_CLIMAT.taiga) return c;
+  // la taïga et les tropiques sont des forêts presque partout
+  if (it !== INDICE_CLIMAT.taiga && it !== INDICE_CLIMAT.tropiques) return c;
   const f = TEINTE_FEUILLES[it], fe = MAP_COLORS[BLOCK.LEAVES];
   return [(c[0] + fe[0] * f[0]) / 2, (c[1] + fe[1] * f[1]) / 2, (c[2] + fe[2] * f[2]) / 2];
 }

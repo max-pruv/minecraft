@@ -977,7 +977,7 @@ en temps réel), `fun.js` le fait descendre et `deposer` le pose debout sur une
 case libre à côté (côté conducteur d'abord). La carcasse porte `horsService`
 (lu par `animals.js`, comme `montee`) : elle ne se reprend pas, et elle s'en
 va au bout de `DUREE_CARCASSE`.
-## La conduite à la GTA (v349) — un modèle pur, une boîte orientée, des chocs qui se publient
+## La conduite à la GTA (v350) — un modèle pur, une boîte orientée, des chocs qui se publient
 
 Max : « une grosse refonte de la façon de conduire… comme GTA ». Premier palier
 de la session `conduite-physique` (six sessions en parallèle sur la conduite).
@@ -1179,6 +1179,12 @@ Plaines à l'ouest du 100e méridien, steppe pontique au sud de 47° N).
 Et `DATE_CLIMATS` SE RELIT à chaque tranche qui change des arbres : la
 steppe en retire, donc ce qu'un enfant a bâti jusqu'à la fusion de la v347
 garde les arbres d'avant.
+**Les forêts tropicales (v349)** ferment les quatre climats : dix forêts
+humides réelles, la forêt dense de grands feuillus et un palmier sur quatre
+(`DENSITE_MAX` passe à 0,08, la seule densité au-dessus de la forêt
+tempérée). Une teinte se juge en capture et pas seulement au témoin : le vert
+réglé à (60, 160, 50) virait au fluo à l'écran, et le témoin le trouvait
+très bien teint.
 
 ## Les déserts chauds (v341) — le climat est une donnée de géographie, comme la côte
 
@@ -5061,8 +5067,8 @@ caméra à part, `layers.enableAll()` comme le veut la v250.
 ## Chaque voiture roule à l'allure de sa classe (v260)
 
 > **⚠️ Le plafond calculé ci-dessous (28 blocs/s) est remplacé par un plafond
-> MESURÉ (60) en v349, et l'allure se déduit des fiches de `conduite.js`.** Lire
-> « La conduite à la GTA (v349) ».
+> MESURÉ (60) en v350, et l'allure se déduit des fiches de `conduite.js`.** Lire
+> « La conduite à la GTA (v350) ».
 
 Max : « une vitesse en fonction du modèle ». Deux règles.
 
