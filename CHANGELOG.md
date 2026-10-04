@@ -50,6 +50,16 @@ hauteur connue (le Capitole, Big Ben, la Tour Blanche, les beffrois de Lille…)
 aucune inversion, chaque monument à sa cible. Captures de rue et de ciel des
 trois monuments (`tests/sonde-captures-lot2.cjs`).
 
+**Et à Paris, des cubes ne dépassent plus des modèles étirés.** Second sujet de
+la livraison. La corniche de l'Opéra, l'entablement du Panthéon et le pied de
+la flèche de Notre-Dame faisaient quatre dixièmes de bloc ; la couche du voxel
+qu'ils habillent en fait un, et une fois étirée par la v335 la fin de la couche
+sortait du modèle en cubes. Les trois modèles prennent l'épaisseur de la
+couche : au-dessus de la hauteur d'un enfant, l'Opéra passe de 15 cellules de
+flanc découvertes à 0, le Panthéon de 6 à 0, Notre-Dame de 8 à 0, et un témoin
+de `plafond.js` les compte. Restent les vingt-quatre cubes du parvis de
+Notre-Dame, au sol, d'avant la v335 (dette déclarée).
+
 ---
 
 ## v349 — Les forêts tropicales
