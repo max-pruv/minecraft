@@ -20,6 +20,41 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v353 — Le ciel de toutes les villes
+
+**Pourquoi.** La v342 avait donné son ciel à vingt-cinq villes engendrées —
+celles qui portaient une dette. Mesuré sur toutes les autres : vingt et une
+villes avaient des repères au-dessus de leurs toits mais pas à leur vraie
+hauteur (la Frauenkirche de Munich à quinze blocs pour quatre-vingt-dix-neuf
+mètres, le Capitole de La Havane à onze pour quatre-vingt-douze, la pagode de
+Sensō-ji à seize, à peine au-dessus des immeubles). Max : « lance sur toutes
+les villes, pas juste celle-là ».
+
+**Ce que ça change.** Seize monuments de neuf villes prennent la hauteur de
+leur ciel — la corniche mesurée, la courbe de Paris posée dessus : le
+Capitole de La Havane à trente-quatre blocs, la coupole de Saint-Marc à
+dix-huit, les tours de la Frauenkirche et le beffroi de Munich à vingt-trois,
+la colonne de Colomb à Barcelone, la Freedom Tower de Miami, la demi-tour
+Eiffel de Las Vegas, et trois pagodes, Sensō-ji, Tō-ji et Kiyomizu-dera, dont
+chaque étage s'étire et chaque toit reste un rang. Le ciel garde son ordre :
+Tokyo et Munich compriment leur courbe pour que la tour de Tokyo et la
+Frauenkirche restent au-dessus. Les tours d'un bloc qui dominent DÉJÀ leurs
+toits (l'hôtel de ville de Bruxelles, la Koutoubia, la Willis Tower, la
+Skytree…) ne bougent pas : étirées, ce sont des perches. L'emprise ne bouge
+d'aucun bloc, le sol non plus.
+
+**Ce qui le prouve.** Un témoin neuf dans `plafond.js`, rouge sur
+`origin/main` (dix-neuf villes sans ciel) : toute ville engendrée dont un
+repère est mesuré a son ciel, ou dit pourquoi ; et aucun fût qui domine déjà
+ses toits n'est étiré. Le témoin d'ordre couvre cinquante-neuf monuments
+contre quarante-huit, avec la Sagrada Família, le Luxor, le campanile, la tour
+de Tokyo et la Skytree en repères fixes. Les deux empreintes du relief sont
+intactes. Captures de rue et de ciel des onze villes : elles ont démonté le
+premier jet (l'hôtel de ville de Bruxelles à trente-quatre blocs, la Willis
+Tower à cinquante-cinq, des perches noires au-dessus de la ville).
+
+---
+
 ## v352 — Un morceau de monde coûte deux fois moins
 
 **Pourquoi.** La v346 avait mesuré qu'au-delà de 70 blocs par seconde la

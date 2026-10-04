@@ -182,7 +182,7 @@ export const ECHELLES_VILLES = Object.freeze({
   // La tour du Cabildo, trente mètres.
   'Buenos Aires|Le Cabildo': { vraie: 30, corps: ARCHE(4) },
 
-  // LES AUTRES VILLES ENGENDRÉES (v351). Même
+  // LES AUTRES VILLES ENGENDRÉES (v352). Même
   // règle, même table : la corniche mesurée, la courbe de Paris posée dessus.
   // Ce qui est déjà au-dessus de son ciel ne bouge pas (la Sagrada Família,
   // le Burj Khalifa, la Space Needle, le Christ Rédempteur, l'Opéra de Sydney —
@@ -355,7 +355,7 @@ export const CIELS = Object.freeze({
   // blocs sur trois, et à seize blocs (k = 1) il devenait une tour blanche,
   // vu en capture ; à onze, une fois et demie les toits, il reste un opéra.
   Lille: [7, 0.4], Londres: [8, 0.75], Washington: [13, 0.26],
-  // v351 : les autres villes engendrées qui portent des repères.
+  // v352 : les autres villes engendrées qui portent des repères.
   Barcelone: 13, Munich: [13, 0.55], Venise: 8, 'Las Vegas': 15, Miami: 13, 'La Havane': 13,
   Tokyo: [13, 0.72], Kyoto: 12,
 });

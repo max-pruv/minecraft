@@ -949,7 +949,7 @@
   couleur de la calotte) : un obus d'ardoise, corrigé (le corps s'arrête au
   tambour). Le remède de fond est un bâtisseur par monument, avec sa nef — pas
   une table de paliers.
-- [ ] **LES GRATTE-CIEL ET LES BEFFROIS D'UN BLOC DE LARGE (vNNN), mesuré.**
+- [ ] **LES GRATTE-CIEL ET LES BEFFROIS D'UN BLOC DE LARGE (v352), mesuré.**
   Toute ville engendrée mesurée a désormais son ciel ou dit pourquoi
   (`VILLES_SANS_CIEL`). Restent hors de leur vraie hauteur, déclarés `vrai`, les
   fûts qui dominent DÉJÀ leurs toits (hauteur d'auteur au-delà d'une fois et
@@ -962,7 +962,7 @@
   remède est un BÂTISSEUR de tour avec une emprise (`tourBoule`, `minaret` sont
   des colonnes d'un bloc) — l'emprise d'un repère est sa `box`, qui ne bouge
   pas : une tour de trois blocs de côté tient dans `box: 4`.
-- [ ] **LE CIEL DE LAS VEGAS GARDE SA ROUE ET SA PYRAMIDE (vNNN), déclaré.** La
+- [ ] **LE CIEL DE LAS VEGAS GARDE SA ROUE ET SA PYRAMIDE (v352), déclaré.** La
   High Roller (167 m, 16 blocs) est sous la demi-tour Eiffel (165 m, 26) : une
   roue ne s'étire pas, comme le Prater. Le Luxor (107 m) reste à quinze blocs :
   étirée, une pyramide devient un obélisque.
