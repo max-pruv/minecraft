@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v350 — Conduire comme au cinéma
+## v352 — Conduire comme au cinéma
 
 **Pourquoi.** Max (4 octobre 2026) : « une grosse refonte de la façon de
 conduire… comme GTA ». Au volant, la caméra restait rivée à six blocs quatre
@@ -53,6 +53,80 @@ choc 0,90 contre 0,073, secousse 0,23 bloc, caméra du côté de la voiture. Le 
 se mesure en ordre alterné sur la même page (`?sensations=0` rejoue l'ancienne
 conduite) : aucun appel de dessin ni programme de shader de plus (67 des deux
 côtés).
+
+---
+
+## v351 — Les piétons à l'abri des voitures rapides
+
+**Pourquoi.** Le chantier « conduite » fait rouler les voitures trois fois plus
+vite — 40 à 70 blocs par seconde. L'écart des piétons (v259) avait été réglé
+pour 4 à 25 : il regardait trente blocs devant une voiture, une demi-seconde à
+60 b/s, quand il en faut plus pour sortir d'une carrosserie au pas pressé. Et,
+plus grave, la voiture roule sur l'horloge RÉELLE de la rue (v305) quand le
+piéton marche en temps de jeu, borné à un vingtième de seconde : sur une
+tablette qui rame, il marchait quatre fois moins vite que la voiture qui
+arrive. Mesuré sous node : un piéton touché dès 50 b/s à soixante images par
+seconde, dès 7 b/s à cinq.
+
+**Ce que ça change.**
+
+- **Un piéton voit venir une voiture 1,6 seconde à l'avance**, quelle que soit
+  sa vitesse, et s'en écarte d'un pas pressé compté en temps réel : il sort de
+  la trajectoire à temps même quand la tablette rame. Personne n'est touché.
+- Loin devant, seul celui qui est DANS la trajectoire réagit : les passants du
+  bord du trottoir continuent leur chemin.
+- La pause qui suit un écart n'aveugle plus : on regarde la route en soufflant.
+
+**Ce qui le prouve.** Un témoin de `monte.js` lance une voiture à 60 puis
+70 b/s sur un passant immobile, six fois, dont une à cinq images par seconde
+provoquées ; il juge le volume balayé par la carrosserie entre deux images et
+la position d'arrivée du piéton. Rouge sur `origin/main` (trois passes sur six
+touchées, arrivée à 0,68 bloc de l'axe), vert ici (zéro, arrivée à 2,9). La
+sonde sous node : aucun choc jusqu'à 120 b/s, de 60 à 3 images par seconde.
+Coût mesuré en ordre alterné : 0,05 à 0,1 ms par image pour cent piétons et
+deux cents voitures.
+
+---
+
+## v350 — L'Opéra de Lille, Buckingham et les Archives à leur hauteur
+
+**Pourquoi.** La mesure de la v335, lancée sur toutes les villes, avait laissé
+huit monuments des villes bâties à la main plus bas que les immeubles autour
+d'eux, déclarés en dette (« lot 2 ») : l'Opéra de Lille à six blocs pour des
+toits à sept, Buckingham à sept pour huit, l'Arche de Washington à New York, et
+à Washington le Trésor, les Archives, le Théâtre Ford, les musées d'Histoire
+américaine et de l'Indien d'Amérique.
+
+**Ce que ça change.** Trois montent dans le ciel de leur ville, la même règle
+que les villes engendrées (la corniche mesurée, puis la courbe de Paris) :
+l'Opéra de Lille passe de six à onze blocs, une fois et demie les toits de la
+place du Théâtre (à seize, son petit bâtisseur faisait une tour blanche, vu en
+capture) ; Buckingham de sept à
+douze, à la hauteur de la Tour Blanche ; les Archives nationales de onze à
+quinze, à la hauteur du dôme de la Bibliothèque du Congrès. Sous la troisième
+couche rien ne s'étire : la porte, la locomotive du musée, les gardes et les
+grilles de Buckingham gardent leur taille. Les cinq autres sont bas dans la
+vraie ville aussi et le disent : l'Arche (23 m) au milieu des immeubles de NYU,
+et à Washington, ville plafonnée par la loi de 1910, le Trésor, le Théâtre Ford
+et les deux musées du Mall, qui monteraient sinon au-dessus des tours du
+château du Smithsonian.
+
+**Ce qui le prouve.** Le témoin des monuments de `plafond.js` n'a plus aucune
+dette « lot 2 » (huit sur l'ancien code) ; celui de l'ordre du vrai ciel
+compte désormais les villes bâties à la main, avec quinze repères fixes de
+hauteur connue (le Capitole, Big Ben, la Tour Blanche, les beffrois de Lille…) :
+aucune inversion, chaque monument à sa cible. Captures de rue et de ciel des
+trois monuments (`tests/sonde-captures-lot2.cjs`).
+
+**Et à Paris, des cubes ne dépassent plus des modèles étirés.** Second sujet de
+la livraison. La corniche de l'Opéra, l'entablement du Panthéon et le pied de
+la flèche de Notre-Dame faisaient quatre dixièmes de bloc ; la couche du voxel
+qu'ils habillent en fait un, et une fois étirée par la v335 la fin de la couche
+sortait du modèle en cubes. Les trois modèles prennent l'épaisseur de la
+couche : au-dessus de la hauteur d'un enfant, l'Opéra passe de 15 cellules de
+flanc découvertes à 0, le Panthéon de 6 à 0, Notre-Dame de 8 à 0, et un témoin
+de `plafond.js` les compte. Restent les vingt-quatre cubes du parvis de
+Notre-Dame, au sol, d'avant la v335 (dette déclarée).
 
 ---
 

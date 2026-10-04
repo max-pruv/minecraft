@@ -181,7 +181,7 @@ export function moteurDemarre(type = 'voiture') {
   filtre.Q.value = r.q;
   const gainS = c.createGain();
   gainS.gain.value = 0.0001;
-  // LA TOUX ET LA PANNE (v350) passent par un robinet commun au souffle et aux
+  // LA TOUX ET LA PANNE (v352) passent par un robinet commun au souffle et aux
   // harmoniques : un moteur qui tousse se tait tout entier un instant, il ne
   // garde pas son souffle pendant que ses harmoniques s'éteignent.
   const toux = c.createGain();
@@ -204,7 +204,7 @@ export function moteurDemarre(type = 'voiture') {
     siffle.connect(gainSif).connect(sortie);
     siffle.start();
   }
-  // LES PNEUS (v350), montés UNE fois avec le moteur d'une voiture et
+  // LES PNEUS (v352), montés UNE fois avec le moteur d'une voiture et
   // silencieux tant qu'ils ne glissent pas : un souffle serré autour de trois
   // kilohertz et un sifflement tonal qui tremble — c'est le tremblement qui
   // fait un crissement plutôt qu'une bouilloire.
@@ -230,7 +230,7 @@ export function moteurDemarre(type = 'voiture') {
   return true;
 }
 
-// LA VOITURE EN ENTIER (v350), appelée à chaque image depuis `sensations.js` :
+// LA VOITURE EN ENTIER (v352), appelée à chaque image depuis `sensations.js` :
 // tout se règle par `setTargetAtTime` ou se PROGRAMME contre l'horloge du
 // contexte audio — rien ne se crée par image, sauf une étincelle de feu
 // programmée à l'avance, comme une note de radio.
@@ -296,7 +296,7 @@ export function voitureSons({ regime = 0, charge = 0, crissement = 0, sante = 1,
   }
 }
 
-// LE CHOC (v350) : un coup sourd qui descend, un froissement de tôle, et pour
+// LE CHOC (v352) : un coup sourd qui descend, un froissement de tôle, et pour
 // un choc fort une résonance métallique. C'est un ÉVÉNEMENT, pas une image :
 // il crée ses nœuds, les programme et les laisse s'éteindre, comme une note.
 export function bruitDeChoc(force = 0.5) {
@@ -338,7 +338,7 @@ export function bruitDeChoc(force = 0.5) {
 export function moteurRegime(regime, charge = null) {
   if (!moteur || !ctx) return;
   const g = Math.max(0, Math.min(1, regime));
-  // LA CHARGE (v350) : un moteur qui tire gronde, un moteur sur sa lancée
+  // LA CHARGE (v352) : un moteur qui tire gronde, un moteur sur sa lancée
   // s'adoucit. Sans charge donnée (l'avion), on garde le dosage d'avant.
   const ch = charge == null ? null : Math.max(0, Math.min(1, charge));
   const t = ctx.currentTime, k = 0.09;

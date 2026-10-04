@@ -448,19 +448,40 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       'Jérusalem|Le dôme du Rocher': 35, 'Jérusalem|La tour de David': 30,
       'Los Angeles|L\'hôtel de ville': 138, 'Mexico|La Torre Latino': 183, 'Buenos Aires|L\'Obélisque': 68,
       'Berlin|Berliner Dom': 98, 'Singapour|Marina Bay Sands': 200, 'Bangkok|Wat Arun': 82,
-      'Delhi|Rashtrapati Bhavan': 55 };
+      'Delhi|Rashtrapati Bhavan': 55,
+      // Le lot 2, les villes bâties à la main (v350).
+      'Lille|Beffroi de la Chambre de commerce': 76, 'Lille|Beffroi de Lille': 104, 'Lille|Tour de Lille': 117,
+      // St Paul (111 m, 17 blocs sous Big Ben) et le château du Smithsonian
+      // (44 m, onze blocs sous Jefferson) n'y sont pas : leurs inversions
+      // précèdent la v350, déclarées dans `TASKS.md`.
+      'Londres|Tour de Londres': 27, 'Londres|Colonne Nelson': 52,
+      'Londres|Big Ben': 96, 'Londres|The Shard': 310,
+      'Washington|Maison-Blanche': 21, 'Washington|Lincoln Memorial': 30, 'Washington|Mémorial Jefferson': 39,
+      'Washington|Bibliothèque du Congrès': 59,
+      'Washington|Capitole des États-Unis': 88, 'Washington|Monument de Washington': 169 };
     const EV = EM && EM.ECHELLES_VILLES ? EM.ECHELLES_VILLES : {};
-    const ciel = [...new Map([...Object.entries(EV).map(([k, e]) => [k, e.vraie]), ...Object.entries(FIXES)])]
+    const EMAIN = EM && EM.ECHELLES_MAIN ? EM.ECHELLES_MAIN : {};
+    const ciel = [...new Map([...Object.entries({ ...EV, ...EMAIN }).map(([k, e]) => [k, e.vraie]), ...Object.entries(FIXES)])]
       .filter(([k]) => hauteurs[k] != null);
     const inversions = [];
     for (const [a, va] of ciel) for (const [b, vb] of ciel) {
       if (a.split('|')[0] !== b.split('|')[0] || va >= vb) continue;
       if (hauteurs[a] > hauteurs[b]) inversions.push(`${a} (${va} m) ${hauteurs[a]} > ${b.split('|')[1]} (${vb} m) ${hauteurs[b]}`);
     }
-    const ecartsCible = Object.keys(EV).filter((k) => hauteurs[k] != null)
+    const ecartsCible = Object.keys({ ...EV, ...EMAIN }).filter((k) => hauteurs[k] != null)
       .map((k) => [k, EM.echelleDe(...k.split('|')).cible]).filter(([k, c]) => hauteurs[k] !== c)
       .map(([k, c]) => `${k} ${hauteurs[k]} pour ${c}`);
-    verifier('chaque ville engendrée garde l\'ordre de son vrai ciel',
+    // LE LOT 2, LES VILLES BÂTIES À LA MAIN (v350) : plus de dette non plus.
+    // Sur l'ancien code huit monuments la portent, de l'Arche de Washington au
+    // Théâtre Ford ; trois montent dans le ciel de leur ville, cinq sont bas
+    // dans la vraie ville aussi.
+    const lot2 = Object.entries(declares).filter(([, d]) => /lot 2/.test(d.lot || '')).map(([k]) => k);
+    verifier('les monuments des villes bâties à la main ne sont plus une dette',
+      lot2.length === 0 && Object.keys(EMAIN).length >= 3,
+      lot2.length ? `${lot2.length} encore en dette : ${lot2.join(' · ')}`
+        : `${Object.keys(EMAIN).map((k) => `${k} ${hauteurs[k]}`).join(' · ')}`);
+
+    verifier('chaque ville remise à son ciel garde l\'ordre de son vrai ciel',
       Object.keys(EV).length > 40 && inversions.length === 0 && ecartsCible.length === 0,
       `${Object.keys(EV).length} monuments à l'échelle de leur ville`
       + (inversions.length ? ` — INVERSÉS : ${inversions.join(' · ')}` : '')
@@ -486,6 +507,42 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     verifier('les monuments de Paris sont à l\'échelle du ciel, sous la tour Eiffel',
       ecarts.length === 0,
       ecarts.length ? ecarts.join(' · ') : paris.map((q) => `${q.nom} ${q.h}`).join(' · '));
+  }
+
+  // LES MODÈLES ÉTIRÉS COUVRENT LEUR VOXEL (v350). La v335 a étiré les
+  // monuments de Paris trois à huit fois : un bloc d'écart entre le modèle et
+  // son voxel, qui tenait dans la tolérance, en sortait en CUBES accrochés au
+  // modèle — l'attique de l'Opéra (15), les angles arrière de l'entablement du
+  // Panthéon (6), le pied de la flèche de Notre-Dame (8). Même lecture que
+  // `sonde-monuments-hd.cjs` : une cellule de voxel exposée par le côté, que le
+  // modèle ne couvre pas, au-dessus de la hauteur d'un enfant. Les vingt-quatre
+  // du parvis de Notre-Dame, au sol, précèdent la v335 (dette déclarée).
+  {
+    const W = await import('../src/world.js');
+    const HD = await import('../src/paris-monuments-hd.js');
+    const { BLOCK } = await import('../src/blocks.js');
+    const fautes = [];
+    let exposees = 0;
+    for (const lm of W.REPERES_HD) {
+      const solide = new Set();
+      const cellules = new Map();
+      lm.build((x, y, z, id) => cellules.set(`${x},${y},${z}`, id));
+      for (const [k, id] of cellules) if (id !== BLOCK.AIR) solide.add(k);
+      const couvre = HD.cellulesCouvertes(lm.name);
+      let n = 0;
+      for (const k of solide) {
+        const [x, y, z] = k.split(',').map(Number);
+        if (y <= 3) continue;
+        const cote = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dz]) => !solide.has(`${x + dx},${y},${z + dz}`));
+        if (!cote) continue;
+        exposees++;
+        if (!couvre.has(k)) n++;
+      }
+      if (n) fautes.push(`${lm.name} ${n}`);
+    }
+    verifier('les modèles étirés de Paris couvrent leur voxel au-dessus d\'un enfant',
+      exposees > 5000 && fautes.length === 0,
+      fautes.length ? `cubes qui dépassent : ${fautes.join(' · ')}` : `${exposees} cellules de flanc, toutes couvertes`);
   }
 
   const { ZONE_WASHINGTON: Z } = await import('../src/washington.js');

@@ -6,13 +6,32 @@
 
 export const NOUVEAUTES = [
   {
-    v: 350,
+    v: 352,
     titre: 'Conduire comme au cinéma',
     puces: [
       'La caméra recule quand on accélère',
       'La voiture penche dans les virages',
       'Les roues avant tournent avec toi',
       'Les pneus crissent, les chocs s\'entendent',
+    ],
+  },
+  {
+    v: 351,
+    titre: 'Les passants voient venir',
+    puces: [
+      'Ils s\'écartent des voitures rapides',
+      'Même quand la tablette rame',
+      'Personne n\'est jamais touché',
+    ],
+  },
+  {
+    v: 350,
+    titre: 'Buckingham et l\'Opéra de Lille grandissent',
+    puces: [
+      'L\'Opéra de Lille domine sa place',
+      'Buckingham et les Archives aussi',
+      'Les portes gardent leur taille',
+      'Plus de cubes sur l\'Opéra de Paris',
     ],
   },
   {

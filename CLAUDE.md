@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Les sensations au volant (v350) — la caméra regarde la voiture, et un mur se cherche cellule par cellule
+## Les sensations au volant (v352) — la caméra regarde la voiture, et un mur se cherche cellule par cellule
 
 Chantier « conduite » (six sessions, octobre 2026) ; celle-ci tient ce que
 l'enfant VOIT et ENTEND. Tout vit dans `src/sensations.js`, branché par un
@@ -805,6 +805,37 @@ règles.
   dans l'image, et `sensations.js` reprend le suivi du bestiaire pour ne pas
   compter deux fois. Les avions gardent la poursuite d'avant à l'identique ;
   `?sensations=0` rejoue l'ancienne conduite, pour mesurer.
+
+## Les villes bâties à la main dans leur ciel (v350) — un repère-fût borne la courbe d'en dessous aussi
+
+Le lot 2 de la dette de la v335 : huit monuments. Trois règles.
+
+- **UNE SALLE QU'ON VISITE NE S'ÉTIRE PAS SOUS LA TROISIÈME COUCHE.** Les
+  monuments de Washington sont des musées à exposition, Buckingham a ses gardes
+  et ses grilles aux couches 1 et 2 : la forme `corps` (qui étire dès la couche
+  1) en ferait des gardes de quatre blocs. Leurs paliers s'écrivent en mètres,
+  comme à Paris, avec un premier palier à 2, 3 ou 4 (`ECHELLES_MAIN`).
+- **UN FÛT PLUS HAUT DANS LA VRAIE VILLE INTERDIT AUSSI DE MONTER CE QUI EST
+  PLUS BAS.** Le château du Smithsonian (44 m) a ses tours d'un bloc à onze :
+  les monter en ferait des aiguilles (v342), et les musées d'Histoire
+  américaine (≈30 m) et de l'Indien d'Amérique (≈30 m, dôme 37) ne peuvent donc
+  pas dépasser onze — or la corniche de Washington est à treize, et tout ce qui
+  passe la corniche y monte au moins. Aucune courbe ne tient les deux : ils sont
+  `vrai`, et c'est juste (la loi de 1910 plafonne la ville à une quarantaine de
+  mètres, ces bâtiments n'y montent pas). Avant de chercher le `k` d'une ville,
+  on écrit ses repères fixes de hauteur connue dans le témoin (`FIXES`) : c'est
+  eux qui disent ce qui peut monter.
+- **UNE COUCHE DE VOXEL SE COUVRE EN ENTIER, PAS À QUATRE DIXIÈMES PRÈS.** La
+  corniche de `palais` fait 0,4 bloc ; la couche du voxel qu'elle habille en
+  fait un. Aux cotes d'auteur, la dilatation d'un bloc la couvrait ; étirée
+  trois fois, la fin de la couche sortait du modèle en cubes (l'attique de
+  l'Opéra, l'entablement du Panthéon, le pied de la flèche de Notre-Dame). Le
+  modèle prend l'épaisseur de la couche, et un témoin de `plafond.js` compte
+  les cellules de flanc non couvertes au-dessus d'un enfant : zéro.
+- **UNE HAUTEUR VRAIE SE CHERCHE, ELLE NE SE DEVINE PAS** : 160 pieds pour les
+  Archives, 24 m pour Buckingham, une quarantaine de mètres pour l'Opéra de
+  Lille, 23 m pour l'Arche. Ce qu'on n'a pas trouvé (le musée d'Histoire
+  américaine, « cinq étages ») se dit approché dans le commentaire.
 
 ## Le monde à la vitesse (v346) — on maille où l'on va, et le plafond se mesure en roulant
 
@@ -898,6 +929,36 @@ engendrées. Quatre règles.
   journal vide dans le jeu, trois rouges de `maj.js`. Après tout conflit dans un
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
+
+## Les piétons et les voitures rapides (v351) — ce qui fuit une horloge réelle se compte sur elle
+
+Le chantier « conduite » (sept sessions) triple les vitesses. Trois règles.
+
+- **UN REGARD QUI PORTE EN BLOCS EST UN TEMPS QUI RÉTRÉCIT.** Le couloir de la
+  v259 valait `min(30, 2 v + 4)` blocs : une demi-seconde à 60 b/s. Il se
+  mesure désormais en SECONDES de route (`HORIZON_S`, 1,6 — le double de ce
+  qu'il faut à trois images par seconde, mesuré), avec une marge large sous
+  0,8 s et étroite au-delà (seul ce qui est dans la trajectoire réagit loin
+  devant). `src/pietons.js` est pur et c'est lui que `main.js` lit.
+- **UNE VOITURE QUI ROULE EN TEMPS RÉEL SE FUIT EN TEMPS RÉEL.** La position
+  d'un convoi est une fonction de l'horloge de la rue (v305) ; le piéton
+  marchait en `dt` borné. À cinq images par seconde il allait quatre fois
+  moins vite que ce qu'il fuyait : touché dès 7 b/s. C'est le piège de `dt`
+  (v226) dans le sens où il BLESSE, et la règle « une animation suit le temps
+  du jeu » ne s'y applique pas : ce qui doit tenir face à une horloge réelle
+  se compte sur elle. L'écart (`BaseNPC.update`) avance en temps réel, par
+  pas de 0,9 bloc au plus pour que la boîte glisse bloc à bloc. **Avant
+  d'accélérer un objet, on demande sur quelle horloge il roule, et sur
+  laquelle roule ce qui doit l'éviter.**
+- **UN TÉMOIN DE CHOC JUGE LE VOLUME BALAYÉ, ET IL PROVOQUE LA CADENCE.** À
+  60 b/s et cinq images par seconde, une voiture saute douze blocs d'une image
+  à l'autre : un instantané ne la voit jamais sur le piéton. Le témoin de
+  `monte.js` juge l'intervalle parcouru par la carrosserie entre deux images,
+  et la position d'ARRIVÉE (v279) ; il suspend `player.update` pour conduire
+  la voiture à la main en temps réel — le freinage de la voiture
+  (`pietonDevant`) ne joue donc pas : on éprouve le seul filet du piéton, les
+  deux se cumulent et l'on ne compte pas sur l'autre. Une passe brûle
+  180 ms par image (v234).
 
 ## Les rues de Londres à la règle du kit (v339) — un plan deux fois plus serré ne porte pas les mêmes rues
 
@@ -1148,7 +1209,7 @@ Plaines à l'ouest du 100e méridien, steppe pontique au sud de 47° N).
 Et `DATE_CLIMATS` SE RELIT à chaque tranche qui change des arbres : la
 steppe en retire, donc ce qu'un enfant a bâti jusqu'à la fusion de la v347
 garde les arbres d'avant.
-**Les forêts tropicales (v349)** ferment les quatre climats : dix forêts
+**Les forêts tropicales (v351)** ferment les quatre climats : dix forêts
 humides réelles, la forêt dense de grands feuillus et un palmier sur quatre
 (`DENSITE_MAX` passe à 0,08, la seule densité au-dessus de la forêt
 tempérée). Une teinte se juge en capture et pas seulement au témoin : le vert
