@@ -4509,7 +4509,11 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         for (const a of [...g.animalManager.animals]) if (a.def.key === 'voiture' || a.def.pilote) { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); }
         g.player.keys.clear(); g.player.touchMove.f = 0; g.player.touchMove.s = 0;
         g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined; g.player.flying = false;
-        const x0 = 30000, z0 = 30600, L = 300, W = 8;
+        // LA PISTE S'ÉLARGIT AVEC LA v337 : la voiture prend sa vitesse plus
+        // progressivement, roule plus loin, et en lâchant après le virage elle
+        // file en roue libre — le frein moteur, plus le frein franc d'avant.
+        // Huit blocs de demi-largeur la faisaient sortir de la dalle de côté.
+        const x0 = 30000, z0 = 30600, L = 300, W = 36;
         let y0 = 0;
         for (let d = -6; d <= L; d += 4) for (let w = -W; w <= W; w += 4) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
         y0 += 2;
@@ -4632,7 +4636,10 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       // puis on relève — jamais un délai fixe.
       const vitesses = [];
       const t0 = Date.now();
-      while (Date.now() - t0 < 20000) { const r = await lire(); if (r.v >= prep.max * 0.9) break; await dormirIci(200); }
+      // et depuis la v337 elle la prend comme une vraie voiture — vite au
+      // départ, plus lentement vers la pointe : cinq secondes de JEU pour une
+      // citadine, donc bien plus de montre au banc. Borné, jamais un délai fixe.
+      while (Date.now() - t0 < 45000) { const r = await lire(); if (r.v >= prep.max * 0.9) break; await dormirIci(200); }
       for (let i = 0; i < 8; i++) { await dormirIci(200); vitesses.push(await lire()); }
       // puis le joystick à droite, toujours plein avant
       const avantVirage = await lire();
@@ -4647,7 +4654,8 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       // borné, jamais un délai fixe.
       let apresLacher = await lire();
       const t2 = Date.now();
-      while (Date.now() - t2 < 10000) { apresLacher = await lire(); if (apresLacher.v < prep.max * 0.3) break; await dormirIci(200); }
+      // la roue libre (frein moteur et air, v337) dure quelques secondes de jeu
+      while (Date.now() - t2 < 30000) { apresLacher = await lire(); if (apresLacher.v < prep.max * 0.3) break; await dormirIci(200); }
       // on descend : les boutons reviennent
       const apres = await tab.evaluate(async () => {
         const g = window.__game;
