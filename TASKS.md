@@ -255,6 +255,13 @@
   branche 3 · 3 · 2, `origin/main` 3 · 3 · 3. Même distribution ; le 5 est un
   tirage sous la charge du portail, et la dette de la v306 (deux ou trois
   programmes à l'arrivée) reste ouverte telle quelle.
+- [ ] **LE PORTAIL DE LA v324.** `plafond.js`, `maj.js`, `carte.js` verts ;
+  `carteMonde.js` : le témoin de l'Autosole vert (rouge sur `origin/main` :
+  « aucun convoi Autosole », neuf segments), seul rouge le tour des monuments
+  de Paris au pas près (`dur 6 · lus 597`). `monte.js` : l'écran figé (3 233 ms
+  · 27,3 %, dette déclarée) et « se téléporter ne compile plus de programmes »,
+  rouge au portail seulement — rejoué seul des deux côtés en v323 (portail de la
+  v322 ci-dessous), vert sur la branche ET sur `origin/main`.
 - [ ] **LE PORTAIL DE LA v323 (règle de la v195), DOUBLE MESURE FAITE.**
   `plafond.js`, `maj.js`, `carte.js` verts ; `carteMonde.js` : le témoin de
   l'E1 vert (rouge sur `origin/main` : « aucun convoi E1 », huit segments), et
