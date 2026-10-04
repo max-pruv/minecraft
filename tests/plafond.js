@@ -374,7 +374,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const reperes = W.CONF_NEUF.reperes.filter((l) => !/mobilier/.test(l.name));
     const wm = new World();
     const feuillage = new Set([BLOCK.LEAVES, BLOCK.LOG]);
-    const fautes = [], mesures = [], paris = [];
+    const fautes = [], mesures = [], paris = [], hauteurs = {};
     let declaresVus = 0;
     for (const lm of reperes) {
       const v = villeDe(lm.x, lm.z);
@@ -399,6 +399,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       hs.sort((a, b) => a - b);
       const med = hs.length >= 40 ? hs[hs.length >> 1] : null;
       const cle = `${v.nom}|${lm.name}`;
+      hauteurs[cle] = h;
       if (v.nom === 'Paris') {
         paris.push({ nom: lm.name, h, med, sol: wm.terrainHeight(lm.x, lm.z), echelle: EM ? EM.echelleDe('Paris', lm.name) : null });
       }
@@ -419,6 +420,51 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     verifier('chaque exception déclarée nomme un monument mesuré',
       introuvables.length === 0,
       introuvables.length ? `introuvables : ${introuvables.join(' · ')}` : `${Object.keys(declares).length} exceptions`);
+
+    // LE LOT 3, LES VILLES ENGENDRÉES (v342) : plus aucune dette déclarée. Sur
+    // l'ancien code `BAS_DECLARES` en porte quarante-sept, de St-Pierre au
+    // Cabildo ; remis à l'échelle du ciel de leur ville, ils en sortent tous.
+    const lot3 = Object.entries(declares).filter(([, d]) => /lot 3/.test(d.lot || '')).map(([k]) => k);
+    verifier('les monuments des villes engendrées ne sont plus une dette',
+      lot3.length === 0, lot3.length ? `${lot3.length} encore en dette : ${lot3.slice(0, 6).join(' · ')}…` : 'aucune');
+
+    // ET LE CIEL GARDE SON ORDRE — le piège du premier jet de la v335 (les
+    // Invalides au-dessus de la tour Eiffel). Dans chaque ville remise à son
+    // ciel, un monument PLUS BAS dans la vraie ville ne dépasse jamais un plus
+    // haut : ni un autre monument remis à l'échelle, ni un repère que la
+    // livraison n'a pas touché. Les hauteurs vraies des repères fixes sont
+    // écrites ici (mètres) ; celles des monuments étirés viennent du module.
+    // La grande roue du Prater (65 m, 16 blocs) n'y est pas : une roue ne
+    // s'étire pas, et la Hofburg (30 m, 21 blocs) la dépasse — déclaré dans
+    // `TASKS.md`.
+    const FIXES = { 'Rome|Colisée': 48, 'Pise|Tour de Pise': 56, 'Agra|Taj Mahal': 73,
+      'Berlin|Fernsehturm': 368, 'Vienne|Stephansdom': 136, 'Florence|Palazzo Vecchio': 94,
+      'Toronto|La CN Tower': 553,
+      // Les fûts d'un bloc qui ne montent pas : la courbe de leur ville passe
+      // dessous (le `k` de `CIELS`). Et ceux qui montent pour l'ordre, écrits
+      // ici aussi : en retirer un de la table fait rougir l'inversion.
+      'Amsterdam|Westerkerk': 85, 'Prague|Saint-Guy': 99, 'Prague|L\'horloge astronomique': 70,
+      'Istanbul|La tour de Galata': 67, 'Stockholm|L\'hôtel de ville': 106,
+      'Jérusalem|Le dôme du Rocher': 35, 'Jérusalem|La tour de David': 30,
+      'Los Angeles|L\'hôtel de ville': 138, 'Mexico|La Torre Latino': 183, 'Buenos Aires|L\'Obélisque': 68,
+      'Berlin|Berliner Dom': 98, 'Singapour|Marina Bay Sands': 200, 'Bangkok|Wat Arun': 82,
+      'Delhi|Rashtrapati Bhavan': 55 };
+    const EV = EM && EM.ECHELLES_VILLES ? EM.ECHELLES_VILLES : {};
+    const ciel = [...new Map([...Object.entries(EV).map(([k, e]) => [k, e.vraie]), ...Object.entries(FIXES)])]
+      .filter(([k]) => hauteurs[k] != null);
+    const inversions = [];
+    for (const [a, va] of ciel) for (const [b, vb] of ciel) {
+      if (a.split('|')[0] !== b.split('|')[0] || va >= vb) continue;
+      if (hauteurs[a] > hauteurs[b]) inversions.push(`${a} (${va} m) ${hauteurs[a]} > ${b.split('|')[1]} (${vb} m) ${hauteurs[b]}`);
+    }
+    const ecartsCible = Object.keys(EV).filter((k) => hauteurs[k] != null)
+      .map((k) => [k, EM.echelleDe(...k.split('|')).cible]).filter(([k, c]) => hauteurs[k] !== c)
+      .map(([k, c]) => `${k} ${hauteurs[k]} pour ${c}`);
+    verifier('chaque ville engendrée garde l\'ordre de son vrai ciel',
+      Object.keys(EV).length > 40 && inversions.length === 0 && ecartsCible.length === 0,
+      `${Object.keys(EV).length} monuments à l'échelle de leur ville`
+      + (inversions.length ? ` — INVERSÉS : ${inversions.join(' · ')}` : '')
+      + (ecartsCible.length ? ` — HORS CIBLE : ${ecartsCible.join(' · ')}` : ''));
 
     // PARIS À L'ÉCHELLE DU CIEL : un bloc pour un mètre jusqu'à la corniche,
     // puis la courbe qui mène la tour Eiffel (330 m) à soixante-neuf. Les
