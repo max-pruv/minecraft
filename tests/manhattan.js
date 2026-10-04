@@ -521,7 +521,19 @@ function verifier(nom, ok, detail = "") {
       avance > 8,
       `${avance} blocs en ${Date.now() - t0Taxi} ms`,
     );
-    await p.locator("#ride-btn").tap();
+    // DESCENDRE NE DOIT PAS TUER LA SUITE (v338) : ce `tap` a levé son délai
+    // au portail de la v338 et neuf témoins n'ont pas été atteints. On
+    // descend, borné, et ce que le bouton annonce entre dans le message.
+    const descendu = await p.locator("#ride-btn").tap({ timeout: 15000 }).then(() => true).catch(() => false);
+    if (!descendu) {
+      const vu = await p.evaluate(() => {
+        const b = document.getElementById("ride-btn");
+        return { bouton: b ? b.textContent.trim() : null, affiche: b ? getComputedStyle(b).display : null,
+          auVolant: !!(__game.fun.montureConduite && __game.fun.montureConduite()), v: __game.player.vitesseVoiture };
+      });
+      console.log(`   (descente du taxi impossible : ${JSON.stringify(vu)})`);
+      await p.evaluate(() => { if (__game.fun.montureConduite && __game.fun.montureConduite()) document.getElementById("ride-btn").click(); });
+    }
     }
     const memo = await p.evaluate(() => {
       __game.world.saveEdits();
