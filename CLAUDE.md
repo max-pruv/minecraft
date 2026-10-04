@@ -961,6 +961,17 @@ qu'il dessine (`distant`), avec les mêmes fonctions et le même bruit
 déterministe — on n'envoie pas de géométrie, on envoie l'histoire du choc.
 Une tablette restée sur l'ancienne version ignore le champ (le receveur cède).
 
+**Le feu coûte deux appels (v348).** Fumée et flammes sont chacune UN
+`InstancedMesh` (`essaim`, degats3d.js) : la couleur par `instanceColor`,
+l'opacité par un attribut `aAlpha` qu'un petit greffon (`onBeforeCompile`,
+clé de programme FIXE `degats-alpha`) multiplie dans le fragment. Les carrés
+vivants sont tassés en tête (`count`), un essaim vide est caché. La chauffe
+compile un essaim d'UNE instance sur les mêmes matériaux — `instanceColor`
+existe dès la naissance, parce que `instancingColor` est dans la clé. Mesuré :
+30 appels pour 30 carrés avant, 2 pour 28 après ; le témoin rend la même image
+deux fois (essaim caché, montré) et exige plus de quatre carrés, sinon
+l'égalité ne prouverait rien.
+
 **Le feu dépose l'enfant, il ne le projette pas** : passé `DELAI_SORTIE` (3,5 s
 en temps réel), `fun.js` le fait descendre et `deposer` le pose debout sur une
 case libre à côté (côté conducteur d'abord). La carcasse porte `horsService`
