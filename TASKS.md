@@ -868,6 +868,10 @@
   tactile (1,06 bloc en 84 s, le chiffre exact des deux côtés en v342) ;
   `monte.js` la compilation à la téléportation (Paris 3 `physical`) et le gel
   d'arrivée (24,4 %, sous les 27,5 % d'`origin/main` en v342).
+  Quatrième, après le rebase sur la v349 (forêts tropicales) : mêmes sept
+  vertes, mêmes rouges — loader, trou de façade (14 460 → 51 734), compilation
+  à la téléportation (chauffe de New York expirée à 163/321), gel d'arrivée
+  (25,5 %) ; le taxi tactile est passé vert.
 - [ ] **LE PORTAIL DE LA v342 (monuments du lot 3) : TROIS SUITES ROUGES, LA DOUBLE
   MESURE EN MAIN.** Sept suites vertes (fumée, métro, parishd, carteMonde,
   plafond, carte, washington). Rejouées SEULES des deux côtés :
