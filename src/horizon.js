@@ -52,7 +52,7 @@
 
 import * as THREE from 'three';
 import { WATER_LEVEL, DESERT, MARS, VOLCANO, dansUneCalotte, CHUNK } from './world.js';
-import { BLOCK } from './blocks.js';
+import { BLOCK, DECOR_START, decorMapColor } from './blocks.js';
 import { decor } from './couches.js';
 import { MAP_COLORS } from './carte.js';
 import { villeMondeEn } from './villesmonde.js';
@@ -136,15 +136,27 @@ const BIOMES = [
 // Les villes bâties à la main ont leurs chiffres relevés dans CLAUDE.md : Paris
 // à trois blocs l'étage (v301), New York et ses tours, Washington basse.
 const VILLES_MAIN = {
-  paris: { h: [14, 24], tours: 0, toit: [122, 128, 138] },     // le zinc
-  ny: { h: [12, 30], tours: 0.35, toit: [128, 126, 124] },
-  londres: { h: [10, 18], tours: 0.05, toit: [134, 104, 88] },
-  sf: { h: [8, 14], tours: 0.1, toit: [196, 190, 178] },
-  nice: { h: [10, 18], tours: 0, toit: [190, 116, 84] },
-  lille: { h: [8, 14], tours: 0, toit: [150, 86, 70] },
-  dc: { h: [6, 12], tours: 0, toit: [196, 192, 182] },
+  paris: { h: [14, 24], tours: 0, toit: [122, 128, 138], mur: [214, 203, 178] },     // le zinc
+  ny: { h: [12, 30], tours: 0.35, toit: [128, 126, 124], mur: [176, 170, 162] },
+  londres: { h: [10, 18], tours: 0.05, toit: [118, 112, 112], mur: [168, 112, 92] },
+  sf: { h: [8, 14], tours: 0.1, toit: [150, 146, 140], mur: [218, 212, 200] },
+  nice: { h: [10, 18], tours: 0, toit: [178, 108, 82], mur: [224, 192, 150] },
+  lille: { h: [8, 14], tours: 0, toit: [104, 96, 96], mur: [160, 92, 72] },
+  dc: { h: [6, 12], tours: 0, toit: [150, 148, 142], mur: [226, 222, 212] },
 };
 const GRIS_RUE = [96, 97, 101];
+
+// La couleur des murs d'une ville engendrée : la moyenne de sa palette de
+// façades, lue comme la carte 2D la lit (`decorMapColor`). Mémoïsée par fiche.
+const MURS = new Map();
+function murDeFiche(f) {
+  let m = MURS.get(f);
+  if (m) return m;
+  const cs = (f.palette || []).map((id) => MAP_COLORS[id] || (id >= DECOR_START && decorMapColor(id))).filter(Boolean);
+  m = cs.length ? [0, 1, 2].map((k) => cs.reduce((a, c) => a + c[k], 0) / cs.length) : [180, 172, 160];
+  MURS.set(f, m);
+  return m;
+}
 
 // Un tirage par case, en coordonnées du MONDE (sinon le motif changerait au
 // défilement) : la ville a des hauteurs variées, pas un plateau.
@@ -157,17 +169,18 @@ function hacher(x, z) {
 // Ce que la ville met sur cette case : sa hauteur de bâti (0 = rien, une rue,
 // un parc) et la couleur de ses toits. `null` hors de toute ville.
 export function urbainEn(world, x, z, villesMain) {
-  let h, tours, toit, cle;
+  let h, tours, toit, cle, mur;
   const f = villeMondeEn(x, z);
   if (f) {
     const hm = f.hMaison || [4, 6];
     h = hm; tours = (f.trame && f.trame.tours) || 0; toit = f.couleurToits || [150, 140, 130]; cle = f.cle;
+    mur = murDeFiche(f);
   } else {
     if (!villesMain(x, z)) return null;
     const c = world.cityAt(x, z);
     if (!c) return null;
     const m = VILLES_MAIN[c.key] || { h: [8, 14], tours: 0, toit: [150, 140, 130] };
-    h = m.h; tours = m.tours; toit = m.toit; cle = c.key;
+    h = m.h; tours = m.tours; toit = m.toit; cle = c.key; mur = m.mur || [180, 172, 160];
   }
   const t = hacher(x, z), t2 = hacher(z + 7, x - 3);
   // Une case sur cinq est une rue, une cour, une place : la ville se lit en
@@ -180,7 +193,7 @@ export function urbainEn(world, x, z, villesMain) {
     haut = 3 + etages * 3;
     if (tours && t2 > 1 - tours * 0.3) haut = Math.round(haut * (2 + t));   // une tour
   }
-  return { haut, toit, cle };
+  return { haut, toit, mur, cle };
 }
 
 export class Horizon {
@@ -196,7 +209,7 @@ export class Horizon {
     // La ville sous chaque sommet : la hauteur de bâti (0 = aucun) et la
     // couleur des toits. Elles DÉFILENT avec les hauteurs, comme tout le reste.
     this.bati = new Float32Array(N * N);
-    this.toits = new Float32Array(N * N * 3);
+    this.toits = new Float32Array(N * N * 3);   // la couleur des MURS du bâti
     this.estNY = new Uint8Array(N * N);
     this.sansNY = false;                     // Manhattan dessine ses propres silhouettes
     // Le filtre des sept villes bâties à la main, par BOÎTE. Manhattan déborde
@@ -247,7 +260,15 @@ export class Horizon {
     this.capacite = Math.min(16000, this.CASES * this.CASES);
     const boite = new THREE.BoxGeometry(1, 1, 1);
     boite.translate(0.5, 0.5, 0.5);          // l'origine au coin bas, comme une case
-    this.materiauBati = new THREE.MeshLambertMaterial({ fog: true });
+    // L'instance porte la couleur des MURS ; le dessus est assombri par une
+    // couleur de sommet — un toit vu d'avion se lit plus sombre que ses façades.
+    const pb = boite.attributes.position.array, cb = new Float32Array(pb.length);
+    for (let k = 0; k < pb.length; k += 3) {
+      const dessus = boite.attributes.normal.array[k + 1] > 0.5;
+      cb[k] = cb[k + 1] = cb[k + 2] = dessus ? 0.62 : 1;
+    }
+    boite.setAttribute('color', new THREE.BufferAttribute(cb, 3));
+    this.materiauBati = new THREE.MeshLambertMaterial({ fog: true, vertexColors: true });
     this.bat = new THREE.InstancedMesh(boite, this.materiauBati, this.capacite);
     this.bat.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.bat.setColorAt(0, new THREE.Color(1, 1, 1));
@@ -347,7 +368,7 @@ export class Horizon {
     if (u) {
       c = [(GRIS_RUE[0] + u.toit[0]) / 2, (GRIS_RUE[1] + u.toit[1]) / 2, (GRIS_RUE[2] + u.toit[2]) / 2];
       this.bati[i] = u.haut;
-      this.toits[o] = u.toit[0] / 255; this.toits[o + 1] = u.toit[1] / 255; this.toits[o + 2] = u.toit[2] / 255;
+      this.toits[o] = u.mur[0] / 255; this.toits[o + 1] = u.mur[1] / 255; this.toits[o + 2] = u.mur[2] / 255;
       this.estNY[i] = u.cle === 'ny' ? 1 : 0;
     } else {
       this.bati[i] = 0;
