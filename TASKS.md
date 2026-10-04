@@ -1,6 +1,18 @@
 # Ce qui est en cours
 
-- [ ] **LE PLAFOND DE VITESSE AU SOL EST MESURÉ ET PUBLIÉ (v337) — À APPLIQUER
+- [ ] **LE PORTAIL DE LA v341 (le monde à la vitesse), DOUBLE MESURE FAITE.**
+  Portail : `manhattan.js` (délai ligne 282) et `monte.js` « l'écran ne se
+  fige pas en arrivant sur une ville » (2 833 ms · 46,4 %). Rejouées SEULES :
+  `manhattan.js:282` identique des deux côtés ; l'arrivée rouge des deux
+  côtés, MOINS grave sur la branche (983 ms · 20,1 %) que sur `origin/main`
+  v340 (3 700 ms · 28 %). La branche seule a rendu deux rouges de plus, déjà
+  déclarés comme intermittents : les programmes à la téléportation (chauffe de
+  New York expirée, 53/321) et « la voiture freine devant un piéton »
+  (`voituresRue: 0`, avance 3,4 : la situation n'a pas eu lieu ; vert aux
+  quatre portails de la branche). Preuve structurelle : en rendu logiciel,
+  l'ordre de file de la v341 est celui d'avant au bit près (`fileAuRegard`) ;
+  seul s'ajoute le suivi du déplacement, de l'arithmétique sur la position.
+- [ ] **LE PLAFOND DE VITESSE AU SOL EST MESURÉ ET PUBLIÉ (v341) — À APPLIQUER
   PAR LA CONDUITE, ET À CONFIRMER SUR LA TABLETTE.** `src/plafond-sol.js` :
   `VITESSE_SOL_MAX` = 60 b/s en ville, 70 en campagne et sur l'autoroute ;
   `plafondSol({ ville, rr })` le borne par le disque (60 partout au palier bas,
