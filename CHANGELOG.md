@@ -46,10 +46,10 @@ Les avions gardent leur caméra à l'identique.
 **Ce qui le prouve.** Sept témoins neufs dans `monte.js`, une seule mesure
 partagée avec la sonde (`sensations-mesure.js`) sur une plate-forme posée dans
 le ciel. Sur `origin/main` : champ 75 → 75, recul 6,4 → 6,4, caisse 0, roue 0,
-pneus ×1,6, choc 0,022 contre 0,022, caméra immobile, et la caméra derrière le
+pneus ×1,7, pic du choc 0,088 contre 0,088, caméra immobile, et la caméra derrière le
 mur. Ici : champ 75 → 83,8, recul 6,4 → 7,4, caisse −0,070 vers l'extérieur
-(lue dans la matrice monde), roue +0,50 rad vers l'intérieur, pneus ×370, choc
-0,27 contre 0,027, secousse 0,23 bloc, caméra du côté de la voiture. Le coût
+(lue dans la matrice monde), roue +0,50 rad vers l'intérieur, pneus ×370, pic du
+choc 0,90 contre 0,073, secousse 0,23 bloc, caméra du côté de la voiture. Le coût
 se mesure en ordre alterné sur la même page (`?sensations=0` rejoue l'ancienne
 conduite) : aucun appel de dessin ni programme de shader de plus (67 des deux
 côtés).

@@ -146,14 +146,25 @@ async function mesurerSensations() {
     const bandeDerive = moy(await fenetre(1.2, bande));
     delete P.derive;
     await tenir(0.6);
-    // 4. LE CHOC — le son
-    const piqueAvant = Math.max(...await fenetre(1.0, rms));
+    // 4. LE CHOC — le son. UNE LECTURE DE 0,74 s, PAS DES INSTANTANÉS : un
+    // analyseur de 2 048 échantillons ne voit que 46 ms, et sur un banc à dix
+    // images par seconde deux lectures sur trois tombaient à côté du coup —
+    // mesuré : 0,27 un passage, 0,026 le suivant, sur le même code. On garde
+    // le plus grand échantillon d'une fenêtre qui couvre tout l'événement.
+    const long = ctx.createAnalyser();
+    long.fftSize = 32768;
+    sortie.connect(long);
+    const ech = new Float32Array(long.fftSize);
+    const pic = () => { long.getFloatTimeDomainData(ech); let m = 0; for (const v of ech) m = Math.max(m, Math.abs(v)); return m; };
+    await tenir(0.8);
+    const piqueAvant = Math.max(pic(), (await tenir(0.8), pic()));
     son = { bandeAvant, bandeDerive, piqueAvant };
     son.rapportCrisse = +(bandeDerive / Math.max(1e-12, bandeAvant)).toFixed(2);
     P.choc = { force: 0.8, t: performance.now() };
-    const apres = await fenetre(0.6, rms);
-    son.piqueChoc = +Math.max(...apres).toFixed(4);
+    await tenir(0.45);
+    son.piqueChoc = +pic().toFixed(4);
     son.piqueAvant = +son.piqueAvant.toFixed(4);
+    try { sortie.disconnect(long); } catch { /* déjà */ }
     son.bandeAvant = +bandeAvant.toExponential(2); son.bandeDerive = +bandeDerive.toExponential(2);
     try { sortie.disconnect(an); } catch { /* déjà */ }
   }

@@ -5522,11 +5522,11 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     //
     // Mesuré des deux côtés, même mesure, avant d'écrire les barres :
     //   `origin/main` (v336) : champ 75 → 75, recul 6,4 → 6,4, caisse 0,
-    //     roue 0, bande des pneus ×1,6, choc 0,022 contre 0,022 avant,
+    //     roue 0, bande des pneus ×1,7, choc 0,088 contre 0,088 avant,
     //     caméra immobile (0), et la caméra DERRIÈRE le mur (segment bouché).
     //   la branche : champ 75 → 83,8, recul 6,4 → 7,4, caisse −0,070 (vers
     //     la droite dans un virage à gauche), roue +0,50 rad, pneus ×370,
-    //     choc 0,27 contre 0,027, secousse 0,23 bloc, segment libre.
+    //     choc 0,90 contre 0,073, secousse 0,23 bloc, segment libre.
     // Les barres sont posées entre les deux régimes, loin de l'un et de l'autre.
     const sens = await tab.evaluate(`(${mesurerSensations.toString()})()`);
     const S = sens || {};
