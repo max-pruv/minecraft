@@ -1048,7 +1048,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     };
     const sol = (q) => q !== BLOCK.AIR && q !== BLOCK.WATER && q !== BLOCK.LOG && q !== BLOCK.BIRCH && q !== BLOCK.LEAVES;
     const lire = (sites) => {
-      const r = { colonnes: 0, herbe: 0, roche: 0, neige: 0, forme: 0, arbres: 0, arbresSans: 0, pins: 0, teints: 0, sommets: 0 };
+      const r = { colonnes: 0, herbe: 0, roche: 0, neige: 0, forme: 0, arbres: 0, arbresSans: 0, pins: 0, palmiers: 0, teints: 0, sommets: 0 };
       for (const [lat, lon] of sites) {
         const p = point(lat, lon);
         for (let cx = 0; cx < 4; cx++) for (let cz = 0; cz < 4; cz++) {
@@ -1065,6 +1065,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
             if (b === BLOCK.LOG || b === BLOCK.BIRCH) r.arbresSans++;
             const arbre = (a === BLOCK.LOG || a === BLOCK.BIRCH) && w.treeAt(x, z);
             if (arbre && arbre.kind === 1) r.pins++;
+            if (arbre && arbre.kind === 3) r.palmiers++;
           }
           // la teinte : les sommets d'herbe que le mailleur a colorés
           if (cx === 1 && cz === 1) {
@@ -1081,6 +1082,8 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const taiga = lire([[62, 125], [52, -72], [60, 75], [63, 27]]);
     // LES STEPPES (v347) : le Kazakhstan, la Mongolie, le Montana, la Patagonie
     const steppe = lire([[50, 65], [47, 105], [47, -107], [-45, -68]]);
+    // LES TROPIQUES HUMIDES (v348) : l'Amazonie, le Congo, Bornéo
+    const tropiques = lire([[-5, -62], [0, 22], [1, 114]]);
     // le Kansas, témoin de la campagne tempérée : rien n'y est teint
     const kansas = lire([[38.5, -98.5]]);
     // LE RACCOURCI DU MORCEAU : un climat déclaré certain pour un morceau
@@ -1114,7 +1117,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         for (let y = h + 1; y <= h + 9; y++) { if (m.getBlock(x, y, z) === sans.getBlock(x, y, z)) garde.pareil++; else garde.autres++; }
       }
     }
-    return { toundra, taiga, steppe, kansas, certains, desaccords, garde };
+    return { toundra, taiga, steppe, tropiques, kansas, certains, desaccords, garde };
   })();
   verifier('dans la toundra, du lichen, de la roche nue et la neige plus bas, presque sans arbre (Nunavut, Iamalie, Sibérie arctique)',
     climats.toundra.colonnes > 2000 && climats.toundra.forme === 0 && climats.toundra.roche + climats.toundra.neige >= climats.toundra.colonnes * 0.05
@@ -1129,6 +1132,10 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     climats.steppe.colonnes > 2000 && climats.steppe.forme === 0 && climats.steppe.arbres * 3 <= climats.steppe.arbresSans
       && climats.steppe.teints >= climats.steppe.sommets * 0.3,
     JSON.stringify(climats.steppe));
+  verifier('sous les tropiques, la forêt dense et ses palmiers, l\'herbe d\'un vert profond ; la même forme bloc pour bloc (Amazonie, Congo, Bornéo)',
+    climats.tropiques.colonnes > 2000 && climats.tropiques.forme === 0 && climats.tropiques.arbres >= climats.tropiques.arbresSans * 2
+      && climats.tropiques.palmiers >= climats.tropiques.arbres * 0.15 && climats.tropiques.teints >= climats.tropiques.sommets * 0.3,
+    JSON.stringify(climats.tropiques));
   verifier('le climat certain d\'un morceau est celui de toutes ses colonnes',
     climats.certains > 3000 && climats.desaccords === 0, `${climats.certains} morceaux certains, ${climats.desaccords} colonnes en désaccord`);
   verifier('là où un enfant a bâti avant la règle, les arbres d\'avant restent',
@@ -2134,7 +2141,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
           return { x: Math.round(a), z };
         };
         const out = {};
-        for (const [nom, lat, lon] of [['toundra', 69, 70], ['taiga', 62, 125], ['steppe', 50, 65], ['kansas', 38.5, -98.5]]) {
+        for (const [nom, lat, lon] of [['toundra', 69, 70], ['taiga', 62, 125], ['steppe', 50, 65], ['tropiques', -5, -62], ['kansas', 38.5, -98.5]]) {
           const p = point(lat, lon);
           const h = new Horizon(w, 200);
           let n = 0;
@@ -2160,12 +2167,14 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         return out;
       });
       const rg = (c) => c[0] / c[1];
-      verifier('vu de loin et sur la carte, la toundra est olive, la taïga sombre et la steppe blonde, à côté du Kansas',
+      verifier('vu de loin et sur la carte, la toundra est olive, la taïga sombre, la steppe blonde et la forêt tropicale d\'un vert profond, à côté du Kansas',
         r.toundra.tous > 500 && r.taiga.tous > 500 && r.kansas.tous > 500 && r.toundra.ct > 20 && r.taiga.ct > 20
           && rg(r.toundra.loin) > rg(r.kansas.loin) + 0.25 && rg(r.toundra.carte) > rg(r.kansas.carte) + 0.25
           && r.taiga.loin[1] < r.kansas.loin[1] * 0.85 && r.taiga.carte[1] < r.kansas.carte[1] * 0.85
           && r.steppe.tous > 500 && r.steppe.ct > 20
-          && rg(r.steppe.loin) > rg(r.kansas.loin) + 0.35 && rg(r.steppe.carte) > rg(r.kansas.carte) + 0.35,
+          && rg(r.steppe.loin) > rg(r.kansas.loin) + 0.35 && rg(r.steppe.carte) > rg(r.kansas.carte) + 0.35
+          && r.tropiques.tous > 500 && r.tropiques.ct > 20
+          && rg(r.tropiques.loin) < rg(r.kansas.loin) - 0.05 && rg(r.tropiques.carte) < rg(r.kansas.carte) - 0.05,
         JSON.stringify(r));
     }
 

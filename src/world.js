@@ -106,7 +106,7 @@ export { CLIMATS_TEINTES, INDICE_CLIMAT, TEINTE_HERBE, TEINTE_FEUILLES } from '.
 export const NEIGE_TOUNDRA = 46;
 // le plus grand tirage qui puisse encore donner un arbre, tous climats
 // confondus (forêt dense, taïga) : au-delà, on ne demande pas le climat
-const DENSITE_MAX = 0.06;
+const DENSITE_MAX = 0.08;
 // L'HEURE DE LA RÈGLE DES CLIMATS (v345), relue à la fusion (v309) : un bloc
 // posé avant a été posé sur le monde d'avant, et son morceau garde ses arbres.
 export const DATE_CLIMATS = Date.parse('2026-10-04T20:24:00Z');
@@ -2955,6 +2955,7 @@ export class World {
     if (cl === 'taiga') return Math.max(f, 0.55);
     if (cl === 'toundra' || cl === 'desert') return 0;
     if (cl === 'steppe') return f * 0.05;
+    if (cl === 'tropiques') return Math.max(f, 0.6);
     return f;
   }
 
@@ -3023,6 +3024,9 @@ export class World {
     // la steppe (v347) : un arbre isolé là où la forêt tempérée en aurait
     // vingt — quelques bosquets le long des creux, pas de bois
     else if (cl === 'steppe') density *= 0.05;
+    // les tropiques humides (v348) : la forêt dense partout, plus serrée encore
+    // que la taïga sur les creux du bruit de forêt
+    else if (cl === 'tropiques') density = forest > 0.48 ? 0.08 : 0.035;
     if (tirage >= density) return null;
     const h = this.terrainHeight(x, z);
     if (h <= WATER_LEVEL + 1 || h >= 58) return null; // only on grass
@@ -3042,6 +3046,8 @@ export class World {
     // la taïga : des pins, quelques bouleaux ; la toundra : un bouleau nain
     if (cl === 'taiga') return { h, trunk: roll < 0.85 ? trunk : trunk + 1, kind: roll < 0.85 ? 1 : 2 };
     if (cl === 'toundra') return { h, trunk: 2, kind: 2 };
+    // sous les tropiques : de grands feuillus, et un palmier sur quatre
+    if (cl === 'tropiques') return roll < 0.75 ? { h, trunk: trunk + 1, kind: 0 } : { h, trunk: 6 + Math.floor(hash2i(x, z, SEED + 786) * 3), kind: 3 };
     const kind = roll < 0.55 ? 0 : roll < 0.85 ? 1 : 2;
     return { h, trunk: kind === 2 ? trunk + 1 : trunk, kind };
   }

@@ -264,6 +264,27 @@ const CLIMATS = [
     147, -28, 146, -32, 141, -34, 136, -33, 130, -31.8, 124, -31, 118, -31, 115, -29]],
   ['steppe', 'mexique-nord', [-106, 31.5, -104, 30, -101, 29, -100, 25, -101, 22, -103, 22, -105, 25,
     -107, 28, -108, 30.5]],
+  // LES TROPIQUES HUMIDES (v348) : les forêts denses de l'équateur et des
+  // côtes de mousson. L'Amazonie (à l'est des Andes), le golfe de Guinée et
+  // le bassin du Congo, l'Insulinde de Sumatra à la Nouvelle-Guinée, les
+  // Philippines, l'Amérique centrale, la forêt atlantique du Brésil, la côte
+  // est de Madagascar, le Kerala, le Bengale et l'Assam, le Queensland.
+  // Un contour peut couvrir la mer : seule la terre a de l'herbe.
+  ['tropiques', 'amazonie', [-77, 2, -72, 4, -67, 6, -60, 8, -55, 6, -50, 4, -48, 0, -44, -2.5, -46, -5,
+    -50, -8, -55, -11, -60, -13, -65, -14, -69, -13, -72, -10, -75, -7, -77, -3]],
+  ['tropiques', 'guinee-congo', [-15, 11, -11, 10, -8, 8, -2, 7.5, 4, 7.5, 8, 6.5, 11, 6.5, 15, 5, 20, 5,
+    25, 4.5, 30, 3, 30.5, -1, 29, -5, 25, -6, 20, -6, 15, -5, 12, -5, 9, 0, 9.5, 3.5, 8, 4.3, 5, 4.3,
+    0, 5, -5, 4.5, -8, 4.5, -11, 6.5, -13.5, 8]],
+  ['tropiques', 'insulinde', [94, 7, 104, 7, 119, 7.5, 127, 7, 127, -2, 141, -2, 151, -4, 151, -10.5,
+    141, -9, 132, -5, 120, -8.8, 115, -8.8, 106, -7.5, 102, -5.5, 95, 2]],
+  ['tropiques', 'philippines', [117, 8, 126.5, 6, 126, 13, 122, 19, 119, 16]],
+  ['tropiques', 'amerique-centrale', [-92, 17, -90, 21, -87, 21.5, -88, 18, -83, 15, -83, 10, -77, 8,
+    -77, 7, -80, 7.5, -85, 10, -88, 13.5, -92, 14.5]],
+  ['tropiques', 'mata-atlantica', [-35, -6, -39, -15, -41, -22, -48, -26, -49, -23, -42, -17, -38, -9]],
+  ['tropiques', 'madagascar-est', [49, -12, 50.5, -15.5, 48, -24.5, 47, -23, 48.5, -15]],
+  ['tropiques', 'kerala', [74, 8, 77, 8, 76.5, 12, 74.5, 15.5, 73, 18, 72.5, 17]],
+  ['tropiques', 'bengale-assam', [88, 21.5, 92, 21, 97, 24, 95.5, 27.5, 92, 27, 89, 26]],
+  ['tropiques', 'queensland', [143.5, -11, 145.5, -14.5, 146.5, -19, 145.5, -19, 144.5, -16, 142.5, -11]],
 ];
 const FORMES_CLIMAT = CLIMATS.map(([climat, nom, pts]) => {
   let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
@@ -324,10 +345,12 @@ export function climatCertain(lat, lon, marge) {
 // taïga → (64, 118, 64) ; et sur la tuile de feuilles (54, 116, 38).
 // La steppe (v347) → (178, 165, 92), l'herbe sèche couleur de paille ; ses
 // rares arbres d'un vert olive.
-export const CLIMATS_TEINTES = ['', 'toundra', 'taiga', 'steppe'];
-export const INDICE_CLIMAT = { toundra: 1, taiga: 2, steppe: 3 };
-export const TEINTE_HERBE = [null, [1.21, 0.74, 1.29], [0.62, 0.70, 1.03], [1.71, 0.98, 1.48]];
-export const TEINTE_FEUILLES = [null, [0.85, 0.8, 1.0], [0.63, 0.71, 1.16], [1.25, 0.95, 1.05]];
+// Les tropiques humides (v348) → (60, 160, 50), un vert profond et saturé,
+// et le feuillage (40, 120, 32).
+export const CLIMATS_TEINTES = ['', 'toundra', 'taiga', 'steppe', 'tropiques'];
+export const INDICE_CLIMAT = { toundra: 1, taiga: 2, steppe: 3, tropiques: 4 };
+export const TEINTE_HERBE = [null, [1.21, 0.74, 1.29], [0.62, 0.70, 1.03], [1.71, 0.98, 1.48], [0.58, 0.95, 0.81]];
+export const TEINTE_FEUILLES = [null, [0.85, 0.8, 1.0], [0.63, 0.71, 1.16], [1.25, 0.95, 1.05], [0.74, 1.03, 0.84]];
 // LES MÊMES, POUR LA COULEUR DE SOMMET DU MONDE PROCHE. three tient une
 // couleur de sommet pour LINÉAIRE et décode la tuile sRGB avant de les
 // multiplier : un facteur 0,62 posé tel quel n'assombrit l'écran que de 0,80.
