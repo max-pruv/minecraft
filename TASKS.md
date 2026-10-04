@@ -255,6 +255,20 @@
   branche 3 · 3 · 2, `origin/main` 3 · 3 · 3. Même distribution ; le 5 est un
   tirage sous la charge du portail, et la dette de la v306 (deux ou trois
   programmes à l'arrivée) reste ouverte telle quelle.
+- [ ] **LE PORTAIL DE LA v321, SECOND, APRÈS REBASE SUR LA v320.** Dix suites.
+  Verts : `maj.js` (cette fois), `plafond.js`, `parishd.js`, `carte.js`,
+  `washington.js`, `metro.js`. Rouges, rejoués SEULS des deux côtés sur la
+  v320 : `carteMonde.js` « aucune voiture ne traverse un monument de Paris »
+  (`dur 6 · lus 597`, au pas près des deux côtés — la dette de la v318, dans ma
+  zone, prise par la livraison suivante) ; `monte.js` l'écran figé (branche
+  3 200 ms · 25 %, `origin/main` 2 433 ms · 18,3 %) et, au portail seulement,
+  le témoin de la v319 sur New York (14 programmes, la chauffe de New York
+  expirée à 54/320 sous la charge) — vert rejoué seul sur la branche ;
+  `manhattan.js` la géométrie de façade (14 460 → 51 734 et → 54 969) puis la
+  page qui meurt (`locator.tap`, ou « le taxi roule », bouton jamais visible),
+  des deux côtés. New York : 79 circuits, 78 de 109 blocs de plan (six
+  voitures, au plancher, avant comme après) ; le déplafonnement n'y touche
+  qu'un circuit.
 - [ ] **LE PORTAIL DE LA v321 (règle de la v195), DOUBLE MESURE FAITE — premier
   portail, sur la base v317.** Dix suites. Verts : `carteMonde.js` (le témoin des 268 villes, rouge sur
   `origin/main`), `plafond.js`, `parishd.js`, `carte.js`, `washington.js`,
