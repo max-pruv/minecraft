@@ -964,6 +964,19 @@ Une règle.
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
 
+## L'A1 Nord Milan–Bologne (v333) — une sonde juge les points tels que le registre les écrit
+
+Une règle.
+
+- **UN TRACÉ SE MESURE EN BLOCS ENTIERS, PARCE QUE LE REGISTRE L'ÉCRIT AINSI.**
+  Ma sonde jugeait ses points de passage en flottants et les imprimait
+  arrondis : le premier tracé retenu rendait un remblai de 1,4, et le même
+  tracé écrit dans `ROUTES` passait sur une mare d'UNE colonne, comblée en
+  buse à 5,3 blocs — au-dessus de la barre de quatre que le témoin de l'A1
+  applique à toutes les routes. Un déplacement d'un demi-bloc suffit à
+  changer la colonne d'eau que l'axe touche. La sonde arrondit avant de
+  juger, et l'on relit toujours le registre réel (`verif`) avant de livrer.
+
 ## L'A1 Sud Rome–Naples (v329) — une sortie de biais tourne en plusieurs fois
 
 Une règle.

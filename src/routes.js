@@ -243,6 +243,23 @@ export const ROUTES = [
   // celui-ci : 966 blocs, aucun pont, déblai 1,9, remblai 1,1, pente 0,061,
   // coudes de 17°, zéro rail, zéro aérodrome à moins de 3 701 blocs.
   { nom: 'M1', villes: ['vienne', 'budapest'], via: [[5374, 595], [5628, 692], [6194, 978]] },
+  // L'A1 ITALIENNE, NORD (v333), MILAN–BOLOGNE : la première moitié de
+  // l'Autostrada del Sole, qui rejoint l'Autosole à Bologne. La Frecciarossa
+  // sort de Milan à 51° et Bologne est à 34°, à trois cents blocs à GAUCHE du
+  // rail : on choisit ce côté et l'on n'en change plus (v320). Milan sort donc
+  // à −16° (trente blocs d'avenue, quatorze relevés sur quinze sur la rue),
+  // puis la route tourne en plusieurs fois (v329) ; Bologne par son axe −156°
+  // (vingt-six blocs). LA SONDE ARRONDIT SES POINTS AVANT DE LES JUGER : mon
+  // premier tracé, mesuré en flottants, rendait un remblai de 1,4 ; écrit en
+  // blocs entiers dans ce registre, son axe passait sur une mare d'UNE
+  // colonne, comblée en buse à 5,3 blocs — au-dessus de la barre de quatre
+  // que le témoin de l'A1 applique à toutes les routes. Mesuré sous node
+  // (scratchpad cherche.mjs, qui appelle `profilDe` sur les points arrondis) :
+  // 5 082 tracés, refus 4 529 coude · 181 remblai · 134 pont près d'une
+  // porte · 106 trop de ponts · 76 ponts proches · 25 rail ; trente et un
+  // admissibles, sept sans pont ; celui-ci : 969 blocs, aucun pont, déblai
+  // 3,6, remblai 1,4, pente 0,062, aucune colonne d'emprise sur le rail.
+  { nom: 'A1 Nord', villes: ['milan', 'bologne'], via: [[2511, 2188], [2550, 2194], [2584, 2215], [2811, 2374], [3018, 2555], [3206, 2759]] },
 ];
 
 // --- la section -----------------------------------------------------------------
