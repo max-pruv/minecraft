@@ -275,6 +275,22 @@
   branche 3 · 3 · 2, `origin/main` 3 · 3 · 3. Même distribution ; le 5 est un
   tirage sous la charge du portail, et la dette de la v306 (deux ou trois
   programmes à l'arrivée) reste ouverte telle quelle.
+- [ ] **LE PORTAIL DE LA v327, SUR LA v326 (règle de la v195), DOUBLE MESURE
+  FAITE.** `carteMonde.js` (ENTIÈRE, le témoin de l'A4 compris), `plafond.js`,
+  `carte.js` verts. `maj.js` : la libération de la préparation (la carte encore
+  en cours), l'intermittence déclarée (v267). `monte.js` REJOUÉE SEULE des deux
+  côtés : « l'on est descendu de la voiture de Paris » (la famille du bouton-
+  bascule, v252, qui revient) rouge au portail, VERT seul sur la branche, ROUGE
+  seul sur `origin/main` (v326) — une intermittence des deux côtés ; « la
+  circulation s'arrête devant la voiture de l'enfant » rouge au portail
+  seulement (34 au travers), vert seul sur la branche ; « se téléporter ne
+  compile plus de programmes » rouge SEUL des deux côtés (branche et v326) —
+  rouge en production, à démonter ; l'écran figé, rouge des deux côtés
+  (3 133 ms branche, 4 216 ms `origin/main`).
+- [ ] **LE PORTAIL DE LA v327 (premier, sur la v324).** `plafond.js`, `maj.js`, `carte.js` verts ;
+  le témoin de l'A4 vert (rouge sur `origin/main` : « aucun convoi A4 », dix
+  segments) ; seuls rouges, les deux dettes déclarées — le tour des monuments
+  de Paris au pas près (`dur 6 · lus 597`) et l'écran figé (3 700 ms · 28,1 %).
 - [ ] **LE PORTAIL DE LA v325 (règle de la v195), DOUBLE MESURE FAITE.** Huit
   suites. Verts : `carteMonde.js` — ENTIÈRE, le tour des monuments compris
   (rouge sur `origin/main`, `dur 6`) —, `plafond.js`, `parishd.js`, `carte.js`,
@@ -454,7 +470,7 @@
   entrée nord propre de sa trame (−100° à −103°) — 79 819 tracés, tous refusés
   par sa marge ; l'autre entrée propre (−175°, −192°) arrive par la mer, deux
   cents blocs de viaduc. Déplacer un aérodrome est une décision de Max
-  (invariant 1) ; un viaduc en mer aussi. A109 Nairobi–Mombasa faite en v315. A3 Cologne–Francfort faite en v320 (au sud de l'ICE : au nord, l'aérodrome de Francfort ne laisse pas la place d'une emprise). E1 Kyoto–Nagoya faite en v323 (au sud du Shinkansen, où les deux trames ont une entrée propre ; un étang contourné par le nord, aucun pont). Autosole Bologne–Florence faite en v324 (aucun pont ; un point de passage sur le rayon de chaque entrée). **Manchester–Liverpool BLOQUÉE PAR LE RELIEF** (v324) : une crête au-dessus de 46 blocs barre tout l'espace entre les deux disques (villes à 33) ; 58 340 tracés, aucun admissible (8 970 déblai, 6 125 pont près d'une porte). Un tunnel ou un relief abaissé est une décision de Max. INSTRUITES en v323 sur l'axe direct, faute de la liste du kit (hors dépôt) — longueur · eau · rail à douze blocs · villes · aérodromes · repères : Manchester–Liverpool 222 · 11 · 0 · 0 · 0 · 0 ; Bologne–Florence 342 · 0 · 0 · 0 · 0 · 0 ; Milan–Turin 530 · 10 · 0 ; Delhi–Agra 656 · 41 · 0 (le Taj Mahal) ; Rome–Naples 683 · 81 · 0 ; Los Angeles–San Diego 718 · 25 · 0 ; Londres–Birmingham 767 · 29 · 0 ; Milan–Bologne 924 · 24 · 3 ; Vienne–Budapest 957 · 33 · 0 ; Tokyo–Nagoya 961 · 142 · 941 (Shinkansen) · Haneda sur l'axe ; New York–Boston 1 020 · 135 · 0 ; Berlin–Hambourg 1 293 · 42 · 0 ; New York–Washington 1 297 · 150 · 0 ; Lyon–Marseille 1 363 · 77 · 1 328 (TGV) ; Séoul–Busan 1 471 · 2 · 0 ; Paris–Lyon 1 625 · 54 · 1 588 (TGV) ; Dallas–Houston 1 781 · 44 · 0 ; Hambourg–Cologne 1 858 · 137 · 0 ; Madrid–Barcelone 2 068 · 199 · 2 033 (AVE) ; Toronto–Montréal 2 305 · 144 · 0 ; San Francisco–Los Angeles 2 403 · 131 · 0 · SFO et deux repères ; Marseille–Nice 596 · 401 · 0 · la Promenade des Anglais (l'axe direct est en mer). Ordre retenu : les courts sans rail ni eau d'abord. Restent à instruire les autres
+  (invariant 1) ; un viaduc en mer aussi. A109 Nairobi–Mombasa faite en v315. A3 Cologne–Francfort faite en v320 (au sud de l'ICE : au nord, l'aérodrome de Francfort ne laisse pas la place d'une emprise). E1 Kyoto–Nagoya faite en v323 (au sud du Shinkansen, où les deux trames ont une entrée propre ; un étang contourné par le nord, aucun pont). Autosole Bologne–Florence faite en v324 (aucun pont ; un point de passage sur le rayon de chaque entrée). A4 Milan–Turin faite en v327 (sept tracés sur 36 432, le déblai a fait le tri ; aucun pont). **Manchester–Liverpool BLOQUÉE PAR LE RELIEF** (v324) : une crête au-dessus de 46 blocs barre tout l'espace entre les deux disques (villes à 33) ; 58 340 tracés, aucun admissible (8 970 déblai, 6 125 pont près d'une porte). Un tunnel ou un relief abaissé est une décision de Max. INSTRUITES en v323 sur l'axe direct, faute de la liste du kit (hors dépôt) — longueur · eau · rail à douze blocs · villes · aérodromes · repères : Manchester–Liverpool 222 · 11 · 0 · 0 · 0 · 0 ; Bologne–Florence 342 · 0 · 0 · 0 · 0 · 0 ; Milan–Turin 530 · 10 · 0 ; Delhi–Agra 656 · 41 · 0 (le Taj Mahal) ; Rome–Naples 683 · 81 · 0 ; Los Angeles–San Diego 718 · 25 · 0 ; Londres–Birmingham 767 · 29 · 0 ; Milan–Bologne 924 · 24 · 3 ; Vienne–Budapest 957 · 33 · 0 ; Tokyo–Nagoya 961 · 142 · 941 (Shinkansen) · Haneda sur l'axe ; New York–Boston 1 020 · 135 · 0 ; Berlin–Hambourg 1 293 · 42 · 0 ; New York–Washington 1 297 · 150 · 0 ; Lyon–Marseille 1 363 · 77 · 1 328 (TGV) ; Séoul–Busan 1 471 · 2 · 0 ; Paris–Lyon 1 625 · 54 · 1 588 (TGV) ; Dallas–Houston 1 781 · 44 · 0 ; Hambourg–Cologne 1 858 · 137 · 0 ; Madrid–Barcelone 2 068 · 199 · 2 033 (AVE) ; Toronto–Montréal 2 305 · 144 · 0 ; San Francisco–Los Angeles 2 403 · 131 · 0 · SFO et deux repères ; Marseille–Nice 596 · 401 · 0 · la Promenade des Anglais (l'axe direct est en mer). Ordre retenu : les courts sans rail ni eau d'abord. Restent à instruire les autres
   candidats du kit (liste hors dépôt), un par un. INSTRUITES en v310 sur
   l'axe direct (longueur · eau · rail parallèle · obstacles) : Bruxelles–
   Amsterdam 790 · 56 · 0 · aucun ; Montréal–Québec 873 · 18 · 0 ; São Paulo–

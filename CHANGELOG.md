@@ -20,6 +20,31 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v327 — L'autoroute Milan–Turin
+
+**Pourquoi.** Candidat suivant du relevé de la v323 : Milan–Turin, 530 blocs
+sur l'axe direct, dix colonnes d'eau, ni rail ni aérodrome. Deux grandes villes
+du nord de l'Italie qui n'avaient aucune route.
+
+**Ce que ça change.** L'A4 relie Milan à Turin : 552 blocs de deux fois deux
+voies, aucun pont, et vingt voitures qui font l'aller-retour. Elle sort de Milan
+par le sud-ouest (quarante-trois blocs d'avenue sur la rue) et entre dans Turin
+par le nord-est.
+
+Rien n'est écrit dans le relief : les deux empreintes de `plafond.js` ne
+bougent pas.
+
+**Ce qui le prouve.** Dans `carteMonde.js`, un témoin neuf, rouge sur
+`origin/main` (pas d'A4) : la route, ses voitures, ses deux entrées sur une rue
+propre, aucune colonne sur un rail (0 sur 8 249 mesurées sous node). La sonde :
+36 432 tracés, refus 28 826 coude · 7 599 déblai · 1 031 remblai · 25 ponts
+proches — sept admissibles, tous sans pont. La plaine du Pô n'est pas plate
+partout : c'est le déblai qui a fait le tri.
+
+---
+
+---
+
 ## v326 — Des falaises de roche et des berges de sable
 
 **Pourquoi.** Partout où le relief saute de deux blocs ou plus, le sol continu
