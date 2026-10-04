@@ -16,8 +16,9 @@
 
 import {
   CHUNK, HEIGHT, WATER_LEVEL, CITIES, PLACES, REPERES,
-  MARS, VILLANDRY, ESPACE, GAULOIS, CIRCUIT,
+  MARS, VILLANDRY, ESPACE, GAULOIS, CIRCUIT, NEIGE_TOUNDRA,
 } from './world.js';
+import { INDICE_CLIMAT, TEINTE_HERBE, TEINTE_FEUILLES } from './terre.js';
 import { AEROPORTS } from './aeroport.js';
 import { couleurCarteManhattan, quartiersDuMonde } from './manhattan.js';
 import { couleurCarteUsine } from './usine.js';
@@ -460,15 +461,24 @@ export class Carte {
     if (h >= 58) return [242, 250, 250];                            // les neiges
     if (h >= 48) return melange([140, 136, 126], [200, 202, 200], (h - 48) / 10);
 
-    // Le désert chaud réel (v341) : le sable que le générateur pose.
-    if (w.aride && w.aride(wx, wz)) return melange([226, 210, 160], [204, 184, 130], borne((h - 31) / 17, 0, 1));
+    // Le climat réel (v341, v342) : le sable que le générateur pose dans le
+    // désert ; la neige de la toundra là où le relief monte.
+    const cl = w.climat ? w.climat(wx, wz) : null;
+    if (cl === 'desert') return melange([226, 210, 160], [204, 184, 130], borne((h - 31) / 17, 0, 1));
+    if (cl === 'toundra' && h >= NEIGE_TOUNDRA) return [236, 242, 244];
+    const it = INDICE_CLIMAT[cl] || 0;
 
     // Prairie, puis bois. Les forêts sont peintes d'après le bruit qui les
     // sème, jamais d'après les arbres posés : elles couvrent ainsi toute la
     // carte, et non le seul carré de monde chargé autour du joueur — c'est ce
     // raccord visible qui trahissait la limite de la mémoire.
     const prairie = melange([104, 174, 88], [76, 138, 68], borne((h - 31) / 17, 0, 1));
-    return melange(prairie, [50, 104, 40], w.foret(wx, wz) * 0.8);
+    if (!it) return melange(prairie, [50, 104, 40], w.foret(wx, wz) * 0.8);
+    // l'herbe et les bois sous la teinte de leur climat (v342) — la même que
+    // le mailleur pose, et la densité de forêt que `treeAt` y plante
+    const th = TEINTE_HERBE[it], tf = TEINTE_FEUILLES[it];
+    const pc = [prairie[0] * th[0], prairie[1] * th[1], prairie[2] * th[2]];
+    return melange(pc, [50 * tf[0], 104 * tf[1], 40 * tf[2]], w.foret(wx, wz) * 0.8);
   }
 
   // --- le fond ---------------------------------------------------------------

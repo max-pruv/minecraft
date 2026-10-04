@@ -50,6 +50,7 @@
 // node. Il ne lit le monde que par `terrainHeight`, `getBlock` et `cityAt`.
 import { BLOCK, BLOCK_INFO, CITY_BLOCK, ARCHI, ROUTE_BLOCK, isProp } from './blocks.js';
 import { tileRect } from './tuiles.js';
+import { TEINTE_HERBE_LIN as TEINTE_HERBE } from './terre.js';
 
 // Les blocs qui font un sol naturel. `STONE` y est pour le volcan et les
 // montagnes ; `SANDSTONE` non, c'est un bloc de bâtisseur.
@@ -295,7 +296,7 @@ export function normale(p, q, r) {
 // dans le format de `GeomBuffer` (mesher.js). Les sommets sont à `lx + 0,5` :
 // c'est ce qui distingue, dans un tampon, une face voxel (coins entiers) d'une
 // cellule de surface — et un témoin s'en sert.
-export function emettreSolContinu(buf, world, cx, cz, chunk, grille = grilleSol(world, cx, cz, chunk)) {
+export function emettreSolContinu(buf, world, cx, cz, chunk, grille = grilleSol(world, cx, cz, chunk), teintes = null) {
   const { idx, cote, dessinee, cid, baseX, baseZ } = grille;
   // au bord de la grille, la différence centrée n'a qu'un côté : on prend l'autre
   const coteEn = (lx, lz) => cote[idx(Math.max(-1, Math.min(chunk, lx)), Math.max(-1, Math.min(chunk, lz)))];
@@ -309,8 +310,13 @@ export function emettreSolContinu(buf, world, cx, cz, chunk, grille = grilleSol(
   for (let lz = 0; lz < chunk; lz++) for (let lx = 0; lx < chunk; lx++) {
     if (!dessinee[cid(lx, lz)]) continue;
     const h = Math.floor(cote[idx(lx, lz)]) - 1;
-    const tile = BLOCK_INFO[world.getBlock(baseX + lx, h, baseZ + lz)].tiles[0];
+    const sommet = world.getBlock(baseX + lx, h, baseZ + lz);
+    const tile = BLOCK_INFO[sommet].tiles[0];
     const rect = tileRect(tile);
+    // la teinte du climat (v342), celle de la colonne a, sur l'herbe seule —
+    // la même que le dessus du cube qu'elle remplace (mesher.js)
+    const it = teintes && sommet === BLOCK.GRASS ? teintes[lx + lz * chunk] : 0;
+    const tr = it ? TEINTE_HERBE[it][0] : 1, tg = it ? TEINTE_HERBE[it][1] : 1, tb = it ? TEINTE_HERBE[it][2] : 1;
     const coins = [[lx, lz], [lx + 1, lz], [lx, lz + 1], [lx + 1, lz + 1]];   // a, b, c, d
     const uv = [[0, 0], [1, 0], [0, 1], [1, 1]];
     const base = buf.positions.length / 3;
@@ -321,7 +327,7 @@ export function emettreSolContinu(buf, world, cx, cz, chunk, grille = grilleSol(
       buf.normals.push(n[0], n[1], n[2]);
       buf.uvs.push(uv[i][0], uv[i][1]);
       buf.tiles.push(rect[0], rect[1], rect[2], rect[3]);
-      buf.colors.push(1, 1, 1);
+      buf.colors.push(tr, tg, tb);
     }
     // diagonale a–d : (a, c, d) et (a, d, b), la même que `solContinu`
     buf.indices.push(base, base + 2, base + 3, base, base + 3, base + 1);

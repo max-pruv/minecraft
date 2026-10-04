@@ -206,6 +206,113 @@ export function desertReel(lat, lon) {
 }
 export function desertsDeLaTerre() { return FORMES_DESERT.map((f) => ({ nom: f.nom, pts: f.pts.slice() })); }
 
+// LES CLIMATS (v342, la suite du point (d)). Les déserts chauds ont ouvert la
+// voie ; viennent ensuite la TOUNDRA — au nord de la limite des arbres, et sur
+// le haut plateau du Tibet — et la TAÏGA, la forêt boréale qui fait le tour du
+// pôle sous elle. Ce sont, comme les côtes et les déserts, des FAITS relevés
+// au degré : la limite des arbres passe à 68° sur le Mackenzie, 59° sur la
+// côte ouest de la baie d'Hudson, 58° en Ungava, 67° au pied de l'Oural, 72°
+// sur la Khatanga, 65° en Tchoukotka ; la taïga descend à 54° en Alberta, 48°
+// au nord des Grands Lacs, 60° en Finlande, 56° en Sibérie occidentale, 48° sur
+// l'Amour. Au-delà de 78° c'est la calotte, qui a sa propre règle. L'ORDRE de
+// la liste est une priorité : un point dans deux zones prend la première.
+// [lon, lat] comme `CONTOURS`.
+const CLIMATS = [
+  ['toundra', 'toundra-amerique', [-180, 64, -168, 66, -163, 64, -160, 67.5, -150, 68.5, -141, 69,
+    -134, 68.5, -125, 67, -115, 65, -108, 63.5, -100, 61.5, -94, 59, -88, 56.5, -85, 57.5,
+    -78, 58.5, -72, 58, -65, 58, -61, 56.5, -50, 58, -40, 59, -20, 68, -10, 78, -180, 78]],
+  ['toundra', 'islande', [-25, 63, -13, 63, -13, 67, -25, 67]],
+  ['toundra', 'toundra-eurasie', [17, 69.8, 25, 70.2, 30, 69.5, 36, 68.5, 42, 67.5, 50, 67.5,
+    60, 67, 66, 66.5, 75, 67, 85, 69, 95, 70.5, 102, 72, 115, 71.5, 127, 71, 140, 70, 150, 69,
+    160, 68, 170, 65.5, 180, 64.5, 180, 78, 17, 78]],
+  ['toundra', 'tibet', [78, 32, 78, 34.5, 80, 36, 85, 36, 90, 36.5, 95, 36, 100, 34, 102, 32,
+    99, 29, 95, 29, 90, 28.3, 85, 28.8, 81, 30]],
+  ['taiga', 'taiga-amerique', [-165, 62, -158, 60, -150, 60, -140, 61.5, -135, 59, -128, 57,
+    -120, 56, -115, 54.5, -105, 53.5, -98, 52, -95, 50.5, -88, 49, -84, 48, -79, 48, -74, 47.5,
+    -70, 48, -66, 48.5, -60, 48, -52, 47.5, -55, 52, -61, 56.5, -65, 58, -72, 58, -78, 58.5,
+    -85, 57.5, -88, 56.5, -94, 59, -100, 61.5, -108, 63.5, -115, 65, -125, 67, -134, 68.5,
+    -141, 69, -150, 68.5, -160, 67.5, -163, 64]],
+  ['taiga', 'taiga-eurasie', [10, 60.5, 17, 60.5, 22, 60.5, 28, 60, 32, 58.5, 40, 58, 50, 57.5,
+    58, 56.5, 65, 56.5, 75, 56, 85, 55, 90, 52, 98, 51, 105, 51.5, 112, 50, 120, 49.5, 127, 48,
+    133, 48.5, 138, 51, 141, 53, 156, 51, 163, 58, 170, 62, 180, 63, 180, 64.5, 170, 65.5,
+    160, 68, 150, 69, 140, 70, 127, 71, 115, 71.5, 102, 72, 95, 70.5, 85, 69, 75, 67, 66, 66.5,
+    60, 67, 50, 67.5, 42, 67.5, 36, 68.5, 30, 69.5, 25, 70.2, 17, 69.8, 14, 68, 8, 63, 6, 61]],
+];
+const FORMES_CLIMAT = CLIMATS.map(([climat, nom, pts]) => {
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for (let i = 0; i < pts.length; i += 2) {
+    x0 = Math.min(x0, pts[i]); x1 = Math.max(x1, pts[i]);
+    y0 = Math.min(y0, pts[i + 1]); y1 = Math.max(y1, pts[i + 1]);
+  }
+  return { climat, nom, pts, x0, x1, y0, y1 };
+});
+// Les déserts d'abord (v341), puis les climats dans l'ordre de la table.
+const TOUTES_LES_ZONES = [...FORMES_DESERT.map((f) => ({ ...f, climat: 'desert' })), ...FORMES_CLIMAT];
+
+// Le climat d'un point du globe : 'desert', 'toundra', 'taiga', ou null — la
+// campagne tempérée de toujours.
+export function climatReel(lat, lon) {
+  for (const f of TOUTES_LES_ZONES) {
+    if (lon < f.x0 || lon > f.x1 || lat < f.y0 || lat > f.y1) continue;
+    if (dedans(f.pts, lon, lat)) return f.climat;
+  }
+  return null;
+}
+
+// LE CLIMAT D'UN MORCEAU ENTIER, quand il est CERTAIN. Le monde fait trembler
+// le bord des zones d'au plus `marge` degrés (`World.climat`) : un point plus
+// loin que `marge` de tout bord a le même climat que toutes les colonnes
+// autour de lui. On rend alors ce climat (ou null), et `undefined` quand un
+// bord est trop près pour trancher — les colonnes se demandent une à une.
+// C'est ce qui rend la question gratuite au mailleur et au générateur : la
+// plupart des morceaux du monde sont loin de tout bord.
+function distanceAuBord(pts, lon, lat) {
+  let min = Infinity;
+  const n = pts.length / 2;
+  for (let i = 0, j = n - 1; i < n; j = i++) {
+    const ax = pts[j * 2], ay = pts[j * 2 + 1], bx = pts[i * 2], by = pts[i * 2 + 1];
+    const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy || 1;
+    const t = Math.max(0, Math.min(1, ((lon - ax) * dx + (lat - ay) * dy) / l2));
+    const ex = ax + dx * t - lon, ey = ay + dy * t - lat;
+    const d = ex * ex + ey * ey;
+    if (d < min) min = d;
+  }
+  return Math.sqrt(min);
+}
+export function climatCertain(lat, lon, marge) {
+  for (const f of TOUTES_LES_ZONES) {
+    if (lon < f.x0 - marge || lon > f.x1 + marge || lat < f.y0 - marge || lat > f.y1 + marge) continue;
+    if (distanceAuBord(f.pts, lon, lat) < marge) return undefined;
+    if (dedans(f.pts, lon, lat)) return f.climat;
+  }
+  return null;
+}
+// LES TEINTES DES CLIMATS (v342). Une zone de climat ne change pas la MATIÈRE
+// de l'herbe — c'est toujours le bloc d'herbe, que tout le monde sait lire —
+// mais sa COULEUR, comme dans la vraie campagne : le lichen olive de la
+// toundra, le vert sombre et froid de la forêt boréale. Un multiplicateur de
+// la couleur de sommet (le mailleur, le sol continu), et la même règle sur
+// les couleurs du paysage lointain et de la carte. L'indice 0 ne teint rien.
+// Réglé sur la tuile d'herbe (104, 168, 62) : toundra → (126, 124, 80),
+// taïga → (64, 118, 64) ; et sur la tuile de feuilles (54, 116, 38).
+export const CLIMATS_TEINTES = ['', 'toundra', 'taiga'];
+export const INDICE_CLIMAT = { toundra: 1, taiga: 2 };
+export const TEINTE_HERBE = [null, [1.21, 0.74, 1.29], [0.62, 0.70, 1.03]];
+export const TEINTE_FEUILLES = [null, [0.85, 0.8, 1.0], [0.63, 0.71, 1.16]];
+// LES MÊMES, POUR LA COULEUR DE SOMMET DU MONDE PROCHE. three tient une
+// couleur de sommet pour LINÉAIRE et décode la tuile sRGB avant de les
+// multiplier : un facteur 0,62 posé tel quel n'assombrit l'écran que de 0,80.
+// Le premier jet l'a fait, et la taïga restait vert vif en capture alors que
+// les maillages portaient bien la teinte (sonde dans la page : 201 516
+// sommets teints sur 300 816). Le facteur linéaire est le facteur perçu à la
+// puissance 2,2 ; la carte et le paysage lointain, eux, mêlent des couleurs
+// de palette et prennent le facteur perçu.
+const lineaire = (t) => t && t.map((v) => v ** 2.2);
+export const TEINTE_HERBE_LIN = TEINTE_HERBE.map(lineaire);
+export const TEINTE_FEUILLES_LIN = TEINTE_FEUILLES.map(lineaire);
+
+export function climatsDeLaTerre() { return FORMES_CLIMAT.map((f) => ({ climat: f.climat, nom: f.nom, pts: f.pts.slice() })); }
+
 // La liste des formes, pour qui veut les vérifier une à une.
 export function contoursDeLaTerre() {
   return FORMES.map((f) => f.nom);
