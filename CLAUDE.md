@@ -770,6 +770,52 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les rues de Londres à la règle du kit (v339) — un plan deux fois plus serré ne porte pas les mêmes rues
+
+La première des cinq villes bâties à la main restées hors règle (dette v271).
+Quatre règles.
+
+- **LA RÈGLE DU KIT SE MESURE QUARTIER PAR QUARTIER AVANT DE CHOISIR LES TYPES,
+  ET LE PLAN DÉCIDE CE QUE LA RÈGLE PEUT PORTER.** Londres est à vingt-quatre
+  blocs par kilomètre, la moitié de Paris : ses soixante-dix avenues nommées
+  sont deux fois plus serrées. Toutes en collectrices (mesuré), Soho tombait
+  de 18,6 % de lots à 2,1 et Bloomsbury de 22,7 à 1,3 — Tottenham Court Road
+  et Gower Street, à quatre blocs, ne font plus qu'une chaussée. Le type se
+  lit à la fonction (v303) : deux voies pour les artères de la vraie ville
+  (`ARTERES`, les « A-roads »), une (`locale`, 3,1 m) pour les rues de
+  quartier — déjà plus large que la plus large d'avant (2,4). Aucun
+  boulevard. Le seul remède qui rende Soho est celui de Paris (doubler le
+  plan) : il déplace la Tamise, donc `terrainHeight` — décision de Max,
+  déclarée dans `TASKS.md`.
+- **UNE TRAME POSÉE SOUS DES AVENUES NE LES DOUBLE PAS.** La trame de la v178
+  était tracée sans regarder les avenues ; une de ses rues venait s'intercaler
+  à quelques blocs d'une avenue parallèle. « Si l'élargissement mange les
+  bâtiments, on recompose les lots » : là où les avenues quadrillent le
+  quartier, ce sont elles les rues, et l'îlot va de l'une à l'autre. Une rue
+  de la trame n'est pas tracée là où elle longe une avenue à moins de 35° et
+  à moins de `RECUL_TRAME` (demi-emprise d'artère + `ILOT_MIN` + demi-chaussée
+  de trame, 13,9) ; celle qui COUPE l'avenue reste. Disque : 26,1 % avant,
+  19,5 avec la règle seule, 26,6 avec le recul.
+- **LE MOBILIER SE POSE SUR LA SECTION, PAS SUR L'AXE.** Les bus et les taxis
+  étaient au milieu de la chaussée, à 0,1 à 2,1 blocs des circuits : la
+  circulation les traversait (dette v210). Une adresse de mobilier se donne
+  par l'avenue, la fraction et le côté ; le véhicule se gare à la
+  demi-chaussée moins sept dixièmes, la cabine au milieu du trottoir, et la
+  pose se MESURE au chargement — tout le véhicule sur sa matière, à plus
+  d'une demi-voiture et d'un demi-bloc de tout axe d'avenue — sinon on
+  glisse le long de l'avenue, puis on change de côté. Une rue d'une voie n'a
+  pas la place d'un bus garé : arrêts et taxis sont sur des artères.
+- **LA VILLE D'AVANT SE FIGE, ET ELLE RESTE SOUS CE QU'UN ENFANT A BÂTI.**
+  Londres ne bouge pas : c'est la règle de la v303, pas celle de la v306.
+  `londres-v332.js` est la ville recopiée à l'octet, jamais modifiée ; une
+  colonne où un bloc a été posé avant `DATE_RUES_LONDRES` (et ses huit
+  voisines, `colonnesLondresAvant`) la garde — rien n'enferme une maison
+  posée sur une ancienne rue, rien ne retire le toit sous une cabine. Les
+  mondes d'avant (`CONF_AVANT`, `CONF_V308`) ont la Londres d'avant
+  (`londresAvant`) : c'est celle qu'on y voyait. Le témoin de `plafond.js`
+  est rouge désarmé (21 blocs de ville autour de la maison, toit absent).
+  **La date se relit à la fusion** (v309) : une date en avance retiendrait
+  la ville d'avant sous ce qu'un enfant pose sur la ville neuve.
 ## Les monuments à la hauteur de leur ville (v335) — une table de paliers, deux lecteurs
 
 Un étage fait trois blocs depuis la v301 ; les monuments n'avaient pas suivi.

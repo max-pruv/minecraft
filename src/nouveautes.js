@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 339,
+    titre: 'Les rues de Londres s\'élargissent',
+    puces: [
+      'De vraies rues à deux voies',
+      'Des îlots plus grands entre les avenues',
+      'Les bus garés au bord du trottoir',
+    ],
+  },
+  {
     v: 338,
     titre: 'L\'autoroute Madrid–Barcelone',
     puces: [

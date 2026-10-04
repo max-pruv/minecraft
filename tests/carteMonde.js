@@ -2291,6 +2291,133 @@ const VRAIES_KM = [
       !ponts.absent && ponts.riveARive >= 2 && ponts.ponts.every((p) => !p.absent && p.traversent.length >= 1),
       JSON.stringify(ponts.absent ? ponts : { riveARive: ponts.riveARive, parPont: ponts.ponts.map((p) => [p.nom, p.traversent]) }));
 
+    // --- LES RUES DE LONDRES À LA RÈGLE DU KIT (v339) ------------------------
+    //
+    // La quatrième ville à passer par `voirie.js` (le `roadSection` du kit,
+    // à un bloc pour un mètre), après Paris (v303) et les villes engendrées
+    // (v307). Trois choses se lisent sur le SOL de la ville, jamais sur une
+    // constante, et la section attendue se DEMANDE au module :
+    //  1. Les avenues ont la chaussée de leur type — deux voies pour une
+    //     artère, une pour une rue de quartier — et la trame celle d'une
+    //     collectrice. On coupe chaque avenue à mi-segment, perpendiculairement,
+    //     au vingtième de bloc. Mesuré sur `origin/main` : artères 3,0, rues de
+    //     quartier 1,7 (plus étroites qu'une voiture) ; ici 7,0 · 3,4 · 6,95.
+    //  2. Londres garde ses immeubles : 26,1 % du disque en lots avant, 19,5
+    //     avec la règle du kit seule, 26,6 avec la trame qui ne double plus
+    //     une avenue. La barre est au milieu (23), et le quartier le plus
+    //     touché est nommé (Soho, 18,6 → 10,1 ; règle seule 2,1 : barre 6).
+    //     Vert des deux côtés à dessein : il garde une CAPACITÉ (v220).
+    //  3. Le mobilier n'est plus sur la trajectoire des convois : les bus et
+    //     les taxis garés contre le trottoir, les cabines dessus. Mesuré sur
+    //     `origin/main` : chacun à 0,1 à 2,1 blocs d'un circuit, pour une
+    //     voiture de 1,13 de demi-largeur.
+    const kitLondres = await tab.evaluate(async () => {
+      try {
+        const m = await import('./src/londres.js');
+        const { sectionDeRue } = await import('./src/voirie.js');
+        const { CITY_BLOCK } = await import('./src/blocks.js');
+        const g = window.__game;
+        const L = m.LONDRES;
+        const med = (a) => { const b = [...a].sort((x, y) => x - y); return b.length ? b[Math.floor(b.length / 2)] : -1; };
+        const roule = (u, v) => m.solLondres(L.x + Math.round(u), L.z + Math.round(v)) === CITY_BLOCK.ASPHALT;
+        // la chaussée traversée au droit d'un point, perpendiculairement à (eu, ev)
+        const coupe = (u, v, eu, ev) => {
+          if (!roule(u, v)) return null;
+          let a = 0, b = 0;
+          while (a < 20 && roule(u - ev * (a + 0.05), v + eu * (a + 0.05))) a += 0.05;
+          while (b < 20 && roule(u + ev * (b + 0.05), v - eu * (b + 0.05))) b += 0.05;
+          return a + b;
+        };
+        const parType = { collecteur: [], locale: [] };
+        const sec = m.sectionDeVoieLondres || (() => ({ type: 'collecteur' }));
+        const artere = new Set(['Oxford Street', 'Strand', 'Fleet Street', 'Park Lane', 'Marylebone Road', 'Victoria Street']);
+        for (const voie of m.VOIES_LONDRES) {
+          const type = m.sectionDeVoieLondres ? sec(voie.nom).type : (artere.has(voie.nom) ? 'collecteur' : 'locale');
+          if (/Bridge$/.test(voie.nom)) continue;           // un tablier se lit au-dessus de l'eau
+          for (let i = 0; i < voie.pts.length - 1; i++) {
+            const [u0, v0] = voie.pts[i], [u1, v1] = voie.pts[i + 1];
+            const lg = Math.hypot(u1 - u0, v1 - v0);
+            if (lg < 8) continue;
+            const c = coupe((u0 + u1) / 2, (v0 + v1) / 2, (u1 - u0) / lg, (v1 - v0) / lg);
+            if (c !== null && c < 20) parType[type].push(c);
+          }
+        }
+        // la trame : à mi-chemin de deux carrefours, loin des avenues
+        const trames = [];
+        const T = m.TRAMES_LONDRES;
+        if (T) for (const t of Object.values(T)) {
+          const co = Math.cos(t.ang), si = Math.sin(t.ang);
+          for (let i = -4; i <= 4; i++) for (let j = -4; j <= 4; j++) {
+            const A = i * t.pu, B = (j + 0.5) * t.pv;
+            const u = t.cu + A * co + B * si, v = t.cv - A * si + B * co;
+            if (Math.hypot(u, v) > L.r - 10 || m.solLondres(L.x + Math.round(u), L.z + Math.round(v)) !== CITY_BLOCK.ASPHALT) continue;
+            const c = coupe(u, v, si, co);
+            if (c !== null && c < 15) trames.push(c);
+          }
+        }
+        // la part bâtie, sur le disque et par quartier
+        const part = (cu, cv, r) => {
+          let n = 0, lots = 0;
+          for (let u = cu - r; u <= cu + r; u++) for (let v = cv - r; v <= cv + r; v++) {
+            if ((u - cu) ** 2 + (v - cv) ** 2 > r * r || u * u + v * v > L.r * L.r) continue;
+            n++; if (m.lotLondresLibre(L.x + u, L.z + v)) lots++;
+          }
+          return +(100 * lots / n).toFixed(1);
+        };
+        const quartiers = { 'St James': part(-28, -2, 14), Marylebone: part(-40, -28, 13), Soho: part(-6, -12, 11),
+          Bloomsbury: part(-2, -38, 13), Holborn: part(24, -36, 14), City: part(64, -22, 12), Southwark: part(40, 18, 16) };
+        // le mobilier contre les circuits
+        const circuits = m.circuitsLondres((x, z) => g.world.terrainHeight(x, z));
+        const segs = [];
+        for (const c of circuits) for (let i = 0; i < c.pts.length; i++) {
+          const a = c.pts[i], b = c.pts[(i + 1) % c.pts.length]; segs.push([a.x, a.z, b.x, b.z]);
+        }
+        const dmin = (x, z) => {
+          let best = Infinity;
+          for (const [x0, z0, x1, z1] of segs) {
+            const dx = x1 - x0, dz = z1 - z0, l2 = dx * dx + dz * dz || 1;
+            let k = ((x - x0) * dx + (z - z0) * dz) / l2; k = k < 0 ? 0 : k > 1 ? 1 : k;
+            best = Math.min(best, Math.hypot(x - x0 - k * dx, z - z0 - k * dz));
+          }
+          return best;
+        };
+        const M = m.MOBILIER_LONDRES, blocs = [];
+        for (const [k, n] of [['bus', 3], ['taxis', 2], ['cabines', 1]]) for (const [u, v, axe] of M[k]) {
+          for (let i = 0; i < n; i++) {
+            const bu = u + (axe === 'v' ? 0 : i), bv = v + (axe === 'v' ? i : 0);
+            blocs.push({ k, d: dmin(L.x + bu + 0.5, L.z + bv + 0.5), sol: m.solLondres(L.x + bu, L.z + bv) });
+          }
+        }
+        const pire = blocs.reduce((a, b) => (b.d < a.d ? b : a), { d: Infinity });
+        const cabinesTrottoir = blocs.filter((b) => b.k === 'cabines' && b.sol === CITY_BLOCK.SIDEWALK).length;
+        return {
+          coll: sectionDeRue('collecteur'), loc: sectionDeRue('locale'),
+          arteres: { n: parType.collecteur.length, med: med(parType.collecteur) },
+          rues: { n: parType.locale.length, med: med(parType.locale) },
+          trame: { n: trames.length, med: med(trames) },
+          bati: part(0, 0, L.r), quartiers, pire: +pire.d.toFixed(2), pireK: pire.k,
+          cabines: M.cabines.length, cabinesTrottoir, bus: M.bus.length, taxis: M.taxis.length,
+        };
+      } catch (e) { return { err: String(e) }; }
+    });
+    const fk = (x) => (typeof x === 'number' ? x.toFixed(2) : String(x));
+    verifier('les rues de Londres ont la section du kit : deux voies aux artères, une aux rues, deux à la trame',
+      !kitLondres.err && kitLondres.arteres.n >= 15 && kitLondres.rues.n >= 15 && kitLondres.trame.n >= 10
+      && kitLondres.arteres.med >= kitLondres.coll.chaussee - 0.5 && kitLondres.rues.med >= kitLondres.loc.chaussee - 0.5
+      && kitLondres.trame.med >= kitLondres.coll.chaussee - 0.5,
+      kitLondres.err || `artères ${fk(kitLondres.arteres.med)} (${kitLondres.arteres.n} coupes, kit ${kitLondres.coll.chaussee})`
+      + ` · rues ${fk(kitLondres.rues.med)} (${kitLondres.rues.n}, kit ${kitLondres.loc.chaussee})`
+      + ` · trame ${fk(kitLondres.trame.med)} (${kitLondres.trame.n})`);
+    verifier('et Londres garde ses immeubles : le disque à plus de 23 %, aucun quartier sous 6 %',
+      !kitLondres.err && kitLondres.bati >= 23 && Object.values(kitLondres.quartiers).every((q) => q >= 6),
+      kitLondres.err || `${kitLondres.bati} % du disque · ${JSON.stringify(kitLondres.quartiers)}`);
+    verifier('et les bus, les taxis et les cabines de Londres ne sont plus sur la trajectoire des convois',
+      !kitLondres.err && kitLondres.pire >= 1.63 && kitLondres.cabinesTrottoir === kitLondres.cabines
+      && kitLondres.bus >= 4 && kitLondres.taxis >= 3 && kitLondres.cabines >= 5,
+      kitLondres.err || `bloc le plus proche d'un circuit : ${kitLondres.pire} (${kitLondres.pireK}, barre 1,63)`
+      + ` · cabines sur le trottoir ${kitLondres.cabinesTrottoir}/${kitLondres.cabines}`
+      + ` · ${kitLondres.bus} bus, ${kitLondres.taxis} taxis`);
+
     // --- AUCUNE VILLE NE FAIT DEMI-TOUR, PAS SEULEMENT LONDRES ---------------
     //
     // Le témoin ci-dessus ne regardait que Londres. Les cinq autres villes à

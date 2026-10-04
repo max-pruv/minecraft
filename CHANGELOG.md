@@ -20,6 +20,49 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v339 — Les rues de Londres à la règle du kit
+
+**Pourquoi.** Paris est passé à la section de rue du kit (`roadSection`) en
+v303, les villes engendrées en v307 ; les cinq villes bâties à la main sont
+restées à leurs largeurs relevées à la main (dette v271). À Londres, une
+avenue nommée avait 1,4 à 2,4 blocs de chaussée pour une voiture de 2,26 —
+les convois y roulaient plus larges que la rue —, et les bus et les taxis
+étaient garés au milieu de la chaussée, là où roulent les convois : la
+circulation passait au travers.
+
+**Ce que ça change.**
+
+- **Les rues de Londres ont la section du kit**, à un bloc pour un mètre :
+  deux voies et des trottoirs de 2,5 m aux artères (Oxford Street, le Strand,
+  Fleet Street, Park Lane, la New Road, l'Embankment, les ponts…), une voie
+  de 3,1 m et des trottoirs de 2 m aux rues de quartier, deux voies aux rues
+  de la trame. La plus petite rue est plus large que la plus large d'avant.
+- **Les îlots se recomposent** : le pas de la trame suit l'élargissement, et
+  une rue de la trame ne double plus une avenue parallèle — l'îlot va d'une
+  avenue à l'autre, comme dans la vraie ville. Londres garde ses immeubles :
+  26,6 % du disque bâti contre 26,1. Le prix, déclaré : Soho, Bloomsbury,
+  Holborn et Southwark en perdent un tiers à la moitié (St James, Marylebone
+  et la City en gagnent) — le plan de Londres est deux fois plus serré que
+  celui de Paris.
+- **Les bus et les taxis se garent contre le trottoir, les cabines sont sur
+  le trottoir** : plus aucun ne se trouve sur la trajectoire d'un convoi.
+- **Ce qu'un enfant a bâti à Londres ne bouge pas** : sous une colonne où il
+  a posé un bloc avant la mise à jour (et autour), la Londres d'avant reste —
+  une maison sur une ancienne rue n'est pas enfermée dans un immeuble neuf,
+  une cabane sur un ancien toit garde son toit.
+
+**Ce qui le prouve.** Cinq témoins neufs. `carteMonde.js` : les avenues et la
+trame ont la chaussée de leur type (artères 7,0, rues 3,4, trame 6,95 contre
+3,0 et 1,7 sur `origin/main`) ; Londres garde plus de 23 % de lots et aucun
+quartier sous 6 % ; le mobilier est à plus de 1,63 bloc de tout circuit (0,11
+sur `origin/main`). `plafond.js` : une maison sur une ancienne rue n'est pas
+enfermée, une cabane garde son toit (désarmé : 21 blocs de ville autour de la
+maison, toit absent). Les douze circuits de Londres restent à 100 % sur la
+rue ; les deux empreintes de `plafond.js` ne bougent pas (les rues sont du
+sol).
+
+---
+
 ## v338 — L'autoroute Madrid–Barcelone
 
 **Pourquoi.** Madrid–Barcelone relie les deux grandes villes d'Espagne, le

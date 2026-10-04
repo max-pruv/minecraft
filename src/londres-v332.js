@@ -1,3 +1,16 @@
+// LONDRES TELLE QU'ELLE ÉTAIT JUSQU'À LA v338 — FIGÉE, ET JAMAIS MODIFIÉE.
+//
+// La v339 passe Londres à la règle du kit (`voirie.js`) : ses rues
+// s'élargissent et ses îlots se recomposent. Un bloc qu'un enfant a posé avant
+// cette date l'a été contre CETTE ville-ci — une maison sur une ancienne rue,
+// une cabane contre un ancien mur. Là où il y en a un (sa colonne et ses huit
+// voisines), le monde garde la ville d'avant (`world.js`, `colonnesLondresAvant`),
+// sinon un immeuble neuf l'enfermerait ou une rue neuve le laisserait flotter.
+// C'est la discipline de `paris-v302.js` (v303) et de `MONDES.terreAvant`
+// (v199) : une règle qui lit le générateur dit QUELLE version elle lit, et
+// cette version-là ne change plus. Recopié à l'octet depuis `londres.js` (inchangé de la v332 à la v338),
+// seul cet en-tête est neuf.
+//
 // Londres.
 //
 // Max : « quand tu vois Londres aujourd'hui, il n'y a qu'un seul bâtiment…
@@ -38,7 +51,6 @@ import { BLOCK, CITY_BLOCK, DECOR_START, ARCHI } from './blocks.js';
 import { rangerVoies, solDesVoies, fabriqueCircuits } from './voies.js';
 import { positionDe } from './mondes.js';
 import { monumentBati } from './monuments.js';
-import { sectionDeRue } from './voirie.js';
 
 const uni = (c) => DECOR_START + c * 10;
 const brique = (c) => DECOR_START + c * 10 + 1;
@@ -75,54 +87,6 @@ const LAT0 = 51.5074, LON0 = -0.1278;
 const uDe = (lon) => Math.round((lon - LON0) * 69.2 * BLOCS_PAR_KM);
 const vDe = (lat) => Math.round(-(lat - LAT0) * 111.19 * BLOCS_PAR_KM);
 const de = (lat, lon) => [uDe(lon), vDe(lat)];
-
-// --- LA SECTION DES RUES, À LA RÈGLE DU KIT (v339) ---------------------------
-//
-// Les largeurs de Londres étaient relevées à la main : une avenue nommée avait
-// 1,4 à 2,4 blocs de chaussée (`l` de 0,7 à 1,2) pour une voiture de 2,26 — les
-// convois y roulaient plus larges que la rue — et la trame trois blocs et
-// demi. Paris est passé à `roadSection` en v303, les villes engendrées en
-// v307 ; c'est le tour de Londres, et la règle est la même : la section se
-// DEMANDE à `voirie.js`, à un bloc pour un mètre, jamais ne s'écrit.
-//
-// LE TYPE SE LIT À LA FONCTION, PAS AU NOM (v303). Le plan de Londres est à
-// vingt-quatre blocs par kilomètre, la moitié de Paris : ses soixante-dix
-// avenues nommées sont deux fois plus serrées sur la carte. Toutes en deux
-// voies (mesuré), Soho tombait de 18,6 % de lots à 2,1, Bloomsbury de 22,7 à
-// 1,3 — Tottenham Court Road et Gower Street, à quatre blocs l'une de l'autre,
-// ne faisaient plus qu'une chaussée. Le kit classe une rue par son NOMBRE DE
-// VOIES : deux (COLLECTRICE) pour les artères — le réseau principal de la vraie
-// ville, les « A-roads » : la New Road (Marylebone et Euston Road), Park Lane,
-// Oxford Street, le Strand et Fleet Street, l'Embankment, les ponts… —, une
-// (LOCALE, 3,1 m et trottoirs de 2 m) pour les rues de quartier. Une voie de
-// 3,1 m, c'est encore 0,4 m de chaque côté d'une voiture de la flotte : la
-// moindre rue de Londres est plus large que la plus large avant (2,4).
-// Le tracé reste celui des vrais carrefours ; seule la section change — `l`
-// (demi-chaussée) et `t` (trottoir) sont ce que `rangerVoies` lit.
-// Aucune n'est un boulevard : quatre voies, c'est vingt et un blocs d'emprise,
-// et pas une artère de Londres n'en a la place sans avaler un quartier.
-const COLLECTRICE = sectionDeRue('collecteur');
-const LOCALE = sectionDeRue('locale');
-export const SECTIONS_LONDRES = { collecteur: COLLECTRICE, locale: LOCALE };
-// Où `world.js` cherche les coins d'un carrefour : à √2 × (demi-chaussée + un
-// bloc et demi) du croisement, la plus large section de la ville — la règle
-// de `PORTEE_FEUX_PARIS` (v306), qui se déduit et ne s'écrit pas.
-export const PORTEE_FEUX_LONDRES = Math.ceil(Math.SQRT2 * (COLLECTRICE.chaussee / 2 + 1.5));
-const ARTERES = new Set([
-  'Park Lane', 'Marylebone Road, côté Edgware', 'Marylebone Road',
-  'Euston Road, côté Marylebone', 'Euston Road', "Euston Road, côté King's Cross",
-  'Pentonville Road', 'Bayswater Road', 'Knightsbridge & Kensington Road', 'Edgware Road',
-  'Grosvenor Place', 'Victoria Embankment', 'The Mall', 'Whitehall', 'Victoria Street', 'Piccadilly',
-  'Oxford Street, côté Marble Arch', 'Oxford Street', 'Oxford Street, côté Soho',
-  'High Holborn', 'Strand', 'Fleet Street', 'Kingsway', 'Farringdon Road', 'Farringdon Street',
-  'New Bridge Street', 'Blackfriars Road', 'Borough High Street', 'London Road',
-  'Waterloo Bridge', 'Blackfriars Bridge', 'London Bridge', 'Westminster Bridge Road', 'London Wall',
-]);
-export const sectionDeVoieLondres = (nom) => (ARTERES.has(nom) ? COLLECTRICE : LOCALE);
-const aLaRegle = (voie) => {
-  const sec = sectionDeVoieLondres(voie.nom);
-  return { ...voie, type: sec.type, l: sec.chaussee / 2, t: sec.trottoir };
-};
 
 // --- la Tamise ---------------------------------------------------------------
 //
@@ -168,13 +132,13 @@ export function distanceTamise(u, v) {
 // tomberait sur le Globe. Ce sont des dettes déclarées, pas des oublis.
 const PONTS = [
   // Waterloo Bridge : du bout de Fleet Street/Kingsway (Aldwych) à York Road.
-  { nom: 'Waterloo Bridge', pts: [[17, -14], [24, 4]] },
+  { nom: 'Waterloo Bridge', l: 0.8, pts: [[17, -14], [24, 4]] },
   // Blackfriars Bridge : du bas de New Bridge Street à Stamford/Blackfriars Road.
-  { nom: 'Blackfriars Bridge', pts: [[40, -13], [41, 3]] },
+  { nom: 'Blackfriars Bridge', l: 0.8, pts: [[40, -13], [41, 3]] },
   // London Bridge : de Cannon Street à Southwark Street, deux blocs à l'ouest
   // du Shard (u 64..74, v 3..13).
-  { nom: 'London Bridge', pts: [[66, -9], [60, 8]] },
-].map(aLaRegle);
+  { nom: 'London Bridge', l: 0.8, pts: [[66, -9], [60, 8]] },
+];
 const BANDES_PONTS = rangerVoies(PONTS);
 
 // Le sol du tablier : bitume au milieu, granit sur les bords comme les quais.
@@ -259,54 +223,54 @@ const VOIES = [
   // --- Westminster et St James's ---
   // Le Mall : l'avenue rouge de Trafalgar au Victoria Memorial, bordée de
   // platanes.
-  { nom: 'The Mall', sol: MALL_ROUGE, pts: [[-2, 2], [-14, 10]] },
+  { nom: 'The Mall', l: 1.2, sol: MALL_ROUGE, pts: [[-2, 2], [-14, 10]] },
   // Horse Guards Road : la bordure est de St James's Park, du Mall à
   // Birdcage Walk.
-  { nom: 'Horse Guards Road', pts: [[-4, 3], [-4, 17]] },
+  { nom: 'Horse Guards Road', l: 0.8, pts: [[-4, 3], [-4, 17]] },
   // Whitehall : des ministères de Trafalgar à Parliament Square.
-  { nom: 'Whitehall', pts: [[0, 2], [1, 16]] },
-  { nom: 'Great George Street', pts: [[1, 16], [-4, 17]] },
+  { nom: 'Whitehall', l: 1.1, pts: [[0, 2], [1, 16]] },
+  { nom: 'Great George Street', l: 0.8, pts: [[1, 16], [-4, 17]] },
   // Birdcage Walk : le sud du parc, jusqu'à la grille de Buckingham.
-  { nom: 'Birdcage Walk', pts: [[-4, 17], [-14, 17]] },
+  { nom: 'Birdcage Walk', l: 0.8, pts: [[-4, 17], [-14, 17]] },
   // Buckingham Gate contourne la grille du palais (u = −18) par l'est.
-  { nom: 'Buckingham Gate', pts: [[-14, 17], [-16, 20], [-17, 27]] },
-  { nom: 'Victoria Street', pts: [[1, 16], [-17, 27]] },
-  { nom: 'Buckingham Palace Road', pts: [[-17, 27], [-27, 33]] },
+  { nom: 'Buckingham Gate', l: 0.8, pts: [[-14, 17], [-16, 20], [-17, 27]] },
+  { nom: 'Victoria Street', l: 0.8, pts: [[1, 16], [-17, 27]] },
+  { nom: 'Buckingham Palace Road', l: 0.8, pts: [[-17, 27], [-27, 33]] },
   // Grosvenor Place : de la gare Victoria à Hyde Park Corner, le long des
   // jardins du palais.
-  { nom: 'Grosvenor Place', pts: [[-27, 33], [-33, 22], [-41, 13]] },
+  { nom: 'Grosvenor Place', l: 0.9, pts: [[-27, 33], [-33, 22], [-41, 13]] },
   // Constitution Hill longe le nord du palais — il fait dix-sept blocs de
   // long ici, six fois sa taille — jusqu'au Victoria Memorial.
-  { nom: 'Constitution Hill',
+  { nom: 'Constitution Hill', l: 0.9,
     pts: [[-41, 13], [-33, 11], [-27, 8], [-25, 6], [-17, 6], [-14, 10]] },
   // Pall Mall : des clubs, de Trafalgar à St James's Street.
-  { nom: 'Pall Mall', pts: [[-4, -1], [-19, 3]] },
-  { nom: "St James's Street", pts: [[-19, 3], [-20, -1]] },
-  { nom: 'Haymarket', pts: [[-10, -7], [-4, -1]] },
+  { nom: 'Pall Mall', l: 0.9, pts: [[-4, -1], [-19, 3]] },
+  { nom: "St James's Street", l: 0.8, pts: [[-19, 3], [-20, -1]] },
+  { nom: 'Haymarket', l: 0.9, pts: [[-10, -7], [-4, -1]] },
   // Piccadilly : du Circus à Hyde Park Corner, en passant sous le Ritz. Coupée
   // à St James's Street, qui la rejoint depuis Pall Mall.
-  { nom: 'Piccadilly, côté Circus', pts: [[-10, -7], [-20, -1]] },
-  { nom: 'Piccadilly', pts: [[-20, -1], [-25, 2], [-41, 13]] },
+  { nom: 'Piccadilly, côté Circus', l: 0.9, pts: [[-10, -7], [-20, -1]] },
+  { nom: 'Piccadilly', l: 0.9, pts: [[-20, -1], [-25, 2], [-41, 13]] },
 
   // --- Mayfair, Marylebone et Hyde Park ---
-  { nom: 'Park Lane', pts: [[-52, -15], [-41, 13]] },
-  { nom: 'Knightsbridge & Kensington Road',
+  { nom: 'Park Lane', l: 1.0, pts: [[-52, -15], [-41, 13]] },
+  { nom: 'Knightsbridge & Kensington Road', l: 0.9,
     pts: [[-41, 13], [-55, 15], [-80, 16]] },
   // West Carriage Drive : la seule route qui traverse Hyde Park, sur le pont
   // de la Serpentine.
-  { nom: 'West Carriage Drive', pts: [[-79, -12], [-79, 5], [-80, 16]] },
-  { nom: 'Bayswater Road', pts: [[-52, -15], [-79, -12]] },
-  { nom: 'Edgware Road', pts: [[-52, -15], [-67, -33]] },
-  { nom: 'Baker Street', pts: [[-47, -16], [-49, -41]] },
+  { nom: 'West Carriage Drive', l: 0.7, pts: [[-79, -12], [-79, 5], [-80, 16]] },
+  { nom: 'Bayswater Road', l: 0.9, pts: [[-52, -15], [-79, -12]] },
+  { nom: 'Edgware Road', l: 0.9, pts: [[-52, -15], [-67, -33]] },
+  { nom: 'Baker Street', l: 0.8, pts: [[-47, -16], [-49, -41]] },
   // Marylebone Road est coupée à Baker Street, où les circuits tournent.
-  { nom: 'Marylebone Road, côté Edgware', pts: [[-67, -33], [-49, -41]] },
-  { nom: 'Marylebone Road', pts: [[-49, -41], [-27, -43]] },
+  { nom: 'Marylebone Road, côté Edgware', l: 1.0, pts: [[-67, -33], [-49, -41]] },
+  { nom: 'Marylebone Road', l: 1.0, pts: [[-49, -41], [-27, -43]] },
   // Euston Road : de Great Portland Street à King's Cross, le long des gares.
   // Coupée à Tottenham Court Road et à Woburn Place ; le dernier tronçon vers
   // King's Cross est un cul-de-sac, aucun circuit ne le prend.
-  { nom: 'Euston Road, côté Marylebone', pts: [[-27, -43], [-12, -48]] },
-  { nom: 'Euston Road', pts: [[-12, -48], [-4, -52]] },
-  { nom: "Euston Road, côté King's Cross", pts: [[-4, -52], [7, -61]] },
+  { nom: 'Euston Road, côté Marylebone', l: 1.0, pts: [[-27, -43], [-12, -48]] },
+  { nom: 'Euston Road', l: 1.0, pts: [[-12, -48], [-4, -52]] },
+  { nom: "Euston Road, côté King's Cross", l: 1.0, pts: [[-4, -52], [7, -61]] },
   // --- LES RUES DE RACCORD DE BLOOMSBURY, CLERKENWELL ET ISLINGTON (v223) ---
   //
   // Euston Road côté King's Cross était un cul-de-sac : rien ne partait de
@@ -315,83 +279,83 @@ const VOIES = [
   // nord-est — c'est la piste que `TASKS.md` nommait depuis la v206, mesurée.
   // Gray's Inn Road et Pentonville Road partent toutes deux du carrefour de
   // King's Cross, comme les vraies.
-  { nom: "Gray's Inn Road", pts: [[7, -61], [18, -47], [22, -32], [28, -27]] },
-  { nom: 'Pentonville Road', pts: [[7, -61], [13, -62], [37, -66]] },
-  { nom: 'Farringdon Road', pts: [[37, -66], [32, -44], [35, -27]] },
-  { nom: 'Clerkenwell Road', pts: [[20, -40], [32, -40]] },
-  { nom: "Theobald's Road", pts: [[10, -32], [22, -32]] },
+  { nom: "Gray's Inn Road", l: 0.8, pts: [[7, -61], [18, -47], [22, -32], [28, -27]] },
+  { nom: 'Pentonville Road', l: 1.0, pts: [[7, -61], [13, -62], [37, -66]] },
+  { nom: 'Farringdon Road', l: 0.9, pts: [[37, -66], [32, -44], [35, -27]] },
+  { nom: 'Clerkenwell Road', l: 0.8, pts: [[20, -40], [32, -40]] },
+  { nom: "Theobald's Road", l: 0.8, pts: [[10, -32], [22, -32]] },
   // Bloomsbury n'avait que DEUX liens nord-sud — Euston Road et Woburn Place —
   // et un seul circuit les prenait tous les deux : mesuré, aucun échange ne
   // pouvait donner ses voitures à King's Cross sans en retirer à Tottenham
   // Court Road, au Strand et à Charing Cross Road. Gower Street (celle de
   // l'University College) et Judd Street sont les deux qui manquaient.
-  { nom: 'Gower Street & Bloomsbury Street', pts: [[-9, -49], [-6, -36], [-3, -23]] },
-  { nom: 'Judd Street', pts: [[2, -57], [1, -45]] },
-  { nom: 'Portland Place', pts: [[-22, -21], [-26, -28], [-27, -43]] },
+  { nom: 'Gower Street & Bloomsbury Street', l: 0.8, pts: [[-9, -49], [-6, -36], [-3, -23]] },
+  { nom: 'Judd Street', l: 0.7, pts: [[2, -57], [1, -45]] },
+  { nom: 'Portland Place', l: 0.9, pts: [[-22, -21], [-26, -28], [-27, -43]] },
   // Oxford Street est coupée à Baker Street et à Oxford Circus, où les
   // circuits tournent.
-  { nom: 'Oxford Street, côté Marble Arch', pts: [[-52, -15], [-47, -16]] },
-  { nom: 'Oxford Street', pts: [[-47, -16], [-22, -21]] },
-  { nom: 'Oxford Street, côté Soho', pts: [[-22, -21], [-4, -23]] },
+  { nom: 'Oxford Street, côté Marble Arch', l: 1.0, pts: [[-52, -15], [-47, -16]] },
+  { nom: 'Oxford Street', l: 1.0, pts: [[-47, -16], [-22, -21]] },
+  { nom: 'Oxford Street, côté Soho', l: 1.0, pts: [[-22, -21], [-4, -23]] },
   // Regent Street : la courbe de Nash, du Circus à Oxford Circus.
-  { nom: 'Regent Street', pts: [[-10, -7], [-16, -10], [-22, -21]] },
+  { nom: 'Regent Street', l: 0.9, pts: [[-10, -7], [-16, -10], [-22, -21]] },
 
   // --- Soho, Bloomsbury et Holborn ---
-  { nom: 'Tottenham Court Road', pts: [[-4, -23], [-12, -48]] },
-  { nom: 'Charing Cross Road', pts: [[0, -3], [0, -16], [-4, -23]] },
-  { nom: 'Shaftesbury Avenue', pts: [[-10, -7], [0, -16], [7, -25]] },
-  { nom: 'New Oxford Street', pts: [[-4, -23], [7, -25]] },
-  { nom: 'High Holborn', pts: [[7, -25], [13, -27], [33, -27]] },
-  { nom: 'Southampton Row & Woburn Place',
+  { nom: 'Tottenham Court Road', l: 0.8, pts: [[-4, -23], [-12, -48]] },
+  { nom: 'Charing Cross Road', l: 0.9, pts: [[0, -3], [0, -16], [-4, -23]] },
+  { nom: 'Shaftesbury Avenue', l: 0.8, pts: [[-10, -7], [0, -16], [7, -25]] },
+  { nom: 'New Oxford Street', l: 1.0, pts: [[-4, -23], [7, -25]] },
+  { nom: 'High Holborn', l: 1.0, pts: [[7, -25], [13, -27], [33, -27]] },
+  { nom: 'Southampton Row & Woburn Place', l: 0.8,
     pts: [[13, -27], [6, -38], [-4, -52]] },
-  { nom: 'Kingsway', pts: [[13, -27], [17, -14]] },
+  { nom: 'Kingsway', l: 0.9, pts: [[13, -27], [17, -14]] },
   // Le Strand, de Charing Cross à Aldwych ; puis Fleet Street jusqu'à
   // Ludgate Circus.
-  { nom: 'Strand', pts: [[3, -1], [10, -7], [17, -14]] },
-  { nom: 'Fleet Street', pts: [[17, -14], [26, -17], [39, -18]] },
-  { nom: 'Farringdon Street', pts: [[33, -27], [39, -18]] },
-  { nom: 'New Bridge Street', pts: [[39, -18], [40, -13]] },
+  { nom: 'Strand', l: 1.0, pts: [[3, -1], [10, -7], [17, -14]] },
+  { nom: 'Fleet Street', l: 1.0, pts: [[17, -14], [26, -17], [39, -18]] },
+  { nom: 'Farringdon Street', l: 0.8, pts: [[33, -27], [39, -18]] },
+  { nom: 'New Bridge Street', l: 0.8, pts: [[39, -18], [40, -13]] },
   // L'Embankment : le quai bâti par Bazalgette, qui suit la rive nord de
   // Westminster à Blackfriars.
-  { nom: 'Victoria Embankment',
+  { nom: 'Victoria Embankment', l: 0.7,
     pts: [[1, 16], [6, 3], [9, -4], [17, -10], [38, -13], [40, -13]] },
 
   // --- la City ---
-  { nom: 'Holborn Viaduct', pts: [[33, -27], [44, -24]] },
+  { nom: 'Holborn Viaduct', l: 0.9, pts: [[33, -27], [44, -24]] },
   // Newgate Street et Cheapside passent au NORD de la nef de Saint-Paul
   // (v ≤ −20), à la Banque d'Angleterre.
-  { nom: 'Newgate Street & Cheapside', pts: [[44, -24], [55, -23], [64, -16]] },
-  { nom: 'King William Street', pts: [[64, -16], [69, -8]] },
-  { nom: 'Moorgate', pts: [[64, -16], [65, -27]] },
-  { nom: 'London Wall', pts: [[65, -27], [50, -27]] },
-  { nom: 'Aldersgate Street', pts: [[50, -27], [44, -24]] },
+  { nom: 'Newgate Street & Cheapside', l: 0.9, pts: [[44, -24], [55, -23], [64, -16]] },
+  { nom: 'King William Street', l: 0.8, pts: [[64, -16], [69, -8]] },
+  { nom: 'Moorgate', l: 0.8, pts: [[64, -16], [65, -27]] },
+  { nom: 'London Wall', l: 0.8, pts: [[65, -27], [50, -27]] },
+  { nom: 'Aldersgate Street', l: 0.8, pts: [[50, -27], [44, -24]] },
   // Old Bailey referme la City : sans elle, l'îlot Newgate–Moorgate–London
   // Wall–Aldersgate ne tenait à la ville que par Holborn Viaduct, et toute
   // boucle qui y entrait en ressortait par le même carrefour — un demi-tour.
-  { nom: 'Old Bailey', pts: [[39, -18], [44, -24]] },
+  { nom: 'Old Bailey', l: 0.7, pts: [[39, -18], [44, -24]] },
   // Cannon Street part du Monument vers l'ouest. La vraie monte jusqu'à
   // Saint-Paul, mais la nef (u 42..54, v −20..−14) barre la route : ici elle
   // rejoint Queen Victoria Street, qui file au sud de la nef jusqu'à
   // Blackfriars — dans la vraie ville aussi, c'est elle qui passe au sud de
   // la cathédrale.
-  { nom: 'Cannon Street', pts: [[69, -8], [56, -12]] },
-  { nom: 'Queen Victoria Street', pts: [[56, -12], [40, -13]] },
+  { nom: 'Cannon Street', l: 0.8, pts: [[69, -8], [56, -12]] },
+  { nom: 'Queen Victoria Street', l: 0.8, pts: [[56, -12], [40, -13]] },
 
   // --- la rive sud ---
-  { nom: 'Westminster Bridge Road', pts: [[17, 18], [37, 24]] },
-  { nom: 'York Road', pts: [[24, 4], [17, 18]] },
-  { nom: 'Waterloo Road', pts: [[37, 24], [27, 12], [24, 4]] },
-  { nom: 'Stamford Street', pts: [[24, 4], [41, 3]] },
-  { nom: 'Blackfriars Road', pts: [[41, 3], [37, 24]] },
-  { nom: 'Southwark Street', pts: [[41, 3], [62, 8]] },
+  { nom: 'Westminster Bridge Road', l: 0.8, pts: [[17, 18], [37, 24]] },
+  { nom: 'York Road', l: 0.7, pts: [[24, 4], [17, 18]] },
+  { nom: 'Waterloo Road', l: 0.8, pts: [[37, 24], [27, 12], [24, 4]] },
+  { nom: 'Stamford Street', l: 0.7, pts: [[24, 4], [41, 3]] },
+  { nom: 'Blackfriars Road', l: 0.8, pts: [[41, 3], [37, 24]] },
+  { nom: 'Southwark Street', l: 0.7, pts: [[41, 3], [62, 8]] },
   // Borough High Street contourne la base du Shard (u 64..74, v 3..13) par
   // l'ouest.
-  { nom: 'Borough High Street', pts: [[62, 8], [56, 17], [46, 34]] },
-  { nom: 'London Road', pts: [[46, 34], [37, 24]] },
+  { nom: 'Borough High Street', l: 0.8, pts: [[62, 8], [56, 17], [46, 34]] },
+  { nom: 'London Road', l: 0.8, pts: [[46, 34], [37, 24]] },
   // Les ponts sont des voies comme les autres pour le chaînage : c'est ce qui
   // permet enfin une boucle rive à rive.
   ...PONTS,
-].map(aLaRegle);
+];
 
 const BANDES = rangerVoies(VOIES);
 
@@ -520,23 +484,11 @@ export const VOIES_LONDRES = VOIES;
 // maisons sans respiration. Même remède, même gabarit : périodes ×3,
 // chaussée de trois blocs, trottoirs de deux. Chaque trame garde son ANGLE
 // — le damier penché de la City reste penché — c'est lui qui fait Londres.
-//
-// À LA RÈGLE DU KIT (v339) : la rue de la trame est une COLLECTRICE (deux
-// voies de 3,2 m, trottoirs de 2,5 m), et SI L'ÉLARGISSEMENT MANGE LES
-// BÂTIMENTS, ON RECOMPOSE LES LOTS — le pas grandit dans le rapport des
-// emprises (méthode `aLaRegle` de Paris, v303), donc l'îlot aussi. Les
-// valeurs écrites ici sont celles de la v178 et ne donnent plus que le
-// rapport.
-const trameALaRegle = (t) => {
-  const w = COLLECTRICE.chaussee / 2, s = w + COLLECTRICE.trottoir;
-  return { ...t, type: COLLECTRICE.type, w, s, pu: t.pu * s / t.s, pv: t.pv * s / t.s };
-};
 const TRAMES = {
-  ouest: trameALaRegle({ ang: 0, pu: 21, pv: 18, cu: 0, cv: 0, w: 1.7, s: 4.0 }),
-  city: trameALaRegle({ ang: 0.32, pu: 15, pv: 12, cu: 60, cv: -14, w: 1.7, s: 4.0 }),
-  sud: trameALaRegle({ ang: 0.08, pu: 24, pv: 18, cu: 40, cv: 14, w: 1.7, s: 4.0 }),
+  ouest: { ang: 0, pu: 21, pv: 18, cu: 0, cv: 0, w: 1.7, s: 4.0 },
+  city: { ang: 0.32, pu: 15, pv: 12, cu: 60, cv: -14, w: 1.7, s: 4.0 },
+  sud: { ang: 0.08, pu: 24, pv: 18, cu: 40, cv: 14, w: 1.7, s: 4.0 },
 };
-export const TRAMES_LONDRES = TRAMES;
 
 // Exporté depuis la v208 : c'est ce qui permet à un témoin de dire qu'un
 // circuit TRAVERSE la Tamise (des points des deux côtés), et pas seulement
@@ -656,63 +608,13 @@ export function solLondres(x, z) {
   const c = Math.cos(t.ang), s = Math.sin(t.ang);
   const du = u - t.cu, dv = v - t.cv;
   const a = du * c - dv * s, b = du * s + dv * c;
-  // Une rue de la trame qui DOUBLE une avenue — parallèle, à moins de
-  // `RECUL_TRAME` — n'est pas tracée (v339) : voir plus bas.
-  let dRue = Infinity;
-  const ra = Math.abs(a - Math.round(a / t.pu) * t.pu);
-  if (ra < t.s && !doubleUneAvenue(u, v, s, c)) dRue = ra;
-  const rb = Math.abs(b - Math.round(b / t.pv) * t.pv);
-  if (rb < t.s && rb < dRue && !doubleUneAvenue(u, v, c, -s)) dRue = rb;
+  const dRue = Math.min(
+    Math.abs(a - Math.round(a / t.pu) * t.pu),
+    Math.abs(b - Math.round(b / t.pv) * t.pv),
+  );
   if (dRue < t.w) return BITUME;
   if (dRue < t.s) return platane(u, v) ? ARBRE : TROTTOIR;
   return null;
-}
-
-// LE LOT QUI BORDE UNE AVENUE GARDE SON ÎLOT (v339). La trame de la v178 était
-// tracée PAR-DESSUS les avenues, sans les regarder : entre deux avenues
-// parallèles, une rue de la trame venait s'intercaler à quelques blocs de
-// chacune. À trois blocs et demi de chaussée cela laissait des immeubles ; à la
-// section du kit, Soho et Bloomsbury n'en gardaient presque plus. Le kit dit :
-// « si l'élargissement mange les bâtiments, recompose les lots ». Dans un
-// quartier quadrillé par ses avenues, ce sont elles, les rues — l'îlot va
-// d'une avenue à l'autre, comme dans la vraie ville. Une rue de la trame n'est
-// donc pas tracée là où elle longe une avenue parallèle (à moins de 35°) à
-// moins de `RECUL_TRAME` : la demi-emprise d'une artère, un îlot de cinq blocs
-// (`ILOT_MIN`, la barre de la v271 et de la v307), et la demi-chaussée de la
-// rue de la trame. Une rue de la trame qui COUPE une avenue reste : c'est par
-// elle qu'on y arrive. Mesuré sur tout le disque : 26,1 % de lots avant, 19,5
-// avec la règle du kit seule, 26,6 avec ce recul.
-const ILOT_MIN = 5;
-export const RECUL_TRAME = COLLECTRICE.emprise / 2 + ILOT_MIN + COLLECTRICE.chaussee / 2;
-const BANDE_RECUL = 8;
-const SEGS_RECUL = new Map();
-for (const voie of VOIES) {
-  for (let i = 0; i < voie.pts.length - 1; i++) {
-    const [u0, v0] = voie.pts[i], [u1, v1] = voie.pts[i + 1];
-    const lg = Math.hypot(u1 - u0, v1 - v0) || 1;
-    const seg = { u0, v0, u1, v1, du: (u1 - u0) / lg, dv: (v1 - v0) / lg,
-      uMin: Math.min(u0, u1) - RECUL_TRAME, uMax: Math.max(u0, u1) + RECUL_TRAME };
-    const b0 = Math.floor((Math.min(v0, v1) - RECUL_TRAME) / BANDE_RECUL);
-    const b1 = Math.floor((Math.max(v0, v1) + RECUL_TRAME) / BANDE_RECUL);
-    for (let b = b0; b <= b1; b++) {
-      if (!SEGS_RECUL.has(b)) SEGS_RECUL.set(b, []);
-      SEGS_RECUL.get(b).push(seg);
-    }
-  }
-}
-const COS_PARALLELE = Math.cos(35 * Math.PI / 180);
-function doubleUneAvenue(u, v, eu, ev) {
-  const segs = SEGS_RECUL.get(Math.floor(v / BANDE_RECUL));
-  if (!segs) return false;
-  for (const g of segs) {
-    if (u < g.uMin || u > g.uMax) continue;
-    if (Math.abs(g.du * eu + g.dv * ev) < COS_PARALLELE) continue;
-    const lu = g.u1 - g.u0, lv = g.v1 - g.v0, l2 = lu * lu + lv * lv || 1;
-    let k = ((u - g.u0) * lu + (v - g.v0) * lv) / l2;
-    k = k < 0 ? 0 : k > 1 ? 1 : k;
-    if (Math.hypot(u - g.u0 - k * lu, v - g.v0 - k * lv) < RECUL_TRAME) return true;
-  }
-  return false;
 }
 
 // Les emprises des monuments : aucune maison ne pousse dans la cour de
@@ -1001,95 +903,22 @@ function buildGlobe(poser) {
 // bougent (v206, soixante avenues), les bus bougent avec. Un témoin qui les
 // recopiait en dur cherchait les bus là où ils n'étaient plus — le même piège
 // que `r: 66` à San Francisco, du côté du banc. Il les demande ici.
-//
-// ET DEPUIS LA v339 ELLES SE CALCULENT SUR LA SECTION. Les bus et les taxis
-// étaient posés au milieu de la chaussée, sur l'axe où roulent les convois :
-// mesuré, chacun de leurs blocs à 0,1 à 2,1 blocs d'un circuit, pour une
-// voiture de 1,13 de demi-largeur — la circulation les traversait (la dette
-// « les bus garés aux arrêts » de la v210). Une rue de deux voies a désormais
-// la place : un bus est garé contre le trottoir, dans la voie de droite, à la
-// demi-chaussée moins sept dixièmes ; une cabine est SUR le trottoir, à sa
-// moitié. Une rue d'une voie (LOCALE) n'a pas la place d'un bus garé : les
-// arrêts et les stations de taxis sont sur des artères. Une adresse se donne
-// par l'avenue, la fraction de sa longueur et le côté (+1 à droite du sens
-// du tracé) — jamais en blocs.
-const VOIE_PAR_NOM = new Map(VOIES.map((v) => [v.nom, v]));
-function surVoie(nom, f, cote, decal) {
-  const voie = VOIE_PAR_NOM.get(nom);
-  const lg = [];
-  let tot = 0;
-  for (let i = 0; i < voie.pts.length - 1; i++) {
-    const [u0, v0] = voie.pts[i], [u1, v1] = voie.pts[i + 1];
-    lg.push(Math.hypot(u1 - u0, v1 - v0)); tot += lg[i];
-  }
-  let reste = f * tot, i = 0;
-  while (i < lg.length - 1 && reste > lg[i]) { reste -= lg[i]; i++; }
-  const [u0, v0] = voie.pts[i], [u1, v1] = voie.pts[i + 1];
-  const du = (u1 - u0) / lg[i], dv = (v1 - v0) / lg[i];
-  const d = decal(voie);
-  return { u: u0 + du * reste - dv * cote * d, v: v0 + dv * reste + du * cote * d,
-    axe: Math.abs(du) >= Math.abs(dv) ? 'u' : 'v' };
-}
-// le premier bloc d'un véhicule de `n` blocs centré sur le point, dans l'axe
-const garer = (p, n) => (p.axe === 'u'
-  ? [Math.round(p.u - (n - 1) / 2), Math.round(p.v), 'u'] : [Math.round(p.u), Math.round(p.v - (n - 1) / 2), 'v']);
-const blocsDe = ([u, v, axe], n) => Array.from({ length: n }, (_, k) => (axe === 'v' ? [u, v + k] : [u + k, v]));
-const auBord = (voie) => voie.l - 0.7;
-const surLeTrottoir = (voie) => voie.l + voie.t / 2;
-// Un bloc de mobilier ne se pose jamais sur la trajectoire d'un convoi : à plus
-// d'une demi-voiture et d'un demi-bloc de l'axe de TOUTE avenue (c'est là que
-// roulent les circuits de Londres, qui n'ont pas de contournement).
-const DEGAGEMENT = 1.13 + 0.5 + 0.1;
-const loinDesAxes = (u, v) => VOIES.every((voie) => voie.pts.slice(1).every((q, i) => {
-  const [u0, v0] = voie.pts[i], lu = q[0] - u0, lv = q[1] - v0, l2 = lu * lu + lv * lv || 1;
-  let k = ((u - u0) * lu + (v - v0) * lv) / l2; k = k < 0 ? 0 : k > 1 ? 1 : k;
-  return Math.hypot(u - u0 - k * lu, v - v0 - k * lv) >= DEGAGEMENT;
-}));
-const solLocal = (u, v) => solLondres(LONDRES.x + u, LONDRES.z + v);
-// L'adresse demandée, ou la plus proche le long de la même avenue où le
-// véhicule tient tout entier sur sa matière — le relevé se fait au
-// chargement, sur le sol de la ville : un emplacement se mesure (v223).
-// Et jamais dans l'emprise d'un monument : un repère se pose APRÈS les
-// colonnes et pave la rue que `solLondres` promettait — le bus de Whitehall
-// s'est retrouvé sur la pierre du Parlement (le piège des ormes du Mall, v205).
-const horsDesMonuments = (u, v) => DEBLAIS.every(([cu, cv, r]) => Math.hypot(u - cu, v - cv) >= r);
-function placer(nom, f, cote0, n, decal, matiere) {
-  for (const cote of [cote0, -cote0]) for (let e = 0; e <= 0.45; e += 0.01) {
-    for (const g of e ? [f + e, f - e] : [f]) {
-      if (g < 0.05 || g > 0.95) continue;
-      const pos = n ? garer(surVoie(nom, g, cote, decal), n) : (() => {
-        const p = surVoie(nom, g, cote, decal); return [Math.round(p.u), Math.round(p.v)];
-      })();
-      const bl = n ? blocsDe(pos, n) : [pos];
-      if (bl.every(([u, v]) => solLocal(u, v) === matiere && loinDesAxes(u + 0.5, v + 0.5) && horsDesMonuments(u, v))) return pos;
-    }
-  }
-  return null;
-}
 export const MOBILIER_LONDRES = {
-  bus: [['Oxford Street', 0.7, 1], ['Oxford Street, côté Soho', 0.55, 1], ['Kingsway', 0.5, 1],
-    ['Whitehall', 0.55, -1], ['Fleet Street', 0.5, 1]].map(([n, f, c]) => placer(n, f, c, 3, auBord, BITUME)).filter(Boolean),
-  cabines: [['Victoria Street', 0.5, 1], ['Oxford Street', 0.95, -1], ['Fleet Street', 0.95, 1],
-    ['Piccadilly, côté Circus', 0.2, -1], ['Strand', 0.25, -1], ['Cannon Street', 0.4, 1]]
-    .map(([n, f, c]) => placer(n, f, c, 0, surLeTrottoir, TROTTOIR)).filter(Boolean),
-  taxis: [['Piccadilly', 0.3, 1], ['High Holborn', 0.5, -1], ['Oxford Street', 0.25, -1], ['Fleet Street', 0.2, -1]]
-    .map(([n, f, c]) => placer(n, f, c, 2, auBord, BITUME)).filter(Boolean),
+  bus: [[-30, -19], [-12, -22], [10, -7], [-1, 10], [30, -17]],
+  cabines: [[-3, 1], [-24, -22], [44, -13], [-11, -6], [7, -5], [63, -5]],
+  taxis: [[-6, 5], [20, -10], [-25, -20], [58, -21]],
 };
 function buildMobilier(poser) {
-  const le = (u, v, axe, k) => (axe === 'v' ? [u, v + k] : [u + k, v]);
-  for (const [du, dv, axe] of MOBILIER_LONDRES.bus) {
+  for (const [du, dv] of MOBILIER_LONDRES.bus) {
     for (let k = 0; k <= 2; k++) {
-      const [a, b] = le(du, dv, axe, k);
-      poser(a, 1, b, ROUGE);
-      poser(a, 2, b, k === 1 ? VERRE : ROUGE);
+      poser(du + k, 1, dv, ROUGE);
+      poser(du + k, 2, dv, k === 1 ? VERRE : ROUGE);
     }
   }
   for (const [du, dv] of MOBILIER_LONDRES.cabines) {
     poser(du, 1, dv, ROUGE); poser(du, 2, dv, VERRE); poser(du, 3, dv, ROUGE);
   }
-  for (const [du, dv, axe] of MOBILIER_LONDRES.taxis) {
-    for (let k = 0; k <= 1; k++) { const [a, b] = le(du, dv, axe, k); poser(a, 1, b, NOIR); }
-  }
+  for (const [du, dv] of MOBILIER_LONDRES.taxis) { poser(du, 1, dv, NOIR); poser(du + 1, 1, dv, NOIR); }
 }
 
 // La liste que world.js déroule : chaque monument à ses coordonnées.

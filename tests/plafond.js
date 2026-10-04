@@ -1142,6 +1142,72 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     !double.absent && double.bati === 0 && double.lotBati,
     double.absent ? 'Paris n\'a pas doublé' : `autour de la maison : ${double.bati} bloc(s) de ville · lot après la date bâti : ${double.lotBati}`);
 
+  // --- LONDRES À LA RÈGLE DU KIT (v339) : la ville d'avant reste sous ce ----
+  // --- qu'un enfant y a bâti ------------------------------------------------
+  //
+  // Les rues de Londres s'élargissent et ses îlots se recomposent : une
+  // ancienne rue peut devenir un immeuble, un ancien immeuble une rue. Londres
+  // ne bouge pas, donc rien ne se déplace — c'est la règle de la v303 qui
+  // vaut : sous une colonne où un bloc a été posé avant `DATE_RUES_LONDRES`
+  // (et ses huit voisines), la ville figée dans `londres-v332.js` reste.
+  // Trois cas, lus dans le monde : une maison posée sur une ancienne rue que
+  // la ville neuve bâtit n'est pas enfermée ; une cabane sur un ancien toit
+  // que la ville neuve fait rue garde son toit ; et un bloc posé APRÈS la date
+  // ne retient rien — la ville neuve bâtit dessous. Rouge sur `origin/main` :
+  // la date n'existe pas, et les deux premiers cas montrent la ville neuve.
+  const londres = await (async () => {
+    const W = await import('../src/world.js');
+    if (!W.DATE_RUES_LONDRES) return { absent: true };
+    const A = await import('../src/londres-v332.js');
+    const N = await import('../src/londres.js');
+    const L = N.LONDRES, t = W.DATE_RUES_LONDRES - 86400000;
+    const nf = new W.World();
+    // une ancienne rue que la ville neuve bâtit, et un ancien lot qu'elle fait rue
+    let rueBatie = null, lotRue = null;
+    for (let d = 20; d < 100 && !(rueBatie && lotRue); d++) for (let a = 0; a < 64; a++) {
+      const x = Math.round(L.x + d * Math.cos(a * Math.PI / 32)), z = Math.round(L.z + d * Math.sin(a * Math.PI / 32));
+      const voisin = (f) => [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]].every(([i, j]) => f(x + i, z + j));
+      // une façade neuve (le bâtisseur y monte un mur) sur neuf colonnes d'ancienne rue
+      const mur = () => { let n = 0; N.batirColonneLondres(x, z, (dy) => { if (dy >= 3) n++; }); return n >= 3; };
+      if (!rueBatie && voisin((xx, zz) => A.solLondres(xx, zz) !== null) && N.lotLondresLibre(x, z) && mur()) rueBatie = [x, z];
+      if (!lotRue && voisin(A.lotLondresLibre) && voisin((xx, zz) => N.solLondres(xx, zz) !== null)) lotRue = [x, z];
+    }
+    if (!rueBatie || !lotRue) return { absent: false, introuvable: true, rueBatie, lotRue };
+    const monde = (carte) => {
+      const m = new W.World();
+      const ed = new Map(), tm = new Map();
+      for (const [k, e] of Object.entries(carte)) { ed.set(k, e[0]); tm.set(k, e[1]); }
+      m.installerEdits(ed, tm);
+      return m;
+    };
+    // 1. une maison de trois blocs sur l'ancienne rue
+    const [mx, mz] = rueBatie, gm = nf.terrainHeight(mx, mz);
+    const maison = {};
+    for (let dy = 1; dy <= 3; dy++) maison[`${mx},${gm + dy},${mz}`] = [5, t];
+    const wm = monde(maison);
+    let enferme = 0;
+    for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) for (let y = gm + 1; y <= gm + 6; y++) {
+      if (!maison[`${mx + dx},${y},${mz + dz}`] && wm.getBlock(mx + dx, y, mz + dz) !== 0) enferme++;
+    }
+    // et sans la date, la ville neuve y bâtit bien (sinon le cas ne prouve rien)
+    const neuf = monde({ [`${mx},${gm + 40},${mz}`]: [5, W.DATE_RUES_LONDRES + 1000] });
+    let batiNeuf = 0;
+    for (let y = gm + 1; y <= gm + 6; y++) if (neuf.getBlock(mx, y, mz) !== 0) batiNeuf++;
+    // 2. une cabane sur l'ancien toit
+    const [cx, cz] = lotRue, gc = nf.terrainHeight(cx, cz);
+    const toit = (() => { let y0 = gc; A.batirColonneLondres(cx, cz, (dy) => { y0 = Math.max(y0, gc + dy - 1); }); return y0; })();
+    const cabane = { [`${cx},${toit + 1},${cz}`]: [8, t] };
+    const wc = monde(cabane);
+    const porte = wc.getBlock(cx, toit, cz) !== 0;
+    return { absent: false, enferme, batiNeuf, porte, toit, gc, rueBatie, lotRue };
+  })();
+  verifier('à Londres, une maison posée sur une ancienne rue n\'est pas enfermée dans un immeuble neuf',
+    !londres.absent && !londres.introuvable && londres.enferme === 0 && londres.batiNeuf > 0,
+    londres.absent ? 'pas de date des rues de Londres' : JSON.stringify(londres));
+  verifier('et une cabane posée sur un ancien toit de Londres garde son toit',
+    !londres.absent && !londres.introuvable && londres.porte,
+    londres.absent ? 'pas de date des rues de Londres' : JSON.stringify(londres));
+
   // --- LE FONDU DOUX DES VILLES (v309) : le pays descend à un bloc par bloc --
   // --- au plus, le monde d'avant reste celui de la production, un bloc suit --
   //

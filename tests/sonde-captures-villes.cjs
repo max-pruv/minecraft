@@ -1,0 +1,67 @@
+// Captures d'une ville bâtie à la main pour juger sur image : rue et ciel.
+// Usage : node tests/sonde-captures-villes.cjs <dossier> <tag> <ville> [vues]
+// Les vues se donnent en blocs depuis l'ancre de la ville (u vers l'est, v vers
+// le sud) ; `rue` cherche la chaussée la plus proche, pour que la caméra ne se
+// pose pas dans un immeuble (v292). Le même script se lance depuis un arbre
+// d'`origin/main` (le banc sert le dossier au-dessus de lui) pour l'« avant ».
+const { Banc, souffler } = require('./banc.js');
+const path = require('path');
+const dossier = process.argv[2] || '.';
+const tag = process.argv[3] || 'avant';
+const ville = process.argv[4] || 'londres';
+
+const VUES = {
+  londres: [
+    { nom: 'oxford-street', u: -34, v: -18, yaw: Math.PI / 2, pitch: 0.06, h: 1.6, rue: true },
+    { nom: 'soho', u: -6, v: -12, yaw: Math.PI / 2, pitch: 0.08, h: 1.6, rue: true },
+    { nom: 'strand', u: 8, v: -6, yaw: -Math.PI * 0.75, pitch: 0.06, h: 1.6, rue: true },
+    { nom: 'city', u: 62, v: -20, yaw: Math.PI / 2, pitch: 0.08, h: 1.6, rue: true },
+    { nom: 'marylebone', u: -40, v: -28, yaw: 0, pitch: 0.08, h: 1.6, rue: true },
+    { nom: 'ciel-ouest', u: -20, v: -15, yaw: 0, pitch: -1.1, h: 70 },
+    { nom: 'ciel-city', u: 45, v: -15, yaw: 0, pitch: -1.1, h: 70 },
+  ],
+};
+
+(async () => {
+  const banc = new Banc({ portJeu: 8397, portPairs: 9397 });
+  await banc.ouvrir();
+  try {
+    await souffler();
+    const page = await banc.jouerSeul('Capture', { rr: 9, viewport: { width: 1280, height: 720 }, dpr: 1, params: '&ombres=1' });
+    for (const v of VUES[ville].filter((v) => !process.argv[5] || process.argv[5].split(',').includes(v.nom))) {
+      try {
+        const info = await page.evaluate(async ({ v, ville }) => {
+          const g = window.__game;
+          const W = await import('./src/world.js');
+          const fiche = W.CITIES.find((c) => c.key === ville);
+          let x = fiche.x + v.u, z = fiche.z + v.v;
+          if (v.rue) {
+            const { CITY_BLOCK } = await import('./src/blocks.js');
+            const sol = (xx, zz) => g.world.getBlock(xx, g.world.terrainHeight(xx, zz), zz);
+            cherche: for (let r = 0; r < 14; r++) for (let dx = -r; dx <= r; dx++) for (let dz = -r; dz <= r; dz++) {
+              if (sol(x + dx, z + dz) === CITY_BLOCK.ASPHALT) { x += dx; z += dz; break cherche; }
+            }
+          }
+          const y = g.world.terrainHeight(x, z);
+          g.player.flying = true;
+          g.player.pos.set(x + 0.5, y + 1 + v.h, z + 0.5);
+          g.player.vel.set(0, 0, 0);
+          g.player.yaw = v.yaw; g.player.pitch = v.pitch;
+          window.__setDayTime(0.42);
+          const dodo = (ms) => new Promise((r) => setTimeout(r, ms));
+          await dodo(8000);
+          let n0 = -1;
+          for (let k = 0; k < 40; k++) { await dodo(700); const n = g.chunkMeshes.size; if (n === n0) break; n0 = n; }
+          await dodo(1500);
+          return { x, z, y, morceaux: g.chunkMeshes.size };
+        }, { v, ville });
+        const f = path.join(dossier, `${tag}-${ville}-${v.nom}.png`);
+        await page.screenshot({ path: f, timeout: 120000 });
+        console.log(v.nom, JSON.stringify(info), '→', f);
+      } catch (e) { console.log(v.nom, 'ÉCHEC :', String(e && e.message || e).split('\n')[0]); }
+    }
+  } finally {
+    await banc.fermer();
+    process.exit(0);
+  }
+})();

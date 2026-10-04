@@ -2888,7 +2888,73 @@ l'embarquement a eu lieu, pas par une hypothèse.
   DISTINGUE les trois : où est la rame la plus proche, à quelle distance du
   quai, et avance-t-elle.
 
-- [ ] **LES SIX VILLES BÂTIES À LA MAIN N'ONT PAS ÉTÉ ÉLARGIES (v271).** Paris,
+- [ ] **LE PORTAIL DE LONDRES (v339, d'abord numérotée v331, v333 puis v337).** Premier passage, neuf suites. Vertes : `metro.js`,
+  `carteMonde.js` (les trois témoins du kit de Londres, rouges sur
+  `origin/main`), `sauvegarde.js`, `plafond.js` (la ville d'avant sous les
+  blocs d'enfant, rouge désarmée), `washington.js`. Rouges :
+  · `carte.js` « chaque bus est sur la chaussée » 4/5 — LE MIEN : le bus de
+    Whitehall tombait dans l'emprise du Parlement, que le repère pave après les
+    colonnes. Corrigé (`horsDesMonuments`), `carte.js` rejouée seule : ce
+    témoin vert, reste la flèche du GPS (gauche 1,92 rad), l'intermittence
+    déclarée v327, rouge seule sur `origin/main` ;
+  · `maj.js` le fond de carte à la libération — rejouée seule sur
+    `origin/main` : même rouge (dette v276) ;
+  · `manhattan.js` la géométrie de façade et le taxi au tactile — mêmes deux
+    rouges sur `origin/main` rejouée seule (qui meurt ensuite d'un délai) ;
+    `PeerJS: Lost connection` (dette réseau v240/v327) non atteint là-bas ;
+  · `monte.js` l'écran qui se fige à l'arrivée (rouge seul sur `origin/main`,
+    48,3 %), la compilation à la téléportation et la voiture au bord de l'eau
+    — deux intermittences déjà mesurées des deux côtés (v326, v327).
+  SECOND PASSAGE (après la fusion de la v332) : vertes `metro`, `parent`,
+  `parishd`, `carteMonde`, `sauvegarde`, `plafond`, `visio`, `realisme`, `hote`,
+  `reglages`. Rouges, tous rejoués seuls des deux côtés :
+  · `washington.js` « on entre dans l'Air et l'Espace » — vert seul sur la
+    branche ET sur `origin/main` : délai de banc ;
+  · `reseau.js` « un hôte sans courtier est trouvé… » (et « il le REJOINT ») —
+    rouge seul sur la branche, vert seul sur `origin/main` au premier rejeu,
+    PUIS rouge seul sur `origin/main` au second (`[[],[]]`, `actif: false`) et,
+    le même tour, la branche rend rouge le témoin voisin « deux enfants se
+    retrouvent sans courtier du tout ». Même distribution des deux côtés
+    (v269) : l'intermittence du chemin par le nuage seul, que Londres ne
+    touche pas — aucun de ces témoins ne quitte le point d'apparition ;
+  · `monte.js` le gel d'arrivée (rouge des deux côtés), la compilation à la
+    téléportation (intermittence v326/v327), et « un train s'arrête devant la
+    voiture de l'enfant » (13 relevés dedans, déjà vu une fois sur
+    `origin/main` seul, ligne 308 de ce fichier) ;
+  · `maj.js`, `carte.js` (GPS), `manhattan.js` : les dettes du premier passage.
+  TROISIÈME PASSAGE (après la fusion de la v336, seize suites) : rouges `maj.js`
+  (libération, programmes 22/27), `carte.js` (GPS), `manhattan.js` (façade),
+  `monte.js` (gel d'arrivée), `reglages.js` (la langue de l'autre tablette,
+  serveur `"fr"`, dette déjà doublement mesurée) et `realisme.js` (délai au
+  clic « Plus tard », charge 4,69). Rejouées SEULES des deux côtés,
+  `realisme.js` (17 témoins) et `reglages.js` (70 témoins) sont VERTES sur la
+  branche ET sur `origin/main` v336. Puis fusion de la v338 (deux autoroutes,
+  `routes.js` seul en code) : `carteMonde.js` et `plafond.js` rejouées.
+
+- [ ] **LONDRES À LA RÈGLE DU KIT : CE QUI RESTE (v339).** Londres est passée à
+  `voirie.js` (artères en collectrices, rues de quartier en locales, trame
+  collectrice recomposée, trame qui ne double plus une avenue). Le prix,
+  mesuré quartier par quartier en part de lots : Soho 18,6 → 10,1 %,
+  Bloomsbury 22,7 → 14,2, Holborn 27,6 → 14,5, Southwark 27,4 → 16,2 ; St
+  James 26,6 → 37,4, Marylebone 32,7 → 36,9, la City 8,6 → 24,0 ; le disque
+  26,1 → 26,6. La cause est le PLAN : vingt-quatre blocs par kilomètre, la
+  moitié de Paris, donc soixante-dix avenues deux fois plus serrées. Le seul
+  remède qui rende ces quartiers est celui de Paris (v306) : doubler le plan,
+  ce qui déplace la Tamise et donc `terrainHeight` — une DÉCISION DE MAX, avec
+  migration des blocs. Restent aussi, déclarés : aucune artère n'est un
+  boulevard (quatre voies = vingt et un blocs d'emprise, aucune n'a la place) ;
+  la City garde des collectrices et non des ruelles ; les rues de la trame qui
+  s'arrêtaient sur une avenue parallèle n'existent plus, mais celles qui
+  arrivent EN BIAIS (35° à 90°) restent — à mesurer en capture si l'une
+  finit en impasse contre un îlot.
+
+- [ ] **LES CINQ AUTRES VILLES BÂTIES À LA MAIN N'ONT PAS ÉTÉ ÉLARGIES (v271).**
+  Londres est faite en v339 (au-dessus). Restent, dans l'ordre : Nice, San
+  Francisco, Washington, Lille (dans la fenêtre d'empreinte). La méthode de
+  Londres se reprend telle quelle : figer la ville d'avant (`<ville>-vNNN.js`),
+  type par fonction, trame recomposée et en recul des avenues, mobilier sur la
+  section, la ville d'avant sous ce qu'un enfant a bâti.
+  *(Entrée d'origine :)* Paris,
   Londres, Nice, Lille, Washington et San Francisco gardent leurs largeurs de
   chaussée relevées sur de vrais plans, par quartier (`rue`, `face` dans chaque
   fiche) : la v271 n'a élargi que la trame des villes ENGENDRÉES. Leurs
