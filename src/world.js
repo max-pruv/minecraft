@@ -2974,6 +2974,8 @@ export class World {
       if (di > ISLAND.r - 14 || hash2i(x, z, SEED + 785) >= 0.05) return null;
       const hi = this.terrainHeight(x, z);
       if (hi <= WATER_LEVEL) return null;
+      // un palmier pousse sur la grève, pas sur une crête de roche
+      if (this.solDeLArbre(x, z, hi) === BLOCK.STONE) return null;
       return { h: hi, trunk: 6 + Math.floor(hash2i(x, z, SEED + 786) * 3), kind: 3 };
     }
     // forests are dense, plains nearly bare
@@ -2982,11 +2984,31 @@ export class World {
     if (hash2i(x, z, SEED + 777) >= density) return null;
     const h = this.terrainHeight(x, z);
     if (h <= WATER_LEVEL + 1 || h >= 58) return null; // only on grass
+    // LES ARBRES AU BORD (v337) : la v326 a fait de la crête d'une falaise
+    // une paroi de roche et du bord d'une berge basse une grève de sable — un
+    // chêne n'y pousse pas. Même règle, même lecture que le générateur.
+    if (this.solDeLArbre(x, z, h) !== BLOCK.GRASS) return null;
+    // ni au-dessus d'un puits de grotte : le générateur y creuse jusqu'au
+    // sommet, et l'arbre flottait sur le vide (trois sur douze mille, mesuré)
+    if (Math.abs(fbm(x * 0.02, z * 0.02, SEED + 882) - 0.5) < 0.015 && h > WATER_LEVEL + 2 && h < 50
+      && 8 + fbm(x * 0.01, z * 0.01, SEED + 881) * 18 > h - 12) return null;
     const trunk = 4 + Math.floor(hash2i(x, z, SEED + 778) * 3); // 4..6
     // three silhouettes: oak, pine, birch
     const roll = hash2i(x, z, SEED + 779);
     const kind = roll < 0.55 ? 0 : roll < 0.85 ? 1 : 2;
     return { h, trunk: kind === 2 ? trunk + 1 : trunk, kind };
+  }
+
+  // Le sommet que la règle des falaises et des berges (v326) donne à une
+  // colonne de campagne au sol d'herbe : herbe, roche ou sable. Hors de
+  // `CONF_NEUF` la règle n'existe pas, et c'est de l'herbe. `treeAt` ne
+  // l'appelle qu'APRÈS le tirage de densité — quatre cotes de plus pour un
+  // arbre sur quinze colonnes de forêt, rien pour la plaine.
+  solDeLArbre(x, z, h) {
+    if (!this.conf.falaises) return BLOCK.GRASS;
+    const r = matiereDuBord(h, this.terrainHeight(x + 1, z), this.terrainHeight(x - 1, z),
+      this.terrainHeight(x, z + 1), this.terrainHeight(x, z - 1));
+    return r ? r.top : BLOCK.GRASS;
   }
 
   generateChunk(cx, cz) {

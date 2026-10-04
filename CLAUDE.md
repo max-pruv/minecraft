@@ -894,8 +894,43 @@ Le point (c) du kit « monde fidèle », sur toute la carte. Trois règles.
   mieux qu'un hasard de géographie, et le témoin la garde.
 - **CE QUI RESTE, DÉCLARÉ** : la marche elle-même (une falaise reste un
   escalier de cubes de roche — l'adoucir, c'est bouger le relief, décision de
-  Max) ; une berge de trois blocs garde sa couronne d'herbe ; le paysage
-  lointain (`horizon.js`) ne connaît pas la règle et garde ses couleurs.
+  Max) ; une berge de trois blocs garde sa couronne d'herbe. *(Le paysage
+  lointain et les arbres ont reçu la règle en v337.)*
+
+## Les arbres au bord, et les falaises vues de loin (v337) — une règle de matière se dit à TOUT ce qui pose quelque chose dessus
+
+La dette déclarée par la v326, remboursée. Trois règles.
+
+- **UNE RÈGLE QUI CHANGE LA MATIÈRE D'UN SOL SE DIT À CE QUI POUSSE DESSUS.**
+  La v326 avait fait de la crête d'une falaise une paroi de roche et du bord
+  d'une berge basse une grève, et `treeAt` continuait de juger « de l'herbe »
+  à la cote seule : 135 à 168 chênes sur la roche pour 12 800 arbres
+  (`sonde-arbres-bord.cjs`, 4 000 morceaux). `solDeLArbre` (world.js) lit
+  `matiereDuBord` sur la même colonne, APRÈS le tirage de densité (quatre
+  cotes pour un arbre, rien pour la plaine), et un palmier refuse la roche
+  mais garde sa grève. C'est la leçon du sol continu (« ce qui remplace un
+  bloc le dit à TOUS ceux qui lisaient le bloc ») appliquée à une matière. Et
+  un arbre ne flotte plus au-dessus d'un puits de grotte (trois sur douze
+  mille) : `treeAt` refait le test d'entrée du générateur.
+- **UN ARBRE N'EST PAS LE RELIEF.** Le témoin « même forme, bloc pour bloc »
+  de la v326 compare le monde à celui SANS la règle ; un arbre retiré y
+  comptait comme un bloc de forme différente. Il compare désormais le sol,
+  troncs (chêne ET bouleau, `BIRCH` — mon premier témoin l'oubliait et
+  comptait 247 bouleaux « ailleurs que sur l'herbe ») et feuilles à part. Et
+  un second témoin garde ce qu'on ne veut pas perdre : tout arbre d'herbe du
+  monde sans la règle est encore là, tronc pour tronc.
+- **UNE RÈGLE QUI COÛTE QUATRE COTES PASSE APRÈS LE RELIEF, PAS DEDANS.** Le
+  paysage lointain lit la même `matiereDuBord` sur la colonne de chaque
+  sommet d'herbe de campagne (`couleurDuBord`, horizon.js, pure). Mesuré :
+  +6 µs sur 3 par sommet — dans la boucle de remplissage, le paysage
+  arrivait trois fois plus tard après une téléportation. Elle vit donc dans
+  une seconde passe (`raffiner`), sur le budget qui reste et deux
+  millisecondes au plus par image, et ne coûte plus rien une fois tout lu
+  (`aRaffiner`). Le relief se remplit dans le même nombre d'images qu'avant
+  (16-17 contre 16-17, quatre sites) ; la roche et le sable suivent en une
+  soixantaine d'images. Un filtre lu sur la grille du paysage (huit blocs)
+  aurait coûté moins, et il est mesuré : il interroge 17 % des sommets et
+  n'attrape que 82 % de ceux que la règle touche — on ne le réessaie pas.
 
 ## Des voitures dans toutes les rues (v322) — un plafond par circuit rend la densité inverse de la longueur
 

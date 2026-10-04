@@ -835,7 +835,11 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         if (enVille(x, z)) continue;
         const h = w.terrainHeight(x, z);
         for (let y = Math.max(0, W.WATER_LEVEL - 4); y <= h + 1; y++) {
-          const id = w.getBlock(x, y, z), id0 = sans.getBlock(x, y, z);
+          // un arbre n'est pas la forme du sol : depuis la v337 il ne pousse
+          // plus sur une crête de roche ni sur une grève, et le monde « sans »
+          // la règle le garde — on compare le relief, troncs et feuilles à part
+          const arbre = (q) => q === BLOCK.LOG || q === BLOCK.BIRCH || q === BLOCK.LEAVES ? BLOCK.AIR : q;
+          const id = arbre(w.getBlock(x, y, z)), id0 = arbre(sans.getBlock(x, y, z));
           if ((BLOCK_INFO[id]?.solid ?? false) !== (BLOCK_INFO[id0]?.solid ?? false)) r.forme++;
           else if (id !== id0) r.matiere++;
         }
@@ -871,6 +875,56 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   verifier('et la règle ne change que la matière : même forme, bloc pour bloc',
     falaises.forme === 0 && falaises.matiere > 500,
     `${falaises.forme} blocs de forme différente, ${falaises.matiere} blocs de matière différente`);
+
+  // LES ARBRES AU BORD (v337) — sous node, six cents morceaux de campagne
+  // tirés comme ci-dessus. Sur `origin/main` (v332), `sonde-arbres-bord.cjs`
+  // rend 135 et 168 arbres sur de la roche, 6 sur du sable et 3 au-dessus d'un
+  // puits de grotte, sur 12 700 à 12 900 arbres de 4 000 morceaux : la v326
+  // avait changé la matière de la crête sans le dire à `treeAt`. Le second
+  // verdict garde ce qu'on ne veut pas perdre : tout arbre sur l'herbe du monde
+  // SANS la règle est encore là, au tronc près.
+  const arbresAuBord = await (async () => {
+    const { BLOCK } = await import('../src/blocks.js');
+    const { dansVilleMonde } = await import('../src/villesmonde.js');
+    const { lieuxDuMonde } = await import('../src/mondes.js');
+    const W = await import('../src/world.js');
+    const sans = new W.World();
+    sans.conf = { ...W.CONF_NEUF, falaises: false };
+    const lieux = lieuxDuMonde().filter((l) => Number.isFinite(l.x));
+    let g = 23; const alea = () => (g = (g * 1103515245 + 12345) % 2147483648) / 2147483648;
+    const enVille = (x, z) => !!w.cityAt(x, z) || dansVilleMonde(x, z);
+    const r = { morceaux: 0, arbres: 0, surHerbe: 0, ailleurs: {}, avant: 0, gardes: 0 };
+    while (r.morceaux < 600) {
+      const l = lieux[Math.floor(alea() * lieux.length)];
+      const a = alea() * Math.PI * 2, d = 120 + alea() * 780;
+      const bx = Math.floor((l.x + Math.cos(a) * d) / 16) * 16, bz = Math.floor((l.z + Math.sin(a) * d) / 16) * 16;
+      if (enVille(bx + 8, bz + 8)) continue;
+      r.morceaux++;
+      for (let z = bz; z < bz + 16; z++) for (let x = bx; x < bx + 16; x++) {
+        const t = w.treeAt(x, z), t0 = sans.treeAt(x, z);
+        if (t && t.kind !== 3) {
+          r.arbres++;
+          const id = w.getBlock(x, t.h, z);
+          const tronc = w.getBlock(x, t.h + 1, z);
+          if (id === BLOCK.GRASS && (tronc === BLOCK.LOG || tronc === BLOCK.BIRCH)) r.surHerbe++;
+          else r.ailleurs[id] = (r.ailleurs[id] || 0) + 1;
+        }
+        // un arbre du monde sans la règle, sur l'herbe du monde AVEC la règle
+        if (t0 && t0.kind !== 3 && w.getBlock(x, t0.h, z) === BLOCK.GRASS && w.getBlock(x, t0.h - 1, z) !== BLOCK.AIR) {
+          r.avant++;
+          if (t && t.h === t0.h && t.trunk === t0.trunk) r.gardes++;
+        }
+      }
+      if (r.morceaux % 100 === 0) { w.oublierLoinDe?.(1e6, 1e6, 1); sans.oublierLoinDe?.(1e6, 1e6, 1); }
+    }
+    return r;
+  })();
+  verifier('un arbre ne pousse ni sur une crête de roche, ni sur une grève, ni au-dessus d\'un puits',
+    arbresAuBord.arbres > 1000 && arbresAuBord.surHerbe === arbresAuBord.arbres,
+    `${arbresAuBord.arbres - arbresAuBord.surHerbe} arbres ailleurs que sur l'herbe (${JSON.stringify(arbresAuBord.ailleurs)}) sur ${arbresAuBord.arbres}, ${arbresAuBord.morceaux} morceaux`);
+  verifier('et la forêt sur l\'herbe reste où elle était, tronc pour tronc',
+    arbresAuBord.avant > 1000 && arbresAuBord.gardes === arbresAuBord.avant,
+    `${arbresAuBord.gardes} gardés sur ${arbresAuBord.avant}`);
 
   // LE MÉNAGE DU CIEL DE PARIS (v298) — PUR, sur un document fabriqué.
   //
@@ -1737,6 +1791,71 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         Object.values(r).every((v) => v.n > 50 && v.hors === 0 && v.hmax >= 9), txt(r));
       verifier('le bâti lointain se retire devant le vrai monde maillé',
         Object.values(r).every((v) => v.retires === 0), Object.entries(r).map(([k, v]) => `${k} ${v.retires}`).join(', '));
+    }
+
+    // LES FALAISES ET LES BERGES, VUES DE LOIN (v337). Le monde proche montre
+    // la roche d'une falaise et le sable d'une grève depuis la v326 ;
+    // `horizon.js` gardait le vert de la carte partout. On remplit un paysage
+    // lointain à la portée de l'iPad sur quatre sites de campagne (relief,
+    // côte, lacs) jusqu'au bout — relief PUIS règle des bords — et l'on
+    // compare chaque sommet de campagne à ce que la règle du générateur
+    // (`matiereDuBord`) dit de sa colonne : la couleur attendue est recalculée
+    // ICI, depuis la palette de la carte, pas lue dans le module.
+    {
+      const r = await tab.evaluate(async () => {
+        const { Horizon } = await import('./src/horizon.js');
+        const W = await import('./src/world.js');
+        const { MAP_COLORS } = await import('./src/carte.js');
+        const { BLOCK } = await import('./src/blocks.js');
+        const VM = await import('./src/villesmonde.js');
+        const w = window.__game.world;
+        const herbe = MAP_COLORS[BLOCK.GRASS], roc = MAP_COLORS[BLOCK.STONE];
+        const sites = [[600, 1400], [-3000, 2500], [4000, -800], [1500, 3500]];
+        const out = { regle: 0, justes: 0, herbe: 0, vertes: 0, appels: 0, rempliA: 0, exemple: null };
+        for (const [sx, sz] of sites) {
+          const h = new Horizon(w, 632);
+          let appels = 0, rempli = 0;
+          for (;;) {
+            appels++; h.maj(sx, sz, 6);
+            const e = h.etat();
+            if (!rempli && e.manquantes === 0) rempli = appels;
+            if ((e.manquantes === 0 && !(e.aRaffiner > 0)) || appels > 2000) break;
+          }
+          out.appels = Math.max(out.appels, appels); out.rempliA = Math.max(out.rempliA, rempli);
+          const N = h.N, col = h.geo.attributes.color.array, pos = h.geo.attributes.position.array;
+          for (let i = 0; i < N * N; i++) {
+            const x = pos[i * 3], z = pos[i * 3 + 2], y = h.hauteurs[i];
+            if (y <= W.WATER_LEVEL + 1 || y >= 58 || W.dansUneCalotte(z) || w.cityAt(x, z) || VM.dansVilleMonde(x, z) || h.bati[i] > 0) continue;
+            if (Math.abs(pos[i * 3 + 1] - (y + 0.5)) > 1e-3) continue;
+            // les biomes ronds ont leur sol à eux
+            if (Math.hypot(x - W.DESERT.x, z - W.DESERT.z) < W.DESERT.r || Math.hypot(x - W.MARS.x, z - W.MARS.z) < W.MARS.r
+              || Math.hypot(x - W.VOLCANO.x, z - W.VOLCANO.z) < W.VOLCANO.r) continue;
+            const th = (a, b) => w.terrainHeight(a, b);
+            const m = W.matiereDuBord(y, th(x + 1, z), th(x - 1, z), th(x, z + 1), th(x, z - 1));
+            let c = null;
+            if (m && m.top !== BLOCK.GRASS) c = MAP_COLORS[m.top];
+            else if (m && m.chute >= 2) c = [(herbe[0] + roc[0]) / 2, (herbe[1] + roc[1]) / 2, (herbe[2] + roc[2]) / 2];
+            const t = 0.72 + Math.min(Math.max(y, 0), 70) / 70 * 0.38;
+            const ecart = (q) => Math.max(...[0, 1, 2].map((k) => Math.abs(col[i * 3 + k] - Math.min(1, q[k] / 255 * t))));
+            if (c) {
+              out.regle++;
+              if (ecart(c) < 0.01) out.justes++;
+              else if (!out.exemple) out.exemple = { x, z, y, top: m.top, chute: m.chute, lu: [0, 1, 2].map((k) => +col[i * 3 + k].toFixed(3)) };
+            } else {
+              out.herbe++;
+              if (ecart(herbe) < 0.01) out.vertes++;
+            }
+          }
+          h.geo.dispose();
+        }
+        return out;
+      });
+      verifier('vu de loin, une falaise montre sa roche et une grève son sable, comme le monde proche',
+        r.regle > 50 && r.justes === r.regle,
+        `${r.justes}/${r.regle} sommets de roche ou de sable justes${r.exemple ? ', ex. ' + JSON.stringify(r.exemple) : ''}`);
+      verifier('et le reste de la campagne lointaine garde son herbe, et le relief arrive aussi vite',
+        r.herbe > 10000 && r.vertes === r.herbe && r.rempliA <= 40,
+        `${r.vertes}/${r.herbe} sommets d'herbe, relief rempli en ${r.rempliA} images de six millisecondes, règle finie en ${r.appels}`);
     }
 
     // La maison d'avant, écrite comme l'ancienne version l'aurait laissée.

@@ -655,9 +655,8 @@
   falaise reste un escalier de cubes de roche, et l'adoucir (une surface
   rocheuse inclinée au-delà de `MARCHE_MAX`) toucherait au contact et au
   franchissement, ou au relief (décision de Max) ; les berges de trois blocs
-  gardent leur couronne d'herbe ; `horizon.js` ne connaît pas la règle (le
-  lointain garde le vert là où la roche est) ; les arbres poussent encore sur
-  une crête de roche ou une grève basse (`treeAt` ne lit que la cote) ; (d) les
+  gardent leur couronne d'herbe. `horizon.js` et les arbres lisent la règle
+  depuis la v337 (`couleurDuBord`, `solDeLArbre`) ; (d) les
   textures par usage et climat ; (e) la bibliothèque architecturale (96
   variantes, 278 profils de ville) — elle exige une retrame à un bloc pour un
   mètre (`docs/monde-fidele/programme.md`, section 6), décision de Max ; (f) la

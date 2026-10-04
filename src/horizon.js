@@ -51,7 +51,7 @@
 //   la route tant que le morceau n'était pas maillé.
 
 import * as THREE from 'three';
-import { WATER_LEVEL, DESERT, MARS, VOLCANO, dansUneCalotte, CHUNK } from './world.js';
+import { WATER_LEVEL, DESERT, MARS, VOLCANO, dansUneCalotte, CHUNK, matiereDuBord } from './world.js';
 import { BLOCK, DECOR_START, decorMapColor } from './blocks.js';
 import { decor } from './couches.js';
 import { MAP_COLORS } from './carte.js';
@@ -106,6 +106,32 @@ function blocDeSurface(x, z, h) {
   if (h <= WATER_LEVEL + 1) return BLOCK.SAND;
   if (h >= 58) return BLOCK.SNOW;
   return BLOCK.GRASS;
+}
+
+// Le relief lit plus clair en altitude, comme sur la carte 2D — sans cela un
+// massif et une plaine ont exactement la même teinte.
+function teindre(col, o, c, h) {
+  const teinte = 0.72 + Math.min(Math.max(h, 0), 70) / 70 * 0.38;
+  col[o] = Math.min(1, c[0] / 255 * teinte);
+  col[o + 1] = Math.min(1, c[1] / 255 * teinte);
+  col[o + 2] = Math.min(1, c[2] / 255 * teinte);
+}
+
+// L'état d'un sommet : à remplir (0), relief et couleur posés mais la règle
+// des bords pas encore lue, ou fini.
+const A_RAFFINER = 1, FAIT = 2;
+
+// La couleur qu'un sommet d'herbe prend sous la règle des bords (v326) : son
+// dessus quand il n'est plus de l'herbe — la roche d'une crête, le sable d'une
+// grève — et, sur une marche de deux ou trois blocs qui garde son gazon, la
+// moitié de roche de sa paroi, qu'on voit de loin. `null` : rien ne change.
+// Pure et exportée : le témoin la lit.
+export function couleurDuBord(herbe, r) {
+  if (!r) return null;
+  if (r.top !== BLOCK.GRASS) return MAP_COLORS[r.top] || herbe;
+  if (r.chute < 2) return null;
+  const roc = MAP_COLORS[BLOCK.STONE];
+  return [(herbe[0] + roc[0]) / 2, (herbe[1] + roc[1]) / 2, (herbe[2] + roc[2]) / 2];
 }
 
 const BIOMES = [
@@ -206,6 +232,9 @@ export class Horizon {
     this.hauteurs = new Float32Array(N * N);
     this.pret = new Uint8Array(N * N);
     this.curseur = 0;                        // où reprendre le remplissage
+    this.curseurRegle = 0;                   // … et la règle des bords (v337)
+    this.aRaffiner = false;                  // reste-t-il un sommet à relire ?
+    this.falaises = !!world.conf?.falaises;
     // La ville sous chaque sommet : la hauteur de bâti (0 = aucun) et la
     // couleur des toits. Elles DÉFILENT avec les hauteurs, comme tout le reste.
     this.bati = new Float32Array(N * N);
@@ -338,7 +367,6 @@ export class Horizon {
       const x = (this.ox + ix) * PAS_HORIZON, z = (this.oz + iz) * PAS_HORIZON;
       this.hauteurs[i] = this.world.coteHorizon(x, z);   // le relief, ou la route qui le creuse (v300)
       this.ecrireSommet(i, x, z, this.hauteurs[i]);
-      this.pret[i] = 1;
       faites++;
       if ((faites & 255) === 0 && performance.now() - t0 > budgetMs) {
         this.curseur = (i + 1) % total;
@@ -349,6 +377,10 @@ export class Horizon {
       this.geo.attributes.position.needsUpdate = true;
       this.geo.attributes.color.needsUpdate = true;
     }
+    // la règle des bords ne prend que ce qui reste, deux millisecondes au plus
+    // par image, et rien du tout une fois tout lu
+    const t1 = performance.now();
+    if (this.aRaffiner && t1 - t0 <= budgetMs) faites += this.raffiner(t1, Math.min(2, budgetMs - (t1 - t0)));
     return faites;
   }
 
@@ -374,12 +406,51 @@ export class Horizon {
       this.bati[i] = 0;
       this.estNY[i] = 0;
     }
-    // Le relief lit plus clair en altitude, comme sur la carte 2D — sans cela
-    // un massif et une plaine ont exactement la même teinte.
-    const teinte = 0.72 + Math.min(Math.max(h, 0), 70) / 70 * 0.38;
-    col[o] = Math.min(1, c[0] / 255 * teinte);
-    col[o + 1] = Math.min(1, c[1] / 255 * teinte);
-    col[o + 2] = Math.min(1, c[2] / 255 * teinte);
+    teindre(col, o, c, h);
+    // De l'herbe de campagne : la règle des bords (v337) passera après.
+    this.pret[i] = id === BLOCK.GRASS && !u && this.falaises ? A_RAFFINER : FAIT;
+    if (this.pret[i] === A_RAFFINER) this.aRaffiner = true;
+  }
+
+  // LES FALAISES ET LES BERGES, VUES DE LOIN (v337). Le monde proche montre
+  // depuis la v326 de la roche sur une marche de deux blocs et plus, une crête
+  // de roche dès quatre, une grève au bord de l'eau ; le paysage lointain
+  // gardait le vert de la carte partout. Il lit la MÊME règle, `matiereDuBord`,
+  // sur la colonne du sommet — un échantillon de la règle, pas une moyenne
+  // inventée — et seulement là où elle s'applique : de l'herbe de campagne,
+  // hors ville.
+  //
+  // ET ELLE PASSE APRÈS LE RELIEF, DANS LE BUDGET QUI RESTE. Quatre cotes de
+  // plus par sommet, c'est +6 µs sur trois (mesuré, `sonde-horizon-bords.cjs`) :
+  // dans la boucle de remplissage, le paysage arrivait trois fois plus tard
+  // après une téléportation. Le relief et sa couleur d'abord, à la cadence
+  // d'avant au sommet près ; la roche et le sable ensuite, quand il n'y a plus
+  // rien à remplir. La règle ne mord que sur un sommet de campagne sur
+  // soixante-quinze : le paysage est juste avant d'être fini.
+  raffiner(t0, budgetMs) {
+    const N = this.N, total = N * N;
+    const col = this.geo.attributes.color.array;
+    const th = (a, b) => this.world.terrainHeight(a, b);
+    let faites = 0, change = false, n = 0;
+    for (; n < total; n++) {
+      const i = (this.curseurRegle + n) % total;
+      if (this.pret[i] !== A_RAFFINER) continue;
+      const ix = (i / N) | 0, iz = i - ix * N;
+      const x = (this.ox + ix) * PAS_HORIZON, z = (this.oz + iz) * PAS_HORIZON;
+      const h = this.hauteurs[i];
+      const c = couleurDuBord(MAP_COLORS[BLOCK.GRASS],
+        matiereDuBord(h, th(x + 1, z), th(x - 1, z), th(x, z + 1), th(x, z - 1)));
+      if (c) { teindre(col, i * 3, c, h); change = true; }
+      this.pret[i] = FAIT;
+      faites++;
+      if ((faites & 63) === 0 && performance.now() - t0 > budgetMs) {
+        this.curseurRegle = (i + 1) % total;
+        break;
+      }
+    }
+    if (n === total) this.aRaffiner = false;   // un tour complet sans rien laisser
+    if (change) this.geo.attributes.color.needsUpdate = true;
+    return faites;
   }
 
   // ON NE DESSINE QUE CE QUI N'EST PAS DESSINÉ. Une case dont le morceau de
@@ -459,9 +530,12 @@ export class Horizon {
 
   // Pour les sondes et les témoins : jusqu'où le paysage porte-t-il vraiment.
   etat() {
-    let manquantes = 0;
-    for (let i = 0; i < this.pret.length; i++) if (!this.pret[i]) manquantes++;
-    return { pas: PAS_HORIZON, rayon: this.rayon, colonnes: this.N * this.N, manquantes,
+    let manquantes = 0, aRaffiner = 0;
+    for (let i = 0; i < this.pret.length; i++) {
+      if (!this.pret[i]) manquantes++;
+      else if (this.pret[i] === A_RAFFINER) aRaffiner++;
+    }
+    return { pas: PAS_HORIZON, rayon: this.rayon, colonnes: this.N * this.N, manquantes, aRaffiner,
       triangles: this.geo.drawRange.count / 3, bati: this.bat.count };
   }
 }
