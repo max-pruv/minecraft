@@ -2056,7 +2056,7 @@ function marquerParisCede(ens, x, z) {
 // voisines, gardent la ville figée dans `londres-v332.js` : une maison sur
 // une ancienne rue n'est pas enfermée dans un immeuble neuf, une cabane contre
 // un ancien mur garde son mur. La date est celle de la publication.
-export const DATE_RUES_LONDRES = Date.UTC(2026, 9, 4, 15, 20, 0);
+export const DATE_RUES_LONDRES = Date.UTC(2026, 9, 4, 15, 0, 0);
 function dansLondresAvant(x, z, t) {
   if (!(t <= DATE_RUES_LONDRES)) return false;
   const du = x - LONDRES.x, dv = z - LONDRES.z, r = LONDRES.r + 1;
