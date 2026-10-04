@@ -4781,12 +4781,16 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       if (!auVolant()) { await rendre(); return { err: 'pas monté dans la voiture' }; }
       g.player.keys.add('KeyW');
       // on roule jusqu'à ce que la voiture ait pris son allure
+      // DEPUIS LA v343 la voiture accélère comme une voiture : elle touche le
+      // mur à trente blocs AVANT d'avoir pris toute son allure, et relue après
+      // le choc, sa vitesse valait zéro (« lancée 0 » au portail). On retient
+      // la PLUS HAUTE vitesse atteinte, et l'on sort au premier choc publié.
       const t0 = performance.now();
-      let lance = 0;
+      let lance = 0; const chocs0 = g.player.chocs || 0;
       while (performance.now() - t0 < 20000) {
         await new Promise((f) => setTimeout(f, 200));
-        lance = Math.abs(g.player.vitesseVoiture || 0);
-        if (lance >= (g.player.vitesseVoitureMax || 3.2) * 0.85) break;
+        lance = Math.max(lance, Math.abs(g.player.vitesseVoiture || 0));
+        if (lance >= (g.player.vitesseVoitureMax || 3.2) * 0.85 || (g.player.chocs || 0) > chocs0) break;
       }
       // PUIS JUSQU'À CE QU'ELLE NE BOUGE PLUS — ET C'EST UN RÉSULTAT, PAS UNE DURÉE
       // (v270). Vingt-cinq secondes ne suffisaient pas : le portail a rendu
