@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v344 — Le monde suit les voitures
+## v346 — Le monde suit les voitures
 
 **Pourquoi.** Max veut une conduite « comme GTA », et les voitures sont trop
 lentes. Leur vitesse était plafonnée à vingt-huit blocs par seconde en ville
@@ -52,6 +52,60 @@ morceaux derrière sur l'ancienne), et à 60 b/s dans Paris l'écart de la part
 des morceaux maillés dans le champ de la caméra entre l'ordre neuf et l'ordre
 d'avant, joués dans la même page en alternance (0,29 ici, −0,04 sur
 `origin/main`, barre 0,13).
+
+---
+
+## v345 — La toundra et la taïga
+
+**Pourquoi.** La v341 a donné au monde ses déserts ; le reste du climat
+manquait. Le Grand Nord canadien, la Iamalie, la Sibérie arctique étaient des
+prairies vertes, et la grande forêt boréale — la Iakoutie, le Québec du Nord,
+la Finlande — une plaine semée de chênes : mesuré sur `origin/main`, 185
+arbres sur 15 119 colonnes au cœur de quatre taïgas, et 197 arbres et zéro
+pierre au cœur de trois toundras. Deuxième tranche du point (d) du kit
+« monde fidèle ».
+
+**Ce que ça change.** Au nord de la vraie limite des arbres (68° sur le
+Mackenzie, 59° au bord de la baie d'Hudson, 67° au pied de l'Oural, 72° sur la
+Khatanga), et sur le haut plateau du Tibet, la campagne est une toundra :
+herbe rase olive, plaques de roche nue, neige dès que le relief monte, et
+presque plus un arbre. En dessous, la taïga fait le tour du pôle : une forêt
+de pins presque partout, quelques bouleaux, l'herbe sombre et froide. Le
+paysage lointain et la carte du monde disent la même chose que le sol. Les
+villes gardent leur sol et leurs parcs ; la forme du monde ne bouge pas d'un
+bloc ; là où un enfant a bâti avant cette version, ses arbres restent ceux
+d'avant.
+
+**Ce qui le prouve.** Cinq témoins neufs dans `plafond.js`, tous rouges sur
+`origin/main` : au cœur de trois toundras, 1 441 colonnes de roche ou de
+neige sur 9 263, 5 arbres contre 197, zéro bloc de forme différente ; au cœur
+de quatre taïgas, 520 arbres contre 185 dont 445 pins, l'herbe teinte et rien
+de teint au Kansas ; un morceau déclaré d'un climat l'est colonne par colonne
+(3 657 morceaux, zéro désaccord) ; les arbres d'avant restent là où un enfant
+a bâti ; vu de loin et sur la carte, la toundra est olive et la taïga sombre à
+côté du Kansas. Coût mesuré sous node, ordre alterné : le mailleur inchangé
+hors des zones (9,34 contre 9,32 ms par morceau), une question de climat
+coûte 0,37 µs.
+
+---
+
+## v344 — Les amis voient les dégâts
+
+**Pourquoi.** Depuis la v343 la voiture de l'enfant s'abîme, fume et brûle —
+mais seulement sur SA tablette. À plusieurs, l'ami qui le regarde conduire
+voyait une voiture neuve foncer dans un mur et repartir intacte : la moitié de
+la scène manquait (« une voiture conduite doit se voir en ligne », CLAUDE.md).
+
+**Ce que ça change.** La position du conducteur emporte désormais les dégâts
+de sa voiture, en un champ court (`p.v.d` : les impacts et l'état du feu).
+L'ami rejoue les mêmes impacts sur la voiture qu'il dessine : la même tôle
+enfoncée, la même fumée, les mêmes flammes. Une tablette restée sur l'ancienne
+version ignore le champ et voit la voiture comme avant.
+
+**Ce qui le prouve.** Deux témoins à deux tablettes dans `tests/degats.js`,
+ROUGES sur la v343 (santé 1 et aucune pièce froissée chez Alice ; pas de
+flammes) et verts ici (santé 0,7 et quinze pièces froissées chez Alice ; puis
+le feu, des flammes chez elle aussi, avant que Marlon ne soit déposé).
 
 ---
 

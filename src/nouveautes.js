@@ -6,12 +6,29 @@
 
 export const NOUVEAUTES = [
   {
-    v: 344,
+    v: 346,
     titre: 'Le monde suit les voitures',
     puces: [
       'Le paysage arrive là où tu roules',
       'Les rues devant toi d\'abord',
       'Assez rapide pour foncer',
+    ],
+  },
+  {
+    v: 345,
+    titre: 'La toundra et la taïga',
+    puces: [
+      'Le Grand Nord a son lichen',
+      'Des forêts de pins en Sibérie',
+      'Et au Canada, en Finlande',
+    ],
+  },
+  {
+    v: 344,
+    titre: 'Tes amis voient les dégâts',
+    puces: [
+      'La voiture abîmée se voit en ligne',
+      'Et ses flammes aussi',
     ],
   },
   {

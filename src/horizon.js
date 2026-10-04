@@ -51,7 +51,8 @@
 //   la route tant que le morceau n'était pas maillé.
 
 import * as THREE from 'three';
-import { WATER_LEVEL, DESERT, MARS, VOLCANO, dansUneCalotte, CHUNK, matiereDuBord } from './world.js';
+import { WATER_LEVEL, DESERT, MARS, VOLCANO, dansUneCalotte, CHUNK, matiereDuBord, NEIGE_TOUNDRA } from './world.js';
+import { INDICE_CLIMAT, TEINTE_HERBE, TEINTE_FEUILLES } from './terre.js';
 import { BLOCK, DECOR_START, decorMapColor } from './blocks.js';
 import { decor } from './couches.js';
 import { MAP_COLORS } from './carte.js';
@@ -105,9 +106,25 @@ function blocDeSurface(x, z, h, world) {
   }
   if (h <= WATER_LEVEL + 1) return BLOCK.SAND;
   if (h >= 58) return BLOCK.SNOW;
-  // le désert chaud réel (v341), la même question que le générateur
-  if (world && world.aride && world.aride(x, z)) return BLOCK.SAND;
+  // le climat (v341, v345), la même question que le générateur : le désert
+  // est de sable, la toundra de neige là où le relief monte
+  const cl = world && world.climat ? world.climat(x, z) : null;
+  if (cl === 'desert') return BLOCK.SAND;
+  if (cl === 'toundra' && h >= NEIGE_TOUNDRA) return BLOCK.SNOW;
   return BLOCK.GRASS;
+}
+
+// LA COULEUR DE L'HERBE D'UN CLIMAT, VUE DE LOIN (v345). L'herbe de la carte
+// sous la teinte du climat — la même que le mailleur pose sur le bloc — et,
+// pour la taïga, mêlée à moitié au feuillage sombre qui la couvre presque
+// partout. Pure et exportée : le témoin la lit, la carte dit la même chose.
+export function herbeDuClimat(it, herbe = MAP_COLORS[BLOCK.GRASS]) {
+  if (!it) return herbe;
+  const t = TEINTE_HERBE[it];
+  const c = [herbe[0] * t[0], herbe[1] * t[1], herbe[2] * t[2]];
+  if (it !== INDICE_CLIMAT.taiga) return c;
+  const f = TEINTE_FEUILLES[it], fe = MAP_COLORS[BLOCK.LEAVES];
+  return [(c[0] + fe[0] * f[0]) / 2, (c[1] + fe[1] * f[1]) / 2, (c[2] + fe[2] * f[2]) / 2];
 }
 
 // Le relief lit plus clair en altitude, comme sur la carte 2D — sans cela un
@@ -244,6 +261,8 @@ export class Horizon {
     this.bati = new Float32Array(N * N);
     this.toits = new Float32Array(N * N * 3);   // la couleur des MURS du bâti
     this.estNY = new Uint8Array(N * N);
+    // le climat de chaque sommet d'herbe (v345) : la règle des bords le relit
+    this.climats = new Uint8Array(N * N);
     this.sansNY = false;                     // Manhattan dessine ses propres silhouettes
     // Le filtre des sept villes bâties à la main, par BOÎTE. Manhattan déborde
     // de son disque du registre (TerreUrbaine la tient dans 1 300 blocs).
@@ -336,6 +355,7 @@ export class Horizon {
         decaler(this.bati, N, 1, dix, diz);
         decaler(this.toits, N, 3, dix, diz);
         decaler(this.estNY, N, 1, dix, diz);
+        decaler(this.climats, N, 1, dix, diz);
         // LES SOMMETS DÉFILENT AUSSI, et c'est ce qui rend l'affaire tenable.
         // Mon premier jet réécrivait les 25 921 sommets — position, couleur,
         // biome — à CHAQUE image où quelque chose bougeait : huit millisecondes
@@ -401,6 +421,10 @@ export class Horizon {
     let c = MAP_COLORS[id] || [140, 140, 140];
     // Sous une ville, hors de l'eau : le gris des rues mêlé aux toits.
     const u = id === BLOCK.WATER ? null : urbainEn(this.world, x, z, this.villesMain);
+    // l'herbe de la toundra et de la taïga (v345), hors des villes
+    const it = id === BLOCK.GRASS && !u && this.world.climat ? (INDICE_CLIMAT[this.world.climat(x, z)] || 0) : 0;
+    this.climats[i] = it;
+    if (it) c = herbeDuClimat(it);
     if (u) {
       c = [(GRIS_RUE[0] + u.toit[0]) / 2, (GRIS_RUE[1] + u.toit[1]) / 2, (GRIS_RUE[2] + u.toit[2]) / 2];
       this.bati[i] = u.haut;
@@ -442,7 +466,7 @@ export class Horizon {
       const ix = (i / N) | 0, iz = i - ix * N;
       const x = (this.ox + ix) * PAS_HORIZON, z = (this.oz + iz) * PAS_HORIZON;
       const h = this.hauteurs[i];
-      const c = couleurDuBord(MAP_COLORS[BLOCK.GRASS],
+      const c = couleurDuBord(herbeDuClimat(this.climats[i]),
         matiereDuBord(h, th(x + 1, z), th(x - 1, z), th(x, z + 1), th(x, z - 1)));
       if (c) { teindre(col, i * 3, c, h); change = true; }
       this.pret[i] = FAIT;

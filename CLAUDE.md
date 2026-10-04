@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Le monde à la vitesse (v344) — on maille où l'on va, et le plafond se mesure en roulant
+## Le monde à la vitesse (v346) — on maille où l'on va, et le plafond se mesure en roulant
 
 Max veut une conduite « comme GTA » ; les voitures étaient plafonnées à 28 b/s
 sur un débit d'avant le worker (v237 → v251). Quatre règles.
@@ -955,6 +955,12 @@ des dégâts. La règle est PURE (`degats.js`, lue sous node), ce qui se voit vi
   lit `if (this.boost)`, et une voiture « en panne » roulait à l'allure de la
   marche (mesuré, 1,7 bloc en 2,5 s).
 
+**Et l'ami le voit (v344).** La position emporte les dégâts (`p.v.d`, les
+impacts et le feu, via `versReseau`) ; le receveur les REJOUE sur la voiture
+qu'il dessine (`distant`), avec les mêmes fonctions et le même bruit
+déterministe — on n'envoie pas de géométrie, on envoie l'histoire du choc.
+Une tablette restée sur l'ancienne version ignore le champ (le receveur cède).
+
 **Le feu dépose l'enfant, il ne le projette pas** : passé `DELAI_SORTIE` (3,5 s
 en temps réel), `fun.js` le fait descendre et `deposer` le pose debout sur une
 case libre à côté (côté conducteur d'abord). La carcasse porte `horsService`
@@ -1041,6 +1047,49 @@ Le point (c) du kit « monde fidèle », sur toute la carte. Trois règles.
   escalier de cubes de roche — l'adoucir, c'est bouger le relief, décision de
   Max) ; une berge de trois blocs garde sa couronne d'herbe. *(Le paysage
   lointain et les arbres ont reçu la règle en v340.)*
+
+## La toundra et la taïga (v345) — une couleur de sommet est LINÉAIRE
+
+La deuxième tranche du point (d). Quatre règles.
+
+- **UNE ZONE DE CLIMAT EST UNE TABLE DE FAITS, ET L'ORDRE EST UNE PRIORITÉ.**
+  `CLIMATS` (terre.js) porte la toundra (limite réelle des arbres, Islande,
+  Tibet) et la taïga, après `DESERTS` ; `climatReel(lat, lon)` rend la
+  première zone qui contient le point. `World.climat` lit `cielDe` et le même
+  bord qui tremble que `aride` (qui n'en est plus qu'un cas). Les sites du
+  témoin tempéré de la v341 (Kansas, Iowa, Pampa, Ukraine à 49° N) restent
+  hors de toute zone — c'est vérifié par ce témoin, qui compte zéro bloc
+  différent.
+- **UNE QUESTION PAR MORCEAU, PAS PAR COLONNE.** `climatDuMorceau` rend le
+  climat d'un morceau entier quand tout bord est à plus de 0,8° (le
+  tremblement fait 0,6°, un morceau 0,13° au pire), et `undefined` sinon ;
+  92 % des morceaux sont certains. Le générateur et le mailleur
+  (`teintesDuMorceau`) n'interrogent colonne par colonne que les autres. Un
+  témoin vérifie qu'un morceau certain l'est pour chacune de ses colonnes —
+  un raccourci de ce genre se trompe en silence au bord des zones.
+- **LA TEINTE CHANGE LA COULEUR, PAS LA MATIÈRE.** L'herbe de la toundra et
+  de la taïga reste le bloc d'herbe — que les falaises, `treeAt`, le sol
+  continu et les bêtes savent lire — et le mailleur multiplie la couleur de
+  sommet de son dessus (et des feuilles) par la teinte du climat, une clé de
+  fusion par teinte. Ce qui change de MATIÈRE se dit comme en v341 : la roche
+  nue et la neige de la toundra (`solDeToundra`, neige dès `NEIGE_TOUNDRA`
+  au lieu de 58), et les arbres (taïga dense de pins, toundra presque nue).
+  Un témoin compare la forme bloc pour bloc au monde sans la règle.
+- **UNE COULEUR DE SOMMET EST LINÉAIRE.** three décode la tuile sRGB et
+  multiplie par la couleur de sommet en espace linéaire : mon premier jet
+  posait les facteurs réglés à l'œil (0,62 sur le rouge), la taïga restait
+  vert vif en capture alors qu'une sonde dans la page comptait 201 516
+  sommets teints sur 300 816. Le mailleur prend le facteur à la puissance
+  2,2 (`TEINTE_HERBE_LIN`) ; la carte et le paysage lointain, qui mêlent des
+  couleurs de palette, gardent le facteur perçu. **Un témoin de couleur de
+  tampon prouve que la teinte est posée, pas qu'elle se voit** : c'est la
+  capture qui l'a dit.
+- **UN ARBRE AJOUTÉ PEUT POUSSER DANS UNE MAISON.** La v340 ne faisait que
+  retirer des arbres ; la taïga en ajoute. Un bloc posé avant
+  `DATE_CLIMATS` (relue à la fusion, v309) marque son morceau et ses huit
+  voisins (`morceauxAvantClimat`, tenu par `setBlock` et refait avec
+  l'index des monuments) : leurs arbres restent ceux d'avant. Le désert,
+  lui, garde sa règle partout.
 
 ## Les déserts chauds (v341) — le climat est une donnée de géographie, comme la côte
 

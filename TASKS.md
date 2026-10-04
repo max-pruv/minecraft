@@ -1,6 +1,6 @@
 # Ce qui est en cours
 
-- [ ] **LE PORTAIL DE LA v344 (le monde à la vitesse), DOUBLE MESURE FAITE.**
+- [ ] **LE PORTAIL DE LA v346 (le monde à la vitesse), DOUBLE MESURE FAITE.**
   Portail : `manhattan.js` (délai ligne 282) et `monte.js` « l'écran ne se
   fige pas en arrivant sur une ville » (2 833 ms · 46,4 %). Rejouées SEULES :
   `manhattan.js:282` identique des deux côtés ; l'arrivée rouge des deux
@@ -10,15 +10,15 @@
   New York expirée, 53/321) et « la voiture freine devant un piéton »
   (`voituresRue: 0`, avance 3,4 : la situation n'a pas eu lieu ; vert aux
   quatre portails de la branche). Preuve structurelle : en rendu logiciel,
-  l'ordre de file de la v344 est celui d'avant au bit près (`fileAuRegard`) ;
+  l'ordre de file de la v346 est celui d'avant au bit près (`fileAuRegard`) ;
   seul s'ajoute le suivi du déplacement, de l'arithmétique sur la position.
-  Dernier portail, sur la fusion avec la v343 : les deux témoins de la file
+  Dernier portail, sur la fusion avec la v343, puis la v345 : les deux témoins de la file
   verts (écart 0,32) ; rouges, tous déjà déclarés avec leur double mesure —
   le loader qui compte ses fichiers (`maj.js`), la façade et le taxi
   (`manhattan.js`), « la monoplace ralentit assez » (9,1 m/s, identique sur
   `origin/main`), le bouton « Conduire » (un métro à portée), les programmes à
   la téléportation et l'arrivée sur une ville (2 267 ms · 26,4 %).
-- [ ] **LE PLAFOND DE VITESSE AU SOL EST MESURÉ ET PUBLIÉ (v344) — À APPLIQUER
+- [ ] **LE PLAFOND DE VITESSE AU SOL EST MESURÉ ET PUBLIÉ (v346) — À APPLIQUER
   PAR LA CONDUITE, ET À CONFIRMER SUR LA TABLETTE.** `src/plafond-sol.js` :
   `VITESSE_SOL_MAX` = 60 b/s en ville, 70 en campagne et sur l'autoroute ;
   `plafondSol({ ville, rr })` le borne par le disque (60 partout au palier bas,
@@ -576,6 +576,25 @@
   second dépend du premier) — REJOUÉE SEULE : branche ces deux-là, `origin/main`
   v318 la libération (programmes 17/25). Même intermittence de préparation des
   deux côtés, déjà déclarée (v267).
+- [ ] **LE PORTAIL DE LA v345 (la toundra et la taïga, préparée comme v342 puis v344) :
+  TOUS LES ROUGES DÉJÀ DÉCLARÉS.** Seize suites, 84 min. `plafond.js` (93 dont
+  les cinq témoins neufs), `carteMonde.js`, `metro.js`, `washington.js`,
+  `parishd.js`, `realisme.js`, `reglages.js`, `hote.js`, `visio.js`,
+  `sauvegarde.js`, `parent.js` verts. `maj.js` : le loader « combien de
+  fichiers » (intermittent, déclaré) et le badge (« version servie v341 » pour
+  une tête de journal à 342 — `sw.js` pas encore monté, la procédure le règle).
+  `carte.js` : la flèche du GPS (gauche 1,92 rad, déclarée). `manhattan.js` :
+  le délai de la ligne 282 (dette v269). `monte.js` : Paris compile quatre
+  programmes `physical` à l'arrivée et l'écran figé (3 583 ms · 28,3 %), tous
+  deux déclarés. `reseau.js` : « sans courtier » `[[],[]]` (intermittence
+  déclarée) — REJOUÉES SEULES : `plafond.js` verte ; `maj.js` badge vert,
+  reste la préparation (programmes 19/27, intermittence déclarée) ;
+  `manhattan.js` le délai de la ligne 282 ; `reseau.js` « un hôte sans
+  courtier est trouvé » `[[],[]]` sur la branche, et sur `origin/main` v343
+  rejoué seul la même famille (« deux enfants se retrouvent sans courtier du
+  tout » `[[],[]]`, plus la voiture de la rue chez l'ami). La livraison n'ajoute aucun matériau ni aucune
+  lampe, seulement une couleur de sommet et des blocs de campagne loin de
+  tout point que ces témoins visitent.
 - [ ] **LE PORTAIL DE LA v341 (les déserts) : TOUS LES ROUGES DÉJÀ
   DÉCLARÉS.** `plafond.js` (les trois témoins des déserts, celui de la page
   compris), `carteMonde.js`, `carte.js`, `metro.js`, `washington.js` verts.
@@ -763,9 +782,10 @@
   depuis la v340 (`couleurDuBord`, `solDeLArbre`) ; (d) les
   textures par usage et climat — PREMIÈRE TRANCHE en v341 : les déserts chauds
   réels (`DESERTS`, terre.js) sont de sable, sans arbre, au sol, au loin et sur
-  la carte ; restent les steppes, la toundra, les tropiques humides (une teinte
-  d'herbe par climat demande une couleur par colonne dans le mailleur, le sol
-  continu, le paysage lointain et la carte — à mesurer avant) ; (e) la bibliothèque architecturale (96
+  la carte ; SECONDE TRANCHE en v345 : la toundra et la taïga (`CLIMATS`,
+  terre.js) — la teinte d'herbe par colonne est MESURÉE gratuite (une
+  question par morceau, 0,37 µs par colonne près d'un bord, mailleur 9,34
+  contre 9,32 ms hors zone) ; restent les steppes, les tropiques humides ; (e) la bibliothèque architecturale (96
   variantes, 278 profils de ville) — elle exige une retrame à un bloc pour un
   mètre (`docs/monde-fidele/programme.md`, section 6), décision de Max ; (f) la
   matrice de couverture ville par ville (convertie, exclue, bloquée) et les

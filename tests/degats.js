@@ -20,7 +20,7 @@
 //
 //     cd tests && node degats.js
 
-const { Banc, dormir } = require('./banc.js');
+const { Banc, dormir, jusqua } = require('./banc.js');
 
 const echecs = [];
 let _dernier = Date.now();
@@ -382,6 +382,63 @@ function verifier(nom, ok, detail = '') {
       rendu.partie && rendu.clones > 0 && rendu.rendues === rendu.clones, JSON.stringify(rendu));
 
     verifier('aucune erreur JavaScript de bout en bout', erreurs.length === 0, JSON.stringify(erreurs.slice(0, 4)));
+    await tab.close();
+
+    // 7. À PLUSIEURS (v344) : Alice voit la voiture de Marlon abîmée, puis en
+    // feu. La position emporte le véhicule depuis la v253 ; elle emporte
+    // désormais ses dégâts (`p.v.d`), et Alice rejoue les mêmes impacts.
+    const { p: hote, code } = await banc.creerMonde('Marlon');
+    const alice = await banc.rejoindre('Alice', code);
+    const volant = await hote.evaluate(async () => {
+      const g = window.__game; const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+      g.animalManager.animals.length = 0;
+      const fx = -Math.sin(g.player.yaw), fz = -Math.cos(g.player.yaw);
+      const a = g.animalManager.invoquer('voiture', g.player.pos.x + fx * 2.5, g.player.pos.z + fz * 2.5, false, { flotte: 'ferrari-f40.glb' });
+      const t0 = performance.now();
+      while (performance.now() - t0 < 30000 && !a.mesh.userData.roues) await dodo(300);
+      for (let e = 0; e < 8 && !(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await dodo(600); }
+      const m = g.fun.montureConduite && g.fun.montureConduite();
+      return { auVolant: !!m, x: g.player.pos.x, y: g.player.pos.y, z: g.player.pos.z };
+    });
+    await alice.evaluate((p) => {
+      const g = window.__game;
+      for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+      g.animalManager.animals.length = 0;
+      g.player.pos.set(p.x + 6, p.y, p.z); g.player.vel.set(0, 0, 0);
+    }, volant);
+    const vuParAlice = () => alice.evaluate(() => {
+      const g = window.__game, d = g.fun.degats;
+      for (const rp of g.remotePlayers.values()) {
+        if (rp.name !== 'Marlon') continue;
+        if (!rp.vehicule) return { vehicule: false };
+        const e = d ? d.etat(rp.vehicule.mesh) : null;
+        const ps = d ? d.pieces(rp.vehicule.mesh) || [] : [];
+        return { vehicule: true, modele: !!rp.vehicule.mesh.userData.roues, sante: e ? e.sante : 1,
+          enFeu: !!(e && e.enFeu), froissees: ps.filter((pc) => pc.propre).length,
+          flammes: d ? d.particulesVisibles().flammes : 0 };
+      }
+      return { absent: true };
+    });
+    await jusqua(async () => { const v = await vuParAlice(); return v.vehicule && v.modele; }, 40000);
+    await hote.evaluate(() => {
+      const g = window.__game, a = g.fun.montureConduite();
+      if (g.fun.degats && a) g.fun.degats.choc(a.mesh, { force: 1, lx: 0, lz: -2.2 });
+    });
+    await jusqua(async () => { const v = await vuParAlice(); return v.sante < 1 && v.froissees > 0; }, 20000);
+    const abimee = await vuParAlice();
+    verifier('à plusieurs, l\'ami voit la voiture abîmée : la même santé, la tôle enfoncée chez lui aussi',
+      volant.auVolant && abimee.sante < 1 && abimee.froissees > 0, JSON.stringify({ volant, abimee }));
+    // le feu : Marlon garde trois secondes et demie au volant avant d'être
+    // déposé — c'est dans cette fenêtre qu'Alice doit voir les flammes
+    await hote.evaluate(() => {
+      const g = window.__game, a = g.fun.montureConduite(), d = g.fun.degats;
+      if (d && a) while (!d.etat(a.mesh).enFeu) d.choc(a.mesh, { force: 0.8, lx: 1.1, lz: 0 });
+    });
+    await jusqua(async () => { const v = await vuParAlice(); return v.enFeu && v.flammes > 0; }, 4000);
+    const enFeu = await vuParAlice();
+    verifier('et elle la voit prendre feu : des flammes sur la voiture de l\'ami', enFeu.enFeu && enFeu.flammes > 0,
+      JSON.stringify(enFeu));
   } finally {
     await banc.fermer();
   }
