@@ -498,6 +498,14 @@
   second dépend du premier) — REJOUÉE SEULE : branche ces deux-là, `origin/main`
   v318 la libération (programmes 17/25). Même intermittence de préparation des
   deux côtés, déjà déclarée (v267).
+- [ ] **LE PORTAIL DE LA v341 (les déserts) : TOUS LES ROUGES DÉJÀ
+  DÉCLARÉS.** `plafond.js` (les trois témoins des déserts, celui de la page
+  compris), `carteMonde.js`, `carte.js`, `metro.js`, `washington.js` verts.
+  `maj.js` : le loader et le fond de carte (personnages 5/9), intermittence de
+  la v340 ci-dessous. `manhattan.js` : le trou de façade (11 684). `monte.js` :
+  la chauffe de New York expirée (55/321) et l'écran figé (3 683 ms · 32,5 %).
+  La livraison ne change que la matière de la campagne des déserts réels,
+  qu'aucun de ces témoins n'approche.
 - [ ] **LES PORTAILS DE LA v340 (les arbres et les falaises, préparée comme v333, v337 puis v339), QUATRE FOIS.**
   `plafond.js` (les quatre témoins neufs), `carteMonde.js`, `metro.js`,
   `washington.js` verts à chaque passage. `maj.js` : le témoin « corps,
