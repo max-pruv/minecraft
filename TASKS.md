@@ -38,7 +38,7 @@
   La chauffe compile les deux variantes en alternant les formes. Si une
   version future de three change cet ordre, la sonde le dira (clé `depth`).
 - [x] **LA RIVE GAUCHE A DEUX FOIS MOINS DE VOITURES DEPUIS PARIS DOUBLÉ —
-  FAIT EN v321, ET POUR TOUTES LES VILLES.** Mesuré sous node, ville par ville
+  FAIT EN v322, ET POUR TOUTES LES VILLES.** Mesuré sous node, ville par ville
   (couverture : part de la ville à moins de 45 blocs d'un tracé qui porte un
   convoi ; densité : voitures pour mille blocs de rue). Paris 38,8 % → 96,4 %
   (rive gauche 38,3 → 94,2), douze tours de quartier sur la trame d'Haussmann
@@ -76,7 +76,7 @@
   rouge des deux côtés, `dur 6 · lus 597 · Tour Eiffel 4 · Invalides 2`, au
   pas près. Le portail complet a rendu le même chiffre.
 - [x] **UNE PLACE DE VOITURE À MOINS DE TROIS BLOCS, SANS VOITURE DESSINÉE —
-  EXPLIQUÉ EN v321, PAS UN DÉFAUT.** `tests/sonde-place-vide.cjs` rejoue le
+  EXPLIQUÉ EN v322, PAS UN DÉFAUT.** `tests/sonde-place-vide.cjs` rejoue le
   geste du témoin (téléportation sur un circuit de Paris, `placeProche` lu par
   un minuteur toutes les 100 ms) sur les vingt circuits, trois fois chacun :
   2 400 relevés, 565 places dessinées, 47 vides — et les 47 sont le MÊME cas
@@ -255,7 +255,7 @@
   branche 3 · 3 · 2, `origin/main` 3 · 3 · 3. Même distribution ; le 5 est un
   tirage sous la charge du portail, et la dette de la v306 (deux ou trois
   programmes à l'arrivée) reste ouverte telle quelle.
-- [ ] **LE PORTAIL DE LA v321, SECOND, APRÈS REBASE SUR LA v320.** Dix suites.
+- [ ] **LE PORTAIL DE LA v322, SECOND, APRÈS REBASE SUR LA v320.** Dix suites.
   Verts : `maj.js` (cette fois), `plafond.js`, `parishd.js`, `carte.js`,
   `washington.js`, `metro.js`. Rouges, rejoués SEULS des deux côtés sur la
   v320 : `carteMonde.js` « aucune voiture ne traverse un monument de Paris »
@@ -269,7 +269,7 @@
   des deux côtés. New York : 79 circuits, 78 de 109 blocs de plan (six
   voitures, au plancher, avant comme après) ; le déplafonnement n'y touche
   qu'un circuit.
-- [ ] **LE PORTAIL DE LA v321 (règle de la v195), DOUBLE MESURE FAITE — premier
+- [ ] **LE PORTAIL DE LA v322 (règle de la v195), DOUBLE MESURE FAITE — premier
   portail, sur la base v317.** Dix suites. Verts : `carteMonde.js` (le témoin des 268 villes, rouge sur
   `origin/main`), `plafond.js`, `parishd.js`, `carte.js`, `washington.js`,
   `metro.js`. Rouges, rejoués SEULS des deux côtés :
