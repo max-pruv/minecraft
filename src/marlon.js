@@ -10,6 +10,7 @@ import * as THREE from 'three';
 import { construireHumain } from './personnages.js';
 import { animerHumain } from './humains.js';
 import { BLOCK, isSolid as blockIsSolid, isSlab } from './blocks.js';
+import { ALLURE_ECART, PAS_ECART_MAX, DT_REEL_MAX } from './pietons.js';
 
 const GRAVITY = 24;
 const WIDTH = 0.5;
@@ -166,16 +167,29 @@ export class BaseNPC {
     // le pas de côté, du côté où il est déjà, jusqu'à être hors du couloir
     // avec de la marge, puis il souffle un instant et reprend son programme.
     // Deux secondes au plus : contre un mur, on ne piétine pas sans fin.
+    // ET L'ÉCART SE FAIT EN TEMPS RÉEL (v351, `pietons.js`) : la voiture qu'on
+    // fuit roule sur l'horloge de la rue (v305), en secondes réelles, quand
+    // `dt` est borné à un vingtième. À cinq images par seconde, l'écart en
+    // `dt` allait quatre fois moins vite que la voiture qui arrive — mesuré,
+    // un choc dès 7 b/s. Le pas d'écart est borné (`PAS_ECART_MAX`) pour que
+    // la boîte glisse bloc à bloc. Et la pause qui suit n'aveugle plus : on
+    // regarde la route même en soufflant.
+    const tReel = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    const dtReel = this._tReel ? Math.min(Math.max((tReel - this._tReel) / 1000, 0), DT_REEL_MAX) : dt;
+    this._tReel = tReel;
+    let vAnim = null;
     if (this.world.vehiculeApproche) {
-      if (!this.ecart && !(this.repos > 0)) {
+      if (!this.ecart) {
         const v = this.world.vehiculeApproche(this.pos.x, this.pos.z, this.pos.y);
-        if (v) this.ecart = { ux: v.ux, uz: v.uz, cote: v.cote, t: 0, lat0: v.lat, retourne: false };
+        if (v) { this.ecart = { ux: v.ux, uz: v.uz, cote: v.cote, t: 0, lat0: v.lat, retourne: false }; this.repos = 0; this.ecarts = (this.ecarts || 0) + 1; }
       }
       if (this.ecart) {
-        const e = this.ecart; e.t += dt;
+        const e = this.ecart; e.t += dtReel;
         const ex = e.uz * e.cote, ez = -e.ux * e.cote;   // perpendiculaire, vers l'extérieur
         yaw = Math.atan2(-ex, -ez); this.yaw = yaw;
-        speed = this.walkSpeed * 1.6;
+        const pas = Math.min(PAS_ECART_MAX, this.walkSpeed * ALLURE_ECART * dtReel);
+        speed = dt > 0 ? pas / dt : 0;
+        vAnim = this.walkSpeed * ALLURE_ECART;
         const encore = this.world.vehiculeApproche(this.pos.x, this.pos.z, this.pos.y, 1.8);
         // un mur de ce côté (pas un quart de bloc gagné en six dixièmes de
         // seconde) : on essaie l'autre côté, une fois
@@ -224,7 +238,7 @@ export class BaseNPC {
     }
 
     this.animTime += dt;
-    const swing = speed > 0 ? Math.sin(this.animTime * 8) * 0.7 : 0;
+    const swing = (vAnim ?? speed) > 0 ? Math.sin(this.animTime * 8) * 0.7 : 0;
     const { legs, arms } = this.mesh.userData;
     legs[0].rotation.x = swing;
     legs[1].rotation.x = -swing;
@@ -237,7 +251,7 @@ export class BaseNPC {
     // Après le balancement de la marche, l'artisan peut plaquer son propre
     // geste — frapper l'enclume, ratisser — par-dessus les mêmes bras.
     if (this.geste) this.geste(dt, speed);
-    animerHumain(this.mesh, this.animTime, speed);
+    animerHumain(this.mesh, this.animTime, vAnim ?? speed);
 
     this.speechTimer -= dt;
     if (this.speechTimer <= 0) {

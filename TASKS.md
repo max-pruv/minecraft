@@ -1,5 +1,17 @@
 # Ce qui est en cours
 
+- [ ] **LE PORTAIL DE LA v351 (les piétons rapides), DOUBLE MESURE FAITE.**
+  Rouges de portail déjà déclarés : `maj.js` « corps, programmes et fond de
+  carte », `manhattan.js` (trou de façade 27 926 → 51 734, `#ride-btn` caché,
+  `PeerJS: Lost connection`), `monte.js` « l'écran ne se fige pas en arrivant
+  sur une ville » (1 550 ms · 25,4 %). Un rouge NON déclaré jusqu'ici, et c'est
+  une intermittence : `reseau.js` « deux tablettes d'une partie voient la même
+  circulation, au même endroit ». Portail (branche) : médiane 37,1 blocs, pire
+  63,6. Rejouée SEULE : `origin/main` v348 **rouge**, 35,0 · 62,2 ; branche
+  **verte**, 5,9 · 14,2. Les deux régimes existent des deux côtés ; à trouver :
+  ce qui fait diverger l'horloge de la rue (v305) d'une tablette à l'autre une
+  fois sur deux. La livraison ne touche ni `vehicules.js` ni l'heure de la rue.
+
 - [ ] **LE PORTAIL DE LA v346 (le monde à la vitesse), DOUBLE MESURE FAITE.**
   Portail : `manhattan.js` (délai ligne 282) et `monte.js` « l'écran ne se
   fige pas en arrivant sur une ville » (2 833 ms · 46,4 %). Rejouées SEULES :
