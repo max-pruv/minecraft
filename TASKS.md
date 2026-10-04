@@ -108,6 +108,25 @@
   - **Les avions ne s'abîment pas** (`pilote` est écarté) : une décision, pas
     un oubli — un atterrissage manqué n'a pas de « choc » dans `player.js`.
 
+- [ ] **AU PORTAIL DE LA v352 (l'épave et la rue, mesurée avant le rebase sur la v351), DEUX SUITES ROUGES — aucune
+  causée par la livraison, double mesure faite (rejouées SEULES sur la branche
+  et sur `origin/main` v348, chacune dans un arbre détaché ; `monte.js` deux
+  fois de chaque côté, règle v269).**
+  - `manhattan.js` : branche seule, « le trou enlève aussi la géométrie
+    visible de la façade » (14 460 → 51 734) et « le taxi roule » (bouton
+    jamais visible, une bête devant) — deux dettes déclarées ; `origin/main`
+    seul meurt au délai de la ligne 282 (dette v269) avant de les atteindre.
+  - `monte.js` : « l'écran ne se fige pas en arrivant sur une ville » rouge
+    aux QUATRE passages (branche 33,4 % · 32,3 % ; `origin/main` 24,6 % ·
+    25,8 %). « En vol, on ne rattrape pas le bout du monde » : rouge une fois
+    sur deux DES DEUX CÔTÉS (Concorde 58 pour une barre à 60, branche 1er
+    passage et `origin/main` 2e passage) — intermittence, même distribution.
+    « Ne compile plus de programmes sur place » : branche 6 `physical` à
+    Paris, `origin/main` 13 à New York (chauffe expirée) — la famille de la
+    v324 (un modèle de flotte tiré à portée pour la première fois). Preuve
+    structurelle : la v352 ne clone un matériau qu'APRÈS un choc, et aucun
+    de ces témoins ne percute rien.
+
 - [ ] **AU PORTAIL DE LA v355 (la 401 et la Hansalinie), UN ROUGE, DÉJÀ
   DÉCLARÉ** — `monte.js` « l'écran ne se fige pas en arrivant sur une ville »
   (portail : 1 967 ms, 26,9 %). Rejouée SEULE des deux côtés : `origin/main`
@@ -124,6 +143,7 @@
   ne se fige pas en arrivant sur une ville » (pire image 1 200 ms, 26,4 %). Les
   trois sont rouges seuls sur `origin/main` aux portails v345 à v348 ; la
   livraison ne touche ni la flotte, ni Manhattan, ni la file de maillage.
+
 - [ ] **AU PORTAIL DE LA v348 (le feu en deux appels), DEUX SUITES ROUGES — aucune
   causée par la livraison, double mesure faite (rejouées SEULES sur la branche
   v348 et sur `origin/main` v345, chacun dans un arbre détaché).**
