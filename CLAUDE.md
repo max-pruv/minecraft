@@ -931,6 +931,14 @@ La dette déclarée par la v326, remboursée. Trois règles.
   soixantaine d'images. Un filtre lu sur la grille du paysage (huit blocs)
   aurait coûté moins, et il est mesuré : il interroge 17 % des sommets et
   n'attrape que 82 % de ceux que la règle touche — on ne le réessaie pas.
+- **ET UNE PASSE DE FOND NE PREND RIEN À L'ACCUEIL.** `horizon.maj` tourne
+  aussi pendant la préparation, et le témoin de `maj.js` « corps, programmes
+  et fond de carte sont vraiment là » est rouge 2 fois sur 2 sur la branche
+  (personnages 7/9, 8/9) contre 1 sur 2 sur `origin/main`, rejouée seule.
+  Plutôt que de plaider l'intermittence, la règle des bords ne passe qu'EN
+  JEU (`raffinerPermis = running`, main.js) : la préparation redevient celle
+  de la v332 au calcul près. Quand on ne peut pas trancher sur deux
+  passages, on retire la cause possible par construction.
 
 ## Des voitures dans toutes les rues (v322) — un plafond par circuit rend la densité inverse de la longueur
 

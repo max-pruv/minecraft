@@ -234,6 +234,8 @@ export class Horizon {
     this.curseur = 0;                        // où reprendre le remplissage
     this.curseurRegle = 0;                   // … et la règle des bords (v337)
     this.aRaffiner = false;                  // reste-t-il un sommet à relire ?
+    // le jeu l'éteint à l'accueil : la préparation garde toutes ses images
+    this.raffinerPermis = true;
     this.falaises = !!world.conf?.falaises;
     // La ville sous chaque sommet : la hauteur de bâti (0 = aucun) et la
     // couleur des toits. Elles DÉFILENT avec les hauteurs, comme tout le reste.
@@ -380,7 +382,7 @@ export class Horizon {
     // la règle des bords ne prend que ce qui reste, deux millisecondes au plus
     // par image, et rien du tout une fois tout lu
     const t1 = performance.now();
-    if (this.aRaffiner && t1 - t0 <= budgetMs) faites += this.raffiner(t1, Math.min(2, budgetMs - (t1 - t0)));
+    if (this.aRaffiner && this.raffinerPermis !== false && t1 - t0 <= budgetMs) faites += this.raffiner(t1, Math.min(2, budgetMs - (t1 - t0)));
     return faites;
   }
 
