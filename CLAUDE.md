@@ -918,6 +918,19 @@ Une règle.
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
 
+## L'Autosole Bologne–Florence (v324) — la porte vise le premier point de passage
+
+Neuvième route. Une règle.
+
+- **UNE SONDE QUI CHOISIT UN ANGLE D'ENTRÉE DOIT LE FIXER DANS LE TRACÉ.**
+  `porte()` (routes.js) pose la porte dans la direction du PREMIER point de
+  passage, pas sur l'angle qu'on a mesuré. Ma sonde posait la porte à l'angle
+  et des points de passage libres : les meilleurs tracés mettaient en réalité
+  la porte de Bologne à 83°, où il n'y a pas d'avenue. Un point sur le RAYON de
+  chaque entrée (dix blocs hors du disque, `cherche2.mjs`) la fixe ; la sonde
+  et le registre lisent alors la même porte. Et l'on revérifie toujours les
+  entrées sur le registre réel (`verif.mjs`), jamais sur la sonde.
+
 ## L'E1 Kyoto–Nagoya (v323) — le côté du rail se choisit aux entrées de ville
 
 Huitième route. Une règle.

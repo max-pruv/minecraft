@@ -187,6 +187,21 @@ export const ROUTES = [
   // moins de dix-neuf blocs du rail, aucun aérodrome à moins de 732 blocs,
   // le premier repère à 77.
   { nom: 'E1', villes: ['kyoto', 'nagoya'], via: [[52034, 8412], [52185, 8362]] },
+  // L'AUTOSOLE (v324), BOLOGNE–FLORENCE, le tronçon de l'Autostrada del Sole
+  // qui passe l'Apennin. L'axe direct est sec, sans rail ni aérodrome ; ce
+  // qui a dessiné le tracé, c'est une règle de `routes.js` qu'une sonde
+  // oublie facilement : LA PORTE VISE LE PREMIER POINT DE PASSAGE, pas
+  // l'angle qu'on a mesuré. Mes premiers tracés posaient leur premier point à
+  // 83° de Bologne, où l'avenue n'existe pas : un point sur le RAYON de
+  // chaque entrée (dix blocs hors du disque) fixe la porte là où l'avenue a
+  // été mesurée — Bologne 104° (vingt-six blocs sur la rue), Florence −93°
+  // (quarante blocs, sans bloc ni eau : à −90°, deux blocs sur l'avenue). Le
+  // Duomo est à trente-deux blocs de l'axe au bout de l'avenue.
+  // Mesuré sous node (scratchpad cherche2.mjs, qui appelle `profilDe`) :
+  // 18 216 tracés, refus 14 552 coude · 1 578 déblai · 1 111 remblai · 369
+  // ponts proches ; celui-ci : 346 blocs, aucun pont, déblai 7,4, remblai 0,8,
+  // pente 0,067, coudes de 20°, zéro rail, zéro aérodrome à moins de 835.
+  { nom: 'Autosole', villes: ['bologne', 'florence'], via: [[3252, 2853], [3257, 3052], [3230, 3135]] },
 ];
 
 // --- la section -----------------------------------------------------------------
