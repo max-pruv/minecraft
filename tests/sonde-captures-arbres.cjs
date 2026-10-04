@@ -3,8 +3,10 @@
 // Le banc sert le dépôt d'où l'on lance le script : lancé depuis un arbre
 // d'`origin/main`, il photographie l'avant. Les points viennent de
 // `sonde-arbres-bord.cjs` (des chênes sur une crête de roche près de Xi'an et
-// de Kazan, sur `origin/main`) ; la vue lointaine se prend à `rr=12`, la portée de l'iPad, d'assez haut
-// pour voir au-delà des morceaux maillés.
+// de Kazan, sur `origin/main`). Pas de vue lointaine : même au site le plus
+// escarpé trouvé (près de Montpellier), la règle des bords ne touche que 3 %
+// des sommets du paysage lointain — c'est le témoin de `plafond.js` qui le
+// prouve, une capture ne le montrerait pas.
 const { Banc, souffler } = require('./banc.js');
 const path = require('path');
 const dossier = process.argv[2] || '.';
@@ -13,10 +15,6 @@ const PAGES = [
   { rr: 6, vues: [
     { nom: 'crete-xian', x: 40760, z: 9429, recul: 12, h: 22, pitch: -0.75 },
     { nom: 'crete-kazan', x: 18688, z: -3883, recul: 12, h: 22, pitch: -0.75 },
-  ] },
-  { rr: 12, vues: [
-    { nom: 'lointain-a', x: 600, z: 1400, recul: 0, h: 60, pitch: -0.2, yaw: 0.8 },
-    { nom: 'lointain-b', x: -3000, z: 2500, recul: 0, h: 60, pitch: -0.2, yaw: 2.2 },
   ] },
 ];
 (async () => {
