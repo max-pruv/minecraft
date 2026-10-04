@@ -212,7 +212,7 @@ n'est pas une étape de fin, c'est une partie de la livraison** — au même tit
 que le code. Une version qu'on ne sait plus expliquer six mois plus tard est
 une version qu'on ne saura pas déboguer.
 
-1. **Portail complet vert obligatoire** : `cd tests && npm test`. Seize suites, précédées de la fumée.
+1. **Portail complet vert obligatoire** : `cd tests && npm test`. Dix-sept suites, précédées de la fumée.
    Aucune publication sur un portail rouge — c'est ce qui produit les
    régressions en cascade.
 2. Bump de `CACHE_VERSION` dans `sw.js` à **chaque** livraison, sinon les
@@ -317,7 +317,7 @@ fichier par fichier. Voici la table, et elle est le mécanisme entier :
 | Voie | Quand | Durée |
 | --- | --- | --- |
 | **Rapide** (`fumee.js`) | Contenu pur : monuments, villes, créatures, décor | ~3 min |
-| **Complète** (16 suites) | Dès qu'un gardien est atteint, ou si git est muet | ~1 h → 59 min (v224) → 48 min (v225) → 74 min à quinze suites (v251) → **51 min** (v255, quinze suites) ; **seize depuis la v287** (`parishd.js`), total non remesuré |
+| **Complète** (17 suites) | Dès qu'un gardien est atteint, ou si git est muet | ~1 h → 59 min (v224) → 48 min (v225) → 74 min à quinze suites (v251) → **51 min** (v255, quinze suites) ; **seize depuis la v287** (`parishd.js`), **dix-sept depuis la v343** (`degats.js`), total non remesuré |
 
 `SUITES` range les suites par durée MESURÉE, le chiffre en commentaire : c'est
 ce qui fait qu'un rouge de `metro.js` se voit à la quatorzième seconde et non à
@@ -860,6 +860,59 @@ Quatre règles.
   est rouge désarmé (21 blocs de ville autour de la maison, toit absent).
   **La date se relit à la fusion** (v309) : une date en avance retiendrait
   la ville d'avant sous ce qu'un enfant pose sur la ville neuve.
+## Les dégâts de la voiture (v343) — on froisse SA géométrie, jamais celle de la rue
+
+Max : « Comme dans GTA, quand tu crashes ton véhicule, il s'abîme… elle prend
+feu, on se retrouve à sortir de la voiture. » Chantier « conduite », session
+des dégâts. La règle est PURE (`degats.js`, lue sous node), ce qui se voit vit
+à côté (`degats3d.js`), et `fun.js` ne porte que quatre crochets. Six règles.
+
+- **LA GÉOMÉTRIE DE LA FLOTTE EST PARTAGÉE PAR TOUTE LA RUE.** Toutes les
+  voitures d'un modèle sont des clones du même prototype : enfoncer ses
+  sommets froisserait chaque voiture du même modèle. On clone la géométrie de
+  LA pièce touchée, au premier choc qui l'atteint (une sphère d'influence
+  écarte les autres), jamais avant. Un témoin lit l'autre voiture du même
+  modèle et exige la géométrie commune intacte. Les clones sont enfants du
+  maillage, non marqués `partagee` : `liberer` (v238) les rend quand la
+  voiture s'en va, et le garage (`reparer`) les rend en remettant l'original.
+- **UN CHOC NE COMPILE RIEN.** Un matériau cloné garde son programme ; on ne
+  change que des UNIFORMES (couleur, opacité, rugosité, émissif), jamais un
+  define (`clearcoat`, `transmission`, une carte). Les deux matériaux neufs —
+  la fumée, les flammes — se chauffent pendant l'accueil (`chauffer`, appelé
+  dans la chaîne `pas` de main.js). Mesuré : 94 → 96 programmes au feu si l'on
+  désarme la chauffe, 96 → 96 armée. Aucune lampe : les flammes sont
+  additives et hors correspondance tonale, comme celles des réacteurs (v264).
+- **UNE COULEUR DE `setRGB` EST LINÉAIRE.** La fumée « noire » à 0,12 sortait
+  gris moyen à l'écran (#616162 mesuré) : le noir d'une fumée est sous 0,02.
+  Et des flammes additives qui se recouvrent saturent au BLANC — la teinte
+  reste dans l'orange, l'opacité sous 0,7. Les deux vus en capture, aucun par
+  un témoin.
+- **LA BOUCLE D'ENFONCEMENT SE MESURE ET SE RODE.** `computeVertexNormals` sur
+  toute la pièce faisait vingt des trente millisecondes du premier choc : on ne
+  refait que les normales des sommets déplacés (une arête vive reste vive). Le
+  premier passage coûte le double des suivants (le moteur JavaScript la
+  compile) : la chauffe la rode sur une boîte. 12 ms au premier choc, 6
+  ensuite, rien par image ; le témoin garde 30.
+- **LE REPLI NE COMPTE JAMAIS UN PIÉTON.** Tant que la physique ne publie pas
+  `player.choc`, un choc est une chute de vitesse qu'aucun frein n'explique
+  (`detecterChoc`). Mais s'arrêter devant un piéton (v259) ou au bord de l'eau
+  (v272) fait la même chute : `main.js` note `player.arretDouxT` dans ces deux
+  familles d'obstacle, et le repli l'ignore. Dès que `player.choc` existe, il
+  fait seul foi.
+- **LE CONTRAT AVEC LA PHYSIQUE.** `player.etatVoiture = { sante, moteur,
+  direction, enPanne, enFeu }` (direction en rad/s à pleine vitesse, positive
+  vers la gauche). Tant que la physique ne pose pas `player.physiqueLitEtat`,
+  `degats3d.js` applique lui-même l'allure réduite (par `player.boost`) et le
+  biais de cap — jamais deux fois. Et `boost` ne vaut jamais ZÉRO : `player.js`
+  lit `if (this.boost)`, et une voiture « en panne » roulait à l'allure de la
+  marche (mesuré, 1,7 bloc en 2,5 s).
+
+**Le feu dépose l'enfant, il ne le projette pas** : passé `DELAI_SORTIE` (3,5 s
+en temps réel), `fun.js` le fait descendre et `deposer` le pose debout sur une
+case libre à côté (côté conducteur d'abord). La carcasse porte `horsService`
+(lu par `animals.js`, comme `montee`) : elle ne se reprend pas, et elle s'en
+va au bout de `DUREE_CARCASSE`.
+
 ## Les monuments à la hauteur de leur ville (v335) — une table de paliers, deux lecteurs
 
 Un étage fait trois blocs depuis la v301 ; les monuments n'avaient pas suivi.
