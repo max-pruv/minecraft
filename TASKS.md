@@ -450,6 +450,16 @@
   second dépend du premier) — REJOUÉE SEULE : branche ces deux-là, `origin/main`
   v318 la libération (programmes 17/25). Même intermittence de préparation des
   deux côtés, déjà déclarée (v267).
+- [ ] **LE PORTAIL DE LA v334 (Berlin–Hambourg) : CINQ ROUGES, TOUS DÉJÀ
+  MESURÉS DES DEUX CÔTÉS.** `carteMonde.js` (le témoin de l'A24 compris) et
+  `plafond.js` verts. `maj.js` : la libération (personnages 6/9, programmes
+  16/27) et le flou pendant la préparation — rejoués seuls rouges des deux
+  côtés au portail de la v327. `carte.js` : la flèche du GPS, gauche lue à
+  1,92 rad — la MÊME valeur que `origin/main` rejoué seul (v327). `monte.js` :
+  l'arrivée figée (3 650 ms · 30,1 %) et la téléportation qui compile, rouges
+  à l'identique des deux côtés (v332). La livraison n'ajoute qu'une entrée au
+  registre des routes, en Allemagne du Nord, qu'aucun de ces témoins
+  n'approche.
 - [ ] **LE PORTAIL DE LA v333 (Milan–Bologne) : TROIS ROUGES, TOUS DÉJÀ
   MESURÉS DES DEUX CÔTÉS.** `carteMonde.js`, `plafond.js`, `carte.js` verts.
   `maj.js` : « le loader dit combien de fichiers sont rangés » (intermittent,
