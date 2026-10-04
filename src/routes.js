@@ -223,6 +223,18 @@ export const ROUTES = [
   // sans pont ; celui-ci : 672 blocs, déblai 7,0, remblai 1,0, pente 0,060,
   // zéro rail, l'aérodrome de Delhi à 395 blocs au-delà de sa marge.
   { nom: 'Yamuna', villes: ['delhi', 'agra'], via: [[29042, 12324], [29156, 12541], [29293, 12881]] },
+  // L'A1 ITALIENNE, SUD (v329), ROME–NAPLES : la seconde moitié de l'Autostrada
+  // del Sole. Rome est immense (rayon 216) et ses avenues propres ne sont PAS
+  // dans l'axe de Naples (42°) : l'est (−4°, trente-sept blocs sur la rue) est
+  // la plus proche. Une sortie à 46° de l'axe et des coudes bornés à 25° : il
+  // faut TOURNER EN PLUSIEURS FOIS. La sonde (scratchpad cherche3.mjs) pose
+  // après le point du rayon une suite de points qui virent de 24° tous les
+  // quarante blocs vers la cible ; sans eux, ses 40 536 tracés étaient tous
+  // refusés pour leur coude. Naples par son axe −140° (vingt-cinq blocs).
+  // Fiumicino est au NORD de Rome : la route part à l'est, loin de sa marge
+  // (358 blocs). Mesuré sous node : 8 115 admissibles, 1 176 sans pont ;
+  // celui-ci : 785 blocs, aucun pont, déblai 3,5, remblai 1,2, pente 0,062.
+  { nom: 'A1 Sud', villes: ['rome', 'naples'], via: [[3943, 4308], [3981, 4322], [4010, 4350], [4081, 4532], [4346, 4894]] },
 ];
 
 // --- la section -----------------------------------------------------------------

@@ -964,6 +964,20 @@ Une règle.
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
 
+## L'A1 Sud Rome–Naples (v329) — une sortie de biais tourne en plusieurs fois
+
+Une règle.
+
+- **QUAND L'AVENUE PROPRE N'EST PAS DANS L'AXE, LA ROUTE TOURNE EN PLUSIEURS
+  FOIS, ET LA SONDE AUSSI.** L'avenue propre de Rome la plus proche de Naples
+  est à 46° de l'axe ; un point sur le rayon puis une ligne droite fait un
+  coude de plus de trente degrés, et les 40 536 tracés de `cherche2.mjs` ont
+  tous été refusés pour leur coude — un « zéro admissible » qui disait la
+  forme de la sonde, pas celle du pays. `cherche3.mjs` pose après le point du
+  rayon une suite de points qui virent de 24° tous les quarante blocs vers la
+  cible : 8 115 admissibles. Un refus qui touche cent pour cent des candidats
+  sur UNE contrainte se lit d'abord comme un défaut de la recherche.
+
 ## L'Autosole Bologne–Florence (v324) — la porte vise le premier point de passage
 
 Neuvième route. Une règle.
