@@ -275,6 +275,30 @@
   branche 3 · 3 · 2, `origin/main` 3 · 3 · 3. Même distribution ; le 5 est un
   tirage sous la charge du portail, et la dette de la v306 (deux ou trois
   programmes à l'arrivée) reste ouverte telle quelle.
+- [ ] **LE PORTAIL DE LA v330 (les terminaux), DOUBLE MESURE FAITE.** Seule
+  suite rouge : `monte.js`, rejouée SEULE trois fois sur la branche et une fois
+  sur `origin/main` (v326). « L'écran ne se fige pas en arrivant sur une ville »
+  rouge à chaque passage des deux côtés (branche 3 400 · 26,2 %, 3 317 · 25,2 %,
+  3 433 · 27,9 % ; `origin/main` 3 733 · 29 %), dette déjà déclarée. « Se
+  téléporter ne compile plus de programmes » : rouge au portail (Paris à huit
+  images, zéro programme neuf) et une fois sur trois seule sur la branche (trois
+  programmes de voiture `physical` à Paris), vert deux fois seule sur la branche
+  et seule sur `origin/main` — l'intermittence des v323 et v324 ; la livraison
+  n'ajoute que des blocs, aucun matériau. « Un train s'arrête devant la voiture
+  de l'enfant » rouge une fois sur `origin/main` seul (13 relevés dedans), vert
+  partout ailleurs. Et « descendu de la voiture de Paris », rouge deux fois sur
+  deux sur la branche, était un défaut du TÉMOIN, corrigé ici : à la seconde
+  pose de `poserAParis`, la voiture était retirée sous l'enfant encore assis.
+  SECOND PORTAIL, après rebase sur la v327 : `maj.js` rouge sur trois témoins
+  (le loader de l'installation, la libération, le flou pendant la préparation)
+  — REJOUÉE SEULE, les trois mêmes rouges sur la branche ET sur `origin/main`
+  (v327), qui en rend un quatrième (le palier, `range: false`) : dette de charge
+  déjà déclarée. `carte.js` rouge sur « la flèche du GPS pointe vers la
+  destination » (gauche lue à 1,92 rad au lieu d'un angle négatif) — verte seule
+  sur la branche, ROUGE seule sur `origin/main` (même valeur) : une intermittence
+  en production depuis la v321, NEUVE dans ce fichier, à démonter (la flèche lue
+  pendant sa transition ? le style écrit, v321).
+
 - [ ] **LE PORTAIL DE LA v329.** `carteMonde.js` (ENTIÈRE, le témoin de l'A1
   Sud compris — rouge sur `origin/main` : « aucun convoi A1 Sud », douze
   segments), `plafond.js`, `maj.js`, `carte.js` verts ; `monte.js` : l'écran
@@ -290,6 +314,7 @@
   compris — rouge sur `origin/main` : « aucun convoi Yamuna », onze segments),
   `plafond.js`, `maj.js`, `carte.js` verts ; seul rouge, l'écran figé de
   `monte.js` (3 600 ms · 44,2 %), dette déclarée, rouge des deux côtés.
+
 - [ ] **LE PORTAIL DE LA v327, SUR LA v326 (règle de la v195), DOUBLE MESURE
   FAITE.** `carteMonde.js` (ENTIÈRE, le témoin de l'A4 compris), `plafond.js`,
   `carte.js` verts. `maj.js` : la libération de la préparation (la carte encore
@@ -3376,9 +3401,12 @@ l'embarquement a eu lieu, pas par une hypothèse.
   manque Changi : aucun disque de soixante-dix blocs au sec dans les trois
   cents blocs autour de Singapour — Delhi a pris sa place dans la quinzaine.
 
-- [ ] **Un terminal n'a ni sièges, ni comptoirs, ni tapis à bagages.** Il se
-  traverse (c'est ce que le témoin garde) mais il est vide. Même dette que les
-  intérieurs de monuments.
+- [x] **Un terminal n'a ni sièges, ni comptoirs, ni tapis à bagages.** FAIT en
+  v330 sur les dix-neuf (`amenagerHall`, aeroport.js), halls de Roissy ouverts
+  au passage. Reste, déclaré : le carrousel d'un hall d'arrivées est coupé par
+  le couloir de sa porte, si bien qu'il est petit (un cœur de deux à quatre
+  blocs) ; le grandir demande de déplacer les portes, que le témoin de la
+  marche lit. Le tambour de l'aérogare 1 reste plein.
 
 - [ ] **Cinquante villes détaillées.** Demandé par Max. Le monde a 269 villes :
   47 avec une fiche (fleuve, trame, palette, monuments aux vraies coordonnées),

@@ -1290,6 +1290,13 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const x = m.x + Math.sin(m.cap) * 12, z = m.z + Math.cos(m.cap) * 12;
       g.player.pos.set(x, g.world.terrainHeight(Math.floor(x), Math.floor(z)) + 1.5, z);
       g.player.vel.set(0, 0, 0); g.player.yaw = m.cap + Math.PI; g.player.pitch = 0; g.player.flying = false;
+      // ON DESCEND AVANT DE RETIRER LA VOITURE (l'idiome de la v284 : on
+      // descend, on RETIRE les bêtes, PUIS on invoque). À la seconde pose,
+      // l'enfant était encore assis dans la voiture de la première : le jeu
+      // le fait descendre quand sa monture disparaît (v245), `monterAParis`
+      // le croyait au volant, et le clic de descente d'après le faisait
+      // MONTER — rouge chaque fois qu'il fallait deux poses (v330, 2 sur 2).
+      if (g.fun.montureConduite && g.fun.montureConduite()) document.getElementById('ride-btn').click();
       for (const a of [...g.animalManager.animals]) if (a.def.key === 'voiture') { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); }
       g.animalManager.invoquer('voiture', x - Math.sin(g.player.yaw) * 3, z - Math.cos(g.player.yaw) * 3);
       return { ...m, candidats: candidats.length };

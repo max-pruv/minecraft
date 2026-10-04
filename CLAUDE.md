@@ -6168,6 +6168,25 @@ arrêt déclaré n'est pas une gare construite, et rien ne le disait.
   Un témoin qui appellerait `gareEn` échouerait par « fonction absente », ce
   qui ne prouve rien du fond.
 
+### Les terminaux se meublent (v330) — le trajet de l'enfant se garde par construction
+
+Les dix-neuf terminaux étaient praticables et vides. Trois règles.
+
+- **ON NE MEUBLE NI LES COULOIRS DES PORTES NI L'ALLÉE DES CLOISONS.**
+  `amenagerHall` (aeroport.js) travaille dans le repère du hall (`u` le long
+  de la façade, `w` depuis le côté ville) et ne pose rien sur les trois
+  colonnes au droit de chaque porte ni dans la bande des passages percés :
+  le témoin de la marche ne peut pas rougir par le mobilier, quelle que soit
+  la pièce qu'on ajoute. Ce qui se met au-dessus de la tête (tableau,
+  enseigne, linteau d'un portique) se pose à `y ≥ 2`.
+- **DU MOBILIER EN BLOCS, PAS EN MEUBLES 3D.** Un meuble est un maillage,
+  donc un appel de dessin (v196) ; cent sièges en coûteraient cent. En blocs,
+  le mailleur les fusionne : mesuré, le bâtisseur coûte le même temps à la
+  milliseconde près.
+- **CHAQUE PIÈCE A SON BLOC À ELLE** (`MOBILIER`, des motifs que rien d'autre
+  du fichier n'emploie) : c'est ce qui permet au témoin de compter le
+  mobilier aérodrome par aérodrome sans le confondre avec un marquage.
+
 ### Les aérodromes (`aeroport.js`) — la piste prend le diamètre (v280)
 
 Max, trois demandes en une phrase : « supprime les avions qui ne volent pas, en

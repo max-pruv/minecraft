@@ -147,6 +147,151 @@ export function aeroportPres(x, z, portee = 140) {
 // premier témoin « rien ne dépasse sur une piste » portait les cotes NEUVES en
 // dur et rendait cent cinquante-deux blocs en faute sur `origin/main`, où les
 // pistes ne sont pas là. Un faux rouge ne se démonte pas.
+// L'AMÉNAGEMENT DES TERMINAUX (v330) — un terminal qu'on traverse n'est pas
+// encore un terminal où l'on attend son avion.
+//
+// La v223 les avait rendus PRATICABLES — creux, de plain-pied, portes sur les
+// deux faces, cloisons percées — et les avait laissés vides : on traversait
+// un hangar blanc. Ce qui fait qu'un enfant reconnaît un aéroport en y
+// entrant, c'est son mobilier : les comptoirs d'enregistrement avec leur
+// tapis derrière, les rangées de sièges des salles d'embarquement, les
+// portiques de sécurité, le carrousel à bagages des arrivées, et le tableau
+// des départs suspendu au-dessus de la foule.
+//
+// TROIS RÈGLES, et la première est celle qui garde le témoin de la marche :
+//
+//  - ON NE MEUBLE NI LES COULOIRS DES PORTES, NI L'ALLÉE DES CLOISONS. Le
+//    trajet de l'enfant — dehors côté ville, d'un hall à l'autre par les
+//    passages des cloisons, ressorti côté pistes — se garde PAR CONSTRUCTION :
+//    trois colonnes au droit de chaque porte, sur toute la profondeur, et la
+//    bande de l'allée sur toute la longueur restent de l'air. Le mobilier ne
+//    vit que dans les quatre quartiers qui restent.
+//  - TOUT EST EN BLOCS, PAS EN MEUBLES 3D. Un siège en meuble est un maillage,
+//    donc un appel de dessin (le goulot de l'iPad, v196) : cent sièges par
+//    terminal en coûteraient cent. En blocs, le mailleur les fusionne avec le
+//    reste du morceau, et ils ne coûtent rien de plus à dessiner.
+//  - CHAQUE PIÈCE A SON BLOC À ELLE (`MOBILIER`), que rien d'autre de ce
+//    fichier n'emploie : c'est ce qui permet à un témoin de COMPTER le
+//    mobilier par aérodrome en interrogeant le bâtisseur, sans le confondre
+//    avec un marquage au sol ou une cloison.
+//
+// Le hall se décrit dans son repère à lui : `u` le long de la façade, `w` en
+// profondeur depuis le côté ville (0 = la rangée contre la façade ville).
+// `versMonde(u, w)` le ramène au repère du bâtisseur. C'est ce qui permet au
+// même aménageur de servir les halls de Roissy, dont la façade ville regarde
+// tantôt le nord, tantôt le sud, et les dix-huit terminaux génériques.
+const motif = (couleur, n) => DECOR_START + couleur * 10 + n;   // n : rang du motif
+export const MOBILIER = {
+  COMPTOIR: motif(27, 8),    // cadre blanc : le guichet d'enregistrement
+  TAPIS: motif(25, 6),       // lignes anthracite : bande transporteuse
+  SIEGE: motif(11, 0),       // indigo : l'assise
+  DOSSIER: motif(24, 8),     // cadre gris : le dossier entre deux rangées
+  PORTIQUE: motif(23, 8),    // cadre gris clair : le portique de sécurité
+  CARROUSEL: motif(23, 6),   // lignes gris clair : le cœur du carrousel
+  PANNEAU: motif(26, 6),     // lignes noires : le tableau des départs
+  LETTRES: motif(2, 6),      // lignes jaunes : ses lignes affichées
+  ENSEIGNE: motif(10, 6),    // lignes bleues : « Enregistrement »
+};
+
+export function amenagerHall(set, { u0, u1, D, h, versMonde, portes, allee, fonction }) {
+  const pose = (u, w, y, id) => {
+    if (u < u0 || u > u1 || w < 0 || w >= D) return;
+    const [x, z] = versMonde(u, w);
+    set(x, y, z, id);
+  };
+  const [wa, wb] = allee;
+  // le couloir d'une porte : trois colonnes, de la façade ville à la façade
+  // pistes. On n'y pose JAMAIS rien sous la tête d'un enfant.
+  const couloir = (u) => portes.some((p) => Math.abs(u - p) <= 1);
+  // Les tronçons meublables d'une rangée : entre deux couloirs.
+  const troncons = [];
+  let debut = null;
+  for (let u = u0; u <= u1 + 1; u++) {
+    const libre = u <= u1 && !couloir(u);
+    if (libre && debut === null) debut = u;
+    if (!libre && debut !== null) { troncons.push([debut, u - 1]); debut = null; }
+  }
+  const avant = wa;               // rangées côté ville : 0 .. wa − 1
+  const arriere = D - 1 - wb;     // rangées côté pistes : wb + 1 .. D − 1
+
+  if (fonction === 'depart') {
+    // CÔTÉ VILLE, L'ENREGISTREMENT : le tapis contre la façade, le comptoir
+    // devant lui, et l'enseigne bleue au-dessus. Un comptoir sur six manque :
+    // c'est le passage par où l'agent rejoint son poste.
+    if (avant >= 2) {
+      for (const [a, b] of troncons) {
+        if (b - a < 2) continue;
+        for (let u = a; u <= b; u++) {
+          pose(u, 0, 0, MOBILIER.TAPIS);
+          if ((u - a) % 6 !== 5) pose(u, 1, 0, MOBILIER.COMPTOIR);
+          if (h - 2 >= 3) pose(u, 0, h - 2, MOBILIER.ENSEIGNE);
+        }
+      }
+    }
+    // CÔTÉ PISTES, LA SALLE D'EMBARQUEMENT : des rangées de sièges dos à dos,
+    // une allée tous les deux rangs, une coupure tous les huit sièges pour
+    // qu'on puisse traverser la salle sans faire le tour.
+    const cycle = ['S', 'D', 'S', 'A'];
+    for (let i = 0; i < arriere; i++) {
+      const w = wb + 1 + i, sorte = cycle[i % 4];
+      if (sorte === 'A') continue;
+      for (const [a, b] of troncons) {
+        for (let u = a; u <= b; u++) {
+          if ((u - a) % 8 === 7) continue;
+          if (sorte === 'S') pose(u, w, 0, MOBILIER.SIEGE);
+          else { pose(u, w, 0, MOBILIER.DOSSIER); pose(u, w, 1, MOBILIER.DOSSIER); }
+        }
+      }
+    }
+  } else {
+    // CÔTÉ VILLE, LE CONTRÔLE DE SÛRETÉ : une file de portiques — un montant
+    // tous les trois blocs, deux blocs d'air sous le linteau, donc on y passe
+    // debout — et devant chaque montant la table où l'on pose son sac.
+    if (avant >= 1) {
+      const rang = Math.min(1, avant - 1);
+      for (const [a, b] of troncons) {
+        if (b - a < 2) continue;
+        for (let u = a; u <= b; u++) {
+          const montant = (u - a) % 3 === 0 || u === b;
+          if (montant) for (let y = 0; y <= 2; y++) pose(u, rang, y, MOBILIER.PORTIQUE);
+          else pose(u, rang, 2, MOBILIER.PORTIQUE);
+          if (montant && rang > 0) pose(u, rang - 1, 0, MOBILIER.TAPIS);
+        }
+      }
+    }
+    // CÔTÉ PISTES, LE CARROUSEL À BAGAGES : deux bandes autour d'un cœur
+    // relevé, refermé à ses deux bouts. Sur une salle trop peu profonde pour
+    // l'îlot, un tapis simple.
+    for (const [a, b] of troncons) {
+      if (b - a < 4) continue;
+      if (arriere >= 3) {
+        const w0 = wb + 1 + (arriere >= 5 ? 1 : 0);
+        for (let u = a + 1; u <= b - 1; u++) {
+          pose(u, w0, 0, MOBILIER.TAPIS);
+          pose(u, w0 + 2, 0, MOBILIER.TAPIS);
+          if (u === a + 1 || u === b - 1) pose(u, w0 + 1, 0, MOBILIER.TAPIS);
+          else { pose(u, w0 + 1, 0, MOBILIER.CARROUSEL); pose(u, w0 + 1, 1, MOBILIER.CARROUSEL); }
+          if ((u - a) % 4 === 2 && h - 2 >= 3) pose(u, w0 + 1, h - 2, MOBILIER.LETTRES);
+        }
+      } else if (arriere >= 1) {
+        for (let u = a + 1; u <= b - 1; u++) pose(u, wb + 1, 0, MOBILIER.TAPIS);
+      }
+    }
+  }
+
+  // LE TABLEAU, suspendu au-dessus de l'allée, au milieu du hall : noir, ses
+  // lignes jaunes. Il est AU-DESSUS de deux blocs d'air, donc il ne barre
+  // rien — et c'est la première chose qu'on lève les yeux pour chercher.
+  const mi = Math.round((u0 + u1) / 2);
+  const yT = h - 2;
+  if (yT >= 2) {
+    for (let u = mi - 2; u <= mi + 2; u++) {
+      pose(u, wa, yT, (u - mi) % 2 === 0 ? MOBILIER.LETTRES : MOBILIER.PANNEAU);
+      if (yT - 1 >= 3) pose(u, wa, yT - 1, MOBILIER.PANNEAU);
+    }
+  }
+}
+
 export const PISTES_ROISSY = [-64, -47, 47, 64];
 export const DEMI_PISTE_ROISSY = 4;
 // ET LA COTE DE SON AIRE AUSSI. Mon premier jet en avait DEUX : `STAND = 30`
@@ -371,9 +516,28 @@ export function buildAeroport(poser) {
   // --- aérogare 2 : les halls par paires ------------------------------------
   // À Roissy, l'aérogare 2 aligne des halls jumelés de part et d'autre d'un axe
   // routier central, avec la gare TGV enterrée au milieu.
-  function hall(x0, x1, z0, z1, nom) {
+  // ET ILS SE VISITENT (v330). Ils étaient creux mais FERMÉS : quatre murs
+  // pleins, aucune porte, un intérieur vide que personne ne pouvait voir. Ils
+  // ont désormais leurs portes sur les deux faces — côté route et côté
+  // tarmac, hors de l'axe des passerelles —, un sol clair, et le mobilier des
+  // terminaux génériques : départs dans 2A et 2C, arrivées dans 2F et 2E.
+  function hall(x0, x1, z0, z1, nom, villeAuNord, portes, fonction) {
     for (let y = 0; y <= 6; y++) bloc(x0, x1, y, y, z0, z1, y === 2 || y === 4 ? VERRE : BETON);
     vider(x0 + 1, x1 - 1, 0, 5, z0 + 1, z1 - 1);
+    dalle(x0 + 1, x1 - 1, z0 + 1, z1 - 1, -1, BLANC);
+    for (const px of portes) {
+      for (let dx = -1; dx <= 1; dx++) {
+        for (let y = 0; y <= 2; y++) { set(px + dx, y, z0, BLOCK.AIR); set(px + dx, y, z1, BLOCK.AIR); }
+      }
+    }
+    const D = z1 - z0 - 1;
+    // deux rangées côté ville (tapis, comptoir), trois côté pistes (deux
+    // rangs de sièges dos à dos) quand la profondeur le permet, l'allée entre.
+    amenagerHall(set, {
+      u0: x0 + 1, u1: x1 - 1, D, h: 6, portes, fonction,
+      allee: D >= 8 ? [2, D - 4] : [2, D - 3],
+      versMonde: villeAuNord ? (u, w) => [u, z0 + 1 + w] : (u, w) => [u, z1 - 1 - w],
+    });
     // La toiture des halls de Roissy est une voûte de bois clair : on la rend
     // par un arc, qui donne au bâtiment sa section en demi-tonneau.
     const zc = (z0 + z1) / 2, demi = (z1 - z0) / 2;
@@ -386,10 +550,13 @@ export function buildAeroport(poser) {
     // enseigne du hall, côté tarmac
     for (let k = 0; k < nom.length; k++) set(x0 + 3 + k, 7, z0, JAUNE);
   }
-  hall(8, 46, -HALL_EXT, -HALL_INT, '2A');
-  hall(8, 46, HALL_INT, HALL_EXT, '2F');
-  hall(50, 62, -HALL_EXT + 2, -HALL_INT - 1, '2C');
-  hall(50, 62, HALL_INT + 1, HALL_EXT - 2, '2E');
+  // La route est au milieu (z ≈ 0) : la façade ville des halls du nord est
+  // donc au SUD (z1), celle des halls du sud au NORD (z0). Les portes évitent
+  // les passerelles (x = 18 et 40) et les poteaux de la route.
+  hall(8, 46, -HALL_EXT, -HALL_INT, '2A', false, [13, 31], 'depart');
+  hall(8, 46, HALL_INT, HALL_EXT, '2F', true, [13, 31], 'arrivee');
+  hall(50, 62, -HALL_EXT + 2, -HALL_INT - 1, '2C', false, [56], 'depart');
+  hall(50, 62, HALL_INT + 1, HALL_EXT - 2, '2E', true, [56], 'arrivee');
 
   // axe routier central et gare TGV en dessous
   dalle(6, 64, -5, 5, -1, GRIS);
@@ -779,6 +946,27 @@ export function buildAerodrome(poser, profil, rayon = 68) {
         const passage = z >= zt0 + 5 && z <= zt0 + 8 && y <= 2;
         if (!passage) set(xc, y, z, base ? KAKI : BETON);
       }
+    }
+  }
+  // LE MOBILIER (v330), hall par hall — entre deux cloisons. Les halls de
+  // l'ouest sont les départs (enregistrement, salle d'embarquement), ceux de
+  // l'est les arrivées (sûreté, carrousel). L'allée est la bande des passages
+  // percés dans les cloisons : on ne la meuble jamais.
+  {
+    const cloisons = [-Math.round(HALL / 2) - 5, 0, Math.round(HALL / 2) + 5]
+      .filter((c) => Math.abs(c) < HALL).sort((p, q) => p - q);
+    let debut = -HALL + 1;
+    const halls = [];
+    for (const c of cloisons) { if (c > debut) halls.push([debut, c - 1]); debut = c + 1; }
+    if (HALL - 1 >= debut) halls.push([debut, HALL - 1]);
+    const D = zt1 - zt0 - 1;
+    for (const [u0, u1] of halls) {
+      if (u1 - u0 < 4) continue;
+      amenagerHall(set, {
+        u0, u1, D, h, portes: PORTES, allee: [4, 7],
+        fonction: (u0 + u1) / 2 < 0 ? 'depart' : 'arrivee',
+        versMonde: (u, w) => [u, zt0 + 1 + w],
+      });
     }
   }
   // l'enseigne, sur le toit, côté ville

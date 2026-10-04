@@ -3153,6 +3153,73 @@ const VRAIES_KM = [
     verifier('on entre dans un terminal, on va d\'un hall à l\'autre et l\'on ressort côté pistes',
       visitables.length === 3, `${visitables.length} sur 3 visitables — ${JSON.stringify(terminaux)}`);
 
+    // ET UN TERMINAL SE MEUBLE (v330) — les dix-neuf, Roissy compris.
+    //
+    // Le témoin d'au-dessus garde qu'on TRAVERSE un terminal ; rien ne gardait
+    // qu'on y trouve un aéroport. Il était vide : un hangar blanc entre deux
+    // portes. Celui-ci interroge le BÂTISSEUR (fonction pure, comme le témoin
+    // des postes) et compte, aérodrome par aérodrome, les cinq pièces qu'un
+    // enfant reconnaît — comptoir, siège, tapis, portique, tableau. Chaque
+    // pièce a son bloc à elle (`MOBILIER`), que rien d'autre du fichier
+    // n'emploie : un compte ne peut donc pas attraper un marquage au sol.
+    //
+    // Et les halls de Roissy, creux mais FERMÉS jusqu'ici, se traversent : de la
+    // route au tarmac par le hall 2A, la même marche de proche en proche.
+    //
+    // Sur l'ancien code `MOBILIER` n'existe pas : il rend « 0 sur 19 meublés »
+    // et « Roissy fermé », au lieu de s'effondrer.
+    const meubles = await tab.evaluate(async () => {
+      const mod = await import('./src/aeroport.js');
+      const { AEROPORTS, buildAeroport, buildAerodrome } = mod;
+      const M = mod.MOBILIER || {};
+      const nom = new Map(Object.entries(M).map(([k, v]) => [v, k]));
+      const res = [];
+      let roissy = null;
+      for (const a of AEROPORTS) {
+        const estRoissy = a.profil === 'roissy';
+        const build = estRoissy ? buildAeroport : (po) => buildAerodrome(po, a.profil, a.r);
+        const monde = new Map(), c = {};
+        build((x, y, z, id) => {
+          monde.set(`${x},${y},${z}`, id);
+          const n = nom.get(id);
+          if (n) c[n] = (c[n] || 0) + 1;
+        });
+        const ok = (c.COMPTOIR || 0) >= 4 && (c.SIEGE || 0) >= 4 && (c.TAPIS || 0) >= 4
+          && (c.PORTIQUE || 0) >= 4 && (c.PANNEAU || 0) >= 1;
+        res.push({ cle: a.cle, ok, c });
+        if (estRoissy) {
+          // y = 0 est le revêtement dans le repère du `poser`
+          const g = (x, y, z) => monde.get(`${x},${y},${z}`) || 0;
+          const libre = (x, z) => g(x, 0, z) !== 0 && g(x, 1, z) === 0 && g(x, 2, z) === 0;
+          const dep = [13, -7];
+          const vus = new Set([dep.join(',')]), file = [dep];
+          if (libre(...dep)) {
+            while (file.length) {
+              const [x, z] = file.shift();
+              for (const [e, f] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+                const nx = x + e, nz = z + f;
+                if (nx < 6 || nx > 48 || nz < -24 || nz > -4) continue;
+                const k = nx + ',' + nz;
+                if (vus.has(k) || !libre(nx, nz)) continue;
+                vus.add(k); file.push([nx, nz]);
+              }
+            }
+          }
+          roissy = { dedans: vus.has('27,-12'), cotePistes: vus.has('13,-21') };
+        }
+      }
+      return { res, roissy };
+    });
+    const meubles_ok = meubles.res.filter((r) => r.ok);
+    const pire = meubles.res.find((r) => !r.ok);
+    verifier('chaque terminal a ses comptoirs, ses sièges, ses tapis, ses portiques et son tableau',
+      meubles_ok.length === meubles.res.length && meubles.res.length >= 19,
+      `${meubles_ok.length} sur ${meubles.res.length} meublés`
+      + (pire ? ` — ${pire.cle} : ${JSON.stringify(pire.c)}` : ` — ${meubles.res[1].cle} : ${JSON.stringify(meubles.res[1].c)}`));
+    verifier('on traverse un hall de Roissy, de la route au tarmac',
+      !!(meubles.roissy && meubles.roissy.dedans && meubles.roissy.cotePistes),
+      JSON.stringify(meubles.roissy));
+
     // LES CINQUANTE-SEPT POSTES DE STATIONNEMENT SONT SUR LE TARMAC.
     //
     // Max, capture à l'appui : « les avions sont moches, posés n'importe où et
