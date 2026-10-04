@@ -2219,7 +2219,14 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     });
     const cit = alluresModeles['berline-citadine'] || {}, jes = alluresModeles['koenigsegg-jesko.glb'] || {};
     verifier('une hypercar va plus vite qu\'une citadine, et la citadine plus vite qu\'avant',
-      !alluresModeles.err && !cit.err && !jes.err && cit.vitesse >= 11 && jes.vitesse >= cit.vitesse * 1.8,
+      // DEPUIS LA v337 L'ACCÉLÉRATION S'ESSOUFFLE VERS LA POINTE : après une
+      // seconde et demie de jeu aucune des deux n'est à sa pointe (14,4 et 23,4
+      // mesurés), et le rapport des VITESSES du moment ne dit plus celui des
+      // classes. Le rapport des POINTES se lit dans l'allure que le jeu leur
+      // donne (`boost`, 1,83) ; la vitesse du moment dit seulement que
+      // l'hypercar mène et que la citadine roule plus vite qu'avant.
+      !alluresModeles.err && !cit.err && !jes.err && cit.vitesse >= 11 && jes.vitesse > cit.vitesse * 1.3
+        && jes.boost >= cit.boost * 1.8,
       JSON.stringify(alluresModeles));
 
     // ---- LES CORPS RÉALISTES SONT PARTOUT, PAS SEULEMENT À NEW YORK (v243) ---
