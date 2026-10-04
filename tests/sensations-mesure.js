@@ -169,17 +169,22 @@ async function mesurerSensations() {
     try { sortie.disconnect(an); } catch { /* déjà */ }
   }
   // 4. LE CHOC — la caméra
+  // UNE FENÊTRE SE COMPTE EN IMAGES, PAS EN SECONDES (v344) : à deux images
+  // par seconde, 0,8 s n'en contenait que DEUX — l'écart au centre valait la
+  // moitié d'un pas, et le verdict (0,184 contre 3 × 0,062) était un tirage.
+  // La secousse s'éteint en temps de JEU, donc huit images la voient toujours ;
+  // et le calme se mesure voiture ARRÊTÉE, sinon il mesure la poursuite.
+  P.keys.clear(); P.gaz = 0; P.vel.set(0, 0, 0); P.vitesseVoiture = 0;
   await tenir(0.8);
-  const ecartCam = async (secondes) => {
+  const ecartCam = async (images) => {
     const pts = [];
-    const t = performance.now();
-    while (performance.now() - t < secondes * 1000) { await image(); pts.push(cam.position.clone()); }
+    for (let i = 0; i < images; i++) { await image(); pts.push(cam.position.clone()); }
     const m = pts.reduce((s, p) => s.add(p), new THREE.Vector3()).multiplyScalar(1 / pts.length);
     return { n: pts.length, max: +Math.max(...pts.map((p) => p.distanceTo(m))).toFixed(3) };
   };
-  const calme = await ecartCam(0.8);
+  const calme = await ecartCam(8);
   P.choc = { force: 0.8, t: performance.now() + 1 };
-  const secoue = await ecartCam(0.8);
+  const secoue = await ecartCam(8);
   delete P.choc;
 
   // 5. LE MUR COLLÉ AU PARE-CHOCS ARRIÈRE ------------------------------------
