@@ -536,6 +536,25 @@
   second dépend du premier) — REJOUÉE SEULE : branche ces deux-là, `origin/main`
   v318 la libération (programmes 17/25). Même intermittence de préparation des
   deux côtés, déjà déclarée (v267).
+- [ ] **LE PORTAIL DE LA v345 (la toundra et la taïga, préparée comme v342 puis v344) :
+  TOUS LES ROUGES DÉJÀ DÉCLARÉS.** Seize suites, 84 min. `plafond.js` (93 dont
+  les cinq témoins neufs), `carteMonde.js`, `metro.js`, `washington.js`,
+  `parishd.js`, `realisme.js`, `reglages.js`, `hote.js`, `visio.js`,
+  `sauvegarde.js`, `parent.js` verts. `maj.js` : le loader « combien de
+  fichiers » (intermittent, déclaré) et le badge (« version servie v341 » pour
+  une tête de journal à 342 — `sw.js` pas encore monté, la procédure le règle).
+  `carte.js` : la flèche du GPS (gauche 1,92 rad, déclarée). `manhattan.js` :
+  le délai de la ligne 282 (dette v269). `monte.js` : Paris compile quatre
+  programmes `physical` à l'arrivée et l'écran figé (3 583 ms · 28,3 %), tous
+  deux déclarés. `reseau.js` : « sans courtier » `[[],[]]` (intermittence
+  déclarée) — REJOUÉES SEULES : `plafond.js` verte ; `maj.js` badge vert,
+  reste la préparation (programmes 19/27, intermittence déclarée) ;
+  `manhattan.js` le délai de la ligne 282 ; `reseau.js` « un hôte sans
+  courtier est trouvé » `[[],[]]` sur la branche, et sur `origin/main` v343
+  rejoué seul la même famille (« deux enfants se retrouvent sans courtier du
+  tout » `[[],[]]`, plus la voiture de la rue chez l'ami). La livraison n'ajoute aucun matériau ni aucune
+  lampe, seulement une couleur de sommet et des blocs de campagne loin de
+  tout point que ces témoins visitent.
 - [ ] **LE PORTAIL DE LA v341 (les déserts) : TOUS LES ROUGES DÉJÀ
   DÉCLARÉS.** `plafond.js` (les trois témoins des déserts, celui de la page
   compris), `carteMonde.js`, `carte.js`, `metro.js`, `washington.js` verts.
@@ -723,9 +742,10 @@
   depuis la v340 (`couleurDuBord`, `solDeLArbre`) ; (d) les
   textures par usage et climat — PREMIÈRE TRANCHE en v341 : les déserts chauds
   réels (`DESERTS`, terre.js) sont de sable, sans arbre, au sol, au loin et sur
-  la carte ; restent les steppes, la toundra, les tropiques humides (une teinte
-  d'herbe par climat demande une couleur par colonne dans le mailleur, le sol
-  continu, le paysage lointain et la carte — à mesurer avant) ; (e) la bibliothèque architecturale (96
+  la carte ; SECONDE TRANCHE en v345 : la toundra et la taïga (`CLIMATS`,
+  terre.js) — la teinte d'herbe par colonne est MESURÉE gratuite (une
+  question par morceau, 0,37 µs par colonne près d'un bord, mailleur 9,34
+  contre 9,32 ms hors zone) ; restent les steppes, les tropiques humides ; (e) la bibliothèque architecturale (96
   variantes, 278 profils de ville) — elle exige une retrame à un bloc pour un
   mètre (`docs/monde-fidele/programme.md`, section 6), décision de Max ; (f) la
   matrice de couverture ville par ville (convertie, exclue, bloquée) et les

@@ -95,7 +95,26 @@ import { routeEn, rubansDans, brancherSol as brancherSolRoutes } from './routes.
 const Z_ARCTIQUE = Math.round(zDeLatitude(78));
 const Z_ANTARCTIQUE = Math.round(zDeLatitude(-63));
 export const dansUneCalotte = (z) => z < Z_ARCTIQUE || z > Z_ANTARCTIQUE;
-import { surTerreReelle, reliefReel, desertReel } from './terre.js';
+
+export { CLIMATS_TEINTES, INDICE_CLIMAT, TEINTE_HERBE, TEINTE_FEUILLES } from './terre.js';
+
+// LE SOL DE LA TOUNDRA (v345) : un bloc de sommet, jamais une hauteur. Au-delà
+// de `NEIGE_TOUNDRA` la neige tient (ailleurs elle attend 58) ; ailleurs, une
+// colonne sur cinq environ, en plaques, est de la roche nue que le gel a
+// brisée — du gravier dans le lichen. Pur et déterministe : le générateur,
+// les arbres et le paysage lointain posent la même question.
+export const NEIGE_TOUNDRA = 46;
+// le plus grand tirage qui puisse encore donner un arbre, tous climats
+// confondus (forêt dense, taïga) : au-delà, on ne demande pas le climat
+const DENSITE_MAX = 0.06;
+// L'HEURE DE LA RÈGLE DES CLIMATS (v345), relue à la fusion (v309) : un bloc
+// posé avant a été posé sur le monde d'avant, et son morceau garde ses arbres.
+export const DATE_CLIMATS = Date.parse('2026-10-04T19:33:00Z');
+export function solDeToundra(x, z, h) {
+  if (h >= NEIGE_TOUNDRA) return BLOCK.SNOW;
+  return fbm(x * 0.07, z * 0.07, SEED + 941) > 0.64 ? BLOCK.GRAVEL : BLOCK.GRASS;
+}
+import { surTerreReelle, reliefReel, climatReel, climatCertain, INDICE_CLIMAT } from './terre.js';
 import { ficheColonne, colonneCouverte, solContinu as solContinuDe } from './solcontinu.js';
 
 // L'accroche au sol continu : jusqu'où l'on redescend sur la surface sans
@@ -2555,6 +2574,7 @@ export class World {
     this.dirty = new Set();       // chunk keys needing a remesh
     this.edits = new Map();       // "x,y,z" -> block id (player modifications)
     this.monumentsTouches = new Set();  // les monuments HD qu'un enfant a modifiés (v292)
+    this.morceauxAvantClimat = new Set(); // les morceaux (et leurs voisins) bâtis avant les climats (v345)
     this.colonnesCedees = new Set();    // les colonnes de Paris où la ville cède à ce qu'un enfant a bâti (v306)
     this.colonnesLondresAvant = new Set();  // celles de Londres où la ville d'avant le kit reste (v339)
     this.cacheSol = new Map();          // "x,z" -> { nat, cote } : la fiche d'une colonne (sol continu, v297)
@@ -2928,7 +2948,13 @@ export class World {
     // La rampe suit les seuils de treeAt : rien avant 0,52, forêt pleine à
     // 0,70. La carte doit dire la même chose que le monde — sinon la limite du
     // terrain chargé se voit comme un carré plus clair au milieu de l'image.
-    return Math.max(0, Math.min(1, (fbm(x * 0.008, z * 0.008, SEED + 701) - 0.52) / 0.18));
+    const f = Math.max(0, Math.min(1, (fbm(x * 0.008, z * 0.008, SEED + 701) - 0.52) / 0.18));
+    // le climat (v345) : la taïga est une forêt presque partout, la toundra
+    // et le désert n'en ont pas — ce que `treeAt` y plante
+    const cl = this.conf.climat ? this.climat(x, z) : null;
+    if (cl === 'taiga') return Math.max(f, 0.55);
+    if (cl === 'toundra' || cl === 'desert') return 0;
+    return f;
   }
 
   treeAt(x, z) {
@@ -2980,15 +3006,28 @@ export class World {
     }
     // forests are dense, plains nearly bare
     const forest = fbm(x * 0.008, z * 0.008, SEED + 701);
-    const density = forest > 0.62 ? 0.06 : forest > 0.48 ? 0.015 : 0.0025;
-    if (hash2i(x, z, SEED + 777) >= density) return null;
+    let density = forest > 0.62 ? 0.06 : forest > 0.48 ? 0.015 : 0.0025;
+    const tirage = hash2i(x, z, SEED + 777);
+    // LES ARBRES DU CLIMAT (v345). La taïga est une forêt presque partout,
+    // de pins surtout ; la toundra n'a que de rares bouleaux nains. Le climat
+    // ne se demande que si le tirage peut encore donner un arbre (`DENSITE_MAX`) :
+    // pour la plaine, rien de plus. Et pas là où un enfant a bâti AVANT la
+    // règle (`morceauxAvantClimat`) : un arbre neuf n'y pousse pas dans sa
+    // maison, un arbre d'avant n'y disparaît pas sous sa cabane.
+    if (tirage >= DENSITE_MAX) return null;
+    let cl = this.climat(x, z);
+    if (cl && cl !== 'desert' && this.morceauxAvantClimat.has(World.key(Math.floor(x / CHUNK), Math.floor(z / CHUNK)))) cl = null;
+    if (cl === 'taiga') density = forest > 0.48 ? 0.06 : 0.025;
+    else if (cl === 'toundra') density = 0.0006;
+    if (tirage >= density) return null;
     const h = this.terrainHeight(x, z);
     if (h <= WATER_LEVEL + 1 || h >= 58) return null; // only on grass
+    if (cl === 'toundra' && solDeToundra(x, z, h) !== BLOCK.GRASS) return null;
     // LES ARBRES AU BORD (v340) : la v326 a fait de la crête d'une falaise
     // une paroi de roche et du bord d'une berge basse une grève de sable — un
     // chêne n'y pousse pas. Même règle, même lecture que le générateur.
     if (this.solDeLArbre(x, z, h) !== BLOCK.GRASS) return null;
-    if (this.aride(x, z)) return null;                // ni dans un désert (v341)
+    if (cl === 'desert') return null;                 // ni dans un désert (v341)
     // ni au-dessus d'un puits de grotte : le générateur y creuse jusqu'au
     // sommet, et l'arbre flottait sur le vide (trois sur douze mille, mesuré)
     if (Math.abs(fbm(x * 0.02, z * 0.02, SEED + 882) - 0.5) < 0.015 && h > WATER_LEVEL + 2 && h < 50
@@ -2996,6 +3035,9 @@ export class World {
     const trunk = 4 + Math.floor(hash2i(x, z, SEED + 778) * 3); // 4..6
     // three silhouettes: oak, pine, birch
     const roll = hash2i(x, z, SEED + 779);
+    // la taïga : des pins, quelques bouleaux ; la toundra : un bouleau nain
+    if (cl === 'taiga') return { h, trunk: roll < 0.85 ? trunk : trunk + 1, kind: roll < 0.85 ? 1 : 2 };
+    if (cl === 'toundra') return { h, trunk: 2, kind: 2 };
     const kind = roll < 0.55 ? 0 : roll < 0.85 ? 1 : 2;
     return { h, trunk: kind === 2 ? trunk + 1 : trunk, kind };
   }
@@ -3005,11 +3047,60 @@ export class World {
   // planisphère (`cielDe`), et un bord qui tremble d'un demi-degré — un
   // désert au cordeau ferait maquette, comme une côte (`hauteurTerre`).
   // Déterministe : deux tablettes engendrent le même erg.
-  aride(x, z) {
-    if (!this.conf.climat) return false;
+  aride(x, z) { return this.climat(x, z) === 'desert'; }
+
+  // LES CLIMATS (v345). La même question, généralisée : 'desert', 'toundra',
+  // 'taiga' ou null (`climatReel`, terre.js), avec le même bord qui tremble
+  // d'au plus `TREMBLE` degrés.
+  climat(x, z) {
+    if (!this.conf.climat) return null;
     const ciel = cielDe(x, z, 'terre');
     const t = fbm(x * 0.006, z * 0.006, SEED + 931) - 0.5;
-    return desertReel(ciel.lat + t * 1.2, ciel.lon + t * 1.2) !== null;
+    return climatReel(ciel.lat + t * 1.2, ciel.lon + t * 1.2);
+  }
+
+  // Le climat d'un morceau entier quand il est certain (null compris), ou
+  // `undefined` près d'un bord. Le tremblement vaut au plus 0,6 degré, un
+  // morceau en couvre 0,13 au pire (l'Atlantique resserré) : la marge de
+  // 0,8 degré borne les deux. C'est ce qui rend la question gratuite au
+  // générateur et au mailleur sur l'essentiel du monde.
+  climatDuMorceau(cx, cz) {
+    if (!this.conf.climat) return null;
+    const ciel = cielDe(cx * CHUNK + CHUNK / 2, cz * CHUNK + CHUNK / 2, 'terre');
+    return climatCertain(ciel.lat, ciel.lon, 0.8);
+  }
+
+  // Les climats d'un morceau, colonne par colonne (v345) : un indice de
+  // `CLIMATS_TEINTES` par colonne (0 : aucune teinte), ou null quand rien
+  // n'est teint dans le morceau — le cas de presque tout le monde, payé d'une
+  // seule question. Le mailleur et le sol continu le lisent ensemble.
+  teintesDuMorceau(cx, cz) {
+    const cm = this.climatDuMorceau(cx, cz);
+    if (cm === null || cm === 'desert') return null;
+    const baseX = cx * CHUNK, baseZ = cz * CHUNK;
+    const villes = this.villesProches(baseX + CHUNK / 2, baseZ + CHUNK / 2, CHUNK);
+    const out = new Uint8Array(CHUNK * CHUNK);
+    let n = 0;
+    for (let lz = 0; lz < CHUNK; lz++) for (let lx = 0; lx < CHUNK; lx++) {
+      const x = baseX + lx, z = baseZ + lz;
+      const c = cm === undefined ? this.climat(x, z) : cm;
+      if (!c || c === 'desert') continue;
+      if ((villes.length && this.cityAtParmi(x, z, villes)) || dansVilleMonde(x, z)) continue;
+      out[lx + lz * CHUNK] = INDICE_CLIMAT[c] || 0;
+      if (out[lx + lz * CHUNK]) n++;
+    }
+    return n ? out : null;
+  }
+
+  // La teinte de l'herbe et des feuilles d'une colonne de CAMPAGNE (v345) :
+  // la matière ne change pas, c'est l'herbe qui jaunit ou fonce, comme sur la
+  // carte et au loin. Les villes gardent leur sol, et leurs parcs leur vert.
+  // `cm` : le climat du morceau s'il est certain (`climatDuMorceau`).
+  climatDeCampagne(x, z, cm) {
+    const c = cm === undefined ? this.climat(x, z) : cm;
+    if (c === null || c === 'desert') return c;
+    if (dansVilleMonde(x, z) || this.cityAt(x, z)) return null;
+    return c;
   }
 
   // Le sommet que la règle des falaises et des berges (v326) donne à une
@@ -3034,6 +3125,9 @@ export class World {
     // le relief du morceau ET d'une colonne de marge : les falaises et les
     // berges (v326) lisent la cote des quatre voisines de chaque colonne
     const N2 = CHUNK + 2;
+    // le climat du morceau, s'il est certain (v345) : une seule question
+    // pour presque tout le monde
+    const climatM = this.climatDuMorceau(cx, cz);
     const reliefs = this.conf.falaises ? new Int16Array(N2 * N2) : null;
     if (reliefs) {
       for (let z = -1; z <= CHUNK; z++) {
@@ -3080,8 +3174,13 @@ export class World {
         // LES DÉSERTS CHAUDS (v341) : une colonne de campagne d'un désert réel
         // a le sol du désert du jeu, sable sur sable — la matière, jamais la
         // hauteur. Avant les falaises : elles ne regardent que l'herbe.
-        if (top === BLOCK.GRASS && !city && this.conf.climat && !dansVilleMonde(wx, wz) && this.aride(wx, wz)) {
-          top = BLOCK.SAND; filler = BLOCK.SAND;
+        // LES CLIMATS (v345) : la toundra a le sol de la toundra — des
+        // plaques de roche nue (gravier) dans le lichen, et la neige plus bas
+        // qu'ailleurs, là où le relief monte. La matière, jamais la hauteur.
+        if (top === BLOCK.GRASS && !city && climatM !== null && !dansVilleMonde(wx, wz)) {
+          const cl = climatM === undefined ? this.climat(wx, wz) : climatM;
+          if (cl === 'desert') { top = BLOCK.SAND; filler = BLOCK.SAND; }
+          else if (cl === 'toundra') top = solDeToundra(wx, wz, h);
         }
         // LES FALAISES ET LES BERGES (v326) : la MATIÈRE d'une colonne de
         // campagne qui borde une marche ou de l'eau, jamais sa hauteur.
@@ -3932,6 +4031,7 @@ export class World {
     this.editTimes.set(k, t);
     if (dansParisCede(x, z, t)) marquerParisCede(this.colonnesCedees, x, z);
     if (dansLondresAvant(x, z, t)) marquerParisCede(this.colonnesLondresAvant, x, z);
+    if (t <= DATE_CLIMATS) this.marquerAvantClimat(x, z);
     if (!remote && this.onOp) this.onOp(k, id, t);
     if (this.onBloc) this.onBloc(x, y, z, id);
 
@@ -4165,15 +4265,25 @@ export class World {
     this.cacheSol.clear();
   }
 
+  // Un bloc posé avant la règle des climats (v345) : son morceau et les huit
+  // voisins — une couronne d'arbre déborde de trois blocs — gardent leurs
+  // arbres d'avant.
+  marquerAvantClimat(x, z) {
+    const cx = Math.floor(x / CHUNK), cz = Math.floor(z / CHUNK);
+    for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) this.morceauxAvantClimat.add(World.key(cx + dx, cz + dz));
+  }
+
   indexerMonumentsTouches() {
     // l'index des colonnes où Paris cède (v306) se refait avec lui : les
     // deux sont appelés partout où un journal s'installe d'un bloc
     this.colonnesCedees.clear();
     this.colonnesLondresAvant.clear();
+    this.morceauxAvantClimat.clear();
     for (const [k, t] of this.editTimes) {
-      if (!(t <= DATE_PARIS_DOUBLE || t <= DATE_RUES_LONDRES)) continue;
+      if (!(t <= DATE_PARIS_DOUBLE || t <= DATE_RUES_LONDRES || t <= DATE_CLIMATS)) continue;
       const virgule = k.indexOf(','), derniere = k.lastIndexOf(',');
       const x = +k.slice(0, virgule), z = +k.slice(derniere + 1);
+      if (t <= DATE_CLIMATS) this.marquerAvantClimat(x, z);
       if (dansParisCede(x, z, t)) marquerParisCede(this.colonnesCedees, x, z);
       if (dansLondresAvant(x, z, t)) marquerParisCede(this.colonnesLondresAvant, x, z);
     }

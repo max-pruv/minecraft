@@ -1028,6 +1028,107 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     deserts.v.colonnes > 1000 && deserts.v.differents === 0 && deserts.d.forme === 0 && deserts.v.herbe > deserts.v.colonnes * 0.5,
     `campagnes tempérées : ${deserts.v.differents} blocs différents, ${deserts.v.herbe} colonnes d'herbe sur ${deserts.v.colonnes} ; déserts : ${deserts.d.forme} blocs de forme différente`);
 
+  // LA TOUNDRA ET LA TAÏGA (v345) — sous node, sur le modèle des déserts.
+  // On pose seize morceaux au cœur de trois toundras et de quatre taïgas
+  // réelles (le point se retrouve par la projection), et l'on compare au même
+  // monde SANS la règle : la forme bloc pour bloc, le sol, les arbres, la
+  // teinte que le mailleur pose sur l'herbe.
+  const climats = await (async () => {
+    const { BLOCK } = await import('../src/blocks.js');
+    const { cielDe, zDeLatitude } = await import('../src/mondes.js');
+    const W = await import('../src/world.js');
+    const { buildChunkTampons } = await import('../src/mesher.js');
+    const sans = new W.World();
+    sans.conf = { ...W.CONF_NEUF, climat: false };
+    const point = (lat, lon) => {
+      const z = Math.round(zDeLatitude(lat));
+      let a = -80000, b = 80000;
+      for (let k = 0; k < 40; k++) { const m = (a + b) / 2; if (cielDe(m, z).lon < lon) a = m; else b = m; }
+      return { x: Math.round(a), z };
+    };
+    const sol = (q) => q !== BLOCK.AIR && q !== BLOCK.WATER && q !== BLOCK.LOG && q !== BLOCK.BIRCH && q !== BLOCK.LEAVES;
+    const lire = (sites) => {
+      const r = { colonnes: 0, herbe: 0, roche: 0, neige: 0, forme: 0, arbres: 0, arbresSans: 0, pins: 0, teints: 0, sommets: 0 };
+      for (const [lat, lon] of sites) {
+        const p = point(lat, lon);
+        for (let cx = 0; cx < 4; cx++) for (let cz = 0; cz < 4; cz++) {
+          const bx = Math.floor(p.x / 16) + cx, bz = Math.floor(p.z / 16) + cz;
+          for (let z = bz * 16; z < bz * 16 + 16; z++) for (let x = bx * 16; x < bx * 16 + 16; x++) {
+            const h = w.terrainHeight(x, z);
+            for (let y = Math.max(0, h - 4); y <= h; y++) if (sol(w.getBlock(x, y, z)) !== sol(sans.getBlock(x, y, z))) r.forme++;
+            if (h <= W.WATER_LEVEL + 1 || h >= 58 || w.cityAt(x, z)) continue;
+            r.colonnes++;
+            const t = w.getBlock(x, h, z);
+            if (t === BLOCK.GRASS) r.herbe++; else if (t === BLOCK.GRAVEL) r.roche++; else if (t === BLOCK.SNOW) r.neige++;
+            const a = w.getBlock(x, h + 1, z), b = sans.getBlock(x, h + 1, z);
+            if (a === BLOCK.LOG || a === BLOCK.BIRCH) r.arbres++;
+            if (b === BLOCK.LOG || b === BLOCK.BIRCH) r.arbresSans++;
+            const arbre = (a === BLOCK.LOG || a === BLOCK.BIRCH) && w.treeAt(x, z);
+            if (arbre && arbre.kind === 1) r.pins++;
+          }
+          // la teinte : les sommets d'herbe que le mailleur a colorés
+          if (cx === 1 && cz === 1) {
+            const t = buildChunkTampons(w, bx, bz).solid;
+            if (t) for (let i = 0; i < t.colors.length; i += 3) { r.sommets++; if (Math.abs(t.colors[i] - t.colors[i + 1]) > 0.08 || Math.abs(t.colors[i + 2] - t.colors[i + 1]) > 0.08) r.teints++; }
+          }
+        }
+      }
+      return r;
+    };
+    // le Nunavut, la Iamalie, l'est de la Sibérie arctique
+    const toundra = lire([[64, -100], [69, 70], [70.5, 140]]);
+    // la Iakoutie, le Québec du Nord, la Sibérie occidentale, la Finlande
+    const taiga = lire([[62, 125], [52, -72], [60, 75], [63, 27]]);
+    // le Kansas, témoin de la campagne tempérée : rien n'y est teint
+    const kansas = lire([[38.5, -98.5]]);
+    // LE RACCOURCI DU MORCEAU : un climat déclaré certain pour un morceau
+    // doit être celui de chacune de ses colonnes, sinon le générateur et le
+    // mailleur se trompent en silence au bord des zones.
+    let certains = 0, desaccords = 0;
+    if (w.climatDuMorceau) {
+      for (let i = 0; i < 4000; i++) {
+        const cx = ((i * 7919) % 9000) - 4500, cz = ((i * 104729) % 3600) - 1800;
+        const c = w.climatDuMorceau(cx, cz);
+        if (c === undefined) continue;
+        certains++;
+        for (let k = 0; k < 16; k++) if (w.climat(cx * 16 + (k * 5) % 16, cz * 16 + (k * 7) % 16) !== c) desaccords++;
+      }
+    }
+    // CE QU'UN ENFANT A BÂTI AVANT LA RÈGLE garde ses arbres : un bloc posé en
+    // taïga avant `DATE_CLIMATS` laisse les arbres de son morceau et des huit
+    // voisins tels qu'ils étaient.
+    let garde = null;
+    if (W.DATE_CLIMATS) {
+      const p = point(62, 125), cx = Math.floor(p.x / 16) + 1, cz = Math.floor(p.z / 16) + 1;
+      const m = new W.World();
+      const hb = m.terrainHeight(cx * 16 + 8, cz * 16 + 8);
+      m.installerEdits(new Map([[`${cx * 16 + 8},${hb + 1},${cz * 16 + 8}`, BLOCK.PLANK]]), new Map([[`${cx * 16 + 8},${hb + 1},${cz * 16 + 8}`, W.DATE_CLIMATS - 86400000]]));
+      garde = { pareil: 0, autres: 0 };
+      // le morceau du bloc : tout arbre qui y pousse ou y déborde a son pied
+      // dans un des huit voisins, marqués avec lui
+      for (let z = cz * 16; z < (cz + 1) * 16; z++) for (let x = cx * 16; x < (cx + 1) * 16; x++) {
+        if (x === cx * 16 + 8 && z === cz * 16 + 8) continue;
+        const h = m.terrainHeight(x, z);
+        for (let y = h + 1; y <= h + 9; y++) { if (m.getBlock(x, y, z) === sans.getBlock(x, y, z)) garde.pareil++; else garde.autres++; }
+      }
+    }
+    return { toundra, taiga, kansas, certains, desaccords, garde };
+  })();
+  verifier('dans la toundra, du lichen, de la roche nue et la neige plus bas, presque sans arbre (Nunavut, Iamalie, Sibérie arctique)',
+    climats.toundra.colonnes > 2000 && climats.toundra.forme === 0 && climats.toundra.roche + climats.toundra.neige >= climats.toundra.colonnes * 0.05
+      && climats.toundra.arbres * 4 <= climats.toundra.arbresSans && climats.toundra.teints >= climats.toundra.sommets * 0.12,
+    JSON.stringify(climats.toundra));
+  verifier('la taïga est une forêt de pins, l\'herbe sombre ; la même forme bloc pour bloc (Iakoutie, Québec, Sibérie, Finlande)',
+    climats.taiga.colonnes > 2000 && climats.taiga.forme === 0 && climats.taiga.arbres >= climats.taiga.arbresSans * 2
+      && climats.taiga.pins >= climats.taiga.arbres * 0.6 && climats.taiga.teints >= climats.taiga.sommets * 0.3
+      && climats.kansas.teints === 0 && climats.kansas.sommets > 500,
+    `taïga ${JSON.stringify(climats.taiga)} ; Kansas : ${climats.kansas.teints} sommets teints sur ${climats.kansas.sommets}`);
+  verifier('le climat certain d\'un morceau est celui de toutes ses colonnes',
+    climats.certains > 3000 && climats.desaccords === 0, `${climats.certains} morceaux certains, ${climats.desaccords} colonnes en désaccord`);
+  verifier('là où un enfant a bâti avant la règle, les arbres d\'avant restent',
+    climats.garde !== null && climats.garde.autres === 0 && climats.garde.pareil > 2000,
+    climats.garde ? `${climats.garde.pareil} blocs pareils au monde d'avant, ${climats.garde.autres} différents` : 'pas de DATE_CLIMATS');
+
   // LE MÉNAGE DU CIEL DE PARIS (v298) — PUR, sur un document fabriqué.
   //
   // Décision de Max (« clean les trucs bizarres ») : une spirale de planches
@@ -2008,6 +2109,55 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       verifier('vu de loin et sur la carte, le désert est de sable et le Kansas vert',
         r.sahara.tous > 500 && r.sahara.blonds >= r.sahara.tous * 0.9 && r.sahara.ct > 20 && r.sahara.cb >= r.sahara.ct * 0.9
           && r.kansas.verts >= r.kansas.tous * 0.8 && r.kansas.cv >= r.kansas.ct * 0.8,
+        JSON.stringify(r));
+    }
+
+    // LA TOUNDRA ET LA TAÏGA, VUES DE LOIN ET SUR LA CARTE (v345). La même
+    // question (`world.climat`) que le générateur et le mailleur : vu de
+    // loin, la toundra tire vers l'olive (plus de rouge que de vert, à côté du
+    // Kansas) et la taïga est plus sombre ; la carte dit la même chose.
+    {
+      const r = await tab.evaluate(async () => {
+        const { Horizon } = await import('./src/horizon.js');
+        const { cielDe, zDeLatitude } = await import('./src/mondes.js');
+        const w = window.__game.world, carte = window.__carte;
+        const point = (lat, lon) => {
+          const z = Math.round(zDeLatitude(lat));
+          let a = -80000, b = 80000;
+          for (let k = 0; k < 40; k++) { const m = (a + b) / 2; if (cielDe(m, z).lon < lon) a = m; else b = m; }
+          return { x: Math.round(a), z };
+        };
+        const out = {};
+        for (const [nom, lat, lon] of [['toundra', 69, 70], ['taiga', 62, 125], ['kansas', 38.5, -98.5]]) {
+          const p = point(lat, lon);
+          const h = new Horizon(w, 200);
+          let n = 0;
+          while (n++ < 400 && h.maj(p.x, p.z, 1e9) > 0) { /* tout remplir */ }
+          const col = h.geo.attributes.color.array, N = h.N;
+          const s = [0, 0, 0]; let tous = 0;
+          for (let i = 0; i < N * N; i++) {
+            const y = h.hauteurs[i];
+            if (y <= 31 || y >= 46) continue;
+            tous++; s[0] += col[i * 3]; s[1] += col[i * 3 + 1]; s[2] += col[i * 3 + 2];
+          }
+          h.geo.dispose();
+          const c = [0, 0, 0]; let ct = 0;
+          for (let k = 0; k < 64; k++) {
+            const x = p.x + (k % 8) * 23 - 80, z = p.z + Math.floor(k / 8) * 23 - 80, hh = w.terrainHeight(x, z);
+            if (hh <= 31 || hh >= 46 || !carte) continue;
+            ct++;
+            const q = carte.couleur(x, z, hh, false, false);
+            c[0] += q[0]; c[1] += q[1]; c[2] += q[2];
+          }
+          out[nom] = { tous, loin: s.map((v) => +(v / Math.max(1, tous)).toFixed(3)), ct, carte: c.map((v) => Math.round(v / Math.max(1, ct))) };
+        }
+        return out;
+      });
+      const rg = (c) => c[0] / c[1];
+      verifier('vu de loin et sur la carte, la toundra est olive et la taïga sombre, à côté du Kansas',
+        r.toundra.tous > 500 && r.taiga.tous > 500 && r.kansas.tous > 500 && r.toundra.ct > 20 && r.taiga.ct > 20
+          && rg(r.toundra.loin) > rg(r.kansas.loin) + 0.25 && rg(r.toundra.carte) > rg(r.kansas.carte) + 0.25
+          && r.taiga.loin[1] < r.kansas.loin[1] * 0.85 && r.taiga.carte[1] < r.kansas.carte[1] * 0.85,
         JSON.stringify(r));
     }
 
