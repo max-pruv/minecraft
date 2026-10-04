@@ -212,7 +212,7 @@ n'est pas une étape de fin, c'est une partie de la livraison** — au même tit
 que le code. Une version qu'on ne sait plus expliquer six mois plus tard est
 une version qu'on ne saura pas déboguer.
 
-1. **Portail complet vert obligatoire** : `cd tests && npm test`. Seize suites, précédées de la fumée.
+1. **Portail complet vert obligatoire** : `cd tests && npm test`. Dix-sept suites, précédées de la fumée.
    Aucune publication sur un portail rouge — c'est ce qui produit les
    régressions en cascade.
 2. Bump de `CACHE_VERSION` dans `sw.js` à **chaque** livraison, sinon les
@@ -317,7 +317,7 @@ fichier par fichier. Voici la table, et elle est le mécanisme entier :
 | Voie | Quand | Durée |
 | --- | --- | --- |
 | **Rapide** (`fumee.js`) | Contenu pur : monuments, villes, créatures, décor | ~3 min |
-| **Complète** (16 suites) | Dès qu'un gardien est atteint, ou si git est muet | ~1 h → 59 min (v224) → 48 min (v225) → 74 min à quinze suites (v251) → **51 min** (v255, quinze suites) ; **seize depuis la v287** (`parishd.js`), total non remesuré |
+| **Complète** (17 suites) | Dès qu'un gardien est atteint, ou si git est muet | ~1 h → 59 min (v224) → 48 min (v225) → 74 min à quinze suites (v251) → **51 min** (v255, quinze suites) ; **seize depuis la v287** (`parishd.js`), **dix-sept depuis la v343** (`degats.js`), total non remesuré |
 
 `SUITES` range les suites par durée MESURÉE, le chiffre en commentaire : c'est
 ce qui fait qu'un rouge de `metro.js` se voit à la quatorzième seconde et non à
@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Le monde à la vitesse (v341) — on maille où l'on va, et le plafond se mesure en roulant
+## Le monde à la vitesse (v344) — on maille où l'on va, et le plafond se mesure en roulant
 
 Max veut une conduite « comme GTA » ; les voitures étaient plafonnées à 28 b/s
 sur un débit d'avant le worker (v237 → v251). Quatre règles.
@@ -818,6 +818,49 @@ sur un débit d'avant le worker (v237 → v251). Quatre règles.
   ouverte de plus à côté de `tab` et `ciel` n'a jamais chargé son disque en
   quarante secondes ; et deux passages IDENTIQUES rendent 0,43 puis 0,57 —
   le premier passage n'est pas le second, d'où l'ABBA.
+## Le ciel de chaque ville (v342) — la courbe de Paris posée sur SA corniche
+
+Le lot 3 de la dette de la v335 : quarante-sept monuments des villes
+engendrées. Quatre règles.
+
+- **UNE COURBE SE TRANSPORTE EN UNITÉS DE CORNICHE, PAS EN BLOCS.** Garder le
+  `K` de Paris (17,5) sur une corniche de treize blocs donne au-dessus des toits
+  une pente de plus d'un bloc par mètre : le palais d'Hiver (22 m) à vingt-quatre
+  blocs, le contraire d'une échelle. `blocsDuCiel(m, c)` met `K` à
+  `K_CIEL × c / 20` : un monument N fois plus haut que les toits l'est dans le
+  ciel de sa ville comme dans celui de Paris. La corniche (`CIELS`) est une
+  MESURE — la plus haute médiane des immeubles autour des repères de la ville.
+- **UN BÂTISSEUR PARTAGÉ SE LIT EN CORPS ET COURONNE.** `corps: [a1, sommet]`
+  (`paliersDuCorps`) : le corps de section constante (tambour, fût, murs) prend
+  l'étirement, la couronne (calotte, flèche, toit) seulement sa racine. Une forme
+  qui ne se lit pas ainsi (une enceinte à tours, une pagode) écrit ses paliers
+  en mètres, comme Paris.
+- **LE CIEL GARDE SON ORDRE, ET LA COURBE PASSE SOUS LE PLUS HAUT REPÈRE.** Un
+  repère plus haut dans la vraie ville qu'un monument remis à l'échelle reste
+  au-dessus de lui, monuments étirés ET repères fixes (le témoin les compare
+  paire par paire, hauteurs vraies écrites dans le témoin). Mon premier jet
+  MONTAIT les repères gênants : la tour de Galata, la Westerkerk sont des fûts
+  d'un bloc de large, et étirés ce sont des aiguilles — le piège même de la
+  v335, vu en capture. On comprime donc la courbe de la ville (`[c, k]`, `k` un
+  RÉSULTAT au centième) ; seul un repère qui a du corps (coupole, prang) monte
+  avec elle (`ordre`). Et un fût du lot (`fut`) ne dépasse pas une fois et demie
+  sa hauteur d'auteur.
+- **LE BAS D'UNE CALOTTE N'EST PAS UN TAMBOUR.** Les premières couches d'une
+  coupole partagée ont le rayon du tambour mais la couleur de la calotte : les
+  étirer avec le corps faisait un obus d'ardoise (Rome, Florence, Berlin en
+  capture). Le corps d'une coupole s'arrête au tambour : on lit les couleurs
+  d'un bâtisseur avant d'écrire ses paliers, pas seulement ses rayons.
+- **CE QUI EST BAS DANS LA VRAIE VILLE SORT DE LA DETTE EN `vrai`, PAS EN
+  AIGUILLE.** La colonne de Marie (11 m), le Pavillon d'or, Topkapi, le Templo
+  Mayor, Wat Pho : étirés, ils seraient devenus des poteaux. Une dette se rembourse
+  aussi en disant vrai.
+- **UNE RÉSOLUTION DE CONFLIT SE CHARGE AVANT DE SE POUSSER.** Au rebase sur
+  la v340, les deux côtés ajoutaient une entrée en tête de `nouveautes.js` ;
+  git a coupé le conflit AU MILIEU d'un objet, ma résolution par expression a
+  recollé les deux moitiés sans `],\n  },`, et le module ne se chargeait plus —
+  journal vide dans le jeu, trois rouges de `maj.js`. Après tout conflit dans un
+  fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
+  journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
 
 ## Les rues de Londres à la règle du kit (v339) — un plan deux fois plus serré ne porte pas les mêmes rues
 
@@ -865,6 +908,59 @@ Quatre règles.
   est rouge désarmé (21 blocs de ville autour de la maison, toit absent).
   **La date se relit à la fusion** (v309) : une date en avance retiendrait
   la ville d'avant sous ce qu'un enfant pose sur la ville neuve.
+## Les dégâts de la voiture (v343) — on froisse SA géométrie, jamais celle de la rue
+
+Max : « Comme dans GTA, quand tu crashes ton véhicule, il s'abîme… elle prend
+feu, on se retrouve à sortir de la voiture. » Chantier « conduite », session
+des dégâts. La règle est PURE (`degats.js`, lue sous node), ce qui se voit vit
+à côté (`degats3d.js`), et `fun.js` ne porte que quatre crochets. Six règles.
+
+- **LA GÉOMÉTRIE DE LA FLOTTE EST PARTAGÉE PAR TOUTE LA RUE.** Toutes les
+  voitures d'un modèle sont des clones du même prototype : enfoncer ses
+  sommets froisserait chaque voiture du même modèle. On clone la géométrie de
+  LA pièce touchée, au premier choc qui l'atteint (une sphère d'influence
+  écarte les autres), jamais avant. Un témoin lit l'autre voiture du même
+  modèle et exige la géométrie commune intacte. Les clones sont enfants du
+  maillage, non marqués `partagee` : `liberer` (v238) les rend quand la
+  voiture s'en va, et le garage (`reparer`) les rend en remettant l'original.
+- **UN CHOC NE COMPILE RIEN.** Un matériau cloné garde son programme ; on ne
+  change que des UNIFORMES (couleur, opacité, rugosité, émissif), jamais un
+  define (`clearcoat`, `transmission`, une carte). Les deux matériaux neufs —
+  la fumée, les flammes — se chauffent pendant l'accueil (`chauffer`, appelé
+  dans la chaîne `pas` de main.js). Mesuré : 94 → 96 programmes au feu si l'on
+  désarme la chauffe, 96 → 96 armée. Aucune lampe : les flammes sont
+  additives et hors correspondance tonale, comme celles des réacteurs (v264).
+- **UNE COULEUR DE `setRGB` EST LINÉAIRE.** La fumée « noire » à 0,12 sortait
+  gris moyen à l'écran (#616162 mesuré) : le noir d'une fumée est sous 0,02.
+  Et des flammes additives qui se recouvrent saturent au BLANC — la teinte
+  reste dans l'orange, l'opacité sous 0,7. Les deux vus en capture, aucun par
+  un témoin.
+- **LA BOUCLE D'ENFONCEMENT SE MESURE ET SE RODE.** `computeVertexNormals` sur
+  toute la pièce faisait vingt des trente millisecondes du premier choc : on ne
+  refait que les normales des sommets déplacés (une arête vive reste vive). Le
+  premier passage coûte le double des suivants (le moteur JavaScript la
+  compile) : la chauffe la rode sur une boîte. 12 ms au premier choc, 6
+  ensuite, rien par image ; le témoin garde 30.
+- **LE REPLI NE COMPTE JAMAIS UN PIÉTON.** Tant que la physique ne publie pas
+  `player.choc`, un choc est une chute de vitesse qu'aucun frein n'explique
+  (`detecterChoc`). Mais s'arrêter devant un piéton (v259) ou au bord de l'eau
+  (v272) fait la même chute : `main.js` note `player.arretDouxT` dans ces deux
+  familles d'obstacle, et le repli l'ignore. Dès que `player.choc` existe, il
+  fait seul foi.
+- **LE CONTRAT AVEC LA PHYSIQUE.** `player.etatVoiture = { sante, moteur,
+  direction, enPanne, enFeu }` (direction en rad/s à pleine vitesse, positive
+  vers la gauche). Tant que la physique ne pose pas `player.physiqueLitEtat`,
+  `degats3d.js` applique lui-même l'allure réduite (par `player.boost`) et le
+  biais de cap — jamais deux fois. Et `boost` ne vaut jamais ZÉRO : `player.js`
+  lit `if (this.boost)`, et une voiture « en panne » roulait à l'allure de la
+  marche (mesuré, 1,7 bloc en 2,5 s).
+
+**Le feu dépose l'enfant, il ne le projette pas** : passé `DELAI_SORTIE` (3,5 s
+en temps réel), `fun.js` le fait descendre et `deposer` le pose debout sur une
+case libre à côté (côté conducteur d'abord). La carcasse porte `horsService`
+(lu par `animals.js`, comme `montee`) : elle ne se reprend pas, et elle s'en
+va au bout de `DUREE_CARCASSE`.
+
 ## Les monuments à la hauteur de leur ville (v335) — une table de paliers, deux lecteurs
 
 Un étage fait trois blocs depuis la v301 ; les monuments n'avaient pas suivi.
@@ -945,6 +1041,32 @@ Le point (c) du kit « monde fidèle », sur toute la carte. Trois règles.
   escalier de cubes de roche — l'adoucir, c'est bouger le relief, décision de
   Max) ; une berge de trois blocs garde sa couronne d'herbe. *(Le paysage
   lointain et les arbres ont reçu la règle en v340.)*
+
+## Les déserts chauds (v341) — le climat est une donnée de géographie, comme la côte
+
+Le point (d) du kit « monde fidèle », dans sa plus petite tranche utile. Trois
+règles.
+
+- **LE CLIMAT SE RELÈVE COMME LES CÔTES, EN POLYGONES DE FAITS.** `DESERTS`
+  (terre.js) porte les contours des grands déserts chauds au degré, à côté de
+  `CONTOURS` et `CHAINES`, avec la même boîte de rejet ; `desertReel(lat,
+  lon)` est pure. Le monde demande `aride(x, z)` (world.js) : `cielDe`, et un
+  bord qui tremble d'un demi-degré (fbm) — un désert au cordeau ferait
+  maquette, comme une côte. Les steppes, la toundra et les tropiques humides
+  sont d'autres tranches, et c'est déclaré.
+- **UNE SEULE QUESTION, TROIS LECTEURS — et la matière seule change.** Le
+  générateur pose sable sur sable (avant les falaises, qui ne regardent que
+  l'herbe), `treeAt` refuse le désert, le paysage lointain
+  (`blocDeSurface`) et la carte du monde (`couleur`) lisent `world.aride`.
+  Drapeau `climat` de `CONF_NEUF` seule : `CONF_V308` et `CONF_AVANT` ne le
+  portent pas, les marches de migration jugent sur le monde où un bloc a été
+  posé (v306). Un témoin compare au monde SANS la règle : zéro bloc de forme
+  différente, et zéro bloc différent hors des déserts.
+- **UN SITE DE TÉMOIN SE CHOISIT LOIN DE TOUT CE QUI A SA PROPRE RÈGLE.** Mon
+  premier site « tempéré » était la Beauce à 48,3° N : DANS le disque de Paris
+  doublé (370 blocs), où le paysage lointain est gris de ville — 640 sommets
+  verts sur 2 141. Le Kansas, loin de toute ville, rend 2 452. Un point écrit
+  en latitude se vérifie contre les disques avant de servir de témoin.
 
 ## Les arbres au bord, et les falaises vues de loin (v340) — une règle de matière se dit à TOUT ce qui pose quelque chose dessus
 

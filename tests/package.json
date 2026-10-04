@@ -24,7 +24,8 @@
     "hote": "node hote.js",
     "manhattan": "node manhattan.js",
     "realisme": "node realisme.js",
-    "parishd": "node parishd.js"
+    "parishd": "node parishd.js",
+    "degats": "node degats.js"
   },
   "devDependencies": {
     "express": "^4.19.2",

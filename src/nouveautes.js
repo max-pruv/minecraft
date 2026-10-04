@@ -6,12 +6,40 @@
 
 export const NOUVEAUTES = [
   {
-    v: 341,
+    v: 344,
     titre: 'Le monde suit les voitures',
     puces: [
       'Le paysage arrive là où tu roules',
       'Les rues devant toi d\'abord',
       'Assez rapide pour foncer',
+    ],
+  },
+  {
+    v: 343,
+    titre: 'La voiture s\'abîme',
+    puces: [
+      'Un choc froisse la carrosserie',
+      'Le moteur fume, puis tombe en panne',
+      'Elle peut brûler : tu sors à temps',
+      'Le garage répare ta voiture',
+    ],
+  },
+  {
+    v: 342,
+    titre: 'Les monuments du monde grandissent',
+    puces: [
+      'Saint-Pierre domine Rome, le Duomo Florence',
+      'Chaque ville a son propre ciel',
+      'Les plus hauts restent les plus hauts',
+    ],
+  },
+  {
+    v: 341,
+    titre: 'Les déserts',
+    puces: [
+      'Le Sahara est enfin de sable',
+      'Et l\'Arabie, l\'Australie, l\'Atacama',
+      'Pas un arbre dans le désert',
     ],
   },
   {
