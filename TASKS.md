@@ -712,6 +712,27 @@
   Arche de Washington (NY) 12/13, Opéra de Lille 6/7, Buckingham 7/8, et à
   Washington le Trésor 8/13, les Archives 11/13, le Théâtre Ford 8/11,
   l'Histoire américaine 9/10, l'Indien d'Amérique 8/9.
+- [ ] **LE PORTAIL DE LA v341 (monuments du lot 3) : TROIS SUITES ROUGES, LA DOUBLE
+  MESURE EN MAIN.** Sept suites vertes (fumée, métro, parishd, carteMonde,
+  plafond, carte, washington). Rejouées SEULES des deux côtés :
+
+  | témoin | branche | `origin/main` (v335) |
+  | --- | --- | --- |
+  | `manhattan.js` le trou enlève la géométrie de la façade | ❌ 17 102 → 51 734 | ❌ 25 316 → 51 734 |
+  | `manhattan.js` le taxi roule aux contrôles tactiles | ❌ 1,06 bloc en 83 s | ❌ 1,06 bloc en 85 s |
+  | `monte.js` l'écran ne se fige pas à l'arrivée | ❌ 21,6 % au-delà de 300 ms | ❌ 27,5 % |
+  | `monte.js` se téléporter ne compile plus de programmes | ❌ au portail (6 `physical` à Paris) | dette v324–v327, rouge seul des deux côtés |
+  | `maj.js` le loader dit combien de fichiers sont rangés | ❌ 2 fois (portail, 1er rejeu), ✅ 3 fois | ✅ 4 fois |
+  | `maj.js` le loader ne s'efface qu'une fois les corps prêts | ❌ au 1er portail, ✅ 4 fois seule | ❌ 1 fois sur 4 |
+
+  `maj.js` rejouée seule trois fois de suite est ENTIÈREMENT verte sur la
+  branche. Tous sont des dettes déjà déclarées plus haut, sauf les deux lignes
+  de `maj.js`, des INTERMITTENCES vues des deux côtés (règle v269 : la distribution, pas un passage) : le témoin lit le
+  loader dix fois par seconde pendant une installation qui range 105 fichiers,
+  et il ne voit parfois que la phrase fixe. Preuve STRUCTURELLE en plus : la
+  v341 ne touche ni `sw.js` (hors version), ni `index.html`, ni le loader — une
+  table de hauteurs, un témoin, une sonde. Le badge de version (« version
+  servie v335 » au premier portail) était le bump manquant, réglé.
 - [ ] **LA GRANDE ROUE DU PRATER SOUS LA HOFBURG (v341), déclaré.** La roue (65 m)
   reste à seize blocs et la Hofburg (30 m) monte à vingt et un : une roue ne
   s'étire pas, elle deviendrait une ellipse. Le témoin d'ordre ne la compte pas.
