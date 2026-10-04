@@ -2718,7 +2718,30 @@ l'embarquement a eu lieu, pas par une hypothèse.
   DISTINGUE les trois : où est la rame la plus proche, à quelle distance du
   quai, et avance-t-elle.
 
-- [ ] **LES SIX VILLES BÂTIES À LA MAIN N'ONT PAS ÉTÉ ÉLARGIES (v271).** Paris,
+- [ ] **LONDRES À LA RÈGLE DU KIT : CE QUI RESTE (v331).** Londres est passée à
+  `voirie.js` (artères en collectrices, rues de quartier en locales, trame
+  collectrice recomposée, trame qui ne double plus une avenue). Le prix,
+  mesuré quartier par quartier en part de lots : Soho 18,6 → 10,1 %,
+  Bloomsbury 22,7 → 14,2, Holborn 27,6 → 14,5, Southwark 27,4 → 16,2 ; St
+  James 26,6 → 37,4, Marylebone 32,7 → 36,9, la City 8,6 → 24,0 ; le disque
+  26,1 → 26,6. La cause est le PLAN : vingt-quatre blocs par kilomètre, la
+  moitié de Paris, donc soixante-dix avenues deux fois plus serrées. Le seul
+  remède qui rende ces quartiers est celui de Paris (v306) : doubler le plan,
+  ce qui déplace la Tamise et donc `terrainHeight` — une DÉCISION DE MAX, avec
+  migration des blocs. Restent aussi, déclarés : aucune artère n'est un
+  boulevard (quatre voies = vingt et un blocs d'emprise, aucune n'a la place) ;
+  la City garde des collectrices et non des ruelles ; les rues de la trame qui
+  s'arrêtaient sur une avenue parallèle n'existent plus, mais celles qui
+  arrivent EN BIAIS (35° à 90°) restent — à mesurer en capture si l'une
+  finit en impasse contre un îlot.
+
+- [ ] **LES CINQ AUTRES VILLES BÂTIES À LA MAIN N'ONT PAS ÉTÉ ÉLARGIES (v271).**
+  Londres est faite en v331 (au-dessus). Restent, dans l'ordre : Nice, San
+  Francisco, Washington, Lille (dans la fenêtre d'empreinte). La méthode de
+  Londres se reprend telle quelle : figer la ville d'avant (`<ville>-v331.js`),
+  type par fonction, trame recomposée et en recul des avenues, mobilier sur la
+  section, la ville d'avant sous ce qu'un enfant a bâti.
+  *(Entrée d'origine :)* Paris,
   Londres, Nice, Lille, Washington et San Francisco gardent leurs largeurs de
   chaussée relevées sur de vrais plans, par quartier (`rue`, `face` dans chaque
   fiche) : la v271 n'a élargi que la trame des villes ENGENDRÉES. Leurs
