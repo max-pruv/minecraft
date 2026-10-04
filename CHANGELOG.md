@@ -20,6 +20,32 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v324 — L'autoroute Bologne–Florence
+
+**Pourquoi.** Premier des candidats instruits en v323 : Bologne–Florence, 342
+blocs sur l'axe direct, sans eau, sans rail, sans aérodrome. Florence était
+bloquée vers Rome par Fiumicino ; elle gagne ici sa première route, vers le
+nord.
+
+**Ce que ça change.** L'Autosole — le tronçon de l'Autostrada del Sole qui
+passe l'Apennin — relie Bologne à Florence : 346 blocs de deux fois deux voies,
+aucun pont, et vingt voitures qui font l'aller-retour. Elle entre dans Bologne
+par le sud (vingt-six blocs d'avenue sur la rue) et dans Florence par le nord
+(quarante blocs), sans traverser un bloc ni une flaque.
+
+Rien n'est écrit dans le relief : les deux empreintes de `plafond.js` ne
+bougent pas.
+
+**Ce qui le prouve.** Dans `carteMonde.js`, un témoin neuf, rouge sur
+`origin/main` (pas d'Autosole) : la route, ses voitures, ses deux entrées sur
+une rue propre, aucune colonne sur un rail (0 sur 4 595 mesurées sous node).
+La sonde de tracé a appris une règle de `routes.js` : la porte d'une ville vise
+le premier point de passage, pas l'angle mesuré — un point sur le rayon de
+chaque entrée la fixe. 18 216 tracés, refus 14 552 coude · 1 578 déblai ·
+1 111 remblai · 369 ponts proches.
+
+---
+
 ## v323 — L'autoroute Kyoto–Nagoya, au sud du Shinkansen
 
 **Pourquoi.** Candidat le plus court du relevé de la v310 : Kyoto–Nagoya, 314
