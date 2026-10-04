@@ -26,6 +26,7 @@
 //
 // Aucun objet three, aucun DOM : cette passe tourne aussi dans le worker.
 import { rectHD } from './facadeshd.js';
+import { echelleDe, etirerFaces } from './echelle-monuments.js';
 
 const STONE = ['pierre', [1, .97, .91], [.86, 0], 0];
 const TRIM = ['pierre-lisse', [1, .98, .94], [.78, 0], 0];
@@ -176,14 +177,18 @@ function arc(a){
     }
   }
   for(const z of [-3.8,3.8])a.arch(0,0,z,3.45,10.8,1.4);
-  a.box(0,16,0,15,.5,9,TRIM);a.box(0,16.5,0,13,4,7);
-  a.box(0,20.5,0,13.4,.35,7.4,TRIM);
+  // L'ATTIQUE MONTE JUSQU'AU HAUT DU VOXEL : le bâtisseur pose sa
+  // dernière couche en 21, donc le dessus en 22. Un bloc d'écart était dans la
+  // tolérance de la sonde ; étiré à cinquante blocs, il en vaut deux et demi,
+  // et la couche du haut restait en cubes au-dessus du modèle.
+  a.box(0,16,0,15,.5,9,TRIM);a.box(0,16.5,0,13,5.1,7);
+  a.box(0,21.6,0,13.4,.4,7.4,TRIM);
   for(const z of [-3.56,3.56])for(let x=-5.8;x<6;x+=.7)a.box(x,17.1,z,.4,1.8,.1,TRIM);
 }
 function notreDame(a){
   // Axe de la nef est-ouest ; portail à l'ouest, comme le monument du monde.
   for(const z of [-4.05,4.05]){
-    a.box(1.5,1,z,20,12.9,.6);
+    a.box(1.5,1,z,20,14,.6);
     for(let x=-6;x<=10;x+=2){
       a.window(x,7,z+(z>0?.34:-.34),.65,3.5,z<0);
       // L'ARC-BOUTANT SUIT LES CELLULES DU VOXEL, sinon sa maçonnerie haute
@@ -200,33 +205,37 @@ function notreDame(a){
       a.beam([x,12.8,s2*4.3],[x,12.4,s2*5.2],.35,TRIM);       // son appui sur la nef
     }
   }
-  a.box(11,1,0,.6,13,8.5);
-  a.quad([-8,14,-4.4],[11.5,14,-4.4],[11.5,18,0],[-8,18,0],ROOF);
-  a.quad([-8,18,0],[11.5,18,0],[11.5,14,4.4],[-8,14,4.4],ROOF);
-  a.lathe(2,0,[[17,1],[20,.8],[29,.03]],ROOF,8);
-  a.beam([2,29,0],[2,31,0],.055,GOLD);a.beam([2,30,-.5],[2,30,.5],.04,GOLD);
+  // LA NEF ET LA FLÈCHE SUIVENT LEURS COUCHES DE VOXEL : les murs
+  // jusqu'au dessus de la couche 14, le comble de 15 à 19, la flèche de 18 à
+  // 30 et la croix en 31. Un bloc d'écart tenait dans la tolérance de la sonde ;
+  // étiré trois fois, il laissait le haut des murs en cubes.
+  a.box(11,1,0,.6,14,8.5);
+  a.quad([-8,15,-4.4],[11.5,15,-4.4],[11.5,20,0],[-8,20,0],ROOF);
+  a.quad([-8,20,0],[11.5,20,0],[11.5,15,4.4],[-8,15,4.4],ROOF);
+  a.lathe(2,0,[[18,1.2],[22,.9],[31,.03]],ROOF,8);
+  a.beam([2,30,0],[2,32,0],.055,GOLD);a.beam([2,31,-.5],[2,31,.5],.04,GOLD);
   // Façade transformée de la face +z à la face -x.
   const f=new Atelier();
   for(const x of [-3,3]){
     f.box(x,1,0,3,12,2.6);
     for(const dx of [-.65,.65]){
-      f.box(x+dx,13,0,.35,8,2.6);
-      f.arch(x+dx,13,1.35,.4,5,.28);
+      f.box(x+dx,13,0,.35,10,2.6);
+      f.arch(x+dx,14,1.35,.4,6,.28);
     }
-    f.box(x,21,0,3.4,.65,3);
-    for(let dx=-1.5;dx<=1.5;dx+=.3)f.box(x+dx,21.65,1.35,.12,.7,.18,TRIM);
+    f.box(x,23,0,3.4,.4,3);
+    for(let dx=-1.5;dx<=1.5;dx+=.3)f.box(x+dx,23.4,1.35,.12,.6,.18,TRIM);
   }
-  f.box(0,1,0,3,13,2.6);
+  f.box(0,1,0,3,15,2.6);
   for(const x of [-3,0,3]){f.box(x,1,1.32,.85,3.5,.08,DARK);f.arch(x,1,1.4,.55,2.8,.32);}
   // Rosace : médaillon bleu et rayons de pierre, sans texture de fenêtre répétée.
   for(let i=0;i<48;i++){
-    const p=t=>[Math.cos(t)*1.35,10.2+Math.sin(t)*1.35,1.38];
-    f.quad([0,10.2,1.38],p(i*Math.PI/24),p((i+1)*Math.PI/24),[0,10.2,1.38],GLASS);
+    const p=t=>[Math.cos(t)*1.35,11+Math.sin(t)*1.35,1.38];
+    f.quad([0,11,1.38],p(i*Math.PI/24),p((i+1)*Math.PI/24),[0,11,1.38],GLASS);
     f.beam(p(i*Math.PI/24),p((i+1)*Math.PI/24),.09,TRIM);
-    if(i%3===0)f.beam([0,10.2,1.43],p(i*Math.PI/24),.045,TRIM);
+    if(i%3===0)f.beam([0,11,1.43],p(i*Math.PI/24),.045,TRIM);
   }
   for(let x=-4.2;x<=4.2;x+=.42)f.column(x,6.2,1.5,.075,1.35);
-  for(const y of [5.9,7.8,14.6])f.box(0,y,1.4,9.4,.25,.45,TRIM);
+  for(const y of [5.9,7.8,16])f.box(0,y,1.4,9.4,.25,.45,TRIM);
   for(const face of f.faces)a.faces.push({...face,p:face.p.map(([x,y,z])=>[-8.8-z,y,x])});
 }
 function palais(a,width,depth,height){
@@ -240,22 +249,30 @@ function palais(a,width,depth,height){
   for(const z of [-depth/2-.32,depth/2+.32])for(let x=-width/2+1;x<width/2;x+=1.6)
     for(let y=3;y<height-1;y+=2.8)a.window(x,y,z,.65,1.6,z<0);
 }
+// LE SACRÉ-CŒUR SUIT SES COUCHES DE VOXEL : la basilique jusqu'au
+// dessus de la couche 10, le pied de la coupole (rayon six) de 11 à 14, la
+// calotte jusqu'en 19, la lanterne et la croix en 23 ; les deux coupoles
+// d'angle sont à l'OUEST (x −5, z ±5), comme dans le voxel — le modèle les
+// posait à (±5, 5), un bloc de travers que l'étirement aurait rendu visible.
 function sacre(a){
-  palais(a,14,14,8);
-  a.lathe(0,0,[[10,5.4],[12,5.4],[13,4.8]],TRIM);
-  a.dome(0,13,0,4.8,6,TRIM);a.column(0,19,0,.45,2);a.beam([0,21,0],[0,23,0],.07,GOLD);
-  a.beam([-.5,22,0],[.5,22,0],.06,GOLD);
-  for(const x of [-5,5]){a.lathe(x,5,[[9,2],[11,2]],TRIM);a.dome(x,11,5,2,3,TRIM);}
+  palais(a,14,14,9);
+  a.lathe(0,0,[[10.4,5.9],[14,5.9],[15,5.3]],TRIM);
+  a.dome(0,15,0,5.3,4,TRIM);a.column(0,19,0,.45,3);a.beam([0,22,0],[0,24,0],.07,GOLD);
+  a.beam([-.5,23,0],[.5,23,0],.06,GOLD);
+  for(const z of [-5,5]){a.lathe(-5,z,[[10.4,2.6],[11.2,2.6]],TRIM);a.dome(-5,11.2,z,2.8,3.8,TRIM);}
   for(const x of [-3,0,3])a.arch(x,1,7.4,1,3,.7);
 }
+// LE PANTHÉON SUIT SES COUCHES DE VOXEL : l'entablement en 12, le
+// fronton de 13 à 18, le tambour de 13 à 22, la coupole de 23 à 28, la
+// lanterne jusqu'en 32.
 function pantheon(a){
   palais(a,10,8,10);
-  for(let x=-5;x<=5;x+=2)a.column(x,1,-6.5,.37,10);
-  a.box(0,11,-5.5,11,.5,4,TRIM);
-  a.quad([-5.5,11.5,-7.5],[5.5,11.5,-7.5],[0,15.5,-7.5],[0,15.5,-7.5],TRIM);
-  a.lathe(0,0,[[12,3.4],[20,3.4],[21,4.4],[22,4.4]],STONE);
-  for(let i=0;i<24;i++){const t=i*Math.PI/12;a.column(Math.cos(t)*3.9,13,Math.sin(t)*3.9,.18,7);}
-  a.dome(0,22,0,4.7,5,ROOF);a.column(0,27,0,.65,3);a.dome(0,30,0,.7,1,ROOF);
+  for(let x=-5;x<=5;x+=2)a.column(x,1,-6.5,.37,11);
+  a.box(0,12,-5.5,11,1,4,TRIM);
+  a.quad([-5.5,13,-7.5],[5.5,13,-7.5],[0,19,-7.5],[0,19,-7.5],TRIM);
+  a.lathe(0,0,[[12,3.6],[22,3.6],[22.5,4.3],[23,4.3]],STONE);
+  for(let i=0;i<24;i++){const t=i*Math.PI/12;a.column(Math.cos(t)*3.9,13,Math.sin(t)*3.9,.18,9);}
+  a.dome(0,23,0,4.6,6,ROOF);a.column(0,29,0,.65,3);a.dome(0,32,0,.7,1,ROOF);
 }
 // LES INVALIDES. Mon premier jet posait la coque générique de `palais` au
 // milieu du repère : mesuré à la sonde, VINGT-CINQ POUR CENT du modèle tombait
@@ -286,11 +303,15 @@ function invalides(a){
   a.dome(0,15,4,4.1,5,GOLD);a.column(0,19.8,4,.5,1.8,GOLD);
   a.beam([0,21.6,4],[0,22.8,4],.07,GOLD);
 }
+// L'OPÉRA SUIT SES COUCHES DE VOXEL : les murs jusqu'au dessus de la
+// couche 9, l'entablement en 10, la coupole de 11 à 16, la lyre en 19. À un
+// bloc près c'était la tolérance de la sonde ; étiré quatre fois, le bloc
+// d'écart laissait l'entablement en cubes autour du modèle (237 cubes).
 function opera(a){
-  palais(a,14,8,8);
-  for(let x=-6;x<=6;x+=1.5){a.column(x,4,-4.5,.18,4);a.dome(x,8.4,-4.5,.23,.45,GOLD);}
-  a.dome(0,10,1,4.8,4,COPPER);a.column(0,14,1,.4,3,GOLD);
-  for(const x of [-6,6]){a.box(x,10,0,1.4,.4,1.4,TRIM);a.column(x,10.4,0,.25,2,GOLD);}
+  palais(a,14,8,9);
+  for(let x=-6;x<=6;x+=1.5){a.column(x,4,-4.5,.18,5);a.dome(x,9.4,-4.5,.23,.45,GOLD);}
+  a.dome(0,11,1,4.8,5,COPPER);a.column(0,16,1,.4,3,GOLD);
+  for(const x of [-6,6]){a.box(x,11,0,1.4,.4,1.4,TRIM);a.column(x,11.4,0,.25,2,GOLD);}
 }
 export const MONUMENTS_HD = Object.freeze({
   'Tour Eiffel': eiffel, 'Pyramide du Louvre': louvre, 'Arc de Triomphe': arc,
@@ -303,8 +324,21 @@ export const MONUMENTS_HD = Object.freeze({
 export const aUnModeleHD = (nom) => Object.prototype.hasOwnProperty.call(MONUMENTS_HD, nom);
 
 const cache = new Map();
+// LE MODÈLE S'ÉTIRE COMME SON VOXEL. Les cotes ci-dessus sont celles
+// d'auteur ; la table de paliers de `echelle-monuments.js` les porte à la
+// hauteur du monument dans le monde — la MÊME fonction que le bâtisseur du
+// voxel, si bien que le modèle suit toujours ses cotes (v292). Les huit
+// modèles sont tous dans le disque de Paris : la clé est « Paris|Nom ».
+const cacheAuteur = new Map();
+function facesAuteur(nom) {
+  if (!cacheAuteur.has(nom)) { const a = new Atelier(); MONUMENTS_HD[nom]?.(a); cacheAuteur.set(nom, a.faces); }
+  return cacheAuteur.get(nom);
+}
 export function geometrieMonument(nom) {
-  if (!cache.has(nom)) { const a = new Atelier(); MONUMENTS_HD[nom]?.(a); cache.set(nom, a.faces); }
+  if (!cache.has(nom)) {
+    const e = echelleDe('Paris', nom);
+    cache.set(nom, e ? etirerFaces(facesAuteur(nom), e.paliers) : facesAuteur(nom));
+  }
   return cache.get(nom);
 }
 
@@ -365,6 +399,13 @@ export function cellulesCouvertes(nom) {
       }
     }
   }
+  // LA COUVERTURE SE MESURE SUR LE MODÈLE ÉTIRÉ, PAS AUX COTES D'AUTEUR.
+  // L'autre lecture — couvrir aux cotes d'auteur, puis étirer comme le voxel —
+  // ne laissait aucun cube dépasser, et rendait 119 à 293 MURS INVISIBLES par
+  // monument : une marche de coupole haute de quatre blocs, masquée, et la
+  // surface lisse trois blocs plus haut. Mesuré à la sonde, les deux lectures
+  // l'une après l'autre ; on garde la règle de la v292 — entre un cube qui
+  // dépasse et un mur qu'on ne voit pas, on choisit le cube.
   ens = new Set();
   for (const k of brut) {
     const [x, y, z] = k.split(',').map(Number);

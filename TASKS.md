@@ -296,6 +296,54 @@
   branche 3 · 3 · 2, `origin/main` 3 · 3 · 3. Même distribution ; le 5 est un
   tirage sous la charge du portail, et la dette de la v306 (deux ou trois
   programmes à l'arrivée) reste ouverte telle quelle.
+- [ ] **LE PORTAIL DE LA v331 (règle de la v195), DOUBLE MESURE FAITE — premier passage,
+  après rebase sur la v323.** Seize suites, 88 min ; dix vertes (`plafond.js`
+  et ses trois témoins des monuments, `parishd.js`, `metro.js`, `washington.js`,
+  `reglages.js`, `reseau.js`…). Six rouges, triés ainsi :
+  - DÉJÀ DÉCLARÉS : `carteMonde.js` « aucune voiture ne traverse un monument »
+    (`{"dur":6,"lus":597,"par":{"Tour Eiffel":4,"Invalides":2}}`, au chiffre près
+    l'entrée de la v321) ; `maj.js` « corps, programmes et fond de carte sont
+    vraiment là » (personnages 7/9, v267) ; `manhattan.js` le trou de façade
+    (14 460 → 51 734), le taxi tactile, et une erreur PeerJS « Lost connection
+    to server » au courtier local.
+  - REJOUÉS SEULS DES DEUX CÔTÉS, VERTS : `carte.js` (au portail « la flèche du
+    GPS », gauche lue à 1,92 rad — 103/103 seule sur la branche ET sur
+    `origin/main` v323) ; `hote.js` (au portail « un nouvel arrivant rejoint le
+    monde repris » `[]` — 9/9 des deux côtés). Intermittences de charge.
+  - REJOUÉ SEUL DES DEUX CÔTÉS, ROUGE IDENTIQUE : `monte.js`, 145 verts / 2
+    rouges sur la branche ET sur `origin/main` — « l'écran ne se fige pas »
+    (3 300 ms · 28,7 % contre 2 917 ms · 24,9 %) et « ne compile plus de
+    programmes sur place » (branche : 3 programmes `physical` à Paris ;
+    `origin/main` : 2 `physical` à New York, chauffe de NY expirée à 162/320 ;
+    au portail de la branche : 0 partout mais Paris à 7 images pour une garde à
+    10). Preuve STRUCTURELLE en plus : la v324 ne crée aucun matériau (aucun
+    `Material(` dans son diff de `src/`), et les clés `physical` sont celles des
+    carrosseries de la flotte — un modèle tiré à portée pour la première fois.
+  - SECOND PASSAGE (rebasée sur la v326, alors v327) : `carteMonde.js`,
+    `maj.js`, `carte.js`, `hote.js` VERTS. Rouges : `manhattan.js` le délai de
+    la ligne 282 (dette v269) ; `monte.js` les deux mêmes témoins (Paris 3
+    programmes `physical`, écran 3 183 ms · 26,7 %) ; `reseau.js` « un hôte
+    sans courtier est trouvé par un invité » `[[],[]]` — rejouée SEULE : 77/77
+    sur la branche, et 70/7 sur `origin/main` v326 (« à trois, chacun voit les
+    deux autres », « la voiture prise garde sa couleur »…). Intermittence de la
+    suite réseau, des deux côtés.
+  - TROISIÈME PASSAGE (rebasée sur la v328, alors v329) : quatorze suites
+    vertes, `reseau.js` comprise. Rouges : `manhattan.js` (trou de façade
+    17 102 → 51 734, taxi tactile « bouton jamais visible », PeerJS « Lost
+    connection to server » — tous déclarés) ; `monte.js` « l'écran ne se fige
+    pas » seul (3 283 ms · 25,3 %), dette mesurée des deux côtés ci-dessus.
+  - QUATRIÈME PASSAGE (rebasée sur la v332 puis la v334, livrée en v335) : treize suites
+    vertes, 77 min. Rouges : `manhattan.js` (trou de façade 11 684 → 54 969,
+    taxi tactile `locator.tap` hors délai — déclarés) ; `monte.js` les deux
+    mêmes (Paris 3 programmes `physical` ; écran 3 117 ms · 22,1 %) ;
+    `carte.js` huit rouges issus d'UNE cause — la question « Téléporter / S'y
+    rendre » ouverte mais `vis: false` à chacun des quatre appuis. Rejouée
+    SEULE : 103/103 sur la branche ; sur `origin/main` (v332) 101 verts et un
+    rouge de charge (« glisser bridé ×4 », 439 ms pour 400). Intermittence de
+    charge, à surveiller si elle revient sur la question du GPS (v306).
+    Rebasée ensuite sur la v330 (aéroports, routes : rien de commun) ; les
+    balises de version des commentaires de `src/` ont été retirées pour qu'un
+    rebasage ne touche plus que la documentation.
 - [ ] **LE PORTAIL DE LA v330 (les terminaux), DOUBLE MESURE FAITE.** Seule
   suite rouge : `monte.js`, rejouée SEULE trois fois sur la branche et une fois
   sur `origin/main` (v326). « L'écran ne se fige pas en arrivant sur une ville »
@@ -450,6 +498,37 @@
   second dépend du premier) — REJOUÉE SEULE : branche ces deux-là, `origin/main`
   v318 la libération (programmes 17/25). Même intermittence de préparation des
   deux côtés, déjà déclarée (v267).
+- [ ] **LE PORTAIL DE LA v336 (Dallas–Houston), DEUX FOIS.** Le premier a
+  trouvé un VRAI trou (le joint du premier pont de l'I-45, dans un coude :
+  402 points), corrigé dans `rubansDans` ; le second : `parishd.js`,
+  `carteMonde.js`, `plafond.js` (joint 0 trou sur 90 794 points, quatorze
+  ponts), `carte.js`, `washington.js` verts. Rouges, déjà déclarés : `maj.js`
+  les deux témoins du palier (26 images, aucun verdict — la charge, v315) ;
+  `manhattan.js` « le trou enlève aussi la géométrie visible de la façade »
+  (9 203 → 51 734, le témoin qui compte TOUS les immeubles, v291) ; `monte.js`
+  l'arrivée figée (3 750 ms · 33,9 %) et la téléportation qui compile (chauffe
+  de New York expirée, 54/321), rouges à l'identique des deux côtés (v332).
+  Le comblement ne s'émet que dans un coude d'un pont ; il n'y en avait aucun
+  avant l'I-45.
+- [ ] **LE PORTAIL DE LA v334 (Berlin–Hambourg) : CINQ ROUGES, TOUS DÉJÀ
+  MESURÉS DES DEUX CÔTÉS.** `carteMonde.js` (le témoin de l'A24 compris) et
+  `plafond.js` verts. `maj.js` : la libération (personnages 6/9, programmes
+  16/27) et le flou pendant la préparation — rejoués seuls rouges des deux
+  côtés au portail de la v327. `carte.js` : la flèche du GPS, gauche lue à
+  1,92 rad — la MÊME valeur que `origin/main` rejoué seul (v327). `monte.js` :
+  l'arrivée figée (3 650 ms · 30,1 %) et la téléportation qui compile, rouges
+  à l'identique des deux côtés (v332). La livraison n'ajoute qu'une entrée au
+  registre des routes, en Allemagne du Nord, qu'aucun de ces témoins
+  n'approche.
+- [ ] **LE PORTAIL DE LA v333 (Milan–Bologne) : TROIS ROUGES, TOUS DÉJÀ
+  MESURÉS DES DEUX CÔTÉS.** `carteMonde.js`, `plafond.js`, `carte.js` verts.
+  `maj.js` : « le loader dit combien de fichiers sont rangés » (intermittent,
+  même distribution des deux côtés, ci-dessous). `monte.js` : l'arrivée figée
+  (3 550 ms · 30,5 % — rejouée seule une heure plus tôt, rouge à l'identique
+  sur la branche et sur `origin/main`, ci-dessous) et « une voiture n'entre
+  pas dans l'eau » (reculé 1,19 : le MÊME relevé déjà rendu par `origin/main`
+  rejoué seul, tableau des rouges plus bas). La livraison n'ajoute qu'une
+  entrée au registre des routes, en Italie, qu'aucun de ces témoins n'approche.
 - [ ] **LE PORTAIL DE LA v332 (Vienne–Budapest), DOUBLE MESURE FAITE.** Six
   suites aiguillées ; `carteMonde.js`, `plafond.js`, `carte.js` verts. Rouges :
   `maj.js` (le fond de carte à la libération, personnages 6/9) et `monte.js`
@@ -546,7 +625,7 @@
   entrée nord propre de sa trame (−100° à −103°) — 79 819 tracés, tous refusés
   par sa marge ; l'autre entrée propre (−175°, −192°) arrive par la mer, deux
   cents blocs de viaduc. Déplacer un aérodrome est une décision de Max
-  (invariant 1) ; un viaduc en mer aussi. A109 Nairobi–Mombasa faite en v315. A3 Cologne–Francfort faite en v320 (au sud de l'ICE : au nord, l'aérodrome de Francfort ne laisse pas la place d'une emprise). E1 Kyoto–Nagoya faite en v323 (au sud du Shinkansen, où les deux trames ont une entrée propre ; un étang contourné par le nord, aucun pont). Autosole Bologne–Florence faite en v324 (aucun pont ; un point de passage sur le rayon de chaque entrée). A4 Milan–Turin faite en v327 (sept tracés sur 36 432, le déblai a fait le tri ; aucun pont). Yamuna Delhi–Agra faite en v328 (soixante-huit tracés sur 18 216, aucun pont). A1 Sud Rome–Naples faite en v329 (sortie est de Rome, puis un virage en plusieurs fois ; aucun pont). M1 Vienne–Budapest faite en v332 (1 573 admissibles sur 18 216, aucun pont). **Los Angeles–San Diego BLOQUÉE** (v332) : une crête au-dessus de 46 blocs à l'est de Los Angeles (z 8 950 à 9 310), et le couloir côtier passe dans la marge de LAX — 265 120 tracés, aucun admissible (9 644 refus aérodrome, 25 076 pont près d'une porte : San Diego est entourée d'eau au nord-ouest). Déplacer LAX ou abaisser la crête est une décision de Max. **Manchester–Liverpool BLOQUÉE PAR LE RELIEF** (v324) : une crête au-dessus de 46 blocs barre tout l'espace entre les deux disques (villes à 33) ; 58 340 tracés, aucun admissible (8 970 déblai, 6 125 pont près d'une porte). Un tunnel ou un relief abaissé est une décision de Max. INSTRUITES en v323 sur l'axe direct, faute de la liste du kit (hors dépôt) — longueur · eau · rail à douze blocs · villes · aérodromes · repères : Manchester–Liverpool 222 · 11 · 0 · 0 · 0 · 0 ; Bologne–Florence 342 · 0 · 0 · 0 · 0 · 0 ; Milan–Turin 530 · 10 · 0 ; Delhi–Agra 656 · 41 · 0 (le Taj Mahal) ; Rome–Naples 683 · 81 · 0 ; Los Angeles–San Diego 718 · 25 · 0 ; Londres–Birmingham 767 · 29 · 0 ; Milan–Bologne 924 · 24 · 3 ; Vienne–Budapest 957 · 33 · 0 ; Tokyo–Nagoya 961 · 142 · 941 (Shinkansen) · Haneda sur l'axe ; New York–Boston 1 020 · 135 · 0 ; Berlin–Hambourg 1 293 · 42 · 0 ; New York–Washington 1 297 · 150 · 0 ; Lyon–Marseille 1 363 · 77 · 1 328 (TGV) ; Séoul–Busan 1 471 · 2 · 0 ; Paris–Lyon 1 625 · 54 · 1 588 (TGV) ; Dallas–Houston 1 781 · 44 · 0 ; Hambourg–Cologne 1 858 · 137 · 0 ; Madrid–Barcelone 2 068 · 199 · 2 033 (AVE) ; Toronto–Montréal 2 305 · 144 · 0 ; San Francisco–Los Angeles 2 403 · 131 · 0 · SFO et deux repères ; Marseille–Nice 596 · 401 · 0 · la Promenade des Anglais (l'axe direct est en mer). Ordre retenu : les courts sans rail ni eau d'abord. Restent à instruire les autres
+  (invariant 1) ; un viaduc en mer aussi. A109 Nairobi–Mombasa faite en v315. A3 Cologne–Francfort faite en v320 (au sud de l'ICE : au nord, l'aérodrome de Francfort ne laisse pas la place d'une emprise). E1 Kyoto–Nagoya faite en v323 (au sud du Shinkansen, où les deux trames ont une entrée propre ; un étang contourné par le nord, aucun pont). Autosole Bologne–Florence faite en v324 (aucun pont ; un point de passage sur le rayon de chaque entrée). A4 Milan–Turin faite en v327 (sept tracés sur 36 432, le déblai a fait le tri ; aucun pont). Yamuna Delhi–Agra faite en v328 (soixante-huit tracés sur 18 216, aucun pont). A1 Sud Rome–Naples faite en v329 (sortie est de Rome, puis un virage en plusieurs fois ; aucun pont). M1 Vienne–Budapest faite en v332 (1 573 admissibles sur 18 216, aucun pont). A1 Nord Milan–Bologne faite en v333 (au nord de la Frecciarossa, qui sort de Milan à 51° ; Milan par −16°, Bologne par −156° ; 31 admissibles sur 5 082, sept sans pont). **Séoul–Busan BLOQUÉE PAR LE RELIEF** (v333) : Busan (ville à 33) est cerclée côté terre d'une crête à 50–60 blocs entre r + 10 et r + 40, et la mer de l'autre ; 8 450 tracés, aucun admissible (1 236 déblai, le reste coude). Abaisser la crête est une décision de Max. A24 Berlin–Hambourg faite en v334 (Hambourg par l'est, porte à vingt-quatre blocs du bord ; un seul tracé sans pont sur 2 904). I-45 Dallas–Houston faite en v336 (Houston par le sud après l'avoir contournée par l'est ; trois ponts ; cinq admissibles sur 24 000 chemins lissés). Suivants dans l'ordre du relevé (courts, sans rail) : New York–Boston (eau 135), New York–Washington (eau 150) — New York est Manhattan, une ville à part (pas dans VILLES_MONDE) : son entrée est à instruire à la main —, Hambourg–Cologne, Toronto–Montréal ; Londres–Birmingham en attente (une autre session élargit les rues de Londres). **Los Angeles–San Diego BLOQUÉE** (v332) : une crête au-dessus de 46 blocs à l'est de Los Angeles (z 8 950 à 9 310), et le couloir côtier passe dans la marge de LAX — 265 120 tracés, aucun admissible (9 644 refus aérodrome, 25 076 pont près d'une porte : San Diego est entourée d'eau au nord-ouest). Déplacer LAX ou abaisser la crête est une décision de Max. **Manchester–Liverpool BLOQUÉE PAR LE RELIEF** (v324) : une crête au-dessus de 46 blocs barre tout l'espace entre les deux disques (villes à 33) ; 58 340 tracés, aucun admissible (8 970 déblai, 6 125 pont près d'une porte). Un tunnel ou un relief abaissé est une décision de Max. INSTRUITES en v323 sur l'axe direct, faute de la liste du kit (hors dépôt) — longueur · eau · rail à douze blocs · villes · aérodromes · repères : Manchester–Liverpool 222 · 11 · 0 · 0 · 0 · 0 ; Bologne–Florence 342 · 0 · 0 · 0 · 0 · 0 ; Milan–Turin 530 · 10 · 0 ; Delhi–Agra 656 · 41 · 0 (le Taj Mahal) ; Rome–Naples 683 · 81 · 0 ; Los Angeles–San Diego 718 · 25 · 0 ; Londres–Birmingham 767 · 29 · 0 ; Milan–Bologne 924 · 24 · 3 ; Vienne–Budapest 957 · 33 · 0 ; Tokyo–Nagoya 961 · 142 · 941 (Shinkansen) · Haneda sur l'axe ; New York–Boston 1 020 · 135 · 0 ; Berlin–Hambourg 1 293 · 42 · 0 ; New York–Washington 1 297 · 150 · 0 ; Lyon–Marseille 1 363 · 77 · 1 328 (TGV) ; Séoul–Busan 1 471 · 2 · 0 ; Paris–Lyon 1 625 · 54 · 1 588 (TGV) ; Dallas–Houston 1 781 · 44 · 0 ; Hambourg–Cologne 1 858 · 137 · 0 ; Madrid–Barcelone 2 068 · 199 · 2 033 (AVE) ; Toronto–Montréal 2 305 · 144 · 0 ; San Francisco–Los Angeles 2 403 · 131 · 0 · SFO et deux repères ; Marseille–Nice 596 · 401 · 0 · la Promenade des Anglais (l'axe direct est en mer). Ordre retenu : les courts sans rail ni eau d'abord. Restent à instruire les autres
   candidats du kit (liste hors dépôt), un par un. INSTRUITES en v310 sur
   l'axe direct (longueur · eau · rail parallèle · obstacles) : Bruxelles–
   Amsterdam 790 · 56 · 0 · aucun ; Montréal–Québec 873 · 18 · 0 ; São Paulo–
@@ -573,20 +652,63 @@
   matrice de couverture ville par ville (convertie, exclue, bloquée) et les
   mesures sur l'iPad de la maison.
 
-- [ ] **LES MONUMENTS DE PARIS SONT PLUS BAS QUE LES IMMEUBLES (v301).** Un
-  étage fait trois blocs : les immeubles montent à 21-24 blocs (six-sept
-  niveaux, comble compris), et les monuments n'ont pas suivi. Mesuré sous
-  node en appelant les bâtisseurs : Opéra 19, Moulin Rouge 17, Bastille 20,
-  Invalides 22, Sacré-Cœur 23, Notre-Dame 31 (murs de nef à 13), Panthéon 32,
-  Montparnasse 38, tour Eiffel 70. Dans la vraie ville, à un bloc pour un
-  mètre : Opéra 73, Invalides 107 (dôme), Sacré-Cœur 83, Notre-Dame 69 (tours)
-  et 35 (nef), Panthéon 83, Montparnasse 210, Arc de Triomphe 50, Eiffel 330.
-  Le ciel au-dessus de Paris tient 125 blocs (HEIGHT 160, sol à 35) : tout y
-  passe sauf la tour (déjà à 70, décision de la v292) et Montparnasse (à
-  borner). Chaque monument refait entraîne SON modèle HD (`paris-monuments-hd.js`,
-  « un modèle suit les cotes du voxel », v292) et sa sonde
-  (`sonde-monuments-hd.cjs` : les cubes qui dépassent). Captures pour Max
-  avant de fusionner. C'est la prochaine livraison, pas un réglage.
+- [x] **LES MONUMENTS DE PARIS SONT PLUS BAS QUE LES IMMEUBLES (v301)** — fait
+  en v335 pour Paris, à l'ÉCHELLE DU CIEL : un bloc pour un mètre jusqu'à la
+  corniche (20 m), puis une courbe qui mène la tour Eiffel (330 m) à 69.
+  Montparnasse 60, Invalides et Notre-Dame 48, Panthéon et Sacré-Cœur 47, Opéra
+  41, Bastille 36, Arc 35. Le premier jet à un bloc pour un mètre (Invalides
+  107, Notre-Dame 96…) passait au-dessus de la tour Eiffel : vu en capture,
+  retiré. Si Max veut la vraie hauteur malgré tout, c'est UNE constante
+  (`EIFFEL_BLOCS` ou la courbe de `blocsDuCiel`, echelle-monuments.js).
+- [ ] **LES MONUMENTS DES AUTRES VILLES PLUS BAS QUE LEURS IMMEUBLES** (v335,
+  mesuré, élargi par Max : « lance sur toutes les villes »). Le témoin de
+  `plafond.js` mesure 215 monuments dans leurs villes contre la médiane des
+  immeubles autour (colonnes à moins de trente blocs de la boîte, hors de toute
+  autre boîte, sommet à six blocs au moins au-dessus du relief, feuillage
+  exclu). `BAS_DECLARES` en nomme 94 : 37 réellement bas (ponts, places,
+  statues, fontaines, palais de plain-pied — ils restent) et 57 en DETTE, à
+  rayer de la liste en les remettant à l'échelle. **Lot 2, les villes bâties à
+  la main** : Arche de Washington (NY) 12/13, Opéra de Lille 6/7, Buckingham
+  7/8, et à Washington le Trésor 8/13, les Archives 11/13, le Théâtre Ford
+  8/11, l'Histoire américaine 9/10, l'Indien d'Amérique 8/9. **Lot 3, les villes
+  engendrées** (hauteur/médiane) : St-Pierre 12/13, Duomo et Baptistère de Pise
+  10/12 et 9/12, fort d'Agra 6/10, Palais royal et porte d'Alcalá de Madrid 5/13
+  et 10/13, São Jorge 7/12, Santa Justa 11/13, palais du Dam 5/13, Rijksmuseum
+  5/10, Brandebourg et Reichstag 10/13, colonne de Marie 6/13, Hofburg 5/13,
+  château de Prague 5/10, Duomo de Florence 11/13, Parthénon, temple de Zeus et
+  Parlement d'Athènes 6, 6 et 5 pour 12, Sainte-Sophie 12/13, Mosquée bleue
+  11/13, Topkapi 7/13, Saint-Basile 11/13, Kremlin 8/13, Bolchoï 6/13, palais
+  d'Hiver 5/10, Saint-Sauveur 11/12, Kazan 6/12, Palais royal et Storkyrkan de
+  Stockholm 5/13 et 11/13, Amalienborg 5/13, Rundetaarn 11/13, Pavillon d'or
+  10/12, Supertrees 8/13, Grand Palais et Wat Pho de Bangkok 7/10 et 4/10, mur
+  des Lamentations 6/8, Taj Mahal Palace 5/10, gare Victoria 10/12, porte de
+  l'Inde 13/15, Jantar Mantar 4/12, Disney Hall 10/15, Rogers Centre 11/13,
+  ancien hôtel de ville de Toronto 13/15, cathédrale, Templo Mayor et Bellas
+  Artes de Mexico 10/13, Casa Rosada 5/12, Cabildo 7/12. La règle à appliquer
+  par ville : l'échelle du ciel de la ville (un bloc pour un mètre jusqu'à la
+  corniche de SES immeubles, puis une courbe sous son plus haut repère), par la
+  même table de paliers — la courbe de Paris est `blocsDuCiel`.
+- [ ] **UNE CABANE SUR UN ANCIEN TOIT DE MONUMENT SE RETROUVE DEDANS (v335),
+  déclaré.** Le relevé des toits (v301) emporte ce qu'on a bâti sur un
+  immeuble ; rien n'emporte ce qu'on a bâti sur un monument étiré. Le bloc
+  reste à sa hauteur, donc DANS la maçonnerie étirée : il n'est pas perdu (le
+  journal des blocs le garde, et le ménage du ciel le juge sur le monde d'avant,
+  `CONF_AVANT`, qui garde les monuments d'avant), mais il ne se voit plus. Si
+  cela se voit un jour, la marche est connue : celle de `releverToitsParis`,
+  avec la table de paliers pour dire de combien monte chaque couche.
+- [ ] **DES CUBES DÉPASSENT ENCORE DES MODÈLES ÉTIRÉS (v335), mesuré.** Sonde
+  `sonde-monuments-hd.cjs`, cubes qui dépassent (avant → après) : Arc 0 → 28,
+  Panthéon 4 → 10, Opéra 9 → 17, Sacré-Cœur 15 → 23, Notre-Dame 34 → 76 (dont
+  24 à hauteur d'enfant, inchangés). Un bloc d'écart entre le modèle et son
+  voxel tenait dans la tolérance de la sonde ; étiré trois à huit fois, il en
+  sort. Les plus gros écarts ont été recalés (l'attique de l'Arc, l'entablement
+  de l'Opéra, la nef et la flèche de Notre-Dame, le tambour du Panthéon, les
+  coupoles d'angle du Sacré-Cœur, qui étaient du mauvais côté). Zéro mur
+  invisible. L'autre lecture de la couverture (aux cotes d'auteur, puis étirée)
+  rendait zéro cube et 119 à 293 murs invisibles : NON-RÉSULTAT, on garde la
+  règle de la v292. **À l'échelle du ciel, les étirements sont plus doux et les
+  comptes retombent** : Arc 0, Panthéon 6, Opéra 15, Sacré-Cœur 0, Notre-Dame
+  32 (contre 34 avant). Les chiffres ci-dessus sont ceux du premier jet.
 - [ ] **CE QUE LE RELEVÉ DES TOITS NE SUIT PAS (v301), déclaré.** (1) Une
   tablette restée sur l'ancienne version après `DATE_RELEVE_PARIS` pose sur
   les anciens toits des blocs que le relevé laissera où ils sont — la même
@@ -2754,7 +2876,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   DISTINGUE les trois : où est la rame la plus proche, à quelle distance du
   quai, et avance-t-elle.
 
-- [ ] **LE PORTAIL DE LA v333.** Neuf suites. Vertes : `metro.js`,
+- [ ] **LE PORTAIL DE LONDRES (v337, d'abord numérotée v331 puis v333).** Premier passage, neuf suites. Vertes : `metro.js`,
   `carteMonde.js` (les trois témoins du kit de Londres, rouges sur
   `origin/main`), `sauvegarde.js`, `plafond.js` (la ville d'avant sous les
   blocs d'enfant, rouge désarmée), `washington.js`. Rouges :
@@ -2771,8 +2893,25 @@ l'embarquement a eu lieu, pas par une hypothèse.
   · `monte.js` l'écran qui se fige à l'arrivée (rouge seul sur `origin/main`,
     48,3 %), la compilation à la téléportation et la voiture au bord de l'eau
     — deux intermittences déjà mesurées des deux côtés (v326, v327).
+  SECOND PASSAGE (après la fusion de la v332) : vertes `metro`, `parent`,
+  `parishd`, `carteMonde`, `sauvegarde`, `plafond`, `visio`, `realisme`, `hote`,
+  `reglages`. Rouges, tous rejoués seuls des deux côtés :
+  · `washington.js` « on entre dans l'Air et l'Espace » — vert seul sur la
+    branche ET sur `origin/main` : délai de banc ;
+  · `reseau.js` « un hôte sans courtier est trouvé… » (et « il le REJOINT ») —
+    rouge seul sur la branche, vert seul sur `origin/main` au premier rejeu,
+    PUIS rouge seul sur `origin/main` au second (`[[],[]]`, `actif: false`) et,
+    le même tour, la branche rend rouge le témoin voisin « deux enfants se
+    retrouvent sans courtier du tout ». Même distribution des deux côtés
+    (v269) : l'intermittence du chemin par le nuage seul, que Londres ne
+    touche pas — aucun de ces témoins ne quitte le point d'apparition ;
+  · `monte.js` le gel d'arrivée (rouge des deux côtés), la compilation à la
+    téléportation (intermittence v326/v327), et « un train s'arrête devant la
+    voiture de l'enfant » (13 relevés dedans, déjà vu une fois sur
+    `origin/main` seul, ligne 308 de ce fichier) ;
+  · `maj.js`, `carte.js` (GPS), `manhattan.js` : les dettes du premier passage.
 
-- [ ] **LONDRES À LA RÈGLE DU KIT : CE QUI RESTE (v333).** Londres est passée à
+- [ ] **LONDRES À LA RÈGLE DU KIT : CE QUI RESTE (v337).** Londres est passée à
   `voirie.js` (artères en collectrices, rues de quartier en locales, trame
   collectrice recomposée, trame qui ne double plus une avenue). Le prix,
   mesuré quartier par quartier en part de lots : Soho 18,6 → 10,1 %,
@@ -2790,9 +2929,9 @@ l'embarquement a eu lieu, pas par une hypothèse.
   finit en impasse contre un îlot.
 
 - [ ] **LES CINQ AUTRES VILLES BÂTIES À LA MAIN N'ONT PAS ÉTÉ ÉLARGIES (v271).**
-  Londres est faite en v333 (au-dessus). Restent, dans l'ordre : Nice, San
+  Londres est faite en v337 (au-dessus). Restent, dans l'ordre : Nice, San
   Francisco, Washington, Lille (dans la fenêtre d'empreinte). La méthode de
-  Londres se reprend telle quelle : figer la ville d'avant (`<ville>-v333.js`),
+  Londres se reprend telle quelle : figer la ville d'avant (`<ville>-vNNN.js`),
   type par fonction, trame recomposée et en recul des avenues, mobilier sur la
   section, la ville d'avant sous ce qu'un enfant a bâti.
   *(Entrée d'origine :)* Paris,

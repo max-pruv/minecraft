@@ -351,6 +351,97 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   verifier('et le sol a son propre plafond, qui ne suit pas le ciel',
     SOMMET_TERRAIN === 80, `${SOMMET_TERRAIN}`);
 
+  // --- LES MONUMENTS À LA HAUTEUR DE LEUR VILLE ----------------------------
+  //
+  // Un étage fait trois blocs depuis la v301, et les monuments n'avaient pas
+  // suivi : l'Opéra à dix-neuf blocs au milieu d'immeubles à vingt. Le témoin
+  // boucle sur TOUTES les villes — bâties à la main et engendrées — et appelle
+  // les bâtisseurs comme le générateur les appelle : la hauteur du monument
+  // (sa plus haute couche au-dessus du sol du repère) contre la MÉDIANE des
+  // immeubles autour de lui (les colonnes à moins de trente blocs de sa boîte,
+  // hors de toute autre boîte de repère, dont le sommet est à six blocs au moins
+  // au-dessus du relief et n'est pas un feuillage). Aucun monument plus bas,
+  // sauf ceux que `BAS_DECLARES` nomme, chacun avec sa raison.
+  {
+    const W = await import('../src/world.js');
+    const { BLOCK } = await import('../src/blocks.js');
+    const { VILLES_MONDE } = await import('../src/villesmonde.js');
+    const EM = await import('../src/echelle-monuments.js').catch(() => null);
+    const declares = EM ? EM.BAS_DECLARES : {};
+    const villes = [...W.CITIES.map((c) => ({ nom: c.name, x: c.x, z: c.z, r: c.r })),
+      ...VILLES_MONDE.map((f) => ({ nom: f.ancre.nom, x: f.ancre.x, z: f.ancre.z, r: f.rayon }))];
+    const villeDe = (x, z) => villes.find((v) => Math.hypot(x - v.x, z - v.z) < v.r);
+    const reperes = W.CONF_NEUF.reperes.filter((l) => !/mobilier/.test(l.name));
+    const wm = new World();
+    const feuillage = new Set([BLOCK.LEAVES, BLOCK.LOG]);
+    const fautes = [], mesures = [], paris = [];
+    let declaresVus = 0;
+    for (const lm of reperes) {
+      const v = villeDe(lm.x, lm.z);
+      if (!v) continue;
+      let h = -1;
+      lm.build((dx, dy, dz, id) => { if (id !== BLOCK.AIR && dy > h) h = dy; });
+      const R2 = lm.box + 30, hs = [];
+      for (let x = lm.x - R2; x <= lm.x + R2; x++) for (let z = lm.z - R2; z <= lm.z + R2; z++) {
+        if (Math.abs(x - lm.x) <= lm.box + 2 && Math.abs(z - lm.z) <= lm.box + 2) continue;
+        if (Math.hypot(x - lm.x, z - lm.z) > R2) continue;
+        if (reperes.some((o) => o !== lm && Math.abs(x - o.x) <= o.box && Math.abs(z - o.z) <= o.box)) continue;
+        const t = wm.terrainHeight(x, z);
+        let top = -1;
+        for (let y = HEIGHT - 1; y > t; y--) {
+          const id = wm.getBlock(x, y, z);
+          if (id !== BLOCK.AIR && id !== BLOCK.WATER) { top = y; break; }
+        }
+        if (top < 0 || feuillage.has(wm.getBlock(x, top, z))) continue;
+        if (top - t >= 6) hs.push(top - t);
+      }
+      if (wm.chunks.size > 4000) wm.chunks.clear();
+      hs.sort((a, b) => a - b);
+      const med = hs.length >= 40 ? hs[hs.length >> 1] : null;
+      const cle = `${v.nom}|${lm.name}`;
+      if (v.nom === 'Paris') {
+        paris.push({ nom: lm.name, h, med, sol: wm.terrainHeight(lm.x, lm.z), echelle: EM ? EM.echelleDe('Paris', lm.name) : null });
+      }
+      if (med == null) continue;
+      mesures.push(cle);
+      if (h >= med) continue;
+      if (declares[cle]) { declaresVus++; continue; }
+      fautes.push(`${cle} ${h}/${med}`);
+    }
+    verifier('aucun monument plus bas que les immeubles qui l\'entourent, sauf exception déclarée',
+      mesures.length > 150 && fautes.length === 0,
+      `${mesures.length} monuments mesurés dans leurs villes, ${declaresVus} déclarés plus bas`
+      + (fautes.length ? ` — EN FAUTE (hauteur/médiane) : ${fautes.join(' · ')}` : ''));
+
+    // Une exception déclarée qui ne sert plus est un monument remis à l'échelle
+    // qu'on a oublié de rayer : elle cacherait le jour où il redescend.
+    const introuvables = Object.keys(declares).filter((k) => !mesures.includes(k));
+    verifier('chaque exception déclarée nomme un monument mesuré',
+      introuvables.length === 0,
+      introuvables.length ? `introuvables : ${introuvables.join(' · ')}` : `${Object.keys(declares).length} exceptions`);
+
+    // PARIS À L'ÉCHELLE DU CIEL : un bloc pour un mètre jusqu'à la corniche,
+    // puis la courbe qui mène la tour Eiffel (330 m) à soixante-neuf. Les
+    // hauteurs attendues sont écrites ici, pas lues dans le module : sur
+    // l'ancien code il n'existe pas, et le témoin doit rendre un vrai chiffre.
+    // Opéra 73 m, Panthéon et Sacré-Cœur 83, Notre-Dame 96, Invalides 107,
+    // Arc 50, Bastille 52, Montparnasse 210.
+    const ATTENDU = { 'Opéra': 41, 'Panthéon': 47, 'Invalides': 48, 'Sacré-Cœur': 47,
+      'Notre-Dame': 48, 'Arc de Triomphe': 35, 'Bastille': 36, 'Montparnasse': 60 };
+    const eiffel = paris.find((q) => q.nom === 'Tour Eiffel');
+    const ecarts = Object.entries(ATTENDU).map(([nom, cible]) => {
+      const m = paris.find((q) => q.nom === nom);
+      if (!m) return `${nom} introuvable`;
+      if (m.h !== cible) return `${nom} ${m.h} pour ${cible}`;
+      if (eiffel && m.h >= eiffel.h) return `${nom} ${m.h} dépasse la tour Eiffel (${eiffel.h})`;
+      if (m.sol + m.h >= HEIGHT) return `${nom} sort du ciel`;
+      return null;
+    }).filter(Boolean);
+    verifier('les monuments de Paris sont à l\'échelle du ciel, sous la tour Eiffel',
+      ecarts.length === 0,
+      ecarts.length ? ecarts.join(' · ') : paris.map((q) => `${q.nom} ${q.h}`).join(' · '));
+  }
+
   const { ZONE_WASHINGTON: Z } = await import('../src/washington.js');
   const { CITIES } = await import('../src/world.js');
   const { SITES, positionSite } = await import('../src/capitales.js');
@@ -1051,7 +1142,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     !double.absent && double.bati === 0 && double.lotBati,
     double.absent ? 'Paris n\'a pas doublé' : `autour de la maison : ${double.bati} bloc(s) de ville · lot après la date bâti : ${double.lotBati}`);
 
-  // --- LONDRES À LA RÈGLE DU KIT (v333) : la ville d'avant reste sous ce ----
+  // --- LONDRES À LA RÈGLE DU KIT (v337) : la ville d'avant reste sous ce ----
   // --- qu'un enfant y a bâti ------------------------------------------------
   //
   // Les rues de Londres s'élargissent et ses îlots se recomposent : une

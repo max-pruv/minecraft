@@ -111,6 +111,11 @@ const GARDIENS = {
   // (`monte.js`). `carteMonde.js` garde les rues qui les longent.
   'src/paris-monuments-hd.js': ['parishd.js', 'plafond.js', 'monte.js', 'carteMonde.js'],
   'src/matierehd.js': ['parishd.js', 'monte.js'],
+  // LES MONUMENTS À LA HAUTEUR DE LEUR VILLE (v335). Importé par `world.js`
+  // et `paris-monuments-hd.js` : l'union de leurs gardiens. Le témoin de la
+  // hauteur des monuments est dans `plafond.js`.
+  'src/echelle-monuments.js': ['plafond.js', 'parishd.js', 'carte.js', 'washington.js', 'metro.js',
+    'carteMonde.js', 'monte.js', 'manhattan.js'],
   // UNE TABLE DE GARDIENS SUIT LES IMPORTS. `liberer.js` est importé par
   // `modeles.js`, `props.js`, `animals.js`, `fun.js` et
   // `main.js` : ses gardiens sont l'UNION de ceux de ses clients, sinon une
@@ -126,7 +131,7 @@ const GARDIENS = {
   'src/terre.js': ['carteMonde.js', 'plafond.js', 'carte.js'],
   // Londres, ville entière du tour du monde.
   'src/londres.js': ['carte.js', 'carteMonde.js', 'plafond.js'],
-  'src/londres-v332.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // la Londres d'avant le kit, sous ce qu'un enfant a bâti (v333)
+  'src/londres-v332.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // la Londres d'avant le kit, sous ce qu'un enfant a bâti (v337)
   // La machine à villes : les cinquante grandes du tour du monde.
   'src/villesmonde.js': ['carteMonde.js', 'carte.js', 'plafond.js', 'monte.js'],
   // Les deux cents villes : des données pures, jugées par les mêmes témoins

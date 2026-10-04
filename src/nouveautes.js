@@ -6,12 +6,48 @@
 
 export const NOUVEAUTES = [
   {
-    v: 333,
+    v: 337,
     titre: 'Les rues de Londres s\'élargissent',
     puces: [
       'De vraies rues à deux voies',
       'Des îlots plus grands entre les avenues',
       'Les bus garés au bord du trottoir',
+    ],
+  },
+  {
+    v: 336,
+    titre: 'L\'autoroute Dallas–Houston',
+    puces: [
+      'De Dallas à Houston en voiture',
+      'La première autoroute d\'Amérique',
+      'Trois ponts sur la route',
+    ],
+  },
+  {
+    v: 335,
+    titre: 'Des monuments plus hauts',
+    puces: [
+      'L\'Opéra, le Panthéon, les Invalides grandissent',
+      'Ils dominent enfin les toits',
+      'La tour Eiffel reste la plus haute',
+    ],
+  },
+  {
+    v: 334,
+    titre: 'L\'autoroute Berlin–Hambourg',
+    puces: [
+      'De Berlin à Hambourg en voiture',
+      'Par la plaine de l\'Elbe',
+      'Sans un seul pont',
+    ],
+  },
+  {
+    v: 333,
+    titre: 'L\'autoroute Milan–Bologne',
+    puces: [
+      'De Milan à Bologne en voiture',
+      'Puis Florence, Rome et Naples',
+      'Sans un seul pont',
     ],
   },
   {

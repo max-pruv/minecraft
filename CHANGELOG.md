@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v333 — Les rues de Londres à la règle du kit
+## v337 — Les rues de Londres à la règle du kit
 
 **Pourquoi.** Paris est passé à la section de rue du kit (`roadSection`) en
 v303, les villes engendrées en v307 ; les cinq villes bâties à la main sont
@@ -60,6 +60,119 @@ enfermée, une cabane garde son toit (désarmé : 21 blocs de ville autour de la
 maison, toit absent). Les douze circuits de Londres restent à 100 % sur la
 rue ; les deux empreintes de `plafond.js` ne bougent pas (les rues sont du
 sol).
+## v336 — L'autoroute Dallas–Houston
+
+**Pourquoi.** Dallas–Houston vient ensuite dans le relevé de la v323 : 1 781
+blocs sur l'axe direct, sans rail. Le pays entre les deux est ondulé, et
+Houston est au pied d'une butte au nord : avec la recherche des livraisons
+précédentes (deux points intermédiaires), le meilleur tracé creusait 9,14
+blocs pour une limite de neuf.
+
+**Ce que ça change.** L'I-45 relie Dallas à Houston : 2 168 blocs de deux fois
+deux voies, trois ponts (deux ravins et un ruisseau), vingt voitures. C'est
+la première autoroute des États-Unis du jeu. Elle contourne Houston par l'est
+et y entre par le sud. Le relief ne bouge pas : les deux empreintes de
+`plafond.js` sont intactes.
+
+**Ce qui le prouve.** Un témoin neuf dans `carteMonde.js`, rouge sur
+`origin/main` (pas d'I-45) : la route, ses voitures, ses deux entrées sur une
+rue propre (seize relevés sur seize de chaque côté), aucune colonne d'emprise
+sur un rail (0 sur 19 271 sous node). Les trois ponts passent par le témoin
+du joint de `plafond.js`, qui lit toutes les routes. La sonde tire désormais
+des chemins lissés (un point tous les deux cents blocs) : cinq admissibles sur
+vingt-quatre mille.
+
+**Et le portail a trouvé un vrai trou.** Le premier pont de l'I-45 tombait
+dans un coude du tracé, et le tablier y laissait le coin extérieur du virage
+ouvert sur le vide : 402 points sans rien dessous au témoin du joint
+(`plafond.js`). C'était un défaut du tablier, pas du tracé — aucune route
+n'avait encore de pont dans un coude. `rubansDans` (routes.js) pose désormais
+au sommet un ruban de comblement, côté extérieur, garde-corps compris : zéro
+trou sur les quatorze ponts du registre (90 794 points sous node).
+
+---
+
+## v335 — Les monuments de Paris dominent les toits
+
+**Pourquoi.** Un étage fait trois blocs depuis la v301 : les immeubles de Paris
+montent à vingt et un, vingt-quatre blocs, et les monuments n'avaient pas suivi.
+Mesuré sous node en appelant les bâtisseurs, l'Opéra faisait dix-neuf blocs au
+milieu d'immeubles à vingt, les Invalides vingt-deux, le Sacré-Cœur vingt-trois,
+Notre-Dame trente et un. Dans la vraie ville ils dominent les toits ; dans le
+jeu, l'Opéra était plus bas que ses voisins. Et la même mesure sur toutes les
+villes du monde rendait quatre-vingt-treize monuments plus bas que les immeubles
+autour d'eux.
+
+**Ce que ça change.** Les monuments de Paris passent au-dessus des toits, dans
+l'ordre du vrai ciel de Paris : Montparnasse 60, les Invalides et Notre-Dame 48,
+le Panthéon et le Sacré-Cœur 47, l'Opéra 41, la Bastille 36, l'Arc de Triomphe
+35, sous la tour Eiffel qui reste à soixante-neuf. Un premier jet les posait à
+leur vraie hauteur, à un bloc pour un mètre : les captures aériennes ont montré
+les Invalides, Notre-Dame et le Sacré-Cœur au-dessus de la tour Eiffel, en
+aiguilles. La règle garde donc un bloc pour un mètre jusqu'à la corniche, puis
+une courbe qui mène la tour Eiffel à soixante-neuf. Les coupoles s'étirent par
+leur pied, qui devient un tambour, les portes gardent la taille d'un enfant, et
+les modèles en relief suivent leurs voxels. Rien ne change d'emprise : aucune
+rue, aucun circuit de voiture n'est touché.
+
+**Ce qui le prouve.** Trois témoins neufs dans `plafond.js`. Le premier boucle
+sur toutes les villes — 215 monuments mesurés contre la médiane des immeubles
+autour d'eux — et n'admet un monument plus bas que s'il est déclaré, avec sa
+raison : rouge sur `origin/main` (l'Opéra 19/20, et 92 autres non déclarés). Le
+deuxième vérifie que chaque exception nomme un monument mesuré. Le troisième
+exige les huit hauteurs de Paris et qu'aucune ne dépasse la tour Eiffel : rouge
+sur `origin/main` (l'Opéra 19 pour 41…). La sonde des monuments en relief rend
+zéro mur invisible et moins de cubes qui dépassent qu'avant (Notre-Dame 34 → 32,
+Sacré-Cœur 15 → 0). Les deux empreintes du relief ne bougent pas : un bâtisseur
+de monument n'écrit pas `terrainHeight`.
+
+---
+
+## v334 — L'autoroute Berlin–Hambourg
+
+**Pourquoi.** Berlin–Hambourg est le candidat suivant du relevé de la v323 :
+1 293 blocs sur l'axe direct, ni rail ni aérodrome, dans la plaine de l'Elbe.
+Une plaine basse et semée de mares, et au nord-est de Hambourg de l'eau qui
+touche le disque de la ville : par là, tout tracé posait un pont contre la
+porte.
+
+**Ce que ça change.** L'A24 relie Berlin à Hambourg : 1 317 blocs de deux fois
+deux voies, aucun pont, vingt voitures. Elle entre à Hambourg par l'est, où le
+pays est sec. Première route du registre en Allemagne du Nord. Le relief ne
+bouge pas : les deux empreintes de `plafond.js` sont intactes.
+
+**Ce qui le prouve.** Un témoin neuf dans `carteMonde.js`, rouge sur
+`origin/main` (pas d'A24) : la route, ses voitures, ses deux entrées sur une
+rue propre (seize relevés sur seize de chaque côté), aucune colonne d'emprise
+sur un rail (0 sur 11 620 mesurées sous node). La sonde : 2 904 tracés,
+trente-quatre admissibles, un seul sans pont — celui-ci.
+
+---
+
+## v333 — L'autoroute Milan–Bologne
+
+**Pourquoi.** Milan–Bologne vient ensuite dans le relevé de la v323 : 924
+blocs sur l'axe direct, et c'est la moitié manquante de l'Autostrada del Sole
+(Milan–Bologne–Florence–Rome–Naples), dont l'Autosole et l'A1 Sud existaient
+déjà. Une difficulté : la Frecciarossa sort de Milan presque dans le même axe
+(51° contre 34°). Et un candidat s'est révélé impossible : Séoul–Busan, parce
+que Busan est cerclée d'une crête.
+
+**Ce que ça change.** L'A1 Nord relie Milan à Bologne : 969 blocs de deux fois
+deux voies, aucun pont, vingt voitures, toute la route au nord du rail sans
+jamais le croiser. De Milan, on peut désormais aller en voiture jusqu'à
+Naples en enchaînant trois autoroutes. Le relief ne bouge pas : les deux
+empreintes de `plafond.js` sont intactes.
+
+**Ce qui le prouve.** Un témoin neuf dans `carteMonde.js`, rouge sur
+`origin/main` (pas d'A1 Nord) : la route, ses voitures, ses deux entrées sur
+une rue propre, aucune colonne d'emprise sur le rail (0 sur 8 473 mesurées
+sous node). La sonde : 5 082 tracés, trente et un admissibles, sept sans
+pont, et elle arrondit désormais les points de passage avant de les juger.
+Séoul–Busan, déclarée bloquée dans `TASKS.md` : la crête de Busan monte à
+50–60 blocs à quarante blocs de son bord, pour une ville à 33.
+
+---
 
 ## v332 — L'autoroute Vienne–Budapest
 

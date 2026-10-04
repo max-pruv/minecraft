@@ -76,7 +76,7 @@ const uDe = (lon) => Math.round((lon - LON0) * 69.2 * BLOCS_PAR_KM);
 const vDe = (lat) => Math.round(-(lat - LAT0) * 111.19 * BLOCS_PAR_KM);
 const de = (lat, lon) => [uDe(lon), vDe(lat)];
 
-// --- LA SECTION DES RUES, À LA RÈGLE DU KIT (v333) ---------------------------
+// --- LA SECTION DES RUES, À LA RÈGLE DU KIT (v337) ---------------------------
 //
 // Les largeurs de Londres étaient relevées à la main : une avenue nommée avait
 // 1,4 à 2,4 blocs de chaussée (`l` de 0,7 à 1,2) pour une voiture de 2,26 — les
@@ -521,7 +521,7 @@ export const VOIES_LONDRES = VOIES;
 // chaussée de trois blocs, trottoirs de deux. Chaque trame garde son ANGLE
 // — le damier penché de la City reste penché — c'est lui qui fait Londres.
 //
-// À LA RÈGLE DU KIT (v333) : la rue de la trame est une COLLECTRICE (deux
+// À LA RÈGLE DU KIT (v337) : la rue de la trame est une COLLECTRICE (deux
 // voies de 3,2 m, trottoirs de 2,5 m), et SI L'ÉLARGISSEMENT MANGE LES
 // BÂTIMENTS, ON RECOMPOSE LES LOTS — le pas grandit dans le rapport des
 // emprises (méthode `aLaRegle` de Paris, v303), donc l'îlot aussi. Les
@@ -657,7 +657,7 @@ export function solLondres(x, z) {
   const du = u - t.cu, dv = v - t.cv;
   const a = du * c - dv * s, b = du * s + dv * c;
   // Une rue de la trame qui DOUBLE une avenue — parallèle, à moins de
-  // `RECUL_TRAME` — n'est pas tracée (v333) : voir plus bas.
+  // `RECUL_TRAME` — n'est pas tracée (v337) : voir plus bas.
   let dRue = Infinity;
   const ra = Math.abs(a - Math.round(a / t.pu) * t.pu);
   if (ra < t.s && !doubleUneAvenue(u, v, s, c)) dRue = ra;
@@ -668,7 +668,7 @@ export function solLondres(x, z) {
   return null;
 }
 
-// LE LOT QUI BORDE UNE AVENUE GARDE SON ÎLOT (v333). La trame de la v178 était
+// LE LOT QUI BORDE UNE AVENUE GARDE SON ÎLOT (v337). La trame de la v178 était
 // tracée PAR-DESSUS les avenues, sans les regarder : entre deux avenues
 // parallèles, une rue de la trame venait s'intercaler à quelques blocs de
 // chacune. À trois blocs et demi de chaussée cela laissait des immeubles ; à la
@@ -1002,7 +1002,7 @@ function buildGlobe(poser) {
 // recopiait en dur cherchait les bus là où ils n'étaient plus — le même piège
 // que `r: 66` à San Francisco, du côté du banc. Il les demande ici.
 //
-// ET DEPUIS LA v333 ELLES SE CALCULENT SUR LA SECTION. Les bus et les taxis
+// ET DEPUIS LA v337 ELLES SE CALCULENT SUR LA SECTION. Les bus et les taxis
 // étaient posés au milieu de la chaussée, sur l'axe où roulent les convois :
 // mesuré, chacun de leurs blocs à 0,1 à 2,1 blocs d'un circuit, pour une
 // voiture de 1,13 de demi-largeur — la circulation les traversait (la dette
