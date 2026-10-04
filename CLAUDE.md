@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Les rues de Nice à la règle du kit (v341) — une règle partagée se corrige pour toutes les villes qui la lisent
+## Les rues de Nice à la règle du kit (v343) — une règle partagée se corrige pour toutes les villes qui la lisent
 
 Deux règles.
 
@@ -787,6 +787,50 @@ Deux règles.
   rue de la trame à seize blocs d'une avenue). Un îlot se mesure de trottoir à
   trottoir : demi-emprise + `ILOT_MIN` + demi-emprise, 16,4. Corrigé dans la
   règle partagée, Londres remesurée avec (26,6 → 28,7 %).
+
+## Le ciel de chaque ville (v342) — la courbe de Paris posée sur SA corniche
+
+Le lot 3 de la dette de la v335 : quarante-sept monuments des villes
+engendrées. Quatre règles.
+
+- **UNE COURBE SE TRANSPORTE EN UNITÉS DE CORNICHE, PAS EN BLOCS.** Garder le
+  `K` de Paris (17,5) sur une corniche de treize blocs donne au-dessus des toits
+  une pente de plus d'un bloc par mètre : le palais d'Hiver (22 m) à vingt-quatre
+  blocs, le contraire d'une échelle. `blocsDuCiel(m, c)` met `K` à
+  `K_CIEL × c / 20` : un monument N fois plus haut que les toits l'est dans le
+  ciel de sa ville comme dans celui de Paris. La corniche (`CIELS`) est une
+  MESURE — la plus haute médiane des immeubles autour des repères de la ville.
+- **UN BÂTISSEUR PARTAGÉ SE LIT EN CORPS ET COURONNE.** `corps: [a1, sommet]`
+  (`paliersDuCorps`) : le corps de section constante (tambour, fût, murs) prend
+  l'étirement, la couronne (calotte, flèche, toit) seulement sa racine. Une forme
+  qui ne se lit pas ainsi (une enceinte à tours, une pagode) écrit ses paliers
+  en mètres, comme Paris.
+- **LE CIEL GARDE SON ORDRE, ET LA COURBE PASSE SOUS LE PLUS HAUT REPÈRE.** Un
+  repère plus haut dans la vraie ville qu'un monument remis à l'échelle reste
+  au-dessus de lui, monuments étirés ET repères fixes (le témoin les compare
+  paire par paire, hauteurs vraies écrites dans le témoin). Mon premier jet
+  MONTAIT les repères gênants : la tour de Galata, la Westerkerk sont des fûts
+  d'un bloc de large, et étirés ce sont des aiguilles — le piège même de la
+  v335, vu en capture. On comprime donc la courbe de la ville (`[c, k]`, `k` un
+  RÉSULTAT au centième) ; seul un repère qui a du corps (coupole, prang) monte
+  avec elle (`ordre`). Et un fût du lot (`fut`) ne dépasse pas une fois et demie
+  sa hauteur d'auteur.
+- **LE BAS D'UNE CALOTTE N'EST PAS UN TAMBOUR.** Les premières couches d'une
+  coupole partagée ont le rayon du tambour mais la couleur de la calotte : les
+  étirer avec le corps faisait un obus d'ardoise (Rome, Florence, Berlin en
+  capture). Le corps d'une coupole s'arrête au tambour : on lit les couleurs
+  d'un bâtisseur avant d'écrire ses paliers, pas seulement ses rayons.
+- **CE QUI EST BAS DANS LA VRAIE VILLE SORT DE LA DETTE EN `vrai`, PAS EN
+  AIGUILLE.** La colonne de Marie (11 m), le Pavillon d'or, Topkapi, le Templo
+  Mayor, Wat Pho : étirés, ils seraient devenus des poteaux. Une dette se rembourse
+  aussi en disant vrai.
+- **UNE RÉSOLUTION DE CONFLIT SE CHARGE AVANT DE SE POUSSER.** Au rebase sur
+  la v340, les deux côtés ajoutaient une entrée en tête de `nouveautes.js` ;
+  git a coupé le conflit AU MILIEU d'un objet, ma résolution par expression a
+  recollé les deux moitiés sans `],\n  },`, et le module ne se chargeait plus —
+  journal vide dans le jeu, trois rouges de `maj.js`. Après tout conflit dans un
+  fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
+  journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
 
 ## Les rues de Londres à la règle du kit (v339) — un plan deux fois plus serré ne porte pas les mêmes rues
 
@@ -914,6 +958,32 @@ Le point (c) du kit « monde fidèle », sur toute la carte. Trois règles.
   escalier de cubes de roche — l'adoucir, c'est bouger le relief, décision de
   Max) ; une berge de trois blocs garde sa couronne d'herbe. *(Le paysage
   lointain et les arbres ont reçu la règle en v340.)*
+
+## Les déserts chauds (v341) — le climat est une donnée de géographie, comme la côte
+
+Le point (d) du kit « monde fidèle », dans sa plus petite tranche utile. Trois
+règles.
+
+- **LE CLIMAT SE RELÈVE COMME LES CÔTES, EN POLYGONES DE FAITS.** `DESERTS`
+  (terre.js) porte les contours des grands déserts chauds au degré, à côté de
+  `CONTOURS` et `CHAINES`, avec la même boîte de rejet ; `desertReel(lat,
+  lon)` est pure. Le monde demande `aride(x, z)` (world.js) : `cielDe`, et un
+  bord qui tremble d'un demi-degré (fbm) — un désert au cordeau ferait
+  maquette, comme une côte. Les steppes, la toundra et les tropiques humides
+  sont d'autres tranches, et c'est déclaré.
+- **UNE SEULE QUESTION, TROIS LECTEURS — et la matière seule change.** Le
+  générateur pose sable sur sable (avant les falaises, qui ne regardent que
+  l'herbe), `treeAt` refuse le désert, le paysage lointain
+  (`blocDeSurface`) et la carte du monde (`couleur`) lisent `world.aride`.
+  Drapeau `climat` de `CONF_NEUF` seule : `CONF_V308` et `CONF_AVANT` ne le
+  portent pas, les marches de migration jugent sur le monde où un bloc a été
+  posé (v306). Un témoin compare au monde SANS la règle : zéro bloc de forme
+  différente, et zéro bloc différent hors des déserts.
+- **UN SITE DE TÉMOIN SE CHOISIT LOIN DE TOUT CE QUI A SA PROPRE RÈGLE.** Mon
+  premier site « tempéré » était la Beauce à 48,3° N : DANS le disque de Paris
+  doublé (370 blocs), où le paysage lointain est gris de ville — 640 sommets
+  verts sur 2 141. Le Kansas, loin de toute ville, rend 2 452. Un point écrit
+  en latitude se vérifie contre les disques avant de servir de témoin.
 
 ## Les arbres au bord, et les falaises vues de loin (v340) — une règle de matière se dit à TOUT ce qui pose quelque chose dessus
 

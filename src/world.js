@@ -96,7 +96,7 @@ import { routeEn, rubansDans, brancherSol as brancherSolRoutes } from './routes.
 const Z_ARCTIQUE = Math.round(zDeLatitude(78));
 const Z_ANTARCTIQUE = Math.round(zDeLatitude(-63));
 export const dansUneCalotte = (z) => z < Z_ARCTIQUE || z > Z_ANTARCTIQUE;
-import { surTerreReelle, reliefReel } from './terre.js';
+import { surTerreReelle, reliefReel, desertReel } from './terre.js';
 import { ficheColonne, colonneCouverte, solContinu as solContinuDe } from './solcontinu.js';
 
 // L'accroche au sol continu : jusqu'où l'on redescend sur la surface sans
@@ -1500,7 +1500,7 @@ function repereAvant(lm) {
 export const CONF_NEUF = {
   cle: 'neuf', villes: CITIES, aeroports: AEROPORTS, gaulois: GAULOIS, volcan: VOLCANO,
   places: PLACES, reperes: LANDMARKS, hauteurParis, parisAvant: false, fonduDoux: true,
-  mursDeQuai: true, falaises: true, villesAvant: false,
+  mursDeQuai: true, falaises: true, villesAvant: false, climat: true,
 };
 // LE MONDE DE LA v306 À LA v308 — celui d'aujourd'hui sans le fondu doux des
 // villes (v309). La marche 6 → 7 juge sur lui ce qui y a été posé, et la marche
@@ -1508,9 +1508,9 @@ export const CONF_NEUF = {
 // ne se met JAMAIS à jour. Même clé que `CONF_NEUF` : ses zones à terre sont
 // les mêmes.
 // Et ces deux mondes-là ont les villes d'avant leur passe au kit (Londres
-// v339, `londres-v332.js` ; Nice v341, `nice-v340.js`) : c'est celles qu'on y
+// v339, `londres-v332.js` ; Nice v343, `nice-v340.js`) : c'est celles qu'on y
 // voyait (`villesAvant`).
-export const CONF_V308 = { ...CONF_NEUF, reperes: LANDMARKS_V317, fonduDoux: false, mursDeQuai: false, falaises: false, villesAvant: true };
+export const CONF_V308 = { ...CONF_NEUF, reperes: LANDMARKS_V317, fonduDoux: false, mursDeQuai: false, falaises: false, villesAvant: true, climat: false };
 export const CONF_AVANT = {
   cle: 'avant-v306', villes: CITIES_AVANT, aeroports: AEROPORTS_AVANT_V306, gaulois: GAULOIS_AVANT,
   volcan: VOLCANO_AVANT, places: PLACES_AVANT, reperes: LANDMARKS_V317.map(repereAvant),
@@ -2059,7 +2059,7 @@ function marquerParisCede(ens, x, z) {
 // une ancienne rue n'est pas enfermée dans un immeuble neuf, une cabane contre
 // un ancien mur garde son mur. La date est celle de la publication.
 export const DATE_RUES_LONDRES = Date.UTC(2026, 9, 4, 15, 0, 0);
-// Nice suit la même règle à la v341 (`nice-v340.js`), avec sa propre date.
+// Nice suit la même règle à la v343 (`nice-v340.js`), avec sa propre date.
 export const DATE_RUES_NICE = Date.UTC(2026, 9, 4, 13, 0, 0);
 const VILLES_FIGEES = [
   { ancre: LONDRES, date: DATE_RUES_LONDRES },
@@ -2569,7 +2569,7 @@ export class World {
     this.edits = new Map();       // "x,y,z" -> block id (player modifications)
     this.monumentsTouches = new Set();  // les monuments HD qu'un enfant a modifiés (v292)
     this.colonnesCedees = new Set();    // les colonnes de Paris où la ville cède à ce qu'un enfant a bâti (v306)
-    this.colonnesVilleAvant = new Set();  // celles de Londres et de Nice où la ville d'avant le kit reste (v339, v341)
+    this.colonnesVilleAvant = new Set();  // celles de Londres et de Nice où la ville d'avant le kit reste (v339, v343)
     this.cacheSol = new Map();          // "x,z" -> { nat, cote } : la fiche d'une colonne (sol continu, v297)
     this.sansSolContinu = false;        // ?solcontinu=0 : la mesure A/B, jamais un réglage
     this.editTimes = new Map();   // "x,y,z" -> ms timestamp, for multiplayer merge
@@ -3001,6 +3001,7 @@ export class World {
     // une paroi de roche et du bord d'une berge basse une grève de sable — un
     // chêne n'y pousse pas. Même règle, même lecture que le générateur.
     if (this.solDeLArbre(x, z, h) !== BLOCK.GRASS) return null;
+    if (this.aride(x, z)) return null;                // ni dans un désert (v341)
     // ni au-dessus d'un puits de grotte : le générateur y creuse jusqu'au
     // sommet, et l'arbre flottait sur le vide (trois sur douze mille, mesuré)
     if (Math.abs(fbm(x * 0.02, z * 0.02, SEED + 882) - 0.5) < 0.015 && h > WATER_LEVEL + 2 && h < 50
@@ -3010,6 +3011,18 @@ export class World {
     const roll = hash2i(x, z, SEED + 779);
     const kind = roll < 0.55 ? 0 : roll < 0.85 ? 1 : 2;
     return { h, trunk: kind === 2 ? trunk + 1 : trunk, kind };
+  }
+
+  // LES DÉSERTS CHAUDS (v341). Un point de campagne est-il dans un désert
+  // chaud réel (`desertReel`, terre.js) ? La latitude et la longitude du
+  // planisphère (`cielDe`), et un bord qui tremble d'un demi-degré — un
+  // désert au cordeau ferait maquette, comme une côte (`hauteurTerre`).
+  // Déterministe : deux tablettes engendrent le même erg.
+  aride(x, z) {
+    if (!this.conf.climat) return false;
+    const ciel = cielDe(x, z, 'terre');
+    const t = fbm(x * 0.006, z * 0.006, SEED + 931) - 0.5;
+    return desertReel(ciel.lat + t * 1.2, ciel.lon + t * 1.2) !== null;
   }
 
   // Le sommet que la règle des falaises et des berges (v326) donne à une
@@ -3077,6 +3090,12 @@ export class World {
         // rare open shafts let explorers climb in from the surface
         const entrance = !city && caveTunnel < 0.015 && h > WATER_LEVEL + 2 && h < 50 && caveY > h - 12;
 
+        // LES DÉSERTS CHAUDS (v341) : une colonne de campagne d'un désert réel
+        // a le sol du désert du jeu, sable sur sable — la matière, jamais la
+        // hauteur. Avant les falaises : elles ne regardent que l'herbe.
+        if (top === BLOCK.GRASS && !city && this.conf.climat && !dansVilleMonde(wx, wz) && this.aride(wx, wz)) {
+          top = BLOCK.SAND; filler = BLOCK.SAND;
+        }
         // LES FALAISES ET LES BERGES (v326) : la MATIÈRE d'une colonne de
         // campagne qui borde une marche ou de l'eau, jamais sa hauteur.
         let rive = null;
@@ -3365,7 +3384,7 @@ export class World {
         // Market Street entre les deux, la plage, les quais et les parcs.
         // Nice et Lille : chacune sa trame, ses places et ses maisons. Comme à
         // San Francisco, la trame générique ne s'applique pas par-dessus.
-        // Londres (v339) et Nice (v341) d'avant le kit dans les mondes d'avant,
+        // Londres (v339) et Nice (v343) d'avant le kit dans les mondes d'avant,
         // et sous les colonnes où un enfant a bâti avant leur date.
         const villeAvant = city && (city.key === 'londres' || city.key === 'nice') && (this.conf.villesAvant
           || (this.colonnesVilleAvant.size > 0 && this.colonnesVilleAvant.has(cleColonneParis(wx, wz))));

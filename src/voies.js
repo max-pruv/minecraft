@@ -527,7 +527,7 @@ export function carrefoursDeVoies(voies) {
   return out;
 }
 
-// --- une trame qui ne double pas ses avenues (v339, Londres ; v341, Nice) ----
+// --- une trame qui ne double pas ses avenues (v339, Londres ; v343, Nice) ----
 //
 // La trame d'une ville bâtie à la main est tracée sans regarder ses avenues :
 // une de ses rues vient s'intercaler à quelques blocs d'une avenue parallèle.

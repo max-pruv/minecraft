@@ -6,12 +6,30 @@
 
 export const NOUVEAUTES = [
   {
-    v: 341,
+    v: 343,
     titre: 'Les rues de Nice s\'élargissent',
     puces: [
       'La Promenade à deux voies',
       'Des îlots plus grands dans la ville neuve',
       'Londres garde encore plus d\'immeubles',
+    ],
+  },
+  {
+    v: 342,
+    titre: 'Les monuments du monde grandissent',
+    puces: [
+      'Saint-Pierre domine Rome, le Duomo Florence',
+      'Chaque ville a son propre ciel',
+      'Les plus hauts restent les plus hauts',
+    ],
+  },
+  {
+    v: 341,
+    titre: 'Les déserts',
+    puces: [
+      'Le Sahara est enfin de sable',
+      'Et l\'Arabie, l\'Australie, l\'Atacama',
+      'Pas un arbre dans le désert',
     ],
   },
   {

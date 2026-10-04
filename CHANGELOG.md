@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v341 — Les rues de Nice à la règle du kit
+## v343 — Les rues de Nice à la règle du kit
 
 **Pourquoi.** La deuxième des cinq villes bâties à la main restées sur leurs
 largeurs relevées à la main (dette v271). La ruelle du Vieux-Nice faisait 1,2
@@ -54,6 +54,70 @@ une ancienne rue n'est pas enfermée et une cabane garde son toit (désarmé :
 même fonction. Les trois circuits de Nice restent à 99-100 % sur la rue.
 
 ---
+
+## v342 — Les monuments du monde dominent leurs villes
+
+**Pourquoi.** La v335 a remis Paris à l'échelle de son ciel, et la même mesure,
+lancée sur toutes les villes, a rendu quarante-sept monuments des villes
+engendrées plus bas que les immeubles autour d'eux : St-Pierre de Rome à douze
+blocs pour des toits à treize, le palais d'Hiver et la Hofburg à cinq, le
+Parthénon à six, Sainte-Sophie, Saint-Basile et le Duomo de Florence noyés dans
+la ville. Ils étaient déclarés en dette dans le témoin, « lot 3 ».
+
+**Ce que ça change.** Chaque ville a désormais son ciel : un bloc pour un mètre
+jusqu'à la corniche de SES immeubles (mesurée, de huit blocs à Jérusalem à vingt
+à Los Angeles), puis la courbe de Paris posée sur cette corniche. St-Pierre
+monte à trente-huit blocs, le Duomo de Florence à trente-six, le Berliner Dom à
+trente-cinq, Saint-Sauveur-sur-le-Sang à trente et un, Saint-Basile à
+vingt-sept, la gare Victoria de Bombay à vingt-six. L'emprise ne bouge pas d'un
+bloc : on étire le corps (le tambour d'une coupole, les murs d'un palais), la
+couronne s'étire moins. Et le ciel garde son ordre : là où un repère plus haut
+dans la vraie ville est un fût d'un bloc (la Westerkerk, la tour de Galata, la
+Torre Latino), la courbe de la ville passe SOUS lui ; un fût ne monte jamais
+au-delà d'une fois et demie sa hauteur. Cinq monuments sortent de la dette parce
+qu'ils sont bas dans la vraie ville aussi : la colonne de Marie, Topkapi, le
+Templo Mayor, le Pavillon d'or et Wat Pho.
+
+**Ce qui le prouve.** Deux témoins neufs dans `plafond.js` : plus aucun monument
+du lot 3 en dette (quarante-sept sur l'ancien code), et l'ordre du vrai ciel
+gardé ville par ville, contre les monuments étirés ET les repères fixes (tour de
+Pise, Westerkerk, Fernsehturm, CN Tower…) — rouge quand on retire un repère de
+la table. Le témoin des monuments mesure toujours 215 monuments contre la
+médiane de leurs immeubles, sans une faute. Captures de rue et de ciel : elles
+ont démonté trois premiers jets — des coupoles en obus (le corps étirait le bas
+de la calotte), des minarets en aiguilles (Santa Justa à vingt-six blocs,
+Galata montée pour l'ordre) et les tours d'angle du Kremlin et du Grand Palais,
+poteaux d'un bloc étirés jusqu'à trente.
+
+
+---
+
+## v341 — Les déserts
+
+**Pourquoi.** Le planisphère savait la terre, la mer et les grandes chaînes de
+montagnes ; il ne savait pas le climat. Le cœur du Sahara, le Rub al-Khali,
+l'intérieur australien, l'Atacama étaient des prairies boisées : mesuré sur
+`origin/main`, 14 colonnes de sable sur 4 309 au cœur de cinq déserts, et 49
+arbres. C'est le point (d) du kit « monde fidèle », les textures par climat,
+dans sa plus petite tranche utile.
+
+**Ce que ça change.** Les grands déserts chauds du monde réel — Sahara,
+Arabie, Iran, Thar, Taklamakan et Gobi, Kalahari et Namib, intérieur
+australien, Atacama, Mojave et Sonora — sont de sable, sans un arbre, avec un
+bord qui tremble comme une côte. Autour de Las Vegas, de Phoenix, de Riyad,
+d'Ispahan ou de Tombouctou, la campagne est blonde ; le delta du Nil, le
+littoral méditerranéen et le Maroc restent verts. Le paysage lointain et la
+carte du monde disent la même chose que le sol. Seule la matière change : la
+forme du monde est identique bloc pour bloc, et les deux empreintes de
+`plafond.js` ne bougent pas.
+
+**Ce qui le prouve.** Trois témoins neufs, deux rouges sur `origin/main` : au
+cœur de cinq déserts réels, 4 309 colonnes de sable sur 4 309 et aucun arbre
+(14 de sable et 49 arbres avant) ; au Kansas, dans l'Iowa, la Pampa et en
+Ukraine, zéro bloc différent du monde sans la règle, et dans les déserts zéro
+bloc de forme différente ; vu de loin et sur la carte, le Sahara est blond et
+le Kansas vert (`plafond.js`, dans la page). Mesuré sous node : 8 546 colonnes
+passent de l'herbe au sable autour de douze villes, coût par morceau inchangé.
 
 ## v340 — Les arbres et les falaises
 

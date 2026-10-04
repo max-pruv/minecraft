@@ -91,7 +91,7 @@ function decaler(buf, N, comp, dix, diz) {
 // Mars, volcan — et va chercher sa teinte dans la palette de la carte, pour que
 // la minicarte et le paysage ne disent pas deux choses différentes du même
 // endroit (leçon de `couleurToits`).
-function blocDeSurface(x, z, h) {
+function blocDeSurface(x, z, h, world) {
   if (h < WATER_LEVEL) return BLOCK.WATER;
   if (dansUneCalotte(z)) return h <= WATER_LEVEL + 1 ? BLOCK.ICE : BLOCK.SNOW;
   // Les trois biomes ronds sont minuscules et loin de presque toutes les
@@ -105,6 +105,8 @@ function blocDeSurface(x, z, h) {
   }
   if (h <= WATER_LEVEL + 1) return BLOCK.SAND;
   if (h >= 58) return BLOCK.SNOW;
+  // le désert chaud réel (v341), la même question que le générateur
+  if (world && world.aride && world.aride(x, z)) return BLOCK.SAND;
   return BLOCK.GRASS;
 }
 
@@ -390,7 +392,7 @@ export class Horizon {
     const pos = this.geo.attributes.position.array;
     const col = this.geo.attributes.color.array;
     const o = i * 3;
-    const id = blocDeSurface(x, z, h);
+    const id = blocDeSurface(x, z, h, this.world);
     // Un demi-bloc SOUS la vraie surface : là où le monde chargé et le paysage
     // lointain se touchent, c'est toujours le vrai terrain qui gagne.
     pos[o] = x;
