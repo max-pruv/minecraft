@@ -704,31 +704,33 @@
 - [ ] **LES MONUMENTS DES AUTRES VILLES PLUS BAS QUE LEURS IMMEUBLES** (v335,
   mesuré, élargi par Max : « lance sur toutes les villes »). Le témoin de
   `plafond.js` mesure 215 monuments dans leurs villes contre la médiane des
-  immeubles autour (colonnes à moins de trente blocs de la boîte, hors de toute
-  autre boîte, sommet à six blocs au moins au-dessus du relief, feuillage
-  exclu). `BAS_DECLARES` en nomme 94 : 37 réellement bas (ponts, places,
-  statues, fontaines, palais de plain-pied — ils restent) et 57 en DETTE, à
-  rayer de la liste en les remettant à l'échelle. **Lot 2, les villes bâties à
-  la main** : Arche de Washington (NY) 12/13, Opéra de Lille 6/7, Buckingham
-  7/8, et à Washington le Trésor 8/13, les Archives 11/13, le Théâtre Ford
-  8/11, l'Histoire américaine 9/10, l'Indien d'Amérique 8/9. **Lot 3, les villes
-  engendrées** (hauteur/médiane) : St-Pierre 12/13, Duomo et Baptistère de Pise
-  10/12 et 9/12, fort d'Agra 6/10, Palais royal et porte d'Alcalá de Madrid 5/13
-  et 10/13, São Jorge 7/12, Santa Justa 11/13, palais du Dam 5/13, Rijksmuseum
-  5/10, Brandebourg et Reichstag 10/13, colonne de Marie 6/13, Hofburg 5/13,
-  château de Prague 5/10, Duomo de Florence 11/13, Parthénon, temple de Zeus et
-  Parlement d'Athènes 6, 6 et 5 pour 12, Sainte-Sophie 12/13, Mosquée bleue
-  11/13, Topkapi 7/13, Saint-Basile 11/13, Kremlin 8/13, Bolchoï 6/13, palais
-  d'Hiver 5/10, Saint-Sauveur 11/12, Kazan 6/12, Palais royal et Storkyrkan de
-  Stockholm 5/13 et 11/13, Amalienborg 5/13, Rundetaarn 11/13, Pavillon d'or
-  10/12, Supertrees 8/13, Grand Palais et Wat Pho de Bangkok 7/10 et 4/10, mur
-  des Lamentations 6/8, Taj Mahal Palace 5/10, gare Victoria 10/12, porte de
-  l'Inde 13/15, Jantar Mantar 4/12, Disney Hall 10/15, Rogers Centre 11/13,
-  ancien hôtel de ville de Toronto 13/15, cathédrale, Templo Mayor et Bellas
-  Artes de Mexico 10/13, Casa Rosada 5/12, Cabildo 7/12. La règle à appliquer
-  par ville : l'échelle du ciel de la ville (un bloc pour un mètre jusqu'à la
-  corniche de SES immeubles, puis une courbe sous son plus haut repère), par la
-  même table de paliers — la courbe de Paris est `blocsDuCiel`.
+  immeubles autour. **Lot 3, les villes engendrées : FAIT en v341** — chaque
+  ville a son ciel (`CIELS`, corniche mesurée), quarante-deux monuments remis à
+  l'échelle, treize repères montés pour garder l'ordre du vrai ciel, cinq
+  reclassés `vrai` (colonne de Marie, Topkapi, Templo Mayor, Pavillon d'or, Wat
+  Pho). **Reste le lot 2, les villes bâties à la main** (une autre session) :
+  Arche de Washington (NY) 12/13, Opéra de Lille 6/7, Buckingham 7/8, et à
+  Washington le Trésor 8/13, les Archives 11/13, le Théâtre Ford 8/11,
+  l'Histoire américaine 9/10, l'Indien d'Amérique 8/9.
+- [ ] **LA GRANDE ROUE DU PRATER SOUS LA HOFBURG (v341), déclaré.** La roue (65 m)
+  reste à seize blocs et la Hofburg (30 m) monte à vingt et un : une roue ne
+  s'étire pas, elle deviendrait une ellipse. Le témoin d'ordre ne la compte pas.
+  Si on veut la garder au-dessus, c'est son bâtisseur (`buildGrandeRoue`) qui
+  doit grandir d'un rayon, pas une table de paliers. Même cas pour Tivoli.
+- [ ] **UNE COUPOLE SANS SA NEF DEVIENT UNE TOUR (v341), vu en capture.** Les
+  bâtisseurs partagés (`dome`, `minaret`, `palaisLong`) sont des gabarits : St-
+  Pierre est une coupole de treize blocs de large SANS la basilique autour.
+  Remise à sa hauteur (38 blocs), elle garde les proportions vraies du tambour
+  et de la calotte, mais sans nef sa silhouette est élancée. Le premier jet
+  étirait aussi les premières couches de la calotte (même rayon que le tambour,
+  couleur de la calotte) : un obus d'ardoise, corrigé (le corps s'arrête au
+  tambour). Le remède de fond est un bâtisseur par monument, avec sa nef — pas
+  une table de paliers.
+- [ ] **LES VILLES ENGENDRÉES HORS DU LOT 3 N'ONT PAS LEUR CIEL (v341).** Seules
+  les vingt-cinq villes qui portaient une dette ont une corniche dans `CIELS` ;
+  ailleurs les repères sont au-dessus de leurs immeubles mais pas à l'échelle de
+  leur vraie hauteur (l'hôtel de ville de Bruxelles, minaret de 22 blocs pour
+  96 m ; la Frauenkirche de Munich à 15 pour 99 m). Même règle, même table.
 - [ ] **UNE CABANE SUR UN ANCIEN TOIT DE MONUMENT SE RETROUVE DEDANS (v335),
   déclaré.** Le relevé des toits (v301) emporte ce qu'on a bâti sur un
   immeuble ; rien n'emporte ce qu'on a bâti sur un monument étiré. Le bloc

@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 342,
+    titre: 'Les monuments du monde grandissent',
+    puces: [
+      'Saint-Pierre domine Rome, le Duomo Florence',
+      'Chaque ville a son propre ciel',
+      'Les plus hauts restent les plus hauts',
+    ],
+  },
+  {
     v: 341,
     titre: 'Les déserts',
     puces: [

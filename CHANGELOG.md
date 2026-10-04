@@ -20,6 +20,43 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v342 — Les monuments du monde dominent leurs villes
+
+**Pourquoi.** La v335 a remis Paris à l'échelle de son ciel, et la même mesure,
+lancée sur toutes les villes, a rendu quarante-sept monuments des villes
+engendrées plus bas que les immeubles autour d'eux : St-Pierre de Rome à douze
+blocs pour des toits à treize, le palais d'Hiver et la Hofburg à cinq, le
+Parthénon à six, Sainte-Sophie, Saint-Basile et le Duomo de Florence noyés dans
+la ville. Ils étaient déclarés en dette dans le témoin, « lot 3 ».
+
+**Ce que ça change.** Chaque ville a désormais son ciel : un bloc pour un mètre
+jusqu'à la corniche de SES immeubles (mesurée, de huit blocs à Jérusalem à vingt
+à Los Angeles), puis la courbe de Paris posée sur cette corniche. St-Pierre
+monte à trente-huit blocs, le Duomo de Florence à trente-six, le Berliner Dom à
+trente-cinq, Saint-Sauveur-sur-le-Sang à trente et un, Saint-Basile à
+vingt-sept, la gare Victoria de Bombay à vingt-six. L'emprise ne bouge pas d'un
+bloc : on étire le corps (le tambour d'une coupole, les murs d'un palais), la
+couronne s'étire moins. Et le ciel garde son ordre : là où un repère plus haut
+dans la vraie ville est un fût d'un bloc (la Westerkerk, la tour de Galata, la
+Torre Latino), la courbe de la ville passe SOUS lui ; un fût ne monte jamais
+au-delà d'une fois et demie sa hauteur. Cinq monuments sortent de la dette parce
+qu'ils sont bas dans la vraie ville aussi : la colonne de Marie, Topkapi, le
+Templo Mayor, le Pavillon d'or et Wat Pho.
+
+**Ce qui le prouve.** Deux témoins neufs dans `plafond.js` : plus aucun monument
+du lot 3 en dette (quarante-sept sur l'ancien code), et l'ordre du vrai ciel
+gardé ville par ville, contre les monuments étirés ET les repères fixes (tour de
+Pise, Westerkerk, Fernsehturm, CN Tower…) — rouge quand on retire un repère de
+la table. Le témoin des monuments mesure toujours 215 monuments contre la
+médiane de leurs immeubles, sans une faute. Captures de rue et de ciel : elles
+ont démonté trois premiers jets — des coupoles en obus (le corps étirait le bas
+de la calotte), des minarets en aiguilles (Santa Justa à vingt-six blocs,
+Galata montée pour l'ordre) et les tours d'angle du Kremlin et du Grand Palais,
+poteaux d'un bloc étirés jusqu'à trente.
+
+
+---
+
 ## v341 — Les déserts
 
 **Pourquoi.** Le planisphère savait la terre, la mer et les grandes chaînes de

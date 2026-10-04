@@ -770,6 +770,43 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Le ciel de chaque ville (v341) — la courbe de Paris posée sur SA corniche
+
+Le lot 3 de la dette de la v335 : quarante-sept monuments des villes
+engendrées. Quatre règles.
+
+- **UNE COURBE SE TRANSPORTE EN UNITÉS DE CORNICHE, PAS EN BLOCS.** Garder le
+  `K` de Paris (17,5) sur une corniche de treize blocs donne au-dessus des toits
+  une pente de plus d'un bloc par mètre : le palais d'Hiver (22 m) à vingt-quatre
+  blocs, le contraire d'une échelle. `blocsDuCiel(m, c)` met `K` à
+  `K_CIEL × c / 20` : un monument N fois plus haut que les toits l'est dans le
+  ciel de sa ville comme dans celui de Paris. La corniche (`CIELS`) est une
+  MESURE — la plus haute médiane des immeubles autour des repères de la ville.
+- **UN BÂTISSEUR PARTAGÉ SE LIT EN CORPS ET COURONNE.** `corps: [a1, sommet]`
+  (`paliersDuCorps`) : le corps de section constante (tambour, fût, murs) prend
+  l'étirement, la couronne (calotte, flèche, toit) seulement sa racine. Une forme
+  qui ne se lit pas ainsi (une enceinte à tours, une pagode) écrit ses paliers
+  en mètres, comme Paris.
+- **LE CIEL GARDE SON ORDRE, ET LA COURBE PASSE SOUS LE PLUS HAUT REPÈRE.** Un
+  repère plus haut dans la vraie ville qu'un monument remis à l'échelle reste
+  au-dessus de lui, monuments étirés ET repères fixes (le témoin les compare
+  paire par paire, hauteurs vraies écrites dans le témoin). Mon premier jet
+  MONTAIT les repères gênants : la tour de Galata, la Westerkerk sont des fûts
+  d'un bloc de large, et étirés ce sont des aiguilles — le piège même de la
+  v335, vu en capture. On comprime donc la courbe de la ville (`[c, k]`, `k` un
+  RÉSULTAT au centième) ; seul un repère qui a du corps (coupole, prang) monte
+  avec elle (`ordre`). Et un fût du lot (`fut`) ne dépasse pas une fois et demie
+  sa hauteur d'auteur.
+- **LE BAS D'UNE CALOTTE N'EST PAS UN TAMBOUR.** Les premières couches d'une
+  coupole partagée ont le rayon du tambour mais la couleur de la calotte : les
+  étirer avec le corps faisait un obus d'ardoise (Rome, Florence, Berlin en
+  capture). Le corps d'une coupole s'arrête au tambour : on lit les couleurs
+  d'un bâtisseur avant d'écrire ses paliers, pas seulement ses rayons.
+- **CE QUI EST BAS DANS LA VRAIE VILLE SORT DE LA DETTE EN `vrai`, PAS EN
+  AIGUILLE.** La colonne de Marie (11 m), le Pavillon d'or, Topkapi, le Templo
+  Mayor, Wat Pho : étirés, ils seraient devenus des poteaux. Une dette se rembourse
+  aussi en disant vrai.
+
 ## Les rues de Londres à la règle du kit (v339) — un plan deux fois plus serré ne porte pas les mêmes rues
 
 La première des cinq villes bâties à la main restées hors règle (dette v271).
