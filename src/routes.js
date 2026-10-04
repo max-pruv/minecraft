@@ -303,6 +303,22 @@ export const ROUTES = [
   // candidat (deux ponts) a été écarté : son entrée à Lyon (50°) n'avait que
   // dix-neuf relevés sur la rue, pour vingt exigés.
   { nom: 'A7', villes: ['lyon', 'marseille'], via: [[674, 2100], [663, 2138], [668, 2178], [732, 2585], [755, 2998], [858, 3398], [873, 3435]] },
+  // L'AP-2 (v338), MADRID–BARCELONE : la plus longue de l'Espagne, le long
+  // de l'AVE qui va droit de gare à gare (−14°) ; la route ne le croise
+  // jamais. Le pays monte vers la Catalogne : à l'approche de Barcelone, une
+  // chaîne à 45–60 blocs entre la ville et la côte, et Barcelone est sous
+  // son pays à l'ouest (43 à 47 à r + 10). Elle s'entre par son côté bas,
+  // −170° (trente-cinq blocs d'avenue sur la rue) ; Madrid par −28°
+  // (trente-quatre). Mesuré sous node (scratchpad cherche.mjs, chemins
+  // lissés) : 16 000 tracés, refus 14 646 déblai au milieu · 686 coude · 292
+  // aérodrome · 162 remblai · 96 ponts proches ; neuf admissibles, tous à
+  // ponts. LE JOINT SE MESURE SUR CHAQUE CANDIDAT : le premier avait une
+  // mare qui commence plus tôt sur le bord que sur l'axe, et sept points
+  // d'accotement sans rien dessous, 2,5 blocs avant la culée (v300 : une
+  // décision prise sur l'axe se vérifie sur toute la largeur). Celui-ci :
+  // 2 094 blocs, quatre ponts, joint fermé, déblai 8,8, remblai 3,1, pente
+  // 0,062, zéro colonne sur le rail.
+  { nom: 'AP-2', villes: ['madrid', 'barcelone'], via: [[-2467, 5133], [-2278, 5071], [-2082, 5032], [-1891, 4977], [-1704, 4907], [-1512, 4854], [-1321, 4797], [-1124, 4765], [-927, 4729], [-738, 4667], [-549, 4605], [-510, 4595]] },
 ];
 
 // --- la section -----------------------------------------------------------------
