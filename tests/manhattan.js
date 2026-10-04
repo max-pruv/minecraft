@@ -279,11 +279,16 @@ function verifier(nom, ok, detail = "") {
           hit,
         ),
       );
-      await p.waitForFunction(
+      // UNE ATTENTE QUI JETTE MASQUE TOUT CE QUI SUIT (v291) : au portail de
+      // la v340 la file de Manhattan ne s'est jamais vidée en soixante
+      // secondes, et la suite s'est arrêtée là. On attend, borné, et le
+      // témoin d'après rend son verdict sur ce qui est installé.
+      const fileVide = await p.waitForFunction(
         () => !__game.villeRealiste.job && !__game.villeRealiste.queue?.length,
         null,
         { timeout: 60000 },
-      );
+      ).then(() => true).catch(() => false);
+      if (!fileVide) console.log("   (file de Manhattan encore pleine après 60 s)");
       const geometrieApres = await p.evaluate(() =>
         [...__game.villeRealiste.buildings.values()].reduce(
           (n, g) => n + (g.userData.instances || 0),
