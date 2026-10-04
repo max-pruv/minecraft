@@ -4653,7 +4653,17 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       // et depuis la v350 elle la prend comme une vraie voiture — vite au
       // départ, plus lentement vers la pointe : cinq secondes de JEU pour une
       // citadine, donc bien plus de montre au banc. Borné, jamais un délai fixe.
-      while (Date.now() - t0 < 45000) { const r = await lire(); if (r.v >= prep.max * 0.9) break; await dormirIci(200); }
+      // ET LE BUDGET SE COMPTE EN IMAGES DE JEU, PAS EN MONTRE (v277) : au
+      // portail de la fusion, 45 s de montre n'ont mené la citadine qu'à 20
+      // blocs/s (27 au portail d'avant, même code). Six cents images rendues
+      // valent trente secondes de jeu (dt borné à un vingtième) ; la montre
+      // n'est qu'un garde-fou.
+      const image0 = await tab.evaluate(() => window.__game.renderer.info.render.frame);
+      while (Date.now() - t0 < 180000) {
+        const r = await lire(); if (r.v >= prep.max * 0.9) break;
+        if (await tab.evaluate((i) => window.__game.renderer.info.render.frame - i > 600, image0)) break;
+        await dormirIci(200);
+      }
       for (let i = 0; i < 8; i++) { await dormirIci(200); vitesses.push(await lire()); }
       // puis le joystick à droite, toujours plein avant
       const avantVirage = await lire();
