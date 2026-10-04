@@ -34,7 +34,7 @@ const SUITES = [
   'carteMonde.js',   //  0 min 34 s
   'sauvegarde.js',   //  0 min 34 s
   'plafond.js',      //  0 min 51 s
-  'degats.js',       //  0 min 55 s (v338)
+  'degats.js',       //  0 min 55 s (v340)
   'visio.js',        //  1 min 03 s
   'maj.js',          //  1 min 34 s
   'realisme.js',     //  1 min 37 s
@@ -186,7 +186,7 @@ const GARDIENS = {
   'src/cap.js': ['monte.js', 'carte.js'],
   'src/gps.js': ['carte.js'],
   'src/fun.js': ['monte.js', 'carte.js', 'reglages.js', 'reseau.js', 'degats.js'],
-  // LES DÉGÂTS DE LA VOITURE (v338) : la règle pure et ce qui se voit.
+  // LES DÉGÂTS DE LA VOITURE (v340) : la règle pure et ce qui se voit.
   'src/degats.js': ['degats.js'],
   'src/degats3d.js': ['degats.js'],
   // Le hub : presque toute livraison y passe. Deux suites larges le couvrent —

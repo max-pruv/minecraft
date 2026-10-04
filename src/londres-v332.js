@@ -1,4 +1,4 @@
-// LONDRES TELLE QU'ELLE ÉTAIT JUSQU'À LA v338 — FIGÉE, ET JAMAIS MODIFIÉE.
+// LONDRES TELLE QU'ELLE ÉTAIT JUSQU'À LA v340 — FIGÉE, ET JAMAIS MODIFIÉE.
 //
 // La v339 passe Londres à la règle du kit (`voirie.js`) : ses rues
 // s'élargissent et ses îlots se recomposent. Un bloc qu'un enfant a posé avant
@@ -8,7 +8,7 @@
 // sinon un immeuble neuf l'enfermerait ou une rue neuve le laisserait flotter.
 // C'est la discipline de `paris-v302.js` (v303) et de `MONDES.terreAvant`
 // (v199) : une règle qui lit le générateur dit QUELLE version elle lit, et
-// cette version-là ne change plus. Recopié à l'octet depuis `londres.js` (inchangé de la v332 à la v338),
+// cette version-là ne change plus. Recopié à l'octet depuis `londres.js` (inchangé de la v332 à la v340),
 // seul cet en-tête est neuf.
 //
 // Londres.

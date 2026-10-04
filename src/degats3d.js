@@ -1,4 +1,4 @@
-// LES DÉGÂTS QUI SE VOIENT (v338) — carrosserie enfoncée, vitres étoilées,
+// LES DÉGÂTS QUI SE VOIENT (v340) — carrosserie enfoncée, vitres étoilées,
 // phares éteints, aileron arraché, fumée, flammes, carcasse calcinée.
 //
 // La règle vit dans `degats.js` (pure, lue sous node) ; ce fichier la DESSINE

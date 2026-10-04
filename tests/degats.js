@@ -1,4 +1,4 @@
-// LES DÉGÂTS DE LA VOITURE (v338).
+// LES DÉGÂTS DE LA VOITURE (v340).
 //
 // Max : « Comme dans GTA, quand tu crashes ton véhicule, il s'abîme, tu vois
 // vraiment les défauts de carrosserie… La voiture perd son sens, à un moment

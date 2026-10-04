@@ -1,4 +1,4 @@
-// Les captures des dégâts (v338) : la voiture neuve, puis enfoncée à l'avant
+// Les captures des dégâts (v340) : la voiture neuve, puis enfoncée à l'avant
 // qui fume, puis en feu, puis la carcasse — de jour, et le feu de nuit. Une vue
 // de face (l'enfant descendu, debout devant) et une vue de poursuite au volant.
 //
