@@ -20,6 +20,29 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v349 — Les forêts tropicales
+
+**Pourquoi.** L'Amazonie, le bassin du Congo, Bornéo étaient une campagne
+tempérée clairsemée : 196 arbres au cœur de trois forêts tropicales sur
+`origin/main`, et pas un palmier. C'est la dernière tranche de climat du
+point (d) du kit « monde fidèle ».
+
+**Ce que ça change.** Dix forêts tropicales humides réelles — l'Amazonie,
+le golfe de Guinée et le Congo, l'Insulinde de Sumatra à la Nouvelle-Guinée,
+les Philippines, l'Amérique centrale, la forêt atlantique du Brésil, l'est de
+Madagascar, le Kerala, le Bengale et l'Assam, le Queensland — sont une forêt
+dense de grands feuillus et de palmiers, l'herbe d'un vert profond. Le
+paysage lointain et la carte disent la même chose. La forme du monde ne bouge
+pas d'un bloc ; les villes gardent leur sol.
+
+**Ce qui le prouve.** Un témoin neuf et un témoin élargi dans `plafond.js`,
+rouges sur `origin/main` : au cœur de trois forêts tropicales, 472 arbres
+contre 196 dont 112 palmiers, l'herbe teinte, zéro bloc de forme différente ;
+vu de loin et sur la carte, la forêt tropicale est d'un vert plus profond
+que le Kansas.
+
+---
+
 ## v348 — Le feu ne coûte plus que deux appels
 
 **Pourquoi.** Les dégâts de la v343 dessinaient chaque carré de fumée et

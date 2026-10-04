@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 349,
+    titre: 'Les forêts tropicales',
+    puces: [
+      'L\'Amazonie est une vraie jungle',
+      'Des palmiers au Congo, à Bornéo',
+      'L\'herbe d\'un vert profond',
+    ],
+  },
+  {
     v: 348,
     titre: 'Un feu plus léger',
     puces: [

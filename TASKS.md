@@ -57,6 +57,13 @@
   - **Les avions ne s'abîment pas** (`pilote` est écarté) : une décision, pas
     un oubli — un atterrissage manqué n'a pas de « choc » dans `player.js`.
 
+- [ ] **AU PORTAIL DE LA v349 (les forêts tropicales), TROIS ROUGES, TOUS DÉJÀ
+  DÉCLARÉS** — `manhattan.js` « le trou enlève aussi la géométrie visible de la
+  façade » (22 326 → 51 734, dette du compte de tous les immeubles) ; `monte.js`
+  « se téléporter ne compile plus de programmes » (Paris 3 neufs) et « l'écran
+  ne se fige pas en arrivant sur une ville » (pire image 1 200 ms, 26,4 %). Les
+  trois sont rouges seuls sur `origin/main` aux portails v345 à v348 ; la
+  livraison ne touche ni la flotte, ni Manhattan, ni la file de maillage.
 - [ ] **AU PORTAIL DE LA v348 (le feu en deux appels), DEUX SUITES ROUGES — aucune
   causée par la livraison, double mesure faite (rejouées SEULES sur la branche
   v348 et sur `origin/main` v345, chacun dans un arbre détaché).**
@@ -806,8 +813,8 @@
   la carte ; SECONDE TRANCHE en v345 : la toundra et la taïga (`CLIMATS`,
   terre.js) — la teinte d'herbe par colonne est MESURÉE gratuite (une
   question par morceau, 0,37 µs par colonne près d'un bord, mailleur 9,34
-  contre 9,32 ms hors zone) ; TROISIÈME en v347, les steppes ; reste les
-  tropiques humides ; (e) la bibliothèque architecturale (96
+  contre 9,32 ms hors zone) ; TROISIÈME en v347, les steppes ; QUATRIÈME en
+  v349, les tropiques humides — les quatre climats du kit sont faits ; (e) la bibliothèque architecturale (96
   variantes, 278 profils de ville) — elle exige une retrame à un bloc pour un
   mètre (`docs/monde-fidele/programme.md`, section 6), décision de Max ; (f) la
   matrice de couverture ville par ville (convertie, exclue, bloquée) — FAITE

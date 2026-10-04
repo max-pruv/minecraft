@@ -8,7 +8,7 @@ livraison qui change une colonne ; on ne la corrige pas à la main.
 Sans aucun anneau de circulation : 7. Reliées par une route
 interurbaine : 33. Monuments à la hauteur de leur ville (ciel
 propre, hors Paris) : 25. Climat de la campagne autour :
-tempéré 254, taiga 3, desert 10, steppe 7, toundra 2.
+tempéré 233, taiga 3, tropiques 21, desert 10, steppe 7, toundra 2.
 
 | Ville | Bâtie | Tissu | Rues au kit | Circulation | Routes | Ciel des monuments | Campagne autour |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -25,7 +25,7 @@ tempéré 254, taiga 3, desert 10, steppe 7, toundra 2.
 | Gizeh | engendrée | — | exclue (sans trame : un site, pas une ville) | 0 anneau(x) | — | — | tempéré, desert |
 | Agra | engendrée | faubourg | convertie (v307) | 4 anneau(x) | Yamuna | oui (v342) | tempéré |
 | Sydney | engendrée | organique | convertie (v307) | 7 anneau(x) | — | — | tempéré |
-| Rio de Janeiro | engendrée | damier | convertie (v307) | 4 anneau(x) | BR-116 | — | tempéré |
+| Rio de Janeiro | engendrée | damier | convertie (v307) | 4 anneau(x) | BR-116 | — | tempéré, tropiques |
 | Seattle | engendrée | superilot | convertie (v307) | 2 anneau(x) | — | — | tempéré |
 | Madrid | engendrée | arcades | convertie (v307) | 4 anneau(x) | A-4, AP-2 | oui (v342) | tempéré |
 | Lisbonne | engendrée | perimetre | convertie (v307) | 2 anneau(x) | — | oui (v342) | tempéré |
@@ -48,7 +48,7 @@ tempéré 254, taiga 3, desert 10, steppe 7, toundra 2.
 | Séoul | engendrée | superilot | convertie (v307) | 3 anneau(x) | — | — | tempéré |
 | Shanghai | engendrée | superilot | convertie (v307) | 3 anneau(x) | — | — | tempéré |
 | Hong Kong | engendrée | superilot | convertie (v307) | 2 anneau(x) | — | — | tempéré |
-| Singapour | engendrée | superilot | convertie (v307) | 2 anneau(x) | — | oui (v342) | tempéré |
+| Singapour | engendrée | superilot | convertie (v307) | 2 anneau(x) | — | oui (v342) | tropiques |
 | Bangkok | engendrée | superilot | convertie (v307) | 3 anneau(x) | — | oui (v342) | tempéré |
 | Dubaï | engendrée | superilot | convertie (v307) | 2 anneau(x) | — | — | desert |
 | Jérusalem | engendrée | medina | exclue (médina : ruelles) | 0 anneau(x) | — | oui (v342) | tempéré |
@@ -162,11 +162,11 @@ tempéré 254, taiga 3, desert 10, steppe 7, toundra 2.
 | Karachi | engendrée | faubourg | convertie (v307) | 2 anneau(x) | — | — | tempéré |
 | Lahore | engendrée | faubourg | convertie (v307) | 2 anneau(x) | — | — | tempéré |
 | Katmandou | engendrée | faubourg | convertie (v307) | 1 anneau(x) | — | — | tempéré |
-| Dacca | engendrée | faubourg | convertie (v307) | 2 anneau(x) | — | — | tempéré |
+| Dacca | engendrée | faubourg | convertie (v307) | 2 anneau(x) | — | — | tropiques |
 | Colombo | engendrée | faubourg | convertie (v307) | 1 anneau(x) | — | — | tempéré |
 | Bangalore | engendrée | superilot | convertie (v307) | 1 anneau(x) | — | — | tempéré |
 | Chennai | engendrée | faubourg | convertie (v307) | 2 anneau(x) | — | — | tempéré |
-| Calcutta | engendrée | faubourg | convertie (v307) | 2 anneau(x) | — | — | tempéré |
+| Calcutta | engendrée | faubourg | convertie (v307) | 2 anneau(x) | — | — | tropiques, tempéré |
 | Hyderabad | engendrée | faubourg | convertie (v307) | 2 anneau(x) | — | — | tempéré |
 | Jaipur | engendrée | damier | convertie (v307) | 1 anneau(x) | — | — | tempéré |
 | Varanasi | engendrée | organique | convertie (v307) | 2 anneau(x) | — | — | tempéré |
@@ -190,11 +190,11 @@ tempéré 254, taiga 3, desert 10, steppe 7, toundra 2.
 | Phnom Penh | engendrée | superilot | convertie (v307) | 1 anneau(x) | — | — | tempéré |
 | Vientiane | engendrée | organique | convertie (v307) | 2 anneau(x) | — | — | tempéré |
 | Rangoun | engendrée | superilot | convertie (v307) | 1 anneau(x) | — | — | tempéré |
-| Kuala Lumpur | engendrée | superilot | convertie (v307) | 1 anneau(x) | — | — | tempéré |
-| Jakarta | engendrée | organique | convertie (v307) | 4 anneau(x) | — | — | tempéré |
-| Denpasar | engendrée | organique | convertie (v307) | 2 anneau(x) | — | — | tempéré |
-| Manille | engendrée | organique | convertie (v307) | 4 anneau(x) | — | — | tempéré |
-| Cebu | engendrée | organique | convertie (v307) | 2 anneau(x) | — | — | tempéré |
+| Kuala Lumpur | engendrée | superilot | convertie (v307) | 1 anneau(x) | — | — | tropiques |
+| Jakarta | engendrée | organique | convertie (v307) | 4 anneau(x) | — | — | tropiques |
+| Denpasar | engendrée | organique | convertie (v307) | 2 anneau(x) | — | — | tropiques, tempéré |
+| Manille | engendrée | organique | convertie (v307) | 4 anneau(x) | — | — | tropiques |
+| Cebu | engendrée | organique | convertie (v307) | 2 anneau(x) | — | — | tropiques |
 | Melbourne | engendrée | superilot | convertie (v307) | 1 anneau(x) | — | — | tempéré |
 | Brisbane | engendrée | superilot | convertie (v307) | 1 anneau(x) | — | — | tempéré |
 | Perth | engendrée | superilot | convertie (v307) | 1 anneau(x) | — | — | tempéré |
@@ -211,22 +211,22 @@ tempéré 254, taiga 3, desert 10, steppe 7, toundra 2.
 | Casablanca | engendrée | faubourg | convertie (v307) | 2 anneau(x) | — | — | tempéré |
 | Fès | engendrée | medina | exclue (médina : ruelles) | 0 anneau(x) | — | — | tempéré |
 | Dakar | engendrée | faubourg | convertie (v307) | 2 anneau(x) | — | — | tempéré |
-| Abidjan | engendrée | faubourg | convertie (v307) | 2 anneau(x) | — | — | tempéré |
-| Accra | engendrée | faubourg | convertie (v307) | 2 anneau(x) | — | — | tempéré |
-| Lagos | engendrée | perimetre | convertie (v307) | 2 anneau(x) | — | — | tempéré |
+| Abidjan | engendrée | faubourg | convertie (v307) | 2 anneau(x) | — | — | tropiques |
+| Accra | engendrée | faubourg | convertie (v307) | 2 anneau(x) | — | — | tropiques |
+| Lagos | engendrée | perimetre | convertie (v307) | 2 anneau(x) | — | — | tropiques |
 | Abuja | engendrée | faubourg | convertie (v307) | 1 anneau(x) | — | — | tempéré |
 | Bamako | engendrée | faubourg | convertie (v307) | 1 anneau(x) | — | — | tempéré, steppe |
 | Tombouctou | engendrée | medina | exclue (médina : ruelles) | 0 anneau(x) | — | — | desert |
-| Kinshasa | engendrée | faubourg | convertie (v307) | 2 anneau(x) | — | — | tempéré |
-| Lomé | engendrée | faubourg | convertie (v307) | 1 anneau(x) | — | — | tempéré |
-| Douala | engendrée | faubourg | convertie (v307) | 1 anneau(x) | — | — | tempéré |
+| Kinshasa | engendrée | faubourg | convertie (v307) | 2 anneau(x) | — | — | tropiques |
+| Lomé | engendrée | faubourg | convertie (v307) | 1 anneau(x) | — | — | tropiques |
+| Douala | engendrée | faubourg | convertie (v307) | 1 anneau(x) | — | — | tropiques |
 | Luanda | engendrée | faubourg | convertie (v307) | 1 anneau(x) | — | — | tempéré |
 | Addis-Abeba | engendrée | faubourg | convertie (v307) | 2 anneau(x) | — | — | tempéré |
 | Khartoum | engendrée | faubourg | convertie (v307) | 1 anneau(x) | — | — | desert |
 | Nairobi | engendrée | faubourg | convertie (v307) | 2 anneau(x) | A109 | — | tempéré |
 | Mombasa | engendrée | faubourg | convertie (v307) | 1 anneau(x) | A109 | — | tempéré |
 | Kampala | engendrée | faubourg | convertie (v307) | 1 anneau(x) | — | — | tempéré |
-| Kigali | engendrée | faubourg | convertie (v307) | 1 anneau(x) | — | — | tempéré |
+| Kigali | engendrée | faubourg | convertie (v307) | 1 anneau(x) | — | — | tropiques, tempéré |
 | Dar es Salam | engendrée | faubourg | convertie (v307) | 1 anneau(x) | — | — | tempéré |
 | Zanzibar | engendrée | faubourg | convertie (v307) | 1 anneau(x) | — | — | tempéré |
 | Lusaka | engendrée | faubourg | convertie (v307) | 1 anneau(x) | — | — | tempéré |
@@ -260,9 +260,9 @@ tempéré 254, taiga 3, desert 10, steppe 7, toundra 2.
 | Guadalajara | engendrée | damier | convertie (v307) | 1 anneau(x) | — | — | tempéré |
 | Monterrey | engendrée | damier | convertie (v307) | 1 anneau(x) | — | — | steppe, tempéré |
 | Cancún | engendrée | damier | convertie (v307) | 1 anneau(x) | — | — | tempéré |
-| Guatemala | engendrée | damier | convertie (v307) | 1 anneau(x) | — | — | tempéré |
-| San José | engendrée | damier | convertie (v307) | 1 anneau(x) | — | — | tempéré |
-| Panama | engendrée | damier | convertie (v307) | 1 anneau(x) | — | — | tempéré |
+| Guatemala | engendrée | damier | convertie (v307) | 1 anneau(x) | — | — | tropiques |
+| San José | engendrée | damier | convertie (v307) | 1 anneau(x) | — | — | tropiques |
+| Panama | engendrée | damier | convertie (v307) | 1 anneau(x) | — | — | tropiques, tempéré |
 | Kingston | engendrée | damier | convertie (v307) | 1 anneau(x) | — | — | tempéré |
 | Saint-Domingue | engendrée | damier | convertie (v307) | 1 anneau(x) | — | — | tempéré |
 | San Juan | engendrée | damier | convertie (v307) | 1 anneau(x) | — | — | tempéré |
@@ -281,11 +281,11 @@ tempéré 254, taiga 3, desert 10, steppe 7, toundra 2.
 | Córdoba | engendrée | damier | convertie (v307) | 1 anneau(x) | — | — | tempéré |
 | Mendoza | engendrée | damier | convertie (v307) | 1 anneau(x) | — | — | tempéré |
 | Ushuaïa | engendrée | damier | convertie (v307) | 1 anneau(x) | — | — | tempéré |
-| São Paulo | engendrée | superilot | convertie (v307) | 2 anneau(x) | BR-116 | — | tempéré |
+| São Paulo | engendrée | superilot | convertie (v307) | 2 anneau(x) | BR-116 | — | tropiques |
 | Brasília | engendrée | superilot | convertie (v307) | 1 anneau(x) | — | — | tempéré |
-| Salvador | engendrée | damier | convertie (v307) | 1 anneau(x) | — | — | tempéré |
+| Salvador | engendrée | damier | convertie (v307) | 1 anneau(x) | — | — | tropiques |
 | Recife | engendrée | damier | convertie (v307) | 1 anneau(x) | — | — | tempéré |
 | Fortaleza | engendrée | damier | convertie (v307) | 1 anneau(x) | — | — | tempéré |
-| Manaus | engendrée | damier | convertie (v307) | 1 anneau(x) | — | — | tempéré |
+| Manaus | engendrée | damier | convertie (v307) | 1 anneau(x) | — | — | tropiques |
 | Porto Alegre | engendrée | damier | convertie (v307) | 1 anneau(x) | — | — | tempéré |
 
