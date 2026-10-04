@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 330,
+    titre: 'Les aéroports sont aménagés',
+    puces: [
+      'Des comptoirs et des sièges partout',
+      'Des portiques et des tapis à bagages',
+      'On entre dans les halls de Roissy',
+    ],
+  },
+  {
     v: 329,
     titre: 'L\'autoroute Rome–Naples',
     puces: [
