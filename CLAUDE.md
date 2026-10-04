@@ -6731,6 +6731,13 @@ règles.
   la carte 2D (`decorMapColor`) : deux couleurs pour le même endroit
   finissent par se contredire.
 
+- **ET LE BÂTI SE COUPE EN RENDU LOGICIEL, comme les ombres (v247) et la
+  couche HD (v287).** Le portail a rendu le gel d'arrivée de `monte.js` plus
+  marqué sur la branche ; l'A/B sur la même page, en vol vers Paris, ordre
+  alterné, l'a nommé : 4,8 · 5,8 · 5,7 images par seconde bâti visible contre
+  15,0 · 17,6 · 11,6 caché. Du remplissage que SwiftShader paie au processeur ;
+  `?batiloin=1` le force (captures, sonde). La teinte urbaine reste partout.
+
 **ET LE PORTAIL ROUGE A FAIT TROUVER PLUS GROS QUE LE PAYSAGE : LE BUDGET DE
 MAILLAGE ÉTAIT COMPTÉ PAR IMAGE.** Le témoin « on ne rattrape pas le bout du
 monde qui se charge » est tombé (trou 66 pour une barre de 80), et la sonde —

@@ -46,7 +46,10 @@ médiane de cinq passages alternés : +0,05 à +0,07 µs par colonne (environ 4 
 la question « est-ce une ville ? » se posant par l'index de cases des villes
 engendrées et par une boîte pour les sept villes bâties à la main. Captures en
 vol à `rr=12`, avant/après, au-dessus de Paris, Londres, Rome et Tokyo
-(`tests/sonde-villes-au-loin.cjs`).
+(`tests/sonde-villes-au-loin.cjs`). Le bâti se coupe quand le navigateur rend
+sans carte graphique, comme les ombres : mesuré en A/B en vol vers Paris, il
+y fait tomber la cadence de 15 à 5 images par seconde
+(`tests/sonde-cout-villes-au-loin.cjs`) ; `?batiloin=1` le force.
 
 ---
 

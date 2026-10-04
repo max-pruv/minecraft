@@ -15,7 +15,7 @@ const tag = process.argv[3] || 'apres';
   await banc.ouvrir();
   try {
     await souffler();
-    const page = await banc.jouerSeul('Loin', { rr: 12, viewport: { width: 1280, height: 720 }, dpr: 1 });
+    const page = await banc.jouerSeul('Loin', { rr: 12, viewport: { width: 1280, height: 720 }, dpr: 1, params: '&batiloin=1' });
     for (const nom of ['paris', 'londres', 'rome', 'tokyo']) {
       try {
         const info = await page.evaluate(async (nom) => {
