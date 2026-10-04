@@ -995,6 +995,13 @@ Six règles.
   `DERIVE_MAX`) naît d'un virage pris plus vite que l'adhérence et se
   rattrape seule (`DERIVE_TAU`). Une session qui la dessine ne la rajoute
   pas au cap : la caisse tourne déjà avec `yaw`.
+- **UNE VOITURE BONDIT AU DÉPART.** La courbe a0 · (1 − (v/vmax)²) seule
+  démarrait mou : au banc, même nombre d'images des deux côtés, l'ancienne
+  voiture (toute son allure en une demi-seconde) faisait 6 blocs et la
+  nouvelle 1,75. `accelVoiture` ajoute un coup de départ (`LANCER`, éteint à
+  dix blocs/s) — 7,5 à 9,8 blocs dans la première seconde selon la classe —
+  et `tempsJusqua` intègre la MÊME fonction : une seule formule, deux
+  lecteurs.
 - **LA CLASSE SE RETROUVE À SA POINTE.** `fun.js` ne passe que `boost`
   (l'allure, multiple de la marche) ; `ALLURES` se déduit des fiches de
   `conduite.js`, et `ficheDeVitesse` retrouve la classe par sa pointe, unique

@@ -1,5 +1,26 @@
 # Ce qui est en cours
 
+- [ ] **AU PORTAIL DE LA v340 (la conduite), LES ROUGES RESTANTS SONT DÉJÀ
+  CONNUS, rejoués SEULS des deux côtés.** `monte.js` « l'écran ne se fige pas
+  en arrivant sur une ville » (vol du chasseur, chemin que la v340 ne touche
+  pas) : branche 1 283 ms · 7,2 % et 1 183 · 8,7 %, `origin/main` 1 050 · 5,9 %
+  et 1 150 · 6,4 % (ordre alterné), et rouge à chaque `monte.js` complet des
+  deux côtés (3 417 ms · 27,1 % sur `origin/main`). `monte.js` « se
+  téléporter dans une ville ne compile plus de programmes » : trois puis six
+  programmes physiques à Paris dans la suite complète, sur la branche ET sur
+  `origin/main` ; vert quatre fois sur quatre rejoué seul (deux de chaque
+  côté) — une intermittence de charge. `monte.js` « le bouton Conduire
+  s'offre tout seul dans la rue » : rouge une fois au portail (un métro plus
+  proche, « 🚇 Monter à bord »), vert aux deux `monte.js` complets précédents
+  sur la branche et vert sur `origin/main`. `maj.js` « le loader dit combien
+  de fichiers sont rangés » et `washington.js` « chaque îlot a sa porte » :
+  verts rejoués seuls des deux côtés. `manhattan.js` : « le trou enlève aussi
+  la géométrie visible » rouge des deux côtés (14 460 à 25 316 → 51 734), et
+  la suite s'arrête des deux côtés sur l'attente de 90 s après le
+  rechargement (même ligne, même délai) ; le taxi, qui ne pouvait PAS rouler
+  huit blocs en quinze secondes de montre à 0,45 image par seconde
+  (sonde : 18 et 19 images en quarante secondes, l'ancienne voiture 6 blocs,
+  la nouvelle 3,3), se mesure désormais en quarante images rendues — vert.
 - [ ] **LE PORTAIL DE LA v346 (le monde à la vitesse), DOUBLE MESURE FAITE.**
   Portail : `manhattan.js` (délai ligne 282) et `monte.js` « l'écran ne se
   fige pas en arrivant sur une ville » (2 833 ms · 46,4 %). Rejouées SEULES :

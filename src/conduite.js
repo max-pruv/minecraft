@@ -23,8 +23,8 @@
 //   · l'adhérence borne ce que la DIRECTION de la vitesse peut tourner
 //     (μ / v) ; ce que le corps tourne en plus devient la dérive, bornée, et
 //     elle se rattrape toute seule dès qu'on relâche le volant ;
-//   · l'accélération est forte au démarrage et s'essouffle vers la pointe,
-//     a = a0 · (1 − (v / vmax)²) ; le frein est franc ; lâcher le joystick,
+//   · l'accélération est forte au démarrage (le coup de départ) et
+//     s'essouffle vers la pointe, a0 · (1 − (v / vmax)²) ; le frein est franc ; lâcher le joystick,
 //     c'est le frein moteur ; tirer en arrière freine PUIS recule (v269).
 //
 // TOUT SE JOUE D'UN DOIGT (v272) : l'avant du joystick accélère, l'arrière
@@ -65,6 +65,14 @@ export const CLASSES = {
 // tablette (`?diag=1`) reste à faire : dette déclarée dans TASKS.md.
 export const PLAFOND_SOL = 60;
 
+// LE COUP DE DÉPART. Une accélération seulement en a0 · (1 − (v/vm)²) démarre
+// mou : mesuré au banc à Manhattan, même nombre d'images des deux côtés,
+// l'ancienne voiture (toute son allure en une demi-seconde) faisait 6 blocs,
+// la nouvelle 1,75. Un enfant appuie et la voiture doit BONDIR. On ajoute
+// donc une poussée de départ, pleine à l'arrêt, éteinte à LANCER_JUSQUA :
+// 0 → 36 km/h en une demi-seconde, et la courbe d'avant au-delà.
+export const LANCER = 12;             // blocs/s² de plus à l'arrêt
+export const LANCER_JUSQUA = 10;      // blocs/s où le coup de départ s'éteint
 export const FREIN = 22;              // blocs/s² — un frein franc
 export const FREIN_MOTEUR = 3.5;      // blocs/s² quand on lâche tout
 export const TRAINEE = 0.004;         // × v² : l'air, qui fait le reste à haute vitesse
@@ -115,12 +123,24 @@ export function rayonDeVirage(v, fiche) {
   return Math.max(geo, (v * v) / fiche.mu);
 }
 
-// Le temps de 0 à `cible` blocs/s, moteur intact, à plein gaz :
-// ∫ dv / (a0 (1 − (v/vm)²)) = (vm / a0) · atanh(cible / vm). Infini si la
-// pointe est sous la cible.
+// L'ACCÉLÉRATION À PLEIN GAZ à la vitesse v (v ≥ 0) : la courbe qui
+// s'essouffle vers la pointe, plus le coup de départ. Une seule formule, que
+// lisent le pas de dynamique et le temps de 0 à 100.
+export function accelVoiture(v, vmax, a0) {
+  const courbe = a0 * Math.max(0, 1 - (v / vmax) ** 2);
+  const coup = LANCER * Math.max(0, 1 - v / LANCER_JUSQUA);
+  return courbe + coup;
+}
+
+// Le temps de 0 à `cible` blocs/s, moteur intact, à plein gaz : ∫ dv / a(v),
+// intégré finement (la courbe seule a une forme fermée en atanh, le coup de
+// départ non). Infini si la pointe est sous la cible.
 export function tempsJusqua(cible, fiche) {
   if (cible >= fiche.vmax) return Infinity;
-  return (fiche.vmax / fiche.a0) * Math.atanh(cible / fiche.vmax);
+  let t = 0;
+  const n = 2000, dv = cible / n;
+  for (let i = 0; i < n; i++) t += dv / accelVoiture((i + 0.5) * dv, fiche.vmax, fiche.a0);
+  return t;
 }
 
 const signe = (x) => (x > 0 ? 1 : x < 0 ? -1 : 0);
@@ -159,7 +179,7 @@ export function pasVoiture(e, entree, fiche, dt) {
       v = Math.min(0, v + FREIN * gaz * dt);           // on freine la marche arrière
     } else {
       const cible = gaz * vmax;
-      if (v < cible) v = Math.min(cible, v + a0 * Math.max(0, 1 - (v / vmax) ** 2) * dt);
+      if (v < cible) v = Math.min(cible, v + accelVoiture(Math.max(0, v), vmax, a0) * dt);
       else roule(FREIN_MOTEUR + TRAINEE * v * v);
     }
   } else if (gaz < 0) {

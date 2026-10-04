@@ -37,7 +37,8 @@ pointe ; le frein est franc ; lâcher le joystick laisse filer en roue libre ;
 on tourne serré au pas et large à pleine vitesse, et un virage serré pris vite
 fait glisser un peu la voiture, qui se rattrape toute seule. Les voitures vont
 beaucoup plus vite, chacune selon sa classe : citadine 108 km/h, berline 122,
-GT 151, sportive 173, hypercar 198 (0 à 100 en 2,2 s). Contre un mur pris en
+GT 151, sportive 173, hypercar 198 (0 à 100 en 2 s) — et toutes
+bondissent au départ. Contre un mur pris en
 rasant, la voiture glisse le long et se remet dans l'axe de la rue ; de face,
 elle s'arrête avec un petit rebond ; une voiture de la rue ou un réverbère la
 font rebondir ; devant un piéton elle freine à temps. Chaque choc est publié
@@ -49,7 +50,7 @@ blocs devant la voiture, dans Paris comme dans les champs
 (`sonde-plafond-voiture.cjs`). Cinq témoins purs dans `plafond.js` (classes
 sous le plafond, 0 → 100 simulé contre la formule, dérive bornée et rattrapée,
 chocs, boîte orientée) et neuf témoins de trajet dans `monte.js` (0 → 100 en
-2,2 s de jeu, pointe 52 blocs/s, frein, rayon de virage 3,9 au pas et 14,4 à
+2 s de jeu, pointe 52 blocs/s, frein, rayon de virage 3,9 au pas et 14,4 à
 20 blocs/s, mur rasant, mur de face, voiture de la rue, panne) — treize rouges
 sur `origin/main`, le frein franc gardé vert des deux côtés. Trois témoins
 existants repointés (rapport des pointes, crochet qui nomme la famille, piste

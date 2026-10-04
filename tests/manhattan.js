@@ -497,7 +497,11 @@ function verifier(nom, ok, detail = "") {
         `bouton jamais visible en ${Date.now() - t0Taxi} ms — ${JSON.stringify(vu)}`,
       );
     } else {
-    await p.locator("#ride-btn").tap();
+    // le bouton est là, mais à 0,45 image par seconde un `tap` attend que la
+    // page soit « stable » et lève son délai (v340) : on retombe sur un clic
+    // plutôt que de tuer la suite — c'est la conduite tactile qu'on éprouve
+    const tape = await p.locator("#ride-btn").tap({ timeout: 15000 }).then(() => true).catch(() => false);
+    if (!tape) await p.evaluate(() => document.getElementById("ride-btn").click());
     const depart = await p.evaluate(() => __game.player.pos.z),
       doigt = await p.context().newCDPSession(p);
     await doigt.send("Input.dispatchTouchEvent", {
@@ -508,22 +512,18 @@ function verifier(nom, ok, detail = "") {
       type: "touchMove",
       touchPoints: [{ x: 100, y: 270 }],
     });
-    // ON ATTEND EN TEMPS DE JEU, PAS EN TEMPS DE MONTRE (v340, règle de la
-    // v277). Manhattan rend moins d'une image par seconde sur ce banc, et `dt`
-    // est borné à un vingtième : quinze secondes de montre y valent moins
-    // d'une seconde de jeu. Depuis la v340 une voiture accélère comme une
-    // voiture (huit blocs en 1,3 s de jeu, contre une demi-seconde pour
-    // prendre toute son allure avant) — sonde faite : 0,9 → 4,0 blocs/s en
-    // huit secondes de montre, aucun choc, aucun obstacle devant. On compte
-    // donc six secondes de JEU, bornées à deux minutes de montre.
-    await p.evaluate(() => {
-      window.__jeuTaxi = 0; let prec = performance.now();
-      const pas = (t) => { window.__jeuTaxi += Math.min(Math.max((t - prec) / 1000, 0), 0.05); prec = t; if (window.__jeuTaxi < 60) requestAnimationFrame(pas); };
-      requestAnimationFrame(pas);
-    });
+    // ON ATTEND DES IMAGES DE JEU, PAS DU TEMPS DE MONTRE (v340, règle de la
+    // v277). Manhattan rend 0,45 image par seconde sur ce banc (sonde : 18 et
+    // 19 images en quarante secondes, branche et `origin/main`) et `dt` est
+    // borné à un vingtième : quinze secondes de montre y valent sept images,
+    // un tiers de seconde de jeu — l'ancienne voiture y faisait 6 blocs en
+    // quarante secondes, la nouvelle 3,3 : RIEN ne pouvait tenir huit blocs en
+    // quinze secondes. On compte donc quarante images rendues (deux secondes
+    // de jeu), bornées à deux minutes et demie de montre.
+    const image0 = await p.evaluate(() => __game.renderer.info.render.frame);
     await p
-      .waitForFunction((z) => __game.player.pos.z < z - 8 || window.__jeuTaxi > 6, depart, {
-        timeout: 120000,
+      .waitForFunction((a) => __game.player.pos.z < a.z - 8 || __game.renderer.info.render.frame - a.i > 40, { z: depart, i: image0 }, {
+        timeout: 150000,
       })
       .catch(() => {});
     await doigt.send("Input.dispatchTouchEvent", {
