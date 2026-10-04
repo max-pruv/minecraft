@@ -19,7 +19,7 @@
   réglage d'ombres de l'appareil (éteintes sur tablette depuis v257) — 22
   programmes de moins ET une passe d'ombre de moins par image dans la ville la
   plus lourde du jeu, au prix des ombres de New York sur l'iPad.
-- [ ] **AU PORTAIL DE LA v329 (les villes au loin), TROIS ROUGES DÉJÀ
+- [ ] **AU PORTAIL DE LA v331 (les villes au loin), TROIS ROUGES DÉJÀ
   DÉCLARÉS, rejoués SEULS des deux côtés.** `monte.js` « l'écran ne se fige
   pas en arrivant sur une ville » : branche 2 967 ms · 21,9 % (bâti lointain
   coupé en rendu logiciel), `origin/main` 3 183 ms · 24,6 % — avant cette
@@ -3303,7 +3303,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   est intact. À reprendre : le faire voler au-dessus d'une ville, et remesurer
   les vitesses des avions sur le VRAI débit (42 morceaux/s, pas 154).
 
-- [x] **Le paysage lointain montre le relief, pas les villes.** *(fait en v329 : teinte urbaine et bâti instancié, `horizon.js`)* `terrainHeight`
+- [x] **Le paysage lointain montre le relief, pas les villes.** *(fait en v331 : teinte urbaine et bâti instancié, `horizon.js`)* `terrainHeight`
   ne sait rien des immeubles : au-delà des morceaux chargés, Paris apparaît en
   prairie. `cityAt` pourrait teinter les cases d'une ville en gris urbain pour
   quelques microsecondes par colonne — non mesuré, non fait.

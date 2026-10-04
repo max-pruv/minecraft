@@ -1,4 +1,4 @@
-// Ce que coûte le bâti lointain (v329) à l'arrivée en vol sur Paris : la même
+// Ce que coûte le bâti lointain (v331) à l'arrivée en vol sur Paris : la même
 // page, le même vol que le témoin « l'écran ne se fige pas en arrivant sur une
 // ville » (monte.js), le bâti visible ou caché, en ORDRE ALTERNÉ (v268).
 const { Banc, souffler } = require('./banc.js');

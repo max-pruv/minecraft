@@ -1,5 +1,5 @@
 // Captures en vol au-dessus de villes, à la distance d'affichage de l'iPad
-// (rr=12), pour juger le paysage lointain sur image (v329 : les villes se
+// (rr=12), pour juger le paysage lointain sur image (v331 : les villes se
 // reconnaissent au loin). Usage :
 //   node tests/sonde-villes-au-loin.cjs <dossier> [avant|apres]
 // La caméra se pose à 520 blocs au sud du centre, à 110 blocs d'altitude, et
