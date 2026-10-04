@@ -212,6 +212,17 @@ export const ROUTES = [
   // sans pont ; celui-ci : 552 blocs, déblai 7,5, remblai 0,7, pente 0,060,
   // zéro rail, l'aérodrome le plus proche à 2 046 blocs.
   { nom: 'A4', villes: ['milan', 'turin'], via: [[2375, 2280], [2310, 2319], [1996, 2365], [1908, 2410]] },
+  // LE YAMUNA EXPRESSWAY (v328), DELHI–AGRA : la route du Taj Mahal. Les deux
+  // villes sont grandes (rayons 130 et 167) et leurs trames ont chacune une
+  // avenue très longue dans l'axe du trajet — Delhi à 58° (quatre-vingt-dix-
+  // huit blocs sur la rue), Agra à −90° (cent vingt-sept) ; un point sur le
+  // RAYON de chaque entrée fixe la porte (v324). Le pays entre les deux est
+  // semé de mares : 7 334 tracés refusés pour un pont près d'une porte, 3 959
+  // pour deux ponts trop proches. Mesuré sous node (scratchpad cherche2.mjs,
+  // qui appelle `profilDe`) : 18 216 tracés, soixante-huit admissibles, tous
+  // sans pont ; celui-ci : 672 blocs, déblai 7,0, remblai 1,0, pente 0,060,
+  // zéro rail, l'aérodrome de Delhi à 395 blocs au-delà de sa marge.
+  { nom: 'Yamuna', villes: ['delhi', 'agra'], via: [[29042, 12324], [29156, 12541], [29293, 12881]] },
 ];
 
 // --- la section -----------------------------------------------------------------
