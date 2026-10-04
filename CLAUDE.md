@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Les monuments à la hauteur de leur ville (v331) — une table de paliers, deux lecteurs
+## Les monuments à la hauteur de leur ville (v333) — une table de paliers, deux lecteurs
 
 Un étage fait trois blocs depuis la v301 ; les monuments n'avaient pas suivi.
 Six règles.

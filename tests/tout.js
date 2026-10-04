@@ -111,7 +111,7 @@ const GARDIENS = {
   // (`monte.js`). `carteMonde.js` garde les rues qui les longent.
   'src/paris-monuments-hd.js': ['parishd.js', 'plafond.js', 'monte.js', 'carteMonde.js'],
   'src/matierehd.js': ['parishd.js', 'monte.js'],
-  // LES MONUMENTS À LA HAUTEUR DE LEUR VILLE (v321). Importé par `world.js`
+  // LES MONUMENTS À LA HAUTEUR DE LEUR VILLE (v333). Importé par `world.js`
   // et `paris-monuments-hd.js` : l'union de leurs gardiens. Le témoin de la
   // hauteur des monuments est dans `plafond.js`.
   'src/echelle-monuments.js': ['plafond.js', 'parishd.js', 'carte.js', 'washington.js', 'metro.js',

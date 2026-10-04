@@ -632,14 +632,14 @@
   mesures sur l'iPad de la maison.
 
 - [x] **LES MONUMENTS DE PARIS SONT PLUS BAS QUE LES IMMEUBLES (v301)** — fait
-  en v321 pour Paris, à l'ÉCHELLE DU CIEL : un bloc pour un mètre jusqu'à la
+  en v333 pour Paris, à l'ÉCHELLE DU CIEL : un bloc pour un mètre jusqu'à la
   corniche (20 m), puis une courbe qui mène la tour Eiffel (330 m) à 69.
   Montparnasse 60, Invalides et Notre-Dame 48, Panthéon et Sacré-Cœur 47, Opéra
   41, Bastille 36, Arc 35. Le premier jet à un bloc pour un mètre (Invalides
   107, Notre-Dame 96…) passait au-dessus de la tour Eiffel : vu en capture,
   retiré. Si Max veut la vraie hauteur malgré tout, c'est UNE constante
   (`EIFFEL_BLOCS` ou la courbe de `blocsDuCiel`, echelle-monuments.js).
-- [ ] **LES MONUMENTS DES AUTRES VILLES PLUS BAS QUE LEURS IMMEUBLES** (v321,
+- [ ] **LES MONUMENTS DES AUTRES VILLES PLUS BAS QUE LEURS IMMEUBLES** (v333,
   mesuré, élargi par Max : « lance sur toutes les villes »). Le témoin de
   `plafond.js` mesure 215 monuments dans leurs villes contre la médiane des
   immeubles autour (colonnes à moins de trente blocs de la boîte, hors de toute
@@ -667,7 +667,7 @@
   par ville : l'échelle du ciel de la ville (un bloc pour un mètre jusqu'à la
   corniche de SES immeubles, puis une courbe sous son plus haut repère), par la
   même table de paliers — la courbe de Paris est `blocsDuCiel`.
-- [ ] **UNE CABANE SUR UN ANCIEN TOIT DE MONUMENT SE RETROUVE DEDANS (v321),
+- [ ] **UNE CABANE SUR UN ANCIEN TOIT DE MONUMENT SE RETROUVE DEDANS (v333),
   déclaré.** Le relevé des toits (v301) emporte ce qu'on a bâti sur un
   immeuble ; rien n'emporte ce qu'on a bâti sur un monument étiré. Le bloc
   reste à sa hauteur, donc DANS la maçonnerie étirée : il n'est pas perdu (le
@@ -675,7 +675,7 @@
   `CONF_AVANT`, qui garde les monuments d'avant), mais il ne se voit plus. Si
   cela se voit un jour, la marche est connue : celle de `releverToitsParis`,
   avec la table de paliers pour dire de combien monte chaque couche.
-- [ ] **DES CUBES DÉPASSENT ENCORE DES MODÈLES ÉTIRÉS (v321), mesuré.** Sonde
+- [ ] **DES CUBES DÉPASSENT ENCORE DES MODÈLES ÉTIRÉS (v333), mesuré.** Sonde
   `sonde-monuments-hd.cjs`, cubes qui dépassent (avant → après) : Arc 0 → 28,
   Panthéon 4 → 10, Opéra 9 → 17, Sacré-Cœur 15 → 23, Notre-Dame 34 → 76 (dont
   24 à hauteur d'enfant, inchangés). Un bloc d'écart entre le modèle et son
