@@ -19,6 +19,17 @@
   réglage d'ombres de l'appareil (éteintes sur tablette depuis v257) — 22
   programmes de moins ET une passe d'ombre de moins par image dans la ville la
   plus lourde du jeu, au prix des ombres de New York sur l'iPad.
+- [ ] **AU PORTAIL DE LA v327 (les villes au loin), TROIS ROUGES DÉJÀ
+  DÉCLARÉS, rejoués SEULS des deux côtés.** `monte.js` « l'écran ne se fige
+  pas en arrivant sur une ville » : branche 2 967 ms · 21,9 % (bâti lointain
+  coupé en rendu logiciel), `origin/main` 3 183 ms · 24,6 % — avant cette
+  coupure la branche rendait 3 683 ms · 45,6 %, et l'A/B (bâti visible 5 im/s,
+  caché 15) a nommé la cause. `manhattan.js` « le trou enlève aussi la
+  géométrie visible de la façade » 11 684 → 51 734 sur la branche, 14 460 →
+  51 734 sur `origin/main` ; « le taxi roule avec les contrôles tactiles »
+  rouge des deux côtés (`#ride-btn` caché, une bête). `carte.js` « la flèche
+  du GPS pointe vers la destination » rouge au portail, VERTE rejouée seule
+  sur la branche ET sur `origin/main` : intermittence à démonter.
 - [ ] **AU PORTAIL DE LA v319, LES DEUX ROUGES SONT DES DETTES DÉJÀ
   DÉCLARÉES.** `manhattan.js` « le trou enlève aussi la géométrie visible de la
   façade » 17 102 → 51 734 (mêmes nombres qu'au tableau plus bas) ; `monte.js`
