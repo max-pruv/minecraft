@@ -16,7 +16,8 @@
 // calcule : ce n'est pas à la conduite de le deviner, ni à ce fichier de régler
 // les voitures (« tu mesures, elle applique »).
 //
-// ── LA MESURE (sonde-monde-a-la-vitesse.cjs, rr 12, file 8, banc) ──────────
+// ── LA MESURE (sonde-monde-a-la-vitesse.cjs, rr 12, file 8, banc, ordre neuf
+// forcé par `?file=cone` — en rendu logiciel le jeu garde l'ordre d'avant) ──
 //
 // L'enfant avance en ligne droite à v blocs par seconde de TEMPS RÉEL, le
 // disque chargé d'abord à l'arrêt, quatre secondes pour établir le régime,

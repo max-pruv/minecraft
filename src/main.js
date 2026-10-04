@@ -1000,7 +1000,19 @@ function suivreLeDeplacement(dt) {
 }
 // `?file=regard` rejoue l'ordre d'avant la v337 (la distance pondérée par le
 // REGARD, rien de retiré) — pour mesurer, jamais un réglage.
-const FILE_AU_REGARD = new URLSearchParams(location.search).get('file') === 'regard';
+//
+// ET L'ORDRE NEUF SE COUPE EN RENDU LOGICIEL, comme les ombres (v247), la
+// couche HD (v287) et le bâti lointain (v331). Il maille ce que la caméra
+// voit : en vol vers Paris la vue passe de ~20 appels de dessin à ~100, et
+// SwiftShader paie ce dessin au processeur — cadence 12 → 7 images par
+// seconde, pire image 1,2 à 1,35 s, alors que les tâches JavaScript longues
+// restent du même ordre (2,3 s contre 1,9 à 2,0 s sur dix-huit secondes) et
+// que le rendu côté JavaScript vaut 10 ms par image des deux côtés. Ce coût-là
+// ne se transpose pas à une vraie carte graphique, pour qui cent appels sont
+// moins que Paris à l'arrêt (394). `?file=cone` force l'ordre neuf : c'est ce
+// que demandent ses témoins et la sonde du plafond.
+const FILE_DEMANDEE = new URLSearchParams(location.search).get('file');
+const FILE_AU_REGARD = FILE_DEMANDEE === 'regard' || (FILE_DEMANDEE !== 'cone' && renduLogiciel());
 let fileRapide = false;   // le régime avec lequel la file a été faite
 // Un quart d'hystérésis : une vitesse qui hésite autour du seuil ne refait pas
 // la file à chaque image.

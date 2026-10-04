@@ -802,6 +802,17 @@ sur un débit d'avant le worker (v237 → v251). Quatre règles.
   ce qui est devant, payé en logiciel, et l'arrêt au même endroit en coûte
   bien plus (394 appels, 7,6 images par seconde). Une baisse de cadence se
   démonte par ce qu'on dessine avant de s'imputer au chargement.
+- **ET L'ORDRE NEUF SE COUPE EN RENDU LOGICIEL, comme les ombres, la couche
+  HD et le bâti lointain.** Le portail l'a dit par « l'écran ne se fige pas en
+  arrivant sur une ville » : en vol vers Paris la vue passe de ~20 à ~100
+  appels, cadence 12 → 7, pire image 1,2 à 1,35 s — et la sonde qui sépare
+  les cas (tâches longues par `PerformanceObserver`, rendu chronométré côté
+  JavaScript) a montré que le JavaScript ne bouge presque pas (2,3 s contre
+  1,9 à 2,0 de tâches longues sur 18 s, 10 ms de rendu JS des deux côtés) :
+  c'est SwiftShader qui dessine enfin la ville. `?file=cone` force l'ordre
+  neuf, `?file=regard` l'ancien ; le témoin de `monte.js` joue les DEUX dans le
+  même passage et juge l'ÉCART des parts (0,31 seul, barre 0,13) — sous la
+  charge du portail une part absolue (0,73 pour 0,77) ne voulait rien dire.
 
 ## Les monuments à la hauteur de leur ville (v335) — une table de paliers, deux lecteurs
 

@@ -10,8 +10,10 @@
 // la pire image, la part du temps dans des images de plus de 300 ms, et le
 // débit de morceaux reçus du worker.
 //
-// Usage : node sonde-monde-a-la-vitesse.cjs [rr] [vitesses] [lieux] [params]
-//   ex. node sonde-monde-a-la-vitesse.cjs 12 20,40,60 campagne,paris
+// Usage : node sonde-monde-a-la-vitesse.cjs [rr] [vitesses] [lieux] [variantes] [tours]
+//   ex. node sonde-monde-a-la-vitesse.cjs 12 20,40,60 campagne,paris '&file=cone|&file=regard' 2
+// Le banc rend en LOGICIEL, où le jeu garde l'ordre de file d'avant (main.js) :
+// `&file=cone` (le défaut ici) force l'ordre neuf, `&file=regard` l'ancien.
 const { Banc, souffler } = require('./banc.js');
 const rr = Number(process.argv[2] || 12);
 const vitesses = (process.argv[3] || '20,30,40,50,60').split(',').map(Number);
@@ -19,7 +21,7 @@ const lieux = (process.argv[4] || 'campagne,a1,paris,londres,rome').split(',');
 // Variantes de paramètres séparées par « | » : chaque mesure les joue toutes,
 // en ORDRE ALTERNÉ (v268), une page à la fois (deux pages ouvertes coûtent la
 // cadence, v220).
-const variantes = (process.argv[5] || '').split('|');
+const variantes = (process.argv[5] || '&file=cone').split('|');
 const tours = Number(process.argv[6] || 1);
 (async () => {
   const banc = new Banc({ portJeu: 8397, portPairs: 9397 });

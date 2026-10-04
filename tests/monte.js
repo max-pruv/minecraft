@@ -3758,80 +3758,94 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     }
 
     // ET DANS LE JEU : à soixante blocs par seconde au cœur de Paris, ce qui
-    // se maille est ce qu'on a DEVANT les yeux. Mesuré en ordre alterné sur la
-    // même page (sonde-monde-a-la-vitesse.cjs, `?file=regard` rejoue l'ordre
-    // d'avant) : part des morceaux installés qui tombent dans le champ de la
-    // caméra (±40°) 0,62 · 0,65 avant, 0,89 · 0,92 après ; le monde maillé dans
-    // ce champ jusqu'à 101 blocs avant, 129 après, et HUIT appels de dessin
-    // devant soi sur la file d'avant — l'enfant roulait devant le seul paysage
-    // lointain. Une PART ne dépend pas de la charge du banc comme un débit : la
-    // barre est le milieu des deux régimes, 0,77. La position est une fonction
-    // du TEMPS RÉEL : on mesure le chargement, pas la voiture (que la session de
-    // conduite refait), et la vitesse ne dépend pas de la cadence du banc (v270).
-    await souffler();
-    const vite = await ciel.evaluate(async () => {
-      const g = window.__game;
-      const { positionDe } = await import('./src/mondes.js');
-      const CHUNK = 16, R = 12, v = 60;
-      const P = positionDe('paris');
-      const x0 = P.x - v * 7, z = P.z + 0.5;
-      const p = g.player;
-      const patienter = (ms) => new Promise((fin) => {
-        const t0 = performance.now();
-        const tic = () => (performance.now() - t0 < ms ? requestAnimationFrame(tic) : fin());
-        requestAnimationFrame(tic);
-      });
-      const poser = (x) => { p.pos.set(x, 140, z); p.vel.set(0, 0, 0); p.yaw = -Math.PI / 2; p.pitch = 0; };
-      p.flying = true; p.pilote = null;
-      poser(x0);
-      // le disque chargé d'abord à l'arrêt, borné : on mesure un régime
-      const t0 = performance.now();
-      const pcz = Math.floor(z / CHUNK);
-      while (performance.now() - t0 < 40000) {
+    // se maille est ce qu'on a DEVANT les yeux. Mesuré seul en ordre alterné
+    // (sonde-monde-a-la-vitesse.cjs) : part des morceaux installés qui tombent
+    // dans le champ de la caméra (±40°) 0,62 · 0,65 sur l'ordre d'avant, 0,89 ·
+    // 0,92 sur le neuf ; le monde maillé dans ce champ jusqu'à 101 blocs avant,
+    // 129 après, et HUIT appels de dessin devant soi avant — l'enfant roulait
+    // devant le seul paysage lointain.
+    //
+    // UNE PART SOUS CHARGE N'EST PAS LA PART SEULE : au portail de la v337 le
+    // neuf a rendu 0,73 (le débit divisé par deux, 146 morceaux au lieu de
+    // 266) pour une barre absolue de 0,77. Le témoin joue donc les DEUX ordres
+    // dans le même passage, une page à la fois — `?file=cone` (le neuf, que le
+    // jeu coupe en rendu logiciel comme les ombres) et `?file=regard`
+    // (l'ancien) — et juge l'ÉCART, que la charge du banc touche des deux
+    // côtés. Sur l'ancien code les deux paramètres sont ignorés : même ordre,
+    // écart nul, rouge. Barre : la moitié de l'écart mesuré seul (0,27 → 0,13).
+    // La position est une fonction du TEMPS RÉEL : on mesure le chargement,
+    // pas la voiture, et la vitesse ne dépend pas de la cadence du banc (v270).
+    const rouler = async (params) => {
+      await souffler();
+      const pg = await banc.jouerSeul(`Rapide${params.replace(/\W/g, '')}`, { rr: 12, params });
+      const r = await pg.evaluate(async () => {
+        const g = window.__game;
+        const { positionDe } = await import('./src/mondes.js');
+        const CHUNK = 16, R = 12, v = 60;
+        const P = positionDe('paris');
+        const x0 = P.x - v * 7, z = P.z + 0.5;
+        const p = g.player;
+        const patienter = (ms) => new Promise((fin) => {
+          const t0 = performance.now();
+          const tic = () => (performance.now() - t0 < ms ? requestAnimationFrame(tic) : fin());
+          requestAnimationFrame(tic);
+        });
+        const poser = (x) => { p.pos.set(x, 140, z); p.vel.set(0, 0, 0); p.yaw = -Math.PI / 2; p.pitch = 0; };
+        p.flying = true;
         poser(x0);
-        let n = 0; const pcx = Math.floor(x0 / CHUNK);
-        for (let dz = -R; dz <= R; dz++) for (let dx = -R; dx <= R; dx++) if (g.chunkMeshes.has(`${pcx + dx},${pcz + dz}`)) n++;
-        if (n >= (2 * R + 1) ** 2 * 0.9) break;
-        await patienter(250);
-      }
-      const charge = Math.round(performance.now() - t0);
-      const depart = performance.now();
-      let roule = true;
-      const tic = () => { if (!roule) return; poser(x0 + v * (performance.now() - depart) / 1000); requestAnimationFrame(tic); };
-      requestAnimationFrame(tic);
-      await patienter(4000);
-      const vus = new Set(g.chunkMeshes.keys());
-      let installes = 0, dansCone = 0, appels = 0, images = 0;
-      const tf = performance.now() + 6000;
-      while (performance.now() < tf) {
-        await patienter(0);
-        const pcx = Math.floor(p.pos.x / CHUNK);
-        appels += g.renderer.info.render.calls; images++;
-        for (const k of g.chunkMeshes.keys()) {
-          if (vus.has(k)) continue;
-          vus.add(k); installes++;
-          const [kx, kz] = k.split(',').map(Number);
-          const ax = kx - pcx, az = kz - pcz;
-          if (ax > 0 && Math.abs(az) <= ax * 0.84) dansCone++;   // ±40°
+        // le disque chargé d'abord à l'arrêt, borné : on mesure un régime
+        const t0 = performance.now();
+        const pcz = Math.floor(z / CHUNK);
+        while (performance.now() - t0 < 40000) {
+          poser(x0);
+          let n = 0; const pcx = Math.floor(x0 / CHUNK);
+          for (let dz = -R; dz <= R; dz++) for (let dx = -R; dx <= R; dx++) if (g.chunkMeshes.has(`${pcx + dx},${pcz + dz}`)) n++;
+          if (n >= (2 * R + 1) ** 2 * 0.9) break;
+          await patienter(250);
         }
-      }
-      // le monde maillé dans le champ, à la fin
-      const pcx = Math.floor(p.pos.x / CHUNK);
-      let champ = R;
-      for (let dz = -R; dz <= R; dz++) for (let dx = 1; dx <= R; dx++) {
-        const len = Math.hypot(dx, dz);
-        if (len > R || dx / len < 0.766) continue;
-        if (!g.chunkMeshes.has(`${pcx + dx},${pcz + dz}`)) champ = Math.min(champ, len);
-      }
-      roule = false;
-      const parcouru = Math.round(p.pos.x - x0);
-      p.flying = false;
-      return { charge, parcouru, installes, dansCone, part: +(dansCone / (installes || 1)).toFixed(2),
-        champ: Math.round(champ * CHUNK), appels: Math.round(appels / (images || 1)), images };
-    });
+        const charge = Math.round(performance.now() - t0);
+        const depart = performance.now();
+        let roule = true;
+        const tic = () => { if (!roule) return; poser(x0 + v * (performance.now() - depart) / 1000); requestAnimationFrame(tic); };
+        requestAnimationFrame(tic);
+        await patienter(4000);
+        const vus = new Set(g.chunkMeshes.keys());
+        let installes = 0, dansCone = 0;
+        const tf = performance.now() + 6000;
+        while (performance.now() < tf) {
+          await patienter(0);
+          const pcx = Math.floor(p.pos.x / CHUNK);
+          for (const k of g.chunkMeshes.keys()) {
+            if (vus.has(k)) continue;
+            vus.add(k); installes++;
+            const [kx, kz] = k.split(',').map(Number);
+            const ax = kx - pcx, az = kz - pcz;
+            if (ax > 0 && Math.abs(az) <= ax * 0.84) dansCone++;   // ±40°
+          }
+        }
+        // le monde maillé dans le champ, à la fin
+        const pcx = Math.floor(p.pos.x / CHUNK);
+        let champ = R;
+        for (let dz = -R; dz <= R; dz++) for (let dx = 1; dx <= R; dx++) {
+          const len = Math.hypot(dx, dz);
+          if (len > R || dx / len < 0.766) continue;
+          if (!g.chunkMeshes.has(`${pcx + dx},${pcz + dz}`)) champ = Math.min(champ, len);
+        }
+        roule = false;
+        return { charge, parcouru: Math.round(p.pos.x - x0), installes, dansCone,
+          part: +(dansCone / (installes || 1)).toFixed(2), champ: Math.round(champ * CHUNK) };
+      });
+      await pg.context().close();
+      return r;
+    };
+    const ordreNeuf = await rouler('&file=cone');
+    const ordreAvant = await rouler('&file=regard');
+    const ecartParts = +(ordreNeuf.part - ordreAvant.part).toFixed(2);
+    const dit = (r) => `part ${r.part} (${r.dansCone}/${r.installes}) · champ maillé jusqu'à ${r.champ} blocs · ${r.parcouru} blocs roulés · disque en ${r.charge} ms`;
     verifier('à soixante blocs par seconde dans Paris, le monde se maille dans le champ de la caméra',
-      vite.parcouru > 300 && vite.installes > 60 && vite.part >= 0.77,
-      `part dans le champ ${vite.part} (barre 0,77 · ${vite.dansCone}/${vite.installes} morceaux) · monde maillé dans le champ jusqu'à ${vite.champ} blocs · ${vite.appels} appels par image · ${vite.parcouru} blocs roulés · disque chargé en ${vite.charge} ms`);
+      ordreNeuf.parcouru > 300 && ordreAvant.parcouru > 300 && ordreNeuf.installes > 40 && ordreAvant.installes > 40
+        && ecartParts >= 0.13,
+      `écart ${ecartParts} (barre 0,13) · ordre neuf : ${dit(ordreNeuf)} · ordre d'avant : ${dit(ordreAvant)}`);
 
     // L'ÉCRAN NE SE FIGE PLUS EN ARRIVANT SUR UNE VILLE (v235).
     //

@@ -38,7 +38,8 @@ plafond de vitesse au sol est désormais MESURÉ et publié
 (`src/plafond-sol.js`) : soixante blocs par seconde en ville, soixante-dix en
 campagne et sur l'autoroute, soixante au palier bas — c'est ce que la conduite
 pourra donner aux voitures (« on mesure, elle applique »). Rien ne change à
-l'arrêt ni à pied.
+l'arrêt ni à pied, ni dans un navigateur sans carte graphique, qui garde
+l'ordre d'avant (comme il garde déjà ses ombres éteintes).
 
 **Ce qui le prouve.** Une sonde en roulant, régime établi
 (`tests/sonde-monde-a-la-vitesse.cjs`) : à rr 12, le worker rend 43 à 58
@@ -47,8 +48,10 @@ maillé dans le champ de la caméra jusqu'à 132 à 143 blocs en ville contre 10
 à 107 sur l'ancienne file, sans aucune image au-delà de 300 ms. Deux témoins
 dans `monte.js`, tous deux rouges sur `origin/main` : l'ordre de la file (le
 morceau de l'axe à douze avant celui de côté à sept, rien derrière — 250
-morceaux derrière sur l'ancienne), et à 60 b/s dans Paris la part des morceaux
-maillés dans le champ de la caméra (0,91 contre 0,65, barre 0,77).
+morceaux derrière sur l'ancienne), et à 60 b/s dans Paris l'écart de la part
+des morceaux maillés dans le champ de la caméra entre l'ordre neuf et l'ordre
+d'avant, joués dans le même passage (0,31 ici, 0,02 sur `origin/main`, barre
+0,13).
 
 ---
 
