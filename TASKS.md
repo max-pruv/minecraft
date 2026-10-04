@@ -332,6 +332,15 @@
     17 102 → 51 734, taxi tactile « bouton jamais visible », PeerJS « Lost
     connection to server » — tous déclarés) ; `monte.js` « l'écran ne se fige
     pas » seul (3 283 ms · 25,3 %), dette mesurée des deux côtés ci-dessus.
+  - QUATRIÈME PASSAGE (rebasée sur la v332, livrée en v333) : treize suites
+    vertes, 77 min. Rouges : `manhattan.js` (trou de façade 11 684 → 54 969,
+    taxi tactile `locator.tap` hors délai — déclarés) ; `monte.js` les deux
+    mêmes (Paris 3 programmes `physical` ; écran 3 117 ms · 22,1 %) ;
+    `carte.js` huit rouges issus d'UNE cause — la question « Téléporter / S'y
+    rendre » ouverte mais `vis: false` à chacun des quatre appuis. Rejouée
+    SEULE : 103/103 sur la branche ; sur `origin/main` (v332) 101 verts et un
+    rouge de charge (« glisser bridé ×4 », 439 ms pour 400). Intermittence de
+    charge, à surveiller si elle revient sur la question du GPS (v306).
     Rebasée ensuite sur la v330 (aéroports, routes : rien de commun) ; les
     balises de version des commentaires de `src/` ont été retirées pour qu'un
     rebasage ne touche plus que la documentation.
