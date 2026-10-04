@@ -20,6 +20,40 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v323 — L'autoroute Kyoto–Nagoya, au sud du Shinkansen
+
+**Pourquoi.** Candidat le plus court du relevé de la v310 : Kyoto–Nagoya, 314
+blocs sur l'axe direct, sans eau ni aérodrome — mais avec le Shinkansen
+presque dans l'axe, qui file de Kyoto à Tokyo et traverse Nagoya à douze blocs
+de son centre. Une route qui passerait d'un côté à l'autre du rail écrirait son
+remblai sur le ballast.
+
+**Ce que ça change.** L'E1, la Meishin, relie Kyoto à Nagoya : 327 blocs de
+deux fois deux voies, aucun pont, et vingt voitures qui font l'aller-retour.
+
+- **Elle reste tout entière au sud du rail**, à dix-neuf blocs au moins de ses
+  colonnes : c'est le côté où les deux villes ont une entrée propre — Kyoto par
+  son axe est (avenue de quatre-vingt-neuf blocs sur la rue), Nagoya par son axe
+  ouest-sud-ouest (vingt-huit blocs). Au nord du rail, Nagoya n'offre qu'une
+  avenue de dix blocs.
+- **Elle contourne un étang par le nord**, au lieu de le franchir : un tracé
+  sans pont sur trois cent vingt-sept blocs.
+
+Rien n'est écrit dans le relief : les deux empreintes de `plafond.js` ne
+bougent pas.
+
+**Ce qui le prouve.** Dans `carteMonde.js`, un témoin neuf, rouge sur
+`origin/main` (pas d'E1) : la route, ses voitures, ses deux entrées sur la rue,
+et aucune colonne d'emprise sur un rail, un talus de voie ou une gare (0 sur
+2 749). Le témoin du rail de la v320, qui lit toutes les routes, la lit aussi.
+La sonde de tracé appelle `profilDe` et `largeurA` : 1 944 tracés au premier
+tour, refus 1 136 coude · 229 rail · 16 remblai · 7 ponts proches ; 4 845
+admissibles sans pont au second, à coudes de 25° au plus.
+
+---
+
+---
+
 ## v322 — Des voitures dans toutes les rues
 
 **Pourquoi.** Paris doublé (v306) avait laissé ses huit circuits d'avenues au

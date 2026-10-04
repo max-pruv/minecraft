@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 323,
+    titre: 'L\'autoroute Kyoto–Nagoya',
+    puces: [
+      'De Kyoto à Nagoya en voiture',
+      'Elle longe le Shinkansen',
+      'Sans pont ni rails à traverser',
+    ],
+  },
+  {
     v: 322,
     titre: 'Des voitures dans toutes les rues',
     puces: [
