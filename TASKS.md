@@ -275,6 +275,17 @@
   branche 3 · 3 · 2, `origin/main` 3 · 3 · 3. Même distribution ; le 5 est un
   tirage sous la charge du portail, et la dette de la v306 (deux ou trois
   programmes à l'arrivée) reste ouverte telle quelle.
+- [ ] **LE PORTAIL DE LA v329.** `carteMonde.js` (ENTIÈRE, le témoin de l'A1
+  Sud compris — rouge sur `origin/main` : « aucun convoi A1 Sud », douze
+  segments), `plafond.js`, `maj.js`, `carte.js` verts ; `monte.js` : l'écran
+  figé (3 500 ms · 28,8 %) et « se téléporter ne compile plus » (la chauffe de
+  New York expirée à 56/320 sous la charge), tous deux rejoués SEULS rouges des
+  deux côtés au portail de la v327 ci-dessous.
+- [ ] **LA PRODUCTION N'A PAS REÇU LA v328 (4 octobre, 05 h 46 UTC).** Fusion
+  faite (83a48bb), `sw.js` servi en v327 une heure plus tard (`age: 3610`,
+  `x-vercel-cache: HIT`) ; les aperçus de PR se déploient, pas la production.
+  La session n'a pas le droit de lister les déploiements Vercel (403) : à
+  regarder dans le tableau de bord du projet `minecraft-fam`.
 - [ ] **LE PORTAIL DE LA v328.** `carteMonde.js` (ENTIÈRE, le témoin du Yamuna
   compris — rouge sur `origin/main` : « aucun convoi Yamuna », onze segments),
   `plafond.js`, `maj.js`, `carte.js` verts ; seul rouge, l'écran figé de
