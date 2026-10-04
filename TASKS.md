@@ -73,7 +73,7 @@
   (`?diag=1`) et la cadence à 60 b/s avant de croire que la cadence tient — les
   millisecondes du worker et de rendu ne se transposent pas, l'ordre et les
   nombres de morceaux oui ; (3) ~~le coût d'un morceau dans le worker~~ —
-  **fait en v352** : Paris 8,3 → 3,3 ms, Rome 10,5 → 4,1 sous node, sortie
+  **fait en v356** : Paris 8,3 → 3,3 ms, Rome 10,5 → 4,1 sous node, sortie
   identique (empreinte de `plafond.js`). Au banc la ville ne suit toujours pas
   80 b/s (Paris 125, Rome 129–138, A1 158 pour 160) : le débit y plafonne vers
   55 morceaux par seconde en ville DES DEUX CÔTÉS, donc ce n'est plus le worker.
@@ -92,14 +92,19 @@
     le coût RÉEL sur la tablette (enfoncer : 12 à 20 ms au premier choc au
     banc, 4 à 7 ensuite), à lire avec `?diag=1` sur une voiture qu'on fait
     brûler.
-  - **La carcasse n'est vue que par celui qui conduisait.** Chez l'ami, la
-    voiture disparaît avec le champ `p.v` dès que le conducteur est déposé.
-  - **Les voitures de la rue ne s'abîment pas** — seule celle de l'enfant.
-  - **Le passage au garage répare** (`rangerAuGarage` → `reparer`) : le témoin
-    éprouve `reparer` directement, pas le trajet complet garage compris.
+  - ~~La carcasse n'est vue que par celui qui conduisait~~ — **fait en v356**
+    (le receveur garde l'épave).
+  - ~~Les voitures de la rue ne s'abîment pas~~ — **fait en v356**. Reste :
+    une voiture de la rue abîmée que l'enfant PREND repart neuve (`emprunter`
+    fabrique une monture neuve ; ses dégâts ne la suivent pas), et l'ami ne
+    voit pas les enfoncements des voitures de SA rue que l'enfant a percutées
+    (chaque tablette a sa rue).
+  - ~~Le garage n'est éprouvé que par `reparer`~~ — **fait en v356** : un
+    témoin par le trajet (descendre dedans, remonter).
   - **Le contrat avec la physique** (`player.choc`, `player.physiqueLitEtat`)
     attend la session « conduite-physique » : tant qu'elle ne publie rien, le
     repli de vitesse décide, et les effets s'appliquent par `player.boost`.
+    Un témoin (v356) publie les deux à la main et garde « jamais deux fois ».
   - **Les avions ne s'abîment pas** (`pilote` est écarté) : une décision, pas
     un oubli — un atterrissage manqué n'a pas de « choc » dans `player.js`.
 

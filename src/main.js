@@ -4205,9 +4205,13 @@ function synchroniserVehiculeDistant(rp, v) {
   if ((rp.vehicule ? rp.vehicule.cle : '') === cle) return;
   if (rp.vehicule) {
     poserDebout(rp);
-    scene.remove(rp.vehicule.mesh);
-    liberer(rp.vehicule.mesh);
+    const vm = rp.vehicule.mesh;
     rp.vehicule = null;
+    // SA VOITURE EN FEU RESTE LÀ (v356) : le conducteur déposé, la position
+    // n'emporte plus de voiture — mais l'épave brûle encore là où elle s'est
+    // arrêtée, et c'est le receveur qui la garde jusqu'à ce qu'elle s'en aille.
+    const enlever = () => { scene.remove(vm); liberer(vm); };
+    if (!(fun.degats && fun.degats.garderEpave(vm, enlever))) enlever();
   }
   if (!v) return;
   const fabrique = MODELES_MONTURE[v.k];
@@ -7489,6 +7493,10 @@ const fun = initFun({
     tirer: () => profileSync.photosTirer().catch(() => []),
   },
 });
+// LES VOITURES DE LA RUE S'ABÎMENT AUSSI (v356) : les dégâts demandent à la
+// circulation laquelle l'enfant vient de percuter (les convois n'existent
+// qu'une fois le monde bâti : on les demande au moment du choc).
+fun.degats.brancherRue((x, z, y) => (vehicules ? vehicules.voitureRueProche(x, z, y) : null));
 
 // --- main loop -------------------------------------------------------------------------
 
