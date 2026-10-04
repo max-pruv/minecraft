@@ -1091,12 +1091,15 @@ La deuxième tranche du point (d). Quatre règles.
   l'index des monuments) : leurs arbres restent ceux d'avant. Le désert,
   lui, garde sa règle partout.
 
-**Les steppes (v346)** suivent la même table : herbe couleur de paille (une
+**Les steppes (v347)** suivent la même table : herbe couleur de paille (une
 teinte de plus, aucun bloc neuf) et un vingtième des arbres. Mesurer en
 capture avant de régler : à un huitième, la steppe du Kazakhstan restait un
 bocage — 42 arbres contre 326 au témoin, mais des bosquets partout à l'écran.
 Les sites du témoin tempéré de la v341 restent hors des steppes (Hautes
 Plaines à l'ouest du 100e méridien, steppe pontique au sud de 47° N).
+Et `DATE_CLIMATS` SE RELIT à chaque tranche qui change des arbres : la
+steppe en retire, donc ce qu'un enfant a bâti jusqu'à la fusion de la v347
+garde les arbres d'avant.
 
 ## Les déserts chauds (v341) — le climat est une donnée de géographie, comme la côte
 

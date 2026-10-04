@@ -237,7 +237,7 @@ const CLIMATS = [
     133, 48.5, 138, 51, 141, 53, 156, 51, 163, 58, 170, 62, 180, 63, 180, 64.5, 170, 65.5,
     160, 68, 150, 69, 140, 70, 127, 71, 115, 71.5, 102, 72, 95, 70.5, 85, 69, 75, 67, 66, 66.5,
     60, 67, 50, 67.5, 42, 67.5, 36, 68.5, 30, 69.5, 25, 70.2, 17, 69.8, 14, 68, 8, 63, 6, 61]],
-  // LES STEPPES (v346) : les herbes sèches à l'abri des pluies, entre les
+  // LES STEPPES (v347) : les herbes sèches à l'abri des pluies, entre les
   // forêts et les déserts. La steppe pontique et kazakhe (de la mer Noire à
   // l'Altaï, au sud de 47-53° N), la Mongolie, l'Anatolie centrale, le
   // plateau iranien, les Hautes Plaines à l'ouest du 100e méridien, le Grand
@@ -322,7 +322,7 @@ export function climatCertain(lat, lon, marge) {
 // les couleurs du paysage lointain et de la carte. L'indice 0 ne teint rien.
 // Réglé sur la tuile d'herbe (104, 168, 62) : toundra → (126, 124, 80),
 // taïga → (64, 118, 64) ; et sur la tuile de feuilles (54, 116, 38).
-// La steppe (v346) → (178, 165, 92), l'herbe sèche couleur de paille ; ses
+// La steppe (v347) → (178, 165, 92), l'herbe sèche couleur de paille ; ses
 // rares arbres d'un vert olive.
 export const CLIMATS_TEINTES = ['', 'toundra', 'taiga', 'steppe'];
 export const INDICE_CLIMAT = { toundra: 1, taiga: 2, steppe: 3 };
