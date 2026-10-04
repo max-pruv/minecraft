@@ -10,7 +10,7 @@
   New York expirée, 53/321) et « la voiture freine devant un piéton »
   (`voituresRue: 0`, avance 3,4 : la situation n'a pas eu lieu ; vert aux
   quatre portails de la branche). Preuve structurelle : en rendu logiciel,
-  l'ordre de file de la v341 est celui d'avant au bit près (`fileAuRegard`) ;
+  l'ordre de file de la v344 est celui d'avant au bit près (`fileAuRegard`) ;
   seul s'ajoute le suivi du déplacement, de l'arithmétique sur la position.
 - [ ] **LE PLAFOND DE VITESSE AU SOL EST MESURÉ ET PUBLIÉ (v344) — À APPLIQUER
   PAR LA CONDUITE, ET À CONFIRMER SUR LA TABLETTE.** `src/plafond-sol.js` :
