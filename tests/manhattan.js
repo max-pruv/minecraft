@@ -508,9 +508,22 @@ function verifier(nom, ok, detail = "") {
       type: "touchMove",
       touchPoints: [{ x: 100, y: 270 }],
     });
+    // ON ATTEND EN TEMPS DE JEU, PAS EN TEMPS DE MONTRE (v340, règle de la
+    // v277). Manhattan rend moins d'une image par seconde sur ce banc, et `dt`
+    // est borné à un vingtième : quinze secondes de montre y valent moins
+    // d'une seconde de jeu. Depuis la v340 une voiture accélère comme une
+    // voiture (huit blocs en 1,3 s de jeu, contre une demi-seconde pour
+    // prendre toute son allure avant) — sonde faite : 0,9 → 4,0 blocs/s en
+    // huit secondes de montre, aucun choc, aucun obstacle devant. On compte
+    // donc six secondes de JEU, bornées à deux minutes de montre.
+    await p.evaluate(() => {
+      window.__jeuTaxi = 0; let prec = performance.now();
+      const pas = (t) => { window.__jeuTaxi += Math.min(Math.max((t - prec) / 1000, 0), 0.05); prec = t; if (window.__jeuTaxi < 60) requestAnimationFrame(pas); };
+      requestAnimationFrame(pas);
+    });
     await p
-      .waitForFunction((z) => __game.player.pos.z < z - 8, depart, {
-        timeout: 15000,
+      .waitForFunction((z) => __game.player.pos.z < z - 8 || window.__jeuTaxi > 6, depart, {
+        timeout: 120000,
       })
       .catch(() => {});
     await doigt.send("Input.dispatchTouchEvent", {
@@ -524,7 +537,7 @@ function verifier(nom, ok, detail = "") {
     verifier(
       "le taxi roule avec les contrôles tactiles",
       avance > 8,
-      `${avance} blocs en ${Date.now() - t0Taxi} ms`,
+      `${avance} blocs en ${Date.now() - t0Taxi} ms de montre`,
     );
     // DESCENDRE NE DOIT PAS TUER LA SUITE (v340) : ce `tap` a levé son délai
     // au portail de la v340 et neuf témoins n'ont pas été atteints. On
