@@ -6048,6 +6048,8 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('et elle file bien plus vite qu\'avant — 25,6 blocs/s, 92 km/h, était sa pointe',
       !cd.err && cd.pointe >= 45,
       `${cd.pointe} blocs/s après sept secondes (${Math.round((cd.pointe || 0) * 3.6)} km/h), pointe de la fiche ${cd.fiche && cd.fiche.vmax}`);
+    // vert des deux côtés à dessein (l'ancienne voiture s'arrêtait en 0,4 s) :
+    // il garde que le modèle neuf ne rend pas le frein mou
     verifier('un frein franc : de la pointe à l\'arrêt en moins de trois secondes',
       !cd.err && cd.freinage != null && cd.freinage < 3, `${cd.freinage} s`);
     verifier('au pas on tourne serré, vite on tourne large — le rayon suit la géométrie puis l\'adhérence',

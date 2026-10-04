@@ -58,7 +58,8 @@ const SWIM_SPEED = 3.0;
 const MAX_STEP = 0.4;     // max movement per collision substep
 const PAS_VOITURE = 0.4;  // pas horizontal de la voiture (v337)
 const DEMI_LONG_VOITURE = 2.2;   // la moitié des 4,4 blocs d'une voiture (vehicules.js)
-const DEGAGEMENT_MARCHE = 0.7;   // ce qu'il faut avancer pour passer le bord d'une marche (v286)
+const DEGAGEMENT_MARCHE = 0.7;
+const FREIN_PIETON = 22;         // le frein franc de conduite.js, devant un piéton   // ce qu'il faut avancer pour passer le bord d'une marche (v286)
 
 // LE VOL D'UN AVION — trois chiffres, et chacun a sa raison.
 //
@@ -385,6 +386,23 @@ export class Player {
     const etaitAuSol = this.onGround;
     this.onGround = false;
     const avantX = this.pos.x, avantZ = this.pos.z;
+    // ON FREINE DEVANT UN PIÉTON, ON NE L'ATTEND PAS AU CONTACT. À cinquante
+    // blocs par seconde, s'arrêter pile au pied de quelqu'un est un pilé qu'on
+    // ne verrait dans aucune voiture : on regarde à la distance d'arrêt (plus
+    // deux blocs, douze au plus) et l'on freine si un piéton y est. Il s'écarte
+    // de lui-même (v259), et la voiture repart.
+    const sp0 = Math.abs(this.vitesseVoiture || 0);
+    if (sp0 > 2 && this.obstacleVehicule && dt > 0) {
+      const arret = Math.min(12, (sp0 * sp0) / (2 * FREIN_PIETON) + 2);
+      const h = this.yaw + (this.derive || 0), s = Math.sign(this.vitesseVoiture);
+      const ax = this.pos.x - Math.sin(h) * s * arret, az = this.pos.z - Math.cos(h) * s * arret;
+      if (this.obstacleVehicule(ax, az, this.yaw + Math.PI, this.pos.x, this.pos.z) === 'pieton') {
+        const v = Math.max(0, sp0 - FREIN_PIETON * dt) * s;
+        const k = sp0 > 1e-6 ? v / this.vitesseVoiture : 0;
+        this.vitesseVoiture = v; this.vel.x *= k; this.vel.z *= k;
+        this.freinePieton = true;
+      } else this.freinePieton = false;
+    }
     let reste = dt, tours = 0;
     while (reste > 1e-6 && tours++ < 32) {
       const vx = this.vel.x, vz = this.vel.z, sp = Math.hypot(vx, vz);
