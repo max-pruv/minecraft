@@ -789,7 +789,11 @@
   tropiques humides ; (e) la bibliothèque architecturale (96
   variantes, 278 profils de ville) — elle exige une retrame à un bloc pour un
   mètre (`docs/monde-fidele/programme.md`, section 6), décision de Max ; (f) la
-  matrice de couverture ville par ville (convertie, exclue, bloquée) et les
+  matrice de couverture ville par ville (convertie, exclue, bloquée) — FAITE
+  en v346, ENGENDRÉE (`tests/sonde-couverture.cjs` →
+  `docs/monde-fidele/couverture.md`, 276 villes : rues 264 converties, 8
+  exclues, 4 bloquées — San Francisco, Nice, Lille, Washington ; 7 villes sans
+  anneau de circulation, toutes exclues ; 33 reliées par une route) — et les
   mesures sur l'iPad de la maison.
 
 - [x] **LES MONUMENTS DE PARIS SONT PLUS BAS QUE LES IMMEUBLES (v301)** — fait
