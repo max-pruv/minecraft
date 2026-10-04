@@ -1,4 +1,4 @@
-// LA CONDUITE DE LA VOITURE DE L'ENFANT (conduite-physique, v345).
+// LA CONDUITE DE LA VOITURE DE L'ENFANT (conduite-physique, v349).
 //
 // Max (4 octobre 2026) : « une grosse refonte de la façon de conduire… comme
 // GTA : des véhicules qui tournent de manière naturelle, des accélérations
@@ -31,6 +31,8 @@
 // freine, le côté tourne le volant. La dérive n'est jamais une commande —
 // elle vient d'un virage serré pris vite, et se rattrape sans rien faire.
 
+import { VITESSE_SOL_MAX } from './plafond-sol.js';
+
 export const MARCHE = 3.2;            // WALK_SPEED de player.js : l'unité des allures
 export const EMPATTEMENT = 2.7;       // L, blocs (une voiture de 4,4)
 
@@ -48,22 +50,14 @@ export const CLASSES = {
   hypercar: { vmax: 55, a0: 14.0, mu: 26 },
 };
 
-// LE PLAFOND DU SOL, MESURÉ (v345) : le trou devant soi — la distance au
-// premier morceau non maillé dans le cône d'avance, critère de la v229 —, à
-// la distance d'affichage de l'iPad (rr=12), le déplacement en TEMPS RÉEL
-// (la position avancée à chaque image : laissée au joueur, `dt` borné l'aurait
-// fait aller au ralenti sur un banc à dix images par seconde) :
-//
-//   vitesse      30    40    50    60  blocs/s
-//   campagne    182   161   151   125  blocs de trou
-//   Paris       160   151   136   125
-//
-// À soixante blocs par seconde le monde se maille encore deux secondes de
-// route devant la voiture, dans Paris comme dans les champs : le plafond de
-// la v260 (28, calculé avant le worker de la v251) ne tient plus. On retient
-// 60 comme plafond MESURÉ, et l'hypercar reste dessous (55). La mesure de la
-// tablette (`?diag=1`) reste à faire : dette déclarée dans TASKS.md.
-export const PLAFOND_SOL = 60;
+// LE PLAFOND DU SOL EST CELUI QUE PUBLIE LE MONDE (`plafond-sol.js`, v346 :
+// « tu mesures, elle applique »). Mesuré par deux sessions, deux sondes, au
+// même critère (le trou devant soi à rr=12, le déplacement en temps réel) :
+// 60 blocs/s en ville et 70 en campagne là-bas ; ici, 125 blocs de trou à 60
+// blocs/s, Paris comme campagne (`sonde-plafond-voiture.cjs`). Les classes se
+// posent sous le plafond de la VILLE — une voiture ne sait pas où elle roule
+// —, l'hypercar à 55.
+export const PLAFOND_SOL = VITESSE_SOL_MAX.ville;
 
 // LE COUP DE DÉPART. Une accélération seulement en a0 · (1 − (v/vm)²) démarre
 // mou : mesuré au banc à Manhattan, même nombre d'images des deux côtés,

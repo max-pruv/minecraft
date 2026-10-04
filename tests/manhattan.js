@@ -280,7 +280,7 @@ function verifier(nom, ok, detail = "") {
         ),
       );
       // UNE ATTENTE QUI JETTE MASQUE TOUT CE QUI SUIT (v291) : au portail de
-      // la v345 la file de Manhattan ne s'est jamais vidée en soixante
+      // la v349 la file de Manhattan ne s'est jamais vidée en soixante
       // secondes, et la suite s'est arrêtée là. On attend, borné, et le
       // témoin d'après rend son verdict sur ce qui est installé.
       const fileVide = await p.waitForFunction(
@@ -498,7 +498,7 @@ function verifier(nom, ok, detail = "") {
       );
     } else {
     // le bouton est là, mais à 0,45 image par seconde un `tap` attend que la
-    // page soit « stable » et lève son délai (v345) : on retombe sur un clic
+    // page soit « stable » et lève son délai (v349) : on retombe sur un clic
     // plutôt que de tuer la suite — c'est la conduite tactile qu'on éprouve
     const tape = await p.locator("#ride-btn").tap({ timeout: 15000 }).then(() => true).catch(() => false);
     if (!tape) await p.evaluate(() => document.getElementById("ride-btn").click());
@@ -512,7 +512,7 @@ function verifier(nom, ok, detail = "") {
       type: "touchMove",
       touchPoints: [{ x: 100, y: 270 }],
     });
-    // ON ATTEND DES IMAGES DE JEU, PAS DU TEMPS DE MONTRE (v345, règle de la
+    // ON ATTEND DES IMAGES DE JEU, PAS DU TEMPS DE MONTRE (v349, règle de la
     // v277). Manhattan rend 0,45 image par seconde sur ce banc (sonde : 18 et
     // 19 images en quarante secondes, branche et `origin/main`) et `dt` est
     // borné à un vingtième : quinze secondes de montre y valent sept images,
@@ -539,8 +539,8 @@ function verifier(nom, ok, detail = "") {
       avance > 8,
       `${avance} blocs en ${Date.now() - t0Taxi} ms de montre`,
     );
-    // DESCENDRE NE DOIT PAS TUER LA SUITE (v345) : ce `tap` a levé son délai
-    // au portail de la v345 et neuf témoins n'ont pas été atteints. On
+    // DESCENDRE NE DOIT PAS TUER LA SUITE (v349) : ce `tap` a levé son délai
+    // au portail de la v349 et neuf témoins n'ont pas été atteints. On
     // descend, borné, et ce que le bouton annonce entre dans le message.
     const descendu = await p.locator("#ride-btn").tap({ timeout: 15000 }).then(() => true).catch(() => false);
     if (!descendu) {

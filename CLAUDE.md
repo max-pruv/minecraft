@@ -977,7 +977,7 @@ en temps réel), `fun.js` le fait descendre et `deposer` le pose debout sur une
 case libre à côté (côté conducteur d'abord). La carcasse porte `horsService`
 (lu par `animals.js`, comme `montee`) : elle ne se reprend pas, et elle s'en
 va au bout de `DUREE_CARCASSE`.
-## La conduite à la GTA (v345) — un modèle pur, une boîte orientée, des chocs qui se publient
+## La conduite à la GTA (v349) — un modèle pur, une boîte orientée, des chocs qui se publient
 
 Max : « une grosse refonte de la façon de conduire… comme GTA ». Premier palier
 de la session `conduite-physique` (six sessions en parallèle sur la conduite).
@@ -1024,7 +1024,9 @@ Six règles.
   (`sonde-plafond-voiture.cjs`) avance la position EN TEMPS RÉEL à chaque
   image. Trou devant soi à rr=12 : 182 · 161 · 151 · 125 blocs en campagne,
   160 · 151 · 136 · 125 à Paris, pour 30 · 40 · 50 · 60 blocs/s.
-  `PLAFOND_SOL` = 60 ; l'hypercar à 55. Le plafond de la v260 (28, calculé
+  `PLAFOND_SOL` se lit dans `plafond-sol.js` (v346, la session du monde à la
+  vitesse : 60 en ville, 70 en campagne — la même valeur, mesurée à part) ;
+  l'hypercar à 55. Le plafond de la v260 (28, calculé
   avant le worker de la v251) est mort. La tablette reste à mesurer.
 - **UNE MARCHE N'EST PAS UN MUR AU BOUT DU CAPOT.** La boîte fait désormais
   4,4 × 2,26 et tourne avec la voiture ; mais sur la surface continue une
@@ -5059,8 +5061,8 @@ caméra à part, `layers.enableAll()` comme le veut la v250.
 ## Chaque voiture roule à l'allure de sa classe (v260)
 
 > **⚠️ Le plafond calculé ci-dessous (28 blocs/s) est remplacé par un plafond
-> MESURÉ (60) en v345, et l'allure se déduit des fiches de `conduite.js`.** Lire
-> « La conduite à la GTA (v345) ».
+> MESURÉ (60) en v349, et l'allure se déduit des fiches de `conduite.js`.** Lire
+> « La conduite à la GTA (v349) ».
 
 Max : « une vitesse en fonction du modèle ». Deux règles.
 
