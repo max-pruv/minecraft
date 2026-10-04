@@ -4638,7 +4638,13 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         pose = await doigt();
         if (pose.f > 0.8) break;
       }
-      const lire = () => tab.evaluate(() => { const p = window.__game.player; return { gaz: p.gaz == null ? null : +p.gaz.toFixed(2), f: +p.touchMove.f.toFixed(2), v: +Math.hypot(p.vel.x, p.vel.z).toFixed(2), yaw: +p.yaw.toFixed(3), y: +(p.pos.y - window.__piste262.y0 - 1).toFixed(2), x: +(p.pos.x - window.__piste262.x0).toFixed(1) }; });
+      // ET LES PASSANTS LOIN DE LA PISTE (v345) : depuis que la voiture freine
+      // et s'arrête devant un piéton à DOUZE blocs (et non plus au contact),
+      // Marlon qui se replace près de l'enfant peut l'arrêter au milieu du
+      // témoin — au portail, 27 blocs/s puis 1,0 au moment de tourner. Les
+      // chocs et l'arrêt devant un piéton entrent dans le message.
+      await tab.evaluate(() => { const g = window.__game; for (const n of (g.npcs || [])) if (n.pos && Math.abs(n.pos.x - window.__piste262.x0 - 150) < 250 && Math.abs(n.pos.z - window.__piste262.z0) < 60) n.pos.y = -500; });
+      const lire = () => tab.evaluate(() => { const p = window.__game.player; return { gaz: p.gaz == null ? null : +p.gaz.toFixed(2), f: +p.touchMove.f.toFixed(2), v: +Math.hypot(p.vel.x, p.vel.z).toFixed(2), yaw: +p.yaw.toFixed(3), y: +(p.pos.y - window.__piste262.y0 - 1).toFixed(2), x: +(p.pos.x - window.__piste262.x0).toFixed(1), chocs: p.chocs || 0, pieton: !!p.freinePieton }; });
       // LE BANC NE VIT PAS EN TEMPS RÉEL (dt borné, trois images par seconde) :
       // on attend que la voiture AIT pris sa vitesse, bornée en temps mural,
       // puis on relève — jamais un délai fixe.
