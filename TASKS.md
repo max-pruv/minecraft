@@ -275,6 +275,21 @@
   branche 3 · 3 · 2, `origin/main` 3 · 3 · 3. Même distribution ; le 5 est un
   tirage sous la charge du portail, et la dette de la v306 (deux ou trois
   programmes à l'arrivée) reste ouverte telle quelle.
+- [ ] **LE PORTAIL DE LA v328 (les terminaux), DOUBLE MESURE FAITE.** Seule
+  suite rouge : `monte.js`, rejouée SEULE trois fois sur la branche et une fois
+  sur `origin/main` (v326). « L'écran ne se fige pas en arrivant sur une ville »
+  rouge à chaque passage des deux côtés (branche 3 400 · 26,2 %, 3 317 · 25,2 %,
+  3 433 · 27,9 % ; `origin/main` 3 733 · 29 %), dette déjà déclarée. « Se
+  téléporter ne compile plus de programmes » : rouge au portail (Paris à huit
+  images, zéro programme neuf) et une fois sur trois seule sur la branche (trois
+  programmes de voiture `physical` à Paris), vert deux fois seule sur la branche
+  et seule sur `origin/main` — l'intermittence des v323 et v324 ; la livraison
+  n'ajoute que des blocs, aucun matériau. « Un train s'arrête devant la voiture
+  de l'enfant » rouge une fois sur `origin/main` seul (13 relevés dedans), vert
+  partout ailleurs. Et « descendu de la voiture de Paris », rouge deux fois sur
+  deux sur la branche, était un défaut du TÉMOIN, corrigé ici : à la seconde
+  pose de `poserAParis`, la voiture était retirée sous l'enfant encore assis.
+
 - [ ] **LE PORTAIL DE LA v327, SUR LA v326 (règle de la v195), DOUBLE MESURE
   FAITE.** `carteMonde.js` (ENTIÈRE, le témoin de l'A4 compris), `plafond.js`,
   `carte.js` verts. `maj.js` : la libération de la préparation (la carte encore

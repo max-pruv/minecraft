@@ -1295,7 +1295,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       // l'enfant était encore assis dans la voiture de la première : le jeu
       // le fait descendre quand sa monture disparaît (v245), `monterAParis`
       // le croyait au volant, et le clic de descente d'après le faisait
-      // MONTER — rouge chaque fois qu'il fallait deux poses (v327, 2 sur 2).
+      // MONTER — rouge chaque fois qu'il fallait deux poses (v328, 2 sur 2).
       if (g.fun.montureConduite && g.fun.montureConduite()) document.getElementById('ride-btn').click();
       for (const a of [...g.animalManager.animals]) if (a.def.key === 'voiture') { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); }
       g.animalManager.invoquer('voiture', x - Math.sin(g.player.yaw) * 3, z - Math.cos(g.player.yaw) * 3);

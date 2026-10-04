@@ -49,7 +49,10 @@ au tarmac à travers le hall 2A de Roissy. Le témoin de la marche d'un hall à
 l'autre reste vert sur les trois profils. Le coût du bâtisseur, médiane de
 huit mesures alternées de deux cents rejeux : Roissy 2,79 → 2,87 ms, Heathrow
 0,75 → 0,75, Orly 0,52 → 0,54, Saint-Dizier 0,38 → 0,38. Captures intérieures
-d'un hub, d'une ville, d'une base et de Roissy (`sonde-captures-terminaux.cjs`).
+d'un hub, d'une ville, d'une base et de Roissy (`sonde-captures-terminaux.cjs`). Au
+passage, un témoin de `monte.js` (« descendu de la voiture de Paris ») retirait
+la voiture sous l'enfant encore assis quand il devait se poser deux fois ; il
+descend désormais d'abord.
 
 ---
 
