@@ -202,6 +202,16 @@ export const ROUTES = [
   // ponts proches ; celui-ci : 346 blocs, aucun pont, déblai 7,4, remblai 0,8,
   // pente 0,067, coudes de 20°, zéro rail, zéro aérodrome à moins de 835.
   { nom: 'Autosole', villes: ['bologne', 'florence'], via: [[3252, 2853], [3257, 3052], [3230, 3135]] },
+  // L'A4 ITALIENNE (v327), MILAN–TURIN, la Torino–Milano : la plaine du Pô,
+  // mais pas plate partout — l'axe direct creusait au-delà de neuf blocs, et
+  // c'est le déblai qui a fait le tri (7 599 refus). Sorties par le RAYON
+  // (règle de la v324) : Milan à 128°, où l'avenue de l'axe fait quarante-
+  // trois blocs sur la rue, Turin à −28° (vingt). Mesuré sous node (scratchpad
+  // cherche2.mjs, qui appelle `profilDe`) : 36 432 tracés, refus 28 826 coude
+  // · 7 599 déblai · 1 031 remblai · 25 ponts proches, sept admissibles, tous
+  // sans pont ; celui-ci : 552 blocs, déblai 7,5, remblai 0,7, pente 0,060,
+  // zéro rail, l'aérodrome le plus proche à 2 046 blocs.
+  { nom: 'A4', villes: ['milan', 'turin'], via: [[2375, 2280], [2310, 2319], [1996, 2365], [1908, 2410]] },
 ];
 
 // --- la section -----------------------------------------------------------------

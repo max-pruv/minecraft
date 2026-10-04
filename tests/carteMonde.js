@@ -583,6 +583,7 @@ const VRAIES_KM = [
       out.convoiA3 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A3') || null;
       out.convoiE1 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'E1') || null;
       out.convoiAutosole = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'Autosole') || null;
+      out.convoiA4it = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A4') || null;
       // AUCUNE ROUTE NE CROISE NI NE LONGE UNE VOIE FERRÉE (v320) : l'A3 est la
       // première dont l'axe a un rail le long (l'ICE). On lit, pour TOUTES les
       // routes, chaque colonne de leur emprise (`routeEn` non nul) et l'on
@@ -778,6 +779,15 @@ const VRAIES_KM = [
       && ['bologne', 'florence'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'Autosole' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7)),
       JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiAutosole ? { nom: a1.convoiAutosole.nom, voitures: (a1.convoiAutosole.modeles || []).length } : 'aucun convoi Autosole',
         surRail: a1.surRail && a1.surRail.Autosole, entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'Autosole') }));
+
+    // L'A4 (v327) : Milan–Turin, la plaine du Pô — où c'est le DÉBLAI qui a
+    // fait le tri. Sept tracés admissibles sur trente-six mille.
+    verifier('l\'A4 relie Milan à Turin, et des voitures entrent dans les deux villes par une rue propre',
+      !a1.absent && a1.segments >= 11 && !!a1.convoiA4it && a1.convoiA4it.routier && (a1.convoiA4it.modeles || []).length >= 10
+      && !!a1.surRail && !!a1.surRail.A4 && a1.surRail.A4[0] > 100 && a1.surRail.A4[1] === 0
+      && ['milan', 'turin'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'A4' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7)),
+      JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiA4it ? { nom: a1.convoiA4it.nom, voitures: (a1.convoiA4it.modeles || []).length } : 'aucun convoi A4',
+        surRail: a1.surRail && a1.surRail.A4, entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'A4') }));
 
     // DE VRAIS RAILS, EN RELIEF, ET DEUX VOIES (v281) ------------------------
     //
