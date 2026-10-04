@@ -159,6 +159,7 @@ const GARDIENS = {
   // commissariat.
   'src/ville.js': ['metro.js', 'carte.js'],
   'src/player.js': ['plafond.js', 'monte.js', 'manhattan.js'],
+  'src/conduite.js': ['plafond.js', 'monte.js', 'manhattan.js', 'carteMonde.js', 'washington.js', 'metro.js'],
   'src/admin.js': ['parent.js', 'reglages.js'],
   'src/identity.js': ['reglages.js', 'parent.js'],
   'src/education.js': ['reglages.js', 'parent.js', 'manhattan.js'],

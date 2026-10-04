@@ -5923,6 +5923,141 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !nature.err && nature.auVolant && nature.d >= 30,
       `barre 30 blocs (mesuré désarmé : 0,4 et 17,9 · armé : 59 et 116) · ${JSON.stringify(nature)}`);
 
+    // ---- LA CONDUITE À LA GTA (v337) ----------------------------------------
+    // Max : « des véhicules qui tournent de manière naturelle, des accélérations
+    // cohérentes, des vitesses cohérentes — aujourd'hui les véhicules sont trop
+    // lents —, des collisions cohérentes ». Une dalle de pierre loin de tout, une
+    // hypercar invoquée, et l'on mesure en TEMPS DE JEU (`min(dt, 0,05)` cumulé
+    // par image, v277) : la cadence du banc entre dans le message. Le modèle
+    // (`conduite.js`) donne la THÉORIE, la page donne ce que la voiture FAIT.
+    // Sur l'ancien code la pointe d'une hypercar est 25,6 blocs/s (92 km/h) :
+    // elle n'atteint jamais 100 km/h, aucun choc ne se publie, et la caisse ne
+    // s'aligne pas le long d'un mur — chaque verdict rougit pour sa raison.
+    const gta = await tab.evaluate(async () => {
+      const g = window.__game, P = g.player;
+      const dormir = (ms) => new Promise((f) => setTimeout(f, ms));
+      const { BLOCK } = await import('./src/blocks.js');
+      const C = await import('./src/conduite.js').catch(() => null);
+      const x0 = 41000, z0 = 41000; let y0 = 0;
+      for (let d = -20; d <= 420; d += 4) for (let w = -60; w <= 60; w += 4) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
+      y0 += 3;
+      const poses = [];
+      const poser = (x, y, z) => { g.world.setBlock(x, y, z, BLOCK.STONE); poses.push([x, y, z]); };
+      for (let d = -20; d <= 420; d++) for (let w = -60; w <= 60; w++) poser(x0 + d, y0, z0 + w);
+      const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+      const vider = () => { for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh); g.animalManager.animals.length = 0; };
+      // UN TÉMOIN SE PLACE LUI-MÊME, ET COMMENCE PAR FAIRE LE VIDE (v284)
+      for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await dormir(400); }
+      vider();
+      P.flying = false; P.yaw = -Math.PI / 2; P.pitch = 0;
+      P.pos.set(x0, y0 + 1.2, z0 + 0.5); P.vel.set(0, 0, 0);
+      g.animalManager.invoquer('voiture', x0 + 3, z0 + 0.5, false, { flotte: 'koenigsegg-jesko.glb' });
+      await dormir(600);
+      for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); const t = performance.now(); while (!auVolant() && performance.now() - t < 2500) await dormir(150); }
+      if (!auVolant()) { for (const [x, y, z] of poses) g.world.setBlock(x, y, z, 0); return { err: 'pas au volant' }; }
+      const enJeu = (n, cb) => new Promise((fin) => { let c = 0, p = performance.now(); const pas = (t) => { const d = Math.min(Math.max((t - p) / 1000, 0), 0.05); c += d; p = t; if (cb) cb(c, d); if (c >= n) fin(c); else requestAnimationFrame(pas); }; requestAnimationFrame(pas); });
+      const placer = (x, z, yaw, v) => { P.pos.set(x0 + x, y0 + 1.05, z0 + z); P.yaw = yaw; P.vitesseVoiture = v; P.derive = 0; P.braquage = 0; P.vel.set(-Math.sin(yaw) * v, 0, -Math.cos(yaw) * v); };
+      const res = {};
+      await enJeu(0.3);
+      // — 0 → 100 km/h et pointe, plein avant au joystick —
+      placer(0, 0.5, -Math.PI / 2, 0);
+      P.touchMove.f = 1; P.touchMove.s = 0;
+      let t100 = null, images = 0; const tw = performance.now();
+      await enJeu(7, (c) => { images++; if (t100 === null && Math.abs(P.vitesseVoiture || 0) >= 27.78) t100 = c; });
+      res.cadence = +(images / ((performance.now() - tw) / 1000)).toFixed(1);
+      res.t100 = t100 == null ? null : +t100.toFixed(2);
+      res.pointe = +Math.abs(P.vitesseVoiture || 0).toFixed(1);
+      res.fiche = P.ficheVoiture || null;
+      res.theorie = C && P.ficheVoiture ? { t100: +C.tempsJusqua(27.78, P.ficheVoiture).toFixed(2), vmax: P.ficheVoiture.vmax } : null;
+      // — le freinage, joystick tiré —
+      P.touchMove.f = -1; let tf = null;
+      await enJeu(6, (c) => { if (tf === null && (P.vitesseVoiture || 0) <= 0.5) tf = c; });
+      res.freinage = tf == null ? null : +tf.toFixed(2);
+      P.touchMove.f = 0;
+      // — le rayon de virage, volant à fond, à 6 puis à 20 blocs/s —
+      const rayon = async (v) => {
+        placer(150, 0, -Math.PI / 2, v);
+        P.touchMove.s = 1;
+        const pts = [];
+        const vmax = P.ficheVoiture ? P.ficheVoiture.vmax : 25.6;
+        await enJeu(5, (c) => { P.touchMove.f = Math.max(0, Math.min(1, v / vmax + (v - Math.abs(P.vitesseVoiture || 0)) * 0.2)); if (c > 1.5) pts.push([P.pos.x, P.pos.z, Math.abs(P.vitesseVoiture || 0), Math.abs(P.derive || 0)]); });
+        P.touchMove.s = 0; P.touchMove.f = 0;
+        const cx = pts.reduce((a, p) => a + p[0], 0) / pts.length, cz = pts.reduce((a, p) => a + p[1], 0) / pts.length;
+        return { v, R: +(pts.reduce((a, p) => a + Math.hypot(p[0] - cx, p[1] - cz), 0) / pts.length).toFixed(1),
+          vMoy: +(pts.reduce((a, p) => a + p[2], 0) / pts.length).toFixed(1), derive: +Math.max(...pts.map((p) => p[3])).toFixed(3),
+          theorie: C && P.ficheVoiture ? +C.rayonDeVirage(v, P.ficheVoiture).toFixed(1) : null };
+      };
+      res.lent = await rayon(6);
+      res.vite = await rayon(20);
+      // — un mur rasant : la voiture arrive à douze degrés, à 24 blocs/s —
+      for (let x = 100; x <= 400; x++) for (let h = 1; h <= 3; h++) poser(x0 + x, y0 + h, z0 + 20);
+      const ang = 12 * Math.PI / 180;
+      placer(110, 15, -Math.PI / 2 - ang, 24);
+      P.touchMove.f = 0.75; P.choc = null; let n0 = P.chocs || 0, contact = null;
+      await enJeu(2.5, (c) => { if (!contact && (P.chocs || 0) > n0) contact = { t: +c.toFixed(2), choc: P.choc }; });
+      res.rasant = { contact, x: +(P.pos.x - x0).toFixed(1), v: +Math.abs(P.vitesseVoiture || 0).toFixed(1), capDeg: +((P.yaw + Math.PI / 2) * 180 / Math.PI).toFixed(1) };
+      P.touchMove.f = 0;
+      // — un mur de face, en travers, pris à 22 blocs/s —
+      for (let z = -30; z <= 0; z++) for (let h = 1; h <= 3; h++) poser(x0 + 90, y0 + h, z0 + z);
+      placer(50, -12, -Math.PI / 2, 22);
+      P.choc = null; n0 = P.chocs || 0; let face = null, vMin = 0;
+      await enJeu(3, (c) => { if (!face && (P.chocs || 0) > n0) face = { t: +c.toFixed(2), choc: P.choc }; if (face) vMin = Math.min(vMin, P.vitesseVoiture || 0); });
+      res.face = { face, rebond: +vMin.toFixed(2), x: +(P.pos.x - x0).toFixed(1), v: +(P.vitesseVoiture || 0).toFixed(2) };
+      // — une voiture de la rue : la famille « voiture » du crochet de main.js,
+      // posée à la main en travers à x = 70 (le crochet RÉEL est éprouvé plus
+      // haut, « la circulation s'arrête devant la voiture de l'enfant ») —
+      const vrai = P.obstacleVehicule;
+      P.obstacleVehicule = (x, z, cap, xa, za) => ((x - x0) > 66 && (xa - x0) <= 66 && Math.abs(z - z0 - 40) < 6 ? 'voiture' : (vrai ? vrai(x, z, cap, xa, za) : false));
+      placer(20, 40, -Math.PI / 2, 18);
+      P.touchMove.f = 1; P.choc = null; n0 = P.chocs || 0; let rue = null;
+      await enJeu(3, (c) => { if (!rue && (P.chocs || 0) > n0) rue = { t: +c.toFixed(2), choc: P.choc, v: +(P.vitesseVoiture || 0).toFixed(2) }; });
+      P.obstacleVehicule = vrai; P.touchMove.f = 0;
+      res.rue = { rue, x: +(P.pos.x - x0).toFixed(1) };
+      // — une panne posée à la main : le joystick ne fait plus rien —
+      placer(0, -40, -Math.PI / 2, 0);
+      P.etatVoiture = { sante: 0, moteur: 0, direction: 0, enPanne: true, enFeu: false };
+      P.touchMove.f = 1; P.touchMove.s = 1; const yawPanne = P.yaw;
+      await enJeu(2);
+      res.panne = { v: +Math.abs(P.vitesseVoiture || 0).toFixed(2), x: +(P.pos.x - x0).toFixed(2), tourne: +Math.abs(P.yaw - yawPanne).toFixed(3) };
+      P.touchMove.f = 0; P.touchMove.s = 0; P.etatVoiture = undefined;
+      for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await dormir(400); }
+      vider();
+      for (const [x, y, z] of poses) g.world.setBlock(x, y, z, 0);
+      return res;
+    });
+    const cd = gta || {};
+    const cadenceC = `cadence ${cd.cadence} images/s`;
+    verifier('une hypercar passe de 0 à 100 km/h en moins de trois secondes de jeu, comme le dit sa fiche',
+      !cd.err && cd.t100 != null && cd.t100 < 3 && cd.theorie && Math.abs(cd.t100 - cd.theorie.t100) < 0.6,
+      `${cd.err || ''} 0→100 en ${cd.t100} s (théorie ${cd.theorie && cd.theorie.t100}) · ${cadenceC}`);
+    verifier('et elle file bien plus vite qu\'avant — 25,6 blocs/s, 92 km/h, était sa pointe',
+      !cd.err && cd.pointe >= 45,
+      `${cd.pointe} blocs/s après sept secondes (${Math.round((cd.pointe || 0) * 3.6)} km/h), pointe de la fiche ${cd.fiche && cd.fiche.vmax}`);
+    verifier('un frein franc : de la pointe à l\'arrêt en moins de trois secondes',
+      !cd.err && cd.freinage != null && cd.freinage < 3, `${cd.freinage} s`);
+    verifier('au pas on tourne serré, vite on tourne large — le rayon suit la géométrie puis l\'adhérence',
+      !cd.err && cd.lent && cd.vite && cd.lent.theorie != null
+        && Math.abs(cd.lent.R - cd.lent.theorie) < 1 && cd.vite.R > 2.5 * cd.lent.R
+        && Math.abs(cd.vite.R - cd.vite.theorie) < 0.3 * cd.vite.theorie,
+      `à ${cd.lent && cd.lent.v} : ${JSON.stringify(cd.lent)} · à ${cd.vite && cd.vite.v} : ${JSON.stringify(cd.vite)}`);
+    verifier('et la dérive d\'un virage serré pris vite reste bornée, petite — on glisse, on ne part pas',
+      !cd.err && cd.vite && cd.vite.derive > 0.02 && cd.vite.derive <= 0.3 && cd.lent.derive < 0.01,
+      `dérive au pas ${cd.lent && cd.lent.derive} · vite ${cd.vite && cd.vite.derive} rad`);
+    verifier('un mur pris en rasant : la voiture glisse le long, se remet dans l\'axe et continue — avec un petit choc publié',
+      !cd.err && cd.rasant && cd.rasant.contact && cd.rasant.contact.choc && cd.rasant.contact.choc.force < 0.5
+        && cd.rasant.x > 150 && cd.rasant.v > 12 && Math.abs(cd.rasant.capDeg) < 3,
+      JSON.stringify(cd.rasant));
+    verifier('un mur pris de face : la voiture s\'arrête, avec un petit rebond, et le choc dit où',
+      !cd.err && cd.face && cd.face.face && cd.face.face.choc && cd.face.face.choc.force > 0.3
+        && cd.face.rebond < -0.3 && Math.abs(cd.face.v) < 0.5 && Math.abs(cd.face.face.choc.x - 41090) < 1,
+      JSON.stringify(cd.face));
+    verifier('une voiture de la rue percutée : choc publié, et la nôtre rebondit au lieu de la traverser',
+      !cd.err && cd.rue && cd.rue.rue && cd.rue.rue.choc && cd.rue.rue.choc.force > 0.2 && cd.rue.x <= 66.01,
+      JSON.stringify(cd.rue));
+    verifier('une voiture en panne ne repart plus — le joystick ne fait plus rien',
+      !cd.err && cd.panne && cd.panne.v < 0.01 && cd.panne.x < 0.05 && cd.panne.tourne < 0.001,
+      JSON.stringify(cd.panne));
+
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0,
       JSON.stringify(tab.erreurs));
   } finally {

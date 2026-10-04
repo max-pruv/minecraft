@@ -101,6 +101,7 @@ const ASSETS = [
   './src/vie.js',
   './src/face-worker.js',
   './src/player.js',
+  './src/conduite.js',
   './src/blocks.js',
   './src/textures.js',
   './src/marlon.js',
