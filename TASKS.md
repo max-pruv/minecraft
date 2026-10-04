@@ -41,11 +41,11 @@
   route à 60 b/s : non mesuré comme nuisible, laissé.
 
 - [ ] **LES DÉGÂTS (v343) : CE QUI RESTE, DÉCLARÉ.**
-  - **Le coût sur l'iPad n'est pas mesuré.** Au banc : enfoncer 12 ms au
-    premier choc, 6 ensuite ; pendant un feu, jusqu'à cinquante-quatre carrés
-    de fumée et de flammes, donc autant d'appels de dessin. À mesurer sur la
-    tablette (`?diag=1`, une voiture qu'on fait brûler) ; le levier est
-    `MAX_FUMEE`/`MAX_FLAMMES` (degats3d.js), ou un seul `Points`.
+  - ~~Cinquante-quatre appels de dessin pendant un feu~~ — **fait en v348** :
+    deux `InstancedMesh`, 30 → 2 appels mesurés, gardé par un témoin. Reste
+    le coût RÉEL sur la tablette (enfoncer : 12 à 20 ms au premier choc au
+    banc, 4 à 7 ensuite), à lire avec `?diag=1` sur une voiture qu'on fait
+    brûler.
   - **La carcasse n'est vue que par celui qui conduisait.** Chez l'ami, la
     voiture disparaît avec le champ `p.v` dès que le conducteur est déposé.
   - **Les voitures de la rue ne s'abîment pas** — seule celle de l'enfant.
@@ -56,6 +56,19 @@
     repli de vitesse décide, et les effets s'appliquent par `player.boost`.
   - **Les avions ne s'abîment pas** (`pilote` est écarté) : une décision, pas
     un oubli — un atterrissage manqué n'a pas de « choc » dans `player.js`.
+
+- [ ] **AU PORTAIL DE LA v348 (le feu en deux appels), DEUX SUITES ROUGES — aucune
+  causée par la livraison, double mesure faite (rejouées SEULES sur la branche
+  v348 et sur `origin/main` v345, chacun dans un arbre détaché).**
+  - `degats.js` « enfoncer coûte quelques millisecondes » : premier choc
+    31,1 ms pour une barre à 30 au portail ; SEULE, 13 ms sur la branche et
+    11,7 sur `origin/main`. La boucle d'enfoncement n'a pas bougé d'une ligne :
+    c'est la charge du portail (`maj.js` tournait à côté, 3,8 cœurs).
+  - `maj.js` : rouge des deux côtés, jamais le même témoin — portail : le
+    loader d'installation, « corps, programmes et fond de carte », le flou ;
+    branche seule : le loader et le palier (période médiane 283 ms) ;
+    `origin/main` seul : « corps, programmes et fond de carte » (personnages
+    7/9). Les mêmes familles qu'au portail de la v343, déclarées.
 
 - [ ] **AU PORTAIL DE LA v343 (les dégâts), CINQ SUITES ROUGES — aucune causée
   par la livraison, double mesure faite (chaque suite rejouée SEULE sur la

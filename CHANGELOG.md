@@ -20,6 +20,29 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v348 — Le feu ne coûte plus que deux appels
+
+**Pourquoi.** Les dégâts de la v343 dessinaient chaque carré de fumée et
+chaque flamme par son propre maillage : pendant un feu, jusqu'à
+cinquante-quatre appels de dessin de plus, et mesuré au banc, trente appels
+pour trente carrés. Or sur l'iPad ce sont les appels de dessin qui coûtent
+(v196) : une voiture qui brûle pouvait faire ramer la tablette précisément au
+moment où l'enfant regarde.
+
+**Ce que ça change.** Rien à l'œil : la même fumée grise puis noire, les mêmes
+flammes orangées. Mais toute la fumée est dessinée en UN appel et toutes les
+flammes en un autre, quel que soit le nombre de carrés — un `InstancedMesh`
+par effet, la couleur et l'opacité portées par chaque instance. Un essaim
+vide est caché : sans feu, zéro appel.
+
+**Ce qui le prouve.** Un témoin neuf de `degats.js` rend la même image deux
+fois, l'essaim caché puis montré, au cœur du feu : **30 appels pour 30
+carrés sur l'ancien code, 2 pour 28 ici** (barre : deux, un par effet).
+Le témoin « aucun programme compilé au feu » reste vert (96 → 96) : la
+chauffe de l'accueil compile désormais la forme instanciée elle-même.
+
+---
+
 ## v347 — Les steppes
 
 **Pourquoi.** Entre les forêts et les déserts, le monde réel a ses grandes

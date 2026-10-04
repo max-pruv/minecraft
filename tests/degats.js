@@ -295,10 +295,24 @@ function verifier(nom, ok, detail = '') {
       });
       while (!d.etat(a.mesh).enFeu) d.choc(a.mesh, { force: 0.6, lx: 1.1, lz: 0 });
       const t0 = performance.now();
-      let flammes = 0;
+      let flammes = 0, appels = null;
       while (performance.now() - t0 < 12000 && g.fun.montureConduite()) {
         await tenir(0.2);
         flammes = Math.max(flammes, d.particulesVisibles().flammes);
+        // CE QUE LE FEU COÛTE EN APPELS DE DESSIN (v348) : la même image
+        // rendue deux fois, l'essaim caché puis montré, dans la même tâche.
+        // Mesuré une fois le feu bien pris (au moins une seconde, et plus de
+        // deux carrés à l'écran — sinon l'égalité ne prouverait rien).
+        const vis = d.particulesVisibles();
+        if (!appels && performance.now() - t0 > 1000 && vis.fumee + vis.flammes > 4) {
+          const fx = g.scene.getObjectByName('degats-fx');
+          if (fx) {
+            const cam = g.player.camera, info = g.renderer.info;
+            fx.visible = false; g.renderer.render(g.scene, cam); const sans = info.render.calls;
+            fx.visible = true; g.renderer.render(g.scene, cam); const avec = info.render.calls;
+            appels = { sans, avec, feu: avec - sans, carres: vis.fumee + vis.flammes };
+          }
+        }
       }
       const sortie = Math.round(performance.now() - t0);
       await tenir(1);
@@ -310,13 +324,18 @@ function verifier(nom, ok, detail = '') {
       g.player.yaw = Math.atan2(-(a.pos.x - g.player.pos.x), -(a.pos.z - g.player.pos.z));
       await tenir(0.4);
       const proposee = g.animalManager.monture() === a;
-      return { sortie, flammes, aPied: !g.fun.montureConduite(), gabarit: g.player.gabarit,
+      return { sortie, flammes, appels, aPied: !g.fun.montureConduite(), gabarit: g.player.gabarit,
         dist: Math.round(dist * 100) / 100, dansUnMur: pied || tete, proposee, publie: g.player.etatVoiture };
     });
     verifier('la voiture prend feu (des flammes), et quelques secondes plus tard l\'enfant est DÉPOSÉ à côté, à pied, hors de tout mur',
       feu.aPied && feu.flammes > 0 && feu.sortie > 3000 && feu.sortie < 11000 && feu.dist > 1.5 && feu.dist < 5
         && !feu.dansUnMur && !(feu.gabarit > 1) && feu.publie === null,
       JSON.stringify(feu));
+    // LA BARRE SE CALCULE : DEUX — un appel pour toute la fumée, un pour
+    // toutes les flammes, quel que soit le nombre de carrés (v196 : sur
+    // l'iPad, ce sont les appels de dessin qui coûtent).
+    verifier('le feu coûte DEUX appels de dessin au plus, quel que soit le nombre de flammes et de nuages',
+      !!feu.appels && feu.appels.carres > 4 && feu.appels.feu <= 2, JSON.stringify(feu.appels));
     verifier('la carcasse qui brûle ne se reprend pas : le bouton ne la propose plus', !feu.err && feu.flammes > 0 && !feu.proposee, JSON.stringify(feu));
 
     // 4. NI LAMPE NI PROGRAMME NEUF : la fumée et les flammes ont été chauffées
