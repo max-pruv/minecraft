@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 352,
+    titre: 'Le monde se fabrique plus vite',
+    puces: [
+      'Deux fois moins de calcul par morceau',
+      'Rien ne change à l\'écran',
+    ],
+  },
+  {
     v: 351,
     titre: 'Les passants voient venir',
     puces: [
