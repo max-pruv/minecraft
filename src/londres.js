@@ -1049,6 +1049,10 @@ const solLocal = (u, v) => solLondres(LONDRES.x + u, LONDRES.z + v);
 // L'adresse demandée, ou la plus proche le long de la même avenue où le
 // véhicule tient tout entier sur sa matière — le relevé se fait au
 // chargement, sur le sol de la ville : un emplacement se mesure (v223).
+// Et jamais dans l'emprise d'un monument : un repère se pose APRÈS les
+// colonnes et pave la rue que `solLondres` promettait — le bus de Whitehall
+// s'est retrouvé sur la pierre du Parlement (le piège des ormes du Mall, v205).
+const horsDesMonuments = (u, v) => DEBLAIS.every(([cu, cv, r]) => Math.hypot(u - cu, v - cv) >= r);
 function placer(nom, f, cote0, n, decal, matiere) {
   for (const cote of [cote0, -cote0]) for (let e = 0; e <= 0.45; e += 0.01) {
     for (const g of e ? [f + e, f - e] : [f]) {
@@ -1057,7 +1061,7 @@ function placer(nom, f, cote0, n, decal, matiere) {
         const p = surVoie(nom, g, cote, decal); return [Math.round(p.u), Math.round(p.v)];
       })();
       const bl = n ? blocsDe(pos, n) : [pos];
-      if (bl.every(([u, v]) => solLocal(u, v) === matiere && loinDesAxes(u + 0.5, v + 0.5))) return pos;
+      if (bl.every(([u, v]) => solLocal(u, v) === matiere && loinDesAxes(u + 0.5, v + 0.5) && horsDesMonuments(u, v))) return pos;
     }
   }
   return null;
