@@ -271,7 +271,7 @@ const K_CIEL = (EIFFEL_BLOCS - CORNICHE) / Math.log(EIFFEL_M / CORNICHE);
 // multiplié par `k`) jusqu'à passer sous lui. Le premier jet montait ces
 // repères à la place : des fûts d'un bloc de large étirés en aiguilles, vus en
 // capture. `k` est un RÉSULTAT : le plus grand, au centième, qui garde l'ordre
-// du vrai ciel de la ville (sonde `k.mjs` de la v341, refaite par le témoin).
+// du vrai ciel de la ville (sonde `k.mjs` de la v342, refaite par le témoin).
 export const CIELS = Object.freeze({
   Rome: 13, Pise: 12, Agra: 12, Madrid: 13, Lisbonne: [13, 0.92], Amsterdam: [13, 0.38],
   Berlin: 13, Vienne: 13, Prague: [10, 0.59], Florence: 13, 'Athènes': 12, Istanbul: [13, 0.48],

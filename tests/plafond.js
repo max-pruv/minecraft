@@ -421,7 +421,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       introuvables.length === 0,
       introuvables.length ? `introuvables : ${introuvables.join(' · ')}` : `${Object.keys(declares).length} exceptions`);
 
-    // LE LOT 3, LES VILLES ENGENDRÉES (v341) : plus aucune dette déclarée. Sur
+    // LE LOT 3, LES VILLES ENGENDRÉES (v342) : plus aucune dette déclarée. Sur
     // l'ancien code `BAS_DECLARES` en porte quarante-sept, de St-Pierre au
     // Cabildo ; remis à l'échelle du ciel de leur ville, ils en sortent tous.
     const lot3 = Object.entries(declares).filter(([, d]) => /lot 3/.test(d.lot || '')).map(([k]) => k);

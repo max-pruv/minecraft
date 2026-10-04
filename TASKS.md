@@ -704,7 +704,7 @@
 - [ ] **LES MONUMENTS DES AUTRES VILLES PLUS BAS QUE LEURS IMMEUBLES** (v335,
   mesuré, élargi par Max : « lance sur toutes les villes »). Le témoin de
   `plafond.js` mesure 215 monuments dans leurs villes contre la médiane des
-  immeubles autour. **Lot 3, les villes engendrées : FAIT en v341** — chaque
+  immeubles autour. **Lot 3, les villes engendrées : FAIT en v342** — chaque
   ville a son ciel (`CIELS`, corniche mesurée), quarante-deux monuments remis à
   l'échelle, treize repères montés pour garder l'ordre du vrai ciel, cinq
   reclassés `vrai` (colonne de Marie, Topkapi, Templo Mayor, Pavillon d'or, Wat
@@ -712,7 +712,7 @@
   Arche de Washington (NY) 12/13, Opéra de Lille 6/7, Buckingham 7/8, et à
   Washington le Trésor 8/13, les Archives 11/13, le Théâtre Ford 8/11,
   l'Histoire américaine 9/10, l'Indien d'Amérique 8/9.
-- [ ] **LE PORTAIL DE LA v341 (monuments du lot 3) : TROIS SUITES ROUGES, LA DOUBLE
+- [ ] **LE PORTAIL DE LA v342 (monuments du lot 3) : TROIS SUITES ROUGES, LA DOUBLE
   MESURE EN MAIN.** Sept suites vertes (fumée, métro, parishd, carteMonde,
   plafond, carte, washington). Rejouées SEULES des deux côtés :
 
@@ -730,15 +730,15 @@
   de `maj.js`, des INTERMITTENCES vues des deux côtés (règle v269 : la distribution, pas un passage) : le témoin lit le
   loader dix fois par seconde pendant une installation qui range 105 fichiers,
   et il ne voit parfois que la phrase fixe. Preuve STRUCTURELLE en plus : la
-  v341 ne touche ni `sw.js` (hors version), ni `index.html`, ni le loader — une
+  v342 ne touche ni `sw.js` (hors version), ni `index.html`, ni le loader — une
   table de hauteurs, un témoin, une sonde. Le badge de version (« version
   servie v335 » au premier portail) était le bump manquant, réglé.
-- [ ] **LA GRANDE ROUE DU PRATER SOUS LA HOFBURG (v341), déclaré.** La roue (65 m)
+- [ ] **LA GRANDE ROUE DU PRATER SOUS LA HOFBURG (v342), déclaré.** La roue (65 m)
   reste à seize blocs et la Hofburg (30 m) monte à vingt et un : une roue ne
   s'étire pas, elle deviendrait une ellipse. Le témoin d'ordre ne la compte pas.
   Si on veut la garder au-dessus, c'est son bâtisseur (`buildGrandeRoue`) qui
   doit grandir d'un rayon, pas une table de paliers. Même cas pour Tivoli.
-- [ ] **UNE COUPOLE SANS SA NEF DEVIENT UNE TOUR (v341), vu en capture.** Les
+- [ ] **UNE COUPOLE SANS SA NEF DEVIENT UNE TOUR (v342), vu en capture.** Les
   bâtisseurs partagés (`dome`, `minaret`, `palaisLong`) sont des gabarits : St-
   Pierre est une coupole de treize blocs de large SANS la basilique autour.
   Remise à sa hauteur (38 blocs), elle garde les proportions vraies du tambour
@@ -747,7 +747,7 @@
   couleur de la calotte) : un obus d'ardoise, corrigé (le corps s'arrête au
   tambour). Le remède de fond est un bâtisseur par monument, avec sa nef — pas
   une table de paliers.
-- [ ] **LES VILLES ENGENDRÉES HORS DU LOT 3 N'ONT PAS LEUR CIEL (v341).** Seules
+- [ ] **LES VILLES ENGENDRÉES HORS DU LOT 3 N'ONT PAS LEUR CIEL (v342).** Seules
   les vingt-cinq villes qui portaient une dette ont une corniche dans `CIELS` ;
   ailleurs les repères sont au-dessus de leurs immeubles mais pas à l'échelle de
   leur vraie hauteur (l'hôtel de ville de Bruxelles, minaret de 22 blocs pour

@@ -1,4 +1,4 @@
-// CAPTURES DES MONUMENTS DES VILLES ENGENDRÉES À L'ÉCHELLE DE LEUR CIEL (v341).
+// CAPTURES DES MONUMENTS DES VILLES ENGENDRÉES À L'ÉCHELLE DE LEUR CIEL (v342).
 // Usage : node tests/sonde-captures-monuments-villes.cjs <dossier> [étiquette] [Villes,séparées]
 //
 // Consigne de Max : on juge sur captures, de la rue et du ciel. Deux vues par
