@@ -275,6 +275,10 @@
   branche 3 · 3 · 2, `origin/main` 3 · 3 · 3. Même distribution ; le 5 est un
   tirage sous la charge du portail, et la dette de la v306 (deux ou trois
   programmes à l'arrivée) reste ouverte telle quelle.
+- [ ] **LE PORTAIL DE LA v328.** `carteMonde.js` (ENTIÈRE, le témoin du Yamuna
+  compris — rouge sur `origin/main` : « aucun convoi Yamuna », onze segments),
+  `plafond.js`, `maj.js`, `carte.js` verts ; seul rouge, l'écran figé de
+  `monte.js` (3 600 ms · 44,2 %), dette déclarée, rouge des deux côtés.
 - [ ] **LE PORTAIL DE LA v327, SUR LA v326 (règle de la v195), DOUBLE MESURE
   FAITE.** `carteMonde.js` (ENTIÈRE, le témoin de l'A4 compris), `plafond.js`,
   `carte.js` verts. `maj.js` : la libération de la préparation (la carte encore
