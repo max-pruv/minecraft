@@ -770,6 +770,55 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les monuments à la hauteur de leur ville (v335) — une table de paliers, deux lecteurs
+
+Un étage fait trois blocs depuis la v301 ; les monuments n'avaient pas suivi.
+Six règles.
+
+- **DEUX CONSIGNES QUI SE CONTREDISENT SE TRANCHENT PAR CE QUE L'ENFANT
+  RECONNAÎT, ET CELA SE VOIT EN CAPTURE.** La consigne disait « la vraie
+  hauteur, à un bloc pour un mètre » ET « la tour Eiffel reste à soixante-dix ».
+  Le premier jet a suivi la première : les Invalides à 107, Notre-Dame à 96, le
+  Sacré-Cœur à 83 passaient tous AU-DESSUS de la tour Eiffel, en aiguilles —
+  un bloc vaut vingt et un mètres au sol de Paris et un mètre en hauteur. Le
+  témoin était vert ; c'est la capture aérienne qui l'a démenti. La règle
+  (`blocsDuCiel`) garde les deux points fixes — un bloc pour un mètre jusqu'à la
+  corniche des immeubles, la tour Eiffel à soixante-neuf — et l'ORDRE du vrai
+  ciel entre les deux. Une consigne de nombre se juge à ce qu'elle produit, pas
+  à sa lettre.
+
+- **ON N'ÉCRIT PAS DEUX FOIS UN MONUMENT : ON L'ÉTIRE PAR UNE TABLE.** Le
+  bâtisseur du voxel et le modèle en relief gardent leurs cotes d'auteur ;
+  `echelle-monuments.js` publie, par monument (`Ville|Nom`), des PALIERS — des
+  couples (couche d'auteur, couche du monde) — et une seule fonction,
+  `hauteurEtiree`, que le voxel (`etirerBatisseur`, couches répétées) et le
+  modèle (`etirerFaces`, sommets étirés) lisent tous deux. L'emprise ne bouge
+  jamais : aucune rue, aucun circuit n'est touché. Sous le premier palier rien
+  ne s'étire — la porte garde la taille d'un enfant — et une coupole s'étire
+  par son PIED, qui devient un tambour ; étirée d'un bloc, elle devient un obus.
+- **LE MONDE D'AVANT GARDE SES MONUMENTS D'AVANT.** `CONF_AVANT` et `CONF_V308`
+  lisent `LANDMARKS_V317`, la liste non étirée : ils sont figés (v306, v309),
+  et un bloc posé avant se juge sur le monde où il a été posé. Le prix se
+  déclare : une cabane sur un ancien toit de monument se retrouve DANS la
+  maçonnerie étirée (dette dans `TASKS.md`, avec sa marche toute trouvée).
+- **UN BLOC D'ÉCART TOLÉRÉ DEVIENT VISIBLE QUAND ON ÉTIRE.** Le modèle et le
+  voxel s'accordaient à un bloc près — la tolérance de la sonde. Étiré quatre
+  fois, l'écart en vaut quatre et la couche d'auteur sort du modèle en cubes :
+  Notre-Dame 34 → 295 cubes qui dépassent, l'Opéra 9 → 237. On RECALE le modèle
+  sur les couches du voxel (la sonde par couche dit lesquelles), on ne relâche
+  pas la tolérance. Et la couverture se mesure sur le modèle ÉTIRÉ : la lire
+  aux cotes d'auteur puis l'étirer rend zéro cube et 119 à 293 murs invisibles
+  — non-résultat mesuré, on garde la règle de la v292 (le cube plutôt que le mur).
+- **UNE CLÉ DE MONUMENT PORTE SA VILLE.** « Panthéon » est à Paris et à Rome,
+  « L'hôtel de ville » trois fois : la ville d'un repère est le disque qui le
+  contient (`villeDuRepere`, world.js), la même lecture que le témoin.
+- **LE TÉMOIN BOUCLE SUR TOUTES LES VILLES ET N'ADMET QUE CE QUI EST DÉCLARÉ.**
+  `plafond.js` mesure chaque monument contre la médiane des immeubles autour ;
+  `BAS_DECLARES` nomme les exceptions, chacune avec sa raison — `vrai` (un pont,
+  une place, une statue : bas dans la vraie ville aussi) ou `lot` (une dette à
+  rayer). Un monument qu'on remet à l'échelle sort de la liste dans la même
+  livraison, et une exception qui ne nomme plus aucun monument mesuré rougit.
+
 ## Les falaises et les berges (v326) — sous le gazon, c'est encore le monde qu'on voit
 
 Le point (c) du kit « monde fidèle », sur toute la carte. Trois règles.
