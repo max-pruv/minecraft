@@ -20,6 +20,30 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v329 — L'autoroute Rome–Naples
+
+**Pourquoi.** Candidat suivant du relevé de la v323 : Rome–Naples, 683 blocs
+sur l'axe direct, ni rail ni aérodrome. Rome n'avait aucune route : vers le
+nord, Fiumicino barre la seule entrée propre (v314) ; vers le sud, rien ne
+l'empêchait.
+
+**Ce que ça change.** L'A1 Sud — la seconde moitié de l'Autostrada del Sole —
+relie Rome à Naples : 785 blocs de deux fois deux voies, aucun pont, et vingt
+voitures qui font l'aller-retour. Elle sort de Rome par l'est, là où l'avenue
+est propre, puis tourne doucement vers le sud-est.
+
+Rien n'est écrit dans le relief : les deux empreintes de `plafond.js` ne
+bougent pas.
+
+**Ce qui le prouve.** Dans `carteMonde.js`, un témoin neuf, rouge sur
+`origin/main` (pas d'A1 Sud) : la route, ses voitures, ses deux entrées sur une
+rue propre, aucune colonne sur un rail (0 sur 7 640 mesurées sous node). La
+sonde a dû apprendre à TOURNER en plusieurs fois : l'avenue propre de Rome est à
+46° de l'axe, et les 40 536 tracés à un seul coude étaient tous refusés ; avec
+un virage de 24° tous les quarante blocs, 8 115 admissibles, 1 176 sans pont.
+
+---
+
 ## v328 — L'autoroute Delhi–Agra, la route du Taj Mahal
 
 **Pourquoi.** Candidat suivant du relevé de la v323 : Delhi–Agra, 656 blocs sur
