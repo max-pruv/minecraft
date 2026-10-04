@@ -1,5 +1,45 @@
 # Ce qui est en cours
 
+- [ ] **LE PORTAIL DE LA v346 (le monde à la vitesse), DOUBLE MESURE FAITE.**
+  Portail : `manhattan.js` (délai ligne 282) et `monte.js` « l'écran ne se
+  fige pas en arrivant sur une ville » (2 833 ms · 46,4 %). Rejouées SEULES :
+  `manhattan.js:282` identique des deux côtés ; l'arrivée rouge des deux
+  côtés, MOINS grave sur la branche (983 ms · 20,1 %) que sur `origin/main`
+  v340 (3 700 ms · 28 %). La branche seule a rendu deux rouges de plus, déjà
+  déclarés comme intermittents : les programmes à la téléportation (chauffe de
+  New York expirée, 53/321) et « la voiture freine devant un piéton »
+  (`voituresRue: 0`, avance 3,4 : la situation n'a pas eu lieu ; vert aux
+  quatre portails de la branche). Preuve structurelle : en rendu logiciel,
+  l'ordre de file de la v346 est celui d'avant au bit près (`fileAuRegard`) ;
+  seul s'ajoute le suivi du déplacement, de l'arithmétique sur la position.
+  Dernier portail, sur la fusion avec la v343, puis la v345 : les deux témoins de la file
+  verts (écart 0,32) ; rouges, tous déjà déclarés avec leur double mesure —
+  le loader qui compte ses fichiers (`maj.js`), la façade et le taxi
+  (`manhattan.js`), « la monoplace ralentit assez » (9,1 m/s, identique sur
+  `origin/main`), le bouton « Conduire » (un métro à portée), les programmes à
+  la téléportation et l'arrivée sur une ville (2 267 ms · 26,4 %).
+- [ ] **LE PLAFOND DE VITESSE AU SOL EST MESURÉ ET PUBLIÉ (v346) — À APPLIQUER
+  PAR LA CONDUITE, ET À CONFIRMER SUR LA TABLETTE.** `src/plafond-sol.js` :
+  `VITESSE_SOL_MAX` = 60 b/s en ville, 70 en campagne et sur l'autoroute ;
+  `plafondSol({ ville, rr })` le borne par le disque (60 partout au palier bas,
+  rr 8). Critère : le monde maillé dans le champ de la caméra (±40°) jusqu'à
+  deux secondes de route, médiane de six relevés en régime établi
+  (`tests/sonde-monde-a-la-vitesse.cjs`). Le « 42 morceaux par seconde » qui
+  bornait `ALLURES` à 28 b/s datait d'avant le worker : en roulant, 43 à 58 en
+  ville, 54 à 78 en campagne. Reste : (1) la session conduite lit `plafondSol`
+  pour relever `ALLURES` — ce n'est pas à cette zone de changer les vitesses ;
+  (2) le banc rend en logiciel à 11-20 images par seconde et la file se
+  recharge une fois par image : sur l'iPad, mesurer le trou en roulant
+  (`?diag=1`) et la cadence à 60 b/s avant de croire que la cadence tient — les
+  millisecondes du worker et de rendu ne se transposent pas, l'ordre et les
+  nombres de morceaux oui ; (3) au-delà de 70 b/s la ville ne suit plus (80 :
+  86 à 115 blocs dans le champ pour 160) — le levier restant est le coût d'un
+  morceau dans le worker (génération 45 %, v229), pas la file : les trois
+  non-résultats de la file (borner la pose, file en temps, deux mailleurs) et
+  la file de seize (v269) restent écartés ; (4) un lot déjà parti au worker ne
+  s'annule pas quand on le dépasse — huit morceaux au plus, onze blocs de
+  route à 60 b/s : non mesuré comme nuisible, laissé.
+
 - [ ] **LES DÉGÂTS (v343) : CE QUI RESTE, DÉCLARÉ.**
   - **Le coût sur l'iPad n'est pas mesuré.** Au banc : enfoncer 12 ms au
     premier choc, 6 ensuite ; pendant un feu, jusqu'à cinquante-quatre carrés

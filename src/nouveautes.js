@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 346,
+    titre: 'Le monde suit les voitures',
+    puces: [
+      'Le paysage arrive là où tu roules',
+      'Les rues devant toi d\'abord',
+      'Assez rapide pour foncer',
+    ],
+  },
+  {
     v: 345,
     titre: 'La toundra et la taïga',
     puces: [

@@ -770,6 +770,54 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Le monde à la vitesse (v346) — on maille où l'on va, et le plafond se mesure en roulant
+
+Max veut une conduite « comme GTA » ; les voitures étaient plafonnées à 28 b/s
+sur un débit d'avant le worker (v237 → v251). Quatre règles.
+
+- **UN PLAFOND QUI DÉRIVE D'UN DÉBIT SE REMESURE QUAND LE DÉBIT CHANGE DE
+  FIL.** « Paris se maille à 42 morceaux par seconde » a survécu quatre-vingts
+  versions au worker qui le rendait faux : en roulant, régime établi, 43 à 58
+  en ville et 54 à 78 en campagne. Le plafond est désormais publié là où il
+  se calcule (`src/plafond-sol.js`, `VITESSE_SOL_MAX`, `plafondSol`), avec sa
+  mesure ; la conduite le lit, elle ne le recopie pas.
+- **LE CRITÈRE EST CE QUE LA CAMÉRA VOIT, ET IL SE MESURE EN ROULANT.** Le
+  monde maillé dans le champ (±40°) jusqu'à deux secondes de route, médiane
+  de six relevés après quatre secondes de régime, le disque chargé d'abord à
+  l'arrêt (`sonde-monde-a-la-vitesse.cjs`) — jamais par saturation (v269). La
+  position y est une fonction du TEMPS RÉEL : on mesure le chargement, pas la
+  voiture, et la vitesse ne dépend pas de la cadence du banc.
+- **LA FILE SUIT LE DÉPLACEMENT, PAS LE REGARD, ET OUBLIE CE QUI EST
+  DERRIÈRE.** L'ancienne file (distance pondérée 1/2,5 par le regard) passait
+  un morceau de côté à sept avant celui de l'axe à douze, et redemandait ce
+  qu'on venait de dépasser : à 60 b/s dans Paris, HUIT appels de dessin devant
+  soi. `fileDeMaillage` pondère continûment par l'écart au déplacement réel
+  (lissé, en temps réel) et, au-dessus de `VITESSE_CONE`, ne demande rien
+  derrière hors du cercle proche ; la file se refait quand le régime change,
+  sinon ce qu'elle a laissé ne revient qu'au morceau suivant. `?file=regard`
+  rejoue l'ancien ordre, pour l'A/B.
+- **LA CADENCE PERDUE EN ROULANT EST CELLE DU MONDE QU'ON VOIT ENFIN.** La
+  nouvelle file coûte 15 à 25 % de cadence au banc ; les appels de dessin
+  disent pourquoi (8 → 31 à Paris, 39 → 84 en campagne) : c'est le rendu de
+  ce qui est devant, payé en logiciel, et l'arrêt au même endroit en coûte
+  bien plus (394 appels, 7,6 images par seconde). Une baisse de cadence se
+  démonte par ce qu'on dessine avant de s'imputer au chargement.
+- **ET L'ORDRE NEUF SE COUPE EN RENDU LOGICIEL, comme les ombres, la couche
+  HD et le bâti lointain.** Le portail l'a dit par « l'écran ne se fige pas en
+  arrivant sur une ville » : en vol vers Paris la vue passe de ~20 à ~100
+  appels, cadence 12 → 7, pire image 1,2 à 1,35 s — et la sonde qui sépare
+  les cas (tâches longues par `PerformanceObserver`, rendu chronométré côté
+  JavaScript) a montré que le JavaScript ne bouge presque pas (2,3 s contre
+  1,9 à 2,0 de tâches longues sur 18 s, 10 ms de rendu JS des deux côtés) :
+  c'est SwiftShader qui dessine enfin la ville. `?file=cone` force l'ordre
+  neuf, `?file=regard` l'ancien, `__game.fileMaillage` les bascule sur une
+  page ouverte. Le témoin de `monte.js` joue les DEUX ordres dans la MÊME page
+  (`ciel`), en ABBA, et juge l'écart des parts moyennes (0,29 ici, −0,04 sur
+  `origin/main`, barre 0,13). Trois leçons de banc, payées en trois portails :
+  une part absolue ne tient pas sous la charge (0,73 pour 0,77) ; une page
+  ouverte de plus à côté de `tab` et `ciel` n'a jamais chargé son disque en
+  quarante secondes ; et deux passages IDENTIQUES rendent 0,43 puis 0,57 —
+  le premier passage n'est pas le second, d'où l'ABBA.
 ## Le ciel de chaque ville (v342) — la courbe de Paris posée sur SA corniche
 
 Le lot 3 de la dette de la v335 : quarante-sept monuments des villes
