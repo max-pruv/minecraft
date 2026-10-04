@@ -6708,7 +6708,7 @@ et chacune a coûté un passage de banc.
 deux empreintes de `plafond.js` ne bougent pas, et l'invariant 1 tient sans
 qu'on ait rien à déclarer.
 
-**ET LES VILLES Y SONT DES VILLES (v327).** Le paysage ne lisait que le
+**ET LES VILLES Y SONT DES VILLES (v329).** Le paysage ne lisait que le
 relief : au-delà des morceaux maillés, toute ville était de la prairie. Trois
 règles.
 

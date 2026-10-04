@@ -114,7 +114,7 @@ const BIOMES = [
   { x: VOLCANO.x, z: VOLCANO.z, r: VOLCANO.r, id: BLOCK.STONE },
 ];
 
-// LES VILLES SE RECONNAISSENT AU LOIN (v327). `terrainHeight` ne sait rien des
+// LES VILLES SE RECONNAISSENT AU LOIN (v329). `terrainHeight` ne sait rien des
 // immeubles : au-delà des morceaux maillés, Paris, Londres, New York et les
 // deux cent soixante-neuf villes engendrées étaient de la PRAIRIE vue d'avion.
 // Deux choses, et aucune n'écrit un bloc ni ne touche au relief :

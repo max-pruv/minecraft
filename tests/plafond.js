@@ -1512,7 +1512,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const tab = await banc.joueur('Marlon');
     const contexte = await tab.evaluate(() => window.__game.world.ctx);
 
-    // LES VILLES SE RECONNAISSENT AU LOIN (v327). Au-delà des morceaux
+    // LES VILLES SE RECONNAISSENT AU LOIN (v329). Au-delà des morceaux
     // maillés, `horizon.js` ne dessinait que le relief : Paris, Londres, New
     // York et les villes engendrées étaient de la prairie vue d'avion. On
     // construit un paysage lointain à la portée de l'iPad (rr=12, 632 blocs)
