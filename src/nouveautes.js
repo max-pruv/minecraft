@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 340,
+    titre: 'Les arbres et les falaises',
+    puces: [
+      'Plus d\'arbre sur une falaise de roche',
+      'Ni sur le sable au bord de l\'eau',
+      'Les falaises se voient de loin',
+    ],
+  },
+  {
     v: 339,
     titre: 'Les rues de Londres s\'élargissent',
     puces: [

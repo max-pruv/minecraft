@@ -498,6 +498,24 @@
   second dépend du premier) — REJOUÉE SEULE : branche ces deux-là, `origin/main`
   v318 la libération (programmes 17/25). Même intermittence de préparation des
   deux côtés, déjà déclarée (v267).
+- [ ] **LES PORTAILS DE LA v340 (les arbres et les falaises, préparée comme v333, v337 puis v339), QUATRE FOIS.**
+  `plafond.js` (les quatre témoins neufs), `carteMonde.js`, `metro.js`,
+  `washington.js` verts à chaque passage. `maj.js` : le témoin « corps,
+  programmes et fond de carte » rouge 2 fois sur 2 sur la branche rejouée
+  SEULE (personnages 7/9, 8/9) et 1 sur 2 sur `origin/main` (v332) — la
+  seconde passe du paysage lointain (2 ms par image) tournait aussi à
+  l'accueil : elle ne passe plus qu'en jeu (`raffinerPermis`), et le témoin
+  est resté rouge ensuite (6/9) : c'est l'intermittence déclarée, pas la
+  livraison. Le palier, vert seul des deux côtés (charge du portail). Au
+  troisième portail, un VRAI rouge, à moi : `nouveautes.js` recollé au rebase
+  sans son accolade, et `node --check` muet (règle écrite dans `CLAUDE.md`) ;
+  corrigé, `maj.js` VERTE au quatrième. `manhattan.js` : le délai de la
+  ligne 282 (v269). `monte.js` : l'écran figé (3 833 à 4 250 ms, ~50 %, des
+  deux côtés), « se téléporter ne compile plus de programmes » (zéro
+  programme neuf dans les cinq villes, Paris à huit images — v326), et une
+  fois « la monoplace ralentit assez » (9,0 pour une barre à 9 : un minimum
+  échantillonné toutes les 300 ms sur une allure qui est une fonction de
+  l'heure, v279 et v305), vert à tous les autres passages.
 - [ ] **LE PORTAIL DE LA v338 (Madrid–Barcelone) : UN SEUL ROUGE, DÉJÀ
   MESURÉ DES DEUX CÔTÉS.** `carteMonde.js` (l'AP-2 comprise), `plafond.js`
   (joint : 0 trou sur 136 879 points), `maj.js`, `carte.js` verts.
@@ -655,9 +673,8 @@
   falaise reste un escalier de cubes de roche, et l'adoucir (une surface
   rocheuse inclinée au-delà de `MARCHE_MAX`) toucherait au contact et au
   franchissement, ou au relief (décision de Max) ; les berges de trois blocs
-  gardent leur couronne d'herbe ; `horizon.js` ne connaît pas la règle (le
-  lointain garde le vert là où la roche est) ; les arbres poussent encore sur
-  une crête de roche ou une grève basse (`treeAt` ne lit que la cote) ; (d) les
+  gardent leur couronne d'herbe. `horizon.js` et les arbres lisent la règle
+  depuis la v340 (`couleurDuBord`, `solDeLArbre`) ; (d) les
   textures par usage et climat ; (e) la bibliothèque architecturale (96
   variantes, 278 profils de ville) — elle exige une retrame à un bloc pour un
   mètre (`docs/monde-fidele/programme.md`, section 6), décision de Max ; (f) la

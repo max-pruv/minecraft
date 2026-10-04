@@ -7580,6 +7580,9 @@ function frame(now) {
   // cases qu'on retire parce que le vrai monde les couvre — se refait à une
   // cadence en TEMPS RÉEL, jamais en `dt` (leçon de la v226).
   horizon.sansNY = renduDansManhattan;   // Manhattan dessine ses propres silhouettes (v331)
+  // la règle des bords (v340) ne passe qu'en jeu : à l'accueil, chaque image
+  // va à la préparation (corps, programmes, fond de carte)
+  horizon.raffinerPermis = running;
   horizon.maj(player.pos.x, player.pos.z, 6);
   // La découpe se refait à une cadence en TEMPS RÉEL, et tout de suite si le
   // joueur a franchement tourné la tête — sinon le cône de vision découvrirait
