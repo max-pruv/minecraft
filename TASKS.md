@@ -12,6 +12,12 @@
   quatre portails de la branche). Preuve structurelle : en rendu logiciel,
   l'ordre de file de la v344 est celui d'avant au bit près (`fileAuRegard`) ;
   seul s'ajoute le suivi du déplacement, de l'arithmétique sur la position.
+  Dernier portail, sur la fusion avec la v343 : les deux témoins de la file
+  verts (écart 0,32) ; rouges, tous déjà déclarés avec leur double mesure —
+  le loader qui compte ses fichiers (`maj.js`), la façade et le taxi
+  (`manhattan.js`), « la monoplace ralentit assez » (9,1 m/s, identique sur
+  `origin/main`), le bouton « Conduire » (un métro à portée), les programmes à
+  la téléportation et l'arrivée sur une ville (2 267 ms · 26,4 %).
 - [ ] **LE PLAFOND DE VITESSE AU SOL EST MESURÉ ET PUBLIÉ (v344) — À APPLIQUER
   PAR LA CONDUITE, ET À CONFIRMER SUR LA TABLETTE.** `src/plafond-sol.js` :
   `VITESSE_SOL_MAX` = 60 b/s en ville, 70 en campagne et sur l'autoroute ;
