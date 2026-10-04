@@ -3361,9 +3361,12 @@ l'embarquement a eu lieu, pas par une hypothèse.
   manque Changi : aucun disque de soixante-dix blocs au sec dans les trois
   cents blocs autour de Singapour — Delhi a pris sa place dans la quinzaine.
 
-- [ ] **Un terminal n'a ni sièges, ni comptoirs, ni tapis à bagages.** Il se
-  traverse (c'est ce que le témoin garde) mais il est vide. Même dette que les
-  intérieurs de monuments.
+- [x] **Un terminal n'a ni sièges, ni comptoirs, ni tapis à bagages.** FAIT en
+  v328 sur les dix-neuf (`amenagerHall`, aeroport.js), halls de Roissy ouverts
+  au passage. Reste, déclaré : le carrousel d'un hall d'arrivées est coupé par
+  le couloir de sa porte, si bien qu'il est petit (un cœur de deux à quatre
+  blocs) ; le grandir demande de déplacer les portes, que le témoin de la
+  marche lit. Le tambour de l'aérogare 1 reste plein.
 
 - [ ] **Cinquante villes détaillées.** Demandé par Max. Le monde a 269 villes :
   47 avec une fiche (fleuve, trame, palette, monuments aux vraies coordonnées),

@@ -20,6 +20,39 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v328 — Les terminaux sont aménagés
+
+**Pourquoi.** Depuis la v223, les terminaux des aérodromes se TRAVERSENT —
+creux, de plain-pied, portes sur les deux faces, cloisons percées — mais ils
+étaient vides : un hangar blanc entre deux portes, sans rien qui dise
+« aéroport » à un enfant qui y entre. Et les quatre halls de l'aérogare 2 de
+Roissy étaient creux mais FERMÉS : quatre murs pleins, aucune porte.
+
+**Ce que ça change.**
+
+- **Les dix-neuf terminaux sont meublés** (Roissy et les dix-huit génériques,
+  hub, ville et base) : côté départs, les comptoirs d'enregistrement avec leur
+  tapis derrière et l'enseigne bleue au-dessus, puis la salle d'embarquement
+  et ses rangées de sièges dos à dos ; côté arrivées, la file des portiques de
+  sûreté (on y passe debout) et le carrousel à bagages ; dans chaque hall, le
+  tableau des départs suspendu au-dessus de l'allée.
+- **On entre dans les halls de Roissy**, par la route comme par le tarmac.
+- **Le trajet de l'enfant ne change pas** : ni les couloirs des portes ni
+  l'allée des cloisons ne sont meublés, par construction. Rien ne sort du
+  terminal, rien ne touche l'aire, les postes ni les pistes, et le relief ne
+  bouge pas d'un bloc.
+
+**Ce qui le prouve.** Deux témoins neufs dans `carteMonde.js`, rouges sur
+`origin/main` : le mobilier compté aérodrome par aérodrome en interrogeant le
+bâtisseur (0 sur 19 meublés avant, 19 sur 19 après), et la marche de la route
+au tarmac à travers le hall 2A de Roissy. Le témoin de la marche d'un hall à
+l'autre reste vert sur les trois profils. Le coût du bâtisseur, médiane de
+huit mesures alternées de deux cents rejeux : Roissy 2,79 → 2,87 ms, Heathrow
+0,75 → 0,75, Orly 0,52 → 0,54, Saint-Dizier 0,38 → 0,38. Captures intérieures
+d'un hub, d'une ville, d'une base et de Roissy (`sonde-captures-terminaux.cjs`).
+
+---
+
 ## v327 — L'autoroute Milan–Turin
 
 **Pourquoi.** Candidat suivant du relevé de la v323 : Milan–Turin, 530 blocs
@@ -41,7 +74,6 @@ propre, aucune colonne sur un rail (0 sur 8 249 mesurées sous node). La sonde :
 proches — sept admissibles, tous sans pont. La plaine du Pô n'est pas plate
 partout : c'est le déblai qui a fait le tri.
 
----
 
 ---
 
