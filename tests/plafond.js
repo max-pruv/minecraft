@@ -289,10 +289,10 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // Le relief de la production v308 autour de Salvador, Jakarta, Bari, Busan et
 // Oslo (disque + 80 blocs, un point sur trois), relevé sur `origin/main` :
 // c'est ce que `new World({ v308: true })` doit rendre au bloc près (v309).
-// v349 : l'empreinte des blocs et des tampons de 490 morceaux (morceaux-temoin.mjs),
+// v352 : l'empreinte des blocs et des tampons de 490 morceaux (morceaux-temoin.mjs),
 // relevée sur la v348 ; et le travail d'un morceau, barre au milieu des deux mesures.
 const EMPREINTE_MORCEAUX_V348 = '0d956b3d988d3d44176424ff2ab7e3860cefbd4e10f8bfcfc1fd15d906b9560a';
-// lectures par morceau, v348 → v349 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
+// lectures par morceau, v348 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
 const EMPREINTE_V308_RELIEF = 'e92db9d7ae703856de1cfb7e00dc4abce156c490';
@@ -1671,7 +1671,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   verifier('et aucune montagne n\'a poussé dans le ciel neuf', trop.length === 0,
     JSON.stringify(trop.slice(0, 3)));
 
-  // --- LE COÛT D'UN MORCEAU BAISSE, SA SORTIE NE BOUGE PAS (v349) ----------
+  // --- LE COÛT D'UN MORCEAU BAISSE, SA SORTIE NE BOUGE PAS (v352) ----------
   //
   // Le worker engendre et maille moins cher (routeEn borné par le talus, relief
   // gardé par morceau, mailleur par tables, Tamise sans hypot inutile). Deux

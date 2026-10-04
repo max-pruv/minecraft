@@ -235,7 +235,7 @@ export function grilleSol(world, cx, cz, chunk) {
   // seulement si une colonne de sol de ville le demande
   const R = RAYON_RACCORD + 1, NR = chunk + 2 * R;
   let reliefs = null;
-  // le relief que `generateChunk` a déjà lu pour le morceau (v349), s'il l'a
+  // le relief que `generateChunk` a déjà lu pour le morceau (v352), s'il l'a
   // gardé — la même valeur, sans refaire le bruit
   const relief = world.terrainMemo ? (x, z) => world.terrainMemo(x, z) : (x, z) => world.terrainHeight(x, z);
   const hEn = (x, z) => {

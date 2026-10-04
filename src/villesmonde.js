@@ -1944,7 +1944,7 @@ export function villeMondeEn(x, z) {
 
 // --- la géométrie commune ----------------------------------------------------
 
-// UNE HYPOTÉNUSE NE SE CALCULE QUE SI ELLE PEUT GAGNER (v349). `Math.hypot`
+// UNE HYPOTÉNUSE NE SE CALCULE QUE SI ELLE PEUT GAGNER (v352). `Math.hypot`
 // est lente, et ce minimum se demande pour chaque colonne de la ville ; le
 // carré de la distance écarte d'abord les segments qui ne peuvent pas battre
 // le minimum courant, avec une marge d'un milliardième qui couvre l'écart

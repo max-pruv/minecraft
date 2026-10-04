@@ -57,9 +57,9 @@
 // pas, et c'est une mesure à faire sur la tablette (`?diag=1`), déclarée dans
 // TASKS.md.
 
-// REMESURÉ EN v349, APRÈS LA BAISSE DU COÛT D'UN MORCEAU DANS LE WORKER
+// REMESURÉ EN v352, APRÈS LA BAISSE DU COÛT D'UN MORCEAU DANS LE WORKER
 // (Paris 8,3 → 3,3 ms, Rome 10,5 → 4,1, campagne 4,1 → 2,5, sous node). Même
-// sonde, ordre ABBA, v348 puis v349, « cone40 » à 80 b/s pour 160 exigés :
+// sonde, ordre ABBA, v348 puis v352, « cone40 » à 80 b/s pour 160 exigés :
 //
 //   Paris 125 · 125  →  125 · 129      Rome     113 · 122  →  138 · 129
 //   Londres 125 · 137 →  143 · 129     campagne 160 · 172  →  173 · 160–173

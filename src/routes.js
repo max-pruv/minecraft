@@ -556,7 +556,7 @@ const q64 = (v) => Math.round(v * 64) / 64;
 // La boîte d'un segment, élargie de tout ce qu'une colonne peut porter de
 // route (emprise pleine et talus le plus large, plus un bloc de marge) : un
 // point hors d'elle est à plus de cette distance de l'axe, donc `routeEn` ne
-// peut rien y rendre — on ne le projette pas (v349). Conservateur par
+// peut rien y rendre — on ne le projette pas (v352). Conservateur par
 // construction : la boîte ne retire que des segments qui rendraient null.
 const PORTEE_ROUTE = DEMI_EMPRISE + DEBLAI_MAX / TALUS_PENTE + 1;
 const BOITES = new WeakMap();
@@ -582,7 +582,7 @@ export function routeEn(x, z) {
   }
   if (!best) return null;
   const { seg, pr } = best;
-  // LE TALUS LE PLUS LARGE BORNE LA ROUTE (v349). Au-delà de la demi-emprise
+  // LE TALUS LE PLUS LARGE BORNE LA ROUTE (v352). Au-delà de la demi-emprise
   // plus `DEBLAI_MAX / TALUS_PENTE`, aucune pièce ne peut répondre — c'est
   // exactement la borne du talus plus bas (`w` ne la dépasse jamais) — et
   // l'on rendait null APRÈS avoir lu le profil et le terrain de la colonne :

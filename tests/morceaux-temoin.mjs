@@ -1,4 +1,4 @@
-// LE COÛT D'UN MORCEAU BAISSE, SA SORTIE NE BOUGE PAS (v349).
+// LE COÛT D'UN MORCEAU BAISSE, SA SORTIE NE BOUGE PAS (v352).
 //
 // Deux mesures, sous node, partagées par `plafond.js` (le témoin) et par qui
 // veut les rejouer sur un autre arbre (`git worktree add --detach … origin/main`,

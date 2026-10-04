@@ -104,7 +104,7 @@ const VITRES = new Set([
 // blocks get darker, which grounds every edge and crevice visually.
 const AO_LEVELS = [0.5, 0.66, 0.82, 1];
 
-// CE QUE LE MAILLAGE DEMANDE À CHAQUE CASE SE LIT DANS UNE TABLE (v349).
+// CE QUE LE MAILLAGE DEMANDE À CHAQUE CASE SE LIT DANS UNE TABLE (v352).
 // `isTransparent`, `isSlab` et `isProp` sont des comparaisons d'intervalles
 // pures sur l'identifiant ; le mailleur les posait des dizaines de fois par
 // case visible. Une table de 65 536 octets par question (un identifiant de
@@ -321,7 +321,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
   // au-dessus, c'est de l'air, qui n'émet aucune face
   const topY = Math.min(world.visualTop ? world.visualTop(cx,cz) : world.chunkTop(cx, cz), HEIGHT - 1);
 
-  // LES HUIT VOISINS SE GARDENT EN MAIN (v349). Une case du bord demandait
+  // LES HUIT VOISINS SE GARDENT EN MAIN (v352). Une case du bord demandait
   // `world.getBlock`, qui refait une clé de chaîne et une recherche dans le
   // dictionnaire des morceaux à chaque appel — et l'occlusion d'une face du
   // bord en fait jusqu'à douze. On demande le morceau voisin UNE fois, par le
@@ -390,7 +390,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
           const isWater = id === BLOCK.WATER;
           const slab = DALLE[id] === 1;
           // Le voisin d'abord : sous terre, presque toute case touche sa
-          // pareille et s'arrête là. Le dessus ne sert qu'à l'eau (v349).
+          // pareille et s'arrête là. Le dessus ne sert qu'à l'eau (v352).
           const nx = x + dX, ny = y + dY, nz = z + dZ;
           const neighbor = nx >= 0 && nx < CHUNK && nz >= 0 && nz < CHUNK && ny >= 0 && ny < HEIGHT
             ? data[nx + nz * CHUNK + ny * CHUNK * CHUNK] : localGet(nx, ny, nz);
@@ -433,7 +433,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
           const facadeHd = monumentHd || (hd && ((face.slot === 1 && FACADE_HD.has(id)) || ARBRE_HD.has(id) || toitHd));
           const it = teintes && ((id === BLOCK.GRASS && face.slot === 0) || id === BLOCK.LEAVES) ? teintes[x + z * CHUNK] : 0;
           const teinte = it ? (id === BLOCK.LEAVES ? TEINTE_FEUILLES[it] : TEINTE_HERBE[it]) : null;
-          // LA CLÉ DE FUSION EST UN NOMBRE (v349) : la chaîne qu'elle était
+          // LA CLÉ DE FUSION EST UN NOMBRE (v352) : la chaîne qu'elle était
           // coûtait une concaténation par face visible. Même injection — deux
           // cases ont la même clé si et seulement si elles avaient la même
           // chaîne — et une case qui ne fusionne pas reçoit une clé négative

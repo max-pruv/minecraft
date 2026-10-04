@@ -141,7 +141,7 @@ export const TAMISE = [
 
 const LARGEUR_TAMISE = 5;      // demi-largeur : ~420 m d'une rive à l'autre
 
-// UNE HYPOTÉNUSE NE SE CALCULE QUE SI ELLE PEUT GAGNER (v349). `Math.hypot`
+// UNE HYPOTÉNUSE NE SE CALCULE QUE SI ELLE PEUT GAGNER (v352). `Math.hypot`
 // est lente, et ce minimum se demande pour chaque colonne de la ville ; le
 // carré de la distance écarte d'abord les segments qui ne peuvent pas battre
 // le minimum courant, avec une marge d'un milliardième qui couvre l'écart
@@ -552,7 +552,7 @@ export const TRAMES_LONDRES = TRAMES;
 // qu'il roule sur la culée d'un pont.
 export const auNordDeLaTamise = (u, v) => {
   // de quel côté du fleuve ? On regarde le point le plus proche du tracé.
-  // (même garde que `distanceTamise`, v349 : le gagnant est mesuré par hypot)
+  // (même garde que `distanceTamise`, v352 : le gagnant est mesuré par hypot)
   let min = Infinity, cote = 0, borne = Infinity;
   for (let i = 0; i < TAMISE.length - 1; i++) {
     const u0 = TAMISE[i][0], v0 = TAMISE[i][1], u1 = TAMISE[i + 1][0], v1 = TAMISE[i + 1][1];

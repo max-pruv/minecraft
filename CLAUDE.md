@@ -770,6 +770,52 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Le coût d'un morceau (v352) — on profile avant de croire la répartition, et la preuve est une empreinte
+
+Le point (3) de la dette de la v346 : au-delà de 70 b/s la ville ne suit plus,
+et le levier restant était le coût d'un morceau dans le worker. Cinq règles.
+
+- **LA RÉPARTITION « GÉNÉRATION 45 % » DATAIT, ET LE PROFIL L'A DÉMENTIE.** Sous
+  node, en roulant le long d'une bande (`morceaux-temoin.mjs`), le maillage
+  pesait le double de la génération à Paris. Et un cinquième du coût d'un
+  morceau de Paris était un `terrainHeight` dont la réponse était jetée :
+  `routeEn` le lisait pour toute colonne de la case de 512 blocs d'une route
+  avant de rendre null. On profile, on nomme la ligne (`--cpu-prof`, puis les
+  appelants des appelants), et l'on corrige le poste le plus lourd, une ligne
+  à la fois.
+- **UNE OPTIMISATION DU GÉNÉRATEUR OU DU MAILLEUR SE PROUVE PAR UNE EMPREINTE
+  RELEVÉE SUR L'ANCIEN CODE.** Le SHA-256 des blocs et de tous les tampons de
+  490 morceaux (neuf lieux, Paris avec et sans HD), plus `routeEn` sur toutes
+  les routes. Il est relevé sur la v348 (`empreinteMorceaux('<worktree>/src')`)
+  et gardé par `plafond.js`. **Et l'empreinte se vérifie capable de rougir** :
+  sur ses seuls 490 morceaux, une borne de `routeEn` cassée à dix blocs passait,
+  parce qu'aucun talus de plus de dix blocs n'y tombait. Il en existe ailleurs,
+  jusqu'à 12,86 blocs au-delà de l'emprise. Le balayage de toutes les routes l'a
+  rendu visible. Un témoin d'identité qui ne contient pas le cas limite ne
+  garde pas le cas limite.
+- **UNE MÉMOÏSATION NE VAUT QUE SUR UNE FONCTION PURE DE CE QUI NE CHANGE PAS.**
+  Le relief ne dépend que de `this.conf`, figée à la naissance du monde : la
+  grille brute de `generateChunk` se garde avec le morceau (`terrainMemo`) et
+  part avec lui (`oublierLoinDe`). Elle n'est tenue que pour `World` lui-même :
+  une classe qui redéfinit `terrainHeight` (Manhattan) relit à chaque fois.
+  `solParis`, `solLondres` et `cityAt`, eux, lisent l'état de l'enfant
+  (colonnes cédées, ville d'avant) : on ne les mémoïse pas.
+- **UN RACCOURCI DE CALCUL FLOTTANT GARDE LE CALCUL D'ORIGINE POUR LE
+  GAGNANT.** `hypot` et la racine du carré peuvent différer d'un ulp. Le carré
+  ne sert qu'à ÉCARTER les segments qui ne peuvent pas gagner, avec une marge
+  d'un milliardième ; le segment retenu est mesuré par `hypot`, comme avant
+  (zéro écart sur 4 millions de points). Et les tables par identifiant du
+  mailleur sont remplies par les MÊMES fonctions (`isProp`, `isSlab`…).
+- **CE QUE LE BANC DIT DU GAIN, ET CE QU'IL NE PEUT PAS DIRE.** Deux fois moins
+  de calcul par morceau ne donnent au banc que 5 à 25 blocs de plus devant soi
+  à 80 b/s : en ville, le débit y plafonne vers 55 morceaux par seconde DES
+  DEUX CÔTÉS. La file se recharge une fois par image en rendu logiciel, et le
+  worker y partage quatre cœurs avec SwiftShader. Le plafond au sol ne bouge
+  donc pas (80 b/s : A1 158 pour 160, Paris 125). Ce qui se transpose à
+  l'iPad, ce sont les APPELS (2 209 → 463 lectures de relief par morceau de
+  Paris) et l'ordre de grandeur des millisecondes sous node. Ce qui ne se
+  transpose pas, c'est le trou mesuré au banc : sur la tablette, il se relit
+  avec `?diag=1`.
 ## Les villes bâties à la main dans leur ciel (v350) — un repère-fût borne la courbe d'en dessous aussi
 
 Le lot 2 de la dette de la v335 : huit monuments. Trois règles.

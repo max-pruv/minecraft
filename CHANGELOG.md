@@ -20,6 +20,50 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v352 — Un morceau de monde coûte deux fois moins
+
+**Pourquoi.** La v346 avait mesuré qu'au-delà de 70 blocs par seconde la
+ville ne suit plus une voiture, et que le seul levier restant était le coût
+d'un morceau dans le worker. Profilé sous node, ce coût n'était pas là où on
+l'attendait. La génération n'en faisait pas 45 % : à Paris le maillage pesait
+le double de la génération. Et un cinquième du coût d'un morceau de Paris
+était une lecture du relief dont la réponse était jetée : `routeEn` relisait
+`terrainHeight` pour toute colonne de la case de 512 blocs qui contient une
+autoroute, avant de conclure « pas de route ici ».
+
+**Ce que ça change.** Rien à l'œil : pas un bloc, pas un sommet ne bouge. Le
+worker engendre et maille un morceau de Paris en 3,3 ms au lieu de 8,3, Rome
+en 4,1 au lieu de 10,5, Londres en 5,4 au lieu de 8,9, la campagne en 2,5 au
+lieu de 4,1 (sous node, médianes en ordre alterné). En roulant à 80 b/s au
+banc, la ville maillée devant soi gagne 5 à 25 blocs (Rome 113–122 → 129–138).
+Cela ne suffit pas pour 80 b/s : au banc, la ville plafonne vers 55 morceaux
+par seconde des deux côtés, et ce n'est plus le worker qui la limite. Le
+plafond au sol publié reste donc à 60 et 70 b/s : on ne publie qu'une valeur
+tenue. Sur la tablette, le worker a deux fois moins de calcul à faire par
+morceau, et cela, l'iPad le reçoit.
+
+Les cinq gains :
+- `routeEn` s'arrête au talus le plus large possible ;
+- le mailleur lit des tables par identifiant, garde ses voisins en main,
+  calcule l'occlusion sans allouer, et prend une clé de fusion numérique ;
+- le relief du morceau se lit une fois par colonne et se garde ;
+- la Tamise et les fleuves ne calculent `hypot` que pour le segment qui peut
+  gagner.
+
+**Ce qui le prouve.** Deux témoins neufs dans `plafond.js` :
+- **l'empreinte des blocs et de tous les tampons du mailleur** de 490
+  morceaux, autour de neuf lieux (Paris avec et sans la couche HD, Rome,
+  Londres, la campagne, l'A1, Washington, San Francisco, Marrakech, Tokyo),
+  plus `routeEn` sur toutes les routes du registre, est **identique à celle
+  de la v348**. Elle rougit si l'on casse la borne de `routeEn` à dix blocs ;
+- **le travail d'un morceau en appels**, pas en millisecondes : à Paris
+  **2 209 → 463 lectures de relief, 3 811 → 324 lectures de blocs** ; barre au
+  milieu, rouge sur la v348.
+
+Les deux empreintes du relief de `plafond.js` sont intactes. La Tamise a été
+comparée à l'ancien code sur 4 millions de points : zéro écart. La sonde
+`sonde-monde-a-la-vitesse.cjs` a été rejouée en ordre ABBA, avec ses chiffres
+dans `plafond-sol.js`.
 ## v351 — Les piétons à l'abri des voitures rapides
 
 **Pourquoi.** Le chantier « conduite » fait rouler les voitures trois fois plus
