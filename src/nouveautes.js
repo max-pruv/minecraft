@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 349,
+    titre: 'Des voitures pour de vrai',
+    puces: [
+      'Les voitures vont beaucoup plus vite',
+      'Elles tournent et glissent pour de vrai',
+      'Contre un mur, on glisse ou on rebondit',
+    ],
+  },
+  {
     v: 348,
     titre: 'Un feu plus léger',
     puces: [

@@ -20,6 +20,43 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v349 — Des voitures qui se conduisent pour de vrai
+
+**Pourquoi.** Max : « une grosse refonte de la façon de conduire… comme GTA :
+des véhicules qui tournent de manière naturelle, des accélérations
+cohérentes, des vitesses cohérentes — aujourd'hui les véhicules sont trop
+lents —, des collisions cohérentes ». La voiture de l'enfant prenait son
+allure en une demi-seconde, tournait au même taux à toute vitesse, plafonnait
+à 92 km/h même en hypercar, et s'arrêtait net contre tout ce qu'elle touchait.
+Sa boîte de collision ne tournait pas : le nez et le coffre traversaient ce
+qui dépassait des côtés.
+
+**Ce que ça change.** Un vrai modèle de voiture, toujours au joystick d'un
+seul doigt : on accélère fort au départ, la poussée s'essouffle vers la
+pointe ; le frein est franc ; lâcher le joystick laisse filer en roue libre ;
+on tourne serré au pas et large à pleine vitesse, et un virage serré pris vite
+fait glisser un peu la voiture, qui se rattrape toute seule. Les voitures vont
+beaucoup plus vite, chacune selon sa classe : citadine 108 km/h, berline 122,
+GT 151, sportive 173, hypercar 198 (0 à 100 en 2,2 s). Contre un mur pris en
+rasant, la voiture glisse le long et se remet dans l'axe de la rue ; de face,
+elle s'arrête avec un petit rebond ; une voiture de la rue ou un réverbère la
+font rebondir ; devant un piéton elle freine à temps. Chaque choc est publié
+(force, point d'impact) pour les dégâts et la caméra qui viennent.
+
+**Ce qui le prouve.** Le plafond de vitesse a été MESURÉ et non calculé : à 60
+blocs/s, à la distance d'affichage de l'iPad, le monde se maille encore 125
+blocs devant la voiture, dans Paris comme dans les champs
+(`sonde-plafond-voiture.cjs`). Cinq témoins purs dans `plafond.js` (classes
+sous le plafond, 0 → 100 simulé contre la formule, dérive bornée et rattrapée,
+chocs, boîte orientée) et neuf témoins de trajet dans `monte.js` (0 → 100 en
+2,2 s de jeu, pointe 52 blocs/s, frein, rayon de virage 3,9 au pas et 14,4 à
+20 blocs/s, mur rasant, mur de face, voiture de la rue, panne) — treize rouges
+sur `origin/main`, le frein franc gardé vert des deux côtés. Trois témoins
+existants repointés (rapport des pointes, crochet qui nomme la famille, piste
+de l'accélérateur). Au portail, les rouges restants sont des dettes déclarées
+et rejouées seules des deux côtés : `manhattan.js` identique (23 verts, mêmes
+deux rouges, même arrêt), et le gel d'arrivée de `monte.js` (vol du chasseur,
+chemin que la livraison ne touche pas : 1 183–1 283 ms contre 1 050–1 150).
 ## v348 — Le feu ne coûte plus que deux appels
 
 **Pourquoi.** Les dégâts de la v343 dessinaient chaque carré de fumée et
