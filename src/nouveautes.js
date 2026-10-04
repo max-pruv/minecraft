@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 347,
+    titre: 'Les steppes',
+    puces: [
+      'L\'herbe sèche couleur de paille',
+      'Du Kazakhstan à la Mongolie',
+      'Et la Patagonie, le Sahel',
+    ],
+  },
+  {
     v: 346,
     titre: 'Le monde suit les voitures',
     puces: [

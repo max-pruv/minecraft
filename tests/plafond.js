@@ -1079,6 +1079,8 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const toundra = lire([[64, -100], [69, 70], [70.5, 140]]);
     // la Iakoutie, le Québec du Nord, la Sibérie occidentale, la Finlande
     const taiga = lire([[62, 125], [52, -72], [60, 75], [63, 27]]);
+    // LES STEPPES (v347) : le Kazakhstan, la Mongolie, le Montana, la Patagonie
+    const steppe = lire([[50, 65], [47, 105], [47, -107], [-45, -68]]);
     // le Kansas, témoin de la campagne tempérée : rien n'y est teint
     const kansas = lire([[38.5, -98.5]]);
     // LE RACCOURCI DU MORCEAU : un climat déclaré certain pour un morceau
@@ -1112,7 +1114,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         for (let y = h + 1; y <= h + 9; y++) { if (m.getBlock(x, y, z) === sans.getBlock(x, y, z)) garde.pareil++; else garde.autres++; }
       }
     }
-    return { toundra, taiga, kansas, certains, desaccords, garde };
+    return { toundra, taiga, steppe, kansas, certains, desaccords, garde };
   })();
   verifier('dans la toundra, du lichen, de la roche nue et la neige plus bas, presque sans arbre (Nunavut, Iamalie, Sibérie arctique)',
     climats.toundra.colonnes > 2000 && climats.toundra.forme === 0 && climats.toundra.roche + climats.toundra.neige >= climats.toundra.colonnes * 0.05
@@ -1123,6 +1125,10 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       && climats.taiga.pins >= climats.taiga.arbres * 0.6 && climats.taiga.teints >= climats.taiga.sommets * 0.3
       && climats.kansas.teints === 0 && climats.kansas.sommets > 500,
     `taïga ${JSON.stringify(climats.taiga)} ; Kansas : ${climats.kansas.teints} sommets teints sur ${climats.kansas.sommets}`);
+  verifier('la steppe est d\'herbe sèche, presque sans arbre ; la même forme bloc pour bloc (Kazakhstan, Mongolie, Montana, Patagonie)',
+    climats.steppe.colonnes > 2000 && climats.steppe.forme === 0 && climats.steppe.arbres * 3 <= climats.steppe.arbresSans
+      && climats.steppe.teints >= climats.steppe.sommets * 0.3,
+    JSON.stringify(climats.steppe));
   verifier('le climat certain d\'un morceau est celui de toutes ses colonnes',
     climats.certains > 3000 && climats.desaccords === 0, `${climats.certains} morceaux certains, ${climats.desaccords} colonnes en désaccord`);
   verifier('là où un enfant a bâti avant la règle, les arbres d\'avant restent',
@@ -2128,7 +2134,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
           return { x: Math.round(a), z };
         };
         const out = {};
-        for (const [nom, lat, lon] of [['toundra', 69, 70], ['taiga', 62, 125], ['kansas', 38.5, -98.5]]) {
+        for (const [nom, lat, lon] of [['toundra', 69, 70], ['taiga', 62, 125], ['steppe', 50, 65], ['kansas', 38.5, -98.5]]) {
           const p = point(lat, lon);
           const h = new Horizon(w, 200);
           let n = 0;
@@ -2154,10 +2160,12 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         return out;
       });
       const rg = (c) => c[0] / c[1];
-      verifier('vu de loin et sur la carte, la toundra est olive et la taïga sombre, à côté du Kansas',
+      verifier('vu de loin et sur la carte, la toundra est olive, la taïga sombre et la steppe blonde, à côté du Kansas',
         r.toundra.tous > 500 && r.taiga.tous > 500 && r.kansas.tous > 500 && r.toundra.ct > 20 && r.taiga.ct > 20
           && rg(r.toundra.loin) > rg(r.kansas.loin) + 0.25 && rg(r.toundra.carte) > rg(r.kansas.carte) + 0.25
-          && r.taiga.loin[1] < r.kansas.loin[1] * 0.85 && r.taiga.carte[1] < r.kansas.carte[1] * 0.85,
+          && r.taiga.loin[1] < r.kansas.loin[1] * 0.85 && r.taiga.carte[1] < r.kansas.carte[1] * 0.85
+          && r.steppe.tous > 500 && r.steppe.ct > 20
+          && rg(r.steppe.loin) > rg(r.kansas.loin) + 0.35 && rg(r.steppe.carte) > rg(r.kansas.carte) + 0.35,
         JSON.stringify(r));
     }
 

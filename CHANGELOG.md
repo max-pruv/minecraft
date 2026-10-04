@@ -20,6 +20,31 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v347 — Les steppes
+
+**Pourquoi.** Entre les forêts et les déserts, le monde réel a ses grandes
+prairies sèches — de la mer Noire à la Mongolie, les Hautes Plaines, le Sahel,
+la Patagonie — et le jeu y montrait la même prairie verte et boisée qu'en
+Normandie : 326 arbres au cœur de quatre steppes sur `origin/main`. Quatrième
+tranche du point (d) du kit « monde fidèle ».
+
+**Ce que ça change.** Douze steppes réelles ont l'herbe sèche couleur de
+paille, et un arbre là où la forêt tempérée en aurait vingt : le Kazakhstan,
+l'Ukraine du Sud, la Mongolie, l'Anatolie, le plateau iranien, les Hautes
+Plaines à l'ouest du 100e méridien, le Grand Bassin, le Sahel, la Corne de
+l'Afrique, le Karoo, la Patagonie, l'intérieur australien autour du désert,
+le nord du Mexique. Au loin et sur la carte, la steppe est blonde. La forme du
+monde ne bouge pas d'un bloc ; le Kansas, l'Iowa, la Pampa et l'Ukraine du
+Nord restent verts.
+
+**Ce qui le prouve.** Un témoin neuf et un témoin élargi dans `plafond.js`,
+rouges sur `origin/main` : au cœur de quatre steppes (Kazakhstan, Mongolie,
+Montana, Patagonie), 11 arbres contre 326, l'herbe teinte, zéro bloc de forme
+différente ; vu de loin et sur la carte, la steppe est blonde à côté du
+Kansas. Le témoin tempéré de la v341 compte toujours zéro bloc différent.
+
+---
+
 ## v346 — Le monde suit les voitures
 
 **Pourquoi.** Max veut une conduite « comme GTA », et les voitures sont trop

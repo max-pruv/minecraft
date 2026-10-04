@@ -13,6 +13,10 @@ const TOUTES = [
   { nom: 'toundra-sol', lat: 69, lon: 70, h: 4, pitch: -0.05, yaw: 1.2 },
   { nom: 'taiga-ciel', lat: 62, lon: 125, h: 40, pitch: -0.4, yaw: 0.6 },
   { nom: 'taiga-sol', lat: 52, lon: -72, h: 4, pitch: -0.05, yaw: 2.0 },
+  { nom: 'steppe-ciel', lat: 50, lon: 65, h: 40, pitch: -0.4, yaw: 0.6 },
+  { nom: 'steppe-sol', lat: 47, lon: -107, h: 4, pitch: -0.05, yaw: 1.2 },
+  { nom: 'tropiques-ciel', lat: -5, lon: -62, h: 40, pitch: -0.4, yaw: 0.6 },
+  { nom: 'tropiques-sol', lat: 1, lon: 114, h: 4, pitch: -0.05, yaw: 2.0 },
 ];
 const filtre = process.argv[4];
 const VUES = filtre ? TOUTES.filter((v) => v.nom.startsWith(filtre)) : TOUTES;

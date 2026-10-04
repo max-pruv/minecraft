@@ -237,6 +237,33 @@ const CLIMATS = [
     133, 48.5, 138, 51, 141, 53, 156, 51, 163, 58, 170, 62, 180, 63, 180, 64.5, 170, 65.5,
     160, 68, 150, 69, 140, 70, 127, 71, 115, 71.5, 102, 72, 95, 70.5, 85, 69, 75, 67, 66, 66.5,
     60, 67, 50, 67.5, 42, 67.5, 36, 68.5, 30, 69.5, 25, 70.2, 17, 69.8, 14, 68, 8, 63, 6, 61]],
+  // LES STEPPES (v347) : les herbes sèches à l'abri des pluies, entre les
+  // forêts et les déserts. La steppe pontique et kazakhe (de la mer Noire à
+  // l'Altaï, au sud de 47-53° N), la Mongolie, l'Anatolie centrale, le
+  // plateau iranien, les Hautes Plaines à l'ouest du 100e méridien, le Grand
+  // Bassin, le Sahel, la Corne de l'Afrique, le Karoo, la Patagonie,
+  // l'anneau semi-aride de l'Australie, le nord du Mexique. Les déserts
+  // passent avant (v341) : un anneau de steppe peut recouvrir le sien.
+  ['steppe', 'steppe-pontique', [30, 47, 34, 47.5, 38, 48, 40, 49, 45, 51, 50, 52, 55, 52.5, 62, 53,
+    70, 54, 78, 53.5, 83, 52, 80, 47, 75, 45, 70, 44, 65, 45, 60, 45.5, 55, 46.5, 50, 46, 47, 44,
+    44, 45, 40, 46, 36, 45, 33, 46, 30, 46]],
+  ['steppe', 'mongolie', [90, 50, 98, 50.5, 105, 50, 112, 49.5, 118, 49, 120, 46, 118, 43.5, 113, 44,
+    105, 42, 100, 43.5, 95, 44.5, 90, 46]],
+  ['steppe', 'anatolie', [31, 38, 34, 40, 38, 39.5, 37, 37.5, 33, 37]],
+  ['steppe', 'iran', [45, 38, 52, 36.5, 60, 37, 68, 36, 70, 33, 66, 30, 62, 29, 57, 28, 52, 30, 48, 33, 45, 35]],
+  ['steppe', 'hautes-plaines', [-114, 51, -105, 50.5, -101, 49.5, -100.5, 45, -100.5, 36, -101, 32,
+    -104, 30, -106, 32, -105, 36, -106, 40, -109, 44, -112, 46, -114, 49]],
+  ['steppe', 'grand-bassin', [-120, 42, -117, 44, -112, 43, -111, 41, -112, 38, -115, 37.5, -118, 38, -120, 40]],
+  ['steppe', 'sahel', [-17, 16.5, -5, 16.5, 5, 16.5, 15, 16, 25, 15.5, 34, 16, 34, 12.5, 25, 11.5,
+    15, 12, 5, 13, -5, 13, -16, 12.5]],
+  ['steppe', 'corne-afrique', [40, 11, 44, 10.5, 51, 11.5, 51, 9, 48, 5, 45, 2, 42, -1, 40, 2, 38, 4, 40, 8]],
+  ['steppe', 'karoo', [19, -31, 24, -30.5, 27, -30, 26, -33, 22, -33.5, 19, -33]],
+  ['steppe', 'patagonie', [-72, -39, -69, -38, -64, -39, -63, -41, -65, -45, -67, -47, -68, -52,
+    -71, -52, -72, -49, -71.5, -45, -71.5, -41]],
+  ['steppe', 'australie', [113.5, -26, 114.5, -21.5, 122, -17, 130, -16, 137, -17, 142, -19, 145, -23,
+    147, -28, 146, -32, 141, -34, 136, -33, 130, -31.8, 124, -31, 118, -31, 115, -29]],
+  ['steppe', 'mexique-nord', [-106, 31.5, -104, 30, -101, 29, -100, 25, -101, 22, -103, 22, -105, 25,
+    -107, 28, -108, 30.5]],
 ];
 const FORMES_CLIMAT = CLIMATS.map(([climat, nom, pts]) => {
   let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
@@ -295,10 +322,12 @@ export function climatCertain(lat, lon, marge) {
 // les couleurs du paysage lointain et de la carte. L'indice 0 ne teint rien.
 // Réglé sur la tuile d'herbe (104, 168, 62) : toundra → (126, 124, 80),
 // taïga → (64, 118, 64) ; et sur la tuile de feuilles (54, 116, 38).
-export const CLIMATS_TEINTES = ['', 'toundra', 'taiga'];
-export const INDICE_CLIMAT = { toundra: 1, taiga: 2 };
-export const TEINTE_HERBE = [null, [1.21, 0.74, 1.29], [0.62, 0.70, 1.03]];
-export const TEINTE_FEUILLES = [null, [0.85, 0.8, 1.0], [0.63, 0.71, 1.16]];
+// La steppe (v347) → (178, 165, 92), l'herbe sèche couleur de paille ; ses
+// rares arbres d'un vert olive.
+export const CLIMATS_TEINTES = ['', 'toundra', 'taiga', 'steppe'];
+export const INDICE_CLIMAT = { toundra: 1, taiga: 2, steppe: 3 };
+export const TEINTE_HERBE = [null, [1.21, 0.74, 1.29], [0.62, 0.70, 1.03], [1.71, 0.98, 1.48]];
+export const TEINTE_FEUILLES = [null, [0.85, 0.8, 1.0], [0.63, 0.71, 1.16], [1.25, 0.95, 1.05]];
 // LES MÊMES, POUR LA COULEUR DE SOMMET DU MONDE PROCHE. three tient une
 // couleur de sommet pour LINÉAIRE et décode la tuile sRGB avant de les
 // multiplier : un facteur 0,62 posé tel quel n'assombrit l'écran que de 0,80.

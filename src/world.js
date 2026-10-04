@@ -109,7 +109,7 @@ export const NEIGE_TOUNDRA = 46;
 const DENSITE_MAX = 0.06;
 // L'HEURE DE LA RÈGLE DES CLIMATS (v345), relue à la fusion (v309) : un bloc
 // posé avant a été posé sur le monde d'avant, et son morceau garde ses arbres.
-export const DATE_CLIMATS = Date.parse('2026-10-04T19:33:00Z');
+export const DATE_CLIMATS = Date.parse('2026-10-04T20:24:00Z');
 export function solDeToundra(x, z, h) {
   if (h >= NEIGE_TOUNDRA) return BLOCK.SNOW;
   return fbm(x * 0.07, z * 0.07, SEED + 941) > 0.64 ? BLOCK.GRAVEL : BLOCK.GRASS;
@@ -2954,6 +2954,7 @@ export class World {
     const cl = this.conf.climat ? this.climat(x, z) : null;
     if (cl === 'taiga') return Math.max(f, 0.55);
     if (cl === 'toundra' || cl === 'desert') return 0;
+    if (cl === 'steppe') return f * 0.05;
     return f;
   }
 
@@ -3019,6 +3020,9 @@ export class World {
     if (cl && cl !== 'desert' && this.morceauxAvantClimat.has(World.key(Math.floor(x / CHUNK), Math.floor(z / CHUNK)))) cl = null;
     if (cl === 'taiga') density = forest > 0.48 ? 0.06 : 0.025;
     else if (cl === 'toundra') density = 0.0006;
+    // la steppe (v347) : un arbre isolé là où la forêt tempérée en aurait
+    // vingt — quelques bosquets le long des creux, pas de bois
+    else if (cl === 'steppe') density *= 0.05;
     if (tirage >= density) return null;
     const h = this.terrainHeight(x, z);
     if (h <= WATER_LEVEL + 1 || h >= 58) return null; // only on grass

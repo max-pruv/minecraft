@@ -576,6 +576,14 @@
   second dépend du premier) — REJOUÉE SEULE : branche ces deux-là, `origin/main`
   v318 la libération (programmes 17/25). Même intermittence de préparation des
   deux côtés, déjà déclarée (v267).
+- [ ] **LE PORTAIL DE LA v347 (les steppes, préparée comme v346) : TOUS LES
+  ROUGES DÉJÀ DÉCLARÉS.** Huit suites choisies par la table des gardiens,
+  45 min. `metro.js`, `carteMonde.js`, `plafond.js` (le témoin des steppes
+  compris), `maj.js`, `carte.js`, `washington.js` verts. `manhattan.js` : le
+  trou de façade (11 684 → 51 734) et le taxi tactile (`locator.tap` hors
+  délai), déclarés. `monte.js` : l'écran figé à l'arrivée (4 100 ms ·
+  47,4 %), déclaré. La livraison ne change qu'une teinte et la densité
+  d'arbres de la campagne des steppes réelles.
 - [ ] **LE PORTAIL DE LA v345 (la toundra et la taïga, préparée comme v342 puis v344) :
   TOUS LES ROUGES DÉJÀ DÉCLARÉS.** Seize suites, 84 min. `plafond.js` (93 dont
   les cinq témoins neufs), `carteMonde.js`, `metro.js`, `washington.js`,
@@ -785,10 +793,15 @@
   la carte ; SECONDE TRANCHE en v345 : la toundra et la taïga (`CLIMATS`,
   terre.js) — la teinte d'herbe par colonne est MESURÉE gratuite (une
   question par morceau, 0,37 µs par colonne près d'un bord, mailleur 9,34
-  contre 9,32 ms hors zone) ; restent les steppes, les tropiques humides ; (e) la bibliothèque architecturale (96
+  contre 9,32 ms hors zone) ; TROISIÈME en v347, les steppes ; reste les
+  tropiques humides ; (e) la bibliothèque architecturale (96
   variantes, 278 profils de ville) — elle exige une retrame à un bloc pour un
   mètre (`docs/monde-fidele/programme.md`, section 6), décision de Max ; (f) la
-  matrice de couverture ville par ville (convertie, exclue, bloquée) et les
+  matrice de couverture ville par ville (convertie, exclue, bloquée) — FAITE
+  en v347, ENGENDRÉE (`tests/sonde-couverture.cjs` →
+  `docs/monde-fidele/couverture.md`, 276 villes : rues 264 converties, 8
+  exclues, 4 bloquées — San Francisco, Nice, Lille, Washington ; 7 villes sans
+  anneau de circulation, toutes exclues ; 33 reliées par une route) — et les
   mesures sur l'iPad de la maison.
 
 - [x] **LES MONUMENTS DE PARIS SONT PLUS BAS QUE LES IMMEUBLES (v301)** — fait
