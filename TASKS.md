@@ -498,7 +498,7 @@
   second dépend du premier) — REJOUÉE SEULE : branche ces deux-là, `origin/main`
   v318 la libération (programmes 17/25). Même intermittence de préparation des
   deux côtés, déjà déclarée (v267).
-- [ ] **LES PORTAILS DE LA v339 (les arbres et les falaises, préparée comme v333 puis v337), QUATRE FOIS.**
+- [ ] **LES PORTAILS DE LA v340 (les arbres et les falaises, préparée comme v333, v337 puis v339), QUATRE FOIS.**
   `plafond.js` (les quatre témoins neufs), `carteMonde.js`, `metro.js`,
   `washington.js` verts à chaque passage. `maj.js` : le témoin « corps,
   programmes et fond de carte » rouge 2 fois sur 2 sur la branche rejouée
@@ -674,7 +674,7 @@
   rocheuse inclinée au-delà de `MARCHE_MAX`) toucherait au contact et au
   franchissement, ou au relief (décision de Max) ; les berges de trois blocs
   gardent leur couronne d'herbe. `horizon.js` et les arbres lisent la règle
-  depuis la v339 (`couleurDuBord`, `solDeLArbre`) ; (d) les
+  depuis la v340 (`couleurDuBord`, `solDeLArbre`) ; (d) les
   textures par usage et climat ; (e) la bibliothèque architecturale (96
   variantes, 278 profils de ville) — elle exige une retrame à un bloc pour un
   mètre (`docs/monde-fidele/programme.md`, section 6), décision de Max ; (f) la

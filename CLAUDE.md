@@ -895,9 +895,9 @@ Le point (c) du kit « monde fidèle », sur toute la carte. Trois règles.
 - **CE QUI RESTE, DÉCLARÉ** : la marche elle-même (une falaise reste un
   escalier de cubes de roche — l'adoucir, c'est bouger le relief, décision de
   Max) ; une berge de trois blocs garde sa couronne d'herbe. *(Le paysage
-  lointain et les arbres ont reçu la règle en v339.)*
+  lointain et les arbres ont reçu la règle en v340.)*
 
-## Les arbres au bord, et les falaises vues de loin (v339) — une règle de matière se dit à TOUT ce qui pose quelque chose dessus
+## Les arbres au bord, et les falaises vues de loin (v340) — une règle de matière se dit à TOUT ce qui pose quelque chose dessus
 
 La dette déclarée par la v326, remboursée. Trois règles.
 
