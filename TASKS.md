@@ -37,17 +37,22 @@
   profondeur, partagé, ne se recompile que quand la forme du maillage change.
   La chauffe compile les deux variantes en alternant les formes. Si une
   version future de three change cet ordre, la sonde le dira (clé `depth`).
-- [ ] **LA RIVE GAUCHE A DEUX FOIS MOINS DE VOITURES DEPUIS PARIS DOUBLÉ
-  (mesuré en v306).** Au témoin de variété de `monte.js`, huit voitures à
-  portée (60 blocs) contre quatorze à quinze avant : les huit circuits
-  couvrent un disque quatre fois plus grand, et `nb` plafonne à vingt voitures
-  par circuit (`Math.max(6, Math.min(20, round(longueur / 18)))`). Deux
-  leviers à mesurer, pas à deviner : relever le plafond de `nb` pour les
-  circuits de Paris (coût en appels de dessin à mesurer, la v201 dit trente-deux
-  maillages par voiture) ou ajouter des circuits sur la rive gauche (la
-  couverture gloutonne de `voies.js`, seuil de partage inchangé). Le témoin
-  de variété, lui, compte désormais une proportion (trois modèles sur quatre)
-  et ne voit plus cette baisse : c'est cette ligne qui la garde.
+- [x] **LA RIVE GAUCHE A DEUX FOIS MOINS DE VOITURES DEPUIS PARIS DOUBLÉ —
+  FAIT EN v322, ET POUR TOUTES LES VILLES.** Mesuré sous node, ville par ville
+  (couverture : part de la ville à moins de 45 blocs d'un tracé qui porte un
+  convoi ; densité : voitures pour mille blocs de rue). Paris 38,8 % → 96,4 %
+  (rive gauche 38,3 → 94,2), douze tours de quartier sur la trame d'Haussmann
+  (`circuitsQuartiersParis`), sol inchangé ; et `nb` sans plafond à vingt
+  (`voituresDuCircuit`, une voiture tous les dix-huit blocs) : densité la plus
+  basse 25,1 (Rome) → 54,3, maximum de voitures en vue d'un point du monde
+  inchangé (72,7, Washington). Témoin « toutes les villes ont des voitures »
+  de `carteMonde.js`. **Reste, déclaré** : les villes les moins couvertes après
+  coup — Nice 59,8 %, Sydney 60,5 %, San Francisco 69,1 %, Las Vegas 79,9 % —
+  livraison suivante ; et les voitures fabriquées ne quittent jamais la scène
+  une fois cachées (`montrer` les rend invisibles, jamais ne les détache) :
+  avec trois fois plus de voitures à Paris, une ville parcourue en entier en
+  garde davantage dans le graphe — coût de parcours des matrices à mesurer
+  sur la tablette avant de les détacher.
 - [ ] **CÔTÉ +u ET +v, LE TOUR DES MONUMENTS DE PARIS N'EST QU'À UN BLOC DU
   SOCLE — L'AILE MORD DE 0,13 BLOC DANS SA DERNIÈRE RANGÉE (trouvé en v318 par
   le témoin repointé de `carteMonde.js`, identique sur `origin/main`).** La
@@ -70,16 +75,19 @@
   sur `origin/main` (fa2f55c, avec le témoin repointé) — 124 verts et ce seul
   rouge des deux côtés, `dur 6 · lus 597 · Tour Eiffel 4 · Invalides 2`, au
   pas près. Le portail complet a rendu le même chiffre.
-- [ ] **UNE PLACE DE VOITURE À MOINS DE TROIS BLOCS, SANS VOITURE DESSINÉE (vu
-  en v306).** Au témoin « on prend le volant » de `fumee.js`, `placeProche(5)`
-  rendait une place à 2,8 puis 1,6 bloc de l'enfant, et `elements[i]` y était
-  VIDE — donc rien de dessiné, et le bouton de bord caché. `montrer`
-  fabrique pourtant toute place à portée, et `update` appelle `montrer` sur
-  tous les convois à chaque image : la contradiction n'est pas expliquée. Le
-  remède (`emprunter` fabrique la voiture) tient sans la cause, mais un enfant
-  pourrait voir une rue où une voiture DEVRAIT être. Sonde à écrire : à
-  l'instant où `placeProche` rend la place, relever `c.vu`, la distance de la
-  tête, `retardMax()` et ce que `montrer` calcule pour cette place.
+- [x] **UNE PLACE DE VOITURE À MOINS DE TROIS BLOCS, SANS VOITURE DESSINÉE —
+  EXPLIQUÉ EN v322, PAS UN DÉFAUT.** `tests/sonde-place-vide.cjs` rejoue le
+  geste du témoin (téléportation sur un circuit de Paris, `placeProche` lu par
+  un minuteur toutes les 100 ms) sur les vingt circuits, trois fois chacun :
+  2 400 relevés, 565 places dessinées, 47 vides — et les 47 sont le MÊME cas
+  (`diagPlace`, vehicules.js) : `montrer` les met dans le champ depuis la
+  position d'aujourd'hui, pas depuis celle qu'il a VUE à son dernier tour
+  (51 à 409 blocs plus loin), et aucune image n'a été rendue depuis la
+  téléportation (`imagesDepuisTp` 0). Le minuteur interroge entre deux images,
+  et le banc en rend une ou deux par seconde à Paris. Zéro cas où la règle
+  elle-même dirait « dehors ». En jeu, `fun.js` lit la place DANS la boucle :
+  l'écart dure au plus une image après une téléportation, et `emprunter`
+  fabrique la voiture si l'enfant clique dans cet instant (v306).
 - [x] **LES QUAIS DE LA SEINE MONTRENT UN MUR DE TERRE — FAIT EN v316.**
   Mesuré : sur les colonnes qui touchent l'eau, deux blocs de terre au-dessus
   de la Seine sous la margelle de granit, des deux rives ET au bord des îles
@@ -247,6 +255,46 @@
   branche 3 · 3 · 2, `origin/main` 3 · 3 · 3. Même distribution ; le 5 est un
   tirage sous la charge du portail, et la dette de la v306 (deux ou trois
   programmes à l'arrivée) reste ouverte telle quelle.
+- [ ] **LE PORTAIL DE LA v322, SECOND, APRÈS REBASE SUR LA v320.** Dix suites.
+  Verts : `maj.js` (cette fois), `plafond.js`, `parishd.js`, `carte.js`,
+  `washington.js`, `metro.js`. Rouges, rejoués SEULS des deux côtés sur la
+  v320 : `carteMonde.js` « aucune voiture ne traverse un monument de Paris »
+  (`dur 6 · lus 597`, au pas près des deux côtés — la dette de la v318, dans ma
+  zone, prise par la livraison suivante) ; `monte.js` l'écran figé (branche
+  3 200 ms · 25 %, `origin/main` 2 433 ms · 18,3 %) et, au portail seulement,
+  le témoin de la v319 sur New York (14 programmes, la chauffe de New York
+  expirée à 54/320 sous la charge) — vert rejoué seul sur la branche ;
+  `manhattan.js` la géométrie de façade (14 460 → 51 734 et → 54 969) puis la
+  page qui meurt (`locator.tap`, ou « le taxi roule », bouton jamais visible),
+  des deux côtés. New York : 79 circuits, 78 de 109 blocs de plan (six
+  voitures, au plancher, avant comme après) ; le déplafonnement n'y touche
+  qu'un circuit.
+- [ ] **LE PORTAIL DE LA v322 (règle de la v195), DOUBLE MESURE FAITE — premier
+  portail, sur la base v317.** Dix suites. Verts : `carteMonde.js` (le témoin des 268 villes, rouge sur
+  `origin/main`), `plafond.js`, `parishd.js`, `carte.js`, `washington.js`,
+  `metro.js`. Rouges, rejoués SEULS des deux côtés :
+  · `maj.js`, le badge — attendu, la version ne monte qu'à la fusion ;
+  · `maj.js`, « corps, programmes et fond de carte » — la dette déclarée :
+    branche 4 rouges sur 5 (libérée à 45–47 s, carte 8–9 pas ; le vert à
+    41,9 s), `origin/main` 1 rouge sur 4 (48,2 s, carte 8 ; les verts à 40–43).
+    Les deux issues des deux côtés, à la borne des 45 s ; la branche tombe plus
+    souvent. Mesuré à part (`sonde-prep-carte.cjs`, page seule, alterné) : 2,0
+    à 3,0 s des deux côtés, aucun écart ; et la page voisine en jeu au point
+    d'apparition est IDENTIQUE (`sonde-cout-spawn.cjs` : 87 convois, 140
+    voitures, aucune dessinée, des deux côtés). Le seul surcoût de démarrage
+    de la branche — le tracé des douze tours, ~140 ms — est désormais calculé à
+    la naissance du convoi (43 ms au démarrage) ;
+  · `maj.js`, les deux témoins du palier (16 images au portail) — rouges au
+    portail seulement, verts rejoués seuls des deux côtés, comme en v315 ;
+  · `manhattan.js` — « le trou enlève la géométrie » (14 460 branche, 11 684
+    `origin/main`) et le `locator.tap` à 30 s, identiques des deux côtés ;
+  · `monte.js` — l'écran figé (3 300 · 3 333 ms branche, 3 416 `origin/main`) ;
+    « les programmes à Paris » rouge au portail sur sa garde (10 images), vert
+    seul des deux côtés (17 images neufs 4 ; 21 images neufs −2) ; « le bouton
+    Conduire s'offre » vert au portail, rouge rejoué seul sur la branche (60 s
+    sans voiture à neuf blocs), vert sur `origin/main` — rejoué sur page neuve
+    (`sonde-bouton-rive.cjs`) : 3,9 · 1,9 · 2,9 s sur la branche, trois sur
+    trois. Une intermittence de l'état que les témoins d'avant laissent (v279).
 - [ ] **LE PORTAIL DE LA v319 (règle de la v195), DOUBLE MESURE FAITE.**
   `carteMonde.js` (le témoin de l'A3, rouge sur `origin/main` : « aucun convoi
   A3 », sept segments, aucune route sur un rail), `plafond.js`, `carte.js`

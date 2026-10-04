@@ -2,7 +2,7 @@
 
 import * as THREE from 'three';
 import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp, MEUBLE_ITEMS, MEUBLE_START, isMeuble, RUE_ITEMS, RUE_START, RUE, isRue, ARCHI } from './blocks.js';
-import { PARIS as PARIS_ANCRE, circuitsParis } from './paris.js';
+import { PARIS as PARIS_ANCRE, circuitsParis, circuitsQuartiersParis } from './paris.js';
 import { circuitsLondres } from './londres.js';
 import { circuitsSF } from './sanfrancisco.js';
 import { circuitsNice } from './nice.js';
@@ -1644,7 +1644,7 @@ function updateChunks() {
   // manière d'avoir des voitures qui suivent des rues. Le carré cherché au
   // hasard reste en secours pour celles qui n'en publient pas encore.
   const propres = [
-    ...circuitsParis(solDe), ...circuitsLondres(solDe), ...circuitsSF(solDe),
+    ...circuitsParis(solDe), ...circuitsQuartiersParis(solDe), ...circuitsLondres(solDe), ...circuitsSF(solDe),
     ...circuitsNice(solDe), ...circuitsLille(solDe), ...circuitsWashington(solDe),
   ];
   const dejaServies = new Set(propres.map((t) => t.cle));
@@ -7439,6 +7439,7 @@ window.__vehicules = {
   etat: () => vehicules?.etat(),
   point: (ci, avance) => vehicules?.point(ci, avance),
   placeProche: (rayon) => vehicules?.placeProche(player.pos, rayon),
+  diagPlace: (rayon) => vehicules?.diagPlace(player.pos, rayon),
 };
 window.__vie = { effectif: () => vie?.effectif(), sites: () => vie?.sites, eteindre: (v) => vie?.eteindre(v) };
 // Pour les tests : ce que la nuit fait aux fenêtres. `solide` est le niveau

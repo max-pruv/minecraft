@@ -31,7 +31,7 @@
 // villes, avec ses îlots, ses cours et sa ligne de corniche.
 
 import { BLOCK, CITY_BLOCK, DECOR_START, ARCHI } from './blocks.js';
-import { rangerVoies, solDesVoies, fabriqueCircuits, contournerRonds, contournerBlocs } from './voies.js';
+import { rangerVoies, solDesVoies, fabriqueCircuits, contournerRonds, contournerBlocs, circuitSurRue, densifierCircuit } from './voies.js';
 import { positionDe } from './mondes.js';
 import { entreesDe } from './routes.js';
 import { sectionDeRue } from './voirie.js';
@@ -705,6 +705,64 @@ export const circuitsParis = fabriqueCircuits({
   voies: { liste: VOIES, sol: solParis }, ajuster: contournerPlaces,
 });
 
+// LES QUARTIERS DE PARIS ONT LEURS VOITURES (v322).
+//
+// Paris doublé (v306) a laissé les huit circuits d'avenues au milieu d'un
+// disque quatre fois plus grand. Mesuré sous node, un point de la ville sur
+// deux tirés au hasard : 35 % du disque est à moins de quarante-cinq blocs
+// — la portée d'affichage d'une voiture, `VU_VOITURE` — d'une rue qui porte un
+// convoi, 2,8 voitures en vue en moyenne, contre 88 % et 15,7 à Londres. Les
+// avenues nommées s'arrêtent à trois kilomètres et demi de Notre-Dame : tout
+// l'anneau du dehors, Montmartre au nord jusqu'à la Porte d'Orléans au sud,
+// était une ville de rues sans une voiture.
+//
+// On n'ajoute PAS de rues. Ce qui manquait n'était pas la chaussée — la trame
+// ordinaire d'Haussmann en est pleine — mais des boucles qui la suivent. Une
+// boucle de quartier fait le tour d'un pâté de rues de la trame, sur l'AXE de
+// ses rues (`tourDeTrameParis`, qui inverse le gauchissement exactement) : le
+// sol ne change pas d'un bloc, aucune maison ne devient une rue.
+//
+// La liste se cherche, elle ne se devine pas : les 18 225 rectangles de
+// deux à sept îlots de côté ont été éprouvés sous node — dans le disque, dans la
+// trame d'Haussmann, sur la chaussée à 97 % au moins, sans partager plus de
+// seize blocs avec les huit circuits d'avenues ni entre eux (la contrainte de
+// la v211, avec sa marge) — et choisis par couverture gloutonne. Puis lus DANS
+// LE MONDE (v293) : un tour dont un point a un bloc plein à hauteur de
+// carrosserie — une vitrine de l'Étoile, un tronc d'avenue — est écarté et la
+// recherche reprend ; sept l'ont été. Couverture mesurée après : 95 %. Les indices sont ceux des rues de la trame, `[a1, a2,
+// b1, b2]` ; une trame qui change les rend faux, et le témoin de
+// `carteMonde.js` le dira.
+const TOURS_DE_QUARTIER = [
+  [-2, 5, -10, -6], [-4, 3, 8, 11], [9, 11, -5, 1], [5, 8, 4, 9], [-8, -5, -9, -5], [-9, -6, 3, 8],
+  [1, 8, -9, -4], [-4, 2, -11, -8], [6, 10, 5, 7], [-10, -5, 4, 6], [-9, -7, -8, -6], [-8, -1, 7, 9],
+];
+export const TOURS_QUARTIERS_PARIS = TOURS_DE_QUARTIER;
+const CHAUSSEE_QUARTIER = new Set([BITUME]);
+export function circuitsQuartiersParis(solDe) {
+  const out = [];
+  for (const r of TOURS_DE_QUARTIER) {
+    const pts = tourDeTrameParis(r);
+    const verdict = circuitSurRue(pts, PARIS, (x, z) => CHAUSSEE_QUARTIER.has(solParis(x, z)), 0.95);
+    if (!verdict.bon) continue;
+    // `rang` au-delà de cent : le bus de la ville dessert le rang zéro, celui
+    // des avenues, et un tour de quartier n'en appelle pas un second.
+    // `x`, `z` : le CENTRE du tour, pas celui de Paris. Un convoi naît quand
+    // l'enfant passe à moins de deux cent vingt blocs de ce point (main.js) ;
+    // ancré sur Notre-Dame, un tour de la Porte d'Orléans, à trois cents
+    // blocs, ne serait jamais né pour l'enfant qui y arrive.
+    let cu = 0, cv = 0;
+    for (const [u, v] of pts) { cu += u; cv += v; }
+    // Le tracé posé sur le sol se calcule à la NAISSANCE du convoi, pas au
+    // démarrage : cent millisecondes pour les douze tours, que l'accueil
+    // n'a pas à payer pour des rues que l'enfant ne verra peut-être jamais.
+    let dense = null;
+    out.push({ cle: 'paris', x: PARIS.x + cu / pts.length, z: PARIS.z + cv / pts.length, rang: 100 + out.length,
+      part: Math.round(verdict.part * 100), quartier: true,
+      get pts() { return dense || (dense = densifierCircuit(pts, PARIS, solDe)); } });
+  }
+  return out;
+}
+
 // Les ponts. Ils sont donnés par leur abscisse, comme sur un plan : c'est la
 // seule chose qui compte pour savoir où l'on traverse.
 const PONTS = [-28, -22, -19, -10, 3, 11, 17, 22, 30].map(kr);
@@ -934,6 +992,38 @@ function formeParis(u, v) {
   // le fond de l'îlot : au-delà commence la cour
   const fond = t.face + (t.pas / 2 - t.face) * (1 - t.cour);
   return { t, ai, bi, ep, eq, fond, d: Math.min(ep, eq) };
+}
+
+// L'INVERSE DE LA MAILLE (v322) : d'un point de la trame GAUCHIE (`wp`, `wq`,
+// ceux que `formeParis` compare au pas) au plan de la ville. Le gauchissement
+// est triangulaire — `p` reçoit une onde de `q` d'origine, puis `q` une onde
+// du `p` déjà gauchi — si bien que l'inverse est EXACT, sans itération :
+// q₀ = wq − g(wp), puis p₀ = wp − f(q₀). C'est ce qui permet de rouler SUR
+// l'axe d'une rue de quartier, et pas à côté d'elle à trois blocs près.
+function trameVersPlan(t, wp, wq) {
+  const d = t.desordre;
+  let q = wq, p = wp;
+  if (d) {
+    q = wq - (Math.sin(wp * (0.19 / K) + 0.9) * d + Math.cos(wp * (0.063 / K)) * d * 1.7);
+    p = wp - (Math.sin(q * (0.23 / K) + 1.7) * d + Math.sin(q * (0.081 / K) + 0.3) * d * 1.7);
+  }
+  const c = Math.cos(t.ang), s = Math.sin(t.ang);
+  return [p * c + q * s, -p * s + q * c];
+}
+
+// LE TOUR D'UN PÂTÉ DE QUARTIER (v322) : les rues `a1`, `a2` (axe p) et `b1`,
+// `b2` (axe q) de la trame ordinaire d'Haussmann, parcourues sur leur axe, un
+// point tous les deux blocs de trame. Rend des points [u, v] du plan local.
+export function tourDeTrameParis([a1, a2, b1, b2], pas = 2) {
+  const t = HAUSSMANN, P = t.pas;
+  const coins = [[a1 * P, b1 * P], [a2 * P, b1 * P], [a2 * P, b2 * P], [a1 * P, b2 * P]];
+  const pts = [];
+  for (let i = 0; i < 4; i++) {
+    const [p0, q0] = coins[i], [p1, q1] = coins[(i + 1) % 4];
+    const n = Math.max(1, Math.round(Math.hypot(p1 - p0, q1 - q0) / pas));
+    for (let k2 = 0; k2 < n; k2++) pts.push(trameVersPlan(t, p0 + ((p1 - p0) * k2) / n, q0 + ((q1 - q0) * k2) / n));
+  }
+  return pts;
 }
 
 function tirageParis(a, b, sel) {
