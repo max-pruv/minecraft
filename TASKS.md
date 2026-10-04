@@ -21,6 +21,13 @@
   huit blocs en quinze secondes de montre à 0,45 image par seconde
   (sonde : 18 et 19 images en quarante secondes, l'ancienne voiture 6 blocs,
   la nouvelle 3,3), se mesure désormais en quarante images rendues — vert.
+  `manhattan.js` « les deux clients restent sans erreur de jeu » (PeerJS
+  « Lost connection to server ») : vu rouge une fois sur la branche, NON
+  comparé sur `origin/main` — la suite s'y arrête plus tôt (attente de 90 s
+  après rechargement, puis une attente de 30 s avec le témoin recopié). Un
+  courtier qui perd la connexion n'est pas du code de conduite (la v349 ne
+  touche ni `net.js` ni le banc réseau) ; à rejouer sur `origin/main` le jour
+  où la suite y va jusqu'au bout.
 - [ ] **LE PORTAIL DE LA v346 (le monde à la vitesse), DOUBLE MESURE FAITE.**
   Portail : `manhattan.js` (délai ligne 282) et `monte.js` « l'écran ne se
   fige pas en arrivant sur une ville » (2 833 ms · 46,4 %). Rejouées SEULES :
