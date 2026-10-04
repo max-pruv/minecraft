@@ -1082,7 +1082,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const taiga = lire([[62, 125], [52, -72], [60, 75], [63, 27]]);
     // LES STEPPES (v347) : le Kazakhstan, la Mongolie, le Montana, la Patagonie
     const steppe = lire([[50, 65], [47, 105], [47, -107], [-45, -68]]);
-    // LES TROPIQUES HUMIDES (v348) : l'Amazonie, le Congo, Bornéo
+    // LES TROPIQUES HUMIDES (v349) : l'Amazonie, le Congo, Bornéo
     const tropiques = lire([[-5, -62], [0, 22], [1, 114]]);
     // le Kansas, témoin de la campagne tempérée : rien n'y est teint
     const kansas = lire([[38.5, -98.5]]);

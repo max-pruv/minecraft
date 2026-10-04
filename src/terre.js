@@ -264,7 +264,7 @@ const CLIMATS = [
     147, -28, 146, -32, 141, -34, 136, -33, 130, -31.8, 124, -31, 118, -31, 115, -29]],
   ['steppe', 'mexique-nord', [-106, 31.5, -104, 30, -101, 29, -100, 25, -101, 22, -103, 22, -105, 25,
     -107, 28, -108, 30.5]],
-  // LES TROPIQUES HUMIDES (v348) : les forêts denses de l'équateur et des
+  // LES TROPIQUES HUMIDES (v349) : les forêts denses de l'équateur et des
   // côtes de mousson. L'Amazonie (à l'est des Andes), le golfe de Guinée et
   // le bassin du Congo, l'Insulinde de Sumatra à la Nouvelle-Guinée, les
   // Philippines, l'Amérique centrale, la forêt atlantique du Brésil, la côte
@@ -345,7 +345,7 @@ export function climatCertain(lat, lon, marge) {
 // taïga → (64, 118, 64) ; et sur la tuile de feuilles (54, 116, 38).
 // La steppe (v347) → (178, 165, 92), l'herbe sèche couleur de paille ; ses
 // rares arbres d'un vert olive.
-// Les tropiques humides (v348) → (78, 150, 60), un vert profond — plus saturé
+// Les tropiques humides (v349) → (78, 150, 60), un vert profond — plus saturé
 // en capture, il virait au vert fluo —
 // et le feuillage (40, 120, 32).
 export const CLIMATS_TEINTES = ['', 'toundra', 'taiga', 'steppe', 'tropiques'];

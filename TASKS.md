@@ -807,7 +807,7 @@
   terre.js) — la teinte d'herbe par colonne est MESURÉE gratuite (une
   question par morceau, 0,37 µs par colonne près d'un bord, mailleur 9,34
   contre 9,32 ms hors zone) ; TROISIÈME en v347, les steppes ; QUATRIÈME en
-  v348, les tropiques humides — les quatre climats du kit sont faits ; (e) la bibliothèque architecturale (96
+  v349, les tropiques humides — les quatre climats du kit sont faits ; (e) la bibliothèque architecturale (96
   variantes, 278 profils de ville) — elle exige une retrame à un bloc pour un
   mètre (`docs/monde-fidele/programme.md`, section 6), décision de Max ; (f) la
   matrice de couverture ville par ville (convertie, exclue, bloquée) — FAITE

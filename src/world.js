@@ -3024,7 +3024,7 @@ export class World {
     // la steppe (v347) : un arbre isolé là où la forêt tempérée en aurait
     // vingt — quelques bosquets le long des creux, pas de bois
     else if (cl === 'steppe') density *= 0.05;
-    // les tropiques humides (v348) : la forêt dense partout, plus serrée encore
+    // les tropiques humides (v349) : la forêt dense partout, plus serrée encore
     // que la taïga sur les creux du bruit de forêt
     else if (cl === 'tropiques') density = forest > 0.48 ? 0.08 : 0.035;
     if (tirage >= density) return null;
