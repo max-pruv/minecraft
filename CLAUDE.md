@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Les rues de Londres à la règle du kit (v337) — un plan deux fois plus serré ne porte pas les mêmes rues
+## Les rues de Londres à la règle du kit (v339) — un plan deux fois plus serré ne porte pas les mêmes rues
 
 La première des cinq villes bâties à la main restées hors règle (dette v271).
 Quatre règles.

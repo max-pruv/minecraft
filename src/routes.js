@@ -290,6 +290,35 @@ export const ROUTES = [
   // ruisseau, à plus de cent quatre-vingts blocs des portes), déblai 7,7,
   // remblai 3,9, pente 0,061, zéro rail, zéro aérodrome.
   { nom: 'I-45', villes: ['dallas', 'houston'], via: [[-28933, 9811], [-28846, 9999], [-28781, 10192], [-28735, 10388], [-28719, 10591], [-28708, 10794], [-28676, 10994], [-28655, 11195], [-28612, 11393], [-28569, 11590], [-28559, 11628], [-28535, 11660], [-28500, 11679], [-28460, 11682], [-28422, 11668], [-28393, 11640], [-28378, 11603]] },
+  // L'A7 (v337), LYON–MARSEILLE : l'autoroute du Soleil, le long du Rhône.
+  // Le TGV va droit de gare à gare (82°) : la route passe à l'OUEST du rail
+  // de bout en bout, sans le croiser (v320). Lyon sort par son axe sud-est
+  // (130°, trente-trois blocs d'avenue sur la rue), Marseille par son axe
+  // nord-ouest (−136°, quarante-sept). Mesuré sous node (scratchpad
+  // cherche.mjs, qui appelle `profilDe` sur les points arrondis) : 2 025
+  // tracés, refus 1 554 coude · 154 déblai · 152 remblai · 29 rail · 26 pont
+  // dans un coude ; quatre admissibles, tous avec des ponts. Celui-ci :
+  // 1 419 blocs, trois ponts sur des vallons (aucun dans un coude), déblai
+  // 7,4, remblai 1,4, pente 0,061, zéro colonne sur le rail. Le premier
+  // candidat (deux ponts) a été écarté : son entrée à Lyon (50°) n'avait que
+  // dix-neuf relevés sur la rue, pour vingt exigés.
+  { nom: 'A7', villes: ['lyon', 'marseille'], via: [[674, 2100], [663, 2138], [668, 2178], [732, 2585], [755, 2998], [858, 3398], [873, 3435]] },
+  // L'AP-2 (v338), MADRID–BARCELONE : la plus longue de l'Espagne, le long
+  // de l'AVE qui va droit de gare à gare (−14°) ; la route ne le croise
+  // jamais. Le pays monte vers la Catalogne : à l'approche de Barcelone, une
+  // chaîne à 45–60 blocs entre la ville et la côte, et Barcelone est sous
+  // son pays à l'ouest (43 à 47 à r + 10). Elle s'entre par son côté bas,
+  // −170° (trente-cinq blocs d'avenue sur la rue) ; Madrid par −28°
+  // (trente-quatre). Mesuré sous node (scratchpad cherche.mjs, chemins
+  // lissés) : 16 000 tracés, refus 14 646 déblai au milieu · 686 coude · 292
+  // aérodrome · 162 remblai · 96 ponts proches ; neuf admissibles, tous à
+  // ponts. LE JOINT SE MESURE SUR CHAQUE CANDIDAT : le premier avait une
+  // mare qui commence plus tôt sur le bord que sur l'axe, et sept points
+  // d'accotement sans rien dessous, 2,5 blocs avant la culée (v300 : une
+  // décision prise sur l'axe se vérifie sur toute la largeur). Celui-ci :
+  // 2 094 blocs, quatre ponts, joint fermé, déblai 8,8, remblai 3,1, pente
+  // 0,062, zéro colonne sur le rail.
+  { nom: 'AP-2', villes: ['madrid', 'barcelone'], via: [[-2467, 5133], [-2278, 5071], [-2082, 5032], [-1891, 4977], [-1704, 4907], [-1512, 4854], [-1321, 4797], [-1124, 4765], [-927, 4729], [-738, 4667], [-549, 4605], [-510, 4595]] },
 ];
 
 // --- la section -----------------------------------------------------------------

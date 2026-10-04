@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v337 — Les rues de Londres à la règle du kit
+## v339 — Les rues de Londres à la règle du kit
 
 **Pourquoi.** Paris est passé à la section de rue du kit (`roadSection`) en
 v303, les villes engendrées en v307 ; les cinq villes bâties à la main sont
@@ -60,6 +60,56 @@ enfermée, une cabane garde son toit (désarmé : 21 blocs de ville autour de la
 maison, toit absent). Les douze circuits de Londres restent à 100 % sur la
 rue ; les deux empreintes de `plafond.js` ne bougent pas (les rues sont du
 sol).
+
+---
+
+## v338 — L'autoroute Madrid–Barcelone
+
+**Pourquoi.** Madrid–Barcelone relie les deux grandes villes d'Espagne, le
+long de l'AVE qui suit tout l'axe direct. À l'approche de Barcelone, le pays
+monte : une chaîne entre la ville et la côte, et Barcelone est en contrebas de
+son pays à l'ouest. Le meilleur tracé creusait d'abord 9,17 blocs pour une
+limite de neuf.
+
+**Ce que ça change.** L'AP-2 relie Madrid à Barcelone : 2 094 blocs de deux
+fois deux voies, quatre ponts, vingt voitures, sans jamais croiser l'AVE. Elle
+entre à Barcelone par le côté bas de la ville. Madrid a désormais deux
+autoroutes : vers Séville et vers Barcelone. Le relief ne bouge pas : les
+deux empreintes de `plafond.js` sont intactes.
+
+**Ce qui le prouve.** Un témoin neuf dans `carteMonde.js`, rouge sur
+`origin/main` (pas d'AP-2) : la route, ses voitures, ses deux entrées sur une
+rue propre (seize relevés sur seize de chaque côté), aucune colonne d'emprise
+sur le rail (0 sur 18 543 sous node). Le joint des ponts mesuré sur CHAQUE
+candidat : le premier avait sept points d'accotement sans rien dessous, au bord
+d'une mare qui commence plus tôt sur le côté que sur l'axe ; celui retenu, zéro
+sur 136 879 points pour tous les ponts du registre.
+
+---
+
+## v337 — L'autoroute Lyon–Marseille
+
+**Pourquoi.** Lyon–Marseille est l'autoroute du Soleil, la route des vacances
+vers la Méditerranée. Le TGV suit tout l'axe direct : il fallait un côté et
+s'y tenir. Et deux corridors plus simples sur le papier se sont révélés sans
+tracé à cette livraison : Hambourg–Cologne et Toronto–Montréal, où les villes
+sont assises sous leur pays du côté qui regarde l'autre.
+
+**Ce que ça change.** L'A7 relie Lyon à Marseille : 1 419 blocs de deux fois
+deux voies, trois ponts sur des vallons, vingt voitures, à l'ouest du TGV
+qu'elle ne croise jamais. Le relief ne bouge pas : les deux empreintes de
+`plafond.js` sont intactes.
+
+**Ce qui le prouve.** Un témoin neuf dans `carteMonde.js`, rouge sur
+`origin/main` (pas d'A7) : la route, ses voitures, ses deux entrées sur une
+rue propre (seize relevés sur seize de chaque côté), aucune colonne d'emprise
+sur le rail (0 sur 12 545 sous node). Les trois ponts au témoin du joint :
+zéro trou sur 19 760 points sous node. La sonde : 2 025 tracés, quatre
+admissibles. Hambourg–Cologne et Toronto–Montréal sont instruites dans
+`TASKS.md`, avec leurs mesures.
+
+---
+
 ## v336 — L'autoroute Dallas–Houston
 
 **Pourquoi.** Dallas–Houston vient ensuite dans le relevé de la v323 : 1 781

@@ -590,6 +590,8 @@ const VRAIES_KM = [
       out.convoiA1Nord = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A1 Nord') || null;
       out.convoiA24 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A24') || null;
       out.convoiI45 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'I-45') || null;
+      out.convoiA7 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A7') || null;
+      out.convoiAP2 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'AP-2') || null;
       // AUCUNE ROUTE NE CROISE NI NE LONGE UNE VOIE FERRÉE (v320) : l'A3 est la
       // première dont l'axe a un rail le long (l'ICE). On lit, pour TOUTES les
       // routes, chaque colonne de leur emprise (`routeEn` non nul) et l'on
@@ -852,6 +854,26 @@ const VRAIES_KM = [
       && ['dallas', 'houston'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'I-45' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7)),
       JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiI45 ? { nom: a1.convoiI45.nom, voitures: (a1.convoiI45.modeles || []).length } : 'aucun convoi I-45',
         surRail: a1.surRail && a1.surRail['I-45'], entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'I-45') }));
+
+    // L'A7 (v337) : Lyon–Marseille, l'autoroute du Soleil, à l'ouest du TGV
+    // qu'elle ne croise jamais. Ses trois ponts sont gardés par le témoin du
+    // joint (plafond.js).
+    verifier('l\'A7 relie Lyon à Marseille sans toucher le TGV, et des voitures entrent dans les deux villes par une rue propre',
+      !a1.absent && a1.segments >= 18 && !!a1.convoiA7 && a1.convoiA7.routier && (a1.convoiA7.modeles || []).length >= 10
+      && !!a1.surRail && !!a1.surRail.A7 && a1.surRail.A7[0] > 100 && a1.surRail.A7[1] === 0
+      && ['lyon', 'marseille'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'A7' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7)),
+      JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiA7 ? { nom: a1.convoiA7.nom, voitures: (a1.convoiA7.modeles || []).length } : 'aucun convoi A7',
+        surRail: a1.surRail && a1.surRail.A7, entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'A7') }));
+
+    // L'AP-2 (v338) : Madrid–Barcelone, le long de l'AVE qu'elle ne croise
+    // jamais ; Barcelone par son côté bas (−170°). Ses quatre ponts sont gardés
+    // par le témoin du joint (plafond.js).
+    verifier('l\'AP-2 relie Madrid à Barcelone sans toucher l\'AVE, et des voitures entrent dans les deux villes par une rue propre',
+      !a1.absent && a1.segments >= 19 && !!a1.convoiAP2 && a1.convoiAP2.routier && (a1.convoiAP2.modeles || []).length >= 10
+      && !!a1.surRail && !!a1.surRail['AP-2'] && a1.surRail['AP-2'][0] > 100 && a1.surRail['AP-2'][1] === 0
+      && ['madrid', 'barcelone'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'AP-2' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7)),
+      JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiAP2 ? { nom: a1.convoiAP2.nom, voitures: (a1.convoiAP2.modeles || []).length } : 'aucun convoi AP-2',
+        surRail: a1.surRail && a1.surRail['AP-2'], entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'AP-2') }));
 
     // DE VRAIS RAILS, EN RELIEF, ET DEUX VOIES (v281) ------------------------
     //
@@ -2269,7 +2291,7 @@ const VRAIES_KM = [
       !ponts.absent && ponts.riveARive >= 2 && ponts.ponts.every((p) => !p.absent && p.traversent.length >= 1),
       JSON.stringify(ponts.absent ? ponts : { riveARive: ponts.riveARive, parPont: ponts.ponts.map((p) => [p.nom, p.traversent]) }));
 
-    // --- LES RUES DE LONDRES À LA RÈGLE DU KIT (v337) ------------------------
+    // --- LES RUES DE LONDRES À LA RÈGLE DU KIT (v339) ------------------------
     //
     // La quatrième ville à passer par `voirie.js` (le `roadSection` du kit,
     // à un bloc pour un mètre), après Paris (v303) et les villes engendrées

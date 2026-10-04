@@ -1142,7 +1142,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     !double.absent && double.bati === 0 && double.lotBati,
     double.absent ? 'Paris n\'a pas doublé' : `autour de la maison : ${double.bati} bloc(s) de ville · lot après la date bâti : ${double.lotBati}`);
 
-  // --- LONDRES À LA RÈGLE DU KIT (v337) : la ville d'avant reste sous ce ----
+  // --- LONDRES À LA RÈGLE DU KIT (v339) : la ville d'avant reste sous ce ----
   // --- qu'un enfant y a bâti ------------------------------------------------
   //
   // Les rues de Londres s'élargissent et ses îlots se recomposent : une

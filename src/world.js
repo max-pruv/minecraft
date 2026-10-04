@@ -1506,7 +1506,7 @@ export const CONF_NEUF = {
 // 5 → 6 y emmène ce qu'elle déplace : c'est là que Paris doublé a été joué. Il
 // ne se met JAMAIS à jour. Même clé que `CONF_NEUF` : ses zones à terre sont
 // les mêmes.
-// Et ces deux mondes-là ont la Londres d'avant sa passe au kit (v337,
+// Et ces deux mondes-là ont la Londres d'avant sa passe au kit (v339,
 // `londres-v332.js`) : c'est celle qu'on y voyait.
 export const CONF_V308 = { ...CONF_NEUF, reperes: LANDMARKS_V317, fonduDoux: false, mursDeQuai: false, falaises: false, londresAvant: true };
 export const CONF_AVANT = {
@@ -2047,7 +2047,7 @@ function dansParisCede(x, z, t) {
 function marquerParisCede(ens, x, z) {
   for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) ens.add(cleColonneParis(x + dx, z + dz));
 }
-// LONDRES GARDE SA VILLE D'AVANT SOUS CE QU'UN ENFANT A BÂTI (v337). Ses rues
+// LONDRES GARDE SA VILLE D'AVANT SOUS CE QU'UN ENFANT A BÂTI (v339). Ses rues
 // passent à la règle du kit et ses îlots se recomposent : là où il y avait un
 // immeuble il peut y avoir une rue, et l'inverse. Londres ne bouge pas, donc
 // rien ne se déplace : c'est la règle de la v303 (« la ville d'avant se fige,
@@ -2056,7 +2056,7 @@ function marquerParisCede(ens, x, z) {
 // voisines, gardent la ville figée dans `londres-v332.js` : une maison sur
 // une ancienne rue n'est pas enfermée dans un immeuble neuf, une cabane contre
 // un ancien mur garde son mur. La date est celle de la publication.
-export const DATE_RUES_LONDRES = Date.UTC(2026, 9, 4, 15, 30, 0);
+export const DATE_RUES_LONDRES = Date.UTC(2026, 9, 4, 15, 20, 0);
 function dansLondresAvant(x, z, t) {
   if (!(t <= DATE_RUES_LONDRES)) return false;
   const du = x - LONDRES.x, dv = z - LONDRES.z, r = LONDRES.r + 1;
@@ -2556,7 +2556,7 @@ export class World {
     this.edits = new Map();       // "x,y,z" -> block id (player modifications)
     this.monumentsTouches = new Set();  // les monuments HD qu'un enfant a modifiés (v292)
     this.colonnesCedees = new Set();    // les colonnes de Paris où la ville cède à ce qu'un enfant a bâti (v306)
-    this.colonnesLondresAvant = new Set();  // celles de Londres où la ville d'avant le kit reste (v337)
+    this.colonnesLondresAvant = new Set();  // celles de Londres où la ville d'avant le kit reste (v339)
     this.cacheSol = new Map();          // "x,z" -> { nat, cote } : la fiche d'une colonne (sol continu, v297)
     this.sansSolContinu = false;        // ?solcontinu=0 : la mesure A/B, jamais un réglage
     this.editTimes = new Map();   // "x,y,z" -> ms timestamp, for multiplayer merge
@@ -3330,7 +3330,7 @@ export class World {
         // Market Street entre les deux, la plage, les quais et les parcs.
         // Nice et Lille : chacune sa trame, ses places et ses maisons. Comme à
         // San Francisco, la trame générique ne s'applique pas par-dessus.
-        // Londres d'avant le kit (v337) dans les mondes d'avant, et sous les
+        // Londres d'avant le kit (v339) dans les mondes d'avant, et sous les
         // colonnes où un enfant a bâti avant la date (`DATE_RUES_LONDRES`).
         const londresAvant = city && city.key === 'londres' && (this.conf.londresAvant
           || (this.colonnesLondresAvant.size > 0 && this.colonnesLondresAvant.has(cleColonneParis(wx, wz))));
