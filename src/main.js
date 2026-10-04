@@ -1546,10 +1546,12 @@ function updateChunks() {
   player.obstacleVehicule = (x, z, cap, x0 = x, z0 = z) => {
     if (vehicules.obstacleDevant(x, z, cap) && !vehicules.obstacleDevant(x0, z0, cap)) return true;
     if (mobilierDevant(x, z, cap) && !mobilierDevant(x0, z0, cap)) return true;
-    if (pietonDevant(x, z, cap, x0, z0)) return true;
+    // `arretDouxT` (v338) : s'arrêter devant un piéton ou au bord de l'eau
+    // n'est PAS un choc — les dégâts ne comptent jamais un piéton touché.
+    if (pietonDevant(x, z, cap, x0, z0)) { player.arretDouxT = performance.now(); return true; }
     // « Pas si l'on est déjà dedans » : une voiture tombée à l'eau doit
     // pouvoir en ressortir, sinon elle y reste pour toujours.
-    if (eauDevant(x, z, cap) && !eauDevant(x0, z0, cap)) { direLEau(); return true; }
+    if (eauDevant(x, z, cap) && !eauDevant(x0, z0, cap)) { player.arretDouxT = performance.now(); direLEau(); return true; }
     return false;
   };
   // UNE VOITURE ARRIVE SUR CE POINT ? (v259) Ce qu'un piéton regarde pour
@@ -7755,6 +7757,8 @@ requestAnimationFrame(() => {
     if (chauffe()) { requestAnimationFrame(pas); return; }
     try { chaufferLesFeux(); } catch (e) { console.warn('chauffe des feux', e); }
     try { chaufferLaCoque(); } catch (e) { console.warn('chauffe de la coque', e); }
+    // la fumée et les flammes des dégâts (v338) : deux matériaux neufs
+    try { fun.degats.chauffer(renderer, camera, scene); } catch (e) { console.warn('chauffe des dégâts', e); }
     chauffeFinie = true;
     requestAnimationFrame(pasNY);
   };

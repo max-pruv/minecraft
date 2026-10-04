@@ -1,0 +1,393 @@
+// LES DÉGÂTS DE LA VOITURE (v338).
+//
+// Max : « Comme dans GTA, quand tu crashes ton véhicule, il s'abîme, tu vois
+// vraiment les défauts de carrosserie… La voiture perd son sens, à un moment
+// elle ne marche plus, potentiellement elle prend feu, on se retrouve à sortir
+// de la voiture. »
+//
+// UNE SUITE À ELLE, ET PAS DES LIGNES DE PLUS DANS `monte.js` : celle-ci dure
+// un quart d'heure et six sessions du chantier « conduite » y écrivent en même
+// temps. Les dégâts tiennent sur UNE page de jeu et une dalle à l'écart.
+//
+// Deux temps. D'abord la règle, sous node (`src/degats.js` est pur) : la
+// santé, les zones, la panne, le feu, le repli de détection, le réseau. Puis le
+// trajet de l'enfant, dans le jeu : il fonce dans un mur, la tôle s'enfonce à
+// l'avant et pas à l'arrière, l'autre voiture du même modèle reste intacte, la
+// voiture cale, prend feu, et l'enfant se retrouve debout à côté.
+//
+// Chaque témoin est vérifié ROUGE sur l'ancien code : sans `degats.js` la
+// règle n'existe pas, et sans le crochet de `fun.js` aucun choc n'est compté.
+//
+//     cd tests && node degats.js
+
+const { Banc, dormir } = require('./banc.js');
+
+const echecs = [];
+let _dernier = Date.now();
+function verifier(nom, ok, detail = '') {
+  const dt = Math.round((Date.now() - _dernier) / 1000);
+  _dernier = Date.now();
+  console.log(`${ok ? '✅' : '❌'} [${String(dt).padStart(3)} s] ${nom}${detail ? ` — ${detail}` : ''}`);
+  if (!ok) echecs.push(nom + (detail ? ` — ${detail}` : ''));
+}
+
+(async () => {
+  // ---------------------------------------------------------------- la règle
+  const D = await import('../src/degats.js').catch(() => null);
+  verifier('la règle des dégâts existe, et elle se lit sans navigateur', !!D);
+  if (D) {
+    // la santé baisse avec la force ; un frôlement ne compte pas
+    const faible = D.etatNeuf(), fort = D.etatNeuf(), frole = D.etatNeuf();
+    D.subirChoc(faible, { force: 0.3, lx: 0, lz: -2.2 });
+    D.subirChoc(fort, { force: 0.9, lx: 0, lz: -2.2 });
+    D.subirChoc(frole, { force: 0.03, lx: 0, lz: -2.2 });
+    verifier('la santé baisse avec la force du choc, et un frôlement ne coûte rien',
+      fort.sante < faible.sante && faible.sante < 1 && frole.sante === 1,
+      `fort ${fort.sante} · faible ${faible.sante} · frôlé ${frole.sante}`);
+
+    // le point d'impact du MONDE tombe sur la bonne zone, quel que soit le cap
+    const zones = [];
+    for (const cap of [0, 0.7, Math.PI / 2, 2.4, -1.9]) {
+      const av = { x: -Math.sin(cap), z: -Math.cos(cap) };      // l'avant du joueur
+      const dr = { x: Math.cos(cap), z: -Math.sin(cap) };       // sa droite
+      const pt = (u, k) => D.versRepere(0, 0, cap, u.x * k, u.z * k);
+      const z = (p) => D.zoneDe(p.lx, p.lz);
+      zones.push([z(pt(av, 2.4)), z(pt(av, -2.4)), z(pt(dr, 1.2)), z(pt(dr, -1.2))].join('/'));
+    }
+    verifier('un impact devant touche l\'avant, derrière l\'arrière, à droite le flanc droit — à tous les caps',
+      zones.every((z) => z === 'avant/arriere/droite/gauche'), zones.join(' '));
+
+    // la zone touchée prend, les autres non ; un flanc enfoncé fait tirer
+    const flanc = D.etatNeuf();
+    D.subirChoc(flanc, { force: 0.8, lx: -1.13, lz: 0 });
+    verifier('un choc sur le flanc gauche abîme ce flanc, et la direction tire à gauche',
+      flanc.zones.gauche < 1 && flanc.zones.avant === 1 && flanc.zones.arriere === 1 && flanc.direction > 0,
+      JSON.stringify({ zones: flanc.zones, direction: flanc.direction }));
+
+    // le moteur est touché : la voiture va moins vite ; sous le seuil, elle cale
+    const e = D.etatNeuf();
+    D.subirChoc(e, { force: 0.8, lx: 0, lz: -2.2 });
+    const touchee = D.effetsConduite(e);
+    D.subirChoc(e, { force: 0.8, lx: 0, lz: -2.2 });
+    const calee = D.effetsConduite(e);
+    verifier('moteur touché : l\'allure baisse ; sous le seuil, la voiture CALE (allure nulle)',
+      touchee.allure < 1 && touchee.allure > 0 && e.enPanne && calee.allure === 0,
+      `touchée ${touchee.allure.toFixed(2)} · après ${calee.allure} · ${JSON.stringify(D.publier(e))}`);
+
+    // sous le seuil critique, le feu ; il dépose l'enfant, s'éteint, la carcasse s'en va
+    const feu = D.etatNeuf();
+    for (let i = 0; i < 4; i++) D.subirChoc(feu, { force: 0.9, lx: 0, lz: i % 2 ? 2.2 : -2.2 });
+    const evts = [];
+    for (let t = 0; t < D.DUREE_FEU + D.DUREE_CARCASSE + 2; t += 0.1) {
+      const ev = D.avancerFeu(feu, 0.1, true);
+      if (ev) evts.push(`${ev}@${t.toFixed(1)}`);
+    }
+    verifier('sous le seuil critique la voiture brûle : on sort, le feu s\'éteint, la carcasse s\'en va',
+      evts.length === 3 && evts[0].startsWith('sortir') && evts[1].startsWith('eteint') && evts[2].startsWith('partie'),
+      evts.join(' '));
+
+    // le repli : un frein n'est pas un choc, un mur si
+    const vmax = 20.5, dt = 1 / 30;
+    const frein = D.detecterChoc(20, 20 - 2.5 * vmax * dt, dt, vmax);
+    const mur = D.detecterChoc(20, 0.4, dt, vmax);
+    verifier('le repli de détection : freiner n\'est pas un choc, un mur à pleine vitesse en est un fort',
+      frein === 0 && mur > 0.8, `frein ${frein} · mur ${mur}`);
+
+    // le réseau rejoue la même voiture
+    const r = D.depuisReseau(JSON.parse(JSON.stringify(D.versReseau(feu))));
+    verifier('le champ réseau rejoue la même voiture chez l\'ami (santé, zones, feu)',
+      Math.abs(r.sante - feu.sante) < 0.02 && r.zones.avant === feu.zones.avant && r.eteint === feu.eteint,
+      `${JSON.stringify(D.publier(r))} contre ${JSON.stringify(D.publier(feu))}`);
+  }
+
+  // ----------------------------------------------------------- dans le jeu
+  const banc = new Banc({ portJeu: 8417, portPairs: 9417 });
+  await banc.ouvrir();
+  try {
+    const tab = await banc.jouerSeul('Dégâts', { rr: 2, pret: true });
+    const erreurs = [];
+    tab.on('pageerror', (e) => erreurs.push(String(e.message || e)));
+
+    // UNE DALLE À L'ÉCART, UN MUR AU BOUT, DEUX VOITURES DU MÊME MODÈLE. Le
+    // témoin se place lui-même (v284) : on descend, on retire les bêtes, puis
+    // on invoque — sinon la monture laissée là par un témoin d'avant est
+    // remontée au premier clic.
+    const prep = await tab.evaluate(async () => {
+      const g = window.__game;
+      const { BLOCK } = await import('./src/blocks.js');
+      const tenir = (n) => new Promise((fin) => {
+        let cumul = 0, prec = performance.now();
+        const pas = (t) => { cumul += (t - prec) / 1000; prec = t; if (cumul >= n) fin(); else requestAnimationFrame(pas); };
+        requestAnimationFrame(pas);
+      });
+      const x0 = 30000, z0 = 32400, L = 70;
+      let y0 = 0;
+      for (let d = -L; d <= L; d += 4) for (let w = -8; w <= 8; w += 4) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
+      y0 += 2;
+      for (let d = -L; d <= L; d++) for (let w = -8; w <= 8; w++) {
+        g.world.setBlock(x0 + d, y0, z0 + w, BLOCK.STONE);
+        for (let h = 1; h <= 6; h++) if (g.world.getBlock(x0 + d, y0 + h, z0 + w) !== 0) g.world.setBlock(x0 + d, y0 + h, z0 + w, 0);
+      }
+      // le mur, à quarante blocs devant (vers +x)
+      for (let w = -8; w <= 8; w++) for (let h = 1; h <= 4; h++) g.world.setBlock(x0 + 40, y0 + h, z0 + w, BLOCK.STONE);
+      g.player.keys.clear();
+      g.player.pilote = null; g.player.flying = false; g.player.gaz = null;
+      g.player.yaw = -Math.PI / 2; g.player.pitch = 0;          // le nez vers +x
+      g.player.pos.set(x0, y0 + 1.01, z0 + 0.5); g.player.vel.set(0, 0, 0);
+      await tenir(1);
+      for (let e = 0; e < 6 && g.fun.montureConduite && g.fun.montureConduite(); e++) { document.getElementById('ride-btn').click(); await tenir(0.4); }
+      for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh);
+      g.animalManager.animals.length = 0;
+      const flotte = 'ferrari-f40.glb';
+      const a = g.animalManager.invoquer('voiture', x0 + 3, z0, false, { flotte });
+      const b = g.animalManager.invoquer('voiture', x0 - 12, z0 + 6, false, { flotte });
+      if (!a || !b) return { err: 'aucune voiture posée' };
+      const t0 = performance.now();
+      while (performance.now() - t0 < 30000 && !(a.mesh.userData.roues && b.mesh.userData.roues)) await tenir(0.3);
+      if (!a.mesh.userData.roues) return { err: 'le modèle n\'est jamais arrivé' };
+      a.pos.y = y0 + 1.01; a.mesh.position.y = a.pos.y;
+      for (let e = 0; e < 8 && !(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await tenir(0.5); }
+      const auVolant = !!(g.fun.montureConduite && g.fun.montureConduite());
+      window.__essai = { a, b, x0, z0, y0 };
+      return { auVolant, y0, flotte, attente: Math.round(performance.now() - t0) };
+    });
+    verifier('on est au volant d\'une voiture de la flotte, sur la dalle d\'essai', !prep.err && prep.auVolant, JSON.stringify(prep));
+
+    // AVANT TOUT CHOC : les programmes et les lampes de la scène, voiture
+    // dessinée, quelques images passées.
+    const avant = await tab.evaluate(async () => {
+      const g = window.__game;
+      await new Promise((f) => setTimeout(f, 1500));
+      let lampes = 0;
+      g.scene.traverse((o) => { if (o.isLight) lampes++; });
+      return { programmes: g.renderer.info.programs.length, lampes };
+    });
+
+    // 1. LE TRAJET DE L'ENFANT : pleins gaz, droit dans le mur. Le choc passe
+    // par le VRAI chemin (la physique s'il publie `player.choc`, le repli sinon).
+    const crash = await tab.evaluate(async () => {
+      const g = window.__game, { a } = window.__essai;
+      const tenir = (n) => new Promise((fin) => {
+        let cumul = 0, prec = performance.now();
+        const pas = (t) => { cumul += (t - prec) / 1000; prec = t; if (cumul >= n) fin(); else requestAnimationFrame(pas); };
+        requestAnimationFrame(pas);
+      });
+      const d = g.fun.degats;
+      if (!d) return { err: 'pas de module de dégâts (fun.degats)' };
+      g.player.gaz = 1;
+      let vmax = 0, etat = null;
+      const t0 = performance.now();
+      while (performance.now() - t0 < 25000) {
+        await tenir(0.1);
+        vmax = Math.max(vmax, Math.abs(g.player.vitesseVoiture || 0));
+        etat = d.etat(a.mesh);
+        if (etat && etat.chocs.length) break;
+      }
+      g.player.gaz = 0;
+      await tenir(0.5);
+      return { vmax: Math.round(vmax * 10) / 10, etat: etat ? { sante: etat.sante, zones: etat.zones, chocs: etat.chocs } : null,
+        publie: g.player.etatVoiture, mesure: d.mesure(a.mesh), x: Math.round(g.player.pos.x - window.__essai.x0) };
+    });
+    verifier('foncer dans un mur abîme la voiture : la santé baisse, l\'AVANT est touché, l\'état est publié pour la physique',
+      !crash.err && crash.etat && crash.etat.sante < 1 && crash.etat.zones.avant < crash.etat.zones.arriere
+        && crash.publie && crash.publie.sante < 1,
+      JSON.stringify(crash));
+
+    // Un second choc fort à l'avant, par la porte publique : la mesure de la
+    // géométrie doit voir un enfoncement net, à l'avant seulement.
+    const geo = await tab.evaluate(async () => {
+      const g = window.__game, { a, b } = window.__essai, d = g.fun.degats;
+      if (!d) return { err: 'pas de module' };
+      const r = d.choc(a.mesh, { force: 1, lx: 0, lz: -2.2 });
+      const pieces = d.pieces(a.mesh) || [];
+      const THREE = await import('three');
+      let avantMax = 0, arriereMax = 0, clones = 0, lues = 0;
+      const p = new THREE.Vector3(), q = new THREE.Vector3();
+      for (const pc of pieces) {
+        if (!pc.propre) continue;
+        clones++;
+        const o = pc.geoOrig.attributes.position, n = pc.mesh.geometry.attributes.position;
+        for (let i = 0; i < o.count; i++) {
+          p.set(o.getX(i), o.getY(i), o.getZ(i)).applyMatrix4(pc.M);
+          q.set(n.getX(i), n.getY(i), n.getZ(i)).applyMatrix4(pc.M);
+          const dep = p.distanceTo(q);
+          lues++;
+          if (p.z < -1.2) avantMax = Math.max(avantMax, dep);
+          if (p.z > 1.2) arriereMax = Math.max(arriereMax, dep);
+        }
+      }
+      // L'AUTRE VOITURE DU MÊME MODÈLE : ses géométries sont les originales,
+      // partagées, et pas un sommet n'a bougé.
+      const originales = new Set(pieces.map((pc) => pc.geoOrig));
+      let partagees = 0, propresB = 0;
+      b.mesh.traverse((o) => { if (o.isMesh && o.geometry) { if (originales.has(o.geometry)) partagees++; } });
+      for (const pc of pieces) if (pc.propre && pc.mesh.geometry === pc.geoOrig) propresB++;
+      // et un sommet de l'original, relu : identique à ce qu'il était
+      return { r, clones, lues, avantMax: Math.round(avantMax * 1000) / 1000, arriereMax: Math.round(arriereMax * 1000) / 1000,
+        partagees, propresB, ms: r && r.mesure ? Math.round(r.mesure.ms * 10) / 10 : null };
+    });
+    verifier('la tôle s\'enfonce À L\'AVANT (sommets déplacés, lus dans la géométrie) et PAS à l\'arrière',
+      !geo.err && geo.lues > 0 && geo.avantMax > 0.15 && geo.arriereMax < 0.02,
+      JSON.stringify(geo));
+    verifier('l\'autre voiture du même modèle reste INTACTE : elle garde la géométrie commune, que personne n\'a touchée',
+      !geo.err && geo.clones > 0 && geo.partagees > 0 && geo.propresB === 0, JSON.stringify(geo));
+    // La barre : deux fois et demie le premier choc mesuré (12 ms) — le premier
+    // est le plus cher, c'est celui qu'on garde.
+    const premier = crash.mesure ? Math.round(crash.mesure.ms * 10) / 10 : null;
+    verifier('enfoncer coûte quelques millisecondes au choc, rien par image', !geo.err && premier !== null && premier < 30 && geo.ms < 30,
+      `premier choc ${premier} ms (clone ${crash.mesure && crash.mesure.msClone}, normales ${crash.mesure && crash.mesure.msNormales}), suivant ${geo.ms} ms`);
+
+    const pieces = await tab.evaluate(() => {
+      const g = window.__game, { a, b } = window.__essai, d = g.fun.degats;
+      const ps = (d && d.pieces(a.mesh)) || [];
+      const phares = ps.filter((pc) => /light_front|lights_front/i.test(pc.nom));
+      const vitres = ps.filter((pc) => /glass|window/i.test(pc.nom));
+      const em = (m) => (m && m.emissive ? m.emissive.r + m.emissive.g + m.emissive.b : -1);
+      let emB = -1;
+      b.mesh.traverse((o) => { if (o.isMesh && /lights_front/i.test(o.name)) emB = em(o.material); });
+      return {
+        phares: phares.map((pc) => ({ casse: !!pc.cassee, em: em(pc.mesh.material), propre: pc.matPropre })),
+        vitres: vitres.map((pc) => ({ etoilee: !!pc.etoilee })),
+        emB,
+      };
+    });
+    verifier('phares cassés (l\'émissif s\'éteint) et vitres étoilées — sur CETTE voiture, pas sur l\'autre',
+      pieces.phares.length > 0 && pieces.phares.every((p) => p.casse && p.em === 0)
+        && pieces.vitres.some((v) => v.etoilee) && pieces.emB > 0,
+      JSON.stringify(pieces));
+
+    // 2. LA FUMÉE, LA PANNE : la voiture ne repart plus.
+    const panne = await tab.evaluate(async () => {
+      const g = window.__game, { a } = window.__essai, d = g.fun.degats;
+      if (!d) return { err: 'pas de module de dégâts' };
+      const tenir = (n) => new Promise((fin) => {
+        let cumul = 0, prec = performance.now();
+        const pas = (t) => { cumul += (t - prec) / 1000; prec = t; if (cumul >= n) fin(); else requestAnimationFrame(pas); };
+        requestAnimationFrame(pas);
+      });
+      // on recule la voiture au milieu de la dalle, nez vers −x, loin du mur
+      const { x0, z0, y0 } = window.__essai;
+      g.player.pos.set(x0 + 5, y0 + 1.01, z0 + 0.5); g.player.yaw = Math.PI / 2; g.player.vitesseVoiture = 0;
+      await tenir(0.5);
+      while (!d.etat(a.mesh).enPanne) d.choc(a.mesh, { force: 0.5, lx: 0, lz: 2.2 });
+      await tenir(0.6);
+      const fumee = d.particulesVisibles().fumee;
+      const p0 = { x: g.player.pos.x, z: g.player.pos.z };
+      g.player.gaz = 1;
+      await tenir(2.5);
+      g.player.gaz = 0;
+      const bouge = Math.hypot(g.player.pos.x - p0.x, g.player.pos.z - p0.z);
+      return { fumee, bouge: Math.round(bouge * 100) / 100, publie: g.player.etatVoiture,
+        auVolant: !!g.fun.montureConduite(), sante: d.etat(a.mesh).sante };
+    });
+    verifier('le moteur atteint FUME, et sous le seuil la voiture cale : pleins gaz, elle ne bouge plus',
+      panne.fumee > 0 && panne.publie && panne.publie.enPanne && panne.bouge < 0.3 && panne.auVolant,
+      JSON.stringify(panne));
+
+    // 3. LE FEU : l'enfant est déposé À CÔTÉ, debout et à pied, sain et sauf.
+    const feu = await tab.evaluate(async () => {
+      const g = window.__game, { a } = window.__essai, d = g.fun.degats;
+      if (!d) return { err: 'pas de module de dégâts' };
+      const tenir = (n) => new Promise((fin) => {
+        let cumul = 0, prec = performance.now();
+        const pas = (t) => { cumul += (t - prec) / 1000; prec = t; if (cumul >= n) fin(); else requestAnimationFrame(pas); };
+        requestAnimationFrame(pas);
+      });
+      while (!d.etat(a.mesh).enFeu) d.choc(a.mesh, { force: 0.6, lx: 1.1, lz: 0 });
+      const t0 = performance.now();
+      let flammes = 0;
+      while (performance.now() - t0 < 12000 && g.fun.montureConduite()) {
+        await tenir(0.2);
+        flammes = Math.max(flammes, d.particulesVisibles().flammes);
+      }
+      const sortie = Math.round(performance.now() - t0);
+      await tenir(1);
+      flammes = Math.max(flammes, d.particulesVisibles().flammes);
+      const dist = Math.hypot(g.player.pos.x - a.pos.x, g.player.pos.z - a.pos.z);
+      const pied = g.world.isSolid(Math.floor(g.player.pos.x), Math.floor(g.player.pos.y + 0.2), Math.floor(g.player.pos.z));
+      const tete = g.world.isSolid(Math.floor(g.player.pos.x), Math.floor(g.player.pos.y + 1.2), Math.floor(g.player.pos.z));
+      // et la carcasse ne se reprend pas : face à elle, aucune monture proposée
+      g.player.yaw = Math.atan2(-(a.pos.x - g.player.pos.x), -(a.pos.z - g.player.pos.z));
+      await tenir(0.4);
+      const proposee = g.animalManager.monture() === a;
+      return { sortie, flammes, aPied: !g.fun.montureConduite(), gabarit: g.player.gabarit,
+        dist: Math.round(dist * 100) / 100, dansUnMur: pied || tete, proposee, publie: g.player.etatVoiture };
+    });
+    verifier('la voiture prend feu (des flammes), et quelques secondes plus tard l\'enfant est DÉPOSÉ à côté, à pied, hors de tout mur',
+      feu.aPied && feu.flammes > 0 && feu.sortie > 3000 && feu.sortie < 11000 && feu.dist > 1.5 && feu.dist < 5
+        && !feu.dansUnMur && !(feu.gabarit > 1) && feu.publie === null,
+      JSON.stringify(feu));
+    verifier('la carcasse qui brûle ne se reprend pas : le bouton ne la propose plus', !feu.err && feu.flammes > 0 && !feu.proposee, JSON.stringify(feu));
+
+    // 4. NI LAMPE NI PROGRAMME NEUF : la fumée et les flammes ont été chauffées
+    // pendant l'accueil (v246), et l'on n'a changé que des uniformes.
+    const apres = await tab.evaluate(async () => {
+      const g = window.__game;
+      await new Promise((f) => setTimeout(f, 1500));
+      let lampes = 0;
+      g.scene.traverse((o) => { if (o.isLight) lampes++; });
+      return { programmes: g.renderer.info.programs.length, lampes };
+    });
+    // (et seulement si le feu a VRAIMENT brûlé : sans flammes, l'égalité ne
+    // prouverait rien — elle serait vraie sur l'ancien code)
+    verifier('aucune lampe de plus dans la scène (quatre pour tout le jeu, v248)', feu.flammes > 0 && apres.lampes === avant.lampes,
+      `${avant.lampes} → ${apres.lampes}, flammes ${feu.flammes}`);
+    verifier('aucun programme de shader compilé au choc ni au feu (chauffés à l\'accueil)', feu.flammes > 0 && apres.programmes === avant.programmes,
+      `${avant.programmes} → ${apres.programmes}, flammes ${feu.flammes}`);
+
+    // 5. UNE VOITURE NEUVE EST NEUVE, ET LE GARAGE RÉPARE.
+    const neuf = await tab.evaluate(async () => {
+      const g = window.__game, d = g.fun.degats, { x0, z0 } = window.__essai;
+      if (!d) return { err: 'pas de module de dégâts' };
+      const c = g.animalManager.invoquer('voiture', x0 - 20, z0 - 4, false, { flotte: 'ferrari-f40.glb' });
+      const vierge = d.etat(c.mesh) === null;
+      // le garage répare : on abîme, on répare, chaque pièce retrouve sa géométrie commune
+      d.choc(c.mesh, { force: 1, lx: 0, lz: -2.2 });
+      const ps = d.pieces(c.mesh) || [];
+      const touchees = ps.filter((pc) => pc.propre).map((pc) => ({ pc, clone: pc.mesh.geometry }));
+      let rendues = 0;
+      for (const t of touchees) t.clone.addEventListener('dispose', () => { rendues++; });
+      const repare = d.reparer(c.mesh);
+      const remises = touchees.every((t) => t.pc.mesh.geometry === t.pc.geoOrig);
+      return { vierge, touchees: touchees.length, repare, remises, rendues, apres: d.etat(c.mesh) };
+    });
+    verifier('une voiture neuve est intacte, et le garage la répare (géométrie commune rendue, clones libérés)',
+      neuf.vierge && neuf.touchees > 0 && neuf.repare && neuf.remises && neuf.rendues === neuf.touchees && neuf.apres === null,
+      JSON.stringify(neuf));
+
+    // 6. CE QUI S'EN VA SE REND (v238) : la carcasse retirée, ses géométries
+    // clonées repartent au pilote — et pas les géométries communes.
+    const rendu = await tab.evaluate(async () => {
+      const g = window.__game, d = g.fun.degats, { a, b } = window.__essai;
+      if (!d) return { err: 'pas de module de dégâts' };
+      const tenir = (n) => new Promise((fin) => {
+        let cumul = 0, prec = performance.now();
+        const pas = (t) => { cumul += (t - prec) / 1000; prec = t; if (cumul >= n) fin(); else requestAnimationFrame(pas); };
+        requestAnimationFrame(pas);
+      });
+      const ps = d.pieces(a.mesh) || [];
+      const clones = ps.filter((pc) => pc.propre).map((pc) => pc.mesh.geometry);
+      let rendues = 0;
+      for (const c of clones) c.addEventListener('dispose', () => { rendues++; });
+      // l'enfant s'éloigne de soixante-dix blocs : le bestiaire la retire (v238)
+      const { x0, z0, y0 } = window.__essai;
+      g.player.pos.set(x0 - 60, y0 + 30, z0 - 60); g.player.flying = true;
+      a.pos.x += 80; a.mesh.position.x += 80;
+      await tenir(1.5);
+      const partie = !g.animalManager.animals.includes(a);
+      return { clones: clones.length, rendues, partie, suivies: d.suivies(),
+        bIntacte: (() => { let n = 0; b.mesh.traverse((o) => { if (o.isMesh && o.geometry && o.geometry.attributes.position) n++; }); return n; })() };
+    });
+    verifier('la carcasse partie, ses géométries clonées sont rendues au pilote (liberer, v238)',
+      rendu.partie && rendu.clones > 0 && rendu.rendues === rendu.clones, JSON.stringify(rendu));
+
+    verifier('aucune erreur JavaScript de bout en bout', erreurs.length === 0, JSON.stringify(erreurs.slice(0, 4)));
+  } finally {
+    await banc.fermer();
+  }
+
+  console.log(echecs.length
+    ? `\n❌ ${echecs.length} défaut(s) :\n   ${echecs.join('\n   ')}`
+    : '\n✅ la voiture s\'abîme, cale, brûle — et l\'enfant en sort sain et sauf');
+  process.exit(echecs.length ? 1 : 0);
+})().catch((e) => { console.error('\n💥 le banc d\'essai a lâché :', e); process.exit(2); });

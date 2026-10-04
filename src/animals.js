@@ -547,7 +547,8 @@ export class AnimalManager {
     const eye = this.player.eyePosition();
     let best = null, bestD = portee;
     for (const a of this.animals) {
-      if (a.dying > 0 || a.baby || !a.def.montable) continue;
+      // `horsService` : une carcasse brûlée ne se reprend pas (degats3d.js, v337)
+      if (a.dying > 0 || a.baby || !a.def.montable || a.horsService) continue;
       const dx = a.pos.x - eye.x, dz = a.pos.z - eye.z;
       const d = Math.hypot(dx, dz);
       if (d > bestD) continue;

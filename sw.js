@@ -125,6 +125,8 @@ const ASSETS = [
   './src/nouveautes.js',
   './src/cloud.js',
   './src/fun.js',
+  './src/degats.js',
+  './src/degats3d.js',
   './src/identity.js',
   './src/sync.js',
   './src/admin.js',
