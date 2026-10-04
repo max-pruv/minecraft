@@ -319,6 +319,22 @@
     10). Preuve STRUCTURELLE en plus : la v324 ne crée aucun matériau (aucun
     `Material(` dans son diff de `src/`), et les clés `physical` sont celles des
     carrosseries de la flotte — un modèle tiré à portée pour la première fois.
+  - SECOND PASSAGE (rebasée sur la v326, alors v327) : `carteMonde.js`,
+    `maj.js`, `carte.js`, `hote.js` VERTS. Rouges : `manhattan.js` le délai de
+    la ligne 282 (dette v269) ; `monte.js` les deux mêmes témoins (Paris 3
+    programmes `physical`, écran 3 183 ms · 26,7 %) ; `reseau.js` « un hôte
+    sans courtier est trouvé par un invité » `[[],[]]` — rejouée SEULE : 77/77
+    sur la branche, et 70/7 sur `origin/main` v326 (« à trois, chacun voit les
+    deux autres », « la voiture prise garde sa couleur »…). Intermittence de la
+    suite réseau, des deux côtés.
+  - TROISIÈME PASSAGE (rebasée sur la v328, alors v329) : quatorze suites
+    vertes, `reseau.js` comprise. Rouges : `manhattan.js` (trou de façade
+    17 102 → 51 734, taxi tactile « bouton jamais visible », PeerJS « Lost
+    connection to server » — tous déclarés) ; `monte.js` « l'écran ne se fige
+    pas » seul (3 283 ms · 25,3 %), dette mesurée des deux côtés ci-dessus.
+    Rebasée ensuite sur la v330 (aéroports, routes : rien de commun) ; les
+    balises de version des commentaires de `src/` ont été retirées pour qu'un
+    rebasage ne touche plus que la documentation.
 - [ ] **LE PORTAIL DE LA v330 (les terminaux), DOUBLE MESURE FAITE.** Seule
   suite rouge : `monte.js`, rejouée SEULE trois fois sur la branche et une fois
   sur `origin/main` (v326). « L'écran ne se fige pas en arrivant sur une ville »
