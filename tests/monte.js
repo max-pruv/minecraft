@@ -5966,7 +5966,15 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // Sur l'ancien code la pointe d'une hypercar est 25,6 blocs/s (92 km/h) :
     // elle n'atteint jamais 100 km/h, aucun choc ne se publie, et la caisse ne
     // s'aligne pas le long d'un mur — chaque verdict rougit pour sa raison.
-    const gta = await tab.evaluate(async () => {
+    // SUR UNE PAGE À ELLE (v345). Sur la longue page de la suite, un passant
+    // — Marlon se replace près de l'enfant dès qu'il s'éloigne — s'est trouvé
+    // devant la voiture, qui s'est arrêtée net comme elle le doit : « 0 bloc/s
+    // après sept secondes » au portail, vert rejoué seul sur une page neuve.
+    // Un témoin se place lui-même (v284), page comprise.
+    const pageGta = await banc.jouerSeul('MonteConduite', { tactile: true });
+    const gta = await pageGta.evaluate(async () => {
+      // les passants de la page ne roulent pas sur la dalle des témoins
+      if (window.__game.npcs) for (const n of window.__game.npcs) { if (n.pos) n.pos.set(n.pos.x, -500, n.pos.z); }
       const g = window.__game, P = g.player;
       const dormir = (ms) => new Promise((f) => setTimeout(f, ms));
       const { BLOCK } = await import('./src/blocks.js');
@@ -6068,6 +6076,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       for (const [x, y, z] of poses) g.world.setBlock(x, y, z, 0);
       return res;
     });
+    await pageGta.close().catch(() => {});
     const cd = gta || {};
     const cadenceC = `cadence ${cd.cadence} images/s`;
     verifier('une hypercar passe de 0 à 100 km/h en moins de trois secondes de jeu, comme le dit sa fiche',
