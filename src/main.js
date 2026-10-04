@@ -25,6 +25,7 @@ import { materiauHD, geometrieHD } from './matierehd.js';
 import { Carte, MAP_COLORS } from './carte.js';
 import { toast } from './bandeau.js';
 import { Horizon, rayonHorizon } from './horizon.js';
+import { fileDeMaillage, VITESSE_CONE } from './plafond-sol.js';
 import { PALIERS, PALIER_CLE, choisirPalier, VITESSE_JET,
   ETENDUE_CLE, ETENDUE_PAR_DEFAUT, ETENDUES, palierRetenu, palierPropose, etendueRange, reglageDe, planDetail,
   PARAMS_FORCANTS } from './palier.js';
@@ -257,6 +258,8 @@ const MESH_MS_PAR_SECONDE = 720;
 const MESH_BUDGET_MAX = 22;
 // L'horloge du maillage : son propre chronomètre, appelé une fois par image.
 const dtMaillage = chronoReel(0.5);
+// et celle du déplacement, qui suit la position d'une image à l'autre (v337)
+const dtDeplacement = chronoReel(0.5);
 const REMESH_BUDGET_MS = 8;
 const REACH = 5.5;                   // block interaction distance
 const DAY_LENGTH = 600;              // seconds for a full day/night cycle
@@ -975,25 +978,74 @@ let poissons = null;
 const chunkMeshes = new Map(); // key -> { solid, water }
 let meshQueue = [];
 
-function rebuildQueue() {
-  const pcx = Math.floor(player.pos.x / CHUNK);
-  const pcz = Math.floor(player.pos.z / CHUNK);
-  // direction du regard : on sert d'abord le paysage qu'on a devant les yeux,
-  // ce qui est dans le dos peut attendre quelques frames sans que ça se voie
+// LA FILE SUIT LE DÉPLACEMENT QUAND ON VA VITE (v337) — voir plafond-sol.js.
+// La vitesse est celle du DÉPLACEMENT RÉEL (position d'une image à l'autre, en
+// temps réel, lissée sur un tiers de seconde) : c'est ce qui dit où l'on va,
+// que l'enfant conduise, vole ou soit emporté par un train — le regard, lui,
+// peut être ailleurs.
+const deplacement = { x: 0, z: 0, vx: 0, vz: 0, v: 0, pret: false };
+function suivreLeDeplacement(dt) {
+  const p = player.pos;
+  if (!deplacement.pret || dt <= 0) {
+    deplacement.x = p.x; deplacement.z = p.z; deplacement.pret = true; return;
+  }
+  const ix = (p.x - deplacement.x) / dt, iz = (p.z - deplacement.z) / dt;
+  deplacement.x = p.x; deplacement.z = p.z;
+  // une téléportation n'est pas une vitesse
+  if (ix * ix + iz * iz > 400 * 400) { deplacement.vx = deplacement.vz = deplacement.v = 0; return; }
+  const a = Math.min(1, dt / 0.33);
+  deplacement.vx += (ix - deplacement.vx) * a;
+  deplacement.vz += (iz - deplacement.vz) * a;
+  deplacement.v = Math.hypot(deplacement.vx, deplacement.vz);
+}
+// `?file=regard` rejoue l'ordre d'avant la v337 (la distance pondérée par le
+// REGARD, rien de retiré) — pour mesurer, jamais un réglage.
+//
+// ET L'ORDRE NEUF SE COUPE EN RENDU LOGICIEL, comme les ombres (v247), la
+// couche HD (v287) et le bâti lointain (v331). Il maille ce que la caméra
+// voit : en vol vers Paris la vue passe de ~20 appels de dessin à ~100, et
+// SwiftShader paie ce dessin au processeur — cadence 12 → 7 images par
+// seconde, pire image 1,2 à 1,35 s, alors que les tâches JavaScript longues
+// restent du même ordre (2,3 s contre 1,9 à 2,0 s sur dix-huit secondes) et
+// que le rendu côté JavaScript vaut 10 ms par image des deux côtés. Ce coût-là
+// ne se transpose pas à une vraie carte graphique, pour qui cent appels sont
+// moins que Paris à l'arrêt (394). `?file=cone` force l'ordre neuf : c'est ce
+// que demandent ses témoins et la sonde du plafond.
+// `__game.fileMaillage('cone' | 'regard' | null)` fait la même chose sur une
+// page déjà ouverte : un témoin compare les deux ordres sans ouvrir une page de
+// plus (deux pages vivantes divisent la cadence du banc, v220).
+let fileDemandee = new URLSearchParams(location.search).get('file');
+const fileAuRegardVoulue = () => fileDemandee === 'regard' || (fileDemandee !== 'cone' && renduLogiciel());
+let fileRapide = false;   // le régime avec lequel la file a été faite
+// Un quart d'hystérésis : une vitesse qui hésite autour du seuil ne refait pas
+// la file à chaque image.
+const regimeRapide = () => deplacement.v >= (fileRapide ? 0.75 : 1) * VITESSE_CONE;
+function fileAuRegard(pcx, pcz) {
   const visX = -Math.sin(player.yaw), visZ = -Math.cos(player.yaw);
   meshQueue = [];
   for (let dz = -RENDER_RADIUS; dz <= RENDER_RADIUS; dz++) {
     for (let dx = -RENDER_RADIUS; dx <= RENDER_RADIUS; dx++) {
       const cx = pcx + dx, cz = pcz + dz;
       if (chunkMeshes.has(World.key(cx, cz))) continue;
-      const d2 = dx * dx + dz * dz;
-      const len = Math.sqrt(d2);
-      // produit scalaire : 1 pile devant, -1 dans le dos
+      const d2 = dx * dx + dz * dz, len = Math.sqrt(d2);
       const devant = len < 1.5 ? 1 : (dx / len) * visX + (dz / len) * visZ;
       meshQueue.push({ cx, cz, d: d2 * (devant > 0.15 ? 1 : 2.5) });
     }
   }
-  meshQueue.sort((a, b) => b.d - a.d); // pop() takes the nearest
+  meshQueue.sort((a, b) => b.d - a.d);
+}
+function rebuildQueue() {
+  const pcx = Math.floor(player.pos.x / CHUNK);
+  const pcz = Math.floor(player.pos.z / CHUNK);
+  // Ce qui compte : le déplacement quand on en a un, le regard sinon — ce
+  // qui est dans le dos peut attendre quelques images sans que ça se voie.
+  fileRapide = regimeRapide();
+  if (fileAuRegardVoulue()) { fileAuRegard(pcx, pcz); return; }
+  const dir = fileRapide
+    ? { x: deplacement.vx / deplacement.v, z: deplacement.vz / deplacement.v }
+    : { x: -Math.sin(player.yaw), z: -Math.cos(player.yaw) };
+  meshQueue = fileDeMaillage({ pcx, pcz, R: RENDER_RADIUS, dir, rapide: fileRapide,
+    deja: (cx, cz) => chunkMeshes.has(World.key(cx, cz)) });
 }
 
 function disposeChunkMesh(entry) {
@@ -1272,6 +1324,12 @@ function updateChunks() {
   const pcz = Math.floor(player.pos.z / CHUNK);
   const chunkKey = pcx + ',' + pcz;
 
+  // Le régime de la file (lent / rapide) change sans changer de morceau quand
+  // l'enfant s'arrête : on la refait, sinon ce qu'elle avait laissé derrière
+  // ne se demanderait qu'au prochain morceau franchi.
+  const ecartDeplacement = Math.min(dtDeplacement(), 0.5);
+  suivreLeDeplacement(ecartDeplacement);
+  if (chunkKey === lastPlayerChunk && regimeRapide() !== fileRapide) rebuildQueue();
   if (chunkKey !== lastPlayerChunk) {
     lastPlayerChunk = chunkKey;
     rebuildQueue();
@@ -1546,10 +1604,12 @@ function updateChunks() {
   player.obstacleVehicule = (x, z, cap, x0 = x, z0 = z) => {
     if (vehicules.obstacleDevant(x, z, cap) && !vehicules.obstacleDevant(x0, z0, cap)) return true;
     if (mobilierDevant(x, z, cap) && !mobilierDevant(x0, z0, cap)) return true;
-    if (pietonDevant(x, z, cap, x0, z0)) return true;
+    // `arretDouxT` (v343) : s'arrêter devant un piéton ou au bord de l'eau
+    // n'est PAS un choc — les dégâts ne comptent jamais un piéton touché.
+    if (pietonDevant(x, z, cap, x0, z0)) { player.arretDouxT = performance.now(); return true; }
     // « Pas si l'on est déjà dedans » : une voiture tombée à l'eau doit
     // pouvoir en ressortir, sinon elle y reste pour toujours.
-    if (eauDevant(x, z, cap) && !eauDevant(x0, z0, cap)) { direLEau(); return true; }
+    if (eauDevant(x, z, cap) && !eauDevant(x0, z0, cap)) { player.arretDouxT = performance.now(); direLEau(); return true; }
     return false;
   };
   // UNE VOITURE ARRIVE SUR CE POINT ? (v259) Ce qu'un piéton regarde pour
@@ -4120,6 +4180,10 @@ function syncRemotePlayers(list) {
     rp.yaw = p.yaw || 0;
     rp.moving = p.moving;
     synchroniserVehiculeDistant(rp, p.v || null);
+    // LES DÉGÂTS DE SA VOITURE (v344) : l'ami la voit enfoncée, qui fume, en
+    // feu. `p.v.d` est court et une tablette restée sur l'ancienne version
+    // l'ignore (le receveur cède).
+    if (rp.vehicule) fun.degats.distant(rp.vehicule.mesh, (p.v && p.v.d) || null);
     rp.passager = p.p || null;
   }
   for (const [id, rp] of remotePlayers) {
@@ -4297,6 +4361,8 @@ function startNetSession(code, isHost, patience) {
       // rue lui avait donnée, et retire de SA rue la voiture qu'on a prise
       if (typeof u.peinture === 'number') p.v.c = u.peinture;
       if (u.origine) p.v.o = u.origine;
+      const d = fun.degats.versReseau(a.mesh);   // dégâts (v344), absent si intacte
+      if (d) p.v.d = d;
     }
     const pa = fun.passagerDe ? fun.passagerDe() : null;
     if (pa) p.p = { de: pa.de, s: pa.s };
@@ -7469,7 +7535,7 @@ window.__lumiere = () => ({
 // pour les tests : déclencher la proposition d'alertes sans attendre la minute
 window.__proposerNotifs = proposerNotifs;
 window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
-window.__game = { villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage, PALIERS, choisirPalier, mesurePalier, journal,
+window.__game = { fileMaillage: (m) => { fileDemandee = m; lastPlayerChunk = null; }, villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage, PALIERS, choisirPalier, mesurePalier, journal,
   RAYON_HD, BUDGET_FACADES, detailTenu, planDetail, get atlasHD() { return hd ? hd.atlas : null; },
   palierRetenu, palierPropose, etendueRange, reglageDe, PARAMS_FORCANTS,
   // CE QUE LE PALIER A RÉELLEMENT APPLIQUÉ, pas ce qu'il déclare : un témoin
@@ -7755,6 +7821,8 @@ requestAnimationFrame(() => {
     if (chauffe()) { requestAnimationFrame(pas); return; }
     try { chaufferLesFeux(); } catch (e) { console.warn('chauffe des feux', e); }
     try { chaufferLaCoque(); } catch (e) { console.warn('chauffe de la coque', e); }
+    // la fumée et les flammes des dégâts (v343) : deux matériaux neufs
+    try { fun.degats.chauffer(renderer, camera, scene); } catch (e) { console.warn('chauffe des dégâts', e); }
     chauffeFinie = true;
     requestAnimationFrame(pasNY);
   };

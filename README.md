@@ -146,7 +146,7 @@ npm install
 npm test
 ```
 
-It takes about an hour, on purpose. Ten suites run one after the other — never
+It takes about an hour, on purpose. Seventeen suites run one after the other — never
 in parallel, since two browsers fighting over four cores produce
 failures that don't exist in the game — and the waits have to outlast the
 game's own thresholds (twenty seconds of silence before a link is cut) or they

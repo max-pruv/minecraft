@@ -6,12 +6,74 @@
 
 export const NOUVEAUTES = [
   {
-    v: 343,
+    v: 350,
     titre: 'Les rues de Nice s\'élargissent',
     puces: [
       'La Promenade à deux voies',
       'Des îlots plus grands dans la ville neuve',
       'Londres garde encore plus d\'immeubles',
+    ],
+  },
+  {
+    v: 349,
+    titre: 'Les forêts tropicales',
+    puces: [
+      'L\'Amazonie est une vraie jungle',
+      'Des palmiers au Congo, à Bornéo',
+      'L\'herbe d\'un vert profond',
+    ],
+  },
+  {
+    v: 348,
+    titre: 'Un feu plus léger',
+    puces: [
+      'La fumée ne fait plus ramer',
+      'Les flammes non plus',
+    ],
+  },
+  {
+    v: 347,
+    titre: 'Les steppes',
+    puces: [
+      'L\'herbe sèche couleur de paille',
+      'Du Kazakhstan à la Mongolie',
+      'Et la Patagonie, le Sahel',
+    ],
+  },
+  {
+    v: 346,
+    titre: 'Le monde suit les voitures',
+    puces: [
+      'Le paysage arrive là où tu roules',
+      'Les rues devant toi d\'abord',
+      'Assez rapide pour foncer',
+    ],
+  },
+  {
+    v: 345,
+    titre: 'La toundra et la taïga',
+    puces: [
+      'Le Grand Nord a son lichen',
+      'Des forêts de pins en Sibérie',
+      'Et au Canada, en Finlande',
+    ],
+  },
+  {
+    v: 344,
+    titre: 'Tes amis voient les dégâts',
+    puces: [
+      'La voiture abîmée se voit en ligne',
+      'Et ses flammes aussi',
+    ],
+  },
+  {
+    v: 343,
+    titre: 'La voiture s\'abîme',
+    puces: [
+      'Un choc froisse la carrosserie',
+      'Le moteur fume, puis tombe en panne',
+      'Elle peut brûler : tu sors à temps',
+      'Le garage répare ta voiture',
     ],
   },
   {

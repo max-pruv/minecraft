@@ -20,6 +20,7 @@ const ARBRE_HD = new Set([BLOCK.LOG, BLOCK.LEAVES]);
 // le shader les reprend telles quelles.
 const NEUTRE = [0, 0, 1, 1];
 import { CHUNK, HEIGHT, REPERES_HD } from './world.js';
+import { TEINTE_HERBE_LIN as TEINTE_HERBE, TEINTE_FEUILLES_LIN as TEINTE_FEUILLES } from './terre.js';
 import { emettreMonument, cellulesDuMorceau } from './paris-monuments-hd.js';
 import { grilleSol, emettreSolContinu, emettreRubans } from './solcontinu.js';
 
@@ -159,7 +160,7 @@ class GeomBuffer {
   // les laisse intactes puisqu'elles sont déjà comprises entre 0 et 1, et le
   // rendu est identique au pixel près à celui d'avant. Seules les faces
   // réellement étirées répètent leur tuile.
-  addFace(face, x, y, z, tile, yTop, ao, w = 1, h = 1) {
+  addFace(face, x, y, z, tile, yTop, ao, w = 1, h = 1, teinte = null) {
     const base = this.positions.length / 3;
     const fusionnee = w > 1 || h > 1;
     const rect = fusionnee ? tileRect(tile) : NEUTRE;
@@ -184,7 +185,8 @@ class GeomBuffer {
       }
       this.tiles.push(rect[0], rect[1], rect[2], rect[3]);
       const shade = face.shade * (ao ? ao[i] : 1);
-      this.colors.push(shade, shade, shade);
+      if (teinte) this.colors.push(shade * teinte[0], shade * teinte[1], shade * teinte[2]);
+      else this.colors.push(shade, shade, shade);
     }
     // flip the quad diagonal when AO is stronger on the other corners,
     // so the smooth gradient follows the occlusion
@@ -262,6 +264,10 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
   // dessus ni de côté, la surface le recouvre — et la surface part dans
   // `solid`, même matériau, même tuile que le bloc qu'elle remplace.
   const grille = world.sansSolContinu ? null : grilleSol(world, cx, cz, CHUNK);
+  // LES TEINTES DES CLIMATS (v345) : l'herbe (son dessus) et les feuilles
+  // d'une colonne de toundra ou de taïga prennent la couleur de leur climat.
+  // Null sur presque tout le monde, payé d'une question par morceau.
+  const teintes = world.teintesDuMorceau ? world.teintesDuMorceau(cx, cz) : null;
   const couvertes = grille ? grille.couvertes : null;
   const hauts = grille ? grille.hauts : null;
 
@@ -383,10 +389,12 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
           // La face d'un bloc de monument part dans le LOIN : de près, le
           // modèle d'auteur la remplace ; de loin, elle est le monument.
           const facadeHd = monumentHd || (hd && ((face.slot === 1 && FACADE_HD.has(id)) || ARBRE_HD.has(id) || toitHd));
+          const it = teintes && ((id === BLOCK.GRASS && face.slot === 0) || id === BLOCK.LEAVES) ? teintes[x + z * CHUNK] : 0;
+          const teinte = it ? (id === BLOCK.LEAVES ? TEINTE_FEUILLES[it] : TEINTE_HERBE[it]) : null;
           const cle = (bloqueV || !uniforme)
             ? `@${u},${v}`
-            : `${id}|${yTop}|${ao ? ao[0] : '-'}|${allume ? 'A' : ''}|${monumentHd ? 'M' : ''}`;
-          masque[u + v * nU] = { cle, id, yTop, ao, tile: BLOCK_INFO[id].tiles[face.slot], isWater, allume, x, y, z, solHD, facadeHd };
+            : `${id}|${yTop}|${ao ? ao[0] : '-'}|${allume ? 'A' : ''}|${monumentHd ? 'M' : ''}|${it}`;
+          masque[u + v * nU] = { cle, id, yTop, ao, tile: BLOCK_INFO[id].tiles[face.slot], isWater, allume, x, y, z, solHD, facadeHd, teinte };
           vide = false;
         }
       }
@@ -428,7 +436,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
           const buffer = cel.isWater ? water
             : cel.facadeHd ? (cel.allume ? platLumineux : plat)
               : (cel.allume ? lumineux : solid);
-          buffer.addFace(face, cel.x, cel.y, cel.z, cel.tile, cel.yTop, cel.ao, w, h);
+          buffer.addFace(face, cel.x, cel.y, cel.z, cel.tile, cel.yTop, cel.ao, w, h, cel.teinte);
         }
       }
     }
@@ -537,7 +545,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
     }
   }
 
-  const surface = grille ? emettreSolContinu(solid, world, cx, cz, CHUNK, grille) : null;
+  const surface = grille ? emettreSolContinu(solid, world, cx, cz, CHUNK, grille, teintes) : null;
   // les tabliers des ponts et le marquage des routes (v300), avec la surface
   // Les rubans (marquage, tabliers, rails) sont de la géométrie pure : ils
   // s'émettent même sans sol continu (`?solcontinu=0`), sinon les rails

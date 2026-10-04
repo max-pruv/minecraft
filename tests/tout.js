@@ -34,6 +34,7 @@ const SUITES = [
   'carteMonde.js',   //  0 min 34 s
   'sauvegarde.js',   //  0 min 34 s
   'plafond.js',      //  0 min 51 s
+  'degats.js',       //  0 min 55 s (v343)
   'visio.js',        //  1 min 03 s
   'maj.js',          //  1 min 34 s
   'realisme.js',     //  1 min 37 s
@@ -92,6 +93,7 @@ const GARDIENS = {
   // eu le temps de bâtir : `monte.js` l'éprouve en vol, `carte.js` garde le
   // rendu, `plafond.js` garde le sol qu'il lit.
   'src/horizon.js': ['monte.js', 'carte.js', 'plafond.js'],
+  'src/plafond-sol.js': ['monte.js'],
   // LE PALIER DE L'APPAREIL (v284). Il décide la distance d'affichage, la
   // profondeur de file du mailleur et la vitesse des jets : `monte.js` garde le
   // trou devant soi et cette vitesse, `maj.js` la préparation et l'accueil — et
@@ -148,7 +150,7 @@ const GARDIENS = {
   // dans monte.js (onglet, vignettes, pose).
   'src/batiments.js': ['monte.js'],
   'src/nice.js': ['carte.js', 'carteMonde.js', 'plafond.js'],
-  'src/nice-v340.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // la Nice d'avant le kit, sous ce qu'un enfant a bâti (v343)
+  'src/nice-v340.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // la Nice d'avant le kit, sous ce qu'un enfant a bâti (v350)
   'src/carte.js': ['carte.js', 'carteMonde.js', 'manhattan.js'],
   // La capitale : son relief, son métro et ses bâtiments ouverts. Elle touche
   // au sol de la carte, donc le témoin du plafond la surveille aussi.
@@ -174,7 +176,7 @@ const GARDIENS = {
   'src/passants.js': ['realisme.js', 'monte.js', 'manhattan.js'],
   // Les poissons : la vie de la mer se prouve au même endroit.
   'src/poissons.js': ['monte.js'],
-  'src/animals.js': ['monte.js', 'manhattan.js'],
+  'src/animals.js': ['monte.js', 'manhattan.js', 'degats.js'],
   'src/montures.js': ['monte.js', 'manhattan.js'],
   'src/avions.js': ['monte.js', 'carteMonde.js'],
   // La cadence de ménage décide si le monde est peuplé : elle se voit dans la
@@ -185,10 +187,13 @@ const GARDIENS = {
   // Le cadran de cap lit le registre et s'affiche aux commandes : la monte le garde.
   'src/cap.js': ['monte.js', 'carte.js'],
   'src/gps.js': ['carte.js'],
-  'src/fun.js': ['monte.js', 'carte.js', 'reglages.js', 'reseau.js'],
+  'src/fun.js': ['monte.js', 'carte.js', 'reglages.js', 'reseau.js', 'degats.js'],
+  // LES DÉGÂTS DE LA VOITURE (v343) : la règle pure et ce qui se voit.
+  'src/degats.js': ['degats.js'],
+  'src/degats3d.js': ['degats.js'],
   // Le hub : presque toute livraison y passe. Deux suites larges le couvrent —
   // la carte traverse l'interface entière, la monte traverse la boucle de jeu.
-  'src/main.js': ['carte.js', 'monte.js', 'washington.js', 'manhattan.js'],
+  'src/main.js': ['carte.js', 'monte.js', 'washington.js', 'manhattan.js', 'degats.js'],
   'index.html': ['carte.js', 'reglages.js', 'maj.js', 'manhattan.js'],
 
   // --- v195 : TRENTE FICHIERS MANQUAIENT, et deux d'entre eux étaient des
