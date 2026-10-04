@@ -1,8 +1,8 @@
 # Ce qui est en cours
 
-- [ ] **AU PORTAIL DE LA v340 (la conduite), LES ROUGES RESTANTS SONT DÉJÀ
+- [ ] **AU PORTAIL DE LA v343 (la conduite), LES ROUGES RESTANTS SONT DÉJÀ
   CONNUS, rejoués SEULS des deux côtés.** `monte.js` « l'écran ne se fige pas
-  en arrivant sur une ville » (vol du chasseur, chemin que la v340 ne touche
+  en arrivant sur une ville » (vol du chasseur, chemin que la v343 ne touche
   pas) : branche 1 283 ms · 7,2 % et 1 183 · 8,7 %, `origin/main` 1 050 · 5,9 %
   et 1 150 · 6,4 % (ordre alterné), et rouge à chaque `monte.js` complet des
   deux côtés (3 417 ms · 27,1 % sur `origin/main`). `monte.js` « se

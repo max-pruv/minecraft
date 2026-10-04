@@ -1,4 +1,4 @@
-// LA CONDUITE DE LA VOITURE DE L'ENFANT (conduite-physique, v340).
+// LA CONDUITE DE LA VOITURE DE L'ENFANT (conduite-physique, v343).
 //
 // Max (4 octobre 2026) : « une grosse refonte de la façon de conduire… comme
 // GTA : des véhicules qui tournent de manière naturelle, des accélérations
@@ -48,7 +48,7 @@ export const CLASSES = {
   hypercar: { vmax: 55, a0: 14.0, mu: 26 },
 };
 
-// LE PLAFOND DU SOL, MESURÉ (v340) : le trou devant soi — la distance au
+// LE PLAFOND DU SOL, MESURÉ (v343) : le trou devant soi — la distance au
 // premier morceau non maillé dans le cône d'avance, critère de la v229 —, à
 // la distance d'affichage de l'iPad (rr=12), le déplacement en TEMPS RÉEL
 // (la position avancée à chaque image : laissée au joueur, `dt` borné l'aurait

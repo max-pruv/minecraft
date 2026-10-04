@@ -2219,7 +2219,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     });
     const cit = alluresModeles['berline-citadine'] || {}, jes = alluresModeles['koenigsegg-jesko.glb'] || {};
     verifier('une hypercar va plus vite qu\'une citadine, et la citadine plus vite qu\'avant',
-      // DEPUIS LA v340 L'ACCÉLÉRATION S'ESSOUFFLE VERS LA POINTE : après une
+      // DEPUIS LA v343 L'ACCÉLÉRATION S'ESSOUFFLE VERS LA POINTE : après une
       // seconde et demie de jeu aucune des deux n'est à sa pointe (14,4 et 23,4
       // mesurés), et le rapport des VITESSES du moment ne dit plus celui des
       // classes. Le rapport des POINTES se lit dans l'allure que le jeu leur
@@ -4509,7 +4509,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         for (const a of [...g.animalManager.animals]) if (a.def.key === 'voiture' || a.def.pilote) { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); }
         g.player.keys.clear(); g.player.touchMove.f = 0; g.player.touchMove.s = 0;
         g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined; g.player.flying = false;
-        // LA PISTE S'ÉLARGIT AVEC LA v340 : la voiture prend sa vitesse plus
+        // LA PISTE S'ÉLARGIT AVEC LA v343 : la voiture prend sa vitesse plus
         // progressivement, roule plus loin, et en lâchant après le virage elle
         // file en roue libre — le frein moteur, plus le frein franc d'avant.
         // Huit blocs de demi-largeur la faisaient sortir de la dalle de côté.
@@ -4636,7 +4636,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       // puis on relève — jamais un délai fixe.
       const vitesses = [];
       const t0 = Date.now();
-      // et depuis la v340 elle la prend comme une vraie voiture — vite au
+      // et depuis la v343 elle la prend comme une vraie voiture — vite au
       // départ, plus lentement vers la pointe : cinq secondes de JEU pour une
       // citadine, donc bien plus de montre au banc. Borné, jamais un délai fixe.
       while (Date.now() - t0 < 45000) { const r = await lire(); if (r.v >= prep.max * 0.9) break; await dormirIci(200); }
@@ -4654,7 +4654,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       // borné, jamais un délai fixe.
       let apresLacher = await lire();
       const t2 = Date.now();
-      // la roue libre (frein moteur et air, v340) dure quelques secondes de jeu
+      // la roue libre (frein moteur et air, v343) dure quelques secondes de jeu
       while (Date.now() - t2 < 30000) { apresLacher = await lire(); if (apresLacher.v < prep.max * 0.3) break; await dormirIci(200); }
       // on descend : les boutons reviennent
       const apres = await tab.evaluate(async () => {
@@ -5938,7 +5938,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !nature.err && nature.auVolant && nature.d >= 30,
       `barre 30 blocs (mesuré désarmé : 0,4 et 17,9 · armé : 59 et 116) · ${JSON.stringify(nature)}`);
 
-    // ---- LA CONDUITE À LA GTA (v340) ----------------------------------------
+    // ---- LA CONDUITE À LA GTA (v343) ----------------------------------------
     // Max : « des véhicules qui tournent de manière naturelle, des accélérations
     // cohérentes, des vitesses cohérentes — aujourd'hui les véhicules sont trop
     // lents —, des collisions cohérentes ». Une dalle de pierre loin de tout, une
