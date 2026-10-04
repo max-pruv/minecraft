@@ -1,5 +1,43 @@
 # Ce qui est en cours
 
+- [ ] **LES DÉGÂTS (v343) : CE QUI RESTE, DÉCLARÉ.**
+  - **Le coût sur l'iPad n'est pas mesuré.** Au banc : enfoncer 12 ms au
+    premier choc, 6 ensuite ; pendant un feu, jusqu'à cinquante-quatre carrés
+    de fumée et de flammes, donc autant d'appels de dessin. À mesurer sur la
+    tablette (`?diag=1`, une voiture qu'on fait brûler) ; le levier est
+    `MAX_FUMEE`/`MAX_FLAMMES` (degats3d.js), ou un seul `Points`.
+  - **La carcasse n'est vue que par celui qui conduisait.** Chez l'ami, la
+    voiture disparaît avec le champ `p.v` dès que le conducteur est déposé.
+  - **Les voitures de la rue ne s'abîment pas** — seule celle de l'enfant.
+  - **Le passage au garage répare** (`rangerAuGarage` → `reparer`) : le témoin
+    éprouve `reparer` directement, pas le trajet complet garage compris.
+  - **Le contrat avec la physique** (`player.choc`, `player.physiqueLitEtat`)
+    attend la session « conduite-physique » : tant qu'elle ne publie rien, le
+    repli de vitesse décide, et les effets s'appliquent par `player.boost`.
+  - **Les avions ne s'abîment pas** (`pilote` est écarté) : une décision, pas
+    un oubli — un atterrissage manqué n'a pas de « choc » dans `player.js`.
+
+- [ ] **AU PORTAIL DE LA v343 (les dégâts), CINQ SUITES ROUGES — aucune causée
+  par la livraison, double mesure faite (chaque suite rejouée SEULE sur la
+  branche, puis sur `origin/main` v339 dans un arbre détaché).**
+  - `visio.js` « pendant l'appel la radio parle plus bas » (avant 0,0000) :
+    rouge au portail seulement, VERTE seule des deux côtés — intermittence.
+  - `maj.js` : rouge des deux côtés, jamais le même témoin — portail : le
+    loader d'installation ; branche seule : « corps, programmes et fond de
+    carte » (personnages 6/9, déjà déclaré) et le flou ; `origin/main` seul :
+    le loader et le palier (période médiane 1 817 ms, machine chargée).
+  - `manhattan.js` : le délai de la ligne 282 tue la suite DES DEUX CÔTÉS
+    rejouée seule (v269). Au portail, « le taxi roule » (1,06 bloc) : sonde à
+    part de la seule scène du taxi, trois essais — ZÉRO choc compté, santé 1,
+    allure de classe intacte (`boost` 4,4) ; il rampe à une image toutes les
+    trois secondes (v259). Les dégâts n'y sont pour rien, par la mesure.
+  - `monte.js` : « l'écran ne se fige pas en arrivant sur une ville » et « se
+    téléporter… ne compile plus » (14 à New York, chauffe expirée) — les deux
+    rouges sur `origin/main` rejoué seul (plus les passants de Rome).
+  - `reseau.js` : « un hôte sans courtier est trouvé » et « il le REJOINT » —
+    rouges à l'identique sur `origin/main` seul ; la branche seule rend « deux
+    enfants sans courtier du tout ». Famille des parties par le nuage,
+    intermittente, en production.
 - [x] **DEUX OU TROIS PROGRAMMES SE COMPILENT ENCORE À L'ARRIVÉE À PARIS
   (mesuré en v306) — ÉLARGI À TOUTES LES VILLES ET FAIT EN v319.**
   `sonde-programmes-villes.cjs` (seize lieux, page neuve par lieu) rendait sur

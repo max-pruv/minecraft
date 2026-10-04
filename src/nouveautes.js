@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 343,
+    titre: 'La voiture s\'abîme',
+    puces: [
+      'Un choc froisse la carrosserie',
+      'Le moteur fume, puis tombe en panne',
+      'Elle peut brûler : tu sors à temps',
+      'Le garage répare ta voiture',
+    ],
+  },
+  {
     v: 342,
     titre: 'Les monuments du monde grandissent',
     puces: [

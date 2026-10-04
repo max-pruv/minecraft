@@ -1,4 +1,4 @@
-// LES DÉGÂTS DE LA VOITURE QUE L'ENFANT CONDUIT — la partie PURE (v340).
+// LES DÉGÂTS DE LA VOITURE QUE L'ENFANT CONDUIT — la partie PURE (v343).
 //
 // Max, 4 octobre 2026 : « Comme dans GTA, quand tu crashes ton véhicule, il
 // s'abîme, tu vois vraiment les défauts de carrosserie… La voiture perd son

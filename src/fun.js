@@ -239,7 +239,7 @@ export function initFun(ctx) {
   // montables alors que le bestiaire s'était étoffé.
   const montable = (a) => !!(a && a.def && a.def.montable && !a.baby && !a.horsService);
 
-  // LES DÉGÂTS DE LA VOITURE (v340) — tout vit dans degats.js (la règle) et
+  // LES DÉGÂTS DE LA VOITURE (v343) — tout vit dans degats.js (la règle) et
   // degats3d.js (ce qui se voit) ; ici, quatre crochets : chaque image au
   // volant, la descente, le garage qui répare, et chaque image pour la fumée.
   // `retirer` : une carcasse s'en va (v238 : ce qu'on retire se rend).
@@ -277,7 +277,7 @@ export function initFun(ctx) {
       // régime pour toujours (v264, le même piège que les flammes).
       moteurCoupe(); radioCoupe();
       quitte.montee = false;
-      degats.descend();   // dégâts (v340) : plus d'état publié à pied
+      degats.descend();   // dégâts (v343) : plus d'état publié à pied
       if (!rangerAuGarage(quitte)) toast('🐴 Tu es descendu·e.', 0xd8c9a4);
       return;
     }
@@ -955,7 +955,7 @@ export function initFun(ctx) {
       x: monture.pos.x, y: monture.pos.y, z: monture.pos.z, yaw: monture.yaw,
     });
     monture.garage = g.id;
-    // LE GARAGE RÉPARE (v340) : une voiture garée ressort neuve.
+    // LE GARAGE RÉPARE (v343) : une voiture garée ressort neuve.
     degats.reparer(monture.mesh);
     toast(`🅿️ ${nom} est garée — tu la retrouveras ici, même demain.`, 0xa8d8ff);
     emojiBurst(['🅿️', '🚗'], 8);
@@ -1032,7 +1032,7 @@ export function initFun(ctx) {
       return;
     }
     player.boost = allureMonture(riding);
-    // DÉGÂTS (v340) : le choc, l'allure réduite, la direction qui tire ; et
+    // DÉGÂTS (v343) : le choc, l'allure réduite, la direction qui tire ; et
     // quand le feu a pris, passé le temps de lire le bandeau, on DÉPOSE
     // l'enfant à côté de sa voiture, debout et sain et sauf.
     if (degats.auVolant(riding, dt) === 'sortir') {
@@ -1308,7 +1308,7 @@ export function initFun(ctx) {
       loadSigns(ctxKey);
     }
     updateRide(dt);
-    degats.update(dt, player.camera, animalManager.animals);   // fumée, feu, carcasses (v340)
+    degats.update(dt, player.camera, animalManager.animals);   // fumée, feu, carcasses (v343)
     updateBord();
     updatePassager();
     updateTargetButtons(dt);
@@ -1352,7 +1352,7 @@ export function initFun(ctx) {
     // La monture que l'enfant est en train de conduire (ou null) : main.js
     // y assied son avatar quand la fiche déclare un `siege` (v249).
     montureConduite: () => riding,
-    // les dégâts de la voiture (v340) : main.js les chauffe et les envoie aux
+    // les dégâts de la voiture (v343) : main.js les chauffe et les envoie aux
     // amis, les témoins les lisent
     degats,
     // Chez qui l'enfant est passager (ou null) : la position réseau

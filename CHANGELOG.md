@@ -20,6 +20,44 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v343 — La voiture s'abîme
+
+**Pourquoi.** Max : « Comme dans GTA, quand tu crashes ton véhicule, il
+s'abîme, tu vois vraiment les défauts de carrosserie… La voiture perd son sens,
+à un moment elle ne marche plus, potentiellement elle prend feu, on se retrouve
+à sortir de la voiture. » Jusqu'ici une voiture lancée à pleine vitesse dans un
+mur s'arrêtait net et repartait comme neuve : rien ne se voyait, rien ne
+comptait.
+
+**Ce que ça change.** La voiture que l'enfant conduit a une santé, zone par
+zone (avant, arrière, flancs, toit). Un choc enfonce la tôle là où il a eu
+lieu : le nez se froisse, le pare-chocs s'affaisse, les phares s'éteignent, le
+pare-brise s'étoile, l'aileron se détache. Le moteur touché fume (gris, puis
+noir), la voiture va moins vite, la direction tire du côté abîmé ; sous un
+seuil elle cale et ne repart plus. Sous le seuil critique elle prend feu — des
+flammes orange, aucune lampe de plus —, le jeu dit « descends vite ! », et
+trois secondes et demie plus tard l'enfant est déposé à côté, debout, sain et
+sauf. La voiture brûle quatorze secondes, puis reste une carcasse noire qui
+fume, qu'on ne peut plus prendre, et qui s'en va au bout d'une minute et demie.
+Une voiture neuve est intacte ; garer la sienne au garage la répare. Personne
+n'est jamais blessé, et s'arrêter devant un piéton ou au bord de l'eau n'est
+jamais un choc.
+
+**Ce qui le prouve.** Une suite neuve, `tests/degats.js` (une minute) : sept
+témoins de la règle sous node (la santé suit la force, les zones à tous les
+caps, la panne, le feu, le repli de détection, le réseau) et treize dans le
+jeu, tous vérifiés ROUGES sur `origin/main`. Les plus importants : foncer dans
+un mur à 20,5 blocs/s abîme l'AVANT ; les sommets lus dans la géométrie
+s'enfoncent de 0,9 à l'avant et de 0 à l'arrière ; l'autre voiture du même
+modèle garde la géométrie commune, intacte ; pleins gaz, la voiture en panne
+ne bouge plus ; le feu dépose l'enfant à 2,4 blocs, hors de tout mur ; ni
+lampe ni programme de shader de plus (94 → 96 si l'on désarme la chauffe,
+96 → 96 armée) ; la carcasse partie rend ses géométries clonées au pilote.
+Enfoncer coûte 12 ms au premier choc, 6 ensuite, rien par image. Captures de
+jour et de nuit : neuve, avant enfoncé qui fume, flanc, feu, carcasse.
+
+---
+
 ## v342 — Les monuments du monde dominent leurs villes
 
 **Pourquoi.** La v335 a remis Paris à l'échelle de son ciel, et la même mesure,
