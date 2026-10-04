@@ -1013,6 +1013,21 @@ Une règle.
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
 
+## L'I-45 Dallas–Houston (v335) — un pays ondulé se traverse par un chemin, pas par deux coudes
+
+Une règle.
+
+- **QUAND LE MEILLEUR CANDIDAT FRÔLE UNE BARRE, ON ÉLARGIT LA FORME DES
+  CANDIDATS, PAS LA BARRE.** Deux points intermédiaires rendaient au mieux
+  9,14 de déblai pour neuf permis — la règle de l'Atomium (v311) : on ne
+  monte pas la barre. Entre Dallas et Houston les croupes se suivent tous les
+  quelques centaines de blocs, et deux coudes ne peuvent pas les éviter
+  toutes. La sonde tire désormais des chemins lissés (`MARCHE` : un point
+  tous les deux cents blocs, écart et virage bornés, tirage à graine fixe) :
+  cinq admissibles sur vingt-quatre mille, déblai 7,7. Et elle dit OÙ le
+  déblai bute (près d'une porte ou au milieu) : c'est ce qui a montré que le
+  défaut n'était pas l'entrée de Houston.
+
 ## L'A1 Nord Milan–Bologne (v333) — une sonde juge les points tels que le registre les écrit
 
 Une règle.
