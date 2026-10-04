@@ -1045,8 +1045,13 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // Borne basse 3,0 : le rapprochement anti-mur peut raccourcir le recul
     // (plancher à 3,2) si un obstacle traîne derrière le parc — c'est un
     // comportement voulu, pas un défaut.
+    // ET LE PLAFOND SUIT LA VITESSE DEPUIS LA v337 : la caméra recule jusqu'à
+    // 1,32 fois le recul de la fiche quand la voiture roule (6,4 → 8,45). Le
+    // portail de la v337 l'a rendue rouge à 7,07 sur la borne fixe de 6,5,
+    // une voiture qui roulait encore — le plafond se calcule, il ne se recopie
+    // pas (v269).
     verifier('au volant, la caméra suit la voiture de derrière, comme GTA',
-      poursuite.recul > 3.0 && poursuite.recul < 6.5 && poursuite.devant < 0,
+      poursuite.recul > 3.0 && poursuite.recul < 6.4 * 1.32 + 0.1 && poursuite.devant < 0,
       `${poursuite.recul} blocs en retrait (devant=${poursuite.devant})`);
     verifier('et elle prend de la hauteur pour voir la route par-dessus le toit',
       poursuite.hauteur > 1.2 && poursuite.hauteur < 3, `${poursuite.hauteur} bloc`);
@@ -5545,7 +5550,10 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('une voiture qui dérape fait crisser ses pneus',
       !S.err && S.son && S.son.rapportCrisse > 10, msg);
     verifier('un choc secoue la caméra et s\'entend',
-      !S.err && S.son && S.secoue.max > 0.05 && S.calme.max < 0.02
+      // le calme n'est pas zéro : la caméra rattrape encore son recul d'un
+      // demi-bloc après l'arrêt (0,018 mesuré au portail). Ce qui sépare les
+      // deux, c'est le rapport : 0,25 contre 0 sur l'ancien code.
+      !S.err && S.son && S.secoue.max > 0.12 && S.secoue.max > 3 * S.calme.max
         && S.son.piqueChoc > 2 * S.son.piqueAvant, msg);
     verifier('dos à un mur, la caméra reste du côté de la voiture',
       !S.err && S.mur.libre, msg);
