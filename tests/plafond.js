@@ -291,8 +291,10 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // c'est ce que `new World({ v308: true })` doit rendre au bloc près (v309).
 // v349 : l'empreinte des blocs et des tampons de 490 morceaux (morceaux-temoin.mjs),
 // relevée sur la v348 ; et le travail d'un morceau, barre au milieu des deux mesures.
-const EMPREINTE_MORCEAUX_V348 = 'à relever';
-const BARRES_TRAVAIL = {};
+const EMPREINTE_MORCEAUX_V348 = '0d956b3d988d3d44176424ff2ab7e3860cefbd4e10f8bfcfc1fd15d906b9560a';
+// lectures par morceau, v348 → v349 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
+// Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
+const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
 const EMPREINTE_V308_RELIEF = 'e92db9d7ae703856de1cfb7e00dc4abce156c490';
 const EMPREINTE_AVANT_BLOCS = 'b402b639d759d0586f32149aac4d3165edf0d10d';
 
@@ -1686,9 +1688,9 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const { empreinteMorceaux, travailParMorceau } = await import('./morceaux-temoin.mjs');
     const t0 = Date.now();
     const e = await empreinteMorceaux('../src');
-    verifier('engendrer et mailler moins cher ne change ni un bloc ni un sommet (490 morceaux, neuf lieux)',
-      e.empreinte === EMPREINTE_MORCEAUX_V348 && e.morceaux === 490 && e.route > 0,
-      `${e.empreinte.slice(0, 16)} pour ${EMPREINTE_MORCEAUX_V348.slice(0, 16)}, ${e.morceaux} morceaux, ${e.route} colonnes de route lues, ${Date.now() - t0} ms`);
+    verifier('engendrer et mailler moins cher ne change ni un bloc ni un sommet (490 morceaux, neuf lieux, toutes les routes)',
+      e.empreinte === EMPREINTE_MORCEAUX_V348 && e.morceaux === 490 && e.route > 0 && e.talus > 0,
+      `${e.empreinte.slice(0, 16)} pour ${EMPREINTE_MORCEAUX_V348.slice(0, 16)}, ${e.morceaux} morceaux, ${e.route} colonnes de route lues, ${e.talus} de talus, ${Date.now() - t0} ms`);
     const tr = await travailParMorceau('../src');
     verifier('un morceau de ville coûte moins de lectures de relief et de blocs que sur la v348',
       Object.entries(BARRES_TRAVAIL).every(([v, b]) => tr[v].reliefs <= b.reliefs && tr[v].lus <= b.lus),

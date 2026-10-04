@@ -25,17 +25,17 @@ async function charger(src) {
   const { World, CHUNK } = await import(src + '/world.js');
   const { buildChunkTampons } = await import(src + '/mesher.js');
   const { positionDe } = await import(src + '/mondes.js');
-  const { routeEn } = await import(src + '/routes.js');
+  const { routeEn, segmentsDeRoute, pointA } = await import(src + '/routes.js');
   const lieu = (nom, pos) => {
     if (pos) return pos;
     if (nom === 'a1') { const P = positionDe('paris'), L = positionDe('lille'); return { x: (P.x + L.x) / 2, z: (P.z + L.z) / 2 }; }
     const p = positionDe(nom); return { x: p.x, z: p.z };
   };
-  return { World, CHUNK, buildChunkTampons, routeEn, lieu };
+  return { World, CHUNK, buildChunkTampons, routeEn, segmentsDeRoute, pointA, lieu };
 }
 
 export async function empreinteMorceaux(src) {
-  const { World, CHUNK, buildChunkTampons, routeEn, lieu } = await charger(src);
+  const { World, CHUNK, buildChunkTampons, routeEn, segmentsDeRoute, pointA, lieu } = await charger(src);
   const h = crypto.createHash('sha256');
   let morceaux = 0, route = 0;
   for (const [nom, pos] of LIEUX) {
@@ -66,7 +66,24 @@ export async function empreinteMorceaux(src) {
       }
     }
   }
-  return { empreinte: h.digest('hex'), morceaux, route };
+  // Et TOUTES les routes du registre, en travers, tous les six blocs : les
+  // talus les plus larges (jusqu'à DEBLAI_MAX / TALUS_PENTE au-delà de
+  // l'emprise, douze blocs et demi) sont rares, et les quarante-neuf morceaux
+  // de l'A1 n'en contiennent pas un — une borne de `routeEn` cassée à dix
+  // blocs y passait inaperçue. Ici, elle se voit.
+  new World();   // branche le relief des routes
+  let talus = 0;
+  for (const seg of segmentsDeRoute()) {
+    for (let s = 0; s < seg.longueur; s += 6) {
+      const p = pointA(seg, s);
+      for (let d = -24; d <= 24; d++) {
+        const r = routeEn(Math.round(p.x - p.fz * d), Math.round(p.z + p.fx * d));
+        h.update(r ? `${r.piece}:${r.cote}` : '-');
+        if (r && r.piece === 'talus') talus++;
+      }
+    }
+  }
+  return { empreinte: h.digest('hex'), morceaux, route, talus };
 }
 
 export async function travailParMorceau(src, noms = ['paris', 'rome', 'londres']) {
