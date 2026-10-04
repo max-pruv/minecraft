@@ -940,6 +940,16 @@ La dette déclarée par la v326, remboursée. Trois règles.
   de la v332 au calcul près. Quand on ne peut pas trancher sur deux
   passages, on retire la cause possible par construction.
 
+- **`node --check` NE VOIT RIEN SUR UN `.js` DE CE DÉPÔT.** Mon rebase a
+  recollé `nouveautes.js` en perdant une accolade : le journal ne se lisait
+  plus (« Unexpected token ':' », `maj.js`), et `node --check
+  src/nouveautes.js` rendait ZÉRO. Vérifié sur un fichier à l'erreur
+  évidente : un `.js` hors d'un package `"type": "module"` passe, le même en
+  `.mjs` est refusé. Tout « `node --check` OK » écrit sur un `src/*.js` était
+  aveugle. Ce qui prouve qu'un module se charge, c'est de l'IMPORTER
+  (`node -e "import('./src/x.js')"`), ou de le vérifier sous un nom `.mjs` —
+  et après un rebase qui a recollé un fichier de données, on l'importe.
+
 ## Des voitures dans toutes les rues (v322) — un plafond par circuit rend la densité inverse de la longueur
 
 Max : « lance sur toutes les villes, pas juste celle-là ». Quatre règles.
