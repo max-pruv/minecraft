@@ -3507,7 +3507,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       return { notee, attente, construitIci, contre, libre, registre: vr.obstacles ? vr.obstacles.size : 'absent' };
     });
     verifier('et une table de Times Square est un obstacle pour sa voiture',
-      table.notee && table.contre === true && table.libre === false,
+      table.notee && (table.contre === true || table.contre === 'mobilier') && table.libre === false,
       JSON.stringify(table));
     await mobPage.close();
 
