@@ -30,6 +30,16 @@
   rouge des deux côtés (`#ride-btn` caché, une bête). `carte.js` « la flèche
   du GPS pointe vers la destination » rouge au portail, VERTE rejouée seule
   sur la branche ET sur `origin/main` : intermittence à démonter.
+  Rebasé sur la v330, trois rouges de `monte.js` VONT ET VIENNENT d'un passage
+  à l'autre, jamais deux fois : « se téléporter dans une ville ne compile plus
+  de programmes » (chauffe de New York expirée, 163/321 au portail, 68/320 sur
+  `origin/main` rejoué seul — deux programmes `physical` de Manhattan, pas le
+  Lambert du paysage), « les passants ne sont plus plantés au milieu de la
+  chaussée » (Rome 4/18, portail seul), « le bouton Conduire s'offre tout
+  seul » (branche seule, le bouton disait « Monter à bord » : un métro à
+  portée). Preuve STRUCTURELLE (v291) : sur le banc, le bâti lointain est coupé
+  (rendu logiciel) et la livraison n'y ajoute qu'un test « est-ce une ville ? »
+  par sommet du paysage lointain (+0,05 µs).
 - [ ] **AU PORTAIL DE LA v319, LES DEUX ROUGES SONT DES DETTES DÉJÀ
   DÉCLARÉES.** `manhattan.js` « le trou enlève aussi la géométrie visible de la
   façade » 17 102 → 51 734 (mêmes nombres qu'au tableau plus bas) ; `monte.js`
