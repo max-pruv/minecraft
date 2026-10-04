@@ -498,6 +498,7 @@
   second dépend du premier) — REJOUÉE SEULE : branche ces deux-là, `origin/main`
   v318 la libération (programmes 17/25). Même intermittence de préparation des
   deux côtés, déjà déclarée (v267).
+<<<<<<< HEAD
 - [ ] **LE PORTAIL DE LA v338 (Madrid–Barcelone) : UN SEUL ROUGE, DÉJÀ
   MESURÉ DES DEUX CÔTÉS.** `carteMonde.js` (l'AP-2 comprise), `plafond.js`
   (joint : 0 trou sur 136 879 points), `maj.js`, `carte.js` verts.
@@ -510,6 +511,26 @@
   (v327). `monte.js` : la téléportation (chauffe de New York expirée, 44/321)
   et l'arrivée figée (3 850 ms · 30 %), rouges à l'identique des deux côtés
   (v332).
+=======
+- [ ] **LES PORTAILS DE LA v337 (les arbres et les falaises), QUATRE FOIS.**
+  `plafond.js` (les quatre témoins neufs), `carteMonde.js`, `metro.js`,
+  `washington.js` verts à chaque passage. `maj.js` : le témoin « corps,
+  programmes et fond de carte » rouge 2 fois sur 2 sur la branche rejouée
+  SEULE (personnages 7/9, 8/9) et 1 sur 2 sur `origin/main` (v332) — la
+  seconde passe du paysage lointain (2 ms par image) tournait aussi à
+  l'accueil : elle ne passe plus qu'en jeu (`raffinerPermis`), et le témoin
+  est resté rouge ensuite (6/9) : c'est l'intermittence déclarée, pas la
+  livraison. Le palier, vert seul des deux côtés (charge du portail). Au
+  troisième portail, un VRAI rouge, à moi : `nouveautes.js` recollé au rebase
+  sans son accolade, et `node --check` muet (règle écrite dans `CLAUDE.md`) ;
+  corrigé, `maj.js` VERTE au quatrième. `manhattan.js` : le délai de la
+  ligne 282 (v269). `monte.js` : l'écran figé (3 833 à 4 250 ms, ~50 %, des
+  deux côtés), « se téléporter ne compile plus de programmes » (zéro
+  programme neuf dans les cinq villes, Paris à huit images — v326), et une
+  fois « la monoplace ralentit assez » (9,0 pour une barre à 9 : un minimum
+  échantillonné toutes les 300 ms sur une allure qui est une fonction de
+  l'heure, v279 et v305), vert à tous les autres passages.
+>>>>>>> 01ead1e (TASKS : les portails de la v337)
 - [ ] **LE PORTAIL DE LA v336 (Dallas–Houston), DEUX FOIS.** Le premier a
   trouvé un VRAI trou (le joint du premier pont de l'I-45, dans un coude :
   402 points), corrigé dans `rubansDans` ; le second : `parishd.js`,
