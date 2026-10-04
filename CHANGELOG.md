@@ -20,6 +20,29 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v337 — L'autoroute Lyon–Marseille
+
+**Pourquoi.** Lyon–Marseille est l'autoroute du Soleil, la route des vacances
+vers la Méditerranée. Le TGV suit tout l'axe direct : il fallait un côté et
+s'y tenir. Et deux corridors plus simples sur le papier se sont révélés sans
+tracé à cette livraison : Hambourg–Cologne et Toronto–Montréal, où les villes
+sont assises sous leur pays du côté qui regarde l'autre.
+
+**Ce que ça change.** L'A7 relie Lyon à Marseille : 1 419 blocs de deux fois
+deux voies, trois ponts sur des vallons, vingt voitures, à l'ouest du TGV
+qu'elle ne croise jamais. Le relief ne bouge pas : les deux empreintes de
+`plafond.js` sont intactes.
+
+**Ce qui le prouve.** Un témoin neuf dans `carteMonde.js`, rouge sur
+`origin/main` (pas d'A7) : la route, ses voitures, ses deux entrées sur une
+rue propre (seize relevés sur seize de chaque côté), aucune colonne d'emprise
+sur le rail (0 sur 12 545 sous node). Les trois ponts au témoin du joint :
+zéro trou sur 19 760 points sous node. La sonde : 2 025 tracés, quatre
+admissibles. Hambourg–Cologne et Toronto–Montréal sont instruites dans
+`TASKS.md`, avec leurs mesures.
+
+---
+
 ## v336 — L'autoroute Dallas–Houston
 
 **Pourquoi.** Dallas–Houston vient ensuite dans le relevé de la v323 : 1 781
