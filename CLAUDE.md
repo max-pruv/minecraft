@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Les sensations au volant (v344) — la caméra regarde la voiture, et un mur se cherche cellule par cellule
+## Les sensations au volant (v350) — la caméra regarde la voiture, et un mur se cherche cellule par cellule
 
 Chantier « conduite » (six sessions, octobre 2026) ; celle-ci tient ce que
 l'enfant VOIT et ENTEND. Tout vit dans `src/sensations.js`, branché par un
@@ -805,6 +805,55 @@ règles.
   dans l'image, et `sensations.js` reprend le suivi du bestiaire pour ne pas
   compter deux fois. Les avions gardent la poursuite d'avant à l'identique ;
   `?sensations=0` rejoue l'ancienne conduite, pour mesurer.
+
+## Le monde à la vitesse (v346) — on maille où l'on va, et le plafond se mesure en roulant
+
+Max veut une conduite « comme GTA » ; les voitures étaient plafonnées à 28 b/s
+sur un débit d'avant le worker (v237 → v251). Quatre règles.
+
+- **UN PLAFOND QUI DÉRIVE D'UN DÉBIT SE REMESURE QUAND LE DÉBIT CHANGE DE
+  FIL.** « Paris se maille à 42 morceaux par seconde » a survécu quatre-vingts
+  versions au worker qui le rendait faux : en roulant, régime établi, 43 à 58
+  en ville et 54 à 78 en campagne. Le plafond est désormais publié là où il
+  se calcule (`src/plafond-sol.js`, `VITESSE_SOL_MAX`, `plafondSol`), avec sa
+  mesure ; la conduite le lit, elle ne le recopie pas.
+- **LE CRITÈRE EST CE QUE LA CAMÉRA VOIT, ET IL SE MESURE EN ROULANT.** Le
+  monde maillé dans le champ (±40°) jusqu'à deux secondes de route, médiane
+  de six relevés après quatre secondes de régime, le disque chargé d'abord à
+  l'arrêt (`sonde-monde-a-la-vitesse.cjs`) — jamais par saturation (v269). La
+  position y est une fonction du TEMPS RÉEL : on mesure le chargement, pas la
+  voiture, et la vitesse ne dépend pas de la cadence du banc.
+- **LA FILE SUIT LE DÉPLACEMENT, PAS LE REGARD, ET OUBLIE CE QUI EST
+  DERRIÈRE.** L'ancienne file (distance pondérée 1/2,5 par le regard) passait
+  un morceau de côté à sept avant celui de l'axe à douze, et redemandait ce
+  qu'on venait de dépasser : à 60 b/s dans Paris, HUIT appels de dessin devant
+  soi. `fileDeMaillage` pondère continûment par l'écart au déplacement réel
+  (lissé, en temps réel) et, au-dessus de `VITESSE_CONE`, ne demande rien
+  derrière hors du cercle proche ; la file se refait quand le régime change,
+  sinon ce qu'elle a laissé ne revient qu'au morceau suivant. `?file=regard`
+  rejoue l'ancien ordre, pour l'A/B.
+- **LA CADENCE PERDUE EN ROULANT EST CELLE DU MONDE QU'ON VOIT ENFIN.** La
+  nouvelle file coûte 15 à 25 % de cadence au banc ; les appels de dessin
+  disent pourquoi (8 → 31 à Paris, 39 → 84 en campagne) : c'est le rendu de
+  ce qui est devant, payé en logiciel, et l'arrêt au même endroit en coûte
+  bien plus (394 appels, 7,6 images par seconde). Une baisse de cadence se
+  démonte par ce qu'on dessine avant de s'imputer au chargement.
+- **ET L'ORDRE NEUF SE COUPE EN RENDU LOGICIEL, comme les ombres, la couche
+  HD et le bâti lointain.** Le portail l'a dit par « l'écran ne se fige pas en
+  arrivant sur une ville » : en vol vers Paris la vue passe de ~20 à ~100
+  appels, cadence 12 → 7, pire image 1,2 à 1,35 s — et la sonde qui sépare
+  les cas (tâches longues par `PerformanceObserver`, rendu chronométré côté
+  JavaScript) a montré que le JavaScript ne bouge presque pas (2,3 s contre
+  1,9 à 2,0 de tâches longues sur 18 s, 10 ms de rendu JS des deux côtés) :
+  c'est SwiftShader qui dessine enfin la ville. `?file=cone` force l'ordre
+  neuf, `?file=regard` l'ancien, `__game.fileMaillage` les bascule sur une
+  page ouverte. Le témoin de `monte.js` joue les DEUX ordres dans la MÊME page
+  (`ciel`), en ABBA, et juge l'écart des parts moyennes (0,29 ici, −0,04 sur
+  `origin/main`, barre 0,13). Trois leçons de banc, payées en trois portails :
+  une part absolue ne tient pas sous la charge (0,73 pour 0,77) ; une page
+  ouverte de plus à côté de `tab` et `ciel` n'a jamais chargé son disque en
+  quarante secondes ; et deux passages IDENTIQUES rendent 0,43 puis 0,57 —
+  le premier passage n'est pas le second, d'où l'ABBA.
 
 ## Le ciel de chaque ville (v342) — la courbe de Paris posée sur SA corniche
 
@@ -943,6 +992,23 @@ des dégâts. La règle est PURE (`degats.js`, lue sous node), ce qui se voit vi
   lit `if (this.boost)`, et une voiture « en panne » roulait à l'allure de la
   marche (mesuré, 1,7 bloc en 2,5 s).
 
+**Et l'ami le voit (v344).** La position emporte les dégâts (`p.v.d`, les
+impacts et le feu, via `versReseau`) ; le receveur les REJOUE sur la voiture
+qu'il dessine (`distant`), avec les mêmes fonctions et le même bruit
+déterministe — on n'envoie pas de géométrie, on envoie l'histoire du choc.
+Une tablette restée sur l'ancienne version ignore le champ (le receveur cède).
+
+**Le feu coûte deux appels (v348).** Fumée et flammes sont chacune UN
+`InstancedMesh` (`essaim`, degats3d.js) : la couleur par `instanceColor`,
+l'opacité par un attribut `aAlpha` qu'un petit greffon (`onBeforeCompile`,
+clé de programme FIXE `degats-alpha`) multiplie dans le fragment. Les carrés
+vivants sont tassés en tête (`count`), un essaim vide est caché. La chauffe
+compile un essaim d'UNE instance sur les mêmes matériaux — `instanceColor`
+existe dès la naissance, parce que `instancingColor` est dans la clé. Mesuré :
+30 appels pour 30 carrés avant, 2 pour 28 après ; le témoin rend la même image
+deux fois (essaim caché, montré) et exige plus de quatre carrés, sinon
+l'égalité ne prouverait rien.
+
 **Le feu dépose l'enfant, il ne le projette pas** : passé `DELAI_SORTIE` (3,5 s
 en temps réel), `fun.js` le fait descendre et `deposer` le pose debout sur une
 case libre à côté (côté conducteur d'abord). La carcasse porte `horsService`
@@ -1029,6 +1095,65 @@ Le point (c) du kit « monde fidèle », sur toute la carte. Trois règles.
   escalier de cubes de roche — l'adoucir, c'est bouger le relief, décision de
   Max) ; une berge de trois blocs garde sa couronne d'herbe. *(Le paysage
   lointain et les arbres ont reçu la règle en v340.)*
+
+## La toundra et la taïga (v345) — une couleur de sommet est LINÉAIRE
+
+La deuxième tranche du point (d). Quatre règles.
+
+- **UNE ZONE DE CLIMAT EST UNE TABLE DE FAITS, ET L'ORDRE EST UNE PRIORITÉ.**
+  `CLIMATS` (terre.js) porte la toundra (limite réelle des arbres, Islande,
+  Tibet) et la taïga, après `DESERTS` ; `climatReel(lat, lon)` rend la
+  première zone qui contient le point. `World.climat` lit `cielDe` et le même
+  bord qui tremble que `aride` (qui n'en est plus qu'un cas). Les sites du
+  témoin tempéré de la v341 (Kansas, Iowa, Pampa, Ukraine à 49° N) restent
+  hors de toute zone — c'est vérifié par ce témoin, qui compte zéro bloc
+  différent.
+- **UNE QUESTION PAR MORCEAU, PAS PAR COLONNE.** `climatDuMorceau` rend le
+  climat d'un morceau entier quand tout bord est à plus de 0,8° (le
+  tremblement fait 0,6°, un morceau 0,13° au pire), et `undefined` sinon ;
+  92 % des morceaux sont certains. Le générateur et le mailleur
+  (`teintesDuMorceau`) n'interrogent colonne par colonne que les autres. Un
+  témoin vérifie qu'un morceau certain l'est pour chacune de ses colonnes —
+  un raccourci de ce genre se trompe en silence au bord des zones.
+- **LA TEINTE CHANGE LA COULEUR, PAS LA MATIÈRE.** L'herbe de la toundra et
+  de la taïga reste le bloc d'herbe — que les falaises, `treeAt`, le sol
+  continu et les bêtes savent lire — et le mailleur multiplie la couleur de
+  sommet de son dessus (et des feuilles) par la teinte du climat, une clé de
+  fusion par teinte. Ce qui change de MATIÈRE se dit comme en v341 : la roche
+  nue et la neige de la toundra (`solDeToundra`, neige dès `NEIGE_TOUNDRA`
+  au lieu de 58), et les arbres (taïga dense de pins, toundra presque nue).
+  Un témoin compare la forme bloc pour bloc au monde sans la règle.
+- **UNE COULEUR DE SOMMET EST LINÉAIRE.** three décode la tuile sRGB et
+  multiplie par la couleur de sommet en espace linéaire : mon premier jet
+  posait les facteurs réglés à l'œil (0,62 sur le rouge), la taïga restait
+  vert vif en capture alors qu'une sonde dans la page comptait 201 516
+  sommets teints sur 300 816. Le mailleur prend le facteur à la puissance
+  2,2 (`TEINTE_HERBE_LIN`) ; la carte et le paysage lointain, qui mêlent des
+  couleurs de palette, gardent le facteur perçu. **Un témoin de couleur de
+  tampon prouve que la teinte est posée, pas qu'elle se voit** : c'est la
+  capture qui l'a dit.
+- **UN ARBRE AJOUTÉ PEUT POUSSER DANS UNE MAISON.** La v340 ne faisait que
+  retirer des arbres ; la taïga en ajoute. Un bloc posé avant
+  `DATE_CLIMATS` (relue à la fusion, v309) marque son morceau et ses huit
+  voisins (`morceauxAvantClimat`, tenu par `setBlock` et refait avec
+  l'index des monuments) : leurs arbres restent ceux d'avant. Le désert,
+  lui, garde sa règle partout.
+
+**Les steppes (v347)** suivent la même table : herbe couleur de paille (une
+teinte de plus, aucun bloc neuf) et un vingtième des arbres. Mesurer en
+capture avant de régler : à un huitième, la steppe du Kazakhstan restait un
+bocage — 42 arbres contre 326 au témoin, mais des bosquets partout à l'écran.
+Les sites du témoin tempéré de la v341 restent hors des steppes (Hautes
+Plaines à l'ouest du 100e méridien, steppe pontique au sud de 47° N).
+Et `DATE_CLIMATS` SE RELIT à chaque tranche qui change des arbres : la
+steppe en retire, donc ce qu'un enfant a bâti jusqu'à la fusion de la v347
+garde les arbres d'avant.
+**Les forêts tropicales (v349)** ferment les quatre climats : dix forêts
+humides réelles, la forêt dense de grands feuillus et un palmier sur quatre
+(`DENSITE_MAX` passe à 0,08, la seule densité au-dessus de la forêt
+tempérée). Une teinte se juge en capture et pas seulement au témoin : le vert
+réglé à (60, 160, 50) virait au fluo à l'écran, et le témoin le trouvait
+très bien teint.
 
 ## Les déserts chauds (v341) — le climat est une donnée de géographie, comme la côte
 

@@ -27,7 +27,7 @@ const verifier = (nom, ok, detail) => {
     });
     await p.locator(".who-card.active").click();
     await p.getByRole("button", { name: "Plus tard", exact: true }).click();
-    // LE CLIC AUSSI PREND LE BUDGET DU FICHIER (v344) : « Jouer » reste grisé
+    // LE CLIC AUSSI PREND LE BUDGET DU FICHIER (v350) : « Jouer » reste grisé
     // pendant la préparation, et le clic l'attend. Mesuré des deux côtés,
     // branche et `origin/main` : 32 et 33 s sous la charge du banc, pour les
     // trente secondes par défaut de Playwright — un pile ou face sur le seuil.

@@ -1,11 +1,51 @@
 # Ce qui est en cours
 
+- [ ] **LE PORTAIL DE LA v346 (le monde à la vitesse), DOUBLE MESURE FAITE.**
+  Portail : `manhattan.js` (délai ligne 282) et `monte.js` « l'écran ne se
+  fige pas en arrivant sur une ville » (2 833 ms · 46,4 %). Rejouées SEULES :
+  `manhattan.js:282` identique des deux côtés ; l'arrivée rouge des deux
+  côtés, MOINS grave sur la branche (983 ms · 20,1 %) que sur `origin/main`
+  v340 (3 700 ms · 28 %). La branche seule a rendu deux rouges de plus, déjà
+  déclarés comme intermittents : les programmes à la téléportation (chauffe de
+  New York expirée, 53/321) et « la voiture freine devant un piéton »
+  (`voituresRue: 0`, avance 3,4 : la situation n'a pas eu lieu ; vert aux
+  quatre portails de la branche). Preuve structurelle : en rendu logiciel,
+  l'ordre de file de la v346 est celui d'avant au bit près (`fileAuRegard`) ;
+  seul s'ajoute le suivi du déplacement, de l'arithmétique sur la position.
+  Dernier portail, sur la fusion avec la v343, puis la v345 : les deux témoins de la file
+  verts (écart 0,32) ; rouges, tous déjà déclarés avec leur double mesure —
+  le loader qui compte ses fichiers (`maj.js`), la façade et le taxi
+  (`manhattan.js`), « la monoplace ralentit assez » (9,1 m/s, identique sur
+  `origin/main`), le bouton « Conduire » (un métro à portée), les programmes à
+  la téléportation et l'arrivée sur une ville (2 267 ms · 26,4 %).
+- [ ] **LE PLAFOND DE VITESSE AU SOL EST MESURÉ ET PUBLIÉ (v346) — À APPLIQUER
+  PAR LA CONDUITE, ET À CONFIRMER SUR LA TABLETTE.** `src/plafond-sol.js` :
+  `VITESSE_SOL_MAX` = 60 b/s en ville, 70 en campagne et sur l'autoroute ;
+  `plafondSol({ ville, rr })` le borne par le disque (60 partout au palier bas,
+  rr 8). Critère : le monde maillé dans le champ de la caméra (±40°) jusqu'à
+  deux secondes de route, médiane de six relevés en régime établi
+  (`tests/sonde-monde-a-la-vitesse.cjs`). Le « 42 morceaux par seconde » qui
+  bornait `ALLURES` à 28 b/s datait d'avant le worker : en roulant, 43 à 58 en
+  ville, 54 à 78 en campagne. Reste : (1) la session conduite lit `plafondSol`
+  pour relever `ALLURES` — ce n'est pas à cette zone de changer les vitesses ;
+  (2) le banc rend en logiciel à 11-20 images par seconde et la file se
+  recharge une fois par image : sur l'iPad, mesurer le trou en roulant
+  (`?diag=1`) et la cadence à 60 b/s avant de croire que la cadence tient — les
+  millisecondes du worker et de rendu ne se transposent pas, l'ordre et les
+  nombres de morceaux oui ; (3) au-delà de 70 b/s la ville ne suit plus (80 :
+  86 à 115 blocs dans le champ pour 160) — le levier restant est le coût d'un
+  morceau dans le worker (génération 45 %, v229), pas la file : les trois
+  non-résultats de la file (borner la pose, file en temps, deux mailleurs) et
+  la file de seize (v269) restent écartés ; (4) un lot déjà parti au worker ne
+  s'annule pas quand on le dépasse — huit morceaux au plus, onze blocs de
+  route à 60 b/s : non mesuré comme nuisible, laissé.
+
 - [ ] **LES DÉGÂTS (v343) : CE QUI RESTE, DÉCLARÉ.**
-  - **Le coût sur l'iPad n'est pas mesuré.** Au banc : enfoncer 12 ms au
-    premier choc, 6 ensuite ; pendant un feu, jusqu'à cinquante-quatre carrés
-    de fumée et de flammes, donc autant d'appels de dessin. À mesurer sur la
-    tablette (`?diag=1`, une voiture qu'on fait brûler) ; le levier est
-    `MAX_FUMEE`/`MAX_FLAMMES` (degats3d.js), ou un seul `Points`.
+  - ~~Cinquante-quatre appels de dessin pendant un feu~~ — **fait en v348** :
+    deux `InstancedMesh`, 30 → 2 appels mesurés, gardé par un témoin. Reste
+    le coût RÉEL sur la tablette (enfoncer : 12 à 20 ms au premier choc au
+    banc, 4 à 7 ensuite), à lire avec `?diag=1` sur une voiture qu'on fait
+    brûler.
   - **La carcasse n'est vue que par celui qui conduisait.** Chez l'ami, la
     voiture disparaît avec le champ `p.v` dès que le conducteur est déposé.
   - **Les voitures de la rue ne s'abîment pas** — seule celle de l'enfant.
@@ -16,6 +56,26 @@
     repli de vitesse décide, et les effets s'appliquent par `player.boost`.
   - **Les avions ne s'abîment pas** (`pilote` est écarté) : une décision, pas
     un oubli — un atterrissage manqué n'a pas de « choc » dans `player.js`.
+
+- [ ] **AU PORTAIL DE LA v349 (les forêts tropicales), TROIS ROUGES, TOUS DÉJÀ
+  DÉCLARÉS** — `manhattan.js` « le trou enlève aussi la géométrie visible de la
+  façade » (22 326 → 51 734, dette du compte de tous les immeubles) ; `monte.js`
+  « se téléporter ne compile plus de programmes » (Paris 3 neufs) et « l'écran
+  ne se fige pas en arrivant sur une ville » (pire image 1 200 ms, 26,4 %). Les
+  trois sont rouges seuls sur `origin/main` aux portails v345 à v348 ; la
+  livraison ne touche ni la flotte, ni Manhattan, ni la file de maillage.
+- [ ] **AU PORTAIL DE LA v348 (le feu en deux appels), DEUX SUITES ROUGES — aucune
+  causée par la livraison, double mesure faite (rejouées SEULES sur la branche
+  v348 et sur `origin/main` v345, chacun dans un arbre détaché).**
+  - `degats.js` « enfoncer coûte quelques millisecondes » : premier choc
+    31,1 ms pour une barre à 30 au portail ; SEULE, 13 ms sur la branche et
+    11,7 sur `origin/main`. La boucle d'enfoncement n'a pas bougé d'une ligne :
+    c'est la charge du portail (`maj.js` tournait à côté, 3,8 cœurs).
+  - `maj.js` : rouge des deux côtés, jamais le même témoin — portail : le
+    loader d'installation, « corps, programmes et fond de carte », le flou ;
+    branche seule : le loader et le palier (période médiane 283 ms) ;
+    `origin/main` seul : « corps, programmes et fond de carte » (personnages
+    7/9). Les mêmes familles qu'au portail de la v343, déclarées.
 
 - [ ] **AU PORTAIL DE LA v343 (les dégâts), CINQ SUITES ROUGES — aucune causée
   par la livraison, double mesure faite (chaque suite rejouée SEULE sur la
@@ -536,7 +596,7 @@
   second dépend du premier) — REJOUÉE SEULE : branche ces deux-là, `origin/main`
   v318 la libération (programmes 17/25). Même intermittence de préparation des
   deux côtés, déjà déclarée (v267).
-- [ ] **LE PORTAIL DE LA v344 (sensations au volant) : UN ROUGE DE MOI, CORRIGÉ,
+- [ ] **LE PORTAIL DE LA v350 (sensations au volant) : UN ROUGE DE MOI, CORRIGÉ,
   ET TROIS DETTES DÉJÀ DÉCLARÉES, REJOUÉES SEULES DES DEUX CÔTÉS.**
   `monte.js` « la caméra suit la voiture de derrière » (7,07 pour une borne
   fixe de 6,5) : à moi, la caméra recule désormais avec la vitesse — le
@@ -551,6 +611,33 @@
   (« element is not stable »), sur la branche le bouton reste caché quinze
   secondes (une bête) : la même intermittence, vue des deux côtés. `maj.js` :
   le loader qui compte les fichiers, intermittent (ci-dessous).
+- [ ] **LE PORTAIL DE LA v347 (les steppes, préparée comme v346) : TOUS LES
+  ROUGES DÉJÀ DÉCLARÉS.** Huit suites choisies par la table des gardiens,
+  45 min. `metro.js`, `carteMonde.js`, `plafond.js` (le témoin des steppes
+  compris), `maj.js`, `carte.js`, `washington.js` verts. `manhattan.js` : le
+  trou de façade (11 684 → 51 734) et le taxi tactile (`locator.tap` hors
+  délai), déclarés. `monte.js` : l'écran figé à l'arrivée (4 100 ms ·
+  47,4 %), déclaré. La livraison ne change qu'une teinte et la densité
+  d'arbres de la campagne des steppes réelles.
+- [ ] **LE PORTAIL DE LA v345 (la toundra et la taïga, préparée comme v342 puis v344) :
+  TOUS LES ROUGES DÉJÀ DÉCLARÉS.** Seize suites, 84 min. `plafond.js` (93 dont
+  les cinq témoins neufs), `carteMonde.js`, `metro.js`, `washington.js`,
+  `parishd.js`, `realisme.js`, `reglages.js`, `hote.js`, `visio.js`,
+  `sauvegarde.js`, `parent.js` verts. `maj.js` : le loader « combien de
+  fichiers » (intermittent, déclaré) et le badge (« version servie v341 » pour
+  une tête de journal à 342 — `sw.js` pas encore monté, la procédure le règle).
+  `carte.js` : la flèche du GPS (gauche 1,92 rad, déclarée). `manhattan.js` :
+  le délai de la ligne 282 (dette v269). `monte.js` : Paris compile quatre
+  programmes `physical` à l'arrivée et l'écran figé (3 583 ms · 28,3 %), tous
+  deux déclarés. `reseau.js` : « sans courtier » `[[],[]]` (intermittence
+  déclarée) — REJOUÉES SEULES : `plafond.js` verte ; `maj.js` badge vert,
+  reste la préparation (programmes 19/27, intermittence déclarée) ;
+  `manhattan.js` le délai de la ligne 282 ; `reseau.js` « un hôte sans
+  courtier est trouvé » `[[],[]]` sur la branche, et sur `origin/main` v343
+  rejoué seul la même famille (« deux enfants se retrouvent sans courtier du
+  tout » `[[],[]]`, plus la voiture de la rue chez l'ami). La livraison n'ajoute aucun matériau ni aucune
+  lampe, seulement une couleur de sommet et des blocs de campagne loin de
+  tout point que ces témoins visitent.
 - [ ] **LE PORTAIL DE LA v341 (les déserts) : TOUS LES ROUGES DÉJÀ
   DÉCLARÉS.** `plafond.js` (les trois témoins des déserts, celui de la page
   compris), `carteMonde.js`, `carte.js`, `metro.js`, `washington.js` verts.
@@ -738,12 +825,18 @@
   depuis la v340 (`couleurDuBord`, `solDeLArbre`) ; (d) les
   textures par usage et climat — PREMIÈRE TRANCHE en v341 : les déserts chauds
   réels (`DESERTS`, terre.js) sont de sable, sans arbre, au sol, au loin et sur
-  la carte ; restent les steppes, la toundra, les tropiques humides (une teinte
-  d'herbe par climat demande une couleur par colonne dans le mailleur, le sol
-  continu, le paysage lointain et la carte — à mesurer avant) ; (e) la bibliothèque architecturale (96
+  la carte ; SECONDE TRANCHE en v345 : la toundra et la taïga (`CLIMATS`,
+  terre.js) — la teinte d'herbe par colonne est MESURÉE gratuite (une
+  question par morceau, 0,37 µs par colonne près d'un bord, mailleur 9,34
+  contre 9,32 ms hors zone) ; TROISIÈME en v347, les steppes ; QUATRIÈME en
+  v349, les tropiques humides — les quatre climats du kit sont faits ; (e) la bibliothèque architecturale (96
   variantes, 278 profils de ville) — elle exige une retrame à un bloc pour un
   mètre (`docs/monde-fidele/programme.md`, section 6), décision de Max ; (f) la
-  matrice de couverture ville par ville (convertie, exclue, bloquée) et les
+  matrice de couverture ville par ville (convertie, exclue, bloquée) — FAITE
+  en v347, ENGENDRÉE (`tests/sonde-couverture.cjs` →
+  `docs/monde-fidele/couverture.md`, 276 villes : rues 264 converties, 8
+  exclues, 4 bloquées — San Francisco, Nice, Lille, Washington ; 7 villes sans
+  anneau de circulation, toutes exclues ; 33 reliées par une route) — et les
   mesures sur l'iPad de la maison.
 
 - [x] **LES MONUMENTS DE PARIS SONT PLUS BAS QUE LES IMMEUBLES (v301)** — fait

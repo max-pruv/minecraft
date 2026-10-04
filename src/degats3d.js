@@ -57,13 +57,51 @@ function lesRessources() {
   x.fillStyle = g; x.fillRect(0, 0, 64, 64);
   const tex = new THREE.CanvasTexture(c);
   tex.userData.partagee = true;
-  const carre = new THREE.PlaneGeometry(1, 1);
-  carre.userData.partagee = true;
-  const fumee = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, color: 0x888888, opacity: 0 });
-  const flamme = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, color: 0xff8a2a,
-    blending: THREE.AdditiveBlending, toneMapped: false, opacity: 0 });
-  ressources = { tex, carre, fumee, flamme };
+  // La couleur et l'opacité de CHAQUE carré viennent de l'instance (v348) :
+  // `instanceColor` pour la teinte, un attribut `aAlpha` pour l'opacité, que
+  // ce petit greffon multiplie dans le fragment. Une clé de programme FIXE :
+  // la chauffe compile exactement ce que le feu dessinera.
+  const alphaParInstance = (m) => {
+    m.onBeforeCompile = (sh) => {
+      sh.vertexShader = sh.vertexShader
+        .replace('#include <common>', '#include <common>\nattribute float aAlpha;\nvarying float vAlpha;')
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvAlpha = aAlpha;');
+      sh.fragmentShader = sh.fragmentShader
+        .replace('#include <common>', '#include <common>\nvarying float vAlpha;')
+        .replace('#include <alphamap_fragment>', '#include <alphamap_fragment>\ndiffuseColor.a *= vAlpha;');
+    };
+    m.customProgramCacheKey = () => 'degats-alpha';
+    m.userData.partagee = true;
+    return m;
+  };
+  const fumee = alphaParInstance(new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false }));
+  const flamme = alphaParInstance(new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false,
+    blending: THREE.AdditiveBlending, toneMapped: false }));
+  ressources = { tex, fumee, flamme };
   return ressources;
+}
+
+// UN ESSAIM, UN APPEL (v348). Chaque effet est UN `InstancedMesh` : trente
+// nuages et vingt-quatre flammes coûtent deux appels de dessin, pas
+// cinquante-quatre — sur l'iPad, ce sont les appels qui coûtent (v196). Le
+// carré porte son propre attribut d'opacité, c'est pourquoi il n'est pas le
+// carré commun : un par essaim, fabriqué ici.
+function essaim(n, materiau, ordre) {
+  const g = new THREE.PlaneGeometry(1, 1);
+  g.setAttribute('aAlpha', new THREE.InstancedBufferAttribute(new Float32Array(n), 1).setUsage(THREE.DynamicDrawUsage));
+  g.userData.partagee = true;
+  const im = new THREE.InstancedMesh(g, materiau, n);
+  im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  // `instanceColor` existe dès la naissance : il fait partie de la clé de
+  // programme (`instancingColor`), et la chauffe doit compiler celle-ci
+  for (let i = 0; i < n; i++) im.setColorAt(i, new THREE.Color(1, 1, 1));
+  im.instanceColor.setUsage(THREE.DynamicDrawUsage);
+  im.count = 0;
+  im.visible = false;
+  im.frustumCulled = false;
+  im.renderOrder = ordre;
+  im.userData.effetDegats = true;
+  return im;
 }
 
 // UN SEUL ESSAIM pour tout le jeu, borné : deux voitures en feu ne doublent
@@ -304,8 +342,8 @@ function detacher(rec, pc, scene) {
 // ---- le gestionnaire --------------------------------------------------------
 export function creerDegats({ scene, world, player, retirer = () => {}, lumiere = () => 1 } = {}) {
   const suivies = new Map();         // racine du maillage → fiche
-  let fx = null;
-  const particules = [];             // { m, vie, age, vx, vy, vz, t0, t1, flamme }
+  let fx = null, imFumee = null, imFlamme = null;
+  const particules = [];             // { x, y, z, vie, age, vx, vy, vz, t0, t1, flamme, couleur }
 
   function fiche(root, creer = true) {
     let rec = suivies.get(root);
@@ -322,14 +360,12 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
     const r = lesRessources();
     fx = new THREE.Group();
     fx.name = 'degats-fx';
+    imFumee = essaim(MAX_FUMEE, r.fumee, 2);
+    imFlamme = essaim(MAX_FLAMMES, r.flamme, 3);
+    fx.add(imFumee, imFlamme);
     for (let i = 0; i < MAX_FUMEE + MAX_FLAMMES; i++) {
-      const flamme = i >= MAX_FUMEE;
-      const m = new THREE.Mesh(r.carre, (flamme ? r.flamme : r.fumee).clone());
-      m.material.userData = {};
-      m.userData.effetDegats = true;
-      m.visible = false; m.frustumCulled = false; m.renderOrder = flamme ? 3 : 2;
-      fx.add(m);
-      particules.push({ m, flamme, vie: 0, age: 0, vx: 0, vy: 0, vz: 0, t0: 0.5, t1: 1 });
+      particules.push({ flamme: i >= MAX_FUMEE, vie: 0, age: 0, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0,
+        t0: 0.5, t1: 1, couleur: new THREE.Color() });
     }
     scene.add(fx);
     return fx;
@@ -482,14 +518,13 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
     p.vy = flamme ? 1.8 + Math.random() * 1.2 : 1.0 + Math.random() * 0.8;
     p.t0 = flamme ? 0.7 + Math.random() * 0.5 : 0.45;
     p.t1 = flamme ? 0.25 : noire ? 2.8 + Math.random() * 0.8 : 1.8 + Math.random() * 0.8;
-    p.m.position.set(x + (Math.random() - 0.5) * 0.5, y, z + (Math.random() - 0.5) * 0.5);
-    p.m.visible = true;
+    p.x = x + (Math.random() - 0.5) * 0.5; p.y = y; p.z = z + (Math.random() - 0.5) * 0.5;
     const e = rec.etat;
     if (flamme) {
       // ORANGE ET NON BLANC : des flammes additives qui se recouvrent
       // saturent au blanc (vu en capture) — la teinte reste dans le rouge et
       // l'orange, l'opacité sous 0,7
-      p.m.material.color.setHSL(0.02 + Math.random() * 0.07, 1, 0.42 + Math.random() * 0.1);
+      p.couleur.setHSL(0.02 + Math.random() * 0.07, 1, 0.42 + Math.random() * 0.1);
     } else {
       // gris clair quand le moteur fume, NOIR quand il brûle ; la nuit, le
       // nuage ne luit pas — il prend la lumière du moment
@@ -498,22 +533,41 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
       // y donne un gris MOYEN à l'écran — mesuré, #616162. Le noir d'une
       // fumée de feu est sous 0,02.
       const g = (0.38 - 0.367 * sombre) * lumiere();
-      p.m.material.color.setRGB(g, g, g * 1.02);
+      p.couleur.setRGB(g, g, g * 1.02);
     }
   }
 
+  // Les carrés vivants sont TASSÉS en tête de chaque essaim (`count`) : ce qui
+  // est mort ne se dessine pas, et un essaim vide est caché — zéro appel.
+  const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _s = new THREE.Vector3(), _pos = new THREE.Vector3();
   function animerParticules(dt, camera) {
+    let nf = 0, nl = 0;
+    if (camera) _q.copy(camera.quaternion);
+    const aF = imFumee.geometry.attributes.aAlpha, aL = imFlamme.geometry.attributes.aAlpha;
     for (const p of particules) {
       if (p.vie <= 0) continue;
       p.age += dt;
-      if (p.age >= p.vie) { p.vie = 0; p.m.visible = false; continue; }
+      if (p.age >= p.vie) { p.vie = 0; continue; }
       const k = p.age / p.vie;
-      p.m.position.x += p.vx * dt; p.m.position.y += p.vy * dt; p.m.position.z += p.vz * dt;
+      p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
       const t = p.t0 + (p.t1 - p.t0) * k;
       // une flamme est plus haute que large
-      p.m.scale.set(t, p.flamme ? t * 1.8 : t, t);
-      p.m.material.opacity = p.flamme ? (1 - k) * 0.65 : Math.min(1, k * 5) * (1 - k) * (p.noire ? 0.95 : 0.75);
-      if (camera) p.m.quaternion.copy(camera.quaternion);
+      _s.set(t, p.flamme ? t * 1.8 : t, t);
+      _m.compose(_pos.set(p.x, p.y, p.z), _q, _s);
+      const alpha = p.flamme ? (1 - k) * 0.65 : Math.min(1, k * 5) * (1 - k) * (p.noire ? 0.95 : 0.75);
+      const im = p.flamme ? imFlamme : imFumee, i = p.flamme ? nl++ : nf++;
+      im.setMatrixAt(i, _m);
+      im.setColorAt(i, p.couleur);
+      (p.flamme ? aL : aF).array[i] = alpha;
+    }
+    for (const [im, n, a] of [[imFumee, nf, aF], [imFlamme, nl, aL]]) {
+      if (n || im.count) {
+        im.instanceMatrix.needsUpdate = true;
+        im.instanceColor.needsUpdate = true;
+        a.needsUpdate = true;
+      }
+      im.count = n;
+      im.visible = n > 0;
     }
   }
 
@@ -642,12 +696,16 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
   function chauffer(renderer, camera, decor) {
     const r = lesRessources();
     const ici = new THREE.Scene();
-    for (const m of [r.fumee, r.flamme]) {
-      const q = new THREE.Mesh(r.carre, m);
+    // LA FORME MÊME DU FEU (v348) : un essaim instancié, sa couleur par
+    // instance, sur le matériau qui dessinera — sinon le premier feu compile
+    const essais = [essaim(1, r.fumee, 2), essaim(1, r.flamme, 3)];
+    for (const q of essais) {
+      q.count = 1; q.visible = true;
       q.position.copy(camera.position).add(new THREE.Vector3(0, -500, 0));
       ici.add(q);
     }
     renderer.compile(ici, camera, decor);
+    for (const q of essais) { q.geometry.dispose(); q.dispose(); }
     // ET LA BOUCLE D'ENFONCEMENT SE RODE ICI : son premier passage coûte le
     // double des suivants (le moteur JavaScript la compile), et c'est le
     // premier choc de l'enfant qui l'aurait payé.

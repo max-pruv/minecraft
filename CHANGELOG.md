@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v344 — Conduire comme au cinéma
+## v350 — Conduire comme au cinéma
 
 **Pourquoi.** Max (4 octobre 2026) : « une grosse refonte de la façon de
 conduire… comme GTA ». Au volant, la caméra restait rivée à six blocs quatre
@@ -53,6 +53,166 @@ choc 0,90 contre 0,073, secousse 0,23 bloc, caméra du côté de la voiture. Le 
 se mesure en ordre alterné sur la même page (`?sensations=0` rejoue l'ancienne
 conduite) : aucun appel de dessin ni programme de shader de plus (67 des deux
 côtés).
+
+---
+
+## v349 — Les forêts tropicales
+
+**Pourquoi.** L'Amazonie, le bassin du Congo, Bornéo étaient une campagne
+tempérée clairsemée : 196 arbres au cœur de trois forêts tropicales sur
+`origin/main`, et pas un palmier. C'est la dernière tranche de climat du
+point (d) du kit « monde fidèle ».
+
+**Ce que ça change.** Dix forêts tropicales humides réelles — l'Amazonie,
+le golfe de Guinée et le Congo, l'Insulinde de Sumatra à la Nouvelle-Guinée,
+les Philippines, l'Amérique centrale, la forêt atlantique du Brésil, l'est de
+Madagascar, le Kerala, le Bengale et l'Assam, le Queensland — sont une forêt
+dense de grands feuillus et de palmiers, l'herbe d'un vert profond. Le
+paysage lointain et la carte disent la même chose. La forme du monde ne bouge
+pas d'un bloc ; les villes gardent leur sol.
+
+**Ce qui le prouve.** Un témoin neuf et un témoin élargi dans `plafond.js`,
+rouges sur `origin/main` : au cœur de trois forêts tropicales, 472 arbres
+contre 196 dont 112 palmiers, l'herbe teinte, zéro bloc de forme différente ;
+vu de loin et sur la carte, la forêt tropicale est d'un vert plus profond
+que le Kansas.
+
+---
+
+## v348 — Le feu ne coûte plus que deux appels
+
+**Pourquoi.** Les dégâts de la v343 dessinaient chaque carré de fumée et
+chaque flamme par son propre maillage : pendant un feu, jusqu'à
+cinquante-quatre appels de dessin de plus, et mesuré au banc, trente appels
+pour trente carrés. Or sur l'iPad ce sont les appels de dessin qui coûtent
+(v196) : une voiture qui brûle pouvait faire ramer la tablette précisément au
+moment où l'enfant regarde.
+
+**Ce que ça change.** Rien à l'œil : la même fumée grise puis noire, les mêmes
+flammes orangées. Mais toute la fumée est dessinée en UN appel et toutes les
+flammes en un autre, quel que soit le nombre de carrés — un `InstancedMesh`
+par effet, la couleur et l'opacité portées par chaque instance. Un essaim
+vide est caché : sans feu, zéro appel.
+
+**Ce qui le prouve.** Un témoin neuf de `degats.js` rend la même image deux
+fois, l'essaim caché puis montré, au cœur du feu : **30 appels pour 30
+carrés sur l'ancien code, 2 pour 28 ici** (barre : deux, un par effet).
+Le témoin « aucun programme compilé au feu » reste vert (96 → 96) : la
+chauffe de l'accueil compile désormais la forme instanciée elle-même.
+
+---
+
+## v347 — Les steppes
+
+**Pourquoi.** Entre les forêts et les déserts, le monde réel a ses grandes
+prairies sèches — de la mer Noire à la Mongolie, les Hautes Plaines, le Sahel,
+la Patagonie — et le jeu y montrait la même prairie verte et boisée qu'en
+Normandie : 326 arbres au cœur de quatre steppes sur `origin/main`. Quatrième
+tranche du point (d) du kit « monde fidèle ».
+
+**Ce que ça change.** Douze steppes réelles ont l'herbe sèche couleur de
+paille, et un arbre là où la forêt tempérée en aurait vingt : le Kazakhstan,
+l'Ukraine du Sud, la Mongolie, l'Anatolie, le plateau iranien, les Hautes
+Plaines à l'ouest du 100e méridien, le Grand Bassin, le Sahel, la Corne de
+l'Afrique, le Karoo, la Patagonie, l'intérieur australien autour du désert,
+le nord du Mexique. Au loin et sur la carte, la steppe est blonde. La forme du
+monde ne bouge pas d'un bloc ; le Kansas, l'Iowa, la Pampa et l'Ukraine du
+Nord restent verts.
+
+**Ce qui le prouve.** Un témoin neuf et un témoin élargi dans `plafond.js`,
+rouges sur `origin/main` : au cœur de quatre steppes (Kazakhstan, Mongolie,
+Montana, Patagonie), 11 arbres contre 326, l'herbe teinte, zéro bloc de forme
+différente ; vu de loin et sur la carte, la steppe est blonde à côté du
+Kansas. Le témoin tempéré de la v341 compte toujours zéro bloc différent.
+
+---
+
+## v346 — Le monde suit les voitures
+
+**Pourquoi.** Max veut une conduite « comme GTA », et les voitures sont trop
+lentes. Leur vitesse était plafonnée à vingt-huit blocs par seconde en ville
+sur un chiffre de la v237 — « Paris se maille à 42 morceaux par seconde » —
+mesuré AVANT que le maillage ne parte dans un worker (v251), et jamais
+remesuré. Et en roulant vite, la file de maillage servait d'abord les côtés
+qu'on dépasse : à soixante blocs par seconde dans Paris, la caméra ne
+dessinait que huit appels devant elle — l'enfant roulait devant le seul
+paysage lointain.
+
+**Ce que ça change.** Quand on va vite, le monde se charge là où l'on va : la
+file de maillage suit le déplacement réel (plus le regard), donne la priorité
+aux morceaux dans l'axe, et ne demande plus ce qu'on laisse derrière soi. Et le
+plafond de vitesse au sol est désormais MESURÉ et publié
+(`src/plafond-sol.js`) : soixante blocs par seconde en ville, soixante-dix en
+campagne et sur l'autoroute, soixante au palier bas — c'est ce que la conduite
+pourra donner aux voitures (« on mesure, elle applique »). Rien ne change à
+l'arrêt ni à pied, ni dans un navigateur sans carte graphique, qui garde
+l'ordre d'avant (comme il garde déjà ses ombres éteintes).
+
+**Ce qui le prouve.** Une sonde en roulant, régime établi
+(`tests/sonde-monde-a-la-vitesse.cjs`) : à rr 12, le worker rend 43 à 58
+morceaux par seconde en ville et 54 à 78 en campagne ; à 60 b/s le monde est
+maillé dans le champ de la caméra jusqu'à 132 à 143 blocs en ville contre 101
+à 107 sur l'ancienne file, sans aucune image au-delà de 300 ms. Deux témoins
+dans `monte.js`, tous deux rouges sur `origin/main` : l'ordre de la file (le
+morceau de l'axe à douze avant celui de côté à sept, rien derrière — 250
+morceaux derrière sur l'ancienne), et à 60 b/s dans Paris l'écart de la part
+des morceaux maillés dans le champ de la caméra entre l'ordre neuf et l'ordre
+d'avant, joués dans la même page en alternance (0,29 ici, −0,04 sur
+`origin/main`, barre 0,13).
+
+---
+
+## v345 — La toundra et la taïga
+
+**Pourquoi.** La v341 a donné au monde ses déserts ; le reste du climat
+manquait. Le Grand Nord canadien, la Iamalie, la Sibérie arctique étaient des
+prairies vertes, et la grande forêt boréale — la Iakoutie, le Québec du Nord,
+la Finlande — une plaine semée de chênes : mesuré sur `origin/main`, 185
+arbres sur 15 119 colonnes au cœur de quatre taïgas, et 197 arbres et zéro
+pierre au cœur de trois toundras. Deuxième tranche du point (d) du kit
+« monde fidèle ».
+
+**Ce que ça change.** Au nord de la vraie limite des arbres (68° sur le
+Mackenzie, 59° au bord de la baie d'Hudson, 67° au pied de l'Oural, 72° sur la
+Khatanga), et sur le haut plateau du Tibet, la campagne est une toundra :
+herbe rase olive, plaques de roche nue, neige dès que le relief monte, et
+presque plus un arbre. En dessous, la taïga fait le tour du pôle : une forêt
+de pins presque partout, quelques bouleaux, l'herbe sombre et froide. Le
+paysage lointain et la carte du monde disent la même chose que le sol. Les
+villes gardent leur sol et leurs parcs ; la forme du monde ne bouge pas d'un
+bloc ; là où un enfant a bâti avant cette version, ses arbres restent ceux
+d'avant.
+
+**Ce qui le prouve.** Cinq témoins neufs dans `plafond.js`, tous rouges sur
+`origin/main` : au cœur de trois toundras, 1 441 colonnes de roche ou de
+neige sur 9 263, 5 arbres contre 197, zéro bloc de forme différente ; au cœur
+de quatre taïgas, 520 arbres contre 185 dont 445 pins, l'herbe teinte et rien
+de teint au Kansas ; un morceau déclaré d'un climat l'est colonne par colonne
+(3 657 morceaux, zéro désaccord) ; les arbres d'avant restent là où un enfant
+a bâti ; vu de loin et sur la carte, la toundra est olive et la taïga sombre à
+côté du Kansas. Coût mesuré sous node, ordre alterné : le mailleur inchangé
+hors des zones (9,34 contre 9,32 ms par morceau), une question de climat
+coûte 0,37 µs.
+
+---
+
+## v344 — Les amis voient les dégâts
+
+**Pourquoi.** Depuis la v343 la voiture de l'enfant s'abîme, fume et brûle —
+mais seulement sur SA tablette. À plusieurs, l'ami qui le regarde conduire
+voyait une voiture neuve foncer dans un mur et repartir intacte : la moitié de
+la scène manquait (« une voiture conduite doit se voir en ligne », CLAUDE.md).
+
+**Ce que ça change.** La position du conducteur emporte désormais les dégâts
+de sa voiture, en un champ court (`p.v.d` : les impacts et l'état du feu).
+L'ami rejoue les mêmes impacts sur la voiture qu'il dessine : la même tôle
+enfoncée, la même fumée, les mêmes flammes. Une tablette restée sur l'ancienne
+version ignore le champ et voit la voiture comme avant.
+
+**Ce qui le prouve.** Deux témoins à deux tablettes dans `tests/degats.js`,
+ROUGES sur la v343 (santé 1 et aucune pièce froissée chez Alice ; pas de
+flammes) et verts ici (santé 0,7 et quinze pièces froissées chez Alice ; puis
+le feu, des flammes chez elle aussi, avant que Marlon ne soit déposé).
 
 ---
 

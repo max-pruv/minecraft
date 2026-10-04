@@ -6,13 +6,65 @@
 
 export const NOUVEAUTES = [
   {
-    v: 344,
+    v: 350,
     titre: 'Conduire comme au cinéma',
     puces: [
       'La caméra recule quand on accélère',
       'La voiture penche dans les virages',
       'Les roues avant tournent avec toi',
       'Les pneus crissent, les chocs s\'entendent',
+    ],
+  },
+  {
+    v: 349,
+    titre: 'Les forêts tropicales',
+    puces: [
+      'L\'Amazonie est une vraie jungle',
+      'Des palmiers au Congo, à Bornéo',
+      'L\'herbe d\'un vert profond',
+    ],
+  },
+  {
+    v: 348,
+    titre: 'Un feu plus léger',
+    puces: [
+      'La fumée ne fait plus ramer',
+      'Les flammes non plus',
+    ],
+  },
+  {
+    v: 347,
+    titre: 'Les steppes',
+    puces: [
+      'L\'herbe sèche couleur de paille',
+      'Du Kazakhstan à la Mongolie',
+      'Et la Patagonie, le Sahel',
+    ],
+  },
+  {
+    v: 346,
+    titre: 'Le monde suit les voitures',
+    puces: [
+      'Le paysage arrive là où tu roules',
+      'Les rues devant toi d\'abord',
+      'Assez rapide pour foncer',
+    ],
+  },
+  {
+    v: 345,
+    titre: 'La toundra et la taïga',
+    puces: [
+      'Le Grand Nord a son lichen',
+      'Des forêts de pins en Sibérie',
+      'Et au Canada, en Finlande',
+    ],
+  },
+  {
+    v: 344,
+    titre: 'Tes amis voient les dégâts',
+    puces: [
+      'La voiture abîmée se voit en ligne',
+      'Et ses flammes aussi',
     ],
   },
   {

@@ -1045,9 +1045,9 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // Borne basse 3,0 : le rapprochement anti-mur peut raccourcir le recul
     // (plancher à 3,2) si un obstacle traîne derrière le parc — c'est un
     // comportement voulu, pas un défaut.
-    // ET LE PLAFOND SUIT LA VITESSE DEPUIS LA v344 : la caméra recule jusqu'à
+    // ET LE PLAFOND SUIT LA VITESSE DEPUIS LA v350 : la caméra recule jusqu'à
     // 1,32 fois le recul de la fiche quand la voiture roule (6,4 → 8,45). Le
-    // portail de la v344 l'a rendue rouge à 7,07 sur la borne fixe de 6,5,
+    // portail de la v350 l'a rendue rouge à 7,07 sur la borne fixe de 6,5,
     // une voiture qui roulait encore — le plafond se calcule, il ne se recopie
     // pas (v269).
     verifier('au volant, la caméra suit la voiture de derrière, comme GTA',
@@ -3728,6 +3728,143 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !suivi.err && tenus.every((a) => a && a.trou >= a.barre),
       `barre = une demi-seconde de vol · ${JSON.stringify(tenus)} · brouillard ${suivi.brouillard}`);
 
+    // LA FILE DE MAILLAGE SUIT LE DÉPLACEMENT QUAND ON VA VITE (v337).
+    //
+    // L'ordre se lit d'abord sous node, sur la règle pure (plafond-sol.js) :
+    // en roulant vers +x, le morceau de l'AXE à douze morceaux passe avant
+    // celui de CÔTÉ à sept, et rien de ce qui est derrière n'est demandé. Sur
+    // l'ancien code le module n'existe pas : on rejoue alors l'ordre d'avant
+    // (la distance au carré, 1 devant le regard, 2,5 ailleurs, rien retiré),
+    // pour que le témoin dise POURQUOI il est rouge et non qu'un fichier
+    // manque (v302).
+    {
+      let regle = 'file neuve (plafond-sol.js)';
+      let file;
+      const deja = () => false;
+      try {
+        const m = await import('../src/plafond-sol.js');
+        file = m.fileDeMaillage({ pcx: 0, pcz: 0, R: 12, dir: { x: 1, z: 0 }, rapide: true, deja });
+      } catch {
+        regle = 'file d\'avant (module absent)';
+        file = [];
+        for (let dz = -12; dz <= 12; dz++) for (let dx = -12; dx <= 12; dx++) {
+          const d2 = dx * dx + dz * dz, len = Math.sqrt(d2);
+          const devant = len < 1.5 ? 1 : dx / len;
+          file.push({ cx: dx, cz: dz, d: d2 * (devant > 0.15 ? 1 : 2.5) });
+        }
+        file.sort((a, b) => b.d - a.d);
+      }
+      // pop() prend la fin : plus l'indice est grand, plus le morceau passe tôt
+      const rang = (x, z) => file.findIndex((e) => e.cx === x && e.cz === z);
+      const axe = rang(12, 0), cote = rang(0, 7);
+      const derriere = file.filter((e) => e.cx < -2).length;
+      verifier('en roulant vite, le morceau dans l\'axe est demandé avant celui de côté, et rien derrière',
+        axe >= 0 && cote >= 0 && axe > cote && derriere === 0,
+        `${regle} · axe à 12 au rang ${file.length - axe}, côté à 7 au rang ${file.length - cote} (sur ${file.length}) · ${derriere} morceau(x) derrière`);
+    }
+
+    // ET DANS LE JEU : à soixante blocs par seconde au cœur de Paris, ce qui
+    // se maille est ce qu'on a DEVANT les yeux. Mesuré seul en ordre alterné
+    // (sonde-monde-a-la-vitesse.cjs) : part des morceaux installés qui tombent
+    // dans le champ de la caméra (±40°) 0,62 · 0,65 sur l'ordre d'avant, 0,89 ·
+    // 0,92 sur le neuf ; le monde maillé dans ce champ jusqu'à 101 blocs avant,
+    // 129 après, et HUIT appels de dessin devant soi avant — l'enfant roulait
+    // devant le seul paysage lointain.
+    //
+    // UNE PART SOUS CHARGE N'EST PAS LA PART SEULE : au portail de la v337 le
+    // neuf a rendu 0,73 (le débit divisé par deux, 146 morceaux au lieu de
+    // 266) pour une barre absolue de 0,77. Le témoin joue donc les DEUX ordres
+    // dans le même passage, sur la même page — l'ordre neuf (que le jeu coupe
+    // en rendu logiciel comme les ombres) puis l'ancien — et juge l'ÉCART, que
+    // la charge du banc touche des deux côtés. Sur l'ancien code le crochet
+    // n'existe pas : même ordre deux fois, écart nul, rouge. Barre : la moitié de l'écart mesuré seul (0,27 → 0,13).
+    // La position est une fonction du TEMPS RÉEL : on mesure le chargement,
+    // pas la voiture, et la vitesse ne dépend pas de la cadence du banc (v270).
+    // UNE PAGE DE PLUS EST UNE MESURE DE MOINS : ouvertes à côté de `tab` et
+    // de `ciel`, mes deux pages n'ont jamais chargé leur disque en quarante
+    // secondes au portail (56 à 68 morceaux installés). Les deux ordres se
+    // jouent donc dans `ciel`, par `__game.fileMaillage`.
+    const rouler = async (mode) => {
+      await souffler();
+      const r = await ciel.evaluate(async (mode) => {
+        const g = window.__game;
+        const crochet = typeof g.fileMaillage === 'function';
+        if (crochet) g.fileMaillage(mode);
+        const { positionDe } = await import('./src/mondes.js');
+        const CHUNK = 16, R = 12, v = 60;
+        const P = positionDe('paris');
+        const x0 = P.x - v * 7, z = P.z + 0.5;
+        const p = g.player;
+        const patienter = (ms) => new Promise((fin) => {
+          const t0 = performance.now();
+          const tic = () => (performance.now() - t0 < ms ? requestAnimationFrame(tic) : fin());
+          requestAnimationFrame(tic);
+        });
+        const poser = (x) => { p.pos.set(x, 140, z); p.vel.set(0, 0, 0); p.yaw = -Math.PI / 2; p.pitch = 0; };
+        p.flying = true;
+        poser(x0);
+        // le disque chargé d'abord à l'arrêt, borné : on mesure un régime
+        const t0 = performance.now();
+        const pcz = Math.floor(z / CHUNK);
+        while (performance.now() - t0 < 40000) {
+          poser(x0);
+          let n = 0; const pcx = Math.floor(x0 / CHUNK);
+          for (let dz = -R; dz <= R; dz++) for (let dx = -R; dx <= R; dx++) if (g.chunkMeshes.has(`${pcx + dx},${pcz + dz}`)) n++;
+          if (n >= (2 * R + 1) ** 2 * 0.9) break;
+          await patienter(250);
+        }
+        const charge = Math.round(performance.now() - t0);
+        const depart = performance.now();
+        let roule = true;
+        const tic = () => { if (!roule) return; poser(x0 + v * (performance.now() - depart) / 1000); requestAnimationFrame(tic); };
+        requestAnimationFrame(tic);
+        await patienter(4000);
+        const vus = new Set(g.chunkMeshes.keys());
+        let installes = 0, dansCone = 0;
+        const tf = performance.now() + 6000;
+        while (performance.now() < tf) {
+          await patienter(0);
+          const pcx = Math.floor(p.pos.x / CHUNK);
+          for (const k of g.chunkMeshes.keys()) {
+            if (vus.has(k)) continue;
+            vus.add(k); installes++;
+            const [kx, kz] = k.split(',').map(Number);
+            const ax = kx - pcx, az = kz - pcz;
+            if (ax > 0 && Math.abs(az) <= ax * 0.84) dansCone++;   // ±40°
+          }
+        }
+        // le monde maillé dans le champ, à la fin
+        const pcx = Math.floor(p.pos.x / CHUNK);
+        let champ = R;
+        for (let dz = -R; dz <= R; dz++) for (let dx = 1; dx <= R; dx++) {
+          const len = Math.hypot(dx, dz);
+          if (len > R || dx / len < 0.766) continue;
+          if (!g.chunkMeshes.has(`${pcx + dx},${pcz + dz}`)) champ = Math.min(champ, len);
+        }
+        roule = false;
+        p.flying = false;
+        if (crochet) g.fileMaillage(null);
+        return { crochet, charge, parcouru: Math.round(p.pos.x - x0), installes, dansCone,
+          part: +(dansCone / (installes || 1)).toFixed(2), champ: Math.round(champ * CHUNK) };
+      }, mode);
+      return r;
+    };
+    // EN ABBA, PARCE QUE LE PREMIER PASSAGE N'EST PAS LE SECOND : sur l'ancien
+    // code, deux passages identiques ont rendu 0,43 puis 0,57. L'ordre
+    // neuf, l'ancien, l'ancien, le neuf — et l'on compare les MOYENNES.
+    const n1 = await rouler('cone'), a1 = await rouler('regard');
+    const a2 = await rouler('regard'), n2 = await rouler('cone');
+    const moyenne = (x, y) => ({ ...x, part: +((x.part + y.part) / 2).toFixed(2),
+      installes: Math.min(x.installes, y.installes), dansCone: x.dansCone + y.dansCone,
+      parcouru: Math.min(x.parcouru, y.parcouru), champ: Math.min(x.champ, y.champ), charge: Math.max(x.charge, y.charge) });
+    const ordreNeuf = moyenne(n1, n2), ordreAvant = moyenne(a1, a2);
+    const ecartParts = +(ordreNeuf.part - ordreAvant.part).toFixed(2);
+    const dit = (r) => `${r.crochet ? '' : '(crochet absent) '}part moyenne ${r.part} · champ maillé jusqu'à ${r.champ} blocs · ${r.parcouru} blocs roulés · disque en ${r.charge} ms`;
+    verifier('à soixante blocs par seconde dans Paris, le monde se maille dans le champ de la caméra',
+      ordreNeuf.parcouru > 300 && ordreAvant.parcouru > 300 && ordreNeuf.installes > 40 && ordreAvant.installes > 40
+        && ecartParts >= 0.13,
+      `écart ${ecartParts} (barre 0,13) · ordre neuf : ${dit(ordreNeuf)} · ordre d'avant : ${dit(ordreAvant)}`);
+
     // L'ÉCRAN NE SE FIGE PLUS EN ARRIVANT SUR UNE VILLE (v235).
     //
     // Max, en vol : « il y a vraiment un lag, l'écran s'arrête pendant trois
@@ -5515,7 +5652,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !sons.err && sons.descendu && sons.apresDescente < sons.auRalenti / 4,
       `${sons.err || ''} ${JSON.stringify(sons)}`);
 
-    // LES SENSATIONS AU VOLANT (v344).
+    // LES SENSATIONS AU VOLANT (v350).
     //
     // Max : « l'impression de conduire dans GTA ». La caméra de poursuite
     // était rivée à six blocs quatre derrière la voiture quelle que soit
