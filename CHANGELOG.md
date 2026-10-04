@@ -20,6 +20,30 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v338 — L'autoroute Madrid–Barcelone
+
+**Pourquoi.** Madrid–Barcelone relie les deux grandes villes d'Espagne, le
+long de l'AVE qui suit tout l'axe direct. À l'approche de Barcelone, le pays
+monte : une chaîne entre la ville et la côte, et Barcelone est en contrebas de
+son pays à l'ouest. Le meilleur tracé creusait d'abord 9,17 blocs pour une
+limite de neuf.
+
+**Ce que ça change.** L'AP-2 relie Madrid à Barcelone : 2 094 blocs de deux
+fois deux voies, quatre ponts, vingt voitures, sans jamais croiser l'AVE. Elle
+entre à Barcelone par le côté bas de la ville. Madrid a désormais deux
+autoroutes : vers Séville et vers Barcelone. Le relief ne bouge pas : les
+deux empreintes de `plafond.js` sont intactes.
+
+**Ce qui le prouve.** Un témoin neuf dans `carteMonde.js`, rouge sur
+`origin/main` (pas d'AP-2) : la route, ses voitures, ses deux entrées sur une
+rue propre (seize relevés sur seize de chaque côté), aucune colonne d'emprise
+sur le rail (0 sur 18 543 sous node). Le joint des ponts mesuré sur CHAQUE
+candidat : le premier avait sept points d'accotement sans rien dessous, au bord
+d'une mare qui commence plus tôt sur le côté que sur l'axe ; celui retenu, zéro
+sur 136 879 points pour tous les ponts du registre.
+
+---
+
 ## v337 — L'autoroute Lyon–Marseille
 
 **Pourquoi.** Lyon–Marseille est l'autoroute du Soleil, la route des vacances
