@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 351,
+    titre: 'Les passants voient venir',
+    puces: [
+      'Ils s\'écartent des voitures rapides',
+      'Même quand la tablette rame',
+      'Personne n\'est jamais touché',
+    ],
+  },
+  {
     v: 350,
     titre: 'Buckingham et l\'Opéra de Lille grandissent',
     puces: [

@@ -893,6 +893,36 @@ engendrées. Quatre règles.
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
 
+## Les piétons et les voitures rapides (v351) — ce qui fuit une horloge réelle se compte sur elle
+
+Le chantier « conduite » (sept sessions) triple les vitesses. Trois règles.
+
+- **UN REGARD QUI PORTE EN BLOCS EST UN TEMPS QUI RÉTRÉCIT.** Le couloir de la
+  v259 valait `min(30, 2 v + 4)` blocs : une demi-seconde à 60 b/s. Il se
+  mesure désormais en SECONDES de route (`HORIZON_S`, 1,6 — le double de ce
+  qu'il faut à trois images par seconde, mesuré), avec une marge large sous
+  0,8 s et étroite au-delà (seul ce qui est dans la trajectoire réagit loin
+  devant). `src/pietons.js` est pur et c'est lui que `main.js` lit.
+- **UNE VOITURE QUI ROULE EN TEMPS RÉEL SE FUIT EN TEMPS RÉEL.** La position
+  d'un convoi est une fonction de l'horloge de la rue (v305) ; le piéton
+  marchait en `dt` borné. À cinq images par seconde il allait quatre fois
+  moins vite que ce qu'il fuyait : touché dès 7 b/s. C'est le piège de `dt`
+  (v226) dans le sens où il BLESSE, et la règle « une animation suit le temps
+  du jeu » ne s'y applique pas : ce qui doit tenir face à une horloge réelle
+  se compte sur elle. L'écart (`BaseNPC.update`) avance en temps réel, par
+  pas de 0,9 bloc au plus pour que la boîte glisse bloc à bloc. **Avant
+  d'accélérer un objet, on demande sur quelle horloge il roule, et sur
+  laquelle roule ce qui doit l'éviter.**
+- **UN TÉMOIN DE CHOC JUGE LE VOLUME BALAYÉ, ET IL PROVOQUE LA CADENCE.** À
+  60 b/s et cinq images par seconde, une voiture saute douze blocs d'une image
+  à l'autre : un instantané ne la voit jamais sur le piéton. Le témoin de
+  `monte.js` juge l'intervalle parcouru par la carrosserie entre deux images,
+  et la position d'ARRIVÉE (v279) ; il suspend `player.update` pour conduire
+  la voiture à la main en temps réel — le freinage de la voiture
+  (`pietonDevant`) ne joue donc pas : on éprouve le seul filet du piéton, les
+  deux se cumulent et l'on ne compte pas sur l'autre. Une passe brûle
+  180 ms par image (v234).
+
 ## Les rues de Londres à la règle du kit (v339) — un plan deux fois plus serré ne porte pas les mêmes rues
 
 La première des cinq villes bâties à la main restées hors règle (dette v271).
@@ -1142,7 +1172,7 @@ Plaines à l'ouest du 100e méridien, steppe pontique au sud de 47° N).
 Et `DATE_CLIMATS` SE RELIT à chaque tranche qui change des arbres : la
 steppe en retire, donc ce qu'un enfant a bâti jusqu'à la fusion de la v347
 garde les arbres d'avant.
-**Les forêts tropicales (v349)** ferment les quatre climats : dix forêts
+**Les forêts tropicales (v351)** ferment les quatre climats : dix forêts
 humides réelles, la forêt dense de grands feuillus et un palmier sur quatre
 (`DENSITE_MAX` passe à 0,08, la seule densité au-dessus de la forêt
 tempérée). Une teinte se juge en capture et pas seulement au témoin : le vert

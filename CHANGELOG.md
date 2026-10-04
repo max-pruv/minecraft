@@ -20,6 +20,38 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v351 — Les piétons à l'abri des voitures rapides
+
+**Pourquoi.** Le chantier « conduite » fait rouler les voitures trois fois plus
+vite — 40 à 70 blocs par seconde. L'écart des piétons (v259) avait été réglé
+pour 4 à 25 : il regardait trente blocs devant une voiture, une demi-seconde à
+60 b/s, quand il en faut plus pour sortir d'une carrosserie au pas pressé. Et,
+plus grave, la voiture roule sur l'horloge RÉELLE de la rue (v305) quand le
+piéton marche en temps de jeu, borné à un vingtième de seconde : sur une
+tablette qui rame, il marchait quatre fois moins vite que la voiture qui
+arrive. Mesuré sous node : un piéton touché dès 50 b/s à soixante images par
+seconde, dès 7 b/s à cinq.
+
+**Ce que ça change.**
+
+- **Un piéton voit venir une voiture 1,6 seconde à l'avance**, quelle que soit
+  sa vitesse, et s'en écarte d'un pas pressé compté en temps réel : il sort de
+  la trajectoire à temps même quand la tablette rame. Personne n'est touché.
+- Loin devant, seul celui qui est DANS la trajectoire réagit : les passants du
+  bord du trottoir continuent leur chemin.
+- La pause qui suit un écart n'aveugle plus : on regarde la route en soufflant.
+
+**Ce qui le prouve.** Un témoin de `monte.js` lance une voiture à 60 puis
+70 b/s sur un passant immobile, six fois, dont une à cinq images par seconde
+provoquées ; il juge le volume balayé par la carrosserie entre deux images et
+la position d'arrivée du piéton. Rouge sur `origin/main` (trois passes sur six
+touchées, arrivée à 0,68 bloc de l'axe), vert ici (zéro, arrivée à 2,9). La
+sonde sous node : aucun choc jusqu'à 120 b/s, de 60 à 3 images par seconde.
+Coût mesuré en ordre alterné : 0,05 à 0,1 ms par image pour cent piétons et
+deux cents voitures.
+
+---
+
 ## v350 — L'Opéra de Lille, Buckingham et les Archives à leur hauteur
 
 **Pourquoi.** La mesure de la v335, lancée sur toutes les villes, avait laissé
