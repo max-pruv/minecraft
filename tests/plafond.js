@@ -709,6 +709,78 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     !tunnel.absent && !tunnel.introuvable && tunnel.plancher && tunnel.reste,
     tunnel.absent ? 'pas de sol continu' : JSON.stringify(tunnel));
 
+  // LES FALAISES ET LES BERGES (v326) — sous node, sur soixante morceaux de
+  // campagne tirés autour des lieux de toute la carte (la graine est fixe).
+  // On compte les faces LATÉRALES qu'on voit sur une colonne hors ville : une
+  // marche de deux blocs ou plus (falaise), ou la rive d'un lac, d'un fleuve,
+  // de la mer (berge). Sur `origin/main` (v321) : 2 863 faces de terre et
+  // 1 164 d'herbe sur les falaises, 1 130 de terre sur les berges, pour 500
+  // morceaux (`sonde-falaises.cjs`). Et le troisième verdict est celui de
+  // l'invariant 1 par l'autre bout : le même monde SANS la règle a la MÊME
+  // forme, bloc pour bloc — seule la matière change.
+  const falaises = await (async () => {
+    const { BLOCK, BLOCK_INFO } = await import('../src/blocks.js');
+    const { dansVilleMonde } = await import('../src/villesmonde.js');
+    const { lieuxDuMonde } = await import('../src/mondes.js');
+    const W = await import('../src/world.js');
+    const { colonneCouverte } = await import('../src/solcontinu.js');
+    // sur l'ancien code la règle n'existe pas : le monde « sans » est alors le
+    // même, et les trois verdicts mesurent quand même (v302 : un témoin neuf
+    // mesure le défaut des deux côtés, pas l'absence d'un export)
+    const sans = new W.World();
+    sans.conf = { ...W.CONF_NEUF, falaises: false };
+    const lieux = lieuxDuMonde().filter((l) => Number.isFinite(l.x));
+    let g = 11; const alea = () => (g = (g * 1103515245 + 12345) % 2147483648) / 2147483648;
+    const enVille = (x, z) => !!w.cityAt(x, z) || dansVilleMonde(x, z);
+    const r = { morceaux: 0, falaise: 0, terreFalaise: 0, rocheFalaise: 0, berge: 0, terreBerge: 0, rive: 0, forme: 0, matiere: 0 };
+    const D = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    while (r.morceaux < 60) {
+      const l = lieux[Math.floor(alea() * lieux.length)];
+      const a = alea() * Math.PI * 2, d = 120 + alea() * 780;
+      const bx = Math.floor((l.x + Math.cos(a) * d) / 16) * 16, bz = Math.floor((l.z + Math.sin(a) * d) / 16) * 16;
+      if (enVille(bx + 8, bz + 8)) continue;
+      r.morceaux++;
+      for (let z = bz; z < bz + 16; z++) for (let x = bx; x < bx + 16; x++) {
+        if (enVille(x, z)) continue;
+        const h = w.terrainHeight(x, z);
+        for (let y = Math.max(0, W.WATER_LEVEL - 4); y <= h + 1; y++) {
+          const id = w.getBlock(x, y, z), id0 = sans.getBlock(x, y, z);
+          if ((BLOCK_INFO[id]?.solid ?? false) !== (BLOCK_INFO[id0]?.solid ?? false)) r.forme++;
+          else if (id !== id0) r.matiere++;
+        }
+        const couverte = colonneCouverte(w, x, z);
+        for (const [dx, dz] of D) {
+          const hv = w.terrainHeight(x + dx, z + dz);
+          for (let y = Math.min(h, hv + 1); y <= h; y++) {
+            const id = w.getBlock(x, y, z);
+            if (!BLOCK_INFO[id]?.solid || id === BLOCK.LOG || id === BLOCK.LEAVES) continue;
+            if (y === h && couverte) continue;
+            const v = w.getBlock(x + dx, y, z + dz);
+            if (v !== BLOCK.AIR && v !== BLOCK.WATER) continue;
+            const terre = id === BLOCK.DIRT || id === BLOCK.GRASS;
+            if (v === BLOCK.WATER || (hv < W.WATER_LEVEL && y <= W.WATER_LEVEL + 3)) {
+              r.berge++; if (terre) r.terreBerge++;
+              if (id === BLOCK.SAND || id === BLOCK.GRAVEL) r.rive++;
+            } else if (h - hv >= 2) {
+              r.falaise++; if (terre) r.terreFalaise++;
+              if (id === BLOCK.STONE) r.rocheFalaise++;
+            }
+          }
+        }
+      }
+    }
+    return r;
+  })();
+  verifier('une falaise de campagne montre de la roche, pas un escalier de terre et d\'herbe',
+    falaises.falaise > 200 && falaises.terreFalaise === 0 && falaises.rocheFalaise > falaises.falaise * 0.9,
+    `${falaises.terreFalaise} faces de terre ou d'herbe sur ${falaises.falaise} faces de falaise (roche ${falaises.rocheFalaise}), ${falaises.morceaux} morceaux`);
+  verifier('et une berge a sa grève de sable et de gravier au ras de l\'eau, pas un talus de terre',
+    falaises.berge > 200 && falaises.terreBerge <= falaises.berge * 0.02 && falaises.rive > 100,
+    `${falaises.terreBerge} faces de terre ou d'herbe sur ${falaises.berge} faces de berge, ${falaises.rive} de sable ou de gravier`);
+  verifier('et la règle ne change que la matière : même forme, bloc pour bloc',
+    falaises.forme === 0 && falaises.matiere > 500,
+    `${falaises.forme} blocs de forme différente, ${falaises.matiere} blocs de matière différente`);
+
   // LE MÉNAGE DU CIEL DE PARIS (v298) — PUR, sur un document fabriqué.
   //
   // Décision de Max (« clean les trucs bizarres ») : une spirale de planches

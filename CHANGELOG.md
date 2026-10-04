@@ -20,6 +20,46 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v326 — Des falaises de roche et des berges de sable
+
+**Pourquoi.** Partout où le relief saute de deux blocs ou plus, le sol continu
+(v297) laisse le voxel — « deux blocs, c'est un mur », et c'est juste. Mais ce
+mur était le remplissage du monde : sous l'herbe, trois blocs de terre. Une
+montagne se lisait comme un escalier de terre et d'herbe, et la rive d'un lac
+ou d'un fleuve comme un talus de terre qui plonge dans l'eau. Mesuré sur 500
+morceaux de campagne tirés autour des lieux de toute la carte : 2 863 faces de
+terre et 1 164 d'herbe sur les flancs de falaise, 1 130 faces de terre sur les
+berges.
+
+**Ce que ça change.**
+
+- **Une falaise est une paroi de roche** : sous le gazon, le flanc est de
+  pierre dès deux blocs de dénivelée, et à partir de quatre la crête aussi.
+- **Une berge est une grève** : au ras de l'eau, du sable ; dessous, du
+  gravier ; et une rive basse (deux blocs au-dessus de l'eau au plus) a son
+  sommet de sable.
+- **Rien ne bouge** : seule la matière change, jamais la hauteur. Le sol sous
+  les maisons des enfants est exactement le même, le sol continu, le contact,
+  les tunnels et le franchissement aussi. Les villes, le désert, la banquise,
+  Mars et le volcan gardent leur matière à eux.
+
+**Ce qui le prouve.** Trois témoins neufs dans `plafond.js`, sous node, sur
+soixante morceaux tirés sur toute la carte, rouges sur `origin/main` : aucune
+face de terre ou d'herbe sur une falaise (0 sur 1 044), au plus deux pour cent
+sur une berge (12 sur 1 409, 268 de sable ou de gravier), et la MÊME forme que
+le monde sans la règle, bloc pour bloc (0 bloc de forme différente, 691 de
+matière différente). Les deux empreintes du relief sont intactes. Le coût de
+génération d'un morceau ne se mesure pas (1,59 contre 1,59 ms chauffé).
+`sonde-falaises.cjs` refait la mesure, `sonde-captures-falaises.cjs` les
+captures. Portail complet : trois rouges, tous des dettes déjà déclarées dans
+`TASKS.md` avec leur double mesure et que la livraison ne touche pas — le
+monument de Paris traversé (`carteMonde.js`, au chiffre près celui de la
+v321), le gel en arrivant sur une ville (`monte.js`), le trou de façade de
+Manhattan (`manhattan.js`, seul rouge rejouée seule) ; l'appui long de
+`carte.js`, rouge au premier portail, est vert rejoué seul des deux côtés.
+
+---
+
 ## v325 — Le North Shore de Sydney a ses voitures
 
 **Pourquoi.** La v322 a mesuré la couverture de toutes les villes : après elle,
