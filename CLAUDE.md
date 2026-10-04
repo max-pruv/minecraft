@@ -907,6 +907,12 @@ des dégâts. La règle est PURE (`degats.js`, lue sous node), ce qui se voit vi
   lit `if (this.boost)`, et une voiture « en panne » roulait à l'allure de la
   marche (mesuré, 1,7 bloc en 2,5 s).
 
+**Et l'ami le voit (v344).** La position emporte les dégâts (`p.v.d`, les
+impacts et le feu, via `versReseau`) ; le receveur les REJOUE sur la voiture
+qu'il dessine (`distant`), avec les mêmes fonctions et le même bruit
+déterministe — on n'envoie pas de géométrie, on envoie l'histoire du choc.
+Une tablette restée sur l'ancienne version ignore le champ (le receveur cède).
+
 **Le feu dépose l'enfant, il ne le projette pas** : passé `DELAI_SORTIE` (3,5 s
 en temps réel), `fun.js` le fait descendre et `deposer` le pose debout sur une
 case libre à côté (côté conducteur d'abord). La carcasse porte `horsService`

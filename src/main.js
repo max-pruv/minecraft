@@ -4122,6 +4122,10 @@ function syncRemotePlayers(list) {
     rp.yaw = p.yaw || 0;
     rp.moving = p.moving;
     synchroniserVehiculeDistant(rp, p.v || null);
+    // LES DÉGÂTS DE SA VOITURE (v344) : l'ami la voit enfoncée, qui fume, en
+    // feu. `p.v.d` est court et une tablette restée sur l'ancienne version
+    // l'ignore (le receveur cède).
+    if (rp.vehicule) fun.degats.distant(rp.vehicule.mesh, (p.v && p.v.d) || null);
     rp.passager = p.p || null;
   }
   for (const [id, rp] of remotePlayers) {
@@ -4299,6 +4303,8 @@ function startNetSession(code, isHost, patience) {
       // rue lui avait donnée, et retire de SA rue la voiture qu'on a prise
       if (typeof u.peinture === 'number') p.v.c = u.peinture;
       if (u.origine) p.v.o = u.origine;
+      const d = fun.degats.versReseau(a.mesh);   // dégâts (v344), absent si intacte
+      if (d) p.v.d = d;
     }
     const pa = fun.passagerDe ? fun.passagerDe() : null;
     if (pa) p.p = { de: pa.de, s: pa.s };
