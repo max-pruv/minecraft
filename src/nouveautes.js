@@ -6,12 +6,48 @@
 
 export const NOUVEAUTES = [
   {
-    v: 337,
+    v: 341,
     titre: 'Le monde suit les voitures',
     puces: [
       'Le paysage arrive là où tu roules',
       'Les rues devant toi d\'abord',
       'Assez rapide pour foncer',
+    ],
+  },
+  {
+    v: 340,
+    titre: 'Les arbres et les falaises',
+    puces: [
+      'Plus d\'arbre sur une falaise de roche',
+      'Ni sur le sable au bord de l\'eau',
+      'Les falaises se voient de loin',
+    ],
+  },
+  {
+    v: 339,
+    titre: 'Les rues de Londres s\'élargissent',
+    puces: [
+      'De vraies rues à deux voies',
+      'Des îlots plus grands entre les avenues',
+      'Les bus garés au bord du trottoir',
+    ],
+  },
+  {
+    v: 338,
+    titre: 'L\'autoroute Madrid–Barcelone',
+    puces: [
+      'De Madrid à Barcelone en voiture',
+      'Le long du train à grande vitesse',
+      'Quatre ponts sur la route',
+    ],
+  },
+  {
+    v: 337,
+    titre: 'L\'autoroute du Soleil',
+    puces: [
+      'De Lyon à Marseille en voiture',
+      'Le long du Rhône, jusqu\'à la mer',
+      'Trois ponts sur la route',
     ],
   },
   {

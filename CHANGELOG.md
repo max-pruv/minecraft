@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v337 — Le monde suit les voitures
+## v341 — Le monde suit les voitures
 
 **Pourquoi.** Max veut une conduite « comme GTA », et les voitures sont trop
 lentes. Leur vitesse était plafonnée à vingt-huit blocs par seconde en ville
@@ -52,6 +52,127 @@ morceaux derrière sur l'ancienne), et à 60 b/s dans Paris l'écart de la part
 des morceaux maillés dans le champ de la caméra entre l'ordre neuf et l'ordre
 d'avant, joués dans le même passage (0,31 ici, 0,02 sur `origin/main`, barre
 0,13).
+
+---
+
+## v340 — Les arbres et les falaises
+
+**Pourquoi.** La v326 a donné à la campagne des falaises de roche et des grèves
+de sable, et elle a déclaré ce qu'elle ne faisait pas : les arbres poussaient
+encore sur une crête de roche ou sur une grève (`treeAt` ne lisait que la
+cote), et le paysage lointain gardait le vert de la carte là où le monde proche
+montre la roche. Mesuré sur `origin/main` (`sonde-arbres-bord.cjs`, 4 000
+morceaux de campagne, deux tirages) : 135 et 168 arbres sur de la roche, 6 sur
+du sable, et 3 qui flottaient au-dessus d'un puits de grotte, sur 12 700 à
+12 900.
+
+**Ce que ça change.** Un arbre ne pousse plus que sur l'herbe : ni sur une
+crête de roche, ni sur une grève, ni au-dessus d'un puits. Le reste de la forêt
+ne bouge pas d'un tronc. Et vu d'avion, au-delà du monde chargé, les falaises
+sont grises et les grèves blondes, comme de près.
+
+Le paysage lointain pose le relief d'abord, à la même vitesse qu'avant, puis
+la roche et le sable dans le temps qui reste (deux millisecondes par image au
+plus, et seulement en jeu — jamais pendant la préparation de l'accueil) : la règle coûte quatre cotes de plus par sommet, et posée dans le
+remplissage elle aurait fait arriver le paysage trois fois plus tard après une
+téléportation. Rien n'est écrit dans le relief : les deux empreintes de
+`plafond.js` ne bougent pas.
+
+**Ce qui le prouve.** Quatre témoins neufs dans `plafond.js`, deux rouges sur
+`origin/main` : aucun arbre ailleurs que sur l'herbe sur 600 morceaux (16 sur
+de la roche avant, 0 ici) ; tout arbre d'herbe du monde sans la règle est
+encore là (1 632 sur 1 632) ; vu de loin, les 674 sommets de roche ou de sable
+de quatre sites ont la couleur que la règle du générateur leur donne (0 sur
+674 avant) ; et les 48 876 autres gardent leur herbe, le relief rempli dans le
+même nombre d'images. Le témoin « même forme, bloc pour bloc » des falaises
+compare le relief sans les arbres, qui ne sont pas du sol.
+## v339 — Les rues de Londres à la règle du kit
+
+**Pourquoi.** Paris est passé à la section de rue du kit (`roadSection`) en
+v303, les villes engendrées en v307 ; les cinq villes bâties à la main sont
+restées à leurs largeurs relevées à la main (dette v271). À Londres, une
+avenue nommée avait 1,4 à 2,4 blocs de chaussée pour une voiture de 2,26 —
+les convois y roulaient plus larges que la rue —, et les bus et les taxis
+étaient garés au milieu de la chaussée, là où roulent les convois : la
+circulation passait au travers.
+
+**Ce que ça change.**
+
+- **Les rues de Londres ont la section du kit**, à un bloc pour un mètre :
+  deux voies et des trottoirs de 2,5 m aux artères (Oxford Street, le Strand,
+  Fleet Street, Park Lane, la New Road, l'Embankment, les ponts…), une voie
+  de 3,1 m et des trottoirs de 2 m aux rues de quartier, deux voies aux rues
+  de la trame. La plus petite rue est plus large que la plus large d'avant.
+- **Les îlots se recomposent** : le pas de la trame suit l'élargissement, et
+  une rue de la trame ne double plus une avenue parallèle — l'îlot va d'une
+  avenue à l'autre, comme dans la vraie ville. Londres garde ses immeubles :
+  26,6 % du disque bâti contre 26,1. Le prix, déclaré : Soho, Bloomsbury,
+  Holborn et Southwark en perdent un tiers à la moitié (St James, Marylebone
+  et la City en gagnent) — le plan de Londres est deux fois plus serré que
+  celui de Paris.
+- **Les bus et les taxis se garent contre le trottoir, les cabines sont sur
+  le trottoir** : plus aucun ne se trouve sur la trajectoire d'un convoi.
+- **Ce qu'un enfant a bâti à Londres ne bouge pas** : sous une colonne où il
+  a posé un bloc avant la mise à jour (et autour), la Londres d'avant reste —
+  une maison sur une ancienne rue n'est pas enfermée dans un immeuble neuf,
+  une cabane sur un ancien toit garde son toit.
+
+**Ce qui le prouve.** Cinq témoins neufs. `carteMonde.js` : les avenues et la
+trame ont la chaussée de leur type (artères 7,0, rues 3,4, trame 6,95 contre
+3,0 et 1,7 sur `origin/main`) ; Londres garde plus de 23 % de lots et aucun
+quartier sous 6 % ; le mobilier est à plus de 1,63 bloc de tout circuit (0,11
+sur `origin/main`). `plafond.js` : une maison sur une ancienne rue n'est pas
+enfermée, une cabane garde son toit (désarmé : 21 blocs de ville autour de la
+maison, toit absent). Les douze circuits de Londres restent à 100 % sur la
+rue ; les deux empreintes de `plafond.js` ne bougent pas (les rues sont du
+sol).
+
+---
+
+## v338 — L'autoroute Madrid–Barcelone
+
+**Pourquoi.** Madrid–Barcelone relie les deux grandes villes d'Espagne, le
+long de l'AVE qui suit tout l'axe direct. À l'approche de Barcelone, le pays
+monte : une chaîne entre la ville et la côte, et Barcelone est en contrebas de
+son pays à l'ouest. Le meilleur tracé creusait d'abord 9,17 blocs pour une
+limite de neuf.
+
+**Ce que ça change.** L'AP-2 relie Madrid à Barcelone : 2 094 blocs de deux
+fois deux voies, quatre ponts, vingt voitures, sans jamais croiser l'AVE. Elle
+entre à Barcelone par le côté bas de la ville. Madrid a désormais deux
+autoroutes : vers Séville et vers Barcelone. Le relief ne bouge pas : les
+deux empreintes de `plafond.js` sont intactes.
+
+**Ce qui le prouve.** Un témoin neuf dans `carteMonde.js`, rouge sur
+`origin/main` (pas d'AP-2) : la route, ses voitures, ses deux entrées sur une
+rue propre (seize relevés sur seize de chaque côté), aucune colonne d'emprise
+sur le rail (0 sur 18 543 sous node). Le joint des ponts mesuré sur CHAQUE
+candidat : le premier avait sept points d'accotement sans rien dessous, au bord
+d'une mare qui commence plus tôt sur le côté que sur l'axe ; celui retenu, zéro
+sur 136 879 points pour tous les ponts du registre.
+
+---
+
+## v337 — L'autoroute Lyon–Marseille
+
+**Pourquoi.** Lyon–Marseille est l'autoroute du Soleil, la route des vacances
+vers la Méditerranée. Le TGV suit tout l'axe direct : il fallait un côté et
+s'y tenir. Et deux corridors plus simples sur le papier se sont révélés sans
+tracé à cette livraison : Hambourg–Cologne et Toronto–Montréal, où les villes
+sont assises sous leur pays du côté qui regarde l'autre.
+
+**Ce que ça change.** L'A7 relie Lyon à Marseille : 1 419 blocs de deux fois
+deux voies, trois ponts sur des vallons, vingt voitures, à l'ouest du TGV
+qu'elle ne croise jamais. Le relief ne bouge pas : les deux empreintes de
+`plafond.js` sont intactes.
+
+**Ce qui le prouve.** Un témoin neuf dans `carteMonde.js`, rouge sur
+`origin/main` (pas d'A7) : la route, ses voitures, ses deux entrées sur une
+rue propre (seize relevés sur seize de chaque côté), aucune colonne d'emprise
+sur le rail (0 sur 12 545 sous node). Les trois ponts au témoin du joint :
+zéro trou sur 19 760 points sous node. La sonde : 2 025 tracés, quatre
+admissibles. Hambourg–Cologne et Toronto–Montréal sont instruites dans
+`TASKS.md`, avec leurs mesures.
 
 ---
 
