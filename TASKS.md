@@ -785,7 +785,8 @@
   la carte ; SECONDE TRANCHE en v345 : la toundra et la taïga (`CLIMATS`,
   terre.js) — la teinte d'herbe par colonne est MESURÉE gratuite (une
   question par morceau, 0,37 µs par colonne près d'un bord, mailleur 9,34
-  contre 9,32 ms hors zone) ; restent les steppes, les tropiques humides ; (e) la bibliothèque architecturale (96
+  contre 9,32 ms hors zone) ; TROISIÈME en v346, les steppes ; reste les
+  tropiques humides ; (e) la bibliothèque architecturale (96
   variantes, 278 profils de ville) — elle exige une retrame à un bloc pour un
   mètre (`docs/monde-fidele/programme.md`, section 6), décision de Max ; (f) la
   matrice de couverture ville par ville (convertie, exclue, bloquée) et les

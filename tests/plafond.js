@@ -1079,7 +1079,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const toundra = lire([[64, -100], [69, 70], [70.5, 140]]);
     // la Iakoutie, le Québec du Nord, la Sibérie occidentale, la Finlande
     const taiga = lire([[62, 125], [52, -72], [60, 75], [63, 27]]);
-    // LES STEPPES (v343) : le Kazakhstan, la Mongolie, le Montana, la Patagonie
+    // LES STEPPES (v346) : le Kazakhstan, la Mongolie, le Montana, la Patagonie
     const steppe = lire([[50, 65], [47, 105], [47, -107], [-45, -68]]);
     // le Kansas, témoin de la campagne tempérée : rien n'y est teint
     const kansas = lire([[38.5, -98.5]]);

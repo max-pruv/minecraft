@@ -2954,7 +2954,7 @@ export class World {
     const cl = this.conf.climat ? this.climat(x, z) : null;
     if (cl === 'taiga') return Math.max(f, 0.55);
     if (cl === 'toundra' || cl === 'desert') return 0;
-    if (cl === 'steppe') return f * 0.12;
+    if (cl === 'steppe') return f * 0.05;
     return f;
   }
 
@@ -3020,9 +3020,9 @@ export class World {
     if (cl && cl !== 'desert' && this.morceauxAvantClimat.has(World.key(Math.floor(x / CHUNK), Math.floor(z / CHUNK)))) cl = null;
     if (cl === 'taiga') density = forest > 0.48 ? 0.06 : 0.025;
     else if (cl === 'toundra') density = 0.0006;
-    // la steppe (v343) : un arbre isolé là où la forêt tempérée en aurait
-    // huit — quelques bosquets le long des creux, pas de bois
-    else if (cl === 'steppe') density *= 0.12;
+    // la steppe (v346) : un arbre isolé là où la forêt tempérée en aurait
+    // vingt — quelques bosquets le long des creux, pas de bois
+    else if (cl === 'steppe') density *= 0.05;
     if (tirage >= density) return null;
     const h = this.terrainHeight(x, z);
     if (h <= WATER_LEVEL + 1 || h >= 58) return null; // only on grass
