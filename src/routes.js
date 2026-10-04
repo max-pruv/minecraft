@@ -303,7 +303,7 @@ export const ROUTES = [
   // candidat (deux ponts) a été écarté : son entrée à Lyon (50°) n'avait que
   // dix-neuf relevés sur la rue, pour vingt exigés.
   { nom: 'A7', villes: ['lyon', 'marseille'], via: [[674, 2100], [663, 2138], [668, 2178], [732, 2585], [755, 2998], [858, 3398], [873, 3435]] },
-  // L'AP-2 (v340), MADRID–BARCELONE : la plus longue de l'Espagne, le long
+  // L'AP-2 (v338), MADRID–BARCELONE : la plus longue de l'Espagne, le long
   // de l'AVE qui va droit de gare à gare (−14°) ; la route ne le croise
   // jamais. Le pays monte vers la Catalogne : à l'approche de Barcelone, une
   // chaîne à 45–60 blocs entre la ville et la côte, et Barcelone est sous
