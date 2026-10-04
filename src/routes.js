@@ -235,6 +235,14 @@ export const ROUTES = [
   // (358 blocs). Mesuré sous node : 8 115 admissibles, 1 176 sans pont ;
   // celui-ci : 785 blocs, aucun pont, déblai 3,5, remblai 1,2, pente 0,062.
   { nom: 'A1 Sud', villes: ['rome', 'naples'], via: [[3943, 4308], [3981, 4322], [4010, 4350], [4081, 4532], [4346, 4894]] },
+  // L'A4/M1 (v330), VIENNE–BUDAPEST : la plaine du Danube, la plus facile du
+  // registre — les deux villes ont une avenue propre presque dans l'axe
+  // (Vienne à 4°, trente-quatre blocs sur la rue ; Budapest à −160°, vingt-
+  // deux), et le pays est bas. Mesuré sous node (scratchpad cherche3.mjs, qui
+  // appelle `profilDe`) : 18 216 tracés, 1 573 admissibles, 547 sans pont ;
+  // celui-ci : 966 blocs, aucun pont, déblai 1,9, remblai 1,1, pente 0,061,
+  // coudes de 17°, zéro rail, zéro aérodrome à moins de 3 701 blocs.
+  { nom: 'M1', villes: ['vienne', 'budapest'], via: [[5374, 595], [5628, 692], [6194, 978]] },
 ];
 
 // --- la section -----------------------------------------------------------------

@@ -20,6 +20,29 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v332 — L'autoroute Vienne–Budapest
+
+**Pourquoi.** Candidat suivant du relevé de la v323 : Vienne–Budapest, 957
+blocs sur l'axe direct, ni rail ni aérodrome, dans la plaine du Danube. Et deux
+candidats plus courts se sont révélés impossibles à cette livraison : Los
+Angeles–San Diego (une crête à l'intérieur, l'aérodrome de LAX sur la côte) et
+Manchester–Liverpool (une crête entre les deux villes).
+
+**Ce que ça change.** La M1 relie Vienne à Budapest : 966 blocs de deux fois
+deux voies, aucun pont, et vingt voitures qui font l'aller-retour, presque en
+ligne droite.
+
+Rien n'est écrit dans le relief : les deux empreintes de `plafond.js` ne
+bougent pas.
+
+**Ce qui le prouve.** Dans `carteMonde.js`, un témoin neuf, rouge sur
+`origin/main` (pas de M1) : la route, ses voitures, ses deux entrées sur une
+rue propre, aucune colonne sur un rail (0 sur 9 228 mesurées sous node). La
+sonde : 18 216 tracés, 1 573 admissibles, 547 sans pont. Los Angeles–San Diego,
+déclarée bloquée dans `TASKS.md` : 265 120 tracés, aucun admissible.
+
+---
+
 ## v331 — Les villes se reconnaissent au loin
 
 **Pourquoi.** Au-delà des morceaux de monde maillés (à peu près deux cents
