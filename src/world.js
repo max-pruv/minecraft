@@ -2984,7 +2984,7 @@ export class World {
     if (hash2i(x, z, SEED + 777) >= density) return null;
     const h = this.terrainHeight(x, z);
     if (h <= WATER_LEVEL + 1 || h >= 58) return null; // only on grass
-    // LES ARBRES AU BORD (v337) : la v326 a fait de la crête d'une falaise
+    // LES ARBRES AU BORD (v339) : la v326 a fait de la crête d'une falaise
     // une paroi de roche et du bord d'une berge basse une grève de sable — un
     // chêne n'y pousse pas. Même règle, même lecture que le générateur.
     if (this.solDeLArbre(x, z, h) !== BLOCK.GRASS) return null;

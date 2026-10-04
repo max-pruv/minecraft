@@ -1,4 +1,4 @@
-// LES ARBRES AU BORD ET LES FALAISES VUES DE LOIN, AVANT ET APRÈS (v337).
+// LES ARBRES AU BORD ET LES FALAISES VUES DE LOIN, AVANT ET APRÈS (v339).
 //   node tests/sonde-captures-arbres.cjs <dossier> <étiquette>
 // Le banc sert le dépôt d'où l'on lance le script : lancé depuis un arbre
 // d'`origin/main`, il photographie l'avant. Les points viennent de

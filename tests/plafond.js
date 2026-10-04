@@ -835,7 +835,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         if (enVille(x, z)) continue;
         const h = w.terrainHeight(x, z);
         for (let y = Math.max(0, W.WATER_LEVEL - 4); y <= h + 1; y++) {
-          // un arbre n'est pas la forme du sol : depuis la v337 il ne pousse
+          // un arbre n'est pas la forme du sol : depuis la v339 il ne pousse
           // plus sur une crête de roche ni sur une grève, et le monde « sans »
           // la règle le garde — on compare le relief, troncs et feuilles à part
           const arbre = (q) => q === BLOCK.LOG || q === BLOCK.BIRCH || q === BLOCK.LEAVES ? BLOCK.AIR : q;
@@ -876,7 +876,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     falaises.forme === 0 && falaises.matiere > 500,
     `${falaises.forme} blocs de forme différente, ${falaises.matiere} blocs de matière différente`);
 
-  // LES ARBRES AU BORD (v337) — sous node, six cents morceaux de campagne
+  // LES ARBRES AU BORD (v339) — sous node, six cents morceaux de campagne
   // tirés comme ci-dessus. Sur `origin/main` (v332), `sonde-arbres-bord.cjs`
   // rend 135 et 168 arbres sur de la roche, 6 sur du sable et 3 au-dessus d'un
   // puits de grotte, sur 12 700 à 12 900 arbres de 4 000 morceaux : la v326
@@ -1793,7 +1793,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         Object.values(r).every((v) => v.retires === 0), Object.entries(r).map(([k, v]) => `${k} ${v.retires}`).join(', '));
     }
 
-    // LES FALAISES ET LES BERGES, VUES DE LOIN (v337). Le monde proche montre
+    // LES FALAISES ET LES BERGES, VUES DE LOIN (v339). Le monde proche montre
     // la roche d'une falaise et le sable d'une grève depuis la v326 ;
     // `horizon.js` gardait le vert de la carte partout. On remplit un paysage
     // lointain à la portée de l'iPad sur quatre sites de campagne (relief,

@@ -498,21 +498,7 @@
   second dépend du premier) — REJOUÉE SEULE : branche ces deux-là, `origin/main`
   v318 la libération (programmes 17/25). Même intermittence de préparation des
   deux côtés, déjà déclarée (v267).
-<<<<<<< HEAD
-- [ ] **LE PORTAIL DE LA v338 (Madrid–Barcelone) : UN SEUL ROUGE, DÉJÀ
-  MESURÉ DES DEUX CÔTÉS.** `carteMonde.js` (l'AP-2 comprise), `plafond.js`
-  (joint : 0 trou sur 136 879 points), `maj.js`, `carte.js` verts.
-  `monte.js` : l'arrivée figée (3 333 ms · 27,7 %), rouge à l'identique des
-  deux côtés (v332).
-- [ ] **LE PORTAIL DE LA v337 (Lyon–Marseille) : TROIS ROUGES, TOUS DÉJÀ
-  MESURÉS DES DEUX CÔTÉS.** `carteMonde.js` (l'A7 comprise), `plafond.js`
-  (joint : 0 trou sur 110 554 points) et `maj.js` verts. `carte.js` : la
-  flèche du GPS, gauche à 1,92 rad — la valeur de `origin/main` rejoué seul
-  (v327). `monte.js` : la téléportation (chauffe de New York expirée, 44/321)
-  et l'arrivée figée (3 850 ms · 30 %), rouges à l'identique des deux côtés
-  (v332).
-=======
-- [ ] **LES PORTAILS DE LA v337 (les arbres et les falaises), QUATRE FOIS.**
+- [ ] **LES PORTAILS DE LA v339 (les arbres et les falaises, préparée comme v333 puis v337), QUATRE FOIS.**
   `plafond.js` (les quatre témoins neufs), `carteMonde.js`, `metro.js`,
   `washington.js` verts à chaque passage. `maj.js` : le témoin « corps,
   programmes et fond de carte » rouge 2 fois sur 2 sur la branche rejouée
@@ -530,7 +516,18 @@
   fois « la monoplace ralentit assez » (9,0 pour une barre à 9 : un minimum
   échantillonné toutes les 300 ms sur une allure qui est une fonction de
   l'heure, v279 et v305), vert à tous les autres passages.
->>>>>>> 01ead1e (TASKS : les portails de la v337)
+- [ ] **LE PORTAIL DE LA v338 (Madrid–Barcelone) : UN SEUL ROUGE, DÉJÀ
+  MESURÉ DES DEUX CÔTÉS.** `carteMonde.js` (l'AP-2 comprise), `plafond.js`
+  (joint : 0 trou sur 136 879 points), `maj.js`, `carte.js` verts.
+  `monte.js` : l'arrivée figée (3 333 ms · 27,7 %), rouge à l'identique des
+  deux côtés (v332).
+- [ ] **LE PORTAIL DE LA v337 (Lyon–Marseille) : TROIS ROUGES, TOUS DÉJÀ
+  MESURÉS DES DEUX CÔTÉS.** `carteMonde.js` (l'A7 comprise), `plafond.js`
+  (joint : 0 trou sur 110 554 points) et `maj.js` verts. `carte.js` : la
+  flèche du GPS, gauche à 1,92 rad — la valeur de `origin/main` rejoué seul
+  (v327). `monte.js` : la téléportation (chauffe de New York expirée, 44/321)
+  et l'arrivée figée (3 850 ms · 30 %), rouges à l'identique des deux côtés
+  (v332).
 - [ ] **LE PORTAIL DE LA v336 (Dallas–Houston), DEUX FOIS.** Le premier a
   trouvé un VRAI trou (le joint du premier pont de l'I-45, dans un coude :
   402 points), corrigé dans `rubansDans` ; le second : `parishd.js`,
@@ -677,7 +674,7 @@
   rocheuse inclinée au-delà de `MARCHE_MAX`) toucherait au contact et au
   franchissement, ou au relief (décision de Max) ; les berges de trois blocs
   gardent leur couronne d'herbe. `horizon.js` et les arbres lisent la règle
-  depuis la v337 (`couleurDuBord`, `solDeLArbre`) ; (d) les
+  depuis la v339 (`couleurDuBord`, `solDeLArbre`) ; (d) les
   textures par usage et climat ; (e) la bibliothèque architecturale (96
   variantes, 278 profils de ville) — elle exige une retrame à un bloc pour un
   mètre (`docs/monde-fidele/programme.md`, section 6), décision de Max ; (f) la

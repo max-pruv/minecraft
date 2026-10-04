@@ -232,7 +232,7 @@ export class Horizon {
     this.hauteurs = new Float32Array(N * N);
     this.pret = new Uint8Array(N * N);
     this.curseur = 0;                        // où reprendre le remplissage
-    this.curseurRegle = 0;                   // … et la règle des bords (v337)
+    this.curseurRegle = 0;                   // … et la règle des bords (v339)
     this.aRaffiner = false;                  // reste-t-il un sommet à relire ?
     // le jeu l'éteint à l'accueil : la préparation garde toutes ses images
     this.raffinerPermis = true;
@@ -409,12 +409,12 @@ export class Horizon {
       this.estNY[i] = 0;
     }
     teindre(col, o, c, h);
-    // De l'herbe de campagne : la règle des bords (v337) passera après.
+    // De l'herbe de campagne : la règle des bords (v339) passera après.
     this.pret[i] = id === BLOCK.GRASS && !u && this.falaises ? A_RAFFINER : FAIT;
     if (this.pret[i] === A_RAFFINER) this.aRaffiner = true;
   }
 
-  // LES FALAISES ET LES BERGES, VUES DE LOIN (v337). Le monde proche montre
+  // LES FALAISES ET LES BERGES, VUES DE LOIN (v339). Le monde proche montre
   // depuis la v326 de la roche sur une marche de deux blocs et plus, une crête
   // de roche dès quatre, une grève au bord de l'eau ; le paysage lointain
   // gardait le vert de la carte partout. Il lit la MÊME règle, `matiereDuBord`,
