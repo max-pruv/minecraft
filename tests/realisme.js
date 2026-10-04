@@ -27,7 +27,11 @@ const verifier = (nom, ok, detail) => {
     });
     await p.locator(".who-card.active").click();
     await p.getByRole("button", { name: "Plus tard", exact: true }).click();
-    await p.locator("#play-btn").click();
+    // LE CLIC AUSSI PREND LE BUDGET DU FICHIER (v344) : « Jouer » reste grisé
+    // pendant la préparation, et le clic l'attend. Mesuré des deux côtés,
+    // branche et `origin/main` : 32 et 33 s sous la charge du banc, pour les
+    // trente secondes par défaut de Playwright — un pile ou face sur le seuil.
+    await p.locator("#play-btn").click({ timeout: 120000 });
     // ET CETTE ATTENTE A LE MÊME BUDGET QUE CELLES DU MÊME FICHIER (v277).
     // Elle n'en déclarait aucun, donc elle prenait les trente secondes par
     // défaut de Playwright, quand les deux attentes de page d'en bas en
