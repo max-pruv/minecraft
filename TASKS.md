@@ -332,7 +332,7 @@
     17 102 → 51 734, taxi tactile « bouton jamais visible », PeerJS « Lost
     connection to server » — tous déclarés) ; `monte.js` « l'écran ne se fige
     pas » seul (3 283 ms · 25,3 %), dette mesurée des deux côtés ci-dessus.
-  - QUATRIÈME PASSAGE (rebasée sur la v332, livrée en v333) : treize suites
+  - QUATRIÈME PASSAGE (rebasée sur la v332 puis la v334, livrée en v335) : treize suites
     vertes, 77 min. Rouges : `manhattan.js` (trou de façade 11 684 → 54 969,
     taxi tactile `locator.tap` hors délai — déclarés) ; `monte.js` les deux
     mêmes (Paris 3 programmes `physical` ; écran 3 117 ms · 22,1 %) ;
@@ -641,14 +641,14 @@
   mesures sur l'iPad de la maison.
 
 - [x] **LES MONUMENTS DE PARIS SONT PLUS BAS QUE LES IMMEUBLES (v301)** — fait
-  en v333 pour Paris, à l'ÉCHELLE DU CIEL : un bloc pour un mètre jusqu'à la
+  en v335 pour Paris, à l'ÉCHELLE DU CIEL : un bloc pour un mètre jusqu'à la
   corniche (20 m), puis une courbe qui mène la tour Eiffel (330 m) à 69.
   Montparnasse 60, Invalides et Notre-Dame 48, Panthéon et Sacré-Cœur 47, Opéra
   41, Bastille 36, Arc 35. Le premier jet à un bloc pour un mètre (Invalides
   107, Notre-Dame 96…) passait au-dessus de la tour Eiffel : vu en capture,
   retiré. Si Max veut la vraie hauteur malgré tout, c'est UNE constante
   (`EIFFEL_BLOCS` ou la courbe de `blocsDuCiel`, echelle-monuments.js).
-- [ ] **LES MONUMENTS DES AUTRES VILLES PLUS BAS QUE LEURS IMMEUBLES** (v333,
+- [ ] **LES MONUMENTS DES AUTRES VILLES PLUS BAS QUE LEURS IMMEUBLES** (v335,
   mesuré, élargi par Max : « lance sur toutes les villes »). Le témoin de
   `plafond.js` mesure 215 monuments dans leurs villes contre la médiane des
   immeubles autour (colonnes à moins de trente blocs de la boîte, hors de toute
@@ -676,7 +676,7 @@
   par ville : l'échelle du ciel de la ville (un bloc pour un mètre jusqu'à la
   corniche de SES immeubles, puis une courbe sous son plus haut repère), par la
   même table de paliers — la courbe de Paris est `blocsDuCiel`.
-- [ ] **UNE CABANE SUR UN ANCIEN TOIT DE MONUMENT SE RETROUVE DEDANS (v333),
+- [ ] **UNE CABANE SUR UN ANCIEN TOIT DE MONUMENT SE RETROUVE DEDANS (v335),
   déclaré.** Le relevé des toits (v301) emporte ce qu'on a bâti sur un
   immeuble ; rien n'emporte ce qu'on a bâti sur un monument étiré. Le bloc
   reste à sa hauteur, donc DANS la maçonnerie étirée : il n'est pas perdu (le
@@ -684,7 +684,7 @@
   `CONF_AVANT`, qui garde les monuments d'avant), mais il ne se voit plus. Si
   cela se voit un jour, la marche est connue : celle de `releverToitsParis`,
   avec la table de paliers pour dire de combien monte chaque couche.
-- [ ] **DES CUBES DÉPASSENT ENCORE DES MODÈLES ÉTIRÉS (v333), mesuré.** Sonde
+- [ ] **DES CUBES DÉPASSENT ENCORE DES MODÈLES ÉTIRÉS (v335), mesuré.** Sonde
   `sonde-monuments-hd.cjs`, cubes qui dépassent (avant → après) : Arc 0 → 28,
   Panthéon 4 → 10, Opéra 9 → 17, Sacré-Cœur 15 → 23, Notre-Dame 34 → 76 (dont
   24 à hauteur d'enfant, inchangés). Un bloc d'écart entre le modèle et son
