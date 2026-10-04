@@ -276,6 +276,10 @@
   `carte.js` VERTE sur la branche ET sur `origin/main` (v321), le témoin de
   compilation vert des deux côtés ; seul reste « l'écran se fige », rouge des
   deux côtés (branche 2 950 ms · 20,8 %, `origin/main` 3 217 · 25,4 %).
+  TROISIÈME PORTAIL, après rebase sur la v322 (les voitures partout) :
+  `plafond.js`, `maj.js`, `carte.js` verts ; seuls rouges, les deux dettes
+  déclarées ci-dessus — le tour des monuments de Paris au pas près
+  (`dur 6 · lus 597`) et l'écran figé (3 617 ms · 25,2 %).
 - [ ] **LE PORTAIL DE LA v322, SECOND, APRÈS REBASE SUR LA v320.** Dix suites.
   Verts : `maj.js` (cette fois), `plafond.js`, `parishd.js`, `carte.js`,
   `washington.js`, `metro.js`. Rouges, rejoués SEULS des deux côtés sur la
