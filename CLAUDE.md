@@ -895,6 +895,44 @@ sur un débit d'avant le worker (v237 → v251). Quatre règles.
   ouverte de plus à côté de `tab` et `ciel` n'a jamais chargé son disque en
   quarante secondes ; et deux passages IDENTIQUES rendent 0,43 puis 0,57 —
   le premier passage n'est pas le second, d'où l'ABBA.
+## Le ciel des autres villes engendrées (vNNN) — toute ville mesurée a son ciel, ou dit pourquoi
+
+Max : « lance sur toutes les villes, pas juste celle-là ». Le lot 3 de la v342
+ne couvrait que les vingt-cinq villes qui portaient une dette ; mesuré sous
+node, vingt et une autres avaient des repères au-dessus de leurs toits mais
+pas à leur hauteur (l'hôtel de ville de Bruxelles à vingt-trois blocs pour
+quatre-vingt-seize mètres). Trois règles.
+
+- **UNE RÈGLE DE VILLE S'ÉCRIT POUR TOUTES LES VILLES, ET UN TÉMOIN LE GARDE.**
+  `VILLES_SANS_CIEL` (echelle-monuments.js) est la `BAS_DECLARES` des villes :
+  toute ville engendrée dont un repère est mesuré parmi ses immeubles est dans
+  `CIELS`, ou déclarée sans ciel avec sa raison — `vrai` (rien à y remettre à
+  l'échelle) ou `lot` (une dette, qui doit disparaître). Une déclaration qui
+  ne sert plus rougit. C'est le verre dans les murs vu du côté d'une table :
+  sans ce témoin, la v342 « couvrait les villes » et en laissait la moitié.
+- **CE QUI EST DÉJÀ AU-DESSUS DE SON CIEL NE BOUGE PAS, ET GARDE L'ORDRE.** Les
+  modèles du catalogue (Sagrada Família, Space Needle, Christ Rédempteur,
+  Opéra de Sydney) et le Burj Khalifa sont à leur hauteur d'auteur, au-dessus
+  de la courbe : on ne les redescend pas (la règle de la tour de Pise), et ceux
+  qui dominent un monument remis à l'échelle entrent dans les `FIXES` du
+  témoin d'ordre. Une pyramide (le Luxor) et une roue (la High Roller) ne
+  s'étirent pas : étirée, une pyramide devient un obélisque.
+- **UN FÛT QUI DOMINE DÉJÀ SES TOITS NE S'ÉTIRE PLUS — vu en capture, pas au
+  témoin.** `minaret` et `tourBoule` sont des colonnes d'un bloc. Le premier
+  jet les étirait jusqu'au plafond des fûts (une fois et demie, v342) : la tour
+  de l'hôtel de ville de Bruxelles à trente-quatre blocs, la Willis Tower à
+  cinquante-cinq, des perches noires au-dessus de la ville. Les fûts de la v342
+  (Santa Justa, Storkyrkan, la Rundetaarn) étaient tous SOUS leurs toits ; ceux
+  d'ici les dominaient déjà de près du double. Un fût ne s'étire donc que si sa
+  hauteur d'auteur reste sous une fois et demie la corniche de sa ville (le
+  témoin le garde) ; sinon il reste où il est (un `FIXE` du témoin d'ordre),
+  et c'est le bâtisseur qu'il faut refaire, pas la hauteur (`TASKS.md`). Les
+  pagodes (Sensō-ji, Tō-ji, Kiyomizu-dera) s'écrivent en paliers de mètres,
+  comme Wat Arun : chaque étage s'étire, chaque toit reste un rang. Deux fûts qui se dépassent
+  dans le mauvais ordre compriment leur courbe (Munich, `k` 0,55 : la
+  Frauenkirche reste au-dessus du beffroi). Gizeh et le Machu Picchu n'ont pas
+  d'immeubles : pas de corniche, pas de ciel à mesurer.
+
 ## Le ciel de chaque ville (v342) — la courbe de Paris posée sur SA corniche
 
 Le lot 3 de la dette de la v335 : quarante-sept monuments des villes

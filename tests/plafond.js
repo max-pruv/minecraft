@@ -464,7 +464,11 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       'Londres|Big Ben': 96, 'Londres|The Shard': 310,
       'Washington|Maison-Blanche': 21, 'Washington|Lincoln Memorial': 30, 'Washington|Mémorial Jefferson': 39,
       'Washington|Bibliothèque du Congrès': 59,
-      'Washington|Capitole des États-Unis': 88, 'Washington|Monument de Washington': 169 };
+      'Washington|Capitole des États-Unis': 88, 'Washington|Monument de Washington': 169,
+      // v351 : ce qui est déjà au-dessus de son ciel garde l'ordre au-dessus
+      // des monuments remis à l'échelle autour de lui.
+      'Barcelone|Sagrada Família': 172, 'Las Vegas|Le Luxor': 107, 'Venise|Le campanile': 99,
+      'Tokyo|La tour de Tokyo': 333, 'Tokyo|La Skytree': 634 };
     const EV = EM && EM.ECHELLES_VILLES ? EM.ECHELLES_VILLES : {};
     const EMAIN = EM && EM.ECHELLES_MAIN ? EM.ECHELLES_MAIN : {};
     const ciel = [...new Map([...Object.entries({ ...EV, ...EMAIN }).map(([k, e]) => [k, e.vraie]), ...Object.entries(FIXES)])]
@@ -492,6 +496,37 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       `${Object.keys(EV).length} monuments à l'échelle de leur ville`
       + (inversions.length ? ` — INVERSÉS : ${inversions.join(' · ')}` : '')
       + (ecartsCible.length ? ` — HORS CIBLE : ${ecartsCible.join(' · ')}` : ''));
+
+    // TOUTES LES VILLES ENGENDRÉES ONT LEUR CIEL (v351). Le lot 3 de la v342 ne
+    // couvrait que les vingt-cinq villes qui portaient une dette ; les autres
+    // avaient des repères au-dessus de leurs immeubles mais pas à l'échelle de
+    // leur vraie hauteur (l'hôtel de ville de Bruxelles à vingt-deux blocs pour
+    // quatre-vingt-seize mètres). Toute ville engendrée dont un repère est
+    // mesuré parmi ses immeubles est dans `CIELS`, ou déclarée sans ciel avec sa
+    // raison ; et une déclaration qui ne sert plus rougit.
+    {
+      const nomsVM = new Set(VILLES_MONDE.map((f) => f.ancre.nom));
+      const villesMesurees = new Set(mesures.map((k) => k.split('|')[0]).filter((v) => nomsVM.has(v)));
+      const CI = EM && EM.CIELS ? EM.CIELS : {};
+      const SC = EM && EM.VILLES_SANS_CIEL ? EM.VILLES_SANS_CIEL : {};
+      const sansCiel = [...villesMesurees].filter((v) => !(v in CI) && !SC[v]);
+      const enDette = Object.keys(SC).filter((v) => SC[v].lot);
+      const inutiles = Object.keys(SC).filter((v) => v in CI || !villesMesurees.has(v));
+      // Et un fût qui domine déjà ses toits ne s'étire plus : sa hauteur
+      // d'auteur reste sous une fois et demie la corniche de sa ville, sinon
+      // l'étirer fait une perche (vu en capture à Bruxelles et à Chicago).
+      const EVf = EM && EM.ECHELLES_VILLES ? EM.ECHELLES_VILLES : {};
+      const perches = Object.entries(EVf).filter(([k, e]) => e.fut && e.corps
+        && e.corps[1] + 1 > 1.5 * [].concat(CI[k.split('|')[0]] || 20)[0]).map(([k]) => k);
+      verifier('chaque ville engendrée qui porte des repères a son ciel, ou dit pourquoi',
+        sansCiel.length === 0 && inutiles.length === 0 && perches.length === 0,
+        `${[...villesMesurees].filter((v) => v in CI).length} villes à leur ciel, `
+        + `${Object.keys(SC).length - enDette.length} sans ciel à bon droit, ${enDette.length} en dette`
+        + (enDette.length ? ` (${enDette.join(', ')})` : '')
+        + (sansCiel.length ? ` — SANS CIEL : ${sansCiel.join(' · ')}` : '')
+        + (inutiles.length ? ` — DÉCLARÉES POUR RIEN : ${inutiles.join(' · ')}` : '')
+        + (perches.length ? ` — FÛTS ÉTIRÉS EN PERCHE : ${perches.join(' · ')}` : ''));
+    }
 
     // PARIS À L'ÉCHELLE DU CIEL : un bloc pour un mètre jusqu'à la corniche,
     // puis la courbe qui mène la tour Eiffel (330 m) à soixante-neuf. Les
