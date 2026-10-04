@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Les rues de Londres à la règle du kit (v331) — un plan deux fois plus serré ne porte pas les mêmes rues
+## Les rues de Londres à la règle du kit (v333) — un plan deux fois plus serré ne porte pas les mêmes rues
 
 La première des cinq villes bâties à la main restées hors règle (dette v271).
 Quatre règles.
@@ -807,7 +807,7 @@ Quatre règles.
   pas la place d'un bus garé : arrêts et taxis sont sur des artères.
 - **LA VILLE D'AVANT SE FIGE, ET ELLE RESTE SOUS CE QU'UN ENFANT A BÂTI.**
   Londres ne bouge pas : c'est la règle de la v303, pas celle de la v306.
-  `londres-v330.js` est la ville recopiée à l'octet, jamais modifiée ; une
+  `londres-v332.js` est la ville recopiée à l'octet, jamais modifiée ; une
   colonne où un bloc a été posé avant `DATE_RUES_LONDRES` (et ses huit
   voisines, `colonnesLondresAvant`) la garde — rien n'enferme une maison
   posée sur une ancienne rue, rien ne retire le toit sous une cabine. Les
@@ -6754,6 +6754,36 @@ et chacune a coûté un passage de banc.
 **Et il ne touche à rien.** Il LIT `terrainHeight` et n'écrit pas un bloc : les
 deux empreintes de `plafond.js` ne bougent pas, et l'invariant 1 tient sans
 qu'on ait rien à déclarer.
+
+**ET LES VILLES Y SONT DES VILLES (v331).** Le paysage ne lisait que le
+relief : au-delà des morceaux maillés, toute ville était de la prairie. Trois
+règles.
+
+- **LA QUESTION « EST-CE UNE VILLE ? » SE POSE PAR CASE D'INDEX, PAS À 280
+  VILLES.** `villeMondeEn` (villesmonde.js) lit l'index de cases de 512 blocs
+  des villes engendrées ; les sept villes bâties à la main passent d'abord par
+  une BOÎTE (Manhattan élargie à 1 300 blocs), et `world.cityAt` — qui connaît
+  la vraie forme de Manhattan par `TerreUrbaine` — n'est appelé que si elle
+  touche. Mesuré : +0,05 à +0,07 µs par colonne, médiane de passages alternés.
+- **LA SILHOUETTE EST UN `InstancedMesh` ENFANT DU PAYSAGE**, un appel de
+  dessin, reconstruit dans `majDecoupe` (4 Hz, temps réel) avec la MÊME règle
+  que le sol : une case dont le morceau est maillé n'a pas de pavé. Les données
+  par sommet (hauteur de bâti, couleur des murs) DÉFILENT avec les hauteurs —
+  jamais refaites. Dans Manhattan rendue (`sansNY`), on ne pose pas de pavés :
+  elle a ses propres silhouettes.
+- **LA HAUTEUR VIENT DE LA FICHE, PAS D'UN GOÛT.** `hMaison` et `trame.tours`
+  pour les villes engendrées, passés par la même formule que la grammaire à
+  travées (trois blocs par étage) ; une table (`VILLES_MAIN`) pour les sept
+  villes bâties à la main. Les murs prennent la palette de la ville lue comme
+  la carte 2D (`decorMapColor`) : deux couleurs pour le même endroit
+  finissent par se contredire.
+
+- **ET LE BÂTI SE COUPE EN RENDU LOGICIEL, comme les ombres (v247) et la
+  couche HD (v287).** Le portail a rendu le gel d'arrivée de `monte.js` plus
+  marqué sur la branche ; l'A/B sur la même page, en vol vers Paris, ordre
+  alterné, l'a nommé : 4,8 · 5,8 · 5,7 images par seconde bâti visible contre
+  15,0 · 17,6 · 11,6 caché. Du remplissage que SwiftShader paie au processeur ;
+  `?batiloin=1` le force (captures, sonde). La teinte urbaine reste partout.
 
 **ET LE PORTAIL ROUGE A FAIT TROUVER PLUS GROS QUE LE PAYSAGE : LE BUDGET DE
 MAILLAGE ÉTAIT COMPTÉ PAR IMAGE.** Le témoin « on ne rattrape pas le bout du

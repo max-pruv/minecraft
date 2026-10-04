@@ -6,12 +6,30 @@
 
 export const NOUVEAUTES = [
   {
-    v: 331,
+    v: 333,
     titre: 'Les rues de Londres s\'élargissent',
     puces: [
       'De vraies rues à deux voies',
       'Des îlots plus grands entre les avenues',
       'Les bus garés au bord du trottoir',
+    ],
+  },
+  {
+    v: 332,
+    titre: 'L\'autoroute Vienne–Budapest',
+    puces: [
+      'De Vienne à Budapest en voiture',
+      'Le long de la plaine du Danube',
+      'Sans un seul pont',
+    ],
+  },
+  {
+    v: 331,
+    titre: 'Les villes se voient de loin',
+    puces: [
+      'En avion, les villes ont leurs immeubles',
+      'Paris en pierre, Tokyo et ses tours',
+      'Plus de prairie à la place des villes',
     ],
   },
   {

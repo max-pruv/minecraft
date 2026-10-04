@@ -81,7 +81,7 @@ import {
 import { positionDe, lieuxDuMonde, cielDe, zDeLatitude } from './mondes.js';
 import { BORNES as BORNES_MANHATTAN } from './manhattan-plan.js';
 import * as PARIS_V302 from './paris-v302.js';
-import * as LONDRES_V330 from './londres-v330.js';
+import * as LONDRES_V332 from './londres-v332.js';
 import { surLaVoie, presDeLaVoie, voieEn, brancherSol, gareEn, rubansVoieDans } from './trains.js';
 import { routeEn, rubansDans, brancherSol as brancherSolRoutes } from './routes.js';
 
@@ -1468,7 +1468,7 @@ function repereAvant(lm) {
   const a = AEROPORT_AVANT.get(lm.name);
   if (a && (a.x !== lm.x || a.z !== lm.z)) return { ...lm, x: a.x, z: a.z };
   if (lm.name === 'Le mobilier de Londres') {
-    const m = LONDRES_V330.MONUMENTS_LONDRES.find((q) => q.nom === lm.name);
+    const m = LONDRES_V332.MONUMENTS_LONDRES.find((q) => q.nom === lm.name);
     return { ...lm, build: m.build };
   }
   return lm;
@@ -1483,8 +1483,8 @@ export const CONF_NEUF = {
 // 5 → 6 y emmène ce qu'elle déplace : c'est là que Paris doublé a été joué. Il
 // ne se met JAMAIS à jour. Même clé que `CONF_NEUF` : ses zones à terre sont
 // les mêmes.
-// Et ces deux mondes-là ont la Londres d'avant sa passe au kit (v331,
-// `londres-v330.js`) : c'est celle qu'on y voyait.
+// Et ces deux mondes-là ont la Londres d'avant sa passe au kit (v333,
+// `londres-v332.js`) : c'est celle qu'on y voyait.
 export const CONF_V308 = { ...CONF_NEUF, fonduDoux: false, mursDeQuai: false, falaises: false, londresAvant: true };
 export const CONF_AVANT = {
   cle: 'avant-v306', villes: CITIES_AVANT, aeroports: AEROPORTS_AVANT_V306, gaulois: GAULOIS_AVANT,
@@ -2024,16 +2024,16 @@ function dansParisCede(x, z, t) {
 function marquerParisCede(ens, x, z) {
   for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) ens.add(cleColonneParis(x + dx, z + dz));
 }
-// LONDRES GARDE SA VILLE D'AVANT SOUS CE QU'UN ENFANT A BÂTI (v331). Ses rues
+// LONDRES GARDE SA VILLE D'AVANT SOUS CE QU'UN ENFANT A BÂTI (v333). Ses rues
 // passent à la règle du kit et ses îlots se recomposent : là où il y avait un
 // immeuble il peut y avoir une rue, et l'inverse. Londres ne bouge pas, donc
 // rien ne se déplace : c'est la règle de la v303 (« la ville d'avant se fige,
 // et elle cède colonne par colonne ») qui vaut, telle quelle. Une colonne où
 // un bloc a été posé ou creusé avant `DATE_RUES_LONDRES`, et ses huit
-// voisines, gardent la ville figée dans `londres-v330.js` : une maison sur
+// voisines, gardent la ville figée dans `londres-v332.js` : une maison sur
 // une ancienne rue n'est pas enfermée dans un immeuble neuf, une cabane contre
 // un ancien mur garde son mur. La date est celle de la publication.
-export const DATE_RUES_LONDRES = Date.UTC(2026, 9, 4, 10, 0, 0);
+export const DATE_RUES_LONDRES = Date.UTC(2026, 9, 4, 12, 0, 0);
 function dansLondresAvant(x, z, t) {
   if (!(t <= DATE_RUES_LONDRES)) return false;
   const du = x - LONDRES.x, dv = z - LONDRES.z, r = LONDRES.r + 1;
@@ -2533,7 +2533,7 @@ export class World {
     this.edits = new Map();       // "x,y,z" -> block id (player modifications)
     this.monumentsTouches = new Set();  // les monuments HD qu'un enfant a modifiés (v292)
     this.colonnesCedees = new Set();    // les colonnes de Paris où la ville cède à ce qu'un enfant a bâti (v306)
-    this.colonnesLondresAvant = new Set();  // celles de Londres où la ville d'avant le kit reste (v331)
+    this.colonnesLondresAvant = new Set();  // celles de Londres où la ville d'avant le kit reste (v333)
     this.cacheSol = new Map();          // "x,z" -> { nat, cote } : la fiche d'une colonne (sol continu, v297)
     this.sansSolContinu = false;        // ?solcontinu=0 : la mesure A/B, jamais un réglage
     this.editTimes = new Map();   // "x,y,z" -> ms timestamp, for multiplayer merge
@@ -3307,7 +3307,7 @@ export class World {
         // Market Street entre les deux, la plage, les quais et les parcs.
         // Nice et Lille : chacune sa trame, ses places et ses maisons. Comme à
         // San Francisco, la trame générique ne s'applique pas par-dessus.
-        // Londres d'avant le kit (v331) dans les mondes d'avant, et sous les
+        // Londres d'avant le kit (v333) dans les mondes d'avant, et sous les
         // colonnes où un enfant a bâti avant la date (`DATE_RUES_LONDRES`).
         const londresAvant = city && city.key === 'londres' && (this.conf.londresAvant
           || (this.colonnesLondresAvant.size > 0 && this.colonnesLondresAvant.has(cleColonneParis(wx, wz))));
@@ -3315,8 +3315,8 @@ export class World {
           ['nice', solNice, lotNiceLibre, batirColonneNice, null, NICE, VOIES_NICE, 'nice'],
           ['lille', solLille, lotLilleLibre, batirColonneLille, null, LILLE, VOIES_LILLE, 'lille'],
           londresAvant
-            ? ['londres', LONDRES_V330.solLondres, LONDRES_V330.lotLondresLibre, LONDRES_V330.batirColonneLondres,
-              LONDRES_V330.pontLondres, LONDRES, LONDRES_V330.VOIES_LONDRES, 'londres-v330']
+            ? ['londres', LONDRES_V332.solLondres, LONDRES_V332.lotLondresLibre, LONDRES_V332.batirColonneLondres,
+              LONDRES_V332.pontLondres, LONDRES, LONDRES_V332.VOIES_LONDRES, 'londres-v332']
             : ['londres', solLondres, lotLondresLibre, batirColonneLondres, pontLondres, LONDRES, VOIES_LONDRES,
               'londres', PORTEE_FEUX_LONDRES],
         ]) {

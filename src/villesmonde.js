@@ -1928,6 +1928,20 @@ export function dansVilleMonde(x, z) {
   return false;
 }
 
+// LA VILLE SOUS UNE COLONNE, POUR LE PAYSAGE LOINTAIN (horizon.js). Même index
+// que `dansVilleMonde`, mais rend la FICHE : sa couleur de toits et sa hauteur
+// propre (`hMaison`, `trame.tours`) disent à quoi ressemble la ville vue de
+// loin. L'eau n'est pas testée ici : sous une ville, le fleuve est déjà sous
+// `WATER_LEVEL` (mesuré à Rome, 67 colonnes d'eau sur 67), et le paysage
+// lointain le lit dans la cote.
+export function villeMondeEn(x, z) {
+  for (const f of villesPres(x, z)) {
+    const u = x - f.ancre.x, v = z - f.ancre.z;
+    if (u * u + v * v <= f.rayon * f.rayon) return f;
+  }
+  return null;
+}
+
 // --- la géométrie commune ----------------------------------------------------
 
 function distancePolyligne(pts, u, v) {
