@@ -275,6 +275,18 @@
   branche 3 · 3 · 2, `origin/main` 3 · 3 · 3. Même distribution ; le 5 est un
   tirage sous la charge du portail, et la dette de la v306 (deux ou trois
   programmes à l'arrivée) reste ouverte telle quelle.
+- [ ] **LE PORTAIL DE LA v327, SUR LA v326 (règle de la v195), DOUBLE MESURE
+  FAITE.** `carteMonde.js` (ENTIÈRE, le témoin de l'A4 compris), `plafond.js`,
+  `carte.js` verts. `maj.js` : la libération de la préparation (la carte encore
+  en cours), l'intermittence déclarée (v267). `monte.js` REJOUÉE SEULE des deux
+  côtés : « l'on est descendu de la voiture de Paris » (la famille du bouton-
+  bascule, v252, qui revient) rouge au portail, VERT seul sur la branche, ROUGE
+  seul sur `origin/main` (v326) — une intermittence des deux côtés ; « la
+  circulation s'arrête devant la voiture de l'enfant » rouge au portail
+  seulement (34 au travers), vert seul sur la branche ; « se téléporter ne
+  compile plus de programmes » rouge SEUL des deux côtés (branche et v326) —
+  rouge en production, à démonter ; l'écran figé, rouge des deux côtés
+  (3 133 ms branche, 4 216 ms `origin/main`).
 - [ ] **LE PORTAIL DE LA v327 (premier, sur la v324).** `plafond.js`, `maj.js`, `carte.js` verts ;
   le témoin de l'A4 vert (rouge sur `origin/main` : « aucun convoi A4 », dix
   segments) ; seuls rouges, les deux dettes déclarées — le tour des monuments
