@@ -274,6 +274,22 @@ export const ROUTES = [
   // admissibles, UN sans pont — celui-ci : 1 317 blocs, déblai 3,9, remblai
   // 1,3, pente 0,061, zéro rail, zéro aérodrome.
   { nom: 'A24', villes: ['berlin', 'hambourg'], via: [[3932, -2036], [3560, -2192], [3189, -2348], [2858, -2584], [2819, -2595]], bord: { hambourg: 24 } },
+  // L'I-45 (v335), DALLAS–HOUSTON : la première route des États-Unis. Le
+  // pays entre les deux est ondulé — des croupes de dix à quinze blocs tous
+  // les quelques centaines de blocs — et Houston est assise au pied d'une
+  // butte au nord (44 à 57 blocs à quarante blocs de son bord, pour une ville
+  // à 33) : par le nord, tous les tracés creusaient au-delà de neuf blocs. On
+  // entre donc par le SUD (88°, trente-six blocs d'avenue sur la rue), après
+  // avoir contourné la ville par l'est, en virages de 24° (v329) ; Dallas par
+  // l'est (86°, trente-trois blocs). LA SONDE TIRE DES CHEMINS LISSÉS : deux
+  // points intermédiaires ne suffisaient pas, le meilleur déblai valait 9,14 ;
+  // un point tous les deux cents blocs, à écart borné et virage borné, en a
+  // trouvé cinq sur vingt-quatre mille (scratchpad cherche.mjs, MARCHE).
+  // Refus : 19 465 déblai au milieu · 1 364 déblai à Houston · 2 667 coude ·
+  // 443 remblai. Celui-ci : 2 168 blocs, trois ponts (deux ravins et un
+  // ruisseau, à plus de cent quatre-vingts blocs des portes), déblai 7,7,
+  // remblai 3,9, pente 0,061, zéro rail, zéro aérodrome.
+  { nom: 'I-45', villes: ['dallas', 'houston'], via: [[-28933, 9811], [-28846, 9999], [-28781, 10192], [-28735, 10388], [-28719, 10591], [-28708, 10794], [-28676, 10994], [-28655, 11195], [-28612, 11393], [-28569, 11590], [-28559, 11628], [-28535, 11660], [-28500, 11679], [-28460, 11682], [-28422, 11668], [-28393, 11640], [-28378, 11603]] },
 ];
 
 // --- la section -----------------------------------------------------------------

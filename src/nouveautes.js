@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 336,
+    titre: 'L\'autoroute Dallas–Houston',
+    puces: [
+      'De Dallas à Houston en voiture',
+      'La première autoroute d\'Amérique',
+      'Trois ponts sur la route',
+    ],
+  },
+  {
     v: 335,
     titre: 'Des monuments plus hauts',
     puces: [
