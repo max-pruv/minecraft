@@ -20,6 +20,27 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v334 — L'autoroute Berlin–Hambourg
+
+**Pourquoi.** Berlin–Hambourg est le candidat suivant du relevé de la v323 :
+1 293 blocs sur l'axe direct, ni rail ni aérodrome, dans la plaine de l'Elbe.
+Une plaine basse et semée de mares, et au nord-est de Hambourg de l'eau qui
+touche le disque de la ville : par là, tout tracé posait un pont contre la
+porte.
+
+**Ce que ça change.** L'A24 relie Berlin à Hambourg : 1 317 blocs de deux fois
+deux voies, aucun pont, vingt voitures. Elle entre à Hambourg par l'est, où le
+pays est sec. Première route du registre en Allemagne du Nord. Le relief ne
+bouge pas : les deux empreintes de `plafond.js` sont intactes.
+
+**Ce qui le prouve.** Un témoin neuf dans `carteMonde.js`, rouge sur
+`origin/main` (pas d'A24) : la route, ses voitures, ses deux entrées sur une
+rue propre (seize relevés sur seize de chaque côté), aucune colonne d'emprise
+sur un rail (0 sur 11 620 mesurées sous node). La sonde : 2 904 tracés,
+trente-quatre admissibles, un seul sans pont — celui-ci.
+
+---
+
 ## v333 — L'autoroute Milan–Bologne
 
 **Pourquoi.** Milan–Bologne vient ensuite dans le relevé de la v323 : 924

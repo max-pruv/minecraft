@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 334,
+    titre: 'L\'autoroute Berlin–Hambourg',
+    puces: [
+      'De Berlin à Hambourg en voiture',
+      'Par la plaine de l\'Elbe',
+      'Sans un seul pont',
+    ],
+  },
+  {
     v: 333,
     titre: 'L\'autoroute Milan–Bologne',
     puces: [
