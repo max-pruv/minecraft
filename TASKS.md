@@ -270,6 +270,15 @@
   branche 3 · 3 · 2, `origin/main` 3 · 3 · 3. Même distribution ; le 5 est un
   tirage sous la charge du portail, et la dette de la v306 (deux ou trois
   programmes à l'arrivée) reste ouverte telle quelle.
+- [ ] **LE PORTAIL DE LA v324 (règle de la v195), DOUBLE MESURE FAITE.** Huit
+  suites. Verts : `carteMonde.js` — ENTIÈRE, le tour des monuments compris
+  (rouge sur `origin/main`, `dur 6`) —, `plafond.js`, `parishd.js`, `carte.js`,
+  `metro.js`. Rouges : `maj.js` le badge (la version monte à la fusion) et les
+  deux témoins du palier (29 images au portail) — rejouée SEULE : le badge
+  seul sur la branche, rien sur `origin/main` ; `monte.js` le témoin New York
+  de la v319 au portail (chauffe expirée à 56/320) et l'écran figé — rejouée
+  SEULE : l'écran figé seul, des deux côtés (3 533 ms · 30 % branche, 3 633 ms
+  · 26 % `origin/main`).
 - [ ] **LE PORTAIL DE LA v324 (règle de la v195), DOUBLE MESURE FAITE.**
 - [ ] **LE PORTAIL DE LA v324.** `plafond.js`, `maj.js`, `carte.js` verts ;
   `carteMonde.js` : le témoin de l'Autosole vert (rouge sur `origin/main` :
