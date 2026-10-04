@@ -21,6 +21,12 @@
   huit blocs en quinze secondes de montre à 0,45 image par seconde
   (sonde : 18 et 19 images en quarante secondes, l'ancienne voiture 6 blocs,
   la nouvelle 3,3), se mesure désormais en quarante images rendues — vert.
+  Dernier portail (57 min, 9 suites) : tous les témoins de la conduite verts ;
+  rouges `monte.js` l'arrivée sur une ville (2 017 ms · 18,7 %), `manhattan.js`
+  la façade (11 684 → 51 734) et le taxi (« bouton jamais visible », une bête,
+  rouge des deux côtés), `carte.js` l'appui long (quatre refus « pointeurs
+  0 », la dette de la v258) — rejouée SEULE : branche verte au premier appui,
+  `origin/main` (v348) verte au deuxième, le premier refusé pareil.
   `manhattan.js` « les deux clients restent sans erreur de jeu » (PeerJS
   « Lost connection to server ») : vu rouge une fois sur la branche, NON
   comparé sur `origin/main` — la suite s'y arrête plus tôt (attente de 90 s
