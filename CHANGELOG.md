@@ -20,6 +20,31 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v324 — Le North Shore de Sydney a ses voitures
+
+**Pourquoi.** La v322 a mesuré la couverture de toutes les villes : après elle,
+les villes engendrées les moins couvertes étaient Sydney (60,5 % — tout le
+North Shore, au-delà du port, sans une voiture), Rome (88,3 %) et Tokyo
+(88,7 %). Les anneaux s'y choisissent du plus grand au plus petit, quatre au
+plus, sans regarder où la ville est vide. Et le tour des monuments de Paris
+passait à un bloc du socle côté +u/+v : l'aile d'une voiture mordait de 0,13
+bloc dans la dernière rangée, et traversait six fois un tronc au coin de la
+Tour Eiffel et des Invalides (dette déclarée en v318, identique sur
+`origin/main`).
+
+**Ce que ça change.** Cinq anneaux de quartier, au sec et sans rien changer au
+sol : Sydney passe à 95,3 % (le North Shore et l'ouest), Rome à 94,6 % (le
+Vatican et Prati), Tokyo à 95,7 %. Et autour des monuments de Paris, les
+voitures roulent un demi-bloc plus loin, des deux côtés : plus aucune ne
+traverse un arbre du square.
+
+**Ce qui le prouve.** Le témoin des 268 villes de `carteMonde.js` exige
+désormais qu'aucune ville engendrée ne soit sous les trois quarts : rouge sur
+`origin/main` (Sydney 60,5 %), vert ici (la pire, Las Vegas, 79,9 %). Le témoin
+« aucune voiture ne traverse un monument de Paris » passe de 6 pas à 0, et la
+tenue de rue comme le partage entre circuits ne bougent pas (pire paire 16
+blocs) ; le recentrage, essayé d'abord, faisait monter un partage à 25 et a été
+retiré.
 ## v324 — L'autoroute Bologne–Florence
 
 **Pourquoi.** Premier des candidats instruits en v323 : Bologne–Florence, 342

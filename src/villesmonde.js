@@ -2764,6 +2764,14 @@ const PARAPET = 1.2;
 // Un pont : une bande le long d'un côté d'anneau, dans le repère de la trame.
 // `axe` 0 = la bande court selon P (le premier axe de trame), 1 = selon Q.
 const ANNEAUX = new Map();
+// Les anneaux de quartier, par ville : `[i, j, ku, kv]` — le nœud de la trame
+// au centre, en pas, et les demi-côtés en pas. Voir la phase 3.
+export const ANNEAUX_EN_PLUS = {
+  // 60,5 → 95,3 % : le North Shore, au-delà du port, puis l'ouest.
+  sydney: [[1, -6, 4, 2], [-7, -5, 1, 1], [-9, 1, 1, 1]],
+  rome: [[-6, 0, 1, 3]],      // 88,3 → 94,6 % : le Vatican et Prati
+  tokyo: [[-3, 0, 1, 3]],     // 88,7 → 95,7 %
+};
 
 export function anneauxDeVille(f) {
   if (ANNEAUX.has(f)) return ANNEAUX.get(f);
@@ -2945,6 +2953,20 @@ export function anneauxDeVille(f) {
           if (c) retenir(c);
         }
       }
+    }
+    // PHASE 3 — LES QUARTIERS QU'AUCUN ANNEAU NE VOIT (v324). Les phases
+    // d'avant ne regardent pas OÙ la ville est vide : quatre anneaux au plus,
+    // du plus grand au plus petit. Mesuré ville par ville (part de la ville à
+    // moins de quarante-cinq blocs, la portée d'une voiture, d'un anneau) :
+    // Sydney 60 %, tout le North Shore au-delà du port sans une voiture, Las
+    // Vegas 80 %. Les anneaux de plus sont des NŒUDS de la trame, cherchés sous
+    // node par couverture gloutonne et écrits dans `ANNEAUX_EN_PLUS` ; ils
+    // passent par la MÊME validation que les autres — le disque, l'eau, le
+    // partage de rue — et une trame qui change les fait tomber en silence, ce
+    // que le témoin de couverture de `carteMonde.js` dira.
+    for (const [i, j, ku, kv] of ANNEAUX_EN_PLUS[f.cle] || []) {
+      const c = valider([0, i, j, ku, kv, true], false);
+      if (c) retenir(c);
     }
     const out = { formes, ponts };
     ANNEAUX.set(f, out);

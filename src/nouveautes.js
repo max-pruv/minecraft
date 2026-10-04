@@ -7,6 +7,11 @@
 export const NOUVEAUTES = [
   {
     v: 324,
+    titre: 'Sydney, Rome et Tokyo plus animées',
+    puces: [
+      'Des voitures au nord du port de Sydney',
+      'Et dans de nouveaux quartiers de Rome',
+      'Plus d\'arbre traversé près des monuments',
     titre: 'L\'autoroute Bologne–Florence',
     puces: [
       'De Bologne à Florence en voiture',

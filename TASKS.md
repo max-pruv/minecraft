@@ -46,14 +46,29 @@
   (`voituresDuCircuit`, une voiture tous les dix-huit blocs) : densité la plus
   basse 25,1 (Rome) → 54,3, maximum de voitures en vue d'un point du monde
   inchangé (72,7, Washington). Témoin « toutes les villes ont des voitures »
-  de `carteMonde.js`. **Reste, déclaré** : les villes les moins couvertes après
-  coup — Nice 59,8 %, Sydney 60,5 %, San Francisco 69,1 %, Las Vegas 79,9 % —
-  livraison suivante ; et les voitures fabriquées ne quittent jamais la scène
+  de `carteMonde.js`. **En v324** : Sydney 60,5 → 95,3 %, Rome 88,3 → 94,6 %,
+  Tokyo 88,7 → 95,7 % (phase 3 des anneaux, `ANNEAUX_EN_PLUS`). **Reste,
+  déclaré** : Nice 59,8 % et San Francisco 69,1 % — leurs rues de trame font
+  deux blocs de chaussée pour une voiture de 2,26 (`w` 1,0, une passe
+  d'élargissement à part, v271) : aucune boucle de quartier n'y tient, il
+  faudrait de vraies avenues nommées (méthode v216), et le sud du disque de
+  San Francisco est au-delà de la vraie ville. Las Vegas 79,9 % : pas de trame
+  de 32 blocs pour un rayon de 126, tout anneau à l'ouest déborde du disque
+  ou suit le côté d'un anneau existant — mesuré, aucun candidat ; Mumbai
+  86,8 %, même cas. Et des anneaux EXISTANTS ont des pas dans du plein à
+  hauteur de carrosserie (Rome 3 : 10, Tokyo 2 : 14, Berlin 1 : 11, Sydney 0 :
+  16) — un monument posé après la trame, le piège des ormes du Mall (v205) :
+  aucun témoin ne lit les anneaux des villes engendrées dans le monde ; et les voitures fabriquées ne quittent jamais la scène
   une fois cachées (`montrer` les rend invisibles, jamais ne les détache) :
   avec trois fois plus de voitures à Paris, une ville parcourue en entier en
   garde davantage dans le graphe — coût de parcours des matrices à mesurer
   sur la tablette avant de les détacher.
-- [ ] **CÔTÉ +u ET +v, LE TOUR DES MONUMENTS DE PARIS N'EST QU'À UN BLOC DU
+- [x] **CÔTÉ +u ET +v, LE TOUR DES MONUMENTS DE PARIS N'EST QU'À UN BLOC DU
+  SOCLE — FAIT EN v324** : demi-côté du tour + 0,5 des deux côtés (`TOURS`,
+  paris.js), 6 pas → 0, partage inchangé. Le recentrage proposé ci-dessous a
+  été mesuré et retiré (un partage à 25 autour de Montparnasse).
+  Ce qui suit est la note d'origine.
+  **CÔTÉ +u ET +v, LE TOUR DES MONUMENTS DE PARIS N'EST QU'À UN BLOC DU
   SOCLE — L'AILE MORD DE 0,13 BLOC DANS SA DERNIÈRE RANGÉE (trouvé en v318 par
   le témoin repointé de `carteMonde.js`, identique sur `origin/main`).** La
   boîte d'un socle se juge sur des COLONNES entières (`|u − p.u| ≤ bu`) : elle
@@ -255,6 +270,7 @@
   branche 3 · 3 · 2, `origin/main` 3 · 3 · 3. Même distribution ; le 5 est un
   tirage sous la charge du portail, et la dette de la v306 (deux ou trois
   programmes à l'arrivée) reste ouverte telle quelle.
+- [ ] **LE PORTAIL DE LA v324 (règle de la v195), DOUBLE MESURE FAITE.**
 - [ ] **LE PORTAIL DE LA v324.** `plafond.js`, `maj.js`, `carte.js` verts ;
   `carteMonde.js` : le témoin de l'Autosole vert (rouge sur `origin/main` :
   « aucun convoi Autosole », neuf segments), seul rouge le tour des monuments
