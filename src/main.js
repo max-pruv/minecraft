@@ -7568,6 +7568,7 @@ function frame(now) {
   // Le remplissage est borné en temps, comme le maillage ; la découpe — les
   // cases qu'on retire parce que le vrai monde les couvre — se refait à une
   // cadence en TEMPS RÉEL, jamais en `dt` (leçon de la v226).
+  horizon.sansNY = renduDansManhattan;   // Manhattan dessine ses propres silhouettes (v326)
   horizon.maj(player.pos.x, player.pos.z, 6);
   // La découpe se refait à une cadence en TEMPS RÉEL, et tout de suite si le
   // joueur a franchement tourné la tête — sinon le cône de vision découvrirait
