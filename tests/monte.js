@@ -3722,6 +3722,117 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !suivi.err && tenus.every((a) => a && a.trou >= a.barre),
       `barre = une demi-seconde de vol · ${JSON.stringify(tenus)} · brouillard ${suivi.brouillard}`);
 
+    // LA FILE DE MAILLAGE SUIT LE DÉPLACEMENT QUAND ON VA VITE (v337).
+    //
+    // L'ordre se lit d'abord sous node, sur la règle pure (plafond-sol.js) :
+    // en roulant vers +x, le morceau de l'AXE à douze morceaux passe avant
+    // celui de CÔTÉ à sept, et rien de ce qui est derrière n'est demandé. Sur
+    // l'ancien code le module n'existe pas : on rejoue alors l'ordre d'avant
+    // (la distance au carré, 1 devant le regard, 2,5 ailleurs, rien retiré),
+    // pour que le témoin dise POURQUOI il est rouge et non qu'un fichier
+    // manque (v302).
+    {
+      let regle = 'file neuve (plafond-sol.js)';
+      let file;
+      const deja = () => false;
+      try {
+        const m = await import('../src/plafond-sol.js');
+        file = m.fileDeMaillage({ pcx: 0, pcz: 0, R: 12, dir: { x: 1, z: 0 }, rapide: true, deja });
+      } catch {
+        regle = 'file d\'avant (module absent)';
+        file = [];
+        for (let dz = -12; dz <= 12; dz++) for (let dx = -12; dx <= 12; dx++) {
+          const d2 = dx * dx + dz * dz, len = Math.sqrt(d2);
+          const devant = len < 1.5 ? 1 : dx / len;
+          file.push({ cx: dx, cz: dz, d: d2 * (devant > 0.15 ? 1 : 2.5) });
+        }
+        file.sort((a, b) => b.d - a.d);
+      }
+      // pop() prend la fin : plus l'indice est grand, plus le morceau passe tôt
+      const rang = (x, z) => file.findIndex((e) => e.cx === x && e.cz === z);
+      const axe = rang(12, 0), cote = rang(0, 7);
+      const derriere = file.filter((e) => e.cx < -2).length;
+      verifier('en roulant vite, le morceau dans l\'axe est demandé avant celui de côté, et rien derrière',
+        axe >= 0 && cote >= 0 && axe > cote && derriere === 0,
+        `${regle} · axe à 12 au rang ${file.length - axe}, côté à 7 au rang ${file.length - cote} (sur ${file.length}) · ${derriere} morceau(x) derrière`);
+    }
+
+    // ET DANS LE JEU : à soixante blocs par seconde au cœur de Paris, ce qui
+    // se maille est ce qu'on a DEVANT les yeux. Mesuré en ordre alterné sur la
+    // même page (sonde-monde-a-la-vitesse.cjs, `?file=regard` rejoue l'ordre
+    // d'avant) : part des morceaux installés qui tombent dans le champ de la
+    // caméra (±40°) 0,62 · 0,65 avant, 0,89 · 0,92 après ; le monde maillé dans
+    // ce champ jusqu'à 101 blocs avant, 129 après, et HUIT appels de dessin
+    // devant soi sur la file d'avant — l'enfant roulait devant le seul paysage
+    // lointain. Une PART ne dépend pas de la charge du banc comme un débit : la
+    // barre est le milieu des deux régimes, 0,77. La position est une fonction
+    // du TEMPS RÉEL : on mesure le chargement, pas la voiture (que la session de
+    // conduite refait), et la vitesse ne dépend pas de la cadence du banc (v270).
+    await souffler();
+    const vite = await ciel.evaluate(async () => {
+      const g = window.__game;
+      const { positionDe } = await import('./src/mondes.js');
+      const CHUNK = 16, R = 12, v = 60;
+      const P = positionDe('paris');
+      const x0 = P.x - v * 7, z = P.z + 0.5;
+      const p = g.player;
+      const patienter = (ms) => new Promise((fin) => {
+        const t0 = performance.now();
+        const tic = () => (performance.now() - t0 < ms ? requestAnimationFrame(tic) : fin());
+        requestAnimationFrame(tic);
+      });
+      const poser = (x) => { p.pos.set(x, 140, z); p.vel.set(0, 0, 0); p.yaw = -Math.PI / 2; p.pitch = 0; };
+      p.flying = true; p.pilote = null;
+      poser(x0);
+      // le disque chargé d'abord à l'arrêt, borné : on mesure un régime
+      const t0 = performance.now();
+      const pcz = Math.floor(z / CHUNK);
+      while (performance.now() - t0 < 40000) {
+        poser(x0);
+        let n = 0; const pcx = Math.floor(x0 / CHUNK);
+        for (let dz = -R; dz <= R; dz++) for (let dx = -R; dx <= R; dx++) if (g.chunkMeshes.has(`${pcx + dx},${pcz + dz}`)) n++;
+        if (n >= (2 * R + 1) ** 2 * 0.9) break;
+        await patienter(250);
+      }
+      const charge = Math.round(performance.now() - t0);
+      const depart = performance.now();
+      let roule = true;
+      const tic = () => { if (!roule) return; poser(x0 + v * (performance.now() - depart) / 1000); requestAnimationFrame(tic); };
+      requestAnimationFrame(tic);
+      await patienter(4000);
+      const vus = new Set(g.chunkMeshes.keys());
+      let installes = 0, dansCone = 0, appels = 0, images = 0;
+      const tf = performance.now() + 6000;
+      while (performance.now() < tf) {
+        await patienter(0);
+        const pcx = Math.floor(p.pos.x / CHUNK);
+        appels += g.renderer.info.render.calls; images++;
+        for (const k of g.chunkMeshes.keys()) {
+          if (vus.has(k)) continue;
+          vus.add(k); installes++;
+          const [kx, kz] = k.split(',').map(Number);
+          const ax = kx - pcx, az = kz - pcz;
+          if (ax > 0 && Math.abs(az) <= ax * 0.84) dansCone++;   // ±40°
+        }
+      }
+      // le monde maillé dans le champ, à la fin
+      const pcx = Math.floor(p.pos.x / CHUNK);
+      let champ = R;
+      for (let dz = -R; dz <= R; dz++) for (let dx = 1; dx <= R; dx++) {
+        const len = Math.hypot(dx, dz);
+        if (len > R || dx / len < 0.766) continue;
+        if (!g.chunkMeshes.has(`${pcx + dx},${pcz + dz}`)) champ = Math.min(champ, len);
+      }
+      roule = false;
+      const parcouru = Math.round(p.pos.x - x0);
+      p.flying = false;
+      return { charge, parcouru, installes, dansCone, part: +(dansCone / (installes || 1)).toFixed(2),
+        champ: Math.round(champ * CHUNK), appels: Math.round(appels / (images || 1)), images };
+    });
+    verifier('à soixante blocs par seconde dans Paris, le monde se maille dans le champ de la caméra',
+      vite.parcouru > 300 && vite.installes > 60 && vite.part >= 0.77,
+      `part dans le champ ${vite.part} (barre 0,77 · ${vite.dansCone}/${vite.installes} morceaux) · monde maillé dans le champ jusqu'à ${vite.champ} blocs · ${vite.appels} appels par image · ${vite.parcouru} blocs roulés · disque chargé en ${vite.charge} ms`);
+
     // L'ÉCRAN NE SE FIGE PLUS EN ARRIVANT SUR UNE VILLE (v235).
     //
     // Max, en vol : « il y a vraiment un lag, l'écran s'arrête pendant trois

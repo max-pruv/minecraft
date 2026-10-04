@@ -20,6 +20,38 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v337 — Le monde suit les voitures
+
+**Pourquoi.** Max veut une conduite « comme GTA », et les voitures sont trop
+lentes. Leur vitesse était plafonnée à vingt-huit blocs par seconde en ville
+sur un chiffre de la v237 — « Paris se maille à 42 morceaux par seconde » —
+mesuré AVANT que le maillage ne parte dans un worker (v251), et jamais
+remesuré. Et en roulant vite, la file de maillage servait d'abord les côtés
+qu'on dépasse : à soixante blocs par seconde dans Paris, la caméra ne
+dessinait que huit appels devant elle — l'enfant roulait devant le seul
+paysage lointain.
+
+**Ce que ça change.** Quand on va vite, le monde se charge là où l'on va : la
+file de maillage suit le déplacement réel (plus le regard), donne la priorité
+aux morceaux dans l'axe, et ne demande plus ce qu'on laisse derrière soi. Et le
+plafond de vitesse au sol est désormais MESURÉ et publié
+(`src/plafond-sol.js`) : soixante blocs par seconde en ville, soixante-dix en
+campagne et sur l'autoroute, soixante au palier bas — c'est ce que la conduite
+pourra donner aux voitures (« on mesure, elle applique »). Rien ne change à
+l'arrêt ni à pied.
+
+**Ce qui le prouve.** Une sonde en roulant, régime établi
+(`tests/sonde-monde-a-la-vitesse.cjs`) : à rr 12, le worker rend 43 à 58
+morceaux par seconde en ville et 54 à 78 en campagne ; à 60 b/s le monde est
+maillé dans le champ de la caméra jusqu'à 132 à 143 blocs en ville contre 101
+à 107 sur l'ancienne file, sans aucune image au-delà de 300 ms. Deux témoins
+dans `monte.js`, tous deux rouges sur `origin/main` : l'ordre de la file (le
+morceau de l'axe à douze avant celui de côté à sept, rien derrière — 250
+morceaux derrière sur l'ancienne), et à 60 b/s dans Paris la part des morceaux
+maillés dans le champ de la caméra (0,91 contre 0,65, barre 0,77).
+
+---
+
 ## v336 — L'autoroute Dallas–Houston
 
 **Pourquoi.** Dallas–Houston vient ensuite dans le relevé de la v323 : 1 781

@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 337,
+    titre: 'Le monde suit les voitures',
+    puces: [
+      'Le paysage arrive là où tu roules',
+      'Les rues devant toi d\'abord',
+      'Assez rapide pour foncer',
+    ],
+  },
+  {
     v: 336,
     titre: 'L\'autoroute Dallas–Houston',
     puces: [

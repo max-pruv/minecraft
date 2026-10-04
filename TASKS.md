@@ -1,5 +1,27 @@
 # Ce qui est en cours
 
+- [ ] **LE PLAFOND DE VITESSE AU SOL EST MESURÉ ET PUBLIÉ (v337) — À APPLIQUER
+  PAR LA CONDUITE, ET À CONFIRMER SUR LA TABLETTE.** `src/plafond-sol.js` :
+  `VITESSE_SOL_MAX` = 60 b/s en ville, 70 en campagne et sur l'autoroute ;
+  `plafondSol({ ville, rr })` le borne par le disque (60 partout au palier bas,
+  rr 8). Critère : le monde maillé dans le champ de la caméra (±40°) jusqu'à
+  deux secondes de route, médiane de six relevés en régime établi
+  (`tests/sonde-monde-a-la-vitesse.cjs`). Le « 42 morceaux par seconde » qui
+  bornait `ALLURES` à 28 b/s datait d'avant le worker : en roulant, 43 à 58 en
+  ville, 54 à 78 en campagne. Reste : (1) la session conduite lit `plafondSol`
+  pour relever `ALLURES` — ce n'est pas à cette zone de changer les vitesses ;
+  (2) le banc rend en logiciel à 11-20 images par seconde et la file se
+  recharge une fois par image : sur l'iPad, mesurer le trou en roulant
+  (`?diag=1`) et la cadence à 60 b/s avant de croire que la cadence tient — les
+  millisecondes du worker et de rendu ne se transposent pas, l'ordre et les
+  nombres de morceaux oui ; (3) au-delà de 70 b/s la ville ne suit plus (80 :
+  86 à 115 blocs dans le champ pour 160) — le levier restant est le coût d'un
+  morceau dans le worker (génération 45 %, v229), pas la file : les trois
+  non-résultats de la file (borner la pose, file en temps, deux mailleurs) et
+  la file de seize (v269) restent écartés ; (4) un lot déjà parti au worker ne
+  s'annule pas quand on le dépasse — huit morceaux au plus, onze blocs de
+  route à 60 b/s : non mesuré comme nuisible, laissé.
+
 - [x] **DEUX OU TROIS PROGRAMMES SE COMPILENT ENCORE À L'ARRIVÉE À PARIS
   (mesuré en v306) — ÉLARGI À TOUTES LES VILLES ET FAIT EN v319.**
   `sonde-programmes-villes.cjs` (seize lieux, page neuve par lieu) rendait sur

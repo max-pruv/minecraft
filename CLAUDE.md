@@ -770,6 +770,39 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Le monde à la vitesse (v337) — on maille où l'on va, et le plafond se mesure en roulant
+
+Max veut une conduite « comme GTA » ; les voitures étaient plafonnées à 28 b/s
+sur un débit d'avant le worker (v237 → v251). Quatre règles.
+
+- **UN PLAFOND QUI DÉRIVE D'UN DÉBIT SE REMESURE QUAND LE DÉBIT CHANGE DE
+  FIL.** « Paris se maille à 42 morceaux par seconde » a survécu quatre-vingts
+  versions au worker qui le rendait faux : en roulant, régime établi, 43 à 58
+  en ville et 54 à 78 en campagne. Le plafond est désormais publié là où il
+  se calcule (`src/plafond-sol.js`, `VITESSE_SOL_MAX`, `plafondSol`), avec sa
+  mesure ; la conduite le lit, elle ne le recopie pas.
+- **LE CRITÈRE EST CE QUE LA CAMÉRA VOIT, ET IL SE MESURE EN ROULANT.** Le
+  monde maillé dans le champ (±40°) jusqu'à deux secondes de route, médiane
+  de six relevés après quatre secondes de régime, le disque chargé d'abord à
+  l'arrêt (`sonde-monde-a-la-vitesse.cjs`) — jamais par saturation (v269). La
+  position y est une fonction du TEMPS RÉEL : on mesure le chargement, pas la
+  voiture, et la vitesse ne dépend pas de la cadence du banc.
+- **LA FILE SUIT LE DÉPLACEMENT, PAS LE REGARD, ET OUBLIE CE QUI EST
+  DERRIÈRE.** L'ancienne file (distance pondérée 1/2,5 par le regard) passait
+  un morceau de côté à sept avant celui de l'axe à douze, et redemandait ce
+  qu'on venait de dépasser : à 60 b/s dans Paris, HUIT appels de dessin devant
+  soi. `fileDeMaillage` pondère continûment par l'écart au déplacement réel
+  (lissé, en temps réel) et, au-dessus de `VITESSE_CONE`, ne demande rien
+  derrière hors du cercle proche ; la file se refait quand le régime change,
+  sinon ce qu'elle a laissé ne revient qu'au morceau suivant. `?file=regard`
+  rejoue l'ancien ordre, pour l'A/B.
+- **LA CADENCE PERDUE EN ROULANT EST CELLE DU MONDE QU'ON VOIT ENFIN.** La
+  nouvelle file coûte 15 à 25 % de cadence au banc ; les appels de dessin
+  disent pourquoi (8 → 31 à Paris, 39 → 84 en campagne) : c'est le rendu de
+  ce qui est devant, payé en logiciel, et l'arrêt au même endroit en coûte
+  bien plus (394 appels, 7,6 images par seconde). Une baisse de cadence se
+  démonte par ce qu'on dessine avant de s'imputer au chargement.
+
 ## Les monuments à la hauteur de leur ville (v335) — une table de paliers, deux lecteurs
 
 Un étage fait trois blocs depuis la v301 ; les monuments n'avaient pas suivi.
