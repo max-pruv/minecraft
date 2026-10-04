@@ -770,6 +770,37 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les villes bâties à la main dans leur ciel (v350) — un repère-fût borne la courbe d'en dessous aussi
+
+Le lot 2 de la dette de la v335 : huit monuments. Trois règles.
+
+- **UNE SALLE QU'ON VISITE NE S'ÉTIRE PAS SOUS LA TROISIÈME COUCHE.** Les
+  monuments de Washington sont des musées à exposition, Buckingham a ses gardes
+  et ses grilles aux couches 1 et 2 : la forme `corps` (qui étire dès la couche
+  1) en ferait des gardes de quatre blocs. Leurs paliers s'écrivent en mètres,
+  comme à Paris, avec un premier palier à 2, 3 ou 4 (`ECHELLES_MAIN`).
+- **UN FÛT PLUS HAUT DANS LA VRAIE VILLE INTERDIT AUSSI DE MONTER CE QUI EST
+  PLUS BAS.** Le château du Smithsonian (44 m) a ses tours d'un bloc à onze :
+  les monter en ferait des aiguilles (v342), et les musées d'Histoire
+  américaine (≈30 m) et de l'Indien d'Amérique (≈30 m, dôme 37) ne peuvent donc
+  pas dépasser onze — or la corniche de Washington est à treize, et tout ce qui
+  passe la corniche y monte au moins. Aucune courbe ne tient les deux : ils sont
+  `vrai`, et c'est juste (la loi de 1910 plafonne la ville à une quarantaine de
+  mètres, ces bâtiments n'y montent pas). Avant de chercher le `k` d'une ville,
+  on écrit ses repères fixes de hauteur connue dans le témoin (`FIXES`) : c'est
+  eux qui disent ce qui peut monter.
+- **UNE COUCHE DE VOXEL SE COUVRE EN ENTIER, PAS À QUATRE DIXIÈMES PRÈS.** La
+  corniche de `palais` fait 0,4 bloc ; la couche du voxel qu'elle habille en
+  fait un. Aux cotes d'auteur, la dilatation d'un bloc la couvrait ; étirée
+  trois fois, la fin de la couche sortait du modèle en cubes (l'attique de
+  l'Opéra, l'entablement du Panthéon, le pied de la flèche de Notre-Dame). Le
+  modèle prend l'épaisseur de la couche, et un témoin de `plafond.js` compte
+  les cellules de flanc non couvertes au-dessus d'un enfant : zéro.
+- **UNE HAUTEUR VRAIE SE CHERCHE, ELLE NE SE DEVINE PAS** : 160 pieds pour les
+  Archives, 24 m pour Buckingham, une quarantaine de mètres pour l'Opéra de
+  Lille, 23 m pour l'Arche. Ce qu'on n'a pas trouvé (le musée d'Histoire
+  américaine, « cinq étages ») se dit approché dans le commentaire.
+
 ## Le monde à la vitesse (v346) — on maille où l'on va, et le plafond se mesure en roulant
 
 Max veut une conduite « comme GTA » ; les voitures étaient plafonnées à 28 b/s
