@@ -20,6 +20,33 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v341 — Les déserts
+
+**Pourquoi.** Le planisphère savait la terre, la mer et les grandes chaînes de
+montagnes ; il ne savait pas le climat. Le cœur du Sahara, le Rub al-Khali,
+l'intérieur australien, l'Atacama étaient des prairies boisées : mesuré sur
+`origin/main`, 14 colonnes de sable sur 4 309 au cœur de cinq déserts, et 49
+arbres. C'est le point (d) du kit « monde fidèle », les textures par climat,
+dans sa plus petite tranche utile.
+
+**Ce que ça change.** Les grands déserts chauds du monde réel — Sahara,
+Arabie, Iran, Thar, Taklamakan et Gobi, Kalahari et Namib, intérieur
+australien, Atacama, Mojave et Sonora — sont de sable, sans un arbre, avec un
+bord qui tremble comme une côte. Autour de Las Vegas, de Phoenix, de Riyad,
+d'Ispahan ou de Tombouctou, la campagne est blonde ; le delta du Nil, le
+littoral méditerranéen et le Maroc restent verts. Le paysage lointain et la
+carte du monde disent la même chose que le sol. Seule la matière change : la
+forme du monde est identique bloc pour bloc, et les deux empreintes de
+`plafond.js` ne bougent pas.
+
+**Ce qui le prouve.** Trois témoins neufs, deux rouges sur `origin/main` : au
+cœur de cinq déserts réels, 4 309 colonnes de sable sur 4 309 et aucun arbre
+(14 de sable et 49 arbres avant) ; au Kansas, dans l'Iowa, la Pampa et en
+Ukraine, zéro bloc différent du monde sans la règle, et dans les déserts zéro
+bloc de forme différente ; vu de loin et sur la carte, le Sahara est blond et
+le Kansas vert (`plafond.js`, dans la page). Mesuré sous node : 8 546 colonnes
+passent de l'herbe au sable autour de douze villes, coût par morceau inchangé.
+
 ## v340 — Les arbres et les falaises
 
 **Pourquoi.** La v326 a donné à la campagne des falaises de roche et des grèves

@@ -498,6 +498,14 @@
   second dépend du premier) — REJOUÉE SEULE : branche ces deux-là, `origin/main`
   v318 la libération (programmes 17/25). Même intermittence de préparation des
   deux côtés, déjà déclarée (v267).
+- [ ] **LE PORTAIL DE LA v341 (les déserts) : TOUS LES ROUGES DÉJÀ
+  DÉCLARÉS.** `plafond.js` (les trois témoins des déserts, celui de la page
+  compris), `carteMonde.js`, `carte.js`, `metro.js`, `washington.js` verts.
+  `maj.js` : le loader et le fond de carte (personnages 5/9), intermittence de
+  la v340 ci-dessous. `manhattan.js` : le trou de façade (11 684). `monte.js` :
+  la chauffe de New York expirée (55/321) et l'écran figé (3 683 ms · 32,5 %).
+  La livraison ne change que la matière de la campagne des déserts réels,
+  qu'aucun de ces témoins n'approche.
 - [ ] **LES PORTAILS DE LA v340 (les arbres et les falaises, préparée comme v333, v337 puis v339), QUATRE FOIS.**
   `plafond.js` (les quatre témoins neufs), `carteMonde.js`, `metro.js`,
   `washington.js` verts à chaque passage. `maj.js` : le témoin « corps,
@@ -675,7 +683,11 @@
   franchissement, ou au relief (décision de Max) ; les berges de trois blocs
   gardent leur couronne d'herbe. `horizon.js` et les arbres lisent la règle
   depuis la v340 (`couleurDuBord`, `solDeLArbre`) ; (d) les
-  textures par usage et climat ; (e) la bibliothèque architecturale (96
+  textures par usage et climat — PREMIÈRE TRANCHE en v341 : les déserts chauds
+  réels (`DESERTS`, terre.js) sont de sable, sans arbre, au sol, au loin et sur
+  la carte ; restent les steppes, la toundra, les tropiques humides (une teinte
+  d'herbe par climat demande une couleur par colonne dans le mailleur, le sol
+  continu, le paysage lointain et la carte — à mesurer avant) ; (e) la bibliothèque architecturale (96
   variantes, 278 profils de ville) — elle exige une retrame à un bloc pour un
   mètre (`docs/monde-fidele/programme.md`, section 6), décision de Max ; (f) la
   matrice de couverture ville par ville (convertie, exclue, bloquée) et les
