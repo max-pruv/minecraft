@@ -274,6 +274,22 @@ export const ROUTES = [
   // admissibles, UN sans pont — celui-ci : 1 317 blocs, déblai 3,9, remblai
   // 1,3, pente 0,061, zéro rail, zéro aérodrome.
   { nom: 'A24', villes: ['berlin', 'hambourg'], via: [[3932, -2036], [3560, -2192], [3189, -2348], [2858, -2584], [2819, -2595]], bord: { hambourg: 24 } },
+  // L'I-45 (v336), DALLAS–HOUSTON : la première route des États-Unis. Le
+  // pays entre les deux est ondulé — des croupes de dix à quinze blocs tous
+  // les quelques centaines de blocs — et Houston est assise au pied d'une
+  // butte au nord (44 à 57 blocs à quarante blocs de son bord, pour une ville
+  // à 33) : par le nord, tous les tracés creusaient au-delà de neuf blocs. On
+  // entre donc par le SUD (88°, trente-six blocs d'avenue sur la rue), après
+  // avoir contourné la ville par l'est, en virages de 24° (v329) ; Dallas par
+  // l'est (86°, trente-trois blocs). LA SONDE TIRE DES CHEMINS LISSÉS : deux
+  // points intermédiaires ne suffisaient pas, le meilleur déblai valait 9,14 ;
+  // un point tous les deux cents blocs, à écart borné et virage borné, en a
+  // trouvé cinq sur vingt-quatre mille (scratchpad cherche.mjs, MARCHE).
+  // Refus : 19 465 déblai au milieu · 1 364 déblai à Houston · 2 667 coude ·
+  // 443 remblai. Celui-ci : 2 168 blocs, trois ponts (deux ravins et un
+  // ruisseau, à plus de cent quatre-vingts blocs des portes), déblai 7,7,
+  // remblai 3,9, pente 0,061, zéro rail, zéro aérodrome.
+  { nom: 'I-45', villes: ['dallas', 'houston'], via: [[-28933, 9811], [-28846, 9999], [-28781, 10192], [-28735, 10388], [-28719, 10591], [-28708, 10794], [-28676, 10994], [-28655, 11195], [-28612, 11393], [-28569, 11590], [-28559, 11628], [-28535, 11660], [-28500, 11679], [-28460, 11682], [-28422, 11668], [-28393, 11640], [-28378, 11603]] },
 ];
 
 // --- la section -----------------------------------------------------------------
@@ -671,6 +687,27 @@ export function rubansDans(x0, z0, x1, z1) {
       if (pont || culee) {
         const lift = culee ? 0.01 : 0;
         out.push({ ...base, ya: ya + lift, yb: yb + lift, genre: 'tablier', o0: -L.demiEmprise, o1: L.demiEmprise, dy: 0 });
+        // UN PONT DANS UN COUDE (v336). Le ruban suit la direction du tronçon
+        // où le pas commence : au sommet d'une polyligne, entre la fin d'un
+        // tronçon et le début du suivant, le côté EXTÉRIEUR du virage restait
+        // un coin ouvert sur le vide — mesuré au premier pont de l'I-45, 402
+        // points sans rien dessous (témoin du joint, plafond.js). Le côté
+        // intérieur, lui, est couvert deux fois. On comble le coin par un
+        // ruban posé au sommet, dans l'axe du tronçon d'arrivée, sur la moitié
+        // extérieure seulement et long de w·tan θ : il couvre tout le secteur
+        // entre les deux bords de tronçon, et son garde-corps ferme le virage.
+        for (let k = 1; k + 1 < seg.pts.length; k++) {
+          const c = seg.cumul[k];
+          if (c < s || c >= s + 1) continue;
+          const [px, pz] = seg.pts[k - 1], [vx, vz] = seg.pts[k], [nx, nz] = seg.pts[k + 1];
+          const l1 = Math.hypot(vx - px, vz - pz) || 1, l2 = Math.hypot(nx - vx, nz - vz) || 1;
+          const d1x = (vx - px) / l1, d1z = (vz - pz) / l1, d2x = (nx - vx) / l2, d2z = (nz - vz) / l2;
+          const croix = d1x * d2z - d1z * d2x, theta = Math.acos(Math.max(-1, Math.min(1, d1x * d2x + d1z * d2z)));
+          if (theta < 1e-3) continue;
+          const Lc = largeurA(seg, c), e = Lc.demiEmprise * Math.tan(theta) + 0.5, yc = coteA(seg, c) + lift + 0.003;
+          const exterieur = croix > 0 ? { o0: -Lc.demiEmprise, o1: 0, garde: 'o0' } : { o0: 0, o1: Lc.demiEmprise, garde: 'o1' };
+          out.push({ seg, s: c, ax: vx, az: vz, bx: vx + d1x * e, bz: vz + d1z * e, ya: yc, yb: yc, fx: d1x, fz: d1z, genre: 'tablier', dy: 0, ...exterieur });
+        }
       }
       if (!pont) {
         // le bord de chaque chaussée, continu ; entre les deux voies d'un sens, pointillé (3 sur 6)

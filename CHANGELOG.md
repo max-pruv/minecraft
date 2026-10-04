@@ -20,6 +20,38 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v336 — L'autoroute Dallas–Houston
+
+**Pourquoi.** Dallas–Houston vient ensuite dans le relevé de la v323 : 1 781
+blocs sur l'axe direct, sans rail. Le pays entre les deux est ondulé, et
+Houston est au pied d'une butte au nord : avec la recherche des livraisons
+précédentes (deux points intermédiaires), le meilleur tracé creusait 9,14
+blocs pour une limite de neuf.
+
+**Ce que ça change.** L'I-45 relie Dallas à Houston : 2 168 blocs de deux fois
+deux voies, trois ponts (deux ravins et un ruisseau), vingt voitures. C'est
+la première autoroute des États-Unis du jeu. Elle contourne Houston par l'est
+et y entre par le sud. Le relief ne bouge pas : les deux empreintes de
+`plafond.js` sont intactes.
+
+**Ce qui le prouve.** Un témoin neuf dans `carteMonde.js`, rouge sur
+`origin/main` (pas d'I-45) : la route, ses voitures, ses deux entrées sur une
+rue propre (seize relevés sur seize de chaque côté), aucune colonne d'emprise
+sur un rail (0 sur 19 271 sous node). Les trois ponts passent par le témoin
+du joint de `plafond.js`, qui lit toutes les routes. La sonde tire désormais
+des chemins lissés (un point tous les deux cents blocs) : cinq admissibles sur
+vingt-quatre mille.
+
+**Et le portail a trouvé un vrai trou.** Le premier pont de l'I-45 tombait
+dans un coude du tracé, et le tablier y laissait le coin extérieur du virage
+ouvert sur le vide : 402 points sans rien dessous au témoin du joint
+(`plafond.js`). C'était un défaut du tablier, pas du tracé — aucune route
+n'avait encore de pont dans un coude. `rubansDans` (routes.js) pose désormais
+au sommet un ruban de comblement, côté extérieur, garde-corps compris : zéro
+trou sur les quatorze ponts du registre (90 794 points sous node).
+
+---
+
 ## v335 — Les monuments de Paris dominent les toits
 
 **Pourquoi.** Un étage fait trois blocs depuis la v301 : les immeubles de Paris

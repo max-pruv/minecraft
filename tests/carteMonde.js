@@ -589,6 +589,7 @@ const VRAIES_KM = [
       out.convoiM1 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'M1') || null;
       out.convoiA1Nord = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A1 Nord') || null;
       out.convoiA24 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A24') || null;
+      out.convoiI45 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'I-45') || null;
       // AUCUNE ROUTE NE CROISE NI NE LONGE UNE VOIE FERRÉE (v320) : l'A3 est la
       // première dont l'axe a un rail le long (l'ICE). On lit, pour TOUTES les
       // routes, chaque colonne de leur emprise (`routeEn` non nul) et l'on
@@ -839,6 +840,18 @@ const VRAIES_KM = [
       && ['berlin', 'hambourg'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'A24' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7)),
       JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiA24 ? { nom: a1.convoiA24.nom, voitures: (a1.convoiA24.modeles || []).length } : 'aucun convoi A24',
         surRail: a1.surRail && a1.surRail.A24, entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'A24') }));
+
+    // L'I-45 (v336) : Dallas–Houston, la première route des États-Unis. Elle
+    // contourne Houston par l'est et y entre par le sud : au nord, la butte
+    // de Houston faisait creuser chaque tracé au-delà de neuf blocs. Ses trois
+    // ponts sont gardés par le témoin du joint (plafond.js), qui lit toutes
+    // les routes.
+    verifier('l\'I-45 relie Dallas à Houston, et des voitures entrent dans les deux villes par une rue propre',
+      !a1.absent && a1.segments >= 17 && !!a1.convoiI45 && a1.convoiI45.routier && (a1.convoiI45.modeles || []).length >= 10
+      && !!a1.surRail && !!a1.surRail['I-45'] && a1.surRail['I-45'][0] > 100 && a1.surRail['I-45'][1] === 0
+      && ['dallas', 'houston'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'I-45' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7)),
+      JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiI45 ? { nom: a1.convoiI45.nom, voitures: (a1.convoiI45.modeles || []).length } : 'aucun convoi I-45',
+        surRail: a1.surRail && a1.surRail['I-45'], entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'I-45') }));
 
     // DE VRAIS RAILS, EN RELIEF, ET DEUX VOIES (v281) ------------------------
     //
