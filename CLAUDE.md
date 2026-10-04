@@ -6675,6 +6675,29 @@ et chacune a coûté un passage de banc.
 deux empreintes de `plafond.js` ne bougent pas, et l'invariant 1 tient sans
 qu'on ait rien à déclarer.
 
+**ET LES VILLES Y SONT DES VILLES (v327).** Le paysage ne lisait que le
+relief : au-delà des morceaux maillés, toute ville était de la prairie. Trois
+règles.
+
+- **LA QUESTION « EST-CE UNE VILLE ? » SE POSE PAR CASE D'INDEX, PAS À 280
+  VILLES.** `villeMondeEn` (villesmonde.js) lit l'index de cases de 512 blocs
+  des villes engendrées ; les sept villes bâties à la main passent d'abord par
+  une BOÎTE (Manhattan élargie à 1 300 blocs), et `world.cityAt` — qui connaît
+  la vraie forme de Manhattan par `TerreUrbaine` — n'est appelé que si elle
+  touche. Mesuré : +0,05 à +0,07 µs par colonne, médiane de passages alternés.
+- **LA SILHOUETTE EST UN `InstancedMesh` ENFANT DU PAYSAGE**, un appel de
+  dessin, reconstruit dans `majDecoupe` (4 Hz, temps réel) avec la MÊME règle
+  que le sol : une case dont le morceau est maillé n'a pas de pavé. Les données
+  par sommet (hauteur de bâti, couleur des murs) DÉFILENT avec les hauteurs —
+  jamais refaites. Dans Manhattan rendue (`sansNY`), on ne pose pas de pavés :
+  elle a ses propres silhouettes.
+- **LA HAUTEUR VIENT DE LA FICHE, PAS D'UN GOÛT.** `hMaison` et `trame.tours`
+  pour les villes engendrées, passés par la même formule que la grammaire à
+  travées (trois blocs par étage) ; une table (`VILLES_MAIN`) pour les sept
+  villes bâties à la main. Les murs prennent la palette de la ville lue comme
+  la carte 2D (`decorMapColor`) : deux couleurs pour le même endroit
+  finissent par se contredire.
+
 **ET LE PORTAIL ROUGE A FAIT TROUVER PLUS GROS QUE LE PAYSAGE : LE BUDGET DE
 MAILLAGE ÉTAIT COMPTÉ PAR IMAGE.** Le témoin « on ne rattrape pas le bout du
 monde qui se charge » est tombé (trou 66 pour une barre de 80), et la sonde —
