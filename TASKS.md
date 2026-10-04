@@ -296,17 +296,29 @@
   branche 3 · 3 · 2, `origin/main` 3 · 3 · 3. Même distribution ; le 5 est un
   tirage sous la charge du portail, et la dette de la v306 (deux ou trois
   programmes à l'arrivée) reste ouverte telle quelle.
-- [ ] **LE PORTAIL DE LA v331 (règle de la v195), DOUBLE MESURE FAITE.** Verts :
-  `plafond.js` (les trois témoins des monuments, rouges sur `origin/main`),
-  `parishd.js`, `carteMonde.js`, `carte.js`, `metro.js`. Rouges au portail, puis
-  REJOUÉS SEULS des deux côtés : `maj.js` vert seul sur la branche et sur
-  `origin/main` (au portail : le badge « version servie v317 », réglé par le
-  passage à v327, et les deux témoins du palier, la charge comme en v315) ;
-  `washington.js` vert seul des deux côtés (« on entre chez les gens », la
-  dette « ne rougit qu'en charge ») ; `manhattan.js` le délai de la ligne 282,
-  IDENTIQUE seul sur la branche et sur `origin/main` (v269) ; `monte.js` l'écran
-  figé, seul 3 483 ms · 27,8 % sur la branche contre 3 750 ms · 30,1 % sur
-  `origin/main`.
+- [ ] **LE PORTAIL DE LA v331 (règle de la v195), DOUBLE MESURE FAITE — premier passage,
+  après rebase sur la v323.** Seize suites, 88 min ; dix vertes (`plafond.js`
+  et ses trois témoins des monuments, `parishd.js`, `metro.js`, `washington.js`,
+  `reglages.js`, `reseau.js`…). Six rouges, triés ainsi :
+  - DÉJÀ DÉCLARÉS : `carteMonde.js` « aucune voiture ne traverse un monument »
+    (`{"dur":6,"lus":597,"par":{"Tour Eiffel":4,"Invalides":2}}`, au chiffre près
+    l'entrée de la v321) ; `maj.js` « corps, programmes et fond de carte sont
+    vraiment là » (personnages 7/9, v267) ; `manhattan.js` le trou de façade
+    (14 460 → 51 734), le taxi tactile, et une erreur PeerJS « Lost connection
+    to server » au courtier local.
+  - REJOUÉS SEULS DES DEUX CÔTÉS, VERTS : `carte.js` (au portail « la flèche du
+    GPS », gauche lue à 1,92 rad — 103/103 seule sur la branche ET sur
+    `origin/main` v323) ; `hote.js` (au portail « un nouvel arrivant rejoint le
+    monde repris » `[]` — 9/9 des deux côtés). Intermittences de charge.
+  - REJOUÉ SEUL DES DEUX CÔTÉS, ROUGE IDENTIQUE : `monte.js`, 145 verts / 2
+    rouges sur la branche ET sur `origin/main` — « l'écran ne se fige pas »
+    (3 300 ms · 28,7 % contre 2 917 ms · 24,9 %) et « ne compile plus de
+    programmes sur place » (branche : 3 programmes `physical` à Paris ;
+    `origin/main` : 2 `physical` à New York, chauffe de NY expirée à 162/320 ;
+    au portail de la branche : 0 partout mais Paris à 7 images pour une garde à
+    10). Preuve STRUCTURELLE en plus : la v324 ne crée aucun matériau (aucun
+    `Material(` dans son diff de `src/`), et les clés `physical` sont celles des
+    carrosseries de la flotte — un modèle tiré à portée pour la première fois.
 - [ ] **LE PORTAIL DE LA v330 (les terminaux), DOUBLE MESURE FAITE.** Seule
   suite rouge : `monte.js`, rejouée SEULE trois fois sur la branche et une fois
   sur `origin/main` (v326). « L'écran ne se fige pas en arrivant sur une ville »
