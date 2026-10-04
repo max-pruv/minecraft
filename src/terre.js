@@ -345,11 +345,12 @@ export function climatCertain(lat, lon, marge) {
 // taïga → (64, 118, 64) ; et sur la tuile de feuilles (54, 116, 38).
 // La steppe (v347) → (178, 165, 92), l'herbe sèche couleur de paille ; ses
 // rares arbres d'un vert olive.
-// Les tropiques humides (v348) → (60, 160, 50), un vert profond et saturé,
+// Les tropiques humides (v348) → (78, 150, 60), un vert profond — plus saturé
+// en capture, il virait au vert fluo —
 // et le feuillage (40, 120, 32).
 export const CLIMATS_TEINTES = ['', 'toundra', 'taiga', 'steppe', 'tropiques'];
 export const INDICE_CLIMAT = { toundra: 1, taiga: 2, steppe: 3, tropiques: 4 };
-export const TEINTE_HERBE = [null, [1.21, 0.74, 1.29], [0.62, 0.70, 1.03], [1.71, 0.98, 1.48], [0.58, 0.95, 0.81]];
+export const TEINTE_HERBE = [null, [1.21, 0.74, 1.29], [0.62, 0.70, 1.03], [1.71, 0.98, 1.48], [0.75, 0.89, 0.97]];
 export const TEINTE_FEUILLES = [null, [0.85, 0.8, 1.0], [0.63, 0.71, 1.16], [1.25, 0.95, 1.05], [0.74, 1.03, 0.84]];
 // LES MÊMES, POUR LA COULEUR DE SOMMET DU MONDE PROCHE. three tient une
 // couleur de sommet pour LINÉAIRE et décode la tuile sRGB avant de les

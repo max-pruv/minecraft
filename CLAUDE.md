@@ -1111,6 +1111,12 @@ Plaines à l'ouest du 100e méridien, steppe pontique au sud de 47° N).
 Et `DATE_CLIMATS` SE RELIT à chaque tranche qui change des arbres : la
 steppe en retire, donc ce qu'un enfant a bâti jusqu'à la fusion de la v347
 garde les arbres d'avant.
+**Les forêts tropicales (v349)** ferment les quatre climats : dix forêts
+humides réelles, la forêt dense de grands feuillus et un palmier sur quatre
+(`DENSITE_MAX` passe à 0,08, la seule densité au-dessus de la forêt
+tempérée). Une teinte se juge en capture et pas seulement au témoin : le vert
+réglé à (60, 160, 50) virait au fluo à l'écran, et le témoin le trouvait
+très bien teint.
 
 ## Les déserts chauds (v341) — le climat est une donnée de géographie, comme la côte
 
