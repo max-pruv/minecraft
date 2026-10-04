@@ -20,6 +20,31 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v333 — L'autoroute Milan–Bologne
+
+**Pourquoi.** Milan–Bologne vient ensuite dans le relevé de la v323 : 924
+blocs sur l'axe direct, et c'est la moitié manquante de l'Autostrada del Sole
+(Milan–Bologne–Florence–Rome–Naples), dont l'Autosole et l'A1 Sud existaient
+déjà. Une difficulté : la Frecciarossa sort de Milan presque dans le même axe
+(51° contre 34°). Et un candidat s'est révélé impossible : Séoul–Busan, parce
+que Busan est cerclée d'une crête.
+
+**Ce que ça change.** L'A1 Nord relie Milan à Bologne : 969 blocs de deux fois
+deux voies, aucun pont, vingt voitures, toute la route au nord du rail sans
+jamais le croiser. De Milan, on peut désormais aller en voiture jusqu'à
+Naples en enchaînant trois autoroutes. Le relief ne bouge pas : les deux
+empreintes de `plafond.js` sont intactes.
+
+**Ce qui le prouve.** Un témoin neuf dans `carteMonde.js`, rouge sur
+`origin/main` (pas d'A1 Nord) : la route, ses voitures, ses deux entrées sur
+une rue propre, aucune colonne d'emprise sur le rail (0 sur 8 473 mesurées
+sous node). La sonde : 5 082 tracés, trente et un admissibles, sept sans
+pont, et elle arrondit désormais les points de passage avant de les juger.
+Séoul–Busan, déclarée bloquée dans `TASKS.md` : la crête de Busan monte à
+50–60 blocs à quarante blocs de son bord, pour une ville à 33.
+
+---
+
 ## v332 — L'autoroute Vienne–Budapest
 
 **Pourquoi.** Candidat suivant du relevé de la v323 : Vienne–Budapest, 957
