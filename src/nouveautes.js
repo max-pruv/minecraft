@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 327,
+    titre: 'Des monuments plus hauts',
+    puces: [
+      'L\'Opéra, le Panthéon, les Invalides grandissent',
+      'Ils dominent enfin les toits',
+      'La tour Eiffel reste la plus haute',
+    ],
+  },
+  {
     v: 326,
     titre: 'Falaises de roche, berges de sable',
     puces: [

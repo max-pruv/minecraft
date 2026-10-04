@@ -275,6 +275,29 @@
   branche 3 · 3 · 2, `origin/main` 3 · 3 · 3. Même distribution ; le 5 est un
   tirage sous la charge du portail, et la dette de la v306 (deux ou trois
   programmes à l'arrivée) reste ouverte telle quelle.
+- [ ] **LE PORTAIL DE LA v327 — premier passage, v324 (règle de la v195), DOUBLE MESURE FAITE,
+  après rebase sur la v323.** Seize suites, 88 min ; dix vertes (`plafond.js`
+  et ses trois témoins des monuments, `parishd.js`, `metro.js`, `washington.js`,
+  `reglages.js`, `reseau.js`…). Six rouges, triés ainsi :
+  - DÉJÀ DÉCLARÉS : `carteMonde.js` « aucune voiture ne traverse un monument »
+    (`{"dur":6,"lus":597,"par":{"Tour Eiffel":4,"Invalides":2}}`, au chiffre près
+    l'entrée de la v321) ; `maj.js` « corps, programmes et fond de carte sont
+    vraiment là » (personnages 7/9, v267) ; `manhattan.js` le trou de façade
+    (14 460 → 51 734), le taxi tactile, et une erreur PeerJS « Lost connection
+    to server » au courtier local.
+  - REJOUÉS SEULS DES DEUX CÔTÉS, VERTS : `carte.js` (au portail « la flèche du
+    GPS », gauche lue à 1,92 rad — 103/103 seule sur la branche ET sur
+    `origin/main` v323) ; `hote.js` (au portail « un nouvel arrivant rejoint le
+    monde repris » `[]` — 9/9 des deux côtés). Intermittences de charge.
+  - REJOUÉ SEUL DES DEUX CÔTÉS, ROUGE IDENTIQUE : `monte.js`, 145 verts / 2
+    rouges sur la branche ET sur `origin/main` — « l'écran ne se fige pas »
+    (3 300 ms · 28,7 % contre 2 917 ms · 24,9 %) et « ne compile plus de
+    programmes sur place » (branche : 3 programmes `physical` à Paris ;
+    `origin/main` : 2 `physical` à New York, chauffe de NY expirée à 162/320 ;
+    au portail de la branche : 0 partout mais Paris à 7 images pour une garde à
+    10). Preuve STRUCTURELLE en plus : la v324 ne crée aucun matériau (aucun
+    `Material(` dans son diff de `src/`), et les clés `physical` sont celles des
+    carrosseries de la flotte — un modèle tiré à portée pour la première fois.
 - [ ] **LE PORTAIL DE LA v325 (règle de la v195), DOUBLE MESURE FAITE.** Huit
   suites. Verts : `carteMonde.js` — ENTIÈRE, le tour des monuments compris
   (rouge sur `origin/main`, `dur 6`) —, `plafond.js`, `parishd.js`, `carte.js`,
@@ -481,20 +504,63 @@
   matrice de couverture ville par ville (convertie, exclue, bloquée) et les
   mesures sur l'iPad de la maison.
 
-- [ ] **LES MONUMENTS DE PARIS SONT PLUS BAS QUE LES IMMEUBLES (v301).** Un
-  étage fait trois blocs : les immeubles montent à 21-24 blocs (six-sept
-  niveaux, comble compris), et les monuments n'ont pas suivi. Mesuré sous
-  node en appelant les bâtisseurs : Opéra 19, Moulin Rouge 17, Bastille 20,
-  Invalides 22, Sacré-Cœur 23, Notre-Dame 31 (murs de nef à 13), Panthéon 32,
-  Montparnasse 38, tour Eiffel 70. Dans la vraie ville, à un bloc pour un
-  mètre : Opéra 73, Invalides 107 (dôme), Sacré-Cœur 83, Notre-Dame 69 (tours)
-  et 35 (nef), Panthéon 83, Montparnasse 210, Arc de Triomphe 50, Eiffel 330.
-  Le ciel au-dessus de Paris tient 125 blocs (HEIGHT 160, sol à 35) : tout y
-  passe sauf la tour (déjà à 70, décision de la v292) et Montparnasse (à
-  borner). Chaque monument refait entraîne SON modèle HD (`paris-monuments-hd.js`,
-  « un modèle suit les cotes du voxel », v292) et sa sonde
-  (`sonde-monuments-hd.cjs` : les cubes qui dépassent). Captures pour Max
-  avant de fusionner. C'est la prochaine livraison, pas un réglage.
+- [x] **LES MONUMENTS DE PARIS SONT PLUS BAS QUE LES IMMEUBLES (v301)** — fait
+  en v321 pour Paris, à l'ÉCHELLE DU CIEL : un bloc pour un mètre jusqu'à la
+  corniche (20 m), puis une courbe qui mène la tour Eiffel (330 m) à 69.
+  Montparnasse 60, Invalides et Notre-Dame 48, Panthéon et Sacré-Cœur 47, Opéra
+  41, Bastille 36, Arc 35. Le premier jet à un bloc pour un mètre (Invalides
+  107, Notre-Dame 96…) passait au-dessus de la tour Eiffel : vu en capture,
+  retiré. Si Max veut la vraie hauteur malgré tout, c'est UNE constante
+  (`EIFFEL_BLOCS` ou la courbe de `blocsDuCiel`, echelle-monuments.js).
+- [ ] **LES MONUMENTS DES AUTRES VILLES PLUS BAS QUE LEURS IMMEUBLES** (v321,
+  mesuré, élargi par Max : « lance sur toutes les villes »). Le témoin de
+  `plafond.js` mesure 215 monuments dans leurs villes contre la médiane des
+  immeubles autour (colonnes à moins de trente blocs de la boîte, hors de toute
+  autre boîte, sommet à six blocs au moins au-dessus du relief, feuillage
+  exclu). `BAS_DECLARES` en nomme 94 : 37 réellement bas (ponts, places,
+  statues, fontaines, palais de plain-pied — ils restent) et 57 en DETTE, à
+  rayer de la liste en les remettant à l'échelle. **Lot 2, les villes bâties à
+  la main** : Arche de Washington (NY) 12/13, Opéra de Lille 6/7, Buckingham
+  7/8, et à Washington le Trésor 8/13, les Archives 11/13, le Théâtre Ford
+  8/11, l'Histoire américaine 9/10, l'Indien d'Amérique 8/9. **Lot 3, les villes
+  engendrées** (hauteur/médiane) : St-Pierre 12/13, Duomo et Baptistère de Pise
+  10/12 et 9/12, fort d'Agra 6/10, Palais royal et porte d'Alcalá de Madrid 5/13
+  et 10/13, São Jorge 7/12, Santa Justa 11/13, palais du Dam 5/13, Rijksmuseum
+  5/10, Brandebourg et Reichstag 10/13, colonne de Marie 6/13, Hofburg 5/13,
+  château de Prague 5/10, Duomo de Florence 11/13, Parthénon, temple de Zeus et
+  Parlement d'Athènes 6, 6 et 5 pour 12, Sainte-Sophie 12/13, Mosquée bleue
+  11/13, Topkapi 7/13, Saint-Basile 11/13, Kremlin 8/13, Bolchoï 6/13, palais
+  d'Hiver 5/10, Saint-Sauveur 11/12, Kazan 6/12, Palais royal et Storkyrkan de
+  Stockholm 5/13 et 11/13, Amalienborg 5/13, Rundetaarn 11/13, Pavillon d'or
+  10/12, Supertrees 8/13, Grand Palais et Wat Pho de Bangkok 7/10 et 4/10, mur
+  des Lamentations 6/8, Taj Mahal Palace 5/10, gare Victoria 10/12, porte de
+  l'Inde 13/15, Jantar Mantar 4/12, Disney Hall 10/15, Rogers Centre 11/13,
+  ancien hôtel de ville de Toronto 13/15, cathédrale, Templo Mayor et Bellas
+  Artes de Mexico 10/13, Casa Rosada 5/12, Cabildo 7/12. La règle à appliquer
+  par ville : l'échelle du ciel de la ville (un bloc pour un mètre jusqu'à la
+  corniche de SES immeubles, puis une courbe sous son plus haut repère), par la
+  même table de paliers — la courbe de Paris est `blocsDuCiel`.
+- [ ] **UNE CABANE SUR UN ANCIEN TOIT DE MONUMENT SE RETROUVE DEDANS (v321),
+  déclaré.** Le relevé des toits (v301) emporte ce qu'on a bâti sur un
+  immeuble ; rien n'emporte ce qu'on a bâti sur un monument étiré. Le bloc
+  reste à sa hauteur, donc DANS la maçonnerie étirée : il n'est pas perdu (le
+  journal des blocs le garde, et le ménage du ciel le juge sur le monde d'avant,
+  `CONF_AVANT`, qui garde les monuments d'avant), mais il ne se voit plus. Si
+  cela se voit un jour, la marche est connue : celle de `releverToitsParis`,
+  avec la table de paliers pour dire de combien monte chaque couche.
+- [ ] **DES CUBES DÉPASSENT ENCORE DES MODÈLES ÉTIRÉS (v321), mesuré.** Sonde
+  `sonde-monuments-hd.cjs`, cubes qui dépassent (avant → après) : Arc 0 → 28,
+  Panthéon 4 → 10, Opéra 9 → 17, Sacré-Cœur 15 → 23, Notre-Dame 34 → 76 (dont
+  24 à hauteur d'enfant, inchangés). Un bloc d'écart entre le modèle et son
+  voxel tenait dans la tolérance de la sonde ; étiré trois à huit fois, il en
+  sort. Les plus gros écarts ont été recalés (l'attique de l'Arc, l'entablement
+  de l'Opéra, la nef et la flèche de Notre-Dame, le tambour du Panthéon, les
+  coupoles d'angle du Sacré-Cœur, qui étaient du mauvais côté). Zéro mur
+  invisible. L'autre lecture de la couverture (aux cotes d'auteur, puis étirée)
+  rendait zéro cube et 119 à 293 murs invisibles : NON-RÉSULTAT, on garde la
+  règle de la v292. **À l'échelle du ciel, les étirements sont plus doux et les
+  comptes retombent** : Arc 0, Panthéon 6, Opéra 15, Sacré-Cœur 0, Notre-Dame
+  32 (contre 34 avant). Les chiffres ci-dessus sont ceux du premier jet.
 - [ ] **CE QUE LE RELEVÉ DES TOITS NE SUIT PAS (v301), déclaré.** (1) Une
   tablette restée sur l'ancienne version après `DATE_RELEVE_PARIS` pose sur
   les anciens toits des blocs que le relevé laissera où ils sont — la même
