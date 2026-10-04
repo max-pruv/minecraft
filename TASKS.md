@@ -536,6 +536,20 @@
   second dépend du premier) — REJOUÉE SEULE : branche ces deux-là, `origin/main`
   v318 la libération (programmes 17/25). Même intermittence de préparation des
   deux côtés, déjà déclarée (v267).
+- [ ] **LE PORTAIL DE LA v344 (la toundra et la taïga, préparée comme v342) :
+  TOUS LES ROUGES DÉJÀ DÉCLARÉS.** Seize suites, 84 min. `plafond.js` (93 dont
+  les cinq témoins neufs), `carteMonde.js`, `metro.js`, `washington.js`,
+  `parishd.js`, `realisme.js`, `reglages.js`, `hote.js`, `visio.js`,
+  `sauvegarde.js`, `parent.js` verts. `maj.js` : le loader « combien de
+  fichiers » (intermittent, déclaré) et le badge (« version servie v341 » pour
+  une tête de journal à 342 — `sw.js` pas encore monté, la procédure le règle).
+  `carte.js` : la flèche du GPS (gauche 1,92 rad, déclarée). `manhattan.js` :
+  le délai de la ligne 282 (dette v269). `monte.js` : Paris compile quatre
+  programmes `physical` à l'arrivée et l'écran figé (3 583 ms · 28,3 %), tous
+  deux déclarés. `reseau.js` : « sans courtier » `[[],[]]` (intermittence
+  déclarée, verte seule). La livraison n'ajoute aucun matériau ni aucune
+  lampe, seulement une couleur de sommet et des blocs de campagne loin de
+  tout point que ces témoins visitent.
 - [ ] **LE PORTAIL DE LA v341 (les déserts) : TOUS LES ROUGES DÉJÀ
   DÉCLARÉS.** `plafond.js` (les trois témoins des déserts, celui de la page
   compris), `carteMonde.js`, `carte.js`, `metro.js`, `washington.js` verts.
