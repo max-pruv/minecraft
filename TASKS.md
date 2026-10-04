@@ -450,6 +450,15 @@
   second dépend du premier) — REJOUÉE SEULE : branche ces deux-là, `origin/main`
   v318 la libération (programmes 17/25). Même intermittence de préparation des
   deux côtés, déjà déclarée (v267).
+- [ ] **LE PORTAIL DE LA v333 (Milan–Bologne) : TROIS ROUGES, TOUS DÉJÀ
+  MESURÉS DES DEUX CÔTÉS.** `carteMonde.js`, `plafond.js`, `carte.js` verts.
+  `maj.js` : « le loader dit combien de fichiers sont rangés » (intermittent,
+  même distribution des deux côtés, ci-dessous). `monte.js` : l'arrivée figée
+  (3 550 ms · 30,5 % — rejouée seule une heure plus tôt, rouge à l'identique
+  sur la branche et sur `origin/main`, ci-dessous) et « une voiture n'entre
+  pas dans l'eau » (reculé 1,19 : le MÊME relevé déjà rendu par `origin/main`
+  rejoué seul, tableau des rouges plus bas). La livraison n'ajoute qu'une
+  entrée au registre des routes, en Italie, qu'aucun de ces témoins n'approche.
 - [ ] **LE PORTAIL DE LA v332 (Vienne–Budapest), DOUBLE MESURE FAITE.** Six
   suites aiguillées ; `carteMonde.js`, `plafond.js`, `carte.js` verts. Rouges :
   `maj.js` (le fond de carte à la libération, personnages 6/9) et `monte.js`
