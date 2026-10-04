@@ -1944,14 +1944,23 @@ export function villeMondeEn(x, z) {
 
 // --- la géométrie commune ----------------------------------------------------
 
+// UNE HYPOTÉNUSE NE SE CALCULE QUE SI ELLE PEUT GAGNER (v349). `Math.hypot`
+// est lente, et ce minimum se demande pour chaque colonne de la ville ; le
+// carré de la distance écarte d'abord les segments qui ne peuvent pas battre
+// le minimum courant, avec une marge d'un milliardième qui couvre l'écart
+// d'arrondi entre le carré et `hypot`. Le segment gagnant est toujours mesuré
+// par `hypot` : le résultat est le même au bit près.
 function distancePolyligne(pts, u, v) {
-  let min = Infinity;
+  let min = Infinity, borne = Infinity;
   for (let i = 0; i < pts.length - 1; i++) {
-    const [u0, v0] = pts[i], [u1, v1] = pts[i + 1];
+    const u0 = pts[i][0], v0 = pts[i][1], u1 = pts[i + 1][0], v1 = pts[i + 1][1];
     const du = u1 - u0, dv = v1 - v0;
     const l2 = du * du + dv * dv || 1;
     const t = Math.max(0, Math.min(1, ((u - u0) * du + (v - v0) * dv) / l2));
-    min = Math.min(min, Math.hypot(u - (u0 + du * t), v - (v0 + dv * t)));
+    const a = u - (u0 + du * t), b = v - (v0 + dv * t);
+    if (a * a + b * b > borne) continue;
+    const d = Math.hypot(a, b);
+    if (d < min) { min = d; borne = (min * (1 + 1e-9)) ** 2; }
   }
   return min;
 }

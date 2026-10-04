@@ -235,13 +235,16 @@ export function grilleSol(world, cx, cz, chunk) {
   // seulement si une colonne de sol de ville le demande
   const R = RAYON_RACCORD + 1, NR = chunk + 2 * R;
   let reliefs = null;
+  // le relief que `generateChunk` a déjà lu pour le morceau (v349), s'il l'a
+  // gardé — la même valeur, sans refaire le bruit
+  const relief = world.terrainMemo ? (x, z) => world.terrainMemo(x, z) : (x, z) => world.terrainHeight(x, z);
   const hEn = (x, z) => {
     const lx = x - baseX + R, lz = z - baseZ + R;
-    if (lx < 0 || lz < 0 || lx >= NR || lz >= NR) return world.terrainHeight(x, z);
+    if (lx < 0 || lz < 0 || lx >= NR || lz >= NR) return relief(x, z);
     if (!reliefs) reliefs = new Float64Array(NR * NR).fill(NaN);
     const i = lx + lz * NR;
     let v = reliefs[i];
-    if (v !== v) v = reliefs[i] = world.terrainHeight(x, z);
+    if (v !== v) v = reliefs[i] = relief(x, z);
     return v;
   };
   for (let lz = -1; lz < chunk + 1; lz++) for (let lx = -1; lx < chunk + 1; lx++) {

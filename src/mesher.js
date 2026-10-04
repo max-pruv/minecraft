@@ -188,20 +188,20 @@ class GeomBuffer {
     const fusionnee = w > 1 || h > 1;
     const rect = fusionnee ? tileRect(tile) : NEUTRE;
     const atlas = fusionnee ? null : tileUV(tile);
-    const echelle = [1, 1, 1];
-    echelle[face.uAxis] = w;
-    echelle[face.vAxis] = h;
+    const e0 = face.uAxis === 0 ? w : face.vAxis === 0 ? h : 1;
+    const e1 = face.uAxis === 1 ? w : face.vAxis === 1 ? h : 1;
+    const e2 = face.uAxis === 2 ? w : face.vAxis === 2 ? h : 1;
     for (let i = 0; i < 4; i++) {
       const c = face.corners[i];
       // Un coin à 1 va jusqu'au bord opposé du rectangle. Sur l'axe vertical,
       // yTop remplace la hauteur unitaire (eau de surface, dalle) ; quand la
       // fusion est verticale, yTop vaut forcément 1 et le produit donne h.
-      const cy = c[1] === 1 ? yTop * echelle[1] : 0;
-      this.positions.push(x + c[0] * echelle[0], y + cy, z + c[2] * echelle[2]);
+      const cy = c[1] === 1 ? yTop * e1 : 0;
+      this.positions.push(x + c[0] * e0, y + cy, z + c[2] * e2);
       this.normals.push(face.dir[0], face.dir[1], face.dir[2]);
-      const [fu, fv] = face.uvs[i];
+      const fu = face.uvs[i][0], fv = face.uvs[i][1];
       if (atlas) {
-        const [u0, v0, u1, v1] = atlas;
+        const u0 = atlas[0], v0 = atlas[1], u1 = atlas[2], v1 = atlas[3];
         this.uvs.push(u0 + (u1 - u0) * fu, v0 + (v1 - v0) * fv);
       } else {
         this.uvs.push(fu * w, fv * h);
@@ -391,7 +391,9 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
           const slab = DALLE[id] === 1;
           // Le voisin d'abord : sous terre, presque toute case touche sa
           // pareille et s'arrête là. Le dessus ne sert qu'à l'eau (v349).
-          const neighbor = localGet(x + dX, y + dY, z + dZ);
+          const nx = x + dX, ny = y + dY, nz = z + dZ;
+          const neighbor = nx >= 0 && nx < CHUNK && nz >= 0 && nz < CHUNK && ny >= 0 && ny < HEIGHT
+            ? data[nx + nz * CHUNK + ny * CHUNK * CHUNK] : localGet(nx, ny, nz);
 
           // a slab's top sits at half height, so it is always exposed
           const sommetDeDalle = slab && dY === 1;
@@ -431,9 +433,15 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
           const facadeHd = monumentHd || (hd && ((face.slot === 1 && FACADE_HD.has(id)) || ARBRE_HD.has(id) || toitHd));
           const it = teintes && ((id === BLOCK.GRASS && face.slot === 0) || id === BLOCK.LEAVES) ? teintes[x + z * CHUNK] : 0;
           const teinte = it ? (id === BLOCK.LEAVES ? TEINTE_FEUILLES[it] : TEINTE_HERBE[it]) : null;
+          // LA CLÉ DE FUSION EST UN NOMBRE (v349) : la chaîne qu'elle était
+          // coûtait une concaténation par face visible. Même injection — deux
+          // cases ont la même clé si et seulement si elles avaient la même
+          // chaîne — et une case qui ne fusionne pas reçoit une clé négative
+          // propre à sa place dans la tranche (l'ancien `@u,v`).
           const cle = (bloqueV || !uniforme)
-            ? `@${u},${v}`
-            : `${id}|${yTop}|${ao ? ao[0] : '-'}|${allume ? 'A' : ''}|${monumentHd ? 'M' : ''}|${it}`;
+            ? -1 - (u + v * nU)
+            : ((((id * 3 + (yTop === 1 ? 0 : yTop === 0.5 ? 1 : 2)) * 5 + (ao ? AO_LEVELS.indexOf(ao[0]) : 4)) * 2
+              + (allume ? 1 : 0)) * 2 + (monumentHd ? 1 : 0)) * 256 + it;
           masque[u + v * nU] = { cle, id, yTop, ao, tile: BLOCK_INFO[id].tiles[face.slot], isWater, allume, x, y, z, solHD, facadeHd, teinte };
           vide = false;
         }

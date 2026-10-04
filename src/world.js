@@ -2571,6 +2571,10 @@ export class World {
     this.conf = avant ? CONF_AVANT : v308 ? CONF_V308 : CONF_NEUF;
     this.chunks = new Map();      // "cx,cz" -> Uint8Array
     this.tops = new Map();        // "cx,cz" -> y du bloc le plus haut (plafond de maillage)
+    this.reliefsMemo = new Map(); // "cx,cz" -> relief brut du morceau et de sa marge (v349)
+    // seulement pour le relief de `World` lui-même : une classe dérivée qui
+    // redéfinit `terrainHeight` (Manhattan) le relit à chaque fois
+    this.memoRelief = this.terrainHeight === World.prototype.terrainHeight;
     this.dirty = new Set();       // chunk keys needing a remesh
     this.edits = new Map();       // "x,y,z" -> block id (player modifications)
     this.monumentsTouches = new Set();  // les monuments HD qu'un enfant a modifiés (v292)
@@ -2627,6 +2631,14 @@ export class World {
     // Et les neuf ponts de Paris, à la cote de la ville (v294).
     if (c && c.key === 'paris' && pontParis(x, z)) return h > c.base ? h : c.base;
     return h;
+  }
+
+  // Le relief d'une colonne, lu dans la grille que `generateChunk` a gardée
+  // pour son morceau, sinon calculé (v349). Même valeur que `terrainHeight`.
+  terrainMemo(x, z) {
+    const cx = Math.floor(x / CHUNK), cz = Math.floor(z / CHUNK);
+    const r = this.reliefsMemo.get(World.key(cx, cz));
+    return r ? r[(x - cx * CHUNK + 1) + (z - cz * CHUNK + 1) * (CHUNK + 2)] : this.terrainHeight(x, z);
   }
 
   terrainHeight(x, z) {
@@ -3139,10 +3151,22 @@ export class World {
     // pour presque tout le monde
     const climatM = this.climatDuMorceau(cx, cz);
     const reliefs = this.conf.falaises ? new Int16Array(N2 * N2) : null;
+    // LE RELIEF SE LIT UNE FOIS PAR COLONNE (v349). La même grille, en valeurs
+    // BRUTES, reste en mémoire avec le morceau : la passe des quais l'y relit
+    // pour sa marge, et le sol continu du mailleur (`grilleSol`, par
+    // `terrainMemo`) pour la sienne — trois `terrainHeight` par colonne de bord
+    // n'en font plus qu'un. Le relief ne dépend que de `this.conf`, figée à la
+    // naissance du monde : la mémoire ne peut pas mentir.
+    const brut = reliefs && this.memoRelief ? new Float64Array(N2 * N2) : null;
     if (reliefs) {
       for (let z = -1; z <= CHUNK; z++) {
-        for (let x = -1; x <= CHUNK; x++) reliefs[(x + 1) + (z + 1) * N2] = this.terrainHeight(baseX + x, baseZ + z);
+        for (let x = -1; x <= CHUNK; x++) {
+          const v = this.terrainHeight(baseX + x, baseZ + z);
+          reliefs[(x + 1) + (z + 1) * N2] = v;
+          if (brut) brut[(x + 1) + (z + 1) * N2] = v;
+        }
       }
+      if (brut) this.reliefsMemo.set(World.key(cx, cz), brut);
     }
 
     for (let z = 0; z < CHUNK; z++) {
@@ -3671,7 +3695,7 @@ export class World {
           return data[World.index(lx, WATER_LEVEL, lz)] === BLOCK.WATER
             && data[World.index(lx, WATER_LEVEL + 1, lz)] === BLOCK.AIR;
         }
-        return this.terrainHeight(wx, wz) < WATER_LEVEL;
+        return (brut ? brut[(lx + 1) + (lz + 1) * N2] : this.terrainHeight(wx, wz)) < WATER_LEVEL;
       };
       for (let z = 0; z < CHUNK; z++) {
         for (let x = 0; x < CHUNK; x++) {
@@ -3980,6 +4004,7 @@ export class World {
       if (Math.abs(cx - pcx) <= rayon && Math.abs(cz - pcz) <= rayon) continue;
       this.chunks.delete(cle);
       this.tops.delete(cle);
+      this.reliefsMemo.delete(cle);
       this.dirty.delete(cle);
       oublies++;
     }
