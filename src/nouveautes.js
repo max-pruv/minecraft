@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 328,
+    titre: 'L\'autoroute Delhi–Agra',
+    puces: [
+      'De Delhi au Taj Mahal en voiture',
+      'De longues avenues jusqu\'au centre',
+      'Sans un seul pont',
+    ],
+  },
+  {
     v: 327,
     titre: 'L\'autoroute Milan–Turin',
     puces: [

@@ -20,6 +20,29 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v328 — L'autoroute Delhi–Agra, la route du Taj Mahal
+
+**Pourquoi.** Candidat suivant du relevé de la v323 : Delhi–Agra, 656 blocs sur
+l'axe direct, sans rail ni repère. Agra porte le Taj Mahal, et l'on ne pouvait
+s'y rendre qu'en se téléportant ou en volant.
+
+**Ce que ça change.** Le Yamuna Expressway relie Delhi à Agra : 672 blocs de
+deux fois deux voies, aucun pont, et vingt voitures qui font l'aller-retour. On
+sort de Delhi par une avenue de quatre-vingt-dix-huit blocs et l'on entre dans
+Agra par une avenue de cent vingt-sept, droit vers le centre.
+
+Rien n'est écrit dans le relief : les deux empreintes de `plafond.js` ne
+bougent pas.
+
+**Ce qui le prouve.** Dans `carteMonde.js`, un témoin neuf, rouge sur
+`origin/main` (pas de Yamuna) : la route, ses voitures, ses deux entrées sur une
+rue propre, aucune colonne sur un rail (0 sur 8 595 mesurées sous node). La
+sonde : 18 216 tracés, soixante-huit admissibles, tous sans pont — le pays est
+semé de mares, et 7 334 tracés ont été refusés pour un pont trop près d'une
+porte.
+
+---
+
 ## v327 — L'autoroute Milan–Turin
 
 **Pourquoi.** Candidat suivant du relevé de la v323 : Milan–Turin, 530 blocs

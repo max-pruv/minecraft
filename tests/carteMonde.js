@@ -584,6 +584,7 @@ const VRAIES_KM = [
       out.convoiE1 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'E1') || null;
       out.convoiAutosole = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'Autosole') || null;
       out.convoiA4it = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A4') || null;
+      out.convoiYamuna = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'Yamuna') || null;
       // AUCUNE ROUTE NE CROISE NI NE LONGE UNE VOIE FERRÉE (v320) : l'A3 est la
       // première dont l'axe a un rail le long (l'ICE). On lit, pour TOUTES les
       // routes, chaque colonne de leur emprise (`routeEn` non nul) et l'on
@@ -788,6 +789,15 @@ const VRAIES_KM = [
       && ['milan', 'turin'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'A4' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7)),
       JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiA4it ? { nom: a1.convoiA4it.nom, voitures: (a1.convoiA4it.modeles || []).length } : 'aucun convoi A4',
         surRail: a1.surRail && a1.surRail.A4, entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'A4') }));
+
+    // LE YAMUNA EXPRESSWAY (v328) : Delhi–Agra, la route du Taj Mahal, entre
+    // deux grandes villes dont les avenues d'entrée font cent blocs et plus.
+    verifier('le Yamuna Expressway relie Delhi à Agra, et des voitures entrent dans les deux villes par une rue propre',
+      !a1.absent && a1.segments >= 12 && !!a1.convoiYamuna && a1.convoiYamuna.routier && (a1.convoiYamuna.modeles || []).length >= 10
+      && !!a1.surRail && !!a1.surRail.Yamuna && a1.surRail.Yamuna[0] > 100 && a1.surRail.Yamuna[1] === 0
+      && ['delhi', 'agra'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'Yamuna' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7)),
+      JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiYamuna ? { nom: a1.convoiYamuna.nom, voitures: (a1.convoiYamuna.modeles || []).length } : 'aucun convoi Yamuna',
+        surRail: a1.surRail && a1.surRail.Yamuna, entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'Yamuna') }));
 
     // DE VRAIS RAILS, EN RELIEF, ET DEUX VOIES (v281) ------------------------
     //
