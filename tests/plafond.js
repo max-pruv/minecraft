@@ -926,6 +926,62 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     arbresAuBord.avant > 1000 && arbresAuBord.gardes === arbresAuBord.avant,
     `${arbresAuBord.gardes} gardés sur ${arbresAuBord.avant}`);
 
+  // LES DÉSERTS CHAUDS (v341) — sous node. Le planisphère savait la terre et
+  // les montagnes, pas le climat : le cœur du Sahara était une prairie boisée.
+  // On pose quatre morceaux au cœur de cinq déserts réels (le point se
+  // retrouve par la projection, jamais en blocs écrits) et de quatre
+  // campagnes tempérées, et l'on compare au même monde SANS la règle.
+  const deserts = await (async () => {
+    const { BLOCK } = await import('../src/blocks.js');
+    const { cielDe, zDeLatitude } = await import('../src/mondes.js');
+    const W = await import('../src/world.js');
+    const sans = new W.World();
+    sans.conf = { ...W.CONF_NEUF, climat: false };
+    // le x d'une longitude, par dichotomie : `cielDe` est croissant en x
+    const point = (lat, lon) => {
+      const z = Math.round(zDeLatitude(lat));
+      let a = -80000, b = 80000;
+      for (let k = 0; k < 40; k++) { const m = (a + b) / 2; if (cielDe(m, z).lon < lon) a = m; else b = m; }
+      return { x: Math.round(a), z };
+    };
+    const lire = (sites) => {
+      const r = { colonnes: 0, sable: 0, herbe: 0, arbres: 0, forme: 0, differents: 0 };
+      for (const [lat, lon] of sites) {
+        const p = point(lat, lon);
+        for (let cx = 0; cx < 2; cx++) for (let cz = 0; cz < 2; cz++) {
+          const bx = Math.floor(p.x / 16) + cx, bz = Math.floor(p.z / 16) + cz;
+          for (let z = bz * 16; z < bz * 16 + 16; z++) for (let x = bx * 16; x < bx * 16 + 16; x++) {
+            const h = w.terrainHeight(x, z);
+            for (let y = Math.max(0, h - 4); y <= h + 8; y++) {
+              const a = w.getBlock(x, y, z), b = sans.getBlock(x, y, z);
+              if (a !== b) r.differents++;
+              const sol = (q) => q !== BLOCK.AIR && q !== BLOCK.WATER && q !== BLOCK.LOG && q !== BLOCK.BIRCH && q !== BLOCK.LEAVES;
+              if (y <= h && sol(a) !== sol(b)) r.forme++;
+            }
+            if (h <= W.WATER_LEVEL + 1 || h >= 58 || w.cityAt(x, z)) continue;
+            r.colonnes++;
+            const top = w.getBlock(x, h, z);
+            if (top === BLOCK.SAND) r.sable++; else if (top === BLOCK.GRASS) r.herbe++;
+            const t = w.getBlock(x, h + 1, z);
+            if (t === BLOCK.LOG || t === BLOCK.BIRCH) r.arbres++;
+          }
+        }
+      }
+      return r;
+    };
+    // Tamanrasset, le Rub al-Khali, Alice Springs, le Taklamakan, l'Atacama
+    const d = lire([[23, 6], [20.5, 50], [-23.7, 133.9], [39, 83], [-24, -69.4]]);
+    // le Kansas, l'Iowa, la Pampa, l'Ukraine
+    const v = lire([[38.5, -98.5], [42, -93.5], [-35, -61], [49, 32]]);
+    return { d, v };
+  })();
+  verifier('au cœur d\'un vrai désert, la campagne est de sable et sans arbre (Sahara, Arabie, Australie, Taklamakan, Atacama)',
+    deserts.d.colonnes > 1000 && deserts.d.sable >= deserts.d.colonnes * 0.95 && deserts.d.arbres === 0,
+    `${deserts.d.sable} de sable, ${deserts.d.herbe} d'herbe sur ${deserts.d.colonnes} colonnes, ${deserts.d.arbres} arbres`);
+  verifier('et ailleurs rien ne change ; dans le désert, la matière seule : même forme, bloc pour bloc',
+    deserts.v.colonnes > 1000 && deserts.v.differents === 0 && deserts.d.forme === 0 && deserts.v.herbe > deserts.v.colonnes * 0.5,
+    `campagnes tempérées : ${deserts.v.differents} blocs différents, ${deserts.v.herbe} colonnes d'herbe sur ${deserts.v.colonnes} ; déserts : ${deserts.d.forme} blocs de forme différente`);
+
   // LE MÉNAGE DU CIEL DE PARIS (v298) — PUR, sur un document fabriqué.
   //
   // Décision de Max (« clean les trucs bizarres ») : une spirale de planches
@@ -1856,6 +1912,57 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       verifier('et le reste de la campagne lointaine garde son herbe, et le relief arrive aussi vite',
         r.herbe > 10000 && r.vertes === r.herbe && r.rempliA <= 40,
         `${r.vertes}/${r.herbe} sommets d'herbe, relief rempli en ${r.rempliA} images de six millisecondes, règle finie en ${r.appels}`);
+    }
+
+    // LE DÉSERT, VU DE LOIN ET SUR LA CARTE (v341). Le générateur, le
+    // paysage lointain et la carte du monde lisent la MÊME question
+    // (`world.aride`) : au cœur du Sahara, un sommet lointain et un pixel de
+    // carte sont blonds ; au Kansas, verts.
+    {
+      const r = await tab.evaluate(async () => {
+        const { Horizon } = await import('./src/horizon.js');
+        const { cielDe, zDeLatitude } = await import('./src/mondes.js');
+        const w = window.__game.world, carte = window.__carte;
+        const point = (lat, lon) => {
+          const z = Math.round(zDeLatitude(lat));
+          let a = -80000, b = 80000;
+          for (let k = 0; k < 40; k++) { const m = (a + b) / 2; if (cielDe(m, z).lon < lon) a = m; else b = m; }
+          return { x: Math.round(a), z };
+        };
+        const blond = (c) => c[0] > c[1] && c[1] > c[2] * 1.1;     // le sable : R > G > B
+        const vert = (c) => c[1] > c[0] * 1.15 && c[1] > c[2] * 1.15;
+        const out = {};
+        for (const [nom, lat, lon] of [['sahara', 23, 6], ['kansas', 38.5, -98.5]]) {
+          const p = point(lat, lon);
+          const h = new Horizon(w, 200);
+          let n = 0;
+          while (n++ < 400 && h.maj(p.x, p.z, 1e9) > 0) { /* tout remplir */ }
+          const col = h.geo.attributes.color.array, N = h.N;
+          let blonds = 0, verts = 0, tous = 0;
+          for (let i = 0; i < N * N; i++) {
+            const y = h.hauteurs[i];
+            if (y <= 31 || y >= 58) continue;
+            tous++;
+            const c = [col[i * 3], col[i * 3 + 1], col[i * 3 + 2]];
+            if (blond(c)) blonds++; else if (vert(c)) verts++;
+          }
+          h.geo.dispose();
+          let cb = 0, cv = 0, ct = 0;
+          for (let k = 0; k < 64; k++) {
+            const x = p.x + (k % 8) * 23 - 80, z = p.z + Math.floor(k / 8) * 23 - 80, hh = w.terrainHeight(x, z);
+            if (hh <= 31 || hh >= 48 || !carte) continue;
+            ct++;
+            const c = carte.couleur(x, z, hh, false, false);
+            if (blond(c)) cb++; else if (vert(c)) cv++;
+          }
+          out[nom] = { tous, blonds, verts, ct, cb, cv };
+        }
+        return out;
+      });
+      verifier('vu de loin et sur la carte, le désert est de sable et le Kansas vert',
+        r.sahara.tous > 500 && r.sahara.blonds >= r.sahara.tous * 0.9 && r.sahara.ct > 20 && r.sahara.cb >= r.sahara.ct * 0.9
+          && r.kansas.verts >= r.kansas.tous * 0.8 && r.kansas.cv >= r.kansas.ct * 0.8,
+        JSON.stringify(r));
     }
 
     // La maison d'avant, écrite comme l'ancienne version l'aurait laissée.

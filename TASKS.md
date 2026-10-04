@@ -675,7 +675,11 @@
   franchissement, ou au relief (décision de Max) ; les berges de trois blocs
   gardent leur couronne d'herbe. `horizon.js` et les arbres lisent la règle
   depuis la v340 (`couleurDuBord`, `solDeLArbre`) ; (d) les
-  textures par usage et climat ; (e) la bibliothèque architecturale (96
+  textures par usage et climat — PREMIÈRE TRANCHE en v341 : les déserts chauds
+  réels (`DESERTS`, terre.js) sont de sable, sans arbre, au sol, au loin et sur
+  la carte ; restent les steppes, la toundra, les tropiques humides (une teinte
+  d'herbe par climat demande une couleur par colonne dans le mailleur, le sol
+  continu, le paysage lointain et la carte — à mesurer avant) ; (e) la bibliothèque architecturale (96
   variantes, 278 profils de ville) — elle exige une retrame à un bloc pour un
   mètre (`docs/monde-fidele/programme.md`, section 6), décision de Max ; (f) la
   matrice de couverture ville par ville (convertie, exclue, bloquée) et les

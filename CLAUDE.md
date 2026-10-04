@@ -897,6 +897,32 @@ Le point (c) du kit « monde fidèle », sur toute la carte. Trois règles.
   Max) ; une berge de trois blocs garde sa couronne d'herbe. *(Le paysage
   lointain et les arbres ont reçu la règle en v340.)*
 
+## Les déserts chauds (v341) — le climat est une donnée de géographie, comme la côte
+
+Le point (d) du kit « monde fidèle », dans sa plus petite tranche utile. Trois
+règles.
+
+- **LE CLIMAT SE RELÈVE COMME LES CÔTES, EN POLYGONES DE FAITS.** `DESERTS`
+  (terre.js) porte les contours des grands déserts chauds au degré, à côté de
+  `CONTOURS` et `CHAINES`, avec la même boîte de rejet ; `desertReel(lat,
+  lon)` est pure. Le monde demande `aride(x, z)` (world.js) : `cielDe`, et un
+  bord qui tremble d'un demi-degré (fbm) — un désert au cordeau ferait
+  maquette, comme une côte. Les steppes, la toundra et les tropiques humides
+  sont d'autres tranches, et c'est déclaré.
+- **UNE SEULE QUESTION, TROIS LECTEURS — et la matière seule change.** Le
+  générateur pose sable sur sable (avant les falaises, qui ne regardent que
+  l'herbe), `treeAt` refuse le désert, le paysage lointain
+  (`blocDeSurface`) et la carte du monde (`couleur`) lisent `world.aride`.
+  Drapeau `climat` de `CONF_NEUF` seule : `CONF_V308` et `CONF_AVANT` ne le
+  portent pas, les marches de migration jugent sur le monde où un bloc a été
+  posé (v306). Un témoin compare au monde SANS la règle : zéro bloc de forme
+  différente, et zéro bloc différent hors des déserts.
+- **UN SITE DE TÉMOIN SE CHOISIT LOIN DE TOUT CE QUI A SA PROPRE RÈGLE.** Mon
+  premier site « tempéré » était la Beauce à 48,3° N : DANS le disque de Paris
+  doublé (370 blocs), où le paysage lointain est gris de ville — 640 sommets
+  verts sur 2 141. Le Kansas, loin de toute ville, rend 2 452. Un point écrit
+  en latitude se vérifie contre les disques avant de servir de témoin.
+
 ## Les arbres au bord, et les falaises vues de loin (v340) — une règle de matière se dit à TOUT ce qui pose quelque chose dessus
 
 La dette déclarée par la v326, remboursée. Trois règles.

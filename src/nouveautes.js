@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 341,
+    titre: 'Les déserts',
+    puces: [
+      'Le Sahara est enfin de sable',
+      'Et l\'Arabie, l\'Australie, l\'Atacama',
+      'Pas un arbre dans le désert',
+    ],
+  },
+  {
     v: 340,
     titre: 'Les arbres et les falaises',
     puces: [
