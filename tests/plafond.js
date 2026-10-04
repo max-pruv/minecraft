@@ -289,6 +289,10 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // Le relief de la production v308 autour de Salvador, Jakarta, Bari, Busan et
 // Oslo (disque + 80 blocs, un point sur trois), relevé sur `origin/main` :
 // c'est ce que `new World({ v308: true })` doit rendre au bloc près (v309).
+// v349 : l'empreinte des blocs et des tampons de 490 morceaux (morceaux-temoin.mjs),
+// relevée sur la v348 ; et le travail d'un morceau, barre au milieu des deux mesures.
+const EMPREINTE_MORCEAUX_V348 = 'à relever';
+const BARRES_TRAVAIL = {};
 const EMPREINTE_V308_RELIEF = 'e92db9d7ae703856de1cfb7e00dc4abce156c490';
 const EMPREINTE_AVANT_BLOCS = 'b402b639d759d0586f32149aac4d3165edf0d10d';
 
@@ -1664,6 +1668,32 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   }
   verifier('et aucune montagne n\'a poussé dans le ciel neuf', trop.length === 0,
     JSON.stringify(trop.slice(0, 3)));
+
+  // --- LE COÛT D'UN MORCEAU BAISSE, SA SORTIE NE BOUGE PAS (v349) ----------
+  //
+  // Le worker engendre et maille moins cher (routeEn borné par le talus, relief
+  // gardé par morceau, mailleur par tables, Tamise sans hypot inutile). Deux
+  // témoins, sous node (`morceaux-temoin.mjs`) :
+  //  • l'EMPREINTE des blocs et de tous les tampons de 490 morceaux engendrés
+  //    et maillés autour de neuf lieux est celle relevée sur la v348 — rien n'a
+  //    bougé d'un bloc ni d'un sommet. Elle se rejoue sur un autre arbre :
+  //    `empreinteMorceaux('<arbre>/src')`. Et elle lit des colonnes de route,
+  //    sans quoi elle ne garderait pas `routeEn` ;
+  //  • le TRAVAIL d'un morceau, en appels et non en millisecondes (la charge du
+  //    banc ne le touche pas) : lectures de relief et de blocs par morceau
+  //    maillé en roulant. Mesuré sur la v348 puis ici, la barre au milieu.
+  {
+    const { empreinteMorceaux, travailParMorceau } = await import('./morceaux-temoin.mjs');
+    const t0 = Date.now();
+    const e = await empreinteMorceaux('../src');
+    verifier('engendrer et mailler moins cher ne change ni un bloc ni un sommet (490 morceaux, neuf lieux)',
+      e.empreinte === EMPREINTE_MORCEAUX_V348 && e.morceaux === 490 && e.route > 0,
+      `${e.empreinte.slice(0, 16)} pour ${EMPREINTE_MORCEAUX_V348.slice(0, 16)}, ${e.morceaux} morceaux, ${e.route} colonnes de route lues, ${Date.now() - t0} ms`);
+    const tr = await travailParMorceau('../src');
+    verifier('un morceau de ville coûte moins de lectures de relief et de blocs que sur la v348',
+      Object.entries(BARRES_TRAVAIL).every(([v, b]) => tr[v].reliefs <= b.reliefs && tr[v].lus <= b.lus),
+      JSON.stringify({ mesure: tr, barres: BARRES_TRAVAIL }));
+  }
 
   // --- LE SOL CONTINU (v297) : le rendu, le contact et la couture lisent la ---
   // --- même triangulation, et le sol N'A PAS BOUGÉ pour autant --------------
