@@ -806,6 +806,13 @@ engendrées. Quatre règles.
   AIGUILLE.** La colonne de Marie (11 m), le Pavillon d'or, Topkapi, le Templo
   Mayor, Wat Pho : étirés, ils seraient devenus des poteaux. Une dette se rembourse
   aussi en disant vrai.
+- **UNE RÉSOLUTION DE CONFLIT SE CHARGE AVANT DE SE POUSSER.** Au rebase sur
+  la v340, les deux côtés ajoutaient une entrée en tête de `nouveautes.js` ;
+  git a coupé le conflit AU MILIEU d'un objet, ma résolution par expression a
+  recollé les deux moitiés sans `],\n  },`, et le module ne se chargeait plus —
+  journal vide dans le jeu, trois rouges de `maj.js`. Après tout conflit dans un
+  fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
+  journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
 
 ## Les rues de Londres à la règle du kit (v339) — un plan deux fois plus serré ne porte pas les mêmes rues
 
