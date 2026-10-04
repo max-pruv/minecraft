@@ -20,6 +20,38 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v350 — L'Opéra de Lille, Buckingham et les Archives à leur hauteur
+
+**Pourquoi.** La mesure de la v335, lancée sur toutes les villes, avait laissé
+huit monuments des villes bâties à la main plus bas que les immeubles autour
+d'eux, déclarés en dette (« lot 2 ») : l'Opéra de Lille à six blocs pour des
+toits à sept, Buckingham à sept pour huit, l'Arche de Washington à New York, et
+à Washington le Trésor, les Archives, le Théâtre Ford, les musées d'Histoire
+américaine et de l'Indien d'Amérique.
+
+**Ce que ça change.** Trois montent dans le ciel de leur ville, la même règle
+que les villes engendrées (la corniche mesurée, puis la courbe de Paris) :
+l'Opéra de Lille passe de six à onze blocs, une fois et demie les toits de la
+place du Théâtre (à seize, son petit bâtisseur faisait une tour blanche, vu en
+capture) ; Buckingham de sept à
+douze, à la hauteur de la Tour Blanche ; les Archives nationales de onze à
+quinze, à la hauteur du dôme de la Bibliothèque du Congrès. Sous la troisième
+couche rien ne s'étire : la porte, la locomotive du musée, les gardes et les
+grilles de Buckingham gardent leur taille. Les cinq autres sont bas dans la
+vraie ville aussi et le disent : l'Arche (23 m) au milieu des immeubles de NYU,
+et à Washington, ville plafonnée par la loi de 1910, le Trésor, le Théâtre Ford
+et les deux musées du Mall, qui monteraient sinon au-dessus des tours du
+château du Smithsonian.
+
+**Ce qui le prouve.** Le témoin des monuments de `plafond.js` n'a plus aucune
+dette « lot 2 » (huit sur l'ancien code) ; celui de l'ordre du vrai ciel
+compte désormais les villes bâties à la main, avec quinze repères fixes de
+hauteur connue (le Capitole, Big Ben, la Tour Blanche, les beffrois de Lille…) :
+aucune inversion, chaque monument à sa cible. Captures de rue et de ciel des
+trois monuments (`tests/sonde-captures-lot2.cjs`).
+
+---
+
 ## v349 — Les forêts tropicales
 
 **Pourquoi.** L'Amazonie, le bassin du Congo, Bornéo étaient une campagne

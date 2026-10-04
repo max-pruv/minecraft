@@ -839,10 +839,35 @@
   ville a son ciel (`CIELS`, corniche mesurée), quarante-deux monuments remis à
   l'échelle, treize repères montés pour garder l'ordre du vrai ciel, cinq
   reclassés `vrai` (colonne de Marie, Topkapi, Templo Mayor, Pavillon d'or, Wat
-  Pho). **Reste le lot 2, les villes bâties à la main** (une autre session) :
-  Arche de Washington (NY) 12/13, Opéra de Lille 6/7, Buckingham 7/8, et à
-  Washington le Trésor 8/13, les Archives 11/13, le Théâtre Ford 8/11,
-  l'Histoire américaine 9/10, l'Indien d'Amérique 8/9.
+  Pho). **Lot 2, les villes bâties à la main : FAIT en v350** — l'Opéra de
+  Lille 6 → 11, Buckingham 7 → 12, les Archives 11 → 15 (ciels de Lille [7, 0,4],
+  Londres [8, 0,75], Washington [13, 0,26]) ; l'Arche de Washington, le Trésor,
+  le Théâtre Ford, l'Histoire américaine et l'Indien d'Amérique passent en
+  `vrai` (Washington plafonnée par la loi de 1910, et les deux musées
+  passeraient au-dessus des tours-fûts du château du Smithsonian, 44 m).
+- [ ] **LE PORTAIL DE LA v350 (monuments du lot 2, cubes de Paris) : LES ROUGES
+  SONT TOUS DES DETTES DÉJÀ MESURÉES.** Deux portails sur la branche avant le
+  rebase (v342 + la livraison) : `plafond.js`, `parishd.js`, `carteMonde.js`,
+  `carte.js`, `washington.js`, `metro.js` verts les deux fois. Rouges :
+  `maj.js` le loader qui compte ses fichiers (2/2) et, au second, la
+  libération et « ne floute rien » ; `manhattan.js` le délai de la ligne 282
+  (1er) et le trou de façade (2e, 22 326 → 51 734, l'étendue déjà relevée) ;
+  `monte.js` la compilation à la téléportation (NY 15 puis Paris 6, comme v342),
+  le gel d'arrivée (25 % puis 32,3 %), et au second « un train s'arrête devant
+  la voiture » (13 relevés dedans — le chiffre exact de la v336 sur
+  `origin/main`). `maj.js` REJOUÉE SEULE : branche le loader + les deux témoins
+  du palier (34 images, aucun verdict — la dépendance à la cadence des v315 et
+  v316) ; `origin/main` le loader seul. Preuve structurelle : la livraison
+  étire trois monuments à Lille, Londres et Washington et épaissit trois
+  modèles HD de Paris, coupés en rendu logiciel (`RAYON_HD` 0) ; aucun de ces
+  témoins ne les dessine.
+  Troisième portail, après le rebase sur la v348 : sept suites vertes (fumée,
+  métro, parishd, carteMonde, plafond, carte, washington) ; rouges, toutes
+  déjà dans le tableau de la v342 ci-dessous : `maj.js` le loader seul ;
+  `manhattan.js` le trou de façade (9 203 → 51 734, dans l'étendue) et le taxi
+  tactile (1,06 bloc en 84 s, le chiffre exact des deux côtés en v342) ;
+  `monte.js` la compilation à la téléportation (Paris 3 `physical`) et le gel
+  d'arrivée (24,4 %, sous les 27,5 % d'`origin/main` en v342).
 - [ ] **LE PORTAIL DE LA v342 (monuments du lot 3) : TROIS SUITES ROUGES, LA DOUBLE
   MESURE EN MAIN.** Sept suites vertes (fumée, métro, parishd, carteMonde,
   plafond, carte, washington). Rejouées SEULES des deux côtés :
@@ -864,6 +889,14 @@
   v342 ne touche ni `sw.js` (hors version), ni `index.html`, ni le loader — une
   table de hauteurs, un témoin, une sonde. Le badge de version (« version
   servie v335 » au premier portail) était le bump manquant, réglé.
+- [ ] **DEUX INVERSIONS DU VRAI CIEL DANS LES VILLES BÂTIES À LA MAIN (v350),
+  mesuré.** Le témoin d'ordre étendu au lot 2 les a trouvées entre repères que
+  la livraison ne touche pas : la cathédrale St Paul (111 m) à dix-sept blocs,
+  sous Big Ben (96 m) à soixante-neuf ; le château du Smithsonian (44 m) à
+  onze, sous le mémorial Jefferson (39 m) à treize. Retirés des `FIXES` du
+  témoin. St Paul est une coupole (`corps` possible, et le dôme se voit de tout
+  Londres) ; les tours du château sont des fûts d'un bloc, à remonter par leur
+  bâtisseur, pas par une table.
 - [ ] **LA GRANDE ROUE DU PRATER SOUS LA HOFBURG (v342), déclaré.** La roue (65 m)
   reste à seize blocs et la Hofburg (30 m) monte à vingt et un : une roue ne
   s'étire pas, elle deviendrait une ellipse. Le témoin d'ordre ne la compte pas.
@@ -890,8 +923,13 @@
   journal des blocs le garde, et le ménage du ciel le juge sur le monde d'avant,
   `CONF_AVANT`, qui garde les monuments d'avant), mais il ne se voit plus. Si
   cela se voit un jour, la marche est connue : celle de `releverToitsParis`,
-  avec la table de paliers pour dire de combien monte chaque couche.
-- [ ] **DES CUBES DÉPASSENT ENCORE DES MODÈLES ÉTIRÉS (v335), mesuré.** Sonde
+  avec la table de paliers pour dire de combien monte chaque couche. Le même
+  prix vaut pour les monuments étirés par la v342 et la v350 (Buckingham,
+  l'Opéra de Lille, les Archives nationales).
+- [ ] **DES CUBES DÉPASSENT ENCORE DES MODÈLES ÉTIRÉS (v335), mesuré. Au-dessus
+  d'un enfant : FAIT en v350** (Opéra 15 → 0, Panthéon 6 → 0, Notre-Dame 8 → 0,
+  témoin dans `plafond.js`). Restent les vingt-quatre cubes du parvis de
+  Notre-Dame, au sol, d'avant la v335. Sonde
   `sonde-monuments-hd.cjs`, cubes qui dépassent (avant → après) : Arc 0 → 28,
   Panthéon 4 → 10, Opéra 9 → 17, Sacré-Cœur 15 → 23, Notre-Dame 34 → 76 (dont
   24 à hauteur d'enfant, inchangés). Un bloc d'écart entre le modèle et son

@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 350,
+    titre: 'Buckingham et l\'Opéra de Lille grandissent',
+    puces: [
+      'L\'Opéra de Lille domine sa place',
+      'Buckingham et les Archives aussi',
+      'Les portes gardent leur taille',
+      'Plus de cubes sur l\'Opéra de Paris',
+    ],
+  },
+  {
     v: 349,
     titre: 'Les forêts tropicales',
     puces: [
