@@ -206,7 +206,7 @@ export function desertReel(lat, lon) {
 }
 export function desertsDeLaTerre() { return FORMES_DESERT.map((f) => ({ nom: f.nom, pts: f.pts.slice() })); }
 
-// LES CLIMATS (v344, la suite du point (d)). Les déserts chauds ont ouvert la
+// LES CLIMATS (v345, la suite du point (d)). Les déserts chauds ont ouvert la
 // voie ; viennent ensuite la TOUNDRA — au nord de la limite des arbres, et sur
 // le haut plateau du Tibet — et la TAÏGA, la forêt boréale qui fait le tour du
 // pôle sous elle. Ce sont, comme les côtes et les déserts, des FAITS relevés
@@ -287,7 +287,7 @@ export function climatCertain(lat, lon, marge) {
   }
   return null;
 }
-// LES TEINTES DES CLIMATS (v344). Une zone de climat ne change pas la MATIÈRE
+// LES TEINTES DES CLIMATS (v345). Une zone de climat ne change pas la MATIÈRE
 // de l'herbe — c'est toujours le bloc d'herbe, que tout le monde sait lire —
 // mais sa COULEUR, comme dans la vraie campagne : le lichen olive de la
 // toundra, le vert sombre et froid de la forêt boréale. Un multiplicateur de

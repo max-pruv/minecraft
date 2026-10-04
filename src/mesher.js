@@ -264,7 +264,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
   // dessus ni de côté, la surface le recouvre — et la surface part dans
   // `solid`, même matériau, même tuile que le bloc qu'elle remplace.
   const grille = world.sansSolContinu ? null : grilleSol(world, cx, cz, CHUNK);
-  // LES TEINTES DES CLIMATS (v344) : l'herbe (son dessus) et les feuilles
+  // LES TEINTES DES CLIMATS (v345) : l'herbe (son dessus) et les feuilles
   // d'une colonne de toundra ou de taïga prennent la couleur de leur climat.
   // Null sur presque tout le monde, payé d'une question par morceau.
   const teintes = world.teintesDuMorceau ? world.teintesDuMorceau(cx, cz) : null;

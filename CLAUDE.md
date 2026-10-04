@@ -1000,7 +1000,7 @@ Le point (c) du kit « monde fidèle », sur toute la carte. Trois règles.
   Max) ; une berge de trois blocs garde sa couronne d'herbe. *(Le paysage
   lointain et les arbres ont reçu la règle en v340.)*
 
-## La toundra et la taïga (v344) — une couleur de sommet est LINÉAIRE
+## La toundra et la taïga (v345) — une couleur de sommet est LINÉAIRE
 
 La deuxième tranche du point (d). Quatre règles.
 

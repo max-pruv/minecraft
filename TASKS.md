@@ -536,7 +536,7 @@
   second dépend du premier) — REJOUÉE SEULE : branche ces deux-là, `origin/main`
   v318 la libération (programmes 17/25). Même intermittence de préparation des
   deux côtés, déjà déclarée (v267).
-- [ ] **LE PORTAIL DE LA v344 (la toundra et la taïga, préparée comme v342) :
+- [ ] **LE PORTAIL DE LA v345 (la toundra et la taïga, préparée comme v342 puis v344) :
   TOUS LES ROUGES DÉJÀ DÉCLARÉS.** Seize suites, 84 min. `plafond.js` (93 dont
   les cinq témoins neufs), `carteMonde.js`, `metro.js`, `washington.js`,
   `parishd.js`, `realisme.js`, `reglages.js`, `hote.js`, `visio.js`,
@@ -742,7 +742,7 @@
   depuis la v340 (`couleurDuBord`, `solDeLArbre`) ; (d) les
   textures par usage et climat — PREMIÈRE TRANCHE en v341 : les déserts chauds
   réels (`DESERTS`, terre.js) sont de sable, sans arbre, au sol, au loin et sur
-  la carte ; SECONDE TRANCHE en v344 : la toundra et la taïga (`CLIMATS`,
+  la carte ; SECONDE TRANCHE en v345 : la toundra et la taïga (`CLIMATS`,
   terre.js) — la teinte d'herbe par colonne est MESURÉE gratuite (une
   question par morceau, 0,37 µs par colonne près d'un bord, mailleur 9,34
   contre 9,32 ms hors zone) ; restent les steppes, les tropiques humides ; (e) la bibliothèque architecturale (96

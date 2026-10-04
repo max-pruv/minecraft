@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 345,
+    titre: 'La toundra et la taïga',
+    puces: [
+      'Le Grand Nord a son lichen',
+      'Des forêts de pins en Sibérie',
+      'Et au Canada, en Finlande',
+    ],
+  },
+  {
     v: 344,
     titre: 'Tes amis voient les dégâts',
     puces: [

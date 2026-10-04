@@ -1028,7 +1028,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     deserts.v.colonnes > 1000 && deserts.v.differents === 0 && deserts.d.forme === 0 && deserts.v.herbe > deserts.v.colonnes * 0.5,
     `campagnes tempérées : ${deserts.v.differents} blocs différents, ${deserts.v.herbe} colonnes d'herbe sur ${deserts.v.colonnes} ; déserts : ${deserts.d.forme} blocs de forme différente`);
 
-  // LA TOUNDRA ET LA TAÏGA (v344) — sous node, sur le modèle des déserts.
+  // LA TOUNDRA ET LA TAÏGA (v345) — sous node, sur le modèle des déserts.
   // On pose seize morceaux au cœur de trois toundras et de quatre taïgas
   // réelles (le point se retrouve par la projection), et l'on compare au même
   // monde SANS la règle : la forme bloc pour bloc, le sol, les arbres, la
@@ -2112,7 +2112,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         JSON.stringify(r));
     }
 
-    // LA TOUNDRA ET LA TAÏGA, VUES DE LOIN ET SUR LA CARTE (v344). La même
+    // LA TOUNDRA ET LA TAÏGA, VUES DE LOIN ET SUR LA CARTE (v345). La même
     // question (`world.climat`) que le générateur et le mailleur : vu de
     // loin, la toundra tire vers l'olive (plus de rouge que de vert, à côté du
     // Kansas) et la taïga est plus sombre ; la carte dit la même chose.
