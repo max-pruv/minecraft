@@ -2718,6 +2718,24 @@ l'embarquement a eu lieu, pas par une hypothèse.
   DISTINGUE les trois : où est la rame la plus proche, à quelle distance du
   quai, et avance-t-elle.
 
+- [ ] **LE PORTAIL DE LA v331.** Neuf suites. Vertes : `metro.js`,
+  `carteMonde.js` (les trois témoins du kit de Londres, rouges sur
+  `origin/main`), `sauvegarde.js`, `plafond.js` (la ville d'avant sous les
+  blocs d'enfant, rouge désarmée), `washington.js`. Rouges :
+  · `carte.js` « chaque bus est sur la chaussée » 4/5 — LE MIEN : le bus de
+    Whitehall tombait dans l'emprise du Parlement, que le repère pave après les
+    colonnes. Corrigé (`horsDesMonuments`), `carte.js` rejouée seule : ce
+    témoin vert, reste la flèche du GPS (gauche 1,92 rad), l'intermittence
+    déclarée v327, rouge seule sur `origin/main` ;
+  · `maj.js` le fond de carte à la libération — rejouée seule sur
+    `origin/main` : même rouge (dette v276) ;
+  · `manhattan.js` la géométrie de façade et le taxi au tactile — mêmes deux
+    rouges sur `origin/main` rejouée seule (qui meurt ensuite d'un délai) ;
+    `PeerJS: Lost connection` (dette réseau v240/v327) non atteint là-bas ;
+  · `monte.js` l'écran qui se fige à l'arrivée (rouge seul sur `origin/main`,
+    48,3 %), la compilation à la téléportation et la voiture au bord de l'eau
+    — deux intermittences déjà mesurées des deux côtés (v326, v327).
+
 - [ ] **LONDRES À LA RÈGLE DU KIT : CE QUI RESTE (v331).** Londres est passée à
   `voirie.js` (artères en collectrices, rues de quartier en locales, trame
   collectrice recomposée, trame qui ne double plus une avenue). Le prix,
