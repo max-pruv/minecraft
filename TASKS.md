@@ -3292,7 +3292,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   est intact. À reprendre : le faire voler au-dessus d'une ville, et remesurer
   les vitesses des avions sur le VRAI débit (42 morceaux/s, pas 154).
 
-- [ ] **Le paysage lointain montre le relief, pas les villes.** `terrainHeight`
+- [x] **Le paysage lointain montre le relief, pas les villes.** *(fait en v327 : teinte urbaine et bâti instancié, `horizon.js`)* `terrainHeight`
   ne sait rien des immeubles : au-delà des morceaux chargés, Paris apparaît en
   prairie. `cityAt` pourrait teinter les cases d'une ville en gris urbain pour
   quelques microsecondes par colonne — non mesuré, non fait.

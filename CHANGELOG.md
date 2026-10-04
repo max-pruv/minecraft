@@ -20,6 +20,36 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v331 — Les villes se reconnaissent au loin
+
+**Pourquoi.** Au-delà des morceaux de monde maillés (à peu près deux cents
+blocs autour de l'enfant sur l'iPad), le paysage lointain (`horizon.js`) ne
+dessinait que le relief : Paris, Londres, New York, Tokyo et les deux cent
+soixante-neuf villes engendrées apparaissaient en PRAIRIE vue d'avion — un
+mur d'immeubles au bord du monde chargé, puis de l'herbe verte là où la ville
+continue. Dette déclarée dans `TASKS.md` depuis la v237.
+
+**Ce que ça change.** Vu de loin, le sol d'une ville prend le gris de ses rues
+mêlé à la couleur de ses toits, et la ville se dresse : un pavé par îlot de
+huit blocs, à la couleur de ses murs (la pierre crème de Paris, la brique de
+Londres, la palette de chaque ville engendrée), le toit plus sombre, à la
+hauteur propre de la ville, avec ses tours là où elle en a (Tokyo, Dubaï,
+New York). Un seul appel de dessin pour tout le paysage. Rien n'est écrit dans
+le monde et le relief ne bouge pas : dès qu'un morceau est maillé, le vrai
+monde reprend sa place.
+
+**Ce qui le prouve.** Trois témoins dans `plafond.js`, sur le vrai monde de la
+page (Paris, Londres, New York par `TerreUrbaine`, Rome) : le sol sous la ville
+n'est plus vert, chaque ville a ses pavés et aucun n'est hors d'une ville, et
+le bâti lointain se retire devant le monde maillé. Coût mesuré sous node, en
+médiane de cinq passages alternés : +0,05 à +0,07 µs par colonne (environ 4 %),
+la question « est-ce une ville ? » se posant par l'index de cases des villes
+engendrées et par une boîte pour les sept villes bâties à la main. Captures en
+vol à `rr=12`, avant/après, au-dessus de Paris, Londres, Rome et Tokyo
+(`tests/sonde-villes-au-loin.cjs`).
+
+---
+
 ## v330 — Les terminaux sont aménagés
 
 **Pourquoi.** Depuis la v223, les terminaux des aérodromes se TRAVERSENT —
@@ -124,8 +154,6 @@ propre, aucune colonne sur un rail (0 sur 8 249 mesurées sous node). La sonde :
 proches — sept admissibles, tous sans pont. La plaine du Pô n'est pas plate
 partout : c'est le déblai qui a fait le tri.
 
-
----
 
 ## v326 — Des falaises de roche et des berges de sable
 

@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 331,
+    titre: 'Les villes se voient de loin',
+    puces: [
+      'En avion, les villes ont leurs immeubles',
+      'Paris en pierre, Tokyo et ses tours',
+      'Plus de prairie à la place des villes',
+    ],
+  },
+  {
     v: 330,
     titre: 'Les aéroports sont aménagés',
     puces: [
