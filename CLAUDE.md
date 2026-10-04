@@ -977,7 +977,7 @@ en temps réel), `fun.js` le fait descendre et `deposer` le pose debout sur une
 case libre à côté (côté conducteur d'abord). La carcasse porte `horsService`
 (lu par `animals.js`, comme `montee`) : elle ne se reprend pas, et elle s'en
 va au bout de `DUREE_CARCASSE`.
-## La conduite à la GTA (v340) — un modèle pur, une boîte orientée, des chocs qui se publient
+## La conduite à la GTA (v345) — un modèle pur, une boîte orientée, des chocs qui se publient
 
 Max : « une grosse refonte de la façon de conduire… comme GTA ». Premier palier
 de la session `conduite-physique` (six sessions en parallèle sur la conduite).
@@ -995,6 +995,16 @@ Six règles.
   `DERIVE_MAX`) naît d'un virage pris plus vite que l'adhérence et se
   rattrape seule (`DERIVE_TAU`). Une session qui la dessine ne la rajoute
   pas au cap : la caisse tourne déjà avec `yaw`.
+- **LE CONTRAT AVEC LES DÉGÂTS SE TIENT PAR DEUX DRAPEAUX, POSÉS PAR LA
+  PHYSIQUE.** Les dégâts (v343) devinent un choc aux chutes de vitesse tant
+  que `player.choc` est `undefined`, et appliquent eux-mêmes leurs effets
+  (allure, biais de cap) tant que `player.physiqueLitEtat` est faux. Le
+  joueur naît donc avec `choc = null` (pas encore de choc, mais une physique
+  qui les publie : un frein franc n'est pas un choc) et `physiqueLitEtat =
+  true` ; `direction` se lit comme les dégâts la publient — un biais de CAP en
+  rad/s à pleine vitesse, pas un angle de roues —, et le moteur abîmé garde
+  leur facteur 0,35 + 0,65 × moteur. Un témoin qui pose `etatVoiture` à la
+  main doit le FIGER : les dégâts le réécrivent à chaque image.
 - **UNE VOITURE BONDIT AU DÉPART.** La courbe a0 · (1 − (v/vmax)²) seule
   démarrait mou : au banc, même nombre d'images des deux côtés, l'ancienne
   voiture (toute son allure en une demi-seconde) faisait 6 blocs et la
@@ -5049,8 +5059,8 @@ caméra à part, `layers.enableAll()` comme le veut la v250.
 ## Chaque voiture roule à l'allure de sa classe (v260)
 
 > **⚠️ Le plafond calculé ci-dessous (28 blocs/s) est remplacé par un plafond
-> MESURÉ (60) en v340, et l'allure se déduit des fiches de `conduite.js`.** Lire
-> « La conduite à la GTA (v340) ».
+> MESURÉ (60) en v345, et l'allure se déduit des fiches de `conduite.js`.** Lire
+> « La conduite à la GTA (v345) ».
 
 Max : « une vitesse en fonction du modèle ». Deux règles.
 

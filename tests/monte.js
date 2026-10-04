@@ -2219,7 +2219,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     });
     const cit = alluresModeles['berline-citadine'] || {}, jes = alluresModeles['koenigsegg-jesko.glb'] || {};
     verifier('une hypercar va plus vite qu\'une citadine, et la citadine plus vite qu\'avant',
-      // DEPUIS LA v343 L'ACCÉLÉRATION S'ESSOUFFLE VERS LA POINTE : après une
+      // DEPUIS LA v345 L'ACCÉLÉRATION S'ESSOUFFLE VERS LA POINTE : après une
       // seconde et demie de jeu aucune des deux n'est à sa pointe (14,4 et 23,4
       // mesurés), et le rapport des VITESSES du moment ne dit plus celui des
       // classes. Le rapport des POINTES se lit dans l'allure que le jeu leur
@@ -4509,7 +4509,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         for (const a of [...g.animalManager.animals]) if (a.def.key === 'voiture' || a.def.pilote) { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); }
         g.player.keys.clear(); g.player.touchMove.f = 0; g.player.touchMove.s = 0;
         g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined; g.player.flying = false;
-        // LA PISTE S'ÉLARGIT AVEC LA v343 : la voiture prend sa vitesse plus
+        // LA PISTE S'ÉLARGIT AVEC LA v345 : la voiture prend sa vitesse plus
         // progressivement, roule plus loin, et en lâchant après le virage elle
         // file en roue libre — le frein moteur, plus le frein franc d'avant.
         // Huit blocs de demi-largeur la faisaient sortir de la dalle de côté.
@@ -4636,7 +4636,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       // puis on relève — jamais un délai fixe.
       const vitesses = [];
       const t0 = Date.now();
-      // et depuis la v343 elle la prend comme une vraie voiture — vite au
+      // et depuis la v345 elle la prend comme une vraie voiture — vite au
       // départ, plus lentement vers la pointe : cinq secondes de JEU pour une
       // citadine, donc bien plus de montre au banc. Borné, jamais un délai fixe.
       while (Date.now() - t0 < 45000) { const r = await lire(); if (r.v >= prep.max * 0.9) break; await dormirIci(200); }
@@ -4654,7 +4654,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       // borné, jamais un délai fixe.
       let apresLacher = await lire();
       const t2 = Date.now();
-      // la roue libre (frein moteur et air, v343) dure quelques secondes de jeu
+      // la roue libre (frein moteur et air, v345) dure quelques secondes de jeu
       while (Date.now() - t2 < 30000) { apresLacher = await lire(); if (apresLacher.v < prep.max * 0.3) break; await dormirIci(200); }
       // on descend : les boutons reviennent
       const apres = await tab.evaluate(async () => {
@@ -4781,7 +4781,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       if (!auVolant()) { await rendre(); return { err: 'pas monté dans la voiture' }; }
       g.player.keys.add('KeyW');
       // on roule jusqu'à ce que la voiture ait pris son allure
-      // DEPUIS LA v343 la voiture accélère comme une voiture : elle touche le
+      // DEPUIS LA v345 la voiture accélère comme une voiture : elle touche le
       // mur à trente blocs AVANT d'avoir pris toute son allure, et relue après
       // le choc, sa vitesse valait zéro (« lancée 0 » au portail). On retient
       // la PLUS HAUTE vitesse atteinte, et l'on sort au premier choc publié.
@@ -5942,7 +5942,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !nature.err && nature.auVolant && nature.d >= 30,
       `barre 30 blocs (mesuré désarmé : 0,4 et 17,9 · armé : 59 et 116) · ${JSON.stringify(nature)}`);
 
-    // ---- LA CONDUITE À LA GTA (v343) ----------------------------------------
+    // ---- LA CONDUITE À LA GTA (v345) ----------------------------------------
     // Max : « des véhicules qui tournent de manière naturelle, des accélérations
     // cohérentes, des vitesses cohérentes — aujourd'hui les véhicules sont trop
     // lents —, des collisions cohérentes ». Une dalle de pierre loin de tout, une
@@ -5975,7 +5975,12 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); const t = performance.now(); while (!auVolant() && performance.now() - t < 2500) await dormir(150); }
       if (!auVolant()) { for (const [x, y, z] of poses) g.world.setBlock(x, y, z, 0); return { err: 'pas au volant' }; }
       const enJeu = (n, cb) => new Promise((fin) => { let c = 0, p = performance.now(); const pas = (t) => { const d = Math.min(Math.max((t - p) / 1000, 0), 0.05); c += d; p = t; if (cb) cb(c, d); if (c >= n) fin(c); else requestAnimationFrame(pas); }; requestAnimationFrame(pas); });
-      const placer = (x, z, yaw, v) => { P.pos.set(x0 + x, y0 + 1.05, z0 + z); P.yaw = yaw; P.vitesseVoiture = v; P.derive = 0; P.braquage = 0; P.vel.set(-Math.sin(yaw) * v, 0, -Math.cos(yaw) * v); };
+      // LES DÉGÂTS (v343) comptent chaque choc : trois chocs à la suite
+      // pourraient mettre la voiture en feu et déposer l'enfant au milieu de la
+      // série. On la répare (le garage) avant chaque mesure — c'est la
+      // physique qu'on éprouve ici, pas les dégâts.
+      const reparer = () => { const m = g.fun.montureConduite && g.fun.montureConduite(); if (m && g.fun.degats && g.fun.degats.reparer) g.fun.degats.reparer(m.mesh); };
+      const placer = (x, z, yaw, v) => { reparer(); P.pos.set(x0 + x, y0 + 1.05, z0 + z); P.yaw = yaw; P.vitesseVoiture = v; P.derive = 0; P.braquage = 0; P.vel.set(-Math.sin(yaw) * v, 0, -Math.cos(yaw) * v); };
       const res = {};
       await enJeu(0.3);
       // — 0 → 100 km/h et pointe, plein avant au joystick —
@@ -6034,11 +6039,16 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       res.rue = { rue, x: +(P.pos.x - x0).toFixed(1) };
       // — une panne posée à la main : le joystick ne fait plus rien —
       placer(0, -40, -Math.PI / 2, 0);
-      P.etatVoiture = { sante: 0, moteur: 0, direction: 0, enPanne: true, enFeu: false };
+      // les dégâts (v343) réécrivent `etatVoiture` à chaque image depuis LEUR
+      // état de la voiture : on fige le champ le temps de la mesure — c'est
+      // la LECTURE par la physique qu'on éprouve, pas l'écriture des dégâts
+      const panneFigee = { sante: 0, moteur: 0, direction: 0, enPanne: true, enFeu: false };
+      Object.defineProperty(P, 'etatVoiture', { configurable: true, get: () => panneFigee, set: () => {} });
       P.touchMove.f = 1; P.touchMove.s = 1; const yawPanne = P.yaw;
       await enJeu(2);
       res.panne = { v: +Math.abs(P.vitesseVoiture || 0).toFixed(2), x: +(P.pos.x - x0).toFixed(2), tourne: +Math.abs(P.yaw - yawPanne).toFixed(3) };
-      P.touchMove.f = 0; P.touchMove.s = 0; P.etatVoiture = undefined;
+      P.touchMove.f = 0; P.touchMove.s = 0;
+      delete P.etatVoiture; P.etatVoiture = undefined;
       for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await dormir(400); }
       vider();
       for (const [x, y, z] of poses) g.world.setBlock(x, y, z, 0);

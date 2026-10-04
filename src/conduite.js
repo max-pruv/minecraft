@@ -1,4 +1,4 @@
-// LA CONDUITE DE LA VOITURE DE L'ENFANT (conduite-physique, v343).
+// LA CONDUITE DE LA VOITURE DE L'ENFANT (conduite-physique, v345).
 //
 // Max (4 octobre 2026) : « une grosse refonte de la façon de conduire… comme
 // GTA : des véhicules qui tournent de manière naturelle, des accélérations
@@ -48,7 +48,7 @@ export const CLASSES = {
   hypercar: { vmax: 55, a0: 14.0, mu: 26 },
 };
 
-// LE PLAFOND DU SOL, MESURÉ (v343) : le trou devant soi — la distance au
+// LE PLAFOND DU SOL, MESURÉ (v345) : le trou devant soi — la distance au
 // premier morceau non maillé dans le cône d'avance, critère de la v229 —, à
 // la distance d'affichage de l'iPad (rr=12), le déplacement en TEMPS RÉEL
 // (la position avancée à chaque image : laissée au joueur, `dt` borné l'aurait
@@ -151,7 +151,8 @@ const borne = (x, a) => Math.max(-a, Math.min(a, x));
 //   entree : { gaz, volant, moteur, direction, inerte }
 //            gaz ∈ [−1, 1] l'avant/arrière du joystick ; volant ∈ [−1, 1]
 //            (positif = à droite) ; moteur ∈ [0, 1] (dégâts) ; direction en
-//            rad (la voiture tire d'un côté) ; inerte : plus aucune commande
+//            rad/s à pleine vitesse (la voiture tire d'un côté, contrat de
+//            degats.js) ; inerte : plus aucune commande
 //            (panne, feu, embarquement en cours).
 //   fiche  : CLASSES[...] (ou `ficheDeVitesse`)
 // Rend { v, braquage, derive, dCap } : dCap est ce qu'on AJOUTE au cap du
@@ -163,8 +164,11 @@ export function pasVoiture(e, entree, fiche, dt) {
   let derive = e.derive || 0;
   const inerte = !!entree.inerte;
   const m = entree.moteur == null ? 1 : Math.max(0, Math.min(1, entree.moteur));
-  const vmax = fiche.vmax * (0.3 + 0.7 * m);
-  const a0 = fiche.a0 * (0.3 + 0.7 * m);
+  // le facteur des dégâts (`effetsConduite`, degats.js) : un moteur à zéro
+  // garde trente-cinq pour cent de l'allure — en panne, c'est `inerte`
+  const facteur = 0.35 + 0.65 * m;
+  const vmax = fiche.vmax * facteur;
+  const a0 = fiche.a0 * facteur;
   let gaz = inerte ? 0 : borne(entree.gaz || 0, 1);
   if (Math.abs(gaz) < ZONE_MORTE) gaz = 0;
   const volant = inerte ? 0 : borne(entree.volant || 0, 1);
@@ -202,7 +206,7 @@ export function pasVoiture(e, entree, fiche, dt) {
 
   // — lacet —
   const a = Math.abs(v);
-  const delta = braquage * braquageMax(v, fiche) + (entree.direction || 0);
+  const delta = braquage * braquageMax(v, fiche);
   const omega = (v * Math.tan(delta)) / EMPATTEMENT;   // rad/s, positif = à droite
   const corps = -omega;                                // ce que le cap voudrait tourner
   // la direction de la vitesse suit le corps, et rattrape la dérive…
@@ -220,6 +224,11 @@ export function pasVoiture(e, entree, fiche, dt) {
     nouvelle -= exces;
   }
   derive = a < 0.3 ? 0 : nouvelle;
+  // LA DIRECTION FAUSSÉE (degats.js, contrat) : un biais de CAP en rad/s à
+  // pleine vitesse, positif = le cap croît, proportionnel à la vitesse —
+  // exactement ce que les dégâts appliquaient eux-mêmes avant que la
+  // physique ne le lise (`physiqueLitEtat`).
+  if (entree.direction) dCap += entree.direction * Math.min(1, a / Math.max(1, fiche.vmax)) * signe(v) * dt;
   // la dérive coûte de la vitesse : on frotte les pneus
   if (derive) v -= v * FROTTEMENT_DERIVE * Math.abs(Math.sin(derive)) * dt;
   return { v, braquage, derive, dCap };
