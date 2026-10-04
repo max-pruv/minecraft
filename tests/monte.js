@@ -1045,9 +1045,9 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // Borne basse 3,0 : le rapprochement anti-mur peut raccourcir le recul
     // (plancher à 3,2) si un obstacle traîne derrière le parc — c'est un
     // comportement voulu, pas un défaut.
-    // ET LE PLAFOND SUIT LA VITESSE DEPUIS LA v337 : la caméra recule jusqu'à
+    // ET LE PLAFOND SUIT LA VITESSE DEPUIS LA v340 : la caméra recule jusqu'à
     // 1,32 fois le recul de la fiche quand la voiture roule (6,4 → 8,45). Le
-    // portail de la v337 l'a rendue rouge à 7,07 sur la borne fixe de 6,5,
+    // portail de la v340 l'a rendue rouge à 7,07 sur la borne fixe de 6,5,
     // une voiture qui roulait encore — le plafond se calcule, il ne se recopie
     // pas (v269).
     verifier('au volant, la caméra suit la voiture de derrière, comme GTA',

@@ -498,6 +498,21 @@
   second dépend du premier) — REJOUÉE SEULE : branche ces deux-là, `origin/main`
   v318 la libération (programmes 17/25). Même intermittence de préparation des
   deux côtés, déjà déclarée (v267).
+- [ ] **LE PORTAIL DE LA v340 (sensations au volant) : UN ROUGE DE MOI, CORRIGÉ,
+  ET TROIS DETTES DÉJÀ DÉCLARÉES, REJOUÉES SEULES DES DEUX CÔTÉS.**
+  `monte.js` « la caméra suit la voiture de derrière » (7,07 pour une borne
+  fixe de 6,5) : à moi, la caméra recule désormais avec la vitesse — le
+  plafond suit la fiche (6,4 × 1,32), rejoué seul vert. `monte.js` « l'écran
+  ne se fige pas en arrivant sur une ville » (3 283 ms · 25,2 % au portail,
+  3 517 · 24,4 rejoué seul) : la dette connue. `monte.js` rejouée seule a
+  aussi rendu « se téléporter ne compile plus de programmes » rouge avec ZÉRO
+  programme neuf dans les cinq villes — vert au portail : c'est la famille qui
+  va et vient (ci-dessus), et la livraison n'ajoute ni matériau ni maillage.
+  `manhattan.js` : le trou de façade (9 203 et 14 460 → 51 734 des deux côtés)
+  et `#ride-btn` — sur `origin/main` rejoué seul la suite MEURT sur l'appui
+  (« element is not stable »), sur la branche le bouton reste caché quinze
+  secondes (une bête) : la même intermittence, vue des deux côtés. `maj.js` :
+  le loader qui compte les fichiers, intermittent (ci-dessous).
 - [ ] **LE PORTAIL DE LA v338 (Madrid–Barcelone) : UN SEUL ROUGE, DÉJÀ
   MESURÉ DES DEUX CÔTÉS.** `carteMonde.js` (l'AP-2 comprise), `plafond.js`
   (joint : 0 trou sur 136 879 points), `maj.js`, `carte.js` verts.
