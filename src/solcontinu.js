@@ -392,7 +392,10 @@ export function emettreRubans(buf, world, cx, cz, chunk) {
       quad(buf, [coin(r.o0, r.ya, 0), coin(r.o1, r.ya, 0), coin(r.o0, r.yb, 1), coin(r.o1, r.yb, 1)], BITUME, HAUT, baseX, baseZ);
       quad(buf, [coin(r.o0, r.ya - EP, 0), coin(r.o1, r.ya - EP, 0), coin(r.o0, r.yb - EP, 1), coin(r.o1, r.yb - EP, 1)], PIERRE, BAS, baseX, baseZ);
       // les deux flancs (de l'épaisseur jusqu'au garde-corps), tournés vers l'extérieur
+      // Le comblement d'un coude (routes.js, v335) n'a de garde-corps que du
+      // côté extérieur : de l'autre, il recouvre la chaussée du tronçon suivant.
       for (const [o, dehors] of [[r.o0, [-rx, 0, -rz]], [r.o1, [rx, 0, rz]]]) {
+        if (r.garde && o !== r[r.garde]) continue;
         quad(buf, [coin(o, r.ya - EP, 0), coin(o, r.ya + GARDE, 0), coin(o, r.yb - EP, 1), coin(o, r.yb + GARDE, 1)], PIERRE, dehors, baseX, baseZ);
         // et la face intérieure du garde-corps, vue de la route
         const dedans = [-dehors[0], 0, -dehors[2]];

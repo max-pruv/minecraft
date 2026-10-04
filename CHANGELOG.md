@@ -42,6 +42,14 @@ du joint de `plafond.js`, qui lit toutes les routes. La sonde tire désormais
 des chemins lissés (un point tous les deux cents blocs) : cinq admissibles sur
 vingt-quatre mille.
 
+**Et le portail a trouvé un vrai trou.** Le premier pont de l'I-45 tombait
+dans un coude du tracé, et le tablier y laissait le coin extérieur du virage
+ouvert sur le vide : 402 points sans rien dessous au témoin du joint
+(`plafond.js`). C'était un défaut du tablier, pas du tracé — aucune route
+n'avait encore de pont dans un coude. `rubansDans` (routes.js) pose désormais
+au sommet un ruban de comblement, côté extérieur, garde-corps compris : zéro
+trou sur les quatorze ponts du registre (90 794 points sous node).
+
 ---
 
 ## v335 — Les monuments de Paris dominent les toits

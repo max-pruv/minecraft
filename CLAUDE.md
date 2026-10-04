@@ -1027,6 +1027,13 @@ Une règle.
   cinq admissibles sur vingt-quatre mille, déblai 7,7. Et elle dit OÙ le
   déblai bute (près d'une porte ou au milieu) : c'est ce qui a montré que le
   défaut n'était pas l'entrée de Houston.
+- **UN RUBAN QUI SUIT UN TRONÇON NE COUVRE PAS LE COIN D'UN SOMMET.** Le
+  tablier est fait de rubans d'un bloc orientés selon le tronçon où le pas
+  commence ; dans un coude, le côté extérieur du virage restait ouvert (402
+  points au joint du premier pont de l'I-45). C'est le piège de la culée
+  (v302) une géométrie plus loin : là où une surface continue change de
+  direction, on vérifie le coin. Le comblement couvre le secteur exact
+  (moitié extérieure, longueur w·tan θ) et ne porte de garde-corps que dehors.
 
 ## L'A1 Nord Milan–Bologne (v333) — une sonde juge les points tels que le registre les écrit
 

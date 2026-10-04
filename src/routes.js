@@ -687,6 +687,27 @@ export function rubansDans(x0, z0, x1, z1) {
       if (pont || culee) {
         const lift = culee ? 0.01 : 0;
         out.push({ ...base, ya: ya + lift, yb: yb + lift, genre: 'tablier', o0: -L.demiEmprise, o1: L.demiEmprise, dy: 0 });
+        // UN PONT DANS UN COUDE (v335). Le ruban suit la direction du tronçon
+        // où le pas commence : au sommet d'une polyligne, entre la fin d'un
+        // tronçon et le début du suivant, le côté EXTÉRIEUR du virage restait
+        // un coin ouvert sur le vide — mesuré au premier pont de l'I-45, 402
+        // points sans rien dessous (témoin du joint, plafond.js). Le côté
+        // intérieur, lui, est couvert deux fois. On comble le coin par un
+        // ruban posé au sommet, dans l'axe du tronçon d'arrivée, sur la moitié
+        // extérieure seulement et long de w·tan θ : il couvre tout le secteur
+        // entre les deux bords de tronçon, et son garde-corps ferme le virage.
+        for (let k = 1; k + 1 < seg.pts.length; k++) {
+          const c = seg.cumul[k];
+          if (c < s || c >= s + 1) continue;
+          const [px, pz] = seg.pts[k - 1], [vx, vz] = seg.pts[k], [nx, nz] = seg.pts[k + 1];
+          const l1 = Math.hypot(vx - px, vz - pz) || 1, l2 = Math.hypot(nx - vx, nz - vz) || 1;
+          const d1x = (vx - px) / l1, d1z = (vz - pz) / l1, d2x = (nx - vx) / l2, d2z = (nz - vz) / l2;
+          const croix = d1x * d2z - d1z * d2x, theta = Math.acos(Math.max(-1, Math.min(1, d1x * d2x + d1z * d2z)));
+          if (theta < 1e-3) continue;
+          const Lc = largeurA(seg, c), e = Lc.demiEmprise * Math.tan(theta) + 0.5, yc = coteA(seg, c) + lift + 0.003;
+          const exterieur = croix > 0 ? { o0: -Lc.demiEmprise, o1: 0, garde: 'o0' } : { o0: 0, o1: Lc.demiEmprise, garde: 'o1' };
+          out.push({ seg, s: c, ax: vx, az: vz, bx: vx + d1x * e, bz: vz + d1z * e, ya: yc, yb: yc, fx: d1x, fz: d1z, genre: 'tablier', dy: 0, ...exterieur });
+        }
       }
       if (!pont) {
         // le bord de chaque chaussée, continu ; entre les deux voies d'un sens, pointillé (3 sur 6)
