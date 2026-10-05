@@ -20,6 +20,44 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v383 — La rue n'entre plus dans la voiture d'un ami
+
+**Pourquoi.** Depuis la v305, la circulation cède le passage aux amis comme à
+l'enfant : sur la tablette d'Alice, la voiture de Marlon arrête la rue. Le
+témoin de `reseau.js` le prouvait pour la voiture qui arrive derrière lui,
+mais publiait une gêne qu'il n'expliquait pas : une AUTRE voiture entrait
+encore une fois dans celle de Marlon, sur l'ancien code comme sur le neuf.
+Trois pistes étaient déclarées (le cap de l'ami lu sur son regard, sa position
+réseau en retard, une voiture d'un convoi voisin arrivée de travers). Une sonde
+qui relève, image par image chez Alice, chaque voiture qui touche celle de
+Marlon et ce que la rue en pensait (`sonde-intrus-ami.cjs`) a tranché : ce
+n'était aucune des trois. Les cinq voitures entrées avaient TOUTES l'ami et
+une voiture de la rue dans leur liste de gêne ; la règle « devant l'enfant on
+attend sans limite » ne valait que quand l'enfant était SEUL sur le chemin.
+Avec un carrefour en plus, la voiture retombait sur la patience de quatre
+secondes, puis se lançait deux secondes à l'aveugle — au travers. Et la même
+règle valait pour l'enfant de la tablette : sa propre voiture n'était pas à
+l'abri non plus à un carrefour.
+
+**Ce que ça change.** Dès qu'un joueur (l'enfant, un ami) ou un train est sur
+le chemin d'une voiture de la rue, elle attend, quoi qu'il y ait d'autre
+devant elle ; la patience ne sert plus qu'à dénouer deux voitures de la rue
+entre elles. À plusieurs, la voiture d'un ami garée dans la rue n'est plus
+traversée.
+
+**Ce qui le prouve.** La sonde, même protocole des deux côtés : ancien code,
+cinq voitures entrées sur onze poses mesurées (toutes en `repart`, l'ami et
+une voiture de la rue dans leur gêne) ; code neuf, zéro sur dix. L'écart de
+position réseau mesuré (0 à 0,17 bloc) et le cap posé identique écartent les
+deux pistes réseau. Le témoin de `reseau.js` fait désormais entrer ce compte
+dans son verdict (« … et aucune ne lui passe au travers »).
+Et un témoin de `monte.js` était vert GRÂCE à la panne : l'enfant posé sur la
+piste voyait le bouton de la monoplace parce qu'elle finissait par lui passer
+au travers (5,4 s sur l'ancien code). Il est posé au bord du circuit, comme
+son commentaire l'annonçait (bouton en 0,3 s).
+
+---
+
 ## v382 — Le cône se mesure à chaud
 
 **Pourquoi.** Le témoin « à soixante blocs par seconde dans Paris, le monde se

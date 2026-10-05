@@ -7724,6 +7724,7 @@ window.__vehicules = {
   point: (ci, avance) => vehicules?.point(ci, avance),
   placeProche: (rayon) => vehicules?.placeProche(player.pos, rayon),
   diagPlace: (rayon) => vehicules?.diagPlace(player.pos, rayon),
+  diagCeder: () => vehicules?.diagCeder(),
 };
 window.__vie = { effectif: () => vie?.effectif(), sites: () => vie?.sites, eteindre: (v) => vie?.eteindre(v) };
 // Pour les tests : ce que la nuit fait aux fenêtres. `solide` est le niveau
