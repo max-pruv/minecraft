@@ -364,7 +364,7 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
   // enfoncement, le pire, combien, et ce que le feu coûte en appels de dessin.
   // Max les lit sur l'iPad avec `?diag=1`, sans rien installer.
   const cout = { chocs: 0, dernierMs: 0, pireMs: 0, premierMs: 0 };
-  // PAR QUEL CHEMIN PASSE UN CHOC (v370) : publié par la physique, ou deviné
+  // PAR QUEL CHEMIN PASSE UN CHOC (v374) : publié par la physique, ou deviné
   // par le repli ; et combien d'images les EFFETS ont été appliqués ici
   // plutôt que lus par la physique. Depuis la v358 le jeu ne passe plus que
   // par le premier : un témoin le garde, le repli reste pour l'ancien chemin.
@@ -558,7 +558,7 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
     if (h.length > 12) h.shift();
   }
 
-  // UN HÔTE RESTÉ SUR L'ANCIENNE VERSION NE RELAIE PAS `rue_choc` (v370) :
+  // UN HÔTE RESTÉ SUR L'ANCIENNE VERSION NE RELAIE PAS `rue_choc` (v374) :
   // il ne connaît pas ce nom et l'ignore. Il relaie en revanche la position
   // telle quelle (`{ ...msg }`, net.js, depuis la v315 au moins) : l'histoire
   // des voitures de la rue que CETTE tablette vient de percuter y voyage

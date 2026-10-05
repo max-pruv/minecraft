@@ -1,4 +1,4 @@
-// SONDE (v370) — « un choix fait sur une tablette part au serveur », rouge
+// SONDE (v374) — « un choix fait sur une tablette part au serveur », rouge
 // aux portails de la v363 et vert seul. Elle distingue les cas que le témoin
 // confond en un seul « fr » : le choix n'est JAMAIS PARTI (aucune écriture
 // « en » de la tablette qui a cliqué), il est parti puis a été ÉCRASÉ (une

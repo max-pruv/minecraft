@@ -207,7 +207,7 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
     // ancienne. C'est ainsi qu'un choix fait sur une tablette se défaisait tout
     // seul quelques secondes plus tard, sans que personne n'y touche.
     //
-    // ON PROVOQUE LA COURSE, ON NE L'ATTEND PAS (v233, v370). Rouge aux deux
+    // ON PROVOQUE LA COURSE, ON NE L'ATTEND PAS (v233, v374). Rouge aux deux
     // portails de la v363 et vert seul : la sonde `sonde-reglages-deux.cjs` a
     // montré que le choix PART bien, puis que l'autre tablette le réécrit
     // avec son ancienne langue — son battement de présence (toutes les vingt

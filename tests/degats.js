@@ -178,7 +178,7 @@ function verifier(nom, ok, detail = '') {
       });
       const d = g.fun.degats;
       if (!d) return { err: 'pas de module de dégâts (fun.degats)' };
-      // ce qui sert à prouver le chemin (v370) : les chocs que la PHYSIQUE a
+      // ce qui sert à prouver le chemin (v374) : les chocs que la PHYSIQUE a
       // publiés (`player.chocs`, compté par player.js), et par quel chemin les
       // dégâts les ont pris
       const chocsPhys0 = g.player.chocs || 0, chemins0 = d.chemins ? d.chemins() : null;
@@ -230,7 +230,7 @@ function verifier(nom, ok, detail = '') {
         && crash.publie && crash.publie.sante < 1,
       JSON.stringify(crash));
 
-    // A. LE CONTRAT, BOUT À BOUT, PAR LA VRAIE PHYSIQUE (v370). Le témoin du
+    // A. LE CONTRAT, BOUT À BOUT, PAR LA VRAIE PHYSIQUE (v374). Le témoin du
     // contrat plus bas publie ses chocs à la main ; celui-ci n'écrit RIEN dans
     // `player` : c'est player.js qui publie le choc du mur, et l'on vérifie ce
     // que chaque côté en a fait.
@@ -253,7 +253,7 @@ function verifier(nom, ok, detail = '') {
     const geo = await tab.evaluate(async () => {
       const g = window.__game, { a, b } = window.__essai, d = g.fun.degats;
       if (!d) return { err: 'pas de module' };
-      // B. CE QUE FAIT UN CHOC, EN COMPTES ET NON EN MILLISECONDES (v370) :
+      // B. CE QUE FAIT UN CHOC, EN COMPTES ET NON EN MILLISECONDES (v374) :
       // les positions et les normales de chaque pièce, relevées avant, puis
       // comparées — combien de sommets ont bougé, combien de normales ont été
       // réécrites, sur combien de sommets en tout.
@@ -326,7 +326,7 @@ function verifier(nom, ok, detail = '') {
       JSON.stringify(geo));
     verifier('l\'autre voiture du même modèle reste INTACTE : elle garde la géométrie commune, que personne n\'a touchée',
       !geo.err && geo.clones > 0 && geo.partagees > 0 && geo.propresB === 0, JSON.stringify(geo));
-    // B. UNE GRANDEUR QUI NE DÉPEND PAS DU PROCESSEUR PARTAGÉ (v370). Le
+    // B. UNE GRANDEUR QUI NE DÉPEND PAS DU PROCESSEUR PARTAGÉ (v374). Le
     // témoin d'avant bornait des millisecondes : 15 seul, 31,1 une fois au
     // portail de la v348 — il mesurait la charge. Ce qu'un choc FAIT ne
     // dépend pas d'elle : il ne déplace qu'une part de la voiture, il ne
@@ -986,7 +986,7 @@ function verifier(nom, ok, detail = '') {
       JSON.stringify({ memeConvoi: cles[0] === cles[1], rang, coup, vue }));
 
     // 10. UN HÔTE RESTÉ SUR L'ANCIENNE VERSION NE RELAIE PAS `rue_choc`
-    // (v370). On le provoque : Marlon cesse d'envoyer `rue_choc` (ce qu'un
+    // (v374). On le provoque : Marlon cesse d'envoyer `rue_choc` (ce qu'un
     // ancien hôte en fait : rien), et percute la même voiture une seconde
     // fois. Le choc doit arriver chez Alice par la POSITION, que tout hôte
     // relaie telle quelle — et l'histoire doit rester la même, choc pour
