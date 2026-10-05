@@ -108,7 +108,7 @@
   - **Les avions ne s'abîment pas** (`pilote` est écarté) : une décision, pas
     un oubli — un atterrissage manqué n'a pas de « choc » dans `player.js`.
 
-- [ ] **AU PORTAIL DE LA v352 (l'épave et la rue, mesurée avant le rebase sur la v351), DEUX SUITES ROUGES — aucune
+- [ ] **AU PORTAIL DE LA v355 (l'épave et la rue, mesurée sur la v348 puis la v351), DEUX SUITES ROUGES — aucune
   causée par la livraison, double mesure faite (rejouées SEULES sur la branche
   et sur `origin/main` v348, chacune dans un arbre détaché ; `monte.js` deux
   fois de chaque côté, règle v269).**
@@ -124,7 +124,7 @@
     « Ne compile plus de programmes sur place » : branche 6 `physical` à
     Paris, `origin/main` 13 à New York (chauffe expirée) — la famille de la
     v324 (un modèle de flotte tiré à portée pour la première fois). Preuve
-    structurelle : la v352 ne clone un matériau qu'APRÈS un choc, et aucun
+    structurelle : la v355 ne clone un matériau qu'APRÈS un choc, et aucun
     de ces témoins ne percute rien.
   - Rebasée sur la v351, portail rejoué : mêmes rouges de `manhattan.js` et
     `monte.js`, plus `maj.js` « le loader ne s'efface qu'une fois les corps
