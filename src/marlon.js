@@ -10,7 +10,7 @@ import * as THREE from 'three';
 import { construireHumain } from './personnages.js';
 import { animerHumain } from './humains.js';
 import { BLOCK, isSolid as blockIsSolid, isSlab } from './blocks.js';
-import { ALLURE_ECART, PAS_ECART_MAX, DT_REEL_MAX } from './pietons.js';
+import { ALLURE_ECART, PAS_ECART_MAX, DT_REEL_MAX, SURSAUT_S, DUREE_SURSAUT, VEILLE_SURSAUT_S, MARGE_SURSAUT, REPOS_ECART_S, ARRET_CHOC_S, regardChoc } from './pietons.js';
 
 const GRAVITY = 24;
 const WIDTH = 0.5;
@@ -192,7 +192,18 @@ export class BaseNPC {
     if (this.world.vehiculeApproche) {
       if (!this.ecart) {
         const v = this.world.vehiculeApproche(this.pos.x, this.pos.z, this.pos.y);
-        if (v) { this.ecart = { ux: v.ux, uz: v.uz, cote: v.cote, t: 0, lat0: v.lat, retourne: false }; this.repos = 0; this.ecarts = (this.ecarts || 0) + 1; }
+        if (v) {
+          this.ecart = { ux: v.ux, uz: v.uz, cote: v.cote, t: 0, lat0: v.lat, retourne: false }; this.repos = 0; this.ecarts = (this.ecarts || 0) + 1;
+          // LE SURSAUT (v376) : une voiture à moins d'une demi-seconde — les
+          // bras se lèvent d'un coup pendant le pas de côté. Un geste, rien de
+          // plus : c'est l'écart qui protège.
+          // Il se juge sur TOUT le passage de la voiture, pas sur l'instant où
+          // l'écart commence : le couloir porte à 1,6 s de route, et à cet
+          // instant la voiture est presque toujours plus loin qu'une
+          // demi-seconde. On veille donc tant qu'elle n'est pas passée.
+          this.veilleSursaut = VEILLE_SURSAUT_S;
+          this.regardChoc = null;
+        }
       }
       if (this.ecart) {
         const e = this.ecart; e.t += dtReel;
@@ -205,8 +216,36 @@ export class BaseNPC {
         // un mur de ce côté (pas un quart de bloc gagné en six dixièmes de
         // seconde) : on essaie l'autre côté, une fois
         if (encore && !e.retourne && e.t > 0.6 && Math.abs(encore.lat - e.lat0) < 0.25) { e.cote = -e.cote; e.retourne = true; e.t = 0; e.lat0 = encore.lat; }
-        if (!encore || e.t > 2) { this.ecart = null; this.repos = 0.8; speed = 0; }
-      } else if (this.repos > 0) { this.repos -= dt; speed = 0; vAnim = null; }
+        if (!encore || e.t > 2) { this.ecart = null; this.repos = REPOS_ECART_S; speed = 0; }
+      // la pause d'après l'écart se compte en temps RÉEL (v376) : 0,8 seconde
+      // de jeu valait trois secondes de montre à cinq images par seconde
+      } else if (this.repos > 0) { this.repos -= dtReel; speed = 0; vAnim = null; }
+    }
+    // la voiture qui passe au ras, à moins d'une demi-seconde, fait sursauter —
+    // pendant l'écart ou juste après, une fois par passage
+    if (this.veilleSursaut > 0) {
+      this.veilleSursaut -= dtReel;
+      const proche = this.world.vehiculeApproche(this.pos.x, this.pos.z, this.pos.y, MARGE_SURSAUT);
+      if (proche && proche.t < SURSAUT_S) { this.veilleSursaut = 0; this.sursaut = DUREE_SURSAUT; this.sursauts = (this.sursauts || 0) + 1; }
+    }
+    // ON SE RETOURNE VERS UN CHOC (v376). `player.choc` est publié par la
+    // physique de la conduite (`{ force, t, x, z }`), lu SI PRÉSENT : un
+    // passant à portée tourne la tête et le corps vers le bruit, s'arrête un
+    // instant, et reprend son chemin. Jamais au milieu d'un écart ni d'une
+    // traversée : là, on regarde la route.
+    const c = this.player.choc;
+    if (c && c.t !== this._chocVu) {
+      this._chocVu = c.t;
+      if (!this.ecart && !this.traversee) {
+        const vers = regardChoc(c, this.pos.x, this.pos.z, tReel);
+        if (vers !== null) { this.regardChoc = { yaw: vers, reste: ARRET_CHOC_S }; this.retournements = (this.retournements || 0) + 1; }
+      }
+    }
+    if (this.regardChoc && !this.ecart) {
+      const r = this.regardChoc;
+      r.reste -= dtReel;
+      if (r.reste <= 0) this.regardChoc = null;
+      else { yaw = r.yaw; this.yaw = yaw; speed = 0; vAnim = null; }
     }
     if (speed > 0 && this.world.obstaclePieton) {
       const pas = 0.9 + this.largeur / 2;
@@ -263,6 +302,14 @@ export class BaseNPC {
     // geste — frapper l'enclume, ratisser — par-dessus les mêmes bras.
     if (this.geste) this.geste(dt, speed);
     animerHumain(this.mesh, this.animTime, vAnim ?? speed);
+    if (this.sursaut > 0) {
+      this.sursaut -= dtReel;
+      // 0 → 1 → 0 sur la durée du sursaut : les bras montent, un petit saut
+      const a = Math.sin(Math.PI * Math.min(1, 1 - Math.max(0, this.sursaut) / DUREE_SURSAUT));
+      if (this.mesh.userData.rig) animerHumain(this.mesh, this.animTime, 0, { cuisses: 0, genoux: 0.25 * a, bras: -1.6 * a, coudes: -1.2 * a });
+      else { arms[0].rotation.x = arms[1].rotation.x = -2.4 * a; }
+      this.mesh.position.y += 0.14 * a;
+    }
 
     this.speechTimer -= dt;
     if (this.speechTimer <= 0) {

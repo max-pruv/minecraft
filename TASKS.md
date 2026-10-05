@@ -1,5 +1,20 @@
 # Ce qui est en cours
 
+- [ ] **LE PORTAIL DE LA v376 (les passants réagissent à la route).** Mes
+  quatre témoins verts (sursaut 1, arrêt 0,82 s ; six passants sur six se
+  retournent vers le choc ; traversées 6 sur 6 au rouge ; chaussée de Rome 2
+  sur 21). Rouges : `maj.js` (préparation, programmes 18/27 — l'intermittence
+  déclarée v371, des deux côtés), `manhattan.js` (façade 11 684 → 51 734 et un
+  délai de 30 s — dette déclarée), `reseau.js` (« même circulation », la dette
+  de la session circulation-vivante), `monte.js` (compilation à New York, gel
+  d'arrivée — déclarés des deux côtés ; « la recharge à l'arrivée garde la
+  cadence », rouge au portail de la v371 et à celui-ci, VERTE rejouée seule des
+  deux côtés à la v371 : un témoin de cadence sous la charge du portail), et
+  `realisme.js` morte au départ sur « Jouer » « not stable » à une charge de
+  4,86, AVANT tout témoin — rejouée seule : verte. Avant la correction du
+  sursaut, sur `origin/main` (v371) : « un piéton frôlé sursaute » rouge
+  (`sursauts: 0`, arrêt 3,92 s), « les passants se retournent vers un choc »
+  rouge (0 tourné sur 6).
 - [ ] **LE PORTAIL DE LA v371 (les passants traversent au feu), DOUBLE MESURE
   FAITE.** Premier portail (base v354) : deux rouges de `monte.js` étaient à
   MOI et sont corrigés dans la livraison — le témoin des traversées (une seule

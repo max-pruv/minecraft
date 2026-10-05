@@ -2340,6 +2340,134 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !pietonRapide.err && pietonRapide.passes.length === 6 && pietonRapide.passes.every((p) => p.touche === 0 && p.arrivee > 1.13 + 0.25 && p.images >= 4),
       JSON.stringify(pietonRapide));
 
+    // ---- UN PIÉTON FRÔLÉ SURSAUTE, FAIT UN PAS DE CÔTÉ, ET REPART AUSSITÔT (v376)
+    //
+    // Des gestes courts, jamais d'arrêt prolongé (v243). Un passant qui MARCHE
+    // à 0,6 bloc de l'axe d'une voiture lancée à 40 b/s, la tablette qui rame
+    // (cent quatre-vingts millisecondes par image, v234) : il doit sursauter
+    // (bras levés, `sursauts`), sortir de la carrosserie, et reprendre sa
+    // marche dans la seconde de MONTRE qui suit la fin de l'écart. Sur l'ancien
+    // code la pause d'après l'écart valait 0,8 seconde de JEU — trois secondes
+    // de montre à cinq images par seconde — et il n'y avait pas de sursaut.
+    const frole = await tab.evaluate(async () => {
+      const g = window.__game;
+      const { Habitant } = await import('./src/vie.js');
+      const { construireHumain } = await import('./src/personnages.js');
+      let ancre = null;
+      for (let k = 0; k < 400 && !ancre; k++) {
+        const x0 = 30000 + (k % 20) * 16, z0 = 30000 + Math.floor(k / 20) * 16;
+        const h0 = g.world.terrainHeight(x0, z0);
+        let plat = true;
+        for (let dx = -6; dx <= 6 && plat; dx++) for (let dz = -6; dz <= 6 && plat; dz++) if (g.world.terrainHeight(x0 + dx, z0 + dz) !== h0) plat = false;
+        if (plat) ancre = { x: x0 + 0.5, z: z0 + 0.5, y: h0 + 1 };
+      }
+      if (!ancre) return { err: 'aucun carré plat' };
+      const majPlayer = g.player.update, sauve = g.player.pos.clone(), gab0 = g.player.gabarit, pousse0 = g.player.pousse;
+      g.player.update = () => {};
+      const image = () => new Promise((f) => requestAnimationFrame(f));
+      const h = new Habitant(g.scene, g.world, g.player, () => {}, {
+        name: 'essai', phrases: ['…'], walkSpeed: 1.6, largeur: 0.5, hauteur: 1.72,
+        build: () => construireHumain({ tenue: 'passant' }),
+      }, ancre.x, ancre.z);
+      try {
+        const v = 40, L = 4.4, lourd = 180;
+        h.placeAt(ancre.x - 0.6, ancre.z, ancre.y);
+        h.ecart = null; h.repos = 0; h.etat = 'pause'; h.minuteur = 1e9; h.surTrottoir = false;
+        for (let k = 0; k < 10; k++) { h.update(0.02); await image(); }
+        h.placeAt(ancre.x - 0.6, ancre.z, ancre.y);
+        h.poste.set(h.pos.x, h.pos.z); h.rayon = 99;
+        // il marche vers −x, à l'écart de l'axe : la voiture le frôle
+        h.etat = 'marche'; h.capYaw = Math.PI / 2; h.minuteur = 1e9;
+        g.player.gabarit = 2.26;
+        let front = ancre.z - v * 1.2 - 6, prec = performance.now();
+        let finEcart = null, repart = null, vuEcart = false, touche = 0, px = h.pos.x, pz = h.pos.z;
+        const t0 = performance.now();
+        while (performance.now() - t0 < 12000 && repart === null) {
+          await image();
+          { const t = performance.now(); while (performance.now() - t < lourd); }
+          const now = performance.now(), dtR = Math.min(0.5, (now - prec) / 1000); prec = now;
+          const f1 = front + v * dtR;
+          if (front - L < ancre.z + 30) { g.player.pos.set(ancre.x, ancre.y, f1 - L / 2); g.player.pousse = { x: 0, z: v }; }
+          else { g.player.pousse = { x: 0, z: 0 }; g.player.pos.set(ancre.x + 40, ancre.y, ancre.z); }
+          const lat = Math.abs(h.pos.x - ancre.x);
+          h.update(Math.min(dtR, 0.05));
+          if (h.pos.z >= front - L && h.pos.z <= f1 && Math.min(lat, Math.abs(h.pos.x - ancre.x)) <= 1.13 + 0.25) touche++;
+          front = f1;
+          if (h.ecart) vuEcart = true;
+          else if (vuEcart && finEcart === null) { finEcart = performance.now(); px = h.pos.x; pz = h.pos.z; }
+          else if (finEcart !== null && Math.hypot(h.pos.x - px, h.pos.z - pz) > 0.05) repart = performance.now();
+          if (finEcart === null) { px = h.pos.x; pz = h.pos.z; }
+        }
+        return { ecarts: h.ecarts || 0, sursauts: h.sursauts || 0, touche,
+          arretS: finEcart !== null && repart !== null ? +((repart - finEcart) / 1000).toFixed(2) : null,
+          arrivee: +Math.abs(h.pos.x - ancre.x).toFixed(2) };
+      } finally {
+        g.player.update = majPlayer; g.player.gabarit = gab0; g.player.pousse = pousse0; g.player.pos.copy(sauve);
+        g.scene.remove(h.mesh);
+      }
+    });
+    verifier('un piéton frôlé sursaute, fait un pas de côté et repart aussitôt',
+      !frole.err && frole.ecarts >= 1 && frole.sursauts >= 1 && frole.touche === 0
+        && frole.arretS !== null && frole.arretS <= 1.2, JSON.stringify(frole));
+
+    // ---- ET IL SE RETOURNE VERS UN CHOC, UN INSTANT (v376) ------------------------
+    //
+    // `player.choc = { force, t, x, z }` est publié par la physique de la
+    // conduite (lu SI PRÉSENT) ; on le POSE ici, comme elle le ferait, au
+    // milieu de six passants qui marchent dans toutes les directions. Dans le
+    // tiers de seconde de montre qui suit, ils regardent le point du choc
+    // (écart de cap sous 0,3 rad) ; deux secondes plus tard, ils ont tous
+    // repris leur chemin. Ancien code : personne ne se retourne.
+    const choc = await tab.evaluate(async () => {
+      const g = window.__game;
+      const { Habitant } = await import('./src/vie.js');
+      const { construireHumain } = await import('./src/personnages.js');
+      let ancre = null;
+      for (let k = 0; k < 400 && !ancre; k++) {
+        const x0 = 30000 + (k % 20) * 16, z0 = 30000 + Math.floor(k / 20) * 16;
+        const h0 = g.world.terrainHeight(x0, z0);
+        let plat = true;
+        for (let dx = -8; dx <= 8 && plat; dx++) for (let dz = -8; dz <= 8 && plat; dz++) if (g.world.terrainHeight(x0 + dx, z0 + dz) !== h0) plat = false;
+        if (plat) ancre = { x: x0 + 0.5, z: z0 + 0.5, y: h0 + 1 };
+      }
+      if (!ancre) return { err: 'aucun carré plat' };
+      const image = () => new Promise((f) => requestAnimationFrame(f));
+      const gens = [];
+      const avait = Object.prototype.hasOwnProperty.call(g.player, 'choc'), choc0 = g.player.choc;
+      try {
+        for (let i = 0; i < 6; i++) {
+          const a = i * Math.PI / 3;
+          const h = new Habitant(g.scene, g.world, g.player, () => {}, {
+            name: 'essai', phrases: ['…'], walkSpeed: 1.6, largeur: 0.5, hauteur: 1.72,
+            build: () => construireHumain({ tenue: 'passant' }),
+          }, ancre.x + Math.cos(a) * 5, ancre.z + Math.sin(a) * 5);
+          h.surTrottoir = false; h.rayon = 99; h.etat = 'marche'; h.minuteur = 1e9; h.capYaw = a;
+          gens.push(h);
+        }
+        // chacun avance au temps de jeu de l'image (dt borné à un vingtième, comme main.js)
+        let prec = performance.now();
+        const pas = () => { const n = performance.now(), d = Math.min(0.05, (n - prec) / 1000); prec = n; gens.forEach((h) => h.update(d)); };
+        for (let k = 0; k < 6; k++) { pas(); await image(); }
+        g.player.choc = { force: 0.8, t: performance.now(), x: ancre.x, z: ancre.z };
+        const ecartCap = (h) => {
+          const vers = Math.atan2(-(ancre.x - h.pos.x), -(ancre.z - h.pos.z));
+          return Math.abs(Math.atan2(Math.sin(h.yaw - vers), Math.cos(h.yaw - vers)));
+        };
+        const t0 = performance.now();
+        while (performance.now() - t0 < 300) { pas(); await image(); }
+        const tournes = gens.filter((h) => ecartCap(h) < 0.3).length;
+        const avant = gens.map((h) => [h.pos.x, h.pos.z]);
+        while (performance.now() - t0 < 2300) { pas(); await image(); }
+        const repartis = gens.filter((h, i) => Math.hypot(h.pos.x - avant[i][0], h.pos.z - avant[i][1]) > 0.3).length;
+        return { n: gens.length, tournes, repartis, retournements: gens.reduce((n, h) => n + (h.retournements || 0), 0) };
+      } finally {
+        if (avait) g.player.choc = choc0; else delete g.player.choc;
+        gens.forEach((h) => g.scene.remove(h.mesh));
+      }
+    });
+    verifier('les passants se retournent vers un choc, un instant, puis reprennent leur chemin',
+      !choc.err && choc.tournes >= 5 && choc.repartis >= 5, JSON.stringify(choc));
+
     // ---- UNE HYPERCAR VA PLUS VITE QU'UNE CITADINE (v260) ------------------------
     //
     // Max : « les voitures devraient aller plus vite et surtout une vitesse en

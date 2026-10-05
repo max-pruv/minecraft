@@ -1386,6 +1386,33 @@ engendrées. Quatre règles.
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
 
+## Les passants réagissent à la route (v376) — un geste court, et une pause qui se compte en temps réel
+
+Point 3 du chantier « conduite » côté piétons. Trois règles.
+
+- **UNE PAUSE QUI SUIT UN GESTE EN TEMPS RÉEL SE COMPTE EN TEMPS RÉEL.**
+  L'écart (v351) se faisait en temps réel, mais la pause d'après (`repos`)
+  restait en `dt` : 0,8 seconde de jeu, trois secondes de montre à cinq images
+  par seconde — exactement le « planté au bord de la rue » que la v243
+  interdit. `REPOS_ECART_S` (0,35) se décompte sur `dtReel`. Quand un état
+  change d'horloge, celui qui le suit change avec lui.
+- **UN SURSAUT EST UN GESTE, PAS UNE PROTECTION.** Il se déclenche quand
+  l'échéance de la voiture (`couloirVoiture`, champ `t`) passe sous
+  `SURSAUT_S` et ne touche qu'à l'animation : la pose d'`animerHumain` et un
+  petit saut du maillage. C'est l'écart qui protège, et rien ne le remplace.
+  Et il se juge sur TOUT le passage de la voiture (`VEILLE_SURSAUT_S`, couloir
+  élargi `MARGE_SURSAUT`), pas à l'instant où l'écart commence : le couloir
+  porte à 1,6 s de route, et à cet instant la voiture est presque toujours
+  plus loin qu'une demi-seconde. Le premier jet ne testait que l'entrée :
+  vert quand le banc ramait, rouge (`sursauts: 0`) au portail suivant.
+- **CE QU'UNE AUTRE SESSION PUBLIE SE LIT SI PRÉSENT, ET À FRAIS.**
+  `player.choc` (session physique) : `regardChoc` (pur) ne regarde qu'un choc
+  de moins de `CHOC_FRAIS_MS` — un passant né après le bruit ne se retourne
+  pas — et jamais pendant un écart ni une traversée. Le témoin POSE le choc
+  comme la physique le ferait, puis rend `player.choc` à son état d'avant :
+  `degats3d.js` lit sa PRÉSENCE pour choisir entre le choc publié et son
+  repli.
+
 ## Les passants traversent au feu (v371) — un piéton lit le MÊME feu que la voiture
 
 Point 2 du chantier « conduite » côté piétons. Quatre règles.
