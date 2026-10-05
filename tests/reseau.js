@@ -383,6 +383,14 @@ function verifier(nom, ok, detail = '') {
           for (const pl of c.places) {
             const peinture = pl[6];
             if (peinture === null) continue;              // livrée d'origine : rien à perdre
+            // LA TEINTE DE CHAQUE VOITURE AVANT LA MONTE (v370) : on compare
+            // la monture à la voiture RÉELLEMENT prise, lue dans `pris`, pas à
+            // celle qu'on visait — un convoi roule, et quand le premier appui
+            // ne monte pas, le suivant peut prendre la voisine (deux rouges
+            // sur cinq passages pour ce seul motif, monture d'une autre teinte).
+            const avant = new Map();
+            for (const c2 of v.etat()) for (const p2 of c2.places || []) avant.set(c2.cle + '#' + p2[3], p2[6]);
+            const prisAvant = new Set(v.etat().flatMap((c2) => (c2.pris || []).map((i) => c2.cle + '#' + i)));
             g.player.pos.set(pl[0] + 0.5, g.world.terrainHeight(pl[0], pl[1]) + 1.2, pl[1]);
             g.player.vel.set(0, 0, 0);
             await dodo(150);
@@ -390,10 +398,18 @@ function verifier(nom, ok, detail = '') {
             await dodo(1500);
             const a = g.fun.montureConduite && g.fun.montureConduite();
             if (!a || !a.mesh) continue;
+            const prise = v.etat().flatMap((c2) => (c2.pris || []).map((i) => c2.cle + '#' + i)).find((k) => !prisAvant.has(k));
+            const teinte = prise !== undefined && avant.has(prise) ? avant.get(prise) : peinture;
+            if (teinte === null) {             // on a pris une livrée d'origine : rien à perdre, on redescend
+              document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyM' }));
+              await dodo(800);
+              continue;
+            }
             const couleurs = [];
             a.mesh.traverse((o) => { if (o.isMesh && o.material && o.material.color) couleurs.push(o.material.color.getHex()); });
-            return { auVolant: true, rue: peinture === undefined ? null : peinture, monture: a.mesh.userData.peinture ?? null,
-              peinte: peinture !== undefined && couleurs.includes(peinture), flotte: a.mesh.userData.flotte,
+            return { auVolant: true, rue: teinte === undefined ? null : teinte, visee: peinture, prise: prise || null,
+              monture: a.mesh.userData.peinture ?? null,
+              peinte: teinte !== undefined && couleurs.includes(teinte), flotte: a.mesh.userData.flotte,
               x: a.pos.x, z: a.pos.z, cap: a.yaw };
           }
         }
