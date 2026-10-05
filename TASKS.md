@@ -1,5 +1,21 @@
 # Ce qui est en cours
 
+- [ ] **LE PORTAIL DE LA v352 (le coût d'un morceau), DOUBLE MESURE FAITE.**
+  Treize suites vertes, dont `plafond.js` et ses deux témoins neufs. Rouges,
+  chacun rejoué SEUL des deux côtés (`origin/main` v348, arbre détaché) :
+  `manhattan.js` — trou de façade 11 684 → 51 734 sur la branche, 14 326 →
+  51 734 sur `origin/main`, et la suite meurt sur le MÊME `locator.tap`
+  (30 s) des deux côtés ; au portail s'y ajoutaient le taxi (bouton jamais
+  visible) et `PeerJS: Lost connection`, déjà déclarés. `monte.js` — l'arrivée
+  figée, seul rouge, 18,6 % au-delà de 300 ms au portail (branche), 25,4 % sur
+  `origin/main` seul. `reseau.js` — « un hôte sans courtier est trouvé » et
+  « il le REJOINT » au portail ; rejouée seule, **verte des deux côtés** :
+  l'intermittence déjà déclarée. `maj.js` — le badge (version servie v348 au
+  portail, avant le bump) et le loader qui compte ses fichiers (rouge au
+  premier passage, vert à la reprise). La livraison ne touche ni Manhattan,
+  ni le réseau, ni le rendu : seulement le générateur et le mailleur, dont
+  l'empreinte (blocs et tampons) est celle d'`origin/main`, bit pour bit.
+
 - [ ] **LE PORTAIL DE LA v351 (les piétons rapides), DOUBLE MESURE FAITE.**
   Rouges de portail déjà déclarés : `maj.js` « corps, programmes et fond de
   carte », `manhattan.js` (trou de façade 27 926 → 51 734, `#ride-btn` caché,
@@ -44,11 +60,17 @@
   recharge une fois par image : sur l'iPad, mesurer le trou en roulant
   (`?diag=1`) et la cadence à 60 b/s avant de croire que la cadence tient — les
   millisecondes du worker et de rendu ne se transposent pas, l'ordre et les
-  nombres de morceaux oui ; (3) au-delà de 70 b/s la ville ne suit plus (80 :
-  86 à 115 blocs dans le champ pour 160) — le levier restant est le coût d'un
-  morceau dans le worker (génération 45 %, v229), pas la file : les trois
-  non-résultats de la file (borner la pose, file en temps, deux mailleurs) et
-  la file de seize (v269) restent écartés ; (4) un lot déjà parti au worker ne
+  nombres de morceaux oui ; (3) ~~le coût d'un morceau dans le worker~~ —
+  **fait en v352** : Paris 8,3 → 3,3 ms, Rome 10,5 → 4,1 sous node, sortie
+  identique (empreinte de `plafond.js`). Au banc la ville ne suit toujours pas
+  80 b/s (Paris 125, Rome 129–138, A1 158 pour 160) : le débit y plafonne vers
+  55 morceaux par seconde en ville DES DEUX CÔTÉS, donc ce n'est plus le worker.
+  Pistes, non mesurées : l'installation des géométries sur le fil principal en
+  ville (Paris ne gagne rien quand Rome gagne), et la recharge de la file une
+  fois par image. Les trois non-résultats de la file (borner la pose, file en
+  temps, deux mailleurs) et la file de seize (v269) restent écartés. Sur
+  l'iPad, deux fois moins de calcul par morceau est un fait, mais le plafond
+  ne se relève que sur une mesure `?diag=1` en roulant ; (4) un lot déjà parti au worker ne
   s'annule pas quand on le dépasse — huit morceaux au plus, onze blocs de
   route à 60 b/s : non mesuré comme nuisible, laissé.
 
