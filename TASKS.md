@@ -986,14 +986,23 @@
   table de hauteurs, un témoin, une sonde. Le badge de version (« version
   servie v335 » au premier portail) était le bump manquant, réglé.
 - [ ] **DEUX INVERSIONS DU VRAI CIEL DANS LES VILLES BÂTIES À LA MAIN (v350),
-  mesuré.** Le témoin d'ordre étendu au lot 2 les a trouvées entre repères que
+  mesuré. Le château du Smithsonian : FAIT en v354** (sa tour du nord, deux
+  blocs de côté, monte à quatorze — `buildChateauSmithsonianHaut`, entre
+  Jefferson et la Bibliothèque du Congrès ; il est dans les `FIXES`). Reste St
+  Paul : Big Ben est à soixante-neuf blocs, aucune coupole de la City ne peut
+  passer au-dessus sans devenir une tour — c'est Big Ben qu'il faudrait
+  remettre dans le ciel de Londres, décision de ville bâtie à la main. Le témoin d'ordre étendu au lot 2 les a trouvées entre repères que
   la livraison ne touche pas : la cathédrale St Paul (111 m) à dix-sept blocs,
   sous Big Ben (96 m) à soixante-neuf ; le château du Smithsonian (44 m) à
   onze, sous le mémorial Jefferson (39 m) à treize. Retirés des `FIXES` du
   témoin. St Paul est une coupole (`corps` possible, et le dôme se voit de tout
   Londres) ; les tours du château sont des fûts d'un bloc, à remonter par leur
   bâtisseur, pas par une table.
-- [ ] **LA GRANDE ROUE DU PRATER SOUS LA HOFBURG (v342), déclaré.** La roue (65 m)
+- [x] **LA GRANDE ROUE DU PRATER SOUS LA HOFBURG (v342) — FAIT en v354** : une
+  roue à son vrai rayon (`buildRoueDuPrater`, neuf blocs, ce que tient sa
+  boîte), vingt-deux blocs au-dessus de la Hofburg (vingt et un) ; elle est
+  dans les `FIXES`. Tivoli et la High Roller restent (la boîte ne tient pas
+  la roue qu'il faudrait). Texte d'origine : La roue (65 m)
   reste à seize blocs et la Hofburg (30 m) monte à vingt et un : une roue ne
   s'étire pas, elle deviendrait une ellipse. Le témoin d'ordre ne la compte pas.
   Si on veut la garder au-dessus, c'est son bâtisseur (`buildGrandeRoue`) qui

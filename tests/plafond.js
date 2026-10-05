@@ -445,9 +445,9 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     // haut : ni un autre monument remis à l'échelle, ni un repère que la
     // livraison n'a pas touché. Les hauteurs vraies des repères fixes sont
     // écrites ici (mètres) ; celles des monuments étirés viennent du module.
-    // La grande roue du Prater (65 m, 16 blocs) n'y est pas : une roue ne
-    // s'étire pas, et la Hofburg (30 m, 21 blocs) la dépasse — déclaré dans
-    // `TASKS.md`.
+    // La grande roue du Prater (65 m) y est depuis la v354 : une roue ne
+    // s'étire pas, elle a reçu son vrai rayon (`buildRoueDuPrater`) et passe
+    // au-dessus de la Hofburg (30 m, 21 blocs).
     // (La Fernsehturm, le Stephansdom, le Palazzo Vecchio, Saint-Guy, la Torre
     // Latino : remis à l'échelle par leur bâtisseur neuf en v354, ils sont
     // dans la table du module.)
@@ -464,13 +464,15 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       'Delhi|Rashtrapati Bhavan': 55,
       // Le lot 2, les villes bâties à la main (v350).
       'Lille|Beffroi de la Chambre de commerce': 76, 'Lille|Beffroi de Lille': 104, 'Lille|Tour de Lille': 117,
-      // St Paul (111 m, 17 blocs sous Big Ben) et le château du Smithsonian
-      // (44 m, onze blocs sous Jefferson) n'y sont pas : leurs inversions
-      // précèdent la v350, déclarées dans `TASKS.md`.
+      // St Paul (111 m, 17 blocs sous Big Ben, 69) n'y est pas : son inversion
+      // précède la v350, déclarée dans `TASKS.md`.
       'Londres|Tour de Londres': 27, 'Londres|Colonne Nelson': 52,
       'Londres|Big Ben': 96, 'Londres|The Shard': 310,
       'Washington|Maison-Blanche': 21, 'Washington|Lincoln Memorial': 30, 'Washington|Mémorial Jefferson': 39,
       'Washington|Bibliothèque du Congrès': 59,
+      // v354 : la roue du Prater à son vrai rayon, la tour du nord du château
+      // du Smithsonian rendue à sa hauteur (deux inversions des v342 et v350).
+      'Vienne|La grande roue du Prater': 65, 'Washington|Château du Smithsonian': 44,
       'Washington|Capitole des États-Unis': 88, 'Washington|Monument de Washington': 169,
       // v353 : ce qui est déjà au-dessus de son ciel garde l'ordre au-dessus
       // des monuments remis à l'échelle autour de lui.

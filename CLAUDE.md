@@ -807,6 +807,10 @@ hauteur parce qu'étirées c'étaient des perches. Cinq règles.
   (hauteurs à l'étage, emprises au sol) vaut pour un monument comme pour une
   tour de Manhattan.
 
+Et une roue ne s'étire pas (elle deviendrait une ellipse) : la roue du Prater
+a reçu un bâtisseur à son vrai rayon, le plus grand que tient sa boîte ;
+celle de la High Roller ne tiendrait pas, et c'est déclaré.
+
 Et une empreinte d'identité qui change se PROUVE : celle des 490 morceaux
 (v352) couvre Marrakech et Tokyo ; la branche, bâtisseurs neufs désarmés, rend
 l'ancienne au bit près — c'est ce qui a permis de la remplacer.

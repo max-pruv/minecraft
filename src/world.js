@@ -67,7 +67,7 @@ import {
   buildCapitole, buildObelisque, buildLincoln, buildMemorialGuerre, buildMaisonBlanche,
   buildCourSupreme, buildBibliotheque, buildUnionStation, buildGalerieArt, buildNGAEst,
   buildHistoireNaturelle, buildHistoireAmericaine, buildAirEspace, buildHirshhorn,
-  buildIndienAmerique, buildArtsIndustries, buildChateauSmithsonian, buildFreer,
+  buildIndienAmerique, buildArtsIndustries, buildChateauSmithsonian, buildChateauSmithsonianHaut, buildFreer,
   buildAfroAmericain, buildTresor, buildArchives, buildArcChinatown, buildFordTheatre,
   buildJefferson, buildMLK, buildRoosevelt, buildCoree, buildVietnam, buildKennedyCenter,
   buildPentagone, buildSoldatInconnu, buildIwoJima,
@@ -1310,7 +1310,7 @@ const LANDMARKS_V317 = [
     ['Musée afro-américain', buildAfroAmericain],
     ["Musée de l'Indien d'Amérique", buildIndienAmerique],
     ["Musée de l'Air et de l'Espace", buildAirEspace], ['Hirshhorn', buildHirshhorn],
-    ['Arts et Industries', buildArtsIndustries], ['Château du Smithsonian', buildChateauSmithsonian],
+    ['Arts et Industries', buildArtsIndustries], ['Château du Smithsonian', buildChateauSmithsonian, buildChateauSmithsonianHaut],
     ['Galerie Freer', buildFreer],
     ['Maison-Blanche', buildMaisonBlanche], ['Le Trésor', buildTresor],
     ['Archives nationales', buildArchives], ['Arc de Chinatown', buildArcChinatown],
@@ -1322,11 +1322,11 @@ const LANDMARKS_V317 = [
     ['Mémorial Roosevelt', buildRoosevelt], ['Mémorial Jefferson', buildJefferson],
     ['Kennedy Center', buildKennedyCenter], ['Pentagone', buildPentagone],
     ['Tombe du Soldat inconnu', buildSoldatInconnu], ['Mémorial Iwo Jima', buildIwoJima],
-  ].map(([nom, build]) => {
+  ].map(([nom, build, tour]) => {
     const m = MONUMENTS_DC.find((q) => q.nom === nom);
     return {
       name: nom, x: WASHINGTON.x + m.u, z: WASHINGTON.z + m.v,
-      box: Math.max(m.bu, m.bv), seuil: m.seuil, waterBase: !!m.eau, build,
+      box: Math.max(m.bu, m.bv), seuil: m.seuil, waterBase: !!m.eau, build, tour,
     };
   }),
   // Countryside

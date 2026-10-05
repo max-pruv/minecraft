@@ -675,6 +675,30 @@ function buildGrandeRoue(poser) {
   for (let y = 1; y <= R + 2; y++) poser(0, y, 0, ACIER);
 }
 
+// La grande roue du Prater (v354) : 65 m de haut pour 61 de diamètre, plus
+// haute que la Hofburg — et `buildGrandeRoue` (seize blocs) passait dessous.
+// Une roue ne s'étire pas, elle deviendrait une ellipse : celle-ci a son vrai
+// rayon, le plus grand que tient la boîte de son repère (neuf), la jante, les
+// rayons, le moyeu sur ses deux chevalets, et les cabines rouges.
+function buildRoueDuPrater(poser) {
+  const R = 9, C = R + 4;
+  for (let a = 0; a < 360; a += 4) {
+    const r = (a * Math.PI) / 180;
+    const y = C + Math.round(Math.sin(r) * R), z = Math.round(Math.cos(r) * R);
+    poser(0, y, z, BLANC);
+    if (a % 24 === 0) { poser(1, y - 1, z, VERMILLON); poser(-1, y - 1, z, VERMILLON); }
+  }
+  for (let a = 0; a < 360; a += 30) {
+    const r = (a * Math.PI) / 180;
+    for (let k = 1; k < R; k++) poser(0, C + Math.round(Math.sin(r) * k), Math.round(Math.cos(r) * k), ACIER);
+  }
+  for (const x of [-1, 1]) for (let y = 1; y <= C; y++) {
+    const e = Math.round((C - y) * 0.4);
+    poser(x, y, -e, ACIER); poser(x, y, e, ACIER);
+  }
+  poser(0, C, 0, ACIER);
+}
+
 // La halle de Pike Place et son enseigne rouge.
 function buildPikePlace(poser) {
   for (let dz = -4; dz <= 4; dz++) {
@@ -1527,7 +1551,7 @@ const FICHES = {
     monuments: [
       { nom: 'Stephansdom', lat: 48.2086, lon: 16.3733, box: 4, build: minaret(24, ARDOISE), tour: buildStephansdom },
       { nom: 'La Hofburg', lat: 48.2065, lon: 16.3653, box: 8, build: palaisLong(6, CREME, uni(6)) },
-      { nom: 'La grande roue du Prater', lat: 48.2167, lon: 16.3958, box: 9, build: buildGrandeRoue },
+      { nom: 'La grande roue du Prater', lat: 48.2167, lon: 16.3958, box: 9, build: buildGrandeRoue, tour: buildRoueDuPrater },
     ],
     lieux: [['Le Graben', 48.2088, 16.3696], ['Le Prater', 48.2162, 16.3987],
       ['Naschmarkt', 48.1985, 16.3634]],

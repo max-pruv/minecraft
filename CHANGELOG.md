@@ -46,7 +46,10 @@ Tower, la Torre Latino, Saint-Étienne de Vienne et Saint-Guy de Prague avec
 leur nef, le Palazzo Vecchio avec son palais, la Frauenkirche, l'hôtel de ville
 de Munich, la demi-tour Eiffel de Las Vegas sur ses quatre pieds, la Freedom
 Tower — et les quatre pagodes, qui n'avaient qu'un poteau sous chaque toit,
-ont leurs étages. Saint-Pierre a sa nef, son transept et sa façade. Le monde
+ont leurs étages. Saint-Pierre a sa nef, son transept et sa façade. Deux inversions du vrai
+ciel tombent : la grande roue du Prater, à son vrai rayon, passe au-dessus de
+la Hofburg, et la tour du nord du château du Smithsonian au-dessus du
+mémorial Jefferson. Le monde
 d'avant garde ses colonnes : un bloc posé avant se juge sur le monde où il a
 été posé.
 
