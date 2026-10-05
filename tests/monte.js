@@ -2340,6 +2340,134 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !pietonRapide.err && pietonRapide.passes.length === 6 && pietonRapide.passes.every((p) => p.touche === 0 && p.arrivee > 1.13 + 0.25 && p.images >= 4),
       JSON.stringify(pietonRapide));
 
+    // ---- UN PIÉTON FRÔLÉ SURSAUTE, FAIT UN PAS DE CÔTÉ, ET REPART AUSSITÔT (v376)
+    //
+    // Des gestes courts, jamais d'arrêt prolongé (v243). Un passant qui MARCHE
+    // à 0,6 bloc de l'axe d'une voiture lancée à 40 b/s, la tablette qui rame
+    // (cent quatre-vingts millisecondes par image, v234) : il doit sursauter
+    // (bras levés, `sursauts`), sortir de la carrosserie, et reprendre sa
+    // marche dans la seconde de MONTRE qui suit la fin de l'écart. Sur l'ancien
+    // code la pause d'après l'écart valait 0,8 seconde de JEU — trois secondes
+    // de montre à cinq images par seconde — et il n'y avait pas de sursaut.
+    const frole = await tab.evaluate(async () => {
+      const g = window.__game;
+      const { Habitant } = await import('./src/vie.js');
+      const { construireHumain } = await import('./src/personnages.js');
+      let ancre = null;
+      for (let k = 0; k < 400 && !ancre; k++) {
+        const x0 = 30000 + (k % 20) * 16, z0 = 30000 + Math.floor(k / 20) * 16;
+        const h0 = g.world.terrainHeight(x0, z0);
+        let plat = true;
+        for (let dx = -6; dx <= 6 && plat; dx++) for (let dz = -6; dz <= 6 && plat; dz++) if (g.world.terrainHeight(x0 + dx, z0 + dz) !== h0) plat = false;
+        if (plat) ancre = { x: x0 + 0.5, z: z0 + 0.5, y: h0 + 1 };
+      }
+      if (!ancre) return { err: 'aucun carré plat' };
+      const majPlayer = g.player.update, sauve = g.player.pos.clone(), gab0 = g.player.gabarit, pousse0 = g.player.pousse;
+      g.player.update = () => {};
+      const image = () => new Promise((f) => requestAnimationFrame(f));
+      const h = new Habitant(g.scene, g.world, g.player, () => {}, {
+        name: 'essai', phrases: ['…'], walkSpeed: 1.6, largeur: 0.5, hauteur: 1.72,
+        build: () => construireHumain({ tenue: 'passant' }),
+      }, ancre.x, ancre.z);
+      try {
+        const v = 40, L = 4.4, lourd = 180;
+        h.placeAt(ancre.x - 0.6, ancre.z, ancre.y);
+        h.ecart = null; h.repos = 0; h.etat = 'pause'; h.minuteur = 1e9; h.surTrottoir = false;
+        for (let k = 0; k < 10; k++) { h.update(0.02); await image(); }
+        h.placeAt(ancre.x - 0.6, ancre.z, ancre.y);
+        h.poste.set(h.pos.x, h.pos.z); h.rayon = 99;
+        // il marche vers −x, à l'écart de l'axe : la voiture le frôle
+        h.etat = 'marche'; h.capYaw = Math.PI / 2; h.minuteur = 1e9;
+        g.player.gabarit = 2.26;
+        let front = ancre.z - v * 1.2 - 6, prec = performance.now();
+        let finEcart = null, repart = null, vuEcart = false, touche = 0, px = h.pos.x, pz = h.pos.z;
+        const t0 = performance.now();
+        while (performance.now() - t0 < 12000 && repart === null) {
+          await image();
+          { const t = performance.now(); while (performance.now() - t < lourd); }
+          const now = performance.now(), dtR = Math.min(0.5, (now - prec) / 1000); prec = now;
+          const f1 = front + v * dtR;
+          if (front - L < ancre.z + 30) { g.player.pos.set(ancre.x, ancre.y, f1 - L / 2); g.player.pousse = { x: 0, z: v }; }
+          else { g.player.pousse = { x: 0, z: 0 }; g.player.pos.set(ancre.x + 40, ancre.y, ancre.z); }
+          const lat = Math.abs(h.pos.x - ancre.x);
+          h.update(Math.min(dtR, 0.05));
+          if (h.pos.z >= front - L && h.pos.z <= f1 && Math.min(lat, Math.abs(h.pos.x - ancre.x)) <= 1.13 + 0.25) touche++;
+          front = f1;
+          if (h.ecart) vuEcart = true;
+          else if (vuEcart && finEcart === null) { finEcart = performance.now(); px = h.pos.x; pz = h.pos.z; }
+          else if (finEcart !== null && Math.hypot(h.pos.x - px, h.pos.z - pz) > 0.05) repart = performance.now();
+          if (finEcart === null) { px = h.pos.x; pz = h.pos.z; }
+        }
+        return { ecarts: h.ecarts || 0, sursauts: h.sursauts || 0, touche,
+          arretS: finEcart !== null && repart !== null ? +((repart - finEcart) / 1000).toFixed(2) : null,
+          arrivee: +Math.abs(h.pos.x - ancre.x).toFixed(2) };
+      } finally {
+        g.player.update = majPlayer; g.player.gabarit = gab0; g.player.pousse = pousse0; g.player.pos.copy(sauve);
+        g.scene.remove(h.mesh);
+      }
+    });
+    verifier('un piéton frôlé sursaute, fait un pas de côté et repart aussitôt',
+      !frole.err && frole.ecarts >= 1 && frole.sursauts >= 1 && frole.touche === 0
+        && frole.arretS !== null && frole.arretS <= 1.2, JSON.stringify(frole));
+
+    // ---- ET IL SE RETOURNE VERS UN CHOC, UN INSTANT (v376) ------------------------
+    //
+    // `player.choc = { force, t, x, z }` est publié par la physique de la
+    // conduite (lu SI PRÉSENT) ; on le POSE ici, comme elle le ferait, au
+    // milieu de six passants qui marchent dans toutes les directions. Dans le
+    // tiers de seconde de montre qui suit, ils regardent le point du choc
+    // (écart de cap sous 0,3 rad) ; deux secondes plus tard, ils ont tous
+    // repris leur chemin. Ancien code : personne ne se retourne.
+    const choc = await tab.evaluate(async () => {
+      const g = window.__game;
+      const { Habitant } = await import('./src/vie.js');
+      const { construireHumain } = await import('./src/personnages.js');
+      let ancre = null;
+      for (let k = 0; k < 400 && !ancre; k++) {
+        const x0 = 30000 + (k % 20) * 16, z0 = 30000 + Math.floor(k / 20) * 16;
+        const h0 = g.world.terrainHeight(x0, z0);
+        let plat = true;
+        for (let dx = -8; dx <= 8 && plat; dx++) for (let dz = -8; dz <= 8 && plat; dz++) if (g.world.terrainHeight(x0 + dx, z0 + dz) !== h0) plat = false;
+        if (plat) ancre = { x: x0 + 0.5, z: z0 + 0.5, y: h0 + 1 };
+      }
+      if (!ancre) return { err: 'aucun carré plat' };
+      const image = () => new Promise((f) => requestAnimationFrame(f));
+      const gens = [];
+      const avait = Object.prototype.hasOwnProperty.call(g.player, 'choc'), choc0 = g.player.choc;
+      try {
+        for (let i = 0; i < 6; i++) {
+          const a = i * Math.PI / 3;
+          const h = new Habitant(g.scene, g.world, g.player, () => {}, {
+            name: 'essai', phrases: ['…'], walkSpeed: 1.6, largeur: 0.5, hauteur: 1.72,
+            build: () => construireHumain({ tenue: 'passant' }),
+          }, ancre.x + Math.cos(a) * 5, ancre.z + Math.sin(a) * 5);
+          h.surTrottoir = false; h.rayon = 99; h.etat = 'marche'; h.minuteur = 1e9; h.capYaw = a;
+          gens.push(h);
+        }
+        // chacun avance au temps de jeu de l'image (dt borné à un vingtième, comme main.js)
+        let prec = performance.now();
+        const pas = () => { const n = performance.now(), d = Math.min(0.05, (n - prec) / 1000); prec = n; gens.forEach((h) => h.update(d)); };
+        for (let k = 0; k < 6; k++) { pas(); await image(); }
+        g.player.choc = { force: 0.8, t: performance.now(), x: ancre.x, z: ancre.z };
+        const ecartCap = (h) => {
+          const vers = Math.atan2(-(ancre.x - h.pos.x), -(ancre.z - h.pos.z));
+          return Math.abs(Math.atan2(Math.sin(h.yaw - vers), Math.cos(h.yaw - vers)));
+        };
+        const t0 = performance.now();
+        while (performance.now() - t0 < 300) { pas(); await image(); }
+        const tournes = gens.filter((h) => ecartCap(h) < 0.3).length;
+        const avant = gens.map((h) => [h.pos.x, h.pos.z]);
+        while (performance.now() - t0 < 2300) { pas(); await image(); }
+        const repartis = gens.filter((h, i) => Math.hypot(h.pos.x - avant[i][0], h.pos.z - avant[i][1]) > 0.3).length;
+        return { n: gens.length, tournes, repartis, retournements: gens.reduce((n, h) => n + (h.retournements || 0), 0) };
+      } finally {
+        if (avait) g.player.choc = choc0; else delete g.player.choc;
+        gens.forEach((h) => g.scene.remove(h.mesh));
+      }
+    });
+    verifier('les passants se retournent vers un choc, un instant, puis reprennent leur chemin',
+      !choc.err && choc.tournes >= 5 && choc.repartis >= 5, JSON.stringify(choc));
+
     // ---- UNE HYPERCAR VA PLUS VITE QU'UNE CITADINE (v260) ------------------------
     //
     // Max : « les voitures devraient aller plus vite et surtout une vitesse en
@@ -4181,10 +4309,69 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       verifier('à quatre-vingts blocs par seconde dans Paris, le worker ne reste pas à sec entre deux images',
         n1.parcouru > 300 && a1.parcouru > 300 && rapport >= 1.5 && enVol <= 4,
         `débit × ${rapport} (barre 1,5) · en vol au plus ${enVol} (barre 4) · à l'arrivée : ${dit(n1)} | ${dit(n2)} · à l'image : ${dit(a1)} | ${dit(a2)}`);
-      const vn = await roulerRecharge('arrivee', true), va = await roulerRecharge('image', true);
+      // EN ORDRE ALTERNÉ (v379) : une seule paire rendait 0,753 sur
+      // `origin/main` et 0,726 sur la branche — un pile ou face sur la barre,
+      // avec la recharge FORCÉE des deux côtés (aucune règle de la livraison
+      // n'y est lue). Deux paires, ABBA, et l'on compare les moyennes.
+      const vn1 = await roulerRecharge('arrivee', true), va1 = await roulerRecharge('image', true);
+      const va2 = await roulerRecharge('image', true), vn2 = await roulerRecharge('arrivee', true);
+      const cn = (vn1.cadence + vn2.cadence) / 2, ca = (va1.cadence + va2.cadence) / 2;
       verifier('rendue dans une scène vide, la recharge à l\'arrivée garde la cadence de l\'ancienne',
-        vn.parcouru > 300 && va.parcouru > 300 && vn.cadence >= 0.75 * va.cadence,
-        `à l'arrivée ${dit(vn)} · à l'image ${dit(va)} (barre : trois quarts de la cadence)`);
+        [vn1, vn2, va1, va2].every((r) => r.parcouru > 300) && cn >= 0.75 * ca,
+        `rapport ${(cn / (ca || 1)).toFixed(2)} (barre 0,75, moyennes ABBA) · à l'arrivée ${dit(vn1)} | ${dit(vn2)} · à l'image ${dit(va1)} | ${dit(va2)}`);
+    }
+
+    // APRÈS UNE TÉLÉPORTATION, LA FILE SE RECHARGE À L'ARRIVÉE LE TEMPS DE
+    // REMPLIR LE DISQUE, PUIS SE REND (v379).
+    //
+    // Sondé (sonde-teleport-recharge.cjs, deux tours alternés, Paris) : à la
+    // recharge par image, 291 à 304 morceaux sur 625 en vingt secondes ; à
+    // l'arrivée, 90 % en 5,5 à 6,4 s ; dans une scène VIDE, les deux modes
+    // chargent en 4,1 à 4,4 s à 57 images par seconde — le chargement ne prend
+    // rien aux images. Le banc rendant en logiciel, la recharge y reste coupée
+    // (v360) : le témoin lit donc la RÈGLE (`rechargeRegle`), garde du rendu
+    // logiciel mise à part. Trois cas : un saut l'arme, elle se rend quand la
+    // file est vide, et un pas d'un morceau ne l'arme pas. Sur l'ancien code la
+    // règle n'existe pas : rouge, proprement.
+    {
+      await souffler();
+      const r = await ciel.evaluate(async () => {
+        const g = window.__game;
+        const lire = () => g.rechargeRegle;
+        if (!lire()) return { regle: false };
+        const { positionDe } = await import('./src/mondes.js');
+        const patienter = (ms) => new Promise((fin) => {
+          const t0 = performance.now();
+          const tic = () => (performance.now() - t0 < ms ? requestAnimationFrame(tic) : fin());
+          requestAnimationFrame(tic);
+        });
+        const p = g.player;
+        p.flying = true;
+        const R = g.reglageApplique.rr;
+        // le pas d'un morceau d'abord, depuis une position installée
+        const x0 = p.pos.x, z0 = p.pos.z;
+        await patienter(300);
+        p.pos.set(x0 + 16, p.pos.y, z0); p.vel.set(0, 0, 0);
+        await patienter(400);
+        const apresUnPas = lire().arrivee;
+        // le saut : Rome, à plusieurs milliers de blocs
+        const P = positionDe('rome');
+        const y = g.world.terrainHeight(P.x, P.z) + 3;
+        const poser = () => { p.pos.set(P.x + 0.5, y, P.z + 0.5); p.vel.set(0, 0, 0); };
+        poser();
+        await patienter(400);
+        const apresLeSaut = lire().arrivee, fileApres = g.fileDeMorceaux.length;
+        const t0 = performance.now();
+        while (performance.now() - t0 < 15000 && lire().arrivee) { poser(); await patienter(250); }
+        const rendueEn = Math.round(performance.now() - t0);
+        const apresLaFenetre = lire().arrivee;
+        p.flying = false;
+        return { regle: true, R, apresUnPas, apresLeSaut, fileApres, rendueEn, apresLaFenetre };
+      });
+      verifier('après une téléportation, la file se recharge à l\'arrivée le temps de remplir le disque, puis se rend',
+        r.regle && r.apresUnPas === false && r.apresLeSaut === true && r.apresLaFenetre === false && r.rendueEn <= 11000,
+        r.regle ? `un pas : ${r.apresUnPas} · le saut : ${r.apresLeSaut} (${r.fileApres} morceaux en file) · rendue en ${r.rendueEn} ms : ${r.apresLaFenetre}`
+          : 'pas de règle de recharge à l\'arrivée après un saut (`__game.rechargeRegle` absent)');
     }
 
     // L'ÉCRAN NE SE FIGE PLUS EN ARRIVANT SUR UNE VILLE (v235).
@@ -4222,20 +4409,26 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       g.player.vitesseAvion = def.pilote.max;
       g.player.avionEnVol = true; g.player.avionEtat = 'vol';
       g.player.altitudeDecollage = -9999;
+      // la scène VIDE (v379) : voir plus bas, « ce que le banc dessine »
+      const rendre = g.renderer.render, rendreLie = rendre.bind(g.renderer), vide = new g.scene.constructor();
+      g.renderer.render = (s, c) => rendreLie(s === g.scene ? vide : s, c);
       await new Promise((f) => setTimeout(f, 3000));
       const durees = [];
+      const x0 = g.player.pos.x;
       let prec = performance.now(), actif = true;
       const tic = (t) => { durees.push(t - prec); prec = t; if (actif) requestAnimationFrame(tic); };
       requestAnimationFrame(tic);
       await new Promise((f) => setTimeout(f, 18000));
       actif = false;
+      g.renderer.render = rendre;
+      const parcouru = Math.round(g.player.pos.x - x0);
       g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined;
       g.player.vitesseAvion = undefined; g.player.flying = false;
       const total = durees.reduce((a, c) => a + c, 0);
       const partAuDela = (s) => +(durees.filter((d) => d > s)
         .reduce((a, c) => a + c, 0) / total * 100).toFixed(1);
       return {
-        images: durees.length,
+        images: durees.length, parcouru,
         pireImage: Math.round(Math.max(...durees)),
         partAuDela300: partAuDela(300),
         cadence: +(durees.length / (total / 1000)).toFixed(1),
@@ -4257,10 +4450,29 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // verdict, lui, tombait pour sa propre raison. Trente, la valeur que
     // `programmes.images` utilise déjà pour dire la même chose (v246) : une
     // page morte rend zéro.
+    // CE QUE LE BANC DESSINE NE SE TRANSPOSE PAS, ET LE TÉMOIN NE LE MESURE
+    // PLUS (v379). Rouge des deux côtés depuis plusieurs portails (1 367 ms ·
+    // 21,7 % sur la branche de la v360, 2 350 ms · 20,5 % sur `origin/main`),
+    // il a été démonté par une sonde qui sépare, image par image, ce qui la
+    // remplit (sonde-arrivee-ville.cjs, deux tours, ce même vol) : dans les
+    // images de plus de 300 ms, 1 à 5 ms d'installation, ZÉRO programme
+    // compilé, 18 à 49 ms de JavaScript de rendu, pour des images de 1 267 à
+    // 1 550 ms ; et la même page dans une scène vide rend 83 à 100 ms au pire,
+    // zéro pour cent au-delà de 300. Le gel est SwiftShader qui dessine Paris
+    // (84 à 158 appels), au processeur — le paysage lointain, les ombres, la
+    // couche HD et le bâti lointain sont déjà coupés en rendu logiciel. Le
+    // témoin rend donc une scène VIDE pendant le vol, comme le témoin de
+    // cadence de la v360 : il garde ce que la v235 a corrigé — du JavaScript
+    // qui fige une image (`animerLesVilles`, 557 ms) — et tout ce qui vit sur le
+    // fil principal à l'arrivée (installation, naissances, programmes), pas le
+    // pilote graphique du banc. Vérifié capable de rougir : le remède de la
+    // v235 désarmé dans une copie (chaque convoi fabrique ses voitures à sa
+    // naissance), il rend 9,2 et 10,8 % du temps dans des images de plus de
+    // 300 ms (barre 5) ; armé, 0 % et 100 à 117 ms au pire.
     verifier('l\'écran ne se fige pas en arrivant sur une ville',
-      !secousses.err && secousses.images > 30
+      !secousses.err && secousses.images > 30 && secousses.parcouru > 500
         && secousses.pireImage <= 550 && secousses.partAuDela300 <= 5,
-      JSON.stringify(secousses));
+      `scène vide pendant le vol · ${JSON.stringify(secousses)}`);
 
     // VOLER NE REMPLIT PLUS LA MÉMOIRE DE LA TABLETTE (v236).
     //
@@ -4327,8 +4539,11 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // ses pixels — 1 782 blocs en v247, 1 127 en v248, 964 en v249, pour une
     // borne de 1 000 qui ne séparait plus « ça a volé » de « ça n'a pas
     // volé ». Cinq cents : un vol qui n'a pas eu lieu rend zéro.
+    // ET CINQ CENTS ÉTAIT REDEVENU LA MESURE (v379) : 490 et 494 sur la
+    // branche, 528 sur `origin/main` rejoué seul — la même borne posée à
+    // nouveau SUR la valeur, ce que la règle interdit. Deux cent cinquante.
     verifier('voler une demi-minute ne remplit pas la mémoire de la tablette',
-      !memoire.err && memoire.parcouru > 500 && memoire.moBlocs <= 100,
+      !memoire.err && memoire.parcouru > 250 && memoire.moBlocs <= 100,
       `barre 100 Mo · ${JSON.stringify(memoire)}`);
 
     // ET CE QU'UN ENFANT A POSÉ SURVIT À L'OUBLI DE SON MORCEAU.

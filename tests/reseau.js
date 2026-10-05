@@ -287,6 +287,67 @@ function verifier(nom, ok, detail = '') {
       (await vu(hote)).compteur === 2 && (await vu(alice)).compteur === 2
       && !(await nomsVus(hote)).includes('Nina') && !(await nomsVus(alice)).includes('Nina'),
       `hôte ${JSON.stringify(await nomsVus(hote))} · Alice ${JSON.stringify(await nomsVus(alice))}`);
+    // --- le passager entre par la portière, et l'ami la voit s'ouvrir (v377)
+    //
+    // Le passager d'un ami (v253) était collé au siège d'un coup. Il marche
+    // désormais jusqu'à la portière DROITE, l'ouvre, s'assied, la referme —
+    // et le conducteur voit SA portière s'ouvrir, sur sa tablette, par un
+    // message court (`portiere`). Lou joue la séquence (`embarq: 1`) ; Marlon
+    // conduit, sur une page qui la saute. On lit les DEUX pages au même
+    // instant, relevé par relevé (v305) : la phase de Lou, et l'angle de la
+    // portière droite de la voiture de Marlon, lu chez Marlon. Sur l'ancien
+    // code, Lou est passagère d'un coup et la portière de Marlon ne bouge pas.
+    const lou = await banc.rejoindre('Lou', code, { embarq: 1 });
+    await jusqua(async () => (await nomsVus(hote)).includes('Lou') && (await nomsVus(lou)).includes('Marlon'), 30000);
+    const volantLou = await hote.evaluate(async () => {
+      const g = window.__game; const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+      g.animalManager.animals.length = 0;
+      const fx = -Math.sin(g.player.yaw), fz = -Math.cos(g.player.yaw);
+      const a = g.animalManager.invoquer('voiture', g.player.pos.x + fx * 2.5, g.player.pos.z + fz * 2.5, false, { flotte: 'amg-gt-black-series.glb' });
+      for (let i = 0; i < 80 && !(a && a.mesh.userData.modele); i++) await dodo(100);
+      document.getElementById('ride-btn').click();
+      await dodo(800);
+      const m = g.fun.montureConduite && g.fun.montureConduite();
+      return { auVolant: !!m, modele: !!(m && m.mesh.userData.modele), x: g.player.pos.x, y: g.player.pos.y, z: g.player.pos.z };
+    });
+    const marlonChezLou = await idDe(lou, 'Marlon');
+    await jusqua(async () => lou.evaluate((id) => { const rp = window.__game.remotePlayers.get(id); return !!(rp && rp.vehicule && rp.vehicule.mesh.userData.modele); }, marlonChezLou), 20000);
+    await lou.evaluate((p) => {
+      const g = window.__game;
+      for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+      g.animalManager.animals.length = 0;
+      g.player.pos.set(p.x + 3, p.y, p.z); g.player.vel.set(0, 0, 0);
+    }, volantLou);
+    const boutonLou = () => lou.evaluate(() => { const b = document.getElementById('ride-btn'); return { texte: b.textContent, visible: b.style.display !== 'none' }; });
+    await jusqua(async () => { const b = await boutonLou(); return b.visible && /Monter avec/.test(b.texte); }, 15000);
+    await lou.evaluate(() => document.getElementById('ride-btn').click());
+    const t0 = Date.now();
+    const releves = [];
+    while (Date.now() - t0 < 45000) {
+      const [cL, cM] = await Promise.all([
+        lou.evaluate(() => { const g = window.__game; const e = g.player.embarquement; return { ph: e ? e.phase : null, passager: !!(g.fun.passagerDe && g.fun.passagerDe()) }; }),
+        hote.evaluate(() => {
+          const m = window.__game.fun.montureConduite && window.__game.fun.montureConduite();
+          const p = m && m.mesh.userData.portieres ? m.mesh.userData.portieres['1'] : null;
+          return { angle: p ? +p.rotation.y.toFixed(3) : null };
+        }),
+      ]);
+      releves.push({ t: Date.now() - t0, ...cL, ...cM });
+      if (cL.passager && !cL.ph && releves.some((r) => r.angle > 0.5) && cM.angle !== null && Math.abs(cM.angle) < 0.02) break;
+      await dormir(150);
+    }
+    const phases = [...new Set(releves.map((r) => r.ph).filter(Boolean))];
+    const ouverteChezMarlon = releves.filter((r) => r.angle > 0.5);
+    const fin = releves[releves.length - 1];
+    verifier('le passager entre par la portière droite, et le conducteur la voit s\'ouvrir chez lui',
+      volantLou.auVolant && phases.includes('ouverture') && phases.includes('entree') && fin.passager
+        && ouverteChezMarlon.length > 0 && fin.angle !== null && Math.abs(fin.angle) < 0.02,
+      JSON.stringify({ volantLou, phases, ouvertes: ouverteChezMarlon.length, max: Math.max(...releves.map((r) => r.angle || 0)), fin, n: releves.length, ms: fin.t }));
+    await lou.evaluate(() => { const g = window.__game; if (g.fun.passagerDe && g.fun.passagerDe()) document.getElementById('ride-btn').click(); });
+    await hote.evaluate(() => { const g = window.__game; if (g.fun.montureConduite && g.fun.montureConduite()) document.getElementById('ride-btn').click(); });
+    await lou.close();
+    await jusqua(async () => (await vu(hote)).compteur === 2 && (await vu(alice)).compteur === 2, 40000);
     // --- une seule rue pour tout le monde (v305) ------------------------------
     //
     // Max, en ligne : « les utilisateurs ne voient pas les mêmes voitures en

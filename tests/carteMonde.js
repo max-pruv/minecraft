@@ -4521,7 +4521,7 @@ const VRAIES_KM = [
               // (mesuré v271) — un décalage à gauche passerait toute mesure
               // d'amplitude.
               //
-              // ET LE CONTRESENS ROULE AUSSI À DROITE (v376) — mais du côté
+              // ET LE CONTRESENS ROULE AUSSI À DROITE (v380) — mais du côté
               // EXTÉRIEUR de son anneau, qu'il parcourt à l'envers. « Vers le
               // centre du rectangle » n'est donc vrai que d'un sens : ce qui
               // est vrai des deux, c'est que la voiture est à DROITE DE L'AXE
@@ -4650,7 +4650,7 @@ const VRAIES_KM = [
       `${rues.place}/${rues.place + rues.serre} relevé(s) avec la place`
       + ` (${(100 * rues.place / (rues.place + rues.serre)).toFixed(1)} %)`);
 
-    // --- PLUSIEURS CIRCUITS PAR VILLE, ET LES DEUX SENS (v376) ---------------
+    // --- PLUSIEURS CIRCUITS PAR VILLE, ET LES DEUX SENS (v380) ---------------
     //
     // « Lance sur toutes les villes. » Mesuré sur `origin/main` : 147 des 262
     // villes engendrées n'avaient qu'UN circuit — dont 48 superîlots, que la
@@ -5128,7 +5128,7 @@ const VRAIES_KM = [
       try { R = await import('./src/routes.js'); } catch { /* ancien code */ }
       const CINQ = ['lyon', 'hambourg', 'bale', 'belgrade', 'budapest'];
       const parRoute = R ? R.segmentsDeRoute().flatMap((sg) => [sg.de, sg.vers]) : [];
-      // ET TOUTES LES VILLES À PONT (v376). La liste des cinq et des villes à
+      // ET TOUTES LES VILLES À PONT (v380). La liste des cinq et des villes à
       // route laissait de côté cinquante villes qui ont un tablier : lues
       // toutes, `origin/main` en rendait SEPT fautives (Agra, Berlin, Prague,
       // Tokyo, Séoul, Hong Kong, Chicago), dont cinq que personne n'avait vues.
@@ -5194,7 +5194,7 @@ const VRAIES_KM = [
     // mesuré 73 à 85 % à la livraison.
     verifier('chaque pont a de l\'eau sous son tablier',
       fleuves.ponts.filter((p) => p.cinq).length === 5
-      // UNE CULÉE SE COMPTE PAR TABLIER, PAS EN PART DE L'AXE (v376) : lu sur
+      // UNE CULÉE SE COMPTE PAR TABLIER, PAS EN PART DE L'AXE (v380) : lu sur
       // toutes les villes à pont, un tablier de trois colonnes d'eau a ses
       // deux culées de un bloc et demi et n'est au-dessus de l'eau qu'à moitié
       // (San José 50 %, Göteborg 56 %) — un vrai pont sur un canal. Ce qui
@@ -5205,7 +5205,7 @@ const VRAIES_KM = [
         + ` sur l'eau (${(100 * p.surEau / p.pas).toFixed(0)} %)`).join(' · '));
 
     // LES DEUX DÉFAUTS DE LA v362 SONT RÉGLÉS PAR LE PLAN, PAS PAR LE PONT
-    // (v376). Agra : le Taj Mahal et le Fort bâtis sur deux tabliers — c'était
+    // (v380). Agra : le Taj Mahal et le Fort bâtis sur deux tabliers — c'était
     // l'ANNEAU qui passait dans le monument, et un anneau ne traverse plus ce
     // que le bâtisseur pose (`contreUnMonument`) ; la boîte du monument, qui
     // entre dans les zones du relief, n'a pas bougé. Berlin : l'anneau dont le

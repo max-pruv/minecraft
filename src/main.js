@@ -26,7 +26,7 @@ import { materiauHD, geometrieHD } from './matierehd.js';
 import { Carte, MAP_COLORS } from './carte.js';
 import { toast } from './bandeau.js';
 import { Horizon, rayonHorizon } from './horizon.js';
-import { fileDeMaillage, VITESSE_CONE } from './plafond-sol.js';
+import { fileDeMaillage, VITESSE_CONE, estUnSaut, FENETRE_ARRIVEE_MS } from './plafond-sol.js';
 import { PALIERS, PALIER_CLE, choisirPalier, VITESSE_JET,
   ETENDUE_CLE, ETENDUE_PAR_DEFAUT, ETENDUES, palierRetenu, palierPropose, etendueRange, reglageDe, planDetail,
   PARAMS_FORCANTS } from './palier.js';
@@ -880,6 +880,8 @@ function recevoirMorceau(m) {
   statsMaillage.installMs += performance.now() - t0;
   statsMaillage.workerMs += m.ms || 0;
   if (m.inactif) statsMaillage.workerInactifMs += m.inactif;
+  if (m.cumul) statsMaillage.workerCumul = m.cumul;
+  if (statsMaillage.sonde) statsMaillage.sonde(m, attente);   // une sonde regarde arriver chaque morceau (v379)
   statsMaillage.distants++;
   noterMorceau(m.ms);
   if (attente && attente.sale) world.dirty.add(key);
@@ -1370,8 +1372,13 @@ let lastPlayerChunk = null;
 const RECHARGE_DEMANDEE = new URLSearchParams(location.search).get('recharge');
 let rechargeForcee = RECHARGE_DEMANDEE === 'arrivee' || RECHARGE_DEMANDEE === 'image' ? RECHARGE_DEMANDEE : null;
 let logicielMemo = null;   // un appel GL synchrone : une fois, pas à chaque morceau
+// ET APRÈS UNE TÉLÉPORTATION (v379), le temps de remplir le disque : voir
+// `estUnSaut` dans plafond-sol.js. Coupée en rendu logiciel comme le reste.
+let arriveeJusqua = 0;
+const enArrivee = () => arriveeJusqua > 0 && performance.now() < arriveeJusqua && meshQueue.length > 0;
+const rechargeParRegle = () => fileRapide || enArrivee();
 const rechargeALArrivee = () => (rechargeForcee ? rechargeForcee === 'arrivee'
-  : fileRapide && !(logicielMemo ??= renduLogiciel()));
+  : rechargeParRegle() && !(logicielMemo ??= renduLogiciel()));
 const EN_VOL_MAX = Math.max(1, Math.ceil(EN_ATTENTE_MAX / 2));
 function demander(suivant, pcx, pcz, lot) {
   const key = World.key(suivant.cx, suivant.cz);
@@ -1415,6 +1422,10 @@ function updateChunks() {
   suivreLeDeplacement(ecartDeplacement);
   if (chunkKey === lastPlayerChunk && regimeRapide() !== fileRapide) rebuildQueue();
   if (chunkKey !== lastPlayerChunk) {
+    if (lastPlayerChunk) {
+      const [ax, az] = lastPlayerChunk.split(',').map(Number);
+      if (estUnSaut({ cx: ax, cz: az }, { cx: pcx, cz: pcz }, RENDER_RADIUS)) arriveeJusqua = performance.now() + FENETRE_ARRIVEE_MS;
+    }
     lastPlayerChunk = chunkKey;
     rebuildQueue();
     const candidats = [];
@@ -4782,6 +4793,9 @@ function showOnlineUI() {
   net.onAnnonce = (txt) => toast(txt, 0x9fd8e8);
   net.onRueChoc = (m) => fun.degats.recevoirRue(m);   // dégâts de la rue (v363)
   net.onRueHistoires = (rc) => fun.degats.adopterHistoires(rc); // par la position, si l'hôte ne relaie pas rue_choc (v374)
+  // la portière qu'un ami ouvre pour monter en passager (v377) : la nôtre si
+  // l'on conduit, sinon celle de la voiture du conducteur telle qu'on la dessine
+  net.onPortiere = (m) => { const v = vehiculeDuConducteur(m.de); if (v && v.mesh) fun.recevoirPortiere(v.mesh, m.c, m.o); };
   net.onCiel = (c) => adopterCiel(c);
   net.donnerCiel = () => cielDuMonde();
   net.onJoin = (nom) => annonceArrivee(nom);
@@ -7689,6 +7703,7 @@ fun.degats.brancherReseau((m) => { if (net && net.active) net.broadcast(m); });
 // LA SÉQUENCE D'EMBARQUEMENT (v366) prend l'avatar que main.js possède, et la
 // place assise que main.js calcule : un seul corps, une seule assise.
 fun.brancherAvatar({ obtenir: obtenirAvatarLocal, placeAssise, pose: POSE_AU_VOLANT });
+fun.brancherPortieres((m) => { if (net && net.active) net.broadcast(m); });   // v377
 
 // --- main loop -------------------------------------------------------------------------
 
@@ -7734,7 +7749,10 @@ window.__proposerNotifs = proposerNotifs;
 window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
 window.__game = { fileMaillage: (m) => { fileDemandee = m; lastPlayerChunk = null; },
   // l'A/B de la recharge dans UNE page (v360) : 'arrivee', 'image', ou null (la règle)
-  rechargeMaillage: (m) => { rechargeForcee = m || null; }, villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage, PALIERS, choisirPalier, mesurePalier, journal,
+  rechargeMaillage: (m) => { rechargeForcee = m || null; }, get fileDeMorceaux() { return meshQueue; },
+  // la règle de la recharge, garde du rendu logiciel mise à part (v379) : un témoin
+  // la lit au banc, où le rendu est toujours logiciel
+  get rechargeRegle() { return { arrivee: enArrivee(), rapide: fileRapide, regle: rechargeParRegle(), active: rechargeALArrivee() }; }, villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage, PALIERS, choisirPalier, mesurePalier, journal,
   RAYON_HD, BUDGET_FACADES, detailTenu, planDetail, get atlasHD() { return hd ? hd.atlas : null; },
   palierRetenu, palierPropose, etendueRange, reglageDe, PARAMS_FORCANTS,
   // CE QUE LE PALIER A RÉELLEMENT APPLIQUÉ, pas ce qu'il déclare : un témoin

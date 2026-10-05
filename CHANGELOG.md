@@ -20,15 +20,15 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v376 — Plusieurs circuits dans chaque ville, et les deux sens
+## v380 — Plusieurs circuits dans chaque ville, et les deux sens
 
-**Pourquoi.** Dans 147 des 262 villes engendrées, les voitures ne faisaient
-qu'UN tour, toujours dans le même sens — dont 48 villes à tours (Houston,
-Melbourne, Taipei…) depuis la v282. Et 43 circuits de 28 villes passaient à
-travers un monument : le Taj Mahal et le Fort d'Agra (la dette de la v362),
-le Colisée, Sainte-Sophie, des temples de Kyoto, le Zócalo de Mexico. Le plus
-petit circuit d'une ville, enfin, roulait au milieu de la rue au lieu de sa
-voie de droite.
+**Pourquoi.** Dans 153 des 262 villes engendrées (sur la v379), les voitures
+ne faisaient qu'UN tour, toujours dans le même sens — dont 48 villes à tours
+(Houston, Melbourne, Taipei…) depuis la v282. Le plus petit circuit d'une
+ville roulait au milieu de la rue au lieu de sa voie de droite. Et les
+circuits passaient dans les monuments : la v378, livrée en parallèle par une
+autre session, l'avait réglé de son côté ; cette livraison le règle aussi, et
+il fallait n'en garder qu'une façon.
 
 **Ce que ça change.** Presque chaque ville a désormais deux circuits ou plus
 (251 sur 262), de nouveaux tours autour d'un, deux ou trois pâtés de maisons,
@@ -36,16 +36,19 @@ et des voitures dans les DEUX sens sur la même rue, chacune dans sa voie. Plus
 aucune voiture ne passe dans un monument : à Agra, Istanbul, Rome, Munich,
 Séoul, Dubaï, Amsterdam et Prague, des tours de quartier contournent les
 monuments et rendent la couverture d'avant. Les circuits d'une ville se
-calculent quand l'enfant en approche, plus pendant l'écran d'accueil.
+calculent quand l'enfant en approche, plus pendant l'écran d'accueil — comme
+en v378, dont le filtre et le dépliage sont remplacés par ceux-ci (un seul
+code pour une seule règle), sans qu'aucune ville ne perde de couverture ni sa
+voiture en vue par rapport à la v379.
 
 **Ce qui le prouve.** Trois témoins neufs dans `carteMonde.js`, sur toutes
-les villes et vérifiés rouges sur `origin/main` : 251/262 villes à plusieurs
-circuits (115 avant) ; 1 063 côtés de rue partagés, sens contraires à 3,2
+les villes et vérifiés rouges sur `origin/main` (v373) : 251/262 villes à
+plusieurs circuits (115 avant, 109 sur la v379) ; 1 063 côtés de rue partagés, sens contraires à 3,2
 blocs au moins pour deux demi-largeurs de 2,26 (49 avant, sans aucun sens
 contraire) ; zéro pas de carrosserie dans un monument (1 613 avant, 43
-anneaux). Le témoin de la v375, qui lit les blocs que chaque monument pose
-sous la carrosserie, voit zéro monument en travers sur 123 : sa dette de
-quarante-cinq monuments est remboursée, la table est vide. Le témoin « à droite » de la v271 relu à l'axe de la rue : 0 relevé à
+anneaux). Les deux témoins de la v378 restent verts sur ce code : zéro
+monument en travers sur 123, et les anneaux dépliés sont les mêmes que le
+calcul entier (262 villes). Le témoin « à droite » de la v271 relu à l'axe de la rue : 0 relevé à
 gauche (325 sur `origin/main`). Le témoin des ponts lit les 56 villes à pont
 au lieu de quinze : Agra, Berlin et Munich réglés — un tablier d'anneau
 porte désormais un bloc de plus à chaque bout, pour la colonne arrondie que la
@@ -56,6 +59,117 @@ partage dans le même sens reste sous vingt blocs (14,8). L'empreinte des 490
 morceaux change à Rome et à Tokyo seulement, et chaque colonne différente est
 sur un tablier d'avant ou d'après.
 
+## v379 — On arrive plus vite après la carte
+
+**Pourquoi.** Trois questions laissées ouvertes par la v360, et une quatrième
+qui traînait au portail. Après une téléportation, la file de maillage ne se
+rechargeait qu'une fois par image : sur un écran qui rame au milieu de Paris,
+le disque d'affichage arrivait au compte-gouttes — au banc, 291 à 304
+morceaux sur 625 au bout de vingt secondes. Londres plafonnait à 70 blocs par
+seconde quand Paris tenait 80, sans cause mesurée. Et le témoin « l'écran ne
+se fige pas en arrivant sur une ville » était rouge des deux côtés depuis
+plusieurs portails, sans qu'on sache ce qu'il mesurait encore.
+
+**Ce que ça change.** Après un saut par la carte, la file se recharge à
+l'arrivée de chaque morceau — toujours quatre demandes en vol au plus — le
+temps de remplir le disque, dix secondes au plus, puis redevient celle d'avant
+(coupée en rendu logiciel, comme la recharge en roulant de la v360). Au banc,
+90 % du disque de Paris en 5,5 à 6,4 s. Les morceaux du centre de Londres se
+fabriquent un peu plus vite : `solLondres` y était appelé quatre fois par
+colonne, une seule suffit (génération 2,8 → 2,1 ms sous node) — sans changer
+un bloc. Le plafond de vitesse au sol, lui, ne bouge pas : Londres ne tient
+toujours pas 80 au banc, il reste à 70 en ville.
+
+**Ce qui le prouve.** Trois sondes qui séparent les cas. `sonde-londres.cjs` :
+le centre de Londres, pile au milieu du trajet mesuré, porte 64 % de faces de
+plus que celui de Paris et une génération 70 % plus chère ; avec la mémoire,
+145–151 blocs devant soi contre 137–152 sur `origin/main` — les distributions
+se recouvrent, le plafond ville reste donc à 70 ; et moins de 1 % des
+morceaux reçus arrivent derrière l'enfant (un lot dépassé n'est pas
+nuisible). `sonde-teleport-recharge.cjs` : dans une scène vide, les deux
+recharges chargent Paris en 4,1–4,4 s à 57 images par seconde — le
+chargement ne prend rien aux images ; ce que le banc perd en scène dessinée
+(3,9 → 2,8–3,1 images par seconde) est SwiftShader qui dessine la ville plus
+tôt. `sonde-arrivee-ville.cjs` : dans les images de plus de 300 ms du vol vers
+Paris, 1 à 5 ms d'installation, zéro programme compilé, 18 à 49 ms de
+JavaScript, pour des images de 1,3 à 1,5 s ; en scène vide, 100 ms au pire. Le
+témoin de la v235 rend donc une scène vide pendant le vol (vert, 0 % ; rouge à
+9–11 % quand on désarme son remède dans une copie), et un témoin neuf garde la
+fenêtre d'arrivée (un saut l'arme, un pas non, elle se rend ; rouge sur
+`origin/main`). L'empreinte des 490 morceaux est inchangée. À relire sur la
+tablette : `?recharge=arrivee&diag=1` contre `?recharge=image&diag=1`, en se
+téléportant à Paris.
+## v378 — Les voitures ne traversent plus les monuments
+
+**Pourquoi.** Le témoin de la v375 l'a mesuré : dans les villes engendrées, les
+anneaux de voitures se choisissaient sur la trame sans regarder les monuments,
+qui se posent après. Quarante-cinq monuments étaient bâtis en travers d'un
+anneau à hauteur de carrosserie — le Taj Mahal sur 294 cases, le Colisée sur
+53, Rashtrapati Bhavan, le Templo Mayor, Tō-ji, le palais royal de Madrid… :
+des voitures qui passaient au travers des murs.
+
+**Ce que ça change.** Un anneau qui passerait dans un monument est écarté, et
+la ville en prend un autre. Plus une voiture ne traverse un monument. Agra et
+Le Cap, qui perdaient trop de rues, reçoivent des anneaux de quartier. Et les
+anneaux d'une ville ne se calculent plus au démarrage mais quand l'enfant
+s'en approche : la page démarre plus vite.
+
+**Ce qui le prouve.** `plafond.js` : le témoin des monuments en travers d'un
+anneau passe de 45 dettes déclarées à zéro (48 à la mesure de la carrosserie
+vraie sur `origin/main`), et un témoin neuf exige que les anneaux dépliés à
+l'approche soient exactement ceux du calcul entier (262 villes). `carteMonde.js` :
+les dettes des ponts d'Agra (le Taj et le Fort sur deux tabliers, 9 pas) et
+de Berlin (l'anneau qui passait dans le Berliner Dom) tombent. L'empreinte des
+490 morceaux change — les tabliers des anneaux sont du sol — et c'est prouvé :
+le filtre désarmé, la branche rend celle de la v375 au bit près.
+Mesuré sous node : aucune ville sans voitures, la moins couverte à 78,7 %
+(barre 75) ; 445 → 430 anneaux ; démarrage 157 → 0 ms pour ce calcul.
+
+---
+
+## v377 — Le passager monte par la portière
+
+**Pourquoi.** Depuis la v366, l'enfant qui prend le volant marche jusqu'à la
+portière, l'ouvre et s'assied. Mais celui qui monte en PASSAGER dans la voiture
+d'un ami (v253) était encore collé au siège d'un coup, et le conducteur ne
+voyait rien bouger sur sa tablette.
+
+**Ce que ça change.** « Monter avec Marlon » : l'enfant marche jusqu'à la
+portière DROITE de la voiture de son ami, elle s'ouvre, il s'assied, elle se
+referme — et Marlon, sur SA tablette, voit sa portière droite s'ouvrir et se
+refermer. Un second appui termine tout de suite, comme au volant. Une tablette
+restée sur l'ancienne version ne voit pas la portière bouger, et rien ne casse.
+
+**Ce qui le prouve.** Un témoin neuf à deux tablettes dans `reseau.js` : Lou
+(qui joue la séquence) monte avec Marlon ; on lit les deux pages au même
+instant, relevé par relevé. Lou passe par l'approche, l'ouverture, l'entrée et
+la fermeture avant d'être passagère ; chez Marlon, la portière droite de sa
+voiture s'ouvre à 60° (1,047 rad) puis se referme. Sur `origin/main` : aucune
+phase, Lou passagère d'un coup, la portière de Marlon jamais touchée. Le témoin
+du passager de la v253 (sur des pages qui sautent la séquence) reste vert.
+
+---
+
+## v376 — Les passants réagissent à la route
+
+**Pourquoi.** Un passant frôlé par une voiture faisait son pas de côté sans un
+geste, puis restait planté au bord de la rue : la pause d'après l'écart valait
+0,8 seconde de JEU, soit trois secondes de montre sur une tablette à cinq
+images par seconde. Et un choc de voiture à vingt mètres ne faisait tourner la
+tête à personne.
+
+**Ce que ça change.** Quand une voiture arrive sur lui à moins d'une
+demi-seconde, le passant sursaute — les bras se lèvent d'un coup, un petit
+saut — pendant son pas de côté, puis il repart aussitôt (la pause se compte en
+temps réel, un tiers de seconde). Quand la conduite publie un choc
+(`player.choc`), les passants à portée se retournent vers le bruit, s'arrêtent
+un instant, et reprennent leur chemin. Jamais de peur, jamais d'arrêt prolongé,
+personne n'est touché.
+
+**Ce qui le prouve.** Deux témoins neufs de `monte.js`, rouges sur
+`origin/main` : un piéton frôlé à 40 b/s sur une tablette qui rame sursaute,
+sort de la carrosserie et repart en moins de 1,2 s de montre ; six passants
+qui marchent se tournent vers un choc posé au milieu d'eux, puis repartent.
 ## v375 — Les huit derniers palais ont leur vraie forme
 
 **Pourquoi.** La v369 avait vidé le monde de ses coupoles de gabarit, et compté
