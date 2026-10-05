@@ -20,6 +20,34 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v371 — Les passants traversent au feu
+
+**Pourquoi.** Les passants marchaient le long de leur trottoir et, au coin,
+tournaient : ils ne changeaient pour ainsi dire jamais de trottoir. Mesuré
+(`tests/sonde-traversees.cjs`, soixante secondes, l'enfant immobile) : à Rome
+une traversée pour vingt et un passants, et pas à un feu ; à Paris et à
+Londres, zéro. Une ville où chacun reste sur son pâté de maisons, à côté de
+feux qui changent pour personne.
+
+**Ce que ça change.** À un carrefour à feux, un passant sur deux ou presque
+s'arrête au bord, face à la rue, attend que les voitures qu'il va couper soient
+au rouge — avec assez de rouge devant lui pour arriver de l'autre côté — puis
+traverse d'un pas pressé. Il lit le même feu que les voitures. À Paris, aux
+carrefours sans feu, il traverse sur le passage piéton peint quand aucune
+voiture n'arrive. Ailleurs, il ne traverse pas : il tourne au coin comme avant.
+Et la traversée se fait en temps réel, comme l'écart de la v351 : une tablette
+qui rame ne laisse pas un passant au milieu de la rue quand le feu repasse au
+vert.
+
+**Ce qui le prouve.** Un témoin neuf de `monte.js` pose huit passants au bord
+du trottoir, aux coins des feux de Rome, et compte les changements de
+trottoir : `origin/main` rend 0 et 0 traversée (rouge) ; ici 9, 6 et 3, au feu
+et au rouge des voitures coupées. Le témoin du réverbère éloigne désormais les
+passants du capot (un passant qui traverse arrête la voiture, c'est voulu), et
+une traversée au feu ne compte plus comme un passant planté sur la chaussée.
+La sonde, au centre des trois villes : Rome 7 à 11 traversées au feu, Paris 2 à 5 sur les passages peints,
+Londres 1 à 3 au feu. La recherche du passage coûte 0,6 ms par coin en moyenne,
+3,6 au pire, une fois par seconde environ.
 ## v370 — La grille de Washington à la règle du kit
 
 **Pourquoi.** La dernière des cinq villes bâties à la main restée hors règle

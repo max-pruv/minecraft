@@ -1335,6 +1335,57 @@ engendrées. Quatre règles.
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
 
+## Les passants traversent au feu (v371) — un piéton lit le MÊME feu que la voiture
+
+Point 2 du chantier « conduite » côté piétons. Quatre règles.
+
+- **ON MESURE CE QUE LES PASSANTS FONT AVANT DE LEUR APPRENDRE À TRAVERSER.**
+  `sonde-traversees.cjs` découpe la trace de chaque passant animé en sorties
+  du trottoir, traversées (retour au trottoir à plus de trois blocs) et
+  retours. Avant : Rome une traversée en soixante secondes, hors feu ; Paris
+  et Londres zéro. Il n'y avait donc pas de traversées « sauvages » à
+  interdire, il y avait des traversées à créer — l'inverse de ce que la
+  consigne laissait supposer.
+- **DEUX LECTURES DU MÊME FEU, JAMAIS DEUX RÈGLES.** `pietons.js` importe
+  `etatFeu` et `axeDuCap` de `feux.js` (son seul import, pur). Traverser dans
+  la direction (ux, uz) coupe l'AUTRE axe (`axeCoupe`) ; on part quand il est
+  au rouge avec `durée + MARGE_FEU_S` de rouge devant soi (`feuPieton`). Le
+  feu qui compte est dans `feuxProches`, la liste que la circulation lit : là,
+  et seulement là, les voitures s'y arrêtent. Le cycle ne dépend que de l'axe
+  et de l'heure de la rue (v305) — `world.heureRue` —, la règle n'a pas
+  besoin de savoir quel feu.
+- **LA TRAVERSÉE EST EN TEMPS RÉEL, COMME L'ÉCART (v351).** La fenêtre du feu
+  est une durée de l'horloge de la rue ; en `dt` borné, huit blocs de
+  chaussée dureraient quinze secondes réelles à cinq images par seconde.
+  `think` rend `reel: true` et `BaseNPC.update` convertit, même pas borné que
+  l'écart. Le témoin compte donc en secondes de MONTRE.
+- **UN PASSAGE SE CHERCHE LE LONG DE LA BORDURE, ET À PARIS IL EST PEINT.**
+  La trame de Paris est en biais : mesuré sur 1 231 bords de trottoir, 588
+  chemins vers le trottoir d'en face et 26 seulement sur un passage depuis le
+  point même. On cherche le départ trois blocs de chaque côté, en restant SUR
+  le trottoir (un départ rejoint par la chaussée, au coin, rendait des
+  « retours » d'un bloc). Aux carrefours parisiens sans feu, `marquageParis`
+  dit où est le passage (`axe: null`) : on part quand `vehiculeApproche`, avec
+  un horizon égal à la durée de la traversée, ne voit rien venir. Hors
+  carrefour, on ne traverse pas : on tourne, comme avant. Et l'attente se
+  borne (`ATTENTE_MAX_S`, douze secondes, un peu plus qu'un demi-cycle) —
+  mesuré à six, six coins à feu sur dix renonçaient.
+- **UN TÉMOIN QUI ATTEND QU'UN PASSANT ARRIVE À UN COIN MESURE LA CADENCE.**
+  Rejoué seul, le premier témoin voyait 3 à 11 traversées en soixante
+  secondes ; au portail, à trois images par seconde, une seule — puis une en
+  trente secondes de JEU. Atteindre un coin se fait au pas (temps de jeu), la
+  traversée et l'attente au feu en temps réel : aucune fenêtre ne sert les
+  deux. Le témoin POSE donc huit passants au bord, face à la rue, aux coins des
+  feux (relevés par le témoin lui-même : l'ancien code n'a pas de
+  `passagePieton`), et compte ce qu'ils font — 0 et 0 sur `origin/main`, 9, 6
+  et 3 ici. C'est la leçon des poissons (v233), une fois de plus.
+- **UN PASSANT QUI TRAVERSE CHANGE LA SITUATION DES TÉMOINS DE CONDUITE.**
+  Avant la v371, aucun passant de Paris ne descendait sur la chaussée ; le
+  témoin du réverbère prenait le volant sans regarder la rue, et un passant
+  sur le passage devant le capot l'a figé à zéro bloc (`pietonDevant`, voulu).
+  Un témoin qui roule fait le vide des passants autour de lui, comme des bêtes
+  (v284) : « se placer » veut dire l'endroit, le cap ET ce qui traîne autour.
+
 ## Les passants de Manhattan au long cap (v354) — un trottoir qui vit dans un plan se demande au plan
 
 Une règle.

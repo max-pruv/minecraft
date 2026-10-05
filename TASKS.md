@@ -1,5 +1,48 @@
 # Ce qui est en cours
 
+- [ ] **LE PORTAIL DE LA v371 (les passants traversent au feu), DOUBLE MESURE
+  FAITE.** Premier portail (base v354) : deux rouges de `monte.js` étaient à
+  MOI et sont corrigés dans la livraison — le témoin des traversées (une seule
+  en soixante secondes à trois images par seconde : il PROVOQUE désormais la
+  situation) et le réverbère (la voiture figée à zéro bloc par un passant qui
+  traversait devant : le témoin fait le vide des passants). Portail après le
+  rebase sur la v365 : mes trois témoins verts (6 traversées sur 6 au rouge,
+  réverbère, zéro passant sur la chaussée à Rome) ; rouges : `monte.js`
+  (chauffe de New York expirée à 54 sur 321, gel d'arrivée 1 417 ms · 32,7 % —
+  déclarés rouges des deux côtés plus bas, v362), `manhattan.js` (façade
+  22 326 → 54 969, dette connue des deux côtés) et `maj.js` cinq rouges (le
+  loader d'installation, la préparation, le flou, et les deux témoins du
+  palier à 25 images pour 383 ms la période). `maj.js` rejouée SEULE deux fois
+  de chaque côté (`origin/main` v365, arbre détaché) : branche 41 verts / 0
+  rouge puis 39 / 1 (« corps, programmes et fond de carte », programmes
+  18/27) ; `origin/main` 41 / 0 puis 38 / 2 (le même, et le loader
+  d'installation). Les deux témoins du palier ne reviennent pas seuls : ils
+  manquaient d'images au portail (25 pour une fenêtre qui en réclame plus).
+  La préparation est la même intermittence des deux côtés, et la livraison ne
+  touche ni l'accueil, ni la chauffe, ni le palier.
+  Après le rebase sur la v366 (portail de la v371) : mes trois témoins verts ;
+  rouges `maj.js` (préparation, loader — ci-dessus), `carte.js` (flèche du GPS
+  à gauche, 1,92 rad — intermittence déclarée), `manhattan.js` (façade, taxi
+  « 🐴 Monter » — déclarés), `reseau.js` (« même circulation » : l'intermittence
+  de la session circulation-vivante, non reprise ici), `washington.js` (l'Air et
+  l'Espace) et `monte.js` (compilation à New York, trou en vol, recharge à
+  l'arrivée, gel d'arrivée). Rejouées SEULES (`origin/main` v366) :
+  `washington.js` verte des deux côtés ; `monte.js` compilation et gel rouges
+  des deux côtés, trou et recharge verts des deux côtés, et « les passants ne
+  sont plus plantés au milieu de la chaussée » ROUGE sur la branche (6 sur 21,
+  29 %, une traversée en cours) et vert sur `origin/main` (2 sur 18). C'est la
+  valeur même des rouges d'`origin/main` aux portails passés (5/21, 4/18,
+  29 %) : la dette des passants sur la chaussée à Rome. La sonde qui sépare
+  les cas (`sonde-chaussee-rome.cjs`, 60 s, deux fois de chaque côté) rend
+  hors traversée 0 et 5 relevés sur ~1 800 sur la branche, 3 et 2 sur
+  `origin/main` : aucun « né sur la chaussée », aucun flâneur. Le témoin lit un
+  instantané au sortir du témoin précédent ; c'est le palier suivant.
+- [ ] **TRAVERSER À LONDRES ET AUX PASSAGES DES VILLES ENGENDRÉES SANS FEU
+  (v371).** Les passages peints sans feu ne sont lus qu'à Paris
+  (`marquageParis`) ; ailleurs on ne traverse qu'au feu. Londres : 1 à 3
+  traversées par minute au centre, parce que la plupart des coins n'ont pas de
+  feu. À voir : `CITY_BLOCK.CROSSWALK` des villes engendrées.
+
 - [ ] **LE PORTAIL DE LA v367 (I-95 Sud), DOUBLE MESURE FAITE.** Neuf suites,
   cinq rouges. `plafond.js` : l'empreinte des 490 morceaux, changée par la route
   dans les morceaux de Washington — relevée avec preuve (sans Washington,

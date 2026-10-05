@@ -1776,7 +1776,10 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         : b === ARCHI.PAVE ? 'pave'
         : b === ARCHI.BORDURE ? 'bordure' : 'autre');
       const tally = {};
+      let enTraversee = 0;
       gens.forEach((h) => {
+        // en pleine traversée au feu (v371) : il traverse, il n'est pas planté
+        if (h.traversee && h.etat === 'traverse') { enTraversee++; return; }
         const bx = Math.floor(h.pos.x), bz = Math.floor(h.pos.z);
         // LE SOL SE LIT AU SOMMET DE LA COLONNE, pas à `terrainHeight` : sur les
         // quais et au pied des ponts, une ville écrit sa chaussée un bloc plus
@@ -1787,7 +1790,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       });
       const surTrottoir = (tally.trottoir || 0) + (tally.granite || 0);
       const surChaussee = (tally.chaussee || 0) + (tally.pave || 0) + (tally.passage || 0);
-      return { ville: s2.nom, total: gens.length, surTrottoir, surChaussee, tally,
+      return { ville: s2.nom, total: gens.length, surTrottoir, surChaussee, tally, enTraversee,
         partTrottoir: gens.length ? +(surTrottoir / gens.length).toFixed(2) : null,
         partChaussee: gens.length ? +(surChaussee / gens.length).toFixed(2) : null };
     });
@@ -1897,6 +1900,135 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('et un passant de rue marche vraiment : il ne fait pas le pied de grue',
       !vontQuelquePart.err && vontQuelquePart.secondesDeJeu >= 3
         && vontQuelquePart.debitMedian >= 0.8, JSON.stringify(vontQuelquePart));
+
+    // ---- ET IL CHANGE DE TROTTOIR AU FEU, QUAND LES VOITURES SONT AU ROUGE (v371)
+    //
+    // Mesuré avant d'écrire (`sonde-traversees.cjs`, soixante secondes,
+    // l'enfant immobile) : les passants ne changeaient pour ainsi dire JAMAIS
+    // de trottoir — Rome une traversée sur vingt et un passants, et pas à un
+    // feu ; Paris et Londres zéro. Au coin, ils tournaient autour de leur îlot.
+    // Désormais, à un carrefour à feux, ils attendent au bord que les voitures
+    // qu'ils coupent soient au rouge, puis traversent — en temps réel.
+    //
+    // CE QUI SE COMPTE : une sortie du trottoir suivie d'un retour au trottoir à
+    // plus de trois blocs (il a changé de trottoir), le sol relevé quatre fois
+    // par seconde. Pour chacune, un feu à moins de cinq blocs du point de
+    // sortie, et l'état du feu de l'axe COUPÉ (la direction sortie → arrivée)
+    // au moment de la sortie, tel que le jeu le montre (`__feux`, v273). On se pose au barycentre de la troupe, comme le témoin
+    // d'au-dessus, et l'on rend l'enfant à sa place.
+    //
+    // Mesuré, huit passants posés au bord : l'ancien code rend 0 et 0
+    // traversée (ils tournent au coin) ; le neuf 9, 6 et 3, au feu et au rouge
+    // (une lue au vert, sur un état de `__feux` vieux d'une demi-seconde au
+    // plus). La barre — deux traversées, huit sur dix au feu et au rouge — est
+    // la moitié du pire passage du neuf. La fenêtre court soixante secondes de
+    // MONTRE (la traversée et l'attente vivent sur l'horloge de la rue) et
+    // quinze secondes de jeu au moins (on atteint le bord au pas).
+    const auFeu = await tab.evaluate(async () => {
+      const g = window.__game;
+      const { TROTTOIR, CHAUSSEE } = await import('./src/world.js');
+      const { RUE, ARCHI } = await import('./src/blocks.js');
+      const { axeDuCap } = await import('./src/feux.js');
+      const s2 = g.passants.sites.find((q) => q.peuple && q.peuple.length);
+      if (!s2) return { err: 'aucune ville peuplée' };
+      const tous = s2.peuple.filter((h) => h.name === 'passant');
+      if (tous.length < 3) return { err: `seulement ${tous.length} passant(s)` };
+      const sauve = g.player.pos.clone();
+      const cx = tous.reduce((a, h) => a + h.pos.x, 0) / tous.length;
+      const cz = tous.reduce((a, h) => a + h.pos.z, 0) / tous.length;
+      g.player.pos.set(cx, g.world.sommetColonne(Math.floor(cx), Math.floor(cz)) + 2.5, cz);
+      g.player.vel.set(0, 0, 0);
+      await new Promise((f) => setTimeout(f, 1500));
+      // l'état des feux tel que le jeu les montre (`__feux`, v273), par axe
+      const etats = () => { const r = {}; for (const f of (window.__feux() || [])) if (f.etat) r[f.axe] = f.etat; return r; };
+      const sol = (x, z) => {
+        const bx = Math.floor(x), bz = Math.floor(z);
+        const b = g.world.getBlock(bx, g.world.sommetColonne(bx, bz), bz);
+        return TROTTOIR.has(b) ? 't' : (CHAUSSEE.has(b) || b === ARCHI.BORDURE) ? 'c' : 'a';
+      };
+      const feuPres = (x, z) => {
+        for (let dx = -5; dx <= 5; dx++) for (let dz = -5; dz <= 5; dz++) {
+          const bx = Math.floor(x) + dx, bz = Math.floor(z) + dz;
+          const y = g.world.sommetColonne(bx, bz);
+          for (let k = 0; k <= 2; k++) if (g.world.getBlock(bx, y + k, bz) === RUE.FEUX) return true;
+        }
+        return false;
+      };
+      // ON PROVOQUE LA SITUATION AU LIEU DE L'ATTENDRE (leçon des poissons,
+      // v233). Attendre qu'un passant arrive de lui-même à un coin dépend de la
+      // cadence du banc : au portail, à trois images par seconde, une seule
+      // traversée en soixante secondes, puis une en trente secondes de jeu. On
+      // pose donc huit passants au bord du trottoir, face à la rue, au coin
+      // d'un feu, là où un chemin mène au trottoir d'en face (relevé ici, sans
+      // rien demander au jeu : l'ancien code n'a pas de `passagePieton`). Sur
+      // l'ancien code, ils tournent au coin ; ici, ils attendent le rouge et
+      // traversent.
+      const poses = [], feuxVus = new Set();
+      for (const f of (window.__feux() || [])) {
+        if (poses.length >= 8) break;
+        const cle = Math.round(f.x / 8) + ',' + Math.round(f.z / 8);
+        if (feuxVus.has(cle)) continue;
+        let trouve = null;
+        for (let dx = -3; dx <= 3 && !trouve; dx++) for (let dz = -3; dz <= 3 && !trouve; dz++) {
+          const x = Math.floor(f.x) + dx + 0.5, z = Math.floor(f.z) + dz + 0.5;
+          if (sol(x, z) !== 't') continue;
+          for (const [ux, uz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+            if (sol(x + ux * 1.2, z + uz * 1.2) !== 'c') continue;     // la bordure tout de suite
+            let c = 0, ok = false;
+            for (let k = 1; k <= 16; k++) { const q = sol(x + ux * k, z + uz * k); if (q === 'a') break; if (q === 'c') c++; else if (c >= 3) { ok = true; break; } }
+            if (ok) { trouve = { x, z, ux, uz }; break; }
+          }
+        }
+        if (trouve) { feuxVus.add(cle); poses.push(trouve); }
+      }
+      const gens = tous.slice(0, poses.length);
+      gens.forEach((h, i) => {
+        const p = poses[i];
+        h.traversee = null; h.ecart = null; h.repos = 0; h.vu = null; h.sonde = 0;
+        h.placeAt(p.x, p.z, g.player.pos.y);
+        h.poste.set(p.x, p.z);
+        h.surTrottoir = true; h.etat = 'marche'; h.minuteur = 20; h.capYaw = Math.atan2(-p.ux, -p.uz);
+      });
+      const suivi = new Map();
+      let traversees = 0, auFeuAuRouge = 0, horsFeu = 0, auVert = 0, aLOrange = 0;
+      // LA FENÊTRE SE COMPTE EN SECONDES DE JEU, bornée en montre : un passant
+      // n'atteint un coin qu'en MARCHANT, et il marche au temps de jeu. Au
+      // premier portail, soixante secondes de montre à 3 images par seconde
+      // n'ont rendu qu'une traversée ; rejoué seul, trois à onze.
+      const t0 = performance.now(), f0 = g.renderer.info.render.frame;
+      const jeu = () => (g.renderer.info.render.frame - f0) * 0.05;
+      while ((jeu() < 15 || performance.now() - t0 < 60000) && performance.now() - t0 < 180000) {
+        for (const h of gens) {
+          const c = sol(h.pos.x, h.pos.z);
+          let e = suivi.get(h);
+          if (!e) { suivi.set(h, { prec: c === 'a' ? null : c, sortie: null }); continue; }
+          if (e.prec === 't' && c === 'c') e.sortie = { x: h.pos.x, z: h.pos.z, feu: feuPres(h.pos.x, h.pos.z), etats: etats() };
+          else if (e.sortie && c === 't') {
+            if (Math.hypot(h.pos.x - e.sortie.x, h.pos.z - e.sortie.z) > 3) {
+              traversees++;
+              const axe = 1 - axeDuCap(h.pos.x - e.sortie.x, h.pos.z - e.sortie.z);
+              const etat = e.sortie.etats[axe];
+              // l'orange arrête les voitures comme le rouge (v273), et `__feux`
+              // ne se rafraîchit que deux fois par seconde : un départ au tout
+              // début du rouge peut se lire sur l'orange d'avant
+              if (!e.sortie.feu) horsFeu++;
+              else if (etat === 'rouge') auFeuAuRouge++;
+              else if (etat === 'orange') { auFeuAuRouge++; aLOrange++; }
+              else auVert++;
+            }
+            e.sortie = null;
+          }
+          if (c !== 'a') e.prec = c;
+        }
+        await new Promise((f) => setTimeout(f, 250));
+      }
+      g.player.pos.copy(sauve);
+      return { ville: s2.nom, poses: poses.length, passants: suivi.size, traversees, auFeuAuRouge, aLOrange, horsFeu, auVert,
+        secondesDeJeu: +jeu().toFixed(1), secondes: +((performance.now() - t0) / 1000).toFixed(1) };
+    });
+    verifier('un passant change de trottoir au feu, quand les voitures qu\'il coupe sont au rouge',
+      !auFeu.err && auFeu.poses >= 4 && auFeu.traversees >= 2 && auFeu.auFeuAuRouge >= 0.8 * auFeu.traversees,
+      JSON.stringify(auFeu));
 
     // ---- UN PASSANT NE TRAVERSE PAS LA VOITURE DE L'ENFANT (v259) -------------
     //
@@ -3496,6 +3628,14 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const { RUE } = await import('./src/blocks.js');
       const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
       const cible = await poser(g, w, RUE);
+      // LES PASSANTS AUSSI, depuis qu'ils traversent (v371) : un passant sur un
+      // passage peint devant le capot arrête la voiture — c'est voulu
+      // (`pietonDevant`) — et le témoin concluait « immobile » à zéro bloc
+      // parcouru. On les éloigne à cent blocs, sous le seuil de rapatriement.
+      for (const s of g.passants.sites) for (const h of (s.peuple || [])) {
+        if (Math.hypot(h.pos.x - g.player.pos.x, h.pos.z - g.player.pos.z) > 40) continue;
+        h.traversee = null; h.ecart = null; h.placeAt(g.player.pos.x + 100, g.player.pos.z + 100, g.player.pos.y);
+      }
       // la voiture, montée par le bouton
       for (const a of [...g.animalManager.animals]) { g.animalManager.scene.remove(a.mesh); }
       g.animalManager.animals.length = 0;

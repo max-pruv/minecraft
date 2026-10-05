@@ -362,6 +362,8 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
         // pour toute la partie — c'est la même raison qui fait que
         // `mettreANiveau` efface ce qui décrivait l'ancien corps (v245).
         h.surTrottoir = !!world.trottoirA?.(nx, nz);
+        // un passant rapatrié ne finit pas la traversée d'une autre rue (v371)
+        if (h.traversee) { h.traversee = null; h.etat = 'marche'; }
       }
     }
   }
