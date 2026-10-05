@@ -4500,8 +4500,6 @@ const VRAIES_KM = [
         if (!f || !f.trame) continue;
         const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
         for (const tr of (parVille.get(cle) || [])) {
-          const cxR = tr.pts.reduce((q, p) => q + p.x, 0) / tr.pts.length;
-          const czR = tr.pts.reduce((q, p) => q + p.z, 0) / tr.pts.length;
           for (let i = 0; i < tr.pts.length; i++) {
             const a = tr.pts[i], b = tr.pts[(i + 1) % tr.pts.length];
             const L = Math.hypot(b.x - a.x, b.z - a.z);
@@ -4522,9 +4520,15 @@ const VRAIES_KM = [
               // rectangle ? C'est ce sens-là qui met la voiture dans sa voie
               // (mesuré v271) — un décalage à gauche passerait toute mesure
               // d'amplitude.
-              const versCentre = Math.hypot(mx + rx - cxR, mz + rz - czR)
-                < Math.hypot(mx - cxR, mz - czR);
-              if (versCentre) aDroite++; else aGauche++;
+              //
+              // ET LE CONTRESENS ROULE AUSSI À DROITE (v372) — mais du côté
+              // EXTÉRIEUR de son anneau, qu'il parcourt à l'envers. « Vers le
+              // centre du rectangle » n'est donc vrai que d'un sens : ce qui
+              // est vrai des deux, c'est que la voiture est à DROITE DE L'AXE
+              // de la rue qu'elle suit — l'écart signé à l'axe, lu dans le
+              // repère de la trame, a le signe de la droite de la marche.
+              const rA = rx * co - rz * si, rB = rx * si + rz * co;
+              if ((leLongDeA ? rb * rB : ra * rA) > 0) aDroite++; else aGauche++;
               // et il reste la place d'une voiture dans l'autre voie, à gauche
               let libre = true;
               for (const k of [-DEMI_LARG_VOITURE, 0, DEMI_LARG_VOITURE]) {
@@ -4645,6 +4649,102 @@ const VRAIES_KM = [
       !rues.err && rues.releves > 20 && rues.place / (rues.place + rues.serre) > 0.85,
       `${rues.place}/${rues.place + rues.serre} relevé(s) avec la place`
       + ` (${(100 * rues.place / (rues.place + rues.serre)).toFixed(1)} %)`);
+
+    // --- PLUSIEURS CIRCUITS PAR VILLE, ET LES DEUX SENS (v372) ---------------
+    //
+    // « Lance sur toutes les villes. » Mesuré sur `origin/main` : 147 des 262
+    // villes engendrées n'avaient qu'UN circuit — dont 48 superîlots, que la
+    // v282 avait déclarés — et quarante-trois anneaux de vingt-huit villes
+    // passaient DANS un monument (le Taj Mahal, le Fort d'Agra, Sainte-Sophie,
+    // le Colisée…), la dette d'Agra n'en étant que le cas visible. Quatre
+    // témoins, tous sur les fonctions pures, toutes les villes :
+    //   · la part des villes à plusieurs circuits ;
+    //   · deux convois sur la même rue roulent en sens CONTRAIRES, chacun dans
+    //     sa voie, assez loin pour ne pas se toucher — le partage de la v211
+    //     (« se croiser, pas se suivre ») lu sur les TRACÉS, sans la formule ;
+    //   · aucun anneau ne passe dans ce que le bâtisseur d'un monument pose à
+    //     hauteur de carrosserie ;
+    //   · et la ville n'y perd ni sa couverture (témoin plus haut) ni ses
+    //     voitures en vue (témoin `rues`).
+    const sens = await tab.evaluate(async () => {
+      const vm = await import('./src/villesmonde.js');
+      const veh = await import('./src/vehicules.js');
+      const DEMI_LARG = veh.DEMI_LARG_VOITURE ?? 1.13;
+      const traces = vm.tracesCirculation(() => 35);
+      const parVille = new Map();
+      for (const tr of traces) (parVille.get(tr.cle) || parVille.set(tr.cle, []).get(tr.cle)).push(tr);
+      const avec = vm.VILLES_MONDE.filter((f) => f.trame && !f.trame.ruelles).length;
+      let plusieurs = 0;
+      for (const g of parVille.values()) if (g.length >= 2) plusieurs++;
+      // deux côtés parallèles de deux anneaux d'une même ville, qui se
+      // recouvrent sur plus de cinq blocs à moins de quatre blocs l'un de
+      // l'autre : c'est la même rue. On note leur écart et leur sens.
+      const cotes = (tr) => tr.pts.map((a, i) => [a, tr.pts[(i + 1) % tr.pts.length]]);
+      let memeRue = 0, memeSens = 0, ecartMin = Infinity, exemple = '';
+      for (const [cle, g] of parVille) for (let i = 0; i < g.length; i++) for (let j = i + 1; j < g.length; j++) {
+        for (const [a1, a2] of cotes(g[i])) {
+          const L = Math.hypot(a2.x - a1.x, a2.z - a1.z);
+          if (L < 1e-6) continue;
+          const ux = (a2.x - a1.x) / L, uz = (a2.z - a1.z) / L;
+          for (const [b1, b2] of cotes(g[j])) {
+            const M = Math.hypot(b2.x - b1.x, b2.z - b1.z);
+            if (M < 1e-6) continue;
+            const vx = (b2.x - b1.x) / M, vz = (b2.z - b1.z) / M;
+            if (Math.abs(ux * vz - uz * vx) > 0.02) continue;
+            const ecart = Math.abs((b1.x - a1.x) * (-uz) + (b1.z - a1.z) * ux);
+            if (ecart > 4) continue;
+            const q1 = (b1.x - a1.x) * ux + (b1.z - a1.z) * uz, q2 = (b2.x - a1.x) * ux + (b2.z - a1.z) * uz;
+            const rec = Math.min(L, Math.max(q1, q2)) - Math.max(0, Math.min(q1, q2));
+            if (rec <= 5) continue;
+            memeRue++;
+            if (ux * vx + uz * vz > 0) { memeSens++; exemple ||= `${cle} : même sens sur ${rec.toFixed(0)} blocs`; continue; }
+            if (ecart < ecartMin) { ecartMin = ecart; if (ecart < 2 * DEMI_LARG) exemple = `${cle} : sens contraires à ${ecart.toFixed(2)} b`; }
+          }
+        }
+      }
+      // les monuments : ce que le BÂTISSEUR pose aux couches 1 à 3, jamais la
+      // boîte (v310, v365), sous toute la largeur de la carrosserie
+      let dansUnMonument = 0, anneauxFautifs = new Set();
+      for (const f of vm.VILLES_MONDE) {
+        const g = parVille.get(f.cle);
+        if (!g) continue;
+        const mur = new Set();
+        for (const m of f.monuments || []) {
+          const b = m.tour || m.build;
+          if (!b) continue;
+          const [du, dv] = f.local(m.lat, m.lon);
+          const mx = Math.round(f.ancre.x + du), mz = Math.round(f.ancre.z + dv);
+          b((ax, ay, az, id) => { if (id && ay >= 1 && ay <= 3) mur.add((mx + ax) + ',' + (mz + az)); });
+        }
+        if (!mur.size) continue;
+        for (const tr of g) for (const [a, b] of cotes(tr)) {
+          const L = Math.hypot(b.x - a.x, b.z - a.z);
+          const ux = (b.x - a.x) / L, uz = (b.z - a.z) / L;
+          for (let d = 0; d < L; d += 0.5) {
+            for (const w of [-DEMI_LARG, 0, DEMI_LARG]) {
+              if (mur.has(Math.floor(a.x + ux * d - uz * w) + ',' + Math.floor(a.z + uz * d + ux * w))) {
+                dansUnMonument++; anneauxFautifs.add(`${tr.cle}#${tr.rang}`);
+              }
+            }
+          }
+        }
+      }
+      return { avec, servies: parVille.size, plusieurs, memeRue, memeSens, exemple,
+        deuxLarg: 2 * DEMI_LARG, dansUnMonument, ecartMin: Number.isFinite(ecartMin) ? ecartMin : -1, fautifs: [...anneauxFautifs].slice(0, 6), nbFautifs: anneauxFautifs.size };
+    });
+    verifier('neuf villes engendrées sur dix ont plusieurs circuits de voitures',
+      sens.plusieurs / sens.avec >= 0.9,
+      `${sens.plusieurs}/${sens.avec} villes à plusieurs circuits`
+      + ` (${(100 * sens.plusieurs / sens.avec).toFixed(1)} %) · ${sens.servies} servies`);
+    verifier('deux convois sur la même rue la parcourent en sens contraires, chacun dans sa voie',
+      sens.memeRue > 100 && sens.ecartMin >= sens.deuxLarg,
+      `${sens.memeRue} côtés partagés · ${sens.memeSens} dans le même sens (le partage de la v211`
+      + ` les borne) · écart le plus petit entre deux sens ${sens.ecartMin.toFixed(2)} blocs`
+      + ` pour deux demi-largeurs de ${sens.deuxLarg.toFixed(2)}` + (sens.exemple ? ` · ${sens.exemple}` : ''));
+    verifier('aucun anneau de ville engendrée ne passe dans un monument',
+      sens.dansUnMonument === 0,
+      `${sens.dansUnMonument} pas de carrosserie dans un monument · ${sens.nbFautifs} anneau(x)`
+      + (sens.fautifs.length ? ` : ${sens.fautifs.join(', ')}` : ''));
 
     // --- LES RUES DES VILLES ENGENDRÉES À LA RÈGLE DU KIT (v307) -------------
     //
@@ -5028,8 +5128,14 @@ const VRAIES_KM = [
       try { R = await import('./src/routes.js'); } catch { /* ancien code */ }
       const CINQ = ['lyon', 'hambourg', 'bale', 'belgrade', 'budapest'];
       const parRoute = R ? R.segmentsDeRoute().flatMap((sg) => [sg.de, sg.vers]) : [];
+      // ET TOUTES LES VILLES À PONT (v372). La liste des cinq et des villes à
+      // route laissait de côté cinquante villes qui ont un tablier : lues
+      // toutes, `origin/main` en rendait SEPT fautives (Agra, Berlin, Prague,
+      // Tokyo, Séoul, Hong Kong, Chicago), dont cinq que personne n'avait vues.
+      const aPont = VILLES_MONDE.filter((f) => f.trame && anneauxDeVille && anneauxDeVille(f).ponts.length)
+        .map((f) => f.cle);
       for (const cle of (anneauxDeVille && coteDeVille
-        ? [...new Set([...CINQ, ...parRoute])] : [])) {
+        ? [...new Set([...CINQ, ...parRoute, ...aPont])] : [])) {
         const f = VILLES_MONDE.find((v) => v.cle === cle);
         if (!f || !f.trame) continue;
         const a = anneauxDeVille(f);
@@ -5088,18 +5194,26 @@ const VRAIES_KM = [
     // mesuré 73 à 85 % à la livraison.
     verifier('chaque pont a de l\'eau sous son tablier',
       fleuves.ponts.filter((p) => p.cinq).length === 5
-      && fleuves.ponts.every((p) => p.tabliers > 0 && p.pas > (p.cinq ? 20 : 0) && p.surEau / p.pas > 0.6),
+      // UNE CULÉE SE COMPTE PAR TABLIER, PAS EN PART DE L'AXE (v372) : lu sur
+      // toutes les villes à pont, un tablier de trois colonnes d'eau a ses
+      // deux culées de un bloc et demi et n'est au-dessus de l'eau qu'à moitié
+      // (San José 50 %, Göteborg 56 %) — un vrai pont sur un canal. Ce qui
+      // borne, c'est quatre pas à sec au plus par tablier.
+      && fleuves.ponts.every((p) => p.tabliers > 0 && p.pas > (p.cinq ? 20 : 0)
+        && (p.cinq ? p.surEau / p.pas > 0.6 : p.pas - p.surEau <= 4 * p.tabliers)),
       fleuves.ponts.map((p) => `${p.cle} ${p.tabliers} tablier(s), ${p.surEau}/${p.pas}`
         + ` sur l'eau (${(100 * p.surEau / p.pas).toFixed(0)} %)`).join(' · '));
 
-    // DEUX DÉFAUTS DE VILLE, VUS PAR LE TÉMOIN ÉLARGI ET DÉCLARÉS (v362) — ni
-    // l'un ni l'autre n'est d'une route, et `origin/main` rend les mêmes :
-    // Berlin a UNE colonne d'eau sans tablier au bout d'un pont (le bout de
-    // l'axe arrondi tombe hors de `pontDeVille`), et à Agra le Taj Mahal et le
-    // Fort sont bâtis SUR deux tabliers (neuf pas bouchés) — un conflit de
-    // plan entre les anneaux et les monuments. Dettes dans TASKS.md ; une
-    // dette qui ne mesure plus rien rougit.
-    const DETTE_PONTS = { berlin: { sansSol: 1, surLaTete: 0 }, agra: { sansSol: 0, surLaTete: 9 } };
+    // LES DEUX DÉFAUTS DE LA v362 SONT RÉGLÉS PAR LE PLAN, PAS PAR LE PONT
+    // (v372). Agra : le Taj Mahal et le Fort bâtis sur deux tabliers — c'était
+    // l'ANNEAU qui passait dans le monument, et un anneau ne traverse plus ce
+    // que le bâtisseur pose (`contreUnMonument`) ; la boîte du monument, qui
+    // entre dans les zones du relief, n'a pas bougé. Berlin : l'anneau dont le
+    // tablier finissait sur une colonne d'eau n'est plus retenu. Restent deux
+    // culées qui mordent dans un parc ou une colline (un tronc à Chicago, le
+    // rocher de Namsan à Séoul) : des anneaux d'AVANT, qui roulent hors de la
+    // chaussée — mêmes valeurs sur `origin/main`, dette dans TASKS.md.
+    const DETTE_PONTS = { seoul: { sansSol: 0, surLaTete: 2 }, chicago: { sansSol: 0, surLaTete: 1 } };
     verifier('et on le traverse à pied d\'une rive à l\'autre',
       fleuves.ponts.filter((p) => p.cinq).length === 5
       && fleuves.ponts.every((p) => (DETTE_PONTS[p.cle]

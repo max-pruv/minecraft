@@ -3671,15 +3671,29 @@ export function mobilierVillesMonde(x, z, poser) {
 // paires : d'accord partout — et il vaut MIEUX que lui sur un point, un
 // croisement de coins (deux anneaux qui se touchent sur vingt blocs sans
 // partager une rue) que le balayage comptait et que la formule ignore.
+//
+// CE QUI SE PARTAGE EST UNE VOIE, PAS UNE RUE (v372). La v211 a posé la barre
+// quand une rue n'avait qu'UNE file — une voiture de 2,26 blocs pour une
+// chaussée de 2,86 : deux convois sur la même rue roulaient l'un dans l'autre.
+// Depuis la v271 la chaussée fait deux voies et l'on roule à droite : chaque
+// anneau roule du côté de son INTÉRIEUR (`retenir`). Deux anneaux posés de
+// part et d'autre d'une même rue la parcourent donc en sens CONTRAIRES, chacun
+// sur sa voie — ils se CROISENT, exactement ce que la v211 autorisait. Ceux qui
+// sont du MÊME côté roulent sur la même voie dans le même sens : ils se
+// SUIVENT, et c'est eux seuls que la barre de vingt blocs interdit. Le côté
+// d'un anneau sur sa rue se lit au signe du côté (est, `+Ru`, l'intérieur à
+// l'ouest), multiplié par son sens (`sens: -1`, le contresens, roule du côté
+// EXTÉRIEUR). Le témoin de `carteMonde.js` le contrôle sans cette formule : il
+// mesure le partage sur les TRACÉS, voie par voie (moins de deux blocs d'écart).
 function partageDeRue(a, b) {
   let total = 0;
-  for (const A1 of [a.cU + a.Ru, a.cU - a.Ru]) for (const A2 of [b.cU + b.Ru, b.cU - b.Ru]) {
-    if (Math.abs(A1 - A2) > 2) continue;                       // pas la même rue
-    total += Math.max(0, Math.min(a.cV + a.Rv, b.cV + b.Rv) - Math.max(a.cV - a.Rv, b.cV - b.Rv));
-  }
-  for (const B1 of [a.cV + a.Rv, a.cV - a.Rv]) for (const B2 of [b.cV + b.Rv, b.cV - b.Rv]) {
-    if (Math.abs(B1 - B2) > 2) continue;
-    total += Math.max(0, Math.min(a.cU + a.Ru, b.cU + b.Ru) - Math.max(a.cU - a.Ru, b.cU - b.Ru));
+  const sa = a.sens || 1, sb = b.sens || 1;
+  for (const ka of [1, -1]) for (const kb of [1, -1]) {
+    if (ka * sa !== kb * sb) continue;                         // deux voies : on se croise
+    if (Math.abs((a.cU + ka * a.Ru) - (b.cU + kb * b.Ru)) <= 2)
+      total += Math.max(0, Math.min(a.cV + a.Rv, b.cV + b.Rv) - Math.max(a.cV - a.Rv, b.cV - b.Rv));
+    if (Math.abs((a.cV + ka * a.Rv) - (b.cV + kb * b.Rv)) <= 2)
+      total += Math.max(0, Math.min(a.cU + a.Ru, b.cU + b.Ru) - Math.max(a.cU - a.Ru, b.cU - b.Ru));
   }
   return total;
 }
@@ -3759,12 +3773,35 @@ const ANNEAUX = new Map();
 export const ANNEAUX_EN_PLUS = {
   // 60,5 → 95,3 % : le North Shore, au-delà du port, puis l'ouest.
   sydney: [[1, -6, 4, 2], [-7, -5, 1, 1], [-9, 1, 1, 1]],
-  rome: [[-6, 0, 1, 3]],      // 88,3 → 94,6 % : le Vatican et Prati
+  rome: [[-6, 0, 1, 3],       // 88,3 → 94,6 % : le Vatican et Prati
+    // v372 : les anneaux qui passaient dans le Colisée et le forum ne sont
+    // plus retenus (93,2 %) ; trois anneaux qui les contournent → 99,7 %
+    [2, -4, 3, 2], [3.5, 1, 2.5, 2], [-1.5, -3, 0.5, 3]],
   tokyo: [[-3, 0, 1, 3]],     // 88,7 → 95,7 %
+  // v372 — la couverture que rendaient les anneaux passés DANS un monument,
+  // regagnée par des anneaux qui en font le tour, cherchés sous node par la
+  // même couverture gloutonne (sonde `cherche.mjs`, scratchpad de la v372) et
+  // passés par la même validation, monument compris :
+  agra: [[3.5, -2, 1.5, 3], [-6.5, 0, 0.5, 1]],           // 84,5 → 100 % (le Taj Mahal, le Fort)
+  istanbul: [[-3, 1.5, 1, 2.5], [3.5, -0.5, 1.5, 1.5]],   // 90,6 → 99,5 % (Sainte-Sophie)
+  munich: [[2.5, -2.5, 0.5, 0.5]],                        // 98,8 → 100 %
+  seoul: [[1.5, -2.5, 0.5, 0.5], [2.5, 1.5, 0.5, 0.5]],   // 98,6 → 100 %
+  dubai: [[2, -1.5, 1, 0.5]],                             // 98,7 → 100 %
+  amsterdam: [[1.5, -2, 0.5, 1]],                         // 99,9 → 100 %
+  prague: [[-1, -3.5, 1, 0.5]],                           // 99,9 → 100 %
 };
 
+// Pendant qu'on choisit les anneaux d'une ville, `horsChaussee` lit son sol —
+// et le sol d'une colonne d'eau demande ses tabliers, c'est-à-dire ses
+// anneaux. On répond « pas encore de pont » pendant ce temps : l'eau, elle,
+// est comptée à part (un tablier se juge par `traverseesDe`).
+const EN_CALCUL = new Set();
 export function anneauxDeVille(f) {
   if (ANNEAUX.has(f)) return ANNEAUX.get(f);
+  EN_CALCUL.add(f);
+  try { return anneauxCalcules(f); } finally { EN_CALCUL.delete(f); }
+}
+function anneauxCalcules(f) {
   const vide = { formes: [], ponts: [] };
   {
     if (!f.trame) { ANNEAUX.set(f, vide); return vide; }
@@ -3841,6 +3878,15 @@ export function anneauxDeVille(f) {
       // lui-même vaut son propre périmètre. La phase 2 peut donc repasser sur
       // toute la liste sans se dédoubler.
       if (gardes.some((g) => partageDeRue(candidat, g) > PARTAGE_MAX)) return null;
+      // Le disque et la limite sud se lisent aux QUATRE COINS : un rectangle
+      // est convexe, et les quarante points du test d'eau ci-dessous les
+      // comprennent — c'est la même réponse, avant le monument, qui coûte.
+      for (const [A, B] of [[Ru, Rv], [-Ru, Rv], [-Ru, -Rv], [Ru, -Rv]]) {
+        const u = (A + cU) * co + (B + cV) * si, v = -(A + cU) * si + (B + cV) * co;
+        if (Math.hypot(u, v) > f.rayon - 2) return null;
+        if (t.sud && v / f.K > t.sud) return null;
+      }
+      if (contreUnMonument(f, candidat)) return null;
       // L'anneau trempe-t-il, et de combien ? On échantillonne son périmètre
       // dans le repère de la trame, puis on tourne vers le monde. Quarante
       // points suffisent à ÉCARTER un anneau au milieu de l'eau ; la longueur
@@ -3882,13 +3928,21 @@ export function anneauxDeVille(f) {
       // L'axe reste ce que porte `forme` : c'est LUI que juge la contrainte
       // de partage (v270), parce que deux convois qui se suivent se suivent
       // sur une RUE, pas sur une trajectoire.
-      const voie = t.w / 2;
-      const Ru = Math.max(t.pu, c.Ru - voie), Rv = Math.max(t.pv, c.Rv - voie);
+      // ET LE PLUS PETIT ANNEAU ROULAIT SUR L'AXE (v372). Ce décalage était
+      // borné par le pas (`Math.max(t.pu, Ru − voie)`) : un anneau d'un pas de
+      // demi-côté — le plus fréquent, celui des petites villes — gardait son
+      // `Ru` entier et roulait au milieu de la chaussée, à cheval sur les deux
+      // voies. Sans conséquence tant qu'un seul convoi passait par une rue ;
+      // faux dès que deux sens s'y croisent. Un contresens (`sens: -1`) roule
+      // du côté extérieur : la même rue, l'autre voie.
+      const voie = (c.sens || 1) * t.w / 2;
+      const Ru = c.Ru - voie, Rv = c.Rv - voie;
       // Les quatre coins, en coordonnées de TRAME : `tracesCirculation` les
       // tournera vers le monde et y ajoutera la cote. Une forme pure ne
       // connaît pas le sol.
-      const pts = [[Ru, Rv], [-Ru, Rv], [-Ru, -Rv], [Ru, -Rv]]
-        .map(([A, B]) => [A + c.cU, B + c.cV]);
+      const coins = [[Ru, Rv], [-Ru, Rv], [-Ru, -Rv], [Ru, -Rv]];
+      if (c.sens === -1) coins.reverse();
+      const pts = coins.map(([A, B]) => [A + c.cU, B + c.cV]);
       // `rang` distingue le grand anneau du petit : le bus ne dessert que le
       // grand. Depuis v178 on garde LES DEUX anneaux quand ils sont au sec —
       // Max : « much more life in cities » — au lieu de s'arrêter au premier.
@@ -3944,6 +3998,64 @@ export function anneauxDeVille(f) {
         }
       }
     }
+    // PHASE 2 BIS — LES ANNEAUX EN PAS DE TRAME (v372). Les candidats des
+    // phases 1 et 2 sont des FRACTIONS du rayon arrondies au pas, centrés sur
+    // un nœud et larges d'un nombre PAIR de pas : un anneau d'un seul îlot, ou
+    // de trois, n'y figure jamais. Ici on énumère les rectangles de la trame
+    // elle-même — tout bloc de un à trois îlots de côté qui tient dans le
+    // disque —, du plus grand au plus proche du centre. Ce n'est pas le jeu de
+    // candidats élargi de la v270 (sept fois plus de FRACTIONS, dix-sept
+    // anneaux) ni le recours sur les nœuds de la v307 (onze) : c'est la
+    // famille des côtés impairs, que ni l'un ni l'autre ne contenait. Et ces
+    // anneaux-là doivent rouler sur la CHAUSSÉE d'un bout à l'autre
+    // (`horsChaussee`) : un îlot touche souvent la place centrale, et la place
+    // a sa fontaine sur le nœud même.
+    if (gardes.length < MAX_ANNEAUX) {
+      const nU = Math.ceil(f.rayon / t.pu), nV = Math.ceil(f.rayon / t.pv);
+      const lim = (f.rayon - 2) ** 2;
+      // La place centrale se lit avant tout : un rectangle dont un côté la
+      // traverse est écarté sans le coûteux test d'eau ni la lecture du sol.
+      // Son étendue est celle que `solVillesMonde` peut lui donner, décalage
+      // compris, plus une chaussée.
+      const pl = t.place;
+      const eP = pl ? pl[0] + Math.min(pl[2] * (t.pu + t.pv) / 2, Math.max(0, pl[0] - 4)) + t.w : -1;
+      const eQ = pl ? pl[1] + Math.min(pl[2] * (t.pu + t.pv) / 2, Math.max(0, pl[1] - 4)) + t.w : -1;
+      const coupe = (b, a0, a1, eB, eA) => Math.abs(b) < eB && a1 > -eA && a0 < eA;
+      const surLaPlace = ([i0, i1, j0, j1]) => pl && (
+        coupe(i0 * t.pu, j0 * t.pv, j1 * t.pv, eP, eQ) || coupe(i1 * t.pu, j0 * t.pv, j1 * t.pv, eP, eQ)
+        || coupe(j0 * t.pv, i0 * t.pu, i1 * t.pu, eQ, eP) || coupe(j1 * t.pv, i0 * t.pu, i1 * t.pu, eQ, eP));
+      const pas = [];
+      for (let i0 = -nU; i0 < nU; i0++) for (let i1 = i0 + 1; i1 <= Math.min(nU, i0 + 3); i1++) {
+        for (let j0 = -nV; j0 < nV; j0++) for (let j1 = j0 + 1; j1 <= Math.min(nV, j0 + 3); j1++) {
+          const A = Math.max(-i0, i1) * t.pu, B = Math.max(-j0, j1) * t.pv;
+          if (A * A + B * B <= lim && !surLaPlace([i0, i1, j0, j1])) pas.push([i0, i1, j0, j1]);
+        }
+      }
+      pas.sort((p, q) => ((q[1] - q[0]) * (q[3] - q[2]) - (p[1] - p[0]) * (p[3] - p[2]))
+        || (Math.hypot(p[0] + p[1], p[2] + p[3]) - Math.hypot(q[0] + q[1], q[2] + q[3])));
+      for (const [i0, i1, j0, j1] of pas) {
+        if (gardes.length >= MAX_ANNEAUX) break;
+        const c = valider([0, (i0 + i1) / 2, (j0 + j1) / 2, (i1 - i0) / 2, (j1 - j0) / 2, true], false);
+        if (c && !horsChaussee(f, c)) retenir(c);
+      }
+    }
+    // PHASE 2 TER — LE CONTRESENS (v372). Une ville dont la trame ne tient que
+    // trois rues de chaque côté du centre — un rayon de moins de 2,3 pas, cent
+    // quatorze villes dont quarante-sept superîlots — n'a qu'UN cycle qui évite
+    // la place centrale : son grand anneau. Ce n'est pas la contrainte de
+    // partage qui le lui interdit, c'est la géométrie (mesuré : aucun autre
+    // rectangle de la trame ne tient dans le disque sans couper la place). Ce
+    // que la vraie ville a, en revanche, c'est la circulation dans les DEUX
+    // SENS : la même boucle sur l'autre voie. Un contresens ne se SUIT pas, il
+    // se CROISE ; il passe sur les mêmes tabliers (larges de deux voies et
+    // deux parapets) et ne les publie pas une seconde fois.
+    for (const g of [...gardes]) {
+      if (gardes.length >= MAX_ANNEAUX) break;
+      const c = { cU: g.cU, cV: g.cV, Ru: g.Ru, Rv: g.Rv, sens: -1, ponts: [] };
+      if (gardes.some((h) => partageDeRue(c, h) > PARTAGE_MAX)) continue;
+      if (contreUnMonument(f, c) || horsChaussee(f, c)) continue;
+      retenir(c);
+    }
     // PHASE 3 — LES QUARTIERS QU'AUCUN ANNEAU NE VOIT (v325). Les phases
     // d'avant ne regardent pas OÙ la ville est vide : quatre anneaux au plus,
     // du plus grand au plus petit. Mesuré ville par ville (part de la ville à
@@ -3962,6 +4074,109 @@ export function anneauxDeVille(f) {
     ANNEAUX.set(f, out);
     return out;
   }
+}
+
+// UN ANNEAU ROULE SUR LA CHAUSSÉE, ET CELA SE MESURE SUR SA VOIE (v372). On
+// parcourt la voie — l'axe décalé d'une demi-chaussée du côté où l'anneau
+// roule — bloc par bloc, et l'on compte ce qui n'est ni bitume, ni marquage,
+// ni eau (un tablier se juge à part). Le trottoir du boulevard central est
+// toléré là où une rue le traverse — c'est le sol de la ville qui le pose en
+// travers, pas l'anneau qui en sort —, et un trottoir ailleurs jusqu'à huit
+// pour cent du tour : une avenue nommée (`f.voies`) borde parfois une rue de
+// la trame. Une place, un parc, une plage, un lot : jamais. Rend le nombre de
+// blocs fautifs (un seul suffit, on s'arrête là), zéro si l'anneau roule.
+function horsChaussee(f, c) {
+  const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
+  const voie = (c.sens || 1) * t.w / 2;
+  const Ru = c.Ru - voie, Rv = c.Rv - voie;
+  const coins = [[Ru, Rv], [-Ru, Rv], [-Ru, -Rv], [Ru, -Rv]];
+  let trottoir = 0, n0 = 0;
+  for (let i = 0; i < 4; i++) {
+    const [A1, B1] = coins[i], [A2, B2] = coins[(i + 1) % 4];
+    // un pas d'un bloc et demi : une place, un parc ou un lot fait plusieurs
+    // blocs de large, et lire chaque bloc doublait le coût au démarrage.
+    const n = Math.ceil(Math.hypot(A2 - A1, B2 - B1) / 1.5);
+    n0 += n;
+    for (let k = 0; k < n; k++) {
+      const P = c.cU + A1 + ((A2 - A1) * k) / n, Q = c.cV + B1 + ((B2 - B1) * k) / n;
+      const X = Math.floor(f.ancre.x + P * co + Q * si), Z = Math.floor(f.ancre.z - P * si + Q * co);
+      if (eauDeVille(f, (X - f.ancre.x) / f.K, (Z - f.ancre.z) / f.K)) continue;
+      const s = solVillesMonde(X, Z);
+      if (s === BITUME || s === LIGNE_NS || s === LIGNE_EO || s === PASSAGE_NS || s === PASSAGE_EO) continue;
+      if (s === TROTTOIR) {
+        if (!(t.axe && Math.min(Math.abs(P), Math.abs(Q)) < t.axe.s)) trottoir++;
+        continue;
+      }
+      return 1;                         // un seul suffit à écarter l'anneau
+    }
+  }
+  return trottoir > 0.08 * n0 ? trottoir : 0;
+}
+
+// UN ANNEAU NE TRAVERSE PAS UN MONUMENT (v372). La dette d'Agra (v362) — le
+// Taj Mahal et le Fort bâtis SUR deux tabliers d'anneaux — n'était que le cas
+// visible d'un défaut plus large : mesuré sur `origin/main`, QUARANTE-TROIS
+// anneaux de vingt-huit villes passaient dans un monument à hauteur de
+// carrosserie (Rome, Agra, Istanbul, Kyoto, Mexico…). Les monuments se posent
+// APRÈS le sol, si bien que la chaussée promise sous eux n'existe pas : la
+// voiture roulait dans la pierre. On lit ce que le BÂTISSEUR pose aux couches
+// 1 à 3 (`murDeMonument`, la règle de l'avenue d'entrée, v365), jamais la
+// boîte, sur toute la largeur de la carrosserie, le long de la VOIE.
+// Lire les murs de TOUS les monuments coûte cent soixante millisecondes de
+// bâtisseurs ; on ne bâtit donc que ceux dont la BOÎTE approche la voie (la
+// boîte est plus large que ce que le bâtisseur pose : elle ne laisse rien
+// passer), et chacun une seule fois.
+const _monumentsDeVille = new Map();
+function monumentsDeVille(f) {
+  let l = _monumentsDeVille.get(f.cle);
+  if (l) return l;
+  const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
+  l = [];
+  for (const m of f.monuments || []) {
+    const b = m.tour || m.build;
+    if (!b) continue;
+    const [du, dv] = f.local(m.lat, m.lon);
+    const mx = Math.round(f.ancre.x + du), mz = Math.round(f.ancre.z + dv);
+    const u = mx - f.ancre.x, v = mz - f.ancre.z;
+    l.push({ b, mx, mz, P: u * co - v * si, Q: u * si + v * co, r: Math.SQRT2 * (boiteDuMonument(m) + 2), murs: null });
+  }
+  _monumentsDeVille.set(f.cle, l);
+  return l;
+}
+function contreUnMonument(f, c) {
+  const ms = monumentsDeVille(f);
+  if (!ms.length) return false;
+  const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
+  const voie = (c.sens || 1) * t.w / 2;
+  const Ru = c.Ru - voie, Rv = c.Rv - voie;
+  const coins = [[Ru, Rv], [-Ru, Rv], [-Ru, -Rv], [Ru, -Rv]];
+  for (let i = 0; i < 4; i++) {
+    const [A1, B1] = coins[i], [A2, B2] = coins[(i + 1) % 4];
+    const P1 = c.cU + A1, Q1 = c.cV + B1, P2 = c.cU + A2, Q2 = c.cV + B2;
+    for (const m of ms) {
+      // le côté est parallèle à un axe de la trame : la distance du centre du
+      // monument au segment se lit sans racine de trop
+      const dp = Math.max(Math.min(P1, P2) - m.P, 0, m.P - Math.max(P1, P2));
+      const dq = Math.max(Math.min(Q1, Q2) - m.Q, 0, m.Q - Math.max(Q1, Q2));
+      if (Math.hypot(dp, dq) > m.r + DEGAGEMENT_VOITURE + 1) continue;
+      if (!m.murs) {
+        m.murs = new Set();
+        m.b((ax, ay, az, id) => { if (id && ay >= 1 && ay <= 3) m.murs.add((m.mx + ax) * 262144 + (m.mz + az)); });
+      }
+      // on ne parcourt que le morceau de côté qui passe à portée de la boîte
+      const L = Math.hypot(P2 - P1, Q2 - Q1);
+      const ua = (P2 - P1) / L, ub = (Q2 - Q1) / L;
+      const s0 = (m.P - P1) * ua + (m.Q - Q1) * ub, R = m.r + DEGAGEMENT_VOITURE + 1;
+      for (let d = Math.max(0, s0 - R); d <= Math.min(L, s0 + R); d += 0.5) {
+        for (const w of [-DEGAGEMENT_VOITURE, 0, DEGAGEMENT_VOITURE]) {
+          const P = P1 + ua * d - ub * w, Q = Q1 + ub * d + ua * w;
+          const X = Math.floor(f.ancre.x + P * co + Q * si), Z = Math.floor(f.ancre.z - P * si + Q * co);
+          if (m.murs.has(X * 262144 + Z)) return true;
+        }
+      }
+    }
+  }
+  return false;
 }
 
 // LE TRONÇON MOUILLÉ SE MESURE AU BLOC, CÔTÉ PAR CÔTÉ. Les quarante
@@ -4029,6 +4244,7 @@ export function coteDeVille(f) {
 // Ce point est-il sur un tablier de cette ville ? Rend le bloc à poser —
 // bitume au milieu, pierre aux parapets — ou `null`.
 function pontDeVille(f, u, v) {
+  if (EN_CALCUL.has(f)) return null;
   const a = anneauxDeVille(f);
   if (!a.ponts.length) return null;
   const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
@@ -4065,27 +4281,42 @@ export function pontVillesMonde(x, z) {
 // peut pas savoir : la cote du sol, et le décalage de la voie de droite.
 export function tracesCirculation(solDe) {
   const traces = [];
-  for (const f of VILLES_MONDE) {
-    const a = anneauxDeVille(f);
-    if (!a.formes.length) continue;
-    const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
-    const y = solDe(f.ancre.x, f.ancre.z) + 1.05;
-    for (const forme of a.formes) {
-      traces.push({
-        cle: f.cle,
-        x: f.ancre.x,
-        z: f.ancre.z,
-        rang: forme.rang,
-        forme: forme.forme,
-        pts: forme.pts.map(([P, Q]) => ({
-          x: f.ancre.x + P * co + Q * si,
-          y,
-          z: f.ancre.z + (-P * si + Q * co),
-        })),
-      });
-    }
-  }
+  for (const f of VILLES_MONDE) traces.push(...tracesCirculationDe(f, solDe));
   return traces;
+}
+
+// LES ANNEAUX SE CALCULENT QUAND L'ENFANT APPROCHE, PAS À L'OUVERTURE (v372).
+// Choisir les anneaux des deux cent soixante-deux villes coûtait deux cent
+// trente millisecondes ; avec les anneaux en pas de trame, le contresens et la
+// lecture des monuments, près de sept cents — et le jeu attend ce calcul
+// derrière son bouton « Jouer » (v258). Or un convoi ne naît qu'à deux cent
+// vingt blocs de sa ville (main.js) : la ville n'a besoin de ses anneaux qu'à
+// ce moment-là. `circulationsAPlier` rend un repère par ville — son ancre, la
+// même position que portaient ses anneaux, donc le même instant de naissance —
+// et `deplier()` fait le calcul, une ville à la fois. Le résultat est
+// identique à `tracesCirculation`, que les témoins lisent en entier.
+export function circulationsAPlier(solDe) {
+  return VILLES_MONDE.filter((f) => f.trame && !f.trame.ruelles)
+    .map((f) => ({ cle: f.cle, x: f.ancre.x, z: f.ancre.z, deplier: () => tracesCirculationDe(f, solDe) }));
+}
+
+function tracesCirculationDe(f, solDe) {
+  const a = anneauxDeVille(f);
+  if (!a.formes.length) return [];
+  const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
+  const y = solDe(f.ancre.x, f.ancre.z) + 1.05;
+  return a.formes.map((forme) => ({
+    cle: f.cle,
+    x: f.ancre.x,
+    z: f.ancre.z,
+    rang: forme.rang,
+    forme: forme.forme,
+    pts: forme.pts.map(([P, Q]) => ({
+      x: f.ancre.x + P * co + Q * si,
+      y,
+      z: f.ancre.z + (-P * si + Q * co),
+    })),
+  }));
 }
 
 // LES VILLES BÂTIES À LA MAIN — Paris, Londres, Nice, Lille, Washington, San
@@ -4130,21 +4361,23 @@ export function tracesCirculationMain(villes, solDe) {
 }
 
 // Les monuments, pour la liste LANDMARKS de world.js.
+// La demi-boîte d'un monument : celle de sa fiche, ou celle du modèle du
+// catalogue, lue sur le monument déjà bâti, jamais recopiée.
+function boiteDuMonument(m) {
+  if (m.box) return m.box;
+  const nomCat = { 'Colisée': 'colisee', 'Sagrada Família': 'sagrada', 'Tour de Pise': 'tour-pise',
+    'Pyramide de Khéops': 'pyramide-gizeh', 'Taj Mahal': 'taj-mahal', "Opéra de Sydney": 'opera-sydney',
+    'Christ Rédempteur': 'christ-redempteur', 'Space Needle': 'space-needle' }[m.nom];
+  const bati = nomCat && monumentBati(nomCat);
+  return bati ? Math.ceil(Math.max(bati.emprise.l, bati.emprise.p) / 2) + 2 : 8;
+}
+
 export function landmarksVillesMonde() {
   const out = [];
   for (const f of VILLES_MONDE) {
     for (const m of f.monuments || []) {
       const [du, dv] = f.local(m.lat, m.lon);
-      let box = m.box;
-      if (!box) {
-        // la boîte se lit sur le monument déjà bâti, jamais recopiée
-        const nomCat = { 'Colisée': 'colisee', 'Sagrada Família': 'sagrada', 'Tour de Pise': 'tour-pise',
-          'Pyramide de Khéops': 'pyramide-gizeh', 'Taj Mahal': 'taj-mahal', "Opéra de Sydney": 'opera-sydney',
-          'Christ Rédempteur': 'christ-redempteur', 'Space Needle': 'space-needle' }[m.nom];
-        const bati = nomCat && monumentBati(nomCat);
-        box = bati ? Math.ceil(Math.max(bati.emprise.l, bati.emprise.p) / 2) + 2 : 8;
-      }
-      out.push({ name: m.nom, x: f.ancre.x + du, z: f.ancre.z + dv, box, seuil: m.seuil, build: m.build, tour: m.tour });
+      out.push({ name: m.nom, x: f.ancre.x + du, z: f.ancre.z + dv, box: boiteDuMonument(m), seuil: m.seuil, build: m.build, tour: m.tour });
     }
   }
   return out;
