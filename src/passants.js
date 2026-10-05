@@ -288,7 +288,7 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
       // esplanade ou dans l'herbe garde le programme d'avant (pause longue, cap
       // au hasard autour de son poste), qui convient à un badaud de place. Celui
       // du trottoir, lui, marche et suit sa rue.
-      h.surTrottoir = !site.urbain && !!world.trottoirA?.(x, z);
+      h.surTrottoir = !!world.trottoirA?.(x, z);
       h.apparitionDouce = true;
       gens.push(h);
       npcs.push(h);
@@ -361,7 +361,7 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
         // cette ligne, un passant né sur l'herbe garderait le mauvais programme
         // pour toute la partie — c'est la même raison qui fait que
         // `mettreANiveau` efface ce qui décrivait l'ancien corps (v245).
-        if (!site.urbain) h.surTrottoir = !!world.trottoirA?.(nx, nz);
+        h.surTrottoir = !!world.trottoirA?.(nx, nz);
       }
     }
   }

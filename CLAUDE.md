@@ -977,6 +977,18 @@ engendrées. Quatre règles.
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
 
+## Les passants de Manhattan au long cap (v354) — un trottoir qui vit dans un plan se demande au plan
+
+Une règle.
+
+- **À MANHATTAN, UN SOL PRATICABLE N'EST PAS UN TROTTOIR.** `piedPieton` rend
+  33 pour toute case où l'on peut poser le pied, chaussée comprise : c'était la
+  raison pour laquelle la v278 avait écarté le site urbain de la marche au long
+  cap. `world.trottoirA` (main.js) exige désormais aussi `ruePietonne` (le
+  plan) — la même question, posée à la source qui sait y répondre. Et un
+  témoin qui pose la voiture dans une rue de Manhattan fait aussi le vide des
+  passants : ils y marchent désormais, et la voiture freine devant eux.
+
 ## Les piétons et les voitures rapides (v351) — ce qui fuit une horloge réelle se compte sur elle
 
 Le chantier « conduite » (sept sessions) triple les vitesses. Trois règles.
