@@ -20,6 +20,34 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v382 — Le cône se mesure à chaud
+
+**Pourquoi.** Le témoin « à soixante blocs par seconde dans Paris, le monde se
+maille dans le champ » était rouge des deux côtés depuis la v375 : écart 0,02 à
+0,07 pour une barre à 0,13, quand la v346 mesurait 0,29. On croyait le gain de
+l'ordre en cône perdu, peut-être absorbé par la recharge à l'arrivée des v360 et
+v379 — et une dette de ma zone attendait qu'on choisisse entre baisser la barre
+et retirer l'ordre.
+
+**Ce que ça change.** Rien dans le jeu : c'était le témoin. Une sonde
+(`sonde-cone-banc.cjs`, une seule page, trois paires en ordre alterné) a séparé
+les cas. Ordre neuf 0,42 · 0,87 · 0,87, ordre d'avant 0,65 · 0,63 · 0,67 : le
+gain est là (0,22), et c'est le PREMIER passage dans Paris — la première
+arrivée, ses convois, ses passants, 5,3 images par seconde et 80 morceaux contre
+11,9 et 281 — qui l'écrasait ; l'ABBA le mettait toujours sur l'ordre neuf. Le
+témoin joue désormais un passage d'échauffement, non compté. Et la sonde dit ce
+que le cône vaut vraiment : dans une scène vide (0,84 des deux côtés) et la
+recharge à l'arrivée armée (0,72 contre 0,70, 90 morceaux par seconde), le
+worker suit et l'ordre n'a plus rien à décider. Le cône ne compte que quand le
+débit manque — une tablette qui arrive dans une ville.
+
+**Ce qui le prouve.** La sonde, douze passages publiés dans le commit. Le
+témoin repointé ; joué avec l'ordre d'avant des deux côtés, il rend l'écart des
+passages « regard » de la sonde (0,02 à 0,04), sous la barre : il peut encore
+rougir. Portail : `monte.js` et la fumée.
+
+---
+
 ## v381 — Plus de trou au bout des ponts, et le Tōmei
 
 **Pourquoi.** Au bout d'un pont de Berlin, une colonne d'eau sans tablier : la

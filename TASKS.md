@@ -61,9 +61,9 @@
   Après la fusion de la v375 : mêmes dettes, plus la flèche du GPS (déclarée,
   v367) et « à soixante blocs par seconde dans Paris, le monde se maille dans le
   champ » : écart 0,07 sur la branche, **0,02 sur `origin/main`** rejouée seule,
-  pour une barre à 0,13 — rouge des deux côtés, le gain de l'ordre en cône
-  (0,29 à la v346) ne se voit plus au banc. À remesurer (ABBA, plusieurs
-  paires) avant de toucher à la barre ou à l'ordre : dette de ma zone.
+  pour une barre à 0,13. **Démontée en v382** : le premier passage dans Paris,
+  à froid, écrasait l'ordre neuf (0,42 contre 0,87 · 0,87) ; échauffement non
+  compté (`sonde-cone-banc.cjs`).
 - [ ] **LE PORTAIL DE LA v376 (les passants réagissent à la route).** Mes
   quatre témoins verts (sursaut 1, arrêt 0,82 s ; six passants sur six se
   retournent vers le choc ; traversées 6 sur 6 au rouge ; chaussée de Rome 2
