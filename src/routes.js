@@ -387,7 +387,7 @@ export const ROUTES = [
   // (s 152–160, un ruisseau), coudes ≤ 18°, déblai 1,5, remblai 1,7, JFK à
   // 512 blocs au-delà de sa marge, le premier repère à 526.
   { nom: 'I-95', villes: ['ny', 'boston'], portes: { ny: [-19769, 4140] }, via: [[-19739, 4140], [-19498, 4128], [-19415, 4096]] },
-  // L'I-95 SUD (v365) : New York–Washington. Deux villes qui ne sont pas des
+  // L'I-95 SUD (v367) : New York–Washington. Deux villes qui ne sont pas des
   // disques. À New York, la porte de l'I-95 regarde le nord-est : celle-ci est
   // une SECONDE porte déclarée, sur la rive de l'Hudson, trente-six blocs à
   // l'ouest du rectangle (la rive à trente-huit blocs vers l'île). Washington
@@ -709,7 +709,7 @@ export function routeEn(x, z) {
   // dans l'air — une erreur par morceau de talus, et le contact (double
   // précision) ne lisait plus la triangulation du maillage. Toute cote de
   // route est donc un soixante-quatrième de bloc, exact dans les deux.
-  // UNE VILLE QUI N'EST PAS UN DISQUE N'A PAS DE RACCORD (v365). Au bout,
+  // UNE VILLE QUI N'EST PAS UN DISQUE N'A PAS DE RACCORD (v367). Au bout,
   // la chaussée continue d'ordinaire dans la ville en demi-cercle (la
   // distance au point borné) : c'est l'entrée de la ville. Washington est une
   // BOÎTE bâtie jusqu'à son bord ; ce demi-cercle y écrivait de l'asphalte dans

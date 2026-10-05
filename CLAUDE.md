@@ -1911,7 +1911,7 @@ Une règle.
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
 
-## La route de Washington (v365) — une ville fermée par son relief s'entre par son côté bas, et un bout peut s'arrêter net
+## La route de Washington (v367) — une ville fermée par son relief s'entre par son côté bas, et un bout peut s'arrêter net
 
 L'I-95 Sud New York–Washington. Quatre règles.
 

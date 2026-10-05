@@ -1879,7 +1879,7 @@ function updateChunks() {
     const i = entreesDe(cle).findIndex((e) => e.route === route);
     if (i < 0) return undefined;
     if (ENTREES[cle]) return ENTREES[cle][i];
-    // Une ville qui n'est pas un disque (Washington, v365) a son avenue
+    // Une ville qui n'est pas un disque (Washington, v367) a son avenue
     // DÉCLARÉE dans la fiche de la route, comme sa porte.
     const fiche = segmentsDeRoute().find((sg) => sg.route.nom === route);
     if (fiche && fiche.route.avenues && fiche.route.avenues[cle]) return fiche.route.avenues[cle];

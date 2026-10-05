@@ -596,7 +596,7 @@ const VRAIES_KM = [
       out.convoiHansa = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'Hansalinie') || null;
       out.convoiI95 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'I-95') || null;
       out.convoiI95Sud = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'I-95 Sud') || null;
-      // WASHINGTON EST UNE BOÎTE (v365) : la route de New York s'arrête NET à
+      // WASHINGTON EST UNE BOÎTE (v367) : la route de New York s'arrête NET à
       // son bord sud (`boutNet`), au niveau de la rue d'Anacostia qui y
       // débouche, et ses voitures entrent par cette rue (`avenues`). On compte
       // les colonnes de route DANS la ville (zéro : le demi-cercle d'asphalte
@@ -660,7 +660,7 @@ const VRAIES_KM = [
       try {
         const MO = await import('./src/mondes.js');
         out.frole = {};
-        // UNE VILLE QUI N'EST PAS UN DISQUE SE JUGE À SON EMPRISE (v365) :
+        // UNE VILLE QUI N'EST PAS UN DISQUE SE JUGE À SON EMPRISE (v367) :
         // Washington est une boîte bâtie (avec son fondu, `ZONE_WASHINGTON`)
         // dans un disque de 187, Manhattan un rectangle. Lire leur disque
         // accuserait une route qui longe la campagne autour d'eux.
@@ -1001,7 +1001,7 @@ const VRAIES_KM = [
         portes: a1.manhattan, barre: a1.porteMin && +a1.porteMin.toFixed(1), emprise: a1.manhattanEmprise, frole: a1.frole && a1.frole['I-95'], erreur: a1.manhattanErreur,
         boston: (a1.entreesEngendrees || []).filter((e) => e.route === 'I-95') }));
 
-    // L'I-95 SUD (v365) : New York–Washington. Sa porte de New York est une
+    // L'I-95 SUD (v367) : New York–Washington. Sa porte de New York est une
     // SECONDE porte déclarée, sur la rive de l'Hudson (le témoin d'au-dessus
     // lit toutes les portes de New York) ; à Washington, une boîte fermée de
     // trois côtés par le relief et le Potomac, elle arrive par le sud, s'arrête
