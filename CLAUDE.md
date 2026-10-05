@@ -887,6 +887,18 @@ d'un plan est rejeté par six comparaisons — sans cela le plan passait de 4 à
 135 ms. Un bord net ne suffit pas à rendre une portière : les taxis l'ont, et
 restent refusés parce que derrière il n'y a rien (0/24 rayons).
 
+**Le passager monte par la portière, et l'ami la voit (v377).**
+`monterChez` rejoue la séquence sur la voiture DISTANTE de l'ami (telle que
+cette tablette la dessine), portière droite, et n'appelle `fin` (qui fait de
+l'enfant un passager, fun.js) qu'une fois assis — `passagerDe()` ne ment pas
+avant. L'ouverture et la fermeture partent dans un message court
+(`portiere`, `{ de, c, o }`) : chaque tablette anime la portière de la
+voiture de ce conducteur (`vehiculeDuConducteur`, la sienne si c'est elle qui
+conduit), en temps de jeu. Nom neuf : l'ancienne tablette l'ignore, le
+receveur cède, l'hôte relaie. Le témoin à deux tablettes lit les deux pages
+au même instant ; il attend le RÉSULTAT (borné à 45 s) : à deux pages, une
+séquence de 2,4 s de jeu prend vingt-sept secondes de montre.
+
 **Le revers d'une portière se fabrique (v373).** Aucun modèle n'a meublé
 l'intérieur de sa portière : de derrière, la face simple était culée (0 rayon
 sur 24, sur les cinquante modèles). La portière reçoit une copie compacte de

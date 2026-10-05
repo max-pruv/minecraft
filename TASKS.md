@@ -3098,11 +3098,24 @@ l'embarquement a eu lieu, pas par une hypothèse.
 ## En cours
 
 ### Embarquement (v366) — ce qui reste dans la zone
-- **Le passager d'un ami (v253) monte sans séquence.** `monterAvec` colle encore
-  l'enfant au siège d'un coup. La séquence sait sortir par la portière droite
-  (`cote: 1`, déjà fabriquée) : la faire entrer par là est l'étape suivante, à
-  condition que l'ami — sur SA tablette — voie aussi la portière s'ouvrir, ce
-  qui demande un message réseau (`net.js`, hors zone).
+- [ ] **LE PORTAIL DE LA v377 (le passager), DOUBLE MESURE FAITE.** Six
+  suites vertes (`degats`, `visio`, `hote`, `washington`, `reglages`). Rouges
+  déclarés : `maj.js` (préparation), `carte.js` (glisser bridé ×4, 484 ms),
+  `manhattan.js` (trou de façade, taxi tactile), `monte.js` (téléportation,
+  écran figé). `reseau.js` rejouée SEULE des deux côtés : la circulation
+  partagée verte des deux côtés (écart médian 3,1 branche · 9,1 `origin/main`,
+  62 au portail) ; « hôte sans courtier » et « il le REJOINT » rouges à
+  l'identique ; « un départ propre » rouge sur la branche seule cette fois,
+  déjà mesuré rouge sur `origin/main` (plus bas) et joué AVANT que la Lou du
+  témoin neuf n'existe.
+  Puis v374 à v376 sont parties pendant ces mesures : rebasée sur la v376
+  (conflit sur une ligne de `main.js`, les deux gardées), témoin du passager
+  vert et fumée verte, publiée en v377.
+- [x] **Le passager d'un ami** — FAIT en v377 : il entre par la portière
+  droite avec la séquence (`monterChez`), et le conducteur la voit s'ouvrir
+  chez lui (message `portiere`, l'hôte relaie). Reste : la DESCENTE du
+  passager est encore instantanée ; et sans courtier (partie par le nuage
+  seul) le message ne sait pas nommer le conducteur (dette v253).
 - [ ] **LE PORTAIL DE LA v372 (bords des portières), DOUBLE MESURE FAITE.**
   `degats.js` vert. Au portail, 17 rouges dans `monte.js` et `maj.js` : il a
   tourné pendant que je faisais tourner une dizaine de sondes de navigateur

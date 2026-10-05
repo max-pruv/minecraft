@@ -4774,6 +4774,9 @@ function showOnlineUI() {
   net.onAnnonce = (txt) => toast(txt, 0x9fd8e8);
   net.onRueChoc = (m) => fun.degats.recevoirRue(m);   // dégâts de la rue (v363)
   net.onRueHistoires = (rc) => fun.degats.adopterHistoires(rc); // par la position, si l'hôte ne relaie pas rue_choc (v374)
+  // la portière qu'un ami ouvre pour monter en passager (v377) : la nôtre si
+  // l'on conduit, sinon celle de la voiture du conducteur telle qu'on la dessine
+  net.onPortiere = (m) => { const v = vehiculeDuConducteur(m.de); if (v && v.mesh) fun.recevoirPortiere(v.mesh, m.c, m.o); };
   net.onCiel = (c) => adopterCiel(c);
   net.donnerCiel = () => cielDuMonde();
   net.onJoin = (nom) => annonceArrivee(nom);
@@ -7681,6 +7684,7 @@ fun.degats.brancherReseau((m) => { if (net && net.active) net.broadcast(m); });
 // LA SÉQUENCE D'EMBARQUEMENT (v366) prend l'avatar que main.js possède, et la
 // place assise que main.js calcule : un seul corps, une seule assise.
 fun.brancherAvatar({ obtenir: obtenirAvatarLocal, placeAssise, pose: POSE_AU_VOLANT });
+fun.brancherPortieres((m) => { if (net && net.active) net.broadcast(m); });   // v377
 
 // --- main loop -------------------------------------------------------------------------
 

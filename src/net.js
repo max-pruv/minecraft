@@ -1572,6 +1572,12 @@ export class NetSession {
         if (this.onRueChoc) this.onRueChoc(msg);
         if (this.isHost) this.relay(conn.peer, msg);
         break;
+      // La portière qu'un passager ouvre (v377) : le conducteur et les autres
+      // la voient s'ouvrir. Nom neuf, le receveur cède, l'hôte relaie.
+      case 'portiere':
+        if (this.onPortiere && (msg.c === 1 || msg.c === -1)) this.onPortiere({ de: String(msg.de || ''), c: msg.c, o: msg.o ? 1 : 0 });
+        if (this.isHost) this.relay(conn.peer, msg);
+        break;
       case 'sign': // a text sign planted in the world
         if (this.onSign) this.onSign(msg.sign);
         if (this.isHost) this.relay(conn.peer, msg);
