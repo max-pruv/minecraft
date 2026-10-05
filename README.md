@@ -210,6 +210,8 @@ src/visio.js      camera tiles and sound, split so autoplay can't mute both
   who lives there
 src/animals.js    passive animals, spawning, the mount you can climb
 src/montures.js   the eight rideable beasts and the height of their backs
+src/embarquement.js getting in and out of a car: walk to the door, open, sit, close
+src/portieres.js  car doors cut from the bodywork of each fleet model, once per model
 src/cap.js        the pilot's heading dial: bearing, the city ahead, its distance
 src/marlon.js     friendly NPCs (Marlon the companion, Professeur Cornichon)
 src/vie.js        city life; src/vehicules.js  métro trains (which stop at
@@ -221,7 +223,7 @@ src/washington.js  the capital: L'Enfant's plan, the Mall, and the Metro
 src/dcmonuments.js its 32 landmarks — real interiors, you walk in — and 3 bridges
 src/chine.js src/pole.js src/espace.js src/gaulois.js src/villandry.js
 src/aeroport.js src/circuit.js src/ville.js src/parc.js src/voies.js
-src/routes.js     the interurban roads (A1 Paris–Lille, E429 Lille–Bruxelles, E19 Bruxelles–Amsterdam, A20 Montréal–Québec, BR-116 São Paulo–Rio, A-4 Madrid–Séville, A109 Nairobi–Mombasa, A3 Cologne–Francfort, E1 Kyoto–Nagoya, Autosole Bologne–Florence, A4 Milan–Turin, Yamuna Delhi–Agra, A1 Sud Rome–Naples, M1 Vienne–Budapest, A1 Nord Milan–Bologne, A24 Berlin–Hambourg, I-45 Dallas–Houston, A7 Lyon–Marseille, AP-2 Madrid–Barcelone, 401 Toronto–Montréal, Hansalinie Cologne–Hambourg, I-95 New York–Boston: profile, section, bridges, traffic)
+src/routes.js     the interurban roads (A1 Paris–Lille, E429 Lille–Bruxelles, E19 Bruxelles–Amsterdam, A20 Montréal–Québec, BR-116 São Paulo–Rio, A-4 Madrid–Séville, A109 Nairobi–Mombasa, A3 Cologne–Francfort, E1 Kyoto–Nagoya, Autosole Bologne–Florence, A4 Milan–Turin, Yamuna Delhi–Agra, A1 Sud Rome–Naples, M1 Vienne–Budapest, A1 Nord Milan–Bologne, A24 Berlin–Hambourg, I-45 Dallas–Houston, A7 Lyon–Marseille, AP-2 Madrid–Barcelone, 401 Toronto–Montréal, Hansalinie Cologne–Hambourg, I-95 New York–Boston, I-95 Sud New York–Washington: profile, section, bridges, traffic)
 
   learning and parents
 src/education.js  quiz bank, adaptive difficulty, stats, persistence

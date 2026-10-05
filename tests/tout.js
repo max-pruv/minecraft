@@ -152,6 +152,7 @@ const GARDIENS = {
   'src/nice.js': ['carte.js', 'carteMonde.js', 'plafond.js'],
   'src/nice-v340.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // la Nice d'avant le kit, sous ce qu'un enfant a bâti (v359)
   'src/sanfrancisco-v343.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // la San Francisco d'avant le kit, sous ce qu'un enfant a bâti (v361)
+  'src/lille-v344.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // la Lille d'avant le kit, sous ce qu'un enfant a bâti (v368)
   'src/carte.js': ['carte.js', 'carteMonde.js', 'manhattan.js'],
   // La capitale : son relief, son métro et ses bâtiments ouverts. Elle touche
   // au sol de la carte, donc le témoin du plafond la surveille aussi.
@@ -193,6 +194,10 @@ const GARDIENS = {
   // LES DÉGÂTS DE LA VOITURE (v343) : la règle pure et ce qui se voit.
   'src/degats.js': ['degats.js'],
   'src/degats3d.js': ['degats.js'],
+  // la séquence d'embarquement et ses portières (v366) : monte.js les éprouve
+  // sur une page qui la joue, reseau.js garde la position qui voyage avec
+  'src/embarquement.js': ['monte.js', 'reseau.js'],
+  'src/portieres.js': ['monte.js', 'degats.js'],
   // Le hub : presque toute livraison y passe. Deux suites larges le couvrent —
   // la carte traverse l'interface entière, la monte traverse la boucle de jeu.
   'src/main.js': ['carte.js', 'monte.js', 'washington.js', 'manhattan.js', 'degats.js'],

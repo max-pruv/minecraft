@@ -27,6 +27,7 @@ import { allureDe } from './vehicules.js';
 import { moteurDemarre, moteurRegime, moteurCoupe, radioDemarre, radioCoupe } from './sons.js';
 import { creerDegats } from './degats3d.js';
 import { sensationsAuVolant, sensationsAPied, reposerVoiture } from './sensations.js';
+import { creerEmbarquement } from './embarquement.js';
 
 // Le sac (`web-minecraft-bag-v1`), la quête (`web-minecraft-quest-v1`), le
 // coffre (`web-minecraft-chest-v1::…`) et le chantier
@@ -34,7 +35,7 @@ import { sensationsAuVolant, sensationsAPied, reposerVoiture } from './sensation
 // v255 ; leurs clés restent en place, et sync.js continue de faire voyager le
 // sac et la quête tels quels. On n'efface rien.
 // La caméra de poursuite et son retard (`?camlag=`, v278) vivent dans
-// `sensations.js` depuis la v366.
+// `sensations.js` depuis la v370.
 const RECORDS_KEY = 'web-minecraft-records-v1';
 const PHOTOS_KEY = 'web-minecraft-photos-v1';
 
@@ -304,6 +305,19 @@ export function initFun(ctx) {
     emojiBurst([a.def.emoji, '💨'], 8);
   }
 
+  // MONTER ET DESCENDRE COMME DANS UN VRAI JEU (v366) : l'enfant marche à la
+  // portière, l'ouvre, s'assied, la referme — et l'inverse. La séquence vit
+  // dans embarquement.js ; elle appelle `toggleRide` au moment où il est
+  // ASSIS, si bien que `montureConduite()` ne ment jamais (v252).
+  const embarquement = creerEmbarquement({
+    player, world, toggleRide,
+    montureConduite: () => riding,
+    existe: (a) => !!a && !(a.dying > 0) && animalManager.animals.includes(a),
+  });
+  // monter dans une monture : la séquence pour une voiture, l'ancien geste
+  // pour le reste (elle en décide elle-même, par la fiche)
+  const monterDans = (a) => embarquement.monter(a);
+
   // ---- monter à bord de ce qui roule ---------------------------------------
   // Le métro et les monoplaces tournaient depuis toujours sans qu'on puisse y
   // monter : on les regardait passer. Embarquer, ici, c'est simplement se
@@ -410,7 +424,9 @@ export function initFun(ctx) {
     // d'où elle vient : la position la porte aux amis, qui la retirent de LEUR
     // rue (v305)
     auto.mesh.userData.origine = pris.origine || null;
-    toggleRide(auto);
+    // elle s'arrête (elle n'est plus dans le convoi) et l'enfant y MARCHE : une
+    // voiture de la rue est vide, personne n'en est sorti (v366)
+    monterDans(auto);
     toast(`🚗 Tu prends le volant ${pris.nom ? `de la ${pris.nom}` : 'de la voiture'} !`, 0xa8d8ff);
     return true;
   }
@@ -450,23 +466,28 @@ export function initFun(ctx) {
     // Une seule touche pour « monter » : sur ce qui vit s'il y a une bête
     // devant soi, à bord sinon. L'enfant n'a pas à savoir laquelle des deux.
     if (e.code === 'KeyM') {
-      if (passager) descendreDePassager();
-      else if (riding) toggleRide(null);
+      if (embarquement.enCours()) embarquement.terminer();   // un second appui termine (v366)
+      else if (passager) descendreDePassager();
+      else if (riding) embarquement.descendre();
       else if (bord) debarquer();
-      else if (animalManager.monture()) toggleRide(animalManager.monture());
+      else if (animalManager.monture()) monterDans(animalManager.monture());
       else embarquer();
     }
   });
   document.getElementById('feed-btn').addEventListener('click', () => feed(animalManager.targeted()));
   document.getElementById('ride-btn').addEventListener('click', () => {
+    if (embarquement.enCours()) { embarquement.terminer(); return; }   // un second appui termine (v366)
     if (passager) { descendreDePassager(); return; }
-    if (riding) { toggleRide(null); return; }
+    if (riding) { embarquement.descendre(); return; }
     const m = animalManager.monture();
-    if (m) { toggleRide(m); return; }
+    if (m) { monterDans(m); return; }
     const ami = vehiculeAmiProche();
     if (ami) monterAvec(ami);
   });
-  document.getElementById('board-btn').addEventListener('click', () => embarquer());
+  document.getElementById('board-btn').addEventListener('click', () => {
+    if (embarquement.enCours()) { embarquement.terminer(); return; }
+    embarquer();
+  });
 
   // ---- emotes ---------------------------------------------------------------
   const emoteSprites = new Map(); // peerId -> { sprite, t }
@@ -1149,7 +1170,7 @@ export function initFun(ctx) {
     // voiture et la caméra, elle avance devant lui plutôt que d'entrer
     // dans la roche.
     if (a.def.poursuite) {
-      // LA POURSUITE ET LA CAISSE QUI VIT (v366) : la caméra qui recule et
+      // LA POURSUITE ET LA CAISSE QUI VIT (v370) : la caméra qui recule et
       // ouvre son champ avec la vitesse, qui ne traverse pas les murs, qui
       // regarde dans le virage et tremble au choc ; la caisse qui penche et
       // plonge ; les roues qui braquent ; le son des rapports et des pneus.
@@ -1265,10 +1286,11 @@ export function initFun(ctx) {
     }
     updateRide(dt);
     degats.update(dt, player.camera, animalManager.animals);   // fumée, feu, carcasses (v343)
-    // CE QU'ON QUITTE SE REPOSE (v366) : la voiture garée reprend son
+    // CE QU'ON QUITTE SE REPOSE (v370) : la voiture garée reprend son
     // assiette et ses roues droites, et le champ de la caméra revient.
     if (riding !== derniereMonture) { reposerVoiture(derniereMonture); derniereMonture = riding; }
     if (!riding) sensationsAPied(player, dt);
+    embarquement.update(dt);   // APRÈS updateRide : la caméra de poursuite est posée, on s'y fond
     updateBord();
     updatePassager();
     updateTargetButtons(dt);
@@ -1295,6 +1317,7 @@ export function initFun(ctx) {
     emoteRow.style.display = 'none';
     targetRow.style.display = 'none';
     panel.style.display = 'none';
+    embarquement.annuler();
     if (riding) { riding = null; player.boost = undefined; }
     moteurCoupe(); radioCoupe();
     debarquer(true);
@@ -1315,6 +1338,15 @@ export function initFun(ctx) {
     // les dégâts de la voiture (v343) : main.js les chauffe et les envoie aux
     // amis, les témoins les lisent
     degats,
+    // LA SÉQUENCE D'EMBARQUEMENT (v366). `descendre({ presse: true })` pose
+    // l'enfant à côté sans animation (la voiture qui prend feu) ;
+    // `avatarEnSequence` dit à main.js de ne pas asseoir l'avatar cette image.
+    descendre: (o) => embarquement.descendre(o),
+    embarquement: () => embarquement.etat(),
+    terminerEmbarquement: () => embarquement.terminer(),
+    refusSortie: () => embarquement.refusSortie(),
+    avatarEnSequence: () => embarquement.avatarPilote(),
+    brancherAvatar: (h) => embarquement.brancherAvatar(h),
     // Chez qui l'enfant est passager (ou null) : la position réseau
     // l'emporte, et main.js l'assied sur le siège de la voiture de l'ami.
     passagerDe: () => passager,

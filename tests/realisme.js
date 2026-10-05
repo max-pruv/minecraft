@@ -416,7 +416,7 @@ const verifier = (nom, ok, detail) => {
     });
     const depart = Date.now();
     await q.goto(
-      "http://127.0.0.1:8361/index.html?peerhost=127.0.0.1:9361&cloud=&stay=1&rr=2&prep=0",
+      "http://127.0.0.1:8361/index.html?peerhost=127.0.0.1:9361&cloud=&stay=1&rr=2&prep=0&embarq=0",
       { waitUntil: "load", timeout: 120000 },
     );
     await q.waitForFunction(() => window.__game, null, { timeout: 120000 });

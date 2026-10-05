@@ -595,6 +595,32 @@ const VRAIES_KM = [
       out.convoi401 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === '401') || null;
       out.convoiHansa = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'Hansalinie') || null;
       out.convoiI95 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'I-95') || null;
+      out.convoiI95Sud = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'I-95 Sud') || null;
+      // WASHINGTON EST UNE BOÎTE (v367) : la route de New York s'arrête NET à
+      // son bord sud (`boutNet`), au niveau de la rue d'Anacostia qui y
+      // débouche, et ses voitures entrent par cette rue (`avenues`). On compte
+      // les colonnes de route DANS la ville (zéro : le demi-cercle d'asphalte
+      // ordinaire du bout en écrivait cinq), la marche entre la route et la
+      // rue, et les blocs à hauteur de carrosserie sur l'avenue.
+      try {
+        const sw = m.segmentsDeRoute().find((sg) => sg.route.nom === 'I-95 Sud');
+        if (sw) {
+          let col = 0, dansVille = 0;
+          const fin = m.pointA(sw, sw.longueur);
+          for (let x = Math.floor(fin.x) - 30; x <= fin.x + 30; x++) for (let z = Math.floor(fin.z) - 30; z <= fin.z + 30; z++) {
+            const r = m.routeEn(x, z); if (!r || r.seg !== sw) continue; col++;
+            const c = w.cityAt(x, z); if (c && /Washington/.test(c.nom || c.name || '')) dansVille++;
+          }
+          const av = sw.route.avenues.washington, bloque = [], cotes = [];
+          for (let k = 0; k + 1 < av.length; k++) { const [x0, z0] = av[k], [x1, z1] = av[k + 1], L = Math.hypot(x1 - x0, z1 - z0);
+            for (let t = 0; t <= L; t += 0.5) { const X = Math.floor(x0 + (x1 - x0) * t / L), Z2 = Math.floor(z0 + (z1 - z0) * t / L);
+              const r = m.routeEn(X, Z2), h = r ? Math.floor(r.cote) - 1 : w.coteRoulable(X, Z2); cotes.push(h);
+              if (w.isSolid(X, h + 1, Z2) || w.isSolid(X, h + 2, Z2)) bloque.push([X, Z2]); } }
+          let marche = 0; for (let k = 1; k < cotes.length; k++) marche = Math.max(marche, Math.abs(cotes[k] - cotes[k - 1]));
+          const [ex, ez] = av[av.length - 1], c = w.cityAt(Math.floor(ex), Math.floor(ez));
+          out.washington = { col, dansVille, bloque: bloque.length, marche, rue: !!c && (await import('./src/world.js')).CHAUSSEE.has(w.getBlock(Math.floor(ex), w.coteRoulable(Math.floor(ex), Math.floor(ez)), Math.floor(ez))) };
+        }
+      } catch (e) { out.washingtonErreur = String(e); }
       // LA PORTE DE MANHATTAN (v362) : Manhattan est un RECTANGLE (`BORNES`),
       // et ni la route ni son talus n'y entrent — le worker ne connaît pas le
       // plan qui y règne, et le rendu urbain n'y dessine pas de tablier. On lit
@@ -634,10 +660,18 @@ const VRAIES_KM = [
       try {
         const MO = await import('./src/mondes.js');
         out.frole = {};
+        // UNE VILLE QUI N'EST PAS UN DISQUE SE JUGE À SON EMPRISE (v367) :
+        // Washington est une boîte bâtie (avec son fondu, `ZONE_WASHINGTON`)
+        // dans un disque de 187, Manhattan un rectangle. Lire leur disque
+        // accuserait une route qui longe la campagne autour d'eux.
+        const WA = await import('./src/washington.js'), MWf = await import('./src/manhattan-world.js');
+        const Z = WA.ZONE_WASHINGTON;
+        const touche = (cle, q) => cle === 'washington' ? Math.max(Z.x0 - q.x, q.x - Z.x1, Z.z0 - q.z, q.z - Z.z1) < 10
+          : cle === 'ny' ? MWf.dansManhattan(q.x, q.z, 10)
+          : (() => { const C = MO.positionDe(cle); return Math.hypot(q.x - C.x, q.z - C.z) < C.r + 10; })();
         for (const s of m.segmentsDeRoute()) {
-          const A = MO.positionDe(s.de), B = MO.positionDe(s.vers);
           let n = 0;
-          for (let sa = 80; sa <= s.longueur - 80; sa += 4) { const q = m.pointA(s, sa); if (Math.hypot(q.x - A.x, q.z - A.z) < A.r + 10 || Math.hypot(q.x - B.x, q.z - B.z) < B.r + 10) n++; }
+          for (let sa = 80; sa <= s.longueur - 80; sa += 4) { const q = m.pointA(s, sa); if (touche(s.de, q) || touche(s.vers, q)) n++; }
           out.frole[s.route.nom] = n;
         }
       } catch (e) { out.froleErreur = String(e); }
@@ -966,6 +1000,19 @@ const VRAIES_KM = [
       JSON.stringify(a1.absent ? a1 : { convoi: a1.convoiI95 ? { nom: a1.convoiI95.nom, voitures: (a1.convoiI95.modeles || []).length } : 'aucun convoi I-95',
         portes: a1.manhattan, barre: a1.porteMin && +a1.porteMin.toFixed(1), emprise: a1.manhattanEmprise, frole: a1.frole && a1.frole['I-95'], erreur: a1.manhattanErreur,
         boston: (a1.entreesEngendrees || []).filter((e) => e.route === 'I-95') }));
+
+    // L'I-95 SUD (v367) : New York–Washington. Sa porte de New York est une
+    // SECONDE porte déclarée, sur la rive de l'Hudson (le témoin d'au-dessus
+    // lit toutes les portes de New York) ; à Washington, une boîte fermée de
+    // trois côtés par le relief et le Potomac, elle arrive par le sud, s'arrête
+    // net au bord, au niveau de la rue d'Anacostia, et ses voitures y entrent.
+    // Sur l'ancien code, la route n'existe pas.
+    verifier('l\'I-95 Sud relie New York à Washington, s\'arrête au bord de la ville sans y écrire, et ses voitures entrent par une rue',
+      !a1.absent && !a1.washingtonErreur && !!a1.convoiI95Sud && a1.convoiI95Sud.routier && (a1.convoiI95Sud.modeles || []).length >= 10
+      && !!a1.washington && a1.washington.col > 100 && a1.washington.dansVille === 0 && a1.washington.bloque === 0 && a1.washington.marche <= 1 && a1.washington.rue
+      && (a1.manhattan || []).filter((e) => e.route === 'I-95 Sud').length === 1 && !!a1.frole && a1.frole['I-95 Sud'] === 0,
+      JSON.stringify(a1.absent ? a1 : { convoi: a1.convoiI95Sud ? { nom: a1.convoiI95Sud.nom, voitures: (a1.convoiI95Sud.modeles || []).length } : 'aucun convoi I-95 Sud',
+        washington: a1.washington, erreur: a1.washingtonErreur, portesNY: a1.manhattan, frole: a1.frole && a1.frole['I-95 Sud'] }));
 
     // AUCUNE ROUTE NE PREND L'EMPRISE D'UNE AUTRE (v355) : Montréal a deux
     // routes, et chaque colonne d'emprise doit appartenir au segment qu'on
@@ -2688,6 +2735,85 @@ const VRAIES_KM = [
     verifier('et San Francisco garde ses immeubles : le disque à plus de 30 %, aucun quartier sous 10 %',
       !kitSF.err && kitSF.bati >= 30 && Object.values(kitSF.quartiers).every((q) => q >= 10),
       kitSF.err || `${kitSF.bati} % du disque · ${JSON.stringify(kitSF.quartiers)}`);
+
+    // --- LES RUES DE LILLE À LA RÈGLE DU KIT (v368) ---------------------------
+    //
+    // La méthode de Nice, la ville la plus semblable : boulevards et grandes
+    // rues en deux voies, rues du Vieux-Lille en une, trame du centre et des
+    // faubourgs en deux, celle du Vieux-Lille en une, le pas recomposé et la
+    // trame qui ne double plus une avenue. Mesuré sur `origin/main` : avenues
+    // 2,9 à 4,8 blocs de chaussée, trame 2,0 ; part bâtie du disque 30,1 % —
+    // ici 33,3, aucun quartier qui perde (la République, le plus bas, 11,8 →
+    // 13,0), la barre des quartiers à 10.
+    const kitLille = await tab.evaluate(async () => {
+      try {
+        const m = await import('./src/lille.js');
+        const { sectionDeRue } = await import('./src/voirie.js');
+        const { CITY_BLOCK } = await import('./src/blocks.js');
+        const N = m.LILLE;
+        const med = (a) => { const b = [...a].sort((x, y) => x - y); return b.length ? b[Math.floor(b.length / 2)] : -1; };
+        const roule = (u, v) => m.solLille(N.x + Math.round(u), N.z + Math.round(v)) === CITY_BLOCK.ASPHALT;
+        const coupe = (u, v, eu, ev) => {
+          if (!roule(u, v)) return null;
+          let a = 0, b = 0;
+          while (a < 20 && roule(u - ev * (a + 0.05), v + eu * (a + 0.05))) a += 0.05;
+          while (b < 20 && roule(u + ev * (b + 0.05), v - eu * (b + 0.05))) b += 0.05;
+          return a + b;
+        };
+        const parType = { collecteur: [], locale: [] };
+        const locales = new Set(['Rue Esquermoise', 'Rue Royale', 'Rue de la Monnaie']);
+        for (const voie of m.VOIES_LILLE) {
+          const type = m.sectionDeVoieLille ? m.sectionDeVoieLille(voie.nom).type : (locales.has(voie.nom) ? 'locale' : 'collecteur');
+          for (let i = 0; i < voie.pts.length - 1; i++) {
+            const [u0, v0] = voie.pts[i], [u1, v1] = voie.pts[i + 1];
+            const lg = Math.hypot(u1 - u0, v1 - v0);
+            if (lg < 6) continue;
+            const c = coupe((u0 + u1) / 2, (v0 + v1) / 2, (u1 - u0) / lg, (v1 - v0) / lg);
+            if (c !== null && c < 20) parType[type].push(c);
+          }
+        }
+        const T = m.TRAMES_LILLE || { centre: { ang: -0.14, pu: 9, pv: 8, cu: 8, cv: 8 }, sud: { ang: 0, pu: 10, pv: 9, cu: -16, cv: 36 } };
+        const trames = [];
+        for (const t of [T.centre, T.sud]) {
+          const co = Math.cos(t.ang), si = Math.sin(t.ang);
+          for (let i = -8; i <= 8; i++) for (let j = -8; j <= 8; j++) {
+            const A = i * t.pu, B = (j + 0.5) * t.pv;
+            const u = t.cu + A * co + B * si, v = t.cv - A * si + B * co;
+            if (Math.hypot(u, v) > N.r - 8) continue;
+            const c = coupe(u, v, si, co);
+            if (c !== null && c < 15) trames.push(c);
+          }
+        }
+        const part = (dx, dz, r) => {
+          const cx = N.x + Math.round(dx * 32), cz = N.z + Math.round(dz * 32);
+          let n = 0, lots = 0;
+          for (let x = cx - r; x <= cx + r; x++) for (let z = cz - r; z <= cz + r; z++) {
+            if ((x - cx) ** 2 + (z - cz) ** 2 > r * r || (x - N.x) ** 2 + (z - N.z) ** 2 > N.r ** 2) continue;
+            n++; if (m.lotLilleLibre(x, z)) lots++;
+          }
+          return +(100 * lots / n).toFixed(1);
+        };
+        return {
+          coll: sectionDeRue('collecteur'), loc: sectionDeRue('locale'),
+          arteres: { n: parType.collecteur.length, med: med(parType.collecteur) },
+          rues: { n: parType.locale.length, med: med(parType.locale) },
+          trame: { n: trames.length, med: med(trames) },
+          bati: part(0, 0, N.r),
+          quartiers: { GrandPlace: part(0, 0, 16), VieuxLille: part(-0.3, -0.6, 16), Gares: part(0.9, -0.2, 16),
+            Republique: part(-0.2, 0.7, 16), Wazemmes: part(-0.85, 1.2, 16), Moulins: part(0.2, 1.3, 16) },
+        };
+      } catch (e) { return { err: String(e) }; }
+    });
+    verifier('les rues de Lille ont la section du kit : deux voies aux boulevards et à la trame, une au Vieux-Lille',
+      !kitLille.err && kitLille.arteres.n >= 10 && kitLille.rues.n >= 2 && kitLille.trame.n >= 10
+      && kitLille.arteres.med >= kitLille.coll.chaussee - 0.5 && kitLille.rues.med >= kitLille.loc.chaussee - 0.5
+      && kitLille.trame.med >= kitLille.coll.chaussee - 0.5,
+      kitLille.err || `boulevards ${fk(kitLille.arteres.med)} (${kitLille.arteres.n} coupes, kit ${kitLille.coll.chaussee})`
+      + ` · Vieux-Lille ${fk(kitLille.rues.med)} (${kitLille.rues.n}, kit ${kitLille.loc.chaussee})`
+      + ` · trame ${fk(kitLille.trame.med)} (${kitLille.trame.n})`);
+    verifier('et Lille garde ses immeubles : le disque à plus de 30 %, aucun quartier sous 10 %',
+      !kitLille.err && kitLille.bati >= 30 && Object.values(kitLille.quartiers).every((q) => q >= 10),
+      kitLille.err || `${kitLille.bati} % du disque · ${JSON.stringify(kitLille.quartiers)}`);
 
     // --- AUCUNE VILLE NE FAIT DEMI-TOUR, PAS SEULEMENT LONDRES ---------------
     //
