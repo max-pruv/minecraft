@@ -1,5 +1,16 @@
 # Ce qui est en cours
 
+- [ ] **LE PORTAIL DE LA v383 (la rue n'entre plus chez un ami) : DEUX PASSAGES.**
+  Premier passage, trois suites rouges : `manhattan.js` (trou de façade, taxi
+  — déclarés), `monte.js` (la monoplace — À MOI, repointée, voir CLAUDE.md ;
+  la compilation à la téléportation et le gel d'arrivée — familles déclarées),
+  `reseau.js` (« la même circulation », écart médian 35,1 — la famille
+  intermittente déclarée en v371 ; preuve structurelle : les deux joueurs
+  volent trente blocs au-dessus de la rue, `|a.y − b.y| > 2,5` les écarte de
+  `veut`, la règle neuve n'est pas atteinte). Second passage (reprise) :
+  `reseau.js` ENTIÈREMENT vert (mon témoin compris) ; `monte.js` : le seul gel
+  d'arrivée (24,8 %, déclaré) ; `manhattan.js` : trou, taxi, « Lost
+  connection to server » de PeerJS — déclarés.
 - [ ] **LE PORTAIL DE LA v381 (ponts des villes engendrées, le Tōmei), DOUBLE
   MESURE FAITE.** `carteMonde.js` et `plafond.js` verts (empreinte des 490
   morceaux 36b34a87…, la même branche règle désarmée rend 27789d06…, la
@@ -788,7 +799,7 @@
   passe sous l'eau à côté d'un trottoir — elles sont désormais maçonnées
   aussi, mais leur forme reste un bord de disque, pas un quai.
 - [x] **EN LIGNE, UNE VOITURE DE LA RUE ENTRE ENCORE UNE FOIS DANS CELLE D'UN
-  AMI (v305) — faite en v375.** Ni le cap, ni le retard réseau : la patience
+  AMI (v305) — faite en v383.** Ni le cap, ni le retard réseau : la patience
   de quatre secondes revenait dès qu'une voiture de la rue gênait aussi
   (`some` au lieu de `every`, vehicules.js). Sonde `sonde-intrus-ami.cjs` :
   ancien 5 entrées sur 11 poses, neuf 0 sur 10.

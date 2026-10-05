@@ -588,7 +588,7 @@ function verifier(nom, ok, detail = '') {
       traversee = { ...r, essais: essai + 1 };
       if (r.suivie && r.suivie.vue > 20) break;     // la situation a eu lieu
     }
-    // ET LA SEPTIÈME VOITURE, CELLE QUI ENTRAIT QUAND MÊME (v375). Le compte
+    // ET LA SEPTIÈME VOITURE, CELLE QUI ENTRAIT QUAND MÊME (v383). Le compte
     // `dedans` valait 1 des deux côtés : la sonde `sonde-intrus-ami.cjs` l'a
     // démonté — toutes les voitures entrées avaient l'ami ET une voiture de la
     // rue dans leur `veut`, donc la patience de quatre secondes, puis `repart`

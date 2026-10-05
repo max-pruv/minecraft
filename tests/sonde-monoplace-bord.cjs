@@ -1,4 +1,4 @@
-// SONDE (v375) : « quand la monoplace arrive, on a le temps de voir le
+// SONDE (v383) : « quand la monoplace arrive, on a le temps de voir le
 // bouton » — l'enfant posé SUR le circuit, ou au BORD. Où s'arrête la
 // monoplace qui l'attend, et pourquoi (veut, repart) ?
 const { Banc, dormir } = require('./banc.js');

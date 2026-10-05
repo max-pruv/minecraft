@@ -748,10 +748,10 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     const surLeCircuit = await tab.evaluate(() => window.__vehicules.point(2, 12));
     verifier('le circuit tourne quelque part sur la carte', !!surLeCircuit,
       JSON.stringify(surLeCircuit));
-    // AU BORD, PAS SUR LA PISTE (v375). Posé SUR le tracé, l'enfant arrête la
+    // AU BORD, PAS SUR LA PISTE (v383). Posé SUR le tracé, l'enfant arrête la
     // monoplace — elle attend à 9,3 blocs, à un pas du bouton (RAYON_BORD 9).
     // Ce témoin était vert parce qu'au bout de quatre secondes elle repartait
-    // AU TRAVERS de lui (`repart`, la panne que la v375 corrige ; sonde
+    // AU TRAVERS de lui (`repart`, la panne que la v383 corrige ; sonde
     // `sonde-monoplace-bord.cjs` : ancien code bouton à 5,4 s, neuf jamais sur
     // la piste, 0,3 s au bord). Son commentaire disait « planté au bord du
     // circuit » : on le pose au bord, trois blocs et demi de côté.

@@ -1992,7 +1992,7 @@ export function createVehicules({ scene, player }) {
       // gardent leurs quatre secondes entre elles.
       // …et devant un train (v304) : on ne force pas un passage à niveau.
       //
-      // ET « SEUL » NE VEUT PAS DIRE « SEULEMENT LUI » (v375). La règle
+      // ET « SEUL » NE VEUT PAS DIRE « SEULEMENT LUI » (v383). La règle
       // écrivait « devant l'enfant SEUL » : une voiture gênée par l'enfant ET
       // par une autre voiture de la rue — un carrefour, une file qui croise —
       // retombait sur la patience de quatre secondes, puis `repart` la lançait
@@ -2287,7 +2287,7 @@ export function createVehicules({ scene, player }) {
     // les amis de la partie (v305), branchés par main.js : où ils sont, leur cap,
     // et s'ils conduisent
     brancherAmis: (f) => { amis = f; },
-    // pour les sondes (v375) : ce que `cederLePassage` a vu à la dernière
+    // pour les sondes (v383) : ce que `cederLePassage` a vu à la dernière
     // image — qui gêne qui (`veut`), qui attend, qui vient de forcer (`repart`)
     diagCeder: () => dernieres.map((a) => ({ cle: a.cle, x: +a.x.toFixed(1), z: +a.z.toFixed(1), ami: !!a.ami, enfant: !!a.enfant,
       veut: a.veut ? [...a.veut.keys()] : [], attend: a.c && a.c.attend ? a.c.attend[a.i] : null,

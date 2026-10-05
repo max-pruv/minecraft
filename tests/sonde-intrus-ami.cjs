@@ -1,4 +1,4 @@
-// SONDE (v375) : la voiture de la rue qui entre chez l'ami — trois pistes.
+// SONDE (v383) : la voiture de la rue qui entre chez l'ami — trois pistes.
 // (1) cap de l'ami lu sur rp.yaw ; (2) position réseau en retard ; (3) une
 // voiture d'un autre convoi, de travers. On relève CHEZ ALICE, image par
 // image, chaque voiture qui touche le rectangle VRAI de Marlon, avec ce que
