@@ -1740,7 +1740,7 @@ Une règle.
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
 
-## La porte de Manhattan (v359) — une ville qui n'est pas un disque déclare sa porte
+## La porte de Manhattan (v361) — une ville qui n'est pas un disque déclare sa porte
 
 L'I-95 New York–Boston. Quatre règles.
 
