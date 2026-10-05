@@ -43,7 +43,10 @@ roulée de 1 881 à 2 026 blocs. La ville d'avant reste sous ce qu'un enfant a
 bâti (`washington-v367.js`, `DATE_RUES_WASHINGTON`). Le prix : la part de lots
 du disque passe de 14,2 à 11,2 %. Et l'I-95 (v367), dont l'avenue d'entrée
 finissait sur une rue de l'ancienne grille, arrive par une bretelle sur la
-rue v = 84.
+rue v = 84. Le Triangle fédéral descend de 13–16 à 12–14 blocs : sa
+ligne de corniche est celle des musées du Mall, et le Musée afro-américain
+n'est plus plus bas que ses voisins (le portail l'a vu, la médiane de ses
+quatre îlots voisins était passée de 10 à 14 avec la trame neuve).
 
 **Ce qui le prouve.** Deux témoins neufs. `carteMonde.js` coupe la grille des
 quartiers bâtis en travers et mesure chaque rue : 46 rues, chaussée médiane

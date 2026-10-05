@@ -316,7 +316,12 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // colonnes de route entrent dans ses morceaux (886 → 1 515) — voulu. Sans
 // Washington, les 441 autres morceaux et toutes les routes rendent ad9949da…
 // sur `origin/main` (v366, f70060cd… avec elle) ET sur la branche.
-const EMPREINTE_MORCEAUX_V357 = '7d235907f961e6536d4badf7dd15491ee5be529fa7967c4399a3eb6edd4a1e71';
+// v369 : la grille de Washington à la règle du kit — le CONTENU du lieu
+// « washington » change, voulu. Mesuré lieu par lieu (une empreinte par
+// lieu, sonde du scratchpad) sur `origin/main` (v367) et sur la branche :
+// les huit autres lieux identiques au bit près, Washington seul diffère
+// (7bb3f492… → 019bb14a…).
+const EMPREINTE_MORCEAUX_V357 = '6bba8eacb7e44f90aa117239bc8a4c2b36f2fabf2edd8125deb51839f219c345';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };

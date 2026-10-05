@@ -867,7 +867,7 @@ const QUARTIERS = [
   { nom: 'Shaw', u: -50, v: -100, r: 16, genre: 'brique', hMin: 8, hMax: 12 },
   { nom: 'Penn Quarter', u: -62, v: -40, r: 18, genre: 'calcaire', hMin: 13, hMax: 17 },
   { nom: 'Chinatown', u: -50, v: -54, r: 9, genre: 'chinois', hMin: 9, hMax: 13 },
-  { nom: 'Le Triangle fédéral', u: -82, v: -22, r: 16, genre: 'ministere', hMin: 13, hMax: 16 },
+  { nom: 'Le Triangle fédéral', u: -82, v: -22, r: 16, genre: 'ministere', hMin: 12, hMax: 14 },
   { nom: 'Judiciary Square', u: -28, v: -36, r: 12, genre: 'calcaire', hMin: 12, hMax: 16 },
   { nom: 'Capitol Hill', u: 40, v: 6, r: 26, genre: 'brique', hMin: 7, hMax: 10 },
   { nom: 'NoMa', u: 34, v: -66, r: 20, genre: 'bureaux', hMin: 13, hMax: 17 },
