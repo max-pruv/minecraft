@@ -1069,6 +1069,46 @@ Et une empreinte d'identité qui change se PROUVE : celle des 490 morceaux
 (v352) couvre Marrakech et Tokyo ; la branche, bâtisseurs neufs désarmés, rend
 l'ancienne au bit près — c'est ce qui a permis de la remplacer.
 
+## L'arrivée après la carte (v379) — un gel de banc se démonte en scène vide
+
+Les dettes de la v360. Cinq règles.
+
+- **UN PLAFOND DE VILLE SE LIT À L'ENDROIT QUE LA SONDE TRAVERSE.** Londres
+  « plafonnait à 70 » : la sonde (`sonde-londres.cjs`) a montré que le trou ne
+  tombait qu'au milieu du trajet, c'est-à-dire au CENTRE de la ville — 64 % de
+  faces de plus qu'au centre de Paris, une génération 70 % plus chère — et que
+  le reste du couloir coûte autant qu'à Paris (5,3 contre 5,4 ms sous node).
+  On compare donc des DISTRIBUTIONS (quatre tours alternés, v269), jamais un
+  passage par ville : 143–161 contre 158–173.
+- **UNE FONCTION DE COLONNE APPELÉE QUATRE FOIS SE GARDE, ET LA TABLE NE
+  GROSSIT PAS.** `solLondres` servait quatre fois par colonne (la colonne, ses
+  quatre voisines par `lotLondresLibre`, les arbres et réverbères) : une table
+  à correspondance directe de 8 192 cases (génération 2,8 → 2,1 ms), prouvée
+  par l'empreinte des 490 morceaux. Elle n'est juste que parce que la fonction
+  ne lit que (x, z) — la ville d'avant se choisit dans `world.js`, qui appelle
+  alors un autre module. Et ce qui sert à l'initialisation du module (les
+  arrêts de la v339 appellent `solLondres`) ne peut pas lire une `const`
+  déclarée plus bas : tables en `var`, tailles écrites en dur.
+- **UN DÉBIT SE JUGE EN SCÈNE VIDE, ET UNE FENÊTRE SE FERME D'ELLE-MÊME.**
+  Après un saut (`estUnSaut`, plus que la portée d'un coup), la file se
+  recharge à l'arrivée jusqu'à ce qu'elle soit vide, dix secondes au plus
+  (`FENETRE_ARRIVEE_MS`), hors rendu logiciel. Mesuré : en scène vide, les deux
+  recharges chargent Paris en 4,1–4,4 s à 57 images par seconde ; en scène
+  dessinée au banc, 90 % en 5,5–6,4 s contre 291–304 morceaux sur 625 en vingt
+  secondes. Ce que la scène dessinée perd est le dessin, pas le chargement.
+  Sur la tablette : `?recharge=arrivee&diag=1` contre `?recharge=image&diag=1`.
+- **UN TÉMOIN DE GEL EN RENDU LOGICIEL MESURE SWIFTSHADER — on le repointe en
+  scène vide, et l'on prouve qu'il rougit encore.** « L'écran ne se fige pas »
+  (v235) était rouge des deux côtés : dans ses images lentes, 1 à 5 ms
+  d'installation, zéro programme, 18 à 49 ms de JavaScript pour 1,3 à 1,5 s.
+  Il rend désormais une scène vide pendant le vol (0 %, 100 ms au pire) ; le
+  remède de la v235 désarmé dans une copie, il rend 9 à 11 % (barre 5). Le
+  verdict garde ce qui vit sur le fil principal et se transpose ; le dessin de
+  la ville se lit sur la tablette.
+- **UN LOT DÉPASSÉ N'EST PAS NUISIBLE, ET C'EST MESURÉ.** À 80 b/s, 0 à 6
+  morceaux sur 400 à 700 reçus arrivent derrière l'enfant, zéro refusé : moins
+  de 1 % de travail perdu. On ne l'annule pas.
+
 ## La file se recharge à l'arrivée (v360) — un plafond de débit peut être la cadence du banc
 
 Les deux pistes que la v352 avait déclarées sans mesure. Cinq règles.

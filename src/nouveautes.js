@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 379,
+    titre: 'On arrive plus vite',
+    puces: [
+      'Après la carte, la ville arrive vite',
+      'Londres se dessine un peu plus vite',
+    ],
+  },
+  {
     v: 378,
     titre: 'Les voitures contournent les monuments',
     puces: [

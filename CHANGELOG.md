@@ -20,6 +20,46 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v379 — On arrive plus vite après la carte
+
+**Pourquoi.** Trois questions laissées ouvertes par la v360, et une quatrième
+qui traînait au portail. Après une téléportation, la file de maillage ne se
+rechargeait qu'une fois par image : sur un écran qui rame au milieu de Paris,
+le disque d'affichage arrivait au compte-gouttes — au banc, 291 à 304
+morceaux sur 625 au bout de vingt secondes. Londres plafonnait à 70 blocs par
+seconde quand Paris tenait 80, sans cause mesurée. Et le témoin « l'écran ne
+se fige pas en arrivant sur une ville » était rouge des deux côtés depuis
+plusieurs portails, sans qu'on sache ce qu'il mesurait encore.
+
+**Ce que ça change.** Après un saut par la carte, la file se recharge à
+l'arrivée de chaque morceau — toujours quatre demandes en vol au plus — le
+temps de remplir le disque, dix secondes au plus, puis redevient celle d'avant
+(coupée en rendu logiciel, comme la recharge en roulant de la v360). Au banc,
+90 % du disque de Paris en 5,5 à 6,4 s. Les morceaux du centre de Londres se
+fabriquent un peu plus vite : `solLondres` y était appelé quatre fois par
+colonne, une seule suffit (génération 2,8 → 2,1 ms sous node) — sans changer
+un bloc. Le plafond de vitesse au sol, lui, ne bouge pas : Londres ne tient
+toujours pas 80 au banc, il reste à 70 en ville.
+
+**Ce qui le prouve.** Trois sondes qui séparent les cas. `sonde-londres.cjs` :
+le centre de Londres, pile au milieu du trajet mesuré, porte 64 % de faces de
+plus que celui de Paris et une génération 70 % plus chère ; avec la mémoire,
+145–151 blocs devant soi contre 137–152 sur `origin/main` — les distributions
+se recouvrent, le plafond ville reste donc à 70 ; et moins de 1 % des
+morceaux reçus arrivent derrière l'enfant (un lot dépassé n'est pas
+nuisible). `sonde-teleport-recharge.cjs` : dans une scène vide, les deux
+recharges chargent Paris en 4,1–4,4 s à 57 images par seconde — le
+chargement ne prend rien aux images ; ce que le banc perd en scène dessinée
+(3,9 → 2,8–3,1 images par seconde) est SwiftShader qui dessine la ville plus
+tôt. `sonde-arrivee-ville.cjs` : dans les images de plus de 300 ms du vol vers
+Paris, 1 à 5 ms d'installation, zéro programme compilé, 18 à 49 ms de
+JavaScript, pour des images de 1,3 à 1,5 s ; en scène vide, 100 ms au pire. Le
+témoin de la v235 rend donc une scène vide pendant le vol (vert, 0 % ; rouge à
+9–11 % quand on désarme son remède dans une copie), et un témoin neuf garde la
+fenêtre d'arrivée (un saut l'arme, un pas non, elle se rend ; rouge sur
+`origin/main`). L'empreinte des 490 morceaux est inchangée. À relire sur la
+tablette : `?recharge=arrivee&diag=1` contre `?recharge=image&diag=1`, en se
+téléportant à Paris.
 ## v378 — Les voitures ne traversent plus les monuments
 
 **Pourquoi.** Le témoin de la v375 l'a mesuré : dans les villes engendrées, les
