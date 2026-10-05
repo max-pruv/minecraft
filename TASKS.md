@@ -389,6 +389,20 @@
     New York 53/321, gel d'arrivée 38 %) : les familles déclarées aux
     portails des v356 à v364, aucune ne lit les réglages ni les dégâts de la
     rue.
+  - SECOND PORTAIL, après rebase sur la v369 : `degats`, `reglages`,
+    `visio`, `hote`, `washington` VERTS. Rouges : `maj.js` (loader, flou —
+    déclarés), `carte.js` (la flèche du GPS à 1,92 rad, déclarée v327 ; le
+    glissé bridé 418 ms, déclaré v364), `manhattan.js` (trou, taxi),
+    `reseau.js` (départ propre, voir plus haut) et `monte.js` : passants de
+    Rome sur la chaussée (le tirage déclaré), téléportation qui compile, trou
+    en vol, gel d'arrivée, et « rendue dans une scène vide, la recharge à
+    l'arrivée garde la cadence » (v360, 6,5 contre 9,9 images/s). `monte.js`
+    REJOUÉE SEULE des deux côtés (v369 dans un arbre détaché) : la scène vide
+    VERTE des deux côtés — un rouge de charge ; le gel d'arrivée rouge des
+    deux côtés ; la téléportation qui compile et le trou en vol rouges sur la
+    branche seule à ce passage, familles déclarées (rouges des deux côtés en
+    v363–v364, intermittent pour le second). Aucune ne passe par le champ
+    `rc` (aucune voiture de la rue percutée) ni par les réglages.
 
 - [ ] **AU PORTAIL DE LA v364 (le coût des dégâts dans le journal), CINQ
   SUITES ROUGES — une à moi, corrigée ; les autres déjà déclarées.**
