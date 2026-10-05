@@ -1,5 +1,15 @@
 # Ce qui est en cours
 
+- [ ] **PORTAIL FINAL DE LA v355 (après la fusion avec la v354)** : rouges
+  `monte.js` gel d'arrivée (2 350 ms · 20,6 %, dette ci-dessous),
+  `manhattan.js` façade (17 102 → 51 734), taxi (bouton jamais visible) et
+  PeerJS « Lost connection » (déclarés), et `maj.js` « le loader ne s'efface
+  qu'une fois les corps et les programmes prêts » (20/27 programmes à 1 252 ms
+  au portail) — rejoué SEUL sur la branche : vert, 27/27 à 3 161 ms ; c'est
+  l'intermittence déjà mesurée rouge une fois sur quatre sur `origin/main`
+  (tableau plus bas). Le témoin neuf « une voiture neuve n'hérite pas du
+  dernier choc » est vert au portail.
+
 - [ ] **AU PORTAIL DE LA v355 (la conduite), LES ROUGES RESTANTS SONT DÉJÀ
   CONNUS, rejoués SEULS des deux côtés.** `monte.js` « l'écran ne se fige pas
   en arrivant sur une ville » (vol du chasseur, chemin que la v355 ne touche
