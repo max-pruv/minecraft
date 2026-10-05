@@ -3222,11 +3222,20 @@ l'embarquement a eu lieu, pas par une hypothèse.
   Puis v374 à v376 sont parties pendant ces mesures : rebasée sur la v376
   (conflit sur une ligne de `main.js`, les deux gardées), témoin du passager
   vert et fumée verte, publiée en v377.
+- [ ] **LE PORTAIL DE LA v384 (la descente du passager).** `reseau.js`
+  ENTIÈRE verte, témoin neuf compris ; `degats.js`, `reglages.js` verts.
+  Rouges, tous de familles déjà déclarées : `maj.js` (loader de
+  l'installation, loader après rechargement), `carte.js` (flèche du GPS, rouge
+  seule sur `origin/main` en v327 ; glisser bridé ×4, 428 ms), `monte.js`
+  (téléportation qui compile, réverbère `parcouru 0`). PREUVE STRUCTURELLE :
+  le code neuf (`descendreDeChez`) n'est atteint que par un passager d'ami,
+  qui n'existe que dans `reseau.js` ; partout ailleurs `embarq=0`.
 - [x] **Le passager d'un ami** — FAIT en v377 : il entre par la portière
   droite avec la séquence (`monterChez`), et le conducteur la voit s'ouvrir
-  chez lui (message `portiere`, l'hôte relaie). Reste : la DESCENTE du
-  passager est encore instantanée ; et sans courtier (partie par le nuage
-  seul) le message ne sait pas nommer le conducteur (dette v253).
+  chez lui (message `portiere`, l'hôte relaie). La DESCENTE aussi depuis la
+  v384 (`descendreDeChez`). Reste : sans courtier (partie par le nuage seul)
+  le message ne sait pas nommer le conducteur (dette v253, zone
+  conduite-en-ligne).
 - [ ] **LE PORTAIL DE LA v372 (bords des portières), DOUBLE MESURE FAITE.**
   `degats.js` vert. Au portail, 17 rouges dans `monte.js` et `maj.js` : il a
   tourné pendant que je faisais tourner une dizaine de sondes de navigateur
