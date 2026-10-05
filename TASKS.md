@@ -3098,7 +3098,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
 ## En cours
 
 ### Embarquement (v366) — ce qui reste dans la zone
-- [ ] **LE PORTAIL DE LA v374 (le passager), DOUBLE MESURE FAITE.** Six
+- [ ] **LE PORTAIL DE LA v377 (le passager), DOUBLE MESURE FAITE.** Six
   suites vertes (`degats`, `visio`, `hote`, `washington`, `reglages`). Rouges
   déclarés : `maj.js` (préparation), `carte.js` (glisser bridé ×4, 484 ms),
   `manhattan.js` (trou de façade, taxi tactile), `monte.js` (téléportation,
@@ -3108,7 +3108,10 @@ l'embarquement a eu lieu, pas par une hypothèse.
   l'identique ; « un départ propre » rouge sur la branche seule cette fois,
   déjà mesuré rouge sur `origin/main` (plus bas) et joué AVANT que la Lou du
   témoin neuf n'existe.
-- [x] **Le passager d'un ami** — FAIT en v374 : il entre par la portière
+  Puis v374 à v376 sont parties pendant ces mesures : rebasée sur la v376
+  (conflit sur une ligne de `main.js`, les deux gardées), témoin du passager
+  vert et fumée verte, publiée en v377.
+- [x] **Le passager d'un ami** — FAIT en v377 : il entre par la portière
   droite avec la séquence (`monterChez`), et le conducteur la voit s'ouvrir
   chez lui (message `portiere`, l'hôte relaie). Reste : la DESCENTE du
   passager est encore instantanée ; et sans courtier (partie par le nuage

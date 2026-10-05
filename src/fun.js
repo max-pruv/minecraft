@@ -363,7 +363,7 @@ export function initFun(ctx) {
       toast(`🚗 Tu montes avec ${ami.nom} ! Appuie encore pour descendre.`, 0xa8d8ff);
       emojiBurst(['🚗', '💨'], 8);
     };
-    // PAR LA PORTIÈRE DROITE, comme au volant (v374) : la séquence marche,
+    // PAR LA PORTIÈRE DROITE, comme au volant (v377) : la séquence marche,
     // ouvre, assied, puis appelle `assis` — `passagerDe()` ne ment pas avant
     const veh = vehiculeDistant ? vehiculeDistant(ami.id) : null;
     if (!veh) { assis(); return; }
@@ -1399,7 +1399,7 @@ export function initFun(ctx) {
     refusSortie: () => embarquement.refusSortie(),
     avatarEnSequence: () => embarquement.avatarPilote(),
     brancherAvatar: (h) => embarquement.brancherAvatar(h),
-    // la portière d'un passager, d'une tablette à l'autre (v374)
+    // la portière d'un passager, d'une tablette à l'autre (v377)
     brancherPortieres: (f) => embarquement.brancherReseau(f),
     recevoirPortiere: (mesh, c, o) => embarquement.porteDistante(mesh, c, o),
     // Chez qui l'enfant est passager (ou null) : la position réseau

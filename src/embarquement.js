@@ -303,7 +303,7 @@ export function creerEmbarquement(ctx) {
     publier();
   }
 
-  // ---- monter chez un ami (v374) -----------------------------------------
+  // ---- monter chez un ami (v377) -----------------------------------------
   // Le passager d'un ami (v253) collait l'enfant au siège d'un coup. Il entre
   // désormais par la portière DROITE de la voiture de l'ami (`cote: 1`, déjà
   // fabriquée par portieres.js), avec la même marche, la même portière, la
@@ -336,7 +336,7 @@ export function creerEmbarquement(ctx) {
     if (s && s.chez && s.chez.de && diffuser) diffuser({ t: 'portiere', de: s.chez.de, c: s.cote, o });
   }
 
-  // LA PORTIÈRE QU'UN AUTRE OUVRE (v374) : sur cette tablette, la voiture où
+  // LA PORTIÈRE QU'UN AUTRE OUVRE (v377) : sur cette tablette, la voiture où
   // un ami monte en passager — la nôtre si l'on conduit, ou celle d'un autre.
   // Elle s'ouvre et se referme au rythme de la séquence de l'ami, en temps de
   // jeu (v226), sans rien attendre d'autre que ses deux messages.

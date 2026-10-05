@@ -7684,7 +7684,7 @@ fun.degats.brancherReseau((m) => { if (net && net.active) net.broadcast(m); });
 // LA SÉQUENCE D'EMBARQUEMENT (v366) prend l'avatar que main.js possède, et la
 // place assise que main.js calcule : un seul corps, une seule assise.
 fun.brancherAvatar({ obtenir: obtenirAvatarLocal, placeAssise, pose: POSE_AU_VOLANT });
-fun.brancherPortieres((m) => { if (net && net.active) net.broadcast(m); });   // v374
+fun.brancherPortieres((m) => { if (net && net.active) net.broadcast(m); });   // v377
 
 // --- main loop -------------------------------------------------------------------------
 

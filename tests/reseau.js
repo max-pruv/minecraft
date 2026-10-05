@@ -287,7 +287,7 @@ function verifier(nom, ok, detail = '') {
       (await vu(hote)).compteur === 2 && (await vu(alice)).compteur === 2
       && !(await nomsVus(hote)).includes('Nina') && !(await nomsVus(alice)).includes('Nina'),
       `hôte ${JSON.stringify(await nomsVus(hote))} · Alice ${JSON.stringify(await nomsVus(alice))}`);
-    // --- le passager entre par la portière, et l'ami la voit s'ouvrir (v374)
+    // --- le passager entre par la portière, et l'ami la voit s'ouvrir (v377)
     //
     // Le passager d'un ami (v253) était collé au siège d'un coup. Il marche
     // désormais jusqu'à la portière DROITE, l'ouvre, s'assied, la referme —

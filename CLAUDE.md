@@ -887,7 +887,7 @@ d'un plan est rejeté par six comparaisons — sans cela le plan passait de 4 à
 135 ms. Un bord net ne suffit pas à rendre une portière : les taxis l'ont, et
 restent refusés parce que derrière il n'y a rien (0/24 rayons).
 
-**Le passager monte par la portière, et l'ami la voit (v374).**
+**Le passager monte par la portière, et l'ami la voit (v377).**
 `monterChez` rejoue la séquence sur la voiture DISTANTE de l'ami (telle que
 cette tablette la dessine), portière droite, et n'appelle `fin` (qui fait de
 l'enfant un passager, fun.js) qu'une fois assis — `passagerDe()` ne ment pas
