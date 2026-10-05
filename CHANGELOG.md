@@ -55,10 +55,10 @@ Les cinq gains :
   morceaux, autour de neuf lieux (Paris avec et sans la couche HD, Rome,
   Londres, la campagne, l'A1, Washington, San Francisco, Marrakech, Tokyo),
   plus `routeEn` sur toutes les routes du registre, est **identique à celle
-  de la v348**. Elle rougit si l'on casse la borne de `routeEn` à dix blocs ;
+  de la v351**. Elle rougit si l'on casse la borne de `routeEn` à dix blocs ;
 - **le travail d'un morceau en appels**, pas en millisecondes : à Paris
   **2 209 → 463 lectures de relief, 3 811 → 324 lectures de blocs** ; barre au
-  milieu, rouge sur la v348.
+  milieu, rouge sur la v351.
 
 Les deux empreintes du relief de `plafond.js` sont intactes. La Tamise a été
 comparée à l'ancien code sur 4 millions de points : zéro écart. La sonde

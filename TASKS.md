@@ -1,5 +1,21 @@
 # Ce qui est en cours
 
+- [ ] **LE PORTAIL DE LA v352 (le coût d'un morceau), DOUBLE MESURE FAITE.**
+  Treize suites vertes, dont `plafond.js` et ses deux témoins neufs. Rouges,
+  chacun rejoué SEUL des deux côtés (`origin/main` v348, arbre détaché) :
+  `manhattan.js` — trou de façade 11 684 → 51 734 sur la branche, 14 326 →
+  51 734 sur `origin/main`, et la suite meurt sur le MÊME `locator.tap`
+  (30 s) des deux côtés ; au portail s'y ajoutaient le taxi (bouton jamais
+  visible) et `PeerJS: Lost connection`, déjà déclarés. `monte.js` — l'arrivée
+  figée, seul rouge, 18,6 % au-delà de 300 ms au portail (branche), 25,4 % sur
+  `origin/main` seul. `reseau.js` — « un hôte sans courtier est trouvé » et
+  « il le REJOINT » au portail ; rejouée seule, **verte des deux côtés** :
+  l'intermittence déjà déclarée. `maj.js` — le badge (version servie v348 au
+  portail, avant le bump) et le loader qui compte ses fichiers (rouge au
+  premier passage, vert à la reprise). La livraison ne touche ni Manhattan,
+  ni le réseau, ni le rendu : seulement le générateur et le mailleur, dont
+  l'empreinte (blocs et tampons) est celle d'`origin/main`, bit pour bit.
+
 - [ ] **LE PORTAIL DE LA v351 (les piétons rapides), DOUBLE MESURE FAITE.**
   Rouges de portail déjà déclarés : `maj.js` « corps, programmes et fond de
   carte », `manhattan.js` (trou de façade 27 926 → 51 734, `#ride-btn` caché,

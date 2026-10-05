@@ -290,9 +290,9 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // Oslo (disque + 80 blocs, un point sur trois), relevé sur `origin/main` :
 // c'est ce que `new World({ v308: true })` doit rendre au bloc près (v309).
 // v352 : l'empreinte des blocs et des tampons de 490 morceaux (morceaux-temoin.mjs),
-// relevée sur la v348 ; et le travail d'un morceau, barre au milieu des deux mesures.
-const EMPREINTE_MORCEAUX_V348 = '0d956b3d988d3d44176424ff2ab7e3860cefbd4e10f8bfcfc1fd15d906b9560a';
-// lectures par morceau, v348 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
+// relevée sur la v351 (la même, bit pour bit, que sur la v348) ; et le travail d'un morceau, barre au milieu des deux mesures.
+const EMPREINTE_MORCEAUX_V351 = 'b31099b9fbe9443f1511a752d8136967d3f93e052da1c133f7704e76f25a44af';
+// lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
 const EMPREINTE_V308_RELIEF = 'e92db9d7ae703856de1cfb7e00dc4abce156c490';
@@ -1677,22 +1677,22 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   // gardé par morceau, mailleur par tables, Tamise sans hypot inutile). Deux
   // témoins, sous node (`morceaux-temoin.mjs`) :
   //  • l'EMPREINTE des blocs et de tous les tampons de 490 morceaux engendrés
-  //    et maillés autour de neuf lieux est celle relevée sur la v348 — rien n'a
+  //    et maillés autour de neuf lieux est celle relevée sur la v351 — rien n'a
   //    bougé d'un bloc ni d'un sommet. Elle se rejoue sur un autre arbre :
   //    `empreinteMorceaux('<arbre>/src')`. Et elle lit des colonnes de route,
   //    sans quoi elle ne garderait pas `routeEn` ;
   //  • le TRAVAIL d'un morceau, en appels et non en millisecondes (la charge du
   //    banc ne le touche pas) : lectures de relief et de blocs par morceau
-  //    maillé en roulant. Mesuré sur la v348 puis ici, la barre au milieu.
+  //    maillé en roulant. Mesuré sur la v351 puis ici, la barre au milieu.
   {
     const { empreinteMorceaux, travailParMorceau } = await import('./morceaux-temoin.mjs');
     const t0 = Date.now();
     const e = await empreinteMorceaux('../src');
     verifier('engendrer et mailler moins cher ne change ni un bloc ni un sommet (490 morceaux, neuf lieux, toutes les routes)',
-      e.empreinte === EMPREINTE_MORCEAUX_V348 && e.morceaux === 490 && e.route > 0 && e.talus > 0,
-      `${e.empreinte.slice(0, 16)} pour ${EMPREINTE_MORCEAUX_V348.slice(0, 16)}, ${e.morceaux} morceaux, ${e.route} colonnes de route lues, ${e.talus} de talus, ${Date.now() - t0} ms`);
+      e.empreinte === EMPREINTE_MORCEAUX_V351 && e.morceaux === 490 && e.route > 0 && e.talus > 0,
+      `${e.empreinte.slice(0, 16)} pour ${EMPREINTE_MORCEAUX_V351.slice(0, 16)}, ${e.morceaux} morceaux, ${e.route} colonnes de route lues, ${e.talus} de talus, ${Date.now() - t0} ms`);
     const tr = await travailParMorceau('../src');
-    verifier('un morceau de ville coûte moins de lectures de relief et de blocs que sur la v348',
+    verifier('un morceau de ville coûte moins de lectures de relief et de blocs que sur la v351',
       Object.entries(BARRES_TRAVAIL).every(([v, b]) => tr[v].reliefs <= b.reliefs && tr[v].lus <= b.lus),
       JSON.stringify({ mesure: tr, barres: BARRES_TRAVAIL }));
   }

@@ -786,7 +786,7 @@ et le levier restant était le coût d'un morceau dans le worker. Cinq règles.
 - **UNE OPTIMISATION DU GÉNÉRATEUR OU DU MAILLEUR SE PROUVE PAR UNE EMPREINTE
   RELEVÉE SUR L'ANCIEN CODE.** Le SHA-256 des blocs et de tous les tampons de
   490 morceaux (neuf lieux, Paris avec et sans HD), plus `routeEn` sur toutes
-  les routes. Il est relevé sur la v348 (`empreinteMorceaux('<worktree>/src')`)
+  les routes. Il est relevé sur la v351 (`empreinteMorceaux('<worktree>/src')`)
   et gardé par `plafond.js`. **Et l'empreinte se vérifie capable de rougir** :
   sur ses seuls 490 morceaux, une borne de `routeEn` cassée à dix blocs passait,
   parce qu'aucun talus de plus de dix blocs n'y tombait. Il en existe ailleurs,
