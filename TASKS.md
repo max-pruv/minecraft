@@ -1019,6 +1019,20 @@
   couleur de la calotte) : un obus d'ardoise, corrigé (le corps s'arrête au
   tambour). Le remède de fond est un bâtisseur par monument, avec sa nef — pas
   une table de paliers.
+- [ ] **LE PORTAIL DE LA v357 (les tours) : TOUS LES ROUGES DÉJÀ DÉCLARÉS, UN
+  NEUF INTERMITTENT.** Second portail, sur le code rebasé : `maj.js` le loader
+  (intermittence déclarée, 1 sur 4 sur `origin/main`), `manhattan.js` « le trou
+  enlève aussi la géométrie visible » (25 316 → 54 969, déclaré), `monte.js` le
+  gel d'arrivée (rejoué SEUL sur `origin/main` cette session : rouge aussi,
+  pire image 1 150 ms). Au premier portail, « 🛬 descend train sorti… freine
+  jusqu'à l'arrêt » est sorti du bout de la piste d'essai (arrêt à x 303,4 pour
+  300) : vert au second portail sur la branche, vert rejoué seul sur
+  `origin/main` — la marge de l'atterrissage assisté (291 blocs sur 300, v273)
+  dépend de la cadence. PREUVE STRUCTURELLE : la piste est posée en
+  (30 000, 30 300), loin de tout repère touché, et ni `player.js` ni la physique
+  ne changent. Et l'empreinte des 490 morceaux était ROUGE sur `origin/main`
+  depuis la v355 (routes : 20 186 → 26 361 colonnes de talus, constante non
+  relevée) ; réparé, avec la preuve du désarmement.
 - [x] **LES GRATTE-CIEL ET LES BEFFROIS D'UN BLOC DE LARGE (v353) — FAIT en v357.**
   Les treize ont un bâtisseur d'après leur vraie silhouette (champ `tour`,
   villesmonde.js ; le monde d'avant garde la colonne), et leur ville a son ciel.
