@@ -355,7 +355,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
 
   verifier('le ciel est monté', HEIGHT >= 160, `${HEIGHT} blocs`);
 
-  // --- LE MODÈLE DE CONDUITE, PUR (v354) -------------------------------------
+  // --- LE MODÈLE DE CONDUITE, PUR (v355) -------------------------------------
   // `conduite.js` est lu sous node : ce que la voiture FAIT d'une commande et
   // d'un choc se vérifie ici en millisecondes, sans navigateur. Sur l'ancien
   // code le module n'existe pas, et chaque verdict le DIT au lieu de planter.

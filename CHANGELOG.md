@@ -20,7 +20,8 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v354 — Des voitures qui se conduisent pour de vrai
+<<<<<<< HEAD
+## v355 — Des voitures qui se conduisent pour de vrai
 
 **Pourquoi.** Max : « une grosse refonte de la façon de conduire… comme GTA :
 des véhicules qui tournent de manière naturelle, des accélérations
@@ -60,6 +61,27 @@ de l'accélérateur). Au portail, les rouges restants sont des dettes déclarée
 et rejouées seules des deux côtés : `manhattan.js` identique (23 verts, mêmes
 deux rouges, même arrêt), et le gel d'arrivée de `monte.js` (vol du chasseur,
 chemin que la livraison ne touche pas : 1 183–1 283 ms contre 1 050–1 150).
+=======
+## v354 — Les passants de Manhattan se promènent
+
+**Pourquoi.** Depuis la v278, les passants des villes marchent le long de leur
+trottoir — sauf à New York, la seule ville dont le trottoir vit dans un plan et
+non dans des blocs : ils y gardaient le vieux programme, une longue pause puis
+un pas au hasard. Une avenue de Manhattan semblait peuplée de gens qui
+attendent.
+
+**Ce que ça change.** À Manhattan aussi, les passants marchent d'un pas
+régulier le long du trottoir et tournent au coin de la rue. Ils ne descendent
+pas sur la chaussée : là-bas, ce qui fait un trottoir se lit dans le plan de la
+ville (`ruePietonne`), et c'est lui que `trottoirA` interroge désormais.
+
+**Ce qui le prouve.** Un témoin neuf de `manhattan.js` fait avancer la troupe
+de dix secondes de jeu d'un seul tenant et mesure un débit de chemin par
+seconde : `origin/main` v351, 0 promeneur sur 10 et 0,54 bloc/s (rouge) ; ici
+11 sur 11 puis 10 sur 10, 0,99 et 1,25 bloc/s, zéro passant sur la chaussée.
+Le témoin du taxi fait désormais le vide des passants autour de lui, comme il
+le faisait des bêtes.
+>>>>>>> origin/main
 
 ---
 

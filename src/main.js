@@ -1602,7 +1602,7 @@ function updateChunks() {
   // LES FAMILLES SE JUGENT L'UNE APRÈS L'AUTRE, ET LA PLUS CHÈRE EN DERNIER
   // (leçon de la contrainte de partage, v270) : `eauDevant` descend une
   // colonne, les autres lisent des listes déjà figées.
-  // ET LE CROCHET DIT QUELLE FAMILLE ARRÊTE LA VOITURE (v354) : un choc
+  // ET LE CROCHET DIT QUELLE FAMILLE ARRÊTE LA VOITURE (v355) : un choc
   // contre une voiture de la rue ou du mobilier rebondit, un piéton et l'eau
   // arrêtent net, sans choc — personne n'est jamais touché (v259).
   player.obstacleVehicule = (x, z, cap, x0 = x, z0 = z) => {
@@ -1685,7 +1685,9 @@ function updateChunks() {
   // (`piedPieton`), et elle passe devant : son plan n'est pas fait de blocs.
   world.trottoirA = (x, z) => {
     const bx = Math.floor(x), bz = Math.floor(z);
-    if (world.piedPieton) { const p = world.piedPieton(bx, bz); if (p !== undefined && p !== null) return p === 33; }
+    // À MANHATTAN (v350), le sol de la chaussée est aussi praticable : ce qui
+    // fait un trottoir se lit dans le PLAN (`ruePietonne`), pas dans un bloc.
+    if (world.piedPieton) { const p = world.piedPieton(bx, bz); if (p !== undefined && p !== null) return p === 33 && world.ruePietonne?.(x, z) !== false; }
     const y = world.sommetColonne(bx, bz);
     return TROTTOIR.has(world.getBlock(bx, y, bz));
   };

@@ -56,7 +56,7 @@ const FLY_CROISIERE = 8;    // multiplicateur maximal (88 blocs/s)
 const FLY_MONTEE = 2.5;     // secondes de vol pour gagner un cran (+×1)
 const SWIM_SPEED = 3.0;
 const MAX_STEP = 0.4;     // max movement per collision substep
-const PAS_VOITURE = 0.4;  // pas horizontal de la voiture (v354)
+const PAS_VOITURE = 0.4;  // pas horizontal de la voiture (v355)
 const DEMI_LONG_VOITURE = 2.2;   // la moitié des 4,4 blocs d'une voiture (vehicules.js)
 const DEGAGEMENT_MARCHE = 0.7;
 const FREIN_PIETON = 22;         // le frein franc de conduite.js, devant un piéton   // ce qu'il faut avancer pour passer le bord d'une marche (v286)
@@ -124,7 +124,7 @@ const ROULIS_MAX = 0.52;          // ~30°
 // vitesse ; accélérer et ralentir les voitures, idem pour les avions ».
 // `gaz` est la consigne de la manette (0 à 1), ou null tant qu'elle n'a pas
 // été touchée — alors l'avant du joystick reste l'accélérateur, comme avant.
-// La dynamique de la VOITURE vit dans `conduite.js` depuis la v354 ; seule
+// La dynamique de la VOITURE vit dans `conduite.js` depuis la v355 ; seule
 // la marche arrière de l'AVION se règle encore ici.
 const RECUL = 0.35;               // la marche arrière, part de l'allure
 
@@ -151,7 +151,7 @@ export class Player {
     // La largeur de la boîte de collision. `WIDTH` à pied ; la fiche de
     // l'espèce la remplace quand on prend le volant (`gabarit`).
     this.gabarit = WIDTH;
-    // LE CONTRAT DE LA CONDUITE (v354) : la physique PUBLIE ses chocs —
+    // LE CONTRAT DE LA CONDUITE (v355) : la physique PUBLIE ses chocs —
     // `null` tant qu'il n'y en a pas eu, et non `undefined`, sinon les dégâts
     // (degats3d.js) devinent des chocs aux chutes de vitesse, et un frein franc
     // en serait un — ; et elle LIT `etatVoiture` elle-même (moteur, direction,
@@ -225,7 +225,7 @@ export class Player {
   // lieu d'être posée en déplacement. C'est ce qui permet de demander « et si
   // je montais d'un bloc ? » sans bouger de là où l'on est.
   boiteLibre(x, y, z) {
-    // au volant, la boîte est ORIENTÉE (v354) — et elle doit être libre
+    // au volant, la boîte est ORIENTÉE (v355) — et elle doit être libre
     // tout entière : on ne monte pas une marche pour s'encastrer
     if (this.gabarit > 1 && !this.pilote) return this.cellulesPleinesVoiture(x, y, z, this.yaw).size === 0;
     const half = this.gabarit / 2, eps = 1e-4;
@@ -290,7 +290,7 @@ export class Player {
     return true;
   }
 
-  // LA BOÎTE ORIENTÉE DE LA VOITURE (v354). La v212 avait donné à la voiture
+  // LA BOÎTE ORIENTÉE DE LA VOITURE (v355). La v212 avait donné à la voiture
   // une AABB de sa LARGEUR seule (2,26 × 2,26), parce qu'une boîte alignée sur
   // les axes ne tourne pas et qu'une boîte de 4,4 n'aurait passé dans aucune
   // rue : le nez et le coffre traversaient tout ce qui dépassait des côtés. Le
@@ -795,7 +795,7 @@ export class Player {
     else if (this.inWater) speed = SWIM_SPEED;
     if (this.boost) speed *= this.boost; // riding a mount / berry-juice power-up
 
-    // UN CHOC EST UN ÉVÉNEMENT, PAS UN ÉTAT (v354) : les dégâts rejouent tout
+    // UN CHOC EST UN ÉVÉNEMENT, PAS UN ÉTAT (v355) : les dégâts rejouent tout
     // `choc` dont la date n'est pas celle du dernier qu'ils ont vu POUR CETTE
     // VOITURE — une voiture neuve n'en a vu aucun, et elle héritait donc du
     // dernier choc de la précédente (mesuré dans `monte.js` : une citadine
@@ -804,7 +804,7 @@ export class Player {
     const enVoiture = this.gabarit > 1 && !this.pilote;
     if (enVoiture !== !!this._enVoiture) { this.choc = null; this._enVoiture = enVoiture; }
     if (this.gabarit > 1) {
-      // AU VOLANT (conduite-physique, v354) : le modèle de véhicule de
+      // AU VOLANT (conduite-physique, v355) : le modèle de véhicule de
       // `conduite.js` — l'accélération qui s'essouffle vers la pointe, le frein
       // franc, le frein moteur au lâcher, le braquage qui se resserre avec la
       // vitesse, l'adhérence et sa petite dérive. Le joystick reste la seule
@@ -886,7 +886,7 @@ export class Player {
 
     // Move with collision, in substeps so we never tunnel through blocks.
     const move = this.vel.clone().multiplyScalar(dt);
-    // AU VOLANT, LA VOITURE A SON PROPRE DÉPLACEMENT (v354) : une boîte
+    // AU VOLANT, LA VOITURE A SON PROPRE DÉPLACEMENT (v355) : une boîte
     // ORIENTÉE, des chocs qui glissent ou rebondissent au lieu d'un arrêt net,
     // et les familles d'obstacles de main.js jugées pas à pas.
     if (this.gabarit > 1 && !this.pilote) {

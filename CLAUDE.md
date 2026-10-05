@@ -977,6 +977,18 @@ engendrées. Quatre règles.
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
 
+## Les passants de Manhattan au long cap (v354) — un trottoir qui vit dans un plan se demande au plan
+
+Une règle.
+
+- **À MANHATTAN, UN SOL PRATICABLE N'EST PAS UN TROTTOIR.** `piedPieton` rend
+  33 pour toute case où l'on peut poser le pied, chaussée comprise : c'était la
+  raison pour laquelle la v278 avait écarté le site urbain de la marche au long
+  cap. `world.trottoirA` (main.js) exige désormais aussi `ruePietonne` (le
+  plan) — la même question, posée à la source qui sait y répondre. Et un
+  témoin qui pose la voiture dans une rue de Manhattan fait aussi le vide des
+  passants : ils y marchent désormais, et la voiture freine devant eux.
+
 ## Les piétons et les voitures rapides (v351) — ce qui fuit une horloge réelle se compte sur elle
 
 Le chantier « conduite » (sept sessions) triple les vitesses. Trois règles.
@@ -1122,7 +1134,7 @@ en temps réel), `fun.js` le fait descendre et `deposer` le pose debout sur une
 case libre à côté (côté conducteur d'abord). La carcasse porte `horsService`
 (lu par `animals.js`, comme `montee`) : elle ne se reprend pas, et elle s'en
 va au bout de `DUREE_CARCASSE`.
-## La conduite à la GTA (v354) — un modèle pur, une boîte orientée, des chocs qui se publient
+## La conduite à la GTA (v355) — un modèle pur, une boîte orientée, des chocs qui se publient
 
 Max : « une grosse refonte de la façon de conduire… comme GTA ». Premier palier
 de la session `conduite-physique` (six sessions en parallèle sur la conduite).
@@ -5215,8 +5227,8 @@ caméra à part, `layers.enableAll()` comme le veut la v250.
 ## Chaque voiture roule à l'allure de sa classe (v260)
 
 > **⚠️ Le plafond calculé ci-dessous (28 blocs/s) est remplacé par un plafond
-> MESURÉ (60) en v354, et l'allure se déduit des fiches de `conduite.js`.** Lire
-> « La conduite à la GTA (v354) ».
+> MESURÉ (60) en v355, et l'allure se déduit des fiches de `conduite.js`.** Lire
+> « La conduite à la GTA (v355) ».
 
 Max : « une vitesse en fonction du modèle ». Deux règles.
 

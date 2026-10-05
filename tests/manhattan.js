@@ -214,6 +214,46 @@ function verifier(nom, ok, detail = "") {
         preuves.routes.collisions === 0,
       JSON.stringify(preuves.routes),
     );
+    // ---- LES PASSANTS DE MANHATTAN MARCHENT AU LONG CAP (v350) ------------
+    // Dette de la v278 : un site URBAIN gardait `surTrottoir` faux, donc le
+    // vieux programme (pause longue, cap au hasard). Le trottoir de Manhattan
+    // se lit dans le PLAN (`ruePietonne`), et `trottoirA` le lit désormais.
+    // On mesure un DÉBIT de chemin par seconde de JEU (v279), en faisant
+    // avancer la troupe de dix secondes de jeu d'un seul tenant : à 0,4 image
+    // par seconde sur ce banc (v259), la cadence de la page n'y entre pas.
+    // Mesuré : `origin/main` v351, 0 promeneur sur 10, débit 0,54 ; ici 11 sur
+    // 11, 0,99. La barre de débit est au milieu.
+    const debut = Date.now();
+    await p.waitForFunction(() => {
+      const s = __game.passants?.sites?.find((q) => q.urbain);
+      return s && s.peuple && s.peuple.filter((h) => h.name === 'passant').length >= 10;
+    }, null, { timeout: 60000 }).catch(() => {});
+    const marche = await p.evaluate(() => {
+      const g = __game, s = g.passants.sites.find((q) => q.urbain);
+      if (!s || !s.peuple) return { err: 'aucun passant à New York' };
+      const gens = s.peuple.filter((h) => h.name === 'passant');
+      const promeneurs = gens.filter((h) => h.promene && h.promene()).length;
+      let chemin = 0, surChaussee = 0, n = 0;
+      for (const h of gens) {
+        h.ecart = null;
+        const x0 = h.pos.x, z0 = h.pos.z;
+        let px = x0, pz = z0;
+        for (let k = 0; k < 200; k++) {
+          h.update(0.05);
+          chemin += Math.hypot(h.pos.x - px, h.pos.z - pz);
+          px = h.pos.x; pz = h.pos.z;
+        }
+        n++;
+        if (g.world.ruePietonne && g.world.ruePietonne(h.pos.x, h.pos.z) === false) surChaussee++;
+      }
+      return { total: gens.length, promeneurs, debit: n ? +(chemin / (n * 10)).toFixed(2) : 0, surChaussee };
+    });
+    verifier(
+      "les passants de Manhattan marchent au long cap, sur le trottoir",
+      !marche.err && marche.total >= 10 && marche.promeneurs >= marche.total / 2
+        && marche.debit > 0.75 && marche.surChaussee <= marche.total / 5,
+      JSON.stringify({ ...marche, attente_ms: Date.now() - debut }),
+    );
     await p.evaluate((NY) => {
       const j = __game.player;
       j.pos.set(NY.x + 4.5, 33.01, NY.z + 7.5);
@@ -280,7 +320,7 @@ function verifier(nom, ok, detail = "") {
         ),
       );
       // UNE ATTENTE QUI JETTE MASQUE TOUT CE QUI SUIT (v291) : au portail de
-      // la v354 la file de Manhattan ne s'est jamais vidée en soixante
+      // la v355 la file de Manhattan ne s'est jamais vidée en soixante
       // secondes, et la suite s'est arrêtée là. On attend, borné, et le
       // témoin d'après rend son verdict sur ce qui est installé.
       const fileVide = await p.waitForFunction(
@@ -466,6 +506,14 @@ function verifier(nom, ok, detail = "") {
         g.animalManager.scene.remove(a.mesh);
       }
       g.animalManager.animals.length = 0;
+      // ET LES PASSANTS AUSSI (v354) : ils marchent désormais sur le trottoir
+      // de Manhattan, et la voiture freine devant un piéton (`pietonDevant`).
+      // Ce témoin éprouve les contrôles tactiles, pas la patience de la rue :
+      // il se place lui-même, c'est-à-dire qu'il fait le vide (v284).
+      const s = g.passants?.sites?.find((q) => q.urbain);
+      for (const h of s?.peuple || []) {
+        if (Math.hypot(h.pos.x - NY.x, h.pos.z - NY.z) < 60) h.pos.set(NY.x + 400, h.pos.y, NY.z + 400);
+      }
       g.animalManager.invoquer("voiture", NY.x, NY.z + 22, false, {
         flotte: "ny-crown-victoria",
       });
@@ -498,7 +546,7 @@ function verifier(nom, ok, detail = "") {
       );
     } else {
     // le bouton est là, mais à 0,45 image par seconde un `tap` attend que la
-    // page soit « stable » et lève son délai (v354) : on retombe sur un clic
+    // page soit « stable » et lève son délai (v355) : on retombe sur un clic
     // plutôt que de tuer la suite — c'est la conduite tactile qu'on éprouve
     const tape = await p.locator("#ride-btn").tap({ timeout: 15000 }).then(() => true).catch(() => false);
     if (!tape) await p.evaluate(() => document.getElementById("ride-btn").click());
@@ -512,7 +560,7 @@ function verifier(nom, ok, detail = "") {
       type: "touchMove",
       touchPoints: [{ x: 100, y: 270 }],
     });
-    // ON ATTEND DES IMAGES DE JEU, PAS DU TEMPS DE MONTRE (v354, règle de la
+    // ON ATTEND DES IMAGES DE JEU, PAS DU TEMPS DE MONTRE (v355, règle de la
     // v277). Manhattan rend 0,45 image par seconde sur ce banc (sonde : 18 et
     // 19 images en quarante secondes, branche et `origin/main`) et `dt` est
     // borné à un vingtième : quinze secondes de montre y valent sept images,
@@ -539,8 +587,8 @@ function verifier(nom, ok, detail = "") {
       avance > 8,
       `${avance} blocs en ${Date.now() - t0Taxi} ms de montre`,
     );
-    // DESCENDRE NE DOIT PAS TUER LA SUITE (v354) : ce `tap` a levé son délai
-    // au portail de la v354 et neuf témoins n'ont pas été atteints. On
+    // DESCENDRE NE DOIT PAS TUER LA SUITE (v355) : ce `tap` a levé son délai
+    // au portail de la v355 et neuf témoins n'ont pas été atteints. On
     // descend, borné, et ce que le bouton annonce entre dans le message.
     const descendu = await p.locator("#ride-btn").tap({ timeout: 15000 }).then(() => true).catch(() => false);
     if (!descendu) {
