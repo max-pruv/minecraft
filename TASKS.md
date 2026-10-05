@@ -2882,6 +2882,104 @@ l'embarquement a eu lieu, pas par une hypothèse.
 
 ## En cours
 
+### Embarquement (v366) — ce qui reste dans la zone
+- **Le passager d'un ami (v253) monte sans séquence.** `monterAvec` colle encore
+  l'enfant au siège d'un coup. La séquence sait sortir par la portière droite
+  (`cote: 1`, déjà fabriquée) : la faire entrer par là est l'étape suivante, à
+  condition que l'ami — sur SA tablette — voie aussi la portière s'ouvrir, ce
+  qui demande un message réseau (`net.js`, hors zone).
+- **Les bords de la découpe sont en dents de scie** là où un triangle chevauche
+  le bord du volume (mesuré : 0 sur la plupart des modèles, 21 % de la surface
+  sur la Lucid Gravity, 36-38 % sur les taxis, qui s'en passent). Remède
+  possible : couper les triangles au plan du bord (une passe de découpe), pas
+  agrandir le volume.
+- **Une portière ouverte vue de dos est invisible** sur les modèles qui n'ont
+  pas meublé son revers (faces simples). `DoubleSide` changerait la clé de
+  programme (v246) : il faudrait le chauffer (`signatures.js`) avant de le
+  livrer.
+- **La séquence ne se juge qu'au banc.** Durées (1,1 s de marche au plus, 2,4 s
+  en tout) et caméra de trois quarts arrière : à confirmer sur l'iPad.
+- **Les avions** gardent leur montée instantanée (on ne marche pas jusqu'au
+  cockpit d'un Concorde) : une passerelle serait un second palier.
+- [ ] **LE PORTAIL DE LA v366 APRÈS LA v364, DOUBLE MESURE FAITE.** Cinq
+  suites rouges, toutes des familles déjà déclarées : `maj.js` (préparation
+  libérée avec personnages 4/9 ; « la page ne floute rien »), `manhattan.js`
+  (trou de façade 22 326 → 51 734, taxi « 🐴 Monter » caché), `monte.js`
+  (passants sur la chaussée à Rome 6/21, téléportation qui compile, gel
+  d'arrivée 21,8 %), `reseau.js` (« un départ propre nettoie tout le
+  monde », rouge à l'identique sur `origin/main`, ligne 2639) et
+  `reglages.js` (« un choix fait sur une tablette part au serveur » et ses
+  deux suivants). La seule dont le banc est touché par la livraison
+  (`embarq=0` dans son adresse) est `reglages.js` : rejouée SEULE, 70 verts
+  sur la branche ET 70 verts sur `origin/main` (v364) — rouge de charge,
+  comme au portail de la v363. Preuve structurelle pour les autres : le banc
+  met `embarq=0` partout, donc `monter`/`descendre` appellent `toggleRide`
+  au bit près comme avant.
+- [ ] **LE PORTAIL DE LA v366 APRÈS LA v356, DOUBLE MESURE FAITE.** Onze
+  suites vertes. Rouges déjà déclarés : `maj.js` (le loader de
+  l'installation), `carte.js` (la flèche GPS à gauche, 1,92 rad), `manhattan.js`
+  (le trou de façade 14 460 → 51 734, le taxi tactile), `monte.js` (la
+  téléportation qui compile, l'écran figé à l'arrivée). Deux neufs, rejoués SEULS
+  des deux côtés :
+  - `plafond.js` — « engendrer et mailler moins cher ne change ni un bloc ni un
+    sommet » : `69381f2e…` pour `b31099b9…` attendue, À L'IDENTIQUE sur la
+    branche et sur `origin/main` (v356). L'empreinte de la v351 n'a pas été
+    relevée après les routes de la v355 (Toronto–Montréal, Cologne–Hambourg) ou
+    le ciel de la v353 : à remesurer par la session qui l'a posée, pas à
+    recopier.
+  - `reseau.js` — « deux tablettes voient la même circulation » (barre 20) :
+    écart médian sur la branche 21,0 (portail) · 16,9 · 37,1 · 18,9 · 0,1 · 13,0 ;
+    sur `origin/main` 13,1 · 7,1 · 9,0 · 1,1 · 13,1, en ordre alterné. Les deux
+    étendues se recouvrent (0,1 et 13,0 d'un côté, 13,1 de l'autre) ; la
+    branche penche plus haut et rougit deux fois sur six. Le chemin est
+    pourtant le même PAR CONSTRUCTION : le banc met `embarq=0`, où `monter` et
+    `descendre` appellent `toggleRide` comme avant, `update` sort à la
+    première ligne sans séquence, et ni `embarquement.js` ni `portieres.js`
+    n'ont de minuterie. Ce témoin varie de 0 à 37 blocs sur un même code (sa
+    barre suppose qu'une page rend une image par seconde) : c'est un tirage,
+    pas un gardien. À refaire en lisant les deux pages à la MÊME image (ou en
+    comparant l'horloge de rue publiée, `rue` du message `ciel`, au lieu des
+    positions), et à rejouer dix fois de chaque côté avant d'accuser qui que ce
+    soit.
+- [ ] **LE PORTAIL DE LA v366 APRÈS REBASE SUR LA v348, DOUBLE MESURE FAITE.**
+  Quinze suites vertes. Rouges, rejoués SEULS des deux côtés :
+  `manhattan.js` — le trou de façade (9 203 branche · 11 684 `origin/main` →
+  51 734, dette v291) ; le taxi tactile (1,06 bloc, seul sur la branche :
+  dette v291 déjà vue des deux côtés). `monte.js` — la téléportation qui
+  compile (chauffe NY expirée, 7 et 12 programmes neufs), le trou en vol
+  (chasseur 58 · Concorde 58 pour une barre à 60, l'un ou l'autre selon le
+  passage, des deux côtés), l'écran figé à l'arrivée (1 467 et 2 083 ms) :
+  rouges à l'identique sur la branche et sur `origin/main`. **Et un rouge
+  était à moi** : « descendre vite » rejouée seule sortait l'enfant par
+  l'ARRIÈRE (côté conducteur refusé « mur », un obstacle de la prairie ;
+  passager « circulation » une fois sur trois, sonde `sonde-presse`) — sortie
+  juste, témoin trop étroit (il n'acceptait que les flancs) : il accepte
+  désormais toute place hors de l'emprise et publie les refus. À creuser : ce
+  qui rend « circulation » en pleine prairie à soixante blocs de toute route.
+- [ ] **LE PORTAIL DE LA v366 (embarquement), DOUBLE MESURE FAITE.** Deux
+  portails complets (le second après rebase sur la v339). Les huit témoins de
+  l'embarquement verts aux deux. Rouges, tous rejoués SEULS des deux côtés :
+  `monte.js` — la téléportation qui compile (chauffe de New York expirée) et
+  l'écran figé à l'arrivée (3 600 à 3 733 ms) : rouges à l'identique seule sur
+  la branche ET sur `origin/main` ; « une voiture roule dans la nature » (`pas
+  au volant`) rouge au premier portail, verte au second et seule : la
+  dépendance au témoin d'avant de la v317. `maj.js` — le loader de
+  l'installation : rouge au portail 1 et seule sur la branche, vert au
+  portail 2 et seul sur `origin/main` (qui rend en plus « la libération » et
+  « le flou pendant la préparation », dette de charge de la v327) :
+  l'intermittence déjà mesurée des deux côtés. `visio.js` — la radio pendant
+  l'appel (0,0054 pour une barre à 0,0046) : verte seule des DEUX côtés, un
+  tirage. `carte.js` — la flèche GPS (1,92 rad, la dette de la v327) au
+  portail 2 ; seules, les deux rendent « la faire glisser, bridé ×4 » (439 et
+  408 ms pour 400). `manhattan.js` — le délai de la ligne 282 au portail (dette
+  v269) ; seules, les deux rendent le trou de façade et le taxi tactile
+  (dettes v291). La livraison ne touche ni la carte, ni la visio, ni
+  Manhattan, et le banc saute la séquence (`embarq=0`) partout ailleurs.
+  **Et un rouge était à moi** : rejouée seule, la descente tombait sur
+  « circulation » des deux côtés de la voiture et se faisait sans animation —
+  le témoin remonte et redescend désormais quand la situation n'a pas eu lieu.
+
+
 - [x] **(FAIT en v354 : `trottoirA` lit `ruePietonne` à Manhattan, témoin de débit dans `manhattan.js`.) LES PASSANTS DE MANHATTAN N'ONT PAS REÇU LA MARCHE AU LONG CAP (v278,
   déclaré en v279).** `passants.js` pose `h.surTrottoir = !site.urbain && …` :
   dans un site URBAIN — New York est le seul — le drapeau reste faux, donc

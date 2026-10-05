@@ -193,6 +193,10 @@ const GARDIENS = {
   // LES DÉGÂTS DE LA VOITURE (v343) : la règle pure et ce qui se voit.
   'src/degats.js': ['degats.js'],
   'src/degats3d.js': ['degats.js'],
+  // la séquence d'embarquement et ses portières (v366) : monte.js les éprouve
+  // sur une page qui la joue, reseau.js garde la position qui voyage avec
+  'src/embarquement.js': ['monte.js', 'reseau.js'],
+  'src/portieres.js': ['monte.js', 'degats.js'],
   // Le hub : presque toute livraison y passe. Deux suites larges le couvrent —
   // la carte traverse l'interface entière, la monte traverse la boucle de jeu.
   'src/main.js': ['carte.js', 'monte.js', 'washington.js', 'manhattan.js', 'degats.js'],

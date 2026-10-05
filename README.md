@@ -210,6 +210,8 @@ src/visio.js      camera tiles and sound, split so autoplay can't mute both
   who lives there
 src/animals.js    passive animals, spawning, the mount you can climb
 src/montures.js   the eight rideable beasts and the height of their backs
+src/embarquement.js getting in and out of a car: walk to the door, open, sit, close
+src/portieres.js  car doors cut from the bodywork of each fleet model, once per model
 src/cap.js        the pilot's heading dial: bearing, the city ahead, its distance
 src/marlon.js     friendly NPCs (Marlon the companion, Professeur Cornichon)
 src/vie.js        city life; src/vehicules.js  métro trains (which stop at
