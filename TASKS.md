@@ -1,5 +1,20 @@
 # Ce qui est en cours
 
+- [ ] **PORTAIL DE LA v356 (sur la v355 fusionnée)** — deux rouges neufs, ni
+  l'un ni l'autre de la conduite. (1) `plafond.js` « engendrer et mailler moins
+  cher ne change ni un bloc ni un sommet » : empreinte `69381f2e…` pour une
+  référence `b31099b9…` (v351). Calculée sur `origin/main` (v355) :
+  `69381f2e…` à l'identique — ce sont les deux routes neuves de la v355
+  (Toronto–Montréal, Cologne–Hambourg), lues par le balayage « toutes les
+  routes ». La référence se relève sur la v355 si la session des routes
+  confirme que seul `routeEn` a bougé ; et l'égalité branche = `origin/main`
+  prouve que la conduite ne change ni un bloc ni un sommet. (2) `degats.js`
+  « enfoncer coûte quelques millisecondes » : premier choc 31 ms pour une
+  barre de 30 au portail ; rejouée seule, branche 15,6 et 17,6 ms,
+  `origin/main` 12,8 ms — un coût de charge. Le reste (gel d'arrivée,
+  programmes de NY, appui long de `carte.js`, façade et taxi de Manhattan)
+  est déjà déclaré ci-dessous.
+
 - [ ] **PORTAIL FINAL DE LA v356 (après la fusion avec la v354)** : rouges
   `monte.js` gel d'arrivée (2 350 ms · 20,6 %, dette ci-dessous),
   `manhattan.js` façade (17 102 → 51 734), taxi (bouton jamais visible) et
