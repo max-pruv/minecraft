@@ -3023,6 +3023,10 @@ l'embarquement a eu lieu, pas par une hypothèse.
   `maj.js` rejouée seule : « vraiment là » rouge des deux côtés (personnages
   en retard), « ne floute rien » rouge sur `origin/main` seul — la famille de
   la préparation, déclarée plus bas.
+  Après rebase sur la v369, portail complet relancé seul : `degats.js`,
+  `maj.js`, `reseau.js` verts ; `monte.js` rend les quatre rouges que
+  `origin/main` rendait rejouée seule (passants de Rome, téléportation qui
+  compile, trou en vol, écran figé à l'arrivée) — le témoin des bords vert.
 - [x] **Les bords de la découpe** — FAIT en v370 : coupés au plan (débord 0
   sur les 55 modèles). Les taxis gardent `fabrique` → pas de portière : bords
   nets, mais 0/24 rayons touchent un habitacle derrière l'ouverture.
