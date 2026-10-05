@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 371,
+    titre: 'On traverse au feu',
+    puces: [
+      'Les passants attendent leur tour au feu',
+      'Puis ils traversent la rue',
+      'À Paris, sur les passages piétons',
+    ],
+  },
+  {
     v: 370,
     titre: 'Washington, des rues plus larges',
     puces: [
