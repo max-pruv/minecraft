@@ -424,6 +424,21 @@
     rouges à l'identique sur `origin/main` seul ; la branche seule rend « deux
     enfants sans courtier du tout ». Famille des parties par le nuage,
     intermittente, en production.
+- [ ] **AU PORTAIL DE LA v370 (la normale de ce qu'on touche), CINQ ROUGES,
+  TOUS DÉJÀ VUS SUR `origin/main`.** `reseau.js` « un départ propre nettoie
+  tout le monde », `manhattan.js` « le trou enlève aussi la géométrie »,
+  `maj.js` « corps, programmes et fond de carte » (programmes 15/27, carte
+  fausse à 65 s) et `monte.js` « l'écran ne se fige pas » : dettes déjà
+  déclarées ci-dessous. Le cinquième, `monte.js` « se téléporter dans une
+  ville ne compile plus de programmes », a été rejoué SEUL des deux côtés :
+  branche rouge (Paris 8 images pour une garde à 10, chauffe de New York
+  expirée 44/321, 18 programmes neufs à NY), `origin/main` (v369) rouge aussi
+  (chauffe NY expirée 56/321) — plus un rouge que la branche n'a pas (« en
+  vol, on ne rattrape pas le bout du monde », chasseur 58 pour 60). C'est la
+  chauffe de New York qui n'aboutit pas sur ce banc chargé, pas la
+  conduite : la v370 ne touche à rien de ce chemin (branche AU VOLANT de
+  `player.js`, crochets d'obstacle). Piste : borner l'attente du témoin sur la
+  chauffe (`finie`), et sinon le dire au lieu de juger NY.
 - [ ] **LA CONDUITE À LA GTA, PALIERS 1 (v358) ET 2 (v370) LIVRÉS
   (conduite-physique) — CE QUI RESTE, DÉCLARÉ.** Faits en v370 : le choc
   contre une voiture de la rue prend la normale de SON rectangle et se juge
