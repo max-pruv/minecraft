@@ -205,7 +205,7 @@ export const lieuxDeLille = () => LIEUX_LILLE
 // façades entre deux rues. Les ORIGINES de trame, elles, sont des points du
 // plan d'auteur et passent par `k()`.
 //
-// À LA RÈGLE DU KIT (v367) : la rue du centre et des faubourgs est une
+// À LA RÈGLE DU KIT (v368) : la rue du centre et des faubourgs est une
 // COLLECTRICE, la ruelle du Vieux-Lille une LOCALE — « une ruelle héritée est
 // une rue locale » (Paris, v303) —, et le pas grandit dans le rapport des
 // emprises : SI L'ÉLARGISSEMENT MANGE LES BÂTIMENTS, ON RECOMPOSE LES LOTS
@@ -236,7 +236,7 @@ function trameDeLille(u, v) {
 }
 
 // LES LARGEURS SE DEMANDENT AU KIT (`voirie.js`, `roadSection`, un bloc pour
-// un mètre) depuis la v367. Le type se lit à la FONCTION : les boulevards et
+// un mètre) depuis la v368. Le type se lit à la FONCTION : les boulevards et
 // les grandes rues de la vraie ville passent à deux voies (COLLECTRICE) ; les
 // rues du Vieux-Lille — l'Esquermoise, la rue Royale, la rue de la Monnaie,
 // pavées et à sens unique — à une (LOCALE). Les valeurs `a(l)` d'avant
@@ -464,7 +464,7 @@ export function solLille(x, z) {
   }
 
   if (autourDunSocleLille(u, v)) return BITUME;
-  // LA COUR DE LA VIEILLE BOURSE EST UN SOL, PAS UN LOT (v367). Le
+  // LA COUR DE LA VIEILLE BOURSE EST UN SOL, PAS UN LOT (v368). Le
   // bâtisseur ne pose que les murs et le pavé de la cour : sous l'ancienne
   // trame, une rue passait par chance dans son emprise ; recomposée à la
   // règle du kit, l'îlot tombait dessus et une maison de cinq blocs
@@ -494,7 +494,7 @@ export function solLille(x, z) {
   const co = Math.cos(t.ang), si = Math.sin(t.ang);
   const du = u - t.cu, dv = v - t.cv;
   const a = du * co - dv * si, b = du * si + dv * co;
-  // Une rue de la trame qui DOUBLE une avenue n'est pas tracée (v367) : la
+  // Une rue de la trame qui DOUBLE une avenue n'est pas tracée (v368) : la
   // règle de Londres, de Nice et de San Francisco (`reculDesAvenues`).
   const double = t.type === 'locale' ? doubleLocale : doubleCollectrice;
   let d = Infinity;

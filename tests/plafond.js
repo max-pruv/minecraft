@@ -312,7 +312,11 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // La preuve qu'il n'y a que lui : la même branche, ses bâtisseurs neufs
 // désarmés (les `tour` de la v365 retirés), rend 58a67b42…, la constante
 // d'`origin/main` (v364), au bit près.
-const EMPREINTE_MORCEAUX_V357 = 'f70060cd04ff8aa3e0fbe7d04b322534cb0d8dc5bb290d84881832e2ed4e94ce';
+// v367 : l'I-95 Sud arrive au sud de Washington, un des neuf lieux, et ses
+// colonnes de route entrent dans ses morceaux (886 → 1 515) — voulu. Sans
+// Washington, les 441 autres morceaux et toutes les routes rendent ad9949da…
+// sur `origin/main` (v366, f70060cd… avec elle) ET sur la branche.
+const EMPREINTE_MORCEAUX_V357 = '7d235907f961e6536d4badf7dd15491ee5be529fa7967c4399a3eb6edd4a1e71';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -1704,7 +1708,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   // ne retient rien — la ville neuve bâtit dessous. Rouge sur `origin/main` :
   // la date n'existe pas, et les deux premiers cas montrent la ville neuve.
   // ET NICE À LA v359, PAR LA MÊME RÈGLE : la fonction se joue ville par ville.
-  // SAN FRANCISCO À LA v361, LILLE À LA v367.
+  // SAN FRANCISCO À LA v361, LILLE À LA v368.
   const figee = async (date, avant, neuf, ancre, sol, libre, batir) => {
     const W = await import('../src/world.js');
     if (!W[date]) return { absent: true };
@@ -1725,7 +1729,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       // chaussée — pas un trottoir, où la ville d'avant a ses arbres et ses réverbères
       const mur = () => { let n = 0; N[batir](x, z, (dy) => { if (dy >= 3) n++; }); return n >= 3; };
       // et rien n'y est posé par-dessus dans la ville d'avant — un monument se
-      // pose APRÈS les colonnes (Lille, v367 : la Vieille Bourse à côté)
+      // pose APRÈS les colonnes (Lille, v368 : la Vieille Bourse à côté)
       const degage = () => croix((xx, zz) => {
         const g = av.terrainHeight(xx, zz);
         for (let y = g + 1; y <= g + 6; y++) if (av.getBlock(xx, y, zz) !== 0) return false;

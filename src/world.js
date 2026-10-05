@@ -2087,8 +2087,8 @@ export const DATE_RUES_LONDRES = Date.UTC(2026, 9, 4, 15, 0, 0);
 export const DATE_RUES_NICE = Date.UTC(2026, 9, 5, 5, 25, 0);
 // San Francisco à la v361 (`sanfrancisco-v343.js`).
 export const DATE_RUES_SF = Date.UTC(2026, 9, 5, 8, 15, 0);
-// Lille à la v367 (`lille-v344.js`).
-export const DATE_RUES_LILLE = Date.UTC(2026, 9, 5, 10, 45, 0);
+// Lille à la v368 (`lille-v344.js`).
+export const DATE_RUES_LILLE = Date.UTC(2026, 9, 5, 13, 45, 0);
 const VILLES_FIGEES = [
   { ancre: LONDRES, date: DATE_RUES_LONDRES },
   { ancre: NICE, date: DATE_RUES_NICE },
@@ -2604,7 +2604,7 @@ export class World {
     this.monumentsTouches = new Set();  // les monuments HD qu'un enfant a modifiés (v292)
     this.morceauxAvantClimat = new Set(); // les morceaux (et leurs voisins) bâtis avant les climats (v345)
     this.colonnesCedees = new Set();    // les colonnes de Paris où la ville cède à ce qu'un enfant a bâti (v306)
-    this.colonnesVilleAvant = new Set();  // celles de Londres, de Nice, de San Francisco et de Lille où la ville d'avant le kit reste (v339, v359, v361, v367)
+    this.colonnesVilleAvant = new Set();  // celles de Londres, de Nice, de San Francisco et de Lille où la ville d'avant le kit reste (v339, v359, v361, v368)
     this.cacheSol = new Map();          // "x,z" -> { nat, cote } : la fiche d'une colonne (sol continu, v297)
     this.sansSolContinu = false;        // ?solcontinu=0 : la mesure A/B, jamais un réglage
     this.editTimes = new Map();   // "x,y,z" -> ms timestamp, for multiplayer merge
@@ -3528,7 +3528,7 @@ export class World {
         // Market Street entre les deux, la plage, les quais et les parcs.
         // Nice et Lille : chacune sa trame, ses places et ses maisons. Comme à
         // San Francisco, la trame générique ne s'applique pas par-dessus.
-        // Londres (v339), Nice (v359), San Francisco (v361) et Lille (v367) d'avant le kit dans les mondes d'avant,
+        // Londres (v339), Nice (v359), San Francisco (v361) et Lille (v368) d'avant le kit dans les mondes d'avant,
         // et sous les colonnes où un enfant a bâti avant leur date.
         const villeAvant = city && (city.key === 'londres' || city.key === 'nice' || city.key === 'sf' || city.key === 'lille') && (this.conf.villesAvant
           || (this.colonnesVilleAvant.size > 0 && this.colonnesVilleAvant.has(cleColonneParis(wx, wz))));

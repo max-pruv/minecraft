@@ -1,5 +1,30 @@
 # Ce qui est en cours
 
+- [ ] **LE PORTAIL DE LA v367 (I-95 Sud), DOUBLE MESURE FAITE.** Neuf suites,
+  cinq rouges. `plafond.js` : l'empreinte des 490 morceaux, changée par la route
+  dans les morceaux de Washington — relevée avec preuve (sans Washington,
+  9bae2257… des deux côtés), verte rejouée seule. `degats.js` (voiture de la rue
+  percutée puis prise) : verte rejouée seule des deux côtés — charge. `carte.js` :
+  la flèche du GPS à gauche 1,92 rad rouge seule des deux côtés (dette déjà
+  déclarée) ; la tâche de 417 ms ne revient pas seule. `manhattan.js` : façade
+  (22 326 → 54 969 branche, 11 684 → 51 734 `origin/main`) et taxi rouges des deux côtés, délai de
+  `rejoindre` des deux côtés. `monte.js` : gel d'arrivée et compilation à
+  l'arrivée rouges des deux côtés ; « le monde se maille hors du fil
+  principal » (avion à 28 blocs en 40 s au portail) vert seul ; « en vol, on
+  ne rattrape pas le bout du monde » rouge seul sur la branche (Concorde 72) —
+  l'intermittence déclarée plus bas, « rouge une fois sur deux DES DEUX CÔTÉS ».
+  Après le rebase sur la v366 : `carteMonde.js` verte, l'empreinte relevée
+  (7d235907…, sans Washington ad9949da… des deux côtés) verte ; « la surface
+  coûte au plus quelques millisecondes par morceau de campagne » rouge deux
+  fois seule sur la branche (13,3 · 11,0 ms), verte une fois sur `origin/main`
+  (2,2) — sous node, ordre alterné, quatre passages : branche 2,8 à 11,2 ms,
+  la branche SANS la route neuve 4,8 à 11,5, `origin/main` 3,3 à 6,5 — la même
+  dispersion avec et sans la route (le seul fichier de `src/` lu par ce
+  témoin qui change est routes.js) : le témoin de durée déjà déclaré ici en
+  v362, pas la livraison.
+  Preuve structurelle : la livraison n'ajoute de route qu'entre New York et
+  Washington, et ces témoins volent au-dessus de Paris et du couloir (30000,
+  30000).
 - [ ] **LE PORTAIL DE LA v362 (I-95, porte de Manhattan), DOUBLE MESURE FAITE.**
   Portail complet : six suites rouges, dont une de mon fait (la borne de vingt
   pas du témoin des ponts, que Madrid ne passe pas — corrigée). Mes sondes de
@@ -39,6 +64,34 @@
   sans doubler l'eau et le sol que le rendu urbain dessine. Mesuré : le
   rectangle a ~60 blocs d'eau de chaque côté de l'île (Hudson, East River) et
   au nord ; un tablier de soixante blocs suffit.
+  INSTRUIT EN v367, et c'est une décision d'architecture, pas un crochet. (1)
+  est faisable par un crochet : `manhattan-plan.js` n'importe que blocks.js, donc
+  `surface()` peut servir de `SOL` à routes.js dans le rectangle, à l'identique
+  dans le worker et le fil principal (hors du rectangle les deux reliefs sont
+  déjà identiques : 64 561 colonnes à l'ouest, seule la colonne x0 diffère, et
+  elle est DANS le rectangle). (2) touche TROIS méthodes de `TerreUrbaine` :
+  `generateChunk` réécrit toute colonne du rectangle avec `originalBlock`
+  (les blocs de la route s'y perdraient), `visualChunk` efface tout ce qui est
+  au-dessus de `SOL` sauf les blocs d'enfant, et `hasVisualEdits` rend faux pour
+  un morceau entier du rectangle sans bloc posé (le mailleur ordinaire ne le
+  voit pas). Mesuré sur le plan : l'Hudson fait 56 à 64 blocs de large de
+  lz −300 à +600, le bord de l'île est une promenade (`p`) devant des lots, et
+  la seule rue qui touche l'eau des deux côtés dans la fenêtre relevée est à
+  lz = 0. Les deux portes de New York (I-95 à l'est, I-95 Sud à l'ouest, v367)
+  sont prêtes à recevoir ce pont.
+- [ ] **WASHINGTON PAR ANACOSTIA : LA RUE N'EST PAS RELIÉE À LA VILLE (v367).**
+  L'I-95 Sud entre par la rue de u = 37 au sud de l'Anacostia (x −21191, de
+  z 6197 à 6173) ; ce quartier (u 20–66, v 60–96) n'a AUCUN pont vers le reste
+  de Washington — l'Anacostia le coupe en diagonale de (62, 44) à (−50, 98) —
+  et ses voitures y font demi-tour sur une rue sans nom. La vraie ville a deux
+  ponts là (11th Street, Sousa pour Pennsylvania Avenue SE, qui finit ici à
+  (62, 42) sur la rive nord). Un pont de rue est du SOL de washington.js
+  (`dansEauWashington`, `solWashington`), hors de la zone des routes : à faire
+  avec la session qui tient Washington, puis allonger `avenues.washington`
+  jusqu'à Pennsylvania Avenue SE. Relevé des autres côtés, pour ne pas le
+  refaire : nord montagne (≥ 50), est crête 43–49 de u 73 à 121 (une route au
+  niveau de la rue déblaierait douze blocs), ouest le Potomac dans la boîte ;
+  la base d'Andrews (102, 281) ferme le sud-est.
 - [ ] **DEUX PONTS DE VILLE À REPRENDRE, VUS PAR LE TÉMOIN ÉLARGI (v362).**
   Berlin : UNE colonne d'eau sans tablier au bout d'un pont (4186, −2011) —
   le bout de l'axe arrondi tombe hors de `pontDeVille`. Agra : le Taj Mahal
@@ -1077,7 +1130,7 @@
   entrée nord propre de sa trame (−100° à −103°) — 79 819 tracés, tous refusés
   par sa marge ; l'autre entrée propre (−175°, −192°) arrive par la mer, deux
   cents blocs de viaduc. Déplacer un aérodrome est une décision de Max
-  (invariant 1) ; un viaduc en mer aussi. A109 Nairobi–Mombasa faite en v315. A3 Cologne–Francfort faite en v320 (au sud de l'ICE : au nord, l'aérodrome de Francfort ne laisse pas la place d'une emprise). E1 Kyoto–Nagoya faite en v323 (au sud du Shinkansen, où les deux trames ont une entrée propre ; un étang contourné par le nord, aucun pont). Autosole Bologne–Florence faite en v324 (aucun pont ; un point de passage sur le rayon de chaque entrée). A4 Milan–Turin faite en v327 (sept tracés sur 36 432, le déblai a fait le tri ; aucun pont). Yamuna Delhi–Agra faite en v328 (soixante-huit tracés sur 18 216, aucun pont). A1 Sud Rome–Naples faite en v329 (sortie est de Rome, puis un virage en plusieurs fois ; aucun pont). M1 Vienne–Budapest faite en v332 (1 573 admissibles sur 18 216, aucun pont). A1 Nord Milan–Bologne faite en v333 (au nord de la Frecciarossa, qui sort de Milan à 51° ; Milan par −16°, Bologne par −156° ; 31 admissibles sur 5 082, sept sans pont). **Séoul–Busan BLOQUÉE PAR LE RELIEF** (v333) : Busan (ville à 33) est cerclée côté terre d'une crête à 50–60 blocs entre r + 10 et r + 40, et la mer de l'autre ; 8 450 tracés, aucun admissible (1 236 déblai, le reste coude). Abaisser la crête est une décision de Max. A24 Berlin–Hambourg faite en v334 (Hambourg par l'est, porte à vingt-quatre blocs du bord ; un seul tracé sans pont sur 2 904). I-45 Dallas–Houston faite en v336 (Houston par le sud après l'avoir contournée par l'est ; trois ponts ; cinq admissibles sur 24 000 chemins lissés). A7 Lyon–Marseille faite en v337 (à l'ouest du TGV ; Lyon par 130°, Marseille par −136° ; trois ponts ; quatre admissibles sur 2 025). AP-2 Madrid–Barcelone faite en v338 (Barcelone par −170°, son côté bas ; quatre ponts ; neuf admissibles sur 16 000 chemins lissés, le joint mesuré sur chacun). Restent, hors des zones des autres sessions : Paris–Lyon (Paris est `paris.js`, réservé), San Francisco–Los Angeles et Marseille–Nice (villes bâties à la main, réservées), New York–Boston et New York–Washington (Manhattan, entrée à instruire à la main), Londres–Birmingham (en attente), et les corridors bloqués ci-dessus. Hansalinie Cologne–Hambourg faite en v355 (Cologne par −108°, entre l'ICE et l'aérodrome ; Hambourg CONTOURNÉE par l'ouest, entrée par le nord-ouest −134° — l'Elbe ferme le sud du disque entre 38 et 70 blocs du centre, l'A24 l'est, un pont de l'Alster borde l'axe nord ; aucun pont ; 397 admissibles sur 1 500). Dette vue en passant en v355 : la porte de l'A3 à Francfort creusait un pont de la ville — FAITE en v362 (le talus s'arrête à un bloc au-delà du bout d'une route ; le témoin des ponts de villes lit les dix-huit villes à pont qu'une route touche). 401 Toronto–Montréal faite en v355 (Toronto par −18°, Montréal CONTOURNÉE par le sud et prise par son axe sud, 88° ; aucun pont ; seize admissibles sur 3 000). La sonde qui contourne une ville est le couloir le plus bas cherché sur une grille qui porte le CAP (huit directions, un huitième de tour au plus après deux pas droits), rails, autres routes et aérodromes interdits, puis Chaikin et simplification sous 22° de coude, `profilDe` appelé sur chaque candidat — scratchpad de la v355, décrite dans CLAUDE.md « Les routes qui contournent ». Suivants dans l'ordre du relevé (courts, sans rail) : New York–Boston (eau 135), New York–Washington (eau 150) — New York est Manhattan, une ville à part (pas dans VILLES_MONDE) : son entrée est à instruire à la main. Instruit en v355 sans le faire : Manhattan est un RECTANGLE de 480 × 2 300 blocs (`BORNES`, manhattan-plan.js, z de −1 300 à +1 000 autour de l'ancre) et non le disque de 152 du registre — `porte()` (r − 20 sur le rayon) poserait la porte SUR l'île, et le raccord de quarante blocs y écrirait son remblai dans les rues (« la route a le dernier mot sur sa colonne »). Il faut une porte déclarée hors de l'île, au bout d'un pont sur l'East River ou le Hudson, ce qui touche `porte()` ou `manhattan-*.js` : une livraison à elle. FAITE en v362 pour la porte : `portes: { ny: [x, z] }` dans la fiche de la route, sur la rive est hors du rectangle ; I-95 New York–Boston faite en v362 (porte NY à (276, −890) du centre, Boston par 145°, un pont, 86 admissibles sur 12 000) ; Londres–Birmingham en attente (une autre session élargit les rues de Londres). **Los Angeles–San Diego BLOQUÉE** (v332) : une crête au-dessus de 46 blocs à l'est de Los Angeles (z 8 950 à 9 310), et le couloir côtier passe dans la marge de LAX — 265 120 tracés, aucun admissible (9 644 refus aérodrome, 25 076 pont près d'une porte : San Diego est entourée d'eau au nord-ouest). Déplacer LAX ou abaisser la crête est une décision de Max. **Manchester–Liverpool BLOQUÉE PAR LE RELIEF** (v324) : une crête au-dessus de 46 blocs barre tout l'espace entre les deux disques (villes à 33) ; 58 340 tracés, aucun admissible (8 970 déblai, 6 125 pont près d'une porte). Un tunnel ou un relief abaissé est une décision de Max. INSTRUITES en v323 sur l'axe direct, faute de la liste du kit (hors dépôt) — longueur · eau · rail à douze blocs · villes · aérodromes · repères : Manchester–Liverpool 222 · 11 · 0 · 0 · 0 · 0 ; Bologne–Florence 342 · 0 · 0 · 0 · 0 · 0 ; Milan–Turin 530 · 10 · 0 ; Delhi–Agra 656 · 41 · 0 (le Taj Mahal) ; Rome–Naples 683 · 81 · 0 ; Los Angeles–San Diego 718 · 25 · 0 ; Londres–Birmingham 767 · 29 · 0 ; Milan–Bologne 924 · 24 · 3 ; Vienne–Budapest 957 · 33 · 0 ; Tokyo–Nagoya 961 · 142 · 941 (Shinkansen) · Haneda sur l'axe ; New York–Boston 1 020 · 135 · 0 ; Berlin–Hambourg 1 293 · 42 · 0 ; New York–Washington 1 297 · 150 · 0 ; Lyon–Marseille 1 363 · 77 · 1 328 (TGV) ; Séoul–Busan 1 471 · 2 · 0 ; Paris–Lyon 1 625 · 54 · 1 588 (TGV) ; Dallas–Houston 1 781 · 44 · 0 ; Hambourg–Cologne 1 858 · 137 · 0 ; Madrid–Barcelone 2 068 · 199 · 2 033 (AVE) ; Toronto–Montréal 2 305 · 144 · 0 ; San Francisco–Los Angeles 2 403 · 131 · 0 · SFO et deux repères ; Marseille–Nice 596 · 401 · 0 · la Promenade des Anglais (l'axe direct est en mer). Ordre retenu : les courts sans rail ni eau d'abord. Restent à instruire les autres
+  (invariant 1) ; un viaduc en mer aussi. A109 Nairobi–Mombasa faite en v315. A3 Cologne–Francfort faite en v320 (au sud de l'ICE : au nord, l'aérodrome de Francfort ne laisse pas la place d'une emprise). E1 Kyoto–Nagoya faite en v323 (au sud du Shinkansen, où les deux trames ont une entrée propre ; un étang contourné par le nord, aucun pont). Autosole Bologne–Florence faite en v324 (aucun pont ; un point de passage sur le rayon de chaque entrée). A4 Milan–Turin faite en v327 (sept tracés sur 36 432, le déblai a fait le tri ; aucun pont). Yamuna Delhi–Agra faite en v328 (soixante-huit tracés sur 18 216, aucun pont). A1 Sud Rome–Naples faite en v329 (sortie est de Rome, puis un virage en plusieurs fois ; aucun pont). M1 Vienne–Budapest faite en v332 (1 573 admissibles sur 18 216, aucun pont). A1 Nord Milan–Bologne faite en v333 (au nord de la Frecciarossa, qui sort de Milan à 51° ; Milan par −16°, Bologne par −156° ; 31 admissibles sur 5 082, sept sans pont). **Séoul–Busan BLOQUÉE PAR LE RELIEF** (v333) : Busan (ville à 33) est cerclée côté terre d'une crête à 50–60 blocs entre r + 10 et r + 40, et la mer de l'autre ; 8 450 tracés, aucun admissible (1 236 déblai, le reste coude). Abaisser la crête est une décision de Max. A24 Berlin–Hambourg faite en v334 (Hambourg par l'est, porte à vingt-quatre blocs du bord ; un seul tracé sans pont sur 2 904). I-45 Dallas–Houston faite en v336 (Houston par le sud après l'avoir contournée par l'est ; trois ponts ; cinq admissibles sur 24 000 chemins lissés). A7 Lyon–Marseille faite en v337 (à l'ouest du TGV ; Lyon par 130°, Marseille par −136° ; trois ponts ; quatre admissibles sur 2 025). AP-2 Madrid–Barcelone faite en v338 (Barcelone par −170°, son côté bas ; quatre ponts ; neuf admissibles sur 16 000 chemins lissés, le joint mesuré sur chacun). Restent, hors des zones des autres sessions : Paris–Lyon (Paris est `paris.js`, réservé), San Francisco–Los Angeles et Marseille–Nice (villes bâties à la main, réservées), New York–Boston et New York–Washington (Manhattan, entrée à instruire à la main), Londres–Birmingham (en attente), et les corridors bloqués ci-dessus. Hansalinie Cologne–Hambourg faite en v355 (Cologne par −108°, entre l'ICE et l'aérodrome ; Hambourg CONTOURNÉE par l'ouest, entrée par le nord-ouest −134° — l'Elbe ferme le sud du disque entre 38 et 70 blocs du centre, l'A24 l'est, un pont de l'Alster borde l'axe nord ; aucun pont ; 397 admissibles sur 1 500). Dette vue en passant en v355 : la porte de l'A3 à Francfort creusait un pont de la ville — FAITE en v362 (le talus s'arrête à un bloc au-delà du bout d'une route ; le témoin des ponts de villes lit les dix-huit villes à pont qu'une route touche). 401 Toronto–Montréal faite en v355 (Toronto par −18°, Montréal CONTOURNÉE par le sud et prise par son axe sud, 88° ; aucun pont ; seize admissibles sur 3 000). La sonde qui contourne une ville est le couloir le plus bas cherché sur une grille qui porte le CAP (huit directions, un huitième de tour au plus après deux pas droits), rails, autres routes et aérodromes interdits, puis Chaikin et simplification sous 22° de coude, `profilDe` appelé sur chaque candidat — scratchpad de la v355, décrite dans CLAUDE.md « Les routes qui contournent ». Suivants dans l'ordre du relevé (courts, sans rail) : New York–Boston (eau 135), New York–Washington (eau 150 ; FAITE en v367, I-95 Sud : seconde porte de New York sur la rive de l'Hudson, Washington par le sud, `boutNet` et `avenues` ; vingt et un admissibles sur 2 500, aucun sans pont) — New York est Manhattan, une ville à part (pas dans VILLES_MONDE) : son entrée est à instruire à la main. Instruit en v355 sans le faire : Manhattan est un RECTANGLE de 480 × 2 300 blocs (`BORNES`, manhattan-plan.js, z de −1 300 à +1 000 autour de l'ancre) et non le disque de 152 du registre — `porte()` (r − 20 sur le rayon) poserait la porte SUR l'île, et le raccord de quarante blocs y écrirait son remblai dans les rues (« la route a le dernier mot sur sa colonne »). Il faut une porte déclarée hors de l'île, au bout d'un pont sur l'East River ou le Hudson, ce qui touche `porte()` ou `manhattan-*.js` : une livraison à elle. FAITE en v362 pour la porte : `portes: { ny: [x, z] }` dans la fiche de la route, sur la rive est hors du rectangle ; I-95 New York–Boston faite en v362 (porte NY à (276, −890) du centre, Boston par 145°, un pont, 86 admissibles sur 12 000) ; Londres–Birmingham en attente (une autre session élargit les rues de Londres). **Los Angeles–San Diego BLOQUÉE** (v332) : une crête au-dessus de 46 blocs à l'est de Los Angeles (z 8 950 à 9 310), et le couloir côtier passe dans la marge de LAX — 265 120 tracés, aucun admissible (9 644 refus aérodrome, 25 076 pont près d'une porte : San Diego est entourée d'eau au nord-ouest). Déplacer LAX ou abaisser la crête est une décision de Max. **Manchester–Liverpool BLOQUÉE PAR LE RELIEF** (v324) : une crête au-dessus de 46 blocs barre tout l'espace entre les deux disques (villes à 33) ; 58 340 tracés, aucun admissible (8 970 déblai, 6 125 pont près d'une porte). Un tunnel ou un relief abaissé est une décision de Max. INSTRUITES en v323 sur l'axe direct, faute de la liste du kit (hors dépôt) — longueur · eau · rail à douze blocs · villes · aérodromes · repères : Manchester–Liverpool 222 · 11 · 0 · 0 · 0 · 0 ; Bologne–Florence 342 · 0 · 0 · 0 · 0 · 0 ; Milan–Turin 530 · 10 · 0 ; Delhi–Agra 656 · 41 · 0 (le Taj Mahal) ; Rome–Naples 683 · 81 · 0 ; Los Angeles–San Diego 718 · 25 · 0 ; Londres–Birmingham 767 · 29 · 0 ; Milan–Bologne 924 · 24 · 3 ; Vienne–Budapest 957 · 33 · 0 ; Tokyo–Nagoya 961 · 142 · 941 (Shinkansen) · Haneda sur l'axe ; New York–Boston 1 020 · 135 · 0 ; Berlin–Hambourg 1 293 · 42 · 0 ; New York–Washington 1 297 · 150 · 0 ; Lyon–Marseille 1 363 · 77 · 1 328 (TGV) ; Séoul–Busan 1 471 · 2 · 0 ; Paris–Lyon 1 625 · 54 · 1 588 (TGV) ; Dallas–Houston 1 781 · 44 · 0 ; Hambourg–Cologne 1 858 · 137 · 0 ; Madrid–Barcelone 2 068 · 199 · 2 033 (AVE) ; Toronto–Montréal 2 305 · 144 · 0 ; San Francisco–Los Angeles 2 403 · 131 · 0 · SFO et deux repères ; Marseille–Nice 596 · 401 · 0 · la Promenade des Anglais (l'axe direct est en mer). Ordre retenu : les courts sans rail ni eau d'abord. Restent à instruire les autres
   candidats du kit (liste hors dépôt), un par un. INSTRUITES en v310 sur
   l'axe direct (longueur · eau · rail parallèle · obstacles) : Bruxelles–
   Amsterdam 790 · 56 · 0 · aucun ; Montréal–Québec 873 · 18 · 0 ; São Paulo–
@@ -3728,7 +3781,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   ruelles sont piétonnes et plus étroites — la section `ruelle` du kit (sans
   trottoir) ôterait ses réverbères, décision de Max comme pour les médinas.
 
-- [ ] **PORTAIL DE LA v367 (Lille), base v361.** Rouges tous déjà déclarés :
+- [ ] **PORTAIL DE LA v368 (Lille), base v361.** Rouges tous déjà déclarés :
   `maj.js` la libération (`null`, personnages 3/9) et « ne floute rien » ;
   `carte.js` la flèche du GPS (gauche 1,92) et une fois le glisser bridé
   (441 ms) ; `manhattan.js` le trou de façade (9 203 → 46 592) et le bouton du
@@ -3740,7 +3793,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
 
 - [ ] **LES CINQ AUTRES VILLES BÂTIES À LA MAIN N'ONT PAS ÉTÉ ÉLARGIES (v271).**
   Londres est faite en v339, Nice en v359, San Francisco en v361, Lille en
-  v367. **Reste Washington, et ce n'est pas la même passe** (mesuré en v367) :
+  v368. **Reste Washington, et ce n'est pas la même passe** (mesuré en v368) :
   ses diagonales ont déjà la chaussée d'une collectrice (5,2 à 6,8 blocs), ce
   qui reste hors règle c'est la GRILLE — deux colonnes de chaussée et une de
   trottoir, un pas de douze. Or le pas porte trois choses que les autres
@@ -3757,7 +3810,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   les dix-neuf circuits se remesurent (passe de réparation comprise, v216). À
   faire en une livraison à elle : choisir le pas (décision de plan), réécrire
   la maison sur un îlot paramétré, reposer les raccords sur la nouvelle grille,
-  remesurer les circuits, figer `washington-v367.js` sous ce qu'un enfant a
+  remesurer les circuits, figer `washington-v368.js` sous ce qu'un enfant a
   bâti — et le portail de `washington.js` (portes, métro, musées) en entier. La méthode de
   Londres se reprend telle quelle : figer la ville d'avant (`<ville>-v339.js`),
   type par fonction, trame recomposée et en recul des avenues, mobilier sur la
