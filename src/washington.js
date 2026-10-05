@@ -46,7 +46,7 @@
 //     à cette échelle, un musée de deux cents mètres fait dix blocs de large
 //     pour de vrai, et la plupart des grands bâtiments sont à leur taille.
 //   · **les îlots sont agrandis d'un facteur quatre** (`PAS_RUE` = 28 pour des
-//     rues vraies tous les sept blocs) : depuis la v369 les rues de la grille
+//     rues vraies tous les sept blocs) : depuis la v370 les rues de la grille
 //     ont la section du kit (`voirie.js`), et le pas a suivi dans le rapport
 //     des emprises — un îlot porte quatre maisons et la ruelle qui les sépare.
 //   · **quelques écarts de position, chacun commenté à sa ligne** : le
@@ -335,11 +335,11 @@ export function hauteurWashington(x, z, h) {
 // --- le plan de L'Enfant ------------------------------------------------------
 //
 // Dans la vraie ville, une rue tous les cent quarante mètres — sept blocs à
-// cette échelle. Jusqu'à la v368 on la dessinait tous les DOUZE blocs : deux
+// cette échelle. Jusqu'à la v369 on la dessinait tous les DOUZE blocs : deux
 // colonnes de chaussée pour une voiture de 2,26, un seul trottoir, et un îlot
 // de neuf — la maison à étage.
 //
-// À LA RÈGLE DU KIT (v369) : une rue de la grille est une rue LOCALE
+// À LA RÈGLE DU KIT (v370) : une rue de la grille est une rue LOCALE
 // (`sectionDeRue('locale')` : une voie de 3,1, deux trottoirs de 2), soit sept
 // colonnes centrées sur l'axe — trois de chaussée (`floor(3,1)`, la
 // quantification de la v303), deux de trottoir de chaque côté. Le pas grandit
@@ -437,7 +437,7 @@ const AVENUES = [
   // voies dans `solWashington` — mesuré, neuf blocs de pelouse sur quarante.
   // Une rue qu'on ne peut pas tracer ne se force pas ; l'Ellipse fait ici
   // trente blocs de large, à peu près sa vraie taille.
-  // À LA RÈGLE DU KIT (v369) les rues de liaison suivent la grille neuve : un
+  // À LA RÈGLE DU KIT (v370) les rues de liaison suivent la grille neuve : un
   // axe tous les vingt-huit blocs, la section d'une rue LOCALE (demi-chaussée
   // 1,5, trottoir 2 — `LIAISON`). Chacune porte le nom de la vraie rue la plus
   // proche de son axe. La 9e, la 14e, F et C Street disparaissent : leurs axes
@@ -472,7 +472,7 @@ const AVENUES = [
   { nom: '8e Rue NE', ...LIAISON, pts: [[56, -56], [56, -28], [56, 0], [56, 28]] },
   { nom: 'East Capitol Street', ...LIAISON, pts: [[26, 0], [56, 0]] },
   // L'ENTRÉE DE L'I-95 (v367) : sa porte est en (37, 97), au bord sud de la
-  // boîte. La grille d'avant y avait une rue (u = 12k + 1) ; celle de la v369
+  // boîte. La grille d'avant y avait une rue (u = 12k + 1) ; celle de la v370
   // a ses axes en 28 et 56. La bretelle mène de la porte à la rue v = 84.
   { nom: 'Bretelle de l\'I-295', ...LIAISON, pts: [[37, 97], [37, 84]] },
 ];
@@ -529,7 +529,7 @@ const ROULANT = new Set([BITUME, LIGNE, PASSAGE]);
 // puissent tourner. Ils ne posent aucun sol : la chaussée est déjà là.
 // Les RACCORDS de la v205 (des tronçons de rue coupés au carrefour) servaient
 // la grille d'avant. Depuis la v207 `chainerVoies` ne parcourt une avenue
-// qu'entre ses deux carrefours, et la grille de la v369 n'en a plus besoin :
+// qu'entre ses deux carrefours, et la grille de la v370 n'en a plus besoin :
 // la liste reste, vide, pour qu'un raccord neuf ait sa place.
 const RACCORDS = [];
 export const VOIES_CIRCUITS_DC = [...AVENUES, ...RACCORDS];
@@ -581,7 +581,7 @@ export const VOIES_CIRCUITS_DC = [...AVENUES, ...RACCORDS];
 // quarante-sept ; la pire paire reste à vingt-deux blocs.
 //
 // Mesures : part sur la rue, longueur en blocs, virage le plus serré.
-// LES CIRCUITS DE LA GRILLE DU KIT (v369), cherchés sous node sur les
+// LES CIRCUITS DE LA GRILLE DU KIT (v370), cherchés sous node sur les
 // avenues et les rues de liaison neuves : toutes les boucles de trois à six
 // voies du graphe des croisements, gardées si elles tiennent la rue (90 %,
 // `fabriqueCircuits`) sans demi-tour (virage ≤ 150°), puis une couverture
@@ -798,7 +798,7 @@ function solWashingtonCalcul(x, z) {
   if (av2 !== null) {
     if (av2 === BITUME && (((u + v) % 9) + 9) % 9 === 0) return LIGNE;
     // Le trottoir d'une voie ne coupe pas la chaussée d'une rue de la grille
-    // qu'elle croise (v369) : la bretelle de l'I-295 fermait la rue v = 84.
+    // qu'elle croise (v370) : la bretelle de l'I-295 fermait la rue v = 84.
     if (av2 === TROTTOIR && enVille
       && (trameDC(u).d <= DEMI_CHAUSSEE || trameDC(v).d <= DEMI_CHAUSSEE)) return BITUME;
     return av2;
@@ -1520,7 +1520,7 @@ function creuserMetro(u, v, h, poser) {
 // rez-de-chaussée meublé, un vrai escalier, un étage, et deux portes face à
 // face. Ce n'est pas un décor peint, c'est un bâtiment.
 //
-// Une maison fait neuf blocs de côté ; depuis la v369 un îlot en porte quatre,
+// Une maison fait neuf blocs de côté ; depuis la v370 un îlot en porte quatre,
 // de part et d'autre de sa ruelle (`trameDC`). À l'intérieur d'une maison,
 // les coordonnées locales (iu, iv) vont de 0 à 8, et (la, lb) la nomment —
 // deux maisons par pas sur chaque axe.
@@ -1554,7 +1554,7 @@ export function batirColonneWashington(x, z, h, poser) {
   if (!lotWashingtonLibre(x, z)) return;
 
   const q = quartierDe(u, v);
-  // La maison : deux par pas sur chaque axe (v369). Une colonne de lot hors
+  // La maison : deux par pas sur chaque axe (v370). Une colonne de lot hors
   // de toute maison (une avenue qui coupe l'îlot en a laissé un bout) prend
   // la maison la plus proche, comme avant.
   const tu = trameDC(u), tv = trameDC(v);

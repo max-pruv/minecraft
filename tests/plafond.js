@@ -316,12 +316,15 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // colonnes de route entrent dans ses morceaux (886 → 1 515) — voulu. Sans
 // Washington, les 441 autres morceaux et toutes les routes rendent ad9949da…
 // sur `origin/main` (v366, f70060cd… avec elle) ET sur la branche.
-// v369 : la grille de Washington à la règle du kit — le CONTENU du lieu
+// v369 : le Panthéon de Rome reçoit sa rotonde et son portique, et Rome est
+// un des neuf lieux — voulu. Bâtisseurs neufs de la v369 désarmés, la branche
+// rend 7d235907…, la constante d'`origin/main` (v368), au bit près.
+// v370 : la grille de Washington à la règle du kit — le CONTENU du lieu
 // « washington » change, voulu. Mesuré lieu par lieu (une empreinte par
-// lieu, sonde du scratchpad) sur `origin/main` (v367) et sur la branche :
+// lieu, sonde du scratchpad) sur `origin/main` (v367 puis v369) et sur la branche :
 // les huit autres lieux identiques au bit près, Washington seul diffère
 // (7bb3f492… → 019bb14a…).
-const EMPREINTE_MORCEAUX_V357 = '6bba8eacb7e44f90aa117239bc8a4c2b36f2fabf2edd8125deb51839f219c345';
+const EMPREINTE_MORCEAUX_V357 = 'e72d29bcd23e2cb31593ac3dd767ccb9dcc088eff8ff7d866088c553b6a7b771';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -715,6 +718,28 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         vus.length >= 10 && tours.length === 0,
         `${vus.length} édifices de gabarit au-dessus d'une fois et demie leurs toits`
         + (tours.length ? ` — SEULS, EN TOUR (${tours.length}) : ${tours.join(' · ')}` : ` : ${vus.join(' · ')}`));
+    }
+
+    // PLUS UNE COUPOLE DE GABARIT DANS LE MONDE (v369). Le témoin d'avant ne
+    // compte que les gabarits qui montent à une fois et demie leurs toits ;
+    // sous cette barre, Walt Disney Hall (des voiles d'acier), le Rogers Centre
+    // (un stade), le Panthéon de Rome (sans portique), le dôme du Rocher (un
+    // octogone) et le Bean (un haricot) restaient des coupoles sur tambour.
+    // La forme fausse ne dépend pas de la hauteur : aucun repère ne garde
+    // `dome` comme bâtisseur. Les palais (`palaisLong`) sont comptés et dits.
+    {
+      const { VILLES_MONDE: VMg } = await import('../src/villesmonde.js');
+      const gabaritDe = (f) => f && (f.gabarit || (/6 \+ r, 0, OR/.test(String(f)) ? 'dome'
+        : /poser\(1, 5, 0, OR\)/.test(String(f)) ? 'palaisLong' : null));
+      const par = { dome: [], palaisLong: [] };
+      for (const f of VMg) for (const m of f.monuments || []) {
+        const g = gabaritDe(m.tour || m.build);
+        if (g) par[g].push(`${f.ancre.nom}|${m.nom}`);
+      }
+      verifier('aucune coupole de gabarit ne reste dans le monde, quelle que soit sa hauteur',
+        par.dome.length === 0,
+        `${par.dome.length} coupole(s) de gabarit${par.dome.length ? ' : ' + par.dome.join(' · ') : ''}`
+        + ` · palais de gabarit (dette) : ${par.palaisLong.length}`);
     }
 
     // PARIS À L'ÉCHELLE DU CIEL : un bloc pour un mètre jusqu'à la corniche,
@@ -1713,7 +1738,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   // ne retient rien — la ville neuve bâtit dessous. Rouge sur `origin/main` :
   // la date n'existe pas, et les deux premiers cas montrent la ville neuve.
   // ET NICE À LA v359, PAR LA MÊME RÈGLE : la fonction se joue ville par ville.
-  // SAN FRANCISCO À LA v361, LILLE À LA v369, WASHINGTON À LA v369 — dont le
+  // SAN FRANCISCO À LA v361, LILLE À LA v370, WASHINGTON À LA v370 — dont le
   // bâtisseur prend aussi la cote du sol (`bat`).
   const figee = async (date, avant, neuf, ancre, sol, libre, batir) => {
     const W = await import('../src/world.js');

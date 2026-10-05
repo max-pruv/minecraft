@@ -2090,7 +2090,7 @@ export const DATE_RUES_NICE = Date.UTC(2026, 9, 5, 5, 25, 0);
 export const DATE_RUES_SF = Date.UTC(2026, 9, 5, 8, 15, 0);
 // Lille à la v368 (`lille-v344.js`).
 export const DATE_RUES_LILLE = Date.UTC(2026, 9, 5, 13, 32, 0);
-// Washington à la v369 (`washington-v367.js`). Sa ville est une BOÎTE, pas un
+// Washington à la v370 (`washington-v367.js`). Sa ville est une BOÎTE, pas un
 // disque : le cercle qui la contient va jusqu'au coin de Georgetown (268).
 export const DATE_RUES_WASHINGTON = Date.UTC(2026, 9, 5, 14, 0, 0);
 const VILLES_FIGEES = [
@@ -2610,7 +2610,7 @@ export class World {
     this.monumentsTouches = new Set();  // les monuments HD qu'un enfant a modifiés (v292)
     this.morceauxAvantClimat = new Set(); // les morceaux (et leurs voisins) bâtis avant les climats (v345)
     this.colonnesCedees = new Set();    // les colonnes de Paris où la ville cède à ce qu'un enfant a bâti (v306)
-    this.colonnesVilleAvant = new Set();  // celles de Londres, de Nice, de San Francisco, de Lille et de Washington où la ville d'avant le kit reste (v339, v359, v361, v369, v369)
+    this.colonnesVilleAvant = new Set();  // celles de Londres, de Nice, de San Francisco, de Lille et de Washington où la ville d'avant le kit reste (v339, v359, v361, v370, v370)
     this.cacheSol = new Map();          // "x,z" -> { nat, cote } : la fiche d'une colonne (sol continu, v297)
     this.sansSolContinu = false;        // ?solcontinu=0 : la mesure A/B, jamais un réglage
     this.editTimes = new Map();   // "x,y,z" -> ms timestamp, for multiplayer merge
@@ -3439,7 +3439,7 @@ export class World {
         // n'existaient : le générateur sautait les colonnes d'eau, et le train
         // traversait le fleuve dans un tunnel fantôme jamais creusé.
         if ((city && city.key === 'dc') || dansEauWashington(wx, wz)) {
-          // La Washington d'avant le kit (v369) dans les mondes d'avant, et
+          // La Washington d'avant le kit (v370) dans les mondes d'avant, et
           // sous les colonnes où un enfant a bâti avant sa date.
           const dcAvant = this.conf.villesAvant
             || (this.colonnesVilleAvant.size > 0 && this.colonnesVilleAvant.has(cleColonneParis(wx, wz)));

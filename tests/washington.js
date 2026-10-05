@@ -311,7 +311,7 @@ const descendre = async (p, ms) => {
     // portent vraiment un bâtiment — sinon on éprouve des morceaux de rue et
     // des pelouses, et le témoin dit n'importe quoi.
     const ilots = [];
-    // Le centre de chaque maison se DEMANDE au module (`coinDeMaisonDC`, v369) :
+    // Le centre de chaque maison se DEMANDE au module (`coinDeMaisonDC`, v370) :
     // depuis la règle du kit un îlot en porte quatre autour de sa ruelle, et
     // une maison n'est plus au milieu de son îlot. Repli sur la trame d'avant.
     const centres = [];

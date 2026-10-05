@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v369 — La grille de Washington à la règle du kit
+## v370 — La grille de Washington à la règle du kit
 
 **Pourquoi.** La dernière des cinq villes bâties à la main restée hors règle
 (dette v271, v307). Ses diagonales avaient déjà la chaussée d'une collectrice ;
@@ -57,6 +57,36 @@ toit). Le monde d'avant (`v308`) rend la production au bloc près sur
 quatre-vingts morceaux de Washington. Le témoin des maisons de
 `washington.js` demande le coin de chaque maison au module
 (`coinDeMaisonDC`) au lieu d'un pas recopié.
+
+---
+
+## v369 — Plus une coupole de gabarit dans le monde
+
+**Pourquoi.** La v365 avait donné leur édifice aux coupoles et aux palais de
+gabarit qui montaient en tour, et déclaré ceux qui restaient plus bas : Walt
+Disney Hall et le Rogers Centre étaient dessinés en coupole sur tambour, comme
+le Panthéon de Rome (sans son portique), le dôme du Rocher (qui est un
+octogone) et le Bean de Chicago (un haricot d'acier). L'ancien hôtel de ville de
+Toronto était une colonne d'un bloc, et Navy Pier un palais.
+
+**Ce que ça change.** Disney Hall a ses voiles d'acier qui s'évasent ; le
+Rogers Centre est un stade rond à toit plat, à sa hauteur (un stade ne
+s'étire pas : étiré au ciel de Toronto, il montait deux fois plus haut que
+large) ; l'ancien hôtel de ville a son corps de grès et sa tour de l'horloge,
+qui monte enfin au-dessus du stade ; le Panthéon de Rome a sa rotonde, son
+oculus et son portique ; le dôme du Rocher son octogone de faïence bleue et sa
+coupole d'or ; le Bean son haricot sur sa place ; Navy Pier sa jetée vers le
+lac et sa grande roue.
+
+**Ce qui le prouve.** Un témoin neuf de `plafond.js` — « aucune coupole de
+gabarit ne reste dans le monde, quelle que soit sa hauteur » — rouge sur la
+v365 (cinq), vert ici ; il compte aussi les huit palais de gabarit qui restent,
+déclarés. Les témoins de hauteur, d'ordre du vrai ciel, des perches et des
+gabarits en tour restent verts : le Panthéon, étiré à ses 43 m, passait
+au-dessus du Colisée, il garde donc dix blocs ; Toronto garde son `k` de 0,3,
+mesuré (à 1, l'hôtel de ville frôlait la CN Tower). L'empreinte des 490
+morceaux change (Rome est un des neuf lieux) : bâtisseurs neufs désarmés, la
+branche rend celle d'`origin/main` au bit près.
 
 ---
 

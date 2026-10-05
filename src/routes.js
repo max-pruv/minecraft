@@ -411,7 +411,7 @@ export const ROUTES = [
   // blocs, un pont (s 1 048–1 070), coudes ≤ 21°, déblai 7,0 (5,5 avant que le
   // bout ne descende au niveau de la rue), remblai 1,1.
   { nom: 'I-95 Sud', villes: ['ny', 'washington'], portes: { ny: [-20321, 5130], washington: [-21191, 6197] }, boutNet: ['washington'],
-    // La grille de la v369 (pas de 28) n'a plus de rue en u = 37, v = 73 :
+    // La grille de la v370 (pas de 28) n'a plus de rue en u = 37, v = 73 :
     // l'avenue s'arrête sur la rue de la grille v = 84, au bout de la
     // bretelle de l'I-295 que pose `washington.js`.
     avenues: { washington: [[-21191, 6197], [-21191, 6196], [-21191, 6184]] },

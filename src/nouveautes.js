@@ -6,13 +6,23 @@
 
 export const NOUVEAUTES = [
   {
-    v: 369,
+    v: 370,
     titre: 'Washington, des rues plus larges',
     puces: [
       'Les rues ont deux vrais trottoirs',
       'Quatre maisons et une ruelle par îlot',
       'Plus de voitures dans la ville',
       'Tes constructions restent comme avant',
+    ],
+  },
+  {
+    v: 369,
+    titre: 'Sept monuments ont leur vraie forme',
+    puces: [
+      'Le Panthéon de Rome et son portique',
+      'Le dôme du Rocher, octogone et or',
+      'Le Bean et Navy Pier à Chicago',
+      'Un stade et une horloge à Toronto',
     ],
   },
   {

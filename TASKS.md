@@ -1300,12 +1300,36 @@
   le recouvrement reste. Le remède est de PLAN : une tour de catalogue à sa
   vraie emprise (un bloc et demi), ou les trois repères écartés — c'est la
   boîte, donc le relief : décision de carte.
-- [ ] **WALT DISNEY HALL ET LE ROGERS CENTRE SONT DES COUPOLES (v365), déclaré.**
-  Le gabarit `dome(4)` et `dome(5)` les dessine en coupole sur tambour : la
-  salle de Gehry est faite de voiles d'acier courbes, le Rogers Centre est un
-  stade à toit escamotable. Ils ne montent pas à une fois et demie leurs toits
-  (21 blocs pour 20, 20 pour 15), donc le témoin des gabarits ne les compte
-  pas ; leur forme est fausse quand même. Un bâtisseur chacun (`tour`).
+- [x] **WALT DISNEY HALL ET LE ROGERS CENTRE SONT DES COUPOLES (v365) — FAIT en
+  v369, avec les trois autres coupoles de gabarit.** Un témoin de `plafond.js`
+  exige désormais qu'aucun repère ne garde `dome`, quelle que soit sa hauteur
+  (rouge sur la v365 : cinq). Disney Hall a ses voiles d'acier (21 blocs) ; le
+  Rogers Centre est un stade rond à toit plat, `vrai` — étiré au ciel de Toronto
+  il montait deux fois plus haut que large ; l'ancien hôtel de ville a sa tour
+  de l'horloge sur son corps (40 blocs à `k` 1, 28 à `k` 0,3 : Toronto garde
+  0,3, sinon il frôle une CN Tower de 553 m à 45 blocs) ; le Panthéon de Rome
+  a sa rotonde, son oculus et son portique (dix blocs, sous le Colisée fixe à
+  19 : étiré à ses 43 m il le dépassait) ; le dôme du Rocher son octogone ; le
+  Bean son haricot ; Navy Pier sa jetée et sa grande roue.
+- [ ] **LE PORTAIL DE LA v369 : `monte.js` CHANGE DE ROUGES À CHAQUE PASSAGE,
+  DES DEUX CÔTÉS.** Portail : « elle ralentit assez pour qu'on puisse la
+  rejoindre » (9,1 m/s, neuf), le réverbère au volant, la compilation à
+  l'arrivée, le gel d'arrivée. Rejouée SEULE sur la branche : la poule, le trou
+  en vol, la recharge à l'arrivée, compilation et gel — PAS le train. Rejouée
+  SEULE sur `origin/main` (v365) : la caméra en virage, les passants de Rome,
+  compilation et gel. Seuls les deux derniers sont stables (déclarés) ; le reste
+  est une distribution de cadence qu'un passage de chaque côté ne fixe pas
+  (v269). PREUVE STRUCTURELLE pour la livraison : elle ne change que les blocs
+  de sept boîtes de monuments (Los Angeles, Toronto, Rome, Jérusalem, Chicago)
+  et les tables de ces repères ; aucun de ces témoins ne se pose dans l'une de
+  ces boîtes. `washington.js` « chaque îlot a sa porte » (déclaré) : vert seul
+  des deux côtés. `maj.js`, `carte.js`, `manhattan.js` : les rouges déclarés
+  de la v365, identiques.
+- [ ] **HUIT PALAIS SONT ENCORE LE GABARIT `palaisLong` (v369, compté par le
+  témoin).** Palais du Dam, Rijksmuseum, château de Prague (sans Saint-Guy),
+  Palais royal de Stockholm, Amalienborg, Gyeongbokgung (des toits coréens),
+  Casa Rosada, palais Bahia : trois blocs d'épaisseur et une baie sur deux, que
+  la table étire (la leçon du palais de Madrid, v365). Un bâtisseur chacun.
 - [ ] **LE PORTAIL DE LA v357 (les tours) : TOUS LES ROUGES DÉJÀ DÉCLARÉS, UN
   NEUF INTERMITTENT.** Second portail, sur le code rebasé : `maj.js` le loader
   (intermittence déclarée, 1 sur 4 sur `origin/main`), `manhattan.js` « le trou
@@ -3836,11 +3860,11 @@ l'embarquement a eu lieu, pas par une hypothèse.
   C'est la livraison suivante, et le piège est nommé : **une largeur ne se
   projette pas, elle se relève** (v187).
 
-- [x] **v369 — LA GRILLE DE WASHINGTON À LA RÈGLE DU KIT.** Pas de 28, rue
+- [x] **v370 — LA GRILLE DE WASHINGTON À LA RÈGLE DU KIT.** Pas de 28, rue
   locale (3 de chaussée, 2 + 2 de trottoir), quatre maisons et une ruelle par
   îlot, ville d'avant figée (`washington-v367.js`), quatorze circuits. Les
   cinq villes bâties à la main sont à la règle (Londres v339, Nice v359, San
-  Francisco v361, Lille v368, Washington v369). Ce qui reste, DÉCLARÉ :
+  Francisco v361, Lille v368, Washington v370). Ce qui reste, DÉCLARÉ :
   · les diagonales gardent leur trottoir de 0,45 : le kit en veut 2,5 pour une
     collectrice, et l'élargir mange les lots qu'elles coupent en biais — une
     passe à elle, avec la remesure des circuits ;

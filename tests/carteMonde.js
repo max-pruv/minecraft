@@ -2216,7 +2216,7 @@ const VRAIES_KM = [
       !dc.absent && dc.circuits.length > 0 && dc.circuits.every((c) => c.pas > 0 && c.jardin === 0),
       JSON.stringify(dc.absent ? dc : dc.circuits.map((c) => [c.pas, c.jardin])));
 
-    // LA GRILLE DE WASHINGTON À LA RÈGLE DU KIT (v369). Jusqu'à la v368 une
+    // LA GRILLE DE WASHINGTON À LA RÈGLE DU KIT (v370). Jusqu'à la v369 une
     // rue de la grille avait DEUX colonnes de chaussée — pour une voiture de
     // 2,26 — et un seul trottoir. On coupe la grille des quartiers bâtis en
     // travers, ligne par ligne, et l'on mesure chaque rue rencontrée : la

@@ -1,11 +1,11 @@
-// WASHINGTON TELLE QU'ELLE ÉTAIT JUSQU'À LA v368 — FIGÉE, ET JAMAIS MODIFIÉE.
+// WASHINGTON TELLE QU'ELLE ÉTAIT JUSQU'À LA v369 — FIGÉE, ET JAMAIS MODIFIÉE.
 //
-// La v369 passe la grille de Washington à la règle du kit (`voirie.js`). Un
+// La v370 passe la grille de Washington à la règle du kit (`voirie.js`). Un
 // bloc qu'un enfant a posé avant cette date l'a été contre CETTE ville-ci : là
 // où il y en a un (sa colonne et ses huit voisines), le monde garde la ville
 // d'avant (`world.js`, `colonnesVilleAvant`) — la discipline de
 // `londres-v332.js` (v339). Recopié à l'octet depuis `washington.js`
-// (inchangé jusqu'à la v368), seul cet en-tête est neuf.
+// (inchangé jusqu'à la v369), seul cet en-tête est neuf.
 //
 // Washington — le cœur monumental, à hauteur d'enfant.
 //

@@ -1326,6 +1326,121 @@ function buildCapitoleHavane(poser) {
   lanterne(poser, 15, 4, BLANC, BLANC);
 }
 
+// Le Walt Disney Concert Hall de Los Angeles : un socle de pierre claire, puis
+// les voiles d'acier de Gehry, qui se recouvrent et s'évasent vers le haut
+// comme des pétales. Chaque voile est un lobe dont le rayon grandit avec la
+// hauteur (le bord se penche dehors) et dont le dessus s'arrondit : aucun
+// tambour, aucune calotte — c'était le gabarit qui en faisait une coupole.
+function buildDisneyHall(poser) {
+  plein(poser, 1, -6, 6, -5, 5, CREME);
+  plein(poser, 2, -5, 5, -4, 4, CREME);
+  // [cx, cz, rayon au pied, sommet]
+  const VOILES = [[-2, -1, 3.2, 11], [2, -2, 2.8, 9], [-1, 3, 2.6, 8], [3, 2, 2.4, 7], [-4, 1, 2.2, 6]];
+  for (let y = 3; y <= 11; y++) for (let x = -6; x <= 6; x++) for (let z = -5; z <= 5; z++) {
+    for (const [cx, cz, r0, h] of VOILES) {
+      if (y > h) continue;
+      const t = (y - 3) / Math.max(1, h - 3);
+      const r = r0 * (0.75 + 0.45 * t) - (y >= h - 1 ? 0.8 * (y - h + 2) : 0);
+      if (Math.hypot(x - cx, z - cz) <= r) { poser(x, y, z, ACIER); break; }
+    }
+  }
+}
+
+// Le Rogers Centre de Toronto : le mur rond du stade, ses bandeaux de baies,
+// et le toit escamotable — une calotte très plate, découpée en panneaux par
+// ses nervures. Un stade, pas une coupole sur tambour : le toit est aussi
+// large que le mur, et il est bas.
+function buildRogersCentre(poser) {
+  for (let y = 1; y <= 6; y++) for (let x = -7; x <= 7; x++) for (let z = -7; z <= 7; z++) {
+    const d = Math.hypot(x, z);
+    if (d > 7.35) continue;
+    poser(x, y, z, d > 6.4 && (y === 2 || y === 5) ? GRIS_CLAIR : BLANC);
+  }
+  for (let k = 0; k < 3; k++) {
+    const rr = 7.35 - [0.6, 2.4, 4.6][k];
+    for (let x = -7; x <= 7; x++) for (let z = -7; z <= 7; z++) {
+      if (Math.hypot(x, z) > rr) continue;
+      poser(x, 7 + k, z, z % 3 === 0 ? GRIS_CLAIR : BLANC);
+    }
+  }
+}
+
+// L'ancien hôtel de ville de Toronto : le grand bâtiment roman de grès, son
+// toit d'ardoise, et la tour de l'horloge au milieu de la façade sud, son
+// cadran et sa flèche. Un fût d'un bloc (le gabarit `minaret`) ne pouvait pas
+// monter à ses cent quatre mètres ; une tour de trois blocs sur son corps, si.
+function buildHotelDeVilleToronto(poser) {
+  const GRES = brique(0);
+  for (let y = 1; y <= 4; y++) plein(poser, y, -3, 3, -2, 3, y === 4 ? PIERRE : GRES);
+  plein(poser, 5, -3, 3, -2, 3, ARDOISE);
+  plein(poser, 6, -2, 2, -1, 2, ARDOISE);
+  for (let y = 1; y <= 14; y++) plein(poser, y, -1, 1, -3, -1, y === 12 ? BLANC : GRES);
+  plein(poser, 15, -1, 1, -3, -1, ARDOISE);
+  poser(0, 16, -2, ARDOISE); poser(0, 17, -2, ARDOISE);
+}
+
+// Le Panthéon de Rome : la rotonde de brique, la coupole basse — une demi-
+// sphère posée sur un cylindre aussi haut qu'elle (dix blocs en tout, à la
+// hauteur de ses voisins, sous le Colisée) — son
+// oculus ouvert au ciel, et le portique de seize colonnes au nord, sous son
+// fronton. Le gabarit en faisait une coupole sur tambour, sans portique.
+function buildPantheonRome(poser) {
+  tambour(poser, 1, 5, 4, CREME, PIERRE);
+  for (let k = 0; k < 5; k++) {
+    const rr = 4.35 * Math.sqrt(1 - ((k + 0.5) / 5.5) ** 2);
+    for (let x = -4; x <= 4; x++) for (let z = -4; z <= 4; z++) {
+      const d = Math.hypot(x, z);
+      if (d > rr + 0.2 || (k === 4 && d < 0.8)) continue;
+      poser(x, 6 + k, z, PIERRE);
+    }
+  }
+  plein(poser, 1, -3, 3, -6, -5, PIERRE);
+  for (const x of [-3, -1, 1, 3]) for (let y = 2; y <= 5; y++) { poser(x, y, -6, BLANC); poser(x, y, -5, BLANC); }
+  plein(poser, 6, -3, 3, -6, -5, CREME);
+  plein(poser, 7, -1, 1, -6, -5, CREME);
+}
+
+// Le dôme du Rocher : l'octogone revêtu de faïence bleue, son tambour, et la
+// coupole d'or, à peine surhaussée, avec son croissant. Un octogone, pas un
+// cylindre : c'est ce qui le fait reconnaître de loin.
+function buildDomeDuRocher(poser) {
+  const BLEU = uni(10);
+  const octo = (x, z, r) => Math.max(Math.abs(x), Math.abs(z)) <= r && Math.abs(x) + Math.abs(z) <= r * 1.42;
+  for (let y = 1; y <= 4; y++) for (let x = -6; x <= 6; x++) for (let z = -6; z <= 6; z++) {
+    if (!octo(x, z, 6)) continue;
+    poser(x, y, z, y === 1 ? PIERRE : y === 4 ? BLANC : BLEU);
+  }
+  for (let x = -5; x <= 5; x++) for (let z = -5; z <= 5; z++) if (octo(x, z, 5)) poser(x, 5, z, PIERRE);
+  tambour(poser, 6, 7, 3, BLEU, BLANC);
+  calotte(poser, 8, 3, OR, 4);
+  poser(0, 12, 0, OR); poser(0, 13, 0, OR);
+}
+
+// Cloud Gate, le « Bean » : un haricot d'acier poli de dix mètres, plus long
+// que large, creusé d'une arche dessous, sur le parvis du parc Millennium.
+function buildBean(poser) {
+  plein(poser, 0, -4, 4, -3, 3, PIERRE);
+  for (let x = -3; x <= 3; x++) for (let y = 1; y <= 3; y++) for (let z = -2; z <= 2; z++) {
+    if ((x / 3.4) ** 2 + ((y - 1.6) / 1.9) ** 2 + (z / 2.4) ** 2 > 1) continue;
+    if (y === 1 && Math.abs(x) <= 1) continue;
+    poser(x, y, z, ACIER);
+  }
+}
+
+// Navy Pier : la jetée qui s'avance dans le lac Michigan, la longue halle de
+// brique claire et son toit, et la grande roue côté ville (60 m), vers l'ouest.
+// Une roue ne s'étire pas (v353) : la jetée est `vrai`, à sa hauteur d'auteur.
+function buildNavyPier(poser) {
+  plein(poser, 1, -9, 9, -2, 2, PIERRE);
+  for (let y = 2; y <= 3; y++) plein(poser, y, 0, 9, -1, 1, CREME);
+  plein(poser, 4, 0, 9, -1, 1, TUILE);
+  for (let a = 0; a < 360; a += 8) {
+    const r = a * Math.PI / 180;
+    poser(Math.round(-5 + Math.cos(r) * 3.6), Math.round(6 + Math.sin(r) * 3.6), 0, BLANC);
+  }
+  for (let y = 2; y <= 6; y++) { poser(-5, y, -1, GRIS_CLAIR); poser(-5, y, 1, GRIS_CLAIR); }
+}
+
 // Le palais des Beaux-Arts de Mexico : le cube de marbre blanc, son attique,
 // ses quatre lanternons d'angle et la coupole de céramique orangée. Il reste au
 // nord de la rue : la Torre Latino est à cinq blocs au sud-est.
@@ -1756,7 +1871,7 @@ const FICHES = {
     palette: [OCRE, JAUNE_MUR, CREME, ROSE], toit: TUILE, hMaison: [3, 5],
     monuments: [
       { nom: 'Colisée', lat: 41.8902, lon: 12.4922, build: depuisCatalogue('colisee') },
-      { nom: 'Panthéon', lat: 41.8986, lon: 12.4769, box: 6, build: dome(4, CREME, PIERRE) },
+      { nom: 'Panthéon', lat: 41.8986, lon: 12.4769, box: 6, build: dome(4, CREME, PIERRE), tour: buildPantheonRome },
       { nom: 'Basilique St-Pierre', lat: 41.9022, lon: 12.4539, box: 9, build: dome(6, CREME, ARDOISE), tour: buildSaintPierre },
       { nom: 'Forum romain', lat: 41.8925, lon: 12.4853, box: 6, seuil: 0.4, build: buildForum },
     ],
@@ -2257,7 +2372,7 @@ const FICHES = {
     trame: { ang: 0.25, pu: 4, pv: 4, w: 0.4, s: 0.7, ruelles: true },    // la vieille ville en ruelles
     palette: [GRES, CREME, PIERRE], toit: CREME, hMaison: [2, 4], // tout en pierre de Jérusalem
     monuments: [
-      { nom: 'Le dôme du Rocher', lat: 31.778, lon: 35.2354, box: 7, build: dome(5, uni(10), OR) },
+      { nom: 'Le dôme du Rocher', lat: 31.778, lon: 35.2354, box: 7, build: dome(5, uni(10), OR), tour: buildDomeDuRocher },
       { nom: 'Le mur des Lamentations', lat: 31.7767, lon: 35.2262, box: 7, build: (poser) => {
         for (let dz = -5; dz <= 5; dz++) for (let y = 1; y <= 6; y++) poser(0, y, dz, GRES);
       } },
@@ -2305,7 +2420,7 @@ const FICHES = {
     parcs: [{ cu: -18, cv: 20, ru: 6, rv: 5 }],
     monuments: [
       { nom: "L'hôtel de ville", lat: 34.0537, lon: -118.2427, box: 3, build: minaret(20, BLANC) },
-      { nom: 'Walt Disney Hall', lat: 34.0553, lon: -118.25, box: 6, build: dome(4, ACIER, ACIER) },
+      { nom: 'Walt Disney Hall', lat: 34.0553, lon: -118.25, box: 6, build: dome(4, ACIER, ACIER), tour: buildDisneyHall },
       // Le panneau est sur le mont Lee, à dix vrais kilomètres — hors du
       // rayon, ses neuf lettres blanches sur la colline, comme en vrai.
       { nom: 'Hollywood', lat: 34.1341, lon: -118.3215, box: 11, seuil: 0.4, build: buildHollywood },
@@ -2323,9 +2438,9 @@ const FICHES = {
     parcs: [{ cu: 14, cv: -6, ru: 5, rv: 8 }],                    // Millennium Park
     monuments: [
       { nom: 'La Willis Tower', lat: 41.8789, lon: -87.6359, box: 4, build: tourBoule(42, [], NOIRB, NOIRB), tour: buildWillis },
-      { nom: 'Le Bean', lat: 41.8827, lon: -87.6233, box: 4, seuil: 0.4, build: dome(2, ACIER, ACIER) },
+      { nom: 'Le Bean', lat: 41.8827, lon: -87.6233, box: 4, seuil: 0.4, build: dome(2, ACIER, ACIER), tour: buildBean },
       { nom: 'Le John Hancock', lat: 41.8988, lon: -87.6229, box: 4, build: tourBoule(36, [], NOIRB, NOIRB), tour: buildHancock },
-      { nom: 'Navy Pier', lat: 41.8917, lon: -87.6086, box: 9, build: palaisLong(7, CREME, TUILE) },
+      { nom: 'Navy Pier', lat: 41.8917, lon: -87.6086, box: 9, build: palaisLong(7, CREME, TUILE), tour: buildNavyPier },
     ],
     lieux: [['Le Loop', 41.8786, -87.6297], ['Magnificent Mile', 41.8946, -87.6247]],
     couleurToits: [148, 150, 160],
@@ -2378,8 +2493,8 @@ const FICHES = {
     palette: [ACIER, brique(0), CREME], toit: ARDOISE, hMaison: [4, 7],
     monuments: [
       { nom: 'La CN Tower', lat: 43.6426, lon: -79.3871, box: 4, build: tourBoule(44, [32], ACIER, ACIER), tour: buildCNTower },
-      { nom: 'Le Rogers Centre', lat: 43.6414, lon: -79.3894, box: 7, build: dome(5, BLANC, BLANC) },
-      { nom: "L'ancien hôtel de ville", lat: 43.6525, lon: -79.3818, box: 3, build: minaret(12, brique(0)) },
+      { nom: 'Le Rogers Centre', lat: 43.6414, lon: -79.3894, box: 7, build: dome(5, BLANC, BLANC), tour: buildRogersCentre },
+      { nom: "L'ancien hôtel de ville", lat: 43.6525, lon: -79.3818, box: 3, build: minaret(12, brique(0)), tour: buildHotelDeVilleToronto },
     ],
     lieux: [['La Distillerie', 43.6503, -79.3596], ['Kensington', 43.6547, -79.4005]],
     couleurToits: [152, 154, 162],
