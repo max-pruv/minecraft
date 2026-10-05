@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v380 — Plusieurs circuits dans chaque ville, et les deux sens
+## v383 — Plusieurs circuits dans chaque ville, et les deux sens
 
 **Pourquoi.** Dans 153 des 262 villes engendrées (sur la v379), les voitures
 ne faisaient qu'UN tour, toujours dans le même sens — dont 48 villes à tours
@@ -59,6 +59,95 @@ partage dans le même sens reste sous vingt blocs (14,8). L'empreinte des 490
 morceaux change à Rome et à Tokyo seulement, et chaque colonne différente est
 sur un tablier d'avant ou d'après.
 
+## v382 — Le cône se mesure à chaud
+
+**Pourquoi.** Le témoin « à soixante blocs par seconde dans Paris, le monde se
+maille dans le champ » était rouge des deux côtés depuis la v375 : écart 0,02 à
+0,07 pour une barre à 0,13, quand la v346 mesurait 0,29. On croyait le gain de
+l'ordre en cône perdu, peut-être absorbé par la recharge à l'arrivée des v360 et
+v379 — et une dette de ma zone attendait qu'on choisisse entre baisser la barre
+et retirer l'ordre.
+
+**Ce que ça change.** Rien dans le jeu : c'était le témoin. Une sonde
+(`sonde-cone-banc.cjs`, une seule page, trois paires en ordre alterné) a séparé
+les cas. Ordre neuf 0,42 · 0,87 · 0,87, ordre d'avant 0,65 · 0,63 · 0,67 : le
+gain est là (0,22), et c'est le PREMIER passage dans Paris — la première
+arrivée, ses convois, ses passants, 5,3 images par seconde et 80 morceaux contre
+11,9 et 281 — qui l'écrasait ; l'ABBA le mettait toujours sur l'ordre neuf. Le
+témoin joue désormais un passage d'échauffement, non compté. Et la sonde dit ce
+que le cône vaut vraiment : dans une scène vide (0,84 des deux côtés) et la
+recharge à l'arrivée armée (0,72 contre 0,70, 90 morceaux par seconde), le
+worker suit et l'ordre n'a plus rien à décider. Le cône ne compte que quand le
+débit manque — une tablette qui arrive dans une ville.
+
+**Ce qui le prouve.** La sonde, douze passages publiés dans le commit. Le
+témoin repointé ; joué avec l'ordre d'avant des deux côtés, il rend l'écart des
+passages « regard » de la sonde (0,02 à 0,04), sous la barre : il peut encore
+rougir. Portail : `monte.js` et la fumée.
+
+---
+
+## v381 — Plus de trou au bout des ponts, et le Tōmei
+
+**Pourquoi.** Au bout d'un pont de Berlin, une colonne d'eau sans tablier : la
+voiture y tombait (dette déclarée en v362). Mesuré sur toutes les villes à
+pont, ce n'était pas un cas : 437 colonnes d'eau sans tablier aux bouts des
+ponts de quarante-neuf villes. Le tronçon mouillé se mesure sur l'axe du pont,
+et une colonne du monde voisine de l'axe peut être de l'eau un demi-bloc avant
+le premier point mouillé.
+
+**Ce que ça change.** Le tablier se prolonge d'un demi-bloc à chaque bout, et
+seulement sur l'eau : la terre ferme ne change pas d'un bloc. Les bouts des
+ponts n'ont plus d'encoche où la voiture tombe.
+
+**Ce qui le prouve.** Un témoin neuf dans `carteMonde.js` lit toutes les villes
+à pont : 437 encoches sur `origin/main`, zéro ici, sur 28 436 colonnes de
+tablier. La dette de Berlin sort de la liste des ponts déclarés (Agra y
+reste). L'empreinte des 490 morceaux change (Tokyo est un des neuf lieux, et
+le raccord du Tōmei y entre), et la même branche, la règle désarmée et le
+Tōmei retiré, rend celle d'`origin/main` au bit près.
+
+**Et le Tōmei, Tokyo–Nagoya.** La dernière route libre du relevé de la v310,
+laissée de côté parce qu'« un aérodrome est sur l'axe ». C'était pire : à
+l'ouest de Tokyo, Haneda et Yokota ferment la plaine, le Shinkansen part vers
+Kyoto à douze blocs de Haneda et traverse Nagoya, et la montagne de Hakone
+occupe le milieu. La route passe par la bande côtière au sud du rail, entre la
+montagne et la mer : 1 140 blocs, un seul pont (une crique au sud-ouest de
+Tokyo), déblai et remblai de 1,8 bloc. Tokyo s'entre par 132°, porte à
+vingt-quatre blocs du bord — l'entrée par 149°, plus propre, mettait un pont
+sur un étang contre la porte —, Nagoya par 60°, à l'opposé de l'E1. Un témoin
+neuf de `carteMonde.js` exige zéro colonne sur le rail, zéro ville frôlée, des
+voitures sur la route et une rue propre aux deux entrées ; mesuré sous node
+avant le banc : 9 985 colonnes d'emprise, aucune sur la voie ferrée ni à une
+autre route, 283 colonnes d'asphalte sur 283.
+
+---
+
+## v380 — Deux témoins de la rue qui disent ce qu'ils voient
+
+**Pourquoi.** Deux témoins de `monte.js` rendaient des rouges qu'on ne
+pouvait pas démonter. « La voiture de l'enfant freine devant un piéton » a
+rendu `voituresRue: 0` et 3,4 à 5,3 blocs d'avance aux portails des v279,
+v346, v351 et v354 : il cherchait son couloir dans les rues de Rome, et ce qui
+traîne autour d'une rue (façades, mobilier, bêtes, convois) changeait d'un
+portail à l'autre — la situation n'avait souvent pas lieu. Et « les passants
+ne sont plus plantés au milieu de la chaussée » rendait un seul nombre (6 sur
+21 au rejeu de la v371) pour plusieurs pannes possibles.
+
+**Ce que ça change.** Rien dans le jeu. Le témoin du freinage se pose sur un
+rectangle plat de vingt blocs sur neuf, au sec, loin de toute ville, sans
+bête ni convoi, et exige que l'écart ait eu lieu. Le témoin de la chaussée
+publie QUI y est : état, traversée, écart, animé ou figé, à son poste de
+naissance ou non.
+
+**Ce qui le prouve.** Le témoin du freinage, rejoué seul trois fois : 105 à
+107 relevés, zéro traversée, 26 à 33 relevés d'écart, 22,9 à 30,3 blocs
+d'avance. Le couloir vide de la v237, où il devait d'abord se poser, est en
+pleine mer (terrain à 24) : mesuré sous node, aucun de ses quatre cents
+rectangles n'est au sec. La sonde des passants sur la chaussée à Rome
+(`sonde-chaussee-rome.cjs`, 60 s, deux fois de chaque côté) : hors traversée,
+0 et 5 relevés sur ~1 800 sur la branche, 3 et 2 sur `origin/main` — aucun
+passant né sur la chaussée, aucun flâneur.
 ## v379 — On arrive plus vite après la carte
 
 **Pourquoi.** Trois questions laissées ouvertes par la v360, et une quatrième

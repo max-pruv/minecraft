@@ -324,7 +324,7 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // lieu, sonde du scratchpad) sur `origin/main` (v367 puis v369) et sur la branche :
 // les huit autres lieux identiques au bit près, Washington seul diffère
 // (7bb3f492… → 019bb14a…).
-// v380 : les anneaux des villes engendrées (pas de trame, contresens, aucun
+// v383 : les anneaux des villes engendrées (pas de trame, contresens, aucun
 // anneau dans un monument) changent les TABLIERS de Rome et de Tokyo, deux des
 // neuf lieux — voulu. Mesuré lieu par lieu : les sept autres identiques au bit
 // près ; à Rome 29 blocs sur 18 colonnes, à Tokyo 108 blocs sur 87 colonnes (un
@@ -333,7 +333,12 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // (`pontVillesMonde` des deux arbres, sonde `diffbl.mjs` du scratchpad).
 // La v378 (ddf97f87…, livrée en parallèle) avait ses propres anneaux, que
 // ceux-ci remplacent : la constante reste celle mesurée contre la v373.
-const EMPREINTE_MORCEAUX_V357 = '0cf845f573127936c797a4741e5061be661d24cd8138ddfa5fc6d58ba33a7bbe';
+// v381, livrée en parallèle, porte le Tōmei dans les morceaux de Tokyo et
+// couvre l'eau au-delà des bouts de tablier (ici déjà fait d'un bloc). Après la
+// fusion : 1f385723…. La preuve : le même code, le Tōmei retiré du registre,
+// rend 0cf845f5…, la constante de cette livraison avant la fusion, au bit
+// près — la règle d'eau de la v381 ne change aucun bloc de ces tabliers.
+const EMPREINTE_MORCEAUX_V357 = '1f385723b8d1414b3f597cbcb2687f7ace542012cc29ba79326cbe90bebf5b7e';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };

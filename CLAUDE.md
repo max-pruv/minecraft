@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Les circuits des villes engendrées (v380) — ce qui se partage est une voie, pas une rue
+## Les circuits des villes engendrées (v383) — ce qui se partage est une voie, pas une rue
 
 « Lance sur toutes les villes. » Mesuré sur `origin/main` (v373) : 147 des 262
 villes engendrées n'avaient qu'UN circuit (48 superîlots, v282), 43 anneaux de
@@ -851,9 +851,9 @@ Deux règles.
   donne une marque par ville, `animerLesVilles` la déplie à 220 blocs ; un
   témoin exige les mêmes traces que le calcul entier. Un premier dépliage
   coûte au plus 43 ms (Rome, le Colisée du catalogue), une fois.
-  *(Depuis la v380 le filtre est `contreUnMonument` et le dépliage
+  *(Depuis la v383 le filtre est `contreUnMonument` et le dépliage
   `circulationsAPlier`, dont `tracesCirculationParesseuses` est l'alias : voir
-  « Les circuits des villes engendrées (v380) ».)*
+  « Les circuits des villes engendrées (v383) ».)*
 
 ## Les huit derniers palais (v375) — une boîte se relève en carte avant qu'on la remplisse
 
@@ -1134,6 +1134,26 @@ celle de la High Roller ne tiendrait pas, et c'est déclaré.
 Et une empreinte d'identité qui change se PROUVE : celle des 490 morceaux
 (v352) couvre Marrakech et Tokyo ; la branche, bâtisseurs neufs désarmés, rend
 l'ancienne au bit près — c'est ce qui a permis de la remplacer.
+
+## Le cône se mesure à chaud (v382) — l'ABBA n'écarte pas un premier passage à froid
+
+Le témoin de l'ordre en cône était rouge des deux côtés (0,02 à 0,07 pour une
+barre à 0,13). Deux règles.
+
+- **UN ORDRE ALTERNÉ ÉQUILIBRE LA DÉRIVE, PAS LE PREMIER PASSAGE.** L'ABBA
+  (v346) compense une page qui chauffe régulièrement ; il ne compense pas un
+  premier passage qui paie seul la première arrivée dans une ville (convois,
+  passants, programmes) — et il le met toujours sur le même bras. Sondé sur une
+  page, trois paires : ordre neuf 0,42 · 0,87 · 0,87, ordre d'avant 0,65 · 0,63
+  · 0,67. Un passage d'échauffement non compté, et l'on publie les quatre
+  passages dans le message. Avant de croire un gain perdu, on regarde la
+  DISTRIBUTION des passages, pas leur moyenne (v269).
+- **UN ORDRE DE FILE NE DÉCIDE QUE QUAND LE DÉBIT MANQUE.** Scène vide : 0,84
+  des deux côtés (93 morceaux par seconde, file vide). Recharge à l'arrivée
+  armée : 0,72 contre 0,70 (90 par seconde). Le cône garde son gain là où la
+  file attend l'image — la tablette qui arrive dans une ville — et ne coûte rien
+  ailleurs ; on le garde, et le témoin le mesure dans le régime où il compte
+  (recharge par image, celle du banc).
 
 ## L'arrivée après la carte (v379) — un gel de banc se démonte en scène vide
 
@@ -1522,6 +1542,24 @@ engendrées. Quatre règles.
   journal vide dans le jeu, trois rouges de `maj.js`. Après tout conflit dans un
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
+
+## Deux témoins de la rue qui disent ce qu'ils voient (v380) — un couloir « vide » se vérifie au sec
+
+Deux règles.
+
+- **UN SITE DE TÉMOIN NOMMÉ « VIDE » SE VÉRIFIE AVANT D'ÊTRE REPRIS.** Le
+  couloir de la v237, (30 000, 30 000), est vide parce qu'il est en MER
+  (terrain à 24, sous l'eau) : très bien pour un vol ou un piéton qu'on pose
+  sans physique (le sursaut, v376), impossible pour une voiture qui roule —
+  mesuré sous node, aucun de ses quatre cents rectangles n'est au sec. Le
+  témoin du freinage cherche son rectangle à partir de (−1 500, −2 500), hors
+  ville, plat, un sol plein sous chaque colonne, rien posé dessus, et exige que
+  la situation ait eu lieu (`ecartes > 0`).
+- **UN TÉMOIN DE COMPTE PUBLIE QUI IL COMPTE.** « Plantés au milieu de la
+  chaussée » rend désormais, pour chaque passant sur la chaussée, son état, sa
+  traversée, son écart, s'il est animé (sinon figé là où il était, v241) et
+  s'il est à son poste de naissance — son prochain rouge se démonte en une
+  lecture (v223).
 
 ## Les passants réagissent à la route (v376) — un geste court, et une pause qui se compte en temps réel
 
@@ -2282,6 +2320,25 @@ Une règle.
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
 
+## Le Tōmei (v381) — une sonde de couloir lisse par moyenne, et la porte se juge avec son raccord
+
+Tokyo–Nagoya, la route que le relevé de la v310 laissait de côté (« un
+aérodrome sur l'axe »). Deux règles.
+
+- **UNE ENTRÉE DE VILLE SE MESURE AVEC LES QUARANTE BLOCS QUI LA PRÉCÈDENT.**
+  L'avenue de Tokyo par 149° était la plus propre (dix-neuf blocs de rue,
+  aucun bloc) ; mais le rayon qui y mène passe sur un étang à cinquante blocs
+  de la porte, et tous les tracés y posaient un pont contre elle. Une entrée
+  se choisit sur l'avenue ET sur le rayon de dehors — ici 132°, porte à
+  vingt-quatre blocs du bord (`bord`), même avenue mesurée.
+- **QUAND LE COULOIR SERPENTE, CHAIKIN LAISSE SES COINS ; UNE MOYENNE GLISSANTE
+  LES RÉPARTIT.** Le chemin de grille (huit caps, trois pas droits après chaque
+  virage) contournait la montagne côtière en S : lissé par Chaikin et
+  rééchantillonné, il rendait des coudes de 33 à 38° — cent pour cent de refus
+  « coude », c'est-à-dire un défaut de la recherche (v329). Rééchantillonné à
+  cinq blocs puis moyenné sur ±50 blocs (bouts fixés), le même chemin passe
+  sous 25° : 22 admissibles sur 300, dont un à un seul pont.
+
 ## La route de Washington (v367) — une ville fermée par son relief s'entre par son côté bas, et un bout peut s'arrêter net
 
 L'I-95 Sud New York–Washington. Quatre règles.
@@ -2319,6 +2376,14 @@ L'I-95 Sud New York–Washington. Quatre règles.
   (`ZONE_WASHINGTON`) et Manhattan à son rectangle — la règle de la v313
   (« un témoin écrit pour un cas se réécrit le jour où un cas neuf sort de
   son hypothèse »).
+
+**Et un tronçon mesuré sur l'axe ne couvre pas les colonnes d'à côté (v381).**
+Le tablier d'un pont de ville engendrée s'arrêtait là où l'AXE cessait d'être
+mouillé ; une colonne voisine pouvait être de l'eau un demi-bloc plus loin, et
+restait sans pont — une seule vue par le témoin des ponts (Berlin, sur l'axe),
+437 mesurées sur la bande entière dans quarante-neuf villes. Une dette vue
+dans une ville se mesure dans toutes (v319) : le témoin des encoches lit la
+bande de chaque tablier de chaque ville, par les fonctions pures.
 
 ## La porte de Manhattan (v362) — une ville qui n'est pas un disque déclare sa porte
 

@@ -6,12 +6,36 @@
 
 export const NOUVEAUTES = [
   {
-    v: 380,
+    v: 383,
     titre: 'Des voitures dans les deux sens',
     puces: [
       'Presque chaque ville a plusieurs circuits',
       'Les voitures roulent dans les deux sens',
       'Les petites villes ont un second circuit',
+    ],
+  },
+  {
+    v: 382,
+    titre: 'Le jeu se vérifie mieux',
+    puces: [
+      'Un contrôle de la route réparé',
+      'Rien ne change pour toi',
+    ],
+  },
+  {
+    v: 381,
+    titre: 'Ponts finis, Tokyo rejoint Nagoya',
+    puces: [
+      'Plus de trou au bout des ponts',
+      'Une autoroute de Tokyo à Nagoya',
+    ],
+  },
+  {
+    v: 380,
+    titre: 'Des essais plus sûrs',
+    puces: [
+      'Le jeu vérifie mieux les piétons',
+      'Rien ne change pour toi',
     ],
   },
   {

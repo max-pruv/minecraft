@@ -596,6 +596,7 @@ const VRAIES_KM = [
       out.convoiHansa = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'Hansalinie') || null;
       out.convoiI95 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'I-95') || null;
       out.convoiI95Sud = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'I-95 Sud') || null;
+      out.convoiTomei = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'Tōmei') || null;
       // WASHINGTON EST UNE BOÎTE (v367) : la route de New York s'arrête NET à
       // son bord sud (`boutNet`), au niveau de la rue d'Anacostia qui y
       // débouche, et ses voitures entrent par cette rue (`avenues`). On compte
@@ -1013,6 +1014,18 @@ const VRAIES_KM = [
       && (a1.manhattan || []).filter((e) => e.route === 'I-95 Sud').length === 1 && !!a1.frole && a1.frole['I-95 Sud'] === 0,
       JSON.stringify(a1.absent ? a1 : { convoi: a1.convoiI95Sud ? { nom: a1.convoiI95Sud.nom, voitures: (a1.convoiI95Sud.modeles || []).length } : 'aucun convoi I-95 Sud',
         washington: a1.washington, erreur: a1.washingtonErreur, portesNY: a1.manhattan, frole: a1.frole && a1.frole['I-95 Sud'] }));
+
+    // LE TŌMEI (v381) : Tokyo–Nagoya, par la bande côtière au sud du
+    // Shinkansen — Haneda et Yokota ferment la plaine à l'ouest de Tokyo, et le
+    // rail traverse Nagoya. Ni rail, ni aérodrome, ni ville frôlée, et des
+    // voitures entrent dans les deux villes par une rue propre.
+    verifier('le Tōmei relie Tokyo à Nagoya au sud du Shinkansen, et des voitures entrent dans les deux villes par une rue propre',
+      !a1.absent && a1.segments >= 24 && !!a1.convoiTomei && a1.convoiTomei.routier && (a1.convoiTomei.modeles || []).length >= 10
+      && !!a1.surRail && !!a1.surRail['Tōmei'] && a1.surRail['Tōmei'][0] > 100 && a1.surRail['Tōmei'][1] === 0
+      && !!a1.frole && a1.frole['Tōmei'] === 0
+      && ['tokyo', 'nagoya'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'Tōmei' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7)),
+      JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiTomei ? { nom: a1.convoiTomei.nom, voitures: (a1.convoiTomei.modeles || []).length } : 'aucun convoi Tōmei',
+        surRail: a1.surRail && a1.surRail['Tōmei'], frole: a1.frole && a1.frole['Tōmei'], entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'Tōmei') }));
 
     // AUCUNE ROUTE NE PREND L'EMPRISE D'UNE AUTRE (v355) : Montréal a deux
     // routes, et chaque colonne d'emprise doit appartenir au segment qu'on
@@ -4521,7 +4534,7 @@ const VRAIES_KM = [
               // (mesuré v271) — un décalage à gauche passerait toute mesure
               // d'amplitude.
               //
-              // ET LE CONTRESENS ROULE AUSSI À DROITE (v380) — mais du côté
+              // ET LE CONTRESENS ROULE AUSSI À DROITE (v383) — mais du côté
               // EXTÉRIEUR de son anneau, qu'il parcourt à l'envers. « Vers le
               // centre du rectangle » n'est donc vrai que d'un sens : ce qui
               // est vrai des deux, c'est que la voiture est à DROITE DE L'AXE
@@ -4650,7 +4663,7 @@ const VRAIES_KM = [
       `${rues.place}/${rues.place + rues.serre} relevé(s) avec la place`
       + ` (${(100 * rues.place / (rues.place + rues.serre)).toFixed(1)} %)`);
 
-    // --- PLUSIEURS CIRCUITS PAR VILLE, ET LES DEUX SENS (v380) ---------------
+    // --- PLUSIEURS CIRCUITS PAR VILLE, ET LES DEUX SENS (v383) ---------------
     //
     // « Lance sur toutes les villes. » Mesuré sur `origin/main` : 147 des 262
     // villes engendrées n'avaient qu'UN circuit — dont 48 superîlots, que la
@@ -5128,7 +5141,7 @@ const VRAIES_KM = [
       try { R = await import('./src/routes.js'); } catch { /* ancien code */ }
       const CINQ = ['lyon', 'hambourg', 'bale', 'belgrade', 'budapest'];
       const parRoute = R ? R.segmentsDeRoute().flatMap((sg) => [sg.de, sg.vers]) : [];
-      // ET TOUTES LES VILLES À PONT (v380). La liste des cinq et des villes à
+      // ET TOUTES LES VILLES À PONT (v383). La liste des cinq et des villes à
       // route laissait de côté cinquante villes qui ont un tablier : lues
       // toutes, `origin/main` en rendait SEPT fautives (Agra, Berlin, Prague,
       // Tokyo, Séoul, Hong Kong, Chicago), dont cinq que personne n'avait vues.
@@ -5159,7 +5172,35 @@ const VRAIES_KM = [
         }
         ponts.push({ cle, tabliers: a.ponts.length, pas, sansSol, surLaTete, surEau, pireSpan, parLaRoute, cinq: CINQ.includes(cle) });
       }
-      return { eaux, sans, trame: trame.length, servies: par.size, ponts,
+      // LES ENCOCHES AU BOUT DES TABLIERS (v381). Le tronçon mouillé se mesure
+      // sur l'AXE ; une colonne du monde à côté de l'axe peut être de l'eau un
+      // demi-bloc avant le premier point mouillé, et rester sans tablier — à
+      // Berlin, sur l'axe même. On lit, sur TOUTES les villes à pont, les
+      // colonnes d'eau de la bande du tablier prolongée d'un demi-bloc à chaque
+      // bout, par les fonctions pures (le monde chargé n'a pas cinquante
+      // villes). Sur `origin/main` : 437 encoches dans quarante-neuf villes.
+      let encoches = 0, bandes = 0; const encEx = [];
+      if (anneauxDeVille && m.pontVillesMonde) for (const f of VILLES_MONDE) {
+        if (!f.trame) continue;
+        const a = anneauxDeVille(f); if (!a.ponts.length) continue;
+        const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
+        for (const q of a.ponts) {
+          const coins = [];
+          for (const le of [q.a0 - 0.5, q.a1 + 0.5]) for (const tr of [q.b - q.demi, q.b + q.demi]) {
+            const P = q.axe === 0 ? le : tr, Q = q.axe === 0 ? tr : le;
+            coins.push([f.ancre.x + P * co + Q * si, f.ancre.z - P * si + Q * co]);
+          }
+          const xs = coins.map((c) => c[0]), zs = coins.map((c) => c[1]);
+          for (let x = Math.floor(Math.min(...xs)); x <= Math.max(...xs); x++) for (let z = Math.floor(Math.min(...zs)); z <= Math.max(...zs); z++) {
+            const u = x - f.ancre.x, v = z - f.ancre.z, P = u * co - v * si, Q = u * si + v * co;
+            const le = q.axe === 0 ? P : Q, tr = q.axe === 0 ? Q : P;
+            if (le < q.a0 - 0.5 || le > q.a1 + 0.5 || Math.abs(tr - q.b) > q.demi) continue;
+            bandes++;
+            if (w.terrainHeight(x, z) < WATER_LEVEL && !m.pontVillesMonde(x, z)) { encoches++; if (encEx.length < 3) encEx.push([f.cle, x, z]); }
+          }
+        }
+      }
+      return { eaux, sans, trame: trame.length, servies: par.size, ponts, encoches, bandes, encEx,
         PONT_MAX: m.PONT_MAX || 0 };
     });
 
@@ -5194,7 +5235,7 @@ const VRAIES_KM = [
     // mesuré 73 à 85 % à la livraison.
     verifier('chaque pont a de l\'eau sous son tablier',
       fleuves.ponts.filter((p) => p.cinq).length === 5
-      // UNE CULÉE SE COMPTE PAR TABLIER, PAS EN PART DE L'AXE (v380) : lu sur
+      // UNE CULÉE SE COMPTE PAR TABLIER, PAS EN PART DE L'AXE (v383) : lu sur
       // toutes les villes à pont, un tablier de trois colonnes d'eau a ses
       // deux culées de un bloc et demi et n'est au-dessus de l'eau qu'à moitié
       // (San José 50 %, Göteborg 56 %) — un vrai pont sur un canal. Ce qui
@@ -5205,7 +5246,7 @@ const VRAIES_KM = [
         + ` sur l'eau (${(100 * p.surEau / p.pas).toFixed(0)} %)`).join(' · '));
 
     // LES DEUX DÉFAUTS DE LA v362 SONT RÉGLÉS PAR LE PLAN, PAS PAR LE PONT
-    // (v380). Agra : le Taj Mahal et le Fort bâtis sur deux tabliers — c'était
+    // (v383). Agra : le Taj Mahal et le Fort bâtis sur deux tabliers — c'était
     // l'ANNEAU qui passait dans le monument, et un anneau ne traverse plus ce
     // que le bâtisseur pose (`contreUnMonument`) ; la boîte du monument, qui
     // entre dans les zones du relief, n'a pas bougé. Berlin : l'anneau dont le
@@ -5223,6 +5264,10 @@ const VRAIES_KM = [
       fleuves.ponts.map((p) => `${p.cle} ${p.pas} pas, ${p.sansSol} sans sol,`
         + ` ${p.surLaTete} bouché(s), plus long ${p.pireSpan.toFixed(0)} b`).join(' · ')
       + ` · borne ${fleuves.PONT_MAX} · dettes ${Object.keys(DETTE_PONTS).join(', ')}`);
+
+    verifier('au bout de chaque tablier, pas une colonne d\'eau sans pont (toutes les villes à pont)',
+      fleuves.bandes > 10000 && fleuves.encoches === 0,
+      `${fleuves.encoches} encoche(s) sur ${fleuves.bandes} colonnes de tablier ${JSON.stringify(fleuves.encEx)}`);
 
     verifier('aucune route ne creuse le tablier d\'un pont de ville (toutes les villes qu\'une route touche)',
       fleuves.ponts.length > 5 && fleuves.ponts.every((p) => p.parLaRoute === 0),
