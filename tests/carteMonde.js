@@ -907,8 +907,10 @@ const VRAIES_KM = [
 
     // LA HANSALINIE (v352) : Cologne–Hambourg. Cologne sort par son axe
     // nord-nord-ouest, entre l'ICE et l'aérodrome ; Hambourg est contournée par
-    // l'ouest et le nord, parce que l'Elbe ferme son sud et l'A24 son est.
-    verifier('la Hansalinie relie Cologne à Hambourg en contournant Hambourg par le nord, sans toucher l\'ICE, et des voitures entrent dans les deux villes par une rue propre',
+    // l'ouest et prise par le nord-ouest, parce que l'Elbe ferme son sud,
+    // l'A24 son est, et qu'un pont de l'Alster borde son axe nord (le témoin
+    // des ponts de villes, plus bas, l'a vu).
+    verifier('la Hansalinie relie Cologne à Hambourg en contournant Hambourg par l\'ouest, sans toucher l\'ICE, et des voitures entrent dans les deux villes par une rue propre',
       !a1.absent && a1.segments >= 21 && !!a1.convoiHansa && a1.convoiHansa.routier && (a1.convoiHansa.modeles || []).length >= 10
       && !!a1.surRail && !!a1.surRail.Hansalinie && a1.surRail.Hansalinie[0] > 100 && a1.surRail.Hansalinie[1] === 0
       && !!a1.frole && a1.frole.Hansalinie === 0

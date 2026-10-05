@@ -33,9 +33,9 @@ nord-ouest.
 
 **Ce que ça change.** La 401 relie Toronto à Montréal (2 711 blocs) : elle
 contourne Montréal par le sud et y entre par son axe sud. La Hansalinie relie
-Cologne à Hambourg (2 544 blocs) : elle sort de Cologne entre l'ICE et
-l'aérodrome, puis fait le tour de Hambourg par l'ouest et le nord pour y entrer
-par son axe nord. Deux fois deux voies, aucun pont, vingt voitures chacune, des
+Cologne à Hambourg (2 387 blocs) : elle sort de Cologne entre l'ICE et
+l'aérodrome, puis fait le tour de Hambourg par l'ouest pour y entrer par le
+nord-ouest. Deux fois deux voies, aucun pont, vingt voitures chacune, des
 deux côtés une entrée sur une rue propre. Montréal a désormais deux autoroutes,
 Hambourg et Cologne aussi. Le relief ne bouge pas.
 
@@ -49,7 +49,11 @@ vingt et une, sous node. La sonde nouvelle cherche le COULOIR LE PLUS BAS sur
 une grille qui porte le cap (on ne vire que d'un huitième de tour, après deux
 pas droits), avec les rails, les autres routes et les aérodromes interdits,
 puis lisse et appelle `profilDe` sur chaque candidat : 16 admissibles sur
-3 000 pour la 401, 463 sur 1 500 pour la Hansalinie.
+3 000 pour la 401, 397 sur 1 500 pour la Hansalinie. Et le témoin des ponts de
+villes l'a prouvé une fois de plus : la première Hansalinie entrait par l'axe
+nord de Hambourg, au bout d'un pont de l'Alster, et le talus de la route en
+creusait le tablier (six points sans sol, rouge sur la branche, vert sur
+`origin/main`) ; la porte est passée au nord-ouest.
 
 ---
 

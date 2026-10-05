@@ -343,22 +343,25 @@ export const ROUTES = [
   // LA HANSALINIE (v352), COLOGNE–HAMBOURG : l'A1 allemande, rebaptisée de
   // son surnom parce que « A1 » est déjà Paris–Lille. Les deux villes sont
   // sous leur pays du côté qui regarde l'autre, et la v337 avait buté sur
-  // 20 000 chemins lissés (déblai 10,1 au mieux pour neuf). Trois portes
-  // étaient fermées : l'aérodrome de Francfort à 176 blocs à l'est de
-  // Cologne, l'A3 au sud, et l'ICE d'Amsterdam qui sort de Cologne vers
-  // −130° ; et à Hambourg, l'A24 à l'est (−8°) et l'Elbe, qui longe le sud du
-  // disque entre 38 et 70 blocs du centre — toute entrée par le sud
-  // franchissait le fleuve dans le raccord. La sonde de la 401 (couloir le
-  // plus bas avec son cap, rails et autres routes INTERDITS dans la grille) a
-  // donc pris Cologne par son axe nord-nord-ouest (−108°, entre l'ICE et
+  // 20 000 chemins lissés (déblai 10,1 au mieux pour neuf). Les portes
+  // étaient fermées une à une : à Cologne, l'aérodrome de Francfort à 176
+  // blocs à l'est, l'A3 au sud, l'ICE d'Amsterdam qui sort vers −130° ; à
+  // Hambourg, l'A24 à l'est (−8°), l'Elbe qui longe le sud du disque entre 38
+  // et 70 blocs du centre (toute entrée par le sud franchissait le fleuve dans
+  // le raccord), et l'Alster au nord : la porte de l'axe nord (−106°) tombait
+  // au bout d'un pont de la ville, et le TALUS de la route en creusait le
+  // tablier — six points sans sol, rouges au témoin des ponts de villes. La
+  // sonde de la 401, au cap, rails et autres routes INTERDITS dans la grille,
+  // a donc pris Cologne par son axe nord-nord-ouest (−104°, entre l'ICE et
   // l'aérodrome), filé au nord-est par les vallons, et CONTOURNÉ Hambourg par
-  // l'ouest et le nord pour y entrer par son axe nord (−106°, avenue de 35
-  // blocs). 1 500 tracés, refus 339 remblai · 257 entrée · 202 coude · 191
-  // déblai au milieu · 48 ponts proches ; 463 admissibles, puis les points
-  // superflus retirés un à un par la même sonde (76 → 39). Celui-ci : 2 544 blocs,
-  // aucun pont, déblai 5,0, remblai 1,2, pente 0,060, coudes ≤ 22°, zéro
-  // colonne sur un rail, aucune prise à une autre route.
-  { nom: 'Hansalinie', villes: ['cologne', 'hambourg'], via: [[1535, -1105], [1521, -1157], [1521, -1173], [1580, -1327], [1601, -1645], [1609, -1675], [1657, -1752], [1670, -1762], [1707, -1776], [1804, -1795], [1917, -1852], [2019, -1865], [2044, -1872], [2061, -1883], [2104, -1943], [2119, -2000], [2118, -2023], [2112, -2045], [2081, -2096], [2028, -2153], [2016, -2177], [2012, -2198], [2020, -2263], [2036, -2297], [2058, -2329], [2085, -2359], [2314, -2581], [2328, -2587], [2370, -2591], [2385, -2594], [2404, -2601], [2567, -2746], [2586, -2753], [2604, -2754], [2645, -2745], [2677, -2731], [2705, -2704], [2711, -2691], [2721, -2659]] },
+  // l'ouest pour y entrer par le nord-ouest (−134°, avenue de 29 blocs).
+  // 1 500 tracés, refus 439 entrée · 325 déblai au milieu · 163 remblai · 127
+  // coude · 49 ponts proches ; 397 admissibles, puis les points superflus
+  // retirés un à un par la même sonde (72 → 25). Celui-ci : 2 387 blocs,
+  // aucun pont, déblai 5,4, remblai 1,4, pente 0,060, coudes ≤ 22°, zéro
+  // colonne sur un rail ni sur un pont de ville, aucune prise à une autre
+  // route.
+  { nom: 'Hansalinie', villes: ['cologne', 'hambourg'], via: [[1540, -1107], [1530, -1207], [1613, -1549], [1705, -1741], [1790, -1827], [1822, -1841], [2005, -1852], [2032, -1864], [2079, -1904], [2094, -1928], [2106, -1995], [2086, -2095], [2072, -2119], [2027, -2169], [2020, -2182], [2014, -2232], [2027, -2284], [2040, -2305], [2100, -2378], [2347, -2593], [2522, -2680], [2545, -2682], [2647, -2671], [2661, -2664], [2688, -2640]] },
 ];
 
 // --- la section -----------------------------------------------------------------

@@ -1528,7 +1528,7 @@ La 401 Toronto–Montréal et la Hansalinie Cologne–Hambourg, les deux corrido
   très chère), en tire des points avec du jeu, lisse par Chaikin en gardant
   les deux tronçons radiaux, simplifie tant que les coudes restent sous 22°,
   et APPELLE `profilDe` sur chaque candidat. Puis elle retire un à un les
-  points dont le tracé se passe sans rien perdre (56 → 26, 76 → 39).
+  points dont le tracé se passe sans rien perdre (56 → 26, 72 → 25).
 - **UN COULOIR SANS CAP REPART EN ARRIÈRE, ET LE LISSAGE N'Y PEUT RIEN.** Le
   premier jet (Dijkstra sur les cases seules) rendait 88 à 97 % de refus de
   coude — il a trouvé la 401 (seize sur 3 000) et ZÉRO Hansalinie sur 2 500 : le chemin le plus bas repartait souvent DERRIÈRE le tronçon radial,
@@ -1536,7 +1536,7 @@ La 401 Toronto–Montréal et la Hansalinie Cologne–Hambourg, les deux corrido
   la grille porte le cap (huit directions, un huitième de tour au plus, deux
   pas droits après chaque virage), on part dans le cap de la porte et l'on
   arrive dans celui de l'autre ; les points du couloir à moins de 70 blocs des
-  bouts sont laissés au lissage — 463 Hansalinie sur 1 500. C'est la règle de la v329 (« un refus qui
+  bouts sont laissés au lissage — 397 Hansalinie sur 1 500. C'est la règle de la v329 (« un refus qui
   touche cent pour cent des candidats sur une contrainte se lit d'abord comme
   un défaut de la recherche »), une forme de sonde plus loin.
 - **CE QUE LA GRILLE N'INTERDIT PAS, LE LISSAGE LE TOUCHE.** Les rails et les
@@ -1545,9 +1545,12 @@ La 401 Toronto–Montréal et la Hansalinie Cologne–Hambourg, les deux corrido
   grille (rail à douze blocs, axe d'une autre route à deux emprises et talus),
   ils ne sont plus qu'un résidu. Et une porte se ferme aussi par ce qui est
   DANS le disque : l'Elbe longe le sud de Hambourg entre 38 et 70 blocs du
-  centre, toute entrée par le sud mettait un pont dans le raccord — on entre
-  par le nord. Avant de chercher, on relève le long des rayons l'eau de la
-  ville, pas seulement le relief.
+  centre, toute entrée par le sud mettait un pont dans le raccord ; et l'axe
+  nord tombait au bout d'un pont de l'Alster, dont le TALUS de la route
+  creusait le tablier (six points sans sol, vus par le témoin des ponts de
+  villes, pas par la sonde) — on entre par le nord-ouest. Avant de chercher,
+  on relève le long des rayons l'eau de la ville ET ses ponts, pas seulement
+  le relief : une porte se juge contre tout ce que la ville a bâti autour.
 - **DEUX ROUTES DANS UNE VILLE NE SE PRENNENT PAS LEUR EMPRISE.** Montréal,
   Hambourg et Cologne ont désormais deux autoroutes. `routeEn` donne une
   colonne au segment le plus proche : deux corridors qui se recouvrent

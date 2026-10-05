@@ -10,7 +10,7 @@ export const NOUVEAUTES = [
     titre: 'Deux autoroutes de plus',
     puces: [
       'Toronto–Montréal, par le sud',
-      'Cologne–Hambourg, par le nord',
+      'Cologne–Hambourg, par l\'ouest',
       'Elles font le tour des villes',
     ],
   },
