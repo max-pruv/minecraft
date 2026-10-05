@@ -986,7 +986,7 @@
   table de hauteurs, un témoin, une sonde. Le badge de version (« version
   servie v335 » au premier portail) était le bump manquant, réglé.
 - [ ] **DEUX INVERSIONS DU VRAI CIEL DANS LES VILLES BÂTIES À LA MAIN (v350),
-  mesuré. Le château du Smithsonian : FAIT en v354** (sa tour du nord, deux
+  mesuré. Le château du Smithsonian : FAIT en v357** (sa tour du nord, deux
   blocs de côté, monte à quatorze — `buildChateauSmithsonianHaut`, entre
   Jefferson et la Bibliothèque du Congrès ; il est dans les `FIXES`). Reste St
   Paul : Big Ben est à soixante-neuf blocs, aucune coupole de la City ne peut
@@ -998,7 +998,7 @@
   témoin. St Paul est une coupole (`corps` possible, et le dôme se voit de tout
   Londres) ; les tours du château sont des fûts d'un bloc, à remonter par leur
   bâtisseur, pas par une table.
-- [x] **LA GRANDE ROUE DU PRATER SOUS LA HOFBURG (v342) — FAIT en v354** : une
+- [x] **LA GRANDE ROUE DU PRATER SOUS LA HOFBURG (v342) — FAIT en v357** : une
   roue à son vrai rayon (`buildRoueDuPrater`, neuf blocs, ce que tient sa
   boîte), vingt-deux blocs au-dessus de la Hofburg (vingt et un) ; elle est
   dans les `FIXES`. Tivoli et la High Roller restent (la boîte ne tient pas
@@ -1008,7 +1008,7 @@
   Si on veut la garder au-dessus, c'est son bâtisseur (`buildGrandeRoue`) qui
   doit grandir d'un rayon, pas une table de paliers. Même cas pour Tivoli.
 - [x] **UNE COUPOLE SANS SA NEF DEVIENT UNE TOUR (v342), vu en capture. FAIT pour
-  Saint-Pierre en v354** : un bâtisseur avec la croix latine, la façade, le
+  Saint-Pierre en v357** : un bâtisseur avec la croix latine, la façade, le
   tambour et la calotte rigide (`buildSaintPierre`). Les autres coupoles
   partagées (Florence, Berlin, Sainte-Sophie) gardent `dome`. Les
   bâtisseurs partagés (`dome`, `minaret`, `palaisLong`) sont des gabarits : St-
@@ -1019,7 +1019,7 @@
   couleur de la calotte) : un obus d'ardoise, corrigé (le corps s'arrête au
   tambour). Le remède de fond est un bâtisseur par monument, avec sa nef — pas
   une table de paliers.
-- [x] **LES GRATTE-CIEL ET LES BEFFROIS D'UN BLOC DE LARGE (v353) — FAIT en v354.**
+- [x] **LES GRATTE-CIEL ET LES BEFFROIS D'UN BLOC DE LARGE (v353) — FAIT en v357.**
   Les treize ont un bâtisseur d'après leur vraie silhouette (champ `tour`,
   villesmonde.js ; le monde d'avant garde la colonne), et leur ville a son ciel.
   Le témoin neuf des perches (`plafond.js`, toutes les villes) en a trouvé dix

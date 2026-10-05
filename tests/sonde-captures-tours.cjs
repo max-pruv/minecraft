@@ -1,4 +1,4 @@
-// CAPTURES DES TOURS QUI ONT REÇU UNE EMPRISE (v354).
+// CAPTURES DES TOURS QUI ONT REÇU UNE EMPRISE (v357).
 // Usage : node tests/sonde-captures-tours.cjs <dossier> [étiquette] [Ville|Nom;Ville|Nom]
 //
 // La sonde des monuments des villes (v342), visée tour par tour : la rue au

@@ -108,7 +108,7 @@ const ARCHE = (h) => [h + 1, h + 3];
 const PAGODE5 = (v) => [[0, 0], [1, 1], [3, 9], [4, 10], [6, 18], [7, 19], [9, 27], [10, 28],
   [12, 35], [13, 36], [15, 43], [16, 44], [17, v + 1]];
 export const ECHELLES_VILLES = Object.freeze({
-  // Saint-Pierre avec sa basilique (v354, `tour`) : la nef, son toit, le
+  // Saint-Pierre avec sa basilique (v357, `tour`) : la nef, son toit, le
   // tambour, la calotte rigide (une coupole étirée est un obus), la lanterne et
   // la croix à 137. La façade est écrite à 16 m et non à ses 45 vrais : à
   // l'échelle du sol de Rome la basilique ne fait que seize blocs de long, et à
@@ -208,7 +208,7 @@ export const ECHELLES_VILLES = Object.freeze({
   'Barcelone|Colonne de Colom': { vraie: 60, corps: [12, 13], fut: true },
   // Les tours de la Frauenkirche, quatre-vingt-dix-neuf mètres ; le beffroi du
   // nouvel hôtel de ville, quatre-vingt-cinq.
-  // (v354 : leurs bâtisseurs neufs ont un corps, voir `tour` — la nef, les
+  // (v357 : leurs bâtisseurs neufs ont un corps, voir `tour` — la nef, les
   // deux tours et leurs bulbes ; la façade et le beffroi.)
   'Munich|Frauenkirche': { vraie: 99,
     paliers: [[0, 0], [1, 1], [5, 25], [8, 37], [12, 79], [14, 92], [16, 100]] },
@@ -234,7 +234,7 @@ export const ECHELLES_VILLES = Object.freeze({
   'Kyoto|Kiyomizu-dera': { vraie: 31,
     paliers: [[0, 0], [1, 1], [3, 8], [4, 9], [6, 16], [7, 17], [9, 24], [10, 25], [11, 32]] },
 
-  // LES TOURS QUI ONT UNE EMPRISE (v354). Elles dominaient déjà leurs toits en
+  // LES TOURS QUI ONT UNE EMPRISE (v357). Elles dominaient déjà leurs toits en
   // colonnes d'un bloc, et étirées c'étaient des perches ; leurs bâtisseurs
   // neufs (`tour`, villesmonde.js) ont la vraie silhouette, et leurs paliers
   // s'écrivent en mètres aux retraits de cette silhouette. Une sphère, un
@@ -281,7 +281,7 @@ export const ECHELLES_VILLES = Object.freeze({
   // cloches, l'attique, la pyramide et l'ange.
   'Venise|Le campanile': { vraie: 99,
     paliers: [[0, 0], [1, 1], [10, 50], [12, 62], [13, 72], [15, 98], [16, 100]] },
-  // Les autres perches que le témoin a trouvées (v354), avec leur corps.
+  // Les autres perches que le témoin a trouvées (v357), avec leur corps.
   // La Fernsehturm, 368 m : la sphère (rigide) de 200 à 230 m.
   'Berlin|Fernsehturm': { vraie: 368,
     paliers: [[0, 0], [1, 1], [5, 90], [10, 200], [14, 200], [16, 250], [20, 369]] },
@@ -434,7 +434,7 @@ export const CIELS = Object.freeze({
   // v353 : les autres villes engendrées qui portent des repères.
   Barcelone: 13, Munich: [13, 0.55], Venise: 8, 'Las Vegas': 15, Miami: 13, 'La Havane': 13,
   Tokyo: 13, Kyoto: 12,
-  // v354 : les villes dont les tours ont reçu une emprise.
+  // v357 : les villes dont les tours ont reçu une emprise.
   Bruxelles: 13, Marrakech: 7, Chicago: 14, 'Séoul': 13, Shanghai: 13, 'Hong Kong': 13,
 });
 // LES VILLES ENGENDRÉES QUI N'ONT PAS DE CIEL, et chacune dit pourquoi — même
@@ -452,7 +452,7 @@ export const VILLES_SANS_CIEL = Object.freeze({
   'Dubaï': { vrai: 'le Burj Khalifa est bâti à sa hauteur, bien au-dessus de son ciel' },
   'Le Cap': { vrai: 'son seul repère est une forteresse aux murs bas' },
 });
-// LES FÛTS QUI SONT DES FÛTS DANS LA VRAIE VILLE AUSSI (v354). Le témoin de
+// LES FÛTS QUI SONT DES FÛTS DANS LA VRAIE VILLE AUSSI (v357). Le témoin de
 // `tests/plafond.js` exige qu'aucun repère qui domine ses toits (une fois et
 // demie la corniche) ne soit une perche — plus de la moitié de sa hauteur sur
 // une ou deux colonnes — sauf ceux-ci, chacun avec sa raison. Une colonne, un

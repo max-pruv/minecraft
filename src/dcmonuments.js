@@ -609,7 +609,7 @@ export function buildChateauSmithsonian(poser) {
   set(2, 0, 0, LAMPE);
 }
 
-// Le même château, sa tour du nord rendue à sa hauteur (v354). Le château
+// Le même château, sa tour du nord rendue à sa hauteur (v357). Le château
 // (44 m) était à onze blocs, sous le mémorial Jefferson (39 m) à treize : une
 // inversion du vrai ciel de Washington, et une tour d'un bloc qu'aucune table
 // ne pouvait monter sans en faire une aiguille. La tour du nord-ouest — la plus

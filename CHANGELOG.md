@@ -58,10 +58,10 @@ monte à une fois et demie la corniche de sa ville n'est une perche (plus de la
 moitié de ses couches sur une ou deux colonnes), sauf les quatre fûts vrais —
 la colonne de Juillet, la colonne Nelson, celle de Colomb, l'Obélisque. Rouge
 sur `origin/main` (vingt-trois perches), vert ici. Le témoin d'ordre du ciel
-garde les vingt-neuf monuments neufs ou refaits (quatre-vingt-dix-sept repères
-mesurés), les deux empreintes du relief sont intactes, et l'empreinte des 490
+reste vert dans toutes les villes, la roue du Prater et le château du
+Smithsonian y entrent, les deux empreintes du relief sont intactes, et l'empreinte des 490
 morceaux de la v352 change pour une seule raison, prouvée : la même branche,
-ses bâtisseurs neufs désarmés, rend l'empreinte de la v351 au bit près.
+ses bâtisseurs neufs désarmés, rend celle d'`origin/main` au bit près (qui, elle, ne suivait plus les routes de la v355 : le témoin y était rouge, c'est réparé).
 
 ---
 

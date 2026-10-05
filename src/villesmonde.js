@@ -675,7 +675,7 @@ function buildGrandeRoue(poser) {
   for (let y = 1; y <= R + 2; y++) poser(0, y, 0, ACIER);
 }
 
-// La grande roue du Prater (v354) : 65 m de haut pour 61 de diamètre, plus
+// La grande roue du Prater (v357) : 65 m de haut pour 61 de diamètre, plus
 // haute que la Hofburg — et `buildGrandeRoue` (seize blocs) passait dessous.
 // Une roue ne s'étire pas, elle deviendrait une ellipse : celle-ci a son vrai
 // rayon, le plus grand que tient la boîte de son repère (neuf), la jante, les
@@ -766,7 +766,7 @@ function tourBoule(h, boules, fut = ACIER, boule = ACIER) {
 }
 
 
-// LES TOURS QUI ONT UNE EMPRISE (v354). `tourBoule` et `minaret` sont des
+// LES TOURS QUI ONT UNE EMPRISE (v357). `tourBoule` et `minaret` sont des
 // colonnes d'un bloc : à leur vraie hauteur dans le ciel de leur ville, ce
 // sont des perches (vu en capture à Bruxelles et à Chicago, v353). Chaque tour
 // ci-dessous a son bâtisseur, d'après la vraie silhouette — les tubes en
@@ -969,7 +969,7 @@ function buildCampanile(poser) {
   p(0, 15, 0, OR);
 }
 
-// LES AUTRES PERCHES DU MONDE (v354) — le témoin neuf de `plafond.js` les a
+// LES AUTRES PERCHES DU MONDE (v357) — le témoin neuf de `plafond.js` les a
 // trouvées dans toutes les villes, pas seulement dans les treize de la dette :
 // la Fernsehturm, la CN Tower, la Torre Latino, trois clochers de cathédrale
 // posés sans leur cathédrale, la tour d'Arnolfo sans son palais, la demi-tour
@@ -1118,7 +1118,7 @@ function pagodeCorps(niveaux, mur, toit) {
     }
   };
 }
-// Saint-Pierre de Rome avec sa basilique (v354). `dome(6)` posait la coupole
+// Saint-Pierre de Rome avec sa basilique (v357). `dome(6)` posait la coupole
 // seule : remise à sa hauteur, sans nef autour, elle devenait une tour (vu en
 // capture, v342). La croix latine de travertin — la nef vers l'est jusqu'à la
 // façade de Maderno et ses statues, les deux bras du transept — porte le

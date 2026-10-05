@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Les tours ont une emprise (v354) — une perche se cherche au bâtisseur, dans toutes les villes
+## Les tours ont une emprise (v357) — une perche se cherche au bâtisseur, dans toutes les villes
 
 La dette de la v353 : treize tours d'un bloc de large, laissées sous leur vraie
 hauteur parce qu'étirées c'étaient des perches. Cinq règles.
