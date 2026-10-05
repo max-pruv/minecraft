@@ -20,6 +20,39 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v363 — Les coups suivent la voiture
+
+**Pourquoi.** Deux manques laissés déclarés par la v356. Une voiture de la
+rue que l'enfant avait froissée, puis qu'il PRENAIT, repartait neuve : la
+monture qu'on lui fabrique ne portait pas les dégâts de la voiture vue dans la
+rue — sa laque la suivait depuis la v305, ses coups non. Et à plusieurs,
+chaque tablette a SA rue : une voiture de la rue percutée par Marlon n'était
+froissée que chez lui, Alice la voyait intacte au même endroit. Enfin, un
+témoin du portail (« aucun programme compilé au feu ») était rouge des deux
+côtés en comptant 97 → 96 : un compte qui BAISSE, donc un programme rendu,
+jamais une compilation.
+
+**Ce que ça change.** Prendre une voiture de la rue abîmée, c'est la prendre
+abîmée : la même tôle enfoncée, la même santé, le même moteur qui fume — et un
+coup de plus peut la mettre en panne ou en feu, comme toute voiture qu'on
+conduit. Ce n'est jamais une copie de géométrie : l'histoire des chocs passe à
+la monture et se rejoue sur ses pièces, avec les mêmes fonctions et le même
+bruit (v344). À plusieurs, la voiture de la rue que l'un percute est froissée
+chez l'autre aussi, de la même histoire : elle se nomme par `clé#rang` (v305),
+et un message court (`rue_choc`) porte le choc ; une tablette restée sur
+l'ancienne version l'ignore. Si la voiture n'est pas encore dessinée chez
+l'ami, l'histoire attend qu'elle naisse.
+
+**Ce qui le prouve.** Deux témoins neufs dans `degats.js`, rouges sur
+`origin/main` : la voiture prise porte la MÊME histoire de chocs que celle de
+la rue, sa santé publiée et 17 pièces froissées (ancien code : santé 1, rien
+de froissé) ; à deux tablettes, le même convoi, le même rang, la même histoire
+chez Alice et 8 pièces froissées (ancien code : aucun choc). Le témoin des
+programmes lit désormais les CLÉS neuves et non le compte : vert sur les deux
+codes, et rouge (deux clés neuves) quand on désarme la chauffe des dégâts.
+
+---
+
 ## v362 — New York–Boston, et une porte qui n'est pas sur un disque
 
 **Pourquoi.** New York n'avait aucune route : son entrée était instruite

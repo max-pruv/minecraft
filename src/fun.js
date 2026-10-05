@@ -401,10 +401,14 @@ export function initFun(ctx) {
   function conduireLaVoiture(place) {
     const v = getVehicules && getVehicules();
     if (!v || !v.emprunter) return false;
+    // dégâts (v362) : la voiture de la rue, froissée, AVANT qu'elle ne parte
+    const ici = v.place && v.place(place.id);
+    const abimee = ici ? degats.rueEn(ici.x, ici.z, ici.y) : null;
     const pris = v.emprunter(place.id);
     if (!pris) return false;
     const auto = animalManager.invoquer('voiture', pris.x, pris.z, false, { flotte: pris.flotte, peinture: pris.peinture });
     if (!auto) return false;
+    degats.heriter(abimee, auto.mesh);   // ses coups la suivent (v362)
     // À SA PLACE EXACTE, pas au sommet de la colonne — la leçon du garage.
     auto.pos.set(pris.x, pris.y, pris.z);
     auto.yaw = pris.cap || 0;

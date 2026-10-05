@@ -240,11 +240,16 @@
     brûler.
   - ~~La carcasse n'est vue que par celui qui conduisait~~ — **fait en v356**
     (le receveur garde l'épave).
-  - ~~Les voitures de la rue ne s'abîment pas~~ — **fait en v356**. Reste :
-    une voiture de la rue abîmée que l'enfant PREND repart neuve (`emprunter`
-    fabrique une monture neuve ; ses dégâts ne la suivent pas), et l'ami ne
-    voit pas les enfoncements des voitures de SA rue que l'enfant a percutées
-    (chaque tablette a sa rue).
+  - ~~Les voitures de la rue ne s'abîment pas~~ — **fait en v356** ; la
+    voiture prise qui repartait neuve et l'ami qui ne voyait pas les
+    enfoncements de SA rue — **faits en v362** (l'histoire suit, `rue_choc`).
+    Reste : un hôte resté sur l'ancienne version ne relaie pas `rue_choc`
+    entre deux invités à jour (le receveur cède, déclaré).
+  - Le témoin « aucun programme compilé au feu » lit les clés depuis la
+    v362 (le compte baissait : 93 → 92, 97 → 96). « Enfoncer coûte quelques
+    millisecondes » reste une mesure de temps sous charge : 15 ms seul ici,
+    31,1 une fois au portail de la v348 — non repointé faute d'une grandeur
+    qui ne dépende pas du processeur partagé.
   - ~~Le garage n'est éprouvé que par `reparer`~~ — **fait en v356** : un
     témoin par le trajet (descendre dedans, remonter).
   - **Le contrat avec la physique** (`player.choc`, `player.physiqueLitEtat`)

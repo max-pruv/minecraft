@@ -2057,6 +2057,22 @@ export function createVehicules({ scene, player }) {
     return mieux;
   }
 
+  // LES DÉGÂTS À PLUSIEURS (v362) : une voiture de la rue se nomme par
+  // `clé#rang` (v305), la seule chose qui soit la même d'une tablette à
+  // l'autre. Crochet court, lu par degats3d.js (branché par main.js) : un
+  // maillage → son nom, un nom → son maillage (null si la place est vide ou
+  // prise). Appelé au choc, et deux fois par seconde sur une poignée de noms.
+  function voitureNommee(q) {
+    if (typeof q === 'string') {
+      const k = q.lastIndexOf('#');
+      const c = k < 0 ? null : convois.find((x) => x.cle === q.slice(0, k));
+      const i = Number(q.slice(k + 1));
+      return c && !c.pris.has(i) ? c.elements[i] || null : null;
+    }
+    for (const c of convois) { const i = c.elements.indexOf(q); if (i >= 0) return `${c.cle}#${i}`; }
+    return null;
+  }
+
   let enMarcheCache = null;
   function enMarche() {
     if (enMarcheCache) return enMarcheCache;
@@ -2248,7 +2264,7 @@ export function createVehicules({ scene, player }) {
   }
 
   return {
-    metro, course, chaine, circulation, bus, update, placeProche, diagPlace, place, emprunter, retirer, obstacleDevant, voitureA, dansRectangle, enMarche, voitureRueProche,
+    metro, course, chaine, circulation, bus, update, placeProche, diagPlace, place, emprunter, retirer, obstacleDevant, voitureA, dansRectangle, enMarche, voitureRueProche, voitureNommee,
     adopterHorloge, horloge: () => horloge,
     // le crochet des feux tricolores (v273), branché par main.js
     brancherFeux: (f) => { feuRouge = f; },

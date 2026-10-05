@@ -4692,6 +4692,7 @@ function showOnlineUI() {
     }
   };
   net.onAnnonce = (txt) => toast(txt, 0x9fd8e8);
+  net.onRueChoc = (m) => fun.degats.recevoirRue(m);   // dégâts de la rue (v362)
   net.onCiel = (c) => adopterCiel(c);
   net.donnerCiel = () => cielDuMonde();
   net.onJoin = (nom) => annonceArrivee(nom);
@@ -7569,6 +7570,10 @@ const fun = initFun({
 // circulation laquelle l'enfant vient de percuter (les convois n'existent
 // qu'une fois le monde bâti : on les demande au moment du choc).
 fun.degats.brancherRue((x, z, y) => (vehicules ? vehicules.voitureRueProche(x, z, y) : null));
+// Et à plusieurs (v362) : une voiture de la rue se nomme par `clé#rang`, et
+// l'histoire de ses chocs part chez les amis, qui la froissent chez eux.
+fun.degats.brancherNoms((q) => (vehicules ? vehicules.voitureNommee(q) : null));
+fun.degats.brancherReseau((m) => { if (net && net.active) net.broadcast(m); });
 
 // --- main loop -------------------------------------------------------------------------
 
