@@ -770,6 +770,52 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les circuits des villes engendrées (vNNN) — ce qui se partage est une voie, pas une rue
+
+« Lance sur toutes les villes. » Mesuré sur `origin/main` : 147 des 262 villes
+engendrées n'avaient qu'UN circuit (48 superîlots, v282), 43 anneaux de 28
+villes passaient DANS un monument, et le plus petit anneau roulait sur l'axe
+de la rue. Six règles.
+
+- **UNE BARRE DE PARTAGE SE RELIT QUAND LA RUE CHANGE DE SECTION.** La v211 a
+  posé vingt blocs quand une rue n'avait qu'UNE file. Depuis la v271 elle en a
+  deux et l'on roule à droite : deux anneaux de part et d'autre d'une rue la
+  parcourent en sens contraires, chacun sur sa voie — ils se CROISENT. Seuls
+  ceux du même côté se SUIVENT. `partageDeRue` compte par voie (le côté de
+  l'anneau multiplié par son `sens`) ; le témoin le mesure sur les TRACÉS sans
+  la formule (écart, sens, recouvrement). La piste « barre en fraction du
+  périmètre » déclarée en v282 laissait deux convois se suivre : écartée.
+- **UN DÉCALAGE BORNÉ PAR LE PAS NE DÉCALE PAS LE PLUS PETIT.**
+  `Math.max(t.pu, Ru − voie)` laissait l'anneau d'un pas de demi-côté sur
+  l'axe. Le témoin « à droite » de la v271 le lisait comme à droite (« vers le
+  centre du rectangle ») ; relu comme « à droite de l'axe de la rue », il rend
+  325 relevés à gauche sur `origin/main`, zéro ici.
+- **QUAND LA GÉOMÉTRIE N'A QU'UN CYCLE, LE SECOND CIRCUIT EST LE CONTRESENS.**
+  Une ville de rayon < 2,3 pas n'a que trois rues de chaque côté du centre, et
+  la place (et sa fontaine) est sur le nœud central : un seul cycle l'évite.
+  Le contresens (`sens: -1`) roule côté extérieur, sur les mêmes tabliers.
+  Les anneaux en pas de trame (côtés impairs, phase 2 bis) et le contresens
+  doivent rouler sur la chaussée (`horsChaussee`) ; les anneaux d'avant ne le
+  font pas toujours — c'est mesuré et déclaré (`TASKS.md`), parce que le
+  filtre appliqué à eux viderait treize villes.
+- **UN ANNEAU NE TRAVERSE PAS UN MONUMENT, ET L'ON LIT LE BÂTISSEUR.** La dette
+  d'Agra (v362) était le cas visible de 43 anneaux. `contreUnMonument` lit les
+  couches 1 à 3 du bâtisseur sous la largeur de la carrosserie (la règle de
+  `avenueDEntree`, v365), ne bâtit que les monuments dont la boîte approche la
+  voie, et la couverture perdue (Agra 84,5 %) est regagnée par des anneaux de
+  quartier cherchés sous node (`ANNEAUX_EN_PLUS`). On déplace l'ANNEAU, jamais
+  la boîte, qui entre dans les zones du relief.
+- **UN CALCUL QU'ON ENRICHIT SE DÉPLACE LÀ OÙ IL SERT.** Les anneaux des 262
+  villes passaient de ~230 à ~700 ms, derrière le bouton « Jouer » (v258). Un
+  convoi ne naît qu'à 220 blocs de sa ville : `circulationsAPlier` rend un
+  repère par ville (même ancre, donc même instant) et `deplier()` calcule ses
+  anneaux à l'approche. `tracesCirculation` rend le même tout, pour les témoins.
+- **UN TÉMOIN QUI LIT UNE LISTE DE VILLES NE VOIT PAS LES AUTRES.** Le témoin
+  des ponts ne lisait que cinq villes et celles des routes ; lu sur les 56
+  villes à pont, `origin/main` en avait sept fautives, dont cinq jamais vues.
+  Et sa barre « 60 % de l'axe sur l'eau » valait pour les grands fleuves : une
+  culée se compte par tablier (quatre pas à sec au plus).
+
 ## Plus une coupole de gabarit (v369) — une forme fausse ne dépend pas de la hauteur
 
 Trois règles.
