@@ -141,10 +141,17 @@ async function mesurerSensations() {
     const moy = (t) => t.reduce((x, y) => x + y, 0) / t.length;
     // 3. LA DÉRIVE
     const bandeAvant = moy(await fenetre(1.2, bande));
-    P.derive = 0.5;
+    // LA DÉRIVE SE TIENT LE TEMPS DE LA FENÊTRE (v361) : depuis la v358 la
+    // physique (conduite.js) RÉÉCRIT `derive` à chaque image — posée une
+    // fois, elle retombait à zéro à l'image suivante, et le témoin écoutait
+    // une voiture qui ne dérapait plus (rapport 1,07 au portail). Une
+    // propriété qui rend 0,5 et ignore ce qu'on lui écrit ; la voiture est à
+    // l'arrêt, la physique n'en tire aucun mouvement.
+    Object.defineProperty(P, 'derive', { configurable: true, enumerable: true, get: () => 0.5, set: () => {} });
     await tenir(0.4);
     const bandeDerive = moy(await fenetre(1.2, bande));
     delete P.derive;
+    P.derive = 0;
     await tenir(0.6);
     // 4. LE CHOC — le son. UNE LECTURE DE 0,74 s, PAS DES INSTANTANÉS : un
     // analyseur de 2 048 échantillons ne voit que 46 ms, et sur un banc à dix
