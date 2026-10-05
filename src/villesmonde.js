@@ -1714,20 +1714,22 @@ function buildGyeongbokgung(poser) {
 // milieu de la façade, ses pavillons d'angle coiffés à la française, sa
 // balustrade, ses cours.
 function buildCasaRosada(poser) {
-  palaisCour(poser, -7, 7, -6, 6, 2, 1, 3, ROSE);
-  palaisCour(poser, -7, 7, -6, 6, 2, 4, 15, ROSE);
-  facadeEtages(poser, -7, 7, -6, 6, 4, 15, ROSE);
+  // Le rose de la Casa Rosada est un saumon : `ROSE` est ici un beige.
+  const SAUMON = uni(16);
+  palaisCour(poser, -7, 7, -6, 6, 2, 1, 3, SAUMON);
+  palaisCour(poser, -7, 7, -6, 6, 2, 4, 15, SAUMON);
+  facadeEtages(poser, -7, 7, -6, 6, 4, 15, SAUMON);
   palaisCour(poser, -7, 7, -6, 6, 2, 16, 16, ARCHI.CORNICHE);
   for (let x = -7; x <= 7; x++) for (let z = -6; z <= 6; z++) {
     const bord = x === -7 || x === 7 || z === -6 || z === 6;
-    if (bord) poser(x, 17, z, ((x + z) & 1) ? BLANC : ROSE);
+    if (bord) poser(x, 17, z, ((x + z) & 1) ? BLANC : SAUMON);
   }
   for (const a of [-7, 5]) for (const b of [-6, 5]) for (let x = a; x <= a + 2; x++) for (let z = b; z <= b + 1; z++) {
-    for (let y = 17; y <= 18; y++) poser(x, y, z, ROSE);
+    for (let y = 17; y <= 18; y++) poser(x, y, z, SAUMON);
     poser(x, 19, z, ARDOISE);
     if (x === a + 1) poser(x, 20, z, ARDOISE);
   }
-  for (let z = -2; z <= 2; z++) for (let y = 16; y <= 19; y++) poser(7, y, z, Math.abs(z) === 2 || y === 19 ? BLANC : ROSE);
+  for (let z = -2; z <= 2; z++) for (let y = 16; y <= 19; y++) poser(7, y, z, Math.abs(z) === 2 || y === 19 ? BLANC : SAUMON);
   poser(7, 20, 0, BLANC); poser(7, 21, 0, OR);
   for (let x = 5; x <= 7; x++) for (let y = 1; y <= 5; y++) for (let z = -1; z <= 1; z++) poser(x, y, z, 0);
 }
