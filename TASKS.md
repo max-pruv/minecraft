@@ -3033,10 +3033,10 @@ l'embarquement a eu lieu, pas par une hypothèse.
 - [x] **Les bords de la découpe** — FAIT en v372 : coupés au plan (débord 0
   sur les 55 modèles). Les taxis gardent `fabrique` → pas de portière : bords
   nets, mais 0/24 rayons touchent un habitacle derrière l'ouverture.
-- **Une portière ouverte vue de dos est invisible** sur les modèles qui n'ont
-  pas meublé son revers (faces simples). `DoubleSide` changerait la clé de
-  programme (v246) : il faudrait le chauffer (`signatures.js`) avant de le
-  livrer.
+- [x] **Une portière ouverte vue de dos** — FAIT en v373 : un revers fabriqué
+  en géométrie (copie des sommets, normales retournées), pas un `DoubleSide`.
+  De derrière : 0/24 rayons avant, autant que de face après (10 et 10 sur
+  l'AMG). Aucun programme neuf, aucun appel de dessin de plus.
 - **La séquence ne se juge qu'au banc.** Durées (1,1 s de marche au plus, 2,4 s
   en tout) et caméra de trois quarts arrière : à confirmer sur l'iPad.
 - **Les avions** gardent leur montée instantanée (on ne marche pas jusqu'au
@@ -3096,7 +3096,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   juste, témoin trop étroit (il n'acceptait que les flancs) : il accepte
   désormais toute place hors de l'emprise et publie les refus. À creuser : ce
   qui rend « circulation » en pleine prairie à soixante blocs de toute route.
-  **RÉSOLU (v367)** : la « prairie » était DANS Manchester (46 blocs du
+  **RÉSOLU (v373)** : la « prairie » était DANS Manchester (46 blocs du
   centre, rayon 65). La garde du témoin lisait `cityAt`, qui ne connaît que
   les villes bâties à la main ; un vrai circuit de la ville (`voiture|4|-1983,
   -2535`, 270 blocs) passait à 3,5 blocs de la voiture — refus juste. Le

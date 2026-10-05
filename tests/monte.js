@@ -6520,7 +6520,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         // main, et la « prairie » d'avant était DANS Manchester (46 blocs de
         // son centre, rayon 65) ; un circuit de la ville passait à 3,5 blocs
         // de la voiture, d'où le refus « circulation » côté passager, juste
-        // (sonde de la v367, `refus` + places de la rue au moment du refus)
+        // (sonde de la v373, `refus` + places de la rue au moment du refus)
         const enVille = (u, v) => (w.cityAt && w.cityAt(u, v)) || VM.dansVilleMonde(u, v);
         if (enVille(x, z)) continue;
         for (let a = 0; a < 16 && loin; a++) for (const r of [30, 60, 120]) if (enVille(x + Math.cos(a * Math.PI / 8) * r, z + Math.sin(a * Math.PI / 8) * r)) loin = false;
@@ -6765,7 +6765,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
           if (!o.isMesh || roue(o, racine) || !filtre(o)) return;
           M.multiplyMatrices(invR, o.matrixWorld);
           const pos = o.geometry.attributes.position, ix = o.geometry.index;
-          const n = o.geometry.userData.endroit != null ? o.geometry.userData.endroit : ix ? ix.count : pos.count;   // le revers (v367) n'est pas de la surface en plus
+          const n = o.geometry.userData.endroit != null ? o.geometry.userData.endroit : ix ? ix.count : pos.count;   // le revers (v373) n'est pas de la surface en plus
           for (let i = 0; i + 2 < n; i += 3) {
             v.fromBufferAttribute(pos, ix ? ix.getX(i) : i).applyMatrix4(M);
             w.fromBufferAttribute(pos, ix ? ix.getX(i + 1) : i + 1).applyMatrix4(M).sub(v);
@@ -6803,7 +6803,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !embBords.err && embBords.debord < 0.02 && Math.abs(embBords.aire[1] - embBords.aire[0]) < 0.005 * embBords.aire[0]
         && (!embBords.froisse || embBords.froisse.surPivot > 0),
       JSON.stringify(embBords));
-    // 11. LE REVERS D'UNE PORTIÈRE OUVERTE SE VOIT (v367). Aucun modèle de
+    // 11. LE REVERS D'UNE PORTIÈRE OUVERTE SE VOIT (v373). Aucun modèle de
     // la flotte n'a meublé l'intérieur de sa portière : vue de derrière —
     // l'enfant qui arrive par l'arrière — la face simple était culée, et l'on
     // voyait au travers. Des rayons (la face culée ne les arrête pas : le

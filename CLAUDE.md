@@ -868,6 +868,26 @@ d'un plan est rejeté par six comparaisons — sans cela le plan passait de 4 à
 135 ms. Un bord net ne suffit pas à rendre une portière : les taxis l'ont, et
 restent refusés parce que derrière il n'y a rien (0/24 rayons).
 
+**Le revers d'une portière se fabrique (v373).** Aucun modèle n'a meublé
+l'intérieur de sa portière : de derrière, la face simple était culée (0 rayon
+sur 24, sur les cinquante modèles). La portière reçoit une copie compacte de
+ses sommets puis une seconde, normales retournées, triangles à l'envers, DANS
+la même géométrie : même matériau, même programme, même appel de dessin.
+`userData.endroit` dit où finit l'endroit dans l'index (un témoin qui mesure
+une surface ne compte pas le revers). Un `DoubleSide` aurait changé la clé de
+programme (v246). **Et une sonde de rayons voit les couches** : la
+carrosserie vit sur la couche 2 (v245), un `Raycaster` neuf ne voit que la
+couche 0 — ma première sonde rendait « on traverse » de face comme de dos, et
+c'est son CONTRÔLE (la même cible vue de face, 0 sur 24) qui l'a dit.
+
+**Un terrain de témoin « loin des villes » se juge sur TOUTES les villes
+(v373).** `cityAt` ne connaît que les villes bâties à la main ; la « prairie »
+du témoin de la descente était dans Manchester, et le refus « circulation »
+qu'on cherchait depuis la v366 était un vrai circuit de la ville. On lit aussi
+`dansVilleMonde`. **Et une sonde de navigateur ne tourne pas pendant un
+portail** : le portail de la v372 en a rendu dix-sept rouges de cadence, que
+la suite rejouée seule ne reproduisait pas.
+
 **Et une résolution de conflit a avalé deux modules d'une autre session.**
 Rebasée sur la v344, ma résolution de `sw.js` remplaçait le bloc en conflit
 par la seule ligne `CACHE_VERSION` — or le bloc contenait aussi les lignes

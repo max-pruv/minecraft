@@ -303,7 +303,7 @@ export function planPortieres(g) {
     g2.boundingBox = geo.boundingBox; g2.boundingSphere = geo.boundingSphere;
     return partager(g2);
   };
-  // LE REVERS D'UNE PORTIÈRE SE FABRIQUE (v367). Mesuré par la sonde du
+  // LE REVERS D'UNE PORTIÈRE SE FABRIQUE (v373). Mesuré par la sonde du
   // revers : une portière ouverte vue de face prend 10 à 20 rayons sur 24,
   // vue de DERRIÈRE — l'enfant qui arrive de l'arrière de la voiture — zéro,
   // sur les cinquante modèles de la flotte : aucun n'a meublé l'intérieur de
