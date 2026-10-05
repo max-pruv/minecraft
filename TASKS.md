@@ -3096,6 +3096,13 @@ l'embarquement a eu lieu, pas par une hypothèse.
   juste, témoin trop étroit (il n'acceptait que les flancs) : il accepte
   désormais toute place hors de l'emprise et publie les refus. À creuser : ce
   qui rend « circulation » en pleine prairie à soixante blocs de toute route.
+  **RÉSOLU (v367)** : la « prairie » était DANS Manchester (46 blocs du
+  centre, rayon 65). La garde du témoin lisait `cityAt`, qui ne connaît que
+  les villes bâties à la main ; un vrai circuit de la ville (`voiture|4|-1983,
+  -2535`, 270 blocs) passait à 3,5 blocs de la voiture — refus juste. Le
+  « mur » côté conducteur était un arbre de ville. Le témoin cherche
+  désormais hors de TOUTE ville (`dansVilleMonde` aussi) : sur le nouveau
+  site, dix descentes, zéro refus.
 - [ ] **LE PORTAIL DE LA v366 (embarquement), DOUBLE MESURE FAITE.** Deux
   portails complets (le second après rebase sur la v339). Les huit témoins de
   l'embarquement verts aux deux. Rouges, tous rejoués SEULS des deux côtés :
