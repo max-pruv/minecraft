@@ -20,6 +20,37 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v367 — New York–Washington, et une ville qu'on n'entre que par le sud
+
+**Pourquoi.** New York et Washington, les deux grandes villes de la côte est,
+n'avaient aucune route entre elles : la dernière des liaisons courtes du kit
+encore à faire hors des villes réservées. La v362 avait réglé la porte de
+Manhattan (un rectangle, pas un disque) ; Washington pose le même problème
+dans l'autre sens — c'est une BOÎTE bâtie de 311 × 205 blocs dans un disque
+de 187, et la règle du disque y aurait posé la porte au milieu de la campagne,
+ou écrit l'entrée de la route dans ses rues.
+
+**Ce que ça change.** L'I-95 Sud part d'une seconde porte de New York, sur la
+rive de l'Hudson à l'ouest de Manhattan, traverse le New Jersey en plaine sur
+1 563 blocs avec un seul pont, et arrive à Washington par le sud, au niveau
+de la rue d'Anacostia, où ses voitures entrent puis font demi-tour. Le relevé
+a fermé les trois autres côtés : la montagne au nord, une crête de 43 à 49
+blocs à six blocs de la boîte à l'est (une route au niveau de la ville ne
+peut pas la déblayer), le Potomac dans la boîte à l'ouest. La route s'arrête
+net au bord de la ville (`boutNet`) : son demi-cercle d'asphalte ordinaire
+aurait écrit dans cinq colonnes de trottoir.
+
+**Ce qui le prouve.** Un témoin neuf dans `carteMonde.js`, rouge sur
+`origin/main` (la route n'existe pas) : un convoi roule, aucune colonne de
+route dans la ville, aucune marche de plus d'un bloc ni aucun bloc à hauteur
+de carrosserie de la route à la rue, la porte de New York hors du rectangle
+avec la rive à moins de soixante blocs, et la route ne longe ni l'une ni
+l'autre ville. Le témoin « ne frôle pas ses villes » juge désormais une ville
+qui n'est pas un disque à son emprise (la boîte de Washington, le rectangle
+de Manhattan). Mesuré sous node avant le banc : profil à six pour cent, déblai
+7,0, remblai 1,1, zéro colonne sur un rail ou sur une autre route, joint du
+pont fermé (6 630 points, zéro trou), relief identique du worker et du fil
+principal hors du rectangle.
 ## v366 — On monte en voiture comme dans un vrai jeu
 
 **Pourquoi.** Max : « Quand on monte dans une voiture, on voit le personnage
