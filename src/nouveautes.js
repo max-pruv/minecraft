@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 385,
+    titre: 'On monte dans l\'avion',
+    puces: [
+      'Un escalier contre la porte',
+      'Le chasseur a son échelle',
+      'La porte s\'ouvre et se referme',
+    ],
+  },
+  {
     v: 384,
     titre: 'On descend par la portière',
     puces: [
