@@ -234,10 +234,10 @@
 
 - [ ] **LES DÉGÂTS (v343) : CE QUI RESTE, DÉCLARÉ.**
   - ~~Cinquante-quatre appels de dessin pendant un feu~~ — **fait en v348** :
-    deux `InstancedMesh`, 30 → 2 appels mesurés, gardé par un témoin. Reste
-    le coût RÉEL sur la tablette (enfoncer : 12 à 20 ms au premier choc au
-    banc, 4 à 7 ensuite), à lire avec `?diag=1` sur une voiture qu'on fait
-    brûler.
+    deux `InstancedMesh`, 30 → 2 appels mesurés, gardé par un témoin. Le coût
+    RÉEL sur la tablette se mesure depuis la v364 (journal de bord et
+    `?diag=1`) : reste à le LIRE sur l'iPad de Max, une voiture qu'on fait
+    brûler, et à décider sur ses chiffres.
   - ~~La carcasse n'est vue que par celui qui conduisait~~ — **fait en v356**
     (le receveur garde l'épave).
   - ~~Les voitures de la rue ne s'abîment pas~~ — **fait en v356** ; la
@@ -258,6 +258,18 @@
     Un témoin (v356) publie les deux à la main et garde « jamais deux fois ».
   - **Les avions ne s'abîment pas** (`pilote` est écarté) : une décision, pas
     un oubli — un atterrissage manqué n'a pas de « choc » dans `player.js`.
+
+- [ ] **AU PORTAIL DE LA v364 (le coût des dégâts dans le journal), CINQ
+  SUITES ROUGES — une à moi, corrigée ; les autres déjà déclarées.**
+  - `degats.js` « le contrat avec la physique » : la vraie physique (v358) a
+    publié un choc pendant la chute simulée, et le témoin le prenait pour le
+    repli. Repointé (il compte les chocs publiés), vert seul, rouge repli forcé.
+  - `maj.js` (le loader, le flou), `carte.js` « la faire glisser (bridé ×4) »
+    (657 ms), `manhattan.js` (trou de façade, taxi), `monte.js` (téléportation
+    qui compile, chauffe de New York 55/321 ; gel d'arrivée 34,6 %) : les
+    familles déjà déclarées plus haut, rouges des deux côtés à la v362. La
+    livraison n'ajoute qu'une lecture dans le relevé du journal et une ligne
+    de `?diag=1`, ni carte, ni loader, ni rendu.
 
 - [ ] **AU PORTAIL DE LA v363 (les coups suivent la voiture), CINQ SUITES
   ROUGES — aucune causée par la livraison, double mesure faite (rejouées SEULES

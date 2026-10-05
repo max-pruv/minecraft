@@ -358,6 +358,17 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
   // rejoue sur SA voiture du même nom, avec les mêmes fonctions et le même
   // bruit (v344). Jamais de géométrie sur le réseau.
   let nommer = null, diffuser = null;
+  // CE QUE COÛTENT LES DÉGÂTS SUR L'APPAREIL (v364). Le banc rend en
+  // logiciel et ses millisecondes ne se transposent pas (v247) : la tablette
+  // les mesure elle-même, et le journal de bord (v296) les garde — le dernier
+  // enfoncement, le pire, combien, et ce que le feu coûte en appels de dessin.
+  // Max les lit sur l'iPad avec `?diag=1`, sans rien installer.
+  const cout = { chocs: 0, dernierMs: 0, pireMs: 0, premierMs: 0 };
+  function noterCout(m) {
+    const ms = Math.round(m.ms * 10) / 10;
+    if (!cout.chocs) cout.premierMs = ms;
+    cout.chocs++; cout.dernierMs = ms; cout.pireMs = Math.max(cout.pireMs, ms);
+  }
   const histoire = new Map();        // nom → [[f, x, z], …]
   let prochainRapprochement = 0;
 
@@ -407,6 +418,7 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
     for (; rec.appliques < chocs.length; rec.appliques++) mesure = enfoncer(rec.prep, chocs[rec.appliques]);
     appliquerPieces(rec, scene);
     rec.derniereMesure = mesure || rec.derniereMesure;
+    if (mesure) noterCout(mesure);
     return mesure;
   }
 
@@ -870,6 +882,13 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
     brancherNoms: (f) => { nommer = f; },
     brancherReseau: (f) => { diffuser = f; },
     recevoirRue, rueEn, heriter, percuterRue,
+    // le coût réel, pour le journal de bord et `?diag=1` (v364) : null tant
+    // que rien ne s'est abîmé — un relevé ne grossit pas pour rien
+    bilan: () => {
+      const feu = (imFumee && imFumee.visible ? 1 : 0) + (imFlamme && imFlamme.visible ? 1 : 0);
+      if (!cout.chocs && !feu) return null;
+      return { ...cout, feu, carres: (imFumee ? imFumee.count : 0) + (imFlamme ? imFlamme.count : 0) };
+    },
     histoireRue: (nom) => (histoire.get(nom) || []).map((c) => c.slice()),
     // pour main.js : le champ réseau de la voiture qu'on conduit
     versReseau: (root) => { const rec = suivies.get(root); return rec ? D.versReseau(rec.etat) : null; },
