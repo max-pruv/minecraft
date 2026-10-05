@@ -1428,6 +1428,15 @@
   d'essai (arrêt à 303,3 pour 300). PREUVE STRUCTURELLE pour ces deux suites :
   la livraison ne change que les bâtisseurs de huit palais hors de Rome, de
   Paris et de Manhattan, et la piste est en (30 000, 30 300).
+  Second portail, après rebase sur la v371 : `carte.js` la flèche du GPS
+  (gauche à 1,92 rad, déclaré v321) et le glisser bridé (481 ms pour 400,
+  déclaré) ; `monte.js` « en virage, la caméra laisse la voiture glisser » —
+  rejouée SEULE : verte sur la branche (β médian 24,7°) ET sur `origin/main`
+  (30,3°), un rouge de portail. Et rejouée seule, la branche a rendu « la
+  monoplace ralentit assez pour qu'on la rejoigne » rouge (9,1 m/s au plus
+  lent, relevé sur 250 blocs) quand le portail, sur le MÊME commit, la rendait
+  verte (6,8 sur 37 blocs) : NEUF, intermittent, la grandeur dépend de la
+  portion du circuit que la fenêtre a parcourue — à mesurer sur un tour entier.
 - [ ] **QUARANTE-CINQ MONUMENTS SONT BÂTIS EN TRAVERS D'UN ANNEAU DE VOITURES
   (v372, témoin de `plafond.js`, `DETTE_ANNEAUX`).** Les anneaux des villes
   engendrées se choisissent sur la trame sans regarder les repères ; un
