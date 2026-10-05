@@ -594,7 +594,7 @@ const VRAIES_KM = [
       out.convoiAP2 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'AP-2') || null;
       out.convoi401 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === '401') || null;
       out.convoiHansa = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'Hansalinie') || null;
-      // UNE ROUTE QUI CONTOURNE UNE VILLE (v352) n'en approche le disque que
+      // UNE ROUTE QUI CONTOURNE UNE VILLE (v355) n'en approche le disque que
       // par son tronçon radial : on compte, au-delà des quatre-vingts premiers
       // et derniers blocs, les points de l'axe à moins de r + 10 de SES villes.
       try {
@@ -892,7 +892,7 @@ const VRAIES_KM = [
       JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiAP2 ? { nom: a1.convoiAP2.nom, voitures: (a1.convoiAP2.modeles || []).length } : 'aucun convoi AP-2',
         surRail: a1.surRail && a1.surRail['AP-2'], entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'AP-2') }));
 
-    // LA 401 (v352) : Toronto–Montréal, la première route qui CONTOURNE une
+    // LA 401 (v355) : Toronto–Montréal, la première route qui CONTOURNE une
     // ville. Montréal est sous son pays à l'ouest ; la route passe au sud et
     // y entre par son axe sud. Elle ne frôle aucune de ses deux villes hors de
     // son tronçon radial, ne prend aucune colonne d'emprise à l'A20 qui sort
@@ -905,7 +905,7 @@ const VRAIES_KM = [
       JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoi401 ? { nom: a1.convoi401.nom, voitures: (a1.convoi401.modeles || []).length } : 'aucun convoi 401',
         surRail: a1.surRail && a1.surRail['401'], frole: a1.frole && a1.frole['401'], entrees: (a1.entreesEngendrees || []).filter((e) => e.route === '401') }));
 
-    // LA HANSALINIE (v352) : Cologne–Hambourg. Cologne sort par son axe
+    // LA HANSALINIE (v355) : Cologne–Hambourg. Cologne sort par son axe
     // nord-nord-ouest, entre l'ICE et l'aérodrome ; Hambourg est contournée par
     // l'ouest et prise par le nord-ouest, parce que l'Elbe ferme son sud,
     // l'A24 son est, et qu'un pont de l'Alster borde son axe nord (le témoin
@@ -918,7 +918,7 @@ const VRAIES_KM = [
       JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiHansa ? { nom: a1.convoiHansa.nom, voitures: (a1.convoiHansa.modeles || []).length } : 'aucun convoi Hansalinie',
         surRail: a1.surRail && a1.surRail.Hansalinie, frole: a1.frole && a1.frole.Hansalinie, entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'Hansalinie') }));
 
-    // AUCUNE ROUTE NE PREND L'EMPRISE D'UNE AUTRE (v352) : Montréal a deux
+    // AUCUNE ROUTE NE PREND L'EMPRISE D'UNE AUTRE (v355) : Montréal a deux
     // routes, et chaque colonne d'emprise doit appartenir au segment qu'on
     // lit — deux corridors qui se recouvrent n'ont pas d'échangeur.
     verifier('aucune route ne prend une colonne d\'emprise à une autre',

@@ -319,11 +319,11 @@ export const ROUTES = [
   // 2 094 blocs, quatre ponts, joint fermé, déblai 8,8, remblai 3,1, pente
   // 0,062, zéro colonne sur le rail.
   { nom: 'AP-2', villes: ['madrid', 'barcelone'], via: [[-2467, 5133], [-2278, 5071], [-2082, 5032], [-1891, 4977], [-1704, 4907], [-1512, 4854], [-1321, 4797], [-1124, 4765], [-927, 4729], [-738, 4667], [-549, 4605], [-510, 4595]] },
-  // LA 401 (v352), TORONTO–MONTRÉAL : la première route qui CONTOURNE une
+  // LA 401 (v355), TORONTO–MONTRÉAL : la première route qui CONTOURNE une
   // ville au lieu d'y entrer par le côté qui la regarde. Montréal est sous
   // son pays à l'ouest et au sud-ouest (45 à 49 blocs à r + 25, ville à 33),
   // et la v337 l'avait laissée sans tracé : deux coudes ne tournent pas
-  // autour d'un disque. La sonde de la v352 (scratchpad cherche.mjs, mode
+  // autour d'un disque. La sonde de la v355 (scratchpad cherche.mjs, mode
   // « couloir ») cherche d'abord le COULOIR LE PLUS BAS (Dijkstra sur une
   // grille de vingt blocs, coût en carré de la hauteur au-dessus de 40, l'eau
   // très chère), puis en tire des points avec du jeu, lisse par Chaikin en
@@ -340,7 +340,7 @@ export const ROUTES = [
   // 0,060, coudes ≤ 24°, zéro colonne sur un rail, aucune colonne d'emprise
   // prise à une autre route (l'A20 sort de Montréal par l'est, à 88° de là).
   { nom: '401', villes: ['toronto', 'montreal'], via: [[-22014, 3244], [-21986, 3234], [-21971, 3223], [-21955, 3199], [-21941, 3165], [-21941, 3120], [-21963, 3071], [-21963, 3059], [-21958, 3047], [-21944, 3033], [-21801, 2977], [-20821, 2732], [-20781, 2737], [-20616, 2778], [-20589, 2774], [-20547, 2751], [-20512, 2709], [-20488, 2697], [-20400, 2690], [-20226, 2730], [-20199, 2729], [-20169, 2719], [-20112, 2677], [-19986, 2545], [-19955, 2472], [-19939, 2268]] },
-  // LA HANSALINIE (v352), COLOGNE–HAMBOURG : l'A1 allemande, rebaptisée de
+  // LA HANSALINIE (v355), COLOGNE–HAMBOURG : l'A1 allemande, rebaptisée de
   // son surnom parce que « A1 » est déjà Paris–Lille. Les deux villes sont
   // sous leur pays du côté qui regarde l'autre, et la v337 avait buté sur
   // 20 000 chemins lissés (déblai 10,1 au mieux pour neuf). Les portes

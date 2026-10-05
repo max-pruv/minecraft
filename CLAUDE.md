@@ -1516,7 +1516,7 @@ Une règle.
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
 
-## Les routes qui contournent une ville (v352) — le couloir se cherche avec son cap
+## Les routes qui contournent une ville (v355) — le couloir se cherche avec son cap
 
 La 401 Toronto–Montréal et la Hansalinie Cologne–Hambourg, les deux corridors
 « sans tracé » de la v337. Quatre règles.
