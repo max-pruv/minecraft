@@ -6499,6 +6499,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     const embLieu = await emb.evaluate(async () => {
       const g = window.__game, w = g.world;
       const { WATER_LEVEL } = await import('./src/world.js');
+      const VM = await import('./src/villesmonde.js');
       let lieu = null;
       for (let k = 0; k < 20000 && !lieu; k++) {
         const x = -600 + ((k % 140) - 70) * 29, z = -520 + (Math.floor(k / 140) - 70) * 29;
@@ -6514,8 +6515,15 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         // refusés pour « circulation » (v366)
         let loin = true;
         for (let dx = -60; dx <= 60 && loin; dx += 6) for (let dz = -60; dz <= 60 && loin; dz += 6) if (w.corridorEn && w.corridorEn(x + dx, z + dz)) loin = false;
-        // et des villes, dont les voitures roulent jusqu'au bord du disque
-        for (let a = 0; a < 16 && loin; a++) for (const r of [60, 120]) if (w.cityAt && w.cityAt(x + Math.cos(a * Math.PI / 8) * r, z + Math.sin(a * Math.PI / 8) * r)) loin = false;
+        // et des villes, dont les voitures roulent jusqu'au bord du disque —
+        // TOUTES les villes : `cityAt` ne connaît que les villes bâties à la
+        // main, et la « prairie » d'avant était DANS Manchester (46 blocs de
+        // son centre, rayon 65) ; un circuit de la ville passait à 3,5 blocs
+        // de la voiture, d'où le refus « circulation » côté passager, juste
+        // (sonde de la v367, `refus` + places de la rue au moment du refus)
+        const enVille = (u, v) => (w.cityAt && w.cityAt(u, v)) || VM.dansVilleMonde(u, v);
+        if (enVille(x, z)) continue;
+        for (let a = 0; a < 16 && loin; a++) for (const r of [30, 60, 120]) if (enVille(x + Math.cos(a * Math.PI / 8) * r, z + Math.sin(a * Math.PI / 8) * r)) loin = false;
         if (loin) lieu = { x: x + 0.5, z: z + 0.5, h };
       }
       return lieu;
