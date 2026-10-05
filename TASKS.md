@@ -3781,9 +3781,48 @@ l'embarquement a eu lieu, pas par une hypothèse.
   ruelles sont piétonnes et plus étroites — la section `ruelle` du kit (sans
   trottoir) ôterait ses réverbères, décision de Max comme pour les médinas.
 
+- [ ] **PORTAIL DE LA v368 (Lille), après la fusion des v366 et v367.** Dix
+  suites. Rouges, tous déjà déclarés ici : `maj.js` la libération et « ne
+  floute rien », plus les deux témoins du palier (six images, aucun verdict —
+  la charge, ma sonde de circuits tournait à côté ; rejouée SEULE, les deux
+  sont verts et restent les intermittences du loader, lignes 79, 98, 977) ;
+  `carte.js` la flèche du GPS et le glisser bridé (446 ms) ; `washington.js`
+  l'Air et l'Espace (et, seule, « chaque îlot a sa porte » — intermittence de
+  la ligne 438) sur un `washington.js` que Lille ne touche pas ; `manhattan.js`
+  le trou de façade et le taxi ; `monte.js` la compilation à la téléportation.
+  Après la fusion de la v367 (I-95), `carteMonde.js` et `plafond.js` rejouées
+  seules : 156 et 115 verts, zéro rouge.
+- [ ] **PORTAIL DE LA v368 (Lille), base v361.** Rouges tous déjà déclarés :
+  `maj.js` la libération (`null`, personnages 3/9) et « ne floute rien » ;
+  `carte.js` la flèche du GPS (gauche 1,92) et une fois le glisser bridé
+  (441 ms) ; `manhattan.js` le trou de façade (9 203 → 46 592) et le bouton du
+  taxi ; `monte.js` la chauffe de New York, le gel d'arrivée, une fois les
+  passants de Rome (33 %) et une fois le bout du monde (trou 72 pour l'avion
+  de ligne). `plafond.js` a rendu une fois « la surface coûte quelques
+  millisecondes » (8,5 ms contre 2,6) au premier portail, vert au second
+  (2,7 contre 1,5) : la charge du banc, un chiffre de durée. Aucun ne lit Lille.
+
 - [ ] **LES CINQ AUTRES VILLES BÂTIES À LA MAIN N'ONT PAS ÉTÉ ÉLARGIES (v271).**
-  Londres est faite en v339, Nice en v359, San Francisco en v361 (au-dessus).
-  Restent, dans l'ordre : Washington, Lille (dans la fenêtre d'empreinte). La méthode de
+  Londres est faite en v339, Nice en v359, San Francisco en v361, Lille en
+  v368. **Reste Washington, et ce n'est pas la même passe** (mesuré en v368) :
+  ses diagonales ont déjà la chaussée d'une collectrice (5,2 à 6,8 blocs), ce
+  qui reste hors règle c'est la GRILLE — deux colonnes de chaussée et une de
+  trottoir, un pas de douze. Or le pas porte trois choses que les autres
+  villes n'ont pas : la maison de 9 × 9 avec son escalier et ses deux portes
+  (`batirColonneWashington`, coordonnées d'îlot `mu − 3`), vingt-trois rues
+  de raccord posées au centre EXACT des rues de la grille (12k + 1,5 : C, F,
+  H Street, la 3e, la 9e, la 14e, la 15e…), et dix-neuf circuits mesurés sous
+  la contrainte de partage de la v211 qui roulent sur ces raccords. Une rue
+  locale du kit fait sept blocs d'emprise : en gardant l'îlot de neuf, le pas
+  passe à seize et la part de lots du disque tombe de 15,8 % à près de 9 ; en
+  suivant le rapport des emprises (la règle des autres villes), le pas passe à
+  vingt-huit et la maison doit être redessinée pour un lot de vingt et un.
+  Dans les deux cas, TOUTES les rues nommées de la grille changent de place et
+  les dix-neuf circuits se remesurent (passe de réparation comprise, v216). À
+  faire en une livraison à elle : choisir le pas (décision de plan), réécrire
+  la maison sur un îlot paramétré, reposer les raccords sur la nouvelle grille,
+  remesurer les circuits, figer `washington-v368.js` sous ce qu'un enfant a
+  bâti — et le portail de `washington.js` (portes, métro, musées) en entier. La méthode de
   Londres se reprend telle quelle : figer la ville d'avant (`<ville>-v339.js`),
   type par fonction, trame recomposée et en recul des avenues, mobilier sur la
   section, la ville d'avant sous ce qu'un enfant a bâti.

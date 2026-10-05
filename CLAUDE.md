@@ -1092,6 +1092,23 @@ Le lot 2 de la dette de la v335 : huit monuments. Trois règles.
   Lille, 23 m pour l'Arche. Ce qu'on n'a pas trouvé (le musée d'Histoire
   américaine, « cinq étages ») se dit approché dans le commentaire.
 
+## Les rues de Lille à la règle du kit (v368) — un témoin de ville figée cherche une rue que rien ne recouvre
+
+Deux règles.
+
+- **QUAND LA TRAME EST SERRÉE, LA RÈGLE DU KIT REND DES IMMEUBLES.** Lille
+  passe de 30,1 à 33,3 % de lots : le pas recomposé et le recul des avenues
+  rendent plus que les collectrices ne prennent. C'est l'inverse de San
+  Francisco (v361), et c'est la même règle : le résultat dépend de
+  l'écartement des avenues, on le mesure avant de conclure.
+- **UN TÉMOIN QUI POSE UNE MAISON SUR « UNE ANCIENNE RUE » VÉRIFIE QUE RIEN
+  NE L'Y RECOUVRE DANS LA VILLE D'AVANT.** Les monuments se posent APRÈS les
+  colonnes (v205) : la première rue trouvée à Lille longeait la Vieille
+  Bourse, et le témoin comptait ses murs comme une ville neuve qui enferme la
+  maison (9 blocs). La recherche lit désormais le monde d'avant
+  (`new World({ v308: true })`) et exige six blocs d'air au-dessus de la
+  rue — pour toutes les villes figées.
+
 ## Les rues de San Francisco à la règle du kit (v361) — un plan à vingt-sept blocs par kilomètre paie ses avenues
 
 Trois règles.

@@ -20,6 +20,40 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v368 — Les rues de Lille à la règle du kit
+
+**Pourquoi.** La quatrième des cinq villes bâties à la main restées sur leurs
+largeurs relevées à la main (dette v271). Une rue du Vieux-Lille faisait 1,2
+bloc de chaussée, une rue du centre 2, les boulevards 2,9 à 4,8 — une voiture
+de 2,26 blocs y frôlait le trottoir.
+
+**Ce que ça change.**
+
+- **Les rues de Lille ont la section du kit**, à un bloc pour un mètre : deux
+  voies et des trottoirs de 2,5 m pour les boulevards et les grandes rues (la
+  rue Faidherbe, la rue Nationale, le boulevard de la Liberté, Vauban,
+  Victor-Hugo) et pour les rues du centre et des faubourgs ; une voie de
+  3,1 m pour l'Esquermoise, la rue Royale, la rue de la Monnaie et les rues du
+  Vieux-Lille. Les entrées de l'A1 et de l'E429 sont des collectrices.
+- **Les îlots se recomposent** et une rue de la trame ne double plus une
+  avenue : Lille GAGNE des immeubles, 30,1 → 33,3 % du disque, et aucun
+  quartier n'en perd (la Grand'Place 15,8 → 26,7, les gares 12,4 → 18,3).
+- **Ce qu'un enfant a bâti à Lille ne bouge pas** : sous ses blocs d'avant la
+  mise à jour, la Lille d'avant reste.
+
+**Ce qui le prouve.** Quatre témoins neufs. `carteMonde.js` : les rues ont
+la chaussée de leur type (boulevards 7,0, Vieux-Lille 3,8, trame 6,05 contre
+4,0, 3,2 et 1,95 sur `origin/main`) ; Lille garde plus de 30 % de lots,
+aucun quartier sous 10 %. `plafond.js` : une maison posée sur une ancienne rue
+n'est pas enfermée et une cabane garde son toit — et le témoin choisit
+désormais une rue qu'aucun monument ne recouvre dans la ville d'avant (le
+premier jet tombait contre la Vieille Bourse). Les circuits de Lille restent
+à 95-100 % sur la rue. Et la cour de la Vieille Bourse reste une cour : la
+trame recomposée posait un îlot dans son emprise, une maison de cinq blocs la
+remplissait — le témoin de `carte.js` l'a vu, l'emprise est désormais pavée.
+
+---
+
 ## v367 — New York–Washington, et une ville qu'on n'entre que par le sud
 
 **Pourquoi.** New York et Washington, les deux grandes villes de la côte est,
