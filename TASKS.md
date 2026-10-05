@@ -3268,6 +3268,15 @@ l'embarquement a eu lieu, pas par une hypothèse.
   sonde qui lit `edu.today()` et l'heure du prochain quiz au moment du
   premier « cible quiz ». `maj.js` (fond de carte, 7/9 personnages) et
   `manhattan.js:282` (💥 délai de 60 s) : dettes déjà déclarées plus haut.
+  Deux rouges de plus, NON déclarés avant ce portail, avec leur double mesure :
+  `carte.js` « et la faire glisser non plus (bridé ×4) » — pire tâche 415 ms
+  au portail (barre 400), 957 ms rejouée SEULE sur `origin/main` (d34cfa5),
+  468 ms rejouée SEULE sur la branche : rouge des deux côtés, la barre est sous
+  le coût d'une tâche de ce banc (v225). `reseau.js` « deux tablettes d'une
+  partie voient la même circulation » — écart médian 20,9 blocs au portail,
+  60,3 rejouée seule sur `origin/main`, VERTE rejouée seule sur la branche :
+  intermittence vue des deux côtés (la grille horaire de la v305 n'est pas
+  touchée ici).
 
 - [ ] **NICE À LA RÈGLE DU KIT : CE QUI RESTE (v356).** Masséna 13,2 → 8,6 % de
   lots, les Musiciens 20,4 → 14,5, le port 21,8 → 16,4 : les avenues du
