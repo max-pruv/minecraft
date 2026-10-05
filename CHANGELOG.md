@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v374 — Plusieurs circuits dans chaque ville, et les deux sens
+## v376 — Plusieurs circuits dans chaque ville, et les deux sens
 
 **Pourquoi.** Dans 147 des 262 villes engendrées, les voitures ne faisaient
 qu'UN tour, toujours dans le même sens — dont 48 villes à tours (Houston,
@@ -54,6 +54,73 @@ partage dans le même sens reste sous vingt blocs (14,8). L'empreinte des 490
 morceaux change à Rome et à Tokyo seulement, et chaque colonne différente est
 sur un tablier d'avant ou d'après.
 
+## v375 — Les huit derniers palais ont leur vraie forme
+
+**Pourquoi.** La v369 avait vidé le monde de ses coupoles de gabarit, et compté
+huit palais encore bâtis par le gabarit `palaisLong` : un mur de trois blocs
+d'épaisseur, une baie sur deux, que la table de la ville étirait — le palais du
+Dam, le Rijksmuseum, le château de Prague, le palais royal de Stockholm,
+Amalienborg, Gyeongbokgung, la Casa Rosada et le palais Bahia. Et, mesuré en
+préparant leur place, quatre de ces gabarits étaient bâtis EN TRAVERS d'un
+anneau de voitures (Dam, Rijksmuseum, Prague, Gyeongbokgung), celui de
+Stockholm sur l'eau.
+
+**Ce que ça change.** Chacun a son bâtisseur d'après sa vraie forme, dans la
+partie de sa boîte que rien ne traverse : le Dam autour de ses deux cours, avec
+son avant-corps et son lanternon ; le Rijksmuseum de brique rouge, ses deux
+tours et le passage qu'on traverse à pied ; la longue façade du château de
+Prague et la porte de Matthias ; le carré baroque de Stockholm et sa
+balustrade ; les quatre palais d'Amalienborg autour de la place octogonale et
+de la statue ; la salle du trône de Gyeongbokgung sur sa terrasse, sa galerie
+et sa porte ; la Casa Rosada rose, son arche et ses pavillons coiffés ; le
+palais Bahia de plain-pied, ses arcades de zellige et sa cour aux orangers.
+Tous à leur hauteur du monde, un pour un, pour que leurs fenêtres ne se
+répètent pas.
+
+**Ce qui le prouve.** Deux témoins de `plafond.js`. Le témoin des gabarits
+exige désormais zéro palais (huit sur `origin/main`). Un témoin neuf lit les
+anneaux de voitures de toutes les villes engendrées contre les cent
+vingt-trois monuments qui y sont : quarante-cinq coupent un anneau à hauteur de
+carrosserie — un conflit de plan général, déclaré chiffre par chiffre dans
+`TASKS.md` — et aucun ne doit en couper plus ; rouge sur `origin/main` (le Dam,
+le Rijksmuseum, Prague et Gyeongbokgung). Captures de chaque palais au
+portail. L'empreinte des 490 morceaux ne bouge pas : aucun des huit n'y est.
+
+---
+
+## v374 — Un choix de langue qui tient, et la conduite des dégâts éprouvée bout à bout
+
+**Pourquoi.** Trois manques, trois sujets. (1) Le témoin « un choix fait sur
+une tablette part au serveur » de `reglages.js` était rouge aux deux portails
+de la v363 et vert seul : déclaré « rouge de charge », il ne l'était pas. Une
+sonde qui relève chaque écriture des deux tablettes l'a montré sans charge
+du tout : le choix part, puis la seconde tablette de la maison le réécrit
+avec son ANCIENNE langue, sous une date plus ancienne — son battement de
+présence, toutes les vingt secondes, écrivait sans relire. (2) Le contrat
+avec la physique (v358) n'avait jamais été éprouvé de bout en bout : le seul
+témoin publiait ses chocs à la main, et le témoin du coût d'un choc bornait
+des millisecondes, qui suivent la charge du banc (15 seul, 31,1 au portail).
+(3) Un hôte resté sur l'ancienne version ne relayait pas les chocs des
+voitures de la rue (`rue_choc`, v363) entre deux amis à jour.
+
+**Ce que ça change.** Une langue choisie sur une tablette n'est plus défaite,
+même un instant, par l'autre tablette allumée à côté. La voiture de la rue
+qu'un ami cabosse se voit cabossée chez les autres même quand celui qui
+reçoit la partie n'a pas encore la mise à jour.
+
+**Ce qui le prouve.** Cinq témoins neufs ou repointés. `reglages.js` : le
+témoin provoque la course (il repère le battement de l'autre tablette et
+clique juste avant) et observe le serveur toute la fenêtre — rouge sur
+`origin/main` (un retour à l'ancienne langue), vert ici.
+`degats.js` : un mur pris de face par la VRAIE physique rend un choc publié
+pris par ce seul chemin, l'avant seul froissé, l'effet sur la conduite
+appliqué une fois (rouge sur `origin/main` faute des compteurs, le
+comportement y était déjà juste) ; le coût d'un choc se compte en sommets
+(25,6 % déplacés, zéro normale réécrite hors d'eux — 63 avec
+`computeVertexNormals`, vérifié rouge — et rien par image), les
+millisecondes restent dans le message ; et un hôte qui ne relaie pas
+`rue_choc` laisse passer le choc par la position, l'histoire identique choc
+pour choc.
 ## v373 — Une portière ouverte se voit de derrière
 
 **Pourquoi.** Aucun des cinquante modèles de la flotte n'a meublé l'intérieur

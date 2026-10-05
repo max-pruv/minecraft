@@ -1585,6 +1585,170 @@ function buildParlementAthenes(poser) {
   poser(-7, 18, 0, BLANC);
 }
 
+
+// LES HUIT DERNIERS PALAIS DE GABARIT (v375). Chacun d'après sa vraie forme,
+// dans la partie de sa BOÎTE que rien ne traverse : les anneaux de voitures et
+// l'eau qui passent dans la boîte ont été relevés en carte avant de bâtir (le
+// Dam a un anneau sur deux de ses côtés, le Rijksmuseum sur deux, Prague,
+// Stockholm et Séoul un en diagonale). Rien ne s'y pose à hauteur de
+// carrosserie. Écrits à leur hauteur du monde, un pour un, pour que leurs baies
+// ne se répètent pas (v365).
+
+// Le palais royal du Dam : le grand bloc classique de grès autour de ses deux
+// cours, son avant-corps à fronton sur la place, son lanternon et sa girouette
+// en forme de cog.
+function buildPalaisDam(poser) {
+  palaisCour(poser, -7, 1, -3, 7, 2, 1, 3, GRIS_CLAIR);
+  palaisCour(poser, -7, 1, -3, 7, 2, 4, 12, CREME);
+  plein(poser, 1, -5, -1, 2, 2, GRIS_CLAIR);
+  for (let y = 2; y <= 12; y++) plein(poser, y, -5, -1, 2, 2, CREME);
+  facadeEtages(poser, -7, 1, -3, 7, 4, 12, CREME);
+  palaisCour(poser, -7, 1, -3, 7, 2, 13, 13, ARCHI.CORNICHE);
+  plein(poser, 13, -5, -1, 2, 2, ARCHI.CORNICHE);
+  palaisCour(poser, -7, 1, -3, 7, 2, 14, 14, ARDOISE);
+  plein(poser, 14, -5, -1, 2, 2, ARDOISE);
+  for (let z = 0; z <= 4; z++) { poser(1, 14, z, CREME); poser(1, 15, z, z === 2 ? OR : CREME); }
+  for (const [a, b] of [[-3, 1], [-2, 1], [-3, 2], [-2, 2], [-3, 3], [-2, 3]]) poser(a, 15, b, CREME);
+  poser(-3, 16, 2, PATINE); poser(-2, 16, 2, PATINE); poser(-3, 17, 2, OR);
+}
+
+// Le Rijksmuseum : la longue façade de brique rouge, ses deux tours au milieu
+// de la façade nord, le passage qu'on traverse à pied (et à vélo) sous le
+// musée, ses hauts toits d'ardoise.
+function buildRijksmuseum(poser) {
+  const brq = brique(0);
+  palaisCour(poser, -5, 7, 0, 7, 2, 1, 12, brq);
+  for (let y = 1; y <= 12; y++) plein(poser, y, 0, 2, 2, 5, brq);
+  facadeEtages(poser, -5, 7, 0, 7, 4, 12, brq);
+  for (const y of [3, 13]) palaisCour(poser, -5, 7, 0, 7, 2, y, y, CREME);
+  palaisCour(poser, -5, 7, 0, 7, 2, 14, 14, ARDOISE);
+  for (let x = -4; x <= 6; x++) { poser(x, 15, 0, ARDOISE); poser(x, 15, 7, ARDOISE); }
+  for (let y = 1; y <= 3; y++) for (let z = 0; z <= 7; z++) for (let x = 0; x <= 2; x++) poser(x, y, z, 0);
+  for (const x of [-1, 3]) {
+    for (let y = 1; y <= 15; y++) for (const z of [0, 1]) poser(x, y, z, y === 13 ? CREME : brq);
+    poser(x, 16, 0, ARDOISE); poser(x, 16, 1, ARDOISE); poser(x, 17, 0, OR);
+  }
+}
+
+// Le château de Prague : la longue façade thérésienne sur la place du
+// Hradschin, ses trois cours en enfilade, la porte de Matthias au milieu.
+function buildChateauPrague(poser) {
+  palaisCour(poser, -8, 4, -8, 1, 2, 1, 2, GRIS_CLAIR);
+  palaisCour(poser, -8, 4, -8, 1, 2, 3, 11, CREME);
+  for (const x of [-4, 0]) for (let y = 1; y <= 11; y++) plein(poser, y, x, x, -6, -1, y <= 2 ? GRIS_CLAIR : CREME);
+  facadeEtages(poser, -8, 4, -8, 1, 3, 11, CREME);
+  palaisCour(poser, -8, 4, -8, 1, 2, 12, 12, ARCHI.CORNICHE);
+  for (const x of [-4, 0]) poser(x, 12, -3, ARCHI.CORNICHE);
+  palaisCour(poser, -8, 4, -8, 1, 2, 13, 13, TUILE);
+  for (const x of [-4, 0]) plein(poser, 13, x, x, -6, -1, TUILE);
+  for (const x of [-8, -7]) for (let y = 1; y <= 4; y++) for (let z = -4; z <= -3; z++) poser(x, y, z, y === 4 ? GRIS_CLAIR : 0);
+}
+
+// Le palais royal de Stockholm : le carré baroque autour de sa cour, son
+// soubassement, ses ailes, son toit plat derrière sa balustrade.
+function buildPalaisStockholm(poser) {
+  palaisCour(poser, 0, 8, -3, 8, 2, 1, 3, GRIS_CLAIR);
+  palaisCour(poser, 0, 8, -3, 8, 2, 4, 12, OCRE);
+  facadeEtages(poser, 0, 8, -3, 8, 4, 12, OCRE);
+  palaisCour(poser, 0, 8, -3, 8, 2, 13, 13, ARCHI.CORNICHE);
+  for (let x = 0; x <= 8; x++) for (let z = -3; z <= 8; z++) {
+    const bord = x === 0 || x === 8 || z === -3 || z === 8;
+    if (bord && ((x + z) & 1) === 0) poser(x, 14, z, PIERRE);
+  }
+  for (let y = 1; y <= 3; y++) for (let x = 3; x <= 5; x++) for (const z of [-3, -2]) poser(x, y, z, 0);
+}
+
+// Amalienborg : les quatre palais rococo identiques autour de la place
+// octogonale, la statue équestre de Frédéric V au milieu, les rues qui passent
+// entre eux.
+function buildAmalienborg(poser) {
+  const cx = -2;
+  for (const [x0, x1] of [[-7, -4], [0, 3]]) for (const [z0, z1] of [[-7, -3], [3, 7]]) {
+    for (let x = x0; x <= x1; x++) for (let z = z0; z <= z1; z++) {
+      const coin = Math.abs(x - cx) <= 2 + (Math.abs(z) <= 3 ? 1 : 0) && Math.abs(z) <= 3;
+      if (coin) continue;
+      for (let y = 1; y <= 3; y++) poser(x, y, z, GRIS_CLAIR);
+      for (let y = 4; y <= 12; y++) poser(x, y, z, CREME);
+      poser(x, 13, z, ARCHI.CORNICHE);
+      const bordX = x === x0 || x === x1, bordZ = z === z0 || z === z1;
+      if (!(bordX || bordZ) || (x > x0 && x < x1 && z > z0 && z < z1)) poser(x, 14, z, ARDOISE);
+      if (x > x0 && x < x1 && z > z0 && z < z1) poser(x, 15, z, ARDOISE);
+      else poser(x, 14, z, ARDOISE);
+    }
+    facadeEtages(poser, x0, x1, z0, z1, 4, 12, CREME);
+    const mx = (x0 + x1) >> 1, mz = z0 < 0 ? z1 : z0;
+    poser(mx, 14, mz, CREME); poser(mx, 15, mz, CREME); poser(mx, 16, mz, CREME); poser(mx, 17, mz, OR);
+  }
+  poser(cx, 1, 0, GRIS_CLAIR); poser(cx, 2, 0, GRIS_CLAIR); poser(cx, 3, 0, PATINE); poser(cx, 4, 0, PATINE);
+}
+
+// Gyeongbokgung : la salle du trône Geunjeongjeon sur sa double terrasse de
+// pierre, ses colonnes vermillon, ses deux toits de tuiles sombres aux
+// avant-toits peints de vert, la galerie couverte qui ferme la cour et sa
+// porte au sud.
+function buildGyeongbokgung(poser) {
+  const ARD = ARDOISE;
+  for (let x = 0; x <= 8; x++) for (let z = -8; z <= 8; z++) {
+    if (x !== 0 && x !== 8 && z !== -8 && z !== 8) continue;
+    const porte = z === 8 && x >= 3 && x <= 5;
+    if (!porte) { poser(x, 1, z, ((x + z) & 1) ? VERMILLON : CREME); poser(x, 2, z, VERT_SERPENTINE); poser(x, 3, z, ARD); }
+  }
+  for (let x = 2; x <= 6; x++) { poser(x, 3, 8, VERMILLON); poser(x, 4, 8, VERT_SERPENTINE); poser(x, 5, 8, ARD); }
+  for (let x = 3; x <= 5; x++) poser(x, 6, 8, ARD);
+  plein(poser, 1, 1, 7, -6, 2, GRIS_CLAIR);
+  plein(poser, 2, 2, 6, -5, 1, GRIS_CLAIR);
+  for (let x = 2; x <= 6; x++) for (let z = -5; z <= 1; z++) {
+    const bord = x === 2 || x === 6 || z === -5 || z === 1;
+    if (!bord) continue;
+    for (let y = 3; y <= 4; y++) poser(x, y, z, ((x + z) & 1) ? VERMILLON : CREME);
+  }
+  plein(poser, 5, 2, 6, -5, 1, VERT_SERPENTINE);
+  plein(poser, 6, 1, 7, -6, 2, ARD);
+  plein(poser, 7, 3, 5, -4, 0, VERMILLON);
+  plein(poser, 8, 2, 6, -5, 1, ARD);
+  plein(poser, 9, 3, 5, -4, 0, ARD);
+  for (let z = -4; z <= 0; z++) poser(4, 10, z, NOIR);
+}
+
+// La Casa Rosada : le palais rose sur la place de Mai, sa grande arche au
+// milieu de la façade, ses pavillons d'angle coiffés à la française, sa
+// balustrade, ses cours.
+function buildCasaRosada(poser) {
+  // Le rose de la Casa Rosada est un saumon : `ROSE` est ici un beige.
+  const SAUMON = uni(16);
+  palaisCour(poser, -7, 7, -6, 6, 2, 1, 3, SAUMON);
+  palaisCour(poser, -7, 7, -6, 6, 2, 4, 15, SAUMON);
+  facadeEtages(poser, -7, 7, -6, 6, 4, 15, SAUMON);
+  palaisCour(poser, -7, 7, -6, 6, 2, 16, 16, ARCHI.CORNICHE);
+  for (let x = -7; x <= 7; x++) for (let z = -6; z <= 6; z++) {
+    const bord = x === -7 || x === 7 || z === -6 || z === 6;
+    if (bord) poser(x, 17, z, ((x + z) & 1) ? BLANC : SAUMON);
+  }
+  for (const a of [-7, 5]) for (const b of [-6, 5]) for (let x = a; x <= a + 2; x++) for (let z = b; z <= b + 1; z++) {
+    for (let y = 17; y <= 18; y++) poser(x, y, z, SAUMON);
+    poser(x, 19, z, ARDOISE);
+    if (x === a + 1) poser(x, 20, z, ARDOISE);
+  }
+  for (let z = -2; z <= 2; z++) for (let y = 16; y <= 19; y++) poser(7, y, z, Math.abs(z) === 2 || y === 19 ? BLANC : SAUMON);
+  poser(7, 20, 0, BLANC); poser(7, 21, 0, OR);
+  for (let x = 5; x <= 7; x++) for (let y = 1; y <= 5; y++) for (let z = -1; z <= 1; z++) poser(x, y, z, 0);
+}
+
+// Le palais Bahia : les salles de plain-pied autour des cours, les arcades de
+// zellige, les toits de tuile verte, la grande cour aux orangers et sa
+// fontaine.
+function buildPalaisBahia(poser) {
+  palaisCour(poser, -5, 5, -5, 5, 2, 1, 4, OCRE);
+  palaisCour(poser, -5, 5, -5, 5, 2, 5, 5, VERT_SERPENTINE);
+  for (let x = -3; x <= 3; x++) for (let z = -3; z <= 3; z++) {
+    const bord = Math.abs(x) === 3 || Math.abs(z) === 3;
+    if (bord) { poser(x, 1, z, ((x + z) & 1) ? TURQUOISE : 0); poser(x, 2, z, ((x + z) & 1) ? TURQUOISE : 0); }
+  }
+  for (const [a, b] of [[-2, -2], [2, -2], [-2, 2], [2, 2]]) { poser(a, 1, b, BOISF_ARBRE); poser(a, 2, b, ARBRE); poser(a, 3, b, ARBRE); }
+  for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) poser(a, 1, b, BLANC);
+  poser(0, 1, 0, TURQUOISE); poser(0, 2, 0, BLANC);
+  for (let y = 1; y <= 3; y++) for (const z of [-5, -4]) poser(0, y, z, 0);
+}
 // Le baptistère de Pise : l'anneau des bas-côtés et ses arcades, la loggia,
 // le toit de tuile, le tambour central et sa coupole, saint Jean-Baptiste en
 // bronze. Posé à l'ouest du Duomo.
@@ -2023,9 +2187,9 @@ const FICHES = {
     trame: { ang: 0, pu: 4, pv: 4, w: 0.4, s: 0.7 },
     palette: [brique(0), brique(18), CREME, ARDOISE], toit: ARDOISE, hMaison: [4, 6],
     monuments: [
-      { nom: 'Palais du Dam', lat: 52.3731, lon: 4.8913, box: 7, build: palaisLong(5, CREME, ARDOISE) },
+      { nom: 'Palais du Dam', lat: 52.3731, lon: 4.8913, box: 7, build: palaisLong(5, CREME, ARDOISE), tour: buildPalaisDam },
       { nom: 'Westerkerk', lat: 52.3745, lon: 4.8839, box: 3, build: minaret(16, brique(0)) },
-      { nom: 'Rijksmuseum', lat: 52.36, lon: 4.8852, box: 8, build: palaisLong(6, brique(0), ARDOISE) },
+      { nom: 'Rijksmuseum', lat: 52.36, lon: 4.8852, box: 8, build: palaisLong(6, brique(0), ARDOISE), tour: buildRijksmuseum },
     ],
     lieux: [['Le Dam', 52.373, 4.8936], ['Jordaan', 52.3739, 4.8809], ['Prinsengracht', 52.37, 4.884]],
     couleurToits: [150, 118, 96],
@@ -2097,7 +2261,7 @@ const FICHES = {
     trame: { ang: 0.35, pu: 5, pv: 4, w: 0.4, s: 0.75 },
     palette: [OCRE, CREME, ROSE, JAUNE_MUR], toit: TUILE, hMaison: [3, 5],
     monuments: [
-      { nom: 'Le château de Prague', lat: 50.0906, lon: 14.4005, box: 8, build: palaisLong(6, CREME, ARDOISE) },
+      { nom: 'Le château de Prague', lat: 50.0906, lon: 14.4005, box: 8, build: palaisLong(6, CREME, ARDOISE), tour: buildChateauPrague },
       { nom: 'Saint-Guy', lat: 50.0912, lon: 14.4025, box: 4, build: minaret(18, PIERRE), tour: buildSaintGuy },
       { nom: 'Le pont Charles', lat: 50.0865, lon: 14.4114, box: 9, build: pontBati(7, false, true) },
       { nom: "L'horloge astronomique", lat: 50.087, lon: 14.4207, box: 3, seuil: 0.4, build: minaret(12, PIERRE) },
@@ -2207,7 +2371,7 @@ const FICHES = {
     trame: { ang: 0.2, pu: 5, pv: 4, w: 0.45, s: 0.8 },
     palette: [OCRE, ROSE, CREME, JAUNE_MUR], toit: TUILE, hMaison: [4, 6],
     monuments: [
-      { nom: 'Le Palais royal', lat: 59.3268, lon: 18.0717, box: 8, build: palaisLong(6, OCRE, ARDOISE) },
+      { nom: 'Le Palais royal', lat: 59.3268, lon: 18.0717, box: 8, build: palaisLong(6, OCRE, ARDOISE), tour: buildPalaisStockholm },
       { nom: "L'hôtel de ville", lat: 59.3274, lon: 18.0543, box: 4, build: minaret(15, brique(0)) },
       { nom: 'Storkyrkan', lat: 59.3257, lon: 18.0706, box: 3, seuil: 0.4, build: minaret(10, OCRE) },
     ],
@@ -2221,7 +2385,7 @@ const FICHES = {
     trame: { ang: 0.15, pu: 5, pv: 4, w: 0.45, s: 0.8 },
     palette: [brique(0), OCRE, ROSE, CREME], toit: ARDOISE, hMaison: [4, 6],
     monuments: [
-      { nom: 'Amalienborg', lat: 55.6841, lon: 12.5928, box: 7, build: palaisLong(5, CREME, ARDOISE) },
+      { nom: 'Amalienborg', lat: 55.6841, lon: 12.5928, box: 7, build: palaisLong(5, CREME, ARDOISE), tour: buildAmalienborg },
       { nom: 'La Rundetaarn', lat: 55.6813, lon: 12.5757, box: 3, build: minaret(10, brique(0)) },
       // Sur son rocher, dans l'eau du port — la tête au-dessus des vagues.
       { nom: 'La Petite Sirène', lat: 55.6929, lon: 12.5993, box: 2, seuil: 0.4, build: statuette(6, uni(6)) },
@@ -2270,7 +2434,7 @@ const FICHES = {
     trame: { ang: 0.1, pu: 6, pv: 5, w: 0.5, s: 0.85, tours: 0.55 },
     palette: [BLANC, CREME, ACIER], toit: ARDOISE, hMaison: [4, 7],
     monuments: [
-      { nom: 'Gyeongbokgung', lat: 37.5796, lon: 126.977, box: 8, build: palaisLong(6, VERMILLON, uni(6)) },
+      { nom: 'Gyeongbokgung', lat: 37.5796, lon: 126.977, box: 8, build: palaisLong(6, VERMILLON, uni(6)), tour: buildGyeongbokgung },
       { nom: 'La tour de Séoul', lat: 37.5512, lon: 126.9882, box: 4, build: tourBoule(20, [16], ACIER, ACIER), tour: buildTourSeoul },
       { nom: 'Namdaemun', lat: 37.5599, lon: 126.9753, box: 5, seuil: 0.4, build: archePorte(3, 4, PIERRE) },
     ],
@@ -2537,7 +2701,7 @@ const FICHES = {
     monuments: [
       // L'Obélisque est exactement à l'ancre : c'est lui, le centre.
       { nom: "L'Obélisque", lat: -34.6037, lon: -58.3816, box: 4, build: obelisque(22) },
-      { nom: 'La Casa Rosada', lat: -34.608, lon: -58.3702, box: 8, build: palaisLong(6, ROSE, ROSE) },
+      { nom: 'La Casa Rosada', lat: -34.608, lon: -58.3702, box: 8, build: palaisLong(6, ROSE, ROSE), tour: buildCasaRosada },
       { nom: 'Le Cabildo', lat: -34.6089, lon: -58.3742, box: 5, seuil: 0.4, build: archePorte(3, 4, BLANC) },
     ],
     lieux: [['Florida', -34.6035, -58.3752], ['San Telmo', -34.6203, -58.3717],
@@ -2565,7 +2729,7 @@ const FICHES = {
     monuments: [
       { nom: 'La Koutoubia', lat: 31.6258, lon: -7.9891, box: 4, build: minaret(18, ROUGE_GRES), tour: buildKoutoubia },
       { nom: 'Les remparts', lat: 31.6295, lon: -7.9811, box: 18, build: muraillesRect(16, 4, ROUGE_GRES) },
-      { nom: 'Le palais Bahia', lat: 31.6216, lon: -7.9822, box: 6, build: palaisLong(4, OCRE, TUILE) },
+      { nom: 'Le palais Bahia', lat: 31.6216, lon: -7.9822, box: 6, build: palaisLong(4, OCRE, TUILE), tour: buildPalaisBahia },
     ],
     lieux: [['Jemaâ el-Fna', 31.6259, -7.9852], ['Les souks', 31.6308, -7.9843],
       ['La Majorelle', 31.6417, -7.9862]],
@@ -3672,7 +3836,7 @@ export function mobilierVillesMonde(x, z, poser) {
 // croisement de coins (deux anneaux qui se touchent sur vingt blocs sans
 // partager une rue) que le balayage comptait et que la formule ignore.
 //
-// CE QUI SE PARTAGE EST UNE VOIE, PAS UNE RUE (v374). La v211 a posé la barre
+// CE QUI SE PARTAGE EST UNE VOIE, PAS UNE RUE (v376). La v211 a posé la barre
 // quand une rue n'avait qu'UNE file — une voiture de 2,26 blocs pour une
 // chaussée de 2,86 : deux convois sur la même rue roulaient l'un dans l'autre.
 // Depuis la v271 la chaussée fait deux voies et l'on roule à droite : chaque
@@ -3774,13 +3938,13 @@ export const ANNEAUX_EN_PLUS = {
   // 60,5 → 95,3 % : le North Shore, au-delà du port, puis l'ouest.
   sydney: [[1, -6, 4, 2], [-7, -5, 1, 1], [-9, 1, 1, 1]],
   rome: [[-6, 0, 1, 3],       // 88,3 → 94,6 % : le Vatican et Prati
-    // v374 : les anneaux qui passaient dans le Colisée et le forum ne sont
+    // v376 : les anneaux qui passaient dans le Colisée et le forum ne sont
     // plus retenus (93,2 %) ; trois anneaux qui les contournent → 99,7 %
     [2, -4, 3, 2], [3.5, 1, 2.5, 2], [-1.5, -3, 0.5, 3]],
   tokyo: [[-3, 0, 1, 3]],     // 88,7 → 95,7 %
-  // v374 — la couverture que rendaient les anneaux passés DANS un monument,
+  // v376 — la couverture que rendaient les anneaux passés DANS un monument,
   // regagnée par des anneaux qui en font le tour, cherchés sous node par la
-  // même couverture gloutonne (sonde `cherche.mjs`, scratchpad de la v374) et
+  // même couverture gloutonne (sonde `cherche.mjs`, scratchpad de la v376) et
   // passés par la même validation, monument compris :
   agra: [[3.5, -2, 1.5, 3], [-6.5, 0, 0.5, 1]],           // 84,5 → 100 % (le Taj Mahal, le Fort)
   istanbul: [[-3, 1.5, 1, 2.5], [3.5, -0.5, 1.5, 1.5]],   // 90,6 → 99,5 % (Sainte-Sophie)
@@ -3928,7 +4092,7 @@ function anneauxCalcules(f) {
       // L'axe reste ce que porte `forme` : c'est LUI que juge la contrainte
       // de partage (v270), parce que deux convois qui se suivent se suivent
       // sur une RUE, pas sur une trajectoire.
-      // ET LE PLUS PETIT ANNEAU ROULAIT SUR L'AXE (v374). Ce décalage était
+      // ET LE PLUS PETIT ANNEAU ROULAIT SUR L'AXE (v376). Ce décalage était
       // borné par le pas (`Math.max(t.pu, Ru − voie)`) : un anneau d'un pas de
       // demi-côté — le plus fréquent, celui des petites villes — gardait son
       // `Ru` entier et roulait au milieu de la chaussée, à cheval sur les deux
@@ -3998,7 +4162,7 @@ function anneauxCalcules(f) {
         }
       }
     }
-    // PHASE 2 BIS — LES ANNEAUX EN PAS DE TRAME (v374). Les candidats des
+    // PHASE 2 BIS — LES ANNEAUX EN PAS DE TRAME (v376). Les candidats des
     // phases 1 et 2 sont des FRACTIONS du rayon arrondies au pas, centrés sur
     // un nœud et larges d'un nombre PAIR de pas : un anneau d'un seul îlot, ou
     // de trois, n'y figure jamais. Ici on énumère les rectangles de la trame
@@ -4039,7 +4203,7 @@ function anneauxCalcules(f) {
         if (c && !horsChaussee(f, c)) retenir(c);
       }
     }
-    // PHASE 2 TER — LE CONTRESENS (v374). Une ville dont la trame ne tient que
+    // PHASE 2 TER — LE CONTRESENS (v376). Une ville dont la trame ne tient que
     // trois rues de chaque côté du centre — un rayon de moins de 2,3 pas, cent
     // quatorze villes dont quarante-sept superîlots — n'a qu'UN cycle qui évite
     // la place centrale : son grand anneau. Ce n'est pas la contrainte de
@@ -4076,7 +4240,7 @@ function anneauxCalcules(f) {
   }
 }
 
-// UN ANNEAU ROULE SUR LA CHAUSSÉE, ET CELA SE MESURE SUR SA VOIE (v374). On
+// UN ANNEAU ROULE SUR LA CHAUSSÉE, ET CELA SE MESURE SUR SA VOIE (v376). On
 // parcourt la voie — l'axe décalé d'une demi-chaussée du côté où l'anneau
 // roule — bloc par bloc, et l'on compte ce qui n'est ni bitume, ni marquage,
 // ni eau (un tablier se juge à part). Le trottoir du boulevard central est
@@ -4113,7 +4277,7 @@ function horsChaussee(f, c) {
   return trottoir > 0.08 * n0 ? trottoir : 0;
 }
 
-// UN ANNEAU NE TRAVERSE PAS UN MONUMENT (v374). La dette d'Agra (v362) — le
+// UN ANNEAU NE TRAVERSE PAS UN MONUMENT (v376). La dette d'Agra (v362) — le
 // Taj Mahal et le Fort bâtis SUR deux tabliers d'anneaux — n'était que le cas
 // visible d'un défaut plus large : mesuré sur `origin/main`, QUARANTE-TROIS
 // anneaux de vingt-huit villes passaient dans un monument à hauteur de
@@ -4251,11 +4415,11 @@ function pontDeVille(f, u, v) {
   const P = u * co - v * si, Q = u * si + v * co;
   for (const q of a.ponts) {
     const le = q.axe === 0 ? P : Q, tr = q.axe === 0 ? Q : P;
-    // UN BLOC DE PLUS AU BOUT, POUR LA COLONNE ARRONDIE (v374). Sur une trame
+    // UN BLOC DE PLUS AU BOUT, POUR LA COLONNE ARRONDIE (v376). Sur une trame
     // tournée, la colonne qui porte le bout de l'axe n'a pas l'abscisse de
     // l'axe : elle tombait juste au-delà de `a1`, restait de l'eau, et la
     // voiture trouvait un trou au bout du pont (Berlin en v362, Munich en
-    // v374). Ce test n'est lu que sur une colonne d'eau : sur la rive, le sol
+    // v376). Ce test n'est lu que sur une colonne d'eau : sur la rive, le sol
     // de la ville passe avant, et rien ne change.
     if (le < q.a0 - 1 || le > q.a1 + 1) continue;
     const d = Math.abs(tr - q.b);
@@ -4291,7 +4455,7 @@ export function tracesCirculation(solDe) {
   return traces;
 }
 
-// LES ANNEAUX SE CALCULENT QUAND L'ENFANT APPROCHE, PAS À L'OUVERTURE (v374).
+// LES ANNEAUX SE CALCULENT QUAND L'ENFANT APPROCHE, PAS À L'OUVERTURE (v376).
 // Choisir les anneaux des deux cent soixante-deux villes coûtait deux cent
 // trente millisecondes ; avec les anneaux en pas de trame, le contresens et la
 // lecture des monuments, près de sept cents — et le jeu attend ce calcul

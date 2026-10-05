@@ -1,6 +1,6 @@
 # Ce qui est en cours
 
-- [ ] **LE PORTAIL DE LA v374 (les circuits des villes engendrées), DOUBLE
+- [ ] **LE PORTAIL DE LA v376 (les circuits des villes engendrées), DOUBLE
   MESURE FAITE.** Verts : `carteMonde.js`, `plafond.js`, `degats.js`,
   `carte.js`, `washington.js`. `maj.js` : un seul rouge, À MOI et corrigé (le
   titre de la nouveauté faisait sept mots). Rouges déjà déclarés, mêmes
@@ -149,24 +149,24 @@
   niveau de la rue déblaierait douze blocs), ouest le Potomac dans la boîte ;
   la base d'Andrews (102, 281) ferme le sud-est.
 - [x] **DEUX PONTS DE VILLE À REPRENDRE, VUS PAR LE TÉMOIN ÉLARGI (v362).**
-  Réglés par le PLAN en v374 : à Agra c'était l'anneau qui passait dans le Taj
+  Réglés par le PLAN en v376 : à Agra c'était l'anneau qui passait dans le Taj
   Mahal et le Fort (un anneau ne traverse plus un monument), à Berlin l'anneau
   au tablier trop court n'est plus retenu. Le témoin lit désormais TOUTES les
   villes à pont (56) : il reste deux culées qui mordent dans un parc ou une
   colline, Séoul (2 pas, le rocher de Namsan) et Chicago (1 pas, un tronc près
   du Bean) — anneaux d'avant, mêmes valeurs sur `origin/main`, déclarées dans
   `DETTE_PONTS` et rattachées à la dette ci-dessous.
-- [ ] **LES ANNEAUX D'AVANT ROULENT PARFOIS HORS DE LA CHAUSSÉE (mesuré v374).**
+- [ ] **LES ANNEAUX D'AVANT ROULENT PARFOIS HORS DE LA CHAUSSÉE (mesuré v376).**
   Sur `origin/main`, 190 anneaux de villes engendrées sur 445 ont au moins un
   pas de voie qui n'est pas de la chaussée : places centrales (et leur
   fontaine — les grands anneaux des villes à tours passent par le nœud
   central : Seattle, Tokyo, Shanghai, Singapour…), parcs, plages (Las Vegas 279
-  pas de sable, Rio 249), collines. La v374 l'exige des anneaux NEUFS
+  pas de sable, Rio 249), collines. La v376 l'exige des anneaux NEUFS
   (`horsChaussee`) ; l'appliquer aux phases 1 et 2 est mesuré : 13 villes
   n'auraient plus AUCUN anneau et 26 perdraient de la couverture. Le remède
   est un tracé qui contourne (comme `contournerRonds` pour les places de
   Paris), pas un filtre.
-- [ ] **ONZE VILLES ENGENDRÉES N'ONT QU'UN CIRCUIT (v374), ET C'EST LA
+- [ ] **ONZE VILLES ENGENDRÉES N'ONT QU'UN CIRCUIT (v376), ET C'EST LA
   GÉOMÉTRIE.** Newcastle, Cardiff, Tallinn, Bergen, Reykjavik, Aarhus,
   Kuala Lumpur, Melbourne, San Diego, San José, Guayaquil. Leur seul anneau
   passe sur une rue que son contresens ne peut pas reprendre sans sortir de
@@ -367,21 +367,70 @@
   - ~~Les voitures de la rue ne s'abîment pas~~ — **fait en v356** ; la
     voiture prise qui repartait neuve et l'ami qui ne voyait pas les
     enfoncements de SA rue — **faits en v363** (l'histoire suit, `rue_choc`).
-    Reste : un hôte resté sur l'ancienne version ne relaie pas `rue_choc`
-    entre deux invités à jour (le receveur cède, déclaré).
+    ~~Un hôte resté sur l'ancienne version ne relaie pas `rue_choc`~~ —
+    **fait en v374** : l'histoire récente voyage aussi dans la position, que
+    tout hôte relaie telle quelle, et le receveur ne l'adopte que si la
+    sienne en est le début (idempotente). Reste, déclaré : deux amis qui
+    percutent la MÊME voiture par un ancien hôte ont deux histoires qui
+    divergent — chacun garde la sienne.
   - Le témoin « aucun programme compilé au feu » lit les clés depuis la
-    v363 (le compte baissait : 93 → 92, 97 → 96). « Enfoncer coûte quelques
-    millisecondes » reste une mesure de temps sous charge : 15 ms seul ici,
-    31,1 une fois au portail de la v348 — non repointé faute d'une grandeur
-    qui ne dépende pas du processeur partagé.
+    v363 (le compte baissait : 93 → 92, 97 → 96). ~~« Enfoncer coûte
+    quelques millisecondes » mesure le processeur partagé~~ — **repointé en
+    v374** : part des sommets déplacés (25,6 %, barre à la moitié), zéro
+    normale réécrite hors d'eux (63 avec `computeVertexNormals`, vérifié
+    rouge), rien par image ; les ms restent dans le message.
   - ~~Le garage n'est éprouvé que par `reparer`~~ — **fait en v356** : un
     témoin par le trajet (descendre dedans, remonter).
-  - **Le contrat avec la physique** (`player.choc`, `player.physiqueLitEtat`)
-    attend la session « conduite-physique » : tant qu'elle ne publie rien, le
-    repli de vitesse décide, et les effets s'appliquent par `player.boost`.
-    Un témoin (v356) publie les deux à la main et garde « jamais deux fois ».
+  - ~~**Le contrat avec la physique** attend la session
+    « conduite-physique »~~ — arrivé en v358, **éprouvé bout à bout en
+    v374** par la vraie physique (mur de face : un choc publié, pris par ce
+    chemin seul, l'avant seul froissé, l'effet appliqué une fois). Le repli
+    de vitesse ne sert plus en jeu (`chemins().repli` reste à zéro) : il est
+    GARDÉ pour l'ancien chemin — une physique qui ne publierait pas — et sa
+    règle (`detecterChoc`) reste gardée par le témoin pur de `degats.js`.
   - **Les avions ne s'abîment pas** (`pilote` est écarté) : une décision, pas
     un oubli — un atterrissage manqué n'a pas de « choc » dans `player.js`.
+
+- [ ] **AU PORTAIL DE LA v374 (le battement qui relit, le contrat des dégâts
+  éprouvé, les chocs de la rue par la position), CINQ SUITES ROUGES — une à
+  moi, réglée par le bump ; les autres déjà déclarées, double mesure faite.**
+  - `maj.js` « le badge de version ouvre le journal… » : la tête du journal
+    (365) devant la version servie (364) — le bump de `sw.js`, fait à la
+    fusion. « Quand il se libère… fond de carte » : la famille déclarée.
+  - `visio.js` « caméra éteinte, le jeu reprend sa voix normale » : rejouée
+    SEULE, VERTE sur la branche (26/26) et ROUGE sur `origin/main` (0,0177) —
+    la famille déclarée en v363, des deux côtés.
+  - `reseau.js` « un départ propre nettoie tout le monde » (et au second
+    passage « un hôte sans courtier est trouvé », déclaré) : rejouée seule,
+    branche rouge 2/2, `origin/main` rouge 1/2 (« hôte ["Alice","Nina"] »
+    identique) — la famille intermittente des deux côtés (table de la v285).
+    Passages courts alternés (la suite arrêtée après ce témoin) : branche
+    1/4, `origin/main` 0/2, branche SANS le battement qui relit 0/2. Total à
+    ce témoin : branche 4/7, `origin/main` 1/4 — même rouge, même message,
+    écart non significatif sur onze passages ; on ne le classe pas réglé, on
+    le déclare avec ces chiffres. Preuve structurelle : le départ
+    se lit sur `remotePlayers` ; la v374 n'ajoute au message `pos` qu'un
+    champ `rc` ABSENT tant qu'aucune voiture de la rue n'est percutée (aucune
+    dans `reseau.js`), et le battement des réglages n'écrit que dans
+    `player_prefs`.
+  - `manhattan.js` (trou de façade, taxi, PeerJS) et `monte.js` (chauffe de
+    New York 53/321, gel d'arrivée 38 %) : les familles déclarées aux
+    portails des v356 à v364, aucune ne lit les réglages ni les dégâts de la
+    rue.
+  - SECOND PORTAIL, après rebase sur la v369 : `degats`, `reglages`,
+    `visio`, `hote`, `washington` VERTS. Rouges : `maj.js` (loader, flou —
+    déclarés), `carte.js` (la flèche du GPS à 1,92 rad, déclarée v327 ; le
+    glissé bridé 418 ms, déclaré v364), `manhattan.js` (trou, taxi),
+    `reseau.js` (départ propre, voir plus haut) et `monte.js` : passants de
+    Rome sur la chaussée (le tirage déclaré), téléportation qui compile, trou
+    en vol, gel d'arrivée, et « rendue dans une scène vide, la recharge à
+    l'arrivée garde la cadence » (v360, 6,5 contre 9,9 images/s). `monte.js`
+    REJOUÉE SEULE des deux côtés (v369 dans un arbre détaché) : la scène vide
+    VERTE des deux côtés — un rouge de charge ; le gel d'arrivée rouge des
+    deux côtés ; la téléportation qui compile et le trou en vol rouges sur la
+    branche seule à ce passage, familles déclarées (rouges des deux côtés en
+    v363–v364, intermittent pour le second). Aucune ne passe par le champ
+    `rc` (aucune voiture de la rue percutée) ni par les réglages.
 
 - [ ] **AU PORTAIL DE LA v364 (le coût des dégâts dans le journal), CINQ
   SUITES ROUGES — une à moi, corrigée ; les autres déjà déclarées.**
@@ -729,7 +778,7 @@
   boulevard central dans 47 grandes villes), SAUF les médinas : la section
   `ruelle` du kit (3 m, sans trottoir) leur ôterait tous leurs réverbères —
   décision de Max. Prix déclaré de la v307 : 602 → 440 anneaux, 158 974 →
-  127 734 blocs de rue portant un convoi — RENDU en v374 : candidats en pas de
+  127 734 blocs de rue portant un convoi — RENDU en v376 : candidats en pas de
   trame (côtés impairs), contresens et anneaux de quartier, 445 → 809
   anneaux, 129 373 → 200 322 blocs de voie portant un convoi. (4) Une colonne protégée de l'ancienne ville
   peut se trouver au milieu d'une rue neuve : les circuits de voitures,
@@ -1396,7 +1445,38 @@
   ces boîtes. `washington.js` « chaque îlot a sa porte » (déclaré) : vert seul
   des deux côtés. `maj.js`, `carte.js`, `manhattan.js` : les rouges déclarés
   de la v365, identiques.
-- [ ] **HUIT PALAIS SONT ENCORE LE GABARIT `palaisLong` (v369, compté par le
+- [ ] **LE PORTAIL DE LA v375 (les huit palais) : TOUS LES ROUGES DÉJÀ
+  DÉCLARÉS, DOUBLE MESURE FAITE.** `maj.js` : le loader qui compte ses
+  fichiers, le loader qui attend corps et programmes, « fond de carte vraiment
+  là » — rejouée SEULE : les trois rouges sur la branche, les trois ET un
+  quatrième (le flou pendant la préparation) sur `origin/main`. `manhattan.js` :
+  le trou de façade (22 326 → 42 919, déclaré) et PeerJS « ID taken » (le
+  courtier, déclaré v358). `monte.js` : les passants de Rome (29 %, tirage
+  déclaré v319), la compilation à la téléportation, le gel d'arrivée, la piste
+  d'essai (arrêt à 303,3 pour 300). PREUVE STRUCTURELLE pour ces deux suites :
+  la livraison ne change que les bâtisseurs de huit palais hors de Rome, de
+  Paris et de Manhattan, et la piste est en (30 000, 30 300).
+  Second portail, après rebase sur la v371 : `carte.js` la flèche du GPS
+  (gauche à 1,92 rad, déclaré v321) et le glisser bridé (481 ms pour 400,
+  déclaré) ; `monte.js` « en virage, la caméra laisse la voiture glisser » —
+  rejouée SEULE : verte sur la branche (β médian 24,7°) ET sur `origin/main`
+  (30,3°), un rouge de portail. Et rejouée seule, la branche a rendu « la
+  monoplace ralentit assez pour qu'on la rejoigne » rouge (9,1 m/s au plus
+  lent, relevé sur 250 blocs) quand le portail, sur le MÊME commit, la rendait
+  verte (6,8 sur 37 blocs) : NEUF, intermittent, la grandeur dépend de la
+  portion du circuit que la fenêtre a parcourue — à mesurer sur un tour entier.
+- [ ] **QUARANTE-CINQ MONUMENTS SONT BÂTIS EN TRAVERS D'UN ANNEAU DE VOITURES
+  (v375, témoin de `plafond.js`, `DETTE_ANNEAUX`).** Les anneaux des villes
+  engendrées se choisissent sur la trame sans regarder les repères ; un
+  monument posé APRÈS pose ses blocs (couches d'auteur 1 à 3) sur des cases que
+  la voiture traverse. Le pire : le Taj Mahal (294 cases), le Colisée (53),
+  Rashtrapati Bhavan (40), le Templo Mayor (36), Tō-ji (33), le palais royal
+  de Madrid (31). Deux remèdes, à mesurer : écarter des candidats d'anneau
+  toute boîte de repère (`anneauxDeVille`, villesmonde.js — mais cela change
+  les circuits, donc la couverture et le partage de la v270, à remesurer ville
+  par ville), ou bâtir dans la partie libre de la boîte (ce que la v375 a fait
+  pour les huit palais). Une dette qui ne mesure plus rien rougit.
+- [x] **HUIT PALAIS SONT ENCORE LE GABARIT `palaisLong` — FAIT en v375** (compté par le
   témoin).** Palais du Dam, Rijksmuseum, château de Prague (sans Saint-Guy),
   Palais royal de Stockholm, Amalienborg, Gyeongbokgung (des toits coréens),
   Casa Rosada, palais Bahia : trois blocs d'épaisseur et une baie sur deux, que
@@ -2311,7 +2391,7 @@
   bornés, la durée entrant dans le message (v270).
 
 - [x] **LE SUPERÎLOT COÛTE UN CIRCUIT À QUARANTE-SIX VILLES (v282).** Fait en
-  v374, mais pas par la piste déclarée : la contrainte en fraction du
+  v376, mais pas par la piste déclarée : la contrainte en fraction du
   périmètre laisserait deux convois se SUIVRE. Ce qui a changé depuis la v211,
   c'est la chaussée (deux voies, v271) : le partage se compte désormais par
   VOIE, et deux anneaux de part et d'autre d'une rue s'y croisent. Un superîlot
