@@ -259,7 +259,7 @@
   - **Les avions ne s'abîment pas** (`pilote` est écarté) : une décision, pas
     un oubli — un atterrissage manqué n'a pas de « choc » dans `player.js`.
 
-- [ ] **AU PORTAIL DE LA v359 (les coups suivent la voiture), CINQ SUITES
+- [ ] **AU PORTAIL DE LA v362 (les coups suivent la voiture), CINQ SUITES
   ROUGES — aucune causée par la livraison, double mesure faite (rejouées SEULES
   sur la branche et sur `origin/main` v358, arbre détaché).**
   - `reglages.js` « un choix fait sur une tablette part au serveur » et ses
