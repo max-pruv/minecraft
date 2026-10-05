@@ -24,6 +24,11 @@
   `origin/main` 2,05·2,75·2,07 contre 1,51·1,77·1,09, le même écart) ;
   `maj.js` le loader de l'installation ; `manhattan.js` façade 17 102 →
   51 734 et le taxi (bouton jamais visible) ; `monte.js` gel 700 ms · 13,9 %.
+  Après la fusion de la v379 (dix suites) : huit vertes ; `manhattan.js`
+  façade 27 926 → 51 734 (déclarée) ; `carte.js` les deux témoins d'appui long
+  (« pointeurs 0 », la dette de charge de la v258) — rejoués SEULS deux fois de
+  chaque côté, verts sur la branche ET sur `origin/main` v379 ; au troisième
+  passage de la branche, la flèche du GPS seule (gauche 1,92 rad, déclarée).
 
 - [ ] **LE PORTAIL DE LA v379 (l'arrivée après la carte), DOUBLE MESURE FAITE.**
   Dix suites, quatre rouges, toutes des dettes déjà déclarées sauf une.
