@@ -17,6 +17,12 @@
   Après la fusion de la v372, portail rejoué : mêmes dettes (`maj.js` 5/9,
   façade 11 684 → 44 615, taxi, PeerJS « Lost connection » déclaré, chauffe de
   New York, accélérateur 9,1) ; `carte.js` et le trou en vol verts.
+  Après la fusion de la v375 : mêmes dettes, plus la flèche du GPS (déclarée,
+  v367) et « à soixante blocs par seconde dans Paris, le monde se maille dans le
+  champ » : écart 0,07 sur la branche, **0,02 sur `origin/main`** rejouée seule,
+  pour une barre à 0,13 — rouge des deux côtés, le gain de l'ordre en cône
+  (0,29 à la v346) ne se voit plus au banc. À remesurer (ABBA, plusieurs
+  paires) avant de toucher à la barre ou à l'ordre : dette de ma zone.
 - [ ] **LE PORTAIL DE LA v371 (les passants traversent au feu), DOUBLE MESURE
   FAITE.** Premier portail (base v354) : deux rouges de `monte.js` étaient à
   MOI et sont corrigés dans la livraison — le témoin des traversées (une seule
