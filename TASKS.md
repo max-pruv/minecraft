@@ -103,6 +103,15 @@
   - **Les avions ne s'abîment pas** (`pilote` est écarté) : une décision, pas
     un oubli — un atterrissage manqué n'a pas de « choc » dans `player.js`.
 
+- [ ] **AU PORTAIL DE LA v352 (la 401 et la Hansalinie), UN ROUGE, DÉJÀ
+  DÉCLARÉ** — `monte.js` « l'écran ne se fige pas en arrivant sur une ville »
+  (portail : 1 967 ms, 26,9 %). Rejouée SEULE des deux côtés : `origin/main`
+  2 567 ms · 34,6 % (et trois autres rouges : passants sur la chaussée à Rome,
+  téléportation qui compile — chauffe de New York 68/321 —, « en vol, on ne
+  rattrape pas le bout du monde ») ; branche 2 300 ms · 27,0 %
+  (plus « se téléporter ne compile plus de programmes », chauffe de New York
+  163/321, rouge aussi sur `origin/main`). La livraison n'ajoute que deux
+  routes à Toronto, Montréal, Cologne et Hambourg, loin du vol vers Paris.
 - [ ] **AU PORTAIL DE LA v349 (les forêts tropicales), TROIS ROUGES, TOUS DÉJÀ
   DÉCLARÉS** — `manhattan.js` « le trou enlève aussi la géométrie visible de la
   façade » (22 326 → 51 734, dette du compte de tous les immeubles) ; `monte.js`
