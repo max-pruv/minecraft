@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v355 — Des voitures qui se conduisent pour de vrai
+## v356 — Des voitures qui se conduisent pour de vrai
 
 **Pourquoi.** Max : « une grosse refonte de la façon de conduire… comme GTA :
 des véhicules qui tournent de manière naturelle, des accélérations
@@ -60,6 +60,43 @@ de l'accélérateur). Au portail, les rouges restants sont des dettes déclarée
 et rejouées seules des deux côtés : `manhattan.js` identique (23 verts, mêmes
 deux rouges, même arrêt), et le gel d'arrivée de `monte.js` (vol du chasseur,
 chemin que la livraison ne touche pas : 1 183–1 283 ms contre 1 050–1 150).
+
+---
+
+## v355 — Deux routes qui contournent une ville : Toronto–Montréal et Cologne–Hambourg
+
+**Pourquoi.** Deux corridors du kit étaient restés « sans tracé » en v337.
+Montréal est en contrebas de son pays à l'ouest, Hambourg au sud-ouest et
+Cologne au nord-est : chaque fois, la ville est basse du côté qui regarde
+l'autre. Les sondes d'avant ne savaient faire que deux coudes ou un chemin
+lissé tout droit ; aucune ne savait tourner AUTOUR d'une ville pour y entrer
+par son côté bas. À Hambourg, l'Elbe ferme le sud du disque et l'A24 son est ;
+à Cologne, l'aérodrome de Francfort ferme l'est et l'ICE d'Amsterdam frôle le
+nord-ouest.
+
+**Ce que ça change.** La 401 relie Toronto à Montréal (2 711 blocs) : elle
+contourne Montréal par le sud et y entre par son axe sud. La Hansalinie relie
+Cologne à Hambourg (2 387 blocs) : elle sort de Cologne entre l'ICE et
+l'aérodrome, puis fait le tour de Hambourg par l'ouest pour y entrer par le
+nord-ouest. Deux fois deux voies, aucun pont, vingt voitures chacune, des
+deux côtés une entrée sur une rue propre. Montréal a désormais deux autoroutes,
+Hambourg et Cologne aussi. Le relief ne bouge pas.
+
+**Ce qui le prouve.** Trois témoins neufs dans `carteMonde.js`. Les deux
+routes (rouges sur `origin/main` : elles n'existent pas) — leurs voitures,
+leurs entrées sur la rue, zéro colonne d'emprise sur un rail, et aucun point
+d'axe à moins de r + 10 de leurs villes hors du tronçon radial. Et un témoin
+général : aucune route ne prend une colonne d'emprise à une autre (Montréal,
+Hambourg et Cologne en ont deux), et aucune ne frôle ses villes — zéro sur les
+vingt et une, sous node. La sonde nouvelle cherche le COULOIR LE PLUS BAS sur
+une grille qui porte le cap (on ne vire que d'un huitième de tour, après deux
+pas droits), avec les rails, les autres routes et les aérodromes interdits,
+puis lisse et appelle `profilDe` sur chaque candidat : 16 admissibles sur
+3 000 pour la 401, 397 sur 1 500 pour la Hansalinie. Et le témoin des ponts de
+villes l'a prouvé une fois de plus : la première Hansalinie entrait par l'axe
+nord de Hambourg, au bout d'un pont de l'Alster, et le talus de la route en
+creusait le tablier (six points sans sol, rouge sur la branche, vert sur
+`origin/main`) ; la porte est passée au nord-ouest.
 
 ---
 

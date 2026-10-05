@@ -465,7 +465,7 @@ export const FLOTTE = [
 // « les voitures devraient aller plus vite et surtout une vitesse en fonction
 // du modèle (sportive faster than sedan basic) ». Multiplicateur de la marche
 // (3,2 blocs/s) : `fun.js` le passe au joueur en `boost`.
-// DEPUIS LA v355, LA TABLE SE DÉDUIT DES FICHES DE `conduite.js` : la pointe,
+// DEPUIS LA v356, LA TABLE SE DÉDUIT DES FICHES DE `conduite.js` : la pointe,
 // l'accélération et l'adhérence d'une classe vivent au même endroit, et le
 // plafond n'est plus calculé (28 blocs/s, v260) mais MESURÉ — 60 blocs/s,
 // Paris compris (`PLAFOND_SOL`). Citadine 108 km/h, hypercar 198.
