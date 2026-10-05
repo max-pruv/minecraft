@@ -417,7 +417,7 @@ export const FLOTTE = [
   { fichier: 'bmw-m8-competition.glb', classe: 'gt', nom: 'BMW M8 Competition' },
   { fichier: 'bugatti-bolide.glb', classe: 'hypercar', nom: 'Bugatti Bolide' },
   { fichier: 'bugatti-chiron.glb', classe: 'hypercar', nom: 'Bugatti Chiron' },
-  // `portiere: false` (v355) : sans habitacle, la portière ouverte ne montre que
+  // `portiere: false` (v357) : sans habitacle, la portière ouverte ne montre que
   // du noir ; un modèle qui casse vaut moins qu'un modèle qui s'en passe.
   { fichier: 'bugatti-chiron-stealth.glb', classe: 'hypercar', nom: 'Bugatti Chiron Stealth', habitacle: false, portiere: false },
   { fichier: 'bugatti-veyron.glb', classe: 'hypercar', nom: 'Bugatti Veyron 16.4' },
@@ -2041,6 +2041,20 @@ export function createVehicules({ scene, player }) {
   // portail mesuraient une boucle d'affichage moribonde. La liste est figée
   // tant que `cederLePassage` n'a pas refait sa collecte, et l'on ne rend
   // JAMAIS ce tableau à quelqu'un qui pourrait le modifier : lecture seule.
+  // LES DÉGÂTS (v356) : la voiture de la rue la plus proche d'un point de
+  // choc, telle que `cederLePassage` l'a vue à la dernière image. Un crochet
+  // court, lu par degats3d.js (branché par main.js) : c'est lui qui froisse
+  // la voiture, ce fichier ne fait que dire laquelle.
+  function voitureRueProche(x, z, y, rayon = 3.5) {
+    let mieux = null, dm = rayon * rayon;
+    for (const b of dernieres) {
+      if (b.enfant || b.rail || !b.c || Math.abs(b.y - y) > 2.5) continue;
+      const d = (b.x - x) ** 2 + (b.z - z) ** 2, m = b.c.elements[b.i];
+      if (d < dm && m) { dm = d; mieux = m; }
+    }
+    return mieux;
+  }
+
   let enMarcheCache = null;
   function enMarche() {
     if (enMarcheCache) return enMarcheCache;
@@ -2232,7 +2246,7 @@ export function createVehicules({ scene, player }) {
   }
 
   return {
-    metro, course, chaine, circulation, bus, update, placeProche, diagPlace, place, emprunter, retirer, obstacleDevant, voitureA, dansRectangle, enMarche,
+    metro, course, chaine, circulation, bus, update, placeProche, diagPlace, place, emprunter, retirer, obstacleDevant, voitureA, dansRectangle, enMarche, voitureRueProche,
     adopterHorloge, horloge: () => horloge,
     // le crochet des feux tricolores (v273), branché par main.js
     brancherFeux: (f) => { feuRouge = f; },

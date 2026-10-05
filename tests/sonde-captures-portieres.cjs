@@ -1,4 +1,4 @@
-// LES PORTIÈRES EN CAPTURE (v355) : pour quelques modèles, la voiture fermée
+// LES PORTIÈRES EN CAPTURE (v357) : pour quelques modèles, la voiture fermée
 // puis portière gauche ouverte, vue de trois quarts arrière gauche, dans une
 // scène à part rendue par le renderer du jeu (mêmes programmes, mêmes couches).
 const { Banc } = require('./banc.js');

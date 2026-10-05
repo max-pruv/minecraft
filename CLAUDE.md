@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Monter en voiture comme dans un vrai jeu (v355) — une animation qu'on impose garde sa porte de sortie
+## Monter en voiture comme dans un vrai jeu (v357) — une animation qu'on impose garde sa porte de sortie
 
 Max : « on voit le personnage qui avance et qui rentre dans la voiture avec la
 porte qui s'ouvre ». `src/embarquement.js` (la séquence) et `src/portieres.js`
@@ -1206,6 +1206,19 @@ existe dès la naissance, parce que `instancingColor` est dans la clé. Mesuré 
 deux fois (essaim caché, montré) et exige plus de quatre carrés, sinon
 l'égalité ne prouverait rien.
 
+**L'épave reste chez l'ami, et la rue s'abîme (v356).** Quand le conducteur
+est déposé, `p.v` disparaît : le RECEVEUR garde l'épave en feu là où elle
+s'est arrêtée (`garderEpave`, appelé par `synchroniserVehiculeDistant`) et la
+fait vivre lui-même jusqu'à `DUREE_CARCASSE` — rien de neuf sur le réseau.
+Seule une voiture hors service se garde. Une voiture de la rue percutée
+(`percuterRue` : le point d'impact du MONDE, et `vehicules.voitureRueProche`,
+crochet court branché par main.js APRÈS `initFun` — branché avant, `fun` est
+dans sa zone morte et le jeu ne démarre plus, vu au banc) se froisse par la
+même règle 1, ne prend jamais feu (`rec.rue`) et ne parle pas. Ce qui s'en
+va se rend une fois : un clone marqué `rendu` à son `dispose` (par `liberer`)
+ne se rend pas une seconde fois — le premier témoin comptait 28 rendues pour
+14 clones.
+
 **Le feu dépose l'enfant, il ne le projette pas** : passé `DELAI_SORTIE` (3,5 s
 en temps réel), `fun.js` le fait descendre et `deposer` le pose debout sur une
 case libre à côté (côté conducteur d'abord). La carcasse porte `horsService`
@@ -1592,6 +1605,55 @@ Une règle.
   la terre, l'herbe, le sable et la pierre naturelle. Manhattan a son propre sol
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
+
+## Les routes qui contournent une ville (v355) — le couloir se cherche avec son cap
+
+La 401 Toronto–Montréal et la Hansalinie Cologne–Hambourg, les deux corridors
+« sans tracé » de la v337. Quatre règles.
+
+- **QUAND LE CÔTÉ BAS D'UNE VILLE NE REGARDE PAS L'AUTRE, LA ROUTE FAIT LE
+  TOUR.** Deux coudes ou un chemin lissé tout droit ne tournent pas autour
+  d'un disque. La sonde cherche le COULOIR LE PLUS BAS (Dijkstra sur une
+  grille de trente blocs, coût au carré de la hauteur au-dessus de 40, l'eau
+  très chère), en tire des points avec du jeu, lisse par Chaikin en gardant
+  les deux tronçons radiaux, simplifie tant que les coudes restent sous 22°,
+  et APPELLE `profilDe` sur chaque candidat. Puis elle retire un à un les
+  points dont le tracé se passe sans rien perdre (56 → 26, 72 → 25).
+- **UN COULOIR SANS CAP REPART EN ARRIÈRE, ET LE LISSAGE N'Y PEUT RIEN.** Le
+  premier jet (Dijkstra sur les cases seules) rendait 88 à 97 % de refus de
+  coude — il a trouvé la 401 (seize sur 3 000) et ZÉRO Hansalinie sur 2 500 : le chemin le plus bas repartait souvent DERRIÈRE le tronçon radial,
+  et aucun lissage ne fait d'un demi-tour un coude de vingt degrés. L'état de
+  la grille porte le cap (huit directions, un huitième de tour au plus, deux
+  pas droits après chaque virage), on part dans le cap de la porte et l'on
+  arrive dans celui de l'autre ; les points du couloir à moins de 70 blocs des
+  bouts sont laissés au lissage — 397 Hansalinie sur 1 500. C'est la règle de la v329 (« un refus qui
+  touche cent pour cent des candidats sur une contrainte se lit d'abord comme
+  un défaut de la recherche »), une forme de sonde plus loin.
+- **CE QUE LA GRILLE N'INTERDIT PAS, LE LISSAGE LE TOUCHE.** Les rails et les
+  autres routes n'étaient jugés qu'après coup : 878 refus « rail » sur 3 000
+  autour de Cologne, l'ICE d'Amsterdam sortant à −130°. Interdits DANS la
+  grille (rail à douze blocs, axe d'une autre route à deux emprises et talus),
+  ils ne sont plus qu'un résidu. Et une porte se ferme aussi par ce qui est
+  DANS le disque : l'Elbe longe le sud de Hambourg entre 38 et 70 blocs du
+  centre, toute entrée par le sud mettait un pont dans le raccord ; et l'axe
+  nord tombait au bout d'un pont de l'Alster, dont le TALUS de la route
+  creusait le tablier (six points sans sol, vus par le témoin des ponts de
+  villes, pas par la sonde) — on entre par le nord-ouest. Avant de chercher,
+  on relève le long des rayons l'eau de la ville ET ses ponts, pas seulement
+  le relief : une porte se juge contre tout ce que la ville a bâti autour.
+- **DEUX ROUTES DANS UNE VILLE NE SE PRENNENT PAS LEUR EMPRISE.** Montréal,
+  Hambourg et Cologne ont désormais deux autoroutes. `routeEn` donne une
+  colonne au segment le plus proche : deux corridors qui se recouvrent
+  feraient une chaussée qui change de route au milieu, sans échangeur. Un
+  témoin de `carteMonde.js` lit chaque colonne d'emprise de chaque route et
+  exige qu'elle appartienne au segment qu'on lit, et qu'aucun axe ne frôle
+  ses villes hors du tronçon radial (r + 10, au-delà des quatre-vingts
+  premiers et derniers blocs) — zéro sur les vingt et une.
+
+**Et un générateur congruentiel en flottants tourne en rond.**
+`(g * 1103515245 + 12345) % 2^31` dépasse 2^53 et perd sa précision : la sonde
+rendait huit fois le même tracé et l'on croyait en avoir huit. Un tirage de
+sonde se fait en entiers 32 bits (`Math.imul`).
 
 ## L'I-45 Dallas–Houston (v336) — un pays ondulé se traverse par un chemin, pas par deux coudes
 

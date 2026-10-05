@@ -1,4 +1,4 @@
-// LES PORTIÈRES QUI S'OUVRENT, FABRIQUÉES DANS LA CARROSSERIE (v355).
+// LES PORTIÈRES QUI S'OUVRENT, FABRIQUÉES DANS LA CARROSSERIE (v357).
 //
 // Max : « Quand on monte dans une voiture, on voit le personnage qui avance et
 // qui rentre dans la voiture avec le gameplay de la porte qui s'ouvre. »

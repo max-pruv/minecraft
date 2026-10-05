@@ -4205,9 +4205,13 @@ function synchroniserVehiculeDistant(rp, v) {
   if ((rp.vehicule ? rp.vehicule.cle : '') === cle) return;
   if (rp.vehicule) {
     poserDebout(rp);
-    scene.remove(rp.vehicule.mesh);
-    liberer(rp.vehicule.mesh);
+    const vm = rp.vehicule.mesh;
     rp.vehicule = null;
+    // SA VOITURE EN FEU RESTE LÀ (v356) : le conducteur déposé, la position
+    // n'emporte plus de voiture — mais l'épave brûle encore là où elle s'est
+    // arrêtée, et c'est le receveur qui la garde jusqu'à ce qu'elle s'en aille.
+    const enlever = () => { scene.remove(vm); liberer(vm); };
+    if (!(fun.degats && fun.degats.garderEpave(vm, enlever))) enlever();
   }
   if (!v) return;
   const fabrique = MODELES_MONTURE[v.k];
@@ -7007,7 +7011,7 @@ function plafondAuSiege(a, siege) {
     if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return;
     // ni l'avatar de l'enfant, ni celui d'un ami assis là (v253) : une tête
     // n'est pas un toit — reconnu à ses bras articulés (`buildKidMesh`)
-    // ni une portière (v355) : ouverte, elle n'est pas le toit
+    // ni une portière (v357) : ouverte, elle n'est pas le toit
     for (let p = o; p && p !== a.mesh; p = p.parent) if (p === avatarLocal || (p.userData && (p.userData.arms || p.userData.estPortiere))) return;
     const pos = o.geometry.attributes.position;
     _plafondM.multiplyMatrices(_plafondInv, o.matrixWorld);
@@ -7025,7 +7029,7 @@ function plafondAuSiege(a, siege) {
 }
 function asseoirLeConducteur(dt) {
   avatarTemps += dt;
-  // PENDANT QU'IL MONTE OU DESCEND (v355), c'est la séquence qui tient l'avatar
+  // PENDANT QU'IL MONTE OU DESCEND (v357), c'est la séquence qui tient l'avatar
   if (fun.avatarEnSequence && fun.avatarEnSequence()) return;
   const a = fun.montureConduite ? fun.montureConduite() : null;
   const siege = a && a.def && a.def.siege;
@@ -7058,7 +7062,7 @@ function asseoir(av, a, siege, temps) {
   animerHumain(av, temps, 0, POSE_AU_VOLANT);
 }
 // OÙ L'ON EST ASSIS, sans y poser personne : la séquence d'embarquement
-// (embarquement.js, v355) y fait arriver l'avatar, et c'est le MÊME calcul
+// (embarquement.js, v357) y fait arriver l'avatar, et c'est le MÊME calcul
 // que celui qui l'y tient ensuite — sinon il sauterait d'un cran à l'instant
 // où il s'assied.
 function placeAssise(a, siege) {
@@ -7500,8 +7504,12 @@ const fun = initFun({
     tirer: () => profileSync.photosTirer().catch(() => []),
   },
 });
+// LES VOITURES DE LA RUE S'ABÎMENT AUSSI (v356) : les dégâts demandent à la
+// circulation laquelle l'enfant vient de percuter (les convois n'existent
+// qu'une fois le monde bâti : on les demande au moment du choc).
+fun.degats.brancherRue((x, z, y) => (vehicules ? vehicules.voitureRueProche(x, z, y) : null));
 
-// LA SÉQUENCE D'EMBARQUEMENT (v355) prend l'avatar que main.js possède, et la
+// LA SÉQUENCE D'EMBARQUEMENT (v357) prend l'avatar que main.js possède, et la
 // place assise que main.js calcule : un seul corps, une seule assise.
 fun.brancherAvatar({ obtenir: obtenirAvatarLocal, placeAssise, pose: POSE_AU_VOLANT });
 

@@ -5997,7 +5997,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !nature.err && nature.auVolant && nature.d >= 30,
       `barre 30 blocs (mesuré désarmé : 0,4 et 17,9 · armé : 59 et 116) · ${JSON.stringify(nature)}`);
 
-    // MONTER EN VOITURE COMME DANS UN VRAI JEU (v355). Max : « on voit le
+    // MONTER EN VOITURE COMME DANS UN VRAI JEU (v357). Max : « on voit le
     // personnage qui avance et qui rentre dans la voiture avec la porte qui
     // s'ouvre ». Une page à part qui JOUE la séquence (`embarq: 1`) : partout
     // ailleurs le banc la saute (`embarq=0`) et les témoins d'au-dessus gardent
@@ -6027,7 +6027,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         // ET LOIN DE TOUTE ROUTE ET DE TOUT RAIL : la descente refuse à bon droit
         // une place dans le couloir d'une voiture qui arrive (v259), et un
         // rejeu seul de la suite est tombé sur l'A-quelque-chose, deux côtés
-        // refusés pour « circulation » (v355)
+        // refusés pour « circulation » (v357)
         let loin = true;
         for (let dx = -60; dx <= 60 && loin; dx += 6) for (let dz = -60; dz <= 60 && loin; dz += 6) if (w.corridorEn && w.corridorEn(x + dx, z + dz)) loin = false;
         // et des villes, dont les voitures roulent jusqu'au bord du disque
@@ -6217,7 +6217,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     });
     verifier('« descendre vite » pose l\'enfant à côté sans animation', !embFeu.err && !embFeu.volant && !embFeu.ph && (Math.abs(embFeu.x) > 1.3 || Math.abs(embFeu.z) > 2.6) && embFeu.libre,
       JSON.stringify(embFeu));
-    // 9. UNE VOITURE DÉJÀ FROISSÉE NE PREND PAS DE PORTIÈRE (v355). Les
+    // 9. UNE VOITURE DÉJÀ FROISSÉE NE PREND PAS DE PORTIÈRE (v357). Les
     // dégâts (v343) clonent la géométrie de la pièce touchée ; l'équiper
     // remplacerait ce froissé par « la caisse sans les portières ». On simule
     // le choc (une pièce de laque prend une géométrie à elle) et l'on demande

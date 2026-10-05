@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v355 — On monte en voiture comme dans un vrai jeu
+## v357 — On monte en voiture comme dans un vrai jeu
 
 **Pourquoi.** Max : « Quand on monte dans une voiture, on voit le personnage
 qui avance et qui rentre dans la voiture avec le gameplay de la porte qui
@@ -55,6 +55,78 @@ et garde son froissé. Huit rouges sur `origin/main` ; le huitième — aucun pr
 shader compilé — est vert des deux côtés à dessein, il garde une capacité. Le
 banc saute la séquence partout ailleurs (`embarq=0`) : les témoins de conduite
 existants gardent l'ancien geste au bit près.
+
+---
+
+## v356 — L'épave reste, et la rue s'abîme aussi
+
+**Pourquoi.** Trois manques laissés déclarés par la v343. À plusieurs, quand
+la voiture de Marlon prenait feu et qu'il était déposé à côté, elle
+s'évanouissait chez Alice au moment même où elle brûlait : la position de
+Marlon n'emportait plus de voiture. Percuter une voiture de la rue n'abîmait
+que celle de l'enfant — l'autre repartait comme neuve. Et la réparation au
+garage n'était éprouvée qu'en appelant `reparer` à la main, jamais par le
+geste de l'enfant.
+
+**Ce que ça change.** Chez l'ami, l'épave en feu reste là où elle s'est
+arrêtée : elle brûle, fume, puis s'en va au bout d'une minute et demie,
+comme chez celui qui conduisait. Rien de neuf ne voyage sur le réseau : c'est
+le receveur qui la garde. Une voiture de la rue qu'on percute se froisse à
+son tour — sa tôle à elle, jamais celle que toute la rue partage —, garde ses
+enfoncements, fume si elle est très touchée, et ne prend JAMAIS feu
+(personne n'est jamais blessé, personne à déposer). Ranger sa voiture abîmée
+au garage puis la ressortir la rend neuve.
+
+**Ce qui le prouve.** Six témoins neufs dans `degats.js`, dont quatre ROUGES
+sur l'ancien code : l'épave vue par Alice après le dépôt de Marlon (sur
+l'ancien code, plus de voiture), l'épave qui s'en va et rend ses géométries
+froissées (13 sur 13), la voiture de la rue percutée par le VRAI chemin du
+choc (14 pièces clonées, zéro géométrie commune touchée, 14 encore portées
+par une voiture neuve du même modèle), et la même très touchée qui fume sans
+brûler puis rend ses 14 clones quand elle s'en va. Le garage par le trajet
+(descendre dedans, remonter) est vert des deux côtés et rougit quand on
+désarme la réparation ; le contrat avec la physique (un choc publié compte
+une fois, l'allure n'est jamais réduite deux fois) garde une capacité pour le
+jour où `player.choc` sera publié.
+
+---
+
+## v355 — Deux routes qui contournent une ville : Toronto–Montréal et Cologne–Hambourg
+
+**Pourquoi.** Deux corridors du kit étaient restés « sans tracé » en v337.
+Montréal est en contrebas de son pays à l'ouest, Hambourg au sud-ouest et
+Cologne au nord-est : chaque fois, la ville est basse du côté qui regarde
+l'autre. Les sondes d'avant ne savaient faire que deux coudes ou un chemin
+lissé tout droit ; aucune ne savait tourner AUTOUR d'une ville pour y entrer
+par son côté bas. À Hambourg, l'Elbe ferme le sud du disque et l'A24 son est ;
+à Cologne, l'aérodrome de Francfort ferme l'est et l'ICE d'Amsterdam frôle le
+nord-ouest.
+
+**Ce que ça change.** La 401 relie Toronto à Montréal (2 711 blocs) : elle
+contourne Montréal par le sud et y entre par son axe sud. La Hansalinie relie
+Cologne à Hambourg (2 387 blocs) : elle sort de Cologne entre l'ICE et
+l'aérodrome, puis fait le tour de Hambourg par l'ouest pour y entrer par le
+nord-ouest. Deux fois deux voies, aucun pont, vingt voitures chacune, des
+deux côtés une entrée sur une rue propre. Montréal a désormais deux autoroutes,
+Hambourg et Cologne aussi. Le relief ne bouge pas.
+
+**Ce qui le prouve.** Trois témoins neufs dans `carteMonde.js`. Les deux
+routes (rouges sur `origin/main` : elles n'existent pas) — leurs voitures,
+leurs entrées sur la rue, zéro colonne d'emprise sur un rail, et aucun point
+d'axe à moins de r + 10 de leurs villes hors du tronçon radial. Et un témoin
+général : aucune route ne prend une colonne d'emprise à une autre (Montréal,
+Hambourg et Cologne en ont deux), et aucune ne frôle ses villes — zéro sur les
+vingt et une, sous node. La sonde nouvelle cherche le COULOIR LE PLUS BAS sur
+une grille qui porte le cap (on ne vire que d'un huitième de tour, après deux
+pas droits), avec les rails, les autres routes et les aérodromes interdits,
+puis lisse et appelle `profilDe` sur chaque candidat : 16 admissibles sur
+3 000 pour la 401, 397 sur 1 500 pour la Hansalinie. Et le témoin des ponts de
+villes l'a prouvé une fois de plus : la première Hansalinie entrait par l'axe
+nord de Hambourg, au bout d'un pont de l'Alster, et le talus de la route en
+creusait le tablier (six points sans sol, rouge sur la branche, vert sur
+`origin/main`) ; la porte est passée au nord-ouest.
+
+---
 
 ## v354 — Les passants de Manhattan se promènent
 

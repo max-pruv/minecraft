@@ -1,4 +1,4 @@
-// LA DÉCOUPE DES PORTIÈRES, MODÈLE PAR MODÈLE (v355). Pour chacun des modèles
+// LA DÉCOUPE DES PORTIÈRES, MODÈLE PAR MODÈLE (v357). Pour chacun des modèles
 // de la flotte : le plan (charnière, longueur, surface emportée, part de
 // triangles à cheval sur un bord), le coût, et CE QUE LE TROU LAISSE VOIR —
 // des rayons tirés de dehors au travers de l'ouverture, portière ouverte :

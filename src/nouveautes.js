@@ -6,13 +6,31 @@
 
 export const NOUVEAUTES = [
   {
-    v: 355,
+    v: 357,
     titre: 'On monte en voiture',
     puces: [
       'Tu marches jusqu\'à la portière',
       'La porte s\'ouvre, tu t\'assieds',
       'En descendant, tu sors à côté',
       'Appuie deux fois pour aller vite',
+    ],
+  },
+  {
+    v: 356,
+    titre: 'Les épaves restent',
+    puces: [
+      'Tes amis voient l\'épave brûler',
+      'Les voitures de la rue s\'abîment',
+      'Le garage répare ta voiture',
+    ],
+  },
+  {
+    v: 355,
+    titre: 'Deux autoroutes de plus',
+    puces: [
+      'Toronto–Montréal, par le sud',
+      'Cologne–Hambourg, par l\'ouest',
+      'Elles font le tour des villes',
     ],
   },
   {
