@@ -7,9 +7,9 @@
 export const NOUVEAUTES = [
   {
     v: 368,
-    titre: 'Plus de trous au bout des ponts',
+    titre: 'Les ponts vont jusqu\'à la rive',
     puces: [
-      'Les ponts des villes vont jusqu\'à la rive',
+      'Plus de trou au bout des ponts',
     ],
   },
   {
