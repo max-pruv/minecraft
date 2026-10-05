@@ -21,6 +21,13 @@ const monde = new World();
 // suivant, il n'a rien à faire. C'est la grandeur qui dit si la recharge de la
 // file, une fois par image, l'affame — le fil principal ne peut pas la voir.
 let finDuLot = 0;
+// CE QUE LE WORKER FAIT HORS DU MORCEAU (v365) : copier les blocs, cloner et
+// poster le message (le mobilier n'est pas transférable), oublier ce qu'on a
+// dépassé. `ms` ne compte que la génération et le maillage ; une ville dont le
+// worker est occupé sans que `ms` le dise paie ici. Cumulé depuis le
+// lancement, publié avec chaque morceau (le dernier compte arrive avec le
+// suivant), lu par les sondes.
+let cumulMs = 0, cumulHors = 0;
 
 self.onmessage = (e) => {
   const m = e.data;
@@ -68,6 +75,7 @@ self.onmessage = (e) => {
       // seulement. Un message sans le drapeau (ancien format) reçoit tout.
       const t = buildChunkTampons(monde, cx, cz, { detail: detail !== false });
       const ms = performance.now() - t0;
+      cumulMs += ms;
       // Le fil principal garde les BLOCS pour les collisions et les sondes de
       // sol : on lui en donne une copie, transférée, pas recopiée.
       const copie = data.slice();
@@ -78,13 +86,17 @@ self.onmessage = (e) => {
         if (g.matiere) transfert.push(g.matiere.buffer, g.lueur.buffer);
       }
       self.postMessage({ type: 'morceau', cx, cz, generation: m.generation, data: copie, ms, inactif, envoye: performance.timeOrigin + performance.now(),
+        cumul: { ms: cumulMs, hors: cumulHors },
         top: monde.chunkTop(cx, cz), solid: t.solid, water: t.water, lumineux: t.lumineux, props: t.props,
         sol: t.sol, facades: t.facades, plat: t.plat, platLumineux: t.platLumineux, hd: t.hd, detail: t.detail }, transfert);
       inactif = 0;
+      cumulHors += performance.now() - t0 - ms;
     }
-    finDuLot = performance.now();
     // et l'on oublie ce qu'on a dépassé, comme le fil principal (v236)
+    const t2 = performance.now();
     monde.oublierLoinDe(m.pcx, m.pcz, m.rayon);
+    cumulHors += performance.now() - t2;
+    finDuLot = performance.now();
   }
 };
 self.postMessage({ type: 'pret' });

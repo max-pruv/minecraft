@@ -167,3 +167,27 @@ export function fileDeMaillage({ pcx, pcz, R, dir, rapide, deja }) {
   file.sort((a, b) => b.d - a.d);
   return file;
 }
+
+// L'ARRIVÉE APRÈS UNE TÉLÉPORTATION (v365). À l'arrêt, la file se rechargeait
+// une fois par image (v360) : sur un écran qui rame, le disque de Paris mettait
+// plus de vingt secondes à arriver au banc — 291 à 304 morceaux sur 625 en
+// vingt secondes, la cadence tombée à 4 images par seconde pendant que la
+// ville se dessine. Rechargée à l'arrivée de chaque morceau : 90 % en 5,5 à
+// 6,4 s. Et ce que cela coûte au chargement lui-même se mesure dans une scène
+// VIDE (la leçon de la v360) : 90 % en 4,1 à 4,4 s des deux côtés, 57 images
+// par seconde des deux côtés, pire image 217 contre 250 ms — le worker et
+// l'installation ne prennent rien aux images, toujours quatre en vol. Ce que
+// le banc perd en scène dessinée (3,9 → 2,8 à 3,1 images par seconde), c'est
+// SwiftShader qui dessine la ville arrivée plus tôt — la même ville qu'il
+// dessinera de toute façon quinze secondes plus tard.
+//
+// Un SAUT, c'est un changement de morceau de plus que la portée d'affichage
+// d'un coup : aucune voiture, aucun avion ne franchit douze morceaux entre
+// deux images. La fenêtre se ferme quand la file est vide, et au plus tard
+// au bout de `FENETRE_ARRIVEE_MS` : un remède ne va pas plus loin que la panne
+// (v245) — à pied, rien ne change.
+export const FENETRE_ARRIVEE_MS = 10000;
+export function estUnSaut(avant, apres, R) {
+  if (!avant || !apres) return false;
+  return Math.max(Math.abs(apres.cx - avant.cx), Math.abs(apres.cz - avant.cz)) > R;
+}

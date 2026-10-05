@@ -258,24 +258,33 @@
   sec 23–28 %. Plafond publié : **ville 70, campagne 80**. La cadence
   du banc tombe en ville de 14 à 5 images/s — c'est le DESSIN de la ville
   (scène vide : 51–57 contre 53–57) ; sur l'iPad, **relire la cadence à 70–80
-  b/s dans Paris avec `?diag=1` avant de monter `ALLURES`**. Reste : pourquoi
-  Londres plafonne à 70 (une sonde qui sépare les cas : morceaux d'eau, ordre
-  de la file, morceaux jamais demandés) ; et
-  une piste NON appliquée : à l'arrêt, la recharge forcée charge le disque de
-  Paris en 4–5 s au lieu de 18 s au banc (témoin de `monte.js`) — après une
-  téléportation, c'est le chargement que l'enfant attend. Non activée : la
-  v269 rappelle qu'un débit de saturation n'est pas un confort ; à mesurer
-  sur la tablette (`?recharge=arrivee&diag=1`, se téléporter à Paris). Les trois non-résultats de la file (borner la pose, file en
+  b/s dans Paris avec `?diag=1` avant de monter `ALLURES`**. ~~Reste : pourquoi
+  Londres plafonne à 70~~ — **mesuré en v365** (`sonde-londres.cjs`) : ni
+  l'eau (3 % des morceaux), ni la file (les manquants « absents » sont au bord
+  du disque, la file refaite un morceau plus tôt), ni le worker en moyenne —
+  le CENTRE de Londres, pile au milieu du trajet, porte 64 % de faces de plus
+  que celui de Paris et une génération 70 % plus chère. `solLondres` mémoïsé
+  (2,8 → 2,1 ms) ; au banc 145–151 contre 137–152 : le plafond ville reste à
+  70. Le reste est la géométrie de la ville (faces), pas un défaut ;
+  ~~la recharge forcée après une téléportation~~ — **armée en v365**, dans
+  une fenêtre de dix secondes après un saut, hors rendu logiciel (scène vide :
+  57 images/s et 4,1–4,4 s des deux côtés). À relire sur la tablette :
+  `?recharge=arrivee&diag=1` contre `?recharge=image&diag=1`, se téléporter à
+  Paris, pire image et cadence pendant les dix premières secondes. Les trois non-résultats de la file (borner la pose, file en
   temps, deux mailleurs) et la file de seize (v269) restent écartés. Sur
   l'iPad, deux fois moins de calcul par morceau est un fait, mais le plafond
   ne se relève que sur une mesure `?diag=1` en roulant ; (4) un lot déjà parti au worker ne
-  s'annule pas quand on le dépasse — huit morceaux au plus, onze blocs de
-  route à 60 b/s : non mesuré comme nuisible, laissé.
+  s'annule pas quand on le dépasse — **mesuré en v365** : 0 à 6 morceaux sur
+  400 à 700 arrivent derrière l'enfant à 80 b/s, zéro refusé, moins de 1 % :
+  laissé.
 
 - [ ] **AU PORTAIL DE LA v360 (la recharge de la file), LES AUTRES ROUGES SONT
   DÉCLARÉS, rejoués SEULS des deux côtés.** `monte.js` « l'écran ne se fige pas
   en arrivant sur une ville » : branche 1 367 ms · 21,7 %, `origin/main` 2 350 ms
-  · 20,5 % ; « se téléporter ne compile plus de programmes » : branche rouge
+  · 20,5 % — **démonté en v365** (`sonde-arrivee-ville.cjs`) : c'est le dessin
+  SwiftShader, le témoin rend désormais une scène vide (vérifié rouge en
+  désarmant la v235) ; reste à relire le vol vers Paris sur la tablette
+  (`?diag=1`, pire image) ; « se téléporter ne compile plus de programmes » : branche rouge
   (chauffe de New York expirée, 75/321), `origin/main` vert ce passage — rouge
   à 68/320 et 55/321 aux portails précédents, témoin AVANT celui de la v360 et
   sur une autre page ; « 🛬 descend train sorti… freine jusqu'à l'arrêt » rouge
@@ -284,6 +293,29 @@
   rouge au portail, vert seul). `carte.js` : la flèche du GPS, rouge seule sur
   la branche, verte sur `origin/main` — l'intermittence déjà déclarée, dans un
   module (`gps.js`) que la v360 ne touche pas.
+
+- [ ] **AU PORTAIL DE LA v365 (l'arrivée après la carte), QUATRE SUITES ROUGES,
+  rejouées SEULES des deux côtés** (branche rebasée sur la v364, `origin/main`
+  f7f34d3). Aucune n'est causée par la livraison, dont tout ce qui touche la
+  file est inerte en rendu logiciel. `maj.js` : le loader et « corps,
+  programmes et fond de carte » (puis « ne floute rien », qui en dépend),
+  rouges à l'identique des deux côtés. `manhattan.js` : la façade
+  (9 203 → 42 919) et le taxi tactile (« 🐴 Monter », bouton jamais visible),
+  identiques des deux côtés. `carte.js` « et la faire glisser non plus
+  (bridé ×4) » : 411 et 451 ms sur la branche, 415 au portail précédent et 369
+  sur `origin/main` — l'intermittence déjà déclarée, autour de sa barre (400).
+  `monte.js` « se téléporter ne compile plus de programmes » : chauffe de New
+  York expirée des deux côtés (43 et 53/321 branche, 55/321 `origin/main`).
+  Deux témoins réparés au passage, parce que leur barre tombait SUR la
+  mesure : « voler une demi-minute ne remplit pas la mémoire » (parcours
+  490 · 494 branche, 528 `origin/main`, garde 500 → 250, rejoué 700) et
+  « rendue dans une scène vide, la recharge garde la cadence » (une paire,
+  0,726 branche contre 0,753 `origin/main` pour 0,75, recharge FORCÉE des deux
+  côtés → deux paires ABBA, rejoué 0,79). Et `plafond.js` « la surface
+  coûte » : rouge au premier portail (10,8 contre 2,5), vert six fois de suite
+  ensuite des deux côtés (écarts 1,0 à 2,2 ms) — `solLondres` n'est jamais
+  appelé pour ce morceau de campagne ; l'écart se prend désormais par paire
+  alternée (désarmé de 6 ms : rouge, 7,2).
 
 - [ ] **LES DÉGÂTS (v343) : CE QUI RESTE, DÉCLARÉ.**
   - ~~Cinquante-quatre appels de dessin pendant un feu~~ — **fait en v348** :

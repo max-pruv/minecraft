@@ -4041,10 +4041,69 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       verifier('à quatre-vingts blocs par seconde dans Paris, le worker ne reste pas à sec entre deux images',
         n1.parcouru > 300 && a1.parcouru > 300 && rapport >= 1.5 && enVol <= 4,
         `débit × ${rapport} (barre 1,5) · en vol au plus ${enVol} (barre 4) · à l'arrivée : ${dit(n1)} | ${dit(n2)} · à l'image : ${dit(a1)} | ${dit(a2)}`);
-      const vn = await roulerRecharge('arrivee', true), va = await roulerRecharge('image', true);
+      // EN ORDRE ALTERNÉ (v365) : une seule paire rendait 0,753 sur
+      // `origin/main` et 0,726 sur la branche — un pile ou face sur la barre,
+      // avec la recharge FORCÉE des deux côtés (aucune règle de la livraison
+      // n'y est lue). Deux paires, ABBA, et l'on compare les moyennes.
+      const vn1 = await roulerRecharge('arrivee', true), va1 = await roulerRecharge('image', true);
+      const va2 = await roulerRecharge('image', true), vn2 = await roulerRecharge('arrivee', true);
+      const cn = (vn1.cadence + vn2.cadence) / 2, ca = (va1.cadence + va2.cadence) / 2;
       verifier('rendue dans une scène vide, la recharge à l\'arrivée garde la cadence de l\'ancienne',
-        vn.parcouru > 300 && va.parcouru > 300 && vn.cadence >= 0.75 * va.cadence,
-        `à l'arrivée ${dit(vn)} · à l'image ${dit(va)} (barre : trois quarts de la cadence)`);
+        [vn1, vn2, va1, va2].every((r) => r.parcouru > 300) && cn >= 0.75 * ca,
+        `rapport ${(cn / (ca || 1)).toFixed(2)} (barre 0,75, moyennes ABBA) · à l'arrivée ${dit(vn1)} | ${dit(vn2)} · à l'image ${dit(va1)} | ${dit(va2)}`);
+    }
+
+    // APRÈS UNE TÉLÉPORTATION, LA FILE SE RECHARGE À L'ARRIVÉE LE TEMPS DE
+    // REMPLIR LE DISQUE, PUIS SE REND (v365).
+    //
+    // Sondé (sonde-teleport-recharge.cjs, deux tours alternés, Paris) : à la
+    // recharge par image, 291 à 304 morceaux sur 625 en vingt secondes ; à
+    // l'arrivée, 90 % en 5,5 à 6,4 s ; dans une scène VIDE, les deux modes
+    // chargent en 4,1 à 4,4 s à 57 images par seconde — le chargement ne prend
+    // rien aux images. Le banc rendant en logiciel, la recharge y reste coupée
+    // (v360) : le témoin lit donc la RÈGLE (`rechargeRegle`), garde du rendu
+    // logiciel mise à part. Trois cas : un saut l'arme, elle se rend quand la
+    // file est vide, et un pas d'un morceau ne l'arme pas. Sur l'ancien code la
+    // règle n'existe pas : rouge, proprement.
+    {
+      await souffler();
+      const r = await ciel.evaluate(async () => {
+        const g = window.__game;
+        const lire = () => g.rechargeRegle;
+        if (!lire()) return { regle: false };
+        const { positionDe } = await import('./src/mondes.js');
+        const patienter = (ms) => new Promise((fin) => {
+          const t0 = performance.now();
+          const tic = () => (performance.now() - t0 < ms ? requestAnimationFrame(tic) : fin());
+          requestAnimationFrame(tic);
+        });
+        const p = g.player;
+        p.flying = true;
+        const R = g.reglageApplique.rr;
+        // le pas d'un morceau d'abord, depuis une position installée
+        const x0 = p.pos.x, z0 = p.pos.z;
+        await patienter(300);
+        p.pos.set(x0 + 16, p.pos.y, z0); p.vel.set(0, 0, 0);
+        await patienter(400);
+        const apresUnPas = lire().arrivee;
+        // le saut : Rome, à plusieurs milliers de blocs
+        const P = positionDe('rome');
+        const y = g.world.terrainHeight(P.x, P.z) + 3;
+        const poser = () => { p.pos.set(P.x + 0.5, y, P.z + 0.5); p.vel.set(0, 0, 0); };
+        poser();
+        await patienter(400);
+        const apresLeSaut = lire().arrivee, fileApres = g.fileDeMorceaux.length;
+        const t0 = performance.now();
+        while (performance.now() - t0 < 15000 && lire().arrivee) { poser(); await patienter(250); }
+        const rendueEn = Math.round(performance.now() - t0);
+        const apresLaFenetre = lire().arrivee;
+        p.flying = false;
+        return { regle: true, R, apresUnPas, apresLeSaut, fileApres, rendueEn, apresLaFenetre };
+      });
+      verifier('après une téléportation, la file se recharge à l\'arrivée le temps de remplir le disque, puis se rend',
+        r.regle && r.apresUnPas === false && r.apresLeSaut === true && r.apresLaFenetre === false && r.rendueEn <= 11000,
+        r.regle ? `un pas : ${r.apresUnPas} · le saut : ${r.apresLeSaut} (${r.fileApres} morceaux en file) · rendue en ${r.rendueEn} ms : ${r.apresLaFenetre}`
+          : 'pas de règle de recharge à l\'arrivée après un saut (`__game.rechargeRegle` absent)');
     }
 
     // L'ÉCRAN NE SE FIGE PLUS EN ARRIVANT SUR UNE VILLE (v235).
@@ -4082,20 +4141,26 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       g.player.vitesseAvion = def.pilote.max;
       g.player.avionEnVol = true; g.player.avionEtat = 'vol';
       g.player.altitudeDecollage = -9999;
+      // la scène VIDE (v365) : voir plus bas, « ce que le banc dessine »
+      const rendre = g.renderer.render, rendreLie = rendre.bind(g.renderer), vide = new g.scene.constructor();
+      g.renderer.render = (s, c) => rendreLie(s === g.scene ? vide : s, c);
       await new Promise((f) => setTimeout(f, 3000));
       const durees = [];
+      const x0 = g.player.pos.x;
       let prec = performance.now(), actif = true;
       const tic = (t) => { durees.push(t - prec); prec = t; if (actif) requestAnimationFrame(tic); };
       requestAnimationFrame(tic);
       await new Promise((f) => setTimeout(f, 18000));
       actif = false;
+      g.renderer.render = rendre;
+      const parcouru = Math.round(g.player.pos.x - x0);
       g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined;
       g.player.vitesseAvion = undefined; g.player.flying = false;
       const total = durees.reduce((a, c) => a + c, 0);
       const partAuDela = (s) => +(durees.filter((d) => d > s)
         .reduce((a, c) => a + c, 0) / total * 100).toFixed(1);
       return {
-        images: durees.length,
+        images: durees.length, parcouru,
         pireImage: Math.round(Math.max(...durees)),
         partAuDela300: partAuDela(300),
         cadence: +(durees.length / (total / 1000)).toFixed(1),
@@ -4117,10 +4182,29 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // verdict, lui, tombait pour sa propre raison. Trente, la valeur que
     // `programmes.images` utilise déjà pour dire la même chose (v246) : une
     // page morte rend zéro.
+    // CE QUE LE BANC DESSINE NE SE TRANSPOSE PAS, ET LE TÉMOIN NE LE MESURE
+    // PLUS (v365). Rouge des deux côtés depuis plusieurs portails (1 367 ms ·
+    // 21,7 % sur la branche de la v360, 2 350 ms · 20,5 % sur `origin/main`),
+    // il a été démonté par une sonde qui sépare, image par image, ce qui la
+    // remplit (sonde-arrivee-ville.cjs, deux tours, ce même vol) : dans les
+    // images de plus de 300 ms, 1 à 5 ms d'installation, ZÉRO programme
+    // compilé, 18 à 49 ms de JavaScript de rendu, pour des images de 1 267 à
+    // 1 550 ms ; et la même page dans une scène vide rend 83 à 100 ms au pire,
+    // zéro pour cent au-delà de 300. Le gel est SwiftShader qui dessine Paris
+    // (84 à 158 appels), au processeur — le paysage lointain, les ombres, la
+    // couche HD et le bâti lointain sont déjà coupés en rendu logiciel. Le
+    // témoin rend donc une scène VIDE pendant le vol, comme le témoin de
+    // cadence de la v360 : il garde ce que la v235 a corrigé — du JavaScript
+    // qui fige une image (`animerLesVilles`, 557 ms) — et tout ce qui vit sur le
+    // fil principal à l'arrivée (installation, naissances, programmes), pas le
+    // pilote graphique du banc. Vérifié capable de rougir : le remède de la
+    // v235 désarmé dans une copie (chaque convoi fabrique ses voitures à sa
+    // naissance), il rend 9,2 et 10,8 % du temps dans des images de plus de
+    // 300 ms (barre 5) ; armé, 0 % et 100 à 117 ms au pire.
     verifier('l\'écran ne se fige pas en arrivant sur une ville',
-      !secousses.err && secousses.images > 30
+      !secousses.err && secousses.images > 30 && secousses.parcouru > 500
         && secousses.pireImage <= 550 && secousses.partAuDela300 <= 5,
-      JSON.stringify(secousses));
+      `scène vide pendant le vol · ${JSON.stringify(secousses)}`);
 
     // VOLER NE REMPLIT PLUS LA MÉMOIRE DE LA TABLETTE (v236).
     //
@@ -4187,8 +4271,11 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // ses pixels — 1 782 blocs en v247, 1 127 en v248, 964 en v249, pour une
     // borne de 1 000 qui ne séparait plus « ça a volé » de « ça n'a pas
     // volé ». Cinq cents : un vol qui n'a pas eu lieu rend zéro.
+    // ET CINQ CENTS ÉTAIT REDEVENU LA MESURE (v365) : 490 et 494 sur la
+    // branche, 528 sur `origin/main` rejoué seul — la même borne posée à
+    // nouveau SUR la valeur, ce que la règle interdit. Deux cent cinquante.
     verifier('voler une demi-minute ne remplit pas la mémoire de la tablette',
-      !memoire.err && memoire.parcouru > 500 && memoire.moBlocs <= 100,
+      !memoire.err && memoire.parcouru > 250 && memoire.moBlocs <= 100,
       `barre 100 Mo · ${JSON.stringify(memoire)}`);
 
     // ET CE QU'UN ENFANT A POSÉ SURVIT À L'OUBLI DE SON MORCEAU.

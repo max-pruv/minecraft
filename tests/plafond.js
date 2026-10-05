@@ -2135,16 +2135,26 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     }
     // ce que la surface coûte au mailleur : médiane de neuf passages alternés
     const med = (a) => { const b = [...a].sort((p, q) => p - q); return b[b.length >> 1]; };
-    const avec = [], sans = [];
+    const avec = [], sans = [], ecarts = [];
     const cx = Math.floor(-110 / CHUNK), cz = Math.floor(-330 / CHUNK);
+    const passe = (sansSurface) => {
+      w.sansSolContinu = sansSurface; const t0 = performance.now(); buildChunkTampons(w, cx, cz);
+      w.sansSolContinu = false; return performance.now() - t0;
+    };
     for (let i = 0; i < 9; i++) {
-      let t0 = performance.now(); buildChunkTampons(w, cx, cz); avec.push(performance.now() - t0);
-      w.sansSolContinu = true; t0 = performance.now(); buildChunkTampons(w, cx, cz); sans.push(performance.now() - t0); w.sansSolContinu = false;
+      // ordre alterné, et l'ÉCART se prend paire par paire (v365) : la
+      // différence de deux médianes rougissait quand le portail chargeait la
+      // machine au milieu des neuf passages (10,8 contre 2,5, puis 15,5
+      // contre 11,0 — `sans` aussi monté), sur un code qui n'y touchait pas ;
+      // deux passages voisins subissent la même charge, l'écart l'annule
+      let a, s;
+      if (i % 2) { s = passe(true); a = passe(false); } else { a = passe(false); s = passe(true); }
+      avec.push(a); sans.push(s); ecarts.push(a - s);
     }
     // mesuré seul : +1,2 ms par morceau de campagne (4,9 contre 3,7) ; la
     // borne de garde vaut trois fois la mesure, parce qu'un portail charge
     verifier('la surface coûte au plus quelques millisecondes par morceau de campagne',
-      med(avec) - med(sans) < 4, `${med(avec).toFixed(1)} ms avec, ${med(sans).toFixed(1)} sans (médianes de neuf)`);
+      med(ecarts) < 4, `écart ${med(ecarts).toFixed(1)} ms (médiane de neuf paires alternées) — ${med(avec).toFixed(1)} ms avec, ${med(sans).toFixed(1)} sans`);
     // LE PAYSAGE LOINTAIN NE REFERME PAS LE DÉBLAI (v300). `horizon.js` lisait
     // le relief au-dessus de la route : une dalle de terre flottait sur la
     // tranchée tant que le morceau n'était pas maillé (captures du pont et de

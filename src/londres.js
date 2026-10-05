@@ -626,7 +626,7 @@ function platane(u, v) {
   return ((Math.round(u) * 5 + Math.round(v) * 3) % 31) === 0;
 }
 
-export function solLondres(x, z) {
+function solLondresCalcul(x, z) {
   const u = x - LONDRES.x, v = z - LONDRES.z;
   if (Math.hypot(u, v) > LONDRES.r) return null;
 
@@ -706,7 +706,7 @@ const DEBLAIS = [
   [51, -1, 5], [1, -32, 8], [7, -62, 7], [-10, -7, 3],
 ];
 
-export function lotLondresLibre(x, z) {
+function lotLondresLibreCalcul(x, z) {
   const u = x - LONDRES.x, v = z - LONDRES.z;
   if (Math.hypot(u, v) > LONDRES.r) return false;
   if (distanceTamise(u, v) < LARGEUR_TAMISE + 2.5) return false;
@@ -1189,3 +1189,33 @@ export function couleurCarteLondres(x, z) {
   if (t === TRAMES.city) return [148, 158, 170];       // les toits de verre et d'acier
   return [166, 118, 92];                                // la brique, vue du ciel
 }
+
+// UNE COLONNE SE DEMANDE UNE FOIS (v365). Le centre de Londres est le morceau
+// le plus cher que traverse une voiture rapide : sous node, 2,6 ms de
+// génération par morceau contre 1,3 à Paris — et `solLondres` y était appelé
+// quatre fois par colonne (1 090 appels par morceau : la colonne elle-même,
+// puis les quatre voisines que `batirColonneLondres` demande à
+// `lotLondresLibre`, puis les lampadaires et les arbres). Les deux ne
+// dépendent que de (x, z) — la ville d'avant d'une colonne se choisit dans
+// `world.js`, qui appelle alors `londres-v332.js` et non ce module — donc on
+// les garde : une table à correspondance directe de 8 192 cases, la colonne
+// écrite par-dessus l'ancienne, rien qui grossisse. Mesuré sous node sur les
+// 135 morceaux du centre : génération 2,6 → 1,9 ms. Et rien ne change d'un bloc :
+// l'empreinte des 490 morceaux de `plafond.js` est la même (v352).
+// Les constantes sont écrites en dur et les tables en `var` : `solLondres`
+// sert dès l'initialisation du module (les arrêts et cabines de la v339),
+// avant que ses `const` n'existent.
+function memoireDeColonnes() {
+  return { x: new Int32Array(8192).fill(0x7fffffff), z: new Int32Array(8192), v: new Array(8192) };
+}
+function lireOuCalculer(m, calcul, x, z) {
+  if ((x | 0) !== x || (z | 0) !== z) return calcul(x, z);
+  const i = (Math.imul(x, 73856093) ^ Math.imul(z, 19349663)) & 8191;
+  if (m.x[i] === x && m.z[i] === z) return m.v[i];
+  const r = calcul(x, z);
+  m.x[i] = x; m.z[i] = z; m.v[i] = r;
+  return r;
+}
+var memoSol, memoLot;
+export function solLondres(x, z) { return lireOuCalculer(memoSol ??= memoireDeColonnes(), solLondresCalcul, x, z); }
+export function lotLondresLibre(x, z) { return lireOuCalculer(memoLot ??= memoireDeColonnes(), lotLondresLibreCalcul, x, z); }
