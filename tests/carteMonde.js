@@ -4926,7 +4926,35 @@ const VRAIES_KM = [
         }
         ponts.push({ cle, tabliers: a.ponts.length, pas, sansSol, surLaTete, surEau, pireSpan, parLaRoute, cinq: CINQ.includes(cle) });
       }
-      return { eaux, sans, trame: trame.length, servies: par.size, ponts,
+      // LES ENCOCHES AU BOUT DES TABLIERS (v368). Le tronçon mouillé se mesure
+      // sur l'AXE ; une colonne du monde à côté de l'axe peut être de l'eau un
+      // demi-bloc avant le premier point mouillé, et rester sans tablier — à
+      // Berlin, sur l'axe même. On lit, sur TOUTES les villes à pont, les
+      // colonnes d'eau de la bande du tablier prolongée d'un demi-bloc à chaque
+      // bout, par les fonctions pures (le monde chargé n'a pas cinquante
+      // villes). Sur `origin/main` : 437 encoches dans quarante-neuf villes.
+      let encoches = 0, bandes = 0; const encEx = [];
+      if (anneauxDeVille && m.pontVillesMonde) for (const f of VILLES_MONDE) {
+        if (!f.trame) continue;
+        const a = anneauxDeVille(f); if (!a.ponts.length) continue;
+        const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
+        for (const q of a.ponts) {
+          const coins = [];
+          for (const le of [q.a0 - 0.5, q.a1 + 0.5]) for (const tr of [q.b - q.demi, q.b + q.demi]) {
+            const P = q.axe === 0 ? le : tr, Q = q.axe === 0 ? tr : le;
+            coins.push([f.ancre.x + P * co + Q * si, f.ancre.z - P * si + Q * co]);
+          }
+          const xs = coins.map((c) => c[0]), zs = coins.map((c) => c[1]);
+          for (let x = Math.floor(Math.min(...xs)); x <= Math.max(...xs); x++) for (let z = Math.floor(Math.min(...zs)); z <= Math.max(...zs); z++) {
+            const u = x - f.ancre.x, v = z - f.ancre.z, P = u * co - v * si, Q = u * si + v * co;
+            const le = q.axe === 0 ? P : Q, tr = q.axe === 0 ? Q : P;
+            if (le < q.a0 - 0.5 || le > q.a1 + 0.5 || Math.abs(tr - q.b) > q.demi) continue;
+            bandes++;
+            if (w.terrainHeight(x, z) < WATER_LEVEL && !m.pontVillesMonde(x, z)) { encoches++; if (encEx.length < 3) encEx.push([f.cle, x, z]); }
+          }
+        }
+      }
+      return { eaux, sans, trame: trame.length, servies: par.size, ponts, encoches, bandes, encEx,
         PONT_MAX: m.PONT_MAX || 0 };
     });
 
@@ -4965,14 +4993,13 @@ const VRAIES_KM = [
       fleuves.ponts.map((p) => `${p.cle} ${p.tabliers} tablier(s), ${p.surEau}/${p.pas}`
         + ` sur l'eau (${(100 * p.surEau / p.pas).toFixed(0)} %)`).join(' · '));
 
-    // DEUX DÉFAUTS DE VILLE, VUS PAR LE TÉMOIN ÉLARGI ET DÉCLARÉS (v362) — ni
-    // l'un ni l'autre n'est d'une route, et `origin/main` rend les mêmes :
-    // Berlin a UNE colonne d'eau sans tablier au bout d'un pont (le bout de
-    // l'axe arrondi tombe hors de `pontDeVille`), et à Agra le Taj Mahal et le
-    // Fort sont bâtis SUR deux tabliers (neuf pas bouchés) — un conflit de
-    // plan entre les anneaux et les monuments. Dettes dans TASKS.md ; une
-    // dette qui ne mesure plus rien rougit.
-    const DETTE_PONTS = { berlin: { sansSol: 1, surLaTete: 0 }, agra: { sansSol: 0, surLaTete: 9 } };
+    // UN DÉFAUT DE VILLE, VU PAR LE TÉMOIN ÉLARGI ET DÉCLARÉ (v362) — il
+    // n'est pas d'une route, et `origin/main` rend le même : à Agra le Taj
+    // Mahal et le Fort sont bâtis SUR deux tabliers (neuf pas bouchés) — un
+    // conflit de plan entre les anneaux et les monuments. Dette dans
+    // TASKS.md ; une dette qui ne mesure plus rien rougit. (Berlin, la colonne
+    // d'eau au bout d'un pont, est réparée en v368 : témoin des encoches.)
+    const DETTE_PONTS = { agra: { sansSol: 0, surLaTete: 9 } };
     verifier('et on le traverse à pied d\'une rive à l\'autre',
       fleuves.ponts.filter((p) => p.cinq).length === 5
       && fleuves.ponts.every((p) => (DETTE_PONTS[p.cle]
@@ -4982,6 +5009,10 @@ const VRAIES_KM = [
       fleuves.ponts.map((p) => `${p.cle} ${p.pas} pas, ${p.sansSol} sans sol,`
         + ` ${p.surLaTete} bouché(s), plus long ${p.pireSpan.toFixed(0)} b`).join(' · ')
       + ` · borne ${fleuves.PONT_MAX} · dettes ${Object.keys(DETTE_PONTS).join(', ')}`);
+
+    verifier('au bout de chaque tablier, pas une colonne d\'eau sans pont (toutes les villes à pont)',
+      fleuves.bandes > 10000 && fleuves.encoches === 0,
+      `${fleuves.encoches} encoche(s) sur ${fleuves.bandes} colonnes de tablier ${JSON.stringify(fleuves.encEx)}`);
 
     verifier('aucune route ne creuse le tablier d\'un pont de ville (toutes les villes qu\'une route touche)',
       fleuves.ponts.length > 5 && fleuves.ponts.every((p) => p.parLaRoute === 0),

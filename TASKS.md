@@ -93,7 +93,8 @@
   niveau de la rue déblaierait douze blocs), ouest le Potomac dans la boîte ;
   la base d'Andrews (102, 281) ferme le sud-est.
 - [ ] **DEUX PONTS DE VILLE À REPRENDRE, VUS PAR LE TÉMOIN ÉLARGI (v362).**
-  Berlin : UNE colonne d'eau sans tablier au bout d'un pont (4186, −2011) —
+  (Berlin FAIT en v368 : le tablier couvre l'eau du demi-bloc au-delà de ses
+  bouts — 437 encoches dans 49 villes, zéro après ; reste Agra.) Berlin : UNE colonne d'eau sans tablier au bout d'un pont (4186, −2011) —
   le bout de l'axe arrondi tombe hors de `pontDeVille`. Agra : le Taj Mahal
   et le Fort d'Agra sont bâtis SUR deux tabliers d'anneaux (neuf pas bouchés,
   (29201, 13029) et (29290..29297, 13081)) — un conflit de plan entre les

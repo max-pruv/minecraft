@@ -1949,6 +1949,14 @@ L'I-95 Sud New York–Washington. Quatre règles.
   (« un témoin écrit pour un cas se réécrit le jour où un cas neuf sort de
   son hypothèse »).
 
+**Et un tronçon mesuré sur l'axe ne couvre pas les colonnes d'à côté (v368).**
+Le tablier d'un pont de ville engendrée s'arrêtait là où l'AXE cessait d'être
+mouillé ; une colonne voisine pouvait être de l'eau un demi-bloc plus loin, et
+restait sans pont — une seule vue par le témoin des ponts (Berlin, sur l'axe),
+437 mesurées sur la bande entière dans quarante-neuf villes. Une dette vue
+dans une ville se mesure dans toutes (v319) : le témoin des encoches lit la
+bande de chaque tablier de chaque ville, par les fonctions pures.
+
 ## La porte de Manhattan (v362) — une ville qui n'est pas un disque déclare sa porte
 
 L'I-95 New York–Boston. Quatre règles.

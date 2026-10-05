@@ -316,7 +316,11 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // colonnes de route entrent dans ses morceaux (886 → 1 515) — voulu. Sans
 // Washington, les 441 autres morceaux et toutes les routes rendent ad9949da…
 // sur `origin/main` (v366, f70060cd… avec elle) ET sur la branche.
-const EMPREINTE_MORCEAUX_V357 = '7d235907f961e6536d4badf7dd15491ee5be529fa7967c4399a3eb6edd4a1e71';
+// v368 : les tabliers des villes engendrées couvrent les colonnes d'eau du
+// demi-bloc au-delà de leurs bouts (437 encoches dans 49 villes, dont des lieux
+// relevés ici) — voulu. La preuve : la même branche, la règle désarmée (les
+// bornes `a0`/`a1` d'avant), rend 7d235907…, la constante d'`origin/main`.
+const EMPREINTE_MORCEAUX_V357 = '3037c56f7b428bf47aaf8fde87ed2370c8e97f9510d0ca313f0d13e26232546e';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };

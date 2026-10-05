@@ -20,6 +20,27 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v368 — Plus de trou au bout des ponts
+
+**Pourquoi.** Au bout d'un pont de Berlin, une colonne d'eau sans tablier : la
+voiture y tombait (dette déclarée en v362). Mesuré sur toutes les villes à
+pont, ce n'était pas un cas : 437 colonnes d'eau sans tablier aux bouts des
+ponts de quarante-neuf villes. Le tronçon mouillé se mesure sur l'axe du pont,
+et une colonne du monde voisine de l'axe peut être de l'eau un demi-bloc avant
+le premier point mouillé.
+
+**Ce que ça change.** Le tablier se prolonge d'un demi-bloc à chaque bout, et
+seulement sur l'eau : la terre ferme ne change pas d'un bloc. Les bouts des
+ponts n'ont plus d'encoche où la voiture tombe.
+
+**Ce qui le prouve.** Un témoin neuf dans `carteMonde.js` lit toutes les villes
+à pont : 437 encoches sur `origin/main`, zéro ici, sur 28 436 colonnes de
+tablier. La dette de Berlin sort de la liste des ponts déclarés (Agra y
+reste). L'empreinte des 490 morceaux change, et la même branche, la règle
+désarmée, rend celle d'`origin/main` au bit près.
+
+---
+
 ## v367 — New York–Washington, et une ville qu'on n'entre que par le sud
 
 **Pourquoi.** New York et Washington, les deux grandes villes de la côte est,
