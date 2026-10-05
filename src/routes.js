@@ -334,11 +334,31 @@ export const ROUTES = [
   // axe de trame (88°, avenue de 36 blocs) : le pays y est à 39–42.
   // Toronto s'entre par −18°, son axe est-nord-est (avenue de 94 blocs).
   // 3 000 tracés, refus 2 971 coude · 7 déblai au milieu · 5 remblai ; seize
-  // admissibles, deux sans pont. Celui-ci : 2 728 blocs, aucun pont, déblai
-  // 6,6, remblai 1,0, pente 0,060, coudes ≤ 24°, zéro colonne sur un rail,
-  // aucune colonne d'emprise prise à une autre route (l'A20 sort de Montréal
-  // par l'est, à 88° de là).
-  { nom: '401', villes: ['toronto', 'montreal'], via: [[-22014, 3244], [-21986, 3234], [-21971, 3223], [-21955, 3199], [-21941, 3165], [-21938, 3142], [-21941, 3120], [-21963, 3071], [-21963, 3059], [-21958, 3047], [-21944, 3033], [-21911, 3014], [-21837, 2983], [-21801, 2977], [-21756, 2978], [-21728, 2974], [-21698, 2963], [-21647, 2937], [-21610, 2926], [-21522, 2920], [-21404, 2890], [-21338, 2890], [-21316, 2887], [-21287, 2876], [-21241, 2851], [-21209, 2837], [-21144, 2824], [-21048, 2792], [-20948, 2768], [-20880, 2740], [-20858, 2734], [-20821, 2732], [-20781, 2737], [-20741, 2748], [-20683, 2771], [-20616, 2778], [-20589, 2774], [-20565, 2765], [-20547, 2751], [-20525, 2721], [-20512, 2709], [-20488, 2697], [-20459, 2690], [-20400, 2690], [-20349, 2695], [-20226, 2730], [-20199, 2729], [-20169, 2719], [-20137, 2700], [-20112, 2677], [-20047, 2602], [-19986, 2545], [-19968, 2519], [-19955, 2472], [-19940, 2330], [-19939, 2268]] },
+  // admissibles, deux sans pont. Puis on RETIRE un à un les points dont le
+  // tracé se passe sans rien perdre (même sonde, mêmes barres) : 56 → 26.
+  // Celui-ci : 2 711 blocs, aucun pont, déblai 6,6, remblai 1,0, pente
+  // 0,060, coudes ≤ 24°, zéro colonne sur un rail, aucune colonne d'emprise
+  // prise à une autre route (l'A20 sort de Montréal par l'est, à 88° de là).
+  { nom: '401', villes: ['toronto', 'montreal'], via: [[-22014, 3244], [-21986, 3234], [-21971, 3223], [-21955, 3199], [-21941, 3165], [-21941, 3120], [-21963, 3071], [-21963, 3059], [-21958, 3047], [-21944, 3033], [-21801, 2977], [-20821, 2732], [-20781, 2737], [-20616, 2778], [-20589, 2774], [-20547, 2751], [-20512, 2709], [-20488, 2697], [-20400, 2690], [-20226, 2730], [-20199, 2729], [-20169, 2719], [-20112, 2677], [-19986, 2545], [-19955, 2472], [-19939, 2268]] },
+  // LA HANSALINIE (v352), COLOGNE–HAMBOURG : l'A1 allemande, rebaptisée de
+  // son surnom parce que « A1 » est déjà Paris–Lille. Les deux villes sont
+  // sous leur pays du côté qui regarde l'autre, et la v337 avait buté sur
+  // 20 000 chemins lissés (déblai 10,1 au mieux pour neuf). Trois portes
+  // étaient fermées : l'aérodrome de Francfort à 176 blocs à l'est de
+  // Cologne, l'A3 au sud, et l'ICE d'Amsterdam qui sort de Cologne vers
+  // −130° ; et à Hambourg, l'A24 à l'est (−8°) et l'Elbe, qui longe le sud du
+  // disque entre 38 et 70 blocs du centre — toute entrée par le sud
+  // franchissait le fleuve dans le raccord. La sonde de la 401 (couloir le
+  // plus bas avec son cap, rails et autres routes INTERDITS dans la grille) a
+  // donc pris Cologne par son axe nord-nord-ouest (−108°, entre l'ICE et
+  // l'aérodrome), filé au nord-est par les vallons, et CONTOURNÉ Hambourg par
+  // l'ouest et le nord pour y entrer par son axe nord (−106°, avenue de 35
+  // blocs). 1 500 tracés, refus 339 remblai · 257 entrée · 202 coude · 191
+  // déblai au milieu · 48 ponts proches ; 463 admissibles, puis les points
+  // superflus retirés un à un par la même sonde (76 → 39). Celui-ci : 2 544 blocs,
+  // aucun pont, déblai 5,0, remblai 1,2, pente 0,060, coudes ≤ 22°, zéro
+  // colonne sur un rail, aucune prise à une autre route.
+  { nom: 'Hansalinie', villes: ['cologne', 'hambourg'], via: [[1535, -1105], [1521, -1157], [1521, -1173], [1580, -1327], [1601, -1645], [1609, -1675], [1657, -1752], [1670, -1762], [1707, -1776], [1804, -1795], [1917, -1852], [2019, -1865], [2044, -1872], [2061, -1883], [2104, -1943], [2119, -2000], [2118, -2023], [2112, -2045], [2081, -2096], [2028, -2153], [2016, -2177], [2012, -2198], [2020, -2263], [2036, -2297], [2058, -2329], [2085, -2359], [2314, -2581], [2328, -2587], [2370, -2591], [2385, -2594], [2404, -2601], [2567, -2746], [2586, -2753], [2604, -2754], [2645, -2745], [2677, -2731], [2705, -2704], [2711, -2691], [2721, -2659]] },
 ];
 
 // --- la section -----------------------------------------------------------------

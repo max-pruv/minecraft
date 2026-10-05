@@ -593,6 +593,7 @@ const VRAIES_KM = [
       out.convoiA7 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A7') || null;
       out.convoiAP2 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'AP-2') || null;
       out.convoi401 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === '401') || null;
+      out.convoiHansa = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'Hansalinie') || null;
       // UNE ROUTE QUI CONTOURNE UNE VILLE (v352) n'en approche le disque que
       // par son tronçon radial : on compte, au-delà des quatre-vingts premiers
       // et derniers blocs, les points de l'axe à moins de r + 10 de SES villes.
@@ -903,6 +904,17 @@ const VRAIES_KM = [
       && ['toronto', 'montreal'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === '401' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7)),
       JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoi401 ? { nom: a1.convoi401.nom, voitures: (a1.convoi401.modeles || []).length } : 'aucun convoi 401',
         surRail: a1.surRail && a1.surRail['401'], frole: a1.frole && a1.frole['401'], entrees: (a1.entreesEngendrees || []).filter((e) => e.route === '401') }));
+
+    // LA HANSALINIE (v352) : Cologne–Hambourg. Cologne sort par son axe
+    // nord-nord-ouest, entre l'ICE et l'aérodrome ; Hambourg est contournée par
+    // l'ouest et le nord, parce que l'Elbe ferme son sud et l'A24 son est.
+    verifier('la Hansalinie relie Cologne à Hambourg en contournant Hambourg par le nord, sans toucher l\'ICE, et des voitures entrent dans les deux villes par une rue propre',
+      !a1.absent && a1.segments >= 21 && !!a1.convoiHansa && a1.convoiHansa.routier && (a1.convoiHansa.modeles || []).length >= 10
+      && !!a1.surRail && !!a1.surRail.Hansalinie && a1.surRail.Hansalinie[0] > 100 && a1.surRail.Hansalinie[1] === 0
+      && !!a1.frole && a1.frole.Hansalinie === 0
+      && ['cologne', 'hambourg'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'Hansalinie' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7)),
+      JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiHansa ? { nom: a1.convoiHansa.nom, voitures: (a1.convoiHansa.modeles || []).length } : 'aucun convoi Hansalinie',
+        surRail: a1.surRail && a1.surRail.Hansalinie, frole: a1.frole && a1.frole.Hansalinie, entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'Hansalinie') }));
 
     // AUCUNE ROUTE NE PREND L'EMPRISE D'UNE AUTRE (v352) : Montréal a deux
     // routes, et chaque colonne d'emprise doit appartenir au segment qu'on
