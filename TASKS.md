@@ -126,6 +126,14 @@
     v324 (un modèle de flotte tiré à portée pour la première fois). Preuve
     structurelle : la v352 ne clone un matériau qu'APRÈS un choc, et aucun
     de ces témoins ne percute rien.
+  - Rebasée sur la v351, portail rejoué : mêmes rouges de `manhattan.js` et
+    `monte.js`, plus `maj.js` « le loader ne s'efface qu'une fois les corps
+    et les programmes prêts » (programmes 1/27). Rejouée SEULE : branche
+    39 verts, un rouge — « le loader dit combien de fichiers sont rangés » ;
+    `origin/main` v351 41 verts. Deux intermittences déjà démontées des deux
+    côtés (tableaux plus bas : 2 rouges sur 5 sur la branche de la v333, 1
+    sur 4 sur `origin/main`), et la livraison ne touche ni `index.html` ni le
+    loader ni l'installation.
 
 - [ ] **AU PORTAIL DE LA v355 (la 401 et la Hansalinie), UN ROUGE, DÉJÀ
   DÉCLARÉ** — `monte.js` « l'écran ne se fige pas en arrivant sur une ville »
