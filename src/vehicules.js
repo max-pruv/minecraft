@@ -418,7 +418,9 @@ export const FLOTTE = [
   { fichier: 'bmw-m8-competition.glb', classe: 'gt', nom: 'BMW M8 Competition' },
   { fichier: 'bugatti-bolide.glb', classe: 'hypercar', nom: 'Bugatti Bolide' },
   { fichier: 'bugatti-chiron.glb', classe: 'hypercar', nom: 'Bugatti Chiron' },
-  { fichier: 'bugatti-chiron-stealth.glb', classe: 'hypercar', nom: 'Bugatti Chiron Stealth', habitacle: false },
+  // `portiere: false` (v366) : sans habitacle, la portière ouverte ne montre que
+  // du noir ; un modèle qui casse vaut moins qu'un modèle qui s'en passe.
+  { fichier: 'bugatti-chiron-stealth.glb', classe: 'hypercar', nom: 'Bugatti Chiron Stealth', habitacle: false, portiere: false },
   { fichier: 'bugatti-veyron.glb', classe: 'hypercar', nom: 'Bugatti Veyron 16.4' },
   { fichier: 'bugatti-w16-mistral.glb', classe: 'hypercar', nom: 'Bugatti W16 Mistral' },
   { fichier: 'ferrari-812-competizione.glb', classe: 'sportive', nom: 'Ferrari 812 Competizione' },
@@ -2016,7 +2018,7 @@ export function createVehicules({ scene, player }) {
     return false;
   }
 
-  // LA VOITURE QU'ON TOUCHE, PAS SEULEMENT LE FAIT DE LA TOUCHER (v365,
+  // LA VOITURE QU'ON TOUCHE, PAS SEULEMENT LE FAIT DE LA TOUCHER (v370,
   // conduite-physique). `obstacleDevant` dit « oui » ; le choc a besoin de
   // savoir CONTRE QUOI : sa boîte (centre, axe, demi-longueur, demi-largeur,
   // relues sur le rectangle de la collecte — une rame de train n'a pas les

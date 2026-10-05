@@ -1,4 +1,4 @@
-// Sonde (v365) : la voiture de l'enfant contre une VRAIE voiture de la rue, par
+// Sonde (v370) : la voiture de l'enfant contre une VRAIE voiture de la rue, par
 // le vrai crochet — positions relevées image par image, pour démonter le témoin
 // de monte.js s'il rougit.     node tests/sonde-vraie-rue.cjs
 const { Banc } = require('./banc.js');

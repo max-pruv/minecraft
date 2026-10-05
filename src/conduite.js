@@ -297,7 +297,7 @@ export function pointDImpact(x, z, cap, a, b, dx, dz) {
   return { x: x + vx * b * s, z: z + vz * b * s };
 }
 
-// ━━ PALIER 2 (v365) : LA NORMALE DE CE QU'ON TOUCHE ━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ━━ PALIER 2 (v370) : LA NORMALE DE CE QU'ON TOUCHE ━━━━━━━━━━━━━━━━━━━━━━━━━━
 //
 // Le palier 1 prenait deux normales commodes et fausses : contre une voiture
 // de la rue, celle du MOUVEMENT (toujours un choc de face, même en frôlant
@@ -403,7 +403,7 @@ export function normaleDeMur(cases, cx, cz) {
   return s >= 0 ? { nx: nx / l, nz: nz / l } : { nx: -nx / l, nz: -nz / l };
 }
 
-// ━━ CE QUE MAX RELÈVE SUR LA TABLETTE (v365, `?diag=1`) ━━━━━━━━━━━━━━━━━━━━━━━
+// ━━ CE QUE MAX RELÈVE SUR LA TABLETTE (v370, `?diag=1`) ━━━━━━━━━━━━━━━━━━━━━━━
 // Deux choses du palier 1 ne se mesurent pas au banc : le PLAFOND (le banc
 // rend une image par seconde dans Paris, le fil principal de l'iPad installe
 // les morceaux à SA cadence) et la ROUE LIBRE (quelques secondes, voulues —

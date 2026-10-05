@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v365 — La voiture glisse le long des façades, et frôle les autres voitures
+## v370 — La voiture glisse le long des façades, et frôle les autres voitures
 
 **Pourquoi.** Le palier 1 de la conduite (v358) prenait deux normales
 commodes et fausses. Contre une voiture de la rue, celle du MOUVEMENT : frôler
@@ -62,6 +62,194 @@ un rebond), l'arrière percuté (le crochet rend sa boîte, choc franc sur le
 nez). Un à deux tablettes dans `reseau.js` : le braquage et la dérive de
 Marlon arrivent chez Alice. Deux sondes : `sonde-mur-oblique.cjs` (les seize
 façades de Paris) et `sonde-vraie-rue.cjs`.
+
+---
+
+## v369 — Plus une coupole de gabarit dans le monde
+
+**Pourquoi.** La v365 avait donné leur édifice aux coupoles et aux palais de
+gabarit qui montaient en tour, et déclaré ceux qui restaient plus bas : Walt
+Disney Hall et le Rogers Centre étaient dessinés en coupole sur tambour, comme
+le Panthéon de Rome (sans son portique), le dôme du Rocher (qui est un
+octogone) et le Bean de Chicago (un haricot d'acier). L'ancien hôtel de ville de
+Toronto était une colonne d'un bloc, et Navy Pier un palais.
+
+**Ce que ça change.** Disney Hall a ses voiles d'acier qui s'évasent ; le
+Rogers Centre est un stade rond à toit plat, à sa hauteur (un stade ne
+s'étire pas : étiré au ciel de Toronto, il montait deux fois plus haut que
+large) ; l'ancien hôtel de ville a son corps de grès et sa tour de l'horloge,
+qui monte enfin au-dessus du stade ; le Panthéon de Rome a sa rotonde, son
+oculus et son portique ; le dôme du Rocher son octogone de faïence bleue et sa
+coupole d'or ; le Bean son haricot sur sa place ; Navy Pier sa jetée vers le
+lac et sa grande roue.
+
+**Ce qui le prouve.** Un témoin neuf de `plafond.js` — « aucune coupole de
+gabarit ne reste dans le monde, quelle que soit sa hauteur » — rouge sur la
+v365 (cinq), vert ici ; il compte aussi les huit palais de gabarit qui restent,
+déclarés. Les témoins de hauteur, d'ordre du vrai ciel, des perches et des
+gabarits en tour restent verts : le Panthéon, étiré à ses 43 m, passait
+au-dessus du Colisée, il garde donc dix blocs ; Toronto garde son `k` de 0,3,
+mesuré (à 1, l'hôtel de ville frôlait la CN Tower). L'empreinte des 490
+morceaux change (Rome est un des neuf lieux) : bâtisseurs neufs désarmés, la
+branche rend celle d'`origin/main` au bit près.
+
+---
+
+## v368 — Les rues de Lille à la règle du kit
+
+**Pourquoi.** La quatrième des cinq villes bâties à la main restées sur leurs
+largeurs relevées à la main (dette v271). Une rue du Vieux-Lille faisait 1,2
+bloc de chaussée, une rue du centre 2, les boulevards 2,9 à 4,8 — une voiture
+de 2,26 blocs y frôlait le trottoir.
+
+**Ce que ça change.**
+
+- **Les rues de Lille ont la section du kit**, à un bloc pour un mètre : deux
+  voies et des trottoirs de 2,5 m pour les boulevards et les grandes rues (la
+  rue Faidherbe, la rue Nationale, le boulevard de la Liberté, Vauban,
+  Victor-Hugo) et pour les rues du centre et des faubourgs ; une voie de
+  3,1 m pour l'Esquermoise, la rue Royale, la rue de la Monnaie et les rues du
+  Vieux-Lille. Les entrées de l'A1 et de l'E429 sont des collectrices.
+- **Les îlots se recomposent** et une rue de la trame ne double plus une
+  avenue : Lille GAGNE des immeubles, 30,1 → 33,3 % du disque, et aucun
+  quartier n'en perd (la Grand'Place 15,8 → 26,7, les gares 12,4 → 18,3).
+- **Ce qu'un enfant a bâti à Lille ne bouge pas** : sous ses blocs d'avant la
+  mise à jour, la Lille d'avant reste.
+
+**Ce qui le prouve.** Quatre témoins neufs. `carteMonde.js` : les rues ont
+la chaussée de leur type (boulevards 7,0, Vieux-Lille 3,8, trame 6,05 contre
+4,0, 3,2 et 1,95 sur `origin/main`) ; Lille garde plus de 30 % de lots,
+aucun quartier sous 10 %. `plafond.js` : une maison posée sur une ancienne rue
+n'est pas enfermée et une cabane garde son toit — et le témoin choisit
+désormais une rue qu'aucun monument ne recouvre dans la ville d'avant (le
+premier jet tombait contre la Vieille Bourse). Les circuits de Lille restent
+à 95-100 % sur la rue. Et la cour de la Vieille Bourse reste une cour : la
+trame recomposée posait un îlot dans son emprise, une maison de cinq blocs la
+remplissait — le témoin de `carte.js` l'a vu, l'emprise est désormais pavée.
+
+---
+
+## v367 — New York–Washington, et une ville qu'on n'entre que par le sud
+
+**Pourquoi.** New York et Washington, les deux grandes villes de la côte est,
+n'avaient aucune route entre elles : la dernière des liaisons courtes du kit
+encore à faire hors des villes réservées. La v362 avait réglé la porte de
+Manhattan (un rectangle, pas un disque) ; Washington pose le même problème
+dans l'autre sens — c'est une BOÎTE bâtie de 311 × 205 blocs dans un disque
+de 187, et la règle du disque y aurait posé la porte au milieu de la campagne,
+ou écrit l'entrée de la route dans ses rues.
+
+**Ce que ça change.** L'I-95 Sud part d'une seconde porte de New York, sur la
+rive de l'Hudson à l'ouest de Manhattan, traverse le New Jersey en plaine sur
+1 563 blocs avec un seul pont, et arrive à Washington par le sud, au niveau
+de la rue d'Anacostia, où ses voitures entrent puis font demi-tour. Le relevé
+a fermé les trois autres côtés : la montagne au nord, une crête de 43 à 49
+blocs à six blocs de la boîte à l'est (une route au niveau de la ville ne
+peut pas la déblayer), le Potomac dans la boîte à l'ouest. La route s'arrête
+net au bord de la ville (`boutNet`) : son demi-cercle d'asphalte ordinaire
+aurait écrit dans cinq colonnes de trottoir.
+
+**Ce qui le prouve.** Un témoin neuf dans `carteMonde.js`, rouge sur
+`origin/main` (la route n'existe pas) : un convoi roule, aucune colonne de
+route dans la ville, aucune marche de plus d'un bloc ni aucun bloc à hauteur
+de carrosserie de la route à la rue, la porte de New York hors du rectangle
+avec la rive à moins de soixante blocs, et la route ne longe ni l'une ni
+l'autre ville. Le témoin « ne frôle pas ses villes » juge désormais une ville
+qui n'est pas un disque à son emprise (la boîte de Washington, le rectangle
+de Manhattan). Mesuré sous node avant le banc : profil à six pour cent, déblai
+7,0, remblai 1,1, zéro colonne sur un rail ou sur une autre route, joint du
+pont fermé (6 630 points, zéro trou), relief identique du worker et du fil
+principal hors du rectangle.
+
+---
+
+## v366 — On monte en voiture comme dans un vrai jeu
+
+**Pourquoi.** Max : « Quand on monte dans une voiture, on voit le personnage
+qui avance et qui rentre dans la voiture avec le gameplay de la porte qui
+s'ouvre… aller très très loin sur l'expérience. » « Monter » était instantané,
+et faux : la voiture se TÉLÉPORTAIT sous l'enfant et pivotait sur son regard
+(mesuré : quatre blocs de déplacement au premier appui). Et aucun des
+cinquante-deux modèles de la flotte n'a de portière — leurs maillages sont
+groupés par matériau.
+
+**Ce que ça change.** Appuyer sur « Monter » : l'enfant MARCHE jusqu'à la
+portière conducteur — en faisant le tour de la voiture s'il est du mauvais
+côté —, la portière s'ouvre vers l'extérieur, il s'assied, elle se referme, et
+la caméra glisse de la vue de côté à la vue de poursuite. La voiture ne bouge
+plus d'un bloc. En descendant, la portière s'ouvre, il sort et se pose debout
+À CÔTÉ, sur une place libre (ni mur, ni eau, ni devant une voiture qui
+arrive) ; côté passager si le côté conducteur est bouché. Un second appui
+termine tout de suite. Une voiture prise dans la rue s'arrête et il y monte de
+la même façon — elle est vide, personne n'en est sorti. Les portières sont
+fabriquées dans la carrosserie de cinquante et un modèles sur cinquante-cinq ;
+les quatre autres (les trois taxis fabriqués, aux trop grands triangles, et la
+Chiron Stealth, sans habitacle — sa portière ouverte ne montrait que du noir)
+montent sans portière animée.
+
+**Ce qui le prouve.** Neuf témoins neufs dans `monte.js`, sur une page qui
+joue la séquence : la marche jusqu'à la portière en contournant, la portière
+qui s'ouvre vers l'extérieur (lue dans sa matrice) puis se referme, l'enfant
+assis au volant sans que la voiture ait bougé, la sortie debout à côté sur un
+sol libre, la géométrie partagée intacte sur un autre exemplaire du même
+modèle, le second appui qui termine, la descente rapide (pour la voiture qui
+prend feu), et une voiture déjà froissée (v343) qui ne prend pas de portière
+et garde son froissé. Huit rouges sur `origin/main` ; le huitième — aucun programme de
+shader compilé — est vert des deux côtés à dessein, il garde une capacité. Le
+banc saute la séquence partout ailleurs (`embarq=0`) : les témoins de conduite
+existants gardent l'ancien geste au bit près.
+
+---
+
+## v365 — Les coupoles ont leur édifice
+
+**Pourquoi.** La v357 avait donné sa basilique à Saint-Pierre de Rome et
+déclaré la suite : les bâtisseurs partagés `dome` (une coupole sur son seul
+tambour) et `palaisLong` (un palais de trois blocs d'épaisseur) servent de
+gabarits à des dizaines de monuments, et remis à la hauteur de leur ville sans
+l'édifice autour, ce sont des tours et des murs. Mesuré dans toutes les villes :
+seize, du Berliner Dom au palais d'Hiver. Et à Londres, Big Ben (96 m) était à
+soixante-neuf blocs, au-dessus du London Eye, quand St Paul (111 m) restait à
+dix-sept, sous la colonne Nelson.
+
+**Ce que ça change.**
+
+- **Seize monuments ont leur vraie forme** : Santa Maria del Fiore avec sa nef
+  de marbre, son octogone, la coupole de Brunelleschi et le campanile de Giotto ;
+  le Berliner Dom et ses tours d'angle ; le Reichstag et sa coupole de verre ;
+  le Rashtrapati Bhavan ; le Capitolio de La Havane ; le palais des Beaux-Arts
+  et la cathédrale de Mexico ; la gare Victoria et le Taj Mahal Palace de
+  Mumbai ; le baptistère et le Duomo de Pise ; Saint-Marc et ses cinq
+  coupoles ; et quatre palais autour de leur cour — le palais royal de Madrid,
+  la Hofburg, le palais d'Hiver, le Parlement d'Athènes.
+- **Istanbul a ses minarets** : Sainte-Sophie (sa coupole basse, ses
+  demi-coupoles et quatre minarets) et la Mosquée bleue (sa cascade de coupoles
+  et six minarets) ; la tour de Galata a son cylindre de pierre et son toit
+  conique, et le ciel de la ville, qu'elle bornait, se décomprime.
+- **Le ciel de Londres est dans l'ordre** : Big Ben à trente-neuf blocs, à la
+  proportion de la tour Elizabeth, St Paul sur son tambour et sa colonnade à
+  quarante et un, sous le London Eye.
+- **Les voitures de l'Autosole s'arrêtent sur le parvis du Duomo** au lieu de
+  traverser sa nef : une avenue d'entrée s'arrête désormais devant le premier
+  bloc qu'un monument pose à hauteur de carrosserie.
+
+**Ce qui le prouve.** Un témoin neuf dans `plafond.js` — « aucune coupole ni
+aucun palais partagé ne monte seul en tour » — cherche les gabarits dans toutes
+les villes et mesure leur assise (l'emprise du pied sur celle du haut) ou leur
+carrure : rouge sur `origin/main` (seize), vert ici. Le témoin d'ordre du vrai
+ciel reçoit St Paul, Tower Bridge et le London Eye. L'empreinte des 490
+morceaux se relève (Londres est un des neuf lieux), avec sa preuve : bâtisseurs
+neufs désarmés, la branche rend l'empreinte d'`origin/main` au bit près. Jugé
+sur captures, vingt et un monuments. Le portail a trouvé deux défauts de la livraison
+elle-même — l'entrée de Florence dans le Duomo, la barre du témoin de Big Ben
+écrite pour l'ancien modèle à soixante-neuf blocs — et le témoin de Londres
+exige désormais que la roue reste au-dessus de la tour de l'horloge (rouge sur
+`origin/main`).
+Et le portail de la v365 en a trouvé un troisième : le Berliner Dom, bâti sur
+toute sa boîte, recouvrait deux tabliers de pont de Berlin (dix pas bouchés,
+« on le traverse à pied d'une rive à l'autre », `carteMonde.js`) ; il tient
+désormais entre les deux ponts, son aile du nord lui gardant l'assise d'une
+cathédrale.
 
 ---
 

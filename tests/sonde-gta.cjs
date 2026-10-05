@@ -1,4 +1,4 @@
-// Sonde : joue SEULE la page « conduite à la GTA » de monte.js (v358, v365).
+// Sonde : joue SEULE la page « conduite à la GTA » de monte.js (v358, v370).
 //     node tests/sonde-gta.cjs
 const fs = require('fs');
 const { Banc } = require('./banc.js');

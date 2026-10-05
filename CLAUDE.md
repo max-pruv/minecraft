@@ -770,6 +770,178 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Plus une coupole de gabarit (v369) — une forme fausse ne dépend pas de la hauteur
+
+Trois règles.
+
+- **UN TÉMOIN QUI NE COMPTE QUE CE QUI MONTE LAISSE LES FORMES FAUSSES QUI
+  RESTENT BASSES.** Celui de la v365 ne regardait que les gabarits au-dessus
+  d'une fois et demie leurs toits ; cinq coupoles restaient dessous, toutes
+  fausses (des voiles d'acier, un stade, un octogone, un haricot). Le témoin
+  neuf demande la forme, pas la hauteur : aucun repère ne garde `dome`.
+- **UN STADE, COMME UNE PYRAMIDE, NE S'ÉTIRE PAS.** Étiré au ciel de Toronto,
+  le Rogers Centre montait deux fois plus haut que large : un silo, que le
+  témoin des gabarits a d'ailleurs pris pour une tour. Il est `vrai`, à sa
+  hauteur d'auteur. Une forme large et plate se déclare au lieu de s'étirer.
+- **LE `k` MAXIMAL N'EST PAS LE BON `k` QUAND UN REPÈRE FIXE EST TROP BAS.**
+  L'hôtel de ville de Toronto, devenu une tour sur son corps, décomprime la
+  courbe jusqu'à `k` 1 sans rompre l'ordre — mais il y monte à 40 blocs sous
+  une CN Tower de 553 m à 45. L'ordre strict est tenu, les proportions non :
+  Toronto garde 0,3 (28 blocs), et c'est mesuré. De même le Panthéon de Rome,
+  étiré à ses 43 m, passait le Colisée fixe à 19 : il reste à sa hauteur
+  d'auteur, dix blocs, celle de ses voisins.
+
+## Monter en voiture comme dans un vrai jeu (v366) — une animation qu'on impose garde sa porte de sortie
+
+Max : « on voit le personnage qui avance et qui rentre dans la voiture avec la
+porte qui s'ouvre ». `src/embarquement.js` (la séquence) et `src/portieres.js`
+(la portière fabriquée). Six règles.
+
+- **L'ÉTAT NE MENT JAMAIS PENDANT L'ANIMATION.** `montureConduite()` ne devient
+  vrai qu'une fois ASSIS (la séquence appelle `toggleRide` à ce moment-là), et
+  redevient faux au PREMIER appui de « Descendre » ; ce qui se joue entre deux
+  se publie à part, `player.embarquement = { phase, t, sens }`. Un témoin qui
+  lit l'état (v252) ne le voit jamais ambigu. Et la voiture ne bouge plus :
+  l'ancien geste la téléportait sous l'enfant (quatre blocs, mesuré) — c'est
+  l'enfant qui prend le cap de la voiture, pas l'inverse.
+- **UNE ANIMATION QU'ON IMPOSE GARDE SA PORTE DE SORTIE.** Un second appui
+  termine tout de suite (assis, portière fermée) — la règle des réglages
+  automatiques (v290) vue du côté d'un geste. La marche est bornée à 1,1 s de
+  jeu (on presse le pas si la voiture est loin), la séquence entière à
+  ≈ 2,4 s. Elle compte en temps de JEU (v226).
+- **UNE PORTIÈRE SE FABRIQUE, ET LA GÉOMÉTRIE DE LA FLOTTE NE SE TOUCHE
+  JAMAIS.** Aucun modèle n'a de nœud de portière (mesuré sur les 52). Les
+  triangles dont le centre tombe dans le volume de la portière (derrière la
+  roue avant, devant le montant, à plus de 0,6 bloc de l'axe) partent dans un
+  maillage à part, pivot sur l'arête avant, 60° vers l'EXTÉRIEUR (signe lu
+  dans la matrice par un témoin). Les géométries neuves PARTAGENT les
+  attributs du prototype et n'ont qu'un index à elles, mémoïsées par modèle et
+  marquées partagées (`liberer.js` ne les rend pas). Seule la voiture où l'on
+  monte change ; un autre exemplaire garde le prototype, et un témoin le lit.
+  Plan : 4 ms médian, 28 au pire, une fois par modèle.
+- **LE PLAN SE PREND SUR LE PROTOTYPE, PAS SUR LA VOITURE — parce que deux
+  sessions touchent la même tôle.** Les dégâts (`degats3d.js`, v343) clonent
+  et déforment la géométrie de la pièce touchée ; un plan pris sur une voiture
+  froissée serait mémoïsé pour tout le modèle. `voitureNeuve` retient donc le
+  prototype et son clone (`userData.proto`, `userData.modele`), le plan se
+  calcule sur le premier, et une voiture dont une pièce ne porte plus la
+  géométrie du prototype ne s'équipe pas (`refus` : « abimee »). Dans l'autre
+  sens c'est compatible par construction : quand la voiture gagne ses deux
+  pivots, `degats3d` voit ses enfants changer, re-prépare ses pièces (la
+  caisse découpée ET les portières) et rejoue les chocs. Mesuré : équipée puis
+  froissée des deux côtés, 130 164 indices comme le prototype, 11 496 sommets
+  enfoncés, la portière toujours sur son pivot.
+- **AUCUN PROGRAMME NE NAÎT, ET CE QUE ÇA COÛTE SE DÉCLARE.** Même matériau,
+  mêmes attributs : la portière se dessine avec le programme de la
+  carrosserie. Un `DoubleSide` montrerait le revers de la portière et
+  changerait la clé de programme (v246) : on ne le fait pas, le revers d'une
+  portière que le modèle n'a pas meublée est invisible. Et une voiture équipée
+  coûte quelques appels de dessin de plus (une portière par matériau
+  découpé) — seulement celle où l'enfant est monté.
+- **UN MODÈLE QUI CASSE S'EN PASSE, ET C'EST SA FICHE QUI LE DIT.**
+  `portiere: false` (vehicules.js, FLOTTE) comme `habitacle` (v230) ; les
+  taxis fabriqués (`fabrique`, triangles trop grands) aussi. 51 modèles sur 55
+  ont leur portière. Un refus se dit (`refus` de `portieres.js`,
+  `refusSortie` de la séquence) : « il est sorti côté passager » se démonte
+  par la raison du refus du côté conducteur (« mur », « eau », « circulation »,
+  « voiture »).
+- **LE BANC SAUTE LA SÉQUENCE (`embarq=0`), ET CELA SE PROUVE PAR
+  CONSTRUCTION.** `banc.js` le met dans toute adresse, comme `prep=0` ; les
+  deux adresses écrites à la main (`reglages.js`, `realisme.js`) aussi
+  (v258). Les témoins de conduite d'avant retrouvent donc l'ancien geste au
+  bit près ; ceux qui éprouvent la séquence la demandent (`{ embarq: 1 }`).
+  Et un témoin qui cherche son terrain (v285) : le couloir vide de la v237 est
+  SOUS L'EAU, sans importance pour un mur, rédhibitoire pour une descente qui
+  refuse l'eau — la page d'embarquement cherche une prairie sèche et plate.
+
+**Et une résolution de conflit a avalé deux modules d'une autre session.**
+Rebasée sur la v344, ma résolution de `sw.js` remplaçait le bloc en conflit
+par la seule ligne `CACHE_VERSION` — or le bloc contenait aussi les lignes
+`ASSETS` que la session des dégâts venait d'ajouter : `degats.js` et
+`degats3d.js` seraient partis hors du cache hors ligne. C'est la fumée
+(« tout module du jeu arrive sur la tablette ») qui l'a dit. **Une résolution
+de conflit se relit dans `git diff origin/main`, jamais seulement dans le
+fichier** : le diff montre ce qu'on retire à l'autre côté.
+
+Ce qui reste, déclaré dans `TASKS.md` : le passager d'un ami monte encore sans
+séquence ; les bords de la découpe sont en dents de scie sur les modèles à
+grands triangles ; la vue de la séquence ne se juge que sur le banc, pas sur
+l'iPad.
+
+## Les coupoles ont leur édifice (v365) — un gabarit partagé se cherche dans toutes les villes, et le ciel se lit sur les modèles
+
+La suite de la v357 : « une coupole sans sa nef devient une tour », pour toutes
+les villes. Sept règles.
+
+- **UN GABARIT SE MARQUE, ET LE TÉMOIN LE RECONNAÎT DES DEUX CÔTÉS.** `dome` et
+  `palaisLong` portent `gabarit` (villesmonde.js) ; sur l'ancien code, qui ne
+  la porte pas, le témoin reconnaît la dernière ligne du bâtisseur
+  (`String(f)`). C'est ce qui lui fait mesurer le MÊME défaut des deux côtés
+  (règle v302) : seize sur `origin/main`, du Berliner Dom au palais d'Hiver,
+  zéro ici. Saint-Pierre (v357) passait déjà.
+- **« PAS UNE TOUR » A DEUX GRANDEURS, ET L'UNE DES DEUX SUFFIT.** L'ASSISE
+  (l'emprise des trois premières couches sur la plus large couche de la moitié
+  haute : une coupole sur sa nef en a au moins deux, sur son seul tambour un) ou
+  la CARRURE (la hauteur sous deux fois le petit côté du pied : un palais à cour
+  est un bloc). Une hauteur sur une emprise ne départage PAS : le Panthéon de
+  Paris, validé en capture, a l'élancement d'une tour, parce que le ciel double
+  les hauteurs.
+- **LA RECETTE D'UNE COUPOLE REMISE AU CIEL, née de deux captures.** Sur une
+  petite emprise, étirer le TAMBOUR fait une tour (Florence, Berlin, premier
+  jet). Le corps, large, prend l'étirement ; la coupole s'écrit avec assez de
+  couches pour en être une (surhaussée : plus de couches que de rayon) et reste
+  rigide ; la lanterne s'écrit sur quatre ou cinq couches pour ne pas devenir
+  une aiguille. Les paliers sont en mètres ÉCRITS EN PROPORTION (le corps de
+  Florence à 18 m, celui de Berlin à 13) : la courbe du ciel, logarithmique,
+  étire le bas plus que le haut, et la leçon de la façade de Saint-Pierre (une
+  hauteur vraie sur un plan à l'échelle du sol fait un immeuble) vaut pour
+  toutes.
+- **UNE BAIE NE SE POSE QUE SUR UN CORPS QUI NE S'ÉTIRE PAS.** Un étage fait
+  trois couches (v301) et une baie se dessine sur trois bandes (allège, bas,
+  haut). Posée sur une couche que la table répète, chaque couche répétée
+  redessine une fenêtre : le palais royal de Madrid, en capture, était une tour
+  de bureaux à dix-huit rangs de baies. Les palais s'écrivent donc à leur
+  hauteur du monde, un pour un (`[[0, 0], [1, 1], [sommet + 1, vraie + 1]]`),
+  et leurs façades par `facadeEtages`.
+- **UN FÛT QUI BORNE LA COURBE D'UNE VILLE PEUT RECEVOIR SON CORPS, ET LA
+  COURBE SE DÉCOMPRIME.** Istanbul était à `k` 0,48 parce que la tour de Galata,
+  colonne d'un bloc, ne montait pas. Avec son cylindre de pierre, elle prend la
+  table, et la ville revient à `k` 1 : Sainte-Sophie et ses minarets, la
+  Mosquée bleue et les siens montent sous elle. `k` est un résultat : il se
+  refait quand le repère qui le fixait change.
+- **DANS UNE VILLE BÂTIE À LA MAIN, LE CIEL SE LIT SUR SES MODÈLES D'AUTEUR.**
+  À Londres, le London Eye (135 m) est à quarante-trois blocs et Tower Bridge
+  (65 m) à trente-huit ; Big Ben, sorti du catalogue à soixante-neuf, dominait
+  tout, et St Paul (111 m) restait à dix-sept. La courbe de la ville (`k` 0,75,
+  sous la Tour Blanche) ne peut pas les départager : une table de paliers ne
+  sait que monter. Big Ben a donc un bâtisseur de Londres à trente-neuf, St Paul
+  sa coupole sur tambour à quarante et un, tous deux à leur hauteur d'auteur
+  (champ `tour`, pas de table), DANS l'emprise d'avant (aucune rue touchée) ; et
+  Tower Bridge et le London Eye entrent dans les `FIXES` du témoin d'ordre.
+- **UN QUARTIER TROP SERRÉ SE DÉCLARE, IL NE SE FORCE PAS.** À Pise, le Duomo
+  est à trois blocs du centre de la tour penchée, dont le modèle fait onze blocs
+  de large pour quinze mètres : aucun bâtisseur ne tient dans la boîte du Duomo
+  sans recouvrir la tour. Il a son édifice, le recouvrement d'avant reste, et
+  c'est une dette de PLAN (`TASKS.md`).
+
+Et UNE ENTRÉE DE VILLE S'ARRÊTE DEVANT UN MONUMENT, PAS SEULEMENT DEVANT UN
+ÎLOT. L'avenue de Florence finissait dans la boîte du Duomo et ne passait que
+par une brèche de l'ancien anneau de la coupole : donner son édifice à un
+monument peut fermer une rue qu'il ne fermait que par chance. `avenueDEntree`
+lit les blocs que le BÂTISSEUR pose à hauteur de carrosserie (couches 1 à 3),
+jamais la boîte (v274) ; mesuré, seule Florence change sur trente-neuf entrées.
+
+Et UN ÉDIFICE NEUF SE MESURE CONTRE LES PONTS DE SA VILLE, PAS SEULEMENT CONTRE
+SES RUES. Les tabliers des anneaux (`anneauxDeVille(f).ponts`) traversent la
+boîte des repères ; le gabarit, petit, les laissait libres, et le Berliner Dom
+bâti sur toute sa boîte en murait deux (dix pas, vus au portail par
+`carteMonde.js`). Avant de remplir une boîte, on dessine les tabliers qui la
+traversent (une carte ASCII de la boîte suffit) et l'on bâtit à côté.
+
+Et l'empreinte des 490 morceaux (v352) se relève : Londres est un des neuf
+lieux. Bâtisseurs neufs désarmés (`tour` retiré), la branche rend 58a67b42…, la
+constante d'`origin/main`, au bit près.
+
 ## Les tours ont une emprise (v357) — une perche se cherche au bâtisseur, dans toutes les villes
 
 La dette de la v353 : treize tours d'un bloc de large, laissées sous leur vraie
@@ -940,6 +1112,23 @@ Le lot 2 de la dette de la v335 : huit monuments. Trois règles.
   Archives, 24 m pour Buckingham, une quarantaine de mètres pour l'Opéra de
   Lille, 23 m pour l'Arche. Ce qu'on n'a pas trouvé (le musée d'Histoire
   américaine, « cinq étages ») se dit approché dans le commentaire.
+
+## Les rues de Lille à la règle du kit (v368) — un témoin de ville figée cherche une rue que rien ne recouvre
+
+Deux règles.
+
+- **QUAND LA TRAME EST SERRÉE, LA RÈGLE DU KIT REND DES IMMEUBLES.** Lille
+  passe de 30,1 à 33,3 % de lots : le pas recomposé et le recul des avenues
+  rendent plus que les collectrices ne prennent. C'est l'inverse de San
+  Francisco (v361), et c'est la même règle : le résultat dépend de
+  l'écartement des avenues, on le mesure avant de conclure.
+- **UN TÉMOIN QUI POSE UNE MAISON SUR « UNE ANCIENNE RUE » VÉRIFIE QUE RIEN
+  NE L'Y RECOUVRE DANS LA VILLE D'AVANT.** Les monuments se posent APRÈS les
+  colonnes (v205) : la première rue trouvée à Lille longeait la Vieille
+  Bourse, et le témoin comptait ses murs comme une ville neuve qui enferme la
+  maison (9 blocs). La recherche lit désormais le monde d'avant
+  (`new World({ v308: true })`) et exige six blocs d'air au-dessus de la
+  rue — pour toutes les villes figées.
 
 ## Les rues de San Francisco à la règle du kit (v361) — un plan à vingt-sept blocs par kilomètre paie ses avenues
 
@@ -1379,7 +1568,7 @@ Six règles.
   Une voiture de la rue ne se pousse pas (horloge partagée, v305) : c'est
   elle qui attend (`cederLePassage`, v245).
 
-## La normale de ce qu'on touche (v365) — conduite, palier 2
+## La normale de ce qu'on touche (v370) — conduite, palier 2
 
 Le palier 1 prenait la normale du MOUVEMENT contre une voiture de la rue et
 celle d'un AXE DU MONDE contre un mur. Cinq règles.
@@ -1805,6 +1994,44 @@ Une règle.
   la terre, l'herbe, le sable et la pierre naturelle. Manhattan a son propre sol
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
+
+## La route de Washington (v367) — une ville fermée par son relief s'entre par son côté bas, et un bout peut s'arrêter net
+
+L'I-95 Sud New York–Washington. Quatre règles.
+
+- **AVANT DE CHERCHER UN TRACÉ, ON RELÈVE CE QUI ENTOURE LA VILLE, CÔTÉ PAR
+  CÔTÉ, AVEC LA RÈGLE DU PROFIL EN TÊTE.** Washington est fermée au nord par
+  la montagne, à l'est par une crête de 43 à 49 blocs qui commence à six
+  blocs de la boîte, à l'ouest par le Potomac DANS la boîte. Une route
+  épinglée au niveau de la rue (33) ne monte que de 0,06 par bloc et ne
+  déblaie que neuf blocs : à vingt blocs de la porte elle est à 34, la crête
+  à 45. Aucune recherche ne trouve ce qui ne peut pas exister ; un tableau
+  « porte × cap → déblai sur les deux cents premiers blocs » le dit en une
+  seconde. Le côté bas est le sud (Anacostia), et c'est par là qu'on entre.
+- **UNE VILLE QUI N'EST PAS UN DISQUE DÉCLARE AUSSI SON BOUT ET SON AVENUE.**
+  La porte (v362) ne suffit pas : au bout, la chaussée continue en
+  demi-cercle de 3,8 blocs (la distance au point borné) — l'entrée d'une
+  ville-disque, mais dans une boîte bâtie jusqu'à son bord, de l'asphalte dans
+  ses trottoirs. `boutNet: ['washington']` arrête la route net au quart de
+  bloc ; `avenues: { washington: [...] }` donne aux voitures la rue où elles
+  entrent (main.js la lit avant `avenueDEntree`). Et la porte se pose là où
+  le sol est AU NIVEAU de la rue (un bloc hors de la boîte), sinon le fondu
+  de la ville fait une marche entre la route et la rue.
+- **UNE SONDE QUI SIMPLIFIE UN TRACÉ ARRONDIT APRÈS ET DÉDOUBLONNE.** Mon
+  premier jet arrondissait les points au bloc puis mesurait les coudes : deux
+  points confondus rendent un angle nul (`atan2(0, 0)`) et cachaient des
+  coudes de 58° et de 90°. Et un point d'arrivée posé DERRIÈRE le chemin
+  trouvé fait un crochet : la grille vise le point le plus éloigné de la
+  ligne droite d'entrée (la porte, puis le rayon), arrivée par le bon cap, et
+  le virage serré se fait sur un arc écrit (soixante blocs de rayon), jamais
+  par le lissage d'un angle droit.
+- **UN TÉMOIN ÉCRIT POUR DES DISQUES SE RÉÉCRIT POUR LA PREMIÈRE VILLE QUI
+  N'EN EST PAS UNE.** « La route ne frôle pas ses villes » lisait r + 10 :
+  la route longe la campagne au sud de Washington à moins de 197 blocs du
+  centre, et il l'aurait accusée. Il juge désormais Washington à sa zone
+  (`ZONE_WASHINGTON`) et Manhattan à son rectangle — la règle de la v313
+  (« un témoin écrit pour un cas se réécrit le jour où un cas neuf sort de
+  son hypothèse »).
 
 ## La porte de Manhattan (v362) — une ville qui n'est pas un disque déclare sa porte
 

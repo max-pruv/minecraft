@@ -6,12 +6,59 @@
 
 export const NOUVEAUTES = [
   {
-    v: 365,
+    v: 370,
     titre: 'La voiture longe les murs',
     puces: [
       'Elle longe les façades en biais',
       'Frôler une voiture ne t\'arrête plus',
       'Un petit choc ne te renvoie plus',
+    ],
+  },
+  {
+    v: 369,
+    titre: 'Sept monuments ont leur vraie forme',
+    puces: [
+      'Le Panthéon de Rome et son portique',
+      'Le dôme du Rocher, octogone et or',
+      'Le Bean et Navy Pier à Chicago',
+      'Un stade et une horloge à Toronto',
+    ],
+  },
+  {
+    v: 368,
+    titre: 'Les rues de Lille s\'élargissent',
+    puces: [
+      'Les boulevards à deux voies',
+      'Plus d\'immeubles dans le centre',
+      'Tes constructions restent comme avant',
+    ],
+  },
+  {
+    v: 367,
+    titre: 'New York–Washington en voiture',
+    puces: [
+      'Une autoroute descend vers Washington',
+      'On entre par le quartier d\'Anacostia',
+    ],
+  },
+  {
+    v: 366,
+    titre: 'On monte en voiture',
+    puces: [
+      'Tu marches jusqu\'à la portière',
+      'La porte s\'ouvre, tu t\'assieds',
+      'En descendant, tu sors à côté',
+      'Appuie deux fois pour aller vite',
+    ],
+  },
+  {
+    v: 365,
+    titre: 'Les coupoles ont leur église',
+    puces: [
+      'Le Duomo de Florence et sa coupole',
+      'Sainte-Sophie et ses quatre minarets',
+      'Big Ben et Saint-Paul à Londres',
+      'Des palais avec leur cour',
     ],
   },
   {

@@ -307,7 +307,19 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // des neuf lieux — voulu. Sans elle, les 441 autres morceaux et toutes les
 // routes rendent 346a66cd… sur `origin/main` (v360, 5fa54c5c… avec elle) ET sur
 // la branche.
-const EMPREINTE_MORCEAUX_V357 = '58a67b4280e21df094f8979fc4003adcfddb1e037bf0dd9007279dee56522093';
+// v365 : Big Ben rendu au ciel de Londres (un bâtisseur neuf, champ `tour`)
+// est dans les morceaux du lieu « londres » — un changement de CONTENU, voulu.
+// La preuve qu'il n'y a que lui : la même branche, ses bâtisseurs neufs
+// désarmés (les `tour` de la v365 retirés), rend 58a67b42…, la constante
+// d'`origin/main` (v364), au bit près.
+// v367 : l'I-95 Sud arrive au sud de Washington, un des neuf lieux, et ses
+// colonnes de route entrent dans ses morceaux (886 → 1 515) — voulu. Sans
+// Washington, les 441 autres morceaux et toutes les routes rendent ad9949da…
+// sur `origin/main` (v366, f70060cd… avec elle) ET sur la branche.
+// v369 : le Panthéon de Rome reçoit sa rotonde et son portique, et Rome est
+// un des neuf lieux — voulu. Bâtisseurs neufs de la v369 désarmés, la branche
+// rend 7d235907…, la constante d'`origin/main` (v368), au bit près.
+const EMPREINTE_MORCEAUX_V357 = '27789d06e841d95492a1d47b89e300713384850f02b671a5837ee08757f80d0c';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -423,7 +435,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         `droite ${droit} cases · en biais ${biais.length} cases, coins (12,8) et (8,12) ${coin ? 'touchés' : 'libres'}`);
     }
   }
-  // --- LA NORMALE DE CE QU'ON TOUCHE (v365, palier 2 de la conduite) -------
+  // --- LA NORMALE DE CE QU'ON TOUCHE (v370, palier 2 de la conduite) -------
   // Le palier 1 prenait la normale du MOUVEMENT contre une voiture de la rue
   // (toujours un choc de face) et celle d'un AXE DU MONDE contre un mur. Sur
   // une façade oblique en escalier de cubes, la voiture s'arrêtait net ou
@@ -610,17 +622,20 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       // dessous (le `k` de `CIELS`). Et ceux qui montent pour l'ordre, écrits
       // ici aussi : en retirer un de la table fait rougir l'inversion.
       'Amsterdam|Westerkerk': 85, 'Prague|L\'horloge astronomique': 70,
-      'Istanbul|La tour de Galata': 67, 'Stockholm|L\'hôtel de ville': 106,
+      'Stockholm|L\'hôtel de ville': 106,
       'Jérusalem|Le dôme du Rocher': 35, 'Jérusalem|La tour de David': 30,
       'Los Angeles|L\'hôtel de ville': 138, 'Buenos Aires|L\'Obélisque': 68,
       'Berlin|Berliner Dom': 98, 'Singapour|Marina Bay Sands': 200, 'Bangkok|Wat Arun': 82,
       'Delhi|Rashtrapati Bhavan': 55,
       // Le lot 2, les villes bâties à la main (v350).
       'Lille|Beffroi de la Chambre de commerce': 76, 'Lille|Beffroi de Lille': 104, 'Lille|Tour de Lille': 117,
-      // St Paul (111 m, 17 blocs sous Big Ben, 69) n'y est pas : son inversion
-      // précède la v350, déclarée dans `TASKS.md`.
+      // v365 : Big Ben rendu au ciel de Londres (trente-neuf blocs, il était à
+      // soixante-neuf) et St Paul sur son tambour (quarante et un) — l'inversion
+      // de la v350 réglée ; Tower Bridge et le London Eye, deux modèles d'auteur,
+      // entrent ici : c'est sur eux que le ciel de la ville se lit.
       'Londres|Tour de Londres': 27, 'Londres|Colonne Nelson': 52,
-      'Londres|Big Ben': 96, 'Londres|The Shard': 310,
+      'Londres|Big Ben': 96, 'Londres|The Shard': 310, 'Londres|Cathédrale St Paul': 111,
+      'Londres|Tower Bridge': 65, 'Londres|London Eye': 135,
       'Washington|Maison-Blanche': 21, 'Washington|Lincoln Memorial': 30, 'Washington|Mémorial Jefferson': 39,
       'Washington|Bibliothèque du Congrès': 59,
       // v357 : la roue du Prater à son vrai rayon, la tour du nord du château
@@ -730,6 +745,85 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         `${dominants.length} repères au-dessus d'une fois et demie leurs toits, ${Object.keys(vraies).length} fûts vrais`
         + (perches.length ? ` — PERCHES (${perches.length}) : ${perches.join(' · ')}` : '')
         + (vraiesPerdues.length ? ` — DÉCLARÉS POUR RIEN : ${vraiesPerdues.join(' · ')}` : ''));
+    }
+
+    // UNE COUPOLE SANS SA NEF N'EST PAS UNE TOUR (v365). `dome` et `palaisLong`
+    // sont des gabarits : une coupole sur son seul tambour, un palais de trois
+    // blocs d'épaisseur. Remis à la hauteur de leur ville sans l'édifice autour,
+    // ce sont des tours et des murs — vu en capture à Rome (v342), à Florence,
+    // à Berlin. Le témoin les cherche dans TOUTES les villes : un repère bâti
+    // par un gabarit (le monde d'avant, `CONF_V308`, garde le bâtisseur
+    // d'auteur) qui monte aujourd'hui à une fois et demie ses toits doit avoir
+    // reçu son édifice. Deux grandeurs, et l'une des deux suffit. L'ASSISE :
+    // l'emprise de ses trois premières couches sur la plus large couche de sa
+    // moitié haute — une coupole posée sur sa nef en a au moins deux
+    // (Saint-Pierre 2,1), une coupole sur son seul tambour ou un palais de
+    // trois blocs d'épaisseur un (0,8 à 1,0). Ou la CARRURE : la hauteur ne
+    // dépasse pas deux fois le plus petit côté de son pied — un palais à cour
+    // est un bloc, pas une tour. Une hauteur sur une emprise ne départage pas
+    // seule : le Panthéon de Paris, validé en capture, a l'élancement d'une
+    // tour, parce que le ciel double les hauteurs. Le gabarit se reconnaît à
+    // sa marque ou, sur l'ancien code qui ne la porte pas, à sa dernière
+    // ligne : le même défaut se mesure des deux côtés. Sur l'ancien code :
+    // seize, du Berliner Dom au palais d'Hiver.
+    {
+      const CIg = EM && EM.CIELS ? EM.CIELS : {};
+      const avant = new Map(W.CONF_V308.reperes.map((l) => [`${l.name}@${l.x},${l.z}`, l]));
+      const gabaritDe = (f) => f.gabarit || (/6 \+ r, 0, OR/.test(String(f)) ? 'dome'
+        : /poser\(1, 5, 0, OR\)/.test(String(f)) ? 'palaisLong' : null);
+      const tours = [], vus = [];
+      for (const lm of reperes) {
+        const v = villeDe(lm.x, lm.z);
+        const a = avant.get(`${lm.name}@${lm.x},${lm.z}`);
+        if (!v || !a || !gabaritDe(a.build)) continue;
+        let h = 0;
+        const base = new Set(), couches = new Map(), pied = [1e9, -1e9, 1e9, -1e9];
+        lm.build((dx, dy, dz, id) => {
+          if (id === BLOCK.AIR) return;
+          if (dy > h) h = dy;
+          if (dy >= 1 && dy <= 3) {
+            base.add(dx * 1000 + dz);
+            pied[0] = Math.min(pied[0], dx); pied[1] = Math.max(pied[1], dx);
+            pied[2] = Math.min(pied[2], dz); pied[3] = Math.max(pied[3], dz);
+          }
+          if (!couches.has(dy)) couches.set(dy, new Set());
+          couches.get(dy).add(dx * 1000 + dz);
+        });
+        const c = [].concat(CIg[v.nom] || 20)[0];
+        if (h < 1.5 * c) continue;
+        let haut = 1;
+        for (const [y, q] of couches) if (y > h / 2) haut = Math.max(haut, q.size);
+        const e = base.size / haut;
+        const cote = Math.min(pied[1] - pied[0], pied[3] - pied[2]) + 1;
+        vus.push(`${v.nom}|${lm.name} ${e.toFixed(1)}/${(h / cote).toFixed(1)}`);
+        if (e < 2 && h > 2 * cote) tours.push(`${v.nom}|${lm.name} (${gabaritDe(a.build)}) ${h} blocs, ${base.size} cases au pied pour ${haut} en haut (assise ${e.toFixed(1)}), ${cote} de côté`);
+      }
+      verifier('aucune coupole ni aucun palais partagé ne monte seul en tour',
+        vus.length >= 10 && tours.length === 0,
+        `${vus.length} édifices de gabarit au-dessus d'une fois et demie leurs toits`
+        + (tours.length ? ` — SEULS, EN TOUR (${tours.length}) : ${tours.join(' · ')}` : ` : ${vus.join(' · ')}`));
+    }
+
+    // PLUS UNE COUPOLE DE GABARIT DANS LE MONDE (v369). Le témoin d'avant ne
+    // compte que les gabarits qui montent à une fois et demie leurs toits ;
+    // sous cette barre, Walt Disney Hall (des voiles d'acier), le Rogers Centre
+    // (un stade), le Panthéon de Rome (sans portique), le dôme du Rocher (un
+    // octogone) et le Bean (un haricot) restaient des coupoles sur tambour.
+    // La forme fausse ne dépend pas de la hauteur : aucun repère ne garde
+    // `dome` comme bâtisseur. Les palais (`palaisLong`) sont comptés et dits.
+    {
+      const { VILLES_MONDE: VMg } = await import('../src/villesmonde.js');
+      const gabaritDe = (f) => f && (f.gabarit || (/6 \+ r, 0, OR/.test(String(f)) ? 'dome'
+        : /poser\(1, 5, 0, OR\)/.test(String(f)) ? 'palaisLong' : null));
+      const par = { dome: [], palaisLong: [] };
+      for (const f of VMg) for (const m of f.monuments || []) {
+        const g = gabaritDe(m.tour || m.build);
+        if (g) par[g].push(`${f.ancre.nom}|${m.nom}`);
+      }
+      verifier('aucune coupole de gabarit ne reste dans le monde, quelle que soit sa hauteur',
+        par.dome.length === 0,
+        `${par.dome.length} coupole(s) de gabarit${par.dome.length ? ' : ' + par.dome.join(' · ') : ''}`
+        + ` · palais de gabarit (dette) : ${par.palaisLong.length}`);
     }
 
     // PARIS À L'ÉCHELLE DU CIEL : un bloc pour un mètre jusqu'à la corniche,
@@ -1728,7 +1822,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   // ne retient rien — la ville neuve bâtit dessous. Rouge sur `origin/main` :
   // la date n'existe pas, et les deux premiers cas montrent la ville neuve.
   // ET NICE À LA v359, PAR LA MÊME RÈGLE : la fonction se joue ville par ville.
-  // SAN FRANCISCO À LA v361.
+  // SAN FRANCISCO À LA v361, LILLE À LA v368.
   const figee = async (date, avant, neuf, ancre, sol, libre, batir) => {
     const W = await import('../src/world.js');
     if (!W[date]) return { absent: true };
@@ -1738,6 +1832,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const { CITY_BLOCK } = await import('../src/blocks.js');
     const L = N[ancre], t = W[date] - 86400000;
     const nf = new W.World();
+    const av = new W.World({ v308: true });   // les villes d'avant le kit partout
     // une ancienne rue que la ville neuve bâtit, et un ancien lot qu'elle fait rue
     let rueBatie = null, lotRue = null;
     for (let d = 10; d < L.r - 5 && !(rueBatie && lotRue); d++) for (let a = 0; a < 64; a++) {
@@ -1747,8 +1842,15 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       // une façade neuve (le bâtisseur y monte un mur) sur neuf colonnes d'ancienne
       // chaussée — pas un trottoir, où la ville d'avant a ses arbres et ses réverbères
       const mur = () => { let n = 0; N[batir](x, z, (dy) => { if (dy >= 3) n++; }); return n >= 3; };
+      // et rien n'y est posé par-dessus dans la ville d'avant — un monument se
+      // pose APRÈS les colonnes (Lille, v368 : la Vieille Bourse à côté)
+      const degage = () => croix((xx, zz) => {
+        const g = av.terrainHeight(xx, zz);
+        for (let y = g + 1; y <= g + 6; y++) if (av.getBlock(xx, y, zz) !== 0) return false;
+        return true;
+      });
       if (!rueBatie && croix((xx, zz) => A[sol](xx, zz) === CITY_BLOCK.ASPHALT)
-        && N[libre](x, z) && mur()) rueBatie = [x, z];
+        && N[libre](x, z) && mur() && degage()) rueBatie = [x, z];
       if (!lotRue && voisin(A[libre]) && voisin((xx, zz) => N[sol](xx, zz) !== null)) lotRue = [x, z];
     }
     if (!rueBatie || !lotRue) return { absent: false, introuvable: true, rueBatie, lotRue };
@@ -1788,6 +1890,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     ['Londres', ['DATE_RUES_LONDRES', 'londres-v332.js', 'londres.js', 'LONDRES', 'solLondres', 'lotLondresLibre', 'batirColonneLondres']],
     ['Nice', ['DATE_RUES_NICE', 'nice-v340.js', 'nice.js', 'NICE', 'solNice', 'lotNiceLibre', 'batirColonneNice']],
     ['San Francisco', ['DATE_RUES_SF', 'sanfrancisco-v343.js', 'sanfrancisco.js', 'SF', 'solSF', 'lotSFLibre', 'batirColonneSF']],
+    ['Lille', ['DATE_RUES_LILLE', 'lille-v344.js', 'lille.js', 'LILLE', 'solLille', 'lotLilleLibre', 'batirColonneLille']],
   ]) {
     const r = await figee(...args);
     verifier(`à ${ville}, une maison posée sur une ancienne rue n'est pas enfermée dans un immeuble neuf`,

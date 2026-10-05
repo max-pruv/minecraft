@@ -50,7 +50,7 @@ import {
   MONUMENTS_LILLE, buildVieilleBourse, buildPorteDeParis, buildCitadelle,
   buildColonneDeesse, buildOperaLille, buildBeffroiCCI, buildGareFlandres,
   buildTourDeLille, buildTreille,
-  VOIES_LILLE,
+  VOIES_LILLE, PORTEE_FEUX_LILLE,
 } from './lille.js';
 import {
   PARIS, adresseParis, BUTTE, CITE, zCite, hauteurParis, solParis, lotParisLibre, batirColonneParis, gabaritParis, versSeine, pontParis, murDeQuaiParis,
@@ -85,6 +85,7 @@ import * as PARIS_V302 from './paris-v302.js';
 import * as LONDRES_V332 from './londres-v332.js';
 import * as NICE_V340 from './nice-v340.js';
 import * as SF_V343 from './sanfrancisco-v343.js';
+import * as LILLE_V344 from './lille-v344.js';
 import { surLaVoie, presDeLaVoie, voieEn, brancherSol, gareEn, rubansVoieDans } from './trains.js';
 import { routeEn, rubansDans, brancherSol as brancherSolRoutes } from './routes.js';
 
@@ -1387,7 +1388,7 @@ const LANDMARKS_V317 = [
   // Eye en face du Parlement, St Paul dans la City, le Shard sur la rive sud.
   ...MONUMENTS_LONDRES.map((m) => ({
     name: m.nom, x: LONDRES.x + m.u, z: LONDRES.z + m.v,
-    box: m.box, seuil: m.seuil, build: m.build,
+    box: m.box, seuil: m.seuil, build: m.build, tour: m.tour,
   })),
   ...landmarksCapitales(),
   ...landmarksVillesMonde(),
@@ -2086,10 +2087,13 @@ export const DATE_RUES_LONDRES = Date.UTC(2026, 9, 4, 15, 0, 0);
 export const DATE_RUES_NICE = Date.UTC(2026, 9, 5, 5, 25, 0);
 // San Francisco à la v361 (`sanfrancisco-v343.js`).
 export const DATE_RUES_SF = Date.UTC(2026, 9, 5, 8, 15, 0);
+// Lille à la v368 (`lille-v344.js`).
+export const DATE_RUES_LILLE = Date.UTC(2026, 9, 5, 13, 32, 0);
 const VILLES_FIGEES = [
   { ancre: LONDRES, date: DATE_RUES_LONDRES },
   { ancre: NICE, date: DATE_RUES_NICE },
   { ancre: SF, date: DATE_RUES_SF },
+  { ancre: LILLE, date: DATE_RUES_LILLE },
 ];
 const DATE_FIGEE_MAX = Math.max(...VILLES_FIGEES.map((f) => f.date));
 function dansVilleAvant(x, z, t) {
@@ -2600,7 +2604,7 @@ export class World {
     this.monumentsTouches = new Set();  // les monuments HD qu'un enfant a modifiés (v292)
     this.morceauxAvantClimat = new Set(); // les morceaux (et leurs voisins) bâtis avant les climats (v345)
     this.colonnesCedees = new Set();    // les colonnes de Paris où la ville cède à ce qu'un enfant a bâti (v306)
-    this.colonnesVilleAvant = new Set();  // celles de Londres, de Nice et de San Francisco où la ville d'avant le kit reste (v339, v359, v361)
+    this.colonnesVilleAvant = new Set();  // celles de Londres, de Nice, de San Francisco et de Lille où la ville d'avant le kit reste (v339, v359, v361, v368)
     this.cacheSol = new Map();          // "x,z" -> { nat, cote } : la fiche d'une colonne (sol continu, v297)
     this.sansSolContinu = false;        // ?solcontinu=0 : la mesure A/B, jamais un réglage
     this.editTimes = new Map();   // "x,y,z" -> ms timestamp, for multiplayer merge
@@ -3524,9 +3528,9 @@ export class World {
         // Market Street entre les deux, la plage, les quais et les parcs.
         // Nice et Lille : chacune sa trame, ses places et ses maisons. Comme à
         // San Francisco, la trame générique ne s'applique pas par-dessus.
-        // Londres (v339), Nice (v359) et San Francisco (v361) d'avant le kit dans les mondes d'avant,
+        // Londres (v339), Nice (v359), San Francisco (v361) et Lille (v368) d'avant le kit dans les mondes d'avant,
         // et sous les colonnes où un enfant a bâti avant leur date.
-        const villeAvant = city && (city.key === 'londres' || city.key === 'nice' || city.key === 'sf') && (this.conf.villesAvant
+        const villeAvant = city && (city.key === 'londres' || city.key === 'nice' || city.key === 'sf' || city.key === 'lille') && (this.conf.villesAvant
           || (this.colonnesVilleAvant.size > 0 && this.colonnesVilleAvant.has(cleColonneParis(wx, wz))));
         const londresAvant = villeAvant && city.key === 'londres';
         for (const [cle, sol, libre, batir, pont, ancre, voies, cleFeux, portee] of [
@@ -3534,7 +3538,10 @@ export class World {
             ? ['nice', NICE_V340.solNice, NICE_V340.lotNiceLibre, NICE_V340.batirColonneNice, null, NICE,
               NICE_V340.VOIES_NICE, 'nice-v340']
             : ['nice', solNice, lotNiceLibre, batirColonneNice, null, NICE, VOIES_NICE, 'nice', PORTEE_FEUX_NICE],
-          ['lille', solLille, lotLilleLibre, batirColonneLille, null, LILLE, VOIES_LILLE, 'lille'],
+          villeAvant && city.key === 'lille'
+            ? ['lille', LILLE_V344.solLille, LILLE_V344.lotLilleLibre, LILLE_V344.batirColonneLille, null, LILLE,
+              LILLE_V344.VOIES_LILLE, 'lille-v344']
+            : ['lille', solLille, lotLilleLibre, batirColonneLille, null, LILLE, VOIES_LILLE, 'lille', PORTEE_FEUX_LILLE],
           londresAvant
             ? ['londres', LONDRES_V332.solLondres, LONDRES_V332.lotLondresLibre, LONDRES_V332.batirColonneLondres,
               LONDRES_V332.pontLondres, LONDRES, LONDRES_V332.VOIES_LONDRES, 'londres-v332']

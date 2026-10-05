@@ -387,6 +387,32 @@ export const ROUTES = [
   // (s 152–160, un ruisseau), coudes ≤ 18°, déblai 1,5, remblai 1,7, JFK à
   // 512 blocs au-delà de sa marge, le premier repère à 526.
   { nom: 'I-95', villes: ['ny', 'boston'], portes: { ny: [-19769, 4140] }, via: [[-19739, 4140], [-19498, 4128], [-19415, 4096]] },
+  // L'I-95 SUD (v367) : New York–Washington. Deux villes qui ne sont pas des
+  // disques. À New York, la porte de l'I-95 regarde le nord-est : celle-ci est
+  // une SECONDE porte déclarée, sur la rive de l'Hudson, trente-six blocs à
+  // l'ouest du rectangle (la rive à trente-huit blocs vers l'île). Washington
+  // est une BOÎTE (`BOITE`, washington.js) dans un disque de 187, et le relevé
+  // l'a fermée de trois côtés : au nord la montagne (plus de cinquante blocs),
+  // à l'est une crête de 43 à 49 qui commence à six blocs de la boîte — une
+  // route épinglée au niveau de la ville y monte d'un bloc en seize et ne peut
+  // pas déblayer douze blocs (DEBLAI_MAX 9) —, à l'ouest le Potomac DANS la
+  // boîte. Le seul côté bas est le sud, et ce qui touche le bord sud, ce sont
+  // les rues d'Anacostia (la vraie I-295 y passe) : la porte est sous la rue de
+  // u = 37, un bloc hors de la boîte, au niveau de la rue (`boutNet` : pas de
+  // demi-cercle d'asphalte dans la ville), et la route en sort plein sud puis
+  // tourne vers l'est sur un arc de soixante blocs de rayon, entre la boîte et
+  // la marge de la base d'Andrews. Ce quartier n'a pas de pont sur l'Anacostia :
+  // les voitures entrent par sa rue et y font demi-tour (`avenues`), la rue
+  // nommée la plus proche est de l'autre côté de l'eau (dette déclarée).
+  // Mesuré sous node (scratchpad nydc.mjs, couloir le plus bas avec cap sur
+  // une grille de dix blocs, puis cand.mjs, qui appelle `profilDe`) : 2 500
+  // tracés, refus 2 392 coude · 44 remblai · 22 ponts proches · 21 pont près
+  // d'une porte ; vingt et un admissibles, aucun sans pont ; celui-ci : 1 560
+  // blocs, un pont (s 1 048–1 070), coudes ≤ 21°, déblai 7,0 (5,5 avant que le
+  // bout ne descende au niveau de la rue), remblai 1,1.
+  { nom: 'I-95 Sud', villes: ['ny', 'washington'], portes: { ny: [-20321, 5130], washington: [-21191, 6197] }, boutNet: ['washington'],
+    avenues: { washington: [[-21191, 6197], [-21191, 6196], [-21191, 6173]] },
+    via: [[-20361, 5130], [-20404, 5131], [-20441, 5145], [-20451, 5153], [-20680, 5525], [-20684, 5538], [-20684, 5552], [-20687, 5565], [-20762, 5689], [-20781, 5707], [-20817, 5725], [-20842, 5752], [-21048, 6155], [-21052, 6169], [-21052, 6196], [-21055, 6211], [-21061, 6224], [-21072, 6235], [-21105, 6255], [-21130, 6260], [-21147, 6258], [-21161, 6252], [-21173, 6242], [-21183, 6230], [-21189, 6216]] },
 ];
 
 // --- la section -----------------------------------------------------------------
@@ -683,6 +709,20 @@ export function routeEn(x, z) {
   // dans l'air — une erreur par morceau de talus, et le contact (double
   // précision) ne lisait plus la triangulation du maillage. Toute cote de
   // route est donc un soixante-quatrième de bloc, exact dans les deux.
+  // UNE VILLE QUI N'EST PAS UN DISQUE N'A PAS DE RACCORD (v367). Au bout,
+  // la chaussée continue d'ordinaire dans la ville en demi-cercle (la
+  // distance au point borné) : c'est l'entrée de la ville. Washington est une
+  // BOÎTE bâtie jusqu'à son bord ; ce demi-cercle y écrivait de l'asphalte dans
+  // ses rues et ses trottoirs. Un bout déclaré `boutNet` s'arrête net, chaussée
+  // comprise, au quart de bloc près (une colonne se lit en son coin dans le
+  // générateur, en son milieu dans les témoins).
+  if (seg.route.boutNet && (pr.s <= 1e-9 || pr.s >= seg.longueur - 1e-9)) {
+    const cle = pr.s <= 1e-9 ? seg.de : seg.vers;
+    if (seg.route.boutNet.includes(cle)) {
+      const au = (x - pr.px) * pr.fx + (z - pr.pz) * pr.fz;
+      if ((pr.s <= 1e-9 ? -au : au) > 0.25) return null;
+    }
+  }
   const cote = q64(coteA(seg, pr.s));
   const ouvrage = ouvrageA(seg, pr.s);
   if (ouvrage) {

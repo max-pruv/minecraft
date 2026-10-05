@@ -59,7 +59,7 @@ const MAX_STEP = 0.4;     // max movement per collision substep
 const PAS_VOITURE = 0.4;  // pas horizontal de la voiture (v358)
 const DEMI_LONG_VOITURE = 2.2;   // la moitié des 4,4 blocs d'une voiture (vehicules.js)
 const DEGAGEMENT_MARCHE = 0.7;
-const RAYON_MUR = 4.5;     // la façade se lit sur ce rayon autour du contact (v365)
+const RAYON_MUR = 4.5;     // la façade se lit sur ce rayon autour du contact (v370)
 const FACES = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const FREIN_PIETON = 22;         // le frein franc de conduite.js, devant un piéton   // ce qu'il faut avancer pour passer le bord d'une marche (v286)
 
@@ -377,7 +377,7 @@ export class Player {
     this.vel.x = wx; this.vel.z = wz;
   }
 
-  // LES CASES DE SURFACE D'UN MUR AUTOUR DU CONTACT (v365). Les cases que la
+  // LES CASES DE SURFACE D'UN MUR AUTOUR DU CONTACT (v370). Les cases que la
   // pose voulue touche et que la pose d'avant ne touchait pas disent OÙ l'on
   // bute et à quelle hauteur ; autour d'elles (RAYON_MUR), les colonnes
   // pleines à cette hauteur qui ont de l'air à côté sont la façade. Leur
@@ -415,7 +415,7 @@ export class Player {
     return normaleDeMur(cases, x, z);
   }
 
-  // GLISSER LE LONG DE CE QU'ON A TOUCHÉ (v365) : le pas tangent tout de
+  // GLISSER LE LONG DE CE QU'ON A TOUCHÉ (v370) : le pas tangent tout de
   // suite, et s'il bute sur le coin d'une marche de l'escalier, la voiture se
   // décolle d'un cheveu le long de la normale — c'est la réaction du mur, pas
   // un passe-muraille : seule une pose LIBRE est prise.
@@ -492,7 +492,7 @@ export class Player {
         break;
       }
       if (fam) {
-        // CONTRE UNE VOITURE DE LA RUE, LA NORMALE DE SON RECTANGLE (v365) :
+        // CONTRE UNE VOITURE DE LA RUE, LA NORMALE DE SON RECTANGLE (v370) :
         // `voitureContre` (main.js, lecture de la collecte de vehicules.js)
         // rend sa boîte et son allure, et le choc se calcule sur la vitesse
         // RELATIVE (`chocContreVoiture`). Le mobilier, et une voiture qu'on ne
@@ -528,7 +528,7 @@ export class Player {
         const n = Math.hypot(dx, dz);
         if (this.franchirEnRoulant((dx / n) * DEGAGEMENT_MARCHE, (dz / n) * DEGAGEMENT_MARCHE)) continue;
       }
-      // LA NORMALE DU MUR (v365) : la droite qui passe par les cases de
+      // LA NORMALE DU MUR (v370) : la droite qui passe par les cases de
       // surface autour du contact (`normaleDeMur`), stable d'une marche à
       // l'autre sur une façade oblique en escalier. L'essai axe par axe ne
       // sert plus que de repli (moins de trois cases : un poteau, un coin).
@@ -930,7 +930,7 @@ export class Player {
         { v: this.vitesseVoiture, braquage: this.braquage || 0, derive: this.derive || 0 },
         { gaz, volant: strafe, moteur, direction: ev ? ev.direction || 0 : 0, inerte },
         fiche, dt);
-      // LA ROUE LIBRE SE RELÈVE (v365, `?diag=1`) : du lâcher du joystick, au
+      // LA ROUE LIBRE SE RELÈVE (v370, `?diag=1`) : du lâcher du joystick, au
       // dessus de cinq blocs/s, jusqu'à l'arrêt — sur l'horloge du JEU, comme
       // la dynamique qu'elle mesure. Un nouvel appui l'abandonne.
       if (gaz === 0 && !inerte && Math.abs(this.vitesseVoiture) > 5 && !this._roueLibre) this._roueLibre = { depuis: Math.abs(this.vitesseVoiture), s: 0 };
