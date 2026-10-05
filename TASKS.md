@@ -1452,7 +1452,14 @@
   lent, relevé sur 250 blocs) quand le portail, sur le MÊME commit, la rendait
   verte (6,8 sur 37 blocs) : NEUF, intermittent, la grandeur dépend de la
   portion du circuit que la fenêtre a parcourue — à mesurer sur un tour entier.
-- [ ] **QUARANTE-CINQ MONUMENTS SONT BÂTIS EN TRAVERS D'UN ANNEAU DE VOITURES
+- [x] **FAIT en v376** : les anneaux écartent les cases que bâtit un monument
+  (`traverseUnMonument`, villesmonde.js) ; 48 → 0 au témoin (carrosserie à
+  ±1,1), Agra et Le Cap reçoivent leurs anneaux de quartier (66,4 → 91,1 % et
+  71,1 → 95,8 %), la dette des ponts d'Agra (9 pas) tombe. 445 → 430 anneaux,
+  6 % de rue en moins. Et les anneaux se calculent à l'approche de la ville :
+  157 → 0 ms au démarrage, 0,6 ms par ville en médiane, Rome 43 ms la première
+  fois (le Colisée du catalogue). Texte d'origine :
+  **QUARANTE-CINQ MONUMENTS SONT BÂTIS EN TRAVERS D'UN ANNEAU DE VOITURES
   (v375, témoin de `plafond.js`, `DETTE_ANNEAUX`).** Les anneaux des villes
   engendrées se choisissent sur la trame sans regarder les repères ; un
   monument posé APRÈS pose ses blocs (couches d'auteur 1 à 3) sur des cases que

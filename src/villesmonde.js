@@ -3925,8 +3925,72 @@ export const ANNEAUX_EN_PLUS = {
   sydney: [[1, -6, 4, 2], [-7, -5, 1, 1], [-9, 1, 1, 1]],
   rome: [[-6, 0, 1, 3]],      // 88,3 → 94,6 % : le Vatican et Prati
   tokyo: [[-3, 0, 1, 3]],     // 88,7 → 95,7 %
+  // Les anneaux qui traversaient le Taj Mahal et le Fort (v376) partis :
+  // 66,4 → 91,1 %, la ville au sud du Taj et la rive de la Yamuna.
+  agra: [[0, -5, 3, 1], [5, -1, 1, 2]],
+  lecap: [[0, 3, 2, 1]],      // 71,1 → 95,8 %, le château de Bonne-Espérance contourné
 };
 
+// Le trajet du convoi (l'axe moins une demi-chaussée, v271) contre les cases
+// que bâtissent les monuments, À LA DISTANCE : une case dont le centre passe à
+// moins de `DEGAGE_MUR` du trajet est sous la carrosserie (1,13 de
+// demi-largeur, plus la demi-diagonale d'une case, plus la marge du témoin).
+// Échantillonner le trajet au demi-bloc coûtait neuf cents millisecondes au
+// démarrage (157 → 1 075 ms, mesuré) ; les cases, tournées UNE fois dans le
+// repère de la trame, se comparent aux quatre côtés en quelques millisecondes.
+const DEGAGE_MUR = 2.3;
+// Par monument : son centre dans le repère de la trame et le rayon de sa
+// boîte. Ses cases ne se bâtissent que si un trajet passe à portée de la
+// boîte (le bâtisseur est le gros du coût), puis se gardent. Un modèle du
+// catalogue n'écrit pas sa boîte (elle se lit sur le modèle bâti) : il se
+// bâtit toujours.
+const _mursTrame = new Map();
+function mursEnTrame(f) {
+  let liste = _mursTrame.get(f.cle);
+  if (liste) return liste;
+  const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
+  liste = [];
+  for (const m of f.monuments || []) {
+    const b = m.tour || m.build;
+    if (!b) continue;
+    const [du, dv] = f.local(m.lat, m.lon);
+    const mx = Math.round(f.ancre.x + du), mz = Math.round(f.ancre.z + dv);
+    const ex = mx - f.ancre.x, ez = mz - f.ancre.z;
+    liste.push({ A: ex * co - ez * si, B: ex * si + ez * co, r: m.box ? (m.box + 1) * Math.SQRT2 : Infinity, b, mx, mz, cases: null });
+  }
+  _mursTrame.set(f.cle, liste);
+  return liste;
+}
+function casesDe(f, e) {
+  if (e.cases) return e.cases;
+  const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
+  const vues = new Set();
+  e.cases = [];
+  e.b((ax, ay, az, id) => {
+    if (!id || ay < 1 || ay > 3) return;
+    const k = (e.mx + ax) * 65536 + (e.mz + az);
+    if (vues.has(k)) return;
+    vues.add(k);
+    const dx = e.mx + ax + 0.5 - f.ancre.x, dz = e.mz + az + 0.5 - f.ancre.z;
+    e.cases.push(dx * co - dz * si, dx * si + dz * co);
+  });
+  return e.cases;
+}
+function traverseUnMonument(f, c) {
+  const liste = mursEnTrame(f);
+  if (!liste.length) return false;
+  const voie = f.trame.w / 2;
+  const Ru = Math.max(f.trame.pu, c.Ru - voie), Rv = Math.max(f.trame.pv, c.Rv - voie);
+  const D = DEGAGE_MUR;
+  const touche = (A, B, d) => (Math.abs(B) <= Rv + d && Math.abs(Math.abs(A) - Ru) <= d)
+    || (Math.abs(A) <= Ru + d && Math.abs(Math.abs(B) - Rv) <= d);
+  for (const e of liste) {
+    if (!touche(e.A - c.cU, e.B - c.cV, D + e.r)) continue;
+    const cs = casesDe(f, e);
+    for (let i = 0; i < cs.length; i += 2) if (touche(cs[i] - c.cU, cs[i + 1] - c.cV, D)) return true;
+  }
+  return false;
+}
 export function anneauxDeVille(f) {
   if (ANNEAUX.has(f)) return ANNEAUX.get(f);
   const vide = { formes: [], ponts: [] };
@@ -4005,6 +4069,16 @@ export function anneauxDeVille(f) {
       // lui-même vaut son propre périmètre. La phase 2 peut donc repasser sur
       // toute la liste sans se dédoubler.
       if (gardes.some((g) => partageDeRue(candidat, g) > PARTAGE_MAX)) return null;
+      // UN ANNEAU NE PASSE PAS DANS UN MONUMENT (v376). Les repères se posent
+      // APRÈS les colonnes : un anneau choisi sur la seule trame mettait la
+      // voiture dans le Colisée, le Taj Mahal, Tō-ji — quarante-cinq monuments
+      // bâtis en travers d'un anneau, relevés par le témoin de la v375. On lit
+      // les cases que le BÂTISSEUR pose à hauteur de carrosserie
+      // (`murDeMonument`, la lecture des avenues d'entrée), jamais la boîte.
+      // Il passe APRÈS le partage et AVANT l'eau : moins cher que les
+      // quarante lectures de géographie (mis en dernier, mesuré 310 → 410 ms
+      // au démarrage, l'eau tournant alors sur ce qu'il aurait écarté).
+      if (traverseUnMonument(f, candidat)) return null;
       // L'anneau trempe-t-il, et de combien ? On échantillonne son périmètre
       // dans le repère de la trame, puis on tourne vers le monde. Quarante
       // points suffisent à ÉCARTER un anneau au milieu de l'eau ; la longueur
@@ -4227,9 +4301,23 @@ export function pontVillesMonde(x, z) {
 
 // LA CIRCULATION LIT LA MÊME RÈGLE. Elle n'ajoute que ce qu'une forme pure ne
 // peut pas savoir : la cote du sol, et le décalage de la voie de droite.
-export function tracesCirculation(solDe) {
-  const traces = [];
+// LES ANNEAUX SE CALCULENT QUAND L'ENFANT APPROCHE (v376). Toutes les villes
+// au démarrage coûtaient 157 ms derrière la première image (`preloadSpawn`),
+// et 310 depuis que les anneaux écartent les monuments. Le jeu ne lit les
+// traces d'une ville qu'à 220 blocs d'elle : il reçoit ici une marque par
+// ville, que `deplier()` remplace par ses traces au moment voulu.
+export function tracesCirculationParesseuses(solDe) {
+  const out = [];
   for (const f of VILLES_MONDE) {
+    if (!f.trame || f.trame.ruelles) continue;
+    out.push({ cle: f.cle, x: f.ancre.x, z: f.ancre.z, deplier: () => tracesDeVilles([f], solDe) });
+  }
+  return out;
+}
+export function tracesCirculation(solDe) { return tracesDeVilles(VILLES_MONDE, solDe); }
+function tracesDeVilles(villes, solDe) {
+  const traces = [];
+  for (const f of villes) {
     const a = anneauxDeVille(f);
     if (!a.formes.length) continue;
     const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);

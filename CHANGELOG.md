@@ -20,6 +20,31 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v378 — Les voitures ne traversent plus les monuments
+
+**Pourquoi.** Le témoin de la v375 l'a mesuré : dans les villes engendrées, les
+anneaux de voitures se choisissaient sur la trame sans regarder les monuments,
+qui se posent après. Quarante-cinq monuments étaient bâtis en travers d'un
+anneau à hauteur de carrosserie — le Taj Mahal sur 294 cases, le Colisée sur
+53, Rashtrapati Bhavan, le Templo Mayor, Tō-ji, le palais royal de Madrid… :
+des voitures qui passaient au travers des murs.
+
+**Ce que ça change.** Un anneau qui passerait dans un monument est écarté, et
+la ville en prend un autre. Plus une voiture ne traverse un monument. Agra et
+Le Cap, qui perdaient trop de rues, reçoivent des anneaux de quartier. Et les
+anneaux d'une ville ne se calculent plus au démarrage mais quand l'enfant
+s'en approche : la page démarre plus vite.
+
+**Ce qui le prouve.** `plafond.js` : le témoin des monuments en travers d'un
+anneau passe de 45 dettes déclarées à zéro (48 à la mesure de la carrosserie
+vraie sur `origin/main`), et un témoin neuf exige que les anneaux dépliés à
+l'approche soient exactement ceux du calcul entier (262 villes). `carteMonde.js` :
+la dette des ponts d'Agra (le Taj et le Fort sur deux tabliers, 9 pas) tombe.
+Mesuré sous node : aucune ville sans voitures, la moins couverte à 78,7 %
+(barre 75) ; 445 → 430 anneaux ; démarrage 157 → 0 ms pour ce calcul.
+
+---
+
 ## v377 — Le passager monte par la portière
 
 **Pourquoi.** Depuis la v366, l'enfant qui prend le volant marche jusqu'à la
