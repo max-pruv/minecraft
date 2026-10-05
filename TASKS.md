@@ -3789,7 +3789,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   vehicules.js) et l'affichage en prend la fraction de l'allure atteinte. Rien
   à faire tant que Max ne le redemande pas.
 
-- [x] **La physique d'un choc de voiture reste un arrêt net (v272) — FAIT en v358 et v375** (glisse rasante, rebond de face, choc publié, dégâts de la v343 ; contre une voiture de la rue, normale de son rectangle et vitesse relative en v375). La
+- [x] **La physique d'un choc de voiture reste un arrêt net (v272) — FAIT en v358 et v382** (glisse rasante, rebond de face, choc publié, dégâts de la v343 ; contre une voiture de la rue, normale de son rectangle et vitesse relative en v382). La
   vitesse se borne désormais au déplacement RÉEL, ce qui règle le compteur, le
   régime du moteur et les roues qui tournaient dans le vide. Ce n'est pas un
   choc : pas de rebond, pas de dégât, pas de secousse de caméra. C'est la
