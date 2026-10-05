@@ -1,5 +1,74 @@
 # Ce qui est en cours
 
+- [ ] **LA v358 (conduite) N'A PAS REJOUÉ LE PORTAIL ENTIER APRÈS LA FUSION
+  DE LA v357** : dernier portail complet sur la v356 fusionnée (rouges
+  ci-dessous, tous déclarés) ; la v357 ne touche que villesmonde, world,
+  echelle-monuments et dcmonuments, aucun fichier de la conduite, et le seul
+  fichier commun, `tests/plafond.js`, a été rejoué seul sur le code fusionné :
+  108 verts, zéro rouge. Fait pour sortir de la course aux numéros (quatre
+  fusions de `main` pendant quatre portails). Le prochain portail complet le
+  confirme.
+
+- [ ] **PORTAIL DE LA CONDUITE (sur la v355 fusionnée)** — deux rouges neufs, ni
+  l'un ni l'autre de la conduite. (1) `plafond.js` « engendrer et mailler moins
+  cher ne change ni un bloc ni un sommet » : empreinte `69381f2e…` pour une
+  référence `b31099b9…` (v351). Calculée sur `origin/main` (v355) :
+  `69381f2e…` à l'identique — ce sont les deux routes neuves de la v355
+  (Toronto–Montréal, Cologne–Hambourg), lues par le balayage « toutes les
+  routes ». La référence se relève sur la v355 si la session des routes
+  confirme que seul `routeEn` a bougé ; et l'égalité branche = `origin/main`
+  prouve que la conduite ne change ni un bloc ni un sommet — RÉGLÉ par la v357, qui a
+  relevé la référence (`3cc39830…`, vert sur la v358 fusionnée). (2) `degats.js`
+  « enfoncer coûte quelques millisecondes » : premier choc 31 ms pour une
+  barre de 30 au portail ; rejouée seule, branche 15,6 et 17,6 ms,
+  `origin/main` 12,8 ms — un coût de charge. Le reste (gel d'arrivée,
+  programmes de NY, appui long de `carte.js`, façade et taxi de Manhattan)
+  est déjà déclaré ci-dessous.
+
+- [ ] **PORTAIL DE LA CONDUITE (après la fusion avec la v354)** : rouges
+  `monte.js` gel d'arrivée (2 350 ms · 20,6 %, dette ci-dessous),
+  `manhattan.js` façade (17 102 → 51 734), taxi (bouton jamais visible) et
+  PeerJS « Lost connection » (déclarés), et `maj.js` « le loader ne s'efface
+  qu'une fois les corps et les programmes prêts » (20/27 programmes à 1 252 ms
+  au portail) — rejoué SEUL sur la branche : vert, 27/27 à 3 161 ms ; c'est
+  l'intermittence déjà mesurée rouge une fois sur quatre sur `origin/main`
+  (tableau plus bas). Le témoin neuf « une voiture neuve n'hérite pas du
+  dernier choc » est vert au portail.
+
+- [ ] **AU PORTAIL DE LA v358 (la conduite), LES ROUGES RESTANTS SONT DÉJÀ
+  CONNUS, rejoués SEULS des deux côtés.** `monte.js` « l'écran ne se fige pas
+  en arrivant sur une ville » (vol du chasseur, chemin que la v358 ne touche
+  pas) : branche 1 283 ms · 7,2 % et 1 183 · 8,7 %, `origin/main` 1 050 · 5,9 %
+  et 1 150 · 6,4 % (ordre alterné), et rouge à chaque `monte.js` complet des
+  deux côtés (3 417 ms · 27,1 % sur `origin/main`). `monte.js` « se
+  téléporter dans une ville ne compile plus de programmes » : trois puis six
+  programmes physiques à Paris dans la suite complète, sur la branche ET sur
+  `origin/main` ; vert quatre fois sur quatre rejoué seul (deux de chaque
+  côté) — une intermittence de charge. `monte.js` « le bouton Conduire
+  s'offre tout seul dans la rue » : rouge une fois au portail (un métro plus
+  proche, « 🚇 Monter à bord »), vert aux deux `monte.js` complets précédents
+  sur la branche et vert sur `origin/main`. `maj.js` « le loader dit combien
+  de fichiers sont rangés » et `washington.js` « chaque îlot a sa porte » :
+  verts rejoués seuls des deux côtés. `manhattan.js` : « le trou enlève aussi
+  la géométrie visible » rouge des deux côtés (14 460 à 25 316 → 51 734), et
+  la suite s'arrête des deux côtés sur l'attente de 90 s après le
+  rechargement (même ligne, même délai) ; le taxi, qui ne pouvait PAS rouler
+  huit blocs en quinze secondes de montre à 0,45 image par seconde
+  (sonde : 18 et 19 images en quarante secondes, l'ancienne voiture 6 blocs,
+  la nouvelle 3,3), se mesure désormais en quarante images rendues — vert.
+  Dernier portail (57 min, 9 suites) : tous les témoins de la conduite verts ;
+  rouges `monte.js` l'arrivée sur une ville (2 017 ms · 18,7 %), `manhattan.js`
+  la façade (11 684 → 51 734) et le taxi (« bouton jamais visible », une bête,
+  rouge des deux côtés), `carte.js` l'appui long (quatre refus « pointeurs
+  0 », la dette de la v258) — rejouée SEULE : branche verte au premier appui,
+  `origin/main` (v348) verte au deuxième, le premier refusé pareil.
+  `manhattan.js` « les deux clients restent sans erreur de jeu » (PeerJS
+  « Lost connection to server ») : vu rouge une fois sur la branche, NON
+  comparé sur `origin/main` — la suite s'y arrête plus tôt (attente de 90 s
+  après rechargement, puis une attente de 30 s avec le témoin recopié). Un
+  courtier qui perd la connexion n'est pas du code de conduite (la v358 ne
+  touche ni `net.js` ni le banc réseau) ; à rejouer sur `origin/main` le jour
+  où la suite y va jusqu'au bout.
 - [ ] **LE PORTAIL DE LA v352 (le coût d'un morceau), DOUBLE MESURE FAITE.**
   Treize suites vertes, dont `plafond.js` et ses deux témoins neufs. Rouges,
   chacun rejoué SEUL des deux côtés (`origin/main` v348, arbre détaché) :
@@ -190,6 +259,22 @@
     rouges à l'identique sur `origin/main` seul ; la branche seule rend « deux
     enfants sans courtier du tout ». Famille des parties par le nuage,
     intermittente, en production.
+- [ ] **LA CONDUITE À LA GTA, PALIER 1 LIVRÉ (conduite-physique) — CE QUI
+  RESTE, DÉCLARÉ.** (1) Le PLAFOND DE LA TABLETTE n'est pas mesuré : 60
+  blocs/s tient au banc (trou de 125 blocs à rr=12, Paris compris, la
+  position avancée en temps réel — `sonde-plafond-voiture.cjs`), mais le fil
+  principal de l'iPad installe les morceaux à SA cadence ; à mesurer avec
+  `?diag=1` en hypercar (55 blocs/s) dans Paris. (2) Le CHOC contre une
+  voiture de la rue prend la normale du mouvement (de face) : la position de
+  l'autre voiture n'est pas lue, et le témoin pose la famille « voiture » à la
+  main (le crochet réel est éprouvé par « la circulation s'arrête devant la
+  voiture de l'enfant »). (3) La normale d'un MUR se lit sur les axes du
+  monde : contre une façade oblique en escalier (Paris), la glisse alterne
+  les axes. (4) La ROUE LIBRE dure quelques secondes (frein moteur 3,5
+  blocs/s² plus l'air) là où l'ancienne voiture s'arrêtait en 0,4 s : c'est
+  voulu (GTA), à juger sur la tablette avec Marlon. (5) Les réseaux : la
+  dérive et le braquage ne voyagent pas — l'ami voit la caisse au cap du
+  conducteur, pas le volant.
 - [x] **DEUX OU TROIS PROGRAMMES SE COMPILENT ENCORE À L'ARRIVÉE À PARIS
   (mesuré en v306) — ÉLARGI À TOUTES LES VILLES ET FAIT EN v319.**
   `sonde-programmes-villes.cjs` (seize lieux, page neuve par lieu) rendait sur

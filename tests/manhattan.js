@@ -319,11 +319,16 @@ function verifier(nom, ok, detail = "") {
           hit,
         ),
       );
-      await p.waitForFunction(
+      // UNE ATTENTE QUI JETTE MASQUE TOUT CE QUI SUIT (v291) : au portail de
+      // la v358 la file de Manhattan ne s'est jamais vidée en soixante
+      // secondes, et la suite s'est arrêtée là. On attend, borné, et le
+      // témoin d'après rend son verdict sur ce qui est installé.
+      const fileVide = await p.waitForFunction(
         () => !__game.villeRealiste.job && !__game.villeRealiste.queue?.length,
         null,
         { timeout: 60000 },
-      );
+      ).then(() => true).catch(() => false);
+      if (!fileVide) console.log("   (file de Manhattan encore pleine après 60 s)");
       const geometrieApres = await p.evaluate(() =>
         [...__game.villeRealiste.buildings.values()].reduce(
           (n, g) => n + (g.userData.instances || 0),
@@ -540,7 +545,11 @@ function verifier(nom, ok, detail = "") {
         `bouton jamais visible en ${Date.now() - t0Taxi} ms — ${JSON.stringify(vu)}`,
       );
     } else {
-    await p.locator("#ride-btn").tap();
+    // le bouton est là, mais à 0,45 image par seconde un `tap` attend que la
+    // page soit « stable » et lève son délai (v358) : on retombe sur un clic
+    // plutôt que de tuer la suite — c'est la conduite tactile qu'on éprouve
+    const tape = await p.locator("#ride-btn").tap({ timeout: 15000 }).then(() => true).catch(() => false);
+    if (!tape) await p.evaluate(() => document.getElementById("ride-btn").click());
     const depart = await p.evaluate(() => __game.player.pos.z),
       doigt = await p.context().newCDPSession(p);
     await doigt.send("Input.dispatchTouchEvent", {
@@ -551,9 +560,18 @@ function verifier(nom, ok, detail = "") {
       type: "touchMove",
       touchPoints: [{ x: 100, y: 270 }],
     });
+    // ON ATTEND DES IMAGES DE JEU, PAS DU TEMPS DE MONTRE (v358, règle de la
+    // v277). Manhattan rend 0,45 image par seconde sur ce banc (sonde : 18 et
+    // 19 images en quarante secondes, branche et `origin/main`) et `dt` est
+    // borné à un vingtième : quinze secondes de montre y valent sept images,
+    // un tiers de seconde de jeu — l'ancienne voiture y faisait 6 blocs en
+    // quarante secondes, la nouvelle 3,3 : RIEN ne pouvait tenir huit blocs en
+    // quinze secondes. On compte donc quarante images rendues (deux secondes
+    // de jeu), bornées à deux minutes et demie de montre.
+    const image0 = await p.evaluate(() => __game.renderer.info.render.frame);
     await p
-      .waitForFunction((z) => __game.player.pos.z < z - 8, depart, {
-        timeout: 15000,
+      .waitForFunction((a) => __game.player.pos.z < a.z - 8 || __game.renderer.info.render.frame - a.i > 40, { z: depart, i: image0 }, {
+        timeout: 150000,
       })
       .catch(() => {});
     await doigt.send("Input.dispatchTouchEvent", {
@@ -567,9 +585,21 @@ function verifier(nom, ok, detail = "") {
     verifier(
       "le taxi roule avec les contrôles tactiles",
       avance > 8,
-      `${avance} blocs en ${Date.now() - t0Taxi} ms`,
+      `${avance} blocs en ${Date.now() - t0Taxi} ms de montre`,
     );
-    await p.locator("#ride-btn").tap();
+    // DESCENDRE NE DOIT PAS TUER LA SUITE (v358) : ce `tap` a levé son délai
+    // au portail de la v358 et neuf témoins n'ont pas été atteints. On
+    // descend, borné, et ce que le bouton annonce entre dans le message.
+    const descendu = await p.locator("#ride-btn").tap({ timeout: 15000 }).then(() => true).catch(() => false);
+    if (!descendu) {
+      const vu = await p.evaluate(() => {
+        const b = document.getElementById("ride-btn");
+        return { bouton: b ? b.textContent.trim() : null, affiche: b ? getComputedStyle(b).display : null,
+          auVolant: !!(__game.fun.montureConduite && __game.fun.montureConduite()), v: __game.player.vitesseVoiture };
+      });
+      console.log(`   (descente du taxi impossible : ${JSON.stringify(vu)})`);
+      await p.evaluate(() => { if (__game.fun.montureConduite && __game.fun.montureConduite()) document.getElementById("ride-btn").click(); });
+    }
     }
     const memo = await p.evaluate(() => {
       __game.world.saveEdits();

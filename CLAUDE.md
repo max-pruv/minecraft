@@ -1192,6 +1192,77 @@ en temps réel), `fun.js` le fait descendre et `deposer` le pose debout sur une
 case libre à côté (côté conducteur d'abord). La carcasse porte `horsService`
 (lu par `animals.js`, comme `montee`) : elle ne se reprend pas, et elle s'en
 va au bout de `DUREE_CARCASSE`.
+## La conduite à la GTA (v358) — un modèle pur, une boîte orientée, des chocs qui se publient
+
+Max : « une grosse refonte de la façon de conduire… comme GTA ». Premier palier
+de la session `conduite-physique` (six sessions en parallèle sur la conduite).
+Six règles.
+
+- **LA DYNAMIQUE VIT DANS UN MODULE PUR, ET LE JOUEUR NE FAIT QUE L'APPLIQUER.**
+  `conduite.js` (sans three ni document) : le pas de dynamique
+  (`pasVoiture`), le choc (`reponseChoc`), les cases sous une boîte orientée
+  (`casesSousBoite`), le point d'impact. `player.js` l'appelle, `plafond.js`
+  le vérifie sous node — la simulation au pas du jeu y doit rejoindre la
+  formule fermée du 0 → 100 (`tempsJusqua`), sinon les deux copies d'une même
+  dynamique ont divergé.
+- **`player.yaw` EST LE CORPS, `derive` EST L'ÉCART DE LA VITESSE.** La
+  vitesse va dans la direction `yaw + derive` ; la dérive (bornée à
+  `DERIVE_MAX`) naît d'un virage pris plus vite que l'adhérence et se
+  rattrape seule (`DERIVE_TAU`). Une session qui la dessine ne la rajoute
+  pas au cap : la caisse tourne déjà avec `yaw`.
+- **LE CONTRAT AVEC LES DÉGÂTS SE TIENT PAR DEUX DRAPEAUX, POSÉS PAR LA
+  PHYSIQUE.** Les dégâts (v343) devinent un choc aux chutes de vitesse tant
+  que `player.choc` est `undefined`, et appliquent eux-mêmes leurs effets
+  (allure, biais de cap) tant que `player.physiqueLitEtat` est faux. Le
+  joueur naît donc avec `choc = null` (pas encore de choc, mais une physique
+  qui les publie : un frein franc n'est pas un choc) et `physiqueLitEtat =
+  true` ; `direction` se lit comme les dégâts la publient — un biais de CAP en
+  rad/s à pleine vitesse, pas un angle de roues —, et le moteur abîmé garde
+  leur facteur 0,35 + 0,65 × moteur. Un témoin qui pose `etatVoiture` à la
+  main doit le FIGER : les dégâts le réécrivent à chaque image.
+- **UNE VOITURE BONDIT AU DÉPART.** La courbe a0 · (1 − (v/vmax)²) seule
+  démarrait mou : au banc, même nombre d'images des deux côtés, l'ancienne
+  voiture (toute son allure en une demi-seconde) faisait 6 blocs et la
+  nouvelle 1,75. `accelVoiture` ajoute un coup de départ (`LANCER`, éteint à
+  dix blocs/s) — 7,5 à 9,8 blocs dans la première seconde selon la classe —
+  et `tempsJusqua` intègre la MÊME fonction : une seule formule, deux
+  lecteurs.
+- **LA CLASSE SE RETROUVE À SA POINTE.** `fun.js` ne passe que `boost`
+  (l'allure, multiple de la marche) ; `ALLURES` se déduit des fiches de
+  `conduite.js`, et `ficheDeVitesse` retrouve la classe par sa pointe, unique
+  par classe. Une propriété de classe s'ajoute dans la fiche, jamais dans
+  `fun.js`.
+- **LE PLAFOND SE MESURE EN TEMPS RÉEL, PAS AU PAS DU JOUEUR.** La première
+  sonde laissait le joueur avancer : le banc rendant dix images par seconde et
+  `dt` étant borné à un vingtième, la position avançait au ralenti (77 blocs
+  en dix secondes « à 36 ») et la mesure disait la cadence du banc. La sonde
+  (`sonde-plafond-voiture.cjs`) avance la position EN TEMPS RÉEL à chaque
+  image. Trou devant soi à rr=12 : 182 · 161 · 151 · 125 blocs en campagne,
+  160 · 151 · 136 · 125 à Paris, pour 30 · 40 · 50 · 60 blocs/s.
+  `PLAFOND_SOL` se lit dans `plafond-sol.js` (v346, la session du monde à la
+  vitesse : 60 en ville, 70 en campagne — la même valeur, mesurée à part) ;
+  l'hypercar à 55. Le plafond de la v260 (28, calculé
+  avant le worker de la v251) est mort. La tablette reste à mesurer.
+- **UNE MARCHE N'EST PAS UN MUR AU BOUT DU CAPOT.** La boîte fait désormais
+  4,4 × 2,26 et tourne avec la voiture ; mais sur la surface continue une
+  pente d'un bloc par bloc met le relief à deux blocs au-dessus du centre sous
+  le nez. Ce qui ne dépasse pas d'UN bloc la cote de la voiture ne compte
+  donc que sous le carré central (la largeur, comme la v297 l'avait réglé) ;
+  au-delà, seul ce qui dépasse une marche est un mur. Et l'on franchit aussi
+  juste après une crête : plus rapide, la voiture décolle des bosses.
+- **UN CHOC SE PUBLIE, ET « PAS SI L'ON EST DÉJÀ DEDANS » VAUT POUR LES
+  BLOCS.** `player.choc = { force, t, x, z }` (force 0 à 1, un mur de face à
+  72 km/h vaut 1 ; x, z le milieu de la face qui touche), sous cinq pour cent
+  rien ne se publie. **Un choc est un événement, pas un état** : il
+  s'efface quand on monte et quand on descend, sinon les dégâts le rejouent
+  sur la voiture suivante (mesuré : une voiture neuve à santé 0,7, le cap
+  qui tourne seul). Devant un piéton on FREINE à la distance d'arrêt
+  (douze blocs au plus), on ne l'attend pas au contact. Une pose n'est refusée que si elle touche une case pleine
+  que la pose d'avant ne touchait pas : une voiture invoquée contre un mur
+  s'en dégage. Le crochet de main.js rend la FAMILLE : voiture et mobilier
+  rebondissent, piéton et eau arrêtent net — personne n'est jamais touché.
+  Une voiture de la rue ne se pousse pas (horloge partagée, v305) : c'est
+  elle qui attend (`cederLePassage`, v245).
 
 ## Les monuments à la hauteur de leur ville (v335) — une table de paliers, deux lecteurs
 
@@ -5261,6 +5332,10 @@ sonde de captures (`sonde-captures-avion.cjs`) rend une vue de côté par une
 caméra à part, `layers.enableAll()` comme le veut la v250.
 
 ## Chaque voiture roule à l'allure de sa classe (v260)
+
+> **⚠️ Le plafond calculé ci-dessous (28 blocs/s) est remplacé par un plafond
+> MESURÉ (60) en v358, et l'allure se déduit des fiches de `conduite.js`.** Lire
+> « La conduite à la GTA (v358) ».
 
 Max : « une vitesse en fonction du modèle ». Deux règles.
 

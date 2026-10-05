@@ -361,6 +361,59 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   const w = new World();
 
   verifier('le ciel est monté', HEIGHT >= 160, `${HEIGHT} blocs`);
+
+  // --- LE MODÈLE DE CONDUITE, PUR (v358) -------------------------------------
+  // `conduite.js` est lu sous node : ce que la voiture FAIT d'une commande et
+  // d'un choc se vérifie ici en millisecondes, sans navigateur. Sur l'ancien
+  // code le module n'existe pas, et chaque verdict le DIT au lieu de planter.
+  {
+    const C = await import('../src/conduite.js').catch(() => null);
+    const absent = 'conduite.js absent (ancien code)';
+    if (!C) {
+      for (const n of ['les classes de voitures', '0 → 100 km/h par classe', 'la dérive se rattrape seule', 'un choc rasant glisse, un choc de face rebondit', 'la boîte orientée'])
+        verifier(`conduite : ${n}`, false, absent);
+    } else {
+      const ordre = ['citadine', 'berline', 'gt', 'sportive', 'hypercar'];
+      const vm = ordre.map((k) => C.CLASSES[k].vmax);
+      verifier('conduite : les classes vont de la citadine à l\'hypercar, toutes plus vite qu\'avant (25,6), toutes sous le plafond MESURÉ du sol',
+        vm.every((v, i) => i === 0 || v > vm[i - 1]) && vm[0] > 25.6 && vm[vm.length - 1] <= C.PLAFOND_SOL,
+        `${ordre.map((k, i) => `${k} ${vm[i]} (${Math.round(vm[i] * 3.6)} km/h)`).join(' · ')} · plafond ${C.PLAFOND_SOL}`);
+      // le 0 → 100 se SIMULE au pas du jeu (un vingtième), et doit rejoindre la
+      // formule fermée : deux copies d'une même dynamique qui divergeraient
+      const t100 = {};
+      for (const k of Object.keys(C.CLASSES)) {
+        const f = { classe: k, ...C.CLASSES[k] };
+        let e = { v: 0, braquage: 0, derive: 0 }, t = 0;
+        while (e.v < 27.78 && t < 30) { e = { ...e, ...C.pasVoiture(e, { gaz: 1, volant: 0 }, f, 0.05) }; t += 0.05; }
+        t100[k] = { simule: +t.toFixed(2), formule: +C.tempsJusqua(27.78, f).toFixed(2) };
+      }
+      verifier('conduite : 0 → 100 km/h entre deux et sept secondes selon la classe, et la simulation rejoint la formule',
+        Object.values(t100).every((x) => x.simule >= 1.8 && x.simule <= 7 && Math.abs(x.simule - x.formule) < 0.15)
+          && t100.hypercar.simule < t100.citadine.simule,
+        JSON.stringify(t100));
+      // à fond de volant, à pleine vitesse, trois secondes, puis on lâche
+      const fh = { classe: 'hypercar', ...C.CLASSES.hypercar };
+      let e = { v: fh.vmax, braquage: 0, derive: 0 }, pire = 0;
+      for (let t = 0; t < 3; t += 0.05) { e = { ...e, ...C.pasVoiture(e, { gaz: 1, volant: 1 }, fh, 0.05) }; pire = Math.max(pire, Math.abs(e.derive)); }
+      const pendant = Math.abs(e.derive);
+      for (let t = 0; t < 1.5; t += 0.05) e = { ...e, ...C.pasVoiture(e, { gaz: 1, volant: 0 }, fh, 0.05) };
+      verifier('conduite : la dérive d\'un virage serré pris vite reste sous sa borne, et se rattrape seule en lâchant le volant',
+        pire > 0.05 && pire <= C.DERIVE_MAX + 1e-9 && Math.abs(e.derive) < 0.02,
+        `pire ${pire.toFixed(3)} rad (borne ${C.DERIVE_MAX}), à la fin du virage ${pendant.toFixed(3)}, 1,5 s après ${Math.abs(e.derive).toFixed(4)}`);
+      const ras = C.reponseChoc(24, 24 * Math.tan(0.2), 0, -1);
+      const fac = C.reponseChoc(20, 0, -1, 0);
+      verifier('conduite : un choc rasant garde l\'essentiel de la vitesse le long du mur, un choc de face s\'arrête et rebondit un peu',
+        ras.glisse && ras.vx > 24 * 0.75 && Math.abs(ras.vz) < 1e-9 && ras.force < 0.3
+          && !fac.glisse && fac.vx < 0 && fac.vx > -20 * 0.3 && fac.force === 1,
+        `rasant ${JSON.stringify(ras)} · face ${JSON.stringify(fac)}`);
+      const droit = C.casesSousBoite(10.5, 10.5, 0, 2.2, 1.13).length;
+      const biais = C.casesSousBoite(10.5, 10.5, Math.PI / 4, 2.2, 1.13);
+      const coin = biais.some(([bx, bz]) => (bx === 12 && bz === 8) || (bx === 8 && bz === 12));   // les coins du carré englobant hors du rectangle
+      verifier('conduite : la boîte orientée suit la voiture — en biais, elle ne touche pas les coins de son carré englobant',
+        droit === 15 && biais.length > 0 && biais.length < 36 && !coin,
+        `droite ${droit} cases · en biais ${biais.length} cases, coins (12,8) et (8,12) ${coin ? 'touchés' : 'libres'}`);
+    }
+  }
   verifier('et le sol a son propre plafond, qui ne suit pas le ciel',
     SOMMET_TERRAIN === 80, `${SOMMET_TERRAIN}`);
 
