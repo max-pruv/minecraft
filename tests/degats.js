@@ -160,7 +160,7 @@ function verifier(nom, ok, detail = '') {
       await new Promise((f) => setTimeout(f, 1500));
       let lampes = 0;
       g.scene.traverse((o) => { if (o.isLight) lampes++; });
-      // LES CLÉS, PAS LE COMPTE (v362) : un programme RENDU par un objet qui
+      // LES CLÉS, PAS LE COMPTE (v363) : un programme RENDU par un objet qui
       // s'en va fait baisser le compte (97 → 96 mesuré, rouge des deux côtés)
       // sans rien dire d'une compilation. Ce qui est compilé au choc est une
       // clé qui n'existait pas avant.
@@ -349,7 +349,7 @@ function verifier(nom, ok, detail = '') {
       await new Promise((f) => setTimeout(f, 1500));
       let lampes = 0;
       g.scene.traverse((o) => { if (o.isLight) lampes++; });
-      // LES CLÉS, PAS LE COMPTE (v362) : un programme RENDU par un objet qui
+      // LES CLÉS, PAS LE COMPTE (v363) : un programme RENDU par un objet qui
       // s'en va fait baisser le compte (97 → 96 mesuré, rouge des deux côtés)
       // sans rien dire d'une compilation. Ce qui est compilé au choc est une
       // clé qui n'existait pas avant.
@@ -612,7 +612,7 @@ function verifier(nom, ok, detail = '') {
       JSON.stringify(contrat));
 
     // 6 quinquies. UNE VOITURE DE LA RUE ABÎMÉE QU'ON PREND GARDE SES COUPS
-    // (v362). L'enfant descend, une voiture de la rue est froissée par le vrai
+    // (v363). L'enfant descend, une voiture de la rue est froissée par le vrai
     // chemin (un choc publié par la physique, qui trouve la voiture percutée),
     // il se met à côté et touche « Conduire cette voiture ». La monture neuve
     // doit porter la MÊME histoire de chocs, et sa tôle enfoncée dès que son
@@ -784,7 +784,7 @@ function verifier(nom, ok, detail = '') {
       !partie.err && !partie.dansLaScene && partie.restantes === 0 && partie.propres > 0 && partie.rendues === partie.propres,
       JSON.stringify(partie));
 
-    // 9. LES CHOCS DE LA RUE À PLUSIEURS (v362). Chaque tablette a SA rue :
+    // 9. LES CHOCS DE LA RUE À PLUSIEURS (v363). Chaque tablette a SA rue :
     // la même voiture (même convoi, même rang) roule chez Marlon et chez
     // Alice. Marlon la percute ; Alice doit la voir froissée chez elle, de la
     // MÊME histoire de chocs — l'ancien code ne lui en disait rien.

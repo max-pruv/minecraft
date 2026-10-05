@@ -2057,7 +2057,7 @@ export function createVehicules({ scene, player }) {
     return mieux;
   }
 
-  // LES DÉGÂTS À PLUSIEURS (v362) : une voiture de la rue se nomme par
+  // LES DÉGÂTS À PLUSIEURS (v363) : une voiture de la rue se nomme par
   // `clé#rang` (v305), la seule chose qui soit la même d'une tablette à
   // l'autre. Crochet court, lu par degats3d.js (branché par main.js) : un
   // maillage → son nom, un nom → son maillage (null si la place est vide ou

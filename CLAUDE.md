@@ -1282,7 +1282,7 @@ va se rend une fois : un clone marqué `rendu` à son `dispose` (par `liberer`)
 ne se rend pas une seconde fois — le premier témoin comptait 28 rendues pour
 14 clones.
 
-**Les coups suivent la voiture, et la rue est la même chez l'ami (v362).**
+**Les coups suivent la voiture, et la rue est la même chez l'ami (v363).**
 Une voiture de la rue froissée que l'enfant prend (`emprunter`, v194) passe
 son HISTOIRE de chocs à la monture neuve (`heriter`, degats3d.js) ; `fun.js`
 la retrouve AVANT l'emprunt par sa place (`rueEn`), sans toucher la

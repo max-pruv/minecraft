@@ -242,11 +242,11 @@
     (le receveur garde l'épave).
   - ~~Les voitures de la rue ne s'abîment pas~~ — **fait en v356** ; la
     voiture prise qui repartait neuve et l'ami qui ne voyait pas les
-    enfoncements de SA rue — **faits en v362** (l'histoire suit, `rue_choc`).
+    enfoncements de SA rue — **faits en v363** (l'histoire suit, `rue_choc`).
     Reste : un hôte resté sur l'ancienne version ne relaie pas `rue_choc`
     entre deux invités à jour (le receveur cède, déclaré).
   - Le témoin « aucun programme compilé au feu » lit les clés depuis la
-    v362 (le compte baissait : 93 → 92, 97 → 96). « Enfoncer coûte quelques
+    v363 (le compte baissait : 93 → 92, 97 → 96). « Enfoncer coûte quelques
     millisecondes » reste une mesure de temps sous charge : 15 ms seul ici,
     31,1 une fois au portail de la v348 — non repointé faute d'une grandeur
     qui ne dépende pas du processeur partagé.
@@ -259,7 +259,7 @@
   - **Les avions ne s'abîment pas** (`pilote` est écarté) : une décision, pas
     un oubli — un atterrissage manqué n'a pas de « choc » dans `player.js`.
 
-- [ ] **AU PORTAIL DE LA v362 (les coups suivent la voiture), CINQ SUITES
+- [ ] **AU PORTAIL DE LA v363 (les coups suivent la voiture), CINQ SUITES
   ROUGES — aucune causée par la livraison, double mesure faite (rejouées SEULES
   sur la branche et sur `origin/main` v358, arbre détaché).**
   - `reglages.js` « un choix fait sur une tablette part au serveur » et ses

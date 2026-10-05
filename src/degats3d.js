@@ -350,7 +350,7 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
   let fx = null, imFumee = null, imFlamme = null;
   const particules = [];             // { x, y, z, vie, age, vx, vy, vz, t0, t1, flamme, couleur }
   let voitureRue = null;             // (x, z, y) → maillage de la rue percutée, branché par main.js
-  // LES CHOCS DE LA RUE À PLUSIEURS (v362). Chaque tablette a SA rue : une
+  // LES CHOCS DE LA RUE À PLUSIEURS (v363). Chaque tablette a SA rue : une
   // voiture percutée chez Marlon n'était froissée que chez lui. Elle se nomme
   // par `clé#rang` (v305) — `nommer`, branché par main.js, va du maillage au
   // nom et du nom au maillage — et son HISTOIRE (les impacts, en repère de
@@ -515,7 +515,7 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
     if (!m) return null;
     const l = D.versRepere(m.position.x, m.position.z, m.rotation.y, wx, wz);
     const r = choc(m, { force, lx: l.lx, lz: l.lz }, true);
-    // l'histoire de ce choc, pour les amis (v362) : le dernier impact noté
+    // l'histoire de ce choc, pour les amis (v363) : le dernier impact noté
     // est exactement celui que `subirChoc` vient d'arrondir
     const nom = r && nommer ? nommer(m) : null;
     if (nom) {
@@ -538,7 +538,7 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
     if (h.length > 12) h.shift();
   }
 
-  // UN CHOC DE LA RUE REÇU D'UN AMI (v362). On le note, et l'on rejoue tout
+  // UN CHOC DE LA RUE REÇU D'UN AMI (v363). On le note, et l'on rejoue tout
   // de suite si la voiture de ce nom roule chez nous ; sinon `rapprocher` le
   // fera quand elle naîtra (un convoi ne fabrique ses voitures qu'à portée).
   function recevoirRue(msg) {
@@ -566,7 +566,7 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
     }
   }
 
-  // UNE VOITURE DE LA RUE ABÎMÉE QUE L'ENFANT PREND garde ses coups (v362).
+  // UNE VOITURE DE LA RUE ABÎMÉE QUE L'ENFANT PREND garde ses coups (v363).
   // `emprunter` la sort du convoi et fabrique une monture NEUVE du même
   // modèle (v194) — sa laque suit depuis la v305, ses dégâts ne suivaient
   // pas : l'enfant montait dans une voiture froissée et repartait dans une
@@ -866,7 +866,7 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
   return {
     auVolant, descend, deposer, update, choc, reparer, distant, chauffer, garderEpave,
     brancherRue: (f) => { voitureRue = f; },
-    // à plusieurs (v362) : le nom d'une voiture de la rue, et l'envoi
+    // à plusieurs (v363) : le nom d'une voiture de la rue, et l'envoi
     brancherNoms: (f) => { nommer = f; },
     brancherReseau: (f) => { diffuser = f; },
     recevoirRue, rueEn, heriter, percuterRue,
