@@ -3860,6 +3860,18 @@ l'embarquement a eu lieu, pas par une hypothèse.
   C'est la livraison suivante, et le piège est nommé : **une largeur ne se
   projette pas, elle se relève** (v187).
 
+- [ ] **PORTAIL DE LA v370 (Washington), double mesure faite.** Vertes :
+  `carteMonde.js` (le témoin neuf de la grille, rouge sur `origin/main`),
+  `plafond.js`, `washington.js` (les maisons, les portes, le métro), `metro.js`,
+  `sauvegarde.js`. Deux rouges de la livraison, corrigés : l'empreinte des 490
+  morceaux (le lieu « washington » change ; mesurée lieu par lieu, les huit
+  autres identiques au bit près des deux côtés) et le Musée afro-américain sous
+  la médiane de ses voisins (le Triangle fédéral descend à 12–14). Rouges déjà
+  déclarés : `maj.js` le loader et le palier (charge du portail), `carte.js` la
+  flèche du GPS et le glisser bridé (515 ms), `manhattan.js` le trou et le
+  taxi, `monte.js` le gel d'arrivée et « descend train sorti » (ligne 281).
+  Après la fusion de la v369, `plafond.js` rejouée seule : 116 verts, un rouge
+  de durée déjà déclaré (« la surface coûte quelques millisecondes »).
 - [x] **v370 — LA GRILLE DE WASHINGTON À LA RÈGLE DU KIT.** Pas de 28, rue
   locale (3 de chaussée, 2 + 2 de trottoir), quatre maisons et une ruelle par
   îlot, ville d'avant figée (`washington-v367.js`), quatorze circuits. Les

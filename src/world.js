@@ -2092,7 +2092,7 @@ export const DATE_RUES_SF = Date.UTC(2026, 9, 5, 8, 15, 0);
 export const DATE_RUES_LILLE = Date.UTC(2026, 9, 5, 13, 32, 0);
 // Washington à la v370 (`washington-v367.js`). Sa ville est une BOÎTE, pas un
 // disque : le cercle qui la contient va jusqu'au coin de Georgetown (268).
-export const DATE_RUES_WASHINGTON = Date.UTC(2026, 9, 5, 14, 0, 0);
+export const DATE_RUES_WASHINGTON = Date.UTC(2026, 9, 5, 15, 38, 0);
 const VILLES_FIGEES = [
   { ancre: LONDRES, date: DATE_RUES_LONDRES },
   { ancre: NICE, date: DATE_RUES_NICE },
