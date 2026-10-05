@@ -1301,7 +1301,7 @@
   vraie emprise (un bloc et demi), ou les trois repères écartés — c'est la
   boîte, donc le relief : décision de carte.
 - [x] **WALT DISNEY HALL ET LE ROGERS CENTRE SONT DES COUPOLES (v365) — FAIT en
-  v366, avec les trois autres coupoles de gabarit.** Un témoin de `plafond.js`
+  v369, avec les trois autres coupoles de gabarit.** Un témoin de `plafond.js`
   exige désormais qu'aucun repère ne garde `dome`, quelle que soit sa hauteur
   (rouge sur la v365 : cinq). Disney Hall a ses voiles d'acier (21 blocs) ; le
   Rogers Centre est un stade rond à toit plat, `vrai` — étiré au ciel de Toronto
@@ -1311,7 +1311,7 @@
   a sa rotonde, son oculus et son portique (dix blocs, sous le Colisée fixe à
   19 : étiré à ses 43 m il le dépassait) ; le dôme du Rocher son octogone ; le
   Bean son haricot ; Navy Pier sa jetée et sa grande roue.
-- [ ] **LE PORTAIL DE LA v366 : `monte.js` CHANGE DE ROUGES À CHAQUE PASSAGE,
+- [ ] **LE PORTAIL DE LA v369 : `monte.js` CHANGE DE ROUGES À CHAQUE PASSAGE,
   DES DEUX CÔTÉS.** Portail : « elle ralentit assez pour qu'on puisse la
   rejoindre » (9,1 m/s, neuf), le réverbère au volant, la compilation à
   l'arrivée, le gel d'arrivée. Rejouée SEULE sur la branche : la poule, le trou
@@ -1325,7 +1325,7 @@
   ces boîtes. `washington.js` « chaque îlot a sa porte » (déclaré) : vert seul
   des deux côtés. `maj.js`, `carte.js`, `manhattan.js` : les rouges déclarés
   de la v365, identiques.
-- [ ] **HUIT PALAIS SONT ENCORE LE GABARIT `palaisLong` (v366, compté par le
+- [ ] **HUIT PALAIS SONT ENCORE LE GABARIT `palaisLong` (v369, compté par le
   témoin).** Palais du Dam, Rijksmuseum, château de Prague (sans Saint-Guy),
   Palais royal de Stockholm, Amalienborg, Gyeongbokgung (des toits coréens),
   Casa Rosada, palais Bahia : trois blocs d'épaisseur et une baie sur deux, que

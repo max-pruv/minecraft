@@ -177,7 +177,7 @@ export const ECHELLES_VILLES = Object.freeze({
   // Le Samrat Yantra, le grand cadran, vingt et un mètres.
   'Delhi|Jantar Mantar': { vraie: 21, corps: [5, 4] },
   'Delhi|Rashtrapati Bhavan': { vraie: 55, paliers: [[0, 0], [1, 1], [5, 14], [8, 21], [13, 21], [17, 56]] },
-  // Le socle à huit mètres, les voiles de Gehry jusqu'à quarante-six (v365).
+  // Le socle à huit mètres, les voiles de Gehry jusqu'à quarante-six (v369).
   'Los Angeles|Walt Disney Hall': { vraie: 46, paliers: [[0, 0], [1, 1], [3, 8], [12, 47]] },
   // La tour de l'horloge de l'ancien hôtel de ville, cent quatre mètres.
   'Toronto|L\'ancien hôtel de ville': { vraie: 104, paliers: [[0, 0], [1, 1], [5, 24], [7, 30], [15, 92], [18, 105]] },
@@ -342,7 +342,7 @@ export const BAS_DECLARES = Object.freeze({
   'Paris|Pyramide du Louvre': { vrai: 'la pyramide (21,6 m) est plus basse que le palais du Louvre qui l\'entoure' },
   'New York|Bourse de New York': { vrai: 'la Bourse est un temple de six étages au pied des tours de Wall Street' },
   'San Francisco|Lombard Street': { vrai: 'c\'est une rue' },
-  'Toronto|Le Rogers Centre': { vrai: 'un stade ne s\'étire pas : étiré au ciel de Toronto, il montait deux fois plus haut que large, un silo (v365) ; les tours du centre le dominent' },
+  'Toronto|Le Rogers Centre': { vrai: 'un stade ne s\'étire pas : étiré au ciel de Toronto, il montait deux fois plus haut que large, un silo (v369) ; les tours du centre le dominent' },
   'San Francisco|Dragon Gate': { vrai: 'une porte de Chinatown, plus basse que les immeubles de Grant Avenue' },
   'Nice|Port Lympia': { vrai: 'c\'est un port' },
   'Nice|Cours Saleya': { vrai: 'c\'est un marché à ciel ouvert' },

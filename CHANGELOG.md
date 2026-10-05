@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v366 — Plus une coupole de gabarit dans le monde
+## v369 — Plus une coupole de gabarit dans le monde
 
 **Pourquoi.** La v365 avait donné leur édifice aux coupoles et aux palais de
 gabarit qui montaient en tour, et déclaré ceux qui restaient plus bas : Walt

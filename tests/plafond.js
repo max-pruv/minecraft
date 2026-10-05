@@ -316,10 +316,10 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // colonnes de route entrent dans ses morceaux (886 → 1 515) — voulu. Sans
 // Washington, les 441 autres morceaux et toutes les routes rendent ad9949da…
 // sur `origin/main` (v366, f70060cd… avec elle) ET sur la branche.
-// v366 : le Panthéon de Rome reçoit sa rotonde et son portique, et Rome est
-// un des neuf lieux — voulu. Bâtisseurs neufs de la v366 désarmés, la branche
-// rend f70060cd…, la constante d'`origin/main` (v365), au bit près.
-const EMPREINTE_MORCEAUX_V357 = '21840cff828b72827e935136e8f7ac7e6a57fc05527f17d0be7898b67b938ea0';
+// v369 : le Panthéon de Rome reçoit sa rotonde et son portique, et Rome est
+// un des neuf lieux — voulu. Bâtisseurs neufs de la v369 désarmés, la branche
+// rend 7d235907…, la constante d'`origin/main` (v368), au bit près.
+const EMPREINTE_MORCEAUX_V357 = '27789d06e841d95492a1d47b89e300713384850f02b671a5837ee08757f80d0c';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -715,7 +715,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         + (tours.length ? ` — SEULS, EN TOUR (${tours.length}) : ${tours.join(' · ')}` : ` : ${vus.join(' · ')}`));
     }
 
-    // PLUS UNE COUPOLE DE GABARIT DANS LE MONDE (v366). Le témoin d'avant ne
+    // PLUS UNE COUPOLE DE GABARIT DANS LE MONDE (v369). Le témoin d'avant ne
     // compte que les gabarits qui montent à une fois et demie leurs toits ;
     // sous cette barre, Walt Disney Hall (des voiles d'acier), le Rogers Centre
     // (un stade), le Panthéon de Rome (sans portique), le dôme du Rocher (un

@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Plus une coupole de gabarit (v366) — une forme fausse ne dépend pas de la hauteur
+## Plus une coupole de gabarit (v369) — une forme fausse ne dépend pas de la hauteur
 
 Trois règles.
 
