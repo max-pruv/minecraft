@@ -39,6 +39,21 @@
   sans doubler l'eau et le sol que le rendu urbain dessine. Mesuré : le
   rectangle a ~60 blocs d'eau de chaque côté de l'île (Hudson, East River) et
   au nord ; un tablier de soixante blocs suffit.
+  INSTRUIT EN v365, et c'est une décision d'architecture, pas un crochet. (1)
+  est faisable par un crochet : `manhattan-plan.js` n'importe que blocks.js, donc
+  `surface()` peut servir de `SOL` à routes.js dans le rectangle, à l'identique
+  dans le worker et le fil principal (hors du rectangle les deux reliefs sont
+  déjà identiques : 64 561 colonnes à l'ouest, seule la colonne x0 diffère, et
+  elle est DANS le rectangle). (2) touche TROIS méthodes de `TerreUrbaine` :
+  `generateChunk` réécrit toute colonne du rectangle avec `originalBlock`
+  (les blocs de la route s'y perdraient), `visualChunk` efface tout ce qui est
+  au-dessus de `SOL` sauf les blocs d'enfant, et `hasVisualEdits` rend faux pour
+  un morceau entier du rectangle sans bloc posé (le mailleur ordinaire ne le
+  voit pas). Mesuré sur le plan : l'Hudson fait 56 à 64 blocs de large de
+  lz −300 à +600, le bord de l'île est une promenade (`p`) devant des lots, et
+  la seule rue qui touche l'eau des deux côtés dans la fenêtre relevée est à
+  lz = 0. Les deux portes de New York (I-95 à l'est, I-95 Sud à l'ouest, v365)
+  sont prêtes à recevoir ce pont.
 - [ ] **WASHINGTON PAR ANACOSTIA : LA RUE N'EST PAS RELIÉE À LA VILLE (v365).**
   L'I-95 Sud entre par la rue de u = 37 au sud de l'Anacostia (x −21191, de
   z 6197 à 6173) ; ce quartier (u 20–66, v 60–96) n'a AUCUN pont vers le reste
