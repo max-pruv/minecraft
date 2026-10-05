@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 360,
+    titre: 'Le monde suit la voiture',
+    puces: [
+      'La ville arrive deux fois plus vite',
+      'Plus de vide devant, même rapide',
+    ],
+  },
+  {
     v: 359,
     titre: 'Les rues de Nice s\'élargissent',
     puces: [

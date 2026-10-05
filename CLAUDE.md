@@ -815,6 +815,55 @@ Et une empreinte d'identité qui change se PROUVE : celle des 490 morceaux
 (v352) couvre Marrakech et Tokyo ; la branche, bâtisseurs neufs désarmés, rend
 l'ancienne au bit près — c'est ce qui a permis de la remplacer.
 
+## La file se recharge à l'arrivée (v360) — un plafond de débit peut être la cadence du banc
+
+Les deux pistes que la v352 avait déclarées sans mesure. Cinq règles.
+
+- **ON SONDE OÙ PASSE LE TEMPS DES DEUX CÔTÉS DU MESSAGE.** Le fil principal
+  ne voit que des tampons qui arrivent ; le worker publie désormais son temps
+  à sec (`inactif`, entre la fin d'un lot et l'arrivée du suivant) et sa date
+  d'envoi (`envoye`, en `timeOrigin + now` : deux fils n'ont pas la même
+  origine). Mesuré à 80 b/s, rr 12 : installation 0,1 à 0,9 ms par morceau,
+  transit 2 à 8 ms, worker À SEC 55 à 72 % du temps. La piste (a) était
+  innocente, la (b) était la panne.
+- **UNE BOUCLE QUI COMPTE DEUX FOIS FAUSSE TOUTES LES MESURES FAITES DESSUS.**
+  `enAttente.set` PUIS `lot.push`, sous la garde `enAttente.size +
+  lot.length` : chaque demande comptait double depuis la v251, et une file
+  « de huit » en tenait de quatre (le worker en retard : relevé 0 à 5 dans
+  Paris à 80 b/s) à huit (images rapides). La file de seize écartée par la
+  v269 en tenait huit et plus. On ne « corrige » donc pas le compte en gardant huit — ce
+  serait remettre en douce la profondeur mesurée nuisible sur l'iPad (v291) :
+  la profondeur RÉELLE s'écrit (`EN_VOL_MAX`, la moitié de la file nominale)
+  et c'est elle qui borne — quatre, jamais plus que l'ancienne au plus bas
+  (le témoin relève 4 contre 6 à 8). Quand on trouve un défaut sous une mesure, on se
+  demande ce que la mesure mesurait vraiment avant de toucher au chiffre.
+- **UN TAUX PAR IMAGE, ENCORE.** La file ne se rechargeait qu'à l'image : à
+  onze images par seconde, quatre morceaux en trente millisecondes, puis le
+  worker attend soixante. C'est le piège de la v237 (un budget par image est
+  un taux) une quatrième fois. Le morceau qui arrive libère sa place, et elle
+  repart tout de suite (`rechargerLaFile`). Le débit double (Paris 53 → 116,
+  Rome 58 → 120), et le « plafond à 55 morceaux par seconde » des v346 et
+  v352 était la cadence du BANC, pas le monde : en scène vide, l'ancienne
+  file donnait déjà 125.
+- **UNE BAISSE DE CADENCE SE SÉPARE PAR UNE SCÈNE VIDE.** Avec la recharge,
+  la ville tombe au banc de 14 à 5 images par seconde. Les appels de dessin
+  (15 → 190–290) le disaient ; la preuve est la même page rendant une scène
+  VIDE (`vide=1` de la sonde) : 51–57 images contre 53–57, même débit. Ni le
+  worker ni l'installation ne prennent d'images : c'est SwiftShader qui
+  dessine enfin la ville. La recharge ne vaut donc qu'EN ROULANT VITE
+  (`fileRapide`) et se coupe en rendu logiciel, comme l'ordre en cône
+  (`?recharge=arrivee|image`, `__game.rechargeMaillage`). Un témoin le garde
+  en scène vide — vert des deux côtés à dessein (v220).
+- **LE PLAFOND SE REPUBLIE SUR LA MESURE, ET LA PIRE VILLE LE BORNE.** 80 b/s
+  tient à Paris, Rome, sur l'A1 et en campagne ; Londres rend 148–152 pour
+  160 et 182–192 à 70. Pourquoi Londres n'est PAS mesuré : son worker coûte
+  autant que celui de Paris (6,4 ms contre 6,3 à 7) et reste à sec 23 à 28 %
+  — j'avais d'abord écrit « ses morceaux coûtent plus », sans l'avoir lu. `VITESSE_SOL_MAX` : ville 70, campagne 80. Ce qui se transpose à
+  l'iPad : le nombre en vol, l'ordre, le débit quand les images sont lentes
+  (c'est en arrivant dans une ville qu'elles le sont). Ce qui ne se transpose
+  pas : la cadence de rendu — à relire avec `?diag=1` à 70–80 b/s dans Paris
+  avant que la conduite ne monte les voitures.
+
 ## Le coût d'un morceau (v352) — on profile avant de croire la répartition, et la preuve est une empreinte
 
 Le point (3) de la dette de la v346 : au-delà de 70 b/s la ville ne suit plus,

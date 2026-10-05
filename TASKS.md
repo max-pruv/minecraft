@@ -146,14 +146,43 @@
   identique (empreinte de `plafond.js`). Au banc la ville ne suit toujours pas
   80 b/s (Paris 125, Rome 129–138, A1 158 pour 160) : le débit y plafonne vers
   55 morceaux par seconde en ville DES DEUX CÔTÉS, donc ce n'est plus le worker.
-  Pistes, non mesurées : l'installation des géométries sur le fil principal en
-  ville (Paris ne gagne rien quand Rome gagne), et la recharge de la file une
-  fois par image. Les trois non-résultats de la file (borner la pose, file en
+  ~~Pistes, non mesurées : l'installation des géométries sur le fil principal en
+  ville, et la recharge de la file une fois par image~~ — **mesurées et réglées
+  en v360** : installation 0,1 à 0,9 ms par morceau, transit 2 à 8 ms, worker À
+  SEC 55 à 72 % du temps ; la boucle comptait chaque demande deux fois (quatre
+  en vol pour « huit »). Recharge à l'arrivée en roulant vite, quatre en vol :
+  Paris 53 → 116 morceaux/s, Rome 58 → 120, et 80 b/s tient à Paris, Rome, A1
+  et campagne (176–192 pour 160) ; Londres 148–152, 182–192 à 70 — cause NON
+  mesurée : son worker coûte autant que Paris (6,4 ms contre 6,3–7) et reste à
+  sec 23–28 %. Plafond publié : **ville 70, campagne 80**. La cadence
+  du banc tombe en ville de 14 à 5 images/s — c'est le DESSIN de la ville
+  (scène vide : 51–57 contre 53–57) ; sur l'iPad, **relire la cadence à 70–80
+  b/s dans Paris avec `?diag=1` avant de monter `ALLURES`**. Reste : pourquoi
+  Londres plafonne à 70 (une sonde qui sépare les cas : morceaux d'eau, ordre
+  de la file, morceaux jamais demandés) ; et
+  une piste NON appliquée : à l'arrêt, la recharge forcée charge le disque de
+  Paris en 4–5 s au lieu de 18 s au banc (témoin de `monte.js`) — après une
+  téléportation, c'est le chargement que l'enfant attend. Non activée : la
+  v269 rappelle qu'un débit de saturation n'est pas un confort ; à mesurer
+  sur la tablette (`?recharge=arrivee&diag=1`, se téléporter à Paris). Les trois non-résultats de la file (borner la pose, file en
   temps, deux mailleurs) et la file de seize (v269) restent écartés. Sur
   l'iPad, deux fois moins de calcul par morceau est un fait, mais le plafond
   ne se relève que sur une mesure `?diag=1` en roulant ; (4) un lot déjà parti au worker ne
   s'annule pas quand on le dépasse — huit morceaux au plus, onze blocs de
   route à 60 b/s : non mesuré comme nuisible, laissé.
+
+- [ ] **AU PORTAIL DE LA v360 (la recharge de la file), LES AUTRES ROUGES SONT
+  DÉCLARÉS, rejoués SEULS des deux côtés.** `monte.js` « l'écran ne se fige pas
+  en arrivant sur une ville » : branche 1 367 ms · 21,7 %, `origin/main` 2 350 ms
+  · 20,5 % ; « se téléporter ne compile plus de programmes » : branche rouge
+  (chauffe de New York expirée, 75/321), `origin/main` vert ce passage — rouge
+  à 68/320 et 55/321 aux portails précédents, témoin AVANT celui de la v360 et
+  sur une autre page ; « 🛬 descend train sorti… freine jusqu'à l'arrêt » rouge
+  au portail seulement (arrêt à x 303 sur 300), vert seul. `maj.js` : rouge des
+  deux côtés sur le loader et « corps, programmes et fond de carte » (palier
+  rouge au portail, vert seul). `carte.js` : la flèche du GPS, rouge seule sur
+  la branche, verte sur `origin/main` — l'intermittence déjà déclarée, dans un
+  module (`gps.js`) que la v360 ne touche pas.
 
 - [ ] **LES DÉGÂTS (v343) : CE QUI RESTE, DÉCLARÉ.**
   - ~~Cinquante-quatre appels de dessin pendant un feu~~ — **fait en v348** :

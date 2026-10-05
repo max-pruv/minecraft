@@ -20,6 +20,46 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v360 — Le monde suit la voiture jusqu'à 80
+
+**Pourquoi.** Au banc, la ville ne suivait pas 80 blocs par seconde (Paris 125
+blocs de monde devant soi pour 160 exigés) et le débit plafonnait vers 55
+morceaux par seconde en ville, alors que la v352 avait divisé par deux le coût
+d'un morceau. Deux pistes étaient déclarées sans mesure : l'installation des
+géométries sur le fil principal, et la recharge de la file une fois par image.
+Mesuré à 80 b/s, rr 12 : l'installation ne coûte que 0,1 à 0,9 ms par
+morceau, le transit 2 à 8 ms — mais le worker était **à sec 55 à 72 % du
+temps**. Et la boucle de recharge comptait chaque demande deux fois depuis la
+v251 : une file « de huit » tenait de quatre à huit demandes en vol, selon
+ce qui restait de l'image d'avant.
+
+**Ce que ça change.** En roulant vite, chaque morceau qui arrive libère sa
+place et elle repart tout de suite au worker, sans attendre l'image — toujours
+quatre demandes en vol au plus, jamais plus que l'ancienne boucle au plus bas
+(la profondeur mesurée nuisible en v269 ne revient pas). Le débit double (Paris 53 → 116 morceaux par seconde,
+Rome 58 → 120, campagne 74 → 123), et le monde maillé devant soi à 80 b/s
+passe de 101–128 à 176–192 blocs. Le plafond de vitesse au sol publié pour la
+conduite (`plafond-sol.js`) monte de 60 à **70 b/s en ville** (Londres borne)
+et de 70 à **80 b/s en campagne et sur l'autoroute** (l'A1 borne). À pied et à
+l'arrêt rien ne change ; en rendu logiciel la recharge est coupée, comme
+l'ordre en cône de la v346 (`?recharge=arrivee` la force). Les vitesses des
+voitures, elles, ne bougent pas ici : c'est la conduite qui les applique.
+
+**Ce qui le prouve.** Deux témoins dans `monte.js` : la recharge à l'arrivée
+contre l'ancienne, en ABBA dans la même page, débit × 1,5 au moins et jamais
+plus de quatre demandes en vol (× 0,95 sur `origin/main`, crochet absent ;
+× 2,06 ici, quatre en vol contre six pour l'ancienne boucle) ; et
+la même mesure dans une scène vide, où la recharge garde la cadence de
+l'ancienne (51–57 images par seconde contre 53–57) — preuve que la cadence
+perdue en ville au banc (14 → 5) est SwiftShader qui dessine enfin la ville
+(15 → 190–290 appels de dessin), pas le chargement. La sonde
+`sonde-monde-a-la-vitesse.cjs` publie désormais où passe le temps (worker à
+sec, installation, rendu, transit) et `sonde-file-age.cjs` l'âge des demandes.
+Ce qui reste à mesurer sur la tablette : la cadence à 70–80 b/s dans Paris
+(`?diag=1`).
+
+---
+
 ## v359 — Les rues de Nice à la règle du kit
 
 **Pourquoi.** La deuxième des cinq villes bâties à la main restées sur leurs

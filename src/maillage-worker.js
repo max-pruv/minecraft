@@ -17,6 +17,10 @@ import { World, CHUNK } from './world.js';
 import { buildChunkTampons } from './mesher.js';
 
 const monde = new World();
+// LE TEMPS À SEC DU WORKER (v360) : entre la fin d'un lot et l'arrivée du
+// suivant, il n'a rien à faire. C'est la grandeur qui dit si la recharge de la
+// file, une fois par image, l'affame — le fil principal ne peut pas la voir.
+let finDuLot = 0;
 
 self.onmessage = (e) => {
   const m = e.data;
@@ -47,6 +51,8 @@ self.onmessage = (e) => {
     return;
   }
   if (m.type === 'mailler') {
+    const debutLot = performance.now();
+    let inactif = finDuLot ? debutLot - finDuLot : 0;
     for (const { cx, cz, detail } of m.liste) {
       // CE QUE COÛTE UN MORCEAU, MESURÉ LÀ OÙ IL SE PAIE (v284). Le fil
       // principal ne peut pas le savoir : il reçoit des tampons déjà prêts. Et
@@ -71,10 +77,12 @@ self.onmessage = (e) => {
         transfert.push(g.positions.buffer, g.normals.buffer, g.uvs.buffer, g.colors.buffer, g.tiles.buffer, g.indices.buffer);
         if (g.matiere) transfert.push(g.matiere.buffer, g.lueur.buffer);
       }
-      self.postMessage({ type: 'morceau', cx, cz, generation: m.generation, data: copie, ms,
+      self.postMessage({ type: 'morceau', cx, cz, generation: m.generation, data: copie, ms, inactif, envoye: performance.timeOrigin + performance.now(),
         top: monde.chunkTop(cx, cz), solid: t.solid, water: t.water, lumineux: t.lumineux, props: t.props,
         sol: t.sol, facades: t.facades, plat: t.plat, platLumineux: t.platLumineux, hd: t.hd, detail: t.detail }, transfert);
+      inactif = 0;
     }
+    finDuLot = performance.now();
     // et l'on oublie ce qu'on a dépassé, comme le fil principal (v236)
     monde.oublierLoinDe(m.pcx, m.pcz, m.rayon);
   }
