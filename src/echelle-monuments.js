@@ -108,7 +108,13 @@ const ARCHE = (h) => [h + 1, h + 3];
 const PAGODE5 = (v) => [[0, 0], [1, 1], [3, 9], [4, 10], [6, 18], [7, 19], [9, 27], [10, 28],
   [12, 35], [13, 36], [15, 43], [16, 44], [17, v + 1]];
 export const ECHELLES_VILLES = Object.freeze({
-  'Rome|Basilique St-Pierre': { vraie: 137, corps: DOME[6] },
+  // Saint-Pierre avec sa basilique (v354, `tour`) : la nef, son toit, le
+  // tambour, la calotte rigide (une coupole étirée est un obus), la lanterne et
+  // la croix à 137. La façade est écrite à 16 m et non à ses 45 vrais : à
+  // l'échelle du sol de Rome la basilique ne fait que seize blocs de long, et à
+  // 45 m c'était un immeuble de bureaux coiffé d'une coupole (vu en capture).
+  'Rome|Basilique St-Pierre': { vraie: 137,
+    paliers: [[0, 0], [1, 1], [6, 16], [7, 20], [10, 40], [17, 40], [19, 132], [20, 137]] },
   // La façade de la cathédrale de Pise, trente-quatre mètres ; le baptistère
   // en fait cinquante-cinq, un peu moins que la tour penchée.
   'Pise|Duomo de Pise': { vraie: 34, corps: DOME[4] },
@@ -247,10 +253,10 @@ export const ECHELLES_VILLES = Object.freeze({
   // La perle de l'Orient, 468 m : la grande sphère de 68 à 118 m, la haute de
   // 250 à 295, la petite à 335.
   'Shanghai|La perle de l\'Orient': { vraie: 468,
-    paliers: [[0, 0], [1, 1], [4, 68], [8, 68], [12, 250], [15, 250], [17, 335], [18, 335], [21, 469]] },
+    paliers: [[0, 0], [1, 1], [4, 68], [10, 68], [14, 250], [17, 250], [19, 335], [20, 335], [23, 469]] },
   // La tour de Tokyo, 333 m : le grand belvédère à 150, celui du haut à 250.
   'Tokyo|La tour de Tokyo': { vraie: 333,
-    paliers: [[0, 0], [1, 1], [2, 15], [4, 50], [6, 95], [9, 145], [11, 145], [15, 245], [16, 245], [19, 334]] },
+    paliers: [[0, 0], [1, 1], [2, 15], [4, 55], [5, 55], [7, 95], [9, 145], [11, 145], [15, 245], [16, 245], [19, 334]] },
   // La Skytree, 634 m : les belvédères à 350 et à 450.
   'Tokyo|La Skytree': { vraie: 634,
     paliers: [[0, 0], [1, 1], [5, 120], [11, 340], [13, 340], [16, 445], [17, 445], [22, 635]] },

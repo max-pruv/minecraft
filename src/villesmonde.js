@@ -754,7 +754,7 @@ function tourBoule(h, boules, fut = ACIER, boule = ACIER) {
 // les belvédères, rigides (deux paliers au même mètre), pour qu'une boule ne
 // devienne pas un œuf.
 const NOIR = uni(26);
-const NOIR_LIGNES = DECOR_START + 26 * 10 + 6;
+const NOIR_LIGNES = DECOR_START + 25 * 10 + 6;   // l'anthracite à lignes : on voit les étages
 const ACIER_LIGNES = DECOR_START + 23 * 10 + 6;
 const ORANGE = uni(1);
 const MAGENTA = uni(14);
@@ -811,24 +811,22 @@ function buildJinMao(poser) {
 
 // La perle de l'Orient : le trépied, la grande sphère, les trois colonnes, la
 // sphère haute, la petite sphère et l'aiguille.
-const sphere = (poser, y0, id) => {
-  octo(poser, y0, 1, id);
-  for (const y of [y0 + 1, y0 + 2]) octo(poser, y, 2, id);
-  octo(poser, y0 + 3, 1, id);
+const disque = (poser, y, r, id) => {
+  for (let x = -r; x <= r; x++) for (let z = -r; z <= r; z++) if (Math.hypot(x, z) <= r + 0.3) poser(x, y, z, id);
 };
 function buildPerle(poser) {
   const pieds = [[0, -1], [1, 1], [-1, 1]];
   for (let y = 1; y <= 2; y++) for (const [a, b] of pieds) poser(a * 3, y, b * 3, ACIER);
   poser(0, 3, -2, ACIER); poser(2, 3, 2, ACIER); poser(-2, 3, 2, ACIER);
-  for (let y = 1; y <= 15; y++) {
+  for (let y = 1; y <= 17; y++) {
     poser(0, y, 0, ACIER);
     if (y >= 3) for (const [a, b] of pieds) poser(a, y, b, ACIER);
   }
-  sphere(poser, 4, MAGENTA);
-  octo(poser, 12, 1, MAGENTA); octo(poser, 13, 2, MAGENTA); octo(poser, 14, 1, MAGENTA);
-  for (let y = 15; y <= 16; y++) poser(0, y, 0, ACIER);
-  octo(poser, 17, 1, MAGENTA);
-  for (let y = 18; y <= 20; y++) poser(0, y, 0, y === 20 ? BLANC : ACIER);
+  [1, 2, 3, 3, 2, 1].forEach((r, i) => disque(poser, 4 + i, r, MAGENTA));   // la grande sphère
+  [1, 2, 1].forEach((r, i) => disque(poser, 14 + i, r, MAGENTA));          // la sphère haute
+  for (let y = 17; y <= 18; y++) poser(0, y, 0, ACIER);
+  octo(poser, 19, 1, MAGENTA);
+  for (let y = 20; y <= 22; y++) poser(0, y, 0, y === 22 ? BLANC : ACIER);
 }
 
 // La tour de Tokyo : quatre pieds écartés au-dessus de Foot Town, le treillis
@@ -836,12 +834,12 @@ function buildPerle(poser) {
 // l'antenne.
 function buildTourTokyo(poser) {
   plein(poser, 1, -2, 2, -2, 2, BLANC);
-  const bande = (y) => ([5, 8, 12, 14, 17].includes(y) ? BLANC : ORANGE);
+  const bande = (y) => ([6, 8, 12, 14, 17].includes(y) ? BLANC : ORANGE);
   for (let y = 1; y <= 8; y++) {
-    const r = y <= 3 ? 3 : y <= 5 ? 2 : 1;
+    const r = y <= 4 ? 3 : y <= 6 ? 2 : 1;
     for (const a of [-r, r]) for (const b of [-r, r]) poser(a, y, b, bande(y));
   }
-  for (let k = -3; k <= 3; k++) for (const [a, b] of [[k, -3], [k, 3], [-3, k], [3, k]]) poser(a, 3, b, ORANGE);
+  for (let k = -3; k <= 3; k++) for (const [a, b] of [[k, -3], [k, 3], [-3, k], [3, k]]) poser(a, 4, b, ORANGE);
   octo(poser, 9, 2, VITRE); plein(poser, 10, -2, 2, -2, 2, BLANC);
   for (let y = 11; y <= 14; y++) for (const a of [-1, 1]) for (const b of [-1, 1]) poser(a, y, b, bande(y));
   plein(poser, 15, -1, 1, -1, 1, VITRE);
@@ -886,7 +884,7 @@ function buildBanqueDeChine(poser) {
       const u = Math.abs(x) === 3 ? z : x;
       const croix = bord && ((u + y) % 3 === 0 || (u - y) % 3 === 0);
       const arete = Math.abs(x) === Math.abs(z) || (Math.abs(x) === 3 && Math.abs(z) === 3);
-      poser(x, y, z, croix || arete || y === h ? BLANC : VITRE);
+      poser(x, y, z, croix || arete ? BLANC : VITRE);
     }
   }
   for (const x of [-1, 1]) for (let y = 15; y <= 16; y++) poser(x, y, -2, ACIER);
@@ -1096,6 +1094,37 @@ function pagodeCorps(niveaux, mur, toit) {
     }
   };
 }
+// Saint-Pierre de Rome avec sa basilique (v354). `dome(6)` posait la coupole
+// seule : remise à sa hauteur, sans nef autour, elle devenait une tour (vu en
+// capture, v342). La croix latine de travertin — la nef vers l'est jusqu'à la
+// façade de Maderno et ses statues, les deux bras du transept — porte le
+// tambour et la coupole de plomb de Michel-Ange, sa lanterne et sa croix.
+function buildSaintPierre(poser) {
+  for (let y = 1; y <= 5; y++) {
+    plein(poser, y, -6, 9, -4, 4, CREME);               // la nef et la croisée
+    plein(poser, y, -5, 5, -9, 9, CREME);               // le transept
+  }
+  plein(poser, 6, -6, 8, -3, 3, ARDOISE);
+  plein(poser, 6, -4, 4, -8, 8, ARDOISE);
+  for (let z = -5; z <= 5; z++) {                        // la façade et ses statues
+    for (let y = 1; y <= 6; y++) poser(9, y, z, y >= 2 && y <= 4 && (z & 1) ? BLANC : CREME);
+    if (!(z & 1)) poser(9, 7, z, BLANC);
+  }
+  for (let y = 7; y <= 9; y++) {                         // le tambour et ses colonnes
+    for (let a = 0; a < 360; a += 8) {
+      const r = (a * Math.PI) / 180;
+      poser(Math.round(Math.cos(r) * 6), y, Math.round(Math.sin(r) * 6), a % 24 === 0 ? BLANC : CREME);
+    }
+  }
+  for (let dy = 0; dy <= 6; dy++) {                      // la calotte de plomb
+    const rr = Math.sqrt(Math.max(0, 36 - dy * dy)) + 0.3;
+    for (let x = -6; x <= 6; x++) for (let z = -6; z <= 6; z++) if (Math.hypot(x, z) <= rr) poser(x, 10 + dy, z, ARDOISE);
+  }
+  octo(poser, 17, 1, CREME);
+  poser(0, 18, 0, CREME);
+  poser(0, 19, 0, OR);
+}
+
 // Le périptère grec : la colonnade du Parthénon, et rien que lui.
 function colonnade(du2, dv2) {
   return (poser) => {
@@ -1286,7 +1315,7 @@ const FICHES = {
     monuments: [
       { nom: 'Colisée', lat: 41.8902, lon: 12.4922, build: depuisCatalogue('colisee') },
       { nom: 'Panthéon', lat: 41.8986, lon: 12.4769, box: 6, build: dome(4, CREME, PIERRE) },
-      { nom: 'Basilique St-Pierre', lat: 41.9022, lon: 12.4539, box: 9, build: dome(6, CREME, ARDOISE) },
+      { nom: 'Basilique St-Pierre', lat: 41.9022, lon: 12.4539, box: 9, build: dome(6, CREME, ARDOISE), tour: buildSaintPierre },
       { nom: 'Forum romain', lat: 41.8925, lon: 12.4853, box: 6, seuil: 0.4, build: buildForum },
     ],
     lieux: [['Fontaine de Trevi', 41.9009, 12.4833], ['Vatican', 41.9029, 12.4534],

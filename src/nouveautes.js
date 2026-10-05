@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 357,
+    titre: 'Les vraies tours du monde',
+    puces: [
+      'La Willis Tower et ses tubes noirs',
+      'Les sphères roses de Shanghai',
+      'Saint-Pierre de Rome a sa basilique',
+      'Les pagodes ont leurs étages',
+    ],
+  },
+  {
     v: 356,
     titre: 'Les épaves restent',
     puces: [

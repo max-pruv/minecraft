@@ -998,7 +998,10 @@
   s'étire pas, elle deviendrait une ellipse. Le témoin d'ordre ne la compte pas.
   Si on veut la garder au-dessus, c'est son bâtisseur (`buildGrandeRoue`) qui
   doit grandir d'un rayon, pas une table de paliers. Même cas pour Tivoli.
-- [ ] **UNE COUPOLE SANS SA NEF DEVIENT UNE TOUR (v342), vu en capture.** Les
+- [x] **UNE COUPOLE SANS SA NEF DEVIENT UNE TOUR (v342), vu en capture. FAIT pour
+  Saint-Pierre en v354** : un bâtisseur avec la croix latine, la façade, le
+  tambour et la calotte rigide (`buildSaintPierre`). Les autres coupoles
+  partagées (Florence, Berlin, Sainte-Sophie) gardent `dome`. Les
   bâtisseurs partagés (`dome`, `minaret`, `palaisLong`) sont des gabarits : St-
   Pierre est une coupole de treize blocs de large SANS la basilique autour.
   Remise à sa hauteur (38 blocs), elle garde les proportions vraies du tambour
@@ -1007,7 +1010,16 @@
   couleur de la calotte) : un obus d'ardoise, corrigé (le corps s'arrête au
   tambour). Le remède de fond est un bâtisseur par monument, avec sa nef — pas
   une table de paliers.
-- [ ] **LES GRATTE-CIEL ET LES BEFFROIS D'UN BLOC DE LARGE (v353), mesuré.**
+- [x] **LES GRATTE-CIEL ET LES BEFFROIS D'UN BLOC DE LARGE (v353) — FAIT en v354.**
+  Les treize ont un bâtisseur d'après leur vraie silhouette (champ `tour`,
+  villesmonde.js ; le monde d'avant garde la colonne), et leur ville a son ciel.
+  Le témoin neuf des perches (`plafond.js`, toutes les villes) en a trouvé dix
+  autres, faits aussi (Fernsehturm, CN Tower, Torre Latino, Stephansdom,
+  Saint-Guy, Palazzo Vecchio, Frauenkirche, nouvel hôtel de ville de Munich,
+  demi-tour Eiffel, Freedom Tower) et les quatre pagodes, qui n'avaient qu'un
+  poteau sous chaque toit. Restent fûts à bon droit (`PERCHES_VRAIES`) : la
+  colonne de Juillet, la colonne Nelson, celle de Colomb, l'Obélisque.
+  Texte d'origine :
   Toute ville engendrée mesurée a désormais son ciel ou dit pourquoi
   (`VILLES_SANS_CIEL`). Restent hors de leur vraie hauteur, déclarés `vrai`, les
   fûts qui dominent DÉJÀ leurs toits (hauteur d'auteur au-delà d'une fois et
