@@ -20,6 +20,31 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v384 — On descend de la voiture d'un ami par la portière
+
+**Pourquoi.** La v377 faisait monter le passager d'un ami par la portière
+droite ; la DESCENTE restait instantanée — Lou se retrouvait debout d'un
+coup à côté de la voiture de Marlon, et la portière de Marlon ne bougeait
+pas. La moitié du geste manquait.
+
+**Ce que ça change.** Le passager ressort par la portière droite, à
+l'envers de la montée : la portière s'ouvre, il sort, se pose debout à
+côté, la portière se referme. Si la droite est bouchée (un mur, l'eau, une
+voiture qui arrive), il sort côté conducteur ; si tout est bouché, il est
+posé à côté sans animation. Le conducteur — et tout autre joueur — voit la
+portière s'ouvrir chez lui, par le même message court que la montée. On
+n'est plus passager dès le premier appui ; un second appui termine tout de
+suite.
+
+**Ce qui le prouve.** Un témoin neuf dans `reseau.js`, à deux tablettes lues
+au même instant : phases « ouverture » et « sortie » chez Lou, portière
+droite ouverte à 1,05 rad puis refermée chez Marlon, `passagerDe()` faux sur
+chacun des 52 relevés. Rouge sur `origin/main` (aucune phase, portière
+fermée de bout en bout), vert ici. La sonde `sonde-descente-passager.cjs`
+rejoue montée et descente seules en deux minutes.
+
+---
+
 ## v383 — La rue n'entre plus dans la voiture d'un ami
 
 **Pourquoi.** Depuis la v305, la circulation cède le passage aux amis comme à

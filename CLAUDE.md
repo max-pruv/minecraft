@@ -918,6 +918,19 @@ receveur cède, l'hôte relaie. Le témoin à deux tablettes lit les deux pages
 au même instant ; il attend le RÉSULTAT (borné à 45 s) : à deux pages, une
 séquence de 2,4 s de jeu prend vingt-sept secondes de montre.
 
+**Le passager descend par la portière, à l'envers (v384).** `descendreDeChez`
+rejoue la descente du conducteur sur la voiture DISTANTE, côté passager
+d'abord (`choisirSortie(a, d, [1, -1])`). `passagerDe()` est effacé AVANT
+d'appeler la séquence — on n'est plus passager au premier appui, comme
+`toggleRide(null)` pour le conducteur. Le même message `portiere` ouvre (au
+départ) et ferme (au début de la fermeture) la portière chez les autres ;
+`terminer` et `annuler` envoient la fermeture s'ils coupent la séquence avant.
+Sans séquence (`embarq=0`), rien ne change : l'enfant reste où il était, au
+bit près. **Un témoin à deux tablettes se mesure vite par une sonde qui en
+recopie le passage** (`sonde-descente-passager.cjs`, deux minutes contre
+vingt pour `reseau.js` entière) — c'est elle qui a rendu le rouge sur
+`origin/main`.
+
 **Le revers d'une portière se fabrique (v373).** Aucun modèle n'a meublé
 l'intérieur de sa portière : de derrière, la face simple était culée (0 rayon
 sur 24, sur les cinquante modèles). La portière reçoit une copie compacte de
@@ -947,8 +960,8 @@ par la seule ligne `CACHE_VERSION` — or le bloc contenait aussi les lignes
 de conflit se relit dans `git diff origin/main`, jamais seulement dans le
 fichier** : le diff montre ce qu'on retire à l'autre côté.
 
-Ce qui reste, déclaré dans `TASKS.md` : le passager d'un ami monte encore sans
-séquence ; la vue de la séquence ne se juge que sur le banc, pas sur l'iPad.
+Ce qui reste, déclaré dans `TASKS.md` : la vue de la séquence ne se juge que
+sur le banc, pas sur l'iPad ; les avions montent encore sans séquence.
 
 ## Les coupoles ont leur édifice (v365) — un gabarit partagé se cherche dans toutes les villes, et le ciel se lit sur les modèles
 

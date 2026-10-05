@@ -372,10 +372,19 @@ export function initFun(ctx) {
   }
   function descendreDePassager(silencieux = false) {
     if (!passager) return;
-    const nom = passager.nom;
-    passager = null;
+    const { nom, de, s } = passager;
+    passager = null;           // plus passager dès le premier appui (v384)
     player.vel.set(0, 0, 0);
-    if (!silencieux) toast(`🚶 Tu descends de la voiture de ${nom}.`, 0xd8c9a4);
+    if (silencieux) return;
+    toast(`🚶 Tu descends de la voiture de ${nom}.`, 0xd8c9a4);
+    // PAR LA PORTIÈRE DROITE, comme on est monté (v384) : la séquence à
+    // l'envers sur la voiture de l'ami, et l'ami voit sa portière s'ouvrir
+    const veh = vehiculeDistant ? vehiculeDistant(de) : null;
+    if (!veh) return;
+    const sieges = veh.def.sieges || [];
+    const siege = sieges[Math.min(s, sieges.length - 1)] || veh.def.siege;
+    embarquement.descendreDeChez(veh, siege, de,
+      () => { const v = vehiculeDistant(de); return !!v && v.mesh === veh.mesh; });
   }
   function updatePassager() {
     if (!passager) return;

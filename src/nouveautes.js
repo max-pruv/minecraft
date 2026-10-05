@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 384,
+    titre: 'On descend par la portière',
+    puces: [
+      'Chez un ami, on sort par la portière',
+      'Ton ami voit la portière s\'ouvrir',
+    ],
+  },
+  {
     v: 383,
     titre: 'Les voitures attendent ton ami',
     puces: [
