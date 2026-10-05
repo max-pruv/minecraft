@@ -540,6 +540,7 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
     if (nom) {
       const k = suivies.get(m).etat.chocs.at(-1);
       noter(nom, [k.f, k.x, k.z]);
+      recents.set(nom, performance.now());
       if (diffuser) diffuser({ t: 'rue_choc', o: nom, c: [k.f, k.x, k.z] });
     }
     return r;
@@ -555,6 +556,41 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
     }
     h.push(c);
     if (h.length > 12) h.shift();
+  }
+
+  // UN HÔTE RESTÉ SUR L'ANCIENNE VERSION NE RELAIE PAS `rue_choc` (v365) :
+  // il ne connaît pas ce nom et l'ignore. Il relaie en revanche la position
+  // telle quelle (`{ ...msg }`, net.js, depuis la v315 au moins) : l'histoire
+  // des voitures de la rue que CETTE tablette vient de percuter y voyage
+  // quatre secondes (`rc`), toute l'histoire et pas le seul dernier choc —
+  // c'est ce qui la rend idempotente. Le receveur ne l'adopte que si la sienne
+  // en est le DÉBUT : reçue dix fois, ou après `rue_choc`, elle ne compte
+  // rien deux fois ; une histoire qui diverge (deux amis sur la même voiture
+  // par l'ancien hôte) garde la sienne.
+  const recents = new Map();         // nom → date du dernier choc noté ICI
+  function histoiresRecentes() {
+    const t = performance.now();
+    let rc = null, n = 0;
+    for (const [nom, quand] of recents) {
+      if (t - quand > 4000 || !histoire.has(nom)) { recents.delete(nom); continue; }
+      if (n++ >= 4) break;
+      (rc || (rc = {}))[nom] = histoire.get(nom).map((c) => c.slice());
+    }
+    return rc;
+  }
+  function adopterHistoires(rc) {
+    if (!rc || typeof rc !== 'object') return;
+    let neuf = false;
+    for (const [nom, h] of Object.entries(rc).slice(0, 4)) {
+      if (!Array.isArray(h) || h.length > 12) continue;
+      const c = h.map((k) => (Array.isArray(k) && k.length === 3 ? k.map(Number) : null));
+      if (c.some((k) => !k || !k.every(Number.isFinite))) continue;
+      const local = histoire.get(nom) || [];
+      if (c.length <= local.length || !local.every((k, i) => k.every((v, j) => v === c[i][j]))) continue;
+      for (let i = local.length; i < c.length; i++) noter(nom.slice(0, 200), c[i]);
+      neuf = true;
+    }
+    if (neuf) rapprocher(true);
   }
 
   // UN CHOC DE LA RUE REÇU D'UN AMI (v363). On le note, et l'on rejoue tout
@@ -888,7 +924,7 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
     // à plusieurs (v363) : le nom d'une voiture de la rue, et l'envoi
     brancherNoms: (f) => { nommer = f; },
     brancherReseau: (f) => { diffuser = f; },
-    recevoirRue, rueEn, heriter, percuterRue,
+    recevoirRue, rueEn, heriter, percuterRue, histoiresRecentes, adopterHistoires,
     // le coût réel, pour le journal de bord et `?diag=1` (v364) : null tant
     // que rien ne s'est abîmé — un relevé ne grossit pas pour rien
     bilan: () => {

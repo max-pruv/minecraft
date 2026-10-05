@@ -20,6 +20,39 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v374 — Un choix de langue qui tient, et la conduite des dégâts éprouvée bout à bout
+
+**Pourquoi.** Trois manques, trois sujets. (1) Le témoin « un choix fait sur
+une tablette part au serveur » de `reglages.js` était rouge aux deux portails
+de la v363 et vert seul : déclaré « rouge de charge », il ne l'était pas. Une
+sonde qui relève chaque écriture des deux tablettes l'a montré sans charge
+du tout : le choix part, puis la seconde tablette de la maison le réécrit
+avec son ANCIENNE langue, sous une date plus ancienne — son battement de
+présence, toutes les vingt secondes, écrivait sans relire. (2) Le contrat
+avec la physique (v358) n'avait jamais été éprouvé de bout en bout : le seul
+témoin publiait ses chocs à la main, et le témoin du coût d'un choc bornait
+des millisecondes, qui suivent la charge du banc (15 seul, 31,1 au portail).
+(3) Un hôte resté sur l'ancienne version ne relayait pas les chocs des
+voitures de la rue (`rue_choc`, v363) entre deux amis à jour.
+
+**Ce que ça change.** Une langue choisie sur une tablette n'est plus défaite,
+même un instant, par l'autre tablette allumée à côté. La voiture de la rue
+qu'un ami cabosse se voit cabossée chez les autres même quand celui qui
+reçoit la partie n'a pas encore la mise à jour.
+
+**Ce qui le prouve.** Cinq témoins neufs ou repointés. `reglages.js` : le
+témoin provoque la course (il repère le battement de l'autre tablette et
+clique juste avant) et observe le serveur toute la fenêtre — rouge sur
+`origin/main` (un retour à l'ancienne langue), vert ici.
+`degats.js` : un mur pris de face par la VRAIE physique rend un choc publié
+pris par ce seul chemin, l'avant seul froissé, l'effet sur la conduite
+appliqué une fois (rouge sur `origin/main` faute des compteurs, le
+comportement y était déjà juste) ; le coût d'un choc se compte en sommets
+(25,6 % déplacés, zéro normale réécrite hors d'eux — 63 avec
+`computeVertexNormals`, vérifié rouge — et rien par image), les
+millisecondes restent dans le message ; et un hôte qui ne relaie pas
+`rue_choc` laisse passer le choc par la position, l'histoire identique choc
+pour choc.
 ## v373 — Une portière ouverte se voit de derrière
 
 **Pourquoi.** Aucun des cinquante modèles de la flotte n'a meublé l'intérieur

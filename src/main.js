@@ -3710,9 +3710,17 @@ async function envoyerPrefs() {
 
 // Un battement régulier : sans lui, « en ligne » voudrait dire « a ouvert un
 // réglage récemment », ce qui n'est pas la même chose.
+//
+// ET LUI AUSSI RELIT AVANT D'ÉCRIRE (v365). Il écrivait le document entier
+// sans le relire : la seconde tablette de la maison, restée sur l'ancienne
+// langue, la reposait par-dessus le choix tout neuf de la première, avec une
+// date plus ANCIENNE (sonde-reglages-deux.cjs : « en » écrit à 39,3 s, « fr »
+// à 43,1 s, majProfil −60 000 contre 39 270). La relecture de quinze secondes
+// réparait ensuite — mais c'est ce va-et-vient que le témoin de `reglages.js`
+// voyait rouge sous charge. Un seul chemin d'écriture : celui qui relit.
 setInterval(() => {
   if (!playerProfile.name || !cloud.configured || !navigator.onLine) return;
-  cloud.prefsPush(playerProfile.name, prefsPayload()).catch(() => {});
+  envoyerPrefs().catch(() => {});
 }, 20000);
 
 function saveProfile() {
@@ -4508,6 +4516,9 @@ function startNetSession(code, isHost, patience) {
     }
     const pa = fun.passagerDe ? fun.passagerDe() : null;
     if (pa) p.p = { de: pa.de, s: pa.s };
+    // les chocs de la rue (v365) : pour l'ami dont l'hôte ne relaie pas `rue_choc`
+    const rc = fun.degats.histoiresRecentes();
+    if (rc) p.rc = rc;
     return p;
   };
   world.onOp = (k, id, ts) => { if (net && net.active) net.sendOp(k, id, ts); };
@@ -4762,6 +4773,7 @@ function showOnlineUI() {
   };
   net.onAnnonce = (txt) => toast(txt, 0x9fd8e8);
   net.onRueChoc = (m) => fun.degats.recevoirRue(m);   // dégâts de la rue (v363)
+  net.onRueHistoires = (rc) => fun.degats.adopterHistoires(rc); // par la position, si l'hôte ne relaie pas rue_choc (v365)
   net.onCiel = (c) => adopterCiel(c);
   net.donnerCiel = () => cielDuMonde();
   net.onJoin = (nom) => annonceArrivee(nom);

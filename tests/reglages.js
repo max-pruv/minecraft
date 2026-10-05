@@ -206,12 +206,58 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
     // les réglages toutes les quinze secondes — avec SA langue, la plus
     // ancienne. C'est ainsi qu'un choix fait sur une tablette se défaisait tout
     // seul quelques secondes plus tard, sans que personne n'y touche.
+    //
+    // ON PROVOQUE LA COURSE, ON NE L'ATTEND PAS (v233, v365). Rouge aux deux
+    // portails de la v363 et vert seul : la sonde `sonde-reglages-deux.cjs` a
+    // montré que le choix PART bien, puis que l'autre tablette le réécrit
+    // avec son ancienne langue — son battement de présence (toutes les vingt
+    // secondes) écrivait sans relire, et une date plus ANCIENNE. La relecture
+    // de quinze secondes réparait ensuite : tout dépendait de laquelle des
+    // deux boucles de l'autre tablette passait la première. On relève donc
+    // les écritures de l'autre tablette ; une écriture qui n'a pas été
+    // précédée d'une lecture est le battement, et l'on clique juste avant le
+    // suivant. Si aucune écriture ne vient sans lecture (le jeu corrigé), on
+    // clique au bout de la fenêtre : il n'y a plus de course à provoquer.
     const autreIpad = await joueur('Marlon');
-    await dormir(2000);
+    // `envoyerPrefs` lit PUIS écrit : une écriture sans lecture depuis la
+    // précédente est le battement qui ne relit pas
+    const ecrituresSeules = [];
+    let luDepuis = true;
+    await autreIpad.route('**/rest/v1/player_prefs**', (route) => {
+      const r = route.request();
+      if (r.method() === 'GET' && /name=eq\.Marlon(&|$)/.test(r.url())) luDepuis = true;
+      if (r.method() === 'POST' && (r.postData() || '').includes('"name":"Marlon"')) {
+        if (!luDepuis) ecrituresSeules.push(Date.now());
+        luDepuis = false;
+      }
+      route.continue();
+    });
+    const tGuet = Date.now();
+    while (Date.now() - tGuet < 35000 && !ecrituresSeules.length) await dormir(250);
+    let attente = 'aucune écriture sans lecture en 35 s';
+    if (ecrituresSeules.length) {
+      // le battement suivant tombe vingt secondes après ; on clique six
+      // secondes avant, le temps que le choix soit écrit
+      const prochain = ecrituresSeules[ecrituresSeules.length - 1] + 20000;
+      attente = `battement vu, clic ${((prochain - 6000 - Date.now()) / 1000).toFixed(1)} s plus tard`;
+      while (Date.now() < prochain - 6000) await dormir(100);
+    }
     await marlon.evaluate(() => document.querySelector('.pb-toggle[data-lang="en"]').click());
-    const tientAdeux = await jusqua(async () => (nuage.reglages('Marlon') || {}).lang === 'en');
-    verifier('un choix fait sur une tablette part au serveur', tientAdeux,
-      JSON.stringify((nuage.reglages('Marlon') || {}).lang));
+    // ON OBSERVE TOUTE LA FENÊTRE (v270) : une fois « en » arrivé au serveur,
+    // il ne doit plus jamais en repartir — c'est ce que l'enfant appelle « le
+    // jeu a gardé mon choix ».
+    let vuEn = false, retours = 0, prec = null;
+    const tClic = Date.now();
+    while (Date.now() - tClic < 25000) {
+      const v = (nuage.reglages('Marlon') || {}).lang;
+      if (v === 'en') vuEn = true;
+      else if (vuEn && prec === 'en') retours++;
+      prec = v;
+      await dormir(200);
+    }
+    const tientAdeux = vuEn && retours === 0 && (nuage.reglages('Marlon') || {}).lang === 'en';
+    verifier('un choix fait sur une tablette part au serveur, et l\'autre tablette ne le défait pas un instant', tientAdeux,
+      `${attente} ; vu « en » : ${vuEn}, retours à l'ancienne langue : ${retours}, serveur : ${JSON.stringify((nuage.reglages('Marlon') || {}).lang)}`);
     // on laisse largement le temps à l'autre appareil de pousser sa version
     await dormir(20000);
     verifier('et l\'autre tablette ne le défait pas',

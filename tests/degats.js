@@ -984,6 +984,40 @@ function verifier(nom, ok, detail = '') {
     verifier('à plusieurs, la voiture de la rue que Marlon percute est froissée chez Alice aussi — la même histoire de chocs',
       pose.auVolant && cles[0] === cles[1] && !coup.err && vue && JSON.stringify(vue.chocs) === JSON.stringify(coup.chocs) && vue.froissees > 0,
       JSON.stringify({ memeConvoi: cles[0] === cles[1], rang, coup, vue }));
+
+    // 10. UN HÔTE RESTÉ SUR L'ANCIENNE VERSION NE RELAIE PAS `rue_choc`
+    // (v365). On le provoque : Marlon cesse d'envoyer `rue_choc` (ce qu'un
+    // ancien hôte en fait : rien), et percute la même voiture une seconde
+    // fois. Le choc doit arriver chez Alice par la POSITION, que tout hôte
+    // relaie telle quelle — et l'histoire doit rester la même, choc pour
+    // choc : reçue par les deux chemins au premier coup, elle n'a rien compté
+    // deux fois (le verdict d'au-dessus), reçue trente fois par la position,
+    // elle non plus.
+    const second = coup.err ? { err: coup.err } : await hote.evaluate(async (r) => {
+      const g = window.__game, d = g.fun.degats, conv = window.__convB, p = g.player;
+      const tenir = (n) => new Promise((fin) => {
+        let cumul = 0, prec = performance.now();
+        const pas = (t) => { cumul += (t - prec) / 1000; prec = t; if (cumul >= n) fin(); else requestAnimationFrame(pas); };
+        requestAnimationFrame(pas);
+      });
+      const m = conv.elements[r], a = g.fun.montureConduite();
+      if (!m || !a) return { err: 'voiture partie, ou pas au volant' };
+      const envoyes = [];
+      d.brancherReseau((msg) => envoyes.push(msg.t));        // un ancien hôte : rien ne passe
+      p.pos.set(m.position.x, m.position.y + 0.05, m.position.z - 3); a.pos.copy(p.pos); a.mesh.position.copy(a.pos);
+      await tenir(0.2);
+      p.choc = { force: 0.6, t: performance.now(), x: m.position.x, z: m.position.z };
+      await tenir(0.4);
+      p.choc = null;
+      await tenir(5);                                          // la fenêtre de la position, et au-delà
+      d.brancherReseau((msg) => { const n = g.net; if (n && n.active) n.broadcast(msg); });
+      return { chocs: d.etat(m).chocs, retenus: envoyes };
+    }, coup.rang);
+    if (!second.err) await jusqua(async () => { const v = await chezAlice(coup.rang); return v.chocs && v.chocs.length >= second.chocs.length; }, 10000);
+    const vue2 = second.err ? null : await chezAlice(coup.rang);
+    verifier('un hôte qui ne relaie pas rue_choc : le choc arrive quand même par la position, et l\'histoire reste la même, choc pour choc',
+      !second.err && second.chocs.length === coup.chocs.length + 1 && vue2 && JSON.stringify(vue2.chocs) === JSON.stringify(second.chocs),
+      JSON.stringify({ second, vue2 }));
   } finally {
     await banc.fermer();
   }
