@@ -2773,6 +2773,32 @@ l'embarquement a eu lieu, pas par une hypothèse.
   en tout) et caméra de trois quarts arrière : à confirmer sur l'iPad.
 - **Les avions** gardent leur montée instantanée (on ne marche pas jusqu'au
   cockpit d'un Concorde) : une passerelle serait un second palier.
+- [ ] **LE PORTAIL DE LA v362 APRÈS LA v356, DOUBLE MESURE FAITE.** Onze
+  suites vertes. Rouges déjà déclarés : `maj.js` (le loader de
+  l'installation), `carte.js` (la flèche GPS à gauche, 1,92 rad), `manhattan.js`
+  (le trou de façade 14 460 → 51 734, le taxi tactile), `monte.js` (la
+  téléportation qui compile, l'écran figé à l'arrivée). Deux neufs, rejoués SEULS
+  des deux côtés :
+  - `plafond.js` — « engendrer et mailler moins cher ne change ni un bloc ni un
+    sommet » : `69381f2e…` pour `b31099b9…` attendue, À L'IDENTIQUE sur la
+    branche et sur `origin/main` (v356). L'empreinte de la v351 n'a pas été
+    relevée après les routes de la v355 (Toronto–Montréal, Cologne–Hambourg) ou
+    le ciel de la v353 : à remesurer par la session qui l'a posée, pas à
+    recopier.
+  - `reseau.js` — « deux tablettes voient la même circulation » (barre 20) :
+    écart médian sur la branche 21,0 (portail) · 16,9 · 37,1 · 18,9 · 0,1 · 13,0 ;
+    sur `origin/main` 13,1 · 7,1 · 9,0 · 1,1 · 13,1, en ordre alterné. Les deux
+    étendues se recouvrent (0,1 et 13,0 d'un côté, 13,1 de l'autre) ; la
+    branche penche plus haut et rougit deux fois sur six. Le chemin est
+    pourtant le même PAR CONSTRUCTION : le banc met `embarq=0`, où `monter` et
+    `descendre` appellent `toggleRide` comme avant, `update` sort à la
+    première ligne sans séquence, et ni `embarquement.js` ni `portieres.js`
+    n'ont de minuterie. Ce témoin varie de 0 à 37 blocs sur un même code (sa
+    barre suppose qu'une page rend une image par seconde) : c'est un tirage,
+    pas un gardien. À refaire en lisant les deux pages à la MÊME image (ou en
+    comparant l'horloge de rue publiée, `rue` du message `ciel`, au lieu des
+    positions), et à rejouer dix fois de chaque côté avant d'accuser qui que ce
+    soit.
 - [ ] **LE PORTAIL DE LA v362 APRÈS REBASE SUR LA v348, DOUBLE MESURE FAITE.**
   Quinze suites vertes. Rouges, rejoués SEULS des deux côtés :
   `manhattan.js` — le trou de façade (9 203 branche · 11 684 `origin/main` →
