@@ -4692,6 +4692,7 @@ function showOnlineUI() {
     }
   };
   net.onAnnonce = (txt) => toast(txt, 0x9fd8e8);
+  net.onRueChoc = (m) => fun.degats.recevoirRue(m);   // dégâts de la rue (v363)
   net.onCiel = (c) => adopterCiel(c);
   net.donnerCiel = () => cielDuMonde();
   net.onJoin = (nom) => annonceArrivee(nom);
@@ -7083,7 +7084,7 @@ function plafondAuSiege(a, siege) {
     if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return;
     // ni l'avatar de l'enfant, ni celui d'un ami assis là (v253) : une tête
     // n'est pas un toit — reconnu à ses bras articulés (`buildKidMesh`)
-    // ni une portière (v362) : ouverte, elle n'est pas le toit
+    // ni une portière (v365) : ouverte, elle n'est pas le toit
     for (let p = o; p && p !== a.mesh; p = p.parent) if (p === avatarLocal || (p.userData && (p.userData.arms || p.userData.estPortiere))) return;
     const pos = o.geometry.attributes.position;
     _plafondM.multiplyMatrices(_plafondInv, o.matrixWorld);
@@ -7101,7 +7102,7 @@ function plafondAuSiege(a, siege) {
 }
 function asseoirLeConducteur(dt) {
   avatarTemps += dt;
-  // PENDANT QU'IL MONTE OU DESCEND (v362), c'est la séquence qui tient l'avatar
+  // PENDANT QU'IL MONTE OU DESCEND (v365), c'est la séquence qui tient l'avatar
   if (fun.avatarEnSequence && fun.avatarEnSequence()) return;
   const a = fun.montureConduite ? fun.montureConduite() : null;
   const siege = a && a.def && a.def.siege;
@@ -7134,7 +7135,7 @@ function asseoir(av, a, siege, temps) {
   animerHumain(av, temps, 0, POSE_AU_VOLANT);
 }
 // OÙ L'ON EST ASSIS, sans y poser personne : la séquence d'embarquement
-// (embarquement.js, v362) y fait arriver l'avatar, et c'est le MÊME calcul
+// (embarquement.js, v365) y fait arriver l'avatar, et c'est le MÊME calcul
 // que celui qui l'y tient ensuite — sinon il sauterait d'un cran à l'instant
 // où il s'assied.
 function placeAssise(a, siege) {
@@ -7510,6 +7511,8 @@ function releverLeJournal() {
     morceaux: chunkMeshes.size, monde: world.chunks.size, hd: [...chunkMeshes.values()].reduce((n, e) => n + (e.detail ? 1 : 0), 0),
     geometries: info.memory.geometries, textures: info.memory.textures, tasMo: mem, corps: `${h.prets}/${h.total}`,
     monture: player.pilote ? 'avion' : (player.gabarit > 1 ? 'voiture' : null), vol: !!player.flying, prog: info.programs ? info.programs.length : null,
+    // les dégâts (v364) : le coût du dernier enfoncement et du feu, mesurés ici
+    ...(fun.degats && fun.degats.bilan && fun.degats.bilan() ? { degats: fun.degats.bilan() } : {}),
   });
   pireImageJournal = 0;
 }
@@ -7549,7 +7552,16 @@ function updateHud(dt) {
         : ` · morceau ${mesurePalier.morceaux.length} relevé(s), travail ${mesurePalier.travaux.length}${PALIER_SE_RANGE ? '' : ' — non rangé'}`) + '\n'
     + `morceaux ${chunkMeshes.size} (${[...chunkMeshes.values()].filter((e) => e.detail).length} avec façades HD) · corps ${h.prets}/${h.total} · programmes chauffés ${programmesChauffes()} · ${myName() || ''} ${player.pos.x.toFixed(0)},${player.pos.z.toFixed(0)}\n`
     + `journal : ${journal.doc.releves.length} relevé(s), ${journal.doc.erreurs} erreur(s), plantages de suite ${journal.plantages()}${PALIER && PALIER.source === 'sûreté' ? ' — SÛRETÉ' : ''}`
-    + ` · façades HD ${detailTenu.n} morceau(x), ${(detailTenu.octets / 1048576).toFixed(0)} / ${(BUDGET_FACADES / 1048576).toFixed(0)} Mo, ${statsMaillage.detailsBudget} rendu(s) au budget`;
+    + ` · façades HD ${detailTenu.n} morceau(x), ${(detailTenu.octets / 1048576).toFixed(0)} / ${(BUDGET_FACADES / 1048576).toFixed(0)} Mo, ${statsMaillage.detailsBudget} rendu(s) au budget`
+    + texteDegats();
+}
+
+// Les dégâts sur l'appareil (v364) : une ligne, seulement s'il s'est abîmé
+// quelque chose.
+function texteDegats() {
+  const b = fun.degats && fun.degats.bilan ? fun.degats.bilan() : null;
+  if (!b) return '';
+  return `\ndégâts : ${b.chocs} enfoncement(s), dernier ${b.dernierMs} ms, premier ${b.premierMs}, pire ${b.pireMs} · feu ${b.feu} appel(s) pour ${b.carres} carré(s)`;
 }
 
 // --- fun & social systems (breeding, riding, duels, souvenirs, records…) ---------
@@ -7580,8 +7592,12 @@ const fun = initFun({
 // circulation laquelle l'enfant vient de percuter (les convois n'existent
 // qu'une fois le monde bâti : on les demande au moment du choc).
 fun.degats.brancherRue((x, z, y) => (vehicules ? vehicules.voitureRueProche(x, z, y) : null));
+// Et à plusieurs (v363) : une voiture de la rue se nomme par `clé#rang`, et
+// l'histoire de ses chocs part chez les amis, qui la froissent chez eux.
+fun.degats.brancherNoms((q) => (vehicules ? vehicules.voitureNommee(q) : null));
+fun.degats.brancherReseau((m) => { if (net && net.active) net.broadcast(m); });
 
-// LA SÉQUENCE D'EMBARQUEMENT (v362) prend l'avatar que main.js possède, et la
+// LA SÉQUENCE D'EMBARQUEMENT (v365) prend l'avatar que main.js possède, et la
 // place assise que main.js calcule : un seul corps, une seule assise.
 fun.brancherAvatar({ obtenir: obtenirAvatarLocal, placeAssise, pose: POSE_AU_VOLANT });
 

@@ -1,4 +1,4 @@
-// LA SÉQUENCE D'EMBARQUEMENT, RELEVÉE IMAGE PAR IMAGE (v362). Une voiture de
+// LA SÉQUENCE D'EMBARQUEMENT, RELEVÉE IMAGE PAR IMAGE (v365). Une voiture de
 // la flotte posée dans le couloir vide, l'enfant du côté PASSAGER (il doit
 // contourner) ; « Monter », puis « Descendre ». Toutes les 100 ms : la phase,
 // la distance de l'enfant à la portière conducteur, l'angle de la portière,

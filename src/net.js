@@ -1565,6 +1565,13 @@ export class NetSession {
         if (this.onEmote) this.onEmote(msg.from || conn.peer, String(msg.k || '👋'), String(msg.name || ''));
         if (this.isHost) this.relay(conn.peer, { ...msg, from: conn.peer });
         break;
+      // Le choc d'une voiture de la rue (v363) : l'ami la froisse chez lui
+      // aussi. Un nom neuf — une tablette restée sur l'ancienne version
+      // l'ignore, le receveur cède (v256) ; l'hôte relaie.
+      case 'rue_choc':
+        if (this.onRueChoc) this.onRueChoc(msg);
+        if (this.isHost) this.relay(conn.peer, msg);
+        break;
       case 'sign': // a text sign planted in the world
         if (this.onSign) this.onSign(msg.sign);
         if (this.isHost) this.relay(conn.peer, msg);

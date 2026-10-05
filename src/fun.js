@@ -312,7 +312,7 @@ export function initFun(ctx) {
     emojiBurst([a.def.emoji, '💨'], 8);
   }
 
-  // MONTER ET DESCENDRE COMME DANS UN VRAI JEU (v362) : l'enfant marche à la
+  // MONTER ET DESCENDRE COMME DANS UN VRAI JEU (v365) : l'enfant marche à la
   // portière, l'ouvre, s'assied, la referme — et l'inverse. La séquence vit
   // dans embarquement.js ; elle appelle `toggleRide` au moment où il est
   // ASSIS, si bien que `montureConduite()` ne ment jamais (v252).
@@ -415,10 +415,14 @@ export function initFun(ctx) {
   function conduireLaVoiture(place) {
     const v = getVehicules && getVehicules();
     if (!v || !v.emprunter) return false;
+    // dégâts (v363) : la voiture de la rue, froissée, AVANT qu'elle ne parte
+    const ici = v.place && v.place(place.id);
+    const abimee = ici ? degats.rueEn(ici.x, ici.z, ici.y) : null;
     const pris = v.emprunter(place.id);
     if (!pris) return false;
     const auto = animalManager.invoquer('voiture', pris.x, pris.z, false, { flotte: pris.flotte, peinture: pris.peinture });
     if (!auto) return false;
+    degats.heriter(abimee, auto.mesh);   // ses coups la suivent (v363)
     // À SA PLACE EXACTE, pas au sommet de la colonne — la leçon du garage.
     auto.pos.set(pris.x, pris.y, pris.z);
     auto.yaw = pris.cap || 0;
@@ -428,7 +432,7 @@ export function initFun(ctx) {
     // rue (v305)
     auto.mesh.userData.origine = pris.origine || null;
     // elle s'arrête (elle n'est plus dans le convoi) et l'enfant y MARCHE : une
-    // voiture de la rue est vide, personne n'en est sorti (v362)
+    // voiture de la rue est vide, personne n'en est sorti (v365)
     monterDans(auto);
     toast(`🚗 Tu prends le volant ${pris.nom ? `de la ${pris.nom}` : 'de la voiture'} !`, 0xa8d8ff);
     return true;
@@ -469,7 +473,7 @@ export function initFun(ctx) {
     // Une seule touche pour « monter » : sur ce qui vit s'il y a une bête
     // devant soi, à bord sinon. L'enfant n'a pas à savoir laquelle des deux.
     if (e.code === 'KeyM') {
-      if (embarquement.enCours()) embarquement.terminer();   // un second appui termine (v362)
+      if (embarquement.enCours()) embarquement.terminer();   // un second appui termine (v365)
       else if (passager) descendreDePassager();
       else if (riding) embarquement.descendre();
       else if (bord) debarquer();
@@ -479,7 +483,7 @@ export function initFun(ctx) {
   });
   document.getElementById('feed-btn').addEventListener('click', () => feed(animalManager.targeted()));
   document.getElementById('ride-btn').addEventListener('click', () => {
-    if (embarquement.enCours()) { embarquement.terminer(); return; }   // un second appui termine (v362)
+    if (embarquement.enCours()) { embarquement.terminer(); return; }   // un second appui termine (v365)
     if (passager) { descendreDePassager(); return; }
     if (riding) { embarquement.descendre(); return; }
     const m = animalManager.monture();
@@ -1378,7 +1382,7 @@ export function initFun(ctx) {
     // les dégâts de la voiture (v343) : main.js les chauffe et les envoie aux
     // amis, les témoins les lisent
     degats,
-    // LA SÉQUENCE D'EMBARQUEMENT (v362). `descendre({ presse: true })` pose
+    // LA SÉQUENCE D'EMBARQUEMENT (v365). `descendre({ presse: true })` pose
     // l'enfant à côté sans animation (la voiture qui prend feu) ;
     // `avatarEnSequence` dit à main.js de ne pas asseoir l'avatar cette image.
     descendre: (o) => embarquement.descendre(o),
