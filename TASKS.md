@@ -259,6 +259,18 @@
   - **Les avions ne s'abîment pas** (`pilote` est écarté) : une décision, pas
     un oubli — un atterrissage manqué n'a pas de « choc » dans `player.js`.
 
+- [ ] **AU PORTAIL DE LA v364 (le coût des dégâts dans le journal), CINQ
+  SUITES ROUGES — une à moi, corrigée ; les autres déjà déclarées.**
+  - `degats.js` « le contrat avec la physique » : la vraie physique (v358) a
+    publié un choc pendant la chute simulée, et le témoin le prenait pour le
+    repli. Repointé (il compte les chocs publiés), vert seul, rouge repli forcé.
+  - `maj.js` (le loader, le flou), `carte.js` « la faire glisser (bridé ×4) »
+    (657 ms), `manhattan.js` (trou de façade, taxi), `monte.js` (téléportation
+    qui compile, chauffe de New York 55/321 ; gel d'arrivée 34,6 %) : les
+    familles déjà déclarées plus haut, rouges des deux côtés à la v362. La
+    livraison n'ajoute qu'une lecture dans le relevé du journal et une ligne
+    de `?diag=1`, ni carte, ni loader, ni rendu.
+
 - [ ] **AU PORTAIL DE LA v363 (les coups suivent la voiture), CINQ SUITES
   ROUGES — aucune causée par la livraison, double mesure faite (rejouées SEULES
   sur la branche et sur `origin/main` v358, arbre détaché).**

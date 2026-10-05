@@ -40,7 +40,10 @@ que rien ne s'est abîmé, rien n'est ajouté au relevé.
 `origin/main` (aucun relevé) : après le crash et le feu, le journal porte un
 relevé `degats` avec ses enfoncements en millisecondes et un feu à un ou deux
 appels (mesuré : 4 enfoncements, dernier 22,4 ms, premier 18,2, feu 2 appels
-pour 36 carrés).
+pour 36 carrés). Et le témoin du contrat avec la physique (v356) compte
+désormais les chocs que la VRAIE physique publie (v358) pendant sa chute de
+vitesse simulée : au portail, elle en avait publié un, légitime, et le témoin
+l'accusait d'être le repli. Vert sur la branche, rouge quand on force le repli.
 
 ---
 

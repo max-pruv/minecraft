@@ -610,13 +610,25 @@ function verifier(nom, ok, detail = '') {
       p.physiqueLitEtat = true;
       p.choc = null;                                  // la physique existe, rien ne s'est passé
       // une chute de vitesse brutale : le repli la compterait — il doit se taire
+      // DEPUIS LA v358 LA VRAIE PHYSIQUE PUBLIE SES CHOCS : une chute brutale
+      // peut en être un pour elle (mesuré au portail de la v364 : un choc
+      // compté, zone −2,6). Celui-là est légitime ; ce que le témoin garde,
+      // c'est qu'AUCUN choc ne vienne du repli — on compte donc les chocs que
+      // la physique a publiés pendant la chute, et l'on n'exige rien de plus.
+      const avantChute = d.etat(a.mesh) ? d.etat(a.mesh).chocs.length : 0;
+      const publies = new Set();
+      const guet = setInterval(() => { if (p.choc && p.choc.t) publies.add(p.choc.t); }, 5);
       p.vitesseVoiture = 22; await tenir(0.05); p.vitesseVoiture = 0; await tenir(0.3);
-      const apresChute = d.etat(a.mesh) ? d.etat(a.mesh).chocs.length : 0;
+      clearInterval(guet);
+      if (p.choc && p.choc.t) publies.add(p.choc.t);
+      const longueur = d.etat(a.mesh) ? d.etat(a.mesh).chocs.length : 0;
+      // au plus ce que la physique a publié (un frôlement publié ne compte pas)
+      const apresChute = Math.max(0, longueur - avantChute - publies.size);
       const cap = a.mesh.rotation.y;
       p.choc = { force: 0.8, t: performance.now(), x: a.pos.x - Math.sin(cap) * 2.3, z: a.pos.z - Math.cos(cap) * 2.3 };
       await tenir(1.0);                               // relu à chaque image
       const e = d.etat(a.mesh);
-      const chocs = e ? e.chocs.length : 0;
+      const chocs = (e ? e.chocs.length : 0) - longueur;   // celui qu'on vient de publier, une fois
       const boostLu = p.boost;                        // la physique lit l'état : pas de réduction ici
       p.physiqueLitEtat = false;
       await tenir(0.3);
@@ -624,7 +636,7 @@ function verifier(nom, ok, detail = '') {
       p.choc = avantChoc === undefined ? null : avantChoc; p.physiqueLitEtat = avantLit;
       if (avantChoc === undefined) delete p.choc;
       if (avantLit === undefined) delete p.physiqueLitEtat;
-      return { apresChute, chocs, zone: e ? e.chocs.map((c) => c.z) : null, publie: p.etatVoiture,
+      return { apresChute, publiesPendantLaChute: publies.size, chocs, zone: e ? e.chocs.map((c) => c.z) : null, publie: p.etatVoiture,
         boostNeuve, boostLu, boostApplique };
     });
     verifier('le contrat avec la physique : un choc publié compte UNE fois, le repli se tait, l\'allure n\'est jamais réduite deux fois',
