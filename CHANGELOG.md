@@ -20,6 +20,30 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v391 — La tablette mesure sa vitesse au sol
+
+**Pourquoi.** Le plafond de vitesse des voitures (`VITESSE_SOL_MAX` : 70 blocs
+par seconde en ville, 80 en campagne) a été mesuré au banc, qui rend en
+logiciel à une cadence qui n'est pas celle de l'iPad. Il ne peut se confirmer
+que sur la tablette, et rien ne permettait à Max de le relever sans une session
+de développement à côté.
+
+**Ce que ça change.** Avec `?diag=1`, dès qu'on roule, une ligne de plus :
+« roulage : vitesse · trou devant soi (le monde maillé dans le champ, ±40°
+autour du déplacement) · débit de morceaux par seconde · file · ordre ·
+recharge ». Le journal de bord la range toutes les cinq secondes
+(`roulage: { v, trou, debit }`), si bien qu'un essai de Max se relit dans le
+nuage sans rien recopier. La marche exacte — adresse, ville, avenue, ce qu'il
+faut relever et ce qui décide — est dans `TASKS.md`. Sans `?diag=1`, rien ne
+change.
+
+**Ce qui le prouve.** Deux témoins dans `monte.js` : la règle pure (un trou
+connu, un débit connu) et la page (à quarante blocs par seconde, la ligne
+paraît et porte des nombres ; à l'arrêt elle n'y est pas). Rouges sur l'ancien
+code : la règle n'existe pas, la ligne non plus. Portail complet.
+
+---
+
 ## v390 — Londres en relief
 
 **Pourquoi.** Max : « when done do all European cities ». La couche de détail

@@ -443,6 +443,33 @@
   (`manhattan.js`), « la monoplace ralentit assez » (9,1 m/s, identique sur
   `origin/main`), le bouton « Conduire » (un métro à portée), les programmes à
   la téléportation et l'arrivée sur une ville (2 267 ms · 26,4 %).
+- [ ] **LE PLAFOND AU SOL SUR L'IPAD — LA MARCHE POUR MAX (v391).** Le banc
+  ne peut pas relever `VITESSE_SOL_MAX` (ville 70, campagne 80) : il rend en
+  logiciel, à une cadence qui n'est pas celle de la tablette. `?diag=1` affiche
+  désormais, en roulant, une ligne « roulage : V b/s · trou devant T blocs ·
+  débit D morceaux/s · file F · ordre … · recharge … », et le journal de bord
+  la range toutes les cinq secondes (`roulage: { v, trou, debit }` dans
+  `journal_appareil`) — je peux donc la relire sans que Max ne recopie rien.
+  La marche, sur l'iPad de la maison, étendue « Auto » :
+  1. ouvrir `https://minecraft-fam.vercel.app/?diag=1`, jouer, ouvrir la carte,
+     se téléporter au centre de **Paris**, attendre que le compteur de morceaux
+     ne monte plus (une dizaine de secondes) ;
+  2. prendre une voiture de la rue (« Conduire »), choisir une grande avenue
+     droite (les Champs-Élysées, ou le boulevard Haussmann), pleins gaz dix
+     secondes ;
+  3. relever trois fois la ligne « roulage » (capture d'écran) : la vitesse, le
+     trou, le débit ; et la première ligne (images par seconde, pire image) ;
+  4. refaire la même chose en **campagne**, sur l'A1 (la carte, « A1 »), à
+     pleins gaz ;
+  5. si l'avion est plus simple : un vol bas au-dessus de Paris donne le même
+     trou (la vitesse est plus haute, ce qui dit le plafond par l'autre bout).
+  Ce qui décide : le plafond tient si le trou reste au-dessus de **deux
+  secondes de route** (à 70 b/s, 140 blocs) ; s'il tombe sous une seconde,
+  le plafond doit baisser pour ce palier ; s'il reste au-dessus de 190 (le
+  bord du disque à rr 12), il peut monter. Le débit dit pourquoi : sous ~50
+  morceaux par seconde la file attend l'image (ordre en cône utile, v380),
+  au-dessus de 90 le worker suit. Sans session de ma part : le journal du
+  nuage garde les relevés, je les relirai à la prochaine.
 - [ ] **LE PLAFOND DE VITESSE AU SOL EST MESURÉ ET PUBLIÉ (v346) — À APPLIQUER
   PAR LA CONDUITE, ET À CONFIRMER SUR LA TABLETTE.** `src/plafond-sol.js` :
   `VITESSE_SOL_MAX` = 60 b/s en ville, 70 en campagne et sur l'autoroute ;
