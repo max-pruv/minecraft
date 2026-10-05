@@ -6757,7 +6757,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
           if (!o.isMesh || roue(o, racine) || !filtre(o)) return;
           M.multiplyMatrices(invR, o.matrixWorld);
           const pos = o.geometry.attributes.position, ix = o.geometry.index;
-          const n = ix ? ix.count : pos.count;
+          const n = o.geometry.userData.endroit != null ? o.geometry.userData.endroit : ix ? ix.count : pos.count;   // le revers (v367) n'est pas de la surface en plus
           for (let i = 0; i + 2 < n; i += 3) {
             v.fromBufferAttribute(pos, ix ? ix.getX(i) : i).applyMatrix4(M);
             w.fromBufferAttribute(pos, ix ? ix.getX(i + 1) : i + 1).applyMatrix4(M).sub(v);
@@ -6795,6 +6795,52 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !embBords.err && embBords.debord < 0.02 && Math.abs(embBords.aire[1] - embBords.aire[0]) < 0.005 * embBords.aire[0]
         && (!embBords.froisse || embBords.froisse.surPivot > 0),
       JSON.stringify(embBords));
+    // 11. LE REVERS D'UNE PORTIÈRE OUVERTE SE VOIT (v367). Aucun modèle de
+    // la flotte n'a meublé l'intérieur de sa portière : vue de derrière —
+    // l'enfant qui arrive par l'arrière — la face simple était culée, et l'on
+    // voyait au travers. Des rayons (la face culée ne les arrête pas : le
+    // Raycaster lit `side` comme la carte graphique) visent la portière
+    // ouverte de face, puis de derrière ; il en faut autant d'un côté que de
+    // l'autre. Et la portière garde UN maillage par matériau : le revers est
+    // dans la même géométrie, pas un appel de dessin de plus.
+    const embRevers = await emb.evaluate(async () => {
+      const THREE = await import('three');
+      const g = window.__game;
+      let P;
+      try { P = await import('./src/portieres.js'); } catch { return { err: 'pas de portières' }; }
+      const b = g.animalManager.invoquer('voiture', g.player.pos.x + 14, g.player.pos.z - 12, false, { flotte: 'amg-gt-black-series.glb' });
+      for (let i = 0; i < 80 && !b.mesh.userData.modele; i++) await new Promise((r) => setTimeout(r, 100));
+      const eq = b.mesh.userData.modele ? P.equiperPortieres(b.mesh) : null;
+      if (!eq) return { err: 'pas équipée' };
+      P.ouvrir(eq['-1'], 1);
+      b.mesh.updateMatrixWorld(true);
+      const p = eq['-1'], plan = eq.plan, L = p.userData.longueur;
+      const portes = [], tout = [];
+      p.traverse((o) => { if (o.isMesh) portes.push(o); });
+      b.mesh.traverse((o) => { if (o.isMesh) tout.push(o); });
+      const rc = new THREE.Raycaster(); rc.layers.enableAll();
+      const viser = (oeilLocal) => {
+        const oeil = oeilLocal.clone().applyMatrix4(b.mesh.matrixWorld);
+        let n = 0;
+        for (let k = 0; k < 6; k++) for (let j = 0; j < 4; j++) {
+          const cible = new THREE.Vector3(-0.05, plan.y0 + (plan.y1 - plan.y0) * (j + 0.5) / 4, L * (k + 0.5) / 6).applyMatrix4(p.matrixWorld);
+          const d = cible.clone().sub(oeil); const dist = d.length(); d.normalize();
+          rc.set(oeil, d); rc.far = dist + 1;
+          const h = rc.intersectObjects(tout, false);
+          if (h.length && portes.includes(h[0].object)) n++;
+        }
+        return n;
+      };
+      const face = viser(new THREE.Vector3(-plan.demiLarg - 2.5, 0.9, plan.z0 - 0.8));
+      const dos = viser(new THREE.Vector3(-plan.demiLarg + 0.2, 0.9, plan.z1 + 1.2));
+      // autant de maillages de portière que de maillages découpés : le revers n'en ajoute aucun
+      const attendus = plan.geos.filter((x) => x && x['-1']).length;
+      g.animalManager.scene.remove(b.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(b), 1);
+      return { face, dos, maillages: portes.length, attendus };
+    });
+    verifier('une portière ouverte se voit aussi de derrière, sans un appel de dessin de plus',
+      !embRevers.err && embRevers.face > 4 && embRevers.dos >= embRevers.face / 2 && embRevers.maillages === embRevers.attendus,
+      JSON.stringify(embRevers));
     verifier('aucune erreur JavaScript pendant l\'embarquement', emb.erreurs.length === 0, JSON.stringify(emb.erreurs));
     await emb.close();
   } finally {
