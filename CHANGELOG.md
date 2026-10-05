@@ -39,7 +39,10 @@ s'en approche : la page démarre plus vite.
 anneau passe de 45 dettes déclarées à zéro (48 à la mesure de la carrosserie
 vraie sur `origin/main`), et un témoin neuf exige que les anneaux dépliés à
 l'approche soient exactement ceux du calcul entier (262 villes). `carteMonde.js` :
-la dette des ponts d'Agra (le Taj et le Fort sur deux tabliers, 9 pas) tombe.
+les dettes des ponts d'Agra (le Taj et le Fort sur deux tabliers, 9 pas) et
+de Berlin (l'anneau qui passait dans le Berliner Dom) tombent. L'empreinte des
+490 morceaux change — les tabliers des anneaux sont du sol — et c'est prouvé :
+le filtre désarmé, la branche rend celle de la v375 au bit près.
 Mesuré sous node : aucune ville sans voitures, la moins couverte à 78,7 %
 (barre 75) ; 445 → 430 anneaux ; démarrage 157 → 0 ms pour ce calcul.
 

@@ -5101,7 +5101,10 @@ const VRAIES_KM = [
     // dette qui ne mesure plus rien rougit.
     // Agra est payée en v376 : un anneau qui passe dans un monument est écarté
     // à la source (`traverseUnMonument`), et ses ponts avec lui (9 → 0 pas).
-    const DETTE_PONTS = { berlin: { sansSol: 1, surLaTete: 0 } };
+    // Berlin aussi (v376) : l'anneau dont le bout de pont tombait hors de
+    // `pontDeVille` passait dans le Berliner Dom ; écarté, la dette ne mesure
+    // plus rien (1 → 0).
+    const DETTE_PONTS = {};
     verifier('et on le traverse à pied d\'une rive à l\'autre',
       fleuves.ponts.filter((p) => p.cinq).length === 5
       && fleuves.ponts.every((p) => (DETTE_PONTS[p.cle]

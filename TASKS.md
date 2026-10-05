@@ -150,7 +150,11 @@
   refaire : nord montagne (≥ 50), est crête 43–49 de u 73 à 121 (une route au
   niveau de la rue déblaierait douze blocs), ouest le Potomac dans la boîte ;
   la base d'Andrews (102, 281) ferme le sud-est.
-- [ ] **DEUX PONTS DE VILLE À REPRENDRE, VUS PAR LE TÉMOIN ÉLARGI (v362).**
+- [x] **DEUX PONTS DE VILLE À REPRENDRE, VUS PAR LE TÉMOIN ÉLARGI (v362) — tombés
+  en v376** avec les anneaux qui passaient dans un monument (le Taj et le Fort
+  à Agra, le Berliner Dom à Berlin) : `DETTE_PONTS` est vide. La cause de
+  Berlin (le bout d'axe arrondi hors de `pontDeVille`) n'est pas corrigée, elle
+  n'a plus d'anneau où se montrer : le témoin la verrait revenir.
   Berlin : UNE colonne d'eau sans tablier au bout d'un pont (4186, −2011) —
   le bout de l'axe arrondi tombe hors de `pontDeVille`. Agra : le Taj Mahal
   et le Fort d'Agra sont bâtis SUR deux tabliers d'anneaux (neuf pas bouchés,
