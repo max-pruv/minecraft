@@ -163,7 +163,10 @@
   anneaux de circulation et les monuments. Ni l'un ni l'autre n'est d'une
   route ; mêmes valeurs sur `origin/main` (villesmonde.js inchangé). Déclarés
   dans `DETTE_PONTS` (carteMonde.js), qui rougit quand ils ne mesurent plus
-  rien.
+  rien. TOKYO (v375), lue depuis que le Tōmei la touche : le Sensō-ji est bâti
+  sur un tablier d'anneau (deux pas bouchés, (53434..53435, 7944)) — même
+  conflit de plan qu'Agra, mesuré identique sur `origin/main` (v374) ; déclaré
+  dans `DETTE_PONTS`.
 - [ ] **LA v358 (conduite) N'A PAS REJOUÉ LE PORTAIL ENTIER APRÈS LA FUSION
   DE LA v357** : dernier portail complet sur la v356 fusionnée (rouges
   ci-dessous, tous déclarés) ; la v357 ne touche que villesmonde, world,

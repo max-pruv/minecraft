@@ -5139,7 +5139,10 @@ const VRAIES_KM = [
     // conflit de plan entre les anneaux et les monuments. Dette dans
     // TASKS.md ; une dette qui ne mesure plus rien rougit. (Berlin, la colonne
     // d'eau au bout d'un pont, est réparée en v375 : témoin des encoches.)
-    const DETTE_PONTS = { agra: { sansSol: 0, surLaTete: 9 } };
+    // Et Tokyo (v375), lue depuis que le Tōmei la touche : le Sensō-ji est bâti
+    // sur un tablier d'anneau (deux pas bouchés en 53434–53435, 7944), le même
+    // conflit de plan qu'à Agra, mesuré identique sur `origin/main` (v374).
+    const DETTE_PONTS = { agra: { sansSol: 0, surLaTete: 9 }, tokyo: { sansSol: 0, surLaTete: 2 } };
     verifier('et on le traverse à pied d\'une rive à l\'autre',
       fleuves.ponts.filter((p) => p.cinq).length === 5
       && fleuves.ponts.every((p) => (DETTE_PONTS[p.cle]
