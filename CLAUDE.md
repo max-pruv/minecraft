@@ -1082,6 +1082,22 @@ Et une empreinte d'identité qui change se PROUVE : celle des 490 morceaux
 (v352) couvre Marrakech et Tokyo ; la branche, bâtisseurs neufs désarmés, rend
 l'ancienne au bit près — c'est ce qui a permis de la remplacer.
 
+## La chauffe de New York se mesure seule (v386) — un bridage n'est pas une charge de portail
+
+Rouge chronique de `monte.js`, des deux côtés. Deux règles.
+
+- **AVANT DE CORRIGER LE JEU, ON DEMANDE SI L'ENFANT EST TOUCHÉ.** Le trajet
+  exact du témoin, rejoué seul : chauffe finie en 9 s, zéro programme neuf à
+  Paris, New York, Lille, de jour comme de nuit, et bridé ×6 depuis l'accueil
+  la chauffe finit en 16 s. Le jeu tient ; le témoin attendait soixante
+  secondes un ÉTAT que la charge retarde — il attend 150 s et dit sa durée.
+- **UN BRIDAGE DU PROCESSEUR NE REPRODUIT PAS UNE CHARGE DE PORTAIL.** Les
+  trois programmes `physical` vus à Paris au portail ne reviennent ni bridé ×4
+  ni ×6 : un banc chargé n'est pas une page lente (ordre des arrivées, fichiers
+  servis plus tard). Quand on ne peut pas reproduire, le témoin NOMME ce qu'il
+  voit (la case de la clé qui diffère, v319), pour que le prochain rouge se
+  démonte au lieu de se rejouer.
+
 ## Le cône se mesure à chaud (v382) — l'ABBA n'écarte pas un premier passage à froid
 
 Le témoin de l'ordre en cône était rouge des deux côtés (0,02 à 0,07 pour une

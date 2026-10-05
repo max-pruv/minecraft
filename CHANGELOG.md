@@ -20,6 +20,23 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v386 — La chauffe de New York se mesure seule
+
+**Pourquoi.** « Se téléporter dans une ville ne compile plus de programmes »
+était rouge depuis des dizaines de versions, des deux côtés : la chauffe de New
+York « expirée » à 44 à 163 sur 321. On ne savait pas si un enfant qui arrive à
+New York voit l'image se figer, ou si c'était le banc.
+
+**Ce que ça change.** Rien dans le jeu, parce que le jeu tient : la sonde
+`sonde-programmes-paris.cjs` rejoue le trajet exact du témoin — chauffe finie en
+9 s (16 s bridé ×6), zéro programme neuf à l'arrivée à Paris, New York et
+Lille, de jour comme de nuit. Le témoin attend désormais la chauffe jusqu'à 150 s
+et dit combien de temps elle a pris ; sa garde d'images suit le pire relevé
+vivant ; et quand un programme se compile quand même, il nomme la case de sa clé
+qui diffère.
+
+**Ce qui le prouve.** La sonde, cinq passages (seul, nuit, bridé ×4 après la
+chauffe, bridé ×6 depuis l'accueil). Portail : `monte.js` et la fumée.
 ## v385 — Les passants quittent la chaussée
 
 **Pourquoi.** Le témoin de la v380 a nommé qui restait planté au milieu de la
