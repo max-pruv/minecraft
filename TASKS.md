@@ -9,7 +9,7 @@
   fusions de `main` pendant quatre portails). Le prochain portail complet le
   confirme.
 
-- [ ] **PORTAIL DE LA v358 (sur la v355 fusionnée)** — deux rouges neufs, ni
+- [ ] **PORTAIL DE LA CONDUITE (sur la v355 fusionnée)** — deux rouges neufs, ni
   l'un ni l'autre de la conduite. (1) `plafond.js` « engendrer et mailler moins
   cher ne change ni un bloc ni un sommet » : empreinte `69381f2e…` pour une
   référence `b31099b9…` (v351). Calculée sur `origin/main` (v355) :
@@ -25,7 +25,7 @@
   programmes de NY, appui long de `carte.js`, façade et taxi de Manhattan)
   est déjà déclaré ci-dessous.
 
-- [ ] **PORTAIL FINAL DE LA v358 (après la fusion avec la v354)** : rouges
+- [ ] **PORTAIL DE LA CONDUITE (après la fusion avec la v354)** : rouges
   `monte.js` gel d'arrivée (2 350 ms · 20,6 %, dette ci-dessous),
   `manhattan.js` façade (17 102 → 51 734), taxi (bouton jamais visible) et
   PeerJS « Lost connection » (déclarés), et `maj.js` « le loader ne s'efface
