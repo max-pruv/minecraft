@@ -3008,6 +3008,18 @@ l'embarquement a eu lieu, pas par une hypothèse.
   (`cote: 1`, déjà fabriquée) : la faire entrer par là est l'étape suivante, à
   condition que l'ami — sur SA tablette — voie aussi la portière s'ouvrir, ce
   qui demande un message réseau (`net.js`, hors zone).
+- [ ] **LE PORTAIL DE LA v370 (bords des portières), DOUBLE MESURE FAITE.**
+  `degats.js` vert. Au portail, 17 rouges dans `monte.js` et `maj.js` : il a
+  tourné pendant que je faisais tourner une dizaine de sondes de navigateur
+  sur la même machine — ma faute, et la leçon de la v220 (deux pages en même
+  temps font tomber la cadence de moitié). Rejouée SEULE des deux côtés,
+  `monte.js` rend quatre rouges de chaque côté : passants de Rome sur la
+  chaussée, téléportation qui compile, écran figé à l'arrivée — identiques ;
+  et en plus le réverbère (`parcouru 0`, sur la branche) contre le trou en
+  vol (sur `origin/main`), deux intermittences déjà vues des deux côtés.
+  `reseau.js` — « la même circulation » (écart médian 43 blocs) : famille
+  déclarée plus bas ; preuve structurelle, le témoin ne passe ni par
+  `portieres.js` (atteint seulement sous `embarq: 1`) ni par `nouveautes.js`.
 - [x] **Les bords de la découpe** — FAIT en v370 : coupés au plan (débord 0
   sur les 55 modèles). Les taxis gardent `fabrique` → pas de portière : bords
   nets, mais 0/24 rayons touchent un habitacle derrière l'ouverture.
