@@ -1,5 +1,18 @@
 # Ce qui est en cours
 
+- [ ] **LE PORTAIL DE LA v374 (les circuits des villes engendrées), DOUBLE
+  MESURE FAITE.** Verts : `carteMonde.js`, `plafond.js`, `degats.js`,
+  `carte.js`, `washington.js`. `maj.js` : un seul rouge, À MOI et corrigé (le
+  titre de la nouveauté faisait sept mots). Rouges déjà déclarés, mêmes
+  valeurs : `manhattan.js` façade 22 326 → 51 734 ; `monte.js` chauffe de New
+  York expirée à 68 sur 321. Le gel d'arrivée (1 300 ms · 37,8 % au portail)
+  me concernait peut-être — `deplier()` calcule désormais les anneaux d'une
+  ville à l'approche. Rejoué SEUL, même vol, en ordre alterné, deux passages
+  par page (`sonde-gel` du brouillon) : branche 1,8 · 10,4 · 0 · 7,3 % (pire
+  image 283 à 1 517 ms), `origin/main` v375 10,7 · 13,1 · 9,6 · 0 % (283 à
+  1 400 ms). Même distribution, la branche n'est pas pire : c'est la dette
+  connue, pas la livraison.
+
 - [ ] **LE PORTAIL DE LA v371 (les passants traversent au feu), DOUBLE MESURE
   FAITE.** Premier portail (base v354) : deux rouges de `monte.js` étaient à
   MOI et sont corrigés dans la livraison — le témoin des traversées (une seule
