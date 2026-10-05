@@ -14,6 +14,9 @@
   Et ce rejeu sur `origin/main` rend rouges les deux témoins que la v373 garde
   (« la recharge à l'arrivée garde la cadence », « l'écran ne se fige pas en
   arrivant sur une ville », 1 400 ms · 38,7 %) : verts sur la branche.
+  Après la fusion de la v372, portail rejoué : mêmes dettes (`maj.js` 5/9,
+  façade 11 684 → 44 615, taxi, PeerJS « Lost connection » déclaré, chauffe de
+  New York, accélérateur 9,1) ; `carte.js` et le trou en vol verts.
 - [ ] **LE PORTAIL DE LA v371 (les passants traversent au feu), DOUBLE MESURE
   FAITE.** Premier portail (base v354) : deux rouges de `monte.js` étaient à
   MOI et sont corrigés dans la livraison — le témoin des traversées (une seule
