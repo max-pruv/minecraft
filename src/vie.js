@@ -208,9 +208,9 @@ export class Habitant extends BaseNPC {
     // pire que le figé. Et elle se paie sur la cadence de sonde (trois fois par
     // seconde de jeu), et seulement pour les DÉMOTÉS : un villageois de château
     // n'a jamais touché ce drapeau (`undefined`), et Manhattan, dont le trottoir
-    // vit dans un plan et non dans des blocs, est écartée par `rueUrbaine` —
-    // c'est la dette déclarée de la v278, elle ne s'ouvre pas ici par surprise.
-    if (this.surTrottoir === false && !this.rueUrbaine && this.world.trottoirA) {
+    // vit dans un plan et non dans des blocs, passe aussi depuis la v354 :
+    // `trottoirA` y lit `ruePietonne`, le plan, au lieu du seul sol praticable.
+    if (this.surTrottoir === false && this.world.trottoirA) {
       this.sonde = (this.sonde ?? 0) - dt;
       if (this.sonde <= 0) {
         this.sonde = 0.33;

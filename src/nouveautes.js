@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 354,
+    titre: 'New York se promène',
+    puces: [
+      'Les passants marchent le long du trottoir',
+      'Ils tournent au coin de la rue',
+    ],
+  },
+  {
     v: 353,
     titre: 'Le ciel de toutes les villes',
     puces: [

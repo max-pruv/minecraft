@@ -15,6 +15,18 @@
   premier passage, vert à la reprise). La livraison ne touche ni Manhattan,
   ni le réseau, ni le rendu : seulement le générateur et le mailleur, dont
   l'empreinte (blocs et tampons) est celle d'`origin/main`, bit pour bit.
+- [ ] **LE PORTAIL DE LA v354 (Manhattan au long cap), DOUBLE MESURE FAITE.**
+  Portail : `degats.js` (programmes au feu 93 → 92), `maj.js` et
+  `manhattan.js` (déjà déclarés), et cinq rouges de `monte.js` — la rame qui
+  ralentit (9,1 m/s), « Conduire cette voiture » non proposé (rame à portée),
+  les passants sur la chaussée à Rome (5 sur 21), la téléportation sans
+  compilation, le gel d'arrivée. Rejouées SEULES des deux côtés (v351) :
+  `degats.js` vert/vert ; Rome vert/vert (1 et 0 sur la chaussée) ; trou en
+  vol et gel d'arrivée rouges/rouges ; la téléportation rouge sur la branche
+  seulement, avec ZÉRO programme neuf partout — c'est la garde `images > 10`
+  qui tombe (Paris 6 images contre 12 sur `origin/main`), donc la cadence du
+  banc. Preuve structurelle : le diff n'atteint que le site urbain (New York) ;
+  partout ailleurs `piedPieton` rend `undefined` et `trottoirA` est inchangé.
 
 - [ ] **LE PORTAIL DE LA v351 (les piétons rapides), DOUBLE MESURE FAITE.**
   Rouges de portail déjà déclarés : `maj.js` « corps, programmes et fond de
@@ -2547,7 +2559,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
 
 ## En cours
 
-- [ ] **LES PASSANTS DE MANHATTAN N'ONT PAS REÇU LA MARCHE AU LONG CAP (v278,
+- [x] **(FAIT en v354 : `trottoirA` lit `ruePietonne` à Manhattan, témoin de débit dans `manhattan.js`.) LES PASSANTS DE MANHATTAN N'ONT PAS REÇU LA MARCHE AU LONG CAP (v278,
   déclaré en v279).** `passants.js` pose `h.surTrottoir = !site.urbain && …` :
   dans un site URBAIN — New York est le seul — le drapeau reste faux, donc
   `Habitant.promene()` rend faux et les passants y gardent l'ancien programme
