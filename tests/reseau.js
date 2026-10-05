@@ -588,6 +588,13 @@ function verifier(nom, ok, detail = '') {
       traversee = { ...r, essais: essai + 1 };
       if (r.suivie && r.suivie.vue > 20) break;     // la situation a eu lieu
     }
+    // ET LA SEPTIÈME VOITURE, CELLE QUI ENTRAIT QUAND MÊME (v375). Le compte
+    // `dedans` valait 1 des deux côtés : la sonde `sonde-intrus-ami.cjs` l'a
+    // démonté — toutes les voitures entrées avaient l'ami ET une voiture de la
+    // rue dans leur `veut`, donc la patience de quatre secondes, puis `repart`
+    // les lançait au travers. La règle corrigée (vehicules.js), `dedans` entre
+    // dans le verdict : sur l'ancien code il rougit quand un carrefour s'en
+    // mêle (une fois sur quatorze poses à la sonde), sur le neuf jamais.
     // CE QUE CE TÉMOIN PROUVE, ET CE QU'IL NE PROUVE PAS (v306). Six versions
     // de ce témoin ; la sixième sépare enfin les deux codes, et elle le fait
     // par le RETARD de la voiture qui arrive derrière Marlon — 0 s sur
@@ -596,9 +603,9 @@ function verifier(nom, ok, detail = '') {
     // voiture que celle qui cède entre encore une fois chez Alice. Il reste
     // dans le message, pour qu'une sonde le démonte (dette dans TASKS.md), et
     // n'entre pas dans le verdict : un témoin annonce ce qu'il mesure.
-    verifier('et chez l\'ami, la voiture de la rue qui arrive derrière celle de l\'enfant l\'attend',
+    verifier('et chez l\'ami, la voiture de la rue qui arrive derrière celle de l\'enfant l\'attend, et aucune ne lui passe au travers',
       prise.auVolant && !!traversee.suivie
-      && traversee.suivie.vue > 20 && traversee.suivie.retard > 3,
+      && traversee.suivie.vue > 20 && traversee.suivie.retard > 3 && traversee.dedans === 0,
       JSON.stringify(traversee));
 
 
