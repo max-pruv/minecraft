@@ -44,7 +44,7 @@ const { Banc } = require('./banc.js');
         res.push({ f: f.fichier, ms: Math.round(plan.ms), tri: plan.triangles,
           aire: [plan.aire['-1'], plan.aire['1']].map((x) => +x.toFixed(2)),
           L: +plan.longueur['-1'].toFixed(2), z: [+plan.z0.toFixed(2), +plan.z1.toFixed(2)], dl: +plan.demiLarg.toFixed(2),
-          ambig: +plan.ambigues.toFixed(3), vu: `${habitacle}/${habitacle + vide}`, arriereX: +arriere.x.toFixed(2) });
+          ambig: +plan.ambigues.toFixed(3), coupes: plan.tranches, neufs: plan.sommetsNeufs, deborde: +Math.max(0, plan.longueur['-1'] - (plan.z1 - plan.z0)).toFixed(3), vu: `${habitacle}/${habitacle + vide}`, arriereX: +arriere.x.toFixed(2) });
       }
       return res;
     });

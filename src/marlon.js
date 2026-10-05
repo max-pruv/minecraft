@@ -152,8 +152,23 @@ export class BaseNPC {
   think() { return { speed: 0, yaw: this.yaw }; }
 
   update(dt) {
-    let { speed, yaw } = this.think(dt);
+    // Le temps RÉEL depuis la dernière mise à jour, lu AVANT de penser : une
+    // traversée au feu (v371) se compte sur lui, comme l'écart (v351).
+    const tReel = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    const dtReel = this._tReel ? Math.min(Math.max((tReel - this._tReel) / 1000, 0), DT_REEL_MAX) : dt;
+    this._tReel = tReel;
+    this.dtReel = dtReel;
+    let { speed, yaw, reel } = this.think(dt);
     this.yaw = yaw;
+    let vAnim = null;
+    // UNE ALLURE EN TEMPS RÉEL (v371) : `reel` dit que la vitesse rendue est
+    // en blocs par seconde RÉELLE — la traversée au feu, qui doit tenir dans la
+    // fenêtre du feu, une durée de l'horloge de la rue. Même pas borné que
+    // l'écart, pour que la boîte glisse bloc à bloc.
+    if (reel && speed > 0 && dt > 0) {
+      vAnim = speed;
+      speed = Math.min(PAS_ECART_MAX, speed * dtReel) / dt;
+    }
     // UN PIÉTON NE TRAVERSE PAS UNE VOITURE (v259). `sweep` ne connaît que
     // les blocs ; une voiture — de la rue, celle de l'enfant au volant, une
     // voiture garée — n'en est pas un. On regarde un pas devant soi
@@ -174,10 +189,6 @@ export class BaseNPC {
     // un choc dès 7 b/s. Le pas d'écart est borné (`PAS_ECART_MAX`) pour que
     // la boîte glisse bloc à bloc. Et la pause qui suit n'aveugle plus : on
     // regarde la route même en soufflant.
-    const tReel = typeof performance !== 'undefined' ? performance.now() : Date.now();
-    const dtReel = this._tReel ? Math.min(Math.max((tReel - this._tReel) / 1000, 0), DT_REEL_MAX) : dt;
-    this._tReel = tReel;
-    let vAnim = null;
     if (this.world.vehiculeApproche) {
       if (!this.ecart) {
         const v = this.world.vehiculeApproche(this.pos.x, this.pos.z, this.pos.y);
@@ -195,13 +206,13 @@ export class BaseNPC {
         // seconde) : on essaie l'autre côté, une fois
         if (encore && !e.retourne && e.t > 0.6 && Math.abs(encore.lat - e.lat0) < 0.25) { e.cote = -e.cote; e.retourne = true; e.t = 0; e.lat0 = encore.lat; }
         if (!encore || e.t > 2) { this.ecart = null; this.repos = 0.8; speed = 0; }
-      } else if (this.repos > 0) { this.repos -= dt; speed = 0; }
+      } else if (this.repos > 0) { this.repos -= dt; speed = 0; vAnim = null; }
     }
     if (speed > 0 && this.world.obstaclePieton) {
       const pas = 0.9 + this.largeur / 2;
       const ax = this.pos.x - Math.sin(this.yaw) * pas, az = this.pos.z - Math.cos(this.yaw) * pas;
       if (this.world.obstaclePieton(ax, az, this.pos.y) && !this.world.obstaclePieton(this.pos.x, this.pos.z, this.pos.y)) {
-        speed = 0;
+        speed = 0; vAnim = null;
         if (this.contourner) this.contourner();
       }
     }

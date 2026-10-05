@@ -2,7 +2,7 @@
 
 import * as THREE from 'three';
 import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp, MEUBLE_ITEMS, MEUBLE_START, isMeuble, RUE_ITEMS, RUE_START, RUE, isRue, ARCHI } from './blocks.js';
-import { PARIS as PARIS_ANCRE, circuitsParis, circuitsQuartiersParis } from './paris.js';
+import { PARIS as PARIS_ANCRE, circuitsParis, circuitsQuartiersParis, marquageParis } from './paris.js';
 import { circuitsLondres } from './londres.js';
 import { circuitsSF } from './sanfrancisco.js';
 import { circuitsNice } from './nice.js';
@@ -14,7 +14,7 @@ import { MONUMENTS, MONUMENTS_PAR_VILLE, monumentBati } from './monuments.js';
 import { FAMILLES, batimentVariante, NB_BATIMENTS } from './batiments.js';
 import { World, migrerLesBlocs, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, VILLE, CIRCUIT, CHAUSSEE, TROTTOIR } from './world.js';
 import { aeroportPres, postesAvion } from './aeroport.js';
-import { couloirVoiture } from './pietons.js';
+import { couloirVoiture, cheminDeTraversee, axeCoupe } from './pietons.js';
 import { cadence, chronoReel } from './cadence.js';
 import { axeDuFeu, axeDuCap, etatFeu } from './feux.js';
 import { cadran } from './cap.js';
@@ -881,7 +881,7 @@ function recevoirMorceau(m) {
   statsMaillage.workerMs += m.ms || 0;
   if (m.inactif) statsMaillage.workerInactifMs += m.inactif;
   if (m.cumul) statsMaillage.workerCumul = m.cumul;
-  if (statsMaillage.sonde) statsMaillage.sonde(m, attente);   // une sonde regarde arriver chaque morceau (v370)
+  if (statsMaillage.sonde) statsMaillage.sonde(m, attente);   // une sonde regarde arriver chaque morceau (v373)
   statsMaillage.distants++;
   noterMorceau(m.ms);
   if (attente && attente.sale) world.dirty.add(key);
@@ -1372,7 +1372,7 @@ let lastPlayerChunk = null;
 const RECHARGE_DEMANDEE = new URLSearchParams(location.search).get('recharge');
 let rechargeForcee = RECHARGE_DEMANDEE === 'arrivee' || RECHARGE_DEMANDEE === 'image' ? RECHARGE_DEMANDEE : null;
 let logicielMemo = null;   // un appel GL synchrone : une fois, pas à chaque morceau
-// ET APRÈS UNE TÉLÉPORTATION (v370), le temps de remplir le disque : voir
+// ET APRÈS UNE TÉLÉPORTATION (v373), le temps de remplir le disque : voir
 // `estUnSaut` dans plafond-sol.js. Coupée en rendu logiciel comme le reste.
 let arriveeJusqua = 0;
 const enArrivee = () => arriveeJusqua > 0 && performance.now() < arriveeJusqua && meshQueue.length > 0;
@@ -1711,7 +1711,7 @@ function updateChunks() {
   // blocs à soixante blocs par seconde ne laissaient qu'une demi-seconde.
   const dansLeCouloir = couloirVoiture;
   const voitureEnfant = { x: 0, y: 0, z: 0, ux: 0, uz: 1, v: 0, demiLarg: 1.1 };
-  world.vehiculeApproche = (x, z, y, marge = 1.0) => {
+  world.vehiculeApproche = (x, z, y, marge = 1.0, horizon) => {
     // la voiture de l'enfant : ce qu'il DEMANDE (`pousse`), pas ce qu'il
     // obtient — arrêtée devant un piéton, elle veut encore passer, et c'est
     // ce qui fait que le piéton s'écarte au lieu de la bloquer pour toujours
@@ -1721,13 +1721,13 @@ function updateChunks() {
         const e = voitureEnfant;
         e.x = player.pos.x; e.y = player.pos.y; e.z = player.pos.z;
         e.ux = player.pousse.x / v; e.uz = player.pousse.z / v; e.v = v; e.demiLarg = player.gabarit / 2;
-        const r = dansLeCouloir(e, x, z, y, marge);
+        const r = dansLeCouloir(e, x, z, y, marge, horizon);
         if (r) return r;
       }
     }
     const roulent = vehicules.enMarche();
     for (let i = 0; i < roulent.length; i++) {
-      const r = dansLeCouloir(roulent[i], x, z, y, marge);
+      const r = dansLeCouloir(roulent[i], x, z, y, marge, horizon);
       if (r) return r;
     }
     return null;
@@ -1771,6 +1771,71 @@ function updateChunks() {
     const y = world.sommetColonne(bx, bz);
     return TROTTOIR.has(world.getBlock(bx, y, bz));
   };
+  // OÙ TRAVERSER, ET À QUELLE HEURE (v371). Un passant dont le trottoir s'arrête
+  // devant lui demande s'il est à un CARREFOUR À FEUX — un feu de la liste que
+  // la circulation lit (`feuxProches`, à moins de soixante blocs de l'enfant :
+  // c'est là, et seulement là, que les voitures s'y arrêtent) à moins de cinq
+  // blocs — et, si oui, le chemin jusqu'au trottoir d'en face (`pietons.js`).
+  // Hors carrefour il n'y a pas de passage : on ne traverse pas, on tourne.
+  // Appelé au coin seulement, jamais par image : quatre directions, trente-deux
+  // colonnes au plus chacune.
+  const solPieton = (x, z) => {
+    const bx = Math.floor(x), bz = Math.floor(z);
+    const b = world.getBlock(bx, world.sommetColonne(bx, bz), bz);
+    return TROTTOIR.has(b) ? 't' : (CHAUSSEE.has(b) || b === ARCHI.BORDURE) ? 'c' : 'x';
+  };
+  // ET À PARIS, LE PASSAGE PIÉTON PEINT SANS FEU. Les feux de Paris ne sont
+  // qu'aux carrefours des avenues (v274) ; les autres ont leur passage à
+  // larges bandes (`marquageParis`, v287). Mesuré : quarante-six coins en
+  // quarante secondes, un seul à moins de cinq blocs d'un feu. Un passage sans
+  // feu rend `axe: null` : on y traverse quand aucune voiture n'arrive sur le
+  // chemin pendant toute la traversée — jamais devant une voiture qui arrive.
+  const surPassageParis = (x, z, ux, uz, l) => {
+    let n = 0, oui = 0;
+    for (let s = 0.5; s < l; s += 0.5) {
+      if (solPieton(x + ux * s, z + uz * s) !== 'c') continue;
+      n++;
+      const m = marquageParis(x + ux * s, z + uz * s);
+      if (m && m.type === 'passage') oui++;
+    }
+    return n > 0 && oui * 2 >= n;
+  };
+  world.passagePieton = (x, z, cap) => {
+    if (renduDansManhattan) return null;
+    let feu = null;
+    for (const f of feuxProches) if ((f.x - x) * (f.x - x) + (f.z - z) * (f.z - z) <= 25) { feu = f; break; }
+    const paris = !feu && (x - PARIS_ANCRE.x) * (x - PARIS_ANCRE.x) + (z - PARIS_ANCRE.z) * (z - PARIS_ANCRE.z) < PARIS_ANCRE.r * PARIS_ANCRE.r;
+    if (!feu && !paris) return null;
+    const vx = -Math.sin(cap), vz = -Math.cos(cap);
+    let mieux = null, cout = Infinity;
+    // LE DÉPART SE CHERCHE LE LONG DE LA BORDURE, trois blocs de chaque côté :
+    // un passant arrive au bord n'importe où (la trame de Paris est en biais),
+    // et le passage est rarement pile devant lui. Mesuré sur 1 231 bords de
+    // trottoir autour du centre de Paris : 588 chemins vers le trottoir d'en
+    // face, dont 26 seulement sur un passage peint, depuis le point même.
+    for (const [ux, uz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      if (ux * vx + uz * vz < -0.17) continue;           // pas derrière soi
+      for (const o of [0, 1, -1, 2, -2, 3, -3]) {
+        if (Math.abs(o) >= cout) break;
+        const x0 = x + uz * o, z0 = z - ux * o;            // de côté, le long de la bordure
+        // et l'on y va SUR le trottoir : un départ qu'on rejoint par la
+        // chaussée (le coin d'un carrefour) n'en est pas un
+        let surLeTrottoir = true;
+        for (let k = 0.5; k <= Math.abs(o) && surLeTrottoir; k += 0.5) {
+          if (solPieton(x + uz * k * Math.sign(o), z - ux * k * Math.sign(o)) !== 't') surLeTrottoir = false;
+        }
+        if (!surLeTrottoir) continue;
+        const l = cheminDeTraversee(solPieton, x0, z0, ux, uz);
+        if (l === null || Math.abs(o) + l >= cout) continue;
+        if (paris && !surPassageParis(x0, z0, ux, uz, l)) continue;
+        mieux = { ux, uz, longueur: l, axe: feu ? axeCoupe(ux, uz) : null, x0, z0 };
+        cout = Math.abs(o) + l;
+      }
+    }
+    return mieux;
+  };
+  // L'heure des feux est celle de la rue (v305), pas celle de la page.
+  world.heureRue = () => (vehicules ? vehicules.horloge() * 1000 : performance.now());
   vehicules.metro(traceAnneau(VILLE, world.terrainHeight(VILLE.x, VILLE.z)));
   vehicules.course(traceCourse(CIRCUIT, world.terrainHeight(CIRCUIT.x, CIRCUIT.z)));
   // La chaîne de la Giga-usine : les voitures marquent l'arrêt à chaque poste
@@ -7661,7 +7726,7 @@ window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) 
 window.__game = { fileMaillage: (m) => { fileDemandee = m; lastPlayerChunk = null; },
   // l'A/B de la recharge dans UNE page (v360) : 'arrivee', 'image', ou null (la règle)
   rechargeMaillage: (m) => { rechargeForcee = m || null; }, get fileDeMorceaux() { return meshQueue; },
-  // la règle de la recharge, garde du rendu logiciel mise à part (v370) : un témoin
+  // la règle de la recharge, garde du rendu logiciel mise à part (v373) : un témoin
   // la lit au banc, où le rendu est toujours logiciel
   get rechargeRegle() { return { arrivee: enArrivee(), rapide: fileRapide, regle: rechargeParRegle(), active: rechargeALArrivee() }; }, villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage, PALIERS, choisirPalier, mesurePalier, journal,
   RAYON_HD, BUDGET_FACADES, detailTenu, planDetail, get atlasHD() { return hd ? hd.atlas : null; },

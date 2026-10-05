@@ -17,6 +17,7 @@ import { CASTLE, VILLANDRY, GAULOIS, ESPACE, VILLE } from './world.js';
 import { BLOCK, DECOR_START, isSolid as blockIsSolid, isSlab } from './blocks.js';
 import { construireHumain } from './personnages.js';
 import { construireBete, BETES } from './betes.js';
+import { feuPieton, ALLURE_TRAVERSEE, ATTENTE_MAX_S, ENVIE_TRAVERSER } from './pietons.js';
 
 const PORTEE = 120;          // au-delà, le site entier est en sommeil
 const VU = 62;               // au-delà, chacun s'efface et cesse de s'animer
@@ -127,9 +128,80 @@ export class Habitant extends BaseNPC {
     return this.world.trottoirA(x, z);
   }
 
+  // TRAVERSER AU FEU (v371, règle dans `pietons.js`). Au coin, là où le
+  // trottoir s'arrête, un passant sur deux ou presque ne tourne plus : s'il est
+  // à un carrefour à feux (`world.passagePieton`), il attend au bord, face à la
+  // rue, que les voitures qu'il va couper soient au rouge avec assez de rouge
+  // devant lui, puis traverse — en temps réel, comme l'écart. Ailleurs, il
+  // tourne comme avant : hors passage, on ne traverse pas.
+  chercherPassage() {
+    if (!this.world.passagePieton || !this.world.heureRue || Math.random() >= ENVIE_TRAVERSER) return false;
+    const p = this.world.passagePieton(this.pos.x, this.pos.z, this.capYaw);
+    if (!p) return false;
+    // le départ peut être à quelques blocs le long de la bordure : on y va
+    // d'abord, au pas (`approche`), puis l'on attend face à la rue
+    const loin = p.x0 !== undefined && Math.hypot(p.x0 - this.pos.x, p.z0 - this.pos.z) > 0.3;
+    this.traversee = { ...p, x0: p.x0 ?? this.pos.x, z0: p.z0 ?? this.pos.z, debut: performance.now(), depart: 0, vu: 0,
+      cap: Math.atan2(-p.ux, -p.uz) };
+    this.etat = loin ? 'approche' : 'attente';
+    return true;
+  }
+
+  // Le passage est-il libre ? Pas une voiture (arrêtée au rouge, garée) sur le
+  // chemin, et aucune qui arrive dessus — un feu dit qu'on PEUT partir, il ne
+  // dit pas que la rue est vide (une voiture loin de l'enfant ne s'arrête pas,
+  // `feuxProches`).
+  passageLibre(tr, duree) {
+    for (let s = 1; s < tr.longueur; s += 1) {
+      const x = tr.x0 + tr.ux * s, z = tr.z0 + tr.uz * s;
+      if (this.world.obstaclePieton?.(x, z, this.pos.y)) return false;
+      if (this.world.vehiculeApproche?.(x, z, this.pos.y, 1.5, duree + 1)) return false;
+    }
+    return true;
+  }
+
+  // Rend { speed, yaw[, reel] } tant qu'on attend ou qu'on traverse, null quand
+  // c'est fini (le programme de promenade reprend la main).
+  auFeu() {
+    const tr = this.traversee, maintenant = performance.now();
+    const duree = tr.longueur / (this.walkSpeed * ALLURE_TRAVERSEE);
+    const fini = () => {
+      this.traversee = null; this.etat = 'marche';
+      this.capYaw = tr.cap; this.minuteur = 6 + Math.random() * 8; this.sonde = 0; this.vu = null;
+      return null;
+    };
+    const fait = (this.pos.x - tr.x0) * tr.ux + (this.pos.z - tr.z0) * tr.uz;
+    if (this.etat === 'approche') {
+      const ax = tr.x0 - this.pos.x, az = tr.z0 - this.pos.z;
+      if (Math.hypot(ax, az) < 0.3 || maintenant - tr.debut > 4000) { this.etat = 'attente'; tr.debut = maintenant; }
+      else return { speed: this.walkSpeed, yaw: Math.atan2(-ax, -az) };
+    }
+    if (this.etat === 'attente') {
+      // le regard sur le passage, quatre fois par seconde : il lit des listes
+      if (maintenant - tr.vu < 250) return { speed: 0, yaw: tr.cap };
+      tr.vu = maintenant;
+      // un passage sans feu (Paris) : on part dès que personne n'arrive
+      const f = tr.axe === null ? { partir: true, attente: 0 } : feuPieton(tr.axe, this.world.heureRue(), duree);
+      const attendu = (maintenant - tr.debut) / 1000;
+      if (f.partir && this.passageLibre(tr, duree)) {
+        this.etat = 'traverse'; tr.depart = maintenant;
+        this.traversees = (this.traversees || 0) + 1;
+      } else if (attendu + (f.partir ? 0.25 : f.attente) > ATTENTE_MAX_S) {
+        // trop long : on continue sur son trottoir, comme avant
+        this.traversee = null; this.etat = 'marche'; this.tourner(); this.sonde = 0.33;
+        return null;
+      } else return { speed: 0, yaw: tr.cap };
+    }
+    const tx = tr.x0 + tr.ux * tr.longueur, tz = tr.z0 + tr.uz * tr.longueur;
+    const dx = tx - this.pos.x, dz = tz - this.pos.z;
+    if (Math.hypot(dx, dz) < 0.35 || fait >= tr.longueur - 0.2 || (maintenant - tr.depart) / 1000 > duree * 2 + 3) return fini();
+    return { speed: this.walkSpeed * ALLURE_TRAVERSEE, yaw: Math.atan2(-dx, -dz), reel: true };
+  }
+
   think(dt) {
     this.minuteur -= dt;
     if (this.promene()) {
+      if (this.traversee) { const r = this.auFeu(); if (r) return r; }
       if (this.minuteur <= 0) {
         this.etat = this.etat === 'pause' ? 'marche' : 'pause';
         // Une pause brève et rare : on flâne, on ne fait pas le pied de grue.
@@ -169,10 +241,11 @@ export class Habitant extends BaseNPC {
           this.vu.set(ou.x, ou.z);
         } else this.vu = new THREE.Vector2(ou.x, ou.z);
         if (!this.trottoirVers(this.capYaw)) {
-        // Le trottoir tourne : on essaie les deux perpendiculaires, puis le
-        // demi-tour. Jamais de cap tiré au hasard — c'est ce qui faisait
-        // piétiner.
-          this.tourner();
+        // Le trottoir tourne : à un carrefour à feux on peut traverser (v371) ;
+        // sinon on essaie les deux perpendiculaires, puis le demi-tour. Jamais
+        // de cap tiré au hasard — c'est ce qui faisait piétiner.
+          if (!this.chercherPassage()) this.tourner();
+          else return { speed: 0, yaw: this.traversee.cap };
         }
       }
       this.pas = this.etat === 'marche' ? this.walkSpeed : 0;
@@ -250,6 +323,9 @@ export class Habitant extends BaseNPC {
   // Une voiture devant (v259) : on marque le pas et l'on repart de biais —
   // le même geste qu'au bord d'une rue de Manhattan, un peu plus haut.
   contourner() {
+    // sur la chaussée on ne fait pas demi-tour devant une voiture : on la
+    // laisse passer, et l'on reprend le passage (v371)
+    if (this.traversee) return;
     this.capYaw += Math.PI * 0.6;
     this.etat = 'pause'; this.minuteur = 0.3; this.pas = 0;
   }

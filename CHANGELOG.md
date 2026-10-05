@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v370 — On arrive plus vite après la carte
+## v373 — On arrive plus vite après la carte
 
 **Pourquoi.** Trois questions laissées ouvertes par la v360, et une quatrième
 qui traînait au portail. Après une téléportation, la file de maillage ne se
@@ -60,6 +60,99 @@ fenêtre d'arrivée (un saut l'arme, un pas non, elle se rend ; rouge sur
 `origin/main`). L'empreinte des 490 morceaux est inchangée. À relire sur la
 tablette : `?recharge=arrivee&diag=1` contre `?recharge=image&diag=1`, en se
 téléportant à Paris.
+## v372 — Des portières bien découpées
+
+**Pourquoi.** Les portières de la v366 étaient fabriquées dans la
+carrosserie en prenant chaque triangle par son centre : un grand triangle à
+cheval sur le bord du volume partait ENTIER avec la portière, et le bord
+avant ou arrière de la porte était en dents de scie. Mesuré par la sonde des
+portières : 21 % de la surface de la portière à cheval sur un bord sur la
+Lucid Gravity, 36 à 38 % sur les trois taxis — et sur la Lucid, une portière
+de 1,49 bloc de long pour un volume de 1,25.
+
+**Ce que ça change.** Le bord de chaque portière est droit sur les
+cinquante-cinq modèles : les triangles qui chevauchent un bord du volume
+(avant, arrière, bas de caisse, haut de vitre) sont COUPÉS au plan du bord, la
+part du dedans part avec la portière, le reste reste sur la caisse. Rien ne
+change de couleur ni de matière, et aucun programme graphique ne naît. Les
+taxis ont désormais des bords nets eux aussi, mais restent sans portière
+animée : derrière leur portière il n'y a rien (aucun des vingt-quatre rayons
+tirés au travers de l'ouverture ne touche un habitacle).
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js`, qui mesure la portière
+de la Lucid SANS lire le plan — l'étendue de ses sommets contre le volume
+(débord 0,24 bloc sur `origin/main`, 0 ici), la surface de la caisse et des
+portières contre celle du prototype (66,98 des deux côtés : rien de perdu,
+rien de doublé), puis un choc sur le flanc équipé (la portière reste sur son
+pivot, la voiture à 70 % de santé). Le coût du plan, une fois par modèle, se
+remesure : médiane 5 ms (4 avant), 15 ms sur la Lucid (13 avant), 21 ms au
+pire hors taxis (28 avant) — chaque sommet ne passe plus qu'une fois dans le
+repère de la voiture, et la recopie des attributs se fait d'un geste.
+## v371 — Les passants traversent au feu
+
+**Pourquoi.** Les passants marchaient le long de leur trottoir et, au coin,
+tournaient : ils ne changeaient pour ainsi dire jamais de trottoir. Mesuré
+(`tests/sonde-traversees.cjs`, soixante secondes, l'enfant immobile) : à Rome
+une traversée pour vingt et un passants, et pas à un feu ; à Paris et à
+Londres, zéro. Une ville où chacun reste sur son pâté de maisons, à côté de
+feux qui changent pour personne.
+
+**Ce que ça change.** À un carrefour à feux, un passant sur deux ou presque
+s'arrête au bord, face à la rue, attend que les voitures qu'il va couper soient
+au rouge — avec assez de rouge devant lui pour arriver de l'autre côté — puis
+traverse d'un pas pressé. Il lit le même feu que les voitures. À Paris, aux
+carrefours sans feu, il traverse sur le passage piéton peint quand aucune
+voiture n'arrive. Ailleurs, il ne traverse pas : il tourne au coin comme avant.
+Et la traversée se fait en temps réel, comme l'écart de la v351 : une tablette
+qui rame ne laisse pas un passant au milieu de la rue quand le feu repasse au
+vert.
+
+**Ce qui le prouve.** Un témoin neuf de `monte.js` pose huit passants au bord
+du trottoir, aux coins des feux de Rome, et compte les changements de
+trottoir : `origin/main` rend 0 et 0 traversée (rouge) ; ici 9, 6 et 3, au feu
+et au rouge des voitures coupées. Le témoin du réverbère éloigne désormais les
+passants du capot (un passant qui traverse arrête la voiture, c'est voulu), et
+une traversée au feu ne compte plus comme un passant planté sur la chaussée.
+La sonde, au centre des trois villes : Rome 7 à 11 traversées au feu, Paris 2 à 5 sur les passages peints,
+Londres 1 à 3 au feu. La recherche du passage coûte 0,6 ms par coin en moyenne,
+3,6 au pire, une fois par seconde environ.
+## v370 — La grille de Washington à la règle du kit
+
+**Pourquoi.** La dernière des cinq villes bâties à la main restée hors règle
+(dette v271, v307). Ses diagonales avaient déjà la chaussée d'une collectrice ;
+sa GRILLE, non : deux colonnes de chaussée pour une voiture de 2,26 blocs, un
+seul trottoir, une rue tous les douze blocs. Les rues de liaison où roulaient
+les dix-neuf circuits faisaient deux colonnes de large.
+
+**Ce que ça change.** Une rue de la grille est une rue locale du kit
+(`sectionDeRue('locale')`) : trois colonnes de chaussée, deux trottoirs de
+deux. Le pas suit dans le rapport des emprises (12 × 7 / 3 = 28) et l'îlot se
+recompose au lieu de grandir : quatre maisons de neuf blocs — la même maison,
+son escalier, ses deux portes — autour d'une ruelle de trois, une allée de
+gravier entre deux jardins de derrière, comme en a tout îlot de Washington. Les
+rues de liaison passent sur les axes neufs, à la section du kit, sous le nom
+de la vraie rue la plus proche (D, H, M Street, la 3e, la 12e, la 20e, la
+23e…), et sept s'ajoutent à l'est (Capitol Hill, NoMa) et au nord-ouest.
+Quatorze circuits cherchés sous node remplacent les dix-neuf d'avant : la
+part de la ville à portée d'une voiture passe de 50,8 à 56,2 %, la longueur
+roulée de 1 881 à 2 026 blocs. La ville d'avant reste sous ce qu'un enfant a
+bâti (`washington-v367.js`, `DATE_RUES_WASHINGTON`). Le prix : la part de lots
+du disque passe de 14,2 à 11,2 %. Et l'I-95 (v367), dont l'avenue d'entrée
+finissait sur une rue de l'ancienne grille, arrive par une bretelle sur la
+rue v = 84. Le Triangle fédéral descend de 13–16 à 12–14 blocs : sa
+ligne de corniche est celle des musées du Mall, et le Musée afro-américain
+n'est plus plus bas que ses voisins (le portail l'a vu, la médiane de ses
+quatre îlots voisins était passée de 10 à 14 avec la trame neuve).
+
+**Ce qui le prouve.** Deux témoins neufs. `carteMonde.js` coupe la grille des
+quartiers bâtis en travers et mesure chaque rue : 46 rues, chaussée médiane
+3, trottoir 2, lots 11,2 % — rouge sur `origin/main` (11 rues trouvées,
+trottoir 1). `plafond.js` joue pour Washington le témoin des villes figées
+(une maison sur une ancienne rue n'est pas enfermée, une cabane garde son
+toit). Le monde d'avant (`v308`) rend la production au bloc près sur
+quatre-vingts morceaux de Washington. Le témoin des maisons de
+`washington.js` demande le coin de chaque maison au module
+(`coinDeMaisonDC`) au lieu d'un pas recopié.
 
 ---
 

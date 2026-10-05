@@ -6,11 +6,38 @@
 
 export const NOUVEAUTES = [
   {
-    v: 370,
+    v: 373,
     titre: 'On arrive plus vite',
     puces: [
       'Après la carte, la ville arrive vite',
       'Londres se dessine un peu plus vite',
+    ],
+  },
+  {
+    v: 372,
+    titre: 'Des portières bien découpées',
+    puces: [
+      'Le bord de la porte est droit',
+      'Plus de dents de scie sur la carrosserie',
+    ],
+  },
+  {
+    v: 371,
+    titre: 'On traverse au feu',
+    puces: [
+      'Les passants attendent leur tour au feu',
+      'Puis ils traversent la rue',
+      'À Paris, sur les passages piétons',
+    ],
+  },
+  {
+    v: 370,
+    titre: 'Washington, des rues plus larges',
+    puces: [
+      'Les rues ont deux vrais trottoirs',
+      'Quatre maisons et une ruelle par îlot',
+      'Plus de voitures dans la ville',
+      'Tes constructions restent comme avant',
     ],
   },
   {

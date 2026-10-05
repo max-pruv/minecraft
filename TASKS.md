@@ -1,6 +1,6 @@
 # Ce qui est en cours
 
-- [ ] **LE PORTAIL DE LA v370 (l'arrivée après la carte), DOUBLE MESURE FAITE.**
+- [ ] **LE PORTAIL DE LA v373 (l'arrivée après la carte), DOUBLE MESURE FAITE.**
   Dix suites, quatre rouges, toutes des dettes déjà déclarées sauf une.
   `maj.js` (libération `null`, « ne floute rien »), `carte.js` (glisser bridé ×4,
   460 ms), `manhattan.js` (façade 11 684 → 42 919, taxi) : déclarées plus bas.
@@ -11,9 +11,52 @@
   9,13 b/s pour une barre à 9,0 (30 × 0,3). `monte.js` rejouée SEULE sur
   `origin/main` (v369) : **le même rouge, 9,04**, médiane 27,23 des deux côtés —
   dette de la zone conduite-physique (la décélération au lâcher frôle sa barre).
-  Et ce rejeu sur `origin/main` rend rouges les deux témoins que la v370 garde
+  Et ce rejeu sur `origin/main` rend rouges les deux témoins que la v373 garde
   (« la recharge à l'arrivée garde la cadence », « l'écran ne se fige pas en
   arrivant sur une ville », 1 400 ms · 38,7 %) : verts sur la branche.
+- [ ] **LE PORTAIL DE LA v371 (les passants traversent au feu), DOUBLE MESURE
+  FAITE.** Premier portail (base v354) : deux rouges de `monte.js` étaient à
+  MOI et sont corrigés dans la livraison — le témoin des traversées (une seule
+  en soixante secondes à trois images par seconde : il PROVOQUE désormais la
+  situation) et le réverbère (la voiture figée à zéro bloc par un passant qui
+  traversait devant : le témoin fait le vide des passants). Portail après le
+  rebase sur la v365 : mes trois témoins verts (6 traversées sur 6 au rouge,
+  réverbère, zéro passant sur la chaussée à Rome) ; rouges : `monte.js`
+  (chauffe de New York expirée à 54 sur 321, gel d'arrivée 1 417 ms · 32,7 % —
+  déclarés rouges des deux côtés plus bas, v362), `manhattan.js` (façade
+  22 326 → 54 969, dette connue des deux côtés) et `maj.js` cinq rouges (le
+  loader d'installation, la préparation, le flou, et les deux témoins du
+  palier à 25 images pour 383 ms la période). `maj.js` rejouée SEULE deux fois
+  de chaque côté (`origin/main` v365, arbre détaché) : branche 41 verts / 0
+  rouge puis 39 / 1 (« corps, programmes et fond de carte », programmes
+  18/27) ; `origin/main` 41 / 0 puis 38 / 2 (le même, et le loader
+  d'installation). Les deux témoins du palier ne reviennent pas seuls : ils
+  manquaient d'images au portail (25 pour une fenêtre qui en réclame plus).
+  La préparation est la même intermittence des deux côtés, et la livraison ne
+  touche ni l'accueil, ni la chauffe, ni le palier.
+  Après le rebase sur la v366 (portail de la v371) : mes trois témoins verts ;
+  rouges `maj.js` (préparation, loader — ci-dessus), `carte.js` (flèche du GPS
+  à gauche, 1,92 rad — intermittence déclarée), `manhattan.js` (façade, taxi
+  « 🐴 Monter » — déclarés), `reseau.js` (« même circulation » : l'intermittence
+  de la session circulation-vivante, non reprise ici), `washington.js` (l'Air et
+  l'Espace) et `monte.js` (compilation à New York, trou en vol, recharge à
+  l'arrivée, gel d'arrivée). Rejouées SEULES (`origin/main` v366) :
+  `washington.js` verte des deux côtés ; `monte.js` compilation et gel rouges
+  des deux côtés, trou et recharge verts des deux côtés, et « les passants ne
+  sont plus plantés au milieu de la chaussée » ROUGE sur la branche (6 sur 21,
+  29 %, une traversée en cours) et vert sur `origin/main` (2 sur 18). C'est la
+  valeur même des rouges d'`origin/main` aux portails passés (5/21, 4/18,
+  29 %) : la dette des passants sur la chaussée à Rome. La sonde qui sépare
+  les cas (`sonde-chaussee-rome.cjs`, 60 s, deux fois de chaque côté) rend
+  hors traversée 0 et 5 relevés sur ~1 800 sur la branche, 3 et 2 sur
+  `origin/main` : aucun « né sur la chaussée », aucun flâneur. Le témoin lit un
+  instantané au sortir du témoin précédent ; c'est le palier suivant.
+- [ ] **TRAVERSER À LONDRES ET AUX PASSAGES DES VILLES ENGENDRÉES SANS FEU
+  (v371).** Les passages peints sans feu ne sont lus qu'à Paris
+  (`marquageParis`) ; ailleurs on ne traverse qu'au feu. Londres : 1 à 3
+  traversées par minute au centre, parce que la plupart des coins n'ont pas de
+  feu. À voir : `CITY_BLOCK.CROSSWALK` des villes engendrées.
+
 - [ ] **LE PORTAIL DE LA v367 (I-95 Sud), DOUBLE MESURE FAITE.** Neuf suites,
   cinq rouges. `plafond.js` : l'empreinte des 490 morceaux, changée par la route
   dans les morceaux de Washington — relevée avec preuve (sans Washington,
@@ -273,14 +316,14 @@
   du banc tombe en ville de 14 à 5 images/s — c'est le DESSIN de la ville
   (scène vide : 51–57 contre 53–57) ; sur l'iPad, **relire la cadence à 70–80
   b/s dans Paris avec `?diag=1` avant de monter `ALLURES`**. ~~Reste : pourquoi
-  Londres plafonne à 70~~ — **mesuré en v370** (`sonde-londres.cjs`) : ni
+  Londres plafonne à 70~~ — **mesuré en v373** (`sonde-londres.cjs`) : ni
   l'eau (3 % des morceaux), ni la file (les manquants « absents » sont au bord
   du disque, la file refaite un morceau plus tôt), ni le worker en moyenne —
   le CENTRE de Londres, pile au milieu du trajet, porte 64 % de faces de plus
   que celui de Paris et une génération 70 % plus chère. `solLondres` mémoïsé
   (2,8 → 2,1 ms) ; au banc 145–151 contre 137–152 : le plafond ville reste à
   70. Le reste est la géométrie de la ville (faces), pas un défaut ;
-  ~~la recharge forcée après une téléportation~~ — **armée en v370**, dans
+  ~~la recharge forcée après une téléportation~~ — **armée en v373**, dans
   une fenêtre de dix secondes après un saut, hors rendu logiciel (scène vide :
   57 images/s et 4,1–4,4 s des deux côtés). À relire sur la tablette :
   `?recharge=arrivee&diag=1` contre `?recharge=image&diag=1`, se téléporter à
@@ -288,14 +331,14 @@
   temps, deux mailleurs) et la file de seize (v269) restent écartés. Sur
   l'iPad, deux fois moins de calcul par morceau est un fait, mais le plafond
   ne se relève que sur une mesure `?diag=1` en roulant ; (4) un lot déjà parti au worker ne
-  s'annule pas quand on le dépasse — **mesuré en v370** : 0 à 6 morceaux sur
+  s'annule pas quand on le dépasse — **mesuré en v373** : 0 à 6 morceaux sur
   400 à 700 arrivent derrière l'enfant à 80 b/s, zéro refusé, moins de 1 % :
   laissé.
 
 - [ ] **AU PORTAIL DE LA v360 (la recharge de la file), LES AUTRES ROUGES SONT
   DÉCLARÉS, rejoués SEULS des deux côtés.** `monte.js` « l'écran ne se fige pas
   en arrivant sur une ville » : branche 1 367 ms · 21,7 %, `origin/main` 2 350 ms
-  · 20,5 % — **démonté en v370** (`sonde-arrivee-ville.cjs`) : c'est le dessin
+  · 20,5 % — **démonté en v373** (`sonde-arrivee-ville.cjs`) : c'est le dessin
   SwiftShader, le témoin rend désormais une scène vide (vérifié rouge en
   désarmant la v235) ; reste à relire le vol vers Paris sur la tablette
   (`?diag=1`, pire image) ; « se téléporter ne compile plus de programmes » : branche rouge
@@ -308,7 +351,7 @@
   la branche, verte sur `origin/main` — l'intermittence déjà déclarée, dans un
   module (`gps.js`) que la v360 ne touche pas.
 
-- [ ] **AU PORTAIL DE LA v370 (l'arrivée après la carte), QUATRE SUITES ROUGES,
+- [ ] **AU PORTAIL DE LA v373 (l'arrivée après la carte), QUATRE SUITES ROUGES,
   rejouées SEULES des deux côtés** (branche rebasée sur la v364, `origin/main`
   f7f34d3). Aucune n'est causée par la livraison, dont tout ce qui touche la
   file est inerte en rendu logiciel. `maj.js` : le loader et « corps,
@@ -3011,11 +3054,31 @@ l'embarquement a eu lieu, pas par une hypothèse.
   (`cote: 1`, déjà fabriquée) : la faire entrer par là est l'étape suivante, à
   condition que l'ami — sur SA tablette — voie aussi la portière s'ouvrir, ce
   qui demande un message réseau (`net.js`, hors zone).
-- **Les bords de la découpe sont en dents de scie** là où un triangle chevauche
-  le bord du volume (mesuré : 0 sur la plupart des modèles, 21 % de la surface
-  sur la Lucid Gravity, 36-38 % sur les taxis, qui s'en passent). Remède
-  possible : couper les triangles au plan du bord (une passe de découpe), pas
-  agrandir le volume.
+- [ ] **LE PORTAIL DE LA v372 (bords des portières), DOUBLE MESURE FAITE.**
+  `degats.js` vert. Au portail, 17 rouges dans `monte.js` et `maj.js` : il a
+  tourné pendant que je faisais tourner une dizaine de sondes de navigateur
+  sur la même machine — ma faute, et la leçon de la v220 (deux pages en même
+  temps font tomber la cadence de moitié). Rejouée SEULE des deux côtés,
+  `monte.js` rend quatre rouges de chaque côté : passants de Rome sur la
+  chaussée, téléportation qui compile, écran figé à l'arrivée — identiques ;
+  et en plus le réverbère (`parcouru 0`, sur la branche) contre le trou en
+  vol (sur `origin/main`), deux intermittences déjà vues des deux côtés.
+  `reseau.js` — « la même circulation » (écart médian 43 blocs) : famille
+  déclarée plus bas ; preuve structurelle, le témoin ne passe ni par
+  `portieres.js` (atteint seulement sous `embarq: 1`) ni par `nouveautes.js`.
+  `maj.js` rejouée seule : « vraiment là » rouge des deux côtés (personnages
+  en retard), « ne floute rien » rouge sur `origin/main` seul — la famille de
+  la préparation, déclarée plus bas.
+  Après rebase sur la v369, portail complet relancé seul : `degats.js`,
+  `maj.js`, `reseau.js` verts ; `monte.js` rend les quatre rouges que
+  `origin/main` rendait rejouée seule (passants de Rome, téléportation qui
+  compile, trou en vol, écran figé à l'arrivée) — le témoin des bords vert.
+  Puis v370 et v371 sont parties pendant le portail : rebasée sur la v371
+  (aucun fichier de code en commun), fumée verte et témoin des bords vert,
+  publiée en v372.
+- [x] **Les bords de la découpe** — FAIT en v372 : coupés au plan (débord 0
+  sur les 55 modèles). Les taxis gardent `fabrique` → pas de portière : bords
+  nets, mais 0/24 rayons touchent un habitacle derrière l'ouverture.
 - **Une portière ouverte vue de dos est invisible** sur les modèles qui n'ont
   pas meublé son revers (faces simples). `DoubleSide` changerait la clé de
   programme (v246) : il faudrait le chauffer (`signatures.js`) avant de le
@@ -3905,6 +3968,36 @@ l'embarquement a eu lieu, pas par une hypothèse.
   par ville (`circuitSurRue`, l'angle des virages, la contrainte de partage).
   C'est la livraison suivante, et le piège est nommé : **une largeur ne se
   projette pas, elle se relève** (v187).
+
+- [ ] **PORTAIL DE LA v370 (Washington), double mesure faite.** Vertes :
+  `carteMonde.js` (le témoin neuf de la grille, rouge sur `origin/main`),
+  `plafond.js`, `washington.js` (les maisons, les portes, le métro), `metro.js`,
+  `sauvegarde.js`. Deux rouges de la livraison, corrigés : l'empreinte des 490
+  morceaux (le lieu « washington » change ; mesurée lieu par lieu, les huit
+  autres identiques au bit près des deux côtés) et le Musée afro-américain sous
+  la médiane de ses voisins (le Triangle fédéral descend à 12–14). Rouges déjà
+  déclarés : `maj.js` le loader et le palier (charge du portail), `carte.js` la
+  flèche du GPS et le glisser bridé (515 ms), `manhattan.js` le trou et le
+  taxi, `monte.js` le gel d'arrivée et « descend train sorti » (ligne 281).
+  Après la fusion de la v369, `plafond.js` rejouée seule : 116 verts, un rouge
+  de durée déjà déclaré (« la surface coûte quelques millisecondes »).
+- [x] **v370 — LA GRILLE DE WASHINGTON À LA RÈGLE DU KIT.** Pas de 28, rue
+  locale (3 de chaussée, 2 + 2 de trottoir), quatre maisons et une ruelle par
+  îlot, ville d'avant figée (`washington-v367.js`), quatorze circuits. Les
+  cinq villes bâties à la main sont à la règle (Londres v339, Nice v359, San
+  Francisco v361, Lille v368, Washington v370). Ce qui reste, DÉCLARÉ :
+  · les diagonales gardent leur trottoir de 0,45 : le kit en veut 2,5 pour une
+    collectrice, et l'élargir mange les lots qu'elles coupent en biais — une
+    passe à elle, avec la remesure des circuits ;
+  · Independence et Constitution (derrière les musées, v205) et la 3e Rue du
+    Mall (entre la pelouse et le parc du Capitole) gardent leurs deux colonnes
+    de chaussée : ce sont les monuments qui les bornent ;
+  · sans voitures après la recherche : Maryland Avenue SO (11/44 points),
+    Virginia Avenue NO (15/53), la 7e Rue SO (3/24) — leurs boucles se
+    heurtent aux circuits du Mall et de Foggy Bottom sous les vingt blocs de
+    partage ; la 9e, la 14e, la 15e, C et F Street ne sont plus des rues ;
+  · la part de lots passe de 14,2 à 11,2 % : un îlot de vingt et un porte
+    quatre maisons de neuf, pas un bâtiment de vingt et un.
 
 - [ ] **IL RESTE DES ANNEAUX QUI SE PARTAGENT DIX-HUIT BLOCS (v270).** La
   contrainte de la v211 est désormais appliquée aux villes engendrées : 265

@@ -1,4 +1,4 @@
-// POURQUOI LONDRES PLAFONNE À 70 QUAND PARIS TIENT 80 ? (v370)
+// POURQUOI LONDRES PLAFONNE À 70 QUAND PARIS TIENT 80 ? (v373)
 //
 // La v360 a mesuré Londres à 148–152 blocs de monde devant soi pour 160 à
 // 80 b/s, quand Paris, Rome, l'A1 et la campagne tiennent : son worker coûte
