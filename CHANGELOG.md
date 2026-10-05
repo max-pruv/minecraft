@@ -20,6 +20,31 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v380 — Deux témoins de la rue qui disent ce qu'ils voient
+
+**Pourquoi.** Deux témoins de `monte.js` rendaient des rouges qu'on ne
+pouvait pas démonter. « La voiture de l'enfant freine devant un piéton » a
+rendu `voituresRue: 0` et 3,4 à 5,3 blocs d'avance aux portails des v279,
+v346, v351 et v354 : il cherchait son couloir dans les rues de Rome, et ce qui
+traîne autour d'une rue (façades, mobilier, bêtes, convois) changeait d'un
+portail à l'autre — la situation n'avait souvent pas lieu. Et « les passants
+ne sont plus plantés au milieu de la chaussée » rendait un seul nombre (6 sur
+21 au rejeu de la v371) pour plusieurs pannes possibles.
+
+**Ce que ça change.** Rien dans le jeu. Le témoin du freinage se pose sur un
+rectangle plat de vingt blocs sur neuf, au sec, loin de toute ville, sans
+bête ni convoi, et exige que l'écart ait eu lieu. Le témoin de la chaussée
+publie QUI y est : état, traversée, écart, animé ou figé, à son poste de
+naissance ou non.
+
+**Ce qui le prouve.** Le témoin du freinage, rejoué seul trois fois : 105 à
+107 relevés, zéro traversée, 26 à 33 relevés d'écart, 22,9 à 30,3 blocs
+d'avance. Le couloir vide de la v237, où il devait d'abord se poser, est en
+pleine mer (terrain à 24) : mesuré sous node, aucun de ses quatre cents
+rectangles n'est au sec. La sonde des passants sur la chaussée à Rome
+(`sonde-chaussee-rome.cjs`, 60 s, deux fois de chaque côté) : hors traversée,
+0 et 5 relevés sur ~1 800 sur la branche, 3 et 2 sur `origin/main` — aucun
+passant né sur la chaussée, aucun flâneur.
 ## v379 — On arrive plus vite après la carte
 
 **Pourquoi.** Trois questions laissées ouvertes par la v360, et une quatrième

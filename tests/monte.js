@@ -1775,7 +1775,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         : b === CITY_BLOCK.CROSSWALK ? 'passage'
         : b === ARCHI.PAVE ? 'pave'
         : b === ARCHI.BORDURE ? 'bordure' : 'autre');
-      const tally = {};
+      const tally = {}, qui = [];
       let enTraversee = 0;
       gens.forEach((h) => {
         // en pleine traversée au feu (v371) : il traverse, il n'est pas planté
@@ -1787,10 +1787,20 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         const y = g.world.sommetColonne(bx, bz);
         const k = nom(g.world.getBlock(bx, y, bz));
         tally[k] = (tally[k] || 0) + 1;
+        // QUI est sur la chaussée (v380) : un seul nombre pour plusieurs pannes
+        // ne se démonte pas (v223). Son état, sa traversée, son écart, s'il est
+        // ANIMÉ (à moins de 80 blocs, sinon il est figé là où il était, v241) et
+        // s'il est encore à son poste de naissance.
+        if (k === 'chaussee' || k === 'pave' || k === 'passage') qui.push({
+          etat: h.etat, tr: h.traversee ? h.traversee.etat || 'oui' : null, ecart: !!h.ecart,
+          trottoir: h.surTrottoir,
+          anime: Math.hypot(h.pos.x - g.player.pos.x, h.pos.z - g.player.pos.z) < 80,
+          auPoste: h.poste ? Math.hypot(h.pos.x - h.poste.x, h.pos.z - h.poste.y) < 0.6 : null,
+        });
       });
       const surTrottoir = (tally.trottoir || 0) + (tally.granite || 0);
       const surChaussee = (tally.chaussee || 0) + (tally.pave || 0) + (tally.passage || 0);
-      return { ville: s2.nom, total: gens.length, surTrottoir, surChaussee, tally, enTraversee,
+      return { ville: s2.nom, total: gens.length, surTrottoir, surChaussee, tally, enTraversee, qui,
         partTrottoir: gens.length ? +(surTrottoir / gens.length).toFixed(2) : null,
         partChaussee: gens.length ? +(surChaussee / gens.length).toFixed(2) : null };
     });
@@ -2146,59 +2156,44 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // repart : on exige qu'elle ait avancé, sinon le vert serait celui d'une
     // voiture clouée derrière un piéton pour toujours. Le cap est choisi pour
     // que la rue soit plate devant sur seize blocs, sinon on mesure une côte.
+    // ET IL SE PLACE LUI-MÊME (v380). Aux portails des v279, v346, v351 et v354
+    // il a rendu `voituresRue: 0` et 3,4 à 5,3 blocs d'avance pour une barre à
+    // six : la situation n'avait pas eu lieu. Il cherchait son couloir dans les
+    // rues de Rome, dégagé sur ±1,2 bloc seulement — la largeur de la voiture,
+    // pas celle de l'écart : un passant qui s'écarte vers une façade y reste,
+    // la voiture freine devant lui, et l'on mesure un mur. Ce qui traîne
+    // autour d'une rue de Rome — façades, mobilier, bêtes, convois — change
+    // d'un portail à l'autre ; le témoin le subissait au lieu de le choisir.
+    // Il se pose donc sur un rectangle PLAT de vingt blocs sur neuf, AU SEC,
+    // loin de toute ville (cherché à partir de (−1 500, −2 500) : le couloir
+    // vide de la v237, en (30 000, 30 000), est en pleine mer — terrain à 24,
+    // sous l'eau — et n'a pas un carré où rouler), sans bête ni convoi, et le cap
+    // est celui du rectangle : la situation a lieu à chaque passage, et le
+    // message dit qu'elle a eu lieu (`ecartes` > 0).
     const roulant = await tab.evaluate(async () => {
       const g = window.__game, s2 = g.passants.sites.find((x) => x.peuple);
       const gens = s2.peuple.filter((q) => q.name === 'passant').slice(0, 3);
       if (gens.length < 3) return { err: `${gens.length} passant(s)` };
       const sauve = g.player.pos.clone(), yaw0 = g.player.yaw;
       const dormir = (ms) => new Promise((f) => setTimeout(f, ms));
-      // et sans voiture de la rue à portée du trajet (leçon de la v252) : une
-      // voiture de la circulation qui arrive en face cède devant l'enfant sans
-      // limite, et l'on mesurerait deux voitures nez à nez, pas les piétons
-      const rueLibre = (x, z, y) => !g.vehicules.placeProche({ x, y, z }, 10);
       const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
       const retirerVoiture = () => { for (const a of [...g.animalManager.animals]) if (a.def.key === 'voiture') { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); } };
+      const retirerBetes = () => { for (const a of [...g.animalManager.animals]) { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); } };
       const descendre = async () => { for (let essai = 0; essai < 6 && auVolant(); essai++) { document.getElementById('ride-btn').click(); await dormir(500); } };
-      // et un COULOIR libre : le sol exactement à la même cote sur seize
-      // blocs et sur la largeur de la voiture (une marche d'un bloc arrête une
-      // voiture, qui ne saute pas), pas un réverbère ni un banc dessus (le
-      // mobilier arrête la voiture depuis la v252, et `surfaceY` ne le voit
-      // pas : non solide pour la marche), pas une voiture de la rue en
-      // travers. On le mesure ici pièce par pièce, et non par
-      // `player.obstacleVehicule`, qui compte désormais les piétons — les
-      // dix-huit passants de Rome barreraient tout couloir.
-      const { isProp } = await import('./src/blocks.js');
-      const couloirLibre = (h, x0, z0, y0, ux, uz) => {
-        const cap = Math.atan2(ux, uz), vx = uz, vz = -ux;
-        for (let d = 1; d <= 14; d++) {
-          for (const w of [-1.2, 0, 1.2]) {
-            const x = x0 + ux * d + vx * w, z = z0 + uz * d + vz * w;
-            const y = h.surfaceY(x, z);
-            if (y === null || Math.abs(y - y0) > 0.01) return false;
-            const bx = Math.floor(x), bz = Math.floor(z), by = Math.floor(y0 + 0.1);
-            if (isProp(g.world.getBlock(bx, by, bz)) || isProp(g.world.getBlock(bx, by + 1, bz))) return false;
-          }
-          if (g.vehicules.obstacleDevant(x0 + ux * d, z0 + uz * d, cap)) return false;
+      let candidats = 0;
+      let ancre = null;
+      for (let k = 0; k < 400 && !ancre; k++) {
+        candidats++;
+        const x0 = -1500 + (k % 20) * 24, z0 = -2500 + Math.floor(k / 20) * 24;
+        if (g.world.cityAt && g.world.cityAt(x0, z0)) continue;
+        const h0 = g.world.terrainHeight(x0, z0);
+        let plat = true;
+        // plat, au sec (un sol plein sous chaque colonne), et rien posé dessus — un arbre a le même relief que l'herbe
+        for (let dx = -2; dx <= 18 && plat; dx++) for (let dz = -4; dz <= 4 && plat; dz++) {
+          if (g.world.terrainHeight(x0 + dx, z0 + dz) !== h0 || !g.world.getBlock(x0 + dx, h0, z0 + dz)) plat = false;
+          else for (let dy = 1; dy <= 3 && plat; dy++) if (g.world.getBlock(x0 + dx, h0 + dy, z0 + dz)) plat = false;
         }
-        return true;
-      };
-      // Seize caps, et trois départs par cap (sur le passant, quatre blocs en
-      // arrière, quatre en avant) : au portail de la v259, huit caps depuis
-      // les seuls postes des passants n'ont trouvé aucun couloir (56 essais),
-      // alors que trois tours à la sonde en trouvaient dès le premier passant.
-      let ancre = null, candidats = 0;
-      for (const h of s2.peuple.filter((q) => q.name === 'passant')) {
-        for (let k = 0; k < 16 && !ancre; k++) {
-          const a = k * Math.PI / 8, ux = Math.cos(a), uz = Math.sin(a);
-          for (const recul of [0, -4, 4]) {
-            const x0 = h.pos.x + ux * recul, z0 = h.pos.z + uz * recul, y0 = h.surfaceY(x0, z0);
-            candidats++;
-            if (y0 === null || Math.abs(y0 - h.pos.y) > 0.01) continue;
-            if (!rueLibre(x0, z0, y0) || !rueLibre(x0 + ux * 12, z0 + uz * 12, y0)) continue;
-            if (couloirLibre(h, x0, z0, y0, ux, uz)) { ancre = { h, x0, z0, y0, ux, uz }; break; }
-          }
-        }
-        if (ancre) break;
+        if (plat) ancre = { x0: x0 + 0.5, z0: z0 + 0.5, y0: h0 + 1, ux: 1, uz: 0 };
       }
       if (!ancre) return { err: `aucun couloir libre de quatorze blocs (${candidats} essayés)` };
       {
@@ -2206,7 +2201,9 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         // l'avant du joueur est (−sin yaw, −cos yaw) : on vise (ux, uz)
         g.player.yaw = Math.atan2(-ux, -uz); g.player.pitch = 0;
         g.player.pos.set(ancre.x0, y0 + 0.1, ancre.z0); g.player.vel.set(0, 0, 0); g.player.flying = false;
-        retirerVoiture();
+        // on fait le VIDE avant d'invoquer (v284) : une bête montable devant
+        // soi passe avant la voiture, et une bête dans le couloir l'arrête
+        retirerBetes();
         g.animalManager.invoquer('voiture', g.player.pos.x + ux * 3, g.player.pos.z + uz * 3);
         for (let essai = 0; essai < 8 && !auVolant(); essai++) {
           await dormir(600);
@@ -2242,6 +2239,8 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         gens.forEach((h, k) => {
           h.placeAt(xd + ux * (5 + 3 * k), zd + uz * (5 + 3 * k), g.player.pos.y);
           h.poste.set(h.pos.x, h.pos.z); h.etat = 'pause'; h.minuteur = 30; h.pas = 0;
+          // des flâneurs qui bavardent : ni promenade, ni traversée en cours
+          h.surTrottoir = false; h.traversee = null; h.ecart = null; h.repos = 0; h.regardChoc = null;
         });
         releves = 0; traverses = 0; ecartes = 0; voituresRue = 0;
         g.player.keys.add('KeyW');
@@ -2263,7 +2262,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       return { candidats, tours, releves, traverses, ecartes, voituresRue, avance, ecartMax, encoreAuVolant: auVolant() };
     });
     verifier('la voiture de l\'enfant freine devant un piéton, qui s\'écarte, et elle repart sans lui passer au travers',
-      !roulant.err && roulant.releves >= 60 && roulant.traverses === 0 && roulant.avance >= 6,
+      !roulant.err && roulant.releves >= 60 && roulant.traverses === 0 && roulant.avance >= 6 && roulant.ecartes > 0,
       JSON.stringify(roulant));
 
     // ---- À SOIXANTE BLOCS PAR SECONDE, LE PIÉTON N'EST JAMAIS TRAVERSÉ (v351) ---
