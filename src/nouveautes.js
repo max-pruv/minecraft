@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 385,
+    titre: 'Londres rejoint Birmingham',
+    puces: [
+      'Une autoroute passe par le col',
+      'On entre dans Londres par King\'s Cross',
+    ],
+  },
+  {
     v: 384,
     titre: 'On descend par la portière',
     puces: [

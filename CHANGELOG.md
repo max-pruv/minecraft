@@ -20,6 +20,34 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v385 — Londres rejoint Birmingham
+
+**Pourquoi.** Londres–Birmingham était le corridor court sans rail du kit
+« en attente » depuis la v323 : une autre session élargissait les rues de
+Londres. C'est livré (v339) ; restait à trouver un passage. L'axe direct est
+barré par une crête de 46 à 55 blocs, nord-sud, et l'ouest de Londres bute sur
+un mur de collines qui finit dans la marge de Heathrow.
+
+**Ce que ça change.** La M40 sort de Londres par le nord, monte vers le seul
+col de la crête (41 à 46 blocs, à la latitude de Birmingham), passe deux
+ruisseaux sur des ponts et entre dans Birmingham par l'axe de sa trame. Dans
+Londres, une entrée en ligne droite mène de la porte nord à Pentonville Road,
+devant King's Cross ; vingt voitures font l'aller-retour. Une maison de la
+vieille trame générique, qui se posait encore dans l'anneau extérieur de
+Londres et barrait cette entrée, cède désormais à la route et à son entrée.
+
+**Ce qui le prouve.** Un témoin neuf de `carteMonde.js` (rouge sur l'ancien
+code : ni convoi ni entrée) : la M40 n'a aucun rail sous son emprise, ne frôle
+aucune de ses villes, son entrée de Londres est sur la chaussée d'un bout à
+l'autre sans un bloc à hauteur de carrosserie et finit sur une artère, celle de
+Birmingham arrive sur la rue. Les témoins de toutes les routes la lisent aussi
+(profil à six pour cent, asphalte et contact au sol, tablier libre, aucune
+emprise volée, joints des ponts fermés). L'empreinte des 490 morceaux change
+(Londres est un des neuf lieux) et se prouve : M40 retirée, la branche rend
+celle d'`origin/main` au bit près.
+
+---
+
 ## v384 — On descend de la voiture d'un ami par la portière
 
 **Pourquoi.** La v377 faisait monter le passager d'un ami par la portière

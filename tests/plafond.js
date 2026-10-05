@@ -334,7 +334,12 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // morceaux le raccord du Tōmei. La preuve : la même branche, la règle des
 // tabliers désarmée (les bornes `a0`/`a1` d'avant) ET le Tōmei retiré du
 // registre, rend ddf97f87…, la constante d'`origin/main` (v380), au bit près.
-const EMPREINTE_MORCEAUX_V357 = '6976e4f4e1cda42a6d6cbdfbdc4e9dfe7b161ac13d2930d5f73eaa9ac1b27ba6';
+// v385 : Londres, un des neuf lieux, porte l'entrée de la M40 (une collectrice
+// de la porte nord à Pentonville Road) et perd la maison de la trame générique
+// qui la barrait — voulu. La M40 retirée du registre (donc son entrée et le
+// lot qu'elle écartait), la branche rend 6976e4f4…, la constante
+// d'`origin/main` (v384), au bit près.
+const EMPREINTE_MORCEAUX_V357 = 'a36a9f1a9f1f8a62cbb759cdb15a9e90116525fd052cdd9194375a41c6005d96';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };

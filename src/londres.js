@@ -39,6 +39,7 @@ import { rangerVoies, solDesVoies, fabriqueCircuits, reculDesAvenues } from './v
 import { positionDe } from './mondes.js';
 import { monumentBati } from './monuments.js';
 import { sectionDeRue } from './voirie.js';
+import { entreesDe } from './routes.js';
 
 const uni = (c) => DECOR_START + c * 10;
 const brique = (c) => DECOR_START + c * 10 + 1;
@@ -402,7 +403,23 @@ const VOIES = [
   ...PONTS,
 ].map(aLaRegle);
 
-const BANDES = rangerVoies(VOIES);
+// L'ENTRÉE DE LA M40 (v385), comme celles de Paris et de Lille : du bout du
+// corridor (`routes.js`, vingt blocs sous le bord du disque, au nord) jusqu'à
+// Pentonville Road, l'artère de King's Cross, en ligne droite plein sud. Une
+// collectrice, comme les artères. Elle est une voie pour le sol — chaussée,
+// trottoirs, les lots s'écartent — mais pas pour les circuits : ce sont les
+// voitures de la route qui l'empruntent (`main.js`).
+const ENTREES = entreesDe('londres').map((e) => ({
+  nom: `Entrée ${e.route}`, type: COLLECTRICE.type, l: COLLECTRICE.chaussee / 2, t: COLLECTRICE.trottoir,
+  pts: [[Math.round(e.x - LONDRES.x), Math.round(e.z - LONDRES.z)], [13, -62]],
+}));
+export const ENTREES_LONDRES = ENTREES.map((v) => v.pts.map(([u, w]) => [LONDRES.x + u, LONDRES.z + w]));
+
+const BANDES = rangerVoies([...VOIES, ...ENTREES]);
+// La vieille trame générique de `world.js` pose encore des maisons dans
+// l'anneau extérieur de Londres ; sur l'entrée, elle se demande ici.
+const BANDES_ENTREES = rangerVoies(ENTREES);
+export const surEntreeLondres = (x, z) => solDesVoies(BANDES_ENTREES, x - LONDRES.x, z - LONDRES.z, BITUME, TROTTOIR) !== null;
 
 // --- où roulent les voitures -------------------------------------------------
 //
