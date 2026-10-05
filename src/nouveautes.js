@@ -6,12 +6,31 @@
 
 export const NOUVEAUTES = [
   {
-    v: 357,
+    v: 359,
     titre: 'Les rues de Nice s\'élargissent',
     puces: [
       'La Promenade à deux voies',
       'Des îlots plus grands dans la ville neuve',
       'Londres garde encore plus d\'immeubles',
+    ],
+  },
+  {
+    v: 358,
+    titre: 'Des voitures pour de vrai',
+    puces: [
+      'Les voitures vont beaucoup plus vite',
+      'Elles tournent et glissent pour de vrai',
+      'Contre un mur, on glisse ou on rebondit',
+    ],
+  },
+  {
+    v: 357,
+    titre: 'Les vraies tours du monde',
+    puces: [
+      'La Willis Tower et ses tubes noirs',
+      'Les sphères roses de Shanghai',
+      'Saint-Pierre de Rome a sa basilique',
+      'Les pagodes ont leurs étages',
     ],
   },
   {

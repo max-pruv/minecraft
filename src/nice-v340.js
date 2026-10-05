@@ -1,6 +1,6 @@
 // NICE TELLE QU'ELLE ÉTAIT JUSQU'À LA v340 — FIGÉE, ET JAMAIS MODIFIÉE.
 //
-// La v357 passe Nice à la règle du kit (`voirie.js`). Un bloc qu'un enfant a
+// La v359 passe Nice à la règle du kit (`voirie.js`). Un bloc qu'un enfant a
 // posé avant cette date l'a été contre CETTE ville-ci : là où il y en a un (sa
 // colonne et ses huit voisines), le monde garde la ville d'avant (`world.js`,
 // `colonnesVilleAvant`) — la discipline de `londres-v332.js` (v339). Recopié à

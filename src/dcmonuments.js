@@ -609,6 +609,22 @@ export function buildChateauSmithsonian(poser) {
   set(2, 0, 0, LAMPE);
 }
 
+// Le même château, sa tour du nord rendue à sa hauteur (v357). Le château
+// (44 m) était à onze blocs, sous le mémorial Jefferson (39 m) à treize : une
+// inversion du vrai ciel de Washington, et une tour d'un bloc qu'aucune table
+// ne pouvait monter sans en faire une aiguille. La tour du nord-ouest — la plus
+// haute du vrai château — a deux blocs de côté et monte à quatorze, entre le
+// mémorial Jefferson et la Bibliothèque du Congrès (59 m, quinze). Elle part du
+// toit de la grande salle : la salle qu'on visite ne change pas. Le monde
+// d'avant garde l'autre (`tour` de world.js).
+export function buildChateauSmithsonianHaut(poser) {
+  buildChateauSmithsonian(poser);
+  const { set, bloc } = outils(poser);
+  bloc(-3, -2, 5, 11, -2, -1, GRES_ROUGE);
+  set(-3, 12, -2, GRES_ROUGE); set(-2, 12, -1, GRES_ROUGE);   // les créneaux
+  set(-3, 13, -2, uni(5));                                    // le toit vert
+}
+
 // LA GALERIE FREER. Un palais florentin fermé sur sa cour intérieure.
 export function buildFreer(poser) {
   const { set, salle } = outils(poser);

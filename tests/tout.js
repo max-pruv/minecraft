@@ -93,7 +93,7 @@ const GARDIENS = {
   // eu le temps de bâtir : `monte.js` l'éprouve en vol, `carte.js` garde le
   // rendu, `plafond.js` garde le sol qu'il lit.
   'src/horizon.js': ['monte.js', 'carte.js', 'plafond.js'],
-  'src/plafond-sol.js': ['monte.js'],
+  'src/plafond-sol.js': ['monte.js', 'plafond.js', 'manhattan.js', 'carteMonde.js', 'washington.js', 'metro.js'],
   // LE PALIER DE L'APPAREIL (v284). Il décide la distance d'affichage, la
   // profondeur de file du mailleur et la vitesse des jets : `monte.js` garde le
   // trou devant soi et cette vitesse, `maj.js` la préparation et l'accueil — et
@@ -150,7 +150,7 @@ const GARDIENS = {
   // dans monte.js (onglet, vignettes, pose).
   'src/batiments.js': ['monte.js'],
   'src/nice.js': ['carte.js', 'carteMonde.js', 'plafond.js'],
-  'src/nice-v340.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // la Nice d'avant le kit, sous ce qu'un enfant a bâti (v357)
+  'src/nice-v340.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // la Nice d'avant le kit, sous ce qu'un enfant a bâti (v359)
   'src/carte.js': ['carte.js', 'carteMonde.js', 'manhattan.js'],
   // La capitale : son relief, son métro et ses bâtiments ouverts. Elle touche
   // au sol de la carte, donc le témoin du plafond la surveille aussi.
@@ -160,6 +160,7 @@ const GARDIENS = {
   // commissariat.
   'src/ville.js': ['metro.js', 'carte.js'],
   'src/player.js': ['plafond.js', 'monte.js', 'manhattan.js'],
+  'src/conduite.js': ['plafond.js', 'monte.js', 'manhattan.js', 'carteMonde.js', 'washington.js', 'metro.js'],
   'src/admin.js': ['parent.js', 'reglages.js'],
   'src/identity.js': ['reglages.js', 'parent.js'],
   'src/education.js': ['reglages.js', 'parent.js', 'manhattan.js'],

@@ -694,7 +694,7 @@ export function solLondres(x, z) {
 // rue de la trame. Une rue de la trame qui COUPE une avenue reste : c'est par
 // elle qu'on y arrive. Mesuré sur tout le disque : 26,1 % de lots avant, 19,5
 // avec la règle du kit seule, 26,6 avec ce recul.
-// La règle vit dans `voies.js` depuis que Nice la partage (v357).
+// La règle vit dans `voies.js` depuis que Nice la partage (v359).
 const doubleUneAvenue = reculDesAvenues(VOIES, COLLECTRICE);
 export const RECUL_TRAME = doubleUneAvenue.recul;
 

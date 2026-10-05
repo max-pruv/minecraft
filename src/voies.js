@@ -527,7 +527,7 @@ export function carrefoursDeVoies(voies) {
   return out;
 }
 
-// --- une trame qui ne double pas ses avenues (v339, Londres ; v357, Nice) ----
+// --- une trame qui ne double pas ses avenues (v339, Londres ; v359, Nice) ----
 //
 // La trame d'une ville bâtie à la main est tracée sans regarder ses avenues :
 // une de ses rues vient s'intercaler à quelques blocs d'une avenue parallèle.
@@ -544,7 +544,7 @@ export function carrefoursDeVoies(voies) {
 // de 16,4) : elle laissait passer une rue de la trame à quinze ou seize blocs
 // d'une avenue, donc un lot de trois blocs et demi entre leurs trottoirs. Vu
 // au relevé du Sunset de San Francisco, où les avenues sont à seize
-// blocs de la trame ; corrigé ici, et Londres remesurée avec (v357).
+// blocs de la trame ; corrigé ici, et Londres remesurée avec (v359).
 //
 // Rend `double(u, v, eu, ev)` : vrai si une rue de direction (eu, ev) passant
 // en (u, v) double une avenue. `double.recul` dit la distance retenue.

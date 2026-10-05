@@ -55,7 +55,7 @@ export const BLOCS_PAR_KM = 30;
 const K = BLOCS_PAR_KM / 10;
 const k = (n) => n * K;
 const pk = ([u, v]) => [k(u), k(v)];
-// La section des rues, demandée au kit (v357) — voir `ARTERES` plus bas.
+// La section des rues, demandée au kit (v359) — voir `ARTERES` plus bas.
 const COLLECTRICE = sectionDeRue('collecteur');
 const LOCALE = sectionDeRue('locale');
 export const SECTIONS_NICE = { collecteur: COLLECTRICE, locale: LOCALE };
@@ -227,7 +227,7 @@ export const lieuxDeNice = () => LIEUX_NICE
 // passent de deux blocs et demi à cinq — de quoi poser une façade ET une
 // maison derrière.
 //
-// À LA RÈGLE DU KIT (v357) : la rue de la ville neuve et de Cimiez est une
+// À LA RÈGLE DU KIT (v359) : la rue de la ville neuve et de Cimiez est une
 // COLLECTRICE, la ruelle du Vieux-Nice une LOCALE — « une ruelle héritée est
 // une rue locale » (Paris, v303) —, et le pas grandit dans le rapport des
 // emprises : SI L'ÉLARGISSEMENT MANGE LES BÂTIMENTS, ON RECOMPOSE LES LOTS.
@@ -257,7 +257,7 @@ function trameDeNice(u, v) {
 const pt = (nom) => [lieu(nom).u, lieu(nom).v];
 const lieu = (nom) => LIEUX_NICE.find((p) => p.nom === nom);
 
-// LES LARGEURS NE SE PROJETTENT PAS, ELLES SE REDONNENT — ET DEPUIS LA v357
+// LES LARGEURS NE SE PROJETTENT PAS, ELLES SE REDONNENT — ET DEPUIS LA v359
 // ELLES SE DEMANDENT AU KIT (`voirie.js`, `roadSection`, un bloc pour un
 // mètre), comme Paris (v303), les villes engendrées (v307) et Londres (v339).
 // Le type se lit à la FONCTION : deux voies (COLLECTRICE) pour les artères de
@@ -448,7 +448,7 @@ export function solNice(x, z) {
   const c = Math.cos(t.ang), s = Math.sin(t.ang);
   const du = u - t.cu, dv = v - t.cv;
   const a = du * c - dv * s, b = du * s + dv * c;
-  // Une rue de la trame qui DOUBLE une avenue n'est pas tracée (v357) : la
+  // Une rue de la trame qui DOUBLE une avenue n'est pas tracée (v359) : la
   // règle de Londres (v339, `reculDesAvenues` dans `voies.js`).
   let d = Infinity;
   const ra = Math.abs(a - Math.round(a / t.pu) * t.pu);

@@ -1602,15 +1602,18 @@ function updateChunks() {
   // LES FAMILLES SE JUGENT L'UNE APRÈS L'AUTRE, ET LA PLUS CHÈRE EN DERNIER
   // (leçon de la contrainte de partage, v270) : `eauDevant` descend une
   // colonne, les autres lisent des listes déjà figées.
+  // ET LE CROCHET DIT QUELLE FAMILLE ARRÊTE LA VOITURE (v358) : un choc
+  // contre une voiture de la rue ou du mobilier rebondit, un piéton et l'eau
+  // arrêtent net, sans choc — personne n'est jamais touché (v259).
   player.obstacleVehicule = (x, z, cap, x0 = x, z0 = z) => {
-    if (vehicules.obstacleDevant(x, z, cap) && !vehicules.obstacleDevant(x0, z0, cap)) return true;
-    if (mobilierDevant(x, z, cap) && !mobilierDevant(x0, z0, cap)) return true;
+    if (vehicules.obstacleDevant(x, z, cap) && !vehicules.obstacleDevant(x0, z0, cap)) return 'voiture';
+    if (mobilierDevant(x, z, cap) && !mobilierDevant(x0, z0, cap)) return 'mobilier';
     // `arretDouxT` (v343) : s'arrêter devant un piéton ou au bord de l'eau
     // n'est PAS un choc — les dégâts ne comptent jamais un piéton touché.
-    if (pietonDevant(x, z, cap, x0, z0)) { player.arretDouxT = performance.now(); return true; }
+    if (pietonDevant(x, z, cap, x0, z0)) { player.arretDouxT = performance.now(); return 'pieton'; }
     // « Pas si l'on est déjà dedans » : une voiture tombée à l'eau doit
     // pouvoir en ressortir, sinon elle y reste pour toujours.
-    if (eauDevant(x, z, cap) && !eauDevant(x0, z0, cap)) { player.arretDouxT = performance.now(); direLEau(); return true; }
+    if (eauDevant(x, z, cap) && !eauDevant(x0, z0, cap)) { player.arretDouxT = performance.now(); direLEau(); return 'eau'; }
     return false;
   };
   // UNE VOITURE ARRIVE SUR CE POINT ? (v259) Ce qu'un piéton regarde pour
