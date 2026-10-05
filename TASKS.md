@@ -1,5 +1,27 @@
 # Ce qui est en cours
 
+- [ ] **LE PORTAIL DE LA v359 (I-95, porte de Manhattan), DOUBLE MESURE FAITE.**
+  Portail complet : six suites rouges, dont une de mon fait (la borne de vingt
+  pas du témoin des ponts, que Madrid ne passe pas — corrigée). Mes sondes de
+  recherche ont tourné PENDANT une partie de ce portail : les durées de
+  `plafond.js` (surface 7,1 ms) et de `carte.js` (glissement 449 ms) étaient
+  la charge — vertes rejouées seules des deux côtés. Rejouées SEULES, branche
+  puis `origin/main` (v358) : `carteMonde.js` et `plafond.js` vertes des deux
+  côtés ; `manhattan.js` identique (façade 14 460 → 48 958, taxi « 🐴 Monter »
+  jamais visible, délai à la ligne 654) ; `maj.js` fond de carte rouge des
+  deux côtés (`origin/main` rend en plus le flou en préparation) ; `carte.js`
+  la flèche du GPS à gauche rouge sur la branche (1,92 rad), verte sur
+  `origin/main` à ce passage — intermittence déjà déclarée, la v359 ne touche
+  pas au GPS ; `monte.js` : compilation à New York et gel d'arrivée rouges des
+  deux côtés, la monoplace à 9,0/9,1 m/s (barre 9) des deux côtés, et « au
+  volant, la voiture de l'enfant s'arrête devant un réverbère » ROUGE sur la
+  branche (`parcouru 0`, la boucle s'arrête après dix relevés immobiles, soit
+  une seconde — la conduite de la v358 accélère depuis zéro) et vert sur
+  `origin/main`. Preuve structurelle qu'il n'est pas de la v359 : le témoin se
+  joue dans Paris, `routeEn` est nul sur toutes les colonnes à 25 blocs de sa
+  cible, et la v359 ne change que des colonnes de route et une route à New
+  York. Piste : n'arrêter la boucle qu'après un premier mouvement, ou
+  attendre l'allure de croisière (session conduite).
 - [ ] **LE PONT QUI ENTRE DANS MANHATTAN (v359).** L'I-95 s'arrête sur la rive
   est, en face de l'île : sa porte est déclarée hors du rectangle (`BORNES`).
   Le pont lui-même demande deux choses qui ne sont pas des tracés : (1) que le
