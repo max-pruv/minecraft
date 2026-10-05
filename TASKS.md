@@ -19,6 +19,17 @@
   lieu de 23 : banc lent), trois rouges de plus qui sont VERTS rejoués seuls
   sur la branche : la poule qui ne propose pas de monter, le maillage en vol
   au-dessus de Paris (33 blocs parcourus), la mémoire en vol (462 blocs).
+  PORTAIL APRÈS LA FUSION DE LA v374 : `plafond.js` vert ; `carteMonde.js`
+  rouge sur les ponts de Tokyo seulement (le Sensō-ji, déclaré depuis dans
+  `DETTE_PONTS`), VERTE rejouée seule (159 verts) ; `maj.js` la libération et
+  `carte.js` le glissé (465 ms) — ci-dessus ; `monte.js` cinq rouges, rejouée
+  SEULE des deux côtés (`origin/main` v374) : 170 verts de chaque côté, en
+  commun le métro qui ralentit (9,0 m/s), la compilation à New York, le trou en
+  vol, le gel d'arrivée ; la branche seule « les passants ne sont plus plantés
+  au milieu de la chaussée » (5 sur 21 à Rome, la dette de la v371),
+  `origin/main` seul « rien d'autre ne vole le doigt dans la zone du joystick ».
+  Les reflets (7 tours pour une garde à 8) et l'ordre de maillage (écart 0,05)
+  du portail sont VERTS rejoués seuls sur la branche.
 - [ ] **LE PORTAIL DE LA v371 (les passants traversent au feu), DOUBLE MESURE
   FAITE.** Premier portail (base v354) : deux rouges de `monte.js` étaient à
   MOI et sont corrigés dans la livraison — le témoin des traversées (une seule
