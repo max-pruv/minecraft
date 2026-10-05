@@ -623,6 +623,49 @@
   (« element is not stable »), sur la branche le bouton reste caché quinze
   secondes (une bête) : la même intermittence, vue des deux côtés. `maj.js` :
   le loader qui compte les fichiers, intermittent (ci-dessous).
+
+  **Puis main est passé à la v351 : fusion, et second portail complet (v352).**
+  Neuf suites vertes ; sept rouges, chacune REJOUÉE SEULE des deux côtés, et
+  `monte.js` et `reseau.js` deux fois (la règle v269 : la distribution, pas un
+  passage). Aucun rouge propre à la branche :
+
+  | témoin | portail | branche seule | `origin/main` seul |
+  | --- | --- | --- | --- |
+  | `reseau.js` la même circulation sur deux tablettes | ❌ 63 blocs | ❌ 28 · ❌ 27 | ❌ 26 · ❌ 117 |
+  | `reseau.js` un départ propre nettoie tout le monde | ✅ | ❌ · ✅ | ✅ · ❌ |
+  | `reseau.js` « le serveur ne répond pas » (VPN, message, réseau bloqué) | ❌ | ✅ · ❌ | ✅ · ✅ |
+  | `reseau.js` la voiture de la rue attend celle de l'enfant chez l'ami | ✅ | ❌ · ✅ | ✅ · ✅ |
+  | `reseau.js` un monde rempli ne retarde pas les retrouvailles | ✅ | ✅ · ✅ | ✅ · ❌ |
+  | `monte.js` en vol, le bout du monde qui se charge | ❌ chasseur 58/60 | ❌ · ✅ | ✅ · ❌ |
+  | `monte.js` voler ne remplit pas la mémoire (parcouru) | ❌ 204 | ❌ 286 · ❌ 226 | ✅ 762 · ❌ 170 |
+  | `monte.js` l'écran figé à l'arrivée | ❌ 64,8 % | ❌ 58,9 · ❌ 62,6 | ❌ 47 · ❌ 68,8 |
+  | `monte.js` la téléportation qui compile | ❌ | ❌ · ❌ | ❌ · ❌ |
+  | `monte.js` la monoplace ralentit (< 9) | ❌ 9,0 | ✅ · ✅ | ❌ 9,1 · ❌ 9,1 |
+  | `monte.js` reflets au volant (> 8 tours) | ❌ 8 | ✅ · ✅ | ✅ · ✅ |
+  | `monte.js` passants hors de la chaussée (Rome) | ✅ | ❌ 43 % · ✅ | ✅ · ✅ |
+  | `maj.js` la libération / « ne floute rien » | ❌ ❌ | ❌ ❌ | ❌ (17/27 programmes) |
+  | `maj.js` les deux loaders | ❌ ❌ | ✅ ✅ | ✅ ✅ |
+  | `carte.js` le glisser bridé ×4 (barre 400) | ❌ 880 | ❌ 790 | ❌ 489 |
+  | `washington.js` on entre dans l'Air et l'Espace | ❌ | ✅ | ❌ |
+  | `manhattan.js` l'attente de la ligne 282 | ❌ | ❌ | ❌ |
+  | `reglages.js` ouvrir un monde en ligne (40 s) | ❌ | ✅ | ✅ |
+
+  **La circulation partagée de `reseau.js` est NEUVE dans ce fichier et
+  rouge à chaque passage des deux côtés** : écart médian de 26 à 117 blocs pour
+  une barre à 20, quand le commentaire du témoin annonce 2 à 10 sur le code
+  neuf de la v305. C'est un défaut de PRODUCTION, la plus grosse dette de ce
+  portail, et rien de la v352 n'y touche (ni `net.js`, ni `vehicules.js`, ni
+  l'horloge de la rue). À démonter : l'heure de la rue voyage-t-elle encore
+  avec celle du ciel, et à quelle cadence ? Une sonde qui lit
+  `vehicules.horloge` sur les deux pages au même instant le dira.
+
+  Preuve STRUCTURELLE pour les rouges de vol, de mémoire et de passants : les
+  témoins posent `player.pilote` à la main, sans monture ; le seul code neuf
+  par image est alors `sensationsAPied`, qui rend la main tant que le champ n'a
+  pas bougé, et la caméra d'un avion monté reste `poursuiteAvion`, la
+  poursuite d'avant à l'identique. Le portail entier a tourné lentement
+  (`monte.js` 32 min contre 23 d'habitude, `souffler` lisant 3,7 cœurs
+  occupés avant chaque page) : la cadence décide de ces témoins-là.
 - [ ] **LE PORTAIL DE LA v347 (les steppes, préparée comme v346) : TOUS LES
   ROUGES DÉJÀ DÉCLARÉS.** Huit suites choisies par la table des gardiens,
   45 min. `metro.js`, `carteMonde.js`, `plafond.js` (le témoin des steppes
