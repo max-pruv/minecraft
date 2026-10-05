@@ -800,6 +800,22 @@
       font-weight: bold;
     }
     body.gps-actif #gps { display: flex; }
+    /* LA DESTINATION D'UN AMI, PROPOSÉE (v384) : sous le GPS, au centre — rien
+       dans le quart bas-gauche, celui du joystick (v272) */
+    #gps-ami {
+      display: none; position: fixed; top: calc(150px + var(--safe-top)); left: 50%; transform: translateX(-50%);
+      align-items: center; gap: 8px; color: #fff; text-shadow: 1px 1px 0 #000; width: max-content; max-width: calc(100vw - 132px);
+      background: rgba(10,60,44,0.72); border-radius: 12px; padding: 6px 8px 6px 12px; z-index: 8;
+      font-weight: bold; font-size: 15px;
+    }
+    #gps-ami.visible { display: flex; }
+    body.en-avion #gps-ami { top: calc(200px + var(--safe-top)); }
+    #gps-ami-oui, #gps-ami-non {
+      height: 34px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.5); color: #fff; cursor: pointer;
+      font-weight: bold; font-size: 15px; white-space: nowrap;
+    }
+    #gps-ami-oui { background: #0E9268; padding: 0 10px; }
+    #gps-ami-non { background: rgba(0,0,0,0.3); width: 34px; }
     body.en-avion #gps { top: calc(126px + var(--safe-top)); }
     #gps-fleche { font-size: 30px; line-height: 1; transition: transform 0.15s linear; display: inline-block; }
     #gps-texte { font-size: 15px; line-height: 1.2; }
@@ -2119,6 +2135,7 @@
   <div id="link-banner"><span id="link-banner-txt"></span><button class="fermer-msg" id="link-banner-close" aria-label="Masquer">✕</button></div>
   <div id="edu-timer"><span id="edu-timer-txt"></span><button class="fermer-msg" id="edu-timer-close" aria-label="Masquer">✕</button></div>
   <!-- Le cadran de cap (v263) : ce que l'enfant lit aux commandes. -->
+  <div id="gps-ami"><span id="gps-ami-texte"></span><button id="gps-ami-oui">🧭 Y aller</button><button id="gps-ami-non" title="Non merci">✕</button></div>
   <div id="gps"><span id="gps-fleche">⬆</span><div id="gps-texte"></div><button id="gps-stop" title="Arrêter le GPS">✕</button></div>
   <div id="cap-avion"><div id="cap-degres"></div><div id="cap-ville"></div><div id="cap-regle"><div id="cap-repere"></div></div></div>
   <div id="notif-carte">
