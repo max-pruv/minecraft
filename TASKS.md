@@ -1,5 +1,19 @@
 # Ce qui est en cours
 
+- [ ] **LE PORTAIL DE LA v370 (l'arrivée après la carte), DOUBLE MESURE FAITE.**
+  Dix suites, quatre rouges, toutes des dettes déjà déclarées sauf une.
+  `maj.js` (libération `null`, « ne floute rien »), `carte.js` (glisser bridé ×4,
+  460 ms), `manhattan.js` (façade 11 684 → 42 919, taxi) : déclarées plus bas.
+  `monte.js` : « elle ralentit assez pour qu'on puisse la rejoindre » (9,0 m/s,
+  déclaré), compilation à l'arrivée à New York (chauffe expirée 44/321, déclaré),
+  le trou du chasseur en vol (58 pour 60, l'intermittence déclarée). NEUF :
+  « au volant, l'avant du joystick est l'accélérateur » — la voiture lâchée garde
+  9,13 b/s pour une barre à 9,0 (30 × 0,3). `monte.js` rejouée SEULE sur
+  `origin/main` (v369) : **le même rouge, 9,04**, médiane 27,23 des deux côtés —
+  dette de la zone conduite-physique (la décélération au lâcher frôle sa barre).
+  Et ce rejeu sur `origin/main` rend rouges les deux témoins que la v370 garde
+  (« la recharge à l'arrivée garde la cadence », « l'écran ne se fige pas en
+  arrivant sur une ville », 1 400 ms · 38,7 %) : verts sur la branche.
 - [ ] **LE PORTAIL DE LA v367 (I-95 Sud), DOUBLE MESURE FAITE.** Neuf suites,
   cinq rouges. `plafond.js` : l'empreinte des 490 morceaux, changée par la route
   dans les morceaux de Washington — relevée avec preuve (sans Washington,
