@@ -13,6 +13,15 @@
   principal » (avion à 28 blocs en 40 s au portail) vert seul ; « en vol, on
   ne rattrape pas le bout du monde » rouge seul sur la branche (Concorde 72) —
   l'intermittence déclarée plus bas, « rouge une fois sur deux DES DEUX CÔTÉS ».
+  Après le rebase sur la v366 : `carteMonde.js` verte, l'empreinte relevée
+  (7d235907…, sans Washington ad9949da… des deux côtés) verte ; « la surface
+  coûte au plus quelques millisecondes par morceau de campagne » rouge deux
+  fois seule sur la branche (13,3 · 11,0 ms), verte une fois sur `origin/main`
+  (2,2) — sous node, ordre alterné, quatre passages : branche 2,8 à 11,2 ms,
+  la branche SANS la route neuve 4,8 à 11,5, `origin/main` 3,3 à 6,5 — la même
+  dispersion avec et sans la route (le seul fichier de `src/` lu par ce
+  témoin qui change est routes.js) : le témoin de durée déjà déclaré ici en
+  v362, pas la livraison.
   Preuve structurelle : la livraison n'ajoute de route qu'entre New York et
   Washington, et ces témoins volent au-dessus de Paris et du couloir (30000,
   30000).
