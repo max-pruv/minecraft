@@ -3008,11 +3008,9 @@ l'embarquement a eu lieu, pas par une hypothèse.
   (`cote: 1`, déjà fabriquée) : la faire entrer par là est l'étape suivante, à
   condition que l'ami — sur SA tablette — voie aussi la portière s'ouvrir, ce
   qui demande un message réseau (`net.js`, hors zone).
-- **Les bords de la découpe sont en dents de scie** là où un triangle chevauche
-  le bord du volume (mesuré : 0 sur la plupart des modèles, 21 % de la surface
-  sur la Lucid Gravity, 36-38 % sur les taxis, qui s'en passent). Remède
-  possible : couper les triangles au plan du bord (une passe de découpe), pas
-  agrandir le volume.
+- [x] **Les bords de la découpe** — FAIT en v370 : coupés au plan (débord 0
+  sur les 55 modèles). Les taxis gardent `fabrique` → pas de portière : bords
+  nets, mais 0/24 rayons touchent un habitacle derrière l'ouverture.
 - **Une portière ouverte vue de dos est invisible** sur les modèles qui n'ont
   pas meublé son revers (faces simples). `DoubleSide` changerait la clé de
   programme (v246) : il faudrait le chauffer (`signatures.js`) avant de le
