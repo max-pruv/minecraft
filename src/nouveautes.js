@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 366,
+    titre: 'Les rues de Lille s\'élargissent',
+    puces: [
+      'Les boulevards à deux voies',
+      'Plus d\'immeubles dans le centre',
+      'Tes constructions restent comme avant',
+    ],
+  },
+  {
     v: 365,
     titre: 'Les coupoles ont leur église',
     puces: [

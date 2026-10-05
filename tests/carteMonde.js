@@ -2689,6 +2689,85 @@ const VRAIES_KM = [
       !kitSF.err && kitSF.bati >= 30 && Object.values(kitSF.quartiers).every((q) => q >= 10),
       kitSF.err || `${kitSF.bati} % du disque · ${JSON.stringify(kitSF.quartiers)}`);
 
+    // --- LES RUES DE LILLE À LA RÈGLE DU KIT (v366) ---------------------------
+    //
+    // La méthode de Nice, la ville la plus semblable : boulevards et grandes
+    // rues en deux voies, rues du Vieux-Lille en une, trame du centre et des
+    // faubourgs en deux, celle du Vieux-Lille en une, le pas recomposé et la
+    // trame qui ne double plus une avenue. Mesuré sur `origin/main` : avenues
+    // 2,9 à 4,8 blocs de chaussée, trame 2,0 ; part bâtie du disque 30,1 % —
+    // ici 33,3, aucun quartier qui perde (la République, le plus bas, 11,8 →
+    // 13,0), la barre des quartiers à 10.
+    const kitLille = await tab.evaluate(async () => {
+      try {
+        const m = await import('./src/lille.js');
+        const { sectionDeRue } = await import('./src/voirie.js');
+        const { CITY_BLOCK } = await import('./src/blocks.js');
+        const N = m.LILLE;
+        const med = (a) => { const b = [...a].sort((x, y) => x - y); return b.length ? b[Math.floor(b.length / 2)] : -1; };
+        const roule = (u, v) => m.solLille(N.x + Math.round(u), N.z + Math.round(v)) === CITY_BLOCK.ASPHALT;
+        const coupe = (u, v, eu, ev) => {
+          if (!roule(u, v)) return null;
+          let a = 0, b = 0;
+          while (a < 20 && roule(u - ev * (a + 0.05), v + eu * (a + 0.05))) a += 0.05;
+          while (b < 20 && roule(u + ev * (b + 0.05), v - eu * (b + 0.05))) b += 0.05;
+          return a + b;
+        };
+        const parType = { collecteur: [], locale: [] };
+        const locales = new Set(['Rue Esquermoise', 'Rue Royale', 'Rue de la Monnaie']);
+        for (const voie of m.VOIES_LILLE) {
+          const type = m.sectionDeVoieLille ? m.sectionDeVoieLille(voie.nom).type : (locales.has(voie.nom) ? 'locale' : 'collecteur');
+          for (let i = 0; i < voie.pts.length - 1; i++) {
+            const [u0, v0] = voie.pts[i], [u1, v1] = voie.pts[i + 1];
+            const lg = Math.hypot(u1 - u0, v1 - v0);
+            if (lg < 6) continue;
+            const c = coupe((u0 + u1) / 2, (v0 + v1) / 2, (u1 - u0) / lg, (v1 - v0) / lg);
+            if (c !== null && c < 20) parType[type].push(c);
+          }
+        }
+        const T = m.TRAMES_LILLE || { centre: { ang: -0.14, pu: 9, pv: 8, cu: 8, cv: 8 }, sud: { ang: 0, pu: 10, pv: 9, cu: -16, cv: 36 } };
+        const trames = [];
+        for (const t of [T.centre, T.sud]) {
+          const co = Math.cos(t.ang), si = Math.sin(t.ang);
+          for (let i = -8; i <= 8; i++) for (let j = -8; j <= 8; j++) {
+            const A = i * t.pu, B = (j + 0.5) * t.pv;
+            const u = t.cu + A * co + B * si, v = t.cv - A * si + B * co;
+            if (Math.hypot(u, v) > N.r - 8) continue;
+            const c = coupe(u, v, si, co);
+            if (c !== null && c < 15) trames.push(c);
+          }
+        }
+        const part = (dx, dz, r) => {
+          const cx = N.x + Math.round(dx * 32), cz = N.z + Math.round(dz * 32);
+          let n = 0, lots = 0;
+          for (let x = cx - r; x <= cx + r; x++) for (let z = cz - r; z <= cz + r; z++) {
+            if ((x - cx) ** 2 + (z - cz) ** 2 > r * r || (x - N.x) ** 2 + (z - N.z) ** 2 > N.r ** 2) continue;
+            n++; if (m.lotLilleLibre(x, z)) lots++;
+          }
+          return +(100 * lots / n).toFixed(1);
+        };
+        return {
+          coll: sectionDeRue('collecteur'), loc: sectionDeRue('locale'),
+          arteres: { n: parType.collecteur.length, med: med(parType.collecteur) },
+          rues: { n: parType.locale.length, med: med(parType.locale) },
+          trame: { n: trames.length, med: med(trames) },
+          bati: part(0, 0, N.r),
+          quartiers: { GrandPlace: part(0, 0, 16), VieuxLille: part(-0.3, -0.6, 16), Gares: part(0.9, -0.2, 16),
+            Republique: part(-0.2, 0.7, 16), Wazemmes: part(-0.85, 1.2, 16), Moulins: part(0.2, 1.3, 16) },
+        };
+      } catch (e) { return { err: String(e) }; }
+    });
+    verifier('les rues de Lille ont la section du kit : deux voies aux boulevards et à la trame, une au Vieux-Lille',
+      !kitLille.err && kitLille.arteres.n >= 10 && kitLille.rues.n >= 2 && kitLille.trame.n >= 10
+      && kitLille.arteres.med >= kitLille.coll.chaussee - 0.5 && kitLille.rues.med >= kitLille.loc.chaussee - 0.5
+      && kitLille.trame.med >= kitLille.coll.chaussee - 0.5,
+      kitLille.err || `boulevards ${fk(kitLille.arteres.med)} (${kitLille.arteres.n} coupes, kit ${kitLille.coll.chaussee})`
+      + ` · Vieux-Lille ${fk(kitLille.rues.med)} (${kitLille.rues.n}, kit ${kitLille.loc.chaussee})`
+      + ` · trame ${fk(kitLille.trame.med)} (${kitLille.trame.n})`);
+    verifier('et Lille garde ses immeubles : le disque à plus de 30 %, aucun quartier sous 10 %',
+      !kitLille.err && kitLille.bati >= 30 && Object.values(kitLille.quartiers).every((q) => q >= 10),
+      kitLille.err || `${kitLille.bati} % du disque · ${JSON.stringify(kitLille.quartiers)}`);
+
     // --- AUCUNE VILLE NE FAIT DEMI-TOUR, PAS SEULEMENT LONDRES ---------------
     //
     // Le témoin ci-dessus ne regardait que Londres. Les cinq autres villes à
