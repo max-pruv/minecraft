@@ -45,7 +45,9 @@ blocs au moins pour deux demi-largeurs de 2,26 (49 avant, sans aucun sens
 contraire) ; zéro pas de carrosserie dans un monument (1 613 avant, 43
 anneaux). Le témoin « à droite » de la v271 relu à l'axe de la rue : 0 relevé à
 gauche (325 sur `origin/main`). Le témoin des ponts lit les 56 villes à pont
-au lieu de quinze : Agra et Berlin réglés, Séoul et Chicago déclarés (culées
+au lieu de quinze : Agra, Berlin et Munich réglés — un tablier d'anneau
+porte désormais un bloc de plus à chaque bout, pour la colonne arrondie que la
+voiture prend encore —, Séoul et Chicago déclarés (culées
 d'anneaux d'avant, mêmes valeurs sur `origin/main`). Aucune ville ne perd de
 couverture ni sa voiture en vue depuis le centre (sonde ville par ville), le
 partage dans le même sens reste sous vingt blocs (14,8). L'empreinte des 490

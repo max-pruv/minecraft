@@ -4251,7 +4251,13 @@ function pontDeVille(f, u, v) {
   const P = u * co - v * si, Q = u * si + v * co;
   for (const q of a.ponts) {
     const le = q.axe === 0 ? P : Q, tr = q.axe === 0 ? Q : P;
-    if (le < q.a0 || le > q.a1) continue;
+    // UN BLOC DE PLUS AU BOUT, POUR LA COLONNE ARRONDIE (v372). Sur une trame
+    // tournée, la colonne qui porte le bout de l'axe n'a pas l'abscisse de
+    // l'axe : elle tombait juste au-delà de `a1`, restait de l'eau, et la
+    // voiture trouvait un trou au bout du pont (Berlin en v362, Munich en
+    // v372). Ce test n'est lu que sur une colonne d'eau : sur la rive, le sol
+    // de la ville passe avant, et rien ne change.
+    if (le < q.a0 - 1 || le > q.a1 + 1) continue;
     const d = Math.abs(tr - q.b);
     if (d > q.demi) continue;
     // UNE PILE, SINON LE TABLIER FLOTTE. « Si un élément ne se reconnaît pas

@@ -775,7 +775,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
 « Lance sur toutes les villes. » Mesuré sur `origin/main` : 147 des 262 villes
 engendrées n'avaient qu'UN circuit (48 superîlots, v282), 43 anneaux de 28
 villes passaient DANS un monument, et le plus petit anneau roulait sur l'axe
-de la rue. Six règles.
+de la rue. Sept règles.
 
 - **UNE BARRE DE PARTAGE SE RELIT QUAND LA RUE CHANGE DE SECTION.** La v211 a
   posé vingt blocs quand une rue n'avait qu'UNE file. Depuis la v271 elle en a
@@ -815,6 +815,12 @@ de la rue. Six règles.
   villes à pont, `origin/main` en avait sept fautives, dont cinq jamais vues.
   Et sa barre « 60 % de l'axe sur l'eau » valait pour les grands fleuves : une
   culée se compte par tablier (quatre pas à sec au plus).
+- **UN TABLIER COUVRE LA COLONNE OÙ LA VOITURE ARRONDIT, PAS SEULEMENT L'EAU
+  DE L'AXE.** La voiture roule sur des colonnes entières (`Math.floor`) ; un
+  tablier borné exactement aux abscisses mouillées laissait au bout une colonne
+  d'eau non couverte — Berlin en v362, Munich ici, sur le témoin des ponts au
+  portail. `pontDeVille` porte un bloc de plus à chaque bout (`a0 − 1`,
+  `a1 + 1`) ; mesuré, cela n'ajoute qu'un bloc de tablier à Rome et à Tokyo.
 
 ## Plus une coupole de gabarit (v369) — une forme fausse ne dépend pas de la hauteur
 

@@ -327,10 +327,11 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // v372 : les anneaux des villes engendrées (pas de trame, contresens, aucun
 // anneau dans un monument) changent les TABLIERS de Rome et de Tokyo, deux des
 // neuf lieux — voulu. Mesuré lieu par lieu : les sept autres identiques au bit
-// près ; à Rome 28 blocs sur 17 colonnes, à Tokyo 107 blocs sur 86 colonnes, et
+// près ; à Rome 29 blocs sur 18 colonnes, à Tokyo 108 blocs sur 87 colonnes (un
+// bloc de tablier de plus au bout, pour la colonne arrondie), et
 // AUCUNE de ces colonnes n'est hors d'un tablier d'avant ou d'après
 // (`pontVillesMonde` des deux arbres, sonde `diffbl.mjs` du scratchpad).
-const EMPREINTE_MORCEAUX_V357 = '9ea710a37a977e02708cb166f05018a12fb615d41de1293d730b3bedeb3dfbb8';
+const EMPREINTE_MORCEAUX_V357 = '0cf845f573127936c797a4741e5061be661d24cd8138ddfa5fc6d58ba33a7bbe';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
