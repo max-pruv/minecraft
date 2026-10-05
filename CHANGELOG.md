@@ -20,6 +20,26 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v376 — Les passants réagissent à la route
+
+**Pourquoi.** Un passant frôlé par une voiture faisait son pas de côté sans un
+geste, puis restait planté au bord de la rue : la pause d'après l'écart valait
+0,8 seconde de JEU, soit trois secondes de montre sur une tablette à cinq
+images par seconde. Et un choc de voiture à vingt mètres ne faisait tourner la
+tête à personne.
+
+**Ce que ça change.** Quand une voiture arrive sur lui à moins d'une
+demi-seconde, le passant sursaute — les bras se lèvent d'un coup, un petit
+saut — pendant son pas de côté, puis il repart aussitôt (la pause se compte en
+temps réel, un tiers de seconde). Quand la conduite publie un choc
+(`player.choc`), les passants à portée se retournent vers le bruit, s'arrêtent
+un instant, et reprennent leur chemin. Jamais de peur, jamais d'arrêt prolongé,
+personne n'est touché.
+
+**Ce qui le prouve.** Deux témoins neufs de `monte.js`, rouges sur
+`origin/main` : un piéton frôlé à 40 b/s sur une tablette qui rame sursaute,
+sort de la carrosserie et repart en moins de 1,2 s de montre ; six passants
+qui marchent se tournent vers un choc posé au milieu d'eux, puis repartent.
 ## v375 — Les huit derniers palais ont leur vraie forme
 
 **Pourquoi.** La v369 avait vidé le monde de ses coupoles de gabarit, et compté

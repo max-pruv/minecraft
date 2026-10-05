@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 376,
+    titre: 'Les passants sursautent',
+    puces: [
+      'Frôlés par une voiture, ils sursautent',
+      'Puis ils reprennent leur chemin',
+      'Un choc ? Ils se retournent',
+    ],
+  },
+  {
     v: 375,
     titre: 'Huit palais ont leur vraie forme',
     puces: [
