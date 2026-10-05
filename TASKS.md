@@ -339,21 +339,70 @@
   - ~~Les voitures de la rue ne s'abîment pas~~ — **fait en v356** ; la
     voiture prise qui repartait neuve et l'ami qui ne voyait pas les
     enfoncements de SA rue — **faits en v363** (l'histoire suit, `rue_choc`).
-    Reste : un hôte resté sur l'ancienne version ne relaie pas `rue_choc`
-    entre deux invités à jour (le receveur cède, déclaré).
+    ~~Un hôte resté sur l'ancienne version ne relaie pas `rue_choc`~~ —
+    **fait en v374** : l'histoire récente voyage aussi dans la position, que
+    tout hôte relaie telle quelle, et le receveur ne l'adopte que si la
+    sienne en est le début (idempotente). Reste, déclaré : deux amis qui
+    percutent la MÊME voiture par un ancien hôte ont deux histoires qui
+    divergent — chacun garde la sienne.
   - Le témoin « aucun programme compilé au feu » lit les clés depuis la
-    v363 (le compte baissait : 93 → 92, 97 → 96). « Enfoncer coûte quelques
-    millisecondes » reste une mesure de temps sous charge : 15 ms seul ici,
-    31,1 une fois au portail de la v348 — non repointé faute d'une grandeur
-    qui ne dépende pas du processeur partagé.
+    v363 (le compte baissait : 93 → 92, 97 → 96). ~~« Enfoncer coûte
+    quelques millisecondes » mesure le processeur partagé~~ — **repointé en
+    v374** : part des sommets déplacés (25,6 %, barre à la moitié), zéro
+    normale réécrite hors d'eux (63 avec `computeVertexNormals`, vérifié
+    rouge), rien par image ; les ms restent dans le message.
   - ~~Le garage n'est éprouvé que par `reparer`~~ — **fait en v356** : un
     témoin par le trajet (descendre dedans, remonter).
-  - **Le contrat avec la physique** (`player.choc`, `player.physiqueLitEtat`)
-    attend la session « conduite-physique » : tant qu'elle ne publie rien, le
-    repli de vitesse décide, et les effets s'appliquent par `player.boost`.
-    Un témoin (v356) publie les deux à la main et garde « jamais deux fois ».
+  - ~~**Le contrat avec la physique** attend la session
+    « conduite-physique »~~ — arrivé en v358, **éprouvé bout à bout en
+    v374** par la vraie physique (mur de face : un choc publié, pris par ce
+    chemin seul, l'avant seul froissé, l'effet appliqué une fois). Le repli
+    de vitesse ne sert plus en jeu (`chemins().repli` reste à zéro) : il est
+    GARDÉ pour l'ancien chemin — une physique qui ne publierait pas — et sa
+    règle (`detecterChoc`) reste gardée par le témoin pur de `degats.js`.
   - **Les avions ne s'abîment pas** (`pilote` est écarté) : une décision, pas
     un oubli — un atterrissage manqué n'a pas de « choc » dans `player.js`.
+
+- [ ] **AU PORTAIL DE LA v374 (le battement qui relit, le contrat des dégâts
+  éprouvé, les chocs de la rue par la position), CINQ SUITES ROUGES — une à
+  moi, réglée par le bump ; les autres déjà déclarées, double mesure faite.**
+  - `maj.js` « le badge de version ouvre le journal… » : la tête du journal
+    (365) devant la version servie (364) — le bump de `sw.js`, fait à la
+    fusion. « Quand il se libère… fond de carte » : la famille déclarée.
+  - `visio.js` « caméra éteinte, le jeu reprend sa voix normale » : rejouée
+    SEULE, VERTE sur la branche (26/26) et ROUGE sur `origin/main` (0,0177) —
+    la famille déclarée en v363, des deux côtés.
+  - `reseau.js` « un départ propre nettoie tout le monde » (et au second
+    passage « un hôte sans courtier est trouvé », déclaré) : rejouée seule,
+    branche rouge 2/2, `origin/main` rouge 1/2 (« hôte ["Alice","Nina"] »
+    identique) — la famille intermittente des deux côtés (table de la v285).
+    Passages courts alternés (la suite arrêtée après ce témoin) : branche
+    1/4, `origin/main` 0/2, branche SANS le battement qui relit 0/2. Total à
+    ce témoin : branche 4/7, `origin/main` 1/4 — même rouge, même message,
+    écart non significatif sur onze passages ; on ne le classe pas réglé, on
+    le déclare avec ces chiffres. Preuve structurelle : le départ
+    se lit sur `remotePlayers` ; la v374 n'ajoute au message `pos` qu'un
+    champ `rc` ABSENT tant qu'aucune voiture de la rue n'est percutée (aucune
+    dans `reseau.js`), et le battement des réglages n'écrit que dans
+    `player_prefs`.
+  - `manhattan.js` (trou de façade, taxi, PeerJS) et `monte.js` (chauffe de
+    New York 53/321, gel d'arrivée 38 %) : les familles déclarées aux
+    portails des v356 à v364, aucune ne lit les réglages ni les dégâts de la
+    rue.
+  - SECOND PORTAIL, après rebase sur la v369 : `degats`, `reglages`,
+    `visio`, `hote`, `washington` VERTS. Rouges : `maj.js` (loader, flou —
+    déclarés), `carte.js` (la flèche du GPS à 1,92 rad, déclarée v327 ; le
+    glissé bridé 418 ms, déclaré v364), `manhattan.js` (trou, taxi),
+    `reseau.js` (départ propre, voir plus haut) et `monte.js` : passants de
+    Rome sur la chaussée (le tirage déclaré), téléportation qui compile, trou
+    en vol, gel d'arrivée, et « rendue dans une scène vide, la recharge à
+    l'arrivée garde la cadence » (v360, 6,5 contre 9,9 images/s). `monte.js`
+    REJOUÉE SEULE des deux côtés (v369 dans un arbre détaché) : la scène vide
+    VERTE des deux côtés — un rouge de charge ; le gel d'arrivée rouge des
+    deux côtés ; la téléportation qui compile et le trou en vol rouges sur la
+    branche seule à ce passage, familles déclarées (rouges des deux côtés en
+    v363–v364, intermittent pour le second). Aucune ne passe par le champ
+    `rc` (aucune voiture de la rue percutée) ni par les réglages.
 
 - [ ] **AU PORTAIL DE LA v364 (le coût des dégâts dans le journal), CINQ
   SUITES ROUGES — une à moi, corrigée ; les autres déjà déclarées.**

@@ -82,7 +82,7 @@ const GARDIENS = {
   'vendor/humains/femme-manteau.glb': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
   'vendor/humains/garcon.glb': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
   'vendor/humains/fille.glb': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
-  'src/net.js': ['reseau.js', 'visio.js', 'hote.js', 'manhattan.js'],
+  'src/net.js': ['reseau.js', 'visio.js', 'hote.js', 'manhattan.js', 'degats.js'],
   'src/nouveautes.js': ['maj.js'],
   'src/cloud.js': ['reseau.js', 'reglages.js', 'manhattan.js'],
   'src/relaisnuage.js': ['reseau.js'],
@@ -201,7 +201,7 @@ const GARDIENS = {
   'src/portieres.js': ['monte.js', 'degats.js'],
   // Le hub : presque toute livraison y passe. Deux suites larges le couvrent —
   // la carte traverse l'interface entière, la monte traverse la boucle de jeu.
-  'src/main.js': ['carte.js', 'monte.js', 'washington.js', 'manhattan.js', 'degats.js'],
+  'src/main.js': ['carte.js', 'monte.js', 'washington.js', 'manhattan.js', 'degats.js', 'reglages.js'],
   'index.html': ['carte.js', 'reglages.js', 'maj.js', 'manhattan.js'],
 
   // --- v195 : TRENTE FICHIERS MANQUAIENT, et deux d'entre eux étaient des

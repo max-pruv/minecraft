@@ -1608,6 +1608,44 @@ en temps réel), `fun.js` le fait descendre et `deposer` le pose debout sur une
 case libre à côté (côté conducteur d'abord). La carcasse porte `horsService`
 (lu par `animals.js`, comme `montee`) : elle ne se reprend pas, et elle s'en
 va au bout de `DUREE_CARCASSE`.
+**Le contrat éprouvé bout à bout, et un coût qui se compte (v374).** Un
+témoin de contrat qui publie ses chocs à la main ne prouve pas que la vraie
+physique les publie : celui de la v374 n'écrit RIEN dans `player`, prend un
+mur de face, et lit les deux côtés (`player.chocs`, `degats.chemins()` :
+publiés, repli, effets appliqués ici). Le repli ne sert plus en jeu ; il est
+gardé pour une physique qui ne publierait pas. Et le coût d'un choc se borne
+en GRANDEURS qui ne suivent pas le processeur partagé — sommets déplacés,
+normales réécrites hors d'eux (zéro), travail par image après le choc
+(zéro) — les millisecondes restant dans le message (v270).
+
+**Un ancien hôte, et l'histoire par la position (v374).** Un message neuf
+(`rue_choc`) n'est pas relayé par un hôte qui ne le connaît pas ; la
+position, si (`{ ...msg }`). Ce qui doit traverser un ancien hôte s'accroche
+à elle, et devient idempotent en envoyant l'HISTOIRE (adoptée seulement si
+la nôtre en est le début), jamais le seul dernier événement.
+
+## Un battement qui écrit sans relire défait le choix d'à côté (v374)
+
+« Un choix fait sur une tablette part au serveur » (`reglages.js`) était
+déclaré rouge de charge. La sonde qui relève chaque écriture des deux
+tablettes (`sonde-reglages-deux.cjs`) l'a démenti SANS charge : le choix
+part (« en », 39,3 s), puis l'autre tablette écrit « fr » sous une date plus
+ancienne (43,1 s). Deux règles.
+
+- **UN DOCUMENT À DEUX AUTEURS N'A QU'UN CHEMIN D'ÉCRITURE : CELUI QUI
+  RELIT.** Le jeu l'avait écrit (« on relit avant d'écrire ») pour la
+  boucle de quinze secondes ; le battement de présence de vingt secondes,
+  trois lignes plus bas, écrivait encore le document entier sans relire. Il
+  passe par `envoyerPrefs`. Le verre dans les murs, une fois de plus, à
+  l'échelle de deux minuteurs voisins.
+- **UN ROUGE DÉCLARÉ « DE CHARGE » SE DÉMONTE AVANT D'ÊTRE CRU.** La double
+  mesure de la v195 (69 verts seule des deux côtés) disait « pas la
+  livraison » ; elle ne disait pas « pas le jeu ». La course existait en
+  production depuis toujours, et la charge ne faisait que la rendre
+  fréquente. Le témoin la PROVOQUE désormais : il repère le battement de
+  l'autre tablette (une écriture sans lecture depuis la précédente) et
+  clique juste avant le suivant, puis observe le serveur toute la fenêtre.
+
 ## La conduite à la GTA (v358) — un modèle pur, une boîte orientée, des chocs qui se publient
 
 Max : « une grosse refonte de la façon de conduire… comme GTA ». Premier palier
