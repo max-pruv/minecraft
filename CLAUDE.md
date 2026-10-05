@@ -1457,6 +1457,24 @@ engendrées. Quatre règles.
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
 
+## Deux témoins de la rue qui disent ce qu'ils voient (v380) — un couloir « vide » se vérifie au sec
+
+Deux règles.
+
+- **UN SITE DE TÉMOIN NOMMÉ « VIDE » SE VÉRIFIE AVANT D'ÊTRE REPRIS.** Le
+  couloir de la v237, (30 000, 30 000), est vide parce qu'il est en MER
+  (terrain à 24, sous l'eau) : très bien pour un vol ou un piéton qu'on pose
+  sans physique (le sursaut, v376), impossible pour une voiture qui roule —
+  mesuré sous node, aucun de ses quatre cents rectangles n'est au sec. Le
+  témoin du freinage cherche son rectangle à partir de (−1 500, −2 500), hors
+  ville, plat, un sol plein sous chaque colonne, rien posé dessus, et exige que
+  la situation ait eu lieu (`ecartes > 0`).
+- **UN TÉMOIN DE COMPTE PUBLIE QUI IL COMPTE.** « Plantés au milieu de la
+  chaussée » rend désormais, pour chaque passant sur la chaussée, son état, sa
+  traversée, son écart, s'il est animé (sinon figé là où il était, v241) et
+  s'il est à son poste de naissance — son prochain rouge se démonte en une
+  lecture (v223).
+
 ## Les passants réagissent à la route (v376) — un geste court, et une pause qui se compte en temps réel
 
 Point 3 du chantier « conduite » côté piétons. Trois règles.

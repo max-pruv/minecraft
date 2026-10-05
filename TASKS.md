@@ -1,5 +1,16 @@
 # Ce qui est en cours
 
+- [ ] **LES PASSANTS SUR LA CHAUSSÉE À ROME : LE TÉMOIN DIT DÉSORMAIS QUI
+  (v380).** Au portail de la v380, 3 sur 18 (vert, barre un cinquième) et le
+  témoin publie : les TROIS sont des flâneurs (`surTrottoir` faux) en `pause`,
+  animés, et deux sont encore À LEUR POSTE DE NAISSANCE — nés sur la chaussée
+  (`posteAutour` en dernier recours ?) et jamais repartis. La sonde à l'arrêt
+  (60 s) n'en voit presque pas : c'est un état de naissance, pas une dérive.
+  Piste à mesurer avant d'écrire : où `posteAutour` pose un flâneur quand il
+  ne trouve pas de trottoir, et si un flâneur né sur la chaussée doit d'abord
+  en sortir. Portail de la v380 : rouges `maj.js` (préparation, déclarée) et
+  `monte.js` (trou en vol — vert rejoué seul des deux côtés en v371 — et gel
+  d'arrivée, déclaré des deux côtés).
 - [ ] **LE PORTAIL DE LA v379 (l'arrivée après la carte), DOUBLE MESURE FAITE.**
   Dix suites, quatre rouges, toutes des dettes déjà déclarées sauf une.
   `maj.js` (libération `null`, « ne floute rien »), `carte.js` (glisser bridé ×4,
