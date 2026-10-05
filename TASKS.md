@@ -1,5 +1,24 @@
 # Ce qui est en cours
 
+- [ ] **LE PORTAIL DE LA v370 (ponts des villes engendrées, le Tōmei), DOUBLE
+  MESURE FAITE.** `carteMonde.js` et `plafond.js` verts (empreinte des 490
+  morceaux 36b34a87…, la même branche règle désarmée rend 27789d06…, la
+  constante d'`origin/main`). Rouges, tous rejoués SEULS des deux côtés
+  (`origin/main` v369) : `carte.js` « la faire glisser non plus » — 444 ms
+  branche, 416 `origin/main` (barre 400), seul rouge de chaque côté ; `maj.js`
+  quatre rouges sur la branche (libération `null`, le flou, le palier qui ne se
+  range pas ×2), cinq sur `origin/main` (loader, libération, palier ×2) — la
+  dette de charge déclarée plus bas ; `monte.js` cinq de chaque côté : la
+  chauffe de New York expirée et le trou en vol et le gel d'arrivée (des deux
+  côtés), plus l'accélérateur (27,2 pour 30) et le piéton sur `origin/main`
+  seul, la recharge en scène vide (100 contre 37 morceaux/s, 6,5 contre 9,3
+  images/s) et l'atterrissage (intermittence déclarée) sur la branche seule.
+  La recharge en scène vide était VERTE au portail sur la branche et verte sur
+  `origin/main` : preuve structurelle qu'elle n'est pas de la v370, une scène
+  vide (`vide=1`) ne dessine ni route ni ville. Au portail (monte.js 43 min au
+  lieu de 23 : banc lent), trois rouges de plus qui sont VERTS rejoués seuls
+  sur la branche : la poule qui ne propose pas de monter, le maillage en vol
+  au-dessus de Paris (33 blocs parcourus), la mémoire en vol (462 blocs).
 - [ ] **LE PORTAIL DE LA v367 (I-95 Sud), DOUBLE MESURE FAITE.** Neuf suites,
   cinq rouges. `plafond.js` : l'empreinte des 490 morceaux, changée par la route
   dans les morceaux de Washington — relevée avec preuve (sans Washington,
