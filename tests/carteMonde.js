@@ -1015,7 +1015,7 @@ const VRAIES_KM = [
       JSON.stringify(a1.absent ? a1 : { convoi: a1.convoiI95Sud ? { nom: a1.convoiI95Sud.nom, voitures: (a1.convoiI95Sud.modeles || []).length } : 'aucun convoi I-95 Sud',
         washington: a1.washington, erreur: a1.washingtonErreur, portesNY: a1.manhattan, frole: a1.frole && a1.frole['I-95 Sud'] }));
 
-    // LE TŌMEI (v375) : Tokyo–Nagoya, par la bande côtière au sud du
+    // LE TŌMEI (v381) : Tokyo–Nagoya, par la bande côtière au sud du
     // Shinkansen — Haneda et Yokota ferment la plaine à l'ouest de Tokyo, et le
     // rail traverse Nagoya. Ni rail, ni aérodrome, ni ville frôlée, et des
     // voitures entrent dans les deux villes par une rue propre.
@@ -5066,7 +5066,7 @@ const VRAIES_KM = [
         }
         ponts.push({ cle, tabliers: a.ponts.length, pas, sansSol, surLaTete, surEau, pireSpan, parLaRoute, cinq: CINQ.includes(cle) });
       }
-      // LES ENCOCHES AU BOUT DES TABLIERS (v375). Le tronçon mouillé se mesure
+      // LES ENCOCHES AU BOUT DES TABLIERS (v381). Le tronçon mouillé se mesure
       // sur l'AXE ; une colonne du monde à côté de l'axe peut être de l'eau un
       // demi-bloc avant le premier point mouillé, et rester sans tablier — à
       // Berlin, sur l'axe même. On lit, sur TOUTES les villes à pont, les
@@ -5133,16 +5133,19 @@ const VRAIES_KM = [
       fleuves.ponts.map((p) => `${p.cle} ${p.tabliers} tablier(s), ${p.surEau}/${p.pas}`
         + ` sur l'eau (${(100 * p.surEau / p.pas).toFixed(0)} %)`).join(' · '));
 
-    // UN DÉFAUT DE VILLE, VU PAR LE TÉMOIN ÉLARGI ET DÉCLARÉ (v362) — il
-    // n'est pas d'une route, et `origin/main` rend le même : à Agra le Taj
-    // Mahal et le Fort sont bâtis SUR deux tabliers (neuf pas bouchés) — un
-    // conflit de plan entre les anneaux et les monuments. Dette dans
-    // TASKS.md ; une dette qui ne mesure plus rien rougit. (Berlin, la colonne
-    // d'eau au bout d'un pont, est réparée en v375 : témoin des encoches.)
-    // Et Tokyo (v375), lue depuis que le Tōmei la touche : le Sensō-ji est bâti
-    // sur un tablier d'anneau (deux pas bouchés en 53434–53435, 7944), le même
-    // conflit de plan qu'à Agra, mesuré identique sur `origin/main` (v374).
-    const DETTE_PONTS = { agra: { sansSol: 0, surLaTete: 9 }, tokyo: { sansSol: 0, surLaTete: 2 } };
+    // DEUX DÉFAUTS DE VILLE, VUS PAR LE TÉMOIN ÉLARGI ET DÉCLARÉS (v362) — ni
+    // l'un ni l'autre n'est d'une route, et `origin/main` rend les mêmes :
+    // Berlin a UNE colonne d'eau sans tablier au bout d'un pont (le bout de
+    // l'axe arrondi tombe hors de `pontDeVille`), et à Agra le Taj Mahal et le
+    // Fort sont bâtis SUR deux tabliers (neuf pas bouchés) — un conflit de
+    // plan entre les anneaux et les monuments. Dettes dans TASKS.md ; une
+    // dette qui ne mesure plus rien rougit.
+    // Agra est payée en v378 : un anneau qui passe dans un monument est écarté
+    // à la source (`traverseUnMonument`), et ses ponts avec lui (9 → 0 pas).
+    // Berlin aussi (v378) : l'anneau dont le bout de pont tombait hors de
+    // `pontDeVille` passait dans le Berliner Dom ; écarté, la dette ne mesure
+    // plus rien (1 → 0).
+    const DETTE_PONTS = {};
     verifier('et on le traverse à pied d\'une rive à l\'autre',
       fleuves.ponts.filter((p) => p.cinq).length === 5
       && fleuves.ponts.every((p) => (DETTE_PONTS[p.cle]

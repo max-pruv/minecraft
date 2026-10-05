@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v375 — Plus de trou au bout des ponts, et le Tōmei
+## v381 — Plus de trou au bout des ponts, et le Tōmei
 
 **Pourquoi.** Au bout d'un pont de Berlin, une colonne d'eau sans tablier : la
 voiture y tombait (dette déclarée en v362). Mesuré sur toutes les villes à
@@ -53,6 +53,176 @@ neuf de `carteMonde.js` exige zéro colonne sur le rail, zéro ville frôlée, d
 voitures sur la route et une rue propre aux deux entrées ; mesuré sous node
 avant le banc : 9 985 colonnes d'emprise, aucune sur la voie ferrée ni à une
 autre route, 283 colonnes d'asphalte sur 283.
+
+---
+
+## v380 — Deux témoins de la rue qui disent ce qu'ils voient
+
+**Pourquoi.** Deux témoins de `monte.js` rendaient des rouges qu'on ne
+pouvait pas démonter. « La voiture de l'enfant freine devant un piéton » a
+rendu `voituresRue: 0` et 3,4 à 5,3 blocs d'avance aux portails des v279,
+v346, v351 et v354 : il cherchait son couloir dans les rues de Rome, et ce qui
+traîne autour d'une rue (façades, mobilier, bêtes, convois) changeait d'un
+portail à l'autre — la situation n'avait souvent pas lieu. Et « les passants
+ne sont plus plantés au milieu de la chaussée » rendait un seul nombre (6 sur
+21 au rejeu de la v371) pour plusieurs pannes possibles.
+
+**Ce que ça change.** Rien dans le jeu. Le témoin du freinage se pose sur un
+rectangle plat de vingt blocs sur neuf, au sec, loin de toute ville, sans
+bête ni convoi, et exige que l'écart ait eu lieu. Le témoin de la chaussée
+publie QUI y est : état, traversée, écart, animé ou figé, à son poste de
+naissance ou non.
+
+**Ce qui le prouve.** Le témoin du freinage, rejoué seul trois fois : 105 à
+107 relevés, zéro traversée, 26 à 33 relevés d'écart, 22,9 à 30,3 blocs
+d'avance. Le couloir vide de la v237, où il devait d'abord se poser, est en
+pleine mer (terrain à 24) : mesuré sous node, aucun de ses quatre cents
+rectangles n'est au sec. La sonde des passants sur la chaussée à Rome
+(`sonde-chaussee-rome.cjs`, 60 s, deux fois de chaque côté) : hors traversée,
+0 et 5 relevés sur ~1 800 sur la branche, 3 et 2 sur `origin/main` — aucun
+passant né sur la chaussée, aucun flâneur.
+## v379 — On arrive plus vite après la carte
+
+**Pourquoi.** Trois questions laissées ouvertes par la v360, et une quatrième
+qui traînait au portail. Après une téléportation, la file de maillage ne se
+rechargeait qu'une fois par image : sur un écran qui rame au milieu de Paris,
+le disque d'affichage arrivait au compte-gouttes — au banc, 291 à 304
+morceaux sur 625 au bout de vingt secondes. Londres plafonnait à 70 blocs par
+seconde quand Paris tenait 80, sans cause mesurée. Et le témoin « l'écran ne
+se fige pas en arrivant sur une ville » était rouge des deux côtés depuis
+plusieurs portails, sans qu'on sache ce qu'il mesurait encore.
+
+**Ce que ça change.** Après un saut par la carte, la file se recharge à
+l'arrivée de chaque morceau — toujours quatre demandes en vol au plus — le
+temps de remplir le disque, dix secondes au plus, puis redevient celle d'avant
+(coupée en rendu logiciel, comme la recharge en roulant de la v360). Au banc,
+90 % du disque de Paris en 5,5 à 6,4 s. Les morceaux du centre de Londres se
+fabriquent un peu plus vite : `solLondres` y était appelé quatre fois par
+colonne, une seule suffit (génération 2,8 → 2,1 ms sous node) — sans changer
+un bloc. Le plafond de vitesse au sol, lui, ne bouge pas : Londres ne tient
+toujours pas 80 au banc, il reste à 70 en ville.
+
+**Ce qui le prouve.** Trois sondes qui séparent les cas. `sonde-londres.cjs` :
+le centre de Londres, pile au milieu du trajet mesuré, porte 64 % de faces de
+plus que celui de Paris et une génération 70 % plus chère ; avec la mémoire,
+145–151 blocs devant soi contre 137–152 sur `origin/main` — les distributions
+se recouvrent, le plafond ville reste donc à 70 ; et moins de 1 % des
+morceaux reçus arrivent derrière l'enfant (un lot dépassé n'est pas
+nuisible). `sonde-teleport-recharge.cjs` : dans une scène vide, les deux
+recharges chargent Paris en 4,1–4,4 s à 57 images par seconde — le
+chargement ne prend rien aux images ; ce que le banc perd en scène dessinée
+(3,9 → 2,8–3,1 images par seconde) est SwiftShader qui dessine la ville plus
+tôt. `sonde-arrivee-ville.cjs` : dans les images de plus de 300 ms du vol vers
+Paris, 1 à 5 ms d'installation, zéro programme compilé, 18 à 49 ms de
+JavaScript, pour des images de 1,3 à 1,5 s ; en scène vide, 100 ms au pire. Le
+témoin de la v235 rend donc une scène vide pendant le vol (vert, 0 % ; rouge à
+9–11 % quand on désarme son remède dans une copie), et un témoin neuf garde la
+fenêtre d'arrivée (un saut l'arme, un pas non, elle se rend ; rouge sur
+`origin/main`). L'empreinte des 490 morceaux est inchangée. À relire sur la
+tablette : `?recharge=arrivee&diag=1` contre `?recharge=image&diag=1`, en se
+téléportant à Paris.
+## v378 — Les voitures ne traversent plus les monuments
+
+**Pourquoi.** Le témoin de la v375 l'a mesuré : dans les villes engendrées, les
+anneaux de voitures se choisissaient sur la trame sans regarder les monuments,
+qui se posent après. Quarante-cinq monuments étaient bâtis en travers d'un
+anneau à hauteur de carrosserie — le Taj Mahal sur 294 cases, le Colisée sur
+53, Rashtrapati Bhavan, le Templo Mayor, Tō-ji, le palais royal de Madrid… :
+des voitures qui passaient au travers des murs.
+
+**Ce que ça change.** Un anneau qui passerait dans un monument est écarté, et
+la ville en prend un autre. Plus une voiture ne traverse un monument. Agra et
+Le Cap, qui perdaient trop de rues, reçoivent des anneaux de quartier. Et les
+anneaux d'une ville ne se calculent plus au démarrage mais quand l'enfant
+s'en approche : la page démarre plus vite.
+
+**Ce qui le prouve.** `plafond.js` : le témoin des monuments en travers d'un
+anneau passe de 45 dettes déclarées à zéro (48 à la mesure de la carrosserie
+vraie sur `origin/main`), et un témoin neuf exige que les anneaux dépliés à
+l'approche soient exactement ceux du calcul entier (262 villes). `carteMonde.js` :
+les dettes des ponts d'Agra (le Taj et le Fort sur deux tabliers, 9 pas) et
+de Berlin (l'anneau qui passait dans le Berliner Dom) tombent. L'empreinte des
+490 morceaux change — les tabliers des anneaux sont du sol — et c'est prouvé :
+le filtre désarmé, la branche rend celle de la v375 au bit près.
+Mesuré sous node : aucune ville sans voitures, la moins couverte à 78,7 %
+(barre 75) ; 445 → 430 anneaux ; démarrage 157 → 0 ms pour ce calcul.
+
+---
+
+## v377 — Le passager monte par la portière
+
+**Pourquoi.** Depuis la v366, l'enfant qui prend le volant marche jusqu'à la
+portière, l'ouvre et s'assied. Mais celui qui monte en PASSAGER dans la voiture
+d'un ami (v253) était encore collé au siège d'un coup, et le conducteur ne
+voyait rien bouger sur sa tablette.
+
+**Ce que ça change.** « Monter avec Marlon » : l'enfant marche jusqu'à la
+portière DROITE de la voiture de son ami, elle s'ouvre, il s'assied, elle se
+referme — et Marlon, sur SA tablette, voit sa portière droite s'ouvrir et se
+refermer. Un second appui termine tout de suite, comme au volant. Une tablette
+restée sur l'ancienne version ne voit pas la portière bouger, et rien ne casse.
+
+**Ce qui le prouve.** Un témoin neuf à deux tablettes dans `reseau.js` : Lou
+(qui joue la séquence) monte avec Marlon ; on lit les deux pages au même
+instant, relevé par relevé. Lou passe par l'approche, l'ouverture, l'entrée et
+la fermeture avant d'être passagère ; chez Marlon, la portière droite de sa
+voiture s'ouvre à 60° (1,047 rad) puis se referme. Sur `origin/main` : aucune
+phase, Lou passagère d'un coup, la portière de Marlon jamais touchée. Le témoin
+du passager de la v253 (sur des pages qui sautent la séquence) reste vert.
+
+---
+
+## v376 — Les passants réagissent à la route
+
+**Pourquoi.** Un passant frôlé par une voiture faisait son pas de côté sans un
+geste, puis restait planté au bord de la rue : la pause d'après l'écart valait
+0,8 seconde de JEU, soit trois secondes de montre sur une tablette à cinq
+images par seconde. Et un choc de voiture à vingt mètres ne faisait tourner la
+tête à personne.
+
+**Ce que ça change.** Quand une voiture arrive sur lui à moins d'une
+demi-seconde, le passant sursaute — les bras se lèvent d'un coup, un petit
+saut — pendant son pas de côté, puis il repart aussitôt (la pause se compte en
+temps réel, un tiers de seconde). Quand la conduite publie un choc
+(`player.choc`), les passants à portée se retournent vers le bruit, s'arrêtent
+un instant, et reprennent leur chemin. Jamais de peur, jamais d'arrêt prolongé,
+personne n'est touché.
+
+**Ce qui le prouve.** Deux témoins neufs de `monte.js`, rouges sur
+`origin/main` : un piéton frôlé à 40 b/s sur une tablette qui rame sursaute,
+sort de la carrosserie et repart en moins de 1,2 s de montre ; six passants
+qui marchent se tournent vers un choc posé au milieu d'eux, puis repartent.
+## v375 — Les huit derniers palais ont leur vraie forme
+
+**Pourquoi.** La v369 avait vidé le monde de ses coupoles de gabarit, et compté
+huit palais encore bâtis par le gabarit `palaisLong` : un mur de trois blocs
+d'épaisseur, une baie sur deux, que la table de la ville étirait — le palais du
+Dam, le Rijksmuseum, le château de Prague, le palais royal de Stockholm,
+Amalienborg, Gyeongbokgung, la Casa Rosada et le palais Bahia. Et, mesuré en
+préparant leur place, quatre de ces gabarits étaient bâtis EN TRAVERS d'un
+anneau de voitures (Dam, Rijksmuseum, Prague, Gyeongbokgung), celui de
+Stockholm sur l'eau.
+
+**Ce que ça change.** Chacun a son bâtisseur d'après sa vraie forme, dans la
+partie de sa boîte que rien ne traverse : le Dam autour de ses deux cours, avec
+son avant-corps et son lanternon ; le Rijksmuseum de brique rouge, ses deux
+tours et le passage qu'on traverse à pied ; la longue façade du château de
+Prague et la porte de Matthias ; le carré baroque de Stockholm et sa
+balustrade ; les quatre palais d'Amalienborg autour de la place octogonale et
+de la statue ; la salle du trône de Gyeongbokgung sur sa terrasse, sa galerie
+et sa porte ; la Casa Rosada rose, son arche et ses pavillons coiffés ; le
+palais Bahia de plain-pied, ses arcades de zellige et sa cour aux orangers.
+Tous à leur hauteur du monde, un pour un, pour que leurs fenêtres ne se
+répètent pas.
+
+**Ce qui le prouve.** Deux témoins de `plafond.js`. Le témoin des gabarits
+exige désormais zéro palais (huit sur `origin/main`). Un témoin neuf lit les
+anneaux de voitures de toutes les villes engendrées contre les cent
+vingt-trois monuments qui y sont : quarante-cinq coupent un anneau à hauteur de
+carrosserie — un conflit de plan général, déclaré chiffre par chiffre dans
+`TASKS.md` — et aucun ne doit en couper plus ; rouge sur `origin/main` (le Dam,
+le Rijksmuseum, Prague et Gyeongbokgung). Captures de chaque palais au
+portail. L'empreinte des 490 morceaux ne bouge pas : aucun des huit n'y est.
 
 ---
 

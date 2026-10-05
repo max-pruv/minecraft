@@ -131,13 +131,13 @@ export const ECHELLES_VILLES = Object.freeze({
   // Des murailles de quatorze mètres, des tours de vingt-deux.
   'Lisbonne|Château São Jorge': { vraie: 22, paliers: [[0, 0], [1, 1], [5, 14], [6, 15], [8, 23]] },
   'Lisbonne|Santa Justa': { vraie: 45, corps: MINARET(10), fut: true },
-  'Amsterdam|Palais du Dam': { vraie: 51, corps: PALAIS },
-  'Amsterdam|Rijksmuseum': { vraie: 45, corps: PALAIS },
+  'Amsterdam|Palais du Dam': { vraie: 51, paliers: [[0, 0], [1, 1], [18, 52]] },
+  'Amsterdam|Rijksmuseum': { vraie: 45, paliers: [[0, 0], [1, 1], [18, 46]] },
   'Berlin|Porte de Brandebourg': { vraie: 26, corps: ARCHE(7) },
   'Berlin|Reichstag': { vraie: 47, paliers: [[0, 0], [1, 1], [5, 13], [7, 19], [13, 19], [15, 48]] },
   'Berlin|Berliner Dom': { vraie: 98, paliers: [[0, 0], [1, 1], [5, 16], [6, 18], [9, 26], [16, 26], [21, 99]] },
   'Vienne|La Hofburg': { vraie: 30, paliers: [[0, 0], [1, 1], [22, 31]] },
-  'Prague|Le château de Prague': { vraie: 25, corps: PALAIS },
+  'Prague|Le château de Prague': { vraie: 25, paliers: [[0, 0], [1, 1], [14, 26]] },
   'Florence|Le Duomo': { vraie: 114, paliers: [[0, 0], [1, 1], [5, 16], [7, 19], [10, 28], [17, 28], [22, 115]] },
   // Le Parthénon fait 13,7 mètres : c'est son rocher qui le met au-dessus
   // d'Athènes, et le rocher n'est pas dans le bâtisseur.
@@ -156,9 +156,9 @@ export const ECHELLES_VILLES = Object.freeze({
   'Saint-Pétersbourg|Le palais d\'Hiver': { vraie: 23, paliers: [[0, 0], [1, 1], [20, 24]] },
   'Saint-Pétersbourg|Saint-Sauveur-sur-le-Sang': { vraie: 81, corps: [7, 11] },
   'Saint-Pétersbourg|Notre-Dame-de-Kazan': { vraie: 72, corps: COLONNADE },
-  'Stockholm|Le Palais royal': { vraie: 32, corps: PALAIS },
+  'Stockholm|Le Palais royal': { vraie: 32, paliers: [[0, 0], [1, 1], [15, 33]] },
   'Stockholm|Storkyrkan': { vraie: 66, corps: MINARET(10), fut: true },
-  'Copenhague|Amalienborg': { vraie: 22, corps: PALAIS },
+  'Copenhague|Amalienborg': { vraie: 22, paliers: [[0, 0], [1, 1], [18, 23]] },
   'Copenhague|La Rundetaarn': { vraie: 35, corps: MINARET(10), fut: true },
   // Les plus hauts Supertrees, cinquante mètres ; Marina Bay Sands, deux cents.
   'Singapour|Les Supertrees': { vraie: 50, corps: [8, 8] },
@@ -183,7 +183,7 @@ export const ECHELLES_VILLES = Object.freeze({
   'Toronto|L\'ancien hôtel de ville': { vraie: 104, paliers: [[0, 0], [1, 1], [5, 24], [7, 30], [15, 92], [18, 105]] },
   'Mexico|La cathédrale': { vraie: 67, paliers: [[0, 0], [1, 1], [5, 13], [7, 23], [15, 68]] },
   'Mexico|Bellas Artes': { vraie: 53, paliers: [[0, 0], [1, 1], [5, 12], [6, 14], [8, 20], [12, 20], [16, 54]] },
-  'Buenos Aires|La Casa Rosada': { vraie: 26, corps: PALAIS },
+  'Buenos Aires|La Casa Rosada': { vraie: 26, paliers: [[0, 0], [1, 1], [22, 27]] },
   // La tour du Cabildo, trente mètres.
   'Buenos Aires|Le Cabildo': { vraie: 30, corps: ARCHE(4) },
 

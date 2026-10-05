@@ -416,7 +416,7 @@ export const ROUTES = [
     // bretelle de l'I-295 que pose `washington.js`.
     avenues: { washington: [[-21191, 6197], [-21191, 6196], [-21191, 6184]] },
     via: [[-20361, 5130], [-20404, 5131], [-20441, 5145], [-20451, 5153], [-20680, 5525], [-20684, 5538], [-20684, 5552], [-20687, 5565], [-20762, 5689], [-20781, 5707], [-20817, 5725], [-20842, 5752], [-21048, 6155], [-21052, 6169], [-21052, 6196], [-21055, 6211], [-21061, 6224], [-21072, 6235], [-21105, 6255], [-21130, 6260], [-21147, 6258], [-21161, 6252], [-21173, 6242], [-21183, 6230], [-21189, 6216]] },
-  // LE TŌMEI (v375), TOKYO–NAGOYA, le long de la côte du Tōkaidō. Le relevé de
+  // LE TŌMEI (v381), TOKYO–NAGOYA, le long de la côte du Tōkaidō. Le relevé de
   // la v310 le disait : « un aérodrome sur l'axe ». C'est pire : à l'ouest de
   // Tokyo, Haneda (r 76) et Yokota (r 56) ferment la plaine, le Shinkansen
   // part de Tokyo vers Kyoto à douze blocs de Haneda et TRAVERSE Nagoya, et

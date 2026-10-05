@@ -6,11 +6,63 @@
 
 export const NOUVEAUTES = [
   {
-    v: 375,
+    v: 381,
     titre: 'Ponts finis, Tokyo rejoint Nagoya',
     puces: [
       'Plus de trou au bout des ponts',
       'Une autoroute de Tokyo à Nagoya',
+    ],
+  },
+  {
+    v: 380,
+    titre: 'Des essais plus sûrs',
+    puces: [
+      'Le jeu vérifie mieux les piétons',
+      'Rien ne change pour toi',
+    ],
+  },
+  {
+    v: 379,
+    titre: 'On arrive plus vite',
+    puces: [
+      'Après la carte, la ville arrive vite',
+      'Londres se dessine un peu plus vite',
+    ],
+  },
+  {
+    v: 378,
+    titre: 'Les voitures contournent les monuments',
+    puces: [
+      'Plus une voiture dans le Colisée',
+      'Des rues neuves à Agra et au Cap',
+      'Le jeu démarre un peu plus vite',
+    ],
+  },
+  {
+    v: 377,
+    titre: 'Le passager prend la portière',
+    puces: [
+      'Tu montes par la porte de droite',
+      'Ton ami la voit s\'ouvrir chez lui',
+    ],
+  },
+  {
+    v: 376,
+    titre: 'Les passants sursautent',
+    puces: [
+      'Frôlés par une voiture, ils sursautent',
+      'Puis ils reprennent leur chemin',
+      'Un choc ? Ils se retournent',
+    ],
+  },
+  {
+    v: 375,
+    titre: 'Huit palais ont leur vraie forme',
+    puces: [
+      'Le palais du Dam et le Rijksmuseum',
+      'Le château de Prague, le palais de Stockholm',
+      "Amalienborg et sa place à huit côtés",
+      'La Casa Rosada, Gyeongbokgung, le palais Bahia',
     ],
   },
   {

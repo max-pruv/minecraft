@@ -144,3 +144,43 @@ export function cheminDeTraversee(sol, x, z, ux, uz, max = TRAVERSEE_MAX) {
   }
   return null;
 }
+
+// RÉAGIR À LA ROUTE (v376) — des gestes courts, jamais de peur ni d'arrêt
+// prolongé (v243 : un passant ne s'arrête pas pour l'enfant).
+//
+// LE SURSAUT : une voiture qui arrive à moins de `SURSAUT_S` secondes sur le
+// piéton lui fait lever les bras d'un coup et sautiller, le temps de
+// `DUREE_SURSAUT` — pendant que l'écart (v351) le met de côté. Ce n'est qu'un
+// geste : il ne change rien au pas de côté, qui reste la seule chose qui le
+// protège.
+export const SURSAUT_S = 0.45;
+export const DUREE_SURSAUT = 0.5;
+// On veille le passage de la voiture jusqu'à deux secondes après le début de
+// l'écart, dans un couloir élargi à trois blocs : c'est la voiture qui passe
+// AU RAS qui fait sursauter, pas celle qu'on a vue venir de loin.
+export const VEILLE_SURSAUT_S = 2;
+export const MARGE_SURSAUT = 3;
+// APRÈS L'ÉCART, ON REPART TOUT DE SUITE. La pause valait 0,8 seconde de JEU :
+// à cinq images par seconde, trois secondes de montre plantées au bord de la
+// rue. Elle se compte désormais en temps réel, et elle est plus courte.
+export const REPOS_ECART_S = 0.35;
+// LE CHOC : `player.choc = { force, t, x, z }` (session physique, lu SI
+// PRÉSENT). Un passant à moins de `PORTEE_CHOC` blocs se retourne vers le
+// bruit, s'arrête un instant (`ARRET_CHOC_S`), puis reprend son chemin. Un
+// choc plus vieux que `CHOC_FRAIS_MS` ne se regarde plus — un passant né après
+// ne se retourne pas vers un bruit qu'il n'a pas entendu.
+export const PORTEE_CHOC = 24;
+export const ARRET_CHOC_S = 0.7;
+export const CHOC_FRAIS_MS = 1500;
+export const FORCE_CHOC_MIN = 0.15;
+
+// Faut-il se retourner vers ce choc ? Rend le cap (yaw) vers le point, ou null.
+// `t` est en millisecondes de `performance.now()`, comme le choc.
+export function regardChoc(c, x, z, maintenant) {
+  if (!c || typeof c.t !== 'number' || maintenant - c.t > CHOC_FRAIS_MS || maintenant < c.t - 50) return null;
+  if ((c.force ?? 1) < FORCE_CHOC_MIN) return null;
+  const dx = c.x - x, dz = c.z - z;
+  const d = Math.hypot(dx, dz);
+  if (d > PORTEE_CHOC || d < 0.5) return null;
+  return Math.atan2(-dx, -dz);
+}
