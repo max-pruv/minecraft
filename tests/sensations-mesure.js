@@ -189,7 +189,19 @@ async function mesurerSensations() {
     const m = pts.reduce((s, p) => s.add(p), new THREE.Vector3()).multiplyScalar(1 / pts.length);
     return { n: pts.length, max: +Math.max(...pts.map((p) => p.distanceTo(m))).toFixed(3) };
   };
+  // ET LE CALME S'ATTEND (v366) : la caméra revient de son recul de vitesse
+  // (7,4 → 6,4 blocs) en douceur, et 0,8 s ne suffisait pas sous la charge
+  // du portail — calme 0,081 pour 0,018 seul, et la secousse (0,235) tombait
+  // sous trois fois ce reste. On attend un FAIT DU MONDE — la caméra posée,
+  // quatre images à moins de 0,03 bloc — jamais le verdict, borné à huit
+  // secondes, et la durée entre dans le message.
+  const t0Calme = performance.now();
+  while (performance.now() - t0Calme < 8000) {
+    const e = await ecartCam(4);
+    if (e.max < 0.03) break;
+  }
   const calme = await ecartCam(8);
+  calme.attente = Math.round(performance.now() - t0Calme);
   P.choc = { force: 0.8, t: performance.now() + 1 };
   const secoue = await ecartCam(8);
   delete P.choc;
