@@ -1282,6 +1282,20 @@ va se rend une fois : un clone marqué `rendu` à son `dispose` (par `liberer`)
 ne se rend pas une seconde fois — le premier témoin comptait 28 rendues pour
 14 clones.
 
+**Les coups suivent la voiture, et la rue est la même chez l'ami (v363).**
+Une voiture de la rue froissée que l'enfant prend (`emprunter`, v194) passe
+son HISTOIRE de chocs à la monture neuve (`heriter`, degats3d.js) ; `fun.js`
+la retrouve AVANT l'emprunt par sa place (`rueEn`), sans toucher la
+circulation. À plusieurs, une voiture de la rue se nomme par `clé#rang`
+(`vehicules.voitureNommee`, crochet court) ; le choc part dans un message
+court (`rue_choc`, nom neuf : l'ancienne tablette l'ignore, l'hôte relaie) et
+chaque tablette garde l'histoire par nom (`histoire`, soixante-quatre noms,
+douze chocs) et la rejoue sur SA voiture de ce nom quand elle existe
+(`rapprocher`, deux fois par seconde). Toujours l'histoire, jamais la
+géométrie. Et **un témoin de compilation lit les CLÉS de programme, pas leur
+compte** : un programme rendu fait baisser le compte (97 → 96, rouge des deux
+côtés), une compilation ajoute une clé — vérifié rouge, chauffe désarmée.
+
 **Le feu dépose l'enfant, il ne le projette pas** : passé `DELAI_SORTIE` (3,5 s
 en temps réel), `fun.js` le fait descendre et `deposer` le pose debout sur une
 case libre à côté (côté conducteur d'abord). La carcasse porte `horsService`

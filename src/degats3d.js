@@ -350,6 +350,16 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
   let fx = null, imFumee = null, imFlamme = null;
   const particules = [];             // { x, y, z, vie, age, vx, vy, vz, t0, t1, flamme, couleur }
   let voitureRue = null;             // (x, z, y) → maillage de la rue percutée, branché par main.js
+  // LES CHOCS DE LA RUE À PLUSIEURS (v363). Chaque tablette a SA rue : une
+  // voiture percutée chez Marlon n'était froissée que chez lui. Elle se nomme
+  // par `clé#rang` (v305) — `nommer`, branché par main.js, va du maillage au
+  // nom et du nom au maillage — et son HISTOIRE (les impacts, en repère de
+  // voiture) voyage dans un message court (`rue_choc`) ; chaque tablette la
+  // rejoue sur SA voiture du même nom, avec les mêmes fonctions et le même
+  // bruit (v344). Jamais de géométrie sur le réseau.
+  let nommer = null, diffuser = null;
+  const histoire = new Map();        // nom → [[f, x, z], …]
+  let prochainRapprochement = 0;
 
   function fiche(root, creer = true) {
     let rec = suivies.get(root);
@@ -504,7 +514,86 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
     const m = voitureRue ? voitureRue(wx, wz, wy) : null;
     if (!m) return null;
     const l = D.versRepere(m.position.x, m.position.z, m.rotation.y, wx, wz);
-    return choc(m, { force, lx: l.lx, lz: l.lz }, true);
+    const r = choc(m, { force, lx: l.lx, lz: l.lz }, true);
+    // l'histoire de ce choc, pour les amis (v363) : le dernier impact noté
+    // est exactement celui que `subirChoc` vient d'arrondir
+    const nom = r && nommer ? nommer(m) : null;
+    if (nom) {
+      const k = suivies.get(m).etat.chocs.at(-1);
+      noter(nom, [k.f, k.x, k.z]);
+      if (diffuser) diffuser({ t: 'rue_choc', o: nom, c: [k.f, k.x, k.z] });
+    }
+    return r;
+  }
+
+  // L'histoire d'une voiture de la rue, bornée comme `chocs` (douze) ; et
+  // soixante-quatre voitures au plus — la plus ancienne s'oublie.
+  function noter(nom, c) {
+    let h = histoire.get(nom);
+    if (!h) {
+      if (histoire.size >= 64) histoire.delete(histoire.keys().next().value);
+      histoire.set(nom, h = []);
+    }
+    h.push(c);
+    if (h.length > 12) h.shift();
+  }
+
+  // UN CHOC DE LA RUE REÇU D'UN AMI (v363). On le note, et l'on rejoue tout
+  // de suite si la voiture de ce nom roule chez nous ; sinon `rapprocher` le
+  // fera quand elle naîtra (un convoi ne fabrique ses voitures qu'à portée).
+  function recevoirRue(msg) {
+    if (!msg || typeof msg.o !== 'string' || !Array.isArray(msg.c) || msg.c.length !== 3) return;
+    const [f, x, z] = msg.c.map(Number);
+    if (![f, x, z].every(Number.isFinite)) return;
+    noter(msg.o.slice(0, 200), [f, x, z]);
+    rapprocher(true);
+  }
+
+  // Ce que l'histoire porte et que la voiture ne porte pas encore, rejoué sur
+  // elle. Deux fois par seconde en temps réel (une poignée de noms), et tout
+  // de suite à la réception.
+  function rapprocher(force = false) {
+    const t = performance.now();
+    if (!nommer || !histoire.size || (!force && t < prochainRapprochement)) return;
+    prochainRapprochement = t + 500;
+    for (const [nom, h] of histoire) {
+      const m = nommer(nom);
+      if (!m || !m.parent) continue;
+      const rec = suivies.get(m);
+      for (let n = rec ? rec.etat.chocs.length : 0; n < h.length; n++) {
+        choc(m, { force: h[n][0], lx: h[n][1], lz: h[n][2] }, true);
+      }
+    }
+  }
+
+  // UNE VOITURE DE LA RUE ABÎMÉE QUE L'ENFANT PREND garde ses coups (v363).
+  // `emprunter` la sort du convoi et fabrique une monture NEUVE du même
+  // modèle (v194) — sa laque suit depuis la v305, ses dégâts ne suivaient
+  // pas : l'enfant montait dans une voiture froissée et repartait dans une
+  // neuve. On passe à la monture l'HISTOIRE des chocs, que `rattraper` rejoue
+  // sur ses pièces dès que son modèle est là — les mêmes fonctions, le même
+  // bruit, donc la même tôle. Jamais une copie de géométrie. Elle redevient
+  // une voiture comme une autre (`rue` tombe) : le prochain gros choc peut la
+  // mettre en panne ou en feu, et le jeu le dira.
+  function rueEn(x, z, y) {
+    let mieux = null, dm = 2.5 * 2.5;
+    for (const rec of suivies.values()) {
+      if (!rec.rue || !rec.root.parent) continue;
+      const p = rec.root.position;
+      if (y != null && Math.abs(p.y - y) > 2.5) continue;
+      const d = (p.x - x) ** 2 + (p.z - z) ** 2;
+      if (d < dm) { dm = d; mieux = rec.root; }
+    }
+    return mieux;
+  }
+  function heriter(rootRue, root) {
+    const avant = rootRue ? suivies.get(rootRue) : null;
+    if (!avant || !root || !avant.etat.chocs.length) return false;
+    const rec = fiche(root);
+    const e = avant.etat;
+    rec.etat = { ...e, zones: { ...e.zones }, chocs: e.chocs.map((k) => ({ ...k })), enFeu: false, eteint: false, feu: 0, carcasse: 0 };
+    rec.prep = null; rec.appliques = 0;
+    return true;
   }
 
   // L'enfant est descendu (ou a été déposé) : plus d'état publié.
@@ -659,6 +748,7 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
       }
     }
     if (fx) animerParticules(dt, camera);
+    rapprocher();
   }
 
   function calcinerTout(rec, k) {
@@ -776,6 +866,11 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
   return {
     auVolant, descend, deposer, update, choc, reparer, distant, chauffer, garderEpave,
     brancherRue: (f) => { voitureRue = f; },
+    // à plusieurs (v363) : le nom d'une voiture de la rue, et l'envoi
+    brancherNoms: (f) => { nommer = f; },
+    brancherReseau: (f) => { diffuser = f; },
+    recevoirRue, rueEn, heriter, percuterRue,
+    histoireRue: (nom) => (histoire.get(nom) || []).map((c) => c.slice()),
     // pour main.js : le champ réseau de la voiture qu'on conduit
     versReseau: (root) => { const rec = suivies.get(root); return rec ? D.versReseau(rec.etat) : null; },
     estCarcasse: (a) => !!(a && a.horsService),
