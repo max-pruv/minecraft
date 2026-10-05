@@ -1608,9 +1608,9 @@ en temps réel), `fun.js` le fait descendre et `deposer` le pose debout sur une
 case libre à côté (côté conducteur d'abord). La carcasse porte `horsService`
 (lu par `animals.js`, comme `montee`) : elle ne se reprend pas, et elle s'en
 va au bout de `DUREE_CARCASSE`.
-**Le contrat éprouvé bout à bout, et un coût qui se compte (v365).** Un
+**Le contrat éprouvé bout à bout, et un coût qui se compte (v370).** Un
 témoin de contrat qui publie ses chocs à la main ne prouve pas que la vraie
-physique les publie : celui de la v365 n'écrit RIEN dans `player`, prend un
+physique les publie : celui de la v370 n'écrit RIEN dans `player`, prend un
 mur de face, et lit les deux côtés (`player.chocs`, `degats.chemins()` :
 publiés, repli, effets appliqués ici). Le repli ne sert plus en jeu ; il est
 gardé pour une physique qui ne publierait pas. Et le coût d'un choc se borne
@@ -1618,13 +1618,13 @@ en GRANDEURS qui ne suivent pas le processeur partagé — sommets déplacés,
 normales réécrites hors d'eux (zéro), travail par image après le choc
 (zéro) — les millisecondes restant dans le message (v270).
 
-**Un ancien hôte, et l'histoire par la position (v365).** Un message neuf
+**Un ancien hôte, et l'histoire par la position (v370).** Un message neuf
 (`rue_choc`) n'est pas relayé par un hôte qui ne le connaît pas ; la
 position, si (`{ ...msg }`). Ce qui doit traverser un ancien hôte s'accroche
 à elle, et devient idempotent en envoyant l'HISTOIRE (adoptée seulement si
 la nôtre en est le début), jamais le seul dernier événement.
 
-## Un battement qui écrit sans relire défait le choix d'à côté (v365)
+## Un battement qui écrit sans relire défait le choix d'à côté (v370)
 
 « Un choix fait sur une tablette part au serveur » (`reglages.js`) était
 déclaré rouge de charge. La sonde qui relève chaque écriture des deux

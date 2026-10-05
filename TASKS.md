@@ -340,7 +340,7 @@
     voiture prise qui repartait neuve et l'ami qui ne voyait pas les
     enfoncements de SA rue — **faits en v363** (l'histoire suit, `rue_choc`).
     ~~Un hôte resté sur l'ancienne version ne relaie pas `rue_choc`~~ —
-    **fait en v365** : l'histoire récente voyage aussi dans la position, que
+    **fait en v370** : l'histoire récente voyage aussi dans la position, que
     tout hôte relaie telle quelle, et le receveur ne l'adopte que si la
     sienne en est le début (idempotente). Reste, déclaré : deux amis qui
     percutent la MÊME voiture par un ancien hôte ont deux histoires qui
@@ -348,14 +348,14 @@
   - Le témoin « aucun programme compilé au feu » lit les clés depuis la
     v363 (le compte baissait : 93 → 92, 97 → 96). ~~« Enfoncer coûte
     quelques millisecondes » mesure le processeur partagé~~ — **repointé en
-    v365** : part des sommets déplacés (25,6 %, barre à la moitié), zéro
+    v370** : part des sommets déplacés (25,6 %, barre à la moitié), zéro
     normale réécrite hors d'eux (63 avec `computeVertexNormals`, vérifié
     rouge), rien par image ; les ms restent dans le message.
   - ~~Le garage n'est éprouvé que par `reparer`~~ — **fait en v356** : un
     témoin par le trajet (descendre dedans, remonter).
   - ~~**Le contrat avec la physique** attend la session
     « conduite-physique »~~ — arrivé en v358, **éprouvé bout à bout en
-    v365** par la vraie physique (mur de face : un choc publié, pris par ce
+    v370** par la vraie physique (mur de face : un choc publié, pris par ce
     chemin seul, l'avant seul froissé, l'effet appliqué une fois). Le repli
     de vitesse ne sert plus en jeu (`chemins().repli` reste à zéro) : il est
     GARDÉ pour l'ancien chemin — une physique qui ne publierait pas — et sa
@@ -363,7 +363,7 @@
   - **Les avions ne s'abîment pas** (`pilote` est écarté) : une décision, pas
     un oubli — un atterrissage manqué n'a pas de « choc » dans `player.js`.
 
-- [ ] **AU PORTAIL DE LA v365 (le battement qui relit, le contrat des dégâts
+- [ ] **AU PORTAIL DE LA v370 (le battement qui relit, le contrat des dégâts
   éprouvé, les chocs de la rue par la position), CINQ SUITES ROUGES — une à
   moi, réglée par le bump ; les autres déjà déclarées, double mesure faite.**
   - `maj.js` « le badge de version ouvre le journal… » : la tête du journal
@@ -381,7 +381,7 @@
     ce témoin : branche 4/7, `origin/main` 1/4 — même rouge, même message,
     écart non significatif sur onze passages ; on ne le classe pas réglé, on
     le déclare avec ces chiffres. Preuve structurelle : le départ
-    se lit sur `remotePlayers` ; la v365 n'ajoute au message `pos` qu'un
+    se lit sur `remotePlayers` ; la v370 n'ajoute au message `pos` qu'un
     champ `rc` ABSENT tant qu'aucune voiture de la rue n'est percutée (aucune
     dans `reseau.js`), et le battement des réglages n'écrit que dans
     `player_prefs`.

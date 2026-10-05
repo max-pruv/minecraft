@@ -1654,7 +1654,7 @@ export class NetSession {
         // deux champs et voit l'ami à pied, comme avant — le receveur cède.
         entry.v = msg.v || null;
         entry.p = msg.p || null;
-        // l'histoire des chocs de la rue (v365), lue une fois : un ancien
+        // l'histoire des chocs de la rue (v370), lue une fois : un ancien
         // hôte qui ne relaie pas `rue_choc` relaie la position telle quelle
         if (msg.rc && this.onRueHistoires) this.onRueHistoires(msg.rc);
         this.playersChanged();
@@ -1737,7 +1737,7 @@ export class NetSession {
       const msg = { t: 'pos', x: p.x, y: p.y, z: p.z, yaw: p.yaw, m: p.moving ? 1 : 0 };
       if (p.v) msg.v = p.v;                 // au volant : espèce et modèle (v253)
       if (p.p) msg.p = p.p;                 // passager : chez qui, quel siège
-      if (p.rc) msg.rc = p.rc;              // l'histoire des chocs de la rue (v365)
+      if (p.rc) msg.rc = p.rc;              // l'histoire des chocs de la rue (v370)
       for (const c of this.conns.values()) this.envoyer(c, msg);
     }, 120);
   }
