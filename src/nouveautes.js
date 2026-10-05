@@ -6,12 +6,22 @@
 
 export const NOUVEAUTES = [
   {
-    v: 366,
+    v: 367,
     titre: 'Les rues de Lille s\'élargissent',
     puces: [
       'Les boulevards à deux voies',
       'Plus d\'immeubles dans le centre',
       'Tes constructions restent comme avant',
+    ],
+  },
+  {
+    v: 366,
+    titre: 'On monte en voiture',
+    puces: [
+      'Tu marches jusqu\'à la portière',
+      'La porte s\'ouvre, tu t\'assieds',
+      'En descendant, tu sors à côté',
+      'Appuie deux fois pour aller vite',
     ],
   },
   {

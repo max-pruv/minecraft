@@ -1,0 +1,60 @@
+// LA SÉQUENCE D'EMBARQUEMENT, RELEVÉE IMAGE PAR IMAGE (v366). Une voiture de
+// la flotte posée dans le couloir vide, l'enfant du côté PASSAGER (il doit
+// contourner) ; « Monter », puis « Descendre ». Toutes les 100 ms : la phase,
+// la distance de l'enfant à la portière conducteur, l'angle de la portière,
+// l'état « au volant », le parent de l'avatar.
+const { Banc } = require('./banc.js');
+const fs = require('fs');
+const DOSSIER = process.argv[2] || '';
+(async () => {
+  const banc = new Banc({ portJeu: 8421, portPairs: 9421 });
+  await banc.ouvrir();
+  try {
+    const tab = await banc.jouerSeul('SondeEmbarq', { embarq: 1 });
+    const prep = await tab.evaluate(async () => {
+      const g = window.__game;
+      const x = 30000, z = 30000;
+      g.player.pos.set(x, g.world.terrainHeight(x, z) + 1, z); g.player.vel.set(0, 0, 0); g.player.yaw = 0;
+      await new Promise((r) => setTimeout(r, 4000));
+      g.player.pos.y = g.world.sommetColonne(x, z) + 1;
+      for (const a of [...g.animalManager.animals]) { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); }
+      // la voiture à quatre blocs devant, de travers : l'enfant arrive par le flanc DROIT
+      const a = g.animalManager.invoquer('voiture', x, z - 4, false, { flotte: 'amg-gt-black-series.glb' });
+      a.yaw = Math.PI / 2; a.mesh.rotation.y = a.yaw + Math.PI;
+      for (let i = 0; i < 50 && !(a.mesh.userData.roues || []).length; i++) await new Promise((r) => setTimeout(r, 100));
+      return { roues: (a.mesh.userData.roues || []).length, p: [g.player.pos.x, g.player.pos.y, g.player.pos.z].map((v) => +v.toFixed(2)), car: [a.pos.x, a.pos.y, a.pos.z].map((v) => +v.toFixed(2)) };
+    });
+    console.log('prép', JSON.stringify(prep));
+    const etat = () => tab.evaluate(async () => {
+      const THREE = await import('three');
+      const g = window.__game;
+      const a = g.animalManager.animals.find((x) => x.def.key === 'voiture');
+      const eq = a.mesh.userData.portieres;
+      let arriere = null;
+      if (eq) { eq['-1'].updateMatrixWorld(true); const w = new THREE.Vector3(0, 0.8, eq['-1'].userData.longueur).applyMatrix4(eq['-1'].matrixWorld); arriere = +a.mesh.worldToLocal(w).x.toFixed(2); }
+      let assis = false; a.mesh.traverse((o) => { if (o.userData && o.userData.arms) assis = true; });
+      const loc = a.mesh.worldToLocal(g.player.pos.clone());
+      return { ph: g.player.embarquement ? g.player.embarquement.phase : '-', loc: [loc.x, loc.z].map((v) => +v.toFixed(2)),
+        angle: eq ? +(eq['-1'].rotation.y * 180 / Math.PI).toFixed(0) : null, arriereX: arriere,
+        volant: !!g.fun.montureConduite(), avatarDansVoiture: assis, progs: g.renderer.info.programs.length, images: g.renderer.info.render.frame };
+    });
+    const suivre = async (nom, max) => {
+      const t0 = Date.now(); let n = 0, vu = false;
+      while (Date.now() - t0 < max) {
+        const e = await etat();
+        console.log(nom, Date.now() - t0, JSON.stringify(e));
+        if (DOSSIER && n % 2 === 0) await tab.screenshot({ path: `${DOSSIER}/seq-${nom}-${String(n).padStart(2, '0')}.png` });
+        n++;
+        if (e.ph !== '-') vu = true;
+        if (vu && e.ph === '-') break;
+        await new Promise((r) => setTimeout(r, 250));
+      }
+    };
+    await tab.evaluate(() => document.getElementById('ride-btn').click());
+    await suivre('monter', 30000);
+    await new Promise((r) => setTimeout(r, 1500));
+    await tab.evaluate(() => document.getElementById('ride-btn').click());
+    await suivre('descendre', 30000);
+    console.log('erreurs', JSON.stringify(tab.erreurs.slice(0, 5)));
+  } catch (e) { console.log('ÉCHEC', e && e.stack); } finally { await banc.fermer(); process.exit(0); }
+})();

@@ -770,6 +770,83 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Monter en voiture comme dans un vrai jeu (v366) — une animation qu'on impose garde sa porte de sortie
+
+Max : « on voit le personnage qui avance et qui rentre dans la voiture avec la
+porte qui s'ouvre ». `src/embarquement.js` (la séquence) et `src/portieres.js`
+(la portière fabriquée). Six règles.
+
+- **L'ÉTAT NE MENT JAMAIS PENDANT L'ANIMATION.** `montureConduite()` ne devient
+  vrai qu'une fois ASSIS (la séquence appelle `toggleRide` à ce moment-là), et
+  redevient faux au PREMIER appui de « Descendre » ; ce qui se joue entre deux
+  se publie à part, `player.embarquement = { phase, t, sens }`. Un témoin qui
+  lit l'état (v252) ne le voit jamais ambigu. Et la voiture ne bouge plus :
+  l'ancien geste la téléportait sous l'enfant (quatre blocs, mesuré) — c'est
+  l'enfant qui prend le cap de la voiture, pas l'inverse.
+- **UNE ANIMATION QU'ON IMPOSE GARDE SA PORTE DE SORTIE.** Un second appui
+  termine tout de suite (assis, portière fermée) — la règle des réglages
+  automatiques (v290) vue du côté d'un geste. La marche est bornée à 1,1 s de
+  jeu (on presse le pas si la voiture est loin), la séquence entière à
+  ≈ 2,4 s. Elle compte en temps de JEU (v226).
+- **UNE PORTIÈRE SE FABRIQUE, ET LA GÉOMÉTRIE DE LA FLOTTE NE SE TOUCHE
+  JAMAIS.** Aucun modèle n'a de nœud de portière (mesuré sur les 52). Les
+  triangles dont le centre tombe dans le volume de la portière (derrière la
+  roue avant, devant le montant, à plus de 0,6 bloc de l'axe) partent dans un
+  maillage à part, pivot sur l'arête avant, 60° vers l'EXTÉRIEUR (signe lu
+  dans la matrice par un témoin). Les géométries neuves PARTAGENT les
+  attributs du prototype et n'ont qu'un index à elles, mémoïsées par modèle et
+  marquées partagées (`liberer.js` ne les rend pas). Seule la voiture où l'on
+  monte change ; un autre exemplaire garde le prototype, et un témoin le lit.
+  Plan : 4 ms médian, 28 au pire, une fois par modèle.
+- **LE PLAN SE PREND SUR LE PROTOTYPE, PAS SUR LA VOITURE — parce que deux
+  sessions touchent la même tôle.** Les dégâts (`degats3d.js`, v343) clonent
+  et déforment la géométrie de la pièce touchée ; un plan pris sur une voiture
+  froissée serait mémoïsé pour tout le modèle. `voitureNeuve` retient donc le
+  prototype et son clone (`userData.proto`, `userData.modele`), le plan se
+  calcule sur le premier, et une voiture dont une pièce ne porte plus la
+  géométrie du prototype ne s'équipe pas (`refus` : « abimee »). Dans l'autre
+  sens c'est compatible par construction : quand la voiture gagne ses deux
+  pivots, `degats3d` voit ses enfants changer, re-prépare ses pièces (la
+  caisse découpée ET les portières) et rejoue les chocs. Mesuré : équipée puis
+  froissée des deux côtés, 130 164 indices comme le prototype, 11 496 sommets
+  enfoncés, la portière toujours sur son pivot.
+- **AUCUN PROGRAMME NE NAÎT, ET CE QUE ÇA COÛTE SE DÉCLARE.** Même matériau,
+  mêmes attributs : la portière se dessine avec le programme de la
+  carrosserie. Un `DoubleSide` montrerait le revers de la portière et
+  changerait la clé de programme (v246) : on ne le fait pas, le revers d'une
+  portière que le modèle n'a pas meublée est invisible. Et une voiture équipée
+  coûte quelques appels de dessin de plus (une portière par matériau
+  découpé) — seulement celle où l'enfant est monté.
+- **UN MODÈLE QUI CASSE S'EN PASSE, ET C'EST SA FICHE QUI LE DIT.**
+  `portiere: false` (vehicules.js, FLOTTE) comme `habitacle` (v230) ; les
+  taxis fabriqués (`fabrique`, triangles trop grands) aussi. 51 modèles sur 55
+  ont leur portière. Un refus se dit (`refus` de `portieres.js`,
+  `refusSortie` de la séquence) : « il est sorti côté passager » se démonte
+  par la raison du refus du côté conducteur (« mur », « eau », « circulation »,
+  « voiture »).
+- **LE BANC SAUTE LA SÉQUENCE (`embarq=0`), ET CELA SE PROUVE PAR
+  CONSTRUCTION.** `banc.js` le met dans toute adresse, comme `prep=0` ; les
+  deux adresses écrites à la main (`reglages.js`, `realisme.js`) aussi
+  (v258). Les témoins de conduite d'avant retrouvent donc l'ancien geste au
+  bit près ; ceux qui éprouvent la séquence la demandent (`{ embarq: 1 }`).
+  Et un témoin qui cherche son terrain (v285) : le couloir vide de la v237 est
+  SOUS L'EAU, sans importance pour un mur, rédhibitoire pour une descente qui
+  refuse l'eau — la page d'embarquement cherche une prairie sèche et plate.
+
+**Et une résolution de conflit a avalé deux modules d'une autre session.**
+Rebasée sur la v344, ma résolution de `sw.js` remplaçait le bloc en conflit
+par la seule ligne `CACHE_VERSION` — or le bloc contenait aussi les lignes
+`ASSETS` que la session des dégâts venait d'ajouter : `degats.js` et
+`degats3d.js` seraient partis hors du cache hors ligne. C'est la fumée
+(« tout module du jeu arrive sur la tablette ») qui l'a dit. **Une résolution
+de conflit se relit dans `git diff origin/main`, jamais seulement dans le
+fichier** : le diff montre ce qu'on retire à l'autre côté.
+
+Ce qui reste, déclaré dans `TASKS.md` : le passager d'un ami monte encore sans
+séquence ; les bords de la découpe sont en dents de scie sur les modèles à
+grands triangles ; la vue de la séquence ne se juge que sur le banc, pas sur
+l'iPad.
+
 ## Les coupoles ont leur édifice (v365) — un gabarit partagé se cherche dans toutes les villes, et le ciel se lit sur les modèles
 
 La suite de la v357 : « une coupole sans sa nef devient une tour », pour toutes
@@ -1015,7 +1092,7 @@ Le lot 2 de la dette de la v335 : huit monuments. Trois règles.
   Lille, 23 m pour l'Arche. Ce qu'on n'a pas trouvé (le musée d'Histoire
   américaine, « cinq étages ») se dit approché dans le commentaire.
 
-## Les rues de Lille à la règle du kit (v366) — un témoin de ville figée cherche une rue que rien ne recouvre
+## Les rues de Lille à la règle du kit (v367) — un témoin de ville figée cherche une rue que rien ne recouvre
 
 Deux règles.
 

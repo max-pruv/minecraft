@@ -2689,7 +2689,7 @@ const VRAIES_KM = [
       !kitSF.err && kitSF.bati >= 30 && Object.values(kitSF.quartiers).every((q) => q >= 10),
       kitSF.err || `${kitSF.bati} % du disque · ${JSON.stringify(kitSF.quartiers)}`);
 
-    // --- LES RUES DE LILLE À LA RÈGLE DU KIT (v366) ---------------------------
+    // --- LES RUES DE LILLE À LA RÈGLE DU KIT (v367) ---------------------------
     //
     // La méthode de Nice, la ville la plus semblable : boulevards et grandes
     // rues en deux voies, rues du Vieux-Lille en une, trame du centre et des

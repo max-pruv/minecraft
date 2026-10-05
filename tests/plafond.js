@@ -1704,7 +1704,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   // ne retient rien — la ville neuve bâtit dessous. Rouge sur `origin/main` :
   // la date n'existe pas, et les deux premiers cas montrent la ville neuve.
   // ET NICE À LA v359, PAR LA MÊME RÈGLE : la fonction se joue ville par ville.
-  // SAN FRANCISCO À LA v361, LILLE À LA v366.
+  // SAN FRANCISCO À LA v361, LILLE À LA v367.
   const figee = async (date, avant, neuf, ancre, sol, libre, batir) => {
     const W = await import('../src/world.js');
     if (!W[date]) return { absent: true };
@@ -1725,7 +1725,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       // chaussée — pas un trottoir, où la ville d'avant a ses arbres et ses réverbères
       const mur = () => { let n = 0; N[batir](x, z, (dy) => { if (dy >= 3) n++; }); return n >= 3; };
       // et rien n'y est posé par-dessus dans la ville d'avant — un monument se
-      // pose APRÈS les colonnes (Lille, v366 : la Vieille Bourse à côté)
+      // pose APRÈS les colonnes (Lille, v367 : la Vieille Bourse à côté)
       const degage = () => croix((xx, zz) => {
         const g = av.terrainHeight(xx, zz);
         for (let y = g + 1; y <= g + 6; y++) if (av.getBlock(xx, y, zz) !== 0) return false;

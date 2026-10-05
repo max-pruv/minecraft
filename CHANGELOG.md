@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v366 — Les rues de Lille à la règle du kit
+## v367 — Les rues de Lille à la règle du kit
 
 **Pourquoi.** La quatrième des cinq villes bâties à la main restées sur leurs
 largeurs relevées à la main (dette v271). Une rue du Vieux-Lille faisait 1,2
@@ -51,6 +51,44 @@ premier jet tombait contre la Vieille Bourse). Les circuits de Lille restent
 à 95-100 % sur la rue. Et la cour de la Vieille Bourse reste une cour : la
 trame recomposée posait un îlot dans son emprise, une maison de cinq blocs la
 remplissait — le témoin de `carte.js` l'a vu, l'emprise est désormais pavée.
+
+---
+
+## v366 — On monte en voiture comme dans un vrai jeu
+
+**Pourquoi.** Max : « Quand on monte dans une voiture, on voit le personnage
+qui avance et qui rentre dans la voiture avec le gameplay de la porte qui
+s'ouvre… aller très très loin sur l'expérience. » « Monter » était instantané,
+et faux : la voiture se TÉLÉPORTAIT sous l'enfant et pivotait sur son regard
+(mesuré : quatre blocs de déplacement au premier appui). Et aucun des
+cinquante-deux modèles de la flotte n'a de portière — leurs maillages sont
+groupés par matériau.
+
+**Ce que ça change.** Appuyer sur « Monter » : l'enfant MARCHE jusqu'à la
+portière conducteur — en faisant le tour de la voiture s'il est du mauvais
+côté —, la portière s'ouvre vers l'extérieur, il s'assied, elle se referme, et
+la caméra glisse de la vue de côté à la vue de poursuite. La voiture ne bouge
+plus d'un bloc. En descendant, la portière s'ouvre, il sort et se pose debout
+À CÔTÉ, sur une place libre (ni mur, ni eau, ni devant une voiture qui
+arrive) ; côté passager si le côté conducteur est bouché. Un second appui
+termine tout de suite. Une voiture prise dans la rue s'arrête et il y monte de
+la même façon — elle est vide, personne n'en est sorti. Les portières sont
+fabriquées dans la carrosserie de cinquante et un modèles sur cinquante-cinq ;
+les quatre autres (les trois taxis fabriqués, aux trop grands triangles, et la
+Chiron Stealth, sans habitacle — sa portière ouverte ne montrait que du noir)
+montent sans portière animée.
+
+**Ce qui le prouve.** Neuf témoins neufs dans `monte.js`, sur une page qui
+joue la séquence : la marche jusqu'à la portière en contournant, la portière
+qui s'ouvre vers l'extérieur (lue dans sa matrice) puis se referme, l'enfant
+assis au volant sans que la voiture ait bougé, la sortie debout à côté sur un
+sol libre, la géométrie partagée intacte sur un autre exemplaire du même
+modèle, le second appui qui termine, la descente rapide (pour la voiture qui
+prend feu), et une voiture déjà froissée (v343) qui ne prend pas de portière
+et garde son froissé. Huit rouges sur `origin/main` ; le huitième — aucun programme de
+shader compilé — est vert des deux côtés à dessein, il garde une capacité. Le
+banc saute la séquence partout ailleurs (`embarq=0`) : les témoins de conduite
+existants gardent l'ancien geste au bit près.
 
 ---
 
