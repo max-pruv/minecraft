@@ -583,6 +583,9 @@ function verifier(nom, ok, detail = '') {
       p.gaz = 0; p.vitesseVoiture = 0;
       await tenir(0.3);
       const boostNeuve = p.boost;
+      // ce que la physique publiait AVANT le témoin (v358 les pose pour de
+      // bon) : on le rend en sortant, on ne le supprime pas
+      const avantChoc = p.choc, avantLit = p.physiqueLitEtat;
       p.physiqueLitEtat = true;
       p.choc = null;                                  // la physique existe, rien ne s'est passé
       // une chute de vitesse brutale : le repli la compterait — il doit se taire
@@ -597,7 +600,9 @@ function verifier(nom, ok, detail = '') {
       p.physiqueLitEtat = false;
       await tenir(0.3);
       const boostApplique = p.boost;                  // sans elle, l'allure réduite revient ici
-      delete p.choc; delete p.physiqueLitEtat;
+      p.choc = avantChoc === undefined ? null : avantChoc; p.physiqueLitEtat = avantLit;
+      if (avantChoc === undefined) delete p.choc;
+      if (avantLit === undefined) delete p.physiqueLitEtat;
       return { apresChute, chocs, zone: e ? e.chocs.map((c) => c.z) : null, publie: p.etatVoiture,
         boostNeuve, boostLu, boostApplique };
     });
@@ -637,7 +642,7 @@ function verifier(nom, ok, detail = '') {
       await tenir(0.2);
       p.choc = { force: 0.7, t: performance.now(), x: m.position.x, z: m.position.z };
       await tenir(0.4);
-      delete p.choc;
+      p.choc = null;   // la physique publie le suivant (v358)
       // celle que le choc a trouvée (la plus proche du point d'impact)
       m = d.rue().find((r) => r.parent) || m;
       const eRue = d.etat(m);
@@ -826,7 +831,7 @@ function verifier(nom, ok, detail = '') {
       await tenir(0.2);
       p.choc = { force: 0.8, t: performance.now(), x: m.position.x, z: m.position.z };
       await tenir(0.4);
-      delete p.choc;
+      p.choc = null;   // la physique publie le suivant (v358)
       // celle que le choc a trouvée, et son nom dans le convoi
       const touchee = d.rue().find((r) => conv.elements.includes(r));
       if (!touchee) return { err: 'aucune voiture de la rue froissée chez Marlon' };
