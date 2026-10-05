@@ -7,6 +7,15 @@
 export const NOUVEAUTES = [
   {
     v: 364,
+    titre: 'Les coupoles ont leur église',
+    puces: [
+      'Le Duomo de Florence et sa coupole',
+      'Sainte-Sophie et ses quatre minarets',
+      'Big Ben et Saint-Paul à Londres',
+      'Des palais avec leur cour',
+    ],
+  },
+  {
     titre: 'La tablette mesure les dégâts',
     puces: [
       'Le journal note ce que coûte un choc',

@@ -890,6 +890,90 @@ function buildStPauls(poser) {
   }
 }
 
+// LE CIEL DE LONDRES REMIS DANS L'ORDRE (v364). Le ciel de la ville est
+// celui de ses modèles d'auteur — le London Eye à quarante-trois blocs pour
+// 135 m, Tower Bridge à trente-huit pour 65 m — et Big Ben, sorti du catalogue
+// à soixante-neuf, était plus haut que tous, quand St Paul (111 m) restait à
+// dix-sept, sous la colonne Nelson. Big Ben est rendu au ciel de sa ville
+// (trente-neuf, entre Tower Bridge et St Paul) et St Paul reçoit sa coupole sur
+// son tambour (quarante et un, sous la grande roue). Les deux bâtisseurs neufs
+// sont le champ `tour` : le monde d'avant garde les siens, et leurs emprises
+// restent dans celles d'avant — aucune rue n'est touchée.
+const GRES_ANSTON = BLOCK.SANDSTONE;   // le calcaire doré de la tour Elizabeth
+const NOIR_CADRAN = BLOCK.WOOL_BLACK;
+const plein = (poser, y, x0, x1, z0, z1, id) => {
+  for (let x = x0; x <= x1; x++) for (let z = z0; z <= z1; z++) poser(x, y, z, id);
+};
+
+// La tour Elizabeth : le fût carré de calcaire doré et ses panneaux, l'étage
+// des quatre cadrans, le beffroi ajouré, la flèche de fonte et ses pinacles,
+// l'orbe et la croix. Posée trois blocs à l'est de son repère : à l'ouest, le
+// palais de Westminster.
+function buildBigBenLondres(poser) {
+  const P = (x, y, z, id) => poser(x + 3, y, z, id);
+  for (let y = 1; y <= 20; y++) {
+    plein(P, y, -2, 2, -2, 2, GRES_ANSTON);
+    for (const k of [-1, 1]) for (const [a, b] of [[k, -2], [k, 2], [-2, k], [2, k]]) if (y % 3) P(a, y, b, PIERRE);
+  }
+  for (let y = 21; y <= 26; y++) plein(P, y, -3, 3, -3, 3, GRES_ANSTON);
+  for (const [nx, nz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    for (let u = -2; u <= 2; u++) for (let v = -2; v <= 2; v++) {
+      if (Math.abs(u) === 2 && Math.abs(v) === 2) continue;
+      const x = nx ? nx * 3 : u, z = nz ? nz * 3 : u;
+      P(x, 24 + v, z, u === 0 && v === 0 ? NOIR_CADRAN : (Math.abs(u) === 2 || Math.abs(v) === 2) ? OR : BLANC);
+    }
+  }
+  for (let y = 27; y <= 29; y++) for (let x = -2; x <= 2; x++) for (let z = -2; z <= 2; z++) {
+    const bord = Math.abs(x) === 2 || Math.abs(z) === 2;
+    if (!bord || (Math.abs(x) === 2 && Math.abs(z) === 2) || x === 0 || z === 0 || y === 29) P(x, y, z, GRES_ANSTON);
+  }
+  [3, 2, 2, 1, 1, 1, 0, 0].forEach((r, k) => {
+    plein(P, 30 + k, -r, r, -r, r, ARDOISE);
+    if (k < 3) for (const a of [-3 + k, 3 - k]) for (const b of [-3 + k, 3 - k]) P(a, 30 + k, b, OR);
+  });
+  P(0, 38, 0, OR); P(0, 39, 0, OR);
+}
+
+// La cathédrale St Paul de Wren : la nef et le transept de pierre de Portland
+// et leur balustrade, le portique à deux étages de colonnes et son fronton, les
+// deux tours baroques de la façade ouest, le tambour et sa colonnade, l'attique,
+// le grand dôme de plomb, la lanterne, la boule d'or et la croix — 111 m.
+function buildStPaulsCoupole(poser) {
+  for (let y = 1; y <= 8; y++) {
+    plein(poser, y, -6, 5, -3, 3, CREME);
+    plein(poser, y, -3, 1, -5, 5, CREME);
+  }
+  for (let x = -6; x <= 5; x++) for (const z of [-3, 3]) poser(x, 9, z, (x & 1) ? BLANC : CREME);
+  for (let z = -5; z <= 5; z++) for (const x of [-3, 1]) poser(x, 9, z, (z & 1) ? BLANC : CREME);
+  for (let z = -2; z <= 2; z++) for (let y = 1; y <= 8; y++) if ((z & 1) === 0 || y === 4) poser(-7, y, z, (z & 1) === 0 ? BLANC : PIERRE);
+  for (let z = -2; z <= 2; z++) poser(-7, 9, z, BLANC);
+  for (let z = -1; z <= 1; z++) poser(-7, 10, z, BLANC);
+  for (const zc of [-4.5, 4.5]) {
+    const z0 = zc < 0 ? -5 : 4;
+    for (let y = 1; y <= 20; y++) plein(poser, y, -7, -6, z0, z0 + 1, y % 5 === 0 ? BLANC : CREME);
+    plein(poser, 21, -7, -6, z0, z0 + 1, BLANC);
+    poser(-7, 22, z0, PIERRE); poser(-7, 23, z0, PIERRE); poser(-7, 24, z0, OR);
+  }
+  const C = (x, y, z, id) => poser(x - 1, y, z, id);
+  const disque = (y, r, id) => {
+    for (let x = -r; x <= r; x++) for (let z = -r; z <= r; z++) if (Math.hypot(x, z) <= r + 0.35) C(x, y, z, id);
+  };
+  for (let y = 10; y <= 21; y++) {
+    disque(y, 3, CREME);
+    for (let a = 0; a < 360; a += 15) {
+      const t = (a * Math.PI) / 180, x = Math.round(Math.cos(t) * 4), z = Math.round(Math.sin(t) * 4);
+      if (y === 21 || (a / 15) % 2 === 0) C(x, y, z, y === 21 ? CREME : BLANC);
+    }
+  }
+  for (let y = 22; y <= 24; y++) disque(y, 3, y === 24 ? BLANC : CREME);
+  for (let k = 0; k < 6; k++) disque(25 + k, Math.max(0, Math.round(3.6 * Math.sqrt(1 - ((k + 0.5) / 6.5) ** 2))), ACIER);
+  for (let y = 31; y <= 34; y++) for (const [a, b] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) C(a, y, b, y === 34 ? ARDOISE : (a || b) && y < 33 ? BLANC : CREME);
+  C(0, 35, 0, CREME); C(0, 36, 0, CREME);
+  C(0, 37, 0, OR); C(0, 38, 0, OR);
+  for (let y = 39; y <= 41; y++) C(0, y, 0, OR);
+  C(1, 40, 0, OR); C(-1, 40, 0, OR);
+}
+
 function buildBuckingham(poser) {
   // La façade est de 1913 : 108 m de pierre de Portland, le balcon central,
   // la cour d'honneur fermée de grilles dorées, et le mémorial Victoria.
@@ -1077,11 +1161,11 @@ function buildMobilier(poser) {
 
 // La liste que world.js déroule : chaque monument à ses coordonnées.
 export const MONUMENTS_LONDRES = [
-  { nom: 'Big Ben', u: 8, v: 18, box: 26, build: depuisCatalogue('big-ben') },
+  { nom: 'Big Ben', u: 8, v: 18, box: 26, build: depuisCatalogue('big-ben'), tour: buildBigBenLondres },
   { nom: 'Palais de Westminster', u: 4, v: 21, box: 9, build: buildPalaisWestminster },
   { nom: 'Tower Bridge', u: 87, v: 5, box: 34, build: depuisCatalogue('tower-bridge', true) },
   { nom: 'London Eye', u: 14, v: 11, box: 24, build: buildLondonEye },
-  { nom: 'Cathédrale St Paul', u: 49, v: -17, box: 10, build: buildStPauls },
+  { nom: 'Cathédrale St Paul', u: 49, v: -17, box: 10, build: buildStPauls, tour: buildStPaulsCoupole },
   { nom: 'Buckingham Palace', u: -23, v: 16, box: 11, build: buildBuckingham },
   { nom: 'Tour de Londres', u: 86, v: -2, box: 10, build: buildTourDeLondres },
   { nom: 'Colonne Nelson', u: 0, v: 0, box: 6, seuil: 0.4, build: buildTrafalgar },

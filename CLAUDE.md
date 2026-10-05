@@ -770,6 +770,80 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les coupoles ont leur édifice (v364) — un gabarit partagé se cherche dans toutes les villes, et le ciel se lit sur les modèles
+
+La suite de la v357 : « une coupole sans sa nef devient une tour », pour toutes
+les villes. Sept règles.
+
+- **UN GABARIT SE MARQUE, ET LE TÉMOIN LE RECONNAÎT DES DEUX CÔTÉS.** `dome` et
+  `palaisLong` portent `gabarit` (villesmonde.js) ; sur l'ancien code, qui ne
+  la porte pas, le témoin reconnaît la dernière ligne du bâtisseur
+  (`String(f)`). C'est ce qui lui fait mesurer le MÊME défaut des deux côtés
+  (règle v302) : seize sur `origin/main`, du Berliner Dom au palais d'Hiver,
+  zéro ici. Saint-Pierre (v357) passait déjà.
+- **« PAS UNE TOUR » A DEUX GRANDEURS, ET L'UNE DES DEUX SUFFIT.** L'ASSISE
+  (l'emprise des trois premières couches sur la plus large couche de la moitié
+  haute : une coupole sur sa nef en a au moins deux, sur son seul tambour un) ou
+  la CARRURE (la hauteur sous deux fois le petit côté du pied : un palais à cour
+  est un bloc). Une hauteur sur une emprise ne départage PAS : le Panthéon de
+  Paris, validé en capture, a l'élancement d'une tour, parce que le ciel double
+  les hauteurs.
+- **LA RECETTE D'UNE COUPOLE REMISE AU CIEL, née de deux captures.** Sur une
+  petite emprise, étirer le TAMBOUR fait une tour (Florence, Berlin, premier
+  jet). Le corps, large, prend l'étirement ; la coupole s'écrit avec assez de
+  couches pour en être une (surhaussée : plus de couches que de rayon) et reste
+  rigide ; la lanterne s'écrit sur quatre ou cinq couches pour ne pas devenir
+  une aiguille. Les paliers sont en mètres ÉCRITS EN PROPORTION (le corps de
+  Florence à 18 m, celui de Berlin à 13) : la courbe du ciel, logarithmique,
+  étire le bas plus que le haut, et la leçon de la façade de Saint-Pierre (une
+  hauteur vraie sur un plan à l'échelle du sol fait un immeuble) vaut pour
+  toutes.
+- **UNE BAIE NE SE POSE QUE SUR UN CORPS QUI NE S'ÉTIRE PAS.** Un étage fait
+  trois couches (v301) et une baie se dessine sur trois bandes (allège, bas,
+  haut). Posée sur une couche que la table répète, chaque couche répétée
+  redessine une fenêtre : le palais royal de Madrid, en capture, était une tour
+  de bureaux à dix-huit rangs de baies. Les palais s'écrivent donc à leur
+  hauteur du monde, un pour un (`[[0, 0], [1, 1], [sommet + 1, vraie + 1]]`),
+  et leurs façades par `facadeEtages`.
+- **UN FÛT QUI BORNE LA COURBE D'UNE VILLE PEUT RECEVOIR SON CORPS, ET LA
+  COURBE SE DÉCOMPRIME.** Istanbul était à `k` 0,48 parce que la tour de Galata,
+  colonne d'un bloc, ne montait pas. Avec son cylindre de pierre, elle prend la
+  table, et la ville revient à `k` 1 : Sainte-Sophie et ses minarets, la
+  Mosquée bleue et les siens montent sous elle. `k` est un résultat : il se
+  refait quand le repère qui le fixait change.
+- **DANS UNE VILLE BÂTIE À LA MAIN, LE CIEL SE LIT SUR SES MODÈLES D'AUTEUR.**
+  À Londres, le London Eye (135 m) est à quarante-trois blocs et Tower Bridge
+  (65 m) à trente-huit ; Big Ben, sorti du catalogue à soixante-neuf, dominait
+  tout, et St Paul (111 m) restait à dix-sept. La courbe de la ville (`k` 0,75,
+  sous la Tour Blanche) ne peut pas les départager : une table de paliers ne
+  sait que monter. Big Ben a donc un bâtisseur de Londres à trente-neuf, St Paul
+  sa coupole sur tambour à quarante et un, tous deux à leur hauteur d'auteur
+  (champ `tour`, pas de table), DANS l'emprise d'avant (aucune rue touchée) ; et
+  Tower Bridge et le London Eye entrent dans les `FIXES` du témoin d'ordre.
+- **UN QUARTIER TROP SERRÉ SE DÉCLARE, IL NE SE FORCE PAS.** À Pise, le Duomo
+  est à trois blocs du centre de la tour penchée, dont le modèle fait onze blocs
+  de large pour quinze mètres : aucun bâtisseur ne tient dans la boîte du Duomo
+  sans recouvrir la tour. Il a son édifice, le recouvrement d'avant reste, et
+  c'est une dette de PLAN (`TASKS.md`).
+
+Et UNE ENTRÉE DE VILLE S'ARRÊTE DEVANT UN MONUMENT, PAS SEULEMENT DEVANT UN
+ÎLOT. L'avenue de Florence finissait dans la boîte du Duomo et ne passait que
+par une brèche de l'ancien anneau de la coupole : donner son édifice à un
+monument peut fermer une rue qu'il ne fermait que par chance. `avenueDEntree`
+lit les blocs que le BÂTISSEUR pose à hauteur de carrosserie (couches 1 à 3),
+jamais la boîte (v274) ; mesuré, seule Florence change sur trente-neuf entrées.
+
+Et UN ÉDIFICE NEUF SE MESURE CONTRE LES PONTS DE SA VILLE, PAS SEULEMENT CONTRE
+SES RUES. Les tabliers des anneaux (`anneauxDeVille(f).ponts`) traversent la
+boîte des repères ; le gabarit, petit, les laissait libres, et le Berliner Dom
+bâti sur toute sa boîte en murait deux (dix pas, vus au portail par
+`carteMonde.js`). Avant de remplir une boîte, on dessine les tabliers qui la
+traversent (une carte ASCII de la boîte suffit) et l'on bâtit à côté.
+
+Et l'empreinte des 490 morceaux (v352) se relève : Londres est un des neuf
+lieux. Bâtisseurs neufs désarmés (`tour` retiré), la branche rend 58a67b42…, la
+constante d'`origin/main`, au bit près.
+
 ## Les tours ont une emprise (v357) — une perche se cherche au bâtisseur, dans toutes les villes
 
 La dette de la v353 : treize tours d'un bloc de large, laissées sous leur vraie

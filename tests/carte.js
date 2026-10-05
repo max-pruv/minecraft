@@ -1658,7 +1658,7 @@ const position = (p) => p.evaluate(() => ({
       return {
         tamiseWestminster: eau(10, 18), tamiseCity: eau(66, -1), coude: eau(13, 3),
         trafalgarAuSec: !eau(0, 0),
-        bigBen: debout(8, 18, 6), eye: debout(14, 11, 4), stPaul: debout(49, -17, 8),
+        bigBen: debout(11, 18, 2), eye: debout(14, 11, 4), stPaul: debout(49, -17, 8),
         shard: debout(69, 8, 6), towerBridge: debout(87, 5, 15), sousLePont: eau(87, 5),
         serpentine: eau(-62, 5),
         hydeVert: w.getBlock(X(-72), w.terrainHeight(X(-72), Z(-3)), Z(-3)),
@@ -1669,8 +1669,14 @@ const position = (p) => p.evaluate(() => ({
       londres.tamiseWestminster && londres.coude && londres.tamiseCity && londres.trafalgarAuSec,
       JSON.stringify({ w: londres.tamiseWestminster, c: londres.coude,
         city: londres.tamiseCity, trafalgar: londres.trafalgarAuSec }));
+    // BIG BEN SOUS LA ROUE (v364). La barre valait 55, posée pour le modèle du
+    // catalogue (69 blocs) qui dominait toute la ville ; Big Ben a désormais
+    // son bâtisseur de Londres (trente-neuf blocs, la tour à trois blocs à
+    // l'est de son repère, d'où (11, 18)), et la grande roue (135 m) reste
+    // au-dessus de la tour de l'horloge (96 m), comme dans la vraie ville.
+    // Lu sur un rayon de deux blocs : à six, la mesure attrapait la roue.
     verifier('Big Ben au bord de l\'eau, la roue du London Eye en face',
-      londres.bigBen >= 55 && londres.eye >= 38,
+      londres.bigBen >= 35 && londres.eye >= 38 && londres.eye > londres.bigBen,
       `Big Ben ${londres.bigBen} · Eye ${londres.eye}`);
     verifier('Tower Bridge enjambe le fleuve — de l\'eau sous le tablier',
       londres.towerBridge >= 30 && londres.sousLePont,
