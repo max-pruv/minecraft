@@ -943,6 +943,34 @@
   poursuite d'avant à l'identique. Le portail entier a tourné lentement
   (`monte.js` 32 min contre 23 d'habitude, `souffler` lisant 3,7 cœurs
   occupés avant chaque page) : la cadence décide de ces témoins-là.
+
+  **Puis main est passé à la v365 : fusion, la livraison devient v366, et
+  troisième portail complet (107 min).** Treize suites vertes — `degats.js`,
+  `maj.js`, `realisme.js` comprises. Quatre rouges :
+
+  | témoin | portail | branche seule | `origin/main` (v365) seul |
+  | --- | --- | --- | --- |
+  | `monte.js` un choc secoue la caméra | ❌ secousse 0,235 pour 3 × calme 0,081 | (voir plus bas) | — |
+  | `monte.js` l'écran figé à l'arrivée | ❌ 2 417 ms · 35,5 % | | dette déclarée |
+  | `reseau.js` la voiture prise garde sa couleur | ❌ | ✅ 77/77 | ❌ 4 autres rouges réseau |
+  | `manhattan.js` plantage au départ de l'invité (l. 674 / 684) | 💥 | 💥 💥 💥 | 💥 💥 💥 |
+  | `manhattan.js` trou de façade, taxi tactile | ❌ ❌ | ❌ ❌ | ❌ ❌ |
+  | `carte.js` flèche du GPS à gauche, glisser bridé ×4 | ❌ ❌ | | déclarées |
+
+  Le choc est à moi : le calme se mesurait 0,8 s après l'arrêt, quand la
+  caméra revenait encore de son recul de vitesse (0,081 au portail, 0,018
+  seule). Il s'attend désormais — un fait du monde, la caméra posée, borné à
+  huit secondes, la durée dans le message — jamais le verdict.
+
+  **`manhattan.js` meurt au départ de l'invité, des DEUX côtés, à chaque
+  passage** (ordre alterné ABBA, plus le portail et un rejeu : 4/4 sur la
+  branche, 3/3 sur `origin/main`) : la page de l'invité n'a pas de
+  `window.__game` en 90 s pendant que l'hôte tourne dans Manhattan à 0,4
+  image par seconde, ou le bloc de l'hôte n'arrive pas en 30 s. C'est une
+  dette de PRODUCTION neuve et entière — elle cache les témoins réseau de New
+  York à chaque portail. À démonter par une sonde : l'invité charge-t-il en
+  rendu logiciel quand une autre page de Manhattan tient les quatre cœurs ?
+  (`charge.js` dira l'occupation au moment du `goto`.)
 - [ ] **LE PORTAIL DE LA v347 (les steppes, préparée comme v346) : TOUS LES
   ROUGES DÉJÀ DÉCLARÉS.** Huit suites choisies par la table des gardiens,
   45 min. `metro.js`, `carteMonde.js`, `plafond.js` (le témoin des steppes
