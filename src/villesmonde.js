@@ -1586,7 +1586,7 @@ function buildParlementAthenes(poser) {
 }
 
 
-// LES HUIT DERNIERS PALAIS DE GABARIT (v370). Chacun d'après sa vraie forme,
+// LES HUIT DERNIERS PALAIS DE GABARIT (v372). Chacun d'après sa vraie forme,
 // dans la partie de sa BOÎTE que rien ne traverse : les anneaux de voitures et
 // l'eau qui passent dans la boîte ont été relevés en carte avant de bâtir (le
 // Dam a un anneau sur deux de ses côtés, le Rijksmuseum sur deux, Prague,

@@ -736,7 +736,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         const g = gabaritDe(m.tour || m.build);
         if (g) par[g].push(`${f.ancre.nom}|${m.nom}`);
       }
-      // ET PLUS UN PALAIS DE GABARIT (v370) : les huit derniers — le Dam, le
+      // ET PLUS UN PALAIS DE GABARIT (v372) : les huit derniers — le Dam, le
       // Rijksmuseum, le château de Prague, le palais de Stockholm, Amalienborg,
       // Gyeongbokgung, la Casa Rosada, le palais Bahia — ont leur bâtisseur.
       // Huit sur `origin/main`, zéro ici.
@@ -746,7 +746,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         + ` · ${par.palaisLong.length} palais de gabarit${par.palaisLong.length ? ' : ' + par.palaisLong.join(' · ') : ''}`);
     }
 
-    // UN MONUMENT NE SE BÂTIT PAS EN TRAVERS D'UN ANNEAU DE VOITURES (v370).
+    // UN MONUMENT NE SE BÂTIT PAS EN TRAVERS D'UN ANNEAU DE VOITURES (v372).
     // Les anneaux des villes engendrées sont choisis sur la trame, sans
     // regarder les repères : relevé à la livraison, quarante-cinq monuments
     // posent des blocs à hauteur de carrosserie (couches 1 à 3) sur une case

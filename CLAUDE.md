@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Les huit derniers palais (v370) — une boîte se relève en carte avant qu'on la remplisse
+## Les huit derniers palais (v372) — une boîte se relève en carte avant qu'on la remplisse
 
 Deux règles.
 
