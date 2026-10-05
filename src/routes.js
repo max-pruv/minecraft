@@ -416,6 +416,25 @@ export const ROUTES = [
     // bretelle de l'I-295 que pose `washington.js`.
     avenues: { washington: [[-21191, 6197], [-21191, 6196], [-21191, 6184]] },
     via: [[-20361, 5130], [-20404, 5131], [-20441, 5145], [-20451, 5153], [-20680, 5525], [-20684, 5538], [-20684, 5552], [-20687, 5565], [-20762, 5689], [-20781, 5707], [-20817, 5725], [-20842, 5752], [-21048, 6155], [-21052, 6169], [-21052, 6196], [-21055, 6211], [-21061, 6224], [-21072, 6235], [-21105, 6255], [-21130, 6260], [-21147, 6258], [-21161, 6252], [-21173, 6242], [-21183, 6230], [-21189, 6216]] },
+  // LE TŌMEI (v381), TOKYO–NAGOYA, le long de la côte du Tōkaidō. Le relevé de
+  // la v310 le disait : « un aérodrome sur l'axe ». C'est pire : à l'ouest de
+  // Tokyo, Haneda (r 76) et Yokota (r 56) ferment la plaine, le Shinkansen
+  // part de Tokyo vers Kyoto à douze blocs de Haneda et TRAVERSE Nagoya, et
+  // la montagne (Hakone, au-delà de 48) occupe tout le milieu. Le seul couloir
+  // est la bande côtière AU SUD du rail, entre la montagne et la mer : on n'y
+  // croise jamais la voie ferrée. Les deux entrées se mesurent du même côté
+  // (scratchpad entrees2.mjs, la grandeur du témoin des entrées) : Tokyo par
+  // 132°, porte à vingt-quatre blocs du bord (vingt-sept blocs d'avenue propre
+  // — à 149°, son autre entrée sud, le raccord passait sur un étang et y
+  // posait un pont contre la porte) ; Nagoya par 60°, côté opposé à l'E1
+  // (146°). Mesuré sous node (couloir.mjs : couloir le plus bas avec cap sur
+  // une grille de vingt blocs, trois pas droits après chaque virage, lissage
+  // par moyenne glissante, `profilDe` appelé sur chaque candidat) : 300
+  // tracés, refus 254 pont près d'une porte · 16 coude · 8 remblai ; 22
+  // admissibles ; celui-ci : 1 140 blocs, UN pont (s 264–271, une crique au
+  // sud-ouest de Tokyo), déblai et remblai 1,8, coudes ≤ 25°.
+  { nom: 'Tōmei', villes: ['tokyo', 'nagoya'], bord: { tokyo: 24 },
+    via: [[53256, 8150], [53023, 8317], [52949, 8378], [52921, 8389], [52887, 8390], [52828, 8365], [52773, 8334], [52712, 8328], [52445, 8420], [52378, 8414], [52320, 8388], [52298, 8371]] },
 ];
 
 // --- la section -----------------------------------------------------------------
