@@ -3453,6 +3453,9 @@ l'embarquement a eu lieu, pas par une hypothèse.
   Portail de la v361 (base v359) : `maj.js` personnages 6/9, `manhattan.js`
   trou 14460 → 51734, `monte.js` chauffe de New York et gel d'arrivée, et
   `carte.js` la flèche du GPS (gauche 1,92) — tous déjà déclarés plus haut.
+  Second portail (base v360, parcelles) : les mêmes, plus `carte.js` le
+  glisser bridé ×4 (425 ms, déclaré au portail de la v359) et `monte.js` les
+  passants de Rome (21 % pour 20, le tirage de la v291, déclaré à la v319).
 
 - [ ] **PORTAIL DE LA v359 (Nice) : UNE CASCADE DE `monte.js` QUE LA SUITE
   SEULE NE REND PAS.** Au portail complet (base v349), `monte.js` a rendu
