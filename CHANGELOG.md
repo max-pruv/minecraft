@@ -51,6 +51,9 @@ de Manhattan). Mesuré sous node avant le banc : profil à six pour cent, débla
 7,0, remblai 1,1, zéro colonne sur un rail ou sur une autre route, joint du
 pont fermé (6 630 points, zéro trou), relief identique du worker et du fil
 principal hors du rectangle.
+
+---
+
 ## v366 — On monte en voiture comme dans un vrai jeu
 
 **Pourquoi.** Max : « Quand on monte dans une voiture, on voit le personnage
