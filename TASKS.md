@@ -259,6 +259,24 @@
   - **Les avions ne s'abîment pas** (`pilote` est écarté) : une décision, pas
     un oubli — un atterrissage manqué n'a pas de « choc » dans `player.js`.
 
+- [ ] **AU PORTAIL DE LA v359 (les coups suivent la voiture), CINQ SUITES
+  ROUGES — aucune causée par la livraison, double mesure faite (rejouées SEULES
+  sur la branche et sur `origin/main` v358, arbre détaché).**
+  - `reglages.js` « un choix fait sur une tablette part au serveur » et ses
+    deux suivants (`"fr"`) : rouge aux DEUX portails de la livraison, et
+    69 verts seule des deux côtés. Rouge de charge, à démonter par une sonde
+    qui distingue « jamais envoyé » de « relu trop tôt ». Preuve
+    structurelle : le diff ne touche ni la langue, ni les réglages, ni le
+    nuage — trois lignes de branchement des dégâts dans `main.js`.
+  - `monte.js` : la téléportation qui compile (chauffe de New York expirée,
+    55/321 et 56/321) et le gel d'arrivée (34 % · 25,4 %), rouges des deux
+    côtés ; « un train s'arrête devant la voiture de l'enfant » rouge au
+    portail seulement (13 relevés dedans), VERT seul sur la branche ;
+    `origin/main` seul rend en plus « s'arrête devant un réverbère ».
+  - `visio.js` (la voix après la caméra, 0,0177 contre 0,0241), `maj.js`
+    (personnages 8/9), `manhattan.js` (le trou de façade, PeerJS) : les
+    familles déjà déclarées.
+
 - [ ] **AU PORTAIL DE LA v356 (l'épave et la rue, mesurée sur la v348, la v351 et la v354), DEUX SUITES ROUGES — aucune
   causée par la livraison, double mesure faite (rejouées SEULES sur la branche
   et sur `origin/main` v348, chacune dans un arbre détaché ; `monte.js` deux
