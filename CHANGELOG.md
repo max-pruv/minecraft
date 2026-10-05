@@ -20,6 +20,39 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v373 — Une portière ouverte se voit de derrière
+
+**Pourquoi.** Aucun des cinquante modèles de la flotte n'a meublé l'intérieur
+de sa portière : la carrosserie est une peau à une seule face, et la face
+arrière d'un triangle n'est pas dessinée. Quand l'enfant arrive par l'arrière
+de la voiture — le chemin le plus fréquent —, la portière ouverte devant lui
+était invisible : on voyait au travers. Mesuré par la sonde du revers : de face,
+une portière ouverte arrête 10 à 20 rayons sur 24 ; de derrière, ZÉRO, sur les
+cinquante modèles.
+
+**Ce que ça change.** La portière a désormais un revers, de la couleur de la
+carrosserie, sur tous les modèles qui ont une portière animée. Elle se voit
+pendant toute la séquence, de quelque côté qu'on arrive.
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js` : des rayons visent la
+portière ouverte de face, puis de derrière, et il en faut autant d'un côté que
+de l'autre (10 et 10 ici, 10 et 0 sur `origin/main`) ; et la portière garde
+autant de maillages qu'avant — le revers est DANS la même géométrie, pas un
+appel de dessin de plus. Le témoin des programmes de l'embarquement reste vert :
+aucun programme ne naît, parce que le revers n'est pas un `DoubleSide` (qui
+changerait la clé de programme, v246) mais une copie des sommets, normales
+retournées et triangles à l'envers.
+
+**Et un mystère de la v366 s'éclaire.** Le témoin de la descente refusait
+parfois la sortie côté passager pour « circulation », en pleine prairie. Une
+sonde a relevé les voitures de la rue au moment du refus : la « prairie » était
+DANS Manchester, et un vrai circuit de la ville passait à 3,5 blocs. Le refus
+était juste, c'est le témoin qui choisissait mal son terrain : il cherche
+désormais hors de toute ville, y compris des villes engendrées que `cityAt` ne
+connaît pas. Sur le nouveau site : dix descentes, zéro refus.
+
+---
+
 ## v372 — Des portières bien découpées
 
 **Pourquoi.** Les portières de la v366 étaient fabriquées dans la

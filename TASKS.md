@@ -3033,10 +3033,17 @@ l'embarquement a eu lieu, pas par une hypothèse.
 - [x] **Les bords de la découpe** — FAIT en v372 : coupés au plan (débord 0
   sur les 55 modèles). Les taxis gardent `fabrique` → pas de portière : bords
   nets, mais 0/24 rayons touchent un habitacle derrière l'ouverture.
-- **Une portière ouverte vue de dos est invisible** sur les modèles qui n'ont
-  pas meublé son revers (faces simples). `DoubleSide` changerait la clé de
-  programme (v246) : il faudrait le chauffer (`signatures.js`) avant de le
-  livrer.
+- [ ] **LE PORTAIL DE LA v373 (revers des portières).** `degats.js` vert ;
+  les témoins de la livraison verts (revers 10/10, bords, descente en un
+  essai sur le nouveau terrain). Rouges, tous de familles déjà déclarées et
+  mesurées des deux côtés au portail de la v372 : `maj.js` « vraiment là »,
+  `monte.js` téléportation qui compile, trou en vol, écran figé ; et
+  l'atterrissage avion (« descend train sorti ») — preuve structurelle, les
+  avions ne passent ni par `portieres.js` ni par la séquence.
+- [x] **Une portière ouverte vue de dos** — FAIT en v373 : un revers fabriqué
+  en géométrie (copie des sommets, normales retournées), pas un `DoubleSide`.
+  De derrière : 0/24 rayons avant, autant que de face après (10 et 10 sur
+  l'AMG). Aucun programme neuf, aucun appel de dessin de plus.
 - **La séquence ne se juge qu'au banc.** Durées (1,1 s de marche au plus, 2,4 s
   en tout) et caméra de trois quarts arrière : à confirmer sur l'iPad.
 - **Les avions** gardent leur montée instantanée (on ne marche pas jusqu'au
@@ -3096,6 +3103,13 @@ l'embarquement a eu lieu, pas par une hypothèse.
   juste, témoin trop étroit (il n'acceptait que les flancs) : il accepte
   désormais toute place hors de l'emprise et publie les refus. À creuser : ce
   qui rend « circulation » en pleine prairie à soixante blocs de toute route.
+  **RÉSOLU (v373)** : la « prairie » était DANS Manchester (46 blocs du
+  centre, rayon 65). La garde du témoin lisait `cityAt`, qui ne connaît que
+  les villes bâties à la main ; un vrai circuit de la ville (`voiture|4|-1983,
+  -2535`, 270 blocs) passait à 3,5 blocs de la voiture — refus juste. Le
+  « mur » côté conducteur était un arbre de ville. Le témoin cherche
+  désormais hors de TOUTE ville (`dansVilleMonde` aussi) : sur le nouveau
+  site, dix descentes, zéro refus.
 - [ ] **LE PORTAIL DE LA v366 (embarquement), DOUBLE MESURE FAITE.** Deux
   portails complets (le second après rebase sur la v339). Les huit témoins de
   l'embarquement verts aux deux. Rouges, tous rejoués SEULS des deux côtés :

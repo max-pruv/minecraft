@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 373,
+    titre: 'La portière se voit de dos',
+    puces: [
+      'La porte ouverte a son intérieur',
+      'Elle se voit de tous les côtés',
+    ],
+  },
+  {
     v: 372,
     titre: 'Des portières bien découpées',
     puces: [
