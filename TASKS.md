@@ -1417,7 +1417,38 @@
   ces boîtes. `washington.js` « chaque îlot a sa porte » (déclaré) : vert seul
   des deux côtés. `maj.js`, `carte.js`, `manhattan.js` : les rouges déclarés
   de la v365, identiques.
-- [ ] **HUIT PALAIS SONT ENCORE LE GABARIT `palaisLong` (v369, compté par le
+- [ ] **LE PORTAIL DE LA v375 (les huit palais) : TOUS LES ROUGES DÉJÀ
+  DÉCLARÉS, DOUBLE MESURE FAITE.** `maj.js` : le loader qui compte ses
+  fichiers, le loader qui attend corps et programmes, « fond de carte vraiment
+  là » — rejouée SEULE : les trois rouges sur la branche, les trois ET un
+  quatrième (le flou pendant la préparation) sur `origin/main`. `manhattan.js` :
+  le trou de façade (22 326 → 42 919, déclaré) et PeerJS « ID taken » (le
+  courtier, déclaré v358). `monte.js` : les passants de Rome (29 %, tirage
+  déclaré v319), la compilation à la téléportation, le gel d'arrivée, la piste
+  d'essai (arrêt à 303,3 pour 300). PREUVE STRUCTURELLE pour ces deux suites :
+  la livraison ne change que les bâtisseurs de huit palais hors de Rome, de
+  Paris et de Manhattan, et la piste est en (30 000, 30 300).
+  Second portail, après rebase sur la v371 : `carte.js` la flèche du GPS
+  (gauche à 1,92 rad, déclaré v321) et le glisser bridé (481 ms pour 400,
+  déclaré) ; `monte.js` « en virage, la caméra laisse la voiture glisser » —
+  rejouée SEULE : verte sur la branche (β médian 24,7°) ET sur `origin/main`
+  (30,3°), un rouge de portail. Et rejouée seule, la branche a rendu « la
+  monoplace ralentit assez pour qu'on la rejoigne » rouge (9,1 m/s au plus
+  lent, relevé sur 250 blocs) quand le portail, sur le MÊME commit, la rendait
+  verte (6,8 sur 37 blocs) : NEUF, intermittent, la grandeur dépend de la
+  portion du circuit que la fenêtre a parcourue — à mesurer sur un tour entier.
+- [ ] **QUARANTE-CINQ MONUMENTS SONT BÂTIS EN TRAVERS D'UN ANNEAU DE VOITURES
+  (v375, témoin de `plafond.js`, `DETTE_ANNEAUX`).** Les anneaux des villes
+  engendrées se choisissent sur la trame sans regarder les repères ; un
+  monument posé APRÈS pose ses blocs (couches d'auteur 1 à 3) sur des cases que
+  la voiture traverse. Le pire : le Taj Mahal (294 cases), le Colisée (53),
+  Rashtrapati Bhavan (40), le Templo Mayor (36), Tō-ji (33), le palais royal
+  de Madrid (31). Deux remèdes, à mesurer : écarter des candidats d'anneau
+  toute boîte de repère (`anneauxDeVille`, villesmonde.js — mais cela change
+  les circuits, donc la couverture et le partage de la v270, à remesurer ville
+  par ville), ou bâtir dans la partie libre de la boîte (ce que la v375 a fait
+  pour les huit palais). Une dette qui ne mesure plus rien rougit.
+- [x] **HUIT PALAIS SONT ENCORE LE GABARIT `palaisLong` — FAIT en v375** (compté par le
   témoin).** Palais du Dam, Rijksmuseum, château de Prague (sans Saint-Guy),
   Palais royal de Stockholm, Amalienborg, Gyeongbokgung (des toits coréens),
   Casa Rosada, palais Bahia : trois blocs d'épaisseur et une baie sur deux, que

@@ -20,6 +20,40 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v375 — Les huit derniers palais ont leur vraie forme
+
+**Pourquoi.** La v369 avait vidé le monde de ses coupoles de gabarit, et compté
+huit palais encore bâtis par le gabarit `palaisLong` : un mur de trois blocs
+d'épaisseur, une baie sur deux, que la table de la ville étirait — le palais du
+Dam, le Rijksmuseum, le château de Prague, le palais royal de Stockholm,
+Amalienborg, Gyeongbokgung, la Casa Rosada et le palais Bahia. Et, mesuré en
+préparant leur place, quatre de ces gabarits étaient bâtis EN TRAVERS d'un
+anneau de voitures (Dam, Rijksmuseum, Prague, Gyeongbokgung), celui de
+Stockholm sur l'eau.
+
+**Ce que ça change.** Chacun a son bâtisseur d'après sa vraie forme, dans la
+partie de sa boîte que rien ne traverse : le Dam autour de ses deux cours, avec
+son avant-corps et son lanternon ; le Rijksmuseum de brique rouge, ses deux
+tours et le passage qu'on traverse à pied ; la longue façade du château de
+Prague et la porte de Matthias ; le carré baroque de Stockholm et sa
+balustrade ; les quatre palais d'Amalienborg autour de la place octogonale et
+de la statue ; la salle du trône de Gyeongbokgung sur sa terrasse, sa galerie
+et sa porte ; la Casa Rosada rose, son arche et ses pavillons coiffés ; le
+palais Bahia de plain-pied, ses arcades de zellige et sa cour aux orangers.
+Tous à leur hauteur du monde, un pour un, pour que leurs fenêtres ne se
+répètent pas.
+
+**Ce qui le prouve.** Deux témoins de `plafond.js`. Le témoin des gabarits
+exige désormais zéro palais (huit sur `origin/main`). Un témoin neuf lit les
+anneaux de voitures de toutes les villes engendrées contre les cent
+vingt-trois monuments qui y sont : quarante-cinq coupent un anneau à hauteur de
+carrosserie — un conflit de plan général, déclaré chiffre par chiffre dans
+`TASKS.md` — et aucun ne doit en couper plus ; rouge sur `origin/main` (le Dam,
+le Rijksmuseum, Prague et Gyeongbokgung). Captures de chaque palais au
+portail. L'empreinte des 490 morceaux ne bouge pas : aucun des huit n'y est.
+
+---
+
 ## v374 — Un choix de langue qui tient, et la conduite des dégâts éprouvée bout à bout
 
 **Pourquoi.** Trois manques, trois sujets. (1) Le témoin « un choix fait sur
