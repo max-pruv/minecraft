@@ -20,6 +20,47 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v362 — New York–Boston, et une porte qui n'est pas sur un disque
+
+**Pourquoi.** New York n'avait aucune route : son entrée était instruite
+depuis la v355 et pas faite, parce que Manhattan n'est pas un disque. C'est
+un rectangle de 480 × 2 300 blocs — l'île, et l'Hudson et l'East River
+dedans — là où le registre dit « un disque de 152 ». La règle des portes
+(sur le rayon, vingt blocs sous le bord) aurait posé la porte SUR l'île, et
+le raccord aurait écrit son remblai dans les rues de Manhattan. Et deux
+défauts de témoin, trouvés en passant : la porte de l'A3 creusait un pont de
+Francfort sans qu'aucun témoin ne la regarde, et le témoin d'empreinte de la
+v352 hachait TOUTES les routes du registre : rouge en production en v355 et
+v356, re-relevé en v357 — et chaque route neuve l'aurait refait rougir.
+
+**Ce que ça change.** L'I-95 relie New York à Boston : 390 blocs, un petit
+pont, et des voitures qui roulent de la rive de l'East River, en face de
+Manhattan (la tête du Triborough), jusqu'au centre de Boston par sa rue du
+sud-ouest. La route s'arrête à la rive : le pont qui entrerait dans l'île est
+déclaré, pas fait — le maillage de Manhattan ne passe pas par le mailleur
+des routes, un tablier y serait invisible. Une route peut désormais DÉCLARER
+sa porte (`portes`) quand la ville n'est pas un disque. Et une route ne pose
+plus de talus au-delà de son bout : le tablier du pont de Francfort est
+refait.
+
+**Ce qui le prouve.** Trois témoins neufs dans `carteMonde.js`, et un
+réécrit dans `morceaux-temoin.mjs`. L'I-95 (rouge sur l'ancien code : pas de
+route) exige sa porte à plus d'une portée de talus du rectangle de
+Manhattan, l'eau du rectangle à moins de soixante blocs, ZÉRO colonne
+d'emprise dans le rectangle, et une entrée de Boston sur la rue. Le témoin
+des ponts de villes lit désormais les dix-huit villes à pont qu'une route
+touche (cinq avant), et un verdict neuf exige qu'aucune route n'en creuse un
+tablier — Francfort en avait un, zéro ici. Il a vu deux défauts de ville qui
+ne sont pas d'une route (une colonne à Berlin, neuf pas bouchés par le Taj
+Mahal et le Fort d'Agra), déclarés dans le témoin et dans `TASKS.md`.
+L'empreinte des 490 morceaux ne hache plus que les vingt et une routes
+qu'elle a relevées (v357), et elle retombe au bit près sur sa valeur
+(`3cc39830…`), talus-borne compris : le talus coupé au bout ne change rien à
+ce qu'elle lit.
+Le joint des ponts : 0 trou sur 143 509 points, toutes routes.
+
+---
+
 ## v361 — Les rues de San Francisco à la règle du kit
 
 **Pourquoi.** La troisième des cinq villes bâties à la main restées sur leurs

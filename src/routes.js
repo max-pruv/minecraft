@@ -362,6 +362,31 @@ export const ROUTES = [
   // colonne sur un rail ni sur un pont de ville, aucune prise à une autre
   // route.
   { nom: 'Hansalinie', villes: ['cologne', 'hambourg'], via: [[1540, -1107], [1530, -1207], [1613, -1549], [1705, -1741], [1790, -1827], [1822, -1841], [2005, -1852], [2032, -1864], [2079, -1904], [2094, -1928], [2106, -1995], [2086, -2095], [2072, -2119], [2027, -2169], [2020, -2182], [2014, -2232], [2027, -2284], [2040, -2305], [2100, -2378], [2347, -2593], [2522, -2680], [2545, -2682], [2647, -2671], [2661, -2664], [2688, -2640]] },
+  // L'I-95 (v359), NEW YORK–BOSTON : la première route qui touche MANHATTAN,
+  // et Manhattan n'est pas un disque. C'est un RECTANGLE de 480 × 2 300 blocs
+  // (`BORNES`, manhattan-plan.js) — l'île au milieu, l'Hudson et l'East River
+  // dedans, à l'ouest et à l'est — et non le disque de 152 du registre :
+  // `porte()` (r − 20 sur le rayon) aurait posé la porte SUR l'île, et le
+  // raccord aurait écrit son remblai dans ses rues. La porte de New York est
+  // donc DÉCLARÉE (`portes`), sur la rive est, hors du rectangle — la tête du
+  // Triborough. Deux raisons la tiennent hors de l'île, et elles sont
+  // d'architecture, pas de goût : le profil d'une route se lit sur le relief
+  // du monde qui la bâtit, et le worker de maillage (un `World`) ne connaît
+  // pas le plan de Manhattan que le fil principal (`TerreUrbaine`) y lit — un
+  // seul point du profil dans le rectangle donnerait deux routes différentes
+  // aux deux fils ; et les morceaux du rectangle sans bloc posé ne passent
+  // pas par le mailleur ordinaire (le rendu urbain les dessine), si bien
+  // qu'un tablier y serait invisible. La route s'arrête donc à la rive, en
+  // face de l'île (dette déclarée : le pont lui-même). Elle part vers l'est,
+  // à trente-six blocs du rectangle (la portée d'un talus est de vingt-trois),
+  // puis rejoint Boston par son axe sud-ouest (145°, avenue de trente blocs
+  // sur la rue). Mesuré sous node (scratchpad ny/cherche-bos.mjs, qui appelle
+  // `profilDe`) : 12 000 tracés, refus 10 551 coude · 4 590 pont près d'une
+  // porte · 2 334 remblai · 1 940 ponts proches · 119 ville ; quatre-vingt-six
+  // admissibles, tous à un pont au moins ; celui-ci : 390 blocs, un pont
+  // (s 152–160, un ruisseau), coudes ≤ 18°, déblai 1,5, remblai 1,7, JFK à
+  // 512 blocs au-delà de sa marge, le premier repère à 526.
+  { nom: 'I-95', villes: ['ny', 'boston'], portes: { ny: [-19769, 4140] }, via: [[-19739, 4140], [-19498, 4128], [-19415, 4096]] },
 ];
 
 // --- la section -----------------------------------------------------------------
@@ -420,6 +445,11 @@ export function brancherSol(fn) { SOL = fn; PROFILS.clear(); }
 
 // --- les segments ---------------------------------------------------------------
 
+// LA PORTE D'UNE VILLE : sur le rayon qui vise le premier point de passage,
+// à `bord` blocs sous le bord du disque. Une ville qui n'est pas un disque
+// (Manhattan, v359) a sa porte DÉCLARÉE dans la fiche de la route
+// (`portes: { cle: [x, z] }`, en blocs du monde, mesurée) — la règle du
+// disque la poserait au mauvais endroit.
 function porte(C, vers, bord = BORD_VILLE) {
   const vx = vers[0] - C.x, vz = vers[1] - C.z, l = Math.hypot(vx, vz) || 1;
   const r = C.r - bord;
@@ -435,8 +465,9 @@ export function segmentsDeRoute() {
       const A = positionDe(route.villes[i]), B = positionDe(route.villes[i + 1]);
       const via = i === 0 ? route.via || [] : [];
       const bord = route.bord || {};
-      const pA = porte(A, via[0] || [B.x, B.z], bord[route.villes[i]]);
-      const pB = porte(B, via[via.length - 1] || [A.x, A.z], bord[route.villes[i + 1]]);
+      const portes = route.portes || {};
+      const pA = portes[route.villes[i]] || porte(A, via[0] || [B.x, B.z], bord[route.villes[i]]);
+      const pB = portes[route.villes[i + 1]] || porte(B, via[via.length - 1] || [A.x, A.z], bord[route.villes[i + 1]]);
       const pts = [pA, ...via, pB];
       const cumul = [0];
       for (let k = 1; k < pts.length; k++) cumul.push(cumul[k - 1] + Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]));
@@ -668,6 +699,19 @@ export function routeEn(x, z) {
   // d'un bloc au plus par cellule) et le raccord continu.
   // La cote se raccorde au terrain de CETTE colonne : au bout du talus, la
   // surface est le sol naturel, et la couture avec la colonne voisine tient.
+  // PAS DE TALUS AU-DELÀ D'UN BOUT (v359). Une route finit à sa porte, sur le
+  // sol de la ville où son profil s'épingle : le talus n'a rien à y raccorder.
+  // Mais la distance au point borné dessine un CHAPEAU autour de la porte, et
+  // là où le sol au-delà n'est pas celui de la porte — un fleuve de ville — ce
+  // chapeau creusait : l'A3 descendait à treize blocs au-delà de sa porte de
+  // Francfort jusqu'à l'eau, à travers le tablier d'un pont de la ville. Au
+  // bout, la chaussée continue dans la ville ; le talus, lui, s'arrête net.
+  // Un bloc de jeu, parce qu'une colonne arrondie au ras de la porte dépasse
+  // le bout d'un demi-bloc sans être au-delà.
+  if (pr.s <= 1e-9 || pr.s >= seg.longueur - 1e-9) {
+    const au = (x - pr.px) * pr.fx + (z - pr.pz) * pr.fz;
+    if ((pr.s <= 1e-9 ? -au : au) > 1) return null;
+  }
   const terr = SOL(x, z) + 1;
   const ecart = cote - terr;
   const w = Math.min(Math.abs(ecart), DEBLAI_MAX) / TALUS_PENTE;

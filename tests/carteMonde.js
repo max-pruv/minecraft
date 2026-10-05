@@ -594,6 +594,40 @@ const VRAIES_KM = [
       out.convoiAP2 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'AP-2') || null;
       out.convoi401 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === '401') || null;
       out.convoiHansa = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'Hansalinie') || null;
+      out.convoiI95 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'I-95') || null;
+      // LA PORTE DE MANHATTAN (v359) : Manhattan est un RECTANGLE (`BORNES`),
+      // et ni la route ni son talus n'y entrent — le worker ne connaît pas le
+      // plan qui y règne, et le rendu urbain n'y dessine pas de tablier. On lit
+      // la distance de chaque porte au rectangle, la rive (la première eau du
+      // rectangle en allant vers l'île), et chaque colonne d'emprise.
+      try {
+        const MW = await import('./src/manhattan-world.js');
+        const PL = await import('./src/manhattan-plan.js');
+        const O = MW.ORIGINE_MANHATTAN, B = PL.BORNES;
+        out.manhattan = m.entreesDe('ny').map((e) => {
+          const lx = e.x - O.x, lz = e.z - O.z;
+          const hors = Math.max(B.x0 - lx, lx - B.x1, B.z0 - lz, lz - B.z1);
+          const dx = O.x - e.x, dz = O.z - e.z, l = Math.hypot(dx, dz);
+          let rive = null;
+          for (let d = 0; d <= 120 && rive === null; d++) if (w.terrainHeight(Math.round(e.x + dx / l * d), Math.round(e.z + dz / l * d)) < 30) rive = d;
+          return { route: e.route, hors: Math.round(hors), rive };
+        });
+        let n = 0, dans = 0;
+        for (const s of m.segmentsDeRoute()) {
+          if (s.de !== 'ny' && s.vers !== 'ny') continue;
+          for (let sa = -30; sa <= s.longueur + 30; sa += 1) {
+            const q = m.pointA(s, Math.max(0, Math.min(s.longueur, sa))), ext = sa < 0 ? sa : sa > s.longueur ? sa - s.longueur : 0;
+            for (let d = -24; d <= 24; d++) {
+              const x = Math.round(q.x + q.fx * ext - q.fz * d), z = Math.round(q.z + q.fz * ext + q.fx * d);
+              if (!m.routeEn(x, z)) continue;
+              n++;
+              if (MW.dansManhattan(x, z)) dans++;
+            }
+          }
+        }
+        out.manhattanEmprise = [n, dans];
+        out.porteMin = m.DEMI_EMPRISE + m.DEBLAI_MAX / m.TALUS_PENTE + 1;
+      } catch (e) { out.manhattanErreur = String(e); }
       // UNE ROUTE QUI CONTOURNE UNE VILLE (v355) n'en approche le disque que
       // par son tronçon radial : on compte, au-delà des quatre-vingts premiers
       // et derniers blocs, les points de l'axe à moins de r + 10 de SES villes.
@@ -917,6 +951,21 @@ const VRAIES_KM = [
       && ['cologne', 'hambourg'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'Hansalinie' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7)),
       JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiHansa ? { nom: a1.convoiHansa.nom, voitures: (a1.convoiHansa.modeles || []).length } : 'aucun convoi Hansalinie',
         surRail: a1.surRail && a1.surRail.Hansalinie, frole: a1.frole && a1.frole.Hansalinie, entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'Hansalinie') }));
+
+    // L'I-95 (v359) : New York–Boston, la première route qui touche
+    // MANHATTAN. Manhattan n'est pas un disque : sa porte est DÉCLARÉE sur la
+    // rive est, hors du rectangle, en face de l'île (la tête du Triborough) —
+    // `porte()` l'aurait posée sur l'île, et le raccord aurait écrit son remblai
+    // dans les rues. Sur l'ancien code, la route n'existe pas : zéro porte.
+    verifier('l\'I-95 relie New York à Boston, sa porte est sur la rive de l\'East River hors du rectangle de Manhattan, et des voitures y roulent',
+      !a1.absent && !a1.manhattanErreur && !!a1.convoiI95 && a1.convoiI95.routier && (a1.convoiI95.modeles || []).length >= 10
+      && (a1.manhattan || []).length >= 1 && a1.manhattan.every((e) => e.hors >= a1.porteMin && e.rive !== null && e.rive <= 60)
+      && !!a1.manhattanEmprise && a1.manhattanEmprise[0] > 100 && a1.manhattanEmprise[1] === 0
+      && !!a1.frole && a1.frole['I-95'] === 0
+      && (a1.entreesEngendrees || []).some((e) => e.ville === 'boston' && e.route === 'I-95' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7),
+      JSON.stringify(a1.absent ? a1 : { convoi: a1.convoiI95 ? { nom: a1.convoiI95.nom, voitures: (a1.convoiI95.modeles || []).length } : 'aucun convoi I-95',
+        portes: a1.manhattan, barre: a1.porteMin && +a1.porteMin.toFixed(1), emprise: a1.manhattanEmprise, frole: a1.frole && a1.frole['I-95'], erreur: a1.manhattanErreur,
+        boston: (a1.entreesEngendrees || []).filter((e) => e.route === 'I-95') }));
 
     // AUCUNE ROUTE NE PREND L'EMPRISE D'UNE AUTRE (v355) : Montréal a deux
     // routes, et chaque colonne d'emprise doit appartenir au segment qu'on
@@ -4794,14 +4843,26 @@ const VRAIES_KM = [
       // UN TÉMOIN DOIT ÉCHOUER PROPREMENT SUR L'ANCIEN CODE, PAS S'EFFONDRER :
       // là, `anneauxDeVille` n'existe pas, et l'appeler tuerait l'évaluation —
       // on ne verrait alors l'étendue d'aucun des quatre verdicts.
+      // ET TOUTE VILLE QU'UNE ROUTE TOUCHE (v359). Le témoin ne lisait que les
+      // cinq villes de fleuve de la v282 ; la porte de l'A3 à Francfort, posée
+      // dans le disque, avait un talus qui débordait de treize blocs au-delà de
+      // son bout et creusait le tablier d'un pont de la ville — vu sous node en
+      // v355, invisible ici. Un témoin écrit pour un cas se réécrit le jour où
+      // un cas neuf sort de son hypothèse (v313).
       const ponts = [];
+      let R = null;
+      try { R = await import('./src/routes.js'); } catch { /* ancien code */ }
+      const CINQ = ['lyon', 'hambourg', 'bale', 'belgrade', 'budapest'];
+      const parRoute = R ? R.segmentsDeRoute().flatMap((sg) => [sg.de, sg.vers]) : [];
       for (const cle of (anneauxDeVille && coteDeVille
-        ? ['lyon', 'hambourg', 'bale', 'belgrade', 'budapest'] : [])) {
+        ? [...new Set([...CINQ, ...parRoute])] : [])) {
         const f = VILLES_MONDE.find((v) => v.cle === cle);
+        if (!f || !f.trame) continue;
         const a = anneauxDeVille(f);
+        if (!CINQ.includes(cle) && !a.ponts.length) continue;
         const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
         const cote = coteDeVille(f);
-        let pas = 0, sansSol = 0, surLaTete = 0, surEau = 0, pireSpan = 0;
+        let pas = 0, sansSol = 0, surLaTete = 0, surEau = 0, pireSpan = 0, parLaRoute = 0;
         for (const q of a.ponts) {
           pireSpan = Math.max(pireSpan, q.a1 - q.a0);
           const n = Math.round(q.a1 - q.a0);
@@ -4811,12 +4872,12 @@ const VRAIES_KM = [
             const x = Math.round(f.ancre.x + P * co + Q * si);
             const z = Math.round(f.ancre.z + (-P * si + Q * co));
             pas++;
-            if (w.getBlock(x, cote, z) === 0) sansSol++;
+            if (w.getBlock(x, cote, z) === 0) { sansSol++; if (R && R.routeEn(x, z)) parLaRoute++; }
             if (w.getBlock(x, cote + 1, z) !== 0 || w.getBlock(x, cote + 2, z) !== 0) surLaTete++;
             if (w.terrainHeight(x, z) < WATER_LEVEL) surEau++;
           }
         }
-        ponts.push({ cle, tabliers: a.ponts.length, pas, sansSol, surLaTete, surEau, pireSpan });
+        ponts.push({ cle, tabliers: a.ponts.length, pas, sansSol, surLaTete, surEau, pireSpan, parLaRoute, cinq: CINQ.includes(cle) });
       }
       return { eaux, sans, trame: trame.length, servies: par.size, ponts,
         PONT_MAX: m.PONT_MAX || 0 };
@@ -4850,18 +4911,33 @@ const VRAIES_KM = [
     // donc tout l'axe n'est pas au-dessus de l'eau : les trois quarts le sont,
     // mesuré 73 à 85 % à la livraison.
     verifier('chaque pont a de l\'eau sous son tablier',
-      fleuves.ponts.length === 5
+      fleuves.ponts.filter((p) => p.cinq).length === 5
       && fleuves.ponts.every((p) => p.tabliers > 0 && p.pas > 20 && p.surEau / p.pas > 0.6),
       fleuves.ponts.map((p) => `${p.cle} ${p.tabliers} tablier(s), ${p.surEau}/${p.pas}`
         + ` sur l'eau (${(100 * p.surEau / p.pas).toFixed(0)} %)`).join(' · '));
 
+    // DEUX DÉFAUTS DE VILLE, VUS PAR LE TÉMOIN ÉLARGI ET DÉCLARÉS (v359) — ni
+    // l'un ni l'autre n'est d'une route, et `origin/main` rend les mêmes :
+    // Berlin a UNE colonne d'eau sans tablier au bout d'un pont (le bout de
+    // l'axe arrondi tombe hors de `pontDeVille`), et à Agra le Taj Mahal et le
+    // Fort sont bâtis SUR deux tabliers (neuf pas bouchés) — un conflit de
+    // plan entre les anneaux et les monuments. Dettes dans TASKS.md ; une
+    // dette qui ne mesure plus rien rougit.
+    const DETTE_PONTS = { berlin: { sansSol: 1, surLaTete: 0 }, agra: { sansSol: 0, surLaTete: 9 } };
     verifier('et on le traverse à pied d\'une rive à l\'autre',
-      fleuves.ponts.length === 5
-      && fleuves.ponts.every((p) => p.sansSol === 0 && p.surLaTete === 0
-        && p.pireSpan <= fleuves.PONT_MAX + 3),
+      fleuves.ponts.filter((p) => p.cinq).length === 5
+      && fleuves.ponts.every((p) => (DETTE_PONTS[p.cle]
+        ? p.sansSol <= DETTE_PONTS[p.cle].sansSol && p.surLaTete <= DETTE_PONTS[p.cle].surLaTete
+        : p.sansSol === 0 && p.surLaTete === 0) && p.pireSpan <= fleuves.PONT_MAX + 3)
+      && Object.keys(DETTE_PONTS).every((c) => fleuves.ponts.some((p) => p.cle === c && (p.sansSol || p.surLaTete))),
       fleuves.ponts.map((p) => `${p.cle} ${p.pas} pas, ${p.sansSol} sans sol,`
         + ` ${p.surLaTete} bouché(s), plus long ${p.pireSpan.toFixed(0)} b`).join(' · ')
-      + ` · borne ${fleuves.PONT_MAX}`);
+      + ` · borne ${fleuves.PONT_MAX} · dettes ${Object.keys(DETTE_PONTS).join(', ')}`);
+
+    verifier('aucune route ne creuse le tablier d\'un pont de ville (toutes les villes qu\'une route touche)',
+      fleuves.ponts.length > 5 && fleuves.ponts.every((p) => p.parLaRoute === 0),
+      `${fleuves.ponts.length} villes à pont lues · creusés par une route : `
+      + (fleuves.ponts.filter((p) => p.parLaRoute).map((p) => `${p.cle} ${p.parLaRoute}`).join(', ') || 'aucun'));
 
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));

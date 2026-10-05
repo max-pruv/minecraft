@@ -34,6 +34,16 @@ async function charger(src) {
   return { World, CHUNK, buildChunkTampons, routeEn, segmentsDeRoute, pointA, lieu };
 }
 
+// LES ROUTES QUE L'EMPREINTE A RELEVÉES (v357), et elles seules. Une route
+// AJOUTÉE au registre est un contenu neuf, pas une optimisation : la hacher
+// rendait ce témoin rouge à chaque livraison de route — il l'a été en
+// production en v355 et v356 sans que rien ne le dise, et la v357 l'a
+// re-relevé sur ses vingt et une routes. Les routes neuves ont leurs propres
+// témoins (carteMonde.js) ; une route qui volerait l'emprise d'une ancienne
+// change `routeEn` sur l'ancienne, donc ce hash.
+export const ROUTES_RELEVEES = ['A1', 'E429', 'E19', 'A20', 'BR-116', 'A-4', 'A109', 'A3', 'E1', 'Autosole',
+  'A4', 'Yamuna', 'A1 Sud', 'M1', 'A1 Nord', 'A24', 'I-45', 'A7', 'AP-2', '401', 'Hansalinie'];
+
 export async function empreinteMorceaux(src) {
   const { World, CHUNK, buildChunkTampons, routeEn, segmentsDeRoute, pointA, lieu } = await charger(src);
   const h = crypto.createHash('sha256');
@@ -74,6 +84,7 @@ export async function empreinteMorceaux(src) {
   new World();   // branche le relief des routes
   let talus = 0;
   for (const seg of segmentsDeRoute()) {
+    if (!ROUTES_RELEVEES.includes(seg.route.nom)) continue;
     for (let s = 0; s < seg.longueur; s += 6) {
       const p = pointA(seg, s);
       for (let d = -24; d <= 24; d++) {
