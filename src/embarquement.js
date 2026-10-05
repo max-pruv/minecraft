@@ -75,7 +75,7 @@ function portiereRefusee(g) {
   if (!f) return true;
   if (f === 'voiture.glb') return false;
   const e = FLOTTE.find((x) => x.fichier === f);
-  // Les taxis fabriqués (`fabrique`) ont des bords nets depuis la v370 (la
+  // Les taxis fabriqués (`fabrique`) ont des bords nets depuis la v372 (la
   // découpe coupe au plan), mais RIEN derrière : mesuré par la sonde des
   // portières, aucun des vingt-quatre rayons tirés au travers de l'ouverture
   // ne touche un habitacle. Une portière ouverte y montrerait le vide.

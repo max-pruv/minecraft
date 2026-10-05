@@ -129,7 +129,7 @@ export function planPortieres(g) {
   const coupes = [];   // par maillage : { reste, gauche, droite, attrs } (index), ou null
   const portees = { '-1': { n: 0, aire: 0, box: new THREE.Box3() }, '1': { n: 0, aire: 0, box: new THREE.Box3() } };
   let ambigues = 0, aireTotale = 0, tranches = 0, sommetsNeufs = 0;
-  // LES BORDS SE COUPENT AU PLAN (v370). Un triangle à cheval sur un bord du
+  // LES BORDS SE COUPENT AU PLAN (v372). Un triangle à cheval sur un bord du
   // volume — avant, arrière, bas de caisse, haut de vitre — n'est plus emporté
   // entier par son centre : il est COUPÉ au plan du bord, la part du dedans
   // va à la portière, le reste à la caisse. Les sommets neufs sont des

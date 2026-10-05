@@ -6724,7 +6724,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     });
     verifier('une voiture déjà froissée ne prend pas de portière, et garde son froissé',
       !embAbimee.err && !embAbimee.equipee && embAbimee.gardee, JSON.stringify(embAbimee));
-    // 10. LES BORDS DE LA PORTIÈRE SE COUPENT AU PLAN (v370). La Lucid
+    // 10. LES BORDS DE LA PORTIÈRE SE COUPENT AU PLAN (v372). La Lucid
     // Gravity a de grands triangles à cheval sur les bords du volume : la
     // v366 les emportait entiers (21 % de la surface, portière de 1,49 bloc
     // pour un volume de 1,25 — les dents de scie). Le témoin mesure la

@@ -854,7 +854,7 @@ porte qui s'ouvre ». `src/embarquement.js` (la séquence) et `src/portieres.js`
   SOUS L'EAU, sans importance pour un mur, rédhibitoire pour une descente qui
   refuse l'eau — la page d'embarquement cherche une prairie sèche et plate.
 
-**Les bords se coupent au plan (v370).** Un triangle à cheval sur un bord du
+**Les bords se coupent au plan (v372).** Un triangle à cheval sur un bord du
 volume est COUPÉ au plan du bord (z0, z1, y0, y1), jamais emporté par son
 centre — c'était 21 % de la surface sur la Lucid, et la portière débordait de
 0,24 bloc. Trois règles. **Les sommets neufs sont des mélanges barycentriques
