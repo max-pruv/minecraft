@@ -362,7 +362,7 @@ export const ROUTES = [
   // colonne sur un rail ni sur un pont de ville, aucune prise à une autre
   // route.
   { nom: 'Hansalinie', villes: ['cologne', 'hambourg'], via: [[1540, -1107], [1530, -1207], [1613, -1549], [1705, -1741], [1790, -1827], [1822, -1841], [2005, -1852], [2032, -1864], [2079, -1904], [2094, -1928], [2106, -1995], [2086, -2095], [2072, -2119], [2027, -2169], [2020, -2182], [2014, -2232], [2027, -2284], [2040, -2305], [2100, -2378], [2347, -2593], [2522, -2680], [2545, -2682], [2647, -2671], [2661, -2664], [2688, -2640]] },
-  // L'I-95 (v361), NEW YORK–BOSTON : la première route qui touche MANHATTAN,
+  // L'I-95 (v362), NEW YORK–BOSTON : la première route qui touche MANHATTAN,
   // et Manhattan n'est pas un disque. C'est un RECTANGLE de 480 × 2 300 blocs
   // (`BORNES`, manhattan-plan.js) — l'île au milieu, l'Hudson et l'East River
   // dedans, à l'ouest et à l'est — et non le disque de 152 du registre :
@@ -447,7 +447,7 @@ export function brancherSol(fn) { SOL = fn; PROFILS.clear(); }
 
 // LA PORTE D'UNE VILLE : sur le rayon qui vise le premier point de passage,
 // à `bord` blocs sous le bord du disque. Une ville qui n'est pas un disque
-// (Manhattan, v361) a sa porte DÉCLARÉE dans la fiche de la route
+// (Manhattan, v362) a sa porte DÉCLARÉE dans la fiche de la route
 // (`portes: { cle: [x, z] }`, en blocs du monde, mesurée) — la règle du
 // disque la poserait au mauvais endroit.
 function porte(C, vers, bord = BORD_VILLE) {
@@ -699,7 +699,7 @@ export function routeEn(x, z) {
   // d'un bloc au plus par cellule) et le raccord continu.
   // La cote se raccorde au terrain de CETTE colonne : au bout du talus, la
   // surface est le sol naturel, et la couture avec la colonne voisine tient.
-  // PAS DE TALUS AU-DELÀ D'UN BOUT (v361). Une route finit à sa porte, sur le
+  // PAS DE TALUS AU-DELÀ D'UN BOUT (v362). Une route finit à sa porte, sur le
   // sol de la ville où son profil s'épingle : le talus n'a rien à y raccorder.
   // Mais la distance au point borné dessine un CHAPEAU autour de la porte, et
   // là où le sol au-delà n'est pas celui de la porte — un fleuve de ville — ce

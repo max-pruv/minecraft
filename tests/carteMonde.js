@@ -595,7 +595,7 @@ const VRAIES_KM = [
       out.convoi401 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === '401') || null;
       out.convoiHansa = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'Hansalinie') || null;
       out.convoiI95 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'I-95') || null;
-      // LA PORTE DE MANHATTAN (v361) : Manhattan est un RECTANGLE (`BORNES`),
+      // LA PORTE DE MANHATTAN (v362) : Manhattan est un RECTANGLE (`BORNES`),
       // et ni la route ni son talus n'y entrent — le worker ne connaît pas le
       // plan qui y règne, et le rendu urbain n'y dessine pas de tablier. On lit
       // la distance de chaque porte au rectangle, la rive (la première eau du
@@ -952,7 +952,7 @@ const VRAIES_KM = [
       JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiHansa ? { nom: a1.convoiHansa.nom, voitures: (a1.convoiHansa.modeles || []).length } : 'aucun convoi Hansalinie',
         surRail: a1.surRail && a1.surRail.Hansalinie, frole: a1.frole && a1.frole.Hansalinie, entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'Hansalinie') }));
 
-    // L'I-95 (v361) : New York–Boston, la première route qui touche
+    // L'I-95 (v362) : New York–Boston, la première route qui touche
     // MANHATTAN. Manhattan n'est pas un disque : sa porte est DÉCLARÉE sur la
     // rive est, hors du rectangle, en face de l'île (la tête du Triborough) —
     // `porte()` l'aurait posée sur l'île, et le raccord aurait écrit son remblai
@@ -4843,7 +4843,7 @@ const VRAIES_KM = [
       // UN TÉMOIN DOIT ÉCHOUER PROPREMENT SUR L'ANCIEN CODE, PAS S'EFFONDRER :
       // là, `anneauxDeVille` n'existe pas, et l'appeler tuerait l'évaluation —
       // on ne verrait alors l'étendue d'aucun des quatre verdicts.
-      // ET TOUTE VILLE QU'UNE ROUTE TOUCHE (v361). Le témoin ne lisait que les
+      // ET TOUTE VILLE QU'UNE ROUTE TOUCHE (v362). Le témoin ne lisait que les
       // cinq villes de fleuve de la v282 ; la porte de l'A3 à Francfort, posée
       // dans le disque, avait un talus qui débordait de treize blocs au-delà de
       // son bout et creusait le tablier d'un pont de la ville — vu sous node en
@@ -4918,7 +4918,7 @@ const VRAIES_KM = [
       fleuves.ponts.map((p) => `${p.cle} ${p.tabliers} tablier(s), ${p.surEau}/${p.pas}`
         + ` sur l'eau (${(100 * p.surEau / p.pas).toFixed(0)} %)`).join(' · '));
 
-    // DEUX DÉFAUTS DE VILLE, VUS PAR LE TÉMOIN ÉLARGI ET DÉCLARÉS (v361) — ni
+    // DEUX DÉFAUTS DE VILLE, VUS PAR LE TÉMOIN ÉLARGI ET DÉCLARÉS (v362) — ni
     // l'un ni l'autre n'est d'une route, et `origin/main` rend les mêmes :
     // Berlin a UNE colonne d'eau sans tablier au bout d'un pont (le bout de
     // l'axe arrondi tombe hors de `pontDeVille`), et à Agra le Taj Mahal et le
