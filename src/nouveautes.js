@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 378,
+    titre: 'Les voitures contournent les monuments',
+    puces: [
+      'Plus une voiture dans le Colisée',
+      'Des rues neuves à Agra et au Cap',
+      'Le jeu démarre un peu plus vite',
+    ],
+  },
+  {
     v: 377,
     titre: 'Le passager prend la portière',
     puces: [

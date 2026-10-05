@@ -5099,7 +5099,12 @@ const VRAIES_KM = [
     // Fort sont bâtis SUR deux tabliers (neuf pas bouchés) — un conflit de
     // plan entre les anneaux et les monuments. Dettes dans TASKS.md ; une
     // dette qui ne mesure plus rien rougit.
-    const DETTE_PONTS = { berlin: { sansSol: 1, surLaTete: 0 }, agra: { sansSol: 0, surLaTete: 9 } };
+    // Agra est payée en v378 : un anneau qui passe dans un monument est écarté
+    // à la source (`traverseUnMonument`), et ses ponts avec lui (9 → 0 pas).
+    // Berlin aussi (v378) : l'anneau dont le bout de pont tombait hors de
+    // `pontDeVille` passait dans le Berliner Dom ; écarté, la dette ne mesure
+    // plus rien (1 → 0).
+    const DETTE_PONTS = {};
     verifier('et on le traverse à pied d\'une rive à l\'autre',
       fleuves.ponts.filter((p) => p.cinq).length === 5
       && fleuves.ponts.every((p) => (DETTE_PONTS[p.cle]

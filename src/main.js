@@ -42,7 +42,7 @@ import { contexteAudio, sortieAudio, reglerSon, sonActif, etatSon, radioEnCours,
 import { traceAnneau } from './ville.js';
 import { traceCourse } from './circuit.js';
 import { USINE, PARC, traceChaine } from './usine.js';
-import { tracesCirculation, tracesCirculationMain, avenueDEntree } from './villesmonde.js';
+import { tracesCirculationParesseuses, tracesCirculationMain, avenueDEntree } from './villesmonde.js';
 import { createPassants } from './passants.js';
 import { createPoissons } from './poissons.js';
 import { segmentsDeTrain, traceSegment } from './trains.js';
@@ -1854,7 +1854,7 @@ function updateChunks() {
   ];
   const dejaServies = new Set(propres.map((t) => t.cle));
   circulationsEnAttente = [
-    ...tracesCirculation(solDe),
+    ...tracesCirculationParesseuses(solDe),
     ...tracesCirculationMain(
       CITIES.filter((c) => c.key !== 'ny' && !dejaServies.has(c.key)), solDe),
     ...planUrbain.circuitsManhattan().map(t=>({...t,...urbain.versTerre(t.x,t.z),ville:'ny',pts:t.pts.map(p=>({...p,...urbain.versTerre(p.x,p.z)}))})),
@@ -3034,6 +3034,9 @@ function animerLesVilles(dt) {
   }
   if (choisi < 0) return;
   const tr = circulationsEnAttente[choisi];
+  // une ville engendrée n'a calculé ses anneaux qu'ici (v378) : on la déplie
+  // en ses traces, servies aux tours suivants
+  if (tr.deplier) { circulationsEnAttente.splice(choisi, 1, ...tr.deplier()); return; }
   // la graine vient de la ville, pas de la file (v246, voir graineDeVille)
   vehicules.circulation(tr.pts, graineDeVille(tr), {ville:tr.ville});
   // le bus dessert le grand anneau — un par ville, à sa couleur

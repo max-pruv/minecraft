@@ -770,6 +770,25 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les voitures contournent les monuments (v378) — un test qui écarte un candidat se mesure en temps de démarrage
+
+Deux règles.
+
+- **UN ANNEAU QUI PASSE DANS UN MONUMENT EST ÉCARTÉ À LA SOURCE.** Les repères
+  se posent après les colonnes ; l'anneau se choisit donc contre les cases
+  que le BÂTISSEUR pose à hauteur de carrosserie (couches 1 à 3), tournées une
+  fois dans le repère de la trame (`traverseUnMonument`), jamais contre la
+  boîte : à la boîte, Stockholm n'avait plus une voiture (mesuré). Le test
+  passe après le partage et AVANT l'eau — mis en dernier, l'eau tournait sur
+  ce qu'il aurait écarté (310 → 410 ms).
+- **UN CALCUL QUE LE JEU NE LIT QU'À L'APPROCHE NE SE FAIT PAS AU DÉMARRAGE.**
+  Échantillonné au demi-bloc, ce test coûtait 157 → 1 075 ms dans
+  `preloadSpawn` ; en analytique, encore +150 ms, que l'on payait pour 262
+  villes dont l'enfant n'en verra qu'une. `tracesCirculationParesseuses`
+  donne une marque par ville, `animerLesVilles` la déplie à 220 blocs ; un
+  témoin exige les mêmes traces que le calcul entier. Un premier dépliage
+  coûte au plus 43 ms (Rome, le Colisée du catalogue), une fois.
+
 ## Les huit derniers palais (v375) — une boîte se relève en carte avant qu'on la remplisse
 
 Deux règles.

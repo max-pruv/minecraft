@@ -324,7 +324,11 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // lieu, sonde du scratchpad) sur `origin/main` (v367 puis v369) et sur la branche :
 // les huit autres lieux identiques au bit près, Washington seul diffère
 // (7bb3f492… → 019bb14a…).
-const EMPREINTE_MORCEAUX_V357 = 'e72d29bcd23e2cb31593ac3dd767ccb9dcc088eff8ff7d866088c553b6a7b771';
+// v378 : les anneaux de voitures écartent les monuments, et leurs ponts avec
+// eux — voulu (un tablier est un sol). Le filtre désarmé et les anneaux de
+// quartier d'Agra et du Cap retirés, la branche rend e72d29bc…, la constante
+// d'`origin/main` (v375), au bit près.
+const EMPREINTE_MORCEAUX_V357 = 'ddf97f87ddc62b3ef54426dabb1d54ddff43c8c478df185015bdb8187548b483';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -756,25 +760,17 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     // 10, Gyeongbokgung 8 colonnes) n'en coupent plus. Le reste est une dette
     // DÉCLARÉE, chiffre par chiffre (`TASKS.md`) : un repère qui coupe un
     // anneau de plus que sa dette, ou un repère neuf qui en coupe un, rougit ;
-    // une dette qui ne mesure plus rien rougit aussi.
+    // une dette qui ne mesure plus rien rougit aussi. ET LA DETTE EST PAYÉE
+    // EN v378 : l'anneau qui passerait dans un monument est écarté à la
+    // source ; la carrosserie se lit désormais à ±1,1 bloc (1,13 vrais), la
+    // lecture du filtre. Sur `origin/main` : quarante-huit monuments en
+    // travers, ici zéro.
     {
       const VMa = await import('../src/villesmonde.js');
-      const DETTE_ANNEAUX = {
-        'Rome|Colisée': 53, 'Barcelone|Sagrada Família': 21, 'Barcelone|Colonne de Colom': 2,
-        'Pise|Tour de Pise': 11, 'Pise|Duomo de Pise': 24, 'Agra|Taj Mahal': 294, 'Agra|Mosquée du Taj': 18,
-        "Agra|Fort d'Agra": 6, 'Seattle|Pike Place': 21, 'Madrid|Palais royal': 31, 'Amsterdam|Westerkerk': 1,
-        'Berlin|Berliner Dom': 25, 'Munich|Frauenkirche': 4, 'Vienne|La Hofburg': 17, 'Prague|Saint-Guy': 2,
-        'Prague|Le pont Charles': 2, 'Athènes|Le Parthénon': 3, 'Istanbul|Sainte-Sophie': 14,
-        'Istanbul|La Mosquée bleue': 19, 'Moscou|Le Kremlin': 6, 'Moscou|Le Bolchoï': 4,
-        'Saint-Pétersbourg|Notre-Dame-de-Kazan': 4, 'Stockholm|Storkyrkan': 1, 'Copenhague|Tivoli': 7,
-        'Tokyo|Sensō-ji': 17, 'Tokyo|Le palais impérial': 8, "Kyoto|Le Pavillon d'or": 11, 'Kyoto|Fushimi Inari': 2,
-        'Kyoto|Tō-ji': 33, 'Séoul|La tour de Séoul': 1, 'Hong Kong|La Banque de Chine': 18, 'Dubaï|Burj Khalifa': 9,
-        "Delhi|La porte de l'Inde": 2, 'Delhi|Rashtrapati Bhavan': 40, 'Los Angeles|Walt Disney Hall': 7,
-        'Las Vegas|La High Roller': 1, 'Las Vegas|La demi-tour Eiffel': 4, 'Toronto|Le Rogers Centre': 3,
-        "Toronto|L'ancien hôtel de ville": 1, 'Mexico|Le Templo Mayor': 36, 'La Havane|Le Capitole': 25,
-        'La Havane|Les vieilles américaines': 2, "Buenos Aires|L'Obélisque": 4, 'Buenos Aires|Le Cabildo': 4,
-        'Le Cap|Le château de Bonne-Espérance': 6,
-      };
+      // Vidée en v378 : les anneaux écartent les cases que bâtit un monument
+      // (`traverseUnMonument`, villesmonde.js). Une entrée qu'on y remettrait
+      // devrait porter sa mesure.
+      const DETTE_ANNEAUX = {};
       const wa = new W.World();
       const traces = VMa.tracesCirculation((x, z) => wa.terrainHeight(x, z));
       const fautes = [], mesure = {};
@@ -788,7 +784,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
           const n = Math.ceil(Math.hypot(q.x - p.x, q.z - p.z) * 2);
           for (let k = 0; k <= n; k++) {
             const x = p.x + (q.x - p.x) * k / n, z = p.z + (q.z - p.z) * k / n;
-            for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) cases.add(Math.floor(x + a * 0.9) + ',' + Math.floor(z + b * 0.9));
+            for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) cases.add(Math.floor(x + a * 1.1) + ',' + Math.floor(z + b * 1.1));
           }
         }
         for (const m of f.monuments || []) {
@@ -806,6 +802,20 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
           if (vus.size > (DETTE_ANNEAUX[cle] || 0)) fautes.push(`${cle} ${vus.size}${DETTE_ANNEAUX[cle] ? ' (dette ' + DETTE_ANNEAUX[cle] + ')' : ''}`);
         }
       }
+      // ET LE JEU LES CALCULE À L'APPROCHE (v378) : la marque d'une ville se
+      // déplie en EXACTEMENT les traces que le calcul entier lui donne —
+      // sinon les voitures rouleraient sur d'autres anneaux que ceux que ce
+      // témoin mesure.
+      let paresseusesEgales = !!VMa.tracesCirculationParesseuses, nbMarques = 0;
+      if (paresseusesEgales) {
+        const sol = (x, z) => wa.terrainHeight(x, z);
+        const toutes = JSON.stringify(VMa.tracesCirculation(sol));
+        const marques = VMa.tracesCirculationParesseuses(sol);
+        nbMarques = marques.length;
+        paresseusesEgales = JSON.stringify(marques.flatMap((m) => m.deplier())) === toutes;
+      }
+      verifier('les anneaux d\'une ville se calculent à l\'approche, et ce sont les mêmes',
+        paresseusesEgales && nbMarques > 250, `${nbMarques} villes en attente · identiques : ${paresseusesEgales}`);
       const pourRien = Object.keys(DETTE_ANNEAUX).filter((k) => !mesure[k]);
       verifier('aucun monument ne se bâtit en travers d\'un anneau de voitures au-delà de sa dette déclarée',
         lus > 100 && fautes.length === 0 && pourRien.length === 0,

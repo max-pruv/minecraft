@@ -150,7 +150,11 @@
   refaire : nord montagne (≥ 50), est crête 43–49 de u 73 à 121 (une route au
   niveau de la rue déblaierait douze blocs), ouest le Potomac dans la boîte ;
   la base d'Andrews (102, 281) ferme le sud-est.
-- [ ] **DEUX PONTS DE VILLE À REPRENDRE, VUS PAR LE TÉMOIN ÉLARGI (v362).**
+- [x] **DEUX PONTS DE VILLE À REPRENDRE, VUS PAR LE TÉMOIN ÉLARGI (v362) — tombés
+  en v378** avec les anneaux qui passaient dans un monument (le Taj et le Fort
+  à Agra, le Berliner Dom à Berlin) : `DETTE_PONTS` est vide. La cause de
+  Berlin (le bout d'axe arrondi hors de `pontDeVille`) n'est pas corrigée, elle
+  n'a plus d'anneau où se montrer : le témoin la verrait revenir.
   Berlin : UNE colonne d'eau sans tablier au bout d'un pont (4186, −2011) —
   le bout de l'axe arrondi tombe hors de `pontDeVille`. Agra : le Taj Mahal
   et le Fort d'Agra sont bâtis SUR deux tabliers d'anneaux (neuf pas bouchés,
@@ -1452,7 +1456,14 @@
   lent, relevé sur 250 blocs) quand le portail, sur le MÊME commit, la rendait
   verte (6,8 sur 37 blocs) : NEUF, intermittent, la grandeur dépend de la
   portion du circuit que la fenêtre a parcourue — à mesurer sur un tour entier.
-- [ ] **QUARANTE-CINQ MONUMENTS SONT BÂTIS EN TRAVERS D'UN ANNEAU DE VOITURES
+- [x] **FAIT en v378** : les anneaux écartent les cases que bâtit un monument
+  (`traverseUnMonument`, villesmonde.js) ; 48 → 0 au témoin (carrosserie à
+  ±1,1), Agra et Le Cap reçoivent leurs anneaux de quartier (66,4 → 91,1 % et
+  71,1 → 95,8 %), la dette des ponts d'Agra (9 pas) tombe. 445 → 430 anneaux,
+  6 % de rue en moins. Et les anneaux se calculent à l'approche de la ville :
+  157 → 0 ms au démarrage, 0,6 ms par ville en médiane, Rome 43 ms la première
+  fois (le Colisée du catalogue). Texte d'origine :
+  **QUARANTE-CINQ MONUMENTS SONT BÂTIS EN TRAVERS D'UN ANNEAU DE VOITURES
   (v375, témoin de `plafond.js`, `DETTE_ANNEAUX`).** Les anneaux des villes
   engendrées se choisissent sur la trame sans regarder les repères ; un
   monument posé APRÈS pose ses blocs (couches d'auteur 1 à 3) sur des cases que
