@@ -134,6 +134,10 @@
     côtés (tableaux plus bas : 2 rouges sur 5 sur la branche de la v333, 1
     sur 4 sur `origin/main`), et la livraison ne touche ni `index.html` ni le
     loader ni l'installation.
+  - Rebasée sur la v355 (routes seules) : `maj.js` « corps, programmes et
+    fond de carte » (personnages 5/9) et « la page ne floute rien » — les
+    deux familles déjà rouges des deux côtés aux portails v343 et v348 ;
+    `monte.js` l'arrivée figée (6,9 %) et le trou en vol ; le trou de façade.
 
 - [ ] **AU PORTAIL DE LA v355 (la 401 et la Hansalinie), UN ROUGE, DÉJÀ
   DÉCLARÉ** — `monte.js` « l'écran ne se fige pas en arrivant sur une ville »
