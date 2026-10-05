@@ -787,21 +787,11 @@
   et trente-sept colonnes au bord du disque de Paris, où le relief du fondu
   passe sous l'eau à côté d'un trottoir — elles sont désormais maçonnées
   aussi, mais leur forme reste un bord de disque, pas un quai.
-- [ ] **EN LIGNE, UNE VOITURE DE LA RUE ENTRE ENCORE UNE FOIS DANS CELLE D'UN
-  AMI (v305, mesuré en v306).** Le témoin de `reseau.js` pose Marlon au volant
-  dans la rue de Paris et regarde chez Alice. Ce qui est PROUVÉ : la voiture
-  qui arrive derrière lui dans sa voie l'attend (retard 19 s sur le code neuf,
-  0 s sur l'ancien, même passage de banc). Ce qui ne l'est PAS : sur les deux
-  codes, une AUTRE voiture est entrée une fois dans la sienne pendant la
-  fenêtre (`dedans: 1`, centre à 1,6 bloc sur le neuf, 3,7 sur l'ancien). Le
-  message du témoin publie désormais l'intrus (`intrus` : clé, distance, cap de
-  l'intrus et cap posé de Marlon). Trois pistes à séparer par une sonde, pas
-  par une relecture : (1) le rectangle de l'ami est orienté par `rp.yaw + π`,
-  qui est le regard de Marlon et pas le cap de sa voiture ; (2) la position
-  réseau de Marlon arrive en retard chez Alice, et la voiture qui cède cède à
-  l'endroit d'AVANT ; (3) une voiture d'un convoi voisin arrivée de travers au
-  carrefour. Six versions de ce témoin avant qu'il sépare les deux codes : les
-  cinq premières sont dans `git log tests/reseau.js`.
+- [x] **EN LIGNE, UNE VOITURE DE LA RUE ENTRE ENCORE UNE FOIS DANS CELLE D'UN
+  AMI (v305) — faite en v375.** Ni le cap, ni le retard réseau : la patience
+  de quatre secondes revenait dès qu'une voiture de la rue gênait aussi
+  (`some` au lieu de `every`, vehicules.js). Sonde `sonde-intrus-ami.cjs` :
+  ancien 5 entrées sur 11 poses, neuf 0 sur 10.
 - [ ] **`carte.js` : l'appui long refusé au portail de la v326 (« pointeurs 0 »,
   quatre appuis, 8 rouges en cascade) — la dette de la v258, double mesure.**
   Rejouée SEULE : branche verte au premier appui ; `origin/main` (v321) verte

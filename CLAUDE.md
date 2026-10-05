@@ -1779,6 +1779,47 @@ position, si (`{ ...msg }`). Ce qui doit traverser un ancien hôte s'accroche
 à elle, et devient idempotent en envoyant l'HISTOIRE (adoptée seulement si
 la nôtre en est le début), jamais le seul dernier événement.
 
+## « Seul » ne veut pas dire « seulement lui » (v383) — la rue n'entre plus chez un ami
+
+La dette de la v305 : une voiture de la rue entrait encore une fois dans
+celle d'un ami. Trois règles.
+
+- **TROIS PISTES DÉCLARÉES, ET LA CAUSE ÉTAIT UNE QUATRIÈME.** Le cap de
+  l'ami lu sur son regard, sa position réseau en retard, une voiture de
+  travers au carrefour : `sonde-intrus-ami.cjs` relève chez Alice, image par
+  image, chaque voiture qui touche le rectangle de Marlon et ce que
+  `cederLePassage` en pensait (`window.__vehicules.diagCeder()`). Écart
+  réseau 0 à 0,17 bloc, cap posé identique : les deux premières tombent. Les
+  cinq intruses avaient l'ami ET une voiture de la rue dans leur `veut`.
+  Une liste de pistes écrite dans une dette n'est pas la liste des causes :
+  la sonde publie l'état de la DÉCISION, pas seulement la géométrie.
+- **UNE EXCEPTION ÉCRITE « QUAND IL EST SEUL » SE RELIT AU CAS OÙ IL NE
+  L'EST PAS.** La règle de la v245 (« devant l'enfant, on attend sans
+  limite ») était codée `every(k < 0)` : vraie seulement si TOUTES les gênes
+  sont des joueurs. Un carrefour en plus, et la patience de quatre secondes
+  revenait, puis `repart` lançait la voiture deux secondes à l'aveugle — au
+  travers de l'ami, et de l'enfant de la tablette aussi. Désormais `some` : un
+  joueur ou un train sur le chemin, on attend, et un `repart` déjà lancé
+  s'arrête net. La patience ne dénoue plus que deux voitures de la rue.
+- **UNE SITUATION RARE NE SE PROVOQUE PAS TOUJOURS — ALORS ON COMPTE.** J'ai
+  essayé de poser Marlon AU carrefour de deux convois pour forcer le cas
+  (v233) : zéro à trois voitures à moins de douze blocs en quarante secondes,
+  la rue de Paris est trop clairsemée sur ce banc — non-résultat, la sonde
+  n'est pas gardée. La preuve est donc un compte, même protocole des deux
+  côtés : ancien code 5 entrées sur 11 poses, neuf 0 sur 10. Le témoin de
+  `reseau.js` fait entrer `dedans` dans son verdict ; sur l'ancien code il ne
+  rougit qu'une pose sur une dizaine, et c'est dit.
+- **UN TÉMOIN VERT GRÂCE À LA PANNE ROUGIT LE JOUR OÙ ON LA CORRIGE.**
+  « Quand la monoplace arrive, on a le temps de voir le bouton » posait
+  l'enfant SUR la piste : la monoplace s'arrêtait à 9,3 blocs (le bouton est
+  à 9), puis repartait au bout de quatre secondes AU TRAVERS de lui — et le
+  bouton s'allumait (ancien code : 5,4 s, `sonde-monoplace-bord.cjs`). Son
+  commentaire disait « planté au bord du circuit » : il est posé au bord,
+  trois blocs et demi de côté (0,3 s). Ce qu'il faut retenir : devant un rouge
+  qui suit une correction, on se demande d'abord si le témoin ne MESURAIT pas
+  le défaut corrigé — les secondes du message (5,4 ≈ 4 de patience plus la
+  route) le disaient.
+
 ## Un battement qui écrit sans relire défait le choix d'à côté (v374)
 
 « Un choix fait sur une tablette part au serveur » (`reglages.js`) était
