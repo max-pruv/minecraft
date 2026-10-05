@@ -42,7 +42,9 @@ bondissent au départ. Contre un mur pris en
 rasant, la voiture glisse le long et se remet dans l'axe de la rue ; de face,
 elle s'arrête avec un petit rebond ; une voiture de la rue ou un réverbère la
 font rebondir ; devant un piéton elle freine à temps. Chaque choc est publié
-(force, point d'impact) pour les dégâts et la caméra qui viennent.
+(force, point d'impact) pour les dégâts et la caméra qui viennent — et il
+s'efface quand on descend : une voiture neuve ne part plus abîmée par le
+dernier choc de la précédente.
 
 **Ce qui le prouve.** Le plafond de vitesse a été MESURÉ et non calculé : à 60
 blocs/s, à la distance d'affichage de l'iPad, le monde se maille encore 125

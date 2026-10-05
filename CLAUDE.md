@@ -1038,7 +1038,10 @@ Six règles.
 - **UN CHOC SE PUBLIE, ET « PAS SI L'ON EST DÉJÀ DEDANS » VAUT POUR LES
   BLOCS.** `player.choc = { force, t, x, z }` (force 0 à 1, un mur de face à
   72 km/h vaut 1 ; x, z le milieu de la face qui touche), sous cinq pour cent
-  rien ne se publie. Devant un piéton on FREINE à la distance d'arrêt
+  rien ne se publie. **Un choc est un événement, pas un état** : il
+  s'efface quand on monte et quand on descend, sinon les dégâts le rejouent
+  sur la voiture suivante (mesuré : une voiture neuve à santé 0,7, le cap
+  qui tourne seul). Devant un piéton on FREINE à la distance d'arrêt
   (douze blocs au plus), on ne l'attend pas au contact. Une pose n'est refusée que si elle touche une case pleine
   que la pose d'avant ne touchait pas : une voiture invoquée contre un mur
   s'en dégage. Le crochet de main.js rend la FAMILLE : voiture et mobilier

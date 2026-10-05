@@ -795,6 +795,14 @@ export class Player {
     else if (this.inWater) speed = SWIM_SPEED;
     if (this.boost) speed *= this.boost; // riding a mount / berry-juice power-up
 
+    // UN CHOC EST UN ÉVÉNEMENT, PAS UN ÉTAT (v350) : les dégâts rejouent tout
+    // `choc` dont la date n'est pas celle du dernier qu'ils ont vu POUR CETTE
+    // VOITURE — une voiture neuve n'en a vu aucun, et elle héritait donc du
+    // dernier choc de la précédente (mesuré dans `monte.js` : une citadine
+    // neuve, aucun choc pendant le trajet, `direction −0,028` et un cap qui
+    // tourne seul). On l'efface quand on monte ET quand on descend.
+    const enVoiture = this.gabarit > 1 && !this.pilote;
+    if (enVoiture !== !!this._enVoiture) { this.choc = null; this._enVoiture = enVoiture; }
     if (this.gabarit > 1) {
       // AU VOLANT (conduite-physique, v350) : le modèle de véhicule de
       // `conduite.js` — l'accélération qui s'essouffle vers la pointe, le frein

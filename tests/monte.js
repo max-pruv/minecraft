@@ -6108,6 +6108,22 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       res.panne = { v: +Math.abs(P.vitesseVoiture || 0).toFixed(2), x: +(P.pos.x - x0).toFixed(2), tourne: +Math.abs(P.yaw - yawPanne).toFixed(3) };
       P.touchMove.f = 0; P.touchMove.s = 0;
       delete P.etatVoiture; P.etatVoiture = undefined;
+      // — UNE VOITURE NEUVE N'HÉRITE PAS DU DERNIER CHOC DE LA PRÉCÉDENTE
+      // (v350). Les dégâts rejouent tout `choc` dont la date n'est pas la
+      // dernière vue POUR CETTE VOITURE ; une voiture neuve n'en a vu aucun.
+      // On frappe un choc franc, on descend, on prend une voiture neuve, et
+      // l'on lit ce que les dégâts publient pour elle — sans rouler. —
+      P.choc = { force: 1, t: performance.now(), x: P.pos.x, z: P.pos.z };
+      await enJeu(0.3);
+      for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await dormir(400); }
+      vider();
+      P.pos.set(x0, y0 + 1.2, z0 + 20.5); P.vel.set(0, 0, 0); P.yaw = -Math.PI / 2;
+      g.animalManager.invoquer('voiture', x0 + 3, z0 + 20.5, false, { flotte: 'berline-citadine' });
+      await dormir(600);
+      for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); const t = performance.now(); while (!auVolant() && performance.now() - t < 2500) await dormir(150); }
+      await enJeu(0.5);
+      const evNeuve = P.etatVoiture;
+      res.neuve = { auVolant: auVolant(), ev: evNeuve ? { sante: +(+evNeuve.sante).toFixed(3), moteur: +(+evNeuve.moteur).toFixed(3), direction: +(+evNeuve.direction || 0).toFixed(4) } : null };
       for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await dormir(400); }
       vider();
       for (const [x, y, z] of poses) g.world.setBlock(x, y, z, 0);
@@ -6148,6 +6164,9 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('une voiture en panne ne repart plus — le joystick ne fait plus rien',
       !cd.err && cd.panne && cd.panne.v < 0.01 && cd.panne.x < 0.05 && cd.panne.tourne < 0.001,
       JSON.stringify(cd.panne));
+    verifier('une voiture neuve n\'hérite pas du dernier choc de la précédente — elle part sans dégâts',
+      !cd.err && cd.neuve && cd.neuve.auVolant && cd.neuve.ev && cd.neuve.ev.sante >= 0.999 && cd.neuve.ev.direction === 0,
+      JSON.stringify(cd.neuve));
 
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0,
       JSON.stringify(tab.erreurs));
