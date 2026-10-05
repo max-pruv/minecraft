@@ -3314,6 +3314,16 @@ l'embarquement a eu lieu, pas par une hypothèse.
   60,3 rejouée seule sur `origin/main`, VERTE rejouée seule sur la branche :
   intermittence vue des deux côtés (la grille horaire de la v305 n'est pas
   touchée ici).
+  Au portail suivant (base v356) : `visio.js` « caméra éteinte, le jeu
+  reprend sa voix normale » — 0,0197 après pour 0,0255 avant au portail,
+  VERTE rejouée seule sur la branche (0,0181 → 0,0194) ET sur `origin/main`
+  v358 (0,0161 → 0,0154) : un niveau de sortie audio lu sous charge.
+  `monte.js` « 🛬 descend train sorti… jusqu'à l'arrêt » — l'arrêt tombe à
+  x = 300,1, AU BOUT de la piste d'essai de trois cents blocs : c'est le piège
+  de la v273 (l'atterrissage assisté consomme presque toute la piste, la
+  cadence décide où il s'arrête). Le témoin devrait lire l'arrêt sur une piste
+  plus longue ou borner x < 300 avant de juger. Aucune ligne d'avion n'est
+  touchée par les rues de Nice.
 
 - [ ] **NICE À LA RÈGLE DU KIT : CE QUI RESTE (v357).** Masséna 13,2 → 8,6 % de
   lots, les Musiciens 20,4 → 14,5, le port 21,8 → 16,4 : les avenues du
