@@ -20,6 +20,29 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v377 — Le passager monte par la portière
+
+**Pourquoi.** Depuis la v366, l'enfant qui prend le volant marche jusqu'à la
+portière, l'ouvre et s'assied. Mais celui qui monte en PASSAGER dans la voiture
+d'un ami (v253) était encore collé au siège d'un coup, et le conducteur ne
+voyait rien bouger sur sa tablette.
+
+**Ce que ça change.** « Monter avec Marlon » : l'enfant marche jusqu'à la
+portière DROITE de la voiture de son ami, elle s'ouvre, il s'assied, elle se
+referme — et Marlon, sur SA tablette, voit sa portière droite s'ouvrir et se
+refermer. Un second appui termine tout de suite, comme au volant. Une tablette
+restée sur l'ancienne version ne voit pas la portière bouger, et rien ne casse.
+
+**Ce qui le prouve.** Un témoin neuf à deux tablettes dans `reseau.js` : Lou
+(qui joue la séquence) monte avec Marlon ; on lit les deux pages au même
+instant, relevé par relevé. Lou passe par l'approche, l'ouverture, l'entrée et
+la fermeture avant d'être passagère ; chez Marlon, la portière droite de sa
+voiture s'ouvre à 60° (1,047 rad) puis se referme. Sur `origin/main` : aucune
+phase, Lou passagère d'un coup, la portière de Marlon jamais touchée. Le témoin
+du passager de la v253 (sur des pages qui sautent la séquence) reste vert.
+
+---
+
 ## v376 — Les passants réagissent à la route
 
 **Pourquoi.** Un passant frôlé par une voiture faisait son pas de côté sans un

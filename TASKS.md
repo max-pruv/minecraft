@@ -3098,11 +3098,11 @@ l'embarquement a eu lieu, pas par une hypothèse.
 ## En cours
 
 ### Embarquement (v366) — ce qui reste dans la zone
-- **Le passager d'un ami (v253) monte sans séquence.** `monterAvec` colle encore
-  l'enfant au siège d'un coup. La séquence sait sortir par la portière droite
-  (`cote: 1`, déjà fabriquée) : la faire entrer par là est l'étape suivante, à
-  condition que l'ami — sur SA tablette — voie aussi la portière s'ouvrir, ce
-  qui demande un message réseau (`net.js`, hors zone).
+- [x] **Le passager d'un ami** — FAIT en v374 : il entre par la portière
+  droite avec la séquence (`monterChez`), et le conducteur la voit s'ouvrir
+  chez lui (message `portiere`, l'hôte relaie). Reste : la DESCENTE du
+  passager est encore instantanée ; et sans courtier (partie par le nuage
+  seul) le message ne sait pas nommer le conducteur (dette v253).
 - [ ] **LE PORTAIL DE LA v372 (bords des portières), DOUBLE MESURE FAITE.**
   `degats.js` vert. Au portail, 17 rouges dans `monte.js` et `maj.js` : il a
   tourné pendant que je faisais tourner une dizaine de sondes de navigateur

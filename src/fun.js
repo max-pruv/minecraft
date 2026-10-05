@@ -357,10 +357,18 @@ export function initFun(ctx) {
     let occupes = 0;
     if (rps) for (const rp of rps.values()) if (rp.passager && rp.passager.de === ami.id) occupes++;
     const s = Math.min(occupes, ami.def.sieges.length - 1);
-    passager = { de: ami.id, s, nom: ami.nom };
-    player.vel.set(0, 0, 0);
-    toast(`🚗 Tu montes avec ${ami.nom} ! Appuie encore pour descendre.`, 0xa8d8ff);
-    emojiBurst(['🚗', '💨'], 8);
+    const assis = () => {
+      passager = { de: ami.id, s, nom: ami.nom };
+      player.vel.set(0, 0, 0);
+      toast(`🚗 Tu montes avec ${ami.nom} ! Appuie encore pour descendre.`, 0xa8d8ff);
+      emojiBurst(['🚗', '💨'], 8);
+    };
+    // PAR LA PORTIÈRE DROITE, comme au volant (v374) : la séquence marche,
+    // ouvre, assied, puis appelle `assis` — `passagerDe()` ne ment pas avant
+    const veh = vehiculeDistant ? vehiculeDistant(ami.id) : null;
+    if (!veh) { assis(); return; }
+    embarquement.monterChez(veh, ami.def.sieges[s] || ami.def.siege, ami.id, assis,
+      () => { const v = vehiculeDistant(ami.id); return !!v && v.mesh === veh.mesh; });
   }
   function descendreDePassager(silencieux = false) {
     if (!passager) return;
@@ -1391,6 +1399,9 @@ export function initFun(ctx) {
     refusSortie: () => embarquement.refusSortie(),
     avatarEnSequence: () => embarquement.avatarPilote(),
     brancherAvatar: (h) => embarquement.brancherAvatar(h),
+    // la portière d'un passager, d'une tablette à l'autre (v374)
+    brancherPortieres: (f) => embarquement.brancherReseau(f),
+    recevoirPortiere: (mesh, c, o) => embarquement.porteDistante(mesh, c, o),
     // Chez qui l'enfant est passager (ou null) : la position réseau
     // l'emporte, et main.js l'assied sur le siège de la voiture de l'ami.
     passagerDe: () => passager,
