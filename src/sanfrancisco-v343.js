@@ -1,3 +1,12 @@
+// SAN FRANCISCO TELLE QU'ELLE ÉTAIT JUSQU'À LA v359 — FIGÉE, ET JAMAIS MODIFIÉE.
+//
+// La v361 passe San Francisco à la règle du kit (`voirie.js`). Un bloc qu'un
+// enfant a posé avant cette date l'a été contre CETTE ville-ci : là où il y en
+// a un (sa colonne et ses huit voisines), le monde garde la ville d'avant
+// (`world.js`, `colonnesVilleAvant`) — la discipline de `londres-v332.js`
+// (v339) et de `nice-v340.js` (v359). Recopié à l'octet depuis
+// `sanfrancisco.js` (inchangé jusqu'à la v359), seul cet en-tête est neuf.
+//
 // San Francisco.
 //
 // Il n'y avait ni collines, ni côte, ni plan : un disque de maisons pastel
@@ -23,9 +32,8 @@
 // donné par son écart réel à lui.
 
 import { BLOCK, CITY_BLOCK, DECOR_START, ARCHI } from './blocks.js';
-import { rangerVoies, solDesVoies, fabriqueCircuits, reculDesAvenues } from './voies.js';
+import { rangerVoies, solDesVoies, fabriqueCircuits } from './voies.js';
 import { positionDe } from './mondes.js';
-import { sectionDeRue } from './voirie.js';
 
 const uni = (c) => DECOR_START + c * 10;
 
@@ -69,11 +77,6 @@ const K = BLOCS_PAR_KM / 9;
 // taille était fausse.
 const k = (n) => n * K;
 const kr = (n) => Math.round(n * K);
-// La section des rues, demandée au kit (v361) — voir `ARTERES` plus bas.
-const COLLECTRICE = sectionDeRue('collecteur');
-const LOCALE = sectionDeRue('locale');
-export const SECTIONS_SF = { collecteur: COLLECTRICE, locale: LOCALE };
-export const PORTEE_FEUX_SF = Math.ceil(Math.SQRT2 * (COLLECTRICE.chaussee / 2 + 1.5));
 
 // Le Ferry Building : le pied de Market Street, et le point d'où tout se mesure.
 const FERRY = { u: kr(45), v: kr(-4) };
@@ -280,27 +283,15 @@ const MARKET = [de(0, 0), de(-2.2, 0.7), de(-4.2, 1.4), de(-5.4, 2.0)];
 const CHAUSSEE = 1.0;         // demi-largeur de la chaussée, en blocs
 const AVEC_TROTTOIR = 1.9;    // et jusqu'au bord du trottoir
 
-//
-// À LA RÈGLE DU KIT (v361) : la trame de 1847 et celle de l'ouest sont des
-// rues LOCALES (une voie, 3,1 m, trottoirs de 2 m), SoMa — ses rues sont des
-// sens uniques à plusieurs voies, Folsom, Howard, Harrison — une COLLECTRICE.
-// Le pas grandit dans le rapport des emprises : SI L'ÉLARGISSEMENT MANGE LES
-// BÂTIMENTS, ON RECOMPOSE LES LOTS (Paris v303, Londres v339, Nice v359). Les
-// valeurs écrites ici sont celles de la v192 et ne donnent plus que le rapport.
-const trameALaRegle = (t, sec) => {
-  const w = sec.chaussee / 2, s = w + sec.trottoir;
-  return { ...t, type: sec.type, w, s, pu: t.pu * s / t.s, pv: t.pv * s / t.s };
-};
 const TRAMES = {
   // le centre, la Chine, North Beach : la trame de 1847, en biais
-  nord: trameALaRegle({ ang: -0.36, pu: 8, pv: 8, cu: FERRY.u - kr(10), cv: FERRY.v - kr(10), w: CHAUSSEE, s: AVEC_TROTTOIR }, LOCALE),
+  nord: { ang: -0.36, pu: 8, pv: 8, cu: FERRY.u - kr(10), cv: FERRY.v - kr(10), w: CHAUSSEE, s: AVEC_TROTTOIR },
   // South of Market : mêmes angles, mais des îlots deux fois plus grands —
   // c'est ce qui a fait de SoMa un quartier d'entrepôts puis de bureaux.
-  soma: trameALaRegle({ ang: -0.36, pu: 15, pv: 12, cu: FERRY.u - kr(6), cv: FERRY.v + kr(8), w: CHAUSSEE, s: AVEC_TROTTOIR }, COLLECTRICE),
+  soma: { ang: -0.36, pu: 15, pv: 12, cu: FERRY.u - kr(6), cv: FERRY.v + kr(8), w: CHAUSSEE, s: AVEC_TROTTOIR },
   // tout l'ouest : la Mission, le Castro, le Sunset, le Richmond — nord-sud
-  ouest: trameALaRegle({ ang: 0, pu: 10, pv: 10, cu: 0, cv: 0, w: CHAUSSEE, s: AVEC_TROTTOIR }, LOCALE),
+  ouest: { ang: 0, pu: 10, pv: 10, cu: 0, cv: 0, w: CHAUSSEE, s: AVEC_TROTTOIR },
 };
-export const TRAMES_SF = TRAMES;
 
 // De quel côté de Market est-on ? Le produit vectoriel avec le segment le plus
 // proche suffit, et il donne aussi la distance à l'axe.
@@ -319,7 +310,6 @@ function versMarket(u, v) {
   return mieux;
 }
 
-export function trameDeSF(u, v) { return trameDe(u, v); }
 function trameDe(u, v) {
   // à l'ouest de Van Ness, la trame nord-sud gouverne toute la ville
   if (u < FERRY.u - kr(26)) return TRAMES.ouest;
@@ -330,52 +320,40 @@ function trameDe(u, v) {
 
 // Les voies qui portent un nom. Market d'abord — c'est l'épine dorsale — puis
 // celles qu'on cite quand on décrit la ville.
-// LES LARGEURS SE DEMANDENT AU KIT (`voirie.js`, `roadSection`, un bloc pour
-// un mètre) depuis la v361, comme Paris (v303), Londres (v339) et Nice (v359).
-// Le type se lit à la FONCTION : les artères de la vraie ville — Market, Van
-// Ness, Geary, Mission, la 19e Avenue, la Great Highway, les boulevards du
-// Sunset, Divisadero, Lombard (la US-101) — passent à deux voies
-// (COLLECTRICE) ; Columbus, Valencia, Stanyan et la 16e Rue, qui n'ont qu'une
-// voie par sens, sont des rues LOCALES. Mesuré : toutes en collectrices, le
-// disque tombe de 49,0 à 31,9 % de lots ; ainsi, 32,6. Aucune n'est un
-// boulevard, la ville est à
-// vingt-sept blocs par kilomètre et vingt et un blocs d'emprise y feraient
-// huit cents mètres. Les valeurs `av(rang)` d'avant donnaient 1,5 à 3,1 blocs
-// de chaussée ; l'ancien `l` de chaque ligne a disparu, une largeur écrite à
-// côté de la règle finirait par la contredire.
-const RUES_LOCALES = new Set(['Columbus Avenue', 'Valencia Street', 'Stanyan Street', '16e Rue']);
-export const sectionDeVoieSF = (nom) => (RUES_LOCALES.has(nom) ? LOCALE : COLLECTRICE);
-const aLaRegle = (voie) => {
-  const sec = sectionDeVoieSF(voie.nom);
-  return { ...voie, type: sec.type, l: sec.chaussee / 2, t: sec.trottoir };
-};
+// La hiérarchie des voies est conservée — Market plus large qu'une rue de
+// quartier — mais la base est redonnée en blocs neufs : `av(1)` vaut une
+// avenue ordinaire, et Market en vaut 1,4.
+const AVENUE = 1.1;
+const av = (rang) => rang * AVENUE;
+const TROTTOIR_AV = 0.8;
+
 const VOIES = [
-  { nom: 'Market Street', pts: MARKET.concat([de(-6.2, 2.4)]) },
-  { nom: 'The Embarcadero', pts: [de(-1.5, -2.2), de(-0.4, -1.2), de(0.2, -0.2), de(0.4, 1.2), de(0.2, 2.4)] },
-  { nom: 'Columbus Avenue', pts: [de(-0.4, -0.5), de(-1.0, -1.3), de(-1.5, -2.0)] },
-  { nom: 'Van Ness Avenue', pts: [de(-2.6, -2.2), de(-2.5, 0.2), de(-2.4, 2.0)] },
-  { nom: 'Geary Boulevard', pts: [de(-1.0, -0.3), de(-4.0, -0.4), de(-8.0, -0.5), de(-10, -0.5)] },
-  { nom: 'Divisadero Street', pts: [de(-4.6, -2.0), de(-4.7, 0.4), de(-4.7, 2.2)] },
-  { nom: 'Mission Street', pts: [de(-1.6, 0.6), de(-3.0, 1.6), de(-3.6, 3.4), de(-3.8, 4.6)] },
-  { nom: 'Valencia Street', pts: [de(-3.2, 1.4), de(-3.4, 3.6)] },
-  { nom: 'Lombard Street', pts: [de(-2.8, -2.0), de(-1.7, -1.6), de(-0.6, -1.5)] },
+  { nom: 'Market Street', l: av(1.4), t: TROTTOIR_AV, pts: MARKET.concat([de(-6.2, 2.4)]) },
+  { nom: 'The Embarcadero', l: av(1.0), t: TROTTOIR_AV, pts: [de(-1.5, -2.2), de(-0.4, -1.2), de(0.2, -0.2), de(0.4, 1.2), de(0.2, 2.4)] },
+  { nom: 'Columbus Avenue', l: av(0.9), t: TROTTOIR_AV, pts: [de(-0.4, -0.5), de(-1.0, -1.3), de(-1.5, -2.0)] },
+  { nom: 'Van Ness Avenue', l: av(1.0), t: TROTTOIR_AV, pts: [de(-2.6, -2.2), de(-2.5, 0.2), de(-2.4, 2.0)] },
+  { nom: 'Geary Boulevard', l: av(0.9), t: TROTTOIR_AV, pts: [de(-1.0, -0.3), de(-4.0, -0.4), de(-8.0, -0.5), de(-10, -0.5)] },
+  { nom: 'Divisadero Street', l: av(0.7), t: TROTTOIR_AV, pts: [de(-4.6, -2.0), de(-4.7, 0.4), de(-4.7, 2.2)] },
+  { nom: 'Mission Street', l: av(0.9), t: TROTTOIR_AV, pts: [de(-1.6, 0.6), de(-3.0, 1.6), de(-3.6, 3.4), de(-3.8, 4.6)] },
+  { nom: 'Valencia Street', l: av(0.7), t: TROTTOIR_AV, pts: [de(-3.2, 1.4), de(-3.4, 3.6)] },
+  { nom: 'Lombard Street', l: av(0.7), t: TROTTOIR_AV, pts: [de(-2.8, -2.0), de(-1.7, -1.6), de(-0.6, -1.5)] },
   // Fulton et Lincoln Way vont jusqu'à l'océan, comme les vraies : elles
   // s'arrêtaient à 43e Avenue, à neuf blocs de la Great Highway, et aucune
   // des deux ne pouvait donc refermer le tour du parc.
-  { nom: 'Fulton Street', pts: [de(-3.0, 0.2), de(-6.0, 0.1), de(-9.85, 0.0)] },
-  { nom: 'Lincoln Way', pts: [de(-5.33, 0.88), de(-9.85, 0.9)] },
+  { nom: 'Fulton Street', l: av(0.7), t: TROTTOIR_AV, pts: [de(-3.0, 0.2), de(-6.0, 0.1), de(-9.85, 0.0)] },
+  { nom: 'Lincoln Way', l: av(0.7), t: TROTTOIR_AV, pts: [de(-5.33, 0.88), de(-9.85, 0.9)] },
   // LA GREAT HIGHWAY N'EST PAS SUR LA PLAGE. Mesurée avant : ZÉRO pour cent
   // de chaussée — onze blocs de sable et quatre-vingt-dix-neuf hors de la
   // presqu'île, c'est-à-dire dans le Pacifique. Le sable et l'eau passent
   // avant les voies dans `solSF`, à dessein : ce n'était pas une route, c'était
   // un trait sur l'océan. La vraie longe Ocean Beach côté ville, une centaine
   // de mètres en retrait du ressac.
-  { nom: 'Great Highway', pts: [de(-9.85, -0.6), de(-9.85, 1.6), de(-9.78, 3.0), de(-9.7, 3.4)] },
-  { nom: '19e Avenue', pts: [de(-7.6, -0.8), de(-7.7, 1.6), de(-7.8, 4.2)] },
+  { nom: 'Great Highway', l: av(0.8), t: TROTTOIR_AV, pts: [de(-9.85, -0.6), de(-9.85, 1.6), de(-9.78, 3.0), de(-9.7, 3.4)] },
+  { nom: '19e Avenue', l: av(0.8), t: TROTTOIR_AV, pts: [de(-7.6, -0.8), de(-7.7, 1.6), de(-7.8, 4.2)] },
   // Third Street suivait la baie de trop près : ses trente derniers blocs
   // tombaient DANS l'eau, la rive reculant vers l'ouest à hauteur d'Islais
   // Creek. Elle passe désormais par Dogpatch et Bayview, à terre.
-  { nom: 'Third Street', pts: [de(-0.2, 0.8), de(0.0, 2.6), de(-0.6, 3.6), de(-1.0, 4.4)] },
+  { nom: 'Third Street', l: av(0.8), t: TROTTOIR_AV, pts: [de(-0.2, 0.8), de(0.0, 2.6), de(-0.6, 3.6), de(-1.0, 4.4)] },
 
   // --- LES RUES DE RACCORD (v223) ---------------------------------------------
   //
@@ -383,12 +361,12 @@ const VOIES = [
   // leçon de Paris en v209 et v216. Cinq vraies rues, prises sur le plan, pour
   // que le Golden Gate Park, le Sunset et la Mission aient leur propre boucle
   // au lieu de repasser sur celle du voisin.
-  { nom: 'Stanyan Street', pts: [de(-5.40, 0.02), de(-5.40, 1.05)] },
-  { nom: 'Sunset Boulevard', pts: [de(-8.97, 0.88), de(-8.97, 3.3)] },
-  { nom: 'Sloat Boulevard', pts: [de(-9.75, 3.3), de(-8.97, 3.35), de(-7.0, 3.42)] },
-  { nom: '16e Rue', pts: [de(-3.55, 1.85), de(-2.0, 1.9), de(-0.05, 1.95)] },
-  { nom: 'Cesar Chavez Street', pts: [de(-3.85, 3.45), de(-2.0, 3.55), de(-0.55, 3.68)] },
-].map(aLaRegle);
+  { nom: 'Stanyan Street', l: av(0.7), t: TROTTOIR_AV, pts: [de(-5.40, 0.02), de(-5.40, 1.05)] },
+  { nom: 'Sunset Boulevard', l: av(0.8), t: TROTTOIR_AV, pts: [de(-8.97, 0.88), de(-8.97, 3.3)] },
+  { nom: 'Sloat Boulevard', l: av(0.8), t: TROTTOIR_AV, pts: [de(-9.75, 3.3), de(-8.97, 3.35), de(-7.0, 3.42)] },
+  { nom: '16e Rue', l: av(0.7), t: TROTTOIR_AV, pts: [de(-3.55, 1.85), de(-2.0, 1.9), de(-0.05, 1.95)] },
+  { nom: 'Cesar Chavez Street', l: av(0.7), t: TROTTOIR_AV, pts: [de(-3.85, 3.45), de(-2.0, 3.55), de(-0.55, 3.68)] },
+];
 
 const BANDES = rangerVoies(VOIES);
 export const __voiesSF = VOIES;
@@ -527,20 +505,14 @@ export function solSF(x, z) {
   const c = Math.cos(t.ang), s = Math.sin(t.ang);
   const du = u - t.cu, dv = v - t.cv;
   const a = du * c - dv * s, b = du * s + dv * c;
-  // Une rue de la trame qui DOUBLE une avenue n'est pas tracée (v361) : la
-  // règle de Londres et de Nice (`reculDesAvenues` dans `voies.js`).
-  const double = t.type === 'locale' ? doubleLocale : doubleCollectrice;
-  let d = Infinity;
-  const ra = Math.abs(a - Math.round(a / t.pu) * t.pu);
-  if (ra < t.s && !double(u, v, s, c)) d = ra;
-  const rb = Math.abs(b - Math.round(b / t.pv) * t.pv);
-  if (rb < t.s && rb < d && !double(u, v, c, -s)) d = rb;
+  const d = Math.min(
+    Math.abs(a - Math.round(a / t.pu) * t.pu),
+    Math.abs(b - Math.round(b / t.pv) * t.pv),
+  );
   if (d < t.w) return BITUME;
   if (d < t.s) return TROTTOIR;
   return null;
 }
-const doubleLocale = reculDesAvenues(VOIES, COLLECTRICE, LOCALE);
-const doubleCollectrice = reculDesAvenues(VOIES, COLLECTRICE);
 
 // Un lot est bâtissable s'il n'est ni rue, ni parc, ni plage, ni trop près de
 // l'eau — et pas sur le sommet de Twin Peaks, qui reste sauvage comme le vrai.
@@ -585,21 +557,15 @@ function tirageSF(a, b, sel) {
 }
 
 // L'îlot auquel appartient ce point, dans le repère de sa trame.
-// LA PARCELLE (v361). L'îlot recomposé à la règle du kit est 1,9 fois plus
-// grand que celui de la v192 : une hauteur tirée par ÎLOT faisait d'un lot de
-// quatre cents mètres une seule tour, et le centre devenait une poignée de
-// plateaux de quarante blocs (médiane 10 → 23, le Ferry Building dominé). Un
-// îlot porte donc quatre PARCELLES, au pas d'avant, chacune son immeuble et sa
-// hauteur — la règle des deux échelles : les emprises suivent le sol.
 function ilotSF(u, v) {
   const t = trameDe(u, v);
   const c = Math.cos(t.ang), s = Math.sin(t.ang);
   const du = u - t.cu, dv = v - t.cv;
-  const fa = (du * c - dv * s) / t.pu, fb = (du * s + dv * c) / t.pv;
-  const a = Math.round(fa), b = Math.round(fb);
-  return { a, b, pa: 2 * a + (fa >= a ? 1 : 0), pb: 2 * b + (fb >= b ? 1 : 0) };
+  return {
+    a: Math.round((du * c - dv * s) / t.pu),
+    b: Math.round((du * s + dv * c) / t.pv),
+  };
 }
-const memeParcelle = (p, q) => p.pa === q.pa && p.pb === q.pb;
 
 // Combien d'étages ? Le centre des affaires monte, le reste est une ville basse
 // de maisons de trois étages — c'est ce contraste qui fait la silhouette de San
@@ -613,26 +579,14 @@ const memeParcelle = (p, q) => p.pa === q.pa && p.pb === q.pb;
 // soixante-et-un étages, Transamerica quarante-huit, 555 California
 // cinquante-deux.
 export function quartierSF(u, v) {
-  // Le centre s'arrête un pâté plus au sud qu'avant (v361) : au nord,
-  // Fisherman's Wharf est fait d'immeubles bas, et le tapis de centre
-  // dominait Pier 39 (5 blocs pour une médiane de 15).
-  if (u > FERRY.u - kr(16) && v > FERRY.v - kr(11) && v < FERRY.v + kr(8)) return 'centre';
+  if (u > FERRY.u - kr(16) && v > FERRY.v - kr(12) && v < FERRY.v + kr(8)) return 'centre';
   if (u > FERRY.u - kr(24) && v > FERRY.v + kr(6) && v < FERRY.v + kr(22)) return 'soma';
   return 'maisons';
 }
 
 function hauteurSFQuartier(u, v, t) {
   switch (quartierSF(u, v)) {
-    // UN TAPIS PAR CONSTRUCTION (v361). Le centre ne porte qu'une vingtaine de
-    // parcelles : sous la loi t³, sa médiane était un tirage (13 en v359, 21
-    // une fois les îlots recomposés, le Ferry Building dominé). Quatre parcelles
-    // sur cinq font le tapis de huit à quatorze étages, la cinquième une tour
-    // de vingt-deux à cinquante-deux — mêmes bornes, même intention.
-    // Et les tours restent au sud de Washington Street, le long de Market :
-    // c'est là qu'est le vrai Financial District, pas à North Beach.
-    case 'centre':
-      if (t >= 0.8 && v > FERRY.v - kr(6)) return 22 + Math.floor((t - 0.8) / 0.2 * 31);
-      return 8 + Math.floor(Math.min(t, 0.79) / 0.8 * 7);
+    case 'centre': return 8 + Math.floor(t * t * t * 44);
     case 'soma': return 5 + Math.floor(t * t * 12);
     default: return 3 + Math.floor(t * t * 4);
   }
@@ -642,17 +596,15 @@ function hauteurSFQuartier(u, v, t) {
 export function batirColonneSF(x, z, poser) {
   const u = x - SF.x, v = z - SF.z;
   const lot = ilotSF(u, v);
-  const t = tirageSF(lot.pa, lot.pb, 911);
+  const t = tirageSF(lot.a, lot.b, 911);
   const bh = hauteurSFQuartier(u, v, t);
   const q = quartierSF(u, v);
   const tour = bh >= 12;
   const palette = q === 'centre' ? PIERRES_CENTRE : q === 'soma' ? BRIQUES_SOMA : PASTELS_MAISONS;
-  const mur = palette[Math.floor(tirageSF(lot.pa, lot.pb, 912) * palette.length) % palette.length];
+  const mur = palette[Math.floor(tirageSF(lot.a, lot.b, 912) * palette.length) % palette.length];
 
-  // une parcelle voisine est un autre immeuble : sa limite est une façade
-  const libre = (xx, zz) => lotSFLibre(xx, zz) && memeParcelle(lot, ilotSF(xx - SF.x, zz - SF.z));
-  const oE = libre(x + 1, z), oO = libre(x - 1, z);
-  const oS = libre(x, z + 1), oN = libre(x, z - 1);
+  const oE = lotSFLibre(x + 1, z), oO = lotSFLibre(x - 1, z);
+  const oS = lotSFLibre(x, z + 1), oN = lotSFLibre(x, z - 1);
   const dedans = oE && oO && oS && oN;
 
   // Les fenêtres suivent la façade : le long d'un mur est-ouest c'est v qui les

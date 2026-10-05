@@ -20,7 +20,7 @@ import {
   buildTransamerica, buildCoit, buildSutro, buildFerryBuilding, buildPaintedLadies,
   buildPalaisBeauxArts, buildAlcatraz, batirColonneSF,
   buildGoldenGate, buildKarl, buildPier39, buildLombard, buildDragonGate, adresseSF,
-  VOIES_SF,
+  VOIES_SF, PORTEE_FEUX_SF,
 } from './sanfrancisco.js';
 import {
   NICE, surTerreNice, hauteurNice, solNice, lotNiceLibre, batirColonneNice,
@@ -84,6 +84,7 @@ import { BORNES as BORNES_MANHATTAN } from './manhattan-plan.js';
 import * as PARIS_V302 from './paris-v302.js';
 import * as LONDRES_V332 from './londres-v332.js';
 import * as NICE_V340 from './nice-v340.js';
+import * as SF_V343 from './sanfrancisco-v343.js';
 import { surLaVoie, presDeLaVoie, voieEn, brancherSol, gareEn, rubansVoieDans } from './trains.js';
 import { routeEn, rubansDans, brancherSol as brancherSolRoutes } from './routes.js';
 
@@ -2083,9 +2084,12 @@ function marquerParisCede(ens, x, z) {
 export const DATE_RUES_LONDRES = Date.UTC(2026, 9, 4, 15, 0, 0);
 // Nice suit la même règle à la v359 (`nice-v340.js`), avec sa propre date.
 export const DATE_RUES_NICE = Date.UTC(2026, 9, 5, 5, 25, 0);
+// San Francisco à la v361 (`sanfrancisco-v343.js`).
+export const DATE_RUES_SF = Date.UTC(2026, 9, 5, 8, 15, 0);
 const VILLES_FIGEES = [
   { ancre: LONDRES, date: DATE_RUES_LONDRES },
   { ancre: NICE, date: DATE_RUES_NICE },
+  { ancre: SF, date: DATE_RUES_SF },
 ];
 const DATE_FIGEE_MAX = Math.max(...VILLES_FIGEES.map((f) => f.date));
 function dansVilleAvant(x, z, t) {
@@ -2596,7 +2600,7 @@ export class World {
     this.monumentsTouches = new Set();  // les monuments HD qu'un enfant a modifiés (v292)
     this.morceauxAvantClimat = new Set(); // les morceaux (et leurs voisins) bâtis avant les climats (v345)
     this.colonnesCedees = new Set();    // les colonnes de Paris où la ville cède à ce qu'un enfant a bâti (v306)
-    this.colonnesVilleAvant = new Set();  // celles de Londres et de Nice où la ville d'avant le kit reste (v339, v359)
+    this.colonnesVilleAvant = new Set();  // celles de Londres, de Nice et de San Francisco où la ville d'avant le kit reste (v339, v359, v361)
     this.cacheSol = new Map();          // "x,z" -> { nat, cote } : la fiche d'une colonne (sol continu, v297)
     this.sansSolContinu = false;        // ?solcontinu=0 : la mesure A/B, jamais un réglage
     this.editTimes = new Map();   // "x,y,z" -> ms timestamp, for multiplayer merge
@@ -3520,9 +3524,9 @@ export class World {
         // Market Street entre les deux, la plage, les quais et les parcs.
         // Nice et Lille : chacune sa trame, ses places et ses maisons. Comme à
         // San Francisco, la trame générique ne s'applique pas par-dessus.
-        // Londres (v339) et Nice (v359) d'avant le kit dans les mondes d'avant,
+        // Londres (v339), Nice (v359) et San Francisco (v361) d'avant le kit dans les mondes d'avant,
         // et sous les colonnes où un enfant a bâti avant leur date.
-        const villeAvant = city && (city.key === 'londres' || city.key === 'nice') && (this.conf.villesAvant
+        const villeAvant = city && (city.key === 'londres' || city.key === 'nice' || city.key === 'sf') && (this.conf.villesAvant
           || (this.colonnesVilleAvant.size > 0 && this.colonnesVilleAvant.has(cleColonneParis(wx, wz))));
         const londresAvant = villeAvant && city.key === 'londres';
         for (const [cle, sol, libre, batir, pont, ancre, voies, cleFeux, portee] of [
@@ -3579,14 +3583,19 @@ export class World {
         if (fait) continue;
 
         if (city && city.key === 'sf') {
-          const ss = solSF(wx, wz);
-          if (feuDeVille(data, x, z, h, wx, wz, ss, feuxDeVille('sf', SF, VOIES_SF, solSF))) {
+          // San Francisco d'avant le kit (v361), comme Londres et Nice.
+          const V = villeAvant ? SF_V343 : null;
+          const sol = V ? V.solSF : solSF, libre = V ? V.lotSFLibre : lotSFLibre;
+          const batir = V ? V.batirColonneSF : batirColonneSF;
+          const feux = V ? feuxDeVille('sf-v359', SF, V.VOIES_SF, sol) : feuxDeVille('sf', SF, VOIES_SF, sol, PORTEE_FEUX_SF);
+          const ss = sol(wx, wz);
+          if (feuDeVille(data, x, z, h, wx, wz, ss, feux)) {
             // le trottoir et son feu tricolore sont posés (v274)
-          } else if (lampadaireDeVille(data, x, z, h, wx, wz, solSF, ss)) {
+          } else if (lampadaireDeVille(data, x, z, h, wx, wz, sol, ss)) {
             // le trottoir et son réverbère sont posés (v248)
           } else if (ss !== null) data[World.index(x, h, z)] = ss;
-          else if (lotSFLibre(wx, wz)) {
-            batirColonneSF(wx, wz, (dy, id) => {
+          else if (libre(wx, wz)) {
+            batir(wx, wz, (dy, id) => {
               const wy = h + dy - 1;
               if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id;
             });

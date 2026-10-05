@@ -2547,6 +2547,99 @@ const VRAIES_KM = [
       !kitNice.err && kitNice.bati >= 21 && Object.values(kitNice.quartiers).every((q) => q >= 4),
       kitNice.err || `${kitNice.bati} % du disque · ${JSON.stringify(kitNice.quartiers)}`);
 
+    // --- LES RUES DE SAN FRANCISCO À LA RÈGLE DU KIT (v361) -----------------
+    //
+    // La méthode de Londres et de Nice, la troisième ville : les artères de la
+    // vraie ville en deux voies, Columbus, Valencia, Stanyan et la 16e en une,
+    // la trame de 1847 et celle de l'ouest en une, SoMa en deux, le pas
+    // recomposé et la trame qui ne double plus une avenue. Mesuré sur
+    // `origin/main` : artères 2,0 à 3,1 blocs de chaussée, trame 2,0 ; part
+    // bâtie du disque 49,0 % — ici 32,6 (les avenues prennent 27 % du disque
+    // contre 9), Richmond le quartier le plus touché (30,7 → 15,1), la barre
+    // des quartiers à 10.
+    const kitSF = await tab.evaluate(async () => {
+      try {
+        const m = await import('./src/sanfrancisco.js');
+        const { sectionDeRue } = await import('./src/voirie.js');
+        const { CITY_BLOCK } = await import('./src/blocks.js');
+        const N = m.SF;
+        const med = (a) => { const b = [...a].sort((x, y) => x - y); return b.length ? b[Math.floor(b.length / 2)] : -1; };
+        const roule = (u, v) => m.solSF(N.x + Math.round(u), N.z + Math.round(v)) === CITY_BLOCK.ASPHALT;
+        const coupe = (u, v, eu, ev) => {
+          if (!roule(u, v)) return null;
+          let a = 0, b = 0;
+          while (a < 20 && roule(u - ev * (a + 0.05), v + eu * (a + 0.05))) a += 0.05;
+          while (b < 20 && roule(u + ev * (b + 0.05), v - eu * (b + 0.05))) b += 0.05;
+          return a + b;
+        };
+        const parType = { collecteur: [], locale: [] };
+        const locales = new Set(['Columbus Avenue', 'Valencia Street', 'Stanyan Street', '16e Rue']);
+        for (const voie of m.VOIES_SF) {
+          const type = m.sectionDeVoieSF ? m.sectionDeVoieSF(voie.nom).type : (locales.has(voie.nom) ? 'locale' : 'collecteur');
+          for (let i = 0; i < voie.pts.length - 1; i++) {
+            const [u0, v0] = voie.pts[i], [u1, v1] = voie.pts[i + 1];
+            const lg = Math.hypot(u1 - u0, v1 - v0);
+            if (lg < 8) continue;
+            const c = coupe((u0 + u1) / 2, (v0 + v1) / 2, (u1 - u0) / lg, (v1 - v0) / lg);
+            if (c !== null && c < 20) parType[type].push(c);
+          }
+        }
+        // les rues de la trame, coupées en travers au milieu d'un îlot
+        const T = m.TRAMES_SF || {
+          nord: { ang: -0.36, pu: 8, pv: 8, cu: 105, cv: -42, type: 'locale' },
+          soma: { ang: -0.36, pu: 15, pv: 12, cu: 117, cv: 12, type: 'collecteur' },
+          ouest: { ang: 0, pu: 10, pv: 10, cu: 0, cv: 0, type: 'locale' },
+        };
+        const trames = { collecteur: [], locale: [] };
+        for (const t of Object.values(T)) {
+          const co = Math.cos(t.ang), si = Math.sin(t.ang);
+          for (let i = -12; i <= 12; i++) for (let j = -12; j <= 12; j++) {
+            const A = i * t.pu, B = (j + 0.5) * t.pv;
+            const u = t.cu + A * co + B * si, v = t.cv - A * si + B * co;
+            if (Math.hypot(u, v) > N.r - 10) continue;
+            if (m.trameDeSF && m.trameDeSF(u, v) !== t) continue;  // la coupe dans SA trame
+            const c = coupe(u, v, si, co);
+            if (c !== null && c < 15) trames[t.type].push(c);
+          }
+        }
+        const part = (dx, dz, r) => {
+          const [cx, cz] = m.adresseSF(dx, dz);
+          let n = 0, lots = 0;
+          for (let x = cx - r; x <= cx + r; x++) for (let z = cz - r; z <= cz + r; z++) {
+            if ((x - cx) ** 2 + (z - cz) ** 2 > r * r || !m.surTerreSF(x, z)) continue;
+            n++; if (m.lotSFLibre(x, z)) lots++;
+          }
+          return +(100 * lots / n).toFixed(1);
+        };
+        let n = 0, lots = 0;
+        for (let x = N.x - N.r; x <= N.x + N.r; x += 2) for (let z = N.z - N.r; z <= N.z + N.r; z += 2) {
+          if ((x - N.x) ** 2 + (z - N.z) ** 2 > N.r * N.r || !m.surTerreSF(x, z)) continue;
+          n++; if (m.lotSFLibre(x, z)) lots++;
+        }
+        return {
+          coll: sectionDeRue('collecteur'), loc: sectionDeRue('locale'),
+          arteres: { n: parType.collecteur.length, med: med(parType.collecteur) },
+          rues: { n: parType.locale.length, med: med(parType.locale) },
+          trameLoc: { n: trames.locale.length, med: med(trames.locale) },
+          trameColl: { n: trames.collecteur.length, med: med(trames.collecteur) },
+          bati: +(100 * lots / n).toFixed(1),
+          quartiers: { centre: part(-0.8, -0.4, 20), NorthBeach: part(-0.8, -1.4, 20), SoMa: part(-1.2, 0.9, 20),
+            Mission: part(-3.4, 2.4, 20), Haight: part(-5.0, 0.95, 20), Richmond: part(-7.5, -0.3, 20),
+            Sunset: part(-7.5, 2.0, 20), Bayview: part(-1.2, 4.0, 20) },
+        };
+      } catch (e) { return { err: String(e) }; }
+    });
+    verifier('les rues de San Francisco ont la section du kit : deux voies aux artères et à SoMa, une aux rues et à la trame',
+      !kitSF.err && kitSF.arteres.n >= 12 && kitSF.rues.n >= 3 && kitSF.trameLoc.n >= 20 && kitSF.trameColl.n >= 2
+      && kitSF.arteres.med >= kitSF.coll.chaussee - 0.5 && kitSF.rues.med >= kitSF.loc.chaussee - 0.5
+      && kitSF.trameLoc.med >= kitSF.loc.chaussee - 0.5 && kitSF.trameColl.med >= kitSF.coll.chaussee - 0.5,
+      kitSF.err || `artères ${fk(kitSF.arteres.med)} (${kitSF.arteres.n} coupes, kit ${kitSF.coll.chaussee})`
+      + ` · rues ${fk(kitSF.rues.med)} (${kitSF.rues.n}, kit ${kitSF.loc.chaussee})`
+      + ` · trame ${fk(kitSF.trameLoc.med)} (${kitSF.trameLoc.n}) · SoMa ${fk(kitSF.trameColl.med)} (${kitSF.trameColl.n})`);
+    verifier('et San Francisco garde ses immeubles : le disque à plus de 30 %, aucun quartier sous 10 %',
+      !kitSF.err && kitSF.bati >= 30 && Object.values(kitSF.quartiers).every((q) => q >= 10),
+      kitSF.err || `${kitSF.bati} % du disque · ${JSON.stringify(kitSF.quartiers)}`);
+
     // --- AUCUNE VILLE NE FAIT DEMI-TOUR, PAS SEULEMENT LONDRES ---------------
     //
     // Le témoin ci-dessus ne regardait que Londres. Les cinq autres villes à
