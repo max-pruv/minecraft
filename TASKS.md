@@ -12,6 +12,18 @@
   image 283 à 1 517 ms), `origin/main` v375 10,7 · 13,1 · 9,6 · 0 % (283 à
   1 400 ms). Même distribution, la branche n'est pas pire : c'est la dette
   connue, pas la livraison.
+  Après la fusion de la v375 (portail de dix suites) : un rouge À MOI,
+  corrigé — le témoin de la v375 « aucun monument en travers d'un anneau »
+  rendait sa dette « déclarée pour rien » : les anneaux de la livraison la
+  remboursent entière (123 monuments lus, zéro en travers), sa table est
+  vidée. Les autres, déjà déclarés et rejoués SEULS des deux côtés : `carte.js`
+  flèche du GPS (gauche à 1,92 rad, même valeur sur `origin/main` v375) ;
+  `plafond.js` « la surface coûte… » (10,4 puis 8,0 ms avec contre 1,2 et
+  2,2 sans sur la branche ; 10,5 contre 8,6 sur `origin/main` — sous node, ordre
+  alterné, 31 passages : branche 2,16·1,91·1,64 contre 1,60·1,23·1,09 ms,
+  `origin/main` 2,05·2,75·2,07 contre 1,51·1,77·1,09, le même écart) ;
+  `maj.js` le loader de l'installation ; `manhattan.js` façade 17 102 →
+  51 734 et le taxi (bouton jamais visible) ; `monte.js` gel 700 ms · 13,9 %.
 
 - [ ] **LE PORTAIL DE LA v371 (les passants traversent au feu), DOUBLE MESURE
   FAITE.** Premier portail (base v354) : deux rouges de `monte.js` étaient à
@@ -1465,8 +1477,10 @@
   lent, relevé sur 250 blocs) quand le portail, sur le MÊME commit, la rendait
   verte (6,8 sur 37 blocs) : NEUF, intermittent, la grandeur dépend de la
   portion du circuit que la fenêtre a parcourue — à mesurer sur un tour entier.
-- [ ] **QUARANTE-CINQ MONUMENTS SONT BÂTIS EN TRAVERS D'UN ANNEAU DE VOITURES
-  (v375, témoin de `plafond.js`, `DETTE_ANNEAUX`).** Les anneaux des villes
+- [x] **QUARANTE-CINQ MONUMENTS SONT BÂTIS EN TRAVERS D'UN ANNEAU DE VOITURES
+  (v375, témoin de `plafond.js`, `DETTE_ANNEAUX`) — FAIT en v376** : les
+  anneaux lisent le bâtisseur (`contreUnMonument`) et se déplacent ; le témoin
+  de la v375 compte 123 monuments, zéro en travers, et sa table est vide. Les anneaux des villes
   engendrées se choisissent sur la trame sans regarder les repères ; un
   monument posé APRÈS pose ses blocs (couches d'auteur 1 à 3) sur des cases que
   la voiture traverse. Le pire : le Taj Mahal (294 cases), le Colisée (53),

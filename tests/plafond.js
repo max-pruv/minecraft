@@ -761,27 +761,16 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     // huit palais neufs se bâtissent dans la partie libre de leur boîte, et
     // quatre gabarits qui coupaient un anneau (Dam 6, Rijksmuseum 12, Prague
     // 10, Gyeongbokgung 8 colonnes) n'en coupent plus. Le reste est une dette
-    // DÉCLARÉE, chiffre par chiffre (`TASKS.md`) : un repère qui coupe un
-    // anneau de plus que sa dette, ou un repère neuf qui en coupe un, rougit ;
-    // une dette qui ne mesure plus rien rougit aussi.
+    // DÉCLARÉE, chiffre par chiffre : un repère qui coupe un anneau de plus
+    // que sa dette, ou un repère neuf qui en coupe un, rougit ; une dette qui
+    // ne mesure plus rien rougit aussi. (v376 : plus aucune.)
     {
       const VMa = await import('../src/villesmonde.js');
-      const DETTE_ANNEAUX = {
-        'Rome|Colisée': 53, 'Barcelone|Sagrada Família': 21, 'Barcelone|Colonne de Colom': 2,
-        'Pise|Tour de Pise': 11, 'Pise|Duomo de Pise': 24, 'Agra|Taj Mahal': 294, 'Agra|Mosquée du Taj': 18,
-        "Agra|Fort d'Agra": 6, 'Seattle|Pike Place': 21, 'Madrid|Palais royal': 31, 'Amsterdam|Westerkerk': 1,
-        'Berlin|Berliner Dom': 25, 'Munich|Frauenkirche': 4, 'Vienne|La Hofburg': 17, 'Prague|Saint-Guy': 2,
-        'Prague|Le pont Charles': 2, 'Athènes|Le Parthénon': 3, 'Istanbul|Sainte-Sophie': 14,
-        'Istanbul|La Mosquée bleue': 19, 'Moscou|Le Kremlin': 6, 'Moscou|Le Bolchoï': 4,
-        'Saint-Pétersbourg|Notre-Dame-de-Kazan': 4, 'Stockholm|Storkyrkan': 1, 'Copenhague|Tivoli': 7,
-        'Tokyo|Sensō-ji': 17, 'Tokyo|Le palais impérial': 8, "Kyoto|Le Pavillon d'or": 11, 'Kyoto|Fushimi Inari': 2,
-        'Kyoto|Tō-ji': 33, 'Séoul|La tour de Séoul': 1, 'Hong Kong|La Banque de Chine': 18, 'Dubaï|Burj Khalifa': 9,
-        "Delhi|La porte de l'Inde": 2, 'Delhi|Rashtrapati Bhavan': 40, 'Los Angeles|Walt Disney Hall': 7,
-        'Las Vegas|La High Roller': 1, 'Las Vegas|La demi-tour Eiffel': 4, 'Toronto|Le Rogers Centre': 3,
-        "Toronto|L'ancien hôtel de ville": 1, 'Mexico|Le Templo Mayor': 36, 'La Havane|Le Capitole': 25,
-        'La Havane|Les vieilles américaines': 2, "Buenos Aires|L'Obélisque": 4, 'Buenos Aires|Le Cabildo': 4,
-        'Le Cap|Le château de Bonne-Espérance': 6,
-      };
+      // Remboursée en entier par la v376 : les anneaux lisent le bâtisseur
+      // (`contreUnMonument`) et contournent les monuments. Mesuré : 123
+      // monuments lus, zéro en travers. La table reste, vide : un repère neuf
+      // qui coupe un anneau rougit.
+      const DETTE_ANNEAUX = {};
       const wa = new W.World();
       const traces = VMa.tracesCirculation((x, z) => wa.terrainHeight(x, z));
       const fautes = [], mesure = {};

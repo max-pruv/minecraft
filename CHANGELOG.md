@@ -43,7 +43,9 @@ les villes et vérifiés rouges sur `origin/main` : 251/262 villes à plusieurs
 circuits (115 avant) ; 1 063 côtés de rue partagés, sens contraires à 3,2
 blocs au moins pour deux demi-largeurs de 2,26 (49 avant, sans aucun sens
 contraire) ; zéro pas de carrosserie dans un monument (1 613 avant, 43
-anneaux). Le témoin « à droite » de la v271 relu à l'axe de la rue : 0 relevé à
+anneaux). Le témoin de la v375, qui lit les blocs que chaque monument pose
+sous la carrosserie, voit zéro monument en travers sur 123 : sa dette de
+quarante-cinq monuments est remboursée, la table est vide. Le témoin « à droite » de la v271 relu à l'axe de la rue : 0 relevé à
 gauche (325 sur `origin/main`). Le témoin des ponts lit les 56 villes à pont
 au lieu de quinze : Agra, Berlin et Munich réglés — un tablier d'anneau
 porte désormais un bloc de plus à chaque bout, pour la colonne arrondie que la
