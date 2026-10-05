@@ -1,6 +1,6 @@
 # Ce qui est en cours
 
-- [ ] **LE PORTAIL DE LA v383 (les circuits des villes engendrées), DOUBLE
+- [ ] **LE PORTAIL DE LA v387 (les circuits des villes engendrées), DOUBLE
   MESURE FAITE.** Verts : `carteMonde.js`, `plafond.js`, `degats.js`,
   `carte.js`, `washington.js`. `maj.js` : un seul rouge, À MOI et corrigé (le
   titre de la nouveauté faisait sept mots). Rouges déjà déclarés, mêmes
@@ -30,6 +30,35 @@
   chaque côté, verts sur la branche ET sur `origin/main` v379 ; au troisième
   passage de la branche, la flèche du GPS seule (gauche 1,92 rad, déclarée).
 
+- [ ] **LA COMPILATION À L'ARRIVÉE (monte.js) : CE QUE LE BANC SOUS CHARGE
+  MESURE (v386).** Rouge chronique, des deux côtés : « chauffe de New York
+  expirée » (44 à 163 sur 321 en soixante secondes). Sondé
+  (`sonde-programmes-paris.cjs`, le trajet exact du témoin) : seule, la chauffe
+  finit en 9,3 s, bridée ×4 en 9,1 s, bridée ×6 (depuis l'accueil) en 15,8 s ;
+  et à l'arrivée, Paris, New York, Lille rendent ZÉRO programme neuf — de jour
+  comme de nuit. L'enfant n'est pas touché ; le témoin attendait soixante
+  secondes un état que la charge du portail retarde. Repointé : attente bornée
+  à 150 s (un état, pas un taux, v285), la durée dans le message, garde
+  d'images à plus de trois (Paris a rendu 8 images en 20 s au portail de la
+  v382, page vivante). **Reste ouvert** : au portail de la v382 la chauffe a
+  FINI (321/321 en 31 s) et Paris a rendu trois programmes `physical` que ni la
+  nuit ni le bridage ne reproduisent seuls. Le message nomme désormais la case
+  de la clé qui diffère (méthode v319) : au prochain rouge, on saura laquelle.
+  Portail de la v386 : `monte.js` VERT en entier — chauffe finie en 94,8 s
+  (elle aurait « expiré » à 60), zéro programme neuf dans les cinq lieux,
+  Paris à 7 images ; `maj.js` : la préparation (corps 7/9, dette déclarée) et
+  le badge avant le bump.
+- [ ] **LE PORTAIL DE LA v383 (la rue n'entre plus chez un ami) : DEUX PASSAGES.**
+  Premier passage, trois suites rouges : `manhattan.js` (trou de façade, taxi
+  — déclarés), `monte.js` (la monoplace — À MOI, repointée, voir CLAUDE.md ;
+  la compilation à la téléportation et le gel d'arrivée — familles déclarées),
+  `reseau.js` (« la même circulation », écart médian 35,1 — la famille
+  intermittente déclarée en v371 ; preuve structurelle : les deux joueurs
+  volent trente blocs au-dessus de la rue, `|a.y − b.y| > 2,5` les écarte de
+  `veut`, la règle neuve n'est pas atteinte). Second passage (reprise) :
+  `reseau.js` ENTIÈREMENT vert (mon témoin compris) ; `monte.js` : le seul gel
+  d'arrivée (24,8 %, déclaré) ; `manhattan.js` : trou, taxi, « Lost
+  connection to server » de PeerJS — déclarés.
 - [ ] **LE PORTAIL DE LA v381 (ponts des villes engendrées, le Tōmei), DOUBLE
   MESURE FAITE.** `carteMonde.js` et `plafond.js` verts (empreinte des 490
   morceaux 36b34a87…, la même branche règle désarmée rend 27789d06…, la
@@ -60,7 +89,11 @@
   `origin/main` seul « rien d'autre ne vole le doigt dans la zone du joystick ».
   Les reflets (7 tours pour une garde à 8) et l'ordre de maillage (écart 0,05)
   du portail sont VERTS rejoués seuls sur la branche.
-- [ ] **LES PASSANTS SUR LA CHAUSSÉE À ROME : LE TÉMOIN DIT DÉSORMAIS QUI
+- [ ] **« UN PIÉTON FRÔLÉ SURSAUTE » ROUGE DE CHARGE (portail v385).** 1,24 s pour
+  une barre à 1,2 ; rejoué seul trois fois : 0,67-0,83 s (branche), 0,70-0,91 s
+  (`origin/main`). La barre est à 1,5 fois le pire relevé seul : à surveiller.
+- [x] **(v385 : un flâneur sur la chaussée en sort d'abord — témoin provoqué, rouge sur l'ancien code.)**
+  **LES PASSANTS SUR LA CHAUSSÉE À ROME : LE TÉMOIN DIT DÉSORMAIS QUI
   (v380).** Au portail de la v380, 3 sur 18 (vert, barre un cinquième) et le
   témoin publie : les TROIS sont des flâneurs (`surTrottoir` faux) en `pause`,
   animés, et deux sont encore À LEUR POSTE DE NAISSANCE — nés sur la chaussée
@@ -245,24 +278,24 @@
   niveau de la rue déblaierait douze blocs), ouest le Potomac dans la boîte ;
   la base d'Andrews (102, 281) ferme le sud-est.
 - [x] **DEUX PONTS DE VILLE À REPRENDRE, VUS PAR LE TÉMOIN ÉLARGI (v362).**
-  Réglés par le PLAN (v378, puis v383 qui la remplace) : à Agra c'était l'anneau qui passait dans le Taj
+  Réglés par le PLAN (v378, puis v387 qui la remplace) : à Agra c'était l'anneau qui passait dans le Taj
   Mahal et le Fort (un anneau ne traverse plus un monument), à Berlin l'anneau
   au tablier trop court n'est plus retenu, et la v381 couvre l'eau au-delà des bouts de tout tablier (437 encoches dans 49 villes). Le témoin lit désormais TOUTES les
   villes à pont (56) : il reste deux culées qui mordent dans un parc ou une
   colline, Séoul (2 pas, le rocher de Namsan) et Chicago (1 pas, un tronc près
   du Bean) — anneaux d'avant, mêmes valeurs sur `origin/main`, déclarées dans
   `DETTE_PONTS` et rattachées à la dette ci-dessous.
-- [ ] **LES ANNEAUX D'AVANT ROULENT PARFOIS HORS DE LA CHAUSSÉE (mesuré v383).**
+- [ ] **LES ANNEAUX D'AVANT ROULENT PARFOIS HORS DE LA CHAUSSÉE (mesuré v387).**
   Sur `origin/main`, 190 anneaux de villes engendrées sur 445 ont au moins un
   pas de voie qui n'est pas de la chaussée : places centrales (et leur
   fontaine — les grands anneaux des villes à tours passent par le nœud
   central : Seattle, Tokyo, Shanghai, Singapour…), parcs, plages (Las Vegas 279
-  pas de sable, Rio 249), collines. La v383 l'exige des anneaux NEUFS
+  pas de sable, Rio 249), collines. La v387 l'exige des anneaux NEUFS
   (`horsChaussee`) ; l'appliquer aux phases 1 et 2 est mesuré : 13 villes
   n'auraient plus AUCUN anneau et 26 perdraient de la couverture. Le remède
   est un tracé qui contourne (comme `contournerRonds` pour les places de
   Paris), pas un filtre.
-- [ ] **ONZE VILLES ENGENDRÉES N'ONT QU'UN CIRCUIT (v383), ET C'EST LA
+- [ ] **ONZE VILLES ENGENDRÉES N'ONT QU'UN CIRCUIT (v387), ET C'EST LA
   GÉOMÉTRIE.** Newcastle, Cardiff, Tallinn, Bergen, Reykjavik, Aarhus,
   Kuala Lumpur, Melbourne, San Diego, San José, Guayaquil. Leur seul anneau
   passe sur une rue que son contresens ne peut pas reprendre sans sortir de
@@ -825,21 +858,11 @@
   et trente-sept colonnes au bord du disque de Paris, où le relief du fondu
   passe sous l'eau à côté d'un trottoir — elles sont désormais maçonnées
   aussi, mais leur forme reste un bord de disque, pas un quai.
-- [ ] **EN LIGNE, UNE VOITURE DE LA RUE ENTRE ENCORE UNE FOIS DANS CELLE D'UN
-  AMI (v305, mesuré en v306).** Le témoin de `reseau.js` pose Marlon au volant
-  dans la rue de Paris et regarde chez Alice. Ce qui est PROUVÉ : la voiture
-  qui arrive derrière lui dans sa voie l'attend (retard 19 s sur le code neuf,
-  0 s sur l'ancien, même passage de banc). Ce qui ne l'est PAS : sur les deux
-  codes, une AUTRE voiture est entrée une fois dans la sienne pendant la
-  fenêtre (`dedans: 1`, centre à 1,6 bloc sur le neuf, 3,7 sur l'ancien). Le
-  message du témoin publie désormais l'intrus (`intrus` : clé, distance, cap de
-  l'intrus et cap posé de Marlon). Trois pistes à séparer par une sonde, pas
-  par une relecture : (1) le rectangle de l'ami est orienté par `rp.yaw + π`,
-  qui est le regard de Marlon et pas le cap de sa voiture ; (2) la position
-  réseau de Marlon arrive en retard chez Alice, et la voiture qui cède cède à
-  l'endroit d'AVANT ; (3) une voiture d'un convoi voisin arrivée de travers au
-  carrefour. Six versions de ce témoin avant qu'il sépare les deux codes : les
-  cinq premières sont dans `git log tests/reseau.js`.
+- [x] **EN LIGNE, UNE VOITURE DE LA RUE ENTRE ENCORE UNE FOIS DANS CELLE D'UN
+  AMI (v305) — faite en v383.** Ni le cap, ni le retard réseau : la patience
+  de quatre secondes revenait dès qu'une voiture de la rue gênait aussi
+  (`some` au lieu de `every`, vehicules.js). Sonde `sonde-intrus-ami.cjs` :
+  ancien 5 entrées sur 11 poses, neuf 0 sur 10.
 - [ ] **`carte.js` : l'appui long refusé au portail de la v326 (« pointeurs 0 »,
   quatre appuis, 8 rouges en cascade) — la dette de la v258, double mesure.**
   Rejouée SEULE : branche verte au premier appui ; `origin/main` (v321) verte
@@ -906,7 +929,7 @@
   boulevard central dans 47 grandes villes), SAUF les médinas : la section
   `ruelle` du kit (3 m, sans trottoir) leur ôterait tous leurs réverbères —
   décision de Max. Prix déclaré de la v307 : 602 → 440 anneaux, 158 974 →
-  127 734 blocs de rue portant un convoi — RENDU en v383 : candidats en pas de
+  127 734 blocs de rue portant un convoi — RENDU en v387 : candidats en pas de
   trame (côtés impairs), contresens et anneaux de quartier, 445 → 809
   anneaux, 129 373 → 200 322 blocs de voie portant un convoi. (4) Une colonne protégée de l'ancienne ville
   peut se trouver au milieu d'une rue neuve : les circuits de voitures,
@@ -1599,7 +1622,7 @@
   71,1 → 95,8 %), la dette des ponts d'Agra (9 pas) tombe. 445 → 430 anneaux,
   6 % de rue en moins. Et les anneaux se calculent à l'approche de la ville :
   157 → 0 ms au démarrage, 0,6 ms par ville en médiane, Rome 43 ms la première
-  fois (le Colisée du catalogue). Repris en v383 par `contreUnMonument` (même lecture du bâtisseur, couches 1 à 3), qui remplace `traverseUnMonument` : le témoin rend toujours zéro. Texte d'origine :
+  fois (le Colisée du catalogue). Repris en v387 par `contreUnMonument` (même lecture du bâtisseur, couches 1 à 3), qui remplace `traverseUnMonument` : le témoin rend toujours zéro. Texte d'origine :
   **QUARANTE-CINQ MONUMENTS SONT BÂTIS EN TRAVERS D'UN ANNEAU DE VOITURES
   (v375, témoin de `plafond.js`, `DETTE_ANNEAUX`).** Les anneaux des villes
   engendrées se choisissent sur la trame sans regarder les repères ; un
@@ -2526,7 +2549,7 @@
   bornés, la durée entrant dans le message (v270).
 
 - [x] **LE SUPERÎLOT COÛTE UN CIRCUIT À QUARANTE-SIX VILLES (v282).** Fait en
-  v383, mais pas par la piste déclarée : la contrainte en fraction du
+  v387, mais pas par la piste déclarée : la contrainte en fraction du
   périmètre laisserait deux convois se SUIVRE. Ce qui a changé depuis la v211,
   c'est la chaussée (deux voies, v271) : le partage se compte désormais par
   VOIE, et deux anneaux de part et d'autre d'une rue s'y croisent. Un superîlot
@@ -3256,11 +3279,20 @@ l'embarquement a eu lieu, pas par une hypothèse.
   Puis v374 à v376 sont parties pendant ces mesures : rebasée sur la v376
   (conflit sur une ligne de `main.js`, les deux gardées), témoin du passager
   vert et fumée verte, publiée en v377.
+- [ ] **LE PORTAIL DE LA v384 (la descente du passager).** `reseau.js`
+  ENTIÈRE verte, témoin neuf compris ; `degats.js`, `reglages.js` verts.
+  Rouges, tous de familles déjà déclarées : `maj.js` (loader de
+  l'installation, loader après rechargement), `carte.js` (flèche du GPS, rouge
+  seule sur `origin/main` en v327 ; glisser bridé ×4, 428 ms), `monte.js`
+  (téléportation qui compile, réverbère `parcouru 0`). PREUVE STRUCTURELLE :
+  le code neuf (`descendreDeChez`) n'est atteint que par un passager d'ami,
+  qui n'existe que dans `reseau.js` ; partout ailleurs `embarq=0`.
 - [x] **Le passager d'un ami** — FAIT en v377 : il entre par la portière
   droite avec la séquence (`monterChez`), et le conducteur la voit s'ouvrir
-  chez lui (message `portiere`, l'hôte relaie). Reste : la DESCENTE du
-  passager est encore instantanée ; et sans courtier (partie par le nuage
-  seul) le message ne sait pas nommer le conducteur (dette v253).
+  chez lui (message `portiere`, l'hôte relaie). La DESCENTE aussi depuis la
+  v384 (`descendreDeChez`). Reste : sans courtier (partie par le nuage seul)
+  le message ne sait pas nommer le conducteur (dette v253, zone
+  conduite-en-ligne).
 - [ ] **LE PORTAIL DE LA v372 (bords des portières), DOUBLE MESURE FAITE.**
   `degats.js` vert. Au portail, 17 rouges dans `monte.js` et `maj.js` : il a
   tourné pendant que je faisais tourner une dizaine de sondes de navigateur

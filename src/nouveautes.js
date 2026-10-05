@@ -6,12 +6,44 @@
 
 export const NOUVEAUTES = [
   {
-    v: 383,
+    v: 387,
     titre: 'Des voitures dans les deux sens',
     puces: [
       'Presque chaque ville a plusieurs circuits',
       'Les voitures roulent dans les deux sens',
       'Les petites villes ont un second circuit',
+    ],
+  },
+  {
+    v: 386,
+    titre: 'New York vérifiée',
+    puces: [
+      'Arriver à New York reste fluide',
+      'Rien ne change pour toi',
+    ],
+  },
+  {
+    v: 385,
+    titre: 'Les passants quittent la rue',
+    puces: [
+      'Personne ne reste planté sur la route',
+      'Ils retournent vite sur le trottoir',
+    ],
+  },
+  {
+    v: 384,
+    titre: 'On descend par la portière',
+    puces: [
+      'Chez un ami, on sort par la portière',
+      'Ton ami voit la portière s\'ouvrir',
+    ],
+  },
+  {
+    v: 383,
+    titre: 'Les voitures attendent ton ami',
+    puces: [
+      'Plus personne ne traverse sa voiture',
+      'Même au milieu d\'un carrefour',
     ],
   },
   {

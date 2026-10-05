@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v383 — Plusieurs circuits dans chaque ville, et les deux sens
+## v387 — Plusieurs circuits dans chaque ville, et les deux sens
 
 **Pourquoi.** Dans 153 des 262 villes engendrées (sur la v379), les voitures
 ne faisaient qu'UN tour, toujours dans le même sens — dont 48 villes à tours
@@ -58,6 +58,118 @@ couverture ni sa voiture en vue depuis le centre (sonde ville par ville), le
 partage dans le même sens reste sous vingt blocs (14,8). L'empreinte des 490
 morceaux change à Rome et à Tokyo seulement, et chaque colonne différente est
 sur un tablier d'avant ou d'après.
+## v386 — La chauffe de New York se mesure seule
+
+**Pourquoi.** « Se téléporter dans une ville ne compile plus de programmes »
+était rouge depuis des dizaines de versions, des deux côtés : la chauffe de New
+York « expirée » à 44 à 163 sur 321. On ne savait pas si un enfant qui arrive à
+New York voit l'image se figer, ou si c'était le banc.
+
+**Ce que ça change.** Rien dans le jeu, parce que le jeu tient : la sonde
+`sonde-programmes-paris.cjs` rejoue le trajet exact du témoin — chauffe finie en
+9 s (16 s bridé ×6), zéro programme neuf à l'arrivée à Paris, New York et
+Lille, de jour comme de nuit. Le témoin attend désormais la chauffe jusqu'à 150 s
+et dit combien de temps elle a pris ; sa garde d'images suit le pire relevé
+vivant ; et quand un programme se compile quand même, il nomme la case de sa clé
+qui diffère.
+
+**Ce qui le prouve.** La sonde, cinq passages (seul, nuit, bridé ×4 après la
+chauffe, bridé ×6 depuis l'accueil). Portail : `monte.js` et la fumée.
+## v385 — Les passants quittent la chaussée
+
+**Pourquoi.** Le témoin de la v380 a nommé qui restait planté au milieu de la
+rue à Rome : des flâneurs (des passants qui n'ont pas de trottoir à suivre), en
+pause, encore à leur poste de naissance — sur l'asphalte. Le programme de
+flâneur fait quelques pas au hasard autour d'un poste : posé sur la chaussée,
+il y reste. Et `posteAutour`, faute de trottoir, gardait la chaussée comme
+second choix de naissance. Mesuré avant d'écrire : sous node, 1 600 poses dans
+Rome, Paris, Londres, du centre jusqu'au bord, toutes sur un trottoir ; sur une
+page neuve, zéro naissance sur la chaussée en soixante secondes. L'état arrive
+donc par des portes qu'une page neuve ne montre pas — d'où un remède qui ne
+dépend pas de la porte.
+
+**Ce que ça change.** Un flâneur qui se trouve sur la chaussée sans la
+traverser marche jusqu'au bord le plus proche (le trottoir d'abord), en temps
+réel, et y prend son poste : la flânerie reprend hors de la rue, et un trottoir
+trouvé le refait promeneur. À la naissance, la bordure, l'esplanade et l'herbe
+passent avant la chaussée, qui n'est plus qu'un tout dernier recours.
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js` qui PROVOQUE la situation
+— trois flâneurs posés sur l'asphalte de Rome, leur poste aussi, en pause —
+et lit où ils sont arrivés : ici trois sur trois sur le trottoir en 3,3 à
+4,5 s (poste compris) ; sur `origin/main`, trois sur trois encore sur la
+chaussée après 17 s, poste compris (`sonde-sortie-chaussee.cjs`, des deux
+côtés). Le témoin d'avant (« ne sont plus plantés au milieu de la chaussée »)
+reste : c'était un tirage, celui-ci est un gardien. Portail : quatre suites,
+les rouges sont des dettes déclarées (façade et taxi de Manhattan, compilation
+à New York) et « un piéton frôlé sursaute » (1,24 s pour une barre à 1,2),
+rejoué seul trois fois des deux côtés : 0,67 à 0,83 s ici, 0,70 à 0,91 s sur
+`origin/main` — de la charge, et ce piéton est posé en mer, où la règle neuve
+ne trouve jamais de chaussée.
+
+
+## v384 — On descend de la voiture d'un ami par la portière
+
+**Pourquoi.** La v377 faisait monter le passager d'un ami par la portière
+droite ; la DESCENTE restait instantanée — Lou se retrouvait debout d'un
+coup à côté de la voiture de Marlon, et la portière de Marlon ne bougeait
+pas. La moitié du geste manquait.
+
+**Ce que ça change.** Le passager ressort par la portière droite, à
+l'envers de la montée : la portière s'ouvre, il sort, se pose debout à
+côté, la portière se referme. Si la droite est bouchée (un mur, l'eau, une
+voiture qui arrive), il sort côté conducteur ; si tout est bouché, il est
+posé à côté sans animation. Le conducteur — et tout autre joueur — voit la
+portière s'ouvrir chez lui, par le même message court que la montée. On
+n'est plus passager dès le premier appui ; un second appui termine tout de
+suite.
+
+**Ce qui le prouve.** Un témoin neuf dans `reseau.js`, à deux tablettes lues
+au même instant : phases « ouverture » et « sortie » chez Lou, portière
+droite ouverte à 1,05 rad puis refermée chez Marlon, `passagerDe()` faux sur
+chacun des 52 relevés. Rouge sur `origin/main` (aucune phase, portière
+fermée de bout en bout), vert ici. La sonde `sonde-descente-passager.cjs`
+rejoue montée et descente seules en deux minutes.
+
+---
+
+## v383 — La rue n'entre plus dans la voiture d'un ami
+
+**Pourquoi.** Depuis la v305, la circulation cède le passage aux amis comme à
+l'enfant : sur la tablette d'Alice, la voiture de Marlon arrête la rue. Le
+témoin de `reseau.js` le prouvait pour la voiture qui arrive derrière lui,
+mais publiait une gêne qu'il n'expliquait pas : une AUTRE voiture entrait
+encore une fois dans celle de Marlon, sur l'ancien code comme sur le neuf.
+Trois pistes étaient déclarées (le cap de l'ami lu sur son regard, sa position
+réseau en retard, une voiture d'un convoi voisin arrivée de travers). Une sonde
+qui relève, image par image chez Alice, chaque voiture qui touche celle de
+Marlon et ce que la rue en pensait (`sonde-intrus-ami.cjs`) a tranché : ce
+n'était aucune des trois. Les cinq voitures entrées avaient TOUTES l'ami et
+une voiture de la rue dans leur liste de gêne ; la règle « devant l'enfant on
+attend sans limite » ne valait que quand l'enfant était SEUL sur le chemin.
+Avec un carrefour en plus, la voiture retombait sur la patience de quatre
+secondes, puis se lançait deux secondes à l'aveugle — au travers. Et la même
+règle valait pour l'enfant de la tablette : sa propre voiture n'était pas à
+l'abri non plus à un carrefour.
+
+**Ce que ça change.** Dès qu'un joueur (l'enfant, un ami) ou un train est sur
+le chemin d'une voiture de la rue, elle attend, quoi qu'il y ait d'autre
+devant elle ; la patience ne sert plus qu'à dénouer deux voitures de la rue
+entre elles. À plusieurs, la voiture d'un ami garée dans la rue n'est plus
+traversée.
+
+**Ce qui le prouve.** La sonde, même protocole des deux côtés : ancien code,
+cinq voitures entrées sur onze poses mesurées (toutes en `repart`, l'ami et
+une voiture de la rue dans leur gêne) ; code neuf, zéro sur dix. L'écart de
+position réseau mesuré (0 à 0,17 bloc) et le cap posé identique écartent les
+deux pistes réseau. Le témoin de `reseau.js` fait désormais entrer ce compte
+dans son verdict (« … et aucune ne lui passe au travers »).
+Et un témoin de `monte.js` était vert GRÂCE à la panne : l'enfant posé sur la
+piste voyait le bouton de la monoplace parce qu'elle finissait par lui passer
+au travers (5,4 s sur l'ancien code). Il est posé au bord du circuit, comme
+son commentaire l'annonçait (bouton en 0,3 s).
+
+---
 
 ## v382 — Le cône se mesure à chaud
 

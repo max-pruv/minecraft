@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Les circuits des villes engendrées (v383) — ce qui se partage est une voie, pas une rue
+## Les circuits des villes engendrées (v387) — ce qui se partage est une voie, pas une rue
 
 « Lance sur toutes les villes. » Mesuré sur `origin/main` (v373) : 147 des 262
 villes engendrées n'avaient qu'UN circuit (48 superîlots, v282), 43 anneaux de
@@ -851,9 +851,9 @@ Deux règles.
   donne une marque par ville, `animerLesVilles` la déplie à 220 blocs ; un
   témoin exige les mêmes traces que le calcul entier. Un premier dépliage
   coûte au plus 43 ms (Rome, le Colisée du catalogue), une fois.
-  *(Depuis la v383 le filtre est `contreUnMonument` et le dépliage
+  *(Depuis la v387 le filtre est `contreUnMonument` et le dépliage
   `circulationsAPlier`, dont `tracesCirculationParesseuses` est l'alias : voir
-  « Les circuits des villes engendrées (v383) ».)*
+  « Les circuits des villes engendrées (v387) ».)*
 
 ## Les huit derniers palais (v375) — une boîte se relève en carte avant qu'on la remplisse
 
@@ -984,6 +984,19 @@ receveur cède, l'hôte relaie. Le témoin à deux tablettes lit les deux pages
 au même instant ; il attend le RÉSULTAT (borné à 45 s) : à deux pages, une
 séquence de 2,4 s de jeu prend vingt-sept secondes de montre.
 
+**Le passager descend par la portière, à l'envers (v384).** `descendreDeChez`
+rejoue la descente du conducteur sur la voiture DISTANTE, côté passager
+d'abord (`choisirSortie(a, d, [1, -1])`). `passagerDe()` est effacé AVANT
+d'appeler la séquence — on n'est plus passager au premier appui, comme
+`toggleRide(null)` pour le conducteur. Le même message `portiere` ouvre (au
+départ) et ferme (au début de la fermeture) la portière chez les autres ;
+`terminer` et `annuler` envoient la fermeture s'ils coupent la séquence avant.
+Sans séquence (`embarq=0`), rien ne change : l'enfant reste où il était, au
+bit près. **Un témoin à deux tablettes se mesure vite par une sonde qui en
+recopie le passage** (`sonde-descente-passager.cjs`, deux minutes contre
+vingt pour `reseau.js` entière) — c'est elle qui a rendu le rouge sur
+`origin/main`.
+
 **Le revers d'une portière se fabrique (v373).** Aucun modèle n'a meublé
 l'intérieur de sa portière : de derrière, la face simple était culée (0 rayon
 sur 24, sur les cinquante modèles). La portière reçoit une copie compacte de
@@ -1013,8 +1026,8 @@ par la seule ligne `CACHE_VERSION` — or le bloc contenait aussi les lignes
 de conflit se relit dans `git diff origin/main`, jamais seulement dans le
 fichier** : le diff montre ce qu'on retire à l'autre côté.
 
-Ce qui reste, déclaré dans `TASKS.md` : le passager d'un ami monte encore sans
-séquence ; la vue de la séquence ne se juge que sur le banc, pas sur l'iPad.
+Ce qui reste, déclaré dans `TASKS.md` : la vue de la séquence ne se juge que
+sur le banc, pas sur l'iPad ; les avions montent encore sans séquence.
 
 ## Les coupoles ont leur édifice (v365) — un gabarit partagé se cherche dans toutes les villes, et le ciel se lit sur les modèles
 
@@ -1134,6 +1147,22 @@ celle de la High Roller ne tiendrait pas, et c'est déclaré.
 Et une empreinte d'identité qui change se PROUVE : celle des 490 morceaux
 (v352) couvre Marrakech et Tokyo ; la branche, bâtisseurs neufs désarmés, rend
 l'ancienne au bit près — c'est ce qui a permis de la remplacer.
+
+## La chauffe de New York se mesure seule (v386) — un bridage n'est pas une charge de portail
+
+Rouge chronique de `monte.js`, des deux côtés. Deux règles.
+
+- **AVANT DE CORRIGER LE JEU, ON DEMANDE SI L'ENFANT EST TOUCHÉ.** Le trajet
+  exact du témoin, rejoué seul : chauffe finie en 9 s, zéro programme neuf à
+  Paris, New York, Lille, de jour comme de nuit, et bridé ×6 depuis l'accueil
+  la chauffe finit en 16 s. Le jeu tient ; le témoin attendait soixante
+  secondes un ÉTAT que la charge retarde — il attend 150 s et dit sa durée.
+- **UN BRIDAGE DU PROCESSEUR NE REPRODUIT PAS UNE CHARGE DE PORTAIL.** Les
+  trois programmes `physical` vus à Paris au portail ne reviennent ni bridé ×4
+  ni ×6 : un banc chargé n'est pas une page lente (ordre des arrivées, fichiers
+  servis plus tard). Quand on ne peut pas reproduire, le témoin NOMME ce qu'il
+  voit (la case de la clé qui diffère, v319), pour que le prochain rouge se
+  démonte au lieu de se rejouer.
 
 ## Le cône se mesure à chaud (v382) — l'ABBA n'écarte pas un premier passage à froid
 
@@ -1543,6 +1572,27 @@ engendrées. Quatre règles.
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
 
+## Les passants quittent la chaussée (v385) — un remède qui ne dépend pas de la porte
+
+Deux règles.
+
+- **QUAND UN ÉTAT NE SE REPRODUIT PAS SUR UNE PAGE NEUVE, ON SOIGNE L'ÉTAT, PAS
+  LA PORTE.** Le témoin de la v380 nommait des flâneurs en pause, à leur poste,
+  sur l'asphalte de Rome. Mesuré : `posteAutour` ne rend la chaussée sur aucune
+  des 1 600 poses sous node, et une page neuve n'en montre aucune en soixante
+  secondes. Plutôt qu'une quatrième hypothèse sur l'entrée (v223), la règle vit
+  dans le programme du flâneur (`sortirDeLaChaussee`, vie.js) : un piéton qui
+  se trouve sur la chaussée sans la traverser marche au bord le plus proche
+  (trottoir d'abord, jamais un toit), en TEMPS RÉEL (la rue est le domaine des
+  voitures, v351), et y prend son poste. La sonde a sa cadence (une demi-seconde
+  réelle). Et la chaussée n'est plus le second choix de `posteAutour` : la
+  bordure, l'esplanade et l'herbe au niveau de la rue passent avant.
+- **UN TÉMOIN QUI COMPTE CE QUE LE HASARD A LAISSÉ SE DOUBLE D'UN TÉMOIN QUI
+  PROVOQUE.** « Un flâneur posé au milieu de la chaussée en sort » pose trois
+  flâneurs ET leur poste sur l'asphalte et lit leur arrivée : 3/3 au bord en 3 à
+  4,5 s, contre 3/3 encore sur la chaussée après 17 s sur `origin/main`
+  (`sonde-sortie-chaussee.cjs`). Le témoin-tirage d'avant reste, pour le message.
+
 ## Deux témoins de la rue qui disent ce qu'ils voient (v380) — un couloir « vide » se vérifie au sec
 
 Deux règles.
@@ -1844,6 +1894,47 @@ normales réécrites hors d'eux (zéro), travail par image après le choc
 position, si (`{ ...msg }`). Ce qui doit traverser un ancien hôte s'accroche
 à elle, et devient idempotent en envoyant l'HISTOIRE (adoptée seulement si
 la nôtre en est le début), jamais le seul dernier événement.
+
+## « Seul » ne veut pas dire « seulement lui » (v383) — la rue n'entre plus chez un ami
+
+La dette de la v305 : une voiture de la rue entrait encore une fois dans
+celle d'un ami. Trois règles.
+
+- **TROIS PISTES DÉCLARÉES, ET LA CAUSE ÉTAIT UNE QUATRIÈME.** Le cap de
+  l'ami lu sur son regard, sa position réseau en retard, une voiture de
+  travers au carrefour : `sonde-intrus-ami.cjs` relève chez Alice, image par
+  image, chaque voiture qui touche le rectangle de Marlon et ce que
+  `cederLePassage` en pensait (`window.__vehicules.diagCeder()`). Écart
+  réseau 0 à 0,17 bloc, cap posé identique : les deux premières tombent. Les
+  cinq intruses avaient l'ami ET une voiture de la rue dans leur `veut`.
+  Une liste de pistes écrite dans une dette n'est pas la liste des causes :
+  la sonde publie l'état de la DÉCISION, pas seulement la géométrie.
+- **UNE EXCEPTION ÉCRITE « QUAND IL EST SEUL » SE RELIT AU CAS OÙ IL NE
+  L'EST PAS.** La règle de la v245 (« devant l'enfant, on attend sans
+  limite ») était codée `every(k < 0)` : vraie seulement si TOUTES les gênes
+  sont des joueurs. Un carrefour en plus, et la patience de quatre secondes
+  revenait, puis `repart` lançait la voiture deux secondes à l'aveugle — au
+  travers de l'ami, et de l'enfant de la tablette aussi. Désormais `some` : un
+  joueur ou un train sur le chemin, on attend, et un `repart` déjà lancé
+  s'arrête net. La patience ne dénoue plus que deux voitures de la rue.
+- **UNE SITUATION RARE NE SE PROVOQUE PAS TOUJOURS — ALORS ON COMPTE.** J'ai
+  essayé de poser Marlon AU carrefour de deux convois pour forcer le cas
+  (v233) : zéro à trois voitures à moins de douze blocs en quarante secondes,
+  la rue de Paris est trop clairsemée sur ce banc — non-résultat, la sonde
+  n'est pas gardée. La preuve est donc un compte, même protocole des deux
+  côtés : ancien code 5 entrées sur 11 poses, neuf 0 sur 10. Le témoin de
+  `reseau.js` fait entrer `dedans` dans son verdict ; sur l'ancien code il ne
+  rougit qu'une pose sur une dizaine, et c'est dit.
+- **UN TÉMOIN VERT GRÂCE À LA PANNE ROUGIT LE JOUR OÙ ON LA CORRIGE.**
+  « Quand la monoplace arrive, on a le temps de voir le bouton » posait
+  l'enfant SUR la piste : la monoplace s'arrêtait à 9,3 blocs (le bouton est
+  à 9), puis repartait au bout de quatre secondes AU TRAVERS de lui — et le
+  bouton s'allumait (ancien code : 5,4 s, `sonde-monoplace-bord.cjs`). Son
+  commentaire disait « planté au bord du circuit » : il est posé au bord,
+  trois blocs et demi de côté (0,3 s). Ce qu'il faut retenir : devant un rouge
+  qui suit une correction, on se demande d'abord si le témoin ne MESURAIT pas
+  le défaut corrigé — les secondes du message (5,4 ≈ 4 de patience plus la
+  route) le disaient.
 
 ## Un battement qui écrit sans relire défait le choix d'à côté (v374)
 

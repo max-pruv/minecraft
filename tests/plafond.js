@@ -324,7 +324,7 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // lieu, sonde du scratchpad) sur `origin/main` (v367 puis v369) et sur la branche :
 // les huit autres lieux identiques au bit près, Washington seul diffère
 // (7bb3f492… → 019bb14a…).
-// v383 : les anneaux des villes engendrées (pas de trame, contresens, aucun
+// v387 : les anneaux des villes engendrées (pas de trame, contresens, aucun
 // anneau dans un monument) changent les TABLIERS de Rome et de Tokyo, deux des
 // neuf lieux — voulu. Mesuré lieu par lieu : les sept autres identiques au bit
 // près ; à Rome 29 blocs sur 18 colonnes, à Tokyo 108 blocs sur 87 colonnes (un
