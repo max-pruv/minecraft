@@ -141,6 +141,10 @@ function preparer(root) {
   return { pieces, boite };
 }
 
+// Ce qui a déjà été rendu au pilote (par `liberer`, quand la voiture s'en va)
+// ne se rend pas une seconde fois (v356).
+function marquerRendu(ev) { ev.target.userData.rendu = true; }
+
 // Un bruit déterministe par sommet : le froissé ne doit pas changer d'une
 // tablette à l'autre (le réseau rejoue les mêmes chocs).
 function bruit(x, y, z) {
@@ -188,6 +192,7 @@ function enfoncer(prep, { f, x: lx, z: lz }) {
       pc.mesh.geometry = pc.geoOrig.clone();
       msClone += performance.now() - tc;
       pc.mesh.geometry.userData = {};          // surtout pas `partagee`
+      pc.mesh.geometry.addEventListener('dispose', marquerRendu);
       pc.propre = true; clones++;
     }
     const g = pc.mesh.geometry, pos = g.attributes.position;
@@ -279,7 +284,7 @@ function normalesDeplacees(g, deplace) {
 // UN MATÉRIAU SE CLONE AVANT DE CHANGER : il est partagé par toute la rue.
 function matPropre(pc) {
   if (pc.matPropre) return Array.isArray(pc.mesh.material) ? pc.mesh.material : [pc.mesh.material];
-  const cloner = (m) => { if (!m) return m; const c = m.clone(); c.userData = { ...c.userData, partagee: false }; return c; };
+  const cloner = (m) => { if (!m) return m; const c = m.clone(); c.userData = { ...c.userData, partagee: false }; c.addEventListener('dispose', marquerRendu); return c; };
   MAT_ORIG.set(pc.mesh, pc.matOrig);
   pc.mesh.material = Array.isArray(pc.matOrig) ? pc.matOrig.map(cloner) : cloner(pc.matOrig);
   pc.matPropre = true;
@@ -344,6 +349,7 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
   const suivies = new Map();         // racine du maillage → fiche
   let fx = null, imFumee = null, imFlamme = null;
   const particules = [];             // { x, y, z, vie, age, vx, vy, vz, t0, t1, flamme, couleur }
+  let voitureRue = null;             // (x, z, y) → maillage de la rue percutée, branché par main.js
 
   function fiche(root, creer = true) {
     let rec = suivies.get(root);
@@ -395,18 +401,22 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
   }
 
   function dire(rec, cle, msg, couleur, duree) {
-    if (rec.dits[cle] || rec.distant) return;
+    if (rec.dits[cle] || rec.distant || rec.rue) return;
     rec.dits[cle] = true;
     toast(msg, couleur, duree);
   }
 
   // Un choc sur la voiture `root`, en repère de VOITURE. Public pour les
   // témoins et pour le repli ; la physique, elle, passe par `player.choc`.
-  function choc(root, impact) {
+  function choc(root, impact, rue = false) {
     const rec = fiche(root);
+    if (rue) rec.rue = true;
     const avant = { ...rec.etat, zones: { ...rec.etat.zones } };
     const zone = D.subirChoc(rec.etat, impact);
     if (!zone) return null;
+    // UNE VOITURE DE LA RUE NE PREND JAMAIS FEU (v356) : personne n'y est
+    // blessé ni à déposer — elle se froisse, elle fume, et elle roule encore.
+    if (rec.rue) { rec.etat.enFeu = false; rec.etat.enPanne = false; rec.etat.sante = Math.max(rec.etat.sante, D.SEUIL_FEU + 0.02); }
     const mesure = rattraper(rec);
     const e = rec.etat;
     if (e.enFeu && !avant.enFeu) dire(rec, 'feu', '🔥 Ta voiture prend feu — descends vite !', 0xff5a3a, 4000);
@@ -446,13 +456,17 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
       if (c && c.t !== rec.dernierChocT) {
         rec.dernierChocT = c.t;
         const l = D.versRepere(a.pos.x, a.pos.z, a.mesh.rotation.y, c.x, c.z);
-        choc(a.mesh, { force: c.force, lx: l.lx, lz: l.lz });
+        if (choc(a.mesh, { force: c.force, lx: l.lx, lz: l.lz })) percuterRue(c.x, c.z, a.pos.y, c.force);
       }
     } else if (maintenant > rec.calme && maintenant - (player.arretDouxT || 0) > 400) {
       const force = D.detecterChoc(rec.vPrev, v, dt, player.vitesseVoitureMax || 0);
       if (force > 0) {
         const imp = sonderImpact(a, rec.vPrev >= 0);
-        choc(a.mesh, { force, ...imp });
+        if (choc(a.mesh, { force, ...imp })) {
+          // le point d'impact, du repère de la voiture à celui du monde
+          const cap = a.mesh.rotation.y, co = Math.cos(cap), si = Math.sin(cap);
+          percuterRue(a.pos.x + imp.lx * co + imp.lz * si, a.pos.z - imp.lx * si + imp.lz * co, a.pos.y, force);
+        }
         rec.calme = maintenant + 350;
       }
     }
@@ -479,6 +493,18 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
       if (D.avancerFeu(rec.etat, dtr, true) === 'sortir') return 'sortir';
     } else rec.tReel = maintenant;
     return null;
+  }
+
+  // LA VOITURE DE LA RUE QU'ON VIENT DE PERCUTER s'abîme du même choc
+  // (v356). Le point d'impact du MONDE tombe dans SON repère (son cap est la
+  // rotation de son maillage, comme pour une monture) ; on clone la géométrie
+  // de SES pièces touchées, jamais celle du prototype que toute la rue
+  // partage (règle 1). Elle garde ses enfoncements tant qu'elle existe.
+  function percuterRue(wx, wz, wy, force) {
+    const m = voitureRue ? voitureRue(wx, wz, wy) : null;
+    if (!m) return null;
+    const l = D.versRepere(m.position.x, m.position.z, m.rotation.y, wx, wz);
+    return choc(m, { force, lx: l.lx, lz: l.lz }, true);
   }
 
   // L'enfant est descendu (ou a été déposé) : plus d'état publié.
@@ -579,6 +605,9 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
       // on rend ce qu'on avait détaché, le reste part avec elle (liberer)
       if (!rec.distant && rec.animal && animaux && !animaux.includes(rec.animal)) { oublier(rec); continue; }
       if (rec.distant && !root.parent) { oublier(rec); continue; }
+      // une voiture de la rue sortie de la scène (prise par l'enfant, ou par
+      // un ami) : ses clones rendus au pilote, la fiche oubliée
+      if (rec.rue && !root.parent) { rendreClones(rec); oublier(rec); continue; }
       rattraper(rec);
       const e = rec.etat;
       // le feu et la carcasse avancent en temps RÉEL (v226), même sans enfant
@@ -590,7 +619,8 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
           const ev = D.avancerFeu(e, dtr, false);
           if (ev === 'eteint') calcinerTout(rec, 1);
           if (ev === 'partie' && rec.animal) { retirer(rec.animal); oublier(rec); continue; }
-        }
+          if (ev === 'partie' && rec.epave) { rec.epave(); oublier(rec); continue; }
+        } else if (e.enFeu) e.feu += dtr;   // l'âge du feu de l'ami, pour son épave
       }
       if (e.enFeu) calcinerTout(rec, Math.min(1, e.feu / D.DUREE_FEU * 1.6));
       if (e.eteint && !rec.calcinee) calcinerTout(rec, 1);
@@ -606,7 +636,8 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
       }
       // ÉMETTRE : la fumée suit le moteur, le feu ses flammes
       const fume = e.enFeu || (e.eteint && e.carcasse < 60) || e.moteur < D.SEUIL_FUMEE;
-      if (!fume) continue;
+      // une voiture de la rue loin de l'enfant est cachée : pas de fumée sans voiture
+      if (!fume || !root.visible) continue;
       lesFx();
       root.updateMatrixWorld();
       const boite = rec.prep ? rec.prep.boite : null;
@@ -634,6 +665,15 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
     if (!rec.prep) return;
     if (k >= 1) rec.calcinee = true;
     for (const pc of rec.prep.pieces) if (RE_LAQUE.test(pc.nom) || RE_VITRE.test(pc.nom)) calciner(pc, k);
+  }
+
+  // Les géométries et matériaux CLONÉS d'une voiture (jamais les communs).
+  function rendreClones(rec) {
+    if (!rec.prep) return;
+    for (const pc of rec.prep.pieces) {
+      if (pc.propre && !pc.mesh.geometry.userData.rendu) pc.mesh.geometry.dispose();
+      if (pc.matPropre) for (const m of [].concat(pc.mesh.material)) if (m && !m.userData.rendu) m.dispose();
+    }
   }
 
   // OUBLIER une voiture : rendre au pilote ce qui ne lui est plus attaché (les
@@ -692,6 +732,23 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
     if (cible.enFeu && !rec.etat.feu) rec.etat.feu = 0.01;
   }
 
+  // L'ÉPAVE D'UN AMI (v356). Quand le conducteur est déposé, sa position
+  // n'emporte plus de voiture (`p.v` disparaît) ; sans rien de plus, sa
+  // carcasse en feu s'évanouissait chez l'ami au moment même où elle brûle.
+  // Le RECEVEUR la garde là où elle s'est arrêtée et la fait vivre lui-même :
+  // le feu jusqu'au bout, la carcasse fumante, puis elle s'en va au bout de
+  // `DUREE_CARCASSE` (`enlever`, fourni par main.js : scène et pilote). Rien de
+  // neuf ne voyage sur le réseau — une tablette restée sur l'ancienne version
+  // n'a rien à ignorer. Seule une voiture hors service se garde : une voiture
+  // simplement quittée n'est pas dessinée chez l'ami, comme toute monture.
+  function garderEpave(root, enlever) {
+    const rec = suivies.get(root);
+    if (!rec || !(rec.etat.enFeu || rec.etat.eteint)) return false;
+    rec.distant = false; rec.animal = null; rec.epave = enlever;
+    rec.tReel = performance.now();
+    return true;
+  }
+
   // ---- LA CHAUFFE (v246, v319) : les deux matériaux neufs, pendant l'accueil
   function chauffer(renderer, camera, decor) {
     const r = lesRessources();
@@ -717,7 +774,8 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
   }
 
   return {
-    auVolant, descend, deposer, update, choc, reparer, distant, chauffer,
+    auVolant, descend, deposer, update, choc, reparer, distant, chauffer, garderEpave,
+    brancherRue: (f) => { voitureRue = f; },
     // pour main.js : le champ réseau de la voiture qu'on conduit
     versReseau: (root) => { const rec = suivies.get(root); return rec ? D.versReseau(rec.etat) : null; },
     estCarcasse: (a) => !!(a && a.horsService),
@@ -727,5 +785,8 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
     pieces: (root) => { const rec = suivies.get(root); return rec && rec.prep ? rec.prep.pieces : null; },
     particulesVisibles: () => particules.filter((p) => p.vie > 0).reduce((n, p) => { n[p.flamme ? 'flammes' : 'fumee']++; return n; }, { fumee: 0, flammes: 0 }),
     suivies: () => suivies.size,
+    rue: () => [...suivies.values()].filter((r) => r.rue).map((r) => r.root),
+    epaves: () => [...suivies.values()].filter((r) => r.epave).map((r) => ({ root: r.root,
+      x: r.root.position.x, z: r.root.position.z, enFeu: r.etat.enFeu, eteint: r.etat.eteint })),
   };
 }

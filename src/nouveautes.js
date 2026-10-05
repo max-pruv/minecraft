@@ -6,12 +6,21 @@
 
 export const NOUVEAUTES = [
   {
-    v: 356,
+    v: 357,
     titre: 'Des voitures pour de vrai',
     puces: [
       'Les voitures vont beaucoup plus vite',
       'Elles tournent et glissent pour de vrai',
       'Contre un mur, on glisse ou on rebondit',
+    ],
+  },
+  {
+    v: 356,
+    titre: 'Les épaves restent',
+    puces: [
+      'Tes amis voient l\'épave brûler',
+      'Les voitures de la rue s\'abîment',
+      'Le garage répare ta voiture',
     ],
   },
   {

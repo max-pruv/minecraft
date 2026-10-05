@@ -1129,12 +1129,25 @@ existe dès la naissance, parce que `instancingColor` est dans la clé. Mesuré 
 deux fois (essaim caché, montré) et exige plus de quatre carrés, sinon
 l'égalité ne prouverait rien.
 
+**L'épave reste chez l'ami, et la rue s'abîme (v356).** Quand le conducteur
+est déposé, `p.v` disparaît : le RECEVEUR garde l'épave en feu là où elle
+s'est arrêtée (`garderEpave`, appelé par `synchroniserVehiculeDistant`) et la
+fait vivre lui-même jusqu'à `DUREE_CARCASSE` — rien de neuf sur le réseau.
+Seule une voiture hors service se garde. Une voiture de la rue percutée
+(`percuterRue` : le point d'impact du MONDE, et `vehicules.voitureRueProche`,
+crochet court branché par main.js APRÈS `initFun` — branché avant, `fun` est
+dans sa zone morte et le jeu ne démarre plus, vu au banc) se froisse par la
+même règle 1, ne prend jamais feu (`rec.rue`) et ne parle pas. Ce qui s'en
+va se rend une fois : un clone marqué `rendu` à son `dispose` (par `liberer`)
+ne se rend pas une seconde fois — le premier témoin comptait 28 rendues pour
+14 clones.
+
 **Le feu dépose l'enfant, il ne le projette pas** : passé `DELAI_SORTIE` (3,5 s
 en temps réel), `fun.js` le fait descendre et `deposer` le pose debout sur une
 case libre à côté (côté conducteur d'abord). La carcasse porte `horsService`
 (lu par `animals.js`, comme `montee`) : elle ne se reprend pas, et elle s'en
 va au bout de `DUREE_CARCASSE`.
-## La conduite à la GTA (v356) — un modèle pur, une boîte orientée, des chocs qui se publient
+## La conduite à la GTA (v357) — un modèle pur, une boîte orientée, des chocs qui se publient
 
 Max : « une grosse refonte de la façon de conduire… comme GTA ». Premier palier
 de la session `conduite-physique` (six sessions en parallèle sur la conduite).
@@ -5276,8 +5289,8 @@ caméra à part, `layers.enableAll()` comme le veut la v250.
 ## Chaque voiture roule à l'allure de sa classe (v260)
 
 > **⚠️ Le plafond calculé ci-dessous (28 blocs/s) est remplacé par un plafond
-> MESURÉ (60) en v356, et l'allure se déduit des fiches de `conduite.js`.** Lire
-> « La conduite à la GTA (v356) ».
+> MESURÉ (60) en v357, et l'allure se déduit des fiches de `conduite.js`.** Lire
+> « La conduite à la GTA (v357) ».
 
 Max : « une vitesse en fonction du modèle ». Deux règles.
 
