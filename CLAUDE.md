@@ -770,6 +770,27 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Plus une coupole de gabarit (v369) — une forme fausse ne dépend pas de la hauteur
+
+Trois règles.
+
+- **UN TÉMOIN QUI NE COMPTE QUE CE QUI MONTE LAISSE LES FORMES FAUSSES QUI
+  RESTENT BASSES.** Celui de la v365 ne regardait que les gabarits au-dessus
+  d'une fois et demie leurs toits ; cinq coupoles restaient dessous, toutes
+  fausses (des voiles d'acier, un stade, un octogone, un haricot). Le témoin
+  neuf demande la forme, pas la hauteur : aucun repère ne garde `dome`.
+- **UN STADE, COMME UNE PYRAMIDE, NE S'ÉTIRE PAS.** Étiré au ciel de Toronto,
+  le Rogers Centre montait deux fois plus haut que large : un silo, que le
+  témoin des gabarits a d'ailleurs pris pour une tour. Il est `vrai`, à sa
+  hauteur d'auteur. Une forme large et plate se déclare au lieu de s'étirer.
+- **LE `k` MAXIMAL N'EST PAS LE BON `k` QUAND UN REPÈRE FIXE EST TROP BAS.**
+  L'hôtel de ville de Toronto, devenu une tour sur son corps, décomprime la
+  courbe jusqu'à `k` 1 sans rompre l'ordre — mais il y monte à 40 blocs sous
+  une CN Tower de 553 m à 45. L'ordre strict est tenu, les proportions non :
+  Toronto garde 0,3 (28 blocs), et c'est mesuré. De même le Panthéon de Rome,
+  étiré à ses 43 m, passait le Colisée fixe à 19 : il reste à sa hauteur
+  d'auteur, dix blocs, celle de ses voisins.
+
 ## Monter en voiture comme dans un vrai jeu (v366) — une animation qu'on impose garde sa porte de sortie
 
 Max : « on voit le personnage qui avance et qui rentre dans la voiture avec la
@@ -1091,6 +1112,23 @@ Le lot 2 de la dette de la v335 : huit monuments. Trois règles.
   Archives, 24 m pour Buckingham, une quarantaine de mètres pour l'Opéra de
   Lille, 23 m pour l'Arche. Ce qu'on n'a pas trouvé (le musée d'Histoire
   américaine, « cinq étages ») se dit approché dans le commentaire.
+
+## Les rues de Lille à la règle du kit (v368) — un témoin de ville figée cherche une rue que rien ne recouvre
+
+Deux règles.
+
+- **QUAND LA TRAME EST SERRÉE, LA RÈGLE DU KIT REND DES IMMEUBLES.** Lille
+  passe de 30,1 à 33,3 % de lots : le pas recomposé et le recul des avenues
+  rendent plus que les collectrices ne prennent. C'est l'inverse de San
+  Francisco (v361), et c'est la même règle : le résultat dépend de
+  l'écartement des avenues, on le mesure avant de conclure.
+- **UN TÉMOIN QUI POSE UNE MAISON SUR « UNE ANCIENNE RUE » VÉRIFIE QUE RIEN
+  NE L'Y RECOUVRE DANS LA VILLE D'AVANT.** Les monuments se posent APRÈS les
+  colonnes (v205) : la première rue trouvée à Lille longeait la Vieille
+  Bourse, et le témoin comptait ses murs comme une ville neuve qui enferme la
+  maison (9 blocs). La recherche lit désormais le monde d'avant
+  (`new World({ v308: true })`) et exige six blocs d'air au-dessus de la
+  rue — pour toutes les villes figées.
 
 ## Les rues de San Francisco à la règle du kit (v361) — un plan à vingt-sept blocs par kilomètre paie ses avenues
 
@@ -1949,7 +1987,7 @@ L'I-95 Sud New York–Washington. Quatre règles.
   (« un témoin écrit pour un cas se réécrit le jour où un cas neuf sort de
   son hypothèse »).
 
-**Et un tronçon mesuré sur l'axe ne couvre pas les colonnes d'à côté (v368).**
+**Et un tronçon mesuré sur l'axe ne couvre pas les colonnes d'à côté (v370).**
 Le tablier d'un pont de ville engendrée s'arrêtait là où l'AXE cessait d'être
 mouillé ; une colonne voisine pouvait être de l'eau un demi-bloc plus loin, et
 restait sans pont — une seule vue par le témoin des ponts (Berlin, sur l'axe),

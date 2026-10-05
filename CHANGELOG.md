@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v368 — Plus de trou au bout des ponts
+## v370 — Plus de trou au bout des ponts
 
 **Pourquoi.** Au bout d'un pont de Berlin, une colonne d'eau sans tablier : la
 voiture y tombait (dette déclarée en v362). Mesuré sur toutes les villes à
@@ -38,6 +38,70 @@ ponts n'ont plus d'encoche où la voiture tombe.
 tablier. La dette de Berlin sort de la liste des ponts déclarés (Agra y
 reste). L'empreinte des 490 morceaux change, et la même branche, la règle
 désarmée, rend celle d'`origin/main` au bit près.
+
+---
+
+## v369 — Plus une coupole de gabarit dans le monde
+
+**Pourquoi.** La v365 avait donné leur édifice aux coupoles et aux palais de
+gabarit qui montaient en tour, et déclaré ceux qui restaient plus bas : Walt
+Disney Hall et le Rogers Centre étaient dessinés en coupole sur tambour, comme
+le Panthéon de Rome (sans son portique), le dôme du Rocher (qui est un
+octogone) et le Bean de Chicago (un haricot d'acier). L'ancien hôtel de ville de
+Toronto était une colonne d'un bloc, et Navy Pier un palais.
+
+**Ce que ça change.** Disney Hall a ses voiles d'acier qui s'évasent ; le
+Rogers Centre est un stade rond à toit plat, à sa hauteur (un stade ne
+s'étire pas : étiré au ciel de Toronto, il montait deux fois plus haut que
+large) ; l'ancien hôtel de ville a son corps de grès et sa tour de l'horloge,
+qui monte enfin au-dessus du stade ; le Panthéon de Rome a sa rotonde, son
+oculus et son portique ; le dôme du Rocher son octogone de faïence bleue et sa
+coupole d'or ; le Bean son haricot sur sa place ; Navy Pier sa jetée vers le
+lac et sa grande roue.
+
+**Ce qui le prouve.** Un témoin neuf de `plafond.js` — « aucune coupole de
+gabarit ne reste dans le monde, quelle que soit sa hauteur » — rouge sur la
+v365 (cinq), vert ici ; il compte aussi les huit palais de gabarit qui restent,
+déclarés. Les témoins de hauteur, d'ordre du vrai ciel, des perches et des
+gabarits en tour restent verts : le Panthéon, étiré à ses 43 m, passait
+au-dessus du Colisée, il garde donc dix blocs ; Toronto garde son `k` de 0,3,
+mesuré (à 1, l'hôtel de ville frôlait la CN Tower). L'empreinte des 490
+morceaux change (Rome est un des neuf lieux) : bâtisseurs neufs désarmés, la
+branche rend celle d'`origin/main` au bit près.
+
+---
+
+## v368 — Les rues de Lille à la règle du kit
+
+**Pourquoi.** La quatrième des cinq villes bâties à la main restées sur leurs
+largeurs relevées à la main (dette v271). Une rue du Vieux-Lille faisait 1,2
+bloc de chaussée, une rue du centre 2, les boulevards 2,9 à 4,8 — une voiture
+de 2,26 blocs y frôlait le trottoir.
+
+**Ce que ça change.**
+
+- **Les rues de Lille ont la section du kit**, à un bloc pour un mètre : deux
+  voies et des trottoirs de 2,5 m pour les boulevards et les grandes rues (la
+  rue Faidherbe, la rue Nationale, le boulevard de la Liberté, Vauban,
+  Victor-Hugo) et pour les rues du centre et des faubourgs ; une voie de
+  3,1 m pour l'Esquermoise, la rue Royale, la rue de la Monnaie et les rues du
+  Vieux-Lille. Les entrées de l'A1 et de l'E429 sont des collectrices.
+- **Les îlots se recomposent** et une rue de la trame ne double plus une
+  avenue : Lille GAGNE des immeubles, 30,1 → 33,3 % du disque, et aucun
+  quartier n'en perd (la Grand'Place 15,8 → 26,7, les gares 12,4 → 18,3).
+- **Ce qu'un enfant a bâti à Lille ne bouge pas** : sous ses blocs d'avant la
+  mise à jour, la Lille d'avant reste.
+
+**Ce qui le prouve.** Quatre témoins neufs. `carteMonde.js` : les rues ont
+la chaussée de leur type (boulevards 7,0, Vieux-Lille 3,8, trame 6,05 contre
+4,0, 3,2 et 1,95 sur `origin/main`) ; Lille garde plus de 30 % de lots,
+aucun quartier sous 10 %. `plafond.js` : une maison posée sur une ancienne rue
+n'est pas enfermée et une cabane garde son toit — et le témoin choisit
+désormais une rue qu'aucun monument ne recouvre dans la ville d'avant (le
+premier jet tombait contre la Vieille Bourse). Les circuits de Lille restent
+à 95-100 % sur la rue. Et la cour de la Vieille Bourse reste une cour : la
+trame recomposée posait un îlot dans son emprise, une maison de cinq blocs la
+remplissait — le témoin de `carte.js` l'a vu, l'emprise est désormais pavée.
 
 ---
 

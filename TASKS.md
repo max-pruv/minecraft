@@ -93,7 +93,7 @@
   niveau de la rue déblaierait douze blocs), ouest le Potomac dans la boîte ;
   la base d'Andrews (102, 281) ferme le sud-est.
 - [ ] **DEUX PONTS DE VILLE À REPRENDRE, VUS PAR LE TÉMOIN ÉLARGI (v362).**
-  (Berlin FAIT en v368 : le tablier couvre l'eau du demi-bloc au-delà de ses
+  (Berlin FAIT en v370 : le tablier couvre l'eau du demi-bloc au-delà de ses
   bouts — 437 encoches dans 49 villes, zéro après ; reste Agra.) Berlin : UNE colonne d'eau sans tablier au bout d'un pont (4186, −2011) —
   le bout de l'axe arrondi tombe hors de `pontDeVille`. Agra : le Taj Mahal
   et le Fort d'Agra sont bâtis SUR deux tabliers d'anneaux (neuf pas bouchés,
@@ -1301,12 +1301,36 @@
   le recouvrement reste. Le remède est de PLAN : une tour de catalogue à sa
   vraie emprise (un bloc et demi), ou les trois repères écartés — c'est la
   boîte, donc le relief : décision de carte.
-- [ ] **WALT DISNEY HALL ET LE ROGERS CENTRE SONT DES COUPOLES (v365), déclaré.**
-  Le gabarit `dome(4)` et `dome(5)` les dessine en coupole sur tambour : la
-  salle de Gehry est faite de voiles d'acier courbes, le Rogers Centre est un
-  stade à toit escamotable. Ils ne montent pas à une fois et demie leurs toits
-  (21 blocs pour 20, 20 pour 15), donc le témoin des gabarits ne les compte
-  pas ; leur forme est fausse quand même. Un bâtisseur chacun (`tour`).
+- [x] **WALT DISNEY HALL ET LE ROGERS CENTRE SONT DES COUPOLES (v365) — FAIT en
+  v369, avec les trois autres coupoles de gabarit.** Un témoin de `plafond.js`
+  exige désormais qu'aucun repère ne garde `dome`, quelle que soit sa hauteur
+  (rouge sur la v365 : cinq). Disney Hall a ses voiles d'acier (21 blocs) ; le
+  Rogers Centre est un stade rond à toit plat, `vrai` — étiré au ciel de Toronto
+  il montait deux fois plus haut que large ; l'ancien hôtel de ville a sa tour
+  de l'horloge sur son corps (40 blocs à `k` 1, 28 à `k` 0,3 : Toronto garde
+  0,3, sinon il frôle une CN Tower de 553 m à 45 blocs) ; le Panthéon de Rome
+  a sa rotonde, son oculus et son portique (dix blocs, sous le Colisée fixe à
+  19 : étiré à ses 43 m il le dépassait) ; le dôme du Rocher son octogone ; le
+  Bean son haricot ; Navy Pier sa jetée et sa grande roue.
+- [ ] **LE PORTAIL DE LA v369 : `monte.js` CHANGE DE ROUGES À CHAQUE PASSAGE,
+  DES DEUX CÔTÉS.** Portail : « elle ralentit assez pour qu'on puisse la
+  rejoindre » (9,1 m/s, neuf), le réverbère au volant, la compilation à
+  l'arrivée, le gel d'arrivée. Rejouée SEULE sur la branche : la poule, le trou
+  en vol, la recharge à l'arrivée, compilation et gel — PAS le train. Rejouée
+  SEULE sur `origin/main` (v365) : la caméra en virage, les passants de Rome,
+  compilation et gel. Seuls les deux derniers sont stables (déclarés) ; le reste
+  est une distribution de cadence qu'un passage de chaque côté ne fixe pas
+  (v269). PREUVE STRUCTURELLE pour la livraison : elle ne change que les blocs
+  de sept boîtes de monuments (Los Angeles, Toronto, Rome, Jérusalem, Chicago)
+  et les tables de ces repères ; aucun de ces témoins ne se pose dans l'une de
+  ces boîtes. `washington.js` « chaque îlot a sa porte » (déclaré) : vert seul
+  des deux côtés. `maj.js`, `carte.js`, `manhattan.js` : les rouges déclarés
+  de la v365, identiques.
+- [ ] **HUIT PALAIS SONT ENCORE LE GABARIT `palaisLong` (v369, compté par le
+  témoin).** Palais du Dam, Rijksmuseum, château de Prague (sans Saint-Guy),
+  Palais royal de Stockholm, Amalienborg, Gyeongbokgung (des toits coréens),
+  Casa Rosada, palais Bahia : trois blocs d'épaisseur et une baie sur deux, que
+  la table étire (la leçon du palais de Madrid, v365). Un bâtisseur chacun.
 - [ ] **LE PORTAIL DE LA v357 (les tours) : TOUS LES ROUGES DÉJÀ DÉCLARÉS, UN
   NEUF INTERMITTENT.** Second portail, sur le code rebasé : `maj.js` le loader
   (intermittence déclarée, 1 sur 4 sur `origin/main`), `manhattan.js` « le trou
@@ -3782,9 +3806,48 @@ l'embarquement a eu lieu, pas par une hypothèse.
   ruelles sont piétonnes et plus étroites — la section `ruelle` du kit (sans
   trottoir) ôterait ses réverbères, décision de Max comme pour les médinas.
 
+- [ ] **PORTAIL DE LA v368 (Lille), après la fusion des v366 et v367.** Dix
+  suites. Rouges, tous déjà déclarés ici : `maj.js` la libération et « ne
+  floute rien », plus les deux témoins du palier (six images, aucun verdict —
+  la charge, ma sonde de circuits tournait à côté ; rejouée SEULE, les deux
+  sont verts et restent les intermittences du loader, lignes 79, 98, 977) ;
+  `carte.js` la flèche du GPS et le glisser bridé (446 ms) ; `washington.js`
+  l'Air et l'Espace (et, seule, « chaque îlot a sa porte » — intermittence de
+  la ligne 438) sur un `washington.js` que Lille ne touche pas ; `manhattan.js`
+  le trou de façade et le taxi ; `monte.js` la compilation à la téléportation.
+  Après la fusion de la v367 (I-95), `carteMonde.js` et `plafond.js` rejouées
+  seules : 156 et 115 verts, zéro rouge.
+- [ ] **PORTAIL DE LA v368 (Lille), base v361.** Rouges tous déjà déclarés :
+  `maj.js` la libération (`null`, personnages 3/9) et « ne floute rien » ;
+  `carte.js` la flèche du GPS (gauche 1,92) et une fois le glisser bridé
+  (441 ms) ; `manhattan.js` le trou de façade (9 203 → 46 592) et le bouton du
+  taxi ; `monte.js` la chauffe de New York, le gel d'arrivée, une fois les
+  passants de Rome (33 %) et une fois le bout du monde (trou 72 pour l'avion
+  de ligne). `plafond.js` a rendu une fois « la surface coûte quelques
+  millisecondes » (8,5 ms contre 2,6) au premier portail, vert au second
+  (2,7 contre 1,5) : la charge du banc, un chiffre de durée. Aucun ne lit Lille.
+
 - [ ] **LES CINQ AUTRES VILLES BÂTIES À LA MAIN N'ONT PAS ÉTÉ ÉLARGIES (v271).**
-  Londres est faite en v339, Nice en v359, San Francisco en v361 (au-dessus).
-  Restent, dans l'ordre : Washington, Lille (dans la fenêtre d'empreinte). La méthode de
+  Londres est faite en v339, Nice en v359, San Francisco en v361, Lille en
+  v368. **Reste Washington, et ce n'est pas la même passe** (mesuré en v368) :
+  ses diagonales ont déjà la chaussée d'une collectrice (5,2 à 6,8 blocs), ce
+  qui reste hors règle c'est la GRILLE — deux colonnes de chaussée et une de
+  trottoir, un pas de douze. Or le pas porte trois choses que les autres
+  villes n'ont pas : la maison de 9 × 9 avec son escalier et ses deux portes
+  (`batirColonneWashington`, coordonnées d'îlot `mu − 3`), vingt-trois rues
+  de raccord posées au centre EXACT des rues de la grille (12k + 1,5 : C, F,
+  H Street, la 3e, la 9e, la 14e, la 15e…), et dix-neuf circuits mesurés sous
+  la contrainte de partage de la v211 qui roulent sur ces raccords. Une rue
+  locale du kit fait sept blocs d'emprise : en gardant l'îlot de neuf, le pas
+  passe à seize et la part de lots du disque tombe de 15,8 % à près de 9 ; en
+  suivant le rapport des emprises (la règle des autres villes), le pas passe à
+  vingt-huit et la maison doit être redessinée pour un lot de vingt et un.
+  Dans les deux cas, TOUTES les rues nommées de la grille changent de place et
+  les dix-neuf circuits se remesurent (passe de réparation comprise, v216). À
+  faire en une livraison à elle : choisir le pas (décision de plan), réécrire
+  la maison sur un îlot paramétré, reposer les raccords sur la nouvelle grille,
+  remesurer les circuits, figer `washington-v368.js` sous ce qu'un enfant a
+  bâti — et le portail de `washington.js` (portes, métro, musées) en entier. La méthode de
   Londres se reprend telle quelle : figer la ville d'avant (`<ville>-v339.js`),
   type par fonction, trame recomposée et en recul des avenues, mobilier sur la
   section, la ville d'avant sous ce qu'un enfant a bâti.

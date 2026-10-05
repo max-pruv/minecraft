@@ -316,11 +316,14 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // colonnes de route entrent dans ses morceaux (886 → 1 515) — voulu. Sans
 // Washington, les 441 autres morceaux et toutes les routes rendent ad9949da…
 // sur `origin/main` (v366, f70060cd… avec elle) ET sur la branche.
-// v368 : les tabliers des villes engendrées couvrent les colonnes d'eau du
+// v369 : le Panthéon de Rome reçoit sa rotonde et son portique, et Rome est
+// un des neuf lieux — voulu. Bâtisseurs neufs de la v369 désarmés, la branche
+// rend 7d235907…, la constante d'`origin/main` (v368), au bit près.
+// v370 : les tabliers des villes engendrées couvrent les colonnes d'eau du
 // demi-bloc au-delà de leurs bouts (437 encoches dans 49 villes, dont des lieux
 // relevés ici) — voulu. La preuve : la même branche, la règle désarmée (les
-// bornes `a0`/`a1` d'avant), rend 7d235907…, la constante d'`origin/main`.
-const EMPREINTE_MORCEAUX_V357 = '3037c56f7b428bf47aaf8fde87ed2370c8e97f9510d0ca313f0d13e26232546e';
+// bornes `a0`/`a1` d'avant), rend 27789d06…, la constante d'`origin/main`.
+const EMPREINTE_MORCEAUX_V357 = '36b34a87e75e48b63e65f407aaff09099f810251319af3f30d9a03c51259261e';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -714,6 +717,28 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         vus.length >= 10 && tours.length === 0,
         `${vus.length} édifices de gabarit au-dessus d'une fois et demie leurs toits`
         + (tours.length ? ` — SEULS, EN TOUR (${tours.length}) : ${tours.join(' · ')}` : ` : ${vus.join(' · ')}`));
+    }
+
+    // PLUS UNE COUPOLE DE GABARIT DANS LE MONDE (v369). Le témoin d'avant ne
+    // compte que les gabarits qui montent à une fois et demie leurs toits ;
+    // sous cette barre, Walt Disney Hall (des voiles d'acier), le Rogers Centre
+    // (un stade), le Panthéon de Rome (sans portique), le dôme du Rocher (un
+    // octogone) et le Bean (un haricot) restaient des coupoles sur tambour.
+    // La forme fausse ne dépend pas de la hauteur : aucun repère ne garde
+    // `dome` comme bâtisseur. Les palais (`palaisLong`) sont comptés et dits.
+    {
+      const { VILLES_MONDE: VMg } = await import('../src/villesmonde.js');
+      const gabaritDe = (f) => f && (f.gabarit || (/6 \+ r, 0, OR/.test(String(f)) ? 'dome'
+        : /poser\(1, 5, 0, OR\)/.test(String(f)) ? 'palaisLong' : null));
+      const par = { dome: [], palaisLong: [] };
+      for (const f of VMg) for (const m of f.monuments || []) {
+        const g = gabaritDe(m.tour || m.build);
+        if (g) par[g].push(`${f.ancre.nom}|${m.nom}`);
+      }
+      verifier('aucune coupole de gabarit ne reste dans le monde, quelle que soit sa hauteur',
+        par.dome.length === 0,
+        `${par.dome.length} coupole(s) de gabarit${par.dome.length ? ' : ' + par.dome.join(' · ') : ''}`
+        + ` · palais de gabarit (dette) : ${par.palaisLong.length}`);
     }
 
     // PARIS À L'ÉCHELLE DU CIEL : un bloc pour un mètre jusqu'à la corniche,
@@ -1712,7 +1737,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   // ne retient rien — la ville neuve bâtit dessous. Rouge sur `origin/main` :
   // la date n'existe pas, et les deux premiers cas montrent la ville neuve.
   // ET NICE À LA v359, PAR LA MÊME RÈGLE : la fonction se joue ville par ville.
-  // SAN FRANCISCO À LA v361.
+  // SAN FRANCISCO À LA v361, LILLE À LA v368.
   const figee = async (date, avant, neuf, ancre, sol, libre, batir) => {
     const W = await import('../src/world.js');
     if (!W[date]) return { absent: true };
@@ -1722,6 +1747,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const { CITY_BLOCK } = await import('../src/blocks.js');
     const L = N[ancre], t = W[date] - 86400000;
     const nf = new W.World();
+    const av = new W.World({ v308: true });   // les villes d'avant le kit partout
     // une ancienne rue que la ville neuve bâtit, et un ancien lot qu'elle fait rue
     let rueBatie = null, lotRue = null;
     for (let d = 10; d < L.r - 5 && !(rueBatie && lotRue); d++) for (let a = 0; a < 64; a++) {
@@ -1731,8 +1757,15 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       // une façade neuve (le bâtisseur y monte un mur) sur neuf colonnes d'ancienne
       // chaussée — pas un trottoir, où la ville d'avant a ses arbres et ses réverbères
       const mur = () => { let n = 0; N[batir](x, z, (dy) => { if (dy >= 3) n++; }); return n >= 3; };
+      // et rien n'y est posé par-dessus dans la ville d'avant — un monument se
+      // pose APRÈS les colonnes (Lille, v368 : la Vieille Bourse à côté)
+      const degage = () => croix((xx, zz) => {
+        const g = av.terrainHeight(xx, zz);
+        for (let y = g + 1; y <= g + 6; y++) if (av.getBlock(xx, y, zz) !== 0) return false;
+        return true;
+      });
       if (!rueBatie && croix((xx, zz) => A[sol](xx, zz) === CITY_BLOCK.ASPHALT)
-        && N[libre](x, z) && mur()) rueBatie = [x, z];
+        && N[libre](x, z) && mur() && degage()) rueBatie = [x, z];
       if (!lotRue && voisin(A[libre]) && voisin((xx, zz) => N[sol](xx, zz) !== null)) lotRue = [x, z];
     }
     if (!rueBatie || !lotRue) return { absent: false, introuvable: true, rueBatie, lotRue };
@@ -1772,6 +1805,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     ['Londres', ['DATE_RUES_LONDRES', 'londres-v332.js', 'londres.js', 'LONDRES', 'solLondres', 'lotLondresLibre', 'batirColonneLondres']],
     ['Nice', ['DATE_RUES_NICE', 'nice-v340.js', 'nice.js', 'NICE', 'solNice', 'lotNiceLibre', 'batirColonneNice']],
     ['San Francisco', ['DATE_RUES_SF', 'sanfrancisco-v343.js', 'sanfrancisco.js', 'SF', 'solSF', 'lotSFLibre', 'batirColonneSF']],
+    ['Lille', ['DATE_RUES_LILLE', 'lille-v344.js', 'lille.js', 'LILLE', 'solLille', 'lotLilleLibre', 'batirColonneLille']],
   ]) {
     const r = await figee(...args);
     verifier(`à ${ville}, une maison posée sur une ancienne rue n'est pas enfermée dans un immeuble neuf`,

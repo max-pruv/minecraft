@@ -36,6 +36,14 @@ const VUES = {
     { nom: 'ciel-centre', u: 108, v: -25, yaw: 0, pitch: -1.1, h: 70 },
     { nom: 'ciel-ouest', u: -27, v: 15, yaw: 0, pitch: -1.1, h: 70 },
   ],
+  lille: [
+    { nom: 'nationale', u: -10, v: 1, yaw: Math.PI / 2, pitch: 0.06, h: 1.6, rue: true },
+    { nom: 'liberte', u: -18, v: 12, yaw: Math.PI / 4, pitch: 0.06, h: 1.6, rue: true },
+    { nom: 'vieux-lille', u: -8, v: -18, yaw: 0, pitch: 0.08, h: 1.6, rue: true },
+    { nom: 'wazemmes', u: -27, v: 38, yaw: 0, pitch: 0.08, h: 1.6, rue: true },
+    { nom: 'ciel-centre', u: 0, v: 0, yaw: 0, pitch: -1.1, h: 70 },
+    { nom: 'ciel-sud', u: -10, v: 35, yaw: 0, pitch: -1.1, h: 70 },
+  ],
 };
 
 (async () => {
