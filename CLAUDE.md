@@ -1296,6 +1296,12 @@ géométrie. Et **un témoin de compilation lit les CLÉS de programme, pas leur
 compte** : un programme rendu fait baisser le compte (97 → 96, rouge des deux
 côtés), une compilation ajoute une clé — vérifié rouge, chauffe désarmée.
 
+**Le coût se lit sur la tablette (v364).** `degats.bilan()` rend le nombre
+d'enfoncements, le premier, le dernier et le pire en millisecondes, et les
+appels du feu ; `main.js` le range dans le relevé du journal de bord (v296) et
+l'affiche sous `?diag=1`, seulement si quelque chose s'est abîmé. Les
+millisecondes du banc ne se transposent pas (v247) : celles-là si.
+
 **Le feu dépose l'enfant, il ne le projette pas** : passé `DELAI_SORTIE` (3,5 s
 en temps réel), `fun.js` le fait descendre et `deposer` le pose debout sur une
 case libre à côté (côté conducteur d'abord). La carcasse porte `horsService`

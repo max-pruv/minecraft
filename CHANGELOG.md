@@ -20,6 +20,30 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v364 — Ce que coûtent les dégâts, lu sur la tablette
+
+**Pourquoi.** Le coût des dégâts n'a jamais été mesuré sur l'iPad. Au banc,
+enfoncer une carrosserie coûte 12 à 22 ms au premier choc et 4 à 7 ensuite,
+et le feu deux appels de dessin ; mais le banc rend en logiciel et ses
+millisecondes ne se transposent pas (v247). La dette de la v343 le disait :
+« reste le coût RÉEL sur la tablette, à lire avec `?diag=1` ». Il n'y avait
+rien à lire.
+
+**Ce que ça change.** La tablette mesure elle-même. Avec `?diag=1`, une ligne
+de plus apparaît dès qu'une voiture s'est abîmée : le nombre d'enfoncements,
+le premier, le dernier et le pire en millisecondes, et ce que coûte le feu en
+appels de dessin et en carrés. Le journal de bord (v296) garde les mêmes
+chiffres dans ses relevés : Max les relit après coup, sans rien installer. Tant
+que rien ne s'est abîmé, rien n'est ajouté au relevé.
+
+**Ce qui le prouve.** Un témoin neuf dans `degats.js`, rouge sur
+`origin/main` (aucun relevé) : après le crash et le feu, le journal porte un
+relevé `degats` avec ses enfoncements en millisecondes et un feu à un ou deux
+appels (mesuré : 4 enfoncements, dernier 22,4 ms, premier 18,2, feu 2 appels
+pour 36 carrés).
+
+---
+
 ## v363 — Les coups suivent la voiture
 
 **Pourquoi.** Deux manques laissés déclarés par la v356. Une voiture de la

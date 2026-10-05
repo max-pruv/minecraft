@@ -234,10 +234,10 @@
 
 - [ ] **LES DÉGÂTS (v343) : CE QUI RESTE, DÉCLARÉ.**
   - ~~Cinquante-quatre appels de dessin pendant un feu~~ — **fait en v348** :
-    deux `InstancedMesh`, 30 → 2 appels mesurés, gardé par un témoin. Reste
-    le coût RÉEL sur la tablette (enfoncer : 12 à 20 ms au premier choc au
-    banc, 4 à 7 ensuite), à lire avec `?diag=1` sur une voiture qu'on fait
-    brûler.
+    deux `InstancedMesh`, 30 → 2 appels mesurés, gardé par un témoin. Le coût
+    RÉEL sur la tablette se mesure depuis la v364 (journal de bord et
+    `?diag=1`) : reste à le LIRE sur l'iPad de Max, une voiture qu'on fait
+    brûler, et à décider sur ses chiffres.
   - ~~La carcasse n'est vue que par celui qui conduisait~~ — **fait en v356**
     (le receveur garde l'épave).
   - ~~Les voitures de la rue ne s'abîment pas~~ — **fait en v356** ; la
