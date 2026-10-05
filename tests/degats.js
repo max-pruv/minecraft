@@ -363,6 +363,27 @@ function verifier(nom, ok, detail = '') {
     verifier('aucun programme de shader compilé au choc ni au feu (chauffés à l\'accueil)', feu.flammes > 0 && neufs.length === 0,
       `${neufs.length} clé(s) neuve(s) ${neufs.map((k) => k.slice(0, 60)).join(' | ')} — compte ${avant.programmes} → ${apres.programmes}, flammes ${feu.flammes}`);
 
+    // 4 bis. LE COÛT RÉEL SE LIT SUR LA TABLETTE (v364). Le banc rend en
+    // logiciel : ses millisecondes ne se transposent pas (v247). Le journal de
+    // bord (v296) doit donc garder ce que l'appareil a mesuré — le dernier
+    // enfoncement et ce que coûte le feu — pour que Max le relise sur l'iPad.
+    const journalDegats = await tab.evaluate(async () => {
+      const j = window.__journal, d = window.__game.fun.degats;
+      if (!j) return { err: 'pas de journal' };
+      const t0 = performance.now();
+      let r = null;
+      while (performance.now() - t0 < 12000) {
+        r = [...j.doc.releves].reverse().find((x) => x.degats) || null;
+        if (r && r.degats.feu > 0) break;
+        await new Promise((f) => setTimeout(f, 300));
+      }
+      return { releve: r ? r.degats : null, bilan: d && d.bilan ? d.bilan() : null, attente: Math.round(performance.now() - t0) };
+    });
+    verifier('le journal de bord garde le coût réel des dégâts : le dernier enfoncement en ms, et les appels du feu',
+      !journalDegats.err && journalDegats.releve && journalDegats.releve.chocs > 0 && journalDegats.releve.dernierMs > 0
+        && journalDegats.releve.feu >= 1 && journalDegats.releve.feu <= 2,
+      JSON.stringify(journalDegats));
+
     // 5. UNE VOITURE NEUVE EST NEUVE, ET LE GARAGE RÉPARE.
     const neuf = await tab.evaluate(async () => {
       const g = window.__game, d = g.fun.degats, { x0, z0 } = window.__essai;
