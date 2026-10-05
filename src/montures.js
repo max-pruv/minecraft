@@ -363,7 +363,7 @@ function voitureNeuve(voeu) {
       if (peinture != null) repeindre(modele, enFlotte.fichier, peinture);
       g.add(modele);
       // le prototype et son clone : la portière se découpe sur le PROTOTYPE,
-      // qu'aucun choc ne froisse jamais (portieres.js, v365)
+      // qu'aucun choc ne froisse jamais (portieres.js, v366)
       g.userData.proto = proto; g.userData.modele = modele;
       // Les roues du clone, retrouvées par leur nom : le bestiaire les fera
       // tourner à la distance parcourue (animals.js). Les références ne se

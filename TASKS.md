@@ -1182,8 +1182,11 @@
   v342 ne touche ni `sw.js` (hors version), ni `index.html`, ni le loader — une
   table de hauteurs, un témoin, une sonde. Le badge de version (« version
   servie v335 » au premier portail) était le bump manquant, réglé.
-- [ ] **DEUX INVERSIONS DU VRAI CIEL DANS LES VILLES BÂTIES À LA MAIN (v350),
-  mesuré. Le château du Smithsonian : FAIT en v357** (sa tour du nord, deux
+- [x] **DEUX INVERSIONS DU VRAI CIEL DANS LES VILLES BÂTIES À LA MAIN (v350),
+  mesuré. Le château du Smithsonian : FAIT en v357 ; St Paul : FAIT en v365**
+  (Big Ben rendu au ciel de Londres par un bâtisseur à trente-neuf blocs,
+  St Paul sur son tambour à quarante et un, sous le London Eye ; Tower Bridge
+  et le London Eye entrent dans les `FIXES`) (sa tour du nord, deux
   blocs de côté, monte à quatorze — `buildChateauSmithsonianHaut`, entre
   Jefferson et la Bibliothèque du Congrès ; il est dans les `FIXES`). Reste St
   Paul : Big Ben est à soixante-neuf blocs, aucune coupole de la City ne peut
@@ -1205,9 +1208,13 @@
   Si on veut la garder au-dessus, c'est son bâtisseur (`buildGrandeRoue`) qui
   doit grandir d'un rayon, pas une table de paliers. Même cas pour Tivoli.
 - [x] **UNE COUPOLE SANS SA NEF DEVIENT UNE TOUR (v342), vu en capture. FAIT pour
-  Saint-Pierre en v357** : un bâtisseur avec la croix latine, la façade, le
+  Saint-Pierre en v357, pour TOUTES LES VILLES en v365** : le témoin neuf
+  (« aucune coupole ni aucun palais partagé ne monte seul en tour »,
+  `plafond.js`) a trouvé seize gabarits `dome` et `palaisLong` montés seuls sur
+  `origin/main` ; chacun a son édifice (`tour`), plus Sainte-Sophie, la Mosquée
+  bleue et la tour de Galata. Texte d'origine : un bâtisseur avec la croix latine, la façade, le
   tambour et la calotte rigide (`buildSaintPierre`). Les autres coupoles
-  partagées (Florence, Berlin, Sainte-Sophie) gardent `dome`. Les
+  partagées (Florence, Berlin, Sainte-Sophie) gardaient `dome`. Les
   bâtisseurs partagés (`dome`, `minaret`, `palaisLong`) sont des gabarits : St-
   Pierre est une coupole de treize blocs de large SANS la basilique autour.
   Remise à sa hauteur (38 blocs), elle garde les proportions vraies du tambour
@@ -1216,6 +1223,36 @@
   couleur de la calotte) : un obus d'ardoise, corrigé (le corps s'arrête au
   tambour). Le remède de fond est un bâtisseur par monument, avec sa nef — pas
   une table de paliers.
+- [ ] **LE PORTAIL DE LA v365 (les coupoles) : TOUS LES ROUGES DÉJÀ DÉCLARÉS OU
+  IDENTIQUES SUR `origin/main`, UN DÉLAI NEUF NON REPRODUIT.** Rejoués SEULS des
+  deux côtés (branche · `origin/main` v363) : `maj.js` la libération `null` et
+  « ne floute rien » (identiques) ; `carte.js` « la faire glisser » 428 · 419 ms
+  pour 400 ; `manhattan.js` « le trou enlève aussi la géométrie » (14 460 ·
+  17 102 → 51 734 · 46 592, déclaré) et « le taxi roule avec les contrôles
+  tactiles » (`#ride-btn` caché, une bête à portée, identique) ; `monte.js` le
+  gel d'arrivée et la compilation à l'arrivée (déclarés, rouges sur
+  `origin/main` seul). NEUF au portail : `manhattan.js:674`, l'invité ne rejoint
+  pas (`banc.rejoindre` → `TimeoutError`) — vert rejoué seul sur la branche ET
+  sur `origin/main` ; intermittence de partie à deux sous la charge, à rejouer
+  jusqu'à la distribution (v269) si elle revient. Le seul rouge de la livraison
+  (`carteMonde.js`, le Berliner Dom sur deux ponts) est corrigé, vert seul.
+- [ ] **À PISE, LE DUOMO ET LE BAPTISTÈRE SONT DANS L'EMPRISE DE LA TOUR (v365),
+  mesuré, déclaré.** Les trois repères sont à trois et quatre blocs l'un de
+  l'autre (36 blocs par kilomètre), et le modèle de la tour penchée (catalogue)
+  fait onze blocs de large au pied pour quinze mètres : ses couches 0 à 3
+  couvrent x −7..3, z −5..5 autour de son repère, c'est-à-dire les colonnes −4..6
+  du Duomo. Aucun bâtisseur ne tient dans la boîte du Duomo (`box: 6`) sans
+  recouvrir la tour, et c'était déjà le cas du gabarit (`dome(4)`). La v365
+  leur donne leur édifice (nef, transept, coupole ; anneau, loggia, tambour) et
+  le recouvrement reste. Le remède est de PLAN : une tour de catalogue à sa
+  vraie emprise (un bloc et demi), ou les trois repères écartés — c'est la
+  boîte, donc le relief : décision de carte.
+- [ ] **WALT DISNEY HALL ET LE ROGERS CENTRE SONT DES COUPOLES (v365), déclaré.**
+  Le gabarit `dome(4)` et `dome(5)` les dessine en coupole sur tambour : la
+  salle de Gehry est faite de voiles d'acier courbes, le Rogers Centre est un
+  stade à toit escamotable. Ils ne montent pas à une fois et demie leurs toits
+  (21 blocs pour 20, 20 pour 15), donc le témoin des gabarits ne les compte
+  pas ; leur forme est fausse quand même. Un bâtisseur chacun (`tour`).
 - [ ] **LE PORTAIL DE LA v357 (les tours) : TOUS LES ROUGES DÉJÀ DÉCLARÉS, UN
   NEUF INTERMITTENT.** Second portail, sur le code rebasé : `maj.js` le loader
   (intermittence déclarée, 1 sur 4 sur `origin/main`), `manhattan.js` « le trou
@@ -1265,7 +1302,15 @@
 - [ ] **LE CIEL DE LAS VEGAS GARDE SA ROUE ET SA PYRAMIDE (v353), déclaré.** La
   High Roller (167 m, 16 blocs) est sous la demi-tour Eiffel (165 m, 26) : une
   roue ne s'étire pas, comme le Prater. Le Luxor (107 m) reste à quinze blocs :
-  étirée, une pyramide devient un obélisque.
+  étirée, une pyramide devient un obélisque. **Remesuré en v365 : la boîte ne
+  tient pas la roue vraie.** Pour passer au-dessus de la demi-tour Eiffel
+  (vingt-six blocs) une roue dont la jante passe à quatre blocs du sol (celle du
+  Prater, v357) veut un rayon de douze — vingt-cinq blocs de diamètre — et la
+  boîte de la High Roller (`box: 9`) en tient dix-neuf : rayon neuf, sommet à
+  vingt-deux.
+  C'est la boîte qu'il faudrait agrandir, donc les zones du relief : décision
+  de carte, pas de bâtisseur. Tivoli n'a pas d'inversion (sa roue, seize blocs,
+  est sous la Rundetaarn, dix-sept).
 - [ ] **UNE CABANE SUR UN ANCIEN TOIT DE MONUMENT SE RETROUVE DEDANS (v335),
   déclaré.** Le relevé des toits (v301) emporte ce qu'on a bâti sur un
   immeuble ; rien n'emporte ce qu'on a bâti sur un monument étiré. Le bloc
@@ -2837,7 +2882,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
 
 ## En cours
 
-### Embarquement (v365) — ce qui reste dans la zone
+### Embarquement (v366) — ce qui reste dans la zone
 - **Le passager d'un ami (v253) monte sans séquence.** `monterAvec` colle encore
   l'enfant au siège d'un coup. La séquence sait sortir par la portière droite
   (`cote: 1`, déjà fabriquée) : la faire entrer par là est l'étape suivante, à
@@ -2856,7 +2901,21 @@ l'embarquement a eu lieu, pas par une hypothèse.
   en tout) et caméra de trois quarts arrière : à confirmer sur l'iPad.
 - **Les avions** gardent leur montée instantanée (on ne marche pas jusqu'au
   cockpit d'un Concorde) : une passerelle serait un second palier.
-- [ ] **LE PORTAIL DE LA v365 APRÈS LA v356, DOUBLE MESURE FAITE.** Onze
+- [ ] **LE PORTAIL DE LA v366 APRÈS LA v364, DOUBLE MESURE FAITE.** Cinq
+  suites rouges, toutes des familles déjà déclarées : `maj.js` (préparation
+  libérée avec personnages 4/9 ; « la page ne floute rien »), `manhattan.js`
+  (trou de façade 22 326 → 51 734, taxi « 🐴 Monter » caché), `monte.js`
+  (passants sur la chaussée à Rome 6/21, téléportation qui compile, gel
+  d'arrivée 21,8 %), `reseau.js` (« un départ propre nettoie tout le
+  monde », rouge à l'identique sur `origin/main`, ligne 2639) et
+  `reglages.js` (« un choix fait sur une tablette part au serveur » et ses
+  deux suivants). La seule dont le banc est touché par la livraison
+  (`embarq=0` dans son adresse) est `reglages.js` : rejouée SEULE, 70 verts
+  sur la branche ET 70 verts sur `origin/main` (v364) — rouge de charge,
+  comme au portail de la v363. Preuve structurelle pour les autres : le banc
+  met `embarq=0` partout, donc `monter`/`descendre` appellent `toggleRide`
+  au bit près comme avant.
+- [ ] **LE PORTAIL DE LA v366 APRÈS LA v356, DOUBLE MESURE FAITE.** Onze
   suites vertes. Rouges déjà déclarés : `maj.js` (le loader de
   l'installation), `carte.js` (la flèche GPS à gauche, 1,92 rad), `manhattan.js`
   (le trou de façade 14 460 → 51 734, le taxi tactile), `monte.js` (la
@@ -2882,7 +2941,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
     comparant l'horloge de rue publiée, `rue` du message `ciel`, au lieu des
     positions), et à rejouer dix fois de chaque côté avant d'accuser qui que ce
     soit.
-- [ ] **LE PORTAIL DE LA v365 APRÈS REBASE SUR LA v348, DOUBLE MESURE FAITE.**
+- [ ] **LE PORTAIL DE LA v366 APRÈS REBASE SUR LA v348, DOUBLE MESURE FAITE.**
   Quinze suites vertes. Rouges, rejoués SEULS des deux côtés :
   `manhattan.js` — le trou de façade (9 203 branche · 11 684 `origin/main` →
   51 734, dette v291) ; le taxi tactile (1,06 bloc, seul sur la branche :
@@ -2897,7 +2956,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   juste, témoin trop étroit (il n'acceptait que les flancs) : il accepte
   désormais toute place hors de l'emprise et publie les refus. À creuser : ce
   qui rend « circulation » en pleine prairie à soixante blocs de toute route.
-- [ ] **LE PORTAIL DE LA v365 (embarquement), DOUBLE MESURE FAITE.** Deux
+- [ ] **LE PORTAIL DE LA v366 (embarquement), DOUBLE MESURE FAITE.** Deux
   portails complets (le second après rebase sur la v339). Les huit témoins de
   l'embarquement verts aux deux. Rouges, tous rejoués SEULS des deux côtés :
   `monte.js` — la téléportation qui compile (chauffe de New York expirée) et

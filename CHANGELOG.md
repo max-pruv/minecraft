@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v365 — On monte en voiture comme dans un vrai jeu
+## v366 — On monte en voiture comme dans un vrai jeu
 
 **Pourquoi.** Max : « Quand on monte dans une voiture, on voit le personnage
 qui avance et qui rentre dans la voiture avec le gameplay de la porte qui
@@ -55,6 +55,58 @@ et garde son froissé. Huit rouges sur `origin/main` ; le huitième — aucun pr
 shader compilé — est vert des deux côtés à dessein, il garde une capacité. Le
 banc saute la séquence partout ailleurs (`embarq=0`) : les témoins de conduite
 existants gardent l'ancien geste au bit près.
+
+---
+
+## v365 — Les coupoles ont leur édifice
+
+**Pourquoi.** La v357 avait donné sa basilique à Saint-Pierre de Rome et
+déclaré la suite : les bâtisseurs partagés `dome` (une coupole sur son seul
+tambour) et `palaisLong` (un palais de trois blocs d'épaisseur) servent de
+gabarits à des dizaines de monuments, et remis à la hauteur de leur ville sans
+l'édifice autour, ce sont des tours et des murs. Mesuré dans toutes les villes :
+seize, du Berliner Dom au palais d'Hiver. Et à Londres, Big Ben (96 m) était à
+soixante-neuf blocs, au-dessus du London Eye, quand St Paul (111 m) restait à
+dix-sept, sous la colonne Nelson.
+
+**Ce que ça change.**
+
+- **Seize monuments ont leur vraie forme** : Santa Maria del Fiore avec sa nef
+  de marbre, son octogone, la coupole de Brunelleschi et le campanile de Giotto ;
+  le Berliner Dom et ses tours d'angle ; le Reichstag et sa coupole de verre ;
+  le Rashtrapati Bhavan ; le Capitolio de La Havane ; le palais des Beaux-Arts
+  et la cathédrale de Mexico ; la gare Victoria et le Taj Mahal Palace de
+  Mumbai ; le baptistère et le Duomo de Pise ; Saint-Marc et ses cinq
+  coupoles ; et quatre palais autour de leur cour — le palais royal de Madrid,
+  la Hofburg, le palais d'Hiver, le Parlement d'Athènes.
+- **Istanbul a ses minarets** : Sainte-Sophie (sa coupole basse, ses
+  demi-coupoles et quatre minarets) et la Mosquée bleue (sa cascade de coupoles
+  et six minarets) ; la tour de Galata a son cylindre de pierre et son toit
+  conique, et le ciel de la ville, qu'elle bornait, se décomprime.
+- **Le ciel de Londres est dans l'ordre** : Big Ben à trente-neuf blocs, à la
+  proportion de la tour Elizabeth, St Paul sur son tambour et sa colonnade à
+  quarante et un, sous le London Eye.
+- **Les voitures de l'Autosole s'arrêtent sur le parvis du Duomo** au lieu de
+  traverser sa nef : une avenue d'entrée s'arrête désormais devant le premier
+  bloc qu'un monument pose à hauteur de carrosserie.
+
+**Ce qui le prouve.** Un témoin neuf dans `plafond.js` — « aucune coupole ni
+aucun palais partagé ne monte seul en tour » — cherche les gabarits dans toutes
+les villes et mesure leur assise (l'emprise du pied sur celle du haut) ou leur
+carrure : rouge sur `origin/main` (seize), vert ici. Le témoin d'ordre du vrai
+ciel reçoit St Paul, Tower Bridge et le London Eye. L'empreinte des 490
+morceaux se relève (Londres est un des neuf lieux), avec sa preuve : bâtisseurs
+neufs désarmés, la branche rend l'empreinte d'`origin/main` au bit près. Jugé
+sur captures, vingt et un monuments. Le portail a trouvé deux défauts de la livraison
+elle-même — l'entrée de Florence dans le Duomo, la barre du témoin de Big Ben
+écrite pour l'ancien modèle à soixante-neuf blocs — et le témoin de Londres
+exige désormais que la roue reste au-dessus de la tour de l'horloge (rouge sur
+`origin/main`).
+Et le portail de la v365 en a trouvé un troisième : le Berliner Dom, bâti sur
+toute sa boîte, recouvrait deux tabliers de pont de Berlin (dix pas bouchés,
+« on le traverse à pied d'une rive à l'autre », `carteMonde.js`) ; il tient
+désormais entre les deux ponts, son aile du nord lui gardant l'assise d'une
+cathédrale.
 
 ---
 

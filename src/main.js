@@ -7084,7 +7084,7 @@ function plafondAuSiege(a, siege) {
     if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return;
     // ni l'avatar de l'enfant, ni celui d'un ami assis là (v253) : une tête
     // n'est pas un toit — reconnu à ses bras articulés (`buildKidMesh`)
-    // ni une portière (v365) : ouverte, elle n'est pas le toit
+    // ni une portière (v366) : ouverte, elle n'est pas le toit
     for (let p = o; p && p !== a.mesh; p = p.parent) if (p === avatarLocal || (p.userData && (p.userData.arms || p.userData.estPortiere))) return;
     const pos = o.geometry.attributes.position;
     _plafondM.multiplyMatrices(_plafondInv, o.matrixWorld);
@@ -7102,7 +7102,7 @@ function plafondAuSiege(a, siege) {
 }
 function asseoirLeConducteur(dt) {
   avatarTemps += dt;
-  // PENDANT QU'IL MONTE OU DESCEND (v365), c'est la séquence qui tient l'avatar
+  // PENDANT QU'IL MONTE OU DESCEND (v366), c'est la séquence qui tient l'avatar
   if (fun.avatarEnSequence && fun.avatarEnSequence()) return;
   const a = fun.montureConduite ? fun.montureConduite() : null;
   const siege = a && a.def && a.def.siege;
@@ -7135,7 +7135,7 @@ function asseoir(av, a, siege, temps) {
   animerHumain(av, temps, 0, POSE_AU_VOLANT);
 }
 // OÙ L'ON EST ASSIS, sans y poser personne : la séquence d'embarquement
-// (embarquement.js, v365) y fait arriver l'avatar, et c'est le MÊME calcul
+// (embarquement.js, v366) y fait arriver l'avatar, et c'est le MÊME calcul
 // que celui qui l'y tient ensuite — sinon il sauterait d'un cran à l'instant
 // où il s'assied.
 function placeAssise(a, siege) {
@@ -7597,7 +7597,7 @@ fun.degats.brancherRue((x, z, y) => (vehicules ? vehicules.voitureRueProche(x, z
 fun.degats.brancherNoms((q) => (vehicules ? vehicules.voitureNommee(q) : null));
 fun.degats.brancherReseau((m) => { if (net && net.active) net.broadcast(m); });
 
-// LA SÉQUENCE D'EMBARQUEMENT (v365) prend l'avatar que main.js possède, et la
+// LA SÉQUENCE D'EMBARQUEMENT (v366) prend l'avatar que main.js possède, et la
 // place assise que main.js calcule : un seul corps, une seule assise.
 fun.brancherAvatar({ obtenir: obtenirAvatarLocal, placeAssise, pose: POSE_AU_VOLANT });
 

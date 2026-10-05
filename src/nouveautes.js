@@ -6,13 +6,23 @@
 
 export const NOUVEAUTES = [
   {
-    v: 365,
+    v: 366,
     titre: 'On monte en voiture',
     puces: [
       'Tu marches jusqu\'à la portière',
       'La porte s\'ouvre, tu t\'assieds',
       'En descendant, tu sors à côté',
       'Appuie deux fois pour aller vite',
+    ],
+  },
+  {
+    v: 365,
+    titre: 'Les coupoles ont leur église',
+    puces: [
+      'Le Duomo de Florence et sa coupole',
+      'Sainte-Sophie et ses quatre minarets',
+      'Big Ben et Saint-Paul à Londres',
+      'Des palais avec leur cour',
     ],
   },
   {

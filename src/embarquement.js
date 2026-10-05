@@ -1,4 +1,4 @@
-// MONTER EN VOITURE, ET EN DESCENDRE, COMME DANS UN VRAI JEU (v365).
+// MONTER EN VOITURE, ET EN DESCENDRE, COMME DANS UN VRAI JEU (v366).
 //
 // Max : « Quand on monte dans une voiture, on voit le personnage qui avance et
 // qui rentre dans la voiture avec le gameplay de la porte qui s'ouvre, etc. »
