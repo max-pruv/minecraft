@@ -20,6 +20,51 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v357 — Les tours ont une emprise
+
+**Pourquoi.** La v353 avait laissé à leur hauteur d'auteur treize tours qui
+dominaient déjà leurs toits — la Willis Tower, le John Hancock, la perle de
+l'Orient, Jin Mao, les tours de Tokyo et de Séoul, la Skytree, la Banque de
+Chine, l'IFC, l'hôtel de ville de Bruxelles, la Koutoubia, le campanile de
+Venise — parce que leurs bâtisseurs étaient des colonnes d'un bloc : étirées
+à leur vraie hauteur, des perches (vu en capture à Bruxelles et à Chicago).
+Saint-Pierre de Rome, lui, était une coupole sans basilique, donc une tour.
+Max : « Improve all cities ».
+
+**Ce que ça change.** Chacune a son bâtisseur, d'après sa vraie silhouette et
+dans la boîte de son repère (aucune rue, aucun terrain ne bouge) : les neuf
+tubes de la Willis qui s'arrêtent l'un après l'autre et ses antennes,
+l'obélisque noir du Hancock, les gradins de Jin Mao, les sphères roses de la
+perle de l'Orient, le treillis orange et blanc de la tour de Tokyo, les
+belvédères de la Skytree, les prismes de la Banque de Chine, la couronne de
+l'IFC, la halle gothique de Bruxelles et sa tour, le bandeau turquoise de la
+Koutoubia, la chambre des cloches et la pyramide verte du campanile. Leur ville
+a désormais son ciel, et elles montent à leur hauteur : la Willis à
+cinquante-sept blocs, le Hancock à cinquante-cinq. Le témoin neuf a trouvé dix
+autres perches dans toutes les villes, refaites aussi — la Fernsehturm, la CN
+Tower, la Torre Latino, Saint-Étienne de Vienne et Saint-Guy de Prague avec
+leur nef, le Palazzo Vecchio avec son palais, la Frauenkirche, l'hôtel de ville
+de Munich, la demi-tour Eiffel de Las Vegas sur ses quatre pieds, la Freedom
+Tower — et les quatre pagodes, qui n'avaient qu'un poteau sous chaque toit,
+ont leurs étages. Saint-Pierre a sa nef, son transept et sa façade. Deux inversions du vrai
+ciel tombent : la grande roue du Prater, à son vrai rayon, passe au-dessus de
+la Hofburg, et la tour du nord du château du Smithsonian au-dessus du
+mémorial Jefferson. Le monde
+d'avant garde ses colonnes : un bloc posé avant se juge sur le monde où il a
+été posé.
+
+**Ce qui le prouve.** Un témoin neuf dans `plafond.js` : aucun repère qui
+monte à une fois et demie la corniche de sa ville n'est une perche (plus de la
+moitié de ses couches sur une ou deux colonnes), sauf les quatre fûts vrais —
+la colonne de Juillet, la colonne Nelson, celle de Colomb, l'Obélisque. Rouge
+sur `origin/main` (vingt-trois perches), vert ici. Le témoin d'ordre du ciel
+reste vert dans toutes les villes, la roue du Prater et le château du
+Smithsonian y entrent, les deux empreintes du relief sont intactes, et l'empreinte des 490
+morceaux de la v352 change pour une seule raison, prouvée : la même branche,
+ses bâtisseurs neufs désarmés, rend celle d'`origin/main` au bit près (qui, elle, ne suivait plus les routes de la v355 : le témoin y était rouge, c'est réparé).
+
+---
+
 ## v356 — L'épave reste, et la rue s'abîme aussi
 
 **Pourquoi.** Trois manques laissés déclarés par la v343. À plusieurs, quand

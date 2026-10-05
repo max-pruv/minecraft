@@ -105,11 +105,16 @@ const DOME = { 3: [5, 9], 4: [5, 10], 5: [5, 11], 6: [5, 12] };      // r → [a
 const MINARET = (h) => [h - 2, h + 1];
 const PALAIS = [5, 5], COLONNADE = [5, 6];
 const ARCHE = (h) => [h + 1, h + 3];
-const TOUR = (h) => [h, h + 1];
 const PAGODE5 = (v) => [[0, 0], [1, 1], [3, 9], [4, 10], [6, 18], [7, 19], [9, 27], [10, 28],
   [12, 35], [13, 36], [15, 43], [16, 44], [17, v + 1]];
 export const ECHELLES_VILLES = Object.freeze({
-  'Rome|Basilique St-Pierre': { vraie: 137, corps: DOME[6] },
+  // Saint-Pierre avec sa basilique (v357, `tour`) : la nef, son toit, le
+  // tambour, la calotte rigide (une coupole étirée est un obus), la lanterne et
+  // la croix à 137. La façade est écrite à 16 m et non à ses 45 vrais : à
+  // l'échelle du sol de Rome la basilique ne fait que seize blocs de long, et à
+  // 45 m c'était un immeuble de bureaux coiffé d'une coupole (vu en capture).
+  'Rome|Basilique St-Pierre': { vraie: 137,
+    paliers: [[0, 0], [1, 1], [6, 16], [7, 20], [10, 40], [17, 40], [19, 132], [20, 137]] },
   // La façade de la cathédrale de Pise, trente-quatre mètres ; le baptistère
   // en fait cinquante-cinq, un peu moins que la tour penchée.
   'Pise|Duomo de Pise': { vraie: 34, corps: DOME[4] },
@@ -203,13 +208,20 @@ export const ECHELLES_VILLES = Object.freeze({
   'Barcelone|Colonne de Colom': { vraie: 60, corps: [12, 13], fut: true },
   // Les tours de la Frauenkirche, quatre-vingt-dix-neuf mètres ; le beffroi du
   // nouvel hôtel de ville, quatre-vingt-cinq.
-  'Munich|Frauenkirche': { vraie: 99, corps: [11, 15], fut: true },
-  'Munich|Le nouvel hôtel de ville': { vraie: 85, corps: MINARET(16), fut: true },
+  // (v357 : leurs bâtisseurs neufs ont un corps, voir `tour` — la nef, les
+  // deux tours et leurs bulbes ; la façade et le beffroi.)
+  'Munich|Frauenkirche': { vraie: 99,
+    paliers: [[0, 0], [1, 1], [5, 25], [8, 37], [12, 79], [14, 92], [16, 100]] },
+  'Munich|Le nouvel hôtel de ville': { vraie: 85,
+    paliers: [[0, 0], [1, 1], [5, 20], [7, 30], [10, 55], [12, 70], [14, 83], [15, 86]] },
   // La coupole centrale de Saint-Marc, quarante-trois mètres.
   'Venise|Saint-Marc': { vraie: 43, corps: DOME[3] },
   // Une tour à boule : le fût jusqu'à la boule du sommet.
-  'Las Vegas|La demi-tour Eiffel': { vraie: 165, corps: TOUR(16), fut: true },
-  'Miami|La Freedom Tower': { vraie: 78, corps: MINARET(14), fut: true },
+  // La demi-tour Eiffel, ses deux étages (rigides) à 57 et 115 m divisés par deux.
+  'Las Vegas|La demi-tour Eiffel': { vraie: 165,
+    paliers: [[0, 0], [1, 1], [3, 27], [4, 27], [7, 57], [8, 57], [12, 120], [16, 166]] },
+  'Miami|La Freedom Tower': { vraie: 78,
+    paliers: [[0, 0], [1, 1], [4, 14], [5, 18], [10, 55], [11, 62], [13, 74], [14, 79]] },
   // Le Capitolio, quatre-vingt-douze mètres ; les tours de la cathédrale,
   // trente-quatre.
   'La Havane|Le Capitole': { vraie: 92, corps: DOME[5] },
@@ -221,6 +233,70 @@ export const ECHELLES_VILLES = Object.freeze({
   // La pagode à trois étages de Kiyomizu-dera, trente et un mètres.
   'Kyoto|Kiyomizu-dera': { vraie: 31,
     paliers: [[0, 0], [1, 1], [3, 8], [4, 9], [6, 16], [7, 17], [9, 24], [10, 25], [11, 32]] },
+
+  // LES TOURS QUI ONT UNE EMPRISE (v357). Elles dominaient déjà leurs toits en
+  // colonnes d'un bloc, et étirées c'étaient des perches ; leurs bâtisseurs
+  // neufs (`tour`, villesmonde.js) ont la vraie silhouette, et leurs paliers
+  // s'écrivent en mètres aux retraits de cette silhouette. Une sphère, un
+  // belvédère se posent entre DEUX PALIERS AU MÊME MÈTRE : la pente vaut un,
+  // la boule reste une boule.
+  // La Willis, 442 m au toit, 527 aux antennes : tubes coupés aux 50e, 66e et
+  // 90e étages.
+  'Chicago|La Willis Tower': { vraie: 527,
+    paliers: [[0, 0], [1, 1], [5, 205], [7, 270], [10, 370], [12, 443], [14, 528]] },
+  // Le John Hancock, 344 m au toit, 457 aux antennes.
+  'Chicago|Le John Hancock': { vraie: 457,
+    paliers: [[0, 0], [1, 1], [4, 100], [7, 200], [10, 290], [12, 345], [14, 458]] },
+  // Jin Mao, 421 m : des gradins de plus en plus serrés, la couronne à 370.
+  'Shanghai|La tour Jin Mao': { vraie: 421,
+    paliers: [[0, 0], [1, 1], [6, 180], [9, 270], [11, 320], [13, 360], [14, 370], [17, 422]] },
+  // La perle de l'Orient, 468 m : la grande sphère de 68 à 118 m, la haute de
+  // 250 à 295, la petite à 335.
+  'Shanghai|La perle de l\'Orient': { vraie: 468,
+    paliers: [[0, 0], [1, 1], [4, 68], [10, 68], [14, 250], [17, 250], [19, 335], [20, 335], [23, 469]] },
+  // La tour de Tokyo, 333 m : le grand belvédère à 150, celui du haut à 250.
+  'Tokyo|La tour de Tokyo': { vraie: 333,
+    paliers: [[0, 0], [1, 1], [2, 15], [4, 55], [5, 55], [7, 95], [9, 145], [11, 145], [15, 245], [16, 245], [19, 334]] },
+  // La Skytree, 634 m : les belvédères à 350 et à 450.
+  'Tokyo|La Skytree': { vraie: 634,
+    paliers: [[0, 0], [1, 1], [5, 120], [11, 340], [13, 340], [16, 445], [17, 445], [22, 635]] },
+  // La tour de Séoul, 236 m, sa nacelle à 130.
+  'Séoul|La tour de Séoul': { vraie: 236,
+    paliers: [[0, 0], [1, 1], [10, 130], [12, 130], [16, 237]] },
+  // La Banque de Chine, 315 m au toit, 367 aux mâts : quatre prismes coupés
+  // l'un après l'autre.
+  'Hong Kong|La Banque de Chine': { vraie: 367,
+    paliers: [[0, 0], [1, 1], [6, 120], [9, 190], [12, 260], [15, 315], [17, 368]] },
+  // L'IFC, 412 m : le fût, les pans coupés, les gradins et la couronne.
+  'Hong Kong|L\'IFC': { vraie: 412,
+    paliers: [[0, 0], [1, 1], [9, 300], [12, 360], [14, 390], [16, 413]] },
+  // L'hôtel de ville de Bruxelles, 96 m saint Michel compris : la halle et
+  // son toit (26 m), la tour carrée, les étages ajourés, la flèche.
+  'Bruxelles|L\'hôtel de ville': { vraie: 96,
+    paliers: [[0, 0], [1, 1], [5, 18], [7, 26], [10, 45], [12, 65], [14, 92], [15, 97]] },
+  // La Koutoubia, 77 m : le minaret à soixante, le lanternon, les boules d'or.
+  'Marrakech|La Koutoubia': { vraie: 77,
+    paliers: [[0, 0], [1, 1], [11, 60], [12, 63], [14, 72], [16, 78]] },
+  // Le campanile de Saint-Marc, 99 m : le fût à cinquante, la chambre des
+  // cloches, l'attique, la pyramide et l'ange.
+  'Venise|Le campanile': { vraie: 99,
+    paliers: [[0, 0], [1, 1], [10, 50], [12, 62], [13, 72], [15, 98], [16, 100]] },
+  // Les autres perches que le témoin a trouvées (v357), avec leur corps.
+  // La Fernsehturm, 368 m : la sphère (rigide) de 200 à 230 m.
+  'Berlin|Fernsehturm': { vraie: 368,
+    paliers: [[0, 0], [1, 1], [5, 90], [10, 200], [14, 200], [16, 250], [20, 369]] },
+  // La Torre Latino, 183 m antenne comprise.
+  'Mexico|La Torre Latino': { vraie: 183,
+    paliers: [[0, 0], [1, 1], [11, 140], [13, 160], [14, 165], [16, 184]] },
+  // Saint-Étienne : la nef à 28 m, son toit à 60, le Steffl à 136.
+  'Vienne|Stephansdom': { vraie: 136,
+    paliers: [[0, 0], [1, 1], [4, 28], [6, 60], [9, 80], [12, 105], [14, 130], [15, 137]] },
+  // Saint-Guy : la nef à 33 m, le toit à 45, la grande tour à 99.
+  'Prague|Saint-Guy': { vraie: 99,
+    paliers: [[0, 0], [1, 1], [4, 33], [6, 45], [9, 72], [11, 92], [12, 100]] },
+  // Le Palazzo Vecchio : le palais à 32 m, la tour d'Arnolfo à 94.
+  'Florence|Palazzo Vecchio': { vraie: 94,
+    paliers: [[0, 0], [1, 1], [5, 32], [6, 36], [10, 64], [12, 72], [14, 86], [15, 95]] },
 });
 
 // LE LOT 2 : LES VILLES BÂTIES À LA MAIN (v350). Même règle, même table : le
@@ -357,7 +433,9 @@ export const CIELS = Object.freeze({
   Lille: [7, 0.4], Londres: [8, 0.75], Washington: [13, 0.26],
   // v353 : les autres villes engendrées qui portent des repères.
   Barcelone: 13, Munich: [13, 0.55], Venise: 8, 'Las Vegas': 15, Miami: 13, 'La Havane': 13,
-  Tokyo: [13, 0.72], Kyoto: 12,
+  Tokyo: 13, Kyoto: 12,
+  // v357 : les villes dont les tours ont reçu une emprise.
+  Bruxelles: 13, Marrakech: 7, Chicago: 14, 'Séoul': 13, Shanghai: 13, 'Hong Kong': 13,
 });
 // LES VILLES ENGENDRÉES QUI N'ONT PAS DE CIEL, et chacune dit pourquoi — même
 // discipline que `BAS_DECLARES`. `vrai` : rien à y remettre à l'échelle, ses
@@ -373,12 +451,17 @@ export const VILLES_SANS_CIEL = Object.freeze({
   Seattle: { vrai: 'la Space Needle est un modèle du catalogue ; la grande roue ne s\'étire pas' },
   'Dubaï': { vrai: 'le Burj Khalifa est bâti à sa hauteur, bien au-dessus de son ciel' },
   'Le Cap': { vrai: 'son seul repère est une forteresse aux murs bas' },
-  Bruxelles: { vrai: 'la tour de l\'hôtel de ville est un fût qui domine déjà ses toits (23 blocs pour 13)' },
-  Marrakech: { vrai: 'la Koutoubia est un fût qui domine déjà ses toits (19 blocs pour 7)' },
-  Chicago: { vrai: 'la Willis Tower et le John Hancock sont des fûts qui dominent déjà leurs toits (43 et 37 blocs pour 14)' },
-  'Séoul': { vrai: 'la tour de Séoul est un fût qui domine déjà ses toits (22 blocs pour 13)' },
-  Shanghai: { vrai: 'la perle de l\'Orient et Jin Mao sont des fûts qui dominent déjà leurs toits (38 et 42 blocs pour 13)' },
-  'Hong Kong': { vrai: 'la Banque de Chine et l\'IFC sont des fûts qui dominent déjà leurs toits (32 et 36 blocs pour 13)' },
+});
+// LES FÛTS QUI SONT DES FÛTS DANS LA VRAIE VILLE AUSSI (v357). Le témoin de
+// `tests/plafond.js` exige qu'aucun repère qui domine ses toits (une fois et
+// demie la corniche) ne soit une perche — plus de la moitié de sa hauteur sur
+// une ou deux colonnes — sauf ceux-ci, chacun avec sa raison. Une colonne, un
+// obélisque : leur finesse est leur forme.
+export const PERCHES_VRAIES = Object.freeze({
+  'Paris|Bastille': 'la colonne de Juillet est une colonne',
+  'Londres|Colonne Nelson': 'c\'est une colonne',
+  'Barcelone|Colonne de Colom': 'c\'est une colonne',
+  'Buenos Aires|L\'Obélisque': 'c\'est un obélisque',
 });
 export const blocsDuCiel = (m, c = CORNICHE, k = 1) => (m <= c ? m : c + k * K_CIEL * (c / CORNICHE) * Math.log(m / c));
 

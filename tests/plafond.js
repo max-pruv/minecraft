@@ -291,7 +291,14 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // c'est ce que `new World({ v308: true })` doit rendre au bloc près (v309).
 // v352 : l'empreinte des blocs et des tampons de 490 morceaux (morceaux-temoin.mjs),
 // relevée sur la v351 (la même, bit pour bit, que sur la v348) ; et le travail d'un morceau, barre au milieu des deux mesures.
-const EMPREINTE_MORCEAUX_V351 = 'b31099b9fbe9443f1511a752d8136967d3f93e052da1c133f7704e76f25a44af';
+// v357 : les tours de Marrakech et de Tokyo, deux des neuf lieux, ont reçu un
+// bâtisseur avec une emprise — un changement de CONTENU, pas d'optimisation. La
+// preuve qu'il n'y a que lui : la même branche, ses bâtisseurs neufs désarmés
+// (`lm.tour` ignoré, la table d'`origin/main`), rend 69381f2e…, ce que rend
+// `origin/main` lui-même. (Et `origin/main` ne rendait plus b31099b9 : les
+// routes de la v355 ont élargi des talus — 20 186 → 26 361 colonnes — sans que
+// la constante suive ; le témoin y était rouge, mesuré à la fusion de la v357.)
+const EMPREINTE_MORCEAUX_V357 = '3cc39830ead08cc455ed903e88c3358518e6a73c1f19aa59dfc091904cb88bfc';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -440,35 +447,40 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     // haut : ni un autre monument remis à l'échelle, ni un repère que la
     // livraison n'a pas touché. Les hauteurs vraies des repères fixes sont
     // écrites ici (mètres) ; celles des monuments étirés viennent du module.
-    // La grande roue du Prater (65 m, 16 blocs) n'y est pas : une roue ne
-    // s'étire pas, et la Hofburg (30 m, 21 blocs) la dépasse — déclaré dans
-    // `TASKS.md`.
+    // La grande roue du Prater (65 m) y est depuis la v357 : une roue ne
+    // s'étire pas, elle a reçu son vrai rayon (`buildRoueDuPrater`) et passe
+    // au-dessus de la Hofburg (30 m, 21 blocs).
+    // (La Fernsehturm, le Stephansdom, le Palazzo Vecchio, Saint-Guy, la Torre
+    // Latino : remis à l'échelle par leur bâtisseur neuf en v357, ils sont
+    // dans la table du module.)
     const FIXES = { 'Rome|Colisée': 48, 'Pise|Tour de Pise': 56, 'Agra|Taj Mahal': 73,
-      'Berlin|Fernsehturm': 368, 'Vienne|Stephansdom': 136, 'Florence|Palazzo Vecchio': 94,
       'Toronto|La CN Tower': 553,
       // Les fûts d'un bloc qui ne montent pas : la courbe de leur ville passe
       // dessous (le `k` de `CIELS`). Et ceux qui montent pour l'ordre, écrits
       // ici aussi : en retirer un de la table fait rougir l'inversion.
-      'Amsterdam|Westerkerk': 85, 'Prague|Saint-Guy': 99, 'Prague|L\'horloge astronomique': 70,
+      'Amsterdam|Westerkerk': 85, 'Prague|L\'horloge astronomique': 70,
       'Istanbul|La tour de Galata': 67, 'Stockholm|L\'hôtel de ville': 106,
       'Jérusalem|Le dôme du Rocher': 35, 'Jérusalem|La tour de David': 30,
-      'Los Angeles|L\'hôtel de ville': 138, 'Mexico|La Torre Latino': 183, 'Buenos Aires|L\'Obélisque': 68,
+      'Los Angeles|L\'hôtel de ville': 138, 'Buenos Aires|L\'Obélisque': 68,
       'Berlin|Berliner Dom': 98, 'Singapour|Marina Bay Sands': 200, 'Bangkok|Wat Arun': 82,
       'Delhi|Rashtrapati Bhavan': 55,
       // Le lot 2, les villes bâties à la main (v350).
       'Lille|Beffroi de la Chambre de commerce': 76, 'Lille|Beffroi de Lille': 104, 'Lille|Tour de Lille': 117,
-      // St Paul (111 m, 17 blocs sous Big Ben) et le château du Smithsonian
-      // (44 m, onze blocs sous Jefferson) n'y sont pas : leurs inversions
-      // précèdent la v350, déclarées dans `TASKS.md`.
+      // St Paul (111 m, 17 blocs sous Big Ben, 69) n'y est pas : son inversion
+      // précède la v350, déclarée dans `TASKS.md`.
       'Londres|Tour de Londres': 27, 'Londres|Colonne Nelson': 52,
       'Londres|Big Ben': 96, 'Londres|The Shard': 310,
       'Washington|Maison-Blanche': 21, 'Washington|Lincoln Memorial': 30, 'Washington|Mémorial Jefferson': 39,
       'Washington|Bibliothèque du Congrès': 59,
+      // v357 : la roue du Prater à son vrai rayon, la tour du nord du château
+      // du Smithsonian rendue à sa hauteur (deux inversions des v342 et v350).
+      'Vienne|La grande roue du Prater': 65, 'Washington|Château du Smithsonian': 44,
       'Washington|Capitole des États-Unis': 88, 'Washington|Monument de Washington': 169,
       // v353 : ce qui est déjà au-dessus de son ciel garde l'ordre au-dessus
       // des monuments remis à l'échelle autour de lui.
-      'Barcelone|Sagrada Família': 172, 'Las Vegas|Le Luxor': 107, 'Venise|Le campanile': 99,
-      'Tokyo|La tour de Tokyo': 333, 'Tokyo|La Skytree': 634 };
+      // (Le campanile de Venise, les tours de Tokyo : remis à l'échelle par
+      // leur bâtisseur neuf en v357, ils sont dans la table du module.)
+      'Barcelone|Sagrada Família': 172, 'Las Vegas|Le Luxor': 107 };
     const EV = EM && EM.ECHELLES_VILLES ? EM.ECHELLES_VILLES : {};
     const EMAIN = EM && EM.ECHELLES_MAIN ? EM.ECHELLES_MAIN : {};
     const ciel = [...new Map([...Object.entries({ ...EV, ...EMAIN }).map(([k, e]) => [k, e.vraie]), ...Object.entries(FIXES)])]
@@ -526,6 +538,47 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         + (sansCiel.length ? ` — SANS CIEL : ${sansCiel.join(' · ')}` : '')
         + (inutiles.length ? ` — DÉCLARÉES POUR RIEN : ${inutiles.join(' · ')}` : '')
         + (perches.length ? ` — FÛTS ÉTIRÉS EN PERCHE : ${perches.join(' · ')}` : ''));
+    }
+
+    // AUCUNE TOUR QUI DOMINE SES TOITS N'EST UNE PERCHE (v357). La v353 avait
+    // laissé à leur hauteur d'auteur, déclarées `vrai`, treize tours bâties en
+    // colonnes d'un bloc (`tourBoule`, `minaret`) : étirées à leur vraie
+    // hauteur, des perches, vues en capture à Bruxelles et à Chicago. Ce témoin
+    // les cherche dans TOUTES les villes, au bâtisseur : un repère qui monte à
+    // une fois et demie la corniche de sa ville (vingt blocs sans ciel) et dont
+    // plus de la moitié des couches tiennent sur une ou deux colonnes est une
+    // perche, sauf s'il en est une dans la vraie ville aussi (`PERCHES_VRAIES`
+    // — une colonne, un obélisque). Sur l'ancien code il en trouve vingt-trois,
+    // de la Willis Tower aux pagodes (un poteau sous chaque toit).
+    {
+      const CIp = EM && EM.CIELS ? EM.CIELS : {};
+      const vraies = EM && EM.PERCHES_VRAIES ? EM.PERCHES_VRAIES : {};
+      const perches = [], dominants = [];
+      for (const lm of reperes) {
+        const v = villeDe(lm.x, lm.z);
+        if (!v) continue;
+        const couches = new Map();
+        let h = -1;
+        lm.build((dx, dy, dz, id) => {
+          if (id === BLOCK.AIR) return;
+          if (dy > h) h = dy;
+          if (!couches.has(dy)) couches.set(dy, new Set());
+          couches.get(dy).add(dx * 1000 + dz);
+        });
+        const c = [].concat(CIp[v.nom] || 20)[0];
+        if (h < 1.5 * c) continue;
+        const cle = `${v.nom}|${lm.name}`;
+        dominants.push(cle);
+        let fines = 0;
+        for (let y = 1; y <= h; y++) if (!couches.has(y) || couches.get(y).size <= 2) fines++;
+        if (fines / h > 0.5 && !vraies[cle]) perches.push(`${cle} ${h} blocs, ${Math.round(100 * fines / h)} % sur une ou deux colonnes`);
+      }
+      const vraiesPerdues = Object.keys(vraies).filter((k) => !dominants.includes(k));
+      verifier('aucune tour qui domine ses toits n\'est une perche d\'un bloc',
+        dominants.length > 60 && perches.length === 0 && vraiesPerdues.length === 0,
+        `${dominants.length} repères au-dessus d'une fois et demie leurs toits, ${Object.keys(vraies).length} fûts vrais`
+        + (perches.length ? ` — PERCHES (${perches.length}) : ${perches.join(' · ')}` : '')
+        + (vraiesPerdues.length ? ` — DÉCLARÉS POUR RIEN : ${vraiesPerdues.join(' · ')}` : ''));
     }
 
     // PARIS À L'ÉCHELLE DU CIEL : un bloc pour un mètre jusqu'à la corniche,
@@ -1724,8 +1777,8 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const t0 = Date.now();
     const e = await empreinteMorceaux('../src');
     verifier('engendrer et mailler moins cher ne change ni un bloc ni un sommet (490 morceaux, neuf lieux, toutes les routes)',
-      e.empreinte === EMPREINTE_MORCEAUX_V351 && e.morceaux === 490 && e.route > 0 && e.talus > 0,
-      `${e.empreinte.slice(0, 16)} pour ${EMPREINTE_MORCEAUX_V351.slice(0, 16)}, ${e.morceaux} morceaux, ${e.route} colonnes de route lues, ${e.talus} de talus, ${Date.now() - t0} ms`);
+      e.empreinte === EMPREINTE_MORCEAUX_V357 && e.morceaux === 490 && e.route > 0 && e.talus > 0,
+      `${e.empreinte.slice(0, 16)} pour ${EMPREINTE_MORCEAUX_V357.slice(0, 16)}, ${e.morceaux} morceaux, ${e.route} colonnes de route lues, ${e.talus} de talus, ${Date.now() - t0} ms`);
     const tr = await travailParMorceau('../src');
     verifier('un morceau de ville coûte moins de lectures de relief et de blocs que sur la v351',
       Object.entries(BARRES_TRAVAIL).every(([v, b]) => tr[v].reliefs <= b.reliefs && tr[v].lus <= b.lus),
