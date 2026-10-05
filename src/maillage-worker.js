@@ -21,7 +21,7 @@ const monde = new World();
 // suivant, il n'a rien à faire. C'est la grandeur qui dit si la recharge de la
 // file, une fois par image, l'affame — le fil principal ne peut pas la voir.
 let finDuLot = 0;
-// CE QUE LE WORKER FAIT HORS DU MORCEAU (v373) : copier les blocs, cloner et
+// CE QUE LE WORKER FAIT HORS DU MORCEAU (v376) : copier les blocs, cloner et
 // poster le message (le mobilier n'est pas transférable), oublier ce qu'on a
 // dépassé. `ms` ne compte que la génération et le maillage ; une ville dont le
 // worker est occupé sans que `ms` le dise paie ici. Cumulé depuis le

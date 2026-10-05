@@ -1,4 +1,4 @@
-// LA RECHARGE À L'ARRIVÉE APRÈS UNE TÉLÉPORTATION : DÉBIT ET CADENCE (v373)
+// LA RECHARGE À L'ARRIVÉE APRÈS UNE TÉLÉPORTATION : DÉBIT ET CADENCE (v376)
 //
 // La v360 a noté qu'à l'arrêt, la recharge forcée (`?recharge=arrivee`) charge
 // le disque de Paris en 4–5 s au lieu de 18 au banc, et ne l'a PAS armée : un

@@ -6,11 +6,37 @@
 
 export const NOUVEAUTES = [
   {
-    v: 373,
+    v: 376,
     titre: 'On arrive plus vite',
     puces: [
       'Après la carte, la ville arrive vite',
       'Londres se dessine un peu plus vite',
+    ],
+  },
+  {
+    v: 375,
+    titre: 'Huit palais ont leur vraie forme',
+    puces: [
+      'Le palais du Dam et le Rijksmuseum',
+      'Le château de Prague, le palais de Stockholm',
+      "Amalienborg et sa place à huit côtés",
+      'La Casa Rosada, Gyeongbokgung, le palais Bahia',
+    ],
+  },
+  {
+    v: 374,
+    titre: 'Ta langue reste choisie',
+    puces: [
+      'L\'autre tablette ne la change plus',
+      'Les voitures cabossées passent par tous',
+    ],
+  },
+  {
+    v: 373,
+    titre: 'La portière se voit de dos',
+    puces: [
+      'La porte ouverte a son intérieur',
+      'Elle se voit de tous les côtés',
     ],
   },
   {

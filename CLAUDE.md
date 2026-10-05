@@ -770,6 +770,25 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les huit derniers palais (v375) — une boîte se relève en carte avant qu'on la remplisse
+
+Deux règles.
+
+- **UNE BOÎTE DE REPÈRE N'EST PAS UNE PARCELLE LIBRE.** Les anneaux de
+  voitures des villes engendrées se choisissent sur la trame sans regarder les
+  repères : la carte des huit boîtes (anneaux, eau) a montré que quatre
+  gabarits coupaient déjà un anneau à hauteur de carrosserie, et celui de
+  Stockholm était sur l'eau. Avant d'écrire un bâtisseur, on dessine la boîte
+  (`R` anneau, `~` eau) et l'on bâtit dans ce qui reste ; un témoin de
+  `plafond.js` le garde pour tous les monuments (`DETTE_ANNEAUX` : quarante-cinq
+  conflits d'avant, chiffre par chiffre, que rien ne doit aggraver).
+- **UN PALAIS S'ÉCRIT UN POUR UN, ET « UN POUR UN » SE VÉRIFIE.** Les paliers
+  `[[0, 0], [1, 1], [S + 1, vraie + 1]]` ne rendent l'identité que si la
+  hauteur du ciel de `vraie + 1` tombe dans [S + 1, S + 2) : on prend S = la
+  `cible` que la table donnait, et l'on vérifie sous node que
+  `floor(hauteurEtiree(y)) === y` pour toutes les couches. Sinon une couche se
+  répète et une fenêtre est redessinée (v365).
+
 ## Plus une coupole de gabarit (v369) — une forme fausse ne dépend pas de la hauteur
 
 Trois règles.
@@ -867,6 +886,26 @@ le repère de la voiture (un tableau à plat), un triangle tout entier d'un côt
 d'un plan est rejeté par six comparaisons — sans cela le plan passait de 4 à
 135 ms. Un bord net ne suffit pas à rendre une portière : les taxis l'ont, et
 restent refusés parce que derrière il n'y a rien (0/24 rayons).
+
+**Le revers d'une portière se fabrique (v373).** Aucun modèle n'a meublé
+l'intérieur de sa portière : de derrière, la face simple était culée (0 rayon
+sur 24, sur les cinquante modèles). La portière reçoit une copie compacte de
+ses sommets puis une seconde, normales retournées, triangles à l'envers, DANS
+la même géométrie : même matériau, même programme, même appel de dessin.
+`userData.endroit` dit où finit l'endroit dans l'index (un témoin qui mesure
+une surface ne compte pas le revers). Un `DoubleSide` aurait changé la clé de
+programme (v246). **Et une sonde de rayons voit les couches** : la
+carrosserie vit sur la couche 2 (v245), un `Raycaster` neuf ne voit que la
+couche 0 — ma première sonde rendait « on traverse » de face comme de dos, et
+c'est son CONTRÔLE (la même cible vue de face, 0 sur 24) qui l'a dit.
+
+**Un terrain de témoin « loin des villes » se juge sur TOUTES les villes
+(v373).** `cityAt` ne connaît que les villes bâties à la main ; la « prairie »
+du témoin de la descente était dans Manchester, et le refus « circulation »
+qu'on cherchait depuis la v366 était un vrai circuit de la ville. On lit aussi
+`dansVilleMonde`. **Et une sonde de navigateur ne tourne pas pendant un
+portail** : le portail de la v372 en a rendu dix-sept rouges de cadence, que
+la suite rejouée seule ne reproduisait pas.
 
 **Et une résolution de conflit a avalé deux modules d'une autre session.**
 Rebasée sur la v344, ma résolution de `sw.js` remplaçait le bloc en conflit
@@ -999,7 +1038,7 @@ Et une empreinte d'identité qui change se PROUVE : celle des 490 morceaux
 (v352) couvre Marrakech et Tokyo ; la branche, bâtisseurs neufs désarmés, rend
 l'ancienne au bit près — c'est ce qui a permis de la remplacer.
 
-## L'arrivée après la carte (v373) — un gel de banc se démonte en scène vide
+## L'arrivée après la carte (v376) — un gel de banc se démonte en scène vide
 
 Les dettes de la v360. Cinq règles.
 
@@ -1628,6 +1667,44 @@ en temps réel), `fun.js` le fait descendre et `deposer` le pose debout sur une
 case libre à côté (côté conducteur d'abord). La carcasse porte `horsService`
 (lu par `animals.js`, comme `montee`) : elle ne se reprend pas, et elle s'en
 va au bout de `DUREE_CARCASSE`.
+**Le contrat éprouvé bout à bout, et un coût qui se compte (v374).** Un
+témoin de contrat qui publie ses chocs à la main ne prouve pas que la vraie
+physique les publie : celui de la v374 n'écrit RIEN dans `player`, prend un
+mur de face, et lit les deux côtés (`player.chocs`, `degats.chemins()` :
+publiés, repli, effets appliqués ici). Le repli ne sert plus en jeu ; il est
+gardé pour une physique qui ne publierait pas. Et le coût d'un choc se borne
+en GRANDEURS qui ne suivent pas le processeur partagé — sommets déplacés,
+normales réécrites hors d'eux (zéro), travail par image après le choc
+(zéro) — les millisecondes restant dans le message (v270).
+
+**Un ancien hôte, et l'histoire par la position (v374).** Un message neuf
+(`rue_choc`) n'est pas relayé par un hôte qui ne le connaît pas ; la
+position, si (`{ ...msg }`). Ce qui doit traverser un ancien hôte s'accroche
+à elle, et devient idempotent en envoyant l'HISTOIRE (adoptée seulement si
+la nôtre en est le début), jamais le seul dernier événement.
+
+## Un battement qui écrit sans relire défait le choix d'à côté (v374)
+
+« Un choix fait sur une tablette part au serveur » (`reglages.js`) était
+déclaré rouge de charge. La sonde qui relève chaque écriture des deux
+tablettes (`sonde-reglages-deux.cjs`) l'a démenti SANS charge : le choix
+part (« en », 39,3 s), puis l'autre tablette écrit « fr » sous une date plus
+ancienne (43,1 s). Deux règles.
+
+- **UN DOCUMENT À DEUX AUTEURS N'A QU'UN CHEMIN D'ÉCRITURE : CELUI QUI
+  RELIT.** Le jeu l'avait écrit (« on relit avant d'écrire ») pour la
+  boucle de quinze secondes ; le battement de présence de vingt secondes,
+  trois lignes plus bas, écrivait encore le document entier sans relire. Il
+  passe par `envoyerPrefs`. Le verre dans les murs, une fois de plus, à
+  l'échelle de deux minuteurs voisins.
+- **UN ROUGE DÉCLARÉ « DE CHARGE » SE DÉMONTE AVANT D'ÊTRE CRU.** La double
+  mesure de la v195 (69 verts seule des deux côtés) disait « pas la
+  livraison » ; elle ne disait pas « pas le jeu ». La course existait en
+  production depuis toujours, et la charge ne faisait que la rendre
+  fréquente. Le témoin la PROVOQUE désormais : il repère le battement de
+  l'autre tablette (une écriture sans lecture depuis la précédente) et
+  clique juste avant le suivant, puis observe le serveur toute la fenêtre.
+
 ## La conduite à la GTA (v358) — un modèle pur, une boîte orientée, des chocs qui se publient
 
 Max : « une grosse refonte de la façon de conduire… comme GTA ». Premier palier

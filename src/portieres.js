@@ -303,13 +303,59 @@ export function planPortieres(g) {
     g2.boundingBox = geo.boundingBox; g2.boundingSphere = geo.boundingSphere;
     return partager(g2);
   };
+  // LE REVERS D'UNE PORTIÈRE SE FABRIQUE (v373). Mesuré par la sonde du
+  // revers : une portière ouverte vue de face prend 10 à 20 rayons sur 24,
+  // vue de DERRIÈRE — l'enfant qui arrive de l'arrière de la voiture — zéro,
+  // sur les cinquante modèles de la flotte : aucun n'a meublé l'intérieur de
+  // sa portière, et la face simple est culée. Un `DoubleSide` changerait la
+  // clé de programme (v246) et coûterait une compilation à la première
+  // montée ; on DOUBLE donc la géométrie : la portière reçoit une copie
+  // compacte de ses sommets, puis une seconde, normales retournées, et ses
+  // triangles à l'envers. Même matériau, même programme, même appel de
+  // dessin ; seuls les sommets de la portière doublent. `endroit` dit où
+  // finit l'endroit dans l'index (le reste est le revers).
+  const versPorte = (geo, liste, attrs) => {
+    // un maillage à cibles de morphose garderait sa clé de programme : on
+    // ne lui fabrique pas de revers (aucun modèle de la flotte n'en a)
+    if (Object.keys(geo.morphAttributes || {}).length) return vers(geo, liste, attrs);
+    const src = attrs || geo.attributes;
+    const nb = src.position.count;
+    const carte = new Int32Array(nb).fill(-1);
+    const ordre = [];
+    for (const i of liste) if (carte[i] < 0) { carte[i] = ordre.length; ordre.push(i); }
+    const n = ordre.length;
+    const g2 = new THREE.BufferGeometry();
+    for (const [nom, at] of Object.entries(src)) {
+      const k = at.itemSize;
+      const arr = new Float32Array(n * 2 * k);
+      const lire = (i, j) => (j === 0 ? at.getX(i) : j === 1 ? at.getY(i) : j === 2 ? at.getZ(i) : at.getW(i));
+      const signe = nom === 'normal' ? -1 : 1;
+      for (let q = 0; q < n; q++) for (let j = 0; j < k; j++) {
+        const x = lire(ordre[q], j);
+        arr[q * k + j] = x;
+        arr[(n + q) * k + j] = signe * x;
+      }
+      g2.setAttribute(nom, new THREE.BufferAttribute(arr, k));
+    }
+    const idx = new (n * 2 > 65535 ? Uint32Array : Uint16Array)(liste.length * 2);
+    for (let t = 0; t < liste.length; t += 3) {
+      const a0 = carte[liste[t]], a1 = carte[liste[t + 1]], a2 = carte[liste[t + 2]];
+      idx[t] = a0; idx[t + 1] = a1; idx[t + 2] = a2;
+      const o = liste.length + t;
+      idx[o] = n + a0; idx[o + 1] = n + a2; idx[o + 2] = n + a1;
+    }
+    g2.setIndex(new THREE.BufferAttribute(idx, 1));
+    g2.userData.endroit = liste.length;
+    g2.computeBoundingBox(); g2.computeBoundingSphere();
+    return partager(g2);
+  };
   const geos = maillages.map((m, k) => {
     const cp = coupes[k];
     if (!cp) return null;
     return {
       reste: vers(m.geometry, cp.reste, cp.attrs),
-      '-1': cp.gauche.length ? vers(m.geometry, cp.gauche, cp.attrs) : null,
-      '1': cp.droite.length ? vers(m.geometry, cp.droite, cp.attrs) : null,
+      '-1': cp.gauche.length ? versPorte(m.geometry, cp.gauche, cp.attrs) : null,
+      '1': cp.droite.length ? versPorte(m.geometry, cp.droite, cp.attrs) : null,
     };
   });
   // LES CHARNIÈRES : sur l'arête avant de chaque portière, au nu du flanc.
