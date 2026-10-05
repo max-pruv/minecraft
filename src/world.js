@@ -20,13 +20,13 @@ import {
   buildTransamerica, buildCoit, buildSutro, buildFerryBuilding, buildPaintedLadies,
   buildPalaisBeauxArts, buildAlcatraz, batirColonneSF,
   buildGoldenGate, buildKarl, buildPier39, buildLombard, buildDragonGate, adresseSF,
-  VOIES_SF,
+  VOIES_SF, PORTEE_FEUX_SF,
 } from './sanfrancisco.js';
 import {
   NICE, surTerreNice, hauteurNice, solNice, lotNiceLibre, batirColonneNice,
   MONUMENTS_NICE, buildMassena, buildCathedraleRusse, buildCollineChateau,
   buildNegresco, buildPortLympia, buildSaleya, buildBaleine, buildPromenade,
-  VOIES_NICE,
+  VOIES_NICE, PORTEE_FEUX_NICE,
 } from './nice.js';
 import {
   CHINE, hauteurChine, solChine, LIEUX_CHINE,
@@ -67,7 +67,7 @@ import {
   buildCapitole, buildObelisque, buildLincoln, buildMemorialGuerre, buildMaisonBlanche,
   buildCourSupreme, buildBibliotheque, buildUnionStation, buildGalerieArt, buildNGAEst,
   buildHistoireNaturelle, buildHistoireAmericaine, buildAirEspace, buildHirshhorn,
-  buildIndienAmerique, buildArtsIndustries, buildChateauSmithsonian, buildFreer,
+  buildIndienAmerique, buildArtsIndustries, buildChateauSmithsonian, buildChateauSmithsonianHaut, buildFreer,
   buildAfroAmericain, buildTresor, buildArchives, buildArcChinatown, buildFordTheatre,
   buildJefferson, buildMLK, buildRoosevelt, buildCoree, buildVietnam, buildKennedyCenter,
   buildPentagone, buildSoldatInconnu, buildIwoJima,
@@ -83,6 +83,8 @@ import { positionDe, lieuxDuMonde, cielDe, zDeLatitude } from './mondes.js';
 import { BORNES as BORNES_MANHATTAN } from './manhattan-plan.js';
 import * as PARIS_V302 from './paris-v302.js';
 import * as LONDRES_V332 from './londres-v332.js';
+import * as NICE_V340 from './nice-v340.js';
+import * as SF_V343 from './sanfrancisco-v343.js';
 import { surLaVoie, presDeLaVoie, voieEn, brancherSol, gareEn, rubansVoieDans } from './trains.js';
 import { routeEn, rubansDans, brancherSol as brancherSolRoutes } from './routes.js';
 
@@ -1310,7 +1312,7 @@ const LANDMARKS_V317 = [
     ['Musée afro-américain', buildAfroAmericain],
     ["Musée de l'Indien d'Amérique", buildIndienAmerique],
     ["Musée de l'Air et de l'Espace", buildAirEspace], ['Hirshhorn', buildHirshhorn],
-    ['Arts et Industries', buildArtsIndustries], ['Château du Smithsonian', buildChateauSmithsonian],
+    ['Arts et Industries', buildArtsIndustries], ['Château du Smithsonian', buildChateauSmithsonian, buildChateauSmithsonianHaut],
     ['Galerie Freer', buildFreer],
     ['Maison-Blanche', buildMaisonBlanche], ['Le Trésor', buildTresor],
     ['Archives nationales', buildArchives], ['Arc de Chinatown', buildArcChinatown],
@@ -1322,11 +1324,11 @@ const LANDMARKS_V317 = [
     ['Mémorial Roosevelt', buildRoosevelt], ['Mémorial Jefferson', buildJefferson],
     ['Kennedy Center', buildKennedyCenter], ['Pentagone', buildPentagone],
     ['Tombe du Soldat inconnu', buildSoldatInconnu], ['Mémorial Iwo Jima', buildIwoJima],
-  ].map(([nom, build]) => {
+  ].map(([nom, build, tour]) => {
     const m = MONUMENTS_DC.find((q) => q.nom === nom);
     return {
       name: nom, x: WASHINGTON.x + m.u, z: WASHINGTON.z + m.v,
-      box: Math.max(m.bu, m.bv), seuil: m.seuil, waterBase: !!m.eau, build,
+      box: Math.max(m.bu, m.bv), seuil: m.seuil, waterBase: !!m.eau, build, tour,
     };
   }),
   // Countryside
@@ -1410,7 +1412,10 @@ export function villeDuRepere(lm) {
 }
 const LANDMARKS = LANDMARKS_V317.map((lm) => {
   const e = echelleDe(villeDuRepere(lm), lm.name);
-  return e ? { ...lm, build: etirerBatisseur(lm.build, e.paliers), echelle: e } : lm;
+  // Une tour qui a reçu une emprise (v357) étire son bâtisseur neuf ; le monde
+  // d'avant (`LANDMARKS_V317`) garde la colonne d'un bloc.
+  if (e) return { ...lm, build: etirerBatisseur(lm.tour || lm.build, e.paliers), echelle: e };
+  return lm.tour ? { ...lm, build: lm.tour } : lm;
 });
 
 // La même liste, sans les constructeurs : ce que la carte a le droit de lire.
@@ -1518,20 +1523,21 @@ function repereAvant(lm) {
 export const CONF_NEUF = {
   cle: 'neuf', villes: CITIES, aeroports: AEROPORTS, gaulois: GAULOIS, volcan: VOLCANO,
   places: PLACES, reperes: LANDMARKS, hauteurParis, parisAvant: false, fonduDoux: true,
-  mursDeQuai: true, falaises: true, londresAvant: false, climat: true,
+  mursDeQuai: true, falaises: true, villesAvant: false, climat: true,
 };
 // LE MONDE DE LA v306 À LA v308 — celui d'aujourd'hui sans le fondu doux des
 // villes (v309). La marche 6 → 7 juge sur lui ce qui y a été posé, et la marche
 // 5 → 6 y emmène ce qu'elle déplace : c'est là que Paris doublé a été joué. Il
 // ne se met JAMAIS à jour. Même clé que `CONF_NEUF` : ses zones à terre sont
 // les mêmes.
-// Et ces deux mondes-là ont la Londres d'avant sa passe au kit (v339,
-// `londres-v332.js`) : c'est celle qu'on y voyait.
-export const CONF_V308 = { ...CONF_NEUF, reperes: LANDMARKS_V317, fonduDoux: false, mursDeQuai: false, falaises: false, londresAvant: true, climat: false };
+// Et ces deux mondes-là ont les villes d'avant leur passe au kit (Londres
+// v339, `londres-v332.js` ; Nice v359, `nice-v340.js`) : c'est celles qu'on y
+// voyait (`villesAvant`).
+export const CONF_V308 = { ...CONF_NEUF, reperes: LANDMARKS_V317, fonduDoux: false, mursDeQuai: false, falaises: false, villesAvant: true, climat: false };
 export const CONF_AVANT = {
   cle: 'avant-v306', villes: CITIES_AVANT, aeroports: AEROPORTS_AVANT_V306, gaulois: GAULOIS_AVANT,
   volcan: VOLCANO_AVANT, places: PLACES_AVANT, reperes: LANDMARKS_V317.map(repereAvant),
-  hauteurParis: PARIS_V302.hauteurParis, parisAvant: true, fonduDoux: false, londresAvant: true,
+  hauteurParis: PARIS_V302.hauteurParis, parisAvant: true, fonduDoux: false, villesAvant: true,
 };
 
 // SF painted-lady facades reuse the plain decor blocks (Uni pattern).
@@ -2076,10 +2082,24 @@ function marquerParisCede(ens, x, z) {
 // une ancienne rue n'est pas enfermée dans un immeuble neuf, une cabane contre
 // un ancien mur garde son mur. La date est celle de la publication.
 export const DATE_RUES_LONDRES = Date.UTC(2026, 9, 4, 15, 0, 0);
-function dansLondresAvant(x, z, t) {
-  if (!(t <= DATE_RUES_LONDRES)) return false;
-  const du = x - LONDRES.x, dv = z - LONDRES.z, r = LONDRES.r + 1;
-  return du * du + dv * dv <= r * r;
+// Nice suit la même règle à la v359 (`nice-v340.js`), avec sa propre date.
+export const DATE_RUES_NICE = Date.UTC(2026, 9, 5, 5, 25, 0);
+// San Francisco à la v361 (`sanfrancisco-v343.js`).
+export const DATE_RUES_SF = Date.UTC(2026, 9, 5, 8, 15, 0);
+const VILLES_FIGEES = [
+  { ancre: LONDRES, date: DATE_RUES_LONDRES },
+  { ancre: NICE, date: DATE_RUES_NICE },
+  { ancre: SF, date: DATE_RUES_SF },
+];
+const DATE_FIGEE_MAX = Math.max(...VILLES_FIGEES.map((f) => f.date));
+function dansVilleAvant(x, z, t) {
+  if (!(t <= DATE_FIGEE_MAX)) return false;
+  for (const f of VILLES_FIGEES) {
+    if (!(t <= f.date)) continue;
+    const du = x - f.ancre.x, dv = z - f.ancre.z, r = f.ancre.r + 1;
+    if (du * du + dv * dv <= r * r) return true;
+  }
+  return false;
 }
 // La ville d'aujourd'hui et celle d'avant, sous la même forme : le monde
 // d'avant (`CONF_AVANT`) engendre la seconde partout dans l'ancien disque.
@@ -2580,7 +2600,7 @@ export class World {
     this.monumentsTouches = new Set();  // les monuments HD qu'un enfant a modifiés (v292)
     this.morceauxAvantClimat = new Set(); // les morceaux (et leurs voisins) bâtis avant les climats (v345)
     this.colonnesCedees = new Set();    // les colonnes de Paris où la ville cède à ce qu'un enfant a bâti (v306)
-    this.colonnesLondresAvant = new Set();  // celles de Londres où la ville d'avant le kit reste (v339)
+    this.colonnesVilleAvant = new Set();  // celles de Londres, de Nice et de San Francisco où la ville d'avant le kit reste (v339, v359, v361)
     this.cacheSol = new Map();          // "x,z" -> { nat, cote } : la fiche d'une colonne (sol continu, v297)
     this.sansSolContinu = false;        // ?solcontinu=0 : la mesure A/B, jamais un réglage
     this.editTimes = new Map();   // "x,y,z" -> ms timestamp, for multiplayer merge
@@ -3504,12 +3524,16 @@ export class World {
         // Market Street entre les deux, la plage, les quais et les parcs.
         // Nice et Lille : chacune sa trame, ses places et ses maisons. Comme à
         // San Francisco, la trame générique ne s'applique pas par-dessus.
-        // Londres d'avant le kit (v339) dans les mondes d'avant, et sous les
-        // colonnes où un enfant a bâti avant la date (`DATE_RUES_LONDRES`).
-        const londresAvant = city && city.key === 'londres' && (this.conf.londresAvant
-          || (this.colonnesLondresAvant.size > 0 && this.colonnesLondresAvant.has(cleColonneParis(wx, wz))));
+        // Londres (v339), Nice (v359) et San Francisco (v361) d'avant le kit dans les mondes d'avant,
+        // et sous les colonnes où un enfant a bâti avant leur date.
+        const villeAvant = city && (city.key === 'londres' || city.key === 'nice' || city.key === 'sf') && (this.conf.villesAvant
+          || (this.colonnesVilleAvant.size > 0 && this.colonnesVilleAvant.has(cleColonneParis(wx, wz))));
+        const londresAvant = villeAvant && city.key === 'londres';
         for (const [cle, sol, libre, batir, pont, ancre, voies, cleFeux, portee] of [
-          ['nice', solNice, lotNiceLibre, batirColonneNice, null, NICE, VOIES_NICE, 'nice'],
+          villeAvant && city.key === 'nice'
+            ? ['nice', NICE_V340.solNice, NICE_V340.lotNiceLibre, NICE_V340.batirColonneNice, null, NICE,
+              NICE_V340.VOIES_NICE, 'nice-v340']
+            : ['nice', solNice, lotNiceLibre, batirColonneNice, null, NICE, VOIES_NICE, 'nice', PORTEE_FEUX_NICE],
           ['lille', solLille, lotLilleLibre, batirColonneLille, null, LILLE, VOIES_LILLE, 'lille'],
           londresAvant
             ? ['londres', LONDRES_V332.solLondres, LONDRES_V332.lotLondresLibre, LONDRES_V332.batirColonneLondres,
@@ -3559,14 +3583,19 @@ export class World {
         if (fait) continue;
 
         if (city && city.key === 'sf') {
-          const ss = solSF(wx, wz);
-          if (feuDeVille(data, x, z, h, wx, wz, ss, feuxDeVille('sf', SF, VOIES_SF, solSF))) {
+          // San Francisco d'avant le kit (v361), comme Londres et Nice.
+          const V = villeAvant ? SF_V343 : null;
+          const sol = V ? V.solSF : solSF, libre = V ? V.lotSFLibre : lotSFLibre;
+          const batir = V ? V.batirColonneSF : batirColonneSF;
+          const feux = V ? feuxDeVille('sf-v359', SF, V.VOIES_SF, sol) : feuxDeVille('sf', SF, VOIES_SF, sol, PORTEE_FEUX_SF);
+          const ss = sol(wx, wz);
+          if (feuDeVille(data, x, z, h, wx, wz, ss, feux)) {
             // le trottoir et son feu tricolore sont posés (v274)
-          } else if (lampadaireDeVille(data, x, z, h, wx, wz, solSF, ss)) {
+          } else if (lampadaireDeVille(data, x, z, h, wx, wz, sol, ss)) {
             // le trottoir et son réverbère sont posés (v248)
           } else if (ss !== null) data[World.index(x, h, z)] = ss;
-          else if (lotSFLibre(wx, wz)) {
-            batirColonneSF(wx, wz, (dy, id) => {
+          else if (libre(wx, wz)) {
+            batir(wx, wz, (dy, id) => {
               const wy = h + dy - 1;
               if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id;
             });
@@ -4065,7 +4094,7 @@ export class World {
     this.edits.set(k, id);
     this.editTimes.set(k, t);
     if (dansParisCede(x, z, t)) marquerParisCede(this.colonnesCedees, x, z);
-    if (dansLondresAvant(x, z, t)) marquerParisCede(this.colonnesLondresAvant, x, z);
+    if (dansVilleAvant(x, z, t)) marquerParisCede(this.colonnesVilleAvant, x, z);
     if (t <= DATE_CLIMATS) this.marquerAvantClimat(x, z);
     if (!remote && this.onOp) this.onOp(k, id, t);
     if (this.onBloc) this.onBloc(x, y, z, id);
@@ -4312,15 +4341,15 @@ export class World {
     // l'index des colonnes où Paris cède (v306) se refait avec lui : les
     // deux sont appelés partout où un journal s'installe d'un bloc
     this.colonnesCedees.clear();
-    this.colonnesLondresAvant.clear();
+    this.colonnesVilleAvant.clear();
     this.morceauxAvantClimat.clear();
     for (const [k, t] of this.editTimes) {
-      if (!(t <= DATE_PARIS_DOUBLE || t <= DATE_RUES_LONDRES || t <= DATE_CLIMATS)) continue;
+      if (!(t <= DATE_PARIS_DOUBLE || t <= DATE_FIGEE_MAX || t <= DATE_CLIMATS)) continue;
       const virgule = k.indexOf(','), derniere = k.lastIndexOf(',');
       const x = +k.slice(0, virgule), z = +k.slice(derniere + 1);
       if (t <= DATE_CLIMATS) this.marquerAvantClimat(x, z);
       if (dansParisCede(x, z, t)) marquerParisCede(this.colonnesCedees, x, z);
-      if (dansLondresAvant(x, z, t)) marquerParisCede(this.colonnesLondresAvant, x, z);
+      if (dansVilleAvant(x, z, t)) marquerParisCede(this.colonnesVilleAvant, x, z);
     }
     this.monumentsTouches.clear();
     if (REPERES_HD.length === 0) return;
@@ -4450,7 +4479,7 @@ export class World {
     this.editTimes.clear();
     this.monumentsTouches.clear();
     this.colonnesCedees.clear();
-    this.colonnesLondresAvant.clear();
+    this.colonnesVilleAvant.clear();
     this.loadEdits();
     this.allDirty = true;
   }
@@ -4465,7 +4494,7 @@ export class World {
     this.editTimes.clear();
     this.monumentsTouches.clear();
     this.colonnesCedees.clear();
-    this.colonnesLondresAvant.clear();
+    this.colonnesVilleAvant.clear();
     this.chunks.clear();
     this.tops.clear();
     this.allDirty = true;

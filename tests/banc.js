@@ -478,7 +478,7 @@ class Banc {
     // sur un défaut.
     // `ombres: 1` force les ombres du soleil : le jeu les coupe de lui-même en
     // rendu logiciel (v247), et seuls les témoins du regard en ont besoin.
-    // `embarq: 1` joue la séquence d'embarquement (v357) — marcher à la
+    // `embarq: 1` joue la séquence d'embarquement (v362) — marcher à la
     // portière, l'ouvrir, s'asseoir. Le banc la saute partout ailleurs
     // (`embarq=0`), comme il saute la préparation : les témoins de conduite ne
     // la mesurent pas, et ils retrouvent ainsi l'ancien geste au bit près.

@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { BLOCK, isSolid as blockIsSolid, isSlab } from './blocks.js';
 import { HEIGHT, WATER_LEVEL } from './world.js';
+import { ficheDeVitesse, pasVoiture, reponseChoc, casesSousBoite, pointDImpact, DERIVE_MAX } from './conduite.js';
 
 const WIDTH = 0.6;        // player AABB width (x and z)
 // LE GABARIT D'UN VÉHICULE CONDUIT (v212). Max, capture à l'appui : « cars
@@ -55,6 +56,10 @@ const FLY_CROISIERE = 8;    // multiplicateur maximal (88 blocs/s)
 const FLY_MONTEE = 2.5;     // secondes de vol pour gagner un cran (+×1)
 const SWIM_SPEED = 3.0;
 const MAX_STEP = 0.4;     // max movement per collision substep
+const PAS_VOITURE = 0.4;  // pas horizontal de la voiture (v358)
+const DEMI_LONG_VOITURE = 2.2;   // la moitié des 4,4 blocs d'une voiture (vehicules.js)
+const DEGAGEMENT_MARCHE = 0.7;
+const FREIN_PIETON = 22;         // le frein franc de conduite.js, devant un piéton   // ce qu'il faut avancer pour passer le bord d'une marche (v286)
 
 // LE VOL D'UN AVION — trois chiffres, et chacun a sa raison.
 //
@@ -119,14 +124,8 @@ const ROULIS_MAX = 0.52;          // ~30°
 // vitesse ; accélérer et ralentir les voitures, idem pour les avions ».
 // `gaz` est la consigne de la manette (0 à 1), ou null tant qu'elle n'a pas
 // été touchée — alors l'avant du joystick reste l'accélérateur, comme avant.
-// Une voiture a désormais de l'INERTIE : elle prend sa vitesse en une
-// demi-seconde et freine plus fort encore ; et c'est le joystick ↔ qui la
-// fait tourner, d'autant plus qu'elle roule — à l'arrêt, un volant ne fait
-// rien. La demi-seconde est un choix d'enfant : assez pour qu'un départ se
-// voie, pas assez pour qu'on croie la voiture en panne.
-const ACCEL_VOITURE = 2.0;        // fraction de l'allure gagnée par seconde
-const FREIN_VOITURE = 2.5;        // fraction de l'allure perdue par seconde
-const BRAQUAGE = 1.3;             // radians par seconde à plein volant
+// La dynamique de la VOITURE vit dans `conduite.js` depuis la v358 ; seule
+// la marche arrière de l'AVION se règle encore ici.
 const RECUL = 0.35;               // la marche arrière, part de l'allure
 
 export class Player {
@@ -152,6 +151,14 @@ export class Player {
     // La largeur de la boîte de collision. `WIDTH` à pied ; la fiche de
     // l'espèce la remplace quand on prend le volant (`gabarit`).
     this.gabarit = WIDTH;
+    // LE CONTRAT DE LA CONDUITE (v358) : la physique PUBLIE ses chocs —
+    // `null` tant qu'il n'y en a pas eu, et non `undefined`, sinon les dégâts
+    // (degats3d.js) devinent des chocs aux chutes de vitesse, et un frein franc
+    // en serait un — ; et elle LIT `etatVoiture` elle-même (moteur, direction,
+    // panne), si bien que les dégâts n'appliquent pas leurs effets une
+    // seconde fois.
+    this.choc = null;
+    this.physiqueLitEtat = true;
     this.volDepuis = 0;       // secondes de vol continu, cf. FLY_ELAN_APRES
     this.inWater = false;
     this.keys = new Set();
@@ -218,6 +225,9 @@ export class Player {
   // lieu d'être posée en déplacement. C'est ce qui permet de demander « et si
   // je montais d'un bloc ? » sans bouger de là où l'on est.
   boiteLibre(x, y, z) {
+    // au volant, la boîte est ORIENTÉE (v358) — et elle doit être libre
+    // tout entière : on ne monte pas une marche pour s'encastrer
+    if (this.gabarit > 1 && !this.pilote) return this.cellulesPleinesVoiture(x, y, z, this.yaw).size === 0;
     const half = this.gabarit / 2, eps = 1e-4;
     const minX = Math.floor(x - half + eps), maxX = Math.floor(x + half - eps);
     const minY = Math.floor(y + eps), maxY = Math.floor(y + PLAYER_HEIGHT - eps);
@@ -278,6 +288,191 @@ export class Player {
     if (cible - y > 3 || !this.boiteLibre(x, cible, z)) return false;
     this.pos.x = x; this.pos.z = z; this.pos.y = cible;
     return true;
+  }
+
+  // LA BOÎTE ORIENTÉE DE LA VOITURE (v358). La v212 avait donné à la voiture
+  // une AABB de sa LARGEUR seule (2,26 × 2,26), parce qu'une boîte alignée sur
+  // les axes ne tourne pas et qu'une boîte de 4,4 n'aurait passé dans aucune
+  // rue : le nez et le coffre traversaient tout ce qui dépassait des côtés. Le
+  // rectangle tourne désormais avec la voiture (`casesSousBoite`, conduite.js,
+  // séparation d'axes case par case).
+  //
+  // ET UNE MARCHE N'EST PAS UN MUR AU BOUT DU CAPOT. Sur la surface continue
+  // (v297) une pente d'un bloc par bloc met le relief à 2,2 blocs au-dessus du
+  // centre sous le nez : jugé sur toute la longueur, le cube sous la bande que
+  // la surface tait arrêterait la voiture au pied de chaque colline. Ce qui
+  // ne dépasse pas d'UN bloc la cote de la voiture ne compte donc que sous le
+  // carré central (la largeur, comme avant) — c'est là que `franchirEnRoulant`
+  // le gravit ; au-delà, seul ce qui est plus haut qu'une marche est un mur.
+  cellulesPleinesVoiture(x, y, z, yaw) {
+    const a = DEMI_LONG_VOITURE, b = this.gabarit / 2, cap = yaw + Math.PI;
+    const ux = Math.sin(cap), uz = Math.cos(cap);
+    const eps = 1e-4;
+    const out = new Set();
+    const minY = Math.floor(y + eps), maxY = Math.floor(y + PLAYER_HEIGHT - eps);
+    for (const [bx, bz] of casesSousBoite(x, z, cap, a, b)) {
+      const lng = Math.abs((bx + 0.5 - x) * ux + (bz + 0.5 - z) * uz);
+      const auCoeur = lng < b + 0.71;   // la case touche le carré central
+      for (let by = minY; by <= maxY; by++) {
+        const id = by < 0 ? BLOCK.STONE : this.world.getBlock(bx, by, bz);
+        if (!blockIsSolid(id)) continue;
+        if (this.world.blocSousLaSurface && this.world.blocSousLaSurface(bx, by, bz)) continue;
+        const top = by + (isSlab(id) ? 0.5 : 1);
+        if (y >= top - eps) continue;                      // sous les roues
+        if (!auCoeur && top <= y + 1 + eps) continue;      // une marche, pas un mur
+        out.add(`${bx},${by},${bz}`);
+      }
+    }
+    return out;
+  }
+
+  // La pose est-elle libre ? Libre = aucune case pleine que la pose d'avant ne
+  // touchait pas déjà : « pas si l'on est déjà dedans » (v245), appliqué aux
+  // blocs. Une voiture invoquée contre un mur, ou qui s'y est retrouvée en
+  // tournant, s'en dégage au lieu d'y rester clouée.
+  poseVoitureLibre(x, y, z, yaw, dedans) {
+    for (const k of this.cellulesPleinesVoiture(x, y, z, yaw)) if (!dedans || !dedans.has(k)) return false;
+    return true;
+  }
+
+  // LE CHOC SE PUBLIE (contrat du chantier « conduite ») : `player.choc` =
+  // { force 0..1, t, x, z }, (x, z) le point d'impact dans le monde — la
+  // session des dégâts froisse la carrosserie là, la caméra secoue. Un frôlement
+  // sous cinq pour cent n'est pas un choc : poussée contre un mur, la voiture
+  // le toucherait à chaque image et rien ne se lirait plus.
+  publierChoc(force, dx, dz) {
+    if (!(force >= 0.05)) return;
+    const p = pointDImpact(this.pos.x, this.pos.z, this.yaw + Math.PI, DEMI_LONG_VOITURE, this.gabarit / 2, dx, dz);
+    const t = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    this.choc = { force: +force.toFixed(3), t, x: p.x, z: p.z };
+    this.chocs = (this.chocs || 0) + 1;
+  }
+
+  // LA VITESSE D'APRÈS UN CHOC RETOURNE DANS L'ÉTAT DE LA VOITURE : une
+  // vitesse signée le long du cap, et la dérive entre le cap et la vitesse.
+  // Si le choc a tourné la vitesse au-delà de ce que la dérive permet, c'est
+  // la CAISSE qui s'aligne — le long d'un mur rasé, la voiture se remet dans
+  // l'axe de la rue, comme dans GTA.
+  vitesseApresChoc(wx, wz, aligner = false) {
+    const sp = Math.hypot(wx, wz);
+    if (sp < 1e-3) { this.vitesseVoiture = 0; this.derive = 0; this.vel.x = 0; this.vel.z = 0; return; }
+    const fx = -Math.sin(this.yaw), fz = -Math.cos(this.yaw);
+    const v = (wx * fx + wz * fz) >= 0 ? sp : -sp;
+    const h = Math.atan2(-wx / v, -wz / v);
+    let d = h - this.yaw;
+    d = Math.atan2(Math.sin(d), Math.cos(d));
+    // le long d'un mur, la caisse se remet TOUT ENTIÈRE dans l'axe de la
+    // vitesse (sinon elle file en crabe, le nez contre la façade, et le
+    // rattrapage de la dérive la renvoie dans le mur à chaque image)
+    if (Math.abs(d) > DERIVE_MAX || (aligner && Math.abs(d) > 1e-3)) {
+      const tourne = aligner ? d : d - Math.sign(d) * DERIVE_MAX;
+      const dedans = this.cellulesPleinesVoiture(this.pos.x, this.pos.y, this.pos.z, this.yaw);
+      if (this.poseVoitureLibre(this.pos.x, this.pos.y, this.pos.z, this.yaw + tourne, dedans)) {
+        this.yaw += tourne; d -= tourne;
+      } else if (Math.abs(d) > DERIVE_MAX) d = Math.sign(d) * DERIVE_MAX;
+    }
+    this.vitesseVoiture = v; this.derive = d;
+    this.vel.x = wx; this.vel.z = wz;
+  }
+
+  // LE DÉPLACEMENT DE LA VOITURE, PAS À PAS (au plus PAS_VOITURE blocs).
+  //   · les familles de main.js d'abord (`obstacleVehicule`, qui rend la
+  //     famille touchée) : un PIÉTON, on s'arrête devant — personne n'est
+  //     jamais touché (v259) ; l'EAU, on s'arrête sur le quai (v272) ; une
+  //     VOITURE de la rue ou le MOBILIER, c'est un choc, qui rebondit ;
+  //   · puis les blocs, sous la boîte orientée : une marche d'un bloc se
+  //     franchit (v286), sinon c'est un choc — rasant on glisse le long du
+  //     mur en perdant de la vitesse selon l'angle, de face on s'arrête avec
+  //     un petit rebond (`reponseChoc`, conduite.js). La normale du mur se lit
+  //     en essayant chaque axe : le monde est fait de cubes alignés.
+  //   · enfin la verticale, inchangée (le carré central, comme avant), et le
+  //     sol continu (v297).
+  // Une voiture de la rue ne se POUSSE pas : sa position est une fonction de
+  // l'horloge partagée (v305). C'est elle qui s'arrête — elle attend sans
+  // limite devant la voiture de l'enfant (`cederLePassage`, v245).
+  deplacerVoiture(dt) {
+    const etaitAuSol = this.onGround;
+    this.onGround = false;
+    const avantX = this.pos.x, avantZ = this.pos.z;
+    // ON FREINE DEVANT UN PIÉTON, ON NE L'ATTEND PAS AU CONTACT. À cinquante
+    // blocs par seconde, s'arrêter pile au pied de quelqu'un est un pilé qu'on
+    // ne verrait dans aucune voiture : on regarde à la distance d'arrêt (plus
+    // deux blocs, douze au plus) et l'on freine si un piéton y est. Il s'écarte
+    // de lui-même (v259), et la voiture repart.
+    const sp0 = Math.abs(this.vitesseVoiture || 0);
+    if (sp0 > 2 && this.obstacleVehicule && dt > 0) {
+      const arret = Math.min(12, (sp0 * sp0) / (2 * FREIN_PIETON) + 2);
+      const h = this.yaw + (this.derive || 0), s = Math.sign(this.vitesseVoiture);
+      const ax = this.pos.x - Math.sin(h) * s * arret, az = this.pos.z - Math.cos(h) * s * arret;
+      if (this.obstacleVehicule(ax, az, this.yaw + Math.PI, this.pos.x, this.pos.z) === 'pieton') {
+        const v = Math.max(0, sp0 - FREIN_PIETON * dt) * s;
+        const k = sp0 > 1e-6 ? v / this.vitesseVoiture : 0;
+        this.vitesseVoiture = v; this.vel.x *= k; this.vel.z *= k;
+        this.freinePieton = true;
+      } else this.freinePieton = false;
+    }
+    let reste = dt, tours = 0;
+    while (reste > 1e-6 && tours++ < 32) {
+      const vx = this.vel.x, vz = this.vel.z, sp = Math.hypot(vx, vz);
+      if (sp < 1e-4) break;
+      const pas = Math.min(reste, PAS_VOITURE / sp);
+      const dx = vx * pas, dz = vz * pas;
+      reste -= pas;
+      const x = this.pos.x, y = this.pos.y, z = this.pos.z;
+      const fam = this.obstacleVehicule ? this.obstacleVehicule(x + dx, z + dz, this.yaw + Math.PI, x, z) : false;
+      if (fam === 'pieton' || fam === 'eau') {
+        this.vitesseVoiture = 0; this.derive = 0; this.vel.x = 0; this.vel.z = 0;
+        break;
+      }
+      if (fam) {
+        const n = Math.hypot(dx, dz) || 1;
+        const r = reponseChoc(vx, vz, -dx / n, -dz / n);
+        this.publierChoc(r.force, dx, dz);
+        this.vitesseApresChoc(r.vx, r.vz);
+        continue;
+      }
+      const dedans = this.cellulesPleinesVoiture(x, y, z, this.yaw);
+      if (this.poseVoitureLibre(x + dx, y, z + dz, this.yaw, dedans)) {
+        this.pos.x += dx; this.pos.z += dz;
+        continue;
+      }
+      // UNE MARCHE D'UN BLOC SE FRANCHIT (v286), EN ROULANT VRAIMENT — et
+      // aussi juste après une crête : plus vite qu'avant, la voiture décolle
+      // d'une bosse et retombe devant la marche suivante sans être « au sol »
+      // à l'image près ; tant qu'elle ne TOMBE pas, elle la gravit.
+      if ((etaitAuSol || this.vel.y > -4) && Math.abs(this.vitesseVoiture) > 0.5) {
+        const n = Math.hypot(dx, dz);
+        if (this.franchirEnRoulant((dx / n) * DEGAGEMENT_MARCHE, (dz / n) * DEGAGEMENT_MARCHE)) continue;
+      }
+      const libreX = this.poseVoitureLibre(x + dx, y, z, this.yaw, dedans);
+      const libreZ = this.poseVoitureLibre(x, y, z + dz, this.yaw, dedans);
+      let nx, nz;
+      if (libreX && !libreZ) { nx = 0; nz = -Math.sign(dz); }
+      else if (libreZ && !libreX) { nx = -Math.sign(dx); nz = 0; }
+      else { const n = Math.hypot(dx, dz); nx = -dx / n; nz = -dz / n; }
+      const r = reponseChoc(vx, vz, nx, nz);
+      this.publierChoc(r.force, dx, dz);
+      this.vitesseApresChoc(r.vx, r.vz, r.glisse);
+      // ce qui file le long du mur avance tout de suite, sur l'axe libre
+      if (r.glisse) {
+        if (libreX && !libreZ) this.pos.x += dx * Math.abs(r.vx / (vx || 1));
+        else if (libreZ && !libreX) this.pos.z += dz * Math.abs(r.vz / (vz || 1));
+      }
+    }
+    // la verticale : le carré central, comme avant
+    const dy = this.vel.y * dt;
+    const n = Math.max(1, Math.ceil(Math.abs(dy) / MAX_STEP));
+    for (let i = 0; i < n; i++) this.sweepAxis(1, dy / n);
+    this.contactSolContinu(etaitAuSol, Math.hypot(this.pos.x - avantX, this.pos.z - avantZ), false);
+    // UNE VOITURE BLOQUÉE N'ANNONCE PLUS DE VITESSE (v272) — filet : si le
+    // sol continu ou une boîte a mangé le pas sans qu'un choc ne l'ait dit, on
+    // ramène la vitesse à ce que la voiture a FAIT. Seulement quand elle est
+    // bloquée (moins d'un quart du pas), jamais quand elle frotte.
+    if (dt > 0 && this.vitesseVoiture) {
+      const demande = Math.abs(this.vitesseVoiture) * dt;
+      const vraie = Math.hypot(this.pos.x - avantX, this.pos.z - avantZ);
+      if (demande > 1e-6 && vraie < demande * 0.25) this.vitesseVoiture = Math.sign(this.vitesseVoiture) * (vraie / dt);
+    }
   }
 
   franchirUneMarche(dx, dz) {
@@ -600,50 +795,59 @@ export class Player {
     else if (this.inWater) speed = SWIM_SPEED;
     if (this.boost) speed *= this.boost; // riding a mount / berry-juice power-up
 
+    // UN CHOC EST UN ÉVÉNEMENT, PAS UN ÉTAT (v358) : les dégâts rejouent tout
+    // `choc` dont la date n'est pas celle du dernier qu'ils ont vu POUR CETTE
+    // VOITURE — une voiture neuve n'en a vu aucun, et elle héritait donc du
+    // dernier choc de la précédente (mesuré dans `monte.js` : une citadine
+    // neuve, aucun choc pendant le trajet, `direction −0,028` et un cap qui
+    // tourne seul). On l'efface quand on monte ET quand on descend.
+    const enVoiture = this.gabarit > 1 && !this.pilote;
+    if (enVoiture !== !!this._enVoiture) { this.choc = null; this._enVoiture = enVoiture; }
     if (this.gabarit > 1) {
-      // AU VOLANT (v262) : la manette des gaz — ou l'avant du joystick tant
-      // qu'elle n'a pas servi — fixe la vitesse visée, l'inertie fait le
-      // reste, et le joystick ↔ tourne le volant. La marche arrière, lente,
-      // se prend en tirant le joystick à l'arrêt.
-      if (this.vitesseVoiture === undefined) this.vitesseVoiture = 0;
-      const max = speed;
-      // LE PLAFOND SE PUBLIE LÀ OÙ IL SE CALCULE (v268). Le bruit du moteur
-      // suit le régime, c'est-à-dire la vitesse rapportée à ce que la voiture
-      // sait faire — et cette allure vient de la classe du modèle (v260).
-      // Le recopier dans `fun.js` le rendrait faux à la première classe qu'on
-      // ajoute, sans que rien ne rougisse : c'est le piège de l'échelle.
-      this.vitesseVoitureMax = max;
-      // TIRER LE JOYSTICK EN ARRIÈRE FREINE, PUIS RECULE — QUOI QUE DISE LE
-      // CADRAN (v269). Max : « impossible de faire marche arrière avec un
-      // avion ou une voiture. » La marche arrière exigeait TROIS conditions
-      // à la fois : cadran sous cinq pour cent, voiture à l'arrêt, joystick
-      // tiré. Or le cadran RESTE où on l'a laissé (v262) : dès qu'un enfant
-      // y avait touché, il lui fallait un second doigt pour le ramener à
-      // zéro avant de pouvoir reculer. À sept ans, la marche arrière
-      // n'existait pas.
+      // AU VOLANT (conduite-physique, v358) : le modèle de véhicule de
+      // `conduite.js` — l'accélération qui s'essouffle vers la pointe, le frein
+      // franc, le frein moteur au lâcher, le braquage qui se resserre avec la
+      // vitesse, l'adhérence et sa petite dérive. Le joystick reste la seule
+      // commande (v272) : l'avant accélère, l'arrière freine PUIS recule
+      // (v269), le côté tourne le volant.
       //
-      // Le geste prime donc sur la consigne, comme une pédale de frein
-      // annule un régulateur de vitesse — et LE CADRAN SUIT LE GESTE, sinon
-      // il afficherait pleins gaz pendant qu'on recule, et la voiture
-      // bondirait en avant au relâchement.
-      let consigne;
-      if (forward < -0.5) {
-        if (this.gaz != null) this.gaz = 0;
-        // on freine d'abord : on ne passe pas la marche arrière à vingt
-        // blocs par seconde
-        consigne = this.vitesseVoiture > 0.5 ? 0 : forward * max * RECUL;
-      } else if (this.gaz != null) {
-        consigne = this.gaz * max;
-      } else {
-        consigne = Math.max(0, forward) * max;
+      // LA FICHE VIENT DE L'ALLURE. `fun.js` ne transmet que `boost`, multiple
+      // de la marche, et `allureDe` (vehicules.js) le tire de la table des
+      // classes : la pointe désigne la classe. La touche Maj ne double pas une
+      // voiture — elle reste à la marche (WALK_SPEED), pas au sprint.
+      if (this.vitesseVoiture === undefined) this.vitesseVoiture = 0;
+      const fiche = ficheDeVitesse(WALK_SPEED * (this.boost || 1));
+      this.ficheVoiture = fiche;
+      // CE QUE PUBLIENT LES AUTRES, LU SI PRÉSENT : l'état de la voiture (les
+      // dégâts) et l'embarquement en cours. Chacun marche sans l'autre.
+      const ev = this.etatVoiture, emb = this.embarquement;
+      const inerte = !!(ev && (ev.enPanne || ev.enFeu)) || !!(emb && emb.phase);
+      const moteur = ev && ev.moteur != null ? Math.max(0, Math.min(1, ev.moteur)) : 1;
+      // LE PLAFOND SE PUBLIE LÀ OÙ IL SE CALCULE (v268) : le bruit du moteur
+      // suit le régime, la vitesse rapportée à ce que la voiture sait faire.
+      this.vitesseVoitureMax = fiche.vmax * (0.35 + 0.65 * moteur);
+      // le geste prime sur une manette restée réglée (v269) — elle est
+      // nulle en voiture depuis la v272, mais un état laissé ne la rallume pas
+      let gaz = forward;
+      if (forward < -0.15) { if (this.gaz != null) this.gaz = 0; }
+      else if (this.gaz != null) gaz = this.gaz;
+      const r = pasVoiture(
+        { v: this.vitesseVoiture, braquage: this.braquage || 0, derive: this.derive || 0 },
+        { gaz, volant: strafe, moteur, direction: ev ? ev.direction || 0 : 0, inerte },
+        fiche, dt);
+      this.vitesseVoiture = r.v; this.braquage = r.braquage; this.derive = r.derive;
+      // LA CAISSE TOURNE — SAUF SI SON NEZ ENTRAIT DANS UN MUR. La boîte est
+      // orientée : tourner la fait balayer. Un nez contre une façade ne pivote
+      // pas dedans ; on garde le cap, et la vitesse fait le reste.
+      if (r.dCap) {
+        const avant = this.yaw;
+        const dedans = this.cellulesPleinesVoiture(this.pos.x, this.pos.y, this.pos.z, avant);
+        this.yaw += r.dCap;
+        if (!this.poseVoitureLibre(this.pos.x, this.pos.y, this.pos.z, this.yaw, dedans)) this.yaw = avant;
       }
-      const ecart = consigne - this.vitesseVoiture;
-      const taux = Math.abs(consigne) > Math.abs(this.vitesseVoiture) ? ACCEL_VOITURE : FREIN_VOITURE;
-      this.vitesseVoiture += Math.sign(ecart) * Math.min(max * taux * dt, Math.abs(ecart));
-      const v = this.vitesseVoiture;
-      this.yaw -= strafe * BRAQUAGE * Math.min(1, Math.abs(v) / 3) * (v < 0 ? -1 : 1) * dt;
-      this.vel.x = -Math.sin(this.yaw) * v;
-      this.vel.z = -Math.cos(this.yaw) * v;
+      const h = this.yaw + this.derive;
+      this.vel.x = -Math.sin(h) * this.vitesseVoiture;
+      this.vel.z = -Math.cos(h) * this.vitesseVoiture;
     } else {
       this.vitesseVoiture = 0;
       this.vel.x = dx * speed;
@@ -682,21 +886,13 @@ export class Player {
 
     // Move with collision, in substeps so we never tunnel through blocks.
     const move = this.vel.clone().multiplyScalar(dt);
-    // AU VOLANT, ON NE RENTRE PAS DANS UNE VOITURE DE LA RUE (v245). La boîte
-    // de collision ne connaît que les blocs ; `obstacleVehicule` (branché par
-    // main.js sur la circulation) dit si la voiture de l'enfant, un pas plus
-    // loin, toucherait une voiture de la rue. On ne bloque que si l'on n'est
-    // pas DÉJÀ dedans — sinon une voiture arrivée au travers de la nôtre nous
-    // clouerait sur place.
-    // Le crochet reçoit AUSSI la position actuelle (v252) : c'est lui qui
-    // applique « pas si l'on est déjà dedans », FAMILLE PAR FAMILLE — une
-    // voiture de la rue collée à la nôtre ne doit pas nous laisser traverser
-    // un réverbère.
-    if (this.gabarit > 1 && !this.pilote && this.obstacleVehicule && (move.x !== 0 || move.z !== 0)) {
-      const cap = this.yaw + Math.PI;
-      if (this.obstacleVehicule(this.pos.x + move.x, this.pos.z + move.z, cap, this.pos.x, this.pos.z)) {
-        move.x = 0; move.z = 0; this.vel.x = 0; this.vel.z = 0;
-      }
+    // AU VOLANT, LA VOITURE A SON PROPRE DÉPLACEMENT (v358) : une boîte
+    // ORIENTÉE, des chocs qui glissent ou rebondissent au lieu d'un arrêt net,
+    // et les familles d'obstacles de main.js jugées pas à pas.
+    if (this.gabarit > 1 && !this.pilote) {
+      this.deplacerVoiture(dt);
+      this.syncCamera();
+      return;
     }
     // ET À PIED NON PLUS, ON NE TRAVERSE PAS UNE VOITURE (v278).
     //
@@ -739,63 +935,6 @@ export class Player {
       this.sweepAxis(2, move.z / steps);
     }
     this.contactSolContinu(etaitAuSol, Math.hypot(this.pos.x - avantX, this.pos.z - avantZ), this.flying);
-    // UNE VOITURE QUI TOUCHE QUELQUE CHOSE PERD SA VITESSE (v272). Max,
-    // capture de Hambourg : « il est marqué 86 km/h », voiture immobile dans
-    // le port. `vitesseVoiture` était la vitesse DEMANDÉE : ni la boîte de
-    // collision ni le crochet d'obstacle ne la touchaient, si bien qu'une
-    // voiture plaquée contre un mur gardait vingt-quatre blocs par seconde
-    // pour toujours — le compteur le disait, le bruit du moteur le disait,
-    // les roues tournaient. On la borne donc au déplacement RÉELLEMENT
-    // obtenu, c'est-à-dire à ce que la voiture FAIT : contre un mur elle
-    // tombe à zéro, et elle reprend son allure en une demi-seconde
-    // (`ACCEL_VOITURE`) dès que la voie est libre.
-    //
-    // `pousse` — ce qu'un piéton lit pour s'écarter (v259) — est relevé plus
-    // haut, AVANT le déplacement, et reste donc la vitesse demandée : une
-    // voiture arrêtée devant quelqu'un veut encore passer, et c'est ce qui
-    // fait que le piéton s'écarte au lieu de la bloquer pour toujours.
-    //
-    // ET L'ON NE BORNE QUE CE QUI EST BLOQUÉ, PAS CE QUI FROTTE. Mon premier
-    // jet ramenait la vitesse au déplacement réel À CHAQUE image, quel qu'il
-    // soit : une voiture qui rase un mur, ou dont le pas est rogné par une
-    // bordure, tombait alors à presque rien — et comme elle repart de CETTE
-    // valeur, la borne se mordait la queue. Mesuré à la sonde au point
-    // d'apparition, accélérateur tenu trois secondes : 4,4 blocs parcourus, la
-    // vitesse demandée montée à 17,9 puis **zéro pendant 1,2 s** alors que
-    // l'enfant appuyait toujours. C'est le contraire de ce qu'on voulait.
-    // On ne borne donc que le cas de Max — le nez CONTRE quelque chose, où le
-    // déplacement obtenu est un quart au plus de celui demandé ; entre les
-    // deux, la voiture garde sa consigne et ralentit d'elle-même.
-    // ET LA MARCHE SE FRANCHIT AVANT QU'ON NE BORNE LA VITESSE. La borne de la
-    // v272 ramène la vitesse au déplacement obtenu ; si elle passait d'abord,
-    // elle ramènerait à zéro la voiture qui est en train de monter la marche, et
-    // l'enfant sentirait un à-coup à chaque bosse. L'ordre est le remède.
-    // ET L'ON NE MONTE QU'EN ROULANT VRAIMENT, comme l'avion le fait depuis la
-    // v261 (`v > 0,5`) : une voiture qui rampe contre une bordure ne doit pas
-    // bondir dessus, et à l'arrêt un volant ne fait rien (v262).
-    const DEGAGEMENT = 0.7;
-    if (this.gabarit > 1 && !this.pilote && this.onGround
-        && Math.abs(this.vitesseVoiture || 0) > 0.5
-        && ((move.x !== 0 && this.vel.x === 0) || (move.z !== 0 && this.vel.z === 0))) {
-      // On vise là où le DÉPLACEMENT voulait aller, pas le cap du regard : au
-      // volant le regard est libre (v249), et viser le cap ferait monter une
-      // marche de côté. C'est la leçon du signe qu'on regarde au lieu de le
-      // déduire, appliquée à une direction.
-      const n = Math.hypot(move.x, move.z);
-      if (n > 1e-6) {
-        this.franchirEnRoulant((move.x / n) * DEGAGEMENT, (move.z / n) * DEGAGEMENT);
-      }
-    }
-
-    const BLOQUEE = 0.25;
-    if (this.gabarit > 1 && !this.pilote && dt > 0 && this.vitesseVoiture) {
-      const demande = Math.abs(this.vitesseVoiture) * dt;
-      const vraie = Math.hypot(this.pos.x - avantX, this.pos.z - avantZ);
-      if (demande > 1e-6 && vraie < demande * BLOQUEE) {
-        this.vitesseVoiture = Math.sign(this.vitesseVoiture) * (vraie / dt);
-      }
-    }
-
     this.syncCamera();
   }
 

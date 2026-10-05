@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v357 — On monte en voiture comme dans un vrai jeu
+## v362 — On monte en voiture comme dans un vrai jeu
 
 **Pourquoi.** Max : « Quand on monte dans une voiture, on voit le personnage
 qui avance et qui rentre dans la voiture avec le gameplay de la porte qui
@@ -55,6 +55,211 @@ et garde son froissé. Huit rouges sur `origin/main` ; le huitième — aucun pr
 shader compilé — est vert des deux côtés à dessein, il garde une capacité. Le
 banc saute la séquence partout ailleurs (`embarq=0`) : les témoins de conduite
 existants gardent l'ancien geste au bit près.
+
+---
+
+## v361 — Les rues de San Francisco à la règle du kit
+
+**Pourquoi.** La troisième des cinq villes bâties à la main restées sur leurs
+largeurs relevées à la main (dette v271). Une rue de quartier de San
+Francisco faisait deux blocs de chaussée et Market Street trois : une voiture
+de 2,26 blocs y roulait sur la ligne blanche, et deux ne s'y croisaient pas.
+
+**Ce que ça change.**
+
+- **Les rues de San Francisco ont la section du kit**, à un bloc pour un
+  mètre : deux voies et des trottoirs de 2,5 m pour Market, Van Ness, Geary,
+  Mission, la 19e Avenue, la Great Highway, les boulevards du Sunset ; une
+  voie de 3,1 m pour Columbus, Valencia, Stanyan et la 16e Rue ; une voie pour
+  la trame de 1847 et celle de l'ouest, deux pour SoMa.
+- **Les îlots se recomposent** comme à Londres et à Nice, et une rue de la
+  trame ne double plus une avenue. Le prix, déclaré : les avenues prennent
+  27 % du disque contre 9, la part bâtie passe de 49,0 à 32,6 % — plus que
+  Londres ou Paris ; le Richmond, que Geary traverse, est le plus touché
+  (30,7 → 15,1), Pacific Heights et la Mission en gagnent.
+- **Ce qu'un enfant a bâti à San Francisco ne bouge pas** : sous ses blocs
+  d'avant la mise à jour, la ville d'avant reste.
+- **Le centre reste un tapis d'où sortent quelques tours.** Les îlots plus
+  grands faisaient du centre un tirage : médiane 23 blocs, le Ferry Building
+  et le Bay Bridge dominés par leurs voisins. Chaque îlot se coupe désormais
+  en quatre parcelles, quatre sur cinq font huit à quatorze étages, les tours
+  restent le long de Market, et Fisherman's Wharf sort du centre (Pier 39
+  n'y est plus dominé).
+
+**Ce qui le prouve.** Quatre témoins neufs. `carteMonde.js` : les rues ont
+la chaussée de leur type (artères 6,3, rues 4,0, trame 2,95, SoMa 6,35
+contre 2,0, 1,7 et 0,95 sur `origin/main`) ; San Francisco garde plus de
+30 % de lots, aucun quartier sous 10 %. `plafond.js` : une maison posée sur
+une ancienne rue n'est pas enfermée et une cabane garde son toit (sur
+`origin/main` : la date n'existe pas). Les six circuits restent à 100 % sur
+la rue. `carte.js` : le centre a une médiane de 12 blocs, sa plus haute tour
+36, aucune colonne de verre et 212 de façade ; `plafond.js` : aucun monument
+de San Francisco plus bas que ses voisins. L'empreinte des 490 morceaux témoins change parce que San Francisco
+en est un des neuf lieux ; sans elle, les 441 autres rendent `346a66cd…` sur
+`origin/main` et sur la branche.
+
+---
+
+## v360 — Le monde suit la voiture jusqu'à 80
+
+**Pourquoi.** Au banc, la ville ne suivait pas 80 blocs par seconde (Paris 125
+blocs de monde devant soi pour 160 exigés) et le débit plafonnait vers 55
+morceaux par seconde en ville, alors que la v352 avait divisé par deux le coût
+d'un morceau. Deux pistes étaient déclarées sans mesure : l'installation des
+géométries sur le fil principal, et la recharge de la file une fois par image.
+Mesuré à 80 b/s, rr 12 : l'installation ne coûte que 0,1 à 0,9 ms par
+morceau, le transit 2 à 8 ms — mais le worker était **à sec 55 à 72 % du
+temps**. Et la boucle de recharge comptait chaque demande deux fois depuis la
+v251 : une file « de huit » tenait de quatre à huit demandes en vol, selon
+ce qui restait de l'image d'avant.
+
+**Ce que ça change.** En roulant vite, chaque morceau qui arrive libère sa
+place et elle repart tout de suite au worker, sans attendre l'image — toujours
+quatre demandes en vol au plus, jamais plus que l'ancienne boucle au plus bas
+(la profondeur mesurée nuisible en v269 ne revient pas). Le débit double (Paris 53 → 116 morceaux par seconde,
+Rome 58 → 120, campagne 74 → 123), et le monde maillé devant soi à 80 b/s
+passe de 101–128 à 176–192 blocs. Le plafond de vitesse au sol publié pour la
+conduite (`plafond-sol.js`) monte de 60 à **70 b/s en ville** (Londres borne)
+et de 70 à **80 b/s en campagne et sur l'autoroute** (l'A1 borne). À pied et à
+l'arrêt rien ne change ; en rendu logiciel la recharge est coupée, comme
+l'ordre en cône de la v346 (`?recharge=arrivee` la force). Les vitesses des
+voitures, elles, ne bougent pas ici : c'est la conduite qui les applique.
+
+**Ce qui le prouve.** Deux témoins dans `monte.js` : la recharge à l'arrivée
+contre l'ancienne, en ABBA dans la même page, débit × 1,5 au moins et jamais
+plus de quatre demandes en vol (× 0,95 sur `origin/main`, crochet absent ;
+× 2,06 ici, quatre en vol contre six pour l'ancienne boucle) ; et
+la même mesure dans une scène vide, où la recharge garde la cadence de
+l'ancienne (51–57 images par seconde contre 53–57) — preuve que la cadence
+perdue en ville au banc (14 → 5) est SwiftShader qui dessine enfin la ville
+(15 → 190–290 appels de dessin), pas le chargement. La sonde
+`sonde-monde-a-la-vitesse.cjs` publie désormais où passe le temps (worker à
+sec, installation, rendu, transit) et `sonde-file-age.cjs` l'âge des demandes.
+Ce qui reste à mesurer sur la tablette : la cadence à 70–80 b/s dans Paris
+(`?diag=1`).
+
+---
+
+## v359 — Les rues de Nice à la règle du kit
+
+**Pourquoi.** La deuxième des cinq villes bâties à la main restées sur leurs
+largeurs relevées à la main (dette v271). La ruelle du Vieux-Nice faisait 1,2
+bloc de chaussée, la rue de la ville neuve 2, les avenues 2,9 à 5,8 — et la
+trame passait encore à quelques blocs des avenues parallèles.
+
+**Ce que ça change.**
+
+- **Les rues de Nice ont la section du kit**, à un bloc pour un mètre : deux
+  voies et des trottoirs de 2,5 m pour la Promenade des Anglais, Jean-Médecin
+  et les boulevards de la ville neuve ; une voie de 3,1 m pour la rue de
+  France, à sens unique, et les rues de quartier ; deux voies pour les rues de
+  la ville neuve et de Cimiez, une pour les ruelles du Vieux-Nice — « une
+  ruelle héritée est une rue locale », comme à Paris.
+- **Les îlots se recomposent** comme à Londres, et Nice garde ses immeubles :
+  23,7 % du disque bâti contre 22,7. Le prix, déclaré : Masséna 13,2 → 8,6,
+  les Musiciens 20,4 → 14,5, le port 21,8 → 16,4 ; Cimiez et Malausséna en
+  gagnent.
+- **Londres gagne encore deux points** (26,6 → 28,7 %) : la règle qui retire
+  une rue de la trame trop proche d'une avenue comptait la demi-chaussée au
+  lieu de la demi-emprise, et laissait des lots de trois blocs et demi.
+- **Ce qu'un enfant a bâti à Nice ne bouge pas** : sous ses blocs d'avant la
+  mise à jour, la Nice d'avant reste.
+
+**Ce qui le prouve.** Quatre témoins neufs. `carteMonde.js` : les rues de
+Nice ont la chaussée de leur type (artères 7,0, rues 3,0, ville neuve 6,95
+contre 5,0, 2,95 et 0,95 sur `origin/main`) ; Nice garde plus de 21 % de
+lots, aucun quartier sous 4 %. `plafond.js` : à Nice, une maison posée sur
+une ancienne rue n'est pas enfermée et une cabane garde son toit (désarmé :
+8 blocs de ville, toit absent) ; les deux témoins de Londres passent par la
+même fonction. Les trois circuits de Nice restent à 99-100 % sur la rue.
+
+---
+
+## v358 — Des voitures qui se conduisent pour de vrai
+
+**Pourquoi.** Max : « une grosse refonte de la façon de conduire… comme GTA :
+des véhicules qui tournent de manière naturelle, des accélérations
+cohérentes, des vitesses cohérentes — aujourd'hui les véhicules sont trop
+lents —, des collisions cohérentes ». La voiture de l'enfant prenait son
+allure en une demi-seconde, tournait au même taux à toute vitesse, plafonnait
+à 92 km/h même en hypercar, et s'arrêtait net contre tout ce qu'elle touchait.
+Sa boîte de collision ne tournait pas : le nez et le coffre traversaient ce
+qui dépassait des côtés.
+
+**Ce que ça change.** Un vrai modèle de voiture, toujours au joystick d'un
+seul doigt : on accélère fort au départ, la poussée s'essouffle vers la
+pointe ; le frein est franc ; lâcher le joystick laisse filer en roue libre ;
+on tourne serré au pas et large à pleine vitesse, et un virage serré pris vite
+fait glisser un peu la voiture, qui se rattrape toute seule. Les voitures vont
+beaucoup plus vite, chacune selon sa classe : citadine 108 km/h, berline 122,
+GT 151, sportive 173, hypercar 198 (0 à 100 en 2 s) — et toutes
+bondissent au départ. Contre un mur pris en
+rasant, la voiture glisse le long et se remet dans l'axe de la rue ; de face,
+elle s'arrête avec un petit rebond ; une voiture de la rue ou un réverbère la
+font rebondir ; devant un piéton elle freine à temps. Chaque choc est publié
+(force, point d'impact) pour les dégâts et la caméra qui viennent — et il
+s'efface quand on descend : une voiture neuve ne part plus abîmée par le
+dernier choc de la précédente.
+
+**Ce qui le prouve.** Le plafond de vitesse a été MESURÉ et non calculé : à 60
+blocs/s, à la distance d'affichage de l'iPad, le monde se maille encore 125
+blocs devant la voiture, dans Paris comme dans les champs
+(`sonde-plafond-voiture.cjs`). Cinq témoins purs dans `plafond.js` (classes
+sous le plafond, 0 → 100 simulé contre la formule, dérive bornée et rattrapée,
+chocs, boîte orientée) et neuf témoins de trajet dans `monte.js` (0 → 100 en
+2 s de jeu, pointe 52 blocs/s, frein, rayon de virage 3,9 au pas et 14,4 à
+20 blocs/s, mur rasant, mur de face, voiture de la rue, panne) — treize rouges
+sur `origin/main`, le frein franc gardé vert des deux côtés. Trois témoins
+existants repointés (rapport des pointes, crochet qui nomme la famille, piste
+de l'accélérateur). Au portail, les rouges restants sont des dettes déclarées
+et rejouées seules des deux côtés : `manhattan.js` identique (23 verts, mêmes
+deux rouges, même arrêt), et le gel d'arrivée de `monte.js` (vol du chasseur,
+chemin que la livraison ne touche pas : 1 183–1 283 ms contre 1 050–1 150).
+
+---
+
+## v357 — Les tours ont une emprise
+
+**Pourquoi.** La v353 avait laissé à leur hauteur d'auteur treize tours qui
+dominaient déjà leurs toits — la Willis Tower, le John Hancock, la perle de
+l'Orient, Jin Mao, les tours de Tokyo et de Séoul, la Skytree, la Banque de
+Chine, l'IFC, l'hôtel de ville de Bruxelles, la Koutoubia, le campanile de
+Venise — parce que leurs bâtisseurs étaient des colonnes d'un bloc : étirées
+à leur vraie hauteur, des perches (vu en capture à Bruxelles et à Chicago).
+Saint-Pierre de Rome, lui, était une coupole sans basilique, donc une tour.
+Max : « Improve all cities ».
+
+**Ce que ça change.** Chacune a son bâtisseur, d'après sa vraie silhouette et
+dans la boîte de son repère (aucune rue, aucun terrain ne bouge) : les neuf
+tubes de la Willis qui s'arrêtent l'un après l'autre et ses antennes,
+l'obélisque noir du Hancock, les gradins de Jin Mao, les sphères roses de la
+perle de l'Orient, le treillis orange et blanc de la tour de Tokyo, les
+belvédères de la Skytree, les prismes de la Banque de Chine, la couronne de
+l'IFC, la halle gothique de Bruxelles et sa tour, le bandeau turquoise de la
+Koutoubia, la chambre des cloches et la pyramide verte du campanile. Leur ville
+a désormais son ciel, et elles montent à leur hauteur : la Willis à
+cinquante-sept blocs, le Hancock à cinquante-cinq. Le témoin neuf a trouvé dix
+autres perches dans toutes les villes, refaites aussi — la Fernsehturm, la CN
+Tower, la Torre Latino, Saint-Étienne de Vienne et Saint-Guy de Prague avec
+leur nef, le Palazzo Vecchio avec son palais, la Frauenkirche, l'hôtel de ville
+de Munich, la demi-tour Eiffel de Las Vegas sur ses quatre pieds, la Freedom
+Tower — et les quatre pagodes, qui n'avaient qu'un poteau sous chaque toit,
+ont leurs étages. Saint-Pierre a sa nef, son transept et sa façade. Deux inversions du vrai
+ciel tombent : la grande roue du Prater, à son vrai rayon, passe au-dessus de
+la Hofburg, et la tour du nord du château du Smithsonian au-dessus du
+mémorial Jefferson. Le monde
+d'avant garde ses colonnes : un bloc posé avant se juge sur le monde où il a
+été posé.
+
+**Ce qui le prouve.** Un témoin neuf dans `plafond.js` : aucun repère qui
+monte à une fois et demie la corniche de sa ville n'est une perche (plus de la
+moitié de ses couches sur une ou deux colonnes), sauf les quatre fûts vrais —
+la colonne de Juillet, la colonne Nelson, celle de Colomb, l'Obélisque. Rouge
+sur `origin/main` (vingt-trois perches), vert ici. Le témoin d'ordre du ciel
+reste vert dans toutes les villes, la roue du Prater et le château du
+Smithsonian y entrent, les deux empreintes du relief sont intactes, et l'empreinte des 490
+morceaux de la v352 change pour une seule raison, prouvée : la même branche,
+ses bâtisseurs neufs désarmés, rend celle d'`origin/main` au bit près (qui, elle, ne suivait plus les routes de la v355 : le témoin y était rouge, c'est réparé).
 
 ---
 

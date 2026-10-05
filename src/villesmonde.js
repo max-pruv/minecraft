@@ -675,6 +675,30 @@ function buildGrandeRoue(poser) {
   for (let y = 1; y <= R + 2; y++) poser(0, y, 0, ACIER);
 }
 
+// La grande roue du Prater (v357) : 65 m de haut pour 61 de diamètre, plus
+// haute que la Hofburg — et `buildGrandeRoue` (seize blocs) passait dessous.
+// Une roue ne s'étire pas, elle deviendrait une ellipse : celle-ci a son vrai
+// rayon, le plus grand que tient la boîte de son repère (neuf), la jante, les
+// rayons, le moyeu sur ses deux chevalets, et les cabines rouges.
+function buildRoueDuPrater(poser) {
+  const R = 9, C = R + 4;
+  for (let a = 0; a < 360; a += 4) {
+    const r = (a * Math.PI) / 180;
+    const y = C + Math.round(Math.sin(r) * R), z = Math.round(Math.cos(r) * R);
+    poser(0, y, z, BLANC);
+    if (a % 24 === 0) { poser(1, y - 1, z, VERMILLON); poser(-1, y - 1, z, VERMILLON); }
+  }
+  for (let a = 0; a < 360; a += 30) {
+    const r = (a * Math.PI) / 180;
+    for (let k = 1; k < R; k++) poser(0, C + Math.round(Math.sin(r) * k), Math.round(Math.cos(r) * k), ACIER);
+  }
+  for (const x of [-1, 1]) for (let y = 1; y <= C; y++) {
+    const e = Math.round((C - y) * 0.4);
+    poser(x, y, -e, ACIER); poser(x, y, e, ACIER);
+  }
+  poser(0, C, 0, ACIER);
+}
+
 // La halle de Pike Place et son enseigne rouge.
 function buildPikePlace(poser) {
   for (let dz = -4; dz <= 4; dz++) {
@@ -739,6 +763,390 @@ function tourBoule(h, boules, fut = ACIER, boule = ACIER) {
     }
     poser(0, h + 1, 0, boule);
   };
+}
+
+
+// LES TOURS QUI ONT UNE EMPRISE (v357). `tourBoule` et `minaret` sont des
+// colonnes d'un bloc : à leur vraie hauteur dans le ciel de leur ville, ce
+// sont des perches (vu en capture à Bruxelles et à Chicago, v353). Chaque tour
+// ci-dessous a son bâtisseur, d'après la vraie silhouette — les tubes en
+// faisceau de la Willis, l'obélisque du Hancock, les sphères de la perle de
+// l'Orient — dans la boîte de son repère, qui ne bouge pas. Leurs paliers
+// (mètres) sont dans `echelle-monuments.js`, et le monde d'avant garde la
+// colonne d'un bloc (`build`) : le nouveau bâtisseur est le champ `tour`.
+// Les cotes sont des COUCHES D'AUTEUR : la table les étire, sauf les sphères et
+// les belvédères, rigides (deux paliers au même mètre), pour qu'une boule ne
+// devienne pas un œuf.
+const NOIR = uni(26);
+const NOIR_LIGNES = DECOR_START + 25 * 10 + 6;   // l'anthracite à lignes : on voit les étages
+const ACIER_LIGNES = DECOR_START + 23 * 10 + 6;
+const ORANGE = uni(1);
+const MAGENTA = uni(14);
+const TURQUOISE = uni(7);
+const VITRE = CITY_BLOCK.CURTAIN;
+const PATINE = CITY_BLOCK.COPPER;
+const plein = (poser, y, x0, x1, z0, z1, id) => {
+  for (let x = x0; x <= x1; x++) for (let z = z0; z <= z1; z++) poser(x, y, z, id);
+};
+// Un plateau octogonal : le carré de demi-côté `r` sans ses coins.
+const octo = (poser, y, r, id) => {
+  for (let x = -r; x <= r; x++) for (let z = -r; z <= r; z++) {
+    if (r > 0 && Math.abs(x) === r && Math.abs(z) === r) continue;
+    poser(x, y, z, id);
+  }
+};
+
+// La Willis Tower : neuf tubes de trois rangs en faisceau. Deux s'arrêtent au
+// 50e étage, deux au 66e, trois au 90e, les deux derniers montent au toit, et
+// ses deux antennes. Les modules font 2, 3, 2 blocs.
+const MODULES_WILLIS = [[-3, -2], [-1, 1], [2, 3]];
+const TOITS_WILLIS = [[4, 9, 6], [11, 11, 9], [6, 9, 4]];   // [i ouest→est][j nord→sud]
+function buildWillis(poser) {
+  for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
+    const [x0, x1] = MODULES_WILLIS[i], [z0, z1] = MODULES_WILLIS[j], h = TOITS_WILLIS[j][i];
+    for (let y = 1; y <= h; y++) plein(poser, y, x0, x1, z0, z1, y === h ? NOIR : NOIR_LIGNES);
+  }
+  for (const x of [-2, 0]) for (let y = 12; y <= 13; y++) poser(x, y, 0, y === 13 ? BLANC : ACIER);
+}
+
+// Le John Hancock : l'obélisque noir qui s'effile, ses arêtes d'acier, le
+// belvédère et ses deux antennes.
+const ETAGES_HANCOCK = [[1, 3, 3, 2], [4, 6, 2, 2], [7, 9, 2, 1], [10, 11, 1, 1]];
+function buildHancock(poser) {
+  for (const [y0, y1, hx, hz] of ETAGES_HANCOCK) {
+    for (let y = y0; y <= y1; y++) for (let x = -hx; x <= hx; x++) for (let z = -hz; z <= hz; z++) {
+      const arete = Math.abs(x) === hx && Math.abs(z) === hz;
+      poser(x, y, z, arete || y === 11 ? ACIER : NOIR_LIGNES);
+    }
+  }
+  for (const x of [-1, 1]) for (let y = 12; y <= 13; y++) poser(x, y, 0, y === 13 ? BLANC : ACIER);
+}
+
+// La tour Jin Mao : une pagode de verre et d'aluminium, des gradins qui se
+// resserrent vers le haut, la couronne et la flèche.
+function buildJinMao(poser) {
+  for (let y = 1; y <= 5; y++) octo(poser, y, 3, y === 5 ? ACIER : ACIER_LIGNES);
+  for (let y = 6; y <= 8; y++) plein(poser, y, -2, 2, -2, 2, y === 8 ? ACIER : ACIER_LIGNES);
+  for (let y = 9; y <= 10; y++) octo(poser, y, 2, y === 10 ? ACIER : ACIER_LIGNES);
+  for (let y = 11; y <= 12; y++) plein(poser, y, -1, 1, -1, 1, ACIER_LIGNES);
+  octo(poser, 13, 1, ACIER);
+  for (let y = 14; y <= 16; y++) poser(0, y, 0, ACIER);
+}
+
+// La perle de l'Orient : le trépied, la grande sphère, les trois colonnes, la
+// sphère haute, la petite sphère et l'aiguille.
+const disque = (poser, y, r, id) => {
+  for (let x = -r; x <= r; x++) for (let z = -r; z <= r; z++) if (Math.hypot(x, z) <= r + 0.3) poser(x, y, z, id);
+};
+function buildPerle(poser) {
+  const pieds = [[0, -1], [1, 1], [-1, 1]];
+  for (let y = 1; y <= 2; y++) for (const [a, b] of pieds) poser(a * 3, y, b * 3, ACIER);
+  poser(0, 3, -2, ACIER); poser(2, 3, 2, ACIER); poser(-2, 3, 2, ACIER);
+  for (let y = 1; y <= 17; y++) {
+    poser(0, y, 0, ACIER);
+    if (y >= 3) for (const [a, b] of pieds) poser(a, y, b, ACIER);
+  }
+  [1, 2, 3, 3, 2, 1].forEach((r, i) => disque(poser, 4 + i, r, MAGENTA));   // la grande sphère
+  [1, 2, 1].forEach((r, i) => disque(poser, 14 + i, r, MAGENTA));          // la sphère haute
+  for (let y = 17; y <= 18; y++) poser(0, y, 0, ACIER);
+  octo(poser, 19, 1, MAGENTA);
+  for (let y = 20; y <= 22; y++) poser(0, y, 0, y === 22 ? BLANC : ACIER);
+}
+
+// La tour de Tokyo : quatre pieds écartés au-dessus de Foot Town, le treillis
+// orange et blanc qui se resserre, le grand belvédère, le belvédère du haut et
+// l'antenne.
+function buildTourTokyo(poser) {
+  plein(poser, 1, -2, 2, -2, 2, BLANC);
+  const bande = (y) => ([6, 8, 12, 14, 17].includes(y) ? BLANC : ORANGE);
+  for (let y = 1; y <= 8; y++) {
+    const r = y <= 4 ? 3 : y <= 6 ? 2 : 1;
+    for (const a of [-r, r]) for (const b of [-r, r]) poser(a, y, b, bande(y));
+  }
+  for (let k = -3; k <= 3; k++) for (const [a, b] of [[k, -3], [k, 3], [-3, k], [3, k]]) poser(a, 4, b, ORANGE);
+  octo(poser, 9, 2, VITRE); plein(poser, 10, -2, 2, -2, 2, BLANC);
+  for (let y = 11; y <= 14; y++) for (const a of [-1, 1]) for (const b of [-1, 1]) poser(a, y, b, bande(y));
+  plein(poser, 15, -1, 1, -1, 1, VITRE);
+  for (let y = 16; y <= 18; y++) poser(0, y, 0, bande(y));
+}
+
+// La Skytree : le trépied blanc qui s'arrondit, le premier belvédère, le
+// second, et le grand mât.
+function buildSkytree(poser) {
+  for (let y = 1; y <= 4; y++) for (let x = -2; x <= 2; x++) for (let z = -2; z <= 2; z++) {
+    if (Math.max(Math.abs(x), Math.abs(z)) === 2 && (x + z + y) % 2 === 0) poser(x, y, z, BLANC);
+  }
+  for (let y = 1; y <= 15; y++) octo(poser, y, 1, y > 4 && y % 3 === 0 ? ACIER : BLANC);
+  octo(poser, 11, 2, VITRE); octo(poser, 12, 2, BLANC);
+  octo(poser, 16, 1, VITRE);
+  for (let y = 17; y <= 21; y++) poser(0, y, 0, y === 21 ? BLANC : ACIER);
+}
+
+// La tour de Séoul : le fût de béton blanc, la nacelle du belvédère, l'antenne
+// rouge et blanche.
+function buildTourSeoul(poser) {
+  for (let y = 1; y <= 9; y++) octo(poser, y, 1, BLANC);
+  octo(poser, 10, 2, VITRE); octo(poser, 11, 2, BLANC);
+  for (let y = 12; y <= 15; y++) poser(0, y, 0, y % 2 ? BLANC : VERMILLON);
+}
+
+// La Banque de Chine : un carré coupé en quatre triangles par ses diagonales,
+// qui s'arrêtent l'un après l'autre (le dernier monte au toit), le verre bleu
+// barré de ses croix blanches, et les deux mâts.
+function buildBanqueDeChine(poser) {
+  const toit = (x, z) => {
+    const q = [];
+    if (z <= -Math.abs(x)) q.push(14);                // nord
+    if (x >= Math.abs(z)) q.push(11);                 // est
+    if (z >= Math.abs(x)) q.push(8);                  // sud
+    if (x <= -Math.abs(z)) q.push(5);                 // ouest
+    return Math.max(...q);
+  };
+  for (let x = -3; x <= 3; x++) for (let z = -3; z <= 3; z++) {
+    const h = toit(x, z), bord = Math.max(Math.abs(x), Math.abs(z)) === 3;
+    for (let y = 1; y <= h; y++) {
+      const u = Math.abs(x) === 3 ? z : x;
+      const croix = bord && ((u + y) % 3 === 0 || (u - y) % 3 === 0);
+      const arete = Math.abs(x) === Math.abs(z) || (Math.abs(x) === 3 && Math.abs(z) === 3);
+      poser(x, y, z, croix || arete ? BLANC : VITRE);
+    }
+  }
+  for (const x of [-1, 1]) for (let y = 15; y <= 16; y++) poser(x, y, -2, ACIER);
+}
+
+// L'IFC : le fût clair à pans coupés, ses gradins du haut et sa couronne en
+// griffes.
+function buildIFC(poser) {
+  for (let y = 1; y <= 11; y++) for (let x = -2; x <= 2; x++) for (let z = -2; z <= 2; z++) {
+    const coin = Math.abs(x) === 2 && Math.abs(z) === 2;
+    if (coin && y > 8) continue;
+    const nervure = (Math.abs(x) === 2 && z === 0) || (Math.abs(z) === 2 && x === 0) || coin;
+    poser(x, y, z, nervure ? CREME : VITRE);
+  }
+  for (let y = 12; y <= 13; y++) plein(poser, y, -1, 1, -1, 1, y === 13 ? CREME : VITRE);
+  for (const a of [-1, 1]) for (const b of [-1, 1]) { poser(a, 14, b, CREME); poser(a, 15, b, CREME); }
+}
+
+// L'hôtel de ville de Bruxelles : la longue halle gothique et son toit
+// d'ardoise, la tour carrée qui la perce, ses étages ajourés, la flèche et
+// saint Michel doré.
+function buildHotelDeVilleBruxelles(poser) {
+  for (let y = 1; y <= 4; y++) plein(poser, y, -3, 3, -1, 1, PIERRE);
+  plein(poser, 5, -3, 3, -1, 1, ARDOISE);
+  plein(poser, 6, -3, 3, 0, 0, ARDOISE);
+  for (let y = 1; y <= 9; y++) plein(poser, y, -1, 1, -1, 1, PIERRE);
+  for (let y = 10; y <= 11; y++) {
+    octo(poser, y, 1, PIERRE);
+    if (y === 10) for (const a of [-1, 1]) for (const b of [-1, 1]) poser(a, y, b, PIERRE);
+  }
+  for (let y = 12; y <= 13; y++) poser(0, y, 0, PIERRE);
+  poser(0, 14, 0, OR);
+}
+
+// La Koutoubia : le minaret carré de grès rouge, son bandeau de faïence
+// turquoise, ses merlons, le lanternon, la petite coupole et les boules d'or.
+function buildKoutoubia(poser) {
+  for (let y = 1; y <= 10; y++) plein(poser, y, -1, 1, -1, 1, y === 10 ? TURQUOISE : ROUGE_GRES);
+  for (const a of [-1, 1]) for (const b of [-1, 1]) poser(a, 11, b, ROUGE_GRES);
+  for (let y = 11; y <= 12; y++) poser(0, y, 0, ROUGE_GRES);
+  poser(0, 13, 0, PATINE);
+  for (let y = 14; y <= 15; y++) poser(0, y, 0, OR);
+}
+
+// Le campanile de Saint-Marc : le fût de brique, la chambre des cloches
+// ouverte sur ses quatre faces, l'attique, la pyramide verte et l'ange d'or.
+// Posé deux blocs au sud-ouest de son repère : à cette échelle la coupole de
+// Saint-Marc (rayon trois) est à un bloc et demi, comme la vraie basilique est
+// au nord-est du campanile.
+function buildCampanile(poser) {
+  const p = (x, y, z, id) => poser(x - 2, y, z + 2, id);
+  for (let y = 1; y <= 9; y++) plein(p, y, -1, 1, -1, 1, brique(0));
+  for (let y = 10; y <= 11; y++) for (const a of [-1, 1]) for (const b of [-1, 1]) p(a, y, b, BLANC);
+  p(0, 10, 0, OR);
+  plein(p, 12, -1, 1, -1, 1, BLANC);
+  plein(p, 13, -1, 1, -1, 1, PATINE);
+  p(0, 14, 0, PATINE);
+  p(0, 15, 0, OR);
+}
+
+// LES AUTRES PERCHES DU MONDE (v357) — le témoin neuf de `plafond.js` les a
+// trouvées dans toutes les villes, pas seulement dans les treize de la dette :
+// la Fernsehturm, la CN Tower, la Torre Latino, trois clochers de cathédrale
+// posés sans leur cathédrale, la tour d'Arnolfo sans son palais, la demi-tour
+// Eiffel sans ses pieds. Les colonnes et l'obélisque, eux, sont des fûts dans
+// la vraie ville aussi (`PERCHES_VRAIES`).
+const GRIS_CLAIR = uni(23);
+const VERT_BULBE = uni(5);
+const MARRON = uni(17);
+const TOIT_VERNISSE = DECOR_START + 2 * 10 + 7;   // le zigzag jaune du toit de Saint-Étienne
+
+// La Fernsehturm : le fût de béton qui s'effile, la sphère d'acier et de verre,
+// l'antenne rouge et blanche.
+function buildFernsehturm(poser) {
+  for (let y = 1; y <= 4; y++) plein(poser, y, -1, 1, -1, 1, GRIS_CLAIR);
+  for (let y = 5; y <= 9; y++) octo(poser, y, 1, GRIS_CLAIR);
+  octo(poser, 10, 1, ACIER); octo(poser, 11, 2, VITRE); octo(poser, 12, 2, ACIER); octo(poser, 13, 1, ACIER);
+  for (let y = 14; y <= 15; y++) poser(0, y, 0, GRIS_CLAIR);
+  for (let y = 16; y <= 19; y++) poser(0, y, 0, y % 2 ? BLANC : VERMILLON);
+}
+
+// La CN Tower, à sa hauteur d'auteur (elle est au-dessus de son ciel) : le
+// pied en Y, le fût de béton, le grand belvédère, le SkyPod et l'antenne.
+function buildCNTower(poser) {
+  const bras = [[0, -1], [1, 1], [-1, 1]];
+  for (let y = 1; y <= 6; y++) {
+    const l = y <= 3 ? 2 : 1;
+    for (const [a, b] of bras) for (let k = 1; k <= l; k++) poser(a * k, y, b * k, GRIS_CLAIR);
+  }
+  for (let y = 1; y <= 30; y++) octo(poser, y, 1, GRIS_CLAIR);
+  octo(poser, 28, 2, ACIER); octo(poser, 29, 2, VITRE); octo(poser, 30, 2, ACIER);
+  for (let y = 31; y <= 34; y++) poser(0, y, 0, GRIS_CLAIR);
+  octo(poser, 35, 1, VITRE);
+  for (let y = 36; y <= 45; y++) poser(0, y, 0, y === 45 ? BLANC : ACIER);
+}
+
+// La Torre Latino : le fût de verre à arêtes d'acier, ses retraits du haut et
+// son antenne.
+function buildTorreLatino(poser) {
+  for (let y = 1; y <= 10; y++) for (let x = -2; x <= 2; x++) for (let z = -2; z <= 2; z++) {
+    poser(x, y, z, Math.abs(x) === 2 && Math.abs(z) === 2 ? ACIER : VITRE);
+  }
+  for (let y = 11; y <= 12; y++) plein(poser, y, -1, 1, -1, 1, VITRE);
+  plein(poser, 13, -1, 1, -1, 1, ACIER);
+  for (let y = 14; y <= 15; y++) poser(0, y, 0, ACIER);
+}
+
+// Une longue nef et son toit à deux pans, couche par couche, le long de x.
+function nef(poser, x0, x1, hz, murs, toit, mur, tuile) {
+  for (let y = 1; y <= murs; y++) plein(poser, y, x0, x1, -hz, hz, mur);
+  for (let k = 0; k < toit; k++) plein(poser, murs + 1 + k, x0, x1, -Math.max(0, hz - k), Math.max(0, hz - k), tuile);
+}
+
+// Saint-Étienne de Vienne : la nef, son grand toit de tuiles vernissées en
+// zigzag, et le « Steffl », la tour du sud, qui s'effile jusqu'à sa flèche.
+function buildStephansdom(poser) {
+  nef(poser, -4, 4, 1, 3, 2, PIERRE, TOIT_VERNISSE);
+  for (let y = 1; y <= 8; y++) plein(poser, y, -1, 1, 2, 4, PIERRE);
+  for (let y = 9; y <= 11; y++) octo((x, yy, z, id) => poser(x, yy, z + 3, id), y, 1, PIERRE);
+  for (let y = 12; y <= 13; y++) poser(0, y, 3, ARDOISE);
+  poser(0, 14, 3, OR);
+}
+
+// Saint-Guy de Prague : la nef gothique et son toit de cuivre, les deux
+// flèches de la façade, la grande tour du sud et son casque de cuivre.
+function buildSaintGuy(poser) {
+  nef(poser, -4, 3, 1, 3, 2, ACIER, PATINE);
+  for (const z of [-1, 1]) for (let y = 4; y <= 9; y++) poser(-4, y, z, ACIER);
+  for (let y = 1; y <= 8; y++) plein(poser, y, 0, 2, 2, 4, ACIER);
+  octo((x, yy, z, id) => poser(x + 1, yy, z + 3, id), 9, 1, PATINE);
+  poser(1, 10, 3, PATINE);
+  poser(1, 11, 3, OR);
+}
+
+// Le Palazzo Vecchio : le palais de pierre et sa galerie crénelée, la tour
+// d'Arnolfo plantée sur la façade, son mâchicoulis en surplomb, le beffroi et
+// le lion.
+function buildPalazzoVecchio(poser) {
+  for (let y = 1; y <= 4; y++) plein(poser, y, -3, 3, -3, 1, PIERRE);
+  for (let x = -3; x <= 3; x++) for (let z = -3; z <= 1; z++) {
+    if ((Math.abs(x) === 3 || z === -3 || z === 1) && (x + z) % 2 === 0) poser(x, 5, z, PIERRE);
+  }
+  for (let y = 5; y <= 9; y++) plein(poser, y, -1, 1, -3, -1, PIERRE);
+  octo((x, yy, z, id) => poser(x, yy, z - 2, id), 10, 2, PIERRE);
+  for (const a of [-1, 1]) for (const b of [-3, -1]) { poser(a, 11, b, PIERRE); poser(a, 12, b, PIERRE); poser(a, 13, b, PIERRE); }
+  plein(poser, 13, -1, 1, -3, -1, PIERRE);
+  poser(0, 14, -2, OR);
+}
+
+// La Frauenkirche de Munich : la nef de brique et son haut toit, les deux tours
+// carrées de la façade et leurs bulbes verts.
+function buildFrauenkirche(poser) {
+  nef(poser, -1, 5, 3, 4, 3, brique(0), TUILE);
+  for (const zc of [-2, 2]) {
+    for (let y = 1; y <= 11; y++) plein(poser, y, -4, -2, zc - 1, zc + 1, brique(0));
+    const p = (x, y, z, id) => poser(x - 3, y, z + zc, id);
+    octo(p, 12, 1, VERT_BULBE); octo(p, 13, 1, VERT_BULBE);
+    p(0, 14, 0, VERT_BULBE); p(0, 15, 0, OR);
+  }
+}
+
+// Le nouvel hôtel de ville de Munich : la longue façade néogothique et son
+// toit, le beffroi qui la perce, la lanterne et le petit moine doré.
+function buildNouvelHotelDeVilleMunich(poser) {
+  nef(poser, -3, 3, 1, 4, 2, ACIER, ARDOISE);
+  for (let y = 1; y <= 9; y++) plein(poser, y, -1, 1, -1, 1, ACIER);
+  for (let y = 10; y <= 11; y++) octo(poser, y, 1, y === 10 ? ACIER : PATINE);
+  for (let y = 12; y <= 13; y++) poser(0, y, 0, PATINE);
+  poser(0, 14, 0, OR);
+}
+
+// La demi-tour Eiffel de Las Vegas : quatre pieds écartés, les deux étages,
+// le fût de treillis qui se resserre, le sommet.
+function buildDemiEiffel(poser) {
+  for (let y = 1; y <= 11; y++) {
+    const r = y <= 3 ? 3 : y <= 7 ? 2 : 1;
+    for (const a of [-r, r]) for (const b of [-r, r]) poser(a, y, b, MARRON);
+  }
+  for (let k = -3; k <= 3; k++) for (const [a, b] of [[k, -3], [k, 3], [-3, k], [3, k]]) poser(a, 3, b, MARRON);
+  for (let k = -2; k <= 2; k++) for (const [a, b] of [[k, -2], [k, 2], [-2, k], [2, k]]) poser(a, 7, b, MARRON);
+  for (let y = 12; y <= 15; y++) poser(0, y, 0, MARRON);
+}
+
+// La Freedom Tower de Miami : le bâtiment crème au toit de tuiles, la tour à
+// la manière de la Giralda, son belvédère, sa coupole.
+function buildFreedomTower(poser) {
+  for (let y = 1; y <= 3; y++) plein(poser, y, -3, 3, -2, 2, CREME);
+  plein(poser, 4, -3, 3, -2, 2, TUILE);
+  for (let y = 1; y <= 9; y++) plein(poser, y, -1, 1, -1, 1, CREME);
+  for (const a of [-1, 1]) for (const b of [-1, 1]) poser(a, 10, b, CREME);
+  octo(poser, 11, 1, TUILE);
+  poser(0, 12, 0, TUILE);
+  poser(0, 13, 0, OR);
+}
+
+// Une pagode avec ses étages : `pagode` ne pose qu'un poteau sous chaque toit,
+// et étirée à la hauteur du ciel c'était une perche à parapluies. Chaque étage a
+// son corps, d'un rang plus étroit que son toit ; les couches sont celles de
+// `pagode`, pour que ses paliers (`PAGODE5`, Wat Arun) servent tels quels.
+function pagodeCorps(niveaux, mur, toit) {
+  const base = pagode(niveaux, mur, toit);
+  return (poser) => {
+    base(poser);
+    for (let n = 0; n < niveaux; n++) {
+      const y0 = 1 + n * 3, r = Math.max(1, niveaux - n) - 1;
+      for (let y = y0; y < y0 + 2; y++) plein(poser, y, -r, r, -r, r, mur);
+    }
+  };
+}
+// Saint-Pierre de Rome avec sa basilique (v357). `dome(6)` posait la coupole
+// seule : remise à sa hauteur, sans nef autour, elle devenait une tour (vu en
+// capture, v342). La croix latine de travertin — la nef vers l'est jusqu'à la
+// façade de Maderno et ses statues, les deux bras du transept — porte le
+// tambour et la coupole de plomb de Michel-Ange, sa lanterne et sa croix.
+function buildSaintPierre(poser) {
+  for (let y = 1; y <= 5; y++) {
+    plein(poser, y, -6, 9, -4, 4, CREME);               // la nef et la croisée
+    plein(poser, y, -5, 5, -9, 9, CREME);               // le transept
+  }
+  plein(poser, 6, -6, 8, -3, 3, ARDOISE);
+  plein(poser, 6, -4, 4, -8, 8, ARDOISE);
+  for (let z = -5; z <= 5; z++) {                        // la façade et ses statues
+    for (let y = 1; y <= 6; y++) poser(9, y, z, y >= 2 && y <= 4 && (z & 1) ? BLANC : CREME);
+    if (!(z & 1)) poser(9, 7, z, BLANC);
+  }
+  for (let y = 7; y <= 9; y++) {                         // le tambour et ses colonnes
+    for (let a = 0; a < 360; a += 8) {
+      const r = (a * Math.PI) / 180;
+      poser(Math.round(Math.cos(r) * 6), y, Math.round(Math.sin(r) * 6), a % 24 === 0 ? BLANC : CREME);
+    }
+  }
+  for (let dy = 0; dy <= 6; dy++) {                      // la calotte de plomb
+    const rr = Math.sqrt(Math.max(0, 36 - dy * dy)) + 0.3;
+    for (let x = -6; x <= 6; x++) for (let z = -6; z <= 6; z++) if (Math.hypot(x, z) <= rr) poser(x, 10 + dy, z, ARDOISE);
+  }
+  octo(poser, 17, 1, CREME);
+  poser(0, 18, 0, CREME);
+  poser(0, 19, 0, OR);
 }
 
 // Le périptère grec : la colonnade du Parthénon, et rien que lui.
@@ -931,7 +1339,7 @@ const FICHES = {
     monuments: [
       { nom: 'Colisée', lat: 41.8902, lon: 12.4922, build: depuisCatalogue('colisee') },
       { nom: 'Panthéon', lat: 41.8986, lon: 12.4769, box: 6, build: dome(4, CREME, PIERRE) },
-      { nom: 'Basilique St-Pierre', lat: 41.9022, lon: 12.4539, box: 9, build: dome(6, CREME, ARDOISE) },
+      { nom: 'Basilique St-Pierre', lat: 41.9022, lon: 12.4539, box: 9, build: dome(6, CREME, ARDOISE), tour: buildSaintPierre },
       { nom: 'Forum romain', lat: 41.8925, lon: 12.4853, box: 6, seuil: 0.4, build: buildForum },
     ],
     lieux: [['Fontaine de Trevi', 41.9009, 12.4833], ['Vatican', 41.9029, 12.4534],
@@ -1095,7 +1503,7 @@ const FICHES = {
     palette: [PIERRE, CREME, brique(0)], toit: ARDOISE, hMaison: [4, 6],
     parcs: [{ cu: 15, cv: 13, ru: 6, rv: 5 }],                    // le parc de Bruxelles
     monuments: [
-      { nom: "L'hôtel de ville", lat: 50.8467, lon: 4.3525, box: 3, build: minaret(22, PIERRE) },
+      { nom: "L'hôtel de ville", lat: 50.8467, lon: 4.3525, box: 3, build: minaret(22, PIERRE), tour: buildHotelDeVilleBruxelles },
       { nom: 'Manneken Pis', lat: 50.845, lon: 4.3499, box: 2, seuil: 0.4, build: statuette(2, OR) },
       // L'Atomium est à Heysel, à cinq vrais kilomètres du centre : hors du
       // rayon de la ville, ses neuf boules posent sur la campagne — comme en vrai.
@@ -1112,7 +1520,7 @@ const FICHES = {
     parcs: [{ cu: -47, cv: 12, ru: 6, rv: 8 }],                   // le Tiergarten
     monuments: [
       { nom: 'Porte de Brandebourg', lat: 52.5163, lon: 13.3777, box: 7, build: archePorte(5, 7, PIERRE) },
-      { nom: 'Fernsehturm', lat: 52.5208, lon: 13.4094, box: 4, build: tourBoule(40, [28], ACIER, ACIER) },
+      { nom: 'Fernsehturm', lat: 52.5208, lon: 13.4094, box: 4, build: tourBoule(40, [28], ACIER, ACIER), tour: buildFernsehturm },
       { nom: 'Reichstag', lat: 52.5186, lon: 13.3762, box: 7, build: dome(4, PIERRE, VERRE) },
       { nom: 'Berliner Dom', lat: 52.5192, lon: 13.4038, box: 6, build: dome(4, CREME, uni(6)) },
     ],
@@ -1127,8 +1535,8 @@ const FICHES = {
     palette: [CREME, ROSE, OCRE, JAUNE_MUR], toit: TUILE, hMaison: [4, 5],
     parcs: [{ cu: 16, cv: -32, ru: 7, rv: 9 }],                   // le jardin anglais
     monuments: [
-      { nom: 'Frauenkirche', lat: 48.1386, lon: 11.5736, box: 6, build: bulbes([uni(5), uni(5)], 10) },
-      { nom: "Le nouvel hôtel de ville", lat: 48.1374, lon: 11.5755, box: 3, build: minaret(16, PIERRE) },
+      { nom: 'Frauenkirche', lat: 48.1386, lon: 11.5736, box: 6, build: bulbes([uni(5), uni(5)], 10), tour: buildFrauenkirche },
+      { nom: "Le nouvel hôtel de ville", lat: 48.1374, lon: 11.5755, box: 3, build: minaret(16, PIERRE), tour: buildNouvelHotelDeVilleMunich },
       { nom: 'Colonne de Marie', lat: 48.1371, lon: 11.5748, box: 2, seuil: 0.4, build: statuette(5, OR) },
     ],
     lieux: [['Marienplatz', 48.1374, 11.5755], ['Viktualienmarkt', 48.1353, 11.5763]],
@@ -1141,9 +1549,9 @@ const FICHES = {
     trame: { ang: 0.2, pu: 5, pv: 5, w: 0.45, s: 0.8 },
     palette: [CREME, BLANC, OCRE], toit: ARDOISE, hMaison: [4, 6],
     monuments: [
-      { nom: 'Stephansdom', lat: 48.2086, lon: 16.3733, box: 4, build: minaret(24, ARDOISE) },
+      { nom: 'Stephansdom', lat: 48.2086, lon: 16.3733, box: 4, build: minaret(24, ARDOISE), tour: buildStephansdom },
       { nom: 'La Hofburg', lat: 48.2065, lon: 16.3653, box: 8, build: palaisLong(6, CREME, uni(6)) },
-      { nom: 'La grande roue du Prater', lat: 48.2167, lon: 16.3958, box: 9, build: buildGrandeRoue },
+      { nom: 'La grande roue du Prater', lat: 48.2167, lon: 16.3958, box: 9, build: buildGrandeRoue, tour: buildRoueDuPrater },
     ],
     lieux: [['Le Graben', 48.2088, 16.3696], ['Le Prater', 48.2162, 16.3987],
       ['Naschmarkt', 48.1985, 16.3634]],
@@ -1157,7 +1565,7 @@ const FICHES = {
     palette: [OCRE, CREME, ROSE, JAUNE_MUR], toit: TUILE, hMaison: [3, 5],
     monuments: [
       { nom: 'Le château de Prague', lat: 50.0906, lon: 14.4005, box: 8, build: palaisLong(6, CREME, ARDOISE) },
-      { nom: 'Saint-Guy', lat: 50.0912, lon: 14.4025, box: 4, build: minaret(18, PIERRE) },
+      { nom: 'Saint-Guy', lat: 50.0912, lon: 14.4025, box: 4, build: minaret(18, PIERRE), tour: buildSaintGuy },
       { nom: 'Le pont Charles', lat: 50.0865, lon: 14.4114, box: 9, build: pontBati(7, false, true) },
       { nom: "L'horloge astronomique", lat: 50.087, lon: 14.4207, box: 3, seuil: 0.4, build: minaret(12, PIERRE) },
     ],
@@ -1171,7 +1579,7 @@ const FICHES = {
     trame: { ang: 0.1, pu: 4, pv: 4, w: 0.35, s: 0.65, ruelles: true },   // les calli — pas une voiture
     palette: [OCRE, ROSE, CREME, brique(0)], toit: TUILE, hMaison: [3, 5],
     monuments: [
-      { nom: 'Le campanile', lat: 45.4341, lon: 12.339, box: 3, build: minaret(20, brique(0)) },
+      { nom: 'Le campanile', lat: 45.4341, lon: 12.339, box: 3, build: minaret(20, brique(0)), tour: buildCampanile },
       { nom: 'Saint-Marc', lat: 45.4346, lon: 12.3399, box: 6, build: dome(3, CREME, ARDOISE) },
       { nom: 'Le Rialto', lat: 45.438, lon: 12.3358, box: 6, build: pontBati(4, true) },
     ],
@@ -1185,7 +1593,7 @@ const FICHES = {
     palette: [OCRE, CREME, ROSE], toit: TUILE, hMaison: [3, 5],
     monuments: [
       { nom: 'Le Duomo', lat: 43.7731, lon: 11.256, box: 7, build: dome(5, CREME, TUILE) },
-      { nom: 'Palazzo Vecchio', lat: 43.7694, lon: 11.2565, box: 3, build: minaret(20, PIERRE) },
+      { nom: 'Palazzo Vecchio', lat: 43.7694, lon: 11.2565, box: 3, build: minaret(20, PIERRE), tour: buildPalazzoVecchio },
       { nom: 'Le Ponte Vecchio', lat: 43.7679, lon: 11.2531, box: 7, build: pontBati(5, true) },
     ],
     lieux: [['Les Offices', 43.7685, 11.256], ['Boboli', 43.7623, 11.2486]],
@@ -1298,9 +1706,9 @@ const FICHES = {
     palette: [BLANC, CREME, ACIER], toit: ARDOISE, hMaison: [4, 7],
     parcs: [{ cu: -14, cv: -5, ru: 10, rv: 8 }],                  // le palais impérial et ses jardins
     monuments: [
-      { nom: 'La tour de Tokyo', lat: 35.6586, lon: 139.7454, box: 4, build: tourBoule(24, [], VERMILLON, BLANC) },
-      { nom: 'La Skytree', lat: 35.7101, lon: 139.8107, box: 4, build: tourBoule(38, [30], ACIER, ACIER) },
-      { nom: 'Sensō-ji', lat: 35.7148, lon: 139.7967, box: 8, build: pagode(5, VERMILLON, TUILE) },
+      { nom: 'La tour de Tokyo', lat: 35.6586, lon: 139.7454, box: 4, build: tourBoule(24, [], VERMILLON, BLANC), tour: buildTourTokyo },
+      { nom: 'La Skytree', lat: 35.7101, lon: 139.8107, box: 4, build: tourBoule(38, [30], ACIER, ACIER), tour: buildSkytree },
+      { nom: 'Sensō-ji', lat: 35.7148, lon: 139.7967, box: 8, build: pagode(5, VERMILLON, TUILE), tour: pagodeCorps(5, VERMILLON, TUILE) },
       { nom: 'Le palais impérial', lat: 35.6852, lon: 139.7528, box: 10, build: muraillesRect(8, 3, PIERRE) },
     ],
     lieux: [['Ginza', 35.6717, 139.765], ['Akihabara', 35.6984, 139.7731], ['Ueno', 35.7141, 139.7774]],
@@ -1315,8 +1723,8 @@ const FICHES = {
     monuments: [
       { nom: "Le Pavillon d'or", lat: 35.0394, lon: 135.7292, box: 5, build: pagode(3, OR, TUILE) },
       { nom: 'Fushimi Inari', lat: 34.9671, lon: 135.7727, box: 14, seuil: 0.4, build: buildToriis },
-      { nom: 'Kiyomizu-dera', lat: 34.9949, lon: 135.785, box: 6, build: pagode(3, VERMILLON, TUILE) },
-      { nom: 'Tō-ji', lat: 34.9805, lon: 135.7476, box: 7, build: pagode(5, ARDOISE, TUILE) },
+      { nom: 'Kiyomizu-dera', lat: 34.9949, lon: 135.785, box: 6, build: pagode(3, VERMILLON, TUILE), tour: pagodeCorps(3, VERMILLON, TUILE) },
+      { nom: 'Tō-ji', lat: 34.9805, lon: 135.7476, box: 7, build: pagode(5, ARDOISE, TUILE), tour: pagodeCorps(5, ARDOISE, TUILE) },
     ],
     lieux: [['Gion', 35.0037, 135.7751], ['Le chemin de la philosophie', 35.0271, 135.7944]],
     couleurToits: [130, 126, 128],
@@ -1330,7 +1738,7 @@ const FICHES = {
     palette: [BLANC, CREME, ACIER], toit: ARDOISE, hMaison: [4, 7],
     monuments: [
       { nom: 'Gyeongbokgung', lat: 37.5796, lon: 126.977, box: 8, build: palaisLong(6, VERMILLON, uni(6)) },
-      { nom: 'La tour de Séoul', lat: 37.5512, lon: 126.9882, box: 4, build: tourBoule(20, [16], ACIER, ACIER) },
+      { nom: 'La tour de Séoul', lat: 37.5512, lon: 126.9882, box: 4, build: tourBoule(20, [16], ACIER, ACIER), tour: buildTourSeoul },
       { nom: 'Namdaemun', lat: 37.5599, lon: 126.9753, box: 5, seuil: 0.4, build: archePorte(3, 4, PIERRE) },
     ],
     lieux: [['Myeongdong', 37.5637, 126.9838], ['Bukchon', 37.5826, 126.9831],
@@ -1344,8 +1752,8 @@ const FICHES = {
     trame: { ang: 0.15, pu: 6, pv: 5, w: 0.5, s: 0.85, tours: 0.6 },
     palette: [ACIER, CREME, brique(0)], toit: ARDOISE, hMaison: [4, 7],
     monuments: [
-      { nom: "La perle de l'Orient", lat: 31.2397, lon: 121.4998, box: 4, build: tourBoule(36, [10, 26], ACIER, ROSE) },
-      { nom: 'La tour Jin Mao', lat: 31.2372, lon: 121.5015, box: 4, build: tourBoule(40, [], ACIER, ACIER) },
+      { nom: "La perle de l'Orient", lat: 31.2397, lon: 121.4998, box: 4, build: tourBoule(36, [10, 26], ACIER, ROSE), tour: buildPerle },
+      { nom: 'La tour Jin Mao', lat: 31.2372, lon: 121.5015, box: 4, build: tourBoule(40, [], ACIER, ACIER), tour: buildJinMao },
       { nom: 'Le jardin Yu', lat: 31.2271, lon: 121.4921, box: 5, seuil: 0.4, build: pagode(2, VERMILLON, TUILE) },
     ],
     lieux: [['Le Bund', 31.24, 121.4906], ['Nanjing Road', 31.2354, 121.4762], ['Pudong', 31.2397, 121.5064]],
@@ -1359,8 +1767,8 @@ const FICHES = {
     trame: { ang: 0.05, pu: 5, pv: 5, w: 0.45, s: 0.8, tours: 0.5 },
     palette: [ACIER, CREME, BLANC], toit: ARDOISE, hMaison: [5, 8],
     monuments: [
-      { nom: 'La Banque de Chine', lat: 22.2789, lon: 114.1616, box: 4, build: tourBoule(30, [], ACIER, VERRE) },
-      { nom: "L'IFC", lat: 22.2849, lon: 114.1577, box: 4, build: tourBoule(34, [], CREME, CREME) },
+      { nom: 'La Banque de Chine', lat: 22.2789, lon: 114.1616, box: 4, build: tourBoule(30, [], ACIER, VERRE), tour: buildBanqueDeChine },
+      { nom: "L'IFC", lat: 22.2849, lon: 114.1577, box: 4, build: tourBoule(34, [], CREME, CREME), tour: buildIFC },
       { nom: 'Le Star Ferry', lat: 22.2937, lon: 114.1684, box: 4, seuil: 0.4, build: statuette(2, VERMILLON) },
     ],
     lieux: [['Tsim Sha Tsui', 22.2976, 114.1722], ['Central', 22.2819, 114.1582], ['Le Pic', 22.2759, 114.1455]],
@@ -1397,7 +1805,7 @@ const FICHES = {
     palette: [CREME, BLANC, ROSE], toit: TUILE, hMaison: [3, 6],
     monuments: [
       { nom: 'Le Grand Palais', lat: 13.75, lon: 100.4913, box: 8, build: muraillesRect(6, 4, BLANC) },
-      { nom: 'Wat Arun', lat: 13.7437, lon: 100.4889, box: 6, seuil: 0.4, build: pagode(4, CREME, OR) },
+      { nom: 'Wat Arun', lat: 13.7437, lon: 100.4889, box: 6, seuil: 0.4, build: pagode(4, CREME, OR), tour: pagodeCorps(4, CREME, OR) },
       { nom: 'Wat Pho', lat: 13.7465, lon: 100.4933, box: 4, seuil: 0.4, build: statuette(3, OR) },
     ],
     lieux: [['Khao San', 13.7588, 100.4972], ['Chinatown', 13.7403, 100.5096],
@@ -1496,9 +1904,9 @@ const FICHES = {
     palette: [brique(0), ACIER, CREME], toit: ARDOISE, hMaison: [4, 7],
     parcs: [{ cu: 14, cv: -6, ru: 5, rv: 8 }],                    // Millennium Park
     monuments: [
-      { nom: 'La Willis Tower', lat: 41.8789, lon: -87.6359, box: 4, build: tourBoule(42, [], NOIRB, NOIRB) },
+      { nom: 'La Willis Tower', lat: 41.8789, lon: -87.6359, box: 4, build: tourBoule(42, [], NOIRB, NOIRB), tour: buildWillis },
       { nom: 'Le Bean', lat: 41.8827, lon: -87.6233, box: 4, seuil: 0.4, build: dome(2, ACIER, ACIER) },
-      { nom: 'Le John Hancock', lat: 41.8988, lon: -87.6229, box: 4, build: tourBoule(36, [], NOIRB, NOIRB) },
+      { nom: 'Le John Hancock', lat: 41.8988, lon: -87.6229, box: 4, build: tourBoule(36, [], NOIRB, NOIRB), tour: buildHancock },
       { nom: 'Navy Pier', lat: 41.8917, lon: -87.6086, box: 9, build: palaisLong(7, CREME, TUILE) },
     ],
     lieux: [['Le Loop', 41.8786, -87.6297], ['Magnificent Mile', 41.8946, -87.6247]],
@@ -1521,7 +1929,7 @@ const FICHES = {
         }
       } },
       { nom: 'La High Roller', lat: 36.1173, lon: -115.1685, box: 9, build: buildGrandeRoue },
-      { nom: 'La demi-tour Eiffel', lat: 36.1125, lon: -115.1707, box: 4, build: tourBoule(16, [], ACIER, ACIER) },
+      { nom: 'La demi-tour Eiffel', lat: 36.1125, lon: -115.1707, box: 4, build: tourBoule(16, [], ACIER, ACIER), tour: buildDemiEiffel },
     ],
     lieux: [['Le Strip', 36.1147, -115.1728]],
     couleurToits: [216, 196, 152],
@@ -1532,7 +1940,7 @@ const FICHES = {
     trame: { ang: 0, pu: 5, pv: 5, w: 0.5, s: 0.85, tours: 0.45 },
     palette: [BLANC, ROSE, CREME, uni(7)], toit: CREME, hMaison: [3, 6],
     monuments: [
-      { nom: 'La Freedom Tower', lat: 25.7787, lon: -80.1896, box: 3, build: minaret(14, CREME) },
+      { nom: 'La Freedom Tower', lat: 25.7787, lon: -80.1896, box: 3, build: minaret(14, CREME), tour: buildFreedomTower },
       // Trois façades Art déco pastel, face à la plage.
       { nom: 'Ocean Drive', lat: 25.772, lon: -80.177, box: 5, seuil: 0.4, build: (poser) => {
         [[-3, ROSE], [0, uni(7)], [3, uni(2)]].forEach(([dz, c]) => {
@@ -1551,7 +1959,7 @@ const FICHES = {
     trame: { ang: 0.3, pu: 6, pv: 5, w: 0.5, s: 0.85, tours: 0.6 },
     palette: [ACIER, brique(0), CREME], toit: ARDOISE, hMaison: [4, 7],
     monuments: [
-      { nom: 'La CN Tower', lat: 43.6426, lon: -79.3871, box: 4, build: tourBoule(44, [32], ACIER, ACIER) },
+      { nom: 'La CN Tower', lat: 43.6426, lon: -79.3871, box: 4, build: tourBoule(44, [32], ACIER, ACIER), tour: buildCNTower },
       { nom: 'Le Rogers Centre', lat: 43.6414, lon: -79.3894, box: 7, build: dome(5, BLANC, BLANC) },
       { nom: "L'ancien hôtel de ville", lat: 43.6525, lon: -79.3818, box: 3, build: minaret(12, brique(0)) },
     ],
@@ -1567,7 +1975,7 @@ const FICHES = {
       { nom: 'La cathédrale', lat: 19.4342, lon: -99.1332, box: 7, build: dome(4, PIERRE, OCRE) },
       { nom: 'Le Templo Mayor', lat: 19.4348, lon: -99.1316, box: 9, build: pyramide(7, 9, 0) },
       { nom: 'Bellas Artes', lat: 19.4352, lon: -99.1413, box: 6, build: dome(4, CREME, OCRE) },
-      { nom: 'La Torre Latino', lat: 19.4339, lon: -99.1406, box: 3, build: tourBoule(28, [], ACIER, ACIER) },
+      { nom: 'La Torre Latino', lat: 19.4339, lon: -99.1406, box: 3, build: tourBoule(28, [], ACIER, ACIER), tour: buildTorreLatino },
     ],
     lieux: [['Madero', 19.4337, -99.1389], ['La Merced', 19.4258, -99.1244]],
     couleurToits: [196, 152, 124],
@@ -1622,7 +2030,7 @@ const FICHES = {
     palette: [ROUGE_GRES, OCRE, ROSE], toit: ROUGE_GRES, hMaison: [2, 4],   // la ville rouge
     parcs: [{ cu: -10, cv: -27, ru: 4, rv: 4 }],                  // le jardin Majorelle
     monuments: [
-      { nom: 'La Koutoubia', lat: 31.6258, lon: -7.9891, box: 4, build: minaret(18, ROUGE_GRES) },
+      { nom: 'La Koutoubia', lat: 31.6258, lon: -7.9891, box: 4, build: minaret(18, ROUGE_GRES), tour: buildKoutoubia },
       { nom: 'Les remparts', lat: 31.6295, lon: -7.9811, box: 18, build: muraillesRect(16, 4, ROUGE_GRES) },
       { nom: 'Le palais Bahia', lat: 31.6216, lon: -7.9822, box: 6, build: palaisLong(4, OCRE, TUILE) },
     ],
@@ -3177,7 +3585,7 @@ export function landmarksVillesMonde() {
         const bati = nomCat && monumentBati(nomCat);
         box = bati ? Math.ceil(Math.max(bati.emprise.l, bati.emprise.p) / 2) + 2 : 8;
       }
-      out.push({ name: m.nom, x: f.ancre.x + du, z: f.ancre.z + dv, box, seuil: m.seuil, build: m.build });
+      out.push({ name: m.nom, x: f.ancre.x + du, z: f.ancre.z + dv, box, seuil: m.seuil, build: m.build, tour: m.tour });
     }
   }
   return out;

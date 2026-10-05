@@ -6,13 +6,59 @@
 
 export const NOUVEAUTES = [
   {
-    v: 357,
+    v: 362,
     titre: 'On monte en voiture',
     puces: [
       'Tu marches jusqu\'à la portière',
       'La porte s\'ouvre, tu t\'assieds',
       'En descendant, tu sors à côté',
       'Appuie deux fois pour aller vite',
+    ],
+  },
+  {
+    v: 361,
+    titre: 'Les rues de San Francisco s\'élargissent',
+    puces: [
+      'Market et Van Ness à deux voies',
+      'Des îlots plus grands dans le quadrillage',
+      'Les tours restent près de Market Street',
+      'Tes constructions restent comme avant',
+    ],
+  },
+  {
+    v: 360,
+    titre: 'Le monde suit la voiture',
+    puces: [
+      'La ville arrive deux fois plus vite',
+      'Plus de vide devant, même rapide',
+    ],
+  },
+  {
+    v: 359,
+    titre: 'Les rues de Nice s\'élargissent',
+    puces: [
+      'La Promenade à deux voies',
+      'Des îlots plus grands dans la ville neuve',
+      'Londres garde encore plus d\'immeubles',
+    ],
+  },
+  {
+    v: 358,
+    titre: 'Des voitures pour de vrai',
+    puces: [
+      'Les voitures vont beaucoup plus vite',
+      'Elles tournent et glissent pour de vrai',
+      'Contre un mur, on glisse ou on rebondit',
+    ],
+  },
+  {
+    v: 357,
+    titre: 'Les vraies tours du monde',
+    puces: [
+      'La Willis Tower et ses tubes noirs',
+      'Les sphères roses de Shanghai',
+      'Saint-Pierre de Rome a sa basilique',
+      'Les pagodes ont leurs étages',
     ],
   },
   {

@@ -93,7 +93,7 @@ const GARDIENS = {
   // eu le temps de bâtir : `monte.js` l'éprouve en vol, `carte.js` garde le
   // rendu, `plafond.js` garde le sol qu'il lit.
   'src/horizon.js': ['monte.js', 'carte.js', 'plafond.js'],
-  'src/plafond-sol.js': ['monte.js'],
+  'src/plafond-sol.js': ['monte.js', 'plafond.js', 'manhattan.js', 'carteMonde.js', 'washington.js', 'metro.js'],
   // LE PALIER DE L'APPAREIL (v284). Il décide la distance d'affichage, la
   // profondeur de file du mailleur et la vitesse des jets : `monte.js` garde le
   // trou devant soi et cette vitesse, `maj.js` la préparation et l'accueil — et
@@ -150,6 +150,8 @@ const GARDIENS = {
   // dans monte.js (onglet, vignettes, pose).
   'src/batiments.js': ['monte.js'],
   'src/nice.js': ['carte.js', 'carteMonde.js', 'plafond.js'],
+  'src/nice-v340.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // la Nice d'avant le kit, sous ce qu'un enfant a bâti (v359)
+  'src/sanfrancisco-v343.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // la San Francisco d'avant le kit, sous ce qu'un enfant a bâti (v361)
   'src/carte.js': ['carte.js', 'carteMonde.js', 'manhattan.js'],
   // La capitale : son relief, son métro et ses bâtiments ouverts. Elle touche
   // au sol de la carte, donc le témoin du plafond la surveille aussi.
@@ -159,6 +161,7 @@ const GARDIENS = {
   // commissariat.
   'src/ville.js': ['metro.js', 'carte.js'],
   'src/player.js': ['plafond.js', 'monte.js', 'manhattan.js'],
+  'src/conduite.js': ['plafond.js', 'monte.js', 'manhattan.js', 'carteMonde.js', 'washington.js', 'metro.js'],
   'src/admin.js': ['parent.js', 'reglages.js'],
   'src/identity.js': ['reglages.js', 'parent.js'],
   'src/education.js': ['reglages.js', 'parent.js', 'manhattan.js'],
@@ -190,7 +193,7 @@ const GARDIENS = {
   // LES DÉGÂTS DE LA VOITURE (v343) : la règle pure et ce qui se voit.
   'src/degats.js': ['degats.js'],
   'src/degats3d.js': ['degats.js'],
-  // la séquence d'embarquement et ses portières (v357) : monte.js les éprouve
+  // la séquence d'embarquement et ses portières (v362) : monte.js les éprouve
   // sur une page qui la joue, reseau.js garde la position qui voyage avec
   'src/embarquement.js': ['monte.js', 'reseau.js'],
   'src/portieres.js': ['monte.js', 'degats.js'],
@@ -231,7 +234,7 @@ const GARDIENS = {
   // villes bâties à la main. C'est `carteMonde.js` qui mesure leurs virages
   // dans les six villes — un demi-tour né du chaînage se voit là, nulle part
   // ailleurs.
-  'src/voies.js': ['carte.js', 'monte.js', 'carteMonde.js'],
+  'src/voies.js': ['carte.js', 'monte.js', 'carteMonde.js', 'plafond.js'],
   // Le garage écrit dans le profil de l'enfant, à côté de ses blocs : c'est
   // de la sauvegarde, et cela doit se prouver comme telle.
   'src/garages.js': ['sauvegarde.js', 'monte.js'],

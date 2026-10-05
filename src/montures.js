@@ -13,6 +13,7 @@
 import * as THREE from 'three';
 import { MODELES_AVION } from './avions.js';
 import { construireVoitureRoute, chargerVraieVoiture, chargerVoitureFlotte, FLOTTE, repeindre } from './vehicules.js';
+import { allureDeClasse } from './conduite.js';
 
 function box(w, h, d, color, x = 0, y = 0, z = 0) {
   const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({ color }));
@@ -362,7 +363,7 @@ function voitureNeuve(voeu) {
       if (peinture != null) repeindre(modele, enFlotte.fichier, peinture);
       g.add(modele);
       // le prototype et son clone : la portière se découpe sur le PROTOTYPE,
-      // qu'aucun choc ne froisse jamais (portieres.js, v357)
+      // qu'aucun choc ne froisse jamais (portieres.js, v362)
       g.userData.proto = proto; g.userData.modele = modele;
       // Les roues du clone, retrouvées par leur nom : le bestiaire les fera
       // tourner à la distance parcourue (animals.js). Les références ne se
@@ -430,7 +431,10 @@ export const MONTURES = [
   // du bestiaire la faisait « bouger tac tac tac sans rouler » — Max). Elle
   // ne se déplace que conduite, où elle suit le joueur, en douceur.
   { key: 'voiture', name: 'Voiture neuve', cry: 'Vroum vroum !', emoji: '🚗', speed: 0.01,
-    height: 1.3, width: 0.98, habitat: 'usine', meat: '🔩 Boulon', montable: true, allure: 3.4,
+    height: 1.3, width: 0.98, habitat: 'usine', meat: '🔩 Boulon', montable: true,
+    // l'allure de SECOURS, quand le modèle n'a pas de classe : une berline
+    // (v358 — elle valait 3,4, plus lent que toutes les classes)
+    allure: allureDeClasse('berline'),
     assise: 1.0, poursuite: { recul: 6.4, hauteur: 2.59 }, nourrissable: false, immobile: true,
     // LE SIÈGE DU CONDUCTEUR (v249), dans le repère du véhicule (le nez est
     // en −z, le volant du cockpit à x = −0,33) : c'est là que main.js assied

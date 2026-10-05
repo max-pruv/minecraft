@@ -16,6 +16,7 @@ import { construireTaxi } from './taxis.js';
 import { Atelier } from './modeles.js';
 import { liberer } from './liberer.js';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
+import { CLASSES, MARCHE } from './conduite.js';
 
 // --- les reflets --------------------------------------------------------------
 //
@@ -417,7 +418,7 @@ export const FLOTTE = [
   { fichier: 'bmw-m8-competition.glb', classe: 'gt', nom: 'BMW M8 Competition' },
   { fichier: 'bugatti-bolide.glb', classe: 'hypercar', nom: 'Bugatti Bolide' },
   { fichier: 'bugatti-chiron.glb', classe: 'hypercar', nom: 'Bugatti Chiron' },
-  // `portiere: false` (v357) : sans habitacle, la portière ouverte ne montre que
+  // `portiere: false` (v362) : sans habitacle, la portière ouverte ne montre que
   // du noir ; un modèle qui casse vaut moins qu'un modèle qui s'en passe.
   { fichier: 'bugatti-chiron-stealth.glb', classe: 'hypercar', nom: 'Bugatti Chiron Stealth', habitacle: false, portiere: false },
   { fichier: 'bugatti-veyron.glb', classe: 'hypercar', nom: 'Bugatti Veyron 16.4' },
@@ -465,13 +466,12 @@ export const FLOTTE = [
 // UNE ALLURE PAR CLASSE, ET LA CLASSE VIT DANS LE MANIFESTE (v260). Max :
 // « les voitures devraient aller plus vite et surtout une vitesse en fonction
 // du modèle (sportive faster than sedan basic) ». Multiplicateur de la marche
-// (3,2 blocs/s) ; la fiche `voiture` de montures.js garde 3,4 en secours.
-// LE PLAFOND EST CELUI DU MONDE QUI SE CHARGE : Paris se maille à 42 morceaux
-// par seconde au banc (v237) et une vitesse v en réclame 1,5 × v (v229), soit
-// 28 blocs/s au plus en ville — l'hypercar reste dessous (8 × 3,2 = 25,6).
-// À remesurer sur la tablette (`?diag=1`) : le banc à `rr=12` rend une image
-// par seconde dans Paris et n'y voit qu'une cadence d'image, pas une vitesse.
-export const ALLURES = { citadine: 3.8, berline: 4.4, suv: 4.4, gt: 5.4, sportive: 6.4, hypercar: 8 };
+// (3,2 blocs/s) : `fun.js` le passe au joueur en `boost`.
+// DEPUIS LA v358, LA TABLE SE DÉDUIT DES FICHES DE `conduite.js` : la pointe,
+// l'accélération et l'adhérence d'une classe vivent au même endroit, et le
+// plafond n'est plus calculé (28 blocs/s, v260) mais MESURÉ — 60 blocs/s,
+// Paris compris (`PLAFOND_SOL`). Citadine 108 km/h, hypercar 198.
+export const ALLURES = Object.fromEntries(Object.entries(CLASSES).map(([k, f]) => [k, f.vmax / MARCHE]));
 
 // L'EMPRISE AU SOL D'UNE VOITURE, PUBLIÉE LÀ OÙ ELLE SERT (v270). 4,4 × 2,26 :
 // c'est le rectangle que `cederLePassage` fait se regarder (v244), celui que
@@ -504,6 +504,10 @@ export function classeDe(fichier) {
   return e ? e.classe || null : null;
 }
 export function allureDe(fichier, secours = 3.4) {
+  // LE CHIRON D'ARTISTE HISTORIQUE (`voiture.glb`) n'est pas dans le
+  // manifeste : il roulait à l'allure de secours de la fiche, plus lent qu'une
+  // citadine. C'est une hypercar.
+  if (fichier === 'voiture.glb') return ALLURES.hypercar;
   const c = classeDe(fichier);
   return (c && ALLURES[c]) || secours;
 }
