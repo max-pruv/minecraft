@@ -4906,13 +4906,15 @@ const VRAIES_KM = [
       + `${fleuves.sans.length ? fleuves.sans.join(', ') : '(aucune)'}`
       + ` · dette déclarée : ${DETTE_SANS_ANNEAU.join(', ')}`);
 
-    // UN TABLIER SE PROUVE PAR L'EAU DESSOUS. Les culées mordent d'un bloc et
+    // UN TABLIER SE PROUVE PAR L'EAU DESSOUS. (La borne de vingt pas est celle
+    // des cinq villes de fleuve de la v282 ; Madrid, qu'une route touche, n'a
+    // qu'un pont de seize pas — un seul fleuve étroit —, et c'est un vrai pont.) Les culées mordent d'un bloc et
     // demi sur chaque rive — sinon une marche attend l'enfant au bout du pont —
     // donc tout l'axe n'est pas au-dessus de l'eau : les trois quarts le sont,
     // mesuré 73 à 85 % à la livraison.
     verifier('chaque pont a de l\'eau sous son tablier',
       fleuves.ponts.filter((p) => p.cinq).length === 5
-      && fleuves.ponts.every((p) => p.tabliers > 0 && p.pas > 20 && p.surEau / p.pas > 0.6),
+      && fleuves.ponts.every((p) => p.tabliers > 0 && p.pas > (p.cinq ? 20 : 0) && p.surEau / p.pas > 0.6),
       fleuves.ponts.map((p) => `${p.cle} ${p.tabliers} tablier(s), ${p.surEau}/${p.pas}`
         + ` sur l'eau (${(100 * p.surEau / p.pas).toFixed(0)} %)`).join(' · '));
 
