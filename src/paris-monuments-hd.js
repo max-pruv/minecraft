@@ -212,6 +212,9 @@ function notreDame(a){
   a.box(11,1,0,.6,14,8.5);
   a.quad([-8,15,-4.4],[11.5,15,-4.4],[11.5,20,0],[-8,20,0],ROOF);
   a.quad([-8,20,0],[11.5,20,0],[11.5,15,4.4],[-8,15,4.4],ROOF);
+  // Le pied de la flèche, à la croisée (couches 15 à 17 du voxel) : dans le
+  // comble, mais étiré il en sortait en cubes de part et d'autre (v350).
+  a.box(2,15,0,5,3,5);
   a.lathe(2,0,[[18,1.2],[22,.9],[31,.03]],ROOF,8);
   a.beam([2,30,0],[2,32,0],.055,GOLD);a.beam([2,31,-.5],[2,31,.5],.04,GOLD);
   // Façade transformée de la face +z à la face -x.
@@ -268,7 +271,9 @@ function sacre(a){
 function pantheon(a){
   palais(a,10,8,10);
   for(let x=-5;x<=5;x+=2)a.column(x,1,-6.5,.37,11);
-  a.box(0,12,-5.5,11,1,4,TRIM);
+  // L'entablement couvre toute la cella, comme la couche 12 du voxel : posé
+  // sur le seul portique, il laissait les angles arrière en cubes (v350).
+  a.box(0,12,-1.6,11,1,12.2,TRIM);
   a.quad([-5.5,13,-7.5],[5.5,13,-7.5],[0,19,-7.5],[0,19,-7.5],TRIM);
   a.lathe(0,0,[[12,3.6],[22,3.6],[22.5,4.3],[23,4.3]],STONE);
   for(let i=0;i<24;i++){const t=i*Math.PI/12;a.column(Math.cos(t)*3.9,13,Math.sin(t)*3.9,.18,9);}
@@ -309,6 +314,9 @@ function invalides(a){
 // d'écart laissait l'entablement en cubes autour du modèle (237 cubes).
 function opera(a){
   palais(a,14,8,9);
+  // L'attique, une couche entière comme le voxel (couche 10) : la corniche de
+  // `palais` (0,4) laissait, étirée, son dernier bloc en cubes (v350).
+  a.box(0,10,0,14.5,1,8.5,TRIM);
   for(let x=-6;x<=6;x+=1.5){a.column(x,4,-4.5,.18,5);a.dome(x,9.4,-4.5,.23,.45,GOLD);}
   a.dome(0,11,1,4.8,5,COPPER);a.column(0,16,1,.4,3,GOLD);
   for(const x of [-6,6]){a.box(x,11,0,1.4,.4,1.4,TRIM);a.column(x,11.4,0,.25,2,GOLD);}

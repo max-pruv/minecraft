@@ -289,6 +289,12 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // Le relief de la production v308 autour de Salvador, Jakarta, Bari, Busan et
 // Oslo (disque + 80 blocs, un point sur trois), relevé sur `origin/main` :
 // c'est ce que `new World({ v308: true })` doit rendre au bloc près (v309).
+// v352 : l'empreinte des blocs et des tampons de 490 morceaux (morceaux-temoin.mjs),
+// relevée sur la v351 (la même, bit pour bit, que sur la v348) ; et le travail d'un morceau, barre au milieu des deux mesures.
+const EMPREINTE_MORCEAUX_V351 = 'b31099b9fbe9443f1511a752d8136967d3f93e052da1c133f7704e76f25a44af';
+// lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
+// Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
+const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
 const EMPREINTE_V308_RELIEF = 'e92db9d7ae703856de1cfb7e00dc4abce156c490';
 const EMPREINTE_AVANT_BLOCS = 'b402b639d759d0586f32149aac4d3165edf0d10d';
 
@@ -448,23 +454,79 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       'Jérusalem|Le dôme du Rocher': 35, 'Jérusalem|La tour de David': 30,
       'Los Angeles|L\'hôtel de ville': 138, 'Mexico|La Torre Latino': 183, 'Buenos Aires|L\'Obélisque': 68,
       'Berlin|Berliner Dom': 98, 'Singapour|Marina Bay Sands': 200, 'Bangkok|Wat Arun': 82,
-      'Delhi|Rashtrapati Bhavan': 55 };
+      'Delhi|Rashtrapati Bhavan': 55,
+      // Le lot 2, les villes bâties à la main (v350).
+      'Lille|Beffroi de la Chambre de commerce': 76, 'Lille|Beffroi de Lille': 104, 'Lille|Tour de Lille': 117,
+      // St Paul (111 m, 17 blocs sous Big Ben) et le château du Smithsonian
+      // (44 m, onze blocs sous Jefferson) n'y sont pas : leurs inversions
+      // précèdent la v350, déclarées dans `TASKS.md`.
+      'Londres|Tour de Londres': 27, 'Londres|Colonne Nelson': 52,
+      'Londres|Big Ben': 96, 'Londres|The Shard': 310,
+      'Washington|Maison-Blanche': 21, 'Washington|Lincoln Memorial': 30, 'Washington|Mémorial Jefferson': 39,
+      'Washington|Bibliothèque du Congrès': 59,
+      'Washington|Capitole des États-Unis': 88, 'Washington|Monument de Washington': 169,
+      // v353 : ce qui est déjà au-dessus de son ciel garde l'ordre au-dessus
+      // des monuments remis à l'échelle autour de lui.
+      'Barcelone|Sagrada Família': 172, 'Las Vegas|Le Luxor': 107, 'Venise|Le campanile': 99,
+      'Tokyo|La tour de Tokyo': 333, 'Tokyo|La Skytree': 634 };
     const EV = EM && EM.ECHELLES_VILLES ? EM.ECHELLES_VILLES : {};
-    const ciel = [...new Map([...Object.entries(EV).map(([k, e]) => [k, e.vraie]), ...Object.entries(FIXES)])]
+    const EMAIN = EM && EM.ECHELLES_MAIN ? EM.ECHELLES_MAIN : {};
+    const ciel = [...new Map([...Object.entries({ ...EV, ...EMAIN }).map(([k, e]) => [k, e.vraie]), ...Object.entries(FIXES)])]
       .filter(([k]) => hauteurs[k] != null);
     const inversions = [];
     for (const [a, va] of ciel) for (const [b, vb] of ciel) {
       if (a.split('|')[0] !== b.split('|')[0] || va >= vb) continue;
       if (hauteurs[a] > hauteurs[b]) inversions.push(`${a} (${va} m) ${hauteurs[a]} > ${b.split('|')[1]} (${vb} m) ${hauteurs[b]}`);
     }
-    const ecartsCible = Object.keys(EV).filter((k) => hauteurs[k] != null)
+    const ecartsCible = Object.keys({ ...EV, ...EMAIN }).filter((k) => hauteurs[k] != null)
       .map((k) => [k, EM.echelleDe(...k.split('|')).cible]).filter(([k, c]) => hauteurs[k] !== c)
       .map(([k, c]) => `${k} ${hauteurs[k]} pour ${c}`);
-    verifier('chaque ville engendrée garde l\'ordre de son vrai ciel',
+    // LE LOT 2, LES VILLES BÂTIES À LA MAIN (v350) : plus de dette non plus.
+    // Sur l'ancien code huit monuments la portent, de l'Arche de Washington au
+    // Théâtre Ford ; trois montent dans le ciel de leur ville, cinq sont bas
+    // dans la vraie ville aussi.
+    const lot2 = Object.entries(declares).filter(([, d]) => /lot 2/.test(d.lot || '')).map(([k]) => k);
+    verifier('les monuments des villes bâties à la main ne sont plus une dette',
+      lot2.length === 0 && Object.keys(EMAIN).length >= 3,
+      lot2.length ? `${lot2.length} encore en dette : ${lot2.join(' · ')}`
+        : `${Object.keys(EMAIN).map((k) => `${k} ${hauteurs[k]}`).join(' · ')}`);
+
+    verifier('chaque ville remise à son ciel garde l\'ordre de son vrai ciel',
       Object.keys(EV).length > 40 && inversions.length === 0 && ecartsCible.length === 0,
       `${Object.keys(EV).length} monuments à l'échelle de leur ville`
       + (inversions.length ? ` — INVERSÉS : ${inversions.join(' · ')}` : '')
       + (ecartsCible.length ? ` — HORS CIBLE : ${ecartsCible.join(' · ')}` : ''));
+
+    // TOUTES LES VILLES ENGENDRÉES ONT LEUR CIEL (v353). Le lot 3 de la v342 ne
+    // couvrait que les vingt-cinq villes qui portaient une dette ; les autres
+    // avaient des repères au-dessus de leurs immeubles mais pas à l'échelle de
+    // leur vraie hauteur (l'hôtel de ville de Bruxelles à vingt-deux blocs pour
+    // quatre-vingt-seize mètres). Toute ville engendrée dont un repère est
+    // mesuré parmi ses immeubles est dans `CIELS`, ou déclarée sans ciel avec sa
+    // raison ; et une déclaration qui ne sert plus rougit.
+    {
+      const nomsVM = new Set(VILLES_MONDE.map((f) => f.ancre.nom));
+      const villesMesurees = new Set(mesures.map((k) => k.split('|')[0]).filter((v) => nomsVM.has(v)));
+      const CI = EM && EM.CIELS ? EM.CIELS : {};
+      const SC = EM && EM.VILLES_SANS_CIEL ? EM.VILLES_SANS_CIEL : {};
+      const sansCiel = [...villesMesurees].filter((v) => !(v in CI) && !SC[v]);
+      const enDette = Object.keys(SC).filter((v) => SC[v].lot);
+      const inutiles = Object.keys(SC).filter((v) => v in CI || !villesMesurees.has(v));
+      // Et un fût qui domine déjà ses toits ne s'étire plus : sa hauteur
+      // d'auteur reste sous une fois et demie la corniche de sa ville, sinon
+      // l'étirer fait une perche (vu en capture à Bruxelles et à Chicago).
+      const EVf = EM && EM.ECHELLES_VILLES ? EM.ECHELLES_VILLES : {};
+      const perches = Object.entries(EVf).filter(([k, e]) => e.fut && e.corps
+        && e.corps[1] + 1 > 1.5 * [].concat(CI[k.split('|')[0]] || 20)[0]).map(([k]) => k);
+      verifier('chaque ville engendrée qui porte des repères a son ciel, ou dit pourquoi',
+        sansCiel.length === 0 && inutiles.length === 0 && perches.length === 0,
+        `${[...villesMesurees].filter((v) => v in CI).length} villes à leur ciel, `
+        + `${Object.keys(SC).length - enDette.length} sans ciel à bon droit, ${enDette.length} en dette`
+        + (enDette.length ? ` (${enDette.join(', ')})` : '')
+        + (sansCiel.length ? ` — SANS CIEL : ${sansCiel.join(' · ')}` : '')
+        + (inutiles.length ? ` — DÉCLARÉES POUR RIEN : ${inutiles.join(' · ')}` : '')
+        + (perches.length ? ` — FÛTS ÉTIRÉS EN PERCHE : ${perches.join(' · ')}` : ''));
+    }
 
     // PARIS À L'ÉCHELLE DU CIEL : un bloc pour un mètre jusqu'à la corniche,
     // puis la courbe qui mène la tour Eiffel (330 m) à soixante-neuf. Les
@@ -486,6 +548,42 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     verifier('les monuments de Paris sont à l\'échelle du ciel, sous la tour Eiffel',
       ecarts.length === 0,
       ecarts.length ? ecarts.join(' · ') : paris.map((q) => `${q.nom} ${q.h}`).join(' · '));
+  }
+
+  // LES MODÈLES ÉTIRÉS COUVRENT LEUR VOXEL (v350). La v335 a étiré les
+  // monuments de Paris trois à huit fois : un bloc d'écart entre le modèle et
+  // son voxel, qui tenait dans la tolérance, en sortait en CUBES accrochés au
+  // modèle — l'attique de l'Opéra (15), les angles arrière de l'entablement du
+  // Panthéon (6), le pied de la flèche de Notre-Dame (8). Même lecture que
+  // `sonde-monuments-hd.cjs` : une cellule de voxel exposée par le côté, que le
+  // modèle ne couvre pas, au-dessus de la hauteur d'un enfant. Les vingt-quatre
+  // du parvis de Notre-Dame, au sol, précèdent la v335 (dette déclarée).
+  {
+    const W = await import('../src/world.js');
+    const HD = await import('../src/paris-monuments-hd.js');
+    const { BLOCK } = await import('../src/blocks.js');
+    const fautes = [];
+    let exposees = 0;
+    for (const lm of W.REPERES_HD) {
+      const solide = new Set();
+      const cellules = new Map();
+      lm.build((x, y, z, id) => cellules.set(`${x},${y},${z}`, id));
+      for (const [k, id] of cellules) if (id !== BLOCK.AIR) solide.add(k);
+      const couvre = HD.cellulesCouvertes(lm.name);
+      let n = 0;
+      for (const k of solide) {
+        const [x, y, z] = k.split(',').map(Number);
+        if (y <= 3) continue;
+        const cote = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dz]) => !solide.has(`${x + dx},${y},${z + dz}`));
+        if (!cote) continue;
+        exposees++;
+        if (!couvre.has(k)) n++;
+      }
+      if (n) fautes.push(`${lm.name} ${n}`);
+    }
+    verifier('les modèles étirés de Paris couvrent leur voxel au-dessus d\'un enfant',
+      exposees > 5000 && fautes.length === 0,
+      fautes.length ? `cubes qui dépassent : ${fautes.join(' · ')}` : `${exposees} cellules de flanc, toutes couvertes`);
   }
 
   const { ZONE_WASHINGTON: Z } = await import('../src/washington.js');
@@ -1425,7 +1523,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   // que la ville neuve fait rue garde son toit ; et un bloc posé APRÈS la date
   // ne retient rien — la ville neuve bâtit dessous. Rouge sur `origin/main` :
   // la date n'existe pas, et les deux premiers cas montrent la ville neuve.
-  // ET NICE À LA v350, PAR LA MÊME RÈGLE : la fonction se joue ville par ville.
+  // ET NICE À LA v354, PAR LA MÊME RÈGLE : la fonction se joue ville par ville.
   const figee = async (date, avant, neuf, ancre, sol, libre, batir) => {
     const W = await import('../src/world.js');
     if (!W[date]) return { absent: true };
@@ -1618,6 +1716,32 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   }
   verifier('et aucune montagne n\'a poussé dans le ciel neuf', trop.length === 0,
     JSON.stringify(trop.slice(0, 3)));
+
+  // --- LE COÛT D'UN MORCEAU BAISSE, SA SORTIE NE BOUGE PAS (v352) ----------
+  //
+  // Le worker engendre et maille moins cher (routeEn borné par le talus, relief
+  // gardé par morceau, mailleur par tables, Tamise sans hypot inutile). Deux
+  // témoins, sous node (`morceaux-temoin.mjs`) :
+  //  • l'EMPREINTE des blocs et de tous les tampons de 490 morceaux engendrés
+  //    et maillés autour de neuf lieux est celle relevée sur la v351 — rien n'a
+  //    bougé d'un bloc ni d'un sommet. Elle se rejoue sur un autre arbre :
+  //    `empreinteMorceaux('<arbre>/src')`. Et elle lit des colonnes de route,
+  //    sans quoi elle ne garderait pas `routeEn` ;
+  //  • le TRAVAIL d'un morceau, en appels et non en millisecondes (la charge du
+  //    banc ne le touche pas) : lectures de relief et de blocs par morceau
+  //    maillé en roulant. Mesuré sur la v351 puis ici, la barre au milieu.
+  {
+    const { empreinteMorceaux, travailParMorceau } = await import('./morceaux-temoin.mjs');
+    const t0 = Date.now();
+    const e = await empreinteMorceaux('../src');
+    verifier('engendrer et mailler moins cher ne change ni un bloc ni un sommet (490 morceaux, neuf lieux, toutes les routes)',
+      e.empreinte === EMPREINTE_MORCEAUX_V351 && e.morceaux === 490 && e.route > 0 && e.talus > 0,
+      `${e.empreinte.slice(0, 16)} pour ${EMPREINTE_MORCEAUX_V351.slice(0, 16)}, ${e.morceaux} morceaux, ${e.route} colonnes de route lues, ${e.talus} de talus, ${Date.now() - t0} ms`);
+    const tr = await travailParMorceau('../src');
+    verifier('un morceau de ville coûte moins de lectures de relief et de blocs que sur la v351',
+      Object.entries(BARRES_TRAVAIL).every(([v, b]) => tr[v].reliefs <= b.reliefs && tr[v].lus <= b.lus),
+      JSON.stringify({ mesure: tr, barres: BARRES_TRAVAIL }));
+  }
 
   // --- LE SOL CONTINU (v297) : le rendu, le contact et la couture lisent la ---
   // --- même triangulation, et le sol N'A PAS BOUGÉ pour autant --------------

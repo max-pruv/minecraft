@@ -1527,7 +1527,7 @@ export const CONF_NEUF = {
 // ne se met JAMAIS à jour. Même clé que `CONF_NEUF` : ses zones à terre sont
 // les mêmes.
 // Et ces deux mondes-là ont les villes d'avant leur passe au kit (Londres
-// v339, `londres-v332.js` ; Nice v350, `nice-v340.js`) : c'est celles qu'on y
+// v339, `londres-v332.js` ; Nice v354, `nice-v340.js`) : c'est celles qu'on y
 // voyait (`villesAvant`).
 export const CONF_V308 = { ...CONF_NEUF, reperes: LANDMARKS_V317, fonduDoux: false, mursDeQuai: false, falaises: false, villesAvant: true, climat: false };
 export const CONF_AVANT = {
@@ -2078,7 +2078,7 @@ function marquerParisCede(ens, x, z) {
 // une ancienne rue n'est pas enfermée dans un immeuble neuf, une cabane contre
 // un ancien mur garde son mur. La date est celle de la publication.
 export const DATE_RUES_LONDRES = Date.UTC(2026, 9, 4, 15, 0, 0);
-// Nice suit la même règle à la v350 (`nice-v340.js`), avec sa propre date.
+// Nice suit la même règle à la v354 (`nice-v340.js`), avec sa propre date.
 export const DATE_RUES_NICE = Date.UTC(2026, 9, 4, 13, 0, 0);
 const VILLES_FIGEES = [
   { ancre: LONDRES, date: DATE_RUES_LONDRES },
@@ -2584,12 +2584,16 @@ export class World {
     this.conf = avant ? CONF_AVANT : v308 ? CONF_V308 : CONF_NEUF;
     this.chunks = new Map();      // "cx,cz" -> Uint8Array
     this.tops = new Map();        // "cx,cz" -> y du bloc le plus haut (plafond de maillage)
+    this.reliefsMemo = new Map(); // "cx,cz" -> relief brut du morceau et de sa marge (v352)
+    // seulement pour le relief de `World` lui-même : une classe dérivée qui
+    // redéfinit `terrainHeight` (Manhattan) le relit à chaque fois
+    this.memoRelief = this.terrainHeight === World.prototype.terrainHeight;
     this.dirty = new Set();       // chunk keys needing a remesh
     this.edits = new Map();       // "x,y,z" -> block id (player modifications)
     this.monumentsTouches = new Set();  // les monuments HD qu'un enfant a modifiés (v292)
     this.morceauxAvantClimat = new Set(); // les morceaux (et leurs voisins) bâtis avant les climats (v345)
     this.colonnesCedees = new Set();    // les colonnes de Paris où la ville cède à ce qu'un enfant a bâti (v306)
-    this.colonnesVilleAvant = new Set();  // celles de Londres et de Nice où la ville d'avant le kit reste (v339, v350)
+    this.colonnesVilleAvant = new Set();  // celles de Londres et de Nice où la ville d'avant le kit reste (v339, v354)
     this.cacheSol = new Map();          // "x,z" -> { nat, cote } : la fiche d'une colonne (sol continu, v297)
     this.sansSolContinu = false;        // ?solcontinu=0 : la mesure A/B, jamais un réglage
     this.editTimes = new Map();   // "x,y,z" -> ms timestamp, for multiplayer merge
@@ -2640,6 +2644,14 @@ export class World {
     // Et les neuf ponts de Paris, à la cote de la ville (v294).
     if (c && c.key === 'paris' && pontParis(x, z)) return h > c.base ? h : c.base;
     return h;
+  }
+
+  // Le relief d'une colonne, lu dans la grille que `generateChunk` a gardée
+  // pour son morceau, sinon calculé (v352). Même valeur que `terrainHeight`.
+  terrainMemo(x, z) {
+    const cx = Math.floor(x / CHUNK), cz = Math.floor(z / CHUNK);
+    const r = this.reliefsMemo.get(World.key(cx, cz));
+    return r ? r[(x - cx * CHUNK + 1) + (z - cz * CHUNK + 1) * (CHUNK + 2)] : this.terrainHeight(x, z);
   }
 
   terrainHeight(x, z) {
@@ -3152,10 +3164,22 @@ export class World {
     // pour presque tout le monde
     const climatM = this.climatDuMorceau(cx, cz);
     const reliefs = this.conf.falaises ? new Int16Array(N2 * N2) : null;
+    // LE RELIEF SE LIT UNE FOIS PAR COLONNE (v352). La même grille, en valeurs
+    // BRUTES, reste en mémoire avec le morceau : la passe des quais l'y relit
+    // pour sa marge, et le sol continu du mailleur (`grilleSol`, par
+    // `terrainMemo`) pour la sienne — trois `terrainHeight` par colonne de bord
+    // n'en font plus qu'un. Le relief ne dépend que de `this.conf`, figée à la
+    // naissance du monde : la mémoire ne peut pas mentir.
+    const brut = reliefs && this.memoRelief ? new Float64Array(N2 * N2) : null;
     if (reliefs) {
       for (let z = -1; z <= CHUNK; z++) {
-        for (let x = -1; x <= CHUNK; x++) reliefs[(x + 1) + (z + 1) * N2] = this.terrainHeight(baseX + x, baseZ + z);
+        for (let x = -1; x <= CHUNK; x++) {
+          const v = this.terrainHeight(baseX + x, baseZ + z);
+          reliefs[(x + 1) + (z + 1) * N2] = v;
+          if (brut) brut[(x + 1) + (z + 1) * N2] = v;
+        }
       }
+      if (brut) this.reliefsMemo.set(World.key(cx, cz), brut);
     }
 
     for (let z = 0; z < CHUNK; z++) {
@@ -3493,7 +3517,7 @@ export class World {
         // Market Street entre les deux, la plage, les quais et les parcs.
         // Nice et Lille : chacune sa trame, ses places et ses maisons. Comme à
         // San Francisco, la trame générique ne s'applique pas par-dessus.
-        // Londres (v339) et Nice (v350) d'avant le kit dans les mondes d'avant,
+        // Londres (v339) et Nice (v354) d'avant le kit dans les mondes d'avant,
         // et sous les colonnes où un enfant a bâti avant leur date.
         const villeAvant = city && (city.key === 'londres' || city.key === 'nice') && (this.conf.villesAvant
           || (this.colonnesVilleAvant.size > 0 && this.colonnesVilleAvant.has(cleColonneParis(wx, wz))));
@@ -3688,7 +3712,7 @@ export class World {
           return data[World.index(lx, WATER_LEVEL, lz)] === BLOCK.WATER
             && data[World.index(lx, WATER_LEVEL + 1, lz)] === BLOCK.AIR;
         }
-        return this.terrainHeight(wx, wz) < WATER_LEVEL;
+        return (brut ? brut[(lx + 1) + (lz + 1) * N2] : this.terrainHeight(wx, wz)) < WATER_LEVEL;
       };
       for (let z = 0; z < CHUNK; z++) {
         for (let x = 0; x < CHUNK; x++) {
@@ -3997,6 +4021,7 @@ export class World {
       if (Math.abs(cx - pcx) <= rayon && Math.abs(cz - pcz) <= rayon) continue;
       this.chunks.delete(cle);
       this.tops.delete(cle);
+      this.reliefsMemo.delete(cle);
       this.dirty.delete(cle);
       oublies++;
     }

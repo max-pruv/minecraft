@@ -150,7 +150,7 @@ const GARDIENS = {
   // dans monte.js (onglet, vignettes, pose).
   'src/batiments.js': ['monte.js'],
   'src/nice.js': ['carte.js', 'carteMonde.js', 'plafond.js'],
-  'src/nice-v340.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // la Nice d'avant le kit, sous ce qu'un enfant a bâti (v350)
+  'src/nice-v340.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // la Nice d'avant le kit, sous ce qu'un enfant a bâti (v354)
   'src/carte.js': ['carte.js', 'carteMonde.js', 'manhattan.js'],
   // La capitale : son relief, son métro et ses bâtiments ouverts. Elle touche
   // au sol de la carte, donc le témoin du plafond la surveille aussi.
@@ -261,6 +261,7 @@ const GARDIENS = {
   'src/personnages.js': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
   'src/vie.js': ['realisme.js', 'monte.js', 'manhattan.js'],
   'src/marlon.js': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
+  'src/pietons.js': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
   'src/face-worker.js': ['parent.js'],
 };
 

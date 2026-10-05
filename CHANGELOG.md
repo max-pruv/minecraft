@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v350 — Les rues de Nice à la règle du kit
+## v354 — Les rues de Nice à la règle du kit
 
 **Pourquoi.** La deuxième des cinq villes bâties à la main restées sur leurs
 largeurs relevées à la main (dette v271). La ruelle du Vieux-Nice faisait 1,2
@@ -52,6 +52,159 @@ lots, aucun quartier sous 4 %. `plafond.js` : à Nice, une maison posée sur
 une ancienne rue n'est pas enfermée et une cabane garde son toit (désarmé :
 8 blocs de ville, toit absent) ; les deux témoins de Londres passent par la
 même fonction. Les trois circuits de Nice restent à 99-100 % sur la rue.
+
+---
+
+## v353 — Le ciel de toutes les villes
+
+**Pourquoi.** La v342 avait donné son ciel à vingt-cinq villes engendrées —
+celles qui portaient une dette. Mesuré sur toutes les autres : vingt et une
+villes avaient des repères au-dessus de leurs toits mais pas à leur vraie
+hauteur (la Frauenkirche de Munich à quinze blocs pour quatre-vingt-dix-neuf
+mètres, le Capitole de La Havane à onze pour quatre-vingt-douze, la pagode de
+Sensō-ji à seize, à peine au-dessus des immeubles). Max : « lance sur toutes
+les villes, pas juste celle-là ».
+
+**Ce que ça change.** Seize monuments de neuf villes prennent la hauteur de
+leur ciel — la corniche mesurée, la courbe de Paris posée dessus : le
+Capitole de La Havane à trente-quatre blocs, la coupole de Saint-Marc à
+dix-huit, les tours de la Frauenkirche et le beffroi de Munich à vingt-trois,
+la colonne de Colomb à Barcelone, la Freedom Tower de Miami, la demi-tour
+Eiffel de Las Vegas, et trois pagodes, Sensō-ji, Tō-ji et Kiyomizu-dera, dont
+chaque étage s'étire et chaque toit reste un rang. Le ciel garde son ordre :
+Tokyo et Munich compriment leur courbe pour que la tour de Tokyo et la
+Frauenkirche restent au-dessus. Les tours d'un bloc qui dominent DÉJÀ leurs
+toits (l'hôtel de ville de Bruxelles, la Koutoubia, la Willis Tower, la
+Skytree…) ne bougent pas : étirées, ce sont des perches. L'emprise ne bouge
+d'aucun bloc, le sol non plus.
+
+**Ce qui le prouve.** Un témoin neuf dans `plafond.js`, rouge sur
+`origin/main` (dix-neuf villes sans ciel) : toute ville engendrée dont un
+repère est mesuré a son ciel, ou dit pourquoi ; et aucun fût qui domine déjà
+ses toits n'est étiré. Le témoin d'ordre couvre cinquante-neuf monuments
+contre quarante-huit, avec la Sagrada Família, le Luxor, le campanile, la tour
+de Tokyo et la Skytree en repères fixes. Les deux empreintes du relief sont
+intactes. Captures de rue et de ciel des onze villes : elles ont démonté le
+premier jet (l'hôtel de ville de Bruxelles à trente-quatre blocs, la Willis
+Tower à cinquante-cinq, des perches noires au-dessus de la ville).
+
+---
+
+## v352 — Un morceau de monde coûte deux fois moins
+
+**Pourquoi.** La v346 avait mesuré qu'au-delà de 70 blocs par seconde la
+ville ne suit plus une voiture, et que le seul levier restant était le coût
+d'un morceau dans le worker. Profilé sous node, ce coût n'était pas là où on
+l'attendait. La génération n'en faisait pas 45 % : à Paris le maillage pesait
+le double de la génération. Et un cinquième du coût d'un morceau de Paris
+était une lecture du relief dont la réponse était jetée : `routeEn` relisait
+`terrainHeight` pour toute colonne de la case de 512 blocs qui contient une
+autoroute, avant de conclure « pas de route ici ».
+
+**Ce que ça change.** Rien à l'œil : pas un bloc, pas un sommet ne bouge. Le
+worker engendre et maille un morceau de Paris en 3,3 ms au lieu de 8,3, Rome
+en 4,1 au lieu de 10,5, Londres en 5,4 au lieu de 8,9, la campagne en 2,5 au
+lieu de 4,1 (sous node, médianes en ordre alterné). En roulant à 80 b/s au
+banc, la ville maillée devant soi gagne 5 à 25 blocs (Rome 113–122 → 129–138).
+Cela ne suffit pas pour 80 b/s : au banc, la ville plafonne vers 55 morceaux
+par seconde des deux côtés, et ce n'est plus le worker qui la limite. Le
+plafond au sol publié reste donc à 60 et 70 b/s : on ne publie qu'une valeur
+tenue. Sur la tablette, le worker a deux fois moins de calcul à faire par
+morceau, et cela, l'iPad le reçoit.
+
+Les cinq gains :
+- `routeEn` s'arrête au talus le plus large possible ;
+- le mailleur lit des tables par identifiant, garde ses voisins en main,
+  calcule l'occlusion sans allouer, et prend une clé de fusion numérique ;
+- le relief du morceau se lit une fois par colonne et se garde ;
+- la Tamise et les fleuves ne calculent `hypot` que pour le segment qui peut
+  gagner.
+
+**Ce qui le prouve.** Deux témoins neufs dans `plafond.js` :
+- **l'empreinte des blocs et de tous les tampons du mailleur** de 490
+  morceaux, autour de neuf lieux (Paris avec et sans la couche HD, Rome,
+  Londres, la campagne, l'A1, Washington, San Francisco, Marrakech, Tokyo),
+  plus `routeEn` sur toutes les routes du registre, est **identique à celle
+  de la v351**. Elle rougit si l'on casse la borne de `routeEn` à dix blocs ;
+- **le travail d'un morceau en appels**, pas en millisecondes : à Paris
+  **2 209 → 463 lectures de relief, 3 811 → 324 lectures de blocs** ; barre au
+  milieu, rouge sur la v351.
+
+Les deux empreintes du relief de `plafond.js` sont intactes. La Tamise a été
+comparée à l'ancien code sur 4 millions de points : zéro écart. La sonde
+`sonde-monde-a-la-vitesse.cjs` a été rejouée en ordre ABBA, avec ses chiffres
+dans `plafond-sol.js`.
+## v351 — Les piétons à l'abri des voitures rapides
+
+**Pourquoi.** Le chantier « conduite » fait rouler les voitures trois fois plus
+vite — 40 à 70 blocs par seconde. L'écart des piétons (v259) avait été réglé
+pour 4 à 25 : il regardait trente blocs devant une voiture, une demi-seconde à
+60 b/s, quand il en faut plus pour sortir d'une carrosserie au pas pressé. Et,
+plus grave, la voiture roule sur l'horloge RÉELLE de la rue (v305) quand le
+piéton marche en temps de jeu, borné à un vingtième de seconde : sur une
+tablette qui rame, il marchait quatre fois moins vite que la voiture qui
+arrive. Mesuré sous node : un piéton touché dès 50 b/s à soixante images par
+seconde, dès 7 b/s à cinq.
+
+**Ce que ça change.**
+
+- **Un piéton voit venir une voiture 1,6 seconde à l'avance**, quelle que soit
+  sa vitesse, et s'en écarte d'un pas pressé compté en temps réel : il sort de
+  la trajectoire à temps même quand la tablette rame. Personne n'est touché.
+- Loin devant, seul celui qui est DANS la trajectoire réagit : les passants du
+  bord du trottoir continuent leur chemin.
+- La pause qui suit un écart n'aveugle plus : on regarde la route en soufflant.
+
+**Ce qui le prouve.** Un témoin de `monte.js` lance une voiture à 60 puis
+70 b/s sur un passant immobile, six fois, dont une à cinq images par seconde
+provoquées ; il juge le volume balayé par la carrosserie entre deux images et
+la position d'arrivée du piéton. Rouge sur `origin/main` (trois passes sur six
+touchées, arrivée à 0,68 bloc de l'axe), vert ici (zéro, arrivée à 2,9). La
+sonde sous node : aucun choc jusqu'à 120 b/s, de 60 à 3 images par seconde.
+Coût mesuré en ordre alterné : 0,05 à 0,1 ms par image pour cent piétons et
+deux cents voitures.
+
+---
+
+## v350 — L'Opéra de Lille, Buckingham et les Archives à leur hauteur
+
+**Pourquoi.** La mesure de la v335, lancée sur toutes les villes, avait laissé
+huit monuments des villes bâties à la main plus bas que les immeubles autour
+d'eux, déclarés en dette (« lot 2 ») : l'Opéra de Lille à six blocs pour des
+toits à sept, Buckingham à sept pour huit, l'Arche de Washington à New York, et
+à Washington le Trésor, les Archives, le Théâtre Ford, les musées d'Histoire
+américaine et de l'Indien d'Amérique.
+
+**Ce que ça change.** Trois montent dans le ciel de leur ville, la même règle
+que les villes engendrées (la corniche mesurée, puis la courbe de Paris) :
+l'Opéra de Lille passe de six à onze blocs, une fois et demie les toits de la
+place du Théâtre (à seize, son petit bâtisseur faisait une tour blanche, vu en
+capture) ; Buckingham de sept à
+douze, à la hauteur de la Tour Blanche ; les Archives nationales de onze à
+quinze, à la hauteur du dôme de la Bibliothèque du Congrès. Sous la troisième
+couche rien ne s'étire : la porte, la locomotive du musée, les gardes et les
+grilles de Buckingham gardent leur taille. Les cinq autres sont bas dans la
+vraie ville aussi et le disent : l'Arche (23 m) au milieu des immeubles de NYU,
+et à Washington, ville plafonnée par la loi de 1910, le Trésor, le Théâtre Ford
+et les deux musées du Mall, qui monteraient sinon au-dessus des tours du
+château du Smithsonian.
+
+**Ce qui le prouve.** Le témoin des monuments de `plafond.js` n'a plus aucune
+dette « lot 2 » (huit sur l'ancien code) ; celui de l'ordre du vrai ciel
+compte désormais les villes bâties à la main, avec quinze repères fixes de
+hauteur connue (le Capitole, Big Ben, la Tour Blanche, les beffrois de Lille…) :
+aucune inversion, chaque monument à sa cible. Captures de rue et de ciel des
+trois monuments (`tests/sonde-captures-lot2.cjs`).
+
+**Et à Paris, des cubes ne dépassent plus des modèles étirés.** Second sujet de
+la livraison. La corniche de l'Opéra, l'entablement du Panthéon et le pied de
+la flèche de Notre-Dame faisaient quatre dixièmes de bloc ; la couche du voxel
+qu'ils habillent en fait un, et une fois étirée par la v335 la fin de la couche
+sortait du modèle en cubes. Les trois modèles prennent l'épaisseur de la
+couche : au-dessus de la hauteur d'un enfant, l'Opéra passe de 15 cellules de
+flanc découvertes à 0, le Panthéon de 6 à 0, Notre-Dame de 8 à 0, et un témoin
+de `plafond.js` les compte. Restent les vingt-quatre cubes du parvis de
+Notre-Dame, au sol, d'avant la v335 (dette déclarée).
 
 ---
 

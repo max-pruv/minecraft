@@ -2418,7 +2418,7 @@ const VRAIES_KM = [
       + ` · cabines sur le trottoir ${kitLondres.cabinesTrottoir}/${kitLondres.cabines}`
       + ` · ${kitLondres.bus} bus, ${kitLondres.taxis} taxis`);
 
-    // --- LES RUES DE NICE À LA RÈGLE DU KIT (v350) ---------------------------
+    // --- LES RUES DE NICE À LA RÈGLE DU KIT (v354) ---------------------------
     //
     // La méthode de Londres, la ville suivante : artères en deux voies, rues de
     // quartier et ruelles du Vieux-Nice en une, trame de la ville neuve en
