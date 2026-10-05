@@ -6,7 +6,7 @@
 
 export const NOUVEAUTES = [
   {
-    v: 364,
+    v: 365,
     titre: 'Les coupoles ont leur église',
     puces: [
       'Le Duomo de Florence et sa coupole',
@@ -16,6 +16,7 @@ export const NOUVEAUTES = [
     ],
   },
   {
+    v: 364,
     titre: 'La tablette mesure les dégâts',
     puces: [
       'Le journal note ce que coûte un choc',

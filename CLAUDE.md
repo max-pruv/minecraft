@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Les coupoles ont leur édifice (v364) — un gabarit partagé se cherche dans toutes les villes, et le ciel se lit sur les modèles
+## Les coupoles ont leur édifice (v365) — un gabarit partagé se cherche dans toutes les villes, et le ciel se lit sur les modèles
 
 La suite de la v357 : « une coupole sans sa nef devient une tour », pour toutes
 les villes. Sept règles.

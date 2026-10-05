@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v364 — Les coupoles ont leur édifice
+## v365 — Les coupoles ont leur édifice
 
 **Pourquoi.** La v357 avait donné sa basilique à Saint-Pierre de Rome et
 déclaré la suite : les bâtisseurs partagés `dome` (une coupole sur son seul
@@ -64,7 +64,7 @@ elle-même — l'entrée de Florence dans le Duomo, la barre du témoin de Big B
 écrite pour l'ancien modèle à soixante-neuf blocs — et le témoin de Londres
 exige désormais que la roue reste au-dessus de la tour de l'horloge (rouge sur
 `origin/main`).
-Et le portail de la v364 en a trouvé un troisième : le Berliner Dom, bâti sur
+Et le portail de la v365 en a trouvé un troisième : le Berliner Dom, bâti sur
 toute sa boîte, recouvrait deux tabliers de pont de Berlin (dix pas bouchés,
 « on le traverse à pied d'une rive à l'autre », `carteMonde.js`) ; il tient
 désormais entre les deux ponts, son aile du nord lui gardant l'assise d'une

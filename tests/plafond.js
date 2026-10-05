@@ -307,11 +307,11 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // des neuf lieux — voulu. Sans elle, les 441 autres morceaux et toutes les
 // routes rendent 346a66cd… sur `origin/main` (v360, 5fa54c5c… avec elle) ET sur
 // la branche.
-// v364 : Big Ben rendu au ciel de Londres (un bâtisseur neuf, champ `tour`)
+// v365 : Big Ben rendu au ciel de Londres (un bâtisseur neuf, champ `tour`)
 // est dans les morceaux du lieu « londres » — un changement de CONTENU, voulu.
 // La preuve qu'il n'y a que lui : la même branche, ses bâtisseurs neufs
-// désarmés (les `tour` de la v364 retirés), rend 58a67b42…, la constante
-// d'`origin/main` (v363), au bit près.
+// désarmés (les `tour` de la v365 retirés), rend 58a67b42…, la constante
+// d'`origin/main` (v364), au bit près.
 const EMPREINTE_MORCEAUX_V357 = 'f70060cd04ff8aa3e0fbe7d04b322534cb0d8dc5bb290d84881832e2ed4e94ce';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
@@ -533,7 +533,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       'Delhi|Rashtrapati Bhavan': 55,
       // Le lot 2, les villes bâties à la main (v350).
       'Lille|Beffroi de la Chambre de commerce': 76, 'Lille|Beffroi de Lille': 104, 'Lille|Tour de Lille': 117,
-      // v364 : Big Ben rendu au ciel de Londres (trente-neuf blocs, il était à
+      // v365 : Big Ben rendu au ciel de Londres (trente-neuf blocs, il était à
       // soixante-neuf) et St Paul sur son tambour (quarante et un) — l'inversion
       // de la v350 réglée ; Tower Bridge et le London Eye, deux modèles d'auteur,
       // entrent ici : c'est sur eux que le ciel de la ville se lit.
@@ -651,7 +651,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         + (vraiesPerdues.length ? ` — DÉCLARÉS POUR RIEN : ${vraiesPerdues.join(' · ')}` : ''));
     }
 
-    // UNE COUPOLE SANS SA NEF N'EST PAS UNE TOUR (v364). `dome` et `palaisLong`
+    // UNE COUPOLE SANS SA NEF N'EST PAS UNE TOUR (v365). `dome` et `palaisLong`
     // sont des gabarits : une coupole sur son seul tambour, un palais de trois
     // blocs d'épaisseur. Remis à la hauteur de leur ville sans l'édifice autour,
     // ce sont des tours et des murs — vu en capture à Rome (v342), à Florence,

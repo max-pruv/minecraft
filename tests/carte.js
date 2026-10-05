@@ -1669,7 +1669,7 @@ const position = (p) => p.evaluate(() => ({
       londres.tamiseWestminster && londres.coude && londres.tamiseCity && londres.trafalgarAuSec,
       JSON.stringify({ w: londres.tamiseWestminster, c: londres.coude,
         city: londres.tamiseCity, trafalgar: londres.trafalgarAuSec }));
-    // BIG BEN SOUS LA ROUE (v364). La barre valait 55, posée pour le modèle du
+    // BIG BEN SOUS LA ROUE (v365). La barre valait 55, posée pour le modèle du
     // catalogue (69 blocs) qui dominait toute la ville ; Big Ben a désormais
     // son bâtisseur de Londres (trente-neuf blocs, la tour à trois blocs à
     // l'est de son repère, d'où (11, 18)), et la grande roue (135 m) reste

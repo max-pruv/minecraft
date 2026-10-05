@@ -1183,7 +1183,7 @@
   table de hauteurs, un témoin, une sonde. Le badge de version (« version
   servie v335 » au premier portail) était le bump manquant, réglé.
 - [x] **DEUX INVERSIONS DU VRAI CIEL DANS LES VILLES BÂTIES À LA MAIN (v350),
-  mesuré. Le château du Smithsonian : FAIT en v357 ; St Paul : FAIT en v364**
+  mesuré. Le château du Smithsonian : FAIT en v357 ; St Paul : FAIT en v365**
   (Big Ben rendu au ciel de Londres par un bâtisseur à trente-neuf blocs,
   St Paul sur son tambour à quarante et un, sous le London Eye ; Tower Bridge
   et le London Eye entrent dans les `FIXES`) (sa tour du nord, deux
@@ -1208,7 +1208,7 @@
   Si on veut la garder au-dessus, c'est son bâtisseur (`buildGrandeRoue`) qui
   doit grandir d'un rayon, pas une table de paliers. Même cas pour Tivoli.
 - [x] **UNE COUPOLE SANS SA NEF DEVIENT UNE TOUR (v342), vu en capture. FAIT pour
-  Saint-Pierre en v357, pour TOUTES LES VILLES en v364** : le témoin neuf
+  Saint-Pierre en v357, pour TOUTES LES VILLES en v365** : le témoin neuf
   (« aucune coupole ni aucun palais partagé ne monte seul en tour »,
   `plafond.js`) a trouvé seize gabarits `dome` et `palaisLong` montés seuls sur
   `origin/main` ; chacun a son édifice (`tour`), plus Sainte-Sophie, la Mosquée
@@ -1223,7 +1223,7 @@
   couleur de la calotte) : un obus d'ardoise, corrigé (le corps s'arrête au
   tambour). Le remède de fond est un bâtisseur par monument, avec sa nef — pas
   une table de paliers.
-- [ ] **LE PORTAIL DE LA v364 (les coupoles) : TOUS LES ROUGES DÉJÀ DÉCLARÉS OU
+- [ ] **LE PORTAIL DE LA v365 (les coupoles) : TOUS LES ROUGES DÉJÀ DÉCLARÉS OU
   IDENTIQUES SUR `origin/main`, UN DÉLAI NEUF NON REPRODUIT.** Rejoués SEULS des
   deux côtés (branche · `origin/main` v363) : `maj.js` la libération `null` et
   « ne floute rien » (identiques) ; `carte.js` « la faire glisser » 428 · 419 ms
@@ -1236,18 +1236,18 @@
   sur `origin/main` ; intermittence de partie à deux sous la charge, à rejouer
   jusqu'à la distribution (v269) si elle revient. Le seul rouge de la livraison
   (`carteMonde.js`, le Berliner Dom sur deux ponts) est corrigé, vert seul.
-- [ ] **À PISE, LE DUOMO ET LE BAPTISTÈRE SONT DANS L'EMPRISE DE LA TOUR (v364),
+- [ ] **À PISE, LE DUOMO ET LE BAPTISTÈRE SONT DANS L'EMPRISE DE LA TOUR (v365),
   mesuré, déclaré.** Les trois repères sont à trois et quatre blocs l'un de
   l'autre (36 blocs par kilomètre), et le modèle de la tour penchée (catalogue)
   fait onze blocs de large au pied pour quinze mètres : ses couches 0 à 3
   couvrent x −7..3, z −5..5 autour de son repère, c'est-à-dire les colonnes −4..6
   du Duomo. Aucun bâtisseur ne tient dans la boîte du Duomo (`box: 6`) sans
-  recouvrir la tour, et c'était déjà le cas du gabarit (`dome(4)`). La v364
+  recouvrir la tour, et c'était déjà le cas du gabarit (`dome(4)`). La v365
   leur donne leur édifice (nef, transept, coupole ; anneau, loggia, tambour) et
   le recouvrement reste. Le remède est de PLAN : une tour de catalogue à sa
   vraie emprise (un bloc et demi), ou les trois repères écartés — c'est la
   boîte, donc le relief : décision de carte.
-- [ ] **WALT DISNEY HALL ET LE ROGERS CENTRE SONT DES COUPOLES (v364), déclaré.**
+- [ ] **WALT DISNEY HALL ET LE ROGERS CENTRE SONT DES COUPOLES (v365), déclaré.**
   Le gabarit `dome(4)` et `dome(5)` les dessine en coupole sur tambour : la
   salle de Gehry est faite de voiles d'acier courbes, le Rogers Centre est un
   stade à toit escamotable. Ils ne montent pas à une fois et demie leurs toits
@@ -1302,7 +1302,7 @@
 - [ ] **LE CIEL DE LAS VEGAS GARDE SA ROUE ET SA PYRAMIDE (v353), déclaré.** La
   High Roller (167 m, 16 blocs) est sous la demi-tour Eiffel (165 m, 26) : une
   roue ne s'étire pas, comme le Prater. Le Luxor (107 m) reste à quinze blocs :
-  étirée, une pyramide devient un obélisque. **Remesuré en v364 : la boîte ne
+  étirée, une pyramide devient un obélisque. **Remesuré en v365 : la boîte ne
   tient pas la roue vraie.** Pour passer au-dessus de la demi-tour Eiffel
   (vingt-six blocs) une roue dont la jante passe à quatre blocs du sol (celle du
   Prater, v357) veut un rayon de douze — vingt-cinq blocs de diamètre — et la

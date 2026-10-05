@@ -577,7 +577,7 @@ const pyramide = (base, haut, coiffe) => (poser) => {
   }
 };
 
-// UN GABARIT SE MARQUE (v364). `dome` et `palaisLong` sont des gabarits : une
+// UN GABARIT SE MARQUE (v365). `dome` et `palaisLong` sont des gabarits : une
 // coupole sur son seul tambour, un palais de trois blocs d'épaisseur. Remis à
 // la hauteur de leur ville sans l'édifice autour, ce sont des tours et des
 // murs (vu en capture à Florence, à Berlin, à Madrid). La marque ne change rien
@@ -1156,7 +1156,7 @@ function buildSaintPierre(poser) {
   poser(0, 19, 0, OR);
 }
 
-// LES COUPOLES ET LES PALAIS ONT LEUR ÉDIFICE (v364). `dome` posait une
+// LES COUPOLES ET LES PALAIS ONT LEUR ÉDIFICE (v365). `dome` posait une
 // coupole sur son seul tambour, `palaisLong` un palais de trois blocs
 // d'épaisseur : remis à la hauteur de leur ville, des tours et des murs — la
 // leçon de Saint-Pierre (v357), qui valait pour toutes les villes. Le témoin de
@@ -2935,7 +2935,7 @@ export function coeurDIlot(t, ra, rb) {
 // (Québec) pose ses îlots SUR l'axe à neuf blocs du centre : les voitures
 // seraient entrées dans les immeubles. Une seule règle, lue par la
 // circulation (main.js) et par le témoin (carteMonde.js).
-// UNE ENTRÉE S'ARRÊTE AUSSI DEVANT UN MONUMENT (v364). La règle de la v310
+// UNE ENTRÉE S'ARRÊTE AUSSI DEVANT UN MONUMENT (v365). La règle de la v310
 // (« une entrée se termine sur une voie, jamais sur un lieu ») ne lisait que
 // le sol : l'avenue de Florence finissait à 1,5 bloc au sud du centre du Duomo,
 // dans sa boîte, et ne passait que par une brèche de l'ancien anneau de la

@@ -890,7 +890,7 @@ function buildStPauls(poser) {
   }
 }
 
-// LE CIEL DE LONDRES REMIS DANS L'ORDRE (v364). Le ciel de la ville est
+// LE CIEL DE LONDRES REMIS DANS L'ORDRE (v365). Le ciel de la ville est
 // celui de ses modèles d'auteur — le London Eye à quarante-trois blocs pour
 // 135 m, Tower Bridge à trente-huit pour 65 m — et Big Ben, sorti du catalogue
 // à soixante-neuf, était plus haut que tous, quand St Paul (111 m) restait à

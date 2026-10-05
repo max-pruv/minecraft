@@ -1,4 +1,4 @@
-// CAPTURES DES COUPOLES QUI ONT REÇU LEUR ÉDIFICE (v364), d'après celle des
+// CAPTURES DES COUPOLES QUI ONT REÇU LEUR ÉDIFICE (v365), d'après celle des
 // tours (v357), avec quatre vues de trois quarts (`ne`, `no`, `se`, `so`) : la
 // vue « proche » de la v357 se pose toujours au sud-ouest, et à Florence le
 // Palazzo Vecchio était entre elle et le Duomo.
