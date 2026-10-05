@@ -296,3 +296,138 @@ export function pointDImpact(x, z, cap, a, b, dx, dz) {
   const s = signe(dv) || 1;
   return { x: x + vx * b * s, z: z + vz * b * s };
 }
+
+// ━━ PALIER 2 (v365) : LA NORMALE DE CE QU'ON TOUCHE ━━━━━━━━━━━━━━━━━━━━━━━━━━
+//
+// Le palier 1 prenait deux normales commodes et fausses : contre une voiture
+// de la rue, celle du MOUVEMENT (toujours un choc de face, même en frôlant
+// son flanc) ; contre un mur, celle d'un AXE DU MONDE, choisi en essayant x
+// puis z. Sur une façade oblique — une trame tournée, Paris, la moitié des
+// villes engendrées —, ce mur est un escalier de cubes et l'axe libre change
+// à chaque marche. Mesuré sur un mur à 24° (sonde du palier 2, monde
+// synthétique, berline à 30 blocs/s) : approchée à 25°, la voiture s'arrête
+// net après quarante-deux « chocs » au lieu de glisser ; approchée à 12°,
+// elle est renvoyée à quatorze blocs du mur.
+
+// UNE BOÎTE : { x, z, ux, uz, a, b } — le centre, l'axe long (unitaire), la
+// demi-longueur a et la demi-largeur b.
+const boiteVoiture = (x, z, cap, a, b) => ({ x, z, ux: Math.sin(cap), uz: Math.cos(cap), a, b });
+export { boiteVoiture };
+
+// LA NORMALE ENTRE DEUX BOÎTES QUI SE CHEVAUCHENT, par séparation d'axes :
+// des quatre axes des deux rectangles, celui où ils s'enfoncent le MOINS est
+// celui par où l'on est entré. Rend { nx, nz, prof } avec n tourné de B vers A
+// (vers la voiture de l'enfant), ou null s'ils ne se touchent pas.
+export function normaleEntreBoites(A, B) {
+  const axes = [[A.ux, A.uz], [A.uz, -A.ux], [B.ux, B.uz], [B.uz, -B.ux]];
+  const dx = A.x - B.x, dz = A.z - B.z;
+  let mieux = null;
+  for (const [ax, az] of axes) {
+    const rA = A.a * Math.abs(A.ux * ax + A.uz * az) + A.b * Math.abs(A.uz * ax - A.ux * az);
+    const rB = B.a * Math.abs(B.ux * ax + B.uz * az) + B.b * Math.abs(B.uz * ax - B.ux * az);
+    const d = dx * ax + dz * az;
+    const prof = rA + rB - Math.abs(d);
+    if (prof <= 0) return null;
+    if (!mieux || prof < mieux.prof - 1e-9) {
+      const s = d >= 0 ? 1 : -1;
+      mieux = { nx: ax * s, nz: az * s, prof };
+    }
+  }
+  return mieux;
+}
+
+// LE CHOC CONTRE UNE VOITURE QUI ROULE. `moi` et `autre` sont des boîtes
+// (autre.v : sa vitesse le long de son axe, blocs/s), (vx, vz) la vitesse de
+// la voiture de l'enfant. La réponse se calcule dans le repère de l'AUTRE —
+// sur la vitesse RELATIVE — puis l'on y rajoute sa vitesse : un choc par
+// l'arrière dans une voiture qui roule à vingt quand on en fait vingt-cinq
+// est un choc à cinq, et l'on repart derrière elle à son allure ; un flanc
+// frôlé glisse, comme un mur. La voiture de la rue, elle, ne se pousse pas :
+// sa position est une fonction de l'horloge partagée (v305).
+// Rend { vx, vz, force, glisse, nx, nz } ou null si les boîtes ne se touchent
+// pas (on retombe alors sur la normale du mouvement).
+export const CONTACT_DOUX = 0.15;    // 3 blocs/s relatifs, 11 km/h
+// La rue juge le contact avec SES cotes (la voiture de l'enfant à 4,4 × 2,26,
+// `rectangle` de vehicules.js) et le joueur porte son gabarit de fiche (2,2
+// pour une berline) : au bord, la rue dit « touché » quand nos boîtes ne se
+// recouvrent pas encore. On relit alors avec une boîte grossie d'un cheveu,
+// sinon le choc retombait sur la normale du mouvement — vu au banc, un flanc
+// frôlé rendu en choc de face.
+export const MARGE_CONTACT = 0.15;
+export function chocContreVoiture(moi, autre, vx, vz) {
+  const n = normaleEntreBoites(moi, autre)
+    || normaleEntreBoites({ ...moi, a: moi.a + MARGE_CONTACT, b: moi.b + MARGE_CONTACT }, autre);
+  if (!n) return null;
+  const ax = (autre.v || 0) * autre.ux, az = (autre.v || 0) * autre.uz;
+  const r = reponseChoc(vx - ax, vz - az, n.nx, n.nz);
+  // pare-chocs contre pare-chocs à moins de CONTACT_DOUX : un contact, pas un
+  // choc. Collé derrière une voiture plus lente, joystick en avant, on la
+  // touche à chaque image ; publiées, ces caresses useraient la voiture
+  // jusqu'au feu au milieu d'un bouchon.
+  const force = r.force < CONTACT_DOUX ? 0 : r.force;
+  return { vx: r.vx + ax, vz: r.vz + az, force, glisse: r.glisse, nx: n.nx, nz: n.nz };
+}
+
+// LA NORMALE D'UN MUR FAIT DE CUBES. `cases` : les centres [x, z] des cases
+// de SURFACE du mur (pleines, avec de l'air à côté) autour du contact ;
+// (cx, cz) le centre de la voiture. Un mur oblique est un escalier de cubes
+// alignés sur une droite : la droite qui passe au mieux par leurs centres
+// (axe principal) donne la vraie façade, et sa normale ne change plus d'une
+// marche à l'autre. Un coin (pas de droite nette) rend la direction du coin
+// vers la voiture. Moins de trois cases : null — on garde la normale d'axe.
+export const LIGNE_NETTE = 0.3;       // λ2/λ1 sous lequel les cases font une droite
+export function normaleDeMur(cases, cx, cz) {
+  const n = cases.length;
+  if (n < 3) return null;
+  let mx = 0, mz = 0, W = 0;
+  for (const [x, z, p = 1] of cases) { mx += x * p; mz += z * p; W += p; }
+  if (W <= 0) return null;
+  mx /= W; mz /= W;
+  let sxx = 0, szz = 0, sxz = 0;
+  for (const [x, z, p = 1] of cases) { const a = x - mx, b = z - mz; sxx += p * a * a; szz += p * b * b; sxz += p * a * b; }
+  const tr = sxx + szz, det = sxx * szz - sxz * sxz;
+  const l1 = tr / 2 + Math.sqrt(Math.max(0, tr * tr / 4 - det)), l2 = tr - l1;
+  let nx, nz;
+  if (l1 > 1e-9 && l2 / l1 < LIGNE_NETTE) {
+    // la direction de la droite (vecteur propre de l1), puis sa perpendiculaire
+    let ex, ez;
+    if (Math.abs(sxz) > 1e-9) { ex = l1 - szz; ez = sxz; } else if (sxx >= szz) { ex = 1; ez = 0; } else { ex = 0; ez = 1; }
+    const e = Math.hypot(ex, ez); ex /= e; ez /= e;
+    nx = -ez; nz = ex;
+  } else {
+    nx = cx - mx; nz = cz - mz;
+  }
+  const s = (cx - mx) * nx + (cz - mz) * nz;
+  const l = Math.hypot(nx, nz);
+  if (l < 1e-9) return null;
+  return s >= 0 ? { nx: nx / l, nz: nz / l } : { nx: -nx / l, nz: -nz / l };
+}
+
+// ━━ CE QUE MAX RELÈVE SUR LA TABLETTE (v365, `?diag=1`) ━━━━━━━━━━━━━━━━━━━━━━━
+// Deux choses du palier 1 ne se mesurent pas au banc : le PLAFOND (le banc
+// rend une image par seconde dans Paris, le fil principal de l'iPad installe
+// les morceaux à SA cadence) et la ROUE LIBRE (quelques secondes, voulues —
+// à juger avec Marlon). Au volant, le diagnostic dit donc la classe, la
+// vitesse et la pointe, le monde déjà maillé DEVANT la voiture (en blocs et
+// en secondes de route), et la dernière roue libre (de quelle vitesse, en
+// combien de secondes).
+
+// Le monde maillé devant soi : on avance le long du cap, deux blocs à la
+// fois, jusqu'au premier morceau qui n'est pas maillé. `maille(cx, cz)` dit
+// si un morceau l'est ; `taille` est la taille d'un morceau.
+export function mondeDevant(maille, x, z, yaw, taille, max = 400) {
+  const fx = -Math.sin(yaw), fz = -Math.cos(yaw);
+  for (let d = 0; d <= max; d += 2) {
+    if (!maille(Math.floor((x + fx * d) / taille), Math.floor((z + fz * d) / taille))) return d;
+  }
+  return max;
+}
+
+export function ligneDiagConduite({ classe, v, vmax, devant, roueLibre }) {
+  const a = Math.abs(v || 0);
+  const kmh = (b) => Math.round(b * 3.6);
+  let l = `au volant : ${classe || '?'} · ${a.toFixed(1)} blocs/s (${kmh(a)} km/h) · pointe ${(vmax || 0).toFixed(0)} (${kmh(vmax || 0)} km/h)`;
+  if (devant != null) l += ` · monde maillé devant ${devant} blocs${a > 1 ? ` (${(devant / a).toFixed(1)} s de route)` : ''}`;
+  if (roueLibre) l += ` · roue libre ${roueLibre.depuis.toFixed(0)} → 0 en ${roueLibre.s.toFixed(1)} s`;
+  return l;
+}

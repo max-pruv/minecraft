@@ -2016,6 +2016,37 @@ export function createVehicules({ scene, player }) {
     return false;
   }
 
+  // LA VOITURE QU'ON TOUCHE, PAS SEULEMENT LE FAIT DE LA TOUCHER (v365,
+  // conduite-physique). `obstacleDevant` dit « oui » ; le choc a besoin de
+  // savoir CONTRE QUOI : sa boîte (centre, axe, demi-longueur, demi-largeur,
+  // relues sur le rectangle de la collecte — une rame de train n'a pas les
+  // cotes d'une voiture) et son allure du moment le long de son axe (zéro si
+  // elle attend, comme `enMarche`). Lecture seule, une copie : rien de la
+  // collecte ne sort d'ici.
+  function voitureContre(x, z, cap) {
+    const ux = Math.sin(cap), uz = Math.cos(cap);
+    const moi = rectangle(x, z, ux, uz);
+    for (const b of dernieres) {
+      if (b.enfant && !b.ami) continue;
+      if ((b.x - x) ** 2 + (b.z - z) ** 2 > 8 * 8 || Math.abs(b.y - player.pos.y) > 2.5) continue;
+      if (!seTouchent(moi, b.rect)) continue;
+      const vx = b.uz, vz = -b.ux;
+      let a = 0, l = 0;
+      for (const [px, pz] of b.rect) {
+        a = Math.max(a, Math.abs((px - b.x) * b.ux + (pz - b.z) * b.uz));
+        l = Math.max(l, Math.abs((px - b.x) * vx + (pz - b.z) * vz));
+      }
+      const c = b.c;
+      let v = 0;
+      if (c && !b.ami && !(c.attend && c.attend[b.i]) && !c.bloque && !(c.attente > 0)) {
+        const allure = c.rapport ? c.rapport[b.i] : (c.retard && c.retard[b.i] > 0 ? 1.5 : 1);
+        v = (c.vitesseActuelle ?? c.vitesse ?? 0) * allure;
+      }
+      return { x: b.x, z: b.z, ux: b.ux, uz: b.uz, a, b: l, v, rail: !!b.rail };
+    }
+    return null;
+  }
+
   // ET UN PIÉTON NE TRAVERSE PAS UNE VOITURE (v259). Max, capture à la
   // Bastille : « les passants traversent la voiture de l'enfant ». Un passant
   // ne connaît que les blocs solides (`sweep`, marlon.js) ; une voiture n'en
@@ -2264,7 +2295,7 @@ export function createVehicules({ scene, player }) {
   }
 
   return {
-    metro, course, chaine, circulation, bus, update, placeProche, diagPlace, place, emprunter, retirer, obstacleDevant, voitureA, dansRectangle, enMarche, voitureRueProche, voitureNommee,
+    metro, course, chaine, circulation, bus, update, placeProche, diagPlace, place, emprunter, retirer, obstacleDevant, voitureContre, voitureA, dansRectangle, enMarche, voitureRueProche, voitureNommee,
     adopterHorloge, horloge: () => horloge,
     // le crochet des feux tricolores (v273), branché par main.js
     brancherFeux: (f) => { feuRouge = f; },

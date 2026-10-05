@@ -423,6 +423,95 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         `droite ${droit} cases · en biais ${biais.length} cases, coins (12,8) et (8,12) ${coin ? 'touchés' : 'libres'}`);
     }
   }
+  // --- LA NORMALE DE CE QU'ON TOUCHE (v365, palier 2 de la conduite) -------
+  // Le palier 1 prenait la normale du MOUVEMENT contre une voiture de la rue
+  // (toujours un choc de face) et celle d'un AXE DU MONDE contre un mur. Sur
+  // une façade oblique en escalier de cubes, la voiture s'arrêtait net ou
+  // était renvoyée loin du mur. Trois témoins, sous node : la droite d'une
+  // façade se lit sur ses faces exposées ; un choc contre une voiture se juge
+  // dans SON repère ; et le JOUEUR (player.js, three chargé par un crochet de
+  // module) glisse le long d'un mur oblique, deux angles de mur, deux angles
+  // d'approche — mesuré sur l'ancien code : 0,2 à 1,7 bloc puis l'arrêt.
+  {
+    const C = await import('../src/conduite.js').catch(() => null);
+    if (!C || !C.normaleDeMur || !C.chocContreVoiture) {
+      for (const n of ['la normale d\'une façade oblique se lit sur ses faces', 'un choc contre une voiture de la rue se juge dans son repère'])
+        verifier(`conduite : ${n}`, false, 'normaleDeMur / chocContreVoiture absents (ancien code)');
+    } else {
+      // des murs à tous les angles de 0 à 87°, quarante points de contact chacun
+      let pire = 0, somme = 0, nb = 0;
+      for (let th = 0; th < 90; th += 3) {
+        const t = th * Math.PI / 180, nx = -Math.sin(t), nz = Math.cos(t);
+        const plein = (x, z) => { const s = (x + 0.5) * nx + (z + 0.5) * nz; return s > 0 && s < 6; };
+        for (let k = 0; k < 40; k++) {
+          const u = k * 0.37 - 7, cx = Math.cos(t) * u + nx * 0.3, cz = Math.sin(t) * u + nz * 0.3;
+          const car = [cx - nx * 1.5, cz - nz * 1.5], R = 4.5, cases = [];
+          for (let bz = Math.floor(cz - R); bz <= Math.floor(cz + R); bz++) for (let bx = Math.floor(cx - R); bx <= Math.floor(cx + R); bx++) {
+            if ((bx + 0.5 - cx) ** 2 + (bz + 0.5 - cz) ** 2 > R * R || !plein(bx, bz)) continue;
+            for (const [ex, ez] of [[1, 0], [-1, 0], [0, 1], [0, -1]])
+              if (!plein(bx + ex, bz + ez) && (car[0] - bx - 0.5) * ex + (car[1] - bz - 0.5) * ez > 0) cases.push([bx + 0.5 + ex * 0.5, bz + 0.5 + ez * 0.5]);
+          }
+          const r = C.normaleDeMur(cases, car[0], car[1]);
+          const e = r ? Math.acos(Math.max(-1, Math.min(1, -(r.nx * nx + r.nz * nz)))) * 180 / Math.PI : 180;
+          pire = Math.max(pire, e); somme += e; nb++;
+        }
+      }
+      verifier('conduite : la normale d\'une façade oblique se lit sur ses faces — l\'escalier de cubes rend la vraie façade',
+        pire < 12 && somme / nb < 2.5, `${nb} contacts, 0 à 87° : erreur moyenne ${(somme / nb).toFixed(2)}°, pire ${pire.toFixed(1)}°`);
+      const moi = (x, z, cap) => C.boiteVoiture(x, z, cap, 2.2, 1.13);
+      // par l'arrière : à 22 dans une voiture qui roule à 12 dans le même sens
+      const arr = C.chocContreVoiture(moi(-4.3, 0, Math.PI / 2), { ...moi(0, 0, Math.PI / 2), v: 12 }, 22, 0);
+      // le flanc frôlé : à 16, dix degrés vers son flanc, elle roule à 12
+      const a = 10 * Math.PI / 180;
+      const fl = C.chocContreVoiture(moi(0, -2.2, Math.PI / 2 + a), { ...moi(1, 0, Math.PI / 2), v: 12 }, 16 * Math.cos(a), 16 * Math.sin(a));
+      // en travers, de face dans son flanc, elle arrêtée
+      const tr = C.chocContreVoiture(moi(0, -3.3, 0), { ...moi(0, 0, Math.PI / 2), v: 0 }, 0, 20);
+      verifier('conduite : un choc contre une voiture de la rue se juge dans son repère — l\'arrière pousse peu, un flanc frôlé ne nous arrête pas, de face on s\'arrête',
+        arr && arr.force < 0.6 && arr.vx > 8 && !arr.glisse
+          && fl && fl.force < 0.3 && Math.abs(fl.nz) > 0.95 && Math.hypot(fl.vx, fl.vz) > 11
+          && tr && tr.force === 1 && tr.vz < 0 && tr.vz > -5,
+        `arrière ${JSON.stringify(arr)} · flanc ${JSON.stringify(fl)} · travers ${JSON.stringify(tr)}`);
+    }
+    // LE JOUEUR CONTRE UN MUR OBLIQUE. `player.js` importe three : un crochet de
+    // résolution le donne au module, comme l'import map du navigateur.
+    let Player = null, BLK = null;
+    try {
+      const { register } = require('node:module');
+      const { pathToFileURL } = require('url');
+      const trois = pathToFileURL(require('path').resolve(__dirname, '../vendor/three.module.min.js')).href;
+      register('data:text/javascript,' + encodeURIComponent(
+        `export async function resolve(s, c, n) { return s === 'three' ? { url: ${JSON.stringify(trois)}, shortCircuit: true } : n(s, c); }`));
+      ({ Player } = await import('../src/player.js'));
+      ({ BLOCK: BLK } = await import('../src/blocks.js'));
+    } catch (e) { Player = null; }
+    if (!Player) verifier('conduite : la voiture glisse le long d\'une façade oblique', false, 'player.js ne se charge pas sous node');
+    else {
+      const cam = { position: { copy() {} }, rotation: { set() {} } };
+      const essais = [];
+      for (const th of [24, 37]) for (const ap of [12, 25]) {
+        const t = th * Math.PI / 180, nx = -Math.sin(t), nz = Math.cos(t);
+        const monde = { getBlock(x, y, z) { if (y < 30) return BLK.STONE; if (y > 45) return BLK.AIR; const s = (x + 0.5) * nx + (z + 0.5) * nz; return s > 0 && s < 6 ? BLK.STONE : BLK.AIR; } };
+        const p = new Player(cam, monde);
+        p.gabarit = 2.26; p.boost = 34 / 3.2;
+        const d = t + ap * Math.PI / 180, dx = Math.cos(d), dz = Math.sin(d);
+        p.pos.set(-dx * 12 - nx * 4, 30, -dz * 12 - nz * 4); p.onGround = true;
+        p.yaw = Math.atan2(-dx, -dz); p.vitesseVoiture = 30; p.touchMove.f = 1;
+        let depart = null, arret = 0;
+        for (let k = 0; k < 60; k++) {
+          const c0 = p.chocs || 0, x0 = p.pos.x, z0 = p.pos.z;
+          p.update(0.05);
+          if (!depart && (p.chocs || 0) > c0) depart = { x: p.pos.x, z: p.pos.z };
+          if (depart && Math.hypot(p.pos.x - x0, p.pos.z - z0) < 0.1) arret++;
+        }
+        const glisse = depart ? (p.pos.x - depart.x) * Math.cos(t) + (p.pos.z - depart.z) * Math.sin(t) : 0;
+        essais.push({ mur: th, approche: ap, glisse: +glisse.toFixed(1), v: +p.vitesseVoiture.toFixed(1), immobile: arret, contact: !!depart,
+          normale: p.contact ? +((Math.atan2(p.contact.nz, p.contact.nx) - Math.atan2(-nz, -nx)) * 180 / Math.PI).toFixed(1) : null });
+      }
+      verifier('conduite : la voiture glisse le long d\'une façade oblique en escalier, sans s\'y coincer ni en être renvoyée',
+        essais.every((e) => e.contact && e.glisse > 40 && e.v > 15 && e.immobile === 0),
+        JSON.stringify(essais));
+    }
+  }
   verifier('et le sol a son propre plafond, qui ne suit pas le ciel',
     SOMMET_TERRAIN === 80, `${SOMMET_TERRAIN}`);
 
