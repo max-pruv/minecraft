@@ -4041,7 +4041,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       verifier('à quatre-vingts blocs par seconde dans Paris, le worker ne reste pas à sec entre deux images',
         n1.parcouru > 300 && a1.parcouru > 300 && rapport >= 1.5 && enVol <= 4,
         `débit × ${rapport} (barre 1,5) · en vol au plus ${enVol} (barre 4) · à l'arrivée : ${dit(n1)} | ${dit(n2)} · à l'image : ${dit(a1)} | ${dit(a2)}`);
-      // EN ORDRE ALTERNÉ (v365) : une seule paire rendait 0,753 sur
+      // EN ORDRE ALTERNÉ (v370) : une seule paire rendait 0,753 sur
       // `origin/main` et 0,726 sur la branche — un pile ou face sur la barre,
       // avec la recharge FORCÉE des deux côtés (aucune règle de la livraison
       // n'y est lue). Deux paires, ABBA, et l'on compare les moyennes.
@@ -4054,7 +4054,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     }
 
     // APRÈS UNE TÉLÉPORTATION, LA FILE SE RECHARGE À L'ARRIVÉE LE TEMPS DE
-    // REMPLIR LE DISQUE, PUIS SE REND (v365).
+    // REMPLIR LE DISQUE, PUIS SE REND (v370).
     //
     // Sondé (sonde-teleport-recharge.cjs, deux tours alternés, Paris) : à la
     // recharge par image, 291 à 304 morceaux sur 625 en vingt secondes ; à
@@ -4141,7 +4141,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       g.player.vitesseAvion = def.pilote.max;
       g.player.avionEnVol = true; g.player.avionEtat = 'vol';
       g.player.altitudeDecollage = -9999;
-      // la scène VIDE (v365) : voir plus bas, « ce que le banc dessine »
+      // la scène VIDE (v370) : voir plus bas, « ce que le banc dessine »
       const rendre = g.renderer.render, rendreLie = rendre.bind(g.renderer), vide = new g.scene.constructor();
       g.renderer.render = (s, c) => rendreLie(s === g.scene ? vide : s, c);
       await new Promise((f) => setTimeout(f, 3000));
@@ -4183,7 +4183,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // `programmes.images` utilise déjà pour dire la même chose (v246) : une
     // page morte rend zéro.
     // CE QUE LE BANC DESSINE NE SE TRANSPOSE PAS, ET LE TÉMOIN NE LE MESURE
-    // PLUS (v365). Rouge des deux côtés depuis plusieurs portails (1 367 ms ·
+    // PLUS (v370). Rouge des deux côtés depuis plusieurs portails (1 367 ms ·
     // 21,7 % sur la branche de la v360, 2 350 ms · 20,5 % sur `origin/main`),
     // il a été démonté par une sonde qui sépare, image par image, ce qui la
     // remplit (sonde-arrivee-ville.cjs, deux tours, ce même vol) : dans les
@@ -4271,7 +4271,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // ses pixels — 1 782 blocs en v247, 1 127 en v248, 964 en v249, pour une
     // borne de 1 000 qui ne séparait plus « ça a volé » de « ça n'a pas
     // volé ». Cinq cents : un vol qui n'a pas eu lieu rend zéro.
-    // ET CINQ CENTS ÉTAIT REDEVENU LA MESURE (v365) : 490 et 494 sur la
+    // ET CINQ CENTS ÉTAIT REDEVENU LA MESURE (v370) : 490 et 494 sur la
     // branche, 528 sur `origin/main` rejoué seul — la même borne posée à
     // nouveau SUR la valeur, ce que la règle interdit. Deux cent cinquante.
     verifier('voler une demi-minute ne remplit pas la mémoire de la tablette',

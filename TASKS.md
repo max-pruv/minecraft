@@ -259,14 +259,14 @@
   du banc tombe en ville de 14 à 5 images/s — c'est le DESSIN de la ville
   (scène vide : 51–57 contre 53–57) ; sur l'iPad, **relire la cadence à 70–80
   b/s dans Paris avec `?diag=1` avant de monter `ALLURES`**. ~~Reste : pourquoi
-  Londres plafonne à 70~~ — **mesuré en v365** (`sonde-londres.cjs`) : ni
+  Londres plafonne à 70~~ — **mesuré en v370** (`sonde-londres.cjs`) : ni
   l'eau (3 % des morceaux), ni la file (les manquants « absents » sont au bord
   du disque, la file refaite un morceau plus tôt), ni le worker en moyenne —
   le CENTRE de Londres, pile au milieu du trajet, porte 64 % de faces de plus
   que celui de Paris et une génération 70 % plus chère. `solLondres` mémoïsé
   (2,8 → 2,1 ms) ; au banc 145–151 contre 137–152 : le plafond ville reste à
   70. Le reste est la géométrie de la ville (faces), pas un défaut ;
-  ~~la recharge forcée après une téléportation~~ — **armée en v365**, dans
+  ~~la recharge forcée après une téléportation~~ — **armée en v370**, dans
   une fenêtre de dix secondes après un saut, hors rendu logiciel (scène vide :
   57 images/s et 4,1–4,4 s des deux côtés). À relire sur la tablette :
   `?recharge=arrivee&diag=1` contre `?recharge=image&diag=1`, se téléporter à
@@ -274,14 +274,14 @@
   temps, deux mailleurs) et la file de seize (v269) restent écartés. Sur
   l'iPad, deux fois moins de calcul par morceau est un fait, mais le plafond
   ne se relève que sur une mesure `?diag=1` en roulant ; (4) un lot déjà parti au worker ne
-  s'annule pas quand on le dépasse — **mesuré en v365** : 0 à 6 morceaux sur
+  s'annule pas quand on le dépasse — **mesuré en v370** : 0 à 6 morceaux sur
   400 à 700 arrivent derrière l'enfant à 80 b/s, zéro refusé, moins de 1 % :
   laissé.
 
 - [ ] **AU PORTAIL DE LA v360 (la recharge de la file), LES AUTRES ROUGES SONT
   DÉCLARÉS, rejoués SEULS des deux côtés.** `monte.js` « l'écran ne se fige pas
   en arrivant sur une ville » : branche 1 367 ms · 21,7 %, `origin/main` 2 350 ms
-  · 20,5 % — **démonté en v365** (`sonde-arrivee-ville.cjs`) : c'est le dessin
+  · 20,5 % — **démonté en v370** (`sonde-arrivee-ville.cjs`) : c'est le dessin
   SwiftShader, le témoin rend désormais une scène vide (vérifié rouge en
   désarmant la v235) ; reste à relire le vol vers Paris sur la tablette
   (`?diag=1`, pire image) ; « se téléporter ne compile plus de programmes » : branche rouge
@@ -294,7 +294,7 @@
   la branche, verte sur `origin/main` — l'intermittence déjà déclarée, dans un
   module (`gps.js`) que la v360 ne touche pas.
 
-- [ ] **AU PORTAIL DE LA v365 (l'arrivée après la carte), QUATRE SUITES ROUGES,
+- [ ] **AU PORTAIL DE LA v370 (l'arrivée après la carte), QUATRE SUITES ROUGES,
   rejouées SEULES des deux côtés** (branche rebasée sur la v364, `origin/main`
   f7f34d3). Aucune n'est causée par la livraison, dont tout ce qui touche la
   file est inerte en rendu logiciel. `maj.js` : le loader et « corps,

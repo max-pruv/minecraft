@@ -168,7 +168,7 @@ export function fileDeMaillage({ pcx, pcz, R, dir, rapide, deja }) {
   return file;
 }
 
-// L'ARRIVÉE APRÈS UNE TÉLÉPORTATION (v365). À l'arrêt, la file se rechargeait
+// L'ARRIVÉE APRÈS UNE TÉLÉPORTATION (v370). À l'arrêt, la file se rechargeait
 // une fois par image (v360) : sur un écran qui rame, le disque de Paris mettait
 // plus de vingt secondes à arriver au banc — 291 à 304 morceaux sur 625 en
 // vingt secondes, la cadence tombée à 4 images par seconde pendant que la

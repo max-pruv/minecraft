@@ -2142,7 +2142,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       w.sansSolContinu = false; return performance.now() - t0;
     };
     for (let i = 0; i < 9; i++) {
-      // ordre alterné, et l'ÉCART se prend paire par paire (v365) : la
+      // ordre alterné, et l'ÉCART se prend paire par paire (v370) : la
       // différence de deux médianes rougissait quand le portail chargeait la
       // machine au milieu des neuf passages (10,8 contre 2,5, puis 15,5
       // contre 11,0 — `sans` aussi monté), sur un code qui n'y touchait pas ;

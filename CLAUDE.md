@@ -987,7 +987,7 @@ Et une empreinte d'identité qui change se PROUVE : celle des 490 morceaux
 (v352) couvre Marrakech et Tokyo ; la branche, bâtisseurs neufs désarmés, rend
 l'ancienne au bit près — c'est ce qui a permis de la remplacer.
 
-## L'arrivée après la carte (v365) — un gel de banc se démonte en scène vide
+## L'arrivée après la carte (v370) — un gel de banc se démonte en scène vide
 
 Les dettes de la v360. Cinq règles.
 
