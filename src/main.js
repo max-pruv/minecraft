@@ -14,6 +14,7 @@ import { MONUMENTS, MONUMENTS_PAR_VILLE, monumentBati } from './monuments.js';
 import { FAMILLES, batimentVariante, NB_BATIMENTS } from './batiments.js';
 import { World, migrerLesBlocs, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, VILLE, CIRCUIT, CHAUSSEE, TROTTOIR } from './world.js';
 import { aeroportPres, postesAvion } from './aeroport.js';
+import { couloirVoiture } from './pietons.js';
 import { cadence, chronoReel } from './cadence.js';
 import { axeDuFeu, axeDuCap, etatFeu } from './feux.js';
 import { cadran } from './cap.js';
@@ -1601,7 +1602,7 @@ function updateChunks() {
   // LES FAMILLES SE JUGENT L'UNE APRÈS L'AUTRE, ET LA PLUS CHÈRE EN DERNIER
   // (leçon de la contrainte de partage, v270) : `eauDevant` descend une
   // colonne, les autres lisent des listes déjà figées.
-  // ET LE CROCHET DIT QUELLE FAMILLE ARRÊTE LA VOITURE (v350) : un choc
+  // ET LE CROCHET DIT QUELLE FAMILLE ARRÊTE LA VOITURE (v354) : un choc
   // contre une voiture de la rue ou du mobilier rebondit, un piéton et l'eau
   // arrêtent net, sans choc — personne n'est jamais touché (v259).
   player.obstacleVehicule = (x, z, cap, x0 = x, z0 = z) => {
@@ -1626,15 +1627,9 @@ function updateChunks() {
   // fabrique rien — la liste des voitures en marche est celle que
   // `vehicules.enMarche()` a figée pour l'image (lecture seule, jamais
   // copiée ni complétée), et la voiture de l'enfant se regarde à part.
-  const dansLeCouloir = (r, x, z, y, marge) => {
-    if (r.v <= 0.5 || Math.abs(r.y - y) > 2.5) return null;
-    const dx = x - r.x, dz = z - r.z;
-    if (dx * dx + dz * dz > 34 * 34) return null;
-    const devant = dx * r.ux + dz * r.uz, cote = dx * r.uz - dz * r.ux;
-    if (devant < -2.2 || devant > Math.min(30, r.v * 2 + 4)) return null;
-    if (Math.abs(cote) > r.demiLarg + marge) return null;
-    return { ux: r.ux, uz: r.uz, cote: cote >= 0 ? 1 : -1, lat: cote };
-  };
+  // LE COULOIR SE MESURE EN SECONDES DEPUIS LA v340 (`pietons.js`) : trente
+  // blocs à soixante blocs par seconde ne laissaient qu'une demi-seconde.
+  const dansLeCouloir = couloirVoiture;
   const voitureEnfant = { x: 0, y: 0, z: 0, ux: 0, uz: 1, v: 0, demiLarg: 1.1 };
   world.vehiculeApproche = (x, z, y, marge = 1.0) => {
     // la voiture de l'enfant : ce qu'il DEMANDE (`pousse`), pas ce qu'il

@@ -105,6 +105,9 @@ const DOME = { 3: [5, 9], 4: [5, 10], 5: [5, 11], 6: [5, 12] };      // r → [a
 const MINARET = (h) => [h - 2, h + 1];
 const PALAIS = [5, 5], COLONNADE = [5, 6];
 const ARCHE = (h) => [h + 1, h + 3];
+const TOUR = (h) => [h, h + 1];
+const PAGODE5 = (v) => [[0, 0], [1, 1], [3, 9], [4, 10], [6, 18], [7, 19], [9, 27], [10, 28],
+  [12, 35], [13, 36], [15, 43], [16, 44], [17, v + 1]];
 export const ECHELLES_VILLES = Object.freeze({
   'Rome|Basilique St-Pierre': { vraie: 137, corps: DOME[6] },
   // La façade de la cathédrale de Pise, trente-quatre mètres ; le baptistère
@@ -178,6 +181,73 @@ export const ECHELLES_VILLES = Object.freeze({
   'Buenos Aires|La Casa Rosada': { vraie: 26, corps: PALAIS },
   // La tour du Cabildo, trente mètres.
   'Buenos Aires|Le Cabildo': { vraie: 30, corps: ARCHE(4) },
+
+  // LES AUTRES VILLES ENGENDRÉES (v353). Même
+  // règle, même table : la corniche mesurée, la courbe de Paris posée dessus.
+  // Ce qui est déjà au-dessus de son ciel ne bouge pas (la Sagrada Família,
+  // le Burj Khalifa, la Space Needle, le Christ Rédempteur, l'Opéra de Sydney —
+  // ce sont des modèles du catalogue, à leur hauteur d'auteur). Le Luxor non
+  // plus : une pyramide étirée devient un obélisque, elle garde ses
+  // proportions. Les grandes roues ne s'étirent pas (la High Roller, comme le
+  // Prater).
+  //
+  // ET UN FÛT QUI DOMINE DÉJÀ SES TOITS NE S'ÉTIRE PLUS. Les tours d'un bloc
+  // (`minaret`, `tourBoule`) ne montent que tant que leur hauteur d'auteur est
+  // sous une fois et demie la corniche de leur ville (le témoin le garde) :
+  // au-delà elles dominent
+  // déjà leur ville, et le premier jet, qui les étirait, a rendu en capture des
+  // perches — la tour de l'hôtel de ville de Bruxelles à trente-quatre blocs,
+  // la Willis Tower à cinquante-cinq. C'est le bâtisseur qu'il faut refaire
+  // (une emprise de tour), pas la hauteur (`TASKS.md`).
+  // La colonne de Colomb, soixante mètres, statue comprise.
+  'Barcelone|Colonne de Colom': { vraie: 60, corps: [12, 13], fut: true },
+  // Les tours de la Frauenkirche, quatre-vingt-dix-neuf mètres ; le beffroi du
+  // nouvel hôtel de ville, quatre-vingt-cinq.
+  'Munich|Frauenkirche': { vraie: 99, corps: [11, 15], fut: true },
+  'Munich|Le nouvel hôtel de ville': { vraie: 85, corps: MINARET(16), fut: true },
+  // La coupole centrale de Saint-Marc, quarante-trois mètres.
+  'Venise|Saint-Marc': { vraie: 43, corps: DOME[3] },
+  // Une tour à boule : le fût jusqu'à la boule du sommet.
+  'Las Vegas|La demi-tour Eiffel': { vraie: 165, corps: TOUR(16), fut: true },
+  'Miami|La Freedom Tower': { vraie: 78, corps: MINARET(14), fut: true },
+  // Le Capitolio, quatre-vingt-douze mètres ; les tours de la cathédrale,
+  // trente-quatre.
+  'La Havane|Le Capitole': { vraie: 92, corps: DOME[5] },
+  'La Havane|La cathédrale': { vraie: 34, corps: MINARET(8), fut: true },
+  // LES PAGODES (Asie) : chaque étage s'étire, chaque toit reste un rang —
+  // la règle de Wat Arun. Un étage de pagode fait neuf mètres, sa flèche dix.
+  'Tokyo|Sensō-ji': { vraie: 53, paliers: PAGODE5(53) },
+  'Kyoto|Tō-ji': { vraie: 55, paliers: PAGODE5(55) },
+  // La pagode à trois étages de Kiyomizu-dera, trente et un mètres.
+  'Kyoto|Kiyomizu-dera': { vraie: 31,
+    paliers: [[0, 0], [1, 1], [3, 8], [4, 9], [6, 16], [7, 17], [9, 24], [10, 25], [11, 32]] },
+});
+
+// LE LOT 2 : LES VILLES BÂTIES À LA MAIN (v350). Même règle, même table : le
+// ciel de la ville (`CIELS`, corniche mesurée), la courbe qui passe sous les
+// repères plus hauts dans la vraie ville. Leurs bâtisseurs sont des salles
+// qu'on visite ou des façades à gardes et à grilles : sous la troisième couche,
+// RIEN ne s'étire — la porte, la locomotive, les gardes de Buckingham gardent
+// leur taille. Les paliers s'écrivent donc en mètres, comme à Paris.
+//
+// Trois seulement montent, et c'est une mesure : ailleurs, le vrai ciel de la
+// ville ne laisse pas la place (voir `BAS_DECLARES`, entrées de la v350).
+export const ECHELLES_MAIN = Object.freeze({
+  // L'Opéra de Lille, une quarantaine de mètres fronton compris (Cordonnier,
+  // 1913), deux fois les immeubles de la place du Théâtre — et sous le beffroi
+  // de la Chambre de commerce, son voisin de 76 m. Onze blocs (voir `CIELS`). Le rez et la porte ne
+  // bougent pas ; les baies, le mur et l'attique s'étirent, le fronton et
+  // l'Apollon restent d'un rang.
+  'Lille|Opéra de Lille': { vraie: 40, paliers: [[0, 0], [2, 2], [5, 30], [7, 41]] },
+  // Buckingham, vingt-quatre mètres de pierre de Portland : au-dessus des
+  // terrasses de Belgravia et de St James's, sous la Tour Blanche (27 m). Les
+  // grilles et les gardes (couches 1 et 2) gardent leur taille.
+  'Londres|Buckingham Palace': { vraie: 24, paliers: [[0, 0], [3, 3], [8, 25]] },
+  // Les Archives nationales, cent soixante pieds (49 m) : le seul des
+  // bâtiments du lot qui dépasse le plafond de la loi de 1910. Sous le dôme de
+  // la Bibliothèque du Congrès (59 m), au-dessus du mémorial Jefferson (39 m).
+  // Les Chartes, la porte et le pied des colonnes ne bougent pas.
+  'Washington|Archives nationales': { vraie: 49, paliers: [[0, 0], [4, 4], [12, 50]] },
 });
 
 // LES MONUMENTS PLUS BAS QUE LEURS IMMEUBLES, ET C'EST VOULU — ou c'est pour un
@@ -234,15 +304,15 @@ export const BAS_DECLARES = Object.freeze({
   'Mexico|Le Templo Mayor': { vrai: 'ce sont des ruines, fouillées sous le niveau de la rue' },
   'Kyoto|Le Pavillon d\'or': { vrai: 'un pavillon de douze mètres et demi au bord de son étang' },
   'Bangkok|Wat Pho': { vrai: 'le Bouddha couché (quinze mètres) dort sous le toit de son temple' },
-  // Dette déclarée : remis à l'échelle dans la livraison suivante.
-  'New York|Arche de Washington': { lot: 'lot 2 — les villes bâties à la main' },
-  'Lille|Opéra de Lille': { lot: 'lot 2 — les villes bâties à la main' },
-  'Washington|Musée d\'Histoire américaine': { lot: 'lot 2 — les villes bâties à la main' },
-  'Washington|Musée de l\'Indien d\'Amérique': { lot: 'lot 2 — les villes bâties à la main' },
-  'Washington|Le Trésor': { lot: 'lot 2 — les villes bâties à la main' },
-  'Washington|Archives nationales': { lot: 'lot 2 — les villes bâties à la main' },
-  'Washington|Théâtre Ford': { lot: 'lot 2 — les villes bâties à la main' },
-  'Londres|Buckingham Palace': { lot: 'lot 2 — les villes bâties à la main' },
+  // Le lot 2 (v350) : bas dans la vraie ville aussi. Washington a un plafond —
+  // la loi de 1910 arrête ses immeubles à une quarantaine de mètres — et ces
+  // bâtiments n'y montent pas ; plus haut, les deux musées du Mall passeraient
+  // au-dessus des tours du château du Smithsonian (44 m), qui sont des fûts.
+  'New York|Arche de Washington': { vrai: 'l\'arche (23 m) est plus basse que les immeubles de NYU et de Greenwich Village autour du square' },
+  'Washington|Musée d\'Histoire américaine': { vrai: 'cinq étages au pied des palais fédéraux du Triangle, sous les tours du château du Smithsonian' },
+  'Washington|Musée de l\'Indien d\'Amérique': { vrai: 'une trentaine de mètres au pied du Capitole, sous les tours du château du Smithsonian' },
+  'Washington|Le Trésor': { vrai: 'quatre étages de colonnades, plus bas que les bureaux de 15th Street plafonnés par la loi de 1910' },
+  'Washington|Théâtre Ford': { vrai: 'un théâtre de trois étages entre les immeubles de bureaux de 10th Street' },
 });
 
 // L'ÉCHELLE DU CIEL : un bloc pour un mètre jusqu'à la corniche, puis une
@@ -278,6 +348,37 @@ export const CIELS = Object.freeze({
   Moscou: 13, 'Saint-Pétersbourg': 12, Stockholm: [13, 0.26], Copenhague: [13, 0.92],
   Singapour: 13, Bangkok: 12, 'Jérusalem': [8, 0.78], Mumbai: 12, Delhi: 15,
   'Los Angeles': [20, 0.2], Toronto: [15, 0.3], Mexico: [13, 0.95], 'Buenos Aires': 15,
+  // Le lot 2, les villes bâties à la main (v350). Londres passe sous la Tour
+  // Blanche (27 m, douze blocs) ; Washington sous le dôme de la Bibliothèque
+  // du Congrès (59 m, quinze blocs).
+  // À Lille, c'est la FORME qui comprime : le bâtisseur de l'Opéra fait cinq
+  // blocs sur trois, et à seize blocs (k = 1) il devenait une tour blanche,
+  // vu en capture ; à onze, une fois et demie les toits, il reste un opéra.
+  Lille: [7, 0.4], Londres: [8, 0.75], Washington: [13, 0.26],
+  // v353 : les autres villes engendrées qui portent des repères.
+  Barcelone: 13, Munich: [13, 0.55], Venise: 8, 'Las Vegas': 15, Miami: 13, 'La Havane': 13,
+  Tokyo: [13, 0.72], Kyoto: 12,
+});
+// LES VILLES ENGENDRÉES QUI N'ONT PAS DE CIEL, et chacune dit pourquoi — même
+// discipline que `BAS_DECLARES`. `vrai` : rien à y remettre à l'échelle, ses
+// repères sont déjà au-dessus de leur ciel ou n'en ont pas (un modèle du
+// catalogue, une roue, un pont, une place). `lot` : une dette déclarée, qui
+// doit disparaître. Le témoin (`tests/plafond.js`) exige que toute ville
+// engendrée dont un repère est mesuré parmi ses immeubles soit dans `CIELS`
+// ou ici. Gizeh et le Machu Picchu n'ont pas d'immeubles : pas de corniche,
+// pas de ciel à mesurer.
+export const VILLES_SANS_CIEL = Object.freeze({
+  Sydney: { vrai: 'l\'Opéra est un modèle du catalogue, déjà au-dessus de ses toits ; le Harbour Bridge est un pont' },
+  'Rio de Janeiro': { vrai: 'le Christ Rédempteur est un modèle du catalogue, sur son Corcovado' },
+  Seattle: { vrai: 'la Space Needle est un modèle du catalogue ; la grande roue ne s\'étire pas' },
+  'Dubaï': { vrai: 'le Burj Khalifa est bâti à sa hauteur, bien au-dessus de son ciel' },
+  'Le Cap': { vrai: 'son seul repère est une forteresse aux murs bas' },
+  Bruxelles: { vrai: 'la tour de l\'hôtel de ville est un fût qui domine déjà ses toits (23 blocs pour 13)' },
+  Marrakech: { vrai: 'la Koutoubia est un fût qui domine déjà ses toits (19 blocs pour 7)' },
+  Chicago: { vrai: 'la Willis Tower et le John Hancock sont des fûts qui dominent déjà leurs toits (43 et 37 blocs pour 14)' },
+  'Séoul': { vrai: 'la tour de Séoul est un fût qui domine déjà ses toits (22 blocs pour 13)' },
+  Shanghai: { vrai: 'la perle de l\'Orient et Jin Mao sont des fûts qui dominent déjà leurs toits (38 et 42 blocs pour 13)' },
+  'Hong Kong': { vrai: 'la Banque de Chine et l\'IFC sont des fûts qui dominent déjà leurs toits (32 et 36 blocs pour 13)' },
 });
 export const blocsDuCiel = (m, c = CORNICHE, k = 1) => (m <= c ? m : c + k * K_CIEL * (c / CORNICHE) * Math.log(m / c));
 
@@ -324,7 +425,7 @@ const FUT_MAX = 1.5;
 const cleDe = (ville, nom) => `${ville}|${nom}`;
 const MONDE = new Map();
 export const echelleDe = (ville, nom) => {
-  const e = ECHELLES[cleDe(ville, nom)] || ECHELLES_VILLES[cleDe(ville, nom)];
+  const e = ECHELLES[cleDe(ville, nom)] || ECHELLES_VILLES[cleDe(ville, nom)] || ECHELLES_MAIN[cleDe(ville, nom)];
   if (!e) return null;
   if (!MONDE.has(e)) {
     const [c, k] = [].concat(CIELS[ville] || CORNICHE, 1);

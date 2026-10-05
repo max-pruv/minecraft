@@ -141,14 +141,23 @@ export const TAMISE = [
 
 const LARGEUR_TAMISE = 5;      // demi-largeur : ~420 m d'une rive à l'autre
 
+// UNE HYPOTÉNUSE NE SE CALCULE QUE SI ELLE PEUT GAGNER (v352). `Math.hypot`
+// est lente, et ce minimum se demande pour chaque colonne de la ville ; le
+// carré de la distance écarte d'abord les segments qui ne peuvent pas battre
+// le minimum courant, avec une marge d'un milliardième qui couvre l'écart
+// d'arrondi entre le carré et `hypot`. Le segment gagnant est toujours mesuré
+// par `hypot` : le résultat est le même au bit près.
 export function distanceTamise(u, v) {
-  let min = Infinity;
+  let min = Infinity, borne = Infinity;
   for (let i = 0; i < TAMISE.length - 1; i++) {
-    const [u0, v0] = TAMISE[i], [u1, v1] = TAMISE[i + 1];
+    const u0 = TAMISE[i][0], v0 = TAMISE[i][1], u1 = TAMISE[i + 1][0], v1 = TAMISE[i + 1][1];
     const du = u1 - u0, dv = v1 - v0;
     const l2 = du * du + dv * dv || 1;
     const t = Math.max(0, Math.min(1, ((u - u0) * du + (v - v0) * dv) / l2));
-    min = Math.min(min, Math.hypot(u - (u0 + du * t), v - (v0 + dv * t)));
+    const a = u - (u0 + du * t), b = v - (v0 + dv * t);
+    if (a * a + b * b > borne) continue;
+    const d = Math.hypot(a, b);
+    if (d < min) { min = d; borne = (min * (1 + 1e-9)) ** 2; }
   }
   return min;
 }
@@ -543,14 +552,17 @@ export const TRAMES_LONDRES = TRAMES;
 // qu'il roule sur la culée d'un pont.
 export const auNordDeLaTamise = (u, v) => {
   // de quel côté du fleuve ? On regarde le point le plus proche du tracé.
-  let min = Infinity, cote = 0;
+  // (même garde que `distanceTamise`, v352 : le gagnant est mesuré par hypot)
+  let min = Infinity, cote = 0, borne = Infinity;
   for (let i = 0; i < TAMISE.length - 1; i++) {
-    const [u0, v0] = TAMISE[i], [u1, v1] = TAMISE[i + 1];
+    const u0 = TAMISE[i][0], v0 = TAMISE[i][1], u1 = TAMISE[i + 1][0], v1 = TAMISE[i + 1][1];
     const du = u1 - u0, dv = v1 - v0;
     const l2 = du * du + dv * dv || 1;
     const t = Math.max(0, Math.min(1, ((u - u0) * du + (v - v0) * dv) / l2));
-    const d = Math.hypot(u - (u0 + du * t), v - (v0 + dv * t));
-    if (d < min) { min = d; cote = du * (v - v0) - dv * (u - u0); }
+    const a = u - (u0 + du * t), b = v - (v0 + dv * t);
+    if (a * a + b * b > borne) continue;
+    const d = Math.hypot(a, b);
+    if (d < min) { min = d; cote = du * (v - v0) - dv * (u - u0); borne = (min * (1 + 1e-9)) ** 2; }
   }
   return cote < 0;
 };

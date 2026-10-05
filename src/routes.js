@@ -553,15 +553,44 @@ export function largeurA(seg, s) {
 //   pile  : vrai sur une colonne de pile
 const q64 = (v) => Math.round(v * 64) / 64;
 
+// La boîte d'un segment, élargie de tout ce qu'une colonne peut porter de
+// route (emprise pleine et talus le plus large, plus un bloc de marge) : un
+// point hors d'elle est à plus de cette distance de l'axe, donc `routeEn` ne
+// peut rien y rendre — on ne le projette pas (v352). Conservateur par
+// construction : la boîte ne retire que des segments qui rendraient null.
+const PORTEE_ROUTE = DEMI_EMPRISE + DEBLAI_MAX / TALUS_PENTE + 1;
+const BOITES = new WeakMap();
+function boiteDe(seg) {
+  let b = BOITES.get(seg);
+  if (!b) {
+    let x0 = Infinity, z0 = Infinity, x1 = -Infinity, z1 = -Infinity;
+    for (const [x, z] of seg.pts) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (z < z0) z0 = z; if (z > z1) z1 = z; }
+    b = { x0: x0 - PORTEE_ROUTE, z0: z0 - PORTEE_ROUTE, x1: x1 + PORTEE_ROUTE, z1: z1 + PORTEE_ROUTE };
+    BOITES.set(seg, b);
+  }
+  return b;
+}
+
 export function routeEn(x, z) {
   let best = null;
   for (const seg of pres(x, z)) {
+    const b = boiteDe(seg);
+    if (x < b.x0 || x > b.x1 || z < b.z0 || z > b.z1) continue;
     const pr = projeter(seg, x, z);
     if (best && pr.dist >= best.pr.dist) continue;
     best = { seg, pr };
   }
   if (!best) return null;
   const { seg, pr } = best;
+  // LE TALUS LE PLUS LARGE BORNE LA ROUTE (v352). Au-delà de la demi-emprise
+  // plus `DEBLAI_MAX / TALUS_PENTE`, aucune pièce ne peut répondre — c'est
+  // exactement la borne du talus plus bas (`w` ne la dépasse jamais) — et
+  // l'on rendait null APRÈS avoir lu le profil et le terrain de la colonne :
+  // l'index par cases de 512 donne la route à toute colonne de la case, et
+  // ce `terrainHeight` de trop faisait un cinquième du coût d'un morceau de
+  // Paris dans le worker (mesuré, sonde-cout-morceau.mjs). Même réponse, au
+  // bit près : le témoin compare les blocs et les tampons.
+  if (pr.dist - largeurA(seg, pr.s).demiEmprise >= DEBLAI_MAX / TALUS_PENTE) return null;
   const p = profilDe(seg);
   if (!p) return null;
   const L = largeurA(seg, pr.s);

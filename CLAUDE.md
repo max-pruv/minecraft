@@ -770,6 +770,83 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Le coût d'un morceau (v352) — on profile avant de croire la répartition, et la preuve est une empreinte
+
+Le point (3) de la dette de la v346 : au-delà de 70 b/s la ville ne suit plus,
+et le levier restant était le coût d'un morceau dans le worker. Cinq règles.
+
+- **LA RÉPARTITION « GÉNÉRATION 45 % » DATAIT, ET LE PROFIL L'A DÉMENTIE.** Sous
+  node, en roulant le long d'une bande (`morceaux-temoin.mjs`), le maillage
+  pesait le double de la génération à Paris. Et un cinquième du coût d'un
+  morceau de Paris était un `terrainHeight` dont la réponse était jetée :
+  `routeEn` le lisait pour toute colonne de la case de 512 blocs d'une route
+  avant de rendre null. On profile, on nomme la ligne (`--cpu-prof`, puis les
+  appelants des appelants), et l'on corrige le poste le plus lourd, une ligne
+  à la fois.
+- **UNE OPTIMISATION DU GÉNÉRATEUR OU DU MAILLEUR SE PROUVE PAR UNE EMPREINTE
+  RELEVÉE SUR L'ANCIEN CODE.** Le SHA-256 des blocs et de tous les tampons de
+  490 morceaux (neuf lieux, Paris avec et sans HD), plus `routeEn` sur toutes
+  les routes. Il est relevé sur la v351 (`empreinteMorceaux('<worktree>/src')`)
+  et gardé par `plafond.js`. **Et l'empreinte se vérifie capable de rougir** :
+  sur ses seuls 490 morceaux, une borne de `routeEn` cassée à dix blocs passait,
+  parce qu'aucun talus de plus de dix blocs n'y tombait. Il en existe ailleurs,
+  jusqu'à 12,86 blocs au-delà de l'emprise. Le balayage de toutes les routes l'a
+  rendu visible. Un témoin d'identité qui ne contient pas le cas limite ne
+  garde pas le cas limite.
+- **UNE MÉMOÏSATION NE VAUT QUE SUR UNE FONCTION PURE DE CE QUI NE CHANGE PAS.**
+  Le relief ne dépend que de `this.conf`, figée à la naissance du monde : la
+  grille brute de `generateChunk` se garde avec le morceau (`terrainMemo`) et
+  part avec lui (`oublierLoinDe`). Elle n'est tenue que pour `World` lui-même :
+  une classe qui redéfinit `terrainHeight` (Manhattan) relit à chaque fois.
+  `solParis`, `solLondres` et `cityAt`, eux, lisent l'état de l'enfant
+  (colonnes cédées, ville d'avant) : on ne les mémoïse pas.
+- **UN RACCOURCI DE CALCUL FLOTTANT GARDE LE CALCUL D'ORIGINE POUR LE
+  GAGNANT.** `hypot` et la racine du carré peuvent différer d'un ulp. Le carré
+  ne sert qu'à ÉCARTER les segments qui ne peuvent pas gagner, avec une marge
+  d'un milliardième ; le segment retenu est mesuré par `hypot`, comme avant
+  (zéro écart sur 4 millions de points). Et les tables par identifiant du
+  mailleur sont remplies par les MÊMES fonctions (`isProp`, `isSlab`…).
+- **CE QUE LE BANC DIT DU GAIN, ET CE QU'IL NE PEUT PAS DIRE.** Deux fois moins
+  de calcul par morceau ne donnent au banc que 5 à 25 blocs de plus devant soi
+  à 80 b/s : en ville, le débit y plafonne vers 55 morceaux par seconde DES
+  DEUX CÔTÉS. La file se recharge une fois par image en rendu logiciel, et le
+  worker y partage quatre cœurs avec SwiftShader. Le plafond au sol ne bouge
+  donc pas (80 b/s : A1 158 pour 160, Paris 125). Ce qui se transpose à
+  l'iPad, ce sont les APPELS (2 209 → 463 lectures de relief par morceau de
+  Paris) et l'ordre de grandeur des millisecondes sous node. Ce qui ne se
+  transpose pas, c'est le trou mesuré au banc : sur la tablette, il se relit
+  avec `?diag=1`.
+## Les villes bâties à la main dans leur ciel (v350) — un repère-fût borne la courbe d'en dessous aussi
+
+Le lot 2 de la dette de la v335 : huit monuments. Trois règles.
+
+- **UNE SALLE QU'ON VISITE NE S'ÉTIRE PAS SOUS LA TROISIÈME COUCHE.** Les
+  monuments de Washington sont des musées à exposition, Buckingham a ses gardes
+  et ses grilles aux couches 1 et 2 : la forme `corps` (qui étire dès la couche
+  1) en ferait des gardes de quatre blocs. Leurs paliers s'écrivent en mètres,
+  comme à Paris, avec un premier palier à 2, 3 ou 4 (`ECHELLES_MAIN`).
+- **UN FÛT PLUS HAUT DANS LA VRAIE VILLE INTERDIT AUSSI DE MONTER CE QUI EST
+  PLUS BAS.** Le château du Smithsonian (44 m) a ses tours d'un bloc à onze :
+  les monter en ferait des aiguilles (v342), et les musées d'Histoire
+  américaine (≈30 m) et de l'Indien d'Amérique (≈30 m, dôme 37) ne peuvent donc
+  pas dépasser onze — or la corniche de Washington est à treize, et tout ce qui
+  passe la corniche y monte au moins. Aucune courbe ne tient les deux : ils sont
+  `vrai`, et c'est juste (la loi de 1910 plafonne la ville à une quarantaine de
+  mètres, ces bâtiments n'y montent pas). Avant de chercher le `k` d'une ville,
+  on écrit ses repères fixes de hauteur connue dans le témoin (`FIXES`) : c'est
+  eux qui disent ce qui peut monter.
+- **UNE COUCHE DE VOXEL SE COUVRE EN ENTIER, PAS À QUATRE DIXIÈMES PRÈS.** La
+  corniche de `palais` fait 0,4 bloc ; la couche du voxel qu'elle habille en
+  fait un. Aux cotes d'auteur, la dilatation d'un bloc la couvrait ; étirée
+  trois fois, la fin de la couche sortait du modèle en cubes (l'attique de
+  l'Opéra, l'entablement du Panthéon, le pied de la flèche de Notre-Dame). Le
+  modèle prend l'épaisseur de la couche, et un témoin de `plafond.js` compte
+  les cellules de flanc non couvertes au-dessus d'un enfant : zéro.
+- **UNE HAUTEUR VRAIE SE CHERCHE, ELLE NE SE DEVINE PAS** : 160 pieds pour les
+  Archives, 24 m pour Buckingham, une quarantaine de mètres pour l'Opéra de
+  Lille, 23 m pour l'Arche. Ce qu'on n'a pas trouvé (le musée d'Histoire
+  américaine, « cinq étages ») se dit approché dans le commentaire.
+
 ## Le monde à la vitesse (v346) — on maille où l'on va, et le plafond se mesure en roulant
 
 Max veut une conduite « comme GTA » ; les voitures étaient plafonnées à 28 b/s
@@ -818,6 +895,44 @@ sur un débit d'avant le worker (v237 → v251). Quatre règles.
   ouverte de plus à côté de `tab` et `ciel` n'a jamais chargé son disque en
   quarante secondes ; et deux passages IDENTIQUES rendent 0,43 puis 0,57 —
   le premier passage n'est pas le second, d'où l'ABBA.
+## Le ciel des autres villes engendrées (v353) — toute ville mesurée a son ciel, ou dit pourquoi
+
+Max : « lance sur toutes les villes, pas juste celle-là ». Le lot 3 de la v342
+ne couvrait que les vingt-cinq villes qui portaient une dette ; mesuré sous
+node, vingt et une autres avaient des repères au-dessus de leurs toits mais
+pas à leur hauteur (l'hôtel de ville de Bruxelles à vingt-trois blocs pour
+quatre-vingt-seize mètres). Trois règles.
+
+- **UNE RÈGLE DE VILLE S'ÉCRIT POUR TOUTES LES VILLES, ET UN TÉMOIN LE GARDE.**
+  `VILLES_SANS_CIEL` (echelle-monuments.js) est la `BAS_DECLARES` des villes :
+  toute ville engendrée dont un repère est mesuré parmi ses immeubles est dans
+  `CIELS`, ou déclarée sans ciel avec sa raison — `vrai` (rien à y remettre à
+  l'échelle) ou `lot` (une dette, qui doit disparaître). Une déclaration qui
+  ne sert plus rougit. C'est le verre dans les murs vu du côté d'une table :
+  sans ce témoin, la v342 « couvrait les villes » et en laissait la moitié.
+- **CE QUI EST DÉJÀ AU-DESSUS DE SON CIEL NE BOUGE PAS, ET GARDE L'ORDRE.** Les
+  modèles du catalogue (Sagrada Família, Space Needle, Christ Rédempteur,
+  Opéra de Sydney) et le Burj Khalifa sont à leur hauteur d'auteur, au-dessus
+  de la courbe : on ne les redescend pas (la règle de la tour de Pise), et ceux
+  qui dominent un monument remis à l'échelle entrent dans les `FIXES` du
+  témoin d'ordre. Une pyramide (le Luxor) et une roue (la High Roller) ne
+  s'étirent pas : étirée, une pyramide devient un obélisque.
+- **UN FÛT QUI DOMINE DÉJÀ SES TOITS NE S'ÉTIRE PLUS — vu en capture, pas au
+  témoin.** `minaret` et `tourBoule` sont des colonnes d'un bloc. Le premier
+  jet les étirait jusqu'au plafond des fûts (une fois et demie, v342) : la tour
+  de l'hôtel de ville de Bruxelles à trente-quatre blocs, la Willis Tower à
+  cinquante-cinq, des perches noires au-dessus de la ville. Les fûts de la v342
+  (Santa Justa, Storkyrkan, la Rundetaarn) étaient tous SOUS leurs toits ; ceux
+  d'ici les dominaient déjà de près du double. Un fût ne s'étire donc que si sa
+  hauteur d'auteur reste sous une fois et demie la corniche de sa ville (le
+  témoin le garde) ; sinon il reste où il est (un `FIXE` du témoin d'ordre),
+  et c'est le bâtisseur qu'il faut refaire, pas la hauteur (`TASKS.md`). Les
+  pagodes (Sensō-ji, Tō-ji, Kiyomizu-dera) s'écrivent en paliers de mètres,
+  comme Wat Arun : chaque étage s'étire, chaque toit reste un rang. Deux fûts qui se dépassent
+  dans le mauvais ordre compriment leur courbe (Munich, `k` 0,55 : la
+  Frauenkirche reste au-dessus du beffroi). Gizeh et le Machu Picchu n'ont pas
+  d'immeubles : pas de corniche, pas de ciel à mesurer.
+
 ## Le ciel de chaque ville (v342) — la courbe de Paris posée sur SA corniche
 
 Le lot 3 de la dette de la v335 : quarante-sept monuments des villes
@@ -861,6 +976,36 @@ engendrées. Quatre règles.
   journal vide dans le jeu, trois rouges de `maj.js`. Après tout conflit dans un
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
+
+## Les piétons et les voitures rapides (v351) — ce qui fuit une horloge réelle se compte sur elle
+
+Le chantier « conduite » (sept sessions) triple les vitesses. Trois règles.
+
+- **UN REGARD QUI PORTE EN BLOCS EST UN TEMPS QUI RÉTRÉCIT.** Le couloir de la
+  v259 valait `min(30, 2 v + 4)` blocs : une demi-seconde à 60 b/s. Il se
+  mesure désormais en SECONDES de route (`HORIZON_S`, 1,6 — le double de ce
+  qu'il faut à trois images par seconde, mesuré), avec une marge large sous
+  0,8 s et étroite au-delà (seul ce qui est dans la trajectoire réagit loin
+  devant). `src/pietons.js` est pur et c'est lui que `main.js` lit.
+- **UNE VOITURE QUI ROULE EN TEMPS RÉEL SE FUIT EN TEMPS RÉEL.** La position
+  d'un convoi est une fonction de l'horloge de la rue (v305) ; le piéton
+  marchait en `dt` borné. À cinq images par seconde il allait quatre fois
+  moins vite que ce qu'il fuyait : touché dès 7 b/s. C'est le piège de `dt`
+  (v226) dans le sens où il BLESSE, et la règle « une animation suit le temps
+  du jeu » ne s'y applique pas : ce qui doit tenir face à une horloge réelle
+  se compte sur elle. L'écart (`BaseNPC.update`) avance en temps réel, par
+  pas de 0,9 bloc au plus pour que la boîte glisse bloc à bloc. **Avant
+  d'accélérer un objet, on demande sur quelle horloge il roule, et sur
+  laquelle roule ce qui doit l'éviter.**
+- **UN TÉMOIN DE CHOC JUGE LE VOLUME BALAYÉ, ET IL PROVOQUE LA CADENCE.** À
+  60 b/s et cinq images par seconde, une voiture saute douze blocs d'une image
+  à l'autre : un instantané ne la voit jamais sur le piéton. Le témoin de
+  `monte.js` juge l'intervalle parcouru par la carrosserie entre deux images,
+  et la position d'ARRIVÉE (v279) ; il suspend `player.update` pour conduire
+  la voiture à la main en temps réel — le freinage de la voiture
+  (`pietonDevant`) ne joue donc pas : on éprouve le seul filet du piéton, les
+  deux se cumulent et l'on ne compte pas sur l'autre. Une passe brûle
+  180 ms par image (v234).
 
 ## Les rues de Londres à la règle du kit (v339) — un plan deux fois plus serré ne porte pas les mêmes rues
 
@@ -977,7 +1122,7 @@ en temps réel), `fun.js` le fait descendre et `deposer` le pose debout sur une
 case libre à côté (côté conducteur d'abord). La carcasse porte `horsService`
 (lu par `animals.js`, comme `montee`) : elle ne se reprend pas, et elle s'en
 va au bout de `DUREE_CARCASSE`.
-## La conduite à la GTA (v350) — un modèle pur, une boîte orientée, des chocs qui se publient
+## La conduite à la GTA (v354) — un modèle pur, une boîte orientée, des chocs qui se publient
 
 Max : « une grosse refonte de la façon de conduire… comme GTA ». Premier palier
 de la session `conduite-physique` (six sessions en parallèle sur la conduite).
@@ -1182,7 +1327,7 @@ Plaines à l'ouest du 100e méridien, steppe pontique au sud de 47° N).
 Et `DATE_CLIMATS` SE RELIT à chaque tranche qui change des arbres : la
 steppe en retire, donc ce qu'un enfant a bâti jusqu'à la fusion de la v347
 garde les arbres d'avant.
-**Les forêts tropicales (v349)** ferment les quatre climats : dix forêts
+**Les forêts tropicales (v351)** ferment les quatre climats : dix forêts
 humides réelles, la forêt dense de grands feuillus et un palmier sur quatre
 (`DENSITE_MAX` passe à 0,08, la seule densité au-dessus de la forêt
 tempérée). Une teinte se juge en capture et pas seulement au témoin : le vert
@@ -5070,8 +5215,8 @@ caméra à part, `layers.enableAll()` comme le veut la v250.
 ## Chaque voiture roule à l'allure de sa classe (v260)
 
 > **⚠️ Le plafond calculé ci-dessous (28 blocs/s) est remplacé par un plafond
-> MESURÉ (60) en v350, et l'allure se déduit des fiches de `conduite.js`.** Lire
-> « La conduite à la GTA (v350) ».
+> MESURÉ (60) en v354, et l'allure se déduit des fiches de `conduite.js`.** Lire
+> « La conduite à la GTA (v354) ».
 
 Max : « une vitesse en fonction du modèle ». Deux règles.
 

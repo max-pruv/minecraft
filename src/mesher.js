@@ -104,29 +104,52 @@ const VITRES = new Set([
 // blocks get darker, which grounds every edge and crevice visually.
 const AO_LEVELS = [0.5, 0.66, 0.82, 1];
 
-function faceAO(localGet, face, x, y, z) {
+// CE QUE LE MAILLAGE DEMANDE À CHAQUE CASE SE LIT DANS UNE TABLE (v352).
+// `isTransparent`, `isSlab` et `isProp` sont des comparaisons d'intervalles
+// pures sur l'identifiant ; le mailleur les posait des dizaines de fois par
+// case visible. Une table de 65 536 octets par question (un identifiant de
+// bloc tient sur seize bits, c'est le type du morceau), remplie une fois par
+// les MÊMES fonctions : la réponse ne peut pas différer de l'appel.
+const OCCULTE = new Uint8Array(65536);   // occulte la lumière ambiante
+const TRANSPARENT = new Uint8Array(65536);
+const DALLE = new Uint8Array(65536);
+const OBJET = new Uint8Array(65536);
+for (let id = 0; id < 65536; id++) {
+  TRANSPARENT[id] = isTransparent(id) ? 1 : 0;
+  DALLE[id] = isSlab(id) ? 1 : 0;
+  OBJET[id] = isProp(id) ? 1 : 0;
+  OCCULTE[id] = !TRANSPARENT[id] && !DALLE[id] ? 1 : 0;
+}
+
+// Les douze voisins qu'interroge l'occlusion d'une face (trois par coin : les
+// deux côtés et la diagonale), calculés une fois par face au lieu d'à chaque
+// case. Même ordre de lecture qu'avant : côté u, côté v, coin.
+for (const face of FACES) {
   const d = face.dir;
-  // tangent axes spanning the face plane
   const axisU = d[0] !== 0 ? [0, 1, 0] : [1, 0, 0];
   const axisV = d[1] !== 0 ? [0, 0, 1] : (d[0] !== 0 ? [0, 0, 1] : [0, 1, 0]);
-  const bx = x + d[0], by = y + d[1], bz = z + d[2];
-  const occludes = (px, py, pz) => {
-    const id = localGet(px, py, pz);
-    return !isTransparent(id) && !isSlab(id);
-  };
-  const ao = [];
+  const o = new Int8Array(36);
   for (let i = 0; i < 4; i++) {
     const c = face.corners[i];
     const su = (axisU[0] ? c[0] : axisU[1] ? c[1] : c[2]) === 1 ? 1 : -1;
     const sv = (axisV[0] ? c[0] : axisV[1] ? c[1] : c[2]) === 1 ? 1 : -1;
-    const s1 = occludes(bx + su * axisU[0], by + su * axisU[1], bz + su * axisU[2]);
-    const s2 = occludes(bx + sv * axisV[0], by + sv * axisV[1], bz + sv * axisV[2]);
-    const corner = occludes(
-      bx + su * axisU[0] + sv * axisV[0],
-      by + su * axisU[1] + sv * axisV[1],
-      bz + su * axisU[2] + sv * axisV[2]
-    );
-    ao.push(AO_LEVELS[s1 && s2 ? 0 : 3 - (s1 + s2 + corner)]);
+    for (let a = 0; a < 3; a++) {
+      o[i * 9 + a] = d[a] + su * axisU[a];
+      o[i * 9 + 3 + a] = d[a] + sv * axisV[a];
+      o[i * 9 + 6 + a] = d[a] + su * axisU[a] + sv * axisV[a];
+    }
+  }
+  face.aoOffs = o;
+}
+
+function faceAO(localGet, face, x, y, z) {
+  const o = face.aoOffs;
+  const ao = [0, 0, 0, 0];
+  for (let i = 0, j = 0; i < 4; i++, j += 9) {
+    const s1 = OCCULTE[localGet(x + o[j], y + o[j + 1], z + o[j + 2])];
+    const s2 = OCCULTE[localGet(x + o[j + 3], y + o[j + 4], z + o[j + 5])];
+    const coin = OCCULTE[localGet(x + o[j + 6], y + o[j + 7], z + o[j + 8])];
+    ao[i] = AO_LEVELS[s1 && s2 ? 0 : 3 - (s1 + s2 + coin)];
   }
   return ao;
 }
@@ -134,8 +157,8 @@ function faceAO(localGet, face, x, y, z) {
 function shouldRenderFace(id, neighbor) {
   if (neighbor === id) return false;          // no faces between identical blocks
   if (neighbor === BLOCK.AIR) return true;
-  if (isSlab(neighbor)) return true;          // slabs only cover their lower half
-  return isTransparent(neighbor);             // draw against water/glass, not opaque
+  if (DALLE[neighbor]) return true;           // slabs only cover their lower half
+  return TRANSPARENT[neighbor] === 1;         // draw against water/glass, not opaque
 }
 
 class GeomBuffer {
@@ -165,20 +188,20 @@ class GeomBuffer {
     const fusionnee = w > 1 || h > 1;
     const rect = fusionnee ? tileRect(tile) : NEUTRE;
     const atlas = fusionnee ? null : tileUV(tile);
-    const echelle = [1, 1, 1];
-    echelle[face.uAxis] = w;
-    echelle[face.vAxis] = h;
+    const e0 = face.uAxis === 0 ? w : face.vAxis === 0 ? h : 1;
+    const e1 = face.uAxis === 1 ? w : face.vAxis === 1 ? h : 1;
+    const e2 = face.uAxis === 2 ? w : face.vAxis === 2 ? h : 1;
     for (let i = 0; i < 4; i++) {
       const c = face.corners[i];
       // Un coin à 1 va jusqu'au bord opposé du rectangle. Sur l'axe vertical,
       // yTop remplace la hauteur unitaire (eau de surface, dalle) ; quand la
       // fusion est verticale, yTop vaut forcément 1 et le produit donne h.
-      const cy = c[1] === 1 ? yTop * echelle[1] : 0;
-      this.positions.push(x + c[0] * echelle[0], y + cy, z + c[2] * echelle[2]);
+      const cy = c[1] === 1 ? yTop * e1 : 0;
+      this.positions.push(x + c[0] * e0, y + cy, z + c[2] * e2);
       this.normals.push(face.dir[0], face.dir[1], face.dir[2]);
-      const [fu, fv] = face.uvs[i];
+      const fu = face.uvs[i][0], fv = face.uvs[i][1];
       if (atlas) {
-        const [u0, v0, u1, v1] = atlas;
+        const u0 = atlas[0], v0 = atlas[1], u1 = atlas[2], v1 = atlas[3];
         this.uvs.push(u0 + (u1 - u0) * fu, v0 + (v1 - v0) * fv);
       } else {
         this.uvs.push(fu * w, fv * h);
@@ -298,10 +321,25 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
   // au-dessus, c'est de l'air, qui n'émet aucune face
   const topY = Math.min(world.visualTop ? world.visualTop(cx,cz) : world.chunkTop(cx, cz), HEIGHT - 1);
 
+  // LES HUIT VOISINS SE GARDENT EN MAIN (v352). Une case du bord demandait
+  // `world.getBlock`, qui refait une clé de chaîne et une recherche dans le
+  // dictionnaire des morceaux à chaque appel — et l'occlusion d'une face du
+  // bord en fait jusqu'à douze. On demande le morceau voisin UNE fois, par le
+  // même `ensureChunk` que `getBlock` (qui l'engendre s'il manque, comme
+  // avant), et on lit son tableau. Le monde de Manhattan (`visualBlock`)
+  // garde le chemin d'avant : ce qu'il montre n'est pas ce que le morceau tient.
+  const voisins = [null, null, null, null, null, null, null, null, null];
+  const parVoisins = !world.visualBlock;
   const localGet = (x, y, z) => {
     if (y < 0 || y >= HEIGHT) return BLOCK.AIR;
     if (x >= 0 && x < CHUNK && z >= 0 && z < CHUNK) {
       return data[x + z * CHUNK + y * CHUNK * CHUNK];
+    }
+    if (parVoisins && x >= -CHUNK && x < 2 * CHUNK && z >= -CHUNK && z < 2 * CHUNK) {
+      const dx = x < 0 ? -1 : x >= CHUNK ? 1 : 0, dz = z < 0 ? -1 : z >= CHUNK ? 1 : 0;
+      const k = dx + 1 + (dz + 1) * 3;
+      const v = voisins[k] || (voisins[k] = world.ensureChunk(cx + dx, cz + dz));
+      return v[(x - dx * CHUNK) + (z - dz * CHUNK) * CHUNK + y * CHUNK * CHUNK];
     }
     const id=world.getBlock(baseX + x, y, baseZ + z);
     return world.visualBlock ? world.visualBlock(baseX+x,y,baseZ+z,id) : id;
@@ -313,7 +351,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
     for (let z = 0; z < CHUNK; z++) {
       for (let x = 0; x < CHUNK; x++) {
         const id = data[x + z * CHUNK + y * CHUNK * CHUNK];
-        if (id !== BLOCK.AIR && isProp(id)) props.push({ x, y, z, id });
+        if (id !== BLOCK.AIR && OBJET[id]) props.push({ x, y, z, id });
       }
     }
   }
@@ -324,6 +362,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
 
   for (const face of FACES) {
     const sAxis = face.dir[0] !== 0 ? 0 : face.dir[1] !== 0 ? 1 : 2;
+    const dX = face.dir[0], dY = face.dir[1], dZ = face.dir[2];
     const { uAxis, vAxis } = face;
     const nU = dims[uAxis], nV = dims[vAxis], nS = dims[sAxis];
     // le masque décrit une tranche : chaque case porte la face à émettre, ou
@@ -343,23 +382,26 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
       for (let v = 0; v < nV; v++) {
         for (let u = 0; u < nU; u++) {
           cellule[sAxis] = s; cellule[uAxis] = u; cellule[vAxis] = v;
-          const [x, y, z] = cellule;
+          const x = cellule[0], y = cellule[1], z = cellule[2];
           const id = data[x + z * CHUNK + y * CHUNK * CHUNK];
-          if (id === BLOCK.AIR || isProp(id)) continue;
+          if (id === BLOCK.AIR || OBJET[id]) continue;
           if (couvertes && couvertes[x + z * CHUNK] && y === hauts[x + z * CHUNK]) continue;
 
           const isWater = id === BLOCK.WATER;
-          const slab = isSlab(id);
-          const above = localGet(x, y + 1, z);
-          const yTop = isWater && above !== BLOCK.WATER ? WATER_SURFACE_Y : slab ? 0.5 : 1;
-          const neighbor = localGet(x + face.dir[0], y + face.dir[1], z + face.dir[2]);
+          const slab = DALLE[id] === 1;
+          // Le voisin d'abord : sous terre, presque toute case touche sa
+          // pareille et s'arrête là. Le dessus ne sert qu'à l'eau (v352).
+          const nx = x + dX, ny = y + dY, nz = z + dZ;
+          const neighbor = nx >= 0 && nx < CHUNK && nz >= 0 && nz < CHUNK && ny >= 0 && ny < HEIGHT
+            ? data[nx + nz * CHUNK + ny * CHUNK * CHUNK] : localGet(nx, ny, nz);
 
           // a slab's top sits at half height, so it is always exposed
-          const sommetDeDalle = slab && face.dir[1] === 1;
+          const sommetDeDalle = slab && dY === 1;
           if (!sommetDeDalle) {
             if (!shouldRenderFace(id, neighbor)) continue;
             if (isWater && neighbor !== BLOCK.AIR && neighbor !== BLOCK.GLASS) continue;
           }
+          const yTop = isWater && localGet(x, y + 1, z) !== BLOCK.WATER ? WATER_SURFACE_Y : slab ? 0.5 : 1;
 
           const ao = isWater ? null : faceAO(localGet, face, x, y, z);
 
@@ -391,9 +433,15 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
           const facadeHd = monumentHd || (hd && ((face.slot === 1 && FACADE_HD.has(id)) || ARBRE_HD.has(id) || toitHd));
           const it = teintes && ((id === BLOCK.GRASS && face.slot === 0) || id === BLOCK.LEAVES) ? teintes[x + z * CHUNK] : 0;
           const teinte = it ? (id === BLOCK.LEAVES ? TEINTE_FEUILLES[it] : TEINTE_HERBE[it]) : null;
+          // LA CLÉ DE FUSION EST UN NOMBRE (v352) : la chaîne qu'elle était
+          // coûtait une concaténation par face visible. Même injection — deux
+          // cases ont la même clé si et seulement si elles avaient la même
+          // chaîne — et une case qui ne fusionne pas reçoit une clé négative
+          // propre à sa place dans la tranche (l'ancien `@u,v`).
           const cle = (bloqueV || !uniforme)
-            ? `@${u},${v}`
-            : `${id}|${yTop}|${ao ? ao[0] : '-'}|${allume ? 'A' : ''}|${monumentHd ? 'M' : ''}|${it}`;
+            ? -1 - (u + v * nU)
+            : ((((id * 3 + (yTop === 1 ? 0 : yTop === 0.5 ? 1 : 2)) * 5 + (ao ? AO_LEVELS.indexOf(ao[0]) : 4)) * 2
+              + (allume ? 1 : 0)) * 2 + (monumentHd ? 1 : 0)) * 256 + it;
           masque[u + v * nU] = { cle, id, yTop, ao, tile: BLOCK_INFO[id].tiles[face.slot], isWater, allume, x, y, z, solHD, facadeHd, teinte };
           vide = false;
         }

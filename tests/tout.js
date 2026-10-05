@@ -261,6 +261,7 @@ const GARDIENS = {
   'src/personnages.js': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
   'src/vie.js': ['realisme.js', 'monte.js', 'manhattan.js'],
   'src/marlon.js': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
+  'src/pietons.js': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
   'src/face-worker.js': ['parent.js'],
 };
 

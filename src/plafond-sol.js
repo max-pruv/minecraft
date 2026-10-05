@@ -57,6 +57,20 @@
 // pas, et c'est une mesure à faire sur la tablette (`?diag=1`), déclarée dans
 // TASKS.md.
 
+// REMESURÉ EN v352, APRÈS LA BAISSE DU COÛT D'UN MORCEAU DANS LE WORKER
+// (Paris 8,3 → 3,3 ms, Rome 10,5 → 4,1, campagne 4,1 → 2,5, sous node). Même
+// sonde, ordre ABBA, v348 puis v352, « cone40 » à 80 b/s pour 160 exigés :
+//
+//   Paris 125 · 125  →  125 · 129      Rome     113 · 122  →  138 · 129
+//   Londres 125 · 137 →  143 · 129     campagne 160 · 172  →  173 · 160–173
+//   A1 144 · 151     →  158 · 158      (à 90 : campagne 158 → 160, A1 143–148 → 145–151)
+//
+// Le gain est réel en ville (+5 à +25 blocs) et ne suffit pas : au banc le débit
+// plafonne vers 55 morceaux par seconde en ville DES DEUX CÔTÉS — ce n'est
+// plus le worker qui limite ici, c'est la cadence du banc (la file se recharge
+// une fois par image, rendu logiciel). Le plafond NE BOUGE PAS : on ne publie
+// qu'une valeur tenue, et 80 b/s ne tient ni en ville ni sur l'A1 (158).
+
 // Plafond au sol, en blocs par seconde (≈ mètres par seconde : une voiture
 // fait 4,4 blocs pour 4,5 m), pour une distance d'affichage de douze morceaux
 // ou plus.

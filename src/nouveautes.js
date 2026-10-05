@@ -6,12 +6,48 @@
 
 export const NOUVEAUTES = [
   {
-    v: 350,
+    v: 354,
     titre: 'Des voitures pour de vrai',
     puces: [
       'Les voitures vont beaucoup plus vite',
       'Elles tournent et glissent pour de vrai',
       'Contre un mur, on glisse ou on rebondit',
+    ],
+  },
+  {
+    v: 353,
+    titre: 'Le ciel de toutes les villes',
+    puces: [
+      'Le Capitole de La Havane domine',
+      'Des pagodes hautes à Tokyo, Kyoto',
+      'Munich et Venise à leur hauteur',
+    ],
+  },
+  {
+    v: 352,
+    titre: 'Le monde se fabrique plus vite',
+    puces: [
+      'Deux fois moins de calcul par morceau',
+      'Rien ne change à l\'écran',
+    ],
+  },
+  {
+    v: 351,
+    titre: 'Les passants voient venir',
+    puces: [
+      'Ils s\'écartent des voitures rapides',
+      'Même quand la tablette rame',
+      'Personne n\'est jamais touché',
+    ],
+  },
+  {
+    v: 350,
+    titre: 'Buckingham et l\'Opéra de Lille grandissent',
+    puces: [
+      'L\'Opéra de Lille domine sa place',
+      'Buckingham et les Archives aussi',
+      'Les portes gardent leur taille',
+      'Plus de cubes sur l\'Opéra de Paris',
     ],
   },
   {

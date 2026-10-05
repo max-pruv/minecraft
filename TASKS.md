@@ -1,8 +1,8 @@
 # Ce qui est en cours
 
-- [ ] **AU PORTAIL DE LA v350 (la conduite), LES ROUGES RESTANTS SONT DÉJÀ
+- [ ] **AU PORTAIL DE LA v354 (la conduite), LES ROUGES RESTANTS SONT DÉJÀ
   CONNUS, rejoués SEULS des deux côtés.** `monte.js` « l'écran ne se fige pas
-  en arrivant sur une ville » (vol du chasseur, chemin que la v350 ne touche
+  en arrivant sur une ville » (vol du chasseur, chemin que la v354 ne touche
   pas) : branche 1 283 ms · 7,2 % et 1 183 · 8,7 %, `origin/main` 1 050 · 5,9 %
   et 1 150 · 6,4 % (ordre alterné), et rouge à chaque `monte.js` complet des
   deux côtés (3 417 ms · 27,1 % sur `origin/main`). `monte.js` « se
@@ -31,9 +31,37 @@
   « Lost connection to server ») : vu rouge une fois sur la branche, NON
   comparé sur `origin/main` — la suite s'y arrête plus tôt (attente de 90 s
   après rechargement, puis une attente de 30 s avec le témoin recopié). Un
-  courtier qui perd la connexion n'est pas du code de conduite (la v350 ne
+  courtier qui perd la connexion n'est pas du code de conduite (la v354 ne
   touche ni `net.js` ni le banc réseau) ; à rejouer sur `origin/main` le jour
   où la suite y va jusqu'au bout.
+- [ ] **LE PORTAIL DE LA v352 (le coût d'un morceau), DOUBLE MESURE FAITE.**
+  Treize suites vertes, dont `plafond.js` et ses deux témoins neufs. Rouges,
+  chacun rejoué SEUL des deux côtés (`origin/main` v348, arbre détaché) :
+  `manhattan.js` — trou de façade 11 684 → 51 734 sur la branche, 14 326 →
+  51 734 sur `origin/main`, et la suite meurt sur le MÊME `locator.tap`
+  (30 s) des deux côtés ; au portail s'y ajoutaient le taxi (bouton jamais
+  visible) et `PeerJS: Lost connection`, déjà déclarés. `monte.js` — l'arrivée
+  figée, seul rouge, 18,6 % au-delà de 300 ms au portail (branche), 25,4 % sur
+  `origin/main` seul. `reseau.js` — « un hôte sans courtier est trouvé » et
+  « il le REJOINT » au portail ; rejouée seule, **verte des deux côtés** :
+  l'intermittence déjà déclarée. `maj.js` — le badge (version servie v348 au
+  portail, avant le bump) et le loader qui compte ses fichiers (rouge au
+  premier passage, vert à la reprise). La livraison ne touche ni Manhattan,
+  ni le réseau, ni le rendu : seulement le générateur et le mailleur, dont
+  l'empreinte (blocs et tampons) est celle d'`origin/main`, bit pour bit.
+
+- [ ] **LE PORTAIL DE LA v351 (les piétons rapides), DOUBLE MESURE FAITE.**
+  Rouges de portail déjà déclarés : `maj.js` « corps, programmes et fond de
+  carte », `manhattan.js` (trou de façade 27 926 → 51 734, `#ride-btn` caché,
+  `PeerJS: Lost connection`), `monte.js` « l'écran ne se fige pas en arrivant
+  sur une ville » (1 550 ms · 25,4 %). Un rouge NON déclaré jusqu'ici, et c'est
+  une intermittence : `reseau.js` « deux tablettes d'une partie voient la même
+  circulation, au même endroit ». Portail (branche) : médiane 37,1 blocs, pire
+  63,6. Rejouée SEULE : `origin/main` v348 **rouge**, 35,0 · 62,2 ; branche
+  **verte**, 5,9 · 14,2. Les deux régimes existent des deux côtés ; à trouver :
+  ce qui fait diverger l'horloge de la rue (v305) d'une tablette à l'autre une
+  fois sur deux. La livraison ne touche ni `vehicules.js` ni l'heure de la rue.
+
 - [ ] **LE PORTAIL DE LA v346 (le monde à la vitesse), DOUBLE MESURE FAITE.**
   Portail : `manhattan.js` (délai ligne 282) et `monte.js` « l'écran ne se
   fige pas en arrivant sur une ville » (2 833 ms · 46,4 %). Rejouées SEULES :
@@ -66,11 +94,17 @@
   recharge une fois par image : sur l'iPad, mesurer le trou en roulant
   (`?diag=1`) et la cadence à 60 b/s avant de croire que la cadence tient — les
   millisecondes du worker et de rendu ne se transposent pas, l'ordre et les
-  nombres de morceaux oui ; (3) au-delà de 70 b/s la ville ne suit plus (80 :
-  86 à 115 blocs dans le champ pour 160) — le levier restant est le coût d'un
-  morceau dans le worker (génération 45 %, v229), pas la file : les trois
-  non-résultats de la file (borner la pose, file en temps, deux mailleurs) et
-  la file de seize (v269) restent écartés ; (4) un lot déjà parti au worker ne
+  nombres de morceaux oui ; (3) ~~le coût d'un morceau dans le worker~~ —
+  **fait en v352** : Paris 8,3 → 3,3 ms, Rome 10,5 → 4,1 sous node, sortie
+  identique (empreinte de `plafond.js`). Au banc la ville ne suit toujours pas
+  80 b/s (Paris 125, Rome 129–138, A1 158 pour 160) : le débit y plafonne vers
+  55 morceaux par seconde en ville DES DEUX CÔTÉS, donc ce n'est plus le worker.
+  Pistes, non mesurées : l'installation des géométries sur le fil principal en
+  ville (Paris ne gagne rien quand Rome gagne), et la recharge de la file une
+  fois par image. Les trois non-résultats de la file (borner la pose, file en
+  temps, deux mailleurs) et la file de seize (v269) restent écartés. Sur
+  l'iPad, deux fois moins de calcul par morceau est un fait, mais le plafond
+  ne se relève que sur une mesure `?diag=1` en roulant ; (4) un lot déjà parti au worker ne
   s'annule pas quand on le dépasse — huit morceaux au plus, onze blocs de
   route à 60 b/s : non mesuré comme nuisible, laissé.
 
@@ -889,10 +923,39 @@
   ville a son ciel (`CIELS`, corniche mesurée), quarante-deux monuments remis à
   l'échelle, treize repères montés pour garder l'ordre du vrai ciel, cinq
   reclassés `vrai` (colonne de Marie, Topkapi, Templo Mayor, Pavillon d'or, Wat
-  Pho). **Reste le lot 2, les villes bâties à la main** (une autre session) :
-  Arche de Washington (NY) 12/13, Opéra de Lille 6/7, Buckingham 7/8, et à
-  Washington le Trésor 8/13, les Archives 11/13, le Théâtre Ford 8/11,
-  l'Histoire américaine 9/10, l'Indien d'Amérique 8/9.
+  Pho). **Lot 2, les villes bâties à la main : FAIT en v350** — l'Opéra de
+  Lille 6 → 11, Buckingham 7 → 12, les Archives 11 → 15 (ciels de Lille [7, 0,4],
+  Londres [8, 0,75], Washington [13, 0,26]) ; l'Arche de Washington, le Trésor,
+  le Théâtre Ford, l'Histoire américaine et l'Indien d'Amérique passent en
+  `vrai` (Washington plafonnée par la loi de 1910, et les deux musées
+  passeraient au-dessus des tours-fûts du château du Smithsonian, 44 m).
+- [ ] **LE PORTAIL DE LA v350 (monuments du lot 2, cubes de Paris) : LES ROUGES
+  SONT TOUS DES DETTES DÉJÀ MESURÉES.** Deux portails sur la branche avant le
+  rebase (v342 + la livraison) : `plafond.js`, `parishd.js`, `carteMonde.js`,
+  `carte.js`, `washington.js`, `metro.js` verts les deux fois. Rouges :
+  `maj.js` le loader qui compte ses fichiers (2/2) et, au second, la
+  libération et « ne floute rien » ; `manhattan.js` le délai de la ligne 282
+  (1er) et le trou de façade (2e, 22 326 → 51 734, l'étendue déjà relevée) ;
+  `monte.js` la compilation à la téléportation (NY 15 puis Paris 6, comme v342),
+  le gel d'arrivée (25 % puis 32,3 %), et au second « un train s'arrête devant
+  la voiture » (13 relevés dedans — le chiffre exact de la v336 sur
+  `origin/main`). `maj.js` REJOUÉE SEULE : branche le loader + les deux témoins
+  du palier (34 images, aucun verdict — la dépendance à la cadence des v315 et
+  v316) ; `origin/main` le loader seul. Preuve structurelle : la livraison
+  étire trois monuments à Lille, Londres et Washington et épaissit trois
+  modèles HD de Paris, coupés en rendu logiciel (`RAYON_HD` 0) ; aucun de ces
+  témoins ne les dessine.
+  Troisième portail, après le rebase sur la v348 : sept suites vertes (fumée,
+  métro, parishd, carteMonde, plafond, carte, washington) ; rouges, toutes
+  déjà dans le tableau de la v342 ci-dessous : `maj.js` le loader seul ;
+  `manhattan.js` le trou de façade (9 203 → 51 734, dans l'étendue) et le taxi
+  tactile (1,06 bloc en 84 s, le chiffre exact des deux côtés en v342) ;
+  `monte.js` la compilation à la téléportation (Paris 3 `physical`) et le gel
+  d'arrivée (24,4 %, sous les 27,5 % d'`origin/main` en v342).
+  Quatrième, après le rebase sur la v349 (forêts tropicales) : mêmes sept
+  vertes, mêmes rouges — loader, trou de façade (14 460 → 51 734), compilation
+  à la téléportation (chauffe de New York expirée à 163/321), gel d'arrivée
+  (25,5 %) ; le taxi tactile est passé vert.
 - [ ] **LE PORTAIL DE LA v342 (monuments du lot 3) : TROIS SUITES ROUGES, LA DOUBLE
   MESURE EN MAIN.** Sept suites vertes (fumée, métro, parishd, carteMonde,
   plafond, carte, washington). Rejouées SEULES des deux côtés :
@@ -914,6 +977,14 @@
   v342 ne touche ni `sw.js` (hors version), ni `index.html`, ni le loader — une
   table de hauteurs, un témoin, une sonde. Le badge de version (« version
   servie v335 » au premier portail) était le bump manquant, réglé.
+- [ ] **DEUX INVERSIONS DU VRAI CIEL DANS LES VILLES BÂTIES À LA MAIN (v350),
+  mesuré.** Le témoin d'ordre étendu au lot 2 les a trouvées entre repères que
+  la livraison ne touche pas : la cathédrale St Paul (111 m) à dix-sept blocs,
+  sous Big Ben (96 m) à soixante-neuf ; le château du Smithsonian (44 m) à
+  onze, sous le mémorial Jefferson (39 m) à treize. Retirés des `FIXES` du
+  témoin. St Paul est une coupole (`corps` possible, et le dôme se voit de tout
+  Londres) ; les tours du château sont des fûts d'un bloc, à remonter par leur
+  bâtisseur, pas par une table.
 - [ ] **LA GRANDE ROUE DU PRATER SOUS LA HOFBURG (v342), déclaré.** La roue (65 m)
   reste à seize blocs et la Hofburg (30 m) monte à vingt et un : une roue ne
   s'étire pas, elle deviendrait une ellipse. Le témoin d'ordre ne la compte pas.
@@ -928,11 +999,33 @@
   couleur de la calotte) : un obus d'ardoise, corrigé (le corps s'arrête au
   tambour). Le remède de fond est un bâtisseur par monument, avec sa nef — pas
   une table de paliers.
-- [ ] **LES VILLES ENGENDRÉES HORS DU LOT 3 N'ONT PAS LEUR CIEL (v342).** Seules
-  les vingt-cinq villes qui portaient une dette ont une corniche dans `CIELS` ;
-  ailleurs les repères sont au-dessus de leurs immeubles mais pas à l'échelle de
-  leur vraie hauteur (l'hôtel de ville de Bruxelles, minaret de 22 blocs pour
-  96 m ; la Frauenkirche de Munich à 15 pour 99 m). Même règle, même table.
+- [ ] **LES GRATTE-CIEL ET LES BEFFROIS D'UN BLOC DE LARGE (v353), mesuré.**
+  Toute ville engendrée mesurée a désormais son ciel ou dit pourquoi
+  (`VILLES_SANS_CIEL`). Restent hors de leur vraie hauteur, déclarés `vrai`, les
+  fûts qui dominent DÉJÀ leurs toits (hauteur d'auteur au-delà d'une fois et
+  demie la corniche) : l'hôtel de ville de Bruxelles (23 blocs pour 96 m), la
+  Koutoubia (19 pour 77), le campanile de Venise (21 pour 99), la Willis Tower
+  (43 pour 442) et le John Hancock (37), la tour de Tokyo (25 pour 333) et la
+  Skytree (39 pour 634), la tour de Séoul (21), la perle de l'Orient (37) et
+  Jin Mao (41), la Banque de Chine (31) et l'IFC (35). Étirés (premier jet),
+  ce sont des perches d'un bloc, vues en capture à Bruxelles et à Chicago. Le
+  remède est un BÂTISSEUR de tour avec une emprise (`tourBoule`, `minaret` sont
+  des colonnes d'un bloc) — l'emprise d'un repère est sa `box`, qui ne bouge
+  pas : une tour de trois blocs de côté tient dans `box: 4`.
+- [ ] **LE TROU DU CHASSEUR EN VOL FRÔLE SA BARRE (portail v353), déclaré.**
+  « en vol, on ne rattrape pas le bout du monde qui se charge » (`monte.js`) :
+  chasseur 58 pour une barre à 60 (relevés 51 · 58 · 58 · 58 · 58 · 66), le
+  Concorde 66 et l'avion de ligne 82 au-dessus. PREUVE STRUCTURELLE que la v353
+  n'y est pour rien : le vol se fait autour de (30 000 à 38 000, 30 000), et le
+  plus proche des seize monuments étirés (Sensō-ji, 53 431 · 7 940) est à plus
+  de quinze mille blocs ; `nouveautes.js` n'est lu qu'à l'ouverture du journal.
+  Même portail : les autres rouges sont les dettes déjà déclarées (`maj.js`
+  « corps, programmes et fond de carte », `manhattan.js:282`, `monte.js`
+  compilation à la téléportation, gel d'arrivée, piéton `voituresRue: 0`).
+- [ ] **LE CIEL DE LAS VEGAS GARDE SA ROUE ET SA PYRAMIDE (v353), déclaré.** La
+  High Roller (167 m, 16 blocs) est sous la demi-tour Eiffel (165 m, 26) : une
+  roue ne s'étire pas, comme le Prater. Le Luxor (107 m) reste à quinze blocs :
+  étirée, une pyramide devient un obélisque.
 - [ ] **UNE CABANE SUR UN ANCIEN TOIT DE MONUMENT SE RETROUVE DEDANS (v335),
   déclaré.** Le relevé des toits (v301) emporte ce qu'on a bâti sur un
   immeuble ; rien n'emporte ce qu'on a bâti sur un monument étiré. Le bloc
@@ -940,8 +1033,13 @@
   journal des blocs le garde, et le ménage du ciel le juge sur le monde d'avant,
   `CONF_AVANT`, qui garde les monuments d'avant), mais il ne se voit plus. Si
   cela se voit un jour, la marche est connue : celle de `releverToitsParis`,
-  avec la table de paliers pour dire de combien monte chaque couche.
-- [ ] **DES CUBES DÉPASSENT ENCORE DES MODÈLES ÉTIRÉS (v335), mesuré.** Sonde
+  avec la table de paliers pour dire de combien monte chaque couche. Le même
+  prix vaut pour les monuments étirés par la v342 et la v350 (Buckingham,
+  l'Opéra de Lille, les Archives nationales).
+- [ ] **DES CUBES DÉPASSENT ENCORE DES MODÈLES ÉTIRÉS (v335), mesuré. Au-dessus
+  d'un enfant : FAIT en v350** (Opéra 15 → 0, Panthéon 6 → 0, Notre-Dame 8 → 0,
+  témoin dans `plafond.js`). Restent les vingt-quatre cubes du parvis de
+  Notre-Dame, au sol, d'avant la v335. Sonde
   `sonde-monuments-hd.cjs`, cubes qui dépassent (avant → après) : Arc 0 → 28,
   Panthéon 4 → 10, Opéra 9 → 17, Sacré-Cœur 15 → 23, Notre-Dame 34 → 76 (dont
   24 à hauteur d'enfant, inchangés). Un bloc d'écart entre le modèle et son
