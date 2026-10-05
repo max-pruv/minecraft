@@ -4644,6 +4644,21 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       // témoin — au portail, 27 blocs/s puis 1,0 au moment de tourner. Les
       // chocs et l'arrêt devant un piéton entrent dans le message.
       await tab.evaluate(() => { const g = window.__game; for (const n of (g.npcs || [])) if (n.pos && Math.abs(n.pos.x - window.__piste262.x0 - 150) < 250 && Math.abs(n.pos.z - window.__piste262.z0) < 60) n.pos.y = -500; });
+      // QUI TOUCHE LA VITESSE ? (v350) Au rejeu seul de la suite, la citadine
+      // est tombée de 27 à 2 blocs/s vers x ≈ 97, cap tourné de 0,68 rad sans
+      // volant ni choc compté ; sur une page neuve, rien (`sonde-piste-
+      // joystick.cjs` : 29,6 blocs/s à x = 195). C'est donc ce que la suite a
+      // laissé. Le témoin note tout ce qui peut la ralentir — famille
+      // d'obstacle, chocs même sous le seuil, frein piéton, état des dégâts —
+      // et le dit dans son message (v223 : la sonde qui distingue les cas).
+      await tab.evaluate(() => {
+        const P = window.__game.player, x0 = window.__piste262.x0, z0 = window.__piste262.z0;
+        const j = window.__journalPiste = { fam: {}, chocs: [], pieton: 0, ev: null, h: P.obstacleVehicule, c: P.publierChoc };
+        P.obstacleVehicule = function (...a) { const r = j.h.apply(this, a); if (r) j.fam[r] = (j.fam[r] || 0) + 1; return r; };
+        P.publierChoc = function (f, dx, dz) { if (j.chocs.length < 8) j.chocs.push([+f.toFixed(3), +(P.pos.x - x0).toFixed(1), +(P.pos.z - z0).toFixed(1)]); return j.c.call(this, f, dx, dz); };
+        const suivre = () => { if (window.__journalPiste !== j) return; if (P.freinePieton) j.pieton++; const ev = P.etatVoiture; if (ev && (ev.moteur < 1 || ev.direction)) j.ev = { m: ev.moteur, d: ev.direction }; requestAnimationFrame(suivre); };
+        requestAnimationFrame(suivre);
+      });
       const lire = () => tab.evaluate(() => { const p = window.__game.player; return { gaz: p.gaz == null ? null : +p.gaz.toFixed(2), f: +p.touchMove.f.toFixed(2), v: +Math.hypot(p.vel.x, p.vel.z).toFixed(2), yaw: +p.yaw.toFixed(3), y: +(p.pos.y - window.__piste262.y0 - 1).toFixed(2), x: +(p.pos.x - window.__piste262.x0).toFixed(1), chocs: p.chocs || 0, pieton: !!p.freinePieton }; });
       // LE BANC NE VIT PAS EN TEMPS RÉEL (dt borné, trois images par seconde) :
       // on attend que la voiture AIT pris sa vitesse, bornée en temps mural,
@@ -4689,19 +4704,25 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         const vis = (id) => getComputedStyle(document.getElementById(id)).display;
         return { saut: vis('jump-btn'), pioche: vis('mode-btn'), gaz: vis('gaz-base'), barre: vis('hotbar'), gazJoueur: g.player.gaz, auVolant: auVolant() };
       });
+      const journal = await tab.evaluate(() => {
+        const P = window.__game.player, j = window.__journalPiste;
+        if (!j) return null;
+        P.obstacleVehicule = j.h; P.publierChoc = j.c; window.__journalPiste = null;
+        return { fam: j.fam, chocs: j.chocs, pieton: j.pieton, ev: j.ev };
+      });
       const tri = vitesses.map((r) => r.v).sort((a, b) => a - b);
-      return { ...prep, essais, pose, mediane: tri[Math.floor(tri.length / 2)], pointe: tri[tri.length - 1], avantVirage, apresVirage, apresLacher, apres };
+      return { ...prep, essais, pose, journal, mediane: tri[Math.floor(tri.length / 2)], pointe: tri[tri.length - 1], avantVirage, apresVirage, apresLacher, apres };
     })();
     verifier('au volant, l\'avant du joystick est l\'accélérateur — poussé à fond, la voiture prend son allure, et elle ralentit quand on lâche',
       !manette.err && manette.mediane >= manette.max * 0.75 && manette.pointe <= manette.max * 1.05
         && manette.apresLacher && manette.apresLacher.v < manette.max * 0.3
         && manette.apresLacher.gaz == null,
-      `${manette.err || ''} médiane ${manette.mediane} pour ${manette.max && manette.max.toFixed(1)} d'allure · doigt ${JSON.stringify(manette.pose)} en ${manette.essais} essai(s) · lâché ${JSON.stringify(manette.apresLacher)}`);
+      `${manette.err || ''} médiane ${manette.mediane} pour ${manette.max && manette.max.toFixed(1)} d'allure · doigt ${JSON.stringify(manette.pose)} en ${manette.essais} essai(s) · lâché ${JSON.stringify(manette.apresLacher)} · journal ${JSON.stringify(manette.journal)}`);
     verifier('et le côté du joystick tourne le volant pendant qu\'on accélère',
       !manette.err && manette.avantVirage && manette.apresVirage
         && Math.abs(manette.apresVirage.yaw - manette.avantVirage.yaw) > 0.25
         && Math.abs(manette.apresVirage.y) < 0.3 && manette.apresVirage.v > manette.max * 0.5,
-      `doigt ${JSON.stringify(manette.pose)} en ${manette.essais} essai(s) · avant ${JSON.stringify(manette.avantVirage)} · après ${JSON.stringify(manette.apresVirage)}`);
+      `doigt ${JSON.stringify(manette.pose)} en ${manette.essais} essai(s) · avant ${JSON.stringify(manette.avantVirage)} · après ${JSON.stringify(manette.apresVirage)} · journal ${JSON.stringify(manette.journal)}`);
     const b = manette.boutons || {};
     // ET L'ON NE MESURE PLUS DEUX BOUTONS QUI N'EXISTENT PLUS. La capture (◓) et
     // le Dex partent avec le mode d'attrape (v285) : `vis()` rend alors
