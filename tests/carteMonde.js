@@ -594,6 +594,40 @@ const VRAIES_KM = [
       out.convoiAP2 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'AP-2') || null;
       out.convoi401 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === '401') || null;
       out.convoiHansa = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'Hansalinie') || null;
+      out.convoiI95 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'I-95') || null;
+      // LA PORTE DE MANHATTAN (v362) : Manhattan est un RECTANGLE (`BORNES`),
+      // et ni la route ni son talus n'y entrent — le worker ne connaît pas le
+      // plan qui y règne, et le rendu urbain n'y dessine pas de tablier. On lit
+      // la distance de chaque porte au rectangle, la rive (la première eau du
+      // rectangle en allant vers l'île), et chaque colonne d'emprise.
+      try {
+        const MW = await import('./src/manhattan-world.js');
+        const PL = await import('./src/manhattan-plan.js');
+        const O = MW.ORIGINE_MANHATTAN, B = PL.BORNES;
+        out.manhattan = m.entreesDe('ny').map((e) => {
+          const lx = e.x - O.x, lz = e.z - O.z;
+          const hors = Math.max(B.x0 - lx, lx - B.x1, B.z0 - lz, lz - B.z1);
+          const dx = O.x - e.x, dz = O.z - e.z, l = Math.hypot(dx, dz);
+          let rive = null;
+          for (let d = 0; d <= 120 && rive === null; d++) if (w.terrainHeight(Math.round(e.x + dx / l * d), Math.round(e.z + dz / l * d)) < 30) rive = d;
+          return { route: e.route, hors: Math.round(hors), rive };
+        });
+        let n = 0, dans = 0;
+        for (const s of m.segmentsDeRoute()) {
+          if (s.de !== 'ny' && s.vers !== 'ny') continue;
+          for (let sa = -30; sa <= s.longueur + 30; sa += 1) {
+            const q = m.pointA(s, Math.max(0, Math.min(s.longueur, sa))), ext = sa < 0 ? sa : sa > s.longueur ? sa - s.longueur : 0;
+            for (let d = -24; d <= 24; d++) {
+              const x = Math.round(q.x + q.fx * ext - q.fz * d), z = Math.round(q.z + q.fz * ext + q.fx * d);
+              if (!m.routeEn(x, z)) continue;
+              n++;
+              if (MW.dansManhattan(x, z)) dans++;
+            }
+          }
+        }
+        out.manhattanEmprise = [n, dans];
+        out.porteMin = m.DEMI_EMPRISE + m.DEBLAI_MAX / m.TALUS_PENTE + 1;
+      } catch (e) { out.manhattanErreur = String(e); }
       // UNE ROUTE QUI CONTOURNE UNE VILLE (v355) n'en approche le disque que
       // par son tronçon radial : on compte, au-delà des quatre-vingts premiers
       // et derniers blocs, les points de l'axe à moins de r + 10 de SES villes.
@@ -917,6 +951,21 @@ const VRAIES_KM = [
       && ['cologne', 'hambourg'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'Hansalinie' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7)),
       JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiHansa ? { nom: a1.convoiHansa.nom, voitures: (a1.convoiHansa.modeles || []).length } : 'aucun convoi Hansalinie',
         surRail: a1.surRail && a1.surRail.Hansalinie, frole: a1.frole && a1.frole.Hansalinie, entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'Hansalinie') }));
+
+    // L'I-95 (v362) : New York–Boston, la première route qui touche
+    // MANHATTAN. Manhattan n'est pas un disque : sa porte est DÉCLARÉE sur la
+    // rive est, hors du rectangle, en face de l'île (la tête du Triborough) —
+    // `porte()` l'aurait posée sur l'île, et le raccord aurait écrit son remblai
+    // dans les rues. Sur l'ancien code, la route n'existe pas : zéro porte.
+    verifier('l\'I-95 relie New York à Boston, sa porte est sur la rive de l\'East River hors du rectangle de Manhattan, et des voitures y roulent',
+      !a1.absent && !a1.manhattanErreur && !!a1.convoiI95 && a1.convoiI95.routier && (a1.convoiI95.modeles || []).length >= 10
+      && (a1.manhattan || []).length >= 1 && a1.manhattan.every((e) => e.hors >= a1.porteMin && e.rive !== null && e.rive <= 60)
+      && !!a1.manhattanEmprise && a1.manhattanEmprise[0] > 100 && a1.manhattanEmprise[1] === 0
+      && !!a1.frole && a1.frole['I-95'] === 0
+      && (a1.entreesEngendrees || []).some((e) => e.ville === 'boston' && e.route === 'I-95' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7),
+      JSON.stringify(a1.absent ? a1 : { convoi: a1.convoiI95 ? { nom: a1.convoiI95.nom, voitures: (a1.convoiI95.modeles || []).length } : 'aucun convoi I-95',
+        portes: a1.manhattan, barre: a1.porteMin && +a1.porteMin.toFixed(1), emprise: a1.manhattanEmprise, frole: a1.frole && a1.frole['I-95'], erreur: a1.manhattanErreur,
+        boston: (a1.entreesEngendrees || []).filter((e) => e.route === 'I-95') }));
 
     // AUCUNE ROUTE NE PREND L'EMPRISE D'UNE AUTRE (v355) : Montréal a deux
     // routes, et chaque colonne d'emprise doit appartenir au segment qu'on
@@ -2546,6 +2595,99 @@ const VRAIES_KM = [
     verifier('et Nice garde ses immeubles : le disque à plus de 21 %, aucun quartier sous 4 %',
       !kitNice.err && kitNice.bati >= 21 && Object.values(kitNice.quartiers).every((q) => q >= 4),
       kitNice.err || `${kitNice.bati} % du disque · ${JSON.stringify(kitNice.quartiers)}`);
+
+    // --- LES RUES DE SAN FRANCISCO À LA RÈGLE DU KIT (v361) -----------------
+    //
+    // La méthode de Londres et de Nice, la troisième ville : les artères de la
+    // vraie ville en deux voies, Columbus, Valencia, Stanyan et la 16e en une,
+    // la trame de 1847 et celle de l'ouest en une, SoMa en deux, le pas
+    // recomposé et la trame qui ne double plus une avenue. Mesuré sur
+    // `origin/main` : artères 2,0 à 3,1 blocs de chaussée, trame 2,0 ; part
+    // bâtie du disque 49,0 % — ici 32,6 (les avenues prennent 27 % du disque
+    // contre 9), Richmond le quartier le plus touché (30,7 → 15,1), la barre
+    // des quartiers à 10.
+    const kitSF = await tab.evaluate(async () => {
+      try {
+        const m = await import('./src/sanfrancisco.js');
+        const { sectionDeRue } = await import('./src/voirie.js');
+        const { CITY_BLOCK } = await import('./src/blocks.js');
+        const N = m.SF;
+        const med = (a) => { const b = [...a].sort((x, y) => x - y); return b.length ? b[Math.floor(b.length / 2)] : -1; };
+        const roule = (u, v) => m.solSF(N.x + Math.round(u), N.z + Math.round(v)) === CITY_BLOCK.ASPHALT;
+        const coupe = (u, v, eu, ev) => {
+          if (!roule(u, v)) return null;
+          let a = 0, b = 0;
+          while (a < 20 && roule(u - ev * (a + 0.05), v + eu * (a + 0.05))) a += 0.05;
+          while (b < 20 && roule(u + ev * (b + 0.05), v - eu * (b + 0.05))) b += 0.05;
+          return a + b;
+        };
+        const parType = { collecteur: [], locale: [] };
+        const locales = new Set(['Columbus Avenue', 'Valencia Street', 'Stanyan Street', '16e Rue']);
+        for (const voie of m.VOIES_SF) {
+          const type = m.sectionDeVoieSF ? m.sectionDeVoieSF(voie.nom).type : (locales.has(voie.nom) ? 'locale' : 'collecteur');
+          for (let i = 0; i < voie.pts.length - 1; i++) {
+            const [u0, v0] = voie.pts[i], [u1, v1] = voie.pts[i + 1];
+            const lg = Math.hypot(u1 - u0, v1 - v0);
+            if (lg < 8) continue;
+            const c = coupe((u0 + u1) / 2, (v0 + v1) / 2, (u1 - u0) / lg, (v1 - v0) / lg);
+            if (c !== null && c < 20) parType[type].push(c);
+          }
+        }
+        // les rues de la trame, coupées en travers au milieu d'un îlot
+        const T = m.TRAMES_SF || {
+          nord: { ang: -0.36, pu: 8, pv: 8, cu: 105, cv: -42, type: 'locale' },
+          soma: { ang: -0.36, pu: 15, pv: 12, cu: 117, cv: 12, type: 'collecteur' },
+          ouest: { ang: 0, pu: 10, pv: 10, cu: 0, cv: 0, type: 'locale' },
+        };
+        const trames = { collecteur: [], locale: [] };
+        for (const t of Object.values(T)) {
+          const co = Math.cos(t.ang), si = Math.sin(t.ang);
+          for (let i = -12; i <= 12; i++) for (let j = -12; j <= 12; j++) {
+            const A = i * t.pu, B = (j + 0.5) * t.pv;
+            const u = t.cu + A * co + B * si, v = t.cv - A * si + B * co;
+            if (Math.hypot(u, v) > N.r - 10) continue;
+            if (m.trameDeSF && m.trameDeSF(u, v) !== t) continue;  // la coupe dans SA trame
+            const c = coupe(u, v, si, co);
+            if (c !== null && c < 15) trames[t.type].push(c);
+          }
+        }
+        const part = (dx, dz, r) => {
+          const [cx, cz] = m.adresseSF(dx, dz);
+          let n = 0, lots = 0;
+          for (let x = cx - r; x <= cx + r; x++) for (let z = cz - r; z <= cz + r; z++) {
+            if ((x - cx) ** 2 + (z - cz) ** 2 > r * r || !m.surTerreSF(x, z)) continue;
+            n++; if (m.lotSFLibre(x, z)) lots++;
+          }
+          return +(100 * lots / n).toFixed(1);
+        };
+        let n = 0, lots = 0;
+        for (let x = N.x - N.r; x <= N.x + N.r; x += 2) for (let z = N.z - N.r; z <= N.z + N.r; z += 2) {
+          if ((x - N.x) ** 2 + (z - N.z) ** 2 > N.r * N.r || !m.surTerreSF(x, z)) continue;
+          n++; if (m.lotSFLibre(x, z)) lots++;
+        }
+        return {
+          coll: sectionDeRue('collecteur'), loc: sectionDeRue('locale'),
+          arteres: { n: parType.collecteur.length, med: med(parType.collecteur) },
+          rues: { n: parType.locale.length, med: med(parType.locale) },
+          trameLoc: { n: trames.locale.length, med: med(trames.locale) },
+          trameColl: { n: trames.collecteur.length, med: med(trames.collecteur) },
+          bati: +(100 * lots / n).toFixed(1),
+          quartiers: { centre: part(-0.8, -0.4, 20), NorthBeach: part(-0.8, -1.4, 20), SoMa: part(-1.2, 0.9, 20),
+            Mission: part(-3.4, 2.4, 20), Haight: part(-5.0, 0.95, 20), Richmond: part(-7.5, -0.3, 20),
+            Sunset: part(-7.5, 2.0, 20), Bayview: part(-1.2, 4.0, 20) },
+        };
+      } catch (e) { return { err: String(e) }; }
+    });
+    verifier('les rues de San Francisco ont la section du kit : deux voies aux artères et à SoMa, une aux rues et à la trame',
+      !kitSF.err && kitSF.arteres.n >= 12 && kitSF.rues.n >= 3 && kitSF.trameLoc.n >= 20 && kitSF.trameColl.n >= 2
+      && kitSF.arteres.med >= kitSF.coll.chaussee - 0.5 && kitSF.rues.med >= kitSF.loc.chaussee - 0.5
+      && kitSF.trameLoc.med >= kitSF.loc.chaussee - 0.5 && kitSF.trameColl.med >= kitSF.coll.chaussee - 0.5,
+      kitSF.err || `artères ${fk(kitSF.arteres.med)} (${kitSF.arteres.n} coupes, kit ${kitSF.coll.chaussee})`
+      + ` · rues ${fk(kitSF.rues.med)} (${kitSF.rues.n}, kit ${kitSF.loc.chaussee})`
+      + ` · trame ${fk(kitSF.trameLoc.med)} (${kitSF.trameLoc.n}) · SoMa ${fk(kitSF.trameColl.med)} (${kitSF.trameColl.n})`);
+    verifier('et San Francisco garde ses immeubles : le disque à plus de 30 %, aucun quartier sous 10 %',
+      !kitSF.err && kitSF.bati >= 30 && Object.values(kitSF.quartiers).every((q) => q >= 10),
+      kitSF.err || `${kitSF.bati} % du disque · ${JSON.stringify(kitSF.quartiers)}`);
 
     // --- AUCUNE VILLE NE FAIT DEMI-TOUR, PAS SEULEMENT LONDRES ---------------
     //
@@ -4701,14 +4843,26 @@ const VRAIES_KM = [
       // UN TÉMOIN DOIT ÉCHOUER PROPREMENT SUR L'ANCIEN CODE, PAS S'EFFONDRER :
       // là, `anneauxDeVille` n'existe pas, et l'appeler tuerait l'évaluation —
       // on ne verrait alors l'étendue d'aucun des quatre verdicts.
+      // ET TOUTE VILLE QU'UNE ROUTE TOUCHE (v362). Le témoin ne lisait que les
+      // cinq villes de fleuve de la v282 ; la porte de l'A3 à Francfort, posée
+      // dans le disque, avait un talus qui débordait de treize blocs au-delà de
+      // son bout et creusait le tablier d'un pont de la ville — vu sous node en
+      // v355, invisible ici. Un témoin écrit pour un cas se réécrit le jour où
+      // un cas neuf sort de son hypothèse (v313).
       const ponts = [];
+      let R = null;
+      try { R = await import('./src/routes.js'); } catch { /* ancien code */ }
+      const CINQ = ['lyon', 'hambourg', 'bale', 'belgrade', 'budapest'];
+      const parRoute = R ? R.segmentsDeRoute().flatMap((sg) => [sg.de, sg.vers]) : [];
       for (const cle of (anneauxDeVille && coteDeVille
-        ? ['lyon', 'hambourg', 'bale', 'belgrade', 'budapest'] : [])) {
+        ? [...new Set([...CINQ, ...parRoute])] : [])) {
         const f = VILLES_MONDE.find((v) => v.cle === cle);
+        if (!f || !f.trame) continue;
         const a = anneauxDeVille(f);
+        if (!CINQ.includes(cle) && !a.ponts.length) continue;
         const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
         const cote = coteDeVille(f);
-        let pas = 0, sansSol = 0, surLaTete = 0, surEau = 0, pireSpan = 0;
+        let pas = 0, sansSol = 0, surLaTete = 0, surEau = 0, pireSpan = 0, parLaRoute = 0;
         for (const q of a.ponts) {
           pireSpan = Math.max(pireSpan, q.a1 - q.a0);
           const n = Math.round(q.a1 - q.a0);
@@ -4718,12 +4872,12 @@ const VRAIES_KM = [
             const x = Math.round(f.ancre.x + P * co + Q * si);
             const z = Math.round(f.ancre.z + (-P * si + Q * co));
             pas++;
-            if (w.getBlock(x, cote, z) === 0) sansSol++;
+            if (w.getBlock(x, cote, z) === 0) { sansSol++; if (R && R.routeEn(x, z)) parLaRoute++; }
             if (w.getBlock(x, cote + 1, z) !== 0 || w.getBlock(x, cote + 2, z) !== 0) surLaTete++;
             if (w.terrainHeight(x, z) < WATER_LEVEL) surEau++;
           }
         }
-        ponts.push({ cle, tabliers: a.ponts.length, pas, sansSol, surLaTete, surEau, pireSpan });
+        ponts.push({ cle, tabliers: a.ponts.length, pas, sansSol, surLaTete, surEau, pireSpan, parLaRoute, cinq: CINQ.includes(cle) });
       }
       return { eaux, sans, trame: trame.length, servies: par.size, ponts,
         PONT_MAX: m.PONT_MAX || 0 };
@@ -4752,23 +4906,40 @@ const VRAIES_KM = [
       + `${fleuves.sans.length ? fleuves.sans.join(', ') : '(aucune)'}`
       + ` · dette déclarée : ${DETTE_SANS_ANNEAU.join(', ')}`);
 
-    // UN TABLIER SE PROUVE PAR L'EAU DESSOUS. Les culées mordent d'un bloc et
+    // UN TABLIER SE PROUVE PAR L'EAU DESSOUS. (La borne de vingt pas est celle
+    // des cinq villes de fleuve de la v282 ; Madrid, qu'une route touche, n'a
+    // qu'un pont de seize pas — un seul fleuve étroit —, et c'est un vrai pont.) Les culées mordent d'un bloc et
     // demi sur chaque rive — sinon une marche attend l'enfant au bout du pont —
     // donc tout l'axe n'est pas au-dessus de l'eau : les trois quarts le sont,
     // mesuré 73 à 85 % à la livraison.
     verifier('chaque pont a de l\'eau sous son tablier',
-      fleuves.ponts.length === 5
-      && fleuves.ponts.every((p) => p.tabliers > 0 && p.pas > 20 && p.surEau / p.pas > 0.6),
+      fleuves.ponts.filter((p) => p.cinq).length === 5
+      && fleuves.ponts.every((p) => p.tabliers > 0 && p.pas > (p.cinq ? 20 : 0) && p.surEau / p.pas > 0.6),
       fleuves.ponts.map((p) => `${p.cle} ${p.tabliers} tablier(s), ${p.surEau}/${p.pas}`
         + ` sur l'eau (${(100 * p.surEau / p.pas).toFixed(0)} %)`).join(' · '));
 
+    // DEUX DÉFAUTS DE VILLE, VUS PAR LE TÉMOIN ÉLARGI ET DÉCLARÉS (v362) — ni
+    // l'un ni l'autre n'est d'une route, et `origin/main` rend les mêmes :
+    // Berlin a UNE colonne d'eau sans tablier au bout d'un pont (le bout de
+    // l'axe arrondi tombe hors de `pontDeVille`), et à Agra le Taj Mahal et le
+    // Fort sont bâtis SUR deux tabliers (neuf pas bouchés) — un conflit de
+    // plan entre les anneaux et les monuments. Dettes dans TASKS.md ; une
+    // dette qui ne mesure plus rien rougit.
+    const DETTE_PONTS = { berlin: { sansSol: 1, surLaTete: 0 }, agra: { sansSol: 0, surLaTete: 9 } };
     verifier('et on le traverse à pied d\'une rive à l\'autre',
-      fleuves.ponts.length === 5
-      && fleuves.ponts.every((p) => p.sansSol === 0 && p.surLaTete === 0
-        && p.pireSpan <= fleuves.PONT_MAX + 3),
+      fleuves.ponts.filter((p) => p.cinq).length === 5
+      && fleuves.ponts.every((p) => (DETTE_PONTS[p.cle]
+        ? p.sansSol <= DETTE_PONTS[p.cle].sansSol && p.surLaTete <= DETTE_PONTS[p.cle].surLaTete
+        : p.sansSol === 0 && p.surLaTete === 0) && p.pireSpan <= fleuves.PONT_MAX + 3)
+      && Object.keys(DETTE_PONTS).every((c) => fleuves.ponts.some((p) => p.cle === c && (p.sansSol || p.surLaTete))),
       fleuves.ponts.map((p) => `${p.cle} ${p.pas} pas, ${p.sansSol} sans sol,`
         + ` ${p.surLaTete} bouché(s), plus long ${p.pireSpan.toFixed(0)} b`).join(' · ')
-      + ` · borne ${fleuves.PONT_MAX}`);
+      + ` · borne ${fleuves.PONT_MAX} · dettes ${Object.keys(DETTE_PONTS).join(', ')}`);
+
+    verifier('aucune route ne creuse le tablier d\'un pont de ville (toutes les villes qu\'une route touche)',
+      fleuves.ponts.length > 5 && fleuves.ponts.every((p) => p.parLaRoute === 0),
+      `${fleuves.ponts.length} villes à pont lues · creusés par une route : `
+      + (fleuves.ponts.filter((p) => p.parLaRoute).map((p) => `${p.cle} ${p.parLaRoute}`).join(', ') || 'aucun'));
 
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));

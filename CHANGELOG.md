@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v361 — Conduire comme au cinéma
+## v366 — Conduire comme au cinéma
 
 **Pourquoi.** Max (4 octobre 2026) : « une grosse refonte de la façon de
 conduire… comme GTA ». Au volant, la caméra restait rivée à six blocs quatre
@@ -55,6 +55,199 @@ conduite) : aucun appel de dessin ni programme de shader de plus (67 des deux
 côtés).
 
 ---
+
+## v365 — Les coupoles ont leur édifice
+
+**Pourquoi.** La v357 avait donné sa basilique à Saint-Pierre de Rome et
+déclaré la suite : les bâtisseurs partagés `dome` (une coupole sur son seul
+tambour) et `palaisLong` (un palais de trois blocs d'épaisseur) servent de
+gabarits à des dizaines de monuments, et remis à la hauteur de leur ville sans
+l'édifice autour, ce sont des tours et des murs. Mesuré dans toutes les villes :
+seize, du Berliner Dom au palais d'Hiver. Et à Londres, Big Ben (96 m) était à
+soixante-neuf blocs, au-dessus du London Eye, quand St Paul (111 m) restait à
+dix-sept, sous la colonne Nelson.
+
+**Ce que ça change.**
+
+- **Seize monuments ont leur vraie forme** : Santa Maria del Fiore avec sa nef
+  de marbre, son octogone, la coupole de Brunelleschi et le campanile de Giotto ;
+  le Berliner Dom et ses tours d'angle ; le Reichstag et sa coupole de verre ;
+  le Rashtrapati Bhavan ; le Capitolio de La Havane ; le palais des Beaux-Arts
+  et la cathédrale de Mexico ; la gare Victoria et le Taj Mahal Palace de
+  Mumbai ; le baptistère et le Duomo de Pise ; Saint-Marc et ses cinq
+  coupoles ; et quatre palais autour de leur cour — le palais royal de Madrid,
+  la Hofburg, le palais d'Hiver, le Parlement d'Athènes.
+- **Istanbul a ses minarets** : Sainte-Sophie (sa coupole basse, ses
+  demi-coupoles et quatre minarets) et la Mosquée bleue (sa cascade de coupoles
+  et six minarets) ; la tour de Galata a son cylindre de pierre et son toit
+  conique, et le ciel de la ville, qu'elle bornait, se décomprime.
+- **Le ciel de Londres est dans l'ordre** : Big Ben à trente-neuf blocs, à la
+  proportion de la tour Elizabeth, St Paul sur son tambour et sa colonnade à
+  quarante et un, sous le London Eye.
+- **Les voitures de l'Autosole s'arrêtent sur le parvis du Duomo** au lieu de
+  traverser sa nef : une avenue d'entrée s'arrête désormais devant le premier
+  bloc qu'un monument pose à hauteur de carrosserie.
+
+**Ce qui le prouve.** Un témoin neuf dans `plafond.js` — « aucune coupole ni
+aucun palais partagé ne monte seul en tour » — cherche les gabarits dans toutes
+les villes et mesure leur assise (l'emprise du pied sur celle du haut) ou leur
+carrure : rouge sur `origin/main` (seize), vert ici. Le témoin d'ordre du vrai
+ciel reçoit St Paul, Tower Bridge et le London Eye. L'empreinte des 490
+morceaux se relève (Londres est un des neuf lieux), avec sa preuve : bâtisseurs
+neufs désarmés, la branche rend l'empreinte d'`origin/main` au bit près. Jugé
+sur captures, vingt et un monuments. Le portail a trouvé deux défauts de la livraison
+elle-même — l'entrée de Florence dans le Duomo, la barre du témoin de Big Ben
+écrite pour l'ancien modèle à soixante-neuf blocs — et le témoin de Londres
+exige désormais que la roue reste au-dessus de la tour de l'horloge (rouge sur
+`origin/main`).
+Et le portail de la v365 en a trouvé un troisième : le Berliner Dom, bâti sur
+toute sa boîte, recouvrait deux tabliers de pont de Berlin (dix pas bouchés,
+« on le traverse à pied d'une rive à l'autre », `carteMonde.js`) ; il tient
+désormais entre les deux ponts, son aile du nord lui gardant l'assise d'une
+cathédrale.
+
+---
+
+## v364 — Ce que coûtent les dégâts, lu sur la tablette
+
+**Pourquoi.** Le coût des dégâts n'a jamais été mesuré sur l'iPad. Au banc,
+enfoncer une carrosserie coûte 12 à 22 ms au premier choc et 4 à 7 ensuite,
+et le feu deux appels de dessin ; mais le banc rend en logiciel et ses
+millisecondes ne se transposent pas (v247). La dette de la v343 le disait :
+« reste le coût RÉEL sur la tablette, à lire avec `?diag=1` ». Il n'y avait
+rien à lire.
+
+**Ce que ça change.** La tablette mesure elle-même. Avec `?diag=1`, une ligne
+de plus apparaît dès qu'une voiture s'est abîmée : le nombre d'enfoncements,
+le premier, le dernier et le pire en millisecondes, et ce que coûte le feu en
+appels de dessin et en carrés. Le journal de bord (v296) garde les mêmes
+chiffres dans ses relevés : Max les relit après coup, sans rien installer. Tant
+que rien ne s'est abîmé, rien n'est ajouté au relevé.
+
+**Ce qui le prouve.** Un témoin neuf dans `degats.js`, rouge sur
+`origin/main` (aucun relevé) : après le crash et le feu, le journal porte un
+relevé `degats` avec ses enfoncements en millisecondes et un feu à un ou deux
+appels (mesuré : 4 enfoncements, dernier 22,4 ms, premier 18,2, feu 2 appels
+pour 36 carrés). Et le témoin du contrat avec la physique (v356) compte
+désormais les chocs que la VRAIE physique publie (v358) pendant sa chute de
+vitesse simulée : au portail, elle en avait publié un, légitime, et le témoin
+l'accusait d'être le repli. Vert sur la branche, rouge quand on force le repli.
+
+---
+
+## v363 — Les coups suivent la voiture
+
+**Pourquoi.** Deux manques laissés déclarés par la v356. Une voiture de la
+rue que l'enfant avait froissée, puis qu'il PRENAIT, repartait neuve : la
+monture qu'on lui fabrique ne portait pas les dégâts de la voiture vue dans la
+rue — sa laque la suivait depuis la v305, ses coups non. Et à plusieurs,
+chaque tablette a SA rue : une voiture de la rue percutée par Marlon n'était
+froissée que chez lui, Alice la voyait intacte au même endroit. Enfin, un
+témoin du portail (« aucun programme compilé au feu ») était rouge des deux
+côtés en comptant 97 → 96 : un compte qui BAISSE, donc un programme rendu,
+jamais une compilation.
+
+**Ce que ça change.** Prendre une voiture de la rue abîmée, c'est la prendre
+abîmée : la même tôle enfoncée, la même santé, le même moteur qui fume — et un
+coup de plus peut la mettre en panne ou en feu, comme toute voiture qu'on
+conduit. Ce n'est jamais une copie de géométrie : l'histoire des chocs passe à
+la monture et se rejoue sur ses pièces, avec les mêmes fonctions et le même
+bruit (v344). À plusieurs, la voiture de la rue que l'un percute est froissée
+chez l'autre aussi, de la même histoire : elle se nomme par `clé#rang` (v305),
+et un message court (`rue_choc`) porte le choc ; une tablette restée sur
+l'ancienne version l'ignore. Si la voiture n'est pas encore dessinée chez
+l'ami, l'histoire attend qu'elle naisse.
+
+**Ce qui le prouve.** Deux témoins neufs dans `degats.js`, rouges sur
+`origin/main` : la voiture prise porte la MÊME histoire de chocs que celle de
+la rue, sa santé publiée et 17 pièces froissées (ancien code : santé 1, rien
+de froissé) ; à deux tablettes, le même convoi, le même rang, la même histoire
+chez Alice et 8 pièces froissées (ancien code : aucun choc). Le témoin des
+programmes lit désormais les CLÉS neuves et non le compte : vert sur les deux
+codes, et rouge (deux clés neuves) quand on désarme la chauffe des dégâts.
+
+---
+
+## v362 — New York–Boston, et une porte qui n'est pas sur un disque
+
+**Pourquoi.** New York n'avait aucune route : son entrée était instruite
+depuis la v355 et pas faite, parce que Manhattan n'est pas un disque. C'est
+un rectangle de 480 × 2 300 blocs — l'île, et l'Hudson et l'East River
+dedans — là où le registre dit « un disque de 152 ». La règle des portes
+(sur le rayon, vingt blocs sous le bord) aurait posé la porte SUR l'île, et
+le raccord aurait écrit son remblai dans les rues de Manhattan. Et deux
+défauts de témoin, trouvés en passant : la porte de l'A3 creusait un pont de
+Francfort sans qu'aucun témoin ne la regarde, et le témoin d'empreinte de la
+v352 hachait TOUTES les routes du registre : rouge en production en v355 et
+v356, re-relevé en v357 — et chaque route neuve l'aurait refait rougir.
+
+**Ce que ça change.** L'I-95 relie New York à Boston : 390 blocs, un petit
+pont, et des voitures qui roulent de la rive de l'East River, en face de
+Manhattan (la tête du Triborough), jusqu'au centre de Boston par sa rue du
+sud-ouest. La route s'arrête à la rive : le pont qui entrerait dans l'île est
+déclaré, pas fait — le maillage de Manhattan ne passe pas par le mailleur
+des routes, un tablier y serait invisible. Une route peut désormais DÉCLARER
+sa porte (`portes`) quand la ville n'est pas un disque. Et une route ne pose
+plus de talus au-delà de son bout : le tablier du pont de Francfort est
+refait.
+
+**Ce qui le prouve.** Trois témoins neufs dans `carteMonde.js`, et un
+réécrit dans `morceaux-temoin.mjs`. L'I-95 (rouge sur l'ancien code : pas de
+route) exige sa porte à plus d'une portée de talus du rectangle de
+Manhattan, l'eau du rectangle à moins de soixante blocs, ZÉRO colonne
+d'emprise dans le rectangle, et une entrée de Boston sur la rue. Le témoin
+des ponts de villes lit désormais les dix-huit villes à pont qu'une route
+touche (cinq avant), et un verdict neuf exige qu'aucune route n'en creuse un
+tablier — Francfort en avait un, zéro ici. Il a vu deux défauts de ville qui
+ne sont pas d'une route (une colonne à Berlin, neuf pas bouchés par le Taj
+Mahal et le Fort d'Agra), déclarés dans le témoin et dans `TASKS.md`.
+L'empreinte des 490 morceaux ne hache plus que les vingt et une routes
+qu'elle a relevées (v357), et elle retombe au bit près sur sa valeur
+(`3cc39830…`), talus-borne compris : le talus coupé au bout ne change rien à
+ce qu'elle lit.
+Le joint des ponts : 0 trou sur 143 509 points, toutes routes.
+
+---
+
+## v361 — Les rues de San Francisco à la règle du kit
+
+**Pourquoi.** La troisième des cinq villes bâties à la main restées sur leurs
+largeurs relevées à la main (dette v271). Une rue de quartier de San
+Francisco faisait deux blocs de chaussée et Market Street trois : une voiture
+de 2,26 blocs y roulait sur la ligne blanche, et deux ne s'y croisaient pas.
+
+**Ce que ça change.**
+
+- **Les rues de San Francisco ont la section du kit**, à un bloc pour un
+  mètre : deux voies et des trottoirs de 2,5 m pour Market, Van Ness, Geary,
+  Mission, la 19e Avenue, la Great Highway, les boulevards du Sunset ; une
+  voie de 3,1 m pour Columbus, Valencia, Stanyan et la 16e Rue ; une voie pour
+  la trame de 1847 et celle de l'ouest, deux pour SoMa.
+- **Les îlots se recomposent** comme à Londres et à Nice, et une rue de la
+  trame ne double plus une avenue. Le prix, déclaré : les avenues prennent
+  27 % du disque contre 9, la part bâtie passe de 49,0 à 32,6 % — plus que
+  Londres ou Paris ; le Richmond, que Geary traverse, est le plus touché
+  (30,7 → 15,1), Pacific Heights et la Mission en gagnent.
+- **Ce qu'un enfant a bâti à San Francisco ne bouge pas** : sous ses blocs
+  d'avant la mise à jour, la ville d'avant reste.
+- **Le centre reste un tapis d'où sortent quelques tours.** Les îlots plus
+  grands faisaient du centre un tirage : médiane 23 blocs, le Ferry Building
+  et le Bay Bridge dominés par leurs voisins. Chaque îlot se coupe désormais
+  en quatre parcelles, quatre sur cinq font huit à quatorze étages, les tours
+  restent le long de Market, et Fisherman's Wharf sort du centre (Pier 39
+  n'y est plus dominé).
+
+**Ce qui le prouve.** Quatre témoins neufs. `carteMonde.js` : les rues ont
+la chaussée de leur type (artères 6,3, rues 4,0, trame 2,95, SoMa 6,35
+contre 2,0, 1,7 et 0,95 sur `origin/main`) ; San Francisco garde plus de
+30 % de lots, aucun quartier sous 10 %. `plafond.js` : une maison posée sur
+une ancienne rue n'est pas enfermée et une cabane garde son toit (sur
+`origin/main` : la date n'existe pas). Les six circuits restent à 100 % sur
+la rue. `carte.js` : le centre a une médiane de 12 blocs, sa plus haute tour
+36, aucune colonne de verre et 212 de façade ; `plafond.js` : aucun monument
+de San Francisco plus bas que ses voisins. L'empreinte des 490 morceaux témoins change parce que San Francisco
+en est un des neuf lieux ; sans elle, les 441 autres rendent `346a66cd…` sur
+`origin/main` et sur la branche.
 
 ---
 

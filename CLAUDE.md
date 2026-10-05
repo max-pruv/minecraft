@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Les sensations au volant (v361) — la caméra regarde la voiture, et un mur se cherche cellule par cellule
+## Les sensations au volant (v366) — la caméra regarde la voiture, et un mur se cherche cellule par cellule
 
 Chantier « conduite » (six sessions, octobre 2026) ; celle-ci tient ce que
 l'enfant VOIT et ENTEND. Tout vit dans `src/sensations.js`, branché par un
@@ -805,6 +805,80 @@ règles.
   dans l'image, et `sensations.js` reprend le suivi du bestiaire pour ne pas
   compter deux fois. Les avions gardent la poursuite d'avant à l'identique ;
   `?sensations=0` rejoue l'ancienne conduite, pour mesurer.
+
+## Les coupoles ont leur édifice (v365) — un gabarit partagé se cherche dans toutes les villes, et le ciel se lit sur les modèles
+
+La suite de la v357 : « une coupole sans sa nef devient une tour », pour toutes
+les villes. Sept règles.
+
+- **UN GABARIT SE MARQUE, ET LE TÉMOIN LE RECONNAÎT DES DEUX CÔTÉS.** `dome` et
+  `palaisLong` portent `gabarit` (villesmonde.js) ; sur l'ancien code, qui ne
+  la porte pas, le témoin reconnaît la dernière ligne du bâtisseur
+  (`String(f)`). C'est ce qui lui fait mesurer le MÊME défaut des deux côtés
+  (règle v302) : seize sur `origin/main`, du Berliner Dom au palais d'Hiver,
+  zéro ici. Saint-Pierre (v357) passait déjà.
+- **« PAS UNE TOUR » A DEUX GRANDEURS, ET L'UNE DES DEUX SUFFIT.** L'ASSISE
+  (l'emprise des trois premières couches sur la plus large couche de la moitié
+  haute : une coupole sur sa nef en a au moins deux, sur son seul tambour un) ou
+  la CARRURE (la hauteur sous deux fois le petit côté du pied : un palais à cour
+  est un bloc). Une hauteur sur une emprise ne départage PAS : le Panthéon de
+  Paris, validé en capture, a l'élancement d'une tour, parce que le ciel double
+  les hauteurs.
+- **LA RECETTE D'UNE COUPOLE REMISE AU CIEL, née de deux captures.** Sur une
+  petite emprise, étirer le TAMBOUR fait une tour (Florence, Berlin, premier
+  jet). Le corps, large, prend l'étirement ; la coupole s'écrit avec assez de
+  couches pour en être une (surhaussée : plus de couches que de rayon) et reste
+  rigide ; la lanterne s'écrit sur quatre ou cinq couches pour ne pas devenir
+  une aiguille. Les paliers sont en mètres ÉCRITS EN PROPORTION (le corps de
+  Florence à 18 m, celui de Berlin à 13) : la courbe du ciel, logarithmique,
+  étire le bas plus que le haut, et la leçon de la façade de Saint-Pierre (une
+  hauteur vraie sur un plan à l'échelle du sol fait un immeuble) vaut pour
+  toutes.
+- **UNE BAIE NE SE POSE QUE SUR UN CORPS QUI NE S'ÉTIRE PAS.** Un étage fait
+  trois couches (v301) et une baie se dessine sur trois bandes (allège, bas,
+  haut). Posée sur une couche que la table répète, chaque couche répétée
+  redessine une fenêtre : le palais royal de Madrid, en capture, était une tour
+  de bureaux à dix-huit rangs de baies. Les palais s'écrivent donc à leur
+  hauteur du monde, un pour un (`[[0, 0], [1, 1], [sommet + 1, vraie + 1]]`),
+  et leurs façades par `facadeEtages`.
+- **UN FÛT QUI BORNE LA COURBE D'UNE VILLE PEUT RECEVOIR SON CORPS, ET LA
+  COURBE SE DÉCOMPRIME.** Istanbul était à `k` 0,48 parce que la tour de Galata,
+  colonne d'un bloc, ne montait pas. Avec son cylindre de pierre, elle prend la
+  table, et la ville revient à `k` 1 : Sainte-Sophie et ses minarets, la
+  Mosquée bleue et les siens montent sous elle. `k` est un résultat : il se
+  refait quand le repère qui le fixait change.
+- **DANS UNE VILLE BÂTIE À LA MAIN, LE CIEL SE LIT SUR SES MODÈLES D'AUTEUR.**
+  À Londres, le London Eye (135 m) est à quarante-trois blocs et Tower Bridge
+  (65 m) à trente-huit ; Big Ben, sorti du catalogue à soixante-neuf, dominait
+  tout, et St Paul (111 m) restait à dix-sept. La courbe de la ville (`k` 0,75,
+  sous la Tour Blanche) ne peut pas les départager : une table de paliers ne
+  sait que monter. Big Ben a donc un bâtisseur de Londres à trente-neuf, St Paul
+  sa coupole sur tambour à quarante et un, tous deux à leur hauteur d'auteur
+  (champ `tour`, pas de table), DANS l'emprise d'avant (aucune rue touchée) ; et
+  Tower Bridge et le London Eye entrent dans les `FIXES` du témoin d'ordre.
+- **UN QUARTIER TROP SERRÉ SE DÉCLARE, IL NE SE FORCE PAS.** À Pise, le Duomo
+  est à trois blocs du centre de la tour penchée, dont le modèle fait onze blocs
+  de large pour quinze mètres : aucun bâtisseur ne tient dans la boîte du Duomo
+  sans recouvrir la tour. Il a son édifice, le recouvrement d'avant reste, et
+  c'est une dette de PLAN (`TASKS.md`).
+
+Et UNE ENTRÉE DE VILLE S'ARRÊTE DEVANT UN MONUMENT, PAS SEULEMENT DEVANT UN
+ÎLOT. L'avenue de Florence finissait dans la boîte du Duomo et ne passait que
+par une brèche de l'ancien anneau de la coupole : donner son édifice à un
+monument peut fermer une rue qu'il ne fermait que par chance. `avenueDEntree`
+lit les blocs que le BÂTISSEUR pose à hauteur de carrosserie (couches 1 à 3),
+jamais la boîte (v274) ; mesuré, seule Florence change sur trente-neuf entrées.
+
+Et UN ÉDIFICE NEUF SE MESURE CONTRE LES PONTS DE SA VILLE, PAS SEULEMENT CONTRE
+SES RUES. Les tabliers des anneaux (`anneauxDeVille(f).ponts`) traversent la
+boîte des repères ; le gabarit, petit, les laissait libres, et le Berliner Dom
+bâti sur toute sa boîte en murait deux (dix pas, vus au portail par
+`carteMonde.js`). Avant de remplir une boîte, on dessine les tabliers qui la
+traversent (une carte ASCII de la boîte suffit) et l'on bâtit à côté.
+
+Et l'empreinte des 490 morceaux (v352) se relève : Londres est un des neuf
+lieux. Bâtisseurs neufs désarmés (`tour` retiré), la branche rend 58a67b42…, la
+constante d'`origin/main`, au bit près.
 
 ## Les tours ont une emprise (v357) — une perche se cherche au bâtisseur, dans toutes les villes
 
@@ -976,6 +1050,34 @@ Le lot 2 de la dette de la v335 : huit monuments. Trois règles.
   Archives, 24 m pour Buckingham, une quarantaine de mètres pour l'Opéra de
   Lille, 23 m pour l'Arche. Ce qu'on n'a pas trouvé (le musée d'Histoire
   américaine, « cinq étages ») se dit approché dans le commentaire.
+
+## Les rues de San Francisco à la règle du kit (v361) — un plan à vingt-sept blocs par kilomètre paie ses avenues
+
+Trois règles.
+
+- **LE PRIX D'UNE SECTION SE MESURE EN PART DU DISQUE, AVANT DE CHOISIR LES
+  TYPES.** Toutes les voies nommées en collectrices, les avenues passaient de
+  9 à 27 % du disque et la part bâtie de 49,0 à 31,9 % ; les quatre rues qui
+  n'ont qu'une voie par sens dans la vraie ville (Columbus, Valencia, Stanyan,
+  la 16e) en locales : 32,6. Le type se lit toujours à la fonction ; ce que la
+  mesure décide, c'est qu'on le dise. Les quartiers se mesurent sur un rayon
+  de vingt blocs, pas douze : une collectrice de 11,4 blocs d'emprise prend
+  près de la moitié d'un disque de vingt-cinq, et le Richmond tombait à 7,9
+  pour une avenue qui le traverse.
+- **LA VILLE D'AVANT SE FIGE, ET SA BRANCHE DU GÉNÉRATEUR LA LIT AUSSI.** San
+  Francisco n'est pas dans la boucle générique de `world.js` : sa branche à
+  elle choisit `sanfrancisco-v343.js` sous `villeAvant`, sol, lot, bâtisseur
+  ET feux (`sf-v359`). `VILLES_FIGEES` porte la date ; elle se relit à la
+  fusion.
+- **UNE LOI DE HAUTEUR TIRÉE PAR ÎLOT DEVIENT UN TIRAGE QUAND LES ÎLOTS
+  GRANDISSENT.** Recomposés, les îlots du centre n'étaient plus qu'une
+  vingtaine : la médiane passait de 13 à 23 blocs, et le Ferry Building et le
+  Bay Bridge se retrouvaient sous leurs voisins (le témoin des monuments l'a
+  dit, pas la capture). Le tirage se fait par PARCELLE (quatre par îlot,
+  `ilotSF`), le tapis est garanti par construction (quatre parcelles sur cinq
+  entre huit et quatorze étages) et les tours ne vont que là où est le vrai
+  Financial District. Une loi de ville se remesure quand le plan change de
+  grain.
 
 ## Les rues de Nice à la règle du kit (v359) — une règle partagée se corrige pour toutes les villes qui la lisent
 
@@ -1289,6 +1391,26 @@ même règle 1, ne prend jamais feu (`rec.rue`) et ne parle pas. Ce qui s'en
 va se rend une fois : un clone marqué `rendu` à son `dispose` (par `liberer`)
 ne se rend pas une seconde fois — le premier témoin comptait 28 rendues pour
 14 clones.
+
+**Les coups suivent la voiture, et la rue est la même chez l'ami (v363).**
+Une voiture de la rue froissée que l'enfant prend (`emprunter`, v194) passe
+son HISTOIRE de chocs à la monture neuve (`heriter`, degats3d.js) ; `fun.js`
+la retrouve AVANT l'emprunt par sa place (`rueEn`), sans toucher la
+circulation. À plusieurs, une voiture de la rue se nomme par `clé#rang`
+(`vehicules.voitureNommee`, crochet court) ; le choc part dans un message
+court (`rue_choc`, nom neuf : l'ancienne tablette l'ignore, l'hôte relaie) et
+chaque tablette garde l'histoire par nom (`histoire`, soixante-quatre noms,
+douze chocs) et la rejoue sur SA voiture de ce nom quand elle existe
+(`rapprocher`, deux fois par seconde). Toujours l'histoire, jamais la
+géométrie. Et **un témoin de compilation lit les CLÉS de programme, pas leur
+compte** : un programme rendu fait baisser le compte (97 → 96, rouge des deux
+côtés), une compilation ajoute une clé — vérifié rouge, chauffe désarmée.
+
+**Le coût se lit sur la tablette (v364).** `degats.bilan()` rend le nombre
+d'enfoncements, le premier, le dernier et le pire en millisecondes, et les
+appels du feu ; `main.js` le range dans le relevé du journal de bord (v296) et
+l'affiche sous `?diag=1`, seulement si quelque chose s'est abîmé. Les
+millisecondes du banc ne se transposent pas (v247) : celles-là si.
 
 **Le feu dépose l'enfant, il ne le projette pas** : passé `DELAI_SORTIE` (3,5 s
 en temps réel), `fun.js` le fait descendre et `deposer` le pose debout sur une
@@ -1747,6 +1869,37 @@ Une règle.
   la terre, l'herbe, le sable et la pierre naturelle. Manhattan a son propre sol
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
+
+## La porte de Manhattan (v362) — une ville qui n'est pas un disque déclare sa porte
+
+L'I-95 New York–Boston. Quatre règles.
+
+- **UNE VILLE QUI N'EST PAS UN DISQUE N'A PAS SA PORTE SUR LE RAYON.**
+  Manhattan est un rectangle de 480 × 2 300 (`BORNES`), le registre dit un
+  disque de 152 : `porte()` aurait posé la porte sur l'île. La fiche de la
+  route DÉCLARE la porte (`portes: { ny: [x, z] }`, blocs du monde, mesurée),
+  sur la rive est, hors du rectangle d'au moins une portée de talus.
+- **UNE ROUTE NE LIT JAMAIS UN RELIEF QUE LE WORKER NE CONNAÎT PAS.** Le
+  profil se calcule dans chaque monde avec SON `terrainHeight` ; le worker
+  (un `World`) ne connaît pas le plan de Manhattan que le fil principal
+  (`TerreUrbaine`) lit dans le rectangle. Un seul point du profil dedans, et
+  les deux fils bâtissent deux routes différentes — la rampe d'épinglage
+  propage l'écart sur toute la longueur. Et les morceaux du rectangle sans
+  bloc posé ne passent pas par le mailleur ordinaire (`hasVisualEdits`) : un
+  tablier y serait invisible. Le pont qui entrerait dans l'île est donc une
+  dette d'architecture, pas un tracé à chercher.
+- **UNE ROUTE N'A PAS DE TALUS AU-DELÀ DE SON BOUT.** La distance au point
+  borné dessine un chapeau autour de la porte ; là où le sol au-delà n'est pas
+  celui de la porte (un fleuve de ville), il creusait — l'A3 traversait le
+  tablier d'un pont de Francfort à treize blocs au-delà de sa porte. Le talus
+  s'arrête net à un bloc au-delà du bout ; la chaussée continue.
+- **UN TÉMOIN QUI HACHE UN REGISTRE ROUGIT À CHAQUE AJOUT, ET NE PROUVE PLUS
+  RIEN.** L'empreinte de la v352 hachait toutes les routes : rouge en
+  production en v355 et v356, sans un mot dans `TASKS.md`. Une empreinte
+  d'identité porte la LISTE de ce qu'elle a relevé (`ROUTES_RELEVEES`) ; ce qu'on
+  ajoute a ses propres témoins. Et un témoin écrit pour cinq villes
+  (`ponts de villes`) se réécrit pour toutes celles qu'une route touche — il a
+  trouvé Francfort, et deux défauts de ville qu'on déclare.
 
 ## Les routes qui contournent une ville (v355) — le couloir se cherche avec son cap
 

@@ -6,13 +6,57 @@
 
 export const NOUVEAUTES = [
   {
-    v: 361,
+    v: 366,
     titre: 'Conduire comme au cinéma',
     puces: [
       'La caméra recule quand on accélère',
       'La voiture penche dans les virages',
       'Les roues avant tournent avec toi',
       'Les pneus crissent, les chocs s\'entendent',
+    ],
+  },
+  {
+    v: 365,
+    titre: 'Les coupoles ont leur église',
+    puces: [
+      'Le Duomo de Florence et sa coupole',
+      'Sainte-Sophie et ses quatre minarets',
+      'Big Ben et Saint-Paul à Londres',
+      'Des palais avec leur cour',
+    ],
+  },
+  {
+    v: 364,
+    titre: 'La tablette mesure les dégâts',
+    puces: [
+      'Le journal note ce que coûte un choc',
+    ],
+  },
+  {
+    v: 363,
+    titre: 'Les coups suivent la voiture',
+    puces: [
+      'Une voiture abîmée reste abîmée',
+      'Tes amis voient les voitures cabossées',
+    ],
+  },
+  {
+    v: 362,
+    titre: 'New York–Boston en voiture',
+    puces: [
+      'Une autoroute part de New York',
+      'Elle s\'arrête face à Manhattan',
+      'Les ponts de Francfort sont réparés',
+    ],
+  },
+  {
+    v: 361,
+    titre: 'Les rues de San Francisco s\'élargissent',
+    puces: [
+      'Market et Van Ness à deux voies',
+      'Des îlots plus grands dans le quadrillage',
+      'Les tours restent près de Market Street',
+      'Tes constructions restent comme avant',
     ],
   },
   {

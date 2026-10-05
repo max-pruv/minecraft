@@ -160,7 +160,11 @@ function verifier(nom, ok, detail = '') {
       await new Promise((f) => setTimeout(f, 1500));
       let lampes = 0;
       g.scene.traverse((o) => { if (o.isLight) lampes++; });
-      return { programmes: g.renderer.info.programs.length, lampes };
+      // LES CLÉS, PAS LE COMPTE (v363) : un programme RENDU par un objet qui
+      // s'en va fait baisser le compte (97 → 96 mesuré, rouge des deux côtés)
+      // sans rien dire d'une compilation. Ce qui est compilé au choc est une
+      // clé qui n'existait pas avant.
+      return { programmes: g.renderer.info.programs.length, cles: g.renderer.info.programs.map((q) => q.cacheKey), lampes };
     });
 
     // 1. LE TRAJET DE L'ENFANT : pleins gaz, droit dans le mur. Le choc passe
@@ -345,14 +349,40 @@ function verifier(nom, ok, detail = '') {
       await new Promise((f) => setTimeout(f, 1500));
       let lampes = 0;
       g.scene.traverse((o) => { if (o.isLight) lampes++; });
-      return { programmes: g.renderer.info.programs.length, lampes };
+      // LES CLÉS, PAS LE COMPTE (v363) : un programme RENDU par un objet qui
+      // s'en va fait baisser le compte (97 → 96 mesuré, rouge des deux côtés)
+      // sans rien dire d'une compilation. Ce qui est compilé au choc est une
+      // clé qui n'existait pas avant.
+      return { programmes: g.renderer.info.programs.length, cles: g.renderer.info.programs.map((q) => q.cacheKey), lampes };
     });
     // (et seulement si le feu a VRAIMENT brûlé : sans flammes, l'égalité ne
     // prouverait rien — elle serait vraie sur l'ancien code)
     verifier('aucune lampe de plus dans la scène (quatre pour tout le jeu, v248)', feu.flammes > 0 && apres.lampes === avant.lampes,
       `${avant.lampes} → ${apres.lampes}, flammes ${feu.flammes}`);
-    verifier('aucun programme de shader compilé au choc ni au feu (chauffés à l\'accueil)', feu.flammes > 0 && apres.programmes === avant.programmes,
-      `${avant.programmes} → ${apres.programmes}, flammes ${feu.flammes}`);
+    const neufs = apres.cles.filter((k) => !avant.cles.includes(k));
+    verifier('aucun programme de shader compilé au choc ni au feu (chauffés à l\'accueil)', feu.flammes > 0 && neufs.length === 0,
+      `${neufs.length} clé(s) neuve(s) ${neufs.map((k) => k.slice(0, 60)).join(' | ')} — compte ${avant.programmes} → ${apres.programmes}, flammes ${feu.flammes}`);
+
+    // 4 bis. LE COÛT RÉEL SE LIT SUR LA TABLETTE (v364). Le banc rend en
+    // logiciel : ses millisecondes ne se transposent pas (v247). Le journal de
+    // bord (v296) doit donc garder ce que l'appareil a mesuré — le dernier
+    // enfoncement et ce que coûte le feu — pour que Max le relise sur l'iPad.
+    const journalDegats = await tab.evaluate(async () => {
+      const j = window.__journal, d = window.__game.fun.degats;
+      if (!j) return { err: 'pas de journal' };
+      const t0 = performance.now();
+      let r = null;
+      while (performance.now() - t0 < 12000) {
+        r = [...j.doc.releves].reverse().find((x) => x.degats) || null;
+        if (r && r.degats.feu > 0) break;
+        await new Promise((f) => setTimeout(f, 300));
+      }
+      return { releve: r ? r.degats : null, bilan: d && d.bilan ? d.bilan() : null, attente: Math.round(performance.now() - t0) };
+    });
+    verifier('le journal de bord garde le coût réel des dégâts : le dernier enfoncement en ms, et les appels du feu',
+      !journalDegats.err && journalDegats.releve && journalDegats.releve.chocs > 0 && journalDegats.releve.dernierMs > 0
+        && journalDegats.releve.feu >= 1 && journalDegats.releve.feu <= 2,
+      JSON.stringify(journalDegats));
 
     // 5. UNE VOITURE NEUVE EST NEUVE, ET LE GARAGE RÉPARE.
     const neuf = await tab.evaluate(async () => {
@@ -574,28 +604,106 @@ function verifier(nom, ok, detail = '') {
       p.gaz = 0; p.vitesseVoiture = 0;
       await tenir(0.3);
       const boostNeuve = p.boost;
+      // ce que la physique publiait AVANT le témoin (v358 les pose pour de
+      // bon) : on le rend en sortant, on ne le supprime pas
+      const avantChoc = p.choc, avantLit = p.physiqueLitEtat;
       p.physiqueLitEtat = true;
       p.choc = null;                                  // la physique existe, rien ne s'est passé
       // une chute de vitesse brutale : le repli la compterait — il doit se taire
+      // DEPUIS LA v358 LA VRAIE PHYSIQUE PUBLIE SES CHOCS : une chute brutale
+      // peut en être un pour elle (mesuré au portail de la v364 : un choc
+      // compté, zone −2,6). Celui-là est légitime ; ce que le témoin garde,
+      // c'est qu'AUCUN choc ne vienne du repli — on compte donc les chocs que
+      // la physique a publiés pendant la chute, et l'on n'exige rien de plus.
+      const avantChute = d.etat(a.mesh) ? d.etat(a.mesh).chocs.length : 0;
+      const publies = new Set();
+      const guet = setInterval(() => { if (p.choc && p.choc.t) publies.add(p.choc.t); }, 5);
       p.vitesseVoiture = 22; await tenir(0.05); p.vitesseVoiture = 0; await tenir(0.3);
-      const apresChute = d.etat(a.mesh) ? d.etat(a.mesh).chocs.length : 0;
+      clearInterval(guet);
+      if (p.choc && p.choc.t) publies.add(p.choc.t);
+      const longueur = d.etat(a.mesh) ? d.etat(a.mesh).chocs.length : 0;
+      // au plus ce que la physique a publié (un frôlement publié ne compte pas)
+      const apresChute = Math.max(0, longueur - avantChute - publies.size);
       const cap = a.mesh.rotation.y;
       p.choc = { force: 0.8, t: performance.now(), x: a.pos.x - Math.sin(cap) * 2.3, z: a.pos.z - Math.cos(cap) * 2.3 };
       await tenir(1.0);                               // relu à chaque image
       const e = d.etat(a.mesh);
-      const chocs = e ? e.chocs.length : 0;
+      const chocs = (e ? e.chocs.length : 0) - longueur;   // celui qu'on vient de publier, une fois
       const boostLu = p.boost;                        // la physique lit l'état : pas de réduction ici
       p.physiqueLitEtat = false;
       await tenir(0.3);
       const boostApplique = p.boost;                  // sans elle, l'allure réduite revient ici
-      delete p.choc; delete p.physiqueLitEtat;
-      return { apresChute, chocs, zone: e ? e.chocs.map((c) => c.z) : null, publie: p.etatVoiture,
+      p.choc = avantChoc === undefined ? null : avantChoc; p.physiqueLitEtat = avantLit;
+      if (avantChoc === undefined) delete p.choc;
+      if (avantLit === undefined) delete p.physiqueLitEtat;
+      return { apresChute, publiesPendantLaChute: publies.size, chocs, zone: e ? e.chocs.map((c) => c.z) : null, publie: p.etatVoiture,
         boostNeuve, boostLu, boostApplique };
     });
     verifier('le contrat avec la physique : un choc publié compte UNE fois, le repli se tait, l\'allure n\'est jamais réduite deux fois',
       !contrat.err && contrat.apresChute === 0 && contrat.chocs === 1 && contrat.publie && contrat.publie.sante < 1
         && Math.abs(contrat.boostLu - contrat.boostNeuve) < 1e-6 && contrat.boostApplique < contrat.boostNeuve,
       JSON.stringify(contrat));
+
+    // 6 quinquies. UNE VOITURE DE LA RUE ABÎMÉE QU'ON PREND GARDE SES COUPS
+    // (v363). L'enfant descend, une voiture de la rue est froissée par le vrai
+    // chemin (un choc publié par la physique, qui trouve la voiture percutée),
+    // il se met à côté et touche « Conduire cette voiture ». La monture neuve
+    // doit porter la MÊME histoire de chocs, et sa tôle enfoncée dès que son
+    // modèle est là — sur l'ancien code elle repartait neuve.
+    const prise = await tab.evaluate(async () => {
+      const g = window.__game, d = g.fun.degats, R = window.__rue, p = g.player;
+      if (!d || !R) return { err: 'pas de rue d\'essai' };
+      const tenir = (n) => new Promise((fin) => {
+        let cumul = 0, prec = performance.now();
+        const pas = (t) => { cumul += (t - prec) / 1000; prec = t; if (cumul >= n) fin(); else requestAnimationFrame(pas); };
+        requestAnimationFrame(pas);
+      });
+      // une voiture de la rue dessinée, son modèle là
+      let m = null;
+      const t0 = performance.now();
+      while (performance.now() - t0 < 30000 && !m) {
+        await tenir(0.3);
+        for (const e of R.conv.elements) if (e && e.visible && e.parent && e.userData.roues) { m = e; break; }
+      }
+      if (!m) return { err: 'aucune voiture de la rue dessinée' };
+      // percutée par le vrai chemin : on est au volant, la physique publie un
+      // choc à son pare-chocs (le contrat de la v356)
+      const a = g.fun.montureConduite();
+      if (!a) return { err: 'pas au volant' };
+      a.pos.set(m.position.x + 3, m.position.y, m.position.z); a.mesh.position.copy(a.pos);
+      p.pos.copy(a.pos);
+      await tenir(0.2);
+      p.choc = { force: 0.7, t: performance.now(), x: m.position.x, z: m.position.z };
+      await tenir(0.4);
+      p.choc = null;   // la physique publie le suivant (v358)
+      // celle que le choc a trouvée (la plus proche du point d'impact)
+      m = d.rue().find((r) => r.parent) || m;
+      const eRue = d.etat(m);
+      if (!eRue || !(eRue.sante < 1)) return { err: 'la voiture de la rue n\'a pas été froissée', sante: eRue && eRue.sante };
+      const chocsRue = JSON.stringify(eRue.chocs), santeRue = eRue.sante;
+      // l'enfant descend, se met à côté d'elle, et la prend — dans la même
+      // tâche, pour qu'elle n'ait pas roulé entre-temps
+      for (let e = 0; e < 6 && g.fun.montureConduite(); e++) { document.getElementById('ride-btn').click(); await tenir(0.4); }
+      for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh);
+      g.animalManager.animals.length = 0;
+      if (!m.parent) return { err: 'la voiture est partie pendant la descente' };
+      p.pos.set(m.position.x, m.position.y + 0.05, m.position.z + 2.2); p.vel.set(0, 0, 0);
+      document.getElementById('board-btn').click();
+      const n = g.fun.montureConduite();
+      if (!n) return { err: 'on n\'a pas pris la voiture', place: !!g.vehicules.placeProche(p.pos, 9) };
+      const t1 = performance.now();
+      while (performance.now() - t1 < 30000 && !n.mesh.userData.roues) await tenir(0.3);
+      await tenir(0.6);
+      const e = d.etat(n.mesh);
+      const froissees = (d.pieces(n.mesh) || []).filter((pc) => pc.propre).length;
+      return { memeModele: n.mesh.userData.flotte === m.userData.flotte, santeRue: Math.round(santeRue * 100) / 100,
+        sante: e ? Math.round(e.sante * 100) / 100 : null, memesChocs: !!e && JSON.stringify(e.chocs) === chocsRue,
+        froissees, rueOubliee: !d.rue().includes(m), publie: p.etatVoiture };
+    });
+    verifier('une voiture de la rue abîmée qu\'on prend garde ses coups : même histoire, tôle enfoncée sur la monture',
+      !prise.err && prise.memesChocs && prise.sante === prise.santeRue && prise.sante < 1 && prise.froissees > 0
+        && prise.publie && prise.publie.sante < 1,
+      JSON.stringify(prise));
 
     verifier('aucune erreur JavaScript de bout en bout', erreurs.length === 0, JSON.stringify(erreurs.slice(0, 4)));
     await tab.close();
@@ -708,6 +816,71 @@ function verifier(nom, ok, detail = '') {
     verifier('puis l\'épave s\'en va au bout de sa durée, et ses géométries froissées sont rendues au pilote',
       !partie.err && !partie.dansLaScene && partie.restantes === 0 && partie.propres > 0 && partie.rendues === partie.propres,
       JSON.stringify(partie));
+
+    // 9. LES CHOCS DE LA RUE À PLUSIEURS (v363). Chaque tablette a SA rue :
+    // la même voiture (même convoi, même rang) roule chez Marlon et chez
+    // Alice. Marlon la percute ; Alice doit la voir froissée chez elle, de la
+    // MÊME histoire de chocs — l'ancien code ne lui en disait rien.
+    const pose = await hote.evaluate(async () => {
+      const g = window.__game; const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+      g.animalManager.animals.length = 0;
+      const a = g.animalManager.invoquer('voiture', g.player.pos.x, g.player.pos.z + 1.5, false, { flotte: 'ferrari-f40.glb' });
+      const t0 = performance.now();
+      while (performance.now() - t0 < 30000 && !a.mesh.userData.roues) await dodo(300);
+      for (let e = 0; e < 8 && !(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await dodo(600); }
+      const y = g.player.pos.y, x = Math.round(g.player.pos.x), z = Math.round(g.player.pos.z);
+      const pts = [[-40, 6], [40, 6], [40, 16], [-40, 16], [-40, 6]].map(([dx, dz]) => ({ x: x + dx, y, z: z + dz }));
+      return { auVolant: !!g.fun.montureConduite(), pts, x: g.player.pos.x, y, z: g.player.pos.z };
+    });
+    const ouvrirRue = (page) => page.evaluate((pts) => {
+      const g = window.__game;
+      for (const a of [...g.animalManager.animals]) if (!a.montee) g.animalManager.scene.remove(a.mesh);
+      g.animalManager.animals = g.animalManager.animals.filter((a) => a.montee);
+      window.__convB = g.vehicules.circulation(pts, 99, { nb: 6, vitesse: 4 });
+      return window.__convB.cle;
+    }, pose.pts);
+    await alice.evaluate((p) => { const g = window.__game; g.player.pos.set(p.x + 4, p.y, p.z - 3); g.player.vel.set(0, 0, 0); }, pose);
+    const cles = [await ouvrirRue(hote), await ouvrirRue(alice)];
+    // un rang dessiné chez les deux, son modèle là
+    const dessines = (page) => page.evaluate(() => (window.__convB.elements || [])
+      .map((m, i) => (m && m.parent && m.userData.roues ? i : -1)).filter((i) => i >= 0));
+    let rang = -1;
+    await jusqua(async () => {
+      const [a, b] = [await dessines(hote), await dessines(alice)];
+      rang = a.find((i) => b.includes(i)) ?? -1;
+      return rang >= 0;
+    }, 40000);
+    const coup = rang < 0 ? { err: 'aucun rang dessiné chez les deux' } : await hote.evaluate(async (i) => {
+      const g = window.__game, d = g.fun.degats, conv = window.__convB, p = g.player;
+      const tenir = (n) => new Promise((fin) => {
+        let cumul = 0, prec = performance.now();
+        const pas = (t) => { cumul += (t - prec) / 1000; prec = t; if (cumul >= n) fin(); else requestAnimationFrame(pas); };
+        requestAnimationFrame(pas);
+      });
+      const a = g.fun.montureConduite(), m = conv.elements[i];
+      if (!a || !m) return { err: 'pas au volant, ou voiture partie' };
+      p.pos.set(m.position.x, m.position.y + 0.05, m.position.z - 3); a.pos.copy(p.pos); a.mesh.position.copy(a.pos);
+      await tenir(0.2);
+      p.choc = { force: 0.8, t: performance.now(), x: m.position.x, z: m.position.z };
+      await tenir(0.4);
+      p.choc = null;   // la physique publie le suivant (v358)
+      // celle que le choc a trouvée, et son nom dans le convoi
+      const touchee = d.rue().find((r) => conv.elements.includes(r));
+      if (!touchee) return { err: 'aucune voiture de la rue froissée chez Marlon' };
+      return { rang: conv.elements.indexOf(touchee), chocs: d.etat(touchee).chocs };
+    }, rang);
+    const chezAlice = (r) => alice.evaluate((r) => {
+      const g = window.__game, d = g.fun.degats, m = window.__convB.elements[r];
+      if (!m) return { absente: true };
+      const e = d ? d.etat(m) : null;
+      return { chocs: e ? e.chocs : [], froissees: d ? (d.pieces(m) || []).filter((pc) => pc.propre).length : 0 };
+    }, r);
+    if (!coup.err) await jusqua(async () => { const v = await chezAlice(coup.rang); return v.chocs && v.chocs.length >= coup.chocs.length && v.froissees > 0; }, 15000);
+    const vue = coup.err ? null : await chezAlice(coup.rang);
+    verifier('à plusieurs, la voiture de la rue que Marlon percute est froissée chez Alice aussi — la même histoire de chocs',
+      pose.auVolant && cles[0] === cles[1] && !coup.err && vue && JSON.stringify(vue.chocs) === JSON.stringify(coup.chocs) && vue.froissees > 0,
+      JSON.stringify({ memeConvoi: cles[0] === cles[1], rang, coup, vue }));
   } finally {
     await banc.fermer();
   }

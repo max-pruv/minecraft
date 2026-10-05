@@ -1,4 +1,4 @@
-// LA MESURE DES SENSATIONS AU VOLANT (v361), partagée par le témoin de
+// LA MESURE DES SENSATIONS AU VOLANT (v366), partagée par le témoin de
 // `monte.js` et la sonde `sonde-sensations.cjs` : une seule fonction, évaluée
 // DANS la page, pour que la sonde et le témoin mesurent la même chose (deux
 // copies d'une mesure finissent par diverger, v320).
@@ -141,7 +141,7 @@ async function mesurerSensations() {
     const moy = (t) => t.reduce((x, y) => x + y, 0) / t.length;
     // 3. LA DÉRIVE
     const bandeAvant = moy(await fenetre(1.2, bande));
-    // LA DÉRIVE SE TIENT LE TEMPS DE LA FENÊTRE (v361) : depuis la v358 la
+    // LA DÉRIVE SE TIENT LE TEMPS DE LA FENÊTRE (v366) : depuis la v358 la
     // physique (conduite.js) RÉÉCRIT `derive` à chaque image — posée une
     // fois, elle retombait à zéro à l'image suivante, et le témoin écoutait
     // une voiture qui ne dérapait plus (rapport 1,07 au portail). Une
@@ -176,7 +176,7 @@ async function mesurerSensations() {
     try { sortie.disconnect(an); } catch { /* déjà */ }
   }
   // 4. LE CHOC — la caméra
-  // UNE FENÊTRE SE COMPTE EN IMAGES, PAS EN SECONDES (v361) : à deux images
+  // UNE FENÊTRE SE COMPTE EN IMAGES, PAS EN SECONDES (v366) : à deux images
   // par seconde, 0,8 s n'en contenait que DEUX — l'écart au centre valait la
   // moitié d'un pas, et le verdict (0,184 contre 3 × 0,062) était un tirage.
   // La secousse s'éteint en temps de JEU, donc huit images la voient toujours ;

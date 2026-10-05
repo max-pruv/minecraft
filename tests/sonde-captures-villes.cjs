@@ -28,6 +28,14 @@ const VUES = {
     { nom: 'ciel-centre', u: -20, v: -10, yaw: 0, pitch: -1.1, h: 70 },
     { nom: 'ciel-ouest', u: -80, v: -5, yaw: 0, pitch: -1.1, h: 70 },
   ],
+  sf: [
+    { nom: 'market', u: 76, v: 7, yaw: Math.PI / 2 - 0.31, pitch: 0.06, h: 1.6, rue: true },
+    { nom: 'soma', u: 103, v: 12, yaw: Math.PI / 2, pitch: 0.06, h: 1.6, rue: true },
+    { nom: 'mission', u: 43, v: 53, yaw: 0, pitch: 0.08, h: 1.6, rue: true },
+    { nom: 'sunset', u: -67, v: 42, yaw: 0, pitch: 0.08, h: 1.6, rue: true },
+    { nom: 'ciel-centre', u: 108, v: -25, yaw: 0, pitch: -1.1, h: 70 },
+    { nom: 'ciel-ouest', u: -27, v: 15, yaw: 0, pitch: -1.1, h: 70 },
+  ],
 };
 
 (async () => {
