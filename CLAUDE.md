@@ -941,6 +941,34 @@ Le lot 2 de la dette de la v335 : huit monuments. Trois règles.
   Lille, 23 m pour l'Arche. Ce qu'on n'a pas trouvé (le musée d'Histoire
   américaine, « cinq étages ») se dit approché dans le commentaire.
 
+## Les rues de San Francisco à la règle du kit (v361) — un plan à vingt-sept blocs par kilomètre paie ses avenues
+
+Trois règles.
+
+- **LE PRIX D'UNE SECTION SE MESURE EN PART DU DISQUE, AVANT DE CHOISIR LES
+  TYPES.** Toutes les voies nommées en collectrices, les avenues passaient de
+  9 à 27 % du disque et la part bâtie de 49,0 à 31,9 % ; les quatre rues qui
+  n'ont qu'une voie par sens dans la vraie ville (Columbus, Valencia, Stanyan,
+  la 16e) en locales : 32,6. Le type se lit toujours à la fonction ; ce que la
+  mesure décide, c'est qu'on le dise. Les quartiers se mesurent sur un rayon
+  de vingt blocs, pas douze : une collectrice de 11,4 blocs d'emprise prend
+  près de la moitié d'un disque de vingt-cinq, et le Richmond tombait à 7,9
+  pour une avenue qui le traverse.
+- **LA VILLE D'AVANT SE FIGE, ET SA BRANCHE DU GÉNÉRATEUR LA LIT AUSSI.** San
+  Francisco n'est pas dans la boucle générique de `world.js` : sa branche à
+  elle choisit `sanfrancisco-v343.js` sous `villeAvant`, sol, lot, bâtisseur
+  ET feux (`sf-v359`). `VILLES_FIGEES` porte la date ; elle se relit à la
+  fusion.
+- **UNE LOI DE HAUTEUR TIRÉE PAR ÎLOT DEVIENT UN TIRAGE QUAND LES ÎLOTS
+  GRANDISSENT.** Recomposés, les îlots du centre n'étaient plus qu'une
+  vingtaine : la médiane passait de 13 à 23 blocs, et le Ferry Building et le
+  Bay Bridge se retrouvaient sous leurs voisins (le témoin des monuments l'a
+  dit, pas la capture). Le tirage se fait par PARCELLE (quatre par îlot,
+  `ilotSF`), le tapis est garanti par construction (quatre parcelles sur cinq
+  entre huit et quatorze étages) et les tours ne vont que là où est le vrai
+  Financial District. Une loi de ville se remesure quand le plan change de
+  grain.
+
 ## Les rues de Nice à la règle du kit (v359) — une règle partagée se corrige pour toutes les villes qui la lisent
 
 Deux règles.

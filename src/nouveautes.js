@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 361,
+    titre: 'Les rues de San Francisco s\'élargissent',
+    puces: [
+      'Market et Van Ness à deux voies',
+      'Des îlots plus grands dans le quadrillage',
+      'Les tours restent près de Market Street',
+      'Tes constructions restent comme avant',
+    ],
+  },
+  {
     v: 360,
     titre: 'Le monde suit la voiture',
     puces: [

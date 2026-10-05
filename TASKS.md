@@ -3436,6 +3436,24 @@ l'embarquement a eu lieu, pas par une hypothèse.
   arrivent EN BIAIS (35° à 90°) restent — à mesurer en capture si l'une
   finit en impasse contre un îlot.
 
+- [ ] **SAN FRANCISCO À LA RÈGLE DU KIT : CE QUI RESTE (v361).** La part bâtie
+  du disque passe de 49,0 à 32,6 % : à vingt-sept blocs par kilomètre, une
+  collectrice de 11,4 blocs d'emprise vaut quatre cents mètres, et les avenues
+  prennent 27 % du disque. Le Richmond 30,7 → 15,1, le Sunset 42,0 → 31,1,
+  Bayview 38,3 → 27,5. Le seul remède qui rende ces quartiers est celui de
+  Paris (v306) : doubler le plan — décision de Max. Restent aussi : aucune
+  voie n'est un boulevard (Market en est un dans la vraie ville) ; les
+  collines gardent leurs rues droites, sans la pente bornée du kit.
+  Le centre, recomposé en parcelles (quatre par îlot) et en tapis de huit à
+  quatorze étages, n'a plus que les tours au sud de Washington Street ;
+  Fisherman's Wharf sort du centre. Pier 39 (5 blocs) n'est pas mesuré par
+  le témoin des monuments : 36 colonnes bâties autour pour un seuil de 40.
+  Le jour où le quartier se densifie, il sera dominé — et c'est une JETÉE,
+  à déclarer `vrai` dans `BAS_DECLARES` (fichier d'une autre session).
+  Portail de la v361 (base v359) : `maj.js` personnages 6/9, `manhattan.js`
+  trou 14460 → 51734, `monte.js` chauffe de New York et gel d'arrivée, et
+  `carte.js` la flèche du GPS (gauche 1,92) — tous déjà déclarés plus haut.
+
 - [ ] **PORTAIL DE LA v359 (Nice) : UNE CASCADE DE `monte.js` QUE LA SUITE
   SEULE NE REND PAS.** Au portail complet (base v349), `monte.js` a rendu
   trente-quatre rouges d'un seul tenant : tous les témoins d'avion et de
@@ -3482,8 +3500,8 @@ l'embarquement a eu lieu, pas par une hypothèse.
   trottoir) ôterait ses réverbères, décision de Max comme pour les médinas.
 
 - [ ] **LES CINQ AUTRES VILLES BÂTIES À LA MAIN N'ONT PAS ÉTÉ ÉLARGIES (v271).**
-  Londres est faite en v339, Nice en v359 (au-dessus). Restent, dans l'ordre :
-  San Francisco, Washington, Lille (dans la fenêtre d'empreinte). La méthode de
+  Londres est faite en v339, Nice en v359, San Francisco en v361 (au-dessus).
+  Restent, dans l'ordre : Washington, Lille (dans la fenêtre d'empreinte). La méthode de
   Londres se reprend telle quelle : figer la ville d'avant (`<ville>-v339.js`),
   type par fonction, trame recomposée et en recul des avenues, mobilier sur la
   section, la ville d'avant sous ce qu'un enfant a bâti.

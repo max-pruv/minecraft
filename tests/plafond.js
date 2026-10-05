@@ -303,7 +303,11 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // lots — un changement de CONTENU, voulu. La preuve qu'il n'y a que lui : SANS
 // Londres, les 441 autres morceaux et toutes les routes rendent 3850cdfc… sur
 // `origin/main` (v358, 3cc39830… avec Londres) ET sur la branche.
-const EMPREINTE_MORCEAUX_V357 = '5fa54c5c144fbafbf675b40159ae01d4f8e4d1b445e47442ca2ec0d2a206406a';
+// v361 : les rues de San Francisco à la règle du kit changent San Francisco, un
+// des neuf lieux — voulu. Sans elle, les 441 autres morceaux et toutes les
+// routes rendent 346a66cd… sur `origin/main` (v360, 5fa54c5c… avec elle) ET sur
+// la branche.
+const EMPREINTE_MORCEAUX_V357 = '58a67b4280e21df094f8979fc4003adcfddb1e037bf0dd9007279dee56522093';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -1635,6 +1639,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   // ne retient rien — la ville neuve bâtit dessous. Rouge sur `origin/main` :
   // la date n'existe pas, et les deux premiers cas montrent la ville neuve.
   // ET NICE À LA v359, PAR LA MÊME RÈGLE : la fonction se joue ville par ville.
+  // SAN FRANCISCO À LA v361.
   const figee = async (date, avant, neuf, ancre, sol, libre, batir) => {
     const W = await import('../src/world.js');
     if (!W[date]) return { absent: true };
@@ -1671,8 +1676,13 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     for (let dy = 1; dy <= 3; dy++) maison[`${mx},${gm + dy},${mz}`] = [5, t];
     const wm = monde(maison);
     let enferme = 0;
-    for (const [dx, dz] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) for (let y = gm + 1; y <= gm + 6; y++) {
-      if (!maison[`${mx + dx},${y},${mz + dz}`] && wm.getBlock(mx + dx, y, mz + dz) !== 0) enferme++;
+    // Chaque colonne se lit au-dessus de SON sol : à San Francisco la rue est
+    // en pente, et la chaussée voisine, deux blocs plus haut, n'est pas un mur.
+    for (const [dx, dz] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const g = Math.max(gm, nf.terrainHeight(mx + dx, mz + dz));
+      for (let y = g + 1; y <= gm + 6; y++) {
+        if (!maison[`${mx + dx},${y},${mz + dz}`] && wm.getBlock(mx + dx, y, mz + dz) !== 0) enferme++;
+      }
     }
     // et sans la date, la ville neuve y bâtit bien (sinon le cas ne prouve rien)
     const neufM = monde({ [`${mx},${gm + 40},${mz}`]: [5, W[date] + 1000] });
@@ -1688,6 +1698,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   for (const [ville, args] of [
     ['Londres', ['DATE_RUES_LONDRES', 'londres-v332.js', 'londres.js', 'LONDRES', 'solLondres', 'lotLondresLibre', 'batirColonneLondres']],
     ['Nice', ['DATE_RUES_NICE', 'nice-v340.js', 'nice.js', 'NICE', 'solNice', 'lotNiceLibre', 'batirColonneNice']],
+    ['San Francisco', ['DATE_RUES_SF', 'sanfrancisco-v343.js', 'sanfrancisco.js', 'SF', 'solSF', 'lotSFLibre', 'batirColonneSF']],
   ]) {
     const r = await figee(...args);
     verifier(`à ${ville}, une maison posée sur une ancienne rue n'est pas enfermée dans un immeuble neuf`,

@@ -20,6 +20,48 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v361 — Les rues de San Francisco à la règle du kit
+
+**Pourquoi.** La troisième des cinq villes bâties à la main restées sur leurs
+largeurs relevées à la main (dette v271). Une rue de quartier de San
+Francisco faisait deux blocs de chaussée et Market Street trois : une voiture
+de 2,26 blocs y roulait sur la ligne blanche, et deux ne s'y croisaient pas.
+
+**Ce que ça change.**
+
+- **Les rues de San Francisco ont la section du kit**, à un bloc pour un
+  mètre : deux voies et des trottoirs de 2,5 m pour Market, Van Ness, Geary,
+  Mission, la 19e Avenue, la Great Highway, les boulevards du Sunset ; une
+  voie de 3,1 m pour Columbus, Valencia, Stanyan et la 16e Rue ; une voie pour
+  la trame de 1847 et celle de l'ouest, deux pour SoMa.
+- **Les îlots se recomposent** comme à Londres et à Nice, et une rue de la
+  trame ne double plus une avenue. Le prix, déclaré : les avenues prennent
+  27 % du disque contre 9, la part bâtie passe de 49,0 à 32,6 % — plus que
+  Londres ou Paris ; le Richmond, que Geary traverse, est le plus touché
+  (30,7 → 15,1), Pacific Heights et la Mission en gagnent.
+- **Ce qu'un enfant a bâti à San Francisco ne bouge pas** : sous ses blocs
+  d'avant la mise à jour, la ville d'avant reste.
+- **Le centre reste un tapis d'où sortent quelques tours.** Les îlots plus
+  grands faisaient du centre un tirage : médiane 23 blocs, le Ferry Building
+  et le Bay Bridge dominés par leurs voisins. Chaque îlot se coupe désormais
+  en quatre parcelles, quatre sur cinq font huit à quatorze étages, les tours
+  restent le long de Market, et Fisherman's Wharf sort du centre (Pier 39
+  n'y est plus dominé).
+
+**Ce qui le prouve.** Quatre témoins neufs. `carteMonde.js` : les rues ont
+la chaussée de leur type (artères 6,3, rues 4,0, trame 2,95, SoMa 6,35
+contre 2,0, 1,7 et 0,95 sur `origin/main`) ; San Francisco garde plus de
+30 % de lots, aucun quartier sous 10 %. `plafond.js` : une maison posée sur
+une ancienne rue n'est pas enfermée et une cabane garde son toit (sur
+`origin/main` : la date n'existe pas). Les six circuits restent à 100 % sur
+la rue. `carte.js` : le centre a une médiane de 12 blocs, sa plus haute tour
+36, aucune colonne de verre et 212 de façade ; `plafond.js` : aucun monument
+de San Francisco plus bas que ses voisins. L'empreinte des 490 morceaux témoins change parce que San Francisco
+en est un des neuf lieux ; sans elle, les 441 autres rendent `346a66cd…` sur
+`origin/main` et sur la branche.
+
+---
+
 ## v360 — Le monde suit la voiture jusqu'à 80
 
 **Pourquoi.** Au banc, la ville ne suivait pas 80 blocs par seconde (Paris 125
