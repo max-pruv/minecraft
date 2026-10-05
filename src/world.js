@@ -86,6 +86,7 @@ import * as LONDRES_V332 from './londres-v332.js';
 import * as NICE_V340 from './nice-v340.js';
 import * as SF_V343 from './sanfrancisco-v343.js';
 import * as LILLE_V344 from './lille-v344.js';
+import * as WASHINGTON_V367 from './washington-v367.js';
 import { surLaVoie, presDeLaVoie, voieEn, brancherSol, gareEn, rubansVoieDans } from './trains.js';
 import { routeEn, rubansDans, brancherSol as brancherSolRoutes } from './routes.js';
 
@@ -2089,13 +2090,18 @@ export const DATE_RUES_NICE = Date.UTC(2026, 9, 5, 5, 25, 0);
 export const DATE_RUES_SF = Date.UTC(2026, 9, 5, 8, 15, 0);
 // Lille à la v368 (`lille-v344.js`).
 export const DATE_RUES_LILLE = Date.UTC(2026, 9, 5, 13, 32, 0);
+// Washington à la v369 (`washington-v367.js`). Sa ville est une BOÎTE, pas un
+// disque : le cercle qui la contient va jusqu'au coin de Georgetown (268).
+export const DATE_RUES_WASHINGTON = Date.UTC(2026, 9, 5, 14, 0, 0);
 const VILLES_FIGEES = [
   { ancre: LONDRES, date: DATE_RUES_LONDRES },
   { ancre: NICE, date: DATE_RUES_NICE },
   { ancre: SF, date: DATE_RUES_SF },
   { ancre: LILLE, date: DATE_RUES_LILLE },
+  { ancre: { x: WASHINGTON.x, z: WASHINGTON.z, r: 268 }, date: DATE_RUES_WASHINGTON },
 ];
 const DATE_FIGEE_MAX = Math.max(...VILLES_FIGEES.map((f) => f.date));
+const DC_NEUF = { solWashington, batirColonneWashington, VOIES_CIRCUITS_DC };
 function dansVilleAvant(x, z, t) {
   if (!(t <= DATE_FIGEE_MAX)) return false;
   for (const f of VILLES_FIGEES) {
@@ -2604,7 +2610,7 @@ export class World {
     this.monumentsTouches = new Set();  // les monuments HD qu'un enfant a modifiés (v292)
     this.morceauxAvantClimat = new Set(); // les morceaux (et leurs voisins) bâtis avant les climats (v345)
     this.colonnesCedees = new Set();    // les colonnes de Paris où la ville cède à ce qu'un enfant a bâti (v306)
-    this.colonnesVilleAvant = new Set();  // celles de Londres, de Nice, de San Francisco et de Lille où la ville d'avant le kit reste (v339, v359, v361, v368)
+    this.colonnesVilleAvant = new Set();  // celles de Londres, de Nice, de San Francisco, de Lille et de Washington où la ville d'avant le kit reste (v339, v359, v361, v369, v369)
     this.cacheSol = new Map();          // "x,z" -> { nat, cote } : la fiche d'une colonne (sol continu, v297)
     this.sansSolContinu = false;        // ?solcontinu=0 : la mesure A/B, jamais un réglage
     this.editTimes = new Map();   // "x,y,z" -> ms timestamp, for multiplayer merge
@@ -3433,6 +3439,12 @@ export class World {
         // n'existaient : le générateur sautait les colonnes d'eau, et le train
         // traversait le fleuve dans un tunnel fantôme jamais creusé.
         if ((city && city.key === 'dc') || dansEauWashington(wx, wz)) {
+          // La Washington d'avant le kit (v369) dans les mondes d'avant, et
+          // sous les colonnes où un enfant a bâti avant sa date.
+          const dcAvant = this.conf.villesAvant
+            || (this.colonnesVilleAvant.size > 0 && this.colonnesVilleAvant.has(cleColonneParis(wx, wz)));
+          const DC = dcAvant ? WASHINGTON_V367 : DC_NEUF;
+          const solWashington = DC.solWashington;
           const sw = solWashington(wx, wz);
           // Les ormes du Mall et les bosquets des parcs poussent ici — fût et
           // couronne — comme dans toute ville de la boucle générique. Sans cet
@@ -3444,11 +3456,11 @@ export class World {
           // ce qui compte quand les deux pourraient répondre.
           if (!arbreDeVille(data, x, z, h, wx, wz, solWashington, sw)
             && !feuDeVille(data, x, z, h, wx, wz, sw,
-              feuxDeVille('dc', WASHINGTON, VOIES_CIRCUITS_DC, solWashington))
+              feuxDeVille(dcAvant ? 'dc-v367' : 'dc', WASHINGTON, DC.VOIES_CIRCUITS_DC, solWashington))
             && !lampadaireDeVille(data, x, z, h, wx, wz, solWashington, sw) && sw !== null) {
             data[World.index(x, h, z)] = sw;
           }
-          batirColonneWashington(wx, wz, h, (dy, id) => {
+          DC.batirColonneWashington(wx, wz, h, (dy, id) => {
             const wy = h + dy;
             if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id;
           });

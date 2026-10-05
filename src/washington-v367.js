@@ -1,3 +1,12 @@
+// WASHINGTON TELLE QU'ELLE ÉTAIT JUSQU'À LA v368 — FIGÉE, ET JAMAIS MODIFIÉE.
+//
+// La v369 passe la grille de Washington à la règle du kit (`voirie.js`). Un
+// bloc qu'un enfant a posé avant cette date l'a été contre CETTE ville-ci : là
+// où il y en a un (sa colonne et ses huit voisines), le monde garde la ville
+// d'avant (`world.js`, `colonnesVilleAvant`) — la discipline de
+// `londres-v332.js` (v339). Recopié à l'octet depuis `washington.js`
+// (inchangé jusqu'à la v368), seul cet en-tête est neuf.
+//
 // Washington — le cœur monumental, à hauteur d'enfant.
 //
 // Une capitale qui ne ressemble à aucune autre ville américaine, et pour trois
@@ -45,10 +54,9 @@
 //     l'obélisque, six fois trop large pour porter son colimaçon. C'est tout :
 //     à cette échelle, un musée de deux cents mètres fait dix blocs de large
 //     pour de vrai, et la plupart des grands bâtiments sont à leur taille.
-//   · **les îlots sont agrandis d'un facteur quatre** (`PAS_RUE` = 28 pour des
-//     rues vraies tous les sept blocs) : depuis la v369 les rues de la grille
-//     ont la section du kit (`voirie.js`), et le pas a suivi dans le rapport
-//     des emprises — un îlot porte quatre maisons et la ruelle qui les sépare.
+//   · **les îlots sont agrandis d'un facteur 1,7** (`PAS_RUE` = 12 pour des
+//     rues vraies tous les sept blocs) : c'est ce qui donne à chaque maison la
+//     place d'un étage et d'un escalier.
 //   · **quelques écarts de position, chacun commenté à sa ligne** : le
 //     cimetière d'Arlington rentré de huit blocs (le bord du monde le coupait),
 //     la station Pentagon remontée sur l'esplanade, deux musées mitoyens
@@ -60,7 +68,6 @@
 import { BLOCK, CITY_BLOCK, DECOR_START, PROP_START, ARCHI } from './blocks.js';
 import { rangerVoies, solDesVoies, fabriqueCircuits, contournerRonds } from './voies.js';
 import { positionDe } from './mondes.js';
-import { sectionDeRue } from './voirie.js';
 
 const uni = (c) => DECOR_START + c * 10;
 
@@ -335,41 +342,11 @@ export function hauteurWashington(x, z, h) {
 // --- le plan de L'Enfant ------------------------------------------------------
 //
 // Dans la vraie ville, une rue tous les cent quarante mètres — sept blocs à
-// cette échelle. Jusqu'à la v368 on la dessinait tous les DOUZE blocs : deux
-// colonnes de chaussée pour une voiture de 2,26, un seul trottoir, et un îlot
-// de neuf — la maison à étage.
-//
-// À LA RÈGLE DU KIT (v369) : une rue de la grille est une rue LOCALE
-// (`sectionDeRue('locale')` : une voie de 3,1, deux trottoirs de 2), soit sept
-// colonnes centrées sur l'axe — trois de chaussée (`floor(3,1)`, la
-// quantification de la v303), deux de trottoir de chaque côté. Le pas grandit
-// dans le rapport des emprises (v303, v307) : 12 × 7 / 3 = 28. L'îlot qui
-// reste fait vingt et un blocs, et il se RECOMPOSE au lieu de grandir : deux
-// maisons de neuf de chaque côté d'une ruelle de trois — la ruelle du kit
-// (`ruelle`, trois mètres pour le piéton), celle qu'a vraiment tout îlot de
-// Washington. La maison de neuf, son escalier et ses deux portes ne changent
-// pas d'un bloc. Les axes passent par u = 0 et v = 0 : North Capitol, East
-// Capitol.
-const LOCALE_DC = sectionDeRue('locale');
-const PAS_RUE = 28;
-const DEMI_CHAUSSEE = Math.floor(LOCALE_DC.chaussee) >> 1;                 // 1 : trois colonnes
-const DEMI_EMPRISE = DEMI_CHAUSSEE + Math.floor(LOCALE_DC.trottoir);       // 3 : sept colonnes
-const MAISON = 9;                                                          // la maison de la v161
-const RUELLE = Math.floor(sectionDeRue('ruelle').chaussee);                // 3
-// La position d'une colonne dans la trame, sur un axe : `m` dans le pas,
-// `d` la distance à l'axe de rue le plus proche, `i` la coordonnée dans la
-// maison (0 à 8, ou -1 hors maison), `s` laquelle des deux maisons.
-function trameDC(u) {
-  const m = ((u % PAS_RUE) + PAS_RUE) % PAS_RUE;
-  const d = Math.min(m, PAS_RUE - m);
-  const debut = DEMI_EMPRISE + 1;                                          // 4
-  let i = -1, s = 0;
-  if (m >= debut && m < debut + MAISON) i = m - debut;
-  else if (m >= debut + MAISON + RUELLE && m < debut + 2 * MAISON + RUELLE) { i = m - debut - MAISON - RUELLE; s = 1; }
-  const ruelle = d > DEMI_EMPRISE && i < 0;
-  return { m, d, i, s, ruelle };
-}
-export const TRAME_DC = { pas: PAS_RUE, demiChaussee: DEMI_CHAUSSEE, demiEmprise: DEMI_EMPRISE, maison: MAISON, ruelle: RUELLE, trameDC };
+// cette échelle. On dessine la grille tous les DOUZE blocs (entorse déclarée) :
+// c'est ce qui donne aux îlots la profondeur d'une maison à étage.
+
+const PAS_RUE = 12;              // une rue dessinée tous les douze blocs
+const DEMI_CHAUSSEE = 2;         // trois blocs de chaussée, un trottoir de chaque côté
 const ANNEAU_DEDANS = 3;         // un rond-point : le jardin s'arrête à r − 3…
 const ANNEAU_DEHORS = 1;         // …la chaussée tourne jusqu'à r − 1, puis le trottoir
 
@@ -377,16 +354,13 @@ const ANNEAU_DEHORS = 1;         // …la chaussée tourne jusqu'à r − 1, pui
 // Pennsylvania Avenue relie le Capitole à la Maison-Blanche : c'est la rue des
 // défilés d'investiture, et L'Enfant l'a voulue ainsi pour que le président et
 // le Congrès se voient d'un bout à l'autre.
-// La section d'une rue de liaison : celle de la grille (`LOCALE_DC`).
-const LIAISON = { l: 1.5, t: 2, sol: BITUME };
-
 const AVENUES = [
   // Pennsylvania part de la 3e Rue, là où elle se détache de Constitution —
   // dans le parc du Capitole elle n'est qu'une allée — et s'arrête à la 15e :
   // devant la Maison-Blanche, la vraie est fermée aux voitures depuis 1995.
   { nom: 'Pennsylvania Avenue NO', l: 3.4, pts: [[-27, -17], [-53, -21], [-70, -24], [-88, -30], [-104, -37]] },
   { nom: 'Pennsylvania Avenue SE', l: 3, pts: [[20, 16], [30, 22], [46, 32], [62, 42]] },
-  { nom: 'Maryland Avenue SO', l: 3, pts: [[-23, 17], [-28, 20], [-42, 28], [-52, 34], [-56, 36.5]] },   // finit SUR la 7e Rue, pour qu'un circuit s'y referme
+  { nom: 'Maryland Avenue SO', l: 3, pts: [[-23, 17], [-28, 20], [-42, 28], [-52, 34], [-58.5, 38]] },   // finit SUR la 7e Rue, pour qu'un circuit s'y referme
   { nom: 'Massachusetts Avenue NO', l: 3.2, pts: [[36, -20], [16, -26], [-8, -32], [-32, -38], [-54, -46], [-76, -56], [-100, -68], [-124, -82], [-148, -100], [-160, -109]] },
   { nom: 'Connecticut Avenue NO', l: 3, pts: [[-115, -50], [-122, -60], [-129, -68], [-140, -84], [-148, -100], [-152, -109]] },
   { nom: 'New York Avenue NO', l: 3, pts: [[-108, -46], [-92, -54], [-72, -62], [-50, -70], [-28, -78], [0, -88]] },
@@ -437,44 +411,22 @@ const AVENUES = [
   // voies dans `solWashington` — mesuré, neuf blocs de pelouse sur quarante.
   // Une rue qu'on ne peut pas tracer ne se force pas ; l'Ellipse fait ici
   // trente blocs de large, à peu près sa vraie taille.
-  // À LA RÈGLE DU KIT (v369) les rues de liaison suivent la grille neuve : un
-  // axe tous les vingt-huit blocs, la section d'une rue LOCALE (demi-chaussée
-  // 1,5, trottoir 2 — `LIAISON`). Chacune porte le nom de la vraie rue la plus
-  // proche de son axe. La 9e, la 14e, F et C Street disparaissent : leurs axes
-  // ne sont plus des rues ; la 7e Rue NO (avenue) et la 16e longent les axes
-  // u = −56 et u = −112, et ce sont elles qui portent les voitures.
-  //
-  // Le Mall garde ses deux traversées à leur vraie adresse : la 3e Rue passe
-  // entre la pelouse (u −27) et le parc du Capitole (u −24), qui passent avant
-  // les voies — deux colonnes de chaussée, déclaré, comme Independence et
-  // Constitution derrière les musées.
-  { nom: '23e Rue NO', ...LIAISON, pts: [[-168, -17], [-168, -56]] },
-  { nom: '3e Rue', l: 1.05, t: 0, sol: BITUME, pts: [[-28, 17], [-25.5, 13], [-25.5, -13], [-28, -17]] },
-  { nom: '17e Rue', ...LIAISON, pts: [[-121, 17], [-121, -17]] },          // entre l'obélisque et le mémorial
-  { nom: '3e Rue NO', ...LIAISON, pts: [[-28, -17], [-28, -60], [-28, -109]] },
-  { nom: '12e Rue NO', ...LIAISON, pts: [[-84, -17], [-84, -60], [-84, -109]] },
-  { nom: 'D Street NO', ...LIAISON, pts: [[0, -28], [-60, -28], [-103, -28]] },          // s'arrête à l'Ellipse
-  { nom: 'H Street NO', ...LIAISON, pts: [[0, -56], [-60, -56], [-112, -56], [-168, -56]] },
-  { nom: 'D Street SE', ...LIAISON, pts: [[56, 28], [28, 28], [0, 28]] },
-  { nom: 'G Street SO', ...LIAISON, pts: [[0, 56], [-28, 56]] },
-  { nom: '4e Rue SE', ...LIAISON, pts: [[28, 17], [28, 28]] },
-  { nom: '8e Rue SE', ...LIAISON, pts: [[56, 42], [56, 28]] },
-  { nom: '3e Rue SO', ...LIAISON, pts: [[-28, 17], [-28, 40], [-28, 56]] },
-  { nom: '7e Rue SO', ...LIAISON, pts: [[-56, 17], [-56, 40]] },                    // croise Maryland Avenue
-  { nom: 'D Street SO', ...LIAISON, pts: [[0, 28], [-28, 28]] },                    // sous le Rayburn, de South Capitol à la 3e
-  // Les axes neufs qui ferment des boucles où la grille d'avant n'en avait
-  // pas : M Street et la 20e au nord-ouest, Capitol Hill et NoMa à l'est.
-  { nom: 'M Street NO', ...LIAISON, pts: [[0, -84], [-56, -84], [-112, -84], [-140, -84]] },
-  { nom: '20e Rue NO', ...LIAISON, pts: [[-140, -17], [-140, -56], [-140, -84]] },
-  { nom: 'D Street NE', ...LIAISON, pts: [[56, -28], [28, -28], [0, -28]] },
-  { nom: 'H Street NE', ...LIAISON, pts: [[56, -56], [28, -56], [0, -56]] },
-  { nom: '4e Rue NE', ...LIAISON, pts: [[28, -56], [28, -28], [28, 0], [28, 17]] },
-  { nom: '8e Rue NE', ...LIAISON, pts: [[56, -56], [56, -28], [56, 0], [56, 28]] },
-  { nom: 'East Capitol Street', ...LIAISON, pts: [[26, 0], [56, 0]] },
-  // L'ENTRÉE DE L'I-95 (v367) : sa porte est en (37, 97), au bord sud de la
-  // boîte. La grille d'avant y avait une rue (u = 12k + 1) ; celle de la v369
-  // a ses axes en 28 et 56. La bretelle mène de la porte à la rue v = 84.
-  { nom: 'Bretelle de l\'I-295', ...LIAISON, pts: [[37, 97], [37, 84]] },
+  { nom: '23e Rue NO', l: 1.05, t: 0, sol: BITUME, pts: [[-166, -17], [-169, -33], [-170, -58.5]] },
+  { nom: '3e Rue', l: 1.05, t: 0, sol: BITUME, pts: [[-25.5, 17], [-25.5, -17]] },        // vraie adresse u −27,4 : +2, le bord du parc
+  { nom: '17e Rue', l: 1.05, t: 0, sol: BITUME, pts: [[-121, 17], [-121, -17]] },         // entre l'obélisque et le mémorial
+  { nom: '3e Rue NO', l: 1.05, t: 0, sol: BITUME, pts: [[-25.5, -17], [-22.5, -19], [-22.5, -60], [-22.5, -109]] },
+  { nom: '9e Rue NO', l: 1.05, t: 0, sol: BITUME, pts: [[-58.5, -17], [-58.5, -60], [-58.5, -109]] },
+  { nom: '14e Rue NO', l: 1.05, t: 0, sol: BITUME, pts: [[-94.5, -17], [-94.5, -60], [-94.5, -109]] },
+  { nom: 'C Street NO', l: 1.05, t: 0, sol: BITUME, pts: [[1.5, -22.5], [-60, -22.5], [-103, -22.5]] },   // s'arrête à l'Ellipse
+  { nom: 'F Street NO', l: 1.05, t: 0, sol: BITUME, pts: [[1.5, -46.5], [-60, -46.5], [-121, -46.5]] },
+  { nom: 'H Street NO', l: 1.05, t: 0, sol: BITUME, pts: [[1.5, -58.5], [-60, -58.5], [-121, -58.5], [-170, -58.5]] },
+  { nom: 'D Street SE', l: 1.05, t: 0, sol: BITUME, pts: [[61.5, 25.5], [25.5, 25.5], [1.5, 25.5]] },      // E Street SE est sous l'Anacostia ici
+  { nom: 'E Street SO', l: 1.05, t: 0, sol: BITUME, pts: [[1.5, 61.5], [-22.5, 61.5]] },                 // au-delà, les berges du chenal
+  { nom: '3e Rue SE', l: 1.05, t: 0, sol: BITUME, pts: [[25.5, 19], [25.5, 25.5]] },
+  { nom: '8e Rue SE', l: 1.05, t: 0, sol: BITUME, pts: [[61.5, 42], [61.5, 25.5]] },
+  { nom: '3e Rue SO', l: 1.05, t: 0, sol: BITUME, pts: [[-25.5, 17], [-22.5, 19], [-22.5, 40], [-22.5, 61.5]] },
+  { nom: '7e Rue SO', l: 1.05, t: 0, sol: BITUME, pts: [[-58.5, 17], [-58.5, 40]] },                    // croise Maryland Avenue
+  { nom: 'D Street SO', l: 1.05, t: 0, sol: BITUME, pts: [[1.5, 25.5], [-22.5, 25.5]] },                 // sous le Rayburn, de South Capitol à la 3e
 ];
 
 const BANDES_AVENUES = rangerVoies(AVENUES);
@@ -527,11 +479,36 @@ const ROULANT = new Set([BITUME, LIGNE, PASSAGE]);
 // nord sans qu'aucun bout ne touche K Street. Les raccords ci-dessous sont des
 // TRONÇONS de ces mêmes rues, coupés au carrefour, pour que les convois
 // puissent tourner. Ils ne posent aucun sol : la chaussée est déjà là.
-// Les RACCORDS de la v205 (des tronçons de rue coupés au carrefour) servaient
-// la grille d'avant. Depuis la v207 `chainerVoies` ne parcourt une avenue
-// qu'entre ses deux carrefours, et la grille de la v369 n'en a plus besoin :
-// la liste reste, vide, pour qu'un raccord neuf ait sa place.
-const RACCORDS = [];
+const RACCORDS = [
+  // Le centre-ville : de North Capitol à la 7e, puis de la 7e à la 14e.
+  { nom: 'C Street NO, de North Capitol à la 7e', pts: [[0, -22.5], [-54, -22.5]] },
+  { nom: 'C Street NO, de la 7e à la 14e', pts: [[-54, -22.5], [-94.5, -22.5]] },
+  { nom: 'H Street NO, de North Capitol à la 7e', pts: [[0, -58.5], [-54, -58.5]] },
+  { nom: 'K Street NO, de la 7e à la 14e', pts: [[-54, -66], [-94.5, -66]] },
+  { nom: 'North Capitol Street, de C à H', pts: [[0, -22.5], [0, -58.5]] },
+  { nom: '7e Rue NO, de C à H', pts: [[-54, -22.5], [-54, -58.5]] },
+  { nom: '7e Rue NO, de C à K', pts: [[-54, -22.5], [-54, -66]] },
+  { nom: '14e Rue NO, de C à K', pts: [[-94.5, -22.5], [-94.5, -66]] },
+  { nom: 'F Street NO, de la 9e à la 14e', pts: [[-58.5, -46.5], [-94.5, -46.5]] },
+  { nom: 'H Street NO, de la 9e à la 14e', pts: [[-58.5, -58.5], [-94.5, -58.5]] },
+  { nom: '9e Rue NO, de F à H', pts: [[-58.5, -46.5], [-58.5, -58.5]] },
+  { nom: '14e Rue NO, de F à H', pts: [[-94.5, -46.5], [-94.5, -58.5]] },
+  // Les diagonales : de la Maison-Blanche à Dupont Circle et retour par
+  // Massachusetts. Pennsylvania finit sur la 15e ; on remonte à H Street.
+  { nom: '15e Rue NO, de Pennsylvania à H', pts: [[-106.5, -37], [-106.5, -58.5]] },
+  { nom: 'H Street NO, de la 15e à Connecticut', pts: [[-106.5, -58.5], [-121, -58.5]] },
+  { nom: 'Connecticut Avenue NO, de H à Dupont', pts: [[-121, -58.5], [-122, -60], [-129, -68], [-140, -84], [-148, -100]] },
+  { nom: 'Massachusetts Avenue NO, de Dupont à la 3e', pts: [[-148, -100], [-124, -82], [-100, -68], [-76, -56], [-54, -46], [-32, -38], [-22.5, -35.6]] },
+  { nom: 'Massachusetts Avenue NO, de Dupont à la 7e', pts: [[-148, -100], [-124, -82], [-100, -68], [-76, -56], [-54, -46]] },
+  { nom: '3e Rue NO, de Massachusetts à Pennsylvania', pts: [[-22.5, -35.6], [-22.5, -19]] },
+  { nom: '7e Rue NO, de Massachusetts à Rhode Island', pts: [[-54, -46], [-54, -70]] },
+  // Le nord : P Street relie la 16e à Logan Circle.
+  { nom: 'P Street NO, de la 16e à Logan Circle', pts: [[-115, -106.5], [-88, -106.5]] },
+  // Le sud-ouest et Capitol Hill.
+  { nom: 'Independence Avenue, de la 3e à la 7e', pts: [[-25.5, 17], [-58.5, 17]] },
+  { nom: '3e Rue SO, de D à E', pts: [[-22.5, 25.5], [-22.5, 61.5]] },
+  { nom: 'D Street SE, de la 3e à la 8e', pts: [[25.5, 25.5], [61.5, 25.5]] },
+];
 export const VOIES_CIRCUITS_DC = [...AVENUES, ...RACCORDS];
 
 // LES CIRCUITS SE MESURENT, ILS NE SE DEVINENT PAS. Chaque enchaînement
@@ -581,28 +558,45 @@ export const VOIES_CIRCUITS_DC = [...AVENUES, ...RACCORDS];
 // quarante-sept ; la pire paire reste à vingt-deux blocs.
 //
 // Mesures : part sur la rue, longueur en blocs, virage le plus serré.
-// LES CIRCUITS DE LA GRILLE DU KIT (v369), cherchés sous node sur les
-// avenues et les rues de liaison neuves : toutes les boucles de trois à six
-// voies du graphe des croisements, gardées si elles tiennent la rue (90 %,
-// `fabriqueCircuits`) sans demi-tour (virage ≤ 150°), puis une couverture
-// gloutonne sous la contrainte de partage de la v211 (vingt blocs), et la
-// passe de réparation de la v216. Le chiffre de chaque ligne est celui de la
-// mesure. Ce qui reste sans voitures est déclaré dans `TASKS.md`.
 const CIRCUITS = [
-  ["South Capitol Street", "G Street SO", "3e Rue SO", "D Street SO"],   // 100 %, virage 90°, 112 blocs
-  ["M Street (Georgetown)", "Wisconsin Avenue NO", "P Street (Georgetown)", "28e Rue NO"],   // 100 %, virage 94°, 106 blocs
-  ["New York Avenue NO", "Rhode Island Avenue NO", "12e Rue NO", "K Street NO"],   // 100 %, virage 108°, 87 blocs
-  ["Connecticut Avenue NO", "16e Rue NO", "K Street NO"],   // 100 %, virage 124°, 42 blocs
-  ["Constitution Avenue (ouest)", "23e Rue NO", "H Street NO", "20e Rue NO"],   // 100 %, virage 90°, 136 blocs
-  ["Connecticut Avenue NO", "K Street NO", "Vermont Avenue NO", "H Street NO", "20e Rue NO"],   // 100 %, virage 145°, 147 blocs
-  ["Massachusetts Avenue NO", "Rhode Island Avenue NO", "M Street NO", "3e Rue NO", "New York Avenue NO", "North Capitol Street"],   // 100 %, virage 110°, 418 blocs
-  ["New York Avenue NO", "12e Rue NO", "Rhode Island Avenue NO", "M Street NO", "16e Rue NO", "H Street NO"],   // 100 %, virage 100°, 134 blocs
-  ["D Street NE", "4e Rue NE", "East Capitol Street", "8e Rue NE"],   // 100 %, virage 90°, 124 blocs
-  ["Massachusetts Avenue NO", "D Street NO", "3e Rue NO", "H Street NO", "H Street NE", "4e Rue NE"],   // 100 %, virage 90°, 187 blocs
-  ["Pennsylvania Avenue SE", "4e Rue SE", "D Street SE", "8e Rue SE"],   // 100 %, virage 122°, 84 blocs
-  ["Pennsylvania Avenue NO", "3e Rue", "Independence Avenue", "17e Rue", "Constitution Avenue", "12e Rue NO"],   // 100 %, virage 108°, 277 blocs
-  ["New York Avenue NO", "7e Rue NO", "Constitution Avenue", "12e Rue NO", "H Street NO", "3e Rue NO"],   // 100 %, virage 110°, 231 blocs
-  ["Constitution Avenue", "7e Rue NO", "D Street NO", "3e Rue NO"],   // 100 %, virage 90°, 75 blocs
+  // 99 % (86 blocs, virage max 90°)
+  ["Pennsylvania Avenue NO","9e Rue NO","7e Rue NO","7e Rue NO, de C à H"],
+  // 100 % (111 blocs, virage max 90°)
+  ["New York Avenue NO","14e Rue NO","F Street NO, de la 9e à la 14e","7e Rue NO, de C à K"],
+  // 100 % (106 blocs, virage max 119°)
+  ["Rhode Island Avenue NO","14e Rue NO","Massachusetts Avenue NO, de Dupont à la 3e","K Street NO, de la 7e à la 14e"],
+  // 100 % (160 blocs, virage max 93°)
+  ["Connecticut Avenue NO","F Street NO","14e Rue NO, de C à K","Massachusetts Avenue NO, de Dupont à la 7e"],
+  // 100 % (77 blocs, virage max 90°)
+  ["Pennsylvania Avenue NO","3e Rue NO","C Street NO","9e Rue NO"],
+  // 100 % (58 blocs, virage max 130°)
+  ["Massachusetts Avenue NO","New York Avenue NO","H Street NO, de la 9e à la 14e","9e Rue NO, de F à H"],
+  // 100 % (108 blocs, virage max 104°)
+  ["3e Rue NO","H Street NO, de North Capitol à la 7e","9e Rue NO","Massachusetts Avenue NO, de Dupont à la 3e"],
+  // 99 % (78 blocs, virage max 90°)
+  ["Rhode Island Avenue NO","7e Rue NO","9e Rue NO","K Street NO"],
+  // 100 % (66 blocs, virage max 90°)
+  ["Massachusetts Avenue NO","North Capitol Street","C Street NO, de North Capitol à la 7e","3e Rue NO, de Massachusetts à Pennsylvania"],
+  // 98 % (110 blocs, virage max 114°)
+  ["Massachusetts Avenue NO","Vermont Avenue NO","P Street NO, de la 16e à Logan Circle","16e Rue NO"],
+  // 100 % (96 blocs, virage max 94°)
+  ["M Street (Georgetown)","Wisconsin Avenue NO","P Street (Georgetown)","28e Rue NO"],
+  // 100 % (92 blocs, virage max 90°)
+  ["Constitution Avenue","7e Rue NO","C Street NO, de la 7e à la 14e","14e Rue NO"],
+  // 98 % (48 blocs, virage max 114°)
+  ["Pennsylvania Avenue NO","14e Rue NO","F Street NO","15e Rue NO, de Pennsylvania à H"],
+  // 100 % (95 blocs, virage max 122°)
+  ["Maryland Avenue SO","3e Rue SO","Independence Avenue","7e Rue SO"],
+  // 100 % (69 blocs, virage max 90°)
+  ["3e Rue NO","F Street NO","North Capitol Street, de C à H","H Street NO, de North Capitol à la 7e"],
+  // 100 % (117 blocs, virage max 90°)
+  ["South Capitol Street","E Street SO","3e Rue SO, de D à E","D Street SO"],
+  // 100 % (101 blocs, virage max 122°)
+  ["3e Rue SE","D Street SE, de la 3e à la 8e","8e Rue SE","Pennsylvania Avenue SE"],
+  // 100 % (223 blocs, virage max 92°)
+  ["Virginia Avenue NO","23e Rue NO","H Street NO","14e Rue NO, de C à K","14e Rue NO","Constitution Avenue","Constitution Avenue (ouest)"],
+  // 100 % (80 blocs, virage max 132°)
+  ["15e Rue NO, de Pennsylvania à H","New York Avenue NO","Massachusetts Avenue NO","14e Rue NO","K Street NO","Vermont Avenue NO"],
 ];
 
 export const circuitsWashington = fabriqueCircuits({
@@ -777,7 +771,8 @@ function solWashingtonCalcul(x, z) {
     }
     if (d < c.r - ANNEAU_DEHORS) return BITUME;                    // l'anneau qui roule
     if (solDesVoies(BANDES_AVENUES, u, v, BITUME, TROTTOIR) === BITUME) return BITUME;
-    if (trameDC(u).d <= DEMI_CHAUSSEE || trameDC(v).d <= DEMI_CHAUSSEE) return BITUME;
+    const mu0 = ((u % PAS_RUE) + PAS_RUE) % PAS_RUE, mv0 = ((v % PAS_RUE) + PAS_RUE) % PAS_RUE;
+    if ((mu0 > 0 && mu0 <= DEMI_CHAUSSEE) || (mv0 > 0 && mv0 <= DEMI_CHAUSSEE)) return BITUME;
     return TROTTOIR;                                               // le trottoir du tour
   }
   // Le parc de Rock Creek se lit APRÈS les ronds-points : Washington Circle,
@@ -797,10 +792,6 @@ function solWashingtonCalcul(x, z) {
   const av2 = solDesVoies(BANDES_AVENUES, u, v, BITUME, TROTTOIR);
   if (av2 !== null) {
     if (av2 === BITUME && (((u + v) % 9) + 9) % 9 === 0) return LIGNE;
-    // Le trottoir d'une voie ne coupe pas la chaussée d'une rue de la grille
-    // qu'elle croise (v369) : la bretelle de l'I-295 fermait la rue v = 84.
-    if (av2 === TROTTOIR && enVille
-      && (trameDC(u).d <= DEMI_CHAUSSEE || trameDC(v).d <= DEMI_CHAUSSEE)) return BITUME;
     return av2;
   }
 
@@ -809,23 +800,16 @@ function solWashingtonCalcul(x, z) {
   }
 
   // La grille : rues numérotées nord-sud, rues lettrées est-ouest.
-  // Une rue locale n'a qu'une voie : pas de ligne axiale (v287), et le
-  // passage piéton est sur la chaussée, là où le trottoir de la rue qui
-  // croise la traverse — à larges bandes dans le sens de la marche.
-  const tu = trameDC(u), tv = trameDC(v);
-  const chNS = tu.d <= DEMI_CHAUSSEE, chEO = tv.d <= DEMI_CHAUSSEE;
-  if (chNS || chEO) {
-    if (chNS && chEO) return BITUME;
-    if (chNS && tv.d <= DEMI_EMPRISE) return (u & 1) === 0 ? PASSAGE : BITUME;
-    if (chEO && tu.d <= DEMI_EMPRISE) return (v & 1) === 0 ? PASSAGE : BITUME;
+  const mu = ((u % PAS_RUE) + PAS_RUE) % PAS_RUE;
+  const mv = ((v % PAS_RUE) + PAS_RUE) % PAS_RUE;
+  const surRueNS = mu <= DEMI_CHAUSSEE;
+  const surRueEO = mv <= DEMI_CHAUSSEE;
+  if (surRueNS || surRueEO) {
+    if (surRueNS && surRueEO) return ((u + v) & 1) === 0 ? PASSAGE : BITUME;
+    if ((surRueNS && mu === 0) || (surRueEO && mv === 0)) return TROTTOIR;
+    if (surRueNS && mu === 1 && (((v & 7) < 4))) return LIGNE;
+    if (surRueEO && mv === 1 && (((u & 7) < 4))) return LIGNE;
     return BITUME;
-  }
-  if (tu.d <= DEMI_EMPRISE || tv.d <= DEMI_EMPRISE) return TROTTOIR;
-  // La ruelle : l'allée de gravier au milieu, les jardins de derrière de part
-  // et d'autre.
-  if (tu.ruelle || tv.ruelle) {
-    const mil = (tu.ruelle && tu.m === PAS_RUE / 2) || (tv.ruelle && tv.m === PAS_RUE / 2);
-    return mil ? GRAVIER : HERBE;
   }
   return null;
 }
@@ -1520,25 +1504,18 @@ function creuserMetro(u, v, h, poser) {
 // rez-de-chaussée meublé, un vrai escalier, un étage, et deux portes face à
 // face. Ce n'est pas un décor peint, c'est un bâtiment.
 //
-// Une maison fait neuf blocs de côté ; depuis la v369 un îlot en porte quatre,
-// de part et d'autre de sa ruelle (`trameDC`). À l'intérieur d'une maison,
-// les coordonnées locales (iu, iv) vont de 0 à 8, et (la, lb) la nomment —
-// deux maisons par pas sur chaque axe.
+// L'îlot fait douze blocs de côté : trois de rue, neuf de bâti. À l'intérieur,
+// les coordonnées locales (iu, iv) vont de 0 à 8.
 
-// Le coin (u, v) de la maison (la, lb) : pour un témoin, et pour l'axe des portes.
-export function coinDeMaisonDC(la, lb) {
-  const o = (l) => Math.floor(l / 2) * PAS_RUE + DEMI_EMPRISE + 1 + (((l % 2) + 2) % 2) * (MAISON + RUELLE);
-  return [o(la), o(lb)];
-}
 const AXE_ILOT = new Map();
 function axeDeLot(la, lb) {
   const cle = `${la},${lb}`;
   const memo = AXE_ILOT.get(cle);
   if (memo !== undefined) return memo;
-  const [cu, cv] = coinDeMaisonDC(la, lb);
-  const libre = (iu, iv) => lotWashingtonLibre(WASHINGTON.x + cu + iu, WASHINGTON.z + cv + iv);
-  const ns = (libre(3, 0) || libre(4, 0)) && (libre(3, 8) || libre(4, 8));
-  const eo = (libre(0, 3) || libre(0, 4)) && (libre(8, 3) || libre(8, 4));
+  const libre = (mu, mv) => lotWashingtonLibre(
+    WASHINGTON.x + la * PAS_RUE + mu, WASHINGTON.z + lb * PAS_RUE + mv);
+  const ns = (libre(6, 3) || libre(7, 3)) && (libre(6, 11) || libre(7, 11));
+  const eo = (libre(3, 6) || libre(3, 7)) && (libre(11, 6) || libre(11, 7));
   const tire = tirage(la, lb, 73) < 0.5;
   const axe = (tire && ns) || !eo;
   if (AXE_ILOT.size > 8192) AXE_ILOT.clear();
@@ -1554,12 +1531,7 @@ export function batirColonneWashington(x, z, h, poser) {
   if (!lotWashingtonLibre(x, z)) return;
 
   const q = quartierDe(u, v);
-  // La maison : deux par pas sur chaque axe (v369). Une colonne de lot hors
-  // de toute maison (une avenue qui coupe l'îlot en a laissé un bout) prend
-  // la maison la plus proche, comme avant.
-  const tu = trameDC(u), tv = trameDC(v);
-  const la = Math.floor(u / PAS_RUE) * 2 + (tu.i < 0 ? (tu.m >= PAS_RUE / 2 ? 1 : 0) : tu.s);
-  const lb = Math.floor(v / PAS_RUE) * 2 + (tv.i < 0 ? (tv.m >= PAS_RUE / 2 ? 1 : 0) : tv.s);
+  const la = Math.floor(u / PAS_RUE), lb = Math.floor(v / PAS_RUE);
   const r = tirage(la, lb, 71);
   const bh = Math.min(PLAFOND_LOI, q.hMin + Math.floor(r * (q.hMax - q.hMin + 1)));
   const palette = MURS[q.genre] || MURS.brique;
@@ -1570,13 +1542,16 @@ export function batirColonneWashington(x, z, h, poser) {
   const oS = lotWashingtonLibre(x, z + 1), oN = lotWashingtonLibre(x, z - 1);
   const dedans = oE && oO && oS && oN;
 
-  // La position dans la maison — (iu, iv) de 0 à 8 à l'intérieur.
-  const iu = tu.i, iv = tv.i;
+  // La position dans l'îlot : la rue occupe les trois premières colonnes, le
+  // bâti les neuf suivantes — (iu, iv) de 0 à 8 à l'intérieur.
+  const mu = ((u % PAS_RUE) + PAS_RUE) % PAS_RUE;
+  const mv = ((v % PAS_RUE) + PAS_RUE) % PAS_RUE;
+  const iu = mu - (DEMI_CHAUSSEE + 1), iv = mv - (DEMI_CHAUSSEE + 1);
   const axeNS = axeDeLot(la, lb);
   // Les portes : deux blocs de large, au milieu de deux façades opposées.
   const porte = axeNS
-    ? (iv === 0 || iv === MAISON - 1) && (iu === 3 || iu === 4)
-    : (iu === 0 || iu === MAISON - 1) && (iv === 3 || iv === 4);
+    ? (mv === DEMI_CHAUSSEE + 1 || mv === PAS_RUE - 1) && (mu === 6 || mu === 7)
+    : (mu === DEMI_CHAUSSEE + 1 || mu === PAS_RUE - 1) && (mv === 6 || mv === 7);
 
   // Les niveaux : un étage tous les quatre blocs, autant que la hauteur en
   // laisse. Le dernier plancher est le toit.

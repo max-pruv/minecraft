@@ -156,7 +156,8 @@ const GARDIENS = {
   'src/carte.js': ['carte.js', 'carteMonde.js', 'manhattan.js'],
   // La capitale : son relief, son métro et ses bâtiments ouverts. Elle touche
   // au sol de la carte, donc le témoin du plafond la surveille aussi.
-  'src/washington.js': ['washington.js', 'plafond.js', 'carteMonde.js'],
+  'src/washington.js': ['washington.js', 'plafond.js', 'carteMonde.js', 'carte.js'],
+  'src/washington-v367.js': ['washington.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // la Washington d'avant le kit, sous ce qu'un enfant a bâti (v369)
   'src/dcmonuments.js': ['washington.js'],
   // La ville : c'est elle qui bâtit le métro de Paris, la caserne et le
   // commissariat.

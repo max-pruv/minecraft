@@ -1708,7 +1708,8 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   // ne retient rien — la ville neuve bâtit dessous. Rouge sur `origin/main` :
   // la date n'existe pas, et les deux premiers cas montrent la ville neuve.
   // ET NICE À LA v359, PAR LA MÊME RÈGLE : la fonction se joue ville par ville.
-  // SAN FRANCISCO À LA v361, LILLE À LA v368.
+  // SAN FRANCISCO À LA v361, LILLE À LA v369, WASHINGTON À LA v369 — dont le
+  // bâtisseur prend aussi la cote du sol (`bat`).
   const figee = async (date, avant, neuf, ancre, sol, libre, batir) => {
     const W = await import('../src/world.js');
     if (!W[date]) return { absent: true };
@@ -1719,6 +1720,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const L = N[ancre], t = W[date] - 86400000;
     const nf = new W.World();
     const av = new W.World({ v308: true });   // les villes d'avant le kit partout
+    const bat = (M, x, z, f) => (M[batir].length >= 4 ? M[batir](x, z, nf.terrainHeight(x, z), f) : M[batir](x, z, f));
     // une ancienne rue que la ville neuve bâtit, et un ancien lot qu'elle fait rue
     let rueBatie = null, lotRue = null;
     for (let d = 10; d < L.r - 5 && !(rueBatie && lotRue); d++) for (let a = 0; a < 64; a++) {
@@ -1727,7 +1729,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       const croix = (f) => [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]].every(([i, j]) => f(x + i, z + j));
       // une façade neuve (le bâtisseur y monte un mur) sur neuf colonnes d'ancienne
       // chaussée — pas un trottoir, où la ville d'avant a ses arbres et ses réverbères
-      const mur = () => { let n = 0; N[batir](x, z, (dy) => { if (dy >= 3) n++; }); return n >= 3; };
+      const mur = () => { let n = 0; bat(N, x, z, (dy) => { if (dy >= 3) n++; }); return n >= 3; };
       // et rien n'y est posé par-dessus dans la ville d'avant — un monument se
       // pose APRÈS les colonnes (Lille, v368 : la Vieille Bourse à côté)
       const degage = () => croix((xx, zz) => {
@@ -1767,7 +1769,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     for (let y = gm + 1; y <= gm + 6; y++) if (neufM.getBlock(mx, y, mz) !== 0) batiNeuf++;
     // 2. une cabane sur l'ancien toit
     const [cx, cz] = lotRue, gc = nf.terrainHeight(cx, cz);
-    const toit = (() => { let y0 = gc; A[batir](cx, cz, (dy) => { y0 = Math.max(y0, gc + dy - 1); }); return y0; })();
+    const toit = (() => { let y0 = gc; bat(A, cx, cz, (dy) => { y0 = Math.max(y0, gc + dy - 1); }); return y0; })();
     const wc = monde({ [`${cx},${toit + 1},${cz}`]: [8, t] });
     const porte = wc.getBlock(cx, toit, cz) !== 0;
     return { absent: false, enferme, batiNeuf, porte, toit, gc, rueBatie, lotRue };
@@ -1777,6 +1779,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     ['Nice', ['DATE_RUES_NICE', 'nice-v340.js', 'nice.js', 'NICE', 'solNice', 'lotNiceLibre', 'batirColonneNice']],
     ['San Francisco', ['DATE_RUES_SF', 'sanfrancisco-v343.js', 'sanfrancisco.js', 'SF', 'solSF', 'lotSFLibre', 'batirColonneSF']],
     ['Lille', ['DATE_RUES_LILLE', 'lille-v344.js', 'lille.js', 'LILLE', 'solLille', 'lotLilleLibre', 'batirColonneLille']],
+    ['Washington', ['DATE_RUES_WASHINGTON', 'washington-v367.js', 'washington.js', 'WASHINGTON', 'solWashington', 'lotWashingtonLibre', 'batirColonneWashington']],
   ]) {
     const r = await figee(...args);
     verifier(`à ${ville}, une maison posée sur une ancienne rue n'est pas enfermée dans un immeuble neuf`,

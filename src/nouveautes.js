@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 369,
+    titre: 'Washington, des rues plus larges',
+    puces: [
+      'Les rues ont deux vrais trottoirs',
+      'Quatre maisons et une ruelle par îlot',
+      'Plus de voitures dans la ville',
+      'Tes constructions restent comme avant',
+    ],
+  },
+  {
     v: 368,
     titre: 'Les rues de Lille s\'élargissent',
     puces: [

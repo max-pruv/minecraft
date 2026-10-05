@@ -3836,6 +3836,24 @@ l'embarquement a eu lieu, pas par une hypothèse.
   C'est la livraison suivante, et le piège est nommé : **une largeur ne se
   projette pas, elle se relève** (v187).
 
+- [x] **v369 — LA GRILLE DE WASHINGTON À LA RÈGLE DU KIT.** Pas de 28, rue
+  locale (3 de chaussée, 2 + 2 de trottoir), quatre maisons et une ruelle par
+  îlot, ville d'avant figée (`washington-v367.js`), quatorze circuits. Les
+  cinq villes bâties à la main sont à la règle (Londres v339, Nice v359, San
+  Francisco v361, Lille v368, Washington v369). Ce qui reste, DÉCLARÉ :
+  · les diagonales gardent leur trottoir de 0,45 : le kit en veut 2,5 pour une
+    collectrice, et l'élargir mange les lots qu'elles coupent en biais — une
+    passe à elle, avec la remesure des circuits ;
+  · Independence et Constitution (derrière les musées, v205) et la 3e Rue du
+    Mall (entre la pelouse et le parc du Capitole) gardent leurs deux colonnes
+    de chaussée : ce sont les monuments qui les bornent ;
+  · sans voitures après la recherche : Maryland Avenue SO (11/44 points),
+    Virginia Avenue NO (15/53), la 7e Rue SO (3/24) — leurs boucles se
+    heurtent aux circuits du Mall et de Foggy Bottom sous les vingt blocs de
+    partage ; la 9e, la 14e, la 15e, C et F Street ne sont plus des rues ;
+  · la part de lots passe de 14,2 à 11,2 % : un îlot de vingt et un porte
+    quatre maisons de neuf, pas un bâtiment de vingt et un.
+
 - [ ] **IL RESTE DES ANNEAUX QUI SE PARTAGENT DIX-HUIT BLOCS (v270).** La
   contrainte de la v211 est désormais appliquée aux villes engendrées : 265
   villes en faute deviennent 0, le pire partage tombe de 576 blocs (Shanghai)
