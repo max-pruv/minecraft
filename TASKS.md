@@ -1,5 +1,14 @@
 # Ce qui est en cours
 
+- [ ] **LA v358 (conduite) N'A PAS REJOUÉ LE PORTAIL ENTIER APRÈS LA FUSION
+  DE LA v357** : dernier portail complet sur la v356 fusionnée (rouges
+  ci-dessous, tous déclarés) ; la v357 ne touche que villesmonde, world,
+  echelle-monuments et dcmonuments, aucun fichier de la conduite, et le seul
+  fichier commun, `tests/plafond.js`, a été rejoué seul sur le code fusionné :
+  108 verts, zéro rouge. Fait pour sortir de la course aux numéros (quatre
+  fusions de `main` pendant quatre portails). Le prochain portail complet le
+  confirme.
+
 - [ ] **PORTAIL DE LA v358 (sur la v355 fusionnée)** — deux rouges neufs, ni
   l'un ni l'autre de la conduite. (1) `plafond.js` « engendrer et mailler moins
   cher ne change ni un bloc ni un sommet » : empreinte `69381f2e…` pour une
@@ -8,7 +17,8 @@
   (Toronto–Montréal, Cologne–Hambourg), lues par le balayage « toutes les
   routes ». La référence se relève sur la v355 si la session des routes
   confirme que seul `routeEn` a bougé ; et l'égalité branche = `origin/main`
-  prouve que la conduite ne change ni un bloc ni un sommet. (2) `degats.js`
+  prouve que la conduite ne change ni un bloc ni un sommet — RÉGLÉ par la v357, qui a
+  relevé la référence (`3cc39830…`, vert sur la v358 fusionnée). (2) `degats.js`
   « enfoncer coûte quelques millisecondes » : premier choc 31 ms pour une
   barre de 30 au portail ; rejouée seule, branche 15,6 et 17,6 ms,
   `origin/main` 12,8 ms — un coût de charge. Le reste (gel d'arrivée,
