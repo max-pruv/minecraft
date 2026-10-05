@@ -1190,7 +1190,7 @@ export function couleurCarteLondres(x, z) {
   return [166, 118, 92];                                // la brique, vue du ciel
 }
 
-// UNE COLONNE SE DEMANDE UNE FOIS (v376). Le centre de Londres est le morceau
+// UNE COLONNE SE DEMANDE UNE FOIS (v379). Le centre de Londres est le morceau
 // le plus cher que traverse une voiture rapide : sous node, 2,6 ms de
 // génération par morceau contre 1,3 à Paris — et `solLondres` y était appelé
 // quatre fois par colonne (1 090 appels par morceau : la colonne elle-même,

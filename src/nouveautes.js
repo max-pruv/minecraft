@@ -6,11 +6,37 @@
 
 export const NOUVEAUTES = [
   {
-    v: 376,
+    v: 379,
     titre: 'On arrive plus vite',
     puces: [
       'Après la carte, la ville arrive vite',
       'Londres se dessine un peu plus vite',
+    ],
+  },
+  {
+    v: 378,
+    titre: 'Les voitures contournent les monuments',
+    puces: [
+      'Plus une voiture dans le Colisée',
+      'Des rues neuves à Agra et au Cap',
+      'Le jeu démarre un peu plus vite',
+    ],
+  },
+  {
+    v: 377,
+    titre: 'Le passager prend la portière',
+    puces: [
+      'Tu montes par la porte de droite',
+      'Ton ami la voit s\'ouvrir chez lui',
+    ],
+  },
+  {
+    v: 376,
+    titre: 'Les passants sursautent',
+    puces: [
+      'Frôlés par une voiture, ils sursautent',
+      'Puis ils reprennent leur chemin',
+      'Un choc ? Ils se retournent',
     ],
   },
   {

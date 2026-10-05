@@ -42,7 +42,7 @@ import { contexteAudio, sortieAudio, reglerSon, sonActif, etatSon, radioEnCours,
 import { traceAnneau } from './ville.js';
 import { traceCourse } from './circuit.js';
 import { USINE, PARC, traceChaine } from './usine.js';
-import { tracesCirculation, tracesCirculationMain, avenueDEntree } from './villesmonde.js';
+import { tracesCirculationParesseuses, tracesCirculationMain, avenueDEntree } from './villesmonde.js';
 import { createPassants } from './passants.js';
 import { createPoissons } from './poissons.js';
 import { segmentsDeTrain, traceSegment } from './trains.js';
@@ -881,7 +881,7 @@ function recevoirMorceau(m) {
   statsMaillage.workerMs += m.ms || 0;
   if (m.inactif) statsMaillage.workerInactifMs += m.inactif;
   if (m.cumul) statsMaillage.workerCumul = m.cumul;
-  if (statsMaillage.sonde) statsMaillage.sonde(m, attente);   // une sonde regarde arriver chaque morceau (v376)
+  if (statsMaillage.sonde) statsMaillage.sonde(m, attente);   // une sonde regarde arriver chaque morceau (v379)
   statsMaillage.distants++;
   noterMorceau(m.ms);
   if (attente && attente.sale) world.dirty.add(key);
@@ -1372,7 +1372,7 @@ let lastPlayerChunk = null;
 const RECHARGE_DEMANDEE = new URLSearchParams(location.search).get('recharge');
 let rechargeForcee = RECHARGE_DEMANDEE === 'arrivee' || RECHARGE_DEMANDEE === 'image' ? RECHARGE_DEMANDEE : null;
 let logicielMemo = null;   // un appel GL synchrone : une fois, pas à chaque morceau
-// ET APRÈS UNE TÉLÉPORTATION (v376), le temps de remplir le disque : voir
+// ET APRÈS UNE TÉLÉPORTATION (v379), le temps de remplir le disque : voir
 // `estUnSaut` dans plafond-sol.js. Coupée en rendu logiciel comme le reste.
 let arriveeJusqua = 0;
 const enArrivee = () => arriveeJusqua > 0 && performance.now() < arriveeJusqua && meshQueue.length > 0;
@@ -1865,7 +1865,7 @@ function updateChunks() {
   ];
   const dejaServies = new Set(propres.map((t) => t.cle));
   circulationsEnAttente = [
-    ...tracesCirculation(solDe),
+    ...tracesCirculationParesseuses(solDe),
     ...tracesCirculationMain(
       CITIES.filter((c) => c.key !== 'ny' && !dejaServies.has(c.key)), solDe),
     ...planUrbain.circuitsManhattan().map(t=>({...t,...urbain.versTerre(t.x,t.z),ville:'ny',pts:t.pts.map(p=>({...p,...urbain.versTerre(p.x,p.z)}))})),
@@ -3045,6 +3045,9 @@ function animerLesVilles(dt) {
   }
   if (choisi < 0) return;
   const tr = circulationsEnAttente[choisi];
+  // une ville engendrée n'a calculé ses anneaux qu'ici (v378) : on la déplie
+  // en ses traces, servies aux tours suivants
+  if (tr.deplier) { circulationsEnAttente.splice(choisi, 1, ...tr.deplier()); return; }
   // la graine vient de la ville, pas de la file (v246, voir graineDeVille)
   vehicules.circulation(tr.pts, graineDeVille(tr), {ville:tr.ville});
   // le bus dessert le grand anneau — un par ville, à sa couleur
@@ -4785,6 +4788,9 @@ function showOnlineUI() {
   net.onAnnonce = (txt) => toast(txt, 0x9fd8e8);
   net.onRueChoc = (m) => fun.degats.recevoirRue(m);   // dégâts de la rue (v363)
   net.onRueHistoires = (rc) => fun.degats.adopterHistoires(rc); // par la position, si l'hôte ne relaie pas rue_choc (v374)
+  // la portière qu'un ami ouvre pour monter en passager (v377) : la nôtre si
+  // l'on conduit, sinon celle de la voiture du conducteur telle qu'on la dessine
+  net.onPortiere = (m) => { const v = vehiculeDuConducteur(m.de); if (v && v.mesh) fun.recevoirPortiere(v.mesh, m.c, m.o); };
   net.onCiel = (c) => adopterCiel(c);
   net.donnerCiel = () => cielDuMonde();
   net.onJoin = (nom) => annonceArrivee(nom);
@@ -7692,6 +7698,7 @@ fun.degats.brancherReseau((m) => { if (net && net.active) net.broadcast(m); });
 // LA SÉQUENCE D'EMBARQUEMENT (v366) prend l'avatar que main.js possède, et la
 // place assise que main.js calcule : un seul corps, une seule assise.
 fun.brancherAvatar({ obtenir: obtenirAvatarLocal, placeAssise, pose: POSE_AU_VOLANT });
+fun.brancherPortieres((m) => { if (net && net.active) net.broadcast(m); });   // v377
 
 // --- main loop -------------------------------------------------------------------------
 
@@ -7738,7 +7745,7 @@ window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) 
 window.__game = { fileMaillage: (m) => { fileDemandee = m; lastPlayerChunk = null; },
   // l'A/B de la recharge dans UNE page (v360) : 'arrivee', 'image', ou null (la règle)
   rechargeMaillage: (m) => { rechargeForcee = m || null; }, get fileDeMorceaux() { return meshQueue; },
-  // la règle de la recharge, garde du rendu logiciel mise à part (v376) : un témoin
+  // la règle de la recharge, garde du rendu logiciel mise à part (v379) : un témoin
   // la lit au banc, où le rendu est toujours logiciel
   get rechargeRegle() { return { arrivee: enArrivee(), rapide: fileRapide, regle: rechargeParRegle(), active: rechargeALArrivee() }; }, villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage, PALIERS, choisirPalier, mesurePalier, journal,
   RAYON_HD, BUDGET_FACADES, detailTenu, planDetail, get atlasHD() { return hd ? hd.atlas : null; },

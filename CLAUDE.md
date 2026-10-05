@@ -770,6 +770,25 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les voitures contournent les monuments (v378) — un test qui écarte un candidat se mesure en temps de démarrage
+
+Deux règles.
+
+- **UN ANNEAU QUI PASSE DANS UN MONUMENT EST ÉCARTÉ À LA SOURCE.** Les repères
+  se posent après les colonnes ; l'anneau se choisit donc contre les cases
+  que le BÂTISSEUR pose à hauteur de carrosserie (couches 1 à 3), tournées une
+  fois dans le repère de la trame (`traverseUnMonument`), jamais contre la
+  boîte : à la boîte, Stockholm n'avait plus une voiture (mesuré). Le test
+  passe après le partage et AVANT l'eau — mis en dernier, l'eau tournait sur
+  ce qu'il aurait écarté (310 → 410 ms).
+- **UN CALCUL QUE LE JEU NE LIT QU'À L'APPROCHE NE SE FAIT PAS AU DÉMARRAGE.**
+  Échantillonné au demi-bloc, ce test coûtait 157 → 1 075 ms dans
+  `preloadSpawn` ; en analytique, encore +150 ms, que l'on payait pour 262
+  villes dont l'enfant n'en verra qu'une. `tracesCirculationParesseuses`
+  donne une marque par ville, `animerLesVilles` la déplie à 220 blocs ; un
+  témoin exige les mêmes traces que le calcul entier. Un premier dépliage
+  coûte au plus 43 ms (Rome, le Colisée du catalogue), une fois.
+
 ## Les huit derniers palais (v375) — une boîte se relève en carte avant qu'on la remplisse
 
 Deux règles.
@@ -886,6 +905,18 @@ le repère de la voiture (un tableau à plat), un triangle tout entier d'un côt
 d'un plan est rejeté par six comparaisons — sans cela le plan passait de 4 à
 135 ms. Un bord net ne suffit pas à rendre une portière : les taxis l'ont, et
 restent refusés parce que derrière il n'y a rien (0/24 rayons).
+
+**Le passager monte par la portière, et l'ami la voit (v377).**
+`monterChez` rejoue la séquence sur la voiture DISTANTE de l'ami (telle que
+cette tablette la dessine), portière droite, et n'appelle `fin` (qui fait de
+l'enfant un passager, fun.js) qu'une fois assis — `passagerDe()` ne ment pas
+avant. L'ouverture et la fermeture partent dans un message court
+(`portiere`, `{ de, c, o }`) : chaque tablette anime la portière de la
+voiture de ce conducteur (`vehiculeDuConducteur`, la sienne si c'est elle qui
+conduit), en temps de jeu. Nom neuf : l'ancienne tablette l'ignore, le
+receveur cède, l'hôte relaie. Le témoin à deux tablettes lit les deux pages
+au même instant ; il attend le RÉSULTAT (borné à 45 s) : à deux pages, une
+séquence de 2,4 s de jeu prend vingt-sept secondes de montre.
 
 **Le revers d'une portière se fabrique (v373).** Aucun modèle n'a meublé
 l'intérieur de sa portière : de derrière, la face simple était culée (0 rayon
@@ -1038,7 +1069,7 @@ Et une empreinte d'identité qui change se PROUVE : celle des 490 morceaux
 (v352) couvre Marrakech et Tokyo ; la branche, bâtisseurs neufs désarmés, rend
 l'ancienne au bit près — c'est ce qui a permis de la remplacer.
 
-## L'arrivée après la carte (v376) — un gel de banc se démonte en scène vide
+## L'arrivée après la carte (v379) — un gel de banc se démonte en scène vide
 
 Les dettes de la v360. Cinq règles.
 
@@ -1425,6 +1456,33 @@ engendrées. Quatre règles.
   journal vide dans le jeu, trois rouges de `maj.js`. Après tout conflit dans un
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
+
+## Les passants réagissent à la route (v376) — un geste court, et une pause qui se compte en temps réel
+
+Point 3 du chantier « conduite » côté piétons. Trois règles.
+
+- **UNE PAUSE QUI SUIT UN GESTE EN TEMPS RÉEL SE COMPTE EN TEMPS RÉEL.**
+  L'écart (v351) se faisait en temps réel, mais la pause d'après (`repos`)
+  restait en `dt` : 0,8 seconde de jeu, trois secondes de montre à cinq images
+  par seconde — exactement le « planté au bord de la rue » que la v243
+  interdit. `REPOS_ECART_S` (0,35) se décompte sur `dtReel`. Quand un état
+  change d'horloge, celui qui le suit change avec lui.
+- **UN SURSAUT EST UN GESTE, PAS UNE PROTECTION.** Il se déclenche quand
+  l'échéance de la voiture (`couloirVoiture`, champ `t`) passe sous
+  `SURSAUT_S` et ne touche qu'à l'animation : la pose d'`animerHumain` et un
+  petit saut du maillage. C'est l'écart qui protège, et rien ne le remplace.
+  Et il se juge sur TOUT le passage de la voiture (`VEILLE_SURSAUT_S`, couloir
+  élargi `MARGE_SURSAUT`), pas à l'instant où l'écart commence : le couloir
+  porte à 1,6 s de route, et à cet instant la voiture est presque toujours
+  plus loin qu'une demi-seconde. Le premier jet ne testait que l'entrée :
+  vert quand le banc ramait, rouge (`sursauts: 0`) au portail suivant.
+- **CE QU'UNE AUTRE SESSION PUBLIE SE LIT SI PRÉSENT, ET À FRAIS.**
+  `player.choc` (session physique) : `regardChoc` (pur) ne regarde qu'un choc
+  de moins de `CHOC_FRAIS_MS` — un passant né après le bruit ne se retourne
+  pas — et jamais pendant un écart ni une traversée. Le témoin POSE le choc
+  comme la physique le ferait, puis rend `player.choc` à son état d'avant :
+  `degats3d.js` lit sa PRÉSENCE pour choisir entre le choc publié et son
+  repli.
 
 ## Les passants traversent au feu (v371) — un piéton lit le MÊME feu que la voiture
 

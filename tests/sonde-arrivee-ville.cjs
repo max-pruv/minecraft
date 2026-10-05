@@ -1,4 +1,4 @@
-// L'ÉCRAN SE FIGE-T-IL EN ARRIVANT SUR UNE VILLE, ET POURQUOI ? (v376)
+// L'ÉCRAN SE FIGE-T-IL EN ARRIVANT SUR UNE VILLE, ET POURQUOI ? (v379)
 //
 // Le témoin de `monte.js` (v235) est rouge des deux côtés depuis plusieurs
 // portails : 1 367 ms · 21,7 % sur la branche de la v360, 2 350 ms · 20,5 % sur
