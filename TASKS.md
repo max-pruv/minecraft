@@ -1024,6 +1024,30 @@
   York à chaque portail. À démonter par une sonde : l'invité charge-t-il en
   rendu logiciel quand une autre page de Manhattan tient les quatre cœurs ?
   (`charge.js` dira l'occupation au moment du `goto`.)
+
+  **Puis main est passé à la v369 : fusion, la livraison devient v370, et
+  quatrième portail complet (107 min).** Quatorze suites vertes. Trois
+  rouges, tous démontés :
+
+  | témoin | portail | branche seule | `origin/main` (v369) seul |
+  | --- | --- | --- | --- |
+  | `manhattan.js` trou de façade, taxi tactile, plantage au départ de l'invité (après la reprise cloud) | ❌ ❌ 💥 | — | dettes ci-dessus, même endroit |
+  | `monte.js` l'écran figé à l'arrivée (2 233 ms · 21,1 %) | ❌ | — | dette déclarée |
+  | `reseau.js` la voiture prise garde sa couleur | ❌ | ❌ 1 sur 3 avant correction, ✅ 4/4 après | ✅ 4/4 |
+  | `reseau.js` deux tablettes voient la même circulation | ✅ | ❌ 2 sur 7 (28 · 43) | ❌ 2 sur 6 (24 · 26) |
+
+  **La couleur était un défaut du TÉMOIN.** Il visait une place peinte et
+  comparait la monture à la teinte VISÉE ; quand le premier appui ne monte
+  pas, le convoi a roulé et l'appui suivant prend la voisine (rouge 9055034
+  visée, McLaren 3112847 prise). Il lit désormais la place réellement prise
+  (`pris`) et compare à SA teinte — et un passage de la branche a justement
+  pris la voisine, vert. **La circulation partagée est une intermittence de
+  PRODUCTION** (écart médian de 4 à 43 blocs pour une barre à 20, même
+  distribution des deux côtés) ; rien de la v370 ne touche à la rue ni au
+  réseau. Dette déclarée : l'horloge de la rue glisse sous une seconde
+  d'écart (`adopterHorloge`), et une page qui rend une image par seconde lit
+  une position d'une seconde de retard — la sonde à écrire horodate les deux
+  relevés côté page avant d'accuser l'une ou l'autre.
 - [ ] **LE PORTAIL DE LA v347 (les steppes, préparée comme v346) : TOUS LES
   ROUGES DÉJÀ DÉCLARÉS.** Huit suites choisies par la table des gardiens,
   45 min. `metro.js`, `carteMonde.js`, `plafond.js` (le témoin des steppes
