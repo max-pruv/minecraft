@@ -41,6 +41,7 @@ const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
     const p = await ctx.newPage();
     await p.route('**/rest/v1/player_prefs**', async (route) => {
       const r = route.request();
+      if (r.method() === 'GET' && /name=eq\.Marlon(&|$)/.test(r.url())) note(nom, 'LIT');
       if (r.method() === 'POST') {
         try {
           for (const l of JSON.parse(r.postData() || '[]')) {
