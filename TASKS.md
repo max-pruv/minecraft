@@ -2298,6 +2298,20 @@
      `ARCHI` que ces villes posent déjà : l'étendre est d'abord élargir
      `couvreHD` à leurs disques, puis donner à chaque tissu (`villesmonde.js`)
      ses registres — brique de Londres, tuile de Rome, pan de bois.
+     **État (v390).** Palier A livré : Londres (`VILLES_HD`, `STYLES.londres`,
+     le mur d'à côté lu par `murVoisin`, les murs Briques/Uni dans la couche).
+     Restent : B (Nice, Lille), C (villes engendrées d'Europe). Dette déclarée :
+     le raccord ville/campagne (`raccordInterdit`) n'est interdit qu'à Paris —
+     une colonne de raccord de Londres montre la surface plate, pas le sol HD.
+     Portail de la v390 (lancé sous le numéro v386, avant deux rebases) : 12 suites vertes, `parishd.js` comprise ; cinq
+     rouges, tous déjà déclarés ici avec leur double mesure — `maj.js` (le
+     loader et ses fichiers ; corps, programmes et fond de carte), `carte.js`
+     (glisser bridé ×4, 416 ms pour 400), `manhattan.js` (le trou de façade ;
+     PeerJS « Lost connection »), `monte.js` (le bout du monde en vol),
+     `reseau.js` (la même circulation sur deux tablettes). PREUVE STRUCTURELLE
+     (v291) : aucune de ces suites ne force `?hd=`, le banc rend en logiciel,
+     donc `RAYON_HD` vaut 0, `world.hd` est faux et `villeHD` n'est jamais
+     appelé — le mailleur y prend exactement le chemin d'avant.
 
   Ce qu'on ne touche PAS : le système de coordonnées, les clés de stockage, les
   blocs sauvegardés, `terrainHeight`, les contrats réseau. La couche HD LIT les

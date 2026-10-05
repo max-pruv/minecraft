@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 390,
+    titre: 'Londres en relief',
+    puces: [
+      'De vraies fenêtres anglaises à Londres',
+      'La brique et le stuc de près',
+      'Pas de colonne Morris à Londres',
+    ],
+  },
+  {
     v: 389,
     titre: 'On monte dans l\'avion',
     puces: [

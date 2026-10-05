@@ -38,8 +38,9 @@
 // HD s'assombrit au ras du sol et sous ses voisins exactement comme le voxel
 // d'à côté.
 
-import { BLOCK, CITY_BLOCK, ARCHI, ARCHI_BANDES } from './blocks.js';
+import { BLOCK, CITY_BLOCK, ARCHI, ARCHI_BANDES, DECOR_START, DECOR_ITEMS } from './blocks.js';
 import { PARIS, infoFacadeParis, marquageParis } from './paris.js';
+import { LONDRES } from './londres.js';
 
 // --- l'atlas HD : huit tuiles par huit, cent vingt-huit pixels ------------------
 
@@ -146,12 +147,30 @@ export function yBaie(id, y) {
 // plate dessinée par-dessus la pente la coifferait d'une casquette.
 export const TOIT_HD = new Set([ARCHI.ZINC_LISSE, ARCHI.MANSARDE]);
 
-// Un morceau est couvert par la couche HD s'il touche le disque de Paris. La
-// question se pose PAR MORCEAU, une fois, et non par bloc.
-export function couvreHD(cx, cz, chunk) {
+// LES VILLES QUE LA COUCHE COUVRE (v390). Un morceau est couvert s'il touche le
+// disque d'une ville de cette liste ; la question se pose PAR MORCEAU, une
+// fois, et non par bloc — une liste de disques, jamais les deux cent
+// quatre-vingts villes du registre par colonne. `villeHD` rend la fiche de la
+// ville (son nom, donc son registre), `couvreHD` seulement oui ou non.
+//
+// Une fiche porte son REGISTRE (`STYLES`, plus bas) : c'est lui, et non une
+// condition sur un nom dans un registre, qui dit de quoi une façade est faite.
+// Paris n'en porte pas — son registre vient de ses quartiers (`styleDuQuartier`).
+// `mobilier: false` : pas de colonne Morris ni de banc Davioud hors de Paris.
+export const VILLES_HD = [
+  { ville: 'paris', x: PARIS.x, z: PARIS.z, r: PARIS.r },
+  { ville: 'londres', x: LONDRES.x, z: LONDRES.z, r: LONDRES.r, registre: 'londres', mobilier: false },
+];
+export function villeHD(cx, cz, chunk) {
   const x = cx * chunk + chunk / 2, z = cz * chunk + chunk / 2;
-  const marge = PARIS.r + chunk;
-  return (x - PARIS.x) * (x - PARIS.x) + (z - PARIS.z) * (z - PARIS.z) < marge * marge;
+  for (const d of VILLES_HD) {
+    const marge = d.r + chunk;
+    if ((x - d.x) * (x - d.x) + (z - d.z) * (z - d.z) < marge * marge) return d;
+  }
+  return null;
+}
+export function couvreHD(cx, cz, chunk) {
+  return villeHD(cx, cz, chunk) !== null;
 }
 
 // LE TIRAGE DES VITRES ALLUMÉES, en coordonnées du MONDE — sinon le motif se
@@ -291,8 +310,13 @@ const REPERES = {
 };
 
 class Face {
-  constructor(buf, dir, x, y, z, ao, teinte, courant) {
+  // `orn` (v390) : hors de Paris, le mur et ses ornements n'ont pas la même
+  // teinte — une brique rouge n'encadre pas sa fenêtre de pierre rouge. Seule
+  // la tuile du mur (`tuileMur`) prend `teinte`, le reste prend `orn`. Sans
+  // `orn` (Paris), tout prend `teinte`, comme avant, au bit près.
+  constructor(buf, dir, x, y, z, ao, teinte, courant, orn = null, tuileMur = null) {
     this.buf = buf;
+    this.orn = orn; this.tuileMur = tuileMur;
     const r = REPERES[dir.join(',')];
     this.o = [x + r.o[0], y + r.o[1], z + r.o[2]];
     this.S = r.s; this.D = r.d;
@@ -316,9 +340,9 @@ class Face {
     return bas + (haut - bas) * t;
   }
 
-  couleur(s, t, ombre) {
+  couleur(s, t, ombre, tuile) {
     const k = this.aoA(Math.min(1, Math.max(0, s)), Math.min(1, Math.max(0, t))) * ombre;
-    const c = this.teinte;
+    const c = this.orn && tuile !== this.tuileMur ? this.orn : this.teinte;
     return [c[0] * k, c[1] * k, c[2] * k];
   }
 
@@ -347,7 +371,7 @@ class Face {
       } else {
         uv = [this.courant + s, this.y + t];
       }
-      ids.push(this.buf.sommet(this.p(s, t, d), nm, uv, rect, this.couleur(s, t, ombre), mat, lueur));
+      ids.push(this.buf.sommet(this.p(s, t, d), nm, uv, rect, this.couleur(s, t, ombre, tuile), mat, lueur));
     }
     this.buf.quadIndices(ids[0], ids[1], ids[2], ids[3]);
   }
@@ -459,6 +483,69 @@ const STYLE_DU_QUARTIER = {
 };
 export function styleDuQuartier(nom) {
   return STYLES[STYLE_DU_QUARTIER[nom] || 'haussmann'];
+}
+
+// LES REGISTRES DES AUTRES VILLES (v390). Hors de Paris, le voxel ne pose des
+// blocs ARCHI qu'aux FENÊTRES (`ARCHI.ETAGE`, une baie d'un bloc) : le mur
+// autour est un bloc de décor de la palette — la brique rouge ou chocolat de
+// Londres, le stuc blanc de Belgravia. Le relief de la baie doit donc se
+// raccorder au mur D'À CÔTÉ, pas à une pierre de Paris : `voisin: true` lit le
+// bloc de décor voisin (`murVoisin`) et en prend la MATIÈRE (des briques → la
+// tuile `brique`, un enduit uni → `enduit`) et la COULEUR. Les ornements —
+// l'encadrement, l'appui, le linteau — gardent leur teinte à eux (`orn`).
+//
+//   londres — la fenêtre à guillotine géorgienne : haute et étroite, son
+//             châssis peint en blanc, le rail de rencontre au milieu, l'appui
+//             de pierre de Portland et l'arc plat de briques frottées au-dessus.
+//             Ni volet, ni balcon filant, ni garde-corps de fer, ni store.
+STYLES.londres = {
+  mur: 'brique', teintes: [[1, 1, 1]], baie: [0.32, 0.68, 0.1, 0.88], volets: false, filant: false,
+  store: false, corniche: 1, voisin: true, orn: [0.98, 0.97, 0.93], gardeCorps: false, guillotine: true, linteau: 'brique',
+  patine: [0.3, [146, 92, 72]],
+};
+
+// Le bloc de décor le plus proche dans le plan de la façade : à gauche, à
+// droite, puis DESSUS et dessous — dessous, c'est souvent le rez-de-chaussée ou
+// un massif de fleurs du jardin de poche (vu en capture : une fenêtre de stuc
+// encadrée de rose). Rend l'entrée de `DECOR_ITEMS` ou null.
+function murVoisin(get, x, y, z, S) {
+  if (!get) return null;
+  for (const [dx, dy, dz] of [[S[0], 0, S[2]], [-S[0], 0, -S[2]], [0, 1, 0], [0, -1, 0]]) {
+    const item = DECOR_ITEMS[get(x + dx, y + dy, z + dz) - DECOR_START];
+    if (item) return item;
+  }
+  return null;
+}
+// La moyenne de chaque tuile de mur, mesurée sur l'atlas peint (sonde des
+// peintres de `matierehd.js`, v390). La teinte d'un sommet est LINÉAIRE (v345) :
+// le rapport en sRGB passe à la puissance 2,2, sinon une brique chocolat sort
+// orange.
+const MOYENNE_TUILE = { brique: [158.9, 95.5, 79.0], enduit: [215.2, 213.2, 207.2] };
+export function teinteDuMur(rgb, tuile) {
+  const m = MOYENNE_TUILE[tuile];
+  return rgb.map((c, i) => Math.min(2.5, Math.pow(c / m[i], 2.2)));
+}
+// LE MUR LUI-MÊME PASSE DANS LA COUCHE (v390). Vu en capture à Londres : la
+// baie HD au milieu d'un mur resté en voxel faisait un carré clair autour de
+// chaque fenêtre — la couche a son matériau (rugosité, métal), le voxel le
+// sien, et la même couleur n'y rend pas la même lumière. Le mur de brique ou
+// d'enduit voisin d'une baie est donc détaillé lui aussi, d'une face plate
+// dans la tuile HD. SEULS les motifs « Briques » et « Uni » : un bloc de décor
+// à damier, à pois ou à losanges qu'un enfant a posé garde son dessin — la
+// couche ne change pas l'apparence d'une création, elle n'en a pas la tuile.
+const MOTIFS_MUR_HD = new Set(['Briques', 'Uni']);
+export function murHD(id, ville) {
+  if (!ville || !ville.registre || !STYLES[ville.registre].voisin) return false;
+  const item = DECOR_ITEMS[id - DECOR_START];
+  return !!item && MOTIFS_MUR_HD.has(item.pattern);
+}
+// `patine` : [part, couleur] — la brique de la palette est un rouge de jouet
+// (Rouge 200, 62, 56) ; de près, la couche la rapproche d'une vraie brique
+// cuite, sans la changer de famille (le loin garde la tuile du voxel).
+export function murDuDecor(item, patine = null) {
+  const tuile = item.pattern === 'Briques' ? 'brique' : 'enduit';
+  const rgb = patine && tuile === 'brique' ? item.rgb.map((c, i) => c + (patine[1][i] - c) * patine[0]) : item.rgb;
+  return { tuile, teinte: teinteDuMur(rgb, tuile) };
 }
 
 // Les volets à persiennes, ouverts de part et d'autre de la baie : deux
@@ -589,6 +676,18 @@ function etage(f, r, allumee, noble, st) {
   const [s0, s1, t0, t1] = st.baie;
   f.murAutour(s0, s1, t0, t1, st.mur);
   f.baie(s0, s1, t0, t1, allumee);
+  if (st.guillotine) {
+    // LA GUILLOTINE : le rail de rencontre des deux châssis, à mi-hauteur, et
+    // le chambranle peint qui borde la baie.
+    // Des plans, pas des boîtes : trois boîtes coûtaient soixante sommets par
+    // fenêtre (mesuré : 1,96 Mo pour le morceau le plus dense de Londres, 1,30 en plans).
+    const tm = (t0 + t1) / 2;
+    f.plan(s0, s1, tm - 0.025, tm + 0.025, -0.05, 'pierre-lisse');
+    f.plan(s0 - 0.03, s0, t0, t1, 0.012, 'pierre-lisse');
+    f.plan(s1, s1 + 0.03, t0, t1, 0.012, 'pierre-lisse');
+  }
+  // l'arc plat de briques frottées : des claveaux plus clairs que le mur
+  if (st.linteau) f.boite(s0 - 0.05, s1 + 0.05, t1, Math.min(1, t1 + 0.09), 0, 0.02, st.linteau, 1.15);
   // l'appui de fenêtre, en saillie
   f.boite(s0 - 0.04, s1 + 0.04, t0 - 0.04, t0, 0, 0.05, 'pierre-lisse');
   if (st.volets) volets(f, s0, s1, t0, t1);
@@ -601,7 +700,7 @@ function etage(f, r, allumee, noble, st) {
     f.boite(0.8, 0.88, 0.0, 0.08, 0, 0.18, 'pierre-lisse');
   } else {
     // le garde-corps individuel : une lisse de fer devant la baie
-    f.ferronnerie(s0 - 0.02, s1 + 0.02, t0, t0 + 0.24, 0.06);
+    if (st.gardeCorps !== false) f.ferronnerie(s0 - 0.02, s1 + 0.02, t0, t0 + 0.24, 0.06);
     // le bandeau d'étage, une fine assise en saillie
     if (r > 0.5 && st.filant) f.boite(0, 1, 0.0, 0.03, 0, 0.03, 'pierre-lisse');
   }
@@ -852,15 +951,27 @@ function murNu(f, st) {
 // `haut` le bloc juste au-dessus (la terrasse d'une marche de toit ne se
 // dessine que si rien ne la couvre) ; `get(x, y, z)` lit un bloc voisin en
 // local (un coin de toit se coupe en croupe quand le côté est à l'air).
-export function facadeHD(buf, face, x, y, z, wx, wy, wz, id, ao, bas = BLOCK.AIR, haut = BLOCK.AIR, get = null) {
-  const info = infoFacadeParis(wx, wz);
-  const graine = info ? info.graine : 0.5;
-  const st = styleDuQuartier(info ? info.quartier : '');
-  const teinte = st.teintes[Math.floor(graine * st.teintes.length) % st.teintes.length];
+// `ville` (v390) : la fiche de `VILLES_HD` dont le morceau relève ; sans elle,
+// ou pour Paris, le registre vient du quartier, comme avant.
+export function facadeHD(buf, face, x, y, z, wx, wy, wz, id, ao, bas = BLOCK.AIR, haut = BLOCK.AIR, get = null, ville = null) {
+  const reg = ville && ville.registre ? STYLES[ville.registre] : null;
+  const info = reg ? null : infoFacadeParis(wx, wz);
+  const graine = info ? info.graine : reg ? tirage(wx, wz, 700) : 0.5;
+  let st = reg || styleDuQuartier(info ? info.quartier : '');
+  let teinte = st.teintes[Math.floor(graine * st.teintes.length) % st.teintes.length];
+  if (reg && reg.voisin) {
+    const propre = DECOR_ITEMS[id - DECOR_START];
+    const item = propre || murVoisin(get, x, y, z, REPERES[face.dir.join(',')].s);
+    if (item) {
+      const m = murDuDecor(item, reg.patine);
+      st = { ...reg, mur: m.tuile, linteau: m.tuile === 'brique' ? reg.linteau : null };
+      teinte = m.teinte;
+    }
+  }
   // Le courant : la coordonnée du monde le long de la face, pour que la
   // texture continue d'un bloc à l'autre.
   const courant = face.dir[0] !== 0 ? (face.dir[0] > 0 ? -wz : wz) : (face.dir[2] > 0 ? wx : -wx);
-  const f = new Face(buf, face.dir, x, y, z, ao, teinte, courant);
+  const f = new Face(buf, face.dir, x, y, z, ao, teinte, courant, reg ? reg.orn : null, reg ? st.mur : null);
   const r = tirage(wx, wz, 811);
   const allumee = vitreAllumee(wx, yBaie(id, wy), wz);
   switch (id) {
