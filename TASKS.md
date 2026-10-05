@@ -1417,7 +1417,18 @@
   ces boîtes. `washington.js` « chaque îlot a sa porte » (déclaré) : vert seul
   des deux côtés. `maj.js`, `carte.js`, `manhattan.js` : les rouges déclarés
   de la v365, identiques.
-- [ ] **HUIT PALAIS SONT ENCORE LE GABARIT `palaisLong` (v369, compté par le
+- [ ] **QUARANTE-CINQ MONUMENTS SONT BÂTIS EN TRAVERS D'UN ANNEAU DE VOITURES
+  (v370, témoin de `plafond.js`, `DETTE_ANNEAUX`).** Les anneaux des villes
+  engendrées se choisissent sur la trame sans regarder les repères ; un
+  monument posé APRÈS pose ses blocs (couches d'auteur 1 à 3) sur des cases que
+  la voiture traverse. Le pire : le Taj Mahal (294 cases), le Colisée (53),
+  Rashtrapati Bhavan (40), le Templo Mayor (36), Tō-ji (33), le palais royal
+  de Madrid (31). Deux remèdes, à mesurer : écarter des candidats d'anneau
+  toute boîte de repère (`anneauxDeVille`, villesmonde.js — mais cela change
+  les circuits, donc la couverture et le partage de la v270, à remesurer ville
+  par ville), ou bâtir dans la partie libre de la boîte (ce que la v370 a fait
+  pour les huit palais). Une dette qui ne mesure plus rien rougit.
+- [x] **HUIT PALAIS SONT ENCORE LE GABARIT `palaisLong` — FAIT en v370** (compté par le
   témoin).** Palais du Dam, Rijksmuseum, château de Prague (sans Saint-Guy),
   Palais royal de Stockholm, Amalienborg, Gyeongbokgung (des toits coréens),
   Casa Rosada, palais Bahia : trois blocs d'épaisseur et une baie sur deux, que

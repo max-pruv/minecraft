@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 375,
+    titre: 'Huit palais ont leur vraie forme',
+    puces: [
+      'Le palais du Dam et le Rijksmuseum',
+      'Le château de Prague, le palais de Stockholm',
+      "Amalienborg et sa place à huit côtés",
+      'La Casa Rosada, Gyeongbokgung, le palais Bahia',
+    ],
+  },
+  {
     v: 374,
     titre: 'Ta langue reste choisie',
     puces: [

@@ -770,6 +770,25 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les huit derniers palais (v370) — une boîte se relève en carte avant qu'on la remplisse
+
+Deux règles.
+
+- **UNE BOÎTE DE REPÈRE N'EST PAS UNE PARCELLE LIBRE.** Les anneaux de
+  voitures des villes engendrées se choisissent sur la trame sans regarder les
+  repères : la carte des huit boîtes (anneaux, eau) a montré que quatre
+  gabarits coupaient déjà un anneau à hauteur de carrosserie, et celui de
+  Stockholm était sur l'eau. Avant d'écrire un bâtisseur, on dessine la boîte
+  (`R` anneau, `~` eau) et l'on bâtit dans ce qui reste ; un témoin de
+  `plafond.js` le garde pour tous les monuments (`DETTE_ANNEAUX` : quarante-cinq
+  conflits d'avant, chiffre par chiffre, que rien ne doit aggraver).
+- **UN PALAIS S'ÉCRIT UN POUR UN, ET « UN POUR UN » SE VÉRIFIE.** Les paliers
+  `[[0, 0], [1, 1], [S + 1, vraie + 1]]` ne rendent l'identité que si la
+  hauteur du ciel de `vraie + 1` tombe dans [S + 1, S + 2) : on prend S = la
+  `cible` que la table donnait, et l'on vérifie sous node que
+  `floor(hauteurEtiree(y)) === y` pour toutes les couches. Sinon une couche se
+  répète et une fenêtre est redessinée (v365).
+
 ## Plus une coupole de gabarit (v369) — une forme fausse ne dépend pas de la hauteur
 
 Trois règles.

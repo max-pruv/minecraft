@@ -736,10 +736,82 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         const g = gabaritDe(m.tour || m.build);
         if (g) par[g].push(`${f.ancre.nom}|${m.nom}`);
       }
-      verifier('aucune coupole de gabarit ne reste dans le monde, quelle que soit sa hauteur',
-        par.dome.length === 0,
+      // ET PLUS UN PALAIS DE GABARIT (v370) : les huit derniers — le Dam, le
+      // Rijksmuseum, le château de Prague, le palais de Stockholm, Amalienborg,
+      // Gyeongbokgung, la Casa Rosada, le palais Bahia — ont leur bâtisseur.
+      // Huit sur `origin/main`, zéro ici.
+      verifier('aucune coupole ni aucun palais de gabarit ne reste dans le monde, quelle que soit sa hauteur',
+        par.dome.length === 0 && par.palaisLong.length === 0,
         `${par.dome.length} coupole(s) de gabarit${par.dome.length ? ' : ' + par.dome.join(' · ') : ''}`
-        + ` · palais de gabarit (dette) : ${par.palaisLong.length}`);
+        + ` · ${par.palaisLong.length} palais de gabarit${par.palaisLong.length ? ' : ' + par.palaisLong.join(' · ') : ''}`);
+    }
+
+    // UN MONUMENT NE SE BÂTIT PAS EN TRAVERS D'UN ANNEAU DE VOITURES (v370).
+    // Les anneaux des villes engendrées sont choisis sur la trame, sans
+    // regarder les repères : relevé à la livraison, quarante-cinq monuments
+    // posent des blocs à hauteur de carrosserie (couches 1 à 3) sur une case
+    // qu'une voiture traverse — le conflit de plan déjà vu à Agra (v362). Les
+    // huit palais neufs se bâtissent dans la partie libre de leur boîte, et
+    // quatre gabarits qui coupaient un anneau (Dam 6, Rijksmuseum 12, Prague
+    // 10, Gyeongbokgung 8 colonnes) n'en coupent plus. Le reste est une dette
+    // DÉCLARÉE, chiffre par chiffre (`TASKS.md`) : un repère qui coupe un
+    // anneau de plus que sa dette, ou un repère neuf qui en coupe un, rougit ;
+    // une dette qui ne mesure plus rien rougit aussi.
+    {
+      const VMa = await import('../src/villesmonde.js');
+      const DETTE_ANNEAUX = {
+        'Rome|Colisée': 53, 'Barcelone|Sagrada Família': 21, 'Barcelone|Colonne de Colom': 2,
+        'Pise|Tour de Pise': 11, 'Pise|Duomo de Pise': 24, 'Agra|Taj Mahal': 294, 'Agra|Mosquée du Taj': 18,
+        "Agra|Fort d'Agra": 6, 'Seattle|Pike Place': 21, 'Madrid|Palais royal': 31, 'Amsterdam|Westerkerk': 1,
+        'Berlin|Berliner Dom': 25, 'Munich|Frauenkirche': 4, 'Vienne|La Hofburg': 17, 'Prague|Saint-Guy': 2,
+        'Prague|Le pont Charles': 2, 'Athènes|Le Parthénon': 3, 'Istanbul|Sainte-Sophie': 14,
+        'Istanbul|La Mosquée bleue': 19, 'Moscou|Le Kremlin': 6, 'Moscou|Le Bolchoï': 4,
+        'Saint-Pétersbourg|Notre-Dame-de-Kazan': 4, 'Stockholm|Storkyrkan': 1, 'Copenhague|Tivoli': 7,
+        'Tokyo|Sensō-ji': 17, 'Tokyo|Le palais impérial': 8, "Kyoto|Le Pavillon d'or": 11, 'Kyoto|Fushimi Inari': 2,
+        'Kyoto|Tō-ji': 33, 'Séoul|La tour de Séoul': 1, 'Hong Kong|La Banque de Chine': 18, 'Dubaï|Burj Khalifa': 9,
+        "Delhi|La porte de l'Inde": 2, 'Delhi|Rashtrapati Bhavan': 40, 'Los Angeles|Walt Disney Hall': 7,
+        'Las Vegas|La High Roller': 1, 'Las Vegas|La demi-tour Eiffel': 4, 'Toronto|Le Rogers Centre': 3,
+        "Toronto|L'ancien hôtel de ville": 1, 'Mexico|Le Templo Mayor': 36, 'La Havane|Le Capitole': 25,
+        'La Havane|Les vieilles américaines': 2, "Buenos Aires|L'Obélisque": 4, 'Buenos Aires|Le Cabildo': 4,
+        'Le Cap|Le château de Bonne-Espérance': 6,
+      };
+      const wa = new W.World();
+      const traces = VMa.tracesCirculation((x, z) => wa.terrainHeight(x, z));
+      const fautes = [], mesure = {};
+      let lus = 0;
+      for (const f of VMa.VILLES_MONDE) {
+        const pres = traces.filter((t) => t.cle === f.cle);
+        if (!pres.length) continue;
+        const cases = new Set();
+        for (const t of pres) for (let i = 0; i < t.pts.length; i++) {
+          const p = t.pts[i], q = t.pts[(i + 1) % t.pts.length];
+          const n = Math.ceil(Math.hypot(q.x - p.x, q.z - p.z) * 2);
+          for (let k = 0; k <= n; k++) {
+            const x = p.x + (q.x - p.x) * k / n, z = p.z + (q.z - p.z) * k / n;
+            for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) cases.add(Math.floor(x + a * 0.9) + ',' + Math.floor(z + b * 0.9));
+          }
+        }
+        for (const m of f.monuments || []) {
+          const lm = W.REPERES.find((r) => r.name === m.nom && W.villeDuRepere(r) === f.ancre.nom);
+          if (!lm) continue;
+          lus++;
+          const vus = new Set();
+          (m.tour || m.build)((x, y, z, id) => {
+            if (!id || y < 1 || y > 3) return;
+            const k = (lm.x + x) + ',' + (lm.z + z);
+            if (cases.has(k)) vus.add(k);
+          });
+          const cle = `${f.ancre.nom}|${m.nom}`;
+          if (vus.size) mesure[cle] = vus.size;
+          if (vus.size > (DETTE_ANNEAUX[cle] || 0)) fautes.push(`${cle} ${vus.size}${DETTE_ANNEAUX[cle] ? ' (dette ' + DETTE_ANNEAUX[cle] + ')' : ''}`);
+        }
+      }
+      const pourRien = Object.keys(DETTE_ANNEAUX).filter((k) => !mesure[k]);
+      verifier('aucun monument ne se bâtit en travers d\'un anneau de voitures au-delà de sa dette déclarée',
+        lus > 100 && fautes.length === 0 && pourRien.length === 0,
+        `${lus} monuments lus, ${Object.keys(mesure).length} en dette`
+        + (fautes.length ? ` — EN TRAVERS : ${fautes.join(' · ')}` : '')
+        + (pourRien.length ? ` — DÉCLARÉS POUR RIEN : ${pourRien.join(' · ')}` : ''));
     }
 
     // PARIS À L'ÉCHELLE DU CIEL : un bloc pour un mètre jusqu'à la corniche,
