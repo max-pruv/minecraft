@@ -4202,6 +4202,20 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // EN ABBA, PARCE QUE LE PREMIER PASSAGE N'EST PAS LE SECOND : sur l'ancien
     // code, deux passages identiques ont rendu 0,43 puis 0,57. L'ordre
     // neuf, l'ancien, l'ancien, le neuf — et l'on compare les MOYENNES.
+    //
+    // ET LE PREMIER PASSAGE DANS PARIS EST À FROID, CE QUE L'ABBA NE RATTRAPE
+    // PAS (v380). Ce témoin rendait 0,02 à 0,07 des deux côtés depuis la v375,
+    // et l'on croyait le gain du cône perdu. La sonde (sonde-cone-banc.cjs, une
+    // page, trois paires) l'a séparé : ordre neuf 0,42 · 0,87 · 0,87, ordre
+    // d'avant 0,65 · 0,63 · 0,67. Le gain est là (0,22) ; c'est le PREMIER
+    // passage — la première arrivée dans Paris, ses convois, ses passants,
+    // ses programmes : 5,3 images par seconde et 80 morceaux contre 11,9 et
+    // 281 — qui l'écrase, et l'ABBA le met toujours sur l'ordre neuf. Un
+    // passage d'échauffement, non compté, le prend à sa place. En scène VIDE
+    // les deux ordres rendent 0,84 : le worker y suit, l'ordre n'a plus rien à
+    // décider — le cône ne vaut que quand le débit manque, ce qui est le cas de
+    // la tablette dans une ville.
+    const chaud = await rouler('regard');
     const n1 = await rouler('cone'), a1 = await rouler('regard');
     const a2 = await rouler('regard'), n2 = await rouler('cone');
     const moyenne = (x, y) => ({ ...x, part: +((x.part + y.part) / 2).toFixed(2),
@@ -4213,7 +4227,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('à soixante blocs par seconde dans Paris, le monde se maille dans le champ de la caméra',
       ordreNeuf.parcouru > 300 && ordreAvant.parcouru > 300 && ordreNeuf.installes > 40 && ordreAvant.installes > 40
         && ecartParts >= 0.13,
-      `écart ${ecartParts} (barre 0,13) · ordre neuf : ${dit(ordreNeuf)} · ordre d'avant : ${dit(ordreAvant)}`);
+      `écart ${ecartParts} (barre 0,13) · ordre neuf : ${dit(ordreNeuf)} · ordre d'avant : ${dit(ordreAvant)} · échauffement ${chaud.part} (${chaud.installes} morceaux, non compté) · passages ${n1.part}/${a1.part}/${a2.part}/${n2.part}`);
 
     // LA FILE SE RECHARGE À L'ARRIVÉE D'UN MORCEAU (v360).
     //
