@@ -20,7 +20,6 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-<<<<<<< HEAD
 ## v355 — Des voitures qui se conduisent pour de vrai
 
 **Pourquoi.** Max : « une grosse refonte de la façon de conduire… comme GTA :
@@ -61,7 +60,9 @@ de l'accélérateur). Au portail, les rouges restants sont des dettes déclarée
 et rejouées seules des deux côtés : `manhattan.js` identique (23 verts, mêmes
 deux rouges, même arrêt), et le gel d'arrivée de `monte.js` (vol du chasseur,
 chemin que la livraison ne touche pas : 1 183–1 283 ms contre 1 050–1 150).
-=======
+
+---
+
 ## v354 — Les passants de Manhattan se promènent
 
 **Pourquoi.** Depuis la v278, les passants des villes marchent le long de leur
@@ -81,7 +82,6 @@ seconde : `origin/main` v351, 0 promeneur sur 10 et 0,54 bloc/s (rouge) ; ici
 11 sur 11 puis 10 sur 10, 0,99 et 1,25 bloc/s, zéro passant sur la chaussée.
 Le témoin du taxi fait désormais le vide des passants autour de lui, comme il
 le faisait des bêtes.
->>>>>>> origin/main
 
 ---
 
