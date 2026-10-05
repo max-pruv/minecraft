@@ -3672,7 +3672,7 @@ export function mobilierVillesMonde(x, z, poser) {
 // croisement de coins (deux anneaux qui se touchent sur vingt blocs sans
 // partager une rue) que le balayage comptait et que la formule ignore.
 //
-// CE QUI SE PARTAGE EST UNE VOIE, PAS UNE RUE (v372). La v211 a posé la barre
+// CE QUI SE PARTAGE EST UNE VOIE, PAS UNE RUE (v374). La v211 a posé la barre
 // quand une rue n'avait qu'UNE file — une voiture de 2,26 blocs pour une
 // chaussée de 2,86 : deux convois sur la même rue roulaient l'un dans l'autre.
 // Depuis la v271 la chaussée fait deux voies et l'on roule à droite : chaque
@@ -3774,13 +3774,13 @@ export const ANNEAUX_EN_PLUS = {
   // 60,5 → 95,3 % : le North Shore, au-delà du port, puis l'ouest.
   sydney: [[1, -6, 4, 2], [-7, -5, 1, 1], [-9, 1, 1, 1]],
   rome: [[-6, 0, 1, 3],       // 88,3 → 94,6 % : le Vatican et Prati
-    // v372 : les anneaux qui passaient dans le Colisée et le forum ne sont
+    // v374 : les anneaux qui passaient dans le Colisée et le forum ne sont
     // plus retenus (93,2 %) ; trois anneaux qui les contournent → 99,7 %
     [2, -4, 3, 2], [3.5, 1, 2.5, 2], [-1.5, -3, 0.5, 3]],
   tokyo: [[-3, 0, 1, 3]],     // 88,7 → 95,7 %
-  // v372 — la couverture que rendaient les anneaux passés DANS un monument,
+  // v374 — la couverture que rendaient les anneaux passés DANS un monument,
   // regagnée par des anneaux qui en font le tour, cherchés sous node par la
-  // même couverture gloutonne (sonde `cherche.mjs`, scratchpad de la v372) et
+  // même couverture gloutonne (sonde `cherche.mjs`, scratchpad de la v374) et
   // passés par la même validation, monument compris :
   agra: [[3.5, -2, 1.5, 3], [-6.5, 0, 0.5, 1]],           // 84,5 → 100 % (le Taj Mahal, le Fort)
   istanbul: [[-3, 1.5, 1, 2.5], [3.5, -0.5, 1.5, 1.5]],   // 90,6 → 99,5 % (Sainte-Sophie)
@@ -3928,7 +3928,7 @@ function anneauxCalcules(f) {
       // L'axe reste ce que porte `forme` : c'est LUI que juge la contrainte
       // de partage (v270), parce que deux convois qui se suivent se suivent
       // sur une RUE, pas sur une trajectoire.
-      // ET LE PLUS PETIT ANNEAU ROULAIT SUR L'AXE (v372). Ce décalage était
+      // ET LE PLUS PETIT ANNEAU ROULAIT SUR L'AXE (v374). Ce décalage était
       // borné par le pas (`Math.max(t.pu, Ru − voie)`) : un anneau d'un pas de
       // demi-côté — le plus fréquent, celui des petites villes — gardait son
       // `Ru` entier et roulait au milieu de la chaussée, à cheval sur les deux
@@ -3998,7 +3998,7 @@ function anneauxCalcules(f) {
         }
       }
     }
-    // PHASE 2 BIS — LES ANNEAUX EN PAS DE TRAME (v372). Les candidats des
+    // PHASE 2 BIS — LES ANNEAUX EN PAS DE TRAME (v374). Les candidats des
     // phases 1 et 2 sont des FRACTIONS du rayon arrondies au pas, centrés sur
     // un nœud et larges d'un nombre PAIR de pas : un anneau d'un seul îlot, ou
     // de trois, n'y figure jamais. Ici on énumère les rectangles de la trame
@@ -4039,7 +4039,7 @@ function anneauxCalcules(f) {
         if (c && !horsChaussee(f, c)) retenir(c);
       }
     }
-    // PHASE 2 TER — LE CONTRESENS (v372). Une ville dont la trame ne tient que
+    // PHASE 2 TER — LE CONTRESENS (v374). Une ville dont la trame ne tient que
     // trois rues de chaque côté du centre — un rayon de moins de 2,3 pas, cent
     // quatorze villes dont quarante-sept superîlots — n'a qu'UN cycle qui évite
     // la place centrale : son grand anneau. Ce n'est pas la contrainte de
@@ -4076,7 +4076,7 @@ function anneauxCalcules(f) {
   }
 }
 
-// UN ANNEAU ROULE SUR LA CHAUSSÉE, ET CELA SE MESURE SUR SA VOIE (v372). On
+// UN ANNEAU ROULE SUR LA CHAUSSÉE, ET CELA SE MESURE SUR SA VOIE (v374). On
 // parcourt la voie — l'axe décalé d'une demi-chaussée du côté où l'anneau
 // roule — bloc par bloc, et l'on compte ce qui n'est ni bitume, ni marquage,
 // ni eau (un tablier se juge à part). Le trottoir du boulevard central est
@@ -4113,7 +4113,7 @@ function horsChaussee(f, c) {
   return trottoir > 0.08 * n0 ? trottoir : 0;
 }
 
-// UN ANNEAU NE TRAVERSE PAS UN MONUMENT (v372). La dette d'Agra (v362) — le
+// UN ANNEAU NE TRAVERSE PAS UN MONUMENT (v374). La dette d'Agra (v362) — le
 // Taj Mahal et le Fort bâtis SUR deux tabliers d'anneaux — n'était que le cas
 // visible d'un défaut plus large : mesuré sur `origin/main`, QUARANTE-TROIS
 // anneaux de vingt-huit villes passaient dans un monument à hauteur de
@@ -4251,11 +4251,11 @@ function pontDeVille(f, u, v) {
   const P = u * co - v * si, Q = u * si + v * co;
   for (const q of a.ponts) {
     const le = q.axe === 0 ? P : Q, tr = q.axe === 0 ? Q : P;
-    // UN BLOC DE PLUS AU BOUT, POUR LA COLONNE ARRONDIE (v372). Sur une trame
+    // UN BLOC DE PLUS AU BOUT, POUR LA COLONNE ARRONDIE (v374). Sur une trame
     // tournée, la colonne qui porte le bout de l'axe n'a pas l'abscisse de
     // l'axe : elle tombait juste au-delà de `a1`, restait de l'eau, et la
     // voiture trouvait un trou au bout du pont (Berlin en v362, Munich en
-    // v372). Ce test n'est lu que sur une colonne d'eau : sur la rive, le sol
+    // v374). Ce test n'est lu que sur une colonne d'eau : sur la rive, le sol
     // de la ville passe avant, et rien ne change.
     if (le < q.a0 - 1 || le > q.a1 + 1) continue;
     const d = Math.abs(tr - q.b);
@@ -4291,7 +4291,7 @@ export function tracesCirculation(solDe) {
   return traces;
 }
 
-// LES ANNEAUX SE CALCULENT QUAND L'ENFANT APPROCHE, PAS À L'OUVERTURE (v372).
+// LES ANNEAUX SE CALCULENT QUAND L'ENFANT APPROCHE, PAS À L'OUVERTURE (v374).
 // Choisir les anneaux des deux cent soixante-deux villes coûtait deux cent
 // trente millisecondes ; avec les anneaux en pas de trame, le contresens et la
 // lecture des monuments, près de sept cents — et le jeu attend ce calcul

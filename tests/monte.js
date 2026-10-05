@@ -6499,6 +6499,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     const embLieu = await emb.evaluate(async () => {
       const g = window.__game, w = g.world;
       const { WATER_LEVEL } = await import('./src/world.js');
+      const VM = await import('./src/villesmonde.js');
       let lieu = null;
       for (let k = 0; k < 20000 && !lieu; k++) {
         const x = -600 + ((k % 140) - 70) * 29, z = -520 + (Math.floor(k / 140) - 70) * 29;
@@ -6514,8 +6515,15 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         // refusés pour « circulation » (v366)
         let loin = true;
         for (let dx = -60; dx <= 60 && loin; dx += 6) for (let dz = -60; dz <= 60 && loin; dz += 6) if (w.corridorEn && w.corridorEn(x + dx, z + dz)) loin = false;
-        // et des villes, dont les voitures roulent jusqu'au bord du disque
-        for (let a = 0; a < 16 && loin; a++) for (const r of [60, 120]) if (w.cityAt && w.cityAt(x + Math.cos(a * Math.PI / 8) * r, z + Math.sin(a * Math.PI / 8) * r)) loin = false;
+        // et des villes, dont les voitures roulent jusqu'au bord du disque —
+        // TOUTES les villes : `cityAt` ne connaît que les villes bâties à la
+        // main, et la « prairie » d'avant était DANS Manchester (46 blocs de
+        // son centre, rayon 65) ; un circuit de la ville passait à 3,5 blocs
+        // de la voiture, d'où le refus « circulation » côté passager, juste
+        // (sonde de la v373, `refus` + places de la rue au moment du refus)
+        const enVille = (u, v) => (w.cityAt && w.cityAt(u, v)) || VM.dansVilleMonde(u, v);
+        if (enVille(x, z)) continue;
+        for (let a = 0; a < 16 && loin; a++) for (const r of [30, 60, 120]) if (enVille(x + Math.cos(a * Math.PI / 8) * r, z + Math.sin(a * Math.PI / 8) * r)) loin = false;
         if (loin) lieu = { x: x + 0.5, z: z + 0.5, h };
       }
       return lieu;
@@ -6724,6 +6732,123 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     });
     verifier('une voiture déjà froissée ne prend pas de portière, et garde son froissé',
       !embAbimee.err && !embAbimee.equipee && embAbimee.gardee, JSON.stringify(embAbimee));
+    // 10. LES BORDS DE LA PORTIÈRE SE COUPENT AU PLAN (v372). La Lucid
+    // Gravity a de grands triangles à cheval sur les bords du volume : la
+    // v366 les emportait entiers (21 % de la surface, portière de 1,49 bloc
+    // pour un volume de 1,25 — les dents de scie). Le témoin mesure la
+    // portière SANS lire le plan : l'étendue en z des sommets de ses
+    // maillages, dans le repère de la voiture, contre le volume ; puis la
+    // surface totale de la caisse et des portières contre celle du
+    // prototype (rien de perdu, rien de doublé). Et la voiture équipée se
+    // froisse quand même (dégâts, v343) : la portière reste sur son pivot.
+    const embBords = await emb.evaluate(async () => {
+      const THREE = await import('three');
+      const g = window.__game;
+      let P, V;
+      try { P = await import('./src/portieres.js'); V = await import('./src/vehicules.js'); } catch { return { err: 'pas de portières' }; }
+      const b = g.animalManager.invoquer('voiture', g.player.pos.x - 12, g.player.pos.z + 12, false, { flotte: 'lucid-gravity.glb' });
+      for (let i = 0; i < 80 && !b.mesh.userData.modele; i++) await new Promise((r) => setTimeout(r, 100));
+      if (!b.mesh.userData.modele) return { err: 'modèle absent' };
+      const eq = P.equiperPortieres(b.mesh);
+      if (!eq) return { err: 'pas équipée', refus: P.refus.get('lucid-gravity.glb') || null };
+      const plan = eq.plan;
+      b.mesh.updateMatrixWorld(true);
+      const inv = new THREE.Matrix4().copy(b.mesh.matrixWorld).invert();
+      const v = new THREE.Vector3(), w = new THREE.Vector3(), u = new THREE.Vector3();
+      const M = new THREE.Matrix4();
+      const roue = (o, racine) => { for (let q = o; q && q !== racine; q = q.parent) if (/^Wheel_/i.test(q.name || '')) return true; return false; };
+      const aire = (racine, filtre) => {
+        let s = 0;
+        racine.updateMatrixWorld(true);
+        const invR = new THREE.Matrix4().copy(racine.matrixWorld).invert();
+        racine.traverse((o) => {
+          if (!o.isMesh || roue(o, racine) || !filtre(o)) return;
+          M.multiplyMatrices(invR, o.matrixWorld);
+          const pos = o.geometry.attributes.position, ix = o.geometry.index;
+          const n = o.geometry.userData.endroit != null ? o.geometry.userData.endroit : ix ? ix.count : pos.count;   // le revers (v373) n'est pas de la surface en plus
+          for (let i = 0; i + 2 < n; i += 3) {
+            v.fromBufferAttribute(pos, ix ? ix.getX(i) : i).applyMatrix4(M);
+            w.fromBufferAttribute(pos, ix ? ix.getX(i + 1) : i + 1).applyMatrix4(M).sub(v);
+            u.fromBufferAttribute(pos, ix ? ix.getX(i + 2) : i + 2).applyMatrix4(M).sub(v);
+            s += w.cross(u).length() / 2;
+          }
+        });
+        return s;
+      };
+      let zMin = Infinity, zMax = -Infinity;
+      for (const c of ['-1', '1']) eq[c].traverse((o) => {
+        if (!o.isMesh) return;
+        M.multiplyMatrices(inv, o.matrixWorld);
+        const pos = o.geometry.attributes.position, ix = o.geometry.index;
+        const n = ix ? ix.count : pos.count;
+        for (let i = 0; i < n; i++) { v.fromBufferAttribute(pos, ix ? ix.getX(i) : i).applyMatrix4(M); zMin = Math.min(zMin, v.z); zMax = Math.max(zMax, v.z); }
+      });
+      const proto = await V.chargerVoitureFlotte(V.FLOTTE.find((f) => f.fichier === 'lucid-gravity.glb'));
+      const aProto = aire(proto, (o) => !(o.userData && o.userData.arms));
+      const aVoiture = aire(b.mesh, (o) => !(o.userData && o.userData.arms) && !o.userData.effetDegats);
+      const debord = Math.max(0, plan.z0 - zMin) + Math.max(0, zMax - plan.z1);
+      // et le choc sur le flanc gauche, après
+      let froisse = null;
+      if (g.fun.degats && g.fun.degats.choc) {
+        g.fun.degats.choc(b.mesh, { force: 1, lx: -1.1, lz: -0.5 }, true);
+        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+        let surPivot = 0; eq['-1'].traverse((o) => { if (o.isMesh) surPivot++; });
+        froisse = { surPivot, etat: g.fun.degats.etat(b.mesh) ? +g.fun.degats.etat(b.mesh).sante.toFixed(2) : null };
+      }
+      g.animalManager.scene.remove(b.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(b), 1);
+      return { volume: [+plan.z0.toFixed(3), +plan.z1.toFixed(3)], portiere: [+zMin.toFixed(3), +zMax.toFixed(3)], debord: +debord.toFixed(3),
+        aire: [+aProto.toFixed(2), +aVoiture.toFixed(2)], froisse };
+    });
+    verifier('les bords de la portière sont coupés au plan du volume, rien de perdu, et elle se froisse quand même',
+      !embBords.err && embBords.debord < 0.02 && Math.abs(embBords.aire[1] - embBords.aire[0]) < 0.005 * embBords.aire[0]
+        && (!embBords.froisse || embBords.froisse.surPivot > 0),
+      JSON.stringify(embBords));
+    // 11. LE REVERS D'UNE PORTIÈRE OUVERTE SE VOIT (v373). Aucun modèle de
+    // la flotte n'a meublé l'intérieur de sa portière : vue de derrière —
+    // l'enfant qui arrive par l'arrière — la face simple était culée, et l'on
+    // voyait au travers. Des rayons (la face culée ne les arrête pas : le
+    // Raycaster lit `side` comme la carte graphique) visent la portière
+    // ouverte de face, puis de derrière ; il en faut autant d'un côté que de
+    // l'autre. Et la portière garde UN maillage par matériau : le revers est
+    // dans la même géométrie, pas un appel de dessin de plus.
+    const embRevers = await emb.evaluate(async () => {
+      const THREE = await import('three');
+      const g = window.__game;
+      let P;
+      try { P = await import('./src/portieres.js'); } catch { return { err: 'pas de portières' }; }
+      const b = g.animalManager.invoquer('voiture', g.player.pos.x + 14, g.player.pos.z - 12, false, { flotte: 'amg-gt-black-series.glb' });
+      for (let i = 0; i < 80 && !b.mesh.userData.modele; i++) await new Promise((r) => setTimeout(r, 100));
+      const eq = b.mesh.userData.modele ? P.equiperPortieres(b.mesh) : null;
+      if (!eq) return { err: 'pas équipée' };
+      P.ouvrir(eq['-1'], 1);
+      b.mesh.updateMatrixWorld(true);
+      const p = eq['-1'], plan = eq.plan, L = p.userData.longueur;
+      const portes = [], tout = [];
+      p.traverse((o) => { if (o.isMesh) portes.push(o); });
+      b.mesh.traverse((o) => { if (o.isMesh) tout.push(o); });
+      const rc = new THREE.Raycaster(); rc.layers.enableAll();
+      const viser = (oeilLocal) => {
+        const oeil = oeilLocal.clone().applyMatrix4(b.mesh.matrixWorld);
+        let n = 0;
+        for (let k = 0; k < 6; k++) for (let j = 0; j < 4; j++) {
+          const cible = new THREE.Vector3(-0.05, plan.y0 + (plan.y1 - plan.y0) * (j + 0.5) / 4, L * (k + 0.5) / 6).applyMatrix4(p.matrixWorld);
+          const d = cible.clone().sub(oeil); const dist = d.length(); d.normalize();
+          rc.set(oeil, d); rc.far = dist + 1;
+          const h = rc.intersectObjects(tout, false);
+          if (h.length && portes.includes(h[0].object)) n++;
+        }
+        return n;
+      };
+      const face = viser(new THREE.Vector3(-plan.demiLarg - 2.5, 0.9, plan.z0 - 0.8));
+      const dos = viser(new THREE.Vector3(-plan.demiLarg + 0.2, 0.9, plan.z1 + 1.2));
+      // autant de maillages de portière que de maillages découpés : le revers n'en ajoute aucun
+      const attendus = plan.geos.filter((x) => x && x['-1']).length;
+      g.animalManager.scene.remove(b.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(b), 1);
+      return { face, dos, maillages: portes.length, attendus };
+    });
+    verifier('une portière ouverte se voit aussi de derrière, sans un appel de dessin de plus',
+      !embRevers.err && embRevers.face > 4 && embRevers.dos >= embRevers.face / 2 && embRevers.maillages === embRevers.attendus,
+      JSON.stringify(embRevers));
     verifier('aucune erreur JavaScript pendant l\'embarquement', emb.erreurs.length === 0, JSON.stringify(emb.erreurs));
     await emb.close();
   } finally {

@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## vNNN — Plusieurs circuits dans chaque ville, et les deux sens
+## v374 — Plusieurs circuits dans chaque ville, et les deux sens
 
 **Pourquoi.** Dans 147 des 262 villes engendrées, les voitures ne faisaient
 qu'UN tour, toujours dans le même sens — dont 48 villes à tours (Houston,
@@ -53,6 +53,68 @@ couverture ni sa voiture en vue depuis le centre (sonde ville par ville), le
 partage dans le même sens reste sous vingt blocs (14,8). L'empreinte des 490
 morceaux change à Rome et à Tokyo seulement, et chaque colonne différente est
 sur un tablier d'avant ou d'après.
+
+## v373 — Une portière ouverte se voit de derrière
+
+**Pourquoi.** Aucun des cinquante modèles de la flotte n'a meublé l'intérieur
+de sa portière : la carrosserie est une peau à une seule face, et la face
+arrière d'un triangle n'est pas dessinée. Quand l'enfant arrive par l'arrière
+de la voiture — le chemin le plus fréquent —, la portière ouverte devant lui
+était invisible : on voyait au travers. Mesuré par la sonde du revers : de face,
+une portière ouverte arrête 10 à 20 rayons sur 24 ; de derrière, ZÉRO, sur les
+cinquante modèles.
+
+**Ce que ça change.** La portière a désormais un revers, de la couleur de la
+carrosserie, sur tous les modèles qui ont une portière animée. Elle se voit
+pendant toute la séquence, de quelque côté qu'on arrive.
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js` : des rayons visent la
+portière ouverte de face, puis de derrière, et il en faut autant d'un côté que
+de l'autre (10 et 10 ici, 10 et 0 sur `origin/main`) ; et la portière garde
+autant de maillages qu'avant — le revers est DANS la même géométrie, pas un
+appel de dessin de plus. Le témoin des programmes de l'embarquement reste vert :
+aucun programme ne naît, parce que le revers n'est pas un `DoubleSide` (qui
+changerait la clé de programme, v246) mais une copie des sommets, normales
+retournées et triangles à l'envers.
+
+**Et un mystère de la v366 s'éclaire.** Le témoin de la descente refusait
+parfois la sortie côté passager pour « circulation », en pleine prairie. Une
+sonde a relevé les voitures de la rue au moment du refus : la « prairie » était
+DANS Manchester, et un vrai circuit de la ville passait à 3,5 blocs. Le refus
+était juste, c'est le témoin qui choisissait mal son terrain : il cherche
+désormais hors de toute ville, y compris des villes engendrées que `cityAt` ne
+connaît pas. Sur le nouveau site : dix descentes, zéro refus.
+
+---
+
+## v372 — Des portières bien découpées
+
+**Pourquoi.** Les portières de la v366 étaient fabriquées dans la
+carrosserie en prenant chaque triangle par son centre : un grand triangle à
+cheval sur le bord du volume partait ENTIER avec la portière, et le bord
+avant ou arrière de la porte était en dents de scie. Mesuré par la sonde des
+portières : 21 % de la surface de la portière à cheval sur un bord sur la
+Lucid Gravity, 36 à 38 % sur les trois taxis — et sur la Lucid, une portière
+de 1,49 bloc de long pour un volume de 1,25.
+
+**Ce que ça change.** Le bord de chaque portière est droit sur les
+cinquante-cinq modèles : les triangles qui chevauchent un bord du volume
+(avant, arrière, bas de caisse, haut de vitre) sont COUPÉS au plan du bord, la
+part du dedans part avec la portière, le reste reste sur la caisse. Rien ne
+change de couleur ni de matière, et aucun programme graphique ne naît. Les
+taxis ont désormais des bords nets eux aussi, mais restent sans portière
+animée : derrière leur portière il n'y a rien (aucun des vingt-quatre rayons
+tirés au travers de l'ouverture ne touche un habitacle).
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js`, qui mesure la portière
+de la Lucid SANS lire le plan — l'étendue de ses sommets contre le volume
+(débord 0,24 bloc sur `origin/main`, 0 ici), la surface de la caisse et des
+portières contre celle du prototype (66,98 des deux côtés : rien de perdu,
+rien de doublé), puis un choc sur le flanc équipé (la portière reste sur son
+pivot, la voiture à 70 % de santé). Le coût du plan, une fois par modèle, se
+remesure : médiane 5 ms (4 avant), 15 ms sur la Lucid (13 avant), 21 ms au
+pire hors taxis (28 avant) — chaque sommet ne passe plus qu'une fois dans le
+repère de la voiture, et la recopie des attributs se fait d'un geste.
 
 ## v371 — Les passants traversent au feu
 

@@ -15,6 +15,22 @@ export const NOUVEAUTES = [
     ],
   },
   {
+    v: 373,
+    titre: 'La portière se voit de dos',
+    puces: [
+      'La porte ouverte a son intérieur',
+      'Elle se voit de tous les côtés',
+    ],
+  },
+  {
+    v: 372,
+    titre: 'Des portières bien découpées',
+    puces: [
+      'Le bord de la porte est droit',
+      'Plus de dents de scie sur la carrosserie',
+    ],
+  },
+  {
     v: 371,
     titre: 'On traverse au feu',
     puces: [

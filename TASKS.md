@@ -136,24 +136,24 @@
   niveau de la rue déblaierait douze blocs), ouest le Potomac dans la boîte ;
   la base d'Andrews (102, 281) ferme le sud-est.
 - [x] **DEUX PONTS DE VILLE À REPRENDRE, VUS PAR LE TÉMOIN ÉLARGI (v362).**
-  Réglés par le PLAN en v372 : à Agra c'était l'anneau qui passait dans le Taj
+  Réglés par le PLAN en v374 : à Agra c'était l'anneau qui passait dans le Taj
   Mahal et le Fort (un anneau ne traverse plus un monument), à Berlin l'anneau
   au tablier trop court n'est plus retenu. Le témoin lit désormais TOUTES les
   villes à pont (56) : il reste deux culées qui mordent dans un parc ou une
   colline, Séoul (2 pas, le rocher de Namsan) et Chicago (1 pas, un tronc près
   du Bean) — anneaux d'avant, mêmes valeurs sur `origin/main`, déclarées dans
   `DETTE_PONTS` et rattachées à la dette ci-dessous.
-- [ ] **LES ANNEAUX D'AVANT ROULENT PARFOIS HORS DE LA CHAUSSÉE (mesuré v372).**
+- [ ] **LES ANNEAUX D'AVANT ROULENT PARFOIS HORS DE LA CHAUSSÉE (mesuré v374).**
   Sur `origin/main`, 190 anneaux de villes engendrées sur 445 ont au moins un
   pas de voie qui n'est pas de la chaussée : places centrales (et leur
   fontaine — les grands anneaux des villes à tours passent par le nœud
   central : Seattle, Tokyo, Shanghai, Singapour…), parcs, plages (Las Vegas 279
-  pas de sable, Rio 249), collines. La v372 l'exige des anneaux NEUFS
+  pas de sable, Rio 249), collines. La v374 l'exige des anneaux NEUFS
   (`horsChaussee`) ; l'appliquer aux phases 1 et 2 est mesuré : 13 villes
   n'auraient plus AUCUN anneau et 26 perdraient de la couverture. Le remède
   est un tracé qui contourne (comme `contournerRonds` pour les places de
   Paris), pas un filtre.
-- [ ] **ONZE VILLES ENGENDRÉES N'ONT QU'UN CIRCUIT (v372), ET C'EST LA
+- [ ] **ONZE VILLES ENGENDRÉES N'ONT QU'UN CIRCUIT (v374), ET C'EST LA
   GÉOMÉTRIE.** Newcastle, Cardiff, Tallinn, Bergen, Reykjavik, Aarhus,
   Kuala Lumpur, Melbourne, San Diego, San José, Guayaquil. Leur seul anneau
   passe sur une rue que son contresens ne peut pas reprendre sans sortir de
@@ -716,7 +716,7 @@
   boulevard central dans 47 grandes villes), SAUF les médinas : la section
   `ruelle` du kit (3 m, sans trottoir) leur ôterait tous leurs réverbères —
   décision de Max. Prix déclaré de la v307 : 602 → 440 anneaux, 158 974 →
-  127 734 blocs de rue portant un convoi — RENDU en v372 : candidats en pas de
+  127 734 blocs de rue portant un convoi — RENDU en v374 : candidats en pas de
   trame (côtés impairs), contresens et anneaux de quartier, 445 → 809
   anneaux, 129 373 → 200 322 blocs de voie portant un convoi. (4) Une colonne protégée de l'ancienne ville
   peut se trouver au milieu d'une rue neuve : les circuits de voitures,
@@ -2298,7 +2298,7 @@
   bornés, la durée entrant dans le message (v270).
 
 - [x] **LE SUPERÎLOT COÛTE UN CIRCUIT À QUARANTE-SIX VILLES (v282).** Fait en
-  v372, mais pas par la piste déclarée : la contrainte en fraction du
+  v374, mais pas par la piste déclarée : la contrainte en fraction du
   périmètre laisserait deux convois se SUIVRE. Ce qui a changé depuis la v211,
   c'est la chaussée (deux voies, v271) : le partage se compte désormais par
   VOIE, et deux anneaux de part et d'autre d'une rue s'y croisent. Un superîlot
@@ -3020,15 +3020,42 @@ l'embarquement a eu lieu, pas par une hypothèse.
   (`cote: 1`, déjà fabriquée) : la faire entrer par là est l'étape suivante, à
   condition que l'ami — sur SA tablette — voie aussi la portière s'ouvrir, ce
   qui demande un message réseau (`net.js`, hors zone).
-- **Les bords de la découpe sont en dents de scie** là où un triangle chevauche
-  le bord du volume (mesuré : 0 sur la plupart des modèles, 21 % de la surface
-  sur la Lucid Gravity, 36-38 % sur les taxis, qui s'en passent). Remède
-  possible : couper les triangles au plan du bord (une passe de découpe), pas
-  agrandir le volume.
-- **Une portière ouverte vue de dos est invisible** sur les modèles qui n'ont
-  pas meublé son revers (faces simples). `DoubleSide` changerait la clé de
-  programme (v246) : il faudrait le chauffer (`signatures.js`) avant de le
-  livrer.
+- [ ] **LE PORTAIL DE LA v372 (bords des portières), DOUBLE MESURE FAITE.**
+  `degats.js` vert. Au portail, 17 rouges dans `monte.js` et `maj.js` : il a
+  tourné pendant que je faisais tourner une dizaine de sondes de navigateur
+  sur la même machine — ma faute, et la leçon de la v220 (deux pages en même
+  temps font tomber la cadence de moitié). Rejouée SEULE des deux côtés,
+  `monte.js` rend quatre rouges de chaque côté : passants de Rome sur la
+  chaussée, téléportation qui compile, écran figé à l'arrivée — identiques ;
+  et en plus le réverbère (`parcouru 0`, sur la branche) contre le trou en
+  vol (sur `origin/main`), deux intermittences déjà vues des deux côtés.
+  `reseau.js` — « la même circulation » (écart médian 43 blocs) : famille
+  déclarée plus bas ; preuve structurelle, le témoin ne passe ni par
+  `portieres.js` (atteint seulement sous `embarq: 1`) ni par `nouveautes.js`.
+  `maj.js` rejouée seule : « vraiment là » rouge des deux côtés (personnages
+  en retard), « ne floute rien » rouge sur `origin/main` seul — la famille de
+  la préparation, déclarée plus bas.
+  Après rebase sur la v369, portail complet relancé seul : `degats.js`,
+  `maj.js`, `reseau.js` verts ; `monte.js` rend les quatre rouges que
+  `origin/main` rendait rejouée seule (passants de Rome, téléportation qui
+  compile, trou en vol, écran figé à l'arrivée) — le témoin des bords vert.
+  Puis v370 et v371 sont parties pendant le portail : rebasée sur la v371
+  (aucun fichier de code en commun), fumée verte et témoin des bords vert,
+  publiée en v372.
+- [x] **Les bords de la découpe** — FAIT en v372 : coupés au plan (débord 0
+  sur les 55 modèles). Les taxis gardent `fabrique` → pas de portière : bords
+  nets, mais 0/24 rayons touchent un habitacle derrière l'ouverture.
+- [ ] **LE PORTAIL DE LA v373 (revers des portières).** `degats.js` vert ;
+  les témoins de la livraison verts (revers 10/10, bords, descente en un
+  essai sur le nouveau terrain). Rouges, tous de familles déjà déclarées et
+  mesurées des deux côtés au portail de la v372 : `maj.js` « vraiment là »,
+  `monte.js` téléportation qui compile, trou en vol, écran figé ; et
+  l'atterrissage avion (« descend train sorti ») — preuve structurelle, les
+  avions ne passent ni par `portieres.js` ni par la séquence.
+- [x] **Une portière ouverte vue de dos** — FAIT en v373 : un revers fabriqué
+  en géométrie (copie des sommets, normales retournées), pas un `DoubleSide`.
+  De derrière : 0/24 rayons avant, autant que de face après (10 et 10 sur
+  l'AMG). Aucun programme neuf, aucun appel de dessin de plus.
 - **La séquence ne se juge qu'au banc.** Durées (1,1 s de marche au plus, 2,4 s
   en tout) et caméra de trois quarts arrière : à confirmer sur l'iPad.
 - **Les avions** gardent leur montée instantanée (on ne marche pas jusqu'au
@@ -3088,6 +3115,13 @@ l'embarquement a eu lieu, pas par une hypothèse.
   juste, témoin trop étroit (il n'acceptait que les flancs) : il accepte
   désormais toute place hors de l'emprise et publie les refus. À creuser : ce
   qui rend « circulation » en pleine prairie à soixante blocs de toute route.
+  **RÉSOLU (v373)** : la « prairie » était DANS Manchester (46 blocs du
+  centre, rayon 65). La garde du témoin lisait `cityAt`, qui ne connaît que
+  les villes bâties à la main ; un vrai circuit de la ville (`voiture|4|-1983,
+  -2535`, 270 blocs) passait à 3,5 blocs de la voiture — refus juste. Le
+  « mur » côté conducteur était un arbre de ville. Le témoin cherche
+  désormais hors de TOUTE ville (`dansVilleMonde` aussi) : sur le nouveau
+  site, dix descentes, zéro refus.
 - [ ] **LE PORTAIL DE LA v366 (embarquement), DOUBLE MESURE FAITE.** Deux
   portails complets (le second après rebase sur la v339). Les huit témoins de
   l'embarquement verts aux deux. Rouges, tous rejoués SEULS des deux côtés :

@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Les circuits des villes engendrées (vNNN) — ce qui se partage est une voie, pas une rue
+## Les circuits des villes engendrées (v374) — ce qui se partage est une voie, pas une rue
 
 « Lance sur toutes les villes. » Mesuré sur `origin/main` : 147 des 262 villes
 engendrées n'avaient qu'UN circuit (48 superîlots, v282), 43 anneaux de 28
@@ -906,6 +906,40 @@ porte qui s'ouvre ». `src/embarquement.js` (la séquence) et `src/portieres.js`
   SOUS L'EAU, sans importance pour un mur, rédhibitoire pour une descente qui
   refuse l'eau — la page d'embarquement cherche une prairie sèche et plate.
 
+**Les bords se coupent au plan (v372).** Un triangle à cheval sur un bord du
+volume est COUPÉ au plan du bord (z0, z1, y0, y1), jamais emporté par son
+centre — c'était 21 % de la surface sur la Lucid, et la portière débordait de
+0,24 bloc. Trois règles. **Les sommets neufs sont des mélanges barycentriques
+de TOUS les attributs** (position, normale, UV, couleur), recopiés BRUTS dans
+leur type d'origine (un modèle quantifié reste quantifié) : rien ne change de
+programme. **Les attributs d'un maillage coupé se recopient, agrandis** —
+jamais ceux du prototype ; un maillage sans coupe garde les attributs partagés.
+**Un plan de découpe se mesure en coût** : chaque sommet passe UNE fois dans
+le repère de la voiture (un tableau à plat), un triangle tout entier d'un côté
+d'un plan est rejeté par six comparaisons — sans cela le plan passait de 4 à
+135 ms. Un bord net ne suffit pas à rendre une portière : les taxis l'ont, et
+restent refusés parce que derrière il n'y a rien (0/24 rayons).
+
+**Le revers d'une portière se fabrique (v373).** Aucun modèle n'a meublé
+l'intérieur de sa portière : de derrière, la face simple était culée (0 rayon
+sur 24, sur les cinquante modèles). La portière reçoit une copie compacte de
+ses sommets puis une seconde, normales retournées, triangles à l'envers, DANS
+la même géométrie : même matériau, même programme, même appel de dessin.
+`userData.endroit` dit où finit l'endroit dans l'index (un témoin qui mesure
+une surface ne compte pas le revers). Un `DoubleSide` aurait changé la clé de
+programme (v246). **Et une sonde de rayons voit les couches** : la
+carrosserie vit sur la couche 2 (v245), un `Raycaster` neuf ne voit que la
+couche 0 — ma première sonde rendait « on traverse » de face comme de dos, et
+c'est son CONTRÔLE (la même cible vue de face, 0 sur 24) qui l'a dit.
+
+**Un terrain de témoin « loin des villes » se juge sur TOUTES les villes
+(v373).** `cityAt` ne connaît que les villes bâties à la main ; la « prairie »
+du témoin de la descente était dans Manchester, et le refus « circulation »
+qu'on cherchait depuis la v366 était un vrai circuit de la ville. On lit aussi
+`dansVilleMonde`. **Et une sonde de navigateur ne tourne pas pendant un
+portail** : le portail de la v372 en a rendu dix-sept rouges de cadence, que
+la suite rejouée seule ne reproduisait pas.
+
 **Et une résolution de conflit a avalé deux modules d'une autre session.**
 Rebasée sur la v344, ma résolution de `sw.js` remplaçait le bloc en conflit
 par la seule ligne `CACHE_VERSION` — or le bloc contenait aussi les lignes
@@ -916,9 +950,7 @@ de conflit se relit dans `git diff origin/main`, jamais seulement dans le
 fichier** : le diff montre ce qu'on retire à l'autre côté.
 
 Ce qui reste, déclaré dans `TASKS.md` : le passager d'un ami monte encore sans
-séquence ; les bords de la découpe sont en dents de scie sur les modèles à
-grands triangles ; la vue de la séquence ne se juge que sur le banc, pas sur
-l'iPad.
+séquence ; la vue de la séquence ne se juge que sur le banc, pas sur l'iPad.
 
 ## Les coupoles ont leur édifice (v365) — un gabarit partagé se cherche dans toutes les villes, et le ciel se lit sur les modèles
 
