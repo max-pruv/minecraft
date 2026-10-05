@@ -20,6 +20,46 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v370 — La grille de Washington à la règle du kit
+
+**Pourquoi.** La dernière des cinq villes bâties à la main restée hors règle
+(dette v271, v307). Ses diagonales avaient déjà la chaussée d'une collectrice ;
+sa GRILLE, non : deux colonnes de chaussée pour une voiture de 2,26 blocs, un
+seul trottoir, une rue tous les douze blocs. Les rues de liaison où roulaient
+les dix-neuf circuits faisaient deux colonnes de large.
+
+**Ce que ça change.** Une rue de la grille est une rue locale du kit
+(`sectionDeRue('locale')`) : trois colonnes de chaussée, deux trottoirs de
+deux. Le pas suit dans le rapport des emprises (12 × 7 / 3 = 28) et l'îlot se
+recompose au lieu de grandir : quatre maisons de neuf blocs — la même maison,
+son escalier, ses deux portes — autour d'une ruelle de trois, une allée de
+gravier entre deux jardins de derrière, comme en a tout îlot de Washington. Les
+rues de liaison passent sur les axes neufs, à la section du kit, sous le nom
+de la vraie rue la plus proche (D, H, M Street, la 3e, la 12e, la 20e, la
+23e…), et sept s'ajoutent à l'est (Capitol Hill, NoMa) et au nord-ouest.
+Quatorze circuits cherchés sous node remplacent les dix-neuf d'avant : la
+part de la ville à portée d'une voiture passe de 50,8 à 56,2 %, la longueur
+roulée de 1 881 à 2 026 blocs. La ville d'avant reste sous ce qu'un enfant a
+bâti (`washington-v367.js`, `DATE_RUES_WASHINGTON`). Le prix : la part de lots
+du disque passe de 14,2 à 11,2 %. Et l'I-95 (v367), dont l'avenue d'entrée
+finissait sur une rue de l'ancienne grille, arrive par une bretelle sur la
+rue v = 84. Le Triangle fédéral descend de 13–16 à 12–14 blocs : sa
+ligne de corniche est celle des musées du Mall, et le Musée afro-américain
+n'est plus plus bas que ses voisins (le portail l'a vu, la médiane de ses
+quatre îlots voisins était passée de 10 à 14 avec la trame neuve).
+
+**Ce qui le prouve.** Deux témoins neufs. `carteMonde.js` coupe la grille des
+quartiers bâtis en travers et mesure chaque rue : 46 rues, chaussée médiane
+3, trottoir 2, lots 11,2 % — rouge sur `origin/main` (11 rues trouvées,
+trottoir 1). `plafond.js` joue pour Washington le témoin des villes figées
+(une maison sur une ancienne rue n'est pas enfermée, une cabane garde son
+toit). Le monde d'avant (`v308`) rend la production au bloc près sur
+quatre-vingts morceaux de Washington. Le témoin des maisons de
+`washington.js` demande le coin de chaque maison au module
+(`coinDeMaisonDC`) au lieu d'un pas recopié.
+
+---
+
 ## v369 — Plus une coupole de gabarit dans le monde
 
 **Pourquoi.** La v365 avait donné leur édifice aux coupoles et aux palais de

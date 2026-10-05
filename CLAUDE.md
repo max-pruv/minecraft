@@ -1113,6 +1113,35 @@ Le lot 2 de la dette de la v335 : huit monuments. Trois règles.
   Lille, 23 m pour l'Arche. Ce qu'on n'a pas trouvé (le musée d'Histoire
   américaine, « cinq étages ») se dit approché dans le commentaire.
 
+## La grille de Washington à la règle du kit (v370) — un îlot qui grandit se recompose autour d'une ruelle
+
+La dernière des cinq villes bâties à la main. Trois règles.
+
+- **QUAND LE PAS SUIT LE RAPPORT DES EMPRISES, LE LOT SE RECOMPOSE PAR LA
+  PIÈCE QUI EXISTE DÉJÀ.** 12 × 7 / 3 = 28 : l'îlot passe de neuf à vingt et
+  un blocs. Redessiner la maison pour un lot de vingt et un aurait cassé son
+  escalier, ses portes et le témoin qui y entre ; quatre maisons de neuf
+  autour d'une ruelle de trois (la `ruelle` du kit) gardent la maison au bloc
+  près et donnent à Washington ce qu'ont ses vrais îlots. La trame vit dans
+  une seule fonction (`trameDC`) que lisent le sol, le bâtisseur et l'axe des
+  portes ; un témoin demande le coin d'une maison (`coinDeMaisonDC`), jamais
+  un pas recopié.
+- **UNE VILLE DONT LE BÂTISSEUR PREND LA COTE DU SOL SE BRANCHE À PART.**
+  Washington n'est pas dans la boucle des villes de `world.js` : sa branche
+  choisit `washington-v367.js` ou la ville neuve (`DC_NEUF`) au même critère
+  (`conf.villesAvant`, `colonnesVilleAvant`), et sa ville est une BOÎTE — le
+  cercle de `VILLES_FIGEES` va jusqu'au coin de Georgetown (268), pas au
+  rayon du registre (187). Le témoin des villes figées de `plafond.js` passe
+  la cote du sol au bâtisseur quand il la demande (`bat`).
+- **LES CIRCUITS D'UNE GRILLE QUI BOUGE SE CHERCHENT, ILS NE SE RECOPIENT
+  PAS.** Les dix-neuf circuits roulaient sur des rues de liaison posées au
+  centre des rues de la grille d'avant ; aucune ne survit au pas de 28. Toutes
+  les boucles de trois à six voies du graphe des croisements (dix mille), la
+  tenue de rue, le virage, la contrainte de partage (v211) et la passe de
+  réparation (v216) : quatorze circuits, et la couverture MONTE (50,8 →
+  56,2 %). Une boucle de seize blocs est une impasse déguisée : on écarte ce
+  qui fait moins de quarante blocs.
+
 ## Les rues de Lille à la règle du kit (v368) — un témoin de ville figée cherche une rue que rien ne recouvre
 
 Deux règles.
