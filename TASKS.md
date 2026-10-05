@@ -363,6 +363,33 @@
   - **Les avions ne s'abîment pas** (`pilote` est écarté) : une décision, pas
     un oubli — un atterrissage manqué n'a pas de « choc » dans `player.js`.
 
+- [ ] **AU PORTAIL DE LA v365 (le battement qui relit, le contrat des dégâts
+  éprouvé, les chocs de la rue par la position), CINQ SUITES ROUGES — une à
+  moi, réglée par le bump ; les autres déjà déclarées, double mesure faite.**
+  - `maj.js` « le badge de version ouvre le journal… » : la tête du journal
+    (365) devant la version servie (364) — le bump de `sw.js`, fait à la
+    fusion. « Quand il se libère… fond de carte » : la famille déclarée.
+  - `visio.js` « caméra éteinte, le jeu reprend sa voix normale » : rejouée
+    SEULE, VERTE sur la branche (26/26) et ROUGE sur `origin/main` (0,0177) —
+    la famille déclarée en v363, des deux côtés.
+  - `reseau.js` « un départ propre nettoie tout le monde » (et au second
+    passage « un hôte sans courtier est trouvé », déclaré) : rejouée seule,
+    branche rouge 2/2, `origin/main` rouge 1/2 (« hôte ["Alice","Nina"] »
+    identique) — la famille intermittente des deux côtés (table de la v285).
+    Passages courts alternés (la suite arrêtée après ce témoin) : branche
+    1/4, `origin/main` 0/2, branche SANS le battement qui relit 0/2. Total à
+    ce témoin : branche 4/7, `origin/main` 1/4 — même rouge, même message,
+    écart non significatif sur onze passages ; on ne le classe pas réglé, on
+    le déclare avec ces chiffres. Preuve structurelle : le départ
+    se lit sur `remotePlayers` ; la v365 n'ajoute au message `pos` qu'un
+    champ `rc` ABSENT tant qu'aucune voiture de la rue n'est percutée (aucune
+    dans `reseau.js`), et le battement des réglages n'écrit que dans
+    `player_prefs`.
+  - `manhattan.js` (trou de façade, taxi, PeerJS) et `monte.js` (chauffe de
+    New York 53/321, gel d'arrivée 38 %) : les familles déclarées aux
+    portails des v356 à v364, aucune ne lit les réglages ni les dégâts de la
+    rue.
+
 - [ ] **AU PORTAIL DE LA v364 (le coût des dégâts dans le journal), CINQ
   SUITES ROUGES — une à moi, corrigée ; les autres déjà déclarées.**
   - `degats.js` « le contrat avec la physique » : la vraie physique (v358) a
