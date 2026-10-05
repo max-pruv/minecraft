@@ -1815,6 +1815,55 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !solDesPassants.err && solDesPassants.total >= 6 && solDesPassants.partChaussee <= 0.2,
       JSON.stringify(solDesPassants));
 
+    // ---- UN FLÂNEUR POSÉ SUR LA CHAUSSÉE EN SORT (v382) ---------------------
+    //
+    // Le témoin d'au-dessus est un TIRAGE (dette v291) : il compte ce que le
+    // hasard des naissances a laissé sur la rue, et rend 0 à 3 sur 18 selon le
+    // passage. Celui-ci PROVOQUE la situation que la v380 a nommée — un flâneur
+    // (`surTrottoir` faux), en pause, son POSTE sur l'asphalte — et lit où il
+    // est ARRIVÉ (v279), en secondes de montre : la sortie suit l'horloge réelle.
+    // Sur l'ancien code, son poste reste sur la chaussée et il y flâne.
+    const sortieRue = await tab.evaluate(async () => {
+      const g = window.__game;
+      const { TROTTOIR, CHAUSSEE } = await import('./src/world.js');
+      const w = g.world;
+      const cat = (x, z) => {
+        const bx = Math.floor(x), bz = Math.floor(z);
+        const b = w.getBlock(bx, w.sommetColonne(bx, bz), bz);
+        return TROTTOIR.has(b) ? 't' : CHAUSSEE.has(b) ? 'c' : 'a';
+      };
+      const s2 = g.passants.sites.find((q) => q.peuple && q.peuple.length);
+      if (!s2) return { err: 'aucune ville peuplée' };
+      const gens = s2.peuple.filter((h) => h.name === 'passant' && h.pos);
+      const sauve = g.player.pos.clone();
+      const essais = [];
+      for (const h of gens.slice(0, 3)) {
+        // une colonne de chaussée au niveau de la rue, à moins de quinze blocs
+        let ou = null;
+        for (let r = 2; r < 16 && !ou; r++) for (let k = 0; k < 24 && !ou; k++) {
+          const a = k / 24 * Math.PI * 2;
+          const x = Math.floor(h.pos.x + Math.cos(a) * r) + 0.5, z = Math.floor(h.pos.z + Math.sin(a) * r) + 0.5;
+          if (cat(x, z) === 'c' && Math.abs(w.sommetColonne(Math.floor(x), Math.floor(z)) + 1 - h.pos.y) < 1.2) ou = { x, z };
+        }
+        if (!ou) { essais.push({ err: 'pas de chaussée' }); continue; }
+        h.traversee = null; h.ecart = null; h.sortie = null;
+        h.surTrottoir = false; h.etat = 'pause'; h.minuteur = 6;
+        h.poste.set(ou.x, ou.z); h.placeAt(ou.x, ou.z, 40);
+        g.player.pos.set(ou.x + 4, h.pos.y, ou.z + 4); g.player.vel.set(0, 0, 0);
+        const t0 = performance.now();
+        while (performance.now() - t0 < 15000 && cat(h.pos.x, h.pos.z) === 'c') await new Promise((f) => setTimeout(f, 250));
+        // et l'on regarde encore deux secondes : sortir pour y revenir ne compte pas
+        await new Promise((f) => setTimeout(f, 2000));
+        essais.push({ secondes: +((performance.now() - t0) / 1000).toFixed(1), arrivee: cat(h.pos.x, h.pos.z),
+          poste: cat(h.poste.x, h.poste.y), d: +Math.hypot(h.pos.x - ou.x, h.pos.z - ou.z).toFixed(2), sorties: h.sorties || 0 });
+      }
+      g.player.pos.copy(sauve);
+      return { ville: s2.nom, essais };
+    });
+    verifier('un flâneur posé au milieu de la chaussée en sort et flâne au bord',
+      !sortieRue.err && sortieRue.essais.length > 0 && sortieRue.essais.every((e) => !e.err && e.arrivee !== 'c' && e.poste !== 'c'),
+      JSON.stringify(sortieRue));
+
     // ---- ET IL MARCHE VRAIMENT (v278, gardé en v279) ------------------------
     //
     // Le second défaut derrière la phrase de Max, et il était STRUCTUREL : la
