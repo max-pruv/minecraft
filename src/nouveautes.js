@@ -6,13 +6,108 @@
 
 export const NOUVEAUTES = [
   {
-    v: 370,
+    v: 381,
     titre: 'Conduire comme au cinéma',
     puces: [
       'La caméra recule quand on accélère',
       'La voiture penche dans les virages',
       'Les roues avant tournent avec toi',
       'Les pneus crissent, les chocs s\'entendent',
+    ],
+  },
+  {
+    v: 380,
+    titre: 'Des essais plus sûrs',
+    puces: [
+      'Le jeu vérifie mieux les piétons',
+      'Rien ne change pour toi',
+    ],
+  },
+  {
+    v: 379,
+    titre: 'On arrive plus vite',
+    puces: [
+      'Après la carte, la ville arrive vite',
+      'Londres se dessine un peu plus vite',
+    ],
+  },
+  {
+    v: 378,
+    titre: 'Les voitures contournent les monuments',
+    puces: [
+      'Plus une voiture dans le Colisée',
+      'Des rues neuves à Agra et au Cap',
+      'Le jeu démarre un peu plus vite',
+    ],
+  },
+  {
+    v: 377,
+    titre: 'Le passager prend la portière',
+    puces: [
+      'Tu montes par la porte de droite',
+      'Ton ami la voit s\'ouvrir chez lui',
+    ],
+  },
+  {
+    v: 376,
+    titre: 'Les passants sursautent',
+    puces: [
+      'Frôlés par une voiture, ils sursautent',
+      'Puis ils reprennent leur chemin',
+      'Un choc ? Ils se retournent',
+    ],
+  },
+  {
+    v: 375,
+    titre: 'Huit palais ont leur vraie forme',
+    puces: [
+      'Le palais du Dam et le Rijksmuseum',
+      'Le château de Prague, le palais de Stockholm',
+      "Amalienborg et sa place à huit côtés",
+      'La Casa Rosada, Gyeongbokgung, le palais Bahia',
+    ],
+  },
+  {
+    v: 374,
+    titre: 'Ta langue reste choisie',
+    puces: [
+      'L\'autre tablette ne la change plus',
+      'Les voitures cabossées passent par tous',
+    ],
+  },
+  {
+    v: 373,
+    titre: 'La portière se voit de dos',
+    puces: [
+      'La porte ouverte a son intérieur',
+      'Elle se voit de tous les côtés',
+    ],
+  },
+  {
+    v: 372,
+    titre: 'Des portières bien découpées',
+    puces: [
+      'Le bord de la porte est droit',
+      'Plus de dents de scie sur la carrosserie',
+    ],
+  },
+  {
+    v: 371,
+    titre: 'On traverse au feu',
+    puces: [
+      'Les passants attendent leur tour au feu',
+      'Puis ils traversent la rue',
+      'À Paris, sur les passages piétons',
+    ],
+  },
+  {
+    v: 370,
+    titre: 'Washington, des rues plus larges',
+    puces: [
+      'Les rues ont deux vrais trottoirs',
+      'Quatre maisons et une ruelle par îlot',
+      'Plus de voitures dans la ville',
+      'Tes constructions restent comme avant',
     ],
   },
   {

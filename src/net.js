@@ -1572,6 +1572,12 @@ export class NetSession {
         if (this.onRueChoc) this.onRueChoc(msg);
         if (this.isHost) this.relay(conn.peer, msg);
         break;
+      // La portière qu'un passager ouvre (v377) : le conducteur et les autres
+      // la voient s'ouvrir. Nom neuf, le receveur cède, l'hôte relaie.
+      case 'portiere':
+        if (this.onPortiere && (msg.c === 1 || msg.c === -1)) this.onPortiere({ de: String(msg.de || ''), c: msg.c, o: msg.o ? 1 : 0 });
+        if (this.isHost) this.relay(conn.peer, msg);
+        break;
       case 'sign': // a text sign planted in the world
         if (this.onSign) this.onSign(msg.sign);
         if (this.isHost) this.relay(conn.peer, msg);
@@ -1654,6 +1660,9 @@ export class NetSession {
         // deux champs et voit l'ami à pied, comme avant — le receveur cède.
         entry.v = msg.v || null;
         entry.p = msg.p || null;
+        // l'histoire des chocs de la rue (v374), lue une fois : un ancien
+        // hôte qui ne relaie pas `rue_choc` relaie la position telle quelle
+        if (msg.rc && this.onRueHistoires) this.onRueHistoires(msg.rc);
         this.playersChanged();
         if (this.isHost) {
           this.relay(conn.peer, { ...msg, from: conn.peer, name: entry.name, lookIdx: entry.lookIdx, look: entry.look });
@@ -1734,6 +1743,7 @@ export class NetSession {
       const msg = { t: 'pos', x: p.x, y: p.y, z: p.z, yaw: p.yaw, m: p.moving ? 1 : 0 };
       if (p.v) msg.v = p.v;                 // au volant : espèce et modèle (v253)
       if (p.p) msg.p = p.p;                 // passager : chez qui, quel siège
+      if (p.rc) msg.rc = p.rc;              // l'histoire des chocs de la rue (v374)
       for (const c of this.conns.values()) this.envoyer(c, msg);
     }, 120);
   }

@@ -35,7 +35,7 @@ import { creerEmbarquement } from './embarquement.js';
 // v255 ; leurs clés restent en place, et sync.js continue de faire voyager le
 // sac et la quête tels quels. On n'efface rien.
 // La caméra de poursuite et son retard (`?camlag=`, v278) vivent dans
-// `sensations.js` depuis la v370.
+// `sensations.js` depuis la v381.
 const RECORDS_KEY = 'web-minecraft-records-v1';
 const PHOTOS_KEY = 'web-minecraft-photos-v1';
 
@@ -350,10 +350,18 @@ export function initFun(ctx) {
     let occupes = 0;
     if (rps) for (const rp of rps.values()) if (rp.passager && rp.passager.de === ami.id) occupes++;
     const s = Math.min(occupes, ami.def.sieges.length - 1);
-    passager = { de: ami.id, s, nom: ami.nom };
-    player.vel.set(0, 0, 0);
-    toast(`🚗 Tu montes avec ${ami.nom} ! Appuie encore pour descendre.`, 0xa8d8ff);
-    emojiBurst(['🚗', '💨'], 8);
+    const assis = () => {
+      passager = { de: ami.id, s, nom: ami.nom };
+      player.vel.set(0, 0, 0);
+      toast(`🚗 Tu montes avec ${ami.nom} ! Appuie encore pour descendre.`, 0xa8d8ff);
+      emojiBurst(['🚗', '💨'], 8);
+    };
+    // PAR LA PORTIÈRE DROITE, comme au volant (v377) : la séquence marche,
+    // ouvre, assied, puis appelle `assis` — `passagerDe()` ne ment pas avant
+    const veh = vehiculeDistant ? vehiculeDistant(ami.id) : null;
+    if (!veh) { assis(); return; }
+    embarquement.monterChez(veh, ami.def.sieges[s] || ami.def.siege, ami.id, assis,
+      () => { const v = vehiculeDistant(ami.id); return !!v && v.mesh === veh.mesh; });
   }
   function descendreDePassager(silencieux = false) {
     if (!passager) return;
@@ -1170,7 +1178,7 @@ export function initFun(ctx) {
     // voiture et la caméra, elle avance devant lui plutôt que d'entrer
     // dans la roche.
     if (a.def.poursuite) {
-      // LA POURSUITE ET LA CAISSE QUI VIT (v370) : la caméra qui recule et
+      // LA POURSUITE ET LA CAISSE QUI VIT (v381) : la caméra qui recule et
       // ouvre son champ avec la vitesse, qui ne traverse pas les murs, qui
       // regarde dans le virage et tremble au choc ; la caisse qui penche et
       // plonge ; les roues qui braquent ; le son des rapports et des pneus.
@@ -1286,7 +1294,7 @@ export function initFun(ctx) {
     }
     updateRide(dt);
     degats.update(dt, player.camera, animalManager.animals);   // fumée, feu, carcasses (v343)
-    // CE QU'ON QUITTE SE REPOSE (v370) : la voiture garée reprend son
+    // CE QU'ON QUITTE SE REPOSE (v381) : la voiture garée reprend son
     // assiette et ses roues droites, et le champ de la caméra revient.
     if (riding !== derniereMonture) { reposerVoiture(derniereMonture); derniereMonture = riding; }
     if (!riding) sensationsAPied(player, dt);
@@ -1347,6 +1355,9 @@ export function initFun(ctx) {
     refusSortie: () => embarquement.refusSortie(),
     avatarEnSequence: () => embarquement.avatarPilote(),
     brancherAvatar: (h) => embarquement.brancherAvatar(h),
+    // la portière d'un passager, d'une tablette à l'autre (v377)
+    brancherPortieres: (f) => embarquement.brancherReseau(f),
+    recevoirPortiere: (mesh, c, o) => embarquement.porteDistante(mesh, c, o),
     // Chez qui l'enfant est passager (ou null) : la position réseau
     // l'emporte, et main.js l'assied sur le siège de la voiture de l'ami.
     passagerDe: () => passager,

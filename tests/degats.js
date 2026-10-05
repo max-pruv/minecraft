@@ -178,6 +178,11 @@ function verifier(nom, ok, detail = '') {
       });
       const d = g.fun.degats;
       if (!d) return { err: 'pas de module de dégâts (fun.degats)' };
+      // ce qui sert à prouver le chemin (v374) : les chocs que la PHYSIQUE a
+      // publiés (`player.chocs`, compté par player.js), et par quel chemin les
+      // dégâts les ont pris
+      const chocsPhys0 = g.player.chocs || 0, chemins0 = d.chemins ? d.chemins() : null;
+      const choc0 = g.player.choc, lit = g.player.physiqueLitEtat;
       g.player.gaz = 1;
       let vmax = 0, etat = null;
       const t0 = performance.now();
@@ -189,21 +194,106 @@ function verifier(nom, ok, detail = '') {
       }
       g.player.gaz = 0;
       await tenir(0.5);
+      // LA TÔLE DU VRAI CHOC, lue dans la géométrie avant tout autre choc
+      const THREE = await import('three');
+      const p = new THREE.Vector3(), q = new THREE.Vector3();
+      let avantMax = 0, arriereMax = 0;
+      for (const pc of d.pieces(a.mesh) || []) {
+        if (!pc.propre) continue;
+        const o = pc.geoOrig.attributes.position, n = pc.mesh.geometry.attributes.position;
+        for (let i = 0; i < o.count; i++) {
+          p.set(o.getX(i), o.getY(i), o.getZ(i)).applyMatrix4(pc.M);
+          q.set(n.getX(i), n.getY(i), n.getZ(i)).applyMatrix4(pc.M);
+          const dep = p.distanceTo(q);
+          if (p.z < -1.2) avantMax = Math.max(avantMax, dep);
+          if (p.z > 1.2) arriereMax = Math.max(arriereMax, dep);
+        }
+      }
+      // L'EFFET SUR LA CONDUITE, appliqué UNE fois : l'allure (`boost`) reste
+      // celle de la classe — c'est la physique qui lit le moteur, dans son
+      // plafond (0,35 + 0,65 × moteur) — et rien n'a été appliqué ici
+      const { allureDe } = await import('./src/vehicules.js');
+      const allure = allureDe ? allureDe(a.mesh.userData.flotte) : null;
+      const ev = g.player.etatVoiture;
+      const r3 = (v) => Math.round(v * 1000) / 1000;
       return { vmax: Math.round(vmax * 10) / 10, etat: etat ? { sante: etat.sante, zones: etat.zones, chocs: etat.chocs } : null,
-        publie: g.player.etatVoiture, mesure: d.mesure(a.mesh), x: Math.round(g.player.pos.x - window.__essai.x0) };
+        publie: g.player.etatVoiture, mesure: d.mesure(a.mesh), x: Math.round(g.player.pos.x - window.__essai.x0),
+        chocsPhys: (g.player.chocs || 0) - chocsPhys0, choc0: choc0 === undefined ? 'undefined' : choc0, lit,
+        chemins0, chemins: d.chemins ? d.chemins() : null,
+        avantMax: r3(avantMax), arriereMax: r3(arriereMax),
+        boost: g.player.boost, allure,
+        plafondLu: g.player.ficheVoiture ? r3(g.player.vitesseVoitureMax / g.player.ficheVoiture.vmax) : null,
+        plafondAttendu: ev ? r3(0.35 + 0.65 * Math.max(0, Math.min(1, ev.moteur))) : null };
     });
     verifier('foncer dans un mur abîme la voiture : la santé baisse, l\'AVANT est touché, l\'état est publié pour la physique',
       !crash.err && crash.etat && crash.etat.sante < 1 && crash.etat.zones.avant < crash.etat.zones.arriere
         && crash.publie && crash.publie.sante < 1,
       JSON.stringify(crash));
 
+    // A. LE CONTRAT, BOUT À BOUT, PAR LA VRAIE PHYSIQUE (v374). Le témoin du
+    // contrat plus bas publie ses chocs à la main ; celui-ci n'écrit RIEN dans
+    // `player` : c'est player.js qui publie le choc du mur, et l'on vérifie ce
+    // que chaque côté en a fait.
+    const ch = crash.chemins, ch0 = crash.chemins0 || {};
+    verifier('un mur pris de face à pleine vitesse, par la VRAIE physique : un choc publié, pris par ce chemin et par lui seul',
+      !crash.err && crash.chocsPhys >= 1 && crash.choc0 !== 'undefined' && crash.lit === true && !!ch
+        && ch.publies - (ch0.publies || 0) >= 1 && ch.repli === (ch0.repli || 0),
+      JSON.stringify({ chocsPhys: crash.chocsPhys, choc0: crash.choc0, lit: crash.lit, chemins0: ch0, chemins: ch }));
+    verifier('… la tôle froissée à l\'AVANT seulement, lue sur la géométrie de CE choc-là',
+      !crash.err && crash.avantMax > 0.05 && crash.arriereMax < 0.02,
+      `avant ${crash.avantMax}, arrière ${crash.arriereMax}`);
+    verifier('… et l\'effet sur la conduite appliqué UNE fois : allure de la classe intacte, le moteur lu dans le plafond de la physique, rien appliqué ici',
+      !crash.err && !!ch && ch.effetsIci === (ch0.effetsIci || 0) && crash.allure != null
+        && Math.abs(crash.boost - crash.allure) < 1e-6 && crash.plafondLu != null && Math.abs(crash.plafondLu - crash.plafondAttendu) < 0.002,
+      JSON.stringify({ boost: crash.boost, allure: crash.allure, plafondLu: crash.plafondLu, plafondAttendu: crash.plafondAttendu,
+        effetsIci: ch && ch.effetsIci, sante: crash.publie && crash.publie.sante }));
+
     // Un second choc fort à l'avant, par la porte publique : la mesure de la
     // géométrie doit voir un enfoncement net, à l'avant seulement.
     const geo = await tab.evaluate(async () => {
       const g = window.__game, { a, b } = window.__essai, d = g.fun.degats;
       if (!d) return { err: 'pas de module' };
+      // B. CE QUE FAIT UN CHOC, EN COMPTES ET NON EN MILLISECONDES (v374) :
+      // les positions et les normales de chaque pièce, relevées avant, puis
+      // comparées — combien de sommets ont bougé, combien de normales ont été
+      // réécrites, sur combien de sommets en tout.
+      const avantPieces = (d.pieces(a.mesh) || []).map((pc) => {
+        const g2 = pc.mesh.geometry;
+        return { g: g2, pos: g2.attributes.position.array.slice(), nor: g2.attributes.normal ? g2.attributes.normal.array.slice() : null };
+      });
       const r = d.choc(a.mesh, { force: 1, lx: 0, lz: -2.2 });
       const pieces = d.pieces(a.mesh) || [];
+      let sommets = 0, bouges = 0, normales = 0, avecNormales = 0;
+      for (let k = 0; k < pieces.length; k++) {
+        const g2 = pieces[k].mesh.geometry, av = avantPieces[k];
+        const pos = g2.attributes.position, nor = g2.attributes.normal;
+        // une pièce clonée À CE CHOC se compare à l'original (même tableau)
+        const ap = av && av.g === g2 ? av.pos : pieces[k].geoOrig.attributes.position.array;
+        const an = av && av.g === g2 ? av.nor : (pieces[k].geoOrig.attributes.normal ? pieces[k].geoOrig.attributes.normal.array : null);
+        sommets += pos.count;
+        for (let i = 0; i < pos.count; i++) {
+          const i3 = i * 3;
+          const b = pos.array[i3] !== ap[i3] || pos.array[i3 + 1] !== ap[i3 + 1] || pos.array[i3 + 2] !== ap[i3 + 2];
+          if (b) bouges++;
+          if (nor && an) {
+            avecNormales++;
+            if (Math.abs(nor.array[i3] - an[i3]) + Math.abs(nor.array[i3 + 1] - an[i3 + 1]) + Math.abs(nor.array[i3 + 2] - an[i3 + 2]) > 1e-6 && !b) normales++;
+          }
+        }
+      }
+      // ET RIEN PAR IMAGE : une seconde après le choc, aucun enfoncement de
+      // plus et pas une version de tampon qui ait bougé
+      const tenir = (n) => new Promise((fin) => {
+        let cumul = 0, prec = performance.now();
+        const pas = (t) => { cumul += (t - prec) / 1000; prec = t; if (cumul >= n) fin(); else requestAnimationFrame(pas); };
+        requestAnimationFrame(pas);
+      });
+      const versions = () => pieces.reduce((n, pc) => n + pc.mesh.geometry.attributes.position.version
+        + (pc.mesh.geometry.attributes.normal ? pc.mesh.geometry.attributes.normal.version : 0), 0);
+      const enf0 = d.chemins ? d.chemins().enfoncements : null, v0 = versions(), img0 = g.renderer.info.render.frame;
+      await tenir(1);
+      const parImage = { enfoncements: d.chemins ? d.chemins().enfoncements - enf0 : null, versions: versions() - v0,
+        images: g.renderer.info.render.frame - img0 };
       const THREE = await import('three');
       let avantMax = 0, arriereMax = 0, clones = 0, lues = 0;
       const p = new THREE.Vector3(), q = new THREE.Vector3();
@@ -228,18 +318,31 @@ function verifier(nom, ok, detail = '') {
       for (const pc of pieces) if (pc.propre && pc.mesh.geometry === pc.geoOrig) propresB++;
       // et un sommet de l'original, relu : identique à ce qu'il était
       return { r, clones, lues, avantMax: Math.round(avantMax * 1000) / 1000, arriereMax: Math.round(arriereMax * 1000) / 1000,
-        partagees, propresB, ms: r && r.mesure ? Math.round(r.mesure.ms * 10) / 10 : null };
+        partagees, propresB, ms: r && r.mesure ? Math.round(r.mesure.ms * 10) / 10 : null,
+        sommets, bouges, normales, avecNormales, parImage };
     });
     verifier('la tôle s\'enfonce À L\'AVANT (sommets déplacés, lus dans la géométrie) et PAS à l\'arrière',
       !geo.err && geo.lues > 0 && geo.avantMax > 0.15 && geo.arriereMax < 0.02,
       JSON.stringify(geo));
     verifier('l\'autre voiture du même modèle reste INTACTE : elle garde la géométrie commune, que personne n\'a touchée',
       !geo.err && geo.clones > 0 && geo.partagees > 0 && geo.propresB === 0, JSON.stringify(geo));
-    // La barre : deux fois et demie le premier choc mesuré (12 ms) — le premier
-    // est le plus cher, c'est celui qu'on garde.
+    // B. UNE GRANDEUR QUI NE DÉPEND PAS DU PROCESSEUR PARTAGÉ (v374). Le
+    // témoin d'avant bornait des millisecondes : 15 seul, 31,1 une fois au
+    // portail de la v348 — il mesurait la charge. Ce qu'un choc FAIT ne
+    // dépend pas d'elle : il ne déplace qu'une part de la voiture, il ne
+    // réécrit AUCUNE normale d'un sommet resté en place (la limitation de la
+    // v343 : `computeVertexNormals` sur toute la pièce les réécrivait toutes),
+    // et après lui, plus rien par image. Les millisecondes restent dans le
+    // MESSAGE (v270) : elles servent à démonter un rouge, jamais à en faire un.
+    // La part déplacée vaut 25,6 % au choc de force 1 (5 493 sur 21 412) : la
+    // barre de garde est à la MOITIÉ (v237), elle sépare « une zone » de « tout ».
     const premier = crash.mesure ? Math.round(crash.mesure.ms * 10) / 10 : null;
-    verifier('enfoncer coûte quelques millisecondes au choc, rien par image', !geo.err && premier !== null && premier < 30 && geo.ms < 30,
-      `premier choc ${premier} ms (clone ${crash.mesure && crash.mesure.msClone}, normales ${crash.mesure && crash.mesure.msNormales}), suivant ${geo.ms} ms`);
+    const pi = geo.parImage || {};
+    verifier('enfoncer touche une part de la voiture, ne réécrit aucune normale de sommet resté en place, et rien par image',
+      !geo.err && geo.bouges > 0 && geo.bouges < geo.sommets * 0.5 && geo.avecNormales > 0 && geo.normales === 0
+        && pi.enfoncements === 0 && pi.versions === 0 && pi.images > 0,
+      `${geo.bouges} sommets déplacés sur ${geo.sommets}, ${geo.normales} normales réécrites hors d'eux (sur ${geo.avecNormales}), `
+        + `par image : ${JSON.stringify(pi)} — premier choc ${premier} ms (clone ${crash.mesure && crash.mesure.msClone}, normales ${crash.mesure && crash.mesure.msNormales}), suivant ${geo.ms} ms`);
 
     const pieces = await tab.evaluate(() => {
       const g = window.__game, { a, b } = window.__essai, d = g.fun.degats;
@@ -881,6 +984,40 @@ function verifier(nom, ok, detail = '') {
     verifier('à plusieurs, la voiture de la rue que Marlon percute est froissée chez Alice aussi — la même histoire de chocs',
       pose.auVolant && cles[0] === cles[1] && !coup.err && vue && JSON.stringify(vue.chocs) === JSON.stringify(coup.chocs) && vue.froissees > 0,
       JSON.stringify({ memeConvoi: cles[0] === cles[1], rang, coup, vue }));
+
+    // 10. UN HÔTE RESTÉ SUR L'ANCIENNE VERSION NE RELAIE PAS `rue_choc`
+    // (v374). On le provoque : Marlon cesse d'envoyer `rue_choc` (ce qu'un
+    // ancien hôte en fait : rien), et percute la même voiture une seconde
+    // fois. Le choc doit arriver chez Alice par la POSITION, que tout hôte
+    // relaie telle quelle — et l'histoire doit rester la même, choc pour
+    // choc : reçue par les deux chemins au premier coup, elle n'a rien compté
+    // deux fois (le verdict d'au-dessus), reçue trente fois par la position,
+    // elle non plus.
+    const second = coup.err ? { err: coup.err } : await hote.evaluate(async (r) => {
+      const g = window.__game, d = g.fun.degats, conv = window.__convB, p = g.player;
+      const tenir = (n) => new Promise((fin) => {
+        let cumul = 0, prec = performance.now();
+        const pas = (t) => { cumul += (t - prec) / 1000; prec = t; if (cumul >= n) fin(); else requestAnimationFrame(pas); };
+        requestAnimationFrame(pas);
+      });
+      const m = conv.elements[r], a = g.fun.montureConduite();
+      if (!m || !a) return { err: 'voiture partie, ou pas au volant' };
+      const envoyes = [];
+      d.brancherReseau((msg) => envoyes.push(msg.t));        // un ancien hôte : rien ne passe
+      p.pos.set(m.position.x, m.position.y + 0.05, m.position.z - 3); a.pos.copy(p.pos); a.mesh.position.copy(a.pos);
+      await tenir(0.2);
+      p.choc = { force: 0.6, t: performance.now(), x: m.position.x, z: m.position.z };
+      await tenir(0.4);
+      p.choc = null;
+      await tenir(5);                                          // la fenêtre de la position, et au-delà
+      d.brancherReseau((msg) => { const n = g.net; if (n && n.active) n.broadcast(msg); });
+      return { chocs: d.etat(m).chocs, retenus: envoyes };
+    }, coup.rang);
+    if (!second.err) await jusqua(async () => { const v = await chezAlice(coup.rang); return v.chocs && v.chocs.length >= second.chocs.length; }, 10000);
+    const vue2 = second.err ? null : await chezAlice(coup.rang);
+    verifier('un hôte qui ne relaie pas rue_choc : le choc arrive quand même par la position, et l\'histoire reste la même, choc pour choc',
+      !second.err && second.chocs.length === coup.chocs.length + 1 && vue2 && JSON.stringify(vue2.chocs) === JSON.stringify(second.chocs),
+      JSON.stringify({ second, vue2 }));
   } finally {
     await banc.fermer();
   }

@@ -75,6 +75,10 @@ function portiereRefusee(g) {
   if (!f) return true;
   if (f === 'voiture.glb') return false;
   const e = FLOTTE.find((x) => x.fichier === f);
+  // Les taxis fabriqués (`fabrique`) ont des bords nets depuis la v372 (la
+  // découpe coupe au plan), mais RIEN derrière : mesuré par la sonde des
+  // portières, aucun des vingt-quatre rayons tirés au travers de l'ouverture
+  // ne touche un habitacle. Une portière ouverte y montrerait le vide.
   return !e || e.portiere === false || !!e.fabrique;
 }
 
@@ -299,8 +303,72 @@ export function creerEmbarquement(ctx) {
     publier();
   }
 
+  // ---- monter chez un ami (v377) -----------------------------------------
+  // Le passager d'un ami (v253) collait l'enfant au siège d'un coup. Il entre
+  // désormais par la portière DROITE de la voiture de l'ami (`cote: 1`, déjà
+  // fabriquée par portieres.js), avec la même marche, la même portière, la
+  // même assise — et l'ami voit la portière s'ouvrir sur SA tablette : un
+  // message court (`portiere`, nom neuf : l'ancienne tablette l'ignore, le
+  // receveur cède ; l'hôte relaie). `veh` est la voiture DISTANTE telle que
+  // cette tablette la dessine ({ mesh, def }), `fin` fait de l'enfant un
+  // passager (fun.js), `existe` dit si l'ami a encore cette voiture.
+  function monterChez(veh, siege, de, fin, existe) {
+    if (s) { terminer(); return; }
+    if (!SEQUENCE_ACTIVE || !av || !veh || !veh.mesh || !veh.def || !siege) { fin(); return; }
+    const g = veh.mesh;
+    // la voiture d'un ami n'est pas une bête : on lui prête ce que la séquence
+    // lit d'une monture (sa place, son cap — le modèle regarde en −z, d'où π)
+    const a = { mesh: g, def: veh.def, montee: false, get pos() { return g.position; }, get yaw() { return g.rotation.y - Math.PI; } };
+    const portes = equiperPortieres(g, portiereRefusee(g));
+    const d = dims(g, portes);
+    const cote = 1;   // le conducteur est à gauche : on monte à droite
+    const D = pointPorte(d, cote);
+    const pts = chemin(versLocal(g, player.pos), D, d);
+    const L = longueurDe(pts);
+    const T = Math.max(DUREES.marcheMin, Math.min(DUREES.marcheMax, L / PAS));
+    s = { sens: 'monter', phase: 'approche', t: 0, a, d, cote, D, pts, L, T, portes,
+      y0: player.pos.y, temps: 0, assise: null, chez: { fin, existe, siege, de } };
+    publier();
+  }
+  // LA PORTIÈRE SE DIT À L'AMI : ouverte (1) ou refermée (0).
+  let diffuser = null;
+  function signaler(o) {
+    if (s && s.chez && s.chez.de && diffuser) diffuser({ t: 'portiere', de: s.chez.de, c: s.cote, o });
+  }
+
+  // LA PORTIÈRE QU'UN AUTRE OUVRE (v377) : sur cette tablette, la voiture où
+  // un ami monte en passager — la nôtre si l'on conduit, ou celle d'un autre.
+  // Elle s'ouvre et se referme au rythme de la séquence de l'ami, en temps de
+  // jeu (v226), sans rien attendre d'autre que ses deux messages.
+  const distantes = new Map();   // pivot → { k, cible }
+  function porteDistante(mesh, cote, o) {
+    if (!mesh || (cote !== 1 && cote !== -1)) return;
+    const portes = equiperPortieres(mesh, portiereRefusee(mesh));
+    const p = portes ? portes[String(cote)] : null;
+    if (!p) return;
+    const e = distantes.get(p) || { k: 0, cible: 0 };
+    e.cible = o ? 1 : 0;
+    distantes.set(p, e);
+  }
+  function animerDistantes(dt) {
+    for (const [p, e] of distantes) {
+      const pas = dt / (e.cible ? DUREES.ouverture : DUREES.fermeture);
+      e.k = e.cible > e.k ? Math.min(e.cible, e.k + pas) : Math.max(e.cible, e.k - pas);
+      // une portière que la séquence d'ici tient (la nôtre) ne se dispute pas
+      if (!(s && s.portes && s.portes[String(s.cote)] === p)) ouvrir(p, e.k);
+      if (e.k === e.cible && !e.cible) distantes.delete(p);
+    }
+  }
+
   function asseoirMaintenant() {
     const a = s.a;
+    if (s.chez) {
+      // passager : c'est fun.js qui le tient désormais au siège (v253)
+      player.vel.set(0, 0, 0);
+      player.yaw = a.yaw + Math.PI;
+      s.chez.fin();
+      return;
+    }
     player.pos.set(a.pos.x, a.pos.y, a.pos.z);
     player.vel.set(0, 0, 0);
     // la voiture ne pivote pas sous l'enfant : c'est lui qui prend son cap
@@ -352,7 +420,10 @@ export function creerEmbarquement(ctx) {
     if (!s) return;
     const fini = s;
     if (fini.sens === 'monter') {
-      if (fini.phase !== 'fermeture') asseoirMaintenant();
+      if (fini.phase !== 'fermeture') {
+        if (fini.chez && fini.phase !== 'approche') signaler(0);
+        asseoirMaintenant();
+      }
       porte(0);
     } else {
       porte(0);
@@ -367,6 +438,7 @@ export function creerEmbarquement(ctx) {
   }
   function annuler() {
     if (!s) return;
+    if (s.chez && s.phase !== 'approche' && s.phase !== 'fermeture') signaler(0);
     porte(0);
     if (s.a && ctx.montureConduite() !== s.a) s.a.montee = false;
     if (!ctx.montureConduite()) avatarRetire();
@@ -376,9 +448,10 @@ export function creerEmbarquement(ctx) {
 
   // ---- à chaque image, APRÈS `updateRide` ---------------------------------
   function update(dt) {
+    if (distantes.size) animerDistantes(dt);
     if (!s) return;
     const a = s.a, g = a.mesh;
-    if (!ctx.existe(a) || !g) { annuler(); return; }
+    if (!(s.chez ? s.chez.existe() : ctx.existe(a)) || !g) { annuler(); return; }
     s.t += dt; s.temps += dt;
     if (!s.portes && s.phase !== 'approche') {
       // le modèle est peut-être arrivé pendant la marche
@@ -398,7 +471,7 @@ export function creerEmbarquement(ctx) {
         player.vel.set(dirM.x * vit / Math.max(1e-3, dirM.length()), 0, dirM.z * vit / Math.max(1e-3, dirM.length()));
         avatarDebout(g, p, capVers(dir.x, dir.z), vit, s.temps);
         tete.copy(w).y += 1.2;
-        if (k >= 1) { s.phase = 'ouverture'; s.t = 0; s.assise = av.placeAssise(a, a.def.siege); }
+        if (k >= 1) { s.phase = 'ouverture'; s.t = 0; s.assise = av.placeAssise(a, s.chez ? s.chez.siege : a.def.siege); signaler(1); }
         const pos = camSequence(s, tete);
         appliquerCamera(lisse(Math.min(1, s.t / 0.35 + (s.phase === 'approche' ? 0 : 1))), pos);
         av.obtenir().visible = player.camera.position.distanceTo(w) > 1.2;
@@ -418,7 +491,7 @@ export function creerEmbarquement(ctx) {
         player.vel.set(0, 0, 0);
         tete.copy(versMonde(g, new THREE.Vector3(s.cote * s.d.demiLarg * 0.4, 0.9, s.d.zPorte)));
         appliquerCamera(1, camSequence(s, tete));
-        if (k >= 1) { asseoirMaintenant(); s.phase = 'fermeture'; s.t = 0; }
+        if (k >= 1) { asseoirMaintenant(); s.phase = 'fermeture'; s.t = 0; signaler(0); }
       } else if (s.phase === 'fermeture') {
         const k = Math.min(1, s.t / DUREES.fermeture);
         porte(1 - k);
@@ -469,7 +542,8 @@ export function creerEmbarquement(ctx) {
   }
 
   return {
-    monter, descendre, terminer, annuler, update,
+    monter, monterChez, descendre, terminer, annuler, update, porteDistante,
+    brancherReseau(f) { diffuser = f; },
     enCours: () => !!s,
     // l'avatar est-il à nous cette image ? (main.js ne l'assied pas alors)
     avatarPilote: () => !!s && !(s.sens === 'monter' && s.phase === 'fermeture'),

@@ -1053,9 +1053,9 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // Borne basse 3,0 : le rapprochement anti-mur peut raccourcir le recul
     // (plancher à 3,2) si un obstacle traîne derrière le parc — c'est un
     // comportement voulu, pas un défaut.
-    // ET LE PLAFOND SUIT LA VITESSE DEPUIS LA v370 : la caméra recule jusqu'à
+    // ET LE PLAFOND SUIT LA VITESSE DEPUIS LA v381 : la caméra recule jusqu'à
     // 1,32 fois le recul de la fiche quand la voiture roule (6,4 → 8,45). Le
-    // portail de la v370 l'a rendue rouge à 7,07 sur la borne fixe de 6,5,
+    // portail de la v381 l'a rendue rouge à 7,07 sur la borne fixe de 6,5,
     // une voiture qui roulait encore — le plafond se calcule, il ne se recopie
     // pas (v269).
     verifier('au volant, la caméra suit la voiture de derrière, comme GTA',
@@ -1781,8 +1781,11 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         : b === CITY_BLOCK.CROSSWALK ? 'passage'
         : b === ARCHI.PAVE ? 'pave'
         : b === ARCHI.BORDURE ? 'bordure' : 'autre');
-      const tally = {};
+      const tally = {}, qui = [];
+      let enTraversee = 0;
       gens.forEach((h) => {
+        // en pleine traversée au feu (v371) : il traverse, il n'est pas planté
+        if (h.traversee && h.etat === 'traverse') { enTraversee++; return; }
         const bx = Math.floor(h.pos.x), bz = Math.floor(h.pos.z);
         // LE SOL SE LIT AU SOMMET DE LA COLONNE, pas à `terrainHeight` : sur les
         // quais et au pied des ponts, une ville écrit sa chaussée un bloc plus
@@ -1790,10 +1793,20 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         const y = g.world.sommetColonne(bx, bz);
         const k = nom(g.world.getBlock(bx, y, bz));
         tally[k] = (tally[k] || 0) + 1;
+        // QUI est sur la chaussée (v380) : un seul nombre pour plusieurs pannes
+        // ne se démonte pas (v223). Son état, sa traversée, son écart, s'il est
+        // ANIMÉ (à moins de 80 blocs, sinon il est figé là où il était, v241) et
+        // s'il est encore à son poste de naissance.
+        if (k === 'chaussee' || k === 'pave' || k === 'passage') qui.push({
+          etat: h.etat, tr: h.traversee ? h.traversee.etat || 'oui' : null, ecart: !!h.ecart,
+          trottoir: h.surTrottoir,
+          anime: Math.hypot(h.pos.x - g.player.pos.x, h.pos.z - g.player.pos.z) < 80,
+          auPoste: h.poste ? Math.hypot(h.pos.x - h.poste.x, h.pos.z - h.poste.y) < 0.6 : null,
+        });
       });
       const surTrottoir = (tally.trottoir || 0) + (tally.granite || 0);
       const surChaussee = (tally.chaussee || 0) + (tally.pave || 0) + (tally.passage || 0);
-      return { ville: s2.nom, total: gens.length, surTrottoir, surChaussee, tally,
+      return { ville: s2.nom, total: gens.length, surTrottoir, surChaussee, tally, enTraversee, qui,
         partTrottoir: gens.length ? +(surTrottoir / gens.length).toFixed(2) : null,
         partChaussee: gens.length ? +(surChaussee / gens.length).toFixed(2) : null };
     });
@@ -1903,6 +1916,135 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('et un passant de rue marche vraiment : il ne fait pas le pied de grue',
       !vontQuelquePart.err && vontQuelquePart.secondesDeJeu >= 3
         && vontQuelquePart.debitMedian >= 0.8, JSON.stringify(vontQuelquePart));
+
+    // ---- ET IL CHANGE DE TROTTOIR AU FEU, QUAND LES VOITURES SONT AU ROUGE (v371)
+    //
+    // Mesuré avant d'écrire (`sonde-traversees.cjs`, soixante secondes,
+    // l'enfant immobile) : les passants ne changeaient pour ainsi dire JAMAIS
+    // de trottoir — Rome une traversée sur vingt et un passants, et pas à un
+    // feu ; Paris et Londres zéro. Au coin, ils tournaient autour de leur îlot.
+    // Désormais, à un carrefour à feux, ils attendent au bord que les voitures
+    // qu'ils coupent soient au rouge, puis traversent — en temps réel.
+    //
+    // CE QUI SE COMPTE : une sortie du trottoir suivie d'un retour au trottoir à
+    // plus de trois blocs (il a changé de trottoir), le sol relevé quatre fois
+    // par seconde. Pour chacune, un feu à moins de cinq blocs du point de
+    // sortie, et l'état du feu de l'axe COUPÉ (la direction sortie → arrivée)
+    // au moment de la sortie, tel que le jeu le montre (`__feux`, v273). On se pose au barycentre de la troupe, comme le témoin
+    // d'au-dessus, et l'on rend l'enfant à sa place.
+    //
+    // Mesuré, huit passants posés au bord : l'ancien code rend 0 et 0
+    // traversée (ils tournent au coin) ; le neuf 9, 6 et 3, au feu et au rouge
+    // (une lue au vert, sur un état de `__feux` vieux d'une demi-seconde au
+    // plus). La barre — deux traversées, huit sur dix au feu et au rouge — est
+    // la moitié du pire passage du neuf. La fenêtre court soixante secondes de
+    // MONTRE (la traversée et l'attente vivent sur l'horloge de la rue) et
+    // quinze secondes de jeu au moins (on atteint le bord au pas).
+    const auFeu = await tab.evaluate(async () => {
+      const g = window.__game;
+      const { TROTTOIR, CHAUSSEE } = await import('./src/world.js');
+      const { RUE, ARCHI } = await import('./src/blocks.js');
+      const { axeDuCap } = await import('./src/feux.js');
+      const s2 = g.passants.sites.find((q) => q.peuple && q.peuple.length);
+      if (!s2) return { err: 'aucune ville peuplée' };
+      const tous = s2.peuple.filter((h) => h.name === 'passant');
+      if (tous.length < 3) return { err: `seulement ${tous.length} passant(s)` };
+      const sauve = g.player.pos.clone();
+      const cx = tous.reduce((a, h) => a + h.pos.x, 0) / tous.length;
+      const cz = tous.reduce((a, h) => a + h.pos.z, 0) / tous.length;
+      g.player.pos.set(cx, g.world.sommetColonne(Math.floor(cx), Math.floor(cz)) + 2.5, cz);
+      g.player.vel.set(0, 0, 0);
+      await new Promise((f) => setTimeout(f, 1500));
+      // l'état des feux tel que le jeu les montre (`__feux`, v273), par axe
+      const etats = () => { const r = {}; for (const f of (window.__feux() || [])) if (f.etat) r[f.axe] = f.etat; return r; };
+      const sol = (x, z) => {
+        const bx = Math.floor(x), bz = Math.floor(z);
+        const b = g.world.getBlock(bx, g.world.sommetColonne(bx, bz), bz);
+        return TROTTOIR.has(b) ? 't' : (CHAUSSEE.has(b) || b === ARCHI.BORDURE) ? 'c' : 'a';
+      };
+      const feuPres = (x, z) => {
+        for (let dx = -5; dx <= 5; dx++) for (let dz = -5; dz <= 5; dz++) {
+          const bx = Math.floor(x) + dx, bz = Math.floor(z) + dz;
+          const y = g.world.sommetColonne(bx, bz);
+          for (let k = 0; k <= 2; k++) if (g.world.getBlock(bx, y + k, bz) === RUE.FEUX) return true;
+        }
+        return false;
+      };
+      // ON PROVOQUE LA SITUATION AU LIEU DE L'ATTENDRE (leçon des poissons,
+      // v233). Attendre qu'un passant arrive de lui-même à un coin dépend de la
+      // cadence du banc : au portail, à trois images par seconde, une seule
+      // traversée en soixante secondes, puis une en trente secondes de jeu. On
+      // pose donc huit passants au bord du trottoir, face à la rue, au coin
+      // d'un feu, là où un chemin mène au trottoir d'en face (relevé ici, sans
+      // rien demander au jeu : l'ancien code n'a pas de `passagePieton`). Sur
+      // l'ancien code, ils tournent au coin ; ici, ils attendent le rouge et
+      // traversent.
+      const poses = [], feuxVus = new Set();
+      for (const f of (window.__feux() || [])) {
+        if (poses.length >= 8) break;
+        const cle = Math.round(f.x / 8) + ',' + Math.round(f.z / 8);
+        if (feuxVus.has(cle)) continue;
+        let trouve = null;
+        for (let dx = -3; dx <= 3 && !trouve; dx++) for (let dz = -3; dz <= 3 && !trouve; dz++) {
+          const x = Math.floor(f.x) + dx + 0.5, z = Math.floor(f.z) + dz + 0.5;
+          if (sol(x, z) !== 't') continue;
+          for (const [ux, uz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+            if (sol(x + ux * 1.2, z + uz * 1.2) !== 'c') continue;     // la bordure tout de suite
+            let c = 0, ok = false;
+            for (let k = 1; k <= 16; k++) { const q = sol(x + ux * k, z + uz * k); if (q === 'a') break; if (q === 'c') c++; else if (c >= 3) { ok = true; break; } }
+            if (ok) { trouve = { x, z, ux, uz }; break; }
+          }
+        }
+        if (trouve) { feuxVus.add(cle); poses.push(trouve); }
+      }
+      const gens = tous.slice(0, poses.length);
+      gens.forEach((h, i) => {
+        const p = poses[i];
+        h.traversee = null; h.ecart = null; h.repos = 0; h.vu = null; h.sonde = 0;
+        h.placeAt(p.x, p.z, g.player.pos.y);
+        h.poste.set(p.x, p.z);
+        h.surTrottoir = true; h.etat = 'marche'; h.minuteur = 20; h.capYaw = Math.atan2(-p.ux, -p.uz);
+      });
+      const suivi = new Map();
+      let traversees = 0, auFeuAuRouge = 0, horsFeu = 0, auVert = 0, aLOrange = 0;
+      // LA FENÊTRE SE COMPTE EN SECONDES DE JEU, bornée en montre : un passant
+      // n'atteint un coin qu'en MARCHANT, et il marche au temps de jeu. Au
+      // premier portail, soixante secondes de montre à 3 images par seconde
+      // n'ont rendu qu'une traversée ; rejoué seul, trois à onze.
+      const t0 = performance.now(), f0 = g.renderer.info.render.frame;
+      const jeu = () => (g.renderer.info.render.frame - f0) * 0.05;
+      while ((jeu() < 15 || performance.now() - t0 < 60000) && performance.now() - t0 < 180000) {
+        for (const h of gens) {
+          const c = sol(h.pos.x, h.pos.z);
+          let e = suivi.get(h);
+          if (!e) { suivi.set(h, { prec: c === 'a' ? null : c, sortie: null }); continue; }
+          if (e.prec === 't' && c === 'c') e.sortie = { x: h.pos.x, z: h.pos.z, feu: feuPres(h.pos.x, h.pos.z), etats: etats() };
+          else if (e.sortie && c === 't') {
+            if (Math.hypot(h.pos.x - e.sortie.x, h.pos.z - e.sortie.z) > 3) {
+              traversees++;
+              const axe = 1 - axeDuCap(h.pos.x - e.sortie.x, h.pos.z - e.sortie.z);
+              const etat = e.sortie.etats[axe];
+              // l'orange arrête les voitures comme le rouge (v273), et `__feux`
+              // ne se rafraîchit que deux fois par seconde : un départ au tout
+              // début du rouge peut se lire sur l'orange d'avant
+              if (!e.sortie.feu) horsFeu++;
+              else if (etat === 'rouge') auFeuAuRouge++;
+              else if (etat === 'orange') { auFeuAuRouge++; aLOrange++; }
+              else auVert++;
+            }
+            e.sortie = null;
+          }
+          if (c !== 'a') e.prec = c;
+        }
+        await new Promise((f) => setTimeout(f, 250));
+      }
+      g.player.pos.copy(sauve);
+      return { ville: s2.nom, poses: poses.length, passants: suivi.size, traversees, auFeuAuRouge, aLOrange, horsFeu, auVert,
+        secondesDeJeu: +jeu().toFixed(1), secondes: +((performance.now() - t0) / 1000).toFixed(1) };
+    });
+    verifier('un passant change de trottoir au feu, quand les voitures qu\'il coupe sont au rouge',
+      !auFeu.err && auFeu.poses >= 4 && auFeu.traversees >= 2 && auFeu.auFeuAuRouge >= 0.8 * auFeu.traversees,
+      JSON.stringify(auFeu));
 
     // ---- UN PASSANT NE TRAVERSE PAS LA VOITURE DE L'ENFANT (v259) -------------
     //
@@ -2020,59 +2162,44 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // repart : on exige qu'elle ait avancé, sinon le vert serait celui d'une
     // voiture clouée derrière un piéton pour toujours. Le cap est choisi pour
     // que la rue soit plate devant sur seize blocs, sinon on mesure une côte.
+    // ET IL SE PLACE LUI-MÊME (v380). Aux portails des v279, v346, v351 et v354
+    // il a rendu `voituresRue: 0` et 3,4 à 5,3 blocs d'avance pour une barre à
+    // six : la situation n'avait pas eu lieu. Il cherchait son couloir dans les
+    // rues de Rome, dégagé sur ±1,2 bloc seulement — la largeur de la voiture,
+    // pas celle de l'écart : un passant qui s'écarte vers une façade y reste,
+    // la voiture freine devant lui, et l'on mesure un mur. Ce qui traîne
+    // autour d'une rue de Rome — façades, mobilier, bêtes, convois — change
+    // d'un portail à l'autre ; le témoin le subissait au lieu de le choisir.
+    // Il se pose donc sur un rectangle PLAT de vingt blocs sur neuf, AU SEC,
+    // loin de toute ville (cherché à partir de (−1 500, −2 500) : le couloir
+    // vide de la v237, en (30 000, 30 000), est en pleine mer — terrain à 24,
+    // sous l'eau — et n'a pas un carré où rouler), sans bête ni convoi, et le cap
+    // est celui du rectangle : la situation a lieu à chaque passage, et le
+    // message dit qu'elle a eu lieu (`ecartes` > 0).
     const roulant = await tab.evaluate(async () => {
       const g = window.__game, s2 = g.passants.sites.find((x) => x.peuple);
       const gens = s2.peuple.filter((q) => q.name === 'passant').slice(0, 3);
       if (gens.length < 3) return { err: `${gens.length} passant(s)` };
       const sauve = g.player.pos.clone(), yaw0 = g.player.yaw;
       const dormir = (ms) => new Promise((f) => setTimeout(f, ms));
-      // et sans voiture de la rue à portée du trajet (leçon de la v252) : une
-      // voiture de la circulation qui arrive en face cède devant l'enfant sans
-      // limite, et l'on mesurerait deux voitures nez à nez, pas les piétons
-      const rueLibre = (x, z, y) => !g.vehicules.placeProche({ x, y, z }, 10);
       const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
       const retirerVoiture = () => { for (const a of [...g.animalManager.animals]) if (a.def.key === 'voiture') { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); } };
+      const retirerBetes = () => { for (const a of [...g.animalManager.animals]) { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); } };
       const descendre = async () => { for (let essai = 0; essai < 6 && auVolant(); essai++) { document.getElementById('ride-btn').click(); await dormir(500); } };
-      // et un COULOIR libre : le sol exactement à la même cote sur seize
-      // blocs et sur la largeur de la voiture (une marche d'un bloc arrête une
-      // voiture, qui ne saute pas), pas un réverbère ni un banc dessus (le
-      // mobilier arrête la voiture depuis la v252, et `surfaceY` ne le voit
-      // pas : non solide pour la marche), pas une voiture de la rue en
-      // travers. On le mesure ici pièce par pièce, et non par
-      // `player.obstacleVehicule`, qui compte désormais les piétons — les
-      // dix-huit passants de Rome barreraient tout couloir.
-      const { isProp } = await import('./src/blocks.js');
-      const couloirLibre = (h, x0, z0, y0, ux, uz) => {
-        const cap = Math.atan2(ux, uz), vx = uz, vz = -ux;
-        for (let d = 1; d <= 14; d++) {
-          for (const w of [-1.2, 0, 1.2]) {
-            const x = x0 + ux * d + vx * w, z = z0 + uz * d + vz * w;
-            const y = h.surfaceY(x, z);
-            if (y === null || Math.abs(y - y0) > 0.01) return false;
-            const bx = Math.floor(x), bz = Math.floor(z), by = Math.floor(y0 + 0.1);
-            if (isProp(g.world.getBlock(bx, by, bz)) || isProp(g.world.getBlock(bx, by + 1, bz))) return false;
-          }
-          if (g.vehicules.obstacleDevant(x0 + ux * d, z0 + uz * d, cap)) return false;
+      let candidats = 0;
+      let ancre = null;
+      for (let k = 0; k < 400 && !ancre; k++) {
+        candidats++;
+        const x0 = -1500 + (k % 20) * 24, z0 = -2500 + Math.floor(k / 20) * 24;
+        if (g.world.cityAt && g.world.cityAt(x0, z0)) continue;
+        const h0 = g.world.terrainHeight(x0, z0);
+        let plat = true;
+        // plat, au sec (un sol plein sous chaque colonne), et rien posé dessus — un arbre a le même relief que l'herbe
+        for (let dx = -2; dx <= 18 && plat; dx++) for (let dz = -4; dz <= 4 && plat; dz++) {
+          if (g.world.terrainHeight(x0 + dx, z0 + dz) !== h0 || !g.world.getBlock(x0 + dx, h0, z0 + dz)) plat = false;
+          else for (let dy = 1; dy <= 3 && plat; dy++) if (g.world.getBlock(x0 + dx, h0 + dy, z0 + dz)) plat = false;
         }
-        return true;
-      };
-      // Seize caps, et trois départs par cap (sur le passant, quatre blocs en
-      // arrière, quatre en avant) : au portail de la v259, huit caps depuis
-      // les seuls postes des passants n'ont trouvé aucun couloir (56 essais),
-      // alors que trois tours à la sonde en trouvaient dès le premier passant.
-      let ancre = null, candidats = 0;
-      for (const h of s2.peuple.filter((q) => q.name === 'passant')) {
-        for (let k = 0; k < 16 && !ancre; k++) {
-          const a = k * Math.PI / 8, ux = Math.cos(a), uz = Math.sin(a);
-          for (const recul of [0, -4, 4]) {
-            const x0 = h.pos.x + ux * recul, z0 = h.pos.z + uz * recul, y0 = h.surfaceY(x0, z0);
-            candidats++;
-            if (y0 === null || Math.abs(y0 - h.pos.y) > 0.01) continue;
-            if (!rueLibre(x0, z0, y0) || !rueLibre(x0 + ux * 12, z0 + uz * 12, y0)) continue;
-            if (couloirLibre(h, x0, z0, y0, ux, uz)) { ancre = { h, x0, z0, y0, ux, uz }; break; }
-          }
-        }
-        if (ancre) break;
+        if (plat) ancre = { x0: x0 + 0.5, z0: z0 + 0.5, y0: h0 + 1, ux: 1, uz: 0 };
       }
       if (!ancre) return { err: `aucun couloir libre de quatorze blocs (${candidats} essayés)` };
       {
@@ -2080,7 +2207,9 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         // l'avant du joueur est (−sin yaw, −cos yaw) : on vise (ux, uz)
         g.player.yaw = Math.atan2(-ux, -uz); g.player.pitch = 0;
         g.player.pos.set(ancre.x0, y0 + 0.1, ancre.z0); g.player.vel.set(0, 0, 0); g.player.flying = false;
-        retirerVoiture();
+        // on fait le VIDE avant d'invoquer (v284) : une bête montable devant
+        // soi passe avant la voiture, et une bête dans le couloir l'arrête
+        retirerBetes();
         g.animalManager.invoquer('voiture', g.player.pos.x + ux * 3, g.player.pos.z + uz * 3);
         for (let essai = 0; essai < 8 && !auVolant(); essai++) {
           await dormir(600);
@@ -2116,6 +2245,8 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         gens.forEach((h, k) => {
           h.placeAt(xd + ux * (5 + 3 * k), zd + uz * (5 + 3 * k), g.player.pos.y);
           h.poste.set(h.pos.x, h.pos.z); h.etat = 'pause'; h.minuteur = 30; h.pas = 0;
+          // des flâneurs qui bavardent : ni promenade, ni traversée en cours
+          h.surTrottoir = false; h.traversee = null; h.ecart = null; h.repos = 0; h.regardChoc = null;
         });
         releves = 0; traverses = 0; ecartes = 0; voituresRue = 0;
         g.player.keys.add('KeyW');
@@ -2137,7 +2268,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       return { candidats, tours, releves, traverses, ecartes, voituresRue, avance, ecartMax, encoreAuVolant: auVolant() };
     });
     verifier('la voiture de l\'enfant freine devant un piéton, qui s\'écarte, et elle repart sans lui passer au travers',
-      !roulant.err && roulant.releves >= 60 && roulant.traverses === 0 && roulant.avance >= 6,
+      !roulant.err && roulant.releves >= 60 && roulant.traverses === 0 && roulant.avance >= 6 && roulant.ecartes > 0,
       JSON.stringify(roulant));
 
     // ---- À SOIXANTE BLOCS PAR SECONDE, LE PIÉTON N'EST JAMAIS TRAVERSÉ (v351) ---
@@ -2213,6 +2344,134 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('à 60 et 70 blocs par seconde, une voiture lancée sur un piéton ne le traverse jamais : il sort à temps de la carrosserie',
       !pietonRapide.err && pietonRapide.passes.length === 6 && pietonRapide.passes.every((p) => p.touche === 0 && p.arrivee > 1.13 + 0.25 && p.images >= 4),
       JSON.stringify(pietonRapide));
+
+    // ---- UN PIÉTON FRÔLÉ SURSAUTE, FAIT UN PAS DE CÔTÉ, ET REPART AUSSITÔT (v376)
+    //
+    // Des gestes courts, jamais d'arrêt prolongé (v243). Un passant qui MARCHE
+    // à 0,6 bloc de l'axe d'une voiture lancée à 40 b/s, la tablette qui rame
+    // (cent quatre-vingts millisecondes par image, v234) : il doit sursauter
+    // (bras levés, `sursauts`), sortir de la carrosserie, et reprendre sa
+    // marche dans la seconde de MONTRE qui suit la fin de l'écart. Sur l'ancien
+    // code la pause d'après l'écart valait 0,8 seconde de JEU — trois secondes
+    // de montre à cinq images par seconde — et il n'y avait pas de sursaut.
+    const frole = await tab.evaluate(async () => {
+      const g = window.__game;
+      const { Habitant } = await import('./src/vie.js');
+      const { construireHumain } = await import('./src/personnages.js');
+      let ancre = null;
+      for (let k = 0; k < 400 && !ancre; k++) {
+        const x0 = 30000 + (k % 20) * 16, z0 = 30000 + Math.floor(k / 20) * 16;
+        const h0 = g.world.terrainHeight(x0, z0);
+        let plat = true;
+        for (let dx = -6; dx <= 6 && plat; dx++) for (let dz = -6; dz <= 6 && plat; dz++) if (g.world.terrainHeight(x0 + dx, z0 + dz) !== h0) plat = false;
+        if (plat) ancre = { x: x0 + 0.5, z: z0 + 0.5, y: h0 + 1 };
+      }
+      if (!ancre) return { err: 'aucun carré plat' };
+      const majPlayer = g.player.update, sauve = g.player.pos.clone(), gab0 = g.player.gabarit, pousse0 = g.player.pousse;
+      g.player.update = () => {};
+      const image = () => new Promise((f) => requestAnimationFrame(f));
+      const h = new Habitant(g.scene, g.world, g.player, () => {}, {
+        name: 'essai', phrases: ['…'], walkSpeed: 1.6, largeur: 0.5, hauteur: 1.72,
+        build: () => construireHumain({ tenue: 'passant' }),
+      }, ancre.x, ancre.z);
+      try {
+        const v = 40, L = 4.4, lourd = 180;
+        h.placeAt(ancre.x - 0.6, ancre.z, ancre.y);
+        h.ecart = null; h.repos = 0; h.etat = 'pause'; h.minuteur = 1e9; h.surTrottoir = false;
+        for (let k = 0; k < 10; k++) { h.update(0.02); await image(); }
+        h.placeAt(ancre.x - 0.6, ancre.z, ancre.y);
+        h.poste.set(h.pos.x, h.pos.z); h.rayon = 99;
+        // il marche vers −x, à l'écart de l'axe : la voiture le frôle
+        h.etat = 'marche'; h.capYaw = Math.PI / 2; h.minuteur = 1e9;
+        g.player.gabarit = 2.26;
+        let front = ancre.z - v * 1.2 - 6, prec = performance.now();
+        let finEcart = null, repart = null, vuEcart = false, touche = 0, px = h.pos.x, pz = h.pos.z;
+        const t0 = performance.now();
+        while (performance.now() - t0 < 12000 && repart === null) {
+          await image();
+          { const t = performance.now(); while (performance.now() - t < lourd); }
+          const now = performance.now(), dtR = Math.min(0.5, (now - prec) / 1000); prec = now;
+          const f1 = front + v * dtR;
+          if (front - L < ancre.z + 30) { g.player.pos.set(ancre.x, ancre.y, f1 - L / 2); g.player.pousse = { x: 0, z: v }; }
+          else { g.player.pousse = { x: 0, z: 0 }; g.player.pos.set(ancre.x + 40, ancre.y, ancre.z); }
+          const lat = Math.abs(h.pos.x - ancre.x);
+          h.update(Math.min(dtR, 0.05));
+          if (h.pos.z >= front - L && h.pos.z <= f1 && Math.min(lat, Math.abs(h.pos.x - ancre.x)) <= 1.13 + 0.25) touche++;
+          front = f1;
+          if (h.ecart) vuEcart = true;
+          else if (vuEcart && finEcart === null) { finEcart = performance.now(); px = h.pos.x; pz = h.pos.z; }
+          else if (finEcart !== null && Math.hypot(h.pos.x - px, h.pos.z - pz) > 0.05) repart = performance.now();
+          if (finEcart === null) { px = h.pos.x; pz = h.pos.z; }
+        }
+        return { ecarts: h.ecarts || 0, sursauts: h.sursauts || 0, touche,
+          arretS: finEcart !== null && repart !== null ? +((repart - finEcart) / 1000).toFixed(2) : null,
+          arrivee: +Math.abs(h.pos.x - ancre.x).toFixed(2) };
+      } finally {
+        g.player.update = majPlayer; g.player.gabarit = gab0; g.player.pousse = pousse0; g.player.pos.copy(sauve);
+        g.scene.remove(h.mesh);
+      }
+    });
+    verifier('un piéton frôlé sursaute, fait un pas de côté et repart aussitôt',
+      !frole.err && frole.ecarts >= 1 && frole.sursauts >= 1 && frole.touche === 0
+        && frole.arretS !== null && frole.arretS <= 1.2, JSON.stringify(frole));
+
+    // ---- ET IL SE RETOURNE VERS UN CHOC, UN INSTANT (v376) ------------------------
+    //
+    // `player.choc = { force, t, x, z }` est publié par la physique de la
+    // conduite (lu SI PRÉSENT) ; on le POSE ici, comme elle le ferait, au
+    // milieu de six passants qui marchent dans toutes les directions. Dans le
+    // tiers de seconde de montre qui suit, ils regardent le point du choc
+    // (écart de cap sous 0,3 rad) ; deux secondes plus tard, ils ont tous
+    // repris leur chemin. Ancien code : personne ne se retourne.
+    const choc = await tab.evaluate(async () => {
+      const g = window.__game;
+      const { Habitant } = await import('./src/vie.js');
+      const { construireHumain } = await import('./src/personnages.js');
+      let ancre = null;
+      for (let k = 0; k < 400 && !ancre; k++) {
+        const x0 = 30000 + (k % 20) * 16, z0 = 30000 + Math.floor(k / 20) * 16;
+        const h0 = g.world.terrainHeight(x0, z0);
+        let plat = true;
+        for (let dx = -8; dx <= 8 && plat; dx++) for (let dz = -8; dz <= 8 && plat; dz++) if (g.world.terrainHeight(x0 + dx, z0 + dz) !== h0) plat = false;
+        if (plat) ancre = { x: x0 + 0.5, z: z0 + 0.5, y: h0 + 1 };
+      }
+      if (!ancre) return { err: 'aucun carré plat' };
+      const image = () => new Promise((f) => requestAnimationFrame(f));
+      const gens = [];
+      const avait = Object.prototype.hasOwnProperty.call(g.player, 'choc'), choc0 = g.player.choc;
+      try {
+        for (let i = 0; i < 6; i++) {
+          const a = i * Math.PI / 3;
+          const h = new Habitant(g.scene, g.world, g.player, () => {}, {
+            name: 'essai', phrases: ['…'], walkSpeed: 1.6, largeur: 0.5, hauteur: 1.72,
+            build: () => construireHumain({ tenue: 'passant' }),
+          }, ancre.x + Math.cos(a) * 5, ancre.z + Math.sin(a) * 5);
+          h.surTrottoir = false; h.rayon = 99; h.etat = 'marche'; h.minuteur = 1e9; h.capYaw = a;
+          gens.push(h);
+        }
+        // chacun avance au temps de jeu de l'image (dt borné à un vingtième, comme main.js)
+        let prec = performance.now();
+        const pas = () => { const n = performance.now(), d = Math.min(0.05, (n - prec) / 1000); prec = n; gens.forEach((h) => h.update(d)); };
+        for (let k = 0; k < 6; k++) { pas(); await image(); }
+        g.player.choc = { force: 0.8, t: performance.now(), x: ancre.x, z: ancre.z };
+        const ecartCap = (h) => {
+          const vers = Math.atan2(-(ancre.x - h.pos.x), -(ancre.z - h.pos.z));
+          return Math.abs(Math.atan2(Math.sin(h.yaw - vers), Math.cos(h.yaw - vers)));
+        };
+        const t0 = performance.now();
+        while (performance.now() - t0 < 300) { pas(); await image(); }
+        const tournes = gens.filter((h) => ecartCap(h) < 0.3).length;
+        const avant = gens.map((h) => [h.pos.x, h.pos.z]);
+        while (performance.now() - t0 < 2300) { pas(); await image(); }
+        const repartis = gens.filter((h, i) => Math.hypot(h.pos.x - avant[i][0], h.pos.z - avant[i][1]) > 0.3).length;
+        return { n: gens.length, tournes, repartis, retournements: gens.reduce((n, h) => n + (h.retournements || 0), 0) };
+      } finally {
+        if (avait) g.player.choc = choc0; else delete g.player.choc;
+        gens.forEach((h) => g.scene.remove(h.mesh));
+      }
+    });
+    verifier('les passants se retournent vers un choc, un instant, puis reprennent leur chemin',
+      !choc.err && choc.tournes >= 5 && choc.repartis >= 5, JSON.stringify(choc));
 
     // ---- UNE HYPERCAR VA PLUS VITE QU'UNE CITADINE (v260) ------------------------
     //
@@ -3502,6 +3761,14 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const { RUE } = await import('./src/blocks.js');
       const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
       const cible = await poser(g, w, RUE);
+      // LES PASSANTS AUSSI, depuis qu'ils traversent (v371) : un passant sur un
+      // passage peint devant le capot arrête la voiture — c'est voulu
+      // (`pietonDevant`) — et le témoin concluait « immobile » à zéro bloc
+      // parcouru. On les éloigne à cent blocs, sous le seuil de rapatriement.
+      for (const s of g.passants.sites) for (const h of (s.peuple || [])) {
+        if (Math.hypot(h.pos.x - g.player.pos.x, h.pos.z - g.player.pos.z) > 40) continue;
+        h.traversee = null; h.ecart = null; h.placeAt(g.player.pos.x + 100, g.player.pos.z + 100, g.player.pos.y);
+      }
       // la voiture, montée par le bouton
       for (const a of [...g.animalManager.animals]) { g.animalManager.scene.remove(a.mesh); }
       g.animalManager.animals.length = 0;
@@ -4047,10 +4314,69 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       verifier('à quatre-vingts blocs par seconde dans Paris, le worker ne reste pas à sec entre deux images',
         n1.parcouru > 300 && a1.parcouru > 300 && rapport >= 1.5 && enVol <= 4,
         `débit × ${rapport} (barre 1,5) · en vol au plus ${enVol} (barre 4) · à l'arrivée : ${dit(n1)} | ${dit(n2)} · à l'image : ${dit(a1)} | ${dit(a2)}`);
-      const vn = await roulerRecharge('arrivee', true), va = await roulerRecharge('image', true);
+      // EN ORDRE ALTERNÉ (v379) : une seule paire rendait 0,753 sur
+      // `origin/main` et 0,726 sur la branche — un pile ou face sur la barre,
+      // avec la recharge FORCÉE des deux côtés (aucune règle de la livraison
+      // n'y est lue). Deux paires, ABBA, et l'on compare les moyennes.
+      const vn1 = await roulerRecharge('arrivee', true), va1 = await roulerRecharge('image', true);
+      const va2 = await roulerRecharge('image', true), vn2 = await roulerRecharge('arrivee', true);
+      const cn = (vn1.cadence + vn2.cadence) / 2, ca = (va1.cadence + va2.cadence) / 2;
       verifier('rendue dans une scène vide, la recharge à l\'arrivée garde la cadence de l\'ancienne',
-        vn.parcouru > 300 && va.parcouru > 300 && vn.cadence >= 0.75 * va.cadence,
-        `à l'arrivée ${dit(vn)} · à l'image ${dit(va)} (barre : trois quarts de la cadence)`);
+        [vn1, vn2, va1, va2].every((r) => r.parcouru > 300) && cn >= 0.75 * ca,
+        `rapport ${(cn / (ca || 1)).toFixed(2)} (barre 0,75, moyennes ABBA) · à l'arrivée ${dit(vn1)} | ${dit(vn2)} · à l'image ${dit(va1)} | ${dit(va2)}`);
+    }
+
+    // APRÈS UNE TÉLÉPORTATION, LA FILE SE RECHARGE À L'ARRIVÉE LE TEMPS DE
+    // REMPLIR LE DISQUE, PUIS SE REND (v379).
+    //
+    // Sondé (sonde-teleport-recharge.cjs, deux tours alternés, Paris) : à la
+    // recharge par image, 291 à 304 morceaux sur 625 en vingt secondes ; à
+    // l'arrivée, 90 % en 5,5 à 6,4 s ; dans une scène VIDE, les deux modes
+    // chargent en 4,1 à 4,4 s à 57 images par seconde — le chargement ne prend
+    // rien aux images. Le banc rendant en logiciel, la recharge y reste coupée
+    // (v360) : le témoin lit donc la RÈGLE (`rechargeRegle`), garde du rendu
+    // logiciel mise à part. Trois cas : un saut l'arme, elle se rend quand la
+    // file est vide, et un pas d'un morceau ne l'arme pas. Sur l'ancien code la
+    // règle n'existe pas : rouge, proprement.
+    {
+      await souffler();
+      const r = await ciel.evaluate(async () => {
+        const g = window.__game;
+        const lire = () => g.rechargeRegle;
+        if (!lire()) return { regle: false };
+        const { positionDe } = await import('./src/mondes.js');
+        const patienter = (ms) => new Promise((fin) => {
+          const t0 = performance.now();
+          const tic = () => (performance.now() - t0 < ms ? requestAnimationFrame(tic) : fin());
+          requestAnimationFrame(tic);
+        });
+        const p = g.player;
+        p.flying = true;
+        const R = g.reglageApplique.rr;
+        // le pas d'un morceau d'abord, depuis une position installée
+        const x0 = p.pos.x, z0 = p.pos.z;
+        await patienter(300);
+        p.pos.set(x0 + 16, p.pos.y, z0); p.vel.set(0, 0, 0);
+        await patienter(400);
+        const apresUnPas = lire().arrivee;
+        // le saut : Rome, à plusieurs milliers de blocs
+        const P = positionDe('rome');
+        const y = g.world.terrainHeight(P.x, P.z) + 3;
+        const poser = () => { p.pos.set(P.x + 0.5, y, P.z + 0.5); p.vel.set(0, 0, 0); };
+        poser();
+        await patienter(400);
+        const apresLeSaut = lire().arrivee, fileApres = g.fileDeMorceaux.length;
+        const t0 = performance.now();
+        while (performance.now() - t0 < 15000 && lire().arrivee) { poser(); await patienter(250); }
+        const rendueEn = Math.round(performance.now() - t0);
+        const apresLaFenetre = lire().arrivee;
+        p.flying = false;
+        return { regle: true, R, apresUnPas, apresLeSaut, fileApres, rendueEn, apresLaFenetre };
+      });
+      verifier('après une téléportation, la file se recharge à l\'arrivée le temps de remplir le disque, puis se rend',
+        r.regle && r.apresUnPas === false && r.apresLeSaut === true && r.apresLaFenetre === false && r.rendueEn <= 11000,
+        r.regle ? `un pas : ${r.apresUnPas} · le saut : ${r.apresLeSaut} (${r.fileApres} morceaux en file) · rendue en ${r.rendueEn} ms : ${r.apresLaFenetre}`
+          : 'pas de règle de recharge à l\'arrivée après un saut (`__game.rechargeRegle` absent)');
     }
 
     // L'ÉCRAN NE SE FIGE PLUS EN ARRIVANT SUR UNE VILLE (v235).
@@ -4088,20 +4414,26 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       g.player.vitesseAvion = def.pilote.max;
       g.player.avionEnVol = true; g.player.avionEtat = 'vol';
       g.player.altitudeDecollage = -9999;
+      // la scène VIDE (v379) : voir plus bas, « ce que le banc dessine »
+      const rendre = g.renderer.render, rendreLie = rendre.bind(g.renderer), vide = new g.scene.constructor();
+      g.renderer.render = (s, c) => rendreLie(s === g.scene ? vide : s, c);
       await new Promise((f) => setTimeout(f, 3000));
       const durees = [];
+      const x0 = g.player.pos.x;
       let prec = performance.now(), actif = true;
       const tic = (t) => { durees.push(t - prec); prec = t; if (actif) requestAnimationFrame(tic); };
       requestAnimationFrame(tic);
       await new Promise((f) => setTimeout(f, 18000));
       actif = false;
+      g.renderer.render = rendre;
+      const parcouru = Math.round(g.player.pos.x - x0);
       g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined;
       g.player.vitesseAvion = undefined; g.player.flying = false;
       const total = durees.reduce((a, c) => a + c, 0);
       const partAuDela = (s) => +(durees.filter((d) => d > s)
         .reduce((a, c) => a + c, 0) / total * 100).toFixed(1);
       return {
-        images: durees.length,
+        images: durees.length, parcouru,
         pireImage: Math.round(Math.max(...durees)),
         partAuDela300: partAuDela(300),
         cadence: +(durees.length / (total / 1000)).toFixed(1),
@@ -4123,10 +4455,29 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // verdict, lui, tombait pour sa propre raison. Trente, la valeur que
     // `programmes.images` utilise déjà pour dire la même chose (v246) : une
     // page morte rend zéro.
+    // CE QUE LE BANC DESSINE NE SE TRANSPOSE PAS, ET LE TÉMOIN NE LE MESURE
+    // PLUS (v379). Rouge des deux côtés depuis plusieurs portails (1 367 ms ·
+    // 21,7 % sur la branche de la v360, 2 350 ms · 20,5 % sur `origin/main`),
+    // il a été démonté par une sonde qui sépare, image par image, ce qui la
+    // remplit (sonde-arrivee-ville.cjs, deux tours, ce même vol) : dans les
+    // images de plus de 300 ms, 1 à 5 ms d'installation, ZÉRO programme
+    // compilé, 18 à 49 ms de JavaScript de rendu, pour des images de 1 267 à
+    // 1 550 ms ; et la même page dans une scène vide rend 83 à 100 ms au pire,
+    // zéro pour cent au-delà de 300. Le gel est SwiftShader qui dessine Paris
+    // (84 à 158 appels), au processeur — le paysage lointain, les ombres, la
+    // couche HD et le bâti lointain sont déjà coupés en rendu logiciel. Le
+    // témoin rend donc une scène VIDE pendant le vol, comme le témoin de
+    // cadence de la v360 : il garde ce que la v235 a corrigé — du JavaScript
+    // qui fige une image (`animerLesVilles`, 557 ms) — et tout ce qui vit sur le
+    // fil principal à l'arrivée (installation, naissances, programmes), pas le
+    // pilote graphique du banc. Vérifié capable de rougir : le remède de la
+    // v235 désarmé dans une copie (chaque convoi fabrique ses voitures à sa
+    // naissance), il rend 9,2 et 10,8 % du temps dans des images de plus de
+    // 300 ms (barre 5) ; armé, 0 % et 100 à 117 ms au pire.
     verifier('l\'écran ne se fige pas en arrivant sur une ville',
-      !secousses.err && secousses.images > 30
+      !secousses.err && secousses.images > 30 && secousses.parcouru > 500
         && secousses.pireImage <= 550 && secousses.partAuDela300 <= 5,
-      JSON.stringify(secousses));
+      `scène vide pendant le vol · ${JSON.stringify(secousses)}`);
 
     // VOLER NE REMPLIT PLUS LA MÉMOIRE DE LA TABLETTE (v236).
     //
@@ -4193,8 +4544,11 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // ses pixels — 1 782 blocs en v247, 1 127 en v248, 964 en v249, pour une
     // borne de 1 000 qui ne séparait plus « ça a volé » de « ça n'a pas
     // volé ». Cinq cents : un vol qui n'a pas eu lieu rend zéro.
+    // ET CINQ CENTS ÉTAIT REDEVENU LA MESURE (v379) : 490 et 494 sur la
+    // branche, 528 sur `origin/main` rejoué seul — la même borne posée à
+    // nouveau SUR la valeur, ce que la règle interdit. Deux cent cinquante.
     verifier('voler une demi-minute ne remplit pas la mémoire de la tablette',
-      !memoire.err && memoire.parcouru > 500 && memoire.moBlocs <= 100,
+      !memoire.err && memoire.parcouru > 250 && memoire.moBlocs <= 100,
       `barre 100 Mo · ${JSON.stringify(memoire)}`);
 
     // ET CE QU'UN ENFANT A POSÉ SURVIT À L'OUBLI DE SON MORCEAU.
@@ -5895,7 +6249,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !sons.err && sons.descendu && sons.apresDescente < sons.auRalenti / 4,
       `${sons.err || ''} ${JSON.stringify(sons)}`);
 
-    // LES SENSATIONS AU VOLANT (v370).
+    // LES SENSATIONS AU VOLANT (v381).
     //
     // Max : « l'impression de conduire dans GTA ». La caméra de poursuite
     // était rivée à six blocs quatre derrière la voiture quelle que soit
@@ -6410,6 +6764,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     const embLieu = await emb.evaluate(async () => {
       const g = window.__game, w = g.world;
       const { WATER_LEVEL } = await import('./src/world.js');
+      const VM = await import('./src/villesmonde.js');
       let lieu = null;
       for (let k = 0; k < 20000 && !lieu; k++) {
         const x = -600 + ((k % 140) - 70) * 29, z = -520 + (Math.floor(k / 140) - 70) * 29;
@@ -6425,8 +6780,15 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         // refusés pour « circulation » (v366)
         let loin = true;
         for (let dx = -60; dx <= 60 && loin; dx += 6) for (let dz = -60; dz <= 60 && loin; dz += 6) if (w.corridorEn && w.corridorEn(x + dx, z + dz)) loin = false;
-        // et des villes, dont les voitures roulent jusqu'au bord du disque
-        for (let a = 0; a < 16 && loin; a++) for (const r of [60, 120]) if (w.cityAt && w.cityAt(x + Math.cos(a * Math.PI / 8) * r, z + Math.sin(a * Math.PI / 8) * r)) loin = false;
+        // et des villes, dont les voitures roulent jusqu'au bord du disque —
+        // TOUTES les villes : `cityAt` ne connaît que les villes bâties à la
+        // main, et la « prairie » d'avant était DANS Manchester (46 blocs de
+        // son centre, rayon 65) ; un circuit de la ville passait à 3,5 blocs
+        // de la voiture, d'où le refus « circulation » côté passager, juste
+        // (sonde de la v373, `refus` + places de la rue au moment du refus)
+        const enVille = (u, v) => (w.cityAt && w.cityAt(u, v)) || VM.dansVilleMonde(u, v);
+        if (enVille(x, z)) continue;
+        for (let a = 0; a < 16 && loin; a++) for (const r of [30, 60, 120]) if (enVille(x + Math.cos(a * Math.PI / 8) * r, z + Math.sin(a * Math.PI / 8) * r)) loin = false;
         if (loin) lieu = { x: x + 0.5, z: z + 0.5, h };
       }
       return lieu;
@@ -6635,6 +6997,123 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     });
     verifier('une voiture déjà froissée ne prend pas de portière, et garde son froissé',
       !embAbimee.err && !embAbimee.equipee && embAbimee.gardee, JSON.stringify(embAbimee));
+    // 10. LES BORDS DE LA PORTIÈRE SE COUPENT AU PLAN (v372). La Lucid
+    // Gravity a de grands triangles à cheval sur les bords du volume : la
+    // v366 les emportait entiers (21 % de la surface, portière de 1,49 bloc
+    // pour un volume de 1,25 — les dents de scie). Le témoin mesure la
+    // portière SANS lire le plan : l'étendue en z des sommets de ses
+    // maillages, dans le repère de la voiture, contre le volume ; puis la
+    // surface totale de la caisse et des portières contre celle du
+    // prototype (rien de perdu, rien de doublé). Et la voiture équipée se
+    // froisse quand même (dégâts, v343) : la portière reste sur son pivot.
+    const embBords = await emb.evaluate(async () => {
+      const THREE = await import('three');
+      const g = window.__game;
+      let P, V;
+      try { P = await import('./src/portieres.js'); V = await import('./src/vehicules.js'); } catch { return { err: 'pas de portières' }; }
+      const b = g.animalManager.invoquer('voiture', g.player.pos.x - 12, g.player.pos.z + 12, false, { flotte: 'lucid-gravity.glb' });
+      for (let i = 0; i < 80 && !b.mesh.userData.modele; i++) await new Promise((r) => setTimeout(r, 100));
+      if (!b.mesh.userData.modele) return { err: 'modèle absent' };
+      const eq = P.equiperPortieres(b.mesh);
+      if (!eq) return { err: 'pas équipée', refus: P.refus.get('lucid-gravity.glb') || null };
+      const plan = eq.plan;
+      b.mesh.updateMatrixWorld(true);
+      const inv = new THREE.Matrix4().copy(b.mesh.matrixWorld).invert();
+      const v = new THREE.Vector3(), w = new THREE.Vector3(), u = new THREE.Vector3();
+      const M = new THREE.Matrix4();
+      const roue = (o, racine) => { for (let q = o; q && q !== racine; q = q.parent) if (/^Wheel_/i.test(q.name || '')) return true; return false; };
+      const aire = (racine, filtre) => {
+        let s = 0;
+        racine.updateMatrixWorld(true);
+        const invR = new THREE.Matrix4().copy(racine.matrixWorld).invert();
+        racine.traverse((o) => {
+          if (!o.isMesh || roue(o, racine) || !filtre(o)) return;
+          M.multiplyMatrices(invR, o.matrixWorld);
+          const pos = o.geometry.attributes.position, ix = o.geometry.index;
+          const n = o.geometry.userData.endroit != null ? o.geometry.userData.endroit : ix ? ix.count : pos.count;   // le revers (v373) n'est pas de la surface en plus
+          for (let i = 0; i + 2 < n; i += 3) {
+            v.fromBufferAttribute(pos, ix ? ix.getX(i) : i).applyMatrix4(M);
+            w.fromBufferAttribute(pos, ix ? ix.getX(i + 1) : i + 1).applyMatrix4(M).sub(v);
+            u.fromBufferAttribute(pos, ix ? ix.getX(i + 2) : i + 2).applyMatrix4(M).sub(v);
+            s += w.cross(u).length() / 2;
+          }
+        });
+        return s;
+      };
+      let zMin = Infinity, zMax = -Infinity;
+      for (const c of ['-1', '1']) eq[c].traverse((o) => {
+        if (!o.isMesh) return;
+        M.multiplyMatrices(inv, o.matrixWorld);
+        const pos = o.geometry.attributes.position, ix = o.geometry.index;
+        const n = ix ? ix.count : pos.count;
+        for (let i = 0; i < n; i++) { v.fromBufferAttribute(pos, ix ? ix.getX(i) : i).applyMatrix4(M); zMin = Math.min(zMin, v.z); zMax = Math.max(zMax, v.z); }
+      });
+      const proto = await V.chargerVoitureFlotte(V.FLOTTE.find((f) => f.fichier === 'lucid-gravity.glb'));
+      const aProto = aire(proto, (o) => !(o.userData && o.userData.arms));
+      const aVoiture = aire(b.mesh, (o) => !(o.userData && o.userData.arms) && !o.userData.effetDegats);
+      const debord = Math.max(0, plan.z0 - zMin) + Math.max(0, zMax - plan.z1);
+      // et le choc sur le flanc gauche, après
+      let froisse = null;
+      if (g.fun.degats && g.fun.degats.choc) {
+        g.fun.degats.choc(b.mesh, { force: 1, lx: -1.1, lz: -0.5 }, true);
+        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+        let surPivot = 0; eq['-1'].traverse((o) => { if (o.isMesh) surPivot++; });
+        froisse = { surPivot, etat: g.fun.degats.etat(b.mesh) ? +g.fun.degats.etat(b.mesh).sante.toFixed(2) : null };
+      }
+      g.animalManager.scene.remove(b.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(b), 1);
+      return { volume: [+plan.z0.toFixed(3), +plan.z1.toFixed(3)], portiere: [+zMin.toFixed(3), +zMax.toFixed(3)], debord: +debord.toFixed(3),
+        aire: [+aProto.toFixed(2), +aVoiture.toFixed(2)], froisse };
+    });
+    verifier('les bords de la portière sont coupés au plan du volume, rien de perdu, et elle se froisse quand même',
+      !embBords.err && embBords.debord < 0.02 && Math.abs(embBords.aire[1] - embBords.aire[0]) < 0.005 * embBords.aire[0]
+        && (!embBords.froisse || embBords.froisse.surPivot > 0),
+      JSON.stringify(embBords));
+    // 11. LE REVERS D'UNE PORTIÈRE OUVERTE SE VOIT (v373). Aucun modèle de
+    // la flotte n'a meublé l'intérieur de sa portière : vue de derrière —
+    // l'enfant qui arrive par l'arrière — la face simple était culée, et l'on
+    // voyait au travers. Des rayons (la face culée ne les arrête pas : le
+    // Raycaster lit `side` comme la carte graphique) visent la portière
+    // ouverte de face, puis de derrière ; il en faut autant d'un côté que de
+    // l'autre. Et la portière garde UN maillage par matériau : le revers est
+    // dans la même géométrie, pas un appel de dessin de plus.
+    const embRevers = await emb.evaluate(async () => {
+      const THREE = await import('three');
+      const g = window.__game;
+      let P;
+      try { P = await import('./src/portieres.js'); } catch { return { err: 'pas de portières' }; }
+      const b = g.animalManager.invoquer('voiture', g.player.pos.x + 14, g.player.pos.z - 12, false, { flotte: 'amg-gt-black-series.glb' });
+      for (let i = 0; i < 80 && !b.mesh.userData.modele; i++) await new Promise((r) => setTimeout(r, 100));
+      const eq = b.mesh.userData.modele ? P.equiperPortieres(b.mesh) : null;
+      if (!eq) return { err: 'pas équipée' };
+      P.ouvrir(eq['-1'], 1);
+      b.mesh.updateMatrixWorld(true);
+      const p = eq['-1'], plan = eq.plan, L = p.userData.longueur;
+      const portes = [], tout = [];
+      p.traverse((o) => { if (o.isMesh) portes.push(o); });
+      b.mesh.traverse((o) => { if (o.isMesh) tout.push(o); });
+      const rc = new THREE.Raycaster(); rc.layers.enableAll();
+      const viser = (oeilLocal) => {
+        const oeil = oeilLocal.clone().applyMatrix4(b.mesh.matrixWorld);
+        let n = 0;
+        for (let k = 0; k < 6; k++) for (let j = 0; j < 4; j++) {
+          const cible = new THREE.Vector3(-0.05, plan.y0 + (plan.y1 - plan.y0) * (j + 0.5) / 4, L * (k + 0.5) / 6).applyMatrix4(p.matrixWorld);
+          const d = cible.clone().sub(oeil); const dist = d.length(); d.normalize();
+          rc.set(oeil, d); rc.far = dist + 1;
+          const h = rc.intersectObjects(tout, false);
+          if (h.length && portes.includes(h[0].object)) n++;
+        }
+        return n;
+      };
+      const face = viser(new THREE.Vector3(-plan.demiLarg - 2.5, 0.9, plan.z0 - 0.8));
+      const dos = viser(new THREE.Vector3(-plan.demiLarg + 0.2, 0.9, plan.z1 + 1.2));
+      // autant de maillages de portière que de maillages découpés : le revers n'en ajoute aucun
+      const attendus = plan.geos.filter((x) => x && x['-1']).length;
+      g.animalManager.scene.remove(b.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(b), 1);
+      return { face, dos, maillages: portes.length, attendus };
+    });
+    verifier('une portière ouverte se voit aussi de derrière, sans un appel de dessin de plus',
+      !embRevers.err && embRevers.face > 4 && embRevers.dos >= embRevers.face / 2 && embRevers.maillages === embRevers.attendus,
+      JSON.stringify(embRevers));
     verifier('aucune erreur JavaScript pendant l\'embarquement', emb.erreurs.length === 0, JSON.stringify(emb.erreurs));
     await emb.close();
   } finally {

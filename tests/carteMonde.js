@@ -2216,6 +2216,54 @@ const VRAIES_KM = [
       !dc.absent && dc.circuits.length > 0 && dc.circuits.every((c) => c.pas > 0 && c.jardin === 0),
       JSON.stringify(dc.absent ? dc : dc.circuits.map((c) => [c.pas, c.jardin])));
 
+    // LA GRILLE DE WASHINGTON À LA RÈGLE DU KIT (v370). Jusqu'à la v369 une
+    // rue de la grille avait DEUX colonnes de chaussée — pour une voiture de
+    // 2,26 — et un seul trottoir. On coupe la grille des quartiers bâtis en
+    // travers, ligne par ligne, et l'on mesure chaque rue rencontrée : la
+    // largeur de chaussée (bitume, ligne, passage) entre deux trottoirs, et
+    // chaque trottoir. Une rue locale du kit : chaussée `floor(3,1)` = 3, deux
+    // trottoirs de 2. La médiane se compare, pas le minimum (une avenue qui
+    // croise élargit une coupe). Et la ville garde ses maisons : la part de
+    // lots du disque reste au-dessus de 10 % (14,2 avant, 11,2 après, mesuré :
+    // quatre maisons par îlot autour d'une ruelle).
+    const grille = await tab.evaluate(async () => {
+      const m = await import('./src/washington.js');
+      const b = await import('./src/blocks.js');
+      const CH = new Set([b.CITY_BLOCK.ASPHALT, b.CITY_BLOCK.ROADLINE, b.CITY_BLOCK.CROSSWALK]);
+      const TR = b.CITY_BLOCK.SIDEWALK;
+      const sol = (u, v) => m.solWashington(m.WASHINGTON.x + u, m.WASHINGTON.z + v);
+      const chaussees = [], trottoirs = [];
+      // Penn Quarter, Capitol Hill, Logan Circle : des coupes est-ouest et nord-sud
+      const coupes = [];
+      for (const v of [-50, -44, -36, 8, 12, -98, -94]) coupes.push((k) => [k, v]);
+      for (const u of [-70, -64, 40, 46, -40]) coupes.push((k) => [u, k]);
+      for (const f of coupes) {
+        let k = -160;
+        while (k < 70) {
+          const [u, v] = f(k);
+          if (sol(u, v) !== TR) { k++; continue; }
+          // un trottoir, puis une chaussée, puis un trottoir : une rue
+          let t1 = 0; while (sol(...f(k)) === TR) { t1++; k++; }
+          let c = 0; while (CH.has(sol(...f(k)))) { c++; k++; }
+          let t2 = 0; while (sol(...f(k)) === TR) { t2++; k++; }
+          if (c > 0 && c <= 4 && t2 > 0) { chaussees.push(c); trottoirs.push(t1, t2); }
+        }
+      }
+      const med = (a) => { const s = [...a].sort((x, y) => x - y); return s.length ? s[s.length >> 1] : 0; };
+      let lots = 0, tot = 0;
+      const B = m.BOITE;
+      for (let u = B.u0; u <= B.u1; u += 2) for (let v = B.v0; v <= B.v1; v += 2) {
+        const x = m.WASHINGTON.x + u, z = m.WASHINGTON.z + v;
+        if (m.solWashington(x, z) === undefined) continue;
+        tot++;
+        if (m.lotWashingtonLibre(x, z)) lots++;
+      }
+      return { rues: chaussees.length, chaussee: med(chaussees), trottoir: med(trottoirs), lots: Math.round(1000 * lots / tot) / 10 };
+    });
+    verifier('les rues de la grille de Washington ont la section du kit : trois de chaussée, deux trottoirs',
+      grille.rues >= 20 && grille.chaussee >= 3 && grille.trottoir >= 2 && grille.lots >= 10,
+      `${grille.rues} rues coupées · chaussée médiane ${grille.chaussee} · trottoir ${grille.trottoir} · lots ${grille.lots} %`);
+
     // --- LONDRES : DES AVENUES QUI SE CROISENT, ET DES BOUCLES QUI COUVRENT
     // LA VILLE -----------------------------------------------------------------
     //
@@ -5051,7 +5099,12 @@ const VRAIES_KM = [
     // Fort sont bâtis SUR deux tabliers (neuf pas bouchés) — un conflit de
     // plan entre les anneaux et les monuments. Dettes dans TASKS.md ; une
     // dette qui ne mesure plus rien rougit.
-    const DETTE_PONTS = { berlin: { sansSol: 1, surLaTete: 0 }, agra: { sansSol: 0, surLaTete: 9 } };
+    // Agra est payée en v378 : un anneau qui passe dans un monument est écarté
+    // à la source (`traverseUnMonument`), et ses ponts avec lui (9 → 0 pas).
+    // Berlin aussi (v378) : l'anneau dont le bout de pont tombait hors de
+    // `pontDeVille` passait dans le Berliner Dom ; écarté, la dette ne mesure
+    // plus rien (1 → 0).
+    const DETTE_PONTS = {};
     verifier('et on le traverse à pied d\'une rive à l\'autre',
       fleuves.ponts.filter((p) => p.cinq).length === 5
       && fleuves.ponts.every((p) => (DETTE_PONTS[p.cle]

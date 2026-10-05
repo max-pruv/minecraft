@@ -319,7 +319,16 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // v369 : le Panthéon de Rome reçoit sa rotonde et son portique, et Rome est
 // un des neuf lieux — voulu. Bâtisseurs neufs de la v369 désarmés, la branche
 // rend 7d235907…, la constante d'`origin/main` (v368), au bit près.
-const EMPREINTE_MORCEAUX_V357 = '27789d06e841d95492a1d47b89e300713384850f02b671a5837ee08757f80d0c';
+// v370 : la grille de Washington à la règle du kit — le CONTENU du lieu
+// « washington » change, voulu. Mesuré lieu par lieu (une empreinte par
+// lieu, sonde du scratchpad) sur `origin/main` (v367 puis v369) et sur la branche :
+// les huit autres lieux identiques au bit près, Washington seul diffère
+// (7bb3f492… → 019bb14a…).
+// v378 : les anneaux de voitures écartent les monuments, et leurs ponts avec
+// eux — voulu (un tablier est un sol). Le filtre désarmé et les anneaux de
+// quartier d'Agra et du Cap retirés, la branche rend e72d29bc…, la constante
+// d'`origin/main` (v375), au bit près.
+const EMPREINTE_MORCEAUX_V357 = 'ddf97f87ddc62b3ef54426dabb1d54ddff43c8c478df185015bdb8187548b483';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -731,10 +740,88 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         const g = gabaritDe(m.tour || m.build);
         if (g) par[g].push(`${f.ancre.nom}|${m.nom}`);
       }
-      verifier('aucune coupole de gabarit ne reste dans le monde, quelle que soit sa hauteur',
-        par.dome.length === 0,
+      // ET PLUS UN PALAIS DE GABARIT (v375) : les huit derniers — le Dam, le
+      // Rijksmuseum, le château de Prague, le palais de Stockholm, Amalienborg,
+      // Gyeongbokgung, la Casa Rosada, le palais Bahia — ont leur bâtisseur.
+      // Huit sur `origin/main`, zéro ici.
+      verifier('aucune coupole ni aucun palais de gabarit ne reste dans le monde, quelle que soit sa hauteur',
+        par.dome.length === 0 && par.palaisLong.length === 0,
         `${par.dome.length} coupole(s) de gabarit${par.dome.length ? ' : ' + par.dome.join(' · ') : ''}`
-        + ` · palais de gabarit (dette) : ${par.palaisLong.length}`);
+        + ` · ${par.palaisLong.length} palais de gabarit${par.palaisLong.length ? ' : ' + par.palaisLong.join(' · ') : ''}`);
+    }
+
+    // UN MONUMENT NE SE BÂTIT PAS EN TRAVERS D'UN ANNEAU DE VOITURES (v375).
+    // Les anneaux des villes engendrées sont choisis sur la trame, sans
+    // regarder les repères : relevé à la livraison, quarante-cinq monuments
+    // posent des blocs à hauteur de carrosserie (couches 1 à 3) sur une case
+    // qu'une voiture traverse — le conflit de plan déjà vu à Agra (v362). Les
+    // huit palais neufs se bâtissent dans la partie libre de leur boîte, et
+    // quatre gabarits qui coupaient un anneau (Dam 6, Rijksmuseum 12, Prague
+    // 10, Gyeongbokgung 8 colonnes) n'en coupent plus. Le reste est une dette
+    // DÉCLARÉE, chiffre par chiffre (`TASKS.md`) : un repère qui coupe un
+    // anneau de plus que sa dette, ou un repère neuf qui en coupe un, rougit ;
+    // une dette qui ne mesure plus rien rougit aussi. ET LA DETTE EST PAYÉE
+    // EN v378 : l'anneau qui passerait dans un monument est écarté à la
+    // source ; la carrosserie se lit désormais à ±1,1 bloc (1,13 vrais), la
+    // lecture du filtre. Sur `origin/main` : quarante-huit monuments en
+    // travers, ici zéro.
+    {
+      const VMa = await import('../src/villesmonde.js');
+      // Vidée en v378 : les anneaux écartent les cases que bâtit un monument
+      // (`traverseUnMonument`, villesmonde.js). Une entrée qu'on y remettrait
+      // devrait porter sa mesure.
+      const DETTE_ANNEAUX = {};
+      const wa = new W.World();
+      const traces = VMa.tracesCirculation((x, z) => wa.terrainHeight(x, z));
+      const fautes = [], mesure = {};
+      let lus = 0;
+      for (const f of VMa.VILLES_MONDE) {
+        const pres = traces.filter((t) => t.cle === f.cle);
+        if (!pres.length) continue;
+        const cases = new Set();
+        for (const t of pres) for (let i = 0; i < t.pts.length; i++) {
+          const p = t.pts[i], q = t.pts[(i + 1) % t.pts.length];
+          const n = Math.ceil(Math.hypot(q.x - p.x, q.z - p.z) * 2);
+          for (let k = 0; k <= n; k++) {
+            const x = p.x + (q.x - p.x) * k / n, z = p.z + (q.z - p.z) * k / n;
+            for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) cases.add(Math.floor(x + a * 1.1) + ',' + Math.floor(z + b * 1.1));
+          }
+        }
+        for (const m of f.monuments || []) {
+          const lm = W.REPERES.find((r) => r.name === m.nom && W.villeDuRepere(r) === f.ancre.nom);
+          if (!lm) continue;
+          lus++;
+          const vus = new Set();
+          (m.tour || m.build)((x, y, z, id) => {
+            if (!id || y < 1 || y > 3) return;
+            const k = (lm.x + x) + ',' + (lm.z + z);
+            if (cases.has(k)) vus.add(k);
+          });
+          const cle = `${f.ancre.nom}|${m.nom}`;
+          if (vus.size) mesure[cle] = vus.size;
+          if (vus.size > (DETTE_ANNEAUX[cle] || 0)) fautes.push(`${cle} ${vus.size}${DETTE_ANNEAUX[cle] ? ' (dette ' + DETTE_ANNEAUX[cle] + ')' : ''}`);
+        }
+      }
+      // ET LE JEU LES CALCULE À L'APPROCHE (v378) : la marque d'une ville se
+      // déplie en EXACTEMENT les traces que le calcul entier lui donne —
+      // sinon les voitures rouleraient sur d'autres anneaux que ceux que ce
+      // témoin mesure.
+      let paresseusesEgales = !!VMa.tracesCirculationParesseuses, nbMarques = 0;
+      if (paresseusesEgales) {
+        const sol = (x, z) => wa.terrainHeight(x, z);
+        const toutes = JSON.stringify(VMa.tracesCirculation(sol));
+        const marques = VMa.tracesCirculationParesseuses(sol);
+        nbMarques = marques.length;
+        paresseusesEgales = JSON.stringify(marques.flatMap((m) => m.deplier())) === toutes;
+      }
+      verifier('les anneaux d\'une ville se calculent à l\'approche, et ce sont les mêmes',
+        paresseusesEgales && nbMarques > 250, `${nbMarques} villes en attente · identiques : ${paresseusesEgales}`);
+      const pourRien = Object.keys(DETTE_ANNEAUX).filter((k) => !mesure[k]);
+      verifier('aucun monument ne se bâtit en travers d\'un anneau de voitures au-delà de sa dette déclarée',
+        lus > 100 && fautes.length === 0 && pourRien.length === 0,
+        `${lus} monuments lus, ${Object.keys(mesure).length} en dette`
+        + (fautes.length ? ` — EN TRAVERS : ${fautes.join(' · ')}` : '')
+        + (pourRien.length ? ` — DÉCLARÉS POUR RIEN : ${pourRien.join(' · ')}` : ''));
     }
 
     // PARIS À L'ÉCHELLE DU CIEL : un bloc pour un mètre jusqu'à la corniche,
@@ -1733,7 +1820,8 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   // ne retient rien — la ville neuve bâtit dessous. Rouge sur `origin/main` :
   // la date n'existe pas, et les deux premiers cas montrent la ville neuve.
   // ET NICE À LA v359, PAR LA MÊME RÈGLE : la fonction se joue ville par ville.
-  // SAN FRANCISCO À LA v361, LILLE À LA v368.
+  // SAN FRANCISCO À LA v361, LILLE À LA v370, WASHINGTON À LA v370 — dont le
+  // bâtisseur prend aussi la cote du sol (`bat`).
   const figee = async (date, avant, neuf, ancre, sol, libre, batir) => {
     const W = await import('../src/world.js');
     if (!W[date]) return { absent: true };
@@ -1744,6 +1832,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const L = N[ancre], t = W[date] - 86400000;
     const nf = new W.World();
     const av = new W.World({ v308: true });   // les villes d'avant le kit partout
+    const bat = (M, x, z, f) => (M[batir].length >= 4 ? M[batir](x, z, nf.terrainHeight(x, z), f) : M[batir](x, z, f));
     // une ancienne rue que la ville neuve bâtit, et un ancien lot qu'elle fait rue
     let rueBatie = null, lotRue = null;
     for (let d = 10; d < L.r - 5 && !(rueBatie && lotRue); d++) for (let a = 0; a < 64; a++) {
@@ -1752,7 +1841,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       const croix = (f) => [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]].every(([i, j]) => f(x + i, z + j));
       // une façade neuve (le bâtisseur y monte un mur) sur neuf colonnes d'ancienne
       // chaussée — pas un trottoir, où la ville d'avant a ses arbres et ses réverbères
-      const mur = () => { let n = 0; N[batir](x, z, (dy) => { if (dy >= 3) n++; }); return n >= 3; };
+      const mur = () => { let n = 0; bat(N, x, z, (dy) => { if (dy >= 3) n++; }); return n >= 3; };
       // et rien n'y est posé par-dessus dans la ville d'avant — un monument se
       // pose APRÈS les colonnes (Lille, v368 : la Vieille Bourse à côté)
       const degage = () => croix((xx, zz) => {
@@ -1792,7 +1881,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     for (let y = gm + 1; y <= gm + 6; y++) if (neufM.getBlock(mx, y, mz) !== 0) batiNeuf++;
     // 2. une cabane sur l'ancien toit
     const [cx, cz] = lotRue, gc = nf.terrainHeight(cx, cz);
-    const toit = (() => { let y0 = gc; A[batir](cx, cz, (dy) => { y0 = Math.max(y0, gc + dy - 1); }); return y0; })();
+    const toit = (() => { let y0 = gc; bat(A, cx, cz, (dy) => { y0 = Math.max(y0, gc + dy - 1); }); return y0; })();
     const wc = monde({ [`${cx},${toit + 1},${cz}`]: [8, t] });
     const porte = wc.getBlock(cx, toit, cz) !== 0;
     return { absent: false, enferme, batiNeuf, porte, toit, gc, rueBatie, lotRue };
@@ -1802,6 +1891,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     ['Nice', ['DATE_RUES_NICE', 'nice-v340.js', 'nice.js', 'NICE', 'solNice', 'lotNiceLibre', 'batirColonneNice']],
     ['San Francisco', ['DATE_RUES_SF', 'sanfrancisco-v343.js', 'sanfrancisco.js', 'SF', 'solSF', 'lotSFLibre', 'batirColonneSF']],
     ['Lille', ['DATE_RUES_LILLE', 'lille-v344.js', 'lille.js', 'LILLE', 'solLille', 'lotLilleLibre', 'batirColonneLille']],
+    ['Washington', ['DATE_RUES_WASHINGTON', 'washington-v367.js', 'washington.js', 'WASHINGTON', 'solWashington', 'lotWashingtonLibre', 'batirColonneWashington']],
   ]) {
     const r = await figee(...args);
     verifier(`à ${ville}, une maison posée sur une ancienne rue n'est pas enfermée dans un immeuble neuf`,
@@ -2135,16 +2225,26 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     }
     // ce que la surface coûte au mailleur : médiane de neuf passages alternés
     const med = (a) => { const b = [...a].sort((p, q) => p - q); return b[b.length >> 1]; };
-    const avec = [], sans = [];
+    const avec = [], sans = [], ecarts = [];
     const cx = Math.floor(-110 / CHUNK), cz = Math.floor(-330 / CHUNK);
+    const passe = (sansSurface) => {
+      w.sansSolContinu = sansSurface; const t0 = performance.now(); buildChunkTampons(w, cx, cz);
+      w.sansSolContinu = false; return performance.now() - t0;
+    };
     for (let i = 0; i < 9; i++) {
-      let t0 = performance.now(); buildChunkTampons(w, cx, cz); avec.push(performance.now() - t0);
-      w.sansSolContinu = true; t0 = performance.now(); buildChunkTampons(w, cx, cz); sans.push(performance.now() - t0); w.sansSolContinu = false;
+      // ordre alterné, et l'ÉCART se prend paire par paire (v379) : la
+      // différence de deux médianes rougissait quand le portail chargeait la
+      // machine au milieu des neuf passages (10,8 contre 2,5, puis 15,5
+      // contre 11,0 — `sans` aussi monté), sur un code qui n'y touchait pas ;
+      // deux passages voisins subissent la même charge, l'écart l'annule
+      let a, s;
+      if (i % 2) { s = passe(true); a = passe(false); } else { a = passe(false); s = passe(true); }
+      avec.push(a); sans.push(s); ecarts.push(a - s);
     }
     // mesuré seul : +1,2 ms par morceau de campagne (4,9 contre 3,7) ; la
     // borne de garde vaut trois fois la mesure, parce qu'un portail charge
     verifier('la surface coûte au plus quelques millisecondes par morceau de campagne',
-      med(avec) - med(sans) < 4, `${med(avec).toFixed(1)} ms avec, ${med(sans).toFixed(1)} sans (médianes de neuf)`);
+      med(ecarts) < 4, `écart ${med(ecarts).toFixed(1)} ms (médiane de neuf paires alternées) — ${med(avec).toFixed(1)} ms avec, ${med(sans).toFixed(1)} sans`);
     // LE PAYSAGE LOINTAIN NE REFERME PAS LE DÉBLAI (v300). `horizon.js` lisait
     // le relief au-dessus de la route : une dalle de terre flottait sur la
     // tranchée tant que le morceau n'était pas maillé (captures du pont et de

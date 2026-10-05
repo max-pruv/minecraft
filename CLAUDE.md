@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Les sensations au volant (v370) — la caméra regarde la voiture, et un mur se cherche cellule par cellule
+## Les sensations au volant (v381) — la caméra regarde la voiture, et un mur se cherche cellule par cellule
 
 Chantier « conduite » (six sessions, octobre 2026) ; celle-ci tient ce que
 l'enfant VOIT et ENTEND. Tout vit dans `src/sensations.js`, branché par un
@@ -805,6 +805,44 @@ règles.
   dans l'image, et `sensations.js` reprend le suivi du bestiaire pour ne pas
   compter deux fois. Les avions gardent la poursuite d'avant à l'identique ;
   `?sensations=0` rejoue l'ancienne conduite, pour mesurer.
+## Les voitures contournent les monuments (v378) — un test qui écarte un candidat se mesure en temps de démarrage
+
+Deux règles.
+
+- **UN ANNEAU QUI PASSE DANS UN MONUMENT EST ÉCARTÉ À LA SOURCE.** Les repères
+  se posent après les colonnes ; l'anneau se choisit donc contre les cases
+  que le BÂTISSEUR pose à hauteur de carrosserie (couches 1 à 3), tournées une
+  fois dans le repère de la trame (`traverseUnMonument`), jamais contre la
+  boîte : à la boîte, Stockholm n'avait plus une voiture (mesuré). Le test
+  passe après le partage et AVANT l'eau — mis en dernier, l'eau tournait sur
+  ce qu'il aurait écarté (310 → 410 ms).
+- **UN CALCUL QUE LE JEU NE LIT QU'À L'APPROCHE NE SE FAIT PAS AU DÉMARRAGE.**
+  Échantillonné au demi-bloc, ce test coûtait 157 → 1 075 ms dans
+  `preloadSpawn` ; en analytique, encore +150 ms, que l'on payait pour 262
+  villes dont l'enfant n'en verra qu'une. `tracesCirculationParesseuses`
+  donne une marque par ville, `animerLesVilles` la déplie à 220 blocs ; un
+  témoin exige les mêmes traces que le calcul entier. Un premier dépliage
+  coûte au plus 43 ms (Rome, le Colisée du catalogue), une fois.
+
+## Les huit derniers palais (v375) — une boîte se relève en carte avant qu'on la remplisse
+
+Deux règles.
+
+- **UNE BOÎTE DE REPÈRE N'EST PAS UNE PARCELLE LIBRE.** Les anneaux de
+  voitures des villes engendrées se choisissent sur la trame sans regarder les
+  repères : la carte des huit boîtes (anneaux, eau) a montré que quatre
+  gabarits coupaient déjà un anneau à hauteur de carrosserie, et celui de
+  Stockholm était sur l'eau. Avant d'écrire un bâtisseur, on dessine la boîte
+  (`R` anneau, `~` eau) et l'on bâtit dans ce qui reste ; un témoin de
+  `plafond.js` le garde pour tous les monuments (`DETTE_ANNEAUX` : quarante-cinq
+  conflits d'avant, chiffre par chiffre, que rien ne doit aggraver).
+- **UN PALAIS S'ÉCRIT UN POUR UN, ET « UN POUR UN » SE VÉRIFIE.** Les paliers
+  `[[0, 0], [1, 1], [S + 1, vraie + 1]]` ne rendent l'identité que si la
+  hauteur du ciel de `vraie + 1` tombe dans [S + 1, S + 2) : on prend S = la
+  `cible` que la table donnait, et l'on vérifie sous node que
+  `floor(hauteurEtiree(y)) === y` pour toutes les couches. Sinon une couche se
+  répète et une fenêtre est redessinée (v365).
+
 ## Plus une coupole de gabarit (v369) — une forme fausse ne dépend pas de la hauteur
 
 Trois règles.
@@ -889,6 +927,52 @@ porte qui s'ouvre ». `src/embarquement.js` (la séquence) et `src/portieres.js`
   SOUS L'EAU, sans importance pour un mur, rédhibitoire pour une descente qui
   refuse l'eau — la page d'embarquement cherche une prairie sèche et plate.
 
+**Les bords se coupent au plan (v372).** Un triangle à cheval sur un bord du
+volume est COUPÉ au plan du bord (z0, z1, y0, y1), jamais emporté par son
+centre — c'était 21 % de la surface sur la Lucid, et la portière débordait de
+0,24 bloc. Trois règles. **Les sommets neufs sont des mélanges barycentriques
+de TOUS les attributs** (position, normale, UV, couleur), recopiés BRUTS dans
+leur type d'origine (un modèle quantifié reste quantifié) : rien ne change de
+programme. **Les attributs d'un maillage coupé se recopient, agrandis** —
+jamais ceux du prototype ; un maillage sans coupe garde les attributs partagés.
+**Un plan de découpe se mesure en coût** : chaque sommet passe UNE fois dans
+le repère de la voiture (un tableau à plat), un triangle tout entier d'un côté
+d'un plan est rejeté par six comparaisons — sans cela le plan passait de 4 à
+135 ms. Un bord net ne suffit pas à rendre une portière : les taxis l'ont, et
+restent refusés parce que derrière il n'y a rien (0/24 rayons).
+
+**Le passager monte par la portière, et l'ami la voit (v377).**
+`monterChez` rejoue la séquence sur la voiture DISTANTE de l'ami (telle que
+cette tablette la dessine), portière droite, et n'appelle `fin` (qui fait de
+l'enfant un passager, fun.js) qu'une fois assis — `passagerDe()` ne ment pas
+avant. L'ouverture et la fermeture partent dans un message court
+(`portiere`, `{ de, c, o }`) : chaque tablette anime la portière de la
+voiture de ce conducteur (`vehiculeDuConducteur`, la sienne si c'est elle qui
+conduit), en temps de jeu. Nom neuf : l'ancienne tablette l'ignore, le
+receveur cède, l'hôte relaie. Le témoin à deux tablettes lit les deux pages
+au même instant ; il attend le RÉSULTAT (borné à 45 s) : à deux pages, une
+séquence de 2,4 s de jeu prend vingt-sept secondes de montre.
+
+**Le revers d'une portière se fabrique (v373).** Aucun modèle n'a meublé
+l'intérieur de sa portière : de derrière, la face simple était culée (0 rayon
+sur 24, sur les cinquante modèles). La portière reçoit une copie compacte de
+ses sommets puis une seconde, normales retournées, triangles à l'envers, DANS
+la même géométrie : même matériau, même programme, même appel de dessin.
+`userData.endroit` dit où finit l'endroit dans l'index (un témoin qui mesure
+une surface ne compte pas le revers). Un `DoubleSide` aurait changé la clé de
+programme (v246). **Et une sonde de rayons voit les couches** : la
+carrosserie vit sur la couche 2 (v245), un `Raycaster` neuf ne voit que la
+couche 0 — ma première sonde rendait « on traverse » de face comme de dos, et
+c'est son CONTRÔLE (la même cible vue de face, 0 sur 24) qui l'a dit.
+
+**Un terrain de témoin « loin des villes » se juge sur TOUTES les villes
+(v373).** `cityAt` ne connaît que les villes bâties à la main ; la « prairie »
+du témoin de la descente était dans Manchester, et le refus « circulation »
+qu'on cherchait depuis la v366 était un vrai circuit de la ville. On lit aussi
+`dansVilleMonde`. **Et une sonde de navigateur ne tourne pas pendant un
+portail** : le portail de la v372 en a rendu dix-sept rouges de cadence, que
+la suite rejouée seule ne reproduisait pas.
+
 **Et une résolution de conflit a avalé deux modules d'une autre session.**
 Rebasée sur la v344, ma résolution de `sw.js` remplaçait le bloc en conflit
 par la seule ligne `CACHE_VERSION` — or le bloc contenait aussi les lignes
@@ -899,9 +983,7 @@ de conflit se relit dans `git diff origin/main`, jamais seulement dans le
 fichier** : le diff montre ce qu'on retire à l'autre côté.
 
 Ce qui reste, déclaré dans `TASKS.md` : le passager d'un ami monte encore sans
-séquence ; les bords de la découpe sont en dents de scie sur les modèles à
-grands triangles ; la vue de la séquence ne se juge que sur le banc, pas sur
-l'iPad.
+séquence ; la vue de la séquence ne se juge que sur le banc, pas sur l'iPad.
 
 ## Les coupoles ont leur édifice (v365) — un gabarit partagé se cherche dans toutes les villes, et le ciel se lit sur les modèles
 
@@ -1021,6 +1103,46 @@ celle de la High Roller ne tiendrait pas, et c'est déclaré.
 Et une empreinte d'identité qui change se PROUVE : celle des 490 morceaux
 (v352) couvre Marrakech et Tokyo ; la branche, bâtisseurs neufs désarmés, rend
 l'ancienne au bit près — c'est ce qui a permis de la remplacer.
+
+## L'arrivée après la carte (v379) — un gel de banc se démonte en scène vide
+
+Les dettes de la v360. Cinq règles.
+
+- **UN PLAFOND DE VILLE SE LIT À L'ENDROIT QUE LA SONDE TRAVERSE.** Londres
+  « plafonnait à 70 » : la sonde (`sonde-londres.cjs`) a montré que le trou ne
+  tombait qu'au milieu du trajet, c'est-à-dire au CENTRE de la ville — 64 % de
+  faces de plus qu'au centre de Paris, une génération 70 % plus chère — et que
+  le reste du couloir coûte autant qu'à Paris (5,3 contre 5,4 ms sous node).
+  On compare donc des DISTRIBUTIONS (quatre tours alternés, v269), jamais un
+  passage par ville : 143–161 contre 158–173.
+- **UNE FONCTION DE COLONNE APPELÉE QUATRE FOIS SE GARDE, ET LA TABLE NE
+  GROSSIT PAS.** `solLondres` servait quatre fois par colonne (la colonne, ses
+  quatre voisines par `lotLondresLibre`, les arbres et réverbères) : une table
+  à correspondance directe de 8 192 cases (génération 2,8 → 2,1 ms), prouvée
+  par l'empreinte des 490 morceaux. Elle n'est juste que parce que la fonction
+  ne lit que (x, z) — la ville d'avant se choisit dans `world.js`, qui appelle
+  alors un autre module. Et ce qui sert à l'initialisation du module (les
+  arrêts de la v339 appellent `solLondres`) ne peut pas lire une `const`
+  déclarée plus bas : tables en `var`, tailles écrites en dur.
+- **UN DÉBIT SE JUGE EN SCÈNE VIDE, ET UNE FENÊTRE SE FERME D'ELLE-MÊME.**
+  Après un saut (`estUnSaut`, plus que la portée d'un coup), la file se
+  recharge à l'arrivée jusqu'à ce qu'elle soit vide, dix secondes au plus
+  (`FENETRE_ARRIVEE_MS`), hors rendu logiciel. Mesuré : en scène vide, les deux
+  recharges chargent Paris en 4,1–4,4 s à 57 images par seconde ; en scène
+  dessinée au banc, 90 % en 5,5–6,4 s contre 291–304 morceaux sur 625 en vingt
+  secondes. Ce que la scène dessinée perd est le dessin, pas le chargement.
+  Sur la tablette : `?recharge=arrivee&diag=1` contre `?recharge=image&diag=1`.
+- **UN TÉMOIN DE GEL EN RENDU LOGICIEL MESURE SWIFTSHADER — on le repointe en
+  scène vide, et l'on prouve qu'il rougit encore.** « L'écran ne se fige pas »
+  (v235) était rouge des deux côtés : dans ses images lentes, 1 à 5 ms
+  d'installation, zéro programme, 18 à 49 ms de JavaScript pour 1,3 à 1,5 s.
+  Il rend désormais une scène vide pendant le vol (0 %, 100 ms au pire) ; le
+  remède de la v235 désarmé dans une copie, il rend 9 à 11 % (barre 5). Le
+  verdict garde ce qui vit sur le fil principal et se transpose ; le dessin de
+  la ville se lit sur la tablette.
+- **UN LOT DÉPASSÉ N'EST PAS NUISIBLE, ET C'EST MESURÉ.** À 80 b/s, 0 à 6
+  morceaux sur 400 à 700 reçus arrivent derrière l'enfant, zéro refusé : moins
+  de 1 % de travail perdu. On ne l'annule pas.
 
 ## La file se recharge à l'arrivée (v360) — un plafond de débit peut être la cadence du banc
 
@@ -1147,6 +1269,35 @@ Le lot 2 de la dette de la v335 : huit monuments. Trois règles.
   Archives, 24 m pour Buckingham, une quarantaine de mètres pour l'Opéra de
   Lille, 23 m pour l'Arche. Ce qu'on n'a pas trouvé (le musée d'Histoire
   américaine, « cinq étages ») se dit approché dans le commentaire.
+
+## La grille de Washington à la règle du kit (v370) — un îlot qui grandit se recompose autour d'une ruelle
+
+La dernière des cinq villes bâties à la main. Trois règles.
+
+- **QUAND LE PAS SUIT LE RAPPORT DES EMPRISES, LE LOT SE RECOMPOSE PAR LA
+  PIÈCE QUI EXISTE DÉJÀ.** 12 × 7 / 3 = 28 : l'îlot passe de neuf à vingt et
+  un blocs. Redessiner la maison pour un lot de vingt et un aurait cassé son
+  escalier, ses portes et le témoin qui y entre ; quatre maisons de neuf
+  autour d'une ruelle de trois (la `ruelle` du kit) gardent la maison au bloc
+  près et donnent à Washington ce qu'ont ses vrais îlots. La trame vit dans
+  une seule fonction (`trameDC`) que lisent le sol, le bâtisseur et l'axe des
+  portes ; un témoin demande le coin d'une maison (`coinDeMaisonDC`), jamais
+  un pas recopié.
+- **UNE VILLE DONT LE BÂTISSEUR PREND LA COTE DU SOL SE BRANCHE À PART.**
+  Washington n'est pas dans la boucle des villes de `world.js` : sa branche
+  choisit `washington-v367.js` ou la ville neuve (`DC_NEUF`) au même critère
+  (`conf.villesAvant`, `colonnesVilleAvant`), et sa ville est une BOÎTE — le
+  cercle de `VILLES_FIGEES` va jusqu'au coin de Georgetown (268), pas au
+  rayon du registre (187). Le témoin des villes figées de `plafond.js` passe
+  la cote du sol au bâtisseur quand il la demande (`bat`).
+- **LES CIRCUITS D'UNE GRILLE QUI BOUGE SE CHERCHENT, ILS NE SE RECOPIENT
+  PAS.** Les dix-neuf circuits roulaient sur des rues de liaison posées au
+  centre des rues de la grille d'avant ; aucune ne survit au pas de 28. Toutes
+  les boucles de trois à six voies du graphe des croisements (dix mille), la
+  tenue de rue, le virage, la contrainte de partage (v211) et la passe de
+  réparation (v216) : quatorze circuits, et la couverture MONTE (50,8 →
+  56,2 %). Une boucle de seize blocs est une impasse déguisée : on écarte ce
+  qui fait moins de quarante blocs.
 
 ## Les rues de Lille à la règle du kit (v368) — un témoin de ville figée cherche une rue que rien ne recouvre
 
@@ -1341,6 +1492,102 @@ engendrées. Quatre règles.
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
 
+## Deux témoins de la rue qui disent ce qu'ils voient (v380) — un couloir « vide » se vérifie au sec
+
+Deux règles.
+
+- **UN SITE DE TÉMOIN NOMMÉ « VIDE » SE VÉRIFIE AVANT D'ÊTRE REPRIS.** Le
+  couloir de la v237, (30 000, 30 000), est vide parce qu'il est en MER
+  (terrain à 24, sous l'eau) : très bien pour un vol ou un piéton qu'on pose
+  sans physique (le sursaut, v376), impossible pour une voiture qui roule —
+  mesuré sous node, aucun de ses quatre cents rectangles n'est au sec. Le
+  témoin du freinage cherche son rectangle à partir de (−1 500, −2 500), hors
+  ville, plat, un sol plein sous chaque colonne, rien posé dessus, et exige que
+  la situation ait eu lieu (`ecartes > 0`).
+- **UN TÉMOIN DE COMPTE PUBLIE QUI IL COMPTE.** « Plantés au milieu de la
+  chaussée » rend désormais, pour chaque passant sur la chaussée, son état, sa
+  traversée, son écart, s'il est animé (sinon figé là où il était, v241) et
+  s'il est à son poste de naissance — son prochain rouge se démonte en une
+  lecture (v223).
+
+## Les passants réagissent à la route (v376) — un geste court, et une pause qui se compte en temps réel
+
+Point 3 du chantier « conduite » côté piétons. Trois règles.
+
+- **UNE PAUSE QUI SUIT UN GESTE EN TEMPS RÉEL SE COMPTE EN TEMPS RÉEL.**
+  L'écart (v351) se faisait en temps réel, mais la pause d'après (`repos`)
+  restait en `dt` : 0,8 seconde de jeu, trois secondes de montre à cinq images
+  par seconde — exactement le « planté au bord de la rue » que la v243
+  interdit. `REPOS_ECART_S` (0,35) se décompte sur `dtReel`. Quand un état
+  change d'horloge, celui qui le suit change avec lui.
+- **UN SURSAUT EST UN GESTE, PAS UNE PROTECTION.** Il se déclenche quand
+  l'échéance de la voiture (`couloirVoiture`, champ `t`) passe sous
+  `SURSAUT_S` et ne touche qu'à l'animation : la pose d'`animerHumain` et un
+  petit saut du maillage. C'est l'écart qui protège, et rien ne le remplace.
+  Et il se juge sur TOUT le passage de la voiture (`VEILLE_SURSAUT_S`, couloir
+  élargi `MARGE_SURSAUT`), pas à l'instant où l'écart commence : le couloir
+  porte à 1,6 s de route, et à cet instant la voiture est presque toujours
+  plus loin qu'une demi-seconde. Le premier jet ne testait que l'entrée :
+  vert quand le banc ramait, rouge (`sursauts: 0`) au portail suivant.
+- **CE QU'UNE AUTRE SESSION PUBLIE SE LIT SI PRÉSENT, ET À FRAIS.**
+  `player.choc` (session physique) : `regardChoc` (pur) ne regarde qu'un choc
+  de moins de `CHOC_FRAIS_MS` — un passant né après le bruit ne se retourne
+  pas — et jamais pendant un écart ni une traversée. Le témoin POSE le choc
+  comme la physique le ferait, puis rend `player.choc` à son état d'avant :
+  `degats3d.js` lit sa PRÉSENCE pour choisir entre le choc publié et son
+  repli.
+
+## Les passants traversent au feu (v371) — un piéton lit le MÊME feu que la voiture
+
+Point 2 du chantier « conduite » côté piétons. Quatre règles.
+
+- **ON MESURE CE QUE LES PASSANTS FONT AVANT DE LEUR APPRENDRE À TRAVERSER.**
+  `sonde-traversees.cjs` découpe la trace de chaque passant animé en sorties
+  du trottoir, traversées (retour au trottoir à plus de trois blocs) et
+  retours. Avant : Rome une traversée en soixante secondes, hors feu ; Paris
+  et Londres zéro. Il n'y avait donc pas de traversées « sauvages » à
+  interdire, il y avait des traversées à créer — l'inverse de ce que la
+  consigne laissait supposer.
+- **DEUX LECTURES DU MÊME FEU, JAMAIS DEUX RÈGLES.** `pietons.js` importe
+  `etatFeu` et `axeDuCap` de `feux.js` (son seul import, pur). Traverser dans
+  la direction (ux, uz) coupe l'AUTRE axe (`axeCoupe`) ; on part quand il est
+  au rouge avec `durée + MARGE_FEU_S` de rouge devant soi (`feuPieton`). Le
+  feu qui compte est dans `feuxProches`, la liste que la circulation lit : là,
+  et seulement là, les voitures s'y arrêtent. Le cycle ne dépend que de l'axe
+  et de l'heure de la rue (v305) — `world.heureRue` —, la règle n'a pas
+  besoin de savoir quel feu.
+- **LA TRAVERSÉE EST EN TEMPS RÉEL, COMME L'ÉCART (v351).** La fenêtre du feu
+  est une durée de l'horloge de la rue ; en `dt` borné, huit blocs de
+  chaussée dureraient quinze secondes réelles à cinq images par seconde.
+  `think` rend `reel: true` et `BaseNPC.update` convertit, même pas borné que
+  l'écart. Le témoin compte donc en secondes de MONTRE.
+- **UN PASSAGE SE CHERCHE LE LONG DE LA BORDURE, ET À PARIS IL EST PEINT.**
+  La trame de Paris est en biais : mesuré sur 1 231 bords de trottoir, 588
+  chemins vers le trottoir d'en face et 26 seulement sur un passage depuis le
+  point même. On cherche le départ trois blocs de chaque côté, en restant SUR
+  le trottoir (un départ rejoint par la chaussée, au coin, rendait des
+  « retours » d'un bloc). Aux carrefours parisiens sans feu, `marquageParis`
+  dit où est le passage (`axe: null`) : on part quand `vehiculeApproche`, avec
+  un horizon égal à la durée de la traversée, ne voit rien venir. Hors
+  carrefour, on ne traverse pas : on tourne, comme avant. Et l'attente se
+  borne (`ATTENTE_MAX_S`, douze secondes, un peu plus qu'un demi-cycle) —
+  mesuré à six, six coins à feu sur dix renonçaient.
+- **UN TÉMOIN QUI ATTEND QU'UN PASSANT ARRIVE À UN COIN MESURE LA CADENCE.**
+  Rejoué seul, le premier témoin voyait 3 à 11 traversées en soixante
+  secondes ; au portail, à trois images par seconde, une seule — puis une en
+  trente secondes de JEU. Atteindre un coin se fait au pas (temps de jeu), la
+  traversée et l'attente au feu en temps réel : aucune fenêtre ne sert les
+  deux. Le témoin POSE donc huit passants au bord, face à la rue, aux coins des
+  feux (relevés par le témoin lui-même : l'ancien code n'a pas de
+  `passagePieton`), et compte ce qu'ils font — 0 et 0 sur `origin/main`, 9, 6
+  et 3 ici. C'est la leçon des poissons (v233), une fois de plus.
+- **UN PASSANT QUI TRAVERSE CHANGE LA SITUATION DES TÉMOINS DE CONDUITE.**
+  Avant la v371, aucun passant de Paris ne descendait sur la chaussée ; le
+  témoin du réverbère prenait le volant sans regarder la rue, et un passant
+  sur le passage devant le capot l'a figé à zéro bloc (`pietonDevant`, voulu).
+  Un témoin qui roule fait le vide des passants autour de lui, comme des bêtes
+  (v284) : « se placer » veut dire l'endroit, le cap ET ce qui traîne autour.
+
 ## Les passants de Manhattan au long cap (v354) — un trottoir qui vit dans un plan se demande au plan
 
 Une règle.
@@ -1531,6 +1778,44 @@ en temps réel), `fun.js` le fait descendre et `deposer` le pose debout sur une
 case libre à côté (côté conducteur d'abord). La carcasse porte `horsService`
 (lu par `animals.js`, comme `montee`) : elle ne se reprend pas, et elle s'en
 va au bout de `DUREE_CARCASSE`.
+**Le contrat éprouvé bout à bout, et un coût qui se compte (v374).** Un
+témoin de contrat qui publie ses chocs à la main ne prouve pas que la vraie
+physique les publie : celui de la v374 n'écrit RIEN dans `player`, prend un
+mur de face, et lit les deux côtés (`player.chocs`, `degats.chemins()` :
+publiés, repli, effets appliqués ici). Le repli ne sert plus en jeu ; il est
+gardé pour une physique qui ne publierait pas. Et le coût d'un choc se borne
+en GRANDEURS qui ne suivent pas le processeur partagé — sommets déplacés,
+normales réécrites hors d'eux (zéro), travail par image après le choc
+(zéro) — les millisecondes restant dans le message (v270).
+
+**Un ancien hôte, et l'histoire par la position (v374).** Un message neuf
+(`rue_choc`) n'est pas relayé par un hôte qui ne le connaît pas ; la
+position, si (`{ ...msg }`). Ce qui doit traverser un ancien hôte s'accroche
+à elle, et devient idempotent en envoyant l'HISTOIRE (adoptée seulement si
+la nôtre en est le début), jamais le seul dernier événement.
+
+## Un battement qui écrit sans relire défait le choix d'à côté (v374)
+
+« Un choix fait sur une tablette part au serveur » (`reglages.js`) était
+déclaré rouge de charge. La sonde qui relève chaque écriture des deux
+tablettes (`sonde-reglages-deux.cjs`) l'a démenti SANS charge : le choix
+part (« en », 39,3 s), puis l'autre tablette écrit « fr » sous une date plus
+ancienne (43,1 s). Deux règles.
+
+- **UN DOCUMENT À DEUX AUTEURS N'A QU'UN CHEMIN D'ÉCRITURE : CELUI QUI
+  RELIT.** Le jeu l'avait écrit (« on relit avant d'écrire ») pour la
+  boucle de quinze secondes ; le battement de présence de vingt secondes,
+  trois lignes plus bas, écrivait encore le document entier sans relire. Il
+  passe par `envoyerPrefs`. Le verre dans les murs, une fois de plus, à
+  l'échelle de deux minuteurs voisins.
+- **UN ROUGE DÉCLARÉ « DE CHARGE » SE DÉMONTE AVANT D'ÊTRE CRU.** La double
+  mesure de la v195 (69 verts seule des deux côtés) disait « pas la
+  livraison » ; elle ne disait pas « pas le jeu ». La course existait en
+  production depuis toujours, et la charge ne faisait que la rendre
+  fréquente. Le témoin la PROVOQUE désormais : il repère le battement de
+  l'autre tablette (une écriture sans lecture depuis la précédente) et
+  clique juste avant le suivant, puis observe le serveur toute la fenêtre.
+
 ## La conduite à la GTA (v358) — un modèle pur, une boîte orientée, des chocs qui se publient
 
 Max : « une grosse refonte de la façon de conduire… comme GTA ». Premier palier

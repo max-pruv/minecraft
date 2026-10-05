@@ -1,5 +1,7 @@
-// LES PIÉTONS ET LA ROUTE — la règle pure, sans import (lue par main.js, par
-// marlon.js et, sous node, par les témoins).
+// LES PIÉTONS ET LA ROUTE — la règle pure (lue par main.js, par marlon.js, par
+// vie.js et, sous node, par les témoins). Un seul import : `feux.js`, pur lui
+// aussi, parce que le piéton lit le MÊME feu que la voiture (v371).
+import { etatFeu, axeDuCap, VERT, ORANGE, CYCLE } from './feux.js';
 //
 // POURQUOI CE FICHIER (v351). Le chantier « conduite » fait rouler les voitures
 // trois fois plus vite (40 à 70 blocs par seconde, 1 bloc ≈ 1 m pour un
@@ -56,9 +58,11 @@ export const DT_REEL_MAX = 0.25;
 // (x, z) ? Rend { ux, uz, cote, lat, t } — `cote` le côté où s'écarter (celui
 // où l'on est déjà), `lat` l'écart latéral signé, `t` l'échéance en secondes —
 // ou null. `marge` est la marge de côté à courte échéance.
-export function couloirVoiture(r, x, z, y, marge = 1.0) {
+// `horizon` (v371) : le passant qui va TRAVERSER regarde aussi loin que dure
+// sa traversée, pas seulement les 1,6 s de l'écart.
+export function couloirVoiture(r, x, z, y, marge = 1.0, horizon = HORIZON_S) {
   if (!(r.v > 0.5) || Math.abs(r.y - y) > 2.5) return null;
-  const portee = r.v * HORIZON_S + 4;
+  const portee = r.v * horizon + 4;
   const dx = x - r.x, dz = z - r.z;
   const pf = portee + 4;
   if (dx * dx + dz * dz > pf * pf) return null;
@@ -67,4 +71,116 @@ export function couloirVoiture(r, x, z, y, marge = 1.0) {
   const t = Math.max(0, devant) / r.v;
   if (Math.abs(cote) > r.demiLarg + (t < PROCHE_S ? marge : MARGE_LOIN)) return null;
   return { ux: r.ux, uz: r.uz, cote: cote >= 0 ? 1 : -1, lat: cote, t };
+}
+
+// TRAVERSER AU FEU (v371). MESURÉ AVANT D'ÉCRIRE (`tests/sonde-traversees.cjs`,
+// soixante secondes, l'enfant immobile au centre) : les passants ne changeaient
+// pour ainsi dire JAMAIS de trottoir — Rome une traversée sur vingt et un
+// passants, et elle n'était pas à un feu ; Paris zéro sur dix-huit ; Londres
+// zéro sur vingt-quatre. Au coin, le trottoir s'arrête et `tourner()` fait le
+// tour de l'îlot : une ville où chacun reste sur son pâté de maisons.
+//
+// LE PIÉTON LIT LE MÊME FEU QUE LA VOITURE. `etatFeu` et `axeDuCap` sont ceux
+// de `feux.js`, que la circulation lit pour s'arrêter : deux lectures du même
+// feu, jamais deux règles. Traverser dans la direction (ux, uz), c'est couper
+// la rue PERPENDICULAIRE, donc les voitures de l'autre axe : on part quand
+// elles sont au rouge ET qu'il reste assez de rouge pour arriver de l'autre
+// côté, marge comprise. Tous les feux d'un même axe sont en phase (le cycle ne
+// dépend que de l'axe et de l'heure de la rue, v305) : la règle n'a pas besoin
+// de savoir QUEL feu.
+//
+// ET LA TRAVERSÉE SE FAIT EN TEMPS RÉEL, comme l'écart (v351) : la fenêtre du
+// feu est une durée de l'horloge de la rue. Comptée en `dt` borné, une
+// traversée de six blocs durerait quinze secondes réelles à cinq images par
+// seconde, et le feu passerait au vert sous ses pieds.
+export const ALLURE_TRAVERSEE = 1.25;   // on presse un peu le pas sur la chaussée
+export const MARGE_FEU_S = 1.5;         // le rouge qui doit rester en plus de la traversée
+// On n'attend pas plus que cela au bord : au-delà, on continue sur le trottoir
+// (un passant qui fait le pied de grue est ce que Max appelle « figé », v278).
+// Un peu plus d'un demi-cycle (onze secondes) : mesuré à six, six coins à feu
+// sur dix renonçaient, parce qu'une traversée de huit à treize blocs demande
+// six à huit des onze secondes de rouge.
+export const ATTENTE_MAX_S = 12;
+// La part des coins à feu où l'on traverse au lieu de tourner.
+export const ENVIE_TRAVERSER = 0.6;
+// Une traversée ne fait pas plus de seize blocs : au-delà ce n'est plus une rue.
+export const TRAVERSEE_MAX = 16;
+
+export function axeCoupe(ux, uz) { return 1 - axeDuCap(ux, uz); }
+
+// Les secondes de rouge qui restent aux voitures de l'axe `axe` à l'instant
+// `tMs` (0 si elles ne sont pas au rouge), et les secondes jusqu'au prochain
+// début de rouge.
+export function rougeDe(axe, tMs) {
+  const debut = axe === 0 ? 0 : CYCLE / 2;
+  const d = ((((tMs - debut) % CYCLE) + CYCLE) % CYCLE);
+  const libre = VERT + ORANGE;
+  if (d < libre) return { reste: 0, prochain: (libre - d) / 1000 };
+  return { reste: (CYCLE - d) / 1000, prochain: (CYCLE - d + libre) / 1000 };
+}
+
+// La décision au bord du trottoir : partir maintenant, ou combien attendre.
+export function feuPieton(axe, tMs, dureeS) {
+  const r = rougeDe(axe, tMs);
+  if (etatFeu(axe, tMs) === 'rouge' && r.reste >= dureeS + MARGE_FEU_S) return { partir: true, attente: 0 };
+  return { partir: false, attente: r.prochain };
+}
+
+// Le chemin d'un trottoir à l'autre dans la direction (ux, uz), lu par
+// `sol(x, z)` qui rend 't' (trottoir), 'c' (chaussée ou bordure) ou 'x'
+// (autre chose : un mur, une pelouse, l'eau). Rend la longueur jusqu'au
+// trottoir d'en face, un demi-bloc DEDANS, ou null. On peut encore avoir trois
+// blocs de son propre trottoir devant soi ; il faut au moins deux blocs et
+// demi de chaussée — un caniveau n'est pas une rue.
+export function cheminDeTraversee(sol, x, z, ux, uz, max = TRAVERSEE_MAX) {
+  let phase = 0, chaussee = 0;
+  for (let s = 0.5; s <= max; s += 0.5) {
+    const c = sol(x + ux * s, z + uz * s);
+    if (c === 'x') return null;
+    if (phase === 0) {
+      if (c === 'c') { phase = 1; chaussee = 0.5; } else if (s > 3) return null;
+    } else if (c === 'c') chaussee += 0.5;
+    else if (c === 't') return chaussee >= 2.5 ? s + 0.5 : null;
+  }
+  return null;
+}
+
+// RÉAGIR À LA ROUTE (v376) — des gestes courts, jamais de peur ni d'arrêt
+// prolongé (v243 : un passant ne s'arrête pas pour l'enfant).
+//
+// LE SURSAUT : une voiture qui arrive à moins de `SURSAUT_S` secondes sur le
+// piéton lui fait lever les bras d'un coup et sautiller, le temps de
+// `DUREE_SURSAUT` — pendant que l'écart (v351) le met de côté. Ce n'est qu'un
+// geste : il ne change rien au pas de côté, qui reste la seule chose qui le
+// protège.
+export const SURSAUT_S = 0.45;
+export const DUREE_SURSAUT = 0.5;
+// On veille le passage de la voiture jusqu'à deux secondes après le début de
+// l'écart, dans un couloir élargi à trois blocs : c'est la voiture qui passe
+// AU RAS qui fait sursauter, pas celle qu'on a vue venir de loin.
+export const VEILLE_SURSAUT_S = 2;
+export const MARGE_SURSAUT = 3;
+// APRÈS L'ÉCART, ON REPART TOUT DE SUITE. La pause valait 0,8 seconde de JEU :
+// à cinq images par seconde, trois secondes de montre plantées au bord de la
+// rue. Elle se compte désormais en temps réel, et elle est plus courte.
+export const REPOS_ECART_S = 0.35;
+// LE CHOC : `player.choc = { force, t, x, z }` (session physique, lu SI
+// PRÉSENT). Un passant à moins de `PORTEE_CHOC` blocs se retourne vers le
+// bruit, s'arrête un instant (`ARRET_CHOC_S`), puis reprend son chemin. Un
+// choc plus vieux que `CHOC_FRAIS_MS` ne se regarde plus — un passant né après
+// ne se retourne pas vers un bruit qu'il n'a pas entendu.
+export const PORTEE_CHOC = 24;
+export const ARRET_CHOC_S = 0.7;
+export const CHOC_FRAIS_MS = 1500;
+export const FORCE_CHOC_MIN = 0.15;
+
+// Faut-il se retourner vers ce choc ? Rend le cap (yaw) vers le point, ou null.
+// `t` est en millisecondes de `performance.now()`, comme le choc.
+export function regardChoc(c, x, z, maintenant) {
+  if (!c || typeof c.t !== 'number' || maintenant - c.t > CHOC_FRAIS_MS || maintenant < c.t - 50) return null;
+  if ((c.force ?? 1) < FORCE_CHOC_MIN) return null;
+  const dx = c.x - x, dz = c.z - z;
+  const d = Math.hypot(dx, dz);
+  if (d > PORTEE_CHOC || d < 0.5) return null;
+  return Math.atan2(-dx, -dz);
 }
