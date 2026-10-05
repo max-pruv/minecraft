@@ -895,7 +895,7 @@ sur un débit d'avant le worker (v237 → v251). Quatre règles.
   ouverte de plus à côté de `tab` et `ciel` n'a jamais chargé son disque en
   quarante secondes ; et deux passages IDENTIQUES rendent 0,43 puis 0,57 —
   le premier passage n'est pas le second, d'où l'ABBA.
-## Le ciel des autres villes engendrées (v352) — toute ville mesurée a son ciel, ou dit pourquoi
+## Le ciel des autres villes engendrées (v353) — toute ville mesurée a son ciel, ou dit pourquoi
 
 Max : « lance sur toutes les villes, pas juste celle-là ». Le lot 3 de la v342
 ne couvrait que les vingt-cinq villes qui portaient une dette ; mesuré sous

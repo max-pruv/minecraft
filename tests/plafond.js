@@ -465,7 +465,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       'Washington|Maison-Blanche': 21, 'Washington|Lincoln Memorial': 30, 'Washington|Mémorial Jefferson': 39,
       'Washington|Bibliothèque du Congrès': 59,
       'Washington|Capitole des États-Unis': 88, 'Washington|Monument de Washington': 169,
-      // v352 : ce qui est déjà au-dessus de son ciel garde l'ordre au-dessus
+      // v353 : ce qui est déjà au-dessus de son ciel garde l'ordre au-dessus
       // des monuments remis à l'échelle autour de lui.
       'Barcelone|Sagrada Família': 172, 'Las Vegas|Le Luxor': 107, 'Venise|Le campanile': 99,
       'Tokyo|La tour de Tokyo': 333, 'Tokyo|La Skytree': 634 };
@@ -497,7 +497,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       + (inversions.length ? ` — INVERSÉS : ${inversions.join(' · ')}` : '')
       + (ecartsCible.length ? ` — HORS CIBLE : ${ecartsCible.join(' · ')}` : ''));
 
-    // TOUTES LES VILLES ENGENDRÉES ONT LEUR CIEL (v352). Le lot 3 de la v342 ne
+    // TOUTES LES VILLES ENGENDRÉES ONT LEUR CIEL (v353). Le lot 3 de la v342 ne
     // couvrait que les vingt-cinq villes qui portaient une dette ; les autres
     // avaient des repères au-dessus de leurs immeubles mais pas à l'échelle de
     // leur vraie hauteur (l'hôtel de ville de Bruxelles à vingt-deux blocs pour

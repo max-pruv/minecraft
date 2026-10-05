@@ -949,7 +949,7 @@
   couleur de la calotte) : un obus d'ardoise, corrigé (le corps s'arrête au
   tambour). Le remède de fond est un bâtisseur par monument, avec sa nef — pas
   une table de paliers.
-- [ ] **LES GRATTE-CIEL ET LES BEFFROIS D'UN BLOC DE LARGE (v352), mesuré.**
+- [ ] **LES GRATTE-CIEL ET LES BEFFROIS D'UN BLOC DE LARGE (v353), mesuré.**
   Toute ville engendrée mesurée a désormais son ciel ou dit pourquoi
   (`VILLES_SANS_CIEL`). Restent hors de leur vraie hauteur, déclarés `vrai`, les
   fûts qui dominent DÉJÀ leurs toits (hauteur d'auteur au-delà d'une fois et
@@ -962,17 +962,17 @@
   remède est un BÂTISSEUR de tour avec une emprise (`tourBoule`, `minaret` sont
   des colonnes d'un bloc) — l'emprise d'un repère est sa `box`, qui ne bouge
   pas : une tour de trois blocs de côté tient dans `box: 4`.
-- [ ] **LE TROU DU CHASSEUR EN VOL FRÔLE SA BARRE (portail v352), déclaré.**
+- [ ] **LE TROU DU CHASSEUR EN VOL FRÔLE SA BARRE (portail v353), déclaré.**
   « en vol, on ne rattrape pas le bout du monde qui se charge » (`monte.js`) :
   chasseur 58 pour une barre à 60 (relevés 51 · 58 · 58 · 58 · 58 · 66), le
-  Concorde 66 et l'avion de ligne 82 au-dessus. PREUVE STRUCTURELLE que la v352
+  Concorde 66 et l'avion de ligne 82 au-dessus. PREUVE STRUCTURELLE que la v353
   n'y est pour rien : le vol se fait autour de (30 000 à 38 000, 30 000), et le
   plus proche des seize monuments étirés (Sensō-ji, 53 431 · 7 940) est à plus
   de quinze mille blocs ; `nouveautes.js` n'est lu qu'à l'ouverture du journal.
   Même portail : les autres rouges sont les dettes déjà déclarées (`maj.js`
   « corps, programmes et fond de carte », `manhattan.js:282`, `monte.js`
   compilation à la téléportation, gel d'arrivée, piéton `voituresRue: 0`).
-- [ ] **LE CIEL DE LAS VEGAS GARDE SA ROUE ET SA PYRAMIDE (v352), déclaré.** La
+- [ ] **LE CIEL DE LAS VEGAS GARDE SA ROUE ET SA PYRAMIDE (v353), déclaré.** La
   High Roller (167 m, 16 blocs) est sous la demi-tour Eiffel (165 m, 26) : une
   roue ne s'étire pas, comme le Prater. Le Luxor (107 m) reste à quinze blocs :
   étirée, une pyramide devient un obélisque.
