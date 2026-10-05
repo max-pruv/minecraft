@@ -291,10 +291,10 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // c'est ce que `new World({ v308: true })` doit rendre au bloc près (v309).
 // v352 : l'empreinte des blocs et des tampons de 490 morceaux (morceaux-temoin.mjs),
 // relevée sur la v351 (la même, bit pour bit, que sur la v348) ; et le travail d'un morceau, barre au milieu des deux mesures.
-// v356 : remise à jour, et c'est une DÉCISION, pas une valeur recopiée. Deux
+// v357 : remise à jour, et c'est une DÉCISION, pas une valeur recopiée. Deux
 // livraisons changent ce que ces morceaux contiennent, à dessein : la v355 (deux
 // routes de plus, donc d'autres talus dans la passe « toutes les routes » —
-// 69381f2e… sur `origin/main`, déjà rouge là) et la v356 (le recul de la trame
+// 69381f2e… sur `origin/main`, déjà rouge là) et la v357 (le recul de la trame
 // de Londres se compte d'emprise à emprise). Ce qui le prouve : SANS Londres, les
 // 441 morceaux et toutes les routes rendent la MÊME empreinte sur `origin/main`
 // (v355) et sur la branche — 41d4649a83b24cdb… des deux côtés ; et sur la v353,
@@ -1531,7 +1531,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   // que la ville neuve fait rue garde son toit ; et un bloc posé APRÈS la date
   // ne retient rien — la ville neuve bâtit dessous. Rouge sur `origin/main` :
   // la date n'existe pas, et les deux premiers cas montrent la ville neuve.
-  // ET NICE À LA v356, PAR LA MÊME RÈGLE : la fonction se joue ville par ville.
+  // ET NICE À LA v357, PAR LA MÊME RÈGLE : la fonction se joue ville par ville.
   const figee = async (date, avant, neuf, ancre, sol, libre, batir) => {
     const W = await import('../src/world.js');
     if (!W[date]) return { absent: true };

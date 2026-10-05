@@ -1527,7 +1527,7 @@ export const CONF_NEUF = {
 // ne se met JAMAIS à jour. Même clé que `CONF_NEUF` : ses zones à terre sont
 // les mêmes.
 // Et ces deux mondes-là ont les villes d'avant leur passe au kit (Londres
-// v339, `londres-v332.js` ; Nice v356, `nice-v340.js`) : c'est celles qu'on y
+// v339, `londres-v332.js` ; Nice v357, `nice-v340.js`) : c'est celles qu'on y
 // voyait (`villesAvant`).
 export const CONF_V308 = { ...CONF_NEUF, reperes: LANDMARKS_V317, fonduDoux: false, mursDeQuai: false, falaises: false, villesAvant: true, climat: false };
 export const CONF_AVANT = {
@@ -2078,7 +2078,7 @@ function marquerParisCede(ens, x, z) {
 // une ancienne rue n'est pas enfermée dans un immeuble neuf, une cabane contre
 // un ancien mur garde son mur. La date est celle de la publication.
 export const DATE_RUES_LONDRES = Date.UTC(2026, 9, 4, 15, 0, 0);
-// Nice suit la même règle à la v356 (`nice-v340.js`), avec sa propre date.
+// Nice suit la même règle à la v357 (`nice-v340.js`), avec sa propre date.
 export const DATE_RUES_NICE = Date.UTC(2026, 9, 4, 13, 0, 0);
 const VILLES_FIGEES = [
   { ancre: LONDRES, date: DATE_RUES_LONDRES },
@@ -2593,7 +2593,7 @@ export class World {
     this.monumentsTouches = new Set();  // les monuments HD qu'un enfant a modifiés (v292)
     this.morceauxAvantClimat = new Set(); // les morceaux (et leurs voisins) bâtis avant les climats (v345)
     this.colonnesCedees = new Set();    // les colonnes de Paris où la ville cède à ce qu'un enfant a bâti (v306)
-    this.colonnesVilleAvant = new Set();  // celles de Londres et de Nice où la ville d'avant le kit reste (v339, v356)
+    this.colonnesVilleAvant = new Set();  // celles de Londres et de Nice où la ville d'avant le kit reste (v339, v357)
     this.cacheSol = new Map();          // "x,z" -> { nat, cote } : la fiche d'une colonne (sol continu, v297)
     this.sansSolContinu = false;        // ?solcontinu=0 : la mesure A/B, jamais un réglage
     this.editTimes = new Map();   // "x,y,z" -> ms timestamp, for multiplayer merge
@@ -3517,7 +3517,7 @@ export class World {
         // Market Street entre les deux, la plage, les quais et les parcs.
         // Nice et Lille : chacune sa trame, ses places et ses maisons. Comme à
         // San Francisco, la trame générique ne s'applique pas par-dessus.
-        // Londres (v339) et Nice (v356) d'avant le kit dans les mondes d'avant,
+        // Londres (v339) et Nice (v357) d'avant le kit dans les mondes d'avant,
         // et sous les colonnes où un enfant a bâti avant leur date.
         const villeAvant = city && (city.key === 'londres' || city.key === 'nice') && (this.conf.villesAvant
           || (this.colonnesVilleAvant.size > 0 && this.colonnesVilleAvant.has(cleColonneParis(wx, wz))));

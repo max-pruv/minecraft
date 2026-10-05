@@ -847,7 +847,7 @@ Le lot 2 de la dette de la v335 : huit monuments. Trois règles.
   Lille, 23 m pour l'Arche. Ce qu'on n'a pas trouvé (le musée d'Histoire
   américaine, « cinq étages ») se dit approché dans le commentaire.
 
-## Les rues de Nice à la règle du kit (v356) — une règle partagée se corrige pour toutes les villes qui la lisent
+## Les rues de Nice à la règle du kit (v357) — une règle partagée se corrige pour toutes les villes qui la lisent
 
 Deux règles.
 
@@ -1146,6 +1146,19 @@ existe dès la naissance, parce que `instancingColor` est dans la clé. Mesuré 
 30 appels pour 30 carrés avant, 2 pour 28 après ; le témoin rend la même image
 deux fois (essaim caché, montré) et exige plus de quatre carrés, sinon
 l'égalité ne prouverait rien.
+
+**L'épave reste chez l'ami, et la rue s'abîme (v356).** Quand le conducteur
+est déposé, `p.v` disparaît : le RECEVEUR garde l'épave en feu là où elle
+s'est arrêtée (`garderEpave`, appelé par `synchroniserVehiculeDistant`) et la
+fait vivre lui-même jusqu'à `DUREE_CARCASSE` — rien de neuf sur le réseau.
+Seule une voiture hors service se garde. Une voiture de la rue percutée
+(`percuterRue` : le point d'impact du MONDE, et `vehicules.voitureRueProche`,
+crochet court branché par main.js APRÈS `initFun` — branché avant, `fun` est
+dans sa zone morte et le jeu ne démarre plus, vu au banc) se froisse par la
+même règle 1, ne prend jamais feu (`rec.rue`) et ne parle pas. Ce qui s'en
+va se rend une fois : un clone marqué `rendu` à son `dispose` (par `liberer`)
+ne se rend pas une seconde fois — le premier témoin comptait 28 rendues pour
+14 clones.
 
 **Le feu dépose l'enfant, il ne le projette pas** : passé `DELAI_SORTIE` (3,5 s
 en temps réel), `fun.js` le fait descendre et `deposer` le pose debout sur une

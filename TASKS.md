@@ -92,16 +92,52 @@
     le coût RÉEL sur la tablette (enfoncer : 12 à 20 ms au premier choc au
     banc, 4 à 7 ensuite), à lire avec `?diag=1` sur une voiture qu'on fait
     brûler.
-  - **La carcasse n'est vue que par celui qui conduisait.** Chez l'ami, la
-    voiture disparaît avec le champ `p.v` dès que le conducteur est déposé.
-  - **Les voitures de la rue ne s'abîment pas** — seule celle de l'enfant.
-  - **Le passage au garage répare** (`rangerAuGarage` → `reparer`) : le témoin
-    éprouve `reparer` directement, pas le trajet complet garage compris.
+  - ~~La carcasse n'est vue que par celui qui conduisait~~ — **fait en v356**
+    (le receveur garde l'épave).
+  - ~~Les voitures de la rue ne s'abîment pas~~ — **fait en v356**. Reste :
+    une voiture de la rue abîmée que l'enfant PREND repart neuve (`emprunter`
+    fabrique une monture neuve ; ses dégâts ne la suivent pas), et l'ami ne
+    voit pas les enfoncements des voitures de SA rue que l'enfant a percutées
+    (chaque tablette a sa rue).
+  - ~~Le garage n'est éprouvé que par `reparer`~~ — **fait en v356** : un
+    témoin par le trajet (descendre dedans, remonter).
   - **Le contrat avec la physique** (`player.choc`, `player.physiqueLitEtat`)
     attend la session « conduite-physique » : tant qu'elle ne publie rien, le
     repli de vitesse décide, et les effets s'appliquent par `player.boost`.
+    Un témoin (v356) publie les deux à la main et garde « jamais deux fois ».
   - **Les avions ne s'abîment pas** (`pilote` est écarté) : une décision, pas
     un oubli — un atterrissage manqué n'a pas de « choc » dans `player.js`.
+
+- [ ] **AU PORTAIL DE LA v356 (l'épave et la rue, mesurée sur la v348, la v351 et la v354), DEUX SUITES ROUGES — aucune
+  causée par la livraison, double mesure faite (rejouées SEULES sur la branche
+  et sur `origin/main` v348, chacune dans un arbre détaché ; `monte.js` deux
+  fois de chaque côté, règle v269).**
+  - `manhattan.js` : branche seule, « le trou enlève aussi la géométrie
+    visible de la façade » (14 460 → 51 734) et « le taxi roule » (bouton
+    jamais visible, une bête devant) — deux dettes déclarées ; `origin/main`
+    seul meurt au délai de la ligne 282 (dette v269) avant de les atteindre.
+  - `monte.js` : « l'écran ne se fige pas en arrivant sur une ville » rouge
+    aux QUATRE passages (branche 33,4 % · 32,3 % ; `origin/main` 24,6 % ·
+    25,8 %). « En vol, on ne rattrape pas le bout du monde » : rouge une fois
+    sur deux DES DEUX CÔTÉS (Concorde 58 pour une barre à 60, branche 1er
+    passage et `origin/main` 2e passage) — intermittence, même distribution.
+    « Ne compile plus de programmes sur place » : branche 6 `physical` à
+    Paris, `origin/main` 13 à New York (chauffe expirée) — la famille de la
+    v324 (un modèle de flotte tiré à portée pour la première fois). Preuve
+    structurelle : la v356 ne clone un matériau qu'APRÈS un choc, et aucun
+    de ces témoins ne percute rien.
+  - Rebasée sur la v351, portail rejoué : mêmes rouges de `manhattan.js` et
+    `monte.js`, plus `maj.js` « le loader ne s'efface qu'une fois les corps
+    et les programmes prêts » (programmes 1/27). Rejouée SEULE : branche
+    39 verts, un rouge — « le loader dit combien de fichiers sont rangés » ;
+    `origin/main` v351 41 verts. Deux intermittences déjà démontées des deux
+    côtés (tableaux plus bas : 2 rouges sur 5 sur la branche de la v333, 1
+    sur 4 sur `origin/main`), et la livraison ne touche ni `index.html` ni le
+    loader ni l'installation.
+  - Rebasée sur la v355 (routes seules) : `maj.js` « corps, programmes et
+    fond de carte » (personnages 5/9) et « la page ne floute rien » — les
+    deux familles déjà rouges des deux côtés aux portails v343 et v348 ;
+    `monte.js` l'arrivée figée (6,9 %) et le trou en vol ; le trou de façade.
 
 - [ ] **AU PORTAIL DE LA v355 (la 401 et la Hansalinie), UN ROUGE, DÉJÀ
   DÉCLARÉ** — `monte.js` « l'écran ne se fige pas en arrivant sur une ville »
@@ -119,6 +155,7 @@
   ne se fige pas en arrivant sur une ville » (pire image 1 200 ms, 26,4 %). Les
   trois sont rouges seuls sur `origin/main` aux portails v345 à v348 ; la
   livraison ne touche ni la flotte, ni Manhattan, ni la file de maillage.
+
 - [ ] **AU PORTAIL DE LA v348 (le feu en deux appels), DEUX SUITES ROUGES — aucune
   causée par la livraison, double mesure faite (rejouées SEULES sur la branche
   v348 et sur `origin/main` v345, chacun dans un arbre détaché).**
@@ -3250,7 +3287,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   arrivent EN BIAIS (35° à 90°) restent — à mesurer en capture si l'une
   finit en impasse contre un îlot.
 
-- [ ] **PORTAIL DE LA v356 (Nice) : UNE CASCADE DE `monte.js` QUE LA SUITE
+- [ ] **PORTAIL DE LA v357 (Nice) : UNE CASCADE DE `monte.js` QUE LA SUITE
   SEULE NE REND PAS.** Au portail complet (base v349), `monte.js` a rendu
   trente-quatre rouges d'un seul tenant : tous les témoins d'avion et de
   voiture qui suivent le gel d'arrivée rendent « pas aux commandes », et le
@@ -3278,7 +3315,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   intermittence vue des deux côtés (la grille horaire de la v305 n'est pas
   touchée ici).
 
-- [ ] **NICE À LA RÈGLE DU KIT : CE QUI RESTE (v356).** Masséna 13,2 → 8,6 % de
+- [ ] **NICE À LA RÈGLE DU KIT : CE QUI RESTE (v357).** Masséna 13,2 → 8,6 % de
   lots, les Musiciens 20,4 → 14,5, le port 21,8 → 16,4 : les avenues du
   centre se serrent autour de la place. Le Vieux-Nice passe aux rues LOCALES
   (3,1 m, trottoirs de 2 m), comme les ruelles héritées de Paris ; ses vraies
@@ -3286,7 +3323,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   trottoir) ôterait ses réverbères, décision de Max comme pour les médinas.
 
 - [ ] **LES CINQ AUTRES VILLES BÂTIES À LA MAIN N'ONT PAS ÉTÉ ÉLARGIES (v271).**
-  Londres est faite en v339, Nice en v356 (au-dessus). Restent, dans l'ordre :
+  Londres est faite en v339, Nice en v357 (au-dessus). Restent, dans l'ordre :
   San Francisco, Washington, Lille (dans la fenêtre d'empreinte). La méthode de
   Londres se reprend telle quelle : figer la ville d'avant (`<ville>-v339.js`),
   type par fonction, trame recomposée et en recul des avenues, mobilier sur la

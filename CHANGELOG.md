@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v356 — Les rues de Nice à la règle du kit
+## v357 — Les rues de Nice à la règle du kit
 
 **Pourquoi.** La deuxième des cinq villes bâties à la main restées sur leurs
 largeurs relevées à la main (dette v271). La ruelle du Vieux-Nice faisait 1,2
@@ -52,6 +52,39 @@ lots, aucun quartier sous 4 %. `plafond.js` : à Nice, une maison posée sur
 une ancienne rue n'est pas enfermée et une cabane garde son toit (désarmé :
 8 blocs de ville, toit absent) ; les deux témoins de Londres passent par la
 même fonction. Les trois circuits de Nice restent à 99-100 % sur la rue.
+
+---
+
+## v356 — L'épave reste, et la rue s'abîme aussi
+
+**Pourquoi.** Trois manques laissés déclarés par la v343. À plusieurs, quand
+la voiture de Marlon prenait feu et qu'il était déposé à côté, elle
+s'évanouissait chez Alice au moment même où elle brûlait : la position de
+Marlon n'emportait plus de voiture. Percuter une voiture de la rue n'abîmait
+que celle de l'enfant — l'autre repartait comme neuve. Et la réparation au
+garage n'était éprouvée qu'en appelant `reparer` à la main, jamais par le
+geste de l'enfant.
+
+**Ce que ça change.** Chez l'ami, l'épave en feu reste là où elle s'est
+arrêtée : elle brûle, fume, puis s'en va au bout d'une minute et demie,
+comme chez celui qui conduisait. Rien de neuf ne voyage sur le réseau : c'est
+le receveur qui la garde. Une voiture de la rue qu'on percute se froisse à
+son tour — sa tôle à elle, jamais celle que toute la rue partage —, garde ses
+enfoncements, fume si elle est très touchée, et ne prend JAMAIS feu
+(personne n'est jamais blessé, personne à déposer). Ranger sa voiture abîmée
+au garage puis la ressortir la rend neuve.
+
+**Ce qui le prouve.** Six témoins neufs dans `degats.js`, dont quatre ROUGES
+sur l'ancien code : l'épave vue par Alice après le dépôt de Marlon (sur
+l'ancien code, plus de voiture), l'épave qui s'en va et rend ses géométries
+froissées (13 sur 13), la voiture de la rue percutée par le VRAI chemin du
+choc (14 pièces clonées, zéro géométrie commune touchée, 14 encore portées
+par une voiture neuve du même modèle), et la même très touchée qui fume sans
+brûler puis rend ses 14 clones quand elle s'en va. Le garage par le trajet
+(descendre dedans, remonter) est vert des deux côtés et rougit quand on
+désarme la réparation ; le contrat avec la physique (un choc publié compte
+une fois, l'allure n'est jamais réduite deux fois) garde une capacité pour le
+jour où `player.choc` sera publié.
 
 ---
 
