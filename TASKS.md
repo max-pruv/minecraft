@@ -1,5 +1,23 @@
 # Ce qui est en cours
 
+- [ ] **LA COMPILATION À L'ARRIVÉE (monte.js) : CE QUE LE BANC SOUS CHARGE
+  MESURE (v386).** Rouge chronique, des deux côtés : « chauffe de New York
+  expirée » (44 à 163 sur 321 en soixante secondes). Sondé
+  (`sonde-programmes-paris.cjs`, le trajet exact du témoin) : seule, la chauffe
+  finit en 9,3 s, bridée ×4 en 9,1 s, bridée ×6 (depuis l'accueil) en 15,8 s ;
+  et à l'arrivée, Paris, New York, Lille rendent ZÉRO programme neuf — de jour
+  comme de nuit. L'enfant n'est pas touché ; le témoin attendait soixante
+  secondes un état que la charge du portail retarde. Repointé : attente bornée
+  à 150 s (un état, pas un taux, v285), la durée dans le message, garde
+  d'images à plus de trois (Paris a rendu 8 images en 20 s au portail de la
+  v382, page vivante). **Reste ouvert** : au portail de la v382 la chauffe a
+  FINI (321/321 en 31 s) et Paris a rendu trois programmes `physical` que ni la
+  nuit ni le bridage ne reproduisent seuls. Le message nomme désormais la case
+  de la clé qui diffère (méthode v319) : au prochain rouge, on saura laquelle.
+  Portail de la v386 : `monte.js` VERT en entier — chauffe finie en 94,8 s
+  (elle aurait « expiré » à 60), zéro programme neuf dans les cinq lieux,
+  Paris à 7 images ; `maj.js` : la préparation (corps 7/9, dette déclarée) et
+  le badge avant le bump.
 - [ ] **LE PORTAIL DE LA v383 (la rue n'entre plus chez un ami) : DEUX PASSAGES.**
   Premier passage, trois suites rouges : `manhattan.js` (trou de façade, taxi
   — déclarés), `monte.js` (la monoplace — À MOI, repointée, voir CLAUDE.md ;

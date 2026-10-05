@@ -3305,9 +3305,14 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // TASKS.md ; ce que le témoin garde, c'est que l'accueil, lui, couvre tout.
     await souffler();
     const arrivee = await banc.joueur('MonteArrivee', { rr: 6 });
+    // UNE CHAUFFE EST UN ÉTAT, PAS UN TAUX (v285) : sous la charge du portail
+    // elle a rendu 44 à 163 sur 321 en soixante secondes, et seule — page
+    // neuve, ou bridée ×4 et ×6 — elle finit en 9 à 16 s
+    // (sonde-programmes-paris.cjs, v386). Allonger l'attente ne blanchit rien :
+    // un code sans chauffe ne la finit jamais. La durée entre dans le message.
     const chauffeNY = await arrivee.evaluate(async () => {
       const t0 = performance.now();
-      while (performance.now() - t0 < 60000) {
+      while (performance.now() - t0 < 150000) {
         const c = window.__chauffeNY && window.__chauffeNY();
         if (!c || c.finie) return { ...(c || { absente: true }), ms: Math.round(performance.now() - t0) };
         await new Promise((f) => setTimeout(f, 250));
@@ -3345,7 +3350,20 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         const neufs = info.programs.filter((p) => !avant.has(p.cacheKey));
         return { lieu: l.cle, neufs: neufs.length, images: info.render.frame - f0,
           arrive: Math.hypot(g.player.pos.x - x, g.player.pos.z - z) < 60,
-          cles: neufs.slice(0, 4).map((p) => { const k = p.cacheKey.split(','); return [k[0]].concat(k.slice(-4, -1)).join(','); }) };
+          // UN PROGRAMME SE NOMME PAR LA CASE DE SA CLÉ QUI DIFFÈRE (v319) : au
+          // portail de la v382 Paris a rendu trois `physical` que la sonde,
+          // seule ou bridée, ne reproduit pas — le prochain rouge les nomme.
+          cles: neufs.slice(0, 4).map((p) => {
+            const k = p.cacheKey.split(',');
+            let diff = null;
+            for (const a of avant) {
+              const ka = a.split(',');
+              if (ka[0] !== k[0] || ka.length !== k.length) continue;
+              const d = []; for (let i = 0; i < k.length; i++) if (ka[i] !== k[i]) d.push(`${i}:${ka[i]}→${k[i]}`);
+              if (!diff || d.length < diff.length) diff = d;
+            }
+            return `${k[0]} ${diff ? diff.slice(0, 4).join(' ') : 'sans voisin'}`;
+          }) };
       }, l));
     }
     await arrivee.close();
@@ -3373,10 +3391,11 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // les seize lieux de la sonde, `origin/main` rend 3 à Paris et 34 à New
     // York. Un programme au plus par lieu, et deux sur tout le tour — la marge
     // d'un modèle de la flotte qu'un tirage met à portée pour la première fois.
-    // (La garde `images > 10` vaut pour chaque lieu : une page morte rend zéro
-    // programme et ne prouve rien.)
+    // (La garde vaut pour chaque lieu : une page morte rend zéro programme et
+    // ne prouve rien. Au portail de la v382, Paris a rendu HUIT images en vingt
+    // secondes sur une page vivante : la garde passe à la moitié, plus de trois.)
     verifier('se téléporter dans une ville ne compile plus de programmes sur place — Paris, New York, Lille, une médina, Kyoto',
-      tour.every((t) => t.arrive && t.images > 10 && t.neufs <= 1)
+      tour.every((t) => t.arrive && t.images > 3 && t.neufs <= 1)
         && tour.reduce((a, t) => a + t.neufs, 0) <= 2,
       JSON.stringify(programmes));
 
