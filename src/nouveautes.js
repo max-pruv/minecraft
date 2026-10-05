@@ -6,12 +6,29 @@
 
 export const NOUVEAUTES = [
   {
-    v: 354,
+    v: 356,
     titre: 'Les rues de Nice s\'élargissent',
     puces: [
       'La Promenade à deux voies',
       'Des îlots plus grands dans la ville neuve',
       'Londres garde encore plus d\'immeubles',
+    ],
+  },
+  {
+    v: 355,
+    titre: 'Deux autoroutes de plus',
+    puces: [
+      'Toronto–Montréal, par le sud',
+      'Cologne–Hambourg, par l\'ouest',
+      'Elles font le tour des villes',
+    ],
+  },
+  {
+    v: 354,
+    titre: 'New York se promène',
+    puces: [
+      'Les passants marchent le long du trottoir',
+      'Ils tournent au coin de la rue',
     ],
   },
   {

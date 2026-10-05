@@ -592,25 +592,42 @@ const VRAIES_KM = [
       out.convoiI45 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'I-45') || null;
       out.convoiA7 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A7') || null;
       out.convoiAP2 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'AP-2') || null;
+      out.convoi401 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === '401') || null;
+      out.convoiHansa = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'Hansalinie') || null;
+      // UNE ROUTE QUI CONTOURNE UNE VILLE (v355) n'en approche le disque que
+      // par son tronçon radial : on compte, au-delà des quatre-vingts premiers
+      // et derniers blocs, les points de l'axe à moins de r + 10 de SES villes.
+      try {
+        const MO = await import('./src/mondes.js');
+        out.frole = {};
+        for (const s of m.segmentsDeRoute()) {
+          const A = MO.positionDe(s.de), B = MO.positionDe(s.vers);
+          let n = 0;
+          for (let sa = 80; sa <= s.longueur - 80; sa += 4) { const q = m.pointA(s, sa); if (Math.hypot(q.x - A.x, q.z - A.z) < A.r + 10 || Math.hypot(q.x - B.x, q.z - B.z) < B.r + 10) n++; }
+          out.frole[s.route.nom] = n;
+        }
+      } catch (e) { out.froleErreur = String(e); }
       // AUCUNE ROUTE NE CROISE NI NE LONGE UNE VOIE FERRÉE (v320) : l'A3 est la
       // première dont l'axe a un rail le long (l'ICE). On lit, pour TOUTES les
       // routes, chaque colonne de leur emprise (`routeEn` non nul) et l'on
       // demande au rail s'il y est — ballast, talus de voie ou gare.
       try {
         const TR = await import('./src/trains.js');
-        out.surRail = {};
+        out.surRail = {}; out.empriseVolee = {};
         for (const s of m.segmentsDeRoute()) {
-          let n = 0, sur = 0;
+          let n = 0, sur = 0, volee = 0;
           for (let sa = 0; sa <= s.longueur; sa += 2) {
             const q = m.pointA(s, sa), La = m.largeurA(s, sa);
             for (let d = -La.demiEmprise; d <= La.demiEmprise; d += 1) {
               const x = Math.round(q.x - q.fz * d), z = Math.round(q.z + q.fx * d);
               if (!m.routeEn(x, z)) continue;
               n++;
+              if (m.routeEn(x, z).seg !== s) volee++;
               if (TR.voieEn(x, z) || TR.gareEn(x, z)) sur++;
             }
           }
           out.surRail[s.route.nom] = [n, sur];
+          out.empriseVolee[s.route.nom] = (out.empriseVolee[s.route.nom] || 0) + volee;
         }
       } catch (e) { out.railErreur = String(e); }
       // LES ENTRÉES DE VILLE ÉVITENT LES MONUMENTS (v310) : l'avenue d'entrée
@@ -874,6 +891,40 @@ const VRAIES_KM = [
       && ['madrid', 'barcelone'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'AP-2' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7)),
       JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiAP2 ? { nom: a1.convoiAP2.nom, voitures: (a1.convoiAP2.modeles || []).length } : 'aucun convoi AP-2',
         surRail: a1.surRail && a1.surRail['AP-2'], entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'AP-2') }));
+
+    // LA 401 (v355) : Toronto–Montréal, la première route qui CONTOURNE une
+    // ville. Montréal est sous son pays à l'ouest ; la route passe au sud et
+    // y entre par son axe sud. Elle ne frôle aucune de ses deux villes hors de
+    // son tronçon radial, ne prend aucune colonne d'emprise à l'A20 qui sort
+    // de Montréal par l'est, et ne touche aucun rail.
+    verifier('la 401 relie Toronto à Montréal en contournant Montréal par le sud, et des voitures entrent dans les deux villes par une rue propre',
+      !a1.absent && a1.segments >= 20 && !!a1.convoi401 && a1.convoi401.routier && (a1.convoi401.modeles || []).length >= 10
+      && !!a1.surRail && !!a1.surRail['401'] && a1.surRail['401'][0] > 100 && a1.surRail['401'][1] === 0
+      && !!a1.frole && a1.frole['401'] === 0
+      && ['toronto', 'montreal'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === '401' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7)),
+      JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoi401 ? { nom: a1.convoi401.nom, voitures: (a1.convoi401.modeles || []).length } : 'aucun convoi 401',
+        surRail: a1.surRail && a1.surRail['401'], frole: a1.frole && a1.frole['401'], entrees: (a1.entreesEngendrees || []).filter((e) => e.route === '401') }));
+
+    // LA HANSALINIE (v355) : Cologne–Hambourg. Cologne sort par son axe
+    // nord-nord-ouest, entre l'ICE et l'aérodrome ; Hambourg est contournée par
+    // l'ouest et prise par le nord-ouest, parce que l'Elbe ferme son sud,
+    // l'A24 son est, et qu'un pont de l'Alster borde son axe nord (le témoin
+    // des ponts de villes, plus bas, l'a vu).
+    verifier('la Hansalinie relie Cologne à Hambourg en contournant Hambourg par l\'ouest, sans toucher l\'ICE, et des voitures entrent dans les deux villes par une rue propre',
+      !a1.absent && a1.segments >= 21 && !!a1.convoiHansa && a1.convoiHansa.routier && (a1.convoiHansa.modeles || []).length >= 10
+      && !!a1.surRail && !!a1.surRail.Hansalinie && a1.surRail.Hansalinie[0] > 100 && a1.surRail.Hansalinie[1] === 0
+      && !!a1.frole && a1.frole.Hansalinie === 0
+      && ['cologne', 'hambourg'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'Hansalinie' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7)),
+      JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiHansa ? { nom: a1.convoiHansa.nom, voitures: (a1.convoiHansa.modeles || []).length } : 'aucun convoi Hansalinie',
+        surRail: a1.surRail && a1.surRail.Hansalinie, frole: a1.frole && a1.frole.Hansalinie, entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'Hansalinie') }));
+
+    // AUCUNE ROUTE NE PREND L'EMPRISE D'UNE AUTRE (v355) : Montréal a deux
+    // routes, et chaque colonne d'emprise doit appartenir au segment qu'on
+    // lit — deux corridors qui se recouvrent n'ont pas d'échangeur.
+    verifier('aucune route ne prend une colonne d\'emprise à une autre',
+      !a1.absent && !!a1.empriseVolee && Object.keys(a1.empriseVolee).length >= 10 && Object.values(a1.empriseVolee).every((v) => v === 0) && !!a1.frole
+      && Object.values(a1.frole).every((v) => v === 0),
+      JSON.stringify(a1.absent ? a1 : { volees: a1.empriseVolee, frole: a1.frole, erreur: a1.froleErreur || a1.railErreur }));
 
     // DE VRAIS RAILS, EN RELIEF, ET DEUX VOIES (v281) ------------------------
     //
@@ -2418,7 +2469,7 @@ const VRAIES_KM = [
       + ` · cabines sur le trottoir ${kitLondres.cabinesTrottoir}/${kitLondres.cabines}`
       + ` · ${kitLondres.bus} bus, ${kitLondres.taxis} taxis`);
 
-    // --- LES RUES DE NICE À LA RÈGLE DU KIT (v354) ---------------------------
+    // --- LES RUES DE NICE À LA RÈGLE DU KIT (v356) ---------------------------
     //
     // La méthode de Londres, la ville suivante : artères en deux voies, rues de
     // quartier et ruelles du Vieux-Nice en une, trame de la ville neuve en

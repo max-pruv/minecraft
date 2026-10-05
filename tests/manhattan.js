@@ -214,6 +214,46 @@ function verifier(nom, ok, detail = "") {
         preuves.routes.collisions === 0,
       JSON.stringify(preuves.routes),
     );
+    // ---- LES PASSANTS DE MANHATTAN MARCHENT AU LONG CAP (v350) ------------
+    // Dette de la v278 : un site URBAIN gardait `surTrottoir` faux, donc le
+    // vieux programme (pause longue, cap au hasard). Le trottoir de Manhattan
+    // se lit dans le PLAN (`ruePietonne`), et `trottoirA` le lit désormais.
+    // On mesure un DÉBIT de chemin par seconde de JEU (v279), en faisant
+    // avancer la troupe de dix secondes de jeu d'un seul tenant : à 0,4 image
+    // par seconde sur ce banc (v259), la cadence de la page n'y entre pas.
+    // Mesuré : `origin/main` v351, 0 promeneur sur 10, débit 0,54 ; ici 11 sur
+    // 11, 0,99. La barre de débit est au milieu.
+    const debut = Date.now();
+    await p.waitForFunction(() => {
+      const s = __game.passants?.sites?.find((q) => q.urbain);
+      return s && s.peuple && s.peuple.filter((h) => h.name === 'passant').length >= 10;
+    }, null, { timeout: 60000 }).catch(() => {});
+    const marche = await p.evaluate(() => {
+      const g = __game, s = g.passants.sites.find((q) => q.urbain);
+      if (!s || !s.peuple) return { err: 'aucun passant à New York' };
+      const gens = s.peuple.filter((h) => h.name === 'passant');
+      const promeneurs = gens.filter((h) => h.promene && h.promene()).length;
+      let chemin = 0, surChaussee = 0, n = 0;
+      for (const h of gens) {
+        h.ecart = null;
+        const x0 = h.pos.x, z0 = h.pos.z;
+        let px = x0, pz = z0;
+        for (let k = 0; k < 200; k++) {
+          h.update(0.05);
+          chemin += Math.hypot(h.pos.x - px, h.pos.z - pz);
+          px = h.pos.x; pz = h.pos.z;
+        }
+        n++;
+        if (g.world.ruePietonne && g.world.ruePietonne(h.pos.x, h.pos.z) === false) surChaussee++;
+      }
+      return { total: gens.length, promeneurs, debit: n ? +(chemin / (n * 10)).toFixed(2) : 0, surChaussee };
+    });
+    verifier(
+      "les passants de Manhattan marchent au long cap, sur le trottoir",
+      !marche.err && marche.total >= 10 && marche.promeneurs >= marche.total / 2
+        && marche.debit > 0.75 && marche.surChaussee <= marche.total / 5,
+      JSON.stringify({ ...marche, attente_ms: Date.now() - debut }),
+    );
     await p.evaluate((NY) => {
       const j = __game.player;
       j.pos.set(NY.x + 4.5, 33.01, NY.z + 7.5);
@@ -461,6 +501,14 @@ function verifier(nom, ok, detail = "") {
         g.animalManager.scene.remove(a.mesh);
       }
       g.animalManager.animals.length = 0;
+      // ET LES PASSANTS AUSSI (v354) : ils marchent désormais sur le trottoir
+      // de Manhattan, et la voiture freine devant un piéton (`pietonDevant`).
+      // Ce témoin éprouve les contrôles tactiles, pas la patience de la rue :
+      // il se place lui-même, c'est-à-dire qu'il fait le vide (v284).
+      const s = g.passants?.sites?.find((q) => q.urbain);
+      for (const h of s?.peuple || []) {
+        if (Math.hypot(h.pos.x - NY.x, h.pos.z - NY.z) < 60) h.pos.set(NY.x + 400, h.pos.y, NY.z + 400);
+      }
       g.animalManager.invoquer("voiture", NY.x, NY.z + 22, false, {
         flotte: "ny-crown-victoria",
       });

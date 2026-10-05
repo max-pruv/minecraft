@@ -1682,7 +1682,9 @@ function updateChunks() {
   // (`piedPieton`), et elle passe devant : son plan n'est pas fait de blocs.
   world.trottoirA = (x, z) => {
     const bx = Math.floor(x), bz = Math.floor(z);
-    if (world.piedPieton) { const p = world.piedPieton(bx, bz); if (p !== undefined && p !== null) return p === 33; }
+    // À MANHATTAN (v350), le sol de la chaussée est aussi praticable : ce qui
+    // fait un trottoir se lit dans le PLAN (`ruePietonne`), pas dans un bloc.
+    if (world.piedPieton) { const p = world.piedPieton(bx, bz); if (p !== undefined && p !== null) return p === 33 && world.ruePietonne?.(x, z) !== false; }
     const y = world.sommetColonne(bx, bz);
     return TROTTOIR.has(world.getBlock(bx, y, bz));
   };

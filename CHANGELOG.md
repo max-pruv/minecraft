@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v354 — Les rues de Nice à la règle du kit
+## v356 — Les rues de Nice à la règle du kit
 
 **Pourquoi.** La deuxième des cinq villes bâties à la main restées sur leurs
 largeurs relevées à la main (dette v271). La ruelle du Vieux-Nice faisait 1,2
@@ -52,6 +52,65 @@ lots, aucun quartier sous 4 %. `plafond.js` : à Nice, une maison posée sur
 une ancienne rue n'est pas enfermée et une cabane garde son toit (désarmé :
 8 blocs de ville, toit absent) ; les deux témoins de Londres passent par la
 même fonction. Les trois circuits de Nice restent à 99-100 % sur la rue.
+
+---
+
+## v355 — Deux routes qui contournent une ville : Toronto–Montréal et Cologne–Hambourg
+
+**Pourquoi.** Deux corridors du kit étaient restés « sans tracé » en v337.
+Montréal est en contrebas de son pays à l'ouest, Hambourg au sud-ouest et
+Cologne au nord-est : chaque fois, la ville est basse du côté qui regarde
+l'autre. Les sondes d'avant ne savaient faire que deux coudes ou un chemin
+lissé tout droit ; aucune ne savait tourner AUTOUR d'une ville pour y entrer
+par son côté bas. À Hambourg, l'Elbe ferme le sud du disque et l'A24 son est ;
+à Cologne, l'aérodrome de Francfort ferme l'est et l'ICE d'Amsterdam frôle le
+nord-ouest.
+
+**Ce que ça change.** La 401 relie Toronto à Montréal (2 711 blocs) : elle
+contourne Montréal par le sud et y entre par son axe sud. La Hansalinie relie
+Cologne à Hambourg (2 387 blocs) : elle sort de Cologne entre l'ICE et
+l'aérodrome, puis fait le tour de Hambourg par l'ouest pour y entrer par le
+nord-ouest. Deux fois deux voies, aucun pont, vingt voitures chacune, des
+deux côtés une entrée sur une rue propre. Montréal a désormais deux autoroutes,
+Hambourg et Cologne aussi. Le relief ne bouge pas.
+
+**Ce qui le prouve.** Trois témoins neufs dans `carteMonde.js`. Les deux
+routes (rouges sur `origin/main` : elles n'existent pas) — leurs voitures,
+leurs entrées sur la rue, zéro colonne d'emprise sur un rail, et aucun point
+d'axe à moins de r + 10 de leurs villes hors du tronçon radial. Et un témoin
+général : aucune route ne prend une colonne d'emprise à une autre (Montréal,
+Hambourg et Cologne en ont deux), et aucune ne frôle ses villes — zéro sur les
+vingt et une, sous node. La sonde nouvelle cherche le COULOIR LE PLUS BAS sur
+une grille qui porte le cap (on ne vire que d'un huitième de tour, après deux
+pas droits), avec les rails, les autres routes et les aérodromes interdits,
+puis lisse et appelle `profilDe` sur chaque candidat : 16 admissibles sur
+3 000 pour la 401, 397 sur 1 500 pour la Hansalinie. Et le témoin des ponts de
+villes l'a prouvé une fois de plus : la première Hansalinie entrait par l'axe
+nord de Hambourg, au bout d'un pont de l'Alster, et le talus de la route en
+creusait le tablier (six points sans sol, rouge sur la branche, vert sur
+`origin/main`) ; la porte est passée au nord-ouest.
+
+---
+
+## v354 — Les passants de Manhattan se promènent
+
+**Pourquoi.** Depuis la v278, les passants des villes marchent le long de leur
+trottoir — sauf à New York, la seule ville dont le trottoir vit dans un plan et
+non dans des blocs : ils y gardaient le vieux programme, une longue pause puis
+un pas au hasard. Une avenue de Manhattan semblait peuplée de gens qui
+attendent.
+
+**Ce que ça change.** À Manhattan aussi, les passants marchent d'un pas
+régulier le long du trottoir et tournent au coin de la rue. Ils ne descendent
+pas sur la chaussée : là-bas, ce qui fait un trottoir se lit dans le plan de la
+ville (`ruePietonne`), et c'est lui que `trottoirA` interroge désormais.
+
+**Ce qui le prouve.** Un témoin neuf de `manhattan.js` fait avancer la troupe
+de dix secondes de jeu d'un seul tenant et mesure un débit de chemin par
+seconde : `origin/main` v351, 0 promeneur sur 10 et 0,54 bloc/s (rouge) ; ici
+11 sur 11 puis 10 sur 10, 0,99 et 1,25 bloc/s, zéro passant sur la chaussée.
+Le témoin du taxi fait désormais le vide des passants autour de lui, comme il
+le faisait des bêtes.
 
 ---
 
