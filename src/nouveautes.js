@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 369,
+    titre: 'Sept monuments ont leur vraie forme',
+    puces: [
+      'Le Panthéon de Rome et son portique',
+      'Le dôme du Rocher, octogone et or',
+      'Le Bean et Navy Pier à Chicago',
+      'Un stade et une horloge à Toronto',
+    ],
+  },
+  {
     v: 368,
     titre: 'Les rues de Lille s\'élargissent',
     puces: [
