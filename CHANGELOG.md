@@ -20,6 +20,42 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v381 — Plus de trou au bout des ponts, et le Tōmei
+
+**Pourquoi.** Au bout d'un pont de Berlin, une colonne d'eau sans tablier : la
+voiture y tombait (dette déclarée en v362). Mesuré sur toutes les villes à
+pont, ce n'était pas un cas : 437 colonnes d'eau sans tablier aux bouts des
+ponts de quarante-neuf villes. Le tronçon mouillé se mesure sur l'axe du pont,
+et une colonne du monde voisine de l'axe peut être de l'eau un demi-bloc avant
+le premier point mouillé.
+
+**Ce que ça change.** Le tablier se prolonge d'un demi-bloc à chaque bout, et
+seulement sur l'eau : la terre ferme ne change pas d'un bloc. Les bouts des
+ponts n'ont plus d'encoche où la voiture tombe.
+
+**Ce qui le prouve.** Un témoin neuf dans `carteMonde.js` lit toutes les villes
+à pont : 437 encoches sur `origin/main`, zéro ici, sur 28 436 colonnes de
+tablier. La dette de Berlin sort de la liste des ponts déclarés (Agra y
+reste). L'empreinte des 490 morceaux change (Tokyo est un des neuf lieux, et
+le raccord du Tōmei y entre), et la même branche, la règle désarmée et le
+Tōmei retiré, rend celle d'`origin/main` au bit près.
+
+**Et le Tōmei, Tokyo–Nagoya.** La dernière route libre du relevé de la v310,
+laissée de côté parce qu'« un aérodrome est sur l'axe ». C'était pire : à
+l'ouest de Tokyo, Haneda et Yokota ferment la plaine, le Shinkansen part vers
+Kyoto à douze blocs de Haneda et traverse Nagoya, et la montagne de Hakone
+occupe le milieu. La route passe par la bande côtière au sud du rail, entre la
+montagne et la mer : 1 140 blocs, un seul pont (une crique au sud-ouest de
+Tokyo), déblai et remblai de 1,8 bloc. Tokyo s'entre par 132°, porte à
+vingt-quatre blocs du bord — l'entrée par 149°, plus propre, mettait un pont
+sur un étang contre la porte —, Nagoya par 60°, à l'opposé de l'E1. Un témoin
+neuf de `carteMonde.js` exige zéro colonne sur le rail, zéro ville frôlée, des
+voitures sur la route et une rue propre aux deux entrées ; mesuré sous node
+avant le banc : 9 985 colonnes d'emprise, aucune sur la voie ferrée ni à une
+autre route, 283 colonnes d'asphalte sur 283.
+
+---
+
 ## v380 — Deux témoins de la rue qui disent ce qu'ils voient
 
 **Pourquoi.** Deux témoins de `monte.js` rendaient des rouges qu'on ne

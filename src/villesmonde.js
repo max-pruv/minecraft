@@ -4273,9 +4273,17 @@ function pontDeVille(f, u, v) {
   const P = u * co - v * si, Q = u * si + v * co;
   for (const q of a.ponts) {
     const le = q.axe === 0 ? P : Q, tr = q.axe === 0 ? Q : P;
-    if (le < q.a0 || le > q.a1) continue;
+    if (le < q.a0 - 0.5 || le > q.a1 + 0.5) continue;
     const d = Math.abs(tr - q.b);
     if (d > q.demi) continue;
+    // UNE COLONNE D'EAU AU BOUT DU TABLIER EST ENCORE DU PONT (v381). Le
+    // tronçon mouillé se mesure sur l'AXE ; une colonne du monde voisine peut
+    // être de l'eau un demi-bloc avant le premier point mouillé, et restait
+    // sans tablier — à Berlin sur l'axe même, ailleurs au coin du tablier :
+    // 437 encoches dans quarante-neuf villes. Dans le demi-bloc qui prolonge
+    // chaque bout, on pose le tablier si, et seulement si, la colonne est de
+    // l'eau : la terre ferme ne change pas d'un bloc.
+    if ((le < q.a0 || le > q.a1) && !eauDeVille(f, u / f.K, v / f.K)) continue;
     // UNE PILE, SINON LE TABLIER FLOTTE. « Si un élément ne se reconnaît pas
     // au premier regard, refais-le » : une route posée sur l'eau sans rien
     // dessous n'est pas un pont. Une pile tous les sept blocs, sous l'axe.

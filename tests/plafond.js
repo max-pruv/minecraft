@@ -328,7 +328,13 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // eux — voulu (un tablier est un sol). Le filtre désarmé et les anneaux de
 // quartier d'Agra et du Cap retirés, la branche rend e72d29bc…, la constante
 // d'`origin/main` (v375), au bit près.
-const EMPREINTE_MORCEAUX_V357 = 'ddf97f87ddc62b3ef54426dabb1d54ddff43c8c478df185015bdb8187548b483';
+// v381 : deux changements de CONTENU, voulus. Les tabliers des villes
+// engendrées couvrent les colonnes d'eau du demi-bloc au-delà de leurs bouts
+// (dont des lieux relevés ici), et Tokyo, un des neuf lieux, porte dans ses
+// morceaux le raccord du Tōmei. La preuve : la même branche, la règle des
+// tabliers désarmée (les bornes `a0`/`a1` d'avant) ET le Tōmei retiré du
+// registre, rend ddf97f87…, la constante d'`origin/main` (v380), au bit près.
+const EMPREINTE_MORCEAUX_V357 = '6976e4f4e1cda42a6d6cbdfbdc4e9dfe7b161ac13d2930d5f73eaa9ac1b27ba6';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };

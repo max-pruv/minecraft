@@ -2234,6 +2234,25 @@ Une règle.
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
 
+## Le Tōmei (v381) — une sonde de couloir lisse par moyenne, et la porte se juge avec son raccord
+
+Tokyo–Nagoya, la route que le relevé de la v310 laissait de côté (« un
+aérodrome sur l'axe »). Deux règles.
+
+- **UNE ENTRÉE DE VILLE SE MESURE AVEC LES QUARANTE BLOCS QUI LA PRÉCÈDENT.**
+  L'avenue de Tokyo par 149° était la plus propre (dix-neuf blocs de rue,
+  aucun bloc) ; mais le rayon qui y mène passe sur un étang à cinquante blocs
+  de la porte, et tous les tracés y posaient un pont contre elle. Une entrée
+  se choisit sur l'avenue ET sur le rayon de dehors — ici 132°, porte à
+  vingt-quatre blocs du bord (`bord`), même avenue mesurée.
+- **QUAND LE COULOIR SERPENTE, CHAIKIN LAISSE SES COINS ; UNE MOYENNE GLISSANTE
+  LES RÉPARTIT.** Le chemin de grille (huit caps, trois pas droits après chaque
+  virage) contournait la montagne côtière en S : lissé par Chaikin et
+  rééchantillonné, il rendait des coudes de 33 à 38° — cent pour cent de refus
+  « coude », c'est-à-dire un défaut de la recherche (v329). Rééchantillonné à
+  cinq blocs puis moyenné sur ±50 blocs (bouts fixés), le même chemin passe
+  sous 25° : 22 admissibles sur 300, dont un à un seul pont.
+
 ## La route de Washington (v367) — une ville fermée par son relief s'entre par son côté bas, et un bout peut s'arrêter net
 
 L'I-95 Sud New York–Washington. Quatre règles.
@@ -2271,6 +2290,14 @@ L'I-95 Sud New York–Washington. Quatre règles.
   (`ZONE_WASHINGTON`) et Manhattan à son rectangle — la règle de la v313
   (« un témoin écrit pour un cas se réécrit le jour où un cas neuf sort de
   son hypothèse »).
+
+**Et un tronçon mesuré sur l'axe ne couvre pas les colonnes d'à côté (v381).**
+Le tablier d'un pont de ville engendrée s'arrêtait là où l'AXE cessait d'être
+mouillé ; une colonne voisine pouvait être de l'eau un demi-bloc plus loin, et
+restait sans pont — une seule vue par le témoin des ponts (Berlin, sur l'axe),
+437 mesurées sur la bande entière dans quarante-neuf villes. Une dette vue
+dans une ville se mesure dans toutes (v319) : le témoin des encoches lit la
+bande de chaque tablier de chaque ville, par les fonctions pures.
 
 ## La porte de Manhattan (v362) — une ville qui n'est pas un disque déclare sa porte
 
