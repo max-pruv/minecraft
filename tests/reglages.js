@@ -218,6 +218,10 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
     // précédée d'une lecture est le battement, et l'on clique juste avant le
     // suivant. Si aucune écriture ne vient sans lecture (le jeu corrigé), on
     // clique au bout de la fenêtre : il n'y a plus de course à provoquer.
+    // Soixante secondes, parce que la seconde tablette se RECHARGE vingt-cinq
+    // secondes après s'être ouverte (la relance de synchronisation, v189) et
+    // que son battement repart de zéro : le premier qu'on peut repérer tombe
+    // vers quarante-cinq secondes (sonde-reglages-deux.cjs).
     const autreIpad = await joueur('Marlon');
     // `envoyerPrefs` lit PUIS écrit : une écriture sans lecture depuis la
     // précédente est le battement qui ne relit pas
@@ -233,8 +237,8 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
       route.continue();
     });
     const tGuet = Date.now();
-    while (Date.now() - tGuet < 35000 && !ecrituresSeules.length) await dormir(250);
-    let attente = 'aucune écriture sans lecture en 35 s';
+    while (Date.now() - tGuet < 60000 && !ecrituresSeules.length) await dormir(250);
+    let attente = 'aucune écriture sans lecture en 60 s';
     if (ecrituresSeules.length) {
       // le battement suivant tombe vingt secondes après ; on clique six
       // secondes avant, le temps que le choix soit écrit
