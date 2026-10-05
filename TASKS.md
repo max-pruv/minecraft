@@ -22,6 +22,12 @@
   cible, et la v361 ne change que des colonnes de route et une route à New
   York. Piste : n'arrêter la boucle qu'après un premier mouvement, ou
   attendre l'allure de croisière (session conduite).
+  Après le rebase sur la v360 : `carteMonde.js` toute verte (I-95, ponts,
+  empreinte `5fa54c5c…`) ; `plafond.js` « la surface coûte au plus quelques
+  millisecondes par morceau de campagne » rouge UNE fois (12,6 ms pour 1,7),
+  verte rejouée seule (3,0) et sur `origin/main` (3,3) ; sous node, ordre
+  alterné, 3,3 · 3,7 ms branche contre 3,6 · 3,3 `origin/main` — un témoin
+  de durée qui tire, pas la livraison.
 - [ ] **LE PONT QUI ENTRE DANS MANHATTAN (v361).** L'I-95 s'arrête sur la rive
   est, en face de l'île : sa porte est déclarée hors du rectangle (`BORNES`).
   Le pont lui-même demande deux choses qui ne sont pas des tracés : (1) que le
