@@ -1410,7 +1410,10 @@ export function villeDuRepere(lm) {
 }
 const LANDMARKS = LANDMARKS_V317.map((lm) => {
   const e = echelleDe(villeDuRepere(lm), lm.name);
-  return e ? { ...lm, build: etirerBatisseur(lm.build, e.paliers), echelle: e } : lm;
+  // Une tour qui a reçu une emprise (v354) étire son bâtisseur neuf ; le monde
+  // d'avant (`LANDMARKS_V317`) garde la colonne d'un bloc.
+  if (e) return { ...lm, build: etirerBatisseur(lm.tour || lm.build, e.paliers), echelle: e };
+  return lm.tour ? { ...lm, build: lm.tour } : lm;
 });
 
 // La même liste, sans les constructeurs : ce que la carte a le droit de lire.
