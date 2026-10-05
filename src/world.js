@@ -1387,7 +1387,7 @@ const LANDMARKS_V317 = [
   // Eye en face du Parlement, St Paul dans la City, le Shard sur la rive sud.
   ...MONUMENTS_LONDRES.map((m) => ({
     name: m.nom, x: LONDRES.x + m.u, z: LONDRES.z + m.v,
-    box: m.box, seuil: m.seuil, build: m.build,
+    box: m.box, seuil: m.seuil, build: m.build, tour: m.tour,
   })),
   ...landmarksCapitales(),
   ...landmarksVillesMonde(),

@@ -117,11 +117,11 @@ export const ECHELLES_VILLES = Object.freeze({
     paliers: [[0, 0], [1, 1], [6, 16], [7, 20], [10, 40], [17, 40], [19, 132], [20, 137]] },
   // La façade de la cathédrale de Pise, trente-quatre mètres ; le baptistère
   // en fait cinquante-cinq, un peu moins que la tour penchée.
-  'Pise|Duomo de Pise': { vraie: 34, corps: DOME[4] },
-  'Pise|Baptistère': { vraie: 55, corps: DOME[3] },
+  'Pise|Duomo de Pise': { vraie: 34, paliers: [[0, 0], [1, 1], [5, 10], [6, 12], [8, 18], [10, 18], [12, 35]] },
+  'Pise|Baptistère': { vraie: 55, paliers: [[0, 0], [1, 1], [6, 13], [9, 20], [13, 20], [16, 56]] },
   // Les remparts de grès rouge, vingt et un mètres.
   'Agra|Fort d\'Agra': { vraie: 21, corps: [6, 6] },
-  'Madrid|Palais royal': { vraie: 35, corps: PALAIS },
+  'Madrid|Palais royal': { vraie: 35, paliers: [[0, 0], [1, 1], [25, 36]] },
   'Madrid|Porte d\'Alcalá': { vraie: 20, corps: ARCHE(7) },
   // LES TOURS D'ANGLE D'UNE ENCEINTE SONT DES FÛTS. `muraillesRect` les pose
   // d'un bloc de large sur trois couches : étirées jusqu'à la vraie tour
@@ -134,26 +134,26 @@ export const ECHELLES_VILLES = Object.freeze({
   'Amsterdam|Palais du Dam': { vraie: 51, corps: PALAIS },
   'Amsterdam|Rijksmuseum': { vraie: 45, corps: PALAIS },
   'Berlin|Porte de Brandebourg': { vraie: 26, corps: ARCHE(7) },
-  'Berlin|Reichstag': { vraie: 47, corps: DOME[4] },
-  'Berlin|Berliner Dom': { vraie: 98, corps: DOME[4], ordre: true },
-  'Vienne|La Hofburg': { vraie: 30, corps: PALAIS },
+  'Berlin|Reichstag': { vraie: 47, paliers: [[0, 0], [1, 1], [5, 13], [7, 19], [13, 19], [15, 48]] },
+  'Berlin|Berliner Dom': { vraie: 98, paliers: [[0, 0], [1, 1], [5, 16], [6, 18], [9, 26], [16, 26], [21, 99]] },
+  'Vienne|La Hofburg': { vraie: 30, paliers: [[0, 0], [1, 1], [22, 31]] },
   'Prague|Le château de Prague': { vraie: 25, corps: PALAIS },
-  'Florence|Le Duomo': { vraie: 114, corps: DOME[5] },
+  'Florence|Le Duomo': { vraie: 114, paliers: [[0, 0], [1, 1], [5, 16], [7, 19], [10, 28], [17, 28], [22, 115]] },
   // Le Parthénon fait 13,7 mètres : c'est son rocher qui le met au-dessus
   // d'Athènes, et le rocher n'est pas dans le bâtisseur.
   'Athènes|Le Parthénon': { vraie: 14, corps: COLONNADE },
   'Athènes|Temple de Zeus': { vraie: 17, corps: COLONNADE },
-  'Athènes|Le Parlement': { vraie: 25, corps: PALAIS },
-  'Istanbul|Sainte-Sophie': { vraie: 55, corps: DOME[6] },
+  'Athènes|Le Parlement': { vraie: 25, paliers: [[0, 0], [1, 1], [19, 26]] },
+  'Istanbul|Sainte-Sophie': { vraie: 60, paliers: [[0, 0], [1, 1], [5, 11], [6, 14], [23, 61]] },
   // La coupole de la Mosquée bleue, quarante-trois mètres (ses minarets, que
   // le bâtisseur n'a pas, en font soixante-quatre).
-  'Istanbul|La Mosquée bleue': { vraie: 43, corps: DOME[5] },
+  'Istanbul|La Mosquée bleue': { vraie: 64, paliers: [[0, 0], [1, 1], [4, 10], [6, 14], [24, 65]] },
   'Moscou|Saint-Basile': { vraie: 48, corps: [7, 11] },
   // Des murs de dix-neuf mètres, des tours d'enceinte d'une trentaine (la
   // Spasskaïa, soixante et onze, n'est pas dans le bâtisseur).
   'Moscou|Le Kremlin': { vraie: 30, paliers: [[0, 0], [1, 1], [6, 19], [7, 20], [9, 31]] },
   'Moscou|Le Bolchoï': { vraie: 36, corps: COLONNADE },
-  'Saint-Pétersbourg|Le palais d\'Hiver': { vraie: 23, corps: PALAIS },
+  'Saint-Pétersbourg|Le palais d\'Hiver': { vraie: 23, paliers: [[0, 0], [1, 1], [20, 24]] },
   'Saint-Pétersbourg|Saint-Sauveur-sur-le-Sang': { vraie: 81, corps: [7, 11] },
   'Saint-Pétersbourg|Notre-Dame-de-Kazan': { vraie: 72, corps: COLONNADE },
   'Stockholm|Le Palais royal': { vraie: 32, corps: PALAIS },
@@ -171,18 +171,18 @@ export const ECHELLES_VILLES = Object.freeze({
     paliers: [[0, 0], [1, 1], [3, 9], [4, 10], [6, 18], [7, 19], [9, 34], [10, 37], [12, 55], [13, 60], [14, 83]] },
   // Le mur des Lamentations, dix-neuf mètres au-dessus de son esplanade.
   'Jérusalem|Le mur des Lamentations': { vraie: 19, corps: [7, 6] },
-  'Mumbai|Le Taj Mahal Palace': { vraie: 60, corps: PALAIS },
-  'Mumbai|La gare Victoria': { vraie: 50, corps: DOME[4] },
+  'Mumbai|Le Taj Mahal Palace': { vraie: 60, paliers: [[0, 0], [1, 1], [6, 13], [7, 16], [9, 21], [14, 21], [17, 61]] },
+  'Mumbai|La gare Victoria': { vraie: 50, paliers: [[0, 0], [1, 1], [5, 11], [7, 15], [9, 19], [13, 19], [17, 51]] },
   'Delhi|La porte de l\'Inde': { vraie: 42, corps: ARCHE(10) },
   // Le Samrat Yantra, le grand cadran, vingt et un mètres.
   'Delhi|Jantar Mantar': { vraie: 21, corps: [5, 4] },
-  'Delhi|Rashtrapati Bhavan': { vraie: 55, corps: DOME[4], ordre: true },
+  'Delhi|Rashtrapati Bhavan': { vraie: 55, paliers: [[0, 0], [1, 1], [5, 14], [8, 21], [13, 21], [17, 56]] },
   'Los Angeles|Walt Disney Hall': { vraie: 46, corps: DOME[4] },
   'Toronto|Le Rogers Centre': { vraie: 86, corps: DOME[5] },
   // La tour de l'horloge de l'ancien hôtel de ville, cent quatre mètres.
   'Toronto|L\'ancien hôtel de ville': { vraie: 104, corps: MINARET(12), fut: true },
-  'Mexico|La cathédrale': { vraie: 67, corps: DOME[4] },
-  'Mexico|Bellas Artes': { vraie: 53, corps: DOME[4] },
+  'Mexico|La cathédrale': { vraie: 67, paliers: [[0, 0], [1, 1], [5, 13], [7, 23], [15, 68]] },
+  'Mexico|Bellas Artes': { vraie: 53, paliers: [[0, 0], [1, 1], [5, 12], [6, 14], [8, 20], [12, 20], [16, 54]] },
   'Buenos Aires|La Casa Rosada': { vraie: 26, corps: PALAIS },
   // La tour du Cabildo, trente mètres.
   'Buenos Aires|Le Cabildo': { vraie: 30, corps: ARCHE(4) },
@@ -215,7 +215,7 @@ export const ECHELLES_VILLES = Object.freeze({
   'Munich|Le nouvel hôtel de ville': { vraie: 85,
     paliers: [[0, 0], [1, 1], [5, 20], [7, 30], [10, 55], [12, 70], [14, 83], [15, 86]] },
   // La coupole centrale de Saint-Marc, quarante-trois mètres.
-  'Venise|Saint-Marc': { vraie: 43, corps: DOME[3] },
+  'Venise|Saint-Marc': { vraie: 43, paliers: [[0, 0], [1, 1], [4, 12], [5, 15], [9, 15], [10, 44]] },
   // Une tour à boule : le fût jusqu'à la boule du sommet.
   // La demi-tour Eiffel, ses deux étages (rigides) à 57 et 115 m divisés par deux.
   'Las Vegas|La demi-tour Eiffel': { vraie: 165,
@@ -224,7 +224,7 @@ export const ECHELLES_VILLES = Object.freeze({
     paliers: [[0, 0], [1, 1], [4, 14], [5, 18], [10, 55], [11, 62], [13, 74], [14, 79]] },
   // Le Capitolio, quatre-vingt-douze mètres ; les tours de la cathédrale,
   // trente-quatre.
-  'La Havane|Le Capitole': { vraie: 92, corps: DOME[5] },
+  'La Havane|Le Capitole': { vraie: 92, paliers: [[0, 0], [1, 1], [5, 14], [10, 29], [15, 29], [20, 93]] },
   'La Havane|La cathédrale': { vraie: 34, corps: MINARET(8), fut: true },
   // LES PAGODES (Asie) : chaque étage s'étire, chaque toit reste un rang —
   // la règle de Wat Arun. Un étage de pagode fait neuf mètres, sa flèche dix.
@@ -281,6 +281,7 @@ export const ECHELLES_VILLES = Object.freeze({
   // cloches, l'attique, la pyramide et l'ange.
   'Venise|Le campanile': { vraie: 99,
     paliers: [[0, 0], [1, 1], [10, 50], [12, 62], [13, 72], [15, 98], [16, 100]] },
+  'Istanbul|La tour de Galata': { vraie: 67, paliers: [[0, 0], [1, 1], [10, 29], [11, 33], [15, 33], [16, 68]] },
   // Les autres perches que le témoin a trouvées (v357), avec leur corps.
   // La Fernsehturm, 368 m : la sphère (rigide) de 200 à 230 m.
   'Berlin|Fernsehturm': { vraie: 368,
@@ -420,7 +421,7 @@ const K_CIEL = (EIFFEL_BLOCS - CORNICHE) / Math.log(EIFFEL_M / CORNICHE);
 // du vrai ciel de la ville (sonde `k.mjs` de la v342, refaite par le témoin).
 export const CIELS = Object.freeze({
   Rome: 13, Pise: 12, Agra: 12, Madrid: 13, Lisbonne: [13, 0.92], Amsterdam: [13, 0.38],
-  Berlin: 13, Vienne: 13, Prague: [10, 0.59], Florence: 13, 'Athènes': 12, Istanbul: [13, 0.48],
+  Berlin: 13, Vienne: 13, Prague: [10, 0.59], Florence: 13, 'Athènes': 12, Istanbul: 13,
   Moscou: 13, 'Saint-Pétersbourg': 12, Stockholm: [13, 0.26], Copenhague: [13, 0.92],
   Singapour: 13, Bangkok: 12, 'Jérusalem': [8, 0.78], Mumbai: 12, Delhi: 15,
   'Los Angeles': [20, 0.2], Toronto: [15, 0.3], Mexico: [13, 0.95], 'Buenos Aires': 15,
