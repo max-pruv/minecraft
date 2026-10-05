@@ -1417,7 +1417,7 @@
   ces boîtes. `washington.js` « chaque îlot a sa porte » (déclaré) : vert seul
   des deux côtés. `maj.js`, `carte.js`, `manhattan.js` : les rouges déclarés
   de la v365, identiques.
-- [ ] **LE PORTAIL DE LA v372 (les huit palais) : TOUS LES ROUGES DÉJÀ
+- [ ] **LE PORTAIL DE LA v375 (les huit palais) : TOUS LES ROUGES DÉJÀ
   DÉCLARÉS, DOUBLE MESURE FAITE.** `maj.js` : le loader qui compte ses
   fichiers, le loader qui attend corps et programmes, « fond de carte vraiment
   là » — rejouée SEULE : les trois rouges sur la branche, les trois ET un
@@ -1438,7 +1438,7 @@
   verte (6,8 sur 37 blocs) : NEUF, intermittent, la grandeur dépend de la
   portion du circuit que la fenêtre a parcourue — à mesurer sur un tour entier.
 - [ ] **QUARANTE-CINQ MONUMENTS SONT BÂTIS EN TRAVERS D'UN ANNEAU DE VOITURES
-  (v372, témoin de `plafond.js`, `DETTE_ANNEAUX`).** Les anneaux des villes
+  (v375, témoin de `plafond.js`, `DETTE_ANNEAUX`).** Les anneaux des villes
   engendrées se choisissent sur la trame sans regarder les repères ; un
   monument posé APRÈS pose ses blocs (couches d'auteur 1 à 3) sur des cases que
   la voiture traverse. Le pire : le Taj Mahal (294 cases), le Colisée (53),
@@ -1446,9 +1446,9 @@
   de Madrid (31). Deux remèdes, à mesurer : écarter des candidats d'anneau
   toute boîte de repère (`anneauxDeVille`, villesmonde.js — mais cela change
   les circuits, donc la couverture et le partage de la v270, à remesurer ville
-  par ville), ou bâtir dans la partie libre de la boîte (ce que la v372 a fait
+  par ville), ou bâtir dans la partie libre de la boîte (ce que la v375 a fait
   pour les huit palais). Une dette qui ne mesure plus rien rougit.
-- [x] **HUIT PALAIS SONT ENCORE LE GABARIT `palaisLong` — FAIT en v372** (compté par le
+- [x] **HUIT PALAIS SONT ENCORE LE GABARIT `palaisLong` — FAIT en v375** (compté par le
   témoin).** Palais du Dam, Rijksmuseum, château de Prague (sans Saint-Guy),
   Palais royal de Stockholm, Amalienborg, Gyeongbokgung (des toits coréens),
   Casa Rosada, palais Bahia : trois blocs d'épaisseur et une baie sur deux, que
