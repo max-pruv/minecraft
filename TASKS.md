@@ -1417,6 +1417,17 @@
   ces boîtes. `washington.js` « chaque îlot a sa porte » (déclaré) : vert seul
   des deux côtés. `maj.js`, `carte.js`, `manhattan.js` : les rouges déclarés
   de la v365, identiques.
+- [ ] **LE PORTAIL DE LA v370 (les huit palais) : TOUS LES ROUGES DÉJÀ
+  DÉCLARÉS, DOUBLE MESURE FAITE.** `maj.js` : le loader qui compte ses
+  fichiers, le loader qui attend corps et programmes, « fond de carte vraiment
+  là » — rejouée SEULE : les trois rouges sur la branche, les trois ET un
+  quatrième (le flou pendant la préparation) sur `origin/main`. `manhattan.js` :
+  le trou de façade (22 326 → 42 919, déclaré) et PeerJS « ID taken » (le
+  courtier, déclaré v358). `monte.js` : les passants de Rome (29 %, tirage
+  déclaré v319), la compilation à la téléportation, le gel d'arrivée, la piste
+  d'essai (arrêt à 303,3 pour 300). PREUVE STRUCTURELLE pour ces deux suites :
+  la livraison ne change que les bâtisseurs de huit palais hors de Rome, de
+  Paris et de Manhattan, et la piste est en (30 000, 30 300).
 - [ ] **QUARANTE-CINQ MONUMENTS SONT BÂTIS EN TRAVERS D'UN ANNEAU DE VOITURES
   (v370, témoin de `plafond.js`, `DETTE_ANNEAUX`).** Les anneaux des villes
   engendrées se choisissent sur la trame sans regarder les repères ; un
