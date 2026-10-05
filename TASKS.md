@@ -3033,6 +3033,13 @@ l'embarquement a eu lieu, pas par une hypothèse.
 - [x] **Les bords de la découpe** — FAIT en v372 : coupés au plan (débord 0
   sur les 55 modèles). Les taxis gardent `fabrique` → pas de portière : bords
   nets, mais 0/24 rayons touchent un habitacle derrière l'ouverture.
+- [ ] **LE PORTAIL DE LA v373 (revers des portières).** `degats.js` vert ;
+  les témoins de la livraison verts (revers 10/10, bords, descente en un
+  essai sur le nouveau terrain). Rouges, tous de familles déjà déclarées et
+  mesurées des deux côtés au portail de la v372 : `maj.js` « vraiment là »,
+  `monte.js` téléportation qui compile, trou en vol, écran figé ; et
+  l'atterrissage avion (« descend train sorti ») — preuve structurelle, les
+  avions ne passent ni par `portieres.js` ni par la séquence.
 - [x] **Une portière ouverte vue de dos** — FAIT en v373 : un revers fabriqué
   en géométrie (copie des sommets, normales retournées), pas un `DoubleSide`.
   De derrière : 0/24 rayons avant, autant que de face après (10 et 10 sur
