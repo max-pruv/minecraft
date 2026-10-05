@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 356,
+    titre: 'Les épaves restent',
+    puces: [
+      'Tes amis voient l\'épave brûler',
+      'Les voitures de la rue s\'abîment',
+      'Le garage répare ta voiture',
+    ],
+  },
+  {
     v: 355,
     titre: 'Deux autoroutes de plus',
     puces: [

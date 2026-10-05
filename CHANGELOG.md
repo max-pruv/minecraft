@@ -20,6 +20,39 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v356 — L'épave reste, et la rue s'abîme aussi
+
+**Pourquoi.** Trois manques laissés déclarés par la v343. À plusieurs, quand
+la voiture de Marlon prenait feu et qu'il était déposé à côté, elle
+s'évanouissait chez Alice au moment même où elle brûlait : la position de
+Marlon n'emportait plus de voiture. Percuter une voiture de la rue n'abîmait
+que celle de l'enfant — l'autre repartait comme neuve. Et la réparation au
+garage n'était éprouvée qu'en appelant `reparer` à la main, jamais par le
+geste de l'enfant.
+
+**Ce que ça change.** Chez l'ami, l'épave en feu reste là où elle s'est
+arrêtée : elle brûle, fume, puis s'en va au bout d'une minute et demie,
+comme chez celui qui conduisait. Rien de neuf ne voyage sur le réseau : c'est
+le receveur qui la garde. Une voiture de la rue qu'on percute se froisse à
+son tour — sa tôle à elle, jamais celle que toute la rue partage —, garde ses
+enfoncements, fume si elle est très touchée, et ne prend JAMAIS feu
+(personne n'est jamais blessé, personne à déposer). Ranger sa voiture abîmée
+au garage puis la ressortir la rend neuve.
+
+**Ce qui le prouve.** Six témoins neufs dans `degats.js`, dont quatre ROUGES
+sur l'ancien code : l'épave vue par Alice après le dépôt de Marlon (sur
+l'ancien code, plus de voiture), l'épave qui s'en va et rend ses géométries
+froissées (13 sur 13), la voiture de la rue percutée par le VRAI chemin du
+choc (14 pièces clonées, zéro géométrie commune touchée, 14 encore portées
+par une voiture neuve du même modèle), et la même très touchée qui fume sans
+brûler puis rend ses 14 clones quand elle s'en va. Le garage par le trajet
+(descendre dedans, remonter) est vert des deux côtés et rougit quand on
+désarme la réparation ; le contrat avec la physique (un choc publié compte
+une fois, l'allure n'est jamais réduite deux fois) garde une capacité pour le
+jour où `player.choc` sera publié.
+
+---
+
 ## v355 — Deux routes qui contournent une ville : Toronto–Montréal et Cologne–Hambourg
 
 **Pourquoi.** Deux corridors du kit étaient restés « sans tracé » en v337.
