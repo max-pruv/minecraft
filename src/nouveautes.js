@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 382,
+    titre: 'Le jeu se vérifie mieux',
+    puces: [
+      'Un contrôle de la route réparé',
+      'Rien ne change pour toi',
+    ],
+  },
+  {
     v: 381,
     titre: 'Ponts finis, Tokyo rejoint Nagoya',
     puces: [

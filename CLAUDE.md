@@ -1069,6 +1069,26 @@ Et une empreinte d'identité qui change se PROUVE : celle des 490 morceaux
 (v352) couvre Marrakech et Tokyo ; la branche, bâtisseurs neufs désarmés, rend
 l'ancienne au bit près — c'est ce qui a permis de la remplacer.
 
+## Le cône se mesure à chaud (v382) — l'ABBA n'écarte pas un premier passage à froid
+
+Le témoin de l'ordre en cône était rouge des deux côtés (0,02 à 0,07 pour une
+barre à 0,13). Deux règles.
+
+- **UN ORDRE ALTERNÉ ÉQUILIBRE LA DÉRIVE, PAS LE PREMIER PASSAGE.** L'ABBA
+  (v346) compense une page qui chauffe régulièrement ; il ne compense pas un
+  premier passage qui paie seul la première arrivée dans une ville (convois,
+  passants, programmes) — et il le met toujours sur le même bras. Sondé sur une
+  page, trois paires : ordre neuf 0,42 · 0,87 · 0,87, ordre d'avant 0,65 · 0,63
+  · 0,67. Un passage d'échauffement non compté, et l'on publie les quatre
+  passages dans le message. Avant de croire un gain perdu, on regarde la
+  DISTRIBUTION des passages, pas leur moyenne (v269).
+- **UN ORDRE DE FILE NE DÉCIDE QUE QUAND LE DÉBIT MANQUE.** Scène vide : 0,84
+  des deux côtés (93 morceaux par seconde, file vide). Recharge à l'arrivée
+  armée : 0,72 contre 0,70 (90 par seconde). Le cône garde son gain là où la
+  file attend l'image — la tablette qui arrive dans une ville — et ne coûte rien
+  ailleurs ; on le garde, et le témoin le mesure dans le régime où il compte
+  (recharge par image, celle du banc).
+
 ## L'arrivée après la carte (v379) — un gel de banc se démonte en scène vide
 
 Les dettes de la v360. Cinq règles.
