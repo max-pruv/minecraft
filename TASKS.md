@@ -3781,6 +3781,17 @@ l'embarquement a eu lieu, pas par une hypothèse.
   ruelles sont piétonnes et plus étroites — la section `ruelle` du kit (sans
   trottoir) ôterait ses réverbères, décision de Max comme pour les médinas.
 
+- [ ] **PORTAIL DE LA v368 (Lille), après la fusion des v366 et v367.** Dix
+  suites. Rouges, tous déjà déclarés ici : `maj.js` la libération et « ne
+  floute rien », plus les deux témoins du palier (six images, aucun verdict —
+  la charge, ma sonde de circuits tournait à côté ; rejouée SEULE, les deux
+  sont verts et restent les intermittences du loader, lignes 79, 98, 977) ;
+  `carte.js` la flèche du GPS et le glisser bridé (446 ms) ; `washington.js`
+  l'Air et l'Espace (et, seule, « chaque îlot a sa porte » — intermittence de
+  la ligne 438) sur un `washington.js` que Lille ne touche pas ; `manhattan.js`
+  le trou de façade et le taxi ; `monte.js` la compilation à la téléportation.
+  Après la fusion de la v367 (I-95), `carteMonde.js` et `plafond.js` rejouées
+  seules : 156 et 115 verts, zéro rouge.
 - [ ] **PORTAIL DE LA v368 (Lille), base v361.** Rouges tous déjà déclarés :
   `maj.js` la libération (`null`, personnages 3/9) et « ne floute rien » ;
   `carte.js` la flèche du GPS (gauche 1,92) et une fois le glisser bridé
