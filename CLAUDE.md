@@ -770,6 +770,51 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les tours ont une emprise (v357) — une perche se cherche au bâtisseur, dans toutes les villes
+
+La dette de la v353 : treize tours d'un bloc de large, laissées sous leur vraie
+hauteur parce qu'étirées c'étaient des perches. Cinq règles.
+
+- **LE REMÈDE D'UNE FORME EST UN BÂTISSEUR, PAS UNE TABLE.** Une colonne d'un
+  bloc reste une colonne quel que soit son étirement ; la table de paliers ne
+  sait que monter. Chaque tour a son bâtisseur (`buildWillis`, `buildPerle`…,
+  villesmonde.js) d'après sa vraie silhouette — on la cherche avant de bâtir :
+  les tubes coupés aux 50e, 66e et 90e étages, les sphères à 68, 250 et 335 m —
+  dans la BOÎTE de son repère, qui ne bouge pas : elle entre dans les zones du
+  relief (`r = box + 30`), la changer toucherait `terrainHeight`.
+- **LE MONDE D'AVANT GARDE SON BÂTISSEUR D'AVANT.** Le neuf est le champ
+  `tour` du monument ; `LANDMARKS_V317` (donc `CONF_AVANT`, `CONF_V308`) garde
+  `build`, et seul le monde d'aujourd'hui lit `lm.tour || lm.build` (world.js),
+  étiré par la table s'il en a une, tel quel sinon (la CN Tower, au-dessus de
+  son ciel). Remplacer `build` aurait changé les monuments du monde figé.
+- **UNE SPHÈRE, UN BELVÉDÈRE SONT RIGIDES : DEUX PALIERS AU MÊME MÈTRE.**
+  `paliersDuMonde` garde une pente d'au moins un ; deux paliers au même mètre
+  font donc passer les couches entre eux à un bloc par couche, et la boule
+  reste une boule. Une calotte aussi (Saint-Pierre).
+- **UNE PERCHE SE CHERCHE PARTOUT, ET LE TÉMOIN EN A TROUVÉ DIX DE PLUS.**
+  « Plus de la moitié des couches sur une ou deux colonnes, au-dessus d'une
+  fois et demie la corniche » (`plafond.js`) a rendu vingt-trois perches sur
+  `origin/main`, pas treize : la Fernsehturm, la CN Tower, trois clochers sans
+  leur cathédrale, la demi-tour Eiffel sans ses pieds — et les pagodes, qui
+  n'avaient qu'un poteau sous chaque toit, invisibles à toute mesure de
+  hauteur. Le verre dans les murs encore : la portée du remède se mesure au
+  témoin, pas à la liste de la dette. Les fûts vrais se déclarent
+  (`PERCHES_VRAIES`, une colonne, un obélisque).
+- **UNE HAUTEUR VRAIE SUR UN PLAN À L'ÉCHELLE DU SOL FAIT UN IMMEUBLE.** La
+  façade de Saint-Pierre à ses 45 m, sur une basilique de seize blocs de long,
+  faisait un bloc de bureaux coiffé d'une coupole (vu en capture). Elle est
+  écrite à 16 m, et le commentaire le dit : la règle des deux échelles
+  (hauteurs à l'étage, emprises au sol) vaut pour un monument comme pour une
+  tour de Manhattan.
+
+Et une roue ne s'étire pas (elle deviendrait une ellipse) : la roue du Prater
+a reçu un bâtisseur à son vrai rayon, le plus grand que tient sa boîte ;
+celle de la High Roller ne tiendrait pas, et c'est déclaré.
+
+Et une empreinte d'identité qui change se PROUVE : celle des 490 morceaux
+(v352) couvre Marrakech et Tokyo ; la branche, bâtisseurs neufs désarmés, rend
+l'ancienne au bit près — c'est ce qui a permis de la remplacer.
+
 ## Le coût d'un morceau (v352) — on profile avant de croire la répartition, et la preuve est une empreinte
 
 Le point (3) de la dette de la v346 : au-delà de 70 b/s la ville ne suit plus,
@@ -1147,7 +1192,7 @@ en temps réel), `fun.js` le fait descendre et `deposer` le pose debout sur une
 case libre à côté (côté conducteur d'abord). La carcasse porte `horsService`
 (lu par `animals.js`, comme `montee`) : elle ne se reprend pas, et elle s'en
 va au bout de `DUREE_CARCASSE`.
-## La conduite à la GTA (v357) — un modèle pur, une boîte orientée, des chocs qui se publient
+## La conduite à la GTA (v358) — un modèle pur, une boîte orientée, des chocs qui se publient
 
 Max : « une grosse refonte de la façon de conduire… comme GTA ». Premier palier
 de la session `conduite-physique` (six sessions en parallèle sur la conduite).
@@ -5289,8 +5334,8 @@ caméra à part, `layers.enableAll()` comme le veut la v250.
 ## Chaque voiture roule à l'allure de sa classe (v260)
 
 > **⚠️ Le plafond calculé ci-dessous (28 blocs/s) est remplacé par un plafond
-> MESURÉ (60) en v357, et l'allure se déduit des fiches de `conduite.js`.** Lire
-> « La conduite à la GTA (v357) ».
+> MESURÉ (60) en v358, et l'allure se déduit des fiches de `conduite.js`.** Lire
+> « La conduite à la GTA (v358) ».
 
 Max : « une vitesse en fonction du modèle ». Deux règles.
 

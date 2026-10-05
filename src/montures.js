@@ -430,7 +430,7 @@ export const MONTURES = [
   { key: 'voiture', name: 'Voiture neuve', cry: 'Vroum vroum !', emoji: '🚗', speed: 0.01,
     height: 1.3, width: 0.98, habitat: 'usine', meat: '🔩 Boulon', montable: true,
     // l'allure de SECOURS, quand le modèle n'a pas de classe : une berline
-    // (v357 — elle valait 3,4, plus lent que toutes les classes)
+    // (v358 — elle valait 3,4, plus lent que toutes les classes)
     allure: allureDeClasse('berline'),
     assise: 1.0, poursuite: { recul: 6.4, hauteur: 2.59 }, nourrissable: false, immobile: true,
     // LE SIÈGE DU CONDUCTEUR (v249), dans le repère du véhicule (le nez est

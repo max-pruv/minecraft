@@ -375,8 +375,8 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       }
       // ON NE JUGE QUE CE QUI ROULE : à l'arrêt le volant ne fait rien (v262),
       // donc il n'y a pas de virage et l'angle ne veut rien dire.
-      // ET QUE CE QUI ROULE EN AVANT, LOIN D'UN CHOC (v357) : sans cap dégagé
-      // la voiture tape un mur, rebondit (v357) et recule un instant — et en
+      // ET QUE CE QUI ROULE EN AVANT, LOIN D'UN CHOC (v358) : sans cap dégagé
+      // la voiture tape un mur, rebondit (v358) et recule un instant — et en
       // marche arrière le même volant tourne de l'autre côté. Le portail a
       // rendu les deux signes, médiane 25°, là où le virage tenu n'en a qu'un.
       const roule = releves.filter((r) => r.v > 1 && r.avant && !r.rebond);
@@ -2301,7 +2301,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     });
     const cit = alluresModeles['berline-citadine'] || {}, jes = alluresModeles['koenigsegg-jesko.glb'] || {};
     verifier('une hypercar va plus vite qu\'une citadine, et la citadine plus vite qu\'avant',
-      // DEPUIS LA v357 L'ACCÉLÉRATION S'ESSOUFFLE VERS LA POINTE : après une
+      // DEPUIS LA v358 L'ACCÉLÉRATION S'ESSOUFFLE VERS LA POINTE : après une
       // seconde et demie de jeu aucune des deux n'est à sa pointe (14,4 et 23,4
       // mesurés), et le rapport des VITESSES du moment ne dit plus celui des
       // classes. Le rapport des POINTES se lit dans l'allure que le jeu leur
@@ -4591,7 +4591,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         for (const a of [...g.animalManager.animals]) if (a.def.key === 'voiture' || a.def.pilote) { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); }
         g.player.keys.clear(); g.player.touchMove.f = 0; g.player.touchMove.s = 0;
         g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined; g.player.flying = false;
-        // LA PISTE S'ÉLARGIT AVEC LA v357 : la voiture prend sa vitesse plus
+        // LA PISTE S'ÉLARGIT AVEC LA v358 : la voiture prend sa vitesse plus
         // progressivement, roule plus loin, et en lâchant après le virage elle
         // file en roue libre — le frein moteur, plus le frein franc d'avant.
         // Huit blocs de demi-largeur la faisaient sortir de la dalle de côté.
@@ -4712,13 +4712,13 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         pose = await doigt();
         if (pose.f > 0.8) break;
       }
-      // ET LES PASSANTS LOIN DE LA PISTE (v357) : depuis que la voiture freine
+      // ET LES PASSANTS LOIN DE LA PISTE (v358) : depuis que la voiture freine
       // et s'arrête devant un piéton à DOUZE blocs (et non plus au contact),
       // Marlon qui se replace près de l'enfant peut l'arrêter au milieu du
       // témoin — au portail, 27 blocs/s puis 1,0 au moment de tourner. Les
       // chocs et l'arrêt devant un piéton entrent dans le message.
       await tab.evaluate(() => { const g = window.__game; for (const n of (g.npcs || [])) if (n.pos && Math.abs(n.pos.x - window.__piste262.x0 - 150) < 250 && Math.abs(n.pos.z - window.__piste262.z0) < 60) n.pos.y = -500; });
-      // QUI TOUCHE LA VITESSE ? (v357) Au rejeu seul de la suite, la citadine
+      // QUI TOUCHE LA VITESSE ? (v358) Au rejeu seul de la suite, la citadine
       // est tombée de 27 à 2 blocs/s vers x ≈ 97, cap tourné de 0,68 rad sans
       // volant ni choc compté ; sur une page neuve, rien (`sonde-piste-
       // joystick.cjs` : 29,6 blocs/s à x = 195). C'est donc ce que la suite a
@@ -4739,7 +4739,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       // puis on relève — jamais un délai fixe.
       const vitesses = [];
       const t0 = Date.now();
-      // et depuis la v357 elle la prend comme une vraie voiture — vite au
+      // et depuis la v358 elle la prend comme une vraie voiture — vite au
       // départ, plus lentement vers la pointe : cinq secondes de JEU pour une
       // citadine, donc bien plus de montre au banc. Borné, jamais un délai fixe.
       // ET LE BUDGET SE COMPTE EN IMAGES DE JEU, PAS EN MONTRE (v277) : au
@@ -4767,7 +4767,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       // borné, jamais un délai fixe.
       let apresLacher = await lire();
       const t2 = Date.now();
-      // la roue libre (frein moteur et air, v357) dure quelques secondes de jeu
+      // la roue libre (frein moteur et air, v358) dure quelques secondes de jeu
       while (Date.now() - t2 < 30000) { apresLacher = await lire(); if (apresLacher.v < prep.max * 0.3) break; await dormirIci(200); }
       // on descend : les boutons reviennent
       const apres = await tab.evaluate(async () => {
@@ -4900,7 +4900,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       if (!auVolant()) { await rendre(); return { err: 'pas monté dans la voiture' }; }
       g.player.keys.add('KeyW');
       // on roule jusqu'à ce que la voiture ait pris son allure
-      // DEPUIS LA v357 la voiture accélère comme une voiture : elle touche le
+      // DEPUIS LA v358 la voiture accélère comme une voiture : elle touche le
       // mur à trente blocs AVANT d'avoir pris toute son allure, et relue après
       // le choc, sa vitesse valait zéro (« lancée 0 » au portail). On retient
       // la PLUS HAUTE vitesse atteinte, et l'on sort au premier choc publié.
@@ -4940,7 +4940,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         immobile, arret, expire: arret >= 45000,
       };
       // on lâche le mur : la voiture doit repartir en arrière.
-      // DEPUIS LA v357 LE MUR EST UN CHOC, ET LES DÉGÂTS (v343) LE COMPTENT :
+      // DEPUIS LA v358 LE MUR EST UN CHOC, ET LES DÉGÂTS (v343) LE COMPTENT :
       // pris à 19,5 blocs/s il met la voiture en panne (allure 15,7 au portail,
       // reculé 0,02) — c'est juste, une voiture en panne ne repart plus. Ce
       // témoin éprouve la vitesse ANNONCÉE contre un mur (v272), pas les
@@ -6067,7 +6067,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !nature.err && nature.auVolant && nature.d >= 30,
       `barre 30 blocs (mesuré désarmé : 0,4 et 17,9 · armé : 59 et 116) · ${JSON.stringify(nature)}`);
 
-    // ---- LA CONDUITE À LA GTA (v357) ----------------------------------------
+    // ---- LA CONDUITE À LA GTA (v358) ----------------------------------------
     // Max : « des véhicules qui tournent de manière naturelle, des accélérations
     // cohérentes, des vitesses cohérentes — aujourd'hui les véhicules sont trop
     // lents —, des collisions cohérentes ». Une dalle de pierre loin de tout, une
@@ -6077,7 +6077,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // Sur l'ancien code la pointe d'une hypercar est 25,6 blocs/s (92 km/h) :
     // elle n'atteint jamais 100 km/h, aucun choc ne se publie, et la caisse ne
     // s'aligne pas le long d'un mur — chaque verdict rougit pour sa raison.
-    // SUR UNE PAGE À ELLE (v357). Sur la longue page de la suite, un passant
+    // SUR UNE PAGE À ELLE (v358). Sur la longue page de la suite, un passant
     // — Marlon se replace près de l'enfant dès qu'il s'éloigne — s'est trouvé
     // devant la voiture, qui s'est arrêtée net comme elle le doit : « 0 bloc/s
     // après sept secondes » au portail, vert rejoué seul sur une page neuve.
@@ -6183,7 +6183,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       P.touchMove.f = 0; P.touchMove.s = 0;
       delete P.etatVoiture; P.etatVoiture = undefined;
       // — UNE VOITURE NEUVE N'HÉRITE PAS DU DERNIER CHOC DE LA PRÉCÉDENTE
-      // (v357). Les dégâts rejouent tout `choc` dont la date n'est pas la
+      // (v358). Les dégâts rejouent tout `choc` dont la date n'est pas la
       // dernière vue POUR CETTE VOITURE ; une voiture neuve n'en a vu aucun.
       // On frappe un choc franc, on descend, on prend une voiture neuve, et
       // l'on lit ce que les dégâts publient pour elle — sans rouler. —
