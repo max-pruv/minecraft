@@ -2088,7 +2088,7 @@ export const DATE_RUES_NICE = Date.UTC(2026, 9, 5, 5, 25, 0);
 // San Francisco à la v361 (`sanfrancisco-v343.js`).
 export const DATE_RUES_SF = Date.UTC(2026, 9, 5, 8, 15, 0);
 // Lille à la v368 (`lille-v344.js`).
-export const DATE_RUES_LILLE = Date.UTC(2026, 9, 5, 13, 45, 0);
+export const DATE_RUES_LILLE = Date.UTC(2026, 9, 5, 13, 32, 0);
 const VILLES_FIGEES = [
   { ancre: LONDRES, date: DATE_RUES_LONDRES },
   { ancre: NICE, date: DATE_RUES_NICE },
