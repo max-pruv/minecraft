@@ -364,6 +364,11 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
   // enfoncement, le pire, combien, et ce que le feu coûte en appels de dessin.
   // Max les lit sur l'iPad avec `?diag=1`, sans rien installer.
   const cout = { chocs: 0, dernierMs: 0, pireMs: 0, premierMs: 0 };
+  // PAR QUEL CHEMIN PASSE UN CHOC (v365) : publié par la physique, ou deviné
+  // par le repli ; et combien d'images les EFFETS ont été appliqués ici
+  // plutôt que lus par la physique. Depuis la v358 le jeu ne passe plus que
+  // par le premier : un témoin le garde, le repli reste pour l'ancien chemin.
+  const chemins = { publies: 0, repli: 0, effetsIci: 0, enfoncements: 0 };
   function noterCout(m) {
     const ms = Math.round(m.ms * 10) / 10;
     if (!cout.chocs) cout.premierMs = ms;
@@ -415,7 +420,7 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
       rec.appliques = 0;
     }
     let mesure = null;
-    for (; rec.appliques < chocs.length; rec.appliques++) mesure = enfoncer(rec.prep, chocs[rec.appliques]);
+    for (; rec.appliques < chocs.length; rec.appliques++) { mesure = enfoncer(rec.prep, chocs[rec.appliques]); chemins.enfoncements++; }
     appliquerPieces(rec, scene);
     rec.derniereMesure = mesure || rec.derniereMesure;
     if (mesure) noterCout(mesure);
@@ -478,13 +483,14 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
       if (c && c.t !== rec.dernierChocT) {
         rec.dernierChocT = c.t;
         const l = D.versRepere(a.pos.x, a.pos.z, a.mesh.rotation.y, c.x, c.z);
-        if (choc(a.mesh, { force: c.force, lx: l.lx, lz: l.lz })) percuterRue(c.x, c.z, a.pos.y, c.force);
+        if (choc(a.mesh, { force: c.force, lx: l.lx, lz: l.lz })) { chemins.publies++; percuterRue(c.x, c.z, a.pos.y, c.force); }
       }
     } else if (maintenant > rec.calme && maintenant - (player.arretDouxT || 0) > 400) {
       const force = D.detecterChoc(rec.vPrev, v, dt, player.vitesseVoitureMax || 0);
       if (force > 0) {
         const imp = sonderImpact(a, rec.vPrev >= 0);
         if (choc(a.mesh, { force, ...imp })) {
+          chemins.repli++;
           // le point d'impact, du repère de la voiture à celui du monde
           const cap = a.mesh.rotation.y, co = Math.cos(cap), si = Math.sin(cap);
           percuterRue(a.pos.x + imp.lx * co + imp.lz * si, a.pos.z - imp.lx * si + imp.lz * co, a.pos.y, force);
@@ -498,6 +504,7 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
     // 3. LES EFFETS, appliqués ici tant que la physique ne les lit pas
     // elle-même (`player.physiqueLitEtat`) : jamais deux fois.
     if (!player.physiqueLitEtat) {
+      chemins.effetsIci++;
       const eff = D.effetsConduite(rec.etat);
       // un plancher et non zéro : `player.js` lit `if (this.boost)`, et une
       // allure nulle y redonnerait… l'allure de la MARCHE (mesuré : 1,7 bloc
@@ -889,6 +896,7 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
       if (!cout.chocs && !feu) return null;
       return { ...cout, feu, carres: (imFumee ? imFumee.count : 0) + (imFlamme ? imFlamme.count : 0) };
     },
+    chemins: () => ({ ...chemins }),
     histoireRue: (nom) => (histoire.get(nom) || []).map((c) => c.slice()),
     // pour main.js : le champ réseau de la voiture qu'on conduit
     versReseau: (root) => { const rec = suivies.get(root); return rec ? D.versReseau(rec.etat) : null; },
