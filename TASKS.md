@@ -1,5 +1,21 @@
 # Ce qui est en cours
 
+- [ ] **LE PORTAIL DE LA v365 (I-95 Sud), DOUBLE MESURE FAITE.** Neuf suites,
+  cinq rouges. `plafond.js` : l'empreinte des 490 morceaux, changée par la route
+  dans les morceaux de Washington — relevée avec preuve (sans Washington,
+  9bae2257… des deux côtés), verte rejouée seule. `degats.js` (voiture de la rue
+  percutée puis prise) : verte rejouée seule des deux côtés — charge. `carte.js` :
+  la flèche du GPS à gauche 1,92 rad rouge seule des deux côtés (dette déjà
+  déclarée) ; la tâche de 417 ms ne revient pas seule. `manhattan.js` : façade
+  (22 326 → 54 969 branche, 11 684 → 51 734 `origin/main`) et taxi rouges des deux côtés, délai de
+  `rejoindre` des deux côtés. `monte.js` : gel d'arrivée et compilation à
+  l'arrivée rouges des deux côtés ; « le monde se maille hors du fil
+  principal » (avion à 28 blocs en 40 s au portail) vert seul ; « en vol, on
+  ne rattrape pas le bout du monde » rouge seul sur la branche (Concorde 72) —
+  l'intermittence déclarée plus bas, « rouge une fois sur deux DES DEUX CÔTÉS ».
+  Preuve structurelle : la livraison n'ajoute de route qu'entre New York et
+  Washington, et ces témoins volent au-dessus de Paris et du couloir (30000,
+  30000).
 - [ ] **LE PORTAIL DE LA v362 (I-95, porte de Manhattan), DOUBLE MESURE FAITE.**
   Portail complet : six suites rouges, dont une de mon fait (la borne de vingt
   pas du témoin des ponts, que Madrid ne passe pas — corrigée). Mes sondes de
