@@ -3008,11 +3008,31 @@ l'embarquement a eu lieu, pas par une hypothèse.
   (`cote: 1`, déjà fabriquée) : la faire entrer par là est l'étape suivante, à
   condition que l'ami — sur SA tablette — voie aussi la portière s'ouvrir, ce
   qui demande un message réseau (`net.js`, hors zone).
-- **Les bords de la découpe sont en dents de scie** là où un triangle chevauche
-  le bord du volume (mesuré : 0 sur la plupart des modèles, 21 % de la surface
-  sur la Lucid Gravity, 36-38 % sur les taxis, qui s'en passent). Remède
-  possible : couper les triangles au plan du bord (une passe de découpe), pas
-  agrandir le volume.
+- [ ] **LE PORTAIL DE LA v372 (bords des portières), DOUBLE MESURE FAITE.**
+  `degats.js` vert. Au portail, 17 rouges dans `monte.js` et `maj.js` : il a
+  tourné pendant que je faisais tourner une dizaine de sondes de navigateur
+  sur la même machine — ma faute, et la leçon de la v220 (deux pages en même
+  temps font tomber la cadence de moitié). Rejouée SEULE des deux côtés,
+  `monte.js` rend quatre rouges de chaque côté : passants de Rome sur la
+  chaussée, téléportation qui compile, écran figé à l'arrivée — identiques ;
+  et en plus le réverbère (`parcouru 0`, sur la branche) contre le trou en
+  vol (sur `origin/main`), deux intermittences déjà vues des deux côtés.
+  `reseau.js` — « la même circulation » (écart médian 43 blocs) : famille
+  déclarée plus bas ; preuve structurelle, le témoin ne passe ni par
+  `portieres.js` (atteint seulement sous `embarq: 1`) ni par `nouveautes.js`.
+  `maj.js` rejouée seule : « vraiment là » rouge des deux côtés (personnages
+  en retard), « ne floute rien » rouge sur `origin/main` seul — la famille de
+  la préparation, déclarée plus bas.
+  Après rebase sur la v369, portail complet relancé seul : `degats.js`,
+  `maj.js`, `reseau.js` verts ; `monte.js` rend les quatre rouges que
+  `origin/main` rendait rejouée seule (passants de Rome, téléportation qui
+  compile, trou en vol, écran figé à l'arrivée) — le témoin des bords vert.
+  Puis v370 et v371 sont parties pendant le portail : rebasée sur la v371
+  (aucun fichier de code en commun), fumée verte et témoin des bords vert,
+  publiée en v372.
+- [x] **Les bords de la découpe** — FAIT en v372 : coupés au plan (débord 0
+  sur les 55 modèles). Les taxis gardent `fabrique` → pas de portière : bords
+  nets, mais 0/24 rayons touchent un habitacle derrière l'ouverture.
 - **Une portière ouverte vue de dos est invisible** sur les modèles qui n'ont
   pas meublé son revers (faces simples). `DoubleSide` changerait la clé de
   programme (v246) : il faudrait le chauffer (`signatures.js`) avant de le

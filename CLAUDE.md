@@ -854,6 +854,20 @@ porte qui s'ouvre ». `src/embarquement.js` (la séquence) et `src/portieres.js`
   SOUS L'EAU, sans importance pour un mur, rédhibitoire pour une descente qui
   refuse l'eau — la page d'embarquement cherche une prairie sèche et plate.
 
+**Les bords se coupent au plan (v372).** Un triangle à cheval sur un bord du
+volume est COUPÉ au plan du bord (z0, z1, y0, y1), jamais emporté par son
+centre — c'était 21 % de la surface sur la Lucid, et la portière débordait de
+0,24 bloc. Trois règles. **Les sommets neufs sont des mélanges barycentriques
+de TOUS les attributs** (position, normale, UV, couleur), recopiés BRUTS dans
+leur type d'origine (un modèle quantifié reste quantifié) : rien ne change de
+programme. **Les attributs d'un maillage coupé se recopient, agrandis** —
+jamais ceux du prototype ; un maillage sans coupe garde les attributs partagés.
+**Un plan de découpe se mesure en coût** : chaque sommet passe UNE fois dans
+le repère de la voiture (un tableau à plat), un triangle tout entier d'un côté
+d'un plan est rejeté par six comparaisons — sans cela le plan passait de 4 à
+135 ms. Un bord net ne suffit pas à rendre une portière : les taxis l'ont, et
+restent refusés parce que derrière il n'y a rien (0/24 rayons).
+
 **Et une résolution de conflit a avalé deux modules d'une autre session.**
 Rebasée sur la v344, ma résolution de `sw.js` remplaçait le bloc en conflit
 par la seule ligne `CACHE_VERSION` — or le bloc contenait aussi les lignes
@@ -864,9 +878,7 @@ de conflit se relit dans `git diff origin/main`, jamais seulement dans le
 fichier** : le diff montre ce qu'on retire à l'autre côté.
 
 Ce qui reste, déclaré dans `TASKS.md` : le passager d'un ami monte encore sans
-séquence ; les bords de la découpe sont en dents de scie sur les modèles à
-grands triangles ; la vue de la séquence ne se juge que sur le banc, pas sur
-l'iPad.
+séquence ; la vue de la séquence ne se juge que sur le banc, pas sur l'iPad.
 
 ## Les coupoles ont leur édifice (v365) — un gabarit partagé se cherche dans toutes les villes, et le ciel se lit sur les modèles
 

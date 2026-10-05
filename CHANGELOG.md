@@ -20,6 +20,34 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v372 — Des portières bien découpées
+
+**Pourquoi.** Les portières de la v366 étaient fabriquées dans la
+carrosserie en prenant chaque triangle par son centre : un grand triangle à
+cheval sur le bord du volume partait ENTIER avec la portière, et le bord
+avant ou arrière de la porte était en dents de scie. Mesuré par la sonde des
+portières : 21 % de la surface de la portière à cheval sur un bord sur la
+Lucid Gravity, 36 à 38 % sur les trois taxis — et sur la Lucid, une portière
+de 1,49 bloc de long pour un volume de 1,25.
+
+**Ce que ça change.** Le bord de chaque portière est droit sur les
+cinquante-cinq modèles : les triangles qui chevauchent un bord du volume
+(avant, arrière, bas de caisse, haut de vitre) sont COUPÉS au plan du bord, la
+part du dedans part avec la portière, le reste reste sur la caisse. Rien ne
+change de couleur ni de matière, et aucun programme graphique ne naît. Les
+taxis ont désormais des bords nets eux aussi, mais restent sans portière
+animée : derrière leur portière il n'y a rien (aucun des vingt-quatre rayons
+tirés au travers de l'ouverture ne touche un habitacle).
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js`, qui mesure la portière
+de la Lucid SANS lire le plan — l'étendue de ses sommets contre le volume
+(débord 0,24 bloc sur `origin/main`, 0 ici), la surface de la caisse et des
+portières contre celle du prototype (66,98 des deux côtés : rien de perdu,
+rien de doublé), puis un choc sur le flanc équipé (la portière reste sur son
+pivot, la voiture à 70 % de santé). Le coût du plan, une fois par modèle, se
+remesure : médiane 5 ms (4 avant), 15 ms sur la Lucid (13 avant), 21 ms au
+pire hors taxis (28 avant) — chaque sommet ne passe plus qu'une fois dans le
+repère de la voiture, et la recopie des attributs se fait d'un geste.
 ## v371 — Les passants traversent au feu
 
 **Pourquoi.** Les passants marchaient le long de leur trottoir et, au coin,

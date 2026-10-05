@@ -6724,6 +6724,77 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     });
     verifier('une voiture déjà froissée ne prend pas de portière, et garde son froissé',
       !embAbimee.err && !embAbimee.equipee && embAbimee.gardee, JSON.stringify(embAbimee));
+    // 10. LES BORDS DE LA PORTIÈRE SE COUPENT AU PLAN (v372). La Lucid
+    // Gravity a de grands triangles à cheval sur les bords du volume : la
+    // v366 les emportait entiers (21 % de la surface, portière de 1,49 bloc
+    // pour un volume de 1,25 — les dents de scie). Le témoin mesure la
+    // portière SANS lire le plan : l'étendue en z des sommets de ses
+    // maillages, dans le repère de la voiture, contre le volume ; puis la
+    // surface totale de la caisse et des portières contre celle du
+    // prototype (rien de perdu, rien de doublé). Et la voiture équipée se
+    // froisse quand même (dégâts, v343) : la portière reste sur son pivot.
+    const embBords = await emb.evaluate(async () => {
+      const THREE = await import('three');
+      const g = window.__game;
+      let P, V;
+      try { P = await import('./src/portieres.js'); V = await import('./src/vehicules.js'); } catch { return { err: 'pas de portières' }; }
+      const b = g.animalManager.invoquer('voiture', g.player.pos.x - 12, g.player.pos.z + 12, false, { flotte: 'lucid-gravity.glb' });
+      for (let i = 0; i < 80 && !b.mesh.userData.modele; i++) await new Promise((r) => setTimeout(r, 100));
+      if (!b.mesh.userData.modele) return { err: 'modèle absent' };
+      const eq = P.equiperPortieres(b.mesh);
+      if (!eq) return { err: 'pas équipée', refus: P.refus.get('lucid-gravity.glb') || null };
+      const plan = eq.plan;
+      b.mesh.updateMatrixWorld(true);
+      const inv = new THREE.Matrix4().copy(b.mesh.matrixWorld).invert();
+      const v = new THREE.Vector3(), w = new THREE.Vector3(), u = new THREE.Vector3();
+      const M = new THREE.Matrix4();
+      const roue = (o, racine) => { for (let q = o; q && q !== racine; q = q.parent) if (/^Wheel_/i.test(q.name || '')) return true; return false; };
+      const aire = (racine, filtre) => {
+        let s = 0;
+        racine.updateMatrixWorld(true);
+        const invR = new THREE.Matrix4().copy(racine.matrixWorld).invert();
+        racine.traverse((o) => {
+          if (!o.isMesh || roue(o, racine) || !filtre(o)) return;
+          M.multiplyMatrices(invR, o.matrixWorld);
+          const pos = o.geometry.attributes.position, ix = o.geometry.index;
+          const n = ix ? ix.count : pos.count;
+          for (let i = 0; i + 2 < n; i += 3) {
+            v.fromBufferAttribute(pos, ix ? ix.getX(i) : i).applyMatrix4(M);
+            w.fromBufferAttribute(pos, ix ? ix.getX(i + 1) : i + 1).applyMatrix4(M).sub(v);
+            u.fromBufferAttribute(pos, ix ? ix.getX(i + 2) : i + 2).applyMatrix4(M).sub(v);
+            s += w.cross(u).length() / 2;
+          }
+        });
+        return s;
+      };
+      let zMin = Infinity, zMax = -Infinity;
+      for (const c of ['-1', '1']) eq[c].traverse((o) => {
+        if (!o.isMesh) return;
+        M.multiplyMatrices(inv, o.matrixWorld);
+        const pos = o.geometry.attributes.position, ix = o.geometry.index;
+        const n = ix ? ix.count : pos.count;
+        for (let i = 0; i < n; i++) { v.fromBufferAttribute(pos, ix ? ix.getX(i) : i).applyMatrix4(M); zMin = Math.min(zMin, v.z); zMax = Math.max(zMax, v.z); }
+      });
+      const proto = await V.chargerVoitureFlotte(V.FLOTTE.find((f) => f.fichier === 'lucid-gravity.glb'));
+      const aProto = aire(proto, (o) => !(o.userData && o.userData.arms));
+      const aVoiture = aire(b.mesh, (o) => !(o.userData && o.userData.arms) && !o.userData.effetDegats);
+      const debord = Math.max(0, plan.z0 - zMin) + Math.max(0, zMax - plan.z1);
+      // et le choc sur le flanc gauche, après
+      let froisse = null;
+      if (g.fun.degats && g.fun.degats.choc) {
+        g.fun.degats.choc(b.mesh, { force: 1, lx: -1.1, lz: -0.5 }, true);
+        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+        let surPivot = 0; eq['-1'].traverse((o) => { if (o.isMesh) surPivot++; });
+        froisse = { surPivot, etat: g.fun.degats.etat(b.mesh) ? +g.fun.degats.etat(b.mesh).sante.toFixed(2) : null };
+      }
+      g.animalManager.scene.remove(b.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(b), 1);
+      return { volume: [+plan.z0.toFixed(3), +plan.z1.toFixed(3)], portiere: [+zMin.toFixed(3), +zMax.toFixed(3)], debord: +debord.toFixed(3),
+        aire: [+aProto.toFixed(2), +aVoiture.toFixed(2)], froisse };
+    });
+    verifier('les bords de la portière sont coupés au plan du volume, rien de perdu, et elle se froisse quand même',
+      !embBords.err && embBords.debord < 0.02 && Math.abs(embBords.aire[1] - embBords.aire[0]) < 0.005 * embBords.aire[0]
+        && (!embBords.froisse || embBords.froisse.surPivot > 0),
+      JSON.stringify(embBords));
     verifier('aucune erreur JavaScript pendant l\'embarquement', emb.erreurs.length === 0, JSON.stringify(emb.erreurs));
     await emb.close();
   } finally {
