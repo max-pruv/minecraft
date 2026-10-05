@@ -596,6 +596,7 @@ const VRAIES_KM = [
       out.convoiHansa = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'Hansalinie') || null;
       out.convoiI95 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'I-95') || null;
       out.convoiI95Sud = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'I-95 Sud') || null;
+      out.convoiTomei = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'Tōmei') || null;
       // WASHINGTON EST UNE BOÎTE (v367) : la route de New York s'arrête NET à
       // son bord sud (`boutNet`), au niveau de la rue d'Anacostia qui y
       // débouche, et ses voitures entrent par cette rue (`avenues`). On compte
@@ -1013,6 +1014,18 @@ const VRAIES_KM = [
       && (a1.manhattan || []).filter((e) => e.route === 'I-95 Sud').length === 1 && !!a1.frole && a1.frole['I-95 Sud'] === 0,
       JSON.stringify(a1.absent ? a1 : { convoi: a1.convoiI95Sud ? { nom: a1.convoiI95Sud.nom, voitures: (a1.convoiI95Sud.modeles || []).length } : 'aucun convoi I-95 Sud',
         washington: a1.washington, erreur: a1.washingtonErreur, portesNY: a1.manhattan, frole: a1.frole && a1.frole['I-95 Sud'] }));
+
+    // LE TŌMEI (v370) : Tokyo–Nagoya, par la bande côtière au sud du
+    // Shinkansen — Haneda et Yokota ferment la plaine à l'ouest de Tokyo, et le
+    // rail traverse Nagoya. Ni rail, ni aérodrome, ni ville frôlée, et des
+    // voitures entrent dans les deux villes par une rue propre.
+    verifier('le Tōmei relie Tokyo à Nagoya au sud du Shinkansen, et des voitures entrent dans les deux villes par une rue propre',
+      !a1.absent && a1.segments >= 24 && !!a1.convoiTomei && a1.convoiTomei.routier && (a1.convoiTomei.modeles || []).length >= 10
+      && !!a1.surRail && !!a1.surRail['Tōmei'] && a1.surRail['Tōmei'][0] > 100 && a1.surRail['Tōmei'][1] === 0
+      && !!a1.frole && a1.frole['Tōmei'] === 0
+      && ['tokyo', 'nagoya'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'Tōmei' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7)),
+      JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiTomei ? { nom: a1.convoiTomei.nom, voitures: (a1.convoiTomei.modeles || []).length } : 'aucun convoi Tōmei',
+        surRail: a1.surRail && a1.surRail['Tōmei'], frole: a1.frole && a1.frole['Tōmei'], entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'Tōmei') }));
 
     // AUCUNE ROUTE NE PREND L'EMPRISE D'UNE AUTRE (v355) : Montréal a deux
     // routes, et chaque colonne d'emprise doit appartenir au segment qu'on

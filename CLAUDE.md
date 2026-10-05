@@ -1949,6 +1949,25 @@ Une règle.
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
 
+## Le Tōmei (v370) — une sonde de couloir lisse par moyenne, et la porte se juge avec son raccord
+
+Tokyo–Nagoya, la route que le relevé de la v310 laissait de côté (« un
+aérodrome sur l'axe »). Deux règles.
+
+- **UNE ENTRÉE DE VILLE SE MESURE AVEC LES QUARANTE BLOCS QUI LA PRÉCÈDENT.**
+  L'avenue de Tokyo par 149° était la plus propre (dix-neuf blocs de rue,
+  aucun bloc) ; mais le rayon qui y mène passe sur un étang à cinquante blocs
+  de la porte, et tous les tracés y posaient un pont contre elle. Une entrée
+  se choisit sur l'avenue ET sur le rayon de dehors — ici 132°, porte à
+  vingt-quatre blocs du bord (`bord`), même avenue mesurée.
+- **QUAND LE COULOIR SERPENTE, CHAIKIN LAISSE SES COINS ; UNE MOYENNE GLISSANTE
+  LES RÉPARTIT.** Le chemin de grille (huit caps, trois pas droits après chaque
+  virage) contournait la montagne côtière en S : lissé par Chaikin et
+  rééchantillonné, il rendait des coudes de 33 à 38° — cent pour cent de refus
+  « coude », c'est-à-dire un défaut de la recherche (v329). Rééchantillonné à
+  cinq blocs puis moyenné sur ±50 blocs (bouts fixés), le même chemin passe
+  sous 25° : 22 admissibles sur 300, dont un à un seul pont.
+
 ## La route de Washington (v367) — une ville fermée par son relief s'entre par son côté bas, et un bout peut s'arrêter net
 
 L'I-95 Sud New York–Washington. Quatre règles.
