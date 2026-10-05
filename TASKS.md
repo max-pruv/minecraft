@@ -3407,10 +3407,55 @@ l'embarquement a eu lieu, pas par une hypothèse.
   arrivent EN BIAIS (35° à 90°) restent — à mesurer en capture si l'une
   finit en impasse contre un îlot.
 
+- [ ] **PORTAIL DE LA v359 (Nice) : UNE CASCADE DE `monte.js` QUE LA SUITE
+  SEULE NE REND PAS.** Au portail complet (base v349), `monte.js` a rendu
+  trente-quatre rouges d'un seul tenant : tous les témoins d'avion et de
+  voiture qui suivent le gel d'arrivée rendent « pas aux commandes », et le
+  doigt du joystick tombe sur `cible: "quiz"` — une fenêtre de quiz recouvre
+  l'écran alors que `jouerSeul` pose `libreJusqua = 86400`. Rejouée SEULE,
+  l'une après l'autre : `origin/main` (d34cfa5) 147 verts, 3 rouges ; la
+  branche 147 verts, 3 rouges — les MÊMES deux témoins des deux côtés, déjà
+  déclarés (« le bout du monde qui se charge », trou 51-58 pour une barre de
+  60 ; « l'écran ne se fige pas », 19 % et 36 % au-delà de 300 ms), et aucune
+  fenêtre de quiz. Le changement ne touche que la génération de Nice, où
+  aucune suite du portail ne va. Piste, non mesurée : le portail a duré 28 min
+  pour `monte.js` (contre ~23 au portail de la v342) et `libreJusqua` est en
+  secondes de jeu — si le quiz suit une autre horloge (le temps d'écran réel,
+  `dtEcran`, v234), une suite plus longue peut l'ouvrir. À démonter par une
+  sonde qui lit `edu.today()` et l'heure du prochain quiz au moment du
+  premier « cible quiz ». `maj.js` (fond de carte, 7/9 personnages) et
+  `manhattan.js:282` (💥 délai de 60 s) : dettes déjà déclarées plus haut.
+  Deux rouges de plus, NON déclarés avant ce portail, avec leur double mesure :
+  `carte.js` « et la faire glisser non plus (bridé ×4) » — pire tâche 415 ms
+  au portail (barre 400), 957 ms rejouée SEULE sur `origin/main` (d34cfa5),
+  468 ms rejouée SEULE sur la branche : rouge des deux côtés, la barre est sous
+  le coût d'une tâche de ce banc (v225). `reseau.js` « deux tablettes d'une
+  partie voient la même circulation » — écart médian 20,9 blocs au portail,
+  60,3 rejouée seule sur `origin/main`, VERTE rejouée seule sur la branche :
+  intermittence vue des deux côtés (la grille horaire de la v305 n'est pas
+  touchée ici).
+  Au portail suivant (base v356) : `visio.js` « caméra éteinte, le jeu
+  reprend sa voix normale » — 0,0197 après pour 0,0255 avant au portail,
+  VERTE rejouée seule sur la branche (0,0181 → 0,0194) ET sur `origin/main`
+  v358 (0,0161 → 0,0154) : un niveau de sortie audio lu sous charge.
+  `monte.js` « 🛬 descend train sorti… jusqu'à l'arrêt » — l'arrêt tombe à
+  x = 300,1, AU BOUT de la piste d'essai de trois cents blocs : c'est le piège
+  de la v273 (l'atterrissage assisté consomme presque toute la piste, la
+  cadence décide où il s'arrête). Le témoin devrait lire l'arrêt sur une piste
+  plus longue ou borner x < 300 avant de juger. Aucune ligne d'avion n'est
+  touchée par les rues de Nice.
+
+- [ ] **NICE À LA RÈGLE DU KIT : CE QUI RESTE (v359).** Masséna 13,2 → 8,6 % de
+  lots, les Musiciens 20,4 → 14,5, le port 21,8 → 16,4 : les avenues du
+  centre se serrent autour de la place. Le Vieux-Nice passe aux rues LOCALES
+  (3,1 m, trottoirs de 2 m), comme les ruelles héritées de Paris ; ses vraies
+  ruelles sont piétonnes et plus étroites — la section `ruelle` du kit (sans
+  trottoir) ôterait ses réverbères, décision de Max comme pour les médinas.
+
 - [ ] **LES CINQ AUTRES VILLES BÂTIES À LA MAIN N'ONT PAS ÉTÉ ÉLARGIES (v271).**
-  Londres est faite en v339 (au-dessus). Restent, dans l'ordre : Nice, San
-  Francisco, Washington, Lille (dans la fenêtre d'empreinte). La méthode de
-  Londres se reprend telle quelle : figer la ville d'avant (`<ville>-vNNN.js`),
+  Londres est faite en v339, Nice en v359 (au-dessus). Restent, dans l'ordre :
+  San Francisco, Washington, Lille (dans la fenêtre d'empreinte). La méthode de
+  Londres se reprend telle quelle : figer la ville d'avant (`<ville>-v339.js`),
   type par fonction, trame recomposée et en recul des avenues, mobilier sur la
   section, la ville d'avant sous ce qu'un enfant a bâti.
   *(Entrée d'origine :)* Paris,

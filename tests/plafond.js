@@ -298,7 +298,12 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // `origin/main` lui-même. (Et `origin/main` ne rendait plus b31099b9 : les
 // routes de la v355 ont élargi des talus — 20 186 → 26 361 colonnes — sans que
 // la constante suive ; le témoin y était rouge, mesuré à la fusion de la v357.)
-const EMPREINTE_MORCEAUX_V357 = '3cc39830ead08cc455ed903e88c3358518e6a73c1f19aa59dfc091904cb88bfc';
+// v359 : les rues de Nice à la règle du kit corrigent la règle PARTAGÉE du recul
+// (voies.js, d'emprise à emprise), et Londres, un des neuf lieux, en gagne des
+// lots — un changement de CONTENU, voulu. La preuve qu'il n'y a que lui : SANS
+// Londres, les 441 autres morceaux et toutes les routes rendent 3850cdfc… sur
+// `origin/main` (v358, 3cc39830… avec Londres) ET sur la branche.
+const EMPREINTE_MORCEAUX_V357 = '5fa54c5c144fbafbf675b40159ae01d4f8e4d1b445e47442ca2ec0d2a206406a';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -1629,22 +1634,28 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   // que la ville neuve fait rue garde son toit ; et un bloc posé APRÈS la date
   // ne retient rien — la ville neuve bâtit dessous. Rouge sur `origin/main` :
   // la date n'existe pas, et les deux premiers cas montrent la ville neuve.
-  const londres = await (async () => {
+  // ET NICE À LA v359, PAR LA MÊME RÈGLE : la fonction se joue ville par ville.
+  const figee = async (date, avant, neuf, ancre, sol, libre, batir) => {
     const W = await import('../src/world.js');
-    if (!W.DATE_RUES_LONDRES) return { absent: true };
-    const A = await import('../src/londres-v332.js');
-    const N = await import('../src/londres.js');
-    const L = N.LONDRES, t = W.DATE_RUES_LONDRES - 86400000;
+    if (!W[date]) return { absent: true };
+    let A, N;
+    try { A = await import(`../src/${avant}`); } catch { return { absent: true }; }
+    N = await import(`../src/${neuf}`);
+    const { CITY_BLOCK } = await import('../src/blocks.js');
+    const L = N[ancre], t = W[date] - 86400000;
     const nf = new W.World();
     // une ancienne rue que la ville neuve bâtit, et un ancien lot qu'elle fait rue
     let rueBatie = null, lotRue = null;
-    for (let d = 20; d < 100 && !(rueBatie && lotRue); d++) for (let a = 0; a < 64; a++) {
+    for (let d = 10; d < L.r - 5 && !(rueBatie && lotRue); d++) for (let a = 0; a < 64; a++) {
       const x = Math.round(L.x + d * Math.cos(a * Math.PI / 32)), z = Math.round(L.z + d * Math.sin(a * Math.PI / 32));
       const voisin = (f) => [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]].every(([i, j]) => f(x + i, z + j));
-      // une façade neuve (le bâtisseur y monte un mur) sur neuf colonnes d'ancienne rue
-      const mur = () => { let n = 0; N.batirColonneLondres(x, z, (dy) => { if (dy >= 3) n++; }); return n >= 3; };
-      if (!rueBatie && voisin((xx, zz) => A.solLondres(xx, zz) !== null) && N.lotLondresLibre(x, z) && mur()) rueBatie = [x, z];
-      if (!lotRue && voisin(A.lotLondresLibre) && voisin((xx, zz) => N.solLondres(xx, zz) !== null)) lotRue = [x, z];
+      const croix = (f) => [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]].every(([i, j]) => f(x + i, z + j));
+      // une façade neuve (le bâtisseur y monte un mur) sur neuf colonnes d'ancienne
+      // chaussée — pas un trottoir, où la ville d'avant a ses arbres et ses réverbères
+      const mur = () => { let n = 0; N[batir](x, z, (dy) => { if (dy >= 3) n++; }); return n >= 3; };
+      if (!rueBatie && croix((xx, zz) => A[sol](xx, zz) === CITY_BLOCK.ASPHALT)
+        && N[libre](x, z) && mur()) rueBatie = [x, z];
+      if (!lotRue && voisin(A[libre]) && voisin((xx, zz) => N[sol](xx, zz) !== null)) lotRue = [x, z];
     }
     if (!rueBatie || !lotRue) return { absent: false, introuvable: true, rueBatie, lotRue };
     const monde = (carte) => {
@@ -1660,27 +1671,32 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     for (let dy = 1; dy <= 3; dy++) maison[`${mx},${gm + dy},${mz}`] = [5, t];
     const wm = monde(maison);
     let enferme = 0;
-    for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) for (let y = gm + 1; y <= gm + 6; y++) {
+    for (const [dx, dz] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) for (let y = gm + 1; y <= gm + 6; y++) {
       if (!maison[`${mx + dx},${y},${mz + dz}`] && wm.getBlock(mx + dx, y, mz + dz) !== 0) enferme++;
     }
     // et sans la date, la ville neuve y bâtit bien (sinon le cas ne prouve rien)
-    const neuf = monde({ [`${mx},${gm + 40},${mz}`]: [5, W.DATE_RUES_LONDRES + 1000] });
+    const neufM = monde({ [`${mx},${gm + 40},${mz}`]: [5, W[date] + 1000] });
     let batiNeuf = 0;
-    for (let y = gm + 1; y <= gm + 6; y++) if (neuf.getBlock(mx, y, mz) !== 0) batiNeuf++;
+    for (let y = gm + 1; y <= gm + 6; y++) if (neufM.getBlock(mx, y, mz) !== 0) batiNeuf++;
     // 2. une cabane sur l'ancien toit
     const [cx, cz] = lotRue, gc = nf.terrainHeight(cx, cz);
-    const toit = (() => { let y0 = gc; A.batirColonneLondres(cx, cz, (dy) => { y0 = Math.max(y0, gc + dy - 1); }); return y0; })();
-    const cabane = { [`${cx},${toit + 1},${cz}`]: [8, t] };
-    const wc = monde(cabane);
+    const toit = (() => { let y0 = gc; A[batir](cx, cz, (dy) => { y0 = Math.max(y0, gc + dy - 1); }); return y0; })();
+    const wc = monde({ [`${cx},${toit + 1},${cz}`]: [8, t] });
     const porte = wc.getBlock(cx, toit, cz) !== 0;
     return { absent: false, enferme, batiNeuf, porte, toit, gc, rueBatie, lotRue };
-  })();
-  verifier('à Londres, une maison posée sur une ancienne rue n\'est pas enfermée dans un immeuble neuf',
-    !londres.absent && !londres.introuvable && londres.enferme === 0 && londres.batiNeuf > 0,
-    londres.absent ? 'pas de date des rues de Londres' : JSON.stringify(londres));
-  verifier('et une cabane posée sur un ancien toit de Londres garde son toit',
-    !londres.absent && !londres.introuvable && londres.porte,
-    londres.absent ? 'pas de date des rues de Londres' : JSON.stringify(londres));
+  };
+  for (const [ville, args] of [
+    ['Londres', ['DATE_RUES_LONDRES', 'londres-v332.js', 'londres.js', 'LONDRES', 'solLondres', 'lotLondresLibre', 'batirColonneLondres']],
+    ['Nice', ['DATE_RUES_NICE', 'nice-v340.js', 'nice.js', 'NICE', 'solNice', 'lotNiceLibre', 'batirColonneNice']],
+  ]) {
+    const r = await figee(...args);
+    verifier(`à ${ville}, une maison posée sur une ancienne rue n'est pas enfermée dans un immeuble neuf`,
+      !r.absent && !r.introuvable && r.enferme === 0 && r.batiNeuf > 0,
+      r.absent ? `pas de date des rues de ${ville}` : JSON.stringify(r));
+    verifier(`et une cabane posée sur un ancien toit de ${ville} garde son toit`,
+      !r.absent && !r.introuvable && r.porte,
+      r.absent ? `pas de date des rues de ${ville}` : JSON.stringify(r));
+  }
 
   // --- LE FONDU DOUX DES VILLES (v309) : le pays descend à un bloc par bloc --
   // --- au plus, le monde d'avant reste celui de la production, un bloc suit --

@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 359,
+    titre: 'Les rues de Nice s\'élargissent',
+    puces: [
+      'La Promenade à deux voies',
+      'Des îlots plus grands dans la ville neuve',
+      'Londres garde encore plus d\'immeubles',
+    ],
+  },
+  {
     v: 358,
     titre: 'Des voitures pour de vrai',
     puces: [

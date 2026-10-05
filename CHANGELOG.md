@@ -20,6 +20,41 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v359 — Les rues de Nice à la règle du kit
+
+**Pourquoi.** La deuxième des cinq villes bâties à la main restées sur leurs
+largeurs relevées à la main (dette v271). La ruelle du Vieux-Nice faisait 1,2
+bloc de chaussée, la rue de la ville neuve 2, les avenues 2,9 à 5,8 — et la
+trame passait encore à quelques blocs des avenues parallèles.
+
+**Ce que ça change.**
+
+- **Les rues de Nice ont la section du kit**, à un bloc pour un mètre : deux
+  voies et des trottoirs de 2,5 m pour la Promenade des Anglais, Jean-Médecin
+  et les boulevards de la ville neuve ; une voie de 3,1 m pour la rue de
+  France, à sens unique, et les rues de quartier ; deux voies pour les rues de
+  la ville neuve et de Cimiez, une pour les ruelles du Vieux-Nice — « une
+  ruelle héritée est une rue locale », comme à Paris.
+- **Les îlots se recomposent** comme à Londres, et Nice garde ses immeubles :
+  23,7 % du disque bâti contre 22,7. Le prix, déclaré : Masséna 13,2 → 8,6,
+  les Musiciens 20,4 → 14,5, le port 21,8 → 16,4 ; Cimiez et Malausséna en
+  gagnent.
+- **Londres gagne encore deux points** (26,6 → 28,7 %) : la règle qui retire
+  une rue de la trame trop proche d'une avenue comptait la demi-chaussée au
+  lieu de la demi-emprise, et laissait des lots de trois blocs et demi.
+- **Ce qu'un enfant a bâti à Nice ne bouge pas** : sous ses blocs d'avant la
+  mise à jour, la Nice d'avant reste.
+
+**Ce qui le prouve.** Quatre témoins neufs. `carteMonde.js` : les rues de
+Nice ont la chaussée de leur type (artères 7,0, rues 3,0, ville neuve 6,95
+contre 5,0, 2,95 et 0,95 sur `origin/main`) ; Nice garde plus de 21 % de
+lots, aucun quartier sous 4 %. `plafond.js` : à Nice, une maison posée sur
+une ancienne rue n'est pas enfermée et une cabane garde son toit (désarmé :
+8 blocs de ville, toit absent) ; les deux témoins de Londres passent par la
+même fonction. Les trois circuits de Nice restent à 99-100 % sur la rue.
+
+---
+
 ## v358 — Des voitures qui se conduisent pour de vrai
 
 **Pourquoi.** Max : « une grosse refonte de la façon de conduire… comme GTA :

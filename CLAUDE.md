@@ -892,6 +892,24 @@ Le lot 2 de la dette de la v335 : huit monuments. Trois règles.
   Lille, 23 m pour l'Arche. Ce qu'on n'a pas trouvé (le musée d'Histoire
   américaine, « cinq étages ») se dit approché dans le commentaire.
 
+## Les rues de Nice à la règle du kit (v359) — une règle partagée se corrige pour toutes les villes qui la lisent
+
+Deux règles.
+
+- **LA MÉTHODE DE LONDRES SE REPREND TELLE QUELLE, ET ELLE VIT DANS `voies.js`.**
+  `reculDesAvenues(voies, artère, trame)` est la règle « une trame ne double pas
+  ses avenues », partagée par Londres, Nice et les suivantes. La ville d'avant
+  se fige (`nice-v340.js`) et `colonnesVilleAvant` (world.js) sert toutes les
+  villes passées au kit, chacune avec sa date (`VILLES_FIGEES`). Le témoin de
+  `plafond.js` est une fonction jouée ville par ville.
+- **UN RECUL SE COMPTE D'EMPRISE À EMPRISE.** La v339 posait le recul à la
+  demi-emprise de l'artère, plus `ILOT_MIN`, plus la demi-CHAUSSÉE de la rue de
+  la trame (13,9) : le lot entre les deux trottoirs n'avait alors que trois
+  blocs et demi. Le relevé ASCII du Sunset de San Francisco l'a montré (une
+  rue de la trame à seize blocs d'une avenue). Un îlot se mesure de trottoir à
+  trottoir : demi-emprise + `ILOT_MIN` + demi-emprise, 16,4. Corrigé dans la
+  règle partagée, Londres remesurée avec (26,6 → 28,7 %).
+
 ## Le monde à la vitesse (v346) — on maille où l'on va, et le plafond se mesure en roulant
 
 Max veut une conduite « comme GTA » ; les voitures étaient plafonnées à 28 b/s

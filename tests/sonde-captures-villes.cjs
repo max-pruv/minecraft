@@ -20,6 +20,14 @@ const VUES = {
     { nom: 'ciel-ouest', u: -20, v: -15, yaw: 0, pitch: -1.1, h: 70 },
     { nom: 'ciel-city', u: 45, v: -15, yaw: 0, pitch: -1.1, h: 70 },
   ],
+  nice: [
+    { nom: 'jean-medecin', u: -4, v: -20, yaw: 0, pitch: 0.06, h: 1.6, rue: true },
+    { nom: 'promenade', u: -60, v: 18, yaw: Math.PI / 2, pitch: 0.06, h: 1.6, rue: true },
+    { nom: 'musiciens', u: -40, v: -22, yaw: Math.PI / 2, pitch: 0.08, h: 1.6, rue: true },
+    { nom: 'vieux-nice', u: 15, v: 4, yaw: -Math.PI / 2, pitch: 0.08, h: 1.6, rue: true },
+    { nom: 'ciel-centre', u: -20, v: -10, yaw: 0, pitch: -1.1, h: 70 },
+    { nom: 'ciel-ouest', u: -80, v: -5, yaw: 0, pitch: -1.1, h: 70 },
+  ],
 };
 
 (async () => {

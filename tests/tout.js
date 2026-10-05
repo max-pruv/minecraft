@@ -150,6 +150,7 @@ const GARDIENS = {
   // dans monte.js (onglet, vignettes, pose).
   'src/batiments.js': ['monte.js'],
   'src/nice.js': ['carte.js', 'carteMonde.js', 'plafond.js'],
+  'src/nice-v340.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // la Nice d'avant le kit, sous ce qu'un enfant a bâti (v359)
   'src/carte.js': ['carte.js', 'carteMonde.js', 'manhattan.js'],
   // La capitale : son relief, son métro et ses bâtiments ouverts. Elle touche
   // au sol de la carte, donc le témoin du plafond la surveille aussi.
@@ -228,7 +229,7 @@ const GARDIENS = {
   // villes bâties à la main. C'est `carteMonde.js` qui mesure leurs virages
   // dans les six villes — un demi-tour né du chaînage se voit là, nulle part
   // ailleurs.
-  'src/voies.js': ['carte.js', 'monte.js', 'carteMonde.js'],
+  'src/voies.js': ['carte.js', 'monte.js', 'carteMonde.js', 'plafond.js'],
   // Le garage écrit dans le profil de l'enfant, à côté de ses blocs : c'est
   // de la sauvegarde, et cela doit se prouver comme telle.
   'src/garages.js': ['sauvegarde.js', 'monte.js'],
