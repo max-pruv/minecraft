@@ -1015,7 +1015,7 @@ const VRAIES_KM = [
       JSON.stringify(a1.absent ? a1 : { convoi: a1.convoiI95Sud ? { nom: a1.convoiI95Sud.nom, voitures: (a1.convoiI95Sud.modeles || []).length } : 'aucun convoi I-95 Sud',
         washington: a1.washington, erreur: a1.washingtonErreur, portesNY: a1.manhattan, frole: a1.frole && a1.frole['I-95 Sud'] }));
 
-    // LE TŌMEI (v370) : Tokyo–Nagoya, par la bande côtière au sud du
+    // LE TŌMEI (v375) : Tokyo–Nagoya, par la bande côtière au sud du
     // Shinkansen — Haneda et Yokota ferment la plaine à l'ouest de Tokyo, et le
     // rail traverse Nagoya. Ni rail, ni aérodrome, ni ville frôlée, et des
     // voitures entrent dans les deux villes par une rue propre.
@@ -2228,6 +2228,54 @@ const VRAIES_KM = [
     verifier('et aucun circuit ne traverse le jardin d\'un rond-point : il en fait le tour',
       !dc.absent && dc.circuits.length > 0 && dc.circuits.every((c) => c.pas > 0 && c.jardin === 0),
       JSON.stringify(dc.absent ? dc : dc.circuits.map((c) => [c.pas, c.jardin])));
+
+    // LA GRILLE DE WASHINGTON À LA RÈGLE DU KIT (v370). Jusqu'à la v369 une
+    // rue de la grille avait DEUX colonnes de chaussée — pour une voiture de
+    // 2,26 — et un seul trottoir. On coupe la grille des quartiers bâtis en
+    // travers, ligne par ligne, et l'on mesure chaque rue rencontrée : la
+    // largeur de chaussée (bitume, ligne, passage) entre deux trottoirs, et
+    // chaque trottoir. Une rue locale du kit : chaussée `floor(3,1)` = 3, deux
+    // trottoirs de 2. La médiane se compare, pas le minimum (une avenue qui
+    // croise élargit une coupe). Et la ville garde ses maisons : la part de
+    // lots du disque reste au-dessus de 10 % (14,2 avant, 11,2 après, mesuré :
+    // quatre maisons par îlot autour d'une ruelle).
+    const grille = await tab.evaluate(async () => {
+      const m = await import('./src/washington.js');
+      const b = await import('./src/blocks.js');
+      const CH = new Set([b.CITY_BLOCK.ASPHALT, b.CITY_BLOCK.ROADLINE, b.CITY_BLOCK.CROSSWALK]);
+      const TR = b.CITY_BLOCK.SIDEWALK;
+      const sol = (u, v) => m.solWashington(m.WASHINGTON.x + u, m.WASHINGTON.z + v);
+      const chaussees = [], trottoirs = [];
+      // Penn Quarter, Capitol Hill, Logan Circle : des coupes est-ouest et nord-sud
+      const coupes = [];
+      for (const v of [-50, -44, -36, 8, 12, -98, -94]) coupes.push((k) => [k, v]);
+      for (const u of [-70, -64, 40, 46, -40]) coupes.push((k) => [u, k]);
+      for (const f of coupes) {
+        let k = -160;
+        while (k < 70) {
+          const [u, v] = f(k);
+          if (sol(u, v) !== TR) { k++; continue; }
+          // un trottoir, puis une chaussée, puis un trottoir : une rue
+          let t1 = 0; while (sol(...f(k)) === TR) { t1++; k++; }
+          let c = 0; while (CH.has(sol(...f(k)))) { c++; k++; }
+          let t2 = 0; while (sol(...f(k)) === TR) { t2++; k++; }
+          if (c > 0 && c <= 4 && t2 > 0) { chaussees.push(c); trottoirs.push(t1, t2); }
+        }
+      }
+      const med = (a) => { const s = [...a].sort((x, y) => x - y); return s.length ? s[s.length >> 1] : 0; };
+      let lots = 0, tot = 0;
+      const B = m.BOITE;
+      for (let u = B.u0; u <= B.u1; u += 2) for (let v = B.v0; v <= B.v1; v += 2) {
+        const x = m.WASHINGTON.x + u, z = m.WASHINGTON.z + v;
+        if (m.solWashington(x, z) === undefined) continue;
+        tot++;
+        if (m.lotWashingtonLibre(x, z)) lots++;
+      }
+      return { rues: chaussees.length, chaussee: med(chaussees), trottoir: med(trottoirs), lots: Math.round(1000 * lots / tot) / 10 };
+    });
+    verifier('les rues de la grille de Washington ont la section du kit : trois de chaussée, deux trottoirs',
+      grille.rues >= 20 && grille.chaussee >= 3 && grille.trottoir >= 2 && grille.lots >= 10,
+      `${grille.rues} rues coupées · chaussée médiane ${grille.chaussee} · trottoir ${grille.trottoir} · lots ${grille.lots} %`);
 
     // --- LONDRES : DES AVENUES QUI SE CROISENT, ET DES BOUCLES QUI COUVRENT
     // LA VILLE -----------------------------------------------------------------
@@ -5018,7 +5066,7 @@ const VRAIES_KM = [
         }
         ponts.push({ cle, tabliers: a.ponts.length, pas, sansSol, surLaTete, surEau, pireSpan, parLaRoute, cinq: CINQ.includes(cle) });
       }
-      // LES ENCOCHES AU BOUT DES TABLIERS (v370). Le tronçon mouillé se mesure
+      // LES ENCOCHES AU BOUT DES TABLIERS (v375). Le tronçon mouillé se mesure
       // sur l'AXE ; une colonne du monde à côté de l'axe peut être de l'eau un
       // demi-bloc avant le premier point mouillé, et rester sans tablier — à
       // Berlin, sur l'axe même. On lit, sur TOUTES les villes à pont, les
@@ -5090,7 +5138,7 @@ const VRAIES_KM = [
     // Mahal et le Fort sont bâtis SUR deux tabliers (neuf pas bouchés) — un
     // conflit de plan entre les anneaux et les monuments. Dette dans
     // TASKS.md ; une dette qui ne mesure plus rien rougit. (Berlin, la colonne
-    // d'eau au bout d'un pont, est réparée en v370 : témoin des encoches.)
+    // d'eau au bout d'un pont, est réparée en v375 : témoin des encoches.)
     const DETTE_PONTS = { agra: { sansSol: 0, surLaTete: 9 } };
     verifier('et on le traverse à pied d\'une rive à l\'autre',
       fleuves.ponts.filter((p) => p.cinq).length === 5

@@ -4038,7 +4038,7 @@ function pontDeVille(f, u, v) {
     if (le < q.a0 - 0.5 || le > q.a1 + 0.5) continue;
     const d = Math.abs(tr - q.b);
     if (d > q.demi) continue;
-    // UNE COLONNE D'EAU AU BOUT DU TABLIER EST ENCORE DU PONT (v370). Le
+    // UNE COLONNE D'EAU AU BOUT DU TABLIER EST ENCORE DU PONT (v375). Le
     // tronçon mouillé se mesure sur l'AXE ; une colonne du monde voisine peut
     // être de l'eau un demi-bloc avant le premier point mouillé, et restait
     // sans tablier — à Berlin sur l'axe même, ailleurs au coin du tablier :

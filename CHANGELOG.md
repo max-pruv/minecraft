@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v370 — Plus de trou au bout des ponts, et le Tōmei
+## v375 — Plus de trou au bout des ponts, et le Tōmei
 
 **Pourquoi.** Au bout d'un pont de Berlin, une colonne d'eau sans tablier : la
 voiture y tombait (dette déclarée en v362). Mesuré sur toutes les villes à
@@ -36,8 +36,9 @@ ponts n'ont plus d'encoche où la voiture tombe.
 **Ce qui le prouve.** Un témoin neuf dans `carteMonde.js` lit toutes les villes
 à pont : 437 encoches sur `origin/main`, zéro ici, sur 28 436 colonnes de
 tablier. La dette de Berlin sort de la liste des ponts déclarés (Agra y
-reste). L'empreinte des 490 morceaux change, et la même branche, la règle
-désarmée, rend celle d'`origin/main` au bit près.
+reste). L'empreinte des 490 morceaux change (Tokyo est un des neuf lieux, et
+le raccord du Tōmei y entre), et la même branche, la règle désarmée et le
+Tōmei retiré, rend celle d'`origin/main` au bit près.
 
 **Et le Tōmei, Tokyo–Nagoya.** La dernière route libre du relevé de la v310,
 laissée de côté parce qu'« un aérodrome est sur l'axe ». C'était pire : à
@@ -52,6 +53,168 @@ neuf de `carteMonde.js` exige zéro colonne sur le rail, zéro ville frôlée, d
 voitures sur la route et une rue propre aux deux entrées ; mesuré sous node
 avant le banc : 9 985 colonnes d'emprise, aucune sur la voie ferrée ni à une
 autre route, 283 colonnes d'asphalte sur 283.
+
+---
+
+## v374 — Un choix de langue qui tient, et la conduite des dégâts éprouvée bout à bout
+
+**Pourquoi.** Trois manques, trois sujets. (1) Le témoin « un choix fait sur
+une tablette part au serveur » de `reglages.js` était rouge aux deux portails
+de la v363 et vert seul : déclaré « rouge de charge », il ne l'était pas. Une
+sonde qui relève chaque écriture des deux tablettes l'a montré sans charge
+du tout : le choix part, puis la seconde tablette de la maison le réécrit
+avec son ANCIENNE langue, sous une date plus ancienne — son battement de
+présence, toutes les vingt secondes, écrivait sans relire. (2) Le contrat
+avec la physique (v358) n'avait jamais été éprouvé de bout en bout : le seul
+témoin publiait ses chocs à la main, et le témoin du coût d'un choc bornait
+des millisecondes, qui suivent la charge du banc (15 seul, 31,1 au portail).
+(3) Un hôte resté sur l'ancienne version ne relayait pas les chocs des
+voitures de la rue (`rue_choc`, v363) entre deux amis à jour.
+
+**Ce que ça change.** Une langue choisie sur une tablette n'est plus défaite,
+même un instant, par l'autre tablette allumée à côté. La voiture de la rue
+qu'un ami cabosse se voit cabossée chez les autres même quand celui qui
+reçoit la partie n'a pas encore la mise à jour.
+
+**Ce qui le prouve.** Cinq témoins neufs ou repointés. `reglages.js` : le
+témoin provoque la course (il repère le battement de l'autre tablette et
+clique juste avant) et observe le serveur toute la fenêtre — rouge sur
+`origin/main` (un retour à l'ancienne langue), vert ici.
+`degats.js` : un mur pris de face par la VRAIE physique rend un choc publié
+pris par ce seul chemin, l'avant seul froissé, l'effet sur la conduite
+appliqué une fois (rouge sur `origin/main` faute des compteurs, le
+comportement y était déjà juste) ; le coût d'un choc se compte en sommets
+(25,6 % déplacés, zéro normale réécrite hors d'eux — 63 avec
+`computeVertexNormals`, vérifié rouge — et rien par image), les
+millisecondes restent dans le message ; et un hôte qui ne relaie pas
+`rue_choc` laisse passer le choc par la position, l'histoire identique choc
+pour choc.
+## v373 — Une portière ouverte se voit de derrière
+
+**Pourquoi.** Aucun des cinquante modèles de la flotte n'a meublé l'intérieur
+de sa portière : la carrosserie est une peau à une seule face, et la face
+arrière d'un triangle n'est pas dessinée. Quand l'enfant arrive par l'arrière
+de la voiture — le chemin le plus fréquent —, la portière ouverte devant lui
+était invisible : on voyait au travers. Mesuré par la sonde du revers : de face,
+une portière ouverte arrête 10 à 20 rayons sur 24 ; de derrière, ZÉRO, sur les
+cinquante modèles.
+
+**Ce que ça change.** La portière a désormais un revers, de la couleur de la
+carrosserie, sur tous les modèles qui ont une portière animée. Elle se voit
+pendant toute la séquence, de quelque côté qu'on arrive.
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js` : des rayons visent la
+portière ouverte de face, puis de derrière, et il en faut autant d'un côté que
+de l'autre (10 et 10 ici, 10 et 0 sur `origin/main`) ; et la portière garde
+autant de maillages qu'avant — le revers est DANS la même géométrie, pas un
+appel de dessin de plus. Le témoin des programmes de l'embarquement reste vert :
+aucun programme ne naît, parce que le revers n'est pas un `DoubleSide` (qui
+changerait la clé de programme, v246) mais une copie des sommets, normales
+retournées et triangles à l'envers.
+
+**Et un mystère de la v366 s'éclaire.** Le témoin de la descente refusait
+parfois la sortie côté passager pour « circulation », en pleine prairie. Une
+sonde a relevé les voitures de la rue au moment du refus : la « prairie » était
+DANS Manchester, et un vrai circuit de la ville passait à 3,5 blocs. Le refus
+était juste, c'est le témoin qui choisissait mal son terrain : il cherche
+désormais hors de toute ville, y compris des villes engendrées que `cityAt` ne
+connaît pas. Sur le nouveau site : dix descentes, zéro refus.
+
+---
+
+## v372 — Des portières bien découpées
+
+**Pourquoi.** Les portières de la v366 étaient fabriquées dans la
+carrosserie en prenant chaque triangle par son centre : un grand triangle à
+cheval sur le bord du volume partait ENTIER avec la portière, et le bord
+avant ou arrière de la porte était en dents de scie. Mesuré par la sonde des
+portières : 21 % de la surface de la portière à cheval sur un bord sur la
+Lucid Gravity, 36 à 38 % sur les trois taxis — et sur la Lucid, une portière
+de 1,49 bloc de long pour un volume de 1,25.
+
+**Ce que ça change.** Le bord de chaque portière est droit sur les
+cinquante-cinq modèles : les triangles qui chevauchent un bord du volume
+(avant, arrière, bas de caisse, haut de vitre) sont COUPÉS au plan du bord, la
+part du dedans part avec la portière, le reste reste sur la caisse. Rien ne
+change de couleur ni de matière, et aucun programme graphique ne naît. Les
+taxis ont désormais des bords nets eux aussi, mais restent sans portière
+animée : derrière leur portière il n'y a rien (aucun des vingt-quatre rayons
+tirés au travers de l'ouverture ne touche un habitacle).
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js`, qui mesure la portière
+de la Lucid SANS lire le plan — l'étendue de ses sommets contre le volume
+(débord 0,24 bloc sur `origin/main`, 0 ici), la surface de la caisse et des
+portières contre celle du prototype (66,98 des deux côtés : rien de perdu,
+rien de doublé), puis un choc sur le flanc équipé (la portière reste sur son
+pivot, la voiture à 70 % de santé). Le coût du plan, une fois par modèle, se
+remesure : médiane 5 ms (4 avant), 15 ms sur la Lucid (13 avant), 21 ms au
+pire hors taxis (28 avant) — chaque sommet ne passe plus qu'une fois dans le
+repère de la voiture, et la recopie des attributs se fait d'un geste.
+## v371 — Les passants traversent au feu
+
+**Pourquoi.** Les passants marchaient le long de leur trottoir et, au coin,
+tournaient : ils ne changeaient pour ainsi dire jamais de trottoir. Mesuré
+(`tests/sonde-traversees.cjs`, soixante secondes, l'enfant immobile) : à Rome
+une traversée pour vingt et un passants, et pas à un feu ; à Paris et à
+Londres, zéro. Une ville où chacun reste sur son pâté de maisons, à côté de
+feux qui changent pour personne.
+
+**Ce que ça change.** À un carrefour à feux, un passant sur deux ou presque
+s'arrête au bord, face à la rue, attend que les voitures qu'il va couper soient
+au rouge — avec assez de rouge devant lui pour arriver de l'autre côté — puis
+traverse d'un pas pressé. Il lit le même feu que les voitures. À Paris, aux
+carrefours sans feu, il traverse sur le passage piéton peint quand aucune
+voiture n'arrive. Ailleurs, il ne traverse pas : il tourne au coin comme avant.
+Et la traversée se fait en temps réel, comme l'écart de la v351 : une tablette
+qui rame ne laisse pas un passant au milieu de la rue quand le feu repasse au
+vert.
+
+**Ce qui le prouve.** Un témoin neuf de `monte.js` pose huit passants au bord
+du trottoir, aux coins des feux de Rome, et compte les changements de
+trottoir : `origin/main` rend 0 et 0 traversée (rouge) ; ici 9, 6 et 3, au feu
+et au rouge des voitures coupées. Le témoin du réverbère éloigne désormais les
+passants du capot (un passant qui traverse arrête la voiture, c'est voulu), et
+une traversée au feu ne compte plus comme un passant planté sur la chaussée.
+La sonde, au centre des trois villes : Rome 7 à 11 traversées au feu, Paris 2 à 5 sur les passages peints,
+Londres 1 à 3 au feu. La recherche du passage coûte 0,6 ms par coin en moyenne,
+3,6 au pire, une fois par seconde environ.
+## v370 — La grille de Washington à la règle du kit
+
+**Pourquoi.** La dernière des cinq villes bâties à la main restée hors règle
+(dette v271, v307). Ses diagonales avaient déjà la chaussée d'une collectrice ;
+sa GRILLE, non : deux colonnes de chaussée pour une voiture de 2,26 blocs, un
+seul trottoir, une rue tous les douze blocs. Les rues de liaison où roulaient
+les dix-neuf circuits faisaient deux colonnes de large.
+
+**Ce que ça change.** Une rue de la grille est une rue locale du kit
+(`sectionDeRue('locale')`) : trois colonnes de chaussée, deux trottoirs de
+deux. Le pas suit dans le rapport des emprises (12 × 7 / 3 = 28) et l'îlot se
+recompose au lieu de grandir : quatre maisons de neuf blocs — la même maison,
+son escalier, ses deux portes — autour d'une ruelle de trois, une allée de
+gravier entre deux jardins de derrière, comme en a tout îlot de Washington. Les
+rues de liaison passent sur les axes neufs, à la section du kit, sous le nom
+de la vraie rue la plus proche (D, H, M Street, la 3e, la 12e, la 20e, la
+23e…), et sept s'ajoutent à l'est (Capitol Hill, NoMa) et au nord-ouest.
+Quatorze circuits cherchés sous node remplacent les dix-neuf d'avant : la
+part de la ville à portée d'une voiture passe de 50,8 à 56,2 %, la longueur
+roulée de 1 881 à 2 026 blocs. La ville d'avant reste sous ce qu'un enfant a
+bâti (`washington-v367.js`, `DATE_RUES_WASHINGTON`). Le prix : la part de lots
+du disque passe de 14,2 à 11,2 %. Et l'I-95 (v367), dont l'avenue d'entrée
+finissait sur une rue de l'ancienne grille, arrive par une bretelle sur la
+rue v = 84. Le Triangle fédéral descend de 13–16 à 12–14 blocs : sa
+ligne de corniche est celle des musées du Mall, et le Musée afro-américain
+n'est plus plus bas que ses voisins (le portail l'a vu, la médiane de ses
+quatre îlots voisins était passée de 10 à 14 avec la trame neuve).
+
+**Ce qui le prouve.** Deux témoins neufs. `carteMonde.js` coupe la grille des
+quartiers bâtis en travers et mesure chaque rue : 46 rues, chaussée médiane
+3, trottoir 2, lots 11,2 % — rouge sur `origin/main` (11 rues trouvées,
+trottoir 1). `plafond.js` joue pour Washington le témoin des villes figées
+(une maison sur une ancienne rue n'est pas enfermée, une cabane garde son
+toit). Le monde d'avant (`v308`) rend la production au bloc près sur
+quatre-vingts morceaux de Washington. Le témoin des maisons de
+`washington.js` demande le coin de chaque maison au module
+(`coinDeMaisonDC`) au lieu d'un pas recopié.
 
 ---
 

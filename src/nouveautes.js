@@ -6,11 +6,54 @@
 
 export const NOUVEAUTES = [
   {
-    v: 370,
+    v: 375,
     titre: 'Ponts finis, Tokyo rejoint Nagoya',
     puces: [
       'Plus de trou au bout des ponts',
       'Une autoroute de Tokyo à Nagoya',
+    ],
+  },
+  {
+    v: 374,
+    titre: 'Ta langue reste choisie',
+    puces: [
+      'L\'autre tablette ne la change plus',
+      'Les voitures cabossées passent par tous',
+    ],
+  },
+  {
+    v: 373,
+    titre: 'La portière se voit de dos',
+    puces: [
+      'La porte ouverte a son intérieur',
+      'Elle se voit de tous les côtés',
+    ],
+  },
+  {
+    v: 372,
+    titre: 'Des portières bien découpées',
+    puces: [
+      'Le bord de la porte est droit',
+      'Plus de dents de scie sur la carrosserie',
+    ],
+  },
+  {
+    v: 371,
+    titre: 'On traverse au feu',
+    puces: [
+      'Les passants attendent leur tour au feu',
+      'Puis ils traversent la rue',
+      'À Paris, sur les passages piétons',
+    ],
+  },
+  {
+    v: 370,
+    titre: 'Washington, des rues plus larges',
+    puces: [
+      'Les rues ont deux vrais trottoirs',
+      'Quatre maisons et une ruelle par îlot',
+      'Plus de voitures dans la ville',
+      'Tes constructions restent comme avant',
     ],
   },
   {
