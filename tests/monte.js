@@ -3948,6 +3948,105 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         && ecartParts >= 0.13,
       `écart ${ecartParts} (barre 0,13) · ordre neuf : ${dit(ordreNeuf)} · ordre d'avant : ${dit(ordreAvant)}`);
 
+    // LA FILE SE RECHARGE À L'ARRIVÉE D'UN MORCEAU (v360).
+    //
+    // Sondé d'abord (sonde-monde-a-la-vitesse.cjs) : à 80 b/s, rr 12, le
+    // worker était À SEC 55 à 72 % du temps — la file ne se rechargeait qu'une
+    // fois par image, et le banc en rend 11 à 15 — pendant que l'installation
+    // coûtait 0,1 à 0,9 ms par morceau. Et l'ancienne boucle comptait chaque
+    // demande deux fois : une file « de huit » n'en tenait que quatre en vol.
+    // La recharge à l'arrivée garde ces quatre-là (`EN_VOL_MAX`) et ne laisse
+    // plus le worker attendre l'image : mesuré ABBA, Paris 53 → 116 morceaux
+    // par seconde, Rome 58 → 120.
+    //
+    // Les deux modes se jouent dans la MÊME page (`__game.rechargeMaillage`),
+    // en ABBA, et l'on compare des DÉBITS : la charge du banc touche les deux.
+    // Sur l'ancien code le crochet n'existe pas — les quatre passages sont le
+    // même, le rapport vaut un, rouge. Barre : la moitié du gain mesuré seul
+    // (× 2,0 à 2,2 → 1,5). Et l'on relève la file en vol à chaque image :
+    // quatre au plus, jamais plus que l'ancienne boucle au plus bas (elle en
+    // tenait de quatre à huit) — c'est ce qui sépare ce remède de la file de
+    // seize (v269). Mesuré : × 0,95 sur `origin/main`, × 2,06 ici.
+    //
+    // UN SECOND PASSAGE REND UNE SCÈNE VIDE, ET C'EST LUI QUI GARDE LA
+    // CADENCE. En ville la recharge fait tomber le banc de 14 à 5 images par
+    // seconde : les appels de dessin passent de 15 à 190–290, la ville est
+    // enfin là. Rendue dans une scène vide, la même recharge tourne à la
+    // cadence de l'ancienne (51–57 contre 53–57) : le worker et l'installation
+    // ne prennent rien aux images. Ce verdict-là est vert sur l'ancien code
+    // aussi, à dessein (v220) : il garde la capacité qu'on a frôlée.
+    const roulerRecharge = async (mode, vide) => {
+      await souffler();
+      return ciel.evaluate(async ({ mode, vide }) => {
+        const g = window.__game;
+        const crochet = typeof g.rechargeMaillage === 'function';
+        if (crochet) g.rechargeMaillage(mode);
+        if (typeof g.fileMaillage === 'function') g.fileMaillage('cone');
+        const { positionDe } = await import('./src/mondes.js');
+        const CHUNK = 16, R = 12, v = 80;
+        const P = positionDe('paris');
+        const x0 = P.x - v * 6, z = P.z + 40.5;
+        const p = g.player;
+        const patienter = (ms) => new Promise((fin) => {
+          const t0 = performance.now();
+          const tic = () => (performance.now() - t0 < ms ? requestAnimationFrame(tic) : fin());
+          requestAnimationFrame(tic);
+        });
+        const poser = (x) => { p.pos.set(x, 140, z); p.vel.set(0, 0, 0); p.yaw = -Math.PI / 2; p.pitch = 0; };
+        p.flying = true;
+        poser(x0);
+        const t0 = performance.now();
+        const pcz = Math.floor(z / CHUNK);
+        while (performance.now() - t0 < 40000) {
+          poser(x0);
+          let n = 0; const pcx = Math.floor(x0 / CHUNK);
+          for (let dz = -R; dz <= R; dz++) for (let dx = -R; dx <= R; dx++) if (g.chunkMeshes.has(`${pcx + dx},${pcz + dz}`)) n++;
+          if (n >= (2 * R + 1) ** 2 * 0.9) break;
+          await patienter(250);
+        }
+        const charge = Math.round(performance.now() - t0);
+        const rendre = g.renderer.render;
+        if (vide) { const r = rendre.bind(g.renderer), sv = new g.scene.constructor(); g.renderer.render = (s, c) => r(sv, c); }
+        const depart = performance.now();
+        let roule = true, enVol = 0, images = 0;
+        const S = g.statsMaillage;
+        const tic = () => {
+          if (!roule) return;
+          poser(x0 + v * (performance.now() - depart) / 1000);
+          if (S.enAttente) enVol = Math.max(enVol, S.enAttente.size);
+          images++;
+          requestAnimationFrame(tic);
+        };
+        requestAnimationFrame(tic);
+        await patienter(3000);
+        const d0 = S.distants, i0 = images, m0 = performance.now();
+        await patienter(5000);
+        const s = (performance.now() - m0) / 1000;
+        const debit = +((S.distants - d0) / s).toFixed(1), cadence = +((images - i0) / s).toFixed(1);
+        roule = false;
+        g.renderer.render = rendre;
+        p.flying = false;
+        if (crochet) g.rechargeMaillage(null);
+        if (typeof g.fileMaillage === 'function') g.fileMaillage(null);
+        return { crochet, charge, debit, cadence, enVol, parcouru: Math.round(p.pos.x - x0) };
+      }, { mode, vide });
+    };
+    {
+      const n1 = await roulerRecharge('arrivee', false), a1 = await roulerRecharge('image', false);
+      const a2 = await roulerRecharge('image', false), n2 = await roulerRecharge('arrivee', false);
+      const neuf = (n1.debit + n2.debit) / 2, avant = (a1.debit + a2.debit) / 2;
+      const rapport = +(neuf / (avant || 1)).toFixed(2);
+      const enVol = Math.max(n1.enVol, n2.enVol);
+      const dit = (r) => `${r.crochet ? '' : '(crochet absent) '}${r.debit} morceaux/s, ${r.cadence} images/s, ${r.enVol} en vol, ${r.parcouru} blocs, disque en ${r.charge} ms`;
+      verifier('à quatre-vingts blocs par seconde dans Paris, le worker ne reste pas à sec entre deux images',
+        n1.parcouru > 300 && a1.parcouru > 300 && rapport >= 1.5 && enVol <= 4,
+        `débit × ${rapport} (barre 1,5) · en vol au plus ${enVol} (barre 4) · à l'arrivée : ${dit(n1)} | ${dit(n2)} · à l'image : ${dit(a1)} | ${dit(a2)}`);
+      const vn = await roulerRecharge('arrivee', true), va = await roulerRecharge('image', true);
+      verifier('rendue dans une scène vide, la recharge à l\'arrivée garde la cadence de l\'ancienne',
+        vn.parcouru > 300 && va.parcouru > 300 && vn.cadence >= 0.75 * va.cadence,
+        `à l'arrivée ${dit(vn)} · à l'image ${dit(va)} (barre : trois quarts de la cadence)`);
+    }
+
     // L'ÉCRAN NE SE FIGE PLUS EN ARRIVANT SUR UNE VILLE (v235).
     //
     // Max, en vol : « il y a vraiment un lag, l'écran s'arrête pendant trois

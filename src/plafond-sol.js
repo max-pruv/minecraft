@@ -71,14 +71,43 @@
 // une fois par image, rendu logiciel). Le plafond NE BOUGE PAS : on ne publie
 // qu'une valeur tenue, et 80 b/s ne tient ni en ville ni sur l'A1 (158).
 
+// RELEVÉ EN v360 : LE « PLAFOND DU DÉBIT » ÉTAIT LA CADENCE DU BANC, PAS LE
+// MONDE. La file ne se rechargeait qu'une fois par image, et sa boucle
+// comptait chaque demande deux fois (quatre en vol pour une file « de
+// huit ») : le worker était À SEC 55 à 72 % du temps. Rendue dans une scène
+// vide (le banc à 55 images par seconde), la même file donnait déjà 125
+// morceaux par seconde. La v360 la recharge à l'arrivée de chaque morceau en
+// roulant vite (main.js, `rechargerLaFile`), quatre en vol comme avant. Même
+// sonde, `&recharge=arrivee`, deux passages, « cone40 » pour 2 v exigés :
+//
+//   v (b/s)   campagne   A1        Paris     Londres    Rome
+//     70         —        —          —       192 · 182    —
+//     80     192 · 192  192 · 192  176 · 176  148 · 152  176 · 176
+//     90     192 · 192  176 · 176  176 · 160  143 · 145  176 · 176
+//
+// Débit 99 à 143 morceaux par seconde (53 à 75 avant). Londres borne la
+// ville à 70 — pourquoi n'est PAS mesuré : son worker coûte autant que celui
+// de Paris (6,4 ms contre 6,3 à 7) et reste à sec 23 à 28 % ; l'A1 borne la
+// campagne à 80. Le
+// disque de douze morceaux plafonne de toute façon à 90 (deux secondes de
+// route dans 192 blocs).
+//
+// CE QUE LE BANC NE DIT PAS : la cadence. En ville elle y tombe de 14 à 5
+// images par seconde avec la recharge — et c'est SwiftShader qui dessine
+// enfin la ville (15 → 190–290 appels de dessin) : en scène vide, 51–57
+// images contre 53–57. Sur la tablette le rendu est en matériel, mais ce
+// monde-là est à dessiner aussi : la cadence à 70–80 b/s dans Paris se relit
+// avec `?diag=1` avant que la conduite ne monte les voitures (TASKS.md).
+
 // Plafond au sol, en blocs par seconde (≈ mètres par seconde : une voiture
 // fait 4,4 blocs pour 4,5 m), pour une distance d'affichage de douze morceaux
 // ou plus.
-export const VITESSE_SOL_MAX = Object.freeze({ ville: 60, campagne: 70 });
+export const VITESSE_SOL_MAX = Object.freeze({ ville: 70, campagne: 80 });
 
 // Le plafond pour une distance d'affichage donnée (en morceaux de 16 blocs) :
 // celui de la table, et jamais plus que deux secondes de route dans le rayon
-// du disque — au palier bas (rr 8), 64 : soixante partout, au pas de dix.
+// du disque — au palier bas (rr 8), 64 : soixante partout, au pas de dix ;
+// à douze morceaux, 96 : quatre-vingt-dix.
 export function plafondSol({ ville = true, rr = 12 } = {}) {
   const table = ville ? VITESSE_SOL_MAX.ville : VITESSE_SOL_MAX.campagne;
   const disque = Math.floor((rr * 16) / 2 / 10) * 10;

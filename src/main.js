@@ -621,7 +621,10 @@ world.loadEdits();
 // tampons prêts pour la carte graphique, plus les blocs pour les collisions.
 // Le fil principal ne fait plus que les installer. `?maillage=local` rend
 // l'ancien chemin, pour mesurer et pour les témoins.
-const statsMaillage = { principalMs: 0, locaux: 0, distants: 0, refuses: 0, recus: [], detailsDemandes: 0, detailsRendus: 0, detailsBudget: 0 };
+const statsMaillage = { principalMs: 0, locaux: 0, distants: 0, refuses: 0, recus: [], detailsDemandes: 0, detailsRendus: 0, detailsBudget: 0,
+  // CE QUE COÛTE L'INSTALLATION SUR LE FIL PRINCIPAL, ET LE TEMPS À SEC DU
+  // WORKER (v360) — les deux pistes que la v352 avait laissées non mesurées.
+  installMs: 0, workerMs: 0, workerInactifMs: 0, lots: 0, renduMs: 0, travailMs: 0, images: 0, fileVide: 0, transitMs: 0 };
 
 // ── CE QU'ON MESURE POUR CLASSER L'APPAREIL (v284) ───────────────────────────
 //
@@ -838,7 +841,8 @@ function rangerLePalier() {
 // comme en v283.
 const EN_ATTENTE_MAX = Number(new URLSearchParams(location.search).get('attente'))
   || (PALIER ? PALIER.file : SANS_PALIER.file);
-const enAttente = new Map();          // key -> { cx, cz, sale, detail }
+const enAttente = new Map();          // key -> { cx, cz, sale, detail, depuis }
+statsMaillage.enAttente = enAttente;  // la sonde lit l'âge des demandes (v360)
 // LE RÉGLAGE ENTRE DANS LA FICHE DU JOURNAL (v299) : ce que l'appareil joue,
 // pas seulement ce qu'il est. Écrit ici parce que la file est le dernier
 // réglage lu au démarrage.
@@ -870,10 +874,16 @@ function recevoirMorceau(m) {
     statsMaillage.recus.push(key);                                  // blocs adoptés du worker
     if (statsMaillage.recus.length > 64) statsMaillage.recus.shift();  // fenêtre glissante : les derniers sont encore en mémoire
   }
+  const t0 = performance.now();
+  if (m.envoye) statsMaillage.transitMs += performance.timeOrigin + t0 - m.envoye;
   installerMorceau(m.cx, m.cz, m);
+  statsMaillage.installMs += performance.now() - t0;
+  statsMaillage.workerMs += m.ms || 0;
+  if (m.inactif) statsMaillage.workerInactifMs += m.inactif;
   statsMaillage.distants++;
   noterMorceau(m.ms);
   if (attente && attente.sale) world.dirty.add(key);
+  if (maillageDistant && rechargeALArrivee()) rechargerLaFile(pcx, pcz);
 }
 (function creerMaillageDistant() {
   if (new URLSearchParams(location.search).get('maillage') === 'local') return;
@@ -1320,6 +1330,79 @@ function versLaRueAxe(wx, wy, wz, axe) {
 
 let lastPlayerChunk = null;
 
+// LA RECHARGE DE LA FILE (v360) — mesurée avant d'être écrite.
+//
+// L'ANCIENNE BOUCLE COMPTAIT CHAQUE DEMANDE DEUX FOIS, et cela depuis la v251 :
+// `enAttente.set` PUIS `lot.push`, sous la garde `enAttente.size + lot.length`.
+// Une file « de huit » portait donc de quatre à huit demandes en vol selon ce
+// qui restait de l'image d'avant : quatre quand le worker est en retard
+// (relevé à 80 b/s dans Paris : 0 à 5), six à huit quand les images sont
+// rapides. TOUTES les mesures de profondeur du dépôt ont été faites ainsi —
+// la file de seize écartée par la v269 en tenait huit, et plus. On ne
+// corrige donc PAS le compte en gardant huit : ce serait remettre en douce la
+// profondeur mesurée nuisible sur l'iPad. La profondeur RÉELLE est écrite
+// (`EN_VOL_MAX`, la moitié de la file nominale), et c'est elle qui borne :
+// jamais plus que l'ancienne boucle n'en tenait au plus bas.
+//
+// ET LA FILE NE SE RECHARGEAIT QU'UNE FOIS PAR IMAGE : le worker finissait
+// ses quatre morceaux en trente millisecondes et attendait l'image suivante.
+// Mesuré à 80 b/s, rr 12, en rendu logiciel : À SEC 55 à 72 % du temps (Paris
+// 595 ms par seconde, Rome 549, campagne 700), pendant que l'installation ne
+// coûtait au fil principal que 0,1 à 0,9 ms par morceau et le transit 2 à
+// 8 ms. Un morceau qui arrive libère sa place, et sa place repart tout de
+// suite — sans attendre l'image, sans une demande de plus en vol.
+//
+// CE QUE LA RECHARGE À L'ARRIVÉE COÛTE, SÉPARÉ EN DEUX (même page, ABBA,
+// 80 b/s, rr 12) : le débit double (Paris 53 → 116 morceaux par seconde,
+// Rome 58 → 120, campagne 74 → 123), le monde maillé dans le champ passe de
+// 101–128 à 176–192 blocs — et la cadence du banc tombe en ville de 14 à 5
+// images par seconde, les appels de dessin passant de 15 à 190–290. Rendue
+// dans une scène VIDE (`vide=1` de la sonde), la même recharge tourne à 51–57
+// images par seconde, comme l'ancienne, pour 125 morceaux par seconde : le
+// worker et l'installation ne coûtent rien à la cadence, ce qui la coûte est
+// SwiftShader qui dessine enfin la ville (la leçon de la v346). Donc :
+//   • seulement EN ROULANT VITE (`fileRapide`) — à pied et à l'arrêt, la file
+//     est celle de la v353 au calcul près : un remède ne va pas plus loin que
+//     la panne (v245) ;
+//   • et coupée en rendu LOGICIEL, comme l'ordre en cône, les ombres et la
+//     couche HD : `?recharge=arrivee` la force, `?recharge=image` la retire,
+//     `__game.rechargeMaillage` les bascule sur une page ouverte.
+const RECHARGE_DEMANDEE = new URLSearchParams(location.search).get('recharge');
+let rechargeForcee = RECHARGE_DEMANDEE === 'arrivee' || RECHARGE_DEMANDEE === 'image' ? RECHARGE_DEMANDEE : null;
+let logicielMemo = null;   // un appel GL synchrone : une fois, pas à chaque morceau
+const rechargeALArrivee = () => (rechargeForcee ? rechargeForcee === 'arrivee'
+  : fileRapide && !(logicielMemo ??= renduLogiciel()));
+const EN_VOL_MAX = Math.max(1, Math.ceil(EN_ATTENTE_MAX / 2));
+function demander(suivant, pcx, pcz, lot) {
+  const key = World.key(suivant.cx, suivant.cz);
+  if (enAttente.has(key) || chunkMeshes.has(key)) return;
+  if (world.maillageLocal(suivant.cx, suivant.cz)) { meshChunk(suivant.cx, suivant.cz); return; }
+  // le détail se demande à portée ET dans le budget (v299) — la file part
+  // du plus proche, donc c'est le proche qui le reçoit
+  const detail = detailVoulu(suivant.cx, suivant.cz, pcx, pcz) && budgetPermet();
+  enAttente.set(key, { cx: suivant.cx, cz: suivant.cz, sale: false, detail, depuis: performance.now() });
+  lot.push({ cx: suivant.cx, cz: suivant.cz, detail });
+}
+function envoyerLot(lot, pcx, pcz) {
+  if (!lot.length) return;
+  statsMaillage.lots++;
+  maillageDistant.postMessage({ type: 'mailler', liste: lot, generation: generationDistante,
+    pcx, pcz, rayon: RENDER_RADIUS + 2 });
+}
+function rechargerLaFile(pcx, pcz) {
+  const lot = [];
+  while (enAttente.size < EN_VOL_MAX && meshQueue.length) demander(meshQueue.pop(), pcx, pcz, lot);
+  if (meshQueue.length === 0 && enAttente.size < EN_VOL_MAX) statsMaillage.fileVide++;
+  envoyerLot(lot, pcx, pcz);
+}
+// l'ancienne boucle, telle quelle, double compte compris — pour l'A/B
+function rechargerLaFileALancienne(pcx, pcz) {
+  const lot = [];
+  while (enAttente.size + lot.length < EN_ATTENTE_MAX && meshQueue.length) demander(meshQueue.pop(), pcx, pcz, lot);
+  if (meshQueue.length === 0 && enAttente.size < EN_ATTENTE_MAX) statsMaillage.fileVide++;
+  envoyerLot(lot, pcx, pcz);
+}
+
 function updateChunks() {
   const pcx = Math.floor(player.pos.x / CHUNK);
   const pcz = Math.floor(player.pos.z / CHUNK);
@@ -1371,22 +1454,8 @@ function updateChunks() {
   // proches, quelques-uns d'avance, et l'on ne garde pour cette image que ce
   // que lui ne sait pas faire (Manhattan). Sans worker, l'ancien budget.
   if (maillageDistant) {
-    const lot = [];
-    while (enAttente.size + lot.length < EN_ATTENTE_MAX && meshQueue.length) {
-      const suivant = meshQueue.pop();
-      const key = World.key(suivant.cx, suivant.cz);
-      if (enAttente.has(key) || chunkMeshes.has(key)) continue;
-      if (world.maillageLocal(suivant.cx, suivant.cz)) { meshChunk(suivant.cx, suivant.cz); continue; }
-      // le détail se demande à portée ET dans le budget (v299) — la file part
-      // du plus proche, donc c'est le proche qui le reçoit
-      const detail = detailVoulu(suivant.cx, suivant.cz, pcx, pcz) && budgetPermet();
-      enAttente.set(key, { cx: suivant.cx, cz: suivant.cz, sale: false, detail });
-      lot.push({ cx: suivant.cx, cz: suivant.cz, detail });
-    }
-    if (lot.length) {
-      maillageDistant.postMessage({ type: 'mailler', liste: lot, generation: generationDistante,
-        pcx, pcz, rayon: RENDER_RADIUS + 2 });
-    }
+    if (rechargeALArrivee()) rechargerLaFile(pcx, pcz);
+    else rechargerLaFileALancienne(pcx, pcz);
   } else {
     const debut = performance.now();
     do {
@@ -7543,7 +7612,9 @@ window.__lumiere = () => ({
 // pour les tests : déclencher la proposition d'alertes sans attendre la minute
 window.__proposerNotifs = proposerNotifs;
 window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
-window.__game = { fileMaillage: (m) => { fileDemandee = m; lastPlayerChunk = null; }, villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage, PALIERS, choisirPalier, mesurePalier, journal,
+window.__game = { fileMaillage: (m) => { fileDemandee = m; lastPlayerChunk = null; },
+  // l'A/B de la recharge dans UNE page (v360) : 'arrivee', 'image', ou null (la règle)
+  rechargeMaillage: (m) => { rechargeForcee = m || null; }, villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage, PALIERS, choisirPalier, mesurePalier, journal,
   RAYON_HD, BUDGET_FACADES, detailTenu, planDetail, get atlasHD() { return hd ? hd.atlas : null; },
   palierRetenu, palierPropose, etendueRange, reglageDe, PARAMS_FORCANTS,
   // CE QUE LE PALIER A RÉELLEMENT APPLIQUÉ, pas ce qu'il déclare : un témoin
@@ -7739,9 +7810,14 @@ function frame(now) {
   reglerLesFeux();
   villeRealiste.update(dayTime / DAY_LENGTH, weather, now);
   renduDansManhattan=villeRealiste.active;
+  const debutRendu = performance.now();
   renderer.render(scene, camera);
+  const finImage = performance.now();
+  statsMaillage.renduMs += finImage - debutRendu;
+  statsMaillage.travailMs += finImage - debutTravail;
+  statsMaillage.images++;
   // CE QUE L'APPAREIL A RÉELLEMENT FAIT, attente du balayage exclue (v290).
-  noterTravail(performance.now() - debutTravail);
+  noterTravail(finImage - debutTravail);
   requestAnimationFrame(frame);
 }
 
