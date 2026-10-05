@@ -7,9 +7,10 @@
 export const NOUVEAUTES = [
   {
     v: 370,
-    titre: 'Les ponts vont jusqu\'à la rive',
+    titre: 'Ponts finis, Tokyo rejoint Nagoya',
     puces: [
       'Plus de trou au bout des ponts',
+      'Une autoroute de Tokyo à Nagoya',
     ],
   },
   {
