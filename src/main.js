@@ -3034,7 +3034,7 @@ function animerLesVilles(dt) {
   }
   if (choisi < 0) return;
   const tr = circulationsEnAttente[choisi];
-  // une ville engendrée n'a calculé ses anneaux qu'ici (v376) : on la déplie
+  // une ville engendrée n'a calculé ses anneaux qu'ici (v378) : on la déplie
   // en ses traces, servies aux tours suivants
   if (tr.deplier) { circulationsEnAttente.splice(choisi, 1, ...tr.deplier()); return; }
   // la graine vient de la ville, pas de la file (v246, voir graineDeVille)

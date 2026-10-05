@@ -151,7 +151,7 @@
   niveau de la rue déblaierait douze blocs), ouest le Potomac dans la boîte ;
   la base d'Andrews (102, 281) ferme le sud-est.
 - [x] **DEUX PONTS DE VILLE À REPRENDRE, VUS PAR LE TÉMOIN ÉLARGI (v362) — tombés
-  en v376** avec les anneaux qui passaient dans un monument (le Taj et le Fort
+  en v378** avec les anneaux qui passaient dans un monument (le Taj et le Fort
   à Agra, le Berliner Dom à Berlin) : `DETTE_PONTS` est vide. La cause de
   Berlin (le bout d'axe arrondi hors de `pontDeVille`) n'est pas corrigée, elle
   n'a plus d'anneau où se montrer : le témoin la verrait revenir.
@@ -1456,7 +1456,7 @@
   lent, relevé sur 250 blocs) quand le portail, sur le MÊME commit, la rendait
   verte (6,8 sur 37 blocs) : NEUF, intermittent, la grandeur dépend de la
   portion du circuit que la fenêtre a parcourue — à mesurer sur un tour entier.
-- [x] **FAIT en v376** : les anneaux écartent les cases que bâtit un monument
+- [x] **FAIT en v378** : les anneaux écartent les cases que bâtit un monument
   (`traverseUnMonument`, villesmonde.js) ; 48 → 0 au témoin (carrosserie à
   ±1,1), Agra et Le Cap reçoivent leurs anneaux de quartier (66,4 → 91,1 % et
   71,1 → 95,8 %), la dette des ponts d'Agra (9 pas) tombe. 445 → 430 anneaux,

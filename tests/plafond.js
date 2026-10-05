@@ -324,7 +324,7 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // lieu, sonde du scratchpad) sur `origin/main` (v367 puis v369) et sur la branche :
 // les huit autres lieux identiques au bit près, Washington seul diffère
 // (7bb3f492… → 019bb14a…).
-// v376 : les anneaux de voitures écartent les monuments, et leurs ponts avec
+// v378 : les anneaux de voitures écartent les monuments, et leurs ponts avec
 // eux — voulu (un tablier est un sol). Le filtre désarmé et les anneaux de
 // quartier d'Agra et du Cap retirés, la branche rend e72d29bc…, la constante
 // d'`origin/main` (v375), au bit près.
@@ -761,13 +761,13 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     // DÉCLARÉE, chiffre par chiffre (`TASKS.md`) : un repère qui coupe un
     // anneau de plus que sa dette, ou un repère neuf qui en coupe un, rougit ;
     // une dette qui ne mesure plus rien rougit aussi. ET LA DETTE EST PAYÉE
-    // EN v376 : l'anneau qui passerait dans un monument est écarté à la
+    // EN v378 : l'anneau qui passerait dans un monument est écarté à la
     // source ; la carrosserie se lit désormais à ±1,1 bloc (1,13 vrais), la
     // lecture du filtre. Sur `origin/main` : quarante-huit monuments en
     // travers, ici zéro.
     {
       const VMa = await import('../src/villesmonde.js');
-      // Vidée en v376 : les anneaux écartent les cases que bâtit un monument
+      // Vidée en v378 : les anneaux écartent les cases que bâtit un monument
       // (`traverseUnMonument`, villesmonde.js). Une entrée qu'on y remettrait
       // devrait porter sa mesure.
       const DETTE_ANNEAUX = {};
@@ -802,7 +802,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
           if (vus.size > (DETTE_ANNEAUX[cle] || 0)) fautes.push(`${cle} ${vus.size}${DETTE_ANNEAUX[cle] ? ' (dette ' + DETTE_ANNEAUX[cle] + ')' : ''}`);
         }
       }
-      // ET LE JEU LES CALCULE À L'APPROCHE (v376) : la marque d'une ville se
+      // ET LE JEU LES CALCULE À L'APPROCHE (v378) : la marque d'une ville se
       // déplie en EXACTEMENT les traces que le calcul entier lui donne —
       // sinon les voitures rouleraient sur d'autres anneaux que ceux que ce
       // témoin mesure.

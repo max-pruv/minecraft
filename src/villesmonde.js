@@ -3925,7 +3925,7 @@ export const ANNEAUX_EN_PLUS = {
   sydney: [[1, -6, 4, 2], [-7, -5, 1, 1], [-9, 1, 1, 1]],
   rome: [[-6, 0, 1, 3]],      // 88,3 → 94,6 % : le Vatican et Prati
   tokyo: [[-3, 0, 1, 3]],     // 88,7 → 95,7 %
-  // Les anneaux qui traversaient le Taj Mahal et le Fort (v376) partis :
+  // Les anneaux qui traversaient le Taj Mahal et le Fort (v378) partis :
   // 66,4 → 91,1 %, la ville au sud du Taj et la rive de la Yamuna.
   agra: [[0, -5, 3, 1], [5, -1, 1, 2]],
   lecap: [[0, 3, 2, 1]],      // 71,1 → 95,8 %, le château de Bonne-Espérance contourné
@@ -4069,7 +4069,7 @@ export function anneauxDeVille(f) {
       // lui-même vaut son propre périmètre. La phase 2 peut donc repasser sur
       // toute la liste sans se dédoubler.
       if (gardes.some((g) => partageDeRue(candidat, g) > PARTAGE_MAX)) return null;
-      // UN ANNEAU NE PASSE PAS DANS UN MONUMENT (v376). Les repères se posent
+      // UN ANNEAU NE PASSE PAS DANS UN MONUMENT (v378). Les repères se posent
       // APRÈS les colonnes : un anneau choisi sur la seule trame mettait la
       // voiture dans le Colisée, le Taj Mahal, Tō-ji — quarante-cinq monuments
       // bâtis en travers d'un anneau, relevés par le témoin de la v375. On lit
@@ -4301,7 +4301,7 @@ export function pontVillesMonde(x, z) {
 
 // LA CIRCULATION LIT LA MÊME RÈGLE. Elle n'ajoute que ce qu'une forme pure ne
 // peut pas savoir : la cote du sol, et le décalage de la voie de droite.
-// LES ANNEAUX SE CALCULENT QUAND L'ENFANT APPROCHE (v376). Toutes les villes
+// LES ANNEAUX SE CALCULENT QUAND L'ENFANT APPROCHE (v378). Toutes les villes
 // au démarrage coûtaient 157 ms derrière la première image (`preloadSpawn`),
 // et 310 depuis que les anneaux écartent les monuments. Le jeu ne lit les
 // traces d'une ville qu'à 220 blocs d'elle : il reçoit ici une marque par
