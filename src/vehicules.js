@@ -2018,7 +2018,7 @@ export function createVehicules({ scene, player }) {
     return false;
   }
 
-  // LA VOITURE QU'ON TOUCHE, PAS SEULEMENT LE FAIT DE LA TOUCHER (v370,
+  // LA VOITURE QU'ON TOUCHE, PAS SEULEMENT LE FAIT DE LA TOUCHER (v375,
   // conduite-physique). `obstacleDevant` dit « oui » ; le choc a besoin de
   // savoir CONTRE QUOI : sa boîte (centre, axe, demi-longueur, demi-largeur,
   // relues sur le rectangle de la collecte — une rame de train n'a pas les

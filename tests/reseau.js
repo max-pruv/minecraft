@@ -176,7 +176,7 @@ function verifier(nom, ok, detail = '') {
     verifier('au volant, l\'ami est vu dans sa voiture, pas à pied',
       volant.auVolant && vuParAlice.assis === true, JSON.stringify({ volant, vuParAlice }));
 
-    // LE VOLANT ET LA GLISSE VOYAGENT AVEC LA VOITURE (v370). Marlon tourne le
+    // LE VOLANT ET LA GLISSE VOYAGENT AVEC LA VOITURE (v375). Marlon tourne le
     // volant à fond (le joystick, l'arrêt suffit : le volant se braque même
     // sans rouler) et sa voiture glisse — la dérive est FIGÉE à 0,2 le temps
     // de la mesure, sans quoi il faudrait rouler vite dans un virage sur un

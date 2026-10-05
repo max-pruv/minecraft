@@ -1,4 +1,4 @@
-// Sonde (v370) : la voiture contre de VRAIES façades obliques de Paris, deux
+// Sonde (v375) : la voiture contre de VRAIES façades obliques de Paris, deux
 // angles d'approche, sous node. Les sites : une colonne de chaussée à 2-5
 // blocs d'une façade dont la normale est à plus de 12° d'un axe du monde, et
 // qui reste droite et libre sur vingt blocs. On roule à 25 blocs/s, joystick

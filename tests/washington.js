@@ -311,10 +311,23 @@ const descendre = async (p, ms) => {
     // portent vraiment un bâtiment — sinon on éprouve des morceaux de rue et
     // des pelouses, et le témoin dit n'importe quoi.
     const ilots = [];
-    for (let u = 26; u < 62 && ilots.length < 12; u += PAS_ILOT) {
-      for (let v = -12; v < 30 && ilots.length < 12; v += PAS_ILOT) {
-        const la = Math.floor(u / PAS_ILOT) * PAS_ILOT, lb = Math.floor(v / PAS_ILOT) * PAS_ILOT;
-        const x = P.x + la + 7, z = P.z + lb + 7;
+    // Le centre de chaque maison se DEMANDE au module (`coinDeMaisonDC`, v370) :
+    // depuis la règle du kit un îlot en porte quatre autour de sa ruelle, et
+    // une maison n'est plus au milieu de son îlot. Repli sur la trame d'avant.
+    const centres = [];
+    if (typeof D.coinDeMaisonDC === 'function') {
+      for (let la = 0; la < 6; la++) for (let lb = -2; lb < 3; lb++) {
+        const [cu, cv] = D.coinDeMaisonDC(la, lb);
+        centres.push([P.x + cu + 4, P.z + cv + 4]);
+      }
+    } else {
+      for (let u = 26; u < 62; u += PAS_ILOT) for (let v = -12; v < 30; v += PAS_ILOT) {
+        centres.push([P.x + Math.floor(u / PAS_ILOT) * PAS_ILOT + 7, P.z + Math.floor(v / PAS_ILOT) * PAS_ILOT + 7]);
+      }
+    }
+    for (const [x, z] of centres) {
+      if (ilots.length >= 12) break;
+      {
         // « dedans » au sens du générateur : les quatre voisins bâtissables.
         // Une colonne au bord de l'îlot porte un mur, et c'est normal — un
         // témoin qui la prend pour un salon accuse la maison à tort.

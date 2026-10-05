@@ -2,7 +2,7 @@
 
 import * as THREE from 'three';
 import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp, MEUBLE_ITEMS, MEUBLE_START, isMeuble, RUE_ITEMS, RUE_START, RUE, isRue, ARCHI } from './blocks.js';
-import { PARIS as PARIS_ANCRE, circuitsParis, circuitsQuartiersParis } from './paris.js';
+import { PARIS as PARIS_ANCRE, circuitsParis, circuitsQuartiersParis, marquageParis } from './paris.js';
 import { circuitsLondres } from './londres.js';
 import { circuitsSF } from './sanfrancisco.js';
 import { circuitsNice } from './nice.js';
@@ -14,7 +14,7 @@ import { MONUMENTS, MONUMENTS_PAR_VILLE, monumentBati } from './monuments.js';
 import { FAMILLES, batimentVariante, NB_BATIMENTS } from './batiments.js';
 import { World, migrerLesBlocs, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, VILLE, CIRCUIT, CHAUSSEE, TROTTOIR } from './world.js';
 import { aeroportPres, postesAvion } from './aeroport.js';
-import { couloirVoiture } from './pietons.js';
+import { couloirVoiture, cheminDeTraversee, axeCoupe } from './pietons.js';
 import { cadence, chronoReel } from './cadence.js';
 import { axeDuFeu, axeDuCap, etatFeu } from './feux.js';
 import { cadran } from './cap.js';
@@ -1686,7 +1686,7 @@ function updateChunks() {
     if (eauDevant(x, z, cap) && !eauDevant(x0, z0, cap)) { player.arretDouxT = performance.now(); direLEau(); return 'eau'; }
     return false;
   };
-  // ET CONTRE QUELLE VOITURE (v370) : sa boîte et son allure, pour que le choc
+  // ET CONTRE QUELLE VOITURE (v375) : sa boîte et son allure, pour que le choc
   // prenne la normale de SON rectangle et la vitesse RELATIVE — un flanc frôlé
   // glisse, un choc par l'arrière pousse peu.
   player.voitureContre = (x, z, cap) => vehicules.voitureContre(x, z, cap);
@@ -1705,7 +1705,7 @@ function updateChunks() {
   // blocs à soixante blocs par seconde ne laissaient qu'une demi-seconde.
   const dansLeCouloir = couloirVoiture;
   const voitureEnfant = { x: 0, y: 0, z: 0, ux: 0, uz: 1, v: 0, demiLarg: 1.1 };
-  world.vehiculeApproche = (x, z, y, marge = 1.0) => {
+  world.vehiculeApproche = (x, z, y, marge = 1.0, horizon) => {
     // la voiture de l'enfant : ce qu'il DEMANDE (`pousse`), pas ce qu'il
     // obtient — arrêtée devant un piéton, elle veut encore passer, et c'est
     // ce qui fait que le piéton s'écarte au lieu de la bloquer pour toujours
@@ -1715,13 +1715,13 @@ function updateChunks() {
         const e = voitureEnfant;
         e.x = player.pos.x; e.y = player.pos.y; e.z = player.pos.z;
         e.ux = player.pousse.x / v; e.uz = player.pousse.z / v; e.v = v; e.demiLarg = player.gabarit / 2;
-        const r = dansLeCouloir(e, x, z, y, marge);
+        const r = dansLeCouloir(e, x, z, y, marge, horizon);
         if (r) return r;
       }
     }
     const roulent = vehicules.enMarche();
     for (let i = 0; i < roulent.length; i++) {
-      const r = dansLeCouloir(roulent[i], x, z, y, marge);
+      const r = dansLeCouloir(roulent[i], x, z, y, marge, horizon);
       if (r) return r;
     }
     return null;
@@ -1765,6 +1765,71 @@ function updateChunks() {
     const y = world.sommetColonne(bx, bz);
     return TROTTOIR.has(world.getBlock(bx, y, bz));
   };
+  // OÙ TRAVERSER, ET À QUELLE HEURE (v371). Un passant dont le trottoir s'arrête
+  // devant lui demande s'il est à un CARREFOUR À FEUX — un feu de la liste que
+  // la circulation lit (`feuxProches`, à moins de soixante blocs de l'enfant :
+  // c'est là, et seulement là, que les voitures s'y arrêtent) à moins de cinq
+  // blocs — et, si oui, le chemin jusqu'au trottoir d'en face (`pietons.js`).
+  // Hors carrefour il n'y a pas de passage : on ne traverse pas, on tourne.
+  // Appelé au coin seulement, jamais par image : quatre directions, trente-deux
+  // colonnes au plus chacune.
+  const solPieton = (x, z) => {
+    const bx = Math.floor(x), bz = Math.floor(z);
+    const b = world.getBlock(bx, world.sommetColonne(bx, bz), bz);
+    return TROTTOIR.has(b) ? 't' : (CHAUSSEE.has(b) || b === ARCHI.BORDURE) ? 'c' : 'x';
+  };
+  // ET À PARIS, LE PASSAGE PIÉTON PEINT SANS FEU. Les feux de Paris ne sont
+  // qu'aux carrefours des avenues (v274) ; les autres ont leur passage à
+  // larges bandes (`marquageParis`, v287). Mesuré : quarante-six coins en
+  // quarante secondes, un seul à moins de cinq blocs d'un feu. Un passage sans
+  // feu rend `axe: null` : on y traverse quand aucune voiture n'arrive sur le
+  // chemin pendant toute la traversée — jamais devant une voiture qui arrive.
+  const surPassageParis = (x, z, ux, uz, l) => {
+    let n = 0, oui = 0;
+    for (let s = 0.5; s < l; s += 0.5) {
+      if (solPieton(x + ux * s, z + uz * s) !== 'c') continue;
+      n++;
+      const m = marquageParis(x + ux * s, z + uz * s);
+      if (m && m.type === 'passage') oui++;
+    }
+    return n > 0 && oui * 2 >= n;
+  };
+  world.passagePieton = (x, z, cap) => {
+    if (renduDansManhattan) return null;
+    let feu = null;
+    for (const f of feuxProches) if ((f.x - x) * (f.x - x) + (f.z - z) * (f.z - z) <= 25) { feu = f; break; }
+    const paris = !feu && (x - PARIS_ANCRE.x) * (x - PARIS_ANCRE.x) + (z - PARIS_ANCRE.z) * (z - PARIS_ANCRE.z) < PARIS_ANCRE.r * PARIS_ANCRE.r;
+    if (!feu && !paris) return null;
+    const vx = -Math.sin(cap), vz = -Math.cos(cap);
+    let mieux = null, cout = Infinity;
+    // LE DÉPART SE CHERCHE LE LONG DE LA BORDURE, trois blocs de chaque côté :
+    // un passant arrive au bord n'importe où (la trame de Paris est en biais),
+    // et le passage est rarement pile devant lui. Mesuré sur 1 231 bords de
+    // trottoir autour du centre de Paris : 588 chemins vers le trottoir d'en
+    // face, dont 26 seulement sur un passage peint, depuis le point même.
+    for (const [ux, uz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      if (ux * vx + uz * vz < -0.17) continue;           // pas derrière soi
+      for (const o of [0, 1, -1, 2, -2, 3, -3]) {
+        if (Math.abs(o) >= cout) break;
+        const x0 = x + uz * o, z0 = z - ux * o;            // de côté, le long de la bordure
+        // et l'on y va SUR le trottoir : un départ qu'on rejoint par la
+        // chaussée (le coin d'un carrefour) n'en est pas un
+        let surLeTrottoir = true;
+        for (let k = 0.5; k <= Math.abs(o) && surLeTrottoir; k += 0.5) {
+          if (solPieton(x + uz * k * Math.sign(o), z - ux * k * Math.sign(o)) !== 't') surLeTrottoir = false;
+        }
+        if (!surLeTrottoir) continue;
+        const l = cheminDeTraversee(solPieton, x0, z0, ux, uz);
+        if (l === null || Math.abs(o) + l >= cout) continue;
+        if (paris && !surPassageParis(x0, z0, ux, uz, l)) continue;
+        mieux = { ux, uz, longueur: l, axe: feu ? axeCoupe(ux, uz) : null, x0, z0 };
+        cout = Math.abs(o) + l;
+      }
+    }
+    return mieux;
+  };
+  // L'heure des feux est celle de la rue (v305), pas celle de la page.
+  world.heureRue = () => (vehicules ? vehicules.horloge() * 1000 : performance.now());
   vehicules.metro(traceAnneau(VILLE, world.terrainHeight(VILLE.x, VILLE.z)));
   vehicules.course(traceCourse(CIRCUIT, world.terrainHeight(CIRCUIT.x, CIRCUIT.z)));
   // La chaîne de la Giga-usine : les voitures marquent l'arrêt à chaque poste
@@ -3650,9 +3715,17 @@ async function envoyerPrefs() {
 
 // Un battement régulier : sans lui, « en ligne » voudrait dire « a ouvert un
 // réglage récemment », ce qui n'est pas la même chose.
+//
+// ET LUI AUSSI RELIT AVANT D'ÉCRIRE (v374). Il écrivait le document entier
+// sans le relire : la seconde tablette de la maison, restée sur l'ancienne
+// langue, la reposait par-dessus le choix tout neuf de la première, avec une
+// date plus ANCIENNE (sonde-reglages-deux.cjs : « en » écrit à 39,3 s, « fr »
+// à 43,1 s, majProfil −60 000 contre 39 270). La relecture de quinze secondes
+// réparait ensuite — mais c'est ce va-et-vient que le témoin de `reglages.js`
+// voyait rouge sous charge. Un seul chemin d'écriture : celui qui relit.
 setInterval(() => {
   if (!playerProfile.name || !cloud.configured || !navigator.onLine) return;
-  cloud.prefsPush(playerProfile.name, prefsPayload()).catch(() => {});
+  envoyerPrefs().catch(() => {});
 }, 20000);
 
 function saveProfile() {
@@ -4446,7 +4519,7 @@ function startNetSession(code, isHost, patience) {
       if (u.origine) p.v.o = u.origine;
       const d = fun.degats.versReseau(a.mesh);   // dégâts (v344), absent si intacte
       if (d) p.v.d = d;
-      // LE VOLANT ET LA GLISSE (v370) : l'ami voyait la caisse au cap du
+      // LE VOLANT ET LA GLISSE (v375) : l'ami voyait la caisse au cap du
       // conducteur, jamais les roues braquées ni la dérive. Deux nombres
       // courts, absents quand ils sont nuls ; le receveur les pose sur le
       // maillage de SA copie de la voiture (`userData.braquage`, `.derive`),
@@ -4456,6 +4529,9 @@ function startNetSession(code, isHost, patience) {
     }
     const pa = fun.passagerDe ? fun.passagerDe() : null;
     if (pa) p.p = { de: pa.de, s: pa.s };
+    // les chocs de la rue (v374) : pour l'ami dont l'hôte ne relaie pas `rue_choc`
+    const rc = fun.degats.histoiresRecentes();
+    if (rc) p.rc = rc;
     return p;
   };
   world.onOp = (k, id, ts) => { if (net && net.active) net.sendOp(k, id, ts); };
@@ -4710,6 +4786,7 @@ function showOnlineUI() {
   };
   net.onAnnonce = (txt) => toast(txt, 0x9fd8e8);
   net.onRueChoc = (m) => fun.degats.recevoirRue(m);   // dégâts de la rue (v363)
+  net.onRueHistoires = (rc) => fun.degats.adopterHistoires(rc); // par la position, si l'hôte ne relaie pas rue_choc (v374)
   net.onCiel = (c) => adopterCiel(c);
   net.donnerCiel = () => cielDuMonde();
   net.onJoin = (nom) => annonceArrivee(nom);
@@ -7570,7 +7647,7 @@ function updateHud(dt) {
     + `morceaux ${chunkMeshes.size} (${[...chunkMeshes.values()].filter((e) => e.detail).length} avec façades HD) · corps ${h.prets}/${h.total} · programmes chauffés ${programmesChauffes()} · ${myName() || ''} ${player.pos.x.toFixed(0)},${player.pos.z.toFixed(0)}\n`
     + `journal : ${journal.doc.releves.length} relevé(s), ${journal.doc.erreurs} erreur(s), plantages de suite ${journal.plantages()}${PALIER && PALIER.source === 'sûreté' ? ' — SÛRETÉ' : ''}`
     + ` · façades HD ${detailTenu.n} morceau(x), ${(detailTenu.octets / 1048576).toFixed(0)} / ${(BUDGET_FACADES / 1048576).toFixed(0)} Mo, ${statsMaillage.detailsBudget} rendu(s) au budget`
-    // AU VOLANT (v370) : ce que le banc ne sait pas mesurer — le monde maillé
+    // AU VOLANT (v375) : ce que le banc ne sait pas mesurer — le monde maillé
     // devant la voiture et la roue libre — Max le relève sur la tablette.
     + (player.gabarit > 1 && !player.pilote ? '\n' + ligneDiagConduite({
       classe: player.ficheVoiture && player.ficheVoiture.classe, v: player.vitesseVoiture, vmax: player.vitesseVoitureMax,

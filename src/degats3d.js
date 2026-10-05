@@ -364,6 +364,11 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
   // enfoncement, le pire, combien, et ce que le feu coûte en appels de dessin.
   // Max les lit sur l'iPad avec `?diag=1`, sans rien installer.
   const cout = { chocs: 0, dernierMs: 0, pireMs: 0, premierMs: 0 };
+  // PAR QUEL CHEMIN PASSE UN CHOC (v374) : publié par la physique, ou deviné
+  // par le repli ; et combien d'images les EFFETS ont été appliqués ici
+  // plutôt que lus par la physique. Depuis la v358 le jeu ne passe plus que
+  // par le premier : un témoin le garde, le repli reste pour l'ancien chemin.
+  const chemins = { publies: 0, repli: 0, effetsIci: 0, enfoncements: 0 };
   function noterCout(m) {
     const ms = Math.round(m.ms * 10) / 10;
     if (!cout.chocs) cout.premierMs = ms;
@@ -415,7 +420,7 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
       rec.appliques = 0;
     }
     let mesure = null;
-    for (; rec.appliques < chocs.length; rec.appliques++) mesure = enfoncer(rec.prep, chocs[rec.appliques]);
+    for (; rec.appliques < chocs.length; rec.appliques++) { mesure = enfoncer(rec.prep, chocs[rec.appliques]); chemins.enfoncements++; }
     appliquerPieces(rec, scene);
     rec.derniereMesure = mesure || rec.derniereMesure;
     if (mesure) noterCout(mesure);
@@ -478,13 +483,14 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
       if (c && c.t !== rec.dernierChocT) {
         rec.dernierChocT = c.t;
         const l = D.versRepere(a.pos.x, a.pos.z, a.mesh.rotation.y, c.x, c.z);
-        if (choc(a.mesh, { force: c.force, lx: l.lx, lz: l.lz })) percuterRue(c.x, c.z, a.pos.y, c.force);
+        if (choc(a.mesh, { force: c.force, lx: l.lx, lz: l.lz })) { chemins.publies++; percuterRue(c.x, c.z, a.pos.y, c.force); }
       }
     } else if (maintenant > rec.calme && maintenant - (player.arretDouxT || 0) > 400) {
       const force = D.detecterChoc(rec.vPrev, v, dt, player.vitesseVoitureMax || 0);
       if (force > 0) {
         const imp = sonderImpact(a, rec.vPrev >= 0);
         if (choc(a.mesh, { force, ...imp })) {
+          chemins.repli++;
           // le point d'impact, du repère de la voiture à celui du monde
           const cap = a.mesh.rotation.y, co = Math.cos(cap), si = Math.sin(cap);
           percuterRue(a.pos.x + imp.lx * co + imp.lz * si, a.pos.z - imp.lx * si + imp.lz * co, a.pos.y, force);
@@ -498,6 +504,7 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
     // 3. LES EFFETS, appliqués ici tant que la physique ne les lit pas
     // elle-même (`player.physiqueLitEtat`) : jamais deux fois.
     if (!player.physiqueLitEtat) {
+      chemins.effetsIci++;
       const eff = D.effetsConduite(rec.etat);
       // un plancher et non zéro : `player.js` lit `if (this.boost)`, et une
       // allure nulle y redonnerait… l'allure de la MARCHE (mesuré : 1,7 bloc
@@ -533,6 +540,7 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
     if (nom) {
       const k = suivies.get(m).etat.chocs.at(-1);
       noter(nom, [k.f, k.x, k.z]);
+      recents.set(nom, performance.now());
       if (diffuser) diffuser({ t: 'rue_choc', o: nom, c: [k.f, k.x, k.z] });
     }
     return r;
@@ -548,6 +556,41 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
     }
     h.push(c);
     if (h.length > 12) h.shift();
+  }
+
+  // UN HÔTE RESTÉ SUR L'ANCIENNE VERSION NE RELAIE PAS `rue_choc` (v374) :
+  // il ne connaît pas ce nom et l'ignore. Il relaie en revanche la position
+  // telle quelle (`{ ...msg }`, net.js, depuis la v315 au moins) : l'histoire
+  // des voitures de la rue que CETTE tablette vient de percuter y voyage
+  // quatre secondes (`rc`), toute l'histoire et pas le seul dernier choc —
+  // c'est ce qui la rend idempotente. Le receveur ne l'adopte que si la sienne
+  // en est le DÉBUT : reçue dix fois, ou après `rue_choc`, elle ne compte
+  // rien deux fois ; une histoire qui diverge (deux amis sur la même voiture
+  // par l'ancien hôte) garde la sienne.
+  const recents = new Map();         // nom → date du dernier choc noté ICI
+  function histoiresRecentes() {
+    const t = performance.now();
+    let rc = null, n = 0;
+    for (const [nom, quand] of recents) {
+      if (t - quand > 4000 || !histoire.has(nom)) { recents.delete(nom); continue; }
+      if (n++ >= 4) break;
+      (rc || (rc = {}))[nom] = histoire.get(nom).map((c) => c.slice());
+    }
+    return rc;
+  }
+  function adopterHistoires(rc) {
+    if (!rc || typeof rc !== 'object') return;
+    let neuf = false;
+    for (const [nom, h] of Object.entries(rc).slice(0, 4)) {
+      if (!Array.isArray(h) || h.length > 12) continue;
+      const c = h.map((k) => (Array.isArray(k) && k.length === 3 ? k.map(Number) : null));
+      if (c.some((k) => !k || !k.every(Number.isFinite))) continue;
+      const local = histoire.get(nom) || [];
+      if (c.length <= local.length || !local.every((k, i) => k.every((v, j) => v === c[i][j]))) continue;
+      for (let i = local.length; i < c.length; i++) noter(nom.slice(0, 200), c[i]);
+      neuf = true;
+    }
+    if (neuf) rapprocher(true);
   }
 
   // UN CHOC DE LA RUE REÇU D'UN AMI (v363). On le note, et l'on rejoue tout
@@ -881,7 +924,7 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
     // à plusieurs (v363) : le nom d'une voiture de la rue, et l'envoi
     brancherNoms: (f) => { nommer = f; },
     brancherReseau: (f) => { diffuser = f; },
-    recevoirRue, rueEn, heriter, percuterRue,
+    recevoirRue, rueEn, heriter, percuterRue, histoiresRecentes, adopterHistoires,
     // le coût réel, pour le journal de bord et `?diag=1` (v364) : null tant
     // que rien ne s'est abîmé — un relevé ne grossit pas pour rien
     bilan: () => {
@@ -889,6 +932,7 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
       if (!cout.chocs && !feu) return null;
       return { ...cout, feu, carres: (imFumee ? imFumee.count : 0) + (imFlamme ? imFlamme.count : 0) };
     },
+    chemins: () => ({ ...chemins }),
     histoireRue: (nom) => (histoire.get(nom) || []).map((c) => c.slice()),
     // pour main.js : le champ réseau de la voiture qu'on conduit
     versReseau: (root) => { const rec = suivies.get(root); return rec ? D.versReseau(rec.etat) : null; },

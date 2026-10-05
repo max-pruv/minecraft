@@ -82,7 +82,7 @@ const GARDIENS = {
   'vendor/humains/femme-manteau.glb': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
   'vendor/humains/garcon.glb': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
   'vendor/humains/fille.glb': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
-  'src/net.js': ['reseau.js', 'visio.js', 'hote.js', 'manhattan.js'],
+  'src/net.js': ['reseau.js', 'visio.js', 'hote.js', 'manhattan.js', 'degats.js'],
   'src/nouveautes.js': ['maj.js'],
   'src/cloud.js': ['reseau.js', 'reglages.js', 'manhattan.js'],
   'src/relaisnuage.js': ['reseau.js'],
@@ -156,7 +156,8 @@ const GARDIENS = {
   'src/carte.js': ['carte.js', 'carteMonde.js', 'manhattan.js'],
   // La capitale : son relief, son métro et ses bâtiments ouverts. Elle touche
   // au sol de la carte, donc le témoin du plafond la surveille aussi.
-  'src/washington.js': ['washington.js', 'plafond.js', 'carteMonde.js'],
+  'src/washington.js': ['washington.js', 'plafond.js', 'carteMonde.js', 'carte.js'],
+  'src/washington-v367.js': ['washington.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // la Washington d'avant le kit, sous ce qu'un enfant a bâti (v370)
   'src/dcmonuments.js': ['washington.js'],
   // La ville : c'est elle qui bâtit le métro de Paris, la caserne et le
   // commissariat.
@@ -171,7 +172,7 @@ const GARDIENS = {
   // LE FEU TRICOLORE (v273) : il s'allume dans le monde (carteMonde.js) et il
   // arrête la circulation (monte.js). Un module neuf sans gardien annule tous
   // les acquis du cache de reprise — c'est fait pour se voir tout de suite.
-  'src/feux.js': ['carteMonde.js', 'monte.js'],
+  'src/feux.js': ['carteMonde.js', 'monte.js', 'realisme.js', 'reseau.js', 'visio.js', 'manhattan.js'],
   // La Giga-usine : son site touche le terrain (plafond), la carte, le tour
   // du monde — et sa chaîne comme sa voiture à conduire vivent dans monte.js.
   'src/usine.js': ['carteMonde.js', 'carte.js', 'plafond.js', 'monte.js'],
@@ -200,7 +201,7 @@ const GARDIENS = {
   'src/portieres.js': ['monte.js', 'degats.js'],
   // Le hub : presque toute livraison y passe. Deux suites larges le couvrent —
   // la carte traverse l'interface entière, la monte traverse la boucle de jeu.
-  'src/main.js': ['carte.js', 'monte.js', 'washington.js', 'manhattan.js', 'degats.js'],
+  'src/main.js': ['carte.js', 'monte.js', 'washington.js', 'manhattan.js', 'degats.js', 'reglages.js'],
   'index.html': ['carte.js', 'reglages.js', 'maj.js', 'manhattan.js'],
 
   // --- v195 : TRENTE FICHIERS MANQUAIENT, et deux d'entre eux étaient des
