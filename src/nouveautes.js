@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 385,
+    titre: 'Les passants quittent la rue',
+    puces: [
+      'Personne ne reste planté sur la route',
+      'Ils retournent vite sur le trottoir',
+    ],
+  },
+  {
     v: 384,
     titre: 'On descend par la portière',
     puces: [
