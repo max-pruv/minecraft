@@ -1911,6 +1911,44 @@ Une règle.
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
 
+## La route de Washington (v367) — une ville fermée par son relief s'entre par son côté bas, et un bout peut s'arrêter net
+
+L'I-95 Sud New York–Washington. Quatre règles.
+
+- **AVANT DE CHERCHER UN TRACÉ, ON RELÈVE CE QUI ENTOURE LA VILLE, CÔTÉ PAR
+  CÔTÉ, AVEC LA RÈGLE DU PROFIL EN TÊTE.** Washington est fermée au nord par
+  la montagne, à l'est par une crête de 43 à 49 blocs qui commence à six
+  blocs de la boîte, à l'ouest par le Potomac DANS la boîte. Une route
+  épinglée au niveau de la rue (33) ne monte que de 0,06 par bloc et ne
+  déblaie que neuf blocs : à vingt blocs de la porte elle est à 34, la crête
+  à 45. Aucune recherche ne trouve ce qui ne peut pas exister ; un tableau
+  « porte × cap → déblai sur les deux cents premiers blocs » le dit en une
+  seconde. Le côté bas est le sud (Anacostia), et c'est par là qu'on entre.
+- **UNE VILLE QUI N'EST PAS UN DISQUE DÉCLARE AUSSI SON BOUT ET SON AVENUE.**
+  La porte (v362) ne suffit pas : au bout, la chaussée continue en
+  demi-cercle de 3,8 blocs (la distance au point borné) — l'entrée d'une
+  ville-disque, mais dans une boîte bâtie jusqu'à son bord, de l'asphalte dans
+  ses trottoirs. `boutNet: ['washington']` arrête la route net au quart de
+  bloc ; `avenues: { washington: [...] }` donne aux voitures la rue où elles
+  entrent (main.js la lit avant `avenueDEntree`). Et la porte se pose là où
+  le sol est AU NIVEAU de la rue (un bloc hors de la boîte), sinon le fondu
+  de la ville fait une marche entre la route et la rue.
+- **UNE SONDE QUI SIMPLIFIE UN TRACÉ ARRONDIT APRÈS ET DÉDOUBLONNE.** Mon
+  premier jet arrondissait les points au bloc puis mesurait les coudes : deux
+  points confondus rendent un angle nul (`atan2(0, 0)`) et cachaient des
+  coudes de 58° et de 90°. Et un point d'arrivée posé DERRIÈRE le chemin
+  trouvé fait un crochet : la grille vise le point le plus éloigné de la
+  ligne droite d'entrée (la porte, puis le rayon), arrivée par le bon cap, et
+  le virage serré se fait sur un arc écrit (soixante blocs de rayon), jamais
+  par le lissage d'un angle droit.
+- **UN TÉMOIN ÉCRIT POUR DES DISQUES SE RÉÉCRIT POUR LA PREMIÈRE VILLE QUI
+  N'EN EST PAS UNE.** « La route ne frôle pas ses villes » lisait r + 10 :
+  la route longe la campagne au sud de Washington à moins de 197 blocs du
+  centre, et il l'aurait accusée. Il juge désormais Washington à sa zone
+  (`ZONE_WASHINGTON`) et Manhattan à son rectangle — la règle de la v313
+  (« un témoin écrit pour un cas se réécrit le jour où un cas neuf sort de
+  son hypothèse »).
+
 ## La porte de Manhattan (v362) — une ville qui n'est pas un disque déclare sa porte
 
 L'I-95 New York–Boston. Quatre règles.

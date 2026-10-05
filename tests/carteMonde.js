@@ -595,6 +595,32 @@ const VRAIES_KM = [
       out.convoi401 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === '401') || null;
       out.convoiHansa = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'Hansalinie') || null;
       out.convoiI95 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'I-95') || null;
+      out.convoiI95Sud = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'I-95 Sud') || null;
+      // WASHINGTON EST UNE BOÎTE (v367) : la route de New York s'arrête NET à
+      // son bord sud (`boutNet`), au niveau de la rue d'Anacostia qui y
+      // débouche, et ses voitures entrent par cette rue (`avenues`). On compte
+      // les colonnes de route DANS la ville (zéro : le demi-cercle d'asphalte
+      // ordinaire du bout en écrivait cinq), la marche entre la route et la
+      // rue, et les blocs à hauteur de carrosserie sur l'avenue.
+      try {
+        const sw = m.segmentsDeRoute().find((sg) => sg.route.nom === 'I-95 Sud');
+        if (sw) {
+          let col = 0, dansVille = 0;
+          const fin = m.pointA(sw, sw.longueur);
+          for (let x = Math.floor(fin.x) - 30; x <= fin.x + 30; x++) for (let z = Math.floor(fin.z) - 30; z <= fin.z + 30; z++) {
+            const r = m.routeEn(x, z); if (!r || r.seg !== sw) continue; col++;
+            const c = w.cityAt(x, z); if (c && /Washington/.test(c.nom || c.name || '')) dansVille++;
+          }
+          const av = sw.route.avenues.washington, bloque = [], cotes = [];
+          for (let k = 0; k + 1 < av.length; k++) { const [x0, z0] = av[k], [x1, z1] = av[k + 1], L = Math.hypot(x1 - x0, z1 - z0);
+            for (let t = 0; t <= L; t += 0.5) { const X = Math.floor(x0 + (x1 - x0) * t / L), Z2 = Math.floor(z0 + (z1 - z0) * t / L);
+              const r = m.routeEn(X, Z2), h = r ? Math.floor(r.cote) - 1 : w.coteRoulable(X, Z2); cotes.push(h);
+              if (w.isSolid(X, h + 1, Z2) || w.isSolid(X, h + 2, Z2)) bloque.push([X, Z2]); } }
+          let marche = 0; for (let k = 1; k < cotes.length; k++) marche = Math.max(marche, Math.abs(cotes[k] - cotes[k - 1]));
+          const [ex, ez] = av[av.length - 1], c = w.cityAt(Math.floor(ex), Math.floor(ez));
+          out.washington = { col, dansVille, bloque: bloque.length, marche, rue: !!c && (await import('./src/world.js')).CHAUSSEE.has(w.getBlock(Math.floor(ex), w.coteRoulable(Math.floor(ex), Math.floor(ez)), Math.floor(ez))) };
+        }
+      } catch (e) { out.washingtonErreur = String(e); }
       // LA PORTE DE MANHATTAN (v362) : Manhattan est un RECTANGLE (`BORNES`),
       // et ni la route ni son talus n'y entrent — le worker ne connaît pas le
       // plan qui y règne, et le rendu urbain n'y dessine pas de tablier. On lit
@@ -634,10 +660,18 @@ const VRAIES_KM = [
       try {
         const MO = await import('./src/mondes.js');
         out.frole = {};
+        // UNE VILLE QUI N'EST PAS UN DISQUE SE JUGE À SON EMPRISE (v367) :
+        // Washington est une boîte bâtie (avec son fondu, `ZONE_WASHINGTON`)
+        // dans un disque de 187, Manhattan un rectangle. Lire leur disque
+        // accuserait une route qui longe la campagne autour d'eux.
+        const WA = await import('./src/washington.js'), MWf = await import('./src/manhattan-world.js');
+        const Z = WA.ZONE_WASHINGTON;
+        const touche = (cle, q) => cle === 'washington' ? Math.max(Z.x0 - q.x, q.x - Z.x1, Z.z0 - q.z, q.z - Z.z1) < 10
+          : cle === 'ny' ? MWf.dansManhattan(q.x, q.z, 10)
+          : (() => { const C = MO.positionDe(cle); return Math.hypot(q.x - C.x, q.z - C.z) < C.r + 10; })();
         for (const s of m.segmentsDeRoute()) {
-          const A = MO.positionDe(s.de), B = MO.positionDe(s.vers);
           let n = 0;
-          for (let sa = 80; sa <= s.longueur - 80; sa += 4) { const q = m.pointA(s, sa); if (Math.hypot(q.x - A.x, q.z - A.z) < A.r + 10 || Math.hypot(q.x - B.x, q.z - B.z) < B.r + 10) n++; }
+          for (let sa = 80; sa <= s.longueur - 80; sa += 4) { const q = m.pointA(s, sa); if (touche(s.de, q) || touche(s.vers, q)) n++; }
           out.frole[s.route.nom] = n;
         }
       } catch (e) { out.froleErreur = String(e); }
@@ -966,6 +1000,19 @@ const VRAIES_KM = [
       JSON.stringify(a1.absent ? a1 : { convoi: a1.convoiI95 ? { nom: a1.convoiI95.nom, voitures: (a1.convoiI95.modeles || []).length } : 'aucun convoi I-95',
         portes: a1.manhattan, barre: a1.porteMin && +a1.porteMin.toFixed(1), emprise: a1.manhattanEmprise, frole: a1.frole && a1.frole['I-95'], erreur: a1.manhattanErreur,
         boston: (a1.entreesEngendrees || []).filter((e) => e.route === 'I-95') }));
+
+    // L'I-95 SUD (v367) : New York–Washington. Sa porte de New York est une
+    // SECONDE porte déclarée, sur la rive de l'Hudson (le témoin d'au-dessus
+    // lit toutes les portes de New York) ; à Washington, une boîte fermée de
+    // trois côtés par le relief et le Potomac, elle arrive par le sud, s'arrête
+    // net au bord, au niveau de la rue d'Anacostia, et ses voitures y entrent.
+    // Sur l'ancien code, la route n'existe pas.
+    verifier('l\'I-95 Sud relie New York à Washington, s\'arrête au bord de la ville sans y écrire, et ses voitures entrent par une rue',
+      !a1.absent && !a1.washingtonErreur && !!a1.convoiI95Sud && a1.convoiI95Sud.routier && (a1.convoiI95Sud.modeles || []).length >= 10
+      && !!a1.washington && a1.washington.col > 100 && a1.washington.dansVille === 0 && a1.washington.bloque === 0 && a1.washington.marche <= 1 && a1.washington.rue
+      && (a1.manhattan || []).filter((e) => e.route === 'I-95 Sud').length === 1 && !!a1.frole && a1.frole['I-95 Sud'] === 0,
+      JSON.stringify(a1.absent ? a1 : { convoi: a1.convoiI95Sud ? { nom: a1.convoiI95Sud.nom, voitures: (a1.convoiI95Sud.modeles || []).length } : 'aucun convoi I-95 Sud',
+        washington: a1.washington, erreur: a1.washingtonErreur, portesNY: a1.manhattan, frole: a1.frole && a1.frole['I-95 Sud'] }));
 
     // AUCUNE ROUTE NE PREND L'EMPRISE D'UNE AUTRE (v355) : Montréal a deux
     // routes, et chaque colonne d'emprise doit appartenir au segment qu'on
