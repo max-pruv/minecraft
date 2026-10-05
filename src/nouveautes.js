@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 353,
+    titre: 'Le ciel de toutes les villes',
+    puces: [
+      'Le Capitole de La Havane domine',
+      'Des pagodes hautes à Tokyo, Kyoto',
+      'Munich et Venise à leur hauteur',
+    ],
+  },
+  {
     v: 352,
     titre: 'Le monde se fabrique plus vite',
     puces: [

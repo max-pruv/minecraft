@@ -105,6 +105,9 @@ const DOME = { 3: [5, 9], 4: [5, 10], 5: [5, 11], 6: [5, 12] };      // r → [a
 const MINARET = (h) => [h - 2, h + 1];
 const PALAIS = [5, 5], COLONNADE = [5, 6];
 const ARCHE = (h) => [h + 1, h + 3];
+const TOUR = (h) => [h, h + 1];
+const PAGODE5 = (v) => [[0, 0], [1, 1], [3, 9], [4, 10], [6, 18], [7, 19], [9, 27], [10, 28],
+  [12, 35], [13, 36], [15, 43], [16, 44], [17, v + 1]];
 export const ECHELLES_VILLES = Object.freeze({
   'Rome|Basilique St-Pierre': { vraie: 137, corps: DOME[6] },
   // La façade de la cathédrale de Pise, trente-quatre mètres ; le baptistère
@@ -178,6 +181,46 @@ export const ECHELLES_VILLES = Object.freeze({
   'Buenos Aires|La Casa Rosada': { vraie: 26, corps: PALAIS },
   // La tour du Cabildo, trente mètres.
   'Buenos Aires|Le Cabildo': { vraie: 30, corps: ARCHE(4) },
+
+  // LES AUTRES VILLES ENGENDRÉES (v353). Même
+  // règle, même table : la corniche mesurée, la courbe de Paris posée dessus.
+  // Ce qui est déjà au-dessus de son ciel ne bouge pas (la Sagrada Família,
+  // le Burj Khalifa, la Space Needle, le Christ Rédempteur, l'Opéra de Sydney —
+  // ce sont des modèles du catalogue, à leur hauteur d'auteur). Le Luxor non
+  // plus : une pyramide étirée devient un obélisque, elle garde ses
+  // proportions. Les grandes roues ne s'étirent pas (la High Roller, comme le
+  // Prater).
+  //
+  // ET UN FÛT QUI DOMINE DÉJÀ SES TOITS NE S'ÉTIRE PLUS. Les tours d'un bloc
+  // (`minaret`, `tourBoule`) ne montent que tant que leur hauteur d'auteur est
+  // sous une fois et demie la corniche de leur ville (le témoin le garde) :
+  // au-delà elles dominent
+  // déjà leur ville, et le premier jet, qui les étirait, a rendu en capture des
+  // perches — la tour de l'hôtel de ville de Bruxelles à trente-quatre blocs,
+  // la Willis Tower à cinquante-cinq. C'est le bâtisseur qu'il faut refaire
+  // (une emprise de tour), pas la hauteur (`TASKS.md`).
+  // La colonne de Colomb, soixante mètres, statue comprise.
+  'Barcelone|Colonne de Colom': { vraie: 60, corps: [12, 13], fut: true },
+  // Les tours de la Frauenkirche, quatre-vingt-dix-neuf mètres ; le beffroi du
+  // nouvel hôtel de ville, quatre-vingt-cinq.
+  'Munich|Frauenkirche': { vraie: 99, corps: [11, 15], fut: true },
+  'Munich|Le nouvel hôtel de ville': { vraie: 85, corps: MINARET(16), fut: true },
+  // La coupole centrale de Saint-Marc, quarante-trois mètres.
+  'Venise|Saint-Marc': { vraie: 43, corps: DOME[3] },
+  // Une tour à boule : le fût jusqu'à la boule du sommet.
+  'Las Vegas|La demi-tour Eiffel': { vraie: 165, corps: TOUR(16), fut: true },
+  'Miami|La Freedom Tower': { vraie: 78, corps: MINARET(14), fut: true },
+  // Le Capitolio, quatre-vingt-douze mètres ; les tours de la cathédrale,
+  // trente-quatre.
+  'La Havane|Le Capitole': { vraie: 92, corps: DOME[5] },
+  'La Havane|La cathédrale': { vraie: 34, corps: MINARET(8), fut: true },
+  // LES PAGODES (Asie) : chaque étage s'étire, chaque toit reste un rang —
+  // la règle de Wat Arun. Un étage de pagode fait neuf mètres, sa flèche dix.
+  'Tokyo|Sensō-ji': { vraie: 53, paliers: PAGODE5(53) },
+  'Kyoto|Tō-ji': { vraie: 55, paliers: PAGODE5(55) },
+  // La pagode à trois étages de Kiyomizu-dera, trente et un mètres.
+  'Kyoto|Kiyomizu-dera': { vraie: 31,
+    paliers: [[0, 0], [1, 1], [3, 8], [4, 9], [6, 16], [7, 17], [9, 24], [10, 25], [11, 32]] },
 });
 
 // LE LOT 2 : LES VILLES BÂTIES À LA MAIN (v350). Même règle, même table : le
@@ -312,6 +355,30 @@ export const CIELS = Object.freeze({
   // blocs sur trois, et à seize blocs (k = 1) il devenait une tour blanche,
   // vu en capture ; à onze, une fois et demie les toits, il reste un opéra.
   Lille: [7, 0.4], Londres: [8, 0.75], Washington: [13, 0.26],
+  // v353 : les autres villes engendrées qui portent des repères.
+  Barcelone: 13, Munich: [13, 0.55], Venise: 8, 'Las Vegas': 15, Miami: 13, 'La Havane': 13,
+  Tokyo: [13, 0.72], Kyoto: 12,
+});
+// LES VILLES ENGENDRÉES QUI N'ONT PAS DE CIEL, et chacune dit pourquoi — même
+// discipline que `BAS_DECLARES`. `vrai` : rien à y remettre à l'échelle, ses
+// repères sont déjà au-dessus de leur ciel ou n'en ont pas (un modèle du
+// catalogue, une roue, un pont, une place). `lot` : une dette déclarée, qui
+// doit disparaître. Le témoin (`tests/plafond.js`) exige que toute ville
+// engendrée dont un repère est mesuré parmi ses immeubles soit dans `CIELS`
+// ou ici. Gizeh et le Machu Picchu n'ont pas d'immeubles : pas de corniche,
+// pas de ciel à mesurer.
+export const VILLES_SANS_CIEL = Object.freeze({
+  Sydney: { vrai: 'l\'Opéra est un modèle du catalogue, déjà au-dessus de ses toits ; le Harbour Bridge est un pont' },
+  'Rio de Janeiro': { vrai: 'le Christ Rédempteur est un modèle du catalogue, sur son Corcovado' },
+  Seattle: { vrai: 'la Space Needle est un modèle du catalogue ; la grande roue ne s\'étire pas' },
+  'Dubaï': { vrai: 'le Burj Khalifa est bâti à sa hauteur, bien au-dessus de son ciel' },
+  'Le Cap': { vrai: 'son seul repère est une forteresse aux murs bas' },
+  Bruxelles: { vrai: 'la tour de l\'hôtel de ville est un fût qui domine déjà ses toits (23 blocs pour 13)' },
+  Marrakech: { vrai: 'la Koutoubia est un fût qui domine déjà ses toits (19 blocs pour 7)' },
+  Chicago: { vrai: 'la Willis Tower et le John Hancock sont des fûts qui dominent déjà leurs toits (43 et 37 blocs pour 14)' },
+  'Séoul': { vrai: 'la tour de Séoul est un fût qui domine déjà ses toits (22 blocs pour 13)' },
+  Shanghai: { vrai: 'la perle de l\'Orient et Jin Mao sont des fûts qui dominent déjà leurs toits (38 et 42 blocs pour 13)' },
+  'Hong Kong': { vrai: 'la Banque de Chine et l\'IFC sont des fûts qui dominent déjà leurs toits (32 et 36 blocs pour 13)' },
 });
 export const blocsDuCiel = (m, c = CORNICHE, k = 1) => (m <= c ? m : c + k * K_CIEL * (c / CORNICHE) * Math.log(m / c));
 
