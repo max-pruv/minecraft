@@ -296,7 +296,7 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // preuve qu'il n'y a que lui : la même branche, ses bâtisseurs neufs désarmés
 // (`lm.tour` ignoré, la table d'`origin/main`), rend b31099b9…, l'empreinte de
 // la v351 au bit près. Toute optimisation se prouve désormais contre celle-ci.
-const EMPREINTE_MORCEAUX_V354 = '21a4e00968db1efa8d60056afbcd4c110be6ec7c44a744d61881a8f369c9efc4';
+const EMPREINTE_MORCEAUX_V354 = 'd81ef1435ab62615d5d5f98034c3281f7d0fa47d8eba3eb8f50ef8b6b6a3f68d';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
