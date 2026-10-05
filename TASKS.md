@@ -52,6 +52,12 @@
   9,13 b/s pour une barre à 9,0 (30 × 0,3). `monte.js` rejouée SEULE sur
   `origin/main` (v369) : **le même rouge, 9,04**, médiane 27,23 des deux côtés —
   dette de la zone conduite-physique (la décélération au lâcher frôle sa barre).
+  **Démonté en v382** : ce n'était pas le frein. La roue libre de 27 à 9 b/s
+  vaut 3,75 s de JEU (frein moteur 3,5 + air 0,004 v², intégré) ; le témoin
+  l'attendait trente secondes de MONTRE, soit trois à quatre secondes de jeu au
+  banc — il relevait la fin de la roue libre. Le budget se compte désormais en
+  images (quatre cents, vingt secondes de jeu), comme la montée du même témoin
+  (v277), et les images et la durée entrent dans le message.
   Et ce rejeu sur `origin/main` rend rouges les deux témoins que la v379 garde
   (« la recharge à l'arrivée garde la cadence », « l'écran ne se fige pas en
   arrivant sur une ville », 1 400 ms · 38,7 %) : verts sur la branche.

@@ -61,7 +61,11 @@ sur notre flanc, 12 blocs/s gardés ; l'ancien code rendait 0,83 sur le nez et
 un rebond), l'arrière percuté (le crochet rend sa boîte, choc franc sur le
 nez). Un à deux tablettes dans `reseau.js` : le braquage et la dérive de
 Marlon arrivent chez Alice. Deux sondes : `sonde-mur-oblique.cjs` (les seize
-façades de Paris) et `sonde-vraie-rue.cjs`.
+façades de Paris) et `sonde-vraie-rue.cjs`. Et le témoin « l'avant du
+joystick est l'accélérateur », rouge des deux côtés depuis la v379 (voiture
+lâchée relevée à 9,1 b/s pour une barre à 9,0), attend désormais la roue libre
+en images de jeu et non en secondes de montre : 3,75 s de jeu calculées, trois
+ou quatre seulement accordées par l'ancien budget au banc.
 
 ---
 

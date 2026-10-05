@@ -5220,8 +5220,20 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       // borné, jamais un délai fixe.
       let apresLacher = await lire();
       const t2 = Date.now();
-      // la roue libre (frein moteur et air, v358) dure quelques secondes de jeu
-      while (Date.now() - t2 < 30000) { apresLacher = await lire(); if (apresLacher.v < prep.max * 0.3) break; await dormirIci(200); }
+      // la roue libre (frein moteur et air, v358) dure quelques secondes de JEU
+      // — ET LE BUDGET SE COMPTE EN IMAGES, COMME LA MONTÉE CI-DESSUS (v277).
+      // Trente secondes de montre ne valaient au portail de la v379 que trois
+      // à quatre secondes de jeu : la voiture lâchée était relevée à 9,13 puis
+      // 9,04 b/s pour une barre à 9,0, des deux côtés — le banc, pas le frein.
+      // Quatre cents images valent vingt secondes de jeu ; la montre n'est
+      // qu'un garde-fou, et le temps pris entre dans le message.
+      const image2 = await tab.evaluate(() => window.__game.renderer.info.render.frame);
+      while (Date.now() - t2 < 180000) {
+        apresLacher = await lire(); if (apresLacher.v < prep.max * 0.3) break;
+        if (await tab.evaluate((i) => window.__game.renderer.info.render.frame - i > 400, image2)) break;
+        await dormirIci(200);
+      }
+      apresLacher = { ...apresLacher, images: await tab.evaluate((i) => window.__game.renderer.info.render.frame - i, image2), ms: Date.now() - t2 };
       // on descend : les boutons reviennent
       const apres = await tab.evaluate(async () => {
         const g = window.__game;
