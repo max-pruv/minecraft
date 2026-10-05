@@ -1490,6 +1490,27 @@ engendrées. Quatre règles.
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
 
+## Les passants quittent la chaussée (v385) — un remède qui ne dépend pas de la porte
+
+Deux règles.
+
+- **QUAND UN ÉTAT NE SE REPRODUIT PAS SUR UNE PAGE NEUVE, ON SOIGNE L'ÉTAT, PAS
+  LA PORTE.** Le témoin de la v380 nommait des flâneurs en pause, à leur poste,
+  sur l'asphalte de Rome. Mesuré : `posteAutour` ne rend la chaussée sur aucune
+  des 1 600 poses sous node, et une page neuve n'en montre aucune en soixante
+  secondes. Plutôt qu'une quatrième hypothèse sur l'entrée (v223), la règle vit
+  dans le programme du flâneur (`sortirDeLaChaussee`, vie.js) : un piéton qui
+  se trouve sur la chaussée sans la traverser marche au bord le plus proche
+  (trottoir d'abord, jamais un toit), en TEMPS RÉEL (la rue est le domaine des
+  voitures, v351), et y prend son poste. La sonde a sa cadence (une demi-seconde
+  réelle). Et la chaussée n'est plus le second choix de `posteAutour` : la
+  bordure, l'esplanade et l'herbe au niveau de la rue passent avant.
+- **UN TÉMOIN QUI COMPTE CE QUE LE HASARD A LAISSÉ SE DOUBLE D'UN TÉMOIN QUI
+  PROVOQUE.** « Un flâneur posé au milieu de la chaussée en sort » pose trois
+  flâneurs ET leur poste sur l'asphalte et lit leur arrivée : 3/3 au bord en 3 à
+  4,5 s, contre 3/3 encore sur la chaussée après 17 s sur `origin/main`
+  (`sonde-sortie-chaussee.cjs`). Le témoin-tirage d'avant reste, pour le message.
+
 ## Deux témoins de la rue qui disent ce qu'ils voient (v380) — un couloir « vide » se vérifie au sec
 
 Deux règles.

@@ -20,6 +20,39 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v385 — Les passants quittent la chaussée
+
+**Pourquoi.** Le témoin de la v380 a nommé qui restait planté au milieu de la
+rue à Rome : des flâneurs (des passants qui n'ont pas de trottoir à suivre), en
+pause, encore à leur poste de naissance — sur l'asphalte. Le programme de
+flâneur fait quelques pas au hasard autour d'un poste : posé sur la chaussée,
+il y reste. Et `posteAutour`, faute de trottoir, gardait la chaussée comme
+second choix de naissance. Mesuré avant d'écrire : sous node, 1 600 poses dans
+Rome, Paris, Londres, du centre jusqu'au bord, toutes sur un trottoir ; sur une
+page neuve, zéro naissance sur la chaussée en soixante secondes. L'état arrive
+donc par des portes qu'une page neuve ne montre pas — d'où un remède qui ne
+dépend pas de la porte.
+
+**Ce que ça change.** Un flâneur qui se trouve sur la chaussée sans la
+traverser marche jusqu'au bord le plus proche (le trottoir d'abord), en temps
+réel, et y prend son poste : la flânerie reprend hors de la rue, et un trottoir
+trouvé le refait promeneur. À la naissance, la bordure, l'esplanade et l'herbe
+passent avant la chaussée, qui n'est plus qu'un tout dernier recours.
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js` qui PROVOQUE la situation
+— trois flâneurs posés sur l'asphalte de Rome, leur poste aussi, en pause —
+et lit où ils sont arrivés : ici trois sur trois sur le trottoir en 3,3 à
+4,5 s (poste compris) ; sur `origin/main`, trois sur trois encore sur la
+chaussée après 17 s, poste compris (`sonde-sortie-chaussee.cjs`, des deux
+côtés). Le témoin d'avant (« ne sont plus plantés au milieu de la chaussée »)
+reste : c'était un tirage, celui-ci est un gardien. Portail : quatre suites,
+les rouges sont des dettes déclarées (façade et taxi de Manhattan, compilation
+à New York) et « un piéton frôlé sursaute » (1,24 s pour une barre à 1,2),
+rejoué seul trois fois des deux côtés : 0,67 à 0,83 s ici, 0,70 à 0,91 s sur
+`origin/main` — de la charge, et ce piéton est posé en mer, où la règle neuve
+ne trouve jamais de chaussée.
+
+
 ## v384 — On descend de la voiture d'un ami par la portière
 
 **Pourquoi.** La v377 faisait monter le passager d'un ami par la portière

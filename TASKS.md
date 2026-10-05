@@ -41,7 +41,11 @@
   `origin/main` seul « rien d'autre ne vole le doigt dans la zone du joystick ».
   Les reflets (7 tours pour une garde à 8) et l'ordre de maillage (écart 0,05)
   du portail sont VERTS rejoués seuls sur la branche.
-- [ ] **LES PASSANTS SUR LA CHAUSSÉE À ROME : LE TÉMOIN DIT DÉSORMAIS QUI
+- [ ] **« UN PIÉTON FRÔLÉ SURSAUTE » ROUGE DE CHARGE (portail v385).** 1,24 s pour
+  une barre à 1,2 ; rejoué seul trois fois : 0,67-0,83 s (branche), 0,70-0,91 s
+  (`origin/main`). La barre est à 1,5 fois le pire relevé seul : à surveiller.
+- [x] **(v385 : un flâneur sur la chaussée en sort d'abord — témoin provoqué, rouge sur l'ancien code.)**
+  **LES PASSANTS SUR LA CHAUSSÉE À ROME : LE TÉMOIN DIT DÉSORMAIS QUI
   (v380).** Au portail de la v380, 3 sur 18 (vert, barre un cinquième) et le
   témoin publie : les TROIS sont des flâneurs (`surTrottoir` faux) en `pause`,
   animés, et deux sont encore À LEUR POSTE DE NAISSANCE — nés sur la chaussée
