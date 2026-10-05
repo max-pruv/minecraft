@@ -1740,6 +1740,37 @@ Une règle.
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
 
+## La porte de Manhattan (v362) — une ville qui n'est pas un disque déclare sa porte
+
+L'I-95 New York–Boston. Quatre règles.
+
+- **UNE VILLE QUI N'EST PAS UN DISQUE N'A PAS SA PORTE SUR LE RAYON.**
+  Manhattan est un rectangle de 480 × 2 300 (`BORNES`), le registre dit un
+  disque de 152 : `porte()` aurait posé la porte sur l'île. La fiche de la
+  route DÉCLARE la porte (`portes: { ny: [x, z] }`, blocs du monde, mesurée),
+  sur la rive est, hors du rectangle d'au moins une portée de talus.
+- **UNE ROUTE NE LIT JAMAIS UN RELIEF QUE LE WORKER NE CONNAÎT PAS.** Le
+  profil se calcule dans chaque monde avec SON `terrainHeight` ; le worker
+  (un `World`) ne connaît pas le plan de Manhattan que le fil principal
+  (`TerreUrbaine`) lit dans le rectangle. Un seul point du profil dedans, et
+  les deux fils bâtissent deux routes différentes — la rampe d'épinglage
+  propage l'écart sur toute la longueur. Et les morceaux du rectangle sans
+  bloc posé ne passent pas par le mailleur ordinaire (`hasVisualEdits`) : un
+  tablier y serait invisible. Le pont qui entrerait dans l'île est donc une
+  dette d'architecture, pas un tracé à chercher.
+- **UNE ROUTE N'A PAS DE TALUS AU-DELÀ DE SON BOUT.** La distance au point
+  borné dessine un chapeau autour de la porte ; là où le sol au-delà n'est pas
+  celui de la porte (un fleuve de ville), il creusait — l'A3 traversait le
+  tablier d'un pont de Francfort à treize blocs au-delà de sa porte. Le talus
+  s'arrête net à un bloc au-delà du bout ; la chaussée continue.
+- **UN TÉMOIN QUI HACHE UN REGISTRE ROUGIT À CHAQUE AJOUT, ET NE PROUVE PLUS
+  RIEN.** L'empreinte de la v352 hachait toutes les routes : rouge en
+  production en v355 et v356, sans un mot dans `TASKS.md`. Une empreinte
+  d'identité porte la LISTE de ce qu'elle a relevé (`ROUTES_RELEVEES`) ; ce qu'on
+  ajoute a ses propres témoins. Et un témoin écrit pour cinq villes
+  (`ponts de villes`) se réécrit pour toutes celles qu'une route touche — il a
+  trouvé Francfort, et deux défauts de ville qu'on déclare.
+
 ## Les routes qui contournent une ville (v355) — le couloir se cherche avec son cap
 
 La 401 Toronto–Montréal et la Hansalinie Cologne–Hambourg, les deux corridors
