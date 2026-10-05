@@ -35,7 +35,7 @@
 //    butte de Primrose Hill d'où l'on voit toute la ville.
 
 import { BLOCK, CITY_BLOCK, DECOR_START, ARCHI } from './blocks.js';
-import { rangerVoies, solDesVoies, fabriqueCircuits } from './voies.js';
+import { rangerVoies, solDesVoies, fabriqueCircuits, reculDesAvenues } from './voies.js';
 import { positionDe } from './mondes.js';
 import { monumentBati } from './monuments.js';
 import { sectionDeRue } from './voirie.js';
@@ -141,14 +141,23 @@ export const TAMISE = [
 
 const LARGEUR_TAMISE = 5;      // demi-largeur : ~420 m d'une rive à l'autre
 
+// UNE HYPOTÉNUSE NE SE CALCULE QUE SI ELLE PEUT GAGNER (v352). `Math.hypot`
+// est lente, et ce minimum se demande pour chaque colonne de la ville ; le
+// carré de la distance écarte d'abord les segments qui ne peuvent pas battre
+// le minimum courant, avec une marge d'un milliardième qui couvre l'écart
+// d'arrondi entre le carré et `hypot`. Le segment gagnant est toujours mesuré
+// par `hypot` : le résultat est le même au bit près.
 export function distanceTamise(u, v) {
-  let min = Infinity;
+  let min = Infinity, borne = Infinity;
   for (let i = 0; i < TAMISE.length - 1; i++) {
-    const [u0, v0] = TAMISE[i], [u1, v1] = TAMISE[i + 1];
+    const u0 = TAMISE[i][0], v0 = TAMISE[i][1], u1 = TAMISE[i + 1][0], v1 = TAMISE[i + 1][1];
     const du = u1 - u0, dv = v1 - v0;
     const l2 = du * du + dv * dv || 1;
     const t = Math.max(0, Math.min(1, ((u - u0) * du + (v - v0) * dv) / l2));
-    min = Math.min(min, Math.hypot(u - (u0 + du * t), v - (v0 + dv * t)));
+    const a = u - (u0 + du * t), b = v - (v0 + dv * t);
+    if (a * a + b * b > borne) continue;
+    const d = Math.hypot(a, b);
+    if (d < min) { min = d; borne = (min * (1 + 1e-9)) ** 2; }
   }
   return min;
 }
@@ -543,14 +552,17 @@ export const TRAMES_LONDRES = TRAMES;
 // qu'il roule sur la culée d'un pont.
 export const auNordDeLaTamise = (u, v) => {
   // de quel côté du fleuve ? On regarde le point le plus proche du tracé.
-  let min = Infinity, cote = 0;
+  // (même garde que `distanceTamise`, v352 : le gagnant est mesuré par hypot)
+  let min = Infinity, cote = 0, borne = Infinity;
   for (let i = 0; i < TAMISE.length - 1; i++) {
-    const [u0, v0] = TAMISE[i], [u1, v1] = TAMISE[i + 1];
+    const u0 = TAMISE[i][0], v0 = TAMISE[i][1], u1 = TAMISE[i + 1][0], v1 = TAMISE[i + 1][1];
     const du = u1 - u0, dv = v1 - v0;
     const l2 = du * du + dv * dv || 1;
     const t = Math.max(0, Math.min(1, ((u - u0) * du + (v - v0) * dv) / l2));
-    const d = Math.hypot(u - (u0 + du * t), v - (v0 + dv * t));
-    if (d < min) { min = d; cote = du * (v - v0) - dv * (u - u0); }
+    const a = u - (u0 + du * t), b = v - (v0 + dv * t);
+    if (a * a + b * b > borne) continue;
+    const d = Math.hypot(a, b);
+    if (d < min) { min = d; cote = du * (v - v0) - dv * (u - u0); borne = (min * (1 + 1e-9)) ** 2; }
   }
   return cote < 0;
 };
@@ -682,38 +694,9 @@ export function solLondres(x, z) {
 // rue de la trame. Une rue de la trame qui COUPE une avenue reste : c'est par
 // elle qu'on y arrive. Mesuré sur tout le disque : 26,1 % de lots avant, 19,5
 // avec la règle du kit seule, 26,6 avec ce recul.
-const ILOT_MIN = 5;
-export const RECUL_TRAME = COLLECTRICE.emprise / 2 + ILOT_MIN + COLLECTRICE.chaussee / 2;
-const BANDE_RECUL = 8;
-const SEGS_RECUL = new Map();
-for (const voie of VOIES) {
-  for (let i = 0; i < voie.pts.length - 1; i++) {
-    const [u0, v0] = voie.pts[i], [u1, v1] = voie.pts[i + 1];
-    const lg = Math.hypot(u1 - u0, v1 - v0) || 1;
-    const seg = { u0, v0, u1, v1, du: (u1 - u0) / lg, dv: (v1 - v0) / lg,
-      uMin: Math.min(u0, u1) - RECUL_TRAME, uMax: Math.max(u0, u1) + RECUL_TRAME };
-    const b0 = Math.floor((Math.min(v0, v1) - RECUL_TRAME) / BANDE_RECUL);
-    const b1 = Math.floor((Math.max(v0, v1) + RECUL_TRAME) / BANDE_RECUL);
-    for (let b = b0; b <= b1; b++) {
-      if (!SEGS_RECUL.has(b)) SEGS_RECUL.set(b, []);
-      SEGS_RECUL.get(b).push(seg);
-    }
-  }
-}
-const COS_PARALLELE = Math.cos(35 * Math.PI / 180);
-function doubleUneAvenue(u, v, eu, ev) {
-  const segs = SEGS_RECUL.get(Math.floor(v / BANDE_RECUL));
-  if (!segs) return false;
-  for (const g of segs) {
-    if (u < g.uMin || u > g.uMax) continue;
-    if (Math.abs(g.du * eu + g.dv * ev) < COS_PARALLELE) continue;
-    const lu = g.u1 - g.u0, lv = g.v1 - g.v0, l2 = lu * lu + lv * lv || 1;
-    let k = ((u - g.u0) * lu + (v - g.v0) * lv) / l2;
-    k = k < 0 ? 0 : k > 1 ? 1 : k;
-    if (Math.hypot(u - g.u0 - k * lu, v - g.v0 - k * lv) < RECUL_TRAME) return true;
-  }
-  return false;
-}
+// La règle vit dans `voies.js` depuis que Nice la partage (v359).
+const doubleUneAvenue = reculDesAvenues(VOIES, COLLECTRICE);
+export const RECUL_TRAME = doubleUneAvenue.recul;
 
 // Les emprises des monuments : aucune maison ne pousse dans la cour de
 // Buckingham ni sous le dôme de St Paul.

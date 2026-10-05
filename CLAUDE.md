@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Les sensations au volant (v352) — la caméra regarde la voiture, et un mur se cherche cellule par cellule
+## Les sensations au volant (v361) — la caméra regarde la voiture, et un mur se cherche cellule par cellule
 
 Chantier « conduite » (six sessions, octobre 2026) ; celle-ci tient ce que
 l'enfant VOIT et ENTEND. Tout vit dans `src/sensations.js`, branché par un
@@ -806,6 +806,146 @@ règles.
   compter deux fois. Les avions gardent la poursuite d'avant à l'identique ;
   `?sensations=0` rejoue l'ancienne conduite, pour mesurer.
 
+## Les tours ont une emprise (v357) — une perche se cherche au bâtisseur, dans toutes les villes
+
+La dette de la v353 : treize tours d'un bloc de large, laissées sous leur vraie
+hauteur parce qu'étirées c'étaient des perches. Cinq règles.
+
+- **LE REMÈDE D'UNE FORME EST UN BÂTISSEUR, PAS UNE TABLE.** Une colonne d'un
+  bloc reste une colonne quel que soit son étirement ; la table de paliers ne
+  sait que monter. Chaque tour a son bâtisseur (`buildWillis`, `buildPerle`…,
+  villesmonde.js) d'après sa vraie silhouette — on la cherche avant de bâtir :
+  les tubes coupés aux 50e, 66e et 90e étages, les sphères à 68, 250 et 335 m —
+  dans la BOÎTE de son repère, qui ne bouge pas : elle entre dans les zones du
+  relief (`r = box + 30`), la changer toucherait `terrainHeight`.
+- **LE MONDE D'AVANT GARDE SON BÂTISSEUR D'AVANT.** Le neuf est le champ
+  `tour` du monument ; `LANDMARKS_V317` (donc `CONF_AVANT`, `CONF_V308`) garde
+  `build`, et seul le monde d'aujourd'hui lit `lm.tour || lm.build` (world.js),
+  étiré par la table s'il en a une, tel quel sinon (la CN Tower, au-dessus de
+  son ciel). Remplacer `build` aurait changé les monuments du monde figé.
+- **UNE SPHÈRE, UN BELVÉDÈRE SONT RIGIDES : DEUX PALIERS AU MÊME MÈTRE.**
+  `paliersDuMonde` garde une pente d'au moins un ; deux paliers au même mètre
+  font donc passer les couches entre eux à un bloc par couche, et la boule
+  reste une boule. Une calotte aussi (Saint-Pierre).
+- **UNE PERCHE SE CHERCHE PARTOUT, ET LE TÉMOIN EN A TROUVÉ DIX DE PLUS.**
+  « Plus de la moitié des couches sur une ou deux colonnes, au-dessus d'une
+  fois et demie la corniche » (`plafond.js`) a rendu vingt-trois perches sur
+  `origin/main`, pas treize : la Fernsehturm, la CN Tower, trois clochers sans
+  leur cathédrale, la demi-tour Eiffel sans ses pieds — et les pagodes, qui
+  n'avaient qu'un poteau sous chaque toit, invisibles à toute mesure de
+  hauteur. Le verre dans les murs encore : la portée du remède se mesure au
+  témoin, pas à la liste de la dette. Les fûts vrais se déclarent
+  (`PERCHES_VRAIES`, une colonne, un obélisque).
+- **UNE HAUTEUR VRAIE SUR UN PLAN À L'ÉCHELLE DU SOL FAIT UN IMMEUBLE.** La
+  façade de Saint-Pierre à ses 45 m, sur une basilique de seize blocs de long,
+  faisait un bloc de bureaux coiffé d'une coupole (vu en capture). Elle est
+  écrite à 16 m, et le commentaire le dit : la règle des deux échelles
+  (hauteurs à l'étage, emprises au sol) vaut pour un monument comme pour une
+  tour de Manhattan.
+
+Et une roue ne s'étire pas (elle deviendrait une ellipse) : la roue du Prater
+a reçu un bâtisseur à son vrai rayon, le plus grand que tient sa boîte ;
+celle de la High Roller ne tiendrait pas, et c'est déclaré.
+
+Et une empreinte d'identité qui change se PROUVE : celle des 490 morceaux
+(v352) couvre Marrakech et Tokyo ; la branche, bâtisseurs neufs désarmés, rend
+l'ancienne au bit près — c'est ce qui a permis de la remplacer.
+
+## La file se recharge à l'arrivée (v360) — un plafond de débit peut être la cadence du banc
+
+Les deux pistes que la v352 avait déclarées sans mesure. Cinq règles.
+
+- **ON SONDE OÙ PASSE LE TEMPS DES DEUX CÔTÉS DU MESSAGE.** Le fil principal
+  ne voit que des tampons qui arrivent ; le worker publie désormais son temps
+  à sec (`inactif`, entre la fin d'un lot et l'arrivée du suivant) et sa date
+  d'envoi (`envoye`, en `timeOrigin + now` : deux fils n'ont pas la même
+  origine). Mesuré à 80 b/s, rr 12 : installation 0,1 à 0,9 ms par morceau,
+  transit 2 à 8 ms, worker À SEC 55 à 72 % du temps. La piste (a) était
+  innocente, la (b) était la panne.
+- **UNE BOUCLE QUI COMPTE DEUX FOIS FAUSSE TOUTES LES MESURES FAITES DESSUS.**
+  `enAttente.set` PUIS `lot.push`, sous la garde `enAttente.size +
+  lot.length` : chaque demande comptait double depuis la v251, et une file
+  « de huit » en tenait de quatre (le worker en retard : relevé 0 à 5 dans
+  Paris à 80 b/s) à huit (images rapides). La file de seize écartée par la
+  v269 en tenait huit et plus. On ne « corrige » donc pas le compte en gardant huit — ce
+  serait remettre en douce la profondeur mesurée nuisible sur l'iPad (v291) :
+  la profondeur RÉELLE s'écrit (`EN_VOL_MAX`, la moitié de la file nominale)
+  et c'est elle qui borne — quatre, jamais plus que l'ancienne au plus bas
+  (le témoin relève 4 contre 6 à 8). Quand on trouve un défaut sous une mesure, on se
+  demande ce que la mesure mesurait vraiment avant de toucher au chiffre.
+- **UN TAUX PAR IMAGE, ENCORE.** La file ne se rechargeait qu'à l'image : à
+  onze images par seconde, quatre morceaux en trente millisecondes, puis le
+  worker attend soixante. C'est le piège de la v237 (un budget par image est
+  un taux) une quatrième fois. Le morceau qui arrive libère sa place, et elle
+  repart tout de suite (`rechargerLaFile`). Le débit double (Paris 53 → 116,
+  Rome 58 → 120), et le « plafond à 55 morceaux par seconde » des v346 et
+  v352 était la cadence du BANC, pas le monde : en scène vide, l'ancienne
+  file donnait déjà 125.
+- **UNE BAISSE DE CADENCE SE SÉPARE PAR UNE SCÈNE VIDE.** Avec la recharge,
+  la ville tombe au banc de 14 à 5 images par seconde. Les appels de dessin
+  (15 → 190–290) le disaient ; la preuve est la même page rendant une scène
+  VIDE (`vide=1` de la sonde) : 51–57 images contre 53–57, même débit. Ni le
+  worker ni l'installation ne prennent d'images : c'est SwiftShader qui
+  dessine enfin la ville. La recharge ne vaut donc qu'EN ROULANT VITE
+  (`fileRapide`) et se coupe en rendu logiciel, comme l'ordre en cône
+  (`?recharge=arrivee|image`, `__game.rechargeMaillage`). Un témoin le garde
+  en scène vide — vert des deux côtés à dessein (v220).
+- **LE PLAFOND SE REPUBLIE SUR LA MESURE, ET LA PIRE VILLE LE BORNE.** 80 b/s
+  tient à Paris, Rome, sur l'A1 et en campagne ; Londres rend 148–152 pour
+  160 et 182–192 à 70. Pourquoi Londres n'est PAS mesuré : son worker coûte
+  autant que celui de Paris (6,4 ms contre 6,3 à 7) et reste à sec 23 à 28 %
+  — j'avais d'abord écrit « ses morceaux coûtent plus », sans l'avoir lu. `VITESSE_SOL_MAX` : ville 70, campagne 80. Ce qui se transpose à
+  l'iPad : le nombre en vol, l'ordre, le débit quand les images sont lentes
+  (c'est en arrivant dans une ville qu'elles le sont). Ce qui ne se transpose
+  pas : la cadence de rendu — à relire avec `?diag=1` à 70–80 b/s dans Paris
+  avant que la conduite ne monte les voitures.
+
+## Le coût d'un morceau (v352) — on profile avant de croire la répartition, et la preuve est une empreinte
+
+Le point (3) de la dette de la v346 : au-delà de 70 b/s la ville ne suit plus,
+et le levier restant était le coût d'un morceau dans le worker. Cinq règles.
+
+- **LA RÉPARTITION « GÉNÉRATION 45 % » DATAIT, ET LE PROFIL L'A DÉMENTIE.** Sous
+  node, en roulant le long d'une bande (`morceaux-temoin.mjs`), le maillage
+  pesait le double de la génération à Paris. Et un cinquième du coût d'un
+  morceau de Paris était un `terrainHeight` dont la réponse était jetée :
+  `routeEn` le lisait pour toute colonne de la case de 512 blocs d'une route
+  avant de rendre null. On profile, on nomme la ligne (`--cpu-prof`, puis les
+  appelants des appelants), et l'on corrige le poste le plus lourd, une ligne
+  à la fois.
+- **UNE OPTIMISATION DU GÉNÉRATEUR OU DU MAILLEUR SE PROUVE PAR UNE EMPREINTE
+  RELEVÉE SUR L'ANCIEN CODE.** Le SHA-256 des blocs et de tous les tampons de
+  490 morceaux (neuf lieux, Paris avec et sans HD), plus `routeEn` sur toutes
+  les routes. Il est relevé sur la v351 (`empreinteMorceaux('<worktree>/src')`)
+  et gardé par `plafond.js`. **Et l'empreinte se vérifie capable de rougir** :
+  sur ses seuls 490 morceaux, une borne de `routeEn` cassée à dix blocs passait,
+  parce qu'aucun talus de plus de dix blocs n'y tombait. Il en existe ailleurs,
+  jusqu'à 12,86 blocs au-delà de l'emprise. Le balayage de toutes les routes l'a
+  rendu visible. Un témoin d'identité qui ne contient pas le cas limite ne
+  garde pas le cas limite.
+- **UNE MÉMOÏSATION NE VAUT QUE SUR UNE FONCTION PURE DE CE QUI NE CHANGE PAS.**
+  Le relief ne dépend que de `this.conf`, figée à la naissance du monde : la
+  grille brute de `generateChunk` se garde avec le morceau (`terrainMemo`) et
+  part avec lui (`oublierLoinDe`). Elle n'est tenue que pour `World` lui-même :
+  une classe qui redéfinit `terrainHeight` (Manhattan) relit à chaque fois.
+  `solParis`, `solLondres` et `cityAt`, eux, lisent l'état de l'enfant
+  (colonnes cédées, ville d'avant) : on ne les mémoïse pas.
+- **UN RACCOURCI DE CALCUL FLOTTANT GARDE LE CALCUL D'ORIGINE POUR LE
+  GAGNANT.** `hypot` et la racine du carré peuvent différer d'un ulp. Le carré
+  ne sert qu'à ÉCARTER les segments qui ne peuvent pas gagner, avec une marge
+  d'un milliardième ; le segment retenu est mesuré par `hypot`, comme avant
+  (zéro écart sur 4 millions de points). Et les tables par identifiant du
+  mailleur sont remplies par les MÊMES fonctions (`isProp`, `isSlab`…).
+- **CE QUE LE BANC DIT DU GAIN, ET CE QU'IL NE PEUT PAS DIRE.** Deux fois moins
+  de calcul par morceau ne donnent au banc que 5 à 25 blocs de plus devant soi
+  à 80 b/s : en ville, le débit y plafonne vers 55 morceaux par seconde DES
+  DEUX CÔTÉS. La file se recharge une fois par image en rendu logiciel, et le
+  worker y partage quatre cœurs avec SwiftShader. Le plafond au sol ne bouge
+  donc pas (80 b/s : A1 158 pour 160, Paris 125). Ce qui se transpose à
+  l'iPad, ce sont les APPELS (2 209 → 463 lectures de relief par morceau de
+  Paris) et l'ordre de grandeur des millisecondes sous node. Ce qui ne se
+  transpose pas, c'est le trou mesuré au banc : sur la tablette, il se relit
+  avec `?diag=1`.
 ## Les villes bâties à la main dans leur ciel (v350) — un repère-fût borne la courbe d'en dessous aussi
 
 Le lot 2 de la dette de la v335 : huit monuments. Trois règles.
@@ -836,6 +976,24 @@ Le lot 2 de la dette de la v335 : huit monuments. Trois règles.
   Archives, 24 m pour Buckingham, une quarantaine de mètres pour l'Opéra de
   Lille, 23 m pour l'Arche. Ce qu'on n'a pas trouvé (le musée d'Histoire
   américaine, « cinq étages ») se dit approché dans le commentaire.
+
+## Les rues de Nice à la règle du kit (v359) — une règle partagée se corrige pour toutes les villes qui la lisent
+
+Deux règles.
+
+- **LA MÉTHODE DE LONDRES SE REPREND TELLE QUELLE, ET ELLE VIT DANS `voies.js`.**
+  `reculDesAvenues(voies, artère, trame)` est la règle « une trame ne double pas
+  ses avenues », partagée par Londres, Nice et les suivantes. La ville d'avant
+  se fige (`nice-v340.js`) et `colonnesVilleAvant` (world.js) sert toutes les
+  villes passées au kit, chacune avec sa date (`VILLES_FIGEES`). Le témoin de
+  `plafond.js` est une fonction jouée ville par ville.
+- **UN RECUL SE COMPTE D'EMPRISE À EMPRISE.** La v339 posait le recul à la
+  demi-emprise de l'artère, plus `ILOT_MIN`, plus la demi-CHAUSSÉE de la rue de
+  la trame (13,9) : le lot entre les deux trottoirs n'avait alors que trois
+  blocs et demi. Le relevé ASCII du Sunset de San Francisco l'a montré (une
+  rue de la trame à seize blocs d'une avenue). Un îlot se mesure de trottoir à
+  trottoir : demi-emprise + `ILOT_MIN` + demi-emprise, 16,4. Corrigé dans la
+  règle partagée, Londres remesurée avec (26,6 → 28,7 %).
 
 ## Le monde à la vitesse (v346) — on maille où l'on va, et le plafond se mesure en roulant
 
@@ -885,6 +1043,43 @@ sur un débit d'avant le worker (v237 → v251). Quatre règles.
   ouverte de plus à côté de `tab` et `ciel` n'a jamais chargé son disque en
   quarante secondes ; et deux passages IDENTIQUES rendent 0,43 puis 0,57 —
   le premier passage n'est pas le second, d'où l'ABBA.
+## Le ciel des autres villes engendrées (v353) — toute ville mesurée a son ciel, ou dit pourquoi
+
+Max : « lance sur toutes les villes, pas juste celle-là ». Le lot 3 de la v342
+ne couvrait que les vingt-cinq villes qui portaient une dette ; mesuré sous
+node, vingt et une autres avaient des repères au-dessus de leurs toits mais
+pas à leur hauteur (l'hôtel de ville de Bruxelles à vingt-trois blocs pour
+quatre-vingt-seize mètres). Trois règles.
+
+- **UNE RÈGLE DE VILLE S'ÉCRIT POUR TOUTES LES VILLES, ET UN TÉMOIN LE GARDE.**
+  `VILLES_SANS_CIEL` (echelle-monuments.js) est la `BAS_DECLARES` des villes :
+  toute ville engendrée dont un repère est mesuré parmi ses immeubles est dans
+  `CIELS`, ou déclarée sans ciel avec sa raison — `vrai` (rien à y remettre à
+  l'échelle) ou `lot` (une dette, qui doit disparaître). Une déclaration qui
+  ne sert plus rougit. C'est le verre dans les murs vu du côté d'une table :
+  sans ce témoin, la v342 « couvrait les villes » et en laissait la moitié.
+- **CE QUI EST DÉJÀ AU-DESSUS DE SON CIEL NE BOUGE PAS, ET GARDE L'ORDRE.** Les
+  modèles du catalogue (Sagrada Família, Space Needle, Christ Rédempteur,
+  Opéra de Sydney) et le Burj Khalifa sont à leur hauteur d'auteur, au-dessus
+  de la courbe : on ne les redescend pas (la règle de la tour de Pise), et ceux
+  qui dominent un monument remis à l'échelle entrent dans les `FIXES` du
+  témoin d'ordre. Une pyramide (le Luxor) et une roue (la High Roller) ne
+  s'étirent pas : étirée, une pyramide devient un obélisque.
+- **UN FÛT QUI DOMINE DÉJÀ SES TOITS NE S'ÉTIRE PLUS — vu en capture, pas au
+  témoin.** `minaret` et `tourBoule` sont des colonnes d'un bloc. Le premier
+  jet les étirait jusqu'au plafond des fûts (une fois et demie, v342) : la tour
+  de l'hôtel de ville de Bruxelles à trente-quatre blocs, la Willis Tower à
+  cinquante-cinq, des perches noires au-dessus de la ville. Les fûts de la v342
+  (Santa Justa, Storkyrkan, la Rundetaarn) étaient tous SOUS leurs toits ; ceux
+  d'ici les dominaient déjà de près du double. Un fût ne s'étire donc que si sa
+  hauteur d'auteur reste sous une fois et demie la corniche de sa ville (le
+  témoin le garde) ; sinon il reste où il est (un `FIXE` du témoin d'ordre),
+  et c'est le bâtisseur qu'il faut refaire, pas la hauteur (`TASKS.md`). Les
+  pagodes (Sensō-ji, Tō-ji, Kiyomizu-dera) s'écrivent en paliers de mètres,
+  comme Wat Arun : chaque étage s'étire, chaque toit reste un rang. Deux fûts qui se dépassent
+  dans le mauvais ordre compriment leur courbe (Munich, `k` 0,55 : la
+  Frauenkirche reste au-dessus du beffroi). Gizeh et le Machu Picchu n'ont pas
+  d'immeubles : pas de corniche, pas de ciel à mesurer.
 
 ## Le ciel de chaque ville (v342) — la courbe de Paris posée sur SA corniche
 
@@ -929,6 +1124,18 @@ engendrées. Quatre règles.
   journal vide dans le jeu, trois rouges de `maj.js`. Après tout conflit dans un
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
+
+## Les passants de Manhattan au long cap (v354) — un trottoir qui vit dans un plan se demande au plan
+
+Une règle.
+
+- **À MANHATTAN, UN SOL PRATICABLE N'EST PAS UN TROTTOIR.** `piedPieton` rend
+  33 pour toute case où l'on peut poser le pied, chaussée comprise : c'était la
+  raison pour laquelle la v278 avait écarté le site urbain de la marche au long
+  cap. `world.trottoirA` (main.js) exige désormais aussi `ruePietonne` (le
+  plan) — la même question, posée à la source qui sait y répondre. Et un
+  témoin qui pose la voiture dans une rue de Manhattan fait aussi le vide des
+  passants : ils y marchent désormais, et la voiture freine devant eux.
 
 ## Les piétons et les voitures rapides (v351) — ce qui fuit une horloge réelle se compte sur elle
 
@@ -1070,11 +1277,95 @@ existe dès la naissance, parce que `instancingColor` est dans la clé. Mesuré 
 deux fois (essaim caché, montré) et exige plus de quatre carrés, sinon
 l'égalité ne prouverait rien.
 
+**L'épave reste chez l'ami, et la rue s'abîme (v356).** Quand le conducteur
+est déposé, `p.v` disparaît : le RECEVEUR garde l'épave en feu là où elle
+s'est arrêtée (`garderEpave`, appelé par `synchroniserVehiculeDistant`) et la
+fait vivre lui-même jusqu'à `DUREE_CARCASSE` — rien de neuf sur le réseau.
+Seule une voiture hors service se garde. Une voiture de la rue percutée
+(`percuterRue` : le point d'impact du MONDE, et `vehicules.voitureRueProche`,
+crochet court branché par main.js APRÈS `initFun` — branché avant, `fun` est
+dans sa zone morte et le jeu ne démarre plus, vu au banc) se froisse par la
+même règle 1, ne prend jamais feu (`rec.rue`) et ne parle pas. Ce qui s'en
+va se rend une fois : un clone marqué `rendu` à son `dispose` (par `liberer`)
+ne se rend pas une seconde fois — le premier témoin comptait 28 rendues pour
+14 clones.
+
 **Le feu dépose l'enfant, il ne le projette pas** : passé `DELAI_SORTIE` (3,5 s
 en temps réel), `fun.js` le fait descendre et `deposer` le pose debout sur une
 case libre à côté (côté conducteur d'abord). La carcasse porte `horsService`
 (lu par `animals.js`, comme `montee`) : elle ne se reprend pas, et elle s'en
 va au bout de `DUREE_CARCASSE`.
+## La conduite à la GTA (v358) — un modèle pur, une boîte orientée, des chocs qui se publient
+
+Max : « une grosse refonte de la façon de conduire… comme GTA ». Premier palier
+de la session `conduite-physique` (six sessions en parallèle sur la conduite).
+Six règles.
+
+- **LA DYNAMIQUE VIT DANS UN MODULE PUR, ET LE JOUEUR NE FAIT QUE L'APPLIQUER.**
+  `conduite.js` (sans three ni document) : le pas de dynamique
+  (`pasVoiture`), le choc (`reponseChoc`), les cases sous une boîte orientée
+  (`casesSousBoite`), le point d'impact. `player.js` l'appelle, `plafond.js`
+  le vérifie sous node — la simulation au pas du jeu y doit rejoindre la
+  formule fermée du 0 → 100 (`tempsJusqua`), sinon les deux copies d'une même
+  dynamique ont divergé.
+- **`player.yaw` EST LE CORPS, `derive` EST L'ÉCART DE LA VITESSE.** La
+  vitesse va dans la direction `yaw + derive` ; la dérive (bornée à
+  `DERIVE_MAX`) naît d'un virage pris plus vite que l'adhérence et se
+  rattrape seule (`DERIVE_TAU`). Une session qui la dessine ne la rajoute
+  pas au cap : la caisse tourne déjà avec `yaw`.
+- **LE CONTRAT AVEC LES DÉGÂTS SE TIENT PAR DEUX DRAPEAUX, POSÉS PAR LA
+  PHYSIQUE.** Les dégâts (v343) devinent un choc aux chutes de vitesse tant
+  que `player.choc` est `undefined`, et appliquent eux-mêmes leurs effets
+  (allure, biais de cap) tant que `player.physiqueLitEtat` est faux. Le
+  joueur naît donc avec `choc = null` (pas encore de choc, mais une physique
+  qui les publie : un frein franc n'est pas un choc) et `physiqueLitEtat =
+  true` ; `direction` se lit comme les dégâts la publient — un biais de CAP en
+  rad/s à pleine vitesse, pas un angle de roues —, et le moteur abîmé garde
+  leur facteur 0,35 + 0,65 × moteur. Un témoin qui pose `etatVoiture` à la
+  main doit le FIGER : les dégâts le réécrivent à chaque image.
+- **UNE VOITURE BONDIT AU DÉPART.** La courbe a0 · (1 − (v/vmax)²) seule
+  démarrait mou : au banc, même nombre d'images des deux côtés, l'ancienne
+  voiture (toute son allure en une demi-seconde) faisait 6 blocs et la
+  nouvelle 1,75. `accelVoiture` ajoute un coup de départ (`LANCER`, éteint à
+  dix blocs/s) — 7,5 à 9,8 blocs dans la première seconde selon la classe —
+  et `tempsJusqua` intègre la MÊME fonction : une seule formule, deux
+  lecteurs.
+- **LA CLASSE SE RETROUVE À SA POINTE.** `fun.js` ne passe que `boost`
+  (l'allure, multiple de la marche) ; `ALLURES` se déduit des fiches de
+  `conduite.js`, et `ficheDeVitesse` retrouve la classe par sa pointe, unique
+  par classe. Une propriété de classe s'ajoute dans la fiche, jamais dans
+  `fun.js`.
+- **LE PLAFOND SE MESURE EN TEMPS RÉEL, PAS AU PAS DU JOUEUR.** La première
+  sonde laissait le joueur avancer : le banc rendant dix images par seconde et
+  `dt` étant borné à un vingtième, la position avançait au ralenti (77 blocs
+  en dix secondes « à 36 ») et la mesure disait la cadence du banc. La sonde
+  (`sonde-plafond-voiture.cjs`) avance la position EN TEMPS RÉEL à chaque
+  image. Trou devant soi à rr=12 : 182 · 161 · 151 · 125 blocs en campagne,
+  160 · 151 · 136 · 125 à Paris, pour 30 · 40 · 50 · 60 blocs/s.
+  `PLAFOND_SOL` se lit dans `plafond-sol.js` (v346, la session du monde à la
+  vitesse : 60 en ville, 70 en campagne — la même valeur, mesurée à part) ;
+  l'hypercar à 55. Le plafond de la v260 (28, calculé
+  avant le worker de la v251) est mort. La tablette reste à mesurer.
+- **UNE MARCHE N'EST PAS UN MUR AU BOUT DU CAPOT.** La boîte fait désormais
+  4,4 × 2,26 et tourne avec la voiture ; mais sur la surface continue une
+  pente d'un bloc par bloc met le relief à deux blocs au-dessus du centre sous
+  le nez. Ce qui ne dépasse pas d'UN bloc la cote de la voiture ne compte
+  donc que sous le carré central (la largeur, comme la v297 l'avait réglé) ;
+  au-delà, seul ce qui dépasse une marche est un mur. Et l'on franchit aussi
+  juste après une crête : plus rapide, la voiture décolle des bosses.
+- **UN CHOC SE PUBLIE, ET « PAS SI L'ON EST DÉJÀ DEDANS » VAUT POUR LES
+  BLOCS.** `player.choc = { force, t, x, z }` (force 0 à 1, un mur de face à
+  72 km/h vaut 1 ; x, z le milieu de la face qui touche), sous cinq pour cent
+  rien ne se publie. **Un choc est un événement, pas un état** : il
+  s'efface quand on monte et quand on descend, sinon les dégâts le rejouent
+  sur la voiture suivante (mesuré : une voiture neuve à santé 0,7, le cap
+  qui tourne seul). Devant un piéton on FREINE à la distance d'arrêt
+  (douze blocs au plus), on ne l'attend pas au contact. Une pose n'est refusée que si elle touche une case pleine
+  que la pose d'avant ne touchait pas : une voiture invoquée contre un mur
+  s'en dégage. Le crochet de main.js rend la FAMILLE : voiture et mobilier
+  rebondissent, piéton et eau arrêtent net — personne n'est jamais touché.
+  Une voiture de la rue ne se pousse pas (horloge partagée, v305) : c'est
+  elle qui attend (`cederLePassage`, v245).
 
 ## Les monuments à la hauteur de leur ville (v335) — une table de paliers, deux lecteurs
 
@@ -1456,6 +1747,55 @@ Une règle.
   la terre, l'herbe, le sable et la pierre naturelle. Manhattan a son propre sol
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
+
+## Les routes qui contournent une ville (v355) — le couloir se cherche avec son cap
+
+La 401 Toronto–Montréal et la Hansalinie Cologne–Hambourg, les deux corridors
+« sans tracé » de la v337. Quatre règles.
+
+- **QUAND LE CÔTÉ BAS D'UNE VILLE NE REGARDE PAS L'AUTRE, LA ROUTE FAIT LE
+  TOUR.** Deux coudes ou un chemin lissé tout droit ne tournent pas autour
+  d'un disque. La sonde cherche le COULOIR LE PLUS BAS (Dijkstra sur une
+  grille de trente blocs, coût au carré de la hauteur au-dessus de 40, l'eau
+  très chère), en tire des points avec du jeu, lisse par Chaikin en gardant
+  les deux tronçons radiaux, simplifie tant que les coudes restent sous 22°,
+  et APPELLE `profilDe` sur chaque candidat. Puis elle retire un à un les
+  points dont le tracé se passe sans rien perdre (56 → 26, 72 → 25).
+- **UN COULOIR SANS CAP REPART EN ARRIÈRE, ET LE LISSAGE N'Y PEUT RIEN.** Le
+  premier jet (Dijkstra sur les cases seules) rendait 88 à 97 % de refus de
+  coude — il a trouvé la 401 (seize sur 3 000) et ZÉRO Hansalinie sur 2 500 : le chemin le plus bas repartait souvent DERRIÈRE le tronçon radial,
+  et aucun lissage ne fait d'un demi-tour un coude de vingt degrés. L'état de
+  la grille porte le cap (huit directions, un huitième de tour au plus, deux
+  pas droits après chaque virage), on part dans le cap de la porte et l'on
+  arrive dans celui de l'autre ; les points du couloir à moins de 70 blocs des
+  bouts sont laissés au lissage — 397 Hansalinie sur 1 500. C'est la règle de la v329 (« un refus qui
+  touche cent pour cent des candidats sur une contrainte se lit d'abord comme
+  un défaut de la recherche »), une forme de sonde plus loin.
+- **CE QUE LA GRILLE N'INTERDIT PAS, LE LISSAGE LE TOUCHE.** Les rails et les
+  autres routes n'étaient jugés qu'après coup : 878 refus « rail » sur 3 000
+  autour de Cologne, l'ICE d'Amsterdam sortant à −130°. Interdits DANS la
+  grille (rail à douze blocs, axe d'une autre route à deux emprises et talus),
+  ils ne sont plus qu'un résidu. Et une porte se ferme aussi par ce qui est
+  DANS le disque : l'Elbe longe le sud de Hambourg entre 38 et 70 blocs du
+  centre, toute entrée par le sud mettait un pont dans le raccord ; et l'axe
+  nord tombait au bout d'un pont de l'Alster, dont le TALUS de la route
+  creusait le tablier (six points sans sol, vus par le témoin des ponts de
+  villes, pas par la sonde) — on entre par le nord-ouest. Avant de chercher,
+  on relève le long des rayons l'eau de la ville ET ses ponts, pas seulement
+  le relief : une porte se juge contre tout ce que la ville a bâti autour.
+- **DEUX ROUTES DANS UNE VILLE NE SE PRENNENT PAS LEUR EMPRISE.** Montréal,
+  Hambourg et Cologne ont désormais deux autoroutes. `routeEn` donne une
+  colonne au segment le plus proche : deux corridors qui se recouvrent
+  feraient une chaussée qui change de route au milieu, sans échangeur. Un
+  témoin de `carteMonde.js` lit chaque colonne d'emprise de chaque route et
+  exige qu'elle appartienne au segment qu'on lit, et qu'aucun axe ne frôle
+  ses villes hors du tronçon radial (r + 10, au-delà des quatre-vingts
+  premiers et derniers blocs) — zéro sur les vingt et une.
+
+**Et un générateur congruentiel en flottants tourne en rond.**
+`(g * 1103515245 + 12345) % 2^31` dépasse 2^53 et perd sa précision : la sonde
+rendait huit fois le même tracé et l'on croyait en avoir huit. Un tirage de
+sonde se fait en entiers 32 bits (`Math.imul`).
 
 ## L'I-45 Dallas–Houston (v336) — un pays ondulé se traverse par un chemin, pas par deux coudes
 
@@ -5095,6 +5435,10 @@ sonde de captures (`sonde-captures-avion.cjs`) rend une vue de côté par une
 caméra à part, `layers.enableAll()` comme le veut la v250.
 
 ## Chaque voiture roule à l'allure de sa classe (v260)
+
+> **⚠️ Le plafond calculé ci-dessous (28 blocs/s) est remplacé par un plafond
+> MESURÉ (60) en v358, et l'allure se déduit des fiches de `conduite.js`.** Lire
+> « La conduite à la GTA (v358) ».
 
 Max : « une vitesse en fonction du modèle ». Deux règles.
 

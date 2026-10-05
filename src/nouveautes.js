@@ -6,13 +6,92 @@
 
 export const NOUVEAUTES = [
   {
-    v: 352,
+    v: 361,
     titre: 'Conduire comme au cinéma',
     puces: [
       'La caméra recule quand on accélère',
       'La voiture penche dans les virages',
       'Les roues avant tournent avec toi',
       'Les pneus crissent, les chocs s\'entendent',
+    ],
+  },
+  {
+    v: 360,
+    titre: 'Le monde suit la voiture',
+    puces: [
+      'La ville arrive deux fois plus vite',
+      'Plus de vide devant, même rapide',
+    ],
+  },
+  {
+    v: 359,
+    titre: 'Les rues de Nice s\'élargissent',
+    puces: [
+      'La Promenade à deux voies',
+      'Des îlots plus grands dans la ville neuve',
+      'Londres garde encore plus d\'immeubles',
+    ],
+  },
+  {
+    v: 358,
+    titre: 'Des voitures pour de vrai',
+    puces: [
+      'Les voitures vont beaucoup plus vite',
+      'Elles tournent et glissent pour de vrai',
+      'Contre un mur, on glisse ou on rebondit',
+    ],
+  },
+  {
+    v: 357,
+    titre: 'Les vraies tours du monde',
+    puces: [
+      'La Willis Tower et ses tubes noirs',
+      'Les sphères roses de Shanghai',
+      'Saint-Pierre de Rome a sa basilique',
+      'Les pagodes ont leurs étages',
+    ],
+  },
+  {
+    v: 356,
+    titre: 'Les épaves restent',
+    puces: [
+      'Tes amis voient l\'épave brûler',
+      'Les voitures de la rue s\'abîment',
+      'Le garage répare ta voiture',
+    ],
+  },
+  {
+    v: 355,
+    titre: 'Deux autoroutes de plus',
+    puces: [
+      'Toronto–Montréal, par le sud',
+      'Cologne–Hambourg, par l\'ouest',
+      'Elles font le tour des villes',
+    ],
+  },
+  {
+    v: 354,
+    titre: 'New York se promène',
+    puces: [
+      'Les passants marchent le long du trottoir',
+      'Ils tournent au coin de la rue',
+    ],
+  },
+  {
+    v: 353,
+    titre: 'Le ciel de toutes les villes',
+    puces: [
+      'Le Capitole de La Havane domine',
+      'Des pagodes hautes à Tokyo, Kyoto',
+      'Munich et Venise à leur hauteur',
+    ],
+  },
+  {
+    v: 352,
+    titre: 'Le monde se fabrique plus vite',
+    puces: [
+      'Deux fois moins de calcul par morceau',
+      'Rien ne change à l\'écran',
     ],
   },
   {

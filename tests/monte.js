@@ -367,12 +367,20 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         if (d < 0.5) continue;                       // la caméra n'est pas encore posée
         const bx = Math.sin(g.player.yaw), bz = Math.cos(g.player.yaw);
         const beta = Math.atan2(bx * (dz / d) - bz * (dx / d), bx * (dx / d) + bz * (dz / d));
+        const vv = g.player.vitesseVoiture;
+        const choc = g.player.choc;
         releves.push({ beta: +(beta * 180 / Math.PI).toFixed(1), recul: +d.toFixed(2),
-          v: +Math.hypot(g.player.vel.x, g.player.vel.z).toFixed(1) });
+          v: +Math.hypot(g.player.vel.x, g.player.vel.z).toFixed(1),
+          avant: vv === undefined || vv > 1,
+          rebond: !!(choc && performance.now() - choc.t < 1500) });
       }
       // ON NE JUGE QUE CE QUI ROULE : à l'arrêt le volant ne fait rien (v262),
       // donc il n'y a pas de virage et l'angle ne veut rien dire.
-      const roule = releves.filter((r) => r.v > 1);
+      // ET QUE CE QUI ROULE EN AVANT, LOIN D'UN CHOC (v358) : sans cap dégagé
+      // la voiture tape un mur, rebondit (v358) et recule un instant — et en
+      // marche arrière le même volant tourne de l'autre côté. Le portail a
+      // rendu les deux signes, médiane 25°, là où le virage tenu n'en a qu'un.
+      const roule = releves.filter((r) => r.v > 1 && r.avant && !r.rebond);
       const abs = roule.map((r) => Math.abs(r.beta)).sort((x, y) => x - y);
       const images = g.renderer.info.render.frame - f0;
       return { n: releves.length, enMouvement: roule.length,
@@ -1045,9 +1053,9 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // Borne basse 3,0 : le rapprochement anti-mur peut raccourcir le recul
     // (plancher à 3,2) si un obstacle traîne derrière le parc — c'est un
     // comportement voulu, pas un défaut.
-    // ET LE PLAFOND SUIT LA VITESSE DEPUIS LA v352 : la caméra recule jusqu'à
+    // ET LE PLAFOND SUIT LA VITESSE DEPUIS LA v361 : la caméra recule jusqu'à
     // 1,32 fois le recul de la fiche quand la voiture roule (6,4 → 8,45). Le
-    // portail de la v352 l'a rendue rouge à 7,07 sur la borne fixe de 6,5,
+    // portail de la v361 l'a rendue rouge à 7,07 sur la borne fixe de 6,5,
     // une voiture qui roulait encore — le plafond se calcule, il ne se recopie
     // pas (v269).
     verifier('au volant, la caméra suit la voiture de derrière, comme GTA',
@@ -2299,7 +2307,14 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     });
     const cit = alluresModeles['berline-citadine'] || {}, jes = alluresModeles['koenigsegg-jesko.glb'] || {};
     verifier('une hypercar va plus vite qu\'une citadine, et la citadine plus vite qu\'avant',
-      !alluresModeles.err && !cit.err && !jes.err && cit.vitesse >= 11 && jes.vitesse >= cit.vitesse * 1.8,
+      // DEPUIS LA v358 L'ACCÉLÉRATION S'ESSOUFFLE VERS LA POINTE : après une
+      // seconde et demie de jeu aucune des deux n'est à sa pointe (14,4 et 23,4
+      // mesurés), et le rapport des VITESSES du moment ne dit plus celui des
+      // classes. Le rapport des POINTES se lit dans l'allure que le jeu leur
+      // donne (`boost`, 1,83) ; la vitesse du moment dit seulement que
+      // l'hypercar mène et que la citadine roule plus vite qu'avant.
+      !alluresModeles.err && !cit.err && !jes.err && cit.vitesse >= 11 && jes.vitesse > cit.vitesse * 1.3
+        && jes.boost >= cit.boost * 1.8,
       JSON.stringify(alluresModeles));
 
     // ---- LES CORPS RÉALISTES SONT PARTOUT, PAS SEULEMENT À NEW YORK (v243) ---
@@ -3580,7 +3595,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       return { notee, attente, construitIci, contre, libre, registre: vr.obstacles ? vr.obstacles.size : 'absent' };
     });
     verifier('et une table de Times Square est un obstacle pour sa voiture',
-      table.notee && table.contre === true && table.libre === false,
+      table.notee && (table.contre === true || table.contre === 'mobilier') && table.libre === false,
       JSON.stringify(table));
     await mobPage.close();
 
@@ -3938,6 +3953,105 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       ordreNeuf.parcouru > 300 && ordreAvant.parcouru > 300 && ordreNeuf.installes > 40 && ordreAvant.installes > 40
         && ecartParts >= 0.13,
       `écart ${ecartParts} (barre 0,13) · ordre neuf : ${dit(ordreNeuf)} · ordre d'avant : ${dit(ordreAvant)}`);
+
+    // LA FILE SE RECHARGE À L'ARRIVÉE D'UN MORCEAU (v360).
+    //
+    // Sondé d'abord (sonde-monde-a-la-vitesse.cjs) : à 80 b/s, rr 12, le
+    // worker était À SEC 55 à 72 % du temps — la file ne se rechargeait qu'une
+    // fois par image, et le banc en rend 11 à 15 — pendant que l'installation
+    // coûtait 0,1 à 0,9 ms par morceau. Et l'ancienne boucle comptait chaque
+    // demande deux fois : une file « de huit » n'en tenait que quatre en vol.
+    // La recharge à l'arrivée garde ces quatre-là (`EN_VOL_MAX`) et ne laisse
+    // plus le worker attendre l'image : mesuré ABBA, Paris 53 → 116 morceaux
+    // par seconde, Rome 58 → 120.
+    //
+    // Les deux modes se jouent dans la MÊME page (`__game.rechargeMaillage`),
+    // en ABBA, et l'on compare des DÉBITS : la charge du banc touche les deux.
+    // Sur l'ancien code le crochet n'existe pas — les quatre passages sont le
+    // même, le rapport vaut un, rouge. Barre : la moitié du gain mesuré seul
+    // (× 2,0 à 2,2 → 1,5). Et l'on relève la file en vol à chaque image :
+    // quatre au plus, jamais plus que l'ancienne boucle au plus bas (elle en
+    // tenait de quatre à huit) — c'est ce qui sépare ce remède de la file de
+    // seize (v269). Mesuré : × 0,95 sur `origin/main`, × 2,06 ici.
+    //
+    // UN SECOND PASSAGE REND UNE SCÈNE VIDE, ET C'EST LUI QUI GARDE LA
+    // CADENCE. En ville la recharge fait tomber le banc de 14 à 5 images par
+    // seconde : les appels de dessin passent de 15 à 190–290, la ville est
+    // enfin là. Rendue dans une scène vide, la même recharge tourne à la
+    // cadence de l'ancienne (51–57 contre 53–57) : le worker et l'installation
+    // ne prennent rien aux images. Ce verdict-là est vert sur l'ancien code
+    // aussi, à dessein (v220) : il garde la capacité qu'on a frôlée.
+    const roulerRecharge = async (mode, vide) => {
+      await souffler();
+      return ciel.evaluate(async ({ mode, vide }) => {
+        const g = window.__game;
+        const crochet = typeof g.rechargeMaillage === 'function';
+        if (crochet) g.rechargeMaillage(mode);
+        if (typeof g.fileMaillage === 'function') g.fileMaillage('cone');
+        const { positionDe } = await import('./src/mondes.js');
+        const CHUNK = 16, R = 12, v = 80;
+        const P = positionDe('paris');
+        const x0 = P.x - v * 6, z = P.z + 40.5;
+        const p = g.player;
+        const patienter = (ms) => new Promise((fin) => {
+          const t0 = performance.now();
+          const tic = () => (performance.now() - t0 < ms ? requestAnimationFrame(tic) : fin());
+          requestAnimationFrame(tic);
+        });
+        const poser = (x) => { p.pos.set(x, 140, z); p.vel.set(0, 0, 0); p.yaw = -Math.PI / 2; p.pitch = 0; };
+        p.flying = true;
+        poser(x0);
+        const t0 = performance.now();
+        const pcz = Math.floor(z / CHUNK);
+        while (performance.now() - t0 < 40000) {
+          poser(x0);
+          let n = 0; const pcx = Math.floor(x0 / CHUNK);
+          for (let dz = -R; dz <= R; dz++) for (let dx = -R; dx <= R; dx++) if (g.chunkMeshes.has(`${pcx + dx},${pcz + dz}`)) n++;
+          if (n >= (2 * R + 1) ** 2 * 0.9) break;
+          await patienter(250);
+        }
+        const charge = Math.round(performance.now() - t0);
+        const rendre = g.renderer.render;
+        if (vide) { const r = rendre.bind(g.renderer), sv = new g.scene.constructor(); g.renderer.render = (s, c) => r(sv, c); }
+        const depart = performance.now();
+        let roule = true, enVol = 0, images = 0;
+        const S = g.statsMaillage;
+        const tic = () => {
+          if (!roule) return;
+          poser(x0 + v * (performance.now() - depart) / 1000);
+          if (S.enAttente) enVol = Math.max(enVol, S.enAttente.size);
+          images++;
+          requestAnimationFrame(tic);
+        };
+        requestAnimationFrame(tic);
+        await patienter(3000);
+        const d0 = S.distants, i0 = images, m0 = performance.now();
+        await patienter(5000);
+        const s = (performance.now() - m0) / 1000;
+        const debit = +((S.distants - d0) / s).toFixed(1), cadence = +((images - i0) / s).toFixed(1);
+        roule = false;
+        g.renderer.render = rendre;
+        p.flying = false;
+        if (crochet) g.rechargeMaillage(null);
+        if (typeof g.fileMaillage === 'function') g.fileMaillage(null);
+        return { crochet, charge, debit, cadence, enVol, parcouru: Math.round(p.pos.x - x0) };
+      }, { mode, vide });
+    };
+    {
+      const n1 = await roulerRecharge('arrivee', false), a1 = await roulerRecharge('image', false);
+      const a2 = await roulerRecharge('image', false), n2 = await roulerRecharge('arrivee', false);
+      const neuf = (n1.debit + n2.debit) / 2, avant = (a1.debit + a2.debit) / 2;
+      const rapport = +(neuf / (avant || 1)).toFixed(2);
+      const enVol = Math.max(n1.enVol, n2.enVol);
+      const dit = (r) => `${r.crochet ? '' : '(crochet absent) '}${r.debit} morceaux/s, ${r.cadence} images/s, ${r.enVol} en vol, ${r.parcouru} blocs, disque en ${r.charge} ms`;
+      verifier('à quatre-vingts blocs par seconde dans Paris, le worker ne reste pas à sec entre deux images',
+        n1.parcouru > 300 && a1.parcouru > 300 && rapport >= 1.5 && enVol <= 4,
+        `débit × ${rapport} (barre 1,5) · en vol au plus ${enVol} (barre 4) · à l'arrivée : ${dit(n1)} | ${dit(n2)} · à l'image : ${dit(a1)} | ${dit(a2)}`);
+      const vn = await roulerRecharge('arrivee', true), va = await roulerRecharge('image', true);
+      verifier('rendue dans une scène vide, la recharge à l\'arrivée garde la cadence de l\'ancienne',
+        vn.parcouru > 300 && va.parcouru > 300 && vn.cadence >= 0.75 * va.cadence,
+        `à l'arrivée ${dit(vn)} · à l'image ${dit(va)} (barre : trois quarts de la cadence)`);
+    }
 
     // L'ÉCRAN NE SE FIGE PLUS EN ARRIVANT SUR UNE VILLE (v235).
     //
@@ -4582,7 +4696,11 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         for (const a of [...g.animalManager.animals]) if (a.def.key === 'voiture' || a.def.pilote) { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); }
         g.player.keys.clear(); g.player.touchMove.f = 0; g.player.touchMove.s = 0;
         g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined; g.player.flying = false;
-        const x0 = 30000, z0 = 30600, L = 300, W = 8;
+        // LA PISTE S'ÉLARGIT AVEC LA v358 : la voiture prend sa vitesse plus
+        // progressivement, roule plus loin, et en lâchant après le virage elle
+        // file en roue libre — le frein moteur, plus le frein franc d'avant.
+        // Huit blocs de demi-largeur la faisaient sortir de la dalle de côté.
+        const x0 = 30000, z0 = 30600, L = 300, W = 36;
         let y0 = 0;
         for (let d = -6; d <= L; d += 4) for (let w = -W; w <= W; w += 4) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
         y0 += 2;
@@ -4699,13 +4817,47 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         pose = await doigt();
         if (pose.f > 0.8) break;
       }
-      const lire = () => tab.evaluate(() => { const p = window.__game.player; return { gaz: p.gaz == null ? null : +p.gaz.toFixed(2), f: +p.touchMove.f.toFixed(2), v: +Math.hypot(p.vel.x, p.vel.z).toFixed(2), yaw: +p.yaw.toFixed(3), y: +(p.pos.y - window.__piste262.y0 - 1).toFixed(2), x: +(p.pos.x - window.__piste262.x0).toFixed(1) }; });
+      // ET LES PASSANTS LOIN DE LA PISTE (v358) : depuis que la voiture freine
+      // et s'arrête devant un piéton à DOUZE blocs (et non plus au contact),
+      // Marlon qui se replace près de l'enfant peut l'arrêter au milieu du
+      // témoin — au portail, 27 blocs/s puis 1,0 au moment de tourner. Les
+      // chocs et l'arrêt devant un piéton entrent dans le message.
+      await tab.evaluate(() => { const g = window.__game; for (const n of (g.npcs || [])) if (n.pos && Math.abs(n.pos.x - window.__piste262.x0 - 150) < 250 && Math.abs(n.pos.z - window.__piste262.z0) < 60) n.pos.y = -500; });
+      // QUI TOUCHE LA VITESSE ? (v358) Au rejeu seul de la suite, la citadine
+      // est tombée de 27 à 2 blocs/s vers x ≈ 97, cap tourné de 0,68 rad sans
+      // volant ni choc compté ; sur une page neuve, rien (`sonde-piste-
+      // joystick.cjs` : 29,6 blocs/s à x = 195). C'est donc ce que la suite a
+      // laissé. Le témoin note tout ce qui peut la ralentir — famille
+      // d'obstacle, chocs même sous le seuil, frein piéton, état des dégâts —
+      // et le dit dans son message (v223 : la sonde qui distingue les cas).
+      await tab.evaluate(() => {
+        const P = window.__game.player, x0 = window.__piste262.x0, z0 = window.__piste262.z0;
+        const j = window.__journalPiste = { fam: {}, chocs: [], pieton: 0, ev: null, h: P.obstacleVehicule, c: P.publierChoc };
+        P.obstacleVehicule = function (...a) { const r = j.h.apply(this, a); if (r) j.fam[r] = (j.fam[r] || 0) + 1; return r; };
+        P.publierChoc = function (f, dx, dz) { if (j.chocs.length < 8) j.chocs.push([+f.toFixed(3), +(P.pos.x - x0).toFixed(1), +(P.pos.z - z0).toFixed(1)]); return j.c.call(this, f, dx, dz); };
+        const suivre = () => { if (window.__journalPiste !== j) return; if (P.freinePieton) j.pieton++; const ev = P.etatVoiture; if (ev && (ev.moteur < 1 || ev.direction)) j.ev = { m: ev.moteur, d: ev.direction }; requestAnimationFrame(suivre); };
+        requestAnimationFrame(suivre);
+      });
+      const lire = () => tab.evaluate(() => { const p = window.__game.player; return { gaz: p.gaz == null ? null : +p.gaz.toFixed(2), f: +p.touchMove.f.toFixed(2), v: +Math.hypot(p.vel.x, p.vel.z).toFixed(2), yaw: +p.yaw.toFixed(3), y: +(p.pos.y - window.__piste262.y0 - 1).toFixed(2), x: +(p.pos.x - window.__piste262.x0).toFixed(1), chocs: p.chocs || 0, pieton: !!p.freinePieton }; });
       // LE BANC NE VIT PAS EN TEMPS RÉEL (dt borné, trois images par seconde) :
       // on attend que la voiture AIT pris sa vitesse, bornée en temps mural,
       // puis on relève — jamais un délai fixe.
       const vitesses = [];
       const t0 = Date.now();
-      while (Date.now() - t0 < 20000) { const r = await lire(); if (r.v >= prep.max * 0.9) break; await dormirIci(200); }
+      // et depuis la v358 elle la prend comme une vraie voiture — vite au
+      // départ, plus lentement vers la pointe : cinq secondes de JEU pour une
+      // citadine, donc bien plus de montre au banc. Borné, jamais un délai fixe.
+      // ET LE BUDGET SE COMPTE EN IMAGES DE JEU, PAS EN MONTRE (v277) : au
+      // portail de la fusion, 45 s de montre n'ont mené la citadine qu'à 20
+      // blocs/s (27 au portail d'avant, même code). Six cents images rendues
+      // valent trente secondes de jeu (dt borné à un vingtième) ; la montre
+      // n'est qu'un garde-fou.
+      const image0 = await tab.evaluate(() => window.__game.renderer.info.render.frame);
+      while (Date.now() - t0 < 180000) {
+        const r = await lire(); if (r.v >= prep.max * 0.9) break;
+        if (await tab.evaluate((i) => window.__game.renderer.info.render.frame - i > 600, image0)) break;
+        await dormirIci(200);
+      }
       for (let i = 0; i < 8; i++) { await dormirIci(200); vitesses.push(await lire()); }
       // puis le joystick à droite, toujours plein avant
       const avantVirage = await lire();
@@ -4720,7 +4872,8 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       // borné, jamais un délai fixe.
       let apresLacher = await lire();
       const t2 = Date.now();
-      while (Date.now() - t2 < 10000) { apresLacher = await lire(); if (apresLacher.v < prep.max * 0.3) break; await dormirIci(200); }
+      // la roue libre (frein moteur et air, v358) dure quelques secondes de jeu
+      while (Date.now() - t2 < 30000) { apresLacher = await lire(); if (apresLacher.v < prep.max * 0.3) break; await dormirIci(200); }
       // on descend : les boutons reviennent
       const apres = await tab.evaluate(async () => {
         const g = window.__game;
@@ -4730,19 +4883,25 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         const vis = (id) => getComputedStyle(document.getElementById(id)).display;
         return { saut: vis('jump-btn'), pioche: vis('mode-btn'), gaz: vis('gaz-base'), barre: vis('hotbar'), gazJoueur: g.player.gaz, auVolant: auVolant() };
       });
+      const journal = await tab.evaluate(() => {
+        const P = window.__game.player, j = window.__journalPiste;
+        if (!j) return null;
+        P.obstacleVehicule = j.h; P.publierChoc = j.c; window.__journalPiste = null;
+        return { fam: j.fam, chocs: j.chocs, pieton: j.pieton, ev: j.ev };
+      });
       const tri = vitesses.map((r) => r.v).sort((a, b) => a - b);
-      return { ...prep, essais, pose, mediane: tri[Math.floor(tri.length / 2)], pointe: tri[tri.length - 1], avantVirage, apresVirage, apresLacher, apres };
+      return { ...prep, essais, pose, journal, mediane: tri[Math.floor(tri.length / 2)], pointe: tri[tri.length - 1], avantVirage, apresVirage, apresLacher, apres };
     })();
     verifier('au volant, l\'avant du joystick est l\'accélérateur — poussé à fond, la voiture prend son allure, et elle ralentit quand on lâche',
       !manette.err && manette.mediane >= manette.max * 0.75 && manette.pointe <= manette.max * 1.05
         && manette.apresLacher && manette.apresLacher.v < manette.max * 0.3
         && manette.apresLacher.gaz == null,
-      `${manette.err || ''} médiane ${manette.mediane} pour ${manette.max && manette.max.toFixed(1)} d'allure · doigt ${JSON.stringify(manette.pose)} en ${manette.essais} essai(s) · lâché ${JSON.stringify(manette.apresLacher)}`);
+      `${manette.err || ''} médiane ${manette.mediane} pour ${manette.max && manette.max.toFixed(1)} d'allure · doigt ${JSON.stringify(manette.pose)} en ${manette.essais} essai(s) · lâché ${JSON.stringify(manette.apresLacher)} · journal ${JSON.stringify(manette.journal)}`);
     verifier('et le côté du joystick tourne le volant pendant qu\'on accélère',
       !manette.err && manette.avantVirage && manette.apresVirage
         && Math.abs(manette.apresVirage.yaw - manette.avantVirage.yaw) > 0.25
         && Math.abs(manette.apresVirage.y) < 0.3 && manette.apresVirage.v > manette.max * 0.5,
-      `doigt ${JSON.stringify(manette.pose)} en ${manette.essais} essai(s) · avant ${JSON.stringify(manette.avantVirage)} · après ${JSON.stringify(manette.apresVirage)}`);
+      `doigt ${JSON.stringify(manette.pose)} en ${manette.essais} essai(s) · avant ${JSON.stringify(manette.avantVirage)} · après ${JSON.stringify(manette.apresVirage)} · journal ${JSON.stringify(manette.journal)}`);
     const b = manette.boutons || {};
     // ET L'ON NE MESURE PLUS DEUX BOUTONS QUI N'EXISTENT PLUS. La capture (◓) et
     // le Dex partent avec le mode d'attrape (v285) : `vis()` rend alors
@@ -4846,12 +5005,16 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       if (!auVolant()) { await rendre(); return { err: 'pas monté dans la voiture' }; }
       g.player.keys.add('KeyW');
       // on roule jusqu'à ce que la voiture ait pris son allure
+      // DEPUIS LA v358 la voiture accélère comme une voiture : elle touche le
+      // mur à trente blocs AVANT d'avoir pris toute son allure, et relue après
+      // le choc, sa vitesse valait zéro (« lancée 0 » au portail). On retient
+      // la PLUS HAUTE vitesse atteinte, et l'on sort au premier choc publié.
       const t0 = performance.now();
-      let lance = 0;
+      let lance = 0; const chocs0 = g.player.chocs || 0;
       while (performance.now() - t0 < 20000) {
         await new Promise((f) => setTimeout(f, 200));
-        lance = Math.abs(g.player.vitesseVoiture || 0);
-        if (lance >= (g.player.vitesseVoitureMax || 3.2) * 0.85) break;
+        lance = Math.max(lance, Math.abs(g.player.vitesseVoiture || 0));
+        if (lance >= (g.player.vitesseVoitureMax || 3.2) * 0.85 || (g.player.chocs || 0) > chocs0) break;
       }
       // PUIS JUSQU'À CE QU'ELLE NE BOUGE PLUS — ET C'EST UN RÉSULTAT, PAS UNE DURÉE
       // (v270). Vingt-cinq secondes ne suffisaient pas : le portail a rendu
@@ -4881,7 +5044,13 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         x: +(g.player.pos.x - x0).toFixed(1),
         immobile, arret, expire: arret >= 45000,
       };
-      // on lâche le mur : la voiture doit repartir en arrière
+      // on lâche le mur : la voiture doit repartir en arrière.
+      // DEPUIS LA v358 LE MUR EST UN CHOC, ET LES DÉGÂTS (v343) LE COMPTENT :
+      // pris à 19,5 blocs/s il met la voiture en panne (allure 15,7 au portail,
+      // reculé 0,02) — c'est juste, une voiture en panne ne repart plus. Ce
+      // témoin éprouve la vitesse ANNONCÉE contre un mur (v272), pas les
+      // dégâts : on passe au garage avant de reculer.
+      { const m = g.fun.montureConduite && g.fun.montureConduite(); if (m && g.fun.degats && g.fun.degats.reparer) g.fun.degats.reparer(m.mesh); }
       g.player.keys.delete('KeyW'); g.player.keys.add('KeyS');
       const t2 = performance.now();
       let recule = 0;
@@ -5726,7 +5895,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !sons.err && sons.descendu && sons.apresDescente < sons.auRalenti / 4,
       `${sons.err || ''} ${JSON.stringify(sons)}`);
 
-    // LES SENSATIONS AU VOLANT (v352).
+    // LES SENSATIONS AU VOLANT (v361).
     //
     // Max : « l'impression de conduire dans GTA ». La caméra de poursuite
     // était rivée à six blocs quatre derrière la voiture quelle que soit
@@ -6047,6 +6216,181 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('une voiture roule dans la nature au lieu de buter sur une marche',
       !nature.err && nature.auVolant && nature.d >= 30,
       `barre 30 blocs (mesuré désarmé : 0,4 et 17,9 · armé : 59 et 116) · ${JSON.stringify(nature)}`);
+
+    // ---- LA CONDUITE À LA GTA (v358) ----------------------------------------
+    // Max : « des véhicules qui tournent de manière naturelle, des accélérations
+    // cohérentes, des vitesses cohérentes — aujourd'hui les véhicules sont trop
+    // lents —, des collisions cohérentes ». Une dalle de pierre loin de tout, une
+    // hypercar invoquée, et l'on mesure en TEMPS DE JEU (`min(dt, 0,05)` cumulé
+    // par image, v277) : la cadence du banc entre dans le message. Le modèle
+    // (`conduite.js`) donne la THÉORIE, la page donne ce que la voiture FAIT.
+    // Sur l'ancien code la pointe d'une hypercar est 25,6 blocs/s (92 km/h) :
+    // elle n'atteint jamais 100 km/h, aucun choc ne se publie, et la caisse ne
+    // s'aligne pas le long d'un mur — chaque verdict rougit pour sa raison.
+    // SUR UNE PAGE À ELLE (v358). Sur la longue page de la suite, un passant
+    // — Marlon se replace près de l'enfant dès qu'il s'éloigne — s'est trouvé
+    // devant la voiture, qui s'est arrêtée net comme elle le doit : « 0 bloc/s
+    // après sept secondes » au portail, vert rejoué seul sur une page neuve.
+    // Un témoin se place lui-même (v284), page comprise.
+    const pageGta = await banc.jouerSeul('MonteConduite', { tactile: true });
+    const gta = await pageGta.evaluate(async () => {
+      // les passants de la page ne roulent pas sur la dalle des témoins
+      if (window.__game.npcs) for (const n of window.__game.npcs) { if (n.pos) n.pos.set(n.pos.x, -500, n.pos.z); }
+      const g = window.__game, P = g.player;
+      const dormir = (ms) => new Promise((f) => setTimeout(f, ms));
+      const { BLOCK } = await import('./src/blocks.js');
+      const C = await import('./src/conduite.js').catch(() => null);
+      const x0 = 41000, z0 = 41000; let y0 = 0;
+      for (let d = -20; d <= 420; d += 4) for (let w = -60; w <= 60; w += 4) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
+      y0 += 3;
+      const poses = [];
+      const poser = (x, y, z) => { g.world.setBlock(x, y, z, BLOCK.STONE); poses.push([x, y, z]); };
+      for (let d = -20; d <= 420; d++) for (let w = -60; w <= 60; w++) poser(x0 + d, y0, z0 + w);
+      const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+      const vider = () => { for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh); g.animalManager.animals.length = 0; };
+      // UN TÉMOIN SE PLACE LUI-MÊME, ET COMMENCE PAR FAIRE LE VIDE (v284)
+      for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await dormir(400); }
+      vider();
+      P.flying = false; P.yaw = -Math.PI / 2; P.pitch = 0;
+      P.pos.set(x0, y0 + 1.2, z0 + 0.5); P.vel.set(0, 0, 0);
+      g.animalManager.invoquer('voiture', x0 + 3, z0 + 0.5, false, { flotte: 'koenigsegg-jesko.glb' });
+      await dormir(600);
+      for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); const t = performance.now(); while (!auVolant() && performance.now() - t < 2500) await dormir(150); }
+      if (!auVolant()) { for (const [x, y, z] of poses) g.world.setBlock(x, y, z, 0); return { err: 'pas au volant' }; }
+      const enJeu = (n, cb) => new Promise((fin) => { let c = 0, p = performance.now(); const pas = (t) => { const d = Math.min(Math.max((t - p) / 1000, 0), 0.05); c += d; p = t; if (cb) cb(c, d); if (c >= n) fin(c); else requestAnimationFrame(pas); }; requestAnimationFrame(pas); });
+      // LES DÉGÂTS (v343) comptent chaque choc : trois chocs à la suite
+      // pourraient mettre la voiture en feu et déposer l'enfant au milieu de la
+      // série. On la répare (le garage) avant chaque mesure — c'est la
+      // physique qu'on éprouve ici, pas les dégâts.
+      const reparer = () => { const m = g.fun.montureConduite && g.fun.montureConduite(); if (m && g.fun.degats && g.fun.degats.reparer) g.fun.degats.reparer(m.mesh); };
+      const placer = (x, z, yaw, v) => { reparer(); P.pos.set(x0 + x, y0 + 1.05, z0 + z); P.yaw = yaw; P.vitesseVoiture = v; P.derive = 0; P.braquage = 0; P.vel.set(-Math.sin(yaw) * v, 0, -Math.cos(yaw) * v); };
+      const res = {};
+      await enJeu(0.3);
+      // — 0 → 100 km/h et pointe, plein avant au joystick —
+      placer(0, 0.5, -Math.PI / 2, 0);
+      P.touchMove.f = 1; P.touchMove.s = 0;
+      let t100 = null, images = 0; const tw = performance.now();
+      await enJeu(7, (c) => { images++; if (t100 === null && Math.abs(P.vitesseVoiture || 0) >= 27.78) t100 = c; });
+      res.cadence = +(images / ((performance.now() - tw) / 1000)).toFixed(1);
+      res.t100 = t100 == null ? null : +t100.toFixed(2);
+      res.pointe = +Math.abs(P.vitesseVoiture || 0).toFixed(1);
+      res.fiche = P.ficheVoiture || null;
+      res.theorie = C && P.ficheVoiture ? { t100: +C.tempsJusqua(27.78, P.ficheVoiture).toFixed(2), vmax: P.ficheVoiture.vmax } : null;
+      // — le freinage, joystick tiré —
+      P.touchMove.f = -1; let tf = null;
+      await enJeu(6, (c) => { if (tf === null && (P.vitesseVoiture || 0) <= 0.5) tf = c; });
+      res.freinage = tf == null ? null : +tf.toFixed(2);
+      P.touchMove.f = 0;
+      // — le rayon de virage, volant à fond, à 6 puis à 20 blocs/s —
+      const rayon = async (v) => {
+        placer(150, 0, -Math.PI / 2, v);
+        P.touchMove.s = 1;
+        const pts = [];
+        const vmax = P.ficheVoiture ? P.ficheVoiture.vmax : 25.6;
+        await enJeu(5, (c) => { P.touchMove.f = Math.max(0, Math.min(1, v / vmax + (v - Math.abs(P.vitesseVoiture || 0)) * 0.2)); if (c > 1.5) pts.push([P.pos.x, P.pos.z, Math.abs(P.vitesseVoiture || 0), Math.abs(P.derive || 0)]); });
+        P.touchMove.s = 0; P.touchMove.f = 0;
+        const cx = pts.reduce((a, p) => a + p[0], 0) / pts.length, cz = pts.reduce((a, p) => a + p[1], 0) / pts.length;
+        return { v, R: +(pts.reduce((a, p) => a + Math.hypot(p[0] - cx, p[1] - cz), 0) / pts.length).toFixed(1),
+          vMoy: +(pts.reduce((a, p) => a + p[2], 0) / pts.length).toFixed(1), derive: +Math.max(...pts.map((p) => p[3])).toFixed(3),
+          theorie: C && P.ficheVoiture ? +C.rayonDeVirage(v, P.ficheVoiture).toFixed(1) : null };
+      };
+      res.lent = await rayon(6);
+      res.vite = await rayon(20);
+      // — un mur rasant : la voiture arrive à douze degrés, à 24 blocs/s —
+      for (let x = 100; x <= 400; x++) for (let h = 1; h <= 3; h++) poser(x0 + x, y0 + h, z0 + 20);
+      const ang = 12 * Math.PI / 180;
+      placer(110, 15, -Math.PI / 2 - ang, 24);
+      P.touchMove.f = 0.75; P.choc = null; let n0 = P.chocs || 0, contact = null;
+      await enJeu(2.5, (c) => { if (!contact && (P.chocs || 0) > n0) contact = { t: +c.toFixed(2), choc: P.choc }; });
+      res.rasant = { contact, x: +(P.pos.x - x0).toFixed(1), v: +Math.abs(P.vitesseVoiture || 0).toFixed(1), capDeg: +((P.yaw + Math.PI / 2) * 180 / Math.PI).toFixed(1) };
+      P.touchMove.f = 0;
+      // — un mur de face, en travers, pris à 22 blocs/s —
+      for (let z = -30; z <= 0; z++) for (let h = 1; h <= 3; h++) poser(x0 + 90, y0 + h, z0 + z);
+      placer(50, -12, -Math.PI / 2, 22);
+      P.choc = null; n0 = P.chocs || 0; let face = null, vMin = 0;
+      await enJeu(3, (c) => { if (!face && (P.chocs || 0) > n0) face = { t: +c.toFixed(2), choc: P.choc }; if (face) vMin = Math.min(vMin, P.vitesseVoiture || 0); });
+      res.face = { face, rebond: +vMin.toFixed(2), x: +(P.pos.x - x0).toFixed(1), v: +(P.vitesseVoiture || 0).toFixed(2) };
+      // — une voiture de la rue : la famille « voiture » du crochet de main.js,
+      // posée à la main en travers à x = 70 (le crochet RÉEL est éprouvé plus
+      // haut, « la circulation s'arrête devant la voiture de l'enfant ») —
+      const vrai = P.obstacleVehicule;
+      P.obstacleVehicule = (x, z, cap, xa, za) => ((x - x0) > 66 && (xa - x0) <= 66 && Math.abs(z - z0 - 40) < 6 ? 'voiture' : (vrai ? vrai(x, z, cap, xa, za) : false));
+      placer(20, 40, -Math.PI / 2, 18);
+      P.touchMove.f = 1; P.choc = null; n0 = P.chocs || 0; let rue = null;
+      await enJeu(3, (c) => { if (!rue && (P.chocs || 0) > n0) rue = { t: +c.toFixed(2), choc: P.choc, v: +(P.vitesseVoiture || 0).toFixed(2) }; });
+      P.obstacleVehicule = vrai; P.touchMove.f = 0;
+      res.rue = { rue, x: +(P.pos.x - x0).toFixed(1) };
+      // — une panne posée à la main : le joystick ne fait plus rien —
+      placer(0, -40, -Math.PI / 2, 0);
+      // les dégâts (v343) réécrivent `etatVoiture` à chaque image depuis LEUR
+      // état de la voiture : on fige le champ le temps de la mesure — c'est
+      // la LECTURE par la physique qu'on éprouve, pas l'écriture des dégâts
+      const panneFigee = { sante: 0, moteur: 0, direction: 0, enPanne: true, enFeu: false };
+      Object.defineProperty(P, 'etatVoiture', { configurable: true, get: () => panneFigee, set: () => {} });
+      P.touchMove.f = 1; P.touchMove.s = 1; const yawPanne = P.yaw;
+      await enJeu(2);
+      res.panne = { v: +Math.abs(P.vitesseVoiture || 0).toFixed(2), x: +(P.pos.x - x0).toFixed(2), tourne: +Math.abs(P.yaw - yawPanne).toFixed(3) };
+      P.touchMove.f = 0; P.touchMove.s = 0;
+      delete P.etatVoiture; P.etatVoiture = undefined;
+      // — UNE VOITURE NEUVE N'HÉRITE PAS DU DERNIER CHOC DE LA PRÉCÉDENTE
+      // (v358). Les dégâts rejouent tout `choc` dont la date n'est pas la
+      // dernière vue POUR CETTE VOITURE ; une voiture neuve n'en a vu aucun.
+      // On frappe un choc franc, on descend, on prend une voiture neuve, et
+      // l'on lit ce que les dégâts publient pour elle — sans rouler. —
+      P.choc = { force: 1, t: performance.now(), x: P.pos.x, z: P.pos.z };
+      await enJeu(0.3);
+      for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await dormir(400); }
+      vider();
+      P.pos.set(x0, y0 + 1.2, z0 + 20.5); P.vel.set(0, 0, 0); P.yaw = -Math.PI / 2;
+      g.animalManager.invoquer('voiture', x0 + 3, z0 + 20.5, false, { flotte: 'berline-citadine' });
+      await dormir(600);
+      for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); const t = performance.now(); while (!auVolant() && performance.now() - t < 2500) await dormir(150); }
+      await enJeu(0.5);
+      const evNeuve = P.etatVoiture;
+      res.neuve = { auVolant: auVolant(), ev: evNeuve ? { sante: +(+evNeuve.sante).toFixed(3), moteur: +(+evNeuve.moteur).toFixed(3), direction: +(+evNeuve.direction || 0).toFixed(4) } : null };
+      for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await dormir(400); }
+      vider();
+      for (const [x, y, z] of poses) g.world.setBlock(x, y, z, 0);
+      return res;
+    });
+    await pageGta.close().catch(() => {});
+    const cd = gta || {};
+    const cadenceC = `cadence ${cd.cadence} images/s`;
+    verifier('une hypercar passe de 0 à 100 km/h en moins de trois secondes de jeu, comme le dit sa fiche',
+      !cd.err && cd.t100 != null && cd.t100 < 3 && cd.theorie && Math.abs(cd.t100 - cd.theorie.t100) < 0.6,
+      `${cd.err || ''} 0→100 en ${cd.t100} s (théorie ${cd.theorie && cd.theorie.t100}) · ${cadenceC}`);
+    verifier('et elle file bien plus vite qu\'avant — 25,6 blocs/s, 92 km/h, était sa pointe',
+      !cd.err && cd.pointe >= 45,
+      `${cd.pointe} blocs/s après sept secondes (${Math.round((cd.pointe || 0) * 3.6)} km/h), pointe de la fiche ${cd.fiche && cd.fiche.vmax}`);
+    // vert des deux côtés à dessein (l'ancienne voiture s'arrêtait en 0,4 s) :
+    // il garde que le modèle neuf ne rend pas le frein mou
+    verifier('un frein franc : de la pointe à l\'arrêt en moins de trois secondes',
+      !cd.err && cd.freinage != null && cd.freinage < 3, `${cd.freinage} s`);
+    verifier('au pas on tourne serré, vite on tourne large — le rayon suit la géométrie puis l\'adhérence',
+      !cd.err && cd.lent && cd.vite && cd.lent.theorie != null
+        && Math.abs(cd.lent.R - cd.lent.theorie) < 1 && cd.vite.R > 2.5 * cd.lent.R
+        && Math.abs(cd.vite.R - cd.vite.theorie) < 0.3 * cd.vite.theorie,
+      `à ${cd.lent && cd.lent.v} : ${JSON.stringify(cd.lent)} · à ${cd.vite && cd.vite.v} : ${JSON.stringify(cd.vite)}`);
+    verifier('et la dérive d\'un virage serré pris vite reste bornée, petite — on glisse, on ne part pas',
+      !cd.err && cd.vite && cd.vite.derive > 0.02 && cd.vite.derive <= 0.3 && cd.lent.derive < 0.01,
+      `dérive au pas ${cd.lent && cd.lent.derive} · vite ${cd.vite && cd.vite.derive} rad`);
+    verifier('un mur pris en rasant : la voiture glisse le long, se remet dans l\'axe et continue — avec un petit choc publié',
+      !cd.err && cd.rasant && cd.rasant.contact && cd.rasant.contact.choc && cd.rasant.contact.choc.force < 0.5
+        && cd.rasant.x > 150 && cd.rasant.v > 12 && Math.abs(cd.rasant.capDeg) < 3,
+      JSON.stringify(cd.rasant));
+    verifier('un mur pris de face : la voiture s\'arrête, avec un petit rebond, et le choc dit où',
+      !cd.err && cd.face && cd.face.face && cd.face.face.choc && cd.face.face.choc.force > 0.3
+        && cd.face.rebond < -0.3 && Math.abs(cd.face.v) < 0.5 && Math.abs(cd.face.face.choc.x - 41090) < 1,
+      JSON.stringify(cd.face));
+    verifier('une voiture de la rue percutée : choc publié, et la nôtre rebondit au lieu de la traverser',
+      !cd.err && cd.rue && cd.rue.rue && cd.rue.rue.choc && cd.rue.rue.choc.force > 0.2 && cd.rue.x <= 66.01,
+      JSON.stringify(cd.rue));
+    verifier('une voiture en panne ne repart plus — le joystick ne fait plus rien',
+      !cd.err && cd.panne && cd.panne.v < 0.01 && cd.panne.x < 0.05 && cd.panne.tourne < 0.001,
+      JSON.stringify(cd.panne));
+    verifier('une voiture neuve n\'hérite pas du dernier choc de la précédente — elle part sans dégâts',
+      !cd.err && cd.neuve && cd.neuve.auVolant && cd.neuve.ev && cd.neuve.ev.sante >= 0.999 && cd.neuve.ev.direction === 0,
+      JSON.stringify(cd.neuve));
 
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0,
       JSON.stringify(tab.erreurs));

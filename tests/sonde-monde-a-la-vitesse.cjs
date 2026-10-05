@@ -68,6 +68,13 @@ const tours = Number(process.argv[6] || 1);
             await patienter(250);
           }
           const chargeEn = Math.round(performance.now() - tAttente);
+          // `vide=1` (v360) : le rendu d'une scène VIDE, une fois le disque
+          // chargé — même chargement, même worker, rien à dessiner. Sépare la
+          // cadence perdue au DESSIN de celle perdue au chargement.
+          if (location.search.includes('vide=1')) {
+            const rendre = g.renderer.render.bind(g.renderer), vide = new g.scene.constructor();
+            g.renderer.render = (s, c) => rendre(vide, c);
+          }
           // Le roulage : la position est une fonction du TEMPS RÉEL.
           const depart = performance.now();
           let roule = true;
@@ -83,6 +90,7 @@ const tours = Number(process.argv[6] || 1);
           requestAnimationFrame(tic);
           await patienter(4000);
           const distants0 = g.statsMaillage.distants, t0 = performance.now();
+          const S0 = { ...g.statsMaillage };
           const trous = [], axes = [], cones = [];
           // les morceaux installés PENDANT la fenêtre, et où ils sont tombés
           const vus = new Set(g.chunkMeshes.keys());
@@ -122,12 +130,21 @@ const tours = Number(process.argv[6] || 1);
           }
           roule = false; suivre = false;
           const debit = (g.statsMaillage.distants - distants0) / ((performance.now() - t0) / 1000);
+          // OÙ PASSE LE TEMPS (v360) : par seconde de montre, en ms
+          const S1 = g.statsMaillage, mur = (performance.now() - t0) / 1000;
+          const d = (k) => +(((S1[k] || 0) - (S0[k] || 0)) / mur).toFixed(0);
+          const n = S1.distants - S0.distants;
+          const temps = { install: d('installMs'), rendu: d('renduMs'), travail: d('travailMs'), images: d('images'),
+            worker: d('workerMs'), workerSec: d('workerInactifMs'), lots: d('lots'), fileVide: d('fileVide'), refuses: d('refuses'),
+            installParMorceau: +((S1.installMs - S0.installMs) / (n || 1)).toFixed(2),
+            workerParMorceau: +((S1.workerMs - S0.workerMs) / (n || 1)).toFixed(2),
+            transitParMorceau: +((S1.transitMs - S0.transitMs) / (n || 1)).toFixed(1) };
           const parcouru = Math.round(p.pos.x - x0);
           p.flying = false;
           trous.sort((a, b) => a - b); axes.sort((a, b) => a - b); cones.sort((a, b) => a - b);
           const total = durees.reduce((a, c) => a + c, 0) || 1;
           const tri = [...durees].sort((a, b) => a - b);
-          return { lieu, v, parcouru, chargeEn, trou: trous[3], trous, axe: axes[3], cone40: cones[3], installes, derriere, dansCone, partCone: +(dansCone / (installes || 1)).toFixed(2), appels: Math.round(appels / (nImg || 1)), ktri: Math.round(triangles / (nImg || 1) / 1000),
+          return { lieu, v, parcouru, temps, chargeEn, trou: trous[3], trous, axe: axes[3], cone40: cones[3], installes, derriere, dansCone, partCone: +(dansCone / (installes || 1)).toFixed(2), appels: Math.round(appels / (nImg || 1)), ktri: Math.round(triangles / (nImg || 1) / 1000),
             debit: +debit.toFixed(1), besoin: +((2 * R + 1) * v / CHUNK).toFixed(1),
             cadence: +(durees.length / (total / 1000)).toFixed(1),
             mediane: Math.round(tri[tri.length >> 1] || 0), pire: Math.round(tri[tri.length - 1] || 0),

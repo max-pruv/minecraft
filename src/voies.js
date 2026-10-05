@@ -526,3 +526,61 @@ export function carrefoursDeVoies(voies) {
   }
   return out;
 }
+
+// --- une trame qui ne double pas ses avenues (v339, Londres ; v359, Nice) ----
+//
+// La trame d'une ville bâtie à la main est tracée sans regarder ses avenues :
+// une de ses rues vient s'intercaler à quelques blocs d'une avenue parallèle.
+// À la section du kit, c'était un quartier sans immeubles. Là où les avenues
+// quadrillent le quartier, ce sont elles les rues, et l'îlot va de l'une à
+// l'autre : une rue de la trame n'est pas tracée là où elle longe une avenue à
+// moins de 35° et à moins de `recul` — la demi-emprise d'une artère, un îlot
+// de cinq blocs (`ILOT_MIN`, v271, v307) et la demi-EMPRISE de la rue de la
+// trame : c'est la distance entre les deux axes sous laquelle le lot qui les
+// sépare, de trottoir à trottoir, n'a plus ses cinq blocs. Celle qui COUPE une
+// avenue reste : c'est par elle qu'on y arrive.
+//
+// ET LA v339 COMPTAIT LA DEMI-CHAUSSÉE AU LIEU DE LA DEMI-EMPRISE (13,9 au lieu
+// de 16,4) : elle laissait passer une rue de la trame à quinze ou seize blocs
+// d'une avenue, donc un lot de trois blocs et demi entre leurs trottoirs. Vu
+// au relevé du Sunset de San Francisco, où les avenues sont à seize
+// blocs de la trame ; corrigé ici, et Londres remesurée avec (v359).
+//
+// Rend `double(u, v, eu, ev)` : vrai si une rue de direction (eu, ev) passant
+// en (u, v) double une avenue. `double.recul` dit la distance retenue.
+const ILOT_MIN_RECUL = 5;
+const BANDE_RECUL = 8;
+const COS_PARALLELE = Math.cos(35 * Math.PI / 180);
+export function reculDesAvenues(voies, artere, trame = artere) {
+  const recul = artere.emprise / 2 + ILOT_MIN_RECUL + trame.emprise / 2;
+  const bandes = new Map();
+  for (const voie of voies) {
+    for (let i = 0; i < voie.pts.length - 1; i++) {
+      const [u0, v0] = voie.pts[i], [u1, v1] = voie.pts[i + 1];
+      const lg = Math.hypot(u1 - u0, v1 - v0) || 1;
+      const seg = { u0, v0, u1, v1, du: (u1 - u0) / lg, dv: (v1 - v0) / lg,
+        uMin: Math.min(u0, u1) - recul, uMax: Math.max(u0, u1) + recul };
+      const b0 = Math.floor((Math.min(v0, v1) - recul) / BANDE_RECUL);
+      const b1 = Math.floor((Math.max(v0, v1) + recul) / BANDE_RECUL);
+      for (let b = b0; b <= b1; b++) {
+        if (!bandes.has(b)) bandes.set(b, []);
+        bandes.get(b).push(seg);
+      }
+    }
+  }
+  const double = (u, v, eu, ev) => {
+    const segs = bandes.get(Math.floor(v / BANDE_RECUL));
+    if (!segs) return false;
+    for (const g of segs) {
+      if (u < g.uMin || u > g.uMax) continue;
+      if (Math.abs(g.du * eu + g.dv * ev) < COS_PARALLELE) continue;
+      const lu = g.u1 - g.u0, lv = g.v1 - g.v0, l2 = lu * lu + lv * lv || 1;
+      let k = ((u - g.u0) * lu + (v - g.v0) * lv) / l2;
+      k = k < 0 ? 0 : k > 1 ? 1 : k;
+      if (Math.hypot(u - g.u0 - k * lu, v - g.v0 - k * lv) < recul) return true;
+    }
+    return false;
+  };
+  double.recul = recul;
+  return double;
+}

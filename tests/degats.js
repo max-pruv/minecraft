@@ -400,6 +400,203 @@ function verifier(nom, ok, detail = '') {
     verifier('la carcasse partie, ses géométries clonées sont rendues au pilote (liberer, v238)',
       rendu.partie && rendu.clones > 0 && rendu.rendues === rendu.clones, JSON.stringify(rendu));
 
+    // 6 bis. LES VOITURES DE LA RUE S'ABÎMENT AUSSI (v356). Une seconde dalle,
+    // un petit circuit de circulation qui la longe, et l'enfant au volant posé
+    // sur la voie, face aux voitures qui arrivent : elles s'arrêtent devant
+    // lui (v245), il fonce dans la première. Le choc passe par le VRAI chemin
+    // (le repli de vitesse, ou `player.choc`) — c'est lui qui doit trouver la
+    // voiture de la rue percutée.
+    const rue = await tab.evaluate(async () => {
+      const g = window.__game, d = g.fun.degats, { x0, z0 } = window.__essai;
+      if (!d) return { err: 'pas de module de dégâts' };
+      const { BLOCK } = await import('./src/blocks.js');
+      const tenir = (n) => new Promise((fin) => {
+        let cumul = 0, prec = performance.now();
+        const pas = (t) => { cumul += (t - prec) / 1000; prec = t; if (cumul >= n) fin(); else requestAnimationFrame(pas); };
+        requestAnimationFrame(pas);
+      });
+      const z1 = z0 + 60;
+      let y1 = 0;
+      for (let dx = -70; dx <= 70; dx += 4) for (let dz = -4; dz <= 16; dz += 4) y1 = Math.max(y1, g.world.terrainHeight(x0 + dx, z1 + dz));
+      y1 += 2;
+      for (let dx = -70; dx <= 70; dx++) for (let dz = -4; dz <= 16; dz++) {
+        g.world.setBlock(x0 + dx, y1, z1 + dz, BLOCK.STONE);
+        for (let h = 1; h <= 6; h++) if (g.world.getBlock(x0 + dx, y1 + h, z1 + dz) !== 0) g.world.setBlock(x0 + dx, y1 + h, z1 + dz, 0);
+      }
+      g.player.flying = false; g.player.gaz = null; g.player.keys.clear();
+      g.player.pos.set(x0 + 14, y1 + 1.01, z1 + 6); g.player.vel.set(0, 0, 0);
+      await tenir(0.8);
+      for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh);
+      g.animalManager.animals.length = 0;
+      const c = g.animalManager.invoquer('voiture', x0 + 14, z1 + 3, false, { flotte: 'ferrari-f40.glb' });
+      const t0 = performance.now();
+      while (performance.now() - t0 < 30000 && !c.mesh.userData.roues) await tenir(0.3);
+      c.pos.y = y1 + 1.01; c.mesh.position.y = c.pos.y;
+      for (let e = 0; e < 8 && !(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await tenir(0.5); }
+      if (!g.fun.montureConduite()) return { err: 'pas au volant' };
+      // sur la voie (z1), le nez vers −x, face aux voitures qui arrivent vers +x
+      g.player.pos.set(x0 + 14, y1 + 1.01, z1); g.player.yaw = Math.PI / 2; g.player.vitesseVoiture = 0;
+      const pts = [[-60, 0], [60, 0], [60, 12], [-60, 12], [-60, 0]].map(([dx, dz]) => ({ x: x0 + dx, y: y1 + 1, z: z1 + dz }));
+      const conv = g.vehicules.circulation(pts, 99, { nb: 4, vitesse: 10 });
+      // la première voiture qui arrive, arrêtée devant l'enfant
+      let cible = null;
+      const t1 = performance.now();
+      while (performance.now() - t1 < 40000 && !cible) {
+        await tenir(0.3);
+        for (let i = 0; i < conv.nb; i++) {
+          const m = conv.elements[i];
+          if (!m || !m.visible) continue;
+          const dx = g.player.pos.x - m.position.x;
+          if (dx > 3 && dx < 16 && Math.abs(m.position.z - z1) < 1.5 && conv.attend[i] && m.userData.roues) cible = { i, m };
+        }
+      }
+      if (!cible) return { err: 'aucune voiture de la rue arrêtée devant l\'enfant', attente: Math.round(performance.now() - t1) };
+      const ecart = Math.round((g.player.pos.x - cible.m.position.x) * 10) / 10;
+      g.player.gaz = 1;
+      const t2 = performance.now();
+      const touchees = () => (d.rue ? d.rue() : []);
+      while (performance.now() - t2 < 10000 && !touchees().length) await tenir(0.1);
+      g.player.gaz = 0;
+      await tenir(0.5);
+      const m = touchees()[0] || null;
+      const e = m ? d.etat(m) : null;
+      const pieces = m ? (d.pieces(m) || []) : [];
+      const propres = pieces.filter((pc) => pc.propre);
+      // la géométrie commune du modèle, que la rue PARTAGE, n'a pas bougé : une
+      // voiture neuve du même modèle la porte encore
+      let partagees = 0;
+      if (m) {
+        const neuve = g.animalManager.invoquer('voiture', x0 - 50, z1 + 8, false, { flotte: m.userData.flotte });
+        const t3 = performance.now();
+        while (performance.now() - t3 < 20000 && !neuve.mesh.userData.roues) await tenir(0.3);
+        const orig = new Set(propres.map((pc) => pc.geoOrig));
+        neuve.mesh.traverse((o) => { if (o.isMesh && orig.has(o.geometry)) partagees++; });
+      }
+      const nous = d.etat(c.mesh);
+      window.__rue = { conv, m, x0, z1 };
+      return { ecart, cibleTouchee: m === cible.m, sante: e ? Math.round(e.sante * 100) / 100 : null,
+        clones: propres.length, communs: propres.filter((pc) => pc.mesh.geometry === pc.geoOrig).length, partagees,
+        notreSante: nous ? Math.round(nous.sante * 100) / 100 : 1 };
+    });
+    verifier('percuter une voiture de la rue l\'abîme AUSSI : sa tôle à elle, clonée, jamais la géométrie que la rue partage',
+      !rue.err && rue.cibleTouchee && rue.sante < 1 && rue.clones > 0 && rue.communs === 0 && rue.partagees > 0 && rue.notreSante < 1,
+      JSON.stringify(rue));
+    const rue2 = await tab.evaluate(async () => {
+      const g = window.__game, d = g.fun.degats, R = window.__rue;
+      if (!d || !R || !R.m) return { err: 'pas de voiture de la rue abîmée' };
+      const tenir = (n) => new Promise((fin) => {
+        let cumul = 0, prec = performance.now();
+        const pas = (t) => { cumul += (t - prec) / 1000; prec = t; if (cumul >= n) fin(); else requestAnimationFrame(pas); };
+        requestAnimationFrame(pas);
+      });
+      // très touchée : elle fume — et ne prend JAMAIS feu
+      for (let k = 0; k < 8; k++) d.choc(R.m, { force: 1, lx: 0, lz: -2.2 }, true);
+      await tenir(0.8);
+      const e = d.etat(R.m);
+      const fumee = d.particulesVisibles().fumee;
+      // et quand elle s'en va (un ami l'a prise : `retirer`, v305), ses clones
+      // sont rendus au pilote (v238)
+      const propres = (d.pieces(R.m) || []).filter((pc) => pc.propre).map((pc) => pc.mesh.geometry);
+      let rendues = 0;
+      for (const gm of propres) gm.addEventListener('dispose', () => { rendues++; });
+      const i = R.conv.elements.indexOf(R.m);
+      const retiree = g.vehicules.retirer(`${R.conv.cle}#${i}`);
+      await tenir(0.6);
+      return { enFeu: e.enFeu, eteint: e.eteint, sante: Math.round(e.sante * 100) / 100, fumee, retiree,
+        prises: propres.length, rendues, suivies: d.rue().length };
+    });
+    verifier('très touchée elle fume, ne prend JAMAIS feu, et partie ses géométries froissées sont rendues (v238)',
+      !rue2.err && !rue2.enFeu && !rue2.eteint && rue2.fumee > 0 && rue2.retiree && rue2.prises > 0 && rue2.rendues === rue2.prises && rue2.suivies === 0,
+      JSON.stringify(rue2));
+
+    // 6 ter. LE GARAGE RÉPARE, PAR LE TRAJET DE L'ENFANT (v356). La voiture
+    // qu'il conduit a été abîmée contre celle de la rue ; il la range dans un
+    // garage (il DESCEND dedans — `rangerAuGarage`), puis la ressort : elle
+    // est neuve, géométrie commune et santé publiée à 1. Le témoin d'avant
+    // appelait `reparer` lui-même ; celui-ci passe par les boutons.
+    const garage = await tab.evaluate(async () => {
+      const g = window.__game, d = g.fun.degats;
+      if (!d) return { err: 'pas de module de dégâts' };
+      const tenir = (n) => new Promise((fin) => {
+        let cumul = 0, prec = performance.now();
+        const pas = (t) => { cumul += (t - prec) / 1000; prec = t; if (cumul >= n) fin(); else requestAnimationFrame(pas); };
+        requestAnimationFrame(pas);
+      });
+      const a = g.fun.montureConduite();
+      if (!a) return { err: 'pas au volant' };
+      // abîmée, et l'on sait par quelles géométries
+      if (!d.etat(a.mesh) || !(d.etat(a.mesh).sante < 1)) d.choc(a.mesh, { force: 1, lx: 0, lz: -2.2 });
+      await tenir(0.3);
+      const clones = new Set((d.pieces(a.mesh) || []).filter((pc) => pc.propre).map((pc) => pc.mesh.geometry));
+      const santeAvant = d.etat(a.mesh).sante;
+      // un garage autour de la voiture (sa pose n'est pas le sujet)
+      const gar = await import('./src/garages.js');
+      const id = gar.inscrireGarage(g.world.ctx, { x: a.pos.x, y: Math.floor(a.pos.y) - 1, z: a.pos.z, l: 8, p: 10,
+        places: [[Math.floor(a.pos.x), Math.floor(a.pos.z)]] });
+      // on DESCEND dans le garage : c'est le geste qui range
+      document.getElementById('ride-btn').click();
+      await tenir(0.6);
+      const descendu = !g.fun.montureConduite();
+      const rangee = !!(gar.garagesDe(g.world.ctx)[id] || {}).voiture;
+      // puis on remonte : derrière la voiture, face à elle
+      const cap = a.mesh.rotation.y;
+      g.player.pos.set(a.pos.x + Math.sin(cap) * 4, a.pos.y + 0.05, a.pos.z + Math.cos(cap) * 4);
+      g.player.yaw = Math.atan2(-(a.pos.x - g.player.pos.x), -(a.pos.z - g.player.pos.z));
+      await tenir(0.4);
+      for (let e = 0; e < 8 && g.fun.montureConduite() !== a; e++) { document.getElementById('ride-btn').click(); await tenir(0.5); }
+      const remonte = g.fun.montureConduite() === a;
+      await tenir(0.4);
+      let restants = 0;
+      a.mesh.traverse((o) => { if (o.isMesh && clones.has(o.geometry)) restants++; });
+      return { santeAvant: Math.round(santeAvant * 100) / 100, clones: clones.size, descendu, rangee, remonte,
+        etat: d.etat(a.mesh) ? d.etat(a.mesh).sante : null, publie: g.player.etatVoiture, restants };
+    });
+    verifier('le garage répare par le trajet : abîmée, rangée (on descend dedans), ressortie — elle est NEUVE',
+      !garage.err && garage.santeAvant < 1 && garage.clones > 0 && garage.descendu && garage.rangee && garage.remonte
+        && garage.restants === 0 && (garage.etat === null || garage.etat === 1) && garage.publie && garage.publie.sante === 1,
+      JSON.stringify(garage));
+
+    // 6 quater. LE CONTRAT AVEC LA PHYSIQUE, JAMAIS DEUX FOIS (v356). Le jour
+    // où la session « conduite-physique » publiera `player.choc` et lira
+    // l'état elle-même (`player.physiqueLitEtat`), aucun choc ni aucun effet
+    // ne doit compter double : un choc publié vaut UN impact (même relu à
+    // chaque image), le repli de vitesse se tait, et l'allure n'est plus
+    // réduite ici. On publie à la main ce que la physique publiera.
+    const contrat = await tab.evaluate(async () => {
+      const g = window.__game, d = g.fun.degats, p = g.player;
+      const tenir = (n) => new Promise((fin) => {
+        let cumul = 0, prec = performance.now();
+        const pas = (t) => { cumul += (t - prec) / 1000; prec = t; if (cumul >= n) fin(); else requestAnimationFrame(pas); };
+        requestAnimationFrame(pas);
+      });
+      const a = g.fun.montureConduite();
+      if (!a || !d) return { err: 'pas au volant' };
+      p.gaz = 0; p.vitesseVoiture = 0;
+      await tenir(0.3);
+      const boostNeuve = p.boost;
+      p.physiqueLitEtat = true;
+      p.choc = null;                                  // la physique existe, rien ne s'est passé
+      // une chute de vitesse brutale : le repli la compterait — il doit se taire
+      p.vitesseVoiture = 22; await tenir(0.05); p.vitesseVoiture = 0; await tenir(0.3);
+      const apresChute = d.etat(a.mesh) ? d.etat(a.mesh).chocs.length : 0;
+      const cap = a.mesh.rotation.y;
+      p.choc = { force: 0.8, t: performance.now(), x: a.pos.x - Math.sin(cap) * 2.3, z: a.pos.z - Math.cos(cap) * 2.3 };
+      await tenir(1.0);                               // relu à chaque image
+      const e = d.etat(a.mesh);
+      const chocs = e ? e.chocs.length : 0;
+      const boostLu = p.boost;                        // la physique lit l'état : pas de réduction ici
+      p.physiqueLitEtat = false;
+      await tenir(0.3);
+      const boostApplique = p.boost;                  // sans elle, l'allure réduite revient ici
+      delete p.choc; delete p.physiqueLitEtat;
+      return { apresChute, chocs, zone: e ? e.chocs.map((c) => c.z) : null, publie: p.etatVoiture,
+        boostNeuve, boostLu, boostApplique };
+    });
+    verifier('le contrat avec la physique : un choc publié compte UNE fois, le repli se tait, l\'allure n\'est jamais réduite deux fois',
+      !contrat.err && contrat.apresChute === 0 && contrat.chocs === 1 && contrat.publie && contrat.publie.sante < 1
+        && Math.abs(contrat.boostLu - contrat.boostNeuve) < 1e-6 && contrat.boostApplique < contrat.boostNeuve,
+      JSON.stringify(contrat));
+
     verifier('aucune erreur JavaScript de bout en bout', erreurs.length === 0, JSON.stringify(erreurs.slice(0, 4)));
     await tab.close();
 
@@ -458,6 +655,59 @@ function verifier(nom, ok, detail = '') {
     const enFeu = await vuParAlice();
     verifier('et elle la voit prendre feu : des flammes sur la voiture de l\'ami', enFeu.enFeu && enFeu.flammes > 0,
       JSON.stringify(enFeu));
+
+    // 8. L'ÉPAVE RESTE CHEZ L'AMI (v356). Marlon est déposé à côté de sa
+    // voiture en feu : sa position n'emporte plus de voiture. Chez Alice,
+    // l'épave doit rester LÀ OÙ ELLE S'EST ARRÊTÉE, et brûler encore — sur
+    // l'ancien code elle s'évanouissait avec le champ `p.v`.
+    const lieu = await hote.evaluate(() => { const a = window.__game.fun.montureConduite(); return a ? { x: a.pos.x, z: a.pos.z } : null; });
+    await jusqua(async () => hote.evaluate(() => !window.__game.fun.montureConduite()), 12000);
+    const depose = await hote.evaluate(() => !window.__game.fun.montureConduite());
+    // le temps que la position sans voiture arrive chez Alice
+    await jusqua(async () => alice.evaluate(() => {
+      for (const rp of window.__game.remotePlayers.values()) if (rp.name === 'Marlon') return !rp.vehicule;
+      return false;
+    }), 8000);
+    await dormir(1500);
+    const epave = await alice.evaluate((l) => {
+      const g = window.__game, d = g.fun.degats;
+      let marlon = null;
+      for (const rp of g.remotePlayers.values()) if (rp.name === 'Marlon') marlon = rp;
+      // ce qui est dessiné là où la voiture s'est arrêtée : une ferrari de la
+      // flotte dans la scène, à moins de trois blocs (Alice a retiré ses bêtes)
+      let voiture = null;
+      for (const o of g.scene.children) {
+        if (o.userData && o.userData.flotte === 'ferrari-f40.glb' && l && Math.hypot(o.position.x - l.x, o.position.z - l.z) < 3) voiture = o;
+      }
+      const e = voiture && d ? d.etat(voiture) : null;
+      const vis = d ? d.particulesVisibles() : { fumee: 0, flammes: 0 };
+      return { lieu: l, aVolant: !!(marlon && marlon.vehicule), voiture: !!voiture, enFeu: !!(e && e.enFeu),
+        eteint: !!(e && e.eteint), fumee: vis.fumee, flammes: vis.flammes,
+        epaves: d && d.epaves ? d.epaves().length : 0 };
+    }, lieu);
+    verifier('Marlon déposé, Alice voit encore son épave EN FEU là où elle s\'est arrêtée (le receveur la garde)',
+      depose && !epave.aVolant && epave.voiture && (epave.enFeu || epave.eteint) && epave.fumee + epave.flammes > 0,
+      JSON.stringify({ depose, ...epave }));
+    // et elle s'en va au bout de la durée de la carcasse, ses clones rendus
+    // (v238) : on avance son horloge jusqu'au bout plutôt que d'attendre une
+    // minute et demie — c'est la même règle (`avancerFeu`) qui décide.
+    const partie = await alice.evaluate(async () => {
+      const g = window.__game, d = g.fun.degats;
+      const ep = d && d.epaves ? d.epaves()[0] : null;
+      if (!ep) return { err: 'aucune épave' };
+      const e = d.etat(ep.root);
+      const clones = [];
+      ep.root.traverse((o) => { if (o.isMesh && o.geometry && !o.geometry.userData.partagee) clones.push(o.geometry); });
+      const propres = (d.pieces(ep.root) || []).filter((pc) => pc.propre).map((pc) => pc.mesh.geometry);
+      let rendues = 0;
+      for (const c of propres) c.addEventListener('dispose', () => { rendues++; });
+      e.enFeu = false; e.eteint = true; e.carcasse = 89.5;
+      await new Promise((f) => setTimeout(f, 2500));
+      return { propres: propres.length, rendues, dansLaScene: !!ep.root.parent, restantes: d.epaves().length };
+    });
+    verifier('puis l\'épave s\'en va au bout de sa durée, et ses géométries froissées sont rendues au pilote',
+      !partie.err && !partie.dansLaScene && partie.restantes === 0 && partie.propres > 0 && partie.rendues === partie.propres,
+      JSON.stringify(partie));
   } finally {
     await banc.fermer();
   }
