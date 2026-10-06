@@ -7712,7 +7712,17 @@ function updateHud(dt) {
     + `morceaux ${chunkMeshes.size} (${[...chunkMeshes.values()].filter((e) => e.detail).length} avec façades HD) · corps ${h.prets}/${h.total} · programmes chauffés ${programmesChauffes()} · ${myName() || ''} ${player.pos.x.toFixed(0)},${player.pos.z.toFixed(0)}\n`
     + `journal : ${journal.doc.releves.length} relevé(s), ${journal.doc.erreurs} erreur(s), plantages de suite ${journal.plantages()}${PALIER && PALIER.source === 'sûreté' ? ' — SÛRETÉ' : ''}`
     + ` · façades HD ${detailTenu.n} morceau(x), ${(detailTenu.octets / 1048576).toFixed(0)} / ${(BUDGET_FACADES / 1048576).toFixed(0)} Mo, ${statsMaillage.detailsBudget} rendu(s) au budget`
-    + texteDegats();
+    + texteDegats()
+    + texteEmbarquement();
+}
+
+// La dernière montée ou descente (v386) : c'est la ligne que Max lit sur la
+// tablette pour valider la séquence (TASKS.md, « gestes sur la tablette »).
+function texteEmbarquement() {
+  const d = fun.embarquementDernier ? fun.embarquementDernier() : null;
+  if (!d) return '';
+  return `\nembarquement : ${d.sens} (${d.quoi}) en ${d.temps.toFixed(1)} s de jeu, ${d.fin}`
+    + (d.sens === 'descendre' ? ` · ${d.cote < 0 ? 'côté conducteur' : d.cote > 0 ? 'côté passager' : 'hors des portières'}${d.refus && d.refus.conducteur ? ` (conducteur refusé : ${d.refus.conducteur})` : ''}` : '');
 }
 
 // Les dégâts sur l'appareil (v364) : une ligne, seulement s'il s'est abîmé

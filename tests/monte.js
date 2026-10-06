@@ -6998,6 +6998,17 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('un second appui pendant la séquence la termine tout de suite',
       !!embEnCours.ph && !embEnCours.volant && embPresse.volant && !embPresse.ph && embPresse.arriere != null && Math.abs(embPresse.arriere - embFin.arriere) < 0.05,
       `pendant : ${embEnCours.ph}/${embEnCours.volant} · après le second appui : ${embPresse.ph}/${embPresse.volant} · arête ${embPresse.arriere}`);
+    // 7 bis. CE QUE MAX LIRA SUR LA TABLETTE (v386) : `?diag=1` nomme la
+    // dernière séquence et comment elle a fini — ici « monter (voiture), second
+    // appui ». La ligne lit `fun.embarquementDernier`, qu'on lit ici.
+    const embDernier = await emb.evaluate(() => {
+      const f = window.__game.fun;
+      return f.embarquementDernier ? f.embarquementDernier() : { err: 'pas de bilan de séquence' };
+    });
+    verifier('le diagnostic dit comment la dernière séquence a fini (le geste que Max valide sur la tablette)',
+      !embDernier.err && embDernier.sens === 'monter' && embDernier.quoi === 'voiture' && embDernier.fin === 'second appui'
+        && embDernier.temps > 0 && embDernier.temps < 2.5,
+      JSON.stringify(embDernier));
     // 8. `descendre({ presse: true })` (la voiture qui prend feu, chantier
     // « dégâts ») : à côté tout de suite, sans animation.
     const embFeu = await emb.evaluate(() => {
