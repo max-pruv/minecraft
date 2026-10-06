@@ -1,3 +1,5 @@
+// UN PASSANT TRAVERSE-T-IL SUR LE PASSAGE PEINT SANS FEU ? (v386) — le témoin
+// de `monte.js`, joué seul à Kyoto.   node tests/sonde-passage-peint.cjs
 const { Banc, souffler } = require('./banc.js');
 (async () => {
   const banc = new Banc({ portJeu: 8430, portPairs: 9430 });
