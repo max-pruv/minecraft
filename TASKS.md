@@ -236,7 +236,22 @@
   `reseau.js` ENTIÈREMENT vert (mon témoin compris) ; `monte.js` : le seul gel
   d'arrivée (24,8 %, déclaré) ; `manhattan.js` : trou, taxi, « Lost
   connection to server » de PeerJS — déclarés.
-- [ ] **LE PORTAIL DE LA M40 (v399, après fusion de la v394), DOUBLE MESURE
+- [ ] **LE PORTAIL DE LA M40 (v399, après fusion de la v398), DOUBLE MESURE
+  FAITE.** Quatre suites rouges. `maj.js` (fond de carte, personnages 6/9),
+  `carte.js` (flèche du GPS, gauche 1,92 rad), `manhattan.js` (trou de façade
+  11 684 → 42 919, taxi tactile, PeerJS « Lost connection ») : mêmes rouges que
+  la double mesure ci-dessous. `monte.js` rejouée SEULE des deux côtés : sur la
+  branche deux rouges — « au feu, la voiture freine sur plusieurs relevés »
+  (1 progressif sur 2 arrêts) et « une vraie voiture de la rue : son flanc
+  frôlé ne nous arrête pas » (`{"c":null,"lu":false,"garee":[410,0]}`) ; sur
+  `origin/main` (v398) cinq — le même flanc frôlé à l'identique, « la rue roule
+  à l'allure d'une ville » et « freine au feu » (médiane 0, aucun arrêt, comme
+  au portail), le train devant la voiture et le flâneur au milieu de la
+  chaussée, le trou en vol. Les rouges de la rue (v395) et du flanc (dégâts et
+  conduite) sont des dettes des sessions conduite ; la M40 ne touche ni
+  `vehicules.js`, ni `player.js`, ni `circulation.js`.
+
+- [ ] **LE PORTAIL DE LA M40 (v399, après fusion de la v394, précédent), DOUBLE MESURE
   FAITE.** Six rouges, tous déjà déclarés, rejoués SEULS des deux côtés.
   `maj.js` libération `null` et « ne floute rien » : identiques sur la branche
   et sur `origin/main` (v394). `carte.js` « la faire glisser (bridé ×4) » :
