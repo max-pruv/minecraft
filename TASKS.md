@@ -2589,8 +2589,19 @@
   7. **Le reste du monde** (session `claude/hd-villes-monde`). Palier A livré
      (v398) : Washington et San Francisco (`STYLES.washington`, `sfCentre`,
      `sfSoma`, `sfMaisons`, la tuile `bardage`). Palier B livré (v399) : les 61
-     villes engendrées des Amériques (`nordAmericain`, `latino`). Palier C (Asie,
-     Moyen-Orient, Afrique, Océanie) à suivre. Dettes déclarées :
+     villes engendrées des Amériques (`nordAmericain`, `latino`). Palier C livré
+     (v400) : Asie, Moyen-Orient, Afrique, Océanie (`asie`, `desert`,
+     `tropical`, `victorien`, et `nord`/`sud`). La zone est faite.
+     - [ ] les quatre médinas restent hors de la couche : un registre `medina`
+       (baie carrée grillée, moucharabieh, auvent de souk) serait une
+       livraison à lui, sur capture ;
+     - [ ] le raccord ville/campagne (`raccordInterdit`) n'est interdit qu'à
+       Paris : hors de Paris une colonne de raccord montre la surface plate —
+       l'étendre change la forme du sol (la hauteur des pieds), hors de la
+       couche ;
+     - [ ] la palette d'Édimbourg (brique rouge pour du grès gris) et la « baie
+       de deux blocs » des villes engendrées sont des changements de BLOCS dans
+       `villesmonde.js`, zone des villes engendrées. Dettes déclarées :
      - [ ] **le Colisée du catalogue change à chaque lancement** :
        `monuments.js:501` tire ses gradins effondrés à `Math.random()` — 173
        blocs du morceau (cx, cz + 1) de Rome différents entre deux exécutions

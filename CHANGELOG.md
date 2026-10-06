@@ -20,6 +20,35 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v400 — Le monde entier en relief
+
+**Pourquoi.** L'Europe (v394), Washington et San Francisco (v398) et les
+Amériques (v399) avaient leurs façades en relief ; les cent douze villes
+engendrées d'Asie, du Moyen-Orient, d'Afrique et d'Océanie restaient plates à
+toute distance.
+
+**Ce que ça change.** De près, chaque ville a des fenêtres en relief dans son
+propre mur, avec le registre de sa géographie : Tokyo, Séoul, Shanghai,
+Singapour en béton enduit à baies larges (`asie`) ; Riyad, Dubaï, Téhéran,
+Samarcande et Lhassa en enduit couleur de sable à baies profondes (`desert`) ;
+Bombay, Dakar, Nairobi, Hanoï et les îles du Pacifique en enduit de couleur,
+persiennes et garde-corps de fer (`tropical`) ; Sydney, Melbourne, Auckland,
+Le Cap et Johannesburg en brique victorienne à guillotine et à fonte
+(`victorien`) ; la Russie, Oulan-Bator et Harbin comme l'Est de l'Europe
+(`nord`) ; le Maghreb, le Levant, l'Anatolie et le Caucase comme la
+Méditerranée (`sud`). Les quatre médinas — Marrakech, Fès, Jérusalem,
+Tombouctou — restent comme elles sont, et c'est dit : aucun registre n'y
+dessine leurs petites baies grillées. Un appareil au palier bas ne reçoit
+rien de neuf.
+
+**Ce qui le prouve.** Vingt-neuf témoins neufs dans `parishd.js` : sept par
+ville pour Tokyo, Dubaï, Nairobi et Sydney (le mur de la ville, ni pierre de
+Paris ni bardage, le budget…), et la couverture — toute ville engendrée a son
+registre sauf les quatre médinas, avec les cas qu'une règle classerait mal
+(Lhassa, Tbilissi, Harbin, Maputo, Honolulu). Mesuré sur 681 morceaux :
+0,46 Mo de façades en moyenne, 1,59 au pire (Delhi). Paris, l'Europe et les
+Amériques identiques à l'octet.
+
 ## v399 — Les Amériques en relief
 
 **Pourquoi.** Washington et San Francisco avaient leur relief (v398), mais les
