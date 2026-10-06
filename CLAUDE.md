@@ -1457,6 +1457,32 @@ Et une empreinte d'identité qui change se PROUVE : celle des 490 morceaux
 (v352) couvre Marrakech et Tokyo ; la branche, bâtisseurs neufs désarmés, rend
 l'ancienne au bit près — c'est ce qui a permis de la remplacer.
 
+## Le journal de l'enfant se range par morceau (v403) — un index vit DANS la structure qu'il indexe
+
+`generateChunk` relisait tout le journal des blocs de l'enfant pour chaque
+morceau : 36,6 ms par morceau avec 80 000 blocs, contre 1,25 sans (journal
+fabriqué sous node, `journalFabrique`). Deux règles.
+
+- **UN INDEX SE TIENT LÀ OÙ L'ON ÉCRIT, PAS À CÔTÉ.** Le journal s'écrit par
+  au moins six chemins — `setBlock`, `loadEdits`, `installerEdits`, le worker
+  qui fait `monde.edits.set` lui-même, Manhattan qui importe ses journaux, les
+  effacements — et un index tenu à côté finirait par en manquer un : un bloc
+  d'enfant disparaîtrait d'un morceau (invariant 1). `JournalBlocs`
+  (world.js) est une `Map` dont `set`, `delete` et `clear` tiennent
+  `parMorceau` : tout chemin qui passe par l'API de `Map` le tient sans le
+  savoir. Le seul geste à surveiller est l'AFFECTATION (`this.edits = …`) :
+  `installerEdits` enveloppe ce qu'on lui donne, et `grep -n "\.edits = "`
+  doit ne rendre que lui et le constructeur. Une `Map` clonée vers le worker
+  arrive nue (le clonage ne garde pas la classe) : c'est `installerEdits` qui
+  la rhabille.
+- **UNE OPTIMISATION DU JOURNAL SE PROUVE AVEC UN JOURNAL.** L'empreinte des
+  490 morceaux (v352) est relevée sur un monde sans blocs d'enfant : elle ne
+  pouvait pas voir ce changement. `empreinteJournal` (morceaux-temoin.mjs)
+  engendre les 362 morceaux d'un journal de quarante mille par trois chemins
+  (installé, posé un à un, retiré), relevée sur la v391 ; `lecturesDuJournal`
+  compte les entrées parcourues par morceau — la cause, pas des
+  millisecondes : 80 000 sur la v391, 0 ici.
+
 ## Le plafond au sol se relève sur la tablette (v391) — une mesure qu'on demande à Max se donne en ligne et en marche
 
 `VITESSE_SOL_MAX` ne se relève pas au banc. Deux règles.
