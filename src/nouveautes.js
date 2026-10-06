@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 395,
+    titre: 'Washington et San Francisco en relief',
+    puces: [
+      'Brique et marbre à Washington',
+      'Maisons de bois peint à San Francisco',
+      'Fenêtres à guillotine de près',
+    ],
+  },
+  {
     v: 394,
     titre: 'Toute l\'Europe en relief',
     puces: [

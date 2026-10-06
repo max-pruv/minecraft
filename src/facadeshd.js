@@ -44,6 +44,8 @@ import { LONDRES } from './londres.js';
 import { NICE } from './nice.js';
 import { LILLE } from './lille.js';
 import { VILLES_MONDE } from './villesmonde.js';
+import { ZONE_WASHINGTON } from './washington.js';
+import { SF, quartierSF } from './sanfrancisco.js';
 
 // --- l'atlas HD : huit tuiles par huit, cent vingt-huit pixels ------------------
 
@@ -81,6 +83,8 @@ export const TUILES_HD = [
   'lattes',        // les lattes de bois d'un banc Davioud
   // v301 : un étage de trois blocs, et la baie qui coûte moins cher
   'croisee',       // le châssis d'une fenêtre (alpha) : montants, meneau, traverse, petits bois
+  // v395 : les villes du reste du monde
+  'bardage',       // les clins de bois des maisons victoriennes de San Francisco
 ];
 export const COLS_HD = 8;
 export const PX_HD = 128;
@@ -165,7 +169,18 @@ export const VILLES_HD = [
   { ville: 'londres', x: LONDRES.x, z: LONDRES.z, r: LONDRES.r, registre: 'londres', mobilier: false },
   { ville: 'nice', x: NICE.x, z: NICE.z, r: NICE.r, registre: 'nice', mobilier: false },
   { ville: 'lille', x: LILLE.x, z: LILLE.z, r: LILLE.r, registre: 'lille', mobilier: false },
+  // LES VILLES BÂTIES À LA MAIN HORS D'EUROPE (v395, palier A du reste du
+  // monde). Washington n'est pas un disque : c'est une BOÎTE (le cercle du
+  // registre, 187 blocs, ne couvre pas Georgetown), et la fiche le déclare.
+  // San Francisco a trois villes dans une : le registre se choisit par
+  // QUARTIER (`quartier`, lu dans la même règle que le bâtisseur), comme Paris.
+  // `briqueDuJeu` : le mur de brique de ces deux villes est souvent le bloc de
+  // brique du jeu (`BLOCK.BRICK`), pas un bloc de décor — la couche le lit.
+  { ville: 'washington', boite: ZONE_WASHINGTON, registre: 'washington', mobilier: false, briqueDuJeu: true },
+  { ville: 'sf', x: SF.x, z: SF.z, r: SF.r, registre: 'sfMaisons', mobilier: false, briqueDuJeu: true,
+    quartier: (wx, wz) => QUARTIERS_SF[quartierSF(wx - SF.x, wz - SF.z)] },
 ];
+const QUARTIERS_SF = { centre: 'sfCentre', soma: 'sfSoma', maisons: 'sfMaisons' };
 
 // LES VILLES ENGENDRÉES D'EUROPE (v394, palier C). Une ville est d'Europe si sa
 // latitude et sa longitude tombent dans la boîte du continent, moins les
@@ -192,6 +207,11 @@ for (const f of VILLES_MONDE) {
 export function villeHD(cx, cz, chunk) {
   const x = cx * chunk + chunk / 2, z = cz * chunk + chunk / 2;
   for (const d of VILLES_HD) {
+    if (d.boite) {
+      const b = d.boite;
+      if (x > b.x0 - chunk && x < b.x1 + chunk && z > b.z0 - chunk && z < b.z1 + chunk) return d;
+      continue;
+    }
     const marge = d.r + chunk;
     if ((x - d.x) * (x - d.x) + (z - d.z) * (z - d.z) < marge * marge) return d;
   }
@@ -561,16 +581,61 @@ STYLES.lille = {
   patine: { brique: [0.3, [150, 84, 62]] },
 };
 
+//   washington — la maison de ville fédérale de Capitol Hill et de Logan
+//             Circle : brique rouge, fenêtre à guillotine (six carreaux sur
+//             six) au châssis blanc, appui et linteau de pierre ; et le
+//             calcaire et le marbre blancs des ministères et des monuments,
+//             en pierre de taille. Ni volet, ni balcon, ni store. Un uni
+//             chocolat ou marron EST la brique de la ville (`MURS.brique` de
+//             washington.js) ; un uni blanc, crème ou beige, son calcaire.
+const UNIS_BRIQUE = { Rouge: 'brique', Saumon: 'brique', Marron: 'brique', Chocolat: 'brique' };
+const UNIS_PIERRE = { Blanc: 'pierre', 'Crème': 'pierre', Beige: 'pierre', 'Gris clair': 'pierre', Sable: 'pierre' };
+STYLES.washington = {
+  mur: 'brique', teintes: [[1, 1, 1]], baie: [0.32, 0.68, 0.1, 0.88], volets: false, filant: false,
+  store: false, corniche: 2, voisin: true, orn: [0.97, 0.96, 0.92], gardeCorps: false, guillotine: true, linteau: 'pierre-lisse',
+  unis: { ...UNIS_BRIQUE, ...UNIS_PIERRE }, patine: { brique: [0.25, [150, 80, 64]] },
+};
+//   sfMaisons — les Victoriennes de San Francisco (les « Painted Ladies »
+//             d'Alamo Square, de Haight, de Noe Valley) : un BARDAGE de clins
+//             de bois peint, la fenêtre à guillotine haute et étroite, le
+//             châssis et les moulures blancs. Tout uni clair y est du bois
+//             peint.
+STYLES.sfMaisons = {
+  mur: 'bardage', teintes: [[1, 1, 1]], baie: [0.33, 0.67, 0.08, 0.9], volets: false, filant: false,
+  store: false, corniche: 2, voisin: true, orn: [0.98, 0.98, 0.96], gardeCorps: false, guillotine: true,
+  // l'anthracite et le noir sont l'ardoise du toit et le bandeau du
+  // couronnement, vus de côté : un clin de bois n'y a rien à faire (capture)
+  uni: 'bardage', unis: { Anthracite: 'enduit', Noir: 'enduit', Gris: 'enduit' },
+};
+//   sfCentre — le Financial District d'avant les tours : la pierre de taille
+//             et le granit des immeubles de bureaux, l'encadrement de pierre.
+//             Le mur-rideau des tours n'est pas dans la couche : il reste sa
+//             tuile (`CITY_BLOCK.CURTAIN`), qui n'est jamais un trou (v195).
+STYLES.sfCentre = {
+  mur: 'pierre', teintes: [[1, 1, 1]], baie: [0.3, 0.7, 0.1, 0.88], volets: false, filant: false,
+  store: false, corniche: 3, voisin: true, orn: [0.92, 0.9, 0.85], gardeCorps: false,
+  uni: 'pierre', unis: { Anthracite: 'enduit', Gris: 'enduit' },
+};
+//   sfSoma   — les entrepôts de brique de SoMa, l'arc de brique au-dessus de
+//             la baie ; un uni clair y est un enduit de ciment.
+STYLES.sfSoma = {
+  mur: 'brique', teintes: [[1, 1, 1]], baie: [0.3, 0.7, 0.12, 0.86], volets: false, filant: false,
+  store: false, corniche: 2, voisin: true, orn: [0.9, 0.88, 0.84], gardeCorps: false, linteau: 'brique',
+  unis: UNIS_BRIQUE, patine: { brique: [0.25, [150, 82, 64]] },
+};
+
 // Le bloc de décor le plus proche dans le plan de la façade : à gauche, à
 // droite, puis DESSUS et dessous — dessous, c'est souvent le rez-de-chaussée ou
 // un massif de fleurs du jardin de poche (vu en capture : une fenêtre de stuc
 // encadrée de rose). Rend l'entrée de `DECOR_ITEMS` ou null.
 // La corniche, elle, regarde dessous d'abord : au-dessus d'elle, c'est le toit.
-function murVoisin(get, x, y, z, S, dessousDabord = false) {
+function murVoisin(get, x, y, z, S, dessousDabord = false, briques = false) {
   if (!get) return null;
   const v = dessousDabord ? [[0, -1, 0], [0, 1, 0]] : [[0, 1, 0], [0, -1, 0]];
   for (const [dx, dy, dz] of [[S[0], 0, S[2]], [-S[0], 0, -S[2]], ...v]) {
-    const item = DECOR_ITEMS[get(x + dx, y + dy, z + dz) - DECOR_START];
+    const idv = get(x + dx, y + dy, z + dz);
+    if (briques && idv === BLOCK.BRICK) return BRIQUE_DU_JEU;
+    const item = DECOR_ITEMS[idv - DECOR_START];
     if (item) return item;
   }
   return null;
@@ -579,7 +644,12 @@ function murVoisin(get, x, y, z, S, dessousDabord = false) {
 // peintres de `matierehd.js`, v390). La teinte d'un sommet est LINÉAIRE (v345) :
 // le rapport en sRGB passe à la puissance 2,2, sinon une brique chocolat sort
 // orange.
-const MOYENNE_TUILE = { brique: [158.9, 95.5, 79.0], enduit: [215.2, 213.2, 207.2] };
+const MOYENNE_TUILE = {
+  brique: [158.9, 95.5, 79.0], enduit: [215.2, 213.2, 207.2],
+  // v395 : la pierre de taille (le marbre et le calcaire de Washington, le
+  // centre de San Francisco) et le bardage des Victoriennes, mesurés de même
+  pierre: [191.3, 183.3, 165.3], bardage: [214.4, 212.4, 208.4],
+};
 export function teinteDuMur(rgb, tuile) {
   const m = MOYENNE_TUILE[tuile];
   return rgb.map((c, i) => Math.min(2.5, Math.pow(c / m[i], 2.2)));
@@ -595,17 +665,25 @@ export function teinteDuMur(rgb, tuile) {
 const MOTIFS_MUR_HD = new Set(['Briques', 'Uni']);
 export function murHD(id, ville) {
   if (!ville || !ville.registre || !STYLES[ville.registre].voisin) return false;
+  if (id === BLOCK.BRICK && ville.briqueDuJeu) return true;
   const item = DECOR_ITEMS[id - DECOR_START];
   return !!item && MOTIFS_MUR_HD.has(item.pattern);
 }
+// Le bloc de brique du jeu (`BLOCK.BRICK`) vu comme un mur de décor : sa
+// couleur est celle de sa tuile hors joints (textures.js, [148, 68, 58]).
+const BRIQUE_DU_JEU = { pattern: 'Briques', colorName: 'Brique', rgb: [148, 68, 58] };
 // `patine` : par tuile, [part, couleur] — la brique de la palette est un rouge
 // de jouet (Rouge 200, 62, 56), l'enduit de Nice l'orange de signalisation ;
 // de près, la couche les rapproche d'une vraie brique cuite, d'un vrai ocre,
 // sans les changer de famille (le loin garde la tuile du voxel). 'chaud' : la
 // couleur vers son propre gris, réchauffé — elle se désature sans changer de
 // clarté.
-export function murDuDecor(item, patine = null) {
-  const tuile = item.pattern === 'Briques' ? 'brique' : 'enduit';
+// `unis` (v395) : la tuile d'un mur de motif « Uni » selon sa couleur — à
+// Washington, un uni chocolat est de la brique et un uni blanc du marbre ;
+// `uni` la tuile d'un uni que la table ne nomme pas. Sans eux, l'enduit.
+export function murDuDecor(item, patine = null, unis = null, uni = null) {
+  const tuile = item.pattern === 'Briques' ? 'brique'
+    : (unis && unis[item.colorName]) || uni || 'enduit';
   const p = patine && patine[tuile];
   let rgb = item.rgb;
   if (p) {
@@ -1022,16 +1100,17 @@ function murNu(f, st) {
 // `ville` (v390) : la fiche de `VILLES_HD` dont le morceau relève ; sans elle,
 // ou pour Paris, le registre vient du quartier, comme avant.
 export function facadeHD(buf, face, x, y, z, wx, wy, wz, id, ao, bas = BLOCK.AIR, haut = BLOCK.AIR, get = null, ville = null) {
-  const reg = ville && ville.registre ? STYLES[ville.registre] : null;
+  const reg = ville && ville.registre ? STYLES[(ville.quartier && ville.quartier(wx, wz)) || ville.registre] : null;
   const info = reg ? null : infoFacadeParis(wx, wz);
   const graine = info ? info.graine : reg ? tirage(wx, wz, 700) : 0.5;
   let st = reg || styleDuQuartier(info ? info.quartier : '');
   let teinte = st.teintes[Math.floor(graine * st.teintes.length) % st.teintes.length];
   if (reg && reg.voisin) {
-    const propre = DECOR_ITEMS[id - DECOR_START];
-    const item = propre || murVoisin(get, x, y, z, REPERES[face.dir.join(',')].s, id === ARCHI.CORNICHE);
+    const briques = !!ville.briqueDuJeu;
+    const propre = (briques && id === BLOCK.BRICK) ? BRIQUE_DU_JEU : DECOR_ITEMS[id - DECOR_START];
+    const item = propre || murVoisin(get, x, y, z, REPERES[face.dir.join(',')].s, id === ARCHI.CORNICHE, briques);
     if (item) {
-      const m = murDuDecor(item, reg.patine);
+      const m = murDuDecor(item, reg.patine, reg.unis, reg.uni);
       st = { ...reg, mur: m.tuile, linteau: m.tuile === 'brique' ? reg.linteau : null };
       teinte = m.teinte;
     }

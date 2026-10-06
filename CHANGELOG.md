@@ -20,6 +20,36 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v395 — Washington et San Francisco en relief
+
+**Pourquoi.** L'Europe entière avait sa couche de relief (v394), mais les deux
+villes bâties à la main de l'autre côté de l'Atlantique — Washington et San
+Francisco — restaient en façades plates à toute distance.
+
+**Ce que ça change.** À Washington, la maison de ville fédérale : brique rouge,
+fenêtre à guillotine au châssis blanc, appui et linteau de pierre ; les
+ministères et les monuments en pierre de taille de calcaire et de marbre. À San
+Francisco, le registre suit le quartier : les Victoriennes d'Alamo Square en
+bardage de clins de bois peint (une tuile neuve de l'atlas), aux couleurs de
+leur palette, avec leurs guillotines blanches ; la pierre de taille au centre
+(le mur-rideau des tours garde sa tuile, il n'est jamais un trou) ; la brique
+des entrepôts de SoMa. Un appareil au palier bas ne reçoit rien de neuf ; Paris,
+Londres, Nice, Lille et les villes d'Europe n'ont pas bougé d'un octet.
+
+**Ce qui le prouve.** Seize témoins neufs dans `parishd.js`, rouges sur
+`origin/main` (la ville n'y est pas couverte) : sept par ville (couverture,
+aucun bloc posé, `hd 0` identique, chaque face exposée détaillée — 1 306 et
+1 522 —, le mur de la ville, pas le mobilier de Paris, le budget), le registre
+qui suit le quartier à San Francisco (pierre 3 060 et bardage 0 au centre,
+bardage 10 700 et pierre 0 à Alamo Square), et le bloc de brique du jeu lu à
+Washington et à San Francisco, pas à Londres ni à Paris. Une empreinte des
+tampons de vingt-cinq morceaux par lieu, relevée sur `origin/main` : Paris,
+Londres, Nice, Lille, Rome, Berlin, Manchester, Istanbul, Tokyo et Mexico
+identiques à l'octet, avec et sans HD ; Washington et San Francisco identiques
+sans HD. Mesuré : 0,23 Mo par morceau en moyenne à Washington (2,11 au pire),
+0,11 à San Francisco (0,59) ; dans le worker, 5,4 → 16,2 ms par morceau à
+Washington, 2,2 → 6,3 chez les Victoriennes, seulement à portée de `RAYON_HD`.
+
 ## v394 — Toute l'Europe en relief
 
 **Pourquoi.** Après Londres, Nice et Lille, les quatre-vingt-dix villes
