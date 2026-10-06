@@ -4759,6 +4759,66 @@ const VRAIES_KM = [
       `${sens.dansUnMonument} pas de carrosserie dans un monument · ${sens.nbFautifs} anneau(x)`
       + (sens.fautifs.length ? ` : ${sens.fautifs.join(', ')}` : ''));
 
+    // --- LES ANNEAUX CONTOURNENT CE QUI N'EST PAS LA CHAUSSÉE (v390) ---------
+    //
+    // La dette de la v387 : 147 anneaux de villes engendrées sur 809 avaient au
+    // moins un pas de voie hors de la chaussée (mesuré sur `origin/main`, v389 :
+    // 3 512 pas — la place centrale et sa fontaine, le sable, des parcs), et
+    // onze villes n'avaient qu'un circuit. On parcourt chaque VOIE de chaque
+    // tracé au demi-bloc et l'on compte ce qui n'est ni chaussée, ni tablier,
+    // ni le trottoir du boulevard là où une rue le traverse, ni le quai pavé
+    // que le sol pose en travers des rues qui mènent à l'eau — ces deux-là
+    // sont le SOL, qu'aucun tracé n'évite (v387, v390). Mesuré ici : 92
+    // anneaux, 2 437 pas, trois villes à un circuit. Les barres sont au milieu.
+    const contour = await tab.evaluate(async () => {
+      const vm = await import('./src/villesmonde.js');
+      const wo = await import('./src/world.js');
+      const traces = vm.tracesCirculation(() => 35);
+      const parVille = new Map();
+      for (const tr of traces) (parVille.get(tr.cle) || parVille.set(tr.cle, []).get(tr.cle)).push(tr);
+      const fiches = new Map(vm.VILLES_MONDE.map((f) => [f.cle, f]));
+      const { CITY_BLOCK, BLOCK } = await import('./src/blocks.js');
+      let anneaux = 0, pas = 0, fontaine = 0;
+      const pires = [];
+      for (const tr of traces) {
+        const f = fiches.get(tr.cle), t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
+        const vus = new Set();
+        let n = 0;
+        for (let i = 0; i < tr.pts.length; i++) {
+          const a = tr.pts[i], b = tr.pts[(i + 1) % tr.pts.length];
+          const m = Math.ceil(Math.hypot(b.x - a.x, b.z - a.z) / 0.5);
+          for (let k = 0; k < m; k++) {
+            const X = Math.floor(a.x + (b.x - a.x) * k / m), Z = Math.floor(a.z + (b.z - a.z) * k / m);
+            if (vus.has(X * 65536 + Z)) continue;
+            vus.add(X * 65536 + Z);
+            const s = vm.solVillesMonde(X, Z);
+            if (s === null) { if (!vm.pontVillesMonde(X, Z)) n++; continue; }
+            if (s !== 'lot' && wo.CHAUSSEE.has(s)) continue;
+            const u = X - f.ancre.x, v = Z - f.ancre.z, P = u * co - v * si, Q = u * si + v * co;
+            const U = u / f.K, V = v / f.K;
+            if (s === CITY_BLOCK.SIDEWALK && t.axe && Math.min(Math.abs(P), Math.abs(Q)) < t.axe.s + 1) continue;
+            const quai = (f.mer && f.mer.quais && U * f.mer.nx + V * f.mer.nz > f.mer.d - 2)
+              || (f.cote && f.cote.quais && U < f.cote.base + f.cote.pente * V + 2);
+            if (s === CITY_BLOCK.GRANITE && quai) continue;
+            if (s === BLOCK.WATER) fontaine++;
+            n++;
+          }
+        }
+        if (n) { anneaux++; pas += n; pires.push([n, `${tr.cle}#${tr.rang}`]); }
+      }
+      let seuls = [];
+      for (const [cle, g] of parVille) if (g.length === 1) seuls.push(cle);
+      pires.sort((a, b) => b[0] - a[0]);
+      return { total: traces.length, anneaux, pas, fontaine, seuls, pires: pires.slice(0, 5).map(([n, c]) => `${c} ${n}`) };
+    });
+    verifier('un anneau qui sortait de la chaussée contourne la place, la fontaine ou le parc',
+      contour.anneaux <= 120 && contour.pas <= 3000 && contour.total >= 809,
+      `${contour.anneaux}/${contour.total} anneaux, ${contour.pas} pas hors de la chaussée`
+      + ` (dont ${contour.fontaine} dans une fontaine) · les pires : ${contour.pires.join(', ')}`);
+    verifier('les villes engendrées à un seul circuit en ont désormais deux, le contresens',
+      contour.seuls.length <= 6,
+      `${contour.seuls.length} ville(s) à un circuit : ${contour.seuls.join(', ')}`);
+
     // --- LES RUES DES VILLES ENGENDRÉES À LA RÈGLE DU KIT (v307) -------------
     //
     // Max, après Paris : « Pourquoi tu n'as pas fait le reste du monde ? » La
