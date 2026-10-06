@@ -3325,6 +3325,18 @@ l'embarquement a eu lieu, pas par une hypothèse.
   Puis v374 à v376 sont parties pendant ces mesures : rebasée sur la v376
   (conflit sur une ligne de `main.js`, les deux gardées), témoin du passager
   vert et fumée verte, publiée en v377.
+- [ ] **LE PORTAIL DE LA v390 (le diagnostic de l'embarquement), DOUBLE
+  MESURE FAITE.** Témoin neuf vert ; `degats`, `carte`, `washington`,
+  `reglages` verts. Rouges de familles déclarées : `maj.js` (loader de
+  l'installation), `manhattan.js` (trou de façade, taxi tactile), `monte.js`
+  (téléportation qui compile). Deux rouges NEUFS, rejoués SEULS des deux
+  côtés : « après une téléportation, la file se recharge… puis se rend »
+  (`monte.js`) — VERT sur la branche, ROUGE sur `origin/main` (v389,
+  « rendue en 11 s : false ») ; « chez l'ami, la voiture de la rue… l'attend »
+  et « le même temps » (`reseau.js`) — `reseau.js` ENTIÈRE verte sur la
+  branche, seule ; `origin/main` seule : « un départ propre » rouge (déclaré).
+  Intermittences de portail ; la seule différence de code est une ligne lue
+  sous `?diag=1` et un relevé dans `publier`.
 - [ ] **LE PORTAIL DE LA v389 (l'avion), DOUBLE MESURE FAITE.** Les trois
   témoins de l'avion verts (`monte.js`), `carteMonde.js` vert. Rouges, tous de
   familles déjà déclarées : `maj.js` (« vraiment là », « ne floute rien »),
