@@ -1,4 +1,4 @@
-// SONDE (v398) : on DESCEND d'un avion par son escalier — le passage de
+// SONDE (v400) : on DESCEND d'un avion par son escalier — le passage de
 // monte.js, seul, sur une page qui joue la séquence, pour le mesurer des deux
 // côtés en deux minutes. Copie conforme du passage (la fonction `passage` est
 // exportée et monte.js l'appelle telle quelle).

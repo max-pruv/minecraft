@@ -273,7 +273,7 @@ export function creerEmbarquement(ctx) {
   }
   // Autour d'un avion, on se pose sur le SOL de la colonne : un appareil est
   // long, et sur une pente le pied des marches est trois ou quatre blocs plus
-  // haut ou plus bas que les roues (v398, mesuré au couloir de la v297). Une
+  // haut ou plus bas que les roues (v400, mesuré au couloir de la v297). Une
   // colonne d'eau est refusée, comme un écart de plus de quatre blocs.
   function placeAuSol(g, local, y0, nom) {
     const w = versMonde(g, local);
@@ -442,7 +442,7 @@ export function creerEmbarquement(ctx) {
     }
   }
 
-  // ---- descendre d'un avion (v398) ---------------------------------------
+  // ---- descendre d'un avion (v400) ---------------------------------------
   // Le pendant de `monterAvion` : l'enfant se retrouvait debout d'un coup,
   // au milieu du fuselage. L'escalier (l'échelle) revient contre la porte, la
   // porte s'ouvre, il sort en se redressant, il descend les marches, la porte
@@ -621,7 +621,7 @@ export function creerEmbarquement(ctx) {
     const a = ctx.montureConduite();
     if (!a) return;
     if (s && s.sens === 'monter') terminer();
-    // un avion au sol qui a une porte descend par son escalier (v398)
+    // un avion au sol qui a une porte descend par son escalier (v400)
     if (SEQUENCE_ACTIVE && av && !opts.presse && a.mesh && a.def && a.def.pilote && a.mesh.userData.porte
       && !player.avionEnVol && (player.avionEtat === undefined || player.avionEtat === 'sol')) { descendreAvion(a); return; }
     const sansSequence = !SEQUENCE_ACTIVE || !av || !a.mesh || !a.def || !a.def.siege || a.def.pilote;

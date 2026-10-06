@@ -7518,7 +7518,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         r.clesNeuves === 0 && r.blocs === 0 && r.avionligne && r.avionligne.clesNeuves === 0,
         JSON.stringify({ cles: r.clesNeuves, blocs: r.blocs, parAvion: [r.avionligne && r.avionligne.clesNeuves, r.chasseur && r.chasseur.clesNeuves] }));
     }
-    // ON DESCEND D'UN AVION PAR SON ESCALIER (v398). Les avions descendaient
+    // ON DESCEND D'UN AVION PAR SON ESCALIER (v400). Les avions descendaient
     // d'un coup, au milieu du fuselage. Le passage vit dans
     // `sonde-descente-avion.cjs`, qu'on rejoue seul en deux minutes des deux
     // côtés : les phases, l'état qui bascule au premier appui, la porte,

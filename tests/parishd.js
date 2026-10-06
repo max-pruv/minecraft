@@ -676,6 +676,53 @@ function verifier(nom, ok, detail = '') {
           && !reg('tunis') && !reg('ankara') && !reg('fes') && !reg('tbilissi') && !reg('tokyo'),
         `${couvertes.length} sur ${europe.length} dans la boîte ; Édimbourg ${reg('edimbourg')}, Rome ${reg('rome')}, Berlin ${reg('berlin')}, Tunis ${reg('tunis')}`);
     }
+    // LE RESTE DU MONDE, PALIER A (v398) : Washington et San Francisco, les
+    // deux villes bâties à la main hors d'Europe. Washington est une BOÎTE
+    // (`boite` dans sa fiche), San Francisco choisit son registre par
+    // quartier ; leur brique est souvent le bloc de brique du jeu.
+    const { ZONE_WASHINGTON: ZW } = await import('../src/washington.js');
+    const { SF, adresseSF } = await import('../src/sanfrancisco.js');
+    await temoinsVille({ cle: 'washington', centre: { x: (ZW.x0 + ZW.x1) / 2, z: (ZW.z0 + ZW.z1) / 2, r: Math.hypot(ZW.x1 - ZW.x0, ZW.z1 - ZW.z0) / 2 },
+      attendu: ['brique', 'pierre'], interdit: ['volet', 'fer', 'bardage'] });
+    await temoinsVille({ cle: 'sf', centre: SF, attendu: ['bardage', 'pierre', 'brique'], interdit: ['volet', 'fer'] });
+    {
+      // le registre suit le QUARTIER : la pierre au centre, le bardage des
+      // Victoriennes autour d'Alamo Square — mesuré 3 060 et 0, 0 et 10 700
+      const w = new World(); w.hd = 1;
+      const [ax, az] = adresseSF(-4.3, 1.0);
+      const lire = (x, z) => {
+        const t = { pierre: 0, bardage: 0 };
+        for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
+          const b = buildChunkTampons(w, Math.floor(x / CHUNK) + dx, Math.floor(z / CHUNK) + dz);
+          for (const k of Object.keys(t)) t[k] += compteTuile(b.facades, k);
+        }
+        return t;
+      };
+      const centre = lire(SF.x + 154, SF.z - 18), maisons = lire(ax, az);
+      verifier('à San Francisco, le registre suit le quartier : la pierre du centre, le bardage des Victoriennes',
+        centre.pierre > 500 && centre.bardage === 0 && maisons.bardage > 2000 && maisons.pierre === 0,
+        `centre ${JSON.stringify(centre)}, Alamo Square ${JSON.stringify(maisons)}`);
+    }
+    if (typeof HD.murHD === 'function') {
+      const fiche = (cle) => (HD.VILLES_HD || []).find((d) => d.ville === cle);
+      verifier('le bloc de brique du jeu passe dans la couche à Washington et à San Francisco, pas à Londres ni à Paris',
+        !!fiche('washington') && HD.murHD(BLOCK.BRICK, fiche('washington')) && HD.murHD(BLOCK.BRICK, fiche('sf'))
+          && !HD.murHD(BLOCK.BRICK, fiche('londres')) && !HD.murHD(BLOCK.BRICK, fiche('paris')));
+    }
+    // PALIER B (v399) : les villes engendrées des Amériques, une par registre
+    await temoinsVille({ cle: 'chicago', centre: vm('chicago'), attendu: ['brique', 'pierre'], interdit: ['volet', 'fer', 'bardage'], rayonSonde: 60 });
+    await temoinsVille({ cle: 'mexico', centre: vm('mexico'), attendu: ['enduit', 'fer'], interdit: ['volet', 'pierre', 'bardage'], rayonSonde: 60 });
+    {
+      const reg = (cle) => (HD.VILLES_HD || []).find((d) => d.ville === cle)?.registre || null;
+      const ameriques = VILLES_MONDE.filter((f) => f.trame && f.lon0 < -30 && f.lon0 > -140);
+      const couvertes = ameriques.filter((f) => reg(f.cle));
+      verifier('toutes les villes engendrées des Amériques ont leur registre, et pas une île du Pacifique',
+        couvertes.length === ameriques.length && couvertes.length >= 55
+          && reg('chicago') === 'nordAmericain' && reg('montreal') === 'nordAmericain' && reg('miami') === 'nordAmericain'
+          && reg('mexico') === 'latino' && reg('havane') === 'latino' && reg('buenosaires') === 'latino'
+          && reg('monterrey') === 'latino' && reg('nouvelleorleans') === 'latino' && !reg('honolulu') && !reg('papeete'),
+        `${couvertes.length} sur ${ameriques.length} ; Chicago ${reg('chicago')}, Mexico ${reg('mexico')}, La Nouvelle-Orléans ${reg('nouvelleorleans')}, Honolulu ${reg('honolulu')}`);
+    }
     // un bloc de décor à motif posé par un enfant garde son dessin : seuls les
     // murs de brique et d'enduit passent dans la couche
     if (typeof HD.murHD === 'function') {
