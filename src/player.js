@@ -526,7 +526,7 @@ export class Player {
       // à l'image près ; tant qu'elle ne TOMBE pas, elle la gravit.
       if ((etaitAuSol || this.vel.y > -4) && Math.abs(this.vitesseVoiture) > 0.5) {
         const n = Math.hypot(dx, dz);
-        if (this.franchirEnRoulant((dx / n) * DEGAGEMENT_MARCHE, (dz / n) * DEGAGEMENT_MARCHE)) continue;
+        if (this.franchirEnRoulant((dx / n) * DEGAGEMENT_MARCHE, (dz / n) * DEGAGEMENT_MARCHE)) { this._franchi = true; continue; }
       }
       // LA NORMALE DU MUR (v397) : la droite qui passe par les cases de
       // surface autour du contact (`normaleDeMur`), stable d'une marche à
@@ -603,16 +603,20 @@ export class Player {
     const s = w.solContinu ? w.solContinu(this.pos.x, this.pos.z) : null;
     const tab = w.tablierEn ? w.tablierEn(this.pos.x, this.pos.z) : null;
     const l1 = s === null || tab !== null ? null : this.lectureCaisse();
-    // UN CUBE SOUS LA CAISSE PLUS HAUT QUE LA SURFACE LISSÉE la porte : au bord
-    // d'une zone voxel (un liseré, une marche franchie, un bloc posé), c'est
-    // lui qui décide, comme avant. Mesuré sur les couloirs à marches de la
-    // nature : sans cette garde, chaque marche franchie passait pour un saut.
-    const appui = l1 !== null && w.niveauVoxel ? w.niveauVoxel(this.pos.x, this.pos.z, this.pos.y, this.gabarit / 2) : -Infinity;
-    if (l1 === null || this.pos.y < s - 2 || this.onGround || appui > Math.max(l1.cote, s - ENFONCE) + 0.05) {
+    // UNE MARCHE FRANCHIE DANS L'IMAGE (`franchirEnRoulant`, v286) : la caisse
+    // vient d'être posée sur un cube, c'est le voxel qui décide, comme avant.
+    // Mesuré sur les couloirs à marches de la nature : sans cette garde,
+    // chaque marche franchie passait pour un saut. (Le premier jet lisait
+    // `niveauVoxel`, qui compte aussi la cote des colonnes COUVERTES : au
+    // sommet d'une crête, la colonne voisine est plus haute que le centre, et
+    // la caisse s'envolait sans être « en l'air » — sept blocs, sonde.)
+    const franchi = this._franchi; this._franchi = false;
+    if (l1 === null || this.pos.y < s - 2 || this.onGround || franchi) {
       // le voxel a parlé (un bloc sous les roues), ou l'on n'est pas sur la
       // surface continue : le chemin d'avant, et l'on oublie tout vol
       if (this._vol && this.onGround) this.publierAtterrissage(forceAtterrissage(vyAvant, 0));
       this.enLair = false; this._vol = null;
+      if (this.vel.y > 0) this.vel.y = 0;   // l'élan d'une pente ne survit pas au voxel
       this.tangage = (this.tangage || 0) * (1 - Math.min(1, dt * 10));
       return false;
     }

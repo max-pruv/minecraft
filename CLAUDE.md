@@ -2399,6 +2399,70 @@ celle d'un AXE DU MONDE contre un mur. Cinq règles.
   `player.contact` ({ famille, nx, nz }) ; `?diag=1` au volant les affiche
   avec le monde maillé devant la voiture (`mondeDevant`, `ligneDiagConduite`).
 
+## La pente, la bosse et la file (v399) — conduite, palier 3
+
+Mesuré sur `origin/main` par `tests/sonde-pente.cjs` (sous node, le vrai
+joueur sur de vraies lignes de campagne trouvées par la sonde) : une sportive à
+plein gaz faisait 26,4 blocs/s au bout de quarante blocs en côte, en descente
+et sur le plat, et une crête la plaquait au sol. Après : 24,1 en côte, 28,6 en
+descente, et une crête vive prise à 40 blocs/s fait voler environ une seconde.
+Six règles.
+
+- **UNE SEULE PESANTEUR LE LONG DE LA ROUTE, LA VRAIE (9,81).** Celle du jeu
+  (26, le saut) rendrait une pente d'un bloc par bloc — la plus raide que la
+  surface continue dessine — plus forte que le moteur d'une citadine : un
+  enfant resterait au pied d'une colline. `gravitePente` entre dans
+  `pasVoiture` (`entree.pente`) ; `vitesseEnCote` et `vitesseEnRoueLibre` sont
+  ses formules fermées, et le témoin exige que la simulation les rejoigne. Une
+  voiture arrêtée qu'on ne commande pas TIENT (`MAINTIEN`). En l'air, en
+  revanche, la pesanteur reste celle du jeu, comme avant.
+- **LA SURFACE CONTINUE EST UNE DENT DE SCIE, ET LA CAISSE LA LIT EN CINQ
+  POINTS.** Elle passe par le centre de colonnes de relief entier : une pente
+  de 0,37 est faite de facettes à 0 et à 1. Un point-masse qui la suivait
+  décollait de chaque dent (premier jet : 1,1 à 3,2 s « en l'air » sur six
+  côtes droites). `sousLaCaisse` lit la surface de −2 à +2 blocs le long de la
+  caisse : la moyenne est le sol de la voiture, la droite des moindres carrés
+  sa pente. La caisse ne s'enfonce pas de plus d'`ENFONCE` sous la surface au
+  centre.
+- **LA SURFACE POUSSE LA CAISSE D'UN COUP, MAIS NE LA TIRE QU'À LA
+  PESANTEUR.** Au sol, la vitesse verticale vaut `max(ce que la surface exige,
+  ce que la pesanteur laisse)`. Au sommet d'une crête, l'écart s'accumule
+  d'image en image ; passé le `DEBATTEMENT` on vole. C'est une HAUTEUR, pas un
+  seuil d'image : mon deuxième jet recollait la vitesse à la surface à chaque
+  image, et sur une crête vive l'écart repartait de zéro — la voiture ne
+  décollait JAMAIS, à aucune cadence. Une règle qui doit s'accumuler ne se
+  remet pas à zéro à chaque image.
+- **LE VOXEL DÉCIDE OÙ IL DÉCIDAIT, ET UNE GARDE SE FORMULE SUR L'ÉVÉNEMENT,
+  PAS SUR UNE MESURE VOISINE.** Ma première garde lisait `niveauVoxel`, qui
+  compte aussi la cote des colonnes COUVERTES : au sommet d'une crête la
+  colonne voisine dépasse le centre, la garde rendait la main au chemin
+  d'avant avec l'élan de la pente, et la caisse montait de sept blocs sans
+  être « en l'air ». La garde est l'événement lui-même : une marche franchie
+  dans l'image (`_franchi`), un cube sous les roues (`onGround`), pas de
+  surface (ville). Là, l'élan vertical ne survit pas.
+- **CE QUE LA PHYSIQUE PUBLIE, LES AUTRES LE LISENT SI PRÉSENT.**
+  `player.tangage` (rad, nez en haut), `player.enLair`, `player.pente`, et à
+  chaque retour au sol `player.atterrissage = { force, t, air, hauteur }` —
+  un ÉVÉNEMENT comme `choc`, effacé à la montée et à la descente, publié
+  seulement s'il s'est vu (plus haut que le débattement) ou senti. Personne
+  ne le dessine encore (`conduite-sensations`). Le contrat des dégâts ne
+  change pas : un atterrissage n'est pas un choc.
+- **DERRIÈRE UNE VOITURE PLUS LENTE, ON LA SUIT.** Elle ne se pousse pas
+  (v305) ; on la touchait à chaque image. `suiviDevant` pose notre rectangle
+  devant le pare-chocs par le crochet en lecture seule `voitureContre`, sur la
+  distance où l'on peut avoir à freiner, et la vitesse permise
+  (`vitesseDeSuivi`) est celle qu'on peut encore perdre au freinage de confort
+  avant `ECART_SUIVI` — jusqu'au frein franc si on l'a vue tard
+  (`freinDeSuivi`). Mesuré sous node : 101, 1 et 1 contacts (voiture arrêtée,
+  à 6 et à 12 blocs/s) → zéro, à 1,1 à 1,4 bloc de son pare-chocs. Braquer
+  pour la doubler lève le suivi : on ne regarde que dans son axe.
+
+Et un **non-résultat** : lire la façade sur six blocs au lieu de 4,5 bat la
+droite des faces sur un mur synthétique (pire 9,8 → 7,1°) et ne la bat pas sur
+les seize vraies façades de Paris (`sonde-mur-oblique.cjs` : trajet médian
+après contact 10,4 → 7,5 à 10°, 14,3 → 16,8 à 25°). La coque convexe des faces
+est pire partout (pire 12° puis 168°). `RAYON_MUR` reste à 4,5.
+
 ## Les monuments à la hauteur de leur ville (v335) — une table de paliers, deux lecteurs
 
 Un étage fait trois blocs depuis la v301 ; les monuments n'avaient pas suivi.

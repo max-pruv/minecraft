@@ -74,7 +74,7 @@ function rouler(site, v0, duree) {
     if (vole) { air += 1 / 30; haut = Math.max(haut, p.pos.y - (s ?? p.pos.y)); }
     if (p.atterrissage && !att) att = p.atterrissage;
     if (vAu40 === null && parcouru >= 40) vAu40 = +p.vitesseVoiture.toFixed(1);
-    if (parcouru >= L) break;
+    if (parcouru >= L && !p.enLair) break;
   }
   return { vAu40, air: +air.toFixed(2), haut: +haut.toFixed(2), att: att ? +att.force.toFixed(2) : null, chocs };
 }
