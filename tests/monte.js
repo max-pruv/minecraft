@@ -1815,6 +1815,55 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !solDesPassants.err && solDesPassants.total >= 6 && solDesPassants.partChaussee <= 0.2,
       JSON.stringify(solDesPassants));
 
+    // ---- UN FLÂNEUR POSÉ SUR LA CHAUSSÉE EN SORT (v382) ---------------------
+    //
+    // Le témoin d'au-dessus est un TIRAGE (dette v291) : il compte ce que le
+    // hasard des naissances a laissé sur la rue, et rend 0 à 3 sur 18 selon le
+    // passage. Celui-ci PROVOQUE la situation que la v380 a nommée — un flâneur
+    // (`surTrottoir` faux), en pause, son POSTE sur l'asphalte — et lit où il
+    // est ARRIVÉ (v279), en secondes de montre : la sortie suit l'horloge réelle.
+    // Sur l'ancien code, son poste reste sur la chaussée et il y flâne.
+    const sortieRue = await tab.evaluate(async () => {
+      const g = window.__game;
+      const { TROTTOIR, CHAUSSEE } = await import('./src/world.js');
+      const w = g.world;
+      const cat = (x, z) => {
+        const bx = Math.floor(x), bz = Math.floor(z);
+        const b = w.getBlock(bx, w.sommetColonne(bx, bz), bz);
+        return TROTTOIR.has(b) ? 't' : CHAUSSEE.has(b) ? 'c' : 'a';
+      };
+      const s2 = g.passants.sites.find((q) => q.peuple && q.peuple.length);
+      if (!s2) return { err: 'aucune ville peuplée' };
+      const gens = s2.peuple.filter((h) => h.name === 'passant' && h.pos);
+      const sauve = g.player.pos.clone();
+      const essais = [];
+      for (const h of gens.slice(0, 3)) {
+        // une colonne de chaussée au niveau de la rue, à moins de quinze blocs
+        let ou = null;
+        for (let r = 2; r < 16 && !ou; r++) for (let k = 0; k < 24 && !ou; k++) {
+          const a = k / 24 * Math.PI * 2;
+          const x = Math.floor(h.pos.x + Math.cos(a) * r) + 0.5, z = Math.floor(h.pos.z + Math.sin(a) * r) + 0.5;
+          if (cat(x, z) === 'c' && Math.abs(w.sommetColonne(Math.floor(x), Math.floor(z)) + 1 - h.pos.y) < 1.2) ou = { x, z };
+        }
+        if (!ou) { essais.push({ err: 'pas de chaussée' }); continue; }
+        h.traversee = null; h.ecart = null; h.sortie = null;
+        h.surTrottoir = false; h.etat = 'pause'; h.minuteur = 6;
+        h.poste.set(ou.x, ou.z); h.placeAt(ou.x, ou.z, 40);
+        g.player.pos.set(ou.x + 4, h.pos.y, ou.z + 4); g.player.vel.set(0, 0, 0);
+        const t0 = performance.now();
+        while (performance.now() - t0 < 15000 && cat(h.pos.x, h.pos.z) === 'c') await new Promise((f) => setTimeout(f, 250));
+        // et l'on regarde encore deux secondes : sortir pour y revenir ne compte pas
+        await new Promise((f) => setTimeout(f, 2000));
+        essais.push({ secondes: +((performance.now() - t0) / 1000).toFixed(1), arrivee: cat(h.pos.x, h.pos.z),
+          poste: cat(h.poste.x, h.poste.y), d: +Math.hypot(h.pos.x - ou.x, h.pos.z - ou.z).toFixed(2), sorties: h.sorties || 0 });
+      }
+      g.player.pos.copy(sauve);
+      return { ville: s2.nom, essais };
+    });
+    verifier('un flâneur posé au milieu de la chaussée en sort et flâne au bord',
+      !sortieRue.err && sortieRue.essais.length > 0 && sortieRue.essais.every((e) => !e.err && e.arrivee !== 'c' && e.poste !== 'c'),
+      JSON.stringify(sortieRue));
+
     // ---- ET IL MARCHE VRAIMENT (v278, gardé en v279) ------------------------
     //
     // Le second défaut derrière la phrase de Max, et il était STRUCTUREL : la
@@ -3256,9 +3305,14 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // TASKS.md ; ce que le témoin garde, c'est que l'accueil, lui, couvre tout.
     await souffler();
     const arrivee = await banc.joueur('MonteArrivee', { rr: 6 });
+    // UNE CHAUFFE EST UN ÉTAT, PAS UN TAUX (v285) : sous la charge du portail
+    // elle a rendu 44 à 163 sur 321 en soixante secondes, et seule — page
+    // neuve, ou bridée ×4 et ×6 — elle finit en 9 à 16 s
+    // (sonde-programmes-paris.cjs, v386). Allonger l'attente ne blanchit rien :
+    // un code sans chauffe ne la finit jamais. La durée entre dans le message.
     const chauffeNY = await arrivee.evaluate(async () => {
       const t0 = performance.now();
-      while (performance.now() - t0 < 60000) {
+      while (performance.now() - t0 < 150000) {
         const c = window.__chauffeNY && window.__chauffeNY();
         if (!c || c.finie) return { ...(c || { absente: true }), ms: Math.round(performance.now() - t0) };
         await new Promise((f) => setTimeout(f, 250));
@@ -3296,7 +3350,20 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         const neufs = info.programs.filter((p) => !avant.has(p.cacheKey));
         return { lieu: l.cle, neufs: neufs.length, images: info.render.frame - f0,
           arrive: Math.hypot(g.player.pos.x - x, g.player.pos.z - z) < 60,
-          cles: neufs.slice(0, 4).map((p) => { const k = p.cacheKey.split(','); return [k[0]].concat(k.slice(-4, -1)).join(','); }) };
+          // UN PROGRAMME SE NOMME PAR LA CASE DE SA CLÉ QUI DIFFÈRE (v319) : au
+          // portail de la v382 Paris a rendu trois `physical` que la sonde,
+          // seule ou bridée, ne reproduit pas — le prochain rouge les nomme.
+          cles: neufs.slice(0, 4).map((p) => {
+            const k = p.cacheKey.split(',');
+            let diff = null;
+            for (const a of avant) {
+              const ka = a.split(',');
+              if (ka[0] !== k[0] || ka.length !== k.length) continue;
+              const d = []; for (let i = 0; i < k.length; i++) if (ka[i] !== k[i]) d.push(`${i}:${ka[i]}→${k[i]}`);
+              if (!diff || d.length < diff.length) diff = d;
+            }
+            return `${k[0]} ${diff ? diff.slice(0, 4).join(' ') : 'sans voisin'}`;
+          }) };
       }, l));
     }
     await arrivee.close();
@@ -3324,10 +3391,11 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // les seize lieux de la sonde, `origin/main` rend 3 à Paris et 34 à New
     // York. Un programme au plus par lieu, et deux sur tout le tour — la marge
     // d'un modèle de la flotte qu'un tirage met à portée pour la première fois.
-    // (La garde `images > 10` vaut pour chaque lieu : une page morte rend zéro
-    // programme et ne prouve rien.)
+    // (La garde vaut pour chaque lieu : une page morte rend zéro programme et
+    // ne prouve rien. Au portail de la v382, Paris a rendu HUIT images en vingt
+    // secondes sur une page vivante : la garde passe à la moitié, plus de trois.)
     verifier('se téléporter dans une ville ne compile plus de programmes sur place — Paris, New York, Lille, une médina, Kyoto',
-      tour.every((t) => t.arrive && t.images > 10 && t.neufs <= 1)
+      tour.every((t) => t.arrive && t.images > 3 && t.neufs <= 1)
         && tour.reduce((a, t) => a + t.neufs, 0) <= 2,
       JSON.stringify(programmes));
 

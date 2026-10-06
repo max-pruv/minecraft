@@ -666,6 +666,40 @@ function verifier(nom, ok, detail = '') {
       && Math.hypot(pointAmi.carte[0] - marlonVrai[0], pointAmi.carte[1] - marlonVrai[1]) < 4,
       JSON.stringify({ ...pointAmi, marlonChezLui: marlonVrai }));
     await hote.evaluate(() => { const g = window.__game; if (g.fun.montureConduite && g.fun.montureConduite()) document.getElementById('ride-btn').click(); });
+
+    // LE GPS SE PARTAGE (v388). Marlon choisit Rome sur sa carte : chez Alice,
+    // une PROPOSITION (« Marlon va à Rome — 🧭 y aller aussi ? »), et jamais un
+    // ordre — elle roulait déjà vers Lyon, son GPS ne change pas tant qu'elle
+    // n'a pas touché le bouton. Sur l'ancien code rien n'arrive chez elle :
+    // la destination ne voyageait pas.
+    const gpsPartage = { proposee: null, avant: null, apres: null, ms: 0 };
+    {
+      const lieux = await alice.evaluate(async () => {
+        const { positionDe } = await import('./src/mondes.js');
+        return { rome: positionDe('rome'), lyon: positionDe('lyon') };
+      });
+      await alice.evaluate((l) => window.__carte.surGPS(l.x, l.z, 'Lyon'), lieux.lyon);
+      await hote.evaluate((r) => window.__carte.surGPS(r.x, r.z, 'Rome'), lieux.rome);
+      const t0 = Date.now();
+      await jusqua(async () => !!(await alice.evaluate(() => window.__gpsAmi && window.__gpsAmi())), 20000);
+      gpsPartage.ms = Date.now() - t0;
+      gpsPartage.proposee = await alice.evaluate(() => {
+        const p = window.__gpsAmi ? window.__gpsAmi() : null; const el = document.getElementById('gps-ami');
+        return p ? { ...p, vue: !!el && getComputedStyle(el).display !== 'none', texte: el ? el.textContent : '' } : null;
+      });
+      gpsPartage.avant = await alice.evaluate(() => (window.__gps() ? window.__gps().nom : null));
+      if (gpsPartage.proposee) await alice.evaluate(() => document.getElementById('gps-ami-oui').click());
+      await dormir(300);
+      gpsPartage.apres = await alice.evaluate(() => (window.__gps() ? window.__gps().nom : null));
+      gpsPartage.reste = await alice.evaluate(() => !!(window.__gpsAmi && window.__gpsAmi()));
+      await hote.evaluate(() => document.getElementById('gps-stop').click());
+      await alice.evaluate(() => document.getElementById('gps-stop').click());
+    }
+    verifier('l\'ami voit où l\'on va, et la proposition ne remplace pas son GPS sans qu\'il le demande',
+      !!gpsPartage.proposee && gpsPartage.proposee.nom === 'Rome' && gpsPartage.proposee.vue
+      && /Marlon va à Rome/.test(gpsPartage.proposee.texte)
+      && gpsPartage.avant === 'Lyon' && gpsPartage.apres === 'Rome' && !gpsPartage.reste,
+      JSON.stringify(gpsPartage));
     for (const [page, p] of [[hote, departRue.hote], [alice, departRue.alice]]) {
       await page.evaluate((p) => { const g = window.__game; g.player.flying = false; g.player.pos.set(p.x, p.y, p.z); g.player.vel.set(0, 0, 0); }, p);
     }

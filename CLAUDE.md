@@ -770,6 +770,69 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les circuits des villes engendrées (v387) — ce qui se partage est une voie, pas une rue
+
+« Lance sur toutes les villes. » Mesuré sur `origin/main` (v373) : 147 des 262
+villes engendrées n'avaient qu'UN circuit (48 superîlots, v282), 43 anneaux de
+28 villes passaient DANS un monument, et le plus petit anneau roulait sur
+l'axe de la rue. Huit règles.
+
+- **UNE BARRE DE PARTAGE SE RELIT QUAND LA RUE CHANGE DE SECTION.** La v211 a
+  posé vingt blocs quand une rue n'avait qu'UNE file. Depuis la v271 elle en a
+  deux et l'on roule à droite : deux anneaux de part et d'autre d'une rue la
+  parcourent en sens contraires, chacun sur sa voie — ils se CROISENT. Seuls
+  ceux du même côté se SUIVENT. `partageDeRue` compte par voie (le côté de
+  l'anneau multiplié par son `sens`) ; le témoin le mesure sur les TRACÉS sans
+  la formule (écart, sens, recouvrement). La piste « barre en fraction du
+  périmètre » déclarée en v282 laissait deux convois se suivre : écartée.
+- **UN DÉCALAGE BORNÉ PAR LE PAS NE DÉCALE PAS LE PLUS PETIT.**
+  `Math.max(t.pu, Ru − voie)` laissait l'anneau d'un pas de demi-côté sur
+  l'axe. Le témoin « à droite » de la v271 le lisait comme à droite (« vers le
+  centre du rectangle ») ; relu comme « à droite de l'axe de la rue », il rend
+  325 relevés à gauche sur `origin/main`, zéro ici.
+- **QUAND LA GÉOMÉTRIE N'A QU'UN CYCLE, LE SECOND CIRCUIT EST LE CONTRESENS.**
+  Une ville de rayon < 2,3 pas n'a que trois rues de chaque côté du centre, et
+  la place (et sa fontaine) est sur le nœud central : un seul cycle l'évite.
+  Le contresens (`sens: -1`) roule côté extérieur, sur les mêmes tabliers.
+  Les anneaux en pas de trame (côtés impairs, phase 2 bis) et le contresens
+  doivent rouler sur la chaussée (`horsChaussee`) ; les anneaux d'avant ne le
+  font pas toujours — c'est mesuré et déclaré (`TASKS.md`), parce que le
+  filtre appliqué à eux viderait treize villes.
+- **UN ANNEAU NE TRAVERSE PAS UN MONUMENT, ET L'ON LIT LE BÂTISSEUR.** La dette
+  d'Agra (v362) était le cas visible de 43 anneaux. `contreUnMonument` lit les
+  couches 1 à 3 du bâtisseur sous la largeur de la carrosserie (la règle de
+  `avenueDEntree`, v365), ne bâtit que les monuments dont la boîte approche la
+  voie, et la couverture perdue (Agra 84,5 %) est regagnée par des anneaux de
+  quartier cherchés sous node (`ANNEAUX_EN_PLUS`). On déplace l'ANNEAU, jamais
+  la boîte, qui entre dans les zones du relief.
+- **UN CALCUL QU'ON ENRICHIT SE DÉPLACE LÀ OÙ IL SERT.** Les anneaux des 262
+  villes passaient de ~230 à ~700 ms, derrière le bouton « Jouer » (v258). Un
+  convoi ne naît qu'à 220 blocs de sa ville : `circulationsAPlier` rend un
+  repère par ville (même ancre, donc même instant) et `deplier()` calcule ses
+  anneaux à l'approche. `tracesCirculation` rend le même tout, pour les témoins.
+- **UN TÉMOIN QUI LIT UNE LISTE DE VILLES NE VOIT PAS LES AUTRES.** Le témoin
+  des ponts ne lisait que cinq villes et celles des routes ; lu sur les 56
+  villes à pont, `origin/main` en avait sept fautives, dont cinq jamais vues.
+  Et sa barre « 60 % de l'axe sur l'eau » valait pour les grands fleuves : une
+  culée se compte par tablier (quatre pas à sec au plus).
+- **UN TABLIER COUVRE LA COLONNE OÙ LA VOITURE ARRONDIT, PAS SEULEMENT L'EAU
+  DE L'AXE.** La voiture roule sur des colonnes entières (`Math.floor`) ; un
+  tablier borné exactement aux abscisses mouillées laissait au bout une colonne
+  d'eau non couverte — Berlin en v362, Munich ici, sur le témoin des ponts au
+  portail. `pontDeVille` porte un bloc de plus à chaque bout (`a0 − 1`,
+  `a1 + 1`) ; mesuré, cela n'ajoute qu'un bloc de tablier à Rome et à Tokyo.
+- **DEUX SESSIONS ONT LIVRÉ LA MÊME RÈGLE, ET L'ON EN GARDE UNE.** La v378
+  (une autre session) a écarté les monuments et déplié les anneaux à
+  l'approche pendant que cette livraison faisait de même. À la fusion, une
+  seule implémentation reste (`contreUnMonument`, `circulationsAPlier`), et
+  les TÉMOINS des deux restent : le nom que lit le témoin de la v378
+  (`tracesCirculationParesseuses`) est un alias, ses anneaux de quartier
+  d'Agra et du Cap partent avec son filtre. Ce qui le permet est une mesure,
+  pas une préférence : ville par ville contre `origin/main` v379, aucune ne
+  perd de couverture ni sa voiture en vue (sonde `couv.mjs`), et son témoin
+  rend toujours zéro monument en travers. Deux filtres pour la même règle
+  finiraient par diverger, et l'anneau écarté par l'un passerait par l'autre.
+
 ## Les voitures contournent les monuments (v378) — un test qui écarte un candidat se mesure en temps de démarrage
 
 Deux règles.
@@ -788,6 +851,9 @@ Deux règles.
   donne une marque par ville, `animerLesVilles` la déplie à 220 blocs ; un
   témoin exige les mêmes traces que le calcul entier. Un premier dépliage
   coûte au plus 43 ms (Rome, le Colisée du catalogue), une fois.
+  *(Depuis la v387 le filtre est `contreUnMonument` et le dépliage
+  `circulationsAPlier`, dont `tracesCirculationParesseuses` est l'alias : voir
+  « Les circuits des villes engendrées (v387) ».)*
 
 ## Les huit derniers palais (v375) — une boîte se relève en carte avant qu'on la remplisse
 
@@ -918,7 +984,7 @@ receveur cède, l'hôte relaie. Le témoin à deux tablettes lit les deux pages
 au même instant ; il attend le RÉSULTAT (borné à 45 s) : à deux pages, une
 séquence de 2,4 s de jeu prend vingt-sept secondes de montre.
 
-**On monte dans un avion par un escalier (v385).** `monterAvion`
+**On monte dans un avion par un escalier (v389).** `monterAvion`
 (embarquement.js) : marche au pied de l'accès, `gravir`, `ouverture`,
 `entree` (l'enfant se baisse : la porte fait la moitié de sa taille),
 aux commandes (`toggleRide`, l'état bascule ICI), `fermeture`. Trois règles.
@@ -1102,6 +1168,22 @@ celle de la High Roller ne tiendrait pas, et c'est déclaré.
 Et une empreinte d'identité qui change se PROUVE : celle des 490 morceaux
 (v352) couvre Marrakech et Tokyo ; la branche, bâtisseurs neufs désarmés, rend
 l'ancienne au bit près — c'est ce qui a permis de la remplacer.
+
+## La chauffe de New York se mesure seule (v386) — un bridage n'est pas une charge de portail
+
+Rouge chronique de `monte.js`, des deux côtés. Deux règles.
+
+- **AVANT DE CORRIGER LE JEU, ON DEMANDE SI L'ENFANT EST TOUCHÉ.** Le trajet
+  exact du témoin, rejoué seul : chauffe finie en 9 s, zéro programme neuf à
+  Paris, New York, Lille, de jour comme de nuit, et bridé ×6 depuis l'accueil
+  la chauffe finit en 16 s. Le jeu tient ; le témoin attendait soixante
+  secondes un ÉTAT que la charge retarde — il attend 150 s et dit sa durée.
+- **UN BRIDAGE DU PROCESSEUR NE REPRODUIT PAS UNE CHARGE DE PORTAIL.** Les
+  trois programmes `physical` vus à Paris au portail ne reviennent ni bridé ×4
+  ni ×6 : un banc chargé n'est pas une page lente (ordre des arrivées, fichiers
+  servis plus tard). Quand on ne peut pas reproduire, le témoin NOMME ce qu'il
+  voit (la case de la clé qui diffère, v319), pour que le prochain rouge se
+  démonte au lieu de se rejouer.
 
 ## Le cône se mesure à chaud (v382) — l'ABBA n'écarte pas un premier passage à froid
 
@@ -1511,6 +1593,27 @@ engendrées. Quatre règles.
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
 
+## Les passants quittent la chaussée (v385) — un remède qui ne dépend pas de la porte
+
+Deux règles.
+
+- **QUAND UN ÉTAT NE SE REPRODUIT PAS SUR UNE PAGE NEUVE, ON SOIGNE L'ÉTAT, PAS
+  LA PORTE.** Le témoin de la v380 nommait des flâneurs en pause, à leur poste,
+  sur l'asphalte de Rome. Mesuré : `posteAutour` ne rend la chaussée sur aucune
+  des 1 600 poses sous node, et une page neuve n'en montre aucune en soixante
+  secondes. Plutôt qu'une quatrième hypothèse sur l'entrée (v223), la règle vit
+  dans le programme du flâneur (`sortirDeLaChaussee`, vie.js) : un piéton qui
+  se trouve sur la chaussée sans la traverser marche au bord le plus proche
+  (trottoir d'abord, jamais un toit), en TEMPS RÉEL (la rue est le domaine des
+  voitures, v351), et y prend son poste. La sonde a sa cadence (une demi-seconde
+  réelle). Et la chaussée n'est plus le second choix de `posteAutour` : la
+  bordure, l'esplanade et l'herbe au niveau de la rue passent avant.
+- **UN TÉMOIN QUI COMPTE CE QUE LE HASARD A LAISSÉ SE DOUBLE D'UN TÉMOIN QUI
+  PROVOQUE.** « Un flâneur posé au milieu de la chaussée en sort » pose trois
+  flâneurs ET leur poste sur l'asphalte et lit leur arrivée : 3/3 au bord en 3 à
+  4,5 s, contre 3/3 encore sur la chaussée après 17 s sur `origin/main`
+  (`sonde-sortie-chaussee.cjs`). Le témoin-tirage d'avant reste, pour le message.
+
 ## Deux témoins de la rue qui disent ce qu'ils voient (v380) — un couloir « vide » se vérifie au sec
 
 Deux règles.
@@ -1812,6 +1915,33 @@ normales réécrites hors d'eux (zéro), travail par image après le choc
 position, si (`{ ...msg }`). Ce qui doit traverser un ancien hôte s'accroche
 à elle, et devient idempotent en envoyant l'HISTOIRE (adoptée seulement si
 la nôtre en est le début), jamais le seul dernier événement.
+
+## Le GPS se partage (v388) — un état voyage avec la position, pas dans un message neuf
+
+La dette de la v321. Trois règles.
+
+- **CE QUI EST UN ÉTAT VOYAGE AVEC LA POSITION.** La consigne proposait un
+  message `gps_de` relayé comme `ciel`. La leçon de la v374 décide autrement :
+  un ancien hôte ne relaie pas un message qu'il ne connaît pas, mais il relaie
+  la position telle quelle (`{ ...msg }`). La destination n'est pas un
+  événement, c'est un ÉTAT (« je vais à Rome ») : elle part dans la position
+  (`g` = [x, z, nom, clé], net.js), qu'un ami arrivé en cours de route reçoit
+  aussi, et qu'une tablette restée en arrière ignore (le receveur cède). La
+  CLÉ nomme le trajet : la proposition n'apparaît qu'une fois par trajet, même
+  si la position repasse huit fois par seconde.
+- **UN CHAMP DE POSITION SE LIT SUR LES DEUX CHEMINS DE LA POSITION.** Le
+  direct (`pos`) et le relayé (`rpos`). La v374 avait accroché l'histoire des
+  chocs (`rc`) à la position pour traverser un ancien hôte — et ne la lisait
+  que sur `pos` : entre deux invités, précisément le chemin d'un ancien hôte,
+  elle tombait. Corrigé avec `g`. Quand on ajoute un champ à `pos`, on cherche
+  `case 'rpos'` le jour même.
+- **UNE PROPOSITION, JAMAIS UN ORDRE.** Règle de la v306 : un geste qui change
+  le trajet pose la question. Le bandeau « Marlon va à Rome — y aller aussi ? »
+  ne touche pas un GPS en cours ; il s'efface seul (vingt secondes en temps
+  réel), quand l'ami arrête son GPS ou s'en va, et ne s'affiche pas si l'on va
+  déjà là ou qu'on y est. Il vit au centre, sous le GPS — rien dans le quart
+  bas-gauche (v272) — et la première capture l'a montré coincé entre les
+  colonnes de boutons : sa largeur se borne aux colonnes, pas à l'écran.
 
 ## « Seul » ne veut pas dire « seulement lui » (v383) — la rue n'entre plus chez un ami
 

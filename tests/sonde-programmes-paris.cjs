@@ -9,12 +9,15 @@
 // Usage : node sonde-programmes-paris.cjs [lieux]
 const { Banc, souffler } = require('./banc.js');
 const lieux = (process.argv[2] || 'paris').split(',');
+const heure = process.argv[3] !== undefined ? Number(process.argv[3]) : null;
 (async () => {
   const banc = new Banc({ portJeu: 8401, portPairs: 9401 });
   await banc.ouvrir();
   try {
     await souffler();
     const page = await banc.joueur('Programmine', { rr: 6 });
+    const bride = Number(process.env.BRIDE || 0);
+    if (bride) { const cdp = await page.context().newCDPSession(page); await cdp.send('Emulation.setCPUThrottlingRate', { rate: bride }); console.log('bridé ×' + bride); }
     const c = await page.evaluate(async () => {
       const t0 = performance.now();
       while (performance.now() - t0 < 120000) {
@@ -28,12 +31,13 @@ const lieux = (process.argv[2] || 'paris').split(',');
     await page.evaluate(() => { window.__game.edu.today().libreJusqua = 86400; document.getElementById('play-btn').click(); });
     await page.waitForFunction(() => window.__game.running, null, { timeout: 30000 });
     for (const cle of lieux) {
-      const r = await page.evaluate(async (cle) => {
+      const r = await page.evaluate(async ({ cle, process_heure }) => {
         const g = window.__game, info = g.renderer.info;
         const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
         let n = info.programs.length, stable = 0;
         const t0 = performance.now();
         while (stable < 3 && performance.now() - t0 < 40000) { await dodo(1000); if (info.programs.length === n) stable++; else { stable = 0; n = info.programs.length; } }
+        if (process_heure !== null && window.__setDayTime) { window.__setDayTime(process_heure); await dodo(3000); }
         const avant = info.programs.map((p) => p.cacheKey);
         const avantSet = new Set(avant);
         const { positionDe } = await import('./src/mondes.js');
@@ -57,7 +61,7 @@ const lieux = (process.argv[2] || 'paris').split(',');
           out.push({ type: k[0], diff: best, porteurs: [...new Set(porteurs)].slice(0, 6), cle: p.cacheKey.slice(0, 400) });
         }
         return { cle, neufs: neufs.length, out };
-      }, cle);
+      }, { cle, process_heure: heure }).catch((e) => ({ err: String(e) }));
       console.log(JSON.stringify(r, null, 1));
     }
   } finally { await banc.fermer(); process.exit(0); }

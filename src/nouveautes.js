@@ -6,12 +6,45 @@
 
 export const NOUVEAUTES = [
   {
-    v: 385,
+    v: 389,
     titre: 'On monte dans l\'avion',
     puces: [
       'Un escalier contre la porte',
       'Le chasseur a son échelle',
       'La porte s\'ouvre et se referme',
+    ],
+  },
+  {
+    v: 388,
+    titre: 'Ton GPS se partage',
+    puces: [
+      'Ton ami voit où tu vas',
+      'Il peut y aller avec toi',
+    ],
+  },
+  {
+    v: 387,
+    titre: 'Des voitures dans les deux sens',
+    puces: [
+      'Presque chaque ville a plusieurs circuits',
+      'Les voitures roulent dans les deux sens',
+      'Les petites villes ont un second circuit',
+    ],
+  },
+  {
+    v: 386,
+    titre: 'New York vérifiée',
+    puces: [
+      'Arriver à New York reste fluide',
+      'Rien ne change pour toi',
+    ],
+  },
+  {
+    v: 385,
+    titre: 'Les passants quittent la rue',
+    puces: [
+      'Personne ne reste planté sur la route',
+      'Ils retournent vite sur le trottoir',
     ],
   },
   {

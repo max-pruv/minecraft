@@ -13,7 +13,7 @@
 
 import * as THREE from 'three';
 import { BaseNPC } from './marlon.js';
-import { CASTLE, VILLANDRY, GAULOIS, ESPACE, VILLE } from './world.js';
+import { CASTLE, VILLANDRY, GAULOIS, ESPACE, VILLE, CHAUSSEE, TROTTOIR } from './world.js';
 import { BLOCK, DECOR_START, isSolid as blockIsSolid, isSlab } from './blocks.js';
 import { construireHumain } from './personnages.js';
 import { construireBete, BETES } from './betes.js';
@@ -198,6 +198,62 @@ export class Habitant extends BaseNPC {
     return { speed: this.walkSpeed * ALLURE_TRAVERSEE, yaw: Math.atan2(-dx, -dz), reel: true };
   }
 
+  // OÙ EST LE BORD LE PLUS PROCHE ? Le trottoir d'abord, à défaut tout sol qui
+  // n'est pas la chaussée, au niveau de la rue (pas un toit). Huit couronnes de
+  // seize directions, une seule fois, au moment où l'on se découvre sur la rue.
+  bordLePlusProche() {
+    const w = this.world, y0 = Math.floor(this.pos.y - 0.1);
+    let autre = null;
+    for (let r = 1; r <= 8; r++) {
+      for (let k = 0; k < 16; k++) {
+        const a = (k / 16) * Math.PI * 2;
+        const x = this.pos.x + Math.cos(a) * r, z = this.pos.z + Math.sin(a) * r;
+        const bx = Math.floor(x), bz = Math.floor(z);
+        const y = w.sommetColonne(bx, bz);
+        if (Math.abs(y + 1 - y0) > 1) continue;            // un mur, un trou
+        const b = w.getBlock(bx, y, bz);
+        if (TROTTOIR.has(b)) return { x: bx + 0.5, z: bz + 0.5 };
+        if (!autre && !CHAUSSEE.has(b)) autre = { x: bx + 0.5, z: bz + 0.5 };
+      }
+    }
+    return autre;
+  }
+
+  // Sur la chaussée : on marche vers le bord, en TEMPS RÉEL (`reel`) — la rue est
+  // le domaine des voitures, qui roulent sur l'horloge réelle (v351) ; un
+  // piéton qui la quitterait au pas du banc y passerait quinze secondes de
+  // montre. Arrivé, le poste DEVIENT le bord : la flânerie reprend hors de la
+  // rue, et un trottoir trouvé le repromeut par la règle juste en dessous.
+  // La sonde a sa cadence (une demi-seconde réelle) : `sommetColonne` descend
+  // une colonne, on ne la paie pas par image.
+  sortirDeLaChaussee(dt) {
+    if (this.rueUrbaine || this.ecart || this.traversee) return null;
+    const reel = this.dtReel ?? dt;
+    if (this.sortie) {
+      const s = this.sortie, dx = s.x - this.pos.x, dz = s.z - this.pos.z;
+      s.t += reel;
+      if (Math.hypot(dx, dz) < 0.35 || s.t > 6) {
+        this.sortie = null;
+        this.poste.set(this.pos.x, this.pos.z);
+        this.etat = 'pause'; this.minuteur = 0.5; this.sonde = 0;
+        return null;
+      }
+      return { speed: this.walkSpeed, yaw: Math.atan2(-dx, -dz), reel: true };
+    }
+    this.sondeRue = (this.sondeRue ?? Math.random() * 0.5) - reel;
+    if (this.sondeRue > 0) return null;
+    this.sondeRue = 0.5;
+    const w = this.world;
+    if (!w.sommetColonne) return null;
+    const bx = Math.floor(this.pos.x), bz = Math.floor(this.pos.z);
+    if (!CHAUSSEE.has(w.getBlock(bx, w.sommetColonne(bx, bz), bz))) return null;
+    const bord = this.bordLePlusProche();
+    if (!bord) return null;
+    this.sortie = { ...bord, t: 0 };
+    this.sorties = (this.sorties || 0) + 1;
+    return null;
+  }
+
   think(dt) {
     this.minuteur -= dt;
     if (this.promene()) {
@@ -283,6 +339,20 @@ export class Habitant extends BaseNPC {
     // n'a jamais touché ce drapeau (`undefined`), et Manhattan, dont le trottoir
     // vit dans un plan et non dans des blocs, passe aussi depuis la v354 :
     // `trottoirA` y lit `ruePietonne`, le plan, au lieu du seul sol praticable.
+    // UN FLÂNEUR NE RESTE PAS SUR LA CHAUSSÉE : IL EN SORT D'ABORD (v382).
+    //
+    // Le témoin de la v380 a nommé qui restait au milieu de la rue à Rome : des
+    // FLÂNEURS (`surTrottoir` faux), en pause, encore à leur poste de naissance.
+    // Le programme de flâneur — pause, quelques pas au hasard autour d'un poste —
+    // est le bon pour un badaud d'esplanade ; posé sur l'asphalte, il y reste,
+    // puisque son poste y est. Une sonde sur une page neuve ne le reproduit pas
+    // (zéro naissance sur la chaussée en soixante secondes) et `posteAutour` ne
+    // rend plus la chaussée qu'au tout dernier recours : la règle vaut donc pour
+    // TOUTE porte d'entrée — une naissance, un rapatriement, un pas de côté, une
+    // démotion au milieu d'un carrefour. On ne cherche pas laquelle : un piéton
+    // qui se trouve sur la chaussée sans la traverser la quitte.
+    const sortie = this.sortirDeLaChaussee(dt);
+    if (sortie) return sortie;
     if (this.surTrottoir === false && this.world.trottoirA) {
       this.sonde = (this.sonde ?? 0) - dt;
       if (this.sonde <= 0) {
