@@ -27,6 +27,7 @@ import { Carte, MAP_COLORS } from './carte.js';
 import { toast } from './bandeau.js';
 import { Horizon, rayonHorizon } from './horizon.js';
 import { fileDeMaillage, VITESSE_CONE, estUnSaut, FENETRE_ARRIVEE_MS, trouDevant, debitRecent } from './plafond-sol.js';
+import { mondeDevant, ligneDiagConduite } from './conduite.js';
 import { PALIERS, PALIER_CLE, choisirPalier, VITESSE_JET,
   ETENDUE_CLE, ETENDUE_PAR_DEFAUT, ETENDUES, palierRetenu, palierPropose, etendueRange, reglageDe, planDetail,
   PARAMS_FORCANTS } from './palier.js';
@@ -1704,6 +1705,10 @@ function updateChunks() {
     if (eauDevant(x, z, cap) && !eauDevant(x0, z0, cap)) { player.arretDouxT = performance.now(); direLEau(); return 'eau'; }
     return false;
   };
+  // ET CONTRE QUELLE VOITURE (v397) : sa boîte et son allure, pour que le choc
+  // prenne la normale de SON rectangle et la vitesse RELATIVE — un flanc frôlé
+  // glisse, un choc par l'arrière pousse peu.
+  player.voitureContre = (x, z, cap) => vehicules.voitureContre(x, z, cap);
   // UNE VOITURE ARRIVE SUR CE POINT ? (v259) Ce qu'un piéton regarde pour
   // s'écarter : une voiture de la rue en marche, ou celle de l'enfant quand
   // elle roule, dont le couloir — sa largeur plus une marge, deux secondes de
@@ -4421,6 +4426,7 @@ function syncRemotePlayers(list) {
     // feu. `p.v.d` est court et une tablette restée sur l'ancienne version
     // l'ignore (le receveur cède).
     if (rp.vehicule) fun.degats.distant(rp.vehicule.mesh, (p.v && p.v.d) || null);
+    if (rp.vehicule) { const u = rp.vehicule.mesh.userData; u.braquage = (p.v && +p.v.b) || 0; u.derive = (p.v && +p.v.r) || 0; }
     rp.passager = p.p || null;
     proposerGPSAmi(p.id, rp, p.g || null);   // sa destination, proposée (v388)
   }
@@ -4606,6 +4612,13 @@ function startNetSession(code, isHost, patience) {
       if (u.origine) p.v.o = u.origine;
       const d = fun.degats.versReseau(a.mesh);   // dégâts (v344), absent si intacte
       if (d) p.v.d = d;
+      // LE VOLANT ET LA GLISSE (v397) : l'ami voyait la caisse au cap du
+      // conducteur, jamais les roues braquées ni la dérive. Deux nombres
+      // courts, absents quand ils sont nuls ; le receveur les pose sur le
+      // maillage de SA copie de la voiture (`userData.braquage`, `.derive`),
+      // et une tablette restée sur l'ancienne version les ignore.
+      if (Math.abs(player.braquage || 0) > 0.005) p.v.b = Math.round(player.braquage * 100) / 100;
+      if (Math.abs(player.derive || 0) > 0.0005) p.v.r = Math.round(player.derive * 1000) / 1000;
     }
     const pa = fun.passagerDe ? fun.passagerDe() : null;
     if (pa) p.p = { de: pa.de, s: pa.s };
@@ -7766,6 +7779,12 @@ function updateHud(dt) {
     + `morceaux ${chunkMeshes.size} (${[...chunkMeshes.values()].filter((e) => e.detail).length} avec façades HD) · corps ${h.prets}/${h.total} · programmes chauffés ${programmesChauffes()} · ${myName() || ''} ${player.pos.x.toFixed(0)},${player.pos.z.toFixed(0)}\n`
     + `journal : ${journal.doc.releves.length} relevé(s), ${journal.doc.erreurs} erreur(s), plantages de suite ${journal.plantages()}${PALIER && PALIER.source === 'sûreté' ? ' — SÛRETÉ' : ''}`
     + ` · façades HD ${detailTenu.n} morceau(x), ${(detailTenu.octets / 1048576).toFixed(0)} / ${(BUDGET_FACADES / 1048576).toFixed(0)} Mo, ${statsMaillage.detailsBudget} rendu(s) au budget`
+    // AU VOLANT (v397) : ce que le banc ne sait pas mesurer — le monde maillé
+    // devant la voiture et la roue libre — Max le relève sur la tablette.
+    + (player.gabarit > 1 && !player.pilote ? '\n' + ligneDiagConduite({
+      classe: player.ficheVoiture && player.ficheVoiture.classe, v: player.vitesseVoiture, vmax: player.vitesseVoitureMax,
+      devant: mondeDevant((cx, cz) => chunkMeshes.has(World.key(cx, cz)), player.pos.x, player.pos.z, player.yaw + (player.derive || 0) + (player.vitesseVoiture < 0 ? Math.PI : 0), CHUNK),
+      roueLibre: player.roueLibre }) : '')
     + texteRoulage()
     + texteDegats()
     + texteEmbarquement();

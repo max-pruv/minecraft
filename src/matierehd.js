@@ -397,6 +397,20 @@ const PEINTRES = {
       p(x, y, r + n, g + n, b + n);
     });
   },
+  // Le BARDAGE des maisons victoriennes de San Francisco (v398) : des clins de
+  // bois horizontaux, huit par bloc — chacun recouvre celui du dessous, d'où
+  // une ombre franche sous son bord et une arête claire au-dessus. Blanc cassé :
+  // la couleur (le rose, le menthe, le ciel des Painted Ladies) vient du sommet.
+  bardage(p, rempli, N) {
+    rempli((x, y) => {
+      const l = y % 16;
+      const fil = bruitLisse(x, y * 4, 11, 97) * 10 + (bruit(x, y, 98) - 0.5) * 6;
+      let v = 222 + fil - l * 0.9;
+      if (l > 13) v -= 58;
+      else if (l < 2) v += 10;
+      p(x, y, v, v - 2, v - 6);
+    });
+  },
   // Les lattes de bois d'un banc : des lattes chaudes et vernies, le fil du bois
   // le long, et l'ombre entre deux lattes.
   lattes(p, rempli, N) {

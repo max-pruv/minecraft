@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Les sensations au volant (v397) — la caméra regarde la voiture, et un mur se cherche cellule par cellule
+## Les sensations au volant (v399) — la caméra regarde la voiture, et un mur se cherche cellule par cellule
 
 Chantier « conduite » (six sessions, octobre 2026) ; celle-ci tient ce que
 l'enfant VOIT et ENTEND. Tout vit dans `src/sensations.js`, branché par un
@@ -805,6 +805,39 @@ règles.
   dans l'image, et `sensations.js` reprend le suivi du bestiaire pour ne pas
   compter deux fois. Les avions gardent la poursuite d'avant à l'identique ;
   `?sensations=0` rejoue l'ancienne conduite, pour mesurer.
+
+## Washington et San Francisco en relief (v398) — une fiche dit sa forme, un uni se lit à sa couleur
+
+Palier A du reste du monde. Quatre règles.
+
+- **UNE VILLE QUI N'EST PAS UN DISQUE LE DÉCLARE DANS SA FICHE.** Washington est
+  une boîte (`boite: ZONE_WASHINGTON`) : le cercle du registre (187 blocs) ne
+  couvre pas Georgetown. `villeHD` lit la boîte, élargie d'un morceau comme le
+  disque. La règle de la v362 (la porte de Manhattan), du côté de la couche.
+- **UN REGISTRE PAR QUARTIER SE DEMANDE À LA RÈGLE DU BÂTISSEUR.** San Francisco
+  a trois villes dans une : `quartier(wx, wz)` dans la fiche lit `quartierSF`,
+  la même fonction que `batirColonneSF` — pierre au centre, brique à SoMa,
+  bardage des Victoriennes (`sfCentre`, `sfSoma`, `sfMaisons`). Mesuré : centre
+  pierre 3 060 et bardage 0, Alamo Square bardage 10 700 et pierre 0.
+- **UN UNI SE LIT À SA COULEUR, ET LE BLOC DE BRIQUE DU JEU EST UN MUR.** Le mur
+  de ces villes est un uni (le marbre blanc, le calcaire crème, la brique
+  chocolat de `MURS.brique`) ou `BLOCK.BRICK`, que `murVoisin` ne lisait pas :
+  `unis` (couleur → tuile) et `uni` (le défaut) dans le registre ;
+  `briqueDuJeu` dans la fiche, lu par `murHD` et `murVoisin`. L'anthracite et le
+  noir restent de l'enduit chez les Victoriennes : c'est le toit vu de côté — vu
+  en capture, un bardage de clins sur l'ardoise.
+- **UNE TUILE NEUVE S'AJOUTE EN FIN D'ATLAS, ET SA MOYENNE SE MESURE.**
+  `bardage` est la vingt-huitième ; les index d'avant ne bougent pas, et
+  l'empreinte de Paris le prouve. `MOYENNE_TUILE` est relevée sur les peintres
+  (sonde `moyennes.mjs` : brique et enduit retrouvés au dixième, pierre et
+  bardage ajoutés).
+
+Et la sonde d'empreinte a trouvé que **le Colisée du catalogue n'est pas le même
+d'un lancement à l'autre** (`monuments.js`, `Math.random` dans ses gradins
+effondrés, en production depuis la v346) : deux exécutions rendent 173 blocs
+différents au centre de Rome, et le worker et le fil principal deux Colisées.
+Hors de la zone de la couche (un bloc écrit) : dette déclarée dans `TASKS.md`.
+Une empreinte de monde fige `Math.random` avant d'importer `src/`.
 
 ## Toute l'Europe en relief (v394) — un registre par géographie, et un compte qui voit ce qu'il compte
 
@@ -2355,6 +2388,52 @@ Six règles.
   rebondissent, piéton et eau arrêtent net — personne n'est jamais touché.
   Une voiture de la rue ne se pousse pas (horloge partagée, v305) : c'est
   elle qui attend (`cederLePassage`, v245).
+
+## La normale de ce qu'on touche (v397) — conduite, palier 2
+
+Le palier 1 prenait la normale du MOUVEMENT contre une voiture de la rue et
+celle d'un AXE DU MONDE contre un mur. Cinq règles.
+
+- **UN MUR DE CUBES EN BIAIS SE LIT PAR LA DROITE DE SES FACES.** Sur une
+  façade oblique, l'axe libre change à chaque marche de l'escalier : la
+  voiture s'y arrêtait (seize façades de Paris, 1,4 bloc après contact).
+  `normaleDeMur` (conduite.js) ajuste une droite sur les MILIEUX des faces
+  exposées tournées vers la voiture, à `RAYON_MUR` (4,5) du contact — mesuré :
+  1,4° d'erreur moyenne, 7,8 au pire, contre 3,6 et 15 avec les centres des
+  cases sur 2,6 blocs. Les centres pondérés par la distance sont un
+  non-résultat mesuré (pire). L'essai axe par axe ne reste qu'en repli
+  (moins de trois faces).
+- **LONGER UNE NORMALE LUE À DEUX DEGRÉS PRÈS, C'EST BUTER SUR UN COIN DE
+  MARCHE.** Une vitesse qui ne rentre pas dans la normale lue mais bute quand
+  même glisse aussi ; `glisserLeLong` prend le pas tangent, puis se décolle
+  d'un cheveu (0,12 à 0,5 bloc) le long de la normale, et remet la caisse
+  dans l'axe — seule une pose LIBRE est prise. Sans cela, `reponseChoc` rendait
+  « pas de choc » (vitesse tangente), le pas bloqué se rejouait trente-deux
+  fois et le filet de la v272 ramenait la vitesse à zéro.
+- **CONTRE UNE VOITURE, LA NORMALE DE SON RECTANGLE ET LA VITESSE RELATIVE.**
+  `voitureContre` (vehicules.js, lecture seule de la collecte de
+  `cederLePassage`, branchée par main.js) rend sa boîte et son allure ;
+  `chocContreVoiture` prend l'axe de moindre enfoncement des deux rectangles
+  et juge `reponseChoc` dans le repère de l'autre. Sous `CONTACT_DOUX` (trois
+  blocs/s relatifs) c'est un contact, pas un choc — collé derrière une voiture
+  plus lente, on la touche à chaque image. Et la rue juge avec SES cotes (2,26
+  de large) quand le joueur porte celles de sa fiche (2,2) : au bord, la rue
+  dit « touché » avant que nos boîtes ne se recouvrent — on relit avec une
+  boîte grossie de `MARGE_CONTACT`, sinon le choc retombait sur le mouvement.
+- **UN TÉMOIN NE RATTRAPE PAS UNE VOITURE DE LA RUE AU BANC.** La rue avance
+  en temps RÉEL (v305), la nôtre en temps de jeu : à deux images par seconde,
+  dix fois moins vite (`sonde-vraie-rue.cjs`). La vitesse relative se garde
+  sous node ; le témoin de `monte.js` pose une voiture GARÉE (`vitesse: 0`)
+  et éprouve le crochet. **Et un témoin qui se téléporte à côté d'une voiture
+  de la rue attend une image avant de rouler** : la collecte ne la connaît
+  qu'à l'image suivante, et la nôtre entrait sans la voir — « déjà dedans »
+  ensuite, donc traversée.
+- **LE VOLANT VOYAGE DANS `p.v`** (`b` braquage, `r` dérive, absents quand
+  nuls) ; le receveur les pose sur `userData.braquage` et `.derive` de sa
+  copie. Personne ne les DESSINE encore (session des sensations), et c'est
+  déclaré. Le joueur, lui, publie `player.roueLibre` ({ depuis, s }) et
+  `player.contact` ({ famille, nx, nz }) ; `?diag=1` au volant les affiche
+  avec le monde maillé devant la voiture (`mondeDevant`, `ligneDiagConduite`).
 
 ## Les monuments à la hauteur de leur ville (v335) — une table de paliers, deux lecteurs
 

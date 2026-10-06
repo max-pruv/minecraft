@@ -6,13 +6,31 @@
 
 export const NOUVEAUTES = [
   {
-    v: 397,
+    v: 399,
     titre: 'Conduire comme au cinéma',
     puces: [
       'La caméra recule quand on accélère',
       'La voiture penche dans les virages',
       'Les roues avant tournent avec toi',
       'Les pneus crissent, les chocs s\'entendent',
+    ],
+  },
+  {
+    v: 398,
+    titre: 'Washington et San Francisco en relief',
+    puces: [
+      'Brique et marbre à Washington',
+      'Maisons de bois peint à San Francisco',
+      'Fenêtres à guillotine de près',
+    ],
+  },
+  {
+    v: 397,
+    titre: 'La voiture longe les murs',
+    puces: [
+      'Elle longe les façades en biais',
+      'Frôler une voiture ne t\'arrête plus',
+      'Un petit choc ne te renvoie plus',
     ],
   },
   {

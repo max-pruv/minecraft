@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v397 — Conduire comme au cinéma
+## v399 — Conduire comme au cinéma
 
 **Pourquoi.** Max (4 octobre 2026) : « une grosse refonte de la façon de
 conduire… comme GTA ». Au volant, la caméra restait rivée à six blocs quatre
@@ -53,6 +53,85 @@ choc 0,90 contre 0,073, secousse 0,23 bloc, caméra du côté de la voiture. Le 
 se mesure en ordre alterné sur la même page (`?sensations=0` rejoue l'ancienne
 conduite) : aucun appel de dessin ni programme de shader de plus (67 des deux
 côtés).
+
+---
+
+## v398 — Washington et San Francisco en relief
+
+**Pourquoi.** L'Europe entière avait sa couche de relief (v394), mais les deux
+villes bâties à la main de l'autre côté de l'Atlantique — Washington et San
+Francisco — restaient en façades plates à toute distance.
+
+**Ce que ça change.** À Washington, la maison de ville fédérale : brique rouge,
+fenêtre à guillotine au châssis blanc, appui et linteau de pierre ; les
+ministères et les monuments en pierre de taille de calcaire et de marbre. À San
+Francisco, le registre suit le quartier : les Victoriennes d'Alamo Square en
+bardage de clins de bois peint (une tuile neuve de l'atlas), aux couleurs de
+leur palette, avec leurs guillotines blanches ; la pierre de taille au centre
+(le mur-rideau des tours garde sa tuile, il n'est jamais un trou) ; la brique
+des entrepôts de SoMa. Un appareil au palier bas ne reçoit rien de neuf ; Paris,
+Londres, Nice, Lille et les villes d'Europe n'ont pas bougé d'un octet.
+
+**Ce qui le prouve.** Seize témoins neufs dans `parishd.js` ; sur
+`origin/main` la suite neuve rend quatre rouges (« la ville n'est pas dans
+`VILLES_HD` » pour chacune, le quartier à 0/0, la brique du jeu non lue) : sept par ville (couverture,
+aucun bloc posé, `hd 0` identique, chaque face exposée détaillée — 1 306 et
+1 522 —, le mur de la ville, pas le mobilier de Paris, le budget), le registre
+qui suit le quartier à San Francisco (pierre 3 060 et bardage 0 au centre,
+bardage 10 700 et pierre 0 à Alamo Square), et le bloc de brique du jeu lu à
+Washington et à San Francisco, pas à Londres ni à Paris. Une empreinte des
+tampons de vingt-cinq morceaux par lieu, relevée sur `origin/main` : Paris,
+Londres, Nice, Lille, Rome, Berlin, Manchester, Istanbul, Tokyo et Mexico
+identiques à l'octet, avec et sans HD ; Washington et San Francisco identiques
+sans HD. Mesuré : 0,23 Mo par morceau en moyenne à Washington (2,11 au pire),
+0,11 à San Francisco (0,59) ; dans le worker, 5,4 → 16,2 ms par morceau à
+Washington, 2,2 → 6,3 chez les Victoriennes, seulement à portée de `RAYON_HD`.
+## v397 — La voiture glisse le long des façades, et frôle les autres voitures
+
+**Pourquoi.** Le palier 1 de la conduite (v358) prenait deux normales
+commodes et fausses. Contre une voiture de la rue, celle du MOUVEMENT : frôler
+son flanc était un choc de face, on rebondissait en arrière et les dégâts
+comptaient un choc plein. Contre un mur, celle d'un axe du monde : sur une
+façade oblique — une trame tournée, Paris, la moitié des villes engendrées —
+le mur est un escalier de cubes, et la voiture s'y arrêtait net ou en était
+renvoyée. Mesuré sur seize vraies façades obliques de Paris : 1,4 à 1,5 bloc
+de trajet médian après le contact, puis l'arrêt. Et à plusieurs, l'ami ne
+voyait ni le volant ni la glisse.
+
+**Ce que ça change.**
+
+- **On glisse le long des façades obliques** : la façade se lit sur la droite
+  de ses faces exposées, et la voiture la longe au lieu de s'y coincer — trajet
+  médian après contact 1,4 → 10,4 blocs (approche à 10°) et 1,5 → 14,3 (25°) ;
+  ce qui l'arrête ensuite est la rue elle-même, un trottoir, un coin d'îlot.
+- **Contre une voiture de la rue, le choc se juge dans son repère** : la
+  normale de SON rectangle, et la vitesse RELATIVE. Un flanc frôlé est un choc
+  léger sur notre flanc, et l'on continue ; percuter par l'arrière une voiture
+  qui roule est un petit choc, et l'on repart derrière elle ; pare-chocs contre
+  pare-chocs au pas, c'est un contact, pas un choc qui use la voiture.
+- **À plusieurs, le volant et la glisse voyagent** avec la voiture : la copie
+  de l'ami porte son braquage et sa dérive (à dessiner par la session des
+  sensations).
+- **`?diag=1` au volant** dit la classe, la vitesse, la pointe, le monde déjà
+  maillé devant la voiture (en blocs et en secondes de route) et la dernière
+  roue libre : ce que le banc ne sait pas mesurer, Max le relève sur l'iPad.
+
+**Ce qui le prouve.** Six témoins neufs, tous vérifiés rouges sur l'ancien
+code. Trois sous node dans `plafond.js` : la normale d'une façade lue à 1,63°
+près en moyenne sur 1 200 contacts de 0 à 87° ; le choc contre une voiture
+dans son repère (l'arrière à 0,5 au lieu de 1, le flanc à 0,17) ; et le JOUEUR
+contre un mur oblique à 24° et 37°, deux approches — 57 à 66 blocs de glisse
+contre 0,2 à 1,7 puis l'arrêt sur l'ancien code. Deux dans `monte.js`, par le
+VRAI crochet contre une voiture de la rue garée : le flanc frôlé (choc 0,21,
+sur notre flanc, 12 blocs/s gardés ; l'ancien code rendait 0,83 sur le nez et
+un rebond), l'arrière percuté (le crochet rend sa boîte, choc franc sur le
+nez). Un à deux tablettes dans `reseau.js` : le braquage et la dérive de
+Marlon arrivent chez Alice. Deux sondes : `sonde-mur-oblique.cjs` (les seize
+façades de Paris) et `sonde-vraie-rue.cjs`. Et le témoin « l'avant du
+joystick est l'accélérateur », rouge des deux côtés depuis la v379 (voiture
+lâchée relevée à 9,1 b/s pour une barre à 9,0), attend désormais la roue libre
+en images de jeu et non en secondes de montre : 3,75 s de jeu calculées, trois
+ou quatre seulement accordées par l'ancien budget au banc.
 
 ---
 

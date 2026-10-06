@@ -156,7 +156,7 @@ const GARDIENS = {
   'src/carte.js': ['carte.js', 'carteMonde.js', 'manhattan.js'],
   // La capitale : son relief, son métro et ses bâtiments ouverts. Elle touche
   // au sol de la carte, donc le témoin du plafond la surveille aussi.
-  'src/washington.js': ['washington.js', 'plafond.js', 'carteMonde.js', 'carte.js'],
+  'src/washington.js': ['washington.js', 'plafond.js', 'carteMonde.js', 'carte.js', 'parishd.js'],
   'src/washington-v367.js': ['washington.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // la Washington d'avant le kit, sous ce qu'un enfant a bâti (v370)
   'src/dcmonuments.js': ['washington.js'],
   // La ville : c'est elle qui bâtit le métro de Paris, la caserne et le
@@ -221,7 +221,7 @@ const GARDIENS = {
   'src/manhattan-materiaux.js': ['manhattan.js', 'carte.js'],
   'src/manhattan-render.js': ['manhattan.js', 'monte.js'],
   'src/manhattan.js': ['carte.js', 'carteMonde.js', 'plafond.js'],
-  'src/sanfrancisco.js': ['carte.js', 'carteMonde.js', 'plafond.js'],
+  'src/sanfrancisco.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'parishd.js'],
   'src/lille.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'parishd.js'],    // la couche HD lit Lille (v392)
   // Les régions et les sites du tour du monde : ils aplanissent leur parvis,
   // donc le témoin du relief, et s'ajoutent aux destinations de la carte.
