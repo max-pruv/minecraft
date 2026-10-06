@@ -200,8 +200,25 @@ export function registreEurope(f) {
   if (la > 49.8 && lo > -11 && lo < -1.6) return 'londres';
   return la < 45.5 ? 'sud' : 'nord';
 }
+// LES VILLES ENGENDRÉES DES AMÉRIQUES (v396, palier B du reste du monde). Même
+// méthode que l'Europe : la longitude de la fiche, moins les îles du Pacifique
+// (`PACIFIQUE`, l'Océanie a son palier), et deux registres par géographie —
+//   États-Unis et Canada → `nordAmericain` (la maison de brique, la guillotine
+//                         et son linteau de pierre, le calcaire crème)
+//   au sud de 24° N       → `latino` (l'enduit coloré, le garde-corps de fer)
+// et les villes du nord qui sont latines par leur histoire (`LATINO_AU_NORD`,
+// avec leur raison).
+export const PACIFIQUE = { honolulu: 'Océanie', papeete: 'Océanie' };
+export const LATINO_AU_NORD = {
+  monterrey: 'Mexique', nouvelleorleans: 'le Vieux Carré espagnol et ses balcons de fer',
+};
+export function registreAmeriques(f) {
+  const la = f.lat0, lo = f.lon0;
+  if (la === undefined || lo > -30 || lo < -170 || PACIFIQUE[f.cle]) return null;
+  return (la < 24 || LATINO_AU_NORD[f.cle]) ? 'latino' : 'nordAmericain';
+}
 for (const f of VILLES_MONDE) {
-  const registre = f.trame ? registreEurope(f) : null;
+  const registre = f.trame ? (registreEurope(f) || registreAmeriques(f)) : null;
   if (registre) VILLES_HD.push({ ville: f.cle, x: f.ancre.x, z: f.ancre.z, r: f.rayon, registre, mobilier: false });
 }
 export function villeHD(cx, cz, chunk) {
@@ -622,6 +639,26 @@ STYLES.sfSoma = {
   mur: 'brique', teintes: [[1, 1, 1]], baie: [0.3, 0.7, 0.12, 0.86], volets: false, filant: false,
   store: false, corniche: 2, voisin: true, orn: [0.9, 0.88, 0.84], gardeCorps: false, linteau: 'brique',
   unis: UNIS_BRIQUE, patine: { brique: [0.25, [150, 82, 64]] },
+};
+
+//   nordAmericain — la ville engendrée des États-Unis et du Canada : la maison
+//             de brique rouge et sa fenêtre à guillotine, le linteau et l'appui
+//             de pierre ; un uni crème, beige ou sable y est le calcaire (le
+//             « brownstone » clair), un uni gris le béton enduit.
+STYLES.nordAmericain = {
+  mur: 'enduit', teintes: [[0.95, 0.93, 0.88]], baie: [0.32, 0.68, 0.1, 0.88], volets: false, filant: false,
+  store: false, corniche: 2, voisin: true, orn: [0.96, 0.95, 0.92], gardeCorps: false, guillotine: true, linteau: 'pierre-lisse',
+  unis: { 'Crème': 'pierre', Beige: 'pierre', Sable: 'pierre' },
+  patine: { enduit: [0.25, 'chaud'], brique: [0.3, [150, 84, 64]] },
+};
+//   latino  — la ville coloniale d'Amérique latine et des Caraïbes : l'enduit
+//             de couleur (sa palette, à peine patinée — ces villes SONT de
+//             couleur), la baie haute et son garde-corps de fer forgé, la
+//             corniche simple. Ni store ni guillotine.
+STYLES.latino = {
+  mur: 'enduit', teintes: [[1, 0.94, 0.84]], baie: [0.34, 0.66, 0.12, 0.88], volets: false, filant: false,
+  store: false, corniche: 1, voisin: true, orn: [0.97, 0.95, 0.9], gardeCorps: true,
+  patine: { enduit: [0.15, 'chaud'], brique: [0.3, [150, 84, 64]] },
 };
 
 // Le bloc de décor le plus proche dans le plan de la façade : à gauche, à
