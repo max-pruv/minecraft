@@ -1,7 +1,7 @@
 // Entry point: scene setup, chunk streaming, input, HUD, and the game loop.
 
 import * as THREE from 'three';
-import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp, MEUBLE_ITEMS, MEUBLE_START, isMeuble, RUE_ITEMS, RUE_START, RUE, isRue, ARCHI } from './blocks.js';
+import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp, MEUBLE_ITEMS, MEUBLE_START, isMeuble, RUE_ITEMS, RUE_START, RUE, isRue, ARCHI, CITY_BLOCK, ROUTE_BLOCK } from './blocks.js';
 import { PARIS as PARIS_ANCRE, circuitsParis, circuitsQuartiersParis, marquageParis } from './paris.js';
 import { circuitsLondres } from './londres.js';
 import { circuitsSF } from './sanfrancisco.js';
@@ -1813,12 +1813,38 @@ function updateChunks() {
     }
     return n > 0 && oui * 2 >= n;
   };
+  const PASSAGES_PEINTS = new Set([CITY_BLOCK.CROSSWALK, ROUTE_BLOCK.PASSAGE_NS]);
+  const blocSol = (x, z) => { const bx = Math.floor(x), bz = Math.floor(z); return world.getBlock(bx, world.sommetColonne(bx, bz), bz); };
+  const peintPres = (x, z) => {
+    for (const [ux, uz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      for (let s = 1; s <= 4; s++) if (PASSAGES_PEINTS.has(blocSol(x + ux * s, z + uz * s))) return true;
+    }
+    return false;
+  };
+  const surPassagePeint = (x, z, ux, uz, l) => {
+    let n = 0, oui = 0;
+    for (let s = 0.5; s < l; s += 0.5) {
+      if (solPieton(x + ux * s, z + uz * s) !== 'c') continue;
+      n++;
+      if (PASSAGES_PEINTS.has(blocSol(x + ux * s, z + uz * s))) oui++;
+    }
+    return n > 0 && oui * 2 >= n;
+  };
   world.passagePieton = (x, z, cap) => {
     if (renduDansManhattan) return null;
     let feu = null;
     for (const f of feuxProches) if ((f.x - x) * (f.x - x) + (f.z - z) * (f.z - z) <= 25) { feu = f; break; }
     const paris = !feu && (x - PARIS_ANCRE.x) * (x - PARIS_ANCRE.x) + (z - PARIS_ANCRE.z) * (z - PARIS_ANCRE.z) < PARIS_ANCRE.r * PARIS_ANCRE.r;
-    if (!feu && !paris) return null;
+    // ET AILLEURS, LE PASSAGE PEINT SANS FEU (v386). Les villes engendrées dont
+    // la trame suit les axes du monde (65 sur 267, `t.net`) peignent un passage
+    // à l'abord de chaque carrefour, feu ou pas : mesuré à Tokyo, 119 chemins
+    // de traversée sur un passage peint, dont 55 loin de tout feu. Même règle
+    // qu'à Paris — on part quand rien n'arrive sur le chemin. Un premier coup
+    // d'œil (un bloc peint à moins de quatre blocs devant, sur un des axes)
+    // évite de chercher des chemins là où rien n'est peint : Rome, Zurich,
+    // Londres n'ont aucune peinture (dette de peinture, `TASKS.md`).
+    const peint = !feu && !paris && peintPres(x, z);
+    if (!feu && !paris && !peint) return null;
     const vx = -Math.sin(cap), vz = -Math.cos(cap);
     let mieux = null, cout = Infinity;
     // LE DÉPART SE CHERCHE LE LONG DE LA BORDURE, trois blocs de chaque côté :
@@ -1841,6 +1867,7 @@ function updateChunks() {
         const l = cheminDeTraversee(solPieton, x0, z0, ux, uz);
         if (l === null || Math.abs(o) + l >= cout) continue;
         if (paris && !surPassageParis(x0, z0, ux, uz, l)) continue;
+        if (peint && !surPassagePeint(x0, z0, ux, uz, l)) continue;
         mieux = { ux, uz, longueur: l, axe: feu ? axeCoupe(ux, uz) : null, x0, z0 };
         cout = Math.abs(o) + l;
       }
