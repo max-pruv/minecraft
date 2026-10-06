@@ -1,5 +1,15 @@
 # Ce qui est en cours
 
+- [ ] **LE PORTAIL DE LA v388 (le GPS se partage).** Rouges : `maj.js` « il
+  couvre toutes les versions du journal » (`manquantes: [384]` — À MOI :
+  l'entrée du journal écrite pendant le portail, la ligne de `nouveautes.js`
+  ajoutée ensuite) ; `manhattan.js` (trou, taxi — déclarés) ; `monte.js` (la
+  téléportation qui compile — déclarée) ; `reseau.js` trois rouges : « un
+  départ propre » (la famille du point C ci-dessous), « la même circulation »
+  (34,1, déclarée v371) et « la voiture prise garde sa couleur »
+  (`monture: null`, intermittence vue sur `origin/main` v326). `reseau.js`
+  REJOUÉE SEULE sur la branche : 79 verts, zéro rouge (mon témoin du GPS
+  compris).
 - [ ] **LE PORTAIL DE LA v387 (les circuits des villes engendrées), DOUBLE
   MESURE FAITE.** Verts : `carteMonde.js`, `plafond.js`, `degats.js`,
   `carte.js`, `washington.js`. `maj.js` : un seul rouge, À MOI et corrigé (le
@@ -881,16 +891,11 @@
   est pur (circuits de `voies.js`/`paris.js`), la v321 n'y touche pas. Piste :
   le tour des monuments signalé par la v318 (une boîte jugée sur des colonnes
   couvre `c − b` à `c + b + 1`, un bloc plus près côté +). Zone voitures.
-- [ ] **LE GPS : LE PARTAGE AVEC UN AMI EN LIGNE (v321, déclaré).** Les trois
-  autres points de la dette v306 sont faits (minicarte, question sur les lieux
-  et les résultats, flèche par l'écart le plus court). Partager la destination
-  n'est pas « simple » : un message `gps_de` (au nom de l'émetteur) à envoyer
-  par `net.js`, à RELAYER par l'hôte comme `ciel`, à faire passer par
-  `relaisnuage.js`, ignoré sans casse par une tablette restée en arrière (le
-  receveur cède) ; côté receveur, un bandeau « Marlon va à Rome — 🧭 y aller
-  aussi ? » qui ne remplace jamais un GPS déjà en cours sans qu'on le demande.
-  Témoin : deux pages dans `reseau.js`, Marlon choisit Rome, Alice voit la
-  proposition et, si elle accepte, `__gps().nom === 'Rome'` chez elle.
+- [x] **LE GPS : LE PARTAGE AVEC UN AMI EN LIGNE (v321) — fait en v388.** Par
+  la position (`g`), pas par un message neuf (leçon v374) ; proposition chez
+  l'ami, jamais un ordre. Témoin à deux pages dans `reseau.js`. Reste : le
+  témoin n'éprouve que le chemin direct (hôte → invité) ; le relayé (`rpos`)
+  est lu par la même ligne, sans témoin à trois pages.
 - [ ] **PARIS DOUBLÉ (v306) : CE QUI RESTE, DÉCLARÉ.** (1) Une tablette qui
   jouerait encore sur l'ancienne version APRÈS la publication poserait dans
   l'ancien Paris des blocs datés d'après `DATE_PARIS_DOUBLE` : la marche 5 → 6

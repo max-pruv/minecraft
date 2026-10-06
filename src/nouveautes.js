@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 388,
+    titre: 'Ton GPS se partage',
+    puces: [
+      'Ton ami voit où tu vas',
+      'Il peut y aller avec toi',
+    ],
+  },
+  {
     v: 387,
     titre: 'Des voitures dans les deux sens',
     puces: [
