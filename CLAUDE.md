@@ -770,6 +770,29 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Toute l'Europe en relief (v394) — un registre par géographie, et un compte qui voit ce qu'il compte
+
+Palier C : les quatre-vingt-dix villes engendrées d'Europe. Trois règles.
+
+- **L'EUROPE EST UNE BOÎTE MOINS UNE LISTE QUI SE LIT.** `registreEurope`
+  (facadeshd.js) prend la latitude et la longitude de la fiche ; `HORS_EUROPE`
+  nomme, avec leur raison, les villes de la boîte qui n'en sont pas (Caucase,
+  Anatolie, Maghreb). Le registre suit la vraie ville, pas son tissu : îles
+  britanniques → `londres`, au sud de 45,5° N → `sud` (persiennes, fer,
+  stores), au nord → `nord` (encadrement de pierre). `VILLES_HD` passe à
+  94 disques, toujours une liste par morceau.
+- **UN COMPTE DE TUILE NE VOIT PAS CE QUI S'ÉMET EN UV ABSOLUS.** La
+  ferronnerie et la croisée portent le rectangle `NEUTRE` : comptées à la
+  tuile elles rendaient zéro partout, et « pas de fer » à Londres et à Lille
+  était vrai à vide pendant deux livraisons. Le fer se compte à sa MATIÈRE
+  (`compteFer`, parishd.js). Un témoin d'absence se vérifie capable de voir
+  la présence : il fallait Rome pour le voir rendre autre chose que zéro.
+- **CE QUI SE MESURE.** 1 676 morceaux des villes engendrées : 0,55 Mo de
+  façades en moyenne, 1,71 au pire (Barcelone) ; un morceau détaillé coûte au
+  worker à peu près le double d'un morceau plat (20 → 45 ms sous node, comme
+  Paris 28 → 108), seulement à portée de `RAYON_HD`. Paris, Londres, Nice et
+  Lille identiques à l'octet.
+
 ## Nice et Lille en relief (v392) — un registre par ville, une patine par tuile
 
 Palier B. Deux règles.

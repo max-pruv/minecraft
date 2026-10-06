@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 394,
+    titre: 'Toute l\'Europe en relief',
+    puces: [
+      'Rome, Berlin, Barcelone… de près',
+      'Persiennes au sud, pierre au nord',
+      'Fenêtres anglaises en Écosse',
+    ],
+  },
+  {
     v: 393,
     titre: 'Un ami qui part disparaît',
     puces: [

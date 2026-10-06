@@ -20,6 +20,35 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v394 — Toute l'Europe en relief
+
+**Pourquoi.** Après Londres, Nice et Lille, les quatre-vingt-dix villes
+engendrées d'Europe — Rome, Berlin, Barcelone, Amsterdam, Édimbourg… —
+restaient en façades plates à toute distance. C'était la fin de la consigne de
+Max : « when done do all European cities ».
+
+**Ce que ça change.** De près, chaque ville d'Europe a des fenêtres en relief
+dans son propre mur (la couleur de sa palette, patinée) : au sud de 45,5° N,
+les persiennes, le garde-corps de fer et le store de la boutique ; au nord,
+l'encadrement et le linteau de pierre sur la brique ; dans les îles
+britanniques, la guillotine géorgienne de Londres. Trottoirs relevés, arbres
+maillés, devantures et corniches en relief. Ni Tbilissi, ni Ankara, ni le
+Maghreb : ils ne sont pas en Europe. Un appareil au palier bas ne reçoit rien
+de neuf ; Paris, Londres, Nice et Lille n'ont pas bougé d'un octet.
+
+**Ce qui le prouve.** Vingt-deux témoins neufs dans `parishd.js`, rouges sur
+`origin/main` : sept par ville pour Rome (sud), Berlin (nord) et Manchester
+(îles britanniques) — couverture, aucun bloc posé, tampons d'avant sans HD,
+chaque face exposée détaillée, le mur et les ornements du registre, pas de
+mobilier parisien, morceau le plus lourd sous 3 Mo — sur 1 676 morceaux des villes engendrées, 0,55 Mo en moyenne et 1,71 au pire (Barcelone) — et
+un témoin de liste : les villes de la boîte européenne ont leur registre, pas
+celles qui n'en sont pas. Et le fer se compte enfin : la ferronnerie s'émet
+en UV absolus, elle ne se reconnaissait pas à sa tuile, et les « pas de fer »
+de Londres et de Lille étaient vrais à vide ; comptés à la matière, ils
+rendent zéro (Rome : 8 304 sommets).
+
+---
+
 ## v393 — Celui qui part dit au revoir
 
 **Pourquoi.** À trois en ligne, quand un enfant quittait la partie, les deux

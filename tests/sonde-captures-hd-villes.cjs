@@ -19,6 +19,10 @@ const VUES = [
   { nom: 'nice-rue-2', x: 1635, z: 3151, yaw: Math.PI / 2, pitch: 0.15, h: 1.6 },
   { nom: 'lille-rue', x: -29, z: -858, yaw: -Math.PI / 2, pitch: 0.15, h: 1.6 },
   { nom: 'lille-rue-2', x: -26, z: -906, yaw: 0, pitch: 0.18, h: 1.6 },
+  // les villes engendrées d'Europe (v394) : Rome (sud), Berlin (nord), Édimbourg
+  { nom: 'rome-rue', x: 3567, z: 4188, yaw: 0, pitch: 0.2, h: 1.6 },
+  { nom: 'berlin-rue', x: 3972, z: -2071, yaw: Math.PI, pitch: 0.2, h: 1.6 },
+  { nom: 'edimbourg-rue', x: -2445, z: -4046, yaw: -Math.PI / 2, pitch: 0.15, h: 1.6 },
 ];
 
 (async () => {
@@ -41,7 +45,7 @@ const VUES = [
           const t0 = performance.now();
           while (performance.now() - t0 < 30000) {
             await dodo(500);
-            const n = g.chunkMeshes.size; if (n === (window.__n0 || -1)) { await dodo(3000); break; } window.__n0 = n;
+            const n = g.chunkMeshes.size; if (n > 12 && n === (window.__n0 || -1)) { await dodo(3000); break; } window.__n0 = n;
           }
           const info = g.renderer.info;
           return { appels: info.render.calls, tri: info.render.triangles, morceaux: g.chunkMeshes.size };
