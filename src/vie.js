@@ -174,7 +174,11 @@ export class Habitant extends BaseNPC {
     if (this.etat === 'approche') {
       const ax = tr.x0 - this.pos.x, az = tr.z0 - this.pos.z;
       if (Math.hypot(ax, az) < 0.3 || maintenant - tr.debut > 4000) { this.etat = 'attente'; tr.debut = maintenant; }
-      else return { speed: this.walkSpeed, yaw: Math.atan2(-ax, -az) };
+      // L'APPROCHE EST EN TEMPS RÉEL AUSSI (v386) : bornée à quatre secondes de
+      // MONTRE, elle marchait au pas du jeu — à cinq images par seconde le
+      // passant n'atteignait pas son départ et traversait d'où il était, au
+      // bord de la bande peinte (6 relevés peints sur 14 au témoin).
+      else return { speed: this.walkSpeed, yaw: Math.atan2(-ax, -az), reel: true };
     }
     if (this.etat === 'attente') {
       // le regard sur le passage, quatre fois par seconde : il lit des listes

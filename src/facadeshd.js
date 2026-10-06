@@ -200,8 +200,64 @@ export function registreEurope(f) {
   if (la > 49.8 && lo > -11 && lo < -1.6) return 'londres';
   return la < 45.5 ? 'sud' : 'nord';
 }
+// LES VILLES ENGENDRÉES DES AMÉRIQUES (v399, palier B du reste du monde). Même
+// méthode que l'Europe : la longitude de la fiche, moins les îles du Pacifique
+// (`PACIFIQUE`, l'Océanie a son palier), et deux registres par géographie —
+//   États-Unis et Canada → `nordAmericain` (la maison de brique, la guillotine
+//                         et son linteau de pierre, le calcaire crème)
+//   au sud de 24° N       → `latino` (l'enduit coloré, le garde-corps de fer)
+// et les villes du nord qui sont latines par leur histoire (`LATINO_AU_NORD`,
+// avec leur raison).
+export const PACIFIQUE = { honolulu: 'Océanie', papeete: 'Océanie' };
+export const LATINO_AU_NORD = {
+  monterrey: 'Mexique', nouvelleorleans: 'le Vieux Carré espagnol et ses balcons de fer',
+};
+export function registreAmeriques(f) {
+  const la = f.lat0, lo = f.lon0;
+  if (la === undefined || lo > -30 || lo < -170 || PACIFIQUE[f.cle]) return null;
+  return (la < 24 || LATINO_AU_NORD[f.cle]) ? 'latino' : 'nordAmericain';
+}
+// LE RESTE DU MONDE (v401, palier C) : l'Asie, le Moyen-Orient, l'Afrique,
+// l'Océanie. Des règles de géographie dans l'ordre, et les villes que la règle
+// classerait mal, NOMMÉES avec leur raison :
+//   une médina           → rien (`MEDINAS`) : ses baies sont de petites
+//                          ouvertures grillées et ses souks des échoppes ; une
+//                          vitre en retrait sous un encadrement de pierre n'y
+//                          est pas — aucun registre ne l'honore, on le dit
+//   îles du Pacifique    → `tropical` (`ILES`)
+//   Lhassa                → `desert` (`TIBET`)
+//   Australie, Nouvelle-Zélande, Afrique du Sud → `victorien` (la brique, la
+//                          guillotine, la dentelle de fonte des vérandas)
+//   au nord de 45° N, et Vladivostok → `nord` (la Russie, Oulan-Bator et Harbin
+//                          ont l'enduit et l'encadrement de l'Europe de l'Est)
+//   à l'est de 95° E      → `asie` (le béton enduit, la baie large, le store),
+//                          sauf les compartiments coloniaux (`COLONIALES`)
+//   Arabie, Golfe, Iran, Asie centrale, Pakistan → `desert`
+//   Maghreb, Levant, Anatolie, Caucase (au nord de 38° N) → `sud` (la
+//                          Méditerranée de l'Europe)
+//   le reste — l'Inde, l'Afrique, les compartiments → `tropical` (l'enduit de
+//                          couleur, les persiennes, le garde-corps de fer)
+export const MEDINAS = { marrakech: 'médina', fes: 'médina', jerusalem: 'vieille ville', tombouctou: 'médina' };
+export const ILES = { suva: 'Fidji', noumea: 'Nouvelle-Calédonie', papeete: 'Polynésie', honolulu: 'Hawaï' };
+export const COLONIALES = {
+  hanoi: 'le compartiment colonial', saigon: 'le compartiment colonial', phnompenh: 'le compartiment colonial',
+  vientiane: 'le compartiment colonial', rangoun: 'la ville coloniale', manille: 'Intramuros, espagnole',
+};
+export const TIBET = { lhassa: 'l’enduit blanc et la baie trapue du Tibet' };
+export function registreAilleurs(f) {
+  const la = f.lat0, lo = f.lon0, c = f.cle;
+  if (la === undefined || MEDINAS[c] || f.typo === 'medina') return null;
+  if (ILES[c]) return 'tropical';
+  if ((la < -10 && lo > 110) || (la < -25 && lo > 15 && lo < 32)) return 'victorien';
+  if (TIBET[c]) return 'desert';
+  if ((la > 45 && lo > 46) || c === 'vladivostok') return 'nord';
+  if (lo > 95) return COLONIALES[c] ? 'tropical' : 'asie';
+  if (la >= 20 && lo >= 34 && lo < 75 && !(la >= 38 && lo < 46) && c !== 'beyrouth') return 'desert';
+  if (la >= 30 && lo > -20 && lo < 46) return 'sud';
+  return 'tropical';
+}
 for (const f of VILLES_MONDE) {
-  const registre = f.trame ? registreEurope(f) : null;
+  const registre = f.trame ? (registreEurope(f) || registreAmeriques(f) || registreAilleurs(f)) : null;
   if (registre) VILLES_HD.push({ ville: f.cle, x: f.ancre.x, z: f.ancre.z, r: f.rayon, registre, mobilier: false });
 }
 export function villeHD(cx, cz, chunk) {
@@ -622,6 +678,59 @@ STYLES.sfSoma = {
   mur: 'brique', teintes: [[1, 1, 1]], baie: [0.3, 0.7, 0.12, 0.86], volets: false, filant: false,
   store: false, corniche: 2, voisin: true, orn: [0.9, 0.88, 0.84], gardeCorps: false, linteau: 'brique',
   unis: UNIS_BRIQUE, patine: { brique: [0.25, [150, 82, 64]] },
+};
+
+//   nordAmericain — la ville engendrée des États-Unis et du Canada : la maison
+//             de brique rouge et sa fenêtre à guillotine, le linteau et l'appui
+//             de pierre ; un uni crème, beige ou sable y est le calcaire (le
+//             « brownstone » clair), un uni gris le béton enduit.
+STYLES.nordAmericain = {
+  mur: 'enduit', teintes: [[0.95, 0.93, 0.88]], baie: [0.32, 0.68, 0.1, 0.88], volets: false, filant: false,
+  store: false, corniche: 2, voisin: true, orn: [0.96, 0.95, 0.92], gardeCorps: false, guillotine: true, linteau: 'pierre-lisse',
+  unis: { 'Crème': 'pierre', Beige: 'pierre', Sable: 'pierre' },
+  patine: { enduit: [0.25, 'chaud'], brique: [0.3, [150, 84, 64]] },
+};
+//   latino  — la ville coloniale d'Amérique latine et des Caraïbes : l'enduit
+//             de couleur (sa palette, à peine patinée — ces villes SONT de
+//             couleur), la baie haute et son garde-corps de fer forgé, la
+//             corniche simple. Ni store ni guillotine.
+STYLES.latino = {
+  mur: 'enduit', teintes: [[1, 0.94, 0.84]], baie: [0.34, 0.66, 0.12, 0.88], volets: false, filant: false,
+  store: false, corniche: 1, voisin: true, orn: [0.97, 0.95, 0.9], gardeCorps: true,
+  patine: { enduit: [0.15, 'chaud'], brique: [0.3, [150, 84, 64]] },
+};
+
+//   victorien — Sydney, Melbourne, Auckland, Le Cap, Johannesburg : la
+//             terrasse victorienne de brique, la guillotine au châssis blanc,
+//             le linteau de pierre et le garde-corps de fonte des vérandas.
+STYLES.victorien = {
+  mur: 'enduit', teintes: [[0.95, 0.93, 0.88]], baie: [0.32, 0.68, 0.1, 0.88], volets: false, filant: false,
+  store: false, corniche: 2, voisin: true, orn: [0.97, 0.96, 0.92], gardeCorps: true, guillotine: true, linteau: 'pierre-lisse',
+  unis: { 'Crème': 'pierre', Beige: 'pierre', Sable: 'pierre' },
+  patine: { enduit: [0.25, 'chaud'], brique: [0.3, [150, 84, 64]] },
+};
+//   asie    — Tokyo, Séoul, Shanghai, Singapour : le béton enduit, la baie
+//             large au cadre d'aluminium, sans volet ni fer, le store de
+//             l'échoppe. Le mur-rideau des tours reste sa tuile (v195).
+STYLES.asie = {
+  mur: 'enduit', teintes: [[0.93, 0.93, 0.92]], baie: [0.27, 0.73, 0.12, 0.86], volets: false, filant: false,
+  store: true, corniche: 1, voisin: true, orn: [0.88, 0.89, 0.9], gardeCorps: false,
+  patine: { enduit: [0.25, 'chaud'], brique: [0.3, [146, 84, 64]] },
+};
+//   desert  — Riyad, Dubaï, Téhéran, Samarcande : l'enduit couleur de sable,
+//             la baie étroite et profonde contre le soleil, la corniche
+//             simple ; ni volet ni fer.
+STYLES.desert = {
+  mur: 'enduit', teintes: [[0.98, 0.92, 0.8]], baie: [0.36, 0.64, 0.16, 0.84], volets: false, filant: false,
+  store: false, corniche: 1, voisin: true, orn: [0.96, 0.92, 0.84], gardeCorps: false,
+  patine: { enduit: [0.25, 'chaud'], brique: [0.3, [156, 96, 70]] },
+};
+//   tropical — Bombay, Dakar, Nairobi, Hanoï, Nouméa : l'enduit de couleur à
+//             peine patiné, les persiennes ouvertes, le garde-corps de fer.
+STYLES.tropical = {
+  mur: 'enduit', teintes: [[1, 0.94, 0.84]], baie: [0.34, 0.66, 0.12, 0.88], volets: true, filant: false,
+  store: false, corniche: 1, voisin: true, orn: [0.97, 0.95, 0.9], gardeCorps: true,
+  patine: { enduit: [0.15, 'chaud'], brique: [0.3, [150, 84, 64]] },
 };
 
 // Le bloc de décor le plus proche dans le plan de la façade : à gauche, à

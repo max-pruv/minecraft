@@ -1994,7 +1994,13 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const g = window.__game;
       const { TROTTOIR, CHAUSSEE } = await import('./src/world.js');
       const { RUE, ARCHI } = await import('./src/blocks.js');
-      const { axeDuCap } = await import('./src/feux.js');
+      const { axeDuCap, etatFeu } = await import('./src/feux.js');
+      // CE QUI N'EST PAS AU ROUGE SE PUBLIE (v386) : rouge des deux côtés au
+      // portail (une traversée « au vert » sur deux à quatre), vert rejoué seul
+      // (dix sur dix au rouge). Le prochain rouge se démonte en une lecture :
+      // le passant traversait-il au feu (`traversee`), écarté par une voiture,
+      // et que disait le feu CALCULÉ à l'heure de la rue ?
+      const horsRouge = [], poussees = [];
       const s2 = g.passants.sites.find((q) => q.peuple && q.peuple.length);
       if (!s2) return { err: 'aucune ville peuplée' };
       const tous = s2.peuple.filter((h) => h.name === 'passant');
@@ -2068,9 +2074,18 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
           const c = sol(h.pos.x, h.pos.z);
           let e = suivi.get(h);
           if (!e) { suivi.set(h, { prec: c === 'a' ? null : c, sortie: null }); continue; }
-          if (e.prec === 't' && c === 'c') e.sortie = { x: h.pos.x, z: h.pos.z, feu: feuPres(h.pos.x, h.pos.z), etats: etats() };
+          if (e.prec === 't' && c === 'c') e.sortie = { x: h.pos.x, z: h.pos.z, feu: feuPres(h.pos.x, h.pos.z), etats: etats(),
+            tr: h.traversee ? { axe: h.traversee.axe, etat: h.etat } : null, ecart: !!h.ecart,
+            calc: [etatFeu(0, g.world.heureRue()), etatFeu(1, g.world.heureRue())] };
           else if (e.sortie && c === 't') {
-            if (Math.hypot(h.pos.x - e.sortie.x, h.pos.z - e.sortie.z) > 3) {
+            // UN ÉCART N'EST PAS UNE DÉCISION DE TRAVERSER (v386). Le détail publié
+            // l'a montré au premier rejeu : la seule traversée « au vert » avait
+            // `traversee` nul et `ecart` vrai — un passant poussé de l'autre côté
+            // par un pas de côté devant une voiture (dette déclarée). On le
+            // compte à part, et on le garde dans le message.
+            if (Math.hypot(h.pos.x - e.sortie.x, h.pos.z - e.sortie.z) > 3 && e.sortie.ecart && !e.sortie.tr) {
+              poussees.push({ d: [+(h.pos.x - e.sortie.x).toFixed(1), +(h.pos.z - e.sortie.z).toFixed(1)], calc: e.sortie.calc });
+            } else if (Math.hypot(h.pos.x - e.sortie.x, h.pos.z - e.sortie.z) > 3) {
               traversees++;
               const axe = 1 - axeDuCap(h.pos.x - e.sortie.x, h.pos.z - e.sortie.z);
               const etat = e.sortie.etats[axe];
@@ -2081,6 +2096,8 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
               else if (etat === 'rouge') auFeuAuRouge++;
               else if (etat === 'orange') { auFeuAuRouge++; aLOrange++; }
               else auVert++;
+              if (etat !== 'rouge') horsRouge.push({ axe, lu: etat, d: [+(h.pos.x - e.sortie.x).toFixed(1), +(h.pos.z - e.sortie.z).toFixed(1)],
+                tr: e.sortie.tr, ecart: e.sortie.ecart, calc: e.sortie.calc, feu: e.sortie.feu });
             }
             e.sortie = null;
           }
@@ -2089,12 +2106,112 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         await new Promise((f) => setTimeout(f, 250));
       }
       g.player.pos.copy(sauve);
-      return { ville: s2.nom, poses: poses.length, passants: suivi.size, traversees, auFeuAuRouge, aLOrange, horsFeu, auVert,
+      return { ville: s2.nom, poses: poses.length, passants: suivi.size, traversees, auFeuAuRouge, aLOrange, horsFeu, auVert, horsRouge, poussees,
         secondesDeJeu: +jeu().toFixed(1), secondes: +((performance.now() - t0) / 1000).toFixed(1) };
     });
     verifier('un passant change de trottoir au feu, quand les voitures qu\'il coupe sont au rouge',
       !auFeu.err && auFeu.poses >= 4 && auFeu.traversees >= 2 && auFeu.auFeuAuRouge >= 0.8 * auFeu.traversees,
       JSON.stringify(auFeu));
+
+    // ---- ET AU PASSAGE PEINT SANS FEU, HORS DE PARIS (v386) -----------------
+    //
+    // Les 65 villes engendrées dont la trame suit les axes du monde peignent un
+    // passage à l'abord de chaque carrefour, feu ou pas. Jusqu'ici seul Paris
+    // lisait les siens : ailleurs, sans feu à cinq blocs, un passant tournait au
+    // coin. Mesuré à Kyoto (`sonde-traversees.cjs`, soixante secondes) : 2
+    // traversées avant, 8 après dont 5 sur un passage peint. Le témoin POSE huit
+    // passants au bord d'un passage peint loin de tout feu (relevé ici, sans rien
+    // demander au jeu), face à la rue, et compte qui change de trottoir SUR le
+    // passage — en secondes de montre et de jeu, comme le témoin du feu.
+    const auPassage = await tab.evaluate(async () => {
+      const g = window.__game;
+      const { positionDe } = await import('./src/mondes.js');
+      const { TROTTOIR, CHAUSSEE } = await import('./src/world.js');
+      const { RUE, ARCHI, CITY_BLOCK, ROUTE_BLOCK } = await import('./src/blocks.js');
+      const PEINT = new Set([CITY_BLOCK.CROSSWALK, ROUTE_BLOCK.PASSAGE_NS]);
+      const w = g.world, sauve = g.player.pos.clone();
+      const blk = (x, z) => { const bx = Math.floor(x), bz = Math.floor(z); return w.getBlock(bx, w.sommetColonne(bx, bz), bz); };
+      const sol = (x, z) => { const b = blk(x, z); return TROTTOIR.has(b) ? 't' : (CHAUSSEE.has(b) || b === ARCHI.BORDURE) ? 'c' : 'a'; };
+      const p = positionDe('kyoto');
+      g.player.flying = true; g.player.vel.set(0, 0, 0);
+      g.player.pos.set(p.x + 0.5, w.terrainHeight(p.x, p.z) + 8, p.z + 0.5);
+      let site = null;
+      const tN = performance.now();
+      while (performance.now() - tN < 25000) {
+        site = g.passants.sites.find((q) => q.peuple && q.peuple.filter((h) => h.name === 'passant' && h.pos).length >= 8 && Math.hypot(q.x - p.x, q.z - p.z) < 60);
+        if (site) break;
+        await new Promise((f) => setTimeout(f, 500));
+      }
+      if (!site) { g.player.pos.copy(sauve); return { err: 'Kyoto pas peuplée en 25 s' }; }
+      const feux = [];
+      for (let x = p.x - 40; x < p.x + 40; x++) for (let z = p.z - 40; z < p.z + 40; z++) {
+        const y = w.sommetColonne(x, z);
+        for (let k = 0; k <= 2; k++) if (w.getBlock(x, y + k, z) === RUE.FEUX) { feux.push([x + 0.5, z + 0.5]); break; }
+      }
+      const poses = [];
+      for (let x = p.x - 36; x < p.x + 36 && poses.length < 8; x++) for (let z = p.z - 36; z < p.z + 36 && poses.length < 8; z++) {
+        const cx = x + 0.5, cz = z + 0.5;
+        if (sol(cx, cz) !== 't' || feux.some(([a, b]) => (a - cx) ** 2 + (b - cz) ** 2 <= 49)) continue;
+        if (poses.some((q) => Math.hypot(q.x - cx, q.z - cz) < 6)) continue;
+        for (const [ux, uz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          if (sol(cx + ux * 1.2, cz + uz * 1.2) !== 'c') continue;
+          let n = 0, o = 0, fin = false;
+          for (let s = 1; s <= 16; s++) { const q = sol(cx + ux * s, cz + uz * s); if (q === 'a') break; if (q === 'c') { n++; if (PEINT.has(blk(cx + ux * s, cz + uz * s))) o++; } else if (n >= 3) { fin = true; break; } }
+          if (fin && o * 2 >= n) { poses.push({ x: cx, z: cz, ux, uz }); break; }
+        }
+      }
+      const gens = site.peuple.filter((h) => h.name === 'passant' && h.pos).slice(0, poses.length);
+      gens.forEach((h, i) => {
+        const q = poses[i];
+        h.traversee = null; h.ecart = null; h.repos = 0; h.vu = null; h.sonde = 0; h.sortie = null;
+        h.placeAt(q.x, q.z, g.player.pos.y); h.poste.set(q.x, q.z);
+        h.surTrottoir = true; h.etat = 'marche'; h.minuteur = 20; h.capYaw = Math.atan2(-q.ux, -q.uz);
+      });
+      // l'enfant au barycentre, pour que la troupe soit animée
+      if (gens.length) {
+        const cx = gens.reduce((a, h) => a + h.pos.x, 0) / gens.length, cz = gens.reduce((a, h) => a + h.pos.z, 0) / gens.length;
+        g.player.pos.set(cx, w.sommetColonne(Math.floor(cx), Math.floor(cz)) + 2.5, cz);
+      }
+      const suivi = new Map();
+      let traversees = 0, surPassage = 0; const detail = [];
+      const t0 = performance.now(), f0 = g.renderer.info.render.frame;
+      const jeu = () => (g.renderer.info.render.frame - f0) * 0.05;
+      while ((jeu() < 15 || performance.now() - t0 < 60000) && performance.now() - t0 < 180000) {
+        for (const h of gens) {
+          const c = sol(h.pos.x, h.pos.z);
+          let e = suivi.get(h);
+          if (!e) { suivi.set(h, { prec: c === 'a' ? null : c, sortie: null, peint: 0, n: 0 }); continue; }
+          if (e.prec === 't' && c === 'c') e.sortie = { x: h.pos.x, z: h.pos.z, tr: h.traversee ? h.traversee.axe : undefined, ecart: !!h.ecart };
+          if (e.sortie && c === 't') {
+            // la PREMIÈRE traversée de chacun : c'est la situation qu'on a posée ;
+            // après, il continue sa promenade et peut traverser à un feu
+            // LA PEINTURE SE LIT SUR LA LIGNE DE LA TRAVERSÉE, tous les demi-blocs de
+            // la sortie à l'arrivée — pas sous le passant à chaque relevé : à cinq
+            // images par seconde, deux ou trois relevés par traversée, et le
+            // compte devenait un tirage (5 sur 7 au portail, 7 sur 7 seul).
+            const L = Math.hypot(h.pos.x - e.sortie.x, h.pos.z - e.sortie.z);
+            if (!e.fait && L > 3) {
+              e.fait = true; traversees++;
+              let n = 0, o = 0;
+              for (let t = 0; t <= L; t += 0.5) {
+                const x = e.sortie.x + (h.pos.x - e.sortie.x) * t / L, z = e.sortie.z + (h.pos.z - e.sortie.z) * t / L;
+                if (sol(x, z) !== 'c') continue; n++; if (PEINT.has(blk(x, z))) o++;
+              }
+              if (n && o * 2 >= n) surPassage++;
+              detail.push({ peint: `${o}/${n}`, L: +L.toFixed(1), tr: e.sortie.tr, ecart: e.sortie.ecart });
+            }
+            e.sortie = null;
+          }
+          if (c !== 'a') e.prec = c;
+        }
+        await new Promise((f) => setTimeout(f, 250));
+      }
+      g.player.pos.copy(sauve);
+      return { poses: poses.length, feux: feux.length, traversees, surPassage, detail, secondesDeJeu: +jeu().toFixed(1), secondes: +((performance.now() - t0) / 1000).toFixed(1) };
+    });
+    verifier('hors de Paris aussi, un passant traverse sur le passage peint d\'un carrefour sans feu',
+      !auPassage.err && auPassage.poses >= 4 && auPassage.traversees >= 2 && auPassage.surPassage >= 0.8 * auPassage.traversees,
+      JSON.stringify(auPassage));
 
     // ---- UN PASSANT NE TRAVERSE PAS LA VOITURE DE L'ENFANT (v259) -------------
     //
@@ -7517,6 +7634,23 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       verifier('monter dans un avion ne compile aucun programme et n\'écrit aucun bloc',
         r.clesNeuves === 0 && r.blocs === 0 && r.avionligne && r.avionligne.clesNeuves === 0,
         JSON.stringify({ cles: r.clesNeuves, blocs: r.blocs, parAvion: [r.avionligne && r.avionligne.clesNeuves, r.chasseur && r.chasseur.clesNeuves] }));
+    }
+    // ON DESCEND D'UN AVION PAR SON ESCALIER (v400). Les avions descendaient
+    // d'un coup, au milieu du fuselage. Le passage vit dans
+    // `sonde-descente-avion.cjs`, qu'on rejoue seul en deux minutes des deux
+    // côtés : les phases, l'état qui bascule au premier appui, la porte,
+    // l'escalier qui vient et s'en va, la place mesurée (jamais dans l'eau
+    // ni dans un mur), le second appui, le Concorde, aucune clé neuve, aucun
+    // bloc. On se pose d'abord sur le couloir plat de la sonde.
+    {
+      const { passage, juger } = require('./sonde-descente-avion.cjs');
+      await emb.evaluate(async () => {
+        const g = window.__game;
+        const x = -600.5, z = -520.5;
+        g.player.pos.set(x, g.world.terrainHeight(x, z) + 1, z); g.player.vel.set(0, 0, 0);
+        await new Promise((r) => setTimeout(r, 4000));
+      });
+      juger(await emb.evaluate(passage), verifier);
     }
     verifier('aucune erreur JavaScript pendant l\'embarquement', emb.erreurs.length === 0, JSON.stringify(emb.erreurs));
     await emb.close();
