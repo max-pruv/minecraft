@@ -1,5 +1,15 @@
 # Ce qui est en cours
 
+- [ ] **LE PORTAIL DE LA v384 (le GPS se partage).** Rouges : `maj.js` « il
+  couvre toutes les versions du journal » (`manquantes: [384]` — À MOI :
+  l'entrée du journal écrite pendant le portail, la ligne de `nouveautes.js`
+  ajoutée ensuite) ; `manhattan.js` (trou, taxi — déclarés) ; `monte.js` (la
+  téléportation qui compile — déclarée) ; `reseau.js` trois rouges : « un
+  départ propre » (la famille du point C ci-dessous), « la même circulation »
+  (34,1, déclarée v371) et « la voiture prise garde sa couleur »
+  (`monture: null`, intermittence vue sur `origin/main` v326). `reseau.js`
+  REJOUÉE SEULE sur la branche : 79 verts, zéro rouge (mon témoin du GPS
+  compris).
 - [ ] **LE PORTAIL DE LA v387 (les circuits des villes engendrées), DOUBLE
   MESURE FAITE.** Verts : `carteMonde.js`, `plafond.js`, `degats.js`,
   `carte.js`, `washington.js`. `maj.js` : un seul rouge, À MOI et corrigé (le
