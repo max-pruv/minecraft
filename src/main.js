@@ -1828,7 +1828,11 @@ function updateChunks() {
       n++;
       if (PASSAGES_PEINTS.has(blocSol(x + ux * s, z + uz * s))) oui++;
     }
-    return n > 0 && oui * 2 >= n;
+    // TOUT le chemin sur la peinture, pas la moitié : la bande fait 1,7 bloc et
+    // les départs se cherchent par pas d'un bloc, une ligne entièrement peinte
+    // existe donc toujours. À moitié, le passant marchait au bord de la bande
+    // (6 et 7 relevés peints sur 14 au témoin) — à côté du passage, vu d'en haut.
+    return n > 0 && oui === n;
   };
   world.passagePieton = (x, z, cap) => {
     if (renduDansManhattan) return null;

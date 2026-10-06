@@ -2173,7 +2173,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         g.player.pos.set(cx, w.sommetColonne(Math.floor(cx), Math.floor(cz)) + 2.5, cz);
       }
       const suivi = new Map();
-      let traversees = 0, surPassage = 0;
+      let traversees = 0, surPassage = 0; const detail = [];
       const t0 = performance.now(), f0 = g.renderer.info.render.frame;
       const jeu = () => (g.renderer.info.render.frame - f0) * 0.05;
       while ((jeu() < 15 || performance.now() - t0 < 60000) && performance.now() - t0 < 180000) {
@@ -2181,12 +2181,25 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
           const c = sol(h.pos.x, h.pos.z);
           let e = suivi.get(h);
           if (!e) { suivi.set(h, { prec: c === 'a' ? null : c, sortie: null, peint: 0, n: 0 }); continue; }
-          if (e.prec === 't' && c === 'c') { e.sortie = { x: h.pos.x, z: h.pos.z }; e.peint = 0; e.n = 0; }
-          if (e.sortie && c === 'c') { e.n++; if (PEINT.has(blk(h.pos.x, h.pos.z))) e.peint++; }
-          else if (e.sortie && c === 't') {
+          if (e.prec === 't' && c === 'c') e.sortie = { x: h.pos.x, z: h.pos.z, tr: h.traversee ? h.traversee.axe : undefined, ecart: !!h.ecart };
+          if (e.sortie && c === 't') {
             // la PREMIÈRE traversée de chacun : c'est la situation qu'on a posée ;
             // après, il continue sa promenade et peut traverser à un feu
-            if (!e.fait && Math.hypot(h.pos.x - e.sortie.x, h.pos.z - e.sortie.z) > 3) { e.fait = true; traversees++; if (e.peint * 2 >= e.n) surPassage++; }
+            // LA PEINTURE SE LIT SUR LA LIGNE DE LA TRAVERSÉE, tous les demi-blocs de
+            // la sortie à l'arrivée — pas sous le passant à chaque relevé : à cinq
+            // images par seconde, deux ou trois relevés par traversée, et le
+            // compte devenait un tirage (5 sur 7 au portail, 7 sur 7 seul).
+            const L = Math.hypot(h.pos.x - e.sortie.x, h.pos.z - e.sortie.z);
+            if (!e.fait && L > 3) {
+              e.fait = true; traversees++;
+              let n = 0, o = 0;
+              for (let t = 0; t <= L; t += 0.5) {
+                const x = e.sortie.x + (h.pos.x - e.sortie.x) * t / L, z = e.sortie.z + (h.pos.z - e.sortie.z) * t / L;
+                if (sol(x, z) !== 'c') continue; n++; if (PEINT.has(blk(x, z))) o++;
+              }
+              if (n && o * 2 >= n) surPassage++;
+              detail.push({ peint: `${o}/${n}`, L: +L.toFixed(1), tr: e.sortie.tr, ecart: e.sortie.ecart });
+            }
             e.sortie = null;
           }
           if (c !== 'a') e.prec = c;
@@ -2194,7 +2207,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         await new Promise((f) => setTimeout(f, 250));
       }
       g.player.pos.copy(sauve);
-      return { poses: poses.length, feux: feux.length, traversees, surPassage, secondesDeJeu: +jeu().toFixed(1), secondes: +((performance.now() - t0) / 1000).toFixed(1) };
+      return { poses: poses.length, feux: feux.length, traversees, surPassage, detail, secondesDeJeu: +jeu().toFixed(1), secondes: +((performance.now() - t0) / 1000).toFixed(1) };
     });
     verifier('hors de Paris aussi, un passant traverse sur le passage peint d\'un carrefour sans feu',
       !auPassage.err && auPassage.poses >= 4 && auPassage.traversees >= 2 && auPassage.surPassage >= 0.8 * auPassage.traversees,
