@@ -33,7 +33,12 @@ const { Banc, dormir } = require('./banc.js');
         S.appelEnCours(true); await dodo(1500); S.appelEnCours(false); await dodo(3000);
         apresAttente.push(await niveau(1500));
       }
-      return { etabli, etabliLong, apres, apresLong, apresAttente, gains };
+      // CONTRÔLE : la radio coupée puis relancée, SANS appel — le même début de
+      // mélodie que ce que l'appel rejoue sur son contexte neuf.
+      const relance = [], etabliLong2 = [];
+      for (let k = 0; k < 5; k++) { S.radioCoupe(); S.radioDemarre(0); relance.push(await niveau(4000)); }
+      for (let k = 0; k < 5; k++) etabliLong2.push(await niveau(4000));
+      return { etabli, etabliLong, apres, apresLong, apresAttente, gains, relance, etabliLong2 };
     });
     console.log(JSON.stringify(r));
   } finally { process.exit(0); }

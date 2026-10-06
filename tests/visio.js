@@ -96,7 +96,7 @@ async function allumerLaCamera(p) {
       };
       S.radioDemarre(0);
       window.__ctxAvantAppel = window.__sons.contexte();
-      return { niveau: await window.__niveauSon(1500) };
+      return { niveau: await window.__niveauSon(1500), gain: window.__sons.sortie().gain.value };
     });
 
     await allumerLaCamera(alice);
@@ -239,11 +239,21 @@ async function allumerLaCamera(p) {
       if (!window.__niveauSon) return { absent: true };
       const c = window.__sons.contexte();
       return { neuf: c !== window.__ctxAvantAppel && c.state !== 'closed', radio: window.__sons.station(),
-        niveau: await window.__niveauSon(1500) };
+        niveau: await window.__niveauSon(1500), gain: window.__sons.sortie().gain.value };
     });
+    // LA VOIX NORMALE, C'EST LE GAIN RENDU, PAS UNE FENÊTRE DE MÉLODIE (v389).
+    // La barre « 0,8 × avant » comparait 1,5 s de radio en régime établi au
+    // DÉBUT de la mélodie que le contexte neuf relance. Mesuré sans aucun
+    // appel (`sonde-voix-apres-appel.cjs`) : 0,0195 à 0,0285 d'une fenêtre à
+    // l'autre — 0,68, sous la barre ; la radio relancée sans appel rend
+    // 0,0214–0,0225, après l'appel 0,0212–0,0253, gain revenu à 1 cinq fois
+    // sur cinq. Ce que le témoin doit attraper, c'est une voix restée au quart
+    // (`GAIN_APPEL`) : le gain d'avant, et un niveau au-dessus de la MOITIÉ —
+    // le milieu entre un quart et un régime qui varie de 0,68 à 1,3.
     verifier('caméra éteinte, le jeu reprend sa voix normale sur un contexte neuf',
-      !avantAppel.absent && apresAppel.neuf === true && !!apresAppel.radio && apresAppel.niveau > 0.8 * avantAppel.niveau,
-      `avant ${(+avantAppel.niveau || 0).toFixed(4)} · après ${(+apresAppel.niveau || 0).toFixed(4)} · ${JSON.stringify(apresAppel)}`);
+      !avantAppel.absent && apresAppel.neuf === true && !!apresAppel.radio
+      && Math.abs(apresAppel.gain - avantAppel.gain) < 0.01 && apresAppel.niveau > 0.5 * avantAppel.niveau,
+      `avant ${(+avantAppel.niveau || 0).toFixed(4)} (gain ${avantAppel.gain}) · après ${(+apresAppel.niveau || 0).toFixed(4)} · ${JSON.stringify(apresAppel)}`);
 
     verifier('aucune faute de page pendant la visio',
       fautes(marlon).length === 0 && fautes(alice).length === 0,
