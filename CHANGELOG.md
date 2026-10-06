@@ -20,6 +20,34 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v400 — On descend d'un avion par son escalier
+
+**Pourquoi.** Depuis la v389 on MONTE dans un avion par un escalier (une
+échelle pour le chasseur) ; on en DESCENDAIT encore d'un coup — l'enfant se
+retrouvait debout au milieu du fuselage, et sur un avion arrêté au bord d'un
+lac il se posait DANS l'eau (mesuré sur `origin/main` : `eau: true`). C'était
+la dette déclarée de la v389.
+
+**Ce que ça change.** Au premier appui on n'est plus aux commandes ; puis
+l'escalier revient contre la porte, la porte (la verrière) s'ouvre, l'enfant
+sort en se redressant, descend les marches (de face, ou face aux barreaux de
+l'échelle), la porte se referme et l'escalier s'en va. Un second appui le pose
+tout de suite au pied des marches. La place où il se pose se MESURE sur le sol
+de la colonne : si le pied des marches tombe dans l'eau, sur une pente de plus
+de quatre blocs ou dans un mur, il se pose d'un coup à une place libre autour
+de l'appareil. Le Concorde (sans porte) et un avion en vol descendent comme
+avant ; sous `embarq=0` (le banc) rien ne change, par construction. La ligne
+`?diag=1` dit « par l'escalier » ou « sans escalier » et pourquoi.
+
+**Ce qui le prouve.** Quatre témoins dans `monte.js` (le passage vit dans
+`sonde-descente-avion.cjs`, rejouable seul en deux minutes) : les quatre
+phases et l'état qui bascule au premier appui, pour l'avion de ligne et le
+chasseur ; le second appui et le Concorde ; le pied des marches dans l'eau ;
+aucune clé de programme neuve et aucun bloc écrit. Rejoués sur `origin/main` :
+trois rouges sur quatre (et l'enfant dans l'eau).
+
+---
+
 ## v399 — Les Amériques en relief
 
 **Pourquoi.** Washington et San Francisco avaient leur relief (v398), mais les

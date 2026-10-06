@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 400,
+    titre: 'On descend de l\'avion',
+    puces: [
+      'L\'escalier revient contre la porte',
+      'Tu descends les marches',
+      'Jamais dans l\'eau en descendant',
+    ],
+  },
+  {
     v: 399,
     titre: 'Les Amériques en relief',
     puces: [
