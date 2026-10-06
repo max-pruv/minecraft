@@ -996,6 +996,27 @@
   le moteur ne pousse pas, et une crête vive à 40 blocs/s fait voler une
   seconde (mesuré, `sonde-pente.cjs`) — c'est voulu (GTA), à juger avec
   Marlon sur la tablette ; (9) LE FREIN À MAIN (palier C) n'est pas fait.
+- [ ] **AU PORTAIL DE LA v399 (la pente, la bosse et la file), DES ROUGES QUI NE
+  SONT PAS LA LIVRAISON — mesurés.** Mes trois rouges (percuter une voiture de
+  la rue, elle s'arrête en feux de détresse, son flanc frôlé) venaient du
+  suivi qui freinait AUSSI devant une voiture qu'on voulait percuter : corrigé
+  (`SUIVI_DELTA`), `degats.js` rejouée seule 39/39. `monte.js` rejouée SEULE :
+  branche 182 verts, 10 rouges ; `origin/main` 188 verts, 4 rouges. Des deux
+  côtés : « son flanc frôlé ne nous arrête pas » (`c: null` sur `origin/main`
+  aussi, `lu: false` — NEUF ET DÉCLARÉ : le crochet n'y lit même pas la
+  voiture garée à 410 blocs du site, le témoin la pose loin de son terrain),
+  le sursaut du piéton. Sur la branche seulement, et hors de son chemin
+  (preuve structurelle, v291) : le train 🛞 (0,95 pour 0,97, chemin
+  `pilote`), la remise de gaz sur la mer (`pilote`), « un mur pris de face »
+  (sur une dalle de blocs POSÉS : ni pente ni suivi n'y sont lus ; recul
+  −1,25 encore en cours à la fin d'une fenêtre de 0,65 s — vert au portail
+  complet de la branche et sur `origin/main` seul), la monoplace (déclarée),
+  le flâneur (déclaré), le trou en vol et l'arrivée sur une ville (déclarés),
+  le taux de chevauchement de la circulation (5,5 % ; sur `origin/main` c'est
+  sa voisine « la rue roule à l'allure » qui a rougi au même passage). Au
+  portail complet, `maj.js`, `carte.js`, `reglages.js` et `manhattan.js` ont
+  rendu des rouges déjà déclarés (loader, préparation, glisser bridé, PeerJS,
+  trou de façade, taxi tactile).
 - [ ] **POUR MAX, SUR LA TABLETTE — la pente, la bosse et la file (v399).**
   Ouvrir `https://minecraft-fam.vercel.app/?diag=1`, prendre une voiture. La
   ligne « au volant : … » dit désormais la `pente` sous la caisse, le
