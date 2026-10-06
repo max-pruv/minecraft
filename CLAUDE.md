@@ -1208,6 +1208,20 @@ Et une empreinte d'identité qui change se PROUVE : celle des 490 morceaux
 (v352) couvre Marrakech et Tokyo ; la branche, bâtisseurs neufs désarmés, rend
 l'ancienne au bit près — c'est ce qui a permis de la remplacer.
 
+## Le plafond au sol se relève sur la tablette (v391) — une mesure qu'on demande à Max se donne en ligne et en marche
+
+`VITESSE_SOL_MAX` ne se relève pas au banc. Deux règles.
+
+- **UNE MESURE QUI NE SE FAIT QUE SUR L'APPAREIL SE MONTRE DANS `?diag=1`, AVEC
+  LA MÊME RÈGLE QUE LA SONDE.** `trouDevant` et `debitRecent` (plafond-sol.js,
+  purs) sont le critère de la v346 — le monde maillé dans le champ, ±40° autour
+  du DÉPLACEMENT — et `main.js` les affiche en roulant (`texteRoulage`). Deux
+  copies du critère finiraient par mesurer deux choses.
+- **ET ELLE SE RANGE DANS LE JOURNAL DE BORD** (`roulage` dans chaque relevé en
+  roulant) : ce que Max mesure se relit dans `journal_appareil` sans qu'il
+  recopie un chiffre. La marche (adresse, lieu, geste, ce qui décide) est
+  écrite dans `TASKS.md`, pas dans une conversation.
+
 ## La chauffe de New York se mesure seule (v386) — un bridage n'est pas une charge de portail
 
 Rouge chronique de `monte.js`, des deux côtés. Deux règles.

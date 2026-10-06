@@ -7265,6 +7265,67 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     }
     verifier('aucune erreur JavaScript pendant l\'embarquement', emb.erreurs.length === 0, JSON.stringify(emb.erreurs));
     await emb.close();
+
+    // LE PLAFOND AU SOL SE MESURE SUR LA TABLETTE (v380). `VITESSE_SOL_MAX`
+    // ne se relève que sur l'iPad : `?diag=1` affiche, en roulant, le trou
+    // devant soi et le débit de morceaux — la marche est dans TASKS.md. La
+    // règle se lit d'abord sous node (un trou connu, un débit connu), puis
+    // dans le jeu : à quarante blocs par seconde, la ligne « roulage » paraît
+    // et porte des nombres ; à l'arrêt, elle n'y est pas. Sur l'ancien code ni
+    // la règle ni la ligne n'existent : rouge, et le message le dit.
+    {
+      let regle = null;
+      try {
+        const m = await import('../src/plafond-sol.js');
+        if (typeof m.trouDevant === 'function') {
+          const maille = new Set(['1,0', '2,0', '1,1']);
+          regle = {
+            trou: m.trouDevant({ pcx: 0, pcz: 0, R: 12, dir: { x: 1, z: 0 }, maille: (x, z) => maille.has(x + ',' + z) }),
+            plein: m.trouDevant({ pcx: 0, pcz: 0, R: 12, dir: { x: 1, z: 0 }, maille: () => true }),
+            debit: m.debitRecent([100, 900, 1200, 2500, 2900], 3000),
+          };
+        }
+      } catch { /* module absent */ }
+      // (2,1) est à 2,24 morceaux, dans le cône (cos 0,89), et manque : 36 blocs
+      verifier('la règle du trou devant soi et du débit, sous node',
+        !!regle && regle.trou === 36 && regle.plein === 192 && regle.debit === 2,
+        JSON.stringify(regle || 'règle absente'));
+      await souffler();
+      const diagPage = await banc.jouerSeul('Diagonne', { rr: 6, params: '&diag=1' });
+      const lu = await diagPage.evaluate(async () => {
+        const g = window.__game, p = g.player;
+        const patienter = (ms) => new Promise((fin) => {
+          const t0 = performance.now();
+          const tic = () => (performance.now() - t0 < ms ? requestAnimationFrame(tic) : fin());
+          requestAnimationFrame(tic);
+        });
+        const texte = () => (document.getElementById('debug') || {}).textContent || '';
+        await patienter(1500);
+        const arret = texte();
+        const x0 = p.pos.x, z = p.pos.z, depart = performance.now();
+        p.flying = true;
+        let roule = true;
+        const tic = () => {
+          if (!roule) return;
+          p.pos.set(x0 + 40 * (performance.now() - depart) / 1000, 120, z); p.vel.set(0, 0, 0);
+          requestAnimationFrame(tic);
+        };
+        requestAnimationFrame(tic);
+        let ligne = '';
+        const t0 = performance.now();
+        while (performance.now() - t0 < 15000) {
+          await patienter(250);
+          ligne = (texte().split('\n').find((l) => l.startsWith('roulage')) || '');
+          if (/trou devant \d+ blocs · débit \d+ morceaux\/s/.test(ligne) && performance.now() - t0 > 2000) break;
+        }
+        roule = false; p.flying = false;
+        return { arret: arret.includes('roulage'), ligne, ms: Math.round(performance.now() - t0) };
+      });
+      verifier('avec ?diag=1, en roulant, la tablette affiche le trou devant soi et le débit de morceaux',
+        !lu.arret && /^roulage : \d+ b\/s · trou devant \d+ blocs · débit \d+ morceaux\/s/.test(lu.ligne),
+        JSON.stringify(lu));
+      await diagPage.close();
+    }
   } finally {
     await banc.fermer();
   }
