@@ -2558,6 +2558,12 @@
        `tirage(x, y, z)`), mais c'est un bloc écrit : il change le Colisée une
        fois pour toutes, et un enfant a peut-être bâti contre — à décider avec la
        zone des monuments, pas dans la couche HD ;
+     Portail de la v396 (quatre suites) : `parishd.js` et `plafond.js` verts ;
+     `maj.js` « corps, programmes et fond de carte » (déclaré) ; `monte.js`
+     « un passant change de trottoir au feu » à 1 au vert sur 4 (déclaré plus
+     haut, même chiffre sur `origin/main`). PREUVE STRUCTURELLE (v291) : aucune
+     des deux ne force `?hd=`, le banc rend en logiciel, la couche n'est jamais
+     lue.
      - [ ] la vue de rue au centre de San Francisco montre la pierre HD entre
        les fenêtres du mur-rideau (`CITY_BLOCK.CURTAIN`, hors couche) : le
        mur-rideau reste une tuile plate, ce qui est juste (v195), mais son
