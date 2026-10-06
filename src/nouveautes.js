@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 397,
+    titre: 'La voiture longe les murs',
+    puces: [
+      'Elle longe les façades en biais',
+      'Frôler une voiture ne t\'arrête plus',
+      'Un petit choc ne te renvoie plus',
+    ],
+  },
+  {
     v: 396,
     titre: 'Un outil pour les parents',
     puces: [

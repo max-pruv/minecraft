@@ -292,6 +292,12 @@
   9,13 b/s pour une barre à 9,0 (30 × 0,3). `monte.js` rejouée SEULE sur
   `origin/main` (v369) : **le même rouge, 9,04**, médiane 27,23 des deux côtés —
   dette de la zone conduite-physique (la décélération au lâcher frôle sa barre).
+  **Démonté en v397** : ce n'était pas le frein. La roue libre de 27 à 9 b/s
+  vaut 3,75 s de JEU (frein moteur 3,5 + air 0,004 v², intégré) ; le témoin
+  l'attendait trente secondes de MONTRE, soit trois à quatre secondes de jeu au
+  banc — il relevait la fin de la roue libre. Le budget se compte désormais en
+  images (quatre cents, vingt secondes de jeu), comme la montée du même témoin
+  (v277), et les images et la durée entrent dans le message.
   Et ce rejeu sur `origin/main` rend rouges les deux témoins que la v379 garde
   (« la recharge à l'arrivée garde la cadence », « l'écran ne se fige pas en
   arrivant sur une ville », 1 400 ms · 38,7 %) : verts sur la branche.
@@ -924,22 +930,59 @@
     rouges à l'identique sur `origin/main` seul ; la branche seule rend « deux
     enfants sans courtier du tout ». Famille des parties par le nuage,
     intermittente, en production.
-- [ ] **LA CONDUITE À LA GTA, PALIER 1 LIVRÉ (conduite-physique) — CE QUI
-  RESTE, DÉCLARÉ.** (1) Le PLAFOND DE LA TABLETTE n'est pas mesuré : 60
-  blocs/s tient au banc (trou de 125 blocs à rr=12, Paris compris, la
-  position avancée en temps réel — `sonde-plafond-voiture.cjs`), mais le fil
-  principal de l'iPad installe les morceaux à SA cadence ; à mesurer avec
-  `?diag=1` en hypercar (55 blocs/s) dans Paris. (2) Le CHOC contre une
-  voiture de la rue prend la normale du mouvement (de face) : la position de
-  l'autre voiture n'est pas lue, et le témoin pose la famille « voiture » à la
-  main (le crochet réel est éprouvé par « la circulation s'arrête devant la
-  voiture de l'enfant »). (3) La normale d'un MUR se lit sur les axes du
-  monde : contre une façade oblique en escalier (Paris), la glisse alterne
-  les axes. (4) La ROUE LIBRE dure quelques secondes (frein moteur 3,5
-  blocs/s² plus l'air) là où l'ancienne voiture s'arrêtait en 0,4 s : c'est
-  voulu (GTA), à juger sur la tablette avec Marlon. (5) Les réseaux : la
-  dérive et le braquage ne voyagent pas — l'ami voit la caisse au cap du
-  conducteur, pas le volant.
+- [ ] **AU PORTAIL DE LA v397 (la normale de ce qu'on touche), CINQ ROUGES,
+  TOUS DÉJÀ VUS SUR `origin/main`.** `reseau.js` « un départ propre nettoie
+  tout le monde », `manhattan.js` « le trou enlève aussi la géométrie »,
+  `maj.js` « corps, programmes et fond de carte » (programmes 15/27, carte
+  fausse à 65 s) et `monte.js` « l'écran ne se fige pas » : dettes déjà
+  déclarées ci-dessous. Le cinquième, `monte.js` « se téléporter dans une
+  ville ne compile plus de programmes », a été rejoué SEUL des deux côtés :
+  branche rouge (Paris 8 images pour une garde à 10, chauffe de New York
+  expirée 44/321, 18 programmes neufs à NY), `origin/main` (v369) rouge aussi
+  (chauffe NY expirée 56/321) — plus un rouge que la branche n'a pas (« en
+  vol, on ne rattrape pas le bout du monde », chasseur 58 pour 60). C'est la
+  chauffe de New York qui n'aboutit pas sur ce banc chargé, pas la
+  conduite : la v397 ne touche à rien de ce chemin (branche AU VOLANT de
+  `player.js`, crochets d'obstacle). Piste : borner l'attente du témoin sur la
+  chauffe (`finie`), et sinon le dire au lieu de juger NY.
+- [ ] **AU PORTAIL DE LA v397, « LE PASSAGER ENTRE PAR LA PORTIÈRE DROITE »
+  (`reseau.js`, v377) VA ET VIENT — DÉCLARÉ AVEC SA DISTRIBUTION.** Suite
+  entière : branche 2 vertes sur 5 (deux portails, trois rejeux seuls),
+  `origin/main` 3 sur 3. Le rouge est toujours le même : Lou reste en
+  « approche » puis la séquence s'annule (`existe` faux : la voiture distante
+  de Marlon a changé de maillage), et il tombe dans les passages où le réseau
+  rougit ailleurs (veille sans retour, reprise, compteur après le départ de
+  l'hôte). Isolé : `sonde-portiere-ami.cjs`, cinq tours sur cinq verts sur la
+  branche ; la suite coupée après les portières, en ABBA, avec et sans le
+  témoin du volant qui la précède (seul ajout de la branche en amont) : six
+  sur six verts. Ce n'est donc ni la physique (Marlon immobile, zéro choc,
+  zéro contact, volant gardé) ni le témoin neuf. Piste : relever la clé et le
+  maillage de la voiture distante À L'INSTANT de l'annulation, dans la suite
+  entière, et chercher ce qui recrée `rp` côté Lou (une reconnexion).
+- [ ] **LA CONDUITE À LA GTA, PALIERS 1 (v358) ET 2 (v397) LIVRÉS
+  (conduite-physique) — CE QUI RESTE, DÉCLARÉ.** Faits en v397 : le choc
+  contre une voiture de la rue prend la normale de SON rectangle et se juge
+  sur la vitesse RELATIVE (`chocContreVoiture`, lu par le vrai crochet
+  `voitureContre`) ; la normale d'un mur se lit sur la droite des faces
+  exposées (`normaleDeMur`), et la voiture glisse le long d'une façade oblique
+  (sonde `sonde-mur-oblique.cjs`, seize vraies façades de Paris : trajet
+  médian après contact 1,4 → 10,4 et 1,5 → 14,3 blocs) ; le braquage et la
+  dérive voyagent dans `p.v` (`b`, `r`) et le receveur les pose sur
+  `userData.braquage` / `.derive` de sa copie. RESTE : (1) le PLAFOND DE LA
+  TABLETTE et la ROUE LIBRE ne se mesurent que sur l'iPad — `?diag=1`, au
+  volant, affiche désormais classe, vitesse, pointe, monde maillé devant la
+  voiture (blocs et secondes de route) et la dernière roue libre : Max le
+  relève en hypercar dans Paris (cible : au moins une seconde et demie de
+  route devant soi à 55 blocs/s). (2) PERSONNE NE DESSINE ENCORE le braquage
+  ni la dérive, ni chez soi ni chez l'ami : c'est la session des sensations
+  (`conduite-sensations`), qui lit `player.braquage` pour la sienne et
+  `userData.braquage` pour celle d'un ami. (3) Une voiture de la rue ne se
+  pousse pas (horloge partagée, v305) : collé derrière une plus lente,
+  joystick en avant, on la touche à chaque image — ces contacts sous
+  `CONTACT_DOUX` (11 km/h relatifs) ne sont pas des chocs. (4) La normale lue
+  sur un escalier se trompe d'un ou deux degrés (pire 9,8° sur 1 200
+  contacts) : la voiture s'écarte de la façade d'un cheveu au lieu de la
+  suivre, et `glisserLeLong` la décolle d'une marche si elle s'y coince.
 - [x] **DEUX OU TROIS PROGRAMMES SE COMPILENT ENCORE À L'ARRIVÉE À PARIS
   (mesuré en v306) — ÉLARGI À TOUTES LES VILLES ET FAIT EN v319.**
   `sonde-programmes-villes.cjs` (seize lieux, page neuve par lieu) rendait sur
@@ -4145,7 +4188,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   vehicules.js) et l'affichage en prend la fraction de l'allure atteinte. Rien
   à faire tant que Max ne le redemande pas.
 
-- [ ] **La physique d'un choc de voiture reste un arrêt net (v272).** La
+- [x] **La physique d'un choc de voiture reste un arrêt net (v272) — FAIT en v358 et v397** (glisse rasante, rebond de face, choc publié, dégâts de la v343 ; contre une voiture de la rue, normale de son rectangle et vitesse relative en v382). La
   vitesse se borne désormais au déplacement RÉEL, ce qui règle le compteur, le
   régime du moteur et les roues qui tournaient dans le vide. Ce n'est pas un
   choc : pas de rebond, pas de dégât, pas de secousse de caméra. C'est la

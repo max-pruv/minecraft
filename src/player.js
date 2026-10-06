@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { BLOCK, isSolid as blockIsSolid, isSlab } from './blocks.js';
 import { HEIGHT, WATER_LEVEL } from './world.js';
-import { ficheDeVitesse, pasVoiture, reponseChoc, casesSousBoite, pointDImpact, DERIVE_MAX } from './conduite.js';
+import { ficheDeVitesse, pasVoiture, reponseChoc, casesSousBoite, pointDImpact, DERIVE_MAX, boiteVoiture, chocContreVoiture, normaleDeMur } from './conduite.js';
 
 const WIDTH = 0.6;        // player AABB width (x and z)
 // LE GABARIT D'UN VÉHICULE CONDUIT (v212). Max, capture à l'appui : « cars
@@ -59,6 +59,8 @@ const MAX_STEP = 0.4;     // max movement per collision substep
 const PAS_VOITURE = 0.4;  // pas horizontal de la voiture (v358)
 const DEMI_LONG_VOITURE = 2.2;   // la moitié des 4,4 blocs d'une voiture (vehicules.js)
 const DEGAGEMENT_MARCHE = 0.7;
+const RAYON_MUR = 4.5;     // la façade se lit sur ce rayon autour du contact (v397)
+const FACES = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const FREIN_PIETON = 22;         // le frein franc de conduite.js, devant un piéton   // ce qu'il faut avancer pour passer le bord d'une marche (v286)
 
 // LE VOL D'UN AVION — trois chiffres, et chacun a sa raison.
@@ -375,6 +377,71 @@ export class Player {
     this.vel.x = wx; this.vel.z = wz;
   }
 
+  // LES CASES DE SURFACE D'UN MUR AUTOUR DU CONTACT (v397). Les cases que la
+  // pose voulue touche et que la pose d'avant ne touchait pas disent OÙ l'on
+  // bute et à quelle hauteur ; autour d'elles (RAYON_MUR), les colonnes
+  // pleines à cette hauteur qui ont de l'air à côté sont la façade. Leur
+  // droite donne la normale (`normaleDeMur`, conduite.js).
+  normaleDuMur(x, y, z, dedans) {
+    const neuves = [];
+    for (const k of this.cellulesPleinesVoiture(x, y, z, this.yaw)) {
+      if (dedans && dedans.has(k)) continue;
+      const [bx, by, bz] = k.split(',').map(Number);
+      neuves.push([bx, by, bz]);
+    }
+    if (!neuves.length) return null;
+    let hy = Infinity, cx = 0, cz = 0;
+    for (const [bx, by, bz] of neuves) { hy = Math.min(hy, by); cx += bx + 0.5; cz += bz + 0.5; }
+    cx /= neuves.length; cz /= neuves.length;
+    const w = this.world, R = RAYON_MUR;
+    const plein = (bx, bz) => {
+      const id = w.getBlock(bx, hy, bz);
+      return blockIsSolid(id) && !(w.blocSousLaSurface && w.blocSousLaSurface(bx, hy, bz));
+    };
+    const cases = [];
+    for (let bz = Math.floor(cz - R); bz <= Math.floor(cz + R); bz++) {
+      for (let bx = Math.floor(cx - R); bx <= Math.floor(cx + R); bx++) {
+        if ((bx + 0.5 - cx) ** 2 + (bz + 0.5 - cz) ** 2 > R * R || !plein(bx, bz)) continue;
+        // le milieu de chaque face EXPOSÉE tournée vers la voiture : sur un
+        // escalier, ces milieux se répartissent des deux côtés de la vraie
+        // façade (mesuré : 1,4° d'erreur moyenne, 7,8° au pire, contre 3,6 et
+        // 15 avec les centres des cases sur 2,6 blocs)
+        for (const [ex, ez] of FACES) {
+          if (plein(bx + ex, bz + ez) || (x - bx - 0.5) * ex + (z - bz - 0.5) * ez <= 0) continue;
+          cases.push([bx + 0.5 + ex * 0.5, bz + 0.5 + ez * 0.5]);
+        }
+      }
+    }
+    return normaleDeMur(cases, x, z);
+  }
+
+  // GLISSER LE LONG DE CE QU'ON A TOUCHÉ (v397) : le pas tangent tout de
+  // suite, et s'il bute sur le coin d'une marche de l'escalier, la voiture se
+  // décolle d'un cheveu le long de la normale — c'est la réaction du mur, pas
+  // un passe-muraille : seule une pose LIBRE est prise.
+  //
+  // ET LA CAISSE SE MET DANS L'AXE DU MUR SI ELLE NE L'EST PAS : la normale
+  // lue sur un escalier se trompe d'un ou deux degrés (mesuré), et une caisse
+  // restée d'un degré vers la façade y coinçait son coin à la marche suivante
+  // — arrêt net au bout de vingt-cinq blocs de glisse sur un mur à 37°.
+  glisserLeLong(x, y, z, sx, sz, nx, nz) {
+    const dedans = this.cellulesPleinesVoiture(x, y, z, this.yaw);
+    const av = this.vitesseVoiture >= 0 ? 1 : -1;
+    let yt = Math.atan2(-sx * av, -sz * av);
+    let dy = Math.atan2(Math.sin(yt - this.yaw), Math.cos(yt - this.yaw));
+    const caps = Math.abs(dy) > 1e-3 && Math.abs(dy) <= DERIVE_MAX ? [this.yaw, this.yaw + dy] : [this.yaw];
+    for (const d of [0, 0.12, 0.3, 0.5]) {
+      for (const cap of caps) {
+        const tx = x + sx + nx * d, tz = z + sz + nz * d;
+        if (!this.poseVoitureLibre(tx, y, tz, cap, dedans)) continue;
+        this.pos.x = tx; this.pos.z = tz;
+        if (cap !== this.yaw) { this.derive = (this.derive || 0) - (cap - this.yaw); this.yaw = cap; }
+        return true;
+      }
+    }
+    return false;
+  }
+
   // LE DÉPLACEMENT DE LA VOITURE, PAS À PAS (au plus PAS_VOITURE blocs).
   //   · les familles de main.js d'abord (`obstacleVehicule`, qui rend la
   //     famille touchée) : un PIÉTON, on s'arrête devant — personne n'est
@@ -425,8 +492,25 @@ export class Player {
         break;
       }
       if (fam) {
+        // CONTRE UNE VOITURE DE LA RUE, LA NORMALE DE SON RECTANGLE (v397) :
+        // `voitureContre` (main.js, lecture de la collecte de vehicules.js)
+        // rend sa boîte et son allure, et le choc se calcule sur la vitesse
+        // RELATIVE (`chocContreVoiture`). Le mobilier, et une voiture qu'on ne
+        // sait pas lire, gardent la normale du mouvement.
+        const autre = fam === 'voiture' && this.voitureContre ? this.voitureContre(x + dx, z + dz, this.yaw + Math.PI) : null;
+        const moi = boiteVoiture(x + dx, z + dz, this.yaw + Math.PI, DEMI_LONG_VOITURE, this.gabarit / 2);
+        const rv = autre ? chocContreVoiture(moi, autre, vx, vz) : null;
+        if (rv) {
+          this.contact = { famille: 'voiture', nx: rv.nx, nz: rv.nz, autre: { x: autre.x, z: autre.z } };
+          this.publierChoc(rv.force, -rv.nx, -rv.nz);
+          this.vitesseApresChoc(rv.vx, rv.vz, rv.glisse);
+          const gl = rv.glisse || (vx * rv.nx + vz * rv.nz >= 0);
+          if (gl && !this.glisserLeLong(x, y, z, rv.vx * pas, rv.vz * pas, rv.nx, rv.nz) && !rv.glisse) break;
+          continue;
+        }
         const n = Math.hypot(dx, dz) || 1;
         const r = reponseChoc(vx, vz, -dx / n, -dz / n);
+        this.contact = { famille: fam, nx: -dx / n, nz: -dz / n };
         this.publierChoc(r.force, dx, dz);
         this.vitesseApresChoc(r.vx, r.vz);
         continue;
@@ -444,20 +528,31 @@ export class Player {
         const n = Math.hypot(dx, dz);
         if (this.franchirEnRoulant((dx / n) * DEGAGEMENT_MARCHE, (dz / n) * DEGAGEMENT_MARCHE)) continue;
       }
-      const libreX = this.poseVoitureLibre(x + dx, y, z, this.yaw, dedans);
-      const libreZ = this.poseVoitureLibre(x, y, z + dz, this.yaw, dedans);
+      // LA NORMALE DU MUR (v397) : la droite qui passe par les cases de
+      // surface autour du contact (`normaleDeMur`), stable d'une marche à
+      // l'autre sur une façade oblique en escalier. L'essai axe par axe ne
+      // sert plus que de repli (moins de trois cases : un poteau, un coin).
       let nx, nz;
-      if (libreX && !libreZ) { nx = 0; nz = -Math.sign(dz); }
-      else if (libreZ && !libreX) { nx = -Math.sign(dx); nz = 0; }
-      else { const n = Math.hypot(dx, dz); nx = -dx / n; nz = -dz / n; }
-      const r = reponseChoc(vx, vz, nx, nz);
-      this.publierChoc(r.force, dx, dz);
-      this.vitesseApresChoc(r.vx, r.vz, r.glisse);
-      // ce qui file le long du mur avance tout de suite, sur l'axe libre
-      if (r.glisse) {
-        if (libreX && !libreZ) this.pos.x += dx * Math.abs(r.vx / (vx || 1));
-        else if (libreZ && !libreX) this.pos.z += dz * Math.abs(r.vz / (vz || 1));
+      const mur = this.normaleDuMur(x + dx, y, z + dz, dedans);
+      if (mur) { nx = mur.nx; nz = mur.nz; }
+      else {
+        const libreX = this.poseVoitureLibre(x + dx, y, z, this.yaw, dedans);
+        const libreZ = this.poseVoitureLibre(x, y, z + dz, this.yaw, dedans);
+        if (libreX && !libreZ) { nx = 0; nz = -Math.sign(dz); }
+        else if (libreZ && !libreX) { nx = -Math.sign(dx); nz = 0; }
+        else { const n = Math.hypot(dx, dz); nx = -dx / n; nz = -dz / n; }
       }
+      const r = reponseChoc(vx, vz, nx, nz);
+      // une vitesse qui ne rentre pas dans la normale lue (elle la longe, à
+      // l'erreur de lecture près) et qui bute quand même : c'est un coin de
+      // marche, on glisse — sans quoi la voiture rejouait trente-deux fois le
+      // même pas bloqué et le filet de la v272 la ramenait à zéro
+      const glisse = r.glisse || (vx * nx + vz * nz >= 0);
+      this.contact = { famille: 'mur', nx, nz, ligne: !!mur };
+      this.publierChoc(r.force, -nx, -nz);
+      this.vitesseApresChoc(r.vx, r.vz, glisse);
+      // ce qui file le long du mur avance tout de suite, le long du mur
+      if (glisse && !this.glisserLeLong(x, y, z, r.vx * pas, r.vz * pas, nx, nz) && !r.glisse) break;
     }
     // la verticale : le carré central, comme avant
     const dy = this.vel.y * dt;
@@ -835,6 +930,17 @@ export class Player {
         { v: this.vitesseVoiture, braquage: this.braquage || 0, derive: this.derive || 0 },
         { gaz, volant: strafe, moteur, direction: ev ? ev.direction || 0 : 0, inerte },
         fiche, dt);
+      // LA ROUE LIBRE SE RELÈVE (v397, `?diag=1`) : du lâcher du joystick, au
+      // dessus de cinq blocs/s, jusqu'à l'arrêt — sur l'horloge du JEU, comme
+      // la dynamique qu'elle mesure. Un nouvel appui l'abandonne.
+      if (gaz === 0 && !inerte && Math.abs(this.vitesseVoiture) > 5 && !this._roueLibre) this._roueLibre = { depuis: Math.abs(this.vitesseVoiture), s: 0 };
+      if (this._roueLibre) {
+        if (gaz !== 0 || inerte) this._roueLibre = null;
+        else {
+          this._roueLibre.s += dt;
+          if (Math.abs(r.v) < 0.3) { this.roueLibre = this._roueLibre; this._roueLibre = null; }
+        }
+      }
       this.vitesseVoiture = r.v; this.braquage = r.braquage; this.derive = r.derive;
       // LA CAISSE TOURNE — SAUF SI SON NEZ ENTRAIT DANS UN MUR. La boîte est
       // orientée : tourner la fait balayer. Un nez contre une façade ne pivote
