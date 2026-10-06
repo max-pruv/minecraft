@@ -725,7 +725,7 @@ function verifier(nom, ok, detail = '') {
           && reg('monterrey') === 'latino' && reg('nouvelleorleans') === 'latino' && !reg('honolulu') && !reg('papeete'),
         `${couvertes.length} sur ${ameriques.length} ; Chicago ${reg('chicago')}, Mexico ${reg('mexico')}, La Nouvelle-Orléans ${reg('nouvelleorleans')}, Honolulu ${reg('honolulu')}`);
     }
-    // PALIER C (v398) : l'Asie, le Moyen-Orient, l'Afrique, l'Océanie
+    // PALIER C (v400) : l'Asie, le Moyen-Orient, l'Afrique, l'Océanie
     await temoinsVille({ cle: 'tokyo', centre: vm('tokyo'), attendu: ['enduit'], interdit: ['volet', 'fer', 'bardage', 'pierre'], rayonSonde: 60 });
     await temoinsVille({ cle: 'dubai', centre: vm('dubai'), attendu: ['enduit'], interdit: ['volet', 'fer', 'bardage', 'pierre'], rayonSonde: 60 });
     await temoinsVille({ cle: 'nairobi', centre: vm('nairobi'), attendu: ['enduit', 'volet', 'fer'], interdit: ['pierre', 'bardage'], rayonSonde: 60 });
