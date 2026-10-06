@@ -984,6 +984,27 @@ receveur cède, l'hôte relaie. Le témoin à deux tablettes lit les deux pages
 au même instant ; il attend le RÉSULTAT (borné à 45 s) : à deux pages, une
 séquence de 2,4 s de jeu prend vingt-sept secondes de montre.
 
+**On monte dans un avion par un escalier (v389).** `monterAvion`
+(embarquement.js) : marche au pied de l'accès, `gravir`, `ouverture`,
+`entree` (l'enfant se baisse : la porte fait la moitié de sa taille),
+aux commandes (`toggleRide`, l'état bascule ICI), `fermeture`. Trois règles.
+**L'accès se déclare avec le modèle** : `userData.porte` (avions.js, posé par
+`fini`) donne le seuil, le type (`escalier`, `echelle`), le membre qui
+s'ouvre et de combien ; `null` (le Concorde, fuselage de 0,94 bloc, mesuré)
+monte d'un coup — la discipline de `portiere: false`. **Ce qui s'ouvre est un
+MEMBRE de l'atelier** (`porte_avant`, `verriere`), pas une géométrie
+découpée : la voiture n'a pas de nœud de portière, l'avion est notre propre
+modèle et on lui en donne un — un appel de dessin de plus par appareil.
+**L'escalier est fabriqué par l'atelier** (`accesAvion`), donc avec
+`matiereVivante` : aucune clé de programme neuve par construction, et un
+témoin les compare. Il est gardé et `partagerTout` : un avion retiré pendant
+la séquence ne le rend pas au pilote. Et un emplacement d'échelle se MESURE
+(v223) : au droit de la verrière, elle traversait les canards du chasseur.
+**Et un témoin qui pose l'enfant d'après la matrice d'un modèle qu'on vient
+d'invoquer la lit à l'origine du monde** : le modèle n'est placé qu'à l'image
+suivante — mon premier jet posait l'enfant à trente blocs de l'avion, et le
+bouton ne trouvait rien. On copie `a.pos` dans le maillage avant de lire.
+
 **Le passager descend par la portière, à l'envers (v384).** `descendreDeChez`
 rejoue la descente du conducteur sur la voiture DISTANTE, côté passager
 d'abord (`choisirSortie(a, d, [1, -1])`). `passagerDe()` est effacé AVANT
@@ -1027,7 +1048,7 @@ de conflit se relit dans `git diff origin/main`, jamais seulement dans le
 fichier** : le diff montre ce qu'on retire à l'autre côté.
 
 Ce qui reste, déclaré dans `TASKS.md` : la vue de la séquence ne se juge que
-sur le banc, pas sur l'iPad ; les avions montent encore sans séquence.
+sur le banc, pas sur l'iPad ; les avions DESCENDENT encore d'un coup.
 
 ## Les coupoles ont leur édifice (v365) — un gabarit partagé se cherche dans toutes les villes, et le ciel se lit sur les modèles
 

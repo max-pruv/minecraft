@@ -49,6 +49,8 @@ import * as THREE from 'three';
 import { animerHumain } from './humains.js';
 import { equiperPortieres, ouvrir } from './portieres.js';
 import { FLOTTE } from './vehicules.js';
+import { accesAvion } from './avions.js';
+import { partagerTout } from './liberer.js';
 import { BLOCK } from './blocks.js';
 
 export const SEQUENCE_ACTIVE = (() => {
@@ -59,6 +61,9 @@ export const SEQUENCE_ACTIVE = (() => {
 export const DUREES = {
   marcheMin: 0.35, marcheMax: 1.1, ouverture: 0.35, entree: 0.6, fermeture: 0.35,
   sortieOuverture: 0.3, sortie: 0.55, sortieFermeture: 0.35,
+  // l'avion (v381) : la marche jusqu'au pied de l'escalier peut faire le
+  // tour du nez, on la borne plus large ; puis on monte les marches
+  marcheAvionMax: 2.0, gravir: 0.9, ouvertureAvion: 0.45, entreeAvion: 0.5, fermetureAvion: 0.45,
 };
 const PAS = 3.2;               // la marche de l'enfant (blocs/s), qu'on presse si c'est loin
 const LONG_VOITURE = 2.2;      // demi-longueur d'une voiture (4,4 blocs)
@@ -110,17 +115,17 @@ export function creerEmbarquement(ctx) {
   // LE CHEMIN JUSQU'À LA PORTIÈRE, dans le repère de la voiture (nez en −z).
   // Tout droit si rien ne coupe la carrosserie ; sinon le long d'un rectangle
   // qui l'entoure, par le côté le plus court.
-  function chemin(P, D, d) {
+  function chemin(P, D, d, demiLong = LONG_VOITURE) {
     const coupe = (A, B) => {
       for (let k = 1; k < 20; k++) {
         const x = lerp(A.x, B.x, k / 20), z = lerp(A.z, B.z, k / 20);
-        if (Math.abs(x) < d.demiLarg + 0.25 && Math.abs(z) < LONG_VOITURE + 0.25) return true;
+        if (Math.abs(x) < d.demiLarg + 0.25 && Math.abs(z) < demiLong + 0.25) return true;
       }
       return false;
     };
     const P0 = new THREE.Vector3(P.x, 0, P.z);
     if (!coupe(P0, D)) return [P0, D.clone()];
-    const ex = d.demiLarg + 0.8, ez = LONG_VOITURE + 0.8;
+    const ex = d.demiLarg + 0.8, ez = demiLong + 0.8;
     // le point du pourtour le plus proche, et l'abscisse le long de ce pourtour
     // (sens : avant-gauche → arrière-gauche → arrière-droit → avant-droit)
     const coins = [new THREE.Vector3(-ex, 0, -ez), new THREE.Vector3(-ex, 0, ez),
@@ -287,6 +292,7 @@ export function creerEmbarquement(ctx) {
   // ---- monter ----------------------------------------------------------
   function monter(a) {
     if (s) { terminer(); return; }
+    if (SEQUENCE_ACTIVE && av && a && a.mesh && a.def && a.def.pilote && a.mesh.userData.porte) { monterAvion(a); return; }
     if (!SEQUENCE_ACTIVE || !av || !a || !a.mesh || !a.def || !a.def.siege || a.def.pilote) { ctx.toggleRide(a); return; }
     const g = a.mesh;
     a.montee = true; a.state = 'idle';
@@ -301,6 +307,113 @@ export function creerEmbarquement(ctx) {
     s = { sens: 'monter', phase: 'approche', t: 0, a, d, cote, D, pts, L, T, portes,
       y0: player.pos.y, temps: 0, assise: null };
     publier();
+  }
+
+  // ---- monter dans un avion (v381) --------------------------------------
+  // Max : « on voit le personnage qui avance et qui rentre ». Pour un avion :
+  // l'enfant marche jusqu'au pied d'un escalier (une échelle pour le
+  // chasseur) posé contre la porte avant gauche, le gravit, la porte (la
+  // verrière) s'ouvre, il entre, il est aux commandes, elle se referme et
+  // l'escalier s'en va. Mêmes règles que la voiture (v366) : l'état ne ment
+  // jamais (`montureConduite()` faux jusqu'à « aux commandes »), un second
+  // appui termine tout de suite, tout compte en temps de JEU, rien ne
+  // s'écrit dans le monde, et le banc la saute (`embarq=0`). Un modèle qui ne
+  // permet pas de porte (le Concorde, `userData.porte` nul) monte d'un coup.
+  const accesCache = new Map();
+  function acces(porte) {
+    const cle = JSON.stringify(porte);
+    if (!accesCache.has(cle)) {
+      const a = accesAvion(porte);
+      // gardé d'un embarquement à l'autre : `liberer` ne doit pas le rendre si
+      // l'avion qui le porte quitte la scène pendant la séquence
+      partagerTout(a.groupe);
+      accesCache.set(cle, a);
+    }
+    return accesCache.get(cle);
+  }
+  function ouvrant(g, porte, k) {
+    const m = g.userData.membres && g.userData.membres[porte.ouvrant];
+    if (m) m.rotation[porte.axe] = porte.angle * k;
+  }
+  function monterAvion(a) {
+    const g = a.mesh, porte = g.userData.porte;
+    a.montee = true; a.state = 'idle';
+    const ac = acces(porte);
+    if (ac.groupe.parent !== g) g.add(ac.groupe);
+    const pied = new THREE.Vector3(...ac.pied), haut = new THREE.Vector3(...ac.haut);
+    const d = { demiLarg: Math.abs(porte.x) + 0.3, zPorte: porte.z };
+    const pts = chemin(versLocal(g, player.pos), pied, d, porte.demiLong);
+    const L = longueurDe(pts);
+    const T = Math.max(DUREES.marcheMin, Math.min(DUREES.marcheAvionMax, L / PAS));
+    s = { sens: 'monter', avion: true, phase: 'approche', t: 0, a, d, cote: -1, porte, ac, pied, haut,
+      pts, L, T, y0: player.pos.y, temps: 0 };
+    publier();
+  }
+  // la caméra : devant l'appareil, à gauche, assez loin pour voir l'escalier
+  // ET la porte (on recule d'autant que l'appareil est grand)
+  function camAvion(s0, cible) {
+    const g = s0.a.mesh, p = s0.porte;
+    const recul = s0.porte.type === 'echelle' ? 4.5 : 6.5;
+    let pos = versMonde(g, new THREE.Vector3(p.x - recul, p.y + 2.6, p.z - recul * 0.9));
+    for (let i = 0; i < 8 && world.isSolid(Math.floor(pos.x), Math.floor(pos.y), Math.floor(pos.z)); i++) {
+      pos = pos.lerp(cible, 0.18);
+      if (pos.distanceTo(cible) < 2) break;
+    }
+    mSeq.lookAt(pos, cible, camHaut);
+    qSeq.setFromRotationMatrix(mSeq);
+    return pos;
+  }
+  function retirerAcces(s0) {
+    if (s0 && s0.ac && s0.ac.groupe.parent) s0.ac.groupe.removeFromParent();
+  }
+  function updateAvion(dt) {
+    const a = s.a, g = a.mesh, porte = s.porte;
+    const tete = versMonde(g, new THREE.Vector3(porte.x, porte.y + 0.7, porte.z));
+    if (s.phase === 'approche') {
+      const k = Math.min(1, s.t / s.T);
+      const { p, dir } = pointA(s.pts, s.L * lisse(k));
+      p.y = lerp(s.y0 - g.position.y, 0, Math.min(1, k * 1.5));
+      const w = versMonde(g, p);
+      player.pos.copy(w);
+      player.vel.set(0, 0, 0);
+      avatarDebout(g, p, capVers(dir.x, dir.z), s.L / s.T, s.temps);
+      appliquerCamera(lisse(Math.min(1, s.t / 0.35)), camAvion(s, tete));
+      if (k >= 1) { s.phase = 'gravir'; s.t = 0; }
+    } else if (s.phase === 'gravir') {
+      const k = Math.min(1, s.t / DUREES.gravir);
+      const p = s.pied.clone().lerp(s.haut, lisse(k));
+      player.pos.copy(versMonde(g, p)); player.vel.set(0, 0, 0);
+      // face à l'avion (+x), le pas des marches
+      avatarDebout(g, p, -Math.PI / 2, 2.2, s.temps);
+      appliquerCamera(1, camAvion(s, tete));
+      if (k >= 1) { s.phase = 'ouverture'; s.t = 0; }
+    } else if (s.phase === 'ouverture') {
+      const k = Math.min(1, s.t / DUREES.ouvertureAvion);
+      ouvrant(g, porte, lisse(k));
+      avatarDebout(g, s.haut, -Math.PI / 2, 0, s.temps);
+      player.pos.copy(versMonde(g, s.haut)); player.vel.set(0, 0, 0);
+      appliquerCamera(1, camAvion(s, tete));
+      if (k >= 1) { s.phase = 'entree'; s.t = 0; }
+    } else if (s.phase === 'entree') {
+      // il entre en se baissant : la porte fait la moitié de sa taille
+      const k = Math.min(1, s.t / DUREES.entreeAvion);
+      const av0 = av.obtenir();
+      const p = s.haut.clone().lerp(new THREE.Vector3(0, porte.y, porte.z), lisse(k));
+      avatarDebout(g, p, -Math.PI / 2, 1.2, s.temps);
+      av0.scale.setScalar(lerp(1, 0.35, lisse(k)));
+      player.pos.copy(versMonde(g, p)); player.vel.set(0, 0, 0);   // sinon il retombe
+      appliquerCamera(1, camAvion(s, tete));
+      if (k >= 1) {
+        avatarRetire(); av0.scale.setScalar(1);
+        asseoirMaintenant();       // aux commandes : toggleRide, l'état bascule ICI
+        s.phase = 'fermeture'; s.t = 0;
+      }
+    } else if (s.phase === 'fermeture') {
+      const k = Math.min(1, s.t / DUREES.fermetureAvion);
+      ouvrant(g, porte, 1 - lisse(k));
+      appliquerCamera(1 - lisse(k), camAvion(s, tete));
+      if (k >= 1) { ouvrant(g, porte, 0); retirerAcces(s); s = null; }
+    }
   }
 
   // ---- monter chez un ami (v377) -----------------------------------------
@@ -455,6 +568,14 @@ export function creerEmbarquement(ctx) {
   function terminer() {
     if (!s) return;
     const fini = s;
+    if (fini.avion) {
+      if (fini.phase !== 'fermeture') { avatarRetire(); const a0 = av.obtenir(); a0.scale.setScalar(1); asseoirMaintenant(); }
+      ouvrant(fini.a.mesh, fini.porte, 0);
+      retirerAcces(fini);
+      s = null;
+      publier();
+      return;
+    }
     if (fini.sens === 'monter') {
       if (fini.phase !== 'fermeture') {
         if (fini.chez && fini.phase !== 'approche') signaler(0);
@@ -475,6 +596,17 @@ export function creerEmbarquement(ctx) {
   }
   function annuler() {
     if (!s) return;
+    if (s.avion) {
+      ouvrant(s.a.mesh, s.porte, 0);
+      retirerAcces(s);
+      if (ctx.montureConduite() !== s.a) s.a.montee = false;
+      const a0 = av && av.obtenir ? av.obtenir() : null;
+      if (a0) a0.scale.setScalar(1);
+      if (!ctx.montureConduite()) avatarRetire();
+      s = null;
+      publier();
+      return;
+    }
     if (s.chez && s.phase !== 'approche' && s.phase !== 'fermeture') signaler(0);
     porte(0);
     if (s.a && ctx.montureConduite() !== s.a) s.a.montee = false;
@@ -490,6 +622,7 @@ export function creerEmbarquement(ctx) {
     const a = s.a, g = a.mesh;
     if (!(s.chez ? s.chez.existe() : ctx.existe(a)) || !g) { annuler(); return; }
     s.t += dt; s.temps += dt;
+    if (s.avion) { updateAvion(dt); publier(); return; }
     if (!s.portes && s.phase !== 'approche') {
       // le modèle est peut-être arrivé pendant la marche
       s.portes = equiperPortieres(g, portiereRefusee(g));
@@ -585,7 +718,7 @@ export function creerEmbarquement(ctx) {
     // l'avatar est-il à nous cette image ? (main.js ne l'assied pas alors)
     avatarPilote: () => !!s && !(s.sens === 'monter' && s.phase === 'fermeture'),
     brancherAvatar(h) { av = h; },
-    etat: () => (s ? { sens: s.sens, phase: s.phase, t: s.t, cote: s.cote, portes: !!s.portes, refus: refusSortie } : null),
+    etat: () => (s ? { sens: s.sens, phase: s.phase, t: s.t, cote: s.cote, portes: !!s.portes, avion: !!s.avion, refus: refusSortie } : null),
     refusSortie: () => refusSortie,
   };
 }

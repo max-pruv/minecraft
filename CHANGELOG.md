@@ -20,6 +20,32 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v389 — On monte dans l'avion par l'escalier
+
+**Pourquoi.** Depuis la v366 on marche jusqu'à la portière d'une voiture,
+on l'ouvre, on s'assied. Les avions, eux, montaient d'un coup : l'enfant
+était aux commandes à l'instant même où il appuyait, sans jamais approcher
+la porte.
+
+**Ce que ça change.** Pour l'avion de ligne : un escalier roulant aux
+rampes jaunes vient contre la porte avant gauche, l'enfant y marche, gravit
+les marches, la porte s'ouvre, il entre en se baissant, il est aux
+commandes, la porte se referme et l'escalier s'en va. Pour le chasseur : une
+échelle contre le cockpit, et c'est la verrière qui se lève. Le Concorde
+monte d'un coup comme avant — son fuselage mesure 0,94 bloc, une porte y
+ferait la moitié de la taille de l'enfant ; c'est le modèle qui le déclare.
+Un second appui met aux commandes tout de suite.
+
+**Ce qui le prouve.** Trois témoins neufs dans `monte.js` (page `embarq: 1`),
+rouges sur `origin/main` (rejoués par `sonde-embarquement-avion.cjs`,
+deux minutes) : les phases approche → gravir → ouverture → entrée
+pour l'avion de ligne et le chasseur, `montureConduite()` faux pendant chacune,
+les pieds montés de plus d'un bloc, la porte ouverte puis refermée, l'escalier
+posé puis rangé ; le second appui en pleine marche et le Concorde sans porte ;
+et aucune clé de programme neuve, aucun bloc écrit.
+
+---
+
 ## v388 — Le GPS se partage avec un ami
 
 **Pourquoi.** Depuis la v306, un enfant choisit sa destination sur la carte et

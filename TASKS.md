@@ -3289,6 +3289,18 @@ l'embarquement a eu lieu, pas par une hypothèse.
   Puis v374 à v376 sont parties pendant ces mesures : rebasée sur la v376
   (conflit sur une ligne de `main.js`, les deux gardées), témoin du passager
   vert et fumée verte, publiée en v377.
+- [ ] **LE PORTAIL DE LA v389 (l'avion), DOUBLE MESURE FAITE.** Les trois
+  témoins de l'avion verts (`monte.js`), `carteMonde.js` vert. Rouges, tous de
+  familles déjà déclarées : `maj.js` (« vraiment là », « ne floute rien »),
+  `monte.js` (téléportation qui compile). `reseau.js` au portail : cinq rouges
+  dont un NEUF, « l'invité voit le même temps et la même heure que l'hôte »
+  (hôte pluie 0,85 · invité clair 0,37). Rejouée SEULE : branche 1 rouge, la
+  circulation partagée (écart médian 20,2, famille déclarée, 43 sur
+  `origin/main` en v372) — le temps vert ; `origin/main` (v384) zéro rouge.
+  Intermittence de portail. PREUVE STRUCTURELLE : le code neuf n'est atteint
+  que sous `embarq: 1` face à un avion (`monterAvion`), et `reseau.js` ne
+  monte dans aucun avion ; le ciel partagé ne lit ni `avions.js` ni
+  `embarquement.js`.
 - [ ] **LE PORTAIL DE LA v384 (la descente du passager).** `reseau.js`
   ENTIÈRE verte, témoin neuf compris ; `degats.js`, `reglages.js` verts.
   Rouges, tous de familles déjà déclarées : `maj.js` (loader de
@@ -3341,8 +3353,12 @@ l'embarquement a eu lieu, pas par une hypothèse.
   l'AMG). Aucun programme neuf, aucun appel de dessin de plus.
 - **La séquence ne se juge qu'au banc.** Durées (1,1 s de marche au plus, 2,4 s
   en tout) et caméra de trois quarts arrière : à confirmer sur l'iPad.
-- **Les avions** gardent leur montée instantanée (on ne marche pas jusqu'au
-  cockpit d'un Concorde) : une passerelle serait un second palier.
+- [x] **Les avions** — FAIT en v389 : escalier contre la porte avant gauche
+  (avion de ligne), échelle et verrière (chasseur) ; le Concorde déclare
+  `porte: null` (fuselage 0,94 bloc). Reste : la DESCENTE d'un avion est
+  instantanée ; les amis ne voient pas la porte de l'avion s'ouvrir (aucun
+  message) ; l'enfant traverse l'aile s'il arrive par l'arrière (le chemin ne
+  contourne que le fuselage).
 - [ ] **LE PORTAIL DE LA v366 APRÈS LA v364, DOUBLE MESURE FAITE.** Cinq
   suites rouges, toutes des familles déjà déclarées : `maj.js` (préparation
   libérée avec personnages 4/9 ; « la page ne floute rien »), `manhattan.js`
