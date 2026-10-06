@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 399,
+    titre: 'Les Amériques en relief',
+    puces: [
+      'Chicago, Montréal, Mexico, Rio de près',
+      'Brique et guillotine au nord',
+      'Couleurs et balcons de fer au sud',
+    ],
+  },
+  {
     v: 398,
     titre: 'Washington et San Francisco en relief',
     puces: [

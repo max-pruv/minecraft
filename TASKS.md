@@ -2588,9 +2588,9 @@
 
   7. **Le reste du monde** (session `claude/hd-villes-monde`). Palier A livré
      (v398) : Washington et San Francisco (`STYLES.washington`, `sfCentre`,
-     `sfSoma`, `sfMaisons`, la tuile `bardage`). Paliers B (les villes
-     engendrées des Amériques) et C (Asie, Moyen-Orient, Afrique, Océanie) à
-     suivre. Dettes déclarées :
+     `sfSoma`, `sfMaisons`, la tuile `bardage`). Palier B livré (v399) : les 61
+     villes engendrées des Amériques (`nordAmericain`, `latino`). Palier C (Asie,
+     Moyen-Orient, Afrique, Océanie) à suivre. Dettes déclarées :
      - [ ] **le Colisée du catalogue change à chaque lancement** :
        `monuments.js:501` tire ses gradins effondrés à `Math.random()` — 173
        blocs du morceau (cx, cz + 1) de Rome différents entre deux exécutions
@@ -2601,6 +2601,25 @@
        `tirage(x, y, z)`), mais c'est un bloc écrit : il change le Colisée une
        fois pour toutes, et un enfant a peut-être bâti contre — à décider avec la
        zone des monuments, pas dans la couche HD ;
+     Portail de la v399 (quatre suites) : `parishd.js` et `plafond.js` verts ;
+     six rouges dans `maj.js` et `monte.js`, aucune ne force `?hd=` (preuve
+     structurelle v291). Rejouées SEULES des deux côtés :
+     - [ ] `monte.js` « une vraie voiture de la rue, par le vrai crochet : son
+       flanc frôlé ne nous arrête pas » (témoin de la v397) : rouge sur la
+       branche ET sur `origin/main` (v398), `{"c":null,"lu":false}` — aucune
+       voiture trouvée ; à reprendre par la session de la conduite ;
+     - `maj.js` « le jeu se mesure en jouant, et range son verdict » et « le
+       palier se décide sur le TRAVAIL d'une image » : rouges au portail
+       (période 467 ms, la page à deux images par seconde), VERTS seuls des deux
+       côtés — charge du portail ;
+     - [ ] `monte.js` « au volant, le personnage de l'enfant est assis dans la
+       voiture » : `{"avatar":false,"monture":true}` une fois sur la branche
+       rejouée seule, vert au portail sur la même branche et seule sur
+       `origin/main` — intermittence de la zone de la conduite ;
+     - les autres (« corps, programmes et fond de carte », « ne floute rien »,
+       le flâneur, le bout du monde en vol) : déjà déclarés plus haut, et
+       `origin/main` rend en plus « la rue roule à l'allure d'une ville » et
+       « au feu, la voiture freine » rouges seule.
      Portail de la v398 (quatre suites) : `parishd.js` et `plafond.js` verts ;
      `maj.js` « corps, programmes et fond de carte » (déclaré) ; `monte.js`
      « un passant change de trottoir au feu » à 1 au vert sur 4 (déclaré plus

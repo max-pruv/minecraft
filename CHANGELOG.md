@@ -20,6 +20,29 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v399 — Les Amériques en relief
+
+**Pourquoi.** Washington et San Francisco avaient leur relief (v398), mais les
+soixante et une villes engendrées des Amériques — Chicago, Montréal, Mexico,
+La Havane, Rio, Buenos Aires… — restaient en façades plates à toute distance.
+
+**Ce que ça change.** De près, chaque ville des Amériques a des fenêtres en
+relief dans son propre mur. Aux États-Unis et au Canada, la maison de brique
+rouge et sa guillotine au châssis blanc, l'appui et le linteau de pierre, le
+calcaire crème des immeubles (`nordAmericain`). Au sud de 24° N, et à Monterrey
+et à La Nouvelle-Orléans (le Vieux Carré espagnol), l'enduit de couleur à peine
+patiné et le garde-corps de fer forgé (`latino`). Honolulu et Papeete sont dans
+le Pacifique : elles attendent le palier suivant. Un appareil au palier bas ne
+reçoit rien de neuf ; Paris, l'Europe, Washington et San Francisco n'ont pas
+bougé d'un octet.
+
+**Ce qui le prouve.** Quinze témoins neufs dans `parishd.js`, rouges sur
+`origin/main` : sept par ville pour Chicago (brique et pierre, ni volet ni fer)
+et Mexico (enduit et fer, ni pierre ni volet), et la couverture — les
+soixante et une villes ont leur registre, aucune île du Pacifique. Mesuré sur
+505 morceaux : 0,44 Mo de façades par morceau en moyenne, 1,62 au pire (Buenos
+Aires), contre 0,55 et 1,71 pour l'Europe.
+
 ## v398 — Washington et San Francisco en relief
 
 **Pourquoi.** L'Europe entière avait sa couche de relief (v394), mais les deux
