@@ -6,12 +6,54 @@
 
 export const NOUVEAUTES = [
   {
-    v: 390,
+    v: 395,
     titre: 'On fait le tour de la place',
     puces: [
       'Les voitures contournent la fontaine',
       'Les voitures restent sur la route',
       'Deux circuits dans les petits ports',
+    ],
+  },
+  {
+    v: 394,
+    titre: 'Toute l\'Europe en relief',
+    puces: [
+      'Rome, Berlin, Barcelone… de près',
+      'Persiennes au sud, pierre au nord',
+      'Fenêtres anglaises en Écosse',
+    ],
+  },
+  {
+    v: 393,
+    titre: 'Un ami qui part disparaît',
+    puces: [
+      'Il dit au revoir en partant',
+      'Plus de joueur fantôme à l\'écran',
+    ],
+  },
+  {
+    v: 392,
+    titre: 'Nice et Lille en relief',
+    puces: [
+      'Les persiennes de Nice, de près',
+      'La brique de Lille, de près',
+    ],
+  },
+  {
+    v: 391,
+    titre: 'La tablette mesure la route',
+    puces: [
+      'Papa peut mesurer la vitesse',
+      'Rien ne change pour toi',
+    ],
+  },
+  {
+    v: 390,
+    titre: 'Londres en relief',
+    puces: [
+      'De vraies fenêtres anglaises à Londres',
+      'La brique et le stuc de près',
+      'Pas de colonne Morris à Londres',
     ],
   },
   {

@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v390 — Les voitures font le tour de la place
+## v395 — Les voitures font le tour de la place
 
 **Pourquoi.** Dans les villes engendrées, beaucoup d'anneaux de voitures
 roulaient en ligne droite au travers de ce qui n'est pas une rue : la place
@@ -48,6 +48,136 @@ centre reste à 30 blocs, aucun tablier n'est retiré (642 colonnes d'eau en
 gagnent un), et le relief ne bouge pas. Le prix, déclaré : le premier
 dépliage d'une ville coûte plus cher (Rome ≈ 57 → 85-100 ms, une fois, à 220
 blocs de la ville).
+
+---
+
+## v394 — Toute l'Europe en relief
+
+**Pourquoi.** Après Londres, Nice et Lille, les quatre-vingt-dix villes
+engendrées d'Europe — Rome, Berlin, Barcelone, Amsterdam, Édimbourg… —
+restaient en façades plates à toute distance. C'était la fin de la consigne de
+Max : « when done do all European cities ».
+
+**Ce que ça change.** De près, chaque ville d'Europe a des fenêtres en relief
+dans son propre mur (la couleur de sa palette, patinée) : au sud de 45,5° N,
+les persiennes, le garde-corps de fer et le store de la boutique ; au nord,
+l'encadrement et le linteau de pierre sur la brique ; dans les îles
+britanniques, la guillotine géorgienne de Londres. Trottoirs relevés, arbres
+maillés, devantures et corniches en relief. Ni Tbilissi, ni Ankara, ni le
+Maghreb : ils ne sont pas en Europe. Un appareil au palier bas ne reçoit rien
+de neuf ; Paris, Londres, Nice et Lille n'ont pas bougé d'un octet.
+
+**Ce qui le prouve.** Vingt-deux témoins neufs dans `parishd.js`, rouges sur
+`origin/main` : sept par ville pour Rome (sud), Berlin (nord) et Manchester
+(îles britanniques) — couverture, aucun bloc posé, tampons d'avant sans HD,
+chaque face exposée détaillée, le mur et les ornements du registre, pas de
+mobilier parisien, morceau le plus lourd sous 3 Mo — sur 1 676 morceaux des villes engendrées, 0,55 Mo en moyenne et 1,71 au pire (Barcelone) — et
+un témoin de liste : les villes de la boîte européenne ont leur registre, pas
+celles qui n'en sont pas. Et le fer se compte enfin : la ferronnerie s'émet
+en UV absolus, elle ne se reconnaissait pas à sa tuile, et les « pas de fer »
+de Londres et de Lille étaient vrais à vide ; comptés à la matière, ils
+rendent zéro (Rome : 8 304 sommets).
+
+---
+
+## v393 — Celui qui part dit au revoir
+
+**Pourquoi.** À trois en ligne, quand un enfant quittait la partie, les deux
+autres le gardaient parfois à l'écran une minute et demie : immobile, puis
+évanoui sans qu'on sache pourquoi. Le jeu écrivait « on prévient les autres
+joueurs avant de disparaître » — et n'envoyait rien : il comptait sur la
+fermeture du lien, qui ne traverse pas toujours (une tablette qu'iOS suspend
+au lieu de la tuer, un canal qui reste « ouvert » de l'autre côté). Le témoin
+« un départ propre nettoie tout le monde » rougissait de loin en loin des deux
+côtés depuis des versions.
+
+**Ce que ça change.** Celui qui part envoie un adieu à chacun avant de couper ;
+l'hôte le retire tout de suite et le dit aux autres. Une tablette restée sur
+une ancienne version connaît déjà ce message. Et le témoin de la voix après
+un appel vidéo, qui rougissait lui aussi de loin en loin, mesure désormais ce
+qu'il annonce : le volume du jeu rendu après l'appel.
+
+**Ce qui le prouve.** Une sonde reproduit le départ sans fermeture de lien :
+ancien code 0 nettoyage en 60 s sur 2 passages, nouveau 3/3 en ≈ 1 s. Le
+témoin de `reseau.js` provoque désormais ce cas lui-même — suite entière
+verte, 80 témoins. Pour la voix : sans aucun appel, deux fenêtres de 1,5 s de
+radio varient déjà de 0,68 à 1 ; la radio relancée sans appel et la radio
+après l'appel rendent la même distribution, gain revenu à 1 cinq fois sur
+cinq. Le témoin juge le gain et un niveau au-dessus de la moitié, et il rougit
+sur une copie où la voix reste au quart (gain 0,25).
+## v392 — Nice et Lille en relief
+
+**Pourquoi.** Le palier A avait donné son relief à Londres ; Nice et Lille, les
+deux autres villes d'Europe bâties à la main, restaient en façades plates à
+toute distance — et leur palette de décor (l'orange de signalisation, le jaune
+de balise à Nice ; un rouge de jouet à Lille) se voyait telle quelle.
+
+**Ce que ça change.** De près, Nice a ses enduits ocre, rose et sable, patinés
+vers un vrai ocre, ses persiennes ouvertes de part et d'autre des baies et son
+garde-corps de fer. Lille a sa brique flamande patinée, l'encadrement et le
+linteau de pierre blonde. Les deux villes ont le trottoir relevé et leurs
+arbres maillés ; ni colonne Morris ni banc de Paris. Un appareil au palier bas
+ne reçoit rien de neuf ; Paris et Londres n'ont pas bougé d'un octet.
+
+**Ce qui le prouve.** Quatorze témoins neufs dans `parishd.js` (sept par
+ville), rouges sur `origin/main` : la couche couvre la ville, ne pose aucun
+bloc, rend les tampons d'avant sans HD, détaille chaque face exposée, pose le
+mur de la ville (enduit et persiennes à Nice, brique à Lille, jamais la pierre
+de Paris), sans mobilier parisien, et le morceau le plus lourd pèse moins de
+1,1 Mo (Nice 0,74, Lille 1,06 ; Paris 10).
+
+---
+
+## v391 — La tablette mesure sa vitesse au sol
+
+**Pourquoi.** Le plafond de vitesse des voitures (`VITESSE_SOL_MAX` : 70 blocs
+par seconde en ville, 80 en campagne) a été mesuré au banc, qui rend en
+logiciel à une cadence qui n'est pas celle de l'iPad. Il ne peut se confirmer
+que sur la tablette, et rien ne permettait à Max de le relever sans une session
+de développement à côté.
+
+**Ce que ça change.** Avec `?diag=1`, dès qu'on roule, une ligne de plus :
+« roulage : vitesse · trou devant soi (le monde maillé dans le champ, ±40°
+autour du déplacement) · débit de morceaux par seconde · file · ordre ·
+recharge ». Le journal de bord la range toutes les cinq secondes
+(`roulage: { v, trou, debit }`), si bien qu'un essai de Max se relit dans le
+nuage sans rien recopier. La marche exacte — adresse, ville, avenue, ce qu'il
+faut relever et ce qui décide — est dans `TASKS.md`. Sans `?diag=1`, rien ne
+change.
+
+**Ce qui le prouve.** Deux témoins dans `monte.js` : la règle pure (un trou
+connu, un débit connu) et la page (à quarante blocs par seconde, la ligne
+paraît et porte des nombres ; à l'arrêt elle n'y est pas). Rouges sur l'ancien
+code : la règle n'existe pas, la ligne non plus. Portail complet.
+
+---
+
+## v390 — Londres en relief
+
+**Pourquoi.** Max : « when done do all European cities ». La couche de détail
+(façades en relief, trottoirs relevés, arbres maillés) ne couvrait que Paris :
+`couvreHD` testait le seul disque de Paris. Londres, à cinq heures de vol
+virtuel, restait en cubes plats à toute distance — des fenêtres peintes sur
+des murs de brique de jouet.
+
+**Ce que ça change.** De près, Londres est en relief : chaque fenêtre est une
+guillotine géorgienne en retrait, haute et étroite, son châssis blanc, le rail
+de rencontre au milieu, l'appui de pierre et l'arc de briques au-dessus. Le mur
+autour est celui de la maison : la brique (patinée, plus une brique de jouet)
+ou le stuc blanc de Belgravia. Le trottoir est relevé, les arbres des squares
+sont maillés. Pas de colonne Morris à Londres : le mobilier de Paris reste à
+Paris. Un appareil au palier bas ne reçoit rien de neuf ; Paris n'a pas bougé
+d'un octet.
+
+**Ce qui le prouve.** Huit témoins neufs dans `parishd.js`, rouges sur
+`origin/main` : la couche couvre Londres ; elle ne pose aucun bloc (morceau le
+plus dense, à l'octet près) ; sans HD les tampons sont ceux d'avant ; chaque
+face exposée d'une façade ou d'un mur reçoit son détail (1 274 sur 1 274) ; le
+mur est de brique ou d'enduit, jamais de la pierre de Paris ; ni Morris ni
+Davioud ; le morceau le plus lourd pèse 1,2 Mo (Paris en pèse 10) ; en vol au
+palier moyen, 22,5 Mo de façades pour 128 de budget. Un bloc de décor à motif
+posé par un enfant garde son dessin. L'empreinte des tampons HD de Paris
+(256 morceaux) est identique sur `origin/main` et sur la branche.
 
 ---
 
@@ -340,6 +470,9 @@ rectangles n'est au sec. La sonde des passants sur la chaussée à Rome
 (`sonde-chaussee-rome.cjs`, 60 s, deux fois de chaque côté) : hors traversée,
 0 et 5 relevés sur ~1 800 sur la branche, 3 et 2 sur `origin/main` — aucun
 passant né sur la chaussée, aucun flâneur.
+
+---
+
 ## v379 — On arrive plus vite après la carte
 
 **Pourquoi.** Trois questions laissées ouvertes par la v360, et une quatrième

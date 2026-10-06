@@ -1,5 +1,42 @@
 # Ce qui est en cours
 
+- [x] **LES DEUX ROUGES RÉSEAU RÉCURRENTS (v393).** « Un départ propre
+  nettoie tout le monde » : CORRIGÉ dans le jeu — `net.stop()` n'envoyait
+  aucun adieu, un pair au transport muet restait 90 s (v266). Sonde
+  `sonde-depart-transport-muet.cjs` : `origin/main` 0/2 nettoyé en 60 s,
+  branche 3/3 en ≈ 1 s ; `reseau.js` seule sur la branche 80/80. « Caméra
+  éteinte, le jeu reprend sa voix normale » : TÉMOIN REPOINTÉ — il comparait
+  deux moments de mélodie (sans appel, 0,0195 à 0,0285 d'une fenêtre à
+  l'autre ; radio relancée sans appel ≡ après l'appel, gain 1 cinq fois sur
+  cinq). Il juge le gain rendu et un niveau > ½ ; rouge sur une copie où la
+  voix reste au quart. Les entrées plus bas qui déclarent ces deux témoins
+  « intermittents des deux côtés » sont closes par celle-ci.
+  Portail (base v388) : `degats`, `visio`, `hote`, `reseau` VERTS ; seul
+  rouge `manhattan.js` « le trou enlève aussi la géométrie visible de la
+  façade » (17 102 → 54 969) — la dette déclarée en v291 (22 326 → 51 734 sur
+  `origin/main`), un compte qui suit ce que la file a installé ; la livraison
+  ne touche ni la façade ni Manhattan.
+  Second portail (rebasé sur la v392) : `degats`, `visio`, `hote`, `reseau`
+  VERTS (départ nettoyé en 1 s, voix gain 1). Rouges, tous déjà déclarés :
+  `maj.js` « le loader dit combien de fichiers » (intermittent, table plus
+  bas), `manhattan.js` trou (9 203 → 51 734), « le taxi roule » (bouton
+  jamais visible) et l'invité de la ligne 674 qui ne rejoint pas.
+- [ ] **LE GPS PARTAGÉ PAR UN HÔTE QUI RELAIE (`rpos`) N'A PAS DE TÉMOIN À
+  TROIS TABLETTES** (v388 l'éprouve entre l'hôte et un invité). Le champ `g`
+  est lu sur `rpos`, la règle est écrite ; le témoin reste à faire.
+- [ ] **LE PORTAIL DE LA v391 (la tablette mesure sa vitesse au sol), DOUBLE
+  MESURE FAITE.** Onze suites ; mes deux témoins verts (règle 36/192/2 ; ligne
+  « roulage : 43 b/s · trou devant 16 blocs · débit 4 morceaux/s »). Rouges :
+  `maj.js` (libération `null`, « ne floute rien » — déclarés), `carte.js`
+  (glisser bridé ×4, 414 ms pour 400 — déclaré), `manhattan.js` (façade
+  11 684 → 42 919, taxi — déclarés) et un NEUF de `monte.js` : « un passant
+  change de trottoir au feu » (4 traversées, 3 au rouge, **1 au vert**).
+  `monte.js` rejouée SEULE : branche VERTE en entier (5 traversées, 0 au vert) ;
+  `origin/main` (v386) verte sur ce témoin avec **1 au vert sur 5** aussi, et
+  rouge sur le trou du chasseur en vol (intermittence déclarée). Le témoin du
+  feu est une proportion qui frôle sa barre sous la charge, des deux côtés ;
+  zone des piétons, non reprise ici. La livraison ne touche les piétons par
+  aucun chemin (une ligne de `?diag=1`, un champ du journal de bord).
 - [ ] **LE PORTAIL DE LA v388 (le GPS se partage).** Rouges : `maj.js` « il
   couvre toutes les versions du journal » (`manquantes: [384]` — À MOI :
   l'entrée du journal écrite pendant le portail, la ligne de `nouveautes.js`
@@ -10,7 +47,7 @@
   (`monture: null`, intermittence vue sur `origin/main` v326). `reseau.js`
   REJOUÉE SEULE sur la branche : 79 verts, zéro rouge (mon témoin du GPS
   compris).
-- [ ] **LE PORTAIL DE LA v390 (les anneaux contournent), DOUBLE MESURE FAITE.**
+- [ ] **LE PORTAIL DE LA v395 (les anneaux contournent), DOUBLE MESURE FAITE.**
   Verts : `fumee.js`, `carteMonde.js` (les deux témoins neufs), `plafond.js`
   (empreintes, celle des 490 morceaux comprise). `carte.js` : « la flèche du
   GPS » (1,92 rad) et « la faire glisser non plus » rouges des DEUX côtés
@@ -21,7 +58,7 @@
   sur `origin/main` (le trou en vol). Le flâneur, le seul qui passe dans une
   ville engendrée, rejoué par `sonde-sortie-chaussee.cjs` trois fois de chaque
   côté en alternance : 9 sur 9 au bord des deux côtés (3,1 à 5 s). Le train
-  et le réverbère sont dans Paris et Londres, que la v390 ne touche pas.
+  et le réverbère sont dans Paris et Londres, que la v395 ne touche pas.
 - [ ] **LE PORTAIL DE LA v387 (les circuits des villes engendrées), DOUBLE
   MESURE FAITE.** Verts : `carteMonde.js`, `plafond.js`, `degats.js`,
   `carte.js`, `washington.js`. `maj.js` : un seul rouge, À MOI et corrigé (le
@@ -313,9 +350,9 @@
   du Bean) — anneaux d'avant, mêmes valeurs sur `origin/main`, déclarées dans
   `DETTE_PONTS` et rattachées à la dette ci-dessous.
 - [ ] **LES ANNEAUX D'AVANT ROULENT PARFOIS HORS DE LA CHAUSSÉE (mesuré v387,
-  repris v390).** Ils CONTOURNENT désormais (phase 4, `contourner`) : 147
+  repris v395).** Ils CONTOURNENT désormais (phase 4, `contourner`) : 147
   anneaux et 3 512 pas hors chaussée sur `origin/main` v389, 92 et 2 437 en
-  v390 (fontaines 167 → 82). Ce qui reste, mesuré par la sonde de la v390 :
+  v395 (fontaines 167 → 82). Ce qui reste, mesuré par la sonde de la v395 :
   Las Vegas (le désert hors de la bande du Strip, 689 pas : la bande ne tient
   qu'UNE rue de la trame, 16 unités de fiche pour un pas de 32 blocs, donc
   aucun anneau ne peut y tenir — le remède est de SOL, des rues à travers le
@@ -325,16 +362,16 @@
   Las Vegas et Rio, des anneaux choisis DANS la bande (une sélection, donc
   mesurer la couverture) ; pour les rivières, un contour qui publie son tablier
   (un tablier neuf est du sol : Rome est dans l'empreinte des 490 morceaux).
-- [ ] **DES ANNEAUX D'AVANT ROULENT SUR L'EAU HORS DE TOUT TABLIER (v390).** La
+- [ ] **DES ANNEAUX D'AVANT ROULENT SUR L'EAU HORS DE TOUT TABLIER (v395).** La
   règle de la v387 (`horsChaussee`) tenait toute eau sous un anneau pour un
-  pont : 159 pas sur l'eau sans tablier en v390 (195 sur `origin/main`), dont
+  pont : 159 pas sur l'eau sans tablier en v395 (195 sur `origin/main`), dont
   des anneaux de la phase 2 bis. Le contrôle strict (`surUnTablier`) est
   appliqué aux contresens et aux contours ; l'appliquer à la phase 2 bis est
   mesuré : il retire des anneaux ET leurs tabliers (Vienne 212 colonnes,
   Shanghai 502) — un enfant a pu bâtir dessus. Le remède est d'ALLONGER ces
   tabliers (`traverseesDe` sur la voie, comme le contresens), en vérifiant
   l'empreinte des 490 morceaux.
-- [ ] **TROIS VILLES ENGENDRÉES N'ONT QU'UN CIRCUIT (v387 : onze ; v390 :
+- [ ] **TROIS VILLES ENGENDRÉES N'ONT QU'UN CIRCUIT (v387 : onze ; v395 :
   trois).** Huit ports ont reçu leur contresens (quai toléré, tablier mesuré
   sur sa voie). Restent San Diego, San José et Guayaquil : leur contresens
   touche la fontaine de la place déplacée (San José, `place` à décalage) ou la
@@ -468,6 +505,44 @@
   (`manhattan.js`), « la monoplace ralentit assez » (9,1 m/s, identique sur
   `origin/main`), le bouton « Conduire » (un métro à portée), les programmes à
   la téléportation et l'arrivée sur une ville (2 267 ms · 26,4 %).
+- [ ] **LE COÛT D'UN MORCEAU DE VILLE : PROFIL PLAT APRÈS LA v391.** Mesuré sous
+  node (monde neuf, 117 morceaux engendrés, 77 maillés sans HD) : Paris 4,4 ms
+  de génération et 7,2 de maillage par morceau, Rome 3,5 et 9,9, Londres 4,5 et
+  10,7. Profil `--cpu-prof` de Londres, temps propre : `generateChunk` 10,5 %,
+  `buildChunkTampons` 9,3 %, ramasse-miettes 7 %, `terrainHeight` 5,1 %,
+  `addFace` 3,5 %, `solLondresCalcul` 2,5 %, `chunkTop` 2,4 %, `hauteurTerre`
+  2,4 %, `cityAtParmi` 1,9 % — aucun poste ne domine. La méthode « une ligne à
+  la fois » de la v352 n'a plus de ligne lourde à prendre : le prochain gain
+  est de structure (moins de faces émises, moins d'allocations dans le
+  mailleur), à prouver par l'empreinte des 490 morceaux. Et le chemin HD du
+  mailleur est la zone de claude/hd-villes-europe.
+- [ ] **LE PLAFOND AU SOL SUR L'IPAD — LA MARCHE POUR MAX (v391).** Le banc
+  ne peut pas relever `VITESSE_SOL_MAX` (ville 70, campagne 80) : il rend en
+  logiciel, à une cadence qui n'est pas celle de la tablette. `?diag=1` affiche
+  désormais, en roulant, une ligne « roulage : V b/s · trou devant T blocs ·
+  débit D morceaux/s · file F · ordre … · recharge … », et le journal de bord
+  la range toutes les cinq secondes (`roulage: { v, trou, debit }` dans
+  `journal_appareil`) — je peux donc la relire sans que Max ne recopie rien.
+  La marche, sur l'iPad de la maison, étendue « Auto » :
+  1. ouvrir `https://minecraft-fam.vercel.app/?diag=1`, jouer, ouvrir la carte,
+     se téléporter au centre de **Paris**, attendre que le compteur de morceaux
+     ne monte plus (une dizaine de secondes) ;
+  2. prendre une voiture de la rue (« Conduire »), choisir une grande avenue
+     droite (les Champs-Élysées, ou le boulevard Haussmann), pleins gaz dix
+     secondes ;
+  3. relever trois fois la ligne « roulage » (capture d'écran) : la vitesse, le
+     trou, le débit ; et la première ligne (images par seconde, pire image) ;
+  4. refaire la même chose en **campagne**, sur l'A1 (la carte, « A1 »), à
+     pleins gaz ;
+  5. si l'avion est plus simple : un vol bas au-dessus de Paris donne le même
+     trou (la vitesse est plus haute, ce qui dit le plafond par l'autre bout).
+  Ce qui décide : le plafond tient si le trou reste au-dessus de **deux
+  secondes de route** (à 70 b/s, 140 blocs) ; s'il tombe sous une seconde,
+  le plafond doit baisser pour ce palier ; s'il reste au-dessus de 190 (le
+  bord du disque à rr 12), il peut monter. Le débit dit pourquoi : sous ~50
+  morceaux par seconde la file attend l'image (ordre en cône utile, v380),
+  au-dessus de 90 le worker suit. Sans session de ma part : le journal du
+  nuage garde les relevés, je les relirai à la prochaine.
 - [ ] **LE PLAFOND DE VITESSE AU SOL EST MESURÉ ET PUBLIÉ (v346) — À APPLIQUER
   PAR LA CONDUITE, ET À CONFIRMER SUR LA TABLETTE.** `src/plafond-sol.js` :
   `VITESSE_SOL_MAX` = 60 b/s en ville, 70 en campagne et sur l'autoroute ;
@@ -2323,6 +2398,46 @@
      `ARCHI` que ces villes posent déjà : l'étendre est d'abord élargir
      `couvreHD` à leurs disques, puis donner à chaque tissu (`villesmonde.js`)
      ses registres — brique de Londres, tuile de Rome, pan de bois.
+     **État (v390).** Palier A livré : Londres (`VILLES_HD`, `STYLES.londres`,
+     le mur d'à côté lu par `murVoisin`, les murs Briques/Uni dans la couche).
+     Palier B livré (v392) : Nice et Lille (`STYLES.nice`, `STYLES.lille`).
+     Palier C livré (v394) : les 90 villes engendrées d'Europe (`registreEurope`,
+     `STYLES.sud`, `STYLES.nord`). La consigne est remplie. Dettes déclarées
+     du palier C, vues en capture :
+     - [ ] une baie de ville engendrée est faite de DEUX blocs `ETAGE`
+       empilés : la couche (comme la tuile plate) y dessine deux fenêtres
+       l'une sur l'autre par étage — un registre « baie de deux blocs »
+       (les bandes `ETAGE_BAS/MI/HAUT` de Paris) demanderait que
+       `villesmonde.js` pose ces bandes : c'est un changement de blocs, donc
+       de la zone des villes engendrées, pas de la couche ;
+     - [ ] Édimbourg est en brique rouge parce que sa palette l'est ; la vraie
+       ville est de grès gris — une fiche, pas un registre ;
+     Et :
+     le raccord ville/campagne (`raccordInterdit`) n'est interdit qu'à Paris —
+     une colonne de raccord de Londres montre la surface plate, pas le sol HD.
+     Portail de la v390 (lancé sous le numéro v386, avant deux rebases) : 12 suites vertes, `parishd.js` comprise ; cinq
+     rouges, tous déjà déclarés ici avec leur double mesure — `maj.js` (le
+     loader et ses fichiers ; corps, programmes et fond de carte), `carte.js`
+     (glisser bridé ×4, 416 ms pour 400), `manhattan.js` (le trou de façade ;
+     PeerJS « Lost connection »), `monte.js` (le bout du monde en vol),
+     `reseau.js` (la même circulation sur deux tablettes). PREUVE STRUCTURELLE
+     (v291) : aucune de ces suites ne force `?hd=`, le banc rend en logiciel,
+     donc `RAYON_HD` vaut 0, `world.hd` est faux et `villeHD` n'est jamais
+     appelé — le mailleur y prend exactement le chemin d'avant.
+     Portail de la v392 (cinq suites) : `parishd.js` et `plafond.js` verts ;
+     `maj.js` rend ses deux rouges déclarés ; `monte.js` un rouge NEUF —
+     « un flâneur posé au milieu de la chaussée en sort et flâne au bord »
+     (témoin de la v385) : à Rome, trois essais, sortie après 3,1 · 2,8 ·
+     3,8 s, d 1,27 · 1,84 · 3,3, arrivée « t », « a », « a ». PREUVE
+     STRUCTURELLE (v291) : `monte.js` ne force pas `?hd=`, `world.hd` y est
+     faux et la couche n'est jamais lue. À reprendre par la session des
+     passants, avec sa double mesure.
+     Portail de la v394 (cinq suites) : `parishd.js` (avec les vingt-deux
+     témoins du palier C) et `plafond.js` verts ; `maj.js` « corps, programmes
+     et fond de carte » (déclaré) ; `monte.js` deux rouges de la recharge à
+     l'arrivée (v379) — « garde la cadence » rapport 0,72 pour 0,75 (déjà
+     nommé plus haut), « la file … puis se rend » rendue en 11 236 ms : non.
+     Même preuve structurelle : `monte.js` ne force pas `?hd=`.
 
   Ce qu'on ne touche PAS : le système de coordonnées, les clés de stockage, les
   blocs sauvegardés, `terrainHeight`, les contrats réseau. La couche HD LIT les

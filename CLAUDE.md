@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Les anneaux contournent (v390) — un anneau est le bord d'un ensemble d'îlots
+## Les anneaux contournent (v395) — un anneau est le bord d'un ensemble d'îlots
 
 La dette de la v387 : 147 anneaux de villes engendrées sur 809 sortaient de la
 chaussée (place, fontaine, parc, plage), onze villes n'avaient qu'un circuit.
@@ -825,6 +825,84 @@ Sept règles.
   garde de couverture qui relisait toute la ville à chaque proposition (une
   liste par anneau, une grille par ville). Le prix déclaré : le premier
   dépliage de Rome passe d'environ 57 à 85-100 ms, une fois, à l'approche.
+
+## Toute l'Europe en relief (v394) — un registre par géographie, et un compte qui voit ce qu'il compte
+
+Palier C : les quatre-vingt-dix villes engendrées d'Europe. Trois règles.
+
+- **L'EUROPE EST UNE BOÎTE MOINS UNE LISTE QUI SE LIT.** `registreEurope`
+  (facadeshd.js) prend la latitude et la longitude de la fiche ; `HORS_EUROPE`
+  nomme, avec leur raison, les villes de la boîte qui n'en sont pas (Caucase,
+  Anatolie, Maghreb). Le registre suit la vraie ville, pas son tissu : îles
+  britanniques → `londres`, au sud de 45,5° N → `sud` (persiennes, fer,
+  stores), au nord → `nord` (encadrement de pierre). `VILLES_HD` passe à
+  94 disques, toujours une liste par morceau.
+- **UN COMPTE DE TUILE NE VOIT PAS CE QUI S'ÉMET EN UV ABSOLUS.** La
+  ferronnerie et la croisée portent le rectangle `NEUTRE` : comptées à la
+  tuile elles rendaient zéro partout, et « pas de fer » à Londres et à Lille
+  était vrai à vide pendant deux livraisons. Le fer se compte à sa MATIÈRE
+  (`compteFer`, parishd.js). Un témoin d'absence se vérifie capable de voir
+  la présence : il fallait Rome pour le voir rendre autre chose que zéro.
+- **CE QUI SE MESURE.** 1 676 morceaux des villes engendrées : 0,55 Mo de
+  façades en moyenne, 1,71 au pire (Barcelone) ; un morceau détaillé coûte au
+  worker à peu près le double d'un morceau plat (20 → 45 ms sous node, comme
+  Paris 28 → 108), seulement à portée de `RAYON_HD`. Paris, Londres, Nice et
+  Lille identiques à l'octet.
+
+## Nice et Lille en relief (v392) — un registre par ville, une patine par tuile
+
+Palier B. Deux règles.
+
+- **LA PATINE EST PAR TUILE, ET « CHAUD » DÉSATURE SANS CHANGER LA CLARTÉ.**
+  `patine: { brique: [part, rgb], enduit: [part, 'chaud'] }` : l'orange de
+  signalisation et le jaune de balise de la palette de Nice vont vers leur
+  propre gris réchauffé ; la brique de Lille vers une brique cuite. De près
+  seulement, le loin garde la tuile du voxel.
+- **LA CORNICHE LIT SON MUR DESSOUS.** `murVoisin` regarde à gauche, à droite,
+  puis dessus — sauf pour une corniche, dont le dessus est le toit : sans cela
+  elle prendrait la couleur des tuiles. Londres (sans corniche) et Paris (sans
+  registre) restent identiques à l'octet, mesuré.
+
+Mesuré : Nice 0,30 Mo par morceau en moyenne, 0,74 au pire ; Lille 0,48 et 1,06.
+
+## Londres en relief (v390) — la couche HD devient une question par ville, et le mur suit la baie
+
+La consigne de Max (« when done do all European cities »), palier A. Cinq règles.
+
+- **`couvreHD` DEMANDE UNE LISTE DE DISQUES, PAR MORCEAU.** `VILLES_HD`
+  (facadeshd.js) porte une fiche par ville couverte ; `villeHD(cx, cz)` rend la
+  fiche, le mailleur la passe à `facadeHD`. Jamais les 280 villes du registre
+  par colonne. Une fiche porte son REGISTRE (`STYLES.londres`) et
+  `mobilier: false` : la colonne Morris et le banc Davioud restent à Paris.
+  Le mot est dans la fiche, jamais une condition sur un nom dans un registre.
+- **HORS DE PARIS, LE MUR AUTOUR D'UNE BAIE EST LE MUR D'À CÔTÉ.** Les villes
+  bâties à la main ne posent de blocs ARCHI qu'aux fenêtres ; le mur est un
+  bloc de décor. `voisin: true` lit le bloc de décor voisin (gauche, droite,
+  DESSUS puis dessous — dessous, c'est souvent un massif de fleurs, vu en
+  capture) et en prend la tuile (Briques → `brique`, Uni → `enduit`) et la
+  couleur. Les ornements (encadrement, appui, châssis) ont leur teinte à eux
+  (`orn`) : sans `orn`, Paris rend tout à l'identique, au bit près.
+- **UNE BAIE HD DANS UN MUR VOXEL FAIT UN CARRÉ CLAIR — le mur passe donc dans
+  la couche.** Vu en capture : le matériau HD (rugosité, métal) ne rend pas la
+  même lumière que le voxel pour la même couleur. Les murs de décor des motifs
+  « Briques » et « Uni » sont détaillés d'une face plate (`murHD`), les mêmes
+  qui partent dans `plat`. SEULEMENT ces deux motifs : un bloc à damier, à
+  pois, à losanges qu'un enfant a posé garde son dessin — la couche n'a pas sa
+  tuile, elle ne change pas l'apparence d'une création.
+- **UNE TEINTE DE MUR SE CALCULE SUR LA MOYENNE DE LA TUILE, EN LINÉAIRE.**
+  `MOYENNE_TUILE` est mesurée sur les peintres de `matierehd.js` ; le rapport
+  sRGB passe à la puissance 2,2 (v345). La brique de la palette (Rouge 200, 62,
+  56) est patinée de près (`patine`), le loin garde la tuile du voxel.
+- **CE QUI SE PROUVE, ET COMMENT.** L'empreinte des tampons HD de 256 morceaux
+  de Paris est identique sur `origin/main` et sur la branche (8f3652af…) ;
+  Londres à `hd 0` aussi (b15d4f39…) : le palier bas ne reçoit rien de neuf. Un
+  morceau de Londres pèse 0,5 Mo en moyenne, 1,2 à 1,45 au pire — Paris en pèse
+  dix — et le vol au palier moyen tient 22,5 Mo pour 128. Un chambranle en
+  boîtes coûtait 60 sommets par fenêtre (1,96 Mo au pire) : des plans.
+
+Ce qui reste, déclaré : le raccord ville/campagne (v308) n'est interdit qu'à
+Paris — à Londres, une colonne de raccord montre la surface plate, pas le sol
+HD (l'étendre changerait la forme du sol, donc la hauteur des pieds).
 
 ## Les circuits des villes engendrées (v387) — ce qui se partage est une voie, pas une rue
 
@@ -1224,6 +1302,20 @@ celle de la High Roller ne tiendrait pas, et c'est déclaré.
 Et une empreinte d'identité qui change se PROUVE : celle des 490 morceaux
 (v352) couvre Marrakech et Tokyo ; la branche, bâtisseurs neufs désarmés, rend
 l'ancienne au bit près — c'est ce qui a permis de la remplacer.
+
+## Le plafond au sol se relève sur la tablette (v391) — une mesure qu'on demande à Max se donne en ligne et en marche
+
+`VITESSE_SOL_MAX` ne se relève pas au banc. Deux règles.
+
+- **UNE MESURE QUI NE SE FAIT QUE SUR L'APPAREIL SE MONTRE DANS `?diag=1`, AVEC
+  LA MÊME RÈGLE QUE LA SONDE.** `trouDevant` et `debitRecent` (plafond-sol.js,
+  purs) sont le critère de la v346 — le monde maillé dans le champ, ±40° autour
+  du DÉPLACEMENT — et `main.js` les affiche en roulant (`texteRoulage`). Deux
+  copies du critère finiraient par mesurer deux choses.
+- **ET ELLE SE RANGE DANS LE JOURNAL DE BORD** (`roulage` dans chaque relevé en
+  roulant) : ce que Max mesure se relit dans `journal_appareil` sans qu'il
+  recopie un chiffre. La marche (adresse, lieu, geste, ce qui décide) est
+  écrite dans `TASKS.md`, pas dans une conversation.
 
 ## La chauffe de New York se mesure seule (v386) — un bridage n'est pas une charge de portail
 
@@ -1971,6 +2063,36 @@ normales réécrites hors d'eux (zéro), travail par image après le choc
 position, si (`{ ...msg }`). Ce qui doit traverser un ancien hôte s'accroche
 à elle, et devient idempotent en envoyant l'HISTOIRE (adoptée seulement si
 la nôtre en est le début), jamais le seul dernier événement.
+
+## Celui qui part dit au revoir (v393) — un commentaire de départ se relit dans `stop()`
+
+Les deux rouges réseau récurrents du palier C. Trois règles.
+
+- **CE QUI S'ARRÊTE S'ANNONCE, ET LA LIGNE QUI LE DIT SE RELIT DANS LE CODE
+  QU'ELLE APPELLE.** `pagehide` appelait `net.stop()` sous « on prévient les
+  autres joueurs avant de disparaître » ; `stop()` ne faisait que démonter.
+  Le départ reposait sur la fermeture du transport — la règle de la v219,
+  écrite pour la caméra, jamais appliquée au départ. Tant que le silence
+  retirait tout pair à 20 s, le défaut se voyait à peine ; depuis que la v266
+  garde un pair au canal ouvert 90 s, un transport qui ne dit rien (sonde du
+  portail : canal `open`, ICE `connected`, silence 74 s) le gardait une minute
+  et demie. `stop()` envoie `bye` avec `adieu: 1` à chacun AVANT de démonter,
+  et le receveur traite l'adieu du pair lui-même comme un lien qui tombe
+  (`dropPeer` : l'hôte relaie, l'invité qui perd l'hôte repart). Une ancienne
+  tablette lit `from` et retire le pair. Quand une règle durcit un délai
+  (v266), on cherche le jour même qui comptait sur l'ancien délai.
+- **ON PROVOQUE L'ÉTAT DU PORTAIL, ON NE L'ATTEND PAS.** Le rouge venait une
+  fois sur dix ; la sonde `sonde-depart-transport-muet.cjs` le fabrique à
+  chaque fois (transport laissé debout, `stop()`, page figée) : 0/2 nettoyé en
+  60 s sur l'ancien code, 3/3 en ≈ 1 s. Le témoin de `reseau.js` fait de même.
+- **UNE FENÊTRE DE MÉLODIE N'EST PAS UN VOLUME.** « Caméra éteinte, le jeu
+  reprend sa voix normale » comparait 1,5 s de radio établie au DÉBUT de la
+  mélodie que le contexte neuf relance. Sans aucun appel, deux fenêtres
+  varient de 0,68 à 1 (`sonde-voix-apres-appel.cjs`), et la radio relancée
+  sans appel rend la même distribution qu'après l'appel. La grandeur est le
+  gain de sortie rendu, plus un niveau au-dessus de la MOITIÉ — milieu entre
+  une voix restée au quart (`GAIN_APPEL`) et le régime qui varie ; vérifié
+  rouge sur une copie où la voix reste au quart.
 
 ## Le GPS se partage (v388) — un état voyage avec la position, pas dans un message neuf
 

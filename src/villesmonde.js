@@ -3850,7 +3850,7 @@ export function mobilierVillesMonde(x, z, poser) {
 // EXTÉRIEUR). Le témoin de `carteMonde.js` le contrôle sans cette formule : il
 // mesure le partage sur les TRACÉS, voie par voie (moins de deux blocs d'écart).
 //
-// ET LE PARTAGE SE LIT SUR DES CÔTÉS, PLUS SUR UN RECTANGLE (v390). Un anneau
+// ET LE PARTAGE SE LIT SUR DES CÔTÉS, PLUS SUR UN RECTANGLE (v395). Un anneau
 // qui contourne une place n'est plus un rectangle : c'est le bord d'un
 // ensemble d'îlots de la trame (`contourner`, plus bas). Chaque côté porte sa
 // rue (`axe`, `b`), son étendue (`a0`, `a1`) et son côté de voie (`s`) — pour
@@ -4114,7 +4114,7 @@ function anneauxCalcules(f) {
       // du côté extérieur : la même rue, l'autre voie.
       let pts;
       if (c.contour) {
-        // UN ANNEAU QUI CONTOURNE (v390) : ses sommets sont déjà ceux de sa
+        // UN ANNEAU QUI CONTOURNE (v395) : ses sommets sont déjà ceux de sa
         // voie, décalée du bon côté de chaque rue (`contourner`).
         pts = c.contour.pts;
         c.aretes = c.contour.aretes;
@@ -4138,7 +4138,7 @@ function anneauxCalcules(f) {
     };
 
     // LES PHASES 2 BIS ET TER EXIGENT LA CHAUSSÉE (v387) : un candidat qui
-    // en sort y gagne sa place s'il la CONTOURNE (v390) sans gêner les
+    // en sort y gagne sa place s'il la CONTOURNE (v395) sans gêner les
     // anneaux déjà retenus. Les autres phases gardent leur rectangle ; on les
     // fait contourner APRÈS, une fois la sélection faite (phase 4), pour que
     // le contour ne change jamais QUELS anneaux une ville reçoit.
@@ -4232,7 +4232,7 @@ function anneauxCalcules(f) {
       pas.sort((p, q) => ((q[1] - q[0]) * (q[3] - q[2]) - (p[1] - p[0]) * (p[3] - p[2]))
         || (Math.hypot(p[0] + p[1], p[2] + p[3]) - Math.hypot(q[0] + q[1], q[2] + q[3])));
       // (Un second tour qui admettrait les candidats en les CONTOURNANT a été
-      // écrit et mesuré, v390 : il n'ajoute aucun anneau dans aucune ville et
+      // écrit et mesuré, v395 : il n'ajoute aucun anneau dans aucune ville et
       // coûtait des centaines d'appels à la recherche. Retiré.)
       for (const [i0, i1, j0, j1] of pas) {
         if (gardes.length >= MAX_ANNEAUX) break;
@@ -4253,7 +4253,7 @@ function anneauxCalcules(f) {
     for (const g of [...gardes]) {
       if (gardes.length >= MAX_ANNEAUX) break;
       const c = { cU: g.cU, cV: g.cV, Ru: g.Ru, Rv: g.Rv, sens: -1, ponts: [] };
-      // LE CONTRESENS MESURE SA TRAVERSÉE SUR SA VOIE (v390). Il roule à une
+      // LE CONTRESENS MESURE SA TRAVERSÉE SUR SA VOIE (v395). Il roule à une
       // demi-voie de l'axe, côté extérieur : là où la rive est en biais, il
       // touche l'eau avant le bout du tablier mesuré sur l'axe (Newcastle,
       // deux blocs). On mesure donc le tronçon mouillé sur SA voie, et le
@@ -4285,7 +4285,7 @@ function anneauxCalcules(f) {
       if (c) retenir(c);
     }
     // PHASE 4 — LES ANNEAUX RETENUS CONTOURNENT CE QUI N'EST PAS LA CHAUSSÉE
-    // (v390). Chacun, dans l'ordre, prend sa forme contournée si elle tient
+    // (v395). Chacun, dans l'ordre, prend sa forme contournée si elle tient
     // trois promesses : le partage par voie avec TOUS les autres anneaux de
     // la ville (leur forme finale), la portée de vue du centre pour l'anneau
     // de la phase 1, et AUCUNE part de la ville qui perde sa voiture — un
@@ -4309,7 +4309,7 @@ function anneauxCalcules(f) {
   }
 }
 
-// UN ANNEAU QUI SORT DE LA CHAUSSÉE CONTOURNE, IL NE SE JETTE PAS (v390).
+// UN ANNEAU QUI SORT DE LA CHAUSSÉE CONTOURNE, IL NE SE JETTE PAS (v395).
 // Mesuré sur `origin/main` (v389) : 147 anneaux sur 809 avaient au moins un
 // pas de voie hors de la chaussée, 3 512 pas en tout — la place centrale et sa
 // fontaine (les grands anneaux des villes à tours passent par le nœud
@@ -4344,7 +4344,7 @@ const CONTOUR_ESSAIS = 40;
 const CONTOUR_CHANGE_MAX = 12;
 const CONTOUR_PATIENCE = 10;
 // LE QUAI EST POSÉ EN TRAVERS DES RUES QUI MÈNENT À L'EAU, COMME LE TROTTOIR
-// DU BOULEVARD (v390). `solVillesMonde` pave les deux derniers blocs avant la
+// DU BOULEVARD (v395). `solVillesMonde` pave les deux derniers blocs avant la
 // mer d'une ville à quais — par-dessus la rue qui mène au pont ou au port. Un
 // anneau qui passe là ne sort pas de la rue : c'est le sol qui la recouvre,
 // et aucun tracé ne l'évite (les onze villes à un seul circuit, v387, en sont
@@ -4443,7 +4443,7 @@ function bordDIlots(ilots) {
   } while (e !== depart);
   return bord.length === n ? bord : null;
 }
-// LA COUVERTURE SE GARDE POINT PAR POINT (v390). La règle du témoin de
+// LA COUVERTURE SE GARDE POINT PAR POINT (v395). La règle du témoin de
 // `carteMonde.js` (v322) : un point de la ville est vu s'il est à moins de
 // `VU_VOITURE` d'un tracé qui porte un convoi. On en tire la grille de la
 // ville (un point tous les six blocs, jusqu'aux neuf dixièmes du rayon, hors
@@ -4666,7 +4666,7 @@ function contourner(f, c, ponts, quai = true, autres = [], accepte = null) {
 // pour cent du tour : une avenue nommée (`f.voies`) borde parfois une rue de
 // la trame. Une place, un parc, une plage, un lot : jamais. Rend le nombre de
 // blocs fautifs (un seul suffit, on s'arrête là), zéro si l'anneau roule.
-// `options.quai` tolère le quai (le contresens seul, v390) ; `options.ponts`
+// `options.quai` tolère le quai (le contresens seul, v395) ; `options.ponts`
 // sont les tabliers déjà publiés : une colonne d'eau n'est permise que
 // dessous — le contresens roule sur l'AUTRE voie, qu'aucun tablier neuf ne
 // porte, et la règle d'avant supposait que toute eau sous un anneau avait le

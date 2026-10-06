@@ -1674,6 +1674,9 @@ export class NetSession {
         }
         break;
       case 'bye':
+        // l'adieu du pair lui-même (v393) : on le retire comme un lien qui
+        // tombe — l'hôte le dit aux autres, un invité qui perd l'hôte repart
+        if (msg.adieu) { this.dropPeer(conn.peer, conn); break; }
         this.conns.delete(msg.from);
         this.playersChanged();
         break;
@@ -2007,6 +2010,16 @@ export class NetSession {
     // quelques événements après destroy(), et ceux-là ré-inscrivaient des
     // connexions dans une session morte — d'où des avatars qui revenaient
     // hanter un monde qu'on venait de quitter.
+    // CE QUI S'ARRÊTE S'ANNONCE (v219, v393). `main.js` appelle stop() sur
+    // `pagehide` en écrivant « on prévient les autres joueurs » — et rien ne
+    // partait : on comptait sur la fermeture du transport. Quand elle ne
+    // traverse pas (canal resté `open`, ICE `connected`, mesuré 74 s), la
+    // règle de la v266 garde un pair sondable 90 s. Un `bye` de notre propre
+    // bouche, avant de démonter : le receveur le connaît déjà.
+    if (this.active) {
+      const moi = this.peer ? this.peer.id : undefined;
+      for (const c of this.conns.values()) { try { this.envoyer(c, { t: 'bye', from: moi, adieu: 1 }); } catch { /* lien déjà mort */ } }
+    }
     this.active = false;
     clearInterval(this._phare);
     this._phare = null;

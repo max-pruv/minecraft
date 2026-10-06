@@ -4759,7 +4759,7 @@ const VRAIES_KM = [
       `${sens.dansUnMonument} pas de carrosserie dans un monument · ${sens.nbFautifs} anneau(x)`
       + (sens.fautifs.length ? ` : ${sens.fautifs.join(', ')}` : ''));
 
-    // --- LES ANNEAUX CONTOURNENT CE QUI N'EST PAS LA CHAUSSÉE (v390) ---------
+    // --- LES ANNEAUX CONTOURNENT CE QUI N'EST PAS LA CHAUSSÉE (v395) ---------
     //
     // La dette de la v387 : 147 anneaux de villes engendrées sur 809 avaient au
     // moins un pas de voie hors de la chaussée (mesuré sur `origin/main`, v389 :
@@ -4768,7 +4768,7 @@ const VRAIES_KM = [
     // tracé au demi-bloc et l'on compte ce qui n'est ni chaussée, ni tablier,
     // ni le trottoir du boulevard là où une rue le traverse, ni le quai pavé
     // que le sol pose en travers des rues qui mènent à l'eau — ces deux-là
-    // sont le SOL, qu'aucun tracé n'évite (v387, v390). Mesuré ici : 92
+    // sont le SOL, qu'aucun tracé n'évite (v387, v395). Mesuré ici : 92
     // anneaux, 2 437 pas, trois villes à un circuit. Les barres sont au milieu.
     const contour = await tab.evaluate(async () => {
       const vm = await import('./src/villesmonde.js');
