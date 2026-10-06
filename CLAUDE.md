@@ -1895,6 +1895,29 @@ engendrées. Quatre règles.
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
 
+## On traverse aux passages peints (v402) — la peinture se lit sur la ligne, et l'approche est en temps réel
+
+Trois règles.
+
+- **UNE RÈGLE DE PARIS SE CHERCHE DANS LES AUTRES VILLES, ET LA PEINTURE SE
+  MESURE AVANT.** `passagePieton` (main.js) ne lisait le passage sans feu qu'à
+  Paris. Sous node : 65 villes engendrées sur 267 (trame alignée, `t.net`)
+  peignent un passage à chaque carrefour ; Rome, Zurich, Londres n'en peignent
+  aucun (une bande peinte dans une tuile ne se tourne pas). Hors feu et hors
+  Paris, un bloc peint à quatre blocs devant ouvre la recherche, et le chemin
+  doit être peint EN ENTIER : la bande fait 1,7 bloc et les départs se
+  cherchent par pas d'un bloc, une ligne pleine existe toujours.
+- **CE QUI PRÉCÈDE UNE TRAVERSÉE EN TEMPS RÉEL EST EN TEMPS RÉEL.** L'approche
+  du départ était bornée à quatre secondes de montre et marchait au pas du jeu :
+  à cinq images par seconde le passant traversait d'où il était, au bord de la
+  bande. C'est le piège de `dt` (v226, v351) à l'étape d'avant.
+- **UN TÉMOIN DE TRAVERSÉE SÉPARE LES DÉCISIONS DES POUSSÉES, ET LIT LA LIGNE.**
+  Le témoin du feu (v371) publie ses traversées hors rouge : la seule « au vert »
+  était un passant poussé de l'autre côté par un écart (`traversee` nul,
+  `ecart` vrai) — compté à part, dette déclarée. Et la peinture d'une traversée
+  se lit sur la droite sortie → arrivée tous les demi-blocs : sous le passant à
+  chaque relevé, à cinq images par seconde, c'était un tirage (5 sur 7).
+
 ## Les passants quittent la chaussée (v385) — un remède qui ne dépend pas de la porte
 
 Deux règles.

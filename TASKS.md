@@ -1,5 +1,21 @@
 # Ce qui est en cours
 
+- [ ] **UN ÉCART QUI FAIT TRAVERSER LA RUE (v402).** Le témoin du feu de
+  `monte.js` l'a publié : un passant sur le trottoir, poussé par l'écart devant
+  une voiture qui tourne, ressort sur le trottoir d'EN FACE (`traversee` nul,
+  `ecart` vrai, 6,5 blocs), au vert. Vu deux fois sur quatre passages de
+  `monte.js` des deux côtés. Piste : un écart ne quitte pas le trottoir s'il
+  peut l'éviter (choisir le côté qui reste sur `TROTTOIR`). Zone piétons.
+- [ ] **LONDRES, ROME, ZURICH : AUCUN PASSAGE PEINT (v402).** Sur 267 villes
+  engendrées, seules les 65 à trame alignée (`t.net`) peignent un passage ;
+  Londres n'en peint aucun. Les passants n'y traversent qu'aux feux (Londres 1 à
+  3 fois par minute). Peindre un passage en biais demande une géométrie (la
+  couche du mailleur, comme les marquages de Paris), pas une tuile : hors zone
+  piétons (villesmonde.js, londres.js, le mailleur).
+- [ ] **`realisme.js` MEURT AU CLIC « JOUER » (v385-v402, intermittent).**
+  `locator.click: Timeout 30000ms` sur `#play-btn`, machine au repos ; vu sur la
+  v381 et la v384 (mort), la v382 (vivant) : antérieur, pas de la zone piétons.
+
 - [x] **LES DEUX ROUGES RÉSEAU RÉCURRENTS (v393).** « Un départ propre
   nettoie tout le monde » : CORRIGÉ dans le jeu — `net.stop()` n'envoyait
   aucun adieu, un pair au transport muet restait 90 s (v266). Sonde

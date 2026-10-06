@@ -20,6 +20,37 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v402 — On traverse aux passages peints
+
+**Pourquoi.** Depuis la v371, un passant change de trottoir à un carrefour à
+feux, et à Paris sur un passage peint sans feu. Ailleurs, sans feu à cinq
+blocs, il tournait au coin : Kyoto rendait deux traversées en une minute.
+Mesuré sous node avant d'écrire : les 65 villes engendrées dont la trame suit
+les axes du monde peignent un passage à l'abord de chaque carrefour, feu ou
+pas (Tokyo : 119 chemins de traversée sur un passage peint, dont 55 loin de
+tout feu). Rome, Zurich et Londres n'en peignent aucun.
+
+**Ce que ça change.** Dans ces 65 villes, un passant traverse aussi sur le
+passage peint d'un carrefour sans feu, avec la règle de Paris : il part quand
+aucune voiture n'arrive sur son chemin pendant toute la traversée. Kyoto, une
+minute : 8 traversées dont 5 sur un passage, contre 2 (`sonde-traversees.cjs`).
+La recherche coûte 1,2 ms au pire, au coin seulement. Le chemin doit être
+ENTIÈREMENT peint (à moitié, le passant marchait au bord de la bande), et
+l'approche du point de départ se fait en temps réel comme la traversée (au pas
+du jeu, un passant qui n'arrivait pas à temps traversait d'où il était). Et le
+témoin du feu publie chaque traversée qui n'est pas au rouge : le seul « au
+vert » qu'il rendait était un passant POUSSÉ de l'autre côté par un pas de côté
+devant une voiture, pas une décision — compté à part, et déclaré en dette.
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js` POSE huit passants au bord
+d'un passage peint sans feu, à Kyoto, et compte leur première traversée, la peinture lue sur la LIGNE de la traversée :
+22 sur 22 sur le passage en trois passages (`sonde-passage-peint.cjs`), zéro
+traversée sur `origin/main`. Portail sur la v398 : mes trois témoins de piétons
+verts ; les rouges (GPS et glissé de `carte.js`, `reglages.js`, Manhattan,
+circulation, embarquement, train, trou en vol) se retrouvent rejoués seuls sur
+`origin/main`, souvent en plus grand nombre.
+
+
 ## v401 — Le monde entier en relief
 
 **Pourquoi.** L'Europe (v394), Washington et San Francisco (v398) et les
