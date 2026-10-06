@@ -397,7 +397,7 @@ const PEINTRES = {
       p(x, y, r + n, g + n, b + n);
     });
   },
-  // Le BARDAGE des maisons victoriennes de San Francisco (v395) : des clins de
+  // Le BARDAGE des maisons victoriennes de San Francisco (v398) : des clins de
   // bois horizontaux, huit par bloc — chacun recouvre celui du dessous, d'où
   // une ombre franche sous son bord et une arête claire au-dessus. Blanc cassé :
   // la couleur (le rose, le menthe, le ciel des Painted Ladies) vient du sommet.

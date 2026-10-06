@@ -676,7 +676,7 @@ function verifier(nom, ok, detail = '') {
           && !reg('tunis') && !reg('ankara') && !reg('fes') && !reg('tbilissi') && !reg('tokyo'),
         `${couvertes.length} sur ${europe.length} dans la boîte ; Édimbourg ${reg('edimbourg')}, Rome ${reg('rome')}, Berlin ${reg('berlin')}, Tunis ${reg('tunis')}`);
     }
-    // LE RESTE DU MONDE, PALIER A (v395) : Washington et San Francisco, les
+    // LE RESTE DU MONDE, PALIER A (v398) : Washington et San Francisco, les
     // deux villes bâties à la main hors d'Europe. Washington est une BOÎTE
     // (`boite` dans sa fiche), San Francisco choisit son registre par
     // quartier ; leur brique est souvent le bloc de brique du jeu.

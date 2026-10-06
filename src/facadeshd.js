@@ -83,7 +83,7 @@ export const TUILES_HD = [
   'lattes',        // les lattes de bois d'un banc Davioud
   // v301 : un étage de trois blocs, et la baie qui coûte moins cher
   'croisee',       // le châssis d'une fenêtre (alpha) : montants, meneau, traverse, petits bois
-  // v395 : les villes du reste du monde
+  // v398 : les villes du reste du monde
   'bardage',       // les clins de bois des maisons victoriennes de San Francisco
 ];
 export const COLS_HD = 8;
@@ -169,7 +169,7 @@ export const VILLES_HD = [
   { ville: 'londres', x: LONDRES.x, z: LONDRES.z, r: LONDRES.r, registre: 'londres', mobilier: false },
   { ville: 'nice', x: NICE.x, z: NICE.z, r: NICE.r, registre: 'nice', mobilier: false },
   { ville: 'lille', x: LILLE.x, z: LILLE.z, r: LILLE.r, registre: 'lille', mobilier: false },
-  // LES VILLES BÂTIES À LA MAIN HORS D'EUROPE (v395, palier A du reste du
+  // LES VILLES BÂTIES À LA MAIN HORS D'EUROPE (v398, palier A du reste du
   // monde). Washington n'est pas un disque : c'est une BOÎTE (le cercle du
   // registre, 187 blocs, ne couvre pas Georgetown), et la fiche le déclare.
   // San Francisco a trois villes dans une : le registre se choisit par
@@ -646,7 +646,7 @@ function murVoisin(get, x, y, z, S, dessousDabord = false, briques = false) {
 // orange.
 const MOYENNE_TUILE = {
   brique: [158.9, 95.5, 79.0], enduit: [215.2, 213.2, 207.2],
-  // v395 : la pierre de taille (le marbre et le calcaire de Washington, le
+  // v398 : la pierre de taille (le marbre et le calcaire de Washington, le
   // centre de San Francisco) et le bardage des Victoriennes, mesurés de même
   pierre: [191.3, 183.3, 165.3], bardage: [214.4, 212.4, 208.4],
 };

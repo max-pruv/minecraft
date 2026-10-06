@@ -6,12 +6,29 @@
 
 export const NOUVEAUTES = [
   {
-    v: 396,
+    v: 398,
     titre: 'Washington et San Francisco en relief',
     puces: [
       'Brique et marbre à Washington',
       'Maisons de bois peint à San Francisco',
       'Fenêtres à guillotine de près',
+    ],
+  },
+  {
+    v: 397,
+    titre: 'La voiture longe les murs',
+    puces: [
+      'Elle longe les façades en biais',
+      'Frôler une voiture ne t\'arrête plus',
+      'Un petit choc ne te renvoie plus',
+    ],
+  },
+  {
+    v: 396,
+    titre: 'Un outil pour les parents',
+    puces: [
+      'Il vérifie les portières sur la tablette',
+      'Rien ne change pour toi',
     ],
   },
   {

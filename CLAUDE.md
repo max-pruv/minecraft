@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Washington et San Francisco en relief (v396) — une fiche dit sa forme, un uni se lit à sa couleur
+## Washington et San Francisco en relief (v398) — une fiche dit sa forme, un uni se lit à sa couleur
 
 Palier A du reste du monde. Quatre règles.
 
@@ -1223,6 +1223,18 @@ la séquence ne le rend pas au pilote. Et un emplacement d'échelle se MESURE
 d'invoquer la lit à l'origine du monde** : le modèle n'est placé qu'à l'image
 suivante — mon premier jet posait l'enfant à trente blocs de l'avion, et le
 bouton ne trouvait rien. On copie `a.pos` dans le maillage avant de lire.
+
+**Une séquence qu'on ne juge qu'au banc se fait lire sur la tablette (v396).**
+Le banc saute la séquence (`embarq=0`) et rend en logiciel : durées, caméra et
+image figée ne se valident que sur l'iPad. `?diag=1` porte donc une ligne de
+la dernière séquence (`embarquementDernier`, relevée à la transition dans
+`publier`, sans rien changer à la séquence) : sens, voiture / ami / avion,
+secondes de JEU, et comment elle a fini (jusqu'au bout, second appui,
+annulée), plus le côté de sortie et le refus du côté conducteur. La liste des
+gestes que Max fait pour valider est dans `TASKS.md` (« POUR MAX, SUR LA
+TABLETTE »). **Une fonctionnalité que le banc ne peut pas juger livre avec
+l'instrument qui la juge ailleurs**, comme le palier (v284) et le journal de
+bord (v296).
 
 **Le passager descend par la portière, à l'envers (v384).** `descendreDeChez`
 rejoue la descente du conducteur sur la voiture DISTANTE, côté passager
@@ -2340,6 +2352,52 @@ Six règles.
   rebondissent, piéton et eau arrêtent net — personne n'est jamais touché.
   Une voiture de la rue ne se pousse pas (horloge partagée, v305) : c'est
   elle qui attend (`cederLePassage`, v245).
+
+## La normale de ce qu'on touche (v397) — conduite, palier 2
+
+Le palier 1 prenait la normale du MOUVEMENT contre une voiture de la rue et
+celle d'un AXE DU MONDE contre un mur. Cinq règles.
+
+- **UN MUR DE CUBES EN BIAIS SE LIT PAR LA DROITE DE SES FACES.** Sur une
+  façade oblique, l'axe libre change à chaque marche de l'escalier : la
+  voiture s'y arrêtait (seize façades de Paris, 1,4 bloc après contact).
+  `normaleDeMur` (conduite.js) ajuste une droite sur les MILIEUX des faces
+  exposées tournées vers la voiture, à `RAYON_MUR` (4,5) du contact — mesuré :
+  1,4° d'erreur moyenne, 7,8 au pire, contre 3,6 et 15 avec les centres des
+  cases sur 2,6 blocs. Les centres pondérés par la distance sont un
+  non-résultat mesuré (pire). L'essai axe par axe ne reste qu'en repli
+  (moins de trois faces).
+- **LONGER UNE NORMALE LUE À DEUX DEGRÉS PRÈS, C'EST BUTER SUR UN COIN DE
+  MARCHE.** Une vitesse qui ne rentre pas dans la normale lue mais bute quand
+  même glisse aussi ; `glisserLeLong` prend le pas tangent, puis se décolle
+  d'un cheveu (0,12 à 0,5 bloc) le long de la normale, et remet la caisse
+  dans l'axe — seule une pose LIBRE est prise. Sans cela, `reponseChoc` rendait
+  « pas de choc » (vitesse tangente), le pas bloqué se rejouait trente-deux
+  fois et le filet de la v272 ramenait la vitesse à zéro.
+- **CONTRE UNE VOITURE, LA NORMALE DE SON RECTANGLE ET LA VITESSE RELATIVE.**
+  `voitureContre` (vehicules.js, lecture seule de la collecte de
+  `cederLePassage`, branchée par main.js) rend sa boîte et son allure ;
+  `chocContreVoiture` prend l'axe de moindre enfoncement des deux rectangles
+  et juge `reponseChoc` dans le repère de l'autre. Sous `CONTACT_DOUX` (trois
+  blocs/s relatifs) c'est un contact, pas un choc — collé derrière une voiture
+  plus lente, on la touche à chaque image. Et la rue juge avec SES cotes (2,26
+  de large) quand le joueur porte celles de sa fiche (2,2) : au bord, la rue
+  dit « touché » avant que nos boîtes ne se recouvrent — on relit avec une
+  boîte grossie de `MARGE_CONTACT`, sinon le choc retombait sur le mouvement.
+- **UN TÉMOIN NE RATTRAPE PAS UNE VOITURE DE LA RUE AU BANC.** La rue avance
+  en temps RÉEL (v305), la nôtre en temps de jeu : à deux images par seconde,
+  dix fois moins vite (`sonde-vraie-rue.cjs`). La vitesse relative se garde
+  sous node ; le témoin de `monte.js` pose une voiture GARÉE (`vitesse: 0`)
+  et éprouve le crochet. **Et un témoin qui se téléporte à côté d'une voiture
+  de la rue attend une image avant de rouler** : la collecte ne la connaît
+  qu'à l'image suivante, et la nôtre entrait sans la voir — « déjà dedans »
+  ensuite, donc traversée.
+- **LE VOLANT VOYAGE DANS `p.v`** (`b` braquage, `r` dérive, absents quand
+  nuls) ; le receveur les pose sur `userData.braquage` et `.derive` de sa
+  copie. Personne ne les DESSINE encore (session des sensations), et c'est
+  déclaré. Le joueur, lui, publie `player.roueLibre` ({ depuis, s }) et
+  `player.contact` ({ famille, nx, nz }) ; `?diag=1` au volant les affiche
+  avec le monde maillé devant la voiture (`mondeDevant`, `ligneDiagConduite`).
 
 ## Les monuments à la hauteur de leur ville (v335) — une table de paliers, deux lecteurs
 

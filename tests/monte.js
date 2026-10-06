@@ -5485,8 +5485,20 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       // borné, jamais un délai fixe.
       let apresLacher = await lire();
       const t2 = Date.now();
-      // la roue libre (frein moteur et air, v358) dure quelques secondes de jeu
-      while (Date.now() - t2 < 30000) { apresLacher = await lire(); if (apresLacher.v < prep.max * 0.3) break; await dormirIci(200); }
+      // la roue libre (frein moteur et air, v358) dure quelques secondes de JEU
+      // — ET LE BUDGET SE COMPTE EN IMAGES, COMME LA MONTÉE CI-DESSUS (v277).
+      // Trente secondes de montre ne valaient au portail de la v379 que trois
+      // à quatre secondes de jeu : la voiture lâchée était relevée à 9,13 puis
+      // 9,04 b/s pour une barre à 9,0, des deux côtés — le banc, pas le frein.
+      // Quatre cents images valent vingt secondes de jeu ; la montre n'est
+      // qu'un garde-fou, et le temps pris entre dans le message.
+      const image2 = await tab.evaluate(() => window.__game.renderer.info.render.frame);
+      while (Date.now() - t2 < 180000) {
+        apresLacher = await lire(); if (apresLacher.v < prep.max * 0.3) break;
+        if (await tab.evaluate((i) => window.__game.renderer.info.render.frame - i > 400, image2)) break;
+        await dormirIci(200);
+      }
+      apresLacher = { ...apresLacher, images: await tab.evaluate((i) => window.__game.renderer.info.render.frame - i, image2), ms: Date.now() - t2 };
       // on descend : les boutons reviennent
       const apres = await tab.evaluate(async () => {
         const g = window.__game;
@@ -6888,6 +6900,55 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       await enJeu(3, (c) => { if (!rue && (P.chocs || 0) > n0) rue = { t: +c.toFixed(2), choc: P.choc, v: +(P.vitesseVoiture || 0).toFixed(2) }; });
       P.obstacleVehicule = vrai; P.touchMove.f = 0;
       res.rue = { rue, x: +(P.pos.x - x0).toFixed(1) };
+      // — UNE VRAIE VOITURE DE LA RUE, PAR LE VRAI CROCHET (v397) : un convoi
+      // d'une voiture garée (vitesse nulle) sur un anneau de la dalle. Une
+      // voiture qui ROULE ne se rattrape pas au banc : la rue avance en temps
+      // RÉEL (v305) et la nôtre en temps de jeu, dix fois plus lent à deux
+      // images par seconde (sonde-vraie-rue.cjs). La vitesse relative se garde
+      // donc sous node (plafond.js) ; ici, le crochet rend SA boîte
+      // (`voitureContre`) et le choc prend la normale de son rectangle. On
+      // frôle son flanc à quinze degrés, puis on la percute par l'arrière. Sur
+      // l'ancien code, le flanc frôlé prend la normale du mouvement : un choc
+      // franc, et l'on rebondit. —
+      const zr = z0 - 50;
+      const anneau = [[250, 0], [410, 0], [410, -8], [120, -8], [120, 0], [250, 0]].map(([dx, dz]) => ({ x: x0 + dx, y: y0 + 1, z: zr + dz }));
+      const conv = g.vehicules.circulation(anneau, 77, { nb: 1, vitesse: 0 });
+      const contre = async (pose, f) => {
+        reparer();
+        const q = conv.place(0);
+        const [dx, dz, yaw, v] = pose(q);
+        // ON SE POSE, PUIS L'ON ATTEND UNE IMAGE : la rue relit ce qui
+        // l'entoure à chaque image (`cederLePassage`), et une voiture posée de
+        // loin à côté d'elle n'est pas encore dans sa liste — au premier pas,
+        // la nôtre entrerait sans la voir, et serait « déjà dedans » ensuite.
+        P.pos.set(dx, y0 + 1.05, dz); P.yaw = yaw; P.vitesseVoiture = 0; P.derive = 0; P.braquage = 0; P.vel.set(0, 0, 0);
+        P.touchMove.f = 0;
+        await enJeu(0.3);
+        P.pos.set(dx, y0 + 1.05, dz); P.yaw = yaw; P.vitesseVoiture = v;
+        P.vel.set(-Math.sin(yaw) * v, 0, -Math.cos(yaw) * v);
+        P.touchMove.f = f; P.choc = null; P.contact = null; const n = P.chocs || 0; let c = null; const lus = [];
+        const vrai = P.voitureContre;
+        P.voitureContre = (x, z, cap) => { const o = vrai ? vrai(x, z, cap) : null; lus.push(!!o); return o; };
+        // au PREMIER contact (un choc publié, ou une voiture touchée sous le
+        // seuil d'un choc) : la force, la vitesse d'après, et où sur NOTRE
+        // caisse le choc s'est dit (le long du cap, en travers)
+        await enJeu(2, () => { if (!c && ((P.chocs || 0) > n || (P.contact && P.contact.famille === 'voiture'))) {
+          const fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw);
+          const ch = (P.chocs || 0) > n ? P.choc : null;
+          const ex = ch ? ch.x - P.pos.x : 0, ez = ch ? ch.z - P.pos.z : 0;
+          c = { force: ch ? ch.force : 0, v: +(P.vitesseVoiture || 0).toFixed(1), long: +(ex * fx + ez * fz).toFixed(2), lat: +Math.abs(ex * fz - ez * fx).toFixed(2), contact: P.contact ? P.contact.famille : null };
+        } });
+        P.voitureContre = vrai; P.touchMove.f = 0;
+        return { c, lu: lus.some(Boolean), garee: [+(q.x - x0).toFixed(1), +(q.z - zr).toFixed(1)] };
+      };
+      await enJeu(0.5);
+      // le flanc : à côté d'elle, quinze degrés vers elle, à 16 (à dix degrés
+      // le contact reste sous le seuil d'un choc, et rien ne se publie)
+      const a15 = 15 * Math.PI / 180;
+      res.vraieFlanc = await contre((q) => [q.x - 1, q.z + 3, Math.atan2(-Math.cos(a15), Math.sin(a15)), 16], 0.6);
+      // par l'arrière, à 18, sur sa voie, cap +x
+      res.vraieArriere = await contre((q) => [q.x - 9, q.z, -Math.PI / 2, 18], 0.6);
+      g.vehicules.retirer(`${conv.cle}#0`);
       // — une panne posée à la main : le joystick ne fait plus rien —
       placer(0, -40, -Math.PI / 2, 0);
       // les dégâts (v343) réécrivent `etatVoiture` à chaque image depuis LEUR
@@ -6953,6 +7014,13 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('une voiture de la rue percutée : choc publié, et la nôtre rebondit au lieu de la traverser',
       !cd.err && cd.rue && cd.rue.rue && cd.rue.rue.choc && cd.rue.rue.choc.force > 0.2 && cd.rue.x <= 66.01,
       JSON.stringify(cd.rue));
+    const va = cd.vraieArriere || {}, vf = cd.vraieFlanc || {};
+    verifier('une vraie voiture de la rue, par le vrai crochet : son flanc frôlé ne nous arrête pas — un choc léger, sur NOTRE flanc, et l\'on continue',
+      !cd.err && vf.lu && vf.c && vf.c.contact === 'voiture' && vf.c.force > 0.05 && vf.c.force < 0.4 && vf.c.v > 9 && vf.c.lat > 0.9 && Math.abs(vf.c.long) < 1.8,
+      JSON.stringify(vf));
+    verifier('et percutée par l\'arrière, le crochet rend sa boîte : un choc franc sur notre nez, et l\'on rebondit',
+      !cd.err && va.lu && va.c && va.c.contact === 'voiture' && va.c.force > 0.5 && va.c.v < 0 && va.c.long > 1.8,
+      JSON.stringify(va));
     verifier('une voiture en panne ne repart plus — le joystick ne fait plus rien',
       !cd.err && cd.panne && cd.panne.v < 0.01 && cd.panne.x < 0.05 && cd.panne.tourne < 0.001,
       JSON.stringify(cd.panne));
@@ -7174,6 +7242,17 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('un second appui pendant la séquence la termine tout de suite',
       !!embEnCours.ph && !embEnCours.volant && embPresse.volant && !embPresse.ph && embPresse.arriere != null && Math.abs(embPresse.arriere - embFin.arriere) < 0.05,
       `pendant : ${embEnCours.ph}/${embEnCours.volant} · après le second appui : ${embPresse.ph}/${embPresse.volant} · arête ${embPresse.arriere}`);
+    // 7 bis. CE QUE MAX LIRA SUR LA TABLETTE (v396) : `?diag=1` nomme la
+    // dernière séquence et comment elle a fini — ici « monter (voiture), second
+    // appui ». La ligne lit `fun.embarquementDernier`, qu'on lit ici.
+    const embDernier = await emb.evaluate(() => {
+      const f = window.__game.fun;
+      return f.embarquementDernier ? f.embarquementDernier() : { err: 'pas de bilan de séquence' };
+    });
+    verifier('le diagnostic dit comment la dernière séquence a fini (le geste que Max valide sur la tablette)',
+      !embDernier.err && embDernier.sens === 'monter' && embDernier.quoi === 'voiture' && embDernier.fin === 'second appui'
+        && embDernier.temps > 0 && embDernier.temps < 2.5,
+      JSON.stringify(embDernier));
     // 8. `descendre({ presse: true })` (la voiture qui prend feu, chantier
     // « dégâts ») : à côté tout de suite, sans animation.
     const embFeu = await emb.evaluate(() => {

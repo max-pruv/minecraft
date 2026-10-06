@@ -176,6 +176,33 @@ function verifier(nom, ok, detail = '') {
     verifier('au volant, l\'ami est vu dans sa voiture, pas à pied',
       volant.auVolant && vuParAlice.assis === true, JSON.stringify({ volant, vuParAlice }));
 
+    // LE VOLANT ET LA GLISSE VOYAGENT AVEC LA VOITURE (v397). Marlon tourne le
+    // volant à fond (le joystick, l'arrêt suffit : le volant se braque même
+    // sans rouler) et sa voiture glisse — la dérive est FIGÉE à 0,2 le temps
+    // de la mesure, sans quoi il faudrait rouler vite dans un virage sur un
+    // banc qui rend deux images par seconde. Chez Alice, la copie de la
+    // voiture de Marlon porte les deux nombres. Sur l'ancien code, rien.
+    await hote.evaluate(() => {
+      const P = window.__game.player;
+      P.touchMove.s = 1;
+      Object.defineProperty(P, 'derive', { configurable: true, get: () => 0.2, set: () => {} });
+    });
+    const volantVu = () => alice.evaluate((id) => {
+      const rp = window.__game.remotePlayers.get(id);
+      const u = rp && rp.vehicule ? rp.vehicule.mesh.userData : null;
+      return u ? { braquage: u.braquage, derive: u.derive } : null;
+    }, marlonChezAlice);
+    await jusqua(async () => { const v = await volantVu(); return !!(v && v.braquage > 0.9 && v.derive > 0.15); }, 20000);
+    const vuVolant = await volantVu();
+    const chezMarlon = await hote.evaluate(() => {
+      const P = window.__game.player; const b = P.braquage;
+      P.touchMove.s = 0; delete P.derive; P.derive = 0;
+      return { braquage: +(b || 0).toFixed(2) };
+    });
+    verifier('au volant, l\'ami voit aussi les roues braquées et la glisse de sa voiture',
+      !!vuVolant && vuVolant.braquage > 0.9 && Math.abs(vuVolant.derive - 0.2) < 0.01,
+      JSON.stringify({ chezMarlon, chezAlice: vuVolant }));
+
     const chezHote = await hote.evaluate(() => ({ x: window.__game.player.pos.x, y: window.__game.player.pos.y, z: window.__game.player.pos.z }));
     // Les bêtes ne voyagent pas par le réseau : chaque page a les siennes, et
     // une bête montable à moins de huit blocs devant Alice PASSE AVANT la
