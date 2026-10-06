@@ -1895,6 +1895,33 @@ position, si (`{ ...msg }`). Ce qui doit traverser un ancien hôte s'accroche
 à elle, et devient idempotent en envoyant l'HISTOIRE (adoptée seulement si
 la nôtre en est le début), jamais le seul dernier événement.
 
+## Le GPS se partage (v384) — un état voyage avec la position, pas dans un message neuf
+
+La dette de la v321. Trois règles.
+
+- **CE QUI EST UN ÉTAT VOYAGE AVEC LA POSITION.** La consigne proposait un
+  message `gps_de` relayé comme `ciel`. La leçon de la v374 décide autrement :
+  un ancien hôte ne relaie pas un message qu'il ne connaît pas, mais il relaie
+  la position telle quelle (`{ ...msg }`). La destination n'est pas un
+  événement, c'est un ÉTAT (« je vais à Rome ») : elle part dans la position
+  (`g` = [x, z, nom, clé], net.js), qu'un ami arrivé en cours de route reçoit
+  aussi, et qu'une tablette restée en arrière ignore (le receveur cède). La
+  CLÉ nomme le trajet : la proposition n'apparaît qu'une fois par trajet, même
+  si la position repasse huit fois par seconde.
+- **UN CHAMP DE POSITION SE LIT SUR LES DEUX CHEMINS DE LA POSITION.** Le
+  direct (`pos`) et le relayé (`rpos`). La v374 avait accroché l'histoire des
+  chocs (`rc`) à la position pour traverser un ancien hôte — et ne la lisait
+  que sur `pos` : entre deux invités, précisément le chemin d'un ancien hôte,
+  elle tombait. Corrigé avec `g`. Quand on ajoute un champ à `pos`, on cherche
+  `case 'rpos'` le jour même.
+- **UNE PROPOSITION, JAMAIS UN ORDRE.** Règle de la v306 : un geste qui change
+  le trajet pose la question. Le bandeau « Marlon va à Rome — y aller aussi ? »
+  ne touche pas un GPS en cours ; il s'efface seul (vingt secondes en temps
+  réel), quand l'ami arrête son GPS ou s'en va, et ne s'affiche pas si l'on va
+  déjà là ou qu'on y est. Il vit au centre, sous le GPS — rien dans le quart
+  bas-gauche (v272) — et la première capture l'a montré coincé entre les
+  colonnes de boutons : sa largeur se borne aux colonnes, pas à l'écran.
+
 ## « Seul » ne veut pas dire « seulement lui » (v383) — la rue n'entre plus chez un ami
 
 La dette de la v305 : une voiture de la rue entrait encore une fois dans

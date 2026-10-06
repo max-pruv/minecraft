@@ -20,6 +20,29 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v388 — Le GPS se partage avec un ami
+
+**Pourquoi.** Depuis la v306, un enfant choisit sa destination sur la carte et
+une flèche le guide. À deux, Marlon qui part pour Rome ne pouvait pas le dire
+à Alice autrement qu'à voix haute : la destination restait sur sa tablette
+(dette de la v321).
+
+**Ce que ça change.** Chez l'ami, un bandeau : « Marlon va à Rome — y aller
+aussi ? ». Un toucher sur « 🧭 Y aller » lance son GPS vers le même endroit ;
+sinon rien ne change — un GPS déjà en cours n'est jamais remplacé sans qu'on
+le demande. La destination voyage avec la position, si bien qu'un ami qui
+arrive en cours de route la reçoit aussi, et qu'une partie sous un hôte resté
+sur une ancienne version la transmet quand même. Au passage, l'histoire des
+chocs de la rue (v374) passe enfin aussi par la position relayée entre deux
+invités.
+
+**Ce qui le prouve.** Un témoin à deux pages dans `reseau.js` : Alice roule
+vers Lyon, Marlon choisit Rome ; la proposition arrive (0,5 s à la sonde),
+Alice garde Lyon jusqu'au geste, puis `__gps().nom === 'Rome'`. Sur
+`origin/main` (v383), rien n'arrive en vingt secondes (`sonde-gps-ami.cjs`).
+
+---
+
 ## v387 — Plusieurs circuits dans chaque ville, et les deux sens
 
 **Pourquoi.** Dans 153 des 262 villes engendrées (sur la v379), les voitures
