@@ -74,6 +74,19 @@
   `reseau.js` ENTIÈREMENT vert (mon témoin compris) ; `monte.js` : le seul gel
   d'arrivée (24,8 %, déclaré) ; `manhattan.js` : trou, taxi, « Lost
   connection to server » de PeerJS — déclarés.
+- [ ] **LE PORTAIL DE LA M40 (Londres–Birmingham), DOUBLE MESURE FAITE.**
+  Trois rouges, tous déjà déclarés. `carte.js` « et la faire glisser non plus
+  (bridé ×4) » : 663 ms au portail, où mes sondes de couloir tournaient en même
+  temps ; rejouée SEULE, verte des deux côtés (103/103 branche, 103/103
+  `origin/main` v392) — l'intermittence autour de 400 ms. `manhattan.js` « le
+  trou enlève aussi la géométrie » : rouge des deux côtés rejouée seule
+  (9 203 branche, 22 326 `origin/main`, pour 48 958) ; « le taxi roule avec
+  les contrôles tactiles » (bouton jamais visible) et « les deux clients
+  restent sans erreur » (PeerJS « Lost connection ») rouges sur la branche,
+  NON atteints sur `origin/main` (la suite y meurt plus tôt, `rejoindre`
+  expiré, ligne 674). Preuve structurelle : la M40 ne touche ni Manhattan ni
+  le réseau (londres.js, une condition `londres` de world.js, un segment du
+  registre à 4 000 blocs de New York).
 - [ ] **LE PORTAIL DE LA v381 (ponts des villes engendrées, le Tōmei), DOUBLE
   MESURE FAITE.** `carteMonde.js` et `plafond.js` verts (empreinte des 490
   morceaux 36b34a87…, la même branche règle désarmée rend 27789d06…, la
