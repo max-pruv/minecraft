@@ -300,22 +300,35 @@
   colline, Séoul (2 pas, le rocher de Namsan) et Chicago (1 pas, un tronc près
   du Bean) — anneaux d'avant, mêmes valeurs sur `origin/main`, déclarées dans
   `DETTE_PONTS` et rattachées à la dette ci-dessous.
-- [ ] **LES ANNEAUX D'AVANT ROULENT PARFOIS HORS DE LA CHAUSSÉE (mesuré v387).**
-  Sur `origin/main`, 190 anneaux de villes engendrées sur 445 ont au moins un
-  pas de voie qui n'est pas de la chaussée : places centrales (et leur
-  fontaine — les grands anneaux des villes à tours passent par le nœud
-  central : Seattle, Tokyo, Shanghai, Singapour…), parcs, plages (Las Vegas 279
-  pas de sable, Rio 249), collines. La v387 l'exige des anneaux NEUFS
-  (`horsChaussee`) ; l'appliquer aux phases 1 et 2 est mesuré : 13 villes
-  n'auraient plus AUCUN anneau et 26 perdraient de la couverture. Le remède
-  est un tracé qui contourne (comme `contournerRonds` pour les places de
-  Paris), pas un filtre.
-- [ ] **ONZE VILLES ENGENDRÉES N'ONT QU'UN CIRCUIT (v387), ET C'EST LA
-  GÉOMÉTRIE.** Newcastle, Cardiff, Tallinn, Bergen, Reykjavik, Aarhus,
-  Kuala Lumpur, Melbourne, San Diego, San José, Guayaquil. Leur seul anneau
-  passe sur une rue que son contresens ne peut pas reprendre sans sortir de
-  la chaussée ou du disque (rayon ≈ 2 pas). Une ville plus grande (rayon de
-  fiche) ou un anneau qui contourne la place leur en rendrait un second.
+- [ ] **LES ANNEAUX D'AVANT ROULENT PARFOIS HORS DE LA CHAUSSÉE (mesuré v387,
+  repris v390).** Ils CONTOURNENT désormais (phase 4, `contourner`) : 147
+  anneaux et 3 512 pas hors chaussée sur `origin/main` v389, 92 et 2 437 en
+  v390 (fontaines 167 → 82). Ce qui reste, mesuré par la sonde de la v390 :
+  Las Vegas (le désert hors de la bande du Strip, 689 pas : la bande ne tient
+  qu'UNE rue de la trame, 16 unités de fiche pour un pas de 32 blocs, donc
+  aucun anneau ne peut y tenir — le remède est de SOL, des rues à travers le
+  désert), Rio (la plage de Copacabana en bande sur toute la ville, 589), puis
+  des anneaux dont tout contour coupe une rivière sans tablier (Rome, Moscou,
+  Delhi) ou gêne un autre anneau au-delà de la barre de partage. Pistes : pour
+  Las Vegas et Rio, des anneaux choisis DANS la bande (une sélection, donc
+  mesurer la couverture) ; pour les rivières, un contour qui publie son tablier
+  (un tablier neuf est du sol : Rome est dans l'empreinte des 490 morceaux).
+- [ ] **DES ANNEAUX D'AVANT ROULENT SUR L'EAU HORS DE TOUT TABLIER (v390).** La
+  règle de la v387 (`horsChaussee`) tenait toute eau sous un anneau pour un
+  pont : 159 pas sur l'eau sans tablier en v390 (195 sur `origin/main`), dont
+  des anneaux de la phase 2 bis. Le contrôle strict (`surUnTablier`) est
+  appliqué aux contresens et aux contours ; l'appliquer à la phase 2 bis est
+  mesuré : il retire des anneaux ET leurs tabliers (Vienne 212 colonnes,
+  Shanghai 502) — un enfant a pu bâtir dessus. Le remède est d'ALLONGER ces
+  tabliers (`traverseesDe` sur la voie, comme le contresens), en vérifiant
+  l'empreinte des 490 morceaux.
+- [ ] **TROIS VILLES ENGENDRÉES N'ONT QU'UN CIRCUIT (v387 : onze ; v390 :
+  trois).** Huit ports ont reçu leur contresens (quai toléré, tablier mesuré
+  sur sa voie). Restent San Diego, San José et Guayaquil : leur contresens
+  touche la fontaine de la place déplacée (San José, `place` à décalage) ou la
+  plage (Guayaquil) que leur seul anneau traverse déjà. Pistes : un rayon de
+  fiche plus grand (le SOL, décision de Max) ou une place non décalée pour ces
+  trois (le sol aussi).
 - [ ] **LA v358 (conduite) N'A PAS REJOUÉ LE PORTAIL ENTIER APRÈS LA FUSION
   DE LA v357** : dernier portail complet sur la v356 fusionnée (rouges
   ci-dessous, tous déclarés) ; la v357 ne touche que villesmonde, world,

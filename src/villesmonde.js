@@ -4371,10 +4371,8 @@ function etatDeSegment(f, ia, ja, dx, dy, sens, quai) {
   const LP = dx * t.pu, LQ = dy * t.pv;
   // le pas de `horsChaussee` : un bloc et demi
   const n = Math.ceil(Math.abs(LP + LQ) / 1.5);
-  const ech = [];
   for (let k = 0; k <= n && !e.bloque; k++) {
     const P = P0 + (LP * k) / n, Q = Q0 + (LQ * k) / n;
-    ech.push([P, Q]);
     const X = Math.floor(f.ancre.x + P * co + Q * si), Z = Math.floor(f.ancre.z - P * si + Q * co);
     const u = X - f.ancre.x, v = Z - f.ancre.z;
     if (Math.hypot(u, v) > f.rayon - 2 || (t.sud && v / f.K > t.sud)) { e.bloque = true; break; }

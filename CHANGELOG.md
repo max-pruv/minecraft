@@ -20,6 +20,37 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v390 — Les voitures font le tour de la place
+
+**Pourquoi.** Dans les villes engendrées, beaucoup d'anneaux de voitures
+roulaient en ligne droite au travers de ce qui n'est pas une rue : la place
+centrale pavée, sa fontaine (les voitures passaient dans l'eau), un parc, une
+plage. Mesuré sur `origin/main` : 147 anneaux sur 809, 3 512 pas de voie hors
+de la chaussée, 167 dans une fontaine. Et onze petites villes portuaires
+(Newcastle, Cardiff, Tallinn, Bergen, Reykjavik, Aarhus, Kuala Lumpur,
+Melbourne, San Diego, San José, Guayaquil) n'avaient qu'un seul circuit. La
+v387 l'avait mesuré et déclaré ; filtrer ces anneaux vidait treize villes.
+
+**Ce que ça change.** Un anneau qui passait par la place la contourne
+désormais par les rues d'à côté, comme un vrai tour de place ; la voiture ne
+traverse plus la fontaine. Rien ne disparaît : chaque ville garde ses
+circuits et ses voitures en vue, et huit des onze petites villes reçoivent un
+second circuit, la même boucle dans l'autre sens, avec le bout de pont qui
+lui manquait au-dessus de l'eau.
+
+**Ce qui le prouve.** Deux témoins neufs dans `carteMonde.js`, sur toutes
+les villes engendrées : les anneaux hors chaussée (92 au lieu de 147, 2 437
+pas au lieu de 3 512, 82 dans une fontaine au lieu de 167) et les villes à un
+seul circuit (3 au lieu de 11) — tous deux rouges sur `origin/main`. Mesuré
+ville par ville par une sonde : aucune ne perd un circuit ni un point de
+couverture, le pire partage reste 18 blocs, la voiture la plus lointaine du
+centre reste à 30 blocs, aucun tablier n'est retiré (642 colonnes d'eau en
+gagnent un), et le relief ne bouge pas. Le prix, déclaré : le premier
+dépliage d'une ville coûte plus cher (Rome ≈ 57 → 85-100 ms, une fois, à 220
+blocs de la ville).
+
+---
+
 ## v389 — On monte dans l'avion par l'escalier
 
 **Pourquoi.** Depuis la v366 on marche jusqu'à la portière d'une voiture,
