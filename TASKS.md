@@ -59,6 +59,12 @@
   ville engendrée, rejoué par `sonde-sortie-chaussee.cjs` trois fois de chaque
   côté en alternance : 9 sur 9 au bord des deux côtés (3,1 à 5 s). Le train
   et le réverbère sont dans Paris et Londres, que la v395 ne touche pas.
+  Après la fusion de la v394 (portail de sept suites) : verts `parishd.js`,
+  `carteMonde.js`, `plafond.js`. Un rouge À MOI, corrigé : le titre de la
+  nouveauté faisait sept mots (`maj.js`). Les autres sont déclarés plus haut,
+  mêmes valeurs : `maj.js` libération `null` et « ne floute rien », `carte.js`
+  flèche du GPS (1,92 rad) et glisser (719 ms), `monte.js` « l'avant du
+  joystick est l'accélérateur » (médiane 27,18, 27,23 sur `origin/main`).
 - [ ] **LE PORTAIL DE LA v387 (les circuits des villes engendrées), DOUBLE
   MESURE FAITE.** Verts : `carteMonde.js`, `plafond.js`, `degats.js`,
   `carte.js`, `washington.js`. `maj.js` : un seul rouge, À MOI et corrigé (le

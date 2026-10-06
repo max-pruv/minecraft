@@ -7,9 +7,9 @@
 export const NOUVEAUTES = [
   {
     v: 395,
-    titre: 'On fait le tour de la place',
+    titre: 'Les voitures contournent la place',
     puces: [
-      'Les voitures contournent la fontaine',
+      'Plus de voiture dans la fontaine',
       'Les voitures restent sur la route',
       'Deux circuits dans les petits ports',
     ],
