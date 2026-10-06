@@ -6,12 +6,21 @@
 
 export const NOUVEAUTES = [
   {
-    v: 400,
+    v: 401,
     titre: 'Le monde entier en relief',
     puces: [
       'Tokyo, Dubaï, Nairobi, Sydney de près',
       'Persiennes et fer sous les tropiques',
       'Sable et baies profondes au désert',
+    ],
+  },
+  {
+    v: 400,
+    titre: 'On descend de l\'avion',
+    puces: [
+      'L\'escalier revient contre la porte',
+      'Tu descends les marches',
+      'Jamais dans l\'eau en descendant',
     ],
   },
   {

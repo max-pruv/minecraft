@@ -217,7 +217,7 @@ export function registreAmeriques(f) {
   if (la === undefined || lo > -30 || lo < -170 || PACIFIQUE[f.cle]) return null;
   return (la < 24 || LATINO_AU_NORD[f.cle]) ? 'latino' : 'nordAmericain';
 }
-// LE RESTE DU MONDE (v400, palier C) : l'Asie, le Moyen-Orient, l'Afrique,
+// LE RESTE DU MONDE (v401, palier C) : l'Asie, le Moyen-Orient, l'Afrique,
 // l'Océanie. Des règles de géographie dans l'ordre, et les villes que la règle
 // classerait mal, NOMMÉES avec leur raison :
 //   une médina           → rien (`MEDINAS`) : ses baies sont de petites

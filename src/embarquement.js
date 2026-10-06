@@ -271,6 +271,20 @@ export function creerEmbarquement(ctx) {
     if (world.obstaclePieton && world.obstaclePieton(x, z, y + 1)) return 'voiture';
     return '';
   }
+  // Autour d'un avion, on se pose sur le SOL de la colonne : un appareil est
+  // long, et sur une pente le pied des marches est trois ou quatre blocs plus
+  // haut ou plus bas que les roues (v400, mesuré au couloir de la v297). Une
+  // colonne d'eau est refusée, comme un écart de plus de quatre blocs.
+  function placeAuSol(g, local, y0, nom) {
+    const w = versMonde(g, local);
+    const bx = Math.floor(w.x), bz = Math.floor(w.z);
+    const y = world.sommetColonne(bx, bz) + 1;
+    const r = world.getBlock(bx, Math.floor(y), bz) === BLOCK.WATER ? 'eau'
+      : Math.abs(y - y0) > 4 ? 'pente' : libre(w.x, y, w.z);
+    if (!r) return new THREE.Vector3(w.x, y, w.z);
+    refusSortie[nom] = refusSortie[nom] ? `${refusSortie[nom]}/${r}` : r;
+    return null;
+  }
   function placeLibre(g, local, y0, nom) {
     const w = versMonde(g, local);
     const raisons = [];
@@ -378,6 +392,7 @@ export function creerEmbarquement(ctx) {
     if (s0 && s0.ac && s0.ac.groupe.parent) s0.ac.groupe.removeFromParent();
   }
   function updateAvion(dt) {
+    if (s.sens === 'descendre') { updateDescenteAvion(); return; }
     const a = s.a, g = a.mesh, porte = s.porte;
     const tete = versMonde(g, new THREE.Vector3(porte.x, porte.y + 0.7, porte.z));
     if (s.phase === 'approche') {
@@ -424,6 +439,105 @@ export function creerEmbarquement(ctx) {
       ouvrant(g, porte, 1 - lisse(k));
       appliquerCamera(1 - lisse(k), camAvion(s, tete));
       if (k >= 1) { ouvrant(g, porte, 0); retirerAcces(s); s = null; }
+    }
+  }
+
+  // ---- descendre d'un avion (v400) ---------------------------------------
+  // Le pendant de `monterAvion` : l'enfant se retrouvait debout d'un coup,
+  // au milieu du fuselage. L'escalier (l'échelle) revient contre la porte, la
+  // porte s'ouvre, il sort en se redressant, il descend les marches, la porte
+  // se referme et l'escalier s'en va. Mêmes règles que la voiture (v366) :
+  // l'état bascule au PREMIER appui (`toggleRide(null)` tout de suite), un
+  // second appui termine, tout compte en temps de JEU. Et la place où il se
+  // pose se MESURE (v223) : le pied des marches s'il est libre (ni mur, ni
+  // eau, ni voiture), sinon une place autour de l'appareil, sinon l'ancien
+  // geste — jamais dans l'eau ni dans un bâtiment.
+  function sortieAvion(g, porte, y0) {
+    refusSortie = {};
+    const ac = acces(porte);
+    const pied = new THREE.Vector3(...ac.pied);
+    const m = placeAuSol(g, pied, y0, 'escalier');
+    if (m) return { escalier: true, ac, monde: m };
+    const L = porte.demiLong || 4, x = Math.abs(porte.x) + 1.6;
+    for (const loc of [new THREE.Vector3(-x, 0, porte.z + 2), new THREE.Vector3(x, 0, porte.z + 2),
+      new THREE.Vector3(0, 0, L + 2), new THREE.Vector3(0, 0, -L - 2), new THREE.Vector3(-x - 3, 0, 0), new THREE.Vector3(x + 3, 0, 0)]) {
+      const w = placeAuSol(g, loc, y0, 'autour');
+      if (w) return { escalier: false, monde: w };
+    }
+    return { escalier: false, monde: null };
+  }
+  function descendreAvion(a) {
+    const g = a.mesh, porte = g.userData.porte;
+    const cam = { p: player.camera.position.clone(), q: player.camera.quaternion.clone() };
+    const y0 = a.pos.y;
+    ctx.toggleRide(null);           // on n'est plus aux commandes, tout de suite
+    if (!ctx.existe(a)) return;
+    const sortie = sortieAvion(g, porte, y0);
+    if (!sortie.escalier) {
+      // pas d'escalier possible ici : d'un coup, à une place mesurée (ou
+      // l'ancien geste, là où l'on était, si rien autour n'est libre)
+      if (sortie.monde) { player.pos.copy(sortie.monde); player.vel.set(0, 0, 0); }
+      avatarRetire();
+      dernier = { sens: 'descendre', quoi: 'avion', temps: 0, fin: 'd\'un coup', cote: 0, refus: refusSortie };
+      return;
+    }
+    a.montee = true; a.state = 'idle';
+    const ac = sortie.ac;
+    if (ac.groupe.parent !== g) g.add(ac.groupe);
+    const dedans = new THREE.Vector3(0, porte.y, porte.z);
+    s = { sens: 'descendre', avion: true, phase: 'ouverture', t: 0, a, d: { demiLarg: Math.abs(porte.x) + 0.3, zPorte: porte.z },
+      cote: -1, porte, ac, haut: new THREE.Vector3(...ac.haut), dedans, piedL: versLocal(g, sortie.monde),
+      monde: sortie.monde, cam, temps: 0 };
+    player.pos.copy(versMonde(g, dedans)); player.vel.set(0, 0, 0);
+    publier();
+  }
+  // le cap du joueur qui tourne le dos à l'appareil (il regarde vers −x local)
+  function capDos(g, pL) {
+    const w0 = versMonde(g, pL), w1 = versMonde(g, pL.clone().add(new THREE.Vector3(-1, 0, 0)));
+    return Math.atan2(-(w1.x - w0.x), -(w1.z - w0.z));
+  }
+  function updateDescenteAvion() {
+    const a = s.a, g = a.mesh, porte = s.porte;
+    const regard = (pL) => versMonde(g, pL.clone().add(new THREE.Vector3(0, 1.1, 0)));
+    if (s.phase === 'ouverture') {
+      // dedans, caché : la porte s'ouvre, la caméra quitte le poste de pilotage
+      const k = Math.min(1, s.t / DUREES.ouvertureAvion);
+      ouvrant(g, porte, lisse(k));
+      const a0 = av.obtenir();
+      if (a0.parent) a0.removeFromParent();
+      player.pos.copy(versMonde(g, s.dedans)); player.vel.set(0, 0, 0);
+      appliquerCamera(lisse(k), camAvion(s, regard(s.haut)), s.cam);
+      if (k >= 1) { s.phase = 'sortie'; s.t = 0; }
+    } else if (s.phase === 'sortie') {
+      // il sort en se redressant : la porte fait la moitié de sa taille
+      const k = Math.min(1, s.t / DUREES.entreeAvion);
+      const p = s.dedans.clone().lerp(s.haut, lisse(k));
+      const a0 = avatarDebout(g, p, Math.PI / 2, 1.2, s.temps);
+      a0.scale.setScalar(lerp(0.35, 1, lisse(k)));
+      player.pos.copy(versMonde(g, p)); player.vel.set(0, 0, 0);
+      appliquerCamera(1, camAvion(s, regard(p)));
+      if (k >= 1) { a0.scale.setScalar(1); s.phase = 'descente'; s.t = 0; }
+    } else if (s.phase === 'descente') {
+      // les marches, de dos à l'appareil, jusqu'à la place mesurée
+      const k = Math.min(1, s.t / DUREES.gravir);
+      const p = s.haut.clone().lerp(s.piedL, lisse(k));
+      // un escalier se descend de face, une échelle face aux barreaux
+      avatarDebout(g, p, porte.type === 'echelle' ? -Math.PI / 2 : Math.PI / 2, 2.2, s.temps);
+      player.pos.copy(versMonde(g, p)); player.vel.set(0, 0, 0);
+      appliquerCamera(1, camAvion(s, regard(p)));
+      if (k >= 1) { s.phase = 'fermeture'; s.t = 0; player.yaw = capDos(g, s.piedL); }
+    } else if (s.phase === 'fermeture') {
+      // au sol : la porte se referme, l'escalier s'en va, la caméra rend la main
+      const k = Math.min(1, s.t / DUREES.fermetureAvion);
+      ouvrant(g, porte, 1 - lisse(k));
+      player.pos.copy(s.monde); player.vel.set(0, 0, 0);
+      const w = 1 - lisse(k);
+      avatarDebout(g, s.piedL, Math.PI / 2, 0, s.temps).visible = w > 0.3;
+      appliquerCamera(w, camAvion(s, regard(s.piedL)));
+      if (k >= 1) {
+        ouvrant(g, porte, 0); retirerAcces(s); a.montee = false;
+        avatarRetire(); av.obtenir().visible = true; s = null;
+      }
     }
   }
 
@@ -507,6 +621,9 @@ export function creerEmbarquement(ctx) {
     const a = ctx.montureConduite();
     if (!a) return;
     if (s && s.sens === 'monter') terminer();
+    // un avion au sol qui a une porte descend par son escalier (v400)
+    if (SEQUENCE_ACTIVE && av && !opts.presse && a.mesh && a.def && a.def.pilote && a.mesh.userData.porte
+      && !player.avionEnVol && (player.avionEtat === undefined || player.avionEtat === 'sol')) { descendreAvion(a); return; }
     const sansSequence = !SEQUENCE_ACTIVE || !av || !a.mesh || !a.def || !a.def.siege || a.def.pilote;
     if (sansSequence && !opts.presse) { ctx.toggleRide(null); return; }
     const g = a.mesh;
@@ -581,7 +698,13 @@ export function creerEmbarquement(ctx) {
     const fini = s;
     fini.fin = 'second appui';
     if (fini.avion) {
-      if (fini.phase !== 'fermeture') { avatarRetire(); const a0 = av.obtenir(); a0.scale.setScalar(1); asseoirMaintenant(); }
+      if (fini.sens === 'descendre') {
+        player.pos.copy(fini.monde); player.vel.set(0, 0, 0);
+        player.yaw = capDos(fini.a.mesh, fini.piedL);
+        fini.a.montee = false;
+        const a0 = av.obtenir(); a0.scale.setScalar(1); a0.visible = true;
+        avatarRetire();
+      } else if (fini.phase !== 'fermeture') { avatarRetire(); const a0 = av.obtenir(); a0.scale.setScalar(1); asseoirMaintenant(); }
       ouvrant(fini.a.mesh, fini.porte, 0);
       retirerAcces(fini);
       s = null;
