@@ -627,8 +627,11 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         const p = new Pl(cam, w);
         p.gabarit = 2.26; p.boost = 40 / 3.2;
         p.pos.set(0.5, 30, 0.5); p.onGround = true; p.yaw = -Math.PI / 2;   // vers +x
-        p.vitesseVoiture = 25; p.touchMove.f = 1;
-        const autre = { x: 30, z: 0.5, ux: 1, uz: 0 };
+        // COLLÉ DERRIÈRE : un bloc entre les pare-chocs, un bloc/s plus vite
+        // qu'elle, joystick en avant — la situation de la dette, pas une
+        // approche (arriver de loin à pleine vitesse est un choc, voulu)
+        p.vitesseVoiture = vA + 1; p.touchMove.f = 1;
+        const autre = { x: 0.5 + 4.4 + 1, z: 0.5, ux: 1, uz: 0 };
         const sa = () => ({ ...C.boiteVoiture(autre.x, autre.z, -Math.PI / 2 + Math.PI, 2.2, 1.13), x: autre.x, z: autre.z, ux: 1, uz: 0, a: 2.2, b: 1.13, v: vA });
         const touche = (x, z, cap) => !!C.normaleEntreBoites(C.boiteVoiture(x, z, cap, 2.2, 1.13), sa());
         p.obstacleVehicule = (x, z, cap) => (touche(x, z, cap) ? 'voiture' : false);
@@ -644,9 +647,20 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         }
         essais.push({ vAutre: vA, contacts, chocs: (p.chocs || 0) - chocs0, ecartMin: +ecartMin.toFixed(2), v: +p.vitesseVoiture.toFixed(1), ecartFin: +(autre.x - p.pos.x - 4.4).toFixed(2) });
       }
-      verifier('conduite : derrière une voiture de la rue plus lente (ou arrêtée), joystick en avant, on la suit à sa vitesse sans la toucher',
-        essais.every((e) => e.contacts === 0 && e.ecartMin > 0.5 && Math.abs(e.v - e.vAutre) < 0.6 && e.ecartFin < 4),
-        JSON.stringify(essais));
+      // et foncer dessus reste un choc : à 25 blocs/s sur la voiture arrêtée
+      const w2 = { getBlock: (x, y) => (y < 30 ? BK.STONE : BK.AIR) };
+      const q = new Pl(cam, w2);
+      q.gabarit = 2.26; q.boost = 40 / 3.2; q.pos.set(0.5, 30, 0.5); q.onGround = true; q.yaw = -Math.PI / 2;
+      q.vitesseVoiture = 25; q.touchMove.f = 1;
+      const fixe = () => ({ ...C.boiteVoiture(30, 0.5, Math.PI / 2, 2.2, 1.13), x: 30, z: 0.5, ux: 1, uz: 0, a: 2.2, b: 1.13, v: 0 });
+      const t2 = (x, z, cap) => !!C.normaleEntreBoites(C.boiteVoiture(x, z, cap, 2.2, 1.13), fixe());
+      q.obstacleVehicule = (x, z, cap) => (t2(x, z, cap) ? 'voiture' : false);
+      q.voitureContre = (x, z, cap) => (t2(x, z, cap) ? fixe() : null);
+      let choc = 0;
+      for (let k = 0; k < 60; k++) { q.update(1 / 30); if (q.choc) choc = Math.max(choc, q.choc.force); }
+      verifier('conduite : derrière une voiture de la rue plus lente (ou arrêtée), joystick en avant, on la suit à sa vitesse sans la toucher — et foncer dessus reste un choc',
+        essais.every((e) => e.contacts === 0 && e.ecartMin > 0.3 && Math.abs(e.v - e.vAutre) < 0.6 && e.ecartFin < 4) && choc > 0.5,
+        `${JSON.stringify(essais)} · foncer à 25 sur l'arrêtée : choc ${choc.toFixed(2)}`);
     }
   }
   verifier('et le sol a son propre plafond, qui ne suit pas le ciel',

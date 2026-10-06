@@ -2453,9 +2453,15 @@ Six règles.
   distance où l'on peut avoir à freiner, et la vitesse permise
   (`vitesseDeSuivi`) est celle qu'on peut encore perdre au freinage de confort
   avant `ECART_SUIVI` — jusqu'au frein franc si on l'a vue tard
-  (`freinDeSuivi`). Mesuré sous node : 101, 1 et 1 contacts (voiture arrêtée,
-  à 6 et à 12 blocs/s) → zéro, à 1,1 à 1,4 bloc de son pare-chocs. Braquer
-  pour la doubler lève le suivi : on ne regarde que dans son axe.
+  (`freinDeSuivi`). Mesuré sous node, collé derrière à un bloc/s de plus
+  qu'elle : 139, 7 et 133 contacts (voiture arrêtée, à 6 et à 12 blocs/s) →
+  zéro. Braquer pour la doubler lève le suivi : on ne regarde que dans son
+  axe. **ET L'ON NE SUIT QUE CE QU'ON RATTRAPE DOUCEMENT** (`SUIVI_DELTA`,
+  4 blocs/s) : mon premier jet freinait aussi devant une voiture qu'on
+  voulait percuter, et le portail a rendu rouges trois témoins des dégâts et
+  de la rue (percuter une voiture de la rue l'abîme, elle s'arrête en
+  feux de détresse, son flanc frôlé nous laisse passer). Foncer dessus reste
+  un choc ; le témoin l'exige aussi.
 
 Et un **non-résultat** : lire la façade sur six blocs au lieu de 4,5 bat la
 droite des faces sur un mur synthétique (pire 9,8 → 7,1°) et ne la bat pas sur

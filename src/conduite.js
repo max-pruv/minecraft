@@ -220,6 +220,10 @@ export function forceAtterrissage(vyImpact, vyCible) {
 // arrière, le long de notre cap.
 export const ECART_SUIVI = 1.5;       // blocs entre les deux pare-chocs, à l'arrêt comme en file
 export const FREIN_SUIVI = 9;         // blocs/s², un freinage qu'on sent sans piler
+// On ne suit que ce qu'on RATTRAPE DOUCEMENT : une file. Arriver plus vite que
+// SUIVI_DELTA au-dessus de son allure, c'est foncer dessus — un choc, comme
+// avant (les dégâts de la rue, v356, et le jeu de Marlon en dépendent).
+export const SUIVI_DELTA = 4;         // blocs/s relatifs
 export const PORTEE_SUIVI = 36;       // blocs devant le pare-chocs : l'arrêt au frein franc depuis 40 b/s
 export function vitesseDeSuivi(vAutre, ecart) {
   return Math.max(0, vAutre) + Math.sqrt(2 * FREIN_SUIVI * Math.max(0, ecart - ECART_SUIVI));

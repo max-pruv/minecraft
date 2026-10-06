@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { BLOCK, isSolid as blockIsSolid, isSlab } from './blocks.js';
 import { HEIGHT, WATER_LEVEL } from './world.js';
-import { ficheDeVitesse, pasVoiture, reponseChoc, casesSousBoite, pointDImpact, DERIVE_MAX, boiteVoiture, chocContreVoiture, normaleDeMur, sousLaCaisse, forceAtterrissage, DEBATTEMENT, RAPPEL, ENFONCE, vitesseDeSuivi, freinDeSuivi, PORTEE_SUIVI } from './conduite.js';
+import { ficheDeVitesse, pasVoiture, reponseChoc, casesSousBoite, pointDImpact, DERIVE_MAX, boiteVoiture, chocContreVoiture, normaleDeMur, sousLaCaisse, forceAtterrissage, DEBATTEMENT, RAPPEL, ENFONCE, vitesseDeSuivi, freinDeSuivi, PORTEE_SUIVI, SUIVI_DELTA } from './conduite.js';
 
 const WIDTH = 0.6;        // player AABB width (x and z)
 // LE GABARIT D'UN VÉHICULE CONDUIT (v212). Max, capture à l'appui : « cars
@@ -665,7 +665,7 @@ export class Player {
     if (!this.voitureContre || !(this.vitesseVoiture >= 0)) return null;
     const fx = -Math.sin(this.yaw), fz = -Math.cos(this.yaw);
     // on ne regarde que jusqu'où l'on peut avoir à freiner (au plus PORTEE_SUIVI)
-    const v = this.vitesseVoiture, portee = Math.min(PORTEE_SUIVI, (v * v) / (2 * 9) + 4);
+    const v = this.vitesseVoiture, portee = Math.min(PORTEE_SUIVI, (v * v) / (2 * 9) + 8);
     for (let d = DEMI_LONG_VOITURE + 1; d <= DEMI_LONG_VOITURE + 1 + portee; d += 3) {
       const a = this.voitureContre(this.pos.x + fx * d, this.pos.z + fz * d, this.yaw + Math.PI);
       if (!a || a.rail) continue;
@@ -673,6 +673,7 @@ export class Player {
       const ecart = (a.x - this.pos.x) * fx + (a.z - this.pos.z) * fz - DEMI_LONG_VOITURE - (a.a || DEMI_LONG_VOITURE);
       if (ecart < -0.5) return null;                                  // déjà dedans : le choc décide
       const vAutre = a.v * (a.ux * fx + a.uz * fz);
+      if (v > Math.max(0, vAutre) + SUIVI_DELTA) return null;        // on fonce dessus : c'est un choc
       this.suivi = { v: +vAutre.toFixed(1), ecart: +ecart.toFixed(1), frein: freinDeSuivi(v, vAutre, ecart) };
       return vitesseDeSuivi(vAutre, ecart);
     }
