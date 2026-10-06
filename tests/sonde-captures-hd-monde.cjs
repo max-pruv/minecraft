@@ -15,7 +15,7 @@ const VUES = [
   { nom: 'dc-penn', x: -21287, z: 6063, yaw: Math.PI / 2, pitch: 0.25, h: 1.6 },
   { nom: 'dc-ciel', x: -21300, z: 6020, yaw: Math.PI / 2, pitch: -0.6, h: 30 },
   // San Francisco : les Victoriennes, le centre, SoMa
-  { nom: 'sf-alamo', x: -38924, z: 6770, yaw: Math.PI / 2, pitch: 0.15, h: 1.6 },
+  { nom: 'sf-alamo', x: -38924, z: 6770, yaw: -Math.PI / 2, pitch: 0.2, h: 1.6 },
   { nom: 'sf-alamo-2', x: -38902, z: 6772, yaw: Math.PI / 2, pitch: 0.2, h: 1.6 },
   { nom: 'sf-centre', x: -38802, z: 6734, yaw: 0, pitch: 0.2, h: 1.6 },
   { nom: 'sf-soma', x: -38798, z: 6807, yaw: 0, pitch: 0.2, h: 1.6 },

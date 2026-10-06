@@ -36,8 +36,9 @@ leur palette, avec leurs guillotines blanches ; la pierre de taille au centre
 des entrepôts de SoMa. Un appareil au palier bas ne reçoit rien de neuf ; Paris,
 Londres, Nice, Lille et les villes d'Europe n'ont pas bougé d'un octet.
 
-**Ce qui le prouve.** Seize témoins neufs dans `parishd.js`, rouges sur
-`origin/main` (la ville n'y est pas couverte) : sept par ville (couverture,
+**Ce qui le prouve.** Seize témoins neufs dans `parishd.js` ; sur
+`origin/main` la suite neuve rend quatre rouges (« la ville n'est pas dans
+`VILLES_HD` » pour chacune, le quartier à 0/0, la brique du jeu non lue) : sept par ville (couverture,
 aucun bloc posé, `hd 0` identique, chaque face exposée détaillée — 1 306 et
 1 522 —, le mur de la ville, pas le mobilier de Paris, le budget), le registre
 qui suit le quartier à San Francisco (pierre 3 060 et bardage 0 au centre,
