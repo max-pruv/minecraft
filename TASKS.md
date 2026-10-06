@@ -65,6 +65,19 @@
   mêmes valeurs : `maj.js` libération `null` et « ne floute rien », `carte.js`
   flèche du GPS (1,92 rad) et glisser (719 ms), `monte.js` « l'avant du
   joystick est l'accélérateur » (médiane 27,18, 27,23 sur `origin/main`).
+  Après la fusion de la v397 (sept suites) : verts `parishd.js`,
+  `carteMonde.js`, `plafond.js` ; `maj.js` libération `null` et flou
+  (déclarés). Rejouées SEULES des deux côtés (`origin/main` v397) :
+  `carte.js` branche 2 rouges (GPS, glisser — déclarés), `origin/main` 9 (dont
+  l'appui long et tout le GPS) ; `monte.js` branche 188 verts et 4 rouges
+  (« la rue roule à l'allure d'une ville » médiane 0 dans un bouchon, la
+  compilation à New York, le trou en vol, le flanc frôlé), `origin/main` 189
+  verts et 3 rouges (la monoplace 9,1, le flâneur, le flanc frôlé). Preuve
+  structurelle pour « la rue roule » : le témoin se joue à Paris, et la ville
+  engendrée la plus proche (Rennes) est à 1 518 blocs — aucun anneau engendré
+  ne s'y déplie (220 blocs). Un premier passage de la branche est mort au
+  démarrage d'une page sous une charge stable de 3,8 cœurs (`banc.joueur`,
+  90 s), rejoué complet ensuite.
 - [ ] **LE PORTAIL DE LA v387 (les circuits des villes engendrées), DOUBLE
   MESURE FAITE.** Verts : `carteMonde.js`, `plafond.js`, `degats.js`,
   `carte.js`, `washington.js`. `maj.js` : un seul rouge, À MOI et corrigé (le
