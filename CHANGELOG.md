@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v393 — Conduire comme au cinéma
+## v397 — Conduire comme au cinéma
 
 **Pourquoi.** Max (4 octobre 2026) : « une grosse refonte de la façon de
 conduire… comme GTA ». Au volant, la caméra restait rivée à six blocs quatre
@@ -53,6 +53,153 @@ choc 0,90 contre 0,073, secousse 0,23 bloc, caméra du côté de la voiture. Le 
 se mesure en ordre alterné sur la même page (`?sensations=0` rejoue l'ancienne
 conduite) : aucun appel de dessin ni programme de shader de plus (67 des deux
 côtés).
+
+---
+
+## v396 — La montée en voiture se valide sur la tablette
+
+**Pourquoi.** Les séquences de montée et de descente (v366, v377, v384, v389)
+ne se jugent qu'au banc, qui les saute partout ailleurs et rend en logiciel :
+leurs durées, leur caméra et l'absence d'image figée n'ont jamais été vues sur
+l'iPad, et rien ne disait à Max quoi regarder.
+
+**Ce que ça change.** Avec `?diag=1`, une ligne dit après chaque geste ce qui
+vient de se passer : « embarquement : monter (voiture) en 2,1 s de jeu,
+jusqu'au bout » — ou « second appui », « annulée », et pour une descente le
+côté et la raison d'un refus du côté conducteur. `TASKS.md` porte la liste
+des six gestes à faire sur la tablette (voiture, second appui, descente, avec
+un ami, l'avion, ce qui ne doit pas arriver). Rien ne change pour les enfants.
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js` (le diagnostic dit
+« monter (voiture), second appui »), rouge sur `origin/main` — rejoué seul par
+`sonde-diag-embarq.cjs` : `null` sur `origin/main`, la ligne attendue ici.
+
+---
+
+## v395 — La rue roule à l'allure d'une ville
+
+**Pourquoi.** Max : « des vitesses de circulation cohérentes — aujourd'hui les
+véhicules sont trop lents ». Mesuré au-dessus de Paris sur `origin/main` : une
+voiture de ville roulait à 4,2 blocs par seconde — quinze km/h —, médiane
+1,7 et jamais plus de 5 ; l'autoroute à douze (43 km/h) ; et chaque arrêt au
+feu se faisait d'un relevé au suivant (vingt-quatre arrêts « secs » sur
+vingt-sept), la voiture passant de son allure à zéro.
+
+**Ce que ça change.** Chaque voie a sa limitation — quarante km/h dans les
+rues des villes engendrées, cinquante sur les avenues des villes bâties à la
+main, cent vingt sur l'autoroute, cinquante à l'entrée des villes —, chaque
+convoi son conducteur (±8 %). La voiture freine AVANT un virage, une entrée de
+ville, un feu rouge, la voiture qui la précède, l'enfant, et désormais un
+piéton ; elle réaccélère comme une voiture (0 à 50 en cinq secondes et demie).
+Dans une file, chaque voiture freine là où ELLE est : la file se resserre dans
+le virage et se détend dans la ligne droite. Sur les avenues de Paris,
+Londres, Nice, Lille, San Francisco et Washington on roule à droite — deux
+files se croisent sans se rencontrer. Le bus roule dans la file de son
+anneau, sans plus marquer d'arrêt. Une voiture de la rue que l'enfant heurte
+(`player.choc`, quand la conduite le publie) s'arrête quelques secondes, feux
+de détresse allumés, puis repart. Et tout cela reste une fonction de
+l'horloge partagée (v305) : deux tablettes voient la même rue.
+
+**Ce qui le prouve.** Sept témoins neufs ou réécrits. Dans `monte.js`,
+au-dessus de Paris : la croisière d'une avenue (15 blocs/s) et le 90e centile
+des voitures visibles (7,4 à 11,7 contre 4,2 sur `origin/main`, barre 6,5) ; les arrêts
+au feu, tous progressifs (aucun sec, contre 24 sur 27) ; les voitures l'une
+dans l'autre en TAUX sur les paires examinées (0,5 à 3,9 %, barre 4 — le
+compte absolu d'avant allait de 0 à 53 sur le même code, v277) ; une voiture
+heurtée qui s'arrête, clignote et repart ; une voiture qui s'arrête devant un
+piéton posé sur sa route, à 4,4 blocs de lui. Dans `carteMonde.js` : la règle
+pure (`circulation.js`) — 40/50/120 km/h, un coin pris à 3,1 blocs/s après
+dix-huit points de freinage, une relance jamais plus vive que l'accélération
+d'une voiture — et l'A1 à 120 km/h qui ralentit à moins de 6 pour entrer en
+ville. Dans `reseau.js`, le témoin des deux tablettes mesure l'heure de rue et
+la place à heure égale, parce qu'à cinquante km/h une seconde de lecture vaut
+quatorze blocs. Tous rouges sur `origin/main` sauf la garde du taux de
+chevauchement, verte des deux côtés à dessein (elle garde une capacité).
+Et le portail a trouvé ce que les sondes n'avaient pas vu : au croisement du
+circuit en huit de Paris, deux voitures de la même file se présentaient
+ensemble et la seconde finissait par traverser la première (taux 7,5 %). La
+grille choisit désormais un nombre de voitures qui ne s'y rencontrent pas :
+0,4 à 1,6 % de paires au contact selon le passage (7,5 % avant), aucun
+arrêt sec.
+Coût mesuré : `vehicules.update` 0,7 → 1,5 à 1,7 ms par image au-dessus de
+Paris (`sonde-cout-circulation.cjs`).
+
+**Et un ami voit la même rue même quand l'hôte rame.** Second sujet de la
+livraison. Pourquoi : `reseau.js` « deux tablettes voient la même
+circulation » rougissait une fois sur deux, sur `origin/main` comme sur la
+branche (35 blocs d'écart). L'hôte annonce l'heure de la rue avec celle du
+ciel « toutes les trois secondes » — un compte à rebours en `dt`, borné à un
+vingtième de seconde : à deux images par seconde, une annonce toutes les
+trente secondes, et un invité qui avait calé gardait sa rue en retard jusque
+là. Ce que ça change : l'annonce se cadence en temps réel (`cadence.js`,
+v226). Ce qui le prouve : un témoin de `reseau.js` fait ramer l'hôte (400 ms
+par image, douze secondes) et compte les annonces — quatre attendues, au
+moins trois exigées.
+
+**Et devant l'enfant, une voiture pile quand il le faut.** Le premier portail
+de la v372 a rendu « la circulation s'arrête devant la voiture de l'enfant »
+rouge : trois et quatre relevés au travers sur deux passages seuls de
+`monte.js`, zéro sur la v363. Le freinage doux ne suffisait pas à une voiture
+qui voit l'enfant tard, et une fois au contact elle passait au travers.
+Devant une personne, elle pile désormais dès que le freinage d'urgence ne
+suffit plus.
+
+---
+
+## v394 — Toute l'Europe en relief
+
+**Pourquoi.** Après Londres, Nice et Lille, les quatre-vingt-dix villes
+engendrées d'Europe — Rome, Berlin, Barcelone, Amsterdam, Édimbourg… —
+restaient en façades plates à toute distance. C'était la fin de la consigne de
+Max : « when done do all European cities ».
+
+**Ce que ça change.** De près, chaque ville d'Europe a des fenêtres en relief
+dans son propre mur (la couleur de sa palette, patinée) : au sud de 45,5° N,
+les persiennes, le garde-corps de fer et le store de la boutique ; au nord,
+l'encadrement et le linteau de pierre sur la brique ; dans les îles
+britanniques, la guillotine géorgienne de Londres. Trottoirs relevés, arbres
+maillés, devantures et corniches en relief. Ni Tbilissi, ni Ankara, ni le
+Maghreb : ils ne sont pas en Europe. Un appareil au palier bas ne reçoit rien
+de neuf ; Paris, Londres, Nice et Lille n'ont pas bougé d'un octet.
+
+**Ce qui le prouve.** Vingt-deux témoins neufs dans `parishd.js`, rouges sur
+`origin/main` : sept par ville pour Rome (sud), Berlin (nord) et Manchester
+(îles britanniques) — couverture, aucun bloc posé, tampons d'avant sans HD,
+chaque face exposée détaillée, le mur et les ornements du registre, pas de
+mobilier parisien, morceau le plus lourd sous 3 Mo — sur 1 676 morceaux des villes engendrées, 0,55 Mo en moyenne et 1,71 au pire (Barcelone) — et
+un témoin de liste : les villes de la boîte européenne ont leur registre, pas
+celles qui n'en sont pas. Et le fer se compte enfin : la ferronnerie s'émet
+en UV absolus, elle ne se reconnaissait pas à sa tuile, et les « pas de fer »
+de Londres et de Lille étaient vrais à vide ; comptés à la matière, ils
+rendent zéro (Rome : 8 304 sommets).
+
+---
+
+## v393 — Celui qui part dit au revoir
+
+**Pourquoi.** À trois en ligne, quand un enfant quittait la partie, les deux
+autres le gardaient parfois à l'écran une minute et demie : immobile, puis
+évanoui sans qu'on sache pourquoi. Le jeu écrivait « on prévient les autres
+joueurs avant de disparaître » — et n'envoyait rien : il comptait sur la
+fermeture du lien, qui ne traverse pas toujours (une tablette qu'iOS suspend
+au lieu de la tuer, un canal qui reste « ouvert » de l'autre côté). Le témoin
+« un départ propre nettoie tout le monde » rougissait de loin en loin des deux
+côtés depuis des versions.
+
+**Ce que ça change.** Celui qui part envoie un adieu à chacun avant de couper ;
+l'hôte le retire tout de suite et le dit aux autres. Une tablette restée sur
+une ancienne version connaît déjà ce message. Et le témoin de la voix après
+un appel vidéo, qui rougissait lui aussi de loin en loin, mesure désormais ce
+qu'il annonce : le volume du jeu rendu après l'appel.
+
+**Ce qui le prouve.** Une sonde reproduit le départ sans fermeture de lien :
+ancien code 0 nettoyage en 60 s sur 2 passages, nouveau 3/3 en ≈ 1 s. Le
+témoin de `reseau.js` provoque désormais ce cas lui-même — suite entière
+verte, 80 témoins. Pour la voix : sans aucun appel, deux fenêtres de 1,5 s de
+radio varient déjà de 0,68 à 1 ; la radio relancée sans appel et la radio
+après l'appel rendent la même distribution, gain revenu à 1 cinq fois sur
+cinq. Le témoin juge le gain et un niveau au-dessus de la moitié, et il rougit
+sur une copie où la voix reste au quart (gain 0,25).
 
 ---
 

@@ -95,7 +95,18 @@ export function creerEmbarquement(ctx) {
   const qSeq = new THREE.Quaternion(), mSeq = new THREE.Matrix4();
   const camHaut = new THREE.Vector3(0, 1, 0);
 
+  // LA DERNIÈRE SÉQUENCE, pour `?diag=1` (v396) : la séquence ne se juge
+  // qu'au banc, et c'est sur la TABLETTE que Max la valide — la ligne dit ce
+  // qui s'est passé (monter ou descendre, voiture, ami ou avion), en combien
+  // de secondes de jeu, et comment elle a fini (jusqu'au bout, second appui,
+  // annulée). Relevé à la transition, sans rien changer à la séquence.
+  let vu = null, dernier = null;
   function publier() {
+    if (vu && vu !== s) {
+      dernier = { sens: vu.sens, quoi: vu.avion ? 'avion' : vu.chez ? 'ami' : 'voiture',
+        temps: vu.temps || 0, fin: vu.fin || 'jusqu\'au bout', cote: vu.cote, refus: refusSortie };
+    }
+    vu = s;
     player.embarquement = s ? { phase: s.phase, t: s.t, sens: s.sens } : null;
   }
 
@@ -568,6 +579,7 @@ export function creerEmbarquement(ctx) {
   function terminer() {
     if (!s) return;
     const fini = s;
+    fini.fin = 'second appui';
     if (fini.avion) {
       if (fini.phase !== 'fermeture') { avatarRetire(); const a0 = av.obtenir(); a0.scale.setScalar(1); asseoirMaintenant(); }
       ouvrant(fini.a.mesh, fini.porte, 0);
@@ -596,6 +608,7 @@ export function creerEmbarquement(ctx) {
   }
   function annuler() {
     if (!s) return;
+    s.fin = 'annulée';
     if (s.avion) {
       ouvrant(s.a.mesh, s.porte, 0);
       retirerAcces(s);
@@ -720,5 +733,6 @@ export function creerEmbarquement(ctx) {
     brancherAvatar(h) { av = h; },
     etat: () => (s ? { sens: s.sens, phase: s.phase, t: s.t, cote: s.cote, portes: !!s.portes, avion: !!s.avion, refus: refusSortie } : null),
     refusSortie: () => refusSortie,
+    dernier: () => dernier,
   };
 }

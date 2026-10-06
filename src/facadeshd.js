@@ -43,6 +43,7 @@ import { PARIS, infoFacadeParis, marquageParis } from './paris.js';
 import { LONDRES } from './londres.js';
 import { NICE } from './nice.js';
 import { LILLE } from './lille.js';
+import { VILLES_MONDE } from './villesmonde.js';
 
 // --- l'atlas HD : huit tuiles par huit, cent vingt-huit pixels ------------------
 
@@ -166,6 +167,28 @@ export const VILLES_HD = [
   { ville: 'lille', x: LILLE.x, z: LILLE.z, r: LILLE.r, registre: 'lille', mobilier: false },
 ];
 
+// LES VILLES ENGENDRÉES D'EUROPE (v394, palier C). Une ville est d'Europe si sa
+// latitude et sa longitude tombent dans la boîte du continent, moins les
+// villes de la boîte qui n'en sont pas (`HORS_EUROPE`, avec leur raison) — une
+// liste se conteste en la lisant, une frontière tracée à la règle non. Le
+// registre se choisit par la géographie de la vraie ville, pas par son tissu :
+//   îles britanniques → `londres` (la guillotine géorgienne d'Édimbourg à Dublin)
+//   au sud de 45,5° N → `sud` (persiennes, garde-corps, stores)
+//   au nord          → `nord` (encadrement de pierre, ni volet ni fer)
+export const HORS_EUROPE = {
+  tbilissi: 'Caucase', erevan: 'Caucase', ankara: 'Anatolie', izmir: 'Anatolie',
+  tunis: 'Maghreb', alger: 'Maghreb', fes: 'Maghreb',
+};
+export function registreEurope(f) {
+  const la = f.lat0, lo = f.lon0;
+  if (la === undefined || la < 34 || la > 72 || lo < -25 || lo > 46 || HORS_EUROPE[f.cle]) return null;
+  if (la > 49.8 && lo > -11 && lo < -1.6) return 'londres';
+  return la < 45.5 ? 'sud' : 'nord';
+}
+for (const f of VILLES_MONDE) {
+  const registre = f.trame ? registreEurope(f) : null;
+  if (registre) VILLES_HD.push({ ville: f.cle, x: f.ancre.x, z: f.ancre.z, r: f.rayon, registre, mobilier: false });
+}
 export function villeHD(cx, cz, chunk) {
   const x = cx * chunk + chunk / 2, z = cz * chunk + chunk / 2;
   for (const d of VILLES_HD) {
@@ -515,6 +538,20 @@ STYLES.londres = {
 STYLES.nice = {
   mur: 'enduit', teintes: [[1, 0.9, 0.75]], baie: [0.34, 0.66, 0.14, 0.86], volets: true, filant: false,
   store: false, corniche: 1, voisin: true, orn: [0.97, 0.94, 0.86], gardeCorps: true, patine: { enduit: [0.35, 'chaud'] },
+};
+//   sud     — les villes engendrées de la Méditerranée : l'enduit et ses
+//             persiennes, le garde-corps de fer, le store de la boutique.
+STYLES.sud = {
+  mur: 'enduit', teintes: [[1, 0.92, 0.8]], baie: [0.34, 0.66, 0.14, 0.86], volets: true, filant: false,
+  store: true, corniche: 2, voisin: true, orn: [0.97, 0.94, 0.86], gardeCorps: true,
+  patine: { enduit: [0.3, 'chaud'], brique: [0.3, [150, 88, 66]] },
+};
+//   nord    — les villes engendrées du Nord et de l'Est : l'encadrement et le
+//             linteau de pierre sur la brique, l'enduit sans volet.
+STYLES.nord = {
+  mur: 'enduit', teintes: [[0.95, 0.93, 0.88]], baie: [0.31, 0.69, 0.12, 0.86], volets: false, filant: false,
+  store: false, corniche: 2, voisin: true, orn: [0.93, 0.91, 0.86], gardeCorps: false, linteau: 'pierre-lisse',
+  patine: { enduit: [0.3, 'chaud'], brique: [0.3, [146, 84, 64]] },
 };
 //   lille   — la brique flamande et la pierre blonde : l'encadrement et le
 //             linteau de pierre calcaire, le rang-sur-rang ; ni volet ni fer.

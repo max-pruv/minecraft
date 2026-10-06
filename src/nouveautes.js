@@ -6,13 +6,50 @@
 
 export const NOUVEAUTES = [
   {
-    v: 393,
+    v: 397,
     titre: 'Conduire comme au cinéma',
     puces: [
       'La caméra recule quand on accélère',
       'La voiture penche dans les virages',
       'Les roues avant tournent avec toi',
       'Les pneus crissent, les chocs s\'entendent',
+    ],
+  },
+  {
+    v: 396,
+    titre: 'Un outil pour les parents',
+    puces: [
+      'Il vérifie les portières sur la tablette',
+      'Rien ne change pour toi',
+    ],
+  },
+  {
+    v: 395,
+    titre: 'Des rues qui roulent vraiment',
+    puces: [
+      'Cinquante à l\'heure en ville',
+      'Cent vingt sur l\'autoroute',
+      'Les voitures freinent avant le feu',
+      'Elles s\'arrêtent devant les piétons',
+      'Une voiture heurtée met ses warnings',
+      'À plusieurs, la même rue pour tous',
+    ],
+  },
+  {
+    v: 394,
+    titre: 'Toute l\'Europe en relief',
+    puces: [
+      'Rome, Berlin, Barcelone… de près',
+      'Persiennes au sud, pierre au nord',
+      'Fenêtres anglaises en Écosse',
+    ],
+  },
+  {
+    v: 393,
+    titre: 'Un ami qui part disparaît',
+    puces: [
+      'Il dit au revoir en partant',
+      'Plus de joueur fantôme à l\'écran',
     ],
   },
   {
