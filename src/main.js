@@ -7796,7 +7796,9 @@ function texteEmbarquement() {
   const d = fun.embarquementDernier ? fun.embarquementDernier() : null;
   if (!d) return '';
   return `\nembarquement : ${d.sens} (${d.quoi}) en ${d.temps.toFixed(1)} s de jeu, ${d.fin}`
-    + (d.sens === 'descendre' ? ` · ${d.cote < 0 ? 'côté conducteur' : d.cote > 0 ? 'côté passager' : 'hors des portières'}${d.refus && d.refus.conducteur ? ` (conducteur refusé : ${d.refus.conducteur})` : ''}` : '');
+    // un avion descend par son escalier, ou d'un coup quand il n'a pas de place (v398)
+    + (d.sens === 'descendre' && d.quoi === 'avion' ? ` · ${d.cote ? 'par l\'escalier' : 'sans escalier'}${d.refus && d.refus.escalier ? ` (escalier refusé : ${d.refus.escalier})` : ''}` : '')
+    + (d.sens === 'descendre' && d.quoi !== 'avion' ? ` · ${d.cote < 0 ? 'côté conducteur' : d.cote > 0 ? 'côté passager' : 'hors des portières'}${d.refus && d.refus.conducteur ? ` (conducteur refusé : ${d.refus.conducteur})` : ''}` : '');
 }
 
 // LE PLAFOND AU SOL SE MESURE SUR LA TABLETTE (v380) : en roulant, le trou

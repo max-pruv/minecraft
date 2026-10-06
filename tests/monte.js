@@ -7518,6 +7518,23 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         r.clesNeuves === 0 && r.blocs === 0 && r.avionligne && r.avionligne.clesNeuves === 0,
         JSON.stringify({ cles: r.clesNeuves, blocs: r.blocs, parAvion: [r.avionligne && r.avionligne.clesNeuves, r.chasseur && r.chasseur.clesNeuves] }));
     }
+    // ON DESCEND D'UN AVION PAR SON ESCALIER (v398). Les avions descendaient
+    // d'un coup, au milieu du fuselage. Le passage vit dans
+    // `sonde-descente-avion.cjs`, qu'on rejoue seul en deux minutes des deux
+    // côtés : les phases, l'état qui bascule au premier appui, la porte,
+    // l'escalier qui vient et s'en va, la place mesurée (jamais dans l'eau
+    // ni dans un mur), le second appui, le Concorde, aucune clé neuve, aucun
+    // bloc. On se pose d'abord sur le couloir plat de la sonde.
+    {
+      const { passage, juger } = require('./sonde-descente-avion.cjs');
+      await emb.evaluate(async () => {
+        const g = window.__game;
+        const x = -600.5, z = -520.5;
+        g.player.pos.set(x, g.world.terrainHeight(x, z) + 1, z); g.player.vel.set(0, 0, 0);
+        await new Promise((r) => setTimeout(r, 4000));
+      });
+      juger(await emb.evaluate(passage), verifier);
+    }
     verifier('aucune erreur JavaScript pendant l\'embarquement', emb.erreurs.length === 0, JSON.stringify(emb.erreurs));
     await emb.close();
 
