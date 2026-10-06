@@ -543,6 +543,112 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         JSON.stringify(essais));
     }
   }
+  // --- LA PENTE ET LA BOSSE (palier 3 de la conduite) ---------------------
+  // Mesuré sur `origin/main` (`tests/sonde-pente.cjs`, six côtes, six
+  // descentes et six plats de la campagne, une sportive à plein gaz) : 26,4
+  // blocs/s au bout de quarante blocs PARTOUT — la pente n'existait pas pour
+  // la voiture, et le sommet d'une crête la plaquait au sol. Trois témoins :
+  // la dynamique pure contre ses formules fermées, puis le JOUEUR sur une
+  // côte en dents de scie (le relief entier triangulé) et sur une crête vive.
+  {
+    const C = await import('../src/conduite.js').catch(() => null);
+    if (!C || !C.gravitePente || !C.vitesseEnCote) {
+      verifier('conduite : la côte ralentit, la descente accélère, et la simulation rejoint ses formules — aucune colline n\'arrête une voiture', false, 'gravitePente / vitesseEnCote absents (ancien code)');
+    } else {
+      const sim = (f, pente, gaz, v0, t) => { let e = { v: v0, braquage: 0, derive: 0 }; for (let k = 0; k < t / 0.05; k++) e = { ...e, ...C.pasVoiture(e, { gaz, volant: 0, pente }, f, 0.05) }; return e.v; };
+      const sp = { classe: 'sportive', ...C.CLASSES.sportive };
+      const cote = { simule: +sim(sp, 0.37, 1, 0, 30).toFixed(2), formule: +C.vitesseEnCote(0.37, sp).toFixed(2) };
+      const libre = { simule: +sim(sp, -0.6, 0, 5, 30).toFixed(2), formule: +C.vitesseEnRoueLibre(-0.6).toFixed(2) };
+      const douce = +sim(sp, -0.2, 0, 10, 10).toFixed(2);
+      const tient = +sim(sp, -0.6, 0, 0, 5).toFixed(3);
+      const raide = {};
+      for (const k of Object.keys(C.CLASSES)) raide[k] = +sim({ classe: k, ...C.CLASSES[k] }, 1, 1, 0, 15).toFixed(1);
+      verifier('conduite : la côte ralentit, la descente accélère, et la simulation rejoint ses formules — aucune colline n\'arrête une voiture',
+        Math.abs(cote.simule - cote.formule) < 0.3 && cote.simule < sp.vmax - 5
+          && Math.abs(libre.simule - libre.formule) < 0.3 && libre.simule > 10
+          && douce === 0 && tient === 0
+          && Object.values(raide).every((v) => v > 8),
+        `côte 0,37 à plein gaz ${JSON.stringify(cote)} (pointe ${sp.vmax}) · descente 0,6 roue libre ${JSON.stringify(libre)} · descente douce lâchée ${douce} · arrêtée sans commande ${tient} · pente 1 à plein gaz ${JSON.stringify(raide)}`);
+    }
+    {
+      // LE JOUEUR, sous node : un monde dont la surface continue est un profil
+      // le long de x (les cubes sont loin dessous). `accrocherAuSol` est celui
+      // du jeu, prêté au monde factice, pour que l'ancien chemin soit le vrai.
+      let Pl = null, BK = null, Wd = null;
+      try { ({ Player: Pl } = await import('../src/player.js')); ({ BLOCK: BK } = await import('../src/blocks.js')); ({ World: Wd } = await import('../src/world.js')); } catch (e) { Pl = null; }
+      if (!Pl) verifier('conduite : la voiture sur une côte en dents de scie et sur une crête vive', false, 'player.js ne se charge pas sous node');
+      else {
+        const cam = { position: { copy() {} }, rotation: { set() {} } };
+        const monde = (prof) => ({ getBlock: (x, y) => (y < 0 ? BK.STONE : BK.AIR), solContinu: (x) => prof(x), tablierEn: () => null,
+          boiteLibre: () => true, blocSousLaSurface: () => false, accrocherAuSol: Wd.prototype.accrocherAuSol });
+        // le relief entier, triangulé par les centres des colonnes : la dent de scie
+        const scie = (pente) => (x) => { const i = Math.floor(x - 0.5), u = x - 0.5 - i; const h = (k) => Math.floor(pente * k); return 35 + h(i) + (h(i + 1) - h(i)) * u; };
+        const rouler = (prof, v0, duree, gaz = 1) => {
+          const w = monde(prof), p = new Pl(cam, w);
+          p.gabarit = 2.26; p.boost = 40 / 3.2;
+          p.pos.set(0.5, prof(0.5) + 1e-4, 0); p.onGround = true; p.yaw = -Math.PI / 2;   // vers +x
+          p.vitesseVoiture = v0; p.touchMove.f = gaz;
+          let air = 0, sous = 0, haut = 0;
+          for (let t = 0; t < duree; t += 1 / 30) {
+            p.update(1 / 30);
+            if (p.enLair) { air += 1 / 30; haut = Math.max(haut, p.pos.y - prof(p.pos.x)); }
+            sous = Math.max(sous, prof(p.pos.x) - p.pos.y);
+          }
+          return { x: +p.pos.x.toFixed(1), v: +p.vitesseVoiture.toFixed(1), air: +air.toFixed(2), haut: +haut.toFixed(2), sous: +sous.toFixed(2), att: p.atterrissage ? p.atterrissage.force : null, tang: p.tangage };
+        };
+        const plat = rouler(() => 35, 0, 3);
+        const monte = rouler(scie(0.37), 0, 3);
+        const descend = rouler((x) => scie(0.37)(-x + 200) - 44, 0, 3);
+        const crete = rouler((x) => 35 + 0.35 * Math.min(x, 60 - x) - (x > 60 ? 0 : 0), 30, 3.5);
+        verifier('conduite : la voiture sur une côte en dents de scie (relief entier) ralentit sans jamais décoller, accélère en descente, et décolle d\'une crête vive puis l\'atterrissage se publie',
+          monte.x < plat.x - 3 && monte.air === 0 && descend.x > plat.x + 3 && descend.air === 0
+            && crete.air > 0.5 && crete.haut > 1 && crete.att > 0 && crete.att <= 1
+            && [plat, monte, descend, crete].every((r) => r.sous <= (C && C.ENFONCE != null ? C.ENFONCE : 0) + 0.05)
+            && monte.tang > 0.2,
+          `trois secondes à plein gaz depuis l'arrêt — plat ${JSON.stringify(plat)} · côte 0,37 ${JSON.stringify(monte)} · descente ${JSON.stringify(descend)} · crête vive à 30 blocs/s ${JSON.stringify(crete)}`);
+      }
+    }
+  }
+  // --- COLLÉ DERRIÈRE UNE VOITURE PLUS LENTE (palier 3) ------------------
+  // Une voiture de la rue ne se pousse pas (horloge partagée, v305). Mesuré sur
+  // `origin/main` : derrière une voiture à 10 blocs/s, joystick en avant, la
+  // nôtre la touche à presque chaque image. Le témoin pose le JOUEUR (sous
+  // node) derrière une voiture factice qui roule à son horloge, lue par les
+  // deux crochets du jeu (`obstacleVehicule` et `voitureContre`), et compte.
+  {
+    let Pl = null, BK = null, C = null;
+    try { ({ Player: Pl } = await import('../src/player.js')); ({ BLOCK: BK } = await import('../src/blocks.js')); C = await import('../src/conduite.js'); } catch (e) { Pl = null; }
+    if (!Pl || !C || !C.boiteVoiture) verifier('conduite : derrière une voiture plus lente, on la suit sans la toucher', false, 'player.js ou conduite.js ne se charge pas');
+    else {
+      const cam = { position: { copy() {} }, rotation: { set() {} } };
+      const essais = [];
+      for (const vA of [0, 6, 12]) {
+        const w = { getBlock: (x, y) => (y < 30 ? BK.STONE : BK.AIR) };
+        const p = new Pl(cam, w);
+        p.gabarit = 2.26; p.boost = 40 / 3.2;
+        p.pos.set(0.5, 30, 0.5); p.onGround = true; p.yaw = -Math.PI / 2;   // vers +x
+        p.vitesseVoiture = 25; p.touchMove.f = 1;
+        const autre = { x: 30, z: 0.5, ux: 1, uz: 0 };
+        const sa = () => ({ ...C.boiteVoiture(autre.x, autre.z, -Math.PI / 2 + Math.PI, 2.2, 1.13), x: autre.x, z: autre.z, ux: 1, uz: 0, a: 2.2, b: 1.13, v: vA });
+        const touche = (x, z, cap) => !!C.normaleEntreBoites(C.boiteVoiture(x, z, cap, 2.2, 1.13), sa());
+        p.obstacleVehicule = (x, z, cap) => (touche(x, z, cap) ? 'voiture' : false);
+        p.voitureContre = (x, z, cap) => (touche(x, z, cap) ? sa() : null);
+        let contacts = 0, chocs0 = p.chocs || 0, ecartMin = Infinity;
+        for (let k = 0; k < 150; k++) {
+          autre.x += vA / 30;
+          const c0 = p.contact; p.contact = null;
+          p.update(1 / 30);
+          if (p.contact && p.contact.famille === 'voiture') contacts++;
+          if (!p.contact) p.contact = c0;
+          ecartMin = Math.min(ecartMin, autre.x - p.pos.x - 4.4);
+        }
+        essais.push({ vAutre: vA, contacts, chocs: (p.chocs || 0) - chocs0, ecartMin: +ecartMin.toFixed(2), v: +p.vitesseVoiture.toFixed(1), ecartFin: +(autre.x - p.pos.x - 4.4).toFixed(2) });
+      }
+      verifier('conduite : derrière une voiture de la rue plus lente (ou arrêtée), joystick en avant, on la suit à sa vitesse sans la toucher',
+        essais.every((e) => e.contacts === 0 && e.ecartMin > 0.5 && Math.abs(e.v - e.vAutre) < 0.6 && e.ecartFin < 4),
+        JSON.stringify(essais));
+    }
+  }
   verifier('et le sol a son propre plafond, qui ne suit pas le ciel',
     SOMMET_TERRAIN === 80, `${SOMMET_TERRAIN}`);
 
