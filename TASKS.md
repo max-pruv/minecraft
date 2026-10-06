@@ -84,6 +84,7 @@
 
 - [ ] **LE PORTAIL DE LA v395 (la rue à l'allure d'une ville), DOUBLE MESURE
   Portail du rebase sur la v380 : `monte.js` rouge sur « en vol, on ne rattrape pas le bout du monde » (chasseur 58/60) — rejouée SEULE sur la branche : 184 verts, zéro rouge (chasseur 72/60). `reseau.js` verte ; `manhattan.js` façade 22 326 → 51 734, déclarée.
+  Portail du rebase sur la v394 : douze rouges, tous déjà déclarés (appui long « pointeurs 0 » et sa cascade GPS dans `carte.js`, flanc en virage et atterrissage dans `monte.js`, façade et taxi dans `manhattan.js`, loader de `maj.js`). `carte.js` rejouée SEULE sur la branche : 101 verts, un rouge — la flèche GPS « gauche 1,92 », dette v321.
   FAITE.** **Portail complet après la correction de l'annonce du ciel** :
   neuf suites, quatre vertes ; cinq rouges, tous déjà déclarés ici avec leur
   double mesure — la flèche du GPS (`carte.js`, gauche 1,92 rad), « chaque
