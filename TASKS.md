@@ -16,6 +16,11 @@
   façade » (17 102 → 54 969) — la dette déclarée en v291 (22 326 → 51 734 sur
   `origin/main`), un compte qui suit ce que la file a installé ; la livraison
   ne touche ni la façade ni Manhattan.
+  Second portail (rebasé sur la v392) : `degats`, `visio`, `hote`, `reseau`
+  VERTS (départ nettoyé en 1 s, voix gain 1). Rouges, tous déjà déclarés :
+  `maj.js` « le loader dit combien de fichiers » (intermittent, table plus
+  bas), `manhattan.js` trou (9 203 → 51 734), « le taxi roule » (bouton
+  jamais visible) et l'invité de la ligne 674 qui ne rejoint pas.
 - [ ] **LE GPS PARTAGÉ PAR UN HÔTE QUI RELAIE (`rpos`) N'A PAS DE TÉMOIN À
   TROIS TABLETTES** (v388 l'éprouve entre l'hôte et un invité). Le champ `g`
   est lu sur `rpos`, la règle est écrite ; le témoin reste à faire.
