@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v400 — Les voitures font le tour de la place
+## v404 — Les voitures font le tour de la place
 
 **Pourquoi.** Dans les villes engendrées, beaucoup d'anneaux de voitures
 roulaient en ligne droite au travers de ce qui n'est pas une rue : la place
@@ -48,6 +48,119 @@ centre reste à 30 blocs, aucun tablier n'est retiré (642 colonnes d'eau en
 gagnent un), et le relief ne bouge pas. Le prix, déclaré : le premier
 dépliage d'une ville coûte plus cher (Rome ≈ 57 → 85-100 ms, une fois, à 220
 blocs de la ville).
+## v403 — Le monde se charge aussi vite chez qui a beaucoup bâti
+
+**Pourquoi.** Chaque morceau de monde que le jeu fabrique reçoit les blocs que
+l'enfant a posés. Pour les trouver, il relisait le journal ENTIER de l'enfant,
+bloc par bloc, pour chaque morceau — même au milieu de la campagne, où il n'y
+en a aucun. Mesuré sous node avec un journal fabriqué (une maison, des
+villages) : 1,25 ms par morceau sans blocs, 10 avec vingt mille, **36,6 avec
+quatre-vingt mille** — et le journal de Marlon en comptait 83 780 en septembre.
+Un avion fait fabriquer des dizaines de morceaux par seconde : plus un enfant
+avait construit, plus le monde arrivait en retard devant lui.
+
+**Ce que ça change.** Le journal se range par morceau, et c'est le journal
+lui-même qui tient ce rangement à chaque bloc posé, retiré, chargé ou reçu
+d'un ami : un morceau ne lit plus que les blocs qui sont dedans. Avec
+quatre-vingt mille blocs, un morceau de campagne revient à son coût d'enfant
+qui n'a rien bâti. Aucun bloc ne bouge.
+
+**Ce qui le prouve.** Deux témoins dans `plafond.js` : un morceau ne parcourt
+plus le journal (0 entrée lue, contre 80 000 sur la v391, où il est rouge), et
+l'empreinte des blocs de 362 morceaux d'un journal fabriqué de quarante mille,
+par trois chemins d'écriture, est celle relevée sur `origin/main` au bit près.
+L'empreinte des 490 morceaux (v352) est intacte.
+
+## v402 — On traverse aux passages peints
+
+**Pourquoi.** Depuis la v371, un passant change de trottoir à un carrefour à
+feux, et à Paris sur un passage peint sans feu. Ailleurs, sans feu à cinq
+blocs, il tournait au coin : Kyoto rendait deux traversées en une minute.
+Mesuré sous node avant d'écrire : les 65 villes engendrées dont la trame suit
+les axes du monde peignent un passage à l'abord de chaque carrefour, feu ou
+pas (Tokyo : 119 chemins de traversée sur un passage peint, dont 55 loin de
+tout feu). Rome, Zurich et Londres n'en peignent aucun.
+
+**Ce que ça change.** Dans ces 65 villes, un passant traverse aussi sur le
+passage peint d'un carrefour sans feu, avec la règle de Paris : il part quand
+aucune voiture n'arrive sur son chemin pendant toute la traversée. Kyoto, une
+minute : 8 traversées dont 5 sur un passage, contre 2 (`sonde-traversees.cjs`).
+La recherche coûte 1,2 ms au pire, au coin seulement. Le chemin doit être
+ENTIÈREMENT peint (à moitié, le passant marchait au bord de la bande), et
+l'approche du point de départ se fait en temps réel comme la traversée (au pas
+du jeu, un passant qui n'arrivait pas à temps traversait d'où il était). Et le
+témoin du feu publie chaque traversée qui n'est pas au rouge : le seul « au
+vert » qu'il rendait était un passant POUSSÉ de l'autre côté par un pas de côté
+devant une voiture, pas une décision — compté à part, et déclaré en dette.
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js` POSE huit passants au bord
+d'un passage peint sans feu, à Kyoto, et compte leur première traversée, la peinture lue sur la LIGNE de la traversée :
+22 sur 22 sur le passage en trois passages (`sonde-passage-peint.cjs`), zéro
+traversée sur `origin/main`. Portail sur la v398 : mes trois témoins de piétons
+verts ; les rouges (GPS et glissé de `carte.js`, `reglages.js`, Manhattan,
+circulation, embarquement, train, trou en vol) se retrouvent rejoués seuls sur
+`origin/main`, souvent en plus grand nombre.
+
+
+## v401 — Le monde entier en relief
+
+**Pourquoi.** L'Europe (v394), Washington et San Francisco (v398) et les
+Amériques (v399) avaient leurs façades en relief ; les cent douze villes
+engendrées d'Asie, du Moyen-Orient, d'Afrique et d'Océanie restaient plates à
+toute distance.
+
+**Ce que ça change.** De près, chaque ville a des fenêtres en relief dans son
+propre mur, avec le registre de sa géographie : Tokyo, Séoul, Shanghai,
+Singapour en béton enduit à baies larges (`asie`) ; Riyad, Dubaï, Téhéran,
+Samarcande et Lhassa en enduit couleur de sable à baies profondes (`desert`) ;
+Bombay, Dakar, Lagos, Nairobi, Hanoï et les îles du Pacifique en enduit de couleur,
+persiennes et garde-corps de fer (`tropical`) ; Sydney, Melbourne, Auckland,
+Le Cap et Johannesburg en brique victorienne à guillotine et à fonte
+(`victorien`) ; la Russie, Oulan-Bator et Harbin comme l'Est de l'Europe
+(`nord`) ; le Maghreb, le Levant, l'Anatolie et le Caucase comme la
+Méditerranée (`sud`). Les quatre médinas — Marrakech, Fès, Jérusalem,
+Tombouctou — restent comme elles sont, et c'est dit : aucun registre n'y
+dessine leurs petites baies grillées. Un appareil au palier bas ne reçoit
+rien de neuf.
+
+**Ce qui le prouve.** Vingt-neuf témoins neufs dans `parishd.js` : sept par
+ville pour Tokyo, Dubaï, Lagos et Sydney (le mur de la ville, ni pierre de
+Paris ni bardage, le budget…), et la couverture — toute ville engendrée a son
+registre sauf les quatre médinas, avec les cas qu'une règle classerait mal
+(Lhassa, Tbilissi, Harbin, Maputo, Honolulu). Mesuré sur 681 morceaux :
+0,46 Mo de façades en moyenne, 1,59 au pire (Delhi). Paris, l'Europe et les
+Amériques identiques à l'octet.
+## v400 — On descend d'un avion par son escalier
+
+**Pourquoi.** Depuis la v389 on MONTE dans un avion par un escalier (une
+échelle pour le chasseur) ; on en DESCENDAIT encore d'un coup — l'enfant se
+retrouvait debout au milieu du fuselage, et sur un avion arrêté au bord d'un
+lac il se posait DANS l'eau (mesuré sur `origin/main` : `eau: true`). C'était
+la dette déclarée de la v389.
+
+**Ce que ça change.** Au premier appui on n'est plus aux commandes ; puis
+l'escalier revient contre la porte, la porte (la verrière) s'ouvre, l'enfant
+sort en se redressant, descend les marches (de face, ou face aux barreaux de
+l'échelle), la porte se referme et l'escalier s'en va. Un second appui le pose
+tout de suite au pied des marches. La place où il se pose se MESURE sur le sol
+de la colonne : si le pied des marches tombe dans l'eau, sur une pente de plus
+de quatre blocs ou dans un mur, il se pose d'un coup à une place libre autour
+de l'appareil. Le Concorde (sans porte) et un avion en vol descendent comme
+avant ; sous `embarq=0` (le banc) rien ne change, par construction. La ligne
+`?diag=1` dit « par l'escalier » ou « sans escalier » et pourquoi.
+
+**Ce qui le prouve.** Quatre témoins dans `monte.js` (le passage vit dans
+`sonde-descente-avion.cjs`, rejouable seul en deux minutes) : les quatre
+phases et l'état qui bascule au premier appui, pour l'avion de ligne et le
+chasseur ; le second appui et le Concorde ; le pied des marches dans l'eau ;
+aucune clé de programme neuve et aucun bloc écrit. Rejoués sur `origin/main` :
+trois rouges sur quatre (et l'enfant dans l'eau).
+
+---
+
+
+---
+
 ## v399 — Les Amériques en relief
 
 **Pourquoi.** Washington et San Francisco avaient leur relief (v398), mais les

@@ -118,3 +118,70 @@ export async function travailParMorceau(src, noms = ['paris', 'rome', 'londres']
   }
   return out;
 }
+
+// LES BLOCS DE L'ENFANT, RANGÉS PAR MORCEAU (v403).
+//
+// Un journal FABRIQUÉ, comme celui d'un enfant qui a beaucoup bâti : huit
+// sites (la maison témoin, des villages, des cabanes au loin), soixante blocs
+// de côté, des hauteurs de maison. Graine fixe, donc le même journal partout.
+export function journalFabrique(n, graine = 7) {
+  let g = graine >>> 0;
+  const r = () => ((g = Math.imul(g ^ (g >>> 15), 2246822507) + 0x9e3779b9 >>> 0) / 4294967296);
+  const sites = [[-100, -100], [40, 60], [-300, 200], [500, -400], [1200, 800], [-2000, 1500], [3000, -2500], [150, -700]];
+  const m = new Map(), t = new Map();
+  let i = 0;
+  while (m.size < n) {
+    const s = sites[i++ % sites.length];
+    const x = Math.round(s[0] + (r() - 0.5) * 60), z = Math.round(s[1] + (r() - 0.5) * 60);
+    const k = `${x},${34 + Math.floor(r() * 20)},${z}`;
+    m.set(k, 1 + Math.floor(r() * 30)); t.set(k, 1.9e12 + i);
+  }
+  return [m, t];
+}
+
+//   • `empreinteJournal` engendre tous les morceaux qui portent un bloc d'un
+//     journal de quarante mille, par les trois chemins d'écriture — journal
+//     installé d'un bloc, blocs posés un à un par `setBlock`, blocs retirés —
+//     et rend le SHA-256 des blocs. Relevée sur la v391 (`origin/main`, avant
+//     l'index) : aucun bloc d'enfant ne bouge (invariant 1).
+//   • `lecturesDuJournal` compte les entrées du journal que `generateChunk`
+//     parcourt pour UN morceau — la cause, pas des millisecondes (v236).
+export async function empreinteJournal(src) {
+  const { World, CHUNK } = await import(src + '/world.js');
+  const h = crypto.createHash('sha256');
+  const [m, t] = journalFabrique(40000);
+  const cles = new Set();
+  for (const k of m.keys()) { const [x, , z] = k.split(',').map(Number); cles.add(Math.floor(x / CHUNK) + ',' + Math.floor(z / CHUNK)); }
+  const liste = [...cles].sort();
+  let morceaux = 0;
+  const lire = (w) => {
+    for (const c of liste) {
+      const [cx, cz] = c.split(',').map(Number);
+      const d = w.ensureChunk(cx, cz);
+      h.update(c); h.update(Buffer.from(d.buffer, d.byteOffset, d.byteLength)); morceaux++;
+    }
+  };
+  const w = new World();
+  w.installerEdits(m, t, 'local');
+  lire(w);
+  const w2 = new World();
+  let i = 0;
+  for (const [k, id] of m) { if (i++ % 7) continue; const [x, y, z] = k.split(',').map(Number); w2.setBlock(x, y, z, id, 1.95e12); }
+  for (const [k] of m) { if (i++ % 11) continue; const [x, y, z] = k.split(',').map(Number); w2.setBlock(x, y, z, 0, 1.96e12); }
+  w2.chunks.clear(); w2.tops.clear();
+  lire(w2);
+  return { empreinte: h.digest('hex'), morceaux };
+}
+
+export async function lecturesDuJournal(src, n = 80000) {
+  const { World } = await import(src + '/world.js');
+  const [m, t] = journalFabrique(n);
+  const w = new World();
+  w.installerEdits(m, t, 'local');
+  let lues = 0;
+  const parcourir = Map.prototype[Symbol.iterator];
+  w.edits[Symbol.iterator] = function* () { for (const e of parcourir.call(this)) { lues++; yield e; } };
+  const t0 = performance.now();
+  for (let i = 0; i < 10; i++) w.generateChunk(1875 + i, 1875);
+  return { lues: lues / 10, ms: (performance.now() - t0) / 10, journal: w.edits.size };
+}
