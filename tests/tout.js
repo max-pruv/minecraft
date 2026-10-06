@@ -156,7 +156,7 @@ const GARDIENS = {
   'src/carte.js': ['carte.js', 'carteMonde.js', 'manhattan.js'],
   // La capitale : son relief, son métro et ses bâtiments ouverts. Elle touche
   // au sol de la carte, donc le témoin du plafond la surveille aussi.
-  'src/washington.js': ['washington.js', 'plafond.js', 'carteMonde.js', 'carte.js'],
+  'src/washington.js': ['washington.js', 'plafond.js', 'carteMonde.js', 'carte.js', 'parishd.js'],
   'src/washington-v367.js': ['washington.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // la Washington d'avant le kit, sous ce qu'un enfant a bâti (v370)
   'src/dcmonuments.js': ['washington.js'],
   // La ville : c'est elle qui bâtit le métro de Paris, la caserne et le
@@ -168,11 +168,12 @@ const GARDIENS = {
   'src/identity.js': ['reglages.js', 'parent.js'],
   'src/education.js': ['reglages.js', 'parent.js', 'manhattan.js'],
   'src/taxis.js': ['realisme.js', 'monte.js', 'sauvegarde.js', 'manhattan.js'],
-  'src/vehicules.js': ['monte.js', 'washington.js', 'metro.js', 'manhattan.js', 'carteMonde.js'],
+  'src/vehicules.js': ['monte.js', 'washington.js', 'metro.js', 'manhattan.js', 'carteMonde.js', 'reseau.js'],
   // LE FEU TRICOLORE (v273) : il s'allume dans le monde (carteMonde.js) et il
   // arrête la circulation (monte.js). Un module neuf sans gardien annule tous
   // les acquis du cache de reprise — c'est fait pour se voir tout de suite.
   'src/feux.js': ['carteMonde.js', 'monte.js', 'realisme.js', 'reseau.js', 'visio.js', 'manhattan.js'],
+  'src/circulation.js': ['monte.js', 'carteMonde.js', 'reseau.js', 'washington.js', 'metro.js', 'manhattan.js'],
   // La Giga-usine : son site touche le terrain (plafond), la carte, le tour
   // du monde — et sa chaîne comme sa voiture à conduire vivent dans monte.js.
   'src/usine.js': ['carteMonde.js', 'carte.js', 'plafond.js', 'monte.js'],
@@ -220,7 +221,7 @@ const GARDIENS = {
   'src/manhattan-materiaux.js': ['manhattan.js', 'carte.js'],
   'src/manhattan-render.js': ['manhattan.js', 'monte.js'],
   'src/manhattan.js': ['carte.js', 'carteMonde.js', 'plafond.js'],
-  'src/sanfrancisco.js': ['carte.js', 'carteMonde.js', 'plafond.js'],
+  'src/sanfrancisco.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'parishd.js'],
   'src/lille.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'parishd.js'],    // la couche HD lit Lille (v392)
   // Les régions et les sites du tour du monde : ils aplanissent leur parvis,
   // donc le témoin du relief, et s'ajoutent aux destinations de la carte.

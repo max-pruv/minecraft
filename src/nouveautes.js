@@ -6,12 +6,24 @@
 
 export const NOUVEAUTES = [
   {
-    v: 395,
+    v: 396,
     titre: 'Washington et San Francisco en relief',
     puces: [
       'Brique et marbre à Washington',
       'Maisons de bois peint à San Francisco',
       'Fenêtres à guillotine de près',
+    ],
+  },
+  {
+    v: 395,
+    titre: 'Des rues qui roulent vraiment',
+    puces: [
+      'Cinquante à l\'heure en ville',
+      'Cent vingt sur l\'autoroute',
+      'Les voitures freinent avant le feu',
+      'Elles s\'arrêtent devant les piétons',
+      'Une voiture heurtée met ses warnings',
+      'À plusieurs, la même rue pour tous',
     ],
   },
   {

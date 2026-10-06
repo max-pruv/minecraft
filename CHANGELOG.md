@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v395 — Washington et San Francisco en relief
+## v396 — Washington et San Francisco en relief
 
 **Pourquoi.** L'Europe entière avait sa couche de relief (v394), mais les deux
 villes bâties à la main de l'autre côté de l'Atlantique — Washington et San
@@ -50,6 +50,75 @@ identiques à l'octet, avec et sans HD ; Washington et San Francisco identiques
 sans HD. Mesuré : 0,23 Mo par morceau en moyenne à Washington (2,11 au pire),
 0,11 à San Francisco (0,59) ; dans le worker, 5,4 → 16,2 ms par morceau à
 Washington, 2,2 → 6,3 chez les Victoriennes, seulement à portée de `RAYON_HD`.
+## v395 — La rue roule à l'allure d'une ville
+
+**Pourquoi.** Max : « des vitesses de circulation cohérentes — aujourd'hui les
+véhicules sont trop lents ». Mesuré au-dessus de Paris sur `origin/main` : une
+voiture de ville roulait à 4,2 blocs par seconde — quinze km/h —, médiane
+1,7 et jamais plus de 5 ; l'autoroute à douze (43 km/h) ; et chaque arrêt au
+feu se faisait d'un relevé au suivant (vingt-quatre arrêts « secs » sur
+vingt-sept), la voiture passant de son allure à zéro.
+
+**Ce que ça change.** Chaque voie a sa limitation — quarante km/h dans les
+rues des villes engendrées, cinquante sur les avenues des villes bâties à la
+main, cent vingt sur l'autoroute, cinquante à l'entrée des villes —, chaque
+convoi son conducteur (±8 %). La voiture freine AVANT un virage, une entrée de
+ville, un feu rouge, la voiture qui la précède, l'enfant, et désormais un
+piéton ; elle réaccélère comme une voiture (0 à 50 en cinq secondes et demie).
+Dans une file, chaque voiture freine là où ELLE est : la file se resserre dans
+le virage et se détend dans la ligne droite. Sur les avenues de Paris,
+Londres, Nice, Lille, San Francisco et Washington on roule à droite — deux
+files se croisent sans se rencontrer. Le bus roule dans la file de son
+anneau, sans plus marquer d'arrêt. Une voiture de la rue que l'enfant heurte
+(`player.choc`, quand la conduite le publie) s'arrête quelques secondes, feux
+de détresse allumés, puis repart. Et tout cela reste une fonction de
+l'horloge partagée (v305) : deux tablettes voient la même rue.
+
+**Ce qui le prouve.** Sept témoins neufs ou réécrits. Dans `monte.js`,
+au-dessus de Paris : la croisière d'une avenue (15 blocs/s) et le 90e centile
+des voitures visibles (7,4 à 11,7 contre 4,2 sur `origin/main`, barre 6,5) ; les arrêts
+au feu, tous progressifs (aucun sec, contre 24 sur 27) ; les voitures l'une
+dans l'autre en TAUX sur les paires examinées (0,5 à 3,9 %, barre 4 — le
+compte absolu d'avant allait de 0 à 53 sur le même code, v277) ; une voiture
+heurtée qui s'arrête, clignote et repart ; une voiture qui s'arrête devant un
+piéton posé sur sa route, à 4,4 blocs de lui. Dans `carteMonde.js` : la règle
+pure (`circulation.js`) — 40/50/120 km/h, un coin pris à 3,1 blocs/s après
+dix-huit points de freinage, une relance jamais plus vive que l'accélération
+d'une voiture — et l'A1 à 120 km/h qui ralentit à moins de 6 pour entrer en
+ville. Dans `reseau.js`, le témoin des deux tablettes mesure l'heure de rue et
+la place à heure égale, parce qu'à cinquante km/h une seconde de lecture vaut
+quatorze blocs. Tous rouges sur `origin/main` sauf la garde du taux de
+chevauchement, verte des deux côtés à dessein (elle garde une capacité).
+Et le portail a trouvé ce que les sondes n'avaient pas vu : au croisement du
+circuit en huit de Paris, deux voitures de la même file se présentaient
+ensemble et la seconde finissait par traverser la première (taux 7,5 %). La
+grille choisit désormais un nombre de voitures qui ne s'y rencontrent pas :
+0,4 à 1,6 % de paires au contact selon le passage (7,5 % avant), aucun
+arrêt sec.
+Coût mesuré : `vehicules.update` 0,7 → 1,5 à 1,7 ms par image au-dessus de
+Paris (`sonde-cout-circulation.cjs`).
+
+**Et un ami voit la même rue même quand l'hôte rame.** Second sujet de la
+livraison. Pourquoi : `reseau.js` « deux tablettes voient la même
+circulation » rougissait une fois sur deux, sur `origin/main` comme sur la
+branche (35 blocs d'écart). L'hôte annonce l'heure de la rue avec celle du
+ciel « toutes les trois secondes » — un compte à rebours en `dt`, borné à un
+vingtième de seconde : à deux images par seconde, une annonce toutes les
+trente secondes, et un invité qui avait calé gardait sa rue en retard jusque
+là. Ce que ça change : l'annonce se cadence en temps réel (`cadence.js`,
+v226). Ce qui le prouve : un témoin de `reseau.js` fait ramer l'hôte (400 ms
+par image, douze secondes) et compte les annonces — quatre attendues, au
+moins trois exigées.
+
+**Et devant l'enfant, une voiture pile quand il le faut.** Le premier portail
+de la v372 a rendu « la circulation s'arrête devant la voiture de l'enfant »
+rouge : trois et quatre relevés au travers sur deux passages seuls de
+`monte.js`, zéro sur la v363. Le freinage doux ne suffisait pas à une voiture
+qui voit l'enfant tard, et une fois au contact elle passait au travers.
+Devant une personne, elle pile désormais dès que le freinage d'urgence ne
+suffit plus.
+
+---
 
 ## v394 — Toute l'Europe en relief
 
