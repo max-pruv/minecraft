@@ -14,6 +14,11 @@ const VUES = [
   { nom: 'londres-rue-2', x: -1283, z: -1354, yaw: Math.PI, pitch: 0.15, h: 1.6 },
   { nom: 'londres-facade', x: -1286, z: -1351, yaw: Math.PI / 2, pitch: 0.2, h: 3.5 },
   { nom: 'londres-ciel', x: -1290, z: -1340, yaw: Math.PI / 2, pitch: -0.6, h: 30 },
+  // Nice : l'enduit et les persiennes ; Lille : la brique et la pierre blonde (v392)
+  { nom: 'nice-rue', x: 1689, z: 3256, yaw: 0, pitch: 0.18, h: 1.6 },
+  { nom: 'nice-rue-2', x: 1635, z: 3151, yaw: Math.PI / 2, pitch: 0.15, h: 1.6 },
+  { nom: 'lille-rue', x: -29, z: -858, yaw: -Math.PI / 2, pitch: 0.15, h: 1.6 },
+  { nom: 'lille-rue-2', x: -26, z: -906, yaw: 0, pitch: 0.18, h: 1.6 },
 ];
 
 (async () => {

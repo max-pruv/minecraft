@@ -482,7 +482,7 @@ function verifier(nom, ok, detail = '') {
           for (const pl of c.places) {
             const peinture = pl[6];
             if (peinture === null) continue;              // livrée d'origine : rien à perdre
-            // LA TEINTE DE CHAQUE VOITURE AVANT LA MONTE (v391) : on compare
+            // LA TEINTE DE CHAQUE VOITURE AVANT LA MONTE (v393) : on compare
             // la monture à la voiture RÉELLEMENT prise, lue dans `pris`, pas à
             // celle qu'on visait — un convoi roule, et quand le premier appui
             // ne monte pas, le suivant peut prendre la voisine (deux rouges

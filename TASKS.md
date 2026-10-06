@@ -1,5 +1,18 @@
 # Ce qui est en cours
 
+- [ ] **LE PORTAIL DE LA v391 (la tablette mesure sa vitesse au sol), DOUBLE
+  MESURE FAITE.** Onze suites ; mes deux témoins verts (règle 36/192/2 ; ligne
+  « roulage : 43 b/s · trou devant 16 blocs · débit 4 morceaux/s »). Rouges :
+  `maj.js` (libération `null`, « ne floute rien » — déclarés), `carte.js`
+  (glisser bridé ×4, 414 ms pour 400 — déclaré), `manhattan.js` (façade
+  11 684 → 42 919, taxi — déclarés) et un NEUF de `monte.js` : « un passant
+  change de trottoir au feu » (4 traversées, 3 au rouge, **1 au vert**).
+  `monte.js` rejouée SEULE : branche VERTE en entier (5 traversées, 0 au vert) ;
+  `origin/main` (v386) verte sur ce témoin avec **1 au vert sur 5** aussi, et
+  rouge sur le trou du chasseur en vol (intermittence déclarée). Le témoin du
+  feu est une proportion qui frôle sa barre sous la charge, des deux côtés ;
+  zone des piétons, non reprise ici. La livraison ne touche les piétons par
+  aucun chemin (une ligne de `?diag=1`, un champ du journal de bord).
 - [ ] **LE PORTAIL DE LA v388 (le GPS se partage).** Rouges : `maj.js` « il
   couvre toutes les versions du journal » (`manquantes: [384]` — À MOI :
   l'entrée du journal écrite pendant le portail, la ligne de `nouveautes.js`
@@ -443,6 +456,44 @@
   (`manhattan.js`), « la monoplace ralentit assez » (9,1 m/s, identique sur
   `origin/main`), le bouton « Conduire » (un métro à portée), les programmes à
   la téléportation et l'arrivée sur une ville (2 267 ms · 26,4 %).
+- [ ] **LE COÛT D'UN MORCEAU DE VILLE : PROFIL PLAT APRÈS LA v391.** Mesuré sous
+  node (monde neuf, 117 morceaux engendrés, 77 maillés sans HD) : Paris 4,4 ms
+  de génération et 7,2 de maillage par morceau, Rome 3,5 et 9,9, Londres 4,5 et
+  10,7. Profil `--cpu-prof` de Londres, temps propre : `generateChunk` 10,5 %,
+  `buildChunkTampons` 9,3 %, ramasse-miettes 7 %, `terrainHeight` 5,1 %,
+  `addFace` 3,5 %, `solLondresCalcul` 2,5 %, `chunkTop` 2,4 %, `hauteurTerre`
+  2,4 %, `cityAtParmi` 1,9 % — aucun poste ne domine. La méthode « une ligne à
+  la fois » de la v352 n'a plus de ligne lourde à prendre : le prochain gain
+  est de structure (moins de faces émises, moins d'allocations dans le
+  mailleur), à prouver par l'empreinte des 490 morceaux. Et le chemin HD du
+  mailleur est la zone de claude/hd-villes-europe.
+- [ ] **LE PLAFOND AU SOL SUR L'IPAD — LA MARCHE POUR MAX (v391).** Le banc
+  ne peut pas relever `VITESSE_SOL_MAX` (ville 70, campagne 80) : il rend en
+  logiciel, à une cadence qui n'est pas celle de la tablette. `?diag=1` affiche
+  désormais, en roulant, une ligne « roulage : V b/s · trou devant T blocs ·
+  débit D morceaux/s · file F · ordre … · recharge … », et le journal de bord
+  la range toutes les cinq secondes (`roulage: { v, trou, debit }` dans
+  `journal_appareil`) — je peux donc la relire sans que Max ne recopie rien.
+  La marche, sur l'iPad de la maison, étendue « Auto » :
+  1. ouvrir `https://minecraft-fam.vercel.app/?diag=1`, jouer, ouvrir la carte,
+     se téléporter au centre de **Paris**, attendre que le compteur de morceaux
+     ne monte plus (une dizaine de secondes) ;
+  2. prendre une voiture de la rue (« Conduire »), choisir une grande avenue
+     droite (les Champs-Élysées, ou le boulevard Haussmann), pleins gaz dix
+     secondes ;
+  3. relever trois fois la ligne « roulage » (capture d'écran) : la vitesse, le
+     trou, le débit ; et la première ligne (images par seconde, pire image) ;
+  4. refaire la même chose en **campagne**, sur l'A1 (la carte, « A1 »), à
+     pleins gaz ;
+  5. si l'avion est plus simple : un vol bas au-dessus de Paris donne le même
+     trou (la vitesse est plus haute, ce qui dit le plafond par l'autre bout).
+  Ce qui décide : le plafond tient si le trou reste au-dessus de **deux
+  secondes de route** (à 70 b/s, 140 blocs) ; s'il tombe sous une seconde,
+  le plafond doit baisser pour ce palier ; s'il reste au-dessus de 190 (le
+  bord du disque à rr 12), il peut monter. Le débit dit pourquoi : sous ~50
+  morceaux par seconde la file attend l'image (ordre en cône utile, v380),
+  au-dessus de 90 le worker suit. Sans session de ma part : le journal du
+  nuage garde les relevés, je les relirai à la prochaine.
 - [ ] **LE PLAFOND DE VITESSE AU SOL EST MESURÉ ET PUBLIÉ (v346) — À APPLIQUER
   PAR LA CONDUITE, ET À CONFIRMER SUR LA TABLETTE.** `src/plafond-sol.js` :
   `VITESSE_SOL_MAX` = 60 b/s en ville, 70 en campagne et sur l'autoroute ;
@@ -2410,7 +2461,8 @@
      ses registres — brique de Londres, tuile de Rome, pan de bois.
      **État (v390).** Palier A livré : Londres (`VILLES_HD`, `STYLES.londres`,
      le mur d'à côté lu par `murVoisin`, les murs Briques/Uni dans la couche).
-     Restent : B (Nice, Lille), C (villes engendrées d'Europe). Dette déclarée :
+     Palier B livré (v392) : Nice et Lille (`STYLES.nice`, `STYLES.lille`).
+     Reste : C (villes engendrées d'Europe). Dette déclarée :
      le raccord ville/campagne (`raccordInterdit`) n'est interdit qu'à Paris —
      une colonne de raccord de Londres montre la surface plate, pas le sol HD.
      Portail de la v390 (lancé sous le numéro v386, avant deux rebases) : 12 suites vertes, `parishd.js` comprise ; cinq
@@ -2422,6 +2474,14 @@
      (v291) : aucune de ces suites ne force `?hd=`, le banc rend en logiciel,
      donc `RAYON_HD` vaut 0, `world.hd` est faux et `villeHD` n'est jamais
      appelé — le mailleur y prend exactement le chemin d'avant.
+     Portail de la v392 (cinq suites) : `parishd.js` et `plafond.js` verts ;
+     `maj.js` rend ses deux rouges déclarés ; `monte.js` un rouge NEUF —
+     « un flâneur posé au milieu de la chaussée en sort et flâne au bord »
+     (témoin de la v385) : à Rome, trois essais, sortie après 3,1 · 2,8 ·
+     3,8 s, d 1,27 · 1,84 · 3,3, arrivée « t », « a », « a ». PREUVE
+     STRUCTURELLE (v291) : `monte.js` ne force pas `?hd=`, `world.hd` y est
+     faux et la couche n'est jamais lue. À reprendre par la session des
+     passants, avec sa double mesure.
 
   Ce qu'on ne touche PAS : le système de coordonnées, les clés de stockage, les
   blocs sauvegardés, `terrainHeight`, les contrats réseau. La couche HD LIT les

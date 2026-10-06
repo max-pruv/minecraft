@@ -35,7 +35,7 @@ import { creerEmbarquement } from './embarquement.js';
 // v255 ; leurs clés restent en place, et sync.js continue de faire voyager le
 // sac et la quête tels quels. On n'efface rien.
 // La caméra de poursuite et son retard (`?camlag=`, v278) vivent dans
-// `sensations.js` depuis la v391.
+// `sensations.js` depuis la v393.
 const RECORDS_KEY = 'web-minecraft-records-v1';
 const PHOTOS_KEY = 'web-minecraft-photos-v1';
 
@@ -1187,7 +1187,7 @@ export function initFun(ctx) {
     // voiture et la caméra, elle avance devant lui plutôt que d'entrer
     // dans la roche.
     if (a.def.poursuite) {
-      // LA POURSUITE ET LA CAISSE QUI VIT (v391) : la caméra qui recule et
+      // LA POURSUITE ET LA CAISSE QUI VIT (v393) : la caméra qui recule et
       // ouvre son champ avec la vitesse, qui ne traverse pas les murs, qui
       // regarde dans le virage et tremble au choc ; la caisse qui penche et
       // plonge ; les roues qui braquent ; le son des rapports et des pneus.
@@ -1303,7 +1303,7 @@ export function initFun(ctx) {
     }
     updateRide(dt);
     degats.update(dt, player.camera, animalManager.animals);   // fumée, feu, carcasses (v343)
-    // CE QU'ON QUITTE SE REPOSE (v391) : la voiture garée reprend son
+    // CE QU'ON QUITTE SE REPOSE (v393) : la voiture garée reprend son
     // assiette et ses roues droites, et le champ de la caméra revient.
     if (riding !== derniereMonture) { reposerVoiture(derniereMonture); derniereMonture = riding; }
     if (!riding) sensationsAPied(player, dt);

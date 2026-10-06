@@ -6,13 +6,29 @@
 
 export const NOUVEAUTES = [
   {
-    v: 391,
+    v: 393,
     titre: 'Conduire comme au cinéma',
     puces: [
       'La caméra recule quand on accélère',
       'La voiture penche dans les virages',
       'Les roues avant tournent avec toi',
       'Les pneus crissent, les chocs s\'entendent',
+    ],
+  },
+  {
+    v: 392,
+    titre: 'Nice et Lille en relief',
+    puces: [
+      'Les persiennes de Nice, de près',
+      'La brique de Lille, de près',
+    ],
+  },
+  {
+    v: 391,
+    titre: 'La tablette mesure la route',
+    puces: [
+      'Papa peut mesurer la vitesse',
+      'Rien ne change pour toi',
     ],
   },
   {

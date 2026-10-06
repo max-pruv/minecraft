@@ -191,3 +191,35 @@ export function estUnSaut(avant, apres, R) {
   if (!avant || !apres) return false;
   return Math.max(Math.abs(apres.cx - avant.cx), Math.abs(apres.cz - avant.cz)) > R;
 }
+
+// ── LA MESURE QUE MAX FAIT SUR LA TABLETTE (v380) ───────────────────────────
+//
+// `VITESSE_SOL_MAX` ne se relève que sur l'iPad (le banc rend en logiciel, sa
+// cadence n'est pas celle de la tablette). `?diag=1` affiche donc, en roulant,
+// les deux grandeurs que la sonde du banc mesure — le critère de la v346 — pour
+// que Max les lise sans session : le TROU devant soi (le monde maillé dans le
+// champ, ±40° autour du DÉPLACEMENT, jusqu'au premier morceau manquant) et le
+// DÉBIT de morceaux installés. Pure, lue par main.js et par un témoin.
+//   maille(cx, cz) : vrai si le morceau est maillé
+//   dir            : direction unitaire du déplacement {x, z}
+// Rend la distance en BLOCS au premier morceau manquant (R × 16 si aucun).
+export function trouDevant({ pcx, pcz, R, dir, maille, CHUNK = 16 }) {
+  let trou = R;
+  for (let dz = -R; dz <= R; dz++) {
+    for (let dx = -R; dx <= R; dx++) {
+      const len = Math.hypot(dx, dz);
+      if (len < 1 || len > R) continue;
+      if ((dx * dir.x + dz * dir.z) / len < 0.766) continue;   // ±40°
+      if (len < trou && !maille(pcx + dx, pcz + dz)) trou = len;
+    }
+  }
+  return Math.round(trou * CHUNK);
+}
+
+// Le débit : morceaux installés par seconde sur une fenêtre glissante de
+// dates (ms). Rend 0 sans dates.
+export function debitRecent(dates, maintenant, fenetre = 2000) {
+  let n = 0;
+  for (let i = dates.length - 1; i >= 0 && dates[i] >= maintenant - fenetre; i--) n++;
+  return Math.round((n * 1000) / fenetre);
+}

@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v391 — Conduire comme au cinéma
+## v393 — Conduire comme au cinéma
 
 **Pourquoi.** Max (4 octobre 2026) : « une grosse refonte de la façon de
 conduire… comme GTA ». Au volant, la caméra restait rivée à six blocs quatre
@@ -53,6 +53,56 @@ choc 0,90 contre 0,073, secousse 0,23 bloc, caméra du côté de la voiture. Le 
 se mesure en ordre alterné sur la même page (`?sensations=0` rejoue l'ancienne
 conduite) : aucun appel de dessin ni programme de shader de plus (67 des deux
 côtés).
+
+---
+
+## v392 — Nice et Lille en relief
+
+**Pourquoi.** Le palier A avait donné son relief à Londres ; Nice et Lille, les
+deux autres villes d'Europe bâties à la main, restaient en façades plates à
+toute distance — et leur palette de décor (l'orange de signalisation, le jaune
+de balise à Nice ; un rouge de jouet à Lille) se voyait telle quelle.
+
+**Ce que ça change.** De près, Nice a ses enduits ocre, rose et sable, patinés
+vers un vrai ocre, ses persiennes ouvertes de part et d'autre des baies et son
+garde-corps de fer. Lille a sa brique flamande patinée, l'encadrement et le
+linteau de pierre blonde. Les deux villes ont le trottoir relevé et leurs
+arbres maillés ; ni colonne Morris ni banc de Paris. Un appareil au palier bas
+ne reçoit rien de neuf ; Paris et Londres n'ont pas bougé d'un octet.
+
+**Ce qui le prouve.** Quatorze témoins neufs dans `parishd.js` (sept par
+ville), rouges sur `origin/main` : la couche couvre la ville, ne pose aucun
+bloc, rend les tampons d'avant sans HD, détaille chaque face exposée, pose le
+mur de la ville (enduit et persiennes à Nice, brique à Lille, jamais la pierre
+de Paris), sans mobilier parisien, et le morceau le plus lourd pèse moins de
+1,1 Mo (Nice 0,74, Lille 1,06 ; Paris 10).
+
+---
+
+## v391 — La tablette mesure sa vitesse au sol
+
+**Pourquoi.** Le plafond de vitesse des voitures (`VITESSE_SOL_MAX` : 70 blocs
+par seconde en ville, 80 en campagne) a été mesuré au banc, qui rend en
+logiciel à une cadence qui n'est pas celle de l'iPad. Il ne peut se confirmer
+que sur la tablette, et rien ne permettait à Max de le relever sans une session
+de développement à côté.
+
+**Ce que ça change.** Avec `?diag=1`, dès qu'on roule, une ligne de plus :
+« roulage : vitesse · trou devant soi (le monde maillé dans le champ, ±40°
+autour du déplacement) · débit de morceaux par seconde · file · ordre ·
+recharge ». Le journal de bord la range toutes les cinq secondes
+(`roulage: { v, trou, debit }`), si bien qu'un essai de Max se relit dans le
+nuage sans rien recopier. La marche exacte — adresse, ville, avenue, ce qu'il
+faut relever et ce qui décide — est dans `TASKS.md`. Sans `?diag=1`, rien ne
+change.
+
+**Ce qui le prouve.** Deux témoins dans `monte.js` : la règle pure (un trou
+connu, un débit connu) et la page (à quarante blocs par seconde, la ligne
+paraît et porte des nombres ; à l'arrêt elle n'y est pas). Rouges sur l'ancien
+code : la règle n'existe pas, la ligne non plus. Portail complet.
+
+---
+
 ## v390 — Londres en relief
 
 **Pourquoi.** Max : « when done do all European cities ». La couche de détail
