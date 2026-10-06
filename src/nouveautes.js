@@ -6,11 +6,44 @@
 
 export const NOUVEAUTES = [
   {
-    v: 385,
+    v: 389,
     titre: 'Londres rejoint Birmingham',
     puces: [
       'Une autoroute passe par le col',
       'On entre dans Londres par King\'s Cross',
+    ],
+  },
+  {
+    v: 388,
+    titre: 'Ton GPS se partage',
+    puces: [
+      'Ton ami voit où tu vas',
+      'Il peut y aller avec toi',
+    ],
+  },
+  {
+    v: 387,
+    titre: 'Des voitures dans les deux sens',
+    puces: [
+      'Presque chaque ville a plusieurs circuits',
+      'Les voitures roulent dans les deux sens',
+      'Les petites villes ont un second circuit',
+    ],
+  },
+  {
+    v: 386,
+    titre: 'New York vérifiée',
+    puces: [
+      'Arriver à New York reste fluide',
+      'Rien ne change pour toi',
+    ],
+  },
+  {
+    v: 385,
+    titre: 'Les passants quittent la rue',
+    puces: [
+      'Personne ne reste planté sur la route',
+      'Ils retournent vite sur le trottoir',
     ],
   },
   {

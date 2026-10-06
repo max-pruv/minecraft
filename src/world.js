@@ -3875,7 +3875,7 @@ export class World {
           if (city.key === 'paris' && [[x0, z0], [x1, z0], [x0, z1], [x1, z1], [ccx, ccz]]
             .some(([ax, az]) => !lotParisLibre(ax, az))) continue;
           // UNE MAISON DE LA TRAME GÉNÉRIQUE NE SE POSE NI SUR UNE ROUTE NI SUR
-          // SON ENTRÉE (v385). Londres se bâtit colonne par colonne, mais cette
+          // SON ENTRÉE (v389). Londres se bâtit colonne par colonne, mais cette
           // boucle ne l'exclut pas : hors de la place que « le mobilier de
           // Londres » réserve (soixante-dix-sept blocs autour du centre), elle
           // y pose encore ses maisons, par-dessus la ville. L'une barrait

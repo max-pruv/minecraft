@@ -18,7 +18,7 @@ import { couloirVoiture, cheminDeTraversee, axeCoupe } from './pietons.js';
 import { cadence, chronoReel } from './cadence.js';
 import { axeDuFeu, axeDuCap, etatFeu } from './feux.js';
 import { cadran } from './cap.js';
-import { guidage, arriveEntre, nomDestination, rotationContinue, repereMinicarte } from './gps.js';
+import { guidage, arriveEntre, nomDestination, rotationContinue, repereMinicarte, ARRIVEE } from './gps.js';
 import { POLE } from './pole.js';
 import { LIGNES as LIGNES_DC, traceLigneMetro, arretsDeLigne, circuitsWashington } from './washington.js';
 import { buildChunkTampons } from './mesher.js';
@@ -42,7 +42,7 @@ import { contexteAudio, sortieAudio, reglerSon, sonActif, etatSon, radioEnCours,
 import { traceAnneau } from './ville.js';
 import { traceCourse } from './circuit.js';
 import { USINE, PARC, traceChaine } from './usine.js';
-import { tracesCirculationParesseuses, tracesCirculationMain, avenueDEntree } from './villesmonde.js';
+import { circulationsAPlier, tracesCirculationMain, avenueDEntree } from './villesmonde.js';
 import { createPassants } from './passants.js';
 import { createPoissons } from './poissons.js';
 import { segmentsDeTrain, traceSegment } from './trains.js';
@@ -1866,7 +1866,9 @@ function updateChunks() {
   ];
   const dejaServies = new Set(propres.map((t) => t.cle));
   circulationsEnAttente = [
-    ...tracesCirculationParesseuses(solDe),
+    // un repère par ville engendrée : ses anneaux se calculent à l'approche
+    // (`deplier`, v372), pas ici, derrière le bouton « Jouer »
+    ...circulationsAPlier(solDe),
     ...tracesCirculationMain(
       CITIES.filter((c) => c.key !== 'ny' && !dejaServies.has(c.key)), solDe),
     ...planUrbain.circuitsManhattan().map(t=>({...t,...urbain.versTerre(t.x,t.z),ville:'ny',pts:t.pts.map(p=>({...p,...urbain.versTerre(p.x,p.z)}))})),
@@ -2686,7 +2688,10 @@ let gpsRot = null;            // l'angle AFFICHÉ de la flèche, continu (v321)
 // Tour Eiffel se dit « Tour Eiffel », pas « Paris ». Sans nom, celui de la
 // ville dont le disque contient le point, ou « le point choisi ».
 function demarrerGPS(x, z, nom) {
-  gpsCible = { x, z, nom: nom || nomDestination(x, z) };
+  // `k` nomme CE trajet (v388) : l'ami ne se voit proposer une destination
+  // qu'une fois, même si elle repasse à chaque position
+  gpsCible = { x, z, nom: nom || nomDestination(x, z), k: (Date.now() % 1e8).toString(36) + Math.floor(Math.random() * 1296).toString(36) };
+  if (gpsAmi && Math.hypot(gpsAmi.x - x, gpsAmi.z - z) < ARRIVEE) cacherGPSAmi();
   gpsTexteAvant = ''; gpsPrec = null; gpsRot = null;
   document.body.classList.add('gps-actif');
   majGPS();
@@ -2725,6 +2730,55 @@ document.getElementById('gps-stop').addEventListener('click', (e) => {
   toast('🧭 GPS arrêté.', 0xcfd8e8);
 });
 window.__gps = () => (gpsCible ? { ...gpsCible, ...guidage(player.pos.x, player.pos.z, player.yaw, gpsCible) } : null);
+
+// LE GPS SE PARTAGE (v388). Max avait demandé la flèche (v306) ; à deux, un
+// enfant qui choisit Rome ne peut pas l'écrire à son ami. Sa destination
+// voyage avec sa position (`g`, net.js) et l'ami reçoit une PROPOSITION —
+// « Marlon va à Rome — 🧭 y aller aussi ? » — jamais un ordre : un GPS déjà
+// en cours ne change que si l'on touche le bouton (règle de la v306 : un
+// geste qui change le trajet pose la question). Une seule proposition à la
+// fois, la plus récente ; elle s'efface seule au bout de vingt secondes (en
+// temps RÉEL, v226), quand l'ami arrête son GPS, ou quand on y va déjà.
+const gpsAmiEl = document.getElementById('gps-ami');
+const gpsAmiTexte = document.getElementById('gps-ami-texte');
+let gpsAmi = null;              // { de, qui, x, z, nom, k, jusqua }
+function cacherGPSAmi() {
+  gpsAmi = null;
+  if (gpsAmiEl) gpsAmiEl.classList.remove('visible');
+}
+function proposerGPSAmi(id, rp, g) {
+  if (!gpsAmiEl) return;
+  if (!Array.isArray(g) || !Number.isFinite(g[0]) || !Number.isFinite(g[1])) {
+    if (gpsAmi && gpsAmi.de === id) cacherGPSAmi();   // il a arrêté son GPS
+    return;
+  }
+  const k = String(g[3] || ''), x = g[0], z = g[1];
+  if (rp.gpsVu === k) return;
+  rp.gpsVu = k;
+  if (gpsCible && Math.hypot(gpsCible.x - x, gpsCible.z - z) < ARRIVEE) return;   // on y va déjà
+  if (Math.hypot(player.pos.x - x, player.pos.z - z) < ARRIVEE) return;           // on y est
+  const nom = String(g[2] || '').slice(0, 40) || 'le point choisi';
+  gpsAmi = { de: id, qui: rp.name || 'Ton ami', x, z, nom, k, jusqua: performance.now() + 20000 };
+  gpsAmiTexte.textContent = nom === 'le point choisi'
+    ? `${gpsAmi.qui} va vers un point de la carte — y aller aussi ?`
+    : `${gpsAmi.qui} va à ${nom} — y aller aussi ?`;
+  gpsAmiEl.classList.add('visible');
+}
+function majGPSAmi() {
+  if (gpsAmi && performance.now() > gpsAmi.jusqua) cacherGPSAmi();
+}
+document.getElementById('gps-ami-oui')?.addEventListener('click', (e) => {
+  e.preventDefault(); e.stopPropagation();
+  if (!gpsAmi) return;
+  const { x, z, nom } = gpsAmi;
+  cacherGPSAmi();
+  demarrerGPS(x, z, nom === 'le point choisi' ? undefined : nom);
+});
+document.getElementById('gps-ami-non')?.addEventListener('click', (e) => {
+  e.preventDefault(); e.stopPropagation();
+  cacherGPSAmi();
+});
+window.__gpsAmi = () => (gpsAmi ? { de: gpsAmi.de, qui: gpsAmi.qui, nom: gpsAmi.nom, x: gpsAmi.x, z: gpsAmi.z } : null);
 // Une destination neuve ou effacée se montre TOUT DE SUITE sur la minicarte :
 // elle ne se redessine d'elle-même que quand l'enfant a bougé.
 function majMinicarteGPS() {
@@ -3046,9 +3100,12 @@ function animerLesVilles(dt) {
   }
   if (choisi < 0) return;
   const tr = circulationsEnAttente[choisi];
-  // une ville engendrée n'a calculé ses anneaux qu'ici (v378) : on la déplie
-  // en ses traces, servies aux tours suivants
-  if (tr.deplier) { circulationsEnAttente.splice(choisi, 1, ...tr.deplier()); return; }
+  // Une ville engendrée arrive pliée : on calcule ses anneaux maintenant, et
+  // ils naissent aux tours suivants, comme les autres (v372).
+  if (tr.deplier) {
+    circulationsEnAttente.splice(choisi, 1, ...tr.deplier());
+    return;
+  }
   // la graine vient de la ville, pas de la file (v246, voir graineDeVille)
   vehicules.circulation(tr.pts, graineDeVille(tr), {ville:tr.ville});
   // le bus dessert le grand anneau — un par ville, à sa couleur
@@ -4346,12 +4403,14 @@ function syncRemotePlayers(list) {
     // l'ignore (le receveur cède).
     if (rp.vehicule) fun.degats.distant(rp.vehicule.mesh, (p.v && p.v.d) || null);
     rp.passager = p.p || null;
+    proposerGPSAmi(p.id, rp, p.g || null);   // sa destination, proposée (v388)
   }
   for (const [id, rp] of remotePlayers) {
     if (!seen.has(id)) {
       // on ne retire pas tout de suite : leaveEffect fait disparaître le corps
       poserDebout(rp);
       synchroniserVehiculeDistant(rp, null);
+      if (gpsAmi && gpsAmi.de === id) cacherGPSAmi();   // il est parti (v388)
       leaveEffect(rp.mesh, rp.name || 'Un ami');
       remotePlayers.delete(id);
     }
@@ -4534,6 +4593,8 @@ function startNetSession(code, isHost, patience) {
     // les chocs de la rue (v374) : pour l'ami dont l'hôte ne relaie pas `rue_choc`
     const rc = fun.degats.histoiresRecentes();
     if (rc) p.rc = rc;
+    // où l'on va (v388) : l'ami se voit proposer d'y aller aussi
+    if (gpsCible) p.g = [Math.round(gpsCible.x), Math.round(gpsCible.z), gpsCible.nom, gpsCible.k];
     return p;
   };
   world.onOp = (k, id, ts) => { if (net && net.active) net.sendOp(k, id, ts); };
@@ -7895,6 +7956,7 @@ function frame(now) {
   fun.update(dt);
   majBoutonsVehicule();
   if (running) majGPS();   // à pied comme au volant (v306)
+  majGPSAmi();             // la proposition d'un ami s'efface seule (v388)
   asseoirLeConducteur(dt);
   effects.update(dt);
 

@@ -324,22 +324,26 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // lieu, sonde du scratchpad) sur `origin/main` (v367 puis v369) et sur la branche :
 // les huit autres lieux identiques au bit près, Washington seul diffère
 // (7bb3f492… → 019bb14a…).
-// v378 : les anneaux de voitures écartent les monuments, et leurs ponts avec
-// eux — voulu (un tablier est un sol). Le filtre désarmé et les anneaux de
-// quartier d'Agra et du Cap retirés, la branche rend e72d29bc…, la constante
-// d'`origin/main` (v375), au bit près.
-// v381 : deux changements de CONTENU, voulus. Les tabliers des villes
-// engendrées couvrent les colonnes d'eau du demi-bloc au-delà de leurs bouts
-// (dont des lieux relevés ici), et Tokyo, un des neuf lieux, porte dans ses
-// morceaux le raccord du Tōmei. La preuve : la même branche, la règle des
-// tabliers désarmée (les bornes `a0`/`a1` d'avant) ET le Tōmei retiré du
-// registre, rend ddf97f87…, la constante d'`origin/main` (v380), au bit près.
-// v385 : Londres, un des neuf lieux, porte l'entrée de la M40 (une collectrice
+// v387 : les anneaux des villes engendrées (pas de trame, contresens, aucun
+// anneau dans un monument) changent les TABLIERS de Rome et de Tokyo, deux des
+// neuf lieux — voulu. Mesuré lieu par lieu : les sept autres identiques au bit
+// près ; à Rome 29 blocs sur 18 colonnes, à Tokyo 108 blocs sur 87 colonnes (un
+// bloc de tablier de plus au bout, pour la colonne arrondie), et
+// AUCUNE de ces colonnes n'est hors d'un tablier d'avant ou d'après
+// (`pontVillesMonde` des deux arbres, sonde `diffbl.mjs` du scratchpad).
+// La v378 (ddf97f87…, livrée en parallèle) avait ses propres anneaux, que
+// ceux-ci remplacent : la constante reste celle mesurée contre la v373.
+// v381, livrée en parallèle, porte le Tōmei dans les morceaux de Tokyo et
+// couvre l'eau au-delà des bouts de tablier (ici déjà fait d'un bloc). Après la
+// fusion : 1f385723…. La preuve : le même code, le Tōmei retiré du registre,
+// rend 0cf845f5…, la constante de cette livraison avant la fusion, au bit
+// près — la règle d'eau de la v381 ne change aucun bloc de ces tabliers.
+// v389 : Londres, un des neuf lieux, porte l'entrée de la M40 (une collectrice
 // de la porte nord à Pentonville Road) et perd la maison de la trame générique
 // qui la barrait — voulu. La M40 retirée du registre (donc son entrée et le
-// lot qu'elle écartait), la branche rend 6976e4f4…, la constante
-// d'`origin/main` (v384), au bit près.
-const EMPREINTE_MORCEAUX_V357 = 'a36a9f1a9f1f8a62cbb759cdb15a9e90116525fd052cdd9194375a41c6005d96';
+// lot qu'elle écartait), la branche rend 1f385723…, la constante
+// d'`origin/main` (v388), au bit près.
+const EMPREINTE_MORCEAUX_V357 = '7e7f4e360448ba52cecf0011875ea65734f3a14726291f0675c5f395f83e24bb';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
