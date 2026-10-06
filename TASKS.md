@@ -2586,6 +2586,32 @@
      nommé plus haut), « la file … puis se rend » rendue en 11 236 ms : non.
      Même preuve structurelle : `monte.js` ne force pas `?hd=`.
 
+  7. **Le reste du monde** (session `claude/hd-villes-monde`). Palier A livré
+     (v398) : Washington et San Francisco (`STYLES.washington`, `sfCentre`,
+     `sfSoma`, `sfMaisons`, la tuile `bardage`). Paliers B (les villes
+     engendrées des Amériques) et C (Asie, Moyen-Orient, Afrique, Océanie) à
+     suivre. Dettes déclarées :
+     - [ ] **le Colisée du catalogue change à chaque lancement** :
+       `monuments.js:501` tire ses gradins effondrés à `Math.random()` — 173
+       blocs du morceau (cx, cz + 1) de Rome différents entre deux exécutions
+       (sonde `empreinte.mjs`, sur `origin/main` comme sur la branche). Le worker
+       et le fil principal engendrent donc DEUX Colisées : on se cogne à des
+       gradins qu'on ne voit pas, ou l'on traverse ceux qu'on voit, et deux
+       tablettes n'ont pas le même. Remède d'une ligne (le tirage de la colonne,
+       `tirage(x, y, z)`), mais c'est un bloc écrit : il change le Colisée une
+       fois pour toutes, et un enfant a peut-être bâti contre — à décider avec la
+       zone des monuments, pas dans la couche HD ;
+     Portail de la v398 (quatre suites) : `parishd.js` et `plafond.js` verts ;
+     `maj.js` « corps, programmes et fond de carte » (déclaré) ; `monte.js`
+     « un passant change de trottoir au feu » à 1 au vert sur 4 (déclaré plus
+     haut, même chiffre sur `origin/main`). PREUVE STRUCTURELLE (v291) : aucune
+     des deux ne force `?hd=`, le banc rend en logiciel, la couche n'est jamais
+     lue.
+     - [ ] la vue de rue au centre de San Francisco montre la pierre HD entre
+       les fenêtres du mur-rideau (`CITY_BLOCK.CURTAIN`, hors couche) : le
+       mur-rideau reste une tuile plate, ce qui est juste (v195), mais son
+       raccord avec la pierre en relief est à juger sur la tablette.
+
   Ce qu'on ne touche PAS : le système de coordonnées, les clés de stockage, les
   blocs sauvegardés, `terrainHeight`, les contrats réseau. La couche HD LIT les
   blocs, elle n'en écrit aucun.
