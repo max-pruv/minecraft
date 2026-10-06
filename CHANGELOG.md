@@ -20,6 +20,29 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v392 — Nice et Lille en relief
+
+**Pourquoi.** Le palier A avait donné son relief à Londres ; Nice et Lille, les
+deux autres villes d'Europe bâties à la main, restaient en façades plates à
+toute distance — et leur palette de décor (l'orange de signalisation, le jaune
+de balise à Nice ; un rouge de jouet à Lille) se voyait telle quelle.
+
+**Ce que ça change.** De près, Nice a ses enduits ocre, rose et sable, patinés
+vers un vrai ocre, ses persiennes ouvertes de part et d'autre des baies et son
+garde-corps de fer. Lille a sa brique flamande patinée, l'encadrement et le
+linteau de pierre blonde. Les deux villes ont le trottoir relevé et leurs
+arbres maillés ; ni colonne Morris ni banc de Paris. Un appareil au palier bas
+ne reçoit rien de neuf ; Paris et Londres n'ont pas bougé d'un octet.
+
+**Ce qui le prouve.** Quatorze témoins neufs dans `parishd.js` (sept par
+ville), rouges sur `origin/main` : la couche couvre la ville, ne pose aucun
+bloc, rend les tampons d'avant sans HD, détaille chaque face exposée, pose le
+mur de la ville (enduit et persiennes à Nice, brique à Lille, jamais la pierre
+de Paris), sans mobilier parisien, et le morceau le plus lourd pèse moins de
+1,1 Mo (Nice 0,74, Lille 1,06 ; Paris 10).
+
+---
+
 ## v391 — La tablette mesure sa vitesse au sol
 
 **Pourquoi.** Le plafond de vitesse des voitures (`VITESSE_SOL_MAX` : 70 blocs

@@ -592,7 +592,7 @@ function verifier(nom, ok, detail = '') {
   async function temoinsVille({ cle, centre, attendu, interdit, rayonSonde }) {
     const fiche = HD.VILLES_HD && HD.VILLES_HD.find((d) => d.ville === cle);
     if (!fiche || typeof HD.villeHD !== 'function' || typeof HD.murHD !== 'function') {
-      verifier(`${cle} : la couche HD couvre la ville (VILLES_HD, villeHD, murHD)`, false, 'absents — la couche ne couvre que Paris');
+      verifier(`${cle} : la couche HD couvre la ville (VILLES_HD, villeHD, murHD)`, false, 'la ville n’est pas dans VILLES_HD (ou villeHD, murHD absents)');
       return;
     }
     const cxc = Math.floor(centre.x / CHUNK), czc = Math.floor(centre.z / CHUNK);
@@ -646,6 +646,11 @@ function verifier(nom, ok, detail = '') {
   {
     const { LONDRES } = await import('../src/londres.js');
     await temoinsVille({ cle: 'londres', centre: LONDRES, attendu: ['brique', 'enduit'], interdit: ['pierre', 'fer'] });
+    // PALIER B (v392) : Nice et Lille, même méthode
+    const { NICE } = await import('../src/nice.js');
+    const { LILLE } = await import('../src/lille.js');
+    await temoinsVille({ cle: 'nice', centre: NICE, attendu: ['enduit', 'volet'], interdit: ['pierre', 'brique'] });
+    await temoinsVille({ cle: 'lille', centre: LILLE, attendu: ['brique'], interdit: ['pierre', 'volet', 'fer'] });
     // un bloc de décor à motif posé par un enfant garde son dessin : seuls les
     // murs de brique et d'enduit passent dans la couche
     if (typeof HD.murHD === 'function') {

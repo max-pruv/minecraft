@@ -41,6 +41,8 @@
 import { BLOCK, CITY_BLOCK, ARCHI, ARCHI_BANDES, DECOR_START, DECOR_ITEMS } from './blocks.js';
 import { PARIS, infoFacadeParis, marquageParis } from './paris.js';
 import { LONDRES } from './londres.js';
+import { NICE } from './nice.js';
+import { LILLE } from './lille.js';
 
 // --- l'atlas HD : huit tuiles par huit, cent vingt-huit pixels ------------------
 
@@ -160,7 +162,10 @@ export const TOIT_HD = new Set([ARCHI.ZINC_LISSE, ARCHI.MANSARDE]);
 export const VILLES_HD = [
   { ville: 'paris', x: PARIS.x, z: PARIS.z, r: PARIS.r },
   { ville: 'londres', x: LONDRES.x, z: LONDRES.z, r: LONDRES.r, registre: 'londres', mobilier: false },
+  { ville: 'nice', x: NICE.x, z: NICE.z, r: NICE.r, registre: 'nice', mobilier: false },
+  { ville: 'lille', x: LILLE.x, z: LILLE.z, r: LILLE.r, registre: 'lille', mobilier: false },
 ];
+
 export function villeHD(cx, cz, chunk) {
   const x = cx * chunk + chunk / 2, z = cz * chunk + chunk / 2;
   for (const d of VILLES_HD) {
@@ -501,16 +506,33 @@ export function styleDuQuartier(nom) {
 STYLES.londres = {
   mur: 'brique', teintes: [[1, 1, 1]], baie: [0.32, 0.68, 0.1, 0.88], volets: false, filant: false,
   store: false, corniche: 1, voisin: true, orn: [0.98, 0.97, 0.93], gardeCorps: false, guillotine: true, linteau: 'brique',
-  patine: [0.3, [146, 92, 72]],
+  patine: { brique: [0.3, [146, 92, 72]] },
+};
+//   nice    — l'enduit ocre, rose et sable du Vieux-Nice et ses persiennes, la
+//             baie à garde-corps de fer ; la palette (l'orange de
+//             signalisation, le jaune de balise) est patinée vers un ocre
+//             chaud, de près seulement.
+STYLES.nice = {
+  mur: 'enduit', teintes: [[1, 0.9, 0.75]], baie: [0.34, 0.66, 0.14, 0.86], volets: true, filant: false,
+  store: false, corniche: 1, voisin: true, orn: [0.97, 0.94, 0.86], gardeCorps: true, patine: { enduit: [0.35, 'chaud'] },
+};
+//   lille   — la brique flamande et la pierre blonde : l'encadrement et le
+//             linteau de pierre calcaire, le rang-sur-rang ; ni volet ni fer.
+STYLES.lille = {
+  mur: 'brique', teintes: [[1, 1, 1]], baie: [0.3, 0.7, 0.12, 0.86], volets: false, filant: false,
+  store: false, corniche: 2, voisin: true, orn: [0.94, 0.89, 0.78], gardeCorps: false, linteau: 'pierre-lisse',
+  patine: { brique: [0.3, [150, 84, 62]] },
 };
 
 // Le bloc de décor le plus proche dans le plan de la façade : à gauche, à
 // droite, puis DESSUS et dessous — dessous, c'est souvent le rez-de-chaussée ou
 // un massif de fleurs du jardin de poche (vu en capture : une fenêtre de stuc
 // encadrée de rose). Rend l'entrée de `DECOR_ITEMS` ou null.
-function murVoisin(get, x, y, z, S) {
+// La corniche, elle, regarde dessous d'abord : au-dessus d'elle, c'est le toit.
+function murVoisin(get, x, y, z, S, dessousDabord = false) {
   if (!get) return null;
-  for (const [dx, dy, dz] of [[S[0], 0, S[2]], [-S[0], 0, -S[2]], [0, 1, 0], [0, -1, 0]]) {
+  const v = dessousDabord ? [[0, -1, 0], [0, 1, 0]] : [[0, 1, 0], [0, -1, 0]];
+  for (const [dx, dy, dz] of [[S[0], 0, S[2]], [-S[0], 0, -S[2]], ...v]) {
     const item = DECOR_ITEMS[get(x + dx, y + dy, z + dz) - DECOR_START];
     if (item) return item;
   }
@@ -539,12 +561,21 @@ export function murHD(id, ville) {
   const item = DECOR_ITEMS[id - DECOR_START];
   return !!item && MOTIFS_MUR_HD.has(item.pattern);
 }
-// `patine` : [part, couleur] — la brique de la palette est un rouge de jouet
-// (Rouge 200, 62, 56) ; de près, la couche la rapproche d'une vraie brique
-// cuite, sans la changer de famille (le loin garde la tuile du voxel).
+// `patine` : par tuile, [part, couleur] — la brique de la palette est un rouge
+// de jouet (Rouge 200, 62, 56), l'enduit de Nice l'orange de signalisation ;
+// de près, la couche les rapproche d'une vraie brique cuite, d'un vrai ocre,
+// sans les changer de famille (le loin garde la tuile du voxel). 'chaud' : la
+// couleur vers son propre gris, réchauffé — elle se désature sans changer de
+// clarté.
 export function murDuDecor(item, patine = null) {
   const tuile = item.pattern === 'Briques' ? 'brique' : 'enduit';
-  const rgb = patine && tuile === 'brique' ? item.rgb.map((c, i) => c + (patine[1][i] - c) * patine[0]) : item.rgb;
+  const p = patine && patine[tuile];
+  let rgb = item.rgb;
+  if (p) {
+    const L = 0.3 * rgb[0] + 0.59 * rgb[1] + 0.11 * rgb[2];
+    const cible = p[1] === 'chaud' ? [L * 1.08, L, L * 0.86] : p[1];
+    rgb = rgb.map((c, i) => c + (cible[i] - c) * p[0]);
+  }
   return { tuile, teinte: teinteDuMur(rgb, tuile) };
 }
 
@@ -961,7 +992,7 @@ export function facadeHD(buf, face, x, y, z, wx, wy, wz, id, ao, bas = BLOCK.AIR
   let teinte = st.teintes[Math.floor(graine * st.teintes.length) % st.teintes.length];
   if (reg && reg.voisin) {
     const propre = DECOR_ITEMS[id - DECOR_START];
-    const item = propre || murVoisin(get, x, y, z, REPERES[face.dir.join(',')].s);
+    const item = propre || murVoisin(get, x, y, z, REPERES[face.dir.join(',')].s, id === ARCHI.CORNICHE);
     if (item) {
       const m = murDuDecor(item, reg.patine);
       st = { ...reg, mur: m.tuile, linteau: m.tuile === 'brique' ? reg.linteau : null };

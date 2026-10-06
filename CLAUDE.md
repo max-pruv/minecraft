@@ -770,6 +770,22 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Nice et Lille en relief (v392) — un registre par ville, une patine par tuile
+
+Palier B. Deux règles.
+
+- **LA PATINE EST PAR TUILE, ET « CHAUD » DÉSATURE SANS CHANGER LA CLARTÉ.**
+  `patine: { brique: [part, rgb], enduit: [part, 'chaud'] }` : l'orange de
+  signalisation et le jaune de balise de la palette de Nice vont vers leur
+  propre gris réchauffé ; la brique de Lille vers une brique cuite. De près
+  seulement, le loin garde la tuile du voxel.
+- **LA CORNICHE LIT SON MUR DESSOUS.** `murVoisin` regarde à gauche, à droite,
+  puis dessus — sauf pour une corniche, dont le dessus est le toit : sans cela
+  elle prendrait la couleur des tuiles. Londres (sans corniche) et Paris (sans
+  registre) restent identiques à l'octet, mesuré.
+
+Mesuré : Nice 0,30 Mo par morceau en moyenne, 0,74 au pire ; Lille 0,48 et 1,06.
+
 ## Londres en relief (v390) — la couche HD devient une question par ville, et le mur suit la baie
 
 La consigne de Max (« when done do all European cities »), palier A. Cinq règles.
