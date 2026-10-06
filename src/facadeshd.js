@@ -678,7 +678,7 @@ const BRIQUE_DU_JEU = { pattern: 'Briques', colorName: 'Brique', rgb: [148, 68, 
 // sans les changer de famille (le loin garde la tuile du voxel). 'chaud' : la
 // couleur vers son propre gris, réchauffé — elle se désature sans changer de
 // clarté.
-// `unis` (v395) : la tuile d'un mur de motif « Uni » selon sa couleur — à
+// `unis` (v398) : la tuile d'un mur de motif « Uni » selon sa couleur — à
 // Washington, un uni chocolat est de la brique et un uni blanc du marbre ;
 // `uni` la tuile d'un uni que la table ne nomme pas. Sans eux, l'enduit.
 export function murDuDecor(item, patine = null, unis = null, uni = null) {

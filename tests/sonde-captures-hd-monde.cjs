@@ -1,4 +1,4 @@
-// Captures des villes hors d'Europe en couche HD (v395) : rue et ciel, pour juger
+// Captures des villes hors d'Europe en couche HD (v398) : rue et ciel, pour juger
 // sur image contre une vraie photo du même endroit, comme Max juge.
 //   node tests/sonde-captures-hd-villes.cjs <dossier> [tag] [vue,vue…]
 // Les postes ont été cherchés sous node : un trottoir face à une façade qui
