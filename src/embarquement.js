@@ -733,7 +733,6 @@ export function creerEmbarquement(ctx) {
     if (!s) return;
     s.fin = 'annulée';
     if (s.avion) {
-      if (s.sens === 'descendre' && s.monde) { player.pos.copy(s.monde); player.vel.set(0, 0, 0); }
       ouvrant(s.a.mesh, s.porte, 0);
       retirerAcces(s);
       if (ctx.montureConduite() !== s.a) s.a.montee = false;
