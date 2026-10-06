@@ -5074,7 +5074,16 @@ l'embarquement a eu lieu, pas par une hypothèse.
   voiture la plus proche s'est éloignée ou rapprochée.
 
 - [ ] **Ce qui reste du gel de téléportation après la v246 : le MAILLAGE
-  des morceaux à l'arrivée.** Les programmes de la flotte et des humains ne
+  des morceaux à l'arrivée.**
+  *(Mesuré en v404, `sonde-arrivee-journal.cjs`, arrivée à Paris en scène
+  vide, deux passages : avec un journal de 80 000 blocs l'ancien code (v400)
+  met 14 s à mailler la moitié du disque, n'en atteint jamais 90 % en 20 s
+  (505/625), passe 3,2 à 3,4 s du fil principal à engendrer et rend des images
+  de 567 à 717 ms ; depuis la v403, 3,4 s · 4,7 à 5,0 s · 0,3 s · 283 ms —
+  comme sans journal (3,2 · 4,6 · 0,3 · 250 à 300). Le gel de téléportation
+  des enfants qui ont beaucoup bâti était là. Ce qui reste en scène vide :
+  une pire image de 250 à 300 ms sans journal, non attribuée — le dessin, lui,
+  est SwiftShader et se relit sur la tablette, `?diag=1`.)* Les programmes de la flotte et des humains ne
   se compilent plus sur place (zéro programme neuf à l'arrivée à Paris, vingt
   avant) et les passants naissent par tranches ; sur le banc en rendu
   logiciel la pire image de la téléportation passe de 550 à 450 ms et le

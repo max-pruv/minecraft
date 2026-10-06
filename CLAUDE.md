@@ -1472,6 +1472,13 @@ Une règle.
   Le témoin du désert reste : il garde la campagne, où un morceau coûte trois
   fois moins.
 
+Et **le gel de téléportation se mesurait sur un banc qui n'avait rien bâti.**
+`sonde-arrivee-journal.cjs` rejoue l'arrivée à Paris avec un journal fabriqué
+de 80 000 blocs : sur l'ancien code, 90 % du disque jamais atteints en vingt
+secondes et 3,3 s de fil principal à engendrer ; depuis la v403, comme sans
+journal. Une sonde de performance qui joue sans les données de l'enfant ne
+mesure pas l'enfant le plus touché.
+
 ## Le journal de l'enfant se range par morceau (v403) — un index vit DANS la structure qu'il indexe
 
 `generateChunk` relisait tout le journal des blocs de l'enfant pour chaque
