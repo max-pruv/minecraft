@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 401,
+    titre: 'Monter avec un ami, sans raté',
+    puces: [
+      'Tu montes même si sa voiture change',
+      'Et tu en redescends pareil',
+    ],
+  },
+  {
     v: 400,
     titre: 'On descend de l\'avion',
     puces: [

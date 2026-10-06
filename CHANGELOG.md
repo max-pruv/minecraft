@@ -20,6 +20,28 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v401 — Le passager suit la voiture de son ami
+
+**Pourquoi.** Au portail, « le passager entre par la portière droite »
+(`reseau.js`, v377) allait et venait : Lou restait en « approche » puis la
+séquence s'annulait. La séquence tenait le MAILLAGE de la voiture de l'ami ;
+or une tablette refait ce maillage quand sa clé change ou quand l'ami est
+recréé (une reconnexion). Elle concluait « la voiture n'existe plus », et
+l'enfant restait à pied à côté de la voiture de son ami.
+
+**Ce que ça change.** La séquence redemande à chaque image la voiture de CE
+conducteur : si le maillage a changé, elle s'y rebranche (même place, même
+cap) et l'enfant s'assied quand même ; si la voiture manque, elle attend une
+seconde et demie avant de renoncer. Même chose en descendant.
+
+**Ce qui le prouve.** Un témoin neuf dans `reseau.js` PROVOQUE l'état (la
+tablette de Lou refait la voiture de Marlon pendant la marche) : vert sur la
+branche (rebranchée une fois, assise), rouge sur `origin/main`. Et les deux
+témoins du passager publient désormais, image par image, ce qui arrive à la
+voiture de l'ami (`suivi`) : le prochain rouge se démontera en une lecture.
+
+---
+
 ## v400 — On descend d'un avion par son escalier
 
 **Pourquoi.** Depuis la v389 on MONTE dans un avion par un escalier (une

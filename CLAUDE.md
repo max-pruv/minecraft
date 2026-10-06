@@ -1256,6 +1256,19 @@ un geste instantané ne regarde pas où il pose, une séquence doit le faire.
 Le passage vit dans `sonde-descente-avion.cjs` et `monte.js` l'appelle tel
 quel (`passage`, `juger`) : une copie de sonde finit par diverger du témoin.
 
+**Le passager suit la voiture de son ami, pas un maillage gardé (v401).**
+Une tablette REFAIT le maillage de la voiture d'un ami quand sa clé change
+ou quand l'ami est recréé (`synchroniserVehiculeDistant`) ; la séquence qui
+gardait l'ancien maillage s'annulait (« la voiture n'existe plus ») — le
+rouge de `reseau.js` qui allait et venait depuis la v377. `chez.veh()`
+redemande la voiture de CE conducteur à chaque image (`suivreLaVoiture`) :
+maillage changé → on s'y rebranche ; voiture absente → on attend
+`ABSENCE_MAX` (1,5 s de jeu) avant d'annuler. **Une séquence suit une
+IDENTITÉ (le conducteur), jamais un objet de rendu qu'un autre module peut
+remplacer.** Le témoin provoque l'état (v393) en changeant la clé chez Lou
+pendant la marche, et les témoins du passager publient un `suivi` image par
+image de la voiture de l'ami.
+
 **Une séquence qu'on ne juge qu'au banc se fait lire sur la tablette (v396).**
 Le banc saute la séquence (`embarq=0`) et rend en logiciel : durées, caméra et
 image figée ne se valident que sur l'iPad. `?diag=1` porte donc une ligne de
