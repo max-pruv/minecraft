@@ -1,4 +1,4 @@
-// SONDE (v384) : le GPS d'un enfant proposé à son ami — sur deux pages.
+// SONDE (v388) : le GPS d'un enfant proposé à son ami — sur deux pages.
 const { Banc, dormir, jusqua } = require('./banc.js');
 (async () => {
   const banc = new Banc(); await banc.ouvrir();

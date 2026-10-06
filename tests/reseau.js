@@ -667,7 +667,7 @@ function verifier(nom, ok, detail = '') {
       JSON.stringify({ ...pointAmi, marlonChezLui: marlonVrai }));
     await hote.evaluate(() => { const g = window.__game; if (g.fun.montureConduite && g.fun.montureConduite()) document.getElementById('ride-btn').click(); });
 
-    // LE GPS SE PARTAGE (v384). Marlon choisit Rome sur sa carte : chez Alice,
+    // LE GPS SE PARTAGE (v388). Marlon choisit Rome sur sa carte : chez Alice,
     // une PROPOSITION (« Marlon va à Rome — 🧭 y aller aussi ? »), et jamais un
     // ordre — elle roulait déjà vers Lyon, son GPS ne change pas tant qu'elle
     // n'a pas touché le bouton. Sur l'ancien code rien n'arrive chez elle :

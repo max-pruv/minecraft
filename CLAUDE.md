@@ -1895,7 +1895,7 @@ position, si (`{ ...msg }`). Ce qui doit traverser un ancien hôte s'accroche
 à elle, et devient idempotent en envoyant l'HISTOIRE (adoptée seulement si
 la nôtre en est le début), jamais le seul dernier événement.
 
-## Le GPS se partage (v384) — un état voyage avec la position, pas dans un message neuf
+## Le GPS se partage (v388) — un état voyage avec la position, pas dans un message neuf
 
 La dette de la v321. Trois règles.
 

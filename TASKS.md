@@ -1,6 +1,6 @@
 # Ce qui est en cours
 
-- [ ] **LE PORTAIL DE LA v384 (le GPS se partage).** Rouges : `maj.js` « il
+- [ ] **LE PORTAIL DE LA v388 (le GPS se partage).** Rouges : `maj.js` « il
   couvre toutes les versions du journal » (`manquantes: [384]` — À MOI :
   l'entrée du journal écrite pendant le portail, la ligne de `nouveautes.js`
   ajoutée ensuite) ; `manhattan.js` (trou, taxi — déclarés) ; `monte.js` (la
@@ -891,7 +891,7 @@
   est pur (circuits de `voies.js`/`paris.js`), la v321 n'y touche pas. Piste :
   le tour des monuments signalé par la v318 (une boîte jugée sur des colonnes
   couvre `c − b` à `c + b + 1`, un bloc plus près côté +). Zone voitures.
-- [x] **LE GPS : LE PARTAGE AVEC UN AMI EN LIGNE (v321) — fait en v384.** Par
+- [x] **LE GPS : LE PARTAGE AVEC UN AMI EN LIGNE (v321) — fait en v388.** Par
   la position (`g`), pas par un message neuf (leçon v374) ; proposition chez
   l'ami, jamais un ordre. Témoin à deux pages dans `reseau.js`. Reste : le
   témoin n'éprouve que le chemin direct (hôte → invité) ; le relayé (`rpos`)

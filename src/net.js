@@ -1660,7 +1660,7 @@ export class NetSession {
         // deux champs et voit l'ami à pied, comme avant — le receveur cède.
         entry.v = msg.v || null;
         entry.p = msg.p || null;
-        // LA DESTINATION DU GPS VOYAGE AVEC LA POSITION (v384) : `g` =
+        // LA DESTINATION DU GPS VOYAGE AVEC LA POSITION (v388) : `g` =
         // [x, z, nom, clé]. Un état, pas un événement — un ami qui arrive en
         // cours de route la voit, et un ancien hôte la relaie telle quelle
         // (`{ ...msg }`), là où il jetterait un message neuf (leçon v374).
@@ -1689,12 +1689,12 @@ export class NetSession {
         if (e2) {
           e2.pos = { x: msg.x, y: msg.y, z: msg.z }; e2.yaw = msg.yaw; e2.moving = !!msg.m;
           e2.v = msg.v || null; e2.p = msg.p || null;
-          e2.g = msg.g || null;   // la destination du GPS (v384)
+          e2.g = msg.g || null;   // la destination du GPS (v388)
           e2.seen = Date.now();   // c'est sa seule preuve de vie, cf. startHeartbeat
         }
         // l'histoire des chocs de la rue (v374) passe AUSSI par la position
         // relayée : c'est exactement le chemin d'un invité à l'autre sous un
-        // ancien hôte, et `rpos` ne la lisait pas (v384)
+        // ancien hôte, et `rpos` ne la lisait pas (v388)
         if (msg.rc && this.onRueHistoires) this.onRueHistoires(msg.rc);
         this.playersChanged();
         break;
@@ -1754,7 +1754,7 @@ export class NetSession {
       if (p.v) msg.v = p.v;                 // au volant : espèce et modèle (v253)
       if (p.p) msg.p = p.p;                 // passager : chez qui, quel siège
       if (p.rc) msg.rc = p.rc;              // l'histoire des chocs de la rue (v374)
-      if (p.g) msg.g = p.g;                 // la destination du GPS (v384)
+      if (p.g) msg.g = p.g;                 // la destination du GPS (v388)
       for (const c of this.conns.values()) this.envoyer(c, msg);
     }, 120);
   }
