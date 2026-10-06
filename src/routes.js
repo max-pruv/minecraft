@@ -435,7 +435,7 @@ export const ROUTES = [
   // sud-ouest de Tokyo), déblai et remblai 1,8, coudes ≤ 25°.
   { nom: 'Tōmei', villes: ['tokyo', 'nagoya'], bord: { tokyo: 24 },
     via: [[53256, 8150], [53023, 8317], [52949, 8378], [52921, 8389], [52887, 8390], [52828, 8365], [52773, 8334], [52712, 8328], [52445, 8420], [52378, 8414], [52320, 8388], [52298, 8371]] },
-  // LA M40 (v389), LONDRES–BIRMINGHAM. L'axe direct est barré par une crête
+  // LA M40 (v393), LONDRES–BIRMINGHAM. L'axe direct est barré par une crête
   // de 46 à 55 blocs, nord-sud, de z −2 110 à z −1 430 ; au sud elle vient
   // mourir dans la marge de Heathrow, à l'ouest de Londres un mur de 43 à 50
   // borde le disque à cinq blocs. Le relevé en couronne (scratchpad ring.mjs,

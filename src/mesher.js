@@ -9,7 +9,7 @@
 
 import { BLOCK, BLOCK_INFO, isTransparent, isSlab, isProp, CITY_BLOCK, ARCHI } from './blocks.js';
 import { tileUV, tileRect } from './tuiles.js';
-import { GeomBufferHD, SOL_HD, FACADE_HD, TOIT_HD, facadeHD, couvreHD, rectHD, vitreAllumee, yBaie, marquageHD, bordureHD, trottoirHD, arbreHD, poteletHD, terrasseHD, mitresHD, morrisHD, bancHD, corbeilleHD, toitDessusHD, tirageHD } from './facadeshd.js';
+import { GeomBufferHD, SOL_HD, FACADE_HD, TOIT_HD, facadeHD, villeHD, murHD, rectHD, vitreAllumee, yBaie, marquageHD, bordureHD, trottoirHD, arbreHD, poteletHD, terrasseHD, mitresHD, morrisHD, bancHD, corbeilleHD, toitDessusHD, tirageHD } from './facadeshd.js';
 
 // LES ARBRES EN HD (v288) : de loin, leurs blocs (dans `plat`) ; de près, un
 // arbre maillé (`arbreHD`, dans `facades`). Toutes leurs faces partent donc
@@ -266,7 +266,9 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
   // partent PLATES dans `plat` (le loin) et DÉTAILLÉES dans `facades` (le
   // près). Rien d'autre ne change — un palier sans HD rend exactement les
   // tampons d'avant, et c'est un témoin qui le dit.
-  const hd = !!world.hd && couvreHD(cx, cz, CHUNK);
+  // La ville du morceau (v390, `VILLES_HD`) : son nom porte son registre.
+  const villeDuMorceau = world.hd ? villeHD(cx, cz, CHUNK) : null;
+  const hd = !!villeDuMorceau;
   const detail = hd && options.detail !== false;
   const sol = hd ? new GeomBufferHD() : null;
   const facades = detail ? new GeomBufferHD() : null;
@@ -430,7 +432,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
           const toitHd = hd && face.slot === 0 && TOIT_HD.has(id);
           // La face d'un bloc de monument part dans le LOIN : de près, le
           // modèle d'auteur la remplace ; de loin, elle est le monument.
-          const facadeHd = monumentHd || (hd && ((face.slot === 1 && FACADE_HD.has(id)) || ARBRE_HD.has(id) || toitHd));
+          const facadeHd = monumentHd || (hd && ((face.slot === 1 && (FACADE_HD.has(id) || murHD(id, villeDuMorceau))) || ARBRE_HD.has(id) || toitHd));
           const it = teintes && ((id === BLOCK.GRASS && face.slot === 0) || id === BLOCK.LEAVES) ? teintes[x + z * CHUNK] : 0;
           const teinte = it ? (id === BLOCK.LEAVES ? TEINTE_FEUILLES[it] : TEINTE_HERBE[it]) : null;
           // LA CLÉ DE FUSION EST UN NOMBRE (v352) : la chaîne qu'elle était
@@ -505,10 +507,10 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
         for (let z = 0; z < CHUNK; z++) {
           for (let x = 0; x < CHUNK; x++) {
             const id = data[x + z * CHUNK + y * CHUNK * CHUNK];
-            if (!FACADE_HD.has(id) || estMonument(x, y, z)) continue;
+            if (!(FACADE_HD.has(id) || murHD(id, villeDuMorceau)) || estMonument(x, y, z)) continue;
             const neighbor = localGet(x + face.dir[0], y, z + face.dir[2]);
             if (!shouldRenderFace(id, neighbor)) continue;
-            facadeHD(facades, face, x, y, z, ox + x, y, oz + z, id, faceAO(localGet, face, x, y, z), localGet(x, y - 1, z), localGet(x, y + 1, z), localGet);
+            facadeHD(facades, face, x, y, z, ox + x, y, oz + z, id, faceAO(localGet, face, x, y, z), localGet(x, y - 1, z), localGet(x, y + 1, z), localGet, villeDuMorceau);
             facadesDetaillees++;
           }
         }
@@ -537,6 +539,8 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
             const o = { px: ouvert(1, 0), mx: ouvert(-1, 0), pz: ouvert(0, 1), mz: ouvert(0, -1) };
             if (o.px || o.mx || o.pz || o.mz) trottoirHD(sol, x, y, z, ox + x, oz + z, o);
             if (!detail) continue;                       // le mobilier est du DÉTAIL
+            // le mobilier de Paris reste à Paris (v390) : ni Morris ni Davioud à Londres
+            if (villeDuMorceau.mobilier === false) continue;
             // LE MOBILIER DU TROTTOIR (v288), dans `facades` : un potelet tous
             // les deux blocs au bord du caniveau, une terrasse devant une
             // devanture sur trois. Le monde répond tout seul : on lit le sol

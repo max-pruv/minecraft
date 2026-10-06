@@ -6,11 +6,45 @@
 
 export const NOUVEAUTES = [
   {
-    v: 389,
+    v: 393,
     titre: 'Londres rejoint Birmingham',
     puces: [
       'Une autoroute passe par le col',
       'On entre dans Londres par King\'s Cross',
+    ],
+  },
+  {
+    v: 392,
+    titre: 'Nice et Lille en relief',
+    puces: [
+      'Les persiennes de Nice, de près',
+      'La brique de Lille, de près',
+    ],
+  },
+  {
+    v: 391,
+    titre: 'La tablette mesure la route',
+    puces: [
+      'Papa peut mesurer la vitesse',
+      'Rien ne change pour toi',
+    ],
+  },
+  {
+    v: 390,
+    titre: 'Londres en relief',
+    puces: [
+      'De vraies fenêtres anglaises à Londres',
+      'La brique et le stuc de près',
+      'Pas de colonne Morris à Londres',
+    ],
+  },
+  {
+    v: 389,
+    titre: 'On monte dans l\'avion',
+    puces: [
+      'Un escalier contre la porte',
+      'Le chasseur a son échelle',
+      'La porte s\'ouvre et se referme',
     ],
   },
   {

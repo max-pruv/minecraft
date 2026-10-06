@@ -26,7 +26,7 @@ import { materiauHD, geometrieHD } from './matierehd.js';
 import { Carte, MAP_COLORS } from './carte.js';
 import { toast } from './bandeau.js';
 import { Horizon, rayonHorizon } from './horizon.js';
-import { fileDeMaillage, VITESSE_CONE, estUnSaut, FENETRE_ARRIVEE_MS } from './plafond-sol.js';
+import { fileDeMaillage, VITESSE_CONE, estUnSaut, FENETRE_ARRIVEE_MS, trouDevant, debitRecent } from './plafond-sol.js';
 import { PALIERS, PALIER_CLE, choisirPalier, VITESSE_JET,
   ETENDUE_CLE, ETENDUE_PAR_DEFAUT, ETENDUES, palierRetenu, palierPropose, etendueRange, reglageDe, planDetail,
   PARAMS_FORCANTS } from './palier.js';
@@ -1099,8 +1099,12 @@ function meshChunk(cx, cz) {
   statsMaillage.locaux++;
 }
 
+// les dates d'installation, pour le débit que `?diag=1` affiche en roulant (v380)
+const datesInstall = [];
 function installerMorceau(cx, cz, tampons) {
   const key = World.key(cx, cz);
+  datesInstall.push(performance.now());
+  if (datesInstall.length > 600) datesInstall.splice(0, 300);
   const old = chunkMeshes.get(key);
   if (old) disposeChunkMesh(old);
 
@@ -7673,6 +7677,8 @@ function releverLeJournal() {
     monture: player.pilote ? 'avion' : (player.gabarit > 1 ? 'voiture' : null), vol: !!player.flying, prog: info.programs ? info.programs.length : null,
     // les dégâts (v364) : le coût du dernier enfoncement et du feu, mesurés ici
     ...(fun.degats && fun.degats.bilan && fun.degats.bilan() ? { degats: fun.degats.bilan() } : {}),
+    // en roulant (v380) : le trou devant soi et le débit, pour relire le plafond au sol sans session
+    ...(deplacement.v >= 2 ? { roulage: mesureRoulage() } : {}),
   });
   pireImageJournal = 0;
 }
@@ -7713,7 +7719,22 @@ function updateHud(dt) {
     + `morceaux ${chunkMeshes.size} (${[...chunkMeshes.values()].filter((e) => e.detail).length} avec façades HD) · corps ${h.prets}/${h.total} · programmes chauffés ${programmesChauffes()} · ${myName() || ''} ${player.pos.x.toFixed(0)},${player.pos.z.toFixed(0)}\n`
     + `journal : ${journal.doc.releves.length} relevé(s), ${journal.doc.erreurs} erreur(s), plantages de suite ${journal.plantages()}${PALIER && PALIER.source === 'sûreté' ? ' — SÛRETÉ' : ''}`
     + ` · façades HD ${detailTenu.n} morceau(x), ${(detailTenu.octets / 1048576).toFixed(0)} / ${(BUDGET_FACADES / 1048576).toFixed(0)} Mo, ${statsMaillage.detailsBudget} rendu(s) au budget`
+    + texteRoulage()
     + texteDegats();
+}
+
+// LE PLAFOND AU SOL SE MESURE SUR LA TABLETTE (v380) : en roulant, le trou
+// devant soi et le débit de morceaux — la marche est dans TASKS.md.
+function mesureRoulage() {
+  const dir = { x: deplacement.vx / deplacement.v, z: deplacement.vz / deplacement.v };
+  return { v: Math.round(deplacement.v), trou: trouDevant({ pcx: Math.floor(player.pos.x / CHUNK), pcz: Math.floor(player.pos.z / CHUNK),
+    R: RENDER_RADIUS, dir, maille: (cx, cz) => chunkMeshes.has(World.key(cx, cz)) }),
+    debit: debitRecent(datesInstall, performance.now()) };
+}
+function texteRoulage() {
+  if (deplacement.v < 2) return '';
+  const { v, trou, debit } = mesureRoulage();
+  return `\nroulage : ${v} b/s · trou devant ${trou} blocs · débit ${debit} morceaux/s · file ${meshQueue.length} · ordre ${fileAuRegardVoulue() ? 'regard' : 'cône'} · recharge ${rechargeALArrivee() ? 'à l\'arrivée' : 'à l\'image'}`;
 }
 
 // Les dégâts sur l'appareil (v364) : une ligne, seulement s'il s'est abîmé

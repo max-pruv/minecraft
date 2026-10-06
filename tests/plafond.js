@@ -338,11 +338,11 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // fusion : 1f385723…. La preuve : le même code, le Tōmei retiré du registre,
 // rend 0cf845f5…, la constante de cette livraison avant la fusion, au bit
 // près — la règle d'eau de la v381 ne change aucun bloc de ces tabliers.
-// v389 : Londres, un des neuf lieux, porte l'entrée de la M40 (une collectrice
+// v393 : Londres, un des neuf lieux, porte l'entrée de la M40 (une collectrice
 // de la porte nord à Pentonville Road) et perd la maison de la trame générique
 // qui la barrait — voulu. La M40 retirée du registre (donc son entrée et le
 // lot qu'elle écartait), la branche rend 1f385723…, la constante
-// d'`origin/main` (v388), au bit près.
+// d'`origin/main` (v392), au bit près.
 const EMPREINTE_MORCEAUX_V357 = '7e7f4e360448ba52cecf0011875ea65734f3a14726291f0675c5f395f83e24bb';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891

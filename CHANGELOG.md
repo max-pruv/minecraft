@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v389 — Londres rejoint Birmingham
+## v393 — Londres rejoint Birmingham
 
 **Pourquoi.** Londres–Birmingham était le corridor court sans rail du kit
 « en attente » depuis la v323 : une autre session élargissait les rues de
@@ -45,6 +45,102 @@ Birmingham arrive sur la rue. Les témoins de toutes les routes la lisent aussi
 emprise volée, joints des ponts fermés). L'empreinte des 490 morceaux change
 (Londres est un des neuf lieux) et se prouve : M40 retirée, la branche rend
 celle d'`origin/main` au bit près.
+## v392 — Nice et Lille en relief
+
+**Pourquoi.** Le palier A avait donné son relief à Londres ; Nice et Lille, les
+deux autres villes d'Europe bâties à la main, restaient en façades plates à
+toute distance — et leur palette de décor (l'orange de signalisation, le jaune
+de balise à Nice ; un rouge de jouet à Lille) se voyait telle quelle.
+
+**Ce que ça change.** De près, Nice a ses enduits ocre, rose et sable, patinés
+vers un vrai ocre, ses persiennes ouvertes de part et d'autre des baies et son
+garde-corps de fer. Lille a sa brique flamande patinée, l'encadrement et le
+linteau de pierre blonde. Les deux villes ont le trottoir relevé et leurs
+arbres maillés ; ni colonne Morris ni banc de Paris. Un appareil au palier bas
+ne reçoit rien de neuf ; Paris et Londres n'ont pas bougé d'un octet.
+
+**Ce qui le prouve.** Quatorze témoins neufs dans `parishd.js` (sept par
+ville), rouges sur `origin/main` : la couche couvre la ville, ne pose aucun
+bloc, rend les tampons d'avant sans HD, détaille chaque face exposée, pose le
+mur de la ville (enduit et persiennes à Nice, brique à Lille, jamais la pierre
+de Paris), sans mobilier parisien, et le morceau le plus lourd pèse moins de
+1,1 Mo (Nice 0,74, Lille 1,06 ; Paris 10).
+
+---
+
+## v391 — La tablette mesure sa vitesse au sol
+
+**Pourquoi.** Le plafond de vitesse des voitures (`VITESSE_SOL_MAX` : 70 blocs
+par seconde en ville, 80 en campagne) a été mesuré au banc, qui rend en
+logiciel à une cadence qui n'est pas celle de l'iPad. Il ne peut se confirmer
+que sur la tablette, et rien ne permettait à Max de le relever sans une session
+de développement à côté.
+
+**Ce que ça change.** Avec `?diag=1`, dès qu'on roule, une ligne de plus :
+« roulage : vitesse · trou devant soi (le monde maillé dans le champ, ±40°
+autour du déplacement) · débit de morceaux par seconde · file · ordre ·
+recharge ». Le journal de bord la range toutes les cinq secondes
+(`roulage: { v, trou, debit }`), si bien qu'un essai de Max se relit dans le
+nuage sans rien recopier. La marche exacte — adresse, ville, avenue, ce qu'il
+faut relever et ce qui décide — est dans `TASKS.md`. Sans `?diag=1`, rien ne
+change.
+
+**Ce qui le prouve.** Deux témoins dans `monte.js` : la règle pure (un trou
+connu, un débit connu) et la page (à quarante blocs par seconde, la ligne
+paraît et porte des nombres ; à l'arrêt elle n'y est pas). Rouges sur l'ancien
+code : la règle n'existe pas, la ligne non plus. Portail complet.
+
+---
+
+## v390 — Londres en relief
+
+**Pourquoi.** Max : « when done do all European cities ». La couche de détail
+(façades en relief, trottoirs relevés, arbres maillés) ne couvrait que Paris :
+`couvreHD` testait le seul disque de Paris. Londres, à cinq heures de vol
+virtuel, restait en cubes plats à toute distance — des fenêtres peintes sur
+des murs de brique de jouet.
+
+**Ce que ça change.** De près, Londres est en relief : chaque fenêtre est une
+guillotine géorgienne en retrait, haute et étroite, son châssis blanc, le rail
+de rencontre au milieu, l'appui de pierre et l'arc de briques au-dessus. Le mur
+autour est celui de la maison : la brique (patinée, plus une brique de jouet)
+ou le stuc blanc de Belgravia. Le trottoir est relevé, les arbres des squares
+sont maillés. Pas de colonne Morris à Londres : le mobilier de Paris reste à
+Paris. Un appareil au palier bas ne reçoit rien de neuf ; Paris n'a pas bougé
+d'un octet.
+
+**Ce qui le prouve.** Huit témoins neufs dans `parishd.js`, rouges sur
+`origin/main` : la couche couvre Londres ; elle ne pose aucun bloc (morceau le
+plus dense, à l'octet près) ; sans HD les tampons sont ceux d'avant ; chaque
+face exposée d'une façade ou d'un mur reçoit son détail (1 274 sur 1 274) ; le
+mur est de brique ou d'enduit, jamais de la pierre de Paris ; ni Morris ni
+Davioud ; le morceau le plus lourd pèse 1,2 Mo (Paris en pèse 10) ; en vol au
+palier moyen, 22,5 Mo de façades pour 128 de budget. Un bloc de décor à motif
+posé par un enfant garde son dessin. L'empreinte des tampons HD de Paris
+(256 morceaux) est identique sur `origin/main` et sur la branche.
+## v389 — On monte dans l'avion par l'escalier
+
+**Pourquoi.** Depuis la v366 on marche jusqu'à la portière d'une voiture,
+on l'ouvre, on s'assied. Les avions, eux, montaient d'un coup : l'enfant
+était aux commandes à l'instant même où il appuyait, sans jamais approcher
+la porte.
+
+**Ce que ça change.** Pour l'avion de ligne : un escalier roulant aux
+rampes jaunes vient contre la porte avant gauche, l'enfant y marche, gravit
+les marches, la porte s'ouvre, il entre en se baissant, il est aux
+commandes, la porte se referme et l'escalier s'en va. Pour le chasseur : une
+échelle contre le cockpit, et c'est la verrière qui se lève. Le Concorde
+monte d'un coup comme avant — son fuselage mesure 0,94 bloc, une porte y
+ferait la moitié de la taille de l'enfant ; c'est le modèle qui le déclare.
+Un second appui met aux commandes tout de suite.
+
+**Ce qui le prouve.** Trois témoins neufs dans `monte.js` (page `embarq: 1`),
+rouges sur `origin/main` (rejoués par `sonde-embarquement-avion.cjs`,
+deux minutes) : les phases approche → gravir → ouverture → entrée
+pour l'avion de ligne et le chasseur, `montureConduite()` faux pendant chacune,
+les pieds montés de plus d'un bloc, la porte ouverte puis refermée, l'escalier
+posé puis rangé ; le second appui en pleine marche et le Concorde sans porte ;
+et aucune clé de programme neuve, aucun bloc écrit.
 
 ---
 
@@ -311,6 +407,9 @@ rectangles n'est au sec. La sonde des passants sur la chaussée à Rome
 (`sonde-chaussee-rome.cjs`, 60 s, deux fois de chaque côté) : hors traversée,
 0 et 5 relevés sur ~1 800 sur la branche, 3 et 2 sur `origin/main` — aucun
 passant né sur la chaussée, aucun flâneur.
+
+---
+
 ## v379 — On arrive plus vite après la carte
 
 **Pourquoi.** Trois questions laissées ouvertes par la v360, et une quatrième
