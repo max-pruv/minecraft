@@ -770,6 +770,20 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les Amériques en relief (v399) — un registre se donne aussi aux villes qu'une règle classerait mal
+
+Palier B. Deux règles.
+
+- **LA GÉOGRAPHIE DÉCIDE, L'HISTOIRE CORRIGE, ET LA CORRECTION SE NOMME.**
+  `registreAmeriques` (facadeshd.js) : longitude de la fiche, `nordAmericain`
+  au nord de 24° N, `latino` au sud ; `LATINO_AU_NORD` nomme Monterrey et La
+  Nouvelle-Orléans avec leur raison, `PACIFIQUE` les îles qui attendent le
+  palier C. Même forme que `registreEurope` et `HORS_EUROPE` : une liste se
+  conteste en la lisant.
+- **CE QUI SE MESURE.** 505 morceaux sur les 61 villes : 0,44 Mo de façades en
+  moyenne, 1,62 au pire (Buenos Aires) ; Paris, l'Europe, Washington et San
+  Francisco identiques à l'octet (sonde d'empreinte, `Math.random` figé).
+
 ## Washington et San Francisco en relief (v398) — une fiche dit sa forme, un uni se lit à sa couleur
 
 Palier A du reste du monde. Quatre règles.

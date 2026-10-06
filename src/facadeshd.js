@@ -200,7 +200,7 @@ export function registreEurope(f) {
   if (la > 49.8 && lo > -11 && lo < -1.6) return 'londres';
   return la < 45.5 ? 'sud' : 'nord';
 }
-// LES VILLES ENGENDRÉES DES AMÉRIQUES (v396, palier B du reste du monde). Même
+// LES VILLES ENGENDRÉES DES AMÉRIQUES (v399, palier B du reste du monde). Même
 // méthode que l'Europe : la longitude de la fiche, moins les îles du Pacifique
 // (`PACIFIQUE`, l'Océanie a son palier), et deux registres par géographie —
 //   États-Unis et Canada → `nordAmericain` (la maison de brique, la guillotine

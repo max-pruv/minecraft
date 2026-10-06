@@ -709,7 +709,7 @@ function verifier(nom, ok, detail = '') {
         !!fiche('washington') && HD.murHD(BLOCK.BRICK, fiche('washington')) && HD.murHD(BLOCK.BRICK, fiche('sf'))
           && !HD.murHD(BLOCK.BRICK, fiche('londres')) && !HD.murHD(BLOCK.BRICK, fiche('paris')));
     }
-    // PALIER B (v397) : les villes engendrées des Amériques, une par registre
+    // PALIER B (v399) : les villes engendrées des Amériques, une par registre
     await temoinsVille({ cle: 'chicago', centre: vm('chicago'), attendu: ['brique', 'pierre'], interdit: ['volet', 'fer', 'bardage'], rayonSonde: 60 });
     await temoinsVille({ cle: 'mexico', centre: vm('mexico'), attendu: ['enduit', 'fer'], interdit: ['volet', 'pierre', 'bardage'], rayonSonde: 60 });
     {
