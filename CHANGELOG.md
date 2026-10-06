@@ -20,6 +20,26 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v396 — La montée en voiture se valide sur la tablette
+
+**Pourquoi.** Les séquences de montée et de descente (v366, v377, v384, v389)
+ne se jugent qu'au banc, qui les saute partout ailleurs et rend en logiciel :
+leurs durées, leur caméra et l'absence d'image figée n'ont jamais été vues sur
+l'iPad, et rien ne disait à Max quoi regarder.
+
+**Ce que ça change.** Avec `?diag=1`, une ligne dit après chaque geste ce qui
+vient de se passer : « embarquement : monter (voiture) en 2,1 s de jeu,
+jusqu'au bout » — ou « second appui », « annulée », et pour une descente le
+côté et la raison d'un refus du côté conducteur. `TASKS.md` porte la liste
+des six gestes à faire sur la tablette (voiture, second appui, descente, avec
+un ami, l'avion, ce qui ne doit pas arriver). Rien ne change pour les enfants.
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js` (le diagnostic dit
+« monter (voiture), second appui »), rouge sur `origin/main` — rejoué seul par
+`sonde-diag-embarq.cjs` : `null` sur `origin/main`, la ligne attendue ici.
+
+---
+
 ## v395 — La rue roule à l'allure d'une ville
 
 **Pourquoi.** Max : « des vitesses de circulation cohérentes — aujourd'hui les

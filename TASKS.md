@@ -3520,6 +3520,42 @@ l'embarquement a eu lieu, pas par une hypothèse.
 ## En cours
 
 ### Embarquement (v366) — ce qui reste dans la zone
+- [ ] **POUR MAX, SUR LA TABLETTE — valider la montée et la descente (v366,
+  v377, v384, v389).** Le banc saute la séquence (`embarq=0`) et rend en
+  logiciel : ce qui suit ne se juge QUE sur l'iPad. Ouvrir
+  `https://minecraft-fam.vercel.app/?diag=1` ; la dernière ligne du
+  diagnostic (v396) dit, après chaque geste, « embarquement : monter
+  (voiture) en 2,1 s de jeu, jusqu'au bout » — c'est elle qu'on relève.
+  1. **Monter dans une voiture.** Dans une rue de Paris, face à une voiture
+     arrêtée, « Monter » (ou « 🚗 Conduire cette voiture » pour une voiture de
+     la rue). On doit voir l'enfant MARCHER jusqu'à la portière gauche, la
+     portière s'ouvrir vers l'extérieur, l'enfant s'asseoir, la portière se
+     refermer. Diagnostic : `monter (voiture)`, environ 1,5 à 2,5 s,
+     `jusqu'au bout`. La voiture ne bouge pas d'un bloc.
+  2. **Le second appui.** Recommencer et rappuyer pendant la marche : on doit
+     être assis tout de suite, portière fermée. Diagnostic : `second appui`.
+  3. **Descendre.** « ⬇️ Descendre » : la portière gauche s'ouvre, l'enfant
+     sort à côté, elle se referme. Diagnostic : `descendre (voiture) … côté
+     conducteur`. Garé contre un mur côté gauche : il sort côté passager, et la
+     ligne dit pourquoi (`conducteur refusé : mur`).
+  4. **Avec un ami (deux tablettes, v377 et v384).** Alice près de la voiture
+     de Marlon : « 🚗 Monter avec Marlon » — elle entre par la portière DROITE,
+     et Marlon voit SA portière droite s'ouvrir chez lui. Puis « Descendre » :
+     elle ressort par la droite. Diagnostic chez Alice : `monter (ami)` puis
+     `descendre (ami)`.
+  5. **L'avion (v389).** À Roissy (carte → Paris–Charles-de-Gaulle), devant
+     l'avion de ligne, « Monter » : un escalier à rampe jaune apparaît contre
+     la porte avant gauche, l'enfant le gravit, la porte s'ouvre, il entre,
+     elle se ferme, l'escalier disparaît. Diagnostic : `monter (avion)`,
+     3 à 4,5 s. Le chasseur : une échelle et la verrière qui se lève. Le
+     Concorde : on monte d'un coup, comme avant (pas de porte, c'est voulu) —
+     la ligne ne change donc pas.
+  6. **Ce qui ne doit PAS arriver.** Une image figée au moment où l'escalier
+     ou la portière apparaît : la première ligne du diagnostic (`pire image`)
+     doit rester sous 300 ms pendant le geste. Si l'une des séquences gêne,
+     `?embarq=0` rend l'ancien geste instantané, au bit près.
+  Ce que Max relève (chiffre de durée, `pire image`, ce qu'il a vu) se recopie
+  ici et décide des durées de `DUREES` (embarquement.js).
 - [ ] **LE PORTAIL DE LA v377 (le passager), DOUBLE MESURE FAITE.** Six
   suites vertes (`degats`, `visio`, `hote`, `washington`, `reglages`). Rouges
   déclarés : `maj.js` (préparation), `carte.js` (glisser bridé ×4, 484 ms),
@@ -3533,6 +3569,18 @@ l'embarquement a eu lieu, pas par une hypothèse.
   Puis v374 à v376 sont parties pendant ces mesures : rebasée sur la v376
   (conflit sur une ligne de `main.js`, les deux gardées), témoin du passager
   vert et fumée verte, publiée en v377.
+- [ ] **LE PORTAIL DE LA v396 (le diagnostic de l'embarquement), DOUBLE
+  MESURE FAITE.** Témoin neuf vert ; `degats`, `carte`, `washington`,
+  `reglages` verts. Rouges de familles déclarées : `maj.js` (loader de
+  l'installation), `manhattan.js` (trou de façade, taxi tactile), `monte.js`
+  (téléportation qui compile). Deux rouges NEUFS, rejoués SEULS des deux
+  côtés : « après une téléportation, la file se recharge… puis se rend »
+  (`monte.js`) — VERT sur la branche, ROUGE sur `origin/main` (v389,
+  « rendue en 11 s : false ») ; « chez l'ami, la voiture de la rue… l'attend »
+  et « le même temps » (`reseau.js`) — `reseau.js` ENTIÈRE verte sur la
+  branche, seule ; `origin/main` seule : « un départ propre » rouge (déclaré).
+  Intermittences de portail ; la seule différence de code est une ligne lue
+  sous `?diag=1` et un relevé dans `publier`.
 - [ ] **LE PORTAIL DE LA v389 (l'avion), DOUBLE MESURE FAITE.** Les trois
   témoins de l'avion verts (`monte.js`), `carteMonde.js` vert. Rouges, tous de
   familles déjà déclarées : `maj.js` (« vraiment là », « ne floute rien »),

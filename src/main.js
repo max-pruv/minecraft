@@ -7767,7 +7767,17 @@ function updateHud(dt) {
     + `journal : ${journal.doc.releves.length} relevé(s), ${journal.doc.erreurs} erreur(s), plantages de suite ${journal.plantages()}${PALIER && PALIER.source === 'sûreté' ? ' — SÛRETÉ' : ''}`
     + ` · façades HD ${detailTenu.n} morceau(x), ${(detailTenu.octets / 1048576).toFixed(0)} / ${(BUDGET_FACADES / 1048576).toFixed(0)} Mo, ${statsMaillage.detailsBudget} rendu(s) au budget`
     + texteRoulage()
-    + texteDegats();
+    + texteDegats()
+    + texteEmbarquement();
+}
+
+// La dernière montée ou descente (v396) : c'est la ligne que Max lit sur la
+// tablette pour valider la séquence (TASKS.md, « gestes sur la tablette »).
+function texteEmbarquement() {
+  const d = fun.embarquementDernier ? fun.embarquementDernier() : null;
+  if (!d) return '';
+  return `\nembarquement : ${d.sens} (${d.quoi}) en ${d.temps.toFixed(1)} s de jeu, ${d.fin}`
+    + (d.sens === 'descendre' ? ` · ${d.cote < 0 ? 'côté conducteur' : d.cote > 0 ? 'côté passager' : 'hors des portières'}${d.refus && d.refus.conducteur ? ` (conducteur refusé : ${d.refus.conducteur})` : ''}` : '');
 }
 
 // LE PLAFOND AU SOL SE MESURE SUR LA TABLETTE (v380) : en roulant, le trou

@@ -1191,6 +1191,18 @@ d'invoquer la lit à l'origine du monde** : le modèle n'est placé qu'à l'imag
 suivante — mon premier jet posait l'enfant à trente blocs de l'avion, et le
 bouton ne trouvait rien. On copie `a.pos` dans le maillage avant de lire.
 
+**Une séquence qu'on ne juge qu'au banc se fait lire sur la tablette (v396).**
+Le banc saute la séquence (`embarq=0`) et rend en logiciel : durées, caméra et
+image figée ne se valident que sur l'iPad. `?diag=1` porte donc une ligne de
+la dernière séquence (`embarquementDernier`, relevée à la transition dans
+`publier`, sans rien changer à la séquence) : sens, voiture / ami / avion,
+secondes de JEU, et comment elle a fini (jusqu'au bout, second appui,
+annulée), plus le côté de sortie et le refus du côté conducteur. La liste des
+gestes que Max fait pour valider est dans `TASKS.md` (« POUR MAX, SUR LA
+TABLETTE »). **Une fonctionnalité que le banc ne peut pas juger livre avec
+l'instrument qui la juge ailleurs**, comme le palier (v284) et le journal de
+bord (v296).
+
 **Le passager descend par la portière, à l'envers (v384).** `descendreDeChez`
 rejoue la descente du conducteur sur la voiture DISTANTE, côté passager
 d'abord (`choisirSortie(a, d, [1, -1])`). `passagerDe()` est effacé AVANT
