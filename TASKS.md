@@ -78,6 +78,13 @@
   ne s'y déplie (220 blocs). Un premier passage de la branche est mort au
   démarrage d'une page sous une charge stable de 3,8 cœurs (`banc.joueur`,
   90 s), rejoué complet ensuite.
+  Après la fusion de la v399 (sept suites) : verts `parishd.js`,
+  `carteMonde.js`, `plafond.js`. Rouges, tous déjà vus sur `origin/main` ou
+  déclarés : `maj.js` libération ; `carte.js` glisser (617 ms) et « le rendu
+  suivant, cache chaud » 152 ms pour 150 (une durée, anneaux déjà en cache) ;
+  `monte.js` monoplace 9,1, piéton frôlé (couloir vide de 30 000, aucune
+  ville — déclaré v371), feu, compilation New York, réverbère, trou en vol,
+  flanc frôlé.
 - [ ] **LE PORTAIL DE LA v387 (les circuits des villes engendrées), DOUBLE
   MESURE FAITE.** Verts : `carteMonde.js`, `plafond.js`, `degats.js`,
   `carte.js`, `washington.js`. `maj.js` : un seul rouge, À MOI et corrigé (le
