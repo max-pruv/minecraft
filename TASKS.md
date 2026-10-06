@@ -688,6 +688,20 @@
   conduite : la v387 ne touche à rien de ce chemin (branche AU VOLANT de
   `player.js`, crochets d'obstacle). Piste : borner l'attente du témoin sur la
   chauffe (`finie`), et sinon le dire au lieu de juger NY.
+- [ ] **AU PORTAIL DE LA v387, « LE PASSAGER ENTRE PAR LA PORTIÈRE DROITE »
+  (`reseau.js`, v377) VA ET VIENT — DÉCLARÉ AVEC SA DISTRIBUTION.** Suite
+  entière : branche 2 vertes sur 5 (deux portails, trois rejeux seuls),
+  `origin/main` 3 sur 3. Le rouge est toujours le même : Lou reste en
+  « approche » puis la séquence s'annule (`existe` faux : la voiture distante
+  de Marlon a changé de maillage), et il tombe dans les passages où le réseau
+  rougit ailleurs (veille sans retour, reprise, compteur après le départ de
+  l'hôte). Isolé : `sonde-portiere-ami.cjs`, cinq tours sur cinq verts sur la
+  branche ; la suite coupée après les portières, en ABBA, avec et sans le
+  témoin du volant qui la précède (seul ajout de la branche en amont) : six
+  sur six verts. Ce n'est donc ni la physique (Marlon immobile, zéro choc,
+  zéro contact, volant gardé) ni le témoin neuf. Piste : relever la clé et le
+  maillage de la voiture distante À L'INSTANT de l'annulation, dans la suite
+  entière, et chercher ce qui recrée `rp` côté Lou (une reconnexion).
 - [ ] **LA CONDUITE À LA GTA, PALIERS 1 (v358) ET 2 (v387) LIVRÉS
   (conduite-physique) — CE QUI RESTE, DÉCLARÉ.** Faits en v387 : le choc
   contre une voiture de la rue prend la normale de SON rectangle et se juge
