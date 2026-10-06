@@ -276,7 +276,22 @@ function verifier(nom, ok, detail = '') {
       `hôte ${(await ciel(hote)).meteo} · invité ${(await ciel(alice)).meteo}`);
 
     // --- un départ propre disparaît des deux côtés ----------------------------
-    await nina.close();
+    //
+    // ON PROVOQUE LE CAS QUI ROUGISSAIT (v389), on ne l'attend pas (v233). Au
+    // portail, le lien de Nina restait chez l'hôte canal `open`, ICE
+    // `connected`, silence 74 s : la page partie, le transport n'avait rien
+    // dit, et un pair sondable se garde 90 s (v266). C'est aussi la tablette
+    // qu'iOS suspend au lieu de la tuer. Nina fait donc ce que fait `pagehide`
+    // (`net.stop()`) avec un transport qui reste debout, puis se fige. Sur
+    // l'ancien code, rien n'est envoyé : 0 nettoyage en 60 s, deux fois sur
+    // deux (`sonde-depart-transport-muet.cjs`) ; ici l'adieu part, ≈ 1 s.
+    await nina.evaluate(() => {
+      const n = window.__game.net;
+      n.peer.destroy = () => {};
+      for (const c of n.conns.values()) if (c.conn) c.conn.close = () => {};
+      n.stop();
+      setTimeout(() => { const t = Date.now(); while (Date.now() - t < 60000) { /* suspendue */ } }, 50);
+    });
     // Quarante secondes, pas vingt-cinq. Une page qui se ferme ne coupe pas
     // toujours son canal proprement : il reste alors les vingt secondes de
     // silence tolérées, plus un battement de cœur pour s'en apercevoir. La
@@ -287,6 +302,7 @@ function verifier(nom, ok, detail = '') {
       (await vu(hote)).compteur === 2 && (await vu(alice)).compteur === 2
       && !(await nomsVus(hote)).includes('Nina') && !(await nomsVus(alice)).includes('Nina'),
       `hôte ${JSON.stringify(await nomsVus(hote))} · Alice ${JSON.stringify(await nomsVus(alice))}`);
+    await nina.close().catch(() => {});
     // --- le passager entre par la portière, et l'ami la voit s'ouvrir (v377)
     //
     // Le passager d'un ami (v253) était collé au siège d'un coup. Il marche
