@@ -29,6 +29,11 @@
   (« pointeurs 0 », la dette de charge de la v258) — rejoués SEULS deux fois de
   chaque côté, verts sur la branche ET sur `origin/main` v379 ; au troisième
   passage de la branche, la flèche du GPS seule (gauche 1,92 rad, déclarée).
+  Après la fusion de la v382 : huit suites vertes ; `manhattan.js` façade
+  (déclarée) et `maj.js` les deux témoins du loader d'installation (dette
+  déclarée) — après la fusion de la v386, `maj.js` et `plafond.js` rejoués
+  SEULS sur la branche, et `maj.js` seul sur `origin/main` v386 : verts tous
+  les trois.
 
 - [ ] **LA COMPILATION À L'ARRIVÉE (monte.js) : CE QUE LE BANC SOUS CHARGE
   MESURE (v386).** Rouge chronique, des deux côtés : « chauffe de New York
