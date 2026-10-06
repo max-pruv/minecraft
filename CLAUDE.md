@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Les sensations au volant (v381) — la caméra regarde la voiture, et un mur se cherche cellule par cellule
+## Les sensations au volant (v391) — la caméra regarde la voiture, et un mur se cherche cellule par cellule
 
 Chantier « conduite » (six sessions, octobre 2026) ; celle-ci tient ce que
 l'enfant VOIT et ENTEND. Tout vit dans `src/sensations.js`, branché par un
@@ -805,6 +805,108 @@ règles.
   dans l'image, et `sensations.js` reprend le suivi du bestiaire pour ne pas
   compter deux fois. Les avions gardent la poursuite d'avant à l'identique ;
   `?sensations=0` rejoue l'ancienne conduite, pour mesurer.
+## Londres en relief (v390) — la couche HD devient une question par ville, et le mur suit la baie
+
+La consigne de Max (« when done do all European cities »), palier A. Cinq règles.
+
+- **`couvreHD` DEMANDE UNE LISTE DE DISQUES, PAR MORCEAU.** `VILLES_HD`
+  (facadeshd.js) porte une fiche par ville couverte ; `villeHD(cx, cz)` rend la
+  fiche, le mailleur la passe à `facadeHD`. Jamais les 280 villes du registre
+  par colonne. Une fiche porte son REGISTRE (`STYLES.londres`) et
+  `mobilier: false` : la colonne Morris et le banc Davioud restent à Paris.
+  Le mot est dans la fiche, jamais une condition sur un nom dans un registre.
+- **HORS DE PARIS, LE MUR AUTOUR D'UNE BAIE EST LE MUR D'À CÔTÉ.** Les villes
+  bâties à la main ne posent de blocs ARCHI qu'aux fenêtres ; le mur est un
+  bloc de décor. `voisin: true` lit le bloc de décor voisin (gauche, droite,
+  DESSUS puis dessous — dessous, c'est souvent un massif de fleurs, vu en
+  capture) et en prend la tuile (Briques → `brique`, Uni → `enduit`) et la
+  couleur. Les ornements (encadrement, appui, châssis) ont leur teinte à eux
+  (`orn`) : sans `orn`, Paris rend tout à l'identique, au bit près.
+- **UNE BAIE HD DANS UN MUR VOXEL FAIT UN CARRÉ CLAIR — le mur passe donc dans
+  la couche.** Vu en capture : le matériau HD (rugosité, métal) ne rend pas la
+  même lumière que le voxel pour la même couleur. Les murs de décor des motifs
+  « Briques » et « Uni » sont détaillés d'une face plate (`murHD`), les mêmes
+  qui partent dans `plat`. SEULEMENT ces deux motifs : un bloc à damier, à
+  pois, à losanges qu'un enfant a posé garde son dessin — la couche n'a pas sa
+  tuile, elle ne change pas l'apparence d'une création.
+- **UNE TEINTE DE MUR SE CALCULE SUR LA MOYENNE DE LA TUILE, EN LINÉAIRE.**
+  `MOYENNE_TUILE` est mesurée sur les peintres de `matierehd.js` ; le rapport
+  sRGB passe à la puissance 2,2 (v345). La brique de la palette (Rouge 200, 62,
+  56) est patinée de près (`patine`), le loin garde la tuile du voxel.
+- **CE QUI SE PROUVE, ET COMMENT.** L'empreinte des tampons HD de 256 morceaux
+  de Paris est identique sur `origin/main` et sur la branche (8f3652af…) ;
+  Londres à `hd 0` aussi (b15d4f39…) : le palier bas ne reçoit rien de neuf. Un
+  morceau de Londres pèse 0,5 Mo en moyenne, 1,2 à 1,45 au pire — Paris en pèse
+  dix — et le vol au palier moyen tient 22,5 Mo pour 128. Un chambranle en
+  boîtes coûtait 60 sommets par fenêtre (1,96 Mo au pire) : des plans.
+
+Ce qui reste, déclaré : le raccord ville/campagne (v308) n'est interdit qu'à
+Paris — à Londres, une colonne de raccord montre la surface plate, pas le sol
+HD (l'étendre changerait la forme du sol, donc la hauteur des pieds).
+
+## Les circuits des villes engendrées (v387) — ce qui se partage est une voie, pas une rue
+
+« Lance sur toutes les villes. » Mesuré sur `origin/main` (v373) : 147 des 262
+villes engendrées n'avaient qu'UN circuit (48 superîlots, v282), 43 anneaux de
+28 villes passaient DANS un monument, et le plus petit anneau roulait sur
+l'axe de la rue. Huit règles.
+
+- **UNE BARRE DE PARTAGE SE RELIT QUAND LA RUE CHANGE DE SECTION.** La v211 a
+  posé vingt blocs quand une rue n'avait qu'UNE file. Depuis la v271 elle en a
+  deux et l'on roule à droite : deux anneaux de part et d'autre d'une rue la
+  parcourent en sens contraires, chacun sur sa voie — ils se CROISENT. Seuls
+  ceux du même côté se SUIVENT. `partageDeRue` compte par voie (le côté de
+  l'anneau multiplié par son `sens`) ; le témoin le mesure sur les TRACÉS sans
+  la formule (écart, sens, recouvrement). La piste « barre en fraction du
+  périmètre » déclarée en v282 laissait deux convois se suivre : écartée.
+- **UN DÉCALAGE BORNÉ PAR LE PAS NE DÉCALE PAS LE PLUS PETIT.**
+  `Math.max(t.pu, Ru − voie)` laissait l'anneau d'un pas de demi-côté sur
+  l'axe. Le témoin « à droite » de la v271 le lisait comme à droite (« vers le
+  centre du rectangle ») ; relu comme « à droite de l'axe de la rue », il rend
+  325 relevés à gauche sur `origin/main`, zéro ici.
+- **QUAND LA GÉOMÉTRIE N'A QU'UN CYCLE, LE SECOND CIRCUIT EST LE CONTRESENS.**
+  Une ville de rayon < 2,3 pas n'a que trois rues de chaque côté du centre, et
+  la place (et sa fontaine) est sur le nœud central : un seul cycle l'évite.
+  Le contresens (`sens: -1`) roule côté extérieur, sur les mêmes tabliers.
+  Les anneaux en pas de trame (côtés impairs, phase 2 bis) et le contresens
+  doivent rouler sur la chaussée (`horsChaussee`) ; les anneaux d'avant ne le
+  font pas toujours — c'est mesuré et déclaré (`TASKS.md`), parce que le
+  filtre appliqué à eux viderait treize villes.
+- **UN ANNEAU NE TRAVERSE PAS UN MONUMENT, ET L'ON LIT LE BÂTISSEUR.** La dette
+  d'Agra (v362) était le cas visible de 43 anneaux. `contreUnMonument` lit les
+  couches 1 à 3 du bâtisseur sous la largeur de la carrosserie (la règle de
+  `avenueDEntree`, v365), ne bâtit que les monuments dont la boîte approche la
+  voie, et la couverture perdue (Agra 84,5 %) est regagnée par des anneaux de
+  quartier cherchés sous node (`ANNEAUX_EN_PLUS`). On déplace l'ANNEAU, jamais
+  la boîte, qui entre dans les zones du relief.
+- **UN CALCUL QU'ON ENRICHIT SE DÉPLACE LÀ OÙ IL SERT.** Les anneaux des 262
+  villes passaient de ~230 à ~700 ms, derrière le bouton « Jouer » (v258). Un
+  convoi ne naît qu'à 220 blocs de sa ville : `circulationsAPlier` rend un
+  repère par ville (même ancre, donc même instant) et `deplier()` calcule ses
+  anneaux à l'approche. `tracesCirculation` rend le même tout, pour les témoins.
+- **UN TÉMOIN QUI LIT UNE LISTE DE VILLES NE VOIT PAS LES AUTRES.** Le témoin
+  des ponts ne lisait que cinq villes et celles des routes ; lu sur les 56
+  villes à pont, `origin/main` en avait sept fautives, dont cinq jamais vues.
+  Et sa barre « 60 % de l'axe sur l'eau » valait pour les grands fleuves : une
+  culée se compte par tablier (quatre pas à sec au plus).
+- **UN TABLIER COUVRE LA COLONNE OÙ LA VOITURE ARRONDIT, PAS SEULEMENT L'EAU
+  DE L'AXE.** La voiture roule sur des colonnes entières (`Math.floor`) ; un
+  tablier borné exactement aux abscisses mouillées laissait au bout une colonne
+  d'eau non couverte — Berlin en v362, Munich ici, sur le témoin des ponts au
+  portail. `pontDeVille` porte un bloc de plus à chaque bout (`a0 − 1`,
+  `a1 + 1`) ; mesuré, cela n'ajoute qu'un bloc de tablier à Rome et à Tokyo.
+- **DEUX SESSIONS ONT LIVRÉ LA MÊME RÈGLE, ET L'ON EN GARDE UNE.** La v378
+  (une autre session) a écarté les monuments et déplié les anneaux à
+  l'approche pendant que cette livraison faisait de même. À la fusion, une
+  seule implémentation reste (`contreUnMonument`, `circulationsAPlier`), et
+  les TÉMOINS des deux restent : le nom que lit le témoin de la v378
+  (`tracesCirculationParesseuses`) est un alias, ses anneaux de quartier
+  d'Agra et du Cap partent avec son filtre. Ce qui le permet est une mesure,
+  pas une préférence : ville par ville contre `origin/main` v379, aucune ne
+  perd de couverture ni sa voiture en vue (sonde `couv.mjs`), et son témoin
+  rend toujours zéro monument en travers. Deux filtres pour la même règle
+  finiraient par diverger, et l'anneau écarté par l'un passerait par l'autre.
+
 ## Les voitures contournent les monuments (v378) — un test qui écarte un candidat se mesure en temps de démarrage
 
 Deux règles.
@@ -823,6 +925,9 @@ Deux règles.
   donne une marque par ville, `animerLesVilles` la déplie à 220 blocs ; un
   témoin exige les mêmes traces que le calcul entier. Un premier dépliage
   coûte au plus 43 ms (Rome, le Colisée du catalogue), une fois.
+  *(Depuis la v387 le filtre est `contreUnMonument` et le dépliage
+  `circulationsAPlier`, dont `tracesCirculationParesseuses` est l'alias : voir
+  « Les circuits des villes engendrées (v387) ».)*
 
 ## Les huit derniers palais (v375) — une boîte se relève en carte avant qu'on la remplisse
 
@@ -953,6 +1058,40 @@ receveur cède, l'hôte relaie. Le témoin à deux tablettes lit les deux pages
 au même instant ; il attend le RÉSULTAT (borné à 45 s) : à deux pages, une
 séquence de 2,4 s de jeu prend vingt-sept secondes de montre.
 
+**On monte dans un avion par un escalier (v389).** `monterAvion`
+(embarquement.js) : marche au pied de l'accès, `gravir`, `ouverture`,
+`entree` (l'enfant se baisse : la porte fait la moitié de sa taille),
+aux commandes (`toggleRide`, l'état bascule ICI), `fermeture`. Trois règles.
+**L'accès se déclare avec le modèle** : `userData.porte` (avions.js, posé par
+`fini`) donne le seuil, le type (`escalier`, `echelle`), le membre qui
+s'ouvre et de combien ; `null` (le Concorde, fuselage de 0,94 bloc, mesuré)
+monte d'un coup — la discipline de `portiere: false`. **Ce qui s'ouvre est un
+MEMBRE de l'atelier** (`porte_avant`, `verriere`), pas une géométrie
+découpée : la voiture n'a pas de nœud de portière, l'avion est notre propre
+modèle et on lui en donne un — un appel de dessin de plus par appareil.
+**L'escalier est fabriqué par l'atelier** (`accesAvion`), donc avec
+`matiereVivante` : aucune clé de programme neuve par construction, et un
+témoin les compare. Il est gardé et `partagerTout` : un avion retiré pendant
+la séquence ne le rend pas au pilote. Et un emplacement d'échelle se MESURE
+(v223) : au droit de la verrière, elle traversait les canards du chasseur.
+**Et un témoin qui pose l'enfant d'après la matrice d'un modèle qu'on vient
+d'invoquer la lit à l'origine du monde** : le modèle n'est placé qu'à l'image
+suivante — mon premier jet posait l'enfant à trente blocs de l'avion, et le
+bouton ne trouvait rien. On copie `a.pos` dans le maillage avant de lire.
+
+**Le passager descend par la portière, à l'envers (v384).** `descendreDeChez`
+rejoue la descente du conducteur sur la voiture DISTANTE, côté passager
+d'abord (`choisirSortie(a, d, [1, -1])`). `passagerDe()` est effacé AVANT
+d'appeler la séquence — on n'est plus passager au premier appui, comme
+`toggleRide(null)` pour le conducteur. Le même message `portiere` ouvre (au
+départ) et ferme (au début de la fermeture) la portière chez les autres ;
+`terminer` et `annuler` envoient la fermeture s'ils coupent la séquence avant.
+Sans séquence (`embarq=0`), rien ne change : l'enfant reste où il était, au
+bit près. **Un témoin à deux tablettes se mesure vite par une sonde qui en
+recopie le passage** (`sonde-descente-passager.cjs`, deux minutes contre
+vingt pour `reseau.js` entière) — c'est elle qui a rendu le rouge sur
+`origin/main`.
+
 **Le revers d'une portière se fabrique (v373).** Aucun modèle n'a meublé
 l'intérieur de sa portière : de derrière, la face simple était culée (0 rayon
 sur 24, sur les cinquante modèles). La portière reçoit une copie compacte de
@@ -982,8 +1121,8 @@ par la seule ligne `CACHE_VERSION` — or le bloc contenait aussi les lignes
 de conflit se relit dans `git diff origin/main`, jamais seulement dans le
 fichier** : le diff montre ce qu'on retire à l'autre côté.
 
-Ce qui reste, déclaré dans `TASKS.md` : le passager d'un ami monte encore sans
-séquence ; la vue de la séquence ne se juge que sur le banc, pas sur l'iPad.
+Ce qui reste, déclaré dans `TASKS.md` : la vue de la séquence ne se juge que
+sur le banc, pas sur l'iPad ; les avions DESCENDENT encore d'un coup.
 
 ## Les coupoles ont leur édifice (v365) — un gabarit partagé se cherche dans toutes les villes, et le ciel se lit sur les modèles
 
@@ -1103,6 +1242,42 @@ celle de la High Roller ne tiendrait pas, et c'est déclaré.
 Et une empreinte d'identité qui change se PROUVE : celle des 490 morceaux
 (v352) couvre Marrakech et Tokyo ; la branche, bâtisseurs neufs désarmés, rend
 l'ancienne au bit près — c'est ce qui a permis de la remplacer.
+
+## La chauffe de New York se mesure seule (v386) — un bridage n'est pas une charge de portail
+
+Rouge chronique de `monte.js`, des deux côtés. Deux règles.
+
+- **AVANT DE CORRIGER LE JEU, ON DEMANDE SI L'ENFANT EST TOUCHÉ.** Le trajet
+  exact du témoin, rejoué seul : chauffe finie en 9 s, zéro programme neuf à
+  Paris, New York, Lille, de jour comme de nuit, et bridé ×6 depuis l'accueil
+  la chauffe finit en 16 s. Le jeu tient ; le témoin attendait soixante
+  secondes un ÉTAT que la charge retarde — il attend 150 s et dit sa durée.
+- **UN BRIDAGE DU PROCESSEUR NE REPRODUIT PAS UNE CHARGE DE PORTAIL.** Les
+  trois programmes `physical` vus à Paris au portail ne reviennent ni bridé ×4
+  ni ×6 : un banc chargé n'est pas une page lente (ordre des arrivées, fichiers
+  servis plus tard). Quand on ne peut pas reproduire, le témoin NOMME ce qu'il
+  voit (la case de la clé qui diffère, v319), pour que le prochain rouge se
+  démonte au lieu de se rejouer.
+
+## Le cône se mesure à chaud (v382) — l'ABBA n'écarte pas un premier passage à froid
+
+Le témoin de l'ordre en cône était rouge des deux côtés (0,02 à 0,07 pour une
+barre à 0,13). Deux règles.
+
+- **UN ORDRE ALTERNÉ ÉQUILIBRE LA DÉRIVE, PAS LE PREMIER PASSAGE.** L'ABBA
+  (v346) compense une page qui chauffe régulièrement ; il ne compense pas un
+  premier passage qui paie seul la première arrivée dans une ville (convois,
+  passants, programmes) — et il le met toujours sur le même bras. Sondé sur une
+  page, trois paires : ordre neuf 0,42 · 0,87 · 0,87, ordre d'avant 0,65 · 0,63
+  · 0,67. Un passage d'échauffement non compté, et l'on publie les quatre
+  passages dans le message. Avant de croire un gain perdu, on regarde la
+  DISTRIBUTION des passages, pas leur moyenne (v269).
+- **UN ORDRE DE FILE NE DÉCIDE QUE QUAND LE DÉBIT MANQUE.** Scène vide : 0,84
+  des deux côtés (93 morceaux par seconde, file vide). Recharge à l'arrivée
+  armée : 0,72 contre 0,70 (90 par seconde). Le cône garde son gain là où la
+  file attend l'image — la tablette qui arrive dans une ville — et ne coûte rien
+  ailleurs ; on le garde, et le témoin le mesure dans le régime où il compte
+  (recharge par image, celle du banc).
 
 ## L'arrivée après la carte (v379) — un gel de banc se démonte en scène vide
 
@@ -1492,6 +1667,27 @@ engendrées. Quatre règles.
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
 
+## Les passants quittent la chaussée (v385) — un remède qui ne dépend pas de la porte
+
+Deux règles.
+
+- **QUAND UN ÉTAT NE SE REPRODUIT PAS SUR UNE PAGE NEUVE, ON SOIGNE L'ÉTAT, PAS
+  LA PORTE.** Le témoin de la v380 nommait des flâneurs en pause, à leur poste,
+  sur l'asphalte de Rome. Mesuré : `posteAutour` ne rend la chaussée sur aucune
+  des 1 600 poses sous node, et une page neuve n'en montre aucune en soixante
+  secondes. Plutôt qu'une quatrième hypothèse sur l'entrée (v223), la règle vit
+  dans le programme du flâneur (`sortirDeLaChaussee`, vie.js) : un piéton qui
+  se trouve sur la chaussée sans la traverser marche au bord le plus proche
+  (trottoir d'abord, jamais un toit), en TEMPS RÉEL (la rue est le domaine des
+  voitures, v351), et y prend son poste. La sonde a sa cadence (une demi-seconde
+  réelle). Et la chaussée n'est plus le second choix de `posteAutour` : la
+  bordure, l'esplanade et l'herbe au niveau de la rue passent avant.
+- **UN TÉMOIN QUI COMPTE CE QUE LE HASARD A LAISSÉ SE DOUBLE D'UN TÉMOIN QUI
+  PROVOQUE.** « Un flâneur posé au milieu de la chaussée en sort » pose trois
+  flâneurs ET leur poste sur l'asphalte et lit leur arrivée : 3/3 au bord en 3 à
+  4,5 s, contre 3/3 encore sur la chaussée après 17 s sur `origin/main`
+  (`sonde-sortie-chaussee.cjs`). Le témoin-tirage d'avant reste, pour le message.
+
 ## Deux témoins de la rue qui disent ce qu'ils voient (v380) — un couloir « vide » se vérifie au sec
 
 Deux règles.
@@ -1793,6 +1989,74 @@ normales réécrites hors d'eux (zéro), travail par image après le choc
 position, si (`{ ...msg }`). Ce qui doit traverser un ancien hôte s'accroche
 à elle, et devient idempotent en envoyant l'HISTOIRE (adoptée seulement si
 la nôtre en est le début), jamais le seul dernier événement.
+
+## Le GPS se partage (v388) — un état voyage avec la position, pas dans un message neuf
+
+La dette de la v321. Trois règles.
+
+- **CE QUI EST UN ÉTAT VOYAGE AVEC LA POSITION.** La consigne proposait un
+  message `gps_de` relayé comme `ciel`. La leçon de la v374 décide autrement :
+  un ancien hôte ne relaie pas un message qu'il ne connaît pas, mais il relaie
+  la position telle quelle (`{ ...msg }`). La destination n'est pas un
+  événement, c'est un ÉTAT (« je vais à Rome ») : elle part dans la position
+  (`g` = [x, z, nom, clé], net.js), qu'un ami arrivé en cours de route reçoit
+  aussi, et qu'une tablette restée en arrière ignore (le receveur cède). La
+  CLÉ nomme le trajet : la proposition n'apparaît qu'une fois par trajet, même
+  si la position repasse huit fois par seconde.
+- **UN CHAMP DE POSITION SE LIT SUR LES DEUX CHEMINS DE LA POSITION.** Le
+  direct (`pos`) et le relayé (`rpos`). La v374 avait accroché l'histoire des
+  chocs (`rc`) à la position pour traverser un ancien hôte — et ne la lisait
+  que sur `pos` : entre deux invités, précisément le chemin d'un ancien hôte,
+  elle tombait. Corrigé avec `g`. Quand on ajoute un champ à `pos`, on cherche
+  `case 'rpos'` le jour même.
+- **UNE PROPOSITION, JAMAIS UN ORDRE.** Règle de la v306 : un geste qui change
+  le trajet pose la question. Le bandeau « Marlon va à Rome — y aller aussi ? »
+  ne touche pas un GPS en cours ; il s'efface seul (vingt secondes en temps
+  réel), quand l'ami arrête son GPS ou s'en va, et ne s'affiche pas si l'on va
+  déjà là ou qu'on y est. Il vit au centre, sous le GPS — rien dans le quart
+  bas-gauche (v272) — et la première capture l'a montré coincé entre les
+  colonnes de boutons : sa largeur se borne aux colonnes, pas à l'écran.
+
+## « Seul » ne veut pas dire « seulement lui » (v383) — la rue n'entre plus chez un ami
+
+La dette de la v305 : une voiture de la rue entrait encore une fois dans
+celle d'un ami. Trois règles.
+
+- **TROIS PISTES DÉCLARÉES, ET LA CAUSE ÉTAIT UNE QUATRIÈME.** Le cap de
+  l'ami lu sur son regard, sa position réseau en retard, une voiture de
+  travers au carrefour : `sonde-intrus-ami.cjs` relève chez Alice, image par
+  image, chaque voiture qui touche le rectangle de Marlon et ce que
+  `cederLePassage` en pensait (`window.__vehicules.diagCeder()`). Écart
+  réseau 0 à 0,17 bloc, cap posé identique : les deux premières tombent. Les
+  cinq intruses avaient l'ami ET une voiture de la rue dans leur `veut`.
+  Une liste de pistes écrite dans une dette n'est pas la liste des causes :
+  la sonde publie l'état de la DÉCISION, pas seulement la géométrie.
+- **UNE EXCEPTION ÉCRITE « QUAND IL EST SEUL » SE RELIT AU CAS OÙ IL NE
+  L'EST PAS.** La règle de la v245 (« devant l'enfant, on attend sans
+  limite ») était codée `every(k < 0)` : vraie seulement si TOUTES les gênes
+  sont des joueurs. Un carrefour en plus, et la patience de quatre secondes
+  revenait, puis `repart` lançait la voiture deux secondes à l'aveugle — au
+  travers de l'ami, et de l'enfant de la tablette aussi. Désormais `some` : un
+  joueur ou un train sur le chemin, on attend, et un `repart` déjà lancé
+  s'arrête net. La patience ne dénoue plus que deux voitures de la rue.
+- **UNE SITUATION RARE NE SE PROVOQUE PAS TOUJOURS — ALORS ON COMPTE.** J'ai
+  essayé de poser Marlon AU carrefour de deux convois pour forcer le cas
+  (v233) : zéro à trois voitures à moins de douze blocs en quarante secondes,
+  la rue de Paris est trop clairsemée sur ce banc — non-résultat, la sonde
+  n'est pas gardée. La preuve est donc un compte, même protocole des deux
+  côtés : ancien code 5 entrées sur 11 poses, neuf 0 sur 10. Le témoin de
+  `reseau.js` fait entrer `dedans` dans son verdict ; sur l'ancien code il ne
+  rougit qu'une pose sur une dizaine, et c'est dit.
+- **UN TÉMOIN VERT GRÂCE À LA PANNE ROUGIT LE JOUR OÙ ON LA CORRIGE.**
+  « Quand la monoplace arrive, on a le temps de voir le bouton » posait
+  l'enfant SUR la piste : la monoplace s'arrêtait à 9,3 blocs (le bouton est
+  à 9), puis repartait au bout de quatre secondes AU TRAVERS de lui — et le
+  bouton s'allumait (ancien code : 5,4 s, `sonde-monoplace-bord.cjs`). Son
+  commentaire disait « planté au bord du circuit » : il est posé au bord,
+  trois blocs et demi de côté (0,3 s). Ce qu'il faut retenir : devant un rouge
+  qui suit une correction, on se demande d'abord si le témoin ne MESURAIT pas
+  le défaut corrigé — les secondes du message (5,4 ≈ 4 de patience plus la
+  route) le disaient.
 
 ## Un battement qui écrit sans relire défait le choix d'à côté (v374)
 
@@ -2269,6 +2533,25 @@ Une règle.
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
 
+## Le Tōmei (v381) — une sonde de couloir lisse par moyenne, et la porte se juge avec son raccord
+
+Tokyo–Nagoya, la route que le relevé de la v310 laissait de côté (« un
+aérodrome sur l'axe »). Deux règles.
+
+- **UNE ENTRÉE DE VILLE SE MESURE AVEC LES QUARANTE BLOCS QUI LA PRÉCÈDENT.**
+  L'avenue de Tokyo par 149° était la plus propre (dix-neuf blocs de rue,
+  aucun bloc) ; mais le rayon qui y mène passe sur un étang à cinquante blocs
+  de la porte, et tous les tracés y posaient un pont contre elle. Une entrée
+  se choisit sur l'avenue ET sur le rayon de dehors — ici 132°, porte à
+  vingt-quatre blocs du bord (`bord`), même avenue mesurée.
+- **QUAND LE COULOIR SERPENTE, CHAIKIN LAISSE SES COINS ; UNE MOYENNE GLISSANTE
+  LES RÉPARTIT.** Le chemin de grille (huit caps, trois pas droits après chaque
+  virage) contournait la montagne côtière en S : lissé par Chaikin et
+  rééchantillonné, il rendait des coudes de 33 à 38° — cent pour cent de refus
+  « coude », c'est-à-dire un défaut de la recherche (v329). Rééchantillonné à
+  cinq blocs puis moyenné sur ±50 blocs (bouts fixés), le même chemin passe
+  sous 25° : 22 admissibles sur 300, dont un à un seul pont.
+
 ## La route de Washington (v367) — une ville fermée par son relief s'entre par son côté bas, et un bout peut s'arrêter net
 
 L'I-95 Sud New York–Washington. Quatre règles.
@@ -2306,6 +2589,14 @@ L'I-95 Sud New York–Washington. Quatre règles.
   (`ZONE_WASHINGTON`) et Manhattan à son rectangle — la règle de la v313
   (« un témoin écrit pour un cas se réécrit le jour où un cas neuf sort de
   son hypothèse »).
+
+**Et un tronçon mesuré sur l'axe ne couvre pas les colonnes d'à côté (v381).**
+Le tablier d'un pont de ville engendrée s'arrêtait là où l'AXE cessait d'être
+mouillé ; une colonne voisine pouvait être de l'eau un demi-bloc plus loin, et
+restait sans pont — une seule vue par le témoin des ponts (Berlin, sur l'axe),
+437 mesurées sur la bande entière dans quarante-neuf villes. Une dette vue
+dans une ville se mesure dans toutes (v319) : le témoin des encoches lit la
+bande de chaque tablier de chaque ville, par les fonctions pures.
 
 ## La porte de Manhattan (v362) — une ville qui n'est pas un disque déclare sa porte
 

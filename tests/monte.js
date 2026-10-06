@@ -749,10 +749,17 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     const surLeCircuit = await tab.evaluate(() => window.__vehicules.point(2, 12));
     verifier('le circuit tourne quelque part sur la carte', !!surLeCircuit,
       JSON.stringify(surLeCircuit));
+    // AU BORD, PAS SUR LA PISTE (v383). Posé SUR le tracé, l'enfant arrête la
+    // monoplace — elle attend à 9,3 blocs, à un pas du bouton (RAYON_BORD 9).
+    // Ce témoin était vert parce qu'au bout de quatre secondes elle repartait
+    // AU TRAVERS de lui (`repart`, la panne que la v383 corrige ; sonde
+    // `sonde-monoplace-bord.cjs` : ancien code bouton à 5,4 s, neuf jamais sur
+    // la piste, 0,3 s au bord). Son commentaire disait « planté au bord du
+    // circuit » : on le pose au bord, trois blocs et demi de côté.
     await tab.evaluate((pt) => {
       const g = window.__game;
       g.player.flying = true;
-      g.player.pos.set(pt.x, pt.y, pt.z);
+      g.player.pos.set(pt.x + Math.cos(pt.cap) * 3.5, pt.y, pt.z - Math.sin(pt.cap) * 3.5);
       g.player.vel.set(0, 0, 0);
     }, surLeCircuit);
     const monteeF1 = await tab.waitForFunction(() => {
@@ -1053,9 +1060,9 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // Borne basse 3,0 : le rapprochement anti-mur peut raccourcir le recul
     // (plancher à 3,2) si un obstacle traîne derrière le parc — c'est un
     // comportement voulu, pas un défaut.
-    // ET LE PLAFOND SUIT LA VITESSE DEPUIS LA v381 : la caméra recule jusqu'à
+    // ET LE PLAFOND SUIT LA VITESSE DEPUIS LA v391 : la caméra recule jusqu'à
     // 1,32 fois le recul de la fiche quand la voiture roule (6,4 → 8,45). Le
-    // portail de la v381 l'a rendue rouge à 7,07 sur la borne fixe de 6,5,
+    // portail de la v391 l'a rendue rouge à 7,07 sur la borne fixe de 6,5,
     // une voiture qui roulait encore — le plafond se calcule, il ne se recopie
     // pas (v269).
     verifier('au volant, la caméra suit la voiture de derrière, comme GTA',
@@ -1813,6 +1820,55 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('et les passants ne sont plus plantés au milieu de la chaussée',
       !solDesPassants.err && solDesPassants.total >= 6 && solDesPassants.partChaussee <= 0.2,
       JSON.stringify(solDesPassants));
+
+    // ---- UN FLÂNEUR POSÉ SUR LA CHAUSSÉE EN SORT (v382) ---------------------
+    //
+    // Le témoin d'au-dessus est un TIRAGE (dette v291) : il compte ce que le
+    // hasard des naissances a laissé sur la rue, et rend 0 à 3 sur 18 selon le
+    // passage. Celui-ci PROVOQUE la situation que la v380 a nommée — un flâneur
+    // (`surTrottoir` faux), en pause, son POSTE sur l'asphalte — et lit où il
+    // est ARRIVÉ (v279), en secondes de montre : la sortie suit l'horloge réelle.
+    // Sur l'ancien code, son poste reste sur la chaussée et il y flâne.
+    const sortieRue = await tab.evaluate(async () => {
+      const g = window.__game;
+      const { TROTTOIR, CHAUSSEE } = await import('./src/world.js');
+      const w = g.world;
+      const cat = (x, z) => {
+        const bx = Math.floor(x), bz = Math.floor(z);
+        const b = w.getBlock(bx, w.sommetColonne(bx, bz), bz);
+        return TROTTOIR.has(b) ? 't' : CHAUSSEE.has(b) ? 'c' : 'a';
+      };
+      const s2 = g.passants.sites.find((q) => q.peuple && q.peuple.length);
+      if (!s2) return { err: 'aucune ville peuplée' };
+      const gens = s2.peuple.filter((h) => h.name === 'passant' && h.pos);
+      const sauve = g.player.pos.clone();
+      const essais = [];
+      for (const h of gens.slice(0, 3)) {
+        // une colonne de chaussée au niveau de la rue, à moins de quinze blocs
+        let ou = null;
+        for (let r = 2; r < 16 && !ou; r++) for (let k = 0; k < 24 && !ou; k++) {
+          const a = k / 24 * Math.PI * 2;
+          const x = Math.floor(h.pos.x + Math.cos(a) * r) + 0.5, z = Math.floor(h.pos.z + Math.sin(a) * r) + 0.5;
+          if (cat(x, z) === 'c' && Math.abs(w.sommetColonne(Math.floor(x), Math.floor(z)) + 1 - h.pos.y) < 1.2) ou = { x, z };
+        }
+        if (!ou) { essais.push({ err: 'pas de chaussée' }); continue; }
+        h.traversee = null; h.ecart = null; h.sortie = null;
+        h.surTrottoir = false; h.etat = 'pause'; h.minuteur = 6;
+        h.poste.set(ou.x, ou.z); h.placeAt(ou.x, ou.z, 40);
+        g.player.pos.set(ou.x + 4, h.pos.y, ou.z + 4); g.player.vel.set(0, 0, 0);
+        const t0 = performance.now();
+        while (performance.now() - t0 < 15000 && cat(h.pos.x, h.pos.z) === 'c') await new Promise((f) => setTimeout(f, 250));
+        // et l'on regarde encore deux secondes : sortir pour y revenir ne compte pas
+        await new Promise((f) => setTimeout(f, 2000));
+        essais.push({ secondes: +((performance.now() - t0) / 1000).toFixed(1), arrivee: cat(h.pos.x, h.pos.z),
+          poste: cat(h.poste.x, h.poste.y), d: +Math.hypot(h.pos.x - ou.x, h.pos.z - ou.z).toFixed(2), sorties: h.sorties || 0 });
+      }
+      g.player.pos.copy(sauve);
+      return { ville: s2.nom, essais };
+    });
+    verifier('un flâneur posé au milieu de la chaussée en sort et flâne au bord',
+      !sortieRue.err && sortieRue.essais.length > 0 && sortieRue.essais.every((e) => !e.err && e.arrivee !== 'c' && e.poste !== 'c'),
+      JSON.stringify(sortieRue));
 
     // ---- ET IL MARCHE VRAIMENT (v278, gardé en v279) ------------------------
     //
@@ -3255,9 +3311,14 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // TASKS.md ; ce que le témoin garde, c'est que l'accueil, lui, couvre tout.
     await souffler();
     const arrivee = await banc.joueur('MonteArrivee', { rr: 6 });
+    // UNE CHAUFFE EST UN ÉTAT, PAS UN TAUX (v285) : sous la charge du portail
+    // elle a rendu 44 à 163 sur 321 en soixante secondes, et seule — page
+    // neuve, ou bridée ×4 et ×6 — elle finit en 9 à 16 s
+    // (sonde-programmes-paris.cjs, v386). Allonger l'attente ne blanchit rien :
+    // un code sans chauffe ne la finit jamais. La durée entre dans le message.
     const chauffeNY = await arrivee.evaluate(async () => {
       const t0 = performance.now();
-      while (performance.now() - t0 < 60000) {
+      while (performance.now() - t0 < 150000) {
         const c = window.__chauffeNY && window.__chauffeNY();
         if (!c || c.finie) return { ...(c || { absente: true }), ms: Math.round(performance.now() - t0) };
         await new Promise((f) => setTimeout(f, 250));
@@ -3295,7 +3356,20 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         const neufs = info.programs.filter((p) => !avant.has(p.cacheKey));
         return { lieu: l.cle, neufs: neufs.length, images: info.render.frame - f0,
           arrive: Math.hypot(g.player.pos.x - x, g.player.pos.z - z) < 60,
-          cles: neufs.slice(0, 4).map((p) => { const k = p.cacheKey.split(','); return [k[0]].concat(k.slice(-4, -1)).join(','); }) };
+          // UN PROGRAMME SE NOMME PAR LA CASE DE SA CLÉ QUI DIFFÈRE (v319) : au
+          // portail de la v382 Paris a rendu trois `physical` que la sonde,
+          // seule ou bridée, ne reproduit pas — le prochain rouge les nomme.
+          cles: neufs.slice(0, 4).map((p) => {
+            const k = p.cacheKey.split(',');
+            let diff = null;
+            for (const a of avant) {
+              const ka = a.split(',');
+              if (ka[0] !== k[0] || ka.length !== k.length) continue;
+              const d = []; for (let i = 0; i < k.length; i++) if (ka[i] !== k[i]) d.push(`${i}:${ka[i]}→${k[i]}`);
+              if (!diff || d.length < diff.length) diff = d;
+            }
+            return `${k[0]} ${diff ? diff.slice(0, 4).join(' ') : 'sans voisin'}`;
+          }) };
       }, l));
     }
     await arrivee.close();
@@ -3323,10 +3397,11 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // les seize lieux de la sonde, `origin/main` rend 3 à Paris et 34 à New
     // York. Un programme au plus par lieu, et deux sur tout le tour — la marge
     // d'un modèle de la flotte qu'un tirage met à portée pour la première fois.
-    // (La garde `images > 10` vaut pour chaque lieu : une page morte rend zéro
-    // programme et ne prouve rien.)
+    // (La garde vaut pour chaque lieu : une page morte rend zéro programme et
+    // ne prouve rien. Au portail de la v382, Paris a rendu HUIT images en vingt
+    // secondes sur une page vivante : la garde passe à la moitié, plus de trois.)
     verifier('se téléporter dans une ville ne compile plus de programmes sur place — Paris, New York, Lille, une médina, Kyoto',
-      tour.every((t) => t.arrive && t.images > 10 && t.neufs <= 1)
+      tour.every((t) => t.arrive && t.images > 3 && t.neufs <= 1)
         && tour.reduce((a, t) => a + t.neufs, 0) <= 2,
       JSON.stringify(programmes));
 
@@ -4208,6 +4283,20 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // EN ABBA, PARCE QUE LE PREMIER PASSAGE N'EST PAS LE SECOND : sur l'ancien
     // code, deux passages identiques ont rendu 0,43 puis 0,57. L'ordre
     // neuf, l'ancien, l'ancien, le neuf — et l'on compare les MOYENNES.
+    //
+    // ET LE PREMIER PASSAGE DANS PARIS EST À FROID, CE QUE L'ABBA NE RATTRAPE
+    // PAS (v380). Ce témoin rendait 0,02 à 0,07 des deux côtés depuis la v375,
+    // et l'on croyait le gain du cône perdu. La sonde (sonde-cone-banc.cjs, une
+    // page, trois paires) l'a séparé : ordre neuf 0,42 · 0,87 · 0,87, ordre
+    // d'avant 0,65 · 0,63 · 0,67. Le gain est là (0,22) ; c'est le PREMIER
+    // passage — la première arrivée dans Paris, ses convois, ses passants,
+    // ses programmes : 5,3 images par seconde et 80 morceaux contre 11,9 et
+    // 281 — qui l'écrase, et l'ABBA le met toujours sur l'ordre neuf. Un
+    // passage d'échauffement, non compté, le prend à sa place. En scène VIDE
+    // les deux ordres rendent 0,84 : le worker y suit, l'ordre n'a plus rien à
+    // décider — le cône ne vaut que quand le débit manque, ce qui est le cas de
+    // la tablette dans une ville.
+    const chaud = await rouler('regard');
     const n1 = await rouler('cone'), a1 = await rouler('regard');
     const a2 = await rouler('regard'), n2 = await rouler('cone');
     const moyenne = (x, y) => ({ ...x, part: +((x.part + y.part) / 2).toFixed(2),
@@ -4219,7 +4308,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('à soixante blocs par seconde dans Paris, le monde se maille dans le champ de la caméra',
       ordreNeuf.parcouru > 300 && ordreAvant.parcouru > 300 && ordreNeuf.installes > 40 && ordreAvant.installes > 40
         && ecartParts >= 0.13,
-      `écart ${ecartParts} (barre 0,13) · ordre neuf : ${dit(ordreNeuf)} · ordre d'avant : ${dit(ordreAvant)}`);
+      `écart ${ecartParts} (barre 0,13) · ordre neuf : ${dit(ordreNeuf)} · ordre d'avant : ${dit(ordreAvant)} · échauffement ${chaud.part} (${chaud.installes} morceaux, non compté) · passages ${n1.part}/${a1.part}/${a2.part}/${n2.part}`);
 
     // LA FILE SE RECHARGE À L'ARRIVÉE D'UN MORCEAU (v360).
     //
@@ -6249,7 +6338,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !sons.err && sons.descendu && sons.apresDescente < sons.auRalenti / 4,
       `${sons.err || ''} ${JSON.stringify(sons)}`);
 
-    // LES SENSATIONS AU VOLANT (v381).
+    // LES SENSATIONS AU VOLANT (v391).
     //
     // Max : « l'impression de conduire dans GTA ». La caméra de poursuite
     // était rivée à six blocs quatre derrière la voiture quelle que soit
@@ -7114,6 +7203,117 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('une portière ouverte se voit aussi de derrière, sans un appel de dessin de plus',
       !embRevers.err && embRevers.face > 4 && embRevers.dos >= embRevers.face / 2 && embRevers.maillages === embRevers.attendus,
       JSON.stringify(embRevers));
+    // MONTER DANS UN AVION (v381). Les avions montaient d'un coup ; l'enfant
+    // marche désormais au pied d'un escalier (d'une échelle pour le
+    // chasseur) posé contre la porte avant gauche, le gravit, la porte (la
+    // verrière) s'ouvre, il entre, il est aux commandes, elle se referme,
+    // l'escalier s'en va. Relevé toutes les cent millisecondes : la phase,
+    // `montureConduite()` (faux jusqu'aux commandes — l'état ne ment pas),
+    // la hauteur des pieds au-dessus du sol (il a gravi), l'angle du membre
+    // qui s'ouvre, l'escalier. Et les CLÉS de programme avant et après
+    // (v363 : une compilation ajoute une clé), le journal des blocs (rien
+    // d'écrit). Puis un second appui en pleine marche termine tout de suite,
+    // et le Concorde (pas de porte) monte d'un coup. Sur l'ancien code :
+    // aux commandes au premier relevé, aucune phase.
+    const embAvion = await emb.evaluate(async () => {
+      const THREE = await import('three');
+      const g = window.__game, am = g.animalManager;
+      const dodo = (ms) => new Promise((r) => setTimeout(r, ms));
+      const images = async (n) => { const f0 = g.renderer.info.render.frame, t0 = performance.now(); while (g.renderer.info.render.frame - f0 < n && performance.now() - t0 < 20000) await dodo(50); };
+      const bouton = () => document.getElementById('ride-btn').click();
+      const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+      const descendre = async () => { for (let i = 0; i < 3 && auVolant(); i++) { bouton(); await images(3); } };
+      const vider = () => { for (const a of [...am.animals]) { am.scene.remove(a.mesh); am.animals.splice(am.animals.indexOf(a), 1); } };
+      const cles = () => new Set((g.renderer.info.programs || []).map((p) => p.cacheKey));
+      const x0 = g.player.pos.x, z0 = g.player.pos.z;
+      const poser = async (key, dx) => {
+        await descendre(); vider();
+        g.player.pilote = null; g.player.avionEtat = undefined; g.player.avionEnVol = undefined; g.player.flying = false;
+        const a = am.invoquer(key, x0 + dx, z0 - 6, false);
+        if (!a) return null;
+        // le modèle n'est placé qu'à l'image suivante : on le place ici, sinon
+        // sa matrice dit encore l'origine du monde
+        a.yaw = 0; a.mesh.rotation.y = Math.PI; a.mesh.position.copy(a.pos);
+        a.mesh.updateMatrixWorld(true);
+        // l'enfant se pose devant-gauche de l'appareil, et le regarde
+        const ici = a.mesh.localToWorld(new THREE.Vector3(-3.5, 0, -5));
+        g.player.pos.set(ici.x, g.world.sommetColonne(Math.floor(ici.x), Math.floor(ici.z)) + 1, ici.z);
+        g.player.vel.set(0, 0, 0);
+        g.player.yaw = Math.atan2(-(a.pos.x - ici.x), -(a.pos.z - ici.z));
+        await images(15);
+        return a;
+      };
+      const releve = async (a, ms) => {
+        const out = [], t0 = performance.now();
+        const porte = a.mesh.userData.porte;
+        const m = porte && a.mesh.userData.membres[porte.ouvrant];
+        while (performance.now() - t0 < ms) {
+          const e = g.player.embarquement;
+          out.push({ ph: e ? e.phase : null, v: auVolant(),
+            dy: +(g.player.pos.y - a.pos.y).toFixed(2),
+            ang: m ? +Math.abs(m.rotation[porte.axe]).toFixed(2) : 0,
+            acces: a.mesh.children.length });
+          if (!e && auVolant() && out.length > 3) break;
+          await dodo(100);
+        }
+        return out;
+      };
+      const res = {};
+      const avant = cles(), blocs = g.world.edits.size;
+      for (const [key, dx] of [['avionligne', 30], ['chasseur', -30]]) {
+        const a = await poser(key, dx);
+        if (!a) { res[key] = { err: 'pas invoqué' }; continue; }
+        const enfants0 = a.mesh.children.length;
+        const avantCles = cles();
+        bouton();
+        const r = await releve(a, 40000);
+        const phases = [...new Set(r.map((x) => x.ph).filter(Boolean))];
+        const fin = r[r.length - 1];
+        res[key] = { phases, n: r.length,
+          volantPendant: r.filter((x) => x.v && ['approche', 'gravir', 'ouverture', 'entree'].includes(x.ph)).length,
+          // la hauteur des pieds EN HAUT des marches (la porte s'ouvre), pas au départ
+          dyHaut: Math.max(-99, ...r.filter((x) => x.ph === 'ouverture').map((x) => x.dy)),
+          seuil: a.mesh.userData.porte ? +a.mesh.userData.porte.y.toFixed(2) : null, angMax: Math.max(...r.map((x) => x.ang)),
+          accesPendant: r.some((x) => x.acces > enfants0), fin: { ...fin, enfants0 },
+          clesNeuves: [...cles()].filter((k) => !avantCles.has(k)).length };
+      }
+      // un second appui en pleine marche termine tout de suite
+      {
+        const a = await poser('avionligne', 30);
+        const enfants0 = a.mesh.children.length;
+        bouton(); await images(2);
+        const ph = g.player.embarquement ? g.player.embarquement.phase : null;
+        bouton(); await images(2);
+        const porte = a.mesh.userData.porte, m = porte && a.mesh.userData.membres[porte.ouvrant];
+        res.second = { avant: ph, apres: g.player.embarquement ? g.player.embarquement.phase : null, auVolant: auVolant(),
+          ang: m ? Math.abs(m.rotation[porte.axe]) : 0, enfants: a.mesh.children.length, enfants0 };
+      }
+      // le Concorde n'a pas de porte : il monte d'un coup
+      {
+        const a = await poser('concorde', 30);
+        bouton(); await images(2);
+        res.concorde = { porte: a.mesh.userData.porte === undefined ? 'absent' : a.mesh.userData.porte, auVolant: auVolant(), ph: g.player.embarquement ? g.player.embarquement.phase : null };
+      }
+      await descendre(); vider();
+      g.player.pilote = null; g.player.avionEtat = undefined; g.player.avionEnVol = undefined; g.player.flying = false;
+      res.clesNeuves = [...cles()].filter((k) => !avant.has(k)).length;
+      res.blocs = g.world.edits.size - blocs;
+      return res;
+    });
+    {
+      const r = embAvion, ok = (k, ouv) => r[k] && !r[k].err && ['approche', 'gravir', 'ouverture', 'entree'].every((p) => r[k].phases.includes(p))
+        && r[k].volantPendant === 0 && r[k].fin.v && !r[k].fin.ph && r[k].dyHaut > r[k].seuil - 0.2 && r[k].angMax > ouv
+        && r[k].accesPendant && r[k].fin.acces === r[k].fin.enfants0 && r[k].fin.ang < 0.02;
+      verifier('on monte dans un avion par un escalier contre la porte, et dans le chasseur par une échelle — l\'état ne ment pas pendant',
+        ok('avionligne', 1.2) && ok('chasseur', 0.6), JSON.stringify({ avionligne: r.avionligne, chasseur: r.chasseur }));
+      verifier('un second appui en pleine marche met aux commandes tout de suite, porte fermée, escalier rangé ; le Concorde (sans porte) monte d\'un coup',
+        r.second && r.second.avant === 'approche' && !r.second.apres && r.second.auVolant && r.second.ang < 0.02 && r.second.enfants === r.second.enfants0
+          && r.concorde && r.concorde.auVolant && !r.concorde.ph,
+        JSON.stringify({ second: r.second, concorde: r.concorde }));
+      verifier('monter dans un avion ne compile aucun programme et n\'écrit aucun bloc',
+        r.clesNeuves === 0 && r.blocs === 0 && r.avionligne && r.avionligne.clesNeuves === 0,
+        JSON.stringify({ cles: r.clesNeuves, blocs: r.blocs, parAvion: [r.avionligne && r.avionligne.clesNeuves, r.chasseur && r.chasseur.clesNeuves] }));
+    }
     verifier('aucune erreur JavaScript pendant l\'embarquement', emb.erreurs.length === 0, JSON.stringify(emb.erreurs));
     await emb.close();
   } finally {

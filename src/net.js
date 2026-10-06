@@ -135,7 +135,7 @@ export class NetSession {
     if (this.hooks.onPlayers) {
       this.hooks.onPlayers(this.presents().map(([id, c]) => ({
         id, name: c.name, lookIdx: c.lookIdx, look: c.look, pos: c.pos, yaw: c.yaw, moving: c.moving,
-        v: c.v || null, p: c.p || null,
+        v: c.v || null, p: c.p || null, g: c.g || null,
       })));
     }
   }
@@ -1660,6 +1660,11 @@ export class NetSession {
         // deux champs et voit l'ami à pied, comme avant — le receveur cède.
         entry.v = msg.v || null;
         entry.p = msg.p || null;
+        // LA DESTINATION DU GPS VOYAGE AVEC LA POSITION (v388) : `g` =
+        // [x, z, nom, clé]. Un état, pas un événement — un ami qui arrive en
+        // cours de route la voit, et un ancien hôte la relaie telle quelle
+        // (`{ ...msg }`), là où il jetterait un message neuf (leçon v374).
+        entry.g = msg.g || null;
         // l'histoire des chocs de la rue (v374), lue une fois : un ancien
         // hôte qui ne relaie pas `rue_choc` relaie la position telle quelle
         if (msg.rc && this.onRueHistoires) this.onRueHistoires(msg.rc);
@@ -1684,8 +1689,13 @@ export class NetSession {
         if (e2) {
           e2.pos = { x: msg.x, y: msg.y, z: msg.z }; e2.yaw = msg.yaw; e2.moving = !!msg.m;
           e2.v = msg.v || null; e2.p = msg.p || null;
+          e2.g = msg.g || null;   // la destination du GPS (v388)
           e2.seen = Date.now();   // c'est sa seule preuve de vie, cf. startHeartbeat
         }
+        // l'histoire des chocs de la rue (v374) passe AUSSI par la position
+        // relayée : c'est exactement le chemin d'un invité à l'autre sous un
+        // ancien hôte, et `rpos` ne la lisait pas (v388)
+        if (msg.rc && this.onRueHistoires) this.onRueHistoires(msg.rc);
         this.playersChanged();
         break;
       }
@@ -1744,6 +1754,7 @@ export class NetSession {
       if (p.v) msg.v = p.v;                 // au volant : espèce et modèle (v253)
       if (p.p) msg.p = p.p;                 // passager : chez qui, quel siège
       if (p.rc) msg.rc = p.rc;              // l'histoire des chocs de la rue (v374)
+      if (p.g) msg.g = p.g;                 // la destination du GPS (v388)
       for (const c of this.conns.values()) this.envoyer(c, msg);
     }, 120);
   }

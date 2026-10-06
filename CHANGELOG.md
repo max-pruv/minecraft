@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v381 — Conduire comme au cinéma
+## v391 — Conduire comme au cinéma
 
 **Pourquoi.** Max (4 octobre 2026) : « une grosse refonte de la façon de
 conduire… comme GTA ». Au volant, la caméra restait rivée à six blocs quatre
@@ -53,6 +53,296 @@ choc 0,90 contre 0,073, secousse 0,23 bloc, caméra du côté de la voiture. Le 
 se mesure en ordre alterné sur la même page (`?sensations=0` rejoue l'ancienne
 conduite) : aucun appel de dessin ni programme de shader de plus (67 des deux
 côtés).
+## v390 — Londres en relief
+
+**Pourquoi.** Max : « when done do all European cities ». La couche de détail
+(façades en relief, trottoirs relevés, arbres maillés) ne couvrait que Paris :
+`couvreHD` testait le seul disque de Paris. Londres, à cinq heures de vol
+virtuel, restait en cubes plats à toute distance — des fenêtres peintes sur
+des murs de brique de jouet.
+
+**Ce que ça change.** De près, Londres est en relief : chaque fenêtre est une
+guillotine géorgienne en retrait, haute et étroite, son châssis blanc, le rail
+de rencontre au milieu, l'appui de pierre et l'arc de briques au-dessus. Le mur
+autour est celui de la maison : la brique (patinée, plus une brique de jouet)
+ou le stuc blanc de Belgravia. Le trottoir est relevé, les arbres des squares
+sont maillés. Pas de colonne Morris à Londres : le mobilier de Paris reste à
+Paris. Un appareil au palier bas ne reçoit rien de neuf ; Paris n'a pas bougé
+d'un octet.
+
+**Ce qui le prouve.** Huit témoins neufs dans `parishd.js`, rouges sur
+`origin/main` : la couche couvre Londres ; elle ne pose aucun bloc (morceau le
+plus dense, à l'octet près) ; sans HD les tampons sont ceux d'avant ; chaque
+face exposée d'une façade ou d'un mur reçoit son détail (1 274 sur 1 274) ; le
+mur est de brique ou d'enduit, jamais de la pierre de Paris ; ni Morris ni
+Davioud ; le morceau le plus lourd pèse 1,2 Mo (Paris en pèse 10) ; en vol au
+palier moyen, 22,5 Mo de façades pour 128 de budget. Un bloc de décor à motif
+posé par un enfant garde son dessin. L'empreinte des tampons HD de Paris
+(256 morceaux) est identique sur `origin/main` et sur la branche.
+## v389 — On monte dans l'avion par l'escalier
+
+**Pourquoi.** Depuis la v366 on marche jusqu'à la portière d'une voiture,
+on l'ouvre, on s'assied. Les avions, eux, montaient d'un coup : l'enfant
+était aux commandes à l'instant même où il appuyait, sans jamais approcher
+la porte.
+
+**Ce que ça change.** Pour l'avion de ligne : un escalier roulant aux
+rampes jaunes vient contre la porte avant gauche, l'enfant y marche, gravit
+les marches, la porte s'ouvre, il entre en se baissant, il est aux
+commandes, la porte se referme et l'escalier s'en va. Pour le chasseur : une
+échelle contre le cockpit, et c'est la verrière qui se lève. Le Concorde
+monte d'un coup comme avant — son fuselage mesure 0,94 bloc, une porte y
+ferait la moitié de la taille de l'enfant ; c'est le modèle qui le déclare.
+Un second appui met aux commandes tout de suite.
+
+**Ce qui le prouve.** Trois témoins neufs dans `monte.js` (page `embarq: 1`),
+rouges sur `origin/main` (rejoués par `sonde-embarquement-avion.cjs`,
+deux minutes) : les phases approche → gravir → ouverture → entrée
+pour l'avion de ligne et le chasseur, `montureConduite()` faux pendant chacune,
+les pieds montés de plus d'un bloc, la porte ouverte puis refermée, l'escalier
+posé puis rangé ; le second appui en pleine marche et le Concorde sans porte ;
+et aucune clé de programme neuve, aucun bloc écrit.
+
+---
+
+## v388 — Le GPS se partage avec un ami
+
+**Pourquoi.** Depuis la v306, un enfant choisit sa destination sur la carte et
+une flèche le guide. À deux, Marlon qui part pour Rome ne pouvait pas le dire
+à Alice autrement qu'à voix haute : la destination restait sur sa tablette
+(dette de la v321).
+
+**Ce que ça change.** Chez l'ami, un bandeau : « Marlon va à Rome — y aller
+aussi ? ». Un toucher sur « 🧭 Y aller » lance son GPS vers le même endroit ;
+sinon rien ne change — un GPS déjà en cours n'est jamais remplacé sans qu'on
+le demande. La destination voyage avec la position, si bien qu'un ami qui
+arrive en cours de route la reçoit aussi, et qu'une partie sous un hôte resté
+sur une ancienne version la transmet quand même. Au passage, l'histoire des
+chocs de la rue (v374) passe enfin aussi par la position relayée entre deux
+invités.
+
+**Ce qui le prouve.** Un témoin à deux pages dans `reseau.js` : Alice roule
+vers Lyon, Marlon choisit Rome ; la proposition arrive (0,5 s à la sonde),
+Alice garde Lyon jusqu'au geste, puis `__gps().nom === 'Rome'`. Sur
+`origin/main` (v383), rien n'arrive en vingt secondes (`sonde-gps-ami.cjs`).
+
+---
+
+## v387 — Plusieurs circuits dans chaque ville, et les deux sens
+
+**Pourquoi.** Dans 153 des 262 villes engendrées (sur la v379), les voitures
+ne faisaient qu'UN tour, toujours dans le même sens — dont 48 villes à tours
+(Houston, Melbourne, Taipei…) depuis la v282. Le plus petit circuit d'une
+ville roulait au milieu de la rue au lieu de sa voie de droite. Et les
+circuits passaient dans les monuments : la v378, livrée en parallèle par une
+autre session, l'avait réglé de son côté ; cette livraison le règle aussi, et
+il fallait n'en garder qu'une façon.
+
+**Ce que ça change.** Presque chaque ville a désormais deux circuits ou plus
+(251 sur 262), de nouveaux tours autour d'un, deux ou trois pâtés de maisons,
+et des voitures dans les DEUX sens sur la même rue, chacune dans sa voie. Plus
+aucune voiture ne passe dans un monument : à Agra, Istanbul, Rome, Munich,
+Séoul, Dubaï, Amsterdam et Prague, des tours de quartier contournent les
+monuments et rendent la couverture d'avant. Les circuits d'une ville se
+calculent quand l'enfant en approche, plus pendant l'écran d'accueil — comme
+en v378, dont le filtre et le dépliage sont remplacés par ceux-ci (un seul
+code pour une seule règle), sans qu'aucune ville ne perde de couverture ni sa
+voiture en vue par rapport à la v379.
+
+**Ce qui le prouve.** Trois témoins neufs dans `carteMonde.js`, sur toutes
+les villes et vérifiés rouges sur `origin/main` (v373) : 251/262 villes à
+plusieurs circuits (115 avant, 109 sur la v379) ; 1 063 côtés de rue partagés, sens contraires à 3,2
+blocs au moins pour deux demi-largeurs de 2,26 (49 avant, sans aucun sens
+contraire) ; zéro pas de carrosserie dans un monument (1 613 avant, 43
+anneaux). Les deux témoins de la v378 restent verts sur ce code : zéro
+monument en travers sur 123, et les anneaux dépliés sont les mêmes que le
+calcul entier (262 villes). Le témoin « à droite » de la v271 relu à l'axe de la rue : 0 relevé à
+gauche (325 sur `origin/main`). Le témoin des ponts lit les 56 villes à pont
+au lieu de quinze : Agra, Berlin et Munich réglés — un tablier d'anneau
+porte désormais un bloc de plus à chaque bout, pour la colonne arrondie que la
+voiture prend encore —, Séoul et Chicago déclarés (culées
+d'anneaux d'avant, mêmes valeurs sur `origin/main`). Aucune ville ne perd de
+couverture ni sa voiture en vue depuis le centre (sonde ville par ville), le
+partage dans le même sens reste sous vingt blocs (14,8). L'empreinte des 490
+morceaux change à Rome et à Tokyo seulement, et chaque colonne différente est
+sur un tablier d'avant ou d'après.
+## v386 — La chauffe de New York se mesure seule
+
+**Pourquoi.** « Se téléporter dans une ville ne compile plus de programmes »
+était rouge depuis des dizaines de versions, des deux côtés : la chauffe de New
+York « expirée » à 44 à 163 sur 321. On ne savait pas si un enfant qui arrive à
+New York voit l'image se figer, ou si c'était le banc.
+
+**Ce que ça change.** Rien dans le jeu, parce que le jeu tient : la sonde
+`sonde-programmes-paris.cjs` rejoue le trajet exact du témoin — chauffe finie en
+9 s (16 s bridé ×6), zéro programme neuf à l'arrivée à Paris, New York et
+Lille, de jour comme de nuit. Le témoin attend désormais la chauffe jusqu'à 150 s
+et dit combien de temps elle a pris ; sa garde d'images suit le pire relevé
+vivant ; et quand un programme se compile quand même, il nomme la case de sa clé
+qui diffère.
+
+**Ce qui le prouve.** La sonde, cinq passages (seul, nuit, bridé ×4 après la
+chauffe, bridé ×6 depuis l'accueil). Portail : `monte.js` et la fumée.
+## v385 — Les passants quittent la chaussée
+
+**Pourquoi.** Le témoin de la v380 a nommé qui restait planté au milieu de la
+rue à Rome : des flâneurs (des passants qui n'ont pas de trottoir à suivre), en
+pause, encore à leur poste de naissance — sur l'asphalte. Le programme de
+flâneur fait quelques pas au hasard autour d'un poste : posé sur la chaussée,
+il y reste. Et `posteAutour`, faute de trottoir, gardait la chaussée comme
+second choix de naissance. Mesuré avant d'écrire : sous node, 1 600 poses dans
+Rome, Paris, Londres, du centre jusqu'au bord, toutes sur un trottoir ; sur une
+page neuve, zéro naissance sur la chaussée en soixante secondes. L'état arrive
+donc par des portes qu'une page neuve ne montre pas — d'où un remède qui ne
+dépend pas de la porte.
+
+**Ce que ça change.** Un flâneur qui se trouve sur la chaussée sans la
+traverser marche jusqu'au bord le plus proche (le trottoir d'abord), en temps
+réel, et y prend son poste : la flânerie reprend hors de la rue, et un trottoir
+trouvé le refait promeneur. À la naissance, la bordure, l'esplanade et l'herbe
+passent avant la chaussée, qui n'est plus qu'un tout dernier recours.
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js` qui PROVOQUE la situation
+— trois flâneurs posés sur l'asphalte de Rome, leur poste aussi, en pause —
+et lit où ils sont arrivés : ici trois sur trois sur le trottoir en 3,3 à
+4,5 s (poste compris) ; sur `origin/main`, trois sur trois encore sur la
+chaussée après 17 s, poste compris (`sonde-sortie-chaussee.cjs`, des deux
+côtés). Le témoin d'avant (« ne sont plus plantés au milieu de la chaussée »)
+reste : c'était un tirage, celui-ci est un gardien. Portail : quatre suites,
+les rouges sont des dettes déclarées (façade et taxi de Manhattan, compilation
+à New York) et « un piéton frôlé sursaute » (1,24 s pour une barre à 1,2),
+rejoué seul trois fois des deux côtés : 0,67 à 0,83 s ici, 0,70 à 0,91 s sur
+`origin/main` — de la charge, et ce piéton est posé en mer, où la règle neuve
+ne trouve jamais de chaussée.
+
+
+## v384 — On descend de la voiture d'un ami par la portière
+
+**Pourquoi.** La v377 faisait monter le passager d'un ami par la portière
+droite ; la DESCENTE restait instantanée — Lou se retrouvait debout d'un
+coup à côté de la voiture de Marlon, et la portière de Marlon ne bougeait
+pas. La moitié du geste manquait.
+
+**Ce que ça change.** Le passager ressort par la portière droite, à
+l'envers de la montée : la portière s'ouvre, il sort, se pose debout à
+côté, la portière se referme. Si la droite est bouchée (un mur, l'eau, une
+voiture qui arrive), il sort côté conducteur ; si tout est bouché, il est
+posé à côté sans animation. Le conducteur — et tout autre joueur — voit la
+portière s'ouvrir chez lui, par le même message court que la montée. On
+n'est plus passager dès le premier appui ; un second appui termine tout de
+suite.
+
+**Ce qui le prouve.** Un témoin neuf dans `reseau.js`, à deux tablettes lues
+au même instant : phases « ouverture » et « sortie » chez Lou, portière
+droite ouverte à 1,05 rad puis refermée chez Marlon, `passagerDe()` faux sur
+chacun des 52 relevés. Rouge sur `origin/main` (aucune phase, portière
+fermée de bout en bout), vert ici. La sonde `sonde-descente-passager.cjs`
+rejoue montée et descente seules en deux minutes.
+
+---
+
+## v383 — La rue n'entre plus dans la voiture d'un ami
+
+**Pourquoi.** Depuis la v305, la circulation cède le passage aux amis comme à
+l'enfant : sur la tablette d'Alice, la voiture de Marlon arrête la rue. Le
+témoin de `reseau.js` le prouvait pour la voiture qui arrive derrière lui,
+mais publiait une gêne qu'il n'expliquait pas : une AUTRE voiture entrait
+encore une fois dans celle de Marlon, sur l'ancien code comme sur le neuf.
+Trois pistes étaient déclarées (le cap de l'ami lu sur son regard, sa position
+réseau en retard, une voiture d'un convoi voisin arrivée de travers). Une sonde
+qui relève, image par image chez Alice, chaque voiture qui touche celle de
+Marlon et ce que la rue en pensait (`sonde-intrus-ami.cjs`) a tranché : ce
+n'était aucune des trois. Les cinq voitures entrées avaient TOUTES l'ami et
+une voiture de la rue dans leur liste de gêne ; la règle « devant l'enfant on
+attend sans limite » ne valait que quand l'enfant était SEUL sur le chemin.
+Avec un carrefour en plus, la voiture retombait sur la patience de quatre
+secondes, puis se lançait deux secondes à l'aveugle — au travers. Et la même
+règle valait pour l'enfant de la tablette : sa propre voiture n'était pas à
+l'abri non plus à un carrefour.
+
+**Ce que ça change.** Dès qu'un joueur (l'enfant, un ami) ou un train est sur
+le chemin d'une voiture de la rue, elle attend, quoi qu'il y ait d'autre
+devant elle ; la patience ne sert plus qu'à dénouer deux voitures de la rue
+entre elles. À plusieurs, la voiture d'un ami garée dans la rue n'est plus
+traversée.
+
+**Ce qui le prouve.** La sonde, même protocole des deux côtés : ancien code,
+cinq voitures entrées sur onze poses mesurées (toutes en `repart`, l'ami et
+une voiture de la rue dans leur gêne) ; code neuf, zéro sur dix. L'écart de
+position réseau mesuré (0 à 0,17 bloc) et le cap posé identique écartent les
+deux pistes réseau. Le témoin de `reseau.js` fait désormais entrer ce compte
+dans son verdict (« … et aucune ne lui passe au travers »).
+Et un témoin de `monte.js` était vert GRÂCE à la panne : l'enfant posé sur la
+piste voyait le bouton de la monoplace parce qu'elle finissait par lui passer
+au travers (5,4 s sur l'ancien code). Il est posé au bord du circuit, comme
+son commentaire l'annonçait (bouton en 0,3 s).
+
+---
+
+## v382 — Le cône se mesure à chaud
+
+**Pourquoi.** Le témoin « à soixante blocs par seconde dans Paris, le monde se
+maille dans le champ » était rouge des deux côtés depuis la v375 : écart 0,02 à
+0,07 pour une barre à 0,13, quand la v346 mesurait 0,29. On croyait le gain de
+l'ordre en cône perdu, peut-être absorbé par la recharge à l'arrivée des v360 et
+v379 — et une dette de ma zone attendait qu'on choisisse entre baisser la barre
+et retirer l'ordre.
+
+**Ce que ça change.** Rien dans le jeu : c'était le témoin. Une sonde
+(`sonde-cone-banc.cjs`, une seule page, trois paires en ordre alterné) a séparé
+les cas. Ordre neuf 0,42 · 0,87 · 0,87, ordre d'avant 0,65 · 0,63 · 0,67 : le
+gain est là (0,22), et c'est le PREMIER passage dans Paris — la première
+arrivée, ses convois, ses passants, 5,3 images par seconde et 80 morceaux contre
+11,9 et 281 — qui l'écrasait ; l'ABBA le mettait toujours sur l'ordre neuf. Le
+témoin joue désormais un passage d'échauffement, non compté. Et la sonde dit ce
+que le cône vaut vraiment : dans une scène vide (0,84 des deux côtés) et la
+recharge à l'arrivée armée (0,72 contre 0,70, 90 morceaux par seconde), le
+worker suit et l'ordre n'a plus rien à décider. Le cône ne compte que quand le
+débit manque — une tablette qui arrive dans une ville.
+
+**Ce qui le prouve.** La sonde, douze passages publiés dans le commit. Le
+témoin repointé ; joué avec l'ordre d'avant des deux côtés, il rend l'écart des
+passages « regard » de la sonde (0,02 à 0,04), sous la barre : il peut encore
+rougir. Portail : `monte.js` et la fumée.
+
+---
+
+## v381 — Plus de trou au bout des ponts, et le Tōmei
+
+**Pourquoi.** Au bout d'un pont de Berlin, une colonne d'eau sans tablier : la
+voiture y tombait (dette déclarée en v362). Mesuré sur toutes les villes à
+pont, ce n'était pas un cas : 437 colonnes d'eau sans tablier aux bouts des
+ponts de quarante-neuf villes. Le tronçon mouillé se mesure sur l'axe du pont,
+et une colonne du monde voisine de l'axe peut être de l'eau un demi-bloc avant
+le premier point mouillé.
+
+**Ce que ça change.** Le tablier se prolonge d'un demi-bloc à chaque bout, et
+seulement sur l'eau : la terre ferme ne change pas d'un bloc. Les bouts des
+ponts n'ont plus d'encoche où la voiture tombe.
+
+**Ce qui le prouve.** Un témoin neuf dans `carteMonde.js` lit toutes les villes
+à pont : 437 encoches sur `origin/main`, zéro ici, sur 28 436 colonnes de
+tablier. La dette de Berlin sort de la liste des ponts déclarés (Agra y
+reste). L'empreinte des 490 morceaux change (Tokyo est un des neuf lieux, et
+le raccord du Tōmei y entre), et la même branche, la règle désarmée et le
+Tōmei retiré, rend celle d'`origin/main` au bit près.
+
+**Et le Tōmei, Tokyo–Nagoya.** La dernière route libre du relevé de la v310,
+laissée de côté parce qu'« un aérodrome est sur l'axe ». C'était pire : à
+l'ouest de Tokyo, Haneda et Yokota ferment la plaine, le Shinkansen part vers
+Kyoto à douze blocs de Haneda et traverse Nagoya, et la montagne de Hakone
+occupe le milieu. La route passe par la bande côtière au sud du rail, entre la
+montagne et la mer : 1 140 blocs, un seul pont (une crique au sud-ouest de
+Tokyo), déblai et remblai de 1,8 bloc. Tokyo s'entre par 132°, porte à
+vingt-quatre blocs du bord — l'entrée par 149°, plus propre, mettait un pont
+sur un étang contre la porte —, Nagoya par 60°, à l'opposé de l'E1. Un témoin
+neuf de `carteMonde.js` exige zéro colonne sur le rail, zéro ville frôlée, des
+voitures sur la route et une rue propre aux deux entrées ; mesuré sous node
+avant le banc : 9 985 colonnes d'emprise, aucune sur la voie ferrée ni à une
+autre route, 283 colonnes d'asphalte sur 283.
+
+---
+
 ## v380 — Deux témoins de la rue qui disent ce qu'ils voient
 
 **Pourquoi.** Deux témoins de `monte.js` rendaient des rouges qu'on ne
@@ -78,6 +368,9 @@ rectangles n'est au sec. La sonde des passants sur la chaussée à Rome
 (`sonde-chaussee-rome.cjs`, 60 s, deux fois de chaque côté) : hors traversée,
 0 et 5 relevés sur ~1 800 sur la branche, 3 et 2 sur `origin/main` — aucun
 passant né sur la chaussée, aucun flâneur.
+
+---
+
 ## v379 — On arrive plus vite après la carte
 
 **Pourquoi.** Trois questions laissées ouvertes par la v360, et une quatrième
@@ -317,6 +610,7 @@ pivot, la voiture à 70 % de santé). Le coût du plan, une fois par modèle, se
 remesure : médiane 5 ms (4 avant), 15 ms sur la Lucid (13 avant), 21 ms au
 pire hors taxis (28 avant) — chaque sommet ne passe plus qu'une fois dans le
 repère de la voiture, et la recopie des attributs se fait d'un geste.
+
 ## v371 — Les passants traversent au feu
 
 **Pourquoi.** Les passants marchaient le long de leur trottoir et, au coin,

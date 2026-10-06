@@ -35,7 +35,7 @@ import { creerEmbarquement } from './embarquement.js';
 // v255 ; leurs clés restent en place, et sync.js continue de faire voyager le
 // sac et la quête tels quels. On n'efface rien.
 // La caméra de poursuite et son retard (`?camlag=`, v278) vivent dans
-// `sensations.js` depuis la v381.
+// `sensations.js` depuis la v391.
 const RECORDS_KEY = 'web-minecraft-records-v1';
 const PHOTOS_KEY = 'web-minecraft-photos-v1';
 
@@ -365,10 +365,19 @@ export function initFun(ctx) {
   }
   function descendreDePassager(silencieux = false) {
     if (!passager) return;
-    const nom = passager.nom;
-    passager = null;
+    const { nom, de, s } = passager;
+    passager = null;           // plus passager dès le premier appui (v384)
     player.vel.set(0, 0, 0);
-    if (!silencieux) toast(`🚶 Tu descends de la voiture de ${nom}.`, 0xd8c9a4);
+    if (silencieux) return;
+    toast(`🚶 Tu descends de la voiture de ${nom}.`, 0xd8c9a4);
+    // PAR LA PORTIÈRE DROITE, comme on est monté (v384) : la séquence à
+    // l'envers sur la voiture de l'ami, et l'ami voit sa portière s'ouvrir
+    const veh = vehiculeDistant ? vehiculeDistant(de) : null;
+    if (!veh) return;
+    const sieges = veh.def.sieges || [];
+    const siege = sieges[Math.min(s, sieges.length - 1)] || veh.def.siege;
+    embarquement.descendreDeChez(veh, siege, de,
+      () => { const v = vehiculeDistant(de); return !!v && v.mesh === veh.mesh; });
   }
   function updatePassager() {
     if (!passager) return;
@@ -1178,7 +1187,7 @@ export function initFun(ctx) {
     // voiture et la caméra, elle avance devant lui plutôt que d'entrer
     // dans la roche.
     if (a.def.poursuite) {
-      // LA POURSUITE ET LA CAISSE QUI VIT (v381) : la caméra qui recule et
+      // LA POURSUITE ET LA CAISSE QUI VIT (v391) : la caméra qui recule et
       // ouvre son champ avec la vitesse, qui ne traverse pas les murs, qui
       // regarde dans le virage et tremble au choc ; la caisse qui penche et
       // plonge ; les roues qui braquent ; le son des rapports et des pneus.
@@ -1294,7 +1303,7 @@ export function initFun(ctx) {
     }
     updateRide(dt);
     degats.update(dt, player.camera, animalManager.animals);   // fumée, feu, carcasses (v343)
-    // CE QU'ON QUITTE SE REPOSE (v381) : la voiture garée reprend son
+    // CE QU'ON QUITTE SE REPOSE (v391) : la voiture garée reprend son
     // assiette et ses roues droites, et le champ de la caméra revient.
     if (riding !== derniereMonture) { reposerVoiture(derniereMonture); derniereMonture = riding; }
     if (!riding) sensationsAPied(player, dt);

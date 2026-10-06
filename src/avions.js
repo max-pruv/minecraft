@@ -76,6 +76,7 @@ const SOMBRE = 0x2a2e34;
 const VERRE = 0x2a3a4a;
 const ACIER = 0x6a7078;
 const KAKI = 0x6a7060;
+const JAUNE = 0xe8c020;   // les rampes d'embarquement (v381)
 
 // --- une surface portante ----------------------------------------------------
 //
@@ -304,8 +305,15 @@ function flamme(t) {
   return groupe;
 }
 
-function fini(a, zPrincipal = 0) {
+// `porte` (v381) : où l'on monte à bord, dans le repère du modèle (nez en −z,
+// gauche en −x) — le seuil (x, y, z), le type d'accès (`escalier` pour une
+// porte de cabine, `echelle` pour un cockpit), le membre qui s'ouvre et de
+// combien. `null` : le modèle ne permet pas de porte, on monte d'un coup.
+// Même discipline que `portiere: false` (vehicules.js) : la règle vit avec le
+// modèle, là où sa géométrie est écrite.
+function fini(a, zPrincipal = 0, porte = null) {
   const g = a.finir();
+  g.userData.porte = porte;
   // une flamme par tuyère déclarée, enfant de la racine
   g.userData.tuyeres = (a.tuyeres || []).map((t) => { const f = flamme(t); g.add(f); return f; });
   // `legs` doit exister même vide : la boucle de monte la parcourt pour faire
@@ -337,6 +345,15 @@ export function avionDeLigne() {
   hublots(a, { de: -L / 2 + 2.4, a: L / 2 - 4.4, y: y + rayon * 0.34, rayon });
   // le cockpit, sur le nez arrondi
   a.boite(VERRE, { p: [0, y + rayon * 0.42, -L / 2 + 1.0], e: [rayon * 1.5, 0.3, 0.7] });
+  // LA PORTE AVANT GAUCHE (v381), juste derrière le nez, sur le barillet —
+  // un membre à part, pivot sur son arête avant : elle s'ouvre vers
+  // l'extérieur quand l'enfant arrive en haut de l'escalier. 0,9 bloc de haut
+  // sur un fuselage de 1,7 : à 0,43 bloc par mètre, une vraie porte (1,85 m)
+  // en ferait 0,8 — l'enfant (1,8) entre en se baissant.
+  const zPorte = -L / 2 + 4.6 * k + 0.1;               // l'arête avant, sur le barillet
+  a.membre('porte_avant', [-(rayon + 0.02), y, zPorte]);
+  a.boite(0xd8d8d0, { p: [-(rayon + 0.04), y - 0.05, zPorte + 0.3], e: [0.05, 0.9, 0.6] });
+  a.membre('tronc');
   // L'AILE BASSE ET EFFILÉE. Envergure 35,8 m ; corde 6,0 à l'emplanture et
   // 1,5 au saumon (effilement 0,25) ; flèche du bord d'attaque 27°, donc
   // 7,6 blocs de demi-envergure reculent de 3,9 ; dièdre 5°.
@@ -371,7 +388,10 @@ export function avionDeLigne() {
   // le train, sorti : un avion garé est posé sur ses roues, pas enterré
   const ventre = y - rayon;
   const zp = trains(a, { nez: { z: -L / 2 + 1.8, r: 0.22 }, principal: { x: 1.1, r: 0.28 }, zPrincipal: 0.9, ventre });
-  return fini(a, zp);
+  return fini(a, zp, {
+    type: 'escalier', x: -(rayon + 0.04), y: y - 0.5, z: zPorte + 0.3, demiLong: L / 2,
+    ouvrant: 'porte_avant', axe: 'y', angle: -1.5,
+  });
 }
 
 // --- le Concorde -------------------------------------------------------------
@@ -425,7 +445,10 @@ export function concorde() {
   }), BLANC);
   const ventre = y - rayon;
   const zp = trains(a, { nez: { z: -L / 2 + 4.4, r: 0.20 }, principal: { x: 1.05, r: 0.24 }, zPrincipal: 3.6, ventre });
-  return fini(a, zp);
+  // PAS DE PORTE (v381) : son fuselage fait 0,94 bloc de diamètre — mesuré —
+  // et une porte y ferait la moitié de la hauteur de l'enfant. On monte à bord
+  // d'un coup, comme avant ; c'est la fiche qui le dit (`porte: null`).
+  return fini(a, zp, null);
 }
 
 // --- l'avion de chasse -------------------------------------------------------
@@ -443,8 +466,11 @@ export function avionDeChasse() {
   // le camouflage : deux taches sombres sur le dos, rien de plus
   a.boite(KAKI, { p: [0, y + rayon * 0.82, -0.9], e: [rayon * 1.3, 0.1, 2.4] });
   a.boite(KAKI, { p: [0, y + rayon * 0.82, 2.0], e: [rayon * 1.1, 0.1, 1.6] });
-  // la verrière en bulle, posée haut et en avant
+  // la verrière en bulle, posée haut et en avant — UN MEMBRE (v381), pivot à
+  // son bord arrière : elle se lève quand l'enfant arrive en haut de l'échelle
+  a.membre('verriere', [0, y + rayon * 0.72, -0.95]);
   a.demiSphere(VERRE, { p: [0, y + rayon * 0.72, -1.9], e: [rayon * 1.25, 0.62, 1.9], seg: 14 });
+  a.membre('tronc');
   // les entrées d'air latérales, PLAQUÉES sur le flanc — elles flottaient
   for (const s of [-1, 1]) {
     a.boite(SOMBRE, { p: [s * (rayon * 0.92), y - 0.16, -0.5], e: [0.3, 0.52, 2.0] });
@@ -491,7 +517,51 @@ export function avionDeChasse() {
   }
   const ventre = y - rayon;
   const zp = trains(a, { nez: { z: -L / 2 + 2.2, r: 0.18 }, principal: { x: 0.8, r: 0.2 }, zPrincipal: 1.1, ventre });
-  return fini(a, zp);
+  return fini(a, zp, {
+    // l'échelle à l'avant de la verrière : plus en arrière, elle traverserait
+    // les canards (mesuré : bord d'attaque à z −2,1 à un bloc de l'axe)
+    type: 'echelle', x: -(rayon * 0.9), y: y + rayon * 0.72, z: -2.7, demiLong: L / 2,
+    ouvrant: 'verriere', axe: 'x', angle: 0.9,
+  });
+}
+
+// --- l'escalier et l'échelle d'embarquement (v381) --------------------------
+//
+// Posés contre la porte le temps de monter, puis retirés. FABRIQUÉS PAR
+// L'ATELIER, donc avec le même matériau que l'avion (`matiereVivante`) : aucun
+// programme neuf, par construction. Un par type de porte, gardé et partagé —
+// l'embarquement le prête à l'avion et le reprend.
+// Rend { groupe, pied: [x, y, z], haut: [x, y, z] } dans le repère du modèle.
+export function accesAvion(porte) {
+  const a = new Atelier();
+  const { x, y, z } = porte;
+  if (porte.type === 'echelle') {
+    // une échelle appuyée au flanc : deux montants, des barreaux
+    const xb = x - 0.75, n = Math.max(4, Math.round(y / 0.32));
+    for (const dz of [-0.24, 0.24]) {
+      a.membreGalbe(JAUNE, { de: [xb, 0, z + dz], a: [x - 0.02, y + 0.15, z + dz], r1: 0.035, seg: 6 });
+    }
+    for (let i = 1; i <= n; i++) {
+      const k = i / (n + 1);
+      a.boite(GRIS, { p: [xb + (x - 0.02 - xb) * k, y * k, z], e: [0.05, 0.05, 0.5] });
+    }
+    return { groupe: a.finir(), pied: [xb - 0.35, 0, z], haut: [x - 0.1, y, z] };
+  }
+  // un escalier roulant : un plateau à la hauteur du seuil, des marches
+  // jusqu'au sol, deux rampes — la rampe JAUNE se voit de loin sur le tarmac
+  const course = y * 1.7, xp = x - 0.45, xb = xp - course;
+  const n = Math.max(3, Math.round(y / 0.25));
+  a.boite(GRIS, { p: [xp + 0.2, y - 0.05, z], e: [0.55, 0.1, 0.8] });   // le plateau
+  for (let i = 0; i < n; i++) {
+    const k = (i + 0.5) / n;
+    a.boite(GRIS, { p: [xb + course * k, y * k - 0.05, z], e: [course / n + 0.02, 0.08, 0.7] });
+  }
+  for (const dz of [-0.4, 0.4]) {
+    a.membreGalbe(JAUNE, { de: [xb, 0.6, z + dz], a: [xp, y + 0.6, z + dz], r1: 0.03, seg: 6 });
+    a.boite(ACIER, { p: [xb + course / 2, y / 2 - 0.1, z + dz], e: [course, 0.12, 0.05],
+      r: [0, 0, Math.atan2(y, course)] });
+  }
+  return { groupe: a.finir(), pied: [xb - 0.4, 0, z], haut: [xp + 0.2, y, z] };
 }
 
 export const MODELES_AVION = {
