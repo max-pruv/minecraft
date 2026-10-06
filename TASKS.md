@@ -1,5 +1,29 @@
 # Ce qui est en cours
 
+- [x] **LES DEUX ROUGES RÉSEAU RÉCURRENTS (v393).** « Un départ propre
+  nettoie tout le monde » : CORRIGÉ dans le jeu — `net.stop()` n'envoyait
+  aucun adieu, un pair au transport muet restait 90 s (v266). Sonde
+  `sonde-depart-transport-muet.cjs` : `origin/main` 0/2 nettoyé en 60 s,
+  branche 3/3 en ≈ 1 s ; `reseau.js` seule sur la branche 80/80. « Caméra
+  éteinte, le jeu reprend sa voix normale » : TÉMOIN REPOINTÉ — il comparait
+  deux moments de mélodie (sans appel, 0,0195 à 0,0285 d'une fenêtre à
+  l'autre ; radio relancée sans appel ≡ après l'appel, gain 1 cinq fois sur
+  cinq). Il juge le gain rendu et un niveau > ½ ; rouge sur une copie où la
+  voix reste au quart. Les entrées plus bas qui déclarent ces deux témoins
+  « intermittents des deux côtés » sont closes par celle-ci.
+  Portail (base v388) : `degats`, `visio`, `hote`, `reseau` VERTS ; seul
+  rouge `manhattan.js` « le trou enlève aussi la géométrie visible de la
+  façade » (17 102 → 54 969) — la dette déclarée en v291 (22 326 → 51 734 sur
+  `origin/main`), un compte qui suit ce que la file a installé ; la livraison
+  ne touche ni la façade ni Manhattan.
+  Second portail (rebasé sur la v392) : `degats`, `visio`, `hote`, `reseau`
+  VERTS (départ nettoyé en 1 s, voix gain 1). Rouges, tous déjà déclarés :
+  `maj.js` « le loader dit combien de fichiers » (intermittent, table plus
+  bas), `manhattan.js` trou (9 203 → 51 734), « le taxi roule » (bouton
+  jamais visible) et l'invité de la ligne 674 qui ne rejoint pas.
+- [ ] **LE GPS PARTAGÉ PAR UN HÔTE QUI RELAIE (`rpos`) N'A PAS DE TÉMOIN À
+  TROIS TABLETTES** (v388 l'éprouve entre l'hôte et un invité). Le champ `g`
+  est lu sur `rpos`, la règle est écrite ; le témoin reste à faire.
 - [ ] **LE PORTAIL DE LA v391 (la tablette mesure sa vitesse au sol), DOUBLE
   MESURE FAITE.** Onze suites ; mes deux témoins verts (règle 36/192/2 ; ligne
   « roulage : 43 b/s · trou devant 16 blocs · débit 4 morceaux/s »). Rouges :
