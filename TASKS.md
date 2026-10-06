@@ -10,6 +10,18 @@
   (`monture: null`, intermittence vue sur `origin/main` v326). `reseau.js`
   REJOUÉE SEULE sur la branche : 79 verts, zéro rouge (mon témoin du GPS
   compris).
+- [ ] **LE PORTAIL DE LA v390 (les anneaux contournent), DOUBLE MESURE FAITE.**
+  Verts : `fumee.js`, `carteMonde.js` (les deux témoins neufs), `plafond.js`
+  (empreintes, celle des 490 morceaux comprise). `carte.js` : « la flèche du
+  GPS » (1,92 rad) et « la faire glisser non plus » rouges des DEUX côtés
+  rejoués seuls (444 ms `origin/main` v389, 618 ms branche, barre 400), dettes
+  déjà déclarées. `monte.js` change de rouges à chaque passage : portail
+  (réverbère dans Paris, recharge à l'arrivée 0,74 pour 0,75), seule sur la
+  branche (le train Eurostar Londres–Paris, le flâneur de Rome 2 sur 3), seule
+  sur `origin/main` (le trou en vol). Le flâneur, le seul qui passe dans une
+  ville engendrée, rejoué par `sonde-sortie-chaussee.cjs` trois fois de chaque
+  côté en alternance : 9 sur 9 au bord des deux côtés (3,1 à 5 s). Le train
+  et le réverbère sont dans Paris et Londres, que la v390 ne touche pas.
 - [ ] **LE PORTAIL DE LA v387 (les circuits des villes engendrées), DOUBLE
   MESURE FAITE.** Verts : `carteMonde.js`, `plafond.js`, `degats.js`,
   `carte.js`, `washington.js`. `maj.js` : un seul rouge, À MOI et corrigé (le
