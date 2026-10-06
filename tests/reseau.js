@@ -277,7 +277,7 @@ function verifier(nom, ok, detail = '') {
 
     // --- un départ propre disparaît des deux côtés ----------------------------
     //
-    // ON PROVOQUE LE CAS QUI ROUGISSAIT (v389), on ne l'attend pas (v233). Au
+    // ON PROVOQUE LE CAS QUI ROUGISSAIT (v393), on ne l'attend pas (v233). Au
     // portail, le lien de Nina restait chez l'hôte canal `open`, ICE
     // `connected`, silence 74 s : la page partie, le transport n'avait rien
     // dit, et un pair sondable se garde 90 s (v266). C'est aussi la tablette

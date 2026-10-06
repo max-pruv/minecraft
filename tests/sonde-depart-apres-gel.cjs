@@ -1,4 +1,4 @@
-// SONDE (v389) : « un départ propre nettoie tout le monde » DANS les
+// SONDE (v393) : « un départ propre nettoie tout le monde » DANS les
 // conditions de reseau.js — Nina a été gelée 25 s plus tôt. Quand elle ferme
 // sa page, que voit l'hôte de son lien (nuage ? canal ouvert ? muet ?
 // endormie ?), seconde par seconde, pendant 60 s ?

@@ -1,4 +1,4 @@
-// SONDE (v389) : « un départ propre » quand le transport ne dit rien. On
+// SONDE (v393) : « un départ propre » quand le transport ne dit rien. On
 // reproduit l'état relevé au portail (canal `open`, ICE `connected`, silence
 // qui grimpe) : Nina part (`net.stop()`, comme `pagehide`) mais son
 // RTCPeerConnection reste debout et sa page se fige — une tablette que iOS

@@ -241,7 +241,7 @@ async function allumerLaCamera(p) {
       return { neuf: c !== window.__ctxAvantAppel && c.state !== 'closed', radio: window.__sons.station(),
         niveau: await window.__niveauSon(1500), gain: window.__sons.sortie().gain.value };
     });
-    // LA VOIX NORMALE, C'EST LE GAIN RENDU, PAS UNE FENÊTRE DE MÉLODIE (v389).
+    // LA VOIX NORMALE, C'EST LE GAIN RENDU, PAS UNE FENÊTRE DE MÉLODIE (v393).
     // La barre « 0,8 × avant » comparait 1,5 s de radio en régime établi au
     // DÉBUT de la mélodie que le contexte neuf relance. Mesuré sans aucun
     // appel (`sonde-voix-apres-appel.cjs`) : 0,0195 à 0,0285 d'une fenêtre à

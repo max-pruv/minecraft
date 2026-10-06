@@ -1985,6 +1985,36 @@ position, si (`{ ...msg }`). Ce qui doit traverser un ancien hôte s'accroche
 à elle, et devient idempotent en envoyant l'HISTOIRE (adoptée seulement si
 la nôtre en est le début), jamais le seul dernier événement.
 
+## Celui qui part dit au revoir (v393) — un commentaire de départ se relit dans `stop()`
+
+Les deux rouges réseau récurrents du palier C. Trois règles.
+
+- **CE QUI S'ARRÊTE S'ANNONCE, ET LA LIGNE QUI LE DIT SE RELIT DANS LE CODE
+  QU'ELLE APPELLE.** `pagehide` appelait `net.stop()` sous « on prévient les
+  autres joueurs avant de disparaître » ; `stop()` ne faisait que démonter.
+  Le départ reposait sur la fermeture du transport — la règle de la v219,
+  écrite pour la caméra, jamais appliquée au départ. Tant que le silence
+  retirait tout pair à 20 s, le défaut se voyait à peine ; depuis que la v266
+  garde un pair au canal ouvert 90 s, un transport qui ne dit rien (sonde du
+  portail : canal `open`, ICE `connected`, silence 74 s) le gardait une minute
+  et demie. `stop()` envoie `bye` avec `adieu: 1` à chacun AVANT de démonter,
+  et le receveur traite l'adieu du pair lui-même comme un lien qui tombe
+  (`dropPeer` : l'hôte relaie, l'invité qui perd l'hôte repart). Une ancienne
+  tablette lit `from` et retire le pair. Quand une règle durcit un délai
+  (v266), on cherche le jour même qui comptait sur l'ancien délai.
+- **ON PROVOQUE L'ÉTAT DU PORTAIL, ON NE L'ATTEND PAS.** Le rouge venait une
+  fois sur dix ; la sonde `sonde-depart-transport-muet.cjs` le fabrique à
+  chaque fois (transport laissé debout, `stop()`, page figée) : 0/2 nettoyé en
+  60 s sur l'ancien code, 3/3 en ≈ 1 s. Le témoin de `reseau.js` fait de même.
+- **UNE FENÊTRE DE MÉLODIE N'EST PAS UN VOLUME.** « Caméra éteinte, le jeu
+  reprend sa voix normale » comparait 1,5 s de radio établie au DÉBUT de la
+  mélodie que le contexte neuf relance. Sans aucun appel, deux fenêtres
+  varient de 0,68 à 1 (`sonde-voix-apres-appel.cjs`), et la radio relancée
+  sans appel rend la même distribution qu'après l'appel. La grandeur est le
+  gain de sortie rendu, plus un niveau au-dessus de la MOITIÉ — milieu entre
+  une voix restée au quart (`GAIN_APPEL`) et le régime qui varie ; vérifié
+  rouge sur une copie où la voix reste au quart.
+
 ## Le GPS se partage (v388) — un état voyage avec la position, pas dans un message neuf
 
 La dette de la v321. Trois règles.
