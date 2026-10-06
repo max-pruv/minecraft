@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 392,
+    titre: 'Nice et Lille en relief',
+    puces: [
+      'Les persiennes de Nice, de près',
+      'La brique de Lille, de près',
+    ],
+  },
+  {
     v: 391,
     titre: 'La tablette mesure la route',
     puces: [

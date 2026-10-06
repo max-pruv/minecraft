@@ -2351,7 +2351,8 @@
      ses registres — brique de Londres, tuile de Rome, pan de bois.
      **État (v390).** Palier A livré : Londres (`VILLES_HD`, `STYLES.londres`,
      le mur d'à côté lu par `murVoisin`, les murs Briques/Uni dans la couche).
-     Restent : B (Nice, Lille), C (villes engendrées d'Europe). Dette déclarée :
+     Palier B livré (v392) : Nice et Lille (`STYLES.nice`, `STYLES.lille`).
+     Reste : C (villes engendrées d'Europe). Dette déclarée :
      le raccord ville/campagne (`raccordInterdit`) n'est interdit qu'à Paris —
      une colonne de raccord de Londres montre la surface plate, pas le sol HD.
      Portail de la v390 (lancé sous le numéro v386, avant deux rebases) : 12 suites vertes, `parishd.js` comprise ; cinq
@@ -2363,6 +2364,14 @@
      (v291) : aucune de ces suites ne force `?hd=`, le banc rend en logiciel,
      donc `RAYON_HD` vaut 0, `world.hd` est faux et `villeHD` n'est jamais
      appelé — le mailleur y prend exactement le chemin d'avant.
+     Portail de la v392 (cinq suites) : `parishd.js` et `plafond.js` verts ;
+     `maj.js` rend ses deux rouges déclarés ; `monte.js` un rouge NEUF —
+     « un flâneur posé au milieu de la chaussée en sort et flâne au bord »
+     (témoin de la v385) : à Rome, trois essais, sortie après 3,1 · 2,8 ·
+     3,8 s, d 1,27 · 1,84 · 3,3, arrivée « t », « a », « a ». PREUVE
+     STRUCTURELLE (v291) : `monte.js` ne force pas `?hd=`, `world.hd` y est
+     faux et la couche n'est jamais lue. À reprendre par la session des
+     passants, avec sa double mesure.
 
   Ce qu'on ne touche PAS : le système de coordonnées, les clés de stockage, les
   blocs sauvegardés, `terrainHeight`, les contrats réseau. La couche HD LIT les
