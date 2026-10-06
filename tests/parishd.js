@@ -709,6 +709,20 @@ function verifier(nom, ok, detail = '') {
         !!fiche('washington') && HD.murHD(BLOCK.BRICK, fiche('washington')) && HD.murHD(BLOCK.BRICK, fiche('sf'))
           && !HD.murHD(BLOCK.BRICK, fiche('londres')) && !HD.murHD(BLOCK.BRICK, fiche('paris')));
     }
+    // PALIER B (v399) : les villes engendrées des Amériques, une par registre
+    await temoinsVille({ cle: 'chicago', centre: vm('chicago'), attendu: ['brique', 'pierre'], interdit: ['volet', 'fer', 'bardage'], rayonSonde: 60 });
+    await temoinsVille({ cle: 'mexico', centre: vm('mexico'), attendu: ['enduit', 'fer'], interdit: ['volet', 'pierre', 'bardage'], rayonSonde: 60 });
+    {
+      const reg = (cle) => (HD.VILLES_HD || []).find((d) => d.ville === cle)?.registre || null;
+      const ameriques = VILLES_MONDE.filter((f) => f.trame && f.lon0 < -30 && f.lon0 > -140);
+      const couvertes = ameriques.filter((f) => reg(f.cle));
+      verifier('toutes les villes engendrées des Amériques ont leur registre, et pas une île du Pacifique',
+        couvertes.length === ameriques.length && couvertes.length >= 55
+          && reg('chicago') === 'nordAmericain' && reg('montreal') === 'nordAmericain' && reg('miami') === 'nordAmericain'
+          && reg('mexico') === 'latino' && reg('havane') === 'latino' && reg('buenosaires') === 'latino'
+          && reg('monterrey') === 'latino' && reg('nouvelleorleans') === 'latino' && !reg('honolulu') && !reg('papeete'),
+        `${couvertes.length} sur ${ameriques.length} ; Chicago ${reg('chicago')}, Mexico ${reg('mexico')}, La Nouvelle-Orléans ${reg('nouvelleorleans')}, Honolulu ${reg('honolulu')}`);
+    }
     // un bloc de décor à motif posé par un enfant garde son dessin : seuls les
     // murs de brique et d'enduit passent dans la couche
     if (typeof HD.murHD === 'function') {

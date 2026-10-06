@@ -6,13 +6,31 @@
 
 export const NOUVEAUTES = [
   {
-    v: 399,
+    v: 401,
     titre: 'Conduire comme au cinéma',
     puces: [
       'La caméra recule quand on accélère',
       'La voiture penche dans les virages',
       'Les roues avant tournent avec toi',
       'Les pneus crissent, les chocs s\'entendent',
+    ],
+  },
+  {
+    v: 400,
+    titre: 'On descend de l\'avion',
+    puces: [
+      'L\'escalier revient contre la porte',
+      'Tu descends les marches',
+      'Jamais dans l\'eau en descendant',
+    ],
+  },
+  {
+    v: 399,
+    titre: 'Les Amériques en relief',
+    puces: [
+      'Chicago, Montréal, Mexico, Rio de près',
+      'Brique et guillotine au nord',
+      'Couleurs et balcons de fer au sud',
     ],
   },
   {

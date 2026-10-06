@@ -1060,9 +1060,9 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // Borne basse 3,0 : le rapprochement anti-mur peut raccourcir le recul
     // (plancher à 3,2) si un obstacle traîne derrière le parc — c'est un
     // comportement voulu, pas un défaut.
-    // ET LE PLAFOND SUIT LA VITESSE DEPUIS LA v399 : la caméra recule jusqu'à
+    // ET LE PLAFOND SUIT LA VITESSE DEPUIS LA v401 : la caméra recule jusqu'à
     // 1,32 fois le recul de la fiche quand la voiture roule (6,4 → 8,45). Le
-    // portail de la v399 l'a rendue rouge à 7,07 sur la borne fixe de 6,5,
+    // portail de la v401 l'a rendue rouge à 7,07 sur la borne fixe de 6,5,
     // une voiture qui roulait encore — le plafond se calcule, il ne se recopie
     // pas (v269).
     verifier('au volant, la caméra suit la voiture de derrière, comme GTA',
@@ -6526,7 +6526,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !sons.err && sons.descendu && sons.apresDescente < sons.auRalenti / 4,
       `${sons.err || ''} ${JSON.stringify(sons)}`);
 
-    // LES SENSATIONS AU VOLANT (v399).
+    // LES SENSATIONS AU VOLANT (v401).
     //
     // Max : « l'impression de conduire dans GTA ». La caméra de poursuite
     // était rivée à six blocs quatre derrière la voiture quelle que soit
@@ -7568,6 +7568,23 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       verifier('monter dans un avion ne compile aucun programme et n\'écrit aucun bloc',
         r.clesNeuves === 0 && r.blocs === 0 && r.avionligne && r.avionligne.clesNeuves === 0,
         JSON.stringify({ cles: r.clesNeuves, blocs: r.blocs, parAvion: [r.avionligne && r.avionligne.clesNeuves, r.chasseur && r.chasseur.clesNeuves] }));
+    }
+    // ON DESCEND D'UN AVION PAR SON ESCALIER (v400). Les avions descendaient
+    // d'un coup, au milieu du fuselage. Le passage vit dans
+    // `sonde-descente-avion.cjs`, qu'on rejoue seul en deux minutes des deux
+    // côtés : les phases, l'état qui bascule au premier appui, la porte,
+    // l'escalier qui vient et s'en va, la place mesurée (jamais dans l'eau
+    // ni dans un mur), le second appui, le Concorde, aucune clé neuve, aucun
+    // bloc. On se pose d'abord sur le couloir plat de la sonde.
+    {
+      const { passage, juger } = require('./sonde-descente-avion.cjs');
+      await emb.evaluate(async () => {
+        const g = window.__game;
+        const x = -600.5, z = -520.5;
+        g.player.pos.set(x, g.world.terrainHeight(x, z) + 1, z); g.player.vel.set(0, 0, 0);
+        await new Promise((r) => setTimeout(r, 4000));
+      });
+      juger(await emb.evaluate(passage), verifier);
     }
     verifier('aucune erreur JavaScript pendant l\'embarquement', emb.erreurs.length === 0, JSON.stringify(emb.erreurs));
     await emb.close();

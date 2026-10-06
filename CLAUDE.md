@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Les sensations au volant (v399) — la caméra regarde la voiture, et un mur se cherche cellule par cellule
+## Les sensations au volant (v401) — la caméra regarde la voiture, et un mur se cherche cellule par cellule
 
 Chantier « conduite » (six sessions, octobre 2026) ; celle-ci tient ce que
 l'enfant VOIT et ENTEND. Tout vit dans `src/sensations.js`, branché par un
@@ -805,6 +805,20 @@ règles.
   dans l'image, et `sensations.js` reprend le suivi du bestiaire pour ne pas
   compter deux fois. Les avions gardent la poursuite d'avant à l'identique ;
   `?sensations=0` rejoue l'ancienne conduite, pour mesurer.
+
+## Les Amériques en relief (v399) — un registre se donne aussi aux villes qu'une règle classerait mal
+
+Palier B. Deux règles.
+
+- **LA GÉOGRAPHIE DÉCIDE, L'HISTOIRE CORRIGE, ET LA CORRECTION SE NOMME.**
+  `registreAmeriques` (facadeshd.js) : longitude de la fiche, `nordAmericain`
+  au nord de 24° N, `latino` au sud ; `LATINO_AU_NORD` nomme Monterrey et La
+  Nouvelle-Orléans avec leur raison, `PACIFIQUE` les îles qui attendent le
+  palier C. Même forme que `registreEurope` et `HORS_EUROPE` : une liste se
+  conteste en la lisant.
+- **CE QUI SE MESURE.** 505 morceaux sur les 61 villes : 0,44 Mo de façades en
+  moyenne, 1,62 au pire (Buenos Aires) ; Paris, l'Europe, Washington et San
+  Francisco identiques à l'octet (sonde d'empreinte, `Math.random` figé).
 
 ## Washington et San Francisco en relief (v398) — une fiche dit sa forme, un uni se lit à sa couleur
 
@@ -1260,6 +1274,24 @@ d'invoquer la lit à l'origine du monde** : le modèle n'est placé qu'à l'imag
 suivante — mon premier jet posait l'enfant à trente blocs de l'avion, et le
 bouton ne trouvait rien. On copie `a.pos` dans le maillage avant de lire.
 
+**On descend d'un avion par son escalier (v400).** `descendreAvion`
+(embarquement.js) : `toggleRide(null)` au PREMIER appui, puis `ouverture`
+(dedans, caché), `sortie` (il se redresse, la porte fait la moitié de sa
+taille), `descente` (un escalier de face, une échelle face aux barreaux),
+`fermeture` (l'escalier s'en va). Seulement un avion AU SOL qui a une porte ;
+en vol, le Concorde et `embarq=0` : l'ancien geste. Deux règles.
+**Autour d'un avion, la place se lit sur le SOL DE LA COLONNE, pas à la cote
+des roues** (`placeAuSol`) : un appareil est long, et sur la pente du couloir
+de la v297 le pied des marches est à quatre blocs des roues — la recherche
+« cote des roues ± deux » de la voiture rendait « mur » partout. Une colonne
+d'eau, une pente de plus de quatre blocs ou une boîte pleine sont refusées,
+et l'on se pose alors d'un coup à une place libre autour ; le refus se dit
+(`refus.escalier`, `?diag=1`). **Et l'ancien geste posait l'enfant DANS
+l'eau** quand l'avion s'arrête au bord d'un lac (mesuré sur `origin/main`) :
+un geste instantané ne regarde pas où il pose, une séquence doit le faire.
+Le passage vit dans `sonde-descente-avion.cjs` et `monte.js` l'appelle tel
+quel (`passage`, `juger`) : une copie de sonde finit par diverger du témoin.
+
 **Une séquence qu'on ne juge qu'au banc se fait lire sur la tablette (v396).**
 Le banc saute la séquence (`embarq=0`) et rend en logiciel : durées, caméra et
 image figée ne se valident que sur l'iPad. `?diag=1` porte donc une ligne de
@@ -1315,7 +1347,8 @@ de conflit se relit dans `git diff origin/main`, jamais seulement dans le
 fichier** : le diff montre ce qu'on retire à l'autre côté.
 
 Ce qui reste, déclaré dans `TASKS.md` : la vue de la séquence ne se juge que
-sur le banc, pas sur l'iPad ; les avions DESCENDENT encore d'un coup.
+sur le banc, pas sur l'iPad ; les amis ne voient pas la porte d'un avion
+s'ouvrir.
 
 ## Les coupoles ont leur édifice (v365) — un gabarit partagé se cherche dans toutes les villes, et le ciel se lit sur les modèles
 

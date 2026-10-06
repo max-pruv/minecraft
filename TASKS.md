@@ -2698,9 +2698,9 @@
 
   7. **Le reste du monde** (session `claude/hd-villes-monde`). Palier A livré
      (v398) : Washington et San Francisco (`STYLES.washington`, `sfCentre`,
-     `sfSoma`, `sfMaisons`, la tuile `bardage`). Paliers B (les villes
-     engendrées des Amériques) et C (Asie, Moyen-Orient, Afrique, Océanie) à
-     suivre. Dettes déclarées :
+     `sfSoma`, `sfMaisons`, la tuile `bardage`). Palier B livré (v399) : les 61
+     villes engendrées des Amériques (`nordAmericain`, `latino`). Palier C (Asie,
+     Moyen-Orient, Afrique, Océanie) à suivre. Dettes déclarées :
      - [ ] **le Colisée du catalogue change à chaque lancement** :
        `monuments.js:501` tire ses gradins effondrés à `Math.random()` — 173
        blocs du morceau (cx, cz + 1) de Rome différents entre deux exécutions
@@ -2711,6 +2711,25 @@
        `tirage(x, y, z)`), mais c'est un bloc écrit : il change le Colisée une
        fois pour toutes, et un enfant a peut-être bâti contre — à décider avec la
        zone des monuments, pas dans la couche HD ;
+     Portail de la v399 (quatre suites) : `parishd.js` et `plafond.js` verts ;
+     six rouges dans `maj.js` et `monte.js`, aucune ne force `?hd=` (preuve
+     structurelle v291). Rejouées SEULES des deux côtés :
+     - [ ] `monte.js` « une vraie voiture de la rue, par le vrai crochet : son
+       flanc frôlé ne nous arrête pas » (témoin de la v397) : rouge sur la
+       branche ET sur `origin/main` (v398), `{"c":null,"lu":false}` — aucune
+       voiture trouvée ; à reprendre par la session de la conduite ;
+     - `maj.js` « le jeu se mesure en jouant, et range son verdict » et « le
+       palier se décide sur le TRAVAIL d'une image » : rouges au portail
+       (période 467 ms, la page à deux images par seconde), VERTS seuls des deux
+       côtés — charge du portail ;
+     - [ ] `monte.js` « au volant, le personnage de l'enfant est assis dans la
+       voiture » : `{"avatar":false,"monture":true}` une fois sur la branche
+       rejouée seule, vert au portail sur la même branche et seule sur
+       `origin/main` — intermittence de la zone de la conduite ;
+     - les autres (« corps, programmes et fond de carte », « ne floute rien »,
+       le flâneur, le bout du monde en vol) : déjà déclarés plus haut, et
+       `origin/main` rend en plus « la rue roule à l'allure d'une ville » et
+       « au feu, la voiture freine » rouges seule.
      Portail de la v398 (quatre suites) : `parishd.js` et `plafond.js` verts ;
      `maj.js` « corps, programmes et fond de carte » (déclaré) ; `monte.js`
      « un passant change de trottoir au feu » à 1 au vert sur 4 (déclaré plus
@@ -3699,6 +3718,35 @@ l'embarquement a eu lieu, pas par une hypothèse.
 ## En cours
 
 ### Embarquement (v366) — ce qui reste dans la zone
+- [ ] **LE PORTAIL DE LA v400 (la descente d'avion), DOUBLE MESURE FAITE.**
+  Les quatre témoins neufs verts (`monte.js`), et la sonde
+  `sonde-descente-avion.cjs` seule : 4/4 sur la branche, 1/4 sur
+  `origin/main` (et l'enfant DANS l'eau). Le premier portail a trouvé un vrai
+  défaut (un avion retiré pendant la descente replaçait l'enfant au pied de
+  l'ancien escalier : le témoin de la montée v389 rougissait), corrigé et
+  rejoué seul, 7/7. Sept suites vertes, `reseau.js` comprise. Rouges, tous de
+  familles déjà déclarées : `maj.js` (loader, « vraiment là »), `carte.js`
+  (flèche du GPS, glisser bridé ×4), `manhattan.js` (trou de façade, taxi
+  tactile), `monte.js` (le train devant la voiture, la recharge à l'arrivée,
+  et le « flanc frôlé » de la v397, rouge à l'identique sur `origin/main`).
+  PREUVE STRUCTURELLE en plus : le code neuf n'est atteint que sous
+  `embarq: 1` en descendant d'un avion au sol ; aucune de ces pages ne le fait.
+- [ ] **MONTER DANS UN TRAIN OU UN MÉTRO PAR SA PORTE — DÉCLARÉ, PAS LIVRÉ
+  (session embarquement, v400).** `bord` (fun.js) colle encore l'enfant au
+  siège d'une rame d'un coup. La même discipline que l'avion (v389) le
+  ferait : l'accès se déclare avec le MODÈLE (`userData.porte` posé par
+  `construireRame`, une porte coulissante en MEMBRE, aucune clé de programme
+  neuve), la séquence ne joue que si le convoi est ARRÊTÉ au quai (`arrets`,
+  `pause` : sinon la porte file sous l'enfant), et `embarq=0` rend l'ancien
+  geste au bit près. Pourquoi ce n'est pas fait : `construireRame` et la
+  pause aux quais vivent dans `vehicules.js`, zone de la session
+  circulation-vivante ; la séquence, elle, est prête à suivre un modèle qui
+  déclare sa porte (`monterAvion` lit `userData.porte` et un membre
+  `porte.ouvrant`). Marche : (1) la session circulation ajoute le membre et
+  `userData.porte` à la rame de tête et publie dans `place()` si le convoi
+  est à l'arrêt ; (2) l'embarquement ajoute `monterRame` (marche sur le quai,
+  la porte glisse, il entre, `bord` bascule ICI) et `descendreRame` ; (3)
+  témoins dans `washington.js` (le métro) et `monte.js` (le train).
 - [ ] **POUR MAX, SUR LA TABLETTE — valider la montée et la descente (v366,
   v377, v384, v389).** Le banc saute la séquence (`embarq=0`) et rend en
   logiciel : ce qui suit ne se juge QUE sur l'iPad. Ouvrir
@@ -3729,7 +3777,16 @@ l'embarquement a eu lieu, pas par une hypothèse.
      3 à 4,5 s. Le chasseur : une échelle et la verrière qui se lève. Le
      Concorde : on monte d'un coup, comme avant (pas de porte, c'est voulu) —
      la ligne ne change donc pas.
-  6. **Ce qui ne doit PAS arriver.** Une image figée au moment où l'escalier
+  6. **Descendre de l'avion (v400).** Avion arrêté au sol, « Descendre » :
+     on n'est plus aux commandes tout de suite, l'escalier revient contre la
+     porte, elle s'ouvre, l'enfant sort, descend les marches et se retrouve
+     au pied, la porte se ferme, l'escalier disparaît. Diagnostic :
+     `descendre (avion)`, 2 à 3 s, `jusqu'au bout · par l'escalier`. Le
+     chasseur : l'échelle, descendue face aux barreaux. Avion arrêté au bord
+     de l'eau (pied des marches sur l'eau) : il se pose d'un coup sur la
+     terre ferme à côté, diagnostic `sans escalier (escalier refusé : eau)`.
+     En vol, et pour le Concorde : comme avant.
+  7. **Ce qui ne doit PAS arriver.** Une image figée au moment où l'escalier
      ou la portière apparaît : la première ligne du diagnostic (`pire image`)
      doit rester sous 300 ms pendant le geste. Si l'une des séquences gêne,
      `?embarq=0` rend l'ancien geste instantané, au bit près.
@@ -3826,8 +3883,9 @@ l'embarquement a eu lieu, pas par une hypothèse.
   en tout) et caméra de trois quarts arrière : à confirmer sur l'iPad.
 - [x] **Les avions** — FAIT en v389 : escalier contre la porte avant gauche
   (avion de ligne), échelle et verrière (chasseur) ; le Concorde déclare
-  `porte: null` (fuselage 0,94 bloc). Reste : la DESCENTE d'un avion est
-  instantanée ; les amis ne voient pas la porte de l'avion s'ouvrir (aucun
+  `porte: null` (fuselage 0,94 bloc). La DESCENTE d'un avion par son
+  escalier est FAITE en v400 (`descendreAvion`, la place mesurée au sol de la
+  colonne). Reste : les amis ne voient pas la porte de l'avion s'ouvrir (aucun
   message) ; l'enfant traverse l'aile s'il arrive par l'arrière (le chemin ne
   contourne que le fuselage).
 - [ ] **LE PORTAIL DE LA v366 APRÈS LA v364, DOUBLE MESURE FAITE.** Cinq
