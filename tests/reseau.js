@@ -176,7 +176,7 @@ function verifier(nom, ok, detail = '') {
     verifier('au volant, l\'ami est vu dans sa voiture, pas à pied',
       volant.auVolant && vuParAlice.assis === true, JSON.stringify({ volant, vuParAlice }));
 
-    // LE VOLANT ET LA GLISSE VOYAGENT AVEC LA VOITURE (v375). Marlon tourne le
+    // LE VOLANT ET LA GLISSE VOYAGENT AVEC LA VOITURE (v397). Marlon tourne le
     // volant à fond (le joystick, l'arrêt suffit : le volant se braque même
     // sans rouler) et sa voiture glisse — la dérive est FIGÉE à 0,2 le temps
     // de la mesure, sans quoi il faudrait rouler vite dans un virage sur un
@@ -303,7 +303,22 @@ function verifier(nom, ok, detail = '') {
       `hôte ${(await ciel(hote)).meteo} · invité ${(await ciel(alice)).meteo}`);
 
     // --- un départ propre disparaît des deux côtés ----------------------------
-    await nina.close();
+    //
+    // ON PROVOQUE LE CAS QUI ROUGISSAIT (v393), on ne l'attend pas (v233). Au
+    // portail, le lien de Nina restait chez l'hôte canal `open`, ICE
+    // `connected`, silence 74 s : la page partie, le transport n'avait rien
+    // dit, et un pair sondable se garde 90 s (v266). C'est aussi la tablette
+    // qu'iOS suspend au lieu de la tuer. Nina fait donc ce que fait `pagehide`
+    // (`net.stop()`) avec un transport qui reste debout, puis se fige. Sur
+    // l'ancien code, rien n'est envoyé : 0 nettoyage en 60 s, deux fois sur
+    // deux (`sonde-depart-transport-muet.cjs`) ; ici l'adieu part, ≈ 1 s.
+    await nina.evaluate(() => {
+      const n = window.__game.net;
+      n.peer.destroy = () => {};
+      for (const c of n.conns.values()) if (c.conn) c.conn.close = () => {};
+      n.stop();
+      setTimeout(() => { const t = Date.now(); while (Date.now() - t < 60000) { /* suspendue */ } }, 50);
+    });
     // Quarante secondes, pas vingt-cinq. Une page qui se ferme ne coupe pas
     // toujours son canal proprement : il reste alors les vingt secondes de
     // silence tolérées, plus un battement de cœur pour s'en apercevoir. La
@@ -314,6 +329,7 @@ function verifier(nom, ok, detail = '') {
       (await vu(hote)).compteur === 2 && (await vu(alice)).compteur === 2
       && !(await nomsVus(hote)).includes('Nina') && !(await nomsVus(alice)).includes('Nina'),
       `hôte ${JSON.stringify(await nomsVus(hote))} · Alice ${JSON.stringify(await nomsVus(alice))}`);
+    await nina.close().catch(() => {});
     // --- le passager entre par la portière, et l'ami la voit s'ouvrir (v377)
     //
     // Le passager d'un ami (v253) était collé au siège d'un coup. Il marche
@@ -452,16 +468,17 @@ function verifier(nom, ok, detail = '') {
     // MACHINE (`Date.now`, la même pour les deux pages) et la vitesse du
     // convoi, et l'on ramène la première lecture à l'instant de la seconde.
     const convoisDe = (page) => page.evaluate(() => {
-      const out = { t: Date.now() };
+      const v = window.__game && window.__game.vehicules;
+      const out = { t: Date.now(), h: v && v.horloge ? v.horloge() : null };
       for (const c of (window.__vehicules.etat() || [])) {
         if (!c.routier || c.nom !== 'voiture') continue;
-        out[`${c.nom}|${c.longueur}|${c.graine}`] = { d: c.distance, L: c.longueur, v: c.vitesse || 0, arret: !!c.attente };
+        out[`${c.nom}|${c.longueur}|${c.graine}`] = { d: c.distance, L: c.longueur, v: c.vitesse || 0, arret: !!c.attente, cle: c.cle };
       }
       return out;
     });
     await jusqua(async () => {
       const a = await convoisDe(hote), b = await convoisDe(alice);
-      return Object.keys(a).filter((k) => k !== 't' && b[k]).length >= 3;
+      return Object.keys(a).filter((k) => k !== 't' && k !== 'h' && b[k]).length >= 3;
     }, 60000);
     // ON PROVOQUE LA DIVERGENCE, ON NE L'ATTEND PAS (v233, v266). Deux pages
     // ouvertes presque ensemble ont des circulations presque en phase par
@@ -473,30 +490,70 @@ function verifier(nom, ok, detail = '') {
     await alice.evaluate(() => { setTimeout(() => { const t = performance.now(); while (performance.now() - t < 6000) { /* gel */ } }, 50); });
     await dormir(6500);
     await dormir(7000);
-    const ecartsRue = [];
+    // LA RUE ROULE TROIS FOIS PLUS VITE DEPUIS LA v372, ET LA LECTURE DES
+    // DEUX PAGES N'EST PLUS GRATUITE : à cinquante km/h, une seconde de
+    // décalage entre deux lectures vaut quatorze blocs. On mesure donc
+    // séparément les DEUX choses que la règle de la v305 garantit :
+    //   (1) LA MÊME RUE À LA MÊME HEURE — on demande à la page d'Alice où SA
+    //       grille met chaque convoi à l'heure que l'hôte vient de lire
+    //       (`distanceA`) : exact, sans aucune lecture intermédiaire ;
+    //   (2) LA MÊME HEURE — l'heure d'Alice ramenée à l'instant de la lecture
+    //       de l'hôte par l'heure de la machine. Sur ce banc une page rend une
+    //       image par seconde ou moins et `dtReel` est borné à deux secondes :
+    //       l'heure de rue de CHAQUE page prend du retard sur la machine entre
+    //       deux annonces du ciel (trois secondes). La barre est donc cinq
+    //       secondes — l'ancien code, sans heure partagée, s'écartait d'une
+    //       minute (le temps d'arrivée).
+    const ecartsRue = [], ecartsHeure = [];
     for (let k = 0; k < 5; k++) {
       const a = await convoisDe(hote), b = await convoisDe(alice);
       const dt = (b.t - a.t) / 1000;
-      for (const cle of Object.keys(a)) {
-        if (cle === 't' || !b[cle] || a[cle].arret || b[cle].arret) continue;
-        const L = a[cle].L || 1;
-        const e = Math.abs((((a[cle].d + a[cle].v * dt - b[cle].d) % L) + L) % L);
+      if (a.h !== null && b.h !== null) ecartsHeure.push(Math.abs(b.h - (a.h + dt)));
+      const cles = Object.keys(a).filter((cle) => cle !== 't' && cle !== 'h' && b[cle] && a[cle].cle);
+      const chezAlice = a.h === null ? {} : await alice.evaluate(({ cles, h }) => {
+        const v = window.__game && window.__game.vehicules, out = {};
+        if (!v || !v.distanceA) return out;
+        for (const c of cles) out[c] = v.distanceA(c, h);
+        return out;
+      }, { cles: cles.map((c) => a[c].cle), h: a.h });
+      for (const cle of cles) {
+        const L = a[cle].L || 1, dB = chezAlice[a[cle].cle];
+        if (typeof dB !== 'number') continue;
+        const e = Math.abs((((a[cle].d - dB) % L) + L) % L);
         ecartsRue.push(Math.min(e, L - e));
       }
       await dormir(600);
     }
+    ecartsHeure.sort((x, y) => x - y);
+    const medianeHeure = ecartsHeure.length ? ecartsHeure[ecartsHeure.length >> 1] : null;
     ecartsRue.sort((x, y) => x - y);
     const medianeRue = ecartsRue.length ? ecartsRue[ecartsRue.length >> 1] : null;
-    // LA BARRE SE CALCULE : l'horloge de la rue glisse vers celle de l'hôte
-    // tant que l'écart est sous UNE seconde (`adopterHorloge`), et sur ce banc
-    // une page rend à peine une image par seconde, donc une position lue a
-    // jusqu'à une seconde de retard. Deux secondes de rue à dix blocs par
-    // seconde : vingt blocs. Mesuré — neuf 2 · 8 · 10, ancien 21 · 22 avec
-    // trente secondes d'écart d'arrivée ; l'écart est porté à une minute pour
-    // que l'ancien code s'éloigne franchement de la barre.
     verifier('deux tablettes d\'une partie voient la même circulation, au même endroit',
-      medianeRue !== null && medianeRue < 20,
-      `écart médian ${medianeRue === null ? null : medianeRue.toFixed(1)} bloc(s) le long du tour, sur ${ecartsRue.length} relevé(s) · pire ${ecartsRue.length ? ecartsRue[ecartsRue.length - 1].toFixed(1) : null}`);
+      ecartsRue.length >= 5 && ecartsRue[ecartsRue.length - 1] < 1 && medianeHeure !== null && medianeHeure < 5,
+      `à heure égale : écart médian ${medianeRue === null ? null : medianeRue.toFixed(2)} bloc(s), pire ${ecartsRue.length ? ecartsRue[ecartsRue.length - 1].toFixed(2) : null}, sur ${ecartsRue.length} relevé(s) · écart d'heure médian ${medianeHeure === null ? null : medianeHeure.toFixed(2)} s`);
+
+    // L'HÔTE QUI RAME ANNONCE QUAND MÊME L'HEURE DE LA RUE (v372). Le compte à
+    // rebours de l'annonce était en `dt`, borné à un vingtième : à deux images
+    // par seconde, « toutes les trois secondes » devenait une fois par
+    // demi-minute, et l'heure de rue d'un invité qui avait calé restait en
+    // retard jusque-là — l'intermittence déclarée sous la v351 (35 blocs
+    // d'écart une fois sur deux). On PROVOQUE la tablette qui rame : chaque
+    // image de l'hôte coûte 400 ms pendant douze secondes, et l'on compte les
+    // annonces. Ancien code : zéro ou une ; neuf : quatre.
+    const annonces = await hote.evaluate(async () => {
+      const n = window.__game.net, dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      if (!n || !n.diffuserCiel) return { err: 'pas de net' };
+      const orig = n.diffuserCiel.bind(n); let k = 0;
+      n.diffuserCiel = (c) => { if (typeof c.rue === 'number') k++; return orig(c); };
+      let actif = true, images = 0;
+      const lourd = () => { if (!actif) return; images++; const t = performance.now(); while (performance.now() - t < 400) { /* rame */ } requestAnimationFrame(lourd); };
+      requestAnimationFrame(lourd);
+      const t0 = performance.now(); await dodo(12000); actif = false;
+      n.diffuserCiel = orig;
+      return { annonces: k, images, secondes: +((performance.now() - t0) / 1000).toFixed(1) };
+    });
+    verifier('l\'hôte qui rame annonce encore l\'heure de la rue toutes les trois secondes',
+      annonces.annonces >= 3, JSON.stringify(annonces));
 
     // Marlon prend le volant d'une voiture de la rue — celle que la rue avait
     // repeinte, pour que la couleur ait quelque chose à perdre.
@@ -512,14 +569,25 @@ function verifier(nom, ok, detail = '') {
             g.player.pos.set(pl[0] + 0.5, g.world.terrainHeight(pl[0], pl[1]) + 1.2, pl[1]);
             g.player.vel.set(0, 0, 0);
             await dodo(150);
+            // LA VOITURE QU'ON PREND EST CELLE QUI EST LÀ AU MOMENT DE L'APPUI
+            // (v372) : à cinquante à l'heure, celle qu'on visait est quinze blocs
+            // plus loin une seconde et demie après, et c'est la suivante — d'une
+            // autre teinte — qui monte. On lit donc la peinture de la voiture
+            // que `placeProche` désigne À L'INSTANT de l'appui.
+            const vise = v.placeProche(9);
+            if (!vise) continue;
+            const [vci, vi] = vise.id.split(':').map(Number);
+            const pv = (v.etat()[vci] || { places: [] }).places.find((q) => q[3] === vi);
+            const teinte = pv ? pv[6] : null;
+            if (teinte === null || teinte === undefined) continue;
             document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyM' }));
             await dodo(1500);
             const a = g.fun.montureConduite && g.fun.montureConduite();
             if (!a || !a.mesh) continue;
             const couleurs = [];
             a.mesh.traverse((o) => { if (o.isMesh && o.material && o.material.color) couleurs.push(o.material.color.getHex()); });
-            return { auVolant: true, rue: peinture === undefined ? null : peinture, monture: a.mesh.userData.peinture ?? null,
-              peinte: peinture !== undefined && couleurs.includes(peinture), flotte: a.mesh.userData.flotte,
+            return { auVolant: true, rue: teinte, visee: peinture, monture: a.mesh.userData.peinture ?? null,
+              peinte: couleurs.includes(teinte), flotte: a.mesh.userData.flotte,
               x: a.pos.x, z: a.pos.z, cap: a.yaw };
           }
         }
@@ -632,7 +700,15 @@ function verifier(nom, ok, detail = '') {
               const qui = `${c.cle}#${pl[3]}`;
               const d = Math.hypot(pl[0] - rp.pos.x, pl[1] - rp.pos.z);
               if (qui === suivie.qui) {
-                if (d < suivie.dMin) suivie.dMin = +d.toFixed(1);
+                // ce qui la retient, relevé au plus près (v372) : un rouge de
+                // portail l'a vue passer au travers une fois sur trois passages,
+                // et sans sa cause il ne se démontait pas
+                if (d < suivie.dMin) {
+                  suivie.dMin = +d.toFixed(1);
+                  suivie.cause = Array.isArray(c.causes) ? c.causes[pl[3]] : undefined;
+                  const me = window.__game.player.pos;
+                  suivie.alice = +Math.hypot(me.x - rp.pos.x, me.z - rp.pos.z).toFixed(1);
+                }
                 suivie.vue++;
                 suivie.retard = pl[4] - (suivie.retard0 || 0);
               }
@@ -693,6 +769,40 @@ function verifier(nom, ok, detail = '') {
       && Math.hypot(pointAmi.carte[0] - marlonVrai[0], pointAmi.carte[1] - marlonVrai[1]) < 4,
       JSON.stringify({ ...pointAmi, marlonChezLui: marlonVrai }));
     await hote.evaluate(() => { const g = window.__game; if (g.fun.montureConduite && g.fun.montureConduite()) document.getElementById('ride-btn').click(); });
+
+    // LE GPS SE PARTAGE (v388). Marlon choisit Rome sur sa carte : chez Alice,
+    // une PROPOSITION (« Marlon va à Rome — 🧭 y aller aussi ? »), et jamais un
+    // ordre — elle roulait déjà vers Lyon, son GPS ne change pas tant qu'elle
+    // n'a pas touché le bouton. Sur l'ancien code rien n'arrive chez elle :
+    // la destination ne voyageait pas.
+    const gpsPartage = { proposee: null, avant: null, apres: null, ms: 0 };
+    {
+      const lieux = await alice.evaluate(async () => {
+        const { positionDe } = await import('./src/mondes.js');
+        return { rome: positionDe('rome'), lyon: positionDe('lyon') };
+      });
+      await alice.evaluate((l) => window.__carte.surGPS(l.x, l.z, 'Lyon'), lieux.lyon);
+      await hote.evaluate((r) => window.__carte.surGPS(r.x, r.z, 'Rome'), lieux.rome);
+      const t0 = Date.now();
+      await jusqua(async () => !!(await alice.evaluate(() => window.__gpsAmi && window.__gpsAmi())), 20000);
+      gpsPartage.ms = Date.now() - t0;
+      gpsPartage.proposee = await alice.evaluate(() => {
+        const p = window.__gpsAmi ? window.__gpsAmi() : null; const el = document.getElementById('gps-ami');
+        return p ? { ...p, vue: !!el && getComputedStyle(el).display !== 'none', texte: el ? el.textContent : '' } : null;
+      });
+      gpsPartage.avant = await alice.evaluate(() => (window.__gps() ? window.__gps().nom : null));
+      if (gpsPartage.proposee) await alice.evaluate(() => document.getElementById('gps-ami-oui').click());
+      await dormir(300);
+      gpsPartage.apres = await alice.evaluate(() => (window.__gps() ? window.__gps().nom : null));
+      gpsPartage.reste = await alice.evaluate(() => !!(window.__gpsAmi && window.__gpsAmi()));
+      await hote.evaluate(() => document.getElementById('gps-stop').click());
+      await alice.evaluate(() => document.getElementById('gps-stop').click());
+    }
+    verifier('l\'ami voit où l\'on va, et la proposition ne remplace pas son GPS sans qu\'il le demande',
+      !!gpsPartage.proposee && gpsPartage.proposee.nom === 'Rome' && gpsPartage.proposee.vue
+      && /Marlon va à Rome/.test(gpsPartage.proposee.texte)
+      && gpsPartage.avant === 'Lyon' && gpsPartage.apres === 'Rome' && !gpsPartage.reste,
+      JSON.stringify(gpsPartage));
     for (const [page, p] of [[hote, departRue.hote], [alice, departRue.alice]]) {
       await page.evaluate((p) => { const g = window.__game; g.player.flying = false; g.player.pos.set(p.x, p.y, p.z); g.player.vel.set(0, 0, 0); }, p);
     }

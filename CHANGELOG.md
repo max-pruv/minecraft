@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v387 — La voiture glisse le long des façades, et frôle les autres voitures
+## v397 — La voiture glisse le long des façades, et frôle les autres voitures
 
 **Pourquoi.** Le palier 1 de la conduite (v358) prenait deux normales
 commodes et fausses. Contre une voiture de la rue, celle du MOUVEMENT : frôler
@@ -69,6 +69,310 @@ ou quatre seulement accordées par l'ancien budget au banc.
 
 ---
 
+## v396 — La montée en voiture se valide sur la tablette
+
+**Pourquoi.** Les séquences de montée et de descente (v366, v377, v384, v389)
+ne se jugent qu'au banc, qui les saute partout ailleurs et rend en logiciel :
+leurs durées, leur caméra et l'absence d'image figée n'ont jamais été vues sur
+l'iPad, et rien ne disait à Max quoi regarder.
+
+**Ce que ça change.** Avec `?diag=1`, une ligne dit après chaque geste ce qui
+vient de se passer : « embarquement : monter (voiture) en 2,1 s de jeu,
+jusqu'au bout » — ou « second appui », « annulée », et pour une descente le
+côté et la raison d'un refus du côté conducteur. `TASKS.md` porte la liste
+des six gestes à faire sur la tablette (voiture, second appui, descente, avec
+un ami, l'avion, ce qui ne doit pas arriver). Rien ne change pour les enfants.
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js` (le diagnostic dit
+« monter (voiture), second appui »), rouge sur `origin/main` — rejoué seul par
+`sonde-diag-embarq.cjs` : `null` sur `origin/main`, la ligne attendue ici.
+
+---
+
+## v395 — La rue roule à l'allure d'une ville
+
+**Pourquoi.** Max : « des vitesses de circulation cohérentes — aujourd'hui les
+véhicules sont trop lents ». Mesuré au-dessus de Paris sur `origin/main` : une
+voiture de ville roulait à 4,2 blocs par seconde — quinze km/h —, médiane
+1,7 et jamais plus de 5 ; l'autoroute à douze (43 km/h) ; et chaque arrêt au
+feu se faisait d'un relevé au suivant (vingt-quatre arrêts « secs » sur
+vingt-sept), la voiture passant de son allure à zéro.
+
+**Ce que ça change.** Chaque voie a sa limitation — quarante km/h dans les
+rues des villes engendrées, cinquante sur les avenues des villes bâties à la
+main, cent vingt sur l'autoroute, cinquante à l'entrée des villes —, chaque
+convoi son conducteur (±8 %). La voiture freine AVANT un virage, une entrée de
+ville, un feu rouge, la voiture qui la précède, l'enfant, et désormais un
+piéton ; elle réaccélère comme une voiture (0 à 50 en cinq secondes et demie).
+Dans une file, chaque voiture freine là où ELLE est : la file se resserre dans
+le virage et se détend dans la ligne droite. Sur les avenues de Paris,
+Londres, Nice, Lille, San Francisco et Washington on roule à droite — deux
+files se croisent sans se rencontrer. Le bus roule dans la file de son
+anneau, sans plus marquer d'arrêt. Une voiture de la rue que l'enfant heurte
+(`player.choc`, quand la conduite le publie) s'arrête quelques secondes, feux
+de détresse allumés, puis repart. Et tout cela reste une fonction de
+l'horloge partagée (v305) : deux tablettes voient la même rue.
+
+**Ce qui le prouve.** Sept témoins neufs ou réécrits. Dans `monte.js`,
+au-dessus de Paris : la croisière d'une avenue (15 blocs/s) et le 90e centile
+des voitures visibles (7,4 à 11,7 contre 4,2 sur `origin/main`, barre 6,5) ; les arrêts
+au feu, tous progressifs (aucun sec, contre 24 sur 27) ; les voitures l'une
+dans l'autre en TAUX sur les paires examinées (0,5 à 3,9 %, barre 4 — le
+compte absolu d'avant allait de 0 à 53 sur le même code, v277) ; une voiture
+heurtée qui s'arrête, clignote et repart ; une voiture qui s'arrête devant un
+piéton posé sur sa route, à 4,4 blocs de lui. Dans `carteMonde.js` : la règle
+pure (`circulation.js`) — 40/50/120 km/h, un coin pris à 3,1 blocs/s après
+dix-huit points de freinage, une relance jamais plus vive que l'accélération
+d'une voiture — et l'A1 à 120 km/h qui ralentit à moins de 6 pour entrer en
+ville. Dans `reseau.js`, le témoin des deux tablettes mesure l'heure de rue et
+la place à heure égale, parce qu'à cinquante km/h une seconde de lecture vaut
+quatorze blocs. Tous rouges sur `origin/main` sauf la garde du taux de
+chevauchement, verte des deux côtés à dessein (elle garde une capacité).
+Et le portail a trouvé ce que les sondes n'avaient pas vu : au croisement du
+circuit en huit de Paris, deux voitures de la même file se présentaient
+ensemble et la seconde finissait par traverser la première (taux 7,5 %). La
+grille choisit désormais un nombre de voitures qui ne s'y rencontrent pas :
+0,4 à 1,6 % de paires au contact selon le passage (7,5 % avant), aucun
+arrêt sec.
+Coût mesuré : `vehicules.update` 0,7 → 1,5 à 1,7 ms par image au-dessus de
+Paris (`sonde-cout-circulation.cjs`).
+
+**Et un ami voit la même rue même quand l'hôte rame.** Second sujet de la
+livraison. Pourquoi : `reseau.js` « deux tablettes voient la même
+circulation » rougissait une fois sur deux, sur `origin/main` comme sur la
+branche (35 blocs d'écart). L'hôte annonce l'heure de la rue avec celle du
+ciel « toutes les trois secondes » — un compte à rebours en `dt`, borné à un
+vingtième de seconde : à deux images par seconde, une annonce toutes les
+trente secondes, et un invité qui avait calé gardait sa rue en retard jusque
+là. Ce que ça change : l'annonce se cadence en temps réel (`cadence.js`,
+v226). Ce qui le prouve : un témoin de `reseau.js` fait ramer l'hôte (400 ms
+par image, douze secondes) et compte les annonces — quatre attendues, au
+moins trois exigées.
+
+**Et devant l'enfant, une voiture pile quand il le faut.** Le premier portail
+de la v372 a rendu « la circulation s'arrête devant la voiture de l'enfant »
+rouge : trois et quatre relevés au travers sur deux passages seuls de
+`monte.js`, zéro sur la v363. Le freinage doux ne suffisait pas à une voiture
+qui voit l'enfant tard, et une fois au contact elle passait au travers.
+Devant une personne, elle pile désormais dès que le freinage d'urgence ne
+suffit plus.
+
+---
+
+## v394 — Toute l'Europe en relief
+
+**Pourquoi.** Après Londres, Nice et Lille, les quatre-vingt-dix villes
+engendrées d'Europe — Rome, Berlin, Barcelone, Amsterdam, Édimbourg… —
+restaient en façades plates à toute distance. C'était la fin de la consigne de
+Max : « when done do all European cities ».
+
+**Ce que ça change.** De près, chaque ville d'Europe a des fenêtres en relief
+dans son propre mur (la couleur de sa palette, patinée) : au sud de 45,5° N,
+les persiennes, le garde-corps de fer et le store de la boutique ; au nord,
+l'encadrement et le linteau de pierre sur la brique ; dans les îles
+britanniques, la guillotine géorgienne de Londres. Trottoirs relevés, arbres
+maillés, devantures et corniches en relief. Ni Tbilissi, ni Ankara, ni le
+Maghreb : ils ne sont pas en Europe. Un appareil au palier bas ne reçoit rien
+de neuf ; Paris, Londres, Nice et Lille n'ont pas bougé d'un octet.
+
+**Ce qui le prouve.** Vingt-deux témoins neufs dans `parishd.js`, rouges sur
+`origin/main` : sept par ville pour Rome (sud), Berlin (nord) et Manchester
+(îles britanniques) — couverture, aucun bloc posé, tampons d'avant sans HD,
+chaque face exposée détaillée, le mur et les ornements du registre, pas de
+mobilier parisien, morceau le plus lourd sous 3 Mo — sur 1 676 morceaux des villes engendrées, 0,55 Mo en moyenne et 1,71 au pire (Barcelone) — et
+un témoin de liste : les villes de la boîte européenne ont leur registre, pas
+celles qui n'en sont pas. Et le fer se compte enfin : la ferronnerie s'émet
+en UV absolus, elle ne se reconnaissait pas à sa tuile, et les « pas de fer »
+de Londres et de Lille étaient vrais à vide ; comptés à la matière, ils
+rendent zéro (Rome : 8 304 sommets).
+
+---
+
+## v393 — Celui qui part dit au revoir
+
+**Pourquoi.** À trois en ligne, quand un enfant quittait la partie, les deux
+autres le gardaient parfois à l'écran une minute et demie : immobile, puis
+évanoui sans qu'on sache pourquoi. Le jeu écrivait « on prévient les autres
+joueurs avant de disparaître » — et n'envoyait rien : il comptait sur la
+fermeture du lien, qui ne traverse pas toujours (une tablette qu'iOS suspend
+au lieu de la tuer, un canal qui reste « ouvert » de l'autre côté). Le témoin
+« un départ propre nettoie tout le monde » rougissait de loin en loin des deux
+côtés depuis des versions.
+
+**Ce que ça change.** Celui qui part envoie un adieu à chacun avant de couper ;
+l'hôte le retire tout de suite et le dit aux autres. Une tablette restée sur
+une ancienne version connaît déjà ce message. Et le témoin de la voix après
+un appel vidéo, qui rougissait lui aussi de loin en loin, mesure désormais ce
+qu'il annonce : le volume du jeu rendu après l'appel.
+
+**Ce qui le prouve.** Une sonde reproduit le départ sans fermeture de lien :
+ancien code 0 nettoyage en 60 s sur 2 passages, nouveau 3/3 en ≈ 1 s. Le
+témoin de `reseau.js` provoque désormais ce cas lui-même — suite entière
+verte, 80 témoins. Pour la voix : sans aucun appel, deux fenêtres de 1,5 s de
+radio varient déjà de 0,68 à 1 ; la radio relancée sans appel et la radio
+après l'appel rendent la même distribution, gain revenu à 1 cinq fois sur
+cinq. Le témoin juge le gain et un niveau au-dessus de la moitié, et il rougit
+sur une copie où la voix reste au quart (gain 0,25).
+## v392 — Nice et Lille en relief
+
+**Pourquoi.** Le palier A avait donné son relief à Londres ; Nice et Lille, les
+deux autres villes d'Europe bâties à la main, restaient en façades plates à
+toute distance — et leur palette de décor (l'orange de signalisation, le jaune
+de balise à Nice ; un rouge de jouet à Lille) se voyait telle quelle.
+
+**Ce que ça change.** De près, Nice a ses enduits ocre, rose et sable, patinés
+vers un vrai ocre, ses persiennes ouvertes de part et d'autre des baies et son
+garde-corps de fer. Lille a sa brique flamande patinée, l'encadrement et le
+linteau de pierre blonde. Les deux villes ont le trottoir relevé et leurs
+arbres maillés ; ni colonne Morris ni banc de Paris. Un appareil au palier bas
+ne reçoit rien de neuf ; Paris et Londres n'ont pas bougé d'un octet.
+
+**Ce qui le prouve.** Quatorze témoins neufs dans `parishd.js` (sept par
+ville), rouges sur `origin/main` : la couche couvre la ville, ne pose aucun
+bloc, rend les tampons d'avant sans HD, détaille chaque face exposée, pose le
+mur de la ville (enduit et persiennes à Nice, brique à Lille, jamais la pierre
+de Paris), sans mobilier parisien, et le morceau le plus lourd pèse moins de
+1,1 Mo (Nice 0,74, Lille 1,06 ; Paris 10).
+
+---
+
+## v391 — La tablette mesure sa vitesse au sol
+
+**Pourquoi.** Le plafond de vitesse des voitures (`VITESSE_SOL_MAX` : 70 blocs
+par seconde en ville, 80 en campagne) a été mesuré au banc, qui rend en
+logiciel à une cadence qui n'est pas celle de l'iPad. Il ne peut se confirmer
+que sur la tablette, et rien ne permettait à Max de le relever sans une session
+de développement à côté.
+
+**Ce que ça change.** Avec `?diag=1`, dès qu'on roule, une ligne de plus :
+« roulage : vitesse · trou devant soi (le monde maillé dans le champ, ±40°
+autour du déplacement) · débit de morceaux par seconde · file · ordre ·
+recharge ». Le journal de bord la range toutes les cinq secondes
+(`roulage: { v, trou, debit }`), si bien qu'un essai de Max se relit dans le
+nuage sans rien recopier. La marche exacte — adresse, ville, avenue, ce qu'il
+faut relever et ce qui décide — est dans `TASKS.md`. Sans `?diag=1`, rien ne
+change.
+
+**Ce qui le prouve.** Deux témoins dans `monte.js` : la règle pure (un trou
+connu, un débit connu) et la page (à quarante blocs par seconde, la ligne
+paraît et porte des nombres ; à l'arrêt elle n'y est pas). Rouges sur l'ancien
+code : la règle n'existe pas, la ligne non plus. Portail complet.
+
+---
+
+## v390 — Londres en relief
+
+**Pourquoi.** Max : « when done do all European cities ». La couche de détail
+(façades en relief, trottoirs relevés, arbres maillés) ne couvrait que Paris :
+`couvreHD` testait le seul disque de Paris. Londres, à cinq heures de vol
+virtuel, restait en cubes plats à toute distance — des fenêtres peintes sur
+des murs de brique de jouet.
+
+**Ce que ça change.** De près, Londres est en relief : chaque fenêtre est une
+guillotine géorgienne en retrait, haute et étroite, son châssis blanc, le rail
+de rencontre au milieu, l'appui de pierre et l'arc de briques au-dessus. Le mur
+autour est celui de la maison : la brique (patinée, plus une brique de jouet)
+ou le stuc blanc de Belgravia. Le trottoir est relevé, les arbres des squares
+sont maillés. Pas de colonne Morris à Londres : le mobilier de Paris reste à
+Paris. Un appareil au palier bas ne reçoit rien de neuf ; Paris n'a pas bougé
+d'un octet.
+
+**Ce qui le prouve.** Huit témoins neufs dans `parishd.js`, rouges sur
+`origin/main` : la couche couvre Londres ; elle ne pose aucun bloc (morceau le
+plus dense, à l'octet près) ; sans HD les tampons sont ceux d'avant ; chaque
+face exposée d'une façade ou d'un mur reçoit son détail (1 274 sur 1 274) ; le
+mur est de brique ou d'enduit, jamais de la pierre de Paris ; ni Morris ni
+Davioud ; le morceau le plus lourd pèse 1,2 Mo (Paris en pèse 10) ; en vol au
+palier moyen, 22,5 Mo de façades pour 128 de budget. Un bloc de décor à motif
+posé par un enfant garde son dessin. L'empreinte des tampons HD de Paris
+(256 morceaux) est identique sur `origin/main` et sur la branche.
+## v389 — On monte dans l'avion par l'escalier
+
+**Pourquoi.** Depuis la v366 on marche jusqu'à la portière d'une voiture,
+on l'ouvre, on s'assied. Les avions, eux, montaient d'un coup : l'enfant
+était aux commandes à l'instant même où il appuyait, sans jamais approcher
+la porte.
+
+**Ce que ça change.** Pour l'avion de ligne : un escalier roulant aux
+rampes jaunes vient contre la porte avant gauche, l'enfant y marche, gravit
+les marches, la porte s'ouvre, il entre en se baissant, il est aux
+commandes, la porte se referme et l'escalier s'en va. Pour le chasseur : une
+échelle contre le cockpit, et c'est la verrière qui se lève. Le Concorde
+monte d'un coup comme avant — son fuselage mesure 0,94 bloc, une porte y
+ferait la moitié de la taille de l'enfant ; c'est le modèle qui le déclare.
+Un second appui met aux commandes tout de suite.
+
+**Ce qui le prouve.** Trois témoins neufs dans `monte.js` (page `embarq: 1`),
+rouges sur `origin/main` (rejoués par `sonde-embarquement-avion.cjs`,
+deux minutes) : les phases approche → gravir → ouverture → entrée
+pour l'avion de ligne et le chasseur, `montureConduite()` faux pendant chacune,
+les pieds montés de plus d'un bloc, la porte ouverte puis refermée, l'escalier
+posé puis rangé ; le second appui en pleine marche et le Concorde sans porte ;
+et aucune clé de programme neuve, aucun bloc écrit.
+
+---
+
+## v388 — Le GPS se partage avec un ami
+
+**Pourquoi.** Depuis la v306, un enfant choisit sa destination sur la carte et
+une flèche le guide. À deux, Marlon qui part pour Rome ne pouvait pas le dire
+à Alice autrement qu'à voix haute : la destination restait sur sa tablette
+(dette de la v321).
+
+**Ce que ça change.** Chez l'ami, un bandeau : « Marlon va à Rome — y aller
+aussi ? ». Un toucher sur « 🧭 Y aller » lance son GPS vers le même endroit ;
+sinon rien ne change — un GPS déjà en cours n'est jamais remplacé sans qu'on
+le demande. La destination voyage avec la position, si bien qu'un ami qui
+arrive en cours de route la reçoit aussi, et qu'une partie sous un hôte resté
+sur une ancienne version la transmet quand même. Au passage, l'histoire des
+chocs de la rue (v374) passe enfin aussi par la position relayée entre deux
+invités.
+
+**Ce qui le prouve.** Un témoin à deux pages dans `reseau.js` : Alice roule
+vers Lyon, Marlon choisit Rome ; la proposition arrive (0,5 s à la sonde),
+Alice garde Lyon jusqu'au geste, puis `__gps().nom === 'Rome'`. Sur
+`origin/main` (v383), rien n'arrive en vingt secondes (`sonde-gps-ami.cjs`).
+
+---
+
+## v387 — Plusieurs circuits dans chaque ville, et les deux sens
+
+**Pourquoi.** Dans 153 des 262 villes engendrées (sur la v379), les voitures
+ne faisaient qu'UN tour, toujours dans le même sens — dont 48 villes à tours
+(Houston, Melbourne, Taipei…) depuis la v282. Le plus petit circuit d'une
+ville roulait au milieu de la rue au lieu de sa voie de droite. Et les
+circuits passaient dans les monuments : la v378, livrée en parallèle par une
+autre session, l'avait réglé de son côté ; cette livraison le règle aussi, et
+il fallait n'en garder qu'une façon.
+
+**Ce que ça change.** Presque chaque ville a désormais deux circuits ou plus
+(251 sur 262), de nouveaux tours autour d'un, deux ou trois pâtés de maisons,
+et des voitures dans les DEUX sens sur la même rue, chacune dans sa voie. Plus
+aucune voiture ne passe dans un monument : à Agra, Istanbul, Rome, Munich,
+Séoul, Dubaï, Amsterdam et Prague, des tours de quartier contournent les
+monuments et rendent la couverture d'avant. Les circuits d'une ville se
+calculent quand l'enfant en approche, plus pendant l'écran d'accueil — comme
+en v378, dont le filtre et le dépliage sont remplacés par ceux-ci (un seul
+code pour une seule règle), sans qu'aucune ville ne perde de couverture ni sa
+voiture en vue par rapport à la v379.
+
+**Ce qui le prouve.** Trois témoins neufs dans `carteMonde.js`, sur toutes
+les villes et vérifiés rouges sur `origin/main` (v373) : 251/262 villes à
+plusieurs circuits (115 avant, 109 sur la v379) ; 1 063 côtés de rue partagés, sens contraires à 3,2
+blocs au moins pour deux demi-largeurs de 2,26 (49 avant, sans aucun sens
+contraire) ; zéro pas de carrosserie dans un monument (1 613 avant, 43
+anneaux). Les deux témoins de la v378 restent verts sur ce code : zéro
+monument en travers sur 123, et les anneaux dépliés sont les mêmes que le
+calcul entier (262 villes). Le témoin « à droite » de la v271 relu à l'axe de la rue : 0 relevé à
+gauche (325 sur `origin/main`). Le témoin des ponts lit les 56 villes à pont
+au lieu de quinze : Agra, Berlin et Munich réglés — un tablier d'anneau
+porte désormais un bloc de plus à chaque bout, pour la colonne arrondie que la
+voiture prend encore —, Séoul et Chicago déclarés (culées
+d'anneaux d'avant, mêmes valeurs sur `origin/main`). Aucune ville ne perd de
+couverture ni sa voiture en vue depuis le centre (sonde ville par ville), le
+partage dans le même sens reste sous vingt blocs (14,8). L'empreinte des 490
+morceaux change à Rome et à Tokyo seulement, et chaque colonne différente est
+sur un tablier d'avant ou d'après.
 ## v386 — La chauffe de New York se mesure seule
 
 **Pourquoi.** « Se téléporter dans une ville ne compile plus de programmes »
@@ -271,6 +575,9 @@ rectangles n'est au sec. La sonde des passants sur la chaussée à Rome
 (`sonde-chaussee-rome.cjs`, 60 s, deux fois de chaque côté) : hors traversée,
 0 et 5 relevés sur ~1 800 sur la branche, 3 et 2 sur `origin/main` — aucun
 passant né sur la chaussée, aucun flâneur.
+
+---
+
 ## v379 — On arrive plus vite après la carte
 
 **Pourquoi.** Trois questions laissées ouvertes par la v360, et une quatrième
@@ -510,6 +817,7 @@ pivot, la voiture à 70 % de santé). Le coût du plan, une fois par modèle, se
 remesure : médiane 5 ms (4 avant), 15 ms sur la Lucid (13 avant), 21 ms au
 pire hors taxis (28 avant) — chaque sommet ne passe plus qu'une fois dans le
 repère de la voiture, et la recopie des attributs se fait d'un geste.
+
 ## v371 — Les passants traversent au feu
 
 **Pourquoi.** Les passants marchaient le long de leur trottoir et, au coin,
