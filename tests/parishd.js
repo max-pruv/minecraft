@@ -722,13 +722,17 @@ function verifier(nom, ok, detail = '') {
         couvertes.length === ameriques.length && couvertes.length >= 55
           && reg('chicago') === 'nordAmericain' && reg('montreal') === 'nordAmericain' && reg('miami') === 'nordAmericain'
           && reg('mexico') === 'latino' && reg('havane') === 'latino' && reg('buenosaires') === 'latino'
-          && reg('monterrey') === 'latino' && reg('nouvelleorleans') === 'latino' && !reg('honolulu') && !reg('papeete'),
+          && reg('monterrey') === 'latino' && reg('nouvelleorleans') === 'latino'
+          // (v400) les îles ont un registre du palier C : ce qui se garde ici,
+          // c'est que la règle des AMÉRIQUES ne les classe pas
+          && ['honolulu', 'papeete'].every((c) => !(HD.registreAmeriques || (() => reg(c)))(VILLES_MONDE.find((f) => f.cle === c))),
         `${couvertes.length} sur ${ameriques.length} ; Chicago ${reg('chicago')}, Mexico ${reg('mexico')}, La Nouvelle-Orléans ${reg('nouvelleorleans')}, Honolulu ${reg('honolulu')}`);
     }
     // PALIER C (v400) : l'Asie, le Moyen-Orient, l'Afrique, l'Océanie
     await temoinsVille({ cle: 'tokyo', centre: vm('tokyo'), attendu: ['enduit'], interdit: ['volet', 'fer', 'bardage', 'pierre'], rayonSonde: 60 });
     await temoinsVille({ cle: 'dubai', centre: vm('dubai'), attendu: ['enduit'], interdit: ['volet', 'fer', 'bardage', 'pierre'], rayonSonde: 60 });
-    await temoinsVille({ cle: 'nairobi', centre: vm('nairobi'), attendu: ['enduit', 'volet', 'fer'], interdit: ['pierre', 'bardage'], rayonSonde: 60 });
+    // Lagos, pas Nairobi : Nairobi ne rend que dix morceaux à un sur deux, sous la barre du témoin
+    await temoinsVille({ cle: 'lagos', centre: vm('lagos'), attendu: ['enduit', 'volet', 'fer'], interdit: ['pierre', 'bardage'] });
     await temoinsVille({ cle: 'sydney', centre: vm('sydney'), attendu: ['brique', 'pierre'], interdit: ['volet', 'bardage'], rayonSonde: 60 });
     {
       const reg = (cle) => (HD.VILLES_HD || []).find((d) => d.ville === cle)?.registre || null;

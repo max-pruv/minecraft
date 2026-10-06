@@ -31,7 +31,7 @@ toute distance.
 propre mur, avec le registre de sa géographie : Tokyo, Séoul, Shanghai,
 Singapour en béton enduit à baies larges (`asie`) ; Riyad, Dubaï, Téhéran,
 Samarcande et Lhassa en enduit couleur de sable à baies profondes (`desert`) ;
-Bombay, Dakar, Nairobi, Hanoï et les îles du Pacifique en enduit de couleur,
+Bombay, Dakar, Lagos, Nairobi, Hanoï et les îles du Pacifique en enduit de couleur,
 persiennes et garde-corps de fer (`tropical`) ; Sydney, Melbourne, Auckland,
 Le Cap et Johannesburg en brique victorienne à guillotine et à fonte
 (`victorien`) ; la Russie, Oulan-Bator et Harbin comme l'Est de l'Europe
@@ -42,7 +42,7 @@ dessine leurs petites baies grillées. Un appareil au palier bas ne reçoit
 rien de neuf.
 
 **Ce qui le prouve.** Vingt-neuf témoins neufs dans `parishd.js` : sept par
-ville pour Tokyo, Dubaï, Nairobi et Sydney (le mur de la ville, ni pierre de
+ville pour Tokyo, Dubaï, Lagos et Sydney (le mur de la ville, ni pierre de
 Paris ni bardage, le budget…), et la couverture — toute ville engendrée a son
 registre sauf les quatre médinas, avec les cas qu'une règle classerait mal
 (Lhassa, Tbilissi, Harbin, Maputo, Honolulu). Mesuré sur 681 morceaux :

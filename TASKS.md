@@ -2612,6 +2612,12 @@
        `tirage(x, y, z)`), mais c'est un bloc écrit : il change le Colisée une
        fois pour toutes, et un enfant a peut-être bâti contre — à décider avec la
        zone des monuments, pas dans la couche HD ;
+     Portail de la v400 (quatre suites) : `plafond.js` vert ; `parishd.js` deux
+     rouges À MOI, corrigés et rejoués seuls (148 verts) — Nairobi ne rend que
+     dix morceaux, sous la barre du témoin (remplacée par Lagos), et le témoin
+     des Amériques exigeait qu'Honolulu n'ait aucun registre (repointé sur
+     `registreAmeriques`) ; `maj.js` « corps, programmes et fond de carte » et
+     `monte.js` « son flanc frôlé » : déclarés, double mesure faite en v399.
      Portail de la v399 (quatre suites) : `parishd.js` et `plafond.js` verts ;
      six rouges dans `maj.js` et `monte.js`, aucune ne force `?hd=` (preuve
      structurelle v291). Rejouées SEULES des deux côtés :
