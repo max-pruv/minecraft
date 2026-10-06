@@ -268,10 +268,10 @@ export function creerEmbarquement(ctx) {
   }
   // Rend { cote, D (local), monde } : par une portière si l'on peut, sinon
   // { cote: 0, monde } — une place devant, derrière, ou un peu plus loin.
-  function choisirSortie(a, d) {
+  function choisirSortie(a, d, ordre = [-1, 1]) {
     const g = a.mesh, y0 = a.pos.y;
     refusSortie = {};
-    for (const cote of [-1, 1]) {
+    for (const cote of ordre) {
       const D = pointPorte(d, cote);
       const m = placeLibre(g, D, y0, cote < 0 ? 'conducteur' : 'passager');
       if (m) return { cote, D, monde: m };
@@ -411,6 +411,42 @@ export function creerEmbarquement(ctx) {
     publier();
   }
 
+  // ---- descendre de chez un ami (v384) -----------------------------------
+  // Le pendant de `monterChez` : le passager d'un ami se retrouvait debout
+  // d'un coup. Il ressort désormais par la portière DROITE de la voiture
+  // DISTANTE (celle que cette tablette dessine), avec la même séquence que le
+  // conducteur, à l'envers. `passagerDe()` est déjà nul quand on arrive ici
+  // (fun.js l'efface au premier appui, comme `toggleRide(null)` pour le
+  // conducteur, v366) ; et l'ami voit la portière par le même message court
+  // que la montée (`portiere`, v377). Rend faux si rien n'est à animer — fun.js
+  // pose alors l'enfant à côté, sans séquence.
+  function descendreDeChez(veh, siege, de, existe) {
+    if (s) terminer();
+    if (!SEQUENCE_ACTIVE || !av || !veh || !veh.mesh || !veh.def || !siege) return false;
+    const g = veh.mesh;
+    const a = { mesh: g, def: veh.def, montee: false, get pos() { return g.position; }, get yaw() { return g.rotation.y - Math.PI; } };
+    const portes = equiperPortieres(g, portiereRefusee(g));
+    const d = dims(g, portes);
+    const cam = { p: player.camera.position.clone(), q: player.camera.quaternion.clone() };
+    // côté passager d'abord : c'est par là qu'il est monté
+    const sortie = choisirSortie(a, d, [1, -1]);
+    if (!sortie.cote) {
+      player.pos.copy(sortie.monde);
+      player.vel.set(0, 0, 0);
+      player.yaw = a.yaw + Math.PI;
+      return false;
+    }
+    const D = versLocal(g, sortie.monde);
+    s = { sens: 'descendre', phase: 'ouverture', t: 0, a, d, cote: sortie.cote, D, portes,
+      monde: sortie.monde, depart: a.pos.clone(), cam, temps: 0,
+      assise: av.placeAssise(a, siege), chez: { existe, siege, de } };
+    player.pos.copy(a.pos);
+    player.vel.set(0, 0, 0);
+    signaler(1);
+    publier();
+    return true;
+  }
+
   // ---- fin --------------------------------------------------------------
   function porte(k) {
     if (!s || !s.portes) return;
@@ -426,6 +462,7 @@ export function creerEmbarquement(ctx) {
       }
       porte(0);
     } else {
+      if (fini.chez && fini.phase !== 'fermeture') signaler(0);
       porte(0);
       player.pos.copy(fini.monde);
       player.vel.set(0, 0, 0);
@@ -515,7 +552,7 @@ export function creerEmbarquement(ctx) {
         player.pos.lerpVectors(s.depart, s.monde, lisse(k)); player.vel.set(0, 0, 0);
         tete.copy(versMonde(g, new THREE.Vector3(s.cote * s.d.demiLarg * 0.6, 0.9, s.d.zPorte)));
         appliquerCamera(1, camSequence(s, tete));
-        if (k >= 1) { s.phase = 'fermeture'; s.t = 0; player.yaw = a.yaw + Math.PI; }
+        if (k >= 1) { s.phase = 'fermeture'; s.t = 0; player.yaw = a.yaw + Math.PI; signaler(0); }
       } else if (s.phase === 'fermeture') {
         const k = Math.min(1, s.t / DUREES.sortieFermeture);
         porte(1 - k);
@@ -542,7 +579,7 @@ export function creerEmbarquement(ctx) {
   }
 
   return {
-    monter, monterChez, descendre, terminer, annuler, update, porteDistante,
+    monter, monterChez, descendre, descendreDeChez, terminer, annuler, update, porteDistante,
     brancherReseau(f) { diffuser = f; },
     enCours: () => !!s,
     // l'avatar est-il à nous cette image ? (main.js ne l'assied pas alors)

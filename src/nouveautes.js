@@ -6,12 +6,52 @@
 
 export const NOUVEAUTES = [
   {
-    v: 382,
+    v: 387,
     titre: 'La voiture longe les murs',
     puces: [
       'Elle longe les façades en biais',
       'Frôler une voiture ne t\'arrête plus',
       'Un petit choc ne te renvoie plus',
+    ],
+  },
+  {
+    v: 386,
+    titre: 'New York vérifiée',
+    puces: [
+      'Arriver à New York reste fluide',
+      'Rien ne change pour toi',
+    ],
+  },
+  {
+    v: 385,
+    titre: 'Les passants quittent la rue',
+    puces: [
+      'Personne ne reste planté sur la route',
+      'Ils retournent vite sur le trottoir',
+    ],
+  },
+  {
+    v: 384,
+    titre: 'On descend par la portière',
+    puces: [
+      'Chez un ami, on sort par la portière',
+      'Ton ami voit la portière s\'ouvrir',
+    ],
+  },
+  {
+    v: 383,
+    titre: 'Les voitures attendent ton ami',
+    puces: [
+      'Plus personne ne traverse sa voiture',
+      'Même au milieu d\'un carrefour',
+    ],
+  },
+  {
+    v: 382,
+    titre: 'Le jeu se vérifie mieux',
+    puces: [
+      'Un contrôle de la route réparé',
+      'Rien ne change pour toi',
     ],
   },
   {

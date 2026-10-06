@@ -27,7 +27,7 @@ import { construireHumain } from './personnages.js';
 import { VILLES_MONDE } from './villesmonde.js';
 import { dansManhattan, ORIGINE_MANHATTAN } from './manhattan-world.js';
 import { surface as surfaceManhattan, batimentA } from './manhattan-plan.js';
-import { CITIES, TROTTOIR } from './world.js';
+import { CITIES, TROTTOIR, CHAUSSEE } from './world.js';
 import { CITY_BLOCK, ARCHI } from './blocks.js';
 
 // Ce sur quoi un passant se tient : la chaussée, le trottoir, les pavés.
@@ -176,7 +176,7 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
   }
 
   function posteAutour(site, g, devant = false, recycle = false) {
-    let repli = null, surRue = null;
+    let repli = null, surRue = null, horsChaussee = null;
     for (let essai = 0; essai < 80; essai++) {
       // Le cap du regard, dans le repère du jeu : dx = −sin(yaw), dz = −cos(yaw),
       // donc l'angle de `Math.cos/sin` employé plus bas vaut −yaw − π/2.
@@ -203,6 +203,9 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
       // rue, ni comme repli
       if (world.obstaclePieton?.(x, z, y + 1)) continue;
       if (!repli) repli = [x, z];
+      const sol0 = world.getBlock(bx, y, bz);
+      // au sol, pas sur un toit : le sol d'une ville est à `terrainHeight`
+      if (!horsChaussee && !CHAUSSEE.has(sol0) && y <= world.terrainHeight(bx, bz) + 1) horsChaussee = [x, z];
       // UN PIÉTON SE MET SUR LE TROTTOIR, ET LA CHAUSSÉE N'EST QU'UN REPLI (v278).
       //
       // Max : « les passants, ça ne fonctionne pas. Je vois quelque chose de très
@@ -223,11 +226,17 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
       // d'avant reste en dernier recours. Ce classement ne peut donc PAS réduire
       // la population — c'est ce que la v217 avait payé cher (un seuil resserré
       // qui rendait tout déplacement inutile).
-      const sol = world.getBlock(bx, y, bz);
-      if (SOLS_TROTTOIR.has(sol)) return [x, z];
-      if (!surRue && SOLS_DE_RUE.has(sol)) surRue = [x, z];
+      //
+      // ET LE SECOND ÉTAGE N'EST PLUS LA CHAUSSÉE (v382). « De rue » y comptait
+      // l'asphalte, le passage et le pavé de Paris : un passant qui ne trouvait
+      // pas de trottoir naissait au milieu des voitures, flâneur, et y restait
+      // en pause (le témoin de la v380 l'a nommé). La bordure, l'esplanade ou
+      // l'herbe passent avant ; la chaussée ne reste qu'au tout dernier recours,
+      // et `vie.js` en fait alors sortir le flâneur (`sortirDeLaChaussee`).
+      if (SOLS_TROTTOIR.has(sol0)) return [x, z];
+      if (!surRue && SOLS_DE_RUE.has(sol0) && !CHAUSSEE.has(sol0)) surRue = [x, z];
     }
-    return surRue || repli || [site.x+5,site.z+7];
+    return surRue || horsChaussee || repli || [site.x+5,site.z+7];
   }
 
   // LES NAISSANCES SE FONT PAR TRANCHES (v246). Dix-huit passants — quarante-

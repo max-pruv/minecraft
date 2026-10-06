@@ -371,6 +371,44 @@ function verifier(nom, ok, detail = '') {
       volantLou.auVolant && phases.includes('ouverture') && phases.includes('entree') && fin.passager
         && ouverteChezMarlon.length > 0 && fin.angle !== null && Math.abs(fin.angle) < 0.02,
       JSON.stringify({ volantLou, phases, ouvertes: ouverteChezMarlon.length, max: Math.max(...releves.map((r) => r.angle || 0)), fin, n: releves.length, ms: fin.t }));
+    // --- et il en DESCEND par la portière (v384) ------------------------------
+    //
+    // La descente du passager était instantanée : Lou se retrouvait debout
+    // d'un coup, la portière de Marlon ne bougeait pas. Elle ressort désormais
+    // par la portière droite, à l'envers de la montée, et Marlon la voit
+    // s'ouvrir chez lui. Même lecture des deux pages au même instant ; et
+    // `passagerDe()` doit être FAUX dès le premier relevé — on n'est plus
+    // passager au premier appui (comme `montureConduite()` pour le conducteur,
+    // v366). On attend le RÉSULTAT, borné : à deux pages une séquence de deux
+    // secondes de jeu prend des dizaines de secondes de montre (v377). Sur
+    // l'ancien code : aucune phase, portière fermée de bout en bout.
+    const descenteLou = [];
+    if (fin.passager) {
+      await lou.evaluate(() => document.getElementById('ride-btn').click());
+      const t1 = Date.now();
+      while (Date.now() - t1 < 45000) {
+        const [cL, cM] = await Promise.all([
+          lou.evaluate(() => { const g = window.__game; const e = g.player.embarquement; return { ph: e ? e.phase : null, sens: e ? e.sens : null, passager: !!(g.fun.passagerDe && g.fun.passagerDe()) }; }),
+          hote.evaluate(() => {
+            const m = window.__game.fun.montureConduite && window.__game.fun.montureConduite();
+            const p = m && m.mesh.userData.portieres ? m.mesh.userData.portieres['1'] : null;
+            return { angle: p ? +p.rotation.y.toFixed(3) : null };
+          }),
+        ]);
+        descenteLou.push({ t: Date.now() - t1, ...cL, ...cM });
+        if (!cL.ph && descenteLou.some((r) => r.angle > 0.5) && cM.angle !== null && Math.abs(cM.angle) < 0.02) break;
+        if (!cL.ph && Date.now() - t1 > 8000 && !descenteLou.some((r) => r.ph)) break;   // rien ne s'est joué
+        await dormir(150);
+      }
+    }
+    const phasesD = [...new Set(descenteLou.filter((r) => r.sens === 'descendre').map((r) => r.ph))];
+    const finD = descenteLou[descenteLou.length - 1] || {};
+    verifier('le passager descend par la portière droite, et le conducteur la voit s\'ouvrir chez lui',
+      fin.passager && descenteLou.length > 0 && descenteLou.every((r) => !r.passager)
+        && phasesD.includes('ouverture') && phasesD.includes('sortie')
+        && descenteLou.some((r) => r.angle > 0.5) && !finD.ph && finD.angle !== null && Math.abs(finD.angle) < 0.02,
+      JSON.stringify({ phasesD, ouvertes: descenteLou.filter((r) => r.angle > 0.5).length, max: Math.max(0, ...descenteLou.map((r) => r.angle || 0)),
+        passagerPendant: descenteLou.filter((r) => r.passager).length, fin: finD, n: descenteLou.length }));
     await lou.evaluate(() => { const g = window.__game; if (g.fun.passagerDe && g.fun.passagerDe()) document.getElementById('ride-btn').click(); });
     await hote.evaluate(() => { const g = window.__game; if (g.fun.montureConduite && g.fun.montureConduite()) document.getElementById('ride-btn').click(); });
     await lou.close();
@@ -615,6 +653,13 @@ function verifier(nom, ok, detail = '') {
       traversee = { ...r, essais: essai + 1 };
       if (r.suivie && r.suivie.vue > 20) break;     // la situation a eu lieu
     }
+    // ET LA SEPTIÈME VOITURE, CELLE QUI ENTRAIT QUAND MÊME (v383). Le compte
+    // `dedans` valait 1 des deux côtés : la sonde `sonde-intrus-ami.cjs` l'a
+    // démonté — toutes les voitures entrées avaient l'ami ET une voiture de la
+    // rue dans leur `veut`, donc la patience de quatre secondes, puis `repart`
+    // les lançait au travers. La règle corrigée (vehicules.js), `dedans` entre
+    // dans le verdict : sur l'ancien code il rougit quand un carrefour s'en
+    // mêle (une fois sur quatorze poses à la sonde), sur le neuf jamais.
     // CE QUE CE TÉMOIN PROUVE, ET CE QU'IL NE PROUVE PAS (v306). Six versions
     // de ce témoin ; la sixième sépare enfin les deux codes, et elle le fait
     // par le RETARD de la voiture qui arrive derrière Marlon — 0 s sur
@@ -623,9 +668,9 @@ function verifier(nom, ok, detail = '') {
     // voiture que celle qui cède entre encore une fois chez Alice. Il reste
     // dans le message, pour qu'une sonde le démonte (dette dans TASKS.md), et
     // n'entre pas dans le verdict : un témoin annonce ce qu'il mesure.
-    verifier('et chez l\'ami, la voiture de la rue qui arrive derrière celle de l\'enfant l\'attend',
+    verifier('et chez l\'ami, la voiture de la rue qui arrive derrière celle de l\'enfant l\'attend, et aucune ne lui passe au travers',
       prise.auVolant && !!traversee.suivie
-      && traversee.suivie.vue > 20 && traversee.suivie.retard > 3,
+      && traversee.suivie.vue > 20 && traversee.suivie.retard > 3 && traversee.dedans === 0,
       JSON.stringify(traversee));
 
 

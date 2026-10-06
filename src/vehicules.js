@@ -1991,8 +1991,22 @@ export function createVehicules({ scene, player }) {
       // secondes. La rue attend que l'enfant reparte ; les autres voitures
       // gardent leurs quatre secondes entre elles.
       // …et devant un train (v304) : on ne force pas un passage à niveau.
-      const patience = a.veut && [...a.veut.keys()].every((k) => k < 0) ? Infinity : 4;
-      if (c.repart[i] > 0) { c.repart[i] -= dt; attend = false; }          // on vient de décider d'y aller
+      //
+      // ET « SEUL » NE VEUT PAS DIRE « SEULEMENT LUI » (v383). La règle
+      // écrivait « devant l'enfant SEUL » : une voiture gênée par l'enfant ET
+      // par une autre voiture de la rue — un carrefour, une file qui croise —
+      // retombait sur la patience de quatre secondes, puis `repart` la lançait
+      // deux secondes à l'aveugle, AU TRAVERS de l'enfant ou de l'ami. Mesuré
+      // à la sonde (`sonde-intrus-ami.cjs`) chez Alice : cinq voitures entrées
+      // dans celle de Marlon, toutes avec l'ami dans leur `veut` à côté d'une
+      // voiture de la rue, toutes en `repart`. La patience ne sert qu'à
+      // dénouer DEUX voitures de la rue ; dès qu'un joueur (ou un train, clé
+      // négative) est sur le chemin, on attend, et un `repart` déjà lancé
+      // s'arrête net devant lui.
+      const devantUnJoueur = !!a.veut && [...a.veut.keys()].some((k) => k < 0);
+      const patience = devantUnJoueur ? Infinity : 4;
+      if (devantUnJoueur) { c.repart[i] = 0; c.attenteDepuis[i] += dt; }
+      else if (c.repart[i] > 0) { c.repart[i] -= dt; attend = false; }          // on vient de décider d'y aller
       else if (attend) {
         c.attenteDepuis[i] += dt;
         if (c.attenteDepuis[i] > patience) { attend = false; c.repart[i] = 2; c.attenteDepuis[i] = 0; }
@@ -2304,6 +2318,12 @@ export function createVehicules({ scene, player }) {
     // les amis de la partie (v305), branchés par main.js : où ils sont, leur cap,
     // et s'ils conduisent
     brancherAmis: (f) => { amis = f; },
+    // pour les sondes (v383) : ce que `cederLePassage` a vu à la dernière
+    // image — qui gêne qui (`veut`), qui attend, qui vient de forcer (`repart`)
+    diagCeder: () => dernieres.map((a) => ({ cle: a.cle, x: +a.x.toFixed(1), z: +a.z.toFixed(1), ami: !!a.ami, enfant: !!a.enfant,
+      veut: a.veut ? [...a.veut.keys()] : [], attend: a.c && a.c.attend ? a.c.attend[a.i] : null,
+      depuis: a.c && a.c.attenteDepuis ? +a.c.attenteDepuis[a.i].toFixed(1) : null, repart: a.c && a.c.repart ? +a.c.repart[a.i].toFixed(1) : null,
+      nom: a.c ? `${a.c.cle}#${a.i}` : null, cap: +Math.atan2(a.ux, a.uz).toFixed(2) })),
     // pour les tests : un point du tracé, en avant de la tête du convoi, là
     // où l'on peut aller attendre son passage
     point: (ci, avance = 0) => (convois[ci] ? convois[ci].place(0, avance) : null),

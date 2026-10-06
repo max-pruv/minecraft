@@ -1,5 +1,34 @@
 # Ce qui est en cours
 
+- [ ] **LA COMPILATION À L'ARRIVÉE (monte.js) : CE QUE LE BANC SOUS CHARGE
+  MESURE (v386).** Rouge chronique, des deux côtés : « chauffe de New York
+  expirée » (44 à 163 sur 321 en soixante secondes). Sondé
+  (`sonde-programmes-paris.cjs`, le trajet exact du témoin) : seule, la chauffe
+  finit en 9,3 s, bridée ×4 en 9,1 s, bridée ×6 (depuis l'accueil) en 15,8 s ;
+  et à l'arrivée, Paris, New York, Lille rendent ZÉRO programme neuf — de jour
+  comme de nuit. L'enfant n'est pas touché ; le témoin attendait soixante
+  secondes un état que la charge du portail retarde. Repointé : attente bornée
+  à 150 s (un état, pas un taux, v285), la durée dans le message, garde
+  d'images à plus de trois (Paris a rendu 8 images en 20 s au portail de la
+  v382, page vivante). **Reste ouvert** : au portail de la v382 la chauffe a
+  FINI (321/321 en 31 s) et Paris a rendu trois programmes `physical` que ni la
+  nuit ni le bridage ne reproduisent seuls. Le message nomme désormais la case
+  de la clé qui diffère (méthode v319) : au prochain rouge, on saura laquelle.
+  Portail de la v386 : `monte.js` VERT en entier — chauffe finie en 94,8 s
+  (elle aurait « expiré » à 60), zéro programme neuf dans les cinq lieux,
+  Paris à 7 images ; `maj.js` : la préparation (corps 7/9, dette déclarée) et
+  le badge avant le bump.
+- [ ] **LE PORTAIL DE LA v383 (la rue n'entre plus chez un ami) : DEUX PASSAGES.**
+  Premier passage, trois suites rouges : `manhattan.js` (trou de façade, taxi
+  — déclarés), `monte.js` (la monoplace — À MOI, repointée, voir CLAUDE.md ;
+  la compilation à la téléportation et le gel d'arrivée — familles déclarées),
+  `reseau.js` (« la même circulation », écart médian 35,1 — la famille
+  intermittente déclarée en v371 ; preuve structurelle : les deux joueurs
+  volent trente blocs au-dessus de la rue, `|a.y − b.y| > 2,5` les écarte de
+  `veut`, la règle neuve n'est pas atteinte). Second passage (reprise) :
+  `reseau.js` ENTIÈREMENT vert (mon témoin compris) ; `monte.js` : le seul gel
+  d'arrivée (24,8 %, déclaré) ; `manhattan.js` : trou, taxi, « Lost
+  connection to server » de PeerJS — déclarés.
 - [ ] **LE PORTAIL DE LA v381 (ponts des villes engendrées, le Tōmei), DOUBLE
   MESURE FAITE.** `carteMonde.js` et `plafond.js` verts (empreinte des 490
   morceaux 36b34a87…, la même branche règle désarmée rend 27789d06…, la
@@ -30,7 +59,11 @@
   `origin/main` seul « rien d'autre ne vole le doigt dans la zone du joystick ».
   Les reflets (7 tours pour une garde à 8) et l'ordre de maillage (écart 0,05)
   du portail sont VERTS rejoués seuls sur la branche.
-- [ ] **LES PASSANTS SUR LA CHAUSSÉE À ROME : LE TÉMOIN DIT DÉSORMAIS QUI
+- [ ] **« UN PIÉTON FRÔLÉ SURSAUTE » ROUGE DE CHARGE (portail v385).** 1,24 s pour
+  une barre à 1,2 ; rejoué seul trois fois : 0,67-0,83 s (branche), 0,70-0,91 s
+  (`origin/main`). La barre est à 1,5 fois le pire relevé seul : à surveiller.
+- [x] **(v385 : un flâneur sur la chaussée en sort d'abord — témoin provoqué, rouge sur l'ancien code.)**
+  **LES PASSANTS SUR LA CHAUSSÉE À ROME : LE TÉMOIN DIT DÉSORMAIS QUI
   (v380).** Au portail de la v380, 3 sur 18 (vert, barre un cinquième) et le
   témoin publie : les TROIS sont des flâneurs (`surTrottoir` faux) en `pause`,
   animés, et deux sont encore À LEUR POSTE DE NAISSANCE — nés sur la chaussée
@@ -52,7 +85,7 @@
   9,13 b/s pour une barre à 9,0 (30 × 0,3). `monte.js` rejouée SEULE sur
   `origin/main` (v369) : **le même rouge, 9,04**, médiane 27,23 des deux côtés —
   dette de la zone conduite-physique (la décélération au lâcher frôle sa barre).
-  **Démonté en v382** : ce n'était pas le frein. La roue libre de 27 à 9 b/s
+  **Démonté en v387** : ce n'était pas le frein. La roue libre de 27 à 9 b/s
   vaut 3,75 s de JEU (frein moteur 3,5 + air 0,004 v², intégré) ; le témoin
   l'attendait trente secondes de MONTRE, soit trois à quatre secondes de jeu au
   banc — il relevait la fin de la roue libre. Le budget se compte désormais en
@@ -67,9 +100,9 @@
   Après la fusion de la v375 : mêmes dettes, plus la flèche du GPS (déclarée,
   v367) et « à soixante blocs par seconde dans Paris, le monde se maille dans le
   champ » : écart 0,07 sur la branche, **0,02 sur `origin/main`** rejouée seule,
-  pour une barre à 0,13 — rouge des deux côtés, le gain de l'ordre en cône
-  (0,29 à la v346) ne se voit plus au banc. À remesurer (ABBA, plusieurs
-  paires) avant de toucher à la barre ou à l'ordre : dette de ma zone.
+  pour une barre à 0,13. **Démontée en v382** : le premier passage dans Paris,
+  à froid, écrasait l'ordre neuf (0,42 contre 0,87 · 0,87) ; échauffement non
+  compté (`sonde-cone-banc.cjs`).
 - [ ] **LE PORTAIL DE LA v376 (les passants réagissent à la route).** Mes
   quatre témoins verts (sursaut 1, arrêt 0,82 s ; six passants sur six se
   retournent vers le choc ; traversées 6 sur 6 au rouge ; chaussée de Rome 2
@@ -640,7 +673,7 @@
     rouges à l'identique sur `origin/main` seul ; la branche seule rend « deux
     enfants sans courtier du tout ». Famille des parties par le nuage,
     intermittente, en production.
-- [ ] **AU PORTAIL DE LA v382 (la normale de ce qu'on touche), CINQ ROUGES,
+- [ ] **AU PORTAIL DE LA v387 (la normale de ce qu'on touche), CINQ ROUGES,
   TOUS DÉJÀ VUS SUR `origin/main`.** `reseau.js` « un départ propre nettoie
   tout le monde », `manhattan.js` « le trou enlève aussi la géométrie »,
   `maj.js` « corps, programmes et fond de carte » (programmes 15/27, carte
@@ -652,11 +685,11 @@
   (chauffe NY expirée 56/321) — plus un rouge que la branche n'a pas (« en
   vol, on ne rattrape pas le bout du monde », chasseur 58 pour 60). C'est la
   chauffe de New York qui n'aboutit pas sur ce banc chargé, pas la
-  conduite : la v382 ne touche à rien de ce chemin (branche AU VOLANT de
+  conduite : la v387 ne touche à rien de ce chemin (branche AU VOLANT de
   `player.js`, crochets d'obstacle). Piste : borner l'attente du témoin sur la
   chauffe (`finie`), et sinon le dire au lieu de juger NY.
-- [ ] **LA CONDUITE À LA GTA, PALIERS 1 (v358) ET 2 (v382) LIVRÉS
-  (conduite-physique) — CE QUI RESTE, DÉCLARÉ.** Faits en v382 : le choc
+- [ ] **LA CONDUITE À LA GTA, PALIERS 1 (v358) ET 2 (v387) LIVRÉS
+  (conduite-physique) — CE QUI RESTE, DÉCLARÉ.** Faits en v387 : le choc
   contre une voiture de la rue prend la normale de SON rectangle et se juge
   sur la vitesse RELATIVE (`chocContreVoiture`, lu par le vrai crochet
   `voitureContre`) ; la normale d'un mur se lit sur la droite des faces
@@ -816,21 +849,11 @@
   et trente-sept colonnes au bord du disque de Paris, où le relief du fondu
   passe sous l'eau à côté d'un trottoir — elles sont désormais maçonnées
   aussi, mais leur forme reste un bord de disque, pas un quai.
-- [ ] **EN LIGNE, UNE VOITURE DE LA RUE ENTRE ENCORE UNE FOIS DANS CELLE D'UN
-  AMI (v305, mesuré en v306).** Le témoin de `reseau.js` pose Marlon au volant
-  dans la rue de Paris et regarde chez Alice. Ce qui est PROUVÉ : la voiture
-  qui arrive derrière lui dans sa voie l'attend (retard 19 s sur le code neuf,
-  0 s sur l'ancien, même passage de banc). Ce qui ne l'est PAS : sur les deux
-  codes, une AUTRE voiture est entrée une fois dans la sienne pendant la
-  fenêtre (`dedans: 1`, centre à 1,6 bloc sur le neuf, 3,7 sur l'ancien). Le
-  message du témoin publie désormais l'intrus (`intrus` : clé, distance, cap de
-  l'intrus et cap posé de Marlon). Trois pistes à séparer par une sonde, pas
-  par une relecture : (1) le rectangle de l'ami est orienté par `rp.yaw + π`,
-  qui est le regard de Marlon et pas le cap de sa voiture ; (2) la position
-  réseau de Marlon arrive en retard chez Alice, et la voiture qui cède cède à
-  l'endroit d'AVANT ; (3) une voiture d'un convoi voisin arrivée de travers au
-  carrefour. Six versions de ce témoin avant qu'il sépare les deux codes : les
-  cinq premières sont dans `git log tests/reseau.js`.
+- [x] **EN LIGNE, UNE VOITURE DE LA RUE ENTRE ENCORE UNE FOIS DANS CELLE D'UN
+  AMI (v305) — faite en v383.** Ni le cap, ni le retard réseau : la patience
+  de quatre secondes revenait dès qu'une voiture de la rue gênait aussi
+  (`some` au lieu de `every`, vehicules.js). Sonde `sonde-intrus-ami.cjs` :
+  ancien 5 entrées sur 11 poses, neuf 0 sur 10.
 - [ ] **`carte.js` : l'appui long refusé au portail de la v326 (« pointeurs 0 »,
   quatre appuis, 8 rouges en cascade) — la dette de la v258, double mesure.**
   Rejouée SEULE : branche verte au premier appui ; `origin/main` (v321) verte
@@ -3250,11 +3273,20 @@ l'embarquement a eu lieu, pas par une hypothèse.
   Puis v374 à v376 sont parties pendant ces mesures : rebasée sur la v376
   (conflit sur une ligne de `main.js`, les deux gardées), témoin du passager
   vert et fumée verte, publiée en v377.
+- [ ] **LE PORTAIL DE LA v384 (la descente du passager).** `reseau.js`
+  ENTIÈRE verte, témoin neuf compris ; `degats.js`, `reglages.js` verts.
+  Rouges, tous de familles déjà déclarées : `maj.js` (loader de
+  l'installation, loader après rechargement), `carte.js` (flèche du GPS, rouge
+  seule sur `origin/main` en v327 ; glisser bridé ×4, 428 ms), `monte.js`
+  (téléportation qui compile, réverbère `parcouru 0`). PREUVE STRUCTURELLE :
+  le code neuf (`descendreDeChez`) n'est atteint que par un passager d'ami,
+  qui n'existe que dans `reseau.js` ; partout ailleurs `embarq=0`.
 - [x] **Le passager d'un ami** — FAIT en v377 : il entre par la portière
   droite avec la séquence (`monterChez`), et le conducteur la voit s'ouvrir
-  chez lui (message `portiere`, l'hôte relaie). Reste : la DESCENTE du
-  passager est encore instantanée ; et sans courtier (partie par le nuage
-  seul) le message ne sait pas nommer le conducteur (dette v253).
+  chez lui (message `portiere`, l'hôte relaie). La DESCENTE aussi depuis la
+  v384 (`descendreDeChez`). Reste : sans courtier (partie par le nuage seul)
+  le message ne sait pas nommer le conducteur (dette v253, zone
+  conduite-en-ligne).
 - [ ] **LE PORTAIL DE LA v372 (bords des portières), DOUBLE MESURE FAITE.**
   `degats.js` vert. Au portail, 17 rouges dans `monte.js` et `maj.js` : il a
   tourné pendant que je faisais tourner une dizaine de sondes de navigateur
@@ -3789,7 +3821,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   vehicules.js) et l'affichage en prend la fraction de l'allure atteinte. Rien
   à faire tant que Max ne le redemande pas.
 
-- [x] **La physique d'un choc de voiture reste un arrêt net (v272) — FAIT en v358 et v382** (glisse rasante, rebond de face, choc publié, dégâts de la v343 ; contre une voiture de la rue, normale de son rectangle et vitesse relative en v382). La
+- [x] **La physique d'un choc de voiture reste un arrêt net (v272) — FAIT en v358 et v387** (glisse rasante, rebond de face, choc publié, dégâts de la v343 ; contre une voiture de la rue, normale de son rectangle et vitesse relative en v382). La
   vitesse se borne désormais au déplacement RÉEL, ce qui règle le compteur, le
   régime du moteur et les roues qui tournaient dans le vide. Ce n'est pas un
   choc : pas de rebond, pas de dégât, pas de secousse de caméra. C'est la
