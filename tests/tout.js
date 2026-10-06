@@ -135,7 +135,7 @@ const GARDIENS = {
   'src/londres.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'parishd.js'],    // la couche HD lit Londres (v390)
   'src/londres-v332.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // la Londres d'avant le kit, sous ce qu'un enfant a bâti (v339)
   // La machine à villes : les cinquante grandes du tour du monde.
-  'src/villesmonde.js': ['carteMonde.js', 'carte.js', 'plafond.js', 'monte.js'],
+  'src/villesmonde.js': ['carteMonde.js', 'carte.js', 'plafond.js', 'monte.js', 'parishd.js'],    // la couche HD lit les villes d'Europe (v394)
   // Les deux cents villes : des données pures, jugées par les mêmes témoins
   // que la machine qui les lit.
   'src/villes200.js': ['carteMonde.js', 'carte.js', 'plafond.js'],

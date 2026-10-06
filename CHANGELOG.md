@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v393 — Londres rejoint Birmingham
+## v395 — Londres rejoint Birmingham
 
 **Pourquoi.** Londres–Birmingham était le corridor court sans rail du kit
 « en attente » depuis la v323 : une autre session élargissait les rues de
@@ -45,6 +45,61 @@ Birmingham arrive sur la rue. Les témoins de toutes les routes la lisent aussi
 emprise volée, joints des ponts fermés). L'empreinte des 490 morceaux change
 (Londres est un des neuf lieux) et se prouve : M40 retirée, la branche rend
 celle d'`origin/main` au bit près.
+
+## v394 — Toute l'Europe en relief
+
+**Pourquoi.** Après Londres, Nice et Lille, les quatre-vingt-dix villes
+engendrées d'Europe — Rome, Berlin, Barcelone, Amsterdam, Édimbourg… —
+restaient en façades plates à toute distance. C'était la fin de la consigne de
+Max : « when done do all European cities ».
+
+**Ce que ça change.** De près, chaque ville d'Europe a des fenêtres en relief
+dans son propre mur (la couleur de sa palette, patinée) : au sud de 45,5° N,
+les persiennes, le garde-corps de fer et le store de la boutique ; au nord,
+l'encadrement et le linteau de pierre sur la brique ; dans les îles
+britanniques, la guillotine géorgienne de Londres. Trottoirs relevés, arbres
+maillés, devantures et corniches en relief. Ni Tbilissi, ni Ankara, ni le
+Maghreb : ils ne sont pas en Europe. Un appareil au palier bas ne reçoit rien
+de neuf ; Paris, Londres, Nice et Lille n'ont pas bougé d'un octet.
+
+**Ce qui le prouve.** Vingt-deux témoins neufs dans `parishd.js`, rouges sur
+`origin/main` : sept par ville pour Rome (sud), Berlin (nord) et Manchester
+(îles britanniques) — couverture, aucun bloc posé, tampons d'avant sans HD,
+chaque face exposée détaillée, le mur et les ornements du registre, pas de
+mobilier parisien, morceau le plus lourd sous 3 Mo — sur 1 676 morceaux des villes engendrées, 0,55 Mo en moyenne et 1,71 au pire (Barcelone) — et
+un témoin de liste : les villes de la boîte européenne ont leur registre, pas
+celles qui n'en sont pas. Et le fer se compte enfin : la ferronnerie s'émet
+en UV absolus, elle ne se reconnaissait pas à sa tuile, et les « pas de fer »
+de Londres et de Lille étaient vrais à vide ; comptés à la matière, ils
+rendent zéro (Rome : 8 304 sommets).
+
+---
+
+## v393 — Celui qui part dit au revoir
+
+**Pourquoi.** À trois en ligne, quand un enfant quittait la partie, les deux
+autres le gardaient parfois à l'écran une minute et demie : immobile, puis
+évanoui sans qu'on sache pourquoi. Le jeu écrivait « on prévient les autres
+joueurs avant de disparaître » — et n'envoyait rien : il comptait sur la
+fermeture du lien, qui ne traverse pas toujours (une tablette qu'iOS suspend
+au lieu de la tuer, un canal qui reste « ouvert » de l'autre côté). Le témoin
+« un départ propre nettoie tout le monde » rougissait de loin en loin des deux
+côtés depuis des versions.
+
+**Ce que ça change.** Celui qui part envoie un adieu à chacun avant de couper ;
+l'hôte le retire tout de suite et le dit aux autres. Une tablette restée sur
+une ancienne version connaît déjà ce message. Et le témoin de la voix après
+un appel vidéo, qui rougissait lui aussi de loin en loin, mesure désormais ce
+qu'il annonce : le volume du jeu rendu après l'appel.
+
+**Ce qui le prouve.** Une sonde reproduit le départ sans fermeture de lien :
+ancien code 0 nettoyage en 60 s sur 2 passages, nouveau 3/3 en ≈ 1 s. Le
+témoin de `reseau.js` provoque désormais ce cas lui-même — suite entière
+verte, 80 témoins. Pour la voix : sans aucun appel, deux fenêtres de 1,5 s de
+radio varient déjà de 0,68 à 1 ; la radio relancée sans appel et la radio
+après l'appel rendent la même distribution, gain revenu à 1 cinq fois sur
+cinq. Le témoin juge le gain et un niveau au-dessus de la moitié, et il rougit
+sur une copie où la voix reste au quart (gain 0,25).
 ## v392 — Nice et Lille en relief
 
 **Pourquoi.** Le palier A avait donné son relief à Londres ; Nice et Lille, les

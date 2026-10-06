@@ -338,7 +338,7 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // fusion : 1f385723…. La preuve : le même code, le Tōmei retiré du registre,
 // rend 0cf845f5…, la constante de cette livraison avant la fusion, au bit
 // près — la règle d'eau de la v381 ne change aucun bloc de ces tabliers.
-// v393 : Londres, un des neuf lieux, porte l'entrée de la M40 (une collectrice
+// v395 : Londres, un des neuf lieux, porte l'entrée de la M40 (une collectrice
 // de la porte nord à Pentonville Road) et perd la maison de la trame générique
 // qui la barrait — voulu. La M40 retirée du registre (donc son entrée et le
 // lot qu'elle écartait), la branche rend 1f385723…, la constante

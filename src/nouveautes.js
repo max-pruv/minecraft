@@ -6,11 +6,28 @@
 
 export const NOUVEAUTES = [
   {
-    v: 393,
+    v: 395,
     titre: 'Londres rejoint Birmingham',
     puces: [
       'Une autoroute passe par le col',
       'On entre dans Londres par King\'s Cross',
+    ],
+  },
+  {
+    v: 394,
+    titre: 'Toute l\'Europe en relief',
+    puces: [
+      'Rome, Berlin, Barcelone… de près',
+      'Persiennes au sud, pierre au nord',
+      'Fenêtres anglaises en Écosse',
+    ],
+  },
+  {
+    v: 393,
+    titre: 'Un ami qui part disparaît',
+    puces: [
+      'Il dit au revoir en partant',
+      'Plus de joueur fantôme à l\'écran',
     ],
   },
   {

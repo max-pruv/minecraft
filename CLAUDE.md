@@ -770,6 +770,29 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Toute l'Europe en relief (v394) — un registre par géographie, et un compte qui voit ce qu'il compte
+
+Palier C : les quatre-vingt-dix villes engendrées d'Europe. Trois règles.
+
+- **L'EUROPE EST UNE BOÎTE MOINS UNE LISTE QUI SE LIT.** `registreEurope`
+  (facadeshd.js) prend la latitude et la longitude de la fiche ; `HORS_EUROPE`
+  nomme, avec leur raison, les villes de la boîte qui n'en sont pas (Caucase,
+  Anatolie, Maghreb). Le registre suit la vraie ville, pas son tissu : îles
+  britanniques → `londres`, au sud de 45,5° N → `sud` (persiennes, fer,
+  stores), au nord → `nord` (encadrement de pierre). `VILLES_HD` passe à
+  94 disques, toujours une liste par morceau.
+- **UN COMPTE DE TUILE NE VOIT PAS CE QUI S'ÉMET EN UV ABSOLUS.** La
+  ferronnerie et la croisée portent le rectangle `NEUTRE` : comptées à la
+  tuile elles rendaient zéro partout, et « pas de fer » à Londres et à Lille
+  était vrai à vide pendant deux livraisons. Le fer se compte à sa MATIÈRE
+  (`compteFer`, parishd.js). Un témoin d'absence se vérifie capable de voir
+  la présence : il fallait Rome pour le voir rendre autre chose que zéro.
+- **CE QUI SE MESURE.** 1 676 morceaux des villes engendrées : 0,55 Mo de
+  façades en moyenne, 1,71 au pire (Barcelone) ; un morceau détaillé coûte au
+  worker à peu près le double d'un morceau plat (20 → 45 ms sous node, comme
+  Paris 28 → 108), seulement à portée de `RAYON_HD`. Paris, Londres, Nice et
+  Lille identiques à l'octet.
+
 ## Nice et Lille en relief (v392) — un registre par ville, une patine par tuile
 
 Palier B. Deux règles.
@@ -1985,6 +2008,36 @@ position, si (`{ ...msg }`). Ce qui doit traverser un ancien hôte s'accroche
 à elle, et devient idempotent en envoyant l'HISTOIRE (adoptée seulement si
 la nôtre en est le début), jamais le seul dernier événement.
 
+## Celui qui part dit au revoir (v393) — un commentaire de départ se relit dans `stop()`
+
+Les deux rouges réseau récurrents du palier C. Trois règles.
+
+- **CE QUI S'ARRÊTE S'ANNONCE, ET LA LIGNE QUI LE DIT SE RELIT DANS LE CODE
+  QU'ELLE APPELLE.** `pagehide` appelait `net.stop()` sous « on prévient les
+  autres joueurs avant de disparaître » ; `stop()` ne faisait que démonter.
+  Le départ reposait sur la fermeture du transport — la règle de la v219,
+  écrite pour la caméra, jamais appliquée au départ. Tant que le silence
+  retirait tout pair à 20 s, le défaut se voyait à peine ; depuis que la v266
+  garde un pair au canal ouvert 90 s, un transport qui ne dit rien (sonde du
+  portail : canal `open`, ICE `connected`, silence 74 s) le gardait une minute
+  et demie. `stop()` envoie `bye` avec `adieu: 1` à chacun AVANT de démonter,
+  et le receveur traite l'adieu du pair lui-même comme un lien qui tombe
+  (`dropPeer` : l'hôte relaie, l'invité qui perd l'hôte repart). Une ancienne
+  tablette lit `from` et retire le pair. Quand une règle durcit un délai
+  (v266), on cherche le jour même qui comptait sur l'ancien délai.
+- **ON PROVOQUE L'ÉTAT DU PORTAIL, ON NE L'ATTEND PAS.** Le rouge venait une
+  fois sur dix ; la sonde `sonde-depart-transport-muet.cjs` le fabrique à
+  chaque fois (transport laissé debout, `stop()`, page figée) : 0/2 nettoyé en
+  60 s sur l'ancien code, 3/3 en ≈ 1 s. Le témoin de `reseau.js` fait de même.
+- **UNE FENÊTRE DE MÉLODIE N'EST PAS UN VOLUME.** « Caméra éteinte, le jeu
+  reprend sa voix normale » comparait 1,5 s de radio établie au DÉBUT de la
+  mélodie que le contexte neuf relance. Sans aucun appel, deux fenêtres
+  varient de 0,68 à 1 (`sonde-voix-apres-appel.cjs`), et la radio relancée
+  sans appel rend la même distribution qu'après l'appel. La grandeur est le
+  gain de sortie rendu, plus un niveau au-dessus de la MOITIÉ — milieu entre
+  une voix restée au quart (`GAIN_APPEL`) et le régime qui varie ; vérifié
+  rouge sur une copie où la voix reste au quart.
+
 ## Le GPS se partage (v388) — un état voyage avec la position, pas dans un message neuf
 
 La dette de la v321. Trois règles.
@@ -2528,7 +2581,7 @@ Une règle.
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
 
-## La M40 (v393) — une ville bâtie à la main s'entre par une rue déclarée, et une vieille boucle se cherche
+## La M40 (v395) — une ville bâtie à la main s'entre par une rue déclarée, et une vieille boucle se cherche
 
 Londres–Birmingham, le corridor « en attente » depuis la v323. Trois règles.
 

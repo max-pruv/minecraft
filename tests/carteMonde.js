@@ -724,7 +724,7 @@ const VRAIES_KM = [
           }
           return { route: e.route, dans, vus };
         });
-        // L'ENTRÉE DE LONDRES (v393) : de la porte nord de la M40 à Pentonville
+        // L'ENTRÉE DE LONDRES (v395) : de la porte nord de la M40 à Pentonville
         // Road, plein sud. Même lecture qu'à Lille — les blocs à hauteur de
         // carrosserie, la chaussée sous la roue — et le bout doit être sur une
         // ARTÈRE (une collectrice nommée). La première mesure a trouvé une
@@ -1052,7 +1052,7 @@ const VRAIES_KM = [
       JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiTomei ? { nom: a1.convoiTomei.nom, voitures: (a1.convoiTomei.modeles || []).length } : 'aucun convoi Tōmei',
         surRail: a1.surRail && a1.surRail['Tōmei'], frole: a1.frole && a1.frole['Tōmei'], entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'Tōmei') }));
 
-    // LA M40 (v393) : Londres–Birmingham, par le col de la crête qui barre
+    // LA M40 (v395) : Londres–Birmingham, par le col de la crête qui barre
     // l'axe direct. Elle sort de Londres par le nord, sa porte donne sur une
     // entrée déclarée qui mène à Pentonville Road, et elle entre dans
     // Birmingham par l'axe de sa trame. Sur l'ancien code, la route n'existe
