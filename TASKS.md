@@ -111,6 +111,19 @@
   `reseau.js` ENTIÈREMENT vert (mon témoin compris) ; `monte.js` : le seul gel
   d'arrivée (24,8 %, déclaré) ; `manhattan.js` : trou, taxi, « Lost
   connection to server » de PeerJS — déclarés.
+- [ ] **LE PORTAIL DE LA v395 (la M40 après fusion de la v394), DOUBLE MESURE
+  FAITE.** Six rouges, tous déjà déclarés, rejoués SEULS des deux côtés.
+  `maj.js` libération `null` et « ne floute rien » : identiques sur la branche
+  et sur `origin/main` (v394). `carte.js` « la faire glisser (bridé ×4) » :
+  574 · 675 · 766 ms branche, 492 ms `origin/main`, barre 400 — rouge partout ;
+  « la flèche du GPS » : rouge 1 fois sur 3 sur la branche (gauche lue à 1,92
+  rad, comme en v329), verte sur `origin/main` ce passage-ci et rouge en v329 —
+  l'intermittence connue. `manhattan.js` « le trou enlève la géométrie »
+  (11 684 branche, 9 203 `origin/main`, pour 42 919) et « les deux clients sans
+  erreur » (PeerJS « Lost connection ») rouges des deux côtés ; « le taxi
+  tactile » rouge sur `origin/main` seul. La M40 ne touche ni l'accueil, ni la
+  carte, ni Manhattan, ni le réseau.
+
 - [ ] **LE PORTAIL DE LA M40 (Londres–Birmingham), DOUBLE MESURE FAITE.**
   Trois rouges, tous déjà déclarés. `carte.js` « et la faire glisser non plus
   (bridé ×4) » : 663 ms au portail, où mes sondes de couloir tournaient en même
