@@ -11,6 +11,11 @@
   cinq). Il juge le gain rendu et un niveau > ½ ; rouge sur une copie où la
   voix reste au quart. Les entrées plus bas qui déclarent ces deux témoins
   « intermittents des deux côtés » sont closes par celle-ci.
+  Portail (base v388) : `degats`, `visio`, `hote`, `reseau` VERTS ; seul
+  rouge `manhattan.js` « le trou enlève aussi la géométrie visible de la
+  façade » (17 102 → 54 969) — la dette déclarée en v291 (22 326 → 51 734 sur
+  `origin/main`), un compte qui suit ce que la file a installé ; la livraison
+  ne touche ni la façade ni Manhattan.
 - [ ] **LE GPS PARTAGÉ PAR UN HÔTE QUI RELAIE (`rpos`) N'A PAS DE TÉMOIN À
   TROIS TABLETTES** (v388 l'éprouve entre l'hôte et un invité). Le champ `g`
   est lu sur `rpos`, la règle est écrite ; le témoin reste à faire.

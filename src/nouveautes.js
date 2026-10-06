@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 393,
+    titre: 'Un ami qui part disparaît',
+    puces: [
+      'Il dit au revoir en partant',
+      'Plus de joueur fantôme à l\'écran',
+    ],
+  },
+  {
     v: 392,
     titre: 'Nice et Lille en relief',
     puces: [
