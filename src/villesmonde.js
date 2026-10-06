@@ -3849,15 +3849,27 @@ export function mobilierVillesMonde(x, z, poser) {
 // l'ouest), multiplié par son sens (`sens: -1`, le contresens, roule du côté
 // EXTÉRIEUR). Le témoin de `carteMonde.js` le contrôle sans cette formule : il
 // mesure le partage sur les TRACÉS, voie par voie (moins de deux blocs d'écart).
-function partageDeRue(a, b) {
+//
+// ET LE PARTAGE SE LIT SUR DES CÔTÉS, PLUS SUR UN RECTANGLE (v404). Un anneau
+// qui contourne une place n'est plus un rectangle : c'est le bord d'un
+// ensemble d'îlots de la trame (`contourner`, plus bas). Chaque côté porte sa
+// rue (`axe`, `b`), son étendue (`a0`, `a1`) et son côté de voie (`s`) — pour
+// un rectangle, le signe du côté multiplié par le sens, exactement la formule
+// d'avant, si bien qu'un anneau qui ne contourne rien rend le MÊME partage au
+// bit près (et les mêmes anneaux : c'est mesuré ville par ville).
+function aretesDuRect(c) {
+  const s = c.sens || 1, out = [];
+  for (const k of [1, -1]) {
+    out.push({ axe: 1, b: c.cU + k * c.Ru, a0: c.cV - c.Rv, a1: c.cV + c.Rv, s: k * s });
+    out.push({ axe: 0, b: c.cV + k * c.Rv, a0: c.cU - c.Ru, a1: c.cU + c.Ru, s: k * s });
+  }
+  return out;
+}
+function partageDAretes(A, B) {
   let total = 0;
-  const sa = a.sens || 1, sb = b.sens || 1;
-  for (const ka of [1, -1]) for (const kb of [1, -1]) {
-    if (ka * sa !== kb * sb) continue;                         // deux voies : on se croise
-    if (Math.abs((a.cU + ka * a.Ru) - (b.cU + kb * b.Ru)) <= 2)
-      total += Math.max(0, Math.min(a.cV + a.Rv, b.cV + b.Rv) - Math.max(a.cV - a.Rv, b.cV - b.Rv));
-    if (Math.abs((a.cV + ka * a.Rv) - (b.cV + kb * b.Rv)) <= 2)
-      total += Math.max(0, Math.min(a.cU + a.Ru, b.cU + b.Ru) - Math.max(a.cU - a.Ru, b.cU - b.Ru));
+  for (const a of A) for (const b of B) {
+    if (a.axe !== b.axe || a.s !== b.s || Math.abs(a.b - b.b) > 2) continue;   // deux voies : on se croise
+    total += Math.max(0, Math.min(a.a1, b.a1) - Math.max(a.a0, b.a0));
   }
   return total;
 }
@@ -4041,7 +4053,8 @@ function anneauxCalcules(f) {
       // Un anneau DÉJÀ retenu se rejette ici tout seul : son partage avec
       // lui-même vaut son propre périmètre. La phase 2 peut donc repasser sur
       // toute la liste sans se dédoubler.
-      if (gardes.some((g) => partageDeRue(candidat, g) > PARTAGE_MAX)) return null;
+      candidat.aretes = aretesDuRect(candidat);
+      if (gardes.some((g) => partageDAretes(candidat.aretes, g.aretes) > PARTAGE_MAX)) return null;
       // Le disque et la limite sud se lisent aux QUATRE COINS : un rectangle
       // est convexe, et les quarante points du test d'eau ci-dessous les
       // comprennent — c'est la même réponse, avant le monument, qui coûte.
@@ -4099,20 +4112,41 @@ function anneauxCalcules(f) {
       // voies. Sans conséquence tant qu'un seul convoi passait par une rue ;
       // faux dès que deux sens s'y croisent. Un contresens (`sens: -1`) roule
       // du côté extérieur : la même rue, l'autre voie.
-      const voie = (c.sens || 1) * t.w / 2;
-      const Ru = c.Ru - voie, Rv = c.Rv - voie;
-      // Les quatre coins, en coordonnées de TRAME : `tracesCirculation` les
-      // tournera vers le monde et y ajoutera la cote. Une forme pure ne
-      // connaît pas le sol.
-      const coins = [[Ru, Rv], [-Ru, Rv], [-Ru, -Rv], [Ru, -Rv]];
-      if (c.sens === -1) coins.reverse();
-      const pts = coins.map(([A, B]) => [A + c.cU, B + c.cV]);
+      let pts;
+      if (c.contour) {
+        // UN ANNEAU QUI CONTOURNE (v404) : ses sommets sont déjà ceux de sa
+        // voie, décalée du bon côté de chaque rue (`contourner`).
+        pts = c.contour.pts;
+        c.aretes = c.contour.aretes;
+      } else {
+        const voie = (c.sens || 1) * t.w / 2;
+        const Ru = c.Ru - voie, Rv = c.Rv - voie;
+        // Les quatre coins, en coordonnées de TRAME : `tracesCirculation` les
+        // tournera vers le monde et y ajoutera la cote. Une forme pure ne
+        // connaît pas le sol.
+        const coins = [[Ru, Rv], [-Ru, Rv], [-Ru, -Rv], [Ru, -Rv]];
+        if (c.sens === -1) coins.reverse();
+        pts = coins.map(([A, B]) => [A + c.cU, B + c.cV]);
+        c.aretes = c.aretes || aretesDuRect(c);
+      }
       // `rang` distingue le grand anneau du petit : le bus ne dessert que le
       // grand. Depuis v178 on garde LES DEUX anneaux quand ils sont au sec —
       // Max : « much more life in cities » — au lieu de s'arrêter au premier.
       formes.push({ pts, forme: c, rang: gardes.length });
       for (const q of c.ponts || []) ponts.push(q);
       gardes.push(c);
+    };
+
+    // LES PHASES 2 BIS ET TER EXIGENT LA CHAUSSÉE (v387) : un candidat qui
+    // en sort y gagne sa place s'il la CONTOURNE (v404) sans gêner les
+    // anneaux déjà retenus. Les autres phases gardent leur rectangle ; on les
+    // fait contourner APRÈS, une fois la sélection faite (phase 4), pour que
+    // le contour ne change jamais QUELS anneaux une ville reçoit.
+    const exigerChaussee = (c, options) => {
+      if (!horsChaussee(f, c, { ...options, ponts: [...ponts, ...(c.ponts || [])] })) return c;
+      const k = contourner(f, c, [...ponts, ...(c.ponts || [])], !!options.quai, gardes.flatMap((g) => g.aretes));
+      if (!k || !k.pts) return null;
+      return Object.assign(c, { contour: k });
     };
 
     // PHASE 1 — L'ANNEAU QUE L'ENFANT VOIT EN ARRIVANT. Il passe en premier,
@@ -4122,7 +4156,7 @@ function anneauxCalcules(f) {
     for (const spec of candidats) {
       if (gardes.length) break;
       const c = valider(spec, true);
-      if (c) retenir(c);
+      if (c) retenir(Object.assign(c, { proche: true }));
     }
 
     // PHASE 2 — le reste, dans l'ordre habituel : du plus grand au plus petit.
@@ -4158,7 +4192,7 @@ function anneauxCalcules(f) {
         for (const spec of noeuds) {
           if (gardes.length) break;
           const c = valider(spec, exiger);
-          if (c) retenir(c);
+          if (c) retenir(exiger ? Object.assign(c, { proche: true }) : c);
         }
       }
     }
@@ -4197,6 +4231,9 @@ function anneauxCalcules(f) {
       }
       pas.sort((p, q) => ((q[1] - q[0]) * (q[3] - q[2]) - (p[1] - p[0]) * (p[3] - p[2]))
         || (Math.hypot(p[0] + p[1], p[2] + p[3]) - Math.hypot(q[0] + q[1], q[2] + q[3])));
+      // (Un second tour qui admettrait les candidats en les CONTOURNANT a été
+      // écrit et mesuré, v404 : il n'ajoute aucun anneau dans aucune ville et
+      // coûtait des centaines d'appels à la recherche. Retiré.)
       for (const [i0, i1, j0, j1] of pas) {
         if (gardes.length >= MAX_ANNEAUX) break;
         const c = valider([0, (i0 + i1) / 2, (j0 + j1) / 2, (i1 - i0) / 2, (j1 - j0) / 2, true], false);
@@ -4216,9 +4253,22 @@ function anneauxCalcules(f) {
     for (const g of [...gardes]) {
       if (gardes.length >= MAX_ANNEAUX) break;
       const c = { cU: g.cU, cV: g.cV, Ru: g.Ru, Rv: g.Rv, sens: -1, ponts: [] };
-      if (gardes.some((h) => partageDeRue(c, h) > PARTAGE_MAX)) continue;
-      if (contreUnMonument(f, c) || horsChaussee(f, c)) continue;
-      retenir(c);
+      // LE CONTRESENS MESURE SA TRAVERSÉE SUR SA VOIE (v404). Il roule à une
+      // demi-voie de l'axe, côté extérieur : là où la rive est en biais, il
+      // touche l'eau avant le bout du tablier mesuré sur l'axe (Newcastle,
+      // deux blocs). On mesure donc le tronçon mouillé sur SA voie, et le
+      // tablier qui en sort reste centré sur la rue, de la même largeur.
+      if (g.ponts && g.ponts.length) {
+        const v2 = t.w / 2;
+        const tr = traverseesDe(f, { cU: g.cU, cV: g.cV, Ru: g.Ru + v2, Rv: g.Rv + v2 });
+        if (!tr) continue;
+        c.ponts = tr.map((q) => ({ ...q, b: q.b - Math.sign(q.b - (q.axe === 0 ? g.cV : g.cU)) * v2 }));
+      }
+      c.aretes = aretesDuRect(c);
+      if (gardes.some((h) => partageDAretes(c.aretes, h.aretes) > PARTAGE_MAX)) continue;
+      if (contreUnMonument(f, c)) continue;
+      const k = exigerChaussee(c, { quai: true, ponts });
+      if (k) retenir(k);
     }
     // PHASE 3 — LES QUARTIERS QU'AUCUN ANNEAU NE VOIT (v325). Les phases
     // d'avant ne regardent pas OÙ la ville est vide : quatre anneaux au plus,
@@ -4234,10 +4284,377 @@ function anneauxCalcules(f) {
       const c = valider([0, i, j, ku, kv, true], false);
       if (c) retenir(c);
     }
+    // PHASE 4 — LES ANNEAUX RETENUS CONTOURNENT CE QUI N'EST PAS LA CHAUSSÉE
+    // (v404). Chacun, dans l'ordre, prend sa forme contournée si elle tient
+    // trois promesses : le partage par voie avec TOUS les autres anneaux de
+    // la ville (leur forme finale), la portée de vue du centre pour l'anneau
+    // de la phase 1, et AUCUNE part de la ville qui perde sa voiture — un
+    // point que seul ce rectangle voyait doit être vu par son contour
+    // (`couvertureGardee`). Sinon il garde son rectangle : jamais pire.
+    for (let n = 0; n < gardes.length; n++) {
+      const g = gardes[n];
+      if (g.contour) continue;
+      const autres = gardes.flatMap((h, m) => (m === n ? [] : h.aretes));
+      let seuls = null;
+      const k = contourner(f, g, ponts, true, autres, (k2) => !(g.proche && k2.dCentre > VU_ANNEAU)
+        && couvertureGardee(seuls ||= pointsSeuls(f, formes.map((fo) => fo.pts), n), k2.pts));
+      if (!k || !k.pts) continue;
+      g.contour = k;
+      g.aretes = k.aretes;
+      formes[n].pts = k.pts;
+    }
     const out = { formes, ponts };
     ANNEAUX.set(f, out);
     return out;
   }
+}
+
+// UN ANNEAU QUI SORT DE LA CHAUSSÉE CONTOURNE, IL NE SE JETTE PAS (v404).
+// Mesuré sur `origin/main` (v389) : 147 anneaux sur 809 avaient au moins un
+// pas de voie hors de la chaussée, 3 512 pas en tout — la place centrale et sa
+// fontaine (les grands anneaux des villes à tours passent par le nœud
+// central), le sable de Las Vegas et de Rio, des parcs. Après : 92 anneaux,
+// 2 437 pas ; ce qui reste longe une rivière sans tablier ou une plage sans
+// rue, que les rues de la trame ne contournent pas. Les filtrer est un
+// non-résultat mesuré (v387 : treize villes sans anneau, vingt-six qui
+// perdent de la couverture). Le remède est celui de Paris (`contournerRonds`,
+// `contournerBlocs`) : passer AUTOUR.
+//
+// UN ANNEAU EST LE BORD D'UN ENSEMBLE D'ÎLOTS. Un rectangle posé sur les
+// nœuds de la trame est le bord des îlots qu'il entoure ; retirer un îlot au
+// bord le fait passer en dedans, en ajouter un le fait passer en dehors — et
+// le tracé reste par CONSTRUCTION sur les rues de la trame. On cherche, au
+// mieux d'abord, l'ensemble le plus proche du rectangle dont toute la voie
+// est sur la chaussée : ni place, ni parc, ni sable, ni lot, ni mur de
+// monument, ni eau qu'aucun tablier du rectangle ne franchit, ni bord du
+// disque. Le trottoir du boulevard, là où une rue le traverse, reste toléré :
+// c'est le sol qui le pose en travers (v387), aucun tracé ne l'évite.
+//
+// ET LE SOL NE CHANGE PAS D'UN BLOC. Les tabliers sont ceux du RECTANGLE
+// (`traverseesDe`), publiés tels quels, et le contour ne pose jamais un pont
+// neuf (une rue neuve doit être au sec). `hauteurVillesMonde` ne lit pas les
+// anneaux : les empreintes de `plafond.js` ne bougent pas.
+//
+// Rend `null` si la voie est déjà sur la chaussée (le rectangle reste,
+// identique au bit près), `{ pts: null }` si l'on n'a pas trouvé de contour,
+// sinon `{ pts, aretes, dCentre }` : les sommets de la VOIE en coordonnées de
+// trame, les côtés pour le partage, et la distance du centre à la rue.
+const CONTOUR_ESSAIS = 40;
+// Un contour qui change plus de douze îlots n'est plus le même anneau.
+const CONTOUR_CHANGE_MAX = 12;
+const CONTOUR_PATIENCE = 10;
+// LE QUAI EST POSÉ EN TRAVERS DES RUES QUI MÈNENT À L'EAU, COMME LE TROTTOIR
+// DU BOULEVARD (v404). `solVillesMonde` pave les deux derniers blocs avant la
+// mer d'une ville à quais — par-dessus la rue qui mène au pont ou au port. Un
+// anneau qui passe là ne sort pas de la rue : c'est le sol qui la recouvre,
+// et aucun tracé ne l'évite (les onze villes à un seul circuit, v387, en sont
+// toutes là). Toléré comme le trottoir du boulevard, et mesuré à part.
+function surLeQuai(f, U, V) {
+  return !!((f.mer && f.mer.quais && U * f.mer.nx + V * f.mer.nz > f.mer.d - 2)
+    || (f.cote && f.cote.quais && U < f.cote.base + f.cote.pente * V + 2));
+}
+const _etatsDeSegment = new Map();
+const cleNoeud = (i, j) => (i + 512) * 1024 + (j + 512);
+function etatDeSegment(f, ia, ja, dx, dy, sens, quai) {
+  let cache = _etatsDeSegment.get(f.cle);
+  if (!cache) { cache = new Map(); _etatsDeSegment.set(f.cle, cache); }
+  const cle = (((cleNoeud(ia, ja) * 3 + dx + 1) * 3 + dy + 1) * 2 + (sens > 0 ? 1 : 0)) * 2 + (quai ? 1 : 0);
+  let e = cache.get(cle);
+  if (e) return e;
+  e = { bloque: false, eaux: [] };
+  const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang), w2 = t.w / 2;
+  // La voie : l'axe de la rue décalé d'une demi-chaussée vers l'intérieur
+  // (sens 1) ou l'extérieur (contresens). Le bord est parcouru l'intérieur à
+  // GAUCHE de la marche (dans le repère de la trame), comme le rectangle.
+  const oP = -dy * sens * w2, oQ = dx * sens * w2;
+  const P0 = ia * t.pu + oP, Q0 = ja * t.pv + oQ;
+  const LP = dx * t.pu, LQ = dy * t.pv;
+  // le pas de `horsChaussee` : un bloc et demi
+  const n = Math.ceil(Math.abs(LP + LQ) / 1.5);
+  for (let k = 0; k <= n && !e.bloque; k++) {
+    const P = P0 + (LP * k) / n, Q = Q0 + (LQ * k) / n;
+    const X = Math.floor(f.ancre.x + P * co + Q * si), Z = Math.floor(f.ancre.z - P * si + Q * co);
+    const u = X - f.ancre.x, v = Z - f.ancre.z;
+    if (Math.hypot(u, v) > f.rayon - 2 || (t.sud && v / f.K > t.sud)) { e.bloque = true; break; }
+    if (eauDeVille(f, u / f.K, v / f.K)) { e.eaux.push(X, Z); continue; }
+    const s = solVillesMonde(X, Z);
+    if (s === BITUME || s === LIGNE_NS || s === LIGNE_EO || s === PASSAGE_NS || s === PASSAGE_EO) continue;
+    // la tolérance se juge sur la COLONNE lue, pas sur le point exact : au
+    // bord de la bande, l'arrondi les séparait (Rome bloquait là).
+    if (s === TROTTOIR && t.axe && Math.min(Math.abs(u * co - v * si), Math.abs(u * si + v * co)) < t.axe.s) continue;
+    if (quai && s === PAVE && surLeQuai(f, u / f.K, v / f.K)) continue;
+    e.bloque = true;
+  }
+  // Les murs des monuments, sur la largeur de la carrosserie (la règle de
+  // `contreUnMonument`) : seuls ceux dont la boîte approche le segment.
+  if (!e.bloque) {
+    const P1 = P0 + LP, Q1 = Q0 + LQ;
+    for (const m of monumentsDeVille(f)) {
+      const dp = Math.max(Math.min(P0, P1) - m.P, 0, m.P - Math.max(P0, P1));
+      const dq = Math.max(Math.min(Q0, Q1) - m.Q, 0, m.Q - Math.max(Q0, Q1));
+      if (Math.hypot(dp, dq) > m.r + DEGAGEMENT_VOITURE + 1) continue;
+      // Un monument dont aucun rectangle n'a fait lire les murs n'est pas
+      // bâti pour le contour : on refuse sa boîte entière (bâtir l'Opéra de
+      // Sydney ou le Colisée du catalogue pour EXPLORER coûtait vingt à
+      // quarante millisecondes à l'approche de la ville). Une boîte est plus
+      // large que les murs : ce refus ne laisse rien passer.
+      if (!m.murs) { e.bloque = true; break; }
+      const L = Math.hypot(LP, LQ), ua = LP / L, ub = LQ / L;
+      for (let d = 0; d <= L && !e.bloque; d += 0.5) {
+        for (const w of [-DEGAGEMENT_VOITURE, 0, DEGAGEMENT_VOITURE]) {
+          const P = P0 + ua * d - ub * w, Q = Q0 + ub * d + ua * w;
+          const X = Math.floor(f.ancre.x + P * co + Q * si), Z = Math.floor(f.ancre.z - P * si + Q * co);
+          if (m.murs.has(X * 262144 + Z)) { e.bloque = true; break; }
+        }
+      }
+      if (e.bloque) break;
+    }
+  }
+  cache.set(cle, e);
+  return e;
+}
+// Le bord orienté d'un ensemble d'îlots : une suite de segments unitaires
+// [i, j, dx, dy] (du nœud (i, j) au nœud voisin), l'intérieur à gauche.
+// `null` si l'ensemble n'a pas UN seul bord simple — deux îlots qui ne se
+// touchent que par un coin (le bord y passerait deux fois), ou un trou.
+function bordDIlots(ilots) {
+  const sortant = new Map();
+  let n = 0;
+  const ajoute = (i, j, dx, dy) => {
+    const k = cleNoeud(i, j);
+    if (sortant.has(k)) return false;
+    sortant.set(k, [i, j, dx, dy]); n++;
+    return true;
+  };
+  for (const k of ilots) {
+    const i = Math.floor(k / 1024) - 512, j = (k % 1024) - 512;
+    if (!ilots.has(cleNoeud(i, j - 1)) && !ajoute(i, j, 1, 0)) return null;
+    if (!ilots.has(cleNoeud(i + 1, j)) && !ajoute(i + 1, j, 0, 1)) return null;
+    if (!ilots.has(cleNoeud(i, j + 1)) && !ajoute(i + 1, j + 1, -1, 0)) return null;
+    if (!ilots.has(cleNoeud(i - 1, j)) && !ajoute(i, j + 1, 0, -1)) return null;
+  }
+  const bord = [];
+  let e = sortant.values().next().value;
+  const depart = e;
+  do {
+    bord.push(e);
+    e = sortant.get(cleNoeud(e[0] + e[2], e[1] + e[3]));
+    if (!e || bord.length > n) return null;
+  } while (e !== depart);
+  return bord.length === n ? bord : null;
+}
+// LA COUVERTURE SE GARDE POINT PAR POINT (v404). La règle du témoin de
+// `carteMonde.js` (v322) : un point de la ville est vu s'il est à moins de
+// `VU_VOITURE` d'un tracé qui porte un convoi. On en tire la grille de la
+// ville (un point tous les six blocs, jusqu'aux neuf dixièmes du rayon, hors
+// de l'eau), une fois et seulement si un contour se présente ; un contour
+// est refusé s'il laisse sans voiture un point que SEUL son rectangle voyait.
+const _pointsDeVille = new Map();
+function pointsDeVille(f) {
+  let pts = _pointsDeVille.get(f.cle);
+  if (pts) return pts;
+  const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang), R = f.rayon * 0.9, l = [];
+  for (let dx = -R; dx <= R; dx += 6) for (let dz = -R; dz <= R; dz += 6) {
+    if (dx * dx + dz * dz > R * R) continue;
+    const x = Math.floor(f.ancre.x + dx), z = Math.floor(f.ancre.z + dz);
+    const u = x - f.ancre.x, v = z - f.ancre.z;
+    if (eauDeVille(f, u / f.K, v / f.K) || solVillesMonde(x, z) === null) continue;
+    l.push(u * co - v * si, u * si + v * co);
+  }
+  pts = Float64Array.from(l);
+  _pointsDeVille.set(f.cle, pts);
+  return pts;
+}
+// la distance d'un point à un tracé fermé, sommets à plat [P0, Q0, P1, …]
+function distanceAuTrace(P, Q, plat) {
+  let d2 = Infinity;
+  const n = plat.length;
+  for (let i = 0; i < n; i += 2) {
+    const a1 = plat[i], b1 = plat[i + 1], a2 = plat[(i + 2) % n], b2 = plat[(i + 3) % n];
+    const dA = a2 - a1, dB = b2 - b1, L2 = dA * dA + dB * dB;
+    let k = L2 ? ((P - a1) * dA + (Q - b1) * dB) / L2 : 0;
+    k = k < 0 ? 0 : k > 1 ? 1 : k;
+    const x = P - a1 - k * dA, y = Q - b1 - k * dB, e = x * x + y * y;
+    if (e < d2) d2 = e;
+  }
+  return Math.sqrt(d2);
+}
+const aPlat = (pts) => Float64Array.from(pts.flat());
+// Le témoin échantillonne le tracé tous les deux blocs : une distance exacte
+// et une distance lue sur ses échantillons diffèrent d'un bloc au plus. La
+// garde se donne donc un bloc et demi de marge des deux côtés — ce que voyait
+// l'ancien tracé à 46,5 blocs, le neuf doit le voir à 43,5.
+const MARGE_VU = 1.5;
+// Les points que SEUL le tracé `n` voit, une fois par anneau : chaque contour
+// proposé ne relit qu'eux (à Rome, relire toute la ville à chaque proposition
+// coûtait cent millisecondes).
+function pointsSeuls(f, traces, n) {
+  const plats = traces.map(aPlat), mien = plats[n];
+  let P0 = Infinity, P1 = -Infinity, Q0 = Infinity, Q1 = -Infinity;
+  for (let i = 0; i < mien.length; i += 2) {
+    P0 = Math.min(P0, mien[i]); P1 = Math.max(P1, mien[i]); Q0 = Math.min(Q0, mien[i + 1]); Q1 = Math.max(Q1, mien[i + 1]);
+  }
+  const m = VU_VOITURE + MARGE_VU, points = pointsDeVille(f), seuls = [];
+  for (let i = 0; i < points.length; i += 2) {
+    const P = points[i], Q = points[i + 1];
+    if (P < P0 - m || P > P1 + m || Q < Q0 - m || Q > Q1 + m) continue;
+    if (distanceAuTrace(P, Q, mien) >= m) continue;
+    let ailleurs = false;
+    for (let k = 0; k < plats.length && !ailleurs; k++) if (k !== n && distanceAuTrace(P, Q, plats[k]) < VU_VOITURE - MARGE_VU) ailleurs = true;
+    if (!ailleurs) seuls.push(P, Q);
+  }
+  return seuls;
+}
+function couvertureGardee(seuls, neuf) {
+  const plat = aPlat(neuf);
+  for (let i = 0; i < seuls.length; i += 2) {
+    if (distanceAuTrace(seuls[i], seuls[i + 1], plat) >= VU_VOITURE - MARGE_VU) return false;
+  }
+  return true;
+}
+
+// `autres` : les côtés des autres anneaux de la ville — le contour cherche
+// AUSSI à ne pas suivre leur voie au-delà de la barre de partage (c'était le
+// premier refus mesuré au premier jet : 92 contours sur 196). `accepte` : la dernière garde
+// (la vue du centre, la couverture), lue sur un contour déjà sans faute.
+function contourner(f, c, ponts, quai = true, autres = [], accepte = null) {
+  const t = f.trame, sens = c.sens || 1;
+  const i0 = Math.round((c.cU - c.Ru) / t.pu), i1 = Math.round((c.cU + c.Ru) / t.pu);
+  const j0 = Math.round((c.cV - c.Rv) / t.pv), j1 = Math.round((c.cV + c.Rv) / t.pv);
+  const depart = new Set();
+  for (let i = i0; i < i1; i++) for (let j = j0; j < j1; j++) depart.add(cleNoeud(i, j));
+  // L'eau n'est permise que sur un tablier DÉJÀ publié : une rue neuve,
+  // ou l'autre voie, ne pose jamais de pont.
+  const bloques = (bord) => bord.filter((e) => {
+    const s = etatDeSegment(f, e[0], e[1], e[2], e[3], sens, quai);
+    if (s.bloque) return true;
+    for (let k = 0; k < s.eaux.length; k += 2) if (!surUnTablier(f, ponts, s.eaux[k], s.eaux[k + 1])) return true;
+    return false;
+  });
+  // le côté d'un segment unitaire, pour le partage
+  const areteDe = (e) => e[2]
+    ? { axe: 0, b: e[1] * t.pv, a0: Math.min(e[0], e[0] + e[2]) * t.pu, a1: Math.max(e[0], e[0] + e[2]) * t.pu, s: -e[2] * sens }
+    : { axe: 1, b: e[0] * t.pu, a0: Math.min(e[1], e[1] + e[3]) * t.pv, a1: Math.max(e[1], e[1] + e[3]) * t.pv, s: e[3] * sens };
+  const etat = (ilots, h1, h2, bord, change) => {
+    const fautifs = bloques(bord);
+    const k = fautifs.length ? null : forme(bord);
+    const exces = k ? Math.max(0, partageDAretes(k.aretes, autres) - PARTAGE_MAX) : 0;
+    return { ilots, h1, h2, bord, change, fautifs, k, exces };
+  };
+  const bord0 = bordDIlots(depart);
+  if (!bord0) return { pts: null };
+  if (!bloques(bord0).length) return null;
+  const forme = (bord) => {
+    // Les segments unitaires se fondent en côtés ; chaque côté porte sa rue.
+    const cotes = [];
+    for (const e of bord) {
+      const d = cotes[cotes.length - 1];
+      if (d && d.dx === e[2] && d.dy === e[3]) { d.n++; continue; }
+      cotes.push({ i: e[0], j: e[1], dx: e[2], dy: e[3], n: 1 });
+    }
+    if (cotes.length > 1 && cotes[0].dx === cotes[cotes.length - 1].dx && cotes[0].dy === cotes[cotes.length - 1].dy) {
+      const der = cotes.pop();
+      cotes[0] = { ...der, n: der.n + cotes[0].n };
+    }
+    const w2 = t.w / 2, pts = [], aretes = [];
+    let dCentre = Infinity;
+    for (let k = 0; k < cotes.length; k++) {
+      const a = cotes[k], b = cotes[(k + 1) % cotes.length];
+      // le sommet de voie entre ce côté et le suivant : l'un court selon P,
+      // l'autre selon Q ; chacun est décalé du côté de sa voie
+      const h = a.dx ? a : b, v = a.dx ? b : a;
+      pts.push([v.i * t.pu - v.dy * sens * w2, h.j * t.pv + h.dx * sens * w2]);
+      // le côté, pour le partage : sa rue, son étendue, son côté de voie
+      const P0 = a.i * t.pu, Q0 = a.j * t.pv, P1 = P0 + a.dx * a.n * t.pu, Q1 = Q0 + a.dy * a.n * t.pv;
+      if (a.dx) aretes.push({ axe: 0, b: Q0, a0: Math.min(P0, P1), a1: Math.max(P0, P1), s: -a.dx * sens });
+      else aretes.push({ axe: 1, b: P0, a0: Math.min(Q0, Q1), a1: Math.max(Q0, Q1), s: a.dy * sens });
+      const dp = Math.max(Math.min(P0, P1), 0, -Math.max(P0, P1)), dq = Math.max(Math.min(Q0, Q1), 0, -Math.max(Q0, Q1));
+      dCentre = Math.min(dCentre, Math.hypot(dp, dq));
+    }
+    if (sens === -1) pts.reverse();
+    return { pts, aretes, dCentre };
+  };
+  // Au mieux d'abord : le moins de segments fautifs, puis le moins de voie
+  // partagée au-delà de la barre, puis le moins d'îlots changés — l'anneau le
+  // plus proche du rectangle qu'on avait choisi.
+  // Un ensemble d'îlots se reconnaît à un hachage qu'on tient à jour îlot
+  // par îlot (deux mots de 32 bits) : trier et joindre les clés à chaque
+  // état coûtait le quart du temps de la recherche.
+  const mel = (k, g) => { let x = Math.imul(k ^ g, 0x9e3779b1); x ^= x >>> 15; x = Math.imul(x, 0x85ebca6b); return (x ^ (x >>> 13)) >>> 0; };
+  let h1 = 0, h2 = 0;
+  for (const k of depart) { h1 ^= mel(k, 0x1234567); h2 ^= mel(k, 0x7654321); }
+  const vus = new Set([h1 + ',' + h2]);
+  // La file est un TAS : la trier à chaque tour coûtait un autre quart.
+  const avant = (a, b) => (a.fautifs.length - b.fautifs.length) || (a.exces - b.exces) || (a.change - b.change);
+  const tas = [];
+  const pousser = (x) => {
+    tas.push(x);
+    for (let i = tas.length - 1; i > 0;) {
+      const p = (i - 1) >> 1;
+      if (avant(tas[i], tas[p]) >= 0) break;
+      [tas[i], tas[p]] = [tas[p], tas[i]]; i = p;
+    }
+  };
+  const tirer = () => {
+    const haut = tas[0], der = tas.pop();
+    if (tas.length) {
+      tas[0] = der;
+      for (let i = 0; ;) {
+        const l = 2 * i + 1, r = l + 1;
+        let m = i;
+        if (l < tas.length && avant(tas[l], tas[m]) < 0) m = l;
+        if (r < tas.length && avant(tas[r], tas[m]) < 0) m = r;
+        if (m === i) break;
+        [tas[i], tas[m]] = [tas[m], tas[i]]; i = m;
+      }
+    }
+    return haut;
+  };
+  const e0 = etat(depart, h1, h2, bord0, 0);
+  pousser(e0);
+  // UNE RECHERCHE QUI NE PROGRESSE PAS S'ARRÊTE. Mesuré : les contours
+  // trouvés le sont en deux essais (médiane), sept au neuvième décile. Une
+  // recherche qui passe `CONTOUR_PATIENCE` essais sans améliorer son meilleur
+  // état longe une rivière sans tablier ou une plage sans rue : à Rome, le
+  // Tibre en faisait échouer cinq, qui coûtaient la moitié du dépliage.
+  let mieux = e0.fautifs.length * 1000, quand = 0;
+  for (let essai = 0; essai < CONTOUR_ESSAIS && tas.length; essai++) {
+    if (essai - quand > CONTOUR_PATIENCE) break;
+    const cur = tirer();
+    const note = cur.fautifs.length * 1000 + cur.exces;
+    if (note < mieux) { mieux = note; quand = essai; }
+    let aRevoir = cur.fautifs;
+    if (!aRevoir.length) {
+      if (!cur.exces) {
+        if (!accepte || accepte(cur.k)) return { ...cur.k, change: cur.change };
+        continue;
+      }
+      // sans faute, mais sur la voie d'un autre anneau : on bouge ces côtés-là
+      aRevoir = cur.bord.filter((e) => partageDAretes([areteDe(e)], autres) > 0);
+    }
+    if (cur.change >= CONTOUR_CHANGE_MAX) continue;
+    for (const e of aRevoir.slice(0, 2)) {
+      const [i, j, dx, dy] = e;
+      // l'îlot à gauche du segment (dedans) et celui de droite (dehors)
+      const dedans = dx === 1 ? [i, j] : dx === -1 ? [i - 1, j - 1] : dy === 1 ? [i - 1, j] : [i, j - 1];
+      const dehors = dx === 1 ? [i, j - 1] : dx === -1 ? [i - 1, j] : dy === 1 ? [i, j] : [i - 1, j - 1];
+      for (const [ilot, ajout] of [[dedans, false], [dehors, true]]) {
+        const k = cleNoeud(ilot[0], ilot[1]);
+        if (ajout === cur.ilots.has(k)) continue;
+        if (!ajout && cur.ilots.size === 1) continue;
+        const n1 = cur.h1 ^ mel(k, 0x1234567), n2 = cur.h2 ^ mel(k, 0x7654321);
+        const sig = n1 + ',' + n2;
+        if (vus.has(sig)) continue;
+        vus.add(sig);
+        const nv = new Set(cur.ilots);
+        if (ajout) nv.add(k); else nv.delete(k);
+        const bord = bordDIlots(nv);
+        if (!bord) continue;
+        pousser(etat(nv, n1, n2, bord, cur.change + 1));
+      }
+    }
+  }
+  return { pts: null };
 }
 
 // UN ANNEAU ROULE SUR LA CHAUSSÉE, ET CELA SE MESURE SUR SA VOIE (v387). On
@@ -4249,7 +4666,20 @@ function anneauxCalcules(f) {
 // pour cent du tour : une avenue nommée (`f.voies`) borde parfois une rue de
 // la trame. Une place, un parc, une plage, un lot : jamais. Rend le nombre de
 // blocs fautifs (un seul suffit, on s'arrête là), zéro si l'anneau roule.
-function horsChaussee(f, c) {
+// `options.quai` tolère le quai (le contresens seul, v404) ; `options.ponts`
+// sont les tabliers déjà publiés : une colonne d'eau n'est permise que
+// dessous — le contresens roule sur l'AUTRE voie, qu'aucun tablier neuf ne
+// porte, et la règle d'avant supposait que toute eau sous un anneau avait le
+// sien (San José : 52 pas dans l'eau, mesuré).
+function surUnTablier(f, ponts, X, Z) {
+  const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
+  const u = X - f.ancre.x, v = Z - f.ancre.z, P = u * co - v * si, Q = u * si + v * co;
+  return ponts.some((q) => {
+    const le = q.axe === 0 ? P : Q, tr = q.axe === 0 ? Q : P;
+    return le >= q.a0 - 1 && le <= q.a1 + 1 && Math.abs(tr - q.b) <= q.demi;
+  });
+}
+function horsChaussee(f, c, options = {}) {
   const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
   const voie = (c.sens || 1) * t.w / 2;
   const Ru = c.Ru - voie, Rv = c.Rv - voie;
@@ -4264,13 +4694,17 @@ function horsChaussee(f, c) {
     for (let k = 0; k < n; k++) {
       const P = c.cU + A1 + ((A2 - A1) * k) / n, Q = c.cV + B1 + ((B2 - B1) * k) / n;
       const X = Math.floor(f.ancre.x + P * co + Q * si), Z = Math.floor(f.ancre.z - P * si + Q * co);
-      if (eauDeVille(f, (X - f.ancre.x) / f.K, (Z - f.ancre.z) / f.K)) continue;
+      if (eauDeVille(f, (X - f.ancre.x) / f.K, (Z - f.ancre.z) / f.K)) {
+        if (options.ponts && !surUnTablier(f, options.ponts, X, Z)) return 1;
+        continue;
+      }
       const s = solVillesMonde(X, Z);
       if (s === BITUME || s === LIGNE_NS || s === LIGNE_EO || s === PASSAGE_NS || s === PASSAGE_EO) continue;
       if (s === TROTTOIR) {
         if (!(t.axe && Math.min(Math.abs(P), Math.abs(Q)) < t.axe.s)) trottoir++;
         continue;
       }
+      if (options.quai && s === PAVE && surLeQuai(f, (X - f.ancre.x) / f.K, (Z - f.ancre.z) / f.K)) continue;
       return 1;                         // un seul suffit à écarter l'anneau
     }
   }

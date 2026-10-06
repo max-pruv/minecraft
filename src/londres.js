@@ -403,7 +403,7 @@ const VOIES = [
   ...PONTS,
 ].map(aLaRegle);
 
-// L'ENTRÉE DE LA M40 (v399), comme celles de Paris et de Lille : du bout du
+// L'ENTRÉE DE LA M40 (v405), comme celles de Paris et de Lille : du bout du
 // corridor (`routes.js`, vingt blocs sous le bord du disque, au nord) jusqu'à
 // Pentonville Road, l'artère de King's Cross, en ligne droite plein sud. Une
 // collectrice, comme les artères. Elle est une voie pour le sol — chaussée,

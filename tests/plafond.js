@@ -338,7 +338,10 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // fusion : 1f385723…. La preuve : le même code, le Tōmei retiré du registre,
 // rend 0cf845f5…, la constante de cette livraison avant la fusion, au bit
 // près — la règle d'eau de la v381 ne change aucun bloc de ces tabliers.
-// v399 : Londres, un des neuf lieux, porte l'entrée de la M40 (une collectrice
+// Les blocs d'un journal fabriqué de quarante mille, relevés sur la v391
+// (`origin/main`, avant l'index par morceau) : `empreinteJournal` (v403).
+const EMPREINTE_JOURNAL_V391 = '540f2b435ba355c9ec885f139968c87a16438f92846b695b8336548c868657e4';
+// v405 : Londres, un des neuf lieux, porte l'entrée de la M40 (une collectrice
 // de la porte nord à Pentonville Road) et perd la maison de la trame générique
 // qui la barrait — voulu. La M40 retirée du registre (donc son entrée et le
 // lot qu'elle écartait), la branche rend 1f385723…, la constante
@@ -2160,6 +2163,24 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     verifier('un morceau de ville coûte moins de lectures de relief et de blocs que sur la v351',
       Object.entries(BARRES_TRAVAIL).every(([v, b]) => tr[v].reliefs <= b.reliefs && tr[v].lus <= b.lus),
       JSON.stringify({ mesure: tr, barres: BARRES_TRAVAIL }));
+  }
+
+  // LES BLOCS DE L'ENFANT, RANGÉS PAR MORCEAU (v403). `generateChunk` balayait
+  // le journal entier pour chaque morceau : 80 000 entrées lues pour un morceau
+  // de campagne qui n'en porte aucune (36,6 ms contre 1,25 sous node, journal
+  // fabriqué). Deux verdicts : le compte des entrées lues (la cause, pas des
+  // millisecondes), et l'empreinte des blocs d'un journal de quarante mille
+  // par trois chemins d'écriture, relevée sur la v391 — invariant 1.
+  {
+    const { empreinteJournal, lecturesDuJournal } = await import('./morceaux-temoin.mjs');
+    const l = await lecturesDuJournal('../src');
+    verifier('un morceau engendré ne parcourt pas tout le journal des blocs de l\'enfant',
+      l.journal === 80000 && l.lues < 100,
+      `${l.lues} entrées lues par morceau pour un journal de ${l.journal}, ${l.ms.toFixed(1)} ms par morceau`);
+    const e = await empreinteJournal('../src');
+    verifier('les blocs de l\'enfant sont réappliqués au bloc près (journal fabriqué de quarante mille)',
+      e.empreinte === EMPREINTE_JOURNAL_V391 && e.morceaux === 362,
+      `${e.empreinte.slice(0, 16)} pour ${EMPREINTE_JOURNAL_V391.slice(0, 16)}, ${e.morceaux} morceaux`);
   }
 
   // --- LE SOL CONTINU (v297) : le rendu, le contact et la couture lisent la ---

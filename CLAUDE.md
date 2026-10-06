@@ -770,6 +770,100 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les anneaux contournent (v404) — un anneau est le bord d'un ensemble d'îlots
+
+La dette de la v387 : 147 anneaux de villes engendrées sur 809 sortaient de la
+chaussée (place, fontaine, parc, plage), onze villes n'avaient qu'un circuit.
+Sept règles.
+
+- **UN ANNEAU EST LE BORD D'UN ENSEMBLE D'ÎLOTS DE LA TRAME.** Retirer un îlot
+  au bord le fait passer en dedans, en ajouter un en dehors : le tracé reste
+  par CONSTRUCTION sur les rues (`contourner`, `bordDIlots`, villesmonde.js).
+  Une recherche au mieux d'abord (moins de segments fautifs, puis moins de
+  voie partagée, puis moins d'îlots changés) trouve le contour le plus proche
+  du rectangle. Deux îlots qui ne se touchent que par un coin, ou un trou,
+  n'ont pas UN bord : refusé.
+- **LE CONTOUR NE CHANGE JAMAIS QUELS ANNEAUX UNE VILLE REÇOIT.** La sélection
+  des rectangles reste celle d'avant, au bit près ; la phase 4 fait contourner
+  chaque anneau APRÈS, s'il garde trois promesses : le partage par voie avec
+  la forme finale de tous les autres, la vue du centre pour l'anneau de la
+  phase 1, et AUCUN point de la ville qui perde sa voiture (`pointsSeuls`,
+  marge d'un bloc et demi parce que le témoin échantillonne tous les deux
+  blocs). Mon premier jet contournait PENDANT la sélection : un anneau
+  contourné gênait les suivants, Rome, Istanbul, Turin perdaient des circuits.
+  Un second tour de la phase 2 bis qui admettait les candidats en les
+  contournant n'ajoutait aucun anneau : non-résultat mesuré, retiré.
+- **LE PARTAGE SE LIT SUR DES CÔTÉS.** `partageDAretes` remplace
+  `partageDeRue` : rue, étendue, côté de voie (`s`, le signe du côté fois le
+  sens pour un rectangle). Pour un rectangle il rend la même valeur au bit
+  près — c'est ce qui garde la sélection identique.
+- **LE QUAI EST UN SOL POSÉ EN TRAVERS DE LA RUE, COMME LE TROTTOIR DU
+  BOULEVARD.** Les onze villes à un circuit étaient toutes des ports : leur
+  anneau traverse le quai pavé pour gagner son pont, et son contresens était
+  refusé pour cela. `surLeQuai` le tolère pour le contresens seul. Et une
+  tolérance se juge sur la COLONNE lue, jamais sur le point exact : au bord de
+  la bande du boulevard, l'arrondi les séparait et Rome bloquait sur un faux
+  trottoir.
+- **L'AUTRE VOIE MESURE SA TRAVERSÉE SUR ELLE-MÊME.** Le contresens roule à
+  une demi-voie de l'axe, côté extérieur : là où la rive est en biais, il
+  touchait l'eau deux blocs avant le bout du tablier mesuré sur l'axe
+  (Newcastle ; San José, 52 pas dans l'eau). `traverseesDe` se rejoue sur sa
+  voie et publie le tablier qui manque, centré sur la rue. Et l'eau n'est
+  permise sous une voie neuve que sur un tablier déjà publié (`surUnTablier`).
+- **UN TABLIER NE SE RETIRE PAS.** Le contrôle d'eau strict, appliqué à la
+  phase 2 bis, écartait des anneaux d'avant ET leurs ponts : Vienne perdait 212
+  colonnes de tablier, Shanghai 502 — un enfant a pu bâtir dessus. La phase 2
+  bis garde sa règle d'avant (le défaut, des anneaux d'avant sur l'eau hors
+  tablier, est déclaré). Une sonde compare les tabliers des deux arbres colonne
+  par colonne : zéro perdue, 642 gagnées, toutes sur l'eau (`world.js` n'écrit
+  un tablier que sous `WATER_LEVEL`).
+- **UNE RECHERCHE SE MESURE AVANT DE SE BORNER.** Les contours trouvés le sont
+  en deux essais (médiane), 36 au pire : `CONTOUR_ESSAIS` vaut 40 et une
+  recherche s'arrête après dix essais sans progrès. Le coût n'était pas là où
+  le profil du premier jet le disait : tri de la file à chaque tour (un tas
+  maintenant), signatures triées (un hachage tenu îlot par îlot), puis la
+  garde de couverture qui relisait toute la ville à chaque proposition (une
+  liste par anneau, une grille par ville). Le prix déclaré : le premier
+  dépliage de Rome passe d'environ 57 à 85-100 ms, une fois, à l'approche.
+
+## Le monde entier en relief (v401) — ce qu'aucun registre n'honore se déclare
+
+Palier C, le dernier. Trois règles.
+
+- **DES RÈGLES DANS L'ORDRE, ET LES EXCEPTIONS NOMMÉES.** `registreAilleurs`
+  (facadeshd.js) : médinas, îles, `victorien` (Océanie, Afrique du Sud),
+  `nord` (au nord de 45° N : la Russie, Oulan-Bator, Harbin), `asie` (à l'est
+  de 95° E), `desert`, `sud` (Maghreb, Levant, Anatolie, Caucase au nord de
+  38° N), `tropical` pour le reste. Ce que la règle classerait mal a son nom et
+  sa raison : `ILES`, `COLONIALES` (les compartiments d'Indochine, Manille),
+  `TIBET`. Le premier jet mettait Tbilissi et Erevan au désert et Maputo dans
+  l'Afrique du Sud victorienne : c'est l'impression de la table entière, ville
+  par ville, qui l'a dit — on la relit avant de livrer.
+- **UNE RÈGLE QUI CHANGE LE SENS D'UN TÉMOIN LE FAIT REPOINTER.** Le témoin de
+  la v394 exigeait que Tunis, Ankara et Tbilissi n'aient AUCUN registre ; ils
+  en ont un désormais, le méditerranéen. Ce qu'il garde vraiment — la règle
+  d'EUROPE ne les classe pas — se lit sur `registreEurope`.
+- **CE QU'AUCUN REGISTRE N'HONORE SE DÉCLARE.** Les quatre médinas (`MEDINAS`,
+  et toute fiche `typo: 'medina'`) posent de petites baies carrées
+  (`ENTRESOL`) et les vitrines des souks, pas un étage à fenêtres ; une vitre
+  en retrait sous un encadrement n'y est pas. Le mur-rideau des tours d'Asie
+  et du Golfe reste sa tuile (v195). Mesuré : 681 morceaux, 0,46 Mo en
+  moyenne, 1,59 au pire.
+
+## Les Amériques en relief (v399) — un registre se donne aussi aux villes qu'une règle classerait mal
+
+Palier B. Deux règles.
+
+- **LA GÉOGRAPHIE DÉCIDE, L'HISTOIRE CORRIGE, ET LA CORRECTION SE NOMME.**
+  `registreAmeriques` (facadeshd.js) : longitude de la fiche, `nordAmericain`
+  au nord de 24° N, `latino` au sud ; `LATINO_AU_NORD` nomme Monterrey et La
+  Nouvelle-Orléans avec leur raison, `PACIFIQUE` les îles qui attendent le
+  palier C. Même forme que `registreEurope` et `HORS_EUROPE` : une liste se
+  conteste en la lisant.
+- **CE QUI SE MESURE.** 505 morceaux sur les 61 villes : 0,44 Mo de façades en
+  moyenne, 1,62 au pire (Buenos Aires) ; Paris, l'Europe, Washington et San
+  Francisco identiques à l'octet (sonde d'empreinte, `Math.random` figé).
+
 ## Washington et San Francisco en relief (v398) — une fiche dit sa forme, un uni se lit à sa couleur
 
 Palier A du reste du monde. Quatre règles.
@@ -1224,6 +1318,24 @@ d'invoquer la lit à l'origine du monde** : le modèle n'est placé qu'à l'imag
 suivante — mon premier jet posait l'enfant à trente blocs de l'avion, et le
 bouton ne trouvait rien. On copie `a.pos` dans le maillage avant de lire.
 
+**On descend d'un avion par son escalier (v400).** `descendreAvion`
+(embarquement.js) : `toggleRide(null)` au PREMIER appui, puis `ouverture`
+(dedans, caché), `sortie` (il se redresse, la porte fait la moitié de sa
+taille), `descente` (un escalier de face, une échelle face aux barreaux),
+`fermeture` (l'escalier s'en va). Seulement un avion AU SOL qui a une porte ;
+en vol, le Concorde et `embarq=0` : l'ancien geste. Deux règles.
+**Autour d'un avion, la place se lit sur le SOL DE LA COLONNE, pas à la cote
+des roues** (`placeAuSol`) : un appareil est long, et sur la pente du couloir
+de la v297 le pied des marches est à quatre blocs des roues — la recherche
+« cote des roues ± deux » de la voiture rendait « mur » partout. Une colonne
+d'eau, une pente de plus de quatre blocs ou une boîte pleine sont refusées,
+et l'on se pose alors d'un coup à une place libre autour ; le refus se dit
+(`refus.escalier`, `?diag=1`). **Et l'ancien geste posait l'enfant DANS
+l'eau** quand l'avion s'arrête au bord d'un lac (mesuré sur `origin/main`) :
+un geste instantané ne regarde pas où il pose, une séquence doit le faire.
+Le passage vit dans `sonde-descente-avion.cjs` et `monte.js` l'appelle tel
+quel (`passage`, `juger`) : une copie de sonde finit par diverger du témoin.
+
 **Une séquence qu'on ne juge qu'au banc se fait lire sur la tablette (v396).**
 Le banc saute la séquence (`embarq=0`) et rend en logiciel : durées, caméra et
 image figée ne se valident que sur l'iPad. `?diag=1` porte donc une ligne de
@@ -1279,7 +1391,8 @@ de conflit se relit dans `git diff origin/main`, jamais seulement dans le
 fichier** : le diff montre ce qu'on retire à l'autre côté.
 
 Ce qui reste, déclaré dans `TASKS.md` : la vue de la séquence ne se juge que
-sur le banc, pas sur l'iPad ; les avions DESCENDENT encore d'un coup.
+sur le banc, pas sur l'iPad ; les amis ne voient pas la porte d'un avion
+s'ouvrir.
 
 ## Les coupoles ont leur édifice (v365) — un gabarit partagé se cherche dans toutes les villes, et le ciel se lit sur les modèles
 
@@ -1399,6 +1512,32 @@ celle de la High Roller ne tiendrait pas, et c'est déclaré.
 Et une empreinte d'identité qui change se PROUVE : celle des 490 morceaux
 (v352) couvre Marrakech et Tokyo ; la branche, bâtisseurs neufs désarmés, rend
 l'ancienne au bit près — c'est ce qui a permis de la remplacer.
+
+## Le journal de l'enfant se range par morceau (v403) — un index vit DANS la structure qu'il indexe
+
+`generateChunk` relisait tout le journal des blocs de l'enfant pour chaque
+morceau : 36,6 ms par morceau avec 80 000 blocs, contre 1,25 sans (journal
+fabriqué sous node, `journalFabrique`). Deux règles.
+
+- **UN INDEX SE TIENT LÀ OÙ L'ON ÉCRIT, PAS À CÔTÉ.** Le journal s'écrit par
+  au moins six chemins — `setBlock`, `loadEdits`, `installerEdits`, le worker
+  qui fait `monde.edits.set` lui-même, Manhattan qui importe ses journaux, les
+  effacements — et un index tenu à côté finirait par en manquer un : un bloc
+  d'enfant disparaîtrait d'un morceau (invariant 1). `JournalBlocs`
+  (world.js) est une `Map` dont `set`, `delete` et `clear` tiennent
+  `parMorceau` : tout chemin qui passe par l'API de `Map` le tient sans le
+  savoir. Le seul geste à surveiller est l'AFFECTATION (`this.edits = …`) :
+  `installerEdits` enveloppe ce qu'on lui donne, et `grep -n "\.edits = "`
+  doit ne rendre que lui et le constructeur. Une `Map` clonée vers le worker
+  arrive nue (le clonage ne garde pas la classe) : c'est `installerEdits` qui
+  la rhabille.
+- **UNE OPTIMISATION DU JOURNAL SE PROUVE AVEC UN JOURNAL.** L'empreinte des
+  490 morceaux (v352) est relevée sur un monde sans blocs d'enfant : elle ne
+  pouvait pas voir ce changement. `empreinteJournal` (morceaux-temoin.mjs)
+  engendre les 362 morceaux d'un journal de quarante mille par trois chemins
+  (installé, posé un à un, retiré), relevée sur la v391 ; `lecturesDuJournal`
+  compte les entrées parcourues par morceau — la cause, pas des
+  millisecondes : 80 000 sur la v391, 0 ici.
 
 ## Le plafond au sol se relève sur la tablette (v391) — une mesure qu'on demande à Max se donne en ligne et en marche
 
@@ -1837,6 +1976,29 @@ engendrées. Quatre règles.
   journal vide dans le jeu, trois rouges de `maj.js`. Après tout conflit dans un
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
+
+## On traverse aux passages peints (v402) — la peinture se lit sur la ligne, et l'approche est en temps réel
+
+Trois règles.
+
+- **UNE RÈGLE DE PARIS SE CHERCHE DANS LES AUTRES VILLES, ET LA PEINTURE SE
+  MESURE AVANT.** `passagePieton` (main.js) ne lisait le passage sans feu qu'à
+  Paris. Sous node : 65 villes engendrées sur 267 (trame alignée, `t.net`)
+  peignent un passage à chaque carrefour ; Rome, Zurich, Londres n'en peignent
+  aucun (une bande peinte dans une tuile ne se tourne pas). Hors feu et hors
+  Paris, un bloc peint à quatre blocs devant ouvre la recherche, et le chemin
+  doit être peint EN ENTIER : la bande fait 1,7 bloc et les départs se
+  cherchent par pas d'un bloc, une ligne pleine existe toujours.
+- **CE QUI PRÉCÈDE UNE TRAVERSÉE EN TEMPS RÉEL EST EN TEMPS RÉEL.** L'approche
+  du départ était bornée à quatre secondes de montre et marchait au pas du jeu :
+  à cinq images par seconde le passant traversait d'où il était, au bord de la
+  bande. C'est le piège de `dt` (v226, v351) à l'étape d'avant.
+- **UN TÉMOIN DE TRAVERSÉE SÉPARE LES DÉCISIONS DES POUSSÉES, ET LIT LA LIGNE.**
+  Le témoin du feu (v371) publie ses traversées hors rouge : la seule « au vert »
+  était un passant poussé de l'autre côté par un écart (`traversee` nul,
+  `ecart` vrai) — compté à part, dette déclarée. Et la peinture d'une traversée
+  se lit sur la droite sortie → arrivée tous les demi-blocs : sous le passant à
+  chaque relevé, à cinq images par seconde, c'était un tirage (5 sur 7).
 
 ## Les passants quittent la chaussée (v385) — un remède qui ne dépend pas de la porte
 
@@ -2780,7 +2942,7 @@ Une règle.
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
 
-## La M40 (v399) — une ville bâtie à la main s'entre par une rue déclarée, et une vieille boucle se cherche
+## La M40 (v405) — une ville bâtie à la main s'entre par une rue déclarée, et une vieille boucle se cherche
 
 Londres–Birmingham, le corridor « en attente » depuis la v323. Trois règles.
 
