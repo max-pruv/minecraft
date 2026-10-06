@@ -20,7 +20,6 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-<<<<<<< HEAD
 ## v389 — On monte dans l'avion par l'escalier
 
 **Pourquoi.** Depuis la v366 on marche jusqu'à la portière d'une voiture,
@@ -47,7 +46,6 @@ et aucune clé de programme neuve, aucun bloc écrit.
 
 ---
 
-=======
 ## v388 — Le GPS se partage avec un ami
 
 **Pourquoi.** Depuis la v306, un enfant choisit sa destination sur la carte et
@@ -159,7 +157,6 @@ rejoué seul trois fois des deux côtés : 0,67 à 0,83 s ici, 0,70 à 0,91 s su
 ne trouve jamais de chaussée.
 
 
->>>>>>> origin/main
 ## v384 — On descend de la voiture d'un ami par la portière
 
 **Pourquoi.** La v377 faisait monter le passager d'un ami par la portière
