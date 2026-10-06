@@ -6,12 +6,30 @@
 
 export const NOUVEAUTES = [
   {
-    v: 398,
+    v: 400,
     titre: 'Les voitures contournent la place',
     puces: [
       'Plus de voiture dans la fontaine',
       'Les voitures restent sur la route',
       'Deux circuits dans les petits ports',
+    ],
+  },
+  {
+    v: 399,
+    titre: 'Les Amériques en relief',
+    puces: [
+      'Chicago, Montréal, Mexico, Rio de près',
+      'Brique et guillotine au nord',
+      'Couleurs et balcons de fer au sud',
+    ],
+  },
+  {
+    v: 398,
+    titre: 'Washington et San Francisco en relief',
+    puces: [
+      'Brique et marbre à Washington',
+      'Maisons de bois peint à San Francisco',
+      'Fenêtres à guillotine de près',
     ],
   },
   {

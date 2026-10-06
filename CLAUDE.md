@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Les anneaux contournent (v398) — un anneau est le bord d'un ensemble d'îlots
+## Les anneaux contournent (v400) — un anneau est le bord d'un ensemble d'îlots
 
 La dette de la v387 : 147 anneaux de villes engendrées sur 809 sortaient de la
 chaussée (place, fontaine, parc, plage), onze villes n'avaient qu'un circuit.
@@ -825,6 +825,53 @@ Sept règles.
   garde de couverture qui relisait toute la ville à chaque proposition (une
   liste par anneau, une grille par ville). Le prix déclaré : le premier
   dépliage de Rome passe d'environ 57 à 85-100 ms, une fois, à l'approche.
+
+## Les Amériques en relief (v399) — un registre se donne aussi aux villes qu'une règle classerait mal
+
+Palier B. Deux règles.
+
+- **LA GÉOGRAPHIE DÉCIDE, L'HISTOIRE CORRIGE, ET LA CORRECTION SE NOMME.**
+  `registreAmeriques` (facadeshd.js) : longitude de la fiche, `nordAmericain`
+  au nord de 24° N, `latino` au sud ; `LATINO_AU_NORD` nomme Monterrey et La
+  Nouvelle-Orléans avec leur raison, `PACIFIQUE` les îles qui attendent le
+  palier C. Même forme que `registreEurope` et `HORS_EUROPE` : une liste se
+  conteste en la lisant.
+- **CE QUI SE MESURE.** 505 morceaux sur les 61 villes : 0,44 Mo de façades en
+  moyenne, 1,62 au pire (Buenos Aires) ; Paris, l'Europe, Washington et San
+  Francisco identiques à l'octet (sonde d'empreinte, `Math.random` figé).
+
+## Washington et San Francisco en relief (v398) — une fiche dit sa forme, un uni se lit à sa couleur
+
+Palier A du reste du monde. Quatre règles.
+
+- **UNE VILLE QUI N'EST PAS UN DISQUE LE DÉCLARE DANS SA FICHE.** Washington est
+  une boîte (`boite: ZONE_WASHINGTON`) : le cercle du registre (187 blocs) ne
+  couvre pas Georgetown. `villeHD` lit la boîte, élargie d'un morceau comme le
+  disque. La règle de la v362 (la porte de Manhattan), du côté de la couche.
+- **UN REGISTRE PAR QUARTIER SE DEMANDE À LA RÈGLE DU BÂTISSEUR.** San Francisco
+  a trois villes dans une : `quartier(wx, wz)` dans la fiche lit `quartierSF`,
+  la même fonction que `batirColonneSF` — pierre au centre, brique à SoMa,
+  bardage des Victoriennes (`sfCentre`, `sfSoma`, `sfMaisons`). Mesuré : centre
+  pierre 3 060 et bardage 0, Alamo Square bardage 10 700 et pierre 0.
+- **UN UNI SE LIT À SA COULEUR, ET LE BLOC DE BRIQUE DU JEU EST UN MUR.** Le mur
+  de ces villes est un uni (le marbre blanc, le calcaire crème, la brique
+  chocolat de `MURS.brique`) ou `BLOCK.BRICK`, que `murVoisin` ne lisait pas :
+  `unis` (couleur → tuile) et `uni` (le défaut) dans le registre ;
+  `briqueDuJeu` dans la fiche, lu par `murHD` et `murVoisin`. L'anthracite et le
+  noir restent de l'enduit chez les Victoriennes : c'est le toit vu de côté — vu
+  en capture, un bardage de clins sur l'ardoise.
+- **UNE TUILE NEUVE S'AJOUTE EN FIN D'ATLAS, ET SA MOYENNE SE MESURE.**
+  `bardage` est la vingt-huitième ; les index d'avant ne bougent pas, et
+  l'empreinte de Paris le prouve. `MOYENNE_TUILE` est relevée sur les peintres
+  (sonde `moyennes.mjs` : brique et enduit retrouvés au dixième, pierre et
+  bardage ajoutés).
+
+Et la sonde d'empreinte a trouvé que **le Colisée du catalogue n'est pas le même
+d'un lancement à l'autre** (`monuments.js`, `Math.random` dans ses gradins
+effondrés, en production depuis la v346) : deux exécutions rendent 173 blocs
+différents au centre de Rome, et le worker et le fil principal deux Colisées.
+Hors de la zone de la couche (un bloc écrit) : dette déclarée dans `TASKS.md`.
+Une empreinte de monde fige `Math.random` avant d'importer `src/`.
 
 ## Toute l'Europe en relief (v394) — un registre par géographie, et un compte qui voit ce qu'il compte
 

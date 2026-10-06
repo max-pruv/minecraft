@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v398 — Les voitures font le tour de la place
+## v400 — Les voitures font le tour de la place
 
 **Pourquoi.** Dans les villes engendrées, beaucoup d'anneaux de voitures
 roulaient en ligne droite au travers de ce qui n'est pas une rue : la place
@@ -48,6 +48,62 @@ centre reste à 30 blocs, aucun tablier n'est retiré (642 colonnes d'eau en
 gagnent un), et le relief ne bouge pas. Le prix, déclaré : le premier
 dépliage d'une ville coûte plus cher (Rome ≈ 57 → 85-100 ms, une fois, à 220
 blocs de la ville).
+## v399 — Les Amériques en relief
+
+**Pourquoi.** Washington et San Francisco avaient leur relief (v398), mais les
+soixante et une villes engendrées des Amériques — Chicago, Montréal, Mexico,
+La Havane, Rio, Buenos Aires… — restaient en façades plates à toute distance.
+
+**Ce que ça change.** De près, chaque ville des Amériques a des fenêtres en
+relief dans son propre mur. Aux États-Unis et au Canada, la maison de brique
+rouge et sa guillotine au châssis blanc, l'appui et le linteau de pierre, le
+calcaire crème des immeubles (`nordAmericain`). Au sud de 24° N, et à Monterrey
+et à La Nouvelle-Orléans (le Vieux Carré espagnol), l'enduit de couleur à peine
+patiné et le garde-corps de fer forgé (`latino`). Honolulu et Papeete sont dans
+le Pacifique : elles attendent le palier suivant. Un appareil au palier bas ne
+reçoit rien de neuf ; Paris, l'Europe, Washington et San Francisco n'ont pas
+bougé d'un octet.
+
+**Ce qui le prouve.** Quinze témoins neufs dans `parishd.js`, rouges sur
+`origin/main` : sept par ville pour Chicago (brique et pierre, ni volet ni fer)
+et Mexico (enduit et fer, ni pierre ni volet), et la couverture — les
+soixante et une villes ont leur registre, aucune île du Pacifique. Mesuré sur
+505 morceaux : 0,44 Mo de façades par morceau en moyenne, 1,62 au pire (Buenos
+Aires), contre 0,55 et 1,71 pour l'Europe.
+
+## v398 — Washington et San Francisco en relief
+
+**Pourquoi.** L'Europe entière avait sa couche de relief (v394), mais les deux
+villes bâties à la main de l'autre côté de l'Atlantique — Washington et San
+Francisco — restaient en façades plates à toute distance.
+
+**Ce que ça change.** À Washington, la maison de ville fédérale : brique rouge,
+fenêtre à guillotine au châssis blanc, appui et linteau de pierre ; les
+ministères et les monuments en pierre de taille de calcaire et de marbre. À San
+Francisco, le registre suit le quartier : les Victoriennes d'Alamo Square en
+bardage de clins de bois peint (une tuile neuve de l'atlas), aux couleurs de
+leur palette, avec leurs guillotines blanches ; la pierre de taille au centre
+(le mur-rideau des tours garde sa tuile, il n'est jamais un trou) ; la brique
+des entrepôts de SoMa. Un appareil au palier bas ne reçoit rien de neuf ; Paris,
+Londres, Nice, Lille et les villes d'Europe n'ont pas bougé d'un octet.
+
+**Ce qui le prouve.** Seize témoins neufs dans `parishd.js` ; sur
+`origin/main` la suite neuve rend quatre rouges (« la ville n'est pas dans
+`VILLES_HD` » pour chacune, le quartier à 0/0, la brique du jeu non lue) : sept par ville (couverture,
+aucun bloc posé, `hd 0` identique, chaque face exposée détaillée — 1 306 et
+1 522 —, le mur de la ville, pas le mobilier de Paris, le budget), le registre
+qui suit le quartier à San Francisco (pierre 3 060 et bardage 0 au centre,
+bardage 10 700 et pierre 0 à Alamo Square), et le bloc de brique du jeu lu à
+Washington et à San Francisco, pas à Londres ni à Paris. Une empreinte des
+tampons de vingt-cinq morceaux par lieu, relevée sur `origin/main` : Paris,
+Londres, Nice, Lille, Rome, Berlin, Manchester, Istanbul, Tokyo et Mexico
+identiques à l'octet, avec et sans HD ; Washington et San Francisco identiques
+sans HD. Mesuré : 0,23 Mo par morceau en moyenne à Washington (2,11 au pire),
+0,11 à San Francisco (0,59) ; dans le worker, 5,4 → 16,2 ms par morceau à
+Washington, 2,2 → 6,3 chez les Victoriennes, seulement à portée de `RAYON_HD`.
+
+---
+
 ## v397 — La voiture glisse le long des façades, et frôle les autres voitures
 
 **Pourquoi.** Le palier 1 de la conduite (v358) prenait deux normales

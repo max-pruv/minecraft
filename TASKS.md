@@ -47,7 +47,7 @@
   (`monture: null`, intermittence vue sur `origin/main` v326). `reseau.js`
   REJOUÉE SEULE sur la branche : 79 verts, zéro rouge (mon témoin du GPS
   compris).
-- [ ] **LE PORTAIL DE LA v398 (les anneaux contournent), DOUBLE MESURE FAITE.**
+- [ ] **LE PORTAIL DE LA v400 (les anneaux contournent), DOUBLE MESURE FAITE.**
   Verts : `fumee.js`, `carteMonde.js` (les deux témoins neufs), `plafond.js`
   (empreintes, celle des 490 morceaux comprise). `carte.js` : « la flèche du
   GPS » (1,92 rad) et « la faire glisser non plus » rouges des DEUX côtés
@@ -58,7 +58,7 @@
   sur `origin/main` (le trou en vol). Le flâneur, le seul qui passe dans une
   ville engendrée, rejoué par `sonde-sortie-chaussee.cjs` trois fois de chaque
   côté en alternance : 9 sur 9 au bord des deux côtés (3,1 à 5 s). Le train
-  et le réverbère sont dans Paris et Londres, que la v398 ne touche pas.
+  et le réverbère sont dans Paris et Londres, que la v400 ne touche pas.
   Après la fusion de la v394 (portail de sept suites) : verts `parishd.js`,
   `carteMonde.js`, `plafond.js`. Un rouge À MOI, corrigé : le titre de la
   nouveauté faisait sept mots (`maj.js`). Les autres sont déclarés plus haut,
@@ -500,9 +500,9 @@
   du Bean) — anneaux d'avant, mêmes valeurs sur `origin/main`, déclarées dans
   `DETTE_PONTS` et rattachées à la dette ci-dessous.
 - [ ] **LES ANNEAUX D'AVANT ROULENT PARFOIS HORS DE LA CHAUSSÉE (mesuré v387,
-  repris v398).** Ils CONTOURNENT désormais (phase 4, `contourner`) : 147
+  repris v400).** Ils CONTOURNENT désormais (phase 4, `contourner`) : 147
   anneaux et 3 512 pas hors chaussée sur `origin/main` v389, 92 et 2 437 en
-  v398 (fontaines 167 → 82). Ce qui reste, mesuré par la sonde de la v398 :
+  v400 (fontaines 167 → 82). Ce qui reste, mesuré par la sonde de la v400 :
   Las Vegas (le désert hors de la bande du Strip, 689 pas : la bande ne tient
   qu'UNE rue de la trame, 16 unités de fiche pour un pas de 32 blocs, donc
   aucun anneau ne peut y tenir — le remède est de SOL, des rues à travers le
@@ -512,16 +512,16 @@
   Las Vegas et Rio, des anneaux choisis DANS la bande (une sélection, donc
   mesurer la couverture) ; pour les rivières, un contour qui publie son tablier
   (un tablier neuf est du sol : Rome est dans l'empreinte des 490 morceaux).
-- [ ] **DES ANNEAUX D'AVANT ROULENT SUR L'EAU HORS DE TOUT TABLIER (v398).** La
+- [ ] **DES ANNEAUX D'AVANT ROULENT SUR L'EAU HORS DE TOUT TABLIER (v400).** La
   règle de la v387 (`horsChaussee`) tenait toute eau sous un anneau pour un
-  pont : 159 pas sur l'eau sans tablier en v398 (195 sur `origin/main`), dont
+  pont : 159 pas sur l'eau sans tablier en v400 (195 sur `origin/main`), dont
   des anneaux de la phase 2 bis. Le contrôle strict (`surUnTablier`) est
   appliqué aux contresens et aux contours ; l'appliquer à la phase 2 bis est
   mesuré : il retire des anneaux ET leurs tabliers (Vienne 212 colonnes,
   Shanghai 502) — un enfant a pu bâtir dessus. Le remède est d'ALLONGER ces
   tabliers (`traverseesDe` sur la voie, comme le contresens), en vérifiant
   l'empreinte des 490 morceaux.
-- [ ] **TROIS VILLES ENGENDRÉES N'ONT QU'UN CIRCUIT (v387 : onze ; v398 :
+- [ ] **TROIS VILLES ENGENDRÉES N'ONT QU'UN CIRCUIT (v387 : onze ; v400 :
   trois).** Huit ports ont reçu leur contresens (quai toléré, tablier mesuré
   sur sa voie). Restent San Diego, San José et Guayaquil : leur contresens
   touche la fontaine de la place déplacée (San José, `place` à décalage) ou la
@@ -2629,6 +2629,51 @@
      l'arrivée (v379) — « garde la cadence » rapport 0,72 pour 0,75 (déjà
      nommé plus haut), « la file … puis se rend » rendue en 11 236 ms : non.
      Même preuve structurelle : `monte.js` ne force pas `?hd=`.
+
+  7. **Le reste du monde** (session `claude/hd-villes-monde`). Palier A livré
+     (v398) : Washington et San Francisco (`STYLES.washington`, `sfCentre`,
+     `sfSoma`, `sfMaisons`, la tuile `bardage`). Palier B livré (v399) : les 61
+     villes engendrées des Amériques (`nordAmericain`, `latino`). Palier C (Asie,
+     Moyen-Orient, Afrique, Océanie) à suivre. Dettes déclarées :
+     - [ ] **le Colisée du catalogue change à chaque lancement** :
+       `monuments.js:501` tire ses gradins effondrés à `Math.random()` — 173
+       blocs du morceau (cx, cz + 1) de Rome différents entre deux exécutions
+       (sonde `empreinte.mjs`, sur `origin/main` comme sur la branche). Le worker
+       et le fil principal engendrent donc DEUX Colisées : on se cogne à des
+       gradins qu'on ne voit pas, ou l'on traverse ceux qu'on voit, et deux
+       tablettes n'ont pas le même. Remède d'une ligne (le tirage de la colonne,
+       `tirage(x, y, z)`), mais c'est un bloc écrit : il change le Colisée une
+       fois pour toutes, et un enfant a peut-être bâti contre — à décider avec la
+       zone des monuments, pas dans la couche HD ;
+     Portail de la v399 (quatre suites) : `parishd.js` et `plafond.js` verts ;
+     six rouges dans `maj.js` et `monte.js`, aucune ne force `?hd=` (preuve
+     structurelle v291). Rejouées SEULES des deux côtés :
+     - [ ] `monte.js` « une vraie voiture de la rue, par le vrai crochet : son
+       flanc frôlé ne nous arrête pas » (témoin de la v397) : rouge sur la
+       branche ET sur `origin/main` (v398), `{"c":null,"lu":false}` — aucune
+       voiture trouvée ; à reprendre par la session de la conduite ;
+     - `maj.js` « le jeu se mesure en jouant, et range son verdict » et « le
+       palier se décide sur le TRAVAIL d'une image » : rouges au portail
+       (période 467 ms, la page à deux images par seconde), VERTS seuls des deux
+       côtés — charge du portail ;
+     - [ ] `monte.js` « au volant, le personnage de l'enfant est assis dans la
+       voiture » : `{"avatar":false,"monture":true}` une fois sur la branche
+       rejouée seule, vert au portail sur la même branche et seule sur
+       `origin/main` — intermittence de la zone de la conduite ;
+     - les autres (« corps, programmes et fond de carte », « ne floute rien »,
+       le flâneur, le bout du monde en vol) : déjà déclarés plus haut, et
+       `origin/main` rend en plus « la rue roule à l'allure d'une ville » et
+       « au feu, la voiture freine » rouges seule.
+     Portail de la v398 (quatre suites) : `parishd.js` et `plafond.js` verts ;
+     `maj.js` « corps, programmes et fond de carte » (déclaré) ; `monte.js`
+     « un passant change de trottoir au feu » à 1 au vert sur 4 (déclaré plus
+     haut, même chiffre sur `origin/main`). PREUVE STRUCTURELLE (v291) : aucune
+     des deux ne force `?hd=`, le banc rend en logiciel, la couche n'est jamais
+     lue.
+     - [ ] la vue de rue au centre de San Francisco montre la pierre HD entre
+       les fenêtres du mur-rideau (`CITY_BLOCK.CURTAIN`, hors couche) : le
+       mur-rideau reste une tuile plate, ce qui est juste (v195), mais son
+       raccord avec la pierre en relief est à juger sur la tablette.
 
   Ce qu'on ne touche PAS : le système de coordonnées, les clés de stockage, les
   blocs sauvegardés, `terrainHeight`, les contrats réseau. La couche HD LIT les
