@@ -20,6 +20,32 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v390 — Londres en relief
+
+**Pourquoi.** Max : « when done do all European cities ». La couche de détail
+(façades en relief, trottoirs relevés, arbres maillés) ne couvrait que Paris :
+`couvreHD` testait le seul disque de Paris. Londres, à cinq heures de vol
+virtuel, restait en cubes plats à toute distance — des fenêtres peintes sur
+des murs de brique de jouet.
+
+**Ce que ça change.** De près, Londres est en relief : chaque fenêtre est une
+guillotine géorgienne en retrait, haute et étroite, son châssis blanc, le rail
+de rencontre au milieu, l'appui de pierre et l'arc de briques au-dessus. Le mur
+autour est celui de la maison : la brique (patinée, plus une brique de jouet)
+ou le stuc blanc de Belgravia. Le trottoir est relevé, les arbres des squares
+sont maillés. Pas de colonne Morris à Londres : le mobilier de Paris reste à
+Paris. Un appareil au palier bas ne reçoit rien de neuf ; Paris n'a pas bougé
+d'un octet.
+
+**Ce qui le prouve.** Huit témoins neufs dans `parishd.js`, rouges sur
+`origin/main` : la couche couvre Londres ; elle ne pose aucun bloc (morceau le
+plus dense, à l'octet près) ; sans HD les tampons sont ceux d'avant ; chaque
+face exposée d'une façade ou d'un mur reçoit son détail (1 274 sur 1 274) ; le
+mur est de brique ou d'enduit, jamais de la pierre de Paris ; ni Morris ni
+Davioud ; le morceau le plus lourd pèse 1,2 Mo (Paris en pèse 10) ; en vol au
+palier moyen, 22,5 Mo de façades pour 128 de budget. Un bloc de décor à motif
+posé par un enfant garde son dessin. L'empreinte des tampons HD de Paris
+(256 morceaux) est identique sur `origin/main` et sur la branche.
 ## v389 — On monte dans l'avion par l'escalier
 
 **Pourquoi.** Depuis la v366 on marche jusqu'à la portière d'une voiture,
@@ -309,6 +335,9 @@ rectangles n'est au sec. La sonde des passants sur la chaussée à Rome
 (`sonde-chaussee-rome.cjs`, 60 s, deux fois de chaque côté) : hors traversée,
 0 et 5 relevés sur ~1 800 sur la branche, 3 et 2 sur `origin/main` — aucun
 passant né sur la chaussée, aucun flâneur.
+
+---
+
 ## v379 — On arrive plus vite après la carte
 
 **Pourquoi.** Trois questions laissées ouvertes par la v360, et une quatrième

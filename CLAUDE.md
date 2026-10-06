@@ -770,6 +770,45 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Londres en relief (v390) — la couche HD devient une question par ville, et le mur suit la baie
+
+La consigne de Max (« when done do all European cities »), palier A. Cinq règles.
+
+- **`couvreHD` DEMANDE UNE LISTE DE DISQUES, PAR MORCEAU.** `VILLES_HD`
+  (facadeshd.js) porte une fiche par ville couverte ; `villeHD(cx, cz)` rend la
+  fiche, le mailleur la passe à `facadeHD`. Jamais les 280 villes du registre
+  par colonne. Une fiche porte son REGISTRE (`STYLES.londres`) et
+  `mobilier: false` : la colonne Morris et le banc Davioud restent à Paris.
+  Le mot est dans la fiche, jamais une condition sur un nom dans un registre.
+- **HORS DE PARIS, LE MUR AUTOUR D'UNE BAIE EST LE MUR D'À CÔTÉ.** Les villes
+  bâties à la main ne posent de blocs ARCHI qu'aux fenêtres ; le mur est un
+  bloc de décor. `voisin: true` lit le bloc de décor voisin (gauche, droite,
+  DESSUS puis dessous — dessous, c'est souvent un massif de fleurs, vu en
+  capture) et en prend la tuile (Briques → `brique`, Uni → `enduit`) et la
+  couleur. Les ornements (encadrement, appui, châssis) ont leur teinte à eux
+  (`orn`) : sans `orn`, Paris rend tout à l'identique, au bit près.
+- **UNE BAIE HD DANS UN MUR VOXEL FAIT UN CARRÉ CLAIR — le mur passe donc dans
+  la couche.** Vu en capture : le matériau HD (rugosité, métal) ne rend pas la
+  même lumière que le voxel pour la même couleur. Les murs de décor des motifs
+  « Briques » et « Uni » sont détaillés d'une face plate (`murHD`), les mêmes
+  qui partent dans `plat`. SEULEMENT ces deux motifs : un bloc à damier, à
+  pois, à losanges qu'un enfant a posé garde son dessin — la couche n'a pas sa
+  tuile, elle ne change pas l'apparence d'une création.
+- **UNE TEINTE DE MUR SE CALCULE SUR LA MOYENNE DE LA TUILE, EN LINÉAIRE.**
+  `MOYENNE_TUILE` est mesurée sur les peintres de `matierehd.js` ; le rapport
+  sRGB passe à la puissance 2,2 (v345). La brique de la palette (Rouge 200, 62,
+  56) est patinée de près (`patine`), le loin garde la tuile du voxel.
+- **CE QUI SE PROUVE, ET COMMENT.** L'empreinte des tampons HD de 256 morceaux
+  de Paris est identique sur `origin/main` et sur la branche (8f3652af…) ;
+  Londres à `hd 0` aussi (b15d4f39…) : le palier bas ne reçoit rien de neuf. Un
+  morceau de Londres pèse 0,5 Mo en moyenne, 1,2 à 1,45 au pire — Paris en pèse
+  dix — et le vol au palier moyen tient 22,5 Mo pour 128. Un chambranle en
+  boîtes coûtait 60 sommets par fenêtre (1,96 Mo au pire) : des plans.
+
+Ce qui reste, déclaré : le raccord ville/campagne (v308) n'est interdit qu'à
+Paris — à Londres, une colonne de raccord montre la surface plate, pas le sol
+HD (l'étendre changerait la forme du sol, donc la hauteur des pieds).
+
 ## Les circuits des villes engendrées (v387) — ce qui se partage est une voie, pas une rue
 
 « Lance sur toutes les villes. » Mesuré sur `origin/main` (v373) : 147 des 262
