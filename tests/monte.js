@@ -2000,7 +2000,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       // (dix sur dix au rouge). Le prochain rouge se démonte en une lecture :
       // le passant traversait-il au feu (`traversee`), écarté par une voiture,
       // et que disait le feu CALCULÉ à l'heure de la rue ?
-      const horsRouge = [];
+      const horsRouge = [], poussees = [];
       const s2 = g.passants.sites.find((q) => q.peuple && q.peuple.length);
       if (!s2) return { err: 'aucune ville peuplée' };
       const tous = s2.peuple.filter((h) => h.name === 'passant');
@@ -2078,7 +2078,14 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
             tr: h.traversee ? { axe: h.traversee.axe, etat: h.etat } : null, ecart: !!h.ecart,
             calc: [etatFeu(0, g.world.heureRue()), etatFeu(1, g.world.heureRue())] };
           else if (e.sortie && c === 't') {
-            if (Math.hypot(h.pos.x - e.sortie.x, h.pos.z - e.sortie.z) > 3) {
+            // UN ÉCART N'EST PAS UNE DÉCISION DE TRAVERSER (v386). Le détail publié
+            // l'a montré au premier rejeu : la seule traversée « au vert » avait
+            // `traversee` nul et `ecart` vrai — un passant poussé de l'autre côté
+            // par un pas de côté devant une voiture (dette déclarée). On le
+            // compte à part, et on le garde dans le message.
+            if (Math.hypot(h.pos.x - e.sortie.x, h.pos.z - e.sortie.z) > 3 && e.sortie.ecart && !e.sortie.tr) {
+              poussees.push({ d: [+(h.pos.x - e.sortie.x).toFixed(1), +(h.pos.z - e.sortie.z).toFixed(1)], calc: e.sortie.calc });
+            } else if (Math.hypot(h.pos.x - e.sortie.x, h.pos.z - e.sortie.z) > 3) {
               traversees++;
               const axe = 1 - axeDuCap(h.pos.x - e.sortie.x, h.pos.z - e.sortie.z);
               const etat = e.sortie.etats[axe];
@@ -2099,7 +2106,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         await new Promise((f) => setTimeout(f, 250));
       }
       g.player.pos.copy(sauve);
-      return { ville: s2.nom, poses: poses.length, passants: suivi.size, traversees, auFeuAuRouge, aLOrange, horsFeu, auVert, horsRouge,
+      return { ville: s2.nom, poses: poses.length, passants: suivi.size, traversees, auFeuAuRouge, aLOrange, horsFeu, auVert, horsRouge, poussees,
         secondesDeJeu: +jeu().toFixed(1), secondes: +((performance.now() - t0) / 1000).toFixed(1) };
     });
     verifier('un passant change de trottoir au feu, quand les voitures qu\'il coupe sont au rouge',
