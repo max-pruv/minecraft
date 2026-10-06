@@ -549,14 +549,46 @@ export function creerEmbarquement(ctx) {
   // message court (`portiere`, nom neuf : l'ancienne tablette l'ignore, le
   // receveur cède ; l'hôte relaie). `veh` est la voiture DISTANTE telle que
   // cette tablette la dessine ({ mesh, def }), `fin` fait de l'enfant un
-  // passager (fun.js), `existe` dit si l'ami a encore cette voiture.
-  function monterChez(veh, siege, de, fin, existe) {
+  // passager (fun.js), `suivre` redemande la voiture de l'ami à chaque image (v401).
+  // la voiture d'un ami n'est pas une bête : on lui prête ce que la séquence
+  // lit d'une monture (sa place, son cap — le modèle regarde en −z, d'où π)
+  function commeMonture(veh) {
+    const g = veh.mesh;
+    return { mesh: g, def: veh.def, montee: false, get pos() { return g.position; }, get yaw() { return g.rotation.y - Math.PI; } };
+  }
+  // LA SÉQUENCE SUIT LA VOITURE DE CE CONDUCTEUR, PAS UN MAILLAGE GARDÉ (v401).
+  // La tablette refait le maillage de la voiture d'un ami quand sa clé change
+  // ou quand l'ami est recréé (une reconnexion) : la séquence d'avant tenait
+  // l'ancien maillage, voyait « la voiture n'existe plus » et s'annulait —
+  // le rouge qui allait et venait au portail (`reseau.js`, v377). On
+  // redemande la voiture à chaque image (`chez.veh`) ; si le maillage a
+  // changé on s'y rebranche (même repère : la position et le cap viennent du
+  // même ami) ; si elle manque, on ATTEND un peu avant de renoncer.
+  const ABSENCE_MAX = 1.5;   // secondes de jeu sans voiture avant d'annuler
+  function suivreLaVoiture(dt) {
+    const v = s.chez.veh();
+    if (!v || !v.mesh || !v.def) {
+      s.absent = (s.absent || 0) + dt;
+      if (s.absent > ABSENCE_MAX) annuler();
+      return false;
+    }
+    s.absent = 0;
+    if (v.mesh !== s.a.mesh) {
+      const ancienne = s.portes ? s.portes[String(s.cote)] : null;
+      if (ancienne) ouvrir(ancienne, 0);
+      s.a = commeMonture(v);
+      s.portes = equiperPortieres(v.mesh, portiereRefusee(v.mesh));
+      s.d = dims(v.mesh, s.portes);
+      s.rebranchee = (s.rebranchee || 0) + 1;
+    }
+    return true;
+  }
+
+  function monterChez(veh, siege, de, fin, suivre) {
     if (s) { terminer(); return; }
     if (!SEQUENCE_ACTIVE || !av || !veh || !veh.mesh || !veh.def || !siege) { fin(); return; }
     const g = veh.mesh;
-    // la voiture d'un ami n'est pas une bête : on lui prête ce que la séquence
-    // lit d'une monture (sa place, son cap — le modèle regarde en −z, d'où π)
-    const a = { mesh: g, def: veh.def, montee: false, get pos() { return g.position; }, get yaw() { return g.rotation.y - Math.PI; } };
+    const a = commeMonture(veh);
     const portes = equiperPortieres(g, portiereRefusee(g));
     const d = dims(g, portes);
     const cote = 1;   // le conducteur est à gauche : on monte à droite
@@ -565,7 +597,7 @@ export function creerEmbarquement(ctx) {
     const L = longueurDe(pts);
     const T = Math.max(DUREES.marcheMin, Math.min(DUREES.marcheMax, L / PAS));
     s = { sens: 'monter', phase: 'approche', t: 0, a, d, cote, D, pts, L, T, portes,
-      y0: player.pos.y, temps: 0, assise: null, chez: { fin, existe, siege, de } };
+      y0: player.pos.y, temps: 0, assise: null, chez: { fin, veh: suivre, siege, de } };
     publier();
   }
   // LA PORTIÈRE SE DIT À L'AMI : ouverte (1) ou refermée (0).
@@ -661,11 +693,11 @@ export function creerEmbarquement(ctx) {
   // conducteur, v366) ; et l'ami voit la portière par le même message court
   // que la montée (`portiere`, v377). Rend faux si rien n'est à animer — fun.js
   // pose alors l'enfant à côté, sans séquence.
-  function descendreDeChez(veh, siege, de, existe) {
+  function descendreDeChez(veh, siege, de, suivre) {
     if (s) terminer();
     if (!SEQUENCE_ACTIVE || !av || !veh || !veh.mesh || !veh.def || !siege) return false;
     const g = veh.mesh;
-    const a = { mesh: g, def: veh.def, montee: false, get pos() { return g.position; }, get yaw() { return g.rotation.y - Math.PI; } };
+    const a = commeMonture(veh);
     const portes = equiperPortieres(g, portiereRefusee(g));
     const d = dims(g, portes);
     const cam = { p: player.camera.position.clone(), q: player.camera.quaternion.clone() };
@@ -680,7 +712,7 @@ export function creerEmbarquement(ctx) {
     const D = versLocal(g, sortie.monde);
     s = { sens: 'descendre', phase: 'ouverture', t: 0, a, d, cote: sortie.cote, D, portes,
       monde: sortie.monde, depart: a.pos.clone(), cam, temps: 0,
-      assise: av.placeAssise(a, siege), chez: { existe, siege, de } };
+      assise: av.placeAssise(a, siege), chez: { veh: suivre, siege, de } };
     player.pos.copy(a.pos);
     player.vel.set(0, 0, 0);
     signaler(1);
@@ -755,8 +787,9 @@ export function creerEmbarquement(ctx) {
   function update(dt) {
     if (distantes.size) animerDistantes(dt);
     if (!s) return;
+    if (s.chez) { if (!suivreLaVoiture(dt) || !s) return; }
+    else if (!ctx.existe(s.a) || !s.a.mesh) { annuler(); return; }
     const a = s.a, g = a.mesh;
-    if (!(s.chez ? s.chez.existe() : ctx.existe(a)) || !g) { annuler(); return; }
     s.t += dt; s.temps += dt;
     if (s.avion) { updateAvion(dt); publier(); return; }
     if (!s.portes && s.phase !== 'approche') {
@@ -854,7 +887,7 @@ export function creerEmbarquement(ctx) {
     // l'avatar est-il à nous cette image ? (main.js ne l'assied pas alors)
     avatarPilote: () => !!s && !(s.sens === 'monter' && s.phase === 'fermeture'),
     brancherAvatar(h) { av = h; },
-    etat: () => (s ? { sens: s.sens, phase: s.phase, t: s.t, cote: s.cote, portes: !!s.portes, avion: !!s.avion, refus: refusSortie } : null),
+    etat: () => (s ? { sens: s.sens, phase: s.phase, t: s.t, cote: s.cote, portes: !!s.portes, avion: !!s.avion, refus: refusSortie, rebranchee: s.rebranchee || 0, absent: s.absent || 0 } : null),
     refusSortie: () => refusSortie,
     dernier: () => dernier,
   };
