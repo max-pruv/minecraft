@@ -20,6 +20,14 @@ const VUES = [
   { nom: 'sf-centre', x: -38802, z: 6734, yaw: 0, pitch: 0.2, h: 1.6 },
   { nom: 'sf-soma', x: -38798, z: 6807, yaw: 0, pitch: 0.2, h: 1.6 },
   { nom: 'sf-ciel', x: -38920, z: 6785, yaw: -Math.PI / 2, pitch: -0.6, h: 30 },
+  // les villes engendrées des Amériques (v399) et du reste du monde (v401)
+  { nom: 'mexico-rue', x: -29831, z: 17658, yaw: Math.PI, pitch: 0.2, h: 1.6 },
+  { nom: 'havane-rue', x: -23290, z: 15484, yaw: Math.PI, pitch: 0.2, h: 1.6 },
+  { nom: 'chicago-rue', x: -25333, z: 4350, yaw: -Math.PI / 2, pitch: 0.2, h: 1.6 },
+  { nom: 'tokyo-rue', x: 53389, z: 7986, yaw: 0, pitch: 0.2, h: 1.6 },
+  { nom: 'dubai-rue', x: 20423, z: 14241, yaw: 0, pitch: 0.2, h: 1.6 },
+  { nom: 'nairobi-rue', x: 13229, z: 29948, yaw: -Math.PI / 2, pitch: 0.2, h: 1.6 },
+  { nom: 'hanoi-rue', x: 40122, z: 16704, yaw: 0, pitch: 0.2, h: 1.6 },
 ];
 
 (async () => {

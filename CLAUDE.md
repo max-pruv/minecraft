@@ -770,6 +770,30 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Le monde entier en relief (v401) — ce qu'aucun registre n'honore se déclare
+
+Palier C, le dernier. Trois règles.
+
+- **DES RÈGLES DANS L'ORDRE, ET LES EXCEPTIONS NOMMÉES.** `registreAilleurs`
+  (facadeshd.js) : médinas, îles, `victorien` (Océanie, Afrique du Sud),
+  `nord` (au nord de 45° N : la Russie, Oulan-Bator, Harbin), `asie` (à l'est
+  de 95° E), `desert`, `sud` (Maghreb, Levant, Anatolie, Caucase au nord de
+  38° N), `tropical` pour le reste. Ce que la règle classerait mal a son nom et
+  sa raison : `ILES`, `COLONIALES` (les compartiments d'Indochine, Manille),
+  `TIBET`. Le premier jet mettait Tbilissi et Erevan au désert et Maputo dans
+  l'Afrique du Sud victorienne : c'est l'impression de la table entière, ville
+  par ville, qui l'a dit — on la relit avant de livrer.
+- **UNE RÈGLE QUI CHANGE LE SENS D'UN TÉMOIN LE FAIT REPOINTER.** Le témoin de
+  la v394 exigeait que Tunis, Ankara et Tbilissi n'aient AUCUN registre ; ils
+  en ont un désormais, le méditerranéen. Ce qu'il garde vraiment — la règle
+  d'EUROPE ne les classe pas — se lit sur `registreEurope`.
+- **CE QU'AUCUN REGISTRE N'HONORE SE DÉCLARE.** Les quatre médinas (`MEDINAS`,
+  et toute fiche `typo: 'medina'`) posent de petites baies carrées
+  (`ENTRESOL`) et les vitrines des souks, pas un étage à fenêtres ; une vitre
+  en retrait sous un encadrement n'y est pas. Le mur-rideau des tours d'Asie
+  et du Golfe reste sa tuile (v195). Mesuré : 681 morceaux, 0,46 Mo en
+  moyenne, 1,59 au pire.
+
 ## Les Amériques en relief (v399) — un registre se donne aussi aux villes qu'une règle classerait mal
 
 Palier B. Deux règles.

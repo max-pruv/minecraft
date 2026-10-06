@@ -673,7 +673,9 @@ function verifier(nom, ok, detail = '') {
       verifier('toutes les villes engendrées d’Europe ont leur registre, et pas une ville de la boîte qui n’est pas d’Europe',
         couvertes.length >= 85 && reg('istanbul') && reg('reykjavik') && reg('lavalette')
           && reg('edimbourg') === 'londres' && reg('dublin') === 'londres' && reg('rome') === 'sud' && reg('berlin') === 'nord'
-          && !reg('tunis') && !reg('ankara') && !reg('fes') && !reg('tbilissi') && !reg('tokyo'),
+          // (v398) hors d'Europe, une ville peut avoir un registre du reste du
+          // monde : ce qui se garde ici, c'est que la règle d'EUROPE ne la classe pas
+          && [ 'tunis', 'ankara', 'fes', 'tbilissi', 'tokyo'].every((c) => !(HD.registreEurope || (() => reg(c)))(VILLES_MONDE.find((f) => f.cle === c))),
         `${couvertes.length} sur ${europe.length} dans la boîte ; Édimbourg ${reg('edimbourg')}, Rome ${reg('rome')}, Berlin ${reg('berlin')}, Tunis ${reg('tunis')}`);
     }
     // LE RESTE DU MONDE, PALIER A (v398) : Washington et San Francisco, les
@@ -720,8 +722,28 @@ function verifier(nom, ok, detail = '') {
         couvertes.length === ameriques.length && couvertes.length >= 55
           && reg('chicago') === 'nordAmericain' && reg('montreal') === 'nordAmericain' && reg('miami') === 'nordAmericain'
           && reg('mexico') === 'latino' && reg('havane') === 'latino' && reg('buenosaires') === 'latino'
-          && reg('monterrey') === 'latino' && reg('nouvelleorleans') === 'latino' && !reg('honolulu') && !reg('papeete'),
+          && reg('monterrey') === 'latino' && reg('nouvelleorleans') === 'latino'
+          // (v401) les îles ont un registre du palier C : ce qui se garde ici,
+          // c'est que la règle des AMÉRIQUES ne les classe pas
+          && ['honolulu', 'papeete'].every((c) => !(HD.registreAmeriques || (() => reg(c)))(VILLES_MONDE.find((f) => f.cle === c))),
         `${couvertes.length} sur ${ameriques.length} ; Chicago ${reg('chicago')}, Mexico ${reg('mexico')}, La Nouvelle-Orléans ${reg('nouvelleorleans')}, Honolulu ${reg('honolulu')}`);
+    }
+    // PALIER C (v401) : l'Asie, le Moyen-Orient, l'Afrique, l'Océanie
+    await temoinsVille({ cle: 'tokyo', centre: vm('tokyo'), attendu: ['enduit'], interdit: ['volet', 'fer', 'bardage', 'pierre'], rayonSonde: 60 });
+    await temoinsVille({ cle: 'dubai', centre: vm('dubai'), attendu: ['enduit'], interdit: ['volet', 'fer', 'bardage', 'pierre'], rayonSonde: 60 });
+    // Lagos, pas Nairobi : Nairobi ne rend que dix morceaux à un sur deux, sous la barre du témoin
+    await temoinsVille({ cle: 'lagos', centre: vm('lagos'), attendu: ['enduit', 'volet', 'fer'], interdit: ['pierre', 'bardage'] });
+    await temoinsVille({ cle: 'sydney', centre: vm('sydney'), attendu: ['brique', 'pierre'], interdit: ['volet', 'bardage'], rayonSonde: 60 });
+    {
+      const reg = (cle) => (HD.VILLES_HD || []).find((d) => d.ville === cle)?.registre || null;
+      const avecTrame = VILLES_MONDE.filter((f) => f.trame);
+      const sans = avecTrame.filter((f) => !reg(f.cle)).map((f) => f.cle).sort();
+      verifier('toute ville engendrée a son registre, sauf les médinas, déclarées',
+        sans.join(',') === 'fes,jerusalem,marrakech,tombouctou'
+          && reg('tokyo') === 'asie' && reg('hanoi') === 'tropical' && reg('dubai') === 'desert' && reg('lhassa') === 'desert'
+          && reg('tbilissi') === 'sud' && reg('harbin') === 'nord' && reg('sydney') === 'victorien' && reg('johannesburg') === 'victorien'
+          && reg('maputo') === 'tropical' && reg('honolulu') === 'tropical' && reg('nairobi') === 'tropical',
+        `sans registre : ${sans.join(', ')} ; Tokyo ${reg('tokyo')}, Hanoï ${reg('hanoi')}, Lhassa ${reg('lhassa')}, Tbilissi ${reg('tbilissi')}, Harbin ${reg('harbin')}`);
     }
     // un bloc de décor à motif posé par un enfant garde son dessin : seuls les
     // murs de brique et d'enduit passent dans la couche
