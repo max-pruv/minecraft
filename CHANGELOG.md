@@ -20,6 +20,31 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v404 — Le monde arrive à temps au-dessus des villes
+
+**Pourquoi.** Le témoin qui vérifie que l'avion ne dépasse pas le monde en
+train de se charger volait au-dessus d'un désert, où un morceau coûte trois
+fois moins qu'à Paris. Il disait « ça tient » là où l'enfant ne vole jamais, et
+rien ne disait si les vitesses des avions (95 et 120 blocs par seconde)
+tenaient au-dessus d'une vraie ville. Et le gel à l'arrivée d'une
+téléportation se mesurait sur un banc qui n'avait jamais rien construit.
+
+**Ce que ça change.** Rien dans le jeu : c'est une livraison de mesure. Les
+vitesses des avions tiennent au-dessus de Paris et de Londres avec le réglage
+que la tablette joue en vol (ordre en cône, recharge à l'arrivée) : le monde
+est chargé 122 à 152 blocs devant l'avion, pour 48 à 60 demandés. Et la v403
+avait déjà retiré le gel de téléportation des enfants qui ont beaucoup bâti :
+avec 80 000 blocs, l'ancien code ne finissait pas de charger Paris en vingt
+secondes.
+
+**Ce qui le prouve.** Un témoin dans `monte.js` qui traverse Paris et Londres
+en avion, au réglage de la tablette (vert, deux fois la barre ; avec l'ordre du
+banc, Paris rend 45 pour 60 : il peut rougir). Une sonde,
+`sonde-arrivee-journal.cjs` : à l'arrivée à Paris en scène vide avec 80 000
+blocs, l'ancien code met 14 s à charger la moitié du disque et passe 3,3 s du
+fil principal à fabriquer des morceaux ; la v403, 3,4 s et 0,3 s, comme sans
+journal.
+
 ## v403 — Le monde se charge aussi vite chez qui a beaucoup bâti
 
 **Pourquoi.** Chaque morceau de monde que le jeu fabrique reçoit les blocs que
