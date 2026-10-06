@@ -42,7 +42,8 @@ import { contexteAudio, sortieAudio, reglerSon, sonActif, etatSon, radioEnCours,
 import { traceAnneau } from './ville.js';
 import { traceCourse } from './circuit.js';
 import { USINE, PARC, traceChaine } from './usine.js';
-import { circulationsAPlier, tracesCirculationMain, avenueDEntree } from './villesmonde.js';
+import { circulationsAPlier, tracesCirculationMain, avenueDEntree, villeMondeEn } from './villesmonde.js';
+import { ALLURE_VOIE } from './circulation.js';
 import { createPassants } from './passants.js';
 import { createPoissons } from './poissons.js';
 import { segmentsDeTrain, traceSegment } from './trains.js';
@@ -1573,6 +1574,9 @@ function updateChunks() {
     }
     return out;
   });
+  // et la rue freine devant les piétons (v372) : à cinquante à l'heure, qu'un
+  // passant s'écarte ne suffit plus à garantir qu'on ne renverse personne
+  vehicules.brancherPietons(() => npcs);
   // la voiture de l'enfant s'arrête devant la circulation (player.js, v245)
   // ET LE MOBILIER NON PLUS (v252). Un réverbère, une jardinière, un banc,
   // une table de Times Square sont des props NON SOLIDES pour la marche —
@@ -1874,8 +1878,9 @@ function updateChunks() {
     ...circulationsAPlier(solDe),
     ...tracesCirculationMain(
       CITIES.filter((c) => c.key !== 'ny' && !dejaServies.has(c.key)), solDe),
-    ...planUrbain.circuitsManhattan().map(t=>({...t,...urbain.versTerre(t.x,t.z),ville:'ny',pts:t.pts.map(p=>({...p,...urbain.versTerre(p.x,p.z)}))})),
-    ...propres,
+    ...planUrbain.circuitsManhattan().map(t=>({...t,...urbain.versTerre(t.x,t.z),ville:'ny',voie:'avenue',pts:t.pts.map(p=>({...p,...urbain.versTerre(p.x,p.z)}))})),
+    // les villes bâties à la main roulent sur leurs avenues nommées (v372)
+    ...propres.map((t) => ({ ...t, voie: 'avenue' })),
   ];
   // Le métro de Washington : quatre lignes de couleur, trois rames chacune, et
   // des tracés qui viennent du creusement lui-même — une rame ne peut donc pas
@@ -1971,7 +1976,11 @@ function updateChunks() {
   for (const seg of segmentsDeRoute()) {
     const avant = entree(seg.de, seg.route.nom), apres = entree(seg.vers, seg.route.nom);
     const pts = traceRoute(seg, { avant, apres, coteDe: (x, z) => world.coteRoulable(x, z) + 1 });
-    vehicules.circulation(pts, 41, { ville: seg.de, vitesse: 12, nb: 20, route: seg.route.nom });
+    // L'AUTOROUTE ROULE À CENT VINGT, ET LA VILLE À CINQUANTE (v372) : la
+    // limite se lit au point du tracé — dans le disque d'une ville, l'avenue
+    // d'entrée ; dehors, l'autoroute — et la grille freine AVANT la porte.
+    vehicules.circulation(pts, 41, { ville: seg.de, voie: 'autoroute', nb: 20, route: seg.route.nom,
+      limite: (x, z) => (world.cityAt(x, z) || villeMondeEn(x, z) ? ALLURE_VOIE.avenue : ALLURE_VOIE.autoroute) });
   }
 })();
 
@@ -3089,6 +3098,9 @@ function emojiBurst(emojis, n = 18) {
 // quand un enfant approche — et une voiture emmenée au loin « rentre à
 // l'usine », c'est-à-dire qu'une neuve l'attend à sa place au retour.
 const PLACES_GARAGE = [[30, 7], [44, 7], [58, 7]];
+// une voiture de 2,26 de large au milieu de sa voie : 1,3 bloc à droite de
+// l'axe laisse 0,17 bloc entre deux voitures qui se croisent (v372)
+const DECALAGE_AVENUE = 1.3;
 const garagistePret = cadence(3000);
 function animerLesVilles(dt) {
   if (passants) passants.update(dt);
@@ -3110,9 +3122,13 @@ function animerLesVilles(dt) {
     return;
   }
   // la graine vient de la ville, pas de la file (v246, voir graineDeVille)
-  vehicules.circulation(tr.pts, graineDeVille(tr), {ville:tr.ville});
-  // le bus dessert le grand anneau — un par ville, à sa couleur
-  if (tr.rang === 0) vehicules.bus(tr.pts, Math.abs(Math.round(tr.x + tr.z)));
+  // l'allure de la voie : une rue de ville engendrée, une avenue nommée (v372)
+  const conv = vehicules.circulation(tr.pts, graineDeVille(tr), { ville: tr.ville, voie: tr.voie || 'rue',
+    // les avenues des villes bâties à la main : la voie de droite (v372)
+    decalage: tr.voie === 'avenue' && tr.ville !== 'ny' ? DECALAGE_AVENUE : 0 });
+  // le bus dessert le grand anneau — un par ville, à sa couleur, DANS la file
+  // de ses voitures (v372) : il prend leur grille horaire
+  if (tr.rang === 0) vehicules.bus(tr.pts, Math.abs(Math.round(tr.x + tr.z)), conv);
   circulationsEnAttente.splice(choisi, 1);
 }
 // L'AÉROPORTISTE : sur le tarmac de l'aérodrome le plus proche, trois
@@ -7374,8 +7390,8 @@ function reglerLesFeux() {
   const px = player.pos.x, pz = player.pos.z;
   const pcx = Math.floor(px / CHUNK), pcz = Math.floor(pz / CHUNK);
   const proches = [];
-  for (let dx = -4; dx <= 4; dx++) {
-    for (let dz = -4; dz <= 4; dz++) {
+  for (let dx = -7; dx <= 7; dx++) {
+    for (let dz = -7; dz <= 7; dz++) {
       const e = chunkMeshes.get((pcx + dx) + ',' + (pcz + dz));
       if (!e || !e.feux) continue;
       for (const f of e.feux) {
@@ -7394,30 +7410,55 @@ function reglerLesFeux() {
 }
 // Un feu ne commande rien au-delà de la portée d'affichage d'une voiture
 // (`VU_VOITURE`, 45) : plus loin, il n'y a personne à arrêter.
-const PORTEE_FEU = 60;
+// (v372 : la rue regarde ses voitures à quatre-vingt-dix blocs de l'enfant et
+// voit un feu à quarante devant elle — un feu à soixante seulement se
+// découvrait trop tard, et la voiture pilait au lieu de freiner)
+const PORTEE_FEU = 110;
 // On s'arrête AVANT le carrefour, jamais dedans : au-delà de deux blocs
 // derrière soi le feu est passé, et au-delà de sept il est trop loin pour
 // qu'un enfant comprenne pourquoi la voiture freine.
-const ARRET_FEU_MIN = 2, ARRET_FEU_MAX = 7, ARRET_FEU_COTE = 5;
+const ARRET_FEU_COTE = 5;
+// LA VOITURE VOIT LE FEU DE LOIN ET FREINE (v372). À quinze kilomètres à
+// l'heure, voir le feu à sept blocs suffisait pour piler ; à cinquante il faut
+// vingt-cinq blocs pour s'arrêter en douceur. On le regarde donc à quarante,
+// et l'on vise la ligne : le centre de la voiture à `ARRET_FEU_VISE` du feu,
+// au milieu de la fenêtre d'avant (2 à 7), là où elle s'arrêtait déjà. Une
+// voiture déjà à moins de `ARRET_FEU_ENGAGE` est dans le carrefour : elle le
+// dégage, elle ne s'y arrête pas.
+const ARRET_FEU_VOIT = 40, ARRET_FEU_VISE = 5, ARRET_FEU_ENGAGE = 3;
 
 // UNE VOITURE S'ARRÊTE AU ROUGE (v273). `vehicules.js` demande, pour une
 // voiture à (x, z) de cap `cap` : un feu de SON axe est-il au rouge (ou à
 // l'orange, qui est le dégagement) juste devant ? L'orange arrête comme le
 // rouge — c'est ce que fait un conducteur, et cela vide le carrefour avant
 // que l'autre file ne démarre.
+// Rend `{ s, orange }` — à combien de blocs s'arrêter, et si c'est l'orange
+// (où l'on passe si l'on ne peut plus s'arrêter, `passeAOrange`) — ou null.
 function feuRougeDevant(x, z, cap) {
-  if (!feuxProches.length) return false;
+  if (!feuxProches.length) return null;
   const ux = Math.sin(cap), uz = Math.cos(cap);
   const axe = axeDuCap(ux, uz);
+  // SEUL LE PROCHAIN FEU COMPTE (v372). À quarante blocs on voit plusieurs
+  // carrefours, et la parité qui donne l'axe d'un feu (feux.js) n'aligne pas
+  // les carrefours d'une même rue dans les villes bâties à la main : il y
+  // avait presque toujours un feu « de son axe » au rouge quelque part devant,
+  // et la file ne repartait jamais (mesuré à Paris : 70 % des voitures à
+  // l'arrêt). On ne lit donc que le plus proche feu de son axe devant soi.
+  let proche = null;
   for (const f of feuxProches) {
-    if (f.axe !== axe || f.etat === 'vert' || f.etat === null) continue;
+    if (f.axe !== axe || f.etat === null) continue;
     const ex = f.x - x, ez = f.z - z;
     const devant = ex * ux + ez * uz;
-    if (devant < ARRET_FEU_MIN || devant > ARRET_FEU_MAX) continue;
     if (Math.abs(ex * uz - ez * ux) > ARRET_FEU_COTE) continue;
-    return true;
+    // dans le carrefour (un feu de son axe à côté ou juste derrière) : on le
+    // dégage, et le feu du coin d'en face ne l'arrête pas au milieu
+    // — seulement s'il n'est pas vert : au vert on regarde déjà le suivant
+    if (devant > -5 && devant < ARRET_FEU_ENGAGE) { if (f.etat !== 'vert') return null; continue; }
+    if (devant < ARRET_FEU_ENGAGE || devant > ARRET_FEU_VOIT) continue;
+    if (!proche || devant < proche.devant) proche = { devant, etat: f.etat };
   }
-  return false;
+  if (!proche || proche.etat === 'vert') return null;
+  return { s: Math.max(0, proche.devant - ARRET_FEU_VISE), orange: proche.etat === 'orange' };
 }
 window.__feux = () => feuxProches.map((f) => ({ x: Math.round(f.x), z: Math.round(f.z), axe: f.axe, etat: f.etat,
   vives: f.lampes.map((l) => l.visible) }));
@@ -7426,7 +7467,15 @@ window.__feux = () => feuxProches.map((f) => ({ x: Math.round(f.x), z: Math.roun
 // délai maximum pendant lequel une tablette peut afficher autre chose que ce
 // que voit l'enfant d'à côté.
 const CIEL_MS = 3;
-let annonceCiel = 0;   // compte à rebours de l'hôte, en secondes
+// UNE ANNONCE QUI PORTE UNE HORLOGE RÉELLE SE CADENCE EN TEMPS RÉEL (v372).
+// Le compte à rebours de l'annonce était en `dt`, borné à un vingtième de
+// seconde : à une image par seconde, « toutes les trois secondes » devenait
+// une fois par minute. Or l'annonce porte l'heure de la RUE (v305), qui est
+// en secondes réelles : un invité dont la page a calé six secondes gardait
+// sa rue en retard jusqu'à l'annonce suivante — l'intermittence de
+// `reseau.js` déclarée sous la v351 (écart médian 35 blocs une fois sur
+// deux). C'est le piège de `dt` de la v226 : une cadence de ménage.
+const annonceCielDue = cadence(CIEL_MS * 1000);
 
 function adopterCiel({ temps, meteo, rue }) {
   if (vehicules && typeof rue === 'number') vehicules.adopterHorloge(rue);
@@ -7451,8 +7500,7 @@ function updateWeather(dt) {
     return;
   }
   if (net && net.active && net.isHost) {
-    annonceCiel -= dt;
-    if (annonceCiel <= 0) { annonceCiel = CIEL_MS; net.diffuserCiel(cielDuMonde()); }
+    if (annonceCielDue()) net.diffuserCiel(cielDuMonde());
   }
   weatherTimer -= dt;
   if (weatherTimer <= 0) {
@@ -7461,7 +7509,7 @@ function updateWeather(dt) {
     rainPoints.visible = weather === 'rain';
     if (running) toast(weather === 'rain' ? '🌧️ Il pleut !' : '🌈 Le soleil revient !', 0x9fd8e8);
     // le changement part tout de suite : c'est ce qui se voit le plus
-    if (net && net.active && net.isHost) { annonceCiel = CIEL_MS; net.diffuserCiel(cielDuMonde()); }
+    if (net && net.active && net.isHost) net.diffuserCiel(cielDuMonde());
   }
   if (weather === 'rain') animerPluie(dt);
 }

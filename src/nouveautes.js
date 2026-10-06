@@ -6,6 +6,18 @@
 
 export const NOUVEAUTES = [
   {
+    v: 395,
+    titre: 'Des rues qui roulent vraiment',
+    puces: [
+      'Cinquante à l\'heure en ville',
+      'Cent vingt sur l\'autoroute',
+      'Les voitures freinent avant le feu',
+      'Elles s\'arrêtent devant les piétons',
+      'Une voiture heurtée met ses warnings',
+      'À plusieurs, la même rue pour tous',
+    ],
+  },
+  {
     v: 394,
     titre: 'Toute l\'Europe en relief',
     puces: [

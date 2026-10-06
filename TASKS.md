@@ -82,6 +82,131 @@
   SEULS sur la branche, et `maj.js` seul sur `origin/main` v386 : verts tous
   les trois.
 
+- [ ] **LE PORTAIL DE LA v395 (la rue à l'allure d'une ville), DOUBLE MESURE
+  Portail du rebase sur la v380 : `monte.js` rouge sur « en vol, on ne rattrape pas le bout du monde » (chasseur 58/60) — rejouée SEULE sur la branche : 184 verts, zéro rouge (chasseur 72/60). `reseau.js` verte ; `manhattan.js` façade 22 326 → 51 734, déclarée.
+  Portail du rebase sur la v394 : douze rouges, tous déjà déclarés (appui long « pointeurs 0 » et sa cascade GPS dans `carte.js`, flanc en virage et atterrissage dans `monte.js`, façade et taxi dans `manhattan.js`, loader de `maj.js`). `carte.js` rejouée SEULE sur la branche : 101 verts, un rouge — la flèche GPS « gauche 1,92 », dette v321.
+  FAITE.** **Portail complet après la correction de l'annonce du ciel** :
+  neuf suites, quatre vertes ; cinq rouges, tous déjà déclarés ici avec leur
+  double mesure — la flèche du GPS (`carte.js`, gauche 1,92 rad), « chaque
+  îlot a sa porte » (`washington.js`), le trou de façade et le taxi tactile
+  (`manhattan.js`), le gel à l'arrivée (`monte.js`, 22,5 %), le départ propre
+  (`reseau.js`). Le diff ne touche ni Washington ni Manhattan. Et le témoin
+  neuf « l'hôte qui rame annonce encore l'heure de la rue » est ROUGE sur
+  `origin/main` rejoué seul (1 annonce en 12,5 s, 30 images) — vert ici.
+  **Portail du rebase sur la v371, puis rebase sur la v373** (87 min) :
+  `carte.js` (flèche du GPS) et `manhattan.js` (trou de façade) rouges,
+  déclarés ; `monte.js` cinq rouges — chauffe, trou en vol (chasseur 58/60),
+  gel à l'arrivée, atterrissage, et « rendue dans une scène vide, la
+  recharge à l'arrivée garde la cadence » (8,8 contre 12,1 images/s, sous
+  les trois quarts). `monte.js` rejouée SEULE sur la v374 (devenue v395) : 178 verts, deux
+  rouges (chauffe de New York expirée 53/321, gel 32,7 %) ; sur
+  `origin/main` v373 seule : 172 verts, les MÊMES deux rouges plus « elle
+  ralentit assez pour qu'on la rejoigne ». La scène vide, le trou et
+  l'atterrissage sont verts seuls : rouges de portail, sous charge.
+  **Portail v395, et la voiture qui pilait trop tard.** `monte.js` rejouée
+  seule sur le rebase v363 : « la circulation s'arrête devant la voiture de
+  l'enfant » rouge (3 et 4 relevés au travers, deux passages), zéro sur
+  `origin/main` — la v395 elle-même : une voiture à cinquante, vue tard,
+  touchait la voiture de l'enfant et « pas si l'on est déjà dedans » la
+  laissait traverser. Corrigé (on PILE devant une personne quand le freinage
+  ne suffit plus, et l'urgence vaut dans le second chemin) : 0 au travers,
+  154/154 arrêtées. Restent, rejouée seule : le gel d'arrivée (déclaré) ;
+  « 🛬 descend train sorti… jusqu'à l'arrêt » (arrêt x 304,8 pour une piste
+  de 300 — le piège de la v273 déjà déclaré ci-dessous, aucune ligne d'avion
+  touchée) ; et une fois « en vol au-dessus de Paris, le monde se maille hors
+  du fil principal » (33 blocs en 64,1 s pour une borne de 40 s : page
+  figée), vert quatre passages sur la branche et sur `origin/main` — un avion
+  en vol est écarté de `cederLePassage` par la hauteur (± 2,5), la correction
+  ne peut pas l'atteindre.
+  **Portail du rebase sur la v366** (84 min) : metro, carteMonde, degats,
+  washington verts ; les rouges sont tous déclarés ici — le loader (`maj.js`),
+  la flèche du GPS à gauche 1,92 rad (`carte.js`), le trou de façade 14 460 →
+  51 734 et le taxi tactile (`manhattan.js`), le départ propre (`reseau.js`),
+  et dans `monte.js` la chauffe (ZÉRO programme neuf dans les cinq lieux, la
+  garde `images` tombe à Paris et New York, 9), le réverbère « parcouru 0 »
+  (rouge aussi sur `origin/main`, ci-dessous) et le gel d'arrivée (29,7 %). Le
+  maillage en vol et l'atterrissage sont VERTS à ce portail.
+  **Portail du rebase sur la v369** (94 min) : mêmes rouges déclarés, plus
+  `reseau.js` « à trois, chacun voit les deux autres » et ses quatre
+  suivants (`[["Alice"],["Marlon"],[]]`). Rejouée SEULE : branche 75 verts,
+  « à trois » VERT, seuls rouges « un hôte sans courtier est trouvé » et « il
+  le REJOINT » (`[[],[]]`, l'intermittence déclarée plus bas, rouge seule sur
+  `origin/main` aux passages précédents) ; `origin/main` v370 seule, 77 verts.
+  « À trois » rouge au portail seulement : la famille du fil principal bloqué
+  sous charge (v266), déjà déclarée. `manhattan.js` « sans erreur de jeu »
+  (PeerJS « Lost connection to server ») : déclarée.
+  Portail d'avant : `manhattan.js` « le trou enlève aussi la géométrie »
+  (11 684 → 51 734, dette déclarée, rouge des deux côtés) ; `monte.js` « se
+  téléporter ne compile plus de programmes » (ZÉRO programme neuf dans les cinq
+  lieux, mais la garde `images > 10` tombe : Paris 7 images) et « l'écran ne se
+  fige pas en arrivant » (23,7 %). `monte.js` rejouée SEULE : branche — le trou
+  en vol (82/58/64, barre 48/60/60) et la chauffe de New York expirée (30/321
+  en 60 s, donc 20 programmes à New York) ; `origin/main` (v348) — le MÊME trou
+  au bloc près et l'arrivée figée (22,1 %), chauffe finie en 29 s. La chauffe
+  se démonte à part (`sonde-chauffe.cjs`, page neuve, ordre alterné, deux
+  passages par arbre) : branche 6,8 · 4,8 · 6,4 · 4,5 s, `origin/main` 5,7 ·
+  3,8 · 6,6 · 4,7 s — aucune différence ; c'est l'état de la machine après
+  vingt minutes de suite qui la fait expirer, une fois sur deux des deux côtés
+  (déjà déclaré « chauffe expirée » sur `origin/main`).
+  **Portail du rebase sur la v353** : sept suites vertes ; `manhattan.js`
+  (14 460 → 51 734, dette déclarée) ; `monte.js` quatre rouges au portail
+  (5 relevés « au travers » devant l'enfant, programmes à Paris 6/7 images,
+  réverbère « parcouru 0 », écran figé 22,2 %). `monte.js` rejouée SEULE :
+  branche — l'écran figé seul (15,3 %, pire 1 983 ms) ; `origin/main` (v353) —
+  le MÊME seul (22,9 %, pire 2 150 ms). Les trois autres sont les
+  intermittences de portail déjà déclarées (vertes seules).
+  **Portail du rebase sur la v356** : cinq suites vertes ; `maj.js` (le
+  loader et le nombre de fichiers, intermittence déclarée), `manhattan.js`
+  (11 684 → 54 969, et « le taxi roule », bouton jamais visible — déclarés),
+  `monte.js` (programmes à New York 15 neufs, chauffe expirée ; écran figé
+  16,8 % — déclarés ; et « au feu, la voiture freine » : UN arrêt « sec » sur
+  deux en 26 s — le témoin comptait les relevés entre 13 b/s et l'arrêt, et
+  une image de portail dure jusqu'à deux secondes : il se juge désormais en
+  DÉCÉLÉRATION lue à l'horloge de la page, sec au-delà de 10 b/s²).
+  `reseau.js` « chez l'ami, la voiture qui arrive derrière celle de l'enfant
+  l'attend » : au portail la voiture suivie (retard initial 108) a rattrapé
+  son retard AU TRAVERS de Marlon (dMin 0,4, dix relevés dedans). Rejouée
+  SEULE : branche verte (retard +49, dMin 6,2), `origin/main` v356 verte
+  (+20, dMin 9). Intermittence vue une fois sur trois passages ; le témoin
+  publie désormais la CAUSE retenue par la voiture au plus près et la
+  distance d'Alice à Marlon (la rue ne cède qu'aux amis à moins de 90 blocs
+  d'elle), pour que le prochain rouge se démonte. Piste : le rattrapage à
+  1,3 × de la grille d'une voiture très en retard.
+  Et `monte.js` rejouée SEULE : branche — « se téléporter ne compile plus de
+  programmes » rouge (Paris : 3 programmes `physical` neufs) et l'écran figé
+  (26,3 %) ; `origin/main` v356 — l'écran figé seul (20,7 %), Paris à zéro. La
+  sonde qui nomme les matériaux (`sonde-programmes-paris.cjs`, trois pages
+  neuves) rend ZÉRO programme neuf à Paris trois fois sur trois : sur la
+  branche, Paris est à zéro trois passages sur quatre (portail, sonde ×3) et
+  à trois une fois. Intermittence des voitures `physical` à l'arrivée ; la
+  sonde nommera le matériau le jour où elle le voit.
+
+- [ ] **LA CIRCULATION VIVANTE, PALIERS SUIVANTS (v395, session
+  `claude/circulation-vivante`).** Livré : limitations par voie, profil de
+  vitesse dans la grille, grille par voiture, freinage local (feu, file,
+  enfant, piéton), voiture heurtée, voie de droite sur les avenues. Reste :
+  (1) **le bus ne marque plus d'arrêt** — il roule dans la file de son anneau
+  parce qu'un convoi ne double pas ; un vrai arrêt demande une voie de bus ou
+  un arrêt hors chaussée. (2) **La variance est par convoi**, pas par voiture
+  ni par classe de modèle (camion, taxi) : une voiture d'un convoi ne peut pas
+  rouler plus vite que la grille sans casser la v305 — piste : une petite
+  oscillation de phase par voiture, fonction de l'horloge, bornée par
+  l'écart de la file. (3) **Le type de voie suit le circuit** (rue engendrée,
+  avenue nommée, autoroute), pas le tronçon : un boulevard et une ruelle d'un
+  même circuit roulent à la même limitation — piste : demander la section à
+  `voirie.js` au point du tracé. (4) **Le croisement du circuit en huit de
+  Paris** (−333, 271) : cadencé par `nbSansCroisement` (le nombre de voitures
+  évite les arrivées simultanées) et la légitimité se propage dans la file ;
+  reste 0,4 à 1,6 % des paires au contact (sonde et témoin) : une voiture qui
+  rattrape son retard arrive au croisement hors de sa grille, ou la grille est saturée
+  et que la patience dénoue un nœud de la même file. Piste si cela revient :
+  un vrai créneau alterné dans `horaire()`, ou casser le huit en deux
+  circuits. (5)
+  **L'arrêt d'une voiture heurtée et le freinage devant l'enfant sont
+  LOCAUX** : l'ami ne les voit pas — pas de témoin à deux tablettes pour eux,
+  seulement pour la grille (`reseau.js`). (6) Coût mesuré au banc : 0,7 →
+  1,5 à 1,7 ms par image pour `vehicules.update` au-dessus de Paris ; à
+  mesurer sur l'iPad (`?diag=1`).
 - [ ] **LA COMPILATION À L'ARRIVÉE (monte.js) : CE QUE LE BANC SOUS CHARGE
   MESURE (v386).** Rouge chronique, des deux côtés : « chauffe de New York
   expirée » (44 à 163 sur 321 en soixante secondes). Sondé
@@ -461,6 +586,10 @@
   **verte**, 5,9 · 14,2. Les deux régimes existent des deux côtés ; à trouver :
   ce qui fait diverger l'horloge de la rue (v305) d'une tablette à l'autre une
   fois sur deux. La livraison ne touche ni `vehicules.js` ni l'heure de la rue.
+  **CAUSE TROUVÉE ET CORRIGÉE EN v395** : l'hôte annonçait l'heure de rue sur
+  un compte à rebours en `dt` borné — une fois par demi-minute à deux images
+  par seconde ; l'annonce se cadence désormais en temps réel, et un témoin
+  fait ramer l'hôte pour la compter.
 
 - [ ] **LE PORTAIL DE LA v346 (le monde à la vitesse), DOUBLE MESURE FAITE.**
   Portail : `manhattan.js` (délai ligne 282) et `monte.js` « l'écran ne se
