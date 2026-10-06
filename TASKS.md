@@ -5315,8 +5315,23 @@ l'embarquement a eu lieu, pas par une hypothèse.
   rayon des reflets mériterait quand même de compter l'altitude — c'est une
   ligne, et cela évitera qu'un futur changement de portée le réveille en vol.
 
-- [ ] **`generateChunk` parcourt TOUS les blocs de l'enfant à chaque morceau
-  engendré.** `for (const [k, id] of this.edits)` avec un `split(',').map(Number)`
+- [ ] **Portail de la v403 (le journal par morceau) : six suites rouges, toutes
+  rejouées SEULES des deux côtés (branche / `origin/main` v395, arbre détaché).**
+  `realisme.js` (clic « Plus tard » expiré) : 17/17 verts des deux côtés.
+  `reseau.js` (« un hôte sans courtier est trouvé ») : 81 verts des deux côtés.
+  `maj.js` (loader d'installation) : branche 41 verts ; `origin/main` 38 verts,
+  2 rouges (« corps, programmes et fond de carte », « ne floute rien », la dette
+  déclarée). `carte.js` : branche 2 rouges de durée (fond à froid 431 ms pour
+  400, glisser bridé 467 pour 400), `origin/main` 1 rouge (la flèche du GPS,
+  gauche 1,92 rad) — rouges différents d'un passage à l'autre, ni `carte.js` ni
+  `gps.js` touchés. `monte.js` : branche 190 verts ; `origin/main` 188 verts,
+  1 rouge (« la file se recharge à l'arrivée… puis se rend », rendue en 12 s :
+  le même qu'au portail de la branche — rouge de charge, pas de la livraison).
+  `manhattan.js` : trou de façade et `#ride-btn` caché, les dettes déclarées.
+
+- [x] **`generateChunk` parcourt TOUS les blocs de l'enfant à chaque morceau
+  engendré.** *(fait en v403 : `JournalBlocs`, index par morceau tenu par
+  `set`/`delete`/`clear` ; mesuré 36,6 → 1,1 ms par morceau avec 80 000 blocs)* `for (const [k, id] of this.edits)` avec un `split(',').map(Number)`
   par entrée, pour chacun des quatre-vingt-sept morceaux engendrés par seconde
   en vol. Gratuit au banc (zéro bloc posé), mais Marlon en a des milliers :
   ~435 000 découpages de chaîne par seconde. Un index `edits` par morceau le

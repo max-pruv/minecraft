@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 403,
+    titre: 'Le monde arrive plus vite',
+    puces: [
+      'Même avec des milliers de blocs posés',
+      'Tes maisons ne bougent pas',
+    ],
+  },
+  {
     v: 402,
     titre: 'On traverse aux passages',
     puces: [

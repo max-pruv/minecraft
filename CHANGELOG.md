@@ -20,6 +20,29 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v403 — Le monde se charge aussi vite chez qui a beaucoup bâti
+
+**Pourquoi.** Chaque morceau de monde que le jeu fabrique reçoit les blocs que
+l'enfant a posés. Pour les trouver, il relisait le journal ENTIER de l'enfant,
+bloc par bloc, pour chaque morceau — même au milieu de la campagne, où il n'y
+en a aucun. Mesuré sous node avec un journal fabriqué (une maison, des
+villages) : 1,25 ms par morceau sans blocs, 10 avec vingt mille, **36,6 avec
+quatre-vingt mille** — et le journal de Marlon en comptait 83 780 en septembre.
+Un avion fait fabriquer des dizaines de morceaux par seconde : plus un enfant
+avait construit, plus le monde arrivait en retard devant lui.
+
+**Ce que ça change.** Le journal se range par morceau, et c'est le journal
+lui-même qui tient ce rangement à chaque bloc posé, retiré, chargé ou reçu
+d'un ami : un morceau ne lit plus que les blocs qui sont dedans. Avec
+quatre-vingt mille blocs, un morceau de campagne revient à son coût d'enfant
+qui n'a rien bâti. Aucun bloc ne bouge.
+
+**Ce qui le prouve.** Deux témoins dans `plafond.js` : un morceau ne parcourt
+plus le journal (0 entrée lue, contre 80 000 sur la v391, où il est rouge), et
+l'empreinte des blocs de 362 morceaux d'un journal fabriqué de quarante mille,
+par trois chemins d'écriture, est celle relevée sur `origin/main` au bit près.
+L'empreinte des 490 morceaux (v352) est intacte.
+
 ## v402 — On traverse aux passages peints
 
 **Pourquoi.** Depuis la v371, un passant change de trottoir à un carrefour à
