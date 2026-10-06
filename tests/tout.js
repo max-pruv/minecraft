@@ -132,10 +132,10 @@ const GARDIENS = {
   // La Terre elle-même : ses côtes et son relief décident du sol partout.
   'src/terre.js': ['carteMonde.js', 'plafond.js', 'carte.js'],
   // Londres, ville entière du tour du monde.
-  'src/londres.js': ['carte.js', 'carteMonde.js', 'plafond.js'],
+  'src/londres.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'parishd.js'],    // la couche HD lit Londres (v390)
   'src/londres-v332.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // la Londres d'avant le kit, sous ce qu'un enfant a bâti (v339)
   // La machine à villes : les cinquante grandes du tour du monde.
-  'src/villesmonde.js': ['carteMonde.js', 'carte.js', 'plafond.js', 'monte.js'],
+  'src/villesmonde.js': ['carteMonde.js', 'carte.js', 'plafond.js', 'monte.js', 'parishd.js'],    // la couche HD lit les villes d'Europe (v394)
   // Les deux cents villes : des données pures, jugées par les mêmes témoins
   // que la machine qui les lit.
   'src/villes200.js': ['carteMonde.js', 'carte.js', 'plafond.js'],
@@ -149,7 +149,7 @@ const GARDIENS = {
   // Les familles de bâtiments : la bibliothèque de l'inventaire se prouve
   // dans monte.js (onglet, vignettes, pose).
   'src/batiments.js': ['monte.js'],
-  'src/nice.js': ['carte.js', 'carteMonde.js', 'plafond.js'],
+  'src/nice.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'parishd.js'],    // la couche HD lit Nice (v392)
   'src/nice-v340.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // la Nice d'avant le kit, sous ce qu'un enfant a bâti (v359)
   'src/sanfrancisco-v343.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // la San Francisco d'avant le kit, sous ce qu'un enfant a bâti (v361)
   'src/lille-v344.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // la Lille d'avant le kit, sous ce qu'un enfant a bâti (v368)
@@ -168,11 +168,12 @@ const GARDIENS = {
   'src/identity.js': ['reglages.js', 'parent.js'],
   'src/education.js': ['reglages.js', 'parent.js', 'manhattan.js'],
   'src/taxis.js': ['realisme.js', 'monte.js', 'sauvegarde.js', 'manhattan.js'],
-  'src/vehicules.js': ['monte.js', 'washington.js', 'metro.js', 'manhattan.js', 'carteMonde.js'],
+  'src/vehicules.js': ['monte.js', 'washington.js', 'metro.js', 'manhattan.js', 'carteMonde.js', 'reseau.js'],
   // LE FEU TRICOLORE (v273) : il s'allume dans le monde (carteMonde.js) et il
   // arrête la circulation (monte.js). Un module neuf sans gardien annule tous
   // les acquis du cache de reprise — c'est fait pour se voir tout de suite.
   'src/feux.js': ['carteMonde.js', 'monte.js', 'realisme.js', 'reseau.js', 'visio.js', 'manhattan.js'],
+  'src/circulation.js': ['monte.js', 'carteMonde.js', 'reseau.js', 'washington.js', 'metro.js', 'manhattan.js'],
   // La Giga-usine : son site touche le terrain (plafond), la carte, le tour
   // du monde — et sa chaîne comme sa voiture à conduire vivent dans monte.js.
   'src/usine.js': ['carteMonde.js', 'carte.js', 'plafond.js', 'monte.js'],
@@ -221,7 +222,7 @@ const GARDIENS = {
   'src/manhattan-render.js': ['manhattan.js', 'monte.js'],
   'src/manhattan.js': ['carte.js', 'carteMonde.js', 'plafond.js'],
   'src/sanfrancisco.js': ['carte.js', 'carteMonde.js', 'plafond.js'],
-  'src/lille.js': ['carte.js', 'carteMonde.js', 'plafond.js'],
+  'src/lille.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'parishd.js'],    // la couche HD lit Lille (v392)
   // Les régions et les sites du tour du monde : ils aplanissent leur parvis,
   // donc le témoin du relief, et s'ajoutent aux destinations de la carte.
   'src/chine.js': ['carteMonde.js', 'carte.js', 'plafond.js'],

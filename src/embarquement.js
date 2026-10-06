@@ -95,7 +95,7 @@ export function creerEmbarquement(ctx) {
   const qSeq = new THREE.Quaternion(), mSeq = new THREE.Matrix4();
   const camHaut = new THREE.Vector3(0, 1, 0);
 
-  // LA DERNIÈRE SÉQUENCE, pour `?diag=1` (v386) : la séquence ne se juge
+  // LA DERNIÈRE SÉQUENCE, pour `?diag=1` (v396) : la séquence ne se juge
   // qu'au banc, et c'est sur la TABLETTE que Max la valide — la ligne dit ce
   // qui s'est passé (monter ou descendre, voiture, ami ou avion), en combien
   // de secondes de jeu, et comment elle a fini (jusqu'au bout, second appui,

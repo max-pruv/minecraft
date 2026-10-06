@@ -6,11 +6,65 @@
 
 export const NOUVEAUTES = [
   {
-    v: 390,
+    v: 396,
     titre: 'Un outil pour les parents',
     puces: [
       'Il vérifie les portières sur la tablette',
       'Rien ne change pour toi',
+    ],
+  },
+  {
+    v: 395,
+    titre: 'Des rues qui roulent vraiment',
+    puces: [
+      'Cinquante à l\'heure en ville',
+      'Cent vingt sur l\'autoroute',
+      'Les voitures freinent avant le feu',
+      'Elles s\'arrêtent devant les piétons',
+      'Une voiture heurtée met ses warnings',
+      'À plusieurs, la même rue pour tous',
+    ],
+  },
+  {
+    v: 394,
+    titre: 'Toute l\'Europe en relief',
+    puces: [
+      'Rome, Berlin, Barcelone… de près',
+      'Persiennes au sud, pierre au nord',
+      'Fenêtres anglaises en Écosse',
+    ],
+  },
+  {
+    v: 393,
+    titre: 'Un ami qui part disparaît',
+    puces: [
+      'Il dit au revoir en partant',
+      'Plus de joueur fantôme à l\'écran',
+    ],
+  },
+  {
+    v: 392,
+    titre: 'Nice et Lille en relief',
+    puces: [
+      'Les persiennes de Nice, de près',
+      'La brique de Lille, de près',
+    ],
+  },
+  {
+    v: 391,
+    titre: 'La tablette mesure la route',
+    puces: [
+      'Papa peut mesurer la vitesse',
+      'Rien ne change pour toi',
+    ],
+  },
+  {
+    v: 390,
+    titre: 'Londres en relief',
+    puces: [
+      'De vraies fenêtres anglaises à Londres',
+      'La brique et le stuc de près',
+      'Pas de colonne Morris à Londres',
     ],
   },
   {

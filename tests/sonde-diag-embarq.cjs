@@ -1,4 +1,4 @@
-// SONDE (v390) : la ligne `?diag=1` de la dernière séquence d'embarquement,
+// SONDE (v396) : la ligne `?diag=1` de la dernière séquence d'embarquement,
 // seule, des deux côtés — monter dans une voiture, second appui, puis lire
 // `fun.embarquementDernier` ET le texte du diagnostic.
 const { Banc } = require('./banc.js');

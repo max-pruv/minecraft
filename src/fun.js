@@ -1404,7 +1404,7 @@ export function initFun(ctx) {
     // `avatarEnSequence` dit à main.js de ne pas asseoir l'avatar cette image.
     descendre: (o) => embarquement.descendre(o),
     embarquement: () => embarquement.etat(),
-    embarquementDernier: () => embarquement.dernier(),   // `?diag=1` (v386)
+    embarquementDernier: () => embarquement.dernier(),   // `?diag=1` (v396)
     terminerEmbarquement: () => embarquement.terminer(),
     refusSortie: () => embarquement.refusSortie(),
     avatarEnSequence: () => embarquement.avatarPilote(),

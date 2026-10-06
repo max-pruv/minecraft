@@ -579,6 +579,116 @@ function verifier(nom, ok, detail = '') {
   verifier('hors de Paris, la couche allumée ne change rien',
     !couvreHD(Math.floor(30000 / CHUNK), Math.floor(30000 / CHUNK), CHUNK) && !campagne.t.sol && !campagne.t.facades && !campagne.t.plat);
 
+  // ── LES VILLES D'EUROPE (v390) : la couche HD hors de Paris ────────────────
+  //
+  // Max : « when done do all European cities ». `couvreHD` ne testait que le
+  // disque de Paris ; il demande désormais une LISTE de villes (`VILLES_HD`),
+  // et chaque ville porte son registre. Ce que le témoin garde, ville par
+  // ville : le morceau le plus dense reçoit son détail (chaque face exposée,
+  // ni plus ni moins), la couche ne pose aucun bloc, un palier sans HD rend
+  // les tampons d'avant, le mur est celui de la ville (pas la pierre de Paris),
+  // le mobilier de Paris reste à Paris, et le morceau le plus lourd tient dans
+  // le budget. Sur l'ancien code `villeHD` n'existe pas : on le dit.
+  // LE FER SE COMPTE À SA MATIÈRE, PAS À SA TUILE : la ferronnerie s'émet avec
+  // des UV absolus, donc un rectangle neutre (`NEUTRE`) — compté à la tuile, un
+  // garde-corps rendait zéro partout, et « pas de fer » était vrai à vide.
+  const compteFer = (g) => {
+    if (!g) return 0;
+    let n = 0;
+    for (let i = 0; i < nb(g); i++) if (Math.abs(g.matiere[i * 2] - 0.55) < 1e-5 && Math.abs(g.matiere[i * 2 + 1] - 0.85) < 1e-5) n++;
+    return n;
+  };
+  async function temoinsVille({ cle, centre, attendu, interdit, rayonSonde }) {
+    const fiche = HD.VILLES_HD && HD.VILLES_HD.find((d) => d.ville === cle);
+    if (!fiche || typeof HD.villeHD !== 'function' || typeof HD.murHD !== 'function') {
+      verifier(`${cle} : la couche HD couvre la ville (VILLES_HD, villeHD, murHD)`, false, 'la ville n’est pas dans VILLES_HD (ou villeHD, murHD absents)');
+      return;
+    }
+    const cxc = Math.floor(centre.x / CHUNK), czc = Math.floor(centre.z / CHUNK);
+    verifier(`${cle} : la couche HD couvre la ville`, HD.couvreHD(cxc, czc, CHUNK) && HD.villeHD(cxc, czc, CHUNK).ville === cle);
+    // le morceau le plus dense : celui qui porte le plus de faces détaillées
+    // (un balayage d'une ville sur deux morceaux), puis le pire en octets
+    const w = new World(); w.hd = 1;
+    const oct = (t) => (t ? ['positions', 'normals', 'uvs', 'colors', 'tiles', 'matiere', 'lueur', 'indices'].reduce((n, k) => n + (t[k] ? t[k].byteLength : 0), 0) : 0);
+    let dense = null, pire = 0, total = 0, n = 0, paris = { affiche: 0, lattes: 0 };
+    const tuiles = {};
+    const r = Math.min(centre.r, rayonSonde || centre.r);
+    for (let kx = Math.floor((centre.x - r) / CHUNK); kx <= Math.floor((centre.x + r) / CHUNK); kx += 2) {
+      for (let kz = Math.floor((centre.z - r) / CHUNK); kz <= Math.floor((centre.z + r) / CHUNK); kz += 2) {
+        if (Math.hypot(kx * CHUNK + 8 - centre.x, kz * CHUNK + 8 - centre.z) > centre.r) continue;
+        const t = buildChunkTampons(w, kx, kz);
+        const o = oct(t.facades);
+        total += o; n++; if (o > pire) pire = o;
+        for (const k of Object.keys(paris)) paris[k] += compteTuile(t.facades, k);
+        for (const k of [...attendu, ...interdit]) tuiles[k] = (tuiles[k] || 0) + (k === 'fer' ? compteFer(t.facades) : compteTuile(t.facades, k));
+        if (!dense || (t.facadesDetaillees || 0) > dense.f) dense = { kx, kz, f: t.facadesDetaillees || 0 };
+        if (w.chunks.size > 300) { w.chunks.clear(); if (w.tops) w.tops.clear(); }
+      }
+    }
+    const sansV = tampons(0, dense.kx, dense.kz), avecV = tampons(1, dense.kx, dense.kz);
+    let memes = sansV.data.length === avecV.data.length;
+    for (let i = 0; memes && i < sansV.data.length; i++) if (sansV.data[i] !== avecV.data[i]) memes = false;
+    verifier(`${cle} : la couche HD ne pose aucun bloc (morceau (${dense.kx}, ${dense.kz}), à l'octet près)`, memes);
+    verifier(`${cle} : sans HD, les tampons sont ceux d'avant — le palier bas ne reçoit rien de neuf`,
+      !sansV.t.sol && !sansV.t.facades && !sansV.t.plat && !sansV.t.platLumineux && nb(sansV.t.solid) > 0);
+    // le compte indépendant : toute face latérale exposée d'un bloc de façade
+    // ou d'un mur de la ville (motifs Briques et Uni)
+    const d = avecV.data;
+    const getV = (x, y, z) => (y < 0 || y >= HEIGHT) ? BLOCK.AIR
+      : (x >= 0 && x < CHUNK && z >= 0 && z < CHUNK) ? d[x + z * CHUNK + y * CHUNK * CHUNK] : avecV.w.getBlock(dense.kx * CHUNK + x, y, dense.kz * CHUNK + z);
+    let faces = 0;
+    for (let y = 0; y < HEIGHT; y++) for (let z = 0; z < CHUNK; z++) for (let x = 0; x < CHUNK; x++) {
+      const id = d[x + z * CHUNK + y * CHUNK * CHUNK];
+      if (!FACADE_HD.has(id) && !HD.murHD(id, fiche)) continue;
+      for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (expose(id, getV(x + dx, y, z + dz))) faces++;
+    }
+    verifier(`${cle} : chaque face exposée d'une façade ou d'un mur de la ville reçoit son détail, ni plus ni moins`,
+      faces > 50 && avecV.t.facadesDetaillees === faces, `${faces} faces exposées, ${avecV.t.facadesDetaillees} détaillées`);
+    verifier(`${cle} : le mur est celui de la ville (${attendu.join(', ')}), pas ${interdit.join(' ni ')}`,
+      attendu.every((k) => tuiles[k] > 100) && interdit.every((k) => tuiles[k] === 0), `${n} morceaux lus : ${JSON.stringify(tuiles)}`);
+    verifier(`${cle} : le mobilier de Paris reste à Paris — ni colonne Morris ni banc Davioud`,
+      n > 10 && total > 0 && paris.affiche === 0 && paris.lattes === 0, `${n} morceaux lus : ${JSON.stringify(paris)}`);
+    const M = 1048576;
+    verifier(`${cle} : le morceau le plus lourd tient largement dans le budget (moins de 3 Mo, Paris en pèse 10)`,
+      pire > 0 && pire < 3 * M, `pire ${(pire / M).toFixed(2)} Mo, moyenne ${(total / Math.max(1, n) / M).toFixed(2)} Mo sur ${n} morceaux`);
+  }
+  {
+    const { LONDRES } = await import('../src/londres.js');
+    await temoinsVille({ cle: 'londres', centre: LONDRES, attendu: ['brique', 'enduit'], interdit: ['pierre', 'fer'] });
+    // PALIER B (v392) : Nice et Lille, même méthode
+    const { NICE } = await import('../src/nice.js');
+    const { LILLE } = await import('../src/lille.js');
+    await temoinsVille({ cle: 'nice', centre: NICE, attendu: ['enduit', 'volet', 'fer'], interdit: ['pierre', 'brique'] });
+    await temoinsVille({ cle: 'lille', centre: LILLE, attendu: ['brique'], interdit: ['pierre', 'volet', 'fer'] });
+    // PALIER C (v394) : les villes engendrées d'Europe, une par registre
+    const { VILLES_MONDE } = await import('../src/villesmonde.js');
+    const vm = (cle) => { const f = VILLES_MONDE.find((v) => v.cle === cle); return { x: f.ancre.x, z: f.ancre.z, r: f.rayon }; };
+    await temoinsVille({ cle: 'rome', centre: vm('rome'), attendu: ['enduit', 'volet', 'fer'], interdit: ['pierre'], rayonSonde: 60 });
+    await temoinsVille({ cle: 'berlin', centre: vm('berlin'), attendu: ['enduit'], interdit: ['pierre', 'volet', 'fer'], rayonSonde: 60 });
+    await temoinsVille({ cle: 'manchester', centre: vm('manchester'), attendu: ['brique'], interdit: ['pierre', 'volet', 'fer'] });
+    {
+      const reg = (cle) => (HD.VILLES_HD || []).find((d) => d.ville === cle)?.registre || null;
+      const europe = VILLES_MONDE.filter((f) => f.trame && f.lat0 > 34 && f.lat0 < 72 && f.lon0 > -25 && f.lon0 < 46);
+      const couvertes = europe.filter((f) => reg(f.cle));
+      verifier('toutes les villes engendrées d’Europe ont leur registre, et pas une ville de la boîte qui n’est pas d’Europe',
+        couvertes.length >= 85 && reg('istanbul') && reg('reykjavik') && reg('lavalette')
+          && reg('edimbourg') === 'londres' && reg('dublin') === 'londres' && reg('rome') === 'sud' && reg('berlin') === 'nord'
+          && !reg('tunis') && !reg('ankara') && !reg('fes') && !reg('tbilissi') && !reg('tokyo'),
+        `${couvertes.length} sur ${europe.length} dans la boîte ; Édimbourg ${reg('edimbourg')}, Rome ${reg('rome')}, Berlin ${reg('berlin')}, Tunis ${reg('tunis')}`);
+    }
+    // un bloc de décor à motif posé par un enfant garde son dessin : seuls les
+    // murs de brique et d'enduit passent dans la couche
+    if (typeof HD.murHD === 'function') {
+      const { DECOR_ITEMS } = await import('../src/blocks.js');
+      const motif = (p) => DECOR_ITEMS.find((i) => i.pattern === p).id;
+      const lo = HD.VILLES_HD.find((d) => d.ville === 'londres');
+      verifier('un bloc de décor à damier, à pois ou à losanges garde son dessin ; la brique et l’enduit passent dans la couche',
+        HD.murHD(motif('Briques'), lo) && HD.murHD(motif('Uni'), lo)
+          && !HD.murHD(motif('Damier'), lo) && !HD.murHD(motif('Pois'), lo) && !HD.murHD(motif('Losange'), lo)
+          && !HD.murHD(motif('Briques'), HD.VILLES_HD.find((d) => d.ville === 'paris')));
+    }
+  }
+
   // Le coût, mesuré et imprimé — pas un verdict, une mesure pour le journal.
   {
     const w = new World(); w.hd = 1;
@@ -740,6 +850,43 @@ function verifier(nom, ok, detail = '') {
     verifier('le compte tenu par le jeu est celui des façades en scène', !!bud.tenu && bud.tenu.n === bud.avec && Math.abs(bud.tenu.Mo - bud.facadesMo) < 1,
       JSON.stringify(bud.tenu) + ' contre ' + bud.avec + ' / ' + bud.facadesMo);
     await ouest.close();
+
+    // ── ET À LONDRES, EN VOL, LE DÉTAIL ARRIVE ET TIENT DANS LE BUDGET (v390) ──
+    //
+    // Les terrasses de brique de Kensington : on s'y pose, on attend que le
+    // disque soit installé (borné, la durée dans le message), puis on vole
+    // quatre-vingts blocs vers l'est en relevant le poids des façades. Sur
+    // l'ancien code aucun morceau de Londres n'est HD : zéro façade, rouge.
+    const lon = await banc.jouerSeul('Lucy', { rr: 6, params: '&hd=2' });
+    const vol = await lon.evaluate(async () => {
+      const g = window.__game;
+      const dodo = (ms) => new Promise((r) => setTimeout(r, ms));
+      const octets = (m) => { if (!m) return 0; let n = 0; for (const a of Object.values(m.geometry.attributes)) n += a.array.byteLength; return n + (m.geometry.index ? m.geometry.index.array.byteLength : 0); };
+      const releve = () => { let mo = 0, avec = 0, hd = 0; for (const e of g.chunkMeshes.values()) { if (e.hd) hd++; if (e.facades) { avec++; mo += octets(e.facades); } } return { mo: mo / 1048576, avec, hd }; };
+      const x0 = -1300, z0 = -1351;
+      const y = g.world.terrainHeight(x0, z0);
+      g.player.flying = true;
+      g.player.pos.set(x0 + 0.5, y + 6, z0 + 0.5); g.player.vel.set(0, 0, 0);
+      const t0 = performance.now();
+      let n0 = -1, stable = 0;
+      while (performance.now() - t0 < 120000) {
+        await dodo(2000);
+        const n = g.chunkMeshes.size, r = releve();
+        if (n === n0 && r.avec > 0) { if (++stable >= 3) break; } else { stable = 0; n0 = n; }
+      }
+      const pose = releve(); let pireMo = pose.mo;
+      for (let i = 1; i <= 8; i++) {
+        g.player.pos.x = x0 + 0.5 + i * 10;
+        await dodo(1500);
+        pireMo = Math.max(pireMo, releve().mo);
+      }
+      return { attente: Math.round(performance.now() - t0), pose, pireMo: +pireMo.toFixed(1), budgetMo: g.BUDGET_FACADES ? g.BUDGET_FACADES / 1048576 : null };
+    });
+    verifier('à Londres, les façades détaillées arrivent et tiennent dans le budget du palier, en vol compris',
+      vol.pose.avec > 0 && vol.pose.hd > 0 && vol.budgetMo > 0 && vol.pireMo <= vol.budgetMo * 1.05,
+      `posé : ${vol.pose.avec} morceau(x) détaillé(s) sur ${vol.pose.hd} HD, ${vol.pose.mo.toFixed(1)} Mo ; pire en vol ${vol.pireMo} Mo pour ${vol.budgetMo} de budget, en ${vol.attente} ms`);
+    verifier('à Londres, aucune erreur JavaScript', lon.erreurs.length === 0, JSON.stringify(lon.erreurs.slice(0, 3)));
+    await lon.close();
 
     const bas = await banc.jouerSeul('Firmin', { rr: 4, params: '&hd=0' });
     const res0 = await bas.evaluate(async ([x, z]) => {
