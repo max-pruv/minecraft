@@ -1,5 +1,18 @@
 # Ce qui est en cours
 
+- [ ] **LE PORTAIL DE LA v391 (la tablette mesure sa vitesse au sol), DOUBLE
+  MESURE FAITE.** Onze suites ; mes deux témoins verts (règle 36/192/2 ; ligne
+  « roulage : 43 b/s · trou devant 16 blocs · débit 4 morceaux/s »). Rouges :
+  `maj.js` (libération `null`, « ne floute rien » — déclarés), `carte.js`
+  (glisser bridé ×4, 414 ms pour 400 — déclaré), `manhattan.js` (façade
+  11 684 → 42 919, taxi — déclarés) et un NEUF de `monte.js` : « un passant
+  change de trottoir au feu » (4 traversées, 3 au rouge, **1 au vert**).
+  `monte.js` rejouée SEULE : branche VERTE en entier (5 traversées, 0 au vert) ;
+  `origin/main` (v386) verte sur ce témoin avec **1 au vert sur 5** aussi, et
+  rouge sur le trou du chasseur en vol (intermittence déclarée). Le témoin du
+  feu est une proportion qui frôle sa barre sous la charge, des deux côtés ;
+  zone des piétons, non reprise ici. La livraison ne touche les piétons par
+  aucun chemin (une ligne de `?diag=1`, un champ du journal de bord).
 - [ ] **LE PORTAIL DE LA v388 (le GPS se partage).** Rouges : `maj.js` « il
   couvre toutes les versions du journal » (`manquantes: [384]` — À MOI :
   l'entrée du journal écrite pendant le portail, la ligne de `nouveautes.js`
