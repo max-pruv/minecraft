@@ -5285,7 +5285,15 @@ l'embarquement a eu lieu, pas par une hypothèse.
   pied avance à **15 % du temps réel** (six blocs en trente secondes au lieu de
   quatre-vingt-dix), ce qui a fait échouer trois sondes avant qu'on le voie.
 
-- [ ] **Le témoin de chargement du monde vole au-dessus d'un désert.** « En vol,
+- [x] **Le témoin de chargement du monde vole au-dessus d'un désert.** *(fait
+  en v404 : jumeau urbain dans `monte.js`, Paris et Londres traversés en temps
+  réel avec le réglage de la tablette — `file=cone&recharge=arrivee`. Mesuré à
+  la sonde, médiane de six relevés, barre `max / 2` (48 · 60) : Paris 137 · 122,
+  Londres 152 · 128 à 95 · 120 b/s ; campagne 192. Les vitesses des avions
+  TIENNENT au-dessus d'une ville avec le réglage de l'iPad. Avec l'ordre du banc
+  (`file=regard&recharge=image`) Paris rend 66 · 45 et Londres 64 · 58 : c'est
+  ce réglage-là, pas la vitesse, qui ferait rougir. Ce qui reste à mesurer sur
+  la tablette : `?diag=1` en vol au-dessus de Paris, la ligne « roulage ».)* « En vol,
   on ne rattrape pas le bout du monde qui se charge » (`monte.js`) se place à
   (30 000, 30 000), un couloir vierge où un morceau coûte 6,8 ms. Au-dessus de
   Paris il en coûte 23,5. Le témoin est donc vert alors que l'enfant, lui, ne

@@ -1457,6 +1457,21 @@ Et une empreinte d'identité qui change se PROUVE : celle des 490 morceaux
 (v352) couvre Marrakech et Tokyo ; la branche, bâtisseurs neufs désarmés, rend
 l'ancienne au bit près — c'est ce qui a permis de la remplacer.
 
+## Le témoin de chargement vole au-dessus d'une ville (v404) — un réglage que le banc coupe se force dans le témoin qui le juge
+
+Une règle.
+
+- **UN TÉMOIN QUI JUGE CE QUE L'IPAD VIT DEMANDE LE RÉGLAGE DE L'IPAD.**
+  L'ordre en cône et la recharge à l'arrivée sont coupés en rendu logiciel
+  (v346, v360) : un témoin de chargement qui ne les force pas mesure l'ancien
+  ordre, que la tablette ne joue plus. Le jumeau urbain de « on ne rattrape
+  pas le bout du monde » (`monte.js`) ouvre sa page avec
+  `file=cone&recharge=arrivee` et lit `rechargeRegle.active` dans son message.
+  Mesuré : avec ce réglage, Paris et Londres tiennent deux fois la barre
+  (`max / 2`) à 95 et 120 b/s ; avec celui du banc, Paris tombe à 45 pour 60.
+  Le témoin du désert reste : il garde la campagne, où un morceau coûte trois
+  fois moins.
+
 ## Le journal de l'enfant se range par morceau (v403) — un index vit DANS la structure qu'il indexe
 
 `generateChunk` relisait tout le journal des blocs de l'enfant pour chaque
