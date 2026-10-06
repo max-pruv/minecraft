@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Les anneaux contournent (v395) — un anneau est le bord d'un ensemble d'îlots
+## Les anneaux contournent (v398) — un anneau est le bord d'un ensemble d'îlots
 
 La dette de la v387 : 147 anneaux de villes engendrées sur 809 sortaient de la
 chaussée (place, fontaine, parc, plage), onze villes n'avaient qu'un circuit.
@@ -967,6 +967,114 @@ l'axe de la rue. Huit règles.
   rend toujours zéro monument en travers. Deux filtres pour la même règle
   finiraient par diverger, et l'anneau écarté par l'un passerait par l'autre.
 
+## La rue à l'allure d'une ville (v395) — chaque voiture suit la grille à SON heure
+
+Max : « des vitesses de circulation cohérentes ». Une rue roulait à quinze
+km/h. `circulation.js` (pur) porte les limitations (40 · 50 · 120 km/h), le
+profil d'un tracé (limite, virage √(a/κ), freinage AVANT, accélération d'une
+voiture) et sa grille horaire ; `vehicules.js` l'applique. Huit règles, et
+toutes sont nées d'une sonde qui contredisait le premier jet.
+
+- **UNE VOITURE SUIT LA GRILLE À SON HEURE, PAS À LA DISTANCE DE LA TÊTE.**
+  Un convoi avançait d'un bloc d'un seul tenant : toutes ses voitures
+  prenaient la vitesse que la grille donnait à la TÊTE — un virage pris à
+  l'allure de la ligne droite. La voiture i passe partout `i × P / nb`
+  secondes après la tête (`updateProfil`, `base[i]`) : la file se resserre
+  dans le coin et se détend dans la ligne droite, et c'est toujours une
+  fonction de l'horloge (v305). Le nombre de voitures se calcule en TEMPS
+  (une toutes les deux secondes au plus) et se borne par un tour simulé où
+  deux voisines ne se touchent jamais (`nbSansChevauchement`).
+- **CE QUI RESTE LOCAL FREINE, IL NE PILE PLUS.** Feu, voiture devant,
+  enfant, piéton : `cederLePassage` pose une `cible` (√(2·a·s), la vitesse
+  qu'on peut avoir à s blocs de l'arrêt) et la voiture y va à l'accélération
+  d'une voiture (`rapprocher`) ; ce qu'elle n'a pas fait devient son `retard`,
+  comme avant. Le balayage grandit avec la vitesse (distance de freinage plus
+  une demi-seconde). **SAUF DEVANT UNE PERSONNE : là où le freinage d'urgence
+  ne suffit plus, on PILE.** Vue tard, une voiture à cinquante touchait la
+  voiture de l'enfant, et « pas si l'on est déjà dedans » (v245) la laissait
+  alors le traverser — trois et quatre relevés au travers, `monte.js` rejouée
+  seule deux fois, zéro sur la v363. Le confort cède devant l'enfant, un ami
+  ou un piéton, jamais l'inverse. Et un arrêt d'urgence vaut dans les DEUX
+  chemins de mise à jour d'un convoi : le second ne le lisait pas.
+- **SEUL LE PROCHAIN FEU DE SON AXE COMPTE.** Vu à quarante blocs, il y avait
+  presque toujours un feu « de son axe » au rouge : dans les villes bâties à
+  la main la parité (`axeDuFeu`) ne s'aligne pas d'un carrefour à l'autre.
+  Mesuré : 70 % des voitures de Paris à l'arrêt, des files qui ne repartaient
+  jamais. Et au milieu d'un carrefour au rouge, on le dégage. **La portée
+  de recherche se calcule sur le freinage** : à treize blocs par seconde il
+  en faut vingt-cinq pour s'arrêter en confort, et un feu cherché à soixante
+  blocs du joueur n'était pas encore connu quand la voiture devait freiner —
+  elle pilait. Cent dix blocs, les morceaux balayés à ±7.
+- **EN TRAVERS, ON PRÉVOIT, ET LA PREMIÈRE ARRIVÉE PASSE.** Deux voitures qui
+  arrivent ensemble à un carrefour ne sont sur le chemin de l'autre qu'une
+  fois dedans. On pose le chemin de l'autre sur deux secondes et demie, et un
+  contact compte s'il tombe à peu près quand on y sera ; dans une paire
+  mutuelle, passe celle qui arrive la première — sauf si l'autre est DÉJÀ
+  sur son chemin. Une voiture qui coupe la route loin devant aura passé : en
+  travers, on ne regarde que la distance de freinage plus quatre blocs.
+- **LA PATIENCE NE VAUT QUE POUR UN NŒUD, PAS POUR UNE FILE.** Quatre
+  secondes (v244) dénouent deux files qui se bouchent un carrefour ; une
+  file arrêtée derrière un feu, l'enfant, un piéton ou un train est
+  « légitime » et attend sans limite — sinon la deuxième voiture passait au
+  travers de la première au bout de quatre secondes. La légitimité ne se
+  propage que dans SA file. Et la patience se compte en temps RÉEL : en
+  `dt` borné, quatre secondes en duraient vingt-cinq au banc.
+- **UNE SUIVEUSE DE LA MÊME FILE N'EST PAS UN OBSTACLE — SAUF DANS UN HUIT.**
+  Regarder celle qui suit bloquait les deux dans un virage serré (elle attend
+  que je parte, j'attends qu'elle parte). On ignore les DEUX qui suivent
+  (moins de quarante blocs derrière le long du tracé) : un circuit en huit
+  repasse par son propre carrefour, et une voiture de la même file à douze
+  rangs de là y arrive en travers — celle-là est un obstacle comme une autre.
+- **UN TRACÉ D'AVENUE SE NETTOIE AVANT DE SE DÉCALER.** On roule à droite
+  sur les avenues des villes bâties à la main (`decalerADroite`, 1,3 bloc) ;
+  `chainerVoies` y laissait des épis d'un ou deux blocs (aller-retour au point
+  de croisement), que le décalage changeait en boucles. `sansEpis` retire tout
+  sommet où le tracé rebrousse, avant ET après le décalage.
+- **L'ARRÊT D'URGENCE AU CONTACT NE VAUT QU'ENTRE DEUX FILES.** Dans une
+  file, c'est le suivi qui règle la distance ; un arrêt d'urgence contre sa
+  propre devancière transformait chaque arrivée au feu en arrêt sec (le
+  témoin « on freine avant le feu » l'a vu).
+- **DEUX TABLETTES SE COMPARENT PAR LA FONCTION, PAS PAR LA VITESSE.** Mon
+  premier témoin à deux tablettes ramenait les deux relevés à la même heure
+  par une vitesse linéaire : faux dès qu'une grille freine et accélère. On
+  demande à Alice `distanceA(clé, heure de Marlon)` : la v305 promet
+  l'égalité exacte, on l'exige à moins d'un bloc.
+- **UN COMPTE DE CHEVAUCHEMENTS EST UN TAUX.** Le témoin de la v277 était un
+  tirage (0 à 53) ; celui-ci rapporte les paires qui se touchent aux paires
+  EXAMINÉES. Et la sonde (`sonde-circulation.cjs`) range chaque contact par
+  famille (même file / autre file, à l'arrêt / en marche, même sens / face /
+  travers) : c'est ce qui a nommé, l'un après l'autre, le blocage mutuel, les
+  épis, le huit et le flanc trop près.
+- **UN CIRCUIT QUI SE RECOUPE SE CADENCE COMME UN CARREFOUR.** Le huit de
+  Paris (−333, 271) repasse par son propre croisement : deux voitures de la
+  MÊME file s'y présentent ensemble, en travers, chacune attend l'autre, la
+  patience les relâche, et la seconde traverse la première. Le portail l'a
+  rendu (taux 7,5 %, deux arrêts secs). Remède dans la GRILLE, donc partagé
+  par les deux tablettes : `nbSansCroisement` choisit le nombre de voitures
+  pour que les écarts de passage au croisement ne tombent jamais à moins
+  d'une seconde et demie d'un multiple de l'intervalle P/nb — un feu sans
+  feu. Et une file bloquée par une voiture de SA file elle-même légitime est
+  légitime à son tour, quel que soit le rang (propagation sur six passes).
+  Sonde : 2 % → 0,6 à 1,6 % de paires au contact, zéro arrêt sec — le reste vient
+  d'une voiture qui rattrape son retard (une fois et demie l'allure) et
+  arrive au croisement hors de sa grille.
+
+- **UNE ANNONCE QUI PORTE UNE HORLOGE RÉELLE SE CADENCE EN TEMPS RÉEL.**
+  L'hôte annonçait l'heure de la rue (v305) sur un compte à rebours en `dt` :
+  à deux images par seconde, une fois par demi-minute, et l'invité qui avait
+  calé gardait sa rue en retard d'autant — l'intermittence de `reseau.js`
+  déclarée sous la v351, rouge des deux côtés une fois sur deux. C'est le
+  piège de `dt` de la v226 une cinquième fois : avant de chercher pourquoi
+  deux tablettes divergent, on demande à quelle cadence elles se recalent.
+
+**Ce qui reste, déclaré** (`TASKS.md`) : le bus ne marque plus d'arrêt (il
+roule dans la file de son anneau — un convoi ne double pas) ; l'arrêt d'une
+voiture heurtée et le freinage devant l'enfant sont LOCAUX (comme l'instant où
+une voiture cède, v305) ; la variance est par convoi, pas par voiture ; les
+types de voie suivent le circuit (rue engendrée, avenue nommée, autoroute),
+pas chaque tronçon ; au croisement saturé d'un circuit en huit, la file
+peut encore se nouer : 0,4 à 1,6 % de paires au contact.
+
 ## Les voitures contournent les monuments (v378) — un test qui écarte un candidat se mesure en temps de démarrage
 
 Deux règles.
@@ -1138,6 +1246,18 @@ la séquence ne le rend pas au pilote. Et un emplacement d'échelle se MESURE
 d'invoquer la lit à l'origine du monde** : le modèle n'est placé qu'à l'image
 suivante — mon premier jet posait l'enfant à trente blocs de l'avion, et le
 bouton ne trouvait rien. On copie `a.pos` dans le maillage avant de lire.
+
+**Une séquence qu'on ne juge qu'au banc se fait lire sur la tablette (v396).**
+Le banc saute la séquence (`embarq=0`) et rend en logiciel : durées, caméra et
+image figée ne se valident que sur l'iPad. `?diag=1` porte donc une ligne de
+la dernière séquence (`embarquementDernier`, relevée à la transition dans
+`publier`, sans rien changer à la séquence) : sens, voiture / ami / avion,
+secondes de JEU, et comment elle a fini (jusqu'au bout, second appui,
+annulée), plus le côté de sortie et le refus du côté conducteur. La liste des
+gestes que Max fait pour valider est dans `TASKS.md` (« POUR MAX, SUR LA
+TABLETTE »). **Une fonctionnalité que le banc ne peut pas juger livre avec
+l'instrument qui la juge ailleurs**, comme le palier (v284) et le journal de
+bord (v296).
 
 **Le passager descend par la portière, à l'envers (v384).** `descendreDeChez`
 rejoue la descente du conducteur sur la voiture DISTANTE, côté passager
@@ -2255,6 +2375,52 @@ Six règles.
   rebondissent, piéton et eau arrêtent net — personne n'est jamais touché.
   Une voiture de la rue ne se pousse pas (horloge partagée, v305) : c'est
   elle qui attend (`cederLePassage`, v245).
+
+## La normale de ce qu'on touche (v397) — conduite, palier 2
+
+Le palier 1 prenait la normale du MOUVEMENT contre une voiture de la rue et
+celle d'un AXE DU MONDE contre un mur. Cinq règles.
+
+- **UN MUR DE CUBES EN BIAIS SE LIT PAR LA DROITE DE SES FACES.** Sur une
+  façade oblique, l'axe libre change à chaque marche de l'escalier : la
+  voiture s'y arrêtait (seize façades de Paris, 1,4 bloc après contact).
+  `normaleDeMur` (conduite.js) ajuste une droite sur les MILIEUX des faces
+  exposées tournées vers la voiture, à `RAYON_MUR` (4,5) du contact — mesuré :
+  1,4° d'erreur moyenne, 7,8 au pire, contre 3,6 et 15 avec les centres des
+  cases sur 2,6 blocs. Les centres pondérés par la distance sont un
+  non-résultat mesuré (pire). L'essai axe par axe ne reste qu'en repli
+  (moins de trois faces).
+- **LONGER UNE NORMALE LUE À DEUX DEGRÉS PRÈS, C'EST BUTER SUR UN COIN DE
+  MARCHE.** Une vitesse qui ne rentre pas dans la normale lue mais bute quand
+  même glisse aussi ; `glisserLeLong` prend le pas tangent, puis se décolle
+  d'un cheveu (0,12 à 0,5 bloc) le long de la normale, et remet la caisse
+  dans l'axe — seule une pose LIBRE est prise. Sans cela, `reponseChoc` rendait
+  « pas de choc » (vitesse tangente), le pas bloqué se rejouait trente-deux
+  fois et le filet de la v272 ramenait la vitesse à zéro.
+- **CONTRE UNE VOITURE, LA NORMALE DE SON RECTANGLE ET LA VITESSE RELATIVE.**
+  `voitureContre` (vehicules.js, lecture seule de la collecte de
+  `cederLePassage`, branchée par main.js) rend sa boîte et son allure ;
+  `chocContreVoiture` prend l'axe de moindre enfoncement des deux rectangles
+  et juge `reponseChoc` dans le repère de l'autre. Sous `CONTACT_DOUX` (trois
+  blocs/s relatifs) c'est un contact, pas un choc — collé derrière une voiture
+  plus lente, on la touche à chaque image. Et la rue juge avec SES cotes (2,26
+  de large) quand le joueur porte celles de sa fiche (2,2) : au bord, la rue
+  dit « touché » avant que nos boîtes ne se recouvrent — on relit avec une
+  boîte grossie de `MARGE_CONTACT`, sinon le choc retombait sur le mouvement.
+- **UN TÉMOIN NE RATTRAPE PAS UNE VOITURE DE LA RUE AU BANC.** La rue avance
+  en temps RÉEL (v305), la nôtre en temps de jeu : à deux images par seconde,
+  dix fois moins vite (`sonde-vraie-rue.cjs`). La vitesse relative se garde
+  sous node ; le témoin de `monte.js` pose une voiture GARÉE (`vitesse: 0`)
+  et éprouve le crochet. **Et un témoin qui se téléporte à côté d'une voiture
+  de la rue attend une image avant de rouler** : la collecte ne la connaît
+  qu'à l'image suivante, et la nôtre entrait sans la voir — « déjà dedans »
+  ensuite, donc traversée.
+- **LE VOLANT VOYAGE DANS `p.v`** (`b` braquage, `r` dérive, absents quand
+  nuls) ; le receveur les pose sur `userData.braquage` et `.derive` de sa
+  copie. Personne ne les DESSINE encore (session des sensations), et c'est
+  déclaré. Le joueur, lui, publie `player.roueLibre` ({ depuis, s }) et
+  `player.contact` ({ famille, nx, nz }) ; `?diag=1` au volant les affiche
+  avec le monde maillé devant la voiture (`mondeDevant`, `ligneDiagConduite`).
 
 ## Les monuments à la hauteur de leur ville (v335) — une table de paliers, deux lecteurs
 

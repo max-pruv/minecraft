@@ -778,6 +778,44 @@ const VRAIES_KM = [
       !a1.absent && !!a1.convoi && a1.convoi.routier && (a1.convoi.modeles || []).length >= 10,
       JSON.stringify(a1.absent ? a1 : (a1.convoi ? { nom: a1.convoi.nom, route: a1.convoi.route, voitures: (a1.convoi.modeles || []).length, visibles: a1.convoi.visibles } : 'aucun convoi de route')));
 
+    // L'AUTOROUTE ROULE À CENT VINGT, ET RALENTIT AVANT LA VILLE (v372). Elle
+    // roulait à douze blocs par seconde (43 km/h) d'un bout à l'autre ; son
+    // profil publie désormais sa croisière (120 km/h, au conducteur près) et
+    // sa plus lente allure — le demi-tour au bout de l'avenue d'entrée.
+    verifier('et sur l\'A1 on roule à cent vingt, en ralentissant pour entrer en ville',
+      !a1.absent && !!a1.convoi && a1.convoi.croisiere >= 30 && a1.convoi.lente <= 6,
+      JSON.stringify(a1.absent || !a1.convoi ? a1 : { croisiere: a1.convoi.croisiere, lente: a1.convoi.lente, voie: a1.convoi.voie }));
+
+    // LA CONDUITE DE LA RUE, LUE SOUS LA RÈGLE (v372, `circulation.js`, pur).
+    // Sur un tour carré de cent blocs de côté, à l'allure d'une rue : la
+    // voiture atteint la limitation en ligne droite, prend le coin à l'allure
+    // que l'accélération latérale permet, et FREINE AVANT lui — la vitesse
+    // descend sur plusieurs points du profil au lieu de tomber au coin. Et
+    // elle ne réaccélère pas plus vite qu'une voiture (√(2·a·h) par pas).
+    const regleRue = await tab.evaluate(async () => {
+      let ci;
+      try { ci = await import('./src/circulation.js'); } catch (e) { return { err: 'src/circulation.js absent (' + e.message + ')' }; }
+      const C = 100, pts = [[0, 0], [C, 0], [C, C], [0, C]];
+      const L = 4 * C;
+      const a = (d) => { d = ((d % L) + L) % L; const k = Math.floor(d / C), t = d - k * C, A = pts[k], B = pts[(k + 1) % 4];
+        return { x: A[0] + (B[0] - A[0]) * t / C, z: A[1] + (B[1] - A[1]) * t / C }; };
+      const capA = (d) => { const p = a(d - 1.6), q = a(d + 1.6); return Math.atan2(q.x - p.x, q.z - p.z); };
+      const prof = ci.profilVitesse({ longueur: L, capA, limiteA: () => ci.ALLURE_VOIE.rue });
+      const vs = Array.from(prof.vs), h = prof.pas;
+      // le coin de (C, 0) est à d = C
+      const kCoin = Math.round(C / h);
+      let freine = 0;
+      for (let k = kCoin - 20; k < kCoin; k++) if (vs[k] > vs[k + 1] + 1e-9) freine++;
+      let pireRelance = 0;
+      for (let k = 1; k < vs.length; k++) pireRelance = Math.max(pireRelance, vs[k] * vs[k] - vs[k - 1] * vs[k - 1]);
+      return { rue: +(ci.ALLURE_VOIE.rue * 3.6).toFixed(0), avenue: +(ci.ALLURE_VOIE.avenue * 3.6).toFixed(0), autoroute: +(ci.ALLURE_VOIE.autoroute * 3.6).toFixed(0),
+        max: +Math.max(...vs).toFixed(2), coin: +Math.min(...vs).toFixed(2), freine, relanceOk: pireRelance <= 2 * ci.ACCEL * h + 1e-6 };
+    });
+    verifier('la rue a ses limitations, et la voiture freine avant le coin au lieu d\'y tomber',
+      !regleRue.err && regleRue.rue === 40 && regleRue.avenue === 50 && regleRue.autoroute === 120
+        && regleRue.max >= 11 && regleRue.coin <= 4 && regleRue.freine >= 8 && regleRue.relanceOk,
+      JSON.stringify(regleRue));
+
     // L'E429 (v310) : Lille–Bruxelles, la première autoroute vers une ville
     // ENGENDRÉE. Ses voitures roulent de l'entrée de Lille (au carrefour
     // Carnot / Willy-Brandt) jusqu'au centre de Bruxelles, par la rue de l'axe.
@@ -4759,7 +4797,7 @@ const VRAIES_KM = [
       `${sens.dansUnMonument} pas de carrosserie dans un monument · ${sens.nbFautifs} anneau(x)`
       + (sens.fautifs.length ? ` : ${sens.fautifs.join(', ')}` : ''));
 
-    // --- LES ANNEAUX CONTOURNENT CE QUI N'EST PAS LA CHAUSSÉE (v395) ---------
+    // --- LES ANNEAUX CONTOURNENT CE QUI N'EST PAS LA CHAUSSÉE (v398) ---------
     //
     // La dette de la v387 : 147 anneaux de villes engendrées sur 809 avaient au
     // moins un pas de voie hors de la chaussée (mesuré sur `origin/main`, v389 :
@@ -4768,7 +4806,7 @@ const VRAIES_KM = [
     // tracé au demi-bloc et l'on compte ce qui n'est ni chaussée, ni tablier,
     // ni le trottoir du boulevard là où une rue le traverse, ni le quai pavé
     // que le sol pose en travers des rues qui mènent à l'eau — ces deux-là
-    // sont le SOL, qu'aucun tracé n'évite (v387, v395). Mesuré ici : 92
+    // sont le SOL, qu'aucun tracé n'évite (v387, v398). Mesuré ici : 92
     // anneaux, 2 437 pas, trois villes à un circuit. Les barres sont au milieu.
     const contour = await tab.evaluate(async () => {
       const vm = await import('./src/villesmonde.js');

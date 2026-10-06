@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v395 — Les voitures font le tour de la place
+## v398 — Les voitures font le tour de la place
 
 **Pourquoi.** Dans les villes engendrées, beaucoup d'anneaux de voitures
 roulaient en ligne droite au travers de ce qui n'est pas une rue : la place
@@ -48,6 +48,145 @@ centre reste à 30 blocs, aucun tablier n'est retiré (642 colonnes d'eau en
 gagnent un), et le relief ne bouge pas. Le prix, déclaré : le premier
 dépliage d'une ville coûte plus cher (Rome ≈ 57 → 85-100 ms, une fois, à 220
 blocs de la ville).
+## v397 — La voiture glisse le long des façades, et frôle les autres voitures
+
+**Pourquoi.** Le palier 1 de la conduite (v358) prenait deux normales
+commodes et fausses. Contre une voiture de la rue, celle du MOUVEMENT : frôler
+son flanc était un choc de face, on rebondissait en arrière et les dégâts
+comptaient un choc plein. Contre un mur, celle d'un axe du monde : sur une
+façade oblique — une trame tournée, Paris, la moitié des villes engendrées —
+le mur est un escalier de cubes, et la voiture s'y arrêtait net ou en était
+renvoyée. Mesuré sur seize vraies façades obliques de Paris : 1,4 à 1,5 bloc
+de trajet médian après le contact, puis l'arrêt. Et à plusieurs, l'ami ne
+voyait ni le volant ni la glisse.
+
+**Ce que ça change.**
+
+- **On glisse le long des façades obliques** : la façade se lit sur la droite
+  de ses faces exposées, et la voiture la longe au lieu de s'y coincer — trajet
+  médian après contact 1,4 → 10,4 blocs (approche à 10°) et 1,5 → 14,3 (25°) ;
+  ce qui l'arrête ensuite est la rue elle-même, un trottoir, un coin d'îlot.
+- **Contre une voiture de la rue, le choc se juge dans son repère** : la
+  normale de SON rectangle, et la vitesse RELATIVE. Un flanc frôlé est un choc
+  léger sur notre flanc, et l'on continue ; percuter par l'arrière une voiture
+  qui roule est un petit choc, et l'on repart derrière elle ; pare-chocs contre
+  pare-chocs au pas, c'est un contact, pas un choc qui use la voiture.
+- **À plusieurs, le volant et la glisse voyagent** avec la voiture : la copie
+  de l'ami porte son braquage et sa dérive (à dessiner par la session des
+  sensations).
+- **`?diag=1` au volant** dit la classe, la vitesse, la pointe, le monde déjà
+  maillé devant la voiture (en blocs et en secondes de route) et la dernière
+  roue libre : ce que le banc ne sait pas mesurer, Max le relève sur l'iPad.
+
+**Ce qui le prouve.** Six témoins neufs, tous vérifiés rouges sur l'ancien
+code. Trois sous node dans `plafond.js` : la normale d'une façade lue à 1,63°
+près en moyenne sur 1 200 contacts de 0 à 87° ; le choc contre une voiture
+dans son repère (l'arrière à 0,5 au lieu de 1, le flanc à 0,17) ; et le JOUEUR
+contre un mur oblique à 24° et 37°, deux approches — 57 à 66 blocs de glisse
+contre 0,2 à 1,7 puis l'arrêt sur l'ancien code. Deux dans `monte.js`, par le
+VRAI crochet contre une voiture de la rue garée : le flanc frôlé (choc 0,21,
+sur notre flanc, 12 blocs/s gardés ; l'ancien code rendait 0,83 sur le nez et
+un rebond), l'arrière percuté (le crochet rend sa boîte, choc franc sur le
+nez). Un à deux tablettes dans `reseau.js` : le braquage et la dérive de
+Marlon arrivent chez Alice. Deux sondes : `sonde-mur-oblique.cjs` (les seize
+façades de Paris) et `sonde-vraie-rue.cjs`. Et le témoin « l'avant du
+joystick est l'accélérateur », rouge des deux côtés depuis la v379 (voiture
+lâchée relevée à 9,1 b/s pour une barre à 9,0), attend désormais la roue libre
+en images de jeu et non en secondes de montre : 3,75 s de jeu calculées, trois
+ou quatre seulement accordées par l'ancien budget au banc.
+
+---
+
+## v396 — La montée en voiture se valide sur la tablette
+
+**Pourquoi.** Les séquences de montée et de descente (v366, v377, v384, v389)
+ne se jugent qu'au banc, qui les saute partout ailleurs et rend en logiciel :
+leurs durées, leur caméra et l'absence d'image figée n'ont jamais été vues sur
+l'iPad, et rien ne disait à Max quoi regarder.
+
+**Ce que ça change.** Avec `?diag=1`, une ligne dit après chaque geste ce qui
+vient de se passer : « embarquement : monter (voiture) en 2,1 s de jeu,
+jusqu'au bout » — ou « second appui », « annulée », et pour une descente le
+côté et la raison d'un refus du côté conducteur. `TASKS.md` porte la liste
+des six gestes à faire sur la tablette (voiture, second appui, descente, avec
+un ami, l'avion, ce qui ne doit pas arriver). Rien ne change pour les enfants.
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js` (le diagnostic dit
+« monter (voiture), second appui »), rouge sur `origin/main` — rejoué seul par
+`sonde-diag-embarq.cjs` : `null` sur `origin/main`, la ligne attendue ici.
+
+---
+
+## v395 — La rue roule à l'allure d'une ville
+
+**Pourquoi.** Max : « des vitesses de circulation cohérentes — aujourd'hui les
+véhicules sont trop lents ». Mesuré au-dessus de Paris sur `origin/main` : une
+voiture de ville roulait à 4,2 blocs par seconde — quinze km/h —, médiane
+1,7 et jamais plus de 5 ; l'autoroute à douze (43 km/h) ; et chaque arrêt au
+feu se faisait d'un relevé au suivant (vingt-quatre arrêts « secs » sur
+vingt-sept), la voiture passant de son allure à zéro.
+
+**Ce que ça change.** Chaque voie a sa limitation — quarante km/h dans les
+rues des villes engendrées, cinquante sur les avenues des villes bâties à la
+main, cent vingt sur l'autoroute, cinquante à l'entrée des villes —, chaque
+convoi son conducteur (±8 %). La voiture freine AVANT un virage, une entrée de
+ville, un feu rouge, la voiture qui la précède, l'enfant, et désormais un
+piéton ; elle réaccélère comme une voiture (0 à 50 en cinq secondes et demie).
+Dans une file, chaque voiture freine là où ELLE est : la file se resserre dans
+le virage et se détend dans la ligne droite. Sur les avenues de Paris,
+Londres, Nice, Lille, San Francisco et Washington on roule à droite — deux
+files se croisent sans se rencontrer. Le bus roule dans la file de son
+anneau, sans plus marquer d'arrêt. Une voiture de la rue que l'enfant heurte
+(`player.choc`, quand la conduite le publie) s'arrête quelques secondes, feux
+de détresse allumés, puis repart. Et tout cela reste une fonction de
+l'horloge partagée (v305) : deux tablettes voient la même rue.
+
+**Ce qui le prouve.** Sept témoins neufs ou réécrits. Dans `monte.js`,
+au-dessus de Paris : la croisière d'une avenue (15 blocs/s) et le 90e centile
+des voitures visibles (7,4 à 11,7 contre 4,2 sur `origin/main`, barre 6,5) ; les arrêts
+au feu, tous progressifs (aucun sec, contre 24 sur 27) ; les voitures l'une
+dans l'autre en TAUX sur les paires examinées (0,5 à 3,9 %, barre 4 — le
+compte absolu d'avant allait de 0 à 53 sur le même code, v277) ; une voiture
+heurtée qui s'arrête, clignote et repart ; une voiture qui s'arrête devant un
+piéton posé sur sa route, à 4,4 blocs de lui. Dans `carteMonde.js` : la règle
+pure (`circulation.js`) — 40/50/120 km/h, un coin pris à 3,1 blocs/s après
+dix-huit points de freinage, une relance jamais plus vive que l'accélération
+d'une voiture — et l'A1 à 120 km/h qui ralentit à moins de 6 pour entrer en
+ville. Dans `reseau.js`, le témoin des deux tablettes mesure l'heure de rue et
+la place à heure égale, parce qu'à cinquante km/h une seconde de lecture vaut
+quatorze blocs. Tous rouges sur `origin/main` sauf la garde du taux de
+chevauchement, verte des deux côtés à dessein (elle garde une capacité).
+Et le portail a trouvé ce que les sondes n'avaient pas vu : au croisement du
+circuit en huit de Paris, deux voitures de la même file se présentaient
+ensemble et la seconde finissait par traverser la première (taux 7,5 %). La
+grille choisit désormais un nombre de voitures qui ne s'y rencontrent pas :
+0,4 à 1,6 % de paires au contact selon le passage (7,5 % avant), aucun
+arrêt sec.
+Coût mesuré : `vehicules.update` 0,7 → 1,5 à 1,7 ms par image au-dessus de
+Paris (`sonde-cout-circulation.cjs`).
+
+**Et un ami voit la même rue même quand l'hôte rame.** Second sujet de la
+livraison. Pourquoi : `reseau.js` « deux tablettes voient la même
+circulation » rougissait une fois sur deux, sur `origin/main` comme sur la
+branche (35 blocs d'écart). L'hôte annonce l'heure de la rue avec celle du
+ciel « toutes les trois secondes » — un compte à rebours en `dt`, borné à un
+vingtième de seconde : à deux images par seconde, une annonce toutes les
+trente secondes, et un invité qui avait calé gardait sa rue en retard jusque
+là. Ce que ça change : l'annonce se cadence en temps réel (`cadence.js`,
+v226). Ce qui le prouve : un témoin de `reseau.js` fait ramer l'hôte (400 ms
+par image, douze secondes) et compte les annonces — quatre attendues, au
+moins trois exigées.
+
+**Et devant l'enfant, une voiture pile quand il le faut.** Le premier portail
+de la v372 a rendu « la circulation s'arrête devant la voiture de l'enfant »
+rouge : trois et quatre relevés au travers sur deux passages seuls de
+`monte.js`, zéro sur la v363. Le freinage doux ne suffisait pas à une voiture
+qui voit l'enfant tard, et une fois au contact elle passait au travers.
+Devant une personne, elle pile désormais dès que le freinage d'urgence ne
+suffit plus.
+
+---
+
 
 ---
 

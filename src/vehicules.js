@@ -15,6 +15,7 @@ import { SIGNATURES_GLB, SIGNATURES_JEU, EST_PEINTURE } from './signatures.js';
 import { construireTaxi } from './taxis.js';
 import { Atelier } from './modeles.js';
 import { liberer } from './liberer.js';
+import { profilVitesse, grilleDuProfil, rapprocher, allureDevant, passeAOrange, FREIN, FREIN_URGENCE, ALLURE_VOIE, allureDuConducteur } from './circulation.js';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
 import { CLASSES, MARCHE } from './conduite.js';
 
@@ -1145,6 +1146,25 @@ class Convoi {
     this.rapport = new Float32Array(opts.nb).fill(1);
     this.retardAvant = new Float64Array(opts.nb);   // le tampon du tour, jamais alloué par image
     this.attenteDepuis = new Float32Array(opts.nb);
+    // LA VITESSE PROPRE DE CHAQUE VOITURE (v372). La grille horaire (v305) dit
+    // où va le convoi ; ce qui reste LOCAL — un feu rouge, la voiture d'avant
+    // qui freine, l'enfant sur la chaussée — se joue ici, et ne se joue plus
+    // d'un coup : `cible[i]` est l'allure que la voiture peut viser devant ce
+    // qui l'arrête (√(2·a·s), `circulation.js`), `vLoc[i]` celle qu'elle a,
+    // qui n'y descend qu'au freinage d'une vraie voiture. Ce qu'elle laisse
+    // filer devient son `retard`, exactement comme avant.
+    this.vLoc = new Float32Array(opts.nb).fill(-1);       // −1 : pas encore lancée
+    this.cible = new Float32Array(opts.nb).fill(Infinity);
+    // une voiture heurtée par l'enfant s'arrête, feux de détresse (v372)
+    this.heurte = new Float32Array(opts.nb);
+    this.urgence = new Uint8Array(opts.nb);
+    this.cause = new Uint8Array(opts.nb);          // 0 libre · 1 un feu (ou la file d'un feu) · 2 autre chose
+    // LE PROFIL DE VITESSE (v372) : `limite(x, z)` rend l'allure permise en
+    // un point du tracé (la rue, l'autoroute, l'entrée de ville), `facteur` le
+    // conducteur de ce convoi. Sans profil, l'ancienne marche (`freine`).
+    this.profil = opts.profil || null;
+    this.suit = opts.suit || null;
+    this.demiLong = opts.demiLong ?? DEMI_LONG_VOITURE;
     this.repart = new Float32Array(opts.nb);     // secondes pendant lesquelles on n'attend plus
     // `relooke(mesh, distanceAbsolue, rang)` : appelé à chaque image sur
     // chaque élément visible. C'est lui qui peint les voitures de la chaîne
@@ -1201,7 +1221,10 @@ class Convoi {
   // même quand elle est à l'autre bout de la ville.
   // Où en est la voiture i le long du tracé : sa place dans le convoi, moins
   // ce qu'elle a laissé filer en cédant le passage.
-  dElement(i) { return this.distance - i * this.ecart - (this.retard ? this.retard[i] : 0); }
+  dElement(i) {
+    if (this.base && this.baseFaite) return this.base[i] - this.retard[i];
+    return this.distance - i * this.ecart - (this.retard ? this.retard[i] : 0);
+  }
 
   // La queue peut traîner plus loin que `ecart × (n − 1)` : de tout ce que ses
   // voitures ont laissé filer en cédant le passage.
@@ -1236,6 +1259,26 @@ class Convoi {
     const L = this.parcours.longueur;
     if (!(L > 0) || !(this.vitesse > 0)) { this._horaire = null; return null; }
     const ts = [0], ds = [0];
+    if (this.profil) {
+      // LA VITESSE DE LA RUE (v372) : la limite de la voie, l'allure des
+      // virages, le freinage AVANT et l'accélération d'une vraie voiture,
+      // calculés une fois sur le tour (`circulation.js`, pur).
+      const pr = this.profil, par = this.parcours;
+      const lim = typeof pr.limite === 'function'
+        ? (d) => { const q = par.a(d); return pr.limite(q.x, q.z) * (pr.facteur || 1); }
+        : () => this.vitesse * (pr.facteur || 1);
+      const prof = pr.calcule || profilVitesse({ longueur: L, capA: (d) => par.capLisse(d), limiteA: lim });
+      const g = grilleDuProfil(prof);
+      this.profilCalcule = prof;
+      this._horaire = { ts: g.ts, ds: g.ds, P: g.ts[g.ts.length - 1], L };
+      // les voitures se suivent à intervalle de TEMPS égal : un tour divisé
+      // par leur nombre, et une queue qui retombe sur la tête au tour suivant
+      this.dtVoiture = this._horaire.P / Math.max(1, this.nb);
+      this.phase = this.tempsA(this.distance);
+      // le bus prend la grille de son anneau, à mi-temps entre deux voitures
+      if (this.suit && this.suit.horaire()) this.phase = this.suit.phase - (this.suit.dtVoiture || 0) / 2;
+      return this._horaire;
+    }
     if (this.freine) {
       const h = 0.05;
       const vise = (d) => this.vitesse * Math.max(this.allureMin,
@@ -1293,7 +1336,99 @@ class Convoi {
     return { d: n * L + ds[lo] + dd * u, v: dt > 0 ? dd / dt : 0, pause: dd === 0 ? ts[hi] - r : 0 };
   }
 
+  // CHAQUE VOITURE SUIT LA GRILLE À SON HEURE, PAS À LA DISTANCE DE LA TÊTE
+  // (v372). Un convoi avançait d'un bloc : toutes ses voitures avançaient d'un
+  // bloc, à la vitesse que la grille donnait à la TÊTE — une voiture dans un
+  // virage le prenait à l'allure de la ligne droite où roulait la tête. Avec
+  // des vitesses qui vont de onze à cinquante km/h dans la même rue, c'est
+  // visible. La voiture i passe donc partout `i × dtVoiture` secondes après la
+  // tête : elle freine là où le virage est, la file se resserre dans le coin
+  // et se détend dans la ligne droite — d'elle-même, et la même sur toutes
+  // les tablettes (une fonction de l'horloge, v305).
+  updateProfil(dt, joueur, horloge) {
+    this.dernierDt = dt;
+    this.horaire();
+    if (!this._horaire) { this.montrer(joueur); return; }
+    if (this.bloque) this.decalage = (this.decalage || 0) + dt;
+    const h0 = horloge - (this.decalage || 0);
+    const n = this.nb;
+    if (!this.base) { this.base = new Float64Array(n); this.vGrille = new Float32Array(n); }
+    const avantTete = this.distance;
+    const pos0 = this.distanceA(h0);
+    const saut = !this.baseFaite || Math.abs(pos0.d - avantTete) > Math.max(30, this.vitesse * 4);
+    const ancien = this.retardAvant;           // tampon réutilisé : l'ancienne base
+    ancien.set(this.base);
+    for (let i = 0; i < n; i++) {
+      const p = i === 0 ? pos0 : this.distanceA(h0 - i * this.dtVoiture);
+      this.base[i] = p.d; this.vGrille[i] = p.v;
+    }
+    this.distance = pos0.d;
+    this.vitesseActuelle = pos0.v;
+    this.attente = 0;
+    if (saut) {
+      this.baseFaite = true;
+      this.retard.fill(0); this.vLoc.fill(-1); this.rapport.fill(1);
+      this.montrer(joueur);
+      return;
+    }
+    // Ce que chaque voiture vise (`cible`, posé par `cederLePassage`), ou la
+    // grille, ou un peu plus pour rattraper ; elle y va au rythme d'une voiture
+    // (`rapprocher`) — ce qu'elle n'a pas fait devient du retard.
+    const mini = 2 * this.demiLong + 1.6;
+    for (let i = 0; i < n; i++) {
+      const pas = this.base[i] - ancien[i];
+      const vConv = dt > 0 ? Math.max(0, pas / dt) : 0;
+      if (this.heurte[i] > 0) this.heurte[i] = Math.max(0, this.heurte[i] - dt);
+      let vise = this.heurte[i] > 0 ? 0 : this.cible[i];
+      // rattraper, oui, mais pas à soixante-dix dans Paris : trois blocs par
+      // seconde de plus que la grille au plus
+      const libre = this.retard[i] > 0.05 ? Math.min(vConv * 1.3, vConv + 3) : vConv;
+      if (vise > libre) vise = libre;
+      let v = this.vLoc[i] < 0 ? vConv : this.vLoc[i];
+      v = (vise >= vConv && this.retard[i] <= 0.05) ? vConv : rapprocher(v, vise, dt);
+      // CONTACT IMMINENT : l'autre est déjà au ras du capot — on s'arrête là,
+      // sans attendre le freinage (v372)
+      if (this.urgence[i]) v = 0;
+      let r = this.retard[i] + pas - v * dt;
+      if (r < 0) r = 0;
+      // UN CONVOI NE SE TÉLESCOPE PAS (v283), par construction : la suiveuse
+      // garde une longueur de voiture derrière celle qui la précède.
+      if (i > 0) {
+        const plancher = this.retard[i - 1] - (this.base[i - 1] - this.base[i]) + mini;
+        if (r < plancher) r = plancher;
+      }
+      // LE RETARD D'UNE VOITURE QUE PERSONNE NE VOIT SE REND (v372). Chaque feu
+      // rouge en ajoute ; rendu à 30 % de l'allure, il s'accumulerait d'un feu
+      // à l'autre et la file finirait par s'étirer sur des centaines de blocs
+      // derrière sa grille. Loin de l'enfant (aucune `cible`, hors de la portée
+      // de la rue), on la remet à sa place en douceur — personne ne la voit.
+      if (r > 0 && this.cible[i] === Infinity && i > 0 && this.retard[i - 1] < r) {
+        const q = this.parcours.a(this.base[i] - r);
+        if ((q.x - joueur.x) ** 2 + (q.z - joueur.z) ** 2 > (VU_VOITURE + 15) ** 2) r = Math.max(this.retard[i - 1], r - Math.max(2, r) * dt);
+      } else if (r > 0 && i === 0 && this.cible[0] === Infinity) {
+        const q = this.parcours.a(this.base[0] - r);
+        if ((q.x - joueur.x) ** 2 + (q.z - joueur.z) ** 2 > (VU_VOITURE + 15) ** 2) r = Math.max(0, r - Math.max(2, r) * dt);
+      }
+      const obtenu = pas - (r - this.retard[i]);
+      this.retard[i] = r;
+      this.vLoc[i] = dt > 0 ? Math.max(0, Math.min(obtenu / dt, Math.max(v, vConv + 3))) : 0;
+      this.rapport[i] = vConv > 0.01 ? this.vLoc[i] / vConv : (this.vLoc[i] > 0.01 ? 1 : 0);
+    }
+    this.montrer(joueur);
+  }
+
+  // L'allure que la grille donne à la voiture i, là où ELLE est (v372).
+  vGrilleDe(i) { return this.vGrille && this.baseFaite ? this.vGrille[i] : (this.vitesseActuelle ?? this.vitesse); }
+
+  // Où s'étend le convoi le long du tracé, de la tête à la queue (v372) : avec
+  // la grille par voiture, l'écart n'est plus constant.
+  etendue() {
+    if (this.base) return Math.max(0, this.base[0] - this.base[this.nb - 1]) + this.retardMax();
+    return this.ecart * (this.nb - 1) + this.retardMax();
+  }
+
   update(dt, joueur, horloge = null) {
+    if (this.profil && horloge !== null) return this.updateProfil(dt, joueur, horloge);
     this.dernierDt = dt;
     const avantTout = this.distance;
     const grille = horloge !== null ? this.horaire() : null;
@@ -1313,7 +1448,7 @@ class Convoi {
       const saut = Math.abs(pos.d - avantTout) > Math.max(20, this.vitesse * 3);
       this.distance = pos.d;
       if (saut || pos.d <= avantTout) {
-        if (saut && this.retard) this.retard.fill(0);
+        if (saut && this.retard) { this.retard.fill(0); this.vLoc.fill(-1); }
         if (this.routier) this.rapport.fill(0);
         this.montrer(joueur);
         return;
@@ -1373,9 +1508,22 @@ class Convoi {
     if (this.routier && pas > 0) {
       const avant = this.retardAvant;
       avant.set(this.retard);
+      // Chaque voiture vise ce que `cederLePassage` lui permet (`cible`), ou
+      // l'allure du convoi, ou un peu plus pour rattraper ce qu'elle a laissé
+      // filer ; elle y va au rythme d'une voiture (`rapprocher`), jamais d'un
+      // coup. Ce qu'elle n'a pas fait devient du retard (v372).
+      const vConv = dt > 0 ? pas / dt : 0;
       for (let i = 0; i < this.nb; i++) {
-        if (this.attend[i]) this.retard[i] += pas;
-        else if (this.retard[i] > 0) this.retard[i] = Math.max(0, this.retard[i] - pas * 0.5);
+        if (this.heurte[i] > 0) this.heurte[i] = Math.max(0, this.heurte[i] - dt);
+        let vise = this.heurte[i] > 0 ? 0 : this.cible[i];
+        const libre = vConv * (this.retard[i] > 0.05 ? 1.3 : 1);
+        if (vise > libre) vise = libre;
+        let v = this.vLoc[i] < 0 ? vConv : this.vLoc[i];
+        v = (vise >= vConv && this.retard[i] <= 0.05) ? vConv : rapprocher(v, vise, dt);
+        if (this.urgence[i]) v = 0;            // le même arrêt d'urgence que l'autre chemin
+        this.retard[i] += pas - v * dt;
+        if (this.retard[i] < 0) this.retard[i] = 0;
+        this.vLoc[i] = v;
       }
       // UN CONVOI NE SE TÉLESCOPE PAS, ET CELA SE GARANTIT PAR CONSTRUCTION.
       //
@@ -1418,6 +1566,7 @@ class Convoi {
       // et l'allure obtenue : ce que `dElement(i)` a réellement avancé.
       for (let i = 0; i < this.nb; i++) {
         this.rapport[i] = Math.max(0, (pas - (this.retard[i] - avant[i])) / pas);
+        this.vLoc[i] = this.rapport[i] * vConv;
       }
     }
     this.montrer(joueur);
@@ -1445,7 +1594,7 @@ class Convoi {
     this.vuX = joueur.x; this.vuZ = joueur.z; this.vuT = performance.now();
     const tete = this.parcours.a(this.distance);
     const portee = (this.decouvert && this.decouvert(tete)) ? VU : this.vu;
-    const trainee = this.ecart * (this.nb - 1) + this.retardMax();
+    const trainee = this.etendue();
     if (Math.hypot(tete.x - joueur.x, tete.z - joueur.z) > portee + trainee) {
       for (const m of this.elements) if (m && m.visible) m.visible = false;
       return;
@@ -1478,7 +1627,7 @@ class Convoi {
         // centrifuge : vitesse au carré fois courbure, à l'échelle de ce qu'un
         // enfant voit — quatre degrés au pire coin, rien en ligne droite.
         // Le signe a été REGARDÉ sur capture, pas déduit.
-        const v = this.vitesseActuelle * allure;
+        const v = this.vGrilleDe(i) * allure;
         const vise = Math.max(-0.08, Math.min(0.08, -this.parcours.courbure(d) * v * v * 0.012));
         const roulis = m.userData.roulis === undefined ? vise : m.userData.roulis + (vise - m.userData.roulis) * Math.min(1, this.dernierDt * 6);
         m.userData.roulis = roulis;
@@ -1486,13 +1635,14 @@ class Convoi {
         m.rotation.z = roulis;
       }
       m.visible = true;
+      if (this.routier) feuxDeDetresse(m, this.heurte[i] > 0);
       // LES ROUES TOURNENT AUSSI EN VILLE. Le long d'un tracé on connaît la
       // distance exacte parcourue depuis la dernière image : l'angle en
       // découle sans rien mesurer. Une voiture qui glisse sans que ses roues
       // tournent, un enfant de sept ans le voit au premier mètre.
       const roues = m.userData.roues;
       if (roues && roues.length) {
-        const angle = (this.vitesseActuelle * allure * this.dernierDt) / (m.userData.rayonRoue || 0.34);
+        const angle = (this.vGrilleDe(i) * allure * this.dernierDt) / (m.userData.rayonRoue || 0.34);
         for (const r of roues) r.rotation.x += angle;
       }
       if (this.relooke) {
@@ -1501,6 +1651,83 @@ class Convoi {
       }
     }
   }
+}
+
+// LES ÉPIS D'UN TRACÉ (v372). `chainerVoies` va jusqu'au point de croisement
+// de deux avenues puis repart : quand ce point est un peu au-delà du virage,
+// le tracé fait un aller-retour d'un ou deux blocs (mesuré à Paris, près de
+// (−321, 325) : ouest, puis est, en deux mètres). À quinze km/h la voiture le
+// faisait sans qu'on le voie ; à cinquante, elle pivote sur place et la
+// suivante, qui l'a rattrapée, se trouve en travers. On retire tout sommet
+// où le tracé rebrousse (plus de 120°), jusqu'à ce qu'il n'y en ait plus.
+export function sansEpis(pts) {
+  let out = pts.slice();
+  for (let passe = 0; passe < 60; passe++) {
+    const n = out.length;
+    if (n < 5) return out;
+    const garde = [];
+    let retire = false;
+    for (let i = 0; i < n; i++) {
+      const a = out[(i - 1 + n) % n], b = out[i], c = out[(i + 1) % n];
+      const ux = b.x - a.x, uz = b.z - a.z, vx = c.x - b.x, vz = c.z - b.z;
+      const l1 = Math.hypot(ux, uz), l2 = Math.hypot(vx, vz);
+      if (!retire && l1 > 1e-6 && l2 > 1e-6 && (ux * vx + uz * vz) / (l1 * l2) < -0.5) { retire = true; continue; }
+      if (!retire && l1 < 0.3) { retire = true; continue; }
+      garde.push(b);
+    }
+    if (!retire) return out;
+    out = garde;
+  }
+  return out;
+}
+
+// UN TRACÉ FERMÉ DÉCALÉ À DROITE DE SA MARCHE (v372). La droite d'une
+// direction (fx, fz) est (−fz, fx) (v271, mesurée). À chaque sommet on suit la
+// bissectrice, allongée de 1/cos(θ/2) pour garder la distance aux deux côtés,
+// et bornée à deux fois le décalage dans un coin très fermé.
+export function decalerADroite(pts, e) {
+  const n = pts.length, out = [];
+  for (let i = 0; i < n; i++) {
+    const a = pts[(i - 1 + n) % n], b = pts[i], c = pts[(i + 1) % n];
+    let ux = b.x - a.x, uz = b.z - a.z, l1 = Math.hypot(ux, uz);
+    let vx = c.x - b.x, vz = c.z - b.z, l2 = Math.hypot(vx, vz);
+    if (l1 < 1e-6) { ux = vx; uz = vz; l1 = l2; }
+    if (l2 < 1e-6) { vx = ux; vz = uz; l2 = l1; }
+    if (!(l1 > 1e-6)) { out.push({ ...b }); continue; }
+    ux /= l1; uz /= l1; vx /= l2; vz /= l2;
+    let nx = -uz - vz, nz = ux + vx;
+    const ln = Math.hypot(nx, nz);
+    if (ln < 1e-6) { nx = -uz; nz = ux; } else { nx /= ln; nz /= ln; }
+    const cos = nx * -uz + nz * ux;
+    const k = Math.min(2, 1 / Math.max(0.5, cos));
+    out.push({ ...b, x: b.x + nx * e * k, z: b.z + nz * e * k });
+  }
+  return out;
+}
+
+// LES FEUX DE DÉTRESSE D'UNE VOITURE HEURTÉE (v372). Quatre petits feux
+// orange aux coins, qui clignotent une fois par seconde, émissifs seulement
+// (aucune lampe : la clé des programmes ne bouge pas, v248). La géométrie et
+// le matériau sont PARTAGÉS (`liberer.js` ne les rend pas) ; le groupe ne se
+// fabrique que pour une voiture effectivement heurtée.
+let geoDetresse = null, matDetresse = null;
+function feuxDeDetresse(m, allumes) {
+  let g = m.userData.detresse;
+  if (!allumes) { if (g) g.visible = false; return; }
+  if (!g) {
+    if (!geoDetresse) {
+      geoDetresse = new THREE.SphereGeometry(0.16, 8, 6); geoDetresse.userData.partagee = true;
+      matDetresse = new THREE.MeshBasicMaterial({ color: 0xffa21a, toneMapped: false }); matDetresse.userData.partagee = true;
+    }
+    g = new THREE.Group(); g.name = 'detresse';
+    for (const [x, z] of [[-0.85, -2.1], [0.85, -2.1], [-0.85, 2.1], [0.85, 2.1]]) {
+      const f = new THREE.Mesh(geoDetresse, matDetresse);
+      f.position.set(x, 0.85, z);
+      g.add(f);
+    }
+    m.add(g); m.userData.detresse = g;
+  }
+  g.visible = (performance.now() % 1000) < 550;
 }
 
 // REPEINDRE UNE VOITURE DE LA FLOTTE (v305) — une seule règle, lue par la rue
@@ -1532,6 +1759,105 @@ export function repeindre(modele, fichier, teinte) {
 // borne de sûreté, qu'aucun circuit n'atteint (le plus long en a 49).
 // Publiée pour le témoin de `carteMonde.js`, qui compte les voitures d'une
 // ville sans en fabriquer une seule.
+// DEUX VOISINES D'UNE FILE NE SE TOUCHENT JAMAIS (v372), et cela se calcule
+// sur le tracé, pas sur un écart moyen. Les voitures passent partout à
+// `P / nb` secondes l'une de l'autre ; on pose, toutes les deux dixièmes de
+// seconde d'un tour, la voisine à cet intervalle derrière, et l'on teste les
+// deux rectangles (trente centimètres de marge devant et derrière ; aucune sur le côté, où deux voies de la même avenue sont à 2,6 blocs). Le plus grand `nb` sans
+// contact se cherche par dichotomie : six essais de deux cent cinquante poses.
+const SEP_DL = DEMI_LONG_VOITURE + 0.3, SEP_DW = DEMI_LARG_VOITURE;
+function rectSep(x, z, cap) {
+  const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux;
+  return [[x + ux * SEP_DL + vx * SEP_DW, z + uz * SEP_DL + vz * SEP_DW], [x + ux * SEP_DL - vx * SEP_DW, z + uz * SEP_DL - vz * SEP_DW],
+    [x - ux * SEP_DL - vx * SEP_DW, z - uz * SEP_DL - vz * SEP_DW], [x - ux * SEP_DL + vx * SEP_DW, z - uz * SEP_DL + vz * SEP_DW]];
+}
+function rectsSeTouchent(P, Q) {
+  for (const R of [P, Q]) for (let k = 0; k < 4; k++) {
+    const ax = -(R[(k + 1) % 4][1] - R[k][1]), az = R[(k + 1) % 4][0] - R[k][0];
+    let p0 = Infinity, p1 = -Infinity, q0 = Infinity, q1 = -Infinity;
+    for (let j = 0; j < 4; j++) {
+      const a = P[j][0] * ax + P[j][1] * az, b = Q[j][0] * ax + Q[j][1] * az;
+      if (a < p0) p0 = a; if (a > p1) p1 = a; if (b < q0) q0 = b; if (b > q1) q1 = b;
+    }
+    if (p1 < q0 || q1 < p0) return false;
+  }
+  return true;
+}
+export function nbSansChevauchement(parcours, grille, nbMax) {
+  const { ts, ds } = grille, P = ts[ts.length - 1], L = parcours.longueur;
+  if (!(P > 0) || nbMax <= 3) return Math.max(1, nbMax);
+  const dA = (t) => {
+    const n = Math.floor(t / P), r = t - n * P;
+    let lo = 0, hi = ts.length - 1;
+    while (hi - lo > 1) { const m = (lo + hi) >> 1; if (ts[m] <= r) lo = m; else hi = m; }
+    const u = ts[hi] > ts[lo] ? (r - ts[lo]) / (ts[hi] - ts[lo]) : 0;
+    return n * L + ds[lo] + (ds[hi] - ds[lo]) * u;
+  };
+  const touche = (nb) => {
+    const ecartT = P / nb;
+    for (let t = 0; t < P; t += Math.max(0.2, P / 400)) {
+      const a = dA(t + ecartT), b = dA(t);
+      const qa = parcours.a(a), qb = parcours.a(b);
+      if ((qa.x - qb.x) ** 2 + (qa.z - qb.z) ** 2 > 36) continue;
+      if (rectsSeTouchent(rectSep(qa.x, qa.z, parcours.capLisse(a)), rectSep(qb.x, qb.z, parcours.capLisse(b)))) return true;
+    }
+    return false;
+  };
+  let nb = nbMax;
+  if (touche(nbMax)) {
+    let lo = 3, hi = nbMax;                // lo : sans contact (supposé), hi : contact
+    if (touche(lo)) nb = lo;
+    else { while (hi - lo > 1) { const m = (lo + hi) >> 1; if (touche(m)) hi = m; else lo = m; } nb = lo; }
+  }
+  return nb;
+}
+
+// UN TRACÉ QUI REPASSE PAR SON PROPRE CARREFOUR (v372). Un circuit en huit
+// croise sa propre route : la voiture i y passe à l'heure t, puis la voiture j
+// y revient à t + Δ, Δ fixé par le tracé. Si Δ tombe sur un multiple de l'écart
+// horaire entre deux voitures, deux voitures de la MÊME file s'y présentent
+// ensemble — et chacune attend l'autre, la file attend sa tête, et au bout de
+// la patience l'une passe au travers (mesuré au croisement de Paris, −333, 271 :
+// 1,8 % des paires au contact, retards de 126 blocs). Ce n'est pas une affaire
+// de règle de collision : c'est la GRILLE qui les envoie ensemble. On choisit
+// donc le nombre de voitures pour qu'à aucun croisement aucune voiture n'en
+// trouve une autre — toutes les paires, pas seulement les voisines — et c'est
+// une fonction de l'horloge, la même sur deux tablettes (v305).
+export function nbSansCroisement(parcours, grille, nb, plancher = 3) {
+  const { ts, ds } = grille, P = ts[ts.length - 1], L = parcours.longueur;
+  if (!(P > 0) || nb <= 3) return nb;
+  const N = 720, h = P / N, X = new Float64Array(N), Z = new Float64Array(N), C = new Float64Array(N);
+  let lo = 0;
+  for (let s = 0; s < N; s++) {
+    const r = s * h;
+    while (lo < ts.length - 2 && ts[lo + 1] <= r) lo++;
+    const u = ts[lo + 1] > ts[lo] ? (r - ts[lo]) / (ts[lo + 1] - ts[lo]) : 0;
+    const d = Math.min(L, ds[lo] + (ds[lo + 1] - ds[lo]) * u);
+    const q = parcours.a(d); X[s] = q.x; Z[s] = q.z; C[s] = parcours.capLisse(d);
+  }
+  // les paires d'instants dont les positions se touchent EN TRAVERS : c'est la
+  // liste des croisements, en écart d'heure (les voisines le long du tracé
+  // sont l'affaire du plancher, v283)
+  const ecarts = [];
+  for (let a = 0; a < N; a++) for (let b = a + 1; b < N; b++) {
+    const dt = (b - a) * h; if (dt < 3 || P - dt < 3) continue;
+    if ((X[a] - X[b]) ** 2 + (Z[a] - Z[b]) ** 2 > 36) continue;
+    if (Math.abs(Math.cos(C[a] - C[b])) > 0.7) continue;
+    if (rectsSeTouchent(rectSep(X[a], Z[a], C[a]), rectSep(X[b], Z[b], C[b]))) ecarts.push(dt);
+  }
+  if (!ecarts.length) return nb;
+  // une marge d'une seconde et demie : le temps de dégager un carrefour
+  const libre = (n) => {
+    const e = P / n;
+    for (const dt of ecarts) { const r = dt % e; if (Math.min(r, e - r) < 1.5) return false; }
+    return true;
+  };
+  for (let n = nb; n >= plancher; n--) if (libre(n)) return n;
+  return nb;
+}
+
+// une voiture passe à un carrefour toutes les deux secondes au plus (v372)
+export const INTERVALLE_RUE = 2;
 export function voituresDuCircuit(longueur) {
   return Math.max(6, Math.min(60, Math.round(longueur / 18)));
 }
@@ -1706,12 +2032,53 @@ export function createVehicules({ scene, player }) {
     0x7a1f1f, 0x2a3f7a, 0xd8a83a, 0x3f7a5a, 0x6a2f6a, 0x8a8a6a,
   ];
   function circulation(pts, graine = 0, options = {}) {
+    // ON ROULE À DROITE SUR LES AVENUES (v372). Les circuits des villes bâties
+    // à la main suivent l'AXE de leurs avenues, et deux circuits qui partagent
+    // une avenue dans les deux sens s'y rencontraient de face, sur la même
+    // ligne : à quinze km/h ils se frôlaient, à cinquante ils se bloquaient
+    // l'un l'autre à chaque rencontre (mesuré à Paris : la moitié des arrêts
+    // « voiture » étaient des face-à-face). La voiture roule désormais dans sa
+    // voie de droite, `decalage` blocs à droite de l'axe — la règle que les
+    // villes engendrées suivent depuis la v271.
+    pts = sansEpis(pts);
+    if (options.decalage) pts = sansEpis(decalerADroite(pts, options.decalage));
     const p = new Parcours(pts);
-    const nb = options.nb ?? voituresDuCircuit(p.longueur);
+    // L'ALLURE DE LA VOIE (v372). Une rue de ville roulait à 4,2 blocs par
+    // seconde — quinze kilomètres à l'heure — et l'autoroute à douze. Chaque
+    // voie a désormais sa limitation (`ALLURE_VOIE`, circulation.js), chaque
+    // convoi son conducteur (±8 %, tiré de sa graine, le même sur toutes les
+    // tablettes), et la grille horaire freine avant les virages et les
+    // entrées de ville et réaccélère comme une voiture. `limite(x, z)` dit
+    // l'allure permise en un point du tracé (l'autoroute qui entre en ville).
+    const voie = options.voie || 'rue';
+    const vitesse = options.vitesse ?? ALLURE_VOIE[voie] ?? ALLURE_VOIE.rue;
+    const facteur = allureDuConducteur(graine * 31 + Math.round(p.longueur));
+    const lim = options.limite
+      ? (d) => { const q = p.a(d); return options.limite(q.x, q.z) * facteur; } : () => vitesse * facteur;
+    const prof = profilVitesse({ longueur: p.longueur, capA: (d) => p.capLisse(d), limiteA: lim });
+    // COMBIEN DE VOITURES : une tous les dix-huit blocs (v322), MAIS les
+    // voitures se suivent à intervalle de TEMPS égal, donc la file se resserre
+    // dans les virages lents — et dans un virage aigu, la voisine qui entre et
+    // celle qui sort sont côte à côte. On ne devine pas l'écart qu'il faut :
+    // on fait rouler deux voisines sur un tour, et l'on garde le plus grand
+    // nombre où elles ne se touchent jamais (`nbSansChevauchement`).
+    const grille = grilleDuProfil(prof);
+    // Un tracé très tortueux (un tour de quartier de Paris) ne garderait que
+    // trois voitures : on n'en retire jamais plus d'un tiers, et ce qui reste
+    // de contacts se règle en roulant — la suiveuse freine sur celle qui la
+    // précède (`cederLePassage`).
+    // Et le compte se fait en TEMPS : à cinquante km/h, une voiture tous les
+    // dix-huit blocs en laisse passer une toutes les une seconde et demie à
+    // l'angle d'une rue droite, mais à peine une toutes les cinq dans le tour
+    // d'un quartier. Une toutes les `INTERVALLE_RUE` secondes au moins.
+    const nbMax = Math.min(60, Math.max(voituresDuCircuit(p.longueur), Math.round(grille.ts[grille.ts.length - 1] / INTERVALLE_RUE)));
+    // les voisines ne se touchent pas (plancher), et la file ne se retrouve
+    // pas elle-même à un croisement de son propre tracé (le huit de Paris)
+    const nb = options.nb ?? nbSansCroisement(p, grille,
+      Math.max(Math.ceil(nbMax * 2 / 3), nbSansChevauchement(p, grille, nbMax)), Math.ceil(nbMax / 3));
     const c = ajouter(pts, {
-      // UNE ROUTE INTERURBAINE ROULE PLUS VITE QU'UNE RUE (v300) : la vitesse
-      // et le nombre se demandent, la rue garde ses chiffres.
-      nb, ecart: p.longueur / nb, vitesse: options.vitesse ?? 4.2, freine: true, allureMin: 0.4, routier: true,
+      nb, ecart: p.longueur / nb, vitesse, freine: true, routier: true,
+      profil: { limite: options.limite || null, facteur, calcule: prof },
       route: options.route || null,
       // QUARANTE-CINQ BLOCS, ET C'EST UNE MESURE, PAS UNE INTUITION. Une
       // voiture coûte TRENTE-DEUX MAILLAGES — trois fois un personnage, et
@@ -1737,6 +2104,7 @@ export function createVehicules({ scene, player }) {
     // Ce que ce convoi VA montrer, sans rien fabriquer : un témoin de
     // diversité le lit avant que la moindre voiture ne soit née.
     c.graine = graine;
+    c.voie = voie;
     c.modeles = Array.from({ length: nb }, (_, i) => choixFlotte(graine * 7 + i * 17, options.ville).fichier);
     return c;
   }
@@ -1745,17 +2113,23 @@ export function createVehicules({ scene, player }) {
   // qui marque quatre arrêts par tour — assez pour qu'un enfant le prenne
   // (« Monter à bord » le voit comme n'importe quel convoi). Max : « much
   // more life in cities, cars, buses… »
-  function bus(pts, graine = 0) {
-    const p = new Parcours(pts);
+  //
+  // LE BUS ROULE DANS LA FILE (v372). Il roulait à cinq blocs par seconde et
+  // marquait quatre arrêts, sur le même tracé que les voitures : tant qu'elles
+  // roulaient à 4,2 il les dépassait AU TRAVERS ; à quarante kilomètres à
+  // l'heure, elles l'auraient rattrapé à chaque arrêt et toute la file serait
+  // restée derrière lui pour toujours — un convoi n'a qu'une grille horaire,
+  // ses voitures ne doublent pas. Il prend donc la grille de SON anneau
+  // (`suit`), à mi-chemin entre deux voitures, et ne marque plus d'arrêt :
+  // on y monte en marche, à neuf blocs, comme dans une voiture. Le prix est
+  // déclaré : un bus qui ne s'arrête pas.
+  function bus(pts, graine = 0, suit = null) {
     const teintes = [0xd84a3a, 0xe8c83a, 0x3a9a4a, 0x3a6ac8, 0xf0813a];
-    const arrets = [0.12, 0.37, 0.62, 0.87].map((f) => p.longueur * f);
-    // Pas de `freine` : les arrêts ne vivent que dans la marche à vitesse
-    // constante (c'est le mécanisme du métro), et un bus qui ne s'arrête
-    // jamais n'est pas un bus.
     return ajouter(pts, {
-      nb: 1, vitesse: 5, routier: true,
+      nb: 1, vitesse: suit ? suit.vitesse : ALLURE_VOIE.rue, routier: true, freine: true,
+      profil: suit ? suit.profil : { limite: null, facteur: 1 },
+      suit, demiLong: 3.3,
       nom: 'bus', emoji: '🚌', assise: 1.7,
-      arrets, pause: 2,
       modele: () => construireBus(teintes[graine % teintes.length]),
     });
   }
@@ -1832,6 +2206,12 @@ export function createVehicules({ scene, player }) {
   // les amis (v305) : des clés négatives, loin de celles des trains
   // (−2 − rang × 1000 − wagon), pour que la patience infinie les couvre aussi
   const CLE_AMI = -1e9;
+  const CLE_PIETON = -2e9;
+  let pietons = null;
+  // des piétons posés par un témoin, en plus de ceux du monde (v372)
+  const pietonsPoses = [];
+  // le dernier choc de l'enfant qu'on a lu (`player.choc`, v372)
+  let dernierChoc = 0;
   function cederLePassage(dt) {
     const px = player.pos.x, pz = player.pos.z;
     const voitures = [];
@@ -1916,102 +2296,266 @@ export function createVehicules({ scene, player }) {
       const c = convois[ci];
       if (!c.routier) continue;
       const tete = c.parcours.a(c.distance);
-      const trainee = c.ecart * (c.nb - 1) + c.retardMax();
-      if (Math.hypot(tete.x - px, tete.z - pz) > PORTEE_CEDE + trainee) { c.attend.fill(0); continue; }
+      const trainee = c.etendue();
+      if (Math.hypot(tete.x - px, tete.z - pz) > PORTEE_CEDE + trainee) { c.attend.fill(0); c.cible.fill(Infinity); c.urgence.fill(0); c.cause.fill(0); continue; }
       for (let i = 0; i < c.nb; i++) {
-        if (c.pris.has(i)) { c.attend[i] = 0; continue; }       // prise par un enfant (v305)
+        if (c.pris.has(i)) { c.attend[i] = 0; c.cible[i] = Infinity; c.urgence[i] = 0; continue; }       // prise par un enfant (v305)
         const d = c.dElement(i);
         const q = c.parcours.a(d);
-        if ((q.x - px) ** 2 + (q.z - pz) ** 2 > PORTEE_CEDE * PORTEE_CEDE) { c.attend[i] = 0; continue; }
+        if ((q.x - px) ** 2 + (q.z - pz) ** 2 > PORTEE_CEDE * PORTEE_CEDE) { c.attend[i] = 0; c.cible[i] = Infinity; c.urgence[i] = 0; continue; }
         const cap = c.parcours.capLisse(d), ux = Math.sin(cap), uz = Math.cos(cap);
         voitures.push({ c, ci, i, cle: ci * 1000 + i, d, x: q.x, y: q.y, z: q.z, ux, uz,
-          rect: rectangle(q.x, q.z, ux, uz), balayage: null, veut: null });
+          rect: rectangle(q.x, q.z, ux, uz, c.demiLong), balayage: null, veut: null });
       }
     }
-    // le balayage de chaque voiture : ses rectangles un peu plus loin sur son tracé
-    for (const a of voitures) {
-      if (a.enfant || a.rail) continue;
-      a.balayage = PAS_BALAYAGE.map((pas) => {
-        const q = a.c.parcours.a(a.d + pas), cap = a.c.parcours.capLisse(a.d + pas);
-        return rectangle(q.x, q.z, Math.sin(cap), Math.cos(cap));
-      });
+    // LES PIÉTONS AUSSI (v372). Jusqu'ici ce sont eux qui s'écartaient
+    // (`vehiculeApproche`, v259), et la rue ne les voyait pas ; à quarante
+    // kilomètres à l'heure, un passant qui presse le pas ne suffit plus à
+    // garantir ce que la maison promet : on ne renverse jamais personne. La
+    // voiture freine donc devant un piéton sur son chemin, sans limite de
+    // patience, comme devant l'enfant — et elle continue de dire qu'elle
+    // VEUT passer (`enMarche`), pour que le passant s'écarte.
+    if (pietons || pietonsPoses.length) {
+      let k = 0;
+      for (const n of pietonsPoses.length ? [...(pietons ? pietons() : []), ...pietonsPoses] : pietons()) {
+        if (!n || !n.pos) continue;
+        const x = n.pos.x, z = n.pos.z;
+        if ((x - px) ** 2 + (z - pz) ** 2 > PORTEE_CEDE * PORTEE_CEDE) continue;
+        const dm = 0.35;
+        voitures.push({ c: null, i: -1, cle: CLE_PIETON - k++, x, y: n.pos.y, z, ux: 0, uz: 1, enfant: true, pieton: true,
+          rect: [[x - dm, z - dm], [x + dm, z - dm], [x + dm, z + dm], [x - dm, z + dm]], balayage: null, veut: null });
+      }
     }
+    // L'ALLURE D'UNE VOITURE DE LA LISTE, le long d'une direction (ux, uz) :
+    // c'est ce que la suiveuse peut garder derrière elle (v372).
+    const vEnfant = player.gabarit > 1 ? Math.max(0, player.vitesseVoiture || 0) : 0;
+    const allureLe = (b, ux, uz) => {
+      const dot = Math.max(0, b.ux * ux + b.uz * uz);
+      if (b.pieton || b.ami) return 0;
+      if (b.enfant) return vEnfant * dot;
+      const c = b.c;
+      if (b.rail) return (c.bloque ? 0 : (c.vitesseActuelle ?? c.vitesse)) * dot;
+      const v = c.vLoc && c.vLoc[b.i] >= 0 ? c.vLoc[b.i] : c.vGrilleDe(b.i);
+      return v * dot;
+    };
+    // LE BALAYAGE GRANDIT AVEC LA VITESSE (v372). Huit blocs suffisaient à
+    // quinze kilomètres à l'heure ; à cinquante, une voiture a besoin de vingt-
+    // cinq blocs pour s'arrêter en douceur. On regarde donc jusqu'à sa distance
+    // de freinage, plus une demi-seconde de réaction.
+    const porteeDe = (a) => {
+      const c = a.c, v = Math.max(c.vLoc[a.i] >= 0 ? c.vLoc[a.i] : 0, c.vGrilleDe(a.i));
+      return Math.min(40, 6 + v * v / (2 * FREIN) + v * 0.5);
+    };
+    const balayer = (a) => {
+      if (a.balayage) return a.balayage;
+      a.balayage = []; a.pas = [];
+      for (let pas = 0.5; pas <= a.portee; pas += 1.5) {
+        const q = a.c.parcours.a(a.d + pas), cap = a.c.parcours.capLisse(a.d + pas);
+        // (soixante centimètres de plus devant et derrière : on s'arrête un
+        // peu AVANT le contact, pas dessus)
+        a.balayage.push(rectangle(q.x, q.z, Math.sin(cap), Math.cos(cap), a.c.demiLong + 0.6, DEMI_LARG + 0.15));
+        a.pas.push(pas);
+      }
+      return a.balayage;
+    };
     for (const a of voitures) {
       if (a.enfant || a.rail) continue;
+      a.portee = porteeDe(a);
+      const loin = (a.portee + 7) * (a.portee + 7);
       for (const b of voitures) {
         if (a === b || Math.abs(a.y - b.y) > 2.5) continue;
         const ex = b.x - a.x, ez = b.z - a.z;
-        if (ex * ex + ez * ez > 12 * 12) continue;
-        if (ex * a.ux + ez * a.uz < -DEMI_LONG) continue;          // derrière moi : pas mon affaire
+        if (ex * ex + ez * ez > loin) continue;
+        const devantMoi = ex * a.ux + ez * a.uz;
+        if (devantMoi < -a.c.demiLong) continue;               // derrière moi : pas mon affaire
         // Déjà DANS la voiture de l'enfant (il s'est posé dessus, ou l'a
         // rattrapée) : continuer est la seule façon d'en sortir ; y attendre
         // sans limite, c'est rester dedans pour toujours.
         if (b.enfant && seTouchent(a.rect, b.rect)) continue;
-        // Là où elle EST, pas là où elle sera : comparer les deux chemins des
-        // huit prochains blocs mettait presque toutes les paires en conflit
-        // mutuel, et la patience de quatre secondes les relâchait ensemble —
-        // 17 → 77, mesuré. Le reliquat (dix-sept relevés sur trente secondes,
-        // un raccord à cent soixante degrés entre deux circuits de Rivoli) est
-        // une affaire de tracé, déclarée dans TASKS.md.
-        let gene = false;
-        for (const R of a.balayage) if (seTouchent(R, b.rect)) { gene = true; break; }
-        if (gene) (a.veut || (a.veut = new Map())).set(b.cle, ex * a.ux + ez * a.uz);
+        // Dans SA file, la grille garde déjà les distances (v372) : on ne
+        // freine sur celle qui précède que si elle s'en écarte — arrêtée au
+        // feu, retenue par l'enfant — sinon chaque virage ferait freiner toute
+        // la file une seconde fois.
+        // et celles qui SUIVENT dans la file sont derrière, par construction
+        // (le plancher, v283) — même quand un virage serré en pose une contre
+        // mon flanc. La regarder bloquait les deux : elle attend que je parte,
+        // j'attends qu'elle parte (mesuré à Paris, une file entière à l'arrêt).
+        // Seule exception, la queue qui précède la tête d'un tour.
+        // (seulement celles qui sont derrière LE LONG DU TRACÉ : un circuit en
+        // huit repasse par son propre carrefour, et la voiture qui le croise là
+        // est bien devant)
+        // — et seulement les deux qui suivent : au croisement du huit (−333, 271)
+        // c'est la HUITIÈME derrière qui repasse devant, à moins de quarante
+        // blocs le long du tracé dans un tour lent
+        if (b.c === a.c && b.i > a.i && b.i - a.i <= 2 && a.d - b.d > 0 && a.d - b.d < 40) continue;
+        const devantDansLaFile = b.c === a.c && (b.i === a.i - 1 || (a.i === 0 && b.i === a.c.nb - 1));
+        // (et la grille ne voit pas un virage en épingle : deux voisines
+        // séparées de sept blocs le long du tracé peuvent s'y toucher en
+        // coupant — on regarde donc celle qui précède, toujours)
+        // Là où elle EST, pas là où elle sera (v244) : on balaie MON tracé
+        // contre SON rectangle actuel. Le premier pas qui la touche dit à quelle
+        // distance s'arrêter — le pas d'avant (v372).
+        const R = balayer(a);
+        const travers = !b.enfant && b.ux * a.ux + b.uz * a.uz < 0.7;
+        if (travers && b.c && !b.rail) {
+          // EN TRAVERS, ON PRÉVOIT (v372). Deux voitures qui arrivent ensemble
+          // à un carrefour ne sont ni l'une ni l'autre sur le chemin de l'autre
+          // AVANT d'y entrer — à quinze km/h on le voyait encore à temps, à
+          // cinquante non. On pose donc l'autre là où elle SERA quand on
+          // passera chaque pas du balayage (sa vitesse, le long de son tracé),
+          // et c'est le premier contact prévu qui compte. Au-delà de ce qu'il
+          // faut pour freiner en douceur, plus quatre blocs, on ne regarde pas :
+          // une voiture qui coupe la route à trente blocs aura passé.
+          const va = Math.max(1, a.c.vLoc[a.i] >= 0 ? a.c.vLoc[a.i] : a.c.vGrilleDe(a.i));
+          const vb = b.c.vLoc && b.c.vLoc[b.i] >= 0 ? b.c.vLoc[b.i] : b.c.vGrilleDe(b.i);
+          const limite = Math.max(6.5, va * va / (2 * FREIN) + 4);
+          // le chemin de l'autre pendant les deux secondes et demie qui viennent
+          const RBs = [], tbs = [];
+          for (let t = 0; t <= 2.5; t += 0.25) {
+            if (vb <= 0.2 && t > 0) break;
+            const db = b.d + vb * t, q = b.c.parcours.a(db), cap = b.c.parcours.capLisse(db);
+            RBs.push(rectangle(q.x, q.z, Math.sin(cap), Math.cos(cap), b.c.demiLong + 0.5, DEMI_LARG + 0.4)); tbs.push(t);
+          }
+          // le premier pas de MON balayage que son chemin occupe à peu près au
+          // moment où j'y serai (à une seconde et quart près) : c'est un
+          // croisement, et l'on s'arrête avant — ou c'est elle qui s'arrête
+          // (paire mutuelle : la première arrivée passe)
+          let trouve = null;
+          for (let k = 0; k < R.length && a.pas[k] <= limite && !trouve; k++) {
+            const tau = a.pas[k] / va;
+            if (seTouchent(R[k], b.rect)) { trouve = { k, tau, dejaLa: true }; break; }
+            for (let j = 0; j < RBs.length; j++) {
+              if (Math.abs(tbs[j] - tau) > 1.25) continue;
+              if (seTouchent(R[k], RBs[j])) { trouve = { k, tau: Math.min(tau, tbs[j] + 0.01), dejaLa: false }; break; }
+            }
+          }
+          if (trouve) {
+            const s = trouve.k > 0 ? a.pas[trouve.k - 1] : 0;
+            (a.veut || (a.veut = new Map())).set(b.cle, { devant: devantMoi, s, v: 0, tau: a.pas[trouve.k] / va, dejaLa: trouve.dejaLa });
+          }
+          continue;
+        }
+        for (let k = 0; k < R.length; k++) {
+          if (!seTouchent(R[k], b.rect)) continue;
+          const s = k > 0 ? a.pas[k - 1] : 0;
+          if (travers) {
+            const va = Math.max(0, a.c.vLoc[a.i]);
+            if (s > Math.max(6.5, va * va / (2 * FREIN_URGENCE) + 2)) break;
+          }
+          (a.veut || (a.veut = new Map())).set(b.cle, { devant: devantMoi, s, v: allureLe(b, a.ux, a.uz), tau: s / Math.max(1, a.c.vLoc[a.i]), dejaLa: true });
+          break;
+        }
       }
     }
     const parCle = new Map(voitures.map((v) => [v.cle, v]));
     dernieres = voitures; enMarcheCache = null;
+    // Ce que chaque voiture peut viser, et ce qui la retient.
     for (const a of voitures) {
       if (a.enfant || a.rail) continue;
-      let attend = false;
+      let cible = Infinity, bloquant = null;
       if (a.veut) {
-        for (const [cle, devantMoi] of a.veut) {
+        for (const [cle, g] of a.veut) {
           const b = parCle.get(cle);
           if (b && b.veut && b.veut.has(a.cle)) {
             // paire mutuelle : la plus engagée passe — celle que l'autre voit le
             // plus loin devant elle ; à égalité, la plus petite
-            const devantLui = b.veut.get(a.cle);
-            if (devantLui > devantMoi || (devantLui === devantMoi && a.cle < cle)) continue;
+            // paire mutuelle : passe celle qui arrive LA PREMIÈRE au point de
+            // contact (v372) — la plus engagée ; à égalité, la plus petite clé
+            // — sauf si l'autre est DÉJÀ sur mon chemin et moi pas sur le sien :
+            // on ne passe pas devant un capot qui dépasse dans sa voie
+            const lui = b.veut.get(a.cle);
+            if (g.dejaLa !== lui.dejaLa) { if (lui.dejaLa) continue; }
+            else if (lui.tau > g.tau || (lui.tau === g.tau && a.cle < cle)) continue;
           }
-          attend = true; break;
+          const vc = allureDevant(g.s - 0.5, g.v);
+          // le contact imminent ne vaut qu'EN TRAVERS d'une autre file : dans la
+          // sienne, le plancher (v283) garde déjà la longueur d'une voiture, et
+          // piler derrière celle qui précède faisait un arrêt sec au feu
+          if (vc < cible) { cible = vc; bloquant = b; a.contact = g.s === 0 && g.dejaLa && g.v < 0.5 && !(b && b.c === a.c); }
+          // DEVANT L'ENFANT, UN AMI OU UN PIÉTON, ON PILE QUAND LE FREINAGE NE
+          // SUFFIT PLUS (v372). Le freinage doux est pour le confort ; vue tard
+          // — l'enfant posé devant elle, une image lente du banc —, une voiture
+          // à cinquante ne s'arrête plus en douceur avant lui, et dès qu'elle le
+          // touche, « pas si l'on est déjà dedans » la laisse le traverser.
+          // Mesuré : trois et quatre relevés au travers, deux passages de
+          // `monte.js` seuls, zéro sur la v363. Marge : une image à trois par
+          // seconde, plus le demi-bloc d'avant le contact.
+          if (b && b.enfant && !b.rail && g.v < 0.5) {
+            const va = Math.max(0, a.c.vLoc[a.i] >= 0 ? a.c.vLoc[a.i] : a.c.vGrilleDe(a.i));
+            if (va * va / (2 * FREIN_URGENCE) + va * 0.35 + 0.5 >= g.s) { cible = 0; bloquant = b; a.contact = true; }
+          }
         }
       }
+      a.cible = cible; a.bloquant = bloquant;
+      a.legit = !!(bloquant && (bloquant.enfant || bloquant.rail));
+    }
+    // UNE FILE DERRIÈRE UN FEU NE FORCE PAS LE PASSAGE (v372). La patience de
+    // quatre secondes (v244) dénoue les paires qui se regardent en travers d'un
+    // carrefour ; appliquée à une file arrêtée derrière un feu ou derrière
+    // l'enfant, elle faisait passer la deuxième voiture AU TRAVERS de la
+    // première au bout de quatre secondes. Est « légitime » ce qui est retenu
+    // par un feu, l'enfant, un piéton, un train — ou par la voiture de SA file
+    // qui l'est. Une voiture d'une AUTRE file arrêtée en travers garde la
+    // patience de quatre secondes : sans elle, deux files qui se bouchent
+    // mutuellement un carrefour s'y bloqueraient pour toujours (mesuré : une
+    // file de Paris arrêtée trente secondes derrière la queue d'une autre).
+    const feuDe = new Map();
+    for (const a of voitures) {
+      if (a.enfant || a.rail || !feuRouge) continue;
+      const f = feuRouge(a.x, a.z, Math.atan2(a.ux, a.uz));
+      if (!f) continue;
+      const s = f === true ? 0 : f.s;
+      const v = a.c.vLoc[a.i] >= 0 ? a.c.vLoc[a.i] : a.c.vGrilleDe(a.i);
+      // À L'ORANGE, ON PASSE SI L'ON NE PEUT PLUS S'ARRÊTER (zone de dilemme)
+      if (f !== true && f.orange && passeAOrange(v, s)) continue;
+      feuDe.set(a, allureDevant(s));
+      a.legit = true;
+    }
+    // Et dans SA file, quel que soit le rang (v372) : au croisement d'un
+    // circuit en huit (−333, 271), la voiture qui attend devant est une voiture
+    // de la même file, douze rangs plus loin, elle-même arrêtée derrière un feu.
+    // Ne propager que par la voisine faisait de cette attente un « nœud » : au
+    // bout de quatre secondes la voiture passait au travers (mesuré, 1,8 % des
+    // paires). Une file ne peut pas former de cycle légitime : la légitimité
+    // part toujours d'un feu, de l'enfant, d'un piéton ou d'un train.
+    // ET « DEVANT L'ENFANT » NE VEUT PAS DIRE « SEULEMENT LUI » (v383). Une
+    // voiture gênée par un joueur (ou un train, clé négative) ET par une
+    // voiture de la rue retombait sur la patience de quatre secondes, puis
+    // `repart` la lançait à l'aveugle AU TRAVERS de l'enfant ou de l'ami —
+    // mesuré à la sonde (`sonde-intrus-ami.cjs`) chez Alice : cinq voitures
+    // entrées dans celle de Marlon, toutes en `repart`. Dès qu'un joueur est
+    // dans son `veut`, elle est légitime : elle attend sans limite, et un
+    // `repart` déjà lancé s'arrête net devant lui.
+    for (const a of voitures) {
+      if (a.enfant || a.rail || !a.veut) continue;
+      for (const k of a.veut.keys()) if (k < 0) { a.legit = true; a.c.repart[a.i] = 0; break; }
+    }
+    for (let passe = 0; passe < 6; passe++) {
+      for (const a of voitures) if (!a.legit && a.bloquant && a.bloquant.c === a.c && a.bloquant.legit) a.legit = true;
+    }
+    for (const a of voitures) {
+      if (a.enfant || a.rail) continue;
       const c = a.c, i = a.i;
-      // ET UN FEU ROUGE ARRÊTE AUSSI (v273) — devant la ligne, jamais dans le
-      // carrefour, et sans patience : un feu ne se force pas, il passe au
-      // vert. C'est la même exception que devant l'enfant (v245), pour la même
-      // raison : une voiture qui finit par démarrer au rouge, c'est la panne
-      // qu'on répare. L'orange arrête comme le rouge — c'est le dégagement.
-      if (feuRouge && feuRouge(a.x, a.z, Math.atan2(a.ux, a.uz))) {
-        c.attend[i] = 1; c.attenteDepuis[i] = 0; c.repart[i] = 0;
-        continue;
-      }
-      // Devant l'enfant seul, on attend SANS LIMITE : une voiture qui finit
-      // par lui passer au travers, c'est la panne qu'on répare — mesuré, la
-      // patience de douze secondes la faisait revenir au bout de douze
-      // secondes. La rue attend que l'enfant reparte ; les autres voitures
-      // gardent leurs quatre secondes entre elles.
-      // …et devant un train (v304) : on ne force pas un passage à niveau.
-      //
-      // ET « SEUL » NE VEUT PAS DIRE « SEULEMENT LUI » (v383). La règle
-      // écrivait « devant l'enfant SEUL » : une voiture gênée par l'enfant ET
-      // par une autre voiture de la rue — un carrefour, une file qui croise —
-      // retombait sur la patience de quatre secondes, puis `repart` la lançait
-      // deux secondes à l'aveugle, AU TRAVERS de l'enfant ou de l'ami. Mesuré
-      // à la sonde (`sonde-intrus-ami.cjs`) chez Alice : cinq voitures entrées
-      // dans celle de Marlon, toutes avec l'ami dans leur `veut` à côté d'une
-      // voiture de la rue, toutes en `repart`. La patience ne sert qu'à
-      // dénouer DEUX voitures de la rue ; dès qu'un joueur (ou un train, clé
-      // négative) est sur le chemin, on attend, et un `repart` déjà lancé
-      // s'arrête net devant lui.
-      const devantUnJoueur = !!a.veut && [...a.veut.keys()].some((k) => k < 0);
-      const patience = devantUnJoueur ? Infinity : 4;
-      if (devantUnJoueur) { c.repart[i] = 0; c.attenteDepuis[i] += dt; }
-      else if (c.repart[i] > 0) { c.repart[i] -= dt; attend = false; }          // on vient de décider d'y aller
-      else if (attend) {
+      let cible = a.cible;
+      const v = c.vLoc[i] >= 0 ? c.vLoc[i] : 0;
+      if (c.repart[i] > 0) { c.repart[i] -= dt; if (!a.legit) { cible = Infinity; a.contact = false; } }
+      else if (cible < 0.5 && v < 0.3 && !a.legit) {
         c.attenteDepuis[i] += dt;
-        if (c.attenteDepuis[i] > patience) { attend = false; c.repart[i] = 2; c.attenteDepuis[i] = 0; }
+        if (c.attenteDepuis[i] > 4) { cible = Infinity; a.contact = false; c.repart[i] = 2; c.attenteDepuis[i] = 0; }
       } else c.attenteDepuis[i] = 0;
-      c.attend[i] = attend ? 1 : 0;
+      // ET UN FEU ROUGE ARRÊTE AUSSI (v273) — devant la ligne, jamais dans le
+      // carrefour, et sans patience : un feu ne se force pas, il passe au vert.
+      // Depuis la v372 on y arrive en FREINANT, pas en pilant.
+      const f = feuDe.get(a);
+      a.cause = cible === Infinity ? null : !a.bloquant ? '?' : a.bloquant.pieton ? 'pieton'
+        : a.bloquant.ami ? 'ami' : a.bloquant.enfant ? 'enfant' : a.bloquant.rail ? 'train'
+          : a.bloquant.c === c && a.bloquant.i === i - 1 ? (a.legit ? 'file-feu' : 'file') : (a.legit ? 'voiture-feu' : 'voiture');
+      if (f !== undefined && f < cible) { cible = f; c.repart[i] = 0; c.attenteDepuis[i] = 0; a.cause = 'feu'; }
+      c.cible[i] = cible;
+      c.urgence[i] = a.contact && cible === a.cible ? 1 : 0;
+      c.cause[i] = a.cause === 'feu' || a.cause === 'file-feu' ? 1 : a.cause ? 2 : 0;
+      a.parPieton = !!(a.bloquant && a.bloquant.pieton && cible === a.cible);
+      c.attend[i] = cible < c.vGrilleDe(i) - 0.05 ? 1 : 0;
     }
   }
 
@@ -2026,10 +2570,41 @@ export function createVehicules({ scene, player }) {
     const moi = rectangle(x, z, ux, uz);
     for (const b of dernieres) {
       if (b.enfant && !b.ami) continue;
-      if ((b.x - x) ** 2 + (b.z - z) ** 2 > 8 * 8 || Math.abs(b.y - player.pos.y) > 2.5) continue;
+      if ((b.x - x) ** 2 + (b.z - z) ** 2 > 9 * 9 || Math.abs(b.y - player.pos.y) > 2.5) continue;
       if (seTouchent(moi, b.rect)) return true;
     }
     return false;
+  }
+
+  // LA VOITURE QU'ON TOUCHE, PAS SEULEMENT LE FAIT DE LA TOUCHER (v397,
+  // conduite-physique). `obstacleDevant` dit « oui » ; le choc a besoin de
+  // savoir CONTRE QUOI : sa boîte (centre, axe, demi-longueur, demi-largeur,
+  // relues sur le rectangle de la collecte — une rame de train n'a pas les
+  // cotes d'une voiture) et son allure du moment le long de son axe (zéro si
+  // elle attend, comme `enMarche`). Lecture seule, une copie : rien de la
+  // collecte ne sort d'ici.
+  function voitureContre(x, z, cap) {
+    const ux = Math.sin(cap), uz = Math.cos(cap);
+    const moi = rectangle(x, z, ux, uz);
+    for (const b of dernieres) {
+      if (b.enfant && !b.ami) continue;
+      if ((b.x - x) ** 2 + (b.z - z) ** 2 > 8 * 8 || Math.abs(b.y - player.pos.y) > 2.5) continue;
+      if (!seTouchent(moi, b.rect)) continue;
+      const vx = b.uz, vz = -b.ux;
+      let a = 0, l = 0;
+      for (const [px, pz] of b.rect) {
+        a = Math.max(a, Math.abs((px - b.x) * b.ux + (pz - b.z) * b.uz));
+        l = Math.max(l, Math.abs((px - b.x) * vx + (pz - b.z) * vz));
+      }
+      const c = b.c;
+      let v = 0;
+      if (c && !b.ami && !(c.attend && c.attend[b.i]) && !c.bloque && !(c.attente > 0)) {
+        const allure = c.rapport ? c.rapport[b.i] : (c.retard && c.retard[b.i] > 0 ? 1.5 : 1);
+        v = (c.vitesseActuelle ?? c.vitesse ?? 0) * allure;
+      }
+      return { x: b.x, z: b.z, ux: b.ux, uz: b.uz, a, b: l, v, rail: !!b.rail };
+    }
+    return null;
   }
 
   // ET UN PIÉTON NE TRAVERSE PAS UNE VOITURE (v259). Max, capture à la
@@ -2041,7 +2616,7 @@ export function createVehicules({ scene, player }) {
   // n'est pas une voiture : on passe à côté de lui comme avant.
   function voitureA(x, z, y) {
     for (const b of dernieres) {
-      if (b.enfant && !(b.ami ? b.vehicule : player.gabarit > 1)) continue;
+      if (b.pieton || (b.enfant && !(b.ami ? b.vehicule : player.gabarit > 1))) continue;
       if ((b.x - x) ** 2 + (b.z - z) ** 2 > 6 * 6 || Math.abs(b.y - y) > 2.5) continue;
       if (dansRectangle(b.rect, x, z)) return true;
     }
@@ -2096,11 +2671,15 @@ export function createVehicules({ scene, player }) {
     for (const b of dernieres) {
       if (b.enfant || b.rail) continue;
       const c = b.c;
-      if (c.attend[b.i]) continue;                       // à l'arrêt : personne ne s'en écarte
       // ce qu'elle a OBTENU, pas ce qu'elle demandait (v283) : un piéton ne
-      // s'écarte pas devant une voiture que le plancher tient immobile.
-      const allure = c.rapport ? c.rapport[b.i] : (c.retard[b.i] > 0 ? 1.5 : 1);
-      out.push({ x: b.x, y: b.y, z: b.z, ux: b.ux, uz: b.uz, v: (c.vitesseActuelle ?? c.vitesse) * allure, demiLarg: DEMI_LARG });
+      // s'écarte pas devant une voiture que le plancher tient immobile — SAUF
+      // si c'est lui qu'elle attend (v372) : elle veut encore passer, et c'est
+      // ce qui le fait s'écarter au lieu de la bloquer pour toujours (la règle
+      // de `pousse`, v259, pour la voiture de l'enfant).
+      let v = c.vLoc && c.vLoc[b.i] >= 0 ? c.vLoc[b.i] : c.vGrilleDe(b.i) * (c.rapport ? c.rapport[b.i] : 1);
+      if (b.parPieton) v = Math.max(v, c.vGrilleDe(b.i));
+      if (v < 0.3) continue;                             // à l'arrêt : personne ne s'en écarte
+      out.push({ x: b.x, y: b.y, z: b.z, ux: b.ux, uz: b.uz, v, demiLarg: DEMI_LARG });
     }
     enMarcheCache = out;
     return out;
@@ -2126,8 +2705,36 @@ export function createVehicules({ scene, player }) {
   let horloge = 0;
   function update(dt, dtReel = dt) {
     horloge += dtReel;
-    cederLePassage(dt);
+    lireLeChoc();
+    // la patience se compte en temps RÉEL (v372) : en `dt`, borné à un
+    // vingtième, quatre secondes en duraient vingt-cinq sur un banc qui rame
+    cederLePassage(dtReel);
     for (const c of convois) c.update(dtReel, player.pos, horloge);
+  }
+  // LA VOITURE QUE L'ENFANT PERCUTE S'ARRÊTE (v372). La session de conduite
+  // publie `player.choc` = { force, t, x, z } quand la voiture de l'enfant
+  // heurte quelque chose ; on le lit SI PRÉSENT. La voiture de la rue la plus
+  // proche du point de choc s'immobilise trois à six secondes, feux de
+  // détresse allumés, puis repart. C'est LOCAL — l'ami ne voit pas l'arrêt sur
+  // sa tablette, comme il ne voit pas l'instant où une voiture cède (v305) —
+  // et c'est déclaré.
+  function lireLeChoc() {
+    const ch = player.choc;
+    if (!ch || typeof ch.t !== 'number' || ch.t === dernierChoc) return;
+    dernierChoc = ch.t;
+    if (performance.now() - ch.t > 1500) return;
+    heurter(ch.x ?? player.pos.x, ch.z ?? player.pos.z, ch.force ?? 0.5);
+  }
+  function heurter(x, z, force = 0.5) {
+    let meilleur = null, dMin = 4.5 * 4.5;
+    for (const b of dernieres) {
+      if (!b.c || b.rail || b.enfant) continue;
+      const d = (b.x - x) ** 2 + (b.z - z) ** 2;
+      if (d < dMin) { dMin = d; meilleur = b; }
+    }
+    if (!meilleur) return null;
+    meilleur.c.heurte[meilleur.i] = 3 + 3 * Math.max(0, Math.min(1, force));
+    return `${meilleur.ci}:${meilleur.i}`;
   }
   // On glisse vers l'heure de l'hôte quand l'écart est petit, on saute quand
   // il est grand — la règle du ciel (`adopterCiel`) : une seconde de rue, ce
@@ -2162,7 +2769,7 @@ export function createVehicules({ scene, player }) {
       // longue que sa corde : si la tête est plus loin que ça plus le rayon,
       // aucun wagon ne peut être à portée.
       const tete = c.place(0);
-      const trainee = c.ecart * (c.elements.length - 1) + c.retardMax();
+      const trainee = c.etendue();
       if (Math.hypot(tete.x - pos.x, tete.z - pos.z) > rayon + trainee) return;
       c.elements.forEach((m, i) => {
         if (c.pris.has(i)) return;
@@ -2190,7 +2797,7 @@ export function createVehicules({ scene, player }) {
     const tete = c.parcours.a(c.distance);
     const q = c.parcours.a(c.dElement(i));
     const portee = (c.decouvert && c.decouvert(tete)) ? VU : c.vu;
-    const trainee = c.ecart * (c.nb - 1) + c.retardMax();
+    const trainee = c.etendue();
     const regle = (x, z) => ({
       prefiltre: Math.hypot(tete.x - x, tete.z - z) <= portee + trainee,
       dedans: (q.x - x) ** 2 + (q.z - z) ** 2 < portee * portee,
@@ -2280,7 +2887,7 @@ export function createVehicules({ scene, player }) {
   }
 
   return {
-    metro, course, chaine, circulation, bus, update, placeProche, diagPlace, place, emprunter, retirer, obstacleDevant, voitureA, dansRectangle, enMarche, voitureRueProche, voitureNommee,
+    metro, course, chaine, circulation, bus, update, placeProche, diagPlace, place, emprunter, retirer, obstacleDevant, voitureContre, voitureA, dansRectangle, enMarche, voitureRueProche, voitureNommee,
     adopterHorloge, horloge: () => horloge,
     // le crochet des feux tricolores (v273), branché par main.js
     brancherFeux: (f) => { feuRouge = f; },
@@ -2293,6 +2900,46 @@ export function createVehicules({ scene, player }) {
       veut: a.veut ? [...a.veut.keys()] : [], attend: a.c && a.c.attend ? a.c.attend[a.i] : null,
       depuis: a.c && a.c.attenteDepuis ? +a.c.attenteDepuis[a.i].toFixed(1) : null, repart: a.c && a.c.repart ? +a.c.repart[a.i].toFixed(1) : null,
       nom: a.c ? `${a.c.cle}#${a.i}` : null, cap: +Math.atan2(a.ux, a.uz).toFixed(2) })),
+    // les piétons de la rue (v372), branchés par main.js : la circulation
+    // freine devant eux
+    brancherPietons: (f) => { pietons = f; },
+    // pour les tests (v372) : où la grille met la tête du convoi `cle` à
+    // l'heure de rue `h` — c'est ce qu'une autre tablette compare à la sienne
+    distanceA: (cle, h) => { const c = convois.find((x) => x.cle === cle); if (!c || !c.horaire()) return null; return c.distanceA(h - (c.decalage || 0)).d; },
+    // pour les tests : un point du tracé `avance` blocs devant la voiture i
+    devantVoiture: (ci, i, avance = 0) => { const c = convois[ci]; if (!c) return null; const q = c.parcours.a(c.dElement(i) + avance); return { x: q.x, y: q.y, z: q.z }; },
+    poserPieton: (x, y, z) => { const n = { pos: { x, y, z } }; pietonsPoses.push(n); return n; },
+    retirerPietons: () => { pietonsPoses.length = 0; },
+    // CE QUI RETIENT LA RUE (v372), pour les sondes : par cause, combien de
+    // voitures à portée visent moins que leur grille, et combien sont à l'arrêt
+    diagAttente: () => {
+      const out = { voitures: 0 };
+      for (const a of dernieres) {
+        if (a.enfant || a.rail) continue;
+        out.voitures++;
+        if (!a.cause) continue;
+        const k = a.cause, arret = a.c.vLoc[a.i] >= 0 && a.c.vLoc[a.i] < 0.3;
+        out[k] = (out[k] || 0) + 1;
+        if (arret) out[k + '·arrêt'] = (out[k + '·arrêt'] || 0) + 1;
+      }
+      out.tetes = dernieres.filter((a) => a.cause === 'feu' || a.cause === 'voiture' || a.cause === 'file-feu' && a.bloquant && a.bloquant.cause === 'voiture').slice(0, 6).map((a) => ({
+        k: a.ci + ':' + a.i, cause: a.cause, x: Math.round(a.x), z: Math.round(a.z), u: [+a.ux.toFixed(2), +a.uz.toFixed(2)], v: +a.c.vLoc[a.i].toFixed(2),
+        cible: +a.c.cible[a.i].toFixed(2), r: Math.round(a.c.retard[a.i]),
+        b: a.bloquant ? (a.bloquant.ci + ':' + a.bloquant.i + ' ' + (a.bloquant.cause || '-') + ' dot ' + (a.ux * a.bloquant.ux + a.uz * a.bloquant.uz).toFixed(2) + ' s ' + (a.veut && a.veut.get(a.bloquant.cle) ? a.veut.get(a.bloquant.cle).s : '?')) : null,
+        f: feuRouge ? feuRouge(a.x, a.z, Math.atan2(a.ux, a.uz)) : null }));
+      return out;
+    },
+    // pour les sondes : ce qu'une voiture voit et vise, à la dernière collecte
+    diagVoiture: (ci, i) => {
+      const a = dernieres.find((v) => v.ci === ci && v.i === i);
+      if (!a) return null;
+      return { x: +a.x.toFixed(1), z: +a.z.toFixed(1), u: [+a.ux.toFixed(2), +a.uz.toFixed(2)], d: +a.d.toFixed(1),
+        v: +a.c.vLoc[i].toFixed(2), vg: +a.c.vGrilleDe(i).toFixed(2), cible: +a.c.cible[i].toFixed(2), r: +a.c.retard[i].toFixed(1),
+        cause: a.cause || null, portee: a.portee, bloquant: a.bloquant ? a.bloquant.ci + ':' + a.bloquant.i : null,
+        veut: a.veut ? [...a.veut].map(([k, g]) => [k, +g.s.toFixed(1), +g.tau.toFixed(2), g.dejaLa]) : [] };
+    },
+    // pour les tests : heurter la voiture de la rue la plus proche d'un point
+    heurter,
     // pour les tests : un point du tracé, en avant de la tête du convoi, là
     // où l'on peut aller attendre son passage
     point: (ci, avance = 0) => (convois[ci] ? convois[ci].place(0, avance) : null),
@@ -2339,6 +2986,19 @@ export function createVehicules({ scene, player }) {
           (_, i) => Math.round((c.dElement(i) - c.dElement(i + 1)) * 100) / 100)
         : [],
       attendent: c.attend ? Array.from(c.attend).filter(Boolean).length : 0, routier: !!c.routier,
+      // L'ALLURE DE LA RUE (v372) : le type de voie, la croisière du profil
+      // (le plus vite qu'il roule sur le tour) et sa plus lente, la vitesse
+      // PROPRE de chaque voiture (`vLoc`, ce qu'elle fait vraiment, freinage
+      // compris) et celles qui ont été heurtées par l'enfant
+      voie: c.voie || null,
+      croisiere: c.profilCalcule ? Math.round(Math.max(...c.profilCalcule.vs) * 10) / 10 : null,
+      lente: c.profilCalcule ? Math.round(Math.min(...c.profilCalcule.vs) * 10) / 10 : null,
+      vitesses: c.vLoc ? Array.from(c.vLoc).map((v, i) => Math.round((v >= 0 ? v : c.vGrilleDe(i)) * 100) / 100) : [],
+      // l'allure que la grille donne à chaque voiture, là où elle est
+      grille: c.vGrille ? Array.from(c.vGrille).map((v) => Math.round(v * 100) / 100) : [],
+      heurtees: c.heurte ? Array.from(c.heurte).filter((h) => h > 0).length : 0,
+      // ce qui retient chaque voiture : 0 rien, 1 un feu ou sa file, 2 autre chose
+      causes: c.cause ? Array.from(c.cause) : [],
       // la diversité (v246) : les modèles que le convoi va montrer, sa graine,
       // et la livrée — modèle + laque — de chaque voiture visible
       graine: c.graine, modeles: c.modeles || [],
