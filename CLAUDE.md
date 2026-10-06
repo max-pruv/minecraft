@@ -770,6 +770,69 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les circuits des villes engendrées (v387) — ce qui se partage est une voie, pas une rue
+
+« Lance sur toutes les villes. » Mesuré sur `origin/main` (v373) : 147 des 262
+villes engendrées n'avaient qu'UN circuit (48 superîlots, v282), 43 anneaux de
+28 villes passaient DANS un monument, et le plus petit anneau roulait sur
+l'axe de la rue. Huit règles.
+
+- **UNE BARRE DE PARTAGE SE RELIT QUAND LA RUE CHANGE DE SECTION.** La v211 a
+  posé vingt blocs quand une rue n'avait qu'UNE file. Depuis la v271 elle en a
+  deux et l'on roule à droite : deux anneaux de part et d'autre d'une rue la
+  parcourent en sens contraires, chacun sur sa voie — ils se CROISENT. Seuls
+  ceux du même côté se SUIVENT. `partageDeRue` compte par voie (le côté de
+  l'anneau multiplié par son `sens`) ; le témoin le mesure sur les TRACÉS sans
+  la formule (écart, sens, recouvrement). La piste « barre en fraction du
+  périmètre » déclarée en v282 laissait deux convois se suivre : écartée.
+- **UN DÉCALAGE BORNÉ PAR LE PAS NE DÉCALE PAS LE PLUS PETIT.**
+  `Math.max(t.pu, Ru − voie)` laissait l'anneau d'un pas de demi-côté sur
+  l'axe. Le témoin « à droite » de la v271 le lisait comme à droite (« vers le
+  centre du rectangle ») ; relu comme « à droite de l'axe de la rue », il rend
+  325 relevés à gauche sur `origin/main`, zéro ici.
+- **QUAND LA GÉOMÉTRIE N'A QU'UN CYCLE, LE SECOND CIRCUIT EST LE CONTRESENS.**
+  Une ville de rayon < 2,3 pas n'a que trois rues de chaque côté du centre, et
+  la place (et sa fontaine) est sur le nœud central : un seul cycle l'évite.
+  Le contresens (`sens: -1`) roule côté extérieur, sur les mêmes tabliers.
+  Les anneaux en pas de trame (côtés impairs, phase 2 bis) et le contresens
+  doivent rouler sur la chaussée (`horsChaussee`) ; les anneaux d'avant ne le
+  font pas toujours — c'est mesuré et déclaré (`TASKS.md`), parce que le
+  filtre appliqué à eux viderait treize villes.
+- **UN ANNEAU NE TRAVERSE PAS UN MONUMENT, ET L'ON LIT LE BÂTISSEUR.** La dette
+  d'Agra (v362) était le cas visible de 43 anneaux. `contreUnMonument` lit les
+  couches 1 à 3 du bâtisseur sous la largeur de la carrosserie (la règle de
+  `avenueDEntree`, v365), ne bâtit que les monuments dont la boîte approche la
+  voie, et la couverture perdue (Agra 84,5 %) est regagnée par des anneaux de
+  quartier cherchés sous node (`ANNEAUX_EN_PLUS`). On déplace l'ANNEAU, jamais
+  la boîte, qui entre dans les zones du relief.
+- **UN CALCUL QU'ON ENRICHIT SE DÉPLACE LÀ OÙ IL SERT.** Les anneaux des 262
+  villes passaient de ~230 à ~700 ms, derrière le bouton « Jouer » (v258). Un
+  convoi ne naît qu'à 220 blocs de sa ville : `circulationsAPlier` rend un
+  repère par ville (même ancre, donc même instant) et `deplier()` calcule ses
+  anneaux à l'approche. `tracesCirculation` rend le même tout, pour les témoins.
+- **UN TÉMOIN QUI LIT UNE LISTE DE VILLES NE VOIT PAS LES AUTRES.** Le témoin
+  des ponts ne lisait que cinq villes et celles des routes ; lu sur les 56
+  villes à pont, `origin/main` en avait sept fautives, dont cinq jamais vues.
+  Et sa barre « 60 % de l'axe sur l'eau » valait pour les grands fleuves : une
+  culée se compte par tablier (quatre pas à sec au plus).
+- **UN TABLIER COUVRE LA COLONNE OÙ LA VOITURE ARRONDIT, PAS SEULEMENT L'EAU
+  DE L'AXE.** La voiture roule sur des colonnes entières (`Math.floor`) ; un
+  tablier borné exactement aux abscisses mouillées laissait au bout une colonne
+  d'eau non couverte — Berlin en v362, Munich ici, sur le témoin des ponts au
+  portail. `pontDeVille` porte un bloc de plus à chaque bout (`a0 − 1`,
+  `a1 + 1`) ; mesuré, cela n'ajoute qu'un bloc de tablier à Rome et à Tokyo.
+- **DEUX SESSIONS ONT LIVRÉ LA MÊME RÈGLE, ET L'ON EN GARDE UNE.** La v378
+  (une autre session) a écarté les monuments et déplié les anneaux à
+  l'approche pendant que cette livraison faisait de même. À la fusion, une
+  seule implémentation reste (`contreUnMonument`, `circulationsAPlier`), et
+  les TÉMOINS des deux restent : le nom que lit le témoin de la v378
+  (`tracesCirculationParesseuses`) est un alias, ses anneaux de quartier
+  d'Agra et du Cap partent avec son filtre. Ce qui le permet est une mesure,
+  pas une préférence : ville par ville contre `origin/main` v379, aucune ne
+  perd de couverture ni sa voiture en vue (sonde `couv.mjs`), et son témoin
+  rend toujours zéro monument en travers. Deux filtres pour la même règle
+  finiraient par diverger, et l'anneau écarté par l'un passerait par l'autre.
+
 ## Les voitures contournent les monuments (v378) — un test qui écarte un candidat se mesure en temps de démarrage
 
 Deux règles.
@@ -788,6 +851,9 @@ Deux règles.
   donne une marque par ville, `animerLesVilles` la déplie à 220 blocs ; un
   témoin exige les mêmes traces que le calcul entier. Un premier dépliage
   coûte au plus 43 ms (Rome, le Colisée du catalogue), une fois.
+  *(Depuis la v387 le filtre est `contreUnMonument` et le dépliage
+  `circulationsAPlier`, dont `tracesCirculationParesseuses` est l'alias : voir
+  « Les circuits des villes engendrées (v387) ».)*
 
 ## Les huit derniers palais (v375) — une boîte se relève en carte avant qu'on la remplisse
 

@@ -20,6 +20,44 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v387 — Plusieurs circuits dans chaque ville, et les deux sens
+
+**Pourquoi.** Dans 153 des 262 villes engendrées (sur la v379), les voitures
+ne faisaient qu'UN tour, toujours dans le même sens — dont 48 villes à tours
+(Houston, Melbourne, Taipei…) depuis la v282. Le plus petit circuit d'une
+ville roulait au milieu de la rue au lieu de sa voie de droite. Et les
+circuits passaient dans les monuments : la v378, livrée en parallèle par une
+autre session, l'avait réglé de son côté ; cette livraison le règle aussi, et
+il fallait n'en garder qu'une façon.
+
+**Ce que ça change.** Presque chaque ville a désormais deux circuits ou plus
+(251 sur 262), de nouveaux tours autour d'un, deux ou trois pâtés de maisons,
+et des voitures dans les DEUX sens sur la même rue, chacune dans sa voie. Plus
+aucune voiture ne passe dans un monument : à Agra, Istanbul, Rome, Munich,
+Séoul, Dubaï, Amsterdam et Prague, des tours de quartier contournent les
+monuments et rendent la couverture d'avant. Les circuits d'une ville se
+calculent quand l'enfant en approche, plus pendant l'écran d'accueil — comme
+en v378, dont le filtre et le dépliage sont remplacés par ceux-ci (un seul
+code pour une seule règle), sans qu'aucune ville ne perde de couverture ni sa
+voiture en vue par rapport à la v379.
+
+**Ce qui le prouve.** Trois témoins neufs dans `carteMonde.js`, sur toutes
+les villes et vérifiés rouges sur `origin/main` (v373) : 251/262 villes à
+plusieurs circuits (115 avant, 109 sur la v379) ; 1 063 côtés de rue partagés, sens contraires à 3,2
+blocs au moins pour deux demi-largeurs de 2,26 (49 avant, sans aucun sens
+contraire) ; zéro pas de carrosserie dans un monument (1 613 avant, 43
+anneaux). Les deux témoins de la v378 restent verts sur ce code : zéro
+monument en travers sur 123, et les anneaux dépliés sont les mêmes que le
+calcul entier (262 villes). Le témoin « à droite » de la v271 relu à l'axe de la rue : 0 relevé à
+gauche (325 sur `origin/main`). Le témoin des ponts lit les 56 villes à pont
+au lieu de quinze : Agra, Berlin et Munich réglés — un tablier d'anneau
+porte désormais un bloc de plus à chaque bout, pour la colonne arrondie que la
+voiture prend encore —, Séoul et Chicago déclarés (culées
+d'anneaux d'avant, mêmes valeurs sur `origin/main`). Aucune ville ne perd de
+couverture ni sa voiture en vue depuis le centre (sonde ville par ville), le
+partage dans le même sens reste sous vingt blocs (14,8). L'empreinte des 490
+morceaux change à Rome et à Tokyo seulement, et chaque colonne différente est
+sur un tablier d'avant ou d'après.
 ## v386 — La chauffe de New York se mesure seule
 
 **Pourquoi.** « Se téléporter dans une ville ne compile plus de programmes »
@@ -461,6 +499,7 @@ pivot, la voiture à 70 % de santé). Le coût du plan, une fois par modèle, se
 remesure : médiane 5 ms (4 avant), 15 ms sur la Lucid (13 avant), 21 ms au
 pire hors taxis (28 avant) — chaque sommet ne passe plus qu'une fois dans le
 repère de la voiture, et la recopie des attributs se fait d'un geste.
+
 ## v371 — Les passants traversent au feu
 
 **Pourquoi.** Les passants marchaient le long de leur trottoir et, au coin,

@@ -1,5 +1,40 @@
 # Ce qui est en cours
 
+- [ ] **LE PORTAIL DE LA v387 (les circuits des villes engendrées), DOUBLE
+  MESURE FAITE.** Verts : `carteMonde.js`, `plafond.js`, `degats.js`,
+  `carte.js`, `washington.js`. `maj.js` : un seul rouge, À MOI et corrigé (le
+  titre de la nouveauté faisait sept mots). Rouges déjà déclarés, mêmes
+  valeurs : `manhattan.js` façade 22 326 → 51 734 ; `monte.js` chauffe de New
+  York expirée à 68 sur 321. Le gel d'arrivée (1 300 ms · 37,8 % au portail)
+  me concernait peut-être — `deplier()` calcule désormais les anneaux d'une
+  ville à l'approche. Rejoué SEUL, même vol, en ordre alterné, deux passages
+  par page (`sonde-gel` du brouillon) : branche 1,8 · 10,4 · 0 · 7,3 % (pire
+  image 283 à 1 517 ms), `origin/main` v375 10,7 · 13,1 · 9,6 · 0 % (283 à
+  1 400 ms). Même distribution, la branche n'est pas pire : c'est la dette
+  connue, pas la livraison.
+  Après la fusion de la v375 (portail de dix suites) : un rouge À MOI,
+  corrigé — le témoin de la v375 « aucun monument en travers d'un anneau »
+  rendait sa dette « déclarée pour rien » : les anneaux de la livraison la
+  remboursent entière (123 monuments lus, zéro en travers), sa table est
+  vidée. Les autres, déjà déclarés et rejoués SEULS des deux côtés : `carte.js`
+  flèche du GPS (gauche à 1,92 rad, même valeur sur `origin/main` v375) ;
+  `plafond.js` « la surface coûte… » (10,4 puis 8,0 ms avec contre 1,2 et
+  2,2 sans sur la branche ; 10,5 contre 8,6 sur `origin/main` — sous node, ordre
+  alterné, 31 passages : branche 2,16·1,91·1,64 contre 1,60·1,23·1,09 ms,
+  `origin/main` 2,05·2,75·2,07 contre 1,51·1,77·1,09, le même écart) ;
+  `maj.js` le loader de l'installation ; `manhattan.js` façade 17 102 →
+  51 734 et le taxi (bouton jamais visible) ; `monte.js` gel 700 ms · 13,9 %.
+  Après la fusion de la v379 (dix suites) : huit vertes ; `manhattan.js`
+  façade 27 926 → 51 734 (déclarée) ; `carte.js` les deux témoins d'appui long
+  (« pointeurs 0 », la dette de charge de la v258) — rejoués SEULS deux fois de
+  chaque côté, verts sur la branche ET sur `origin/main` v379 ; au troisième
+  passage de la branche, la flèche du GPS seule (gauche 1,92 rad, déclarée).
+  Après la fusion de la v382 : huit suites vertes ; `manhattan.js` façade
+  (déclarée) et `maj.js` les deux témoins du loader d'installation (dette
+  déclarée) — après la fusion de la v386, `maj.js` et `plafond.js` rejoués
+  SEULS sur la branche, et `maj.js` seul sur `origin/main` v386 : verts tous
+  les trois.
+
 - [ ] **LA COMPILATION À L'ARRIVÉE (monte.js) : CE QUE LE BANC SOUS CHARGE
   MESURE (v386).** Rouge chronique, des deux côtés : « chauffe de New York
   expirée » (44 à 163 sur 321 en soixante secondes). Sondé
@@ -247,22 +282,30 @@
   refaire : nord montagne (≥ 50), est crête 43–49 de u 73 à 121 (une route au
   niveau de la rue déblaierait douze blocs), ouest le Potomac dans la boîte ;
   la base d'Andrews (102, 281) ferme le sud-est.
-- [ ] **DEUX PONTS DE VILLE À REPRENDRE, VUS PAR LE TÉMOIN ÉLARGI (v362).**
-  (Berlin FAIT en v381 : le tablier couvre l'eau du demi-bloc au-delà de ses
-  bouts — 437 encoches dans 49 villes, zéro après ; reste Agra.) Berlin : UNE colonne d'eau sans tablier au bout d'un pont (4186, −2011) —
-- [x] **DEUX PONTS DE VILLE À REPRENDRE, VUS PAR LE TÉMOIN ÉLARGI (v362) — tombés
-  en v378** avec les anneaux qui passaient dans un monument (le Taj et le Fort
-  à Agra, le Berliner Dom à Berlin) : `DETTE_PONTS` est vide. La cause de
-  Berlin (le bout d'axe arrondi hors de `pontDeVille`) n'est pas corrigée, elle
-  n'a plus d'anneau où se montrer : le témoin la verrait revenir.
-  Berlin : UNE colonne d'eau sans tablier au bout d'un pont (4186, −2011) —
-  le bout de l'axe arrondi tombe hors de `pontDeVille`. Agra : le Taj Mahal
-  et le Fort d'Agra sont bâtis SUR deux tabliers d'anneaux (neuf pas bouchés,
-  (29201, 13029) et (29290..29297, 13081)) — un conflit de plan entre les
-  anneaux de circulation et les monuments. Ni l'un ni l'autre n'est d'une
-  route ; mêmes valeurs sur `origin/main` (villesmonde.js inchangé). Déclarés
-  dans `DETTE_PONTS` (carteMonde.js), qui rougit quand ils ne mesurent plus
-  rien. TOKYO (v381), lue depuis que le Tōmei la touche : le Sensō-ji était bâti sur un tablier d'anneau (deux pas bouchés, mesuré identique sur `origin/main` v374) — payé par la v378 (l'anneau qui traverse un monument est écarté), zéro pas bouché après la fusion.
+- [x] **DEUX PONTS DE VILLE À REPRENDRE, VUS PAR LE TÉMOIN ÉLARGI (v362).**
+  Réglés par le PLAN (v378, puis v387 qui la remplace) : à Agra c'était l'anneau qui passait dans le Taj
+  Mahal et le Fort (un anneau ne traverse plus un monument), à Berlin l'anneau
+  au tablier trop court n'est plus retenu, et la v381 couvre l'eau au-delà des bouts de tout tablier (437 encoches dans 49 villes). Le témoin lit désormais TOUTES les
+  villes à pont (56) : il reste deux culées qui mordent dans un parc ou une
+  colline, Séoul (2 pas, le rocher de Namsan) et Chicago (1 pas, un tronc près
+  du Bean) — anneaux d'avant, mêmes valeurs sur `origin/main`, déclarées dans
+  `DETTE_PONTS` et rattachées à la dette ci-dessous.
+- [ ] **LES ANNEAUX D'AVANT ROULENT PARFOIS HORS DE LA CHAUSSÉE (mesuré v387).**
+  Sur `origin/main`, 190 anneaux de villes engendrées sur 445 ont au moins un
+  pas de voie qui n'est pas de la chaussée : places centrales (et leur
+  fontaine — les grands anneaux des villes à tours passent par le nœud
+  central : Seattle, Tokyo, Shanghai, Singapour…), parcs, plages (Las Vegas 279
+  pas de sable, Rio 249), collines. La v387 l'exige des anneaux NEUFS
+  (`horsChaussee`) ; l'appliquer aux phases 1 et 2 est mesuré : 13 villes
+  n'auraient plus AUCUN anneau et 26 perdraient de la couverture. Le remède
+  est un tracé qui contourne (comme `contournerRonds` pour les places de
+  Paris), pas un filtre.
+- [ ] **ONZE VILLES ENGENDRÉES N'ONT QU'UN CIRCUIT (v387), ET C'EST LA
+  GÉOMÉTRIE.** Newcastle, Cardiff, Tallinn, Bergen, Reykjavik, Aarhus,
+  Kuala Lumpur, Melbourne, San Diego, San José, Guayaquil. Leur seul anneau
+  passe sur une rue que son contresens ne peut pas reprendre sans sortir de
+  la chaussée ou du disque (rayon ≈ 2 pas). Une ville plus grande (rayon de
+  fiche) ou un anneau qui contourne la place leur en rendrait un second.
 - [ ] **LA v358 (conduite) N'A PAS REJOUÉ LE PORTAIL ENTIER APRÈS LA FUSION
   DE LA v357** : dernier portail complet sur la v356 fusionnée (rouges
   ci-dessous, tous déclarés) ; la v357 ne touche que villesmonde, world,
@@ -891,9 +934,9 @@
   boulevard central dans 47 grandes villes), SAUF les médinas : la section
   `ruelle` du kit (3 m, sans trottoir) leur ôterait tous leurs réverbères —
   décision de Max. Prix déclaré de la v307 : 602 → 440 anneaux, 158 974 →
-  127 734 blocs de rue portant un convoi ; la piste, si Max le demande, est un
-  jeu de candidats d'anneau en PAS de trame et non en fraction du rayon (le
-  recours sur les nœuds étendu à toutes les villes ne rend que 11 anneaux). (4) Une colonne protégée de l'ancienne ville
+  127 734 blocs de rue portant un convoi — RENDU en v387 : candidats en pas de
+  trame (côtés impairs), contresens et anneaux de quartier, 445 → 809
+  anneaux, 129 373 → 200 322 blocs de voie portant un convoi. (4) Une colonne protégée de l'ancienne ville
   peut se trouver au milieu d'une rue neuve : les circuits de voitures,
   mesurés sur le plan, la traverseraient. Mesure à faire sur un vrai journal
   (le compte des colonnes protégées se lit dans `world.colonnesParisAvant`).
@@ -1584,7 +1627,7 @@
   71,1 → 95,8 %), la dette des ponts d'Agra (9 pas) tombe. 445 → 430 anneaux,
   6 % de rue en moins. Et les anneaux se calculent à l'approche de la ville :
   157 → 0 ms au démarrage, 0,6 ms par ville en médiane, Rome 43 ms la première
-  fois (le Colisée du catalogue). Texte d'origine :
+  fois (le Colisée du catalogue). Repris en v387 par `contreUnMonument` (même lecture du bâtisseur, couches 1 à 3), qui remplace `traverseUnMonument` : le témoin rend toujours zéro. Texte d'origine :
   **QUARANTE-CINQ MONUMENTS SONT BÂTIS EN TRAVERS D'UN ANNEAU DE VOITURES
   (v375, témoin de `plafond.js`, `DETTE_ANNEAUX`).** Les anneaux des villes
   engendrées se choisissent sur la trame sans regarder les repères ; un
@@ -2510,17 +2553,14 @@
   ces deux verdicts ne la mesurent pas encore. Reste à les reformuler dessus,
   bornés, la durée entrant dans le message (v270).
 
-- [ ] **LE SUPERÎLOT COÛTE UN CIRCUIT À QUARANTE-SIX VILLES (v282).** Croisé
-  avec les anneaux, le pas de vingt-sept de `superilot` fait perdre un circuit
-  à 43 de ses 65 villes, et 46 n'en gardent qu'UN : deux grands rectangles ne
-  tiennent plus sous les vingt blocs de partage de la v211. Le pas est juste
-  sur le fond — un superîlot EST plus grand — et la contrainte aussi : ce
-  qu'elle mesure est la largeur d'un CARREFOUR (la chaussée, 5,6 blocs), pas la
-  taille de l'îlot, donc elle n'a pas à suivre le pas. La longueur de rue qui
-  porte un convoi ne bouge pourtant que d'un dixième de pour cent (159 133 →
-  158 974) : ce qui se perd, c'est la VARIÉTÉ des trajets dans ces
-  quarante-six villes. Piste non mesurée : une contrainte de partage exprimée
-  en FRACTION du périmètre de l'anneau plutôt qu'en blocs absolus.
+- [x] **LE SUPERÎLOT COÛTE UN CIRCUIT À QUARANTE-SIX VILLES (v282).** Fait en
+  v387, mais pas par la piste déclarée : la contrainte en fraction du
+  périmètre laisserait deux convois se SUIVRE. Ce qui a changé depuis la v211,
+  c'est la chaussée (deux voies, v271) : le partage se compte désormais par
+  VOIE, et deux anneaux de part et d'autre d'une rue s'y croisent. Un superîlot
+  de rayon ≈ 2 pas n'a géométriquement qu'un cycle qui évite sa place : il
+  reçoit son CONTRESENS. 48 superîlots à un circuit → 3 ; toutes villes, 147 →
+  11.
 
 - [ ] **J'AI MODIFIÉ `src/` PENDANT QU'UN PORTAIL TOURNAIT (v282).** La règle de
   survie du banc est écrite depuis toujours et je l'ai enfreinte en corrigeant

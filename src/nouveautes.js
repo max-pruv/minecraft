@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 387,
+    titre: 'Des voitures dans les deux sens',
+    puces: [
+      'Presque chaque ville a plusieurs circuits',
+      'Les voitures roulent dans les deux sens',
+      'Les petites villes ont un second circuit',
+    ],
+  },
+  {
     v: 386,
     titre: 'New York vérifiée',
     puces: [
