@@ -456,6 +456,17 @@
   (`manhattan.js`), « la monoplace ralentit assez » (9,1 m/s, identique sur
   `origin/main`), le bouton « Conduire » (un métro à portée), les programmes à
   la téléportation et l'arrivée sur une ville (2 267 ms · 26,4 %).
+- [ ] **LE COÛT D'UN MORCEAU DE VILLE : PROFIL PLAT APRÈS LA v391.** Mesuré sous
+  node (monde neuf, 117 morceaux engendrés, 77 maillés sans HD) : Paris 4,4 ms
+  de génération et 7,2 de maillage par morceau, Rome 3,5 et 9,9, Londres 4,5 et
+  10,7. Profil `--cpu-prof` de Londres, temps propre : `generateChunk` 10,5 %,
+  `buildChunkTampons` 9,3 %, ramasse-miettes 7 %, `terrainHeight` 5,1 %,
+  `addFace` 3,5 %, `solLondresCalcul` 2,5 %, `chunkTop` 2,4 %, `hauteurTerre`
+  2,4 %, `cityAtParmi` 1,9 % — aucun poste ne domine. La méthode « une ligne à
+  la fois » de la v352 n'a plus de ligne lourde à prendre : le prochain gain
+  est de structure (moins de faces émises, moins d'allocations dans le
+  mailleur), à prouver par l'empreinte des 490 morceaux. Et le chemin HD du
+  mailleur est la zone de claude/hd-villes-europe.
 - [ ] **LE PLAFOND AU SOL SUR L'IPAD — LA MARCHE POUR MAX (v391).** Le banc
   ne peut pas relever `VITESSE_SOL_MAX` (ville 70, campagne 80) : il rend en
   logiciel, à une cadence qui n'est pas celle de la tablette. `?diag=1` affiche
