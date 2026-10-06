@@ -2851,6 +2851,182 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       voitures.penchees >= 10 && voitures.contraire === 0 && voitures.maxRoulis >= 0.03 && voitures.maxRoulis <= 0.09,
       `${voitures.penchees} relevés penchés · roulis maximal ${voitures.maxRoulis} · ${voitures.contraire} à contresens`);
 
+    // ---- LA RUE ROULE À L'ALLURE D'UNE VILLE (v372) ------------------------
+    //
+    // Max : « des vitesses de circulation cohérentes — aujourd'hui les
+    // véhicules sont trop lents ». Mesuré sur `origin/main`, au-dessus de
+    // Paris, quarante secondes : médiane 1,7 bloc par seconde, pire 5 — une
+    // ville à six km/h, et chaque arrêt au feu se faisait d'un relevé à
+    // l'autre (la voiture passait de son allure à zéro). Ici, au même endroit :
+    // médiane 4,7 à 8,7, 90e centile 10 à 15 (36 à 54 km/h), et chaque arrêt
+    // passe par six relevés au moins entre l'allure et l'arrêt.
+    //
+    // Trois verdicts sur la MÊME fenêtre, et le dénominateur dans chaque
+    // message (v277) :
+    //   · la croisière publiée par le convoi (`etat().croisiere`, le profil de
+    //     sa voie) et ce que les voitures VISIBLES font vraiment (`vitesses`) ;
+    //   · un arrêt est une suite de relevés d'une même voiture qui passe d'au
+    //     moins trois blocs par seconde à moins de 0,3 ; il est sec si la
+    //     décélération entre les deux, lue sur l'horloge de la page, dépasse
+    //     10 b/s² (plus que le freinage d'urgence) ;
+    //   · les voitures l'une dans l'autre, en TAUX sur les paires examinées,
+    //     plus jamais en compte absolu — celui-ci allait de 0 à 53 sur le même
+    //     code (v277), ce n'était pas un gardien.
+    // On s'arrête quand c'est acquis, borné à quatre-vingt-dix secondes (v270) :
+    // un arrêt complet au feu n'arrive qu'à la voiture que le rouge prend
+    // avant le carrefour, deux ou trois fois par minute au-dessus de Paris.
+    const allure = await tab.evaluate(async () => {
+      const m = await import('./src/mondes.js'); const P = m.positionDe('paris'); const g = window.__game;
+      g.player.pos.set(P.x + 30, 70, P.z - 10); g.player.vel.set(0, 0, 0); g.player.flying = true;
+      const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      const rect = (x, z, cap, dl) => { const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux;
+        return [[x + ux * dl + vx * 1.13, z + uz * dl + vz * 1.13], [x + ux * dl - vx * 1.13, z + uz * dl - vz * 1.13], [x - ux * dl - vx * 1.13, z - uz * dl - vz * 1.13], [x - ux * dl + vx * 1.13, z - uz * dl + vz * 1.13]]; };
+      const separes = (A, B) => { for (const R of [A, B]) for (let k = 0; k < 4; k++) { const ax = -(R[(k + 1) % 4][1] - R[k][1]), az = R[(k + 1) % 4][0] - R[k][0]; const pr = (S) => S.map((q) => q[0] * ax + q[1] * az); const p1 = pr(A), p2 = pr(B); if (Math.max(...p1) < Math.min(...p2) || Math.max(...p2) < Math.min(...p1)) return true; } return false; };
+      const vit = [], suites = new Map(), feuS = new Map(), tempsS = new Map(), pires = []; let paires = 0, chev = 0, croisiere = null, publie = false;
+      const t0 = performance.now();
+      let arrets = 0, progressifs = 0, secs = 0;
+      const compter = () => {
+        arrets = 0; progressifs = 0; secs = 0; pires.length = 0;
+        for (const [cle, s] of suites) for (let k = 0; k < s.length; k++) {
+          if (s[k] >= 0.3) continue;
+          let j = k - 1; while (j >= 0 && s[j] < 3 && s[j] >= 0.3) j--;
+          // UN ARRÊT SEC SE JUGE EN DÉCÉLÉRATION, PAS EN NOMBRE DE RELEVÉS : au
+          // portail une image peut durer deux secondes, et une voiture qui
+          // freine à 3,5 b/s² passe de 13 à 0 entre deux relevés sans piler
+          // (vu : un « sec » sur 26 s de portail). Pile, c'est plus que le
+          // freinage d'urgence (7,5) avec marge : 10 b/s².
+          if (j >= 0 && s[j] >= 3 && feuS.get(cle)[k] === 1) {
+            const ts = tempsS.get(cle), dec = s[j] / Math.max(1e-3, (ts[k] - ts[j]) / 1000);
+            arrets++; if (dec <= 10) progressifs++; else { secs++; pires.push(+dec.toFixed(1)); }
+          }
+          while (k < s.length && s[k] < 0.3) k++;
+        }
+      };
+      while (performance.now() - t0 < 90000) {
+        await dodo(100);
+        const tout = [];
+        g.vehicules.etat().forEach((c, ci) => {
+          if (!c.routier || c.nom !== 'voiture') return;
+          if (c.voie === 'avenue' && c.croisiere) croisiere = Math.max(croisiere || 0, c.croisiere);
+          if (Array.isArray(c.vitesses)) publie = true;
+          for (const p of c.places) {
+            const v = Array.isArray(c.vitesses) ? c.vitesses[p[3]] : (p[5] ? 0 : c.vitesse);
+            vit.push(v);
+            const k = ci + ':' + p[3]; const s = suites.get(k) || []; s.push(v); suites.set(k, s);
+            // ce qui la retient (`causes`, v372) : un arrêt AU FEU se juge seul ;
+            // l'ancien code ne le publie pas, et tout arrêt y compte
+            const ts = tempsS.get(k) || []; ts.push(performance.now()); tempsS.set(k, ts);
+            const fs = feuS.get(k) || []; fs.push(Array.isArray(c.causes) && c.causes.length ? c.causes[p[3]] : 1); feuS.set(k, fs);
+            tout.push(p);
+          }
+        });
+        for (let i = 0; i < tout.length; i++) for (let j = i + 1; j < tout.length; j++) {
+          if (Math.hypot(tout[i][0] - tout[j][0], tout[i][1] - tout[j][1]) > 7) continue;
+          paires++;
+          if (!separes(rect(tout[i][0], tout[i][1], tout[i][2], 2.2), rect(tout[j][0], tout[j][1], tout[j][2], 2.2))) chev++;
+        }
+        if (vit.length > 1500 && paires >= 60 && (performance.now() - t0) > 20000) { compter(); if (arrets >= 2) break; }
+      }
+      compter();
+      vit.sort((a, b) => a - b);
+      const q = (f) => (vit.length ? +vit[Math.floor(f * (vit.length - 1))].toFixed(1) : null);
+      return { publie, croisiere, releves: vit.length, mediane: q(0.5), p90: q(0.9), arrets, progressifs, secs, pires,
+        paires, chev, taux: paires ? +(100 * chev / paires).toFixed(1) : null, secondes: Math.round((performance.now() - t0) / 1000) };
+    });
+    // 40 km/h en ville, 50 sur une avenue : la croisière d'une avenue à
+    // 12 blocs par seconde au moins (43 km/h, la limitation et le conducteur
+    // le plus lent, −8 %) ; et ce que font les voitures visibles, freinages et
+    // feux compris. Sur `origin/main`, la vitesse d'une voiture de ville ne
+    // dépasse jamais 5 ; ici le 90e centile va de 7,4 à 11,7 selon la part des
+    // files qui attendent au feu à ce moment-là. La barre se pose ENTRE les
+    // deux régimes (v237), à 6,5 : posée à 8, juste sous la première mesure,
+    // elle a rougi deux portails de suite sur une croisière juste (15).
+    verifier('la rue roule à l\'allure d\'une ville — cinquante sur une avenue',
+      allure.publie && allure.croisiere >= 12 && allure.releves >= 500 && allure.p90 >= 6.5, JSON.stringify(allure));
+    verifier('et au feu, la voiture freine sur plusieurs relevés au lieu de piler',
+      allure.arrets >= 1 && allure.secs === 0, JSON.stringify(allure));
+    // La barre est un TAUX : moins d'une paire examinée sur vingt-cinq (4 %),
+    // sur au moins soixante paires — mesuré 0 à 3,7 % ici.
+    verifier('et deux voitures ne sont jamais l\'une dans l\'autre — en taux, sur les paires examinées',
+      allure.paires >= 60 && allure.taux !== null && allure.taux <= 4, JSON.stringify(allure));
+
+    // ---- UNE VOITURE HEURTÉE S'ARRÊTE, FEUX DE DÉTRESSE, PUIS REPART (v372) -
+    //
+    // La session de conduite publie `player.choc` ; la rue le lit si présent.
+    // Le témoin passe par le même chemin que le choc (`heurter`, qui prend la
+    // voiture de la rue la plus proche du point) sur une voiture visible qui
+    // ROULE, et lit sa vitesse propre et ses feux de détresse.
+    const heurt = await tab.evaluate(async () => {
+      const g = window.__game, v = g.vehicules, dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      if (!v.heurter) return { err: 'pas de heurter' };
+      let cible = null;
+      for (let k = 0; k < 100 && !cible; k++) {
+        await dodo(150);
+        v.etat().forEach((c, ci) => {
+          if (cible || !c.routier || c.nom !== 'voiture') return;
+          for (const p of c.places) if ((c.vitesses[p[3]] || 0) > 4 && !cible) cible = { ci, i: p[3], x: p[0], z: p[1] };
+        });
+      }
+      if (!cible) return { err: 'aucune voiture en marche en vue' };
+      const id = v.heurter(cible.x, cible.z, 0.8);
+      const [ci, i] = (id || '').split(':').map(Number);
+      const vitesse = () => v.etat()[ci].vitesses[i];
+      const detresse = () => { let vu = false; g.scene.traverse((o) => { if (o.name === 'detresse' && o.visible) vu = true; }); return vu; };
+      let arretee = null, clignote = false, repart = null;
+      const t0 = performance.now();
+      while (performance.now() - t0 < 15000) {
+        await dodo(100);
+        const s = vitesse();
+        if (detresse()) clignote = true;
+        if (arretee === null && s < 0.3) arretee = Math.round(performance.now() - t0);
+        if (arretee !== null && s > 1.5 && performance.now() - t0 > arretee + 500) { repart = Math.round(performance.now() - t0); break; }
+      }
+      return { id, arretee, clignote, repart };
+    });
+    verifier('une voiture de la rue heurtée par l\'enfant s\'arrête, feux de détresse, puis repart',
+      !heurt.err && heurt.arretee !== null && heurt.arretee < 4000 && heurt.clignote && heurt.repart !== null, JSON.stringify(heurt));
+
+    // ---- LA RUE FREINE DEVANT UN PIÉTON (v372) -----------------------------
+    //
+    // À cinquante km/h, qu'un passant s'écarte (v259) ne suffit plus à
+    // garantir qu'on ne renverse personne. On pose un piéton immobile sur le
+    // tracé d'une voiture qui roule, quinze blocs devant elle, et l'on mesure
+    // la plus petite distance entre son centre et le piéton : au moins la
+    // demi-longueur de la voiture et une marge (2,6 blocs), et la voiture à
+    // l'arrêt devant lui.
+    const pieton = await tab.evaluate(async () => {
+      const g = window.__game, v = g.vehicules, dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      if (!v.poserPieton) return { err: 'pas de poserPieton' };
+      let pose = null;
+      for (let k = 0; k < 100 && !pose; k++) {
+        await dodo(150);
+        v.etat().forEach((c, ci) => {
+          if (pose || !c.routier || c.nom !== 'voiture') return;
+          for (const p of c.places) {
+            if ((c.vitesses[p[3]] || 0) < 5 || pose) continue;
+            // un point quinze blocs devant elle, sur son tracé
+            const devant = v.devantVoiture ? v.devantVoiture(ci, p[3], 15) : null;
+            if (devant) pose = { ci, i: p[3], ...devant };
+          }
+        });
+      }
+      if (!pose) return { err: 'aucune voiture en marche en vue' };
+      v.poserPieton(pose.x, pose.y, pose.z);
+      let min = Infinity, vMin = Infinity;
+      const t0 = performance.now();
+      while (performance.now() - t0 < 8000) {
+        await dodo(100);
+        const c = v.etat()[pose.ci];
+        const p = c.places.find((q) => q[3] === pose.i);
+        if (p) min = Math.min(min, Math.hypot(p[0] - pose.x, p[1] - pose.z));
+        vMin = Math.min(vMin, c.vitesses[pose.i]);
+      }
+      v.retirerPietons();
+      return { min: +min.toFixed(2), vMin: +vMin.toFixed(2) };
+    });
+    verifier('la voiture de la rue s\'arrête devant un piéton sur sa route, sans le toucher',
+      !pieton.err && pieton.min >= 2.6 && pieton.vMin < 0.3, JSON.stringify(pieton));
+
     // ---- ET ON NE MARCHE PAS DANS UNE RUE VIDE (v218) ----------------------
     //
     // Max, après la v217 : la ville reste habitée, mais l'enfant ne VOIT
@@ -5309,8 +5485,20 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       // borné, jamais un délai fixe.
       let apresLacher = await lire();
       const t2 = Date.now();
-      // la roue libre (frein moteur et air, v358) dure quelques secondes de jeu
-      while (Date.now() - t2 < 30000) { apresLacher = await lire(); if (apresLacher.v < prep.max * 0.3) break; await dormirIci(200); }
+      // la roue libre (frein moteur et air, v358) dure quelques secondes de JEU
+      // — ET LE BUDGET SE COMPTE EN IMAGES, COMME LA MONTÉE CI-DESSUS (v277).
+      // Trente secondes de montre ne valaient au portail de la v379 que trois
+      // à quatre secondes de jeu : la voiture lâchée était relevée à 9,13 puis
+      // 9,04 b/s pour une barre à 9,0, des deux côtés — le banc, pas le frein.
+      // Quatre cents images valent vingt secondes de jeu ; la montre n'est
+      // qu'un garde-fou, et le temps pris entre dans le message.
+      const image2 = await tab.evaluate(() => window.__game.renderer.info.render.frame);
+      while (Date.now() - t2 < 180000) {
+        apresLacher = await lire(); if (apresLacher.v < prep.max * 0.3) break;
+        if (await tab.evaluate((i) => window.__game.renderer.info.render.frame - i > 400, image2)) break;
+        await dormirIci(200);
+      }
+      apresLacher = { ...apresLacher, images: await tab.evaluate((i) => window.__game.renderer.info.render.frame - i, image2), ms: Date.now() - t2 };
       // on descend : les boutons reviennent
       const apres = await tab.evaluate(async () => {
         const g = window.__game;
@@ -6712,6 +6900,55 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       await enJeu(3, (c) => { if (!rue && (P.chocs || 0) > n0) rue = { t: +c.toFixed(2), choc: P.choc, v: +(P.vitesseVoiture || 0).toFixed(2) }; });
       P.obstacleVehicule = vrai; P.touchMove.f = 0;
       res.rue = { rue, x: +(P.pos.x - x0).toFixed(1) };
+      // — UNE VRAIE VOITURE DE LA RUE, PAR LE VRAI CROCHET (v397) : un convoi
+      // d'une voiture garée (vitesse nulle) sur un anneau de la dalle. Une
+      // voiture qui ROULE ne se rattrape pas au banc : la rue avance en temps
+      // RÉEL (v305) et la nôtre en temps de jeu, dix fois plus lent à deux
+      // images par seconde (sonde-vraie-rue.cjs). La vitesse relative se garde
+      // donc sous node (plafond.js) ; ici, le crochet rend SA boîte
+      // (`voitureContre`) et le choc prend la normale de son rectangle. On
+      // frôle son flanc à quinze degrés, puis on la percute par l'arrière. Sur
+      // l'ancien code, le flanc frôlé prend la normale du mouvement : un choc
+      // franc, et l'on rebondit. —
+      const zr = z0 - 50;
+      const anneau = [[250, 0], [410, 0], [410, -8], [120, -8], [120, 0], [250, 0]].map(([dx, dz]) => ({ x: x0 + dx, y: y0 + 1, z: zr + dz }));
+      const conv = g.vehicules.circulation(anneau, 77, { nb: 1, vitesse: 0 });
+      const contre = async (pose, f) => {
+        reparer();
+        const q = conv.place(0);
+        const [dx, dz, yaw, v] = pose(q);
+        // ON SE POSE, PUIS L'ON ATTEND UNE IMAGE : la rue relit ce qui
+        // l'entoure à chaque image (`cederLePassage`), et une voiture posée de
+        // loin à côté d'elle n'est pas encore dans sa liste — au premier pas,
+        // la nôtre entrerait sans la voir, et serait « déjà dedans » ensuite.
+        P.pos.set(dx, y0 + 1.05, dz); P.yaw = yaw; P.vitesseVoiture = 0; P.derive = 0; P.braquage = 0; P.vel.set(0, 0, 0);
+        P.touchMove.f = 0;
+        await enJeu(0.3);
+        P.pos.set(dx, y0 + 1.05, dz); P.yaw = yaw; P.vitesseVoiture = v;
+        P.vel.set(-Math.sin(yaw) * v, 0, -Math.cos(yaw) * v);
+        P.touchMove.f = f; P.choc = null; P.contact = null; const n = P.chocs || 0; let c = null; const lus = [];
+        const vrai = P.voitureContre;
+        P.voitureContre = (x, z, cap) => { const o = vrai ? vrai(x, z, cap) : null; lus.push(!!o); return o; };
+        // au PREMIER contact (un choc publié, ou une voiture touchée sous le
+        // seuil d'un choc) : la force, la vitesse d'après, et où sur NOTRE
+        // caisse le choc s'est dit (le long du cap, en travers)
+        await enJeu(2, () => { if (!c && ((P.chocs || 0) > n || (P.contact && P.contact.famille === 'voiture'))) {
+          const fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw);
+          const ch = (P.chocs || 0) > n ? P.choc : null;
+          const ex = ch ? ch.x - P.pos.x : 0, ez = ch ? ch.z - P.pos.z : 0;
+          c = { force: ch ? ch.force : 0, v: +(P.vitesseVoiture || 0).toFixed(1), long: +(ex * fx + ez * fz).toFixed(2), lat: +Math.abs(ex * fz - ez * fx).toFixed(2), contact: P.contact ? P.contact.famille : null };
+        } });
+        P.voitureContre = vrai; P.touchMove.f = 0;
+        return { c, lu: lus.some(Boolean), garee: [+(q.x - x0).toFixed(1), +(q.z - zr).toFixed(1)] };
+      };
+      await enJeu(0.5);
+      // le flanc : à côté d'elle, quinze degrés vers elle, à 16 (à dix degrés
+      // le contact reste sous le seuil d'un choc, et rien ne se publie)
+      const a15 = 15 * Math.PI / 180;
+      res.vraieFlanc = await contre((q) => [q.x - 1, q.z + 3, Math.atan2(-Math.cos(a15), Math.sin(a15)), 16], 0.6);
+      // par l'arrière, à 18, sur sa voie, cap +x
+      res.vraieArriere = await contre((q) => [q.x - 9, q.z, -Math.PI / 2, 18], 0.6);
+      g.vehicules.retirer(`${conv.cle}#0`);
       // — une panne posée à la main : le joystick ne fait plus rien —
       placer(0, -40, -Math.PI / 2, 0);
       // les dégâts (v343) réécrivent `etatVoiture` à chaque image depuis LEUR
@@ -6777,6 +7014,13 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('une voiture de la rue percutée : choc publié, et la nôtre rebondit au lieu de la traverser',
       !cd.err && cd.rue && cd.rue.rue && cd.rue.rue.choc && cd.rue.rue.choc.force > 0.2 && cd.rue.x <= 66.01,
       JSON.stringify(cd.rue));
+    const va = cd.vraieArriere || {}, vf = cd.vraieFlanc || {};
+    verifier('une vraie voiture de la rue, par le vrai crochet : son flanc frôlé ne nous arrête pas — un choc léger, sur NOTRE flanc, et l\'on continue',
+      !cd.err && vf.lu && vf.c && vf.c.contact === 'voiture' && vf.c.force > 0.05 && vf.c.force < 0.4 && vf.c.v > 9 && vf.c.lat > 0.9 && Math.abs(vf.c.long) < 1.8,
+      JSON.stringify(vf));
+    verifier('et percutée par l\'arrière, le crochet rend sa boîte : un choc franc sur notre nez, et l\'on rebondit',
+      !cd.err && va.lu && va.c && va.c.contact === 'voiture' && va.c.force > 0.5 && va.c.v < 0 && va.c.long > 1.8,
+      JSON.stringify(va));
     verifier('une voiture en panne ne repart plus — le joystick ne fait plus rien',
       !cd.err && cd.panne && cd.panne.v < 0.01 && cd.panne.x < 0.05 && cd.panne.tourne < 0.001,
       JSON.stringify(cd.panne));
@@ -6998,6 +7242,17 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('un second appui pendant la séquence la termine tout de suite',
       !!embEnCours.ph && !embEnCours.volant && embPresse.volant && !embPresse.ph && embPresse.arriere != null && Math.abs(embPresse.arriere - embFin.arriere) < 0.05,
       `pendant : ${embEnCours.ph}/${embEnCours.volant} · après le second appui : ${embPresse.ph}/${embPresse.volant} · arête ${embPresse.arriere}`);
+    // 7 bis. CE QUE MAX LIRA SUR LA TABLETTE (v396) : `?diag=1` nomme la
+    // dernière séquence et comment elle a fini — ici « monter (voiture), second
+    // appui ». La ligne lit `fun.embarquementDernier`, qu'on lit ici.
+    const embDernier = await emb.evaluate(() => {
+      const f = window.__game.fun;
+      return f.embarquementDernier ? f.embarquementDernier() : { err: 'pas de bilan de séquence' };
+    });
+    verifier('le diagnostic dit comment la dernière séquence a fini (le geste que Max valide sur la tablette)',
+      !embDernier.err && embDernier.sens === 'monter' && embDernier.quoi === 'voiture' && embDernier.fin === 'second appui'
+        && embDernier.temps > 0 && embDernier.temps < 2.5,
+      JSON.stringify(embDernier));
     // 8. `descendre({ presse: true })` (la voiture qui prend feu, chantier
     // « dégâts ») : à côté tout de suite, sans animation.
     const embFeu = await emb.evaluate(() => {

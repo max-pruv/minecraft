@@ -6,11 +6,49 @@
 
 export const NOUVEAUTES = [
   {
-    v: 395,
+    v: 399,
     titre: 'Londres rejoint Birmingham',
     puces: [
       'Une autoroute passe par le col',
       'On entre dans Londres par King\'s Cross',
+    ],
+  },
+  {
+    v: 398,
+    titre: 'Washington et San Francisco en relief',
+    puces: [
+      'Brique et marbre à Washington',
+      'Maisons de bois peint à San Francisco',
+      'Fenêtres à guillotine de près',
+    ],
+  },
+  {
+    v: 397,
+    titre: 'La voiture longe les murs',
+    puces: [
+      'Elle longe les façades en biais',
+      'Frôler une voiture ne t\'arrête plus',
+      'Un petit choc ne te renvoie plus',
+    ],
+  },
+  {
+    v: 396,
+    titre: 'Un outil pour les parents',
+    puces: [
+      'Il vérifie les portières sur la tablette',
+      'Rien ne change pour toi',
+    ],
+  },
+  {
+    v: 395,
+    titre: 'Des rues qui roulent vraiment',
+    puces: [
+      'Cinquante à l\'heure en ville',
+      'Cent vingt sur l\'autoroute',
+      'Les voitures freinent avant le feu',
+      'Elles s\'arrêtent devant les piétons',
+      'Une voiture heurtée met ses warnings',
+      'À plusieurs, la même rue pour tous',
     ],
   },
   {
