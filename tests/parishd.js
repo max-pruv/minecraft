@@ -589,6 +589,15 @@ function verifier(nom, ok, detail = '') {
   // les tampons d'avant, le mur est celui de la ville (pas la pierre de Paris),
   // le mobilier de Paris reste à Paris, et le morceau le plus lourd tient dans
   // le budget. Sur l'ancien code `villeHD` n'existe pas : on le dit.
+  // LE FER SE COMPTE À SA MATIÈRE, PAS À SA TUILE : la ferronnerie s'émet avec
+  // des UV absolus, donc un rectangle neutre (`NEUTRE`) — compté à la tuile, un
+  // garde-corps rendait zéro partout, et « pas de fer » était vrai à vide.
+  const compteFer = (g) => {
+    if (!g) return 0;
+    let n = 0;
+    for (let i = 0; i < nb(g); i++) if (Math.abs(g.matiere[i * 2] - 0.55) < 1e-5 && Math.abs(g.matiere[i * 2 + 1] - 0.85) < 1e-5) n++;
+    return n;
+  };
   async function temoinsVille({ cle, centre, attendu, interdit, rayonSonde }) {
     const fiche = HD.VILLES_HD && HD.VILLES_HD.find((d) => d.ville === cle);
     if (!fiche || typeof HD.villeHD !== 'function' || typeof HD.murHD !== 'function') {
@@ -611,7 +620,7 @@ function verifier(nom, ok, detail = '') {
         const o = oct(t.facades);
         total += o; n++; if (o > pire) pire = o;
         for (const k of Object.keys(paris)) paris[k] += compteTuile(t.facades, k);
-        for (const k of [...attendu, ...interdit]) tuiles[k] = (tuiles[k] || 0) + compteTuile(t.facades, k);
+        for (const k of [...attendu, ...interdit]) tuiles[k] = (tuiles[k] || 0) + (k === 'fer' ? compteFer(t.facades) : compteTuile(t.facades, k));
         if (!dense || (t.facadesDetaillees || 0) > dense.f) dense = { kx, kz, f: t.facadesDetaillees || 0 };
         if (w.chunks.size > 300) { w.chunks.clear(); if (w.tops) w.tops.clear(); }
       }
@@ -649,8 +658,24 @@ function verifier(nom, ok, detail = '') {
     // PALIER B (v392) : Nice et Lille, même méthode
     const { NICE } = await import('../src/nice.js');
     const { LILLE } = await import('../src/lille.js');
-    await temoinsVille({ cle: 'nice', centre: NICE, attendu: ['enduit', 'volet'], interdit: ['pierre', 'brique'] });
+    await temoinsVille({ cle: 'nice', centre: NICE, attendu: ['enduit', 'volet', 'fer'], interdit: ['pierre', 'brique'] });
     await temoinsVille({ cle: 'lille', centre: LILLE, attendu: ['brique'], interdit: ['pierre', 'volet', 'fer'] });
+    // PALIER C (v394) : les villes engendrées d'Europe, une par registre
+    const { VILLES_MONDE } = await import('../src/villesmonde.js');
+    const vm = (cle) => { const f = VILLES_MONDE.find((v) => v.cle === cle); return { x: f.ancre.x, z: f.ancre.z, r: f.rayon }; };
+    await temoinsVille({ cle: 'rome', centre: vm('rome'), attendu: ['enduit', 'volet', 'fer'], interdit: ['pierre'], rayonSonde: 60 });
+    await temoinsVille({ cle: 'berlin', centre: vm('berlin'), attendu: ['enduit'], interdit: ['pierre', 'volet', 'fer'], rayonSonde: 60 });
+    await temoinsVille({ cle: 'manchester', centre: vm('manchester'), attendu: ['brique'], interdit: ['pierre', 'volet', 'fer'] });
+    {
+      const reg = (cle) => (HD.VILLES_HD || []).find((d) => d.ville === cle)?.registre || null;
+      const europe = VILLES_MONDE.filter((f) => f.trame && f.lat0 > 34 && f.lat0 < 72 && f.lon0 > -25 && f.lon0 < 46);
+      const couvertes = europe.filter((f) => reg(f.cle));
+      verifier('toutes les villes engendrées d’Europe ont leur registre, et pas une ville de la boîte qui n’est pas d’Europe',
+        couvertes.length >= 85 && reg('istanbul') && reg('reykjavik') && reg('lavalette')
+          && reg('edimbourg') === 'londres' && reg('dublin') === 'londres' && reg('rome') === 'sud' && reg('berlin') === 'nord'
+          && !reg('tunis') && !reg('ankara') && !reg('fes') && !reg('tbilissi') && !reg('tokyo'),
+        `${couvertes.length} sur ${europe.length} dans la boîte ; Édimbourg ${reg('edimbourg')}, Rome ${reg('rome')}, Berlin ${reg('berlin')}, Tunis ${reg('tunis')}`);
+    }
     // un bloc de décor à motif posé par un enfant garde son dessin : seuls les
     // murs de brique et d'enduit passent dans la couche
     if (typeof HD.murHD === 'function') {

@@ -2376,7 +2376,18 @@
      **État (v390).** Palier A livré : Londres (`VILLES_HD`, `STYLES.londres`,
      le mur d'à côté lu par `murVoisin`, les murs Briques/Uni dans la couche).
      Palier B livré (v392) : Nice et Lille (`STYLES.nice`, `STYLES.lille`).
-     Reste : C (villes engendrées d'Europe). Dette déclarée :
+     Palier C livré (v394) : les 90 villes engendrées d'Europe (`registreEurope`,
+     `STYLES.sud`, `STYLES.nord`). La consigne est remplie. Dettes déclarées
+     du palier C, vues en capture :
+     - [ ] une baie de ville engendrée est faite de DEUX blocs `ETAGE`
+       empilés : la couche (comme la tuile plate) y dessine deux fenêtres
+       l'une sur l'autre par étage — un registre « baie de deux blocs »
+       (les bandes `ETAGE_BAS/MI/HAUT` de Paris) demanderait que
+       `villesmonde.js` pose ces bandes : c'est un changement de blocs, donc
+       de la zone des villes engendrées, pas de la couche ;
+     - [ ] Édimbourg est en brique rouge parce que sa palette l'est ; la vraie
+       ville est de grès gris — une fiche, pas un registre ;
+     Et :
      le raccord ville/campagne (`raccordInterdit`) n'est interdit qu'à Paris —
      une colonne de raccord de Londres montre la surface plate, pas le sol HD.
      Portail de la v390 (lancé sous le numéro v386, avant deux rebases) : 12 suites vertes, `parishd.js` comprise ; cinq
@@ -2396,6 +2407,12 @@
      STRUCTURELLE (v291) : `monte.js` ne force pas `?hd=`, `world.hd` y est
      faux et la couche n'est jamais lue. À reprendre par la session des
      passants, avec sa double mesure.
+     Portail de la v394 (cinq suites) : `parishd.js` (avec les vingt-deux
+     témoins du palier C) et `plafond.js` verts ; `maj.js` « corps, programmes
+     et fond de carte » (déclaré) ; `monte.js` deux rouges de la recharge à
+     l'arrivée (v379) — « garde la cadence » rapport 0,72 pour 0,75 (déjà
+     nommé plus haut), « la file … puis se rend » rendue en 11 236 ms : non.
+     Même preuve structurelle : `monte.js` ne force pas `?hd=`.
 
   Ce qu'on ne touche PAS : le système de coordonnées, les clés de stockage, les
   blocs sauvegardés, `terrainHeight`, les contrats réseau. La couche HD LIT les
