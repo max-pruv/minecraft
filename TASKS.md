@@ -235,6 +235,23 @@
   à trois une fois. Intermittence des voitures `physical` à l'arrivée ; la
   sonde nommera le matériau le jour où elle le voit.
 
+- [ ] **LA RUE DENSE, PALIERS B ET C (v405, session `claude/circulation-vivante`).**
+  Livré en v405 : la seconde voie (jumelle sur la même grille) sur les
+  autoroutes (24/24), les croix-boulevards engendrées (35 circuits, 93 % des
+  voies occupées) et les percées de Paris (76 %) ; l'autoroute densifiée
+  (480 → 1 354 voitures). Mesuré, à reprendre : (1) **la densité d'une rue de
+  ville est au plafond de son virage le plus lent** — le plus grand nombre
+  sans contact vaut une voiture toutes les deux secondes à 0,5 % près sur 205
+  anneaux ; seul un virage plus rapide (des coins arrondis, ce qui touche la
+  voie de droite au coin intérieur) la monterait. (2) **Paris ne garde que
+  630 de ses 1 231 blocs de boulevard** sur deux voies : les places
+  (contournement en arc) coupent les portions ; 2 circuits sur 8 refusés au
+  contact. (3) **Files au rouge** : écart pare-chocs médian 1,9 à 2,4 blocs
+  (plancher `mini` = longueur + 1,6, arrêt 0,6 avant le contact) — à serrer
+  vers 1,2 si la capture le demande. (4) Madrid : 10,6 % de paires au contact
+  sur `origin/main` à (−2 581, 5 272), un nœud de circuits face à face,
+  8,8 % sur la v405 — d'avant, à démonter. (5) Palier C : utilitaires et
+  pickups (classe dans `FLOTTE`), variance par voiture, voie par tronçon.
 - [ ] **LA CIRCULATION VIVANTE, PALIERS SUIVANTS (v395, session
   `claude/circulation-vivante`).** Livré : limitations par voie, profil de
   vitesse dans la grille, grille par voiture, freinage local (feu, file,
