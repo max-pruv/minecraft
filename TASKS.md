@@ -3706,7 +3706,9 @@ l'embarquement a eu lieu, pas par une hypothèse.
   PREUVE STRUCTURELLE en plus : le code neuf n'est atteint que sous
   `embarq: 1` en descendant d'un avion au sol ; aucune de ces pages ne le fait.
 - [ ] **MONTER DANS UN TRAIN OU UN MÉTRO PAR SA PORTE — DÉCLARÉ, PAS LIVRÉ
-  (session embarquement, v400).** `bord` (fun.js) colle encore l'enfant au
+  (session embarquement, v400 ; relu en v405, rien n'a bougé côté
+  `construireRame` : POUR LA SESSION CIRCULATION-VIVANTE, l'étape (1)
+  ci-dessous est le seul verrou).** `bord` (fun.js) colle encore l'enfant au
   siège d'une rame d'un coup. La même discipline que l'avion (v389) le
   ferait : l'accès se déclare avec le MODÈLE (`userData.porte` posé par
   `construireRame`, une porte coulissante en MEMBRE, aucune clé de programme
@@ -3744,6 +3746,11 @@ l'embarquement a eu lieu, pas par une hypothèse.
      et Marlon voit SA portière droite s'ouvrir chez lui. Puis « Descendre » :
      elle ressort par la droite. Diagnostic chez Alice : `monter (ami)` puis
      `descendre (ami)`.
+     **Et si la tablette de Marlon se reconnecte pendant qu'Alice marche
+     (v405)** — mettre l'application de Marlon en arrière-plan deux secondes
+     puis la rouvrir juste après le « Monter avec Marlon » d'Alice : Alice
+     doit s'asseoir quand même (avant : elle restait à pied à côté). Chez
+     Alice : `monter (ami) … jusqu'au bout`, jamais `annulée`.
   5. **L'avion (v389).** À Roissy (carte → Paris–Charles-de-Gaulle), devant
      l'avion de ligne, « Monter » : un escalier à rampe jaune apparaît contre
      la porte avant gauche, l'enfant le gravit, la porte s'ouvre, il entre,
