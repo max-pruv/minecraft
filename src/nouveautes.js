@@ -6,11 +6,20 @@
 
 export const NOUVEAUTES = [
   {
-    v: 404,
+    v: 405,
     titre: 'Le ciel des villes vérifié',
     puces: [
       'L\'avion ne dépasse pas la ville',
       'Rien ne change pour toi',
+    ],
+  },
+  {
+    v: 404,
+    titre: 'Les voitures contournent la place',
+    puces: [
+      'Plus de voiture dans la fontaine',
+      'Les voitures restent sur la route',
+      'Deux circuits dans les petits ports',
     ],
   },
   {

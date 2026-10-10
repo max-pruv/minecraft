@@ -770,6 +770,62 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les anneaux contournent (v404) — un anneau est le bord d'un ensemble d'îlots
+
+La dette de la v387 : 147 anneaux de villes engendrées sur 809 sortaient de la
+chaussée (place, fontaine, parc, plage), onze villes n'avaient qu'un circuit.
+Sept règles.
+
+- **UN ANNEAU EST LE BORD D'UN ENSEMBLE D'ÎLOTS DE LA TRAME.** Retirer un îlot
+  au bord le fait passer en dedans, en ajouter un en dehors : le tracé reste
+  par CONSTRUCTION sur les rues (`contourner`, `bordDIlots`, villesmonde.js).
+  Une recherche au mieux d'abord (moins de segments fautifs, puis moins de
+  voie partagée, puis moins d'îlots changés) trouve le contour le plus proche
+  du rectangle. Deux îlots qui ne se touchent que par un coin, ou un trou,
+  n'ont pas UN bord : refusé.
+- **LE CONTOUR NE CHANGE JAMAIS QUELS ANNEAUX UNE VILLE REÇOIT.** La sélection
+  des rectangles reste celle d'avant, au bit près ; la phase 4 fait contourner
+  chaque anneau APRÈS, s'il garde trois promesses : le partage par voie avec
+  la forme finale de tous les autres, la vue du centre pour l'anneau de la
+  phase 1, et AUCUN point de la ville qui perde sa voiture (`pointsSeuls`,
+  marge d'un bloc et demi parce que le témoin échantillonne tous les deux
+  blocs). Mon premier jet contournait PENDANT la sélection : un anneau
+  contourné gênait les suivants, Rome, Istanbul, Turin perdaient des circuits.
+  Un second tour de la phase 2 bis qui admettait les candidats en les
+  contournant n'ajoutait aucun anneau : non-résultat mesuré, retiré.
+- **LE PARTAGE SE LIT SUR DES CÔTÉS.** `partageDAretes` remplace
+  `partageDeRue` : rue, étendue, côté de voie (`s`, le signe du côté fois le
+  sens pour un rectangle). Pour un rectangle il rend la même valeur au bit
+  près — c'est ce qui garde la sélection identique.
+- **LE QUAI EST UN SOL POSÉ EN TRAVERS DE LA RUE, COMME LE TROTTOIR DU
+  BOULEVARD.** Les onze villes à un circuit étaient toutes des ports : leur
+  anneau traverse le quai pavé pour gagner son pont, et son contresens était
+  refusé pour cela. `surLeQuai` le tolère pour le contresens seul. Et une
+  tolérance se juge sur la COLONNE lue, jamais sur le point exact : au bord de
+  la bande du boulevard, l'arrondi les séparait et Rome bloquait sur un faux
+  trottoir.
+- **L'AUTRE VOIE MESURE SA TRAVERSÉE SUR ELLE-MÊME.** Le contresens roule à
+  une demi-voie de l'axe, côté extérieur : là où la rive est en biais, il
+  touchait l'eau deux blocs avant le bout du tablier mesuré sur l'axe
+  (Newcastle ; San José, 52 pas dans l'eau). `traverseesDe` se rejoue sur sa
+  voie et publie le tablier qui manque, centré sur la rue. Et l'eau n'est
+  permise sous une voie neuve que sur un tablier déjà publié (`surUnTablier`).
+- **UN TABLIER NE SE RETIRE PAS.** Le contrôle d'eau strict, appliqué à la
+  phase 2 bis, écartait des anneaux d'avant ET leurs ponts : Vienne perdait 212
+  colonnes de tablier, Shanghai 502 — un enfant a pu bâtir dessus. La phase 2
+  bis garde sa règle d'avant (le défaut, des anneaux d'avant sur l'eau hors
+  tablier, est déclaré). Une sonde compare les tabliers des deux arbres colonne
+  par colonne : zéro perdue, 642 gagnées, toutes sur l'eau (`world.js` n'écrit
+  un tablier que sous `WATER_LEVEL`).
+- **UNE RECHERCHE SE MESURE AVANT DE SE BORNER.** Les contours trouvés le sont
+  en deux essais (médiane), 36 au pire : `CONTOUR_ESSAIS` vaut 40 et une
+  recherche s'arrête après dix essais sans progrès. Le coût n'était pas là où
+  le profil du premier jet le disait : tri de la file à chaque tour (un tas
+  maintenant), signatures triées (un hachage tenu îlot par îlot), puis la
+  garde de couverture qui relisait toute la ville à chaque proposition (une
+  liste par anneau, une grille par ville). Le prix déclaré : le premier
+  dépliage de Rome passe d'environ 57 à 85-100 ms, une fois, à l'approche.
+
 ## Le monde entier en relief (v401) — ce qu'aucun registre n'honore se déclare
 
 Palier C, le dernier. Trois règles.
@@ -1457,7 +1513,7 @@ Et une empreinte d'identité qui change se PROUVE : celle des 490 morceaux
 (v352) couvre Marrakech et Tokyo ; la branche, bâtisseurs neufs désarmés, rend
 l'ancienne au bit près — c'est ce qui a permis de la remplacer.
 
-## Le témoin de chargement vole au-dessus d'une ville (v404) — un réglage que le banc coupe se force dans le témoin qui le juge
+## Le témoin de chargement vole au-dessus d'une ville (v405) — un réglage que le banc coupe se force dans le témoin qui le juge
 
 Une règle.
 

@@ -63,6 +63,44 @@
   (`monture: null`, intermittence vue sur `origin/main` v326). `reseau.js`
   REJOUÉE SEULE sur la branche : 79 verts, zéro rouge (mon témoin du GPS
   compris).
+- [ ] **LE PORTAIL DE LA v404 (les anneaux contournent), DOUBLE MESURE FAITE.**
+  Verts : `fumee.js`, `carteMonde.js` (les deux témoins neufs), `plafond.js`
+  (empreintes, celle des 490 morceaux comprise). `carte.js` : « la flèche du
+  GPS » (1,92 rad) et « la faire glisser non plus » rouges des DEUX côtés
+  rejoués seuls (444 ms `origin/main` v389, 618 ms branche, barre 400), dettes
+  déjà déclarées. `monte.js` change de rouges à chaque passage : portail
+  (réverbère dans Paris, recharge à l'arrivée 0,74 pour 0,75), seule sur la
+  branche (le train Eurostar Londres–Paris, le flâneur de Rome 2 sur 3), seule
+  sur `origin/main` (le trou en vol). Le flâneur, le seul qui passe dans une
+  ville engendrée, rejoué par `sonde-sortie-chaussee.cjs` trois fois de chaque
+  côté en alternance : 9 sur 9 au bord des deux côtés (3,1 à 5 s). Le train
+  et le réverbère sont dans Paris et Londres, que la v404 ne touche pas.
+  Après la fusion de la v394 (portail de sept suites) : verts `parishd.js`,
+  `carteMonde.js`, `plafond.js`. Un rouge À MOI, corrigé : le titre de la
+  nouveauté faisait sept mots (`maj.js`). Les autres sont déclarés plus haut,
+  mêmes valeurs : `maj.js` libération `null` et « ne floute rien », `carte.js`
+  flèche du GPS (1,92 rad) et glisser (719 ms), `monte.js` « l'avant du
+  joystick est l'accélérateur » (médiane 27,18, 27,23 sur `origin/main`).
+  Après la fusion de la v397 (sept suites) : verts `parishd.js`,
+  `carteMonde.js`, `plafond.js` ; `maj.js` libération `null` et flou
+  (déclarés). Rejouées SEULES des deux côtés (`origin/main` v397) :
+  `carte.js` branche 2 rouges (GPS, glisser — déclarés), `origin/main` 9 (dont
+  l'appui long et tout le GPS) ; `monte.js` branche 188 verts et 4 rouges
+  (« la rue roule à l'allure d'une ville » médiane 0 dans un bouchon, la
+  compilation à New York, le trou en vol, le flanc frôlé), `origin/main` 189
+  verts et 3 rouges (la monoplace 9,1, le flâneur, le flanc frôlé). Preuve
+  structurelle pour « la rue roule » : le témoin se joue à Paris, et la ville
+  engendrée la plus proche (Rennes) est à 1 518 blocs — aucun anneau engendré
+  ne s'y déplie (220 blocs). Un premier passage de la branche est mort au
+  démarrage d'une page sous une charge stable de 3,8 cœurs (`banc.joueur`,
+  90 s), rejoué complet ensuite.
+  Après la fusion de la v399 (sept suites) : verts `parishd.js`,
+  `carteMonde.js`, `plafond.js`. Rouges, tous déjà vus sur `origin/main` ou
+  déclarés : `maj.js` libération ; `carte.js` glisser (617 ms) et « le rendu
+  suivant, cache chaud » 152 ms pour 150 (une durée, anneaux déjà en cache) ;
+  `monte.js` monoplace 9,1, piéton frôlé (couloir vide de 30 000, aucune
+  ville — déclaré v371), feu, compilation New York, réverbère, trou en vol,
+  flanc frôlé.
 - [ ] **LE PORTAIL DE LA v387 (les circuits des villes engendrées), DOUBLE
   MESURE FAITE.** Verts : `carteMonde.js`, `plafond.js`, `degats.js`,
   `carte.js`, `washington.js`. `maj.js` : un seul rouge, À MOI et corrigé (le
@@ -484,22 +522,35 @@
   colline, Séoul (2 pas, le rocher de Namsan) et Chicago (1 pas, un tronc près
   du Bean) — anneaux d'avant, mêmes valeurs sur `origin/main`, déclarées dans
   `DETTE_PONTS` et rattachées à la dette ci-dessous.
-- [ ] **LES ANNEAUX D'AVANT ROULENT PARFOIS HORS DE LA CHAUSSÉE (mesuré v387).**
-  Sur `origin/main`, 190 anneaux de villes engendrées sur 445 ont au moins un
-  pas de voie qui n'est pas de la chaussée : places centrales (et leur
-  fontaine — les grands anneaux des villes à tours passent par le nœud
-  central : Seattle, Tokyo, Shanghai, Singapour…), parcs, plages (Las Vegas 279
-  pas de sable, Rio 249), collines. La v387 l'exige des anneaux NEUFS
-  (`horsChaussee`) ; l'appliquer aux phases 1 et 2 est mesuré : 13 villes
-  n'auraient plus AUCUN anneau et 26 perdraient de la couverture. Le remède
-  est un tracé qui contourne (comme `contournerRonds` pour les places de
-  Paris), pas un filtre.
-- [ ] **ONZE VILLES ENGENDRÉES N'ONT QU'UN CIRCUIT (v387), ET C'EST LA
-  GÉOMÉTRIE.** Newcastle, Cardiff, Tallinn, Bergen, Reykjavik, Aarhus,
-  Kuala Lumpur, Melbourne, San Diego, San José, Guayaquil. Leur seul anneau
-  passe sur une rue que son contresens ne peut pas reprendre sans sortir de
-  la chaussée ou du disque (rayon ≈ 2 pas). Une ville plus grande (rayon de
-  fiche) ou un anneau qui contourne la place leur en rendrait un second.
+- [ ] **LES ANNEAUX D'AVANT ROULENT PARFOIS HORS DE LA CHAUSSÉE (mesuré v387,
+  repris v404).** Ils CONTOURNENT désormais (phase 4, `contourner`) : 147
+  anneaux et 3 512 pas hors chaussée sur `origin/main` v389, 92 et 2 437 en
+  v404 (fontaines 167 → 82). Ce qui reste, mesuré par la sonde de la v404 :
+  Las Vegas (le désert hors de la bande du Strip, 689 pas : la bande ne tient
+  qu'UNE rue de la trame, 16 unités de fiche pour un pas de 32 blocs, donc
+  aucun anneau ne peut y tenir — le remède est de SOL, des rues à travers le
+  désert), Rio (la plage de Copacabana en bande sur toute la ville, 589), puis
+  des anneaux dont tout contour coupe une rivière sans tablier (Rome, Moscou,
+  Delhi) ou gêne un autre anneau au-delà de la barre de partage. Pistes : pour
+  Las Vegas et Rio, des anneaux choisis DANS la bande (une sélection, donc
+  mesurer la couverture) ; pour les rivières, un contour qui publie son tablier
+  (un tablier neuf est du sol : Rome est dans l'empreinte des 490 morceaux).
+- [ ] **DES ANNEAUX D'AVANT ROULENT SUR L'EAU HORS DE TOUT TABLIER (v404).** La
+  règle de la v387 (`horsChaussee`) tenait toute eau sous un anneau pour un
+  pont : 159 pas sur l'eau sans tablier en v404 (195 sur `origin/main`), dont
+  des anneaux de la phase 2 bis. Le contrôle strict (`surUnTablier`) est
+  appliqué aux contresens et aux contours ; l'appliquer à la phase 2 bis est
+  mesuré : il retire des anneaux ET leurs tabliers (Vienne 212 colonnes,
+  Shanghai 502) — un enfant a pu bâtir dessus. Le remède est d'ALLONGER ces
+  tabliers (`traverseesDe` sur la voie, comme le contresens), en vérifiant
+  l'empreinte des 490 morceaux.
+- [ ] **TROIS VILLES ENGENDRÉES N'ONT QU'UN CIRCUIT (v387 : onze ; v404 :
+  trois).** Huit ports ont reçu leur contresens (quai toléré, tablier mesuré
+  sur sa voie). Restent San Diego, San José et Guayaquil : leur contresens
+  touche la fontaine de la place déplacée (San José, `place` à décalage) ou la
+  plage (Guayaquil) que leur seul anneau traverse déjà. Pistes : un rayon de
+  fiche plus grand (le SOL, décision de Max) ou une place non décalée pour ces
+  trois (le sol aussi).
 - [ ] **LA v358 (conduite) N'A PAS REJOUÉ LE PORTAIL ENTIER APRÈS LA FUSION
   DE LA v357** : dernier portail complet sur la v356 fusionnée (rouges
   ci-dessous, tous déclarés) ; la v357 ne touche que villesmonde, world,

@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v404 — Le monde arrive à temps au-dessus des villes
+## v405 — Le monde arrive à temps au-dessus des villes
 
 **Pourquoi.** Le témoin qui vérifie que l'avion ne dépasse pas le monde en
 train de se charger volait au-dessus d'un désert, où un morceau coûte trois
@@ -44,6 +44,35 @@ banc, Paris rend 45 pour 60 : il peut rougir). Une sonde,
 blocs, l'ancien code met 14 s à charger la moitié du disque et passe 3,3 s du
 fil principal à fabriquer des morceaux ; la v403, 3,4 s et 0,3 s, comme sans
 journal.
+
+## v404 — Les voitures font le tour de la place
+
+**Pourquoi.** Dans les villes engendrées, beaucoup d'anneaux de voitures
+roulaient en ligne droite au travers de ce qui n'est pas une rue : la place
+centrale pavée, sa fontaine (les voitures passaient dans l'eau), un parc, une
+plage. Mesuré sur `origin/main` : 147 anneaux sur 809, 3 512 pas de voie hors
+de la chaussée, 167 dans une fontaine. Et onze petites villes portuaires
+(Newcastle, Cardiff, Tallinn, Bergen, Reykjavik, Aarhus, Kuala Lumpur,
+Melbourne, San Diego, San José, Guayaquil) n'avaient qu'un seul circuit. La
+v387 l'avait mesuré et déclaré ; filtrer ces anneaux vidait treize villes.
+
+**Ce que ça change.** Un anneau qui passait par la place la contourne
+désormais par les rues d'à côté, comme un vrai tour de place ; la voiture ne
+traverse plus la fontaine. Rien ne disparaît : chaque ville garde ses
+circuits et ses voitures en vue, et huit des onze petites villes reçoivent un
+second circuit, la même boucle dans l'autre sens, avec le bout de pont qui
+lui manquait au-dessus de l'eau.
+
+**Ce qui le prouve.** Deux témoins neufs dans `carteMonde.js`, sur toutes
+les villes engendrées : les anneaux hors chaussée (92 au lieu de 147, 2 437
+pas au lieu de 3 512, 82 dans une fontaine au lieu de 167) et les villes à un
+seul circuit (3 au lieu de 11) — tous deux rouges sur `origin/main`. Mesuré
+ville par ville par une sonde : aucune ne perd un circuit ni un point de
+couverture, le pire partage reste 18 blocs, la voiture la plus lointaine du
+centre reste à 30 blocs, aucun tablier n'est retiré (642 colonnes d'eau en
+gagnent un), et le relief ne bouge pas. Le prix, déclaré : le premier
+dépliage d'une ville coûte plus cher (Rome ≈ 57 → 85-100 ms, une fois, à 220
+blocs de la ville).
 
 ## v403 — Le monde se charge aussi vite chez qui a beaucoup bâti
 
@@ -155,6 +184,9 @@ trois rouges sur quatre (et l'enfant dans l'eau).
 
 ---
 
+
+---
+
 ## v399 — Les Amériques en relief
 
 **Pourquoi.** Washington et San Francisco avaient leur relief (v398), mais les
@@ -208,6 +240,9 @@ identiques à l'octet, avec et sans HD ; Washington et San Francisco identiques
 sans HD. Mesuré : 0,23 Mo par morceau en moyenne à Washington (2,11 au pire),
 0,11 à San Francisco (0,59) ; dans le worker, 5,4 → 16,2 ms par morceau à
 Washington, 2,2 → 6,3 chez les Victoriennes, seulement à portée de `RAYON_HD`.
+
+---
+
 ## v397 — La voiture glisse le long des façades, et frôle les autres voitures
 
 **Pourquoi.** Le palier 1 de la conduite (v358) prenait deux normales
@@ -347,6 +382,9 @@ suffit plus.
 
 ---
 
+
+---
+
 ## v394 — Toute l'Europe en relief
 
 **Pourquoi.** Après Londres, Nice et Lille, les quatre-vingt-dix villes
@@ -474,6 +512,9 @@ Davioud ; le morceau le plus lourd pèse 1,2 Mo (Paris en pèse 10) ; en vol au
 palier moyen, 22,5 Mo de façades pour 128 de budget. Un bloc de décor à motif
 posé par un enfant garde son dessin. L'empreinte des tampons HD de Paris
 (256 morceaux) est identique sur `origin/main` et sur la branche.
+
+---
+
 ## v389 — On monte dans l'avion par l'escalier
 
 **Pourquoi.** Depuis la v366 on marche jusqu'à la portière d'une voiture,
