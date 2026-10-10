@@ -1336,6 +1336,19 @@ un geste instantané ne regarde pas où il pose, une séquence doit le faire.
 Le passage vit dans `sonde-descente-avion.cjs` et `monte.js` l'appelle tel
 quel (`passage`, `juger`) : une copie de sonde finit par diverger du témoin.
 
+**Le passager suit la voiture de son ami, pas un maillage gardé (v407).**
+Une tablette REFAIT le maillage de la voiture d'un ami quand sa clé change
+ou quand l'ami est recréé (`synchroniserVehiculeDistant`) ; la séquence qui
+gardait l'ancien maillage s'annulait (« la voiture n'existe plus ») — le
+rouge de `reseau.js` qui allait et venait depuis la v377. `chez.veh()`
+redemande la voiture de CE conducteur à chaque image (`suivreLaVoiture`) :
+maillage changé → on s'y rebranche ; voiture absente → on attend
+`ABSENCE_MAX` (1,5 s de jeu) avant d'annuler. **Une séquence suit une
+IDENTITÉ (le conducteur), jamais un objet de rendu qu'un autre module peut
+remplacer.** Le témoin provoque l'état (v393) en changeant la clé chez Lou
+pendant la marche, et les témoins du passager publient un `suivi` image par
+image de la voiture de l'ami.
+
 **Une séquence qu'on ne juge qu'au banc se fait lire sur la tablette (v396).**
 Le banc saute la séquence (`embarq=0`) et rend en logiciel : durées, caméra et
 image figée ne se valident que sur l'iPad. `?diag=1` porte donc une ligne de
@@ -2381,7 +2394,7 @@ Les deux rouges réseau récurrents du palier C. Trois règles.
   une voix restée au quart (`GAIN_APPEL`) et le régime qui varie ; vérifié
   rouge sur une copie où la voix reste au quart.
 
-## Le passager sans courtier (v407) — on se reconnaît à TOUTES ses identités
+## Le passager sans courtier (v410) — on se reconnaît à TOUTES ses identités
 
 Une règle. Une tablette a deux identités possibles : `peer.id` (le courtier)
 et `bus.monId` (le nuage), et elles DIFFÈRENT pour un invité. Les autres la
@@ -2610,6 +2623,101 @@ celle d'un AXE DU MONDE contre un mur. Cinq règles.
   déclaré. Le joueur, lui, publie `player.roueLibre` ({ depuis, s }) et
   `player.contact` ({ famille, nx, nz }) ; `?diag=1` au volant les affiche
   avec le monde maillé devant la voiture (`mondeDevant`, `ligneDiagConduite`).
+
+## Le frein à main (v409) — conduite, palier C
+
+Le dérapage contrôlé à la GTA. Quatre règles.
+
+- **UN GESTE DE PLUS SE CHERCHE DANS CE QUE LE JOYSTICK LAISSE LIBRE.** Le
+  quart bas-gauche est TOUT entier au joystick (v272) ; en voiture, la place du
+  saut (colonne de droite, au-dessus de « Descendre ») est vide. Le bouton 🛑
+  s'y pose et TIENT la barre d'espace (`bindHoldButton`, comme ⤒ à pied) : une
+  seule commande, deux gestes, et `player.js` n'a qu'une source à lire.
+- **UNE TOUCHE QU'ON REPREND SE CHERCHE DANS CE QU'ELLE FAISAIT DÉJÀ.** Au
+  volant, Espace faisait sauter la voiture d'un tiers de bloc (le saut de la
+  marche, resté branché ; mesuré sur la v408, 0,29). Le saut est coupé au
+  volant, et le témoin du joueur le garde.
+- **UNE BORNE QU'ON ÉLARGIT SE REND PEU À PEU.** Au frein à main la dérive va
+  jusqu'à `DERIVE_MAX_MAIN` (≈ 55°) ; au lâcher, la borne n'est pas
+  `DERIVE_MAX` d'un coup — l'excès passerait au cap en UNE image, la caisse
+  sauterait de 35° — mais `max(DERIVE_MAX, |dérive| − REPRISE·dt)`. Sans frein
+  à main, cette borne vaut exactement l'ancienne.
+- **UN AJOUT À LA DYNAMIQUE SE PROUVE AUSSI PAR CE QU'IL NE CHANGE PAS.**
+  240 000 pas de `pasVoiture` tirés au hasard (classes, gaz, volant, pente,
+  moteur, panne, plafond de suivi), sans frein à main, rendent la v408 à
+  l'identique (sonde dans le brouillon, deux arbres). Le moteur ne pousse pas
+  pendant le frein à main : un drift « gaz + frein » demanderait un second
+  doigt sur l'accélérateur, que le joystick n'a pas — décidé, déclaré.
+
+## La pente, la bosse et la file (v408) — conduite, palier 3
+
+Mesuré sur `origin/main` par `tests/sonde-pente.cjs` (sous node, le vrai
+joueur sur de vraies lignes de campagne trouvées par la sonde) : une sportive à
+plein gaz faisait 26,4 blocs/s au bout de quarante blocs en côte, en descente
+et sur le plat, et une crête la plaquait au sol. Après : 24,1 en côte, 28,6 en
+descente, et une crête vive prise à 40 blocs/s fait voler environ une seconde.
+Six règles.
+
+- **UNE SEULE PESANTEUR LE LONG DE LA ROUTE, LA VRAIE (9,81).** Celle du jeu
+  (26, le saut) rendrait une pente d'un bloc par bloc — la plus raide que la
+  surface continue dessine — plus forte que le moteur d'une citadine : un
+  enfant resterait au pied d'une colline. `gravitePente` entre dans
+  `pasVoiture` (`entree.pente`) ; `vitesseEnCote` et `vitesseEnRoueLibre` sont
+  ses formules fermées, et le témoin exige que la simulation les rejoigne. Une
+  voiture arrêtée qu'on ne commande pas TIENT (`MAINTIEN`). En l'air, en
+  revanche, la pesanteur reste celle du jeu, comme avant.
+- **LA SURFACE CONTINUE EST UNE DENT DE SCIE, ET LA CAISSE LA LIT EN CINQ
+  POINTS.** Elle passe par le centre de colonnes de relief entier : une pente
+  de 0,37 est faite de facettes à 0 et à 1. Un point-masse qui la suivait
+  décollait de chaque dent (premier jet : 1,1 à 3,2 s « en l'air » sur six
+  côtes droites). `sousLaCaisse` lit la surface de −2 à +2 blocs le long de la
+  caisse : la moyenne est le sol de la voiture, la droite des moindres carrés
+  sa pente. La caisse ne s'enfonce pas de plus d'`ENFONCE` sous la surface au
+  centre.
+- **LA SURFACE POUSSE LA CAISSE D'UN COUP, MAIS NE LA TIRE QU'À LA
+  PESANTEUR.** Au sol, la vitesse verticale vaut `max(ce que la surface exige,
+  ce que la pesanteur laisse)`. Au sommet d'une crête, l'écart s'accumule
+  d'image en image ; passé le `DEBATTEMENT` on vole. C'est une HAUTEUR, pas un
+  seuil d'image : mon deuxième jet recollait la vitesse à la surface à chaque
+  image, et sur une crête vive l'écart repartait de zéro — la voiture ne
+  décollait JAMAIS, à aucune cadence. Une règle qui doit s'accumuler ne se
+  remet pas à zéro à chaque image.
+- **LE VOXEL DÉCIDE OÙ IL DÉCIDAIT, ET UNE GARDE SE FORMULE SUR L'ÉVÉNEMENT,
+  PAS SUR UNE MESURE VOISINE.** Ma première garde lisait `niveauVoxel`, qui
+  compte aussi la cote des colonnes COUVERTES : au sommet d'une crête la
+  colonne voisine dépasse le centre, la garde rendait la main au chemin
+  d'avant avec l'élan de la pente, et la caisse montait de sept blocs sans
+  être « en l'air ». La garde est l'événement lui-même : une marche franchie
+  dans l'image (`_franchi`), un cube sous les roues (`onGround`), pas de
+  surface (ville). Là, l'élan vertical ne survit pas.
+- **CE QUE LA PHYSIQUE PUBLIE, LES AUTRES LE LISENT SI PRÉSENT.**
+  `player.tangage` (rad, nez en haut), `player.enLair`, `player.pente`, et à
+  chaque retour au sol `player.atterrissage = { force, t, air, hauteur }` —
+  un ÉVÉNEMENT comme `choc`, effacé à la montée et à la descente, publié
+  seulement s'il s'est vu (plus haut que le débattement) ou senti. Personne
+  ne le dessine encore (`conduite-sensations`). Le contrat des dégâts ne
+  change pas : un atterrissage n'est pas un choc.
+- **DERRIÈRE UNE VOITURE PLUS LENTE, ON LA SUIT.** Elle ne se pousse pas
+  (v305) ; on la touchait à chaque image. `suiviDevant` pose notre rectangle
+  devant le pare-chocs par le crochet en lecture seule `voitureContre`, sur la
+  distance où l'on peut avoir à freiner, et la vitesse permise
+  (`vitesseDeSuivi`) est celle qu'on peut encore perdre au freinage de confort
+  avant `ECART_SUIVI` — jusqu'au frein franc si on l'a vue tard
+  (`freinDeSuivi`). Mesuré sous node, collé derrière à un bloc/s de plus
+  qu'elle : 139, 7 et 133 contacts (voiture arrêtée, à 6 et à 12 blocs/s) →
+  zéro. Braquer pour la doubler lève le suivi : on ne regarde que dans son
+  axe. **ET L'ON NE SUIT QUE CE QU'ON RATTRAPE DOUCEMENT** (`SUIVI_DELTA`,
+  4 blocs/s) : mon premier jet freinait aussi devant une voiture qu'on
+  voulait percuter, et le portail a rendu rouges trois témoins des dégâts et
+  de la rue (percuter une voiture de la rue l'abîme, elle s'arrête en
+  feux de détresse, son flanc frôlé nous laisse passer). Foncer dessus reste
+  un choc ; le témoin l'exige aussi.
+
+Et un **non-résultat** : lire la façade sur six blocs au lieu de 4,5 bat la
+droite des faces sur un mur synthétique (pire 9,8 → 7,1°) et ne la bat pas sur
+les seize vraies façades de Paris (`sonde-mur-oblique.cjs` : trajet médian
+après contact 10,4 → 7,5 à 10°, 14,3 → 16,8 à 25°). La coque convexe des faces
+est pire partout (pire 12° puis 168°). `RAYON_MUR` reste à 4,5.
 
 ## Les monuments à la hauteur de leur ville (v335) — une table de paliers, deux lecteurs
 
@@ -7092,7 +7200,7 @@ les autres restent passagers ». Quatre règles.
   libre d'après les positions réseau des autres passagers), rend ses
   commandes inertes, et un appui descend — exactement le métro. Le
   conducteur reconnaît ses passagers à `net.estMoi(p.de)` — l'identité de
-  pair OU celle du bus du nuage (v407 : sans courtier il n'y a pas de pair, et
+  pair OU celle du bus du nuage (v410 : sans courtier il n'y a pas de pair, et
   le passager était vu debout chez le conducteur).
 - **UNE TÊTE N'EST PAS UN TOIT, ET LE CACHE DU PLAFOND EST PAR SIÈGE.**
   `plafondAuSiege` mesure le pavillon parmi les maillages du véhicule ; il

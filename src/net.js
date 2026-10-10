@@ -1704,7 +1704,7 @@ export class NetSession {
     }
   }
 
-  // TOUTES MES IDENTITÉS (v407). Sans courtier, il n'y a pas de pair : la
+  // TOUTES MES IDENTITÉS (v410). Sans courtier, il n'y a pas de pair : la
   // partie passe par le nuage, et les autres nous connaissent sous l'identité
   // du BUS (`bus.monId`). Un passager écrit cette identité-là dans sa position
   // (`p.de`) ; le conducteur qui ne se reconnaissait qu'à `peer.id` le voyait

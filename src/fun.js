@@ -367,8 +367,8 @@ export function initFun(ctx) {
     // ouvre, assied, puis appelle `assis` — `passagerDe()` ne ment pas avant
     const veh = vehiculeDistant ? vehiculeDistant(ami.id) : null;
     if (!veh) { assis(); return; }
-    embarquement.monterChez(veh, ami.def.sieges[s] || ami.def.siege, ami.id, assis,
-      () => { const v = vehiculeDistant(ami.id); return !!v && v.mesh === veh.mesh; });
+    // la séquence redemande la voiture de l'ami à chaque image (v407)
+    embarquement.monterChez(veh, ami.def.sieges[s] || ami.def.siege, ami.id, assis, () => vehiculeDistant(ami.id));
   }
   function descendreDePassager(silencieux = false) {
     if (!passager) return;
@@ -383,8 +383,7 @@ export function initFun(ctx) {
     if (!veh) return;
     const sieges = veh.def.sieges || [];
     const siege = sieges[Math.min(s, sieges.length - 1)] || veh.def.siege;
-    embarquement.descendreDeChez(veh, siege, de,
-      () => { const v = vehiculeDistant(de); return !!v && v.mesh === veh.mesh; });
+    embarquement.descendreDeChez(veh, siege, de, () => vehiculeDistant(de));
   }
   function updatePassager() {
     if (!passager) return;

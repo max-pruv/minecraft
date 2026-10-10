@@ -2554,6 +2554,10 @@ function bindHoldButton(id, code) {
 }
 bindHoldButton('jump-btn', 'Space');
 bindHoldButton('down-btn', 'KeyC');
+// LE FREIN À MAIN (palier C) : au volant, la barre d'espace est le frein à
+// main (player.js) ; le bouton 🛑 de la colonne de droite la tient comme ⤒ la
+// tient à pied. Une seule commande, deux gestes.
+bindHoldButton('fm-btn', 'Space');
 
 document.getElementById('mode-btn').addEventListener('touchstart', (e) => {
   e.preventDefault();
@@ -4514,7 +4518,7 @@ function poserDebout(rp) {
 // Le véhicule dans lequel un joueur (distant) est passager : celui d'un
 // autre ami, ou le nôtre si c'est chez nous qu'il est monté.
 function vehiculeDuConducteur(de) {
-  // `estMoi` (v407) : peer.id avec un courtier, l'identité du bus sans lui
+  // `estMoi` (v410) : peer.id avec un courtier, l'identité du bus sans lui
   if (net && net.estMoi && net.estMoi(de)) {
     const a = fun.montureConduite ? fun.montureConduite() : null;
     // la monture ELLE-MÊME, pas une copie : le cache du plafond vit dessus
@@ -7815,7 +7819,7 @@ function updateHud(dt) {
     + (player.gabarit > 1 && !player.pilote ? '\n' + ligneDiagConduite({
       classe: player.ficheVoiture && player.ficheVoiture.classe, v: player.vitesseVoiture, vmax: player.vitesseVoitureMax,
       devant: mondeDevant((cx, cz) => chunkMeshes.has(World.key(cx, cz)), player.pos.x, player.pos.z, player.yaw + (player.derive || 0) + (player.vitesseVoiture < 0 ? Math.PI : 0), CHUNK),
-      roueLibre: player.roueLibre }) : '')
+      roueLibre: player.roueLibre, pente: player.pente, atterrissage: player.atterrissage, suivi: player.suivi, derapage: player.derapage }) : '')
     + texteRoulage()
     + texteDegats()
     + texteEmbarquement();

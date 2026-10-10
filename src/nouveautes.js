@@ -6,11 +6,39 @@
 
 export const NOUVEAUTES = [
   {
-    v: 407,
+    v: 410,
     titre: 'Passager partout',
     puces: [
       'Ton ami te voit assis',
       'Même sur un Wi-Fi difficile',
+    ],
+  },
+  {
+    v: 409,
+    titre: 'Le frein à main',
+    puces: [
+      'Un bouton 🛑 pour déraper',
+      'La voiture glisse dans les virages',
+      'Elle se remet droite toute seule',
+      'Elle ne saute plus',
+    ],
+  },
+  {
+    v: 408,
+    titre: 'La voiture sent les collines',
+    puces: [
+      'Elle ralentit en montée',
+      'Elle file en descente',
+      'Elle saute au sommet des bosses',
+      'Elle suit les voitures lentes',
+    ],
+  },
+  {
+    v: 407,
+    titre: 'Monter avec un ami, sans raté',
+    puces: [
+      'Tu montes même si sa voiture change',
+      'Et tu en redescends pareil',
     ],
   },
   {
