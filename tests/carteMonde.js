@@ -3459,7 +3459,9 @@ const VRAIES_KM = [
         `A1 en pleine section, pas de tracé de deux blocs : voie de droite ${a.droite}, voie de gauche ${a.gauche}, `
           + `à cheval ${a.cheval} (${a.files} file(s))`);
       verifier('sur les boulevards de Paris, les deux voies de chaque sens sont occupées',
-        p.exterieure >= 40 && p.interieure >= 40,
+        // mesuré : 58 sur `origin/main` (des tracés qui frôlent la voie
+        // extérieure aux places), 205 ici — la barre au milieu (v269)
+        p.exterieure >= 120 && p.interieure >= 40,
         `percées de premier rang, pas de tracé de deux blocs : voie extérieure ${p.exterieure}, intérieure ${p.interieure} (${p.files} files)`);
       verifier('la jumelle de la seconde voie suit la grille horaire de sa file (v305)',
         !!voiesOccupees.grille && voiesOccupees.grille.retard > 0 && voiesOccupees.grille.ecartMax <= 0.01,

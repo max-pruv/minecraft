@@ -57,7 +57,7 @@ const LIEUX = lieux.length ? lieux : ['paris', 'a1', 'londres', 'rome', 'ny', 'z
           for (const c of g.vehicules.etat()) if (c.routier) for (const p of c.places) tout.push({ x: p[0], z: p[1], cap: p[2], dl: c.nom === 'bus' ? 3.2 : 2.2, ligne: (c.cle || '').replace('|voie2', ''), j: !!c.jumeau, v: c.vitesses ? c.vitesses[p[3]] : 0, cause: c.causes ? c.causes[p[3]] : 0 });
           for (let i = 0; i < tout.length; i++) for (let j = i + 1; j < tout.length; j++) {
             if (Math.hypot(tout[i].x - tout[j].x, tout[i].z - tout[j].z) > 7) continue;
-            paires++; if (!separes(rect(tout[i].x, tout[i].z, tout[i].cap, tout[i].dl), rect(tout[j].x, tout[j].z, tout[j].cap, tout[j].dl))) { contacts++; const a = tout[i], b = tout[j]; const k = (a.ligne === b.ligne ? (a.j !== b.j ? 'jumelles' : 'file') : 'autre') + (a.v < 0.3 && b.v < 0.3 ? '-arret' : '-roule') + (Math.abs(Math.cos(a.cap - b.cap)) > 0.7 ? (Math.cos(a.cap - b.cap) > 0 ? '-meme' : '-face') : '-travers'); familles[k] = (familles[k] || 0) + 1; }
+            paires++; if (!separes(rect(tout[i].x, tout[i].z, tout[i].cap, tout[i].dl), rect(tout[j].x, tout[j].z, tout[j].cap, tout[j].dl))) { contacts++; const a = tout[i], b = tout[j]; const k = (a.ligne === b.ligne ? (a.j !== b.j ? 'jumelles' : 'file') : 'autre' + (a.j || b.j ? 'J' : '') + '@' + Math.round((a.x + b.x) / 2) + ',' + Math.round((a.z + b.z) / 2)) + (a.v < 0.3 && b.v < 0.3 ? '-arret' : '-roule') + (Math.abs(Math.cos(a.cap - b.cap)) > 0.7 ? (Math.cos(a.cap - b.cap) > 0 ? '-meme' : '-face') : '-travers'); familles[k] = (familles[k] || 0) + 1; }
           }
         }
         const med = (a) => { const b = [...a].sort((x, y) => x - y); return b.length ? b[Math.floor(b.length / 2)] : null; };

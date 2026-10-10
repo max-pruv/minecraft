@@ -832,6 +832,13 @@ export class ParcoursDecale extends Parcours {
     }
     this.n = n; this.X = X; this.Y = Y; this.Z = Z;
   }
+  // le décalage latéral ici, interpolé : une jumelle qui en a moins d'une
+  // largeur de voiture partage la voie de sa file
+  decalageA(distance) {
+    const L = this.longueur, m = this.lat.length;
+    const f = (((distance % L) + L) % L) / L * m, i = Math.floor(f) % m, u = f - Math.floor(f);
+    return this.lat[i] + (this.lat[(i + 1) % m] - this.lat[i]) * u;
+  }
   a(distance) {
     const L = this.longueur, n = this.n;
     const f = (((distance % L) + L) % L) / L * n, k = Math.min(n - 1, Math.floor(f)), u = f - k;
@@ -1561,6 +1568,16 @@ class Convoi {
         const plancher = this.retard[i - 1] - (this.base[i - 1] - this.base[i]) + mini;
         if (r < plancher) r = plancher;
       }
+      // ET UNE LIGNE NON PLUS (v405) : là où la jumelle d'une seconde voie
+      // partage la voie de sa file, la voiture qui la précède sur la ligne est
+      // dans l'AUTRE convoi. La grille les garde à distance (`jumelleSansContact`) ;
+      // un freinage local (un feu, l'enfant) ne doit pas les faire entrer l'une
+      // dans l'autre. On lit l'autre convoi tel qu'il est à cette image.
+      const devant = this.devantSurLaLigne(i);
+      if (devant) {
+        const plancher = this.base[i] - devant.dElement(devant.iDevant) + mini;
+        if (r < plancher) r = plancher;
+      }
       // LE RETARD D'UNE VOITURE QUE PERSONNE NE VOIT SE REND (v372). Chaque feu
       // rouge en ajoute ; rendu à 30 % de l'allure, il s'accumulerait d'un feu
       // à l'autre et la file finirait par s'étirer sur des centaines de blocs
@@ -1579,6 +1596,23 @@ class Convoi {
       this.rapport[i] = vConv > 0.01 ? this.vLoc[i] / vConv : (this.vLoc[i] > 0.01 ? 1 : 0);
     }
     this.montrer(joueur);
+  }
+
+  // La voiture de l'AUTRE file qui précède la voiture i sur la ligne, là où
+  // les deux voies n'en font qu'une (v405), ou null. Les rangs se lisent dans
+  // la grille : la jumelle est `rangJumeau` intervalles derrière sa file.
+  devantSurLaLigne(i) {
+    const B = this.jumeauDe ? this : this.jumelle, A = this.jumeauDe || this;
+    if (!B || !B.baseFaite || !A.baseFaite || !(B.parcours instanceof ParcoursDecale)) return null;
+    const d = this.base[i] - this.retard[i];
+    if (Math.abs(B.parcours.decalageA(d)) > 2 * DEMI_LARG_VOITURE + 0.3) return null;
+    const r = B.rangJumeau;
+    let autre, j;
+    if (this === B) { autre = A; j = i + Math.floor(r); }       // la voiture de la file juste devant
+    else { autre = B; j = i - Math.ceil(r); }                   // la jumelle juste devant
+    if (j < 0 || j >= autre.nb || autre.pris.has(j)) return null;
+    autre.iDevant = j;
+    return autre;
   }
 
   // L'allure que la grille donne à la voiture i, là où ELLE est (v372).
