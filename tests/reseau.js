@@ -137,6 +137,33 @@ function verifier(nom, ok, detail = '') {
     const fantomes = (await vu(alice)).avatars.filter((a) => a.nom === '…' || !a.nom);
     verifier('aucun avatar sans nom', fantomes.length === 0, JSON.stringify(fantomes));
 
+    // LE GPS D'UN INVITÉ TRAVERSE L'HÔTE (v406). La v388 éprouvait l'hôte et
+    // un invité ; entre DEUX invités, la destination n'existe que dans la
+    // position RELAYÉE (`rpos`), et c'est le chemin que la v374 avait déjà
+    // oublié pour l'histoire des chocs. Nina choisit Rome : Alice, qui n'a
+    // jamais eu de lien avec elle, doit voir « Nina va à Rome » — et la
+    // proposition ne touche pas son GPS (elle n'en a pas). Rouge sur une copie
+    // où `rpos` ne lit pas `g` : rien n'arrive chez Alice.
+    const gpsRelaye = { proposee: null, ms: null, gpsAlice: null };
+    {
+      const rome = await nina.evaluate(async () => (await import('./src/mondes.js')).positionDe('rome'));
+      const t0 = Date.now();
+      await nina.evaluate((r) => window.__carte.surGPS(r.x, r.z, 'Rome'), rome);
+      const vue = await jusqua(async () => !!(await alice.evaluate(() => window.__gpsAmi && window.__gpsAmi())), 30000);
+      gpsRelaye.ms = vue ? Date.now() - t0 : null;
+      gpsRelaye.proposee = await alice.evaluate(() => {
+        const p = window.__gpsAmi ? window.__gpsAmi() : null; const el = document.getElementById('gps-ami-texte');
+        return p ? { qui: p.qui, nom: p.nom, texte: el ? el.textContent : '' } : null;
+      });
+      gpsRelaye.gpsAlice = await alice.evaluate(() => (window.__gps() ? window.__gps().nom : null));
+      await alice.evaluate(() => document.getElementById('gps-ami-non')?.click());
+      await nina.evaluate(() => document.getElementById('gps-stop')?.click());
+    }
+    verifier('le GPS d\'un invité est proposé à l\'autre invité, à travers l\'hôte',
+      !!gpsRelaye.proposee && gpsRelaye.proposee.qui === 'Nina' && gpsRelaye.proposee.nom === 'Rome'
+      && /Nina va à Rome/.test(gpsRelaye.proposee.texte) && gpsRelaye.gpsAlice === null,
+      JSON.stringify(gpsRelaye));
+
     // --- l'ami au volant est vu dans sa voiture, et l'on monte avec lui (v253)
     //
     // Max : « en multijoueur, on ne voit pas si un user est dans une voiture,
@@ -365,7 +392,7 @@ function verifier(nom, ok, detail = '') {
     const boutonLou = () => lou.evaluate(() => { const b = document.getElementById('ride-btn'); return { texte: b.textContent, visible: b.style.display !== 'none' }; });
     await jusqua(async () => { const b = await boutonLou(); return b.visible && /Monter avec/.test(b.texte); }, 15000);
     // CE QUE LA TABLETTE DE LOU FAIT DE LA VOITURE DE MARLON, image par image
-    // (v405) : quand l'ami est recréé, quand son maillage de voiture change,
+    // (v407) : quand l'ami est recréé, quand son maillage de voiture change,
     // quand la phase change. Le rouge qui allait et venait (v377) disait
     // seulement « la séquence s'annule » ; ce relevé dit pourquoi, et il entre
     // dans le message des deux témoins du passager.
@@ -446,7 +473,7 @@ function verifier(nom, ok, detail = '') {
         && descenteLou.some((r) => r.angle > 0.5) && !finD.ph && finD.angle !== null && Math.abs(finD.angle) < 0.02,
       JSON.stringify({ phasesD, ouvertes: descenteLou.filter((r) => r.angle > 0.5).length, max: Math.max(0, ...descenteLou.map((r) => r.angle || 0)),
         passagerPendant: descenteLou.filter((r) => r.passager).length, fin: finD, n: descenteLou.length, suivi: await suiviAmi() }));
-    // --- la voiture de l'ami se refait pendant la marche (v405) ----------------
+    // --- la voiture de l'ami se refait pendant la marche (v407) ----------------
     //
     // ON PROVOQUE L'ÉTAT DU PORTAIL, on ne l'attend pas (v393) : la tablette de
     // Lou refait le maillage de la voiture de Marlon (une clé qui change, une

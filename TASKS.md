@@ -1,5 +1,28 @@
 # Ce qui est en cours
 
+- [ ] **`maj.js`, LE PALIER — UNE INTERMITTENCE DE CADENCE (v405).** « le jeu se
+  mesure en jouant, et range son verdict » et « le palier se décide sur le
+  TRAVAIL d'une image » : rouges UNE fois sur deux passages seuls de la
+  branche (page à 350 ms par image, 30 images, `range: false`, verdict nul),
+  verts au second passage (41/41) et sur `origin/main` v404 (41/41). La v405
+  ne touche que `degats.js`, `degats3d.js` et `nouveautes.js`, que le palier
+  ne lit pas. Au portail de la v405, `maj.js` rendait à la place le fond de
+  carte (dette ci-dessous, v267) et le badge à `v404` (bump pas encore fait).
+  Piste : le témoin juge sur trente images ; il devrait attendre un nombre
+  d'images avant de conclure, borné, la durée dans le message.
+- [ ] **LA TOLÉRANCE DES VOITURES (v405) — ce qui reste, déclaré.** (1) Sur la
+  tablette : Max essaie neuf murs pleins gaz (la voiture doit caler au 9e,
+  fumer dès le 2e de face) et dit si le rythme lui va — les constantes sont
+  `PERTE_SANTE` et `COURBE_FORCE` (degats.js), la promesse `CHOCS_AVANT_PANNE`.
+  (2) La force publiée sature à 1 dès 20 b/s normaux (`CHOC_PLEIN`,
+  conduite.js, session physique) : un mur à 60 b/s coûte autant qu'à 20, et un
+  frôlement rasant à 60 b/s publie 0,78 (0,6 mur). Une force qui suivrait la
+  vitesse jusqu'à 60 se décide côté physique. (3) Au-delà de 24 chocs
+  (`MAX_CHOCS`), l'ami ne rejoue que les 24 derniers : il peut voir une
+  voiture moins abîmée que le conducteur (le feu voyage à part, la panne non).
+  Et `rattraper` (degats3d.js) ne rejoue plus la tôle une fois l'historique
+  plein — défaut d'avant, invisible tant que le feu venait au 3e choc.
+
 - [ ] **UN ÉCART QUI FAIT TRAVERSER LA RUE (v402).** Le témoin du feu de
   `monte.js` l'a publié : un passant sur le trottoir, poussé par l'écart devant
   une voiture qui tourne, ressort sur le trottoir d'EN FACE (`traversee` nul,
@@ -37,9 +60,12 @@
   `maj.js` « le loader dit combien de fichiers » (intermittent, table plus
   bas), `manhattan.js` trou (9 203 → 51 734), « le taxi roule » (bouton
   jamais visible) et l'invité de la ligne 674 qui ne rejoint pas.
-- [ ] **LE GPS PARTAGÉ PAR UN HÔTE QUI RELAIE (`rpos`) N'A PAS DE TÉMOIN À
-  TROIS TABLETTES** (v388 l'éprouve entre l'hôte et un invité). Le champ `g`
-  est lu sur `rpos`, la règle est écrite ; le témoin reste à faire.
+- [x] **LE GPS PARTAGÉ PAR UN HÔTE QUI RELAIE (`rpos`) A SON TÉMOIN À
+  TROIS TABLETTES (v406).** `reseau.js`, pendant la partie à trois : la
+  destination de Nina proposée à Alice à travers l'hôte. Sonde isolée 3/3
+  (0,5–2,6 s) ; `rpos` désarmé, 0/2 en 30 s. Portail : `reseau.js` verte ;
+  `maj.js` « vraiment là » et « ne floute rien » rouges (déclarés) — seule,
+  branche VERTE, `origin/main` v404 rouge sur trois dont « vraiment là ».
 - [ ] **LE PORTAIL DE LA v391 (la tablette mesure sa vitesse au sol), DOUBLE
   MESURE FAITE.** Onze suites ; mes deux témoins verts (règle 36/192/2 ; ligne
   « roulage : 43 b/s · trou devant 16 blocs · débit 4 morceaux/s »). Rouges :
@@ -1012,7 +1038,7 @@
   conduite : la v397 ne touche à rien de ce chemin (branche AU VOLANT de
   `player.js`, crochets d'obstacle). Piste : borner l'attente du témoin sur la
   chauffe (`finie`), et sinon le dire au lieu de juger NY.
-- [x] **(FAIT en v405 : la séquence suit la voiture du conducteur et s'y rebranche ; témoin provoqué dans `reseau.js`.) AU PORTAIL DE LA v397, « LE PASSAGER ENTRE PAR LA PORTIÈRE DROITE »
+- [x] **(FAIT en v407 : la séquence suit la voiture du conducteur et s'y rebranche ; témoin provoqué dans `reseau.js`.) AU PORTAIL DE LA v397, « LE PASSAGER ENTRE PAR LA PORTIÈRE DROITE »
   (`reseau.js`, v377) VA ET VIENT — DÉCLARÉ AVEC SA DISTRIBUTION.** Suite
   entière : branche 2 vertes sur 5 (deux portails, trois rejeux seuls),
   `origin/main` 3 sur 3. Le rouge est toujours le même : Lou reste en
@@ -3692,7 +3718,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
 ## En cours
 
 ### Embarquement (v366) — ce qui reste dans la zone
-- [ ] **LE PORTAIL DE LA v405 (le passager suit la voiture de son ami).**
+- [ ] **LE PORTAIL DE LA v407 (le passager suit la voiture de son ami).**
   `reseau.js` verte en entier (24 min), `degats`, `carte`, `reglages`
   verts. Sonde `sonde-passager-refait.cjs` seule : 3/3 sur la branche, 0/3
   sur `origin/main` (« annulée »). Rouges, tous de familles déjà déclarées et
@@ -3717,7 +3743,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   PREUVE STRUCTURELLE en plus : le code neuf n'est atteint que sous
   `embarq: 1` en descendant d'un avion au sol ; aucune de ces pages ne le fait.
 - [ ] **MONTER DANS UN TRAIN OU UN MÉTRO PAR SA PORTE — DÉCLARÉ, PAS LIVRÉ
-  (session embarquement, v400 ; relu en v405, rien n'a bougé côté
+  (session embarquement, v400 ; relu en v407, rien n'a bougé côté
   `construireRame` : POUR LA SESSION CIRCULATION-VIVANTE, l'étape (1)
   ci-dessous est le seul verrou).** `bord` (fun.js) colle encore l'enfant au
   siège d'une rame d'un coup. La même discipline que l'avion (v389) le
@@ -3758,7 +3784,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
      elle ressort par la droite. Diagnostic chez Alice : `monter (ami)` puis
      `descendre (ami)`.
      **Et si la tablette de Marlon se reconnecte pendant qu'Alice marche
-     (v405)** — mettre l'application de Marlon en arrière-plan deux secondes
+     (v407)** — mettre l'application de Marlon en arrière-plan deux secondes
      puis la rouvrir juste après le « Monter avec Marlon » d'Alice : Alice
      doit s'asseoir quand même (avant : elle restait à pied à côté). Chez
      Alice : `monter (ami) … jusqu'au bout`, jamais `annulée`.
