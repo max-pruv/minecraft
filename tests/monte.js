@@ -4446,81 +4446,6 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !suivi.err && tenus.every((a) => a && a.trou >= a.barre),
       `barre = une demi-seconde de vol · ${JSON.stringify(tenus)} · brouillard ${suivi.brouillard}`);
 
-    // LE MÊME TÉMOIN AU-DESSUS D'UNE VILLE (v404). Celui du dessus vole en
-    // (30 000, 30 000), où un morceau coûte 6,8 ms ; au-dessus de Paris il en
-    // coûte 23,5 (v237), et c'est là que l'enfant vole. On traverse donc Paris
-    // et Londres en ligne droite, la position posée en TEMPS RÉEL à chaque
-    // image (on mesure le chargement, pas l'avion, comme la sonde de la v346),
-    // le passage au-dessus du centre au milieu de la fenêtre, avec le réglage
-    // que la TABLETTE joue en vol : l'ordre en cône et la recharge à l'arrivée
-    // (`file=cone&recharge=arrivee`), que le banc en rendu logiciel coupe
-    // d'office. Mesuré à la sonde (médiane de six relevés) : Paris 137 · 122,
-    // Londres 152 · 128 pour 95 · 120 b/s, barre 48 · 60 ; avec l'ordre du banc
-    // (`file=regard&recharge=image`) Paris rend 45 à 120 : le témoin PEUT
-    // rougir, et c'est ce réglage-là qui le ferait.
-    // ET IL VOLE DANS LA PAGE `ciel`, réglage basculé à chaud
-    // (`__game.fileMaillage`, `__game.rechargeMaillage`) : une troisième page
-    // ouverte à côté de `tab` et `ciel` ne charge jamais son disque (v346), et
-    // le premier jet, qui en ouvrait une, rendait 16 blocs de trou au portail.
-    {
-      const pageVille = ciel;
-      await pageVille.evaluate(() => { window.__game.fileMaillage('cone'); window.__game.rechargeMaillage('arrivee'); });
-      // les vitesses se lisent dans les fiches, jamais recopiées (v269)
-      const vitesses = await pageVille.evaluate(async () => {
-        const m = await import('./src/montures.js');
-        return [...new Set(['avionligne', 'concorde', 'chasseur'].map((k) => m.MONTURES.find((d) => d.key === k).pilote.max))];
-      });
-      const villes = {};
-      for (const lieu of ['paris', 'londres']) for (const v of vitesses) {
-        villes[`${lieu}@${v}`] = await pageVille.evaluate(async ({ lieu, v }) => {
-          const g = window.__game;
-          const { positionDe } = await import('./src/mondes.js');
-          const CHUNK = 16, R = 12;
-          const C = positionDe(lieu), x0 = C.x - v * 7;
-          const patienter = (ms) => new Promise((fin) => {
-            const t0 = performance.now();
-            const tic = () => (performance.now() - t0 < ms ? requestAnimationFrame(tic) : fin());
-            requestAnimationFrame(tic);
-          });
-          const p = g.player;
-          const poser = (x) => { p.pos.set(x, 140, C.z + 0.5); p.vel.set(0, 0, 0); p.yaw = -Math.PI / 2; p.pitch = 0; };
-          p.flying = true; poser(x0);
-          // le disque d'abord chargé à l'arrêt (borné) : un régime, pas un rattrapage
-          const t1 = performance.now();
-          while (performance.now() - t1 < 40000) {
-            poser(x0);
-            let n = 0; const pcx = Math.floor(x0 / CHUNK), pcz = Math.floor(C.z / CHUNK);
-            for (let dz = -R; dz <= R; dz++) for (let dx = -R; dx <= R; dx++) if (g.chunkMeshes.has(`${pcx + dx},${pcz + dz}`)) n++;
-            if (n >= (2 * R + 1) ** 2 * 0.9) break;
-            await patienter(250);
-          }
-          const depart = performance.now();
-          let roule = true;
-          const tic = () => { if (!roule) return; poser(x0 + v * (performance.now() - depart) / 1000); requestAnimationFrame(tic); };
-          requestAnimationFrame(tic);
-          await patienter(4000);
-          const releves = [];
-          for (let n = 0; n < 6; n++) {
-            await patienter(1000);
-            const pcx = Math.floor(p.pos.x / CHUNK), pcz = Math.floor(p.pos.z / CHUNK);
-            let trou = R;
-            for (let dz = -R; dz <= R; dz++) for (let dx = -R; dx <= R; dx++) {
-              const len = Math.hypot(dx, dz);
-              if (len > R || len < 0.5 || dx / len < 0.3) continue;   // devant (+x), ±72°
-              if (!g.chunkMeshes.has(`${pcx + dx},${pcz + dz}`)) trou = Math.min(trou, len);
-            }
-            releves.push(Math.round(trou * CHUNK));
-          }
-          roule = false; p.flying = false;
-          releves.sort((a, b) => a - b);
-          return { trou: releves[3], releves, recharge: g.rechargeRegle && g.rechargeRegle.active };
-        }, { lieu, v });
-      }
-      const ok = Object.entries(villes).every(([k, r]) => r && r.trou >= Math.round(Number(k.split('@')[1]) / 2));
-      verifier('au-dessus d\'une ville aussi, le monde se charge devant l\'avion (réglage de la tablette)',
-        ok, `barre = une demi-seconde de vol · ${JSON.stringify(villes)}`);
-      await pageVille.evaluate(() => { window.__game.fileMaillage(null); window.__game.rechargeMaillage(null); });
-    }
 
     // LA FILE DE MAILLAGE SUIT LE DÉPLACEMENT QUAND ON VA VITE (v337).
     //
@@ -5219,6 +5144,85 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('le fond défilé montre exactement ce qu\'un calcul entier montrerait',
       !!controle && controle.ecarts === 0 && controle.points > 1000,
       JSON.stringify(controle));
+
+    // LE MÊME TÉMOIN AU-DESSUS D'UNE VILLE (v404). Celui du désert, plus haut, vole en
+    // (30 000, 30 000), où un morceau coûte 6,8 ms ; au-dessus de Paris il en
+    // coûte 23,5 (v237), et c'est là que l'enfant vole. On traverse donc Paris
+    // et Londres en ligne droite, la position posée en TEMPS RÉEL à chaque
+    // image (on mesure le chargement, pas l'avion, comme la sonde de la v346),
+    // le passage au-dessus du centre au milieu de la fenêtre, avec le réglage
+    // que la TABLETTE joue en vol : l'ordre en cône et la recharge à l'arrivée
+    // (`file=cone&recharge=arrivee`), que le banc en rendu logiciel coupe
+    // d'office. Mesuré à la sonde (médiane de six relevés) : Paris 137 · 122,
+    // Londres 152 · 128 pour 95 · 120 b/s, barre 48 · 60 ; avec l'ordre du banc
+    // (`file=regard&recharge=image`) Paris rend 45 à 120 : le témoin PEUT
+    // rougir, et c'est ce réglage-là qui le ferait.
+    // Il passe APRÈS les autres témoins de `ciel` : un vol au-dessus de deux
+    // capitales laisse la page autrement chargée qu'avant, et les témoins de
+    // recharge qui suivaient en rendaient deux rouges neufs.
+    // ET IL VOLE DANS LA PAGE `ciel`, réglage basculé à chaud
+    // (`__game.fileMaillage`, `__game.rechargeMaillage`) : une troisième page
+    // ouverte à côté de `tab` et `ciel` ne charge jamais son disque (v346), et
+    // le premier jet, qui en ouvrait une, rendait 16 blocs de trou au portail.
+    {
+      const pageVille = ciel;
+      await pageVille.evaluate(() => { window.__game.fileMaillage('cone'); window.__game.rechargeMaillage('arrivee'); });
+      // les vitesses se lisent dans les fiches, jamais recopiées (v269)
+      const vitesses = await pageVille.evaluate(async () => {
+        const m = await import('./src/montures.js');
+        return [...new Set(['avionligne', 'concorde', 'chasseur'].map((k) => m.MONTURES.find((d) => d.key === k).pilote.max))];
+      });
+      const villes = {};
+      for (const lieu of ['paris', 'londres']) for (const v of vitesses) {
+        villes[`${lieu}@${v}`] = await pageVille.evaluate(async ({ lieu, v }) => {
+          const g = window.__game;
+          const { positionDe } = await import('./src/mondes.js');
+          const CHUNK = 16, R = 12;
+          const C = positionDe(lieu), x0 = C.x - v * 7;
+          const patienter = (ms) => new Promise((fin) => {
+            const t0 = performance.now();
+            const tic = () => (performance.now() - t0 < ms ? requestAnimationFrame(tic) : fin());
+            requestAnimationFrame(tic);
+          });
+          const p = g.player;
+          const poser = (x) => { p.pos.set(x, 140, C.z + 0.5); p.vel.set(0, 0, 0); p.yaw = -Math.PI / 2; p.pitch = 0; };
+          p.flying = true; poser(x0);
+          // le disque d'abord chargé à l'arrêt (borné) : un régime, pas un rattrapage
+          const t1 = performance.now();
+          while (performance.now() - t1 < 40000) {
+            poser(x0);
+            let n = 0; const pcx = Math.floor(x0 / CHUNK), pcz = Math.floor(C.z / CHUNK);
+            for (let dz = -R; dz <= R; dz++) for (let dx = -R; dx <= R; dx++) if (g.chunkMeshes.has(`${pcx + dx},${pcz + dz}`)) n++;
+            if (n >= (2 * R + 1) ** 2 * 0.9) break;
+            await patienter(250);
+          }
+          const depart = performance.now();
+          let roule = true;
+          const tic = () => { if (!roule) return; poser(x0 + v * (performance.now() - depart) / 1000); requestAnimationFrame(tic); };
+          requestAnimationFrame(tic);
+          await patienter(4000);
+          const releves = [];
+          for (let n = 0; n < 6; n++) {
+            await patienter(1000);
+            const pcx = Math.floor(p.pos.x / CHUNK), pcz = Math.floor(p.pos.z / CHUNK);
+            let trou = R;
+            for (let dz = -R; dz <= R; dz++) for (let dx = -R; dx <= R; dx++) {
+              const len = Math.hypot(dx, dz);
+              if (len > R || len < 0.5 || dx / len < 0.3) continue;   // devant (+x), ±72°
+              if (!g.chunkMeshes.has(`${pcx + dx},${pcz + dz}`)) trou = Math.min(trou, len);
+            }
+            releves.push(Math.round(trou * CHUNK));
+          }
+          roule = false; p.flying = false;
+          releves.sort((a, b) => a - b);
+          return { trou: releves[3], releves, recharge: g.rechargeRegle && g.rechargeRegle.active };
+        }, { lieu, v });
+      }
+      const ok = Object.entries(villes).every(([k, r]) => r && r.trou >= Math.round(Number(k.split('@')[1]) / 2));
+      verifier('au-dessus d\'une ville aussi, le monde se charge devant l\'avion (réglage de la tablette)',
+        ok, `barre = une demi-seconde de vol · ${JSON.stringify(villes)}`);
+      await pageVille.evaluate(() => { window.__game.fileMaillage(null); window.__game.rechargeMaillage(null); });
+    }
 
     // UN AVION DÉCOLLE DE SA PISTE, ET IL S'Y POSE (v261).
     //
