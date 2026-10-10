@@ -5126,7 +5126,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
 
 - [ ] **Ce qui reste du gel de téléportation après la v246 : le MAILLAGE
   des morceaux à l'arrivée.**
-  *(Mesuré en v404, `sonde-arrivee-journal.cjs`, arrivée à Paris en scène
+  *(Mesuré en v405, `sonde-arrivee-journal.cjs`, arrivée à Paris en scène
   vide, deux passages : avec un journal de 80 000 blocs l'ancien code (v400)
   met 14 s à mailler la moitié du disque, n'en atteint jamais 90 % en 20 s
   (505/625), passe 3,2 à 3,4 s du fil principal à engendrer et rend des images
@@ -5346,7 +5346,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   quatre-vingt-dix), ce qui a fait échouer trois sondes avant qu'on le voie.
 
 - [x] **Le témoin de chargement du monde vole au-dessus d'un désert.** *(fait
-  en v404 : jumeau urbain dans `monte.js`, Paris et Londres traversés en temps
+  en v405 : jumeau urbain dans `monte.js`, Paris et Londres traversés en temps
   réel avec le réglage de la tablette — `file=cone&recharge=arrivee`. Mesuré à
   la sonde, médiane de six relevés, barre `max / 2` (48 · 60) : Paris 137 · 122,
   Londres 152 · 128 à 95 · 120 b/s ; campagne 192. Les vitesses des avions
