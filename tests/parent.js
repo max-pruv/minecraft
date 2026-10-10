@@ -263,6 +263,48 @@ async function panneau(p) {
           && !!(rn && rn.nom === 'moyen' && rn.source === 'choix') && !!(ra && ra.source === 'sûreté')
           && !!(sa && !('sousChoix' in sa)),
         JSON.stringify({ etendue: bh.etendue, sh, rh: rh && { nom: rh.nom, source: rh.source, sousChoix: rh.sousChoix }, rn: rn && rn.source, ra: ra && ra.source, sa }));
+      // DEUX PAGES SUR LE MÊME STOCKAGE NE SE DÉCLARENT PAS PLANTÉES (v409).
+      // L'iPhone de la famille a déclaré « plantée » une session qui a envoyé
+      // sa fermeture propre trois minutes plus tard (lignes 82 et 83 de
+      // `journal_appareil`) : une seconde page avait lu le drapeau de la
+      // première, vivante. Une horloge et un stockage fabriqués : la première
+      // bat, la seconde s'ouvre une seconde après — ni rapport ni compteur ;
+      // la première se ferme — la ligne de la seconde reste. Puis une page qui
+      // meurt sans battre : relancée quinze secondes plus tard, plantage ; et
+      // relancée trois secondes plus tard, elle est DOUTEUSE, et c'est le
+      // battement qui n'avance pas qui la dit morte. Sur l'ancien code, la
+      // seconde page rapporte la première (rouge).
+      {
+        const magasin = new Map();
+        const stockage = { get: (k) => (magasin.has(k) ? magasin.get(k) : null), set: (k, v) => magasin.set(k, String(v)), remove: (k) => magasin.delete(k) };
+        let h = 1e12;
+        const horloge = () => h;
+        const nouvelle = (id) => new J.Journal({ stockage, maintenant: horloge, id });
+        const a = nouvelle('a'); const ba = a.ouvrir();
+        h += 1000; if (a.battre) a.battre();
+        const b = nouvelle('b'); const bb = b.ouvrir();
+        h += 2000; if (a.battre) a.battre();
+        const vivA = b.verifierDouteuses ? b.verifierDouteuses(true) : { vivantes: [], rapports: ['(pas de vérification)'] };
+        a.fermer('fermeture');
+        const tableApresA = stockage.get(J.SESSION_CLE);
+        const ligneB = J.lireSessions ? !!J.lireSessions(tableApresA).b : false;
+        // b meurt sans dire au revoir ; relance quinze secondes plus tard
+        h += 15000;
+        const c = nouvelle('c'); const bc = c.ouvrir();
+        // c meurt ; relance trois secondes plus tard : douteuse, puis tranchée
+        h += 3000;
+        const d = nouvelle('d'); const bd = d.ouvrir();
+        h += 7000;
+        const td = d.verifierDouteuses ? d.verifierDouteuses(true) : { vivantes: [], rapports: [] };
+        const ancien = J.lireSessions ? J.lireSessions('1791654694912') : null;
+        verifier('deux pages sur le même stockage ne se déclarent pas plantées, et une page morte l’est quand même',
+          !ba.rapport && !bb.rapport && bb.plantages === 0 && vivA.vivantes.length === 1 && !vivA.rapports.length && ligneB
+            && !!(bc.rapport && bc.rapport.fin === 'plantage' && bc.rapport.id === 'b') && bc.plantages === 1
+            && !bd.rapport && bd.douteuses && bd.douteuses.length === 1 && td.rapports.length === 1 && td.rapports[0].id === 'c'
+            && d.plantages() === 2 && !!(ancien && ancien.ancienne && ancien.ancienne.ancienne),
+          JSON.stringify({ seconde: { rapport: !!bb.rapport, plantages: bb.plantages }, vivA, ligneB, apresMort: { rapport: bc.rapport && bc.rapport.id, plantages: bc.plantages },
+            douteuse: { rapport: !!bd.rapport, douteuses: bd.douteuses, tranchee: td.rapports.map((r) => r.id), plantages: d.plantages() }, ancien }));
+      }
       const gros = { fiche: {}, evenements: Array.from({ length: 500 }, (_, i) => ({ t: i, type: 'x', d: 'y'.repeat(100) })),
         releves: Array.from({ length: 200 }, (_, i) => ({ t: i, ips: 30, pire: 40 })) };
       const borne = J.borner(gros);
@@ -319,6 +361,30 @@ async function panneau(p) {
     verifier('une session qui dit au revoir remonte son journal, retire son drapeau et remet le compteur à zéro',
       !!fermeture && adieu.drapeau === null && adieu.plantages === '0',
       `${fermeture ? `fermeture en ${Date.now() - tF} ms (${fermeture.name})` : 'aucune ligne « fermeture » en 15 s'} · ${JSON.stringify(adieu)}`);
+    // UNE PAGE NÉE CACHÉE N'EST PAS UNE SESSION QUE L'ENFANT A VUE (v409).
+    // iOS peut ouvrir l'application sans la montrer, puis la tuer : les
+    // sessions VIDES de `journal_appareil`. Elle se ferme sans remettre le
+    // compteur à zéro ; sur l'ancien code elle reste ouverte (rouge).
+    {
+      const url = tab.url();
+      const cache = await tab.context().newPage();
+      await cache.addInitScript(() => {
+        Object.defineProperty(Document.prototype, 'visibilityState', { configurable: true, get: () => 'hidden' });
+        Object.defineProperty(Document.prototype, 'hidden', { configurable: true, get: () => true });
+      });
+      await tab.evaluate((c) => window.__rawStorage.set(c.PLANTAGES_CLE, '1'), cles);
+      await cache.goto(url, { waitUntil: 'load', timeout: 90000 });
+      await cache.waitForFunction(() => window.__journal, null, { timeout: 90000 });
+      const vuCache = await cache.evaluate((c) => {
+        const j = window.__journal;
+        const t = window.__rawStorage.get(c.SESSION_CLE) || '';
+        return { ouvert: j.ouvert, dansTable: !!(j.id && t.includes(j.id)), avant: j.doc.plantagesAvant, compteur: j.plantages() };
+      }, cles);
+      verifier('une page née cachée ne laisse pas de session ouverte, et ne remet pas le compteur à zéro',
+        vuCache.ouvert === false && !vuCache.dansTable && vuCache.compteur === vuCache.avant && vuCache.avant >= 1,
+        JSON.stringify(vuCache));
+      await cache.close();
+    }
     await tab.close();
 
     // Ce que le parent en voit : le plantage en tête, avec la ville.

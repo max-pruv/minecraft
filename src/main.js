@@ -31,7 +31,7 @@ import { mondeDevant, ligneDiagConduite } from './conduite.js';
 import { PALIERS, PALIER_CLE, choisirPalier, VITESSE_JET,
   ETENDUE_CLE, ETENDUE_PAR_DEFAUT, ETENDUES, palierRetenu, palierPropose, etendueRange, reglageDe, planDetail,
   PARAMS_FORCANTS } from './palier.js';
-import { Journal, suretePalier, PLANTAGES_SURETE } from './journal.js';
+import { Journal, suretePalier, PLANTAGES_SURETE, BATTEMENT_MS } from './journal.js';
 import { liberer } from './liberer.js';
 import { createEffects } from './effects.js';
 import { createSky } from './sky.js';
@@ -96,6 +96,14 @@ const journal = new Journal({
   },
 });
 const BILAN_JOURNAL = journal.ouvrir();
+// UNE PAGE NÉE CACHÉE N'EST PAS UNE SESSION QUE L'ENFANT A VUE (v409). iOS peut
+// ouvrir l'application sans la montrer, puis la tuer : sans ceci, elle laissait
+// sa ligne ouverte et le lancement suivant comptait un plantage — les sessions
+// VIDES (aucun relevé, aucun événement) de `journal_appareil`. Elle se ferme
+// sans remettre le compteur à zéro, et `rouvrir` la relance au premier plan.
+if (document.visibilityState === 'hidden') journal.fermer('arriere-plan', { garderCompteur: true });
+// Le battement : « cette page vit encore » (v409, journal.js).
+setInterval(() => journal.battre(), BATTEMENT_MS);
 window.addEventListener('error', (e) => journal.erreur(e.message || (e.error && e.error.message) || 'erreur',
   `${String(e.filename || '').split('/').pop()}:${e.lineno || 0}`));
 window.addEventListener('unhandledrejection', (e) => journal.erreur(
@@ -5719,8 +5727,23 @@ function envoyerJournal(doc, keepalive = false) {
 }
 if (BILAN_JOURNAL.rapport) {
   journal.noter('plantage-precedent', { plantages: BILAN_JOURNAL.plantages, surete: !!SURETE });
-  setTimeout(() => envoyerJournal(BILAN_JOURNAL.rapport), 2500);
+  setTimeout(() => BILAN_JOURNAL.rapports.forEach((r) => envoyerJournal(r)), 2500);
 }
+// UNE SESSION AU BATTEMENT RÉCENT EST PEUT-ÊTRE UNE PAGE VIVANTE (v409) : on
+// regarde si son battement avance avant de la dire plantée — deux fois, parce
+// qu'une page qui charge peut rater un battement.
+if (BILAN_JOURNAL.douteuses.length) {
+  setTimeout(() => journal.verifierDouteuses(false), 3000);
+  setTimeout(() => {
+    const { vivantes, rapports } = journal.verifierDouteuses(true);
+    if (vivantes.length) journal.noter('page-voisine', { vivantes: vivantes.length });
+    for (const r of rapports) { journal.noter('plantage-precedent', { plantages: journal.plantages(), confirme: true }); envoyerJournal(r); }
+  }, 7000);
+}
+// LA RELANCE VOULUE PAR LE JEU DIT AU REVOIR AVANT DE RECHARGER (v409) :
+// index.html l'appelle dans `reloadOnce` et `forcerMaj`. `pagehide` le fait
+// aussi ; on ne parie pas la sûreté de la famille sur un seul événement.
+window.__journalAuRevoir = (fin = 'mise-a-jour') => { try { envoyerJournal(journal.fermer(fin), true); } catch { /* jamais bloquant */ } };
 window.__journal = journal;
 
 function pushPlayTime(keepalive = false) {
