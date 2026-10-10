@@ -1081,8 +1081,14 @@
   blocs : mieux sur le mur synthétique, pire à 10° sur Paris ; coque convexe :
   pire partout). La dette reste, déclarée.
   **PALIER 3 (v408) LIVRÉ : la pente et la bosse.** RESTE : (5) la pente ne se
-  lit que sur la surface continue — dans une ville en voxel (les collines de
-  San Francisco) la voiture ne la sent pas, comme avant ; (6) personne ne
+  lit que sur la surface continue — **MESURÉ en v409, la dette ne mord
+  presque pas** : sur les 3 189 colonnes de chaussée EN PENTE de San Francisco
+  (cote > 34, 200 000 tirages dans le disque), 2 132 sont sous la surface
+  continue (la voiture y sent déjà la pente), et les 1 057 autres sont le
+  liseré d'un bloc au bord des zones voxel (523 contre une marche de deux
+  blocs, 534 d'un bloc). Une lecture voxel de secours n'est pas écrite :
+  elle ne servirait qu'à ce liseré (sonde `sonde-pente-ville.cjs`, qui ne
+  trouve AUCUNE ligne de cinquante blocs de chaussée voxel en pente) ; (6) personne ne
   DESSINE encore `tangage` ni `atterrissage` (session des sensations) ; (7) la
   vitesse est le long de la route, le déplacement horizontal ne la réduit pas
   du cosinus de la pente (1,4 % à 0,17) ; (8) en l'air, on ne braque pas et
