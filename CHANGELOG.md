@@ -20,6 +20,41 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v408 — La voiture sent les collines, et suit les voitures lentes
+
+**Pourquoi.** Mesuré sur `origin/main` par une sonde qui cherche de vraies côtes,
+descentes et crêtes dans la campagne et y fait rouler le vrai joueur : une
+sportive à plein gaz faisait 26,4 blocs/s au bout de quarante blocs, que ça
+monte, que ça descende ou que ce soit plat — la pente n'existait pas pour la
+voiture, et une crête la plaquait au sol au lieu de la faire décoller. Et
+derrière une voiture de la rue plus lente, joystick en avant, la nôtre la
+touchait à presque chaque image (139 contacts en cinq secondes derrière une
+voiture arrêtée).
+
+**Ce que ça change.** La montée ralentit (24,1 blocs/s au lieu de 26,4) et la
+descente accélère (28,6) ; une voiture arrêtée dans une pente ne repart pas
+toute seule. Une crête prise vite fait décoller la voiture, qui retombe —
+environ une seconde de vol à 40 blocs/s sur une vraie colline. Derrière une
+voiture plus lente, on la suit à un bloc et demi, sans la toucher, et l'on
+freine franchement si on l'a vue tard ; foncer dessus reste un choc. La physique publie pour la caméra et le
+son (session des sensations) le tangage de la caisse et chaque atterrissage
+(`player.tangage`, `player.atterrissage`), et `?diag=1` affiche la pente, le
+dernier saut et la voiture suivie.
+
+**Ce qui le prouve.** Trois témoins sous node dans `plafond.js`, tous rouges
+sur `origin/main` : la dynamique de pente rejoint ses formules fermées (côte à plein
+gaz 40,95 contre 40,95, roue libre 19,46 contre 19,67) et aucune classe ne
+reste au pied d'une pente d'un bloc par bloc ; le joueur sur une côte en dents
+de scie ralentit sans jamais décoller, accélère en descente, décolle d'une
+crête vive et publie son atterrissage ; collé derrière une voiture arrêtée, à
+6 et à 12 blocs/s, zéro contact (139, 7 et 133 sur `origin/main`), et foncer
+dessus reste un choc plein. La sonde `sonde-pente.cjs` (dix-huit lignes de
+campagne) donne les chiffres ci-dessus. Un non-résultat est déclaré : lire la
+façade d'un mur sur six blocs ne bat pas la v397 sur les vraies façades de
+Paris.
+
+---
+
 ## v407 — Le passager suit la voiture de son ami
 
 **Pourquoi.** Au portail, « le passager entre par la portière droite »

@@ -1072,10 +1072,75 @@
   `userData.braquage` pour celle d'un ami. (3) Une voiture de la rue ne se
   pousse pas (horloge partagée, v305) : collé derrière une plus lente,
   joystick en avant, on la touche à chaque image — ces contacts sous
-  `CONTACT_DOUX` (11 km/h relatifs) ne sont pas des chocs. (4) La normale lue
+  `CONTACT_DOUX` (11 km/h relatifs) ne sont pas des chocs — **FAIT en v405** :
+  on la suit (`suiviDevant`), zéro contact mesuré sous node. (4) La normale lue
   sur un escalier se trompe d'un ou deux degrés (pire 9,8° sur 1 200
   contacts) : la voiture s'écarte de la façade d'un cheveu au lieu de la
-  suivre, et `glisserLeLong` la décolle d'une marche si elle s'y coince.
+  suivre, et `glisserLeLong` la décolle d'une marche si elle s'y coince —
+  **mesuré en v408, rien ne la bat sur de vraies façades** (lecture sur 6
+  blocs : mieux sur le mur synthétique, pire à 10° sur Paris ; coque convexe :
+  pire partout). La dette reste, déclarée.
+  **PALIER 3 (v408) LIVRÉ : la pente et la bosse.** RESTE : (5) la pente ne se
+  lit que sur la surface continue — dans une ville en voxel (les collines de
+  San Francisco) la voiture ne la sent pas, comme avant ; (6) personne ne
+  DESSINE encore `tangage` ni `atterrissage` (session des sensations) ; (7) la
+  vitesse est le long de la route, le déplacement horizontal ne la réduit pas
+  du cosinus de la pente (1,4 % à 0,17) ; (8) en l'air, on ne braque pas et
+  le moteur ne pousse pas, et une crête vive à 40 blocs/s fait voler une
+  seconde (mesuré, `sonde-pente.cjs`) — c'est voulu (GTA), à juger avec
+  Marlon sur la tablette ; (9) LE FREIN À MAIN (palier C) n'est pas fait.
+- [ ] **AU PORTAIL DE LA v408 (la pente, la bosse et la file), DES ROUGES QUI NE
+  SONT PAS LA LIVRAISON — mesurés.** Mes trois rouges (percuter une voiture de
+  la rue, elle s'arrête en feux de détresse, son flanc frôlé) venaient du
+  suivi qui freinait AUSSI devant une voiture qu'on voulait percuter : corrigé
+  (`SUIVI_DELTA`), `degats.js` rejouée seule 39/39. `monte.js` rejouée SEULE :
+  branche 182 verts, 10 rouges ; `origin/main` 188 verts, 4 rouges. Des deux
+  côtés : « son flanc frôlé ne nous arrête pas » (`c: null` sur `origin/main`
+  aussi, `lu: false` — NEUF ET DÉCLARÉ : le crochet n'y lit même pas la
+  voiture garée à 410 blocs du site, le témoin la pose loin de son terrain),
+  le sursaut du piéton. Sur la branche seulement, et hors de son chemin
+  (preuve structurelle, v291) : le train 🛞 (0,95 pour 0,97, chemin
+  `pilote`), la remise de gaz sur la mer (`pilote`), « un mur pris de face »
+  (sur une dalle de blocs POSÉS : ni pente ni suivi n'y sont lus ; recul
+  −1,25 encore en cours à la fin d'une fenêtre de 0,65 s — vert au portail
+  complet de la branche et sur `origin/main` seul), la monoplace (déclarée),
+  le flâneur (déclaré), le trou en vol et l'arrivée sur une ville (déclarés),
+  le taux de chevauchement de la circulation (5,5 % ; sur `origin/main` c'est
+  sa voisine « la rue roule à l'allure » qui a rougi au même passage). Au
+  portail complet, `maj.js`, `carte.js`, `reglages.js` et `manhattan.js` ont
+  rendu des rouges déjà déclarés (loader, préparation, glisser bridé, PeerJS,
+  trou de façade, taxi tactile). Portail complet de la reprise (10 octobre,
+  99 min, dix suites) : huit rouges, TOUS déjà déclarés — `monte.js` la
+  chauffe de New York (29/321) et le flanc frôlé (`c: null`, `lu: true`) ;
+  `maj.js` le loader et la préparation ; `carte.js` la flèche du GPS (1,92)
+  et le glisser bridé (486 ms) ; `manhattan.js` le trou de façade et le taxi
+  tactile.
+  Après la fusion de la v406, `degats.js` rejouée seule : « percuter une
+  voiture de la rue » était MON défaut (le suivi ne lisait le sens d'une
+  voiture que si elle roulait — corrigé, vert). Et « très touchée elle fume »
+  est un TIRAGE, déclaré à la session des dégâts : il compte les particules de
+  fumée visibles à UN instant (`particulesVisibles().fumee > 0`), et ce compte
+  vaut 0, 1, 2 sur la branche contre 1, 2 sur `origin/main` v406, même santé
+  (0,33), même module. La grandeur juste est l'émission sur une fenêtre (v279 :
+  un minimum échantillonné est une propriété de la cadence).
+- [ ] **POUR MAX, SUR LA TABLETTE — la pente, la bosse et la file (v408).**
+  Ouvrir `https://minecraft-fam.vercel.app/?diag=1`, prendre une voiture. La
+  ligne « au volant : … » dit désormais la `pente` sous la caisse, le
+  `dernier saut` (durée, hauteur, choc) et `suit une voiture à … blocs/s, …
+  blocs devant`.
+  1. **La côte.** Hors des villes, plein gaz dans une montée : la vitesse
+     affichée doit baisser par rapport au plat (pente 20 à 40 %), et
+     REMONTER en descente. Lâcher le joystick arrêté dans une pente : la
+     voiture ne doit PAS repartir seule.
+  2. **La bosse.** Une crête de colline prise à fond : la voiture décolle,
+     retombe, et la ligne dit `dernier saut 0,5 à 1,5 s`. Ce qui ne doit pas
+     arriver : des sauts en pleine montée régulière, ou une voiture qui
+     tremble sur une pente douce.
+  3. **La file.** En ville, derrière une voiture plus lente, joystick en
+     avant : on la suit à un bloc et demi environ (`suit une voiture`), sans
+     à-coups. Braquer pour la doubler : le suivi s'arrête.
+  4. **La cadence.** La première ligne (`pire image`) ne doit pas changer
+     par rapport à la v404 en roulant hors des villes.
 - [x] **DEUX OU TROIS PROGRAMMES SE COMPILENT ENCORE À L'ARRIVÉE À PARIS
   (mesuré en v306) — ÉLARGI À TOUTES LES VILLES ET FAIT EN v319.**
   `sonde-programmes-villes.cjs` (seize lieux, page neuve par lieu) rendait sur

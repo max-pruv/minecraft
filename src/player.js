@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { BLOCK, isSolid as blockIsSolid, isSlab } from './blocks.js';
 import { HEIGHT, WATER_LEVEL } from './world.js';
-import { ficheDeVitesse, pasVoiture, reponseChoc, casesSousBoite, pointDImpact, DERIVE_MAX, boiteVoiture, chocContreVoiture, normaleDeMur } from './conduite.js';
+import { ficheDeVitesse, pasVoiture, reponseChoc, casesSousBoite, pointDImpact, DERIVE_MAX, boiteVoiture, chocContreVoiture, normaleDeMur, sousLaCaisse, forceAtterrissage, DEBATTEMENT, RAPPEL, ENFONCE, vitesseDeSuivi, freinDeSuivi, PORTEE_SUIVI, SUIVI_DELTA } from './conduite.js';
 
 const WIDTH = 0.6;        // player AABB width (x and z)
 // LE GABARIT D'UN VÉHICULE CONDUIT (v212). Max, capture à l'appui : « cars
@@ -526,7 +526,7 @@ export class Player {
       // à l'image près ; tant qu'elle ne TOMBE pas, elle la gravit.
       if ((etaitAuSol || this.vel.y > -4) && Math.abs(this.vitesseVoiture) > 0.5) {
         const n = Math.hypot(dx, dz);
-        if (this.franchirEnRoulant((dx / n) * DEGAGEMENT_MARCHE, (dz / n) * DEGAGEMENT_MARCHE)) continue;
+        if (this.franchirEnRoulant((dx / n) * DEGAGEMENT_MARCHE, (dz / n) * DEGAGEMENT_MARCHE)) { this._franchi = true; continue; }
       }
       // LA NORMALE DU MUR (v397) : la droite qui passe par les cases de
       // surface autour du contact (`normaleDeMur`), stable d'une marche à
@@ -555,10 +555,16 @@ export class Player {
       if (glisse && !this.glisserLeLong(x, y, z, r.vx * pas, r.vz * pas, nx, nz) && !r.glisse) break;
     }
     // la verticale : le carré central, comme avant
+    // LA BOSSE (palier 3) : sur la surface continue, la voiture garde la
+    // vitesse verticale que la pente lui donnait (`verticaleVoiture`) et n'est
+    // plus plaquée vers le bas : au sommet d'une crête prise vite, elle
+    // décolle. Là où l'on ne lit pas de pente (voxel), on plaque comme avant.
+    const vyAvant = this.vel.y;
     const dy = this.vel.y * dt;
     const n = Math.max(1, Math.ceil(Math.abs(dy) / MAX_STEP));
     for (let i = 0; i < n; i++) this.sweepAxis(1, dy / n);
-    this.contactSolContinu(etaitAuSol, Math.hypot(this.pos.x - avantX, this.pos.z - avantZ), false);
+    if (!this.verticaleVoiture(vyAvant, avantX, avantZ, dt))
+      this.contactSolContinu(etaitAuSol, Math.hypot(this.pos.x - avantX, this.pos.z - avantZ), false);
     // UNE VOITURE BLOQUÉE N'ANNONCE PLUS DE VITESSE (v272) — filet : si le
     // sol continu ou une boîte a mangé le pas sans qu'un choc ne l'ait dit, on
     // ramène la vitesse à ce que la voiture a FAIT. Seulement quand elle est
@@ -568,6 +574,125 @@ export class Player {
       const vraie = Math.hypot(this.pos.x - avantX, this.pos.z - avantZ);
       if (demande > 1e-6 && vraie < demande * 0.25) this.vitesseVoiture = Math.sign(this.vitesseVoiture) * (vraie / dt);
     }
+  }
+
+  // CE QUE LA CAISSE VOIT DE LA SURFACE (palier 3), ou null (voxel).
+  lectureCaisse(x = this.pos.x, z = this.pos.z) {
+    const w = this.world;
+    if (!w.solContinu) return null;
+    return sousLaCaisse((a, b) => w.solContinu(a, b), x, z, this.yaw);
+  }
+  penteVoiture() {
+    const r = this.lectureCaisse();
+    return r ? r.pente : null;
+  }
+
+  // LA BOSSE ET L'ATTERRISSAGE (palier 3). Le point-masse de la caisse sur la
+  // surface lissée (`sousLaCaisse`) : au sol il prend la vitesse verticale que
+  // cette surface exige sous lui (sa cote d'arrivée moins sa cote de départ,
+  // sur le pas de l'image) ; en l'air il suit sa vitesse et la pesanteur du
+  // jeu. C'est ce qui le fait DÉCOLLER au sommet d'une crête prise vite : il
+  // montait, la surface redescend, il continue sa course. Le critère est une
+  // HAUTEUR (le débattement), pas un seuil d'image : il ne dépend pas de la
+  // cadence. Rend false là où l'on ne lit pas la surface (le voxel décide,
+  // comme avant), ou sous la bande que la surface remplace (un tunnel).
+  //   publie `tangage` (rad, nez en haut positif), `enLair`, et au retour au
+  //   sol `atterrissage` = { force 0..1, t, air (s), hauteur (blocs) }.
+  verticaleVoiture(vyAvant, avantX, avantZ, dt) {
+    const w = this.world;
+    const s = w.solContinu ? w.solContinu(this.pos.x, this.pos.z) : null;
+    const tab = w.tablierEn ? w.tablierEn(this.pos.x, this.pos.z) : null;
+    const l1 = s === null || tab !== null ? null : this.lectureCaisse();
+    // UNE MARCHE FRANCHIE DANS L'IMAGE (`franchirEnRoulant`, v286) : la caisse
+    // vient d'être posée sur un cube, c'est le voxel qui décide, comme avant.
+    // Mesuré sur les couloirs à marches de la nature : sans cette garde,
+    // chaque marche franchie passait pour un saut. (Le premier jet lisait
+    // `niveauVoxel`, qui compte aussi la cote des colonnes COUVERTES : au
+    // sommet d'une crête, la colonne voisine est plus haute que le centre, et
+    // la caisse s'envolait sans être « en l'air » — sept blocs, sonde.)
+    const franchi = this._franchi; this._franchi = false;
+    if (l1 === null || this.pos.y < s - 2 || this.onGround || franchi) {
+      // le voxel a parlé (un bloc sous les roues), ou l'on n'est pas sur la
+      // surface continue : le chemin d'avant, et l'on oublie tout vol
+      if (this._vol && this.onGround) this.publierAtterrissage(forceAtterrissage(vyAvant, 0));
+      this.enLair = false; this._vol = null;
+      if (this.vel.y > 0) this.vel.y = 0;   // l'élan d'une pente ne survit pas au voxel
+      this.tangage = (this.tangage || 0) * (1 - Math.min(1, dt * 10));
+      return false;
+    }
+    const l0 = this.lectureCaisse(avantX, avantZ);
+    const vyCible = l0 && dt > 0 ? (l1.cote - l0.cote) / dt : 0;
+    // le sol de la caisse : la surface lissée, sans jamais s'enfoncer de plus
+    // d'ENFONCE sous la surface au centre (une dent de scie passe entre les
+    // roues ; une vraie bosse soulève la caisse)
+    const sol = Math.max(l1.cote, s - ENFONCE);
+    if (this.pos.y < sol) this.pos.y = sol + 1e-4;
+    const gap = this.pos.y - sol;
+    const fx = -Math.sin(this.yaw), fz = -Math.cos(this.yaw);
+    const vLong = dt > 0 ? ((this.pos.x - avantX) * fx + (this.pos.z - avantZ) * fz) / dt : 0;
+    if (gap <= DEBATTEMENT) {
+      if (this._vol) this.publierAtterrissage(forceAtterrissage(vyAvant, vyCible));
+      // la surface POUSSE la caisse vers le haut d'un coup, mais ne la TIRE
+      // vers le bas qu'à la pesanteur (`vyAvant` l'a déjà) : au sommet d'une
+      // crête, l'écart s'accumule d'image en image, et passé le débattement on
+      // vole — quelle que soit la cadence
+      this.vel.y = Math.max(vyCible, vyAvant);
+      if (gap > 1e-4) this.pos.y -= Math.min(gap - 1e-4, RAPPEL * dt);
+      this.onGround = true;
+      this.enLair = false;
+    } else {
+      if (!this._vol) this._vol = { t: 0, haut: 0 };
+      this._vol.t += dt; this._vol.haut = Math.max(this._vol.haut, gap);
+      this.onGround = false;
+      this.enLair = true;
+    }
+    // LE TANGAGE, PUBLIÉ POUR CE QUI DESSINE (la session des sensations) : la
+    // pente sous les roues au sol ; en l'air, la moitié de la trajectoire, et
+    // le nez qui suit doucement.
+    const vise = this.enLair ? Math.atan2(this.vel.y, Math.max(1, Math.abs(vLong))) * 0.5 : Math.atan(l1.pente);
+    const k = Math.min(1, dt * (this.enLair ? 2 : 10));
+    this.tangage = (this.tangage || 0) + (vise - (this.tangage || 0)) * k;
+    return true;
+  }
+
+  // LA VOITURE DE LA RUE DEVANT NOUS (palier 3), lue par le crochet en lecture
+  // seule `voitureContre` (main.js → vehicules.js) : on pose notre rectangle
+  // tous les trois blocs devant le pare-chocs ; la première voiture qui roule
+  // dans notre sens (ou qui attend) donne la vitesse de suivi. Rien n'est
+  // écrit dans la circulation. Publie `suivi` = { v, ecart } pour `?diag=1`.
+  suiviDevant() {
+    this.suivi = null;
+    if (!this.voitureContre || !(this.vitesseVoiture >= 0)) return null;
+    const fx = -Math.sin(this.yaw), fz = -Math.cos(this.yaw);
+    // on ne regarde que jusqu'où l'on peut avoir à freiner (au plus PORTEE_SUIVI)
+    const v = this.vitesseVoiture, portee = Math.min(PORTEE_SUIVI, (v * v) / (2 * 9) + 8);
+    for (let d = DEMI_LONG_VOITURE + 1; d <= DEMI_LONG_VOITURE + 1 + portee; d += 3) {
+      const a = this.voitureContre(this.pos.x + fx * d, this.pos.z + fz * d, this.yaw + Math.PI);
+      if (!a || a.rail) continue;
+      // en travers ou de face : ce n'est pas une file — ET CELA SE LIT MÊME À
+      // L'ARRÊT. Le premier jet ne regardait le sens que d'une voiture qui
+      // roule : une voiture arrêtée qui nous faisait face était « suivie », on
+      // s'arrêtait poliment devant elle au lieu de pouvoir la percuter (rouge
+      // intermittent de `degats.js`, selon qu'elle roulait encore un peu).
+      if (a.ux * fx + a.uz * fz < 0.7) return null;
+      const ecart = (a.x - this.pos.x) * fx + (a.z - this.pos.z) * fz - DEMI_LONG_VOITURE - (a.a || DEMI_LONG_VOITURE);
+      if (ecart < -0.5) return null;                                  // déjà dedans : le choc décide
+      const vAutre = a.v * (a.ux * fx + a.uz * fz);
+      if (v > Math.max(0, vAutre) + SUIVI_DELTA) return null;        // on fonce dessus : c'est un choc
+      this.suivi = { v: +vAutre.toFixed(1), ecart: +ecart.toFixed(1), frein: freinDeSuivi(v, vAutre, ecart) };
+      return vitesseDeSuivi(vAutre, ecart);
+    }
+    return null;
+  }
+
+  // l'atterrissage se publie comme un choc : un ÉVÉNEMENT (effacé à la montée
+  // et à la descente), seulement s'il s'est vu ou senti
+  publierAtterrissage(force) {
+    const v = this._vol; this._vol = null;
+    if (!v || !(v.haut > DEBATTEMENT || force >= 0.05)) return;
+    const t = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    this.atterrissage = { force: +force.toFixed(3), t, air: +v.t.toFixed(2), hauteur: +v.haut.toFixed(2) };
+    this.atterrissages = (this.atterrissages || 0) + 1;
   }
 
   franchirUneMarche(dx, dz) {
@@ -897,7 +1022,7 @@ export class Player {
     // neuve, aucun choc pendant le trajet, `direction −0,028` et un cap qui
     // tourne seul). On l'efface quand on monte ET quand on descend.
     const enVoiture = this.gabarit > 1 && !this.pilote;
-    if (enVoiture !== !!this._enVoiture) { this.choc = null; this._enVoiture = enVoiture; }
+    if (enVoiture !== !!this._enVoiture) { this.choc = null; this.atterrissage = null; this.enLair = false; this._vol = null; this.tangage = 0; this._enVoiture = enVoiture; }
     if (this.gabarit > 1) {
       // AU VOLANT (conduite-physique, v358) : le modèle de véhicule de
       // `conduite.js` — l'accélération qui s'essouffle vers la pointe, le frein
@@ -926,9 +1051,15 @@ export class Player {
       let gaz = forward;
       if (forward < -0.15) { if (this.gaz != null) this.gaz = 0; }
       else if (this.gaz != null) gaz = this.gaz;
+      // LA PENTE SOUS LA CAISSE (palier 3) : lue sur la surface continue, sous
+      // les deux essieux. En l'air, ni pente ni roues (`enLair`, posé par
+      // `verticaleVoiture` à l'image d'avant).
+      const pente = this.enLair ? null : this.penteVoiture();
+      this.pente = pente;
       const r = pasVoiture(
         { v: this.vitesseVoiture, braquage: this.braquage || 0, derive: this.derive || 0 },
-        { gaz, volant: strafe, moteur, direction: ev ? ev.direction || 0 : 0, inerte },
+        { gaz, volant: strafe, moteur, direction: ev ? ev.direction || 0 : 0, inerte, pente: pente || 0, auSol: !this.enLair,
+          plafond: gaz > 0 && !this.enLair ? this.suiviDevant() : null, freinSuivi: this.suivi ? this.suivi.frein : null },
         fiche, dt);
       // LA ROUE LIBRE SE RELÈVE (v397, `?diag=1`) : du lâcher du joystick, au
       // dessus de cinq blocs/s, jusqu'à l'arrêt — sur l'horloge du JEU, comme

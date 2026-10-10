@@ -7815,7 +7815,7 @@ function updateHud(dt) {
     + (player.gabarit > 1 && !player.pilote ? '\n' + ligneDiagConduite({
       classe: player.ficheVoiture && player.ficheVoiture.classe, v: player.vitesseVoiture, vmax: player.vitesseVoitureMax,
       devant: mondeDevant((cx, cz) => chunkMeshes.has(World.key(cx, cz)), player.pos.x, player.pos.z, player.yaw + (player.derive || 0) + (player.vitesseVoiture < 0 ? Math.PI : 0), CHUNK),
-      roueLibre: player.roueLibre }) : '')
+      roueLibre: player.roueLibre, pente: player.pente, atterrissage: player.atterrissage, suivi: player.suivi }) : '')
     + texteRoulage()
     + texteDegats()
     + texteEmbarquement();
