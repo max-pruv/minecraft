@@ -2323,6 +2323,34 @@ position, si (`{ ...msg }`). Ce qui doit traverser un ancien hôte s'accroche
 à elle, et devient idempotent en envoyant l'HISTOIRE (adoptée seulement si
 la nôtre en est le début), jamais le seul dernier événement.
 
+**La tolérance à la GTA (v405).** Max : « on fonce dans deux trucs et elles
+tombent en panne. » Mesuré sur la v404 : panne au 2e mur de face, feu au 3e, et
+dix bordures (force 0,3) mettaient la voiture en feu. Quatre règles.
+
+- **LA PANNE NE VIENT QUE DE LA SANTÉ.** Le moteur (`0,4 × zone avant + 0,6 ×
+  santé`) règle l'allure et la fumée ; une zone enfoncée ne cale plus la voiture
+  à elle seule. C'est ce qui calait en deux murs : `min(zone avant, …)` passait
+  sous le seuil quand la santé valait encore 0,4.
+- **LA PERTE SUIT LE CARRÉ DE LA FORCE** (`COURBE_FORCE`, l'énergie du choc).
+  La force publiée par la physique sature à 1 dès 20 b/s normaux
+  (`CHOC_PLEIN`, conduite.js) : c'est une décision de la physique, qu'on ne
+  touche pas d'ici ; la courbe se règle côté dégâts. Un frôlement rasant à
+  60 b/s publie encore 0,78 — il coûte 0,6 mur, déclaré.
+- **LE NOMBRE DE MURS EST ÉCRIT DANS LE CODE** (`CHOCS_AVANT_PANNE` 9,
+  `CHOCS_AVANT_FEU` 12) et le témoin le LIT : changer une constante sans changer
+  la promesse rougit. Fumée au 2e mur de face (6e de flanc ou par l'arrière) :
+  l'enfant voit qu'elle s'abîme bien avant la panne ; la tôle, elle, se froisse
+  dès le premier choc (la déformation suit la force, pas la santé).
+- **UNE HISTOIRE QUI SE REJOUE DOIT ALLER AUSSI LOIN QUE LA RÈGLE.** Douze chocs
+  d'historique suffisaient quand le feu venait au 3e ; l'ami aurait vu une
+  voiture bien plus saine que le conducteur. `MAX_CHOCS` vaut 24 (la santé
+  rejouée est exacte jusqu'au feu pour des chocs ≥ 0,7), dans `degats.js` et
+  `degats3d.js` (`noter`, `adopterHistoires`) ; le format ne change pas. Une
+  tablette restée sur la v404 rejoue cette histoire avec l'ancienne règle et
+  voit la voiture de l'ami en panne plus tôt : le receveur cède, et c'est
+  accepté. Et une ancienne tablette ignore une histoire `rc` de plus de douze
+  chocs : `rue_choc` reste son chemin.
+
 ## Celui qui part dit au revoir (v393) — un commentaire de départ se relit dans `stop()`
 
 Les deux rouges réseau récurrents du palier C. Trois règles.
@@ -2352,6 +2380,17 @@ Les deux rouges réseau récurrents du palier C. Trois règles.
   gain de sortie rendu, plus un niveau au-dessus de la MOITIÉ — milieu entre
   une voix restée au quart (`GAIN_APPEL`) et le régime qui varie ; vérifié
   rouge sur une copie où la voix reste au quart.
+
+## Le GPS d'un invité traverse l'hôte (v406) — un champ de position a un témoin par chemin
+
+Une règle. La v388 a écrit « un champ de position se lit sur les deux chemins
+de la position » et n'en éprouvait qu'un (le direct). Le relayé (`rpos`) a
+désormais son témoin à trois tablettes dans `reseau.js` (Nina → hôte → Alice),
+vérifié rouge sur une copie où `rpos` ne lit pas `g`. **Un champ ajouté à
+`pos` reçoit deux témoins, ou il n'en a qu'un demi.** Et une proposition
+expire à vingt secondes : une sonde qui lit l'hôte après trente secondes
+d'attente sur l'autre page le trouve vide — ce n'est pas un défaut, c'est
+l'horloge de la proposition.
 
 ## Le GPS se partage (v388) — un état voyage avec la position, pas dans un message neuf
 
@@ -2561,7 +2600,7 @@ celle d'un AXE DU MONDE contre un mur. Cinq règles.
   `player.contact` ({ famille, nx, nz }) ; `?diag=1` au volant les affiche
   avec le monde maillé devant la voiture (`mondeDevant`, `ligneDiagConduite`).
 
-## La pente, la bosse et la file (v405) — conduite, palier 3
+## La pente, la bosse et la file (v407) — conduite, palier 3
 
 Mesuré sur `origin/main` par `tests/sonde-pente.cjs` (sous node, le vrai
 joueur sur de vraies lignes de campagne trouvées par la sonde) : une sportive à

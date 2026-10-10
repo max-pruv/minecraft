@@ -64,19 +64,52 @@ function verifier(nom, ok, detail = '') {
       flanc.zones.gauche < 1 && flanc.zones.avant === 1 && flanc.zones.arriere === 1 && flanc.direction > 0,
       JSON.stringify({ zones: flanc.zones, direction: flanc.direction }));
 
-    // le moteur est touché : la voiture va moins vite ; sous le seuil, elle cale
+    // le moteur est touché : la voiture va moins vite ; sous le seuil, elle cale.
+    // REPOINTÉ en v405 : deux chocs forts calaient la voiture, c'est la panne
+    // que Max a signalée. Deux chocs l'abîment ; c'est l'accumulation qui cale.
     const e = D.etatNeuf();
     D.subirChoc(e, { force: 0.8, lx: 0, lz: -2.2 });
-    const touchee = D.effetsConduite(e);
     D.subirChoc(e, { force: 0.8, lx: 0, lz: -2.2 });
+    const touchee = D.effetsConduite(e);
+    let coups = 2;
+    while (!e.enPanne && coups < 200) { D.subirChoc(e, { force: 0.8, lx: 0, lz: -2.2 }); coups++; }
     const calee = D.effetsConduite(e);
     verifier('moteur touché : l\'allure baisse ; sous le seuil, la voiture CALE (allure nulle)',
       touchee.allure < 1 && touchee.allure > 0 && e.enPanne && calee.allure === 0,
-      `touchée ${touchee.allure.toFixed(2)} · après ${calee.allure} · ${JSON.stringify(D.publier(e))}`);
+      `touchée ${touchee.allure.toFixed(2)} · calée après ${coups} chocs · ${JSON.stringify(D.publier(e))}`);
+
+    // LA TOLÉRANCE À LA GTA (v405). Max : « On fonce dans deux trucs et elles
+    // tombent en panne. » Le nombre de murs se LIT dans le code
+    // (CHOCS_AVANT_PANNE, CHOCS_AVANT_FEU) ; sur la v404, qui ne les publie
+    // pas, on éprouve la promesse écrite au moment de la livraison (9 et 12).
+    // Rouge sur la v404 : panne au 2e mur de face, feu au 3e.
+    const N = D.CHOCS_AVANT_PANNE || 9, NF = D.CHOCS_AVANT_FEU || 12;
+    const table = {};
+    for (const [cote, lx, lz] of [['face', 0, -2.2], ['flanc', -1.13, 0], ['arriere', 0, 2.2]]) {
+      const v = D.etatNeuf(); let panne = null, fumee = null, feu = null;
+      for (let n = 1; n <= 40 && feu === null; n++) {
+        D.subirChoc(v, { force: 1, lx, lz });
+        if (fumee === null && v.moteur < D.SEUIL_FUMEE) fumee = n;
+        if (panne === null && v.enPanne) panne = n;
+        if (v.enFeu) feu = n;
+      }
+      table[cote] = { fumee, panne, feu };
+    }
+    verifier(`${N - 1} murs pris à pleine force ne calent pas la voiture, le ${N}e la cale, le ${NF}e la fait brûler — de face, de flanc, par l'arrière`,
+      N >= 8 && Object.values(table).every((t) => t.panne === N && t.feu === NF),
+      JSON.stringify(table));
+    verifier('… et de face, le moteur FUME dès le deuxième mur : l\'enfant voit qu\'elle s\'abîme bien avant la panne',
+      table.face.fumee !== null && table.face.fumee <= 2, JSON.stringify(table.face));
+
+    // les petits chocs n'usent presque rien : dix bordures, une rayure
+    const bord = D.etatNeuf();
+    for (let i = 0; i < 10; i++) D.subirChoc(bord, { force: 0.3, lx: 0, lz: -2.2 });
+    verifier('dix petits chocs (bordure, voiture de la rue au pas) n\'usent presque rien : la voiture roule et ne fume pas',
+      !bord.enPanne && bord.sante > 0.9 && bord.moteur >= D.SEUIL_FUMEE, JSON.stringify(D.publier(bord)));
 
     // sous le seuil critique, le feu ; il dépose l'enfant, s'éteint, la carcasse s'en va
     const feu = D.etatNeuf();
-    for (let i = 0; i < 4; i++) D.subirChoc(feu, { force: 0.9, lx: 0, lz: i % 2 ? 2.2 : -2.2 });
+    for (let i = 0; i < 200 && !feu.enFeu; i++) D.subirChoc(feu, { force: 0.9, lx: 0, lz: i % 2 ? 2.2 : -2.2 });
     const evts = [];
     for (let t = 0; t < D.DUREE_FEU + D.DUREE_CARCASSE + 2; t += 0.1) {
       const ev = D.avancerFeu(feu, 0.1, true);
@@ -247,6 +280,55 @@ function verifier(nom, ok, detail = '') {
         && Math.abs(crash.boost - crash.allure) < 1e-6 && crash.plafondLu != null && Math.abs(crash.plafondLu - crash.plafondAttendu) < 0.002,
       JSON.stringify({ boost: crash.boost, allure: crash.allure, plafondLu: crash.plafondLu, plafondAttendu: crash.plafondAttendu,
         effetsIci: ch && ch.effetsIci, sante: crash.publie && crash.publie.sante }));
+
+    // 1 bis. LA TOLÉRANCE À LA GTA, PAR LE VRAI CHEMIN (v405). Max : « On fonce
+    // dans deux trucs et elles tombent en panne. » Un SECOND mur, pris à
+    // pleine vitesse comme le premier, par la vraie physique ; puis pleins gaz
+    // depuis le milieu de la dalle. Rouge sur la v404 : la zone avant vidée
+    // en deux murs calait le moteur, la voiture ne repartait plus.
+    const deuxMurs = await tab.evaluate(async () => {
+      const g = window.__game, { a, x0, z0, y0 } = window.__essai, d = g.fun.degats;
+      if (!d) return { err: 'pas de module de dégâts' };
+      const tenir = (n) => new Promise((fin) => {
+        let cumul = 0, prec = performance.now();
+        const pas = (t) => { cumul += (t - prec) / 1000; prec = t; if (cumul >= n) fin(); else requestAnimationFrame(pas); };
+        requestAnimationFrame(pas);
+      });
+      const reculer = async () => {
+        g.player.gaz = 0; g.player.vitesseVoiture = 0; g.player.vel.set(0, 0, 0);
+        g.player.pos.set(x0, y0 + 1.01, z0 + 0.5); g.player.yaw = -Math.PI / 2;
+        await tenir(0.5);
+      };
+      const n0 = (d.etat(a.mesh) || { chocs: [] }).chocs.length;
+      await reculer();
+      g.player.gaz = 1;
+      let vmax = 0;
+      const t0 = performance.now();
+      while (performance.now() - t0 < 25000) {
+        await tenir(0.1);
+        vmax = Math.max(vmax, Math.abs(g.player.vitesseVoiture || 0));
+        const e = d.etat(a.mesh);
+        if (e && e.chocs.length > n0) break;
+      }
+      g.player.gaz = 0;
+      await tenir(0.5);
+      const e = d.etat(a.mesh);
+      const forces = e ? e.chocs.map((k) => k.f) : [];
+      // repart-elle ? pleins gaz deux secondes et demie depuis le milieu de la dalle
+      await reculer();
+      const p0 = { x: g.player.pos.x, z: g.player.pos.z };
+      g.player.gaz = 1;
+      await tenir(2.5);
+      g.player.gaz = 0;
+      const roule = Math.hypot(g.player.pos.x - p0.x, g.player.pos.z - p0.z);
+      await reculer();
+      return { murs: forces.length, forces, vmax: Math.round(vmax * 10) / 10, publie: g.player.etatVoiture,
+        roule: Math.round(roule * 100) / 100, auVolant: !!g.fun.montureConduite() };
+    });
+    verifier('deux murs pris à pleine vitesse laissent la voiture ROULANTE : abîmée, mais elle repart',
+      !deuxMurs.err && deuxMurs.murs >= 2 && deuxMurs.forces.every((f) => f >= 0.9) && deuxMurs.publie
+        && !deuxMurs.publie.enPanne && deuxMurs.publie.sante < 1 && deuxMurs.roule > 3 && deuxMurs.auVolant,
+      JSON.stringify(deuxMurs));
 
     // Un second choc fort à l'avant, par la porte publique : la mesure de la
     // géométrie doit voir un enfoncement net, à l'avant seulement.
