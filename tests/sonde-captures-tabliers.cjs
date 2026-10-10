@@ -1,4 +1,4 @@
-// Captures des tabliers allongés sous la voie (v405) : vue plongeante au-dessus
+// Captures des tabliers allongés sous la voie (v409) : vue plongeante au-dessus
 // du point où la voie touchait l'eau sans tablier.
 // Usage : node tests/sonde-captures-tabliers.cjs <dossier> <tag>
 // Le même script se lance depuis un arbre d'`origin/main` pour l'« avant ».

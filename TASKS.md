@@ -1,5 +1,28 @@
 # Ce qui est en cours
 
+- [ ] **`maj.js`, LE PALIER — UNE INTERMITTENCE DE CADENCE (v405).** « le jeu se
+  mesure en jouant, et range son verdict » et « le palier se décide sur le
+  TRAVAIL d'une image » : rouges UNE fois sur deux passages seuls de la
+  branche (page à 350 ms par image, 30 images, `range: false`, verdict nul),
+  verts au second passage (41/41) et sur `origin/main` v404 (41/41). La v405
+  ne touche que `degats.js`, `degats3d.js` et `nouveautes.js`, que le palier
+  ne lit pas. Au portail de la v405, `maj.js` rendait à la place le fond de
+  carte (dette ci-dessous, v267) et le badge à `v404` (bump pas encore fait).
+  Piste : le témoin juge sur trente images ; il devrait attendre un nombre
+  d'images avant de conclure, borné, la durée dans le message.
+- [ ] **LA TOLÉRANCE DES VOITURES (v405) — ce qui reste, déclaré.** (1) Sur la
+  tablette : Max essaie neuf murs pleins gaz (la voiture doit caler au 9e,
+  fumer dès le 2e de face) et dit si le rythme lui va — les constantes sont
+  `PERTE_SANTE` et `COURBE_FORCE` (degats.js), la promesse `CHOCS_AVANT_PANNE`.
+  (2) La force publiée sature à 1 dès 20 b/s normaux (`CHOC_PLEIN`,
+  conduite.js, session physique) : un mur à 60 b/s coûte autant qu'à 20, et un
+  frôlement rasant à 60 b/s publie 0,78 (0,6 mur). Une force qui suivrait la
+  vitesse jusqu'à 60 se décide côté physique. (3) Au-delà de 24 chocs
+  (`MAX_CHOCS`), l'ami ne rejoue que les 24 derniers : il peut voir une
+  voiture moins abîmée que le conducteur (le feu voyage à part, la panne non).
+  Et `rattraper` (degats3d.js) ne rejoue plus la tôle une fois l'historique
+  plein — défaut d'avant, invisible tant que le feu venait au 3e choc.
+
 - [ ] **UN ÉCART QUI FAIT TRAVERSER LA RUE (v402).** Le témoin du feu de
   `monte.js` l'a publié : un passant sur le trottoir, poussé par l'écart devant
   une voiture qui tourne, ressort sur le trottoir d'EN FACE (`traversee` nul,
@@ -37,9 +60,12 @@
   `maj.js` « le loader dit combien de fichiers » (intermittent, table plus
   bas), `manhattan.js` trou (9 203 → 51 734), « le taxi roule » (bouton
   jamais visible) et l'invité de la ligne 674 qui ne rejoint pas.
-- [ ] **LE GPS PARTAGÉ PAR UN HÔTE QUI RELAIE (`rpos`) N'A PAS DE TÉMOIN À
-  TROIS TABLETTES** (v388 l'éprouve entre l'hôte et un invité). Le champ `g`
-  est lu sur `rpos`, la règle est écrite ; le témoin reste à faire.
+- [x] **LE GPS PARTAGÉ PAR UN HÔTE QUI RELAIE (`rpos`) A SON TÉMOIN À
+  TROIS TABLETTES (v406).** `reseau.js`, pendant la partie à trois : la
+  destination de Nina proposée à Alice à travers l'hôte. Sonde isolée 3/3
+  (0,5–2,6 s) ; `rpos` désarmé, 0/2 en 30 s. Portail : `reseau.js` verte ;
+  `maj.js` « vraiment là » et « ne floute rien » rouges (déclarés) — seule,
+  branche VERTE, `origin/main` v404 rouge sur trois dont « vraiment là ».
 - [ ] **LE PORTAIL DE LA v391 (la tablette mesure sa vitesse au sol), DOUBLE
   MESURE FAITE.** Onze suites ; mes deux témoins verts (règle 36/192/2 ; ligne
   « roulage : 43 b/s · trou devant 16 blocs · débit 4 morceaux/s »). Rouges :
@@ -535,7 +561,7 @@
   Las Vegas et Rio, des anneaux choisis DANS la bande (une sélection, donc
   mesurer la couverture) ; pour les rivières, un contour qui publie son tablier
   (un tablier neuf est du sol : Rome est dans l'empreinte des 490 morceaux).
-- [x] **DES ANNEAUX D'AVANT ROULENT SUR L'EAU HORS DE TOUT TABLIER (v404) — RÉGLÉ EN v405** : les tabliers s'allongent sous la voie (`traverseesDe`, allongements `ext`), 159 → 0 pas, aucune colonne perdue ni changée, 1 485 gagnées sur l'eau. La
+- [x] **DES ANNEAUX D'AVANT ROULENT SUR L'EAU HORS DE TOUT TABLIER (v404) — RÉGLÉ EN v409** : les tabliers s'allongent sous la voie (`traverseesDe`, allongements `ext`), 159 → 0 pas, aucune colonne perdue ni changée, 1 485 gagnées sur l'eau. La
   règle de la v387 (`horsChaussee`) tenait toute eau sous un anneau pour un
   pont : 159 pas sur l'eau sans tablier en v404 (195 sur `origin/main`), dont
   des anneaux de la phase 2 bis. Le contrôle strict (`surUnTablier`) est
@@ -1012,7 +1038,7 @@
   conduite : la v397 ne touche à rien de ce chemin (branche AU VOLANT de
   `player.js`, crochets d'obstacle). Piste : borner l'attente du témoin sur la
   chauffe (`finie`), et sinon le dire au lieu de juger NY.
-- [ ] **AU PORTAIL DE LA v397, « LE PASSAGER ENTRE PAR LA PORTIÈRE DROITE »
+- [x] **(FAIT en v407 : la séquence suit la voiture du conducteur et s'y rebranche ; témoin provoqué dans `reseau.js`.) AU PORTAIL DE LA v397, « LE PASSAGER ENTRE PAR LA PORTIÈRE DROITE »
   (`reseau.js`, v377) VA ET VIENT — DÉCLARÉ AVEC SA DISTRIBUTION.** Suite
   entière : branche 2 vertes sur 5 (deux portails, trois rejeux seuls),
   `origin/main` 3 sur 3. Le rouge est toujours le même : Lou reste en
@@ -1046,10 +1072,75 @@
   `userData.braquage` pour celle d'un ami. (3) Une voiture de la rue ne se
   pousse pas (horloge partagée, v305) : collé derrière une plus lente,
   joystick en avant, on la touche à chaque image — ces contacts sous
-  `CONTACT_DOUX` (11 km/h relatifs) ne sont pas des chocs. (4) La normale lue
+  `CONTACT_DOUX` (11 km/h relatifs) ne sont pas des chocs — **FAIT en v405** :
+  on la suit (`suiviDevant`), zéro contact mesuré sous node. (4) La normale lue
   sur un escalier se trompe d'un ou deux degrés (pire 9,8° sur 1 200
   contacts) : la voiture s'écarte de la façade d'un cheveu au lieu de la
-  suivre, et `glisserLeLong` la décolle d'une marche si elle s'y coince.
+  suivre, et `glisserLeLong` la décolle d'une marche si elle s'y coince —
+  **mesuré en v408, rien ne la bat sur de vraies façades** (lecture sur 6
+  blocs : mieux sur le mur synthétique, pire à 10° sur Paris ; coque convexe :
+  pire partout). La dette reste, déclarée.
+  **PALIER 3 (v408) LIVRÉ : la pente et la bosse.** RESTE : (5) la pente ne se
+  lit que sur la surface continue — dans une ville en voxel (les collines de
+  San Francisco) la voiture ne la sent pas, comme avant ; (6) personne ne
+  DESSINE encore `tangage` ni `atterrissage` (session des sensations) ; (7) la
+  vitesse est le long de la route, le déplacement horizontal ne la réduit pas
+  du cosinus de la pente (1,4 % à 0,17) ; (8) en l'air, on ne braque pas et
+  le moteur ne pousse pas, et une crête vive à 40 blocs/s fait voler une
+  seconde (mesuré, `sonde-pente.cjs`) — c'est voulu (GTA), à juger avec
+  Marlon sur la tablette ; (9) LE FREIN À MAIN (palier C) n'est pas fait.
+- [ ] **AU PORTAIL DE LA v408 (la pente, la bosse et la file), DES ROUGES QUI NE
+  SONT PAS LA LIVRAISON — mesurés.** Mes trois rouges (percuter une voiture de
+  la rue, elle s'arrête en feux de détresse, son flanc frôlé) venaient du
+  suivi qui freinait AUSSI devant une voiture qu'on voulait percuter : corrigé
+  (`SUIVI_DELTA`), `degats.js` rejouée seule 39/39. `monte.js` rejouée SEULE :
+  branche 182 verts, 10 rouges ; `origin/main` 188 verts, 4 rouges. Des deux
+  côtés : « son flanc frôlé ne nous arrête pas » (`c: null` sur `origin/main`
+  aussi, `lu: false` — NEUF ET DÉCLARÉ : le crochet n'y lit même pas la
+  voiture garée à 410 blocs du site, le témoin la pose loin de son terrain),
+  le sursaut du piéton. Sur la branche seulement, et hors de son chemin
+  (preuve structurelle, v291) : le train 🛞 (0,95 pour 0,97, chemin
+  `pilote`), la remise de gaz sur la mer (`pilote`), « un mur pris de face »
+  (sur une dalle de blocs POSÉS : ni pente ni suivi n'y sont lus ; recul
+  −1,25 encore en cours à la fin d'une fenêtre de 0,65 s — vert au portail
+  complet de la branche et sur `origin/main` seul), la monoplace (déclarée),
+  le flâneur (déclaré), le trou en vol et l'arrivée sur une ville (déclarés),
+  le taux de chevauchement de la circulation (5,5 % ; sur `origin/main` c'est
+  sa voisine « la rue roule à l'allure » qui a rougi au même passage). Au
+  portail complet, `maj.js`, `carte.js`, `reglages.js` et `manhattan.js` ont
+  rendu des rouges déjà déclarés (loader, préparation, glisser bridé, PeerJS,
+  trou de façade, taxi tactile). Portail complet de la reprise (10 octobre,
+  99 min, dix suites) : huit rouges, TOUS déjà déclarés — `monte.js` la
+  chauffe de New York (29/321) et le flanc frôlé (`c: null`, `lu: true`) ;
+  `maj.js` le loader et la préparation ; `carte.js` la flèche du GPS (1,92)
+  et le glisser bridé (486 ms) ; `manhattan.js` le trou de façade et le taxi
+  tactile.
+  Après la fusion de la v406, `degats.js` rejouée seule : « percuter une
+  voiture de la rue » était MON défaut (le suivi ne lisait le sens d'une
+  voiture que si elle roulait — corrigé, vert). Et « très touchée elle fume »
+  est un TIRAGE, déclaré à la session des dégâts : il compte les particules de
+  fumée visibles à UN instant (`particulesVisibles().fumee > 0`), et ce compte
+  vaut 0, 1, 2 sur la branche contre 1, 2 sur `origin/main` v406, même santé
+  (0,33), même module. La grandeur juste est l'émission sur une fenêtre (v279 :
+  un minimum échantillonné est une propriété de la cadence).
+- [ ] **POUR MAX, SUR LA TABLETTE — la pente, la bosse et la file (v408).**
+  Ouvrir `https://minecraft-fam.vercel.app/?diag=1`, prendre une voiture. La
+  ligne « au volant : … » dit désormais la `pente` sous la caisse, le
+  `dernier saut` (durée, hauteur, choc) et `suit une voiture à … blocs/s, …
+  blocs devant`.
+  1. **La côte.** Hors des villes, plein gaz dans une montée : la vitesse
+     affichée doit baisser par rapport au plat (pente 20 à 40 %), et
+     REMONTER en descente. Lâcher le joystick arrêté dans une pente : la
+     voiture ne doit PAS repartir seule.
+  2. **La bosse.** Une crête de colline prise à fond : la voiture décolle,
+     retombe, et la ligne dit `dernier saut 0,5 à 1,5 s`. Ce qui ne doit pas
+     arriver : des sauts en pleine montée régulière, ou une voiture qui
+     tremble sur une pente douce.
+  3. **La file.** En ville, derrière une voiture plus lente, joystick en
+     avant : on la suit à un bloc et demi environ (`suit une voiture`), sans
+     à-coups. Braquer pour la doubler : le suivi s'arrête.
+  4. **La cadence.** La première ligne (`pire image`) ne doit pas changer
+     par rapport à la v404 en roulant hors des villes.
 - [x] **DEUX OU TROIS PROGRAMMES SE COMPILENT ENCORE À L'ARRIVÉE À PARIS
   (mesuré en v306) — ÉLARGI À TOUTES LES VILLES ET FAIT EN v319.**
   `sonde-programmes-villes.cjs` (seize lieux, page neuve par lieu) rendait sur
@@ -3692,6 +3783,17 @@ l'embarquement a eu lieu, pas par une hypothèse.
 ## En cours
 
 ### Embarquement (v366) — ce qui reste dans la zone
+- [ ] **LE PORTAIL DE LA v407 (le passager suit la voiture de son ami).**
+  `reseau.js` verte en entier (24 min), `degats`, `carte`, `reglages`
+  verts. Sonde `sonde-passager-refait.cjs` seule : 3/3 sur la branche, 0/3
+  sur `origin/main` (« annulée »). Rouges, tous de familles déjà déclarées et
+  mesurées sur `origin/main` : `maj.js` « vraiment là » ; `monte.js` la
+  chauffe de New York expirée (53/321), le réverbère au volant, le bout du
+  monde qui se charge (trou 82 de l'avion de ligne passe, un autre appareil
+  sous sa barre), le flanc frôlé (v397). PREUVE STRUCTURELLE (v291) : le code
+  neuf n'est atteint que par `monterChez` / `descendreDeChez`, donc avec un
+  passager ET `embarq: 1` ; aucune de ces pages ne le fait, et la seule page
+  `embarq: 1` de `monte.js` est verte.
 - [ ] **LE PORTAIL DE LA v400 (la descente d'avion), DOUBLE MESURE FAITE.**
   Les quatre témoins neufs verts (`monte.js`), et la sonde
   `sonde-descente-avion.cjs` seule : 4/4 sur la branche, 1/4 sur
@@ -3706,7 +3808,9 @@ l'embarquement a eu lieu, pas par une hypothèse.
   PREUVE STRUCTURELLE en plus : le code neuf n'est atteint que sous
   `embarq: 1` en descendant d'un avion au sol ; aucune de ces pages ne le fait.
 - [ ] **MONTER DANS UN TRAIN OU UN MÉTRO PAR SA PORTE — DÉCLARÉ, PAS LIVRÉ
-  (session embarquement, v400).** `bord` (fun.js) colle encore l'enfant au
+  (session embarquement, v400 ; relu en v407, rien n'a bougé côté
+  `construireRame` : POUR LA SESSION CIRCULATION-VIVANTE, l'étape (1)
+  ci-dessous est le seul verrou).** `bord` (fun.js) colle encore l'enfant au
   siège d'une rame d'un coup. La même discipline que l'avion (v389) le
   ferait : l'accès se déclare avec le MODÈLE (`userData.porte` posé par
   `construireRame`, une porte coulissante en MEMBRE, aucune clé de programme
@@ -3744,6 +3848,11 @@ l'embarquement a eu lieu, pas par une hypothèse.
      et Marlon voit SA portière droite s'ouvrir chez lui. Puis « Descendre » :
      elle ressort par la droite. Diagnostic chez Alice : `monter (ami)` puis
      `descendre (ami)`.
+     **Et si la tablette de Marlon se reconnecte pendant qu'Alice marche
+     (v407)** — mettre l'application de Marlon en arrière-plan deux secondes
+     puis la rouvrir juste après le « Monter avec Marlon » d'Alice : Alice
+     doit s'asseoir quand même (avant : elle restait à pied à côté). Chez
+     Alice : `monter (ami) … jusqu'au bout`, jamais `annulée`.
   5. **L'avion (v389).** À Roissy (carte → Paris–Charles-de-Gaulle), devant
      l'avion de ligne, « Monter » : un escalier à rampe jaune apparaît contre
      la porte avant gauche, l'enfant le gravit, la porte s'ouvre, il entre,
