@@ -665,17 +665,43 @@ function verifier(nom, ok, detail = "") {
     );
     await reprise.close();
     nuage = await servirLeNuage(9360);
+    // L'INVITÉ OUVRE SA PAGE AVANT QUE L'HÔTE N'ENTRE DANS MANHATTAN (v411).
+    // C'était le « TimeoutError de la ligne 674 » : `banc.rejoindre` ouvrait
+    // la page de l'invité PENDANT que l'hôte rendait Manhattan, qui tourne à
+    // 0,4 image par seconde en rendu logiciel (v259) et prend les quatre
+    // cœurs du banc. Sonde (`sonde-invite-ny.cjs`) : hôte dans Manhattan,
+    // `window.__game` arrive en 44 s puis au-delà de 90 s, sans une erreur ;
+    // hôte hors Manhattan, 13 et 18 s. Deux tablettes n'ont jamais à se
+    // partager un processeur : on mesurait le banc. Page ouverte d'abord,
+    // puis le geste de l'enfant (code, Rejoindre, Jouer) : 3 sur 3, bloc
+    // propagé en 0,2 à 6 s (`sonde-invite-avant.cjs`).
+    const invite = await banc.joueur("TerreAmi", {
+      rr: 2,
+      tactile: true,
+      portNuage: 9360,
+    });
     const { p: hote, code } = await banc.creerMonde("TerreHote", {
       carte: "manhattan",
       rr: 2,
       tactile: true,
       portNuage: 9360,
     });
-    const invite = await banc.rejoindre("TerreAmi", code, {
-      rr: 2,
-      tactile: true,
-      portNuage: 9360,
-    });
+    await invite.evaluate(() => document.getElementById("online-btn").click());
+    await dormir(400);
+    await invite.evaluate((c) => {
+      document.getElementById("join-code").value = c;
+      document.getElementById("join-btn").click();
+    }, code);
+    await invite
+      .waitForFunction(
+        () => !!(window.__game.net && window.__game.net.active && window.__game.net.linkState === "ok"),
+        null,
+        { timeout: 60000 },
+      )
+      .catch(() => { /* le verdict d'après le dira */ });
+    await dormir(1200);
+    await invite.evaluate(() => document.getElementById("online-play-btn")?.click());
+    await dormir(1800);
     const BLOC = { x: NY.x + 3, y: 36, z: NY.z + 15 };
     await hote.evaluate(
       (B) => __game.world.setBlock(B.x, B.y, B.z, 20, Date.now()),
