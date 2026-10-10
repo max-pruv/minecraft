@@ -1136,6 +1136,10 @@
   vaut 0, 1, 2 sur la branche contre 1, 2 sur `origin/main` v406, même santé
   (0,33), même module. La grandeur juste est l'émission sur une fenêtre (v279 :
   un minimum échantillonné est une propriété de la cadence).
+  Portail complet de la v409 (le frein à main) : neuf rouges, TOUS déjà
+  déclarés ci-dessus et plus haut (fumée 0, préparation de `maj.js`, flèche du
+  GPS, glisser bridé 684 ms, trou de façade, taxi tactile, PeerJS, chauffe de
+  New York 44/321, flanc frôlé) ; les trois témoins du frein à main verts.
 - [ ] **POUR MAX, SUR LA TABLETTE — la pente, la bosse et la file (v408).**
   Ouvrir `https://minecraft-fam.vercel.app/?diag=1`, prendre une voiture. La
   ligne « au volant : … » dit désormais la `pente` sous la caisse, le
