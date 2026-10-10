@@ -63,6 +63,20 @@
   (`monture: null`, intermittence vue sur `origin/main` v326). `reseau.js`
   REJOUÉE SEULE sur la branche : 79 verts, zéro rouge (mon témoin du GPS
   compris).
+- [ ] **LE PORTAIL DE LA v405 (le témoin vole au-dessus des villes), DOUBLE
+  MESURE FAITE.** Le banc tournait à une charge stable de 3,8 cœurs (les pages
+  `tab` et `ciel` de `monte.js`). `maj.js` : libération avec `carte: false`
+  (déclarée). `monte.js` : le premier jet de mon témoin OUVRAIT une troisième
+  page (trou 16 pour 60 à Paris — la leçon de la v346) ; repointé dans `ciel`,
+  placé après ses autres témoins, et la page rendue à sa place en sortant (sans
+  cela la conduite de `pageGta` tombait à 2,8 images par seconde : quatre
+  rouges de conduite de plus). Rejouée SEULE, version finale : 195 verts,
+  3 rouges — « la rue roule à l'allure d'une ville », la compilation à New York,
+  le flanc frôlé — tous trois rouges sur `origin/main` (v404) rejouée seule
+  (21 rouges ce jour-là, dont la cascade « pas aux commandes » des avions et le
+  trou du chasseur au-dessus du désert, 58 pour 60). Mon témoin : Paris 137 ·
+  112, barres 48 · 60. Un passage est mort au démarrage d'une page (90 s,
+  `banc.joueur`), la panne déclarée sous la v397.
 - [ ] **LE PORTAIL DE LA v404 (les anneaux contournent), DOUBLE MESURE FAITE.**
   Verts : `fumee.js`, `carteMonde.js` (les deux témoins neufs), `plafond.js`
   (empreintes, celle des 490 morceaux comprise). `carte.js` : « la flèche du
