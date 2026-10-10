@@ -1129,7 +1129,11 @@
   trouve AUCUNE ligne de cinquante blocs de chaussée voxel en pente) ; (6) personne ne
   DESSINE encore `tangage` ni `atterrissage` (session des sensations) ; (7) la
   vitesse est le long de la route, le déplacement horizontal ne la réduit pas
-  du cosinus de la pente (1,4 % à 0,17) ; (8) en l'air, on ne braque pas et
+  du cosinus de la pente (1,4 % à 0,17) — **MESURÉ en v412, ne se voit pas** :
+  15 542 tirages de campagne hors villes et hors eau (pente sur six blocs),
+  médiane 0, 90e centile 0,17 (1,4 %), 97e 0,33 (5,1 %) ; au-delà ce sont
+  des falaises voxel qu'on ne roule pas. Erreur moyenne 2,1 % falaises
+  comprises. Pas écrite ; (8) en l'air, on ne braque pas et
   le moteur ne pousse pas, et une crête vive à 40 blocs/s fait voler une
   seconde (mesuré, `sonde-pente.cjs`) — c'est voulu (GTA), à juger avec
   Marlon sur la tablette ; (9) LE FREIN À MAIN (palier C) — **FAIT en v409** :
