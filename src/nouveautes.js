@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 418,
+    titre: 'L\'arrivée plus légère',
+    puces: [
+      'Moins d\'attente après une téléportation',
+      'Moins de travail pour la tablette',
+    ],
+  },
+  {
     v: 417,
     titre: 'Le ciel des villes vérifié',
     puces: [

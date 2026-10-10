@@ -5446,6 +5446,26 @@ l'embarquement a eu lieu, pas par une hypothèse.
   parcours du convoi, pas seulement son cap), et dire dans le message si la
   voiture la plus proche s'est éloignée ou rapprochée.
 
+- [ ] **L'ARRIVÉE D'UNE TÉLÉPORTATION, DÉCOUPÉE (v418) — deux dettes pour
+  d'autres zones.** `sonde-arrivee-decoupe.cjs` (Paris, scène vide, trois
+  passages, `PROFIL_MS=600 NIVEAUX=2,3,4`) : la pire image (283 à 383 ms) est
+  UNE tâche `FireAnimationFrame` de JavaScript (trace du fil principal). Temps
+  inclusif sous `frame`, première demi-seconde :
+  (1) **`Convoi.montrer` (vehicules.js, circulation-vivante) : 162 · 276 ·
+  276 ms.** Il fabrique (`this.element(i)`) toutes les voitures qui entrent
+  dans les quarante-cinq blocs dans la MÊME image ; à l'arrivée, c'est toute
+  la rue d'un coup. La piste est celle des passants (v246, `naitre` par
+  tranches de cinq millisecondes) : un budget de fabrication par image, la
+  place restant vide une image de plus.
+  (2) **`ensureChunk` sur le fil principal : 66 à 94 ms**, appelé par le
+  `sweep` des personnages (marlon.js) et `posteAutour` des passants
+  (passants.js, `sommetColonne`) — des morceaux que le worker n'a pas encore
+  rendus. Piste : un passant ne se pose (et un personnage ne marche) que sur
+  un morceau déjà là, comme la minicarte (v258) qui n'engendre jamais.
+  (3) `nbSansCroisement` (vehicules.js) 22 à 36 ms au dépliage d'un circuit.
+  Fait dans ma zone (v418) : `renduLogiciel()` ne redemande plus le pilote
+  (120 à 336 ms de `getParameter` par arrivée, zéro gain en durée d'image au
+  banc, déclaré). À relire sur l'iPad avec `?diag=1` après les deux remèdes.
 - [ ] **Ce qui reste du gel de téléportation après la v246 : le MAILLAGE
   des morceaux à l'arrivée.**
   *(Mesuré en v417, `sonde-arrivee-journal.cjs`, arrivée à Paris en scène

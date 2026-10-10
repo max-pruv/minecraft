@@ -18,6 +18,7 @@ const ville = process.argv[2] || 'paris';
 const tours = Number(process.argv[3] || 2);
 const variantes = (process.argv[4] || '&vide=1&recharge=arrivee').split('|');
 const rr = 12;
+const PROFIL_MS = Number(process.env.PROFIL_MS || 0);   // 0 : tout ; sinon la première fenêtre de l'arrivée
 (async () => {
   const banc = new Banc({ portJeu: 8412, portPairs: 9412 });
   await banc.ouvrir();
@@ -28,9 +29,17 @@ const rr = 12;
       const page = await banc.jouerSeul(`Decoupe${n++}`, { rr, params });
       const cdp = await page.context().newCDPSession(page);
       await cdp.send('Profiler.enable');
-      await cdp.send('Profiler.setSamplingInterval', { interval: 500 });
+      await cdp.send('Profiler.setSamplingInterval', { interval: PROFIL_MS ? 100 : 500 });
       await page.evaluate(() => new Promise((fin) => setTimeout(fin, 8000)));
+      await page.evaluate((ms) => { window.__profilMs = ms; }, PROFIL_MS);
       await cdp.send('Profiler.start');
+      let profilTot = null;
+      if (PROFIL_MS) {
+        (async () => {
+          await page.waitForFunction(() => window.__profilFini, null, { timeout: 120000, polling: 50 });
+          profilTot = (await cdp.send('Profiler.stop')).profile;
+        })();
+      }
       const r = await page.evaluate(async ({ ville, rr }) => {
         const g = window.__game, s = g.statsMaillage, w = g.world;
         const { positionDe } = await import('./src/mondes.js');
@@ -61,6 +70,7 @@ const rr = 12;
           requestAnimationFrame(tic);
         };
         requestAnimationFrame(tic);
+        if (window.__profilMs) { await patienter(window.__profilMs); window.__profilFini = true; }
         await patienter(20000);
         suivre = false;
         const somme = images.reduce((x, i) => x + i.d, 0) || 1;
@@ -71,7 +81,7 @@ const rr = 12;
           totaux: { travail: tot('travail'), rendu: tot('rendu'), install: tot('install'), maillageLocal: tot('maillageLocal'), generation: tot('generation'), recus: tot('recus') },
           lentes };
       }, { ville, rr });
-      const { profile } = await cdp.send('Profiler.stop');
+      const profile = profilTot || (await cdp.send('Profiler.stop')).profile;
       // temps propre par fonction, sur tout le profil
       const parId = new Map(profile.nodes.map((nd) => [nd.id, nd]));
       const propre = new Map();
@@ -81,6 +91,34 @@ const rr = 12;
         const cle = `${f.functionName || '(anonyme)'} ${f.url.split('/').pop()}:${f.lineNumber + 1}`;
         propre.set(cle, (propre.get(cle) || 0) + (dts[i] || 0) / 1000);
       });
+      // qui appelle les fonctions natives lourdes (getParameter, etc.) : la pile
+      const parent = new Map();
+      for (const nd of profile.nodes) for (const c of (nd.children || [])) parent.set(c, nd.id);
+      const piles = new Map();
+      profile.samples.forEach((id, i) => {
+        const f = parId.get(id).callFrame;
+        if (f.functionName !== 'getParameter' && f.functionName !== 'texImage2D' && f.functionName !== 'bufferData' && f.functionName !== 'compileShader' && f.functionName !== 'linkProgram') return;
+        const pile = [];
+        let q = parent.get(id);
+        while (q && pile.length < 6) { const g = parId.get(q).callFrame; if (g.functionName) pile.push(`${g.functionName}@${g.url.split('/').pop()}:${g.lineNumber + 1}`); q = parent.get(q); }
+        const cle = f.functionName + ' ← ' + pile.join(' ← ');
+        piles.set(cle, (piles.get(cle) || 0) + (dts[i] || 0) / 1000);
+      });
+      r.natifs = [...piles].sort((x, y) => y[1] - x[1]).slice(0, 8).map(([k, v]) => `${Math.round(v)} ms ${k}`);
+      // temps INCLUSIF des fonctions appelées sous `frame` (main.js), deux niveaux
+      const incl = new Map();
+      const sousFrame = (id) => { const pile = []; let q = id; while (q) { pile.push(q); q = parent.get(q); } return pile.reverse(); };
+      profile.samples.forEach((id, i) => {
+        const pile = sousFrame(id).map((q) => parId.get(q).callFrame);
+        const k = pile.findIndex((f) => f.functionName === 'frame' && /main\.js/.test(f.url));
+        if (k < 0) return;
+        for (const prof of (process.env.NIVEAUX || '1,2').split(',').map(Number)) {
+          const f = pile[k + prof]; if (!f) continue;
+          const cle = `${'  '.repeat(prof - 1)}${f.functionName || '(anonyme)'} ${f.url.split('/').pop()}:${f.lineNumber + 1}`;
+          incl.set(cle, (incl.get(cle) || 0) + (dts[i] || 0) / 1000);
+        }
+      });
+      r.sousFrame = [...incl].sort((x, y) => y[1] - x[1]).slice(0, 24).map(([k, v]) => `${Math.round(v)} ms ${k}`);
       r.profil = [...propre].sort((x, y) => y[1] - x[1]).slice(0, 18).map(([k, v]) => `${Math.round(v)} ms ${k}`);
       r.params = params;
       console.log(JSON.stringify(r, null, 1));

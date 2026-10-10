@@ -1600,6 +1600,34 @@ Et une empreinte d'identité qui change se PROUVE : celle des 490 morceaux
 (v352) couvre Marrakech et Tokyo ; la branche, bâtisseurs neufs désarmés, rend
 l'ancienne au bit près — c'est ce qui a permis de la remplacer.
 
+## L'arrivée d'une téléportation découpée (v418) — un appel GL synchrone se lit une fois, et une trace nomme ce qu'un profil appelle « (program) »
+
+Trois règles.
+
+- **UN APPEL GL QUI REND UNE CONSTANTE SE MÉMORISE, POUR TOUS SES LECTEURS.**
+  `gl.getParameter` est un aller-retour synchrone avec le processus du GPU.
+  `renduLogiciel()` le refaisait à chaque reconstruction de la file de
+  maillage (`fileAuRegardVoulue`) : 120 à 336 ms dans la première seconde
+  d'une arrivée à Paris. La v360 l'avait déjà vu et mémorisé pour UN lecteur
+  (`logicielMemo`) — le verre dans les murs, une fois de plus. La réponse se
+  garde DANS la fonction, et un témoin compte les demandes du nom du pilote
+  (0x9246) en vol : zéro, huit sur l'ancien code.
+- **UN GAIN QUI NE SE VOIT PAS EN DURÉE D'IMAGE SE DIT TEL QUEL.** Au banc la
+  pire image de l'arrivée ne bouge pas (283 à 367 ms contre 283 à 383) :
+  l'attente se cachait dans des images déjà lentes. Ce qui se transpose à la
+  tablette, c'est un appel synchrone de moins par morceau franchi, pas des
+  millisecondes du banc.
+- **« (program) » DANS UN PROFIL N'EST PAS UNE CAUSE ; UNE TRACE LA NOMME.** Le
+  profil de la première seconde donnait 350 à 440 ms de « (program) » ; la
+  trace du fil principal (`Tracing`, `devtools.timeline`) a montré que l'image
+  lente est une seule tâche `FireAnimationFrame` de 245 ms de JavaScript. Le
+  temps INCLUSIF sous `frame` (`sonde-arrivee-decoupe.cjs`, `NIVEAUX=2,3,4`)
+  a nommé les lignes : `Convoi.montrer` (vehicules.js) fabrique toutes les
+  voitures en vue dans la même image (160 à 290 ms), `ensureChunk` sur le fil
+  principal pour le `sweep` des personnages et `posteAutour` des passants
+  (66 à 94 ms), `nbSansCroisement` (22 à 36 ms). Ces fichiers sont d'autres
+  sessions : dettes nommées dans `TASKS.md`, avec les chiffres.
+
 ## Le témoin de chargement vole au-dessus d'une ville (v417) — un réglage que le banc coupe se force dans le témoin qui le juge
 
 Une règle.

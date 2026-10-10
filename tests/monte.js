@@ -5347,6 +5347,42 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       }, placeCiel);
     }
 
+    // LE NOM DU PILOTE GRAPHIQUE SE LIT UNE FOIS (v418). `gl.getParameter` est
+    // un aller-retour SYNCHRONE avec le processus du GPU ; `renduLogiciel()` le
+    // refaisait à chaque reconstruction de la file de maillage, et à l'arrivée
+    // d'une téléportation à Paris cela pesait 120 à 336 ms dans la première
+    // seconde (profil, `sonde-arrivee-decoupe.cjs`). On compte les appels en
+    // traversant six morceaux : zéro attendu, l'ancien code en fait un par
+    // morceau franchi.
+    {
+      const appels = await ciel.evaluate(async () => {
+        const g = window.__game, gl = g.renderer.getContext();
+        const origine = gl.getParameter;
+        let n = 0;
+        gl.getParameter = function (...a) { if (a[0] === 0x9246) n++; return origine.apply(this, a); };   // UNMASKED_RENDERER_WEBGL
+        const patienter = (ms) => new Promise((fin) => {
+          const t0 = performance.now();
+          const tic = () => (performance.now() - t0 < ms ? requestAnimationFrame(tic) : fin());
+          requestAnimationFrame(tic);
+        });
+        const p = g.player, x0 = p.pos.x, z0 = p.pos.z, y0 = p.pos.y, vol = p.flying;
+        p.flying = true;
+        let franchis = 0, dernier = null;
+        for (let k = 0; k <= 6; k++) {
+          p.pos.set(x0 + k * 16, 140, z0); p.vel.set(0, 0, 0);
+          await patienter(300);
+          const c = Math.floor(p.pos.x / 16);
+          if (dernier !== null && c !== dernier) franchis++;
+          dernier = c;
+        }
+        gl.getParameter = origine;
+        p.pos.set(x0, y0, z0); p.vel.set(0, 0, 0); p.flying = vol;
+        return { n, franchis };
+      });
+      verifier('le jeu ne redemande pas le nom de la carte graphique à chaque morceau franchi',
+        appels.franchis >= 5 && appels.n === 0, JSON.stringify(appels));
+    }
+
     // UN AVION DÉCOLLE DE SA PISTE, ET IL S'Y POSE (v261).
     //
     // Max : « une vraie motion de décollage : accélération sur la piste puis
