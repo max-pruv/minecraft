@@ -3435,7 +3435,13 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
           for (let s = bout - 2.5; s <= bout + 2.5; s += 0.1) for (let d = -8; d <= 8; d += 0.25) {
             if (R.largeurA && Math.abs(d) > R.largeurA(seg, s).demiEmprise - 0.5) continue;
             const a = R.pointA(seg, s), x = a.x - a.fz * d, z = a.z + a.fx * d;
-            const X = Math.floor(x), Z = Math.floor(z), c = R.routeEn(X + 0.5, Z + 0.5);
+            // Au bord de l'emprise, le point peut être dans la route quand le
+            // centre de SA colonne ne l'est pas (A6, v416 : d 7,92 pour une
+            // demi-emprise de 8,5, colonne voisine hors route) : on prend alors
+            // la cote de la route au POINT, et l'on demande un cube plein à
+            // cette cote dans la colonne, quel qu'il soit — le sol naturel y
+            // ferme la chaussée aussi bien. Au-dessus de l'eau, rien : trou.
+            const X = Math.floor(x), Z = Math.floor(z), c = R.routeEn(X + 0.5, Z + 0.5) || R.routeEn(x, z);
             const cube = c && !c.ouvrage && g.world.isSolid(X, Math.floor(c.cote) - 1, Z);
             total++;
             if (!cube && !sur(x, z)) { trous++; if (ex.length < 4) ex.push([+x.toFixed(1), +z.toFixed(1)]); }
