@@ -2323,6 +2323,34 @@ position, si (`{ ...msg }`). Ce qui doit traverser un ancien hôte s'accroche
 à elle, et devient idempotent en envoyant l'HISTOIRE (adoptée seulement si
 la nôtre en est le début), jamais le seul dernier événement.
 
+**La tolérance à la GTA (v405).** Max : « on fonce dans deux trucs et elles
+tombent en panne. » Mesuré sur la v404 : panne au 2e mur de face, feu au 3e, et
+dix bordures (force 0,3) mettaient la voiture en feu. Quatre règles.
+
+- **LA PANNE NE VIENT QUE DE LA SANTÉ.** Le moteur (`0,4 × zone avant + 0,6 ×
+  santé`) règle l'allure et la fumée ; une zone enfoncée ne cale plus la voiture
+  à elle seule. C'est ce qui calait en deux murs : `min(zone avant, …)` passait
+  sous le seuil quand la santé valait encore 0,4.
+- **LA PERTE SUIT LE CARRÉ DE LA FORCE** (`COURBE_FORCE`, l'énergie du choc).
+  La force publiée par la physique sature à 1 dès 20 b/s normaux
+  (`CHOC_PLEIN`, conduite.js) : c'est une décision de la physique, qu'on ne
+  touche pas d'ici ; la courbe se règle côté dégâts. Un frôlement rasant à
+  60 b/s publie encore 0,78 — il coûte 0,6 mur, déclaré.
+- **LE NOMBRE DE MURS EST ÉCRIT DANS LE CODE** (`CHOCS_AVANT_PANNE` 9,
+  `CHOCS_AVANT_FEU` 12) et le témoin le LIT : changer une constante sans changer
+  la promesse rougit. Fumée au 2e mur de face (6e de flanc ou par l'arrière) :
+  l'enfant voit qu'elle s'abîme bien avant la panne ; la tôle, elle, se froisse
+  dès le premier choc (la déformation suit la force, pas la santé).
+- **UNE HISTOIRE QUI SE REJOUE DOIT ALLER AUSSI LOIN QUE LA RÈGLE.** Douze chocs
+  d'historique suffisaient quand le feu venait au 3e ; l'ami aurait vu une
+  voiture bien plus saine que le conducteur. `MAX_CHOCS` vaut 24 (la santé
+  rejouée est exacte jusqu'au feu pour des chocs ≥ 0,7), dans `degats.js` et
+  `degats3d.js` (`noter`, `adopterHistoires`) ; le format ne change pas. Une
+  tablette restée sur la v404 rejoue cette histoire avec l'ancienne règle et
+  voit la voiture de l'ami en panne plus tôt : le receveur cède, et c'est
+  accepté. Et une ancienne tablette ignore une histoire `rc` de plus de douze
+  chocs : `rue_choc` reste son chemin.
+
 ## Celui qui part dit au revoir (v393) — un commentaire de départ se relit dans `stop()`
 
 Les deux rouges réseau récurrents du palier C. Trois règles.
