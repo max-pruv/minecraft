@@ -20,6 +20,35 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v414 — Des ponts sous toutes les voies
+
+**Pourquoi.** Dans quatorze villes engendrées, des voitures roulaient sur
+l'eau sans pont : 159 pas de voie sur un fleuve ou un canal, hors de tout
+tablier (Shanghai 46, Kyoto 24, Chicago 22, Bangkok 18, Istanbul 14,
+Stockholm 13…). Deux causes, mesurées : un tablier se mesurait sur l'AXE de la
+rue, et la voie, une demi-chaussée à côté, touche l'eau plus tôt là où la rive
+est en biais ; et un anneau que ses quarante points de contrôle voyaient au
+sec pouvait encore couper un ruisseau (la Kamo de Kyoto) — sans aucun pont.
+La v404 l'avait déclaré, avec la règle : on ne retire jamais un tablier (un
+enfant a pu bâtir dessus), on les allonge.
+
+**Ce que ça change.** Les ponts s'allongent au-dessus de l'eau là où passe la
+voie, et les petits canaux traversés ont enfin leur pont (trois sur la Kamo à
+Kyoto, vus en capture, le bus passe dessus). Aucune voiture ne roule plus sur
+l'eau. Aucune ville ne change de circuits, de voitures en vue ni de
+couverture ; aucun pont d'avant ne bouge ni ne change de pierre.
+
+**Ce qui le prouve.** Deux témoins neufs dans `carteMonde.js`, rouges sur
+`origin/main` : les pas de voie sur l'eau hors tablier (159 → 0) et « un
+tablier ne se retire pas » — par les fonctions pures, sur toutes les villes à
+pont, aucune colonne d'eau d'avant perdue ni changée de matière, 1 485 colonnes
+gagnées, toutes sur l'eau. Une sonde compare les deux arbres ville par ville :
+circuits, couverture et distance de la voiture au centre identiques au bit
+près. L'empreinte des 490 morceaux change (Rome en est) et se prouve : le même
+code, les allongements retirés, rend la constante d'`origin/main` au bit près.
+Le prix : déplier les anneaux de toutes les villes coûte 15 % de plus
+(1 070 → 1 250 ms au total, une ville à la fois à l'approche), la pire ville
+inchangée (Rome ≈ 90 ms) ; rien au démarrage.
 ## v413 — Le jeu ne plante plus en roulant : la flotte partage ses images
 
 **Pourquoi.** Max : « le jeu plante de temps en temps ». Le journal de bord de

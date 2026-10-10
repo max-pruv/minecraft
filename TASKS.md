@@ -618,7 +618,30 @@
   Las Vegas et Rio, des anneaux choisis DANS la bande (une sélection, donc
   mesurer la couverture) ; pour les rivières, un contour qui publie son tablier
   (un tablier neuf est du sol : Rome est dans l'empreinte des 490 morceaux).
-- [ ] **DES ANNEAUX D'AVANT ROULENT SUR L'EAU HORS DE TOUT TABLIER (v404).** La
+- [ ] **PORTAIL DE LA v414 (les tabliers s'allongent), DOUBLE MESURE FAITE.**
+  (Portail joué sur la v408 fusionnée ; `origin/main` est passée à la v413
+  pendant la double mesure. Après la fusion, rejouées SEULES sur le code
+  fusionné : `carteMonde.js` et `plafond.js` vertes, empreinte des 490
+  morceaux inchangée (863d4203…). Les v409-v413 ne touchent pas
+  `villesmonde.js` ; leurs suites ont été jouées par leurs sessions. Fait pour
+  sortir de la course aux numéros, comme la v357 ; le prochain portail complet
+  le confirme.)
+  Sept suites. Verts : `parishd.js`, `carteMonde.js` (deux témoins neufs),
+  `plafond.js` (empreinte relevée). Rouges, tous déjà déclarés : `maj.js`
+  libération `null` et « ne floute rien » ; `carte.js` appui long (deux témoins)
+  et glisser bridé ×4 (484 ms). `monte.js` au portail : 16 rouges en 60 min
+  (machine chargée, avions et conduite). Rejouée SEULE : `origin/main` (v408)
+  3 rouges (« elle ralentit assez pour qu'on la rejoigne », programmes à
+  l'arrivée, flanc frôlé d'une voiture de la rue) ; branche 6 rouges (passant
+  lancé sur la voiture — dette v277 —, la rue à l'allure d'une ville,
+  programmes, réverbère de Paris `parcouru 0,18`, nature `d 18,8`, flanc
+  frôlé). Les deux qui diffèrent (réverbère à (−313, 382), nature à
+  (−600, −520)) sont prouvés hors de la livraison PAR CONSTRUCTION : aucune
+  ville engendrée à moins de 150 blocs, et sol et tabliers identiques entre
+  les deux arbres sur 181 202 colonnes (sonde `struct.mjs`) ; les circuits de
+  toutes les villes engendrées sont identiques au bit près. Intermittences de
+  conduite à démonter par distribution (v269) — chantier conduite.
+- [x] **DES ANNEAUX D'AVANT ROULENT SUR L'EAU HORS DE TOUT TABLIER (v404) — RÉGLÉ EN v414** : les tabliers s'allongent sous la voie (`traverseesDe`, allongements `ext`), 159 → 0 pas, aucune colonne perdue ni changée, 1 485 gagnées sur l'eau. La
   règle de la v387 (`horsChaussee`) tenait toute eau sous un anneau pour un
   pont : 159 pas sur l'eau sans tablier en v404 (195 sur `origin/main`), dont
   des anneaux de la phase 2 bis. Le contrôle strict (`surUnTablier`) est
