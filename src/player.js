@@ -1022,7 +1022,7 @@ export class Player {
     // neuve, aucun choc pendant le trajet, `direction −0,028` et un cap qui
     // tourne seul). On l'efface quand on monte ET quand on descend.
     const enVoiture = this.gabarit > 1 && !this.pilote;
-    if (enVoiture !== !!this._enVoiture) { this.choc = null; this.atterrissage = null; this.enLair = false; this._vol = null; this.tangage = 0; this._enVoiture = enVoiture; }
+    if (enVoiture !== !!this._enVoiture) { this._derapage = null; this.choc = null; this.atterrissage = null; this.enLair = false; this._vol = null; this.tangage = 0; this._enVoiture = enVoiture; }
     if (this.gabarit > 1) {
       // AU VOLANT (conduite-physique, v358) : le modèle de véhicule de
       // `conduite.js` — l'accélération qui s'essouffle vers la pointe, le frein
@@ -1056,23 +1056,37 @@ export class Player {
       // `verticaleVoiture` à l'image d'avant).
       const pente = this.enLair ? null : this.penteVoiture();
       this.pente = pente;
+      // LE FREIN À MAIN (palier C) : tenu par le bouton de la colonne de droite
+      // (`freinMain`, posé par main.js) ou par la barre d'espace. Publié tel
+      // qu'il agit (`freinMainTire`) pour qui voudrait le dessiner ou l'entendre.
+      const freinMain = !!this.freinMain || k.has('Space');
+      this.freinMainTire = freinMain && !inerte;
       const r = pasVoiture(
         { v: this.vitesseVoiture, braquage: this.braquage || 0, derive: this.derive || 0 },
-        { gaz, volant: strafe, moteur, direction: ev ? ev.direction || 0 : 0, inerte, pente: pente || 0, auSol: !this.enLair,
-          plafond: gaz > 0 && !this.enLair ? this.suiviDevant() : null, freinSuivi: this.suivi ? this.suivi.frein : null },
+        { gaz, volant: strafe, moteur, direction: ev ? ev.direction || 0 : 0, inerte, pente: pente || 0, auSol: !this.enLair, freinMain,
+          plafond: gaz > 0 && !freinMain && !this.enLair ? this.suiviDevant() : null, freinSuivi: this.suivi ? this.suivi.frein : null },
         fiche, dt);
       // LA ROUE LIBRE SE RELÈVE (v397, `?diag=1`) : du lâcher du joystick, au
       // dessus de cinq blocs/s, jusqu'à l'arrêt — sur l'horloge du JEU, comme
       // la dynamique qu'elle mesure. Un nouvel appui l'abandonne.
       if (gaz === 0 && !inerte && Math.abs(this.vitesseVoiture) > 5 && !this._roueLibre) this._roueLibre = { depuis: Math.abs(this.vitesseVoiture), s: 0 };
       if (this._roueLibre) {
-        if (gaz !== 0 || inerte) this._roueLibre = null;
+        if (gaz !== 0 || inerte || freinMain) this._roueLibre = null;
         else {
           this._roueLibre.s += dt;
           if (Math.abs(r.v) < 0.3) { this.roueLibre = this._roueLibre; this._roueLibre = null; }
         }
       }
       this.vitesseVoiture = r.v; this.braquage = r.braquage; this.derive = r.derive;
+      // LE DÉRAPAGE SE RELÈVE (palier C, `?diag=1`) : du frein à main tiré
+      // jusqu'au retour de la dérive sous sa borne ordinaire — l'angle le plus
+      // large et la durée, en temps de JEU comme la dynamique.
+      if (freinMain && !inerte && !this._derapage && Math.abs(r.v) > 3) this._derapage = { max: 0, s: 0 };
+      if (this._derapage) {
+        this._derapage.s += dt;
+        this._derapage.max = Math.max(this._derapage.max, Math.abs(r.derive));
+        if (!freinMain && Math.abs(r.derive) <= 0.29) { this.derapage = this._derapage; this._derapage = null; }
+      }
       // LA CAISSE TOURNE — SAUF SI SON NEZ ENTRAIT DANS UN MUR. La boîte est
       // orientée : tourner la fait balayer. Un nez contre une façade ne pivote
       // pas dedans ; on garde le cap, et la vitesse fait le reste.
@@ -1115,7 +1129,7 @@ export class Player {
     } else {
       this.vel.y -= GRAVITY * dt;
       this.vel.y = Math.max(this.vel.y, -50);
-      if (k.has('Space') && this.onGround) {
+      if (k.has('Space') && this.onGround && !(this.gabarit > 1 && !this.pilote)) { // au volant, Espace est le frein à main
         this.vel.y = JUMP_SPEED;
         this.onGround = false;
       }

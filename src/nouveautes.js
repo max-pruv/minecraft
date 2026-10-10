@@ -6,11 +6,37 @@
 
 export const NOUVEAUTES = [
   {
-    v: 409,
-    titre: 'Le jeu ne plante plus en roulant',
+    v: 412,
+    titre: 'Le jeu ne plante plus',
     puces: [
       'Les voitures prennent moins de mémoire',
       'On peut jouer longtemps sur iPhone',
+    ],
+  },
+  {
+    v: 411,
+    titre: 'Les passants restent sur le trottoir',
+    puces: [
+      'Un pas de côté sans traverser',
+      'Ils attendent au bord de la rue',
+    ],
+  },
+  {
+    v: 410,
+    titre: 'Passager partout',
+    puces: [
+      'Ton ami te voit assis',
+      'Même sur un Wi-Fi difficile',
+    ],
+  },
+  {
+    v: 409,
+    titre: 'Le frein à main',
+    puces: [
+      'Un bouton 🛑 pour déraper',
+      'La voiture glisse dans les virages',
+      'Elle se remet droite toute seule',
+      'Elle ne saute plus',
     ],
   },
   {
