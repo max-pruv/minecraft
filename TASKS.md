@@ -650,6 +650,14 @@
   Shanghai 502) — un enfant a pu bâtir dessus. Le remède est d'ALLONGER ces
   tabliers (`traverseesDe` sur la voie, comme le contresens), en vérifiant
   l'empreinte des 490 morceaux.
+- [ ] **PORTAIL DE LA v415 (San Diego), sept suites.** Verts `parishd.js`,
+  `carteMonde.js`, `plafond.js`. Rouges déjà déclarés : `maj.js` (libération
+  `null`, « ne floute rien »), `carte.js` (glisser bridé ×4, 501 ms) ;
+  `monte.js` (20 min) : piéton frôlé, rue de Paris à l'allure d'une ville,
+  programmes à l'arrivée — les trois vus au portail ou sur `origin/main`
+  rejouée seule pour la v414 (ci-dessous) ; la livraison ne change QUE le
+  contresens de San Diego (sonde : aucune autre ville, aucun tablier, aucun
+  sol).
 - [ ] **DEUX VILLES ENGENDRÉES N'ONT QU'UN CIRCUIT (v387 : onze ; v404 :
   trois ; v415 : deux — San Diego a son contresens).** Mesuré en v415 : à San
   José et Guayaquil la place occupe le nœud central, ses quatre demi-rues sont
