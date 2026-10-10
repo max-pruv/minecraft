@@ -1038,7 +1038,7 @@
   conduite : la v397 ne touche à rien de ce chemin (branche AU VOLANT de
   `player.js`, crochets d'obstacle). Piste : borner l'attente du témoin sur la
   chauffe (`finie`), et sinon le dire au lieu de juger NY.
-- [ ] **AU PORTAIL DE LA v397, « LE PASSAGER ENTRE PAR LA PORTIÈRE DROITE »
+- [x] **(FAIT en v407 : la séquence suit la voiture du conducteur et s'y rebranche ; témoin provoqué dans `reseau.js`.) AU PORTAIL DE LA v397, « LE PASSAGER ENTRE PAR LA PORTIÈRE DROITE »
   (`reseau.js`, v377) VA ET VIENT — DÉCLARÉ AVEC SA DISTRIBUTION.** Suite
   entière : branche 2 vertes sur 5 (deux portails, trois rejeux seuls),
   `origin/main` 3 sur 3. Le rouge est toujours le même : Lou reste en
@@ -1077,10 +1077,10 @@
   sur un escalier se trompe d'un ou deux degrés (pire 9,8° sur 1 200
   contacts) : la voiture s'écarte de la façade d'un cheveu au lieu de la
   suivre, et `glisserLeLong` la décolle d'une marche si elle s'y coince —
-  **mesuré en v407, rien ne la bat sur de vraies façades** (lecture sur 6
+  **mesuré en v408, rien ne la bat sur de vraies façades** (lecture sur 6
   blocs : mieux sur le mur synthétique, pire à 10° sur Paris ; coque convexe :
   pire partout). La dette reste, déclarée.
-  **PALIER 3 (v407) LIVRÉ : la pente et la bosse.** RESTE : (5) la pente ne se
+  **PALIER 3 (v408) LIVRÉ : la pente et la bosse.** RESTE : (5) la pente ne se
   lit que sur la surface continue — dans une ville en voxel (les collines de
   San Francisco) la voiture ne la sent pas, comme avant ; (6) personne ne
   DESSINE encore `tangage` ni `atterrissage` (session des sensations) ; (7) la
@@ -1089,7 +1089,7 @@
   le moteur ne pousse pas, et une crête vive à 40 blocs/s fait voler une
   seconde (mesuré, `sonde-pente.cjs`) — c'est voulu (GTA), à juger avec
   Marlon sur la tablette ; (9) LE FREIN À MAIN (palier C) n'est pas fait.
-- [ ] **AU PORTAIL DE LA v407 (la pente, la bosse et la file), DES ROUGES QUI NE
+- [ ] **AU PORTAIL DE LA v408 (la pente, la bosse et la file), DES ROUGES QUI NE
   SONT PAS LA LIVRAISON — mesurés.** Mes trois rouges (percuter une voiture de
   la rue, elle s'arrête en feux de détresse, son flanc frôlé) venaient du
   suivi qui freinait AUSSI devant une voiture qu'on voulait percuter : corrigé
@@ -1123,7 +1123,7 @@
   vaut 0, 1, 2 sur la branche contre 1, 2 sur `origin/main` v406, même santé
   (0,33), même module. La grandeur juste est l'émission sur une fenêtre (v279 :
   un minimum échantillonné est une propriété de la cadence).
-- [ ] **POUR MAX, SUR LA TABLETTE — la pente, la bosse et la file (v407).**
+- [ ] **POUR MAX, SUR LA TABLETTE — la pente, la bosse et la file (v408).**
   Ouvrir `https://minecraft-fam.vercel.app/?diag=1`, prendre une voiture. La
   ligne « au volant : … » dit désormais la `pente` sous la caisse, le
   `dernier saut` (durée, hauteur, choc) et `suit une voiture à … blocs/s, …
@@ -3783,6 +3783,17 @@ l'embarquement a eu lieu, pas par une hypothèse.
 ## En cours
 
 ### Embarquement (v366) — ce qui reste dans la zone
+- [ ] **LE PORTAIL DE LA v407 (le passager suit la voiture de son ami).**
+  `reseau.js` verte en entier (24 min), `degats`, `carte`, `reglages`
+  verts. Sonde `sonde-passager-refait.cjs` seule : 3/3 sur la branche, 0/3
+  sur `origin/main` (« annulée »). Rouges, tous de familles déjà déclarées et
+  mesurées sur `origin/main` : `maj.js` « vraiment là » ; `monte.js` la
+  chauffe de New York expirée (53/321), le réverbère au volant, le bout du
+  monde qui se charge (trou 82 de l'avion de ligne passe, un autre appareil
+  sous sa barre), le flanc frôlé (v397). PREUVE STRUCTURELLE (v291) : le code
+  neuf n'est atteint que par `monterChez` / `descendreDeChez`, donc avec un
+  passager ET `embarq: 1` ; aucune de ces pages ne le fait, et la seule page
+  `embarq: 1` de `monte.js` est verte.
 - [ ] **LE PORTAIL DE LA v400 (la descente d'avion), DOUBLE MESURE FAITE.**
   Les quatre témoins neufs verts (`monte.js`), et la sonde
   `sonde-descente-avion.cjs` seule : 4/4 sur la branche, 1/4 sur
@@ -3797,7 +3808,9 @@ l'embarquement a eu lieu, pas par une hypothèse.
   PREUVE STRUCTURELLE en plus : le code neuf n'est atteint que sous
   `embarq: 1` en descendant d'un avion au sol ; aucune de ces pages ne le fait.
 - [ ] **MONTER DANS UN TRAIN OU UN MÉTRO PAR SA PORTE — DÉCLARÉ, PAS LIVRÉ
-  (session embarquement, v400).** `bord` (fun.js) colle encore l'enfant au
+  (session embarquement, v400 ; relu en v407, rien n'a bougé côté
+  `construireRame` : POUR LA SESSION CIRCULATION-VIVANTE, l'étape (1)
+  ci-dessous est le seul verrou).** `bord` (fun.js) colle encore l'enfant au
   siège d'une rame d'un coup. La même discipline que l'avion (v389) le
   ferait : l'accès se déclare avec le MODÈLE (`userData.porte` posé par
   `construireRame`, une porte coulissante en MEMBRE, aucune clé de programme
@@ -3835,6 +3848,11 @@ l'embarquement a eu lieu, pas par une hypothèse.
      et Marlon voit SA portière droite s'ouvrir chez lui. Puis « Descendre » :
      elle ressort par la droite. Diagnostic chez Alice : `monter (ami)` puis
      `descendre (ami)`.
+     **Et si la tablette de Marlon se reconnecte pendant qu'Alice marche
+     (v407)** — mettre l'application de Marlon en arrière-plan deux secondes
+     puis la rouvrir juste après le « Monter avec Marlon » d'Alice : Alice
+     doit s'asseoir quand même (avant : elle restait à pied à côté). Chez
+     Alice : `monter (ami) … jusqu'au bout`, jamais `annulée`.
   5. **L'avion (v389).** À Roissy (carte → Paris–Charles-de-Gaulle), devant
      l'avion de ligne, « Monter » : un escalier à rampe jaune apparaît contre
      la porte avant gauche, l'enfant le gravit, la porte s'ouvre, il entre,
