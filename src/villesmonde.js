@@ -4264,9 +4264,14 @@ function anneauxCalcules(f) {
       // tablier qui en sort reste centré sur la rue, de la même largeur.
       if (g.ponts && g.ponts.length) {
         const v2 = t.w / 2;
+        // UNE VOIE TROP MOUILLÉE POUR UN PONT N'ÉCARTE PAS LE CONTRESENS
+        // (v416) : il roule encore sur la chaussée si les tabliers DÉJÀ publiés
+        // couvrent son eau, ou s'il contourne (`exigerChaussee`, où l'eau n'est
+        // permise que sous un tablier publié). San Diego y gagne son second
+        // circuit ; avant, sa voie extérieure longeait l'eau sur plus de
+        // `PONT_MAX` et l'on renonçait sans chercher.
         const tr = traverseesDe(f, { cU: g.cU, cV: g.cV, Ru: g.Ru + v2, Rv: g.Rv + v2 });
-        if (!tr) continue;
-        c.ponts = tr.map((q) => ({ ...q, b: q.b - Math.sign(q.b - (q.axe === 0 ? g.cV : g.cU)) * v2 }));
+        if (tr) c.ponts = tr.map((q) => ({ ...q, b: q.b - Math.sign(q.b - (q.axe === 0 ? g.cV : g.cU)) * v2 }));
       }
       c.aretes = aretesDuRect(c);
       if (gardes.some((h) => partageDAretes(c.aretes, h.aretes) > PARTAGE_MAX)) continue;

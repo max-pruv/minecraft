@@ -20,6 +20,32 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v416 — San Diego a son second circuit
+
+**Pourquoi.** Trois villes engendrées n'avaient qu'un circuit de voitures
+(San Diego, San José, Guayaquil) : la v404 avait donné à huit ports la même
+boucle dans l'autre sens, et ces trois-là restaient. Mesuré : à San Diego, le
+contresens était écarté avant même qu'on cherche à le faire passer ailleurs,
+parce que sa voie extérieure longeait l'eau sur plus de vingt-quatre blocs
+(la longueur d'un pont) — alors que les tabliers déjà posés la couvrent.
+
+**Ce que ça change.** À San Diego, les voitures font le tour dans les deux
+sens, sur la chaussée et les ponts existants ; aucun bloc du sol ne change.
+San José et Guayaquil gardent un circuit, et c'est mesuré : leur place
+centrale occupe le nœud du milieu, le grand anneau est le seul cycle de leur
+trame, et sa voie extérieure passe sur la mer (San José, une quarantaine de
+blocs le long de la côte) ou sur la plage (Guayaquil). Les deux remèdes
+changent le sol (un rayon plus grand, une place déplacée, un quai sur
+pilotis) : c'est une décision, déclarée.
+
+**Ce qui le prouve.** Le témoin « villes à un seul circuit » de
+`carteMonde.js` passe sa barre de six à deux : 3 sur `origin/main`, 2 ici.
+Une sonde compare les deux arbres ville par ville : seule San Diego change
+(1 → 2 circuits, couverture 100 %, voiture à 30 blocs du centre), aucun pas
+de voie sur l'eau hors tablier, partage nul avec son anneau.
+
+---
+
 ## v415 — Londres rejoint Birmingham
 
 **Pourquoi.** Londres–Birmingham était le corridor court sans rail du kit

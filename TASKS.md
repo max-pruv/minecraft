@@ -722,8 +722,23 @@
   Shanghai 502) — un enfant a pu bâtir dessus. Le remède est d'ALLONGER ces
   tabliers (`traverseesDe` sur la voie, comme le contresens), en vérifiant
   l'empreinte des 490 morceaux.
-- [ ] **TROIS VILLES ENGENDRÉES N'ONT QU'UN CIRCUIT (v387 : onze ; v404 :
-  trois).** Huit ports ont reçu leur contresens (quai toléré, tablier mesuré
+- [ ] **PORTAIL DE LA v416 (San Diego), sept suites.** Verts `parishd.js`,
+  `carteMonde.js`, `plafond.js`. Rouges déjà déclarés : `maj.js` (libération
+  `null`, « ne floute rien »), `carte.js` (glisser bridé ×4, 501 ms) ;
+  `monte.js` (20 min) : piéton frôlé, rue de Paris à l'allure d'une ville,
+  programmes à l'arrivée — les trois vus au portail ou sur `origin/main`
+  rejouée seule pour la v414 (ci-dessous) ; la livraison ne change QUE le
+  contresens de San Diego (sonde : aucune autre ville, aucun tablier, aucun
+  sol).
+- [ ] **DEUX VILLES ENGENDRÉES N'ONT QU'UN CIRCUIT (v387 : onze ; v404 :
+  trois ; v416 : deux — San Diego a son contresens).** Mesuré en v416 : à San
+  José et Guayaquil la place occupe le nœud central, ses quatre demi-rues sont
+  fermées, et le grand anneau est le SEUL cycle de la trame (3 × 3 nœuds dans
+  le disque). Son contresens roule sur la voie extérieure : à San José elle
+  longe la mer sur une quarantaine de blocs (plus que `PONT_MAX`, un quai sur
+  pilotis serait du sol), à Guayaquil la plage (11 pas). Remèdes, tous de SOL,
+  donc décision de Max : un rayon de fiche plus grand, une place non décalée
+  ou plus petite, un quai sur pilotis. Ancien texte : Huit ports ont reçu leur contresens (quai toléré, tablier mesuré
   sur sa voie). Restent San Diego, San José et Guayaquil : leur contresens
   touche la fontaine de la place déplacée (San José, `place` à décalage) ou la
   plage (Guayaquil) que leur seul anneau traverse déjà. Pistes : un rayon de

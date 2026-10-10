@@ -770,6 +770,22 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Le contresens ne renonce plus devant une voie mouillée (v416) — un refus se juge sur la règle finale, pas sur une mesure d'avant
+
+Une règle. Le contresens (phase 2 ter) était écarté dès que `traverseesDe`
+refusait sa voie extérieure (plus de `PONT_MAX` d'eau), AVANT qu'on regarde si
+les tabliers déjà publiés la couvraient, ou s'il pouvait contourner. Or la
+règle qui décide est `exigerChaussee` (l'eau n'est permise que sous un tablier
+publié) : un refus pris plus tôt par une mesure plus stricte écartait San Diego
+sans raison. Mesuré sur les 262 villes : seule San Diego change (1 → 2
+circuits), aucun tablier ni sol ne bouge. San José et Guayaquil restent à un
+circuit, et c'est la GÉOMÉTRIE : leur place occupe le nœud central, le grand
+anneau est leur seul cycle, et sa voie extérieure passe sur la mer (une
+quarantaine de blocs le long de la côte) ou sur la plage — un remède de SOL
+(`TASKS.md`). Une sonde de contour lit le bord dans SON sens de marche
+(intérieur à gauche) : interrogé à l'envers, `etatDeSegment` décale la voie du
+mauvais côté et ment.
+
 ## Les tabliers s'allongent sous la voie (v414) — un ouvrage qu'on ne peut pas retirer s'agrandit, et la preuve lit les deux versions
 
 La dette de la v404 : 159 pas de voie sur l'eau hors de tout tablier. Quatre
