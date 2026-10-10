@@ -30,17 +30,44 @@
 export const ZONES = ['avant', 'arriere', 'gauche', 'droite', 'toit'];
 
 // Les seuils, et ce qu'ils veulent dire pour l'enfant. Ils se lisent sur la
-// SANTÉ globale (1 neuve, 0 détruite), qui baisse de `PERTE_SANTE × force` à
-// chaque choc : un mur pris à pleine vitesse (force 1) en retire trois
-// dixièmes. Trois gros chocs mettent la voiture en panne, quatre la font
-// brûler — assez pour que l'enfant le voie venir (la fumée, puis la panne),
-// pas assez pour que ce soit une corvée.
+// SANTÉ globale (1 neuve, 0 détruite).
+//
+// LA TOLÉRANCE « À LA GTA » (v405). Max : « les voitures s'abîment beaucoup
+// trop vite. On fonce dans deux trucs et elles tombent en panne. » Mesuré sur
+// la v404 (sous node, chocs à force 1 de face) : fumée au 1er, PANNE AU 2e, feu
+// au 3e — la zone avant perdait 0,55 par choc et le moteur se calait dès
+// qu'elle passait sous 0,3, quelle que soit la santé. Et la force publiée par
+// la physique vaut 1 dès 20 blocs/s d'impact normal (`CHOC_PLEIN`, conduite.js)
+// quand une voiture roule à 40-60 : presque tout vrai crash sature à 1. La
+// normalisation reste à la physique ; c'est ici que la perte se règle :
+//   · LA PERTE SUIT LE CARRÉ DE LA FORCE, comme l'énergie d'un choc (½ m v²) :
+//     une bordure (0,3) coûte un onzième d'un mur, un choc moyen (0,6) un tiers ;
+//   · UN MUR À PLEINE FORCE RETIRE 0,08 DE SANTÉ : 8 ne calent pas la voiture,
+//     le 9e la cale (1 − 9 × 0,08 = 0,28 ≤ 0,3), le 12e la fait brûler
+//     (0,04 ≤ 0,05) — tableau complet dans le témoin de tests/degats.js ;
+//   · LA PANNE NE VIENT QUE DE LA SANTÉ. Une zone avant enfoncée fait fumer le
+//     moteur dès le 2e mur de face et lui ôte de l'allure, elle ne cale plus
+//     seule la voiture.
+// La tôle, elle, se froisse dès le premier choc : la déformation (degats3d.js)
+// suit la FORCE du choc, pas la santé — l'enfant voit qu'elle s'abîme.
 export const SEUIL_CHOC = 0.06;     // en dessous, une bordure frôlée : rien
-export const PERTE_SANTE = 0.3;
-export const PERTE_ZONE = 0.55;     // une zone prend plus que l'ensemble
+export const PERTE_SANTE = 0.08;    // un mur à pleine force
+export const PERTE_ZONE = 0.35;     // une zone prend plus que l'ensemble
+export const COURBE_FORCE = 2;      // perte ∝ force², l'énergie du choc
 export const SEUIL_FUMEE = 0.75;    // le moteur fume sous ce niveau
-export const SEUIL_PANNE = 0.3;     // la voiture cale (santé ou moteur)
-export const SEUIL_FEU = 0.12;      // le feu prend
+export const SEUIL_PANNE = 0.3;     // la voiture cale (santé seule)
+export const SEUIL_FEU = 0.05;      // le feu prend
+// Ce que la règle promet, écrit pour que le témoin le lise au lieu de le
+// recopier : murs de face à pleine force.
+export const CHOCS_AVANT_PANNE = 9;
+export const CHOCS_AVANT_FEU = 12;
+// L'HISTOIRE DES CHOCS que l'ami rejoue (`versReseau`, `p.v.d`) et que la
+// voiture de la rue garde (degats3d.js). Douze suffisaient quand trois murs
+// faisaient brûler la voiture ; il en faut deux fois plus pour que l'ami
+// retrouve la même santé que le conducteur jusqu'au feu, dès que les chocs
+// valent 0,7 ou plus (0,95 / (0,08 × 0,7²) ≈ 24). Au-delà, l'ami voit les
+// vingt-quatre derniers (le feu, lui, voyage à part : `f`).
+export const MAX_CHOCS = 24;
 // Le feu, en secondes RÉELLES (v226 : un feu ne doit pas durer trois fois plus
 // longtemps parce que la tablette rame). L'enfant a d'abord le temps de lire
 // le bandeau et de descendre lui-même ; passé ce délai, le jeu le dépose.
@@ -87,16 +114,17 @@ const borner = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
 // chaque choc et par un témoin.
 export function deriver(e) {
   const z = e.zones;
-  // LE MOTEUR EST À L'AVANT, et il souffre aussi de l'ensemble : une voiture
-  // percutée trois fois par l'arrière finit par caler, elle aussi.
-  e.moteur = borner(Math.min(z.avant, e.sante + 0.25));
+  // LE MOTEUR EST À L'AVANT, et il souffre aussi de l'ensemble. Il règle
+  // l'allure et la fumée ; il ne cale plus la voiture à lui seul (v405) : deux
+  // murs de face le faisaient tomber sous le seuil de panne.
+  e.moteur = borner(0.4 * z.avant + 0.6 * e.sante);
   // LA DIRECTION TIRE DU CÔTÉ ABÎMÉ : un flanc gauche enfoncé (gauche < droite)
   // rend un biais positif, c'est-à-dire vers la gauche. Un avant très touché
   // ajoute un peu de jeu, du côté du flanc le plus abîmé.
   const flancs = z.droite - z.gauche;
   const jeu = (1 - z.avant) * 0.05 * Math.sign(flancs || 0);
   e.direction = borner(flancs * 0.35 + jeu, -0.3, 0.3);
-  if (e.sante <= SEUIL_PANNE || e.moteur <= SEUIL_PANNE) e.enPanne = true;
+  if (e.sante <= SEUIL_PANNE) e.enPanne = true;
   if (e.sante <= SEUIL_FEU && !e.eteint) e.enFeu = true;
   return e;
 }
@@ -107,12 +135,13 @@ export function subirChoc(e, { force, lx = 0, lz = -DEMI_LONG }, dims = {}) {
   const f = borner(force || 0);
   if (f < SEUIL_CHOC || e.eteint) return null;
   const zone = zoneDe(lx, lz, dims.demiLong, dims.demiLarg);
-  e.zones[zone] = borner(e.zones[zone] - PERTE_ZONE * f);
+  const usure = Math.pow(f, COURBE_FORCE);
+  e.zones[zone] = borner(e.zones[zone] - PERTE_ZONE * usure);
   // un choc très fort secoue aussi le toit (la caisse se tord)
   if (f > 0.7) e.zones.toit = borner(e.zones.toit - (f - 0.7) * 0.5);
-  e.sante = borner(e.sante - PERTE_SANTE * f);
+  e.sante = borner(e.sante - PERTE_SANTE * usure);
   e.chocs.push({ f: Math.round(f * 100) / 100, x: Math.round(lx * 100) / 100, z: Math.round(lz * 100) / 100 });
-  if (e.chocs.length > 12) e.chocs.shift();
+  if (e.chocs.length > MAX_CHOCS) e.chocs.shift();
   deriver(e);
   return zone;
 }

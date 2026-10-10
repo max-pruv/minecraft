@@ -1,5 +1,18 @@
 # Ce qui est en cours
 
+- [ ] **LA TOLÉRANCE DES VOITURES (v405) — ce qui reste, déclaré.** (1) Sur la
+  tablette : Max essaie neuf murs pleins gaz (la voiture doit caler au 9e,
+  fumer dès le 2e de face) et dit si le rythme lui va — les constantes sont
+  `PERTE_SANTE` et `COURBE_FORCE` (degats.js), la promesse `CHOCS_AVANT_PANNE`.
+  (2) La force publiée sature à 1 dès 20 b/s normaux (`CHOC_PLEIN`,
+  conduite.js, session physique) : un mur à 60 b/s coûte autant qu'à 20, et un
+  frôlement rasant à 60 b/s publie 0,78 (0,6 mur). Une force qui suivrait la
+  vitesse jusqu'à 60 se décide côté physique. (3) Au-delà de 24 chocs
+  (`MAX_CHOCS`), l'ami ne rejoue que les 24 derniers : il peut voir une
+  voiture moins abîmée que le conducteur (le feu voyage à part, la panne non).
+  Et `rattraper` (degats3d.js) ne rejoue plus la tôle une fois l'historique
+  plein — défaut d'avant, invisible tant que le feu venait au 3e choc.
+
 - [ ] **UN ÉCART QUI FAIT TRAVERSER LA RUE (v402).** Le témoin du feu de
   `monte.js` l'a publié : un passant sur le trottoir, poussé par l'écart devant
   une voiture qui tourne, ressort sur le trottoir d'EN FACE (`traversee` nul,

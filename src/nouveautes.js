@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 405,
+    titre: 'Des voitures plus solides',
+    puces: [
+      'Deux chocs ne la cassent plus',
+      'Elle fume, puis elle tombe en panne',
+      'Les petits chocs ne comptent presque pas',
+    ],
+  },
+  {
     v: 404,
     titre: 'Les voitures contournent la place',
     puces: [
