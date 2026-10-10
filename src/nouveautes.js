@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 416,
+    titre: 'Paris rejoint Lyon',
+    puces: [
+      'L\'autoroute du Soleil à côté du TGV',
+      'On entre dans Paris par le sud',
+    ],
+  },
+  {
     v: 415,
     titre: 'Londres rejoint Birmingham',
     puces: [

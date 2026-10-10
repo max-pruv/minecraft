@@ -352,7 +352,13 @@ const EMPREINTE_MORCEAUX_V414 = '863d4203a441e3fd029ce2404fc6d6e706799e7f64fe489
 // qui la barrait — voulu. La M40 retirée du registre (donc son entrée et le
 // lot qu'elle écartait), la branche rend 863d4203…, la constante
 // d'`origin/main` (v414, `EMPREINTE_MORCEAUX_V414`), au bit près.
-const EMPREINTE_MORCEAUX_V357 = '7521b9b630f9c648e00fdfe9d2ee3456a7b4f6211cf2188b1cf75515f857ee47';
+// v416 : Paris, un des neuf lieux, porte l'entrée de l'A6 (de la porte
+// d'Italie à la place d'Italie). L'A6 retirée du registre, la branche rend
+// 7521b9b6…, la constante de la v415, au bit près ; et les quatre-vingt-cinq
+// colonnes qui diffèrent dans les morceaux de Paris sont toutes à moins de
+// 11,2 blocs de l'axe de l'entrée — la demi-chaussée et le trottoir d'un
+// boulevard (scratchpad diffp.mjs).
+const EMPREINTE_MORCEAUX_V357 = '1f1e5a6dbde9100ea365bc060d6c0f077a88cfc9bbb8b08128ebc590462126e3';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };

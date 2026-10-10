@@ -3196,6 +3196,38 @@ Une règle.
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
 
+## L'A6 (v416) — une ville qui reçoit deux routes a deux arrivées
+
+Paris–Lyon, l'autoroute du Soleil, à l'ouest du TGV. Quatre règles.
+
+- **UNE DESTINATION ÉCRITE POUR LA PREMIÈRE ROUTE NE VAUT PAS POUR LA
+  SECONDE.** L'entrée de Paris (v300) menait chaque route à la Gare du Nord :
+  juste pour l'A1, qui arrive du nord ; l'A6, qui arrive du sud, aurait
+  traversé toute la ville en diagonale par-dessus les îlots. `ARRIVEE`
+  (paris.js) donne à chaque route son bout — le bout d'une voie nommée (la
+  place d'Italie, où finissent les Gobelins et Arago) —, la Gare du Nord
+  restant le défaut. C'est le `[0]` de la v310 vu du côté de la ville : quand
+  on ajoute la seconde route d'une ville, on cherche ce qui avait été écrit
+  pour la première.
+- **LE BORD D'UNE VILLE DOUBLÉE PEUT ÊTRE UNE CRÊTE.** Le fondu de Paris
+  monte à 41-43 blocs exactement au bord du disque entre 65° et 80° ; une
+  porte à vingt blocs dessous y déblaie neuf blocs (9,2 mesuré, barre 9), à
+  86° le bord est à 38 (4,1). Le relevé en couronne se lit dès la colonne du
+  bord (`d = 0`), pas seulement au-delà.
+- **UNE EMPREINTE D'IDENTITÉ QUI BOUGE SE PROUVE AUSSI PAR CE QUI DIFFÈRE.**
+  Paris est un des neuf lieux de l'empreinte des 490 morceaux : l'entrée de
+  l'A6 la change. L'A6 retirée du registre, la branche rend la constante
+  d'avant au bit près ; et les colonnes qui diffèrent (quatre-vingt-cinq)
+  sont toutes à moins de 11,2 blocs de l'axe de l'entrée — sa demi-chaussée
+  et son trottoir. La première preuve dit « rien d'autre n'a bougé dans le
+  code », la seconde « rien d'autre n'a bougé dans le monde ».
+- **UNE AVENUE D'ENTRÉE SE LIT AUSSI À HAUTEUR DE CARROSSERIE AVANT DE CHOISIR
+  L'ANGLE.** À Lyon, l'angle qui donnait la plus longue avenue (−147°) avait
+  des bancs (planches) sur la chaussée à cinq et vingt blocs de la porte ; le
+  témoin des entrées l'aurait vu, le relevé des angles non. `dansav.mjs` lit,
+  angle par angle, les blocs pleins au-dessus de la cote roulable : la porte
+  de l'A6 est à −144°.
+
 ## La M40 (v415) — une ville bâtie à la main s'entre par une rue déclarée, et une vieille boucle se cherche
 
 Londres–Birmingham, le corridor « en attente » depuis la v323. Trois règles.
