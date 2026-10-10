@@ -1,4 +1,4 @@
-// TOUTES LES VOIES OCCUPÉES (v409) — le passage du témoin de `carteMonde.js`,
+// TOUTES LES VOIES OCCUPÉES (v415) — le passage du témoin de `carteMonde.js`,
 // jouable seul sur deux arbres (la règle de la v400 : le témoin appelle la
 // sonde telle quelle, une copie finirait par diverger).
 // Usage seul : node tests/sonde-voies-occupees.cjs

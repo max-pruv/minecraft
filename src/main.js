@@ -1798,6 +1798,8 @@ function updateChunks() {
     const b = world.getBlock(bx, world.sommetColonne(bx, bz), bz);
     return TROTTOIR.has(b) ? 't' : (CHAUSSEE.has(b) || b === ARCHI.BORDURE) ? 'c' : 'x';
   };
+  // le passant qui s'écarte d'une voiture lit le même sol (v411, `coteDEcart`)
+  world.solPieton = solPieton;
   // ET À PARIS, LE PASSAGE PIÉTON PEINT SANS FEU. Les feux de Paris ne sont
   // qu'aux carrefours des avenues (v274) ; les autres ont leur passage à
   // larges bandes (`marquageParis`, v287). Mesuré : quarante-six coins en
@@ -2016,7 +2018,7 @@ function updateChunks() {
     // L'AUTOROUTE ROULE À CENT VINGT, ET LA VILLE À CINQUANTE (v372) : la
     // limite se lit au point du tracé — dans le disque d'une ville, l'avenue
     // d'entrée ; dehors, l'autoroute — et la grille freine AVANT la porte.
-    // deux voies par sens (v409) : la file à droite, sa jumelle à gauche
+    // deux voies par sens (v415) : la file à droite, sa jumelle à gauche
     vehicules.circulation(pts, 41, { ville: seg.de, voie: 'autoroute', route: seg.route.nom, voies: voiesAutoroute, voiesAuBesoin: true,
       limite: (x, z) => (world.cityAt(x, z) || villeMondeEn(x, z) ? ALLURE_VOIE.avenue : ALLURE_VOIE.autoroute) });
   }
@@ -2556,6 +2558,10 @@ function bindHoldButton(id, code) {
 }
 bindHoldButton('jump-btn', 'Space');
 bindHoldButton('down-btn', 'KeyC');
+// LE FREIN À MAIN (palier C) : au volant, la barre d'espace est le frein à
+// main (player.js) ; le bouton 🛑 de la colonne de droite la tient comme ⤒ la
+// tient à pied. Une seule commande, deux gestes.
+bindHoldButton('fm-btn', 'Space');
 
 document.getElementById('mode-btn').addEventListener('touchstart', (e) => {
   e.preventDefault();
@@ -3165,7 +3171,7 @@ function animerLesVilles(dt) {
   const conv = vehicules.circulation(tr.pts, graineDeVille(tr), { ville: tr.ville, voie: tr.voie || 'rue',
     // les avenues des villes bâties à la main : la voie de droite (v372)
     decalage,
-    // la seconde voie des boulevards (v409) ; le bus prend la première place
+    // la seconde voie des boulevards (v415) ; le bus prend la première place
     voies: decalage ? (x, z) => secondeVoieParis(x, z, decalage) : secondeVoieVilleMonde, bus: tr.rang === 0 });
   // le bus dessert le grand anneau — un par ville, à sa couleur, DANS la file
   // de ses voitures (v372) : il prend leur grille horaire
@@ -4519,8 +4525,8 @@ function poserDebout(rp) {
 // Le véhicule dans lequel un joueur (distant) est passager : celui d'un
 // autre ami, ou le nôtre si c'est chez nous qu'il est monté.
 function vehiculeDuConducteur(de) {
-  const monId = net && net.peer ? net.peer.id : null;
-  if (monId && de === monId) {
+  // `estMoi` (v410) : peer.id avec un courtier, l'identité du bus sans lui
+  if (net && net.estMoi && net.estMoi(de)) {
     const a = fun.montureConduite ? fun.montureConduite() : null;
     // la monture ELLE-MÊME, pas une copie : le cache du plafond vit dessus
     return a && a.def && a.def.sieges ? a : null;
@@ -7820,7 +7826,7 @@ function updateHud(dt) {
     + (player.gabarit > 1 && !player.pilote ? '\n' + ligneDiagConduite({
       classe: player.ficheVoiture && player.ficheVoiture.classe, v: player.vitesseVoiture, vmax: player.vitesseVoitureMax,
       devant: mondeDevant((cx, cz) => chunkMeshes.has(World.key(cx, cz)), player.pos.x, player.pos.z, player.yaw + (player.derive || 0) + (player.vitesseVoiture < 0 ? Math.PI : 0), CHUNK),
-      roueLibre: player.roueLibre, pente: player.pente, atterrissage: player.atterrissage, suivi: player.suivi }) : '')
+      roueLibre: player.roueLibre, pente: player.pente, atterrissage: player.atterrissage, suivi: player.suivi, derapage: player.derapage }) : '')
     + texteRoulage()
     + texteDegats()
     + texteEmbarquement();

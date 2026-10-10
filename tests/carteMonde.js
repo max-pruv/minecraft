@@ -3440,7 +3440,7 @@ const VRAIES_KM = [
           + ` · tours de quartier ${flotteVilles.quartiers} : chaussée ${flotteVilles.chaussee} %, ${flotteVilles.plein} pas dans du plein`);
     }
 
-    // --- TOUTES LES VOIES OCCUPÉES (v409) -------------------------------------
+    // --- TOUTES LES VOIES OCCUPÉES (v415) -------------------------------------
     //
     // Max, une capture de GTA VI : les voies y sont serrées et TOUTES occupées.
     // Mesuré avant : une seule file par sens partout — sur l'autoroute (deux
@@ -4886,6 +4886,63 @@ const VRAIES_KM = [
       contour.seuls.length <= 6,
       `${contour.seuls.length} ville(s) à un circuit : ${contour.seuls.join(', ')}`);
 
+    // --- LES TABLIERS S'ALLONGENT SOUS LA VOIE (v414) -------------------------
+    //
+    // La dette de la v404 : 159 pas de voie sur l'eau hors de tout tablier
+    // (Shanghai 46, Kyoto 24, Chicago 22), parce qu'un tablier se mesurait sur
+    // l'AXE de la rue et que la voie, une demi-chaussée à côté, touche l'eau
+    // plus tôt là où la rive est en biais — ou parce que les quarante points
+    // du test d'eau ne voyaient pas un ruisseau (la Kamo de Kyoto). Le remède
+    // ALLONGE les tabliers, il n'en retire aucun : un enfant a pu bâtir dessus.
+    // On lit donc trois choses, par les fonctions pures, sur toutes les villes
+    // à pont : les pas de voie sur l'eau sans tablier ; les colonnes d'eau que
+    // les tabliers d'AVANT couvraient (`pontVillesMonde(x, z, false)`) et que
+    // les tabliers d'aujourd'hui ne couvrent plus, ou dont ils changent la
+    // matière ; et les colonnes gagnées, qui doivent toutes être de l'eau.
+    // Mesuré : 159 pas sur `origin/main`, 0 ici ; 0 perdue, 0 changée,
+    // 1 485 gagnées, toutes sur l'eau.
+    const allonge = await tab.evaluate(async () => {
+      const vm = await import('./src/villesmonde.js');
+      const traces = vm.tracesCirculation(() => 35);
+      let horsT = 0; const pires = new Map();
+      for (const tr of traces) {
+        const vus = new Set();
+        for (let i = 0; i < tr.pts.length; i++) {
+          const a = tr.pts[i], b = tr.pts[(i + 1) % tr.pts.length];
+          const m = Math.ceil(Math.hypot(b.x - a.x, b.z - a.z) / 0.5);
+          for (let k = 0; k < m; k++) {
+            const X = Math.floor(a.x + (b.x - a.x) * k / m), Z = Math.floor(a.z + (b.z - a.z) * k / m);
+            if (vus.has(X * 65536 + Z)) continue;
+            vus.add(X * 65536 + Z);
+            if (vm.solVillesMonde(X, Z) === null) { horsT++; pires.set(tr.cle, (pires.get(tr.cle) || 0) + 1); }
+          }
+        }
+      }
+      let perdues = 0, changees = 0, gagnees = 0, aSec = 0;
+      if (vm.eauVillesMonde) for (const f of vm.VILLES_MONDE) {
+        if (!f.trame || !vm.anneauxDeVille(f).ponts.length) continue;
+        const R = Math.ceil(f.rayon);
+        for (let u = -R; u <= R; u++) for (let v = -R; v <= R; v++) {
+          if (u * u + v * v > f.rayon * f.rayon) continue;
+          const X = f.ancre.x + u, Z = f.ancre.z + v;
+          const neuf = vm.pontVillesMonde(X, Z), avant = vm.pontVillesMonde(X, Z, false);
+          if (!neuf && !avant) continue;
+          if (!vm.eauVillesMonde(X, Z)) { if (neuf && !avant) aSec++; continue; }
+          if (avant && !neuf) perdues++;
+          else if (avant && neuf.id !== avant.id) changees++;
+          else if (neuf && !avant) gagnees++;
+        }
+      }
+      return { horsT, perdues, changees, gagnees, aSec, pires: [...pires].sort((p, q) => q[1] - p[1]).slice(0, 5) };
+    });
+    verifier('aucune voie ne roule sur l\'eau hors d\'un tablier : les tabliers s\'allongent sous la voie',
+      allonge.horsT <= 80,
+      `${allonge.horsT} pas de voie sur l'eau sans tablier · ${allonge.pires.map(([c, n]) => `${c} ${n}`).join(', ') || 'aucun'}`);
+    verifier('un tablier ne se retire pas : aucune colonne d\'avant perdue ni changée, et tout ce qui s\'ajoute est sur l\'eau',
+      allonge.perdues === 0 && allonge.changees === 0 && allonge.gagnees > 0 && allonge.aSec === 0,
+      `${allonge.perdues} perdue(s), ${allonge.changees} changée(s), ${allonge.gagnees} gagnée(s) sur l'eau`
+      + ` (et ${allonge.aSec} sur la rive : un allongement ne porte que sur l'eau)`);
+
     // --- LES RUES DES VILLES ENGENDRÉES À LA RÈGLE DU KIT (v307) -------------
     //
     // Max, après Paris : « Pourquoi tu n'as pas fait le reste du monde ? » La
@@ -5279,11 +5336,16 @@ const VRAIES_KM = [
         const f = VILLES_MONDE.find((v) => v.cle === cle);
         if (!f || !f.trame) continue;
         const a = anneauxDeVille(f);
-        if (!CINQ.includes(cle) && !a.ponts.length) continue;
+        if (!CINQ.includes(cle) && !a.ponts.some((q2) => !q2.ext)) continue;   // que des allongements (Sydney, v414)
         const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
         const cote = coteDeVille(f);
         let pas = 0, sansSol = 0, surLaTete = 0, surEau = 0, pireSpan = 0, parLaRoute = 0;
-        for (const q of a.ponts) {
+        // UN ALLONGEMENT N'EST PAS UN PONT (v414) : il porte la VOIE là où la
+        // rive est en biais, et son axe peut longer la rive à sec. Sa preuve
+        // est ailleurs — aucun pas de voie sur l'eau hors tablier, et toutes
+        // ses colonnes sur l'eau (témoin « les tabliers s'allongent »). Ces
+        // verdicts-ci, qui marchent l'AXE, ne lisent que les ponts.
+        for (const q of a.ponts.filter((q2) => !q2.ext)) {
           pireSpan = Math.max(pireSpan, q.a1 - q.a0);
           const n = Math.round(q.a1 - q.a0);
           for (let k = 0; k <= n; k++) {
@@ -5297,7 +5359,7 @@ const VRAIES_KM = [
             if (w.terrainHeight(x, z) < WATER_LEVEL) surEau++;
           }
         }
-        ponts.push({ cle, tabliers: a.ponts.length, pas, sansSol, surLaTete, surEau, pireSpan, parLaRoute, cinq: CINQ.includes(cle) });
+        ponts.push({ cle, tabliers: a.ponts.filter((q2) => !q2.ext).length, pas, sansSol, surLaTete, surEau, pireSpan, parLaRoute, cinq: CINQ.includes(cle) });
       }
       // LES ENCOCHES AU BOUT DES TABLIERS (v381). Le tronçon mouillé se mesure
       // sur l'AXE ; une colonne du monde à côté de l'axe peut être de l'eau un
