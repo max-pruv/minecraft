@@ -597,6 +597,7 @@ const VRAIES_KM = [
       out.convoiI95 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'I-95') || null;
       out.convoiI95Sud = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'I-95 Sud') || null;
       out.convoiTomei = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'Tōmei') || null;
+      out.convoiM40 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'M40') || null;
       // WASHINGTON EST UNE BOÎTE (v367) : la route de New York s'arrête NET à
       // son bord sud (`boutNet`), au niveau de la rue d'Anacostia qui y
       // débouche, et ses voitures entrent par cette rue (`avenues`). On compte
@@ -723,6 +724,30 @@ const VRAIES_KM = [
           }
           return { route: e.route, dans, vus };
         });
+        // L'ENTRÉE DE LONDRES (v415) : de la porte nord de la M40 à Pentonville
+        // Road, plein sud. Même lecture qu'à Lille — les blocs à hauteur de
+        // carrosserie, la chaussée sous la roue — et le bout doit être sur une
+        // ARTÈRE (une collectrice nommée). La première mesure a trouvé une
+        // maison de la vieille trame générique en travers, à dix blocs de la
+        // porte : c'est ce que ce témoin garde.
+        try {
+          const LO = await import('./src/londres.js'), WO = await import('./src/world.js');
+          const ents = m.entreesDe('londres'), E = LO.ENTREES_LONDRES || [];
+          out.entreesLondres = ents.map((e, i) => {
+            const pts = E[i] || [];
+            let dans = null, vus = 0, rue = 0;
+            for (let k = 0; k + 1 < pts.length && !dans; k++) for (let t = 0; t <= 1; t += 0.02) {
+              const X = Math.floor(pts[k][0] + (pts[k + 1][0] - pts[k][0]) * t), Z = Math.floor(pts[k][1] + (pts[k + 1][1] - pts[k][1]) * t);
+              if (m.routeEn(X, Z)) continue;
+              const h = w.coteRoulable(X, Z); vus++;
+              if (WO.CHAUSSEE.has(w.getBlock(X, h, Z))) rue++;
+              if (w.isSolid(X, h + 1, Z) || w.isSolid(X, h + 2, Z)) { dans = [X, Z, w.getBlock(X, h + 1, Z)]; break; }
+            }
+            const fin = pts[pts.length - 1] || [0, 0], fu = fin[0] - LO.LONDRES.x, fv = fin[1] - LO.LONDRES.z;
+            const artere = LO.VOIES_LONDRES.filter((v) => v.type === 'collecteur').some((v) => v.pts.some(([a, b]) => Math.hypot(a - fu, b - fv) < 1));
+            return { route: e.route, dans, vus, rue, artere };
+          });
+        } catch (e) { out.entreesLondresErreur = String(e); }
         // TOUTE ENTRÉE DE VILLE ENGENDRÉE (v311) : Bruxelles en a deux,
         // Amsterdam une. Chacune doit arriver sur la rue (trente blocs depuis
         // la porte) et, jusqu'au bout de l'avenue (douze blocs du centre), ne
@@ -1064,6 +1089,22 @@ const VRAIES_KM = [
       && ['tokyo', 'nagoya'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'Tōmei' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7)),
       JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiTomei ? { nom: a1.convoiTomei.nom, voitures: (a1.convoiTomei.modeles || []).length } : 'aucun convoi Tōmei',
         surRail: a1.surRail && a1.surRail['Tōmei'], frole: a1.frole && a1.frole['Tōmei'], entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'Tōmei') }));
+
+    // LA M40 (v415) : Londres–Birmingham, par le col de la crête qui barre
+    // l'axe direct. Elle sort de Londres par le nord, sa porte donne sur une
+    // entrée déclarée qui mène à Pentonville Road, et elle entre dans
+    // Birmingham par l'axe de sa trame. Sur l'ancien code, la route n'existe
+    // pas : ni convoi, ni entrée de Londres.
+    verifier('la M40 relie Londres à Birmingham, entre dans Londres par une rue jusqu\'à Pentonville Road, et des voitures y roulent',
+      !a1.absent && !a1.entreesLondresErreur && !!a1.convoiM40 && a1.convoiM40.routier && (a1.convoiM40.modeles || []).length >= 10
+      && !!a1.surRail && !!a1.surRail['M40'] && a1.surRail['M40'][0] > 100 && a1.surRail['M40'][1] === 0
+      && !!a1.frole && a1.frole['M40'] === 0
+      && (a1.entreesLondres || []).some((e) => e.route === 'M40')
+      && a1.entreesLondres.every((e) => !e.dans && e.vus > 20 && e.rue >= e.vus * 0.95 && e.artere)
+      && (a1.entreesEngendrees || []).some((e) => e.ville === 'birmingham' && e.route === 'M40' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7),
+      JSON.stringify(a1.absent ? a1 : { convoi: a1.convoiM40 ? { nom: a1.convoiM40.nom, voitures: (a1.convoiM40.modeles || []).length } : 'aucun convoi M40',
+        surRail: a1.surRail && a1.surRail['M40'], frole: a1.frole && a1.frole['M40'], londres: a1.entreesLondres, erreur: a1.entreesLondresErreur,
+        birmingham: (a1.entreesEngendrees || []).filter((e) => e.route === 'M40') }));
 
     // AUCUNE ROUTE NE PREND L'EMPRISE D'UNE AUTRE (v355) : Montréal a deux
     // routes, et chaque colonne d'emprise doit appartenir au segment qu'on
