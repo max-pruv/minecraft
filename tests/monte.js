@@ -5145,7 +5145,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !!controle && controle.ecarts === 0 && controle.points > 1000,
       JSON.stringify(controle));
 
-    // LE MÊME TÉMOIN AU-DESSUS D'UNE VILLE (v404). Celui du désert, plus haut, vole en
+    // LE MÊME TÉMOIN AU-DESSUS D'UNE VILLE (v405). Celui du désert, plus haut, vole en
     // (30 000, 30 000), où un morceau coûte 6,8 ms ; au-dessus de Paris il en
     // coûte 23,5 (v237), et c'est là que l'enfant vole. On traverse donc Paris
     // et Londres en ligne droite, la position posée en TEMPS RÉEL à chaque
@@ -5166,7 +5166,15 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // le premier jet, qui en ouvrait une, rendait 16 blocs de trou au portail.
     {
       const pageVille = ciel;
-      await pageVille.evaluate(() => { window.__game.fileMaillage('cone'); window.__game.rechargeMaillage('arrivee'); });
+      // la page `ciel` reste ouverte jusqu'à la fin de la suite : on lui rend sa
+      // place en sortant, sinon elle tournerait au cœur de Londres, ville
+      // vivante comprise, et prendrait leurs images aux pages suivantes (mesuré :
+      // la conduite de `pageGta` tombait à 2,8 images par seconde)
+      const placeCiel = await pageVille.evaluate(() => {
+        const p = window.__game.player;
+        window.__game.fileMaillage('cone'); window.__game.rechargeMaillage('arrivee');
+        return { x: p.pos.x, y: p.pos.y, z: p.pos.z, yaw: p.yaw, pitch: p.pitch, flying: p.flying };
+      });
       // les vitesses se lisent dans les fiches, jamais recopiées (v269)
       const vitesses = await pageVille.evaluate(async () => {
         const m = await import('./src/montures.js');
@@ -5221,7 +5229,11 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const ok = Object.entries(villes).every(([k, r]) => r && r.trou >= Math.round(Number(k.split('@')[1]) / 2));
       verifier('au-dessus d\'une ville aussi, le monde se charge devant l\'avion (réglage de la tablette)',
         ok, `barre = une demi-seconde de vol · ${JSON.stringify(villes)}`);
-      await pageVille.evaluate(() => { window.__game.fileMaillage(null); window.__game.rechargeMaillage(null); });
+      await pageVille.evaluate((q) => {
+        const g = window.__game, p = g.player;
+        g.fileMaillage(null); g.rechargeMaillage(null);
+        p.pos.set(q.x, q.y, q.z); p.vel.set(0, 0, 0); p.yaw = q.yaw; p.pitch = q.pitch; p.flying = q.flying;
+      }, placeCiel);
     }
 
     // UN AVION DÉCOLLE DE SA PISTE, ET IL S'Y POSE (v261).
