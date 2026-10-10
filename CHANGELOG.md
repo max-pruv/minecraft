@@ -20,6 +20,34 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v406 — Le GPS d'un ami passe par l'hôte
+
+**Pourquoi.** Depuis la v388, quand un enfant choisit une destination sur sa
+carte, ses amis reçoivent une proposition (« Marlon va à Rome — y aller
+aussi ? »). Entre l'hôte et un invité, un témoin le prouvait. Mais à trois,
+deux invités ne sont pas reliés entre eux : la destination de l'un n'arrive à
+l'autre que dans la position que l'hôte RELAIE (`rpos`) — le chemin que la
+v374 avait déjà oublié une fois pour l'histoire des chocs. La lecture était
+écrite, rien ne la gardait.
+
+**Ce que ça change.** Rien de visible : c'est le filet qui manquait. Nina
+choisit Rome, Alice — qui n'a jamais eu de lien direct avec Nina — voit
+« Nina va à Rome — y aller aussi ? », et son GPS ne change pas tant qu'elle
+n'a pas touché le bouton.
+
+**Ce qui le prouve.** Un témoin neuf dans `reseau.js`, à trois tablettes,
+pendant la partie à trois du début de la suite. Sonde isolée
+(`sonde-gps-rpos.cjs`) : sur la branche, 3 propositions sur 3, en 0,5 à 2,6 s ;
+sur une copie d'`origin/main` où `rpos` ne lit pas `g`, rien chez Alice en
+trente secondes, 2 fois sur 2.
+
+**Et le portail.** `reseau.js` verte entière. `maj.js` deux rouges de la
+préparation de l'accueil (déjà déclarés) : rejouée seule, branche verte,
+`origin/main` rouge sur trois témoins dont le même. Une ligne de données de
+`nouveautes.js` ne peut pas les causer.
+
+---
+
 ## v405 — Les voitures encaissent les chocs
 
 **Pourquoi.** Max : « les voitures s'abîment beaucoup trop vite. On fonce dans

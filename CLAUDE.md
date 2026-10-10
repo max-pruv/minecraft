@@ -2381,6 +2381,17 @@ Les deux rouges réseau récurrents du palier C. Trois règles.
   une voix restée au quart (`GAIN_APPEL`) et le régime qui varie ; vérifié
   rouge sur une copie où la voix reste au quart.
 
+## Le GPS d'un invité traverse l'hôte (v406) — un champ de position a un témoin par chemin
+
+Une règle. La v388 a écrit « un champ de position se lit sur les deux chemins
+de la position » et n'en éprouvait qu'un (le direct). Le relayé (`rpos`) a
+désormais son témoin à trois tablettes dans `reseau.js` (Nina → hôte → Alice),
+vérifié rouge sur une copie où `rpos` ne lit pas `g`. **Un champ ajouté à
+`pos` reçoit deux témoins, ou il n'en a qu'un demi.** Et une proposition
+expire à vingt secondes : une sonde qui lit l'hôte après trente secondes
+d'attente sur l'autre page le trouve vide — ce n'est pas un défaut, c'est
+l'horloge de la proposition.
+
 ## Le GPS se partage (v388) — un état voyage avec la position, pas dans un message neuf
 
 La dette de la v321. Trois règles.
