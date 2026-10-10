@@ -137,7 +137,7 @@ function verifier(nom, ok, detail = '') {
     const fantomes = (await vu(alice)).avatars.filter((a) => a.nom === '…' || !a.nom);
     verifier('aucun avatar sans nom', fantomes.length === 0, JSON.stringify(fantomes));
 
-    // LE GPS D'UN INVITÉ TRAVERSE L'HÔTE (v405). La v388 éprouvait l'hôte et
+    // LE GPS D'UN INVITÉ TRAVERSE L'HÔTE (v406). La v388 éprouvait l'hôte et
     // un invité ; entre DEUX invités, la destination n'existe que dans la
     // position RELAYÉE (`rpos`), et c'est le chemin que la v374 avait déjà
     // oublié pour l'histoire des chocs. Nina choisit Rome : Alice, qui n'a

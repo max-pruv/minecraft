@@ -546,7 +546,7 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
     return r;
   }
 
-  // L'histoire d'une voiture de la rue, bornée comme `chocs` (douze) ; et
+  // L'histoire d'une voiture de la rue, bornée comme `chocs` (D.MAX_CHOCS) ; et
   // soixante-quatre voitures au plus — la plus ancienne s'oublie.
   function noter(nom, c) {
     let h = histoire.get(nom);
@@ -555,7 +555,7 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
       histoire.set(nom, h = []);
     }
     h.push(c);
-    if (h.length > 12) h.shift();
+    if (h.length > D.MAX_CHOCS) h.shift();
   }
 
   // UN HÔTE RESTÉ SUR L'ANCIENNE VERSION NE RELAIE PAS `rue_choc` (v374) :
@@ -582,7 +582,7 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
     if (!rc || typeof rc !== 'object') return;
     let neuf = false;
     for (const [nom, h] of Object.entries(rc).slice(0, 4)) {
-      if (!Array.isArray(h) || h.length > 12) continue;
+      if (!Array.isArray(h) || h.length > D.MAX_CHOCS) continue;
       const c = h.map((k) => (Array.isArray(k) && k.length === 3 ? k.map(Number) : null));
       if (c.some((k) => !k || !k.every(Number.isFinite))) continue;
       const local = histoire.get(nom) || [];

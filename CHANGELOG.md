@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v405 — Le GPS d'un ami passe par l'hôte
+## v406 — Le GPS d'un ami passe par l'hôte
 
 **Pourquoi.** Depuis la v388, quand un enfant choisit une destination sur sa
 carte, ses amis reçoivent une proposition (« Marlon va à Rome — y aller
@@ -41,7 +41,49 @@ pendant la partie à trois du début de la suite. Sonde isolée
 sur une copie d'`origin/main` où `rpos` ne lit pas `g`, rien chez Alice en
 trente secondes, 2 fois sur 2.
 
+**Et le portail.** `reseau.js` verte entière. `maj.js` deux rouges de la
+préparation de l'accueil (déjà déclarés) : rejouée seule, branche verte,
+`origin/main` rouge sur trois témoins dont le même. Une ligne de données de
+`nouveautes.js` ne peut pas les causer.
+
 ---
+
+## v405 — Les voitures encaissent les chocs
+
+**Pourquoi.** Max : « les voitures s'abîment beaucoup trop vite. On fonce dans
+deux trucs et elles tombent en panne. » Mesuré sur la v404, sous node, murs de
+face à pleine force : fumée au 1er, **panne au 2e**, feu au 3e. Deux causes :
+la zone avant perdait 0,55 par choc et calait le moteur dès qu'elle passait
+sous 0,3, quelle que soit la santé ; et la force publiée par la physique vaut 1
+dès 20 blocs/s d'impact normal, quand une voiture roule à 40-60 — presque tout
+vrai crash compte comme le pire. Même dix bordures (force 0,3) mettaient la
+voiture en feu.
+
+**Ce que ça change.** Une tolérance « à la GTA » : la tôle se froisse dès le
+premier choc (la déformation suit la force, comme avant) et le moteur fume dès
+le deuxième mur de face, mais la voiture ne cale qu'au **neuvième mur à pleine
+force** et ne brûle qu'au **douzième**. Les petits chocs n'usent presque rien
+(la perte suit le carré de la force, comme l'énergie du choc) : dix bordures
+retirent 7 % de santé. Une zone avant enfoncée réduit l'allure et fait fumer,
+elle ne cale plus la voiture à elle seule. Le garage remet toujours tout à neuf.
+
+| murs à force… | 0,3 | 0,6 | 1 |
+| --- | --- | --- | --- |
+| v404 de face : panne / feu | 5 / 10 | 3 / 5 | 2 / 3 |
+| v405 de face, flanc, arrière : panne / feu | 98 / 132 | 25 / 33 | 9 / 12 |
+
+À plusieurs, l'ami rejoue l'historique des chocs, porté de 12 à 24 pour qu'il
+retrouve la même santé jusqu'au feu ; une tablette restée sur la v404 rejoue
+cet historique avec l'ancienne règle et voit la voiture de l'ami en panne plus
+tôt (le receveur cède, le format du message ne change pas).
+
+**Ce qui le prouve.** Quatre témoins neufs ou repointés dans `tests/degats.js`,
+vérifiés rouges sur la v404 : huit murs ne calent pas, le neuvième cale, le
+douzième brûle, de face, de flanc et par l'arrière (v404 : 2 / 3 / 3) ; dix
+bordures n'usent presque rien (v404 : en feu) ; l'allure baisse avant la
+panne ; et au banc, deux vrais murs pris pleins gaz par la physique laissent
+la voiture roulante. Le témoin réseau, rouge avec l'ancien historique de douze
+chocs, rejoue la même santé chez l'ami.
 
 ## v404 — Les voitures font le tour de la place
 

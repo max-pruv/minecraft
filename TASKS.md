@@ -1,5 +1,28 @@
 # Ce qui est en cours
 
+- [ ] **`maj.js`, LE PALIER — UNE INTERMITTENCE DE CADENCE (v405).** « le jeu se
+  mesure en jouant, et range son verdict » et « le palier se décide sur le
+  TRAVAIL d'une image » : rouges UNE fois sur deux passages seuls de la
+  branche (page à 350 ms par image, 30 images, `range: false`, verdict nul),
+  verts au second passage (41/41) et sur `origin/main` v404 (41/41). La v405
+  ne touche que `degats.js`, `degats3d.js` et `nouveautes.js`, que le palier
+  ne lit pas. Au portail de la v405, `maj.js` rendait à la place le fond de
+  carte (dette ci-dessous, v267) et le badge à `v404` (bump pas encore fait).
+  Piste : le témoin juge sur trente images ; il devrait attendre un nombre
+  d'images avant de conclure, borné, la durée dans le message.
+- [ ] **LA TOLÉRANCE DES VOITURES (v405) — ce qui reste, déclaré.** (1) Sur la
+  tablette : Max essaie neuf murs pleins gaz (la voiture doit caler au 9e,
+  fumer dès le 2e de face) et dit si le rythme lui va — les constantes sont
+  `PERTE_SANTE` et `COURBE_FORCE` (degats.js), la promesse `CHOCS_AVANT_PANNE`.
+  (2) La force publiée sature à 1 dès 20 b/s normaux (`CHOC_PLEIN`,
+  conduite.js, session physique) : un mur à 60 b/s coûte autant qu'à 20, et un
+  frôlement rasant à 60 b/s publie 0,78 (0,6 mur). Une force qui suivrait la
+  vitesse jusqu'à 60 se décide côté physique. (3) Au-delà de 24 chocs
+  (`MAX_CHOCS`), l'ami ne rejoue que les 24 derniers : il peut voir une
+  voiture moins abîmée que le conducteur (le feu voyage à part, la panne non).
+  Et `rattraper` (degats3d.js) ne rejoue plus la tôle une fois l'historique
+  plein — défaut d'avant, invisible tant que le feu venait au 3e choc.
+
 - [ ] **UN ÉCART QUI FAIT TRAVERSER LA RUE (v402).** Le témoin du feu de
   `monte.js` l'a publié : un passant sur le trottoir, poussé par l'écart devant
   une voiture qui tourne, ressort sur le trottoir d'EN FACE (`traversee` nul,
@@ -38,9 +61,11 @@
   bas), `manhattan.js` trou (9 203 → 51 734), « le taxi roule » (bouton
   jamais visible) et l'invité de la ligne 674 qui ne rejoint pas.
 - [x] **LE GPS PARTAGÉ PAR UN HÔTE QUI RELAIE (`rpos`) A SON TÉMOIN À
-  TROIS TABLETTES (v405).** `reseau.js`, pendant la partie à trois : la
+  TROIS TABLETTES (v406).** `reseau.js`, pendant la partie à trois : la
   destination de Nina proposée à Alice à travers l'hôte. Sonde isolée 3/3
-  (0,5–2,6 s) ; `rpos` désarmé, 0/2 en 30 s.
+  (0,5–2,6 s) ; `rpos` désarmé, 0/2 en 30 s. Portail : `reseau.js` verte ;
+  `maj.js` « vraiment là » et « ne floute rien » rouges (déclarés) — seule,
+  branche VERTE, `origin/main` v404 rouge sur trois dont « vraiment là ».
 - [ ] **LE PORTAIL DE LA v391 (la tablette mesure sa vitesse au sol), DOUBLE
   MESURE FAITE.** Onze suites ; mes deux témoins verts (règle 36/192/2 ; ligne
   « roulage : 43 b/s · trou devant 16 blocs · débit 4 morceaux/s »). Rouges :

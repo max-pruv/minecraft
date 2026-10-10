@@ -6,11 +6,20 @@
 
 export const NOUVEAUTES = [
   {
-    v: 405,
+    v: 406,
     titre: 'Le GPS passe entre amis',
     puces: [
       'Vérifié à trois tablettes',
       'Même sans lien direct',
+    ],
+  },
+  {
+    v: 405,
+    titre: 'Des voitures plus solides',
+    puces: [
+      'Deux chocs ne la cassent plus',
+      'Elle fume, puis elle tombe en panne',
+      'Les petits chocs ne comptent presque pas',
     ],
   },
   {
