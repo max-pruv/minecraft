@@ -1,5 +1,26 @@
 # Ce qui est en cours
 
+- [x] **UN ÉCART QUI FAIT TRAVERSER LA RUE (v402) — corrigé en v411.**
+  `coteDEcart` (pietons.js) : depuis le trottoir, devant une voiture sur la
+  chaussée, l'écart ne descend plus. Sonde node 92/125 → 0/125 ; témoin de
+  `monte.js` 4/5 → 0/5 (deux fois de chaque côté). Reste déclaré : une voiture
+  qui FRÔLE la bordure peut encore toucher, sans freinage, un passant resté au
+  bord (19 contacts sur 125 à la sonde, 82 avant) — c'est le freinage de la
+  voiture (v395) qui le protège, pas son pas de côté.
+  PORTAIL DE LA v411 (base v404, règle de la v195) : `carte.js` (flèche du
+  GPS, glisser bridé ×4) et `manhattan.js` (trou de façade, taxi) — dettes déjà
+  déclarées plus bas. `monte.js` : la cascade « pas aux commandes » du portail
+  (famille v317, v359) disparaît rejouée SEULE des deux côtés (195 verts
+  chacun) ; restent, des deux côtés, « la téléportation ne compile plus de
+  programmes » et « son flanc frôlé ne nous arrête pas ». Et « deux voitures ne
+  sont jamais l'une dans l'autre — en taux » : 4,7 % au portail, 4,9 % seule
+  sur la branche, 1,0 % seule sur `origin/main`. Rejoué témoin seul, page
+  neuve : branche 1,6 · 0 · 0, `origin/main` 0,7 · 0 · 0 ; après une visite à
+  Rome (le régime à 1 500-2 900 paires) : branche 1,6 · 0,6 · 0,7 et, avec le
+  témoin de l'écart avant, 5,3 · 0,3 · 2,0 ; `origin/main` 1,3 · 0 · 3,0. La
+  barre de 4 % tombe dans l'étendue naturelle du témoin (le tirage de la v277) ;
+  la règle de l'écart ne touche que des passants SUR le trottoir. Dette : un
+  témoin de taux qui va de 0 à 5 % sur le même code n'est pas un gardien.
 - [ ] **`maj.js`, LE PALIER — UNE INTERMITTENCE DE CADENCE (v405).** « le jeu se
   mesure en jouant, et range son verdict » et « le palier se décide sur le
   TRAVAIL d'une image » : rouges UNE fois sur deux passages seuls de la
