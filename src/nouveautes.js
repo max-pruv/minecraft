@@ -6,11 +6,18 @@
 
 export const NOUVEAUTES = [
   {
-    v: 412,
+    v: 413,
     titre: 'Le jeu ne plante plus',
     puces: [
       'Les voitures prennent moins de mémoire',
       'On peut jouer longtemps sur iPhone',
+    ],
+  },
+  {
+    v: 412,
+    titre: 'New York à deux, vérifié',
+    puces: [
+      'Un ami te rejoint à New York',
     ],
   },
   {

@@ -1,14 +1,14 @@
 # Ce qui est en cours
 
 - [ ] **LE JOURNAL DE BORD COMPTE PEUT-ÊTRE UNE MISE À JOUR COMME UN PLANTAGE
-  (v412).** Session 84 (iPhone, v408) : zéro relevé, zéro événement, envoyée
+  (v413).** Session 84 (iPhone, v408) : zéro relevé, zéro événement, envoyée
   cinq secondes après la fermeture propre de la v406 — la relance du service
   worker tue sans doute la page neuve avant `pagehide`. Même forme pour la
   session 70 (v404). Si c'est le cas, chaque mise à jour pousse le disjoncteur
   de sûreté (`suretePalier`, deux plantages) vers le palier bas. À mesurer :
   `?apresmaj=1`, et ne compter comme plantage qu'une session qui a écrit au
   moins un relevé, ou marquer la session fermée avant `reloadOnce`.
-- [ ] **LA v412 SE JUGE DANS LE JOURNAL DE BORD DE L'IPHONE.** Le partage des
+- [ ] **LA v413 SE JUGE DANS LE JOURNAL DE BORD DE L'IPHONE.** Le partage des
   textures de la flotte retire la cause mesurée (734 Mo de copies) ; il faut
   lire `journal_appareil` après la prochaine partie longue : plus de
   `plantage`, et `textures` qui ne grimpe plus à mesure que la rue montre de nouveaux modèles. Si
@@ -97,6 +97,14 @@
   `maj.js` « le loader dit combien de fichiers » (intermittent, table plus
   bas), `manhattan.js` trou (9 203 → 51 734), « le taxi roule » (bouton
   jamais visible) et l'invité de la ligne 674 qui ne rejoint pas.
+- [x] **L'INVITÉ DE `manhattan.js:674` QUI NE REJOINT PAS — FAIT en v412.**
+  Pas une intermittence : rejouée seule, 2/2 des deux côtés. La page de
+  l'invité s'ouvrait pendant que l'hôte rendait Manhattan (4 cœurs pris) :
+  `__game` en 44 s puis >90 s, contre 13–18 s hôte hors Manhattan. Le témoin
+  ouvre la page de l'ami d'abord ; 3/3 en sonde, suite jusqu'au bout.
+  Portail : le témoin vert ; rouges déclarés `maj.js` (loader ×2) et
+  `manhattan.js` (trou, taxi) — mêmes rouges seuls sur `origin/main` v406,
+  mesurés le même jour (portail de la v410).
 - [ ] **LE PORTAIL DE LA v410 (le passager sans courtier), DOUBLE MESURE
   FAITE.** Dix suites ; `reseau.js` VERTE entière (le témoin neuf : assise en
   510 ms). Rouges, tous déjà déclarés : `maj.js` (loader, libération, palier
