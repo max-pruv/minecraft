@@ -619,6 +619,13 @@
   mesurer la couverture) ; pour les rivières, un contour qui publie son tablier
   (un tablier neuf est du sol : Rome est dans l'empreinte des 490 morceaux).
 - [ ] **PORTAIL DE LA v414 (les tabliers s'allongent), DOUBLE MESURE FAITE.**
+  (Portail joué sur la v408 fusionnée ; `origin/main` est passée à la v413
+  pendant la double mesure. Après la fusion, rejouées SEULES sur le code
+  fusionné : `carteMonde.js` et `plafond.js` vertes, empreinte des 490
+  morceaux inchangée (863d4203…). Les v409-v413 ne touchent pas
+  `villesmonde.js` ; leurs suites ont été jouées par leurs sessions. Fait pour
+  sortir de la course aux numéros, comme la v357 ; le prochain portail complet
+  le confirme.)
   Sept suites. Verts : `parishd.js`, `carteMonde.js` (deux témoins neufs),
   `plafond.js` (empreinte relevée). Rouges, tous déjà déclarés : `maj.js`
   libération `null` et « ne floute rien » ; `carte.js` appui long (deux témoins)
