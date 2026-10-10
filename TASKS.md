@@ -1,5 +1,21 @@
 # Ce qui est en cours
 
+- [ ] **LE JOURNAL DE BORD COMPTE PEUT-ÊTRE UNE MISE À JOUR COMME UN PLANTAGE
+  (v413).** Session 84 (iPhone, v408) : zéro relevé, zéro événement, envoyée
+  cinq secondes après la fermeture propre de la v406 — la relance du service
+  worker tue sans doute la page neuve avant `pagehide`. Même forme pour la
+  session 70 (v404). Si c'est le cas, chaque mise à jour pousse le disjoncteur
+  de sûreté (`suretePalier`, deux plantages) vers le palier bas. À mesurer :
+  `?apresmaj=1`, et ne compter comme plantage qu'une session qui a écrit au
+  moins un relevé, ou marquer la session fermée avant `reloadOnce`.
+- [ ] **LA v413 SE JUGE DANS LE JOURNAL DE BORD DE L'IPHONE.** Le partage des
+  textures de la flotte retire la cause mesurée (734 Mo de copies) ; il faut
+  lire `journal_appareil` après la prochaine partie longue : plus de
+  `plantage`, et `textures` qui ne grimpe plus à mesure que la rue montre de nouveaux modèles. Si
+  l'iPhone plante encore avec un compte stable, le suivant à mesurer est le
+  clone de géométrie des dégâts (`degats3d.js`, une pièce par voiture touchée,
+  66 à 87 chocs dans les parties qui ont planté).
+
 - [x] **UN ÉCART QUI FAIT TRAVERSER LA RUE (v402) — corrigé en v411.**
   `coteDEcart` (pietons.js) : depuis le trottoir, devant une voiture sur la
   chaussée, l'écart ne descend plus. Sonde node 92/125 → 0/125 ; témoin de

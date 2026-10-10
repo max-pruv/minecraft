@@ -20,6 +20,40 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v413 — Le jeu ne plante plus en roulant : la flotte partage ses images
+
+**Pourquoi.** Max : « le jeu plante de temps en temps ». Le journal de bord de
+l'iPhone (`journal_appareil`) a compté onze plantages en quarante minutes le
+10 octobre, des parties d'une à sept minutes. Le palier de sûreté était déjà
+au plus bas, la couche HD éteinte. Les journaux ne montrent ni erreur ni gel :
+la cadence reste entre 25 et 60 images par seconde, et la page meurt au milieu
+d'un relevé normal. Une seule grandeur montait d'un bout à l'autre de chaque
+partie, le nombre de textures (409 → 702 en cinq minutes). La cause est dans
+les fichiers : les cinquante modèles de voitures portent 225 images, dont
+seulement CINQ distinctes, octet pour octet. Le chargeur décodait la copie de
+chaque modèle et l'envoyait à la carte graphique, soit environ 15 Mo par
+modèle et 734 Mo pour la flotte entière, que la rue découvre à mesure que
+l'enfant roule. iOS ne prévient pas : il ferme la page. Deuxième fuite, plus
+petite : une voiture repeinte qui quittait la rue rendait au pilote la texture
+de son prototype, qu'il fallait alors renvoyer à la carte graphique pour la
+voiture suivante.
+
+**Ce que ça change.** Le chargeur reconnaît une image à son empreinte et rend
+la texture déjà décodée : toute la flotte tient dans cinq images, quelques
+mégaoctets au lieu de plusieurs centaines. Les textures partagées sont
+marquées, et une voiture qui s'en va ne les jette plus. Les voitures ne
+changent pas d'un pixel : chaque image garde son rôle (teinte ou relief) dans
+les cinquante fichiers, vérifié.
+
+**Ce qui le prouve.** Un témoin neuf dans `realisme.js` charge huit modèles
+texturés et compte les images décodées qu'ils tiennent : 36 sur l'ancien code,
+5 ici. Il repeint ensuite une voiture et la libère : aucune texture du
+prototype n'est rendue au pilote, contre dix sur l'ancien code. La preuve
+sur le téléphone viendra du journal de bord : des parties longues sans
+plantage, et un compte de textures qui ne grimpe plus.
+
+---
+
 ## v412 — New York à deux, vérifié jusqu'au bout
 
 **Pourquoi.** `manhattan.js` s'arrêtait souvent à la ligne 674 sur un
