@@ -2016,7 +2016,7 @@ function updateChunks() {
     // L'AUTOROUTE ROULE À CENT VINGT, ET LA VILLE À CINQUANTE (v372) : la
     // limite se lit au point du tracé — dans le disque d'une ville, l'avenue
     // d'entrée ; dehors, l'autoroute — et la grille freine AVANT la porte.
-    // deux voies par sens (v405) : la file à droite, sa jumelle à gauche
+    // deux voies par sens (v409) : la file à droite, sa jumelle à gauche
     vehicules.circulation(pts, 41, { ville: seg.de, voie: 'autoroute', route: seg.route.nom, voies: voiesAutoroute, voiesAuBesoin: true,
       limite: (x, z) => (world.cityAt(x, z) || villeMondeEn(x, z) ? ALLURE_VOIE.avenue : ALLURE_VOIE.autoroute) });
   }
@@ -3165,7 +3165,7 @@ function animerLesVilles(dt) {
   const conv = vehicules.circulation(tr.pts, graineDeVille(tr), { ville: tr.ville, voie: tr.voie || 'rue',
     // les avenues des villes bâties à la main : la voie de droite (v372)
     decalage,
-    // la seconde voie des boulevards (v405) ; le bus prend la première place
+    // la seconde voie des boulevards (v409) ; le bus prend la première place
     voies: decalage ? (x, z) => secondeVoieParis(x, z, decalage) : secondeVoieVilleMonde, bus: tr.rang === 0 });
   // le bus dessert le grand anneau — un par ville, à sa couleur, DANS la file
   // de ses voitures (v372) : il prend leur grille horaire
@@ -7820,7 +7820,7 @@ function updateHud(dt) {
     + (player.gabarit > 1 && !player.pilote ? '\n' + ligneDiagConduite({
       classe: player.ficheVoiture && player.ficheVoiture.classe, v: player.vitesseVoiture, vmax: player.vitesseVoitureMax,
       devant: mondeDevant((cx, cz) => chunkMeshes.has(World.key(cx, cz)), player.pos.x, player.pos.z, player.yaw + (player.derive || 0) + (player.vitesseVoiture < 0 ? Math.PI : 0), CHUNK),
-      roueLibre: player.roueLibre }) : '')
+      roueLibre: player.roueLibre, pente: player.pente, atterrissage: player.atterrissage, suivi: player.suivi }) : '')
     + texteRoulage()
     + texteDegats()
     + texteEmbarquement();

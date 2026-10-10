@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Toutes les voies occupées (v405) — la seconde voie est la même ligne, décalée
+## Toutes les voies occupées (v409) — la seconde voie est la même ligne, décalée
 
 Max, une capture de GTA VI à côté d'une de GTA V : « Good inspiration » — des
 voies serrées et TOUTES occupées. Mesuré avant : une seule file par sens
@@ -1388,6 +1388,19 @@ l'eau** quand l'avion s'arrête au bord d'un lac (mesuré sur `origin/main`) :
 un geste instantané ne regarde pas où il pose, une séquence doit le faire.
 Le passage vit dans `sonde-descente-avion.cjs` et `monte.js` l'appelle tel
 quel (`passage`, `juger`) : une copie de sonde finit par diverger du témoin.
+
+**Le passager suit la voiture de son ami, pas un maillage gardé (v407).**
+Une tablette REFAIT le maillage de la voiture d'un ami quand sa clé change
+ou quand l'ami est recréé (`synchroniserVehiculeDistant`) ; la séquence qui
+gardait l'ancien maillage s'annulait (« la voiture n'existe plus ») — le
+rouge de `reseau.js` qui allait et venait depuis la v377. `chez.veh()`
+redemande la voiture de CE conducteur à chaque image (`suivreLaVoiture`) :
+maillage changé → on s'y rebranche ; voiture absente → on attend
+`ABSENCE_MAX` (1,5 s de jeu) avant d'annuler. **Une séquence suit une
+IDENTITÉ (le conducteur), jamais un objet de rendu qu'un autre module peut
+remplacer.** Le témoin provoque l'état (v393) en changeant la clé chez Lou
+pendant la marche, et les témoins du passager publient un `suivi` image par
+image de la voiture de l'ami.
 
 **Une séquence qu'on ne juge qu'au banc se fait lire sur la tablette (v396).**
 Le banc saute la séquence (`embarq=0`) et rend en logiciel : durées, caméra et
@@ -2376,6 +2389,34 @@ position, si (`{ ...msg }`). Ce qui doit traverser un ancien hôte s'accroche
 à elle, et devient idempotent en envoyant l'HISTOIRE (adoptée seulement si
 la nôtre en est le début), jamais le seul dernier événement.
 
+**La tolérance à la GTA (v405).** Max : « on fonce dans deux trucs et elles
+tombent en panne. » Mesuré sur la v404 : panne au 2e mur de face, feu au 3e, et
+dix bordures (force 0,3) mettaient la voiture en feu. Quatre règles.
+
+- **LA PANNE NE VIENT QUE DE LA SANTÉ.** Le moteur (`0,4 × zone avant + 0,6 ×
+  santé`) règle l'allure et la fumée ; une zone enfoncée ne cale plus la voiture
+  à elle seule. C'est ce qui calait en deux murs : `min(zone avant, …)` passait
+  sous le seuil quand la santé valait encore 0,4.
+- **LA PERTE SUIT LE CARRÉ DE LA FORCE** (`COURBE_FORCE`, l'énergie du choc).
+  La force publiée par la physique sature à 1 dès 20 b/s normaux
+  (`CHOC_PLEIN`, conduite.js) : c'est une décision de la physique, qu'on ne
+  touche pas d'ici ; la courbe se règle côté dégâts. Un frôlement rasant à
+  60 b/s publie encore 0,78 — il coûte 0,6 mur, déclaré.
+- **LE NOMBRE DE MURS EST ÉCRIT DANS LE CODE** (`CHOCS_AVANT_PANNE` 9,
+  `CHOCS_AVANT_FEU` 12) et le témoin le LIT : changer une constante sans changer
+  la promesse rougit. Fumée au 2e mur de face (6e de flanc ou par l'arrière) :
+  l'enfant voit qu'elle s'abîme bien avant la panne ; la tôle, elle, se froisse
+  dès le premier choc (la déformation suit la force, pas la santé).
+- **UNE HISTOIRE QUI SE REJOUE DOIT ALLER AUSSI LOIN QUE LA RÈGLE.** Douze chocs
+  d'historique suffisaient quand le feu venait au 3e ; l'ami aurait vu une
+  voiture bien plus saine que le conducteur. `MAX_CHOCS` vaut 24 (la santé
+  rejouée est exacte jusqu'au feu pour des chocs ≥ 0,7), dans `degats.js` et
+  `degats3d.js` (`noter`, `adopterHistoires`) ; le format ne change pas. Une
+  tablette restée sur la v404 rejoue cette histoire avec l'ancienne règle et
+  voit la voiture de l'ami en panne plus tôt : le receveur cède, et c'est
+  accepté. Et une ancienne tablette ignore une histoire `rc` de plus de douze
+  chocs : `rue_choc` reste son chemin.
+
 ## Celui qui part dit au revoir (v393) — un commentaire de départ se relit dans `stop()`
 
 Les deux rouges réseau récurrents du palier C. Trois règles.
@@ -2405,6 +2446,17 @@ Les deux rouges réseau récurrents du palier C. Trois règles.
   gain de sortie rendu, plus un niveau au-dessus de la MOITIÉ — milieu entre
   une voix restée au quart (`GAIN_APPEL`) et le régime qui varie ; vérifié
   rouge sur une copie où la voix reste au quart.
+
+## Le GPS d'un invité traverse l'hôte (v406) — un champ de position a un témoin par chemin
+
+Une règle. La v388 a écrit « un champ de position se lit sur les deux chemins
+de la position » et n'en éprouvait qu'un (le direct). Le relayé (`rpos`) a
+désormais son témoin à trois tablettes dans `reseau.js` (Nina → hôte → Alice),
+vérifié rouge sur une copie où `rpos` ne lit pas `g`. **Un champ ajouté à
+`pos` reçoit deux témoins, ou il n'en a qu'un demi.** Et une proposition
+expire à vingt secondes : une sonde qui lit l'hôte après trente secondes
+d'attente sur l'autre page le trouve vide — ce n'est pas un défaut, c'est
+l'horloge de la proposition.
 
 ## Le GPS se partage (v388) — un état voyage avec la position, pas dans un message neuf
 
@@ -2613,6 +2665,76 @@ celle d'un AXE DU MONDE contre un mur. Cinq règles.
   déclaré. Le joueur, lui, publie `player.roueLibre` ({ depuis, s }) et
   `player.contact` ({ famille, nx, nz }) ; `?diag=1` au volant les affiche
   avec le monde maillé devant la voiture (`mondeDevant`, `ligneDiagConduite`).
+
+## La pente, la bosse et la file (v408) — conduite, palier 3
+
+Mesuré sur `origin/main` par `tests/sonde-pente.cjs` (sous node, le vrai
+joueur sur de vraies lignes de campagne trouvées par la sonde) : une sportive à
+plein gaz faisait 26,4 blocs/s au bout de quarante blocs en côte, en descente
+et sur le plat, et une crête la plaquait au sol. Après : 24,1 en côte, 28,6 en
+descente, et une crête vive prise à 40 blocs/s fait voler environ une seconde.
+Six règles.
+
+- **UNE SEULE PESANTEUR LE LONG DE LA ROUTE, LA VRAIE (9,81).** Celle du jeu
+  (26, le saut) rendrait une pente d'un bloc par bloc — la plus raide que la
+  surface continue dessine — plus forte que le moteur d'une citadine : un
+  enfant resterait au pied d'une colline. `gravitePente` entre dans
+  `pasVoiture` (`entree.pente`) ; `vitesseEnCote` et `vitesseEnRoueLibre` sont
+  ses formules fermées, et le témoin exige que la simulation les rejoigne. Une
+  voiture arrêtée qu'on ne commande pas TIENT (`MAINTIEN`). En l'air, en
+  revanche, la pesanteur reste celle du jeu, comme avant.
+- **LA SURFACE CONTINUE EST UNE DENT DE SCIE, ET LA CAISSE LA LIT EN CINQ
+  POINTS.** Elle passe par le centre de colonnes de relief entier : une pente
+  de 0,37 est faite de facettes à 0 et à 1. Un point-masse qui la suivait
+  décollait de chaque dent (premier jet : 1,1 à 3,2 s « en l'air » sur six
+  côtes droites). `sousLaCaisse` lit la surface de −2 à +2 blocs le long de la
+  caisse : la moyenne est le sol de la voiture, la droite des moindres carrés
+  sa pente. La caisse ne s'enfonce pas de plus d'`ENFONCE` sous la surface au
+  centre.
+- **LA SURFACE POUSSE LA CAISSE D'UN COUP, MAIS NE LA TIRE QU'À LA
+  PESANTEUR.** Au sol, la vitesse verticale vaut `max(ce que la surface exige,
+  ce que la pesanteur laisse)`. Au sommet d'une crête, l'écart s'accumule
+  d'image en image ; passé le `DEBATTEMENT` on vole. C'est une HAUTEUR, pas un
+  seuil d'image : mon deuxième jet recollait la vitesse à la surface à chaque
+  image, et sur une crête vive l'écart repartait de zéro — la voiture ne
+  décollait JAMAIS, à aucune cadence. Une règle qui doit s'accumuler ne se
+  remet pas à zéro à chaque image.
+- **LE VOXEL DÉCIDE OÙ IL DÉCIDAIT, ET UNE GARDE SE FORMULE SUR L'ÉVÉNEMENT,
+  PAS SUR UNE MESURE VOISINE.** Ma première garde lisait `niveauVoxel`, qui
+  compte aussi la cote des colonnes COUVERTES : au sommet d'une crête la
+  colonne voisine dépasse le centre, la garde rendait la main au chemin
+  d'avant avec l'élan de la pente, et la caisse montait de sept blocs sans
+  être « en l'air ». La garde est l'événement lui-même : une marche franchie
+  dans l'image (`_franchi`), un cube sous les roues (`onGround`), pas de
+  surface (ville). Là, l'élan vertical ne survit pas.
+- **CE QUE LA PHYSIQUE PUBLIE, LES AUTRES LE LISENT SI PRÉSENT.**
+  `player.tangage` (rad, nez en haut), `player.enLair`, `player.pente`, et à
+  chaque retour au sol `player.atterrissage = { force, t, air, hauteur }` —
+  un ÉVÉNEMENT comme `choc`, effacé à la montée et à la descente, publié
+  seulement s'il s'est vu (plus haut que le débattement) ou senti. Personne
+  ne le dessine encore (`conduite-sensations`). Le contrat des dégâts ne
+  change pas : un atterrissage n'est pas un choc.
+- **DERRIÈRE UNE VOITURE PLUS LENTE, ON LA SUIT.** Elle ne se pousse pas
+  (v305) ; on la touchait à chaque image. `suiviDevant` pose notre rectangle
+  devant le pare-chocs par le crochet en lecture seule `voitureContre`, sur la
+  distance où l'on peut avoir à freiner, et la vitesse permise
+  (`vitesseDeSuivi`) est celle qu'on peut encore perdre au freinage de confort
+  avant `ECART_SUIVI` — jusqu'au frein franc si on l'a vue tard
+  (`freinDeSuivi`). Mesuré sous node, collé derrière à un bloc/s de plus
+  qu'elle : 139, 7 et 133 contacts (voiture arrêtée, à 6 et à 12 blocs/s) →
+  zéro. Braquer pour la doubler lève le suivi : on ne regarde que dans son
+  axe. **ET L'ON NE SUIT QUE CE QU'ON RATTRAPE DOUCEMENT** (`SUIVI_DELTA`,
+  4 blocs/s) : mon premier jet freinait aussi devant une voiture qu'on
+  voulait percuter, et le portail a rendu rouges trois témoins des dégâts et
+  de la rue (percuter une voiture de la rue l'abîme, elle s'arrête en
+  feux de détresse, son flanc frôlé nous laisse passer). Foncer dessus reste
+  un choc ; le témoin l'exige aussi.
+
+Et un **non-résultat** : lire la façade sur six blocs au lieu de 4,5 bat la
+droite des faces sur un mur synthétique (pire 9,8 → 7,1°) et ne la bat pas sur
+les seize vraies façades de Paris (`sonde-mur-oblique.cjs` : trajet médian
+après contact 10,4 → 7,5 à 10°, 14,3 → 16,8 à 25°). La coque convexe des faces
+est pire partout (pire 12° puis 168°). `RAYON_MUR` reste à 4,5.
 
 ## Les monuments à la hauteur de leur ville (v335) — une table de paliers, deux lecteurs
 

@@ -24,7 +24,7 @@ const LIEUX = lieux.length ? lieux : ['paris', 'a1', 'londres', 'rome', 'ny', 'z
           const r = await import('./src/routes.js'); const s = r.segmentsDeRoute()[0];
           const q = r.pointA(s, s.longueur * 0.4); P = { x: q.x, z: q.z };
         } else if (lieu === 'paris') {
-          // sur la rue de Rivoli, là où le circuit 0 a sa jumelle (v405)
+          // sur la rue de Rivoli, là où le circuit 0 a sa jumelle (v409)
           const p = await import('./src/paris.js');
           P = { x: p.PARIS.x - 88, z: p.PARIS.z - 5 };
         } else if (lieu === 'tokyo-bd') P = { x: 53387, z: 8088 };
