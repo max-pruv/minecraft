@@ -290,6 +290,25 @@
   `reseau.js` ENTIÈREMENT vert (mon témoin compris) ; `monte.js` : le seul gel
   d'arrivée (24,8 %, déclaré) ; `manhattan.js` : trou, taxi, « Lost
   connection to server » de PeerJS — déclarés.
+- [ ] **LE PORTAIL DE LA M40 (après fusion de la v404), DOUBLE MESURE FAITE.**
+  Quatre suites rouges au portail (105 min), rejouées SEULES des deux côtés, à
+  la suite. `maj.js` (« corps, programmes et fond de carte » `null`, « ne floute
+  rien ») rouge à l'identique sur `origin/main` (v404) ; la branche y ajoute ce
+  passage-ci le palier non rangé (neuf images mesurées en tout : la page n'a pas
+  joué assez longtemps). `carte.js` « la faire glisser (bridé ×4) » : 430 ms au
+  portail, 466 ms sur `origin/main`, verte seule sur la branche ; la flèche du
+  GPS rouge sur `origin/main` seul (1,92 rad, l'intermittence de la v329).
+  `manhattan.js` « le trou enlève la géométrie » rouge partout (11 684 · 9 203
+  branche, 17 102 `origin/main`), le taxi tactile rouge sur la branche. `monte.js`
+  : la chauffe de New York (`expire`, 53/321) et le flanc frôlé
+  (`{"c":null,"lu":false}`) rouges des deux côtés ; au portail, deux voitures
+  l'une dans l'autre et le trou en vol (des sondes de route tournaient à côté) ;
+  seule, le flâneur sorti de la chaussée et le réverbère (0,35 bloc parcouru) —
+  chacun vu une fois, sur une suite de cinquante-cinq minutes, aucun dans la
+  zone de la M40 (`routes.js`, `londres.js`, l'anneau de Londres de `world.js`,
+  la table des entrées de `main.js`). Ce sont des dettes des sessions conduite et
+  piétons.
+
 - [ ] **LE PORTAIL DE LA M40 (v405, après fusion de la v398), DOUBLE MESURE
   FAITE.** Quatre suites rouges. `maj.js` (fond de carte, personnages 6/9),
   `carte.js` (flèche du GPS, gauche 1,92 rad), `manhattan.js` (trou de façade
