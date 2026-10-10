@@ -4514,8 +4514,8 @@ function poserDebout(rp) {
 // Le véhicule dans lequel un joueur (distant) est passager : celui d'un
 // autre ami, ou le nôtre si c'est chez nous qu'il est monté.
 function vehiculeDuConducteur(de) {
-  const monId = net && net.peer ? net.peer.id : null;
-  if (monId && de === monId) {
+  // `estMoi` (v407) : peer.id avec un courtier, l'identité du bus sans lui
+  if (net && net.estMoi && net.estMoi(de)) {
     const a = fun.montureConduite ? fun.montureConduite() : null;
     // la monture ELLE-MÊME, pas une copie : le cache du plafond vit dessus
     return a && a.def && a.def.sieges ? a : null;

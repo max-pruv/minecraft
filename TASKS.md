@@ -3840,8 +3840,8 @@ l'embarquement a eu lieu, pas par une hypothèse.
 - [x] **Le passager d'un ami** — FAIT en v377 : il entre par la portière
   droite avec la séquence (`monterChez`), et le conducteur la voit s'ouvrir
   chez lui (message `portiere`, l'hôte relaie). La DESCENTE aussi depuis la
-  v384 (`descendreDeChez`). Reste : sans courtier (partie par le nuage seul)
-  le message ne sait pas nommer le conducteur (dette v253, zone
+  v384 (`descendreDeChez`). Sans courtier : FAIT en v407 (`net.estMoi`,
+  le conducteur se reconnaît à l'identité du bus) (dette v253, zone
   conduite-en-ligne).
 - [ ] **LE PORTAIL DE LA v372 (bords des portières), DOUBLE MESURE FAITE.**
   `degats.js` vert. Au portail, 17 rouges dans `monte.js` et `maj.js` : il a
@@ -5182,9 +5182,8 @@ l'embarquement a eu lieu, pas par une hypothèse.
   lui.** Max, après la v249. `v`/`p` dans le message de position, l'ami
   dessiné avec la fabrique de la monture et assis, passagers collés au siège
   (`sieges` de la fiche). Trois témoins dans `reseau.js`, rouges sur
-  l'ancien code. Reste : sans courtier (partie par le nuage seul) le
-  conducteur n'a pas d'identifiant de pair et voit ses passagers debout ;
-  et les montures sans `siege` (cheval, avion) se voient encore à pied chez
+  l'ancien code. Sans courtier, le conducteur voit ses passagers assis
+  depuis la v407 (`net.estMoi`). Reste : les montures sans `siege` (cheval, avion) se voient encore à pied chez
   les autres — le champ `v` part, il manque leur `siege` et leur pose.
 
 - [x] **v252 — La voiture de l'enfant ne traverse plus le mobilier.** Max,

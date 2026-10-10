@@ -1684,8 +1684,7 @@ export class NetSession {
         // treat the origin guest as a virtual peer entry
         // `this.peer` peut être absent : quand le courtier est muet, la partie
         // se joue entièrement par le nuage et il n'y a jamais eu de pair.
-        const monId = this.peer ? this.peer.id : null;
-        if (!this.conns.has(msg.from) && msg.from !== monId) {
+        if (!this.conns.has(msg.from) && !this.estMoi(msg.from)) {
           this.conns.set(msg.from, { conn: null, name: msg.name || 'Joueur', pret: true, lookIdx: msg.lookIdx || 0, look: msg.look || null, pos: null, yaw: 0, moving: false });
         }
         const e2 = this.conns.get(msg.from);
@@ -1703,6 +1702,17 @@ export class NetSession {
         break;
       }
     }
+  }
+
+  // TOUTES MES IDENTITÉS (v407). Sans courtier, il n'y a pas de pair : la
+  // partie passe par le nuage, et les autres nous connaissent sous l'identité
+  // du BUS (`bus.monId`). Un passager écrit cette identité-là dans sa position
+  // (`p.de`) ; le conducteur qui ne se reconnaissait qu'à `peer.id` le voyait
+  // debout à côté de sa voiture (dette v253). Avec un courtier mais un lien
+  // par le nuage, les deux identités coexistent : on se reconnaît aux deux.
+  estMoi(id) {
+    if (!id) return false;
+    return (!!this.peer && this.peer.id === id) || (!!this.bus && this.bus.monId === id);
   }
 
   relay(fromId, msg) {
