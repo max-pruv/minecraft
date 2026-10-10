@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v409 — Des ponts sous toutes les voies
+## v414 — Des ponts sous toutes les voies
 
 **Pourquoi.** Dans quatorze villes engendrées, des voitures roulaient sur
 l'eau sans pont : 159 pas de voie sur un fleuve ou un canal, hors de tout
@@ -49,6 +49,140 @@ code, les allongements retirés, rend la constante d'`origin/main` au bit près.
 Le prix : déplier les anneaux de toutes les villes coûte 15 % de plus
 (1 070 → 1 250 ms au total, une ville à la fois à l'approche), la pire ville
 inchangée (Rome ≈ 90 ms) ; rien au démarrage.
+## v413 — Le jeu ne plante plus en roulant : la flotte partage ses images
+
+**Pourquoi.** Max : « le jeu plante de temps en temps ». Le journal de bord de
+l'iPhone (`journal_appareil`) a compté onze plantages en quarante minutes le
+10 octobre, des parties d'une à sept minutes. Le palier de sûreté était déjà
+au plus bas, la couche HD éteinte. Les journaux ne montrent ni erreur ni gel :
+la cadence reste entre 25 et 60 images par seconde, et la page meurt au milieu
+d'un relevé normal. Une seule grandeur montait d'un bout à l'autre de chaque
+partie, le nombre de textures (409 → 702 en cinq minutes). La cause est dans
+les fichiers : les cinquante modèles de voitures portent 225 images, dont
+seulement CINQ distinctes, octet pour octet. Le chargeur décodait la copie de
+chaque modèle et l'envoyait à la carte graphique, soit environ 15 Mo par
+modèle et 734 Mo pour la flotte entière, que la rue découvre à mesure que
+l'enfant roule. iOS ne prévient pas : il ferme la page. Deuxième fuite, plus
+petite : une voiture repeinte qui quittait la rue rendait au pilote la texture
+de son prototype, qu'il fallait alors renvoyer à la carte graphique pour la
+voiture suivante.
+
+**Ce que ça change.** Le chargeur reconnaît une image à son empreinte et rend
+la texture déjà décodée : toute la flotte tient dans cinq images, quelques
+mégaoctets au lieu de plusieurs centaines. Les textures partagées sont
+marquées, et une voiture qui s'en va ne les jette plus. Les voitures ne
+changent pas d'un pixel : chaque image garde son rôle (teinte ou relief) dans
+les cinquante fichiers, vérifié.
+
+**Ce qui le prouve.** Un témoin neuf dans `realisme.js` charge huit modèles
+texturés et compte les images décodées qu'ils tiennent : 36 sur l'ancien code,
+5 ici. Il repeint ensuite une voiture et la libère : aucune texture du
+prototype n'est rendue au pilote, contre dix sur l'ancien code. La preuve
+sur le téléphone viendra du journal de bord : des parties longues sans
+plantage, et un compte de textures qui ne grimpe plus.
+
+---
+
+## v412 — New York à deux, vérifié jusqu'au bout
+
+**Pourquoi.** `manhattan.js` s'arrêtait souvent à la ligne 674 sur un
+`TimeoutError` : l'ami qui rejoint un monde ouvert dans New York ne
+« démarrait » jamais. Cinq témoins venaient après (le bloc partagé, le code
+Terre dans le nuage, l'archive reprise, deux clients sans erreur, le jeu hors
+ligne) et ne tournaient donc presque jamais. Déclaré « intermittence sous la
+charge » depuis la v381. Rejouée seule, la suite s'arrêtait là deux fois sur
+deux, sur la branche comme sur `origin/main`.
+
+**Ce que ça change.** Rien dans le jeu : la cause était le banc. La page de
+l'invité s'ouvrait pendant que l'hôte rendait Manhattan, qui tourne à 0,4
+image par seconde en rendu logiciel et occupe les quatre cœurs de la machine.
+Sur deux vraies tablettes, chacune a son processeur. Le témoin ouvre
+désormais la page de l'ami d'abord, puis l'hôte entre dans New York et l'ami
+le rejoint avec le geste de l'enfant (code, Rejoindre, Jouer).
+
+**Ce qui le prouve.** Sonde (`sonde-invite-ny.cjs`) : hôte dans Manhattan,
+le jeu de l'invité apparaît en 44 s puis au-delà de 90 s, sans une erreur ;
+hôte hors Manhattan, en 13 et 18 s. Page ouverte d'abord
+(`sonde-invite-avant.cjs`) : 3 sur 3, bloc propagé en 0,2 à 6 s. Rejouée
+seule, `manhattan.js` va jusqu'au bout et les cinq témoins d'après sont
+verts ; reste le rouge déclaré du trou de façade (17 102 → 54 969).
+
+---
+
+## v411 — Un pas de côté ne fait plus traverser la rue
+
+**Pourquoi.** Le témoin du feu de la v402 l'a publié deux fois sur quatre, des
+deux côtés : un passant du trottoir, au coin d'un carrefour, faisait un pas de
+côté devant une voiture qui tournait… et ressortait sur le trottoir d'en face,
+au vert. Le pas de côté partait du côté où le passant était par rapport à
+l'AXE de la voiture ; quand la voiture tourne, cet axe est en biais, et ce
+côté-là, c'est la rue d'à côté. L'écart durait jusqu'à deux secondes, assez
+pour la traverser.
+
+**Ce que ça change.** Un passant sur le trottoir qui s'écarte d'une voiture
+roulant sur la chaussée ne descend plus dans la rue : il s'écarte vers le
+trottoir, en biais si le côté naturel mène à la rue, ou de l'autre côté s'il a
+le temps de passer, ou il reste sur place au bord, et la voiture, qui freine
+devant un piéton, passe. Rien ne change sur la chaussée, ni devant une voiture
+qui roule sur le trottoir (l'enfant au volant) : là, on s'écarte comme avant.
+
+**Ce qui le prouve.** Une sonde sous node (`sonde-ecart-trottoir.cjs`) PROVOQUE
+la situation aux coins des feux de Rome, Zurich, Paris et Londres, avec des
+voitures droites et en virage, sans freinage : 92 écarts sur 125 descendaient
+sur la chaussée avec l'ancienne règle, zéro avec la neuve, et les contacts sans
+freinage tombent de 82 à 19 (ceux d'une voiture qui frôle la bordure). Un témoin
+de `monte.js` (rejoué seul par `sonde-ecart-trottoir-page.cjs`) pose cinq
+passants au coin d'un feu de Rome et leur envoie une voiture en biais :
+`origin/main` 4 sur 5 descendus, deux fois ; la branche 0 sur 5, deux fois.
+
+---
+
+## v410 — Le passager se voit assis, même sans courtier
+
+**Pourquoi.** Quand le serveur de rendez-vous ne répond pas (Wi-Fi d'hôtel,
+école), la partie passe entièrement par le nuage depuis la v154. Un enfant
+pouvait y monter en passager dans la voiture d'un ami — chez les autres il
+était bien assis, mais **chez le conducteur il restait debout à côté de la
+voiture** : le conducteur ne se reconnaissait qu'à son identité de courtier,
+qu'il n'a pas dans ce cas (dette de la v253). La portière animée (v377) ne
+s'ouvrait pas chez lui non plus, pour la même raison.
+
+**Ce que ça change.** Sans courtier, le conducteur voit son passager assis
+dans sa voiture, et sa portière s'ouvrir.
+
+**Ce qui le prouve.** Un témoin neuf dans `reseau.js`, dans la partie à deux
+sans courtier du tout. Sonde (`sonde-passager-nuage.cjs`) : sur `origin/main`,
+le passager écrit bien chez qui il est assis, mais reste debout chez le
+conducteur, 2 fois sur 2 ; corrigé, assis 3 fois sur 3, en moins de 50 ms. Au portail, `reseau.js` est verte
+entière ; les rouges de `maj.js`, `carte.js`, `manhattan.js` et `monte.js` sont
+déjà déclarés, et la double mesure les retrouve des deux côtés (`TASKS.md`).
+## v409 — Le frein à main fait déraper la voiture
+
+**Pourquoi.** La conduite « comme GTA » que demande Max n'avait pas de frein à
+main : au joystick, la voiture tournait comme un train sur ses rails, sans
+jamais pouvoir glisser dans un virage. Et mesuré sur la v408 sous node : au
+volant, la barre d'espace faisait SAUTER la voiture d'un tiers de bloc — le
+saut de la marche, resté branché.
+
+**Ce que ça change.** En voiture, un bouton 🛑 « DÉRAPER » apparaît dans la
+colonne de droite, au-dessus de « Descendre », sous le pouce droit pendant que
+le gauche tient le volant ; sur ordinateur, c'est la barre d'espace. Tenu en
+tournant, les roues arrière lâchent : la caisse tourne près de deux fois plus
+qu'au seul volant (77° au lieu de 46° en 1,2 s à 30 blocs/s), l'arrière glisse
+jusqu'à 54°, la voiture garde la moitié de sa vitesse, et au lâcher elle se
+remet dans l'axe en moins d'une demi-seconde, sans à-coup. Pas de tête-à-queue,
+et le frein à main ne fait rien bouger à l'arrêt. La voiture ne saute plus.
+`?diag=1` dit le dernier dérapage (angle le plus large, durée).
+
+**Ce qui le prouve.** Trois témoins, tous rouges sur la v408 : la dynamique
+pure, classe par classe (rotation 1,6 à 1,9 fois celle du volant, contre 1,2 à
+1,3 sans frein à main ; 16 blocs/s gardés ; retour dans l'axe en 0,4 s ; rien
+ne bouge à l'arrêt) ; le vrai joueur sous node, barre d'espace tenue (la caisse
+tourne plus, ne monte pas d'un centième de bloc — 0,29 sur la v408) ; et au
+banc, le bouton hors du quart du joystick, sans recouvrir « Descendre », qui
+tient le frein au toucher et disparaît à pied. Et une preuve d'identité : sans
+frein à main, 240 000 pas de dynamique tirés au hasard rendent exactement la
+v408.
 
 ---
 

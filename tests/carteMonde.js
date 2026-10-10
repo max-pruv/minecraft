@@ -4857,7 +4857,7 @@ const VRAIES_KM = [
       contour.seuls.length <= 6,
       `${contour.seuls.length} ville(s) à un circuit : ${contour.seuls.join(', ')}`);
 
-    // --- LES TABLIERS S'ALLONGENT SOUS LA VOIE (v409) -------------------------
+    // --- LES TABLIERS S'ALLONGENT SOUS LA VOIE (v414) -------------------------
     //
     // La dette de la v404 : 159 pas de voie sur l'eau hors de tout tablier
     // (Shanghai 46, Kyoto 24, Chicago 22), parce qu'un tablier se mesurait sur
@@ -5307,11 +5307,11 @@ const VRAIES_KM = [
         const f = VILLES_MONDE.find((v) => v.cle === cle);
         if (!f || !f.trame) continue;
         const a = anneauxDeVille(f);
-        if (!CINQ.includes(cle) && !a.ponts.some((q2) => !q2.ext)) continue;   // que des allongements (Sydney, v409)
+        if (!CINQ.includes(cle) && !a.ponts.some((q2) => !q2.ext)) continue;   // que des allongements (Sydney, v414)
         const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
         const cote = coteDeVille(f);
         let pas = 0, sansSol = 0, surLaTete = 0, surEau = 0, pireSpan = 0, parLaRoute = 0;
-        // UN ALLONGEMENT N'EST PAS UN PONT (v409) : il porte la VOIE là où la
+        // UN ALLONGEMENT N'EST PAS UN PONT (v414) : il porte la VOIE là où la
         // rive est en biais, et son axe peut longer la rive à sec. Sa preuve
         // est ailleurs — aucun pas de voie sur l'eau hors tablier, et toutes
         // ses colonnes sur l'eau (témoin « les tabliers s'allongent »). Ces

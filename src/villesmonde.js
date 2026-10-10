@@ -4087,7 +4087,7 @@ function anneauxCalcules(f) {
       // au-delà du quart du périmètre on n'essaie même pas de le franchir.
       if (mouille > 10) return null;
       // UN ANNEAU QUE QUARANTE POINTS VOIENT AU SEC PEUT ENCORE COUPER UN
-      // RUISSEAU (v409) : Kyoto et sa Kamo, vingt-quatre pas sur l'eau sans
+      // RUISSEAU (v414) : Kyoto et sa Kamo, vingt-quatre pas sur l'eau sans
       // tablier. On ne le rejette pas pour autant (la sélection ne change
       // pas) ; on publie le tablier de ce qu'il traverse.
       if (!mouille) { candidat.ponts = traverseesDe(f, candidat, false); return candidat; }
@@ -4843,7 +4843,7 @@ function traverseesDe(f, c, strict = true) {
       }
     }
     // LE TABLIER COUVRE L'EAU DE TOUTE LA CHAUSSÉE, PAS SEULEMENT DE L'AXE
-    // (v409). Les voies roulent à une demi-chaussée de l'axe : là où la rive
+    // (v414). Les voies roulent à une demi-chaussée de l'axe : là où la rive
     // est en biais, elles touchent l'eau un bloc ou dix avant le bout du
     // tablier mesuré sur l'axe — 159 pas sur l'eau sans tablier en v404
     // (Shanghai 46, Kyoto 24, Chicago 22). On mesure donc deux lignes — l'axe et
@@ -4893,7 +4893,7 @@ function pontDeVille(f, u, v, allongement = true) {
   if (!a.ponts.length) return null;
   const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
   const P = u * co - v * si, Q = u * si + v * co;
-  // LES TABLIERS D'AVANT D'ABORD, TELS QUELS (v409, rangés en fin de calcul) : la matière d'une
+  // LES TABLIERS D'AVANT D'ABORD, TELS QUELS (v414, rangés en fin de calcul) : la matière d'une
   // colonne (chaussée ou parapet) se lit sur le premier tablier qui la couvre,
   // et deux tabliers se recouvrent aux coins. L'allongement (`ext`) n'est lu
   // qu'ensuite : il ne change ni une colonne ni une matière d'avant, il ne
@@ -4919,7 +4919,7 @@ function pontDeVille(f, u, v, allongement = true) {
     // tablier si, et seulement si, la colonne est de l'eau : la terre ferme ne
     // change pas d'un bloc.
     if ((le < q.a0 || le > q.a1) && !eauDeVille(f, u / f.K, v / f.K)) continue;
-    // Et l'allongement (v409) ne porte QUE sur l'eau, sur toute sa longueur :
+    // Et l'allongement (v414) ne porte QUE sur l'eau, sur toute sa longueur :
     // `coteRoulable` lit ce tablier sans regarder l'eau, et une rive basse
     // sous l'allongement aurait relevé la route.
     if (q.ext && (le >= q.a0 && le <= q.a1) && !eauDeVille(f, u / f.K, v / f.K)) continue;
@@ -4934,7 +4934,7 @@ function pontDeVille(f, u, v, allongement = true) {
 
 // Ce que `world.js` et `coteRoulable` demandent : le tablier sous ce point du
 // MONDE, avec sa cote. `null` s'il n'y a pas de pont ici.
-// `allongement` à faux rend les tabliers d'avant la v409 seuls : c'est ce que
+// `allongement` à faux rend les tabliers d'avant la v414 seuls : c'est ce que
 // lit le témoin qui prouve qu'aucune colonne de tablier ne s'est perdue.
 export function pontVillesMonde(x, z, allongement = true) {
   for (const f of villesPres(x, z)) {
@@ -4949,7 +4949,7 @@ export function pontVillesMonde(x, z, allongement = true) {
 }
 
 // L'eau d'une ville engendrée sous ce point du monde (la géographie de la
-// fiche : fleuve, mer, lac) — pour les témoins des tabliers (v409).
+// fiche : fleuve, mer, lac) — pour les témoins des tabliers (v414).
 export function eauVillesMonde(x, z) {
   for (const f of villesPres(x, z)) {
     const u = x - f.ancre.x, v = z - f.ancre.z;

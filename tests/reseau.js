@@ -1361,6 +1361,47 @@ function verifier(nom, ok, detail = '') {
     }, 120000);
     verifier('et deux enfants se retrouvent sans courtier du tout', ensembleSans,
       JSON.stringify([await nomsVus(sansCourtier), await nomsVus(secondSans)]));
+    // SANS COURTIER, LE CONDUCTEUR VOIT SON PASSAGER (v410). La dette de la
+    // v253 : la partie passe par le nuage, il n'y a pas de pair, et le
+    // conducteur ne se reconnaissait qu'à `peer.id` — le passager écrivait
+    // pourtant chez qui il était assis (`p.de`, l'identité du BUS), et chez
+    // Sacha Alba restait debout à côté de la voiture. Mesuré avant
+    // (`sonde-passager-nuage.cjs`) : Alba passagère chez elle, debout chez
+    // Sacha. On se reconnaît désormais à ses deux identités (`net.estMoi`).
+    const passagerSans = { volant: false, bouton: false, passagere: null, assise: false, ms: null };
+    if (ensembleSans) {
+      passagerSans.volant = await sansCourtier.evaluate(async () => {
+        const g = window.__game; const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+        for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+        g.animalManager.animals.length = 0;
+        const fx = -Math.sin(g.player.yaw), fz = -Math.cos(g.player.yaw);
+        g.animalManager.invoquer('voiture', g.player.pos.x + fx * 2.5, g.player.pos.z + fz * 2.5);
+        await dodo(1500); document.getElementById('ride-btn').click(); await dodo(800);
+        return !!(g.fun.montureConduite && g.fun.montureConduite());
+      });
+      const p0 = await sansCourtier.evaluate(() => { const p = window.__game.player.pos; return { x: p.x, y: p.y, z: p.z }; });
+      await secondSans.evaluate((p) => {
+        const g = window.__game;
+        for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+        g.animalManager.animals.length = 0;
+        g.player.pos.set(p.x + 3, p.y, p.z); g.player.vel.set(0, 0, 0);
+      }, p0);
+      passagerSans.bouton = await jusqua(async () => secondSans.evaluate(() => {
+        const b = document.getElementById('ride-btn'); return b.style.display !== 'none' && /Monter avec/.test(b.textContent);
+      }), 20000);
+      if (passagerSans.bouton) await secondSans.evaluate(() => document.getElementById('ride-btn').click());
+      await dormir(1000);
+      passagerSans.passagere = await secondSans.evaluate(() => { const p = window.__game.fun.passagerDe(); return p ? { de: p.de, s: p.s } : null; });
+      const t0 = Date.now();
+      passagerSans.assise = await jusqua(async () => sansCourtier.evaluate(() => {
+        const g = window.__game; const a = g.fun.montureConduite && g.fun.montureConduite();
+        for (const rp of g.remotePlayers.values()) if (rp.name === 'Alba') return !!(a && rp.mesh.parent === a.mesh);
+        return false;
+      }), 20000);
+      passagerSans.ms = Date.now() - t0;
+    }
+    verifier('sans courtier, le conducteur voit son passager assis dans sa voiture',
+      passagerSans.volant && !!passagerSans.passagere && passagerSans.assise, JSON.stringify(passagerSans));
     await secondSans.close();
     await sansCourtier.close();
     await souffler();

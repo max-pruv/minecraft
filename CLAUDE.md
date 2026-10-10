@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Les tabliers s'allongent sous la voie (v409) — un ouvrage qu'on ne peut pas retirer s'agrandit, et la preuve lit les deux versions
+## Les tabliers s'allongent sous la voie (v414) — un ouvrage qu'on ne peut pas retirer s'agrandit, et la preuve lit les deux versions
 
 La dette de la v404 : 159 pas de voie sur l'eau hors de tout tablier. Quatre
 règles.
@@ -801,6 +801,32 @@ règles.
   un allongement longe la rive, et sa preuve est la voie. L'empreinte des 490
   morceaux se relève (Rome) et se prouve désarmée (`ext` retirés → la
   constante d'`origin/main`).
+## La flotte partage ses images (v413) — un plantage sans erreur se lit dans ce qui MONTE
+
+Max : « le jeu plante de temps en temps ». Onze plantages de l'iPhone en
+quarante minutes, en palier bas, HD éteinte, zéro erreur, cadence normale.
+Trois règles.
+
+- **UN PLANTAGE SANS ERREUR NI GEL SE CHERCHE DANS LA GRANDEUR QUI MONTE
+  PENDANT LA PARTIE.** Safari ne donne pas le tas (`tasMo` nul), mais le journal
+  de bord compte les géométries et les textures : la seconde grimpait d'un bout
+  à l'autre de chaque partie (409 → 702). La requête qui l'a montré :
+  `jsonb_array_elements(doc->'releves')` par session, un relevé sur quatre.
+- **UN CHARGEUR NE CONNAÎT QU'UN FICHIER : CE QUI SE RÉPÈTE ENTRE FICHIERS SE
+  RECONNAÎT À SES OCTETS.** Cinquante modèles, 225 images, CINQ distinctes ;
+  chaque modèle décodait sa copie (734 Mo pour la flotte entière). Le greffon
+  `partageDesTextures` (vehicules.js) hache le `bufferView` de l'image et rend
+  la texture déjà décodée. Avant de partager, on vérifie dans les fichiers
+  qu'une image n'y joue qu'un rôle : `assignTexture` lui pose son espace de
+  couleur, et une image teinte ici et normale là se contredirait.
+- **UNE RESSOURCE PARTAGÉE SE MARQUE AU MOMENT OÙ ELLE DEVIENT PARTAGÉE.**
+  `repeindre` clone la laque et la marque non partagée ; `liberer` jetait donc
+  la `map` du clone, c'est-à-dire la texture du prototype, à chaque voiture
+  repeinte qui quittait la rue. Les textures du cache portent `partagee`.
+
+Ce qui reste, déclaré dans `TASKS.md` : une relance de mise à jour semble
+compter comme un plantage dans le journal (une session v408 à zéro relevé cinq
+secondes après la fermeture de la v406), et nourrirait le disjoncteur de sûreté.
 
 ## Les anneaux contournent (v404) — un anneau est le bord d'un ensemble d'îlots
 
@@ -2022,6 +2048,34 @@ engendrées. Quatre règles.
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
 
+## Un pas de côté ne traverse pas la rue (v411) — une projection droite n'est pas une trajectoire
+
+Trois règles.
+
+- **LE CÔTÉ D'UN ÉCART SE JUGE SUR LE SOL, PAS SEULEMENT SUR L'AXE.** Le pas de
+  côté de la v259 partait du côté où l'on est par rapport à l'AXE de la voiture.
+  Une voiture qui tourne a un axe en biais : pour un passant au coin, ce côté
+  menait à la rue perpendiculaire, et deux secondes d'écart (6,4 blocs)
+  suffisaient à la traverser. `coteDEcart` (pietons.js, pur) : depuis le
+  trottoir, devant une voiture SUR la chaussée, le côté naturel s'il reste en
+  haut, sinon tourné de 45°, sinon l'autre côté s'il a le temps d'y sortir du
+  couloir, sinon on RESTE au bord. Le demi-tour contre un mur ne se fait plus
+  vers la chaussée (`retournementPermis`), et chaque pas se juge
+  (`pasDEcartPermis`) : la voiture tourne, son couloir suit le passant.
+- **CE QUI REND LA RÈGLE SÛRE, C'EST OÙ ROULE LA VOITURE.** Une voiture sur la
+  chaussée n'est sur la route d'un passant du trottoir que par la projection
+  droite de son couloir, ou parce qu'elle frôle la bordure — et elle freine
+  devant un piéton (v395). Une voiture sur le trottoir (l'enfant au volant) l'y
+  rejoint vraiment : là, rien ne change. Le couloir publie donc la position de
+  la voiture (`rx`, `rz`) et sa demi-largeur (`demi`).
+- **UNE SONDE DE GÉOMÉTRIE SE FAIT SOUS NODE, ET LE TÉMOIN SE LIT DANS LE
+  TÉMOIN.** `sonde-ecart-trottoir.cjs` rejoue l'écart sur les vrais trottoirs
+  de quatre villes, voitures synthétiques droites et en virage : 92 descentes
+  sur 125 avant, 0 après, en quatre secondes. Ma première règle (« l'autre
+  côté seulement ») ne changeait RIEN : le vrai cas est un coin, où l'autre
+  côté croise l'axe de la voiture. Et la sonde de page lit la fonction du
+  témoin dans `monte.js` au lieu de la recopier (v400).
+
 ## On traverse aux passages peints (v402) — la peinture se lit sur la ligne, et l'approche est en temps réel
 
 Trois règles.
@@ -2426,6 +2480,27 @@ Les deux rouges réseau récurrents du palier C. Trois règles.
   une voix restée au quart (`GAIN_APPEL`) et le régime qui varie ; vérifié
   rouge sur une copie où la voix reste au quart.
 
+## L'invité de New York (v412) — deux pages du banc se partagent un processeur, deux tablettes jamais
+
+Une règle. Un témoin à deux tablettes dont l'une rend une scène lourde
+(Manhattan, 0,4 image par seconde en logiciel) ouvre la page de l'AUTRE
+d'abord : ouverte pendant ce rendu, elle met 44 s à plus de 90 s à démarrer,
+sans erreur (13–18 s sinon). Le « TimeoutError de la ligne 674 », déclaré
+intermittence pendant trente versions, rendait 2 sur 2 rejoué seul : une
+« intermittence sous la charge » se REJOUE SEULE avant d'être crue, et si
+elle tombe à chaque fois, c'est une cause, pas un tirage.
+
+## Le passager sans courtier (v410) — on se reconnaît à TOUTES ses identités
+
+Une règle. Une tablette a deux identités possibles : `peer.id` (le courtier)
+et `bus.monId` (le nuage), et elles DIFFÈRENT pour un invité. Les autres la
+nomment par la clé de leur lien — celle du bus quand la partie passe par le
+nuage. Tout test « est-ce moi ? » passe par `net.estMoi(id)`, jamais par
+`peer.id` seul : le conducteur sans courtier ne reconnaissait pas son propre
+nom dans la position du passager (`p.de`) et le voyait debout, 2/2 mesuré
+(`sonde-passager-nuage.cjs`) ; corrigé, 3/3 assis en moins de 50 ms. La même
+lecture sert la portière (`portiere.de`) et `rpos`.
+
 ## Le GPS d'un invité traverse l'hôte (v406) — un champ de position a un témoin par chemin
 
 Une règle. La v388 a écrit « un champ de position se lit sur les deux chemins
@@ -2644,6 +2719,31 @@ celle d'un AXE DU MONDE contre un mur. Cinq règles.
   déclaré. Le joueur, lui, publie `player.roueLibre` ({ depuis, s }) et
   `player.contact` ({ famille, nx, nz }) ; `?diag=1` au volant les affiche
   avec le monde maillé devant la voiture (`mondeDevant`, `ligneDiagConduite`).
+
+## Le frein à main (v409) — conduite, palier C
+
+Le dérapage contrôlé à la GTA. Quatre règles.
+
+- **UN GESTE DE PLUS SE CHERCHE DANS CE QUE LE JOYSTICK LAISSE LIBRE.** Le
+  quart bas-gauche est TOUT entier au joystick (v272) ; en voiture, la place du
+  saut (colonne de droite, au-dessus de « Descendre ») est vide. Le bouton 🛑
+  s'y pose et TIENT la barre d'espace (`bindHoldButton`, comme ⤒ à pied) : une
+  seule commande, deux gestes, et `player.js` n'a qu'une source à lire.
+- **UNE TOUCHE QU'ON REPREND SE CHERCHE DANS CE QU'ELLE FAISAIT DÉJÀ.** Au
+  volant, Espace faisait sauter la voiture d'un tiers de bloc (le saut de la
+  marche, resté branché ; mesuré sur la v408, 0,29). Le saut est coupé au
+  volant, et le témoin du joueur le garde.
+- **UNE BORNE QU'ON ÉLARGIT SE REND PEU À PEU.** Au frein à main la dérive va
+  jusqu'à `DERIVE_MAX_MAIN` (≈ 55°) ; au lâcher, la borne n'est pas
+  `DERIVE_MAX` d'un coup — l'excès passerait au cap en UNE image, la caisse
+  sauterait de 35° — mais `max(DERIVE_MAX, |dérive| − REPRISE·dt)`. Sans frein
+  à main, cette borne vaut exactement l'ancienne.
+- **UN AJOUT À LA DYNAMIQUE SE PROUVE AUSSI PAR CE QU'IL NE CHANGE PAS.**
+  240 000 pas de `pasVoiture` tirés au hasard (classes, gaz, volant, pente,
+  moteur, panne, plafond de suivi), sans frein à main, rendent la v408 à
+  l'identique (sonde dans le brouillon, deux arbres). Le moteur ne pousse pas
+  pendant le frein à main : un drift « gaz + frein » demanderait un second
+  doigt sur l'accélérateur, que le joystick n'a pas — décidé, déclaré.
 
 ## La pente, la bosse et la file (v408) — conduite, palier 3
 
@@ -7195,10 +7295,9 @@ les autres restent passagers ». Quatre règles.
   l'enfant au siège de la voiture de l'ami (`sieges` de la fiche, le premier
   libre d'après les positions réseau des autres passagers), rend ses
   commandes inertes, et un appui descend — exactement le métro. Le
-  conducteur reconnaît ses passagers à `p.de === net.peer.id` ; sans
-  courtier (partie par le nuage seul) il n'a pas d'identifiant de pair, et
-  les passagers sont vus assis chez les autres mais debout chez lui — dette
-  déclarée dans `TASKS.md`.
+  conducteur reconnaît ses passagers à `net.estMoi(p.de)` — l'identité de
+  pair OU celle du bus du nuage (v410 : sans courtier il n'y a pas de pair, et
+  le passager était vu debout chez le conducteur).
 - **UNE TÊTE N'EST PAS UN TOIT, ET LE CACHE DU PLAFOND EST PAR SIÈGE.**
   `plafondAuSiege` mesure le pavillon parmi les maillages du véhicule ; il
   n'excluait que `avatarLocal`. Assis dans la voiture d'un ami, c'est SA
