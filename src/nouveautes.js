@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 405,
+    titre: 'Des ponts sur les canaux',
+    puces: [
+      'Plus de voiture qui roule sur l’eau',
+      'Les ponts s’allongent au-dessus des rivières',
+      'Rien de ce que tu as bâti ne bouge',
+    ],
+  },
+  {
     v: 404,
     titre: 'Les voitures contournent la place',
     puces: [

@@ -770,6 +770,38 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les tabliers s'allongent sous la voie (v405) — un ouvrage qu'on ne peut pas retirer s'agrandit, et la preuve lit les deux versions
+
+La dette de la v404 : 159 pas de voie sur l'eau hors de tout tablier. Quatre
+règles.
+
+- **LE REJET ET LA PUBLICATION SONT DEUX MESURES.** `traverseesDe` décide
+  QUELS anneaux une ville reçoit sur l'AXE, au bloc, exactement comme avant :
+  c'est ce qui garde la sélection identique (circuits, couverture, voiture en
+  vue au bit près, sonde sur les 262 villes). Le tablier PUBLIÉ, lui, est
+  l'union des suites mouillées de l'axe et de la VOIE que l'anneau roule (côté
+  centre ; l'autre voie est au contresens, qui mesure la sienne), au
+  demi-bloc. Les bordures et la voie d'en face ajoutaient des milliers de
+  colonnes le long des rivages où rien ne roule : mesuré, retiré.
+- **UNE TOLÉRANCE SE JUGE SUR LA COLONNE, ENCORE (v404).** La publication lit
+  l'eau sur la colonne que le monde écrit (son coin, `Math.floor`), pas sur le
+  point de la ligne : sur une trame tournée le coin est jusqu'à un bloc et demi
+  du point, et le chenal de Stockholm passait entre les deux.
+- **UN TABLIER NE SE RETIRE PAS, ET SA MATIÈRE NON PLUS.** Les allongements
+  portent `ext` et viennent APRÈS les tabliers d'avant dans la liste
+  (`pontDeVille` rend le premier qui couvre) : rangés autrement, 733 colonnes
+  de parapet passaient en chaussée — un ordre de liste est une règle.
+  L'allongement ne porte que sur l'eau, sur toute sa longueur : `coteRoulable`
+  lit le tablier sans regarder l'eau. Un anneau que les quarante points voient
+  au sec publie aussi le tablier du ruisseau qu'il coupe (la Kamo de Kyoto).
+- **LA PREUVE LIT LES DEUX VERSIONS DANS LE MÊME CODE.**
+  `pontVillesMonde(x, z, false)` rend les tabliers d'avant seuls : le témoin
+  compte les colonnes d'eau perdues ou changées (zéro) et gagnées (1 485, toutes
+  sur l'eau). Les témoins qui marchent l'AXE d'un pont ne lisent que les ponts :
+  un allongement longe la rive, et sa preuve est la voie. L'empreinte des 490
+  morceaux se relève (Rome) et se prouve désarmée (`ext` retirés → la
+  constante d'`origin/main`).
+
 ## Les anneaux contournent (v404) — un anneau est le bord d'un ensemble d'îlots
 
 La dette de la v387 : 147 anneaux de villes engendrées sur 809 sortaient de la
