@@ -770,6 +770,33 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## La flotte partage ses images (v409) — un plantage sans erreur se lit dans ce qui MONTE
+
+Max : « le jeu plante de temps en temps ». Onze plantages de l'iPhone en
+quarante minutes, en palier bas, HD éteinte, zéro erreur, cadence normale.
+Trois règles.
+
+- **UN PLANTAGE SANS ERREUR NI GEL SE CHERCHE DANS LA GRANDEUR QUI MONTE
+  PENDANT LA PARTIE.** Safari ne donne pas le tas (`tasMo` nul), mais le journal
+  de bord compte les géométries et les textures : la seconde grimpait d'un bout
+  à l'autre de chaque partie (409 → 702). La requête qui l'a montré :
+  `jsonb_array_elements(doc->'releves')` par session, un relevé sur quatre.
+- **UN CHARGEUR NE CONNAÎT QU'UN FICHIER : CE QUI SE RÉPÈTE ENTRE FICHIERS SE
+  RECONNAÎT À SES OCTETS.** Cinquante modèles, 225 images, CINQ distinctes ;
+  chaque modèle décodait sa copie (734 Mo pour la flotte entière). Le greffon
+  `partageDesTextures` (vehicules.js) hache le `bufferView` de l'image et rend
+  la texture déjà décodée. Avant de partager, on vérifie dans les fichiers
+  qu'une image n'y joue qu'un rôle : `assignTexture` lui pose son espace de
+  couleur, et une image teinte ici et normale là se contredirait.
+- **UNE RESSOURCE PARTAGÉE SE MARQUE AU MOMENT OÙ ELLE DEVIENT PARTAGÉE.**
+  `repeindre` clone la laque et la marque non partagée ; `liberer` jetait donc
+  la `map` du clone, c'est-à-dire la texture du prototype, à chaque voiture
+  repeinte qui quittait la rue. Les textures du cache portent `partagee`.
+
+Ce qui reste, déclaré dans `TASKS.md` : une relance de mise à jour semble
+compter comme un plantage dans le journal (une session v408 à zéro relevé cinq
+secondes après la fermeture de la v406), et nourrirait le disjoncteur de sûreté.
+
 ## Les anneaux contournent (v404) — un anneau est le bord d'un ensemble d'îlots
 
 La dette de la v387 : 147 anneaux de villes engendrées sur 809 sortaient de la
