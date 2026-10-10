@@ -1,11 +1,12 @@
 # Ce qui est en cours
 
-- [ ] **UN ÉCART QUI FAIT TRAVERSER LA RUE (v402).** Le témoin du feu de
-  `monte.js` l'a publié : un passant sur le trottoir, poussé par l'écart devant
-  une voiture qui tourne, ressort sur le trottoir d'EN FACE (`traversee` nul,
-  `ecart` vrai, 6,5 blocs), au vert. Vu deux fois sur quatre passages de
-  `monte.js` des deux côtés. Piste : un écart ne quitte pas le trottoir s'il
-  peut l'éviter (choisir le côté qui reste sur `TROTTOIR`). Zone piétons.
+- [x] **UN ÉCART QUI FAIT TRAVERSER LA RUE (v402) — corrigé en v405.**
+  `coteDEcart` (pietons.js) : depuis le trottoir, devant une voiture sur la
+  chaussée, l'écart ne descend plus. Sonde node 92/125 → 0/125 ; témoin de
+  `monte.js` 4/5 → 0/5 (deux fois de chaque côté). Reste déclaré : une voiture
+  qui FRÔLE la bordure peut encore toucher, sans freinage, un passant resté au
+  bord (19 contacts sur 125 à la sonde, 82 avant) — c'est le freinage de la
+  voiture (v395) qui le protège, pas son pas de côté.
 - [ ] **LONDRES, ROME, ZURICH : AUCUN PASSAGE PEINT (v402).** Sur 267 villes
   engendrées, seules les 65 à trame alignée (`t.net`) peignent un passage ;
   Londres n'en peint aucun. Les passants n'y traversent qu'aux feux (Londres 1 à

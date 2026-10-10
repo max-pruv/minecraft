@@ -1977,6 +1977,34 @@ engendrées. Quatre règles.
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
 
+## Un pas de côté ne traverse pas la rue (v405) — une projection droite n'est pas une trajectoire
+
+Trois règles.
+
+- **LE CÔTÉ D'UN ÉCART SE JUGE SUR LE SOL, PAS SEULEMENT SUR L'AXE.** Le pas de
+  côté de la v259 partait du côté où l'on est par rapport à l'AXE de la voiture.
+  Une voiture qui tourne a un axe en biais : pour un passant au coin, ce côté
+  menait à la rue perpendiculaire, et deux secondes d'écart (6,4 blocs)
+  suffisaient à la traverser. `coteDEcart` (pietons.js, pur) : depuis le
+  trottoir, devant une voiture SUR la chaussée, le côté naturel s'il reste en
+  haut, sinon tourné de 45°, sinon l'autre côté s'il a le temps d'y sortir du
+  couloir, sinon on RESTE au bord. Le demi-tour contre un mur ne se fait plus
+  vers la chaussée (`retournementPermis`), et chaque pas se juge
+  (`pasDEcartPermis`) : la voiture tourne, son couloir suit le passant.
+- **CE QUI REND LA RÈGLE SÛRE, C'EST OÙ ROULE LA VOITURE.** Une voiture sur la
+  chaussée n'est sur la route d'un passant du trottoir que par la projection
+  droite de son couloir, ou parce qu'elle frôle la bordure — et elle freine
+  devant un piéton (v395). Une voiture sur le trottoir (l'enfant au volant) l'y
+  rejoint vraiment : là, rien ne change. Le couloir publie donc la position de
+  la voiture (`rx`, `rz`) et sa demi-largeur (`demi`).
+- **UNE SONDE DE GÉOMÉTRIE SE FAIT SOUS NODE, ET LE TÉMOIN SE LIT DANS LE
+  TÉMOIN.** `sonde-ecart-trottoir.cjs` rejoue l'écart sur les vrais trottoirs
+  de quatre villes, voitures synthétiques droites et en virage : 92 descentes
+  sur 125 avant, 0 après, en quatre secondes. Ma première règle (« l'autre
+  côté seulement ») ne changeait RIEN : le vrai cas est un coin, où l'autre
+  côté croise l'axe de la voiture. Et la sonde de page lit la fonction du
+  témoin dans `monte.js` au lieu de la recopier (v400).
+
 ## On traverse aux passages peints (v402) — la peinture se lit sur la ligne, et l'approche est en temps réel
 
 Trois règles.

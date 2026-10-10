@@ -10,7 +10,7 @@ import * as THREE from 'three';
 import { construireHumain } from './personnages.js';
 import { animerHumain } from './humains.js';
 import { BLOCK, isSolid as blockIsSolid, isSlab } from './blocks.js';
-import { ALLURE_ECART, PAS_ECART_MAX, DT_REEL_MAX, SURSAUT_S, DUREE_SURSAUT, VEILLE_SURSAUT_S, MARGE_SURSAUT, REPOS_ECART_S, ARRET_CHOC_S, regardChoc } from './pietons.js';
+import { ALLURE_ECART, PAS_ECART_MAX, DT_REEL_MAX, SURSAUT_S, DUREE_SURSAUT, VEILLE_SURSAUT_S, MARGE_SURSAUT, REPOS_ECART_S, ARRET_CHOC_S, regardChoc, coteDEcart, pasDEcartPermis, retournementPermis } from './pietons.js';
 
 const GRAVITY = 24;
 const WIDTH = 0.5;
@@ -193,7 +193,11 @@ export class BaseNPC {
       if (!this.ecart) {
         const v = this.world.vehiculeApproche(this.pos.x, this.pos.z, this.pos.y);
         if (v) {
-          this.ecart = { ux: v.ux, uz: v.uz, cote: v.cote, t: 0, lat0: v.lat, retourne: false }; this.repos = 0; this.ecarts = (this.ecarts || 0) + 1;
+          // DEPUIS LE TROTTOIR, ON NE DESCEND PAS SUR LA CHAUSSÉE (v405,
+          // `coteDEcart`) : le côté naturel, tourné de 45°, l'autre côté s'il
+          // en a le temps, ou l'on reste en haut.
+          const ch = coteDEcart(v, this.world.solPieton, this.pos.x, this.pos.z, this.walkSpeed * ALLURE_ECART);
+          this.ecart = { ux: v.ux, uz: v.uz, cote: v.cote, ex: ch.ex, ez: ch.ez, garde: ch.garde, t: 0, lat0: v.lat, retourne: ch.garde }; this.repos = 0; this.ecarts = (this.ecarts || 0) + 1;
           // LE SURSAUT (v376) : une voiture à moins d'une demi-seconde — les
           // bras se lèvent d'un coup pendant le pas de côté. Un geste, rien de
           // plus : c'est l'écart qui protège.
@@ -207,15 +211,24 @@ export class BaseNPC {
       }
       if (this.ecart) {
         const e = this.ecart; e.t += dtReel;
-        const ex = e.uz * e.cote, ez = -e.ux * e.cote;   // perpendiculaire, vers l'extérieur
-        yaw = Math.atan2(-ex, -ez); this.yaw = yaw;
-        const pas = Math.min(PAS_ECART_MAX, this.walkSpeed * ALLURE_ECART * dtReel);
-        speed = dt > 0 ? pas / dt : 0;
-        vAnim = this.walkSpeed * ALLURE_ECART;
+        const sol = this.world.solPieton;
         const encore = this.world.vehiculeApproche(this.pos.x, this.pos.z, this.pos.y, 1.8);
         // un mur de ce côté (pas un quart de bloc gagné en six dixièmes de
-        // seconde) : on essaie l'autre côté, une fois
-        if (encore && !e.retourne && e.t > 0.6 && Math.abs(encore.lat - e.lat0) < 0.25) { e.cote = -e.cote; e.retourne = true; e.t = 0; e.lat0 = encore.lat; }
+        // seconde) : on essaie l'autre côté, une fois — jamais, depuis le
+        // trottoir, si l'autre côté est la chaussée (v405)
+        if (encore && !e.retourne && e.t > 0.6 && Math.abs(encore.lat - e.lat0) < 0.25 && retournementPermis(sol, this.pos.x, this.pos.z, e, encore.lat, encore.demi, this.walkSpeed * ALLURE_ECART)) {
+          e.cote = -e.cote; e.ex = -e.ex; e.ez = -e.ez; e.retourne = true; e.t = 0; e.lat0 = encore.lat;
+        }
+        // la direction du pas : celle que `coteDEcart` a choisie — nulle quand
+        // on reste sur le trottoir —, perpendiculaire vers l'extérieur sinon
+        const ex = e.ex ?? e.uz * e.cote, ez = e.ez ?? -e.ux * e.cote;
+        const pas = Math.min(PAS_ECART_MAX, this.walkSpeed * ALLURE_ECART * dtReel);
+        if (ex || ez) { yaw = Math.atan2(-ex, -ez); this.yaw = yaw; }
+        // et chaque pas se juge : depuis le trottoir, devant une voiture sur la
+        // chaussée, on s'arrête au bord au lieu de descendre (v405)
+        const permis = (ex || ez) && pasDEcartPermis(sol, this.pos.x, this.pos.z, this.pos.x + ex * pas, this.pos.z + ez * pas, encore);
+        speed = permis && dt > 0 ? pas / dt : 0;
+        vAnim = permis ? this.walkSpeed * ALLURE_ECART : null;
         if (!encore || e.t > 2) { this.ecart = null; this.repos = REPOS_ECART_S; speed = 0; }
       // la pause d'après l'écart se compte en temps RÉEL (v376) : 0,8 seconde
       // de jeu valait trois secondes de montre à cinq images par seconde

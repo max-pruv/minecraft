@@ -20,6 +20,34 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v405 — Un pas de côté ne fait plus traverser la rue
+
+**Pourquoi.** Le témoin du feu de la v402 l'a publié deux fois sur quatre, des
+deux côtés : un passant du trottoir, au coin d'un carrefour, faisait un pas de
+côté devant une voiture qui tournait… et ressortait sur le trottoir d'en face,
+au vert. Le pas de côté partait du côté où le passant était par rapport à
+l'AXE de la voiture ; quand la voiture tourne, cet axe est en biais, et ce
+côté-là, c'est la rue d'à côté. L'écart durait jusqu'à deux secondes, assez
+pour la traverser.
+
+**Ce que ça change.** Un passant sur le trottoir qui s'écarte d'une voiture
+roulant sur la chaussée ne descend plus dans la rue : il s'écarte vers le
+trottoir, en biais si le côté naturel mène à la rue, ou de l'autre côté s'il a
+le temps de passer, ou il reste sur place au bord, et la voiture, qui freine
+devant un piéton, passe. Rien ne change sur la chaussée, ni devant une voiture
+qui roule sur le trottoir (l'enfant au volant) : là, on s'écarte comme avant.
+
+**Ce qui le prouve.** Une sonde sous node (`sonde-ecart-trottoir.cjs`) PROVOQUE
+la situation aux coins des feux de Rome, Zurich, Paris et Londres, avec des
+voitures droites et en virage, sans freinage : 92 écarts sur 125 descendaient
+sur la chaussée avec l'ancienne règle, zéro avec la neuve, et les contacts sans
+freinage tombent de 82 à 19 (ceux d'une voiture qui frôle la bordure). Un témoin
+de `monte.js` (rejoué seul par `sonde-ecart-trottoir-page.cjs`) pose cinq
+passants au coin d'un feu de Rome et leur envoie une voiture en biais :
+`origin/main` 4 sur 5 descendus, deux fois ; la branche 0 sur 5, deux fois.
+
+---
+
 ## v404 — Les voitures font le tour de la place
 
 **Pourquoi.** Dans les villes engendrées, beaucoup d'anneaux de voitures
