@@ -122,6 +122,7 @@ const ASSETS = [
   './src/villes200.js',
   './src/usine.js',
   './src/pietons.js',
+  './src/passages.js',
   './src/passants.js',
   './src/poissons.js',
   './src/trains.js',

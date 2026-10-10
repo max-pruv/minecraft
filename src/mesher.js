@@ -22,7 +22,7 @@ const NEUTRE = [0, 0, 1, 1];
 import { CHUNK, HEIGHT, REPERES_HD } from './world.js';
 import { TEINTE_HERBE_LIN as TEINTE_HERBE, TEINTE_FEUILLES_LIN as TEINTE_FEUILLES } from './terre.js';
 import { emettreMonument, cellulesDuMorceau } from './paris-monuments-hd.js';
-import { grilleSol, emettreSolContinu, emettreRubans } from './solcontinu.js';
+import { grilleSol, emettreSolContinu, emettreRubans, emettreBandesPassages } from './solcontinu.js';
 
 // Faces: corner positions (CCW from outside), normal, tile slot (0 top / 1 side / 2 bottom), shade.
 //
@@ -603,6 +603,10 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
   // s'émettent même sans sol continu (`?solcontinu=0`), sinon les rails
   // disparaîtraient avec la surface (v302).
   const rubans = emettreRubans(solid, world, cx, cz, CHUNK);
+  // les passages piétons des trames en biais (v412) : de la géométrie aussi
+  // (`passagesBiais: false` les retire : l'empreinte des morceaux de la v352
+  // garde ainsi la sortie d'avant, au bit près — un contenu neuf a ses témoins)
+  if (options.passagesBiais !== false) emettreBandesPassages(solid, world, cx, cz, CHUNK);
 
   return {
     solid: solid.toTampons(),

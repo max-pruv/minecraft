@@ -50,6 +50,8 @@
 // node. Il ne lit le monde que par `terrainHeight`, `getBlock` et `cityAt`.
 import { BLOCK, BLOCK_INFO, CITY_BLOCK, ARCHI, ROUTE_BLOCK, isProp } from './blocks.js';
 import { tileRect } from './tuiles.js';
+import { bandesDeColonne } from './passages.js';
+import { villeMondeEn } from './villesmonde.js';
 import { TEINTE_HERBE_LIN as TEINTE_HERBE } from './terre.js';
 
 // Les blocs qui font un sol naturel. `STONE` y est pour le volcan et les
@@ -415,4 +417,49 @@ export function emettreRubans(buf, world, cx, cz, chunk) {
     }
   }
   return rubans.length;
+}
+
+// LES PASSAGES PIÉTONS EN BIAIS (v412, `passages.js`). Une tuile ne se tourne
+// pas : là où la trame d'une ville engendrée est en biais, les bandes du
+// passage sont des polygones posés un centième au-dessus de la chaussée —
+// de la géométrie dans le tampon `solid`, avec la tuile blanche du marquage
+// des routes (v300) : aucun matériau, aucun programme, aucun appel de dessin
+// de plus, et le palier bas les voit comme le haut. Seulement une colonne
+// dont le sommet est de l'asphalte et dont le dessus est de l'air.
+export function emettreBandesPassages(buf, world, cx, cz, chunk) {
+  const baseX = cx * chunk, baseZ = cz * chunk;
+  // une question par morceau d'abord : aucun coin dans une ville en biais, rien
+  let ville = false;
+  for (const [dx, dz] of [[0, 0], [chunk, 0], [0, chunk], [chunk, chunk], [chunk / 2, chunk / 2]]) {
+    const f = villeMondeEn(baseX + dx, baseZ + dz);
+    if (f && f.trame && !f.trame.net && !f.trame.ruelles) { ville = true; break; }
+  }
+  if (!ville) return 0;
+  const rect = tileRect(BLOCK_INFO[BLOCK.SNOW].tiles[0]);
+  let n = 0;
+  for (let x = baseX; x < baseX + chunk; x++) for (let z = baseZ; z < baseZ + chunk; z++) {
+    const y = world.sommetColonne(x, z);
+    if (world.getBlock(x, y, z) !== CITY_BLOCK.ASPHALT || world.getBlock(x, y + 1, z) !== BLOCK.AIR) continue;
+    const bandes = bandesDeColonne(x, z);
+    for (const poly of bandes) {
+      const base = buf.positions.length / 3, yt = y + 1.01;
+      for (const [px, pz] of poly) {
+        buf.positions.push(px - baseX, yt, pz - baseZ);
+        buf.normals.push(0, 1, 0);
+        buf.uvs.push(px - x, pz - z);
+        buf.tiles.push(rect[0], rect[1], rect[2], rect[3]);
+        buf.colors.push(1, 1, 1);
+      }
+      // un éventail ; l'ordre des sommets suit le carré de la colonne (sens de
+      // `decouper`), on pose les deux faces de l'enroulement dans le bon sens
+      for (let k = 1; k + 1 < poly.length; k++) {
+        const [ax, az] = poly[0], [bx, bz] = poly[k], [qx, qz] = poly[k + 1];
+        const nY = (bz - az) * (qx - ax) - (bx - ax) * (qz - az);
+        if (nY >= 0) buf.indices.push(base, base + k, base + k + 1);
+        else buf.indices.push(base, base + k + 1, base + k);
+      }
+      n++;
+    }
+  }
+  return n;
 }
