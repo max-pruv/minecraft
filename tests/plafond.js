@@ -341,12 +341,18 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // Les blocs d'un journal fabriqué de quarante mille, relevés sur la v391
 // (`origin/main`, avant l'index par morceau) : `empreinteJournal` (v403).
 const EMPREINTE_JOURNAL_V391 = '540f2b435ba355c9ec885f139968c87a16438f92846b695b8336548c868657e4';
-// v412 : Londres, un des neuf lieux, porte l'entrée de la M40 (une collectrice
+// v414 : les tabliers des villes engendrées s'allongent sous la voie (Rome est
+// dans les neuf lieux) : 1f385723… → 863d4203…. La preuve : le même code, les
+// allongements retirés de la liste des tabliers (`ext`), rend 1f385723…, la
+// constante d'`origin/main` (v404), au bit près — rien d'autre n'a bougé.
+// v415 (la M40) : voir plus bas.
+const EMPREINTE_MORCEAUX_V414 = '863d4203a441e3fd029ce2404fc6d6e706799e7f64fe489a86f51121e6be0586';
+// v415 : Londres, un des neuf lieux, porte l'entrée de la M40 (une collectrice
 // de la porte nord à Pentonville Road) et perd la maison de la trame générique
 // qui la barrait — voulu. La M40 retirée du registre (donc son entrée et le
-// lot qu'elle écartait), la branche rend 1f385723…, la constante
-// d'`origin/main` (v392), au bit près.
-const EMPREINTE_MORCEAUX_V357 = '7e7f4e360448ba52cecf0011875ea65734f3a14726291f0675c5f395f83e24bb';
+// lot qu'elle écartait), la branche rend 863d4203…, la constante
+// d'`origin/main` (v414, `EMPREINTE_MORCEAUX_V414`), au bit près.
+const EMPREINTE_MORCEAUX_V357 = '7521b9b630f9c648e00fdfe9d2ee3456a7b4f6211cf2188b1cf75515f857ee47';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };

@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v412 — Londres rejoint Birmingham
+## v415 — Londres rejoint Birmingham
 
 **Pourquoi.** Londres–Birmingham était le corridor court sans rail du kit
 « en attente » depuis la v323 : une autre session élargissait les rues de
@@ -45,6 +45,92 @@ Birmingham arrive sur la rue. Les témoins de toutes les routes la lisent aussi
 emprise volée, joints des ponts fermés). L'empreinte des 490 morceaux change
 (Londres est un des neuf lieux) et se prouve : M40 retirée, la branche rend
 celle d'`origin/main` au bit près.
+## v414 — Des ponts sous toutes les voies
+
+**Pourquoi.** Dans quatorze villes engendrées, des voitures roulaient sur
+l'eau sans pont : 159 pas de voie sur un fleuve ou un canal, hors de tout
+tablier (Shanghai 46, Kyoto 24, Chicago 22, Bangkok 18, Istanbul 14,
+Stockholm 13…). Deux causes, mesurées : un tablier se mesurait sur l'AXE de la
+rue, et la voie, une demi-chaussée à côté, touche l'eau plus tôt là où la rive
+est en biais ; et un anneau que ses quarante points de contrôle voyaient au
+sec pouvait encore couper un ruisseau (la Kamo de Kyoto) — sans aucun pont.
+La v404 l'avait déclaré, avec la règle : on ne retire jamais un tablier (un
+enfant a pu bâtir dessus), on les allonge.
+
+**Ce que ça change.** Les ponts s'allongent au-dessus de l'eau là où passe la
+voie, et les petits canaux traversés ont enfin leur pont (trois sur la Kamo à
+Kyoto, vus en capture, le bus passe dessus). Aucune voiture ne roule plus sur
+l'eau. Aucune ville ne change de circuits, de voitures en vue ni de
+couverture ; aucun pont d'avant ne bouge ni ne change de pierre.
+
+**Ce qui le prouve.** Deux témoins neufs dans `carteMonde.js`, rouges sur
+`origin/main` : les pas de voie sur l'eau hors tablier (159 → 0) et « un
+tablier ne se retire pas » — par les fonctions pures, sur toutes les villes à
+pont, aucune colonne d'eau d'avant perdue ni changée de matière, 1 485 colonnes
+gagnées, toutes sur l'eau. Une sonde compare les deux arbres ville par ville :
+circuits, couverture et distance de la voiture au centre identiques au bit
+près. L'empreinte des 490 morceaux change (Rome en est) et se prouve : le même
+code, les allongements retirés, rend la constante d'`origin/main` au bit près.
+Le prix : déplier les anneaux de toutes les villes coûte 15 % de plus
+(1 070 → 1 250 ms au total, une ville à la fois à l'approche), la pire ville
+inchangée (Rome ≈ 90 ms) ; rien au démarrage.
+## v413 — Le jeu ne plante plus en roulant : la flotte partage ses images
+
+**Pourquoi.** Max : « le jeu plante de temps en temps ». Le journal de bord de
+l'iPhone (`journal_appareil`) a compté onze plantages en quarante minutes le
+10 octobre, des parties d'une à sept minutes. Le palier de sûreté était déjà
+au plus bas, la couche HD éteinte. Les journaux ne montrent ni erreur ni gel :
+la cadence reste entre 25 et 60 images par seconde, et la page meurt au milieu
+d'un relevé normal. Une seule grandeur montait d'un bout à l'autre de chaque
+partie, le nombre de textures (409 → 702 en cinq minutes). La cause est dans
+les fichiers : les cinquante modèles de voitures portent 225 images, dont
+seulement CINQ distinctes, octet pour octet. Le chargeur décodait la copie de
+chaque modèle et l'envoyait à la carte graphique, soit environ 15 Mo par
+modèle et 734 Mo pour la flotte entière, que la rue découvre à mesure que
+l'enfant roule. iOS ne prévient pas : il ferme la page. Deuxième fuite, plus
+petite : une voiture repeinte qui quittait la rue rendait au pilote la texture
+de son prototype, qu'il fallait alors renvoyer à la carte graphique pour la
+voiture suivante.
+
+**Ce que ça change.** Le chargeur reconnaît une image à son empreinte et rend
+la texture déjà décodée : toute la flotte tient dans cinq images, quelques
+mégaoctets au lieu de plusieurs centaines. Les textures partagées sont
+marquées, et une voiture qui s'en va ne les jette plus. Les voitures ne
+changent pas d'un pixel : chaque image garde son rôle (teinte ou relief) dans
+les cinquante fichiers, vérifié.
+
+**Ce qui le prouve.** Un témoin neuf dans `realisme.js` charge huit modèles
+texturés et compte les images décodées qu'ils tiennent : 36 sur l'ancien code,
+5 ici. Il repeint ensuite une voiture et la libère : aucune texture du
+prototype n'est rendue au pilote, contre dix sur l'ancien code. La preuve
+sur le téléphone viendra du journal de bord : des parties longues sans
+plantage, et un compte de textures qui ne grimpe plus.
+
+---
+
+## v412 — New York à deux, vérifié jusqu'au bout
+
+**Pourquoi.** `manhattan.js` s'arrêtait souvent à la ligne 674 sur un
+`TimeoutError` : l'ami qui rejoint un monde ouvert dans New York ne
+« démarrait » jamais. Cinq témoins venaient après (le bloc partagé, le code
+Terre dans le nuage, l'archive reprise, deux clients sans erreur, le jeu hors
+ligne) et ne tournaient donc presque jamais. Déclaré « intermittence sous la
+charge » depuis la v381. Rejouée seule, la suite s'arrêtait là deux fois sur
+deux, sur la branche comme sur `origin/main`.
+
+**Ce que ça change.** Rien dans le jeu : la cause était le banc. La page de
+l'invité s'ouvrait pendant que l'hôte rendait Manhattan, qui tourne à 0,4
+image par seconde en rendu logiciel et occupe les quatre cœurs de la machine.
+Sur deux vraies tablettes, chacune a son processeur. Le témoin ouvre
+désormais la page de l'ami d'abord, puis l'hôte entre dans New York et l'ami
+le rejoint avec le geste de l'enfant (code, Rejoindre, Jouer).
+
+**Ce qui le prouve.** Sonde (`sonde-invite-ny.cjs`) : hôte dans Manhattan,
+le jeu de l'invité apparaît en 44 s puis au-delà de 90 s, sans une erreur ;
+hôte hors Manhattan, en 13 et 18 s. Page ouverte d'abord
+(`sonde-invite-avant.cjs`) : 3 sur 3, bloc propagé en 0,2 à 6 s. Rejouée
+seule, `manhattan.js` va jusqu'au bout et les cinq témoins d'après sont
+verts ; reste le rouge déclaré du trou de façade (17 102 → 54 969).
 
 ---
 

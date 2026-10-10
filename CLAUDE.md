@@ -770,6 +770,64 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les tabliers s'allongent sous la voie (v414) — un ouvrage qu'on ne peut pas retirer s'agrandit, et la preuve lit les deux versions
+
+La dette de la v404 : 159 pas de voie sur l'eau hors de tout tablier. Quatre
+règles.
+
+- **LE REJET ET LA PUBLICATION SONT DEUX MESURES.** `traverseesDe` décide
+  QUELS anneaux une ville reçoit sur l'AXE, au bloc, exactement comme avant :
+  c'est ce qui garde la sélection identique (circuits, couverture, voiture en
+  vue au bit près, sonde sur les 262 villes). Le tablier PUBLIÉ, lui, est
+  l'union des suites mouillées de l'axe et de la VOIE que l'anneau roule (côté
+  centre ; l'autre voie est au contresens, qui mesure la sienne), au
+  demi-bloc. Les bordures et la voie d'en face ajoutaient des milliers de
+  colonnes le long des rivages où rien ne roule : mesuré, retiré.
+- **UNE TOLÉRANCE SE JUGE SUR LA COLONNE, ENCORE (v404).** La publication lit
+  l'eau sur la colonne que le monde écrit (son coin, `Math.floor`), pas sur le
+  point de la ligne : sur une trame tournée le coin est jusqu'à un bloc et demi
+  du point, et le chenal de Stockholm passait entre les deux.
+- **UN TABLIER NE SE RETIRE PAS, ET SA MATIÈRE NON PLUS.** Les allongements
+  portent `ext` et viennent APRÈS les tabliers d'avant dans la liste
+  (`pontDeVille` rend le premier qui couvre) : rangés autrement, 733 colonnes
+  de parapet passaient en chaussée — un ordre de liste est une règle.
+  L'allongement ne porte que sur l'eau, sur toute sa longueur : `coteRoulable`
+  lit le tablier sans regarder l'eau. Un anneau que les quarante points voient
+  au sec publie aussi le tablier du ruisseau qu'il coupe (la Kamo de Kyoto).
+- **LA PREUVE LIT LES DEUX VERSIONS DANS LE MÊME CODE.**
+  `pontVillesMonde(x, z, false)` rend les tabliers d'avant seuls : le témoin
+  compte les colonnes d'eau perdues ou changées (zéro) et gagnées (1 485, toutes
+  sur l'eau). Les témoins qui marchent l'AXE d'un pont ne lisent que les ponts :
+  un allongement longe la rive, et sa preuve est la voie. L'empreinte des 490
+  morceaux se relève (Rome) et se prouve désarmée (`ext` retirés → la
+  constante d'`origin/main`).
+## La flotte partage ses images (v413) — un plantage sans erreur se lit dans ce qui MONTE
+
+Max : « le jeu plante de temps en temps ». Onze plantages de l'iPhone en
+quarante minutes, en palier bas, HD éteinte, zéro erreur, cadence normale.
+Trois règles.
+
+- **UN PLANTAGE SANS ERREUR NI GEL SE CHERCHE DANS LA GRANDEUR QUI MONTE
+  PENDANT LA PARTIE.** Safari ne donne pas le tas (`tasMo` nul), mais le journal
+  de bord compte les géométries et les textures : la seconde grimpait d'un bout
+  à l'autre de chaque partie (409 → 702). La requête qui l'a montré :
+  `jsonb_array_elements(doc->'releves')` par session, un relevé sur quatre.
+- **UN CHARGEUR NE CONNAÎT QU'UN FICHIER : CE QUI SE RÉPÈTE ENTRE FICHIERS SE
+  RECONNAÎT À SES OCTETS.** Cinquante modèles, 225 images, CINQ distinctes ;
+  chaque modèle décodait sa copie (734 Mo pour la flotte entière). Le greffon
+  `partageDesTextures` (vehicules.js) hache le `bufferView` de l'image et rend
+  la texture déjà décodée. Avant de partager, on vérifie dans les fichiers
+  qu'une image n'y joue qu'un rôle : `assignTexture` lui pose son espace de
+  couleur, et une image teinte ici et normale là se contredirait.
+- **UNE RESSOURCE PARTAGÉE SE MARQUE AU MOMENT OÙ ELLE DEVIENT PARTAGÉE.**
+  `repeindre` clone la laque et la marque non partagée ; `liberer` jetait donc
+  la `map` du clone, c'est-à-dire la texture du prototype, à chaque voiture
+  repeinte qui quittait la rue. Les textures du cache portent `partagee`.
+
+Ce qui reste, déclaré dans `TASKS.md` : une relance de mise à jour semble
+compter comme un plantage dans le journal (une session v408 à zéro relevé cinq
+secondes après la fermeture de la v406), et nourrirait le disjoncteur de sûreté.
+
 ## Les anneaux contournent (v404) — un anneau est le bord d'un ensemble d'îlots
 
 La dette de la v387 : 147 anneaux de villes engendrées sur 809 sortaient de la
@@ -2422,6 +2480,16 @@ Les deux rouges réseau récurrents du palier C. Trois règles.
   une voix restée au quart (`GAIN_APPEL`) et le régime qui varie ; vérifié
   rouge sur une copie où la voix reste au quart.
 
+## L'invité de New York (v412) — deux pages du banc se partagent un processeur, deux tablettes jamais
+
+Une règle. Un témoin à deux tablettes dont l'une rend une scène lourde
+(Manhattan, 0,4 image par seconde en logiciel) ouvre la page de l'AUTRE
+d'abord : ouverte pendant ce rendu, elle met 44 s à plus de 90 s à démarrer,
+sans erreur (13–18 s sinon). Le « TimeoutError de la ligne 674 », déclaré
+intermittence pendant trente versions, rendait 2 sur 2 rejoué seul : une
+« intermittence sous la charge » se REJOUE SEULE avant d'être crue, et si
+elle tombe à chaque fois, c'est une cause, pas un tirage.
+
 ## Le passager sans courtier (v410) — on se reconnaît à TOUTES ses identités
 
 Une règle. Une tablette a deux identités possibles : `peer.id` (le courtier)
@@ -3128,7 +3196,7 @@ Une règle.
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
 
-## La M40 (v412) — une ville bâtie à la main s'entre par une rue déclarée, et une vieille boucle se cherche
+## La M40 (v415) — une ville bâtie à la main s'entre par une rue déclarée, et une vieille boucle se cherche
 
 Londres–Birmingham, le corridor « en attente » depuis la v323. Trois règles.
 
