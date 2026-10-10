@@ -37,9 +37,10 @@
   `maj.js` « le loader dit combien de fichiers » (intermittent, table plus
   bas), `manhattan.js` trou (9 203 → 51 734), « le taxi roule » (bouton
   jamais visible) et l'invité de la ligne 674 qui ne rejoint pas.
-- [ ] **LE GPS PARTAGÉ PAR UN HÔTE QUI RELAIE (`rpos`) N'A PAS DE TÉMOIN À
-  TROIS TABLETTES** (v388 l'éprouve entre l'hôte et un invité). Le champ `g`
-  est lu sur `rpos`, la règle est écrite ; le témoin reste à faire.
+- [x] **LE GPS PARTAGÉ PAR UN HÔTE QUI RELAIE (`rpos`) A SON TÉMOIN À
+  TROIS TABLETTES (v405).** `reseau.js`, pendant la partie à trois : la
+  destination de Nina proposée à Alice à travers l'hôte. Sonde isolée 3/3
+  (0,5–2,6 s) ; `rpos` désarmé, 0/2 en 30 s.
 - [ ] **LE PORTAIL DE LA v391 (la tablette mesure sa vitesse au sol), DOUBLE
   MESURE FAITE.** Onze suites ; mes deux témoins verts (règle 36/192/2 ; ligne
   « roulage : 43 b/s · trou devant 16 blocs · débit 4 morceaux/s »). Rouges :
