@@ -1083,7 +1083,12 @@
   sa voisine « la rue roule à l'allure » qui a rougi au même passage). Au
   portail complet, `maj.js`, `carte.js`, `reglages.js` et `manhattan.js` ont
   rendu des rouges déjà déclarés (loader, préparation, glisser bridé, PeerJS,
-  trou de façade, taxi tactile).
+  trou de façade, taxi tactile). Portail complet de la reprise (10 octobre,
+  99 min, dix suites) : huit rouges, TOUS déjà déclarés — `monte.js` la
+  chauffe de New York (29/321) et le flanc frôlé (`c: null`, `lu: true`) ;
+  `maj.js` le loader et la préparation ; `carte.js` la flèche du GPS (1,92)
+  et le glisser bridé (486 ms) ; `manhattan.js` le trou de façade et le taxi
+  tactile.
 - [ ] **POUR MAX, SUR LA TABLETTE — la pente, la bosse et la file (v405).**
   Ouvrir `https://minecraft-fam.vercel.app/?diag=1`, prendre une voiture. La
   ligne « au volant : … » dit désormais la `pente` sous la caisse, le
