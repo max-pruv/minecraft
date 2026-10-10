@@ -1,5 +1,15 @@
 # Ce qui est en cours
 
+- [ ] **`maj.js`, LE PALIER — UNE INTERMITTENCE DE CADENCE (v405).** « le jeu se
+  mesure en jouant, et range son verdict » et « le palier se décide sur le
+  TRAVAIL d'une image » : rouges UNE fois sur deux passages seuls de la
+  branche (page à 350 ms par image, 30 images, `range: false`, verdict nul),
+  verts au second passage (41/41) et sur `origin/main` v404 (41/41). La v405
+  ne touche que `degats.js`, `degats3d.js` et `nouveautes.js`, que le palier
+  ne lit pas. Au portail de la v405, `maj.js` rendait à la place le fond de
+  carte (dette ci-dessous, v267) et le badge à `v404` (bump pas encore fait).
+  Piste : le témoin juge sur trente images ; il devrait attendre un nombre
+  d'images avant de conclure, borné, la durée dans le message.
 - [ ] **LA TOLÉRANCE DES VOITURES (v405) — ce qui reste, déclaré.** (1) Sur la
   tablette : Max essaie neuf murs pleins gaz (la voiture doit caler au 9e,
   fumer dès le 2e de face) et dit si le rythme lui va — les constantes sont
