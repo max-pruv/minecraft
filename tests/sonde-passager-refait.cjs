@@ -1,4 +1,4 @@
-// SONDE (v401) : la voiture de l'ami se refait PENDANT la marche du passager,
+// SONDE (v405) : la voiture de l'ami se refait PENDANT la marche du passager,
 // seules, sans le reste de reseau.js (vingt minutes) — pour mesurer le témoin
 // des deux côtés vite. Copie conforme du passage de reseau.js.
 const { Banc, nomsVus, dormir, jusqua } = require('./banc.js');

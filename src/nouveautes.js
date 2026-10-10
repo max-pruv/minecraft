@@ -6,11 +6,45 @@
 
 export const NOUVEAUTES = [
   {
-    v: 401,
+    v: 405,
     titre: 'Monter avec un ami, sans raté',
     puces: [
       'Tu montes même si sa voiture change',
       'Et tu en redescends pareil',
+    ],
+  },
+  {
+    v: 404,
+    titre: 'Les voitures contournent la place',
+    puces: [
+      'Plus de voiture dans la fontaine',
+      'Les voitures restent sur la route',
+      'Deux circuits dans les petits ports',
+    ],
+  },
+  {
+    v: 403,
+    titre: 'Le monde arrive plus vite',
+    puces: [
+      'Même avec des milliers de blocs posés',
+      'Tes maisons ne bougent pas',
+    ],
+  },
+  {
+    v: 402,
+    titre: 'On traverse aux passages',
+    puces: [
+      'Les passants traversent sur les bandes blanches',
+      'Même sans feu, quand la rue est libre',
+    ],
+  },
+  {
+    v: 401,
+    titre: 'Le monde entier en relief',
+    puces: [
+      'Tokyo, Dubaï, Nairobi, Sydney de près',
+      'Persiennes et fer sous les tropiques',
+      'Sable et baies profondes au désert',
     ],
   },
   {

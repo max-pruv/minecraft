@@ -549,14 +549,14 @@ export function creerEmbarquement(ctx) {
   // message court (`portiere`, nom neuf : l'ancienne tablette l'ignore, le
   // receveur cède ; l'hôte relaie). `veh` est la voiture DISTANTE telle que
   // cette tablette la dessine ({ mesh, def }), `fin` fait de l'enfant un
-  // passager (fun.js), `suivre` redemande la voiture de l'ami à chaque image (v401).
+  // passager (fun.js), `suivre` redemande la voiture de l'ami à chaque image (v405).
   // la voiture d'un ami n'est pas une bête : on lui prête ce que la séquence
   // lit d'une monture (sa place, son cap — le modèle regarde en −z, d'où π)
   function commeMonture(veh) {
     const g = veh.mesh;
     return { mesh: g, def: veh.def, montee: false, get pos() { return g.position; }, get yaw() { return g.rotation.y - Math.PI; } };
   }
-  // LA SÉQUENCE SUIT LA VOITURE DE CE CONDUCTEUR, PAS UN MAILLAGE GARDÉ (v401).
+  // LA SÉQUENCE SUIT LA VOITURE DE CE CONDUCTEUR, PAS UN MAILLAGE GARDÉ (v405).
   // La tablette refait le maillage de la voiture d'un ami quand sa clé change
   // ou quand l'ami est recréé (une reconnexion) : la séquence d'avant tenait
   // l'ancien maillage, voyait « la voiture n'existe plus » et s'annulait —

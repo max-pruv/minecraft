@@ -367,7 +367,7 @@ export function initFun(ctx) {
     // ouvre, assied, puis appelle `assis` — `passagerDe()` ne ment pas avant
     const veh = vehiculeDistant ? vehiculeDistant(ami.id) : null;
     if (!veh) { assis(); return; }
-    // la séquence redemande la voiture de l'ami à chaque image (v401)
+    // la séquence redemande la voiture de l'ami à chaque image (v405)
     embarquement.monterChez(veh, ami.def.sieges[s] || ami.def.siege, ami.id, assis, () => vehiculeDistant(ami.id));
   }
   function descendreDePassager(silencieux = false) {

@@ -2593,6 +2593,66 @@ export function matiereDuBord(h, ...voisins) {
   };
 }
 
+// LE JOURNAL DES BLOCS DE L'ENFANT, RANGÉ PAR MORCEAU (v403).
+//
+// `generateChunk` réapplique les blocs de l'enfant au morceau qu'il engendre.
+// Il balayait le journal ENTIER, une découpe de chaîne par bloc, pour chaque
+// morceau : mesuré sous node avec un journal fabriqué (une maison, des
+// villages), 1,25 ms par morceau sans blocs, 10 avec vingt mille, 36,6 avec
+// quatre-vingt mille — et le journal de Marlon en comptait 83 780 (v298).
+// Un avion en engendre des dizaines par seconde : c'était le premier poste
+// du worker, payé par l'enfant qui a le plus construit.
+//
+// L'index vit DANS le journal, pas à côté : `set`, `delete` et `clear` le
+// tiennent, donc TOUT chemin d'écriture le tient — `setBlock`, le chargement,
+// la fusion, le worker qui écrit `monde.edits.set` lui-même, Manhattan qui
+// importe ses journaux — sans qu'un seul ait à s'en souvenir. Un index tenu à
+// côté finirait par manquer un chemin, et un bloc d'enfant disparaîtrait d'un
+// morceau (invariant 1). Pour chaque morceau : la clé du bloc et sa case dans
+// le tableau du morceau, calculées une fois à l'écriture ; l'identifiant, lui,
+// se relit dans le journal au moment d'engendrer.
+export class JournalBlocs extends Map {
+  constructor(entrees) {
+    super();
+    this.parMorceau = new Map();
+    if (entrees) for (const [k, v] of entrees) this.set(k, v);
+  }
+  set(k, v) {
+    if (!super.has(k)) {
+      const a = String(k).split(',');
+      const ex = Number(a[0]), ey = Number(a[1]), ez = Number(a[2]);
+      const cx = Math.floor(ex / CHUNK), cz = Math.floor(ez / CHUNK);
+      // une clé illisible n'était jamais réappliquée (NaN ≠ cx) : on ne
+      // l'indexe pas, et le morceau la laisse de côté comme avant
+      if (Number.isFinite(cx) && Number.isFinite(cz)) {
+        const cle = cx + ',' + cz;
+        let m = this.parMorceau.get(cle);
+        if (!m) { m = new Map(); this.parMorceau.set(cle, m); }
+        m.set(k, World.index(ex - cx * CHUNK, ey, ez - cz * CHUNK));
+      }
+    }
+    return super.set(k, v);
+  }
+  delete(k) {
+    if (super.has(k)) {
+      const a = String(k).split(',');
+      const cle = Math.floor(Number(a[0]) / CHUNK) + ',' + Math.floor(Number(a[2]) / CHUNK);
+      const m = this.parMorceau.get(cle);
+      if (m) { m.delete(k); if (m.size === 0) this.parMorceau.delete(cle); }
+    }
+    return super.delete(k);
+  }
+  clear() {
+    this.parMorceau.clear();
+    super.clear();
+  }
+  // les blocs de l'enfant dans le morceau (cx, cz) : [clé, case] dans l'ordre
+  // où le journal les a reçus — celui que le balayage d'avant suivait
+  duMorceau(cx, cz) {
+    return this.parMorceau.get(cx + ',' + cz);
+  }
+}
+
 export class World {
   // `avant` : le monde d'avant Paris doublé (v306, `CONF_AVANT`) — pour juger
   // les blocs posés dedans, jamais pour jouer.
@@ -2606,7 +2666,7 @@ export class World {
     // redéfinit `terrainHeight` (Manhattan) le relit à chaque fois
     this.memoRelief = this.terrainHeight === World.prototype.terrainHeight;
     this.dirty = new Set();       // chunk keys needing a remesh
-    this.edits = new Map();       // "x,y,z" -> block id (player modifications)
+    this.edits = new JournalBlocs();  // "x,y,z" -> block id (player modifications), rangé par morceau (v403)
     this.monumentsTouches = new Set();  // les monuments HD qu'un enfant a modifiés (v292)
     this.morceauxAvantClimat = new Set(); // les morceaux (et leurs voisins) bâtis avant les climats (v345)
     this.colonnesCedees = new Set();    // les colonnes de Paris où la ville cède à ce qu'un enfant a bâti (v306)
@@ -4002,13 +4062,10 @@ export class World {
       });
     }
 
-    // Re-apply player edits inside this chunk.
-    for (const [k, id] of this.edits) {
-      const [ex, ey, ez] = k.split(',').map(Number);
-      if (Math.floor(ex / CHUNK) === cx && Math.floor(ez / CHUNK) === cz) {
-        data[World.index(ex - baseX, ey, ez - baseZ)] = id;
-      }
-    }
+    // Re-apply player edits inside this chunk — par l'index du journal (v403),
+    // plus jamais en balayant le journal entier pour chaque morceau.
+    const blocsEnfant = this.edits.duMorceau(cx, cz);
+    if (blocsEnfant) for (const [k, i] of blocsEnfant) data[i] = this.edits.get(k);
 
     return data;
   }
@@ -4339,7 +4396,7 @@ export class World {
   // changement de monde, resynchronisation du worker. L'index se REFAIT : le
   // tenir à jour bloc par bloc ne peut pas voir un journal remplacé.
   installerEdits(edits, temps, ctx) {
-    this.edits = edits instanceof Map ? edits : new Map(edits);
+    this.edits = edits instanceof JournalBlocs ? edits : new JournalBlocs(edits instanceof Map ? edits.entries() : edits);
     this.editTimes = temps instanceof Map ? temps : new Map(temps || []);
     if (ctx) this.ctx = ctx;
     this.chunks.clear();
