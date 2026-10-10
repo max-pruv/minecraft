@@ -6,11 +6,19 @@
 
 export const NOUVEAUTES = [
   {
-    v: 415,
+    v: 416,
     titre: 'San Diego dans les deux sens',
     puces: [
       'Un second circuit de voitures',
       'Sur les ponts déjà là',
+    ],
+  },
+  {
+    v: 415,
+    titre: 'Londres rejoint Birmingham',
+    puces: [
+      'Une autoroute passe par le col',
+      'On entre dans Londres par King\'s Cross',
     ],
   },
   {

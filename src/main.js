@@ -51,6 +51,7 @@ import { segmentsDeTrain, traceSegment } from './trains.js';
 import { segmentsDeRoute, traceRoute, entreesDe } from './routes.js';
 import { ENTREES_PARIS } from './paris.js';
 import { ENTREES_LILLE } from './lille.js';
+import { ENTREES_LONDRES } from './londres.js';
 import { Player, raycastBlocks } from './player.js';
 import { actualiserPresence } from './presence.js';
 import { animerHumain, chargerHumains, humainsCharges, humainsPrets } from './humains.js';
@@ -1994,7 +1995,7 @@ function updateChunks() {
   // l'E429 à l'est. `ENTREES_*` suit l'ordre de `entreesDe`, et l'on prend
   // celle de CETTE route — le `[0]` d'avant aurait fait entrer les voitures de
   // Bruxelles par la porte de Paris.
-  const ENTREES = { paris: ENTREES_PARIS, lille: ENTREES_LILLE };
+  const ENTREES = { paris: ENTREES_PARIS, lille: ENTREES_LILLE, londres: ENTREES_LONDRES };
   // Une ville ENGENDRÉE n'a pas d'avenue d'entrée dessinée : le corridor y
   // arrive dans l'axe de sa trame (le point de passage est choisi pour cela),
   // donc sur la rue qui mène au centre. Les voitures la suivent jusqu'à douze

@@ -4265,7 +4265,7 @@ function anneauxCalcules(f) {
       if (g.ponts && g.ponts.length) {
         const v2 = t.w / 2;
         // UNE VOIE TROP MOUILLÉE POUR UN PONT N'ÉCARTE PAS LE CONTRESENS
-        // (v415) : il roule encore sur la chaussée si les tabliers DÉJÀ publiés
+        // (v416) : il roule encore sur la chaussée si les tabliers DÉJÀ publiés
         // couvrent son eau, ou s'il contourne (`exigerChaussee`, où l'eau n'est
         // permise que sous un tablier publié). San Diego y gagne son second
         // circuit ; avant, sa voie extérieure longeait l'eau sur plus de

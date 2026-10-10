@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Le contresens ne renonce plus devant une voie mouillée (v415) — un refus se juge sur la règle finale, pas sur une mesure d'avant
+## Le contresens ne renonce plus devant une voie mouillée (v416) — un refus se juge sur la règle finale, pas sur une mesure d'avant
 
 Une règle. Le contresens (phase 2 ter) était écarté dès que `traverseesDe`
 refusait sa voie extérieure (plus de `PONT_MAX` d'eau), AVANT qu'on regarde si
@@ -3211,6 +3211,38 @@ Une règle.
   la terre, l'herbe, le sable et la pierre naturelle. Manhattan a son propre sol
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
+
+## La M40 (v415) — une ville bâtie à la main s'entre par une rue déclarée, et une vieille boucle se cherche
+
+Londres–Birmingham, le corridor « en attente » depuis la v323. Trois règles.
+
+- **UNE PORTE DE VILLE BÂTIE À LA MAIN RESTE À `BORD_VILLE`, ET L'ENTRÉE SE
+  DÉCLARE.** Les rues nommées de Londres s'arrêtent à quatre-vingts blocs du
+  centre, la porte est à quatre-vingt-douze : aucune rue existante n'y mène
+  (mesuré angle par angle). Pousser la porte plus loin (`bord` plus grand)
+  aurait mis l'axe DANS la ville (le témoin « elle ne traverse ni ville » lit
+  `cityAt` à `r − BORD_VILLE − 2`, et Londres est bâtie à la main — une ville
+  engendrée comme Tokyo n'y entre pas). `ENTREES_LONDRES` (londres.js), comme
+  Paris et Lille : une collectrice de la porte à un SOMMET d'une artère
+  (Pentonville Road), dans le sol de la ville mais hors des circuits.
+- **UNE BOUCLE DE CONSTRUCTION QUI LISTE SES EXCLUSIONS OUBLIE LA DERNIÈRE
+  VILLE.** La trame générique de `world.js` (« City buildings: one lot per grid
+  cell ») exclut six villes bâties à la main, pas Londres : hors de la place que
+  « le mobilier de Londres » réserve (77 blocs autour du centre), elle pose
+  encore ses maisons PAR-DESSUS la ville. L'une barrait l'entrée de la M40 (un
+  bloc à hauteur de carrosserie à dix blocs de la porte, `dans` du témoin), deux
+  colonnes de la route aussi. Ses lots cèdent désormais à la route et à
+  l'entrée ; le reste de l'anneau est une dette déclarée (`TASKS.md`), parce que
+  le retirer touche des toits où un enfant a pu bâtir.
+- **UN COL SE TROUVE PAR LE RELEVÉ, PAS PAR L'AXE.** La carte ASCII du relief
+  (`carte.mjs` du scratchpad) a montré une crête nord-sud de 46 à 55 blocs
+  barrant tout l'espace, Heathrow fermant le sud, et un seul col à 41-46 vers
+  la latitude de Birmingham. Le couloir le plus bas avec cap (v355) le trouve de
+  lui-même dès qu'on lui donne la sortie nord de Londres ; donné par l'ouest, il
+  rend « déblai ». La même sonde sert les routes suivantes : obstacles dans la
+  grille (aérodromes à r + 12 + portée de talus, villes, repères, rails,
+  autres routes), lissage par moyenne, `profilDe` sur chaque candidat, puis
+  `verif.mjs` qui relit le registre réel avec les grandeurs des témoins.
 
 ## Le Tōmei (v381) — une sonde de couloir lisse par moyenne, et la porte se juge avec son raccord
 

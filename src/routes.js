@@ -435,6 +435,25 @@ export const ROUTES = [
   // sud-ouest de Tokyo), déblai et remblai 1,8, coudes ≤ 25°.
   { nom: 'Tōmei', villes: ['tokyo', 'nagoya'], bord: { tokyo: 24 },
     via: [[53256, 8150], [53023, 8317], [52949, 8378], [52921, 8389], [52887, 8390], [52828, 8365], [52773, 8334], [52712, 8328], [52445, 8420], [52378, 8414], [52320, 8388], [52298, 8371]] },
+  // LA M40 (v415), LONDRES–BIRMINGHAM. L'axe direct est barré par une crête
+  // de 46 à 55 blocs, nord-sud, de z −2 110 à z −1 430 ; au sud elle vient
+  // mourir dans la marge de Heathrow, à l'ouest de Londres un mur de 43 à 50
+  // borde le disque à cinq blocs. Le relevé en couronne (scratchpad ring.mjs,
+  // carte.mjs) montre le seul passage : un COL à 41-46 vers z −1 945, à la
+  // latitude même de Birmingham. On sort donc de Londres par le NORD (−82°,
+  // la porte face à King's Cross, où l'entrée rejoint Pentonville Road —
+  // `ENTREES_LONDRES`), on monte vers le col en le prenant par l'est, et l'on
+  // entre dans Birmingham par l'axe de sa trame (45°, vingt-neuf blocs
+  // d'avenue sur la rue). Mesuré sous node (couloir.mjs : couloir le plus bas
+  // avec cap sur une grille de dix blocs, trois pas droits après chaque
+  // virage, lissage par moyenne glissante, `profilDe` appelé sur chaque
+  // candidat ; verif.mjs relit le registre réel) : 480 tracés, refus 288
+  // coude · 160 pont près d'une porte · 95 remblai · 64 ponts proches ;
+  // soixante-neuf admissibles, aucun sans pont ; celui-ci : 1 168 blocs, deux
+  // ponts (s 209–227 et 927–942, joints fermés), déblai 7,5, remblai 2,4,
+  // coudes ≤ 21°, aucun rail, aucun repère, Heathrow loin derrière.
+  { nom: 'M40', villes: ['londres', 'birmingham'],
+    via: [[-1191, -1493], [-1187, -1533], [-1183, -1546], [-1166, -1580], [-1135, -1632], [-1128, -1652], [-1127, -1680], [-1138, -1719], [-1152, -1748], [-1186, -1799], [-1201, -1818], [-1304, -1920], [-1370, -1965], [-1399, -1980], [-1456, -1998], [-1490, -2002], [-1529, -2000], [-1556, -1994], [-1582, -1984], [-1637, -1947], [-1709, -1905], [-1767, -1878], [-1798, -1874], [-1811, -1875], [-1824, -1881], [-1845, -1902]] },
 ];
 
 // --- la section -----------------------------------------------------------------
