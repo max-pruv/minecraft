@@ -382,17 +382,11 @@ export class TerreUrbaine extends World {
                 : BLOCK.AIR
               : this.originalBlock(wx, y, wz);
       }
-    for (const [k, id] of this.edits) {
-      const [x, y, z] = k.split(",").map(Number);
-      if (
-        x >= ox &&
-        x < ox + CHUNK &&
-        z >= oz &&
-        z < oz + CHUNK &&
-        y >= 0 &&
-        y < HEIGHT
-      )
-        data[World.index(x - ox, y, z - oz)] = id;
+    // les blocs de l'enfant de CE morceau, par l'index du journal (v403)
+    const blocsEnfant = this.edits.duMorceau(Math.floor(ox / CHUNK), Math.floor(oz / CHUNK));
+    if (blocsEnfant) for (const [k, i] of blocsEnfant) {
+      const y = Number(k.split(",")[1]);
+      if (y >= 0 && y < HEIGHT) data[i] = this.edits.get(k);
     }
     return data;
   }
