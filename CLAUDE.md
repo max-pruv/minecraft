@@ -2422,6 +2422,16 @@ Les deux rouges réseau récurrents du palier C. Trois règles.
   une voix restée au quart (`GAIN_APPEL`) et le régime qui varie ; vérifié
   rouge sur une copie où la voix reste au quart.
 
+## L'invité de New York (v412) — deux pages du banc se partagent un processeur, deux tablettes jamais
+
+Une règle. Un témoin à deux tablettes dont l'une rend une scène lourde
+(Manhattan, 0,4 image par seconde en logiciel) ouvre la page de l'AUTRE
+d'abord : ouverte pendant ce rendu, elle met 44 s à plus de 90 s à démarrer,
+sans erreur (13–18 s sinon). Le « TimeoutError de la ligne 674 », déclaré
+intermittence pendant trente versions, rendait 2 sur 2 rejoué seul : une
+« intermittence sous la charge » se REJOUE SEULE avant d'être crue, et si
+elle tombe à chaque fois, c'est une cause, pas un tirage.
+
 ## Le passager sans courtier (v410) — on se reconnaît à TOUTES ses identités
 
 Une règle. Une tablette a deux identités possibles : `peer.id` (le courtier)
