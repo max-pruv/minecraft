@@ -634,7 +634,9 @@ export class AdminPanel {
         dernier.ville ? `à ${esc(dernier.ville)}` : (dernier.x !== undefined ? `en (${dernier.x}, ${dernier.z})` : ''),
         dernier.ips != null ? `${dernier.ips} i/s` : '', dernier.pire ? `pire image ${dernier.pire} ms` : '',
         dernier.morceaux != null ? `${dernier.morceaux} morceaux (${dernier.hd || 0} HD)` : '',
-        dernier.tasMo ? `${dernier.tasMo} Mo de tas` : '', doc.duree != null ? `${Math.round(doc.duree)} s de session` : '',
+        dernier.tasMo ? `${dernier.tasMo} Mo de tas` : '',
+        // v409 : ce que la scène tient côté carte graphique, estimé en octets (journal.js)
+        dernier.gpu ? `≈ ${Math.round(dernier.gpu.texMo + dernier.gpu.geoMo)} Mo carte graphique` : '', doc.duree != null ? `${Math.round(doc.duree)} s de session` : '',
         erreurs ? `${erreurs} erreur(s)` : '',
         suspendus && suspendus.d ? `${suspendus.d.n} bloc(s) suspendu(s) à ${(suspendus.d.villes || []).join(', ')}` : '',
       ].filter(Boolean).join(' · ');

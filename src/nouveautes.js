@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 409,
+    titre: 'Moins de fausses alertes',
+    puces: [
+      'Deux fenêtres ouvertes ne se gênent plus',
+      'Le jeu reste en mode normal',
+      'Les parents voient la mémoire utilisée',
+    ],
+  },
+  {
     v: 408,
     titre: 'La voiture sent les collines',
     puces: [

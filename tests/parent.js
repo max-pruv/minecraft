@@ -426,10 +426,10 @@ async function panneau(p) {
       const z = window.__game.admin.el.querySelector('#adm-journal');
       const texte = z.textContent.replace(/\s+/g, ' ');
       return { lignes: z.querySelectorAll('.adm-jr').length, plantage: /PLANTAGE présumé/.test(texte), paris: /paris/.test(texte),
-        fermeture: /au revoir/.test(texte), debut: texte.slice(0, 200) };
+        fermeture: /au revoir/.test(texte), gpu: /Mo carte graphique/.test(texte), debut: texte.slice(0, 200) };
     });
-    verifier('l’espace parent montre le journal de bord, plantage présumé et fermeture, avec la ville',
-      vuJournal.lignes >= 2 && vuJournal.plantage && vuJournal.paris && vuJournal.fermeture,
+    verifier('l’espace parent montre le journal de bord, plantage présumé et fermeture, avec la ville et la mémoire graphique',
+      vuJournal.lignes >= 2 && vuJournal.plantage && vuJournal.paris && vuJournal.fermeture && vuJournal.gpu,
       JSON.stringify(vuJournal));
 
     verifier('aucune faute de page dans l’espace parent', p.erreurs.length === 0,

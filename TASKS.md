@@ -1,5 +1,19 @@
 # Ce qui est en cours
 
+- [ ] **LE JOURNAL DE BORD APRÈS LA v409 — À RELIRE SUR L'iPHONE.** (1) Une
+  fois la v409 de la flotte (#418) en production, lire `journal_appareil`
+  (appareil `n4dhwysj5tmmsinqeou`) : plantages ou non, et le champ `gpu` des
+  relevés (texMo, geoMo) — qui plafonne ou non. (2) Si l'iPhone plante encore
+  avec une mémoire graphique stable, la piste déclarée est le clone de
+  géométrie des dégâts (`degats3d.js`, 66 à 87 chocs dans les parties
+  plantées) : mesurer ses octets AVANT d'y toucher, sans changer la règle des
+  dégâts (v343). (3) Les sessions vides : si des `plantage` sans aucun
+  événement reviennent après la v409, elles ne viennent ni de deux pages ni
+  d'une page née cachée — la sonde `sonde-journal-relance.cjs` dit quoi
+  rejouer. (4) Le verdict `bas` de sûreté rangé par les faux plantages
+  d'avant reste rangé : `rangerLePalier` ne l'écrase pas. Il se lève en
+  choisissant une étendue dans les Réglages ; à décider avec Max s'il faut
+  l'effacer d'office une fois.
 - [ ] **`maj.js`, LE PALIER — UNE INTERMITTENCE DE CADENCE (v405).** « le jeu se
   mesure en jouant, et range son verdict » et « le palier se décide sur le
   TRAVAIL d'une image » : rouges UNE fois sur deux passages seuls de la
