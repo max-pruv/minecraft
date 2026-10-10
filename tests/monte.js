@@ -7252,8 +7252,11 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !cd.err && cd.rasant && cd.rasant.contact && cd.rasant.contact.choc && cd.rasant.contact.choc.force < 0.5
         && cd.rasant.x > 150 && cd.rasant.v > 12 && Math.abs(cd.rasant.capDeg) < 3,
       JSON.stringify(cd.rasant));
+    // la force suit la vitesse jusqu'à la pointe de la classe (v412) : posée à
+    // 22 sans gaz, la Jesko frappe le mur à une dizaine de blocs/s, 0,22 (0,52
+    // à l'ancienne échelle) — un choc publié, d'une taille sensée
     verifier('un mur pris de face : la voiture s\'arrête, avec un petit rebond, et le choc dit où',
-      !cd.err && cd.face && cd.face.face && cd.face.face.choc && cd.face.face.choc.force > 0.3
+      !cd.err && cd.face && cd.face.face && cd.face.face.choc && cd.face.face.choc.force > 0.15
         && cd.face.rebond < -0.3 && Math.abs(cd.face.v) < 0.5 && Math.abs(cd.face.face.choc.x - 41090) < 1,
       JSON.stringify(cd.face));
     verifier('une voiture de la rue percutée : choc publié, et la nôtre rebondit au lieu de la traverser',
