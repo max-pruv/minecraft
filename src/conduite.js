@@ -370,25 +370,42 @@ export function pasVoiture(e, entree, fiche, dt) {
 //   · rasant (moins de RASANT entre la vitesse et le mur) : on GLISSE le long,
 //     et l'on perd de la vitesse selon l'angle d'impact ;
 //   · de face : on s'arrête, avec un petit rebond.
-// La force est la vitesse d'impact NORMALE rapportée à CHOC_PLEIN : un mur pris
-// de face à 72 km/h vaut un choc plein, le même mur frôlé presque rien.
+// La force est la vitesse d'impact NORMALE rapportée à `vPleine`, la vitesse
+// d'un choc plein.
+//
+// LA FORCE SUIT LA VITESSE JUSQU'À LA POINTE DE LA CLASSE (v412). Elle valait
+// `−vn / CHOC_PLEIN`, saturée à 1 dès 20 blocs/s normaux : une voiture roule à
+// 30-55, si bien que presque tout vrai crash valait 1 — un mur à 55 coûtait
+// autant qu'à 20, et un frôlement à 15° pleins gaz publiait 0,71 (une demi-
+// voiture, la dette de la v405). Le joueur passe désormais `vitessePleine`
+// (le choc plein, c'est un mur pris à `POINTE_PLEINE` de la pointe de SA
+// classe, la vitesse qu'on a après quatre ou cinq secondes de gaz) : un mur
+// pleins gaz vaut 1 comme avant — les murs promis par degats.js
+// (`CHOCS_AVANT_PANNE`) ne bougent pas —, un mur à dix blocs/s en vaut un tiers
+// (la perte suit le carré, un neuvième de mur), un frôlement à 15° pleins gaz
+// un quart (un quinzième de mur). Sans `vPleine`, l'ancienne échelle
+// (CHOC_PLEIN) : ce que lit un appelant qui ne connaît pas la classe.
 export const RASANT = 0.5;            // cos(60°) : moins de 30° entre la vitesse et le mur
 export const PERTE_GLISSE = 0.9;      // la part de vitesse perdue au pire des rasants
 export const REBOND = 0.18;           // ce qui revient d'un choc de face
-export const CHOC_PLEIN = 20;         // blocs/s normaux = force 1
-export function reponseChoc(vx, vz, nx, nz) {
+export const CHOC_PLEIN = 20;         // blocs/s normaux = force 1, sans classe
+export const POINTE_PLEINE = 0.85;    // un mur pris à 85 % de la pointe : choc plein
+export function vitessePleine(fiche) {
+  return fiche && fiche.vmax > 0 ? fiche.vmax * POINTE_PLEINE : CHOC_PLEIN;
+}
+export function reponseChoc(vx, vz, nx, nz, vPleine = CHOC_PLEIN) {
   const vn = vx * nx + vz * nz;
   const vit = Math.hypot(vx, vz);
-  if (vn >= 0 || vit < 1e-6) return { vx, vz, force: 0, glisse: false };
+  if (vn >= 0 || vit < 1e-6) return { vx, vz, force: 0, impact: 0, glisse: false };
   const tx = vx - vn * nx, tz = vz - vn * nz;
   const c = -vn / vit;                                 // 1 de face, 0 tout à fait rasant
-  const force = Math.min(1, -vn / CHOC_PLEIN);
+  const force = Math.min(1, -vn / vPleine), impact = -vn;
   if (c < RASANT) {
     const k = 1 - PERTE_GLISSE * c;
-    return { vx: tx * k, vz: tz * k, force, glisse: true };
+    return { vx: tx * k, vz: tz * k, force, impact, glisse: true };
   }
   const k = 0.25 * (1 - c);                            // de face : presque rien ne file de côté
-  return { vx: tx * k - vn * REBOND * nx, vz: tz * k - vn * REBOND * nz, force, glisse: false };
+  return { vx: tx * k - vn * REBOND * nx, vz: tz * k - vn * REBOND * nz, force, impact, glisse: false };
 }
 
 // LES CASES SOUS UNE BOÎTE ORIENTÉE. La boîte : centre (x, z), cap (le sens
@@ -482,7 +499,7 @@ export function normaleEntreBoites(A, B) {
 // sa position est une fonction de l'horloge partagée (v305).
 // Rend { vx, vz, force, glisse, nx, nz } ou null si les boîtes ne se touchent
 // pas (on retombe alors sur la normale du mouvement).
-export const CONTACT_DOUX = 0.15;    // 3 blocs/s relatifs, 11 km/h
+export const CONTACT_DOUX = 3;       // blocs/s relatifs d'impact, 11 km/h
 // La rue juge le contact avec SES cotes (la voiture de l'enfant à 4,4 × 2,26,
 // `rectangle` de vehicules.js) et le joueur porte son gabarit de fiche (2,2
 // pour une berline) : au bord, la rue dit « touché » quand nos boîtes ne se
@@ -490,17 +507,19 @@ export const CONTACT_DOUX = 0.15;    // 3 blocs/s relatifs, 11 km/h
 // sinon le choc retombait sur la normale du mouvement — vu au banc, un flanc
 // frôlé rendu en choc de face.
 export const MARGE_CONTACT = 0.15;
-export function chocContreVoiture(moi, autre, vx, vz) {
+export function chocContreVoiture(moi, autre, vx, vz, vPleine = CHOC_PLEIN) {
   const n = normaleEntreBoites(moi, autre)
     || normaleEntreBoites({ ...moi, a: moi.a + MARGE_CONTACT, b: moi.b + MARGE_CONTACT }, autre);
   if (!n) return null;
   const ax = (autre.v || 0) * autre.ux, az = (autre.v || 0) * autre.uz;
-  const r = reponseChoc(vx - ax, vz - az, n.nx, n.nz);
+  const r = reponseChoc(vx - ax, vz - az, n.nx, n.nz, vPleine);
   // pare-chocs contre pare-chocs à moins de CONTACT_DOUX : un contact, pas un
   // choc. Collé derrière une voiture plus lente, joystick en avant, on la
   // touche à chaque image ; publiées, ces caresses useraient la voiture
   // jusqu'au feu au milieu d'un bouchon.
-  const force = r.force < CONTACT_DOUX ? 0 : r.force;
+  // Le seuil se lit en blocs/s (v412) : la force dépend désormais de la
+  // classe, une caresse de trois blocs/s non.
+  const force = r.impact < CONTACT_DOUX ? 0 : r.force;
   return { vx: r.vx + ax, vz: r.vz + az, force, glisse: r.glisse, nx: n.nx, nz: n.nz };
 }
 

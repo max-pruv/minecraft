@@ -546,6 +546,22 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         JSON.stringify(essais));
     }
   }
+  // --- LA FORCE DES CHOCS SUIT LA VITESSE (v412) ---------------------------
+  // La force publiée saturait à 1 dès 20 blocs/s normaux (`CHOC_PLEIN`) quand
+  // une voiture roule à 30-55 : un mur à 10 blocs/s coûtait un tiers de mur
+  // plein, un frôlement à 15° pleins gaz jusqu'à 0,46 (hypercar). Le VRAI
+  // joueur, sous node (`sonde-force-chocs.cjs`), six classes : pleins gaz
+  // reste un mur plein (les neuf murs de degats.js ne bougent pas), le mur
+  // lent coûte moins d'un quart de mur, le frôlement moins d'un dixième.
+  // Mesuré sur `origin/main` : lent 0,32 à 0,36, frôlé 0,14 à 0,46.
+  {
+    let t = null, err = '';
+    try { t = await require('./sonde-force-chocs.cjs').mesurer(require('path').resolve(__dirname, '..')); } catch (e) { err = String(e && e.message || e); }
+    const lignes = t ? Object.values(t) : [];
+    verifier('conduite : la force d\'un choc suit la vitesse — pleins gaz un mur plein, un mur lent moins d\'un quart, un frôlement moins d\'un dixième',
+      lignes.length === 6 && lignes.every((r) => r.plein.force === 1 && r.lent.murs > 0 && r.lent.murs < 0.25 && r.frole.murs > 0 && r.frole.murs < 0.1),
+      t ? JSON.stringify(t) : `sonde : ${err}`);
+  }
   // --- LA PENTE ET LA BOSSE (palier 3 de la conduite) ---------------------
   // Mesuré sur `origin/main` (`tests/sonde-pente.cjs`, six côtes, six
   // descentes et six plats de la campagne, une sportive à plein gaz) : 26,4

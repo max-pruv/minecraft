@@ -2677,6 +2677,32 @@ Le dérapage contrôlé à la GTA. Quatre règles.
   pendant le frein à main : un drift « gaz + frein » demanderait un second
   doigt sur l'accélérateur, que le joystick n'a pas — décidé, déclaré.
 
+## La force d'un choc suit la vitesse (v412) — conduite, la dette des dégâts
+
+La force publiée (`player.choc.force`) saturait à 1 dès 20 blocs/s normaux
+(`CHOC_PLEIN`) : un mur à 55 coûtait autant qu'à 20, un frôlement à 15° pleins
+gaz publiait 0,68. Trois règles.
+
+- **LE CHOC PLEIN SE LIT À LA POINTE DE SA CLASSE.** `reponseChoc` et
+  `chocContreVoiture` prennent `vPleine` ; le joueur passe
+  `vitessePleine(fiche)` = `POINTE_PLEINE` (0,85) × la pointe — la vitesse
+  qu'on a après quatre ou cinq secondes de gaz. Un mur pleins gaz vaut donc 1
+  comme avant, et les murs promis par degats.js (`CHOCS_AVANT_PANNE`,
+  `CHOCS_AVANT_FEU`) ne bougent pas : rien n'a été recalibré là-bas. Sans
+  `vPleine`, l'ancienne échelle (un appelant qui ne connaît pas la classe).
+  Pourquoi pas un seuil plus bas : sin 15° × 0,95 / `POINTE_PLEINE` au carré
+  doit rester sous un dixième de mur, ce qui exige au moins 0,78.
+- **UN SEUIL QUI DISAIT « DOUX » EN FORCE SE DIT EN VITESSE.** `CONTACT_DOUX`
+  valait 0,15 de force (trois blocs/s à l'ancienne échelle) ; la force
+  dépendant de la classe, il est en blocs/s d'impact (`impact`, rendu par
+  `reponseChoc`). Quand on change l'unité d'une grandeur, on cherche tout seuil
+  écrit dans l'ancienne unité.
+- **« PLEINE VITESSE » DANS UN TÉMOIN SE MESURE.** Le témoin des deux murs
+  (`degats.js`) prenait trente-sept blocs d'élan : 0,58 de la pointe, ce qui
+  saturait à 20 b/s et ne sature plus. La dalle s'étend, cent quarante blocs
+  d'élan (0,89). Le vrai joueur sous node (`sonde-force-chocs.cjs`, appelée
+  par `plafond.js`) garde la règle dans les six classes.
+
 ## La pente, la bosse et la file (v408) — conduite, palier 3
 
 Mesuré sur `origin/main` par `tests/sonde-pente.cjs` (sous node, le vrai

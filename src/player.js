@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { BLOCK, isSolid as blockIsSolid, isSlab } from './blocks.js';
 import { HEIGHT, WATER_LEVEL } from './world.js';
-import { ficheDeVitesse, pasVoiture, reponseChoc, casesSousBoite, pointDImpact, DERIVE_MAX, boiteVoiture, chocContreVoiture, normaleDeMur, sousLaCaisse, forceAtterrissage, DEBATTEMENT, RAPPEL, ENFONCE, vitesseDeSuivi, freinDeSuivi, PORTEE_SUIVI, SUIVI_DELTA } from './conduite.js';
+import { ficheDeVitesse, pasVoiture, reponseChoc, casesSousBoite, pointDImpact, DERIVE_MAX, boiteVoiture, chocContreVoiture, vitessePleine, normaleDeMur, sousLaCaisse, forceAtterrissage, DEBATTEMENT, RAPPEL, ENFONCE, vitesseDeSuivi, freinDeSuivi, PORTEE_SUIVI, SUIVI_DELTA } from './conduite.js';
 
 const WIDTH = 0.6;        // player AABB width (x and z)
 // LE GABARIT D'UN VÉHICULE CONDUIT (v212). Max, capture à l'appui : « cars
@@ -499,7 +499,7 @@ export class Player {
         // sait pas lire, gardent la normale du mouvement.
         const autre = fam === 'voiture' && this.voitureContre ? this.voitureContre(x + dx, z + dz, this.yaw + Math.PI) : null;
         const moi = boiteVoiture(x + dx, z + dz, this.yaw + Math.PI, DEMI_LONG_VOITURE, this.gabarit / 2);
-        const rv = autre ? chocContreVoiture(moi, autre, vx, vz) : null;
+        const rv = autre ? chocContreVoiture(moi, autre, vx, vz, vitessePleine(this.ficheVoiture)) : null;
         if (rv) {
           this.contact = { famille: 'voiture', nx: rv.nx, nz: rv.nz, autre: { x: autre.x, z: autre.z } };
           this.publierChoc(rv.force, -rv.nx, -rv.nz);
@@ -509,7 +509,7 @@ export class Player {
           continue;
         }
         const n = Math.hypot(dx, dz) || 1;
-        const r = reponseChoc(vx, vz, -dx / n, -dz / n);
+        const r = reponseChoc(vx, vz, -dx / n, -dz / n, vitessePleine(this.ficheVoiture));
         this.contact = { famille: fam, nx: -dx / n, nz: -dz / n };
         this.publierChoc(r.force, dx, dz);
         this.vitesseApresChoc(r.vx, r.vz);
@@ -542,7 +542,7 @@ export class Player {
         else if (libreZ && !libreX) { nx = -Math.sign(dx); nz = 0; }
         else { const n = Math.hypot(dx, dz); nx = -dx / n; nz = -dz / n; }
       }
-      const r = reponseChoc(vx, vz, nx, nz);
+      const r = reponseChoc(vx, vz, nx, nz, vitessePleine(this.ficheVoiture));
       // une vitesse qui ne rentre pas dans la normale lue (elle la longe, à
       // l'erreur de lecture près) et qui bute quand même : c'est un coin de
       // marche, on glisse — sans quoi la voiture rejouait trente-deux fois le

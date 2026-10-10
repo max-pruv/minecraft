@@ -155,9 +155,14 @@ function verifier(nom, ok, detail = '') {
       });
       const x0 = 30000, z0 = 32400, L = 70;
       let y0 = 0;
-      for (let d = -L; d <= L; d += 4) for (let w = -8; w <= 8; w += 4) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
+      // ÉLAN (v412) : la force d'un choc suit la vitesse jusqu'à la pointe de la
+      // classe ; « pleine vitesse » veut cent quarante blocs d'élan (0,89 de la
+      // pointe d'une sportive), pas les trente-sept d'avant (0,58). La dalle
+      // s'étend donc vers l'arrière jusqu'à x0 − ELAN − 6.
+      const ELAN = 100;
+      for (let d = -ELAN - 6; d <= L; d += 4) for (let w = -8; w <= 8; w += 4) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
       y0 += 2;
-      for (let d = -L; d <= L; d++) for (let w = -8; w <= 8; w++) {
+      for (let d = -ELAN - 6; d <= L; d++) for (let w = -8; w <= 8; w++) {
         g.world.setBlock(x0 + d, y0, z0 + w, BLOCK.STONE);
         for (let h = 1; h <= 6; h++) if (g.world.getBlock(x0 + d, y0 + h, z0 + w) !== 0) g.world.setBlock(x0 + d, y0 + h, z0 + w, 0);
       }
@@ -181,7 +186,7 @@ function verifier(nom, ok, detail = '') {
       a.pos.y = y0 + 1.01; a.mesh.position.y = a.pos.y;
       for (let e = 0; e < 8 && !(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await tenir(0.5); }
       const auVolant = !!(g.fun.montureConduite && g.fun.montureConduite());
-      window.__essai = { a, b, x0, z0, y0 };
+      window.__essai = { a, b, x0, z0, y0, elan: ELAN };
       return { auVolant, y0, flotte, attente: Math.round(performance.now() - t0) };
     });
     verifier('on est au volant d\'une voiture de la flotte, sur la dalle d\'essai', !prep.err && prep.auVolant, JSON.stringify(prep));
@@ -216,6 +221,11 @@ function verifier(nom, ok, detail = '') {
       // dégâts les ont pris
       const chocsPhys0 = g.player.chocs || 0, chemins0 = d.chemins ? d.chemins() : null;
       const choc0 = g.player.choc, lit = g.player.physiqueLitEtat;
+      // pleine vitesse : l'élan de la dalle (v412)
+      { const { x0, z0, y0, elan } = window.__essai;
+        g.player.vitesseVoiture = 0; g.player.vel.set(0, 0, 0);
+        g.player.pos.set(x0 - (elan || 0), y0 + 1.01, z0 + 0.5); g.player.yaw = -Math.PI / 2;
+        await tenir(0.5); }
       g.player.gaz = 1;
       let vmax = 0, etat = null;
       const t0 = performance.now();
@@ -287,20 +297,20 @@ function verifier(nom, ok, detail = '') {
     // depuis le milieu de la dalle. Rouge sur la v404 : la zone avant vidée
     // en deux murs calait le moteur, la voiture ne repartait plus.
     const deuxMurs = await tab.evaluate(async () => {
-      const g = window.__game, { a, x0, z0, y0 } = window.__essai, d = g.fun.degats;
+      const g = window.__game, { a, x0, z0, y0, elan } = window.__essai, d = g.fun.degats;
       if (!d) return { err: 'pas de module de dégâts' };
       const tenir = (n) => new Promise((fin) => {
         let cumul = 0, prec = performance.now();
         const pas = (t) => { cumul += (t - prec) / 1000; prec = t; if (cumul >= n) fin(); else requestAnimationFrame(pas); };
         requestAnimationFrame(pas);
       });
-      const reculer = async () => {
+      const reculer = async (recul = 0) => {
         g.player.gaz = 0; g.player.vitesseVoiture = 0; g.player.vel.set(0, 0, 0);
-        g.player.pos.set(x0, y0 + 1.01, z0 + 0.5); g.player.yaw = -Math.PI / 2;
+        g.player.pos.set(x0 - recul, y0 + 1.01, z0 + 0.5); g.player.yaw = -Math.PI / 2;
         await tenir(0.5);
       };
       const n0 = (d.etat(a.mesh) || { chocs: [] }).chocs.length;
-      await reculer();
+      await reculer(elan || 0);
       g.player.gaz = 1;
       let vmax = 0;
       const t0 = performance.now();

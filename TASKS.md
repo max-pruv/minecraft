@@ -35,10 +35,15 @@
   tablette : Max essaie neuf murs pleins gaz (la voiture doit caler au 9e,
   fumer dès le 2e de face) et dit si le rythme lui va — les constantes sont
   `PERTE_SANTE` et `COURBE_FORCE` (degats.js), la promesse `CHOCS_AVANT_PANNE`.
-  (2) La force publiée sature à 1 dès 20 b/s normaux (`CHOC_PLEIN`,
-  conduite.js, session physique) : un mur à 60 b/s coûte autant qu'à 20, et un
-  frôlement rasant à 60 b/s publie 0,78 (0,6 mur). Une force qui suivrait la
-  vitesse jusqu'à 60 se décide côté physique. (3) Au-delà de 24 chocs
+  (2) ~~La force publiée sature à 1 dès 20 b/s normaux~~ — FAIT en v412 : la
+  force suit la vitesse jusqu'à 85 % de la pointe de la classe (mur lent 0,07 à
+  0,19 de mur, frôlé 0,08, pleins gaz 1). Reste, déclaré : au-delà de 85 % de
+  la pointe la force sature encore (un mur à la pointe vaut un mur pleins gaz),
+  et sur la tablette, un mur pris après deux ou trois secondes de gaz (0,6 de
+  la pointe) ne coûte plus qu'un demi-mur — si Max trouve la voiture trop
+  solide en ville, c'est `POINTE_PLEINE` (conduite.js) qu'on descend, jusqu'à
+  0,78 au plus bas (sinon un frôlement repasse au-dessus d'un dixième de mur).
+  (3) Au-delà de 24 chocs
   (`MAX_CHOCS`), l'ami ne rejoue que les 24 derniers : il peut voir une
   voiture moins abîmée que le conducteur (le feu voyage à part, la panne non).
   Et `rattraper` (degats3d.js) ne rejoue plus la tôle une fois l'historique
