@@ -349,6 +349,39 @@ async function panneau(p) {
     verifier('au deuxième plantage de suite, le jeu passe en palier bas par sûreté — sans le ranger sous une adresse forcée',
       etat.palier === 'bas' && etat.source === 'sûreté' && etat.hd === 0 && etat.plantages === 2 && etat.range === null,
       JSON.stringify(etat));
+    // CE QUE LA SCÈNE TIENT CÔTÉ CARTE GRAPHIQUE SE COMPTE EN OCTETS (v409).
+    // Safari ne donne pas le tas ; un compte de textures n'est pas un poids.
+    // L'estimation doit SUIVRE un objet : une texture de 1 024² sans mipmaps, une de
+    // 512² avec, et une géométrie de six mégaoctets ajoutées la font monter d'autant, retirées
+    // la ramènent. Et un clone qui partage sa source ne compte qu'une fois.
+    const memoire = await tab.evaluate(async () => {
+      const g = window.__game;
+      if (!g.memoireGPU) return { absente: true };
+      const THREE = await import('three');
+      const avant = g.memoireGPU(true);
+      // Une DataTexture ne fait pas de mipmaps (4 Mo) ; une texture qui en fait
+      // en ajoute un tiers (512² → 1,33 Mo). Total attendu : 5,33 Mo.
+      const tex = new THREE.DataTexture(new Uint8Array(1024 * 1024 * 4), 1024, 1024);
+      const texMip = new THREE.DataTexture(new Uint8Array(512 * 512 * 4), 512, 512);
+      texMip.generateMipmaps = true;
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(3 * 500000), 3));
+      const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: tex }));
+      const clone = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: tex.clone() }));
+      const m2 = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: texMip }));
+      m.visible = false; clone.visible = false; m2.visible = false;
+      g.scene.add(m, clone, m2);
+      const pendant = g.memoireGPU(true);
+      g.scene.remove(m, clone, m2);
+      const apres = g.memoireGPU(true);
+      geo.dispose(); tex.dispose();
+      const dTex = pendant.texMo - avant.texMo, dGeo = pendant.geoMo - avant.geoMo;
+      const r1 = (x) => Math.round(x * 100) / 100;
+      return { avant: r1(avant.texMo + avant.geoMo), dTex: r1(dTex), dGeo: r1(dGeo), retour: r1((apres.texMo - avant.texMo) + (apres.geoMo - avant.geoMo)), ms: pendant.ms };
+    });
+    verifier('la mémoire graphique estimée suit un objet ajouté puis retiré, en octets, une source comptée une fois',
+      !memoire.absente && memoire.dTex > 5.2 && memoire.dTex < 5.5 && memoire.dGeo > 5.5 && memoire.dGeo < 5.9 && Math.abs(memoire.retour) < 0.05,
+      JSON.stringify(memoire));
     // Et la session qui dit au revoir : le drapeau tombe, le compteur aussi.
     await tab.evaluate(() => window.dispatchEvent(new Event('pagehide')));
     const tF = Date.now();

@@ -313,3 +313,71 @@ export class Journal {
     this.persister(true);
   }
 }
+
+// ── CE QUE LA SCÈNE TIENT CÔTÉ CARTE GRAPHIQUE, EN OCTETS (v409) ─────────────
+//
+// Safari ne donne pas le tas (`tasMo` nul dans tous les relevés de l'iPhone),
+// et c'est le COMPTE de textures qui a trahi les 734 Mo de la flotte (v409) —
+// mais un compte n'est pas un poids : cinq cents textures de seize pixels
+// pèsent moins qu'une de quatre mille. Quand le banc ne peut pas subir la
+// panne, on mesure la CAUSE en octets (v236, v296). Une estimation, pas une
+// mesure du pilote : une texture vaut largeur × hauteur × 4 octets × 4/3
+// (mipmaps) par SOURCE distincte — des clones partagent la leur ; une
+// géométrie, les octets de ses attributs et de son index, chaque tableau
+// compté une fois (un attribut entrelacé partage le sien). Lu par forme, sans
+// importer three : `racines` sont des Object3D (scène, ciel…) ; on parcourt
+// TOUT, visible ou non — un objet caché tient sa mémoire.
+const PROPRIETES_TEXTURE = ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'emissiveMap', 'aoMap', 'alphaMap',
+  'bumpMap', 'displacementMap', 'envMap', 'lightMap', 'specularMap', 'clearcoatMap', 'clearcoatNormalMap',
+  'clearcoatRoughnessMap', 'sheenColorMap', 'sheenRoughnessMap', 'transmissionMap', 'thicknessMap', 'iridescenceMap',
+  'iridescenceThicknessMap', 'specularColorMap', 'specularIntensityMap', 'anisotropyMap', 'gradientMap', 'matcap'];
+
+function octetsImage(img) {
+  if (!img) return 0;
+  if (Array.isArray(img)) return img.reduce((n, i) => n + octetsImage(i), 0);   // cube : six faces
+  const w = img.width || img.videoWidth || 0, h = img.height || img.videoHeight || 0;
+  return w * h * (img.depth || 1) * 4;
+}
+
+export function estimerMemoire(racines) {
+  const geos = new Set(), tableaux = new Set(), sources = new Set(), mats = new Set();
+  let octetsGeo = 0, octetsTex = 0;
+  const tableau = (a) => {
+    const arr = a && (a.array || (a.data && a.data.array));
+    if (!arr || tableaux.has(arr)) return;
+    tableaux.add(arr);
+    octetsGeo += arr.byteLength || 0;
+  };
+  const texture = (t) => {
+    if (!t || !t.isTexture) return;
+    const src = t.source || t.image;
+    if (!src || sources.has(src)) return;
+    sources.add(src);
+    const img = t.source ? t.source.data : t.image;
+    const mip = t.generateMipmaps === false && !(t.mipmaps && t.mipmaps.length) ? 1 : 4 / 3;
+    octetsTex += Math.round(octetsImage(img) * mip);
+  };
+  const materiau = (m) => {
+    if (!m || mats.has(m)) return;
+    mats.add(m);
+    for (const p of PROPRIETES_TEXTURE) texture(m[p]);
+    if (m.uniforms) for (const u of Object.values(m.uniforms)) if (u && u.value && u.value.isTexture) texture(u.value);
+  };
+  const visiter = (o) => {
+    const g = o.geometry;
+    if (g && !geos.has(g)) {
+      geos.add(g);
+      if (g.attributes) for (const a of Object.values(g.attributes)) tableau(a);
+      if (g.morphAttributes) for (const l of Object.values(g.morphAttributes)) for (const a of l) tableau(a);
+      tableau(g.index);
+    }
+    if (o.instanceMatrix) tableau(o.instanceMatrix);
+    if (o.instanceColor) tableau(o.instanceColor);
+    if (Array.isArray(o.material)) o.material.forEach(materiau); else materiau(o.material);
+    if (o.isScene) { texture(o.background); texture(o.environment); }
+    const enfants = o.children || [];
+    for (let i = 0; i < enfants.length; i++) visiter(enfants[i]);
+  };
+  for (const r of racines) if (r) visiter(r);
+  return { texMo: octetsTex / 1048576, geoMo: octetsGeo / 1048576, sources: sources.size, geometries: geos.size };
+}
