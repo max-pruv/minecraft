@@ -2394,6 +2394,17 @@ Les deux rouges réseau récurrents du palier C. Trois règles.
   une voix restée au quart (`GAIN_APPEL`) et le régime qui varie ; vérifié
   rouge sur une copie où la voix reste au quart.
 
+## Le passager sans courtier (v410) — on se reconnaît à TOUTES ses identités
+
+Une règle. Une tablette a deux identités possibles : `peer.id` (le courtier)
+et `bus.monId` (le nuage), et elles DIFFÈRENT pour un invité. Les autres la
+nomment par la clé de leur lien — celle du bus quand la partie passe par le
+nuage. Tout test « est-ce moi ? » passe par `net.estMoi(id)`, jamais par
+`peer.id` seul : le conducteur sans courtier ne reconnaissait pas son propre
+nom dans la position du passager (`p.de`) et le voyait debout, 2/2 mesuré
+(`sonde-passager-nuage.cjs`) ; corrigé, 3/3 assis en moins de 50 ms. La même
+lecture sert la portière (`portiere.de`) et `rpos`.
+
 ## Le GPS d'un invité traverse l'hôte (v406) — un champ de position a un témoin par chemin
 
 Une règle. La v388 a écrit « un champ de position se lit sur les deux chemins
@@ -7188,10 +7199,9 @@ les autres restent passagers ». Quatre règles.
   l'enfant au siège de la voiture de l'ami (`sieges` de la fiche, le premier
   libre d'après les positions réseau des autres passagers), rend ses
   commandes inertes, et un appui descend — exactement le métro. Le
-  conducteur reconnaît ses passagers à `p.de === net.peer.id` ; sans
-  courtier (partie par le nuage seul) il n'a pas d'identifiant de pair, et
-  les passagers sont vus assis chez les autres mais debout chez lui — dette
-  déclarée dans `TASKS.md`.
+  conducteur reconnaît ses passagers à `net.estMoi(p.de)` — l'identité de
+  pair OU celle du bus du nuage (v410 : sans courtier il n'y a pas de pair, et
+  le passager était vu debout chez le conducteur).
 - **UNE TÊTE N'EST PAS UN TOIT, ET LE CACHE DU PLAFOND EST PAR SIÈGE.**
   `plafondAuSiege` mesure le pavillon parmi les maillages du véhicule ; il
   n'excluait que `avatarLocal`. Assis dans la voiture d'un ami, c'est SA

@@ -20,6 +20,25 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v410 — Le passager se voit assis, même sans courtier
+
+**Pourquoi.** Quand le serveur de rendez-vous ne répond pas (Wi-Fi d'hôtel,
+école), la partie passe entièrement par le nuage depuis la v154. Un enfant
+pouvait y monter en passager dans la voiture d'un ami — chez les autres il
+était bien assis, mais **chez le conducteur il restait debout à côté de la
+voiture** : le conducteur ne se reconnaissait qu'à son identité de courtier,
+qu'il n'a pas dans ce cas (dette de la v253). La portière animée (v377) ne
+s'ouvrait pas chez lui non plus, pour la même raison.
+
+**Ce que ça change.** Sans courtier, le conducteur voit son passager assis
+dans sa voiture, et sa portière s'ouvrir.
+
+**Ce qui le prouve.** Un témoin neuf dans `reseau.js`, dans la partie à deux
+sans courtier du tout. Sonde (`sonde-passager-nuage.cjs`) : sur `origin/main`,
+le passager écrit bien chez qui il est assis, mais reste debout chez le
+conducteur, 2 fois sur 2 ; corrigé, assis 3 fois sur 3, en moins de 50 ms. Au portail, `reseau.js` est verte
+entière ; les rouges de `maj.js`, `carte.js`, `manhattan.js` et `monte.js` sont
+déjà déclarés, et la double mesure les retrouve des deux côtés (`TASKS.md`).
 ## v409 — Le frein à main fait déraper la voiture
 
 **Pourquoi.** La conduite « comme GTA » que demande Max n'avait pas de frein à
