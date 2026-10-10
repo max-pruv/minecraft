@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 415,
+    titre: 'San Diego dans les deux sens',
+    puces: [
+      'Un second circuit de voitures',
+      'Sur les ponts déjà là',
+    ],
+  },
+  {
     v: 414,
     titre: 'Des ponts sur les canaux',
     puces: [

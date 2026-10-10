@@ -4853,8 +4853,11 @@ const VRAIES_KM = [
       contour.anneaux <= 120 && contour.pas <= 3000 && contour.total >= 809,
       `${contour.anneaux}/${contour.total} anneaux, ${contour.pas} pas hors de la chaussée`
       + ` (dont ${contour.fontaine} dans une fontaine) · les pires : ${contour.pires.join(', ')}`);
+    // v415 : San Diego gagne son contresens (3 → 2) ; restent San José et
+    // Guayaquil, dont le seul cycle a sa voie extérieure sur la mer ou la
+    // plage — un remède de SOL, déclaré dans TASKS.md.
     verifier('les villes engendrées à un seul circuit en ont désormais deux, le contresens',
-      contour.seuls.length <= 6,
+      contour.seuls.length <= 2,
       `${contour.seuls.length} ville(s) à un circuit : ${contour.seuls.join(', ')}`);
 
     // --- LES TABLIERS S'ALLONGENT SOUS LA VOIE (v414) -------------------------
