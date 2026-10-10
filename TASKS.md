@@ -56,9 +56,22 @@
   3 fois par minute). Peindre un passage en biais demande une géométrie (la
   couche du mailleur, comme les marquages de Paris), pas une tuile : hors zone
   piétons (villesmonde.js, londres.js, le mailleur).
-- [ ] **`realisme.js` MEURT AU CLIC « JOUER » (v385-v402, intermittent).**
-  `locator.click: Timeout 30000ms` sur `#play-btn`, machine au repos ; vu sur la
-  v381 et la v384 (mort), la v382 (vivant) : antérieur, pas de la zone piétons.
+- [x] **`monte.js` « son flanc frôlé ne nous arrête pas » — FAIT en v413.**
+  Rouge SEUL 3/3 des deux côtés (`sonde-flanc.cjs` rejoue la page « conduite »
+  seule) : la voiture d'un convoi à l'arrêt se gare au COIN de l'anneau
+  (x 410, en biais : axe 0,71 / −0,71), et la pose écrite pour une voiture
+  tournée vers +x passait à côté (`c: null`). Le témoin attend que le crochet
+  rende la voiture (`vue`, `attenteVue`) et se pose dans SON repère : 3/3
+  verts (force 0,215, 12,3 b/s, sur notre flanc). Désarmé (la boîte de la rue
+  ignorée, normale du mouvement) : choc franc, force 0,83, recul — rouge.
+- [x] **`realisme.js` MEURT AU CLIC « JOUER » — FAIT en v413.** Pas le bouton :
+  la stabilité que `locator.click` exige (deux images identiques). Sonde
+  `sonde-realisme-clic.cjs` : bouton actif, rien dessus, accueil de Manhattan à
+  0,07 image/s ; clic en 23,9 et 24,5 s au repos, expiré sous trois cœurs
+  chargés (et « Plus tard » avec). Les trois clics de l'accueil passent par le
+  document, et un verdict neuf dit si « Jouer » est actif et à découvert.
+  Sous la même charge : `origin/main` meurt au clic, la branche va au bout
+  (18/18, clic en 89 ms).
 
 - [x] **LES DEUX ROUGES RÉSEAU RÉCURRENTS (v393).** « Un départ propre
   nettoie tout le monde » : CORRIGÉ dans le jeu — `net.stop()` n'envoyait
@@ -4833,6 +4846,16 @@ l'embarquement a eu lieu, pas par une hypothèse.
   glisser bridé ×4 (425 ms, déclaré au portail de la v359) et `monte.js` les
   passants de Rome (21 % pour 20, le tirage de la v291, déclaré à la v319).
 
+- [x] **LA CASCADE « cible: quiz » — UN MÉCANISME TROUVÉ EN v413 : MINUIT.**
+  `today()` range la journée sous la date LOCALE ; `jouerSeul` n'ouvrait le
+  répit que de la journée du lancement. Une suite qui passe minuit (minuit UTC
+  est 20 h à New York, l'heure des portails du soir) retrouve un compte à
+  rebours, et un quiz couvre l'écran quinze minutes plus tard. Sonde
+  `sonde-quiz-minuit.cjs` (minuit simulé, compte à rebours réduit à 15 s) :
+  répit d'avant, quiz à 15,8 et 15,5 s ; répit rouvert par le banc, aucun
+  quiz en 30 s (2/2). Que la cascade de la v359 soit CELLE-LÀ n'est pas
+  prouvé (l'heure de ce portail n'est plus lisible) ; le mécanisme l'est, et il
+  est retiré.
 - [ ] **PORTAIL DE LA v359 (Nice) : UNE CASCADE DE `monte.js` QUE LA SUITE
   SEULE NE REND PAS.** Au portail complet (base v349), `monte.js` a rendu
   trente-quatre rouges d'un seul tenant : tous les témoins d'avion et de
@@ -5039,7 +5062,15 @@ l'embarquement a eu lieu, pas par une hypothèse.
   faite et que la v269 a payée. À reprendre après la mesure sur tablette
   ci-dessus, qui dira si la file peut remonter sans les gels.
 
-- [ ] **`maj.js` : « corps, programmes et fond de carte sont vraiment là » —
+- [x] **`maj.js` « vraiment là » — FAIT en v413 : la cause était le banc.** Le
+  témoin préparait à côté de trois pages : deux sur l'accueil (2,4 à 3,7 cœurs
+  occupés à elles deux, `sonde-voisines.cjs` ; le gel CDP n'y change rien) et
+  une en jeu. Préparation seule 3,4 et 4,4 s, avec deux voisines 38,5 et 43,9 s
+  (`sonde-prep-duree.cjs`). Le témoin passe en tête de suite, seul ; `onglet`
+  se ferme après son verdict. `maj.js` rejouée seule : branche 3/3 verte
+  (« vraiment là » et « ne floute rien »), `origin/main` 2/2 rouge (libération
+  jamais vue en 60 s). L'entrée d'origine reste dessous, pour l'histoire.
+- [ ] *(close par l'entrée ci-dessus)* **`maj.js` : « corps, programmes et fond de carte sont vraiment là » —
   ROUGE DES DEUX CÔTÉS, REJOUÉE SEULE (v267).** Portail de la v308 : rouge
   (personnages 5/9 à 47 s, carte prête) ; rejouée SEULE, verte sur la branche
   (9/9, carte prête) et ROUGE sur `origin/main` v307 (8/9, carte absente) —

@@ -7158,7 +7158,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const zr = z0 - 50;
       const anneau = [[250, 0], [410, 0], [410, -8], [120, -8], [120, 0], [250, 0]].map(([dx, dz]) => ({ x: x0 + dx, y: y0 + 1, z: zr + dz }));
       const conv = g.vehicules.circulation(anneau, 77, { nb: 1, vitesse: 0 });
-      const contre = async (pose, f) => {
+      const contre = async (pose, f, repere) => {
         reparer();
         const q = conv.place(0);
         const [dx, dz, yaw, v] = pose(q);
@@ -7169,8 +7169,29 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         P.pos.set(dx, y0 + 1.05, dz); P.yaw = yaw; P.vitesseVoiture = 0; P.derive = 0; P.braquage = 0; P.vel.set(0, 0, 0);
         P.touchMove.f = 0;
         await enJeu(0.3);
-        P.pos.set(dx, y0 + 1.05, dz); P.yaw = yaw; P.vitesseVoiture = v;
-        P.vel.set(-Math.sin(yaw) * v, 0, -Math.cos(yaw) * v);
+        // ET L'ON ATTEND LE FAIT, PAS UNE DURÉE (banc-intermittents). Au
+        // portail, le flanc rendait `{ c: null, lu: false }` une fois sur deux
+        // ou trois, des deux côtés : la voiture n'était pas encore dans la
+        // collecte de la rue quand la nôtre est partie, et deux secondes de jeu
+        // à côté d'elle n'en voyaient jamais la boîte — le témoin mesurait
+        // l'instant où la rue relit ses voitures, pas le choc. On attend que le
+        // crochet la rende À SA PLACE (huit secondes au plus, en temps réel),
+        // et le temps pris entre dans le message.
+        const tVue = performance.now(); let vue = false;
+        while (!(vue = !!(P.voitureContre && P.voitureContre(q.x, q.z, yaw + Math.PI))) && performance.now() - tVue < 8000) await enJeu(0.2);
+        const attenteVue = Math.round(performance.now() - tVue);
+        // ET L'ON SE POSE DANS LE REPÈRE DE LA VOITURE, PAS DANS CELUI DU MONDE
+        // (banc-intermittents). Rejoué SEUL trois fois de chaque côté, le
+        // flanc rendait `c: null` 3/3 sur la branche ET sur `origin/main` : la
+        // voiture d'un convoi à l'arrêt se gare au COIN de l'anneau (x 410,
+        // `garee`), pas sur sa ligne droite, et la pose « un bloc derrière,
+        // trois de côté, quinze degrés vers elle » écrite pour une voiture
+        // tournée vers +x la manquait. La pose se donne donc par rapport à la
+        // BOÎTE que le crochet rend (centre, axe), quand le crochet la rend.
+        const boite = vue ? P.voitureContre(q.x, q.z, yaw + Math.PI) : null;
+        const [px, pz, pyaw] = boite && repere ? repere(boite) : [dx, dz, yaw];
+        P.pos.set(px, y0 + 1.05, pz); P.yaw = pyaw; P.vitesseVoiture = v;
+        P.vel.set(-Math.sin(pyaw) * v, 0, -Math.cos(pyaw) * v);
         P.touchMove.f = f; P.choc = null; P.contact = null; const n = P.chocs || 0; let c = null; const lus = [];
         const vrai = P.voitureContre;
         P.voitureContre = (x, z, cap) => { const o = vrai ? vrai(x, z, cap) : null; lus.push(!!o); return o; };
@@ -7184,13 +7205,18 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
           c = { force: ch ? ch.force : 0, v: +(P.vitesseVoiture || 0).toFixed(1), long: +(ex * fx + ez * fz).toFixed(2), lat: +Math.abs(ex * fz - ez * fx).toFixed(2), contact: P.contact ? P.contact.famille : null };
         } });
         P.voitureContre = vrai; P.touchMove.f = 0;
-        return { c, lu: lus.some(Boolean), garee: [+(q.x - x0).toFixed(1), +(q.z - zr).toFixed(1)] };
+        return { c, lu: lus.some(Boolean), garee: [+(q.x - x0).toFixed(1), +(q.z - zr).toFixed(1)], axe: boite ? [+boite.ux.toFixed(2), +boite.uz.toFixed(2)] : null, vue, attenteVue };
       };
       await enJeu(0.5);
       // le flanc : à côté d'elle, quinze degrés vers elle, à 16 (à dix degrés
       // le contact reste sous le seuil d'un choc, et rien ne se publie)
       const a15 = 15 * Math.PI / 180;
-      res.vraieFlanc = await contre((q) => [q.x - 1, q.z + 3, Math.atan2(-Math.cos(a15), Math.sin(a15)), 16], 0.6);
+      res.vraieFlanc = await contre((q) => [q.x - 1, q.z + 3, Math.atan2(-Math.cos(a15), Math.sin(a15)), 16], 0.6,
+        // dans son repère : h son axe, n son côté ; un bloc en arrière, trois
+        // de côté, le cap tourné de quinze degrés vers elle
+        (o) => { const hx = o.ux, hz = o.uz, nx = -hz, nz = hx;
+          const fx = Math.cos(a15) * hx - Math.sin(a15) * nx, fz = Math.cos(a15) * hz - Math.sin(a15) * nz;
+          return [o.x - hx + 3 * nx, o.z - hz + 3 * nz, Math.atan2(-fx, -fz)]; });
       // par l'arrière, à 18, sur sa voie, cap +x
       res.vraieArriere = await contre((q) => [q.x - 9, q.z, -Math.PI / 2, 18], 0.6);
       g.vehicules.retirer(`${conv.cle}#0`);

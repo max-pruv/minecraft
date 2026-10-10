@@ -20,6 +20,49 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v413 — Les essais du jeu sont plus sûrs
+
+**Pourquoi.** Chaque livraison des sessions parallèles paie un portail de près
+de deux heures, puis une « double mesure » de rouges qui reviennent portail
+après portail, des deux côtés, sans qu'une ligne du jeu bouge. Quatre d'entre
+eux étaient parmi les plus fréquents : `realisme.js` qui meurt au clic
+« Jouer », `maj.js` « corps, programmes et fond de carte sont vraiment là »,
+la cascade « pas aux commandes » de `monte.js` (une fenêtre de quiz sur
+l'écran) et « son flanc frôlé ne nous arrête pas ». Un témoin qui change de
+verdict sans que le jeu change ne garde rien : il coûte des heures et cache
+les vrais rouges.
+
+**Ce que ça change.** Rien dans le jeu : quatre témoins se placent eux-mêmes.
+- `realisme.js` appuie comme un doigt. L'accueil de Manhattan rend 0,07 image
+  par seconde en rendu logiciel, et `locator.click` attend deux images
+  identiques : 24 s au repos, au-delà de 30 sous charge. Le témoin vérifie ce
+  que l'enfant voit (« Jouer » actif, à découvert — verdict neuf), ferme les
+  écrans d'identité qui s'enchaînent, puis clique par le document.
+- `maj.js` prépare seul. Deux pages restées sur l'accueil occupent 2,4 à 3,7
+  cœurs sur quatre (l'accueil rend le monde derrière lui) : la préparation
+  passait de 4 s à 39–44 s et touchait la borne de 45 s. Le témoin passe en
+  tête de suite, et la partie d'un témoin précédent se ferme après son
+  verdict.
+- Le banc rouvre le répit de quiz de la journée COURANTE : une suite qui
+  passait minuit retrouvait un compte à rebours, et un quiz quinze minutes
+  plus tard.
+- Le flanc frôlé se pose dans le repère de la voiture garée : elle s'arrête au
+  coin de son anneau, en biais, et la pose écrite pour une voiture droite la
+  manquait à chaque fois.
+
+**Ce qui le prouve.** Sous trois cœurs chargés, `realisme.js` meurt au clic
+sur `origin/main` et va au bout sur la branche (18/18). `maj.js` rejouée seule :
+branche 3/3 verte, `origin/main` 2/2 rouge (« vraiment là », « ne floute
+rien »). Sonde de minuit : quiz à 15,8 et 15,5 s avec l'ancien répit, aucun
+avec le neuf. Flanc : 3/3 rouge seul des deux côtés avant, 3/3 vert après.
+Chaque témoin peut encore rougir, désarmé dans une copie : « Jouer » grisé ou
+recouvert → rouge ; le choc contre la rue lu sans sa boîte → choc franc, rouge ;
+la préparation libérée sans attendre la carte → carte absente à la libération.
+Sondes : `sonde-realisme-clic`, `sonde-jouer-couvert`, `sonde-prep-duree`,
+`sonde-voisines`, `sonde-quiz-minuit`, `sonde-flanc`.
+
+---
+
 ## v412 — New York à deux, vérifié jusqu'au bout
 
 **Pourquoi.** `manhattan.js` s'arrêtait souvent à la ligne 674 sur un

@@ -517,6 +517,18 @@ class Banc {
     }
     await p.evaluate(() => {
       window.__game.edu.today().libreJusqua = 86400;
+      // LE RÉPIT VAUT AUSSI APRÈS MINUIT (banc-intermittents). `today()` range
+      // la journée sous la DATE LOCALE (`todayKey`) : un portail qui passe
+      // minuit trouve une journée neuve, sans répit, et le compte à rebours du
+      // quiz repart — quinze minutes plus tard, une fenêtre de quiz couvre
+      // l'écran et toute une suite de `monte.js` rend « pas aux commandes »
+      // (la cascade du portail de la v359, `cible: "quiz"`). On rouvre donc le
+      // répit de la journée COURANTE toutes les dix secondes, par la même
+      // donnée — sans fabriquer de journée future, que l'espace parent
+      // compterait. Une page qui a voulu un quiz (`libreJusqua` déjà posé à
+      // une autre valeur) n'est pas touchée.
+      const e = window.__game.edu;
+      setInterval(() => { const t = e.today(); if (t.libreJusqua === undefined) t.libreJusqua = 86400; }, 10000);
       document.getElementById('play-btn').click();
     });
     await p.waitForFunction(() => window.__game.running, null, { timeout: 30000 });
