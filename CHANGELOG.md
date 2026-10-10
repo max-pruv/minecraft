@@ -36,7 +36,9 @@ dans sa voiture, et sa portière s'ouvrir.
 **Ce qui le prouve.** Un témoin neuf dans `reseau.js`, dans la partie à deux
 sans courtier du tout. Sonde (`sonde-passager-nuage.cjs`) : sur `origin/main`,
 le passager écrit bien chez qui il est assis, mais reste debout chez le
-conducteur, 2 fois sur 2 ; corrigé, assis 3 fois sur 3, en moins de 50 ms.
+conducteur, 2 fois sur 2 ; corrigé, assis 3 fois sur 3, en moins de 50 ms. Au portail, `reseau.js` est verte
+entière ; les rouges de `maj.js`, `carte.js`, `manhattan.js` et `monte.js` sont
+déjà déclarés, et la double mesure les retrouve des deux côtés (`TASKS.md`).
 
 ---
 

@@ -60,6 +60,18 @@
   `maj.js` « le loader dit combien de fichiers » (intermittent, table plus
   bas), `manhattan.js` trou (9 203 → 51 734), « le taxi roule » (bouton
   jamais visible) et l'invité de la ligne 674 qui ne rejoint pas.
+- [ ] **LE PORTAIL DE LA v407 (le passager sans courtier), DOUBLE MESURE
+  FAITE.** Dix suites ; `reseau.js` VERTE entière (le témoin neuf : assise en
+  510 ms). Rouges, tous déjà déclarés : `maj.js` (loader, libération, palier
+  ×2), `carte.js` (la flèche du GPS à gauche lue à 1,57), `manhattan.js` (trou
+  22 326 → 51 734), `monte.js` (flâneur de Rome, compilation de New York,
+  flanc frôlé). Rejouées SEULES : `maj.js` branche 3 rouges / `origin/main`
+  (v406) 0 — à l'INVERSE de la mesure faite deux heures plus tôt pour la v406
+  (branche 0, `origin/main` 3) : la même intermittence des deux côtés ;
+  `carte.js` branche « glisser bridé ×4 » 405 ms pour 400, `origin/main` la
+  flèche du GPS ; `manhattan.js` trou et taxi des deux côtés. `monte.js` : preuve
+  structurelle, la suite n'ouvre aucune partie en ligne (`net` nul, `estMoi`
+  jamais appelé).
 - [x] **LE GPS PARTAGÉ PAR UN HÔTE QUI RELAIE (`rpos`) A SON TÉMOIN À
   TROIS TABLETTES (v406).** `reseau.js`, pendant la partie à trois : la
   destination de Nina proposée à Alice à travers l'hôte. Sonde isolée 3/3
