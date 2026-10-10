@@ -669,7 +669,12 @@ export class Player {
     for (let d = DEMI_LONG_VOITURE + 1; d <= DEMI_LONG_VOITURE + 1 + portee; d += 3) {
       const a = this.voitureContre(this.pos.x + fx * d, this.pos.z + fz * d, this.yaw + Math.PI);
       if (!a || a.rail) continue;
-      if (a.v > 0.3 && a.ux * fx + a.uz * fz < 0.7) return null;   // en travers ou de face : ce n'est pas une file
+      // en travers ou de face : ce n'est pas une file — ET CELA SE LIT MÊME À
+      // L'ARRÊT. Le premier jet ne regardait le sens que d'une voiture qui
+      // roule : une voiture arrêtée qui nous faisait face était « suivie », on
+      // s'arrêtait poliment devant elle au lieu de pouvoir la percuter (rouge
+      // intermittent de `degats.js`, selon qu'elle roulait encore un peu).
+      if (a.ux * fx + a.uz * fz < 0.7) return null;
       const ecart = (a.x - this.pos.x) * fx + (a.z - this.pos.z) * fz - DEMI_LONG_VOITURE - (a.a || DEMI_LONG_VOITURE);
       if (ecart < -0.5) return null;                                  // déjà dedans : le choc décide
       const vAutre = a.v * (a.ux * fx + a.uz * fz);
