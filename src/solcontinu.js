@@ -426,7 +426,10 @@ export function emettreRubans(buf, world, cx, cz, chunk) {
 // des routes (v300) : aucun matériau, aucun programme, aucun appel de dessin
 // de plus, et le palier bas les voit comme le haut. Seulement une colonne
 // dont le sommet est de l'asphalte et dont le dessus est de l'air.
-export function emettreBandesPassages(buf, world, cx, cz, chunk) {
+// `localGet` lit le morceau lui-même (coordonnées locales) : aucun bloc lu hors
+// du morceau, aucun `getBlock` du monde — le travail d'un morceau (v352) ne
+// bouge pas pour des bandes peintes.
+export function emettreBandesPassages(buf, world, cx, cz, chunk, localGet, topY) {
   const baseX = cx * chunk, baseZ = cz * chunk;
   // une question par morceau d'abord : aucun coin dans une ville en biais, rien
   let ville = false;
@@ -438,8 +441,10 @@ export function emettreBandesPassages(buf, world, cx, cz, chunk) {
   const rect = tileRect(BLOCK_INFO[BLOCK.SNOW].tiles[0]);
   let n = 0;
   for (let x = baseX; x < baseX + chunk; x++) for (let z = baseZ; z < baseZ + chunk; z++) {
-    const y = world.sommetColonne(x, z);
-    if (world.getBlock(x, y, z) !== CITY_BLOCK.ASPHALT || world.getBlock(x, y + 1, z) !== BLOCK.AIR) continue;
+    const lx = x - baseX, lz = z - baseZ;
+    let y = topY;
+    while (y > 0 && localGet(lx, y, lz) === BLOCK.AIR) y--;
+    if (localGet(lx, y, lz) !== CITY_BLOCK.ASPHALT) continue;
     const bandes = bandesDeColonne(x, z);
     for (const poly of bandes) {
       const base = buf.positions.length / 3, yt = y + 1.01;

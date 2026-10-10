@@ -2351,7 +2351,11 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // rouge, et il le dit.
     const auPassageBiais = await auPassageDans('rome', true);
     verifier('à Rome aussi, en biais, un passant traverse sur le passage peint d\'un carrefour sans feu',
-      !auPassageBiais.err && auPassageBiais.poses >= 4 && auPassageBiais.surPassage >= 2 && auPassageBiais.surPassage >= 0.6 * auPassageBiais.traversees,
+      // une traversée AU FEU (`tr` porte l'axe du feu) n'est pas sur un passage
+      // peint : le passant a pu marcher jusqu'à un carrefour à feux (vu au
+      // portail, 0/24 peint, `tr: 1`). On juge les traversées sans feu.
+      !auPassageBiais.err && auPassageBiais.poses >= 4 && auPassageBiais.surPassage >= 1
+        && auPassageBiais.surPassage >= 0.6 * auPassageBiais.detail.filter((d) => d.tr === null).length,
       JSON.stringify(auPassageBiais));
 
     // ---- UN PASSANT NE TRAVERSE PAS LA VOITURE DE L'ENFANT (v259) -------------

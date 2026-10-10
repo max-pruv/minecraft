@@ -606,7 +606,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
   // les passages piétons des trames en biais (v412) : de la géométrie aussi
   // (`passagesBiais: false` les retire : l'empreinte des morceaux de la v352
   // garde ainsi la sortie d'avant, au bit près — un contenu neuf a ses témoins)
-  if (options.passagesBiais !== false) emettreBandesPassages(solid, world, cx, cz, CHUNK);
+  if (options.passagesBiais !== false) emettreBandesPassages(solid, world, cx, cz, CHUNK, localGet, topY);
 
   return {
     solid: solid.toTampons(),
