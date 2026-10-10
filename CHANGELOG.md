@@ -20,6 +20,32 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v412 — New York à deux, vérifié jusqu'au bout
+
+**Pourquoi.** `manhattan.js` s'arrêtait souvent à la ligne 674 sur un
+`TimeoutError` : l'ami qui rejoint un monde ouvert dans New York ne
+« démarrait » jamais. Cinq témoins venaient après (le bloc partagé, le code
+Terre dans le nuage, l'archive reprise, deux clients sans erreur, le jeu hors
+ligne) et ne tournaient donc presque jamais. Déclaré « intermittence sous la
+charge » depuis la v381. Rejouée seule, la suite s'arrêtait là deux fois sur
+deux, sur la branche comme sur `origin/main`.
+
+**Ce que ça change.** Rien dans le jeu : la cause était le banc. La page de
+l'invité s'ouvrait pendant que l'hôte rendait Manhattan, qui tourne à 0,4
+image par seconde en rendu logiciel et occupe les quatre cœurs de la machine.
+Sur deux vraies tablettes, chacune a son processeur. Le témoin ouvre
+désormais la page de l'ami d'abord, puis l'hôte entre dans New York et l'ami
+le rejoint avec le geste de l'enfant (code, Rejoindre, Jouer).
+
+**Ce qui le prouve.** Sonde (`sonde-invite-ny.cjs`) : hôte dans Manhattan,
+le jeu de l'invité apparaît en 44 s puis au-delà de 90 s, sans une erreur ;
+hôte hors Manhattan, en 13 et 18 s. Page ouverte d'abord
+(`sonde-invite-avant.cjs`) : 3 sur 3, bloc propagé en 0,2 à 6 s. Rejouée
+seule, `manhattan.js` va jusqu'au bout et les cinq témoins d'après sont
+verts ; reste le rouge déclaré du trou de façade (17 102 → 54 969).
+
+---
+
 ## v411 — Un pas de côté ne fait plus traverser la rue
 
 **Pourquoi.** Le témoin du feu de la v402 l'a publié deux fois sur quatre, des

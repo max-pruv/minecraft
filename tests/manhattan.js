@@ -665,7 +665,7 @@ function verifier(nom, ok, detail = "") {
     );
     await reprise.close();
     nuage = await servirLeNuage(9360);
-    // L'INVITÉ OUVRE SA PAGE AVANT QUE L'HÔTE N'ENTRE DANS MANHATTAN (v411).
+    // L'INVITÉ OUVRE SA PAGE AVANT QUE L'HÔTE N'ENTRE DANS MANHATTAN (v412).
     // C'était le « TimeoutError de la ligne 674 » : `banc.rejoindre` ouvrait
     // la page de l'invité PENDANT que l'hôte rendait Manhattan, qui tourne à
     // 0,4 image par seconde en rendu logiciel (v259) et prend les quatre
