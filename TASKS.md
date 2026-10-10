@@ -252,6 +252,16 @@
   sur `origin/main` à (−2 581, 5 272), un nœud de circuits face à face,
   8,8 % sur la v405 — d'avant, à démonter. (5) Palier C : utilitaires et
   pickups (classe dans `FLOTTE`), variance par voiture, voie par tronçon.
+  Portail de la v405 (dix-sept suites) : verts sauf `plafond.js` (l'A1 :
+  À MOI, la voiture du témoin butait sur la circulation densifiée —
+  repointée, rejouée seule entièrement verte, 80,7 blocs, 15 voitures
+  écartées), `maj.js` (libération `null`, flou — déclarés), `carte.js`
+  (glisser 464 ms — déclaré), `manhattan.js` (trou, PeerJS — déclarés),
+  `monte.js` (« la rue roule » médiane 0 dans un bouchon — déclaré v397 ;
+  REJOUÉ SEUL des deux côtés par `sonde-circulation.cjs paris 40` : branche
+  médiane 4,9, p90 10,2, 4 contacts ; `origin/main` 4,8, 9,9, 18 contacts —
+  et compilation New York, trou en vol, atterrissage, flanc frôlé :
+  familles déclarées).
 - [ ] **LA CIRCULATION VIVANTE, PALIERS SUIVANTS (v395, session
   `claude/circulation-vivante`).** Livré : limitations par voie, profil de
   vitesse dans la grille, grille par voiture, freinage local (feu, file,
