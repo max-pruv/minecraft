@@ -3692,6 +3692,17 @@ l'embarquement a eu lieu, pas par une hypothèse.
 ## En cours
 
 ### Embarquement (v366) — ce qui reste dans la zone
+- [ ] **LE PORTAIL DE LA v405 (le passager suit la voiture de son ami).**
+  `reseau.js` verte en entier (24 min), `degats`, `carte`, `reglages`
+  verts. Sonde `sonde-passager-refait.cjs` seule : 3/3 sur la branche, 0/3
+  sur `origin/main` (« annulée »). Rouges, tous de familles déjà déclarées et
+  mesurées sur `origin/main` : `maj.js` « vraiment là » ; `monte.js` la
+  chauffe de New York expirée (53/321), le réverbère au volant, le bout du
+  monde qui se charge (trou 82 de l'avion de ligne passe, un autre appareil
+  sous sa barre), le flanc frôlé (v397). PREUVE STRUCTURELLE (v291) : le code
+  neuf n'est atteint que par `monterChez` / `descendreDeChez`, donc avec un
+  passager ET `embarq: 1` ; aucune de ces pages ne le fait, et la seule page
+  `embarq: 1` de `monte.js` est verte.
 - [ ] **LE PORTAIL DE LA v400 (la descente d'avion), DOUBLE MESURE FAITE.**
   Les quatre témoins neufs verts (`monte.js`), et la sonde
   `sonde-descente-avion.cjs` seule : 4/4 sur la branche, 1/4 sur
