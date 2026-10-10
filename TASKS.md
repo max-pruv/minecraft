@@ -1115,6 +1115,14 @@
   `maj.js` le loader et la préparation ; `carte.js` la flèche du GPS (1,92)
   et le glisser bridé (486 ms) ; `manhattan.js` le trou de façade et le taxi
   tactile.
+  Après la fusion de la v406, `degats.js` rejouée seule : « percuter une
+  voiture de la rue » était MON défaut (le suivi ne lisait le sens d'une
+  voiture que si elle roulait — corrigé, vert). Et « très touchée elle fume »
+  est un TIRAGE, déclaré à la session des dégâts : il compte les particules de
+  fumée visibles à UN instant (`particulesVisibles().fumee > 0`), et ce compte
+  vaut 0, 1, 2 sur la branche contre 1, 2 sur `origin/main` v406, même santé
+  (0,33), même module. La grandeur juste est l'émission sur une fenêtre (v279 :
+  un minimum échantillonné est une propriété de la cadence).
 - [ ] **POUR MAX, SUR LA TABLETTE — la pente, la bosse et la file (v407).**
   Ouvrir `https://minecraft-fam.vercel.app/?diag=1`, prendre une voiture. La
   ligne « au volant : … » dit désormais la `pente` sous la caisse, le
