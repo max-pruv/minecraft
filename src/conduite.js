@@ -81,6 +81,19 @@ export const VOLANT_RETOUR = 4.5;     // et retour au centre quand on lâche
 export const DERIVE_MAX = 0.28;       // ≈ 16° : on glisse, on ne part pas en tête-à-queue
 export const DERIVE_TAU = 0.35;       // s : la vitesse rattrape le cap
 export const FROTTEMENT_DERIVE = 1.1; // la dérive coûte de la vitesse
+// LE FREIN À MAIN (palier C). Les roues arrière se bloquent : elles ne tiennent
+// plus la route, l'arrière part, et la caisse tourne bien plus que le volant ne
+// le dit — le dérapage contrôlé à la GTA. On ne fait pas de tête-à-queue
+// (`DERIVE_MAX_MAIN`, ≈ 55°), et au lâcher la caisse se remet dans l'axe de la
+// vitesse à `REPRISE` rad/s, jamais d'un coup : la dérive d'avant est bornée
+// par sa propre valeur qui décroît, puis par `DERIVE_MAX`.
+export const FREIN_MAIN = 3;          // blocs/s² — les roues arrière frottent
+export const GRIP_MAIN = 0.35;        // part de l'adhérence qui reste
+export const LACET_MAIN = 2.4;        // la caisse tourne plus que le volant
+export const DERIVE_MAX_MAIN = 0.95;  // ≈ 55°
+export const DERIVE_TAU_MAIN = 1.4;   // s : la vitesse rattrape le cap, lentement
+export const REPRISE = 1.5;           // rad/s : la dérive rendue au lâcher
+export const GLISSE_MAIN = 0.45;      // part du frottement de dérive : on glisse, on ne laboure pas
 
 // La fiche d'une voiture d'après sa pointe. `fun.js` ne transmet au joueur
 // que l'allure (`player.boost`, multiple de la marche) : la classe se
@@ -140,6 +153,104 @@ export function tempsJusqua(cible, fiche) {
 const signe = (x) => (x > 0 ? 1 : x < 0 ? -1 : 0);
 const borne = (x, a) => Math.max(-a, Math.min(a, x));
 
+// LA PENTE ET LA BOSSE (palier 3). Une seule pesanteur le long de la route,
+// la vraie (9,81) : celle du jeu (26, le saut) rendrait une pente d'un bloc
+// par bloc — la plus raide que la surface continue dessine — plus forte que
+// le moteur d'une citadine, et un enfant resterait au pied d'une colline.
+// `pente` est la montée par bloc parcouru, nez en haut positif.
+export const PESANTEUR_PENTE = 9.81;
+export const MAINTIEN = 0.3;          // blocs/s : sous ce seuil, sans commande, on tient
+export function gravitePente(pente) {
+  return -PESANTEUR_PENTE * pente / Math.sqrt(1 + pente * pente);
+}
+// La vitesse d'équilibre à plein gaz sur une pente constante (au-dessus du
+// coup de départ, v > LANCER_JUSQUA) : a0·(1 − (v/vmax)²) = g·sin θ. Infinie
+// en descente : là c'est l'air et le frein moteur qui bornent.
+export function vitesseEnCote(pente, fiche) {
+  const g = -gravitePente(pente);
+  if (g <= 0) return fiche.vmax;
+  return g >= fiche.a0 ? 0 : fiche.vmax * Math.sqrt(1 - g / fiche.a0);
+}
+// La vitesse de roue libre sur une descente constante, joystick lâché :
+// FREIN_MOTEUR + TRAINEE·v² = g·sin θ. Nulle tant que le frein moteur tient.
+export function vitesseEnRoueLibre(pente) {
+  const g = gravitePente(pente);
+  return g <= FREIN_MOTEUR ? 0 : Math.sqrt((g - FREIN_MOTEUR) / TRAINEE);
+}
+// CE QUE LA CAISSE VOIT DE LA SURFACE. La surface continue passe par le centre
+// de chaque colonne : sur une colline de relief entier, c'est une dent de scie
+// (des facettes à 0 et à 1 bloc par bloc pour une pente de 0,37). Un point qui
+// la suivrait décollerait de chaque dent — mesuré au premier jet : 1,1 à
+// 3,2 s « en l'air » sur six côtes droites. Une voiture a des roues sur toute
+// sa longueur et une suspension : on lit la surface en CINQ points le long de
+// la caisse (de −2 à +2 blocs) et l'on en prend la moyenne (la cote) et la
+// droite des moindres carrés (la pente, nez en haut positif). `sol` rend la
+// cote de la surface continue en (x, z), ou null (voxel : ville, bloc posé,
+// falaise) — et alors on ne lit rien.
+export const LECTURE = [-2, -1, 0, 1, 2];
+export function sousLaCaisse(sol, x, z, cap) {
+  const fx = -Math.sin(cap), fz = -Math.cos(cap);
+  let somme = 0, pente = 0, n2 = 0;
+  for (const o of LECTURE) {
+    const c = sol(x + fx * o, z + fz * o);
+    if (c === null) return null;
+    somme += c; pente += o * c; n2 += o * o;
+  }
+  return { cote: somme / LECTURE.length, pente: pente / n2 };
+}
+export function penteSousLaCaisse(sol, x, z, cap) {
+  const r = sousLaCaisse(sol, x, z, cap);
+  return r ? r.pente : null;
+}
+// LA SUSPENSION : tant que la caisse est à moins de DEBATTEMENT au-dessus de la
+// surface, ses roues touchent (traction, volant, pente) et elle y revient à
+// RAPPEL blocs/s. Au-delà, elle vole, et cela se voit.
+export const DEBATTEMENT = 0.35;
+export const RAPPEL = 3;
+// Le sol de la caisse est la surface LISSÉE (la cote de `sousLaCaisse`) — sans
+// quoi chaque marche d'une descente faisait sauter la voiture (mesuré : 0,5 à
+// 0,8 s « en l'air » sur six descentes droites, et la descente devenait plus
+// LENTE que le plat faute de roues au sol). Sur une crête de dent de scie, la
+// surface au centre peut dépasser la cote lissée : la caisse ne s'y enfonce
+// pas de plus d'ENFONCE (les roues l'enjambent, cela ne se voit pas).
+export const ENFONCE = 0.3;
+// L'ATTERRISSAGE : la vitesse avec laquelle la caisse rencontre la surface
+// (`vyCible` est la vitesse verticale qu'exige la surface sous les roues, la
+// vitesse le long de la route fois la pente). Une chute de CHUTE_PLEINE blocs/s
+// — 4,3 blocs de haut à la pesanteur du jeu — vaut un atterrissage plein.
+export const CHUTE_PLEINE = 15;
+export function forceAtterrissage(vyImpact, vyCible) {
+  return Math.max(0, Math.min(1, (vyCible - vyImpact) / CHUTE_PLEINE));
+}
+
+// SUIVRE UNE VOITURE PLUS LENTE (palier 3). Une voiture de la rue ne se pousse
+// pas (horloge partagée, v305) : collé derrière elle, joystick en avant, on la
+// touchait à chaque image — des caresses sous CONTACT_DOUX, invisibles aux
+// dégâts mais pas à l'enfant, dont la voiture tremblait contre un pare-chocs.
+// On la SUIT : la vitesse permise est celle qu'on peut encore perdre, au
+// freinage de confort, avant d'arriver à ECART_SUIVI de son pare-chocs — et
+// à cet écart, c'est la sienne. `ecart` : de notre pare-chocs avant au sien
+// arrière, le long de notre cap.
+export const ECART_SUIVI = 1.5;       // blocs entre les deux pare-chocs, à l'arrêt comme en file
+export const FREIN_SUIVI = 9;         // blocs/s², un freinage qu'on sent sans piler
+// On ne suit que ce qu'on RATTRAPE DOUCEMENT : une file. Arriver plus vite que
+// SUIVI_DELTA au-dessus de son allure, c'est foncer dessus — un choc, comme
+// avant (les dégâts de la rue, v356, et le jeu de Marlon en dépendent).
+export const SUIVI_DELTA = 4;         // blocs/s relatifs
+export const PORTEE_SUIVI = 36;       // blocs devant le pare-chocs : l'arrêt au frein franc depuis 40 b/s
+export function vitesseDeSuivi(vAutre, ecart) {
+  return Math.max(0, vAutre) + Math.sqrt(2 * FREIN_SUIVI * Math.max(0, ecart - ECART_SUIVI));
+}
+// le freinage qu'il faut pour arriver à ECART_SUIVI à la vitesse de l'autre :
+// celui du confort si cela suffit, jusqu'au frein franc sinon (une voiture vue
+// tard — un virage, une file qui débouche)
+export function freinDeSuivi(v, vAutre, ecart) {
+  const va = Math.max(0, vAutre);
+  if (v <= va) return FREIN_SUIVI;
+  const besoin = (v * v - va * va) / (2 * Math.max(0.1, ecart - ECART_SUIVI));
+  return Math.max(FREIN_SUIVI, Math.min(FREIN, besoin));
+}
+
 // LE PAS DE DYNAMIQUE.
 //   e      : { v, braquage, derive } — l'état d'avant (v signée, blocs/s)
 //   entree : { gaz, volant, moteur, direction, inerte }
@@ -147,12 +258,22 @@ const borne = (x, a) => Math.max(-a, Math.min(a, x));
 //            (positif = à droite) ; moteur ∈ [0, 1] (dégâts) ; direction en
 //            rad/s à pleine vitesse (la voiture tire d'un côté, contrat de
 //            degats.js) ; inerte : plus aucune commande
-//            (panne, feu, embarquement en cours).
+//            (panne, feu, embarquement en cours) ; pente (montée par bloc,
+//            nez en haut, palier 3) ; auSol === false : les roues en l'air ;
+//            plafond : la vitesse de suivi d'une voiture plus lente devant.
 //   fiche  : CLASSES[...] (ou `ficheDeVitesse`)
 // Rend { v, braquage, derive, dCap } : dCap est ce qu'on AJOUTE au cap du
 // corps (convention de `player.yaw` : tourner à droite le fait décroître).
 // La direction de la vitesse vaut alors cap + derive.
 export function pasVoiture(e, entree, fiche, dt) {
+  // EN L'AIR (palier 3) : les roues ne touchent rien — ni moteur, ni frein, ni
+  // volant, ni pente. Seul l'air freine, et le cap ne tourne pas.
+  if (entree.auSol === false) {
+    let v = e.v || 0;
+    const d = TRAINEE * v * v * dt;
+    v = Math.abs(v) <= d ? 0 : v - signe(v) * d;
+    return { v, braquage: e.braquage || 0, derive: e.derive || 0, dCap: 0 };
+  }
   let v = e.v || 0;
   let braquage = e.braquage || 0;
   let derive = e.derive || 0;
@@ -166,17 +287,25 @@ export function pasVoiture(e, entree, fiche, dt) {
   let gaz = inerte ? 0 : borne(entree.gaz || 0, 1);
   if (Math.abs(gaz) < ZONE_MORTE) gaz = 0;
   const volant = inerte ? 0 : borne(entree.volant || 0, 1);
+  const main = !inerte && !!entree.freinMain;
 
   // — longitudinal —
   const roule = (a) => {   // frein moteur et air : vers zéro, sans le franchir
     const d = a * dt;
     v = Math.abs(v) <= d ? 0 : v - signe(v) * d;
   };
-  if (gaz > 0) {
+  // plafond de suivi (palier 3) : une voiture plus lente devant, on la suit
+  const plafond = entree.plafond == null ? Infinity : Math.max(0, entree.plafond);
+  if (main) {
+    // frein à main : le moteur ne pousse plus, les roues arrière frottent
+    roule(FREIN_MAIN + TRAINEE * v * v);
+  } else if (gaz > 0 && v > plafond + 0.5) {
+    v = Math.max(plafond, v - (entree.freinSuivi || FREIN_SUIVI) * dt);
+  } else if (gaz > 0) {
     if (v < -0.3) {
       v = Math.min(0, v + FREIN * gaz * dt);           // on freine la marche arrière
     } else {
-      const cible = gaz * vmax;
+      const cible = Math.min(gaz * vmax, plafond);
       if (v < cible) v = Math.min(cible, v + accelVoiture(Math.max(0, v), vmax, a0) * dt);
       else roule(FREIN_MOTEUR + TRAINEE * v * v);
     }
@@ -191,6 +320,11 @@ export function pasVoiture(e, entree, fiche, dt) {
   } else {
     roule(FREIN_MOTEUR + TRAINEE * v * v);
   }
+  // LA PENTE (palier 3) : la montée ralentit, la descente accélère. La
+  // composante de la pesanteur le long de la caisse, pente prise nez en haut.
+  // Une voiture arrêtée qu'on ne commande pas tient sur son frein (MAINTIEN) :
+  // un enfant qui lâche le joystick sur une colline ne la redescend pas.
+  if (entree.pente && !((gaz === 0 || main) && Math.abs(v) < MAINTIEN)) v += gravitePente(entree.pente) * dt;
   if (v > vmax) roule(FREIN_MOTEUR + TRAINEE * v * v); // moteur abîmé en route
 
   // — volant lissé, retour au centre —
@@ -202,18 +336,20 @@ export function pasVoiture(e, entree, fiche, dt) {
   const a = Math.abs(v);
   const delta = braquage * braquageMax(v, fiche);
   const omega = (v * Math.tan(delta)) / EMPATTEMENT;   // rad/s, positif = à droite
-  const corps = -omega;                                // ce que le cap voudrait tourner
+  const corps = -omega * (main ? LACET_MAIN : 1);      // ce que le cap voudrait tourner
   // la direction de la vitesse suit le corps, et rattrape la dérive…
-  let vitesseCap = corps - derive / DERIVE_TAU;
+  let vitesseCap = corps - derive / (main ? DERIVE_TAU_MAIN : DERIVE_TAU);
   // … dans la limite de l'adhérence
-  const grip = fiche.mu / Math.max(a, 0.5);
+  const grip = fiche.mu * (main ? GRIP_MAIN : 1) / Math.max(a, 0.5);
   vitesseCap = borne(vitesseCap, grip);
   if (a < 0.3) { vitesseCap = corps; }
   let nouvelle = derive + (vitesseCap - corps) * dt;
   let dCap = corps * dt;
-  if (Math.abs(nouvelle) > DERIVE_MAX) {
+  // la borne : large au frein à main, et rendue PEU À PEU au lâcher
+  const limite = main ? DERIVE_MAX_MAIN : Math.max(DERIVE_MAX, Math.abs(derive) - REPRISE * dt);
+  if (Math.abs(nouvelle) > limite) {
     // le corps ne tourne pas plus que ce que la dérive permet
-    const exces = nouvelle - signe(nouvelle) * DERIVE_MAX;
+    const exces = nouvelle - signe(nouvelle) * limite;
     dCap += exces;
     nouvelle -= exces;
   }
@@ -224,7 +360,7 @@ export function pasVoiture(e, entree, fiche, dt) {
   // physique ne le lise (`physiqueLitEtat`).
   if (entree.direction) dCap += entree.direction * Math.min(1, a / Math.max(1, fiche.vmax)) * signe(v) * dt;
   // la dérive coûte de la vitesse : on frotte les pneus
-  if (derive) v -= v * FROTTEMENT_DERIVE * Math.abs(Math.sin(derive)) * dt;
+  if (derive) v -= v * FROTTEMENT_DERIVE * (main ? GLISSE_MAIN : 1) * Math.abs(Math.sin(derive)) * dt;
   return { v, braquage, derive, dCap };
 }
 
@@ -423,11 +559,18 @@ export function mondeDevant(maille, x, z, yaw, taille, max = 400) {
   return max;
 }
 
-export function ligneDiagConduite({ classe, v, vmax, devant, roueLibre }) {
+export function ligneDiagConduite({ classe, v, vmax, devant, roueLibre, pente, atterrissage, suivi, derapage }) {
   const a = Math.abs(v || 0);
   const kmh = (b) => Math.round(b * 3.6);
   let l = `au volant : ${classe || '?'} · ${a.toFixed(1)} blocs/s (${kmh(a)} km/h) · pointe ${(vmax || 0).toFixed(0)} (${kmh(vmax || 0)} km/h)`;
   if (devant != null) l += ` · monde maillé devant ${devant} blocs${a > 1 ? ` (${(devant / a).toFixed(1)} s de route)` : ''}`;
   if (roueLibre) l += ` · roue libre ${roueLibre.depuis.toFixed(0)} → 0 en ${roueLibre.s.toFixed(1)} s`;
+  // palier 3 : la pente sous la caisse, et le dernier saut (ce que Max relève
+  // en roulant sur une colline, TASKS.md « POUR MAX, SUR LA TABLETTE »)
+  if (pente != null) l += ` · pente ${Math.round(pente * 100)} %`;
+  if (suivi) l += ` · suit une voiture à ${suivi.v.toFixed(0)} blocs/s, ${suivi.ecart.toFixed(1)} blocs devant`;
+  // palier C : le dernier dérapage au frein à main (angle le plus large, durée)
+  if (derapage) l += ` · dernier dérapage ${Math.round(derapage.max * 180 / Math.PI)}° en ${derapage.s.toFixed(1)} s`;
+  if (atterrissage) l += ` · dernier saut ${atterrissage.air.toFixed(1)} s, ${atterrissage.hauteur.toFixed(1)} blocs, choc ${atterrissage.force.toFixed(2)}`;
   return l;
 }

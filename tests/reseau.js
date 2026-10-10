@@ -137,6 +137,33 @@ function verifier(nom, ok, detail = '') {
     const fantomes = (await vu(alice)).avatars.filter((a) => a.nom === '…' || !a.nom);
     verifier('aucun avatar sans nom', fantomes.length === 0, JSON.stringify(fantomes));
 
+    // LE GPS D'UN INVITÉ TRAVERSE L'HÔTE (v406). La v388 éprouvait l'hôte et
+    // un invité ; entre DEUX invités, la destination n'existe que dans la
+    // position RELAYÉE (`rpos`), et c'est le chemin que la v374 avait déjà
+    // oublié pour l'histoire des chocs. Nina choisit Rome : Alice, qui n'a
+    // jamais eu de lien avec elle, doit voir « Nina va à Rome » — et la
+    // proposition ne touche pas son GPS (elle n'en a pas). Rouge sur une copie
+    // où `rpos` ne lit pas `g` : rien n'arrive chez Alice.
+    const gpsRelaye = { proposee: null, ms: null, gpsAlice: null };
+    {
+      const rome = await nina.evaluate(async () => (await import('./src/mondes.js')).positionDe('rome'));
+      const t0 = Date.now();
+      await nina.evaluate((r) => window.__carte.surGPS(r.x, r.z, 'Rome'), rome);
+      const vue = await jusqua(async () => !!(await alice.evaluate(() => window.__gpsAmi && window.__gpsAmi())), 30000);
+      gpsRelaye.ms = vue ? Date.now() - t0 : null;
+      gpsRelaye.proposee = await alice.evaluate(() => {
+        const p = window.__gpsAmi ? window.__gpsAmi() : null; const el = document.getElementById('gps-ami-texte');
+        return p ? { qui: p.qui, nom: p.nom, texte: el ? el.textContent : '' } : null;
+      });
+      gpsRelaye.gpsAlice = await alice.evaluate(() => (window.__gps() ? window.__gps().nom : null));
+      await alice.evaluate(() => document.getElementById('gps-ami-non')?.click());
+      await nina.evaluate(() => document.getElementById('gps-stop')?.click());
+    }
+    verifier('le GPS d\'un invité est proposé à l\'autre invité, à travers l\'hôte',
+      !!gpsRelaye.proposee && gpsRelaye.proposee.qui === 'Nina' && gpsRelaye.proposee.nom === 'Rome'
+      && /Nina va à Rome/.test(gpsRelaye.proposee.texte) && gpsRelaye.gpsAlice === null,
+      JSON.stringify(gpsRelaye));
+
     // --- l'ami au volant est vu dans sa voiture, et l'on monte avec lui (v253)
     //
     // Max : « en multijoueur, on ne voit pas si un user est dans une voiture,
@@ -364,6 +391,27 @@ function verifier(nom, ok, detail = '') {
     }, volantLou);
     const boutonLou = () => lou.evaluate(() => { const b = document.getElementById('ride-btn'); return { texte: b.textContent, visible: b.style.display !== 'none' }; });
     await jusqua(async () => { const b = await boutonLou(); return b.visible && /Monter avec/.test(b.texte); }, 15000);
+    // CE QUE LA TABLETTE DE LOU FAIT DE LA VOITURE DE MARLON, image par image
+    // (v407) : quand l'ami est recréé, quand son maillage de voiture change,
+    // quand la phase change. Le rouge qui allait et venait (v377) disait
+    // seulement « la séquence s'annule » ; ce relevé dit pourquoi, et il entre
+    // dans le message des deux témoins du passager.
+    await lou.evaluate((id) => {
+      const g = window.__game, log = [], t0 = performance.now();
+      let rp = g.remotePlayers.get(id), m = rp && rp.vehicule ? rp.vehicule.mesh : null, ph;
+      const pas = () => {
+        const t = Math.round(performance.now() - t0);
+        const r = g.remotePlayers.get(id), mm = r && r.vehicule ? r.vehicule.mesh : null;
+        const e = g.player.embarquement, p2 = e ? e.phase : null;
+        if (r !== rp) { log.push({ t, quoi: r ? 'ami recréé' : 'ami parti' }); rp = r; }
+        if (mm !== m) { log.push({ t, quoi: mm ? 'maillage neuf' : 'plus de voiture', cle: r && r.vehicule ? r.vehicule.cle : null }); m = mm; }
+        if (p2 !== ph) { log.push({ t, ph: p2 }); ph = p2; }
+        if (t < 150000) requestAnimationFrame(pas);
+      };
+      window.__suiviVoitureAmi = log;
+      requestAnimationFrame(pas);
+    }, marlonChezLou);
+    const suiviAmi = () => lou.evaluate(() => (window.__suiviVoitureAmi || []).slice(0, 40));
     await lou.evaluate(() => document.getElementById('ride-btn').click());
     const t0 = Date.now();
     const releves = [];
@@ -386,7 +434,7 @@ function verifier(nom, ok, detail = '') {
     verifier('le passager entre par la portière droite, et le conducteur la voit s\'ouvrir chez lui',
       volantLou.auVolant && phases.includes('ouverture') && phases.includes('entree') && fin.passager
         && ouverteChezMarlon.length > 0 && fin.angle !== null && Math.abs(fin.angle) < 0.02,
-      JSON.stringify({ volantLou, phases, ouvertes: ouverteChezMarlon.length, max: Math.max(...releves.map((r) => r.angle || 0)), fin, n: releves.length, ms: fin.t }));
+      JSON.stringify({ volantLou, phases, ouvertes: ouverteChezMarlon.length, max: Math.max(...releves.map((r) => r.angle || 0)), fin, n: releves.length, ms: fin.t, suivi: await suiviAmi() }));
     // --- et il en DESCEND par la portière (v384) ------------------------------
     //
     // La descente du passager était instantanée : Lou se retrouvait debout
@@ -424,7 +472,35 @@ function verifier(nom, ok, detail = '') {
         && phasesD.includes('ouverture') && phasesD.includes('sortie')
         && descenteLou.some((r) => r.angle > 0.5) && !finD.ph && finD.angle !== null && Math.abs(finD.angle) < 0.02,
       JSON.stringify({ phasesD, ouvertes: descenteLou.filter((r) => r.angle > 0.5).length, max: Math.max(0, ...descenteLou.map((r) => r.angle || 0)),
-        passagerPendant: descenteLou.filter((r) => r.passager).length, fin: finD, n: descenteLou.length }));
+        passagerPendant: descenteLou.filter((r) => r.passager).length, fin: finD, n: descenteLou.length, suivi: await suiviAmi() }));
+    // --- la voiture de l'ami se refait pendant la marche (v407) ----------------
+    //
+    // ON PROVOQUE L'ÉTAT DU PORTAIL, on ne l'attend pas (v393) : la tablette de
+    // Lou refait le maillage de la voiture de Marlon (une clé qui change, une
+    // reconnexion) pendant que Lou marche vers la portière. La séquence
+    // tenait l'ancien maillage, voyait « la voiture n'existe plus » et
+    // s'annulait : Lou restait à pied. Elle suit désormais la voiture de CE
+    // conducteur, et s'y rebranche. Sur l'ancien code : annulée, pas passagère.
+    let refaite = null;
+    if (!finD.ph) {
+      await jusqua(async () => { const b = await boutonLou(); return b.visible && /Monter avec/.test(b.texte); }, 15000);
+      await lou.evaluate(() => document.getElementById('ride-btn').click());
+      const enMarche = await jusqua(async () => lou.evaluate(() => { const e = window.__game.player.embarquement; return !!(e && e.phase === 'approche'); }), 10000);
+      // la clé change : au prochain message de position, la tablette refait le maillage
+      const refait = await lou.evaluate((id) => { const rp = window.__game.remotePlayers.get(id); if (!rp || !rp.vehicule) return false; rp.vehicule.cle = 'refaite'; return true; }, marlonChezLou);
+      const t2 = Date.now(), vus = [];
+      while (Date.now() - t2 < 45000) {
+        const e = await lou.evaluate(() => { const g = window.__game; const x = g.fun.embarquement ? g.fun.embarquement() : null; return { ph: x ? x.phase : null, rebranchee: x ? x.rebranchee || 0 : 0, passager: !!(g.fun.passagerDe && g.fun.passagerDe()) }; });
+        vus.push(e);
+        if (!e.ph && Date.now() - t2 > 1500) break;
+        await dormir(150);
+      }
+      refaite = { enMarche, refait, rebranchee: Math.max(0, ...vus.map((v) => v.rebranchee)), passager: !!(vus[vus.length - 1] || {}).passager,
+        dernier: await lou.evaluate(() => { const f = window.__game.fun; return f.embarquementDernier ? f.embarquementDernier() : null; }), suivi: (await suiviAmi()).slice(-8) };
+    }
+    verifier('la voiture de l\'ami se refait pendant la marche : le passager s\'y rebranche et s\'assied quand même',
+      !!refaite && refaite.enMarche && refaite.refait && refaite.passager && refaite.rebranchee >= 1,
+      JSON.stringify(refaite));
     await lou.evaluate(() => { const g = window.__game; if (g.fun.passagerDe && g.fun.passagerDe()) document.getElementById('ride-btn').click(); });
     await hote.evaluate(() => { const g = window.__game; if (g.fun.montureConduite && g.fun.montureConduite()) document.getElementById('ride-btn').click(); });
     await lou.close();
@@ -1285,6 +1361,47 @@ function verifier(nom, ok, detail = '') {
     }, 120000);
     verifier('et deux enfants se retrouvent sans courtier du tout', ensembleSans,
       JSON.stringify([await nomsVus(sansCourtier), await nomsVus(secondSans)]));
+    // SANS COURTIER, LE CONDUCTEUR VOIT SON PASSAGER (v410). La dette de la
+    // v253 : la partie passe par le nuage, il n'y a pas de pair, et le
+    // conducteur ne se reconnaissait qu'à `peer.id` — le passager écrivait
+    // pourtant chez qui il était assis (`p.de`, l'identité du BUS), et chez
+    // Sacha Alba restait debout à côté de la voiture. Mesuré avant
+    // (`sonde-passager-nuage.cjs`) : Alba passagère chez elle, debout chez
+    // Sacha. On se reconnaît désormais à ses deux identités (`net.estMoi`).
+    const passagerSans = { volant: false, bouton: false, passagere: null, assise: false, ms: null };
+    if (ensembleSans) {
+      passagerSans.volant = await sansCourtier.evaluate(async () => {
+        const g = window.__game; const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+        for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+        g.animalManager.animals.length = 0;
+        const fx = -Math.sin(g.player.yaw), fz = -Math.cos(g.player.yaw);
+        g.animalManager.invoquer('voiture', g.player.pos.x + fx * 2.5, g.player.pos.z + fz * 2.5);
+        await dodo(1500); document.getElementById('ride-btn').click(); await dodo(800);
+        return !!(g.fun.montureConduite && g.fun.montureConduite());
+      });
+      const p0 = await sansCourtier.evaluate(() => { const p = window.__game.player.pos; return { x: p.x, y: p.y, z: p.z }; });
+      await secondSans.evaluate((p) => {
+        const g = window.__game;
+        for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+        g.animalManager.animals.length = 0;
+        g.player.pos.set(p.x + 3, p.y, p.z); g.player.vel.set(0, 0, 0);
+      }, p0);
+      passagerSans.bouton = await jusqua(async () => secondSans.evaluate(() => {
+        const b = document.getElementById('ride-btn'); return b.style.display !== 'none' && /Monter avec/.test(b.textContent);
+      }), 20000);
+      if (passagerSans.bouton) await secondSans.evaluate(() => document.getElementById('ride-btn').click());
+      await dormir(1000);
+      passagerSans.passagere = await secondSans.evaluate(() => { const p = window.__game.fun.passagerDe(); return p ? { de: p.de, s: p.s } : null; });
+      const t0 = Date.now();
+      passagerSans.assise = await jusqua(async () => sansCourtier.evaluate(() => {
+        const g = window.__game; const a = g.fun.montureConduite && g.fun.montureConduite();
+        for (const rp of g.remotePlayers.values()) if (rp.name === 'Alba') return !!(a && rp.mesh.parent === a.mesh);
+        return false;
+      }), 20000);
+      passagerSans.ms = Date.now() - t0;
+    }
+    verifier('sans courtier, le conducteur voit son passager assis dans sa voiture',
+      passagerSans.volant && !!passagerSans.passagere && passagerSans.assise, JSON.stringify(passagerSans));
     await secondSans.close();
     await sansCourtier.close();
     await souffler();

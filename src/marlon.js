@@ -193,7 +193,7 @@ export class BaseNPC {
       if (!this.ecart) {
         const v = this.world.vehiculeApproche(this.pos.x, this.pos.z, this.pos.y);
         if (v) {
-          // DEPUIS LE TROTTOIR, ON NE DESCEND PAS SUR LA CHAUSSÉE (v405,
+          // DEPUIS LE TROTTOIR, ON NE DESCEND PAS SUR LA CHAUSSÉE (v411,
           // `coteDEcart`) : le côté naturel, tourné de 45°, l'autre côté s'il
           // en a le temps, ou l'on reste en haut.
           const ch = coteDEcart(v, this.world.solPieton, this.pos.x, this.pos.z, this.walkSpeed * ALLURE_ECART);
@@ -215,7 +215,7 @@ export class BaseNPC {
         const encore = this.world.vehiculeApproche(this.pos.x, this.pos.z, this.pos.y, 1.8);
         // un mur de ce côté (pas un quart de bloc gagné en six dixièmes de
         // seconde) : on essaie l'autre côté, une fois — jamais, depuis le
-        // trottoir, si l'autre côté est la chaussée (v405)
+        // trottoir, si l'autre côté est la chaussée (v411)
         if (encore && !e.retourne && e.t > 0.6 && Math.abs(encore.lat - e.lat0) < 0.25 && retournementPermis(sol, this.pos.x, this.pos.z, e, encore.lat, encore.demi, this.walkSpeed * ALLURE_ECART)) {
           e.cote = -e.cote; e.ex = -e.ex; e.ez = -e.ez; e.retourne = true; e.t = 0; e.lat0 = encore.lat;
         }
@@ -225,7 +225,7 @@ export class BaseNPC {
         const pas = Math.min(PAS_ECART_MAX, this.walkSpeed * ALLURE_ECART * dtReel);
         if (ex || ez) { yaw = Math.atan2(-ex, -ez); this.yaw = yaw; }
         // et chaque pas se juge : depuis le trottoir, devant une voiture sur la
-        // chaussée, on s'arrête au bord au lieu de descendre (v405)
+        // chaussée, on s'arrête au bord au lieu de descendre (v411)
         const permis = (ex || ez) && pasDEcartPermis(sol, this.pos.x, this.pos.z, this.pos.x + ex * pas, this.pos.z + ez * pas, encore);
         speed = permis && dt > 0 ? pas / dt : 0;
         vAnim = permis ? this.walkSpeed * ALLURE_ECART : null;

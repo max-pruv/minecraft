@@ -2113,7 +2113,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !auFeu.err && auFeu.poses >= 4 && auFeu.traversees >= 2 && auFeu.auFeuAuRouge >= 0.8 * auFeu.traversees,
       JSON.stringify(auFeu));
 
-    // ---- UN ÉCART NE FAIT PAS TRAVERSER LA RUE (v405) ------------------------
+    // ---- UN ÉCART NE FAIT PAS TRAVERSER LA RUE (v411) ------------------------
     //
     // Le témoin du feu (v402) l'a publié : un passant du trottoir, poussé par
     // l'écart devant une voiture qui tourne, ressortait sur le trottoir d'EN
@@ -5612,7 +5612,15 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
           vue: { w: innerWidth, h: innerHeight }, zone,
           canvas: (document.querySelector('canvas') || {}).id || 'game',
           pastille: pastille ? getComputedStyle(pastille).display : 'absente',
-          descendre, attenduDescendre,
+          descendre, attenduDescendre, frein: boite('fm-btn'), freinTient: (() => {
+            // toucher le bouton tient la barre d'espace, le relâcher la rend
+            const e = document.getElementById('fm-btn');
+            if (!e) return null;
+            e.dispatchEvent(new TouchEvent('touchstart', { cancelable: true, bubbles: true }));
+            const tenu = g.player.keys.has('Space');
+            e.dispatchEvent(new TouchEvent('touchend', { cancelable: true, bubbles: true }));
+            return { tenu, rendu: !g.player.keys.has('Space') };
+          })(),
           boutons: { saut: vis('jump-btn'), pioche: vis('mode-btn'), barre: vis('hotbar'), gaz: vis('gaz-base'), val: vis('gaz-val'), socle: vis('cmd-vol'), train: vis('train-btn'), vol: vis('fly-btn') },
           boost: g.player.boost, max: 3.2 * (g.player.boost || 1),
         };
@@ -5734,7 +5742,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 400)); }
         await new Promise((f) => setTimeout(f, 300));
         const vis = (id) => getComputedStyle(document.getElementById(id)).display;
-        return { saut: vis('jump-btn'), pioche: vis('mode-btn'), gaz: vis('gaz-base'), barre: vis('hotbar'), gazJoueur: g.player.gaz, auVolant: auVolant() };
+        return { saut: vis('jump-btn'), pioche: vis('mode-btn'), gaz: vis('gaz-base'), barre: vis('hotbar'), frein: document.getElementById('fm-btn') ? vis('fm-btn') : 'none', gazJoueur: g.player.gaz, auVolant: auVolant() };
       });
       const journal = await tab.evaluate(() => {
         const P = window.__game.player, j = window.__journalPiste;
@@ -5774,6 +5782,15 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !manette.err && !!d && !!zn && (d.x >= zn.x || d.y + d.h <= zn.y),
       `bouton ${JSON.stringify(d)} après ${((manette.attenduDescendre || 0) / 1000).toFixed(1)} s d'attente`
       + ` · zone du joystick x < ${zn && Math.round(zn.x)} et y > ${zn && Math.round(zn.y)} · vue ${JSON.stringify(manette.vue)}`);
+    // LE FREIN À MAIN (palier C de la conduite) se tient du pouce DROIT : son
+    // bouton est hors du quart du joystick, ne recouvre pas « Descendre », et
+    // n'existe qu'en voiture (vérifié plus bas, en revenant à pied). Le geste
+    // lui-même (Espace tenue → dérapage) est éprouvé sous node dans plafond.js.
+    const fb = manette.frein, sep = (a, c) => !a || !c || a.x + a.w <= c.x || c.x + c.w <= a.x || a.y + a.h <= c.y || c.y + c.h <= a.y;
+    verifier('au volant, le bouton du frein à main est dans la colonne de droite — hors de la zone du joystick, à côté de « Descendre » sans le recouvrir',
+      !manette.err && !!fb && !!zn && (fb.x >= zn.x || fb.y + fb.h <= zn.y) && sep(fb, d) && fb.x + fb.w <= manette.vue.w && fb.y >= 0
+        && !!manette.freinTient && manette.freinTient.tenu && manette.freinTient.rendu,
+      `frein ${JSON.stringify(fb)} · toucher ${JSON.stringify(manette.freinTient)} · descendre ${JSON.stringify(d)} · zone x < ${zn && Math.round(zn.x)} et y > ${zn && Math.round(zn.y)} · vue ${JSON.stringify(manette.vue)}`);
     // ET RIEN D'AUTRE NE VOLE LE DOIGT (v272). C'est l'instrumentation du
     // témoin ci-dessus qui l'a trouvé : `elementFromPoint` répondait
     // « meat-counter ». La pastille de viande (🍖 × N) est posée à gauche, à
@@ -5789,7 +5806,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('et ils reviennent à pied',
       !manette.err && manette.apres && !manette.apres.auVolant && manette.apres.saut !== 'none'
         && manette.apres.pioche !== 'none' && manette.apres.barre !== 'none' && manette.apres.gaz === 'none'
-        && manette.apres.gazJoueur == null,
+        && manette.apres.gazJoueur == null && manette.apres.frein === 'none',
       JSON.stringify(manette.apres));
 
     // « IL EST MARQUÉ 86 KM/H » — UNE VOITURE À L'ARRÊT NE ROULE PAS (v272).

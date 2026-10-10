@@ -73,7 +73,7 @@ export function couloirVoiture(r, x, z, y, marge = 1.0, horizon = HORIZON_S) {
   return { ux: r.ux, uz: r.uz, cote: cote >= 0 ? 1 : -1, lat: cote, t, demi: r.demiLarg, rx: r.x, rz: r.z };
 }
 
-// UN ÉCART NE TRAVERSE PAS LA RUE (v405). Le pas de côté de la v259 part du
+// UN ÉCART NE TRAVERSE PAS LA RUE (v411). Le pas de côté de la v259 part du
 // côté où l'on est DÉJÀ par rapport à l'axe de la voiture. Une voiture qui
 // TOURNE au carrefour a un axe en biais : pour un passant au coin du trottoir,
 // ce côté-là mène à la rue PERPENDICULAIRE, et l'écart de deux secondes (6,4
@@ -123,7 +123,7 @@ export function coteDEcart(v, sol, x, z, vEcart) {
   return { ex: 0, ez: 0, garde: true };
 }
 
-// ET LE PAS LUI-MÊME NE DESCEND PAS (v405). La voiture tourne, son couloir
+// ET LE PAS LUI-MÊME NE DESCEND PAS (v411). La voiture tourne, son couloir
 // suit le passant, et l'écart dure jusqu'à deux secondes : un côté qui restait
 // sur le trottoir sur la distance prévue peut y mener plus loin. Chaque pas se
 // juge donc aussi : depuis le trottoir, devant une voiture sur la chaussée, on
@@ -133,7 +133,7 @@ export function pasDEcartPermis(sol, x, z, nx, nz, v) {
   return !(sol(x, z) === 't' && sol(nx, nz) === 'c' && sol(v.rx, v.rz) === 'c');
 }
 
-// ET L'ÉCART NE SE RETOURNE PAS VERS LA CHAUSSÉE (v405). Contre un mur, la
+// ET L'ÉCART NE SE RETOURNE PAS VERS LA CHAUSSÉE (v411). Contre un mur, la
 // v259 essayait l'autre côté une fois : depuis le trottoir, c'était la rue —
 // la sonde l'a montré, c'est par là que passaient la plupart des traversées.
 // Un passant collé au mur, SUR le trottoir, n'est pas sur la route de la

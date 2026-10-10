@@ -1,4 +1,4 @@
-// UN ÉCART NE FAIT PAS TRAVERSER LA RUE (v405) — le témoin de `monte.js`, joué
+// UN ÉCART NE FAIT PAS TRAVERSER LA RUE (v411) — le témoin de `monte.js`, joué
 // seul sur une page de Rome. La fonction est LUE dans monte.js, pas recopiée
 // (une copie de sonde finit par diverger du témoin, v400).
 //   node tests/sonde-ecart-trottoir-page.cjs [chemin/vers/un/autre/arbre/tests]

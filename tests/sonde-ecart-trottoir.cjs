@@ -1,4 +1,4 @@
-// SONDE — UN ÉCART QUI FAIT TRAVERSER LA RUE (v405). Sous node, sans navigateur.
+// SONDE — UN ÉCART QUI FAIT TRAVERSER LA RUE (v411). Sous node, sans navigateur.
 //
 // On PROVOQUE la situation au lieu de l'attendre (leçon des poissons, v233) :
 // des passants posés au bord du trottoir, face à la rue, aux coins des feux de
