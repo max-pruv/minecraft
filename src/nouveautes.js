@@ -6,12 +6,38 @@
 
 export const NOUVEAUTES = [
   {
-    v: 409,
+    v: 412,
     titre: 'Moins de fausses alertes',
     puces: [
       'Deux fenêtres ouvertes ne se gênent plus',
       'Le jeu reste en mode normal',
       'Les parents voient la mémoire utilisée',
+    ],
+  },
+  {
+    v: 411,
+    titre: 'Les passants restent sur le trottoir',
+    puces: [
+      'Un pas de côté sans traverser',
+      'Ils attendent au bord de la rue',
+    ],
+  },
+  {
+    v: 410,
+    titre: 'Passager partout',
+    puces: [
+      'Ton ami te voit assis',
+      'Même sur un Wi-Fi difficile',
+    ],
+  },
+  {
+    v: 409,
+    titre: 'Le frein à main',
+    puces: [
+      'Un bouton 🛑 pour déraper',
+      'La voiture glisse dans les virages',
+      'Elle se remet droite toute seule',
+      'Elle ne saute plus',
     ],
   },
   {

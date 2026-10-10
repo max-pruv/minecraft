@@ -96,13 +96,13 @@ const journal = new Journal({
   },
 });
 const BILAN_JOURNAL = journal.ouvrir();
-// UNE PAGE NÉE CACHÉE N'EST PAS UNE SESSION QUE L'ENFANT A VUE (v409). iOS peut
+// UNE PAGE NÉE CACHÉE N'EST PAS UNE SESSION QUE L'ENFANT A VUE (v412). iOS peut
 // ouvrir l'application sans la montrer, puis la tuer : sans ceci, elle laissait
 // sa ligne ouverte et le lancement suivant comptait un plantage — les sessions
 // VIDES (aucun relevé, aucun événement) de `journal_appareil`. Elle se ferme
 // sans remettre le compteur à zéro, et `rouvrir` la relance au premier plan.
 if (document.visibilityState === 'hidden') journal.fermer('arriere-plan', { garderCompteur: true });
-// Le battement : « cette page vit encore » (v409, journal.js).
+// Le battement : « cette page vit encore » (v412, journal.js).
 setInterval(() => journal.battre(), BATTEMENT_MS);
 window.addEventListener('error', (e) => journal.erreur(e.message || (e.error && e.error.message) || 'erreur',
   `${String(e.filename || '').split('/').pop()}:${e.lineno || 0}`));
@@ -1805,6 +1805,8 @@ function updateChunks() {
     const b = world.getBlock(bx, world.sommetColonne(bx, bz), bz);
     return TROTTOIR.has(b) ? 't' : (CHAUSSEE.has(b) || b === ARCHI.BORDURE) ? 'c' : 'x';
   };
+  // le passant qui s'écarte d'une voiture lit le même sol (v411, `coteDEcart`)
+  world.solPieton = solPieton;
   // ET À PARIS, LE PASSAGE PIÉTON PEINT SANS FEU. Les feux de Paris ne sont
   // qu'aux carrefours des avenues (v274) ; les autres ont leur passage à
   // larges bandes (`marquageParis`, v287). Mesuré : quarante-six coins en
@@ -2562,6 +2564,10 @@ function bindHoldButton(id, code) {
 }
 bindHoldButton('jump-btn', 'Space');
 bindHoldButton('down-btn', 'KeyC');
+// LE FREIN À MAIN (palier C) : au volant, la barre d'espace est le frein à
+// main (player.js) ; le bouton 🛑 de la colonne de droite la tient comme ⤒ la
+// tient à pied. Une seule commande, deux gestes.
+bindHoldButton('fm-btn', 'Space');
 
 document.getElementById('mode-btn').addEventListener('touchstart', (e) => {
   e.preventDefault();
@@ -4522,8 +4528,8 @@ function poserDebout(rp) {
 // Le véhicule dans lequel un joueur (distant) est passager : celui d'un
 // autre ami, ou le nôtre si c'est chez nous qu'il est monté.
 function vehiculeDuConducteur(de) {
-  const monId = net && net.peer ? net.peer.id : null;
-  if (monId && de === monId) {
+  // `estMoi` (v410) : peer.id avec un courtier, l'identité du bus sans lui
+  if (net && net.estMoi && net.estMoi(de)) {
     const a = fun.montureConduite ? fun.montureConduite() : null;
     // la monture ELLE-MÊME, pas une copie : le cache du plafond vit dessus
     return a && a.def && a.def.sieges ? a : null;
@@ -5729,7 +5735,7 @@ if (BILAN_JOURNAL.rapport) {
   journal.noter('plantage-precedent', { plantages: BILAN_JOURNAL.plantages, surete: !!SURETE });
   setTimeout(() => BILAN_JOURNAL.rapports.forEach((r) => envoyerJournal(r)), 2500);
 }
-// UNE SESSION AU BATTEMENT RÉCENT EST PEUT-ÊTRE UNE PAGE VIVANTE (v409) : on
+// UNE SESSION AU BATTEMENT RÉCENT EST PEUT-ÊTRE UNE PAGE VIVANTE (v412) : on
 // regarde si son battement avance avant de la dire plantée — deux fois, parce
 // qu'une page qui charge peut rater un battement.
 if (BILAN_JOURNAL.douteuses.length) {
@@ -5740,7 +5746,7 @@ if (BILAN_JOURNAL.douteuses.length) {
     for (const r of rapports) { journal.noter('plantage-precedent', { plantages: journal.plantages(), confirme: true }); envoyerJournal(r); }
   }, 7000);
 }
-// LA RELANCE VOULUE PAR LE JEU DIT AU REVOIR AVANT DE RECHARGER (v409) :
+// LA RELANCE VOULUE PAR LE JEU DIT AU REVOIR AVANT DE RECHARGER (v412) :
 // index.html l'appelle dans `reloadOnce` et `forcerMaj`. `pagehide` le fait
 // aussi ; on ne parie pas la sûreté de la famille sur un seul événement.
 window.__journalAuRevoir = (fin = 'mise-a-jour') => { try { envoyerJournal(journal.fermer(fin), true); } catch { /* jamais bloquant */ } };
@@ -7774,7 +7780,7 @@ function motDuPalier() {
 // faut pour relire une panne — où l'enfant est, ce que la page rend, ce
 // qu'elle tient. Pas de parcours de scène : ce qui coûte ne se relève pas.
 let pireImageJournal = 0;
-// CE QUE LA SCÈNE TIENT CÔTÉ CARTE GRAPHIQUE, EN OCTETS (v409, journal.js) :
+// CE QUE LA SCÈNE TIENT CÔTÉ CARTE GRAPHIQUE, EN OCTETS (v412, journal.js) :
 // un parcours de la scène au plus toutes les cinq secondes — la cadence des
 // relevés — et son coût en millisecondes voyage avec lui (`ms`), pour qu'on le
 // relise sur la tablette au lieu de le supposer nul.
@@ -7853,7 +7859,7 @@ function updateHud(dt) {
     + (player.gabarit > 1 && !player.pilote ? '\n' + ligneDiagConduite({
       classe: player.ficheVoiture && player.ficheVoiture.classe, v: player.vitesseVoiture, vmax: player.vitesseVoitureMax,
       devant: mondeDevant((cx, cz) => chunkMeshes.has(World.key(cx, cz)), player.pos.x, player.pos.z, player.yaw + (player.derive || 0) + (player.vitesseVoiture < 0 ? Math.PI : 0), CHUNK),
-      roueLibre: player.roueLibre, pente: player.pente, atterrissage: player.atterrissage, suivi: player.suivi }) : '')
+      roueLibre: player.roueLibre, pente: player.pente, atterrissage: player.atterrissage, suivi: player.suivi, derapage: player.derapage }) : '')
     + texteRoulage()
     + texteDegats()
     + texteEmbarquement();

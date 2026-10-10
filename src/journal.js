@@ -37,7 +37,7 @@ export const SESSION_CLE = 'web-minecraft-session-ouverte-v1';  // les sessions 
 export const PLANTAGES_CLE = 'web-minecraft-plantages-v1';      // plantages consécutifs
 export const TABLE_JOURNAL = 'journal_appareil';
 
-// UNE SESSION, UNE ENTRÉE (v409). L'iPhone de la famille a déclaré « plantée »
+// UNE SESSION, UNE ENTRÉE (v412). L'iPhone de la famille a déclaré « plantée »
 // une session qui a envoyé sa fermeture propre trois minutes plus tard (lignes
 // 82 et 83 de `journal_appareil`) : DEUX PAGES vivaient sur le même stockage,
 // la seconde a lu le drapeau de la première — vivante — comme un plantage, et
@@ -290,10 +290,10 @@ export class Journal {
   // La session se termine PROPREMENT : au revoir (`fermeture`), relance voulue
   // par le jeu (`mise-a-jour`), ou passage en arrière-plan (`arriere-plan`).
   // Sa ligne quitte la table — et seulement la SIENNE : une autre page ouverte
-  // garde la sienne (v409). Le compteur de plantages retombe : une session qui
+  // garde la sienne (v412). Le compteur de plantages retombe : une session qui
   // a su dire au revoir n'est pas un plantage, et un plantage ancien ne doit
   // pas compter contre une relance qui a tenu. SAUF `garderCompteur` : une page
-  // née cachée, que l'enfant n'a jamais vue, n'a rien prouvé (v409).
+  // née cachée, que l'enfant n'a jamais vue, n'a rien prouvé (v412).
   fermer(fin = 'fermeture', { garderCompteur = false } = {}) {
     if (!this.ouvert) return null;
     this.ouvert = false;
@@ -314,10 +314,10 @@ export class Journal {
   }
 }
 
-// ── CE QUE LA SCÈNE TIENT CÔTÉ CARTE GRAPHIQUE, EN OCTETS (v409) ─────────────
+// ── CE QUE LA SCÈNE TIENT CÔTÉ CARTE GRAPHIQUE, EN OCTETS (v412) ─────────────
 //
 // Safari ne donne pas le tas (`tasMo` nul dans tous les relevés de l'iPhone),
-// et c'est le COMPTE de textures qui a trahi les 734 Mo de la flotte (v409) —
+// et c'est le COMPTE de textures qui a trahi les 734 Mo de la flotte (#418) —
 // mais un compte n'est pas un poids : cinq cents textures de seize pixels
 // pèsent moins qu'une de quatre mille. Quand le banc ne peut pas subir la
 // panne, on mesure la CAUSE en octets (v236, v296). Une estimation, pas une

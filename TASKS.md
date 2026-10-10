@@ -1,19 +1,40 @@
 # Ce qui est en cours
 
-- [ ] **LE JOURNAL DE BORD APRÈS LA v409 — À RELIRE SUR L'iPHONE.** (1) Une
-  fois la v409 de la flotte (#418) en production, lire `journal_appareil`
+- [ ] **LE JOURNAL DE BORD APRÈS LA FLOTTE ALLÉGÉE (#418) — À RELIRE SUR L'iPHONE.** (1) Une
+  fois la flotte allégée (#418) en production, lire `journal_appareil`
   (appareil `n4dhwysj5tmmsinqeou`) : plantages ou non, et le champ `gpu` des
   relevés (texMo, geoMo) — qui plafonne ou non. (2) Si l'iPhone plante encore
   avec une mémoire graphique stable, la piste déclarée est le clone de
   géométrie des dégâts (`degats3d.js`, 66 à 87 chocs dans les parties
   plantées) : mesurer ses octets AVANT d'y toucher, sans changer la règle des
   dégâts (v343). (3) Les sessions vides : si des `plantage` sans aucun
-  événement reviennent après la v409, elles ne viennent ni de deux pages ni
+  événement reviennent après la v412, elles ne viennent ni de deux pages ni
   d'une page née cachée — la sonde `sonde-journal-relance.cjs` dit quoi
   rejouer. (4) Le verdict `bas` de sûreté rangé par les faux plantages
   d'avant reste rangé : `rangerLePalier` ne l'écrase pas. Il se lève en
   choisissant une étendue dans les Réglages ; à décider avec Max s'il faut
   l'effacer d'office une fois.
+- [x] **UN ÉCART QUI FAIT TRAVERSER LA RUE (v402) — corrigé en v411.**
+  `coteDEcart` (pietons.js) : depuis le trottoir, devant une voiture sur la
+  chaussée, l'écart ne descend plus. Sonde node 92/125 → 0/125 ; témoin de
+  `monte.js` 4/5 → 0/5 (deux fois de chaque côté). Reste déclaré : une voiture
+  qui FRÔLE la bordure peut encore toucher, sans freinage, un passant resté au
+  bord (19 contacts sur 125 à la sonde, 82 avant) — c'est le freinage de la
+  voiture (v395) qui le protège, pas son pas de côté.
+  PORTAIL DE LA v411 (base v404, règle de la v195) : `carte.js` (flèche du
+  GPS, glisser bridé ×4) et `manhattan.js` (trou de façade, taxi) — dettes déjà
+  déclarées plus bas. `monte.js` : la cascade « pas aux commandes » du portail
+  (famille v317, v359) disparaît rejouée SEULE des deux côtés (195 verts
+  chacun) ; restent, des deux côtés, « la téléportation ne compile plus de
+  programmes » et « son flanc frôlé ne nous arrête pas ». Et « deux voitures ne
+  sont jamais l'une dans l'autre — en taux » : 4,7 % au portail, 4,9 % seule
+  sur la branche, 1,0 % seule sur `origin/main`. Rejoué témoin seul, page
+  neuve : branche 1,6 · 0 · 0, `origin/main` 0,7 · 0 · 0 ; après une visite à
+  Rome (le régime à 1 500-2 900 paires) : branche 1,6 · 0,6 · 0,7 et, avec le
+  témoin de l'écart avant, 5,3 · 0,3 · 2,0 ; `origin/main` 1,3 · 0 · 3,0. La
+  barre de 4 % tombe dans l'étendue naturelle du témoin (le tirage de la v277) ;
+  la règle de l'écart ne touche que des passants SUR le trottoir. Dette : un
+  témoin de taux qui va de 0 à 5 % sur le même code n'est pas un gardien.
 - [ ] **`maj.js`, LE PALIER — UNE INTERMITTENCE DE CADENCE (v405).** « le jeu se
   mesure en jouant, et range son verdict » et « le palier se décide sur le
   TRAVAIL d'une image » : rouges UNE fois sur deux passages seuls de la
@@ -74,6 +95,18 @@
   `maj.js` « le loader dit combien de fichiers » (intermittent, table plus
   bas), `manhattan.js` trou (9 203 → 51 734), « le taxi roule » (bouton
   jamais visible) et l'invité de la ligne 674 qui ne rejoint pas.
+- [ ] **LE PORTAIL DE LA v410 (le passager sans courtier), DOUBLE MESURE
+  FAITE.** Dix suites ; `reseau.js` VERTE entière (le témoin neuf : assise en
+  510 ms). Rouges, tous déjà déclarés : `maj.js` (loader, libération, palier
+  ×2), `carte.js` (la flèche du GPS à gauche lue à 1,57), `manhattan.js` (trou
+  22 326 → 51 734), `monte.js` (flâneur de Rome, compilation de New York,
+  flanc frôlé). Rejouées SEULES : `maj.js` branche 3 rouges / `origin/main`
+  (v406) 0 — à l'INVERSE de la mesure faite deux heures plus tôt pour la v406
+  (branche 0, `origin/main` 3) : la même intermittence des deux côtés ;
+  `carte.js` branche « glisser bridé ×4 » 405 ms pour 400, `origin/main` la
+  flèche du GPS ; `manhattan.js` trou et taxi des deux côtés. `monte.js` : preuve
+  structurelle, la suite n'ouvre aucune partie en ligne (`net` nul, `estMoi`
+  jamais appelé).
 - [x] **LE GPS PARTAGÉ PAR UN HÔTE QUI RELAIE (`rpos`) A SON TÉMOIN À
   TROIS TABLETTES (v406).** `reseau.js`, pendant la partie à trois : la
   destination de Nina proposée à Alice à travers l'hôte. Sonde isolée 3/3
@@ -1095,14 +1128,27 @@
   blocs : mieux sur le mur synthétique, pire à 10° sur Paris ; coque convexe :
   pire partout). La dette reste, déclarée.
   **PALIER 3 (v408) LIVRÉ : la pente et la bosse.** RESTE : (5) la pente ne se
-  lit que sur la surface continue — dans une ville en voxel (les collines de
-  San Francisco) la voiture ne la sent pas, comme avant ; (6) personne ne
+  lit que sur la surface continue — **MESURÉ en v409, la dette ne mord
+  presque pas** : sur les 3 189 colonnes de chaussée EN PENTE de San Francisco
+  (cote > 34, 200 000 tirages dans le disque), 2 132 sont sous la surface
+  continue (la voiture y sent déjà la pente), et les 1 057 autres sont le
+  liseré d'un bloc au bord des zones voxel (523 contre une marche de deux
+  blocs, 534 d'un bloc). Une lecture voxel de secours n'est pas écrite :
+  elle ne servirait qu'à ce liseré (sonde `sonde-pente-ville.cjs`, qui ne
+  trouve AUCUNE ligne de cinquante blocs de chaussée voxel en pente) ; (6) personne ne
   DESSINE encore `tangage` ni `atterrissage` (session des sensations) ; (7) la
   vitesse est le long de la route, le déplacement horizontal ne la réduit pas
   du cosinus de la pente (1,4 % à 0,17) ; (8) en l'air, on ne braque pas et
   le moteur ne pousse pas, et une crête vive à 40 blocs/s fait voler une
   seconde (mesuré, `sonde-pente.cjs`) — c'est voulu (GTA), à juger avec
-  Marlon sur la tablette ; (9) LE FREIN À MAIN (palier C) n'est pas fait.
+  Marlon sur la tablette ; (9) LE FREIN À MAIN (palier C) — **FAIT en v409** :
+  bouton 🛑 de la colonne de droite, ou Espace. RESTE du palier C : (10) le
+  moteur ne pousse pas pendant le frein à main (un vrai drift « gaz + frein à
+  main » demanderait un second doigt sur l'accélérateur, et le joystick n'en a
+  qu'un — décidé, pas oublié) ; (11) personne ne DESSINE encore le dérapage
+  (traces de pneus, crissement : la session des sensations lit
+  `player.freinMainTire` et `player.derive`) ; (12) le frein à main ne se voit
+  pas chez l'ami au-delà de la dérive qui voyage déjà (`p.v.r`).
 - [ ] **AU PORTAIL DE LA v408 (la pente, la bosse et la file), DES ROUGES QUI NE
   SONT PAS LA LIVRAISON — mesurés.** Mes trois rouges (percuter une voiture de
   la rue, elle s'arrête en feux de détresse, son flanc frôlé) venaient du
@@ -1137,6 +1183,10 @@
   vaut 0, 1, 2 sur la branche contre 1, 2 sur `origin/main` v406, même santé
   (0,33), même module. La grandeur juste est l'émission sur une fenêtre (v279 :
   un minimum échantillonné est une propriété de la cadence).
+  Portail complet de la v409 (le frein à main) : neuf rouges, TOUS déjà
+  déclarés ci-dessus et plus haut (fumée 0, préparation de `maj.js`, flèche du
+  GPS, glisser bridé 684 ms, trou de façade, taxi tactile, PeerJS, chauffe de
+  New York 44/321, flanc frôlé) ; les trois témoins du frein à main verts.
 - [ ] **POUR MAX, SUR LA TABLETTE — la pente, la bosse et la file (v408).**
   Ouvrir `https://minecraft-fam.vercel.app/?diag=1`, prendre une voiture. La
   ligne « au volant : … » dit désormais la `pente` sous la caisse, le
@@ -1155,6 +1205,21 @@
      à-coups. Braquer pour la doubler : le suivi s'arrête.
   4. **La cadence.** La première ligne (`pire image`) ne doit pas changer
      par rapport à la v404 en roulant hors des villes.
+- [ ] **POUR MAX, SUR LA TABLETTE — le frein à main (v409).** Ouvrir
+  `https://minecraft-fam.vercel.app/?diag=1`, prendre une voiture sur une
+  grande place ou en campagne.
+  1. **Le bouton.** 🛑 DÉRAPER est au-dessus de « Descendre », sous le pouce
+     droit. Le pouce gauche garde le volant pendant qu'on le tient : si le
+     volant lâche quand le pouce droit se pose, c'est un défaut (multitouch).
+  2. **Le dérapage.** À bonne vitesse, volant à fond et 🛑 tenu une seconde :
+     l'arrière glisse franchement, la voiture tourne bien plus qu'au volant
+     seul, et la ligne `au volant` dit `dernier dérapage 40 à 55° en … s`.
+  3. **La sortie.** On lâche 🛑 : la voiture se remet droite toute seule en
+     moins d'une seconde, sans secousse. Ce qui ne doit pas arriver : un
+     tête-à-queue, ou une voiture qui repart toute seule à l'arrêt.
+  4. **À juger avec Marlon** : 30 → 16 blocs/s pendant un dérapage d'une
+     seconde, est-ce assez « GTA » ou faut-il garder plus de vitesse
+     (`GLISSE_MAIN`, `FREIN_MAIN` dans conduite.js) ?
 - [x] **DEUX OU TROIS PROGRAMMES SE COMPILENT ENCORE À L'ARRIVÉE À PARIS
   (mesuré en v306) — ÉLARGI À TOUTES LES VILLES ET FAIT EN v319.**
   `sonde-programmes-villes.cjs` (seize lieux, page neuve par lieu) rendait sur
@@ -3937,8 +4002,8 @@ l'embarquement a eu lieu, pas par une hypothèse.
 - [x] **Le passager d'un ami** — FAIT en v377 : il entre par la portière
   droite avec la séquence (`monterChez`), et le conducteur la voit s'ouvrir
   chez lui (message `portiere`, l'hôte relaie). La DESCENTE aussi depuis la
-  v384 (`descendreDeChez`). Reste : sans courtier (partie par le nuage seul)
-  le message ne sait pas nommer le conducteur (dette v253, zone
+  v384 (`descendreDeChez`). Sans courtier : FAIT en v410 (`net.estMoi`,
+  le conducteur se reconnaît à l'identité du bus) (dette v253, zone
   conduite-en-ligne).
 - [ ] **LE PORTAIL DE LA v372 (bords des portières), DOUBLE MESURE FAITE.**
   `degats.js` vert. Au portail, 17 rouges dans `monte.js` et `maj.js` : il a
@@ -5279,9 +5344,8 @@ l'embarquement a eu lieu, pas par une hypothèse.
   lui.** Max, après la v249. `v`/`p` dans le message de position, l'ami
   dessiné avec la fabrique de la monture et assis, passagers collés au siège
   (`sieges` de la fiche). Trois témoins dans `reseau.js`, rouges sur
-  l'ancien code. Reste : sans courtier (partie par le nuage seul) le
-  conducteur n'a pas d'identifiant de pair et voit ses passagers debout ;
-  et les montures sans `siege` (cheval, avion) se voient encore à pied chez
+  l'ancien code. Sans courtier, le conducteur voit ses passagers assis
+  depuis la v410 (`net.estMoi`). Reste : les montures sans `siege` (cheval, avion) se voient encore à pied chez
   les autres — le champ `v` part, il manque leur `siege` et leur pose.
 
 - [x] **v252 — La voiture de l'enfant ne traverse plus le mobilier.** Max,

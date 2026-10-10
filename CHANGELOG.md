@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v409 — Le journal de bord ne crie plus au plantage pour rien
+## v412 — Le journal de bord ne crie plus au plantage pour rien
 
 **Pourquoi.** « Le jeu plante de temps en temps » : l'iPhone de la famille a
 remonté onze sessions « plantage » en quarante minutes, et deux plantages de
@@ -53,6 +53,83 @@ page née cachée ne laisse pas de session ouverte ; l'estimation suit un objet
 ajouté puis retiré, une source comptée une fois. Coût du parcours mesuré à
 Paris (rr 12, 11 889 objets) : 4,7 ms médian, 9,7 au pire, une fois toutes les
 cinq secondes.
+
+---
+
+## v411 — Un pas de côté ne fait plus traverser la rue
+
+**Pourquoi.** Le témoin du feu de la v402 l'a publié deux fois sur quatre, des
+deux côtés : un passant du trottoir, au coin d'un carrefour, faisait un pas de
+côté devant une voiture qui tournait… et ressortait sur le trottoir d'en face,
+au vert. Le pas de côté partait du côté où le passant était par rapport à
+l'AXE de la voiture ; quand la voiture tourne, cet axe est en biais, et ce
+côté-là, c'est la rue d'à côté. L'écart durait jusqu'à deux secondes, assez
+pour la traverser.
+
+**Ce que ça change.** Un passant sur le trottoir qui s'écarte d'une voiture
+roulant sur la chaussée ne descend plus dans la rue : il s'écarte vers le
+trottoir, en biais si le côté naturel mène à la rue, ou de l'autre côté s'il a
+le temps de passer, ou il reste sur place au bord, et la voiture, qui freine
+devant un piéton, passe. Rien ne change sur la chaussée, ni devant une voiture
+qui roule sur le trottoir (l'enfant au volant) : là, on s'écarte comme avant.
+
+**Ce qui le prouve.** Une sonde sous node (`sonde-ecart-trottoir.cjs`) PROVOQUE
+la situation aux coins des feux de Rome, Zurich, Paris et Londres, avec des
+voitures droites et en virage, sans freinage : 92 écarts sur 125 descendaient
+sur la chaussée avec l'ancienne règle, zéro avec la neuve, et les contacts sans
+freinage tombent de 82 à 19 (ceux d'une voiture qui frôle la bordure). Un témoin
+de `monte.js` (rejoué seul par `sonde-ecart-trottoir-page.cjs`) pose cinq
+passants au coin d'un feu de Rome et leur envoie une voiture en biais :
+`origin/main` 4 sur 5 descendus, deux fois ; la branche 0 sur 5, deux fois.
+
+---
+
+## v410 — Le passager se voit assis, même sans courtier
+
+**Pourquoi.** Quand le serveur de rendez-vous ne répond pas (Wi-Fi d'hôtel,
+école), la partie passe entièrement par le nuage depuis la v154. Un enfant
+pouvait y monter en passager dans la voiture d'un ami — chez les autres il
+était bien assis, mais **chez le conducteur il restait debout à côté de la
+voiture** : le conducteur ne se reconnaissait qu'à son identité de courtier,
+qu'il n'a pas dans ce cas (dette de la v253). La portière animée (v377) ne
+s'ouvrait pas chez lui non plus, pour la même raison.
+
+**Ce que ça change.** Sans courtier, le conducteur voit son passager assis
+dans sa voiture, et sa portière s'ouvrir.
+
+**Ce qui le prouve.** Un témoin neuf dans `reseau.js`, dans la partie à deux
+sans courtier du tout. Sonde (`sonde-passager-nuage.cjs`) : sur `origin/main`,
+le passager écrit bien chez qui il est assis, mais reste debout chez le
+conducteur, 2 fois sur 2 ; corrigé, assis 3 fois sur 3, en moins de 50 ms. Au portail, `reseau.js` est verte
+entière ; les rouges de `maj.js`, `carte.js`, `manhattan.js` et `monte.js` sont
+déjà déclarés, et la double mesure les retrouve des deux côtés (`TASKS.md`).
+## v409 — Le frein à main fait déraper la voiture
+
+**Pourquoi.** La conduite « comme GTA » que demande Max n'avait pas de frein à
+main : au joystick, la voiture tournait comme un train sur ses rails, sans
+jamais pouvoir glisser dans un virage. Et mesuré sur la v408 sous node : au
+volant, la barre d'espace faisait SAUTER la voiture d'un tiers de bloc — le
+saut de la marche, resté branché.
+
+**Ce que ça change.** En voiture, un bouton 🛑 « DÉRAPER » apparaît dans la
+colonne de droite, au-dessus de « Descendre », sous le pouce droit pendant que
+le gauche tient le volant ; sur ordinateur, c'est la barre d'espace. Tenu en
+tournant, les roues arrière lâchent : la caisse tourne près de deux fois plus
+qu'au seul volant (77° au lieu de 46° en 1,2 s à 30 blocs/s), l'arrière glisse
+jusqu'à 54°, la voiture garde la moitié de sa vitesse, et au lâcher elle se
+remet dans l'axe en moins d'une demi-seconde, sans à-coup. Pas de tête-à-queue,
+et le frein à main ne fait rien bouger à l'arrêt. La voiture ne saute plus.
+`?diag=1` dit le dernier dérapage (angle le plus large, durée).
+
+**Ce qui le prouve.** Trois témoins, tous rouges sur la v408 : la dynamique
+pure, classe par classe (rotation 1,6 à 1,9 fois celle du volant, contre 1,2 à
+1,3 sans frein à main ; 16 blocs/s gardés ; retour dans l'axe en 0,4 s ; rien
+ne bouge à l'arrêt) ; le vrai joueur sous node, barre d'espace tenue (la caisse
+tourne plus, ne monte pas d'un centième de bloc — 0,29 sur la v408) ; et au
+banc, le bouton hors du quart du joystick, sans recouvrir « Descendre », qui
+tient le frein au toucher et disparaît à pied. Et une preuve d'identité : sans
+frein à main, 240 000 pas de dynamique tirés au hasard rendent exactement la
+v408.
 
 ---
 
