@@ -2113,6 +2113,117 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !auFeu.err && auFeu.poses >= 4 && auFeu.traversees >= 2 && auFeu.auFeuAuRouge >= 0.8 * auFeu.traversees,
       JSON.stringify(auFeu));
 
+    // ---- UN ÉCART NE FAIT PAS TRAVERSER LA RUE (v411) ------------------------
+    //
+    // Le témoin du feu (v402) l'a publié : un passant du trottoir, poussé par
+    // l'écart devant une voiture qui tourne, ressortait sur le trottoir d'EN
+    // FACE, au vert. L'écart part du côté où l'on est par rapport à l'AXE de la
+    // voiture : quand cet axe est en biais, ce côté-là est la rue. On PROVOQUE
+    // la situation (leçon des poissons, v233) : au coin d'un feu, des passants
+    // posés au bord du trottoir, et pour chacun une voiture SYNTHÉTIQUE en
+    // temps réel, sur la chaussée, en biais, choisie pour que le côté naturel
+    // de l'écart descende sur la chaussée en moins de trois blocs (relevé ici,
+    // sans rien demander au jeu : l'ancien code n'a pas `coteDEcart`). Le
+    // crochet `world.vehiculeApproche` rend ces voitures-là le temps du
+    // passage ; les passants ne pensent pas (on ne garde que l'écart). Compté :
+    // les passants qui posent le pied sur la chaussée. Sur l'ancien code, tous ;
+    // ici, aucun — et l'écart a bien eu lieu, sinon le vert ne prouverait rien.
+    const ecartTrottoir = await tab.evaluate(async () => {
+      const g = window.__game, w = g.world;
+      const { TROTTOIR, CHAUSSEE } = await import('./src/world.js');
+      const { ARCHI } = await import('./src/blocks.js');
+      const sol = (x, z) => {
+        const bx = Math.floor(x), bz = Math.floor(z);
+        const b = w.getBlock(bx, w.sommetColonne(bx, bz), bz);
+        return TROTTOIR.has(b) ? 't' : (CHAUSSEE.has(b) || b === ARCHI.BORDURE) ? 'c' : 'x';
+      };
+      const s2 = g.passants.sites.find((q) => q.peuple && q.peuple.length);
+      if (!s2) return { err: 'aucune ville peuplée' };
+      const tous = s2.peuple.filter((h) => h.name === 'passant');
+      const V = 12, DEMI = 1.13;
+      // la voiture du scénario à l'instant tau (secondes depuis son passage au
+      // droit du passant) : une droite en biais
+      const voiture = (sc, tau) => ({ x: sc.Px + Math.cos(sc.a) * V * tau, z: sc.Pz + Math.sin(sc.a) * V * tau, ux: Math.cos(sc.a), uz: Math.sin(sc.a) });
+      const couloir = (r, x, z, marge) => {
+        const portee = V * 1.6 + 4, dx = x - r.x, dz = z - r.z;
+        const devant = dx * r.ux + dz * r.uz, cote = dx * r.uz - dz * r.ux;
+        if (devant < -2.2 || devant > portee) return null;
+        const t = Math.max(0, devant) / V;
+        if (Math.abs(cote) > DEMI + (t < 0.8 ? marge : 0.45)) return null;
+        return { ux: r.ux, uz: r.uz, cote: cote >= 0 ? 1 : -1, lat: cote, t, demi: DEMI, rx: r.x, rz: r.z };
+      };
+      // les coins : un trottoir dont la bordure est à 1,2 bloc, au plus près des feux
+      const coins = [], vus = new Set();
+      for (const f of (window.__feux() || [])) {
+        const cl = Math.round(f.x / 6) + ',' + Math.round(f.z / 6);
+        if (vus.has(cl)) continue;
+        for (let dx = -3; dx <= 3; dx++) for (let dz = -3; dz <= 3; dz++) {
+          const x = Math.floor(f.x) + dx + 0.5, z = Math.floor(f.z) + dz + 0.5;
+          if (sol(x, z) !== 't') continue;
+          for (const [ux, uz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (sol(x + ux * 1.2, z + uz * 1.2) === 'c') coins.push({ x, z, ux, uz });
+        }
+        vus.add(cl);
+      }
+      const scenarios = [], pris = new Set();
+      for (const p of coins) {
+        if (scenarios.length >= 6) break;
+        const k = Math.floor(p.x) + ',' + Math.floor(p.z);
+        if (pris.has(k)) continue;
+        cherche: for (const sens of [1, -1]) for (const phi of [-60, -45, -30, -15, 15, 30, 45, 60]) for (const dP of [1.5, 2.5, 3.5]) {
+          const sc = { p, Px: p.x + p.ux * dP, Pz: p.z + p.uz * dP, a: Math.atan2(-p.ux * sens, p.uz * sens) + phi * Math.PI / 180 };
+          // une voiture roule sur la chaussée : son centre y reste au passage
+          let surRue = true;
+          for (let tau = -0.5; tau <= 0.5; tau += 0.1) { const r = voiture(sc, tau); if (sol(r.x, r.z) !== 'c') { surRue = false; break; } }
+          if (!surRue) continue;
+          // l'instant où le passant entre dans le couloir, et le côté naturel
+          let v = null;
+          for (let tau = -2.5; tau <= 0 && !v; tau += 0.05) v = couloir(voiture(sc, tau), p.x, p.z, 1.0);
+          if (!v) continue;
+          const ex = v.uz * v.cote, ez = -v.ux * v.cote, reste = DEMI + 1.8 - v.lat * v.cote;
+          let bord = null;
+          for (let s = 0.5; s <= 3; s += 0.5) { const q = sol(p.x + ex * s, p.z + ez * s); if (q === 'x') break; if (q === 'c') { bord = s; break; } }
+          if (bord === null || bord > reste - 0.3) continue;
+          scenarios.push(sc); pris.add(k); break cherche;
+        }
+      }
+      if (scenarios.length < 3 || tous.length < scenarios.length) return { err: `${scenarios.length} scénario(s), ${tous.length} passant(s)`, coins: coins.length };
+      const gens = tous.slice(0, scenarios.length);
+      const sauveHook = w.vehiculeApproche, sauvePos = g.player.pos.clone();
+      const pensees = gens.map((h) => h.think);
+      g.player.pos.set(scenarios[0].p.x, w.sommetColonne(Math.floor(scenarios[0].p.x), Math.floor(scenarios[0].p.z)) + 2.5, scenarios[0].p.z);
+      g.player.vel.set(0, 0, 0);
+      gens.forEach((h, i) => {
+        const p = scenarios[i].p;
+        h.traversee = null; h.ecart = null; h.repos = 0; h.ecarts = 0;
+        h.placeAt(p.x, p.z, w.sommetColonne(Math.floor(p.x), Math.floor(p.z)) + 1);
+        h.think = () => ({ speed: 0, yaw: h.yaw });
+      });
+      await new Promise((f) => setTimeout(f, 600));
+      const t0 = performance.now() + 500;
+      w.vehiculeApproche = (x, z, y, marge = 1.0) => {
+        const tau = (performance.now() - t0) / 1000 - 2.5;
+        // une voiture ne roule que sur la chaussée : hors d'elle, elle n'existe pas
+        for (const sc of scenarios) { const c = voiture(sc, tau); if (sol(c.x, c.z) !== 'c') continue; const r = couloir(c, x, z, marge); if (r) return r; }
+        return null;
+      };
+      const descendus = gens.map(() => false), loin = gens.map(() => 0);
+      while (performance.now() - t0 < 6000) {
+        gens.forEach((h, i) => {
+          if (sol(h.pos.x, h.pos.z) === 'c') descendus[i] = true;
+          loin[i] = Math.max(loin[i], Math.hypot(h.pos.x - scenarios[i].p.x, h.pos.z - scenarios[i].p.z));
+        });
+        await new Promise((f) => setTimeout(f, 50));
+      }
+      w.vehiculeApproche = sauveHook;
+      gens.forEach((h, i) => { h.think = pensees[i]; h.ecart = null; });
+      g.player.pos.copy(sauvePos);
+      return { ville: s2.nom, scenarios: scenarios.length, ecarts: gens.map((h) => h.ecarts || 0), descendus: descendus.filter(Boolean).length,
+        loin: loin.map((d) => +d.toFixed(1)), secondes: +((performance.now() - t0) / 1000).toFixed(1) };
+    });
+    verifier('un passant du trottoir qui s\'écarte d\'une voiture en biais ne descend pas sur la chaussée',
+      !ecartTrottoir.err && ecartTrottoir.scenarios >= 3 && ecartTrottoir.ecarts.filter((n) => n > 0).length >= ecartTrottoir.scenarios - 1 && ecartTrottoir.descendus === 0,
+      JSON.stringify(ecartTrottoir));
+
     // ---- ET AU PASSAGE PEINT SANS FEU, HORS DE PARIS (v386) -----------------
     //
     // Les 65 villes engendrées dont la trame suit les axes du monde peignent un

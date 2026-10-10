@@ -1797,6 +1797,8 @@ function updateChunks() {
     const b = world.getBlock(bx, world.sommetColonne(bx, bz), bz);
     return TROTTOIR.has(b) ? 't' : (CHAUSSEE.has(b) || b === ARCHI.BORDURE) ? 'c' : 'x';
   };
+  // le passant qui s'écarte d'une voiture lit le même sol (v411, `coteDEcart`)
+  world.solPieton = solPieton;
   // ET À PARIS, LE PASSAGE PIÉTON PEINT SANS FEU. Les feux de Paris ne sont
   // qu'aux carrefours des avenues (v274) ; les autres ont leur passage à
   // larges bandes (`marquageParis`, v287). Mesuré : quarante-six coins en
