@@ -770,6 +770,80 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Le contresens ne renonce plus devant une voie mouillée (v416) — un refus se juge sur la règle finale, pas sur une mesure d'avant
+
+Une règle. Le contresens (phase 2 ter) était écarté dès que `traverseesDe`
+refusait sa voie extérieure (plus de `PONT_MAX` d'eau), AVANT qu'on regarde si
+les tabliers déjà publiés la couvraient, ou s'il pouvait contourner. Or la
+règle qui décide est `exigerChaussee` (l'eau n'est permise que sous un tablier
+publié) : un refus pris plus tôt par une mesure plus stricte écartait San Diego
+sans raison. Mesuré sur les 262 villes : seule San Diego change (1 → 2
+circuits), aucun tablier ni sol ne bouge. San José et Guayaquil restent à un
+circuit, et c'est la GÉOMÉTRIE : leur place occupe le nœud central, le grand
+anneau est leur seul cycle, et sa voie extérieure passe sur la mer (une
+quarantaine de blocs le long de la côte) ou sur la plage — un remède de SOL
+(`TASKS.md`). Une sonde de contour lit le bord dans SON sens de marche
+(intérieur à gauche) : interrogé à l'envers, `etatDeSegment` décale la voie du
+mauvais côté et ment.
+
+## Les tabliers s'allongent sous la voie (v414) — un ouvrage qu'on ne peut pas retirer s'agrandit, et la preuve lit les deux versions
+
+La dette de la v404 : 159 pas de voie sur l'eau hors de tout tablier. Quatre
+règles.
+
+- **LE REJET ET LA PUBLICATION SONT DEUX MESURES.** `traverseesDe` décide
+  QUELS anneaux une ville reçoit sur l'AXE, au bloc, exactement comme avant :
+  c'est ce qui garde la sélection identique (circuits, couverture, voiture en
+  vue au bit près, sonde sur les 262 villes). Le tablier PUBLIÉ, lui, est
+  l'union des suites mouillées de l'axe et de la VOIE que l'anneau roule (côté
+  centre ; l'autre voie est au contresens, qui mesure la sienne), au
+  demi-bloc. Les bordures et la voie d'en face ajoutaient des milliers de
+  colonnes le long des rivages où rien ne roule : mesuré, retiré.
+- **UNE TOLÉRANCE SE JUGE SUR LA COLONNE, ENCORE (v404).** La publication lit
+  l'eau sur la colonne que le monde écrit (son coin, `Math.floor`), pas sur le
+  point de la ligne : sur une trame tournée le coin est jusqu'à un bloc et demi
+  du point, et le chenal de Stockholm passait entre les deux.
+- **UN TABLIER NE SE RETIRE PAS, ET SA MATIÈRE NON PLUS.** Les allongements
+  portent `ext` et viennent APRÈS les tabliers d'avant dans la liste
+  (`pontDeVille` rend le premier qui couvre) : rangés autrement, 733 colonnes
+  de parapet passaient en chaussée — un ordre de liste est une règle.
+  L'allongement ne porte que sur l'eau, sur toute sa longueur : `coteRoulable`
+  lit le tablier sans regarder l'eau. Un anneau que les quarante points voient
+  au sec publie aussi le tablier du ruisseau qu'il coupe (la Kamo de Kyoto).
+- **LA PREUVE LIT LES DEUX VERSIONS DANS LE MÊME CODE.**
+  `pontVillesMonde(x, z, false)` rend les tabliers d'avant seuls : le témoin
+  compte les colonnes d'eau perdues ou changées (zéro) et gagnées (1 485, toutes
+  sur l'eau). Les témoins qui marchent l'AXE d'un pont ne lisent que les ponts :
+  un allongement longe la rive, et sa preuve est la voie. L'empreinte des 490
+  morceaux se relève (Rome) et se prouve désarmée (`ext` retirés → la
+  constante d'`origin/main`).
+## La flotte partage ses images (v413) — un plantage sans erreur se lit dans ce qui MONTE
+
+Max : « le jeu plante de temps en temps ». Onze plantages de l'iPhone en
+quarante minutes, en palier bas, HD éteinte, zéro erreur, cadence normale.
+Trois règles.
+
+- **UN PLANTAGE SANS ERREUR NI GEL SE CHERCHE DANS LA GRANDEUR QUI MONTE
+  PENDANT LA PARTIE.** Safari ne donne pas le tas (`tasMo` nul), mais le journal
+  de bord compte les géométries et les textures : la seconde grimpait d'un bout
+  à l'autre de chaque partie (409 → 702). La requête qui l'a montré :
+  `jsonb_array_elements(doc->'releves')` par session, un relevé sur quatre.
+- **UN CHARGEUR NE CONNAÎT QU'UN FICHIER : CE QUI SE RÉPÈTE ENTRE FICHIERS SE
+  RECONNAÎT À SES OCTETS.** Cinquante modèles, 225 images, CINQ distinctes ;
+  chaque modèle décodait sa copie (734 Mo pour la flotte entière). Le greffon
+  `partageDesTextures` (vehicules.js) hache le `bufferView` de l'image et rend
+  la texture déjà décodée. Avant de partager, on vérifie dans les fichiers
+  qu'une image n'y joue qu'un rôle : `assignTexture` lui pose son espace de
+  couleur, et une image teinte ici et normale là se contredirait.
+- **UNE RESSOURCE PARTAGÉE SE MARQUE AU MOMENT OÙ ELLE DEVIENT PARTAGÉE.**
+  `repeindre` clone la laque et la marque non partagée ; `liberer` jetait donc
+  la `map` du clone, c'est-à-dire la texture du prototype, à chaque voiture
+  repeinte qui quittait la rue. Les textures du cache portent `partagee`.
+
+Ce qui reste, déclaré dans `TASKS.md` : une relance de mise à jour semble
+compter comme un plantage dans le journal (une session v408 à zéro relevé cinq
+secondes après la fermeture de la v406), et nourrirait le disjoncteur de sûreté.
+
 ## Les anneaux contournent (v404) — un anneau est le bord d'un ensemble d'îlots
 
 La dette de la v387 : 147 anneaux de villes engendrées sur 809 sortaient de la
@@ -1336,6 +1410,19 @@ un geste instantané ne regarde pas où il pose, une séquence doit le faire.
 Le passage vit dans `sonde-descente-avion.cjs` et `monte.js` l'appelle tel
 quel (`passage`, `juger`) : une copie de sonde finit par diverger du témoin.
 
+**Le passager suit la voiture de son ami, pas un maillage gardé (v407).**
+Une tablette REFAIT le maillage de la voiture d'un ami quand sa clé change
+ou quand l'ami est recréé (`synchroniserVehiculeDistant`) ; la séquence qui
+gardait l'ancien maillage s'annulait (« la voiture n'existe plus ») — le
+rouge de `reseau.js` qui allait et venait depuis la v377. `chez.veh()`
+redemande la voiture de CE conducteur à chaque image (`suivreLaVoiture`) :
+maillage changé → on s'y rebranche ; voiture absente → on attend
+`ABSENCE_MAX` (1,5 s de jeu) avant d'annuler. **Une séquence suit une
+IDENTITÉ (le conducteur), jamais un objet de rendu qu'un autre module peut
+remplacer.** Le témoin provoque l'état (v393) en changeant la clé chez Lou
+pendant la marche, et les témoins du passager publient un `suivi` image par
+image de la voiture de l'ami.
+
 **Une séquence qu'on ne juge qu'au banc se fait lire sur la tablette (v396).**
 Le banc saute la séquence (`embarq=0`) et rend en logiciel : durées, caméra et
 image figée ne se valident que sur l'iPad. `?diag=1` porte donc une ligne de
@@ -1513,7 +1600,7 @@ Et une empreinte d'identité qui change se PROUVE : celle des 490 morceaux
 (v352) couvre Marrakech et Tokyo ; la branche, bâtisseurs neufs désarmés, rend
 l'ancienne au bit près — c'est ce qui a permis de la remplacer.
 
-## Le témoin de chargement vole au-dessus d'une ville (v405) — un réglage que le banc coupe se force dans le témoin qui le juge
+## Le témoin de chargement vole au-dessus d'une ville (v417) — un réglage que le banc coupe se force dans le témoin qui le juge
 
 Une règle.
 
@@ -1999,6 +2086,34 @@ engendrées. Quatre règles.
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
 
+## Un pas de côté ne traverse pas la rue (v411) — une projection droite n'est pas une trajectoire
+
+Trois règles.
+
+- **LE CÔTÉ D'UN ÉCART SE JUGE SUR LE SOL, PAS SEULEMENT SUR L'AXE.** Le pas de
+  côté de la v259 partait du côté où l'on est par rapport à l'AXE de la voiture.
+  Une voiture qui tourne a un axe en biais : pour un passant au coin, ce côté
+  menait à la rue perpendiculaire, et deux secondes d'écart (6,4 blocs)
+  suffisaient à la traverser. `coteDEcart` (pietons.js, pur) : depuis le
+  trottoir, devant une voiture SUR la chaussée, le côté naturel s'il reste en
+  haut, sinon tourné de 45°, sinon l'autre côté s'il a le temps d'y sortir du
+  couloir, sinon on RESTE au bord. Le demi-tour contre un mur ne se fait plus
+  vers la chaussée (`retournementPermis`), et chaque pas se juge
+  (`pasDEcartPermis`) : la voiture tourne, son couloir suit le passant.
+- **CE QUI REND LA RÈGLE SÛRE, C'EST OÙ ROULE LA VOITURE.** Une voiture sur la
+  chaussée n'est sur la route d'un passant du trottoir que par la projection
+  droite de son couloir, ou parce qu'elle frôle la bordure — et elle freine
+  devant un piéton (v395). Une voiture sur le trottoir (l'enfant au volant) l'y
+  rejoint vraiment : là, rien ne change. Le couloir publie donc la position de
+  la voiture (`rx`, `rz`) et sa demi-largeur (`demi`).
+- **UNE SONDE DE GÉOMÉTRIE SE FAIT SOUS NODE, ET LE TÉMOIN SE LIT DANS LE
+  TÉMOIN.** `sonde-ecart-trottoir.cjs` rejoue l'écart sur les vrais trottoirs
+  de quatre villes, voitures synthétiques droites et en virage : 92 descentes
+  sur 125 avant, 0 après, en quatre secondes. Ma première règle (« l'autre
+  côté seulement ») ne changeait RIEN : le vrai cas est un coin, où l'autre
+  côté croise l'axe de la voiture. Et la sonde de page lit la fonction du
+  témoin dans `monte.js` au lieu de la recopier (v400).
+
 ## On traverse aux passages peints (v402) — la peinture se lit sur la ligne, et l'approche est en temps réel
 
 Trois règles.
@@ -2345,6 +2460,34 @@ position, si (`{ ...msg }`). Ce qui doit traverser un ancien hôte s'accroche
 à elle, et devient idempotent en envoyant l'HISTOIRE (adoptée seulement si
 la nôtre en est le début), jamais le seul dernier événement.
 
+**La tolérance à la GTA (v405).** Max : « on fonce dans deux trucs et elles
+tombent en panne. » Mesuré sur la v404 : panne au 2e mur de face, feu au 3e, et
+dix bordures (force 0,3) mettaient la voiture en feu. Quatre règles.
+
+- **LA PANNE NE VIENT QUE DE LA SANTÉ.** Le moteur (`0,4 × zone avant + 0,6 ×
+  santé`) règle l'allure et la fumée ; une zone enfoncée ne cale plus la voiture
+  à elle seule. C'est ce qui calait en deux murs : `min(zone avant, …)` passait
+  sous le seuil quand la santé valait encore 0,4.
+- **LA PERTE SUIT LE CARRÉ DE LA FORCE** (`COURBE_FORCE`, l'énergie du choc).
+  La force publiée par la physique sature à 1 dès 20 b/s normaux
+  (`CHOC_PLEIN`, conduite.js) : c'est une décision de la physique, qu'on ne
+  touche pas d'ici ; la courbe se règle côté dégâts. Un frôlement rasant à
+  60 b/s publie encore 0,78 — il coûte 0,6 mur, déclaré.
+- **LE NOMBRE DE MURS EST ÉCRIT DANS LE CODE** (`CHOCS_AVANT_PANNE` 9,
+  `CHOCS_AVANT_FEU` 12) et le témoin le LIT : changer une constante sans changer
+  la promesse rougit. Fumée au 2e mur de face (6e de flanc ou par l'arrière) :
+  l'enfant voit qu'elle s'abîme bien avant la panne ; la tôle, elle, se froisse
+  dès le premier choc (la déformation suit la force, pas la santé).
+- **UNE HISTOIRE QUI SE REJOUE DOIT ALLER AUSSI LOIN QUE LA RÈGLE.** Douze chocs
+  d'historique suffisaient quand le feu venait au 3e ; l'ami aurait vu une
+  voiture bien plus saine que le conducteur. `MAX_CHOCS` vaut 24 (la santé
+  rejouée est exacte jusqu'au feu pour des chocs ≥ 0,7), dans `degats.js` et
+  `degats3d.js` (`noter`, `adopterHistoires`) ; le format ne change pas. Une
+  tablette restée sur la v404 rejoue cette histoire avec l'ancienne règle et
+  voit la voiture de l'ami en panne plus tôt : le receveur cède, et c'est
+  accepté. Et une ancienne tablette ignore une histoire `rc` de plus de douze
+  chocs : `rue_choc` reste son chemin.
+
 ## Celui qui part dit au revoir (v393) — un commentaire de départ se relit dans `stop()`
 
 Les deux rouges réseau récurrents du palier C. Trois règles.
@@ -2374,6 +2517,38 @@ Les deux rouges réseau récurrents du palier C. Trois règles.
   gain de sortie rendu, plus un niveau au-dessus de la MOITIÉ — milieu entre
   une voix restée au quart (`GAIN_APPEL`) et le régime qui varie ; vérifié
   rouge sur une copie où la voix reste au quart.
+
+## L'invité de New York (v412) — deux pages du banc se partagent un processeur, deux tablettes jamais
+
+Une règle. Un témoin à deux tablettes dont l'une rend une scène lourde
+(Manhattan, 0,4 image par seconde en logiciel) ouvre la page de l'AUTRE
+d'abord : ouverte pendant ce rendu, elle met 44 s à plus de 90 s à démarrer,
+sans erreur (13–18 s sinon). Le « TimeoutError de la ligne 674 », déclaré
+intermittence pendant trente versions, rendait 2 sur 2 rejoué seul : une
+« intermittence sous la charge » se REJOUE SEULE avant d'être crue, et si
+elle tombe à chaque fois, c'est une cause, pas un tirage.
+
+## Le passager sans courtier (v410) — on se reconnaît à TOUTES ses identités
+
+Une règle. Une tablette a deux identités possibles : `peer.id` (le courtier)
+et `bus.monId` (le nuage), et elles DIFFÈRENT pour un invité. Les autres la
+nomment par la clé de leur lien — celle du bus quand la partie passe par le
+nuage. Tout test « est-ce moi ? » passe par `net.estMoi(id)`, jamais par
+`peer.id` seul : le conducteur sans courtier ne reconnaissait pas son propre
+nom dans la position du passager (`p.de`) et le voyait debout, 2/2 mesuré
+(`sonde-passager-nuage.cjs`) ; corrigé, 3/3 assis en moins de 50 ms. La même
+lecture sert la portière (`portiere.de`) et `rpos`.
+
+## Le GPS d'un invité traverse l'hôte (v406) — un champ de position a un témoin par chemin
+
+Une règle. La v388 a écrit « un champ de position se lit sur les deux chemins
+de la position » et n'en éprouvait qu'un (le direct). Le relayé (`rpos`) a
+désormais son témoin à trois tablettes dans `reseau.js` (Nina → hôte → Alice),
+vérifié rouge sur une copie où `rpos` ne lit pas `g`. **Un champ ajouté à
+`pos` reçoit deux témoins, ou il n'en a qu'un demi.** Et une proposition
+expire à vingt secondes : une sonde qui lit l'hôte après trente secondes
+d'attente sur l'autre page le trouve vide — ce n'est pas un défaut, c'est
+l'horloge de la proposition.
 
 ## Le GPS se partage (v388) — un état voyage avec la position, pas dans un message neuf
 
@@ -2582,6 +2757,101 @@ celle d'un AXE DU MONDE contre un mur. Cinq règles.
   déclaré. Le joueur, lui, publie `player.roueLibre` ({ depuis, s }) et
   `player.contact` ({ famille, nx, nz }) ; `?diag=1` au volant les affiche
   avec le monde maillé devant la voiture (`mondeDevant`, `ligneDiagConduite`).
+
+## Le frein à main (v409) — conduite, palier C
+
+Le dérapage contrôlé à la GTA. Quatre règles.
+
+- **UN GESTE DE PLUS SE CHERCHE DANS CE QUE LE JOYSTICK LAISSE LIBRE.** Le
+  quart bas-gauche est TOUT entier au joystick (v272) ; en voiture, la place du
+  saut (colonne de droite, au-dessus de « Descendre ») est vide. Le bouton 🛑
+  s'y pose et TIENT la barre d'espace (`bindHoldButton`, comme ⤒ à pied) : une
+  seule commande, deux gestes, et `player.js` n'a qu'une source à lire.
+- **UNE TOUCHE QU'ON REPREND SE CHERCHE DANS CE QU'ELLE FAISAIT DÉJÀ.** Au
+  volant, Espace faisait sauter la voiture d'un tiers de bloc (le saut de la
+  marche, resté branché ; mesuré sur la v408, 0,29). Le saut est coupé au
+  volant, et le témoin du joueur le garde.
+- **UNE BORNE QU'ON ÉLARGIT SE REND PEU À PEU.** Au frein à main la dérive va
+  jusqu'à `DERIVE_MAX_MAIN` (≈ 55°) ; au lâcher, la borne n'est pas
+  `DERIVE_MAX` d'un coup — l'excès passerait au cap en UNE image, la caisse
+  sauterait de 35° — mais `max(DERIVE_MAX, |dérive| − REPRISE·dt)`. Sans frein
+  à main, cette borne vaut exactement l'ancienne.
+- **UN AJOUT À LA DYNAMIQUE SE PROUVE AUSSI PAR CE QU'IL NE CHANGE PAS.**
+  240 000 pas de `pasVoiture` tirés au hasard (classes, gaz, volant, pente,
+  moteur, panne, plafond de suivi), sans frein à main, rendent la v408 à
+  l'identique (sonde dans le brouillon, deux arbres). Le moteur ne pousse pas
+  pendant le frein à main : un drift « gaz + frein » demanderait un second
+  doigt sur l'accélérateur, que le joystick n'a pas — décidé, déclaré.
+
+## La pente, la bosse et la file (v408) — conduite, palier 3
+
+Mesuré sur `origin/main` par `tests/sonde-pente.cjs` (sous node, le vrai
+joueur sur de vraies lignes de campagne trouvées par la sonde) : une sportive à
+plein gaz faisait 26,4 blocs/s au bout de quarante blocs en côte, en descente
+et sur le plat, et une crête la plaquait au sol. Après : 24,1 en côte, 28,6 en
+descente, et une crête vive prise à 40 blocs/s fait voler environ une seconde.
+Six règles.
+
+- **UNE SEULE PESANTEUR LE LONG DE LA ROUTE, LA VRAIE (9,81).** Celle du jeu
+  (26, le saut) rendrait une pente d'un bloc par bloc — la plus raide que la
+  surface continue dessine — plus forte que le moteur d'une citadine : un
+  enfant resterait au pied d'une colline. `gravitePente` entre dans
+  `pasVoiture` (`entree.pente`) ; `vitesseEnCote` et `vitesseEnRoueLibre` sont
+  ses formules fermées, et le témoin exige que la simulation les rejoigne. Une
+  voiture arrêtée qu'on ne commande pas TIENT (`MAINTIEN`). En l'air, en
+  revanche, la pesanteur reste celle du jeu, comme avant.
+- **LA SURFACE CONTINUE EST UNE DENT DE SCIE, ET LA CAISSE LA LIT EN CINQ
+  POINTS.** Elle passe par le centre de colonnes de relief entier : une pente
+  de 0,37 est faite de facettes à 0 et à 1. Un point-masse qui la suivait
+  décollait de chaque dent (premier jet : 1,1 à 3,2 s « en l'air » sur six
+  côtes droites). `sousLaCaisse` lit la surface de −2 à +2 blocs le long de la
+  caisse : la moyenne est le sol de la voiture, la droite des moindres carrés
+  sa pente. La caisse ne s'enfonce pas de plus d'`ENFONCE` sous la surface au
+  centre.
+- **LA SURFACE POUSSE LA CAISSE D'UN COUP, MAIS NE LA TIRE QU'À LA
+  PESANTEUR.** Au sol, la vitesse verticale vaut `max(ce que la surface exige,
+  ce que la pesanteur laisse)`. Au sommet d'une crête, l'écart s'accumule
+  d'image en image ; passé le `DEBATTEMENT` on vole. C'est une HAUTEUR, pas un
+  seuil d'image : mon deuxième jet recollait la vitesse à la surface à chaque
+  image, et sur une crête vive l'écart repartait de zéro — la voiture ne
+  décollait JAMAIS, à aucune cadence. Une règle qui doit s'accumuler ne se
+  remet pas à zéro à chaque image.
+- **LE VOXEL DÉCIDE OÙ IL DÉCIDAIT, ET UNE GARDE SE FORMULE SUR L'ÉVÉNEMENT,
+  PAS SUR UNE MESURE VOISINE.** Ma première garde lisait `niveauVoxel`, qui
+  compte aussi la cote des colonnes COUVERTES : au sommet d'une crête la
+  colonne voisine dépasse le centre, la garde rendait la main au chemin
+  d'avant avec l'élan de la pente, et la caisse montait de sept blocs sans
+  être « en l'air ». La garde est l'événement lui-même : une marche franchie
+  dans l'image (`_franchi`), un cube sous les roues (`onGround`), pas de
+  surface (ville). Là, l'élan vertical ne survit pas.
+- **CE QUE LA PHYSIQUE PUBLIE, LES AUTRES LE LISENT SI PRÉSENT.**
+  `player.tangage` (rad, nez en haut), `player.enLair`, `player.pente`, et à
+  chaque retour au sol `player.atterrissage = { force, t, air, hauteur }` —
+  un ÉVÉNEMENT comme `choc`, effacé à la montée et à la descente, publié
+  seulement s'il s'est vu (plus haut que le débattement) ou senti. Personne
+  ne le dessine encore (`conduite-sensations`). Le contrat des dégâts ne
+  change pas : un atterrissage n'est pas un choc.
+- **DERRIÈRE UNE VOITURE PLUS LENTE, ON LA SUIT.** Elle ne se pousse pas
+  (v305) ; on la touchait à chaque image. `suiviDevant` pose notre rectangle
+  devant le pare-chocs par le crochet en lecture seule `voitureContre`, sur la
+  distance où l'on peut avoir à freiner, et la vitesse permise
+  (`vitesseDeSuivi`) est celle qu'on peut encore perdre au freinage de confort
+  avant `ECART_SUIVI` — jusqu'au frein franc si on l'a vue tard
+  (`freinDeSuivi`). Mesuré sous node, collé derrière à un bloc/s de plus
+  qu'elle : 139, 7 et 133 contacts (voiture arrêtée, à 6 et à 12 blocs/s) →
+  zéro. Braquer pour la doubler lève le suivi : on ne regarde que dans son
+  axe. **ET L'ON NE SUIT QUE CE QU'ON RATTRAPE DOUCEMENT** (`SUIVI_DELTA`,
+  4 blocs/s) : mon premier jet freinait aussi devant une voiture qu'on
+  voulait percuter, et le portail a rendu rouges trois témoins des dégâts et
+  de la rue (percuter une voiture de la rue l'abîme, elle s'arrête en
+  feux de détresse, son flanc frôlé nous laisse passer). Foncer dessus reste
+  un choc ; le témoin l'exige aussi.
+
+Et un **non-résultat** : lire la façade sur six blocs au lieu de 4,5 bat la
+droite des faces sur un mur synthétique (pire 9,8 → 7,1°) et ne la bat pas sur
+les seize vraies façades de Paris (`sonde-mur-oblique.cjs` : trajet médian
+après contact 10,4 → 7,5 à 10°, 14,3 → 16,8 à 25°). La coque convexe des faces
+est pire partout (pire 12° puis 168°). `RAYON_MUR` reste à 4,5.
 
 ## Les monuments à la hauteur de leur ville (v335) — une table de paliers, deux lecteurs
 
@@ -2963,6 +3233,38 @@ Une règle.
   la terre, l'herbe, le sable et la pierre naturelle. Manhattan a son propre sol
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
+
+## La M40 (v415) — une ville bâtie à la main s'entre par une rue déclarée, et une vieille boucle se cherche
+
+Londres–Birmingham, le corridor « en attente » depuis la v323. Trois règles.
+
+- **UNE PORTE DE VILLE BÂTIE À LA MAIN RESTE À `BORD_VILLE`, ET L'ENTRÉE SE
+  DÉCLARE.** Les rues nommées de Londres s'arrêtent à quatre-vingts blocs du
+  centre, la porte est à quatre-vingt-douze : aucune rue existante n'y mène
+  (mesuré angle par angle). Pousser la porte plus loin (`bord` plus grand)
+  aurait mis l'axe DANS la ville (le témoin « elle ne traverse ni ville » lit
+  `cityAt` à `r − BORD_VILLE − 2`, et Londres est bâtie à la main — une ville
+  engendrée comme Tokyo n'y entre pas). `ENTREES_LONDRES` (londres.js), comme
+  Paris et Lille : une collectrice de la porte à un SOMMET d'une artère
+  (Pentonville Road), dans le sol de la ville mais hors des circuits.
+- **UNE BOUCLE DE CONSTRUCTION QUI LISTE SES EXCLUSIONS OUBLIE LA DERNIÈRE
+  VILLE.** La trame générique de `world.js` (« City buildings: one lot per grid
+  cell ») exclut six villes bâties à la main, pas Londres : hors de la place que
+  « le mobilier de Londres » réserve (77 blocs autour du centre), elle pose
+  encore ses maisons PAR-DESSUS la ville. L'une barrait l'entrée de la M40 (un
+  bloc à hauteur de carrosserie à dix blocs de la porte, `dans` du témoin), deux
+  colonnes de la route aussi. Ses lots cèdent désormais à la route et à
+  l'entrée ; le reste de l'anneau est une dette déclarée (`TASKS.md`), parce que
+  le retirer touche des toits où un enfant a pu bâtir.
+- **UN COL SE TROUVE PAR LE RELEVÉ, PAS PAR L'AXE.** La carte ASCII du relief
+  (`carte.mjs` du scratchpad) a montré une crête nord-sud de 46 à 55 blocs
+  barrant tout l'espace, Heathrow fermant le sud, et un seul col à 41-46 vers
+  la latitude de Birmingham. Le couloir le plus bas avec cap (v355) le trouve de
+  lui-même dès qu'on lui donne la sortie nord de Londres ; donné par l'ouest, il
+  rend « déblai ». La même sonde sert les routes suivantes : obstacles dans la
+  grille (aérodromes à r + 12 + portée de talus, villes, repères, rails,
+  autres routes), lissage par moyenne, `profilDe` sur chaque candidat, puis
+  `verif.mjs` qui relit le registre réel avec les grandeurs des témoins.
 
 ## Le Tōmei (v381) — une sonde de couloir lisse par moyenne, et la porte se juge avec son raccord
 
@@ -7063,10 +7365,9 @@ les autres restent passagers ». Quatre règles.
   l'enfant au siège de la voiture de l'ami (`sieges` de la fiche, le premier
   libre d'après les positions réseau des autres passagers), rend ses
   commandes inertes, et un appui descend — exactement le métro. Le
-  conducteur reconnaît ses passagers à `p.de === net.peer.id` ; sans
-  courtier (partie par le nuage seul) il n'a pas d'identifiant de pair, et
-  les passagers sont vus assis chez les autres mais debout chez lui — dette
-  déclarée dans `TASKS.md`.
+  conducteur reconnaît ses passagers à `net.estMoi(p.de)` — l'identité de
+  pair OU celle du bus du nuage (v410 : sans courtier il n'y a pas de pair, et
+  le passager était vu debout chez le conducteur).
 - **UNE TÊTE N'EST PAS UN TOIT, ET LE CACHE DU PLAFOND EST PAR SIÈGE.**
   `plafondAuSiege` mesure le pavillon parmi les maillages du véhicule ; il
   n'excluait que `avatarLocal`. Assis dans la voiture d'un ami, c'est SA

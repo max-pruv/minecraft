@@ -70,7 +70,81 @@ export function couloirVoiture(r, x, z, y, marge = 1.0, horizon = HORIZON_S) {
   if (devant < -2.2 || devant > portee) return null;
   const t = Math.max(0, devant) / r.v;
   if (Math.abs(cote) > r.demiLarg + (t < PROCHE_S ? marge : MARGE_LOIN)) return null;
-  return { ux: r.ux, uz: r.uz, cote: cote >= 0 ? 1 : -1, lat: cote, t };
+  return { ux: r.ux, uz: r.uz, cote: cote >= 0 ? 1 : -1, lat: cote, t, demi: r.demiLarg, rx: r.x, rz: r.z };
+}
+
+// UN ÉCART NE TRAVERSE PAS LA RUE (v411). Le pas de côté de la v259 part du
+// côté où l'on est DÉJÀ par rapport à l'axe de la voiture. Une voiture qui
+// TOURNE au carrefour a un axe en biais : pour un passant au coin du trottoir,
+// ce côté-là mène à la rue PERPENDICULAIRE, et l'écart de deux secondes (6,4
+// blocs à 3,2 b/s) le portait jusqu'au trottoir d'EN FACE, au vert — le témoin
+// du feu de la v402 l'a publié, deux fois sur quatre des deux côtés.
+//
+// LA RÈGLE, ET CE QUI LA REND SÛRE. Une voiture qui roule sur la chaussée n'est
+// sur la route d'un passant du trottoir que par la projection DROITE de son
+// couloir (elle tourne) ou parce qu'elle frôle la bordure ; une voiture sur le
+// trottoir (l'enfant au volant) l'est vraiment. Donc : un passant SUR le
+// trottoir, devant une voiture SUR la chaussée, ne descend pas sur la
+// chaussée. Il prend le côté naturel s'il reste en haut, sinon ce côté tourné
+// de 45° d'un bord ou de l'autre (on s'éloigne encore de l'axe), sinon l'autre
+// côté s'il a le temps d'y sortir du couloir avant la voiture, sinon il RESTE
+// sur le trottoir — et la voiture, qui freine devant un piéton (v395), passe.
+// Dans tout autre cas (sur la chaussée, voiture sur le trottoir, pas de sol),
+// rien ne change. `sol(x, z)` rend 't', 'c' ou 'x' (celui de
+// `cheminDeTraversee`). Rend { ex, ez, garde } : la direction du pas (nulle si
+// l'on reste), et `garde` vrai quand on a choisi CONTRE la chaussée.
+export const SORTIE_ECART = 1.8;     // la marge à laquelle l'écart se termine (marlon.js)
+export const MARGE_CHOIX_S = 0.25;   // le temps de rab pour passer devant la voiture
+export function descendSurLaChaussee(sol, x, z, ux, uz, d) {
+  for (let s = 0.5; s <= d + 0.5; s += 0.5) {
+    const c = sol(x + ux * s, z + uz * s);
+    if (c === 'c') return true;
+    if (c === 'x') return false;
+  }
+  return false;
+}
+export function coteDEcart(v, sol, x, z, vEcart) {
+  const dir = (c) => ({ ex: v.uz * c, ez: -v.ux * c });
+  if (!v) return { ex: 0, ez: 0, garde: false };
+  const naturel = { ...dir(v.cote), garde: false };
+  if (!sol || sol(x, z) !== 't' || v.rx === undefined || sol(v.rx, v.rz) !== 'c') return naturel;
+  const demi = v.demi ?? 1.13;
+  const reste = (c) => Math.max(0, demi + SORTIE_ECART - c * v.lat);
+  const loin = Math.min(reste(v.cote), vEcart * 2);
+  if (!descendSurLaChaussee(sol, x, z, naturel.ex, naturel.ez, loin)) return naturel;
+  // tourné de 45° : on s'éloigne encore de l'axe, d'un bord ou de l'autre
+  const k = Math.SQRT1_2;
+  for (const s of [1, -1]) {
+    const ex = (naturel.ex - s * naturel.ez) * k, ez = (naturel.ez + s * naturel.ex) * k;
+    if (!descendSurLaChaussee(sol, x, z, ex, ez, loin / k)) return { ex, ez, garde: true };
+  }
+  const autre = -v.cote, d = dir(autre);
+  if (reste(autre) / vEcart <= v.t - MARGE_CHOIX_S && !descendSurLaChaussee(sol, x, z, d.ex, d.ez, Math.min(reste(autre), vEcart * 2))) return { ...d, garde: true };
+  return { ex: 0, ez: 0, garde: true };
+}
+
+// ET LE PAS LUI-MÊME NE DESCEND PAS (v411). La voiture tourne, son couloir
+// suit le passant, et l'écart dure jusqu'à deux secondes : un côté qui restait
+// sur le trottoir sur la distance prévue peut y mener plus loin. Chaque pas se
+// juge donc aussi : depuis le trottoir, devant une voiture sur la chaussée, on
+// ne pose pas le pied sur la chaussée — on s'arrête au bord.
+export function pasDEcartPermis(sol, x, z, nx, nz, v) {
+  if (!sol || !v || v.rx === undefined) return true;
+  return !(sol(x, z) === 't' && sol(nx, nz) === 'c' && sol(v.rx, v.rz) === 'c');
+}
+
+// ET L'ÉCART NE SE RETOURNE PAS VERS LA CHAUSSÉE (v411). Contre un mur, la
+// v259 essayait l'autre côté une fois : depuis le trottoir, c'était la rue —
+// la sonde l'a montré, c'est par là que passaient la plupart des traversées.
+// Un passant collé au mur, SUR le trottoir, n'est pas sur la route de la
+// voiture ; un passant qui repart à travers la chaussée l'est. `lat` est
+// l'écart latéral lu à cet instant, `demi` la demi-largeur de la voiture.
+export function retournementPermis(sol, x, z, e, lat, demi, vEcart) {
+  if (!sol || sol(x, z) !== 't') return true;
+  if (e.garde) return false;
+  const c = -e.cote;
+  const d = Math.min(Math.max(0, (demi ?? 1.13) + SORTIE_ECART - c * lat), vEcart * 2);
+  return !descendSurLaChaussee(sol, x, z, e.uz * c, -e.ux * c, d);
 }
 
 // TRAVERSER AU FEU (v371). MESURÉ AVANT D'ÉCRIRE (`tests/sonde-traversees.cjs`,

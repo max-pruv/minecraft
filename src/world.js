@@ -38,7 +38,7 @@ import {
 import {
   LONDRES, hauteurLondres, solLondres, lotLondresLibre, batirColonneLondres,
   MONUMENTS_LONDRES, lieuxDeLondres, pontLondres,
-  VOIES_LONDRES, PORTEE_FEUX_LONDRES,
+  VOIES_LONDRES, PORTEE_FEUX_LONDRES, surEntreeLondres,
 } from './londres.js';
 import {
   hauteurVillesMonde, aPorteeDuFondu, solVillesMonde, batirColonneVillesMonde, mobilierVillesMonde,
@@ -3934,6 +3934,19 @@ export class World {
           // l'eau — on éprouve donc les quatre coins.
           if (city.key === 'paris' && [[x0, z0], [x1, z0], [x0, z1], [x1, z1], [ccx, ccz]]
             .some(([ax, az]) => !lotParisLibre(ax, az))) continue;
+          // UNE MAISON DE LA TRAME GÉNÉRIQUE NE SE POSE NI SUR UNE ROUTE NI SUR
+          // SON ENTRÉE (v415). Londres se bâtit colonne par colonne, mais cette
+          // boucle ne l'exclut pas : hors de la place que « le mobilier de
+          // Londres » réserve (soixante-dix-sept blocs autour du centre), elle
+          // y pose encore ses maisons, par-dessus la ville. L'une barrait
+          // l'entrée de la M40 (mesuré : un bloc à hauteur de carrosserie à
+          // dix blocs de la porte). On ne retire que les lots qui touchent la
+          // route ou l'entrée — le reste de l'anneau ne bouge pas.
+          if (city.key === 'londres') {
+            let gene = false;
+            for (let wx = x0; wx <= x1 && !gene; wx++) for (let wz = z0; wz <= z1 && !gene; wz++) gene = !!routeEn(wx, wz) || surEntreeLondres(wx, wz);
+            if (gene) continue;
+          }
 
           if (city.key === 'paris') {
             // Haussmann: uniform cream stone, tall window bays, zinc mansard

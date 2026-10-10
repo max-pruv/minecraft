@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v405 — Le monde arrive à temps au-dessus des villes
+## v417 — Le monde arrive à temps au-dessus des villes
 
 **Pourquoi.** Le témoin qui vérifie que l'avion ne dépasse pas le monde en
 train de se charger volait au-dessus d'un désert, où un morceau coûte trois
@@ -44,6 +44,345 @@ banc, Paris rend 45 pour 60 : il peut rougir). Une sonde,
 blocs, l'ancien code met 14 s à charger la moitié du disque et passe 3,3 s du
 fil principal à fabriquer des morceaux ; la v403, 3,4 s et 0,3 s, comme sans
 journal.
+
+## v416 — San Diego a son second circuit
+
+**Pourquoi.** Trois villes engendrées n'avaient qu'un circuit de voitures
+(San Diego, San José, Guayaquil) : la v404 avait donné à huit ports la même
+boucle dans l'autre sens, et ces trois-là restaient. Mesuré : à San Diego, le
+contresens était écarté avant même qu'on cherche à le faire passer ailleurs,
+parce que sa voie extérieure longeait l'eau sur plus de vingt-quatre blocs
+(la longueur d'un pont) — alors que les tabliers déjà posés la couvrent.
+
+**Ce que ça change.** À San Diego, les voitures font le tour dans les deux
+sens, sur la chaussée et les ponts existants ; aucun bloc du sol ne change.
+San José et Guayaquil gardent un circuit, et c'est mesuré : leur place
+centrale occupe le nœud du milieu, le grand anneau est le seul cycle de leur
+trame, et sa voie extérieure passe sur la mer (San José, une quarantaine de
+blocs le long de la côte) ou sur la plage (Guayaquil). Les deux remèdes
+changent le sol (un rayon plus grand, une place déplacée, un quai sur
+pilotis) : c'est une décision, déclarée.
+
+**Ce qui le prouve.** Le témoin « villes à un seul circuit » de
+`carteMonde.js` passe sa barre de six à deux : 3 sur `origin/main`, 2 ici.
+Une sonde compare les deux arbres ville par ville : seule San Diego change
+(1 → 2 circuits, couverture 100 %, voiture à 30 blocs du centre), aucun pas
+de voie sur l'eau hors tablier, partage nul avec son anneau.
+
+---
+
+## v415 — Londres rejoint Birmingham
+
+**Pourquoi.** Londres–Birmingham était le corridor court sans rail du kit
+« en attente » depuis la v323 : une autre session élargissait les rues de
+Londres. C'est livré (v339) ; restait à trouver un passage. L'axe direct est
+barré par une crête de 46 à 55 blocs, nord-sud, et l'ouest de Londres bute sur
+un mur de collines qui finit dans la marge de Heathrow.
+
+**Ce que ça change.** La M40 sort de Londres par le nord, monte vers le seul
+col de la crête (41 à 46 blocs, à la latitude de Birmingham), passe deux
+ruisseaux sur des ponts et entre dans Birmingham par l'axe de sa trame. Dans
+Londres, une entrée en ligne droite mène de la porte nord à Pentonville Road,
+devant King's Cross ; vingt voitures font l'aller-retour. Une maison de la
+vieille trame générique, qui se posait encore dans l'anneau extérieur de
+Londres et barrait cette entrée, cède désormais à la route et à son entrée.
+
+**Ce qui le prouve.** Un témoin neuf de `carteMonde.js` (rouge sur l'ancien
+code : ni convoi ni entrée) : la M40 n'a aucun rail sous son emprise, ne frôle
+aucune de ses villes, son entrée de Londres est sur la chaussée d'un bout à
+l'autre sans un bloc à hauteur de carrosserie et finit sur une artère, celle de
+Birmingham arrive sur la rue. Les témoins de toutes les routes la lisent aussi
+(profil à six pour cent, asphalte et contact au sol, tablier libre, aucune
+emprise volée, joints des ponts fermés). L'empreinte des 490 morceaux change
+(Londres est un des neuf lieux) et se prouve : M40 retirée, la branche rend
+celle d'`origin/main` au bit près.
+## v414 — Des ponts sous toutes les voies
+
+**Pourquoi.** Dans quatorze villes engendrées, des voitures roulaient sur
+l'eau sans pont : 159 pas de voie sur un fleuve ou un canal, hors de tout
+tablier (Shanghai 46, Kyoto 24, Chicago 22, Bangkok 18, Istanbul 14,
+Stockholm 13…). Deux causes, mesurées : un tablier se mesurait sur l'AXE de la
+rue, et la voie, une demi-chaussée à côté, touche l'eau plus tôt là où la rive
+est en biais ; et un anneau que ses quarante points de contrôle voyaient au
+sec pouvait encore couper un ruisseau (la Kamo de Kyoto) — sans aucun pont.
+La v404 l'avait déclaré, avec la règle : on ne retire jamais un tablier (un
+enfant a pu bâtir dessus), on les allonge.
+
+**Ce que ça change.** Les ponts s'allongent au-dessus de l'eau là où passe la
+voie, et les petits canaux traversés ont enfin leur pont (trois sur la Kamo à
+Kyoto, vus en capture, le bus passe dessus). Aucune voiture ne roule plus sur
+l'eau. Aucune ville ne change de circuits, de voitures en vue ni de
+couverture ; aucun pont d'avant ne bouge ni ne change de pierre.
+
+**Ce qui le prouve.** Deux témoins neufs dans `carteMonde.js`, rouges sur
+`origin/main` : les pas de voie sur l'eau hors tablier (159 → 0) et « un
+tablier ne se retire pas » — par les fonctions pures, sur toutes les villes à
+pont, aucune colonne d'eau d'avant perdue ni changée de matière, 1 485 colonnes
+gagnées, toutes sur l'eau. Une sonde compare les deux arbres ville par ville :
+circuits, couverture et distance de la voiture au centre identiques au bit
+près. L'empreinte des 490 morceaux change (Rome en est) et se prouve : le même
+code, les allongements retirés, rend la constante d'`origin/main` au bit près.
+Le prix : déplier les anneaux de toutes les villes coûte 15 % de plus
+(1 070 → 1 250 ms au total, une ville à la fois à l'approche), la pire ville
+inchangée (Rome ≈ 90 ms) ; rien au démarrage.
+## v413 — Le jeu ne plante plus en roulant : la flotte partage ses images
+
+**Pourquoi.** Max : « le jeu plante de temps en temps ». Le journal de bord de
+l'iPhone (`journal_appareil`) a compté onze plantages en quarante minutes le
+10 octobre, des parties d'une à sept minutes. Le palier de sûreté était déjà
+au plus bas, la couche HD éteinte. Les journaux ne montrent ni erreur ni gel :
+la cadence reste entre 25 et 60 images par seconde, et la page meurt au milieu
+d'un relevé normal. Une seule grandeur montait d'un bout à l'autre de chaque
+partie, le nombre de textures (409 → 702 en cinq minutes). La cause est dans
+les fichiers : les cinquante modèles de voitures portent 225 images, dont
+seulement CINQ distinctes, octet pour octet. Le chargeur décodait la copie de
+chaque modèle et l'envoyait à la carte graphique, soit environ 15 Mo par
+modèle et 734 Mo pour la flotte entière, que la rue découvre à mesure que
+l'enfant roule. iOS ne prévient pas : il ferme la page. Deuxième fuite, plus
+petite : une voiture repeinte qui quittait la rue rendait au pilote la texture
+de son prototype, qu'il fallait alors renvoyer à la carte graphique pour la
+voiture suivante.
+
+**Ce que ça change.** Le chargeur reconnaît une image à son empreinte et rend
+la texture déjà décodée : toute la flotte tient dans cinq images, quelques
+mégaoctets au lieu de plusieurs centaines. Les textures partagées sont
+marquées, et une voiture qui s'en va ne les jette plus. Les voitures ne
+changent pas d'un pixel : chaque image garde son rôle (teinte ou relief) dans
+les cinquante fichiers, vérifié.
+
+**Ce qui le prouve.** Un témoin neuf dans `realisme.js` charge huit modèles
+texturés et compte les images décodées qu'ils tiennent : 36 sur l'ancien code,
+5 ici. Il repeint ensuite une voiture et la libère : aucune texture du
+prototype n'est rendue au pilote, contre dix sur l'ancien code. La preuve
+sur le téléphone viendra du journal de bord : des parties longues sans
+plantage, et un compte de textures qui ne grimpe plus.
+
+---
+
+## v412 — New York à deux, vérifié jusqu'au bout
+
+**Pourquoi.** `manhattan.js` s'arrêtait souvent à la ligne 674 sur un
+`TimeoutError` : l'ami qui rejoint un monde ouvert dans New York ne
+« démarrait » jamais. Cinq témoins venaient après (le bloc partagé, le code
+Terre dans le nuage, l'archive reprise, deux clients sans erreur, le jeu hors
+ligne) et ne tournaient donc presque jamais. Déclaré « intermittence sous la
+charge » depuis la v381. Rejouée seule, la suite s'arrêtait là deux fois sur
+deux, sur la branche comme sur `origin/main`.
+
+**Ce que ça change.** Rien dans le jeu : la cause était le banc. La page de
+l'invité s'ouvrait pendant que l'hôte rendait Manhattan, qui tourne à 0,4
+image par seconde en rendu logiciel et occupe les quatre cœurs de la machine.
+Sur deux vraies tablettes, chacune a son processeur. Le témoin ouvre
+désormais la page de l'ami d'abord, puis l'hôte entre dans New York et l'ami
+le rejoint avec le geste de l'enfant (code, Rejoindre, Jouer).
+
+**Ce qui le prouve.** Sonde (`sonde-invite-ny.cjs`) : hôte dans Manhattan,
+le jeu de l'invité apparaît en 44 s puis au-delà de 90 s, sans une erreur ;
+hôte hors Manhattan, en 13 et 18 s. Page ouverte d'abord
+(`sonde-invite-avant.cjs`) : 3 sur 3, bloc propagé en 0,2 à 6 s. Rejouée
+seule, `manhattan.js` va jusqu'au bout et les cinq témoins d'après sont
+verts ; reste le rouge déclaré du trou de façade (17 102 → 54 969).
+
+---
+
+## v411 — Un pas de côté ne fait plus traverser la rue
+
+**Pourquoi.** Le témoin du feu de la v402 l'a publié deux fois sur quatre, des
+deux côtés : un passant du trottoir, au coin d'un carrefour, faisait un pas de
+côté devant une voiture qui tournait… et ressortait sur le trottoir d'en face,
+au vert. Le pas de côté partait du côté où le passant était par rapport à
+l'AXE de la voiture ; quand la voiture tourne, cet axe est en biais, et ce
+côté-là, c'est la rue d'à côté. L'écart durait jusqu'à deux secondes, assez
+pour la traverser.
+
+**Ce que ça change.** Un passant sur le trottoir qui s'écarte d'une voiture
+roulant sur la chaussée ne descend plus dans la rue : il s'écarte vers le
+trottoir, en biais si le côté naturel mène à la rue, ou de l'autre côté s'il a
+le temps de passer, ou il reste sur place au bord, et la voiture, qui freine
+devant un piéton, passe. Rien ne change sur la chaussée, ni devant une voiture
+qui roule sur le trottoir (l'enfant au volant) : là, on s'écarte comme avant.
+
+**Ce qui le prouve.** Une sonde sous node (`sonde-ecart-trottoir.cjs`) PROVOQUE
+la situation aux coins des feux de Rome, Zurich, Paris et Londres, avec des
+voitures droites et en virage, sans freinage : 92 écarts sur 125 descendaient
+sur la chaussée avec l'ancienne règle, zéro avec la neuve, et les contacts sans
+freinage tombent de 82 à 19 (ceux d'une voiture qui frôle la bordure). Un témoin
+de `monte.js` (rejoué seul par `sonde-ecart-trottoir-page.cjs`) pose cinq
+passants au coin d'un feu de Rome et leur envoie une voiture en biais :
+`origin/main` 4 sur 5 descendus, deux fois ; la branche 0 sur 5, deux fois.
+
+---
+
+## v410 — Le passager se voit assis, même sans courtier
+
+**Pourquoi.** Quand le serveur de rendez-vous ne répond pas (Wi-Fi d'hôtel,
+école), la partie passe entièrement par le nuage depuis la v154. Un enfant
+pouvait y monter en passager dans la voiture d'un ami — chez les autres il
+était bien assis, mais **chez le conducteur il restait debout à côté de la
+voiture** : le conducteur ne se reconnaissait qu'à son identité de courtier,
+qu'il n'a pas dans ce cas (dette de la v253). La portière animée (v377) ne
+s'ouvrait pas chez lui non plus, pour la même raison.
+
+**Ce que ça change.** Sans courtier, le conducteur voit son passager assis
+dans sa voiture, et sa portière s'ouvrir.
+
+**Ce qui le prouve.** Un témoin neuf dans `reseau.js`, dans la partie à deux
+sans courtier du tout. Sonde (`sonde-passager-nuage.cjs`) : sur `origin/main`,
+le passager écrit bien chez qui il est assis, mais reste debout chez le
+conducteur, 2 fois sur 2 ; corrigé, assis 3 fois sur 3, en moins de 50 ms. Au portail, `reseau.js` est verte
+entière ; les rouges de `maj.js`, `carte.js`, `manhattan.js` et `monte.js` sont
+déjà déclarés, et la double mesure les retrouve des deux côtés (`TASKS.md`).
+## v409 — Le frein à main fait déraper la voiture
+
+**Pourquoi.** La conduite « comme GTA » que demande Max n'avait pas de frein à
+main : au joystick, la voiture tournait comme un train sur ses rails, sans
+jamais pouvoir glisser dans un virage. Et mesuré sur la v408 sous node : au
+volant, la barre d'espace faisait SAUTER la voiture d'un tiers de bloc — le
+saut de la marche, resté branché.
+
+**Ce que ça change.** En voiture, un bouton 🛑 « DÉRAPER » apparaît dans la
+colonne de droite, au-dessus de « Descendre », sous le pouce droit pendant que
+le gauche tient le volant ; sur ordinateur, c'est la barre d'espace. Tenu en
+tournant, les roues arrière lâchent : la caisse tourne près de deux fois plus
+qu'au seul volant (77° au lieu de 46° en 1,2 s à 30 blocs/s), l'arrière glisse
+jusqu'à 54°, la voiture garde la moitié de sa vitesse, et au lâcher elle se
+remet dans l'axe en moins d'une demi-seconde, sans à-coup. Pas de tête-à-queue,
+et le frein à main ne fait rien bouger à l'arrêt. La voiture ne saute plus.
+`?diag=1` dit le dernier dérapage (angle le plus large, durée).
+
+**Ce qui le prouve.** Trois témoins, tous rouges sur la v408 : la dynamique
+pure, classe par classe (rotation 1,6 à 1,9 fois celle du volant, contre 1,2 à
+1,3 sans frein à main ; 16 blocs/s gardés ; retour dans l'axe en 0,4 s ; rien
+ne bouge à l'arrêt) ; le vrai joueur sous node, barre d'espace tenue (la caisse
+tourne plus, ne monte pas d'un centième de bloc — 0,29 sur la v408) ; et au
+banc, le bouton hors du quart du joystick, sans recouvrir « Descendre », qui
+tient le frein au toucher et disparaît à pied. Et une preuve d'identité : sans
+frein à main, 240 000 pas de dynamique tirés au hasard rendent exactement la
+v408.
+
+---
+
+## v408 — La voiture sent les collines, et suit les voitures lentes
+
+**Pourquoi.** Mesuré sur `origin/main` par une sonde qui cherche de vraies côtes,
+descentes et crêtes dans la campagne et y fait rouler le vrai joueur : une
+sportive à plein gaz faisait 26,4 blocs/s au bout de quarante blocs, que ça
+monte, que ça descende ou que ce soit plat — la pente n'existait pas pour la
+voiture, et une crête la plaquait au sol au lieu de la faire décoller. Et
+derrière une voiture de la rue plus lente, joystick en avant, la nôtre la
+touchait à presque chaque image (139 contacts en cinq secondes derrière une
+voiture arrêtée).
+
+**Ce que ça change.** La montée ralentit (24,1 blocs/s au lieu de 26,4) et la
+descente accélère (28,6) ; une voiture arrêtée dans une pente ne repart pas
+toute seule. Une crête prise vite fait décoller la voiture, qui retombe —
+environ une seconde de vol à 40 blocs/s sur une vraie colline. Derrière une
+voiture plus lente, on la suit à un bloc et demi, sans la toucher, et l'on
+freine franchement si on l'a vue tard ; foncer dessus reste un choc. La physique publie pour la caméra et le
+son (session des sensations) le tangage de la caisse et chaque atterrissage
+(`player.tangage`, `player.atterrissage`), et `?diag=1` affiche la pente, le
+dernier saut et la voiture suivie.
+
+**Ce qui le prouve.** Trois témoins sous node dans `plafond.js`, tous rouges
+sur `origin/main` : la dynamique de pente rejoint ses formules fermées (côte à plein
+gaz 40,95 contre 40,95, roue libre 19,46 contre 19,67) et aucune classe ne
+reste au pied d'une pente d'un bloc par bloc ; le joueur sur une côte en dents
+de scie ralentit sans jamais décoller, accélère en descente, décolle d'une
+crête vive et publie son atterrissage ; collé derrière une voiture arrêtée, à
+6 et à 12 blocs/s, zéro contact (139, 7 et 133 sur `origin/main`), et foncer
+dessus reste un choc plein. La sonde `sonde-pente.cjs` (dix-huit lignes de
+campagne) donne les chiffres ci-dessus. Un non-résultat est déclaré : lire la
+façade d'un mur sur six blocs ne bat pas la v397 sur les vraies façades de
+Paris.
+
+---
+
+## v407 — Le passager suit la voiture de son ami
+
+**Pourquoi.** Au portail, « le passager entre par la portière droite »
+(`reseau.js`, v377) allait et venait : Lou restait en « approche » puis la
+séquence s'annulait. La séquence tenait le MAILLAGE de la voiture de l'ami ;
+or une tablette refait ce maillage quand sa clé change ou quand l'ami est
+recréé (une reconnexion). Elle concluait « la voiture n'existe plus », et
+l'enfant restait à pied à côté de la voiture de son ami.
+
+**Ce que ça change.** La séquence redemande à chaque image la voiture de CE
+conducteur : si le maillage a changé, elle s'y rebranche (même place, même
+cap) et l'enfant s'assied quand même ; si la voiture manque, elle attend une
+seconde et demie avant de renoncer. Même chose en descendant.
+
+**Ce qui le prouve.** Un témoin neuf dans `reseau.js` PROVOQUE l'état (la
+tablette de Lou refait la voiture de Marlon pendant la marche) : vert sur la
+branche (rebranchée une fois, assise), rouge sur `origin/main`. Et les deux
+témoins du passager publient désormais, image par image, ce qui arrive à la
+voiture de l'ami (`suivi`) : le prochain rouge se démontera en une lecture.
+
+---
+
+## v406 — Le GPS d'un ami passe par l'hôte
+
+**Pourquoi.** Depuis la v388, quand un enfant choisit une destination sur sa
+carte, ses amis reçoivent une proposition (« Marlon va à Rome — y aller
+aussi ? »). Entre l'hôte et un invité, un témoin le prouvait. Mais à trois,
+deux invités ne sont pas reliés entre eux : la destination de l'un n'arrive à
+l'autre que dans la position que l'hôte RELAIE (`rpos`) — le chemin que la
+v374 avait déjà oublié une fois pour l'histoire des chocs. La lecture était
+écrite, rien ne la gardait.
+
+**Ce que ça change.** Rien de visible : c'est le filet qui manquait. Nina
+choisit Rome, Alice — qui n'a jamais eu de lien direct avec Nina — voit
+« Nina va à Rome — y aller aussi ? », et son GPS ne change pas tant qu'elle
+n'a pas touché le bouton.
+
+**Ce qui le prouve.** Un témoin neuf dans `reseau.js`, à trois tablettes,
+pendant la partie à trois du début de la suite. Sonde isolée
+(`sonde-gps-rpos.cjs`) : sur la branche, 3 propositions sur 3, en 0,5 à 2,6 s ;
+sur une copie d'`origin/main` où `rpos` ne lit pas `g`, rien chez Alice en
+trente secondes, 2 fois sur 2.
+
+**Et le portail.** `reseau.js` verte entière. `maj.js` deux rouges de la
+préparation de l'accueil (déjà déclarés) : rejouée seule, branche verte,
+`origin/main` rouge sur trois témoins dont le même. Une ligne de données de
+`nouveautes.js` ne peut pas les causer.
+
+---
+
+## v405 — Les voitures encaissent les chocs
+
+**Pourquoi.** Max : « les voitures s'abîment beaucoup trop vite. On fonce dans
+deux trucs et elles tombent en panne. » Mesuré sur la v404, sous node, murs de
+face à pleine force : fumée au 1er, **panne au 2e**, feu au 3e. Deux causes :
+la zone avant perdait 0,55 par choc et calait le moteur dès qu'elle passait
+sous 0,3, quelle que soit la santé ; et la force publiée par la physique vaut 1
+dès 20 blocs/s d'impact normal, quand une voiture roule à 40-60 — presque tout
+vrai crash compte comme le pire. Même dix bordures (force 0,3) mettaient la
+voiture en feu.
+
+**Ce que ça change.** Une tolérance « à la GTA » : la tôle se froisse dès le
+premier choc (la déformation suit la force, comme avant) et le moteur fume dès
+le deuxième mur de face, mais la voiture ne cale qu'au **neuvième mur à pleine
+force** et ne brûle qu'au **douzième**. Les petits chocs n'usent presque rien
+(la perte suit le carré de la force, comme l'énergie du choc) : dix bordures
+retirent 7 % de santé. Une zone avant enfoncée réduit l'allure et fait fumer,
+elle ne cale plus la voiture à elle seule. Le garage remet toujours tout à neuf.
+
+| murs à force… | 0,3 | 0,6 | 1 |
+| --- | --- | --- | --- |
+| v404 de face : panne / feu | 5 / 10 | 3 / 5 | 2 / 3 |
+| v405 de face, flanc, arrière : panne / feu | 98 / 132 | 25 / 33 | 9 / 12 |
+
+À plusieurs, l'ami rejoue l'historique des chocs, porté de 12 à 24 pour qu'il
+retrouve la même santé jusqu'au feu ; une tablette restée sur la v404 rejoue
+cet historique avec l'ancienne règle et voit la voiture de l'ami en panne plus
+tôt (le receveur cède, le format du message ne change pas).
+
+**Ce qui le prouve.** Quatre témoins neufs ou repointés dans `tests/degats.js`,
+vérifiés rouges sur la v404 : huit murs ne calent pas, le neuvième cale, le
+douzième brûle, de face, de flanc et par l'arrière (v404 : 2 / 3 / 3) ; dix
+bordures n'usent presque rien (v404 : en feu) ; l'allure baisse avant la
+panne ; et au banc, deux vrais murs pris pleins gaz par la physique laissent
+la voiture roulante. Le témoin réseau, rouge avec l'ancien historique de douze
+chocs, rejoue la même santé chez l'ami.
 
 ## v404 — Les voitures font le tour de la place
 

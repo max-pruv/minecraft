@@ -6,11 +6,112 @@
 
 export const NOUVEAUTES = [
   {
-    v: 405,
+    v: 417,
     titre: 'Le ciel des villes vérifié',
     puces: [
       'L\'avion ne dépasse pas la ville',
       'Rien ne change pour toi',
+    ],
+  },
+  {
+    v: 416,
+    titre: 'San Diego dans les deux sens',
+    puces: [
+      'Un second circuit de voitures',
+      'Sur les ponts déjà là',
+    ],
+  },
+  {
+    v: 415,
+    titre: 'Londres rejoint Birmingham',
+    puces: [
+      'Une autoroute passe par le col',
+      'On entre dans Londres par King\'s Cross',
+    ],
+  },
+  {
+    v: 414,
+    titre: 'Des ponts sur les canaux',
+    puces: [
+      'Plus de voiture qui roule sur l’eau',
+      'Les ponts s’allongent au-dessus des rivières',
+      'Tes constructions ne bougent pas',
+    ],
+  },
+  {
+    v: 413,
+    titre: 'Le jeu ne plante plus',
+    puces: [
+      'Les voitures prennent moins de mémoire',
+      'On peut jouer longtemps sur iPhone',
+    ],
+  },
+  {
+    v: 412,
+    titre: 'New York à deux, vérifié',
+    puces: [
+      'Un ami te rejoint à New York',
+    ],
+  },
+  {
+    v: 411,
+    titre: 'Les passants restent sur le trottoir',
+    puces: [
+      'Un pas de côté sans traverser',
+      'Ils attendent au bord de la rue',
+    ],
+  },
+  {
+    v: 410,
+    titre: 'Passager partout',
+    puces: [
+      'Ton ami te voit assis',
+      'Même sur un Wi-Fi difficile',
+    ],
+  },
+  {
+    v: 409,
+    titre: 'Le frein à main',
+    puces: [
+      'Un bouton 🛑 pour déraper',
+      'La voiture glisse dans les virages',
+      'Elle se remet droite toute seule',
+      'Elle ne saute plus',
+    ],
+  },
+  {
+    v: 408,
+    titre: 'La voiture sent les collines',
+    puces: [
+      'Elle ralentit en montée',
+      'Elle file en descente',
+      'Elle saute au sommet des bosses',
+      'Elle suit les voitures lentes',
+    ],
+  },
+  {
+    v: 407,
+    titre: 'Monter avec un ami, sans raté',
+    puces: [
+      'Tu montes même si sa voiture change',
+      'Et tu en redescends pareil',
+    ],
+  },
+  {
+    v: 406,
+    titre: 'Le GPS passe entre amis',
+    puces: [
+      'Vérifié à trois tablettes',
+      'Même sans lien direct',
+    ],
+  },
+  {
+    v: 405,
+    titre: 'Des voitures plus solides',
+    puces: [
+      'Deux chocs ne la cassent plus',
+      'Elle fume, puis elle tombe en panne',
+      'Les petits chocs ne comptent presque pas',
     ],
   },
   {

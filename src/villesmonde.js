@@ -4086,7 +4086,11 @@ function anneauxCalcules(f) {
       // Un anneau à moitié dans l'eau n'est pas une ville, c'est un radeau :
       // au-delà du quart du périmètre on n'essaie même pas de le franchir.
       if (mouille > 10) return null;
-      if (!mouille) { candidat.ponts = []; return candidat; }
+      // UN ANNEAU QUE QUARANTE POINTS VOIENT AU SEC PEUT ENCORE COUPER UN
+      // RUISSEAU (v414) : Kyoto et sa Kamo, vingt-quatre pas sur l'eau sans
+      // tablier. On ne le rejette pas pour autant (la sélection ne change
+      // pas) ; on publie le tablier de ce qu'il traverse.
+      if (!mouille) { candidat.ponts = traverseesDe(f, candidat, false); return candidat; }
       const trav = traverseesDe(f, candidat);
       if (!trav) return null;
       candidat.ponts = trav;
@@ -4260,9 +4264,14 @@ function anneauxCalcules(f) {
       // tablier qui en sort reste centré sur la rue, de la même largeur.
       if (g.ponts && g.ponts.length) {
         const v2 = t.w / 2;
+        // UNE VOIE TROP MOUILLÉE POUR UN PONT N'ÉCARTE PAS LE CONTRESENS
+        // (v416) : il roule encore sur la chaussée si les tabliers DÉJÀ publiés
+        // couvrent son eau, ou s'il contourne (`exigerChaussee`, où l'eau n'est
+        // permise que sous un tablier publié). San Diego y gagne son second
+        // circuit ; avant, sa voie extérieure longeait l'eau sur plus de
+        // `PONT_MAX` et l'on renonçait sans chercher.
         const tr = traverseesDe(f, { cU: g.cU, cV: g.cV, Ru: g.Ru + v2, Rv: g.Rv + v2 });
-        if (!tr) continue;
-        c.ponts = tr.map((q) => ({ ...q, b: q.b - Math.sign(q.b - (q.axe === 0 ? g.cV : g.cU)) * v2 }));
+        if (tr) c.ponts = tr.map((q) => ({ ...q, b: q.b - Math.sign(q.b - (q.axe === 0 ? g.cV : g.cU)) * v2 }));
       }
       c.aretes = aretesDuRect(c);
       if (gardes.some((h) => partageDAretes(c.aretes, h.aretes) > PARTAGE_MAX)) continue;
@@ -4303,7 +4312,8 @@ function anneauxCalcules(f) {
       g.aretes = k.aretes;
       formes[n].pts = k.pts;
     }
-    const out = { formes, ponts };
+    // Les tabliers d'avant d'abord, l'allongement ensuite : voir `pontDeVille`.
+    const out = { formes, ponts: ponts.filter((q) => !q.ext).concat(ponts.filter((q) => q.ext)) };
     ANNEAUX.set(f, out);
     return out;
   }
@@ -4788,7 +4798,7 @@ function contreUnMonument(f, c) {
 // par bloc et l'on note les suites mouillées. Une suite trop longue rend
 // `null` — cet anneau-là n'est pas franchissable. Chaque côté est parcouru à
 // part, donc une suite ne peut pas tourner un coin : un pont ne tourne pas.
-function traverseesDe(f, c) {
+function traverseesDe(f, c, strict = true) {
   const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
   const { cU, cV, Ru, Rv } = c;
   // LE TABLIER PORTE LA CHAUSSÉE ENTIÈRE ET SES DEUX PARAPETS, et la largeur
@@ -4804,29 +4814,70 @@ function traverseesDe(f, c) {
     { axe: 1, b: cU - Ru, a0: cV - Rv, a1: cV + Rv },
     { axe: 0, b: cV - Rv, a0: cU - Ru, a1: cU + Ru },
   ];
+  // Les suites mouillées d'une ligne parallèle au côté, à `d` de son axe :
+  // `[debut, fin]`, `fin` nul quand l'eau va jusqu'au bout du parcours.
+  const suites = (cote, d, a0, a1, pas = 1) => {
+    const out = [];
+    let debut = null;
+    const n = Math.round((a1 - a0) / pas);
+    for (let k = 0; k <= n; k++) {
+      const a = a0 + k * pas, b = cote.b + d;
+      const P = cote.axe === 0 ? a : b, Q = cote.axe === 0 ? b : a;
+      let u = P * co + Q * si, v = -P * si + Q * co;
+      // la publication lit la COLONNE que le monde écrit (son coin), pas le
+      // point : sur une trame tournée, le coin est jusqu'à un bloc et demi du
+      // point, et le chenal de Stockholm tombait entre les deux. Le rejet
+      // (pas d'un bloc) garde le point, comme avant.
+      if (pas < 1) { u = Math.floor(f.ancre.x + u) - f.ancre.x; v = Math.floor(f.ancre.z + v) - f.ancre.z; }
+      if (eauDeVille(f, u / f.K, v / f.K)) { if (debut === null) debut = a; continue; }
+      if (debut !== null) { out.push([debut, a]); debut = null; }
+    }
+    if (debut !== null) out.push([debut, null]);
+    return out;
+  };
   const ponts = [];
   for (const cote of cotes) {
-    let debut = null;
-    const n = Math.round(cote.a1 - cote.a0);
-    for (let k = 0; k <= n; k++) {
-      const a = cote.a0 + k;
-      const P = cote.axe === 0 ? a : cote.b, Q = cote.axe === 0 ? cote.b : a;
-      const u = P * co + Q * si, v = -P * si + Q * co;
-      const eau = k <= n && eauDeVille(f, u / f.K, v / f.K);
-      if (eau) { if (debut === null) debut = a; continue; }
-      if (debut !== null) {
-        if (a - debut > PONT_MAX) return null;
-        // Le tablier mord d'un bloc et demi sur chaque rive : une culée qui
-        // s'arrête au bord de l'eau laisse une marche entre le quai et le
-        // pont, et un enfant de sept ans s'y arrête sans comprendre.
-        ponts.push({ axe: cote.axe, b: cote.b, a0: debut - 1.5, a1: a + 0.5, demi });
-        debut = null;
+    // LE REJET SE JUGE SUR L'AXE, COMME AVANT (v404) : c'est lui qui décide
+    // QUELS anneaux une ville reçoit, et l'élargissement ci-dessous ne doit
+    // jamais en retirer un. Une suite trop longue rend `null` — cet anneau-là
+    // n'est pas franchissable.
+    if (strict) {
+      for (const [debut, fin] of suites(cote, 0, cote.a0, cote.a1)) {
+        if ((fin === null ? cote.a1 : fin) - debut > PONT_MAX) return null;
+        ponts.push({ axe: cote.axe, b: cote.b, a0: debut - 1.5, a1: fin === null ? cote.a1 + 1.5 : fin + 0.5, demi });
       }
     }
-    if (debut !== null) {
-      if (cote.a1 - debut > PONT_MAX) return null;
-      ponts.push({ axe: cote.axe, b: cote.b, a0: debut - 1.5, a1: cote.a1 + 1.5, demi });
+    // LE TABLIER COUVRE L'EAU DE TOUTE LA CHAUSSÉE, PAS SEULEMENT DE L'AXE
+    // (v414). Les voies roulent à une demi-chaussée de l'axe : là où la rive
+    // est en biais, elles touchent l'eau un bloc ou dix avant le bout du
+    // tablier mesuré sur l'axe — 159 pas sur l'eau sans tablier en v404
+    // (Shanghai 46, Kyoto 24, Chicago 22). On mesure donc deux lignes — l'axe et
+    // la voie que l'anneau roule (les bordures et la voie d'en face, mesurées,
+    // ajoutaient des milliers de colonnes le long des rivages où rien ne
+    // roule) — sur la longueur que la voie parcourt, et le tablier est l'UNION de leurs suites, mordant d'un bloc
+    // et demi sur chaque rive : une culée qui s'arrête au bord de l'eau laisse
+    // une marche entre le quai et le pont, et un enfant de sept ans s'y arrête
+    // sans comprendre. L'union contient l'ancien tablier : UN TABLIER NE SE
+    // RETIRE PAS, un enfant a pu bâtir dessus — il ne peut que s'allonger,
+    // et seulement sur l'eau (`pontDeVille` n'est lu que sur une colonne d'eau).
+    const ivs = [];
+    // la voie de l'anneau est du côté du centre (on roule à droite, v271) ;
+    // l'autre voie est celle du contresens, qui mesure la sienne (phase 2 ter)
+    const dedans = cote.b > (cote.axe === 0 ? cV : cU) ? -t.w / 2 : t.w / 2;
+    for (const d of [0, dedans]) {
+      const a0 = d ? cote.a0 - t.w / 2 : cote.a0, a1 = d ? cote.a1 + t.w / 2 : cote.a1;
+      for (const [debut, fin] of suites(cote, d, a0, a1, 0.5)) {
+        ivs.push([debut - 1.5, fin === null ? a1 + 1.5 : fin + 0.5]);
+      }
     }
+    ivs.sort((p, q) => p[0] - q[0]);
+    let cur = null;
+    for (const iv of ivs) {
+      if (cur && iv[0] <= cur[1]) { cur[1] = Math.max(cur[1], iv[1]); continue; }
+      if (cur) ponts.push({ axe: cote.axe, b: cote.b, a0: cur[0], a1: cur[1], demi, ext: true });
+      cur = [...iv];
+    }
+    if (cur) ponts.push({ axe: cote.axe, b: cote.b, a0: cur[0], a1: cur[1], demi, ext: true });
   }
   return ponts;
 }
@@ -4841,13 +4892,19 @@ export function coteDeVille(f) {
 
 // Ce point est-il sur un tablier de cette ville ? Rend le bloc à poser —
 // bitume au milieu, pierre aux parapets — ou `null`.
-function pontDeVille(f, u, v) {
+function pontDeVille(f, u, v, allongement = true) {
   if (EN_CALCUL.has(f)) return null;
   const a = anneauxDeVille(f);
   if (!a.ponts.length) return null;
   const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
   const P = u * co - v * si, Q = u * si + v * co;
+  // LES TABLIERS D'AVANT D'ABORD, TELS QUELS (v414, rangés en fin de calcul) : la matière d'une
+  // colonne (chaussée ou parapet) se lit sur le premier tablier qui la couvre,
+  // et deux tabliers se recouvrent aux coins. L'allongement (`ext`) n'est lu
+  // qu'ensuite : il ne change ni une colonne ni une matière d'avant, il ne
+  // pose que là où il n'y avait que de l'eau.
   for (const q of a.ponts) {
+    if (q.ext && !allongement) break;   // rangés : l'allongement vient en dernier
     const le = q.axe === 0 ? P : Q, tr = q.axe === 0 ? Q : P;
     // UN BLOC DE PLUS AU BOUT, POUR LA COLONNE ARRONDIE (v387). Sur une trame
     // tournée, la colonne qui porte le bout de l'axe n'a pas l'abscisse de
@@ -4867,6 +4924,10 @@ function pontDeVille(f, u, v) {
     // tablier si, et seulement si, la colonne est de l'eau : la terre ferme ne
     // change pas d'un bloc.
     if ((le < q.a0 || le > q.a1) && !eauDeVille(f, u / f.K, v / f.K)) continue;
+    // Et l'allongement (v414) ne porte QUE sur l'eau, sur toute sa longueur :
+    // `coteRoulable` lit ce tablier sans regarder l'eau, et une rive basse
+    // sous l'allongement aurait relevé la route.
+    if (q.ext && (le >= q.a0 && le <= q.a1) && !eauDeVille(f, u / f.K, v / f.K)) continue;
     // UNE PILE, SINON LE TABLIER FLOTTE. « Si un élément ne se reconnaît pas
     // au premier regard, refais-le » : une route posée sur l'eau sans rien
     // dessous n'est pas un pont. Une pile tous les sept blocs, sous l'axe.
@@ -4878,16 +4939,29 @@ function pontDeVille(f, u, v) {
 
 // Ce que `world.js` et `coteRoulable` demandent : le tablier sous ce point du
 // MONDE, avec sa cote. `null` s'il n'y a pas de pont ici.
-export function pontVillesMonde(x, z) {
+// `allongement` à faux rend les tabliers d'avant la v414 seuls : c'est ce que
+// lit le témoin qui prouve qu'aucune colonne de tablier ne s'est perdue.
+export function pontVillesMonde(x, z, allongement = true) {
   for (const f of villesPres(x, z)) {
     if (!f.trame) continue;
     const u = x - f.ancre.x, v = z - f.ancre.z;
     if (Math.hypot(u, v) > f.rayon) continue;
-    const q = pontDeVille(f, u, v);
+    const q = pontDeVille(f, u, v, allongement);
     if (!q) return null;
     return { id: q.id, pile: q.pile, cote: coteDeVille(f) };
   }
   return null;
+}
+
+// L'eau d'une ville engendrée sous ce point du monde (la géographie de la
+// fiche : fleuve, mer, lac) — pour les témoins des tabliers (v414).
+export function eauVillesMonde(x, z) {
+  for (const f of villesPres(x, z)) {
+    const u = x - f.ancre.x, v = z - f.ancre.z;
+    if (Math.hypot(u, v) > f.rayon) continue;
+    return !!eauDeVille(f, u / f.K, v / f.K);
+  }
+  return false;
 }
 
 // LA CIRCULATION LIT LA MÊME RÈGLE. Elle n'ajoute que ce qu'une forme pure ne
