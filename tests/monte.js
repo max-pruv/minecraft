@@ -4458,8 +4458,13 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // Londres 152 · 128 pour 95 · 120 b/s, barre 48 · 60 ; avec l'ordre du banc
     // (`file=regard&recharge=image`) Paris rend 45 à 120 : le témoin PEUT
     // rougir, et c'est ce réglage-là qui le ferait.
+    // ET IL VOLE DANS LA PAGE `ciel`, réglage basculé à chaud
+    // (`__game.fileMaillage`, `__game.rechargeMaillage`) : une troisième page
+    // ouverte à côté de `tab` et `ciel` ne charge jamais son disque (v346), et
+    // le premier jet, qui en ouvrait une, rendait 16 blocs de trou au portail.
     {
-      const pageVille = await banc.jouerSeul('AmélieVille', { rr: 12, params: '&file=cone&recharge=arrivee' });
+      const pageVille = ciel;
+      await pageVille.evaluate(() => { window.__game.fileMaillage('cone'); window.__game.rechargeMaillage('arrivee'); });
       // les vitesses se lisent dans les fiches, jamais recopiées (v269)
       const vitesses = await pageVille.evaluate(async () => {
         const m = await import('./src/montures.js');
@@ -4514,7 +4519,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const ok = Object.entries(villes).every(([k, r]) => r && r.trou >= Math.round(Number(k.split('@')[1]) / 2));
       verifier('au-dessus d\'une ville aussi, le monde se charge devant l\'avion (réglage de la tablette)',
         ok, `barre = une demi-seconde de vol · ${JSON.stringify(villes)}`);
-      await pageVille.context().close();
+      await pageVille.evaluate(() => { window.__game.fileMaillage(null); window.__game.rechargeMaillage(null); });
     }
 
     // LA FILE DE MAILLAGE SUIT LE DÉPLACEMENT QUAND ON VA VITE (v337).
