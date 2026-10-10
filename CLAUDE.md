@@ -2613,6 +2613,31 @@ celle d'un AXE DU MONDE contre un mur. Cinq règles.
   `player.contact` ({ famille, nx, nz }) ; `?diag=1` au volant les affiche
   avec le monde maillé devant la voiture (`mondeDevant`, `ligneDiagConduite`).
 
+## Le frein à main (v409) — conduite, palier C
+
+Le dérapage contrôlé à la GTA. Quatre règles.
+
+- **UN GESTE DE PLUS SE CHERCHE DANS CE QUE LE JOYSTICK LAISSE LIBRE.** Le
+  quart bas-gauche est TOUT entier au joystick (v272) ; en voiture, la place du
+  saut (colonne de droite, au-dessus de « Descendre ») est vide. Le bouton 🛑
+  s'y pose et TIENT la barre d'espace (`bindHoldButton`, comme ⤒ à pied) : une
+  seule commande, deux gestes, et `player.js` n'a qu'une source à lire.
+- **UNE TOUCHE QU'ON REPREND SE CHERCHE DANS CE QU'ELLE FAISAIT DÉJÀ.** Au
+  volant, Espace faisait sauter la voiture d'un tiers de bloc (le saut de la
+  marche, resté branché ; mesuré sur la v408, 0,29). Le saut est coupé au
+  volant, et le témoin du joueur le garde.
+- **UNE BORNE QU'ON ÉLARGIT SE REND PEU À PEU.** Au frein à main la dérive va
+  jusqu'à `DERIVE_MAX_MAIN` (≈ 55°) ; au lâcher, la borne n'est pas
+  `DERIVE_MAX` d'un coup — l'excès passerait au cap en UNE image, la caisse
+  sauterait de 35° — mais `max(DERIVE_MAX, |dérive| − REPRISE·dt)`. Sans frein
+  à main, cette borne vaut exactement l'ancienne.
+- **UN AJOUT À LA DYNAMIQUE SE PROUVE AUSSI PAR CE QU'IL NE CHANGE PAS.**
+  240 000 pas de `pasVoiture` tirés au hasard (classes, gaz, volant, pente,
+  moteur, panne, plafond de suivi), sans frein à main, rendent la v408 à
+  l'identique (sonde dans le brouillon, deux arbres). Le moteur ne pousse pas
+  pendant le frein à main : un drift « gaz + frein » demanderait un second
+  doigt sur l'accélérateur, que le joystick n'a pas — décidé, déclaré.
+
 ## La pente, la bosse et la file (v408) — conduite, palier 3
 
 Mesuré sur `origin/main` par `tests/sonde-pente.cjs` (sous node, le vrai

@@ -666,6 +666,67 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         `${JSON.stringify(essais)} · foncer à 25 sur l'arrêtée : choc ${choc.toFixed(2)}`);
     }
   }
+  // --- LE FREIN À MAIN (palier C de la conduite) -------------------------
+  // Un dérapage contrôlé à la GTA : tenu, les roues arrière lâchent, la caisse
+  // tourne bien plus que le volant ne le dit ; lâché, elle se remet dans l'axe
+  // PEU À PEU. Sur l'ancien code le frein à main n'existe pas : la caisse
+  // tourne comme au seul volant (rapport 1).
+  {
+    const C = await import('../src/conduite.js').catch(() => null);
+    if (!C || !C.pasVoiture) verifier('conduite : le frein à main fait déraper la voiture', false, 'conduite.js ne se charge pas');
+    else {
+      const dt = 1 / 30, lignes = [];
+      for (const nom of Object.keys(C.CLASSES)) {
+        const fiche = C.CLASSES[nom];
+        const tour = (main) => {
+          let e = { v: 30, braquage: 0, derive: 0 }, cap = 0, capA12 = 0, vA12 = 0, maxD = 0, sautApres = 0, retour = null;
+          for (let k = 0; k < 150; k++) {
+            const t = k * dt, tient = t < 1.2;
+            const r = C.pasVoiture(e, { gaz: tient && !main ? 1 : 0, volant: tient ? 1 : 0, freinMain: tient && main }, fiche, dt);
+            e = { v: r.v, braquage: r.braquage, derive: r.derive }; cap += r.dCap;
+            maxD = Math.max(maxD, Math.abs(r.derive));
+            if (k === 35) { capA12 = cap; vA12 = r.v; }
+            if (!tient) {
+              sautApres = Math.max(sautApres, Math.abs(r.dCap) / dt);
+              if (retour == null && Math.abs(r.derive) <= C.DERIVE_MAX) retour = t - 1.2;
+            }
+          }
+          return { cap: Math.abs(capA12), v: vA12, maxD, sautApres, retour };
+        };
+        const vol = tour(false), fm = tour(true);
+        // à l'arrêt, le frein à main ne fait rien bouger
+        const arret = C.pasVoiture({ v: 0, braquage: 0, derive: 0 }, { gaz: 0, volant: 1, freinMain: true }, fiche, dt);
+        lignes.push({ classe: nom, rapport: +(fm.cap / Math.max(1e-6, vol.cap)).toFixed(2), vFm: +fm.v.toFixed(1), deriveMax: +(fm.maxD * 180 / Math.PI).toFixed(0),
+          retour: fm.retour == null ? null : +fm.retour.toFixed(2), sautApres: +fm.sautApres.toFixed(2), arret: +Math.abs(arret.v + arret.dCap).toFixed(3) });
+      }
+      verifier('conduite : le frein à main fait déraper la voiture — la caisse tourne bien plus qu\'au volant, sans tête-à-queue ni arrêt sec, et se remet dans l\'axe peu à peu au lâcher',
+        lignes.every((l) => l.rapport > 1.4 && l.vFm > 10 && l.deriveMax <= 56 && l.deriveMax > 35 && l.retour != null && l.retour < 2 && l.sautApres < 3 && l.arret === 0),
+        JSON.stringify(lignes));
+    }
+    // LE JOUEUR, au volant sous node : Espace tient le frein à main (le bouton
+    // 🛑 la tient sur l'iPad) — la caisse tourne plus, et la voiture ne saute pas.
+    let Pl = null, BK = null;
+    try { ({ Player: Pl } = await import('../src/player.js')); ({ BLOCK: BK } = await import('../src/blocks.js')); } catch (e) { Pl = null; }
+    if (!Pl) verifier('conduite : au volant, Espace tient le frein à main', false, 'player.js ne se charge pas sous node');
+    else {
+      const cam = { position: { copy() {} }, rotation: { set() {} } };
+      const jouer = (espace) => {
+        const w = { getBlock: (x, y) => (y < 30 ? BK.STONE : BK.AIR) };
+        const p = new Pl(cam, w);
+        p.gabarit = 2.26; p.boost = 40 / 3.2;
+        p.pos.set(0.5, 30, 0.5); p.onGround = true; p.yaw = 0;
+        p.vitesseVoiture = 30; p.touchMove.f = espace ? 0 : 1; p.touchMove.s = 1;
+        if (espace) p.keys.add('Space');
+        let yMax = 30, tire = false;
+        for (let k = 0; k < 36; k++) { p.update(1 / 30); yMax = Math.max(yMax, p.pos.y); tire = tire || !!p.freinMainTire; }
+        return { cap: +(Math.abs(p.yaw) * 180 / Math.PI).toFixed(0), v: +p.vitesseVoiture.toFixed(1), monte: +(yMax - 30).toFixed(2), tire, derapage: !!(p._derapage || p.derapage) };
+      };
+      const sans = jouer(false), avec = jouer(true);
+      verifier('conduite : au volant, Espace (ou le bouton 🛑) tient le frein à main — la caisse tourne plus, et la voiture ne saute pas',
+        avec.tire && avec.derapage && avec.cap > sans.cap * 1.4 && avec.v > 10 && avec.monte < 0.05,
+        `volant seul ${JSON.stringify(sans)} · frein à main ${JSON.stringify(avec)}`);
+    }
+  }
   verifier('et le sol a son propre plafond, qui ne suit pas le ciel',
     SOMMET_TERRAIN === 80, `${SOMMET_TERRAIN}`);
 

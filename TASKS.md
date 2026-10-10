@@ -1088,7 +1088,14 @@
   du cosinus de la pente (1,4 % à 0,17) ; (8) en l'air, on ne braque pas et
   le moteur ne pousse pas, et une crête vive à 40 blocs/s fait voler une
   seconde (mesuré, `sonde-pente.cjs`) — c'est voulu (GTA), à juger avec
-  Marlon sur la tablette ; (9) LE FREIN À MAIN (palier C) n'est pas fait.
+  Marlon sur la tablette ; (9) LE FREIN À MAIN (palier C) — **FAIT en v409** :
+  bouton 🛑 de la colonne de droite, ou Espace. RESTE du palier C : (10) le
+  moteur ne pousse pas pendant le frein à main (un vrai drift « gaz + frein à
+  main » demanderait un second doigt sur l'accélérateur, et le joystick n'en a
+  qu'un — décidé, pas oublié) ; (11) personne ne DESSINE encore le dérapage
+  (traces de pneus, crissement : la session des sensations lit
+  `player.freinMainTire` et `player.derive`) ; (12) le frein à main ne se voit
+  pas chez l'ami au-delà de la dérive qui voyage déjà (`p.v.r`).
 - [ ] **AU PORTAIL DE LA v408 (la pente, la bosse et la file), DES ROUGES QUI NE
   SONT PAS LA LIVRAISON — mesurés.** Mes trois rouges (percuter une voiture de
   la rue, elle s'arrête en feux de détresse, son flanc frôlé) venaient du
@@ -1141,6 +1148,21 @@
      à-coups. Braquer pour la doubler : le suivi s'arrête.
   4. **La cadence.** La première ligne (`pire image`) ne doit pas changer
      par rapport à la v404 en roulant hors des villes.
+- [ ] **POUR MAX, SUR LA TABLETTE — le frein à main (v409).** Ouvrir
+  `https://minecraft-fam.vercel.app/?diag=1`, prendre une voiture sur une
+  grande place ou en campagne.
+  1. **Le bouton.** 🛑 DÉRAPER est au-dessus de « Descendre », sous le pouce
+     droit. Le pouce gauche garde le volant pendant qu'on le tient : si le
+     volant lâche quand le pouce droit se pose, c'est un défaut (multitouch).
+  2. **Le dérapage.** À bonne vitesse, volant à fond et 🛑 tenu une seconde :
+     l'arrière glisse franchement, la voiture tourne bien plus qu'au volant
+     seul, et la ligne `au volant` dit `dernier dérapage 40 à 55° en … s`.
+  3. **La sortie.** On lâche 🛑 : la voiture se remet droite toute seule en
+     moins d'une seconde, sans secousse. Ce qui ne doit pas arriver : un
+     tête-à-queue, ou une voiture qui repart toute seule à l'arrêt.
+  4. **À juger avec Marlon** : 30 → 16 blocs/s pendant un dérapage d'une
+     seconde, est-ce assez « GTA » ou faut-il garder plus de vitesse
+     (`GLISSE_MAIN`, `FREIN_MAIN` dans conduite.js) ?
 - [x] **DEUX OU TROIS PROGRAMMES SE COMPILENT ENCORE À L'ARRIVÉE À PARIS
   (mesuré en v306) — ÉLARGI À TOUTES LES VILLES ET FAIT EN v319.**
   `sonde-programmes-villes.cjs` (seize lieux, page neuve par lieu) rendait sur

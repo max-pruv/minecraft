@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 409,
+    titre: 'Le frein à main',
+    puces: [
+      'Un bouton 🛑 pour déraper',
+      'La voiture glisse dans les virages',
+      'Elle se remet droite toute seule',
+      'Elle ne saute plus',
+    ],
+  },
+  {
     v: 408,
     titre: 'La voiture sent les collines',
     puces: [
