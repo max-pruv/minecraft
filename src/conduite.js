@@ -81,6 +81,19 @@ export const VOLANT_RETOUR = 4.5;     // et retour au centre quand on lâche
 export const DERIVE_MAX = 0.28;       // ≈ 16° : on glisse, on ne part pas en tête-à-queue
 export const DERIVE_TAU = 0.35;       // s : la vitesse rattrape le cap
 export const FROTTEMENT_DERIVE = 1.1; // la dérive coûte de la vitesse
+// LE FREIN À MAIN (palier C). Les roues arrière se bloquent : elles ne tiennent
+// plus la route, l'arrière part, et la caisse tourne bien plus que le volant ne
+// le dit — le dérapage contrôlé à la GTA. On ne fait pas de tête-à-queue
+// (`DERIVE_MAX_MAIN`, ≈ 55°), et au lâcher la caisse se remet dans l'axe de la
+// vitesse à `REPRISE` rad/s, jamais d'un coup : la dérive d'avant est bornée
+// par sa propre valeur qui décroît, puis par `DERIVE_MAX`.
+export const FREIN_MAIN = 3;          // blocs/s² — les roues arrière frottent
+export const GRIP_MAIN = 0.35;        // part de l'adhérence qui reste
+export const LACET_MAIN = 2.4;        // la caisse tourne plus que le volant
+export const DERIVE_MAX_MAIN = 0.95;  // ≈ 55°
+export const DERIVE_TAU_MAIN = 1.4;   // s : la vitesse rattrape le cap, lentement
+export const REPRISE = 1.5;           // rad/s : la dérive rendue au lâcher
+export const GLISSE_MAIN = 0.45;      // part du frottement de dérive : on glisse, on ne laboure pas
 
 // La fiche d'une voiture d'après sa pointe. `fun.js` ne transmet au joueur
 // que l'allure (`player.boost`, multiple de la marche) : la classe se
@@ -274,6 +287,7 @@ export function pasVoiture(e, entree, fiche, dt) {
   let gaz = inerte ? 0 : borne(entree.gaz || 0, 1);
   if (Math.abs(gaz) < ZONE_MORTE) gaz = 0;
   const volant = inerte ? 0 : borne(entree.volant || 0, 1);
+  const main = !inerte && !!entree.freinMain;
 
   // — longitudinal —
   const roule = (a) => {   // frein moteur et air : vers zéro, sans le franchir
@@ -282,7 +296,10 @@ export function pasVoiture(e, entree, fiche, dt) {
   };
   // plafond de suivi (palier 3) : une voiture plus lente devant, on la suit
   const plafond = entree.plafond == null ? Infinity : Math.max(0, entree.plafond);
-  if (gaz > 0 && v > plafond + 0.5) {
+  if (main) {
+    // frein à main : le moteur ne pousse plus, les roues arrière frottent
+    roule(FREIN_MAIN + TRAINEE * v * v);
+  } else if (gaz > 0 && v > plafond + 0.5) {
     v = Math.max(plafond, v - (entree.freinSuivi || FREIN_SUIVI) * dt);
   } else if (gaz > 0) {
     if (v < -0.3) {
@@ -307,7 +324,7 @@ export function pasVoiture(e, entree, fiche, dt) {
   // composante de la pesanteur le long de la caisse, pente prise nez en haut.
   // Une voiture arrêtée qu'on ne commande pas tient sur son frein (MAINTIEN) :
   // un enfant qui lâche le joystick sur une colline ne la redescend pas.
-  if (entree.pente && !(gaz === 0 && Math.abs(v) < MAINTIEN)) v += gravitePente(entree.pente) * dt;
+  if (entree.pente && !((gaz === 0 || main) && Math.abs(v) < MAINTIEN)) v += gravitePente(entree.pente) * dt;
   if (v > vmax) roule(FREIN_MOTEUR + TRAINEE * v * v); // moteur abîmé en route
 
   // — volant lissé, retour au centre —
@@ -319,18 +336,20 @@ export function pasVoiture(e, entree, fiche, dt) {
   const a = Math.abs(v);
   const delta = braquage * braquageMax(v, fiche);
   const omega = (v * Math.tan(delta)) / EMPATTEMENT;   // rad/s, positif = à droite
-  const corps = -omega;                                // ce que le cap voudrait tourner
+  const corps = -omega * (main ? LACET_MAIN : 1);      // ce que le cap voudrait tourner
   // la direction de la vitesse suit le corps, et rattrape la dérive…
-  let vitesseCap = corps - derive / DERIVE_TAU;
+  let vitesseCap = corps - derive / (main ? DERIVE_TAU_MAIN : DERIVE_TAU);
   // … dans la limite de l'adhérence
-  const grip = fiche.mu / Math.max(a, 0.5);
+  const grip = fiche.mu * (main ? GRIP_MAIN : 1) / Math.max(a, 0.5);
   vitesseCap = borne(vitesseCap, grip);
   if (a < 0.3) { vitesseCap = corps; }
   let nouvelle = derive + (vitesseCap - corps) * dt;
   let dCap = corps * dt;
-  if (Math.abs(nouvelle) > DERIVE_MAX) {
+  // la borne : large au frein à main, et rendue PEU À PEU au lâcher
+  const limite = main ? DERIVE_MAX_MAIN : Math.max(DERIVE_MAX, Math.abs(derive) - REPRISE * dt);
+  if (Math.abs(nouvelle) > limite) {
     // le corps ne tourne pas plus que ce que la dérive permet
-    const exces = nouvelle - signe(nouvelle) * DERIVE_MAX;
+    const exces = nouvelle - signe(nouvelle) * limite;
     dCap += exces;
     nouvelle -= exces;
   }
@@ -341,7 +360,7 @@ export function pasVoiture(e, entree, fiche, dt) {
   // physique ne le lise (`physiqueLitEtat`).
   if (entree.direction) dCap += entree.direction * Math.min(1, a / Math.max(1, fiche.vmax)) * signe(v) * dt;
   // la dérive coûte de la vitesse : on frotte les pneus
-  if (derive) v -= v * FROTTEMENT_DERIVE * Math.abs(Math.sin(derive)) * dt;
+  if (derive) v -= v * FROTTEMENT_DERIVE * (main ? GLISSE_MAIN : 1) * Math.abs(Math.sin(derive)) * dt;
   return { v, braquage, derive, dCap };
 }
 
@@ -540,7 +559,7 @@ export function mondeDevant(maille, x, z, yaw, taille, max = 400) {
   return max;
 }
 
-export function ligneDiagConduite({ classe, v, vmax, devant, roueLibre, pente, atterrissage, suivi }) {
+export function ligneDiagConduite({ classe, v, vmax, devant, roueLibre, pente, atterrissage, suivi, derapage }) {
   const a = Math.abs(v || 0);
   const kmh = (b) => Math.round(b * 3.6);
   let l = `au volant : ${classe || '?'} · ${a.toFixed(1)} blocs/s (${kmh(a)} km/h) · pointe ${(vmax || 0).toFixed(0)} (${kmh(vmax || 0)} km/h)`;
@@ -550,6 +569,8 @@ export function ligneDiagConduite({ classe, v, vmax, devant, roueLibre, pente, a
   // en roulant sur une colline, TASKS.md « POUR MAX, SUR LA TABLETTE »)
   if (pente != null) l += ` · pente ${Math.round(pente * 100)} %`;
   if (suivi) l += ` · suit une voiture à ${suivi.v.toFixed(0)} blocs/s, ${suivi.ecart.toFixed(1)} blocs devant`;
+  // palier C : le dernier dérapage au frein à main (angle le plus large, durée)
+  if (derapage) l += ` · dernier dérapage ${Math.round(derapage.max * 180 / Math.PI)}° en ${derapage.s.toFixed(1)} s`;
   if (atterrissage) l += ` · dernier saut ${atterrissage.air.toFixed(1)} s, ${atterrissage.hauteur.toFixed(1)} blocs, choc ${atterrissage.force.toFixed(2)}`;
   return l;
 }

@@ -1081,14 +1081,27 @@
   blocs : mieux sur le mur synthétique, pire à 10° sur Paris ; coque convexe :
   pire partout). La dette reste, déclarée.
   **PALIER 3 (v408) LIVRÉ : la pente et la bosse.** RESTE : (5) la pente ne se
-  lit que sur la surface continue — dans une ville en voxel (les collines de
-  San Francisco) la voiture ne la sent pas, comme avant ; (6) personne ne
+  lit que sur la surface continue — **MESURÉ en v409, la dette ne mord
+  presque pas** : sur les 3 189 colonnes de chaussée EN PENTE de San Francisco
+  (cote > 34, 200 000 tirages dans le disque), 2 132 sont sous la surface
+  continue (la voiture y sent déjà la pente), et les 1 057 autres sont le
+  liseré d'un bloc au bord des zones voxel (523 contre une marche de deux
+  blocs, 534 d'un bloc). Une lecture voxel de secours n'est pas écrite :
+  elle ne servirait qu'à ce liseré (sonde `sonde-pente-ville.cjs`, qui ne
+  trouve AUCUNE ligne de cinquante blocs de chaussée voxel en pente) ; (6) personne ne
   DESSINE encore `tangage` ni `atterrissage` (session des sensations) ; (7) la
   vitesse est le long de la route, le déplacement horizontal ne la réduit pas
   du cosinus de la pente (1,4 % à 0,17) ; (8) en l'air, on ne braque pas et
   le moteur ne pousse pas, et une crête vive à 40 blocs/s fait voler une
   seconde (mesuré, `sonde-pente.cjs`) — c'est voulu (GTA), à juger avec
-  Marlon sur la tablette ; (9) LE FREIN À MAIN (palier C) n'est pas fait.
+  Marlon sur la tablette ; (9) LE FREIN À MAIN (palier C) — **FAIT en v409** :
+  bouton 🛑 de la colonne de droite, ou Espace. RESTE du palier C : (10) le
+  moteur ne pousse pas pendant le frein à main (un vrai drift « gaz + frein à
+  main » demanderait un second doigt sur l'accélérateur, et le joystick n'en a
+  qu'un — décidé, pas oublié) ; (11) personne ne DESSINE encore le dérapage
+  (traces de pneus, crissement : la session des sensations lit
+  `player.freinMainTire` et `player.derive`) ; (12) le frein à main ne se voit
+  pas chez l'ami au-delà de la dérive qui voyage déjà (`p.v.r`).
 - [ ] **AU PORTAIL DE LA v408 (la pente, la bosse et la file), DES ROUGES QUI NE
   SONT PAS LA LIVRAISON — mesurés.** Mes trois rouges (percuter une voiture de
   la rue, elle s'arrête en feux de détresse, son flanc frôlé) venaient du
@@ -1123,6 +1136,10 @@
   vaut 0, 1, 2 sur la branche contre 1, 2 sur `origin/main` v406, même santé
   (0,33), même module. La grandeur juste est l'émission sur une fenêtre (v279 :
   un minimum échantillonné est une propriété de la cadence).
+  Portail complet de la v409 (le frein à main) : neuf rouges, TOUS déjà
+  déclarés ci-dessus et plus haut (fumée 0, préparation de `maj.js`, flèche du
+  GPS, glisser bridé 684 ms, trou de façade, taxi tactile, PeerJS, chauffe de
+  New York 44/321, flanc frôlé) ; les trois témoins du frein à main verts.
 - [ ] **POUR MAX, SUR LA TABLETTE — la pente, la bosse et la file (v408).**
   Ouvrir `https://minecraft-fam.vercel.app/?diag=1`, prendre une voiture. La
   ligne « au volant : … » dit désormais la `pente` sous la caisse, le
@@ -1141,6 +1158,21 @@
      à-coups. Braquer pour la doubler : le suivi s'arrête.
   4. **La cadence.** La première ligne (`pire image`) ne doit pas changer
      par rapport à la v404 en roulant hors des villes.
+- [ ] **POUR MAX, SUR LA TABLETTE — le frein à main (v409).** Ouvrir
+  `https://minecraft-fam.vercel.app/?diag=1`, prendre une voiture sur une
+  grande place ou en campagne.
+  1. **Le bouton.** 🛑 DÉRAPER est au-dessus de « Descendre », sous le pouce
+     droit. Le pouce gauche garde le volant pendant qu'on le tient : si le
+     volant lâche quand le pouce droit se pose, c'est un défaut (multitouch).
+  2. **Le dérapage.** À bonne vitesse, volant à fond et 🛑 tenu une seconde :
+     l'arrière glisse franchement, la voiture tourne bien plus qu'au volant
+     seul, et la ligne `au volant` dit `dernier dérapage 40 à 55° en … s`.
+  3. **La sortie.** On lâche 🛑 : la voiture se remet droite toute seule en
+     moins d'une seconde, sans secousse. Ce qui ne doit pas arriver : un
+     tête-à-queue, ou une voiture qui repart toute seule à l'arrêt.
+  4. **À juger avec Marlon** : 30 → 16 blocs/s pendant un dérapage d'une
+     seconde, est-ce assez « GTA » ou faut-il garder plus de vitesse
+     (`GLISSE_MAIN`, `FREIN_MAIN` dans conduite.js) ?
 - [x] **DEUX OU TROIS PROGRAMMES SE COMPILENT ENCORE À L'ARRIVÉE À PARIS
   (mesuré en v306) — ÉLARGI À TOUTES LES VILLES ET FAIT EN v319.**
   `sonde-programmes-villes.cjs` (seize lieux, page neuve par lieu) rendait sur

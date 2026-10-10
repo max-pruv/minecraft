@@ -20,6 +20,36 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v409 — Le frein à main fait déraper la voiture
+
+**Pourquoi.** La conduite « comme GTA » que demande Max n'avait pas de frein à
+main : au joystick, la voiture tournait comme un train sur ses rails, sans
+jamais pouvoir glisser dans un virage. Et mesuré sur la v408 sous node : au
+volant, la barre d'espace faisait SAUTER la voiture d'un tiers de bloc — le
+saut de la marche, resté branché.
+
+**Ce que ça change.** En voiture, un bouton 🛑 « DÉRAPER » apparaît dans la
+colonne de droite, au-dessus de « Descendre », sous le pouce droit pendant que
+le gauche tient le volant ; sur ordinateur, c'est la barre d'espace. Tenu en
+tournant, les roues arrière lâchent : la caisse tourne près de deux fois plus
+qu'au seul volant (77° au lieu de 46° en 1,2 s à 30 blocs/s), l'arrière glisse
+jusqu'à 54°, la voiture garde la moitié de sa vitesse, et au lâcher elle se
+remet dans l'axe en moins d'une demi-seconde, sans à-coup. Pas de tête-à-queue,
+et le frein à main ne fait rien bouger à l'arrêt. La voiture ne saute plus.
+`?diag=1` dit le dernier dérapage (angle le plus large, durée).
+
+**Ce qui le prouve.** Trois témoins, tous rouges sur la v408 : la dynamique
+pure, classe par classe (rotation 1,6 à 1,9 fois celle du volant, contre 1,2 à
+1,3 sans frein à main ; 16 blocs/s gardés ; retour dans l'axe en 0,4 s ; rien
+ne bouge à l'arrêt) ; le vrai joueur sous node, barre d'espace tenue (la caisse
+tourne plus, ne monte pas d'un centième de bloc — 0,29 sur la v408) ; et au
+banc, le bouton hors du quart du joystick, sans recouvrir « Descendre », qui
+tient le frein au toucher et disparaît à pied. Et une preuve d'identité : sans
+frein à main, 240 000 pas de dynamique tirés au hasard rendent exactement la
+v408.
+
+---
+
 ## v408 — La voiture sent les collines, et suit les voitures lentes
 
 **Pourquoi.** Mesuré sur `origin/main` par une sonde qui cherche de vraies côtes,

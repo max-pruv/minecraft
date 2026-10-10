@@ -774,6 +774,14 @@
     body.en-vehicule #jump-btn, body.en-vehicule #mode-btn,
     body.en-vehicule #down-btn, body.en-vehicule #hotbar { display: none !important; }
     body.en-vehicule:not(.en-avion) #fly-btn { display: none !important; }
+    /* LE FREIN À MAIN (palier C de la conduite) : en voiture seulement, tenu
+       du pouce DROIT pendant que le gauche tient le volant. Il prend la place
+       du saut, au-dessus de « Descendre » (fun.js, right 20px bottom 96px) —
+       jamais dans le quart bas-gauche, qui est TOUT entier au joystick
+       (v272). Un témoin de monte.js mesure les deux rectangles. */
+    #fm-btn { display: none; right: 24px; bottom: calc(150px + var(--safe-bottom)); flex-direction: column; }
+    #fm-btn .lb { display: block; }
+    body.en-vehicule:not(.en-avion) #fm-btn { display: flex; }
     /* En avion la colonne se déplie et porte les deux boutons ; en voiture
        elle n'est qu'un socle pour le compteur. */
     body.en-avion #cmd-vol { height: 210px; }
@@ -2200,6 +2208,7 @@
     <button class="tbtn" id="mode-btn">⛏️</button>
     <button class="tbtn" id="fly-btn"><span class="ic">✈️</span><span class="lb" id="fly-lb">VOLER</span></button>
     <button class="tbtn" id="down-btn">▼</button>
+    <button class="tbtn" id="fm-btn" title="Frein à main"><span class="ic">🛑</span><span class="lb">DÉRAPER</span></button>
     <!-- La manette des gaz (v262) : au volant ou aux commandes, à droite, on
          la monte et on la baisse — en même temps que le joystick à gauche. -->
     <div id="gaz-base"><div id="gaz-fill"></div><div id="gaz-knob"></div></div>
