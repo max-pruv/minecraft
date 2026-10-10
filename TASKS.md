@@ -678,7 +678,15 @@
   du Bean) — anneaux d'avant, mêmes valeurs sur `origin/main`, déclarées dans
   `DETTE_PONTS` et rattachées à la dette ci-dessous.
 - [ ] **LES ANNEAUX D'AVANT ROULENT PARFOIS HORS DE LA CHAUSSÉE (mesuré v387,
-  repris v404).** Ils CONTOURNENT désormais (phase 4, `contourner`) : 147
+  repris v404, v417).** v417 : 2 257 → 1 228 pas, 87 → 75 anneaux (contour
+  dans l'autre sens, rues autour du Strip : Las Vegas 689 → 21). Reste, mesuré :
+  Rio (446 : la forêt de Tijuca au sud-ouest des deux grands anneaux, ~16 îlots
+  à retirer, au-delà de la borne de 12 du contour — la relâcher ne change rien,
+  mesuré —, et la bande de Copacabana), puis des anneaux de la phase 1 qui
+  traversent encore la place (Tokyo, Bangkok, Séoul, Shanghai, Dubaï, São
+  Paulo, ~25-30 pas chacun) : leur contour éloigne la voiture du centre
+  au-delà de `VU_ANNEAU` (30 blocs) ; Agra #1 (42, parc), Los Angeles (39),
+  Lisbonne (33, un lot). Ancien texte : Ils CONTOURNENT désormais (phase 4, `contourner`) : 147
   anneaux et 3 512 pas hors chaussée sur `origin/main` v389, 92 et 2 437 en
   v404 (fontaines 167 → 82). Ce qui reste, mesuré par la sonde de la v404 :
   Las Vegas (le désert hors de la bande du Strip, 689 pas : la bande ne tient

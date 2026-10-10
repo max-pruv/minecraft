@@ -770,6 +770,26 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Un contour dans l'autre sens, et les rues du Strip (v417) — ce qui empêchait le contour n'était pas l'absence de rue
+
+Deux règles.
+
+- **AVANT DE CROIRE QU'UN CONTOUR N'EXISTE PAS, ON LIT SA MEILLEURE NOTE.** La
+  phase 4 échouait pour une vingtaine d'anneaux qui traversent la place
+  centrale (Tokyo, Dubaï, São Paulo…). Instrumentée, la recherche trouvait des
+  contours SANS faute, refusés parce qu'ils suivaient la voie d'un autre anneau
+  (44 à 108 blocs de partage). Le remède est géométrique : le même contour dans
+  l'AUTRE sens roule sur l'autre voie des mêmes rues, et deux convois qui se
+  croisent ne se suivent pas (v211, v387). Seulement pour un anneau qui n'a pas
+  déjà son contresens. Relâcher les bornes de la recherche (24 îlots, 120
+  essais) est un non-résultat mesuré : Rio ne change pas, le coût monte.
+- **UNE RUE DANS LE DÉSERT EST UNE MATIÈRE, PAS UN LOT.** La bande du Strip ne
+  tenait qu'une rue de la trame. `desert.rues` pave la CHAUSSÉE des rues de la
+  trame à moins de `rues` unités de la bande : asphalte nu, ni lot ni
+  trottoir, donc aucun immeuble qui pourrait pousser autour d'une construction
+  d'enfant, et le relief ne lit pas `desert`. Un témoin exige zéro colonne
+  autre que sable et asphalte hors de la bande.
+
 ## Le contresens ne renonce plus devant une voie mouillée (v416) — un refus se juge sur la règle finale, pas sur une mesure d'avant
 
 Une règle. Le contresens (phase 2 ter) était écarté dès que `traverseesDe`

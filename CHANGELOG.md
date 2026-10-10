@@ -20,6 +20,35 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v417 — Les voitures contournent la place, et Las Vegas a ses rues
+
+**Pourquoi.** Après la v404, des anneaux de voitures roulaient encore hors de
+la chaussée : 2 257 pas. Deux familles, mesurées. Dans une vingtaine de villes,
+des anneaux traversaient toujours la place centrale et sa fontaine : un contour existait,
+mais il aurait suivi la voie d'un autre anneau (deux convois l'un dans
+l'autre). Et à Las Vegas, la bande du Strip ne tient qu'une rue de la trame :
+les rues voisines tombaient dans le sable, 689 pas dans le désert.
+
+**Ce que ça change.** Un anneau qui ne peut pas contourner dans son sens le
+fait dans l'autre, sur l'autre voie de la même rue : il croise ses voisins au
+lieu de les suivre, et il ne passe plus par la fontaine (Barcelone, Sydney, Stockholm,
+La Havane, Turin, Budapest, Delhi, Dubaï, São Paulo, Prague…). À Las Vegas, une
+grille de rues entoure le Strip comme dans la vraie ville (Paradise, Koval,
+Frank Sinatra, Industrial) : de l'asphalte nu dans le sable, sans un immeuble
+de plus. La ville gagne un quatrième circuit.
+
+**Ce qui le prouve.** Le témoin des anneaux hors chaussée de `carteMonde.js`
+resserre ses barres (rouge sur `origin/main`), et un témoin neuf garde le
+désert de Las Vegas : rien que du sable et de l'asphalte hors de la bande,
+aucun lot. Une sonde compare les deux arbres ville par ville : aucun circuit
+perdu, la couverture ne baisse nulle part (Las Vegas 90,6 → 98,9 %), la
+voiture la plus proche du centre reste à moins de 30 blocs. Anneaux hors
+chaussée : 87 → 75, 2 257 → 1 228 pas ; Las Vegas 689 → 21 pas, trois →
+quatre circuits. Le coût du dépliage ne bouge pas, et l'empreinte des 490
+morceaux est celle d'`origin/main`.
+
+---
+
 ## v416 — San Diego a son second circuit
 
 **Pourquoi.** Trois villes engendrées n'avaient qu'un circuit de voitures

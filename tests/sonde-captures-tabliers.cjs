@@ -1,6 +1,6 @@
 // Captures des tabliers allongés sous la voie (v414) : vue plongeante au-dessus
 // du point où la voie touchait l'eau sans tablier.
-// Usage : node tests/sonde-captures-tabliers.cjs <dossier> <tag>
+// Usage : node tests/sonde-captures-tabliers.cjs <dossier> <tag> [vue,vue]
 // Le même script se lance depuis un arbre d'`origin/main` pour l'« avant ».
 const { Banc, souffler } = require('./banc.js');
 const path = require('path');
@@ -12,14 +12,18 @@ const VUES = [
   { nom: 'kyoto', cle: 'kyoto', P: 7, Q: -1.6 },
   { nom: 'shanghai', cle: 'shanghai', P: 62.4, Q: 60 },
   { nom: 'stockholm', cle: 'stockholm', P: -13, Q: 25.4 },
+  // v417 : le Strip et sa grille de rues, vus de haut
+  { nom: 'lasvegas', cle: 'lasvegas', P: 0, Q: 0, h: 90 },
 ];
+// argv[4] : les vues à prendre, par nom (toutes sinon)
+const choix = process.argv[4] ? process.argv[4].split(',') : null;
 (async () => {
   const banc = new Banc({ portJeu: 8398, portPairs: 9398 });
   await banc.ouvrir();
   try {
     await souffler();
     const page = await banc.jouerSeul('Capture', { rr: 6, viewport: { width: 1280, height: 720 }, dpr: 1 });
-    for (const v of VUES) {
+    for (const v of VUES.filter((w) => !choix || choix.includes(w.nom))) {
       try {
         const info = await page.evaluate(async (v) => {
           const g = window.__game;
@@ -28,7 +32,7 @@ const VUES = [
           const co = Math.cos(t.ang), si = Math.sin(t.ang);
           const x = f.ancre.x + v.P * co + v.Q * si, z = f.ancre.z - v.P * si + v.Q * co;
           g.player.flying = true;
-          g.player.pos.set(x, 33 + 30, z + 18);
+          g.player.pos.set(x, 33 + (v.h || 30), z + (v.h ? 50 : 18));
           g.player.vel.set(0, 0, 0);
           g.player.yaw = 0; g.player.pitch = -0.95;
           window.__setDayTime(0.42);

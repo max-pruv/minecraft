@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 417,
+    titre: 'Des rues autour du Strip',
+    puces: [
+      'Las Vegas roule sur de vraies rues',
+      'Plus de voiture dans les fontaines',
+    ],
+  },
+  {
     v: 416,
     titre: 'San Diego dans les deux sens',
     puces: [
