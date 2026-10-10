@@ -1038,7 +1038,7 @@
   conduite : la v397 ne touche à rien de ce chemin (branche AU VOLANT de
   `player.js`, crochets d'obstacle). Piste : borner l'attente du témoin sur la
   chauffe (`finie`), et sinon le dire au lieu de juger NY.
-- [ ] **AU PORTAIL DE LA v397, « LE PASSAGER ENTRE PAR LA PORTIÈRE DROITE »
+- [x] **(FAIT en v407 : la séquence suit la voiture du conducteur et s'y rebranche ; témoin provoqué dans `reseau.js`.) AU PORTAIL DE LA v397, « LE PASSAGER ENTRE PAR LA PORTIÈRE DROITE »
   (`reseau.js`, v377) VA ET VIENT — DÉCLARÉ AVEC SA DISTRIBUTION.** Suite
   entière : branche 2 vertes sur 5 (deux portails, trois rejeux seuls),
   `origin/main` 3 sur 3. Le rouge est toujours le même : Lou reste en
@@ -3718,6 +3718,17 @@ l'embarquement a eu lieu, pas par une hypothèse.
 ## En cours
 
 ### Embarquement (v366) — ce qui reste dans la zone
+- [ ] **LE PORTAIL DE LA v407 (le passager suit la voiture de son ami).**
+  `reseau.js` verte en entier (24 min), `degats`, `carte`, `reglages`
+  verts. Sonde `sonde-passager-refait.cjs` seule : 3/3 sur la branche, 0/3
+  sur `origin/main` (« annulée »). Rouges, tous de familles déjà déclarées et
+  mesurées sur `origin/main` : `maj.js` « vraiment là » ; `monte.js` la
+  chauffe de New York expirée (53/321), le réverbère au volant, le bout du
+  monde qui se charge (trou 82 de l'avion de ligne passe, un autre appareil
+  sous sa barre), le flanc frôlé (v397). PREUVE STRUCTURELLE (v291) : le code
+  neuf n'est atteint que par `monterChez` / `descendreDeChez`, donc avec un
+  passager ET `embarq: 1` ; aucune de ces pages ne le fait, et la seule page
+  `embarq: 1` de `monte.js` est verte.
 - [ ] **LE PORTAIL DE LA v400 (la descente d'avion), DOUBLE MESURE FAITE.**
   Les quatre témoins neufs verts (`monte.js`), et la sonde
   `sonde-descente-avion.cjs` seule : 4/4 sur la branche, 1/4 sur
@@ -3732,7 +3743,9 @@ l'embarquement a eu lieu, pas par une hypothèse.
   PREUVE STRUCTURELLE en plus : le code neuf n'est atteint que sous
   `embarq: 1` en descendant d'un avion au sol ; aucune de ces pages ne le fait.
 - [ ] **MONTER DANS UN TRAIN OU UN MÉTRO PAR SA PORTE — DÉCLARÉ, PAS LIVRÉ
-  (session embarquement, v400).** `bord` (fun.js) colle encore l'enfant au
+  (session embarquement, v400 ; relu en v407, rien n'a bougé côté
+  `construireRame` : POUR LA SESSION CIRCULATION-VIVANTE, l'étape (1)
+  ci-dessous est le seul verrou).** `bord` (fun.js) colle encore l'enfant au
   siège d'une rame d'un coup. La même discipline que l'avion (v389) le
   ferait : l'accès se déclare avec le MODÈLE (`userData.porte` posé par
   `construireRame`, une porte coulissante en MEMBRE, aucune clé de programme
@@ -3770,6 +3783,11 @@ l'embarquement a eu lieu, pas par une hypothèse.
      et Marlon voit SA portière droite s'ouvrir chez lui. Puis « Descendre » :
      elle ressort par la droite. Diagnostic chez Alice : `monter (ami)` puis
      `descendre (ami)`.
+     **Et si la tablette de Marlon se reconnecte pendant qu'Alice marche
+     (v407)** — mettre l'application de Marlon en arrière-plan deux secondes
+     puis la rouvrir juste après le « Monter avec Marlon » d'Alice : Alice
+     doit s'asseoir quand même (avant : elle restait à pied à côté). Chez
+     Alice : `monter (ami) … jusqu'au bout`, jamais `annulée`.
   5. **L'avion (v389).** À Roissy (carte → Paris–Charles-de-Gaulle), devant
      l'avion de ligne, « Monter » : un escalier à rampe jaune apparaît contre
      la porte avant gauche, l'enfant le gravit, la porte s'ouvre, il entre,
