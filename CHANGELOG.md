@@ -20,6 +20,32 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v422 — Les voitures font le tour de la place
+
+**Pourquoi.** Dans vingt-deux villes engendrées (Tokyo, Séoul, Shanghai, Hong
+Kong, São Paulo, Los Angeles…), l'anneau de voitures qu'on voit en arrivant
+roulait en travers de la place centrale, sur son pavé, à moins de cinq blocs de
+l'endroit où la carte dépose l'enfant. Son contour existait (un îlot plus
+loin), mais la garde le refusait : elle mesurait l'AXE de la rue à trente
+blocs du centre, et la couverture avec un bloc et demi de marge de chaque
+côté. Et deux anneaux qui touchent la place se disputaient les mêmes rues.
+
+**Ce que ça change.** Dans quatorze villes, les voitures font le tour de la
+place par les rues au lieu de la traverser, et on en voit toujours une depuis
+le centre. 1 228 → 840 pas de voie hors de la chaussée sur toutes les villes,
+75 → 61 anneaux fautifs, 22 → 9 villes dont une voie passe sur le centre.
+Aucune ville ne perd de circuit, de couverture ni sa voiture en vue ; aucun
+tablier ni aucun bloc du sol ne bouge, et les 248 autres villes sont
+identiques au bit près.
+
+**Ce qui le prouve.** Deux témoins de `carteMonde.js` : le compte des pas hors
+de la chaussée (barres au milieu, 68 anneaux et 1 034 pas) et un verdict neuf,
+« l'anneau qu'on voit en arrivant fait le tour de la place » (9 villes ici, 22
+sur `origin/main`, barre 15). Sonde sous node ville par ville, avant et après :
+pas, circuits, couverture (règle v322), pire partage (18, inchangé), voiture
+en vue depuis le centre, coût du premier dépliage (inchangé pour les villes
+sans faute, 75 à 110 ms pour celles qu'on essaie, sous le pire de Rome).
+
 ## v421 — Des passages piétons dans les rues en biais
 
 **Pourquoi.** Dans les villes du monde, les bandes blanches d'un passage

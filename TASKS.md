@@ -756,7 +756,22 @@
   200 blocs, donc hors de la livraison par construction (elle ne change que le
   sol de Las Vegas et des contours d'anneaux).
 - [ ] **LES ANNEAUX D'AVANT ROULENT PARFOIS HORS DE LA CHAUSSÉE (mesuré v387,
-  repris v404, v418).** v418 : 2 257 → 1 228 pas, 87 → 75 anneaux (contour
+  repris v404, v418, v422).** v422 : 1 228 → 840 pas, 75 → 61 anneaux, 22 → 9
+  villes dont une voie passe sur le centre (la vue sur la voie, la couverture à
+  la règle du témoin, plusieurs ordres, une rangée d'un coup ; quatorze villes
+  changent, aucune ne perd de couverture). Reste, mesuré par
+  `tests/sonde-anneaux-villes.cjs` : Rio 446 (les deux grands anneaux traversent la
+  forêt de Tijuca et la plage ; la recherche descend à UN segment fautif, P =
+  −25 de Q = 56 à 68, où la trame a un îlot fusionné au lieu d'une rue — une
+  rue à y percer est du SOL, décision de Max ; la couverture n'y est pour
+  rien, mesuré en ne comptant ni forêt ni sable), Tokyo 56 et Toronto 31 (les
+  deux anneaux d'arrivée traversent la place sur la même rue, en sens
+  contraires ; tout contour suit un voisin au-delà de la barre de partage ou
+  perd des points de couverture), Dubaï 32, Agra 42 (parc), puis Gênes 22,
+  Seoul 21, Guayaquil 20, Lima 20, Dublin 19, Amsterdam 19, Bruxelles 18,
+  Turin 13, Innsbruck 12. Piste : une recherche CONJOINTE des deux anneaux qui
+  se disputent la place (aujourd'hui ils se cherchent l'un après l'autre).
+  v418 : 2 257 → 1 228 pas, 87 → 75 anneaux (contour
   dans l'autre sens, rues autour du Strip : Las Vegas 689 → 21). Reste, mesuré :
   Rio (446 : la forêt de Tijuca au sud-ouest des deux grands anneaux, ~16 îlots
   à retirer, au-delà de la borne de 12 du contour — la relâcher ne change rien,

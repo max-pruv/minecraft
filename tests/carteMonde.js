@@ -4937,14 +4937,30 @@ const VRAIES_KM = [
       }
       let seuls = [];
       for (const [cle, g] of parVille) if (g.length === 1) seuls.push(cle);
+      // v422 : la voie la plus proche du centre (là où l'enfant arrive), ville
+      // par ville ; à moins de cinq blocs, elle traverse la place.
+      const surLaPlace = [];
+      for (const [cle, g] of parVille) {
+        let d = Infinity;
+        for (const tr of g) for (let i = 0; i < tr.pts.length; i++) {
+          const a = tr.pts[i], b = tr.pts[(i + 1) % tr.pts.length];
+          const L2 = (b.x - a.x) ** 2 + (b.z - a.z) ** 2;
+          let k = L2 ? ((tr.x - a.x) * (b.x - a.x) + (tr.z - a.z) * (b.z - a.z)) / L2 : 0;
+          k = Math.max(0, Math.min(1, k));
+          d = Math.min(d, Math.hypot(a.x + k * (b.x - a.x) - tr.x, a.z + k * (b.z - a.z) - tr.z));
+        }
+        if (d < 5) surLaPlace.push(cle);
+      }
       pires.sort((a, b) => b[0] - a[0]);
-      return { total: traces.length, anneaux, pas, fontaine, seuls, pires: pires.slice(0, 5).map(([n, c]) => `${c} ${n}`),
+      return { total: traces.length, anneaux, pas, fontaine, seuls, surLaPlace, pires: pires.slice(0, 5).map(([n, c]) => `${c} ${n}`),
         lv: { pas: parCle.lasvegas || 0, circuits: (parVille.get('lasvegas') || []).length, desertLots, desertRues } };
     });
     verifier('un anneau qui sortait de la chaussée contourne la place, la fontaine ou le parc',
       // v418 : 87 anneaux et 2 257 pas avant le contour à contresens et les
-      // rues du Strip, 75 et 1 228 après ; barres au milieu.
-      contour.anneaux <= 81 && contour.pas <= 1740 && contour.total >= 809,
+      // rues du Strip, 75 et 1 228 après. v422 (la vue sur la voie, la
+      // couverture à la règle de ce fichier, plusieurs ordres, une rangée
+      // d'un coup) : 61 et 840. Barres au milieu.
+      contour.anneaux <= 68 && contour.pas <= 1034 && contour.total >= 809,
       `${contour.anneaux}/${contour.total} anneaux, ${contour.pas} pas hors de la chaussée`
       + ` (dont ${contour.fontaine} dans une fontaine) · les pires : ${contour.pires.join(', ')}`);
     // v416 : San Diego gagne son contresens (3 → 2) ; restent San José et
@@ -4957,6 +4973,17 @@ const VRAIES_KM = [
     verifier('à Las Vegas, les voitures roulent sur les rues qui longent le Strip, pas dans le sable',
       contour.lv.pas <= 100 && contour.lv.circuits >= 4 && contour.lv.desertLots === 0 && contour.lv.desertRues > 0,
       JSON.stringify(contour.lv));
+    // L'ANNEAU QU'ON VOIT EN ARRIVANT NE TRAVERSE PLUS LA PLACE (v422). Sa
+    // voie passait sur le centre même — à moins de cinq blocs de l'endroit où
+    // la carte dépose l'enfant, en travers du pavé de la place — dans
+    // vingt-deux villes (mesuré sur la v421). La garde de vue de la phase 4
+    // lisait l'AXE de la rue à trente blocs ; la voiture roule sur sa VOIE, et
+    // une voie à trente-six blocs montre encore une voiture (`VU_CONTOUR`).
+    // Mesuré : neuf villes ici (Rio, Tokyo, Dubaï, Toronto… — voir TASKS.md),
+    // vingt-deux sur `origin/main`. Barre au milieu.
+    verifier('l\'anneau qu\'on voit en arrivant fait le tour de la place au lieu de la traverser',
+      contour.surLaPlace.length <= 15,
+      `${contour.surLaPlace.length} ville(s) dont une voie passe sur le centre : ${contour.surLaPlace.join(', ')}`);
     verifier('les villes engendrées à un seul circuit en ont désormais deux, le contresens',
       contour.seuls.length <= 2,
       `${contour.seuls.length} ville(s) à un circuit : ${contour.seuls.join(', ')}`);

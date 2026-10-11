@@ -4817,6 +4817,9 @@ function contourner(f, c, ponts, quai = true, autres = [], accepte = null) {
     return haut;
   };
   const e0 = etat(depart, h1, h2, bord0, 0);
+  // Un grand anneau peut perdre une rangée sans cesser d'être lui-même : la
+  // borne de douze îlots monte au tiers de l'anneau (v422).
+  const changeMax = Math.max(CONTOUR_CHANGE_MAX, Math.ceil(depart.size * 0.3));
   pousser(e0);
   // UNE RECHERCHE QUI NE PROGRESSE PAS S'ARRÊTE. Mesuré : les contours
   // trouvés le sont en deux essais (médiane), sept au neuvième décile. Une
@@ -4838,7 +4841,42 @@ function contourner(f, c, ponts, quai = true, autres = [], accepte = null) {
       // sans faute, mais sur la voie d'un autre anneau : on bouge ces côtés-là
       aRevoir = cur.bord.filter((e) => partageDAretes([areteDe(e)], autres) > 0);
     }
-    if (cur.change >= CONTOUR_CHANGE_MAX) continue;
+    if (cur.change >= changeMax) continue;
+    // UNE RANGÉE ENTIÈRE D'UN COUP (v422). Quand toute une suite de segments
+    // du même côté est fautive — un parc, une bande de sable le long d'un
+    // côté —, retirer ou ajouter les îlots un à un demande autant d'essais
+    // qu'il y a d'îlots, et la patience s'épuisait avant (Lisbonne : 33 pas
+    // sur un parc le long d'un côté). On recule (ou on avance) la suite
+    // entière d'un pas, comme un seul mouvement.
+    if (cur.fautifs.length >= 3) {
+      const fs = new Set(cur.fautifs);
+      const suites = [];
+      let suite = [];
+      for (const e of [...cur.bord, ...cur.bord]) {
+        const der = suite[suite.length - 1];
+        if (fs.has(e) && (!der || (der[2] === e[2] && der[3] === e[3]))) { if (!suite.includes(e)) suite.push(e); continue; }
+        if (suite.length >= 3 && !suites.some((x) => x[0] === suite[0])) suites.push(suite);
+        suite = fs.has(e) ? [e] : [];
+      }
+      for (const r of suites) for (const ajout of [false, true]) {
+        const nv = new Set(cur.ilots);
+        let n1 = cur.h1, n2 = cur.h2, nb = 0;
+        for (const [i, j, dx, dy] of r) {
+          const ilot = ajout ? (dx === 1 ? [i, j - 1] : dx === -1 ? [i - 1, j] : dy === 1 ? [i, j] : [i - 1, j - 1])
+            : (dx === 1 ? [i, j] : dx === -1 ? [i - 1, j - 1] : dy === 1 ? [i - 1, j] : [i, j - 1]);
+          const k = cleNoeud(ilot[0], ilot[1]);
+          if (ajout === nv.has(k)) continue;
+          if (ajout) nv.add(k); else nv.delete(k);
+          n1 ^= mel(k, 0x1234567); n2 ^= mel(k, 0x7654321); nb++;
+        }
+        if (!nb || !nv.size) continue;
+        const sig = n1 + ',' + n2;
+        if (vus.has(sig)) continue;
+        vus.add(sig);
+        const bord = bordDIlots(nv);
+        if (bord) pousser(etat(nv, n1, n2, bord, cur.change + nb));
+      }
+    }
     for (const e of aRevoir.slice(0, 2)) {
       const [i, j, dx, dy] = e;
       // l'îlot à gauche du segment (dedans) et celui de droite (dehors)

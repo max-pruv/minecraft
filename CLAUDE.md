@@ -770,6 +770,44 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## La place se contourne (v422) — une garde se mesure sur ce qu'elle protège, à la règle du témoin
+
+Vingt-deux villes avaient la voie de leur anneau d'arrivée sur la place. Quatre
+règles.
+
+- **UNE GARDE DE VUE SE LIT SUR LA VOIE, PAS SUR L'AXE.** La phase 4 refusait
+  un contour dont l'AXE de rue passait à plus de `VU_ANNEAU` (30) du centre ;
+  la voiture roule une demi-chaussée plus loin ou plus près. Ce que l'enfant
+  voit : une voiture à `VU_VOITURE`, sur un tracé où elles sont espacées de
+  cinquante-quatre blocs au pis — une voie à √(45² − 27²) = 36 blocs en montre
+  une (`VU_CONTOUR`). La SÉLECTION garde `VU_ANNEAU` : les anneaux qu'une ville
+  reçoit ne changent pas.
+- **UNE GARDE DE COUVERTURE A LA RÈGLE DU TÉMOIN, SANS MARGE.** Celle de la
+  v404 se donnait un bloc et demi de chaque côté : un point vu à 44 blocs
+  avant et après était « perdu ». On échantillonne comme le témoin v322 (pas
+  de deux blocs depuis chaque sommet, 45 blocs), sur une grille qui ne lit pas
+  moins que la sienne (`pointsDeVille(f, true)`).
+- **UNE GARDE COMPARE AU RECTANGLE ; LA CONFIGURATION D'AVANT, ELLE, A PU
+  GAGNER PAR CHANCE.** À Sydney, l'ancien contour à contresens voyait 3,2 blocs
+  plus loin que le rectangle ; la garde neuve l'aurait remplacé et perdu 0,7 %
+  de la ville. La configuration d'avant (garde de la v404) est donc jouée
+  d'abord et reste la référence : un autre essai ne la remplace que s'il
+  laisse moins de pas hors de la chaussée SANS voir moins de points. Les 248
+  villes où elle ne laisse aucune faute sont identiques au bit près, et ne
+  paient rien de plus.
+- **DEUX ANNEAUX QUI TOUCHENT LA PLACE SE DISPUTENT SES RUES : L'ORDRE SE
+  CHOISIT.** Celui qui contourne d'abord prend la voie de l'autre (Bangkok :
+  57 → 1 en mettant le dernier en tête). On essaie l'ordre naturel puis chaque
+  anneau fautif en tête, contours mémorisés par l'état des autres. Et quand
+  toute une suite de segments du même côté est fautive, la recherche recule la
+  RANGÉE d'un coup (Lisbonne, 33 → 0) ; un grand anneau peut changer un tiers
+  de ses îlots.
+
+Ce qui reste, déclaré dans `TASKS.md` : Rio (la forêt de Tijuca, où la trame a
+un îlot fusionné en travers de la seule rue qui en sortirait), Tokyo, Dubaï,
+Toronto (leurs contours suivent un voisin au-delà de la barre de partage ou
+perdent des points), Agra, et une poignée d'anneaux à moins de 25 pas.
+
 ## Un contour dans l'autre sens, et les rues du Strip (v418) — ce qui empêchait le contour n'était pas l'absence de rue
 
 Deux règles.
