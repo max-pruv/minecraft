@@ -102,6 +102,7 @@ const ASSETS = [
   './src/voiesdoubles.js',
   './src/presence.js', './src/humains.js', './vendor/SkeletonUtils.js',
   './src/taxis.js',
+  './src/utilitaires.js',
   './src/modeles.js',
   './src/personnages.js',
   './src/betes.js',

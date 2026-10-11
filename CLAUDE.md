@@ -770,6 +770,48 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## La rue dense, palier C (v433) — une variance par voiture est une fonction de son heure
+
+Quatre règles.
+
+- **UNE VOITURE NE PEUT AVOIR SON ALLURE QUE SI SON ÉCART À LA GRILLE EST UNE
+  FONCTION DE L'HORLOGE.** `Convoi.jeu(i, τ)` (vehicules.js) rend quelques
+  dixièmes de seconde d'avance ou de retard (`JEU_MAX`, 0,35 s ; ±10 %
+  d'allure), une ondulation dont la période et la phase viennent de la CLÉ du
+  convoi et du rang — jamais du hasard local : deux tablettes posent la même
+  voiture au même endroit (v305). Un témoin refait la table et la rejoue à
+  l'identique.
+- **LE JEU S'ÉTEINT LÀ OÙ LA FILE EST CALCULÉE AU PLUS JUSTE.** Le poids `W`
+  vaut zéro sous six blocs par seconde (le virage le plus lent fixe le nombre
+  de voitures, `nbSansChevauchement`), à trois secondes d'un croisement du
+  tracé avec lui-même (`instantsDeCroisement`), là où la jumelle partage la
+  voie de sa file, et dans un anneau que le bus suit. Il se décide sur ce
+  qui est connu à la CRÉATION — sur l'autoroute, la section de deux voies,
+  pas la jumelle qui naît plus tard : le jeu ne change pas quand elle arrive.
+  Preuve STRUCTURELLE (`sonde-rue-dense.cjs jeu`) : 179 convois sous node,
+  un tour d'horloge chacun, 392 contacts de grille sans le jeu, 392 avec.
+- **UNE FLOTTE QUI S'AGRANDIT GARDE SES POINTES UNIQUES.** La fourgonnette
+  et le pickup (`utilitaires.js`, fabriqués, originaux) ont leur classe dans
+  `FLOTTE` et leur fiche dans `conduite.js` (31 et 32 blocs/s) :
+  `ficheDeVitesse` retrouve la classe à sa pointe. Une silhouette entière vient
+  d'un profil extrudé : quinze maillages contre trente-deux pour un modèle
+  de la flotte — une rue qui gagne des utilitaires dessine moins.
+- **LA LIMITATION SE DEMANDE À LA SECTION, AU POINT DU TRACÉ.**
+  `allureDuTroncon` (voiesdoubles.js) lit les voies nommées de chaque ville
+  bâtie à la main et leur type du kit (boulevard 50, collectrice 40, locale
+  30) ; `allureVilleMonde` le boulevard de la croix. Manhattan garde la
+  sienne.
+
+Et **la seconde voie de Paris se perdait aux places, et dans une recherche qui
+supposait le croisement monotone.** 306 blocs de deux voies occupés sur 1 231 :
+la rampe de huit blocs mangeait seize blocs autour de chaque place
+(`RAMPE_VILLE` 5 en ville, l'autoroute garde 8), le seuil de quarante écartait
+les circuits qui ne suivent qu'un tronçon (`SECTION_MIN` 20). 446 après. La
+recherche du nombre de la jumelle ne testait que `nb` et 0,4 `nb` avant sa
+dichotomie : elle liste désormais les nombres que le croisement accepte et
+cherche parmi eux. Les deux circuits en huit restent sans jumelle — seul n = 4
+passe leur croisement (0,18 `nb`) : déclaré.
+
 ## La place se contourne (v432) — une garde se mesure sur ce qu'elle protège, à la règle du témoin
 
 Vingt-deux villes avaient la voie de leur anneau d'arrivée sur la place. Quatre
