@@ -430,7 +430,7 @@ function verifier(nom, ok, detail = '') {
       `${ici.n} colonnes, ${ici.fautes} mal plantée(s) — règle d'avant : ${avant.n} colonnes, ${avant.fautes} mal plantée(s)`);
   }
   {
-    // ── UN TOIT NE LISSE QU'UN IMMEUBLE AVEC LUI-MÊME (v444) ──────────────────
+    // ── UN TOIT NE LISSE QU'UN IMMEUBLE AVEC LUI-MÊME (v445) ──────────────────
     //
     // Dette de la v289 : le champ de hauteurs lisse les colonnes d'un même
     // immeuble (îlot, travée), et deux quartiers voisins se prêtent ces

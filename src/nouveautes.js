@@ -6,10 +6,18 @@
 
 export const NOUVEAUTES = [
   {
-    v: 444,
+    v: 445,
     titre: 'Des toits bien rangés',
     puces: [
       'Chaque immeuble garde son propre toit',
+    ],
+  },
+  {
+    v: 444,
+    titre: 'Les ponts de Washington',
+    puces: [
+      'Deux ponts sur l\'Anacostia',
+      'Les voitures de New York entrent en ville',
     ],
   },
   {

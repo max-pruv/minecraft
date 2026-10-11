@@ -1119,7 +1119,7 @@ function sommetToit(get, x, z, y0) {
 
 // l'immeuble d'une colonne (l'îlot et la travée que `formeParis` publie), mémoïsé :
 // un coin partagé entre deux immeubles de hauteurs différentes ne lisse pas l'un
-// sur l'autre. ET LE QUARTIER EST DANS LA CLÉ (v444) : les indices d'îlot et de
+// sur l'autre. ET LE QUARTIER EST DANS LA CLÉ (v445) : les indices d'îlot et de
 // travée sont ceux de la trame de CHAQUE quartier, et deux quartiers voisins
 // se les prêtent — mesuré sur tout Paris, 16 paires de colonnes voisines de
 // même (îlot, travée) dans deux quartiers, dont 7 aux façades de hauteurs

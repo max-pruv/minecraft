@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v444 — Un toit ne déborde plus d'un quartier sur l'autre
+## v445 — Un toit ne déborde plus d'un quartier sur l'autre
 
 **Pourquoi.** Le comble de Paris (v289) lisse les colonnes d'un même immeuble,
 qu'il reconnaît à son îlot et à sa travée. Ces indices sont ceux de la trame
@@ -37,10 +37,37 @@ ville ; tout le reste est identique.
 **Ce qui le prouve.** Un témoin neuf de `parishd.js` parcourt tout le disque
 de Paris : 176 600 paires de colonnes d'un même toit, 0 aux façades
 différentes (7 sur `origin/main`, où la clé n'est pas publiée : rouge).
-L'empreinte des 490 morceaux change (`31b27cce…`, un des morceaux porte une
+L'empreinte des 490 morceaux change (`c195fbc1…`, un des morceaux porte une
 limite) et se prouve : la clé d'avant rejouée (`toitsQuartier: false`) rend
-la constante `239f48ab…` au bit près. Capture avant/après du toit à la limite
+la constante `fb4f9aed…` (celle de la v444) au bit près. Capture avant/après du toit à la limite
 de Saint-Germain : rien d'autre ne bouge.
+
+---
+
+## v444 — Les ponts de l'Anacostia
+
+**Pourquoi.** L'I-95 Sud entre dans Washington par le quartier au sud de
+l'Anacostia (v367), et ce quartier n'avait AUCUN pont vers le reste de la
+ville : les voitures qui arrivaient de New York faisaient demi-tour sur une rue
+sans nom, et l'enfant à pied restait coincé sur la rive sud.
+
+**Ce que ça change.** Deux ponts de rue, ceux de la vraie ville : le pont de
+la 11e Rue et le pont Sousa, qui porte Pennsylvania Avenue SE. Ils prolongent
+la grille d'une rive à l'autre, à la cote de la rue, l'eau dessous. Les
+voitures de l'I-95 Sud passent le pont Sousa et vont jusqu'au bout de
+Pennsylvania Avenue SE, dans la ville.
+
+**Ce qui le prouve.** Un témoin neuf de `carteMonde.js` : chaque pont franchit
+au moins dix colonnes d'eau, chaussée à la cote 33 d'un bout à l'autre, deux
+blocs libres au-dessus ; l'avenue traverse l'eau, finit sur Pennsylvania
+Avenue SE, aucun bloc à hauteur de carrosserie, aucune marche. Rouge sur
+`origin/main` (aucun pont). Le relief ne bouge pas : `terrainHeight` identique
+sur les 109 881 colonnes de Washington, les deux empreintes de `plafond.js`
+intactes. Les quatorze circuits de Washington sont les mêmes, au bit près (la
+contrainte de partage de la v211 inchangée). L'empreinte des 490 morceaux
+change (Washington est un des neuf lieux) : `pontWashington` désarmé, elle rend
+la constante de la v439 au bit près, et les 112 colonnes qui diffèrent sont
+toutes dans les bandes des deux ponts.
 
 ---
 
@@ -60,7 +87,7 @@ les huit quartiers).
 colonnes de huit quartiers : 0 mal plantée sur 45 dans sa fenêtre, 29 sur 54
 avec la règle d'avant, 43 sur 76 sur `origin/main` (rouge). L'empreinte des
 490 morceaux change (`8bea731f…`) et se prouve : la règle d'avant rejouée
-(`morrisDegagees: false`) rend la constante `239f48ab…` au bit près. Jugé en
+(`morrisDegagees: false`) rend la constante `fb4f9aed…` (celle de la v444) au bit près. Jugé en
 capture à Saint-Germain.
 
 ---
