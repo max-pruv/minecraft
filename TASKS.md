@@ -3712,6 +3712,13 @@
      - [ ] la palette d'Édimbourg (brique rouge pour du grès gris) et la « baie
        de deux blocs » des villes engendrées sont des changements de BLOCS dans
        `villesmonde.js`, zone des villes engendrées. Dettes déclarées :
+     Portail de la v450 (sept suites) : cinq vertes ; `carte.js` deux rouges —
+     « le fond de carte entier se rend vite, même à froid » 429 ms au portail
+     pour 400, vert rejoué SEUL des deux côtés (281 ms branche, 250
+     `origin/main`) : la charge du portail ; « la faire glisser non plus »
+     (543 ms) rouge seul des deux côtés (517 et 465), déjà déclaré. `monte.js`
+     « un mur pris de face » (rebond −1,88, couloir vide 41 090 / 40 988) : déjà
+     déclaré, aucune des trois villes touchées à moins de mille blocs.
      - [x] **le Colisée du catalogue change à chaque lancement** (fait en v450 : `effondre(x, y, z)`, un tirage par bloc ; seule source de hasard dans un bâtisseur, mesurée sur les 763 repères ; et Sydney avait 250 fenêtres qui étaient des trous — `f.baie` lu comme bloc, corrigé) :
        `monuments.js:501` tire ses gradins effondrés à `Math.random()` — 173
        blocs du morceau (cx, cz + 1) de Rome différents entre deux exécutions
