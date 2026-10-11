@@ -1569,6 +1569,15 @@
   `player.freinMainTire` et `player.derive`) — **TRACES FAITES en v431** (`traces.js`) ;
   le crissement au frein à main reste à faire ; (12) le frein à main ne se voit
   pas chez l'ami au-delà de la dérive qui voyage déjà (`p.v.r`).
+- [ ] **AU PORTAIL DE LA v431 (traces de pneus), DES ROUGES QUI NE SONT PAS LA
+  LIVRAISON — mesurés.** `reseau.js` rejouée SEULE : branche 80 verts, trois
+  rouges ; `origin/main` (v430) 80 verts, les MÊMES trois rouges — « deux
+  enfants se retrouvent sans courtier » (`[[],[]]`), « sans courtier, le
+  conducteur voit son passager » (cascade, `volant: false`), « un hôte sans
+  courtier est trouvé par un invité » (`[[],[]]`). Au portail, la suite était
+  morte sur un délai à la ligne 1144 (VPN), passé vert rejoué seul des deux
+  côtés. `monte.js` rejouée seule sur la branche : 213 verts, deux rouges déjà
+  déclarés (chauffe de New York 56/321, « un mur pris de face »).
 - [ ] **AU PORTAIL DE LA v408 (la pente, la bosse et la file), DES ROUGES QUI NE
   SONT PAS LA LIVRAISON — mesurés.** Mes trois rouges (percuter une voiture de
   la rue, elle s'arrête en feux de détresse, son flanc frôlé) venaient du
