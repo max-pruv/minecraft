@@ -408,6 +408,17 @@
   rail et les autres routes. La règle des repères et de SFO tient sur ce
   couloir ; elle est à remesurer sur le tracé, pas sur l'axe.
 
+- [ ] **LE PORTAIL DE L'A8 (v420), DOUBLE MESURE FAITE.** `plafond.js` :
+  deux points du joint du deuxième pont de l'A8 sans cube ni tablier — un
+  vrai défaut, reproduit sous node, corrigé (sommet de coude déplacé), suite
+  rejouée seule verte. `monte.js` au portail : neuf rouges ; rejouée SEULE,
+  trois, À L'IDENTIQUE sur la branche et sur `origin/main` v419 — les deux
+  voitures l'une dans l'autre (taux 4,8 contre 4,4), la chauffe de New York
+  (54/321) et le flanc frôlé (`c` nul). Les six autres (la rue à cinquante,
+  le réverbère, la marche arrière de la voiture et de l'avion, « pas au
+  volant », la rame qui ralentit) ne reviennent pas seuls : rouges de charge
+  de portail. `maj.js` (le fond de carte) et `manhattan.js` (le taxi, la
+  géométrie du trou) : les dettes déclarées plus bas.
 - [ ] **LE PORTAIL DE L'A6 (v419), DOUBLE MESURE FAITE.** Quatre suites
   rouges. `plafond.js` : le joint du premier pont de l'A6 rendait deux
   « trous » à d 7,92, faux — le point est dans l'emprise, le centre de sa
