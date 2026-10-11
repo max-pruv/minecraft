@@ -9,7 +9,7 @@
 
 import { BLOCK, BLOCK_INFO, isTransparent, isSlab, isProp, CITY_BLOCK, ARCHI } from './blocks.js';
 import { tileUV, tileRect } from './tuiles.js';
-import { GeomBufferHD, SOL_HD, FACADE_HD, TOIT_HD, facadeHD, villeHD, murHD, rectHD, vitreAllumee, yBaie, marquageHD, bordureHD, trottoirHD, arbreHD, poteletHD, terrasseHD, mitresHD, morrisHD, bancHD, corbeilleHD, toitDessusHD, tirageHD, mobilierTrottoir } from './facadeshd.js';
+import { GeomBufferHD, SOL_HD, FACADE_HD, TOIT_HD, facadeHD, villeHD, murHD, rectHD, vitreAllumee, yBaie, marquageHD, bordureHD, trottoirHD, arbreHD, poteletHD, terrasseHD, mitresHD, morrisHD, bancHD, corbeilleHD, toitDessusHD, tirageHD, mobilierTrottoir, rejouerToitsAvant } from './facadeshd.js';
 
 // LES ARBRES EN HD (v288) : de loin, leurs blocs (dans `plat`) ; de près, un
 // arbre maillé (`arbreHD`, dans `facades`). Toutes leurs faces partent donc
@@ -254,6 +254,11 @@ const masqueReserve = [];
 // iPad de trois gigaoctets. Le fil principal ne demande le détail qu'à portée
 // de `RAYON_HD`, et le redemande quand un morceau y entre.
 export function buildChunkTampons(world, cx, cz, options = {}) {
+  // (`toitsQuartier: false` rejoue la clé de toit d'avant la v446, le temps du morceau)
+  if (options.toitsQuartier === false) {
+    rejouerToitsAvant(true);
+    try { return buildChunkTampons(world, cx, cz, { ...options, toitsQuartier: undefined }); } finally { rejouerToitsAvant(false); }
+  }
   // (`devantures: false` rejoue la règle des terrasses d'avant la v433 : l'empreinte des morceaux)
   // (`morrisDegagees: false` rejoue la colonne Morris d'avant la v443)
   const optsMobilier = options.devantures === false || options.morrisDegagees === false

@@ -288,6 +288,23 @@
   Portail : le témoin vert ; rouges déclarés `maj.js` (loader ×2) et
   `manhattan.js` (trou, taxi) — mêmes rouges seuls sur `origin/main` v406,
   mesurés le même jour (portail de la v410).
+- [ ] **LE PORTAIL DE LA v446 (le toit qui ne déborde plus d'un quartier),
+  PREUVE STRUCTURELLE ET DOUBLE MESURE DE LA FUMÉE.** Dix-sept suites,
+  `--malgre-fumee` ; `parishd.js` (le témoin neuf : 176 600 paires, 0
+  fautive), `plafond.js` (empreinte des 490 morceaux) et `carteMonde.js`
+  VERTES. La fumée rouge sur « la ville reste habitée quand on la traverse à
+  pied » (pire 1, barre 3) : rejouée SEULE, branche 1 et 1, `origin/main` 3
+  puis 1 — la même intermittence des deux côtés. Rouges au portail :
+  `degats.js` « une voiture de la rue abîmée qu'on prend garde ses coups »
+  (NEUF ici, santé de la rue 0,96 — non déclaré jusqu'ici) ; `visio.js` la
+  radio pendant l'appel (avant 0,0000, déclaré) ; `maj.js` les deux loaders ;
+  `carte.js` glisser bridé ×4 (786 ms) ; `manhattan.js` le taxi tactile et la
+  console PeerJS ; `monte.js` la poule, la rue par tranches (6 par image),
+  Rome en biais, « freine au feu », Moscou (rues pleines, modèles et
+  couleurs) — tous déclarés. Aucun ne peut venir du diff, et cela se montre
+  sans rejeu : la clé de toit (`immeubleDeToit`) n'est lue que par le comble
+  de la couche détaillée, que le banc coupe en rendu logiciel (`RAYON_HD` 0,
+  v287) — seule `parishd.js` la force (`?hd=2`), et elle est verte.
 - [ ] **LE PORTAIL DE LA v444 (les ponts de l'Anacostia), DOUBLE MESURE
   FAITE.** Neuf suites ; `carteMonde.js` (le témoin neuf), `plafond.js`,
   `washington.js`, `carte.js`, `parishd.js`, `metro.js` vertes. Rouges, tous
@@ -3724,7 +3741,9 @@
   `monumentshd.js` : Tour Eiffel en treillis, Notre-Dame, Arc, pyramide du
   Louvre, Sacré-Cœur, Panthéon, Opéra, Invalides, Montparnasse). Dettes
   déclarées de la v289 :
-  - [ ] le champ de hauteurs lisse un immeuble avec lui-même (`infoFacadeParis`,
+  - [x] **FAIT EN v446** (mesuré : les seules paires fautives étaient 7 colonnes
+    de deux quartiers se prêtant (îlot, travée) ; la clé porte le quartier).
+    Historique : le champ de hauteurs lisse un immeuble avec lui-même (`infoFacadeParis`,
     îlot et travée) : deux LOTS voisins d'un même immeuble de hauteurs
     différentes se lissent l'un sur l'autre, ce qui fait un toit qui monte d'un
     lot à l'autre au lieu d'un mur pignon — à mesurer sur capture, rue par rue ;

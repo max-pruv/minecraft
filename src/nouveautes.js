@@ -6,6 +6,13 @@
 
 export const NOUVEAUTES = [
   {
+    v: 446,
+    titre: 'Des toits bien rangés',
+    puces: [
+      'Chaque immeuble garde son propre toit',
+    ],
+  },
+  {
     v: 445,
     titre: 'Les commandes de l\'avion rangées',
     puces: [

@@ -20,6 +20,30 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v446 — Un toit ne déborde plus d'un quartier sur l'autre
+
+**Pourquoi.** Le comble de Paris (v289) lisse les colonnes d'un même immeuble,
+qu'il reconnaît à son îlot et à sa travée. Ces indices sont ceux de la trame
+de CHAQUE quartier, et deux quartiers voisins se les prêtent : mesuré sur
+tout Paris, 16 paires de colonnes voisines de même (îlot, travée) dans deux
+quartiers, dont 7 aux façades de hauteurs différentes (14 et 17 blocs à la
+limite de Saint-Germain), lissées en un toit qui grimpe d'un immeuble à
+l'autre au lieu d'un pignon. C'était la dette déclarée en v289.
+
+**Ce que ça change.** La clé d'immeuble porte le quartier : un toit ne se
+lisse plus qu'avec lui-même. Le changement tient à sept endroits de la
+ville ; tout le reste est identique.
+
+**Ce qui le prouve.** Un témoin neuf de `parishd.js` parcourt tout le disque
+de Paris : 176 600 paires de colonnes d'un même toit, 0 aux façades
+différentes (7 sur `origin/main`, où la clé n'est pas publiée : rouge).
+L'empreinte des 490 morceaux change (`c195fbc1…`, un des morceaux porte une
+limite) et se prouve : la clé d'avant rejouée (`toitsQuartier: false`) rend
+la constante `fb4f9aed…` (celle de la v444) au bit près. Capture avant/après du toit à la limite
+de Saint-Germain : rien d'autre ne bouge.
+
+---
+
 ## v445 — Les commandes de l'avion se rangent
 
 **Pourquoi.** Max, deux captures d'iPhone au-dessus de l'Amérique du Nord :

@@ -2494,6 +2494,17 @@ engendrées. Quatre règles.
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
 
+## Un toit ne déborde plus d'un quartier sur l'autre (v446) — un indice de trame n'est unique que dans sa trame
+
+Une règle. `infoFacadeParis` publie l'îlot et la travée (`ai`, `bi`) dans la
+trame de CHAQUE quartier : deux quartiers voisins se prêtent les mêmes indices.
+Une clé qui identifie un immeuble porte donc le quartier
+(`immeubleDeToit`, facadeshd.js) ; mesuré, c'étaient les seules paires où une
+même clé portait deux façades différentes (7 sur 176 616). Toute table future
+indexée par `(ai, bi)` — tirage, teinte, hauteur — se demande si elle traverse
+une limite de quartier. `buildChunkTampons(…, { toitsQuartier: false })` rejoue
+la clé d'avant, le temps d'un seul morceau, pour l'empreinte des 490 morceaux.
+
 ## Les colonnes Morris se plantent dans le vide (v443) — un meuble se pose en regardant ses voisins, par la même règle
 
 Une règle. Un meuble qui se pose au tirage ne connaît pas ses voisins : la
