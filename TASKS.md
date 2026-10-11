@@ -3313,9 +3313,24 @@
     mesuré : cinq colonnes sur vingt-cinq morceaux, aucune côte à côte.
 
   Dettes déclarées de la v288 :
-  - [ ] une chaise de terrasse HD n'arrête ni un passant ni une voiture (ce
-    n'est pas un `prop`, donc pas un obstacle de `mobilierDevant`) — à régler
-    avec la PR4, où les obstacles de la conduite se refont ;
+  - [~] une chaise de terrasse HD n'arrête ni un passant ni une voiture —
+    LES PASSANTS ET L'ENFANT À PIED : fait en v425 (`mobilierTrottoir`,
+    `world.obstaclePieton`, seulement le mobilier montré). Reste : la VOITURE
+    (`mobilierDevant`, main.js, hors zone piétons) — elle lit `isProp` ; la
+    même `mobilierTrottoir` lui servirait telle quelle ;
+  - [ ] **PLUS UNE TERRASSE DE CAFÉ À PARIS** (mesuré en v425, quatre
+    quartiers, 25 morceaux détaillés chacun) : 324 à 387 potelets, 56 à 59
+    corbeilles, 16 à 25 bancs, 7 à 12 colonnes Morris, ZÉRO terrasse. La règle
+    (`mobilierTrottoir`) veut une `ARCHI.VITRINE` à un bloc au-dessus d'un
+    trottoir qui ne borde pas la rue ; depuis les bandes d'étage de la v301,
+    les devantures ne sont probablement plus ce bloc. À mesurer (quels blocs
+    bordent le trottoir à y+1) avant de corriger ;
+    PORTAIL DE LA v425 (base v421) : `degats.js` « très touchée elle fume »
+    rouge au portail, VERTE seule des deux côtés (43/43) ; `maj.js` les
+    intermittences déclarées et l'entrée 425 (ajoutée à la fusion) ;
+    `manhattan.js` le trou (déclaré) ; `monte.js` la compilation à l'arrivée,
+    le flanc frôlé et « un mur pris de face » (déclarés). Le témoin du
+    mobilier (`parishd.js`) vert au portail.
   - [ ] la ferronnerie d'un garde-corps sur une baie étroite (Marais, 0,28 de
     large) se lit comme un glyphe : la tuile `fer` est faite pour une travée
     entière — une tuile à part pour les petites baies ;

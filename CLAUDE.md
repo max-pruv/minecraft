@@ -2223,6 +2223,24 @@ engendrées. Quatre règles.
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
 
+## Le mobilier de trottoir arrête les passants (v425) — on bute sur ce qu'on voit
+
+Deux règles.
+
+- **LA RÈGLE QUI POSE UN OBJET EST LA RÈGLE QUI LE REND SOLIDE.** Le mailleur
+  décidait seul où poser une terrasse, un banc, une colonne Morris (v288,
+  v289). `mobilierTrottoir` (facadeshd.js, pure) rend le genre et l'orientation
+  pour une colonne de trottoir ; le mailleur dessine, `world.obstaclePieton`
+  (main.js) bute sur ce qui a un corps (`MOBILIER_OBSTACLE` : terrasse, banc,
+  colonne). Prouvé par l'empreinte des 490 morceaux, identique : sortir la
+  règle n'a pas changé un sommet.
+- **ON NE BUTE QUE SUR CE QUI EST MONTRÉ.** Le mobilier n'existe que dans les
+  façades détaillées d'un morceau à portée de `RAYON_HD`, et pas au palier bas.
+  `mobilierVu` exige le détail VISIBLE du morceau (`montrerLeDetail`) ; sinon une
+  tablette sans couche HD aurait des tables invisibles qui arrêtent — un mur
+  invisible, la panne même que la v292 a interdite. Et l'enfant à pied lit le
+  même crochet (v278) : il contourne la terrasse comme les passants.
+
 ## Les passages en biais (v421) — une bande qui suit une direction arbitraire est de la géométrie
 
 Trois règles.

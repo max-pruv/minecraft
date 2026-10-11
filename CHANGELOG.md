@@ -20,6 +20,31 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v425 — Les passants contournent les terrasses de café
+
+**Pourquoi.** À Paris, la couche détaillée pose des terrasses de café, des bancs
+et des colonnes Morris sur les trottoirs (v288, v289). Ce n'étaient pas des
+blocs : un passant marchait au travers de la table d'un café, et l'enfant à pied
+aussi. La dette était déclarée depuis la v288.
+
+**Ce que ça change.** Un passant qui arrive sur une terrasse, un banc ou une
+colonne Morris s'arrête devant et fait le tour, comme devant une voiture garée.
+Seulement là où ce mobilier est AFFICHÉ : une tablette sans couche détaillée
+n'a pas de table invisible qui arrête. Les potelets et les corbeilles se
+frôlent, on passe à côté.
+
+**Ce qui le prouve.** La règle qui pose le mobilier est sortie du mailleur
+(`mobilierTrottoir`, facadeshd.js) : le mailleur dessine ce qu'elle rend, les
+passants butent dessus — une seule règle, deux lecteurs. L'empreinte des 490
+morceaux (Paris détaillé compris) est inchangée au bit près. Un témoin de
+`parishd.js` lance six passants droit sur les bancs et les colonnes montrés
+autour de l'enfant : aucun n'entre dans le meuble, contre six sur six la règle
+désarmée. Et la mesure a trouvé autre chose : dans quatre quartiers de Paris,
+la règle de la v288 ne pose AUCUNE terrasse — plus une devanture `VITRINE` au
+bord d'un trottoir ; c'est déclaré dans `TASKS.md`.
+
+---
+
 ## v424 — La force d'un choc suit la vitesse
 
 **Pourquoi.** La force d'un choc, que la conduite publie et que les dégâts
