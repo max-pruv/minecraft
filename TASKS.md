@@ -5073,6 +5073,16 @@ l'embarquement a eu lieu, pas par une hypothèse.
   glisser bridé ×4 (425 ms, déclaré au portail de la v359) et `monte.js` les
   passants de Rome (21 % pour 20, le tirage de la v291, déclaré à la v319).
 
+- [ ] **LE PORTAIL DE LA v422 (des essais du jeu plus sûrs).** Dix-sept suites,
+  `maj.js` et `realisme.js` VERTES entières, `degats.js` verte. `monte.js`
+  a duré 57 minutes SANS la cascade de l'arrêt quotidien, flanc frôlé vert ;
+  trois rouges déjà déclarés, mêmes chiffres : « la rue roule à l'allure d'une
+  ville » (médiane 0), la chauffe de New York (55/321), le réverbère au volant
+  (`parcouru 0,17`) — ces deux derniers sont le lot suivant de cette session.
+  `manhattan.js` (trou de façade, taxi tactile) et `reseau.js` (la famille
+  « sans courtier » : `[[],[]]`, `actif: false`) : PREUVE STRUCTURELLE (v291),
+  ni l'une ni l'autre n'appelle `jouerSeul`, seul endroit du banc que la
+  livraison change, et la livraison ne touche pas ces deux fichiers.
 - [x] **LA CASCADE « pas aux commandes » DE `monte.js` — TROUVÉE EN v422 :
   L'ARRÊT QUOTIDIEN.** Au portail de la v422 (avant correction), elle est
   tombée à 45,8 minutes de la suite, au témoin près : « à pleins gaz… le mur
