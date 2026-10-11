@@ -45,7 +45,10 @@ arrive sur la rue. Les témoins de toutes les routes (profil, déblai 7,5,
 remblai 0,6, ponts et leurs joints, aérodromes, emprise partagée) la lisent
 sans changement. L'empreinte des 490 morceaux ne bouge pas : aucun de ses
 neuf lieux n'est sur l'A8, et elle rend la constante de la v419 au bit près,
-avec et sans la route.
+avec et sans la route. Le premier portail a trouvé deux points du joint du
+deuxième pont sans cube ni tablier : un sommet de coude tombait un bloc et
+demi avant le tablier ; déplacé, le joint est fermé sur les 19 500 points
+que le témoin lit.
 
 ---
 
