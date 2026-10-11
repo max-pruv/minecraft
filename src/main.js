@@ -21,7 +21,7 @@ import { couloirVoiture, cheminDeTraversee, axeCoupe } from './pietons.js';
 import { cadence, chronoReel } from './cadence.js';
 import { axeDuFeu, axeDuCap, etatFeu } from './feux.js';
 import { cadran, cadranVers, distanceLisible } from './cap.js';
-import { pisteLaPlusProche, D_ENTREE } from './approche.js';
+import { D_ENTREE } from './approche.js';
 import { guidage, arriveEntre, nomDestination, rotationContinue, repereMinicarte, ARRIVEE } from './gps.js';
 import { POLE } from './pole.js';
 import { LIGNES as LIGNES_DC, traceLigneMetro, arretsDeLigne, circuitsWashington } from './washington.js';
@@ -2658,8 +2658,8 @@ function refuserOuVoler() {
   }
   if (aBord === 'pasDePiste') {
     const a = player.aerodromeVise;
-    toast(a ? `🛬 Pas de piste tout près. ${a.nom} est à ${distanceLisible(a.d)} — suis le cadran. ✈️ encore une fois : on se pose ici.`
-      : '🛬 Pas de piste tout près. ✈️ encore une fois : on se pose ici.', 0xffd166, 5000);
+    toast(a ? `🛬 Pas de piste tout près : on se pose ici, train sorti. La prochaine fois, ${a.nom} est à ${distanceLisible(a.d)} — suis le cadran.`
+      : '🛬 Pas de piste tout près : on se pose ici, train sorti.', 0xffd166, 5000);
     return true;
   }
   if (aBord === 'atterrissage') {
@@ -2923,8 +2923,9 @@ let capTexte = '';
 let dernierCadran = null;
 // CE QUE LE CADRAN VISE, quand ce n'est plus une ville (aviation) : la piste
 // de l'approche assistée — le point d'entrée en ralliement, le seuil en
-// finale — ; la piste la plus proche quand on vole bas près d'elle, à la
-// main ; l'aéroport le plus proche quand ✈️ n'a trouvé aucune piste.
+// finale — ; l'aéroport le plus proche quand ✈️ n'a trouvé aucune piste.
+// Hors de l'approche, le cadran nomme les villes (v263) : il ne les remplace
+// pas par une piste.
 function cibleDuCadran() {
   const ap = player.approche;
   if (ap) {
@@ -2934,10 +2935,6 @@ function cibleDuCadran() {
   if (player.sansPiste && Date.now() - player.sansPiste < 30000 && player.aerodromeVise) {
     const a = player.aerodromeVise;
     return { nom: `✈️ ${a.nom}`, x: a.x, z: a.z };
-  }
-  if (player.avionEtat === 'vol') {
-    const c = pisteLaPlusProche(player.pos.x, player.pos.z, player.yaw, 900);
-    if (c && player.pos.y - c.piste.sol < 90) return { nom: `🛬 piste de ${c.piste.nom}`, x: c.seuil, z: c.piste.z };
   }
   return null;
 }

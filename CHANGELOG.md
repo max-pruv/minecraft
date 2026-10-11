@@ -34,9 +34,9 @@ rayon de 2 600 blocs, assez longue pour cet appareil), s'en éloigne pour
 revenir dans l'axe, descend sur un plan régulier, sort le train, arrondit, se
 pose et freine jusqu'à l'arrêt. Le cadran de cap affiche la piste visée et sa
 distance. Le joystick corrige à tout moment ; un second appui sur ✈️ pendant
-l'approche remet les gaz et repart. S'il n'y a aucune piste à portée, le jeu
-le dit, montre la direction de l'aéroport le plus proche, et un second appui
-se pose sur place comme avant. Si l'approche est manquée (trop long, trop de
+l'approche remet les gaz et repart. S'il n'y a aucune piste à portée, l'avion
+se pose sur place comme avant, et le jeu montre l'aéroport le plus proche
+pour la fois suivante. Si l'approche est manquée (trop long, trop de
 travers), l'avion remet les gaz tout seul et refait un tour ; au deuxième
 tour raté, il change de piste.
 

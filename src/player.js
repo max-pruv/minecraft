@@ -201,17 +201,13 @@ export class Player {
         this.avionEtat = 'atterrissage';
         return 'approche';
       }
-      // AUCUNE PISTE À PORTÉE : le premier appui le DIT et montre la plus
-      // proche (cadran de cap) ; un second appui dans les six secondes se pose
-      // ICI, comme avant (v261) — la porte de sortie d'une règle imposée.
-      const maintenant = Date.now();
-      if (this.sansPiste && maintenant - this.sansPiste < 6000) {
-        this.sansPiste = 0; this.approche = null;
-        this.avionEtat = 'atterrissage';
-        return 'atterrissage';
-      }
-      this.sansPiste = maintenant;
+      // AUCUNE PISTE À PORTÉE : on se pose ICI, comme avant (v261) — un
+      // premier appui qui ne ferait que parler laisserait croire au bouton
+      // cassé (v228) —, et le jeu montre l'aéroport le plus proche (cadran de
+      // cap) pour la fois suivante.
+      this.sansPiste = Date.now(); this.approche = null;
       this.aerodromeVise = aerodromeLePlusProche(this.pos.x, this.pos.z);
+      this.avionEtat = 'atterrissage';
       return 'pasDePiste';
     }
     if (etat === 'atterrissage') {

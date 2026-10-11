@@ -790,8 +790,11 @@ finale sur un plan, arrondi. Quatre règles.
   hauteur qui reste (un relief qui tenait l'avion haut le faisait plonger).
 - **LE GESTE PRIME, ET LE SECOND APPUI SORT.** Le joystick corrige (↔ décale,
   ↕ monte ou descend sur le plan) ; un second ✈️ remet les gaz — la porte de
-  sortie de toute séquence imposée (v290, v366). Sans piste à portée, le jeu
-  le dit et montre la direction de l'aéroport le plus proche.
+  sortie de toute séquence imposée (v290, v366). Sans piste à portée, ✈️ se
+  pose sur place dès le premier appui (le témoin de la v261 l'exige) et le
+  cadran montre l'aéroport le plus proche. Hors de l'approche, le cadran nomme
+  les villes (v263) : mon premier jet y mettait la piste la plus proche dès
+  qu'on volait bas, et le témoin « cap sur Lyon » l'a refusé.
 - **ELLE SE MESURE SUR LES VRAIES PISTES.** Livrée après le prolongement des
   pistes : sur les pistes d'avant, le Concorde ne trouvait aucune piste assez
   longue et refaisait des tours (17 approches sur 17, mesuré).

@@ -8361,7 +8361,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // départ. La durée de jeu est bornée par une durée de montre (le banc rend
     // quelques images par seconde) et entre dans le message.
     for (const [espece, cle] of [['chasseur', 'bas-sd'], ['avionligne', 'orly']]) {
-      await banc.mettreDeCote(tab);
+      if (!tab.isClosed()) await banc.mettreDeCote(tab);
       const apPage = await banc.jouerSeul('MonteApproche' + espece, { rr: 2 });
       const r = await apPage.evaluate(async ({ espece, cle }) => {
         const g = window.__game, am = g.animalManager, P = g.player;
@@ -8408,7 +8408,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
           pistes: pistes.map((pi) => ({ z: pi.z, x0: pi.x0, x1: pi.x1 })) };
       }, { espece, cle });
       await apPage.close();
-      await banc.ramener(tab);
+      if (!tab.isClosed()) await banc.ramener(tab);
       verifier(`✈️ en vol près de ${cle} : l'approche assistée pose le ${espece} SUR la piste et l'y arrête`,
         !r.err && r.surPisteToucher && r.surPisteArret && r.etat === 'sol' && r.pilote,
         `${r.err || ''} ${JSON.stringify(r)}`);
