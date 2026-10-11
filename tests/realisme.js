@@ -8,6 +8,27 @@ const verifier = (nom, ok, detail) => {
   );
   if (!ok) echecs.push(nom);
 };
+// Appuyer comme un doigt (voir le clic « Jouer » plus bas) : on attend que
+// l'élément EXISTE et soit visible — un fait du document, sans image à
+// attendre —, on relève s'il est actif et en dessus de tout, puis on clique
+// par le document. Rend ce qu'on a vu, pour un verdict ou un message.
+async function appuyer(p, sel, texte) {
+  const t0 = Date.now();
+  await p.waitForFunction(([sel, texte]) => [...document.querySelectorAll(sel)]
+    .some((e) => (!texte || e.textContent.trim() === texte) && e.getBoundingClientRect().width > 0),
+  [sel, texte], { timeout: 60000, polling: 200 });
+  const vu = await p.evaluate(([sel, texte]) => {
+    const b = [...document.querySelectorAll(sel)]
+      .find((e) => (!texte || e.textContent.trim() === texte) && e.getBoundingClientRect().width > 0);
+    const r = b.getBoundingClientRect();
+    const dessus = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+    const vu = { actif: !b.disabled, visible: getComputedStyle(b).visibility !== "hidden",
+      dessus: dessus === b || b.contains(dessus) };
+    b.click();
+    return vu;
+  }, [sel, texte]);
+  return { ...vu, ms: Date.now() - t0 };
+}
 (async () => {
   const banc = new Banc({ portJeu: 8361, portPairs: 9361 });
   await banc.ouvrir();
@@ -25,13 +46,45 @@ const verifier = (nom, ok, detail) => {
       rr: 2,
       viewport: { width: 1280, height: 800 },
     });
-    await p.locator(".who-card.active").click();
-    await p.getByRole("button", { name: "Plus tard", exact: true }).click();
-    // LE CLIC AUSSI PREND LE BUDGET DU FICHIER (v350) : « Jouer » reste grisé
-    // pendant la préparation, et le clic l'attend. Mesuré des deux côtés,
-    // branche et `origin/main` : 32 et 33 s sous la charge du banc, pour les
-    // trente secondes par défaut de Playwright — un pile ou face sur le seuil.
-    await p.locator("#play-btn").click({ timeout: 120000 });
+    await appuyer(p, ".who-card.active");
+    await appuyer(p, "button", "Plus tard");
+    // L'IDENTITÉ PEUT DEMANDER DEUX FOIS (un « Plus tard » mène parfois à
+    // l'étape suivante : sécuriser le compte). On répond « Plus tard » tant
+    // que la fenêtre est là, quinze secondes au plus, avant de regarder
+    // « Jouer » : sinon c'est la fenêtre qui le recouvre, et le verdict
+    // d'en dessous jugerait un écran de passage.
+    for (const t0 = Date.now(); Date.now() - t0 < 15000;) {
+      const ouverte = await p.evaluate(() => {
+        const m = document.getElementById("id-modal");
+        if (!m || getComputedStyle(m).display === "none") return false;
+        const b = [...m.querySelectorAll("button")].find((e) => e.textContent.trim() === "Plus tard" && e.getBoundingClientRect().width > 0);
+        if (b) b.click();
+        return true;
+      });
+      if (!ouverte) break;
+      await dormir(500);
+    }
+    // ON APPUIE COMME UN DOIGT, PAS COMME PLAYWRIGHT (banc-intermittents).
+    //
+    // Cette ligne mourait au portail une fois sur deux ou trois
+    // (`locator.click: Timeout 30000ms`, de la v381 à la v409). La sonde
+    // `sonde-realisme-clic.cjs` a séparé les trois causes possibles : le bouton
+    // n'est PAS grisé, rien ne le recouvre (`elementFromPoint` rend le bouton),
+    // et l'accueil de Manhattan rend 0,07 image par seconde en rendu logiciel —
+    // une image toutes les quatorze secondes. Or `locator.click` attend que le
+    // bouton soit STABLE, c'est-à-dire identique sur deux images de suite :
+    // 24 s sur une machine au repos, au-delà de 30 dès que le portail charge.
+    // Le témoin mesurait donc la cadence de rendu du banc, pas le bouton. Un
+    // doigt n'attend pas deux images : on vérifie ce que l'enfant voit (actif,
+    // visible, en dessus de tout), on le dit si ce n'est pas le cas, et l'on
+    // clique par le document — le geste de `banc.jouerSeul` depuis toujours.
+    // (Une autre session portait ici le budget du clic à 120 s en supposant
+    // « Jouer » grisé pendant la préparation : le banc ouvre `prep=0`, et la
+    // sonde le lit actif. Un budget plus long aurait masqué la cadence sans
+    // la nommer ; c'est le geste qui change.)
+    const bouton = await appuyer(p, "#play-btn");
+    verifier("à l'accueil, « Jouer » est actif et rien ne le recouvre",
+      bouton.actif && bouton.visible && bouton.dessus, bouton);
     // ET CETTE ATTENTE A LE MÊME BUDGET QUE CELLES DU MÊME FICHIER (v277).
     // Elle n'en déclarait aucun, donc elle prenait les trente secondes par
     // défaut de Playwright, quand les deux attentes de page d'en bas en

@@ -126,6 +126,34 @@
   Et `rattraper` (degats3d.js) ne rejoue plus la tôle une fois l'historique
   plein — défaut d'avant, invisible tant que le feu venait au 3e choc.
 
+- [ ] **UN ÉCART QUI FAIT TRAVERSER LA RUE (v402).** Le témoin du feu de
+  `monte.js` l'a publié : un passant sur le trottoir, poussé par l'écart devant
+  une voiture qui tourne, ressort sur le trottoir d'EN FACE (`traversee` nul,
+  `ecart` vrai, 6,5 blocs), au vert. Vu deux fois sur quatre passages de
+  `monte.js` des deux côtés. Piste : un écart ne quitte pas le trottoir s'il
+  peut l'éviter (choisir le côté qui reste sur `TROTTOIR`). Zone piétons.
+- [ ] **LONDRES, ROME, ZURICH : AUCUN PASSAGE PEINT (v402).** Sur 267 villes
+  engendrées, seules les 65 à trame alignée (`t.net`) peignent un passage ;
+  Londres n'en peint aucun. Les passants n'y traversent qu'aux feux (Londres 1 à
+  3 fois par minute). Peindre un passage en biais demande une géométrie (la
+  couche du mailleur, comme les marquages de Paris), pas une tuile : hors zone
+  piétons (villesmonde.js, londres.js, le mailleur).
+- [x] **`monte.js` « son flanc frôlé ne nous arrête pas » — FAIT en v427.**
+  Rouge SEUL 3/3 des deux côtés (`sonde-flanc.cjs` rejoue la page « conduite »
+  seule) : la voiture d'un convoi à l'arrêt se gare au COIN de l'anneau
+  (x 410, en biais : axe 0,71 / −0,71), et la pose écrite pour une voiture
+  tournée vers +x passait à côté (`c: null`). Le témoin attend que le crochet
+  rende la voiture (`vue`, `attenteVue`) et se pose dans SON repère : 3/3
+  verts (force 0,215, 12,3 b/s, sur notre flanc). Désarmé (la boîte de la rue
+  ignorée, normale du mouvement) : choc franc, force 0,83, recul — rouge.
+- [x] **`realisme.js` MEURT AU CLIC « JOUER » — FAIT en v427.** Pas le bouton :
+  la stabilité que `locator.click` exige (deux images identiques). Sonde
+  `sonde-realisme-clic.cjs` : bouton actif, rien dessus, accueil de Manhattan à
+  0,07 image/s ; clic en 23,9 et 24,5 s au repos, expiré sous trois cœurs
+  chargés (et « Plus tard » avec). Les trois clics de l'accueil passent par le
+  document, et un verdict neuf dit si « Jouer » est actif et à découvert.
+  Sous la même charge : `origin/main` meurt au clic, la branche va au bout
+  (18/18, clic en 89 ms).
 - [x] **ROME, ZURICH : PASSAGES EN BIAIS — fait en v421** (`passages.js`, 197
   villes engendrées). Reste : **LONDRES ET LES VILLES BÂTIES À LA MAIN** n'ont
   toujours aucun passage peint hors Paris. Leurs avenues sont des polylignes
@@ -5302,6 +5330,37 @@ l'embarquement a eu lieu, pas par une hypothèse.
   glisser bridé ×4 (425 ms, déclaré au portail de la v359) et `monte.js` les
   passants de Rome (21 % pour 20, le tirage de la v291, déclaré à la v319).
 
+- [ ] **LE PORTAIL DE LA v427 (des essais du jeu plus sûrs).** Dix-sept suites,
+  `maj.js` et `realisme.js` VERTES entières, `degats.js` verte. `monte.js`
+  a duré 57 minutes SANS la cascade de l'arrêt quotidien, flanc frôlé vert ;
+  trois rouges déjà déclarés, mêmes chiffres : « la rue roule à l'allure d'une
+  ville » (médiane 0), la chauffe de New York (55/321), le réverbère au volant
+  (`parcouru 0,17`) — ces deux derniers sont le lot suivant de cette session.
+  `manhattan.js` (trou de façade, taxi tactile) et `reseau.js` (la famille
+  « sans courtier » : `[[],[]]`, `actif: false`) : PREUVE STRUCTURELLE (v291),
+  ni l'une ni l'autre n'appelle `jouerSeul`, seul endroit du banc que la
+  livraison change, et la livraison ne touche pas ces deux fichiers.
+- [x] **LA CASCADE « pas aux commandes » DE `monte.js` — TROUVÉE EN v427 :
+  L'ARRÊT QUOTIDIEN.** Au portail de la v427 (avant correction), elle est
+  tombée à 45,8 minutes de la suite, au témoin près : « à pleins gaz… le mur
+  du son » (trois compteurs figés à 802 km/h : `majBoutonsVehicule` n'écrit
+  rien quand `running` est faux), « tirer le joystick fait RECULER »,
+  « un avion se repousse », « pas au volant ». C'est la limite de 45 minutes
+  de jeu par jour (invariant 2) sur `tab`, que la suite garde ouverte d'un
+  bout à l'autre : un portail lent la franchit, un rapide non. Sonde
+  `sonde-limite-du-jour.cjs` (jeu posé à cinq secondes de la limite) : banc
+  d'avant 2/2 arrêté, banc neuf 2/2 en jeu — `jouerSeul` pose huit
+  déblocages du jour (`unlocks`), comme le code parental.
+- [x] **LA CASCADE « cible: quiz » — UN SECOND MÉCANISME TROUVÉ EN v427 : MINUIT.**
+  `today()` range la journée sous la date LOCALE ; `jouerSeul` n'ouvrait le
+  répit que de la journée du lancement. Une suite qui passe minuit (minuit UTC
+  est 20 h à New York, l'heure des portails du soir) retrouve un compte à
+  rebours, et un quiz couvre l'écran quinze minutes plus tard. Sonde
+  `sonde-quiz-minuit.cjs` (minuit simulé, compte à rebours réduit à 15 s) :
+  répit d'avant, quiz à 15,8 et 15,5 s ; répit rouvert par le banc, aucun
+  quiz en 30 s (2/2). Que la cascade de la v359 soit CELLE-LÀ n'est pas
+  prouvé (l'heure de ce portail n'est plus lisible) ; le mécanisme l'est, et il
+  est retiré.
 - [ ] **PORTAIL DE LA v359 (Nice) : UNE CASCADE DE `monte.js` QUE LA SUITE
   SEULE NE REND PAS.** Au portail complet (base v349), `monte.js` a rendu
   trente-quatre rouges d'un seul tenant : tous les témoins d'avion et de
@@ -5508,7 +5567,15 @@ l'embarquement a eu lieu, pas par une hypothèse.
   faite et que la v269 a payée. À reprendre après la mesure sur tablette
   ci-dessus, qui dira si la file peut remonter sans les gels.
 
-- [ ] **`maj.js` : « corps, programmes et fond de carte sont vraiment là » —
+- [x] **`maj.js` « vraiment là » — FAIT en v427 : la cause était le banc.** Le
+  témoin préparait à côté de trois pages : deux sur l'accueil (2,4 à 3,7 cœurs
+  occupés à elles deux, `sonde-voisines.cjs` ; le gel CDP n'y change rien) et
+  une en jeu. Préparation seule 3,4 et 4,4 s, avec deux voisines 38,5 et 43,9 s
+  (`sonde-prep-duree.cjs`). Le témoin passe en tête de suite, seul ; `onglet`
+  se ferme après son verdict. `maj.js` rejouée seule : branche 3/3 verte
+  (« vraiment là » et « ne floute rien »), `origin/main` 2/2 rouge (libération
+  jamais vue en 60 s). L'entrée d'origine reste dessous, pour l'histoire.
+- [ ] *(close par l'entrée ci-dessus)* **`maj.js` : « corps, programmes et fond de carte sont vraiment là » —
   ROUGE DES DEUX CÔTÉS, REJOUÉE SEULE (v267).** Portail de la v308 : rouge
   (personnages 5/9 à 47 s, carte prête) ; rejouée SEULE, verte sur la branche
   (9/9, carte prête) et ROUGE sur `origin/main` v307 (8/9, carte absente) —
