@@ -1005,6 +1005,30 @@
   (tableau plus bas). Le témoin neuf « une voiture neuve n'hérite pas du
   dernier choc » est vert au portail.
 
+- [ ] **`monte.js` NE FINIT PLUS UNE FOIS SUR DEUX, ET C'EST UNE AFFAIRE DE
+  BANC (mesuré pour la v429).** Deux causes, une réglée.
+  1. **La limite du jour** (45 min, `education.js`) : la page `tab` vit plus
+     d'une heure, l'écran de fin de journée s'ouvrait et prenait le doigt
+     (`"cible":"hardstop"`) — au portail de la v429, trente-cinq rouges en
+     cascade (avions « pas aux commandes », voiture « pas au volant », les
+     neuf témoins des sensations à `vMax 0`). Réglé dans la suite :
+     `today().unlocks = 99`, la donnée qu'un parent pose (`leverLaLimite`).
+  2. **L'ouverture d'une page à part sous une page à 3,8 cœurs** : après « en
+     vol au-dessus de Paris, le monde se maille hors du fil principal »,
+     `souffler` lit une charge STABLE de 3,7 à 3,9 cœurs, et la page suivante
+     (`MonteRegard` l. 3901, `MonteMobilier` l. 4279) ne charge pas en 90 s.
+     Branche : 2 arrêts sur 2 rejeux seuls (98 et 110 verts) ; `origin/main` :
+     v404 arrêtée, v411 au bout (11 rouges). Piste : ce que `tab` fait encore
+     après ce témoin (vol laissé en cours ? file de maillage à `rr` 12 ?) — la
+     sonde à écrire relève `__game.player.flying`, la file et la position de
+     `tab` à cet instant, puis on ramène `tab` au sol avant `souffler`.
+  Et le pic du choc ratait le coup deux passages sur cinq (0,06 contre 0,07
+  au calme, secousse vue) : une seule lecture 0,45 s après pour une fenêtre de
+  0,74 s. La mesure lit à chaque image pendant 1,5 s : 1,02 · 1,10 · 1,20.
+  La v429 se prouve donc par la sonde (`sonde-sensations.cjs`, même mesure
+  que le témoin), des deux côtés : pente 1,182 contre 0, atterrissage 0,74 à
+  0,95 contre 0,057.
+
 - [ ] **AU PORTAIL DE LA v422 (les sensations au volant, fusionnée avec main
   v404 puis v411 puis v421), AUCUN ROUGE NE VIENT DE LA LIVRAISON.** Trois
   portails coupés à deux heures (le conteneur borne une commande de fond) et

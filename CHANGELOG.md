@@ -20,6 +20,34 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v429 — La voiture suit la pente
+
+**Pourquoi.** Depuis la v408 la physique fait monter la voiture dans les côtes
+et décoller sur les bosses, et publie la pente sous les roues
+(`player.tangage`) et chaque retour au sol (`player.atterrissage`) « pour ce
+qui dessine ». Personne ne les dessinait : dans une côte, la caisse restait à
+plat et s'enfonçait du nez dans la route qu'elle montait, et retomber d'une
+bosse ne faisait aucun bruit.
+
+**Ce que ça change.** Le nez monte dans les côtes et plonge dans les
+descentes (jusqu'à 26°), en plus du nez qui se lève à l'accélération ; en
+l'air, la voiture suit sa trajectoire. Retomber sur ses roues fait plonger la
+caisse sur ses ressorts et s'entend, d'autant plus fort que la chute est
+haute.
+
+**Ce qui le prouve.** Deux témoins neufs dans `monte.js`, sur la mesure
+partagée avec la sonde. La pente figée à 0,3 rad : le nez monte de 1,18 bloc
+au-dessus de la queue ici, 0 sur `origin/main` (v422) ; à plat, 0 des deux
+côtés. L'atterrissage posé comme la physique le pose : pic 0,74 à 0,95 contre
+0,07 avant ici, 0,057 contre 0,068 sur `origin/main`.
+Et le banc : la page de jeu de `monte.js` vit plus d'une heure, et la limite
+du jour (45 min) y ouvrait l'écran de fin de journée, qui prenait le doigt et
+faisait tomber trente-cinq témoins en cascade ; la suite lève désormais la
+limite par la donnée qu'un parent pose. Un second arrêt de la suite, sous une
+page à 3,8 cœurs, est rouge des deux côtés et déclaré dans `TASKS.md`.
+
+---
+
 ## v428 — Marseille rejoint Nice
 
 **Pourquoi.** Marseille–Nice était le dernier corridor court du kit côté

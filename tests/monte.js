@@ -158,6 +158,16 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
   await banc.ouvrir();
   try {
     const tab = await banc.jouerSeul('Marlon', { tactile: true });
+    // LA LIMITE DU JOUR SE LÈVE PAR SA DONNÉE (v429). Cette page vit toute la
+    // suite — plus d'une heure de jeu depuis que la suite a passé l'heure — et
+    // la limite quotidienne (45 min, education.js) y ouvrait l'écran de fin de
+    // journée : `#hardstop` prenait le doigt (`cible: "hardstop"`) et toute la
+    // seconde moitié tombait en cascade — avions « pas aux commandes »,
+    // voiture « pas au volant ». `jouerSeul` n'ouvre que le répit des quiz.
+    // Un parent débloque la limite (`unlocks`) : c'est ce qu'on pose, sans
+    // débrancher le code qu'on traverse.
+    const leverLaLimite = (p) => p.evaluate(() => { window.__game.edu.today().unlocks = 99; });
+    await leverLaLimite(tab);
 
     // --- une bête devant soi -------------------------------------------------
     verifier('l\'éléphant fait partie du monde', await poserDevant(tab, 'elephant'));
@@ -4528,6 +4538,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // de ce témoin était donc VERT sur `origin/main`, à 264 blocs par seconde,
     // avec le trou à trente-six blocs — il mesurait le banc, pas le jeu.
     const ciel = await banc.jouerSeul('Amélie', { rr: 12 });
+    await leverLaLimite(ciel);
     const suivi = await ciel.evaluate(async () => {
       const g = window.__game;
       const m = await import('./src/montures.js');
@@ -6973,6 +6984,14 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       // deux, c'est le rapport : 0,25 contre 0 sur l'ancien code.
       !S.err && S.son && S.secoue.max > 0.12 && S.secoue.max > 3 * S.calme.max
         && S.son.piqueChoc > 2 * S.son.piqueAvant, msg);
+    // LA PENTE (v429) : la physique publie `player.tangage` depuis la v408 et
+    // personne ne le dessinait. Figé à 0,3 rad, le nez doit monter de
+    // 4 × sin 0,3 ≈ 1,2 bloc au-dessus de la queue ; à 0, rester à plat. Sur
+    // l'ancien code la caisse ignore le champ : nez et queue à la même hauteur.
+    verifier('dans une côte, le nez de la voiture monte avec la pente',
+      !S.err && S.pente && Math.abs(S.pente.plat) < 0.3 && S.pente.cote - S.pente.plat > 0.6, msg);
+    verifier('et retomber sur ses roues s\'entend',
+      !S.err && S.son && S.son.piqueSol > 2 * S.son.piqueAvantSol, msg);
     verifier('dos à un mur, la caméra reste du côté de la voiture',
       !S.err && S.mur.libre, msg);
     verifier('et en descendant, le champ revient et la voiture se pose à plat',
