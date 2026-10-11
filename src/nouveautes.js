@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 440,
+    titre: 'Moins de bouchons en ville',
+    puces: [
+      'Les voitures de l\'autoroute font demi-tour',
+      'Elles gardent leur propre voie',
+      'Madrid roule bien mieux',
+    ],
+  },
+  {
     v: 439,
     titre: 'La route de Los Angeles',
     puces: [

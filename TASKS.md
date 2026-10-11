@@ -530,6 +530,18 @@
   entrent plus — c'est le contraire de la v300), ou faire du raccord une file
   de l'anneau qui passe là (une seule grille). `routes.js` et `villesmonde.js`
   sont d'autres sessions.
+  **(4) FAIT en v440** (session `claude/raccords-anneaux`) : le raccord
+  s'arrête quatre blocs avant la première voie d'anneau (`RACCORDS_COURTS`,
+  raccords.js, table mesurée et gardée par `plafond.js`). Sous node, 569 blocs
+  partagés sur 19 raccords → 20 sur 5, tous des DEMI-TOURS (Turin 9, Hambourg
+  6, Cologne 2, Naples 2, Francfort 1 : le demi-tour à la porte, quand la voie
+  d'un anneau passe à moins de quatre blocs, coupe cette voie). L'arrêt à la
+  porte partout rendait 44 sur 13. Au navigateur, Madrid 6,74 / 6,85 % →
+  1,47 / 1,02 % (le reste en travers entre anneaux). RESTE : les raccords des
+  villes bâties à la main (Paris, Lille, Londres, Nice, San Francisco) ne sont
+  pas mesurés contre leurs circuits — la sonde ne lit que les anneaux des
+  villes engendrées ; et ces cinq demi-tours, que seul un demi-tour AVANT la
+  porte (le corridor, `routes.js`, autre session) supprimerait.
   **(5) LE HUIT DE TOKYO, MESURÉ RÉSOLU.** Au même point (53 383, 8 048) :
   0,25 % de paires au contact, toutes en travers entre deux convois (la
   cession locale), zéro dans une file — les contours des v432 et v435 ont
