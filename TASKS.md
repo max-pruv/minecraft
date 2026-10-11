@@ -904,6 +904,17 @@
   ralentit assez pour qu'on la rejoigne » (9,1 m/s) et « la rue roule à
   l'allure d'une ville » (Paris, bâtie à la main, que la v427 ne touche pas :
   seules quatorze villes engendrées changent d'anneaux, sonde `ident`).
+  Après fusion de la v426 : portail rejoué, mêmes familles (`maj.js` loader,
+  déclarés ; `carte.js` flèche du GPS et glisser, déclarés ; `monte.js` 30
+  rouges de commandes sous charge). `monte.js` rejouée seule : les deux
+  passages dépassent l'heure de borne (la suite s'est alourdie avec les
+  sensations de la v422) — branche 189 verts / 13 rouges, `origin/main` v426
+  132 / 42 au moment de la coupure. Propres à la branche : les sensations
+  (même famille que `origin/main`, autre modèle tiré), le taux de paires au
+  contact, le passant au feu, le train devant la voiture, le flanc frôlé, le
+  passage en biais à Rome — tous déclarés plus haut. Preuve par construction :
+  `monte.js` n'éprouve qu'une des quatorze villes, Kyoto, et ses deux témoins
+  y sont verts ; Rome a des anneaux identiques au bit près.
 - [ ] **PORTAIL DE LA v414 (les tabliers s'allongent), DOUBLE MESURE FAITE.**
   (Portail joué sur la v408 fusionnée ; `origin/main` est passée à la v413
   pendant la double mesure. Après la fusion, rejouées SEULES sur le code
