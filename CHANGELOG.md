@@ -26,13 +26,16 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 l'enfant en quelques images. Mais pendant ces images-là, tout ce qui regardait
 le sol — les passants qu'on pose, ceux qui marchent et sondent la rue, l'enfant
 lui-même, la visée, le voile de l'eau, les poissons, l'orientation des
-réverbères — demandait ses blocs à `getBlock`, qui FABRIQUAIT le morceau
+réverbères, et même les personnages laissés à l'autre bout du monde, qui
+marchaient encore pendant leur fondu — demandait ses blocs à `getBlock`, qui FABRIQUAIT le morceau
 manquant sur le fil principal, dans l'image même. À Paris : 23 à 40 morceaux,
 93 à 157 ms dans la première seconde ; à Berlin, 86 morceaux et 325 ms dans la
 première seconde et quart. Et le premier morceau d'une ville payait sa table des
 feux : 86 ms à Paris, `solParis` relu jusqu'à cinq fois par colonne.
 
-**Ce que ça change.** Un personnage dont le monde n'est pas encore là attend,
+**Ce que ça change.** Pendant la seconde et demie qui suit un saut, et autour
+du lieu d'arrivée seulement (en vol ou au volant, rien ne change), un
+personnage dont le monde n'est pas encore là attend,
 immobile, et reprend à sa place dès que le morceau arrive ; un passant ne naît
 que sur un morceau déjà rendu ; l'enfant attend son propre morceau (une ou deux
 images, une seconde et demie au plus) au lieu de le fabriquer ; un réverbère au
@@ -44,7 +47,9 @@ mauvais moment.
 
 **Ce qui le prouve.** `sonde-arrivee-engendre.cjs` range chaque `generateChunk`
 du fil principal par appelant : Paris 23 à 40 → 0 morceau en deux secondes,
-Londres, Rome, Tokyo 0 à 1. Un témoin de `monte.js` saute à Berlin et compte :
+Londres, Rome, Tokyo 0 à 1 (le seul qui reste est parfois l'enfant, 4 à 10 ms).
+Un personnage qu'on ne voit plus, à plus de cent quarante blocs, ne marche plus
+pendant qu'il s'efface. Un témoin de `monte.js` saute à Berlin et compte :
 0 morceau en 1,2 s (86 sur `origin/main`), puis 18 à 22 passants posés, aucun en
 attente, dans le vide ou dans un mur. L'empreinte de toutes les tables de feux
 (`Math.random` figé, neuf villes, 169 morceaux chacune) est identique des deux

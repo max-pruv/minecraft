@@ -1633,8 +1633,21 @@ Trois règles.
   avant `think` (ni chute, ni pas, ni sonde) ; `placeAt` diffère la pose
   (`aPoser`) ; `posteAutour` saute un point sur un morceau absent et rend `null`
   s'il n'y a rien, la naissance reste dans la file ; l'enfant attend son morceau
-  (`joueurAttendLeMonde`, borné à 1,5 s, jamais sans worker ni dans un morceau
-  maillé ici). La règle de la minicarte (v258), pour tout ce qui sonde.
+  (`joueurAttendLeMonde`, son seul morceau ±1, borné à 1,5 s, jamais sans
+  worker ni dans un morceau maillé ici). La règle de la minicarte (v258), pour tout ce qui sonde.
+- **ON N'ATTEND LE WORKER QU'À L'ARRIVÉE, ET LÀ OÙ L'ON ARRIVE.** Mon premier
+  jet attendait partout : en vol et au volant, l'enfant franchit sans cesse le
+  bord du monde rendu (au banc, `rr=2`) et se figeait par à-coups d'une seconde
+  et demie — vingt-neuf rouges de `monte.js` rejouée seule. L'attente ne vaut
+  que dans la fenêtre d'un saut (`estUnSaut`, 1,5 s, `world.arriveeEnCours`)
+  et, pour un point, à portée du lieu d'arrivée (`arriveeLieu`) : des passants
+  d'essai posés ailleurs fabriquent comme avant. Et un témoin qui emmène
+  l'enfant au couloir ATTEND que le monde y soit rendu avant de lancer la
+  voiture (« se placer », v279).
+- **CE QUI S'EFFACE À L'AUTRE BOUT DU MONDE NE MARCHE PLUS.** La présence fond
+  en 0,8 s les personnages laissés derrière un saut, et la boucle les animait
+  encore : leur `sweep` refabriquait les morceaux qu'on venait d'oublier
+  (douze à vingt et un). Au-delà de cent quarante blocs, on s'efface sur place.
 - **UNE FILE QUI ATTEND NE SE BLOQUE PAS SUR SA TÊTE.** Mon premier jet faisait
   `break` sur une naissance impossible : celle de la ville QUITTÉE, dont les
   points sont ramenés dans son disque, attendait pour toujours un monde qui ne
