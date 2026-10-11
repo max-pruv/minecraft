@@ -368,7 +368,17 @@ const EMPREINTE_MORCEAUX_V414 = '863d4203a441e3fd029ce2404fc6d6e706799e7f64fe489
 // l'Anacostia (11e Rue, Sousa). `pontWashington` désarmé (rend null), la
 // branche rend 239f48ab…, la constante de la v439, au bit près ; et les cent
 // douze colonnes qui diffèrent sont toutes dans les bandes des deux ponts.
-const EMPREINTE_MORCEAUX_V357 = 'fb4f9aed89ceb6e29a5ecc6731f5e9840673e0ba720fae16c0f60a86954ca403';
+// v447 : la trame générique quitte Londres, un des neuf lieux — voulu. Le
+// drapeau `sansTrameLondres` retiré de `CONF_NEUF`, la branche rend fb4f9aed…,
+// la constante de la v446, au bit près ; et les 2 600 colonnes qui diffèrent
+// dans le disque de Londres sont toutes à 76 à 106 blocs du centre, sur les
+// cinquante-deux lots de la trame (scratchpad diff.mjs).
+// v448 : Londres, un des neuf lieux, voit passer le prolongement de la piste
+// d'Heathrow. `tronconsDePiste` désarmé (rend []), la branche rend 19946cb7…,
+// la constante de la v447, au bit près ; et les dix-huit colonnes qui
+// diffèrent dans les morceaux de Londres sont toutes dans la boîte d'un
+// tronçon de piste — aucune ailleurs, aucun autre lieu touché.
+const EMPREINTE_MORCEAUX_V357 = '938a330c6f883c7e249720b7274d988de6484768cfdb882dedd474da65bbac6d';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -2272,6 +2282,71 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       r.absent ? `pas de date des rues de ${ville}` : JSON.stringify(r));
   }
 
+  // --- LA TRAME GÉNÉRIQUE QUITTE LONDRES (v447), SAUF SOUS CE QU'UN ENFANT --
+  // --- Y A BÂTI ---------------------------------------------------------------
+  //
+  // La boucle « one lot per grid cell » de world.js n'excluait pas Londres et
+  // y posait cinquante-deux maisons pastel de San Francisco, entre 77 et 102
+  // blocs du centre, par-dessus les rues et les immeubles de la ville. Quatre
+  // choses, lues dans le monde contre le même monde AVEC la trame (le drapeau
+  // `sansTrameLondres` retiré de la configuration) :
+  //  1. elles sont parties — deux mille colonnes au moins, toutes dans le
+  //     disque de Londres ; ROUGE sur `origin/main`, où le drapeau n'existe
+  //     pas et les deux mondes sont identiques ;
+  //  2. une cabane posée sur un de ces toits AVANT `DATE_TRAME_LONDRES` garde
+  //     la maison entière sous elle, au bloc près ;
+  //  3. un bloc posé APRÈS la date ne retient rien ;
+  //  4. le monde de la v308 (donc d'avant) garde ses maisons.
+  {
+    const W = await import('../src/world.js');
+    const { LONDRES } = await import('../src/londres.js');
+    const { isSolid } = await import('../src/blocks.js');
+    const C = W.CHUNK, r = LONDRES.r + 20;
+    const avecTrame = (w) => { w.conf = { ...w.conf, sansTrameLondres: false }; return w; };
+    const neuf = new W.World(), ref = avecTrame(new W.World());
+    const diff = []; let horsDisque = 0;
+    for (let cx = Math.floor((LONDRES.x - r) / C); cx <= Math.floor((LONDRES.x + r) / C); cx++)
+      for (let cz = Math.floor((LONDRES.z - r) / C); cz <= Math.floor((LONDRES.z + r) / C); cz++) {
+        const a = neuf.ensureChunk(cx, cz), b = ref.ensureChunk(cx, cz);
+        for (let lx = 0; lx < C; lx++) for (let lz = 0; lz < C; lz++) for (let y = 0; y < W.HEIGHT; y++) {
+          const i = W.World.index(lx, y, lz);
+          if (a[i] === b[i]) continue;
+          const x = cx * C + lx, z = cz * C + lz;
+          if (Math.hypot(x - LONDRES.x, z - LONDRES.z) > LONDRES.r) horsDisque++;
+          diff.push([x, z]); break;
+        }
+      }
+    verifier('à Londres, la trame générique ne pose plus ses maisons par-dessus la ville',
+      diff.length >= 2000 && horsDisque === 0,
+      `${diff.length} colonne(s) qui diffèrent du monde avec la trame, ${horsDisque} hors du disque`);
+    const date = W.DATE_TRAME_LONDRES;
+    let garde = { absent: true };
+    if (date && diff.length) {
+      // la colonne la plus haute du premier lot : son toit dans le monde avec la trame
+      const [x, z] = diff[Math.floor(diff.length / 2)];
+      let toit = 0;
+      for (let y = W.HEIGHT - 1; y > 0; y--) if (isSolid(ref.getBlock(x, y, z))) { toit = y; break; }
+      const k = `${x},${toit + 1},${z}`;
+      const avec = (t, w) => { w.installerEdits(new Map([[k, 8]]), new Map([[k, t]]), 'local'); return w; };
+      const avantN = avec(date - 60000, new W.World()), avantR = avec(date - 60000, avecTrame(new W.World()));
+      const apresN = avec(date + 60000, new W.World());
+      let ecartAvant = 0, ecartApres = 0;
+      // le lot de la trame (cellule de onze, rue de trois, baie d'un rang devant)
+      const lx0 = Math.floor(x / 11) * 11, lz0 = Math.floor(z / 11) * 11;
+      for (let bx = lx0 + 3; bx <= lx0 + 9; bx++) for (let bz = lz0 + 2; bz <= lz0 + 9; bz++) for (let y = 1; y <= toit + 2; y++) {
+        if (avantN.getBlock(bx, y, bz) !== avantR.getBlock(bx, y, bz)) ecartAvant++;
+      }
+      for (let y = 1; y <= toit; y++) if (apresN.getBlock(x, y, z) !== ref.getBlock(x, y, z)) ecartApres++;
+      const v308 = new W.World({ v308: true });
+      garde = { x, z, toit, ecartAvant, ecartApres, blocApres: apresN.getBlock(x, toit + 1, z),
+        v308Toit: isSolid(v308.getBlock(x, toit, z)) };
+    }
+    verifier('et une cabane posée sur un de ces toits avant la date garde la maison entière sous elle',
+      !garde.absent && garde.ecartAvant === 0, JSON.stringify(garde));
+    verifier('un bloc posé après la date ne retient pas la maison, et le monde d\'avant la garde',
+      !garde.absent && garde.ecartApres > 0 && garde.blocApres === 8 && garde.v308Toit, JSON.stringify(garde));
+  }
+
   // --- LE FONDU DOUX DES VILLES (v309) : le pays descend à un bloc par bloc --
   // --- au plus, le monde d'avant reste celui de la production, un bloc suit --
   //
@@ -2426,6 +2501,113 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     verifier('un morceau de ville coûte moins de lectures de relief et de blocs que sur la v351',
       Object.entries(BARRES_TRAVAIL).every(([v, b]) => tr[v].reliefs <= b.reliefs && tr[v].lus <= b.lus),
       JSON.stringify({ mesure: tr, barres: BARRES_TRAVAIL }));
+  }
+
+  // UN BÂTISSEUR NE TIRE PAS AU HASARD (v450). Le Colisée du catalogue
+  // tirait ses gradins effondrés à `Math.random()` : deux lancements, deux
+  // Colisées (173 blocs de Rome), et le worker de maillage en bâtissait un
+  // autre que le fil principal. On engendre les morceaux de chaque repère du
+  // monde dans DEUX fils neufs (`worker_threads`, comme le worker du jeu : un
+  // graphe de modules à lui), sous deux graines de `Math.random`, dans le monde
+  // d'aujourd'hui ET dans celui d'avant la v306 (`avant: true`), et l'on compare
+  // au fil de ce témoin. Sur l'ancien code les deux fils rendent deux Colisées :
+  // rouge, et le message les nomme.
+  {
+    const { Worker } = await import('worker_threads');
+    const url = require('url').pathToFileURL(require('path').join(__dirname, '../src/world.js')).href;
+    const code = `
+      const { parentPort, workerData } = require('worker_threads');
+      const crypto = require('crypto');
+      let s = workerData.graine >>> 0;
+      Math.random = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
+      (async () => {
+        const W = await import(workerData.url);
+        const out = {};
+        for (const conf of ['neuf', 'avant']) {
+          const w = new W.World(conf === 'avant' ? { avant: true } : {});
+          const cf = conf === 'avant' ? W.CONF_AVANT : W.CONF_NEUF;
+          for (const lm of cf.reperes) {
+            const b = (lm.box || 10) + 2, h = crypto.createHash('sha1');
+            for (let cx = Math.floor((lm.x - b) / W.CHUNK); cx <= Math.floor((lm.x + b) / W.CHUNK); cx++)
+              for (let cz = Math.floor((lm.z - b) / W.CHUNK); cz <= Math.floor((lm.z + b) / W.CHUNK); cz++) {
+                const d = w.ensureChunk(cx, cz);
+                h.update(Buffer.from(d.buffer, d.byteOffset, d.byteLength));
+              }
+            out[conf + ':' + lm.name + '@' + Math.round(lm.x) + ',' + Math.round(lm.z)] = h.digest('hex');
+          }
+        }
+        parentPort.postMessage(out);
+      })().catch((e) => parentPort.postMessage({ erreur: String(e) }));`;
+    const fil = (graine) => new Promise((ok) => {
+      const w = new Worker(code, { eval: true, workerData: { graine, url } });
+      w.once('message', (m) => { ok(m); w.terminate(); });
+      w.once('error', (e) => ok({ erreur: String(e) }));
+    });
+    const t0 = Date.now();
+    const [a, b] = await Promise.all([fil(1), fil(987654)]);
+    const cles = a.erreur || b.erreur ? [] : Object.keys(a);
+    const diff = cles.filter((k) => a[k] !== b[k]);
+    verifier('deux fils neufs sous deux graines de Math.random bâtissent les mêmes repères, au bloc près (monde d\'aujourd\'hui et d\'avant la v306)',
+      cles.length > 400 && diff.length === 0,
+      `${cles.length} repères comparés, ${diff.length} différents${diff.length ? ' : ' + diff.slice(0, 6).join(' | ') : ''}${a.erreur || b.erreur ? ' — ' + (a.erreur || b.erreur) : ''}, ${Date.now() - t0} ms`);
+    // Et le fil de ce témoin — le « fil principal » — bâtit le même Colisée
+    // que les deux autres : c'est la situation exacte du jeu, où le worker
+    // maille ce que le fil principal arrête.
+    const W = await import('../src/world.js');
+    const col = W.CONF_NEUF.reperes.find((lm) => lm.name === 'Colisée');
+    const crypto = await import('crypto');
+    let ici = null;
+    if (col) {
+      const w = new W.World(), bx = (col.box || 10) + 2, h = crypto.createHash('sha1');
+      for (let cx = Math.floor((col.x - bx) / W.CHUNK); cx <= Math.floor((col.x + bx) / W.CHUNK); cx++)
+        for (let cz = Math.floor((col.z - bx) / W.CHUNK); cz <= Math.floor((col.z + bx) / W.CHUNK); cz++) {
+          const d = w.ensureChunk(cx, cz);
+          h.update(Buffer.from(d.buffer, d.byteOffset, d.byteLength));
+        }
+      ici = h.digest('hex');
+    }
+    const k = col && `neuf:Colisée@${Math.round(col.x)},${Math.round(col.z)}`;
+    verifier('le fil principal et le worker bâtissent le même Colisée',
+      !!ici && ici === a[k] && ici === b[k],
+      `ici ${ici && ici.slice(0, 10)}, fil 1 ${a[k] && a[k].slice(0, 10)}, fil 2 ${b[k] && b[k].slice(0, 10)}`);
+  }
+
+  // ÉDIMBOURG EST DE GRÈS GRIS, ET SYDNEY A DES FENÊTRES (v450). Deux
+  // façades de villes engendrées, lues au bâtisseur (`batirColonneVillesMonde`,
+  // pur — jamais le monde chargé, qui ne répond que sur les morceaux déjà là) :
+  //  • Édimbourg portait la brique rouge de l'archétype britannique ; ses murs
+  //    sont désormais le gris, le gris clair et le kaki de la palette de décor.
+  //    Sur l'ancien code : zéro bloc gris, rouge ;
+  //  • la `baie` de la fiche de Sydney (la géographie de son port) était lue
+  //    comme le bloc de ses fenêtres : un objet, écrit 0, donc de l'air. On
+  //    compte ce que le bâtisseur pose qui n'est pas un nombre : zéro, contre
+  //    deux cent cinquante sur l'ancien code.
+  {
+    const VM = await import('../src/villesmonde.js');
+    const { DECOR_START, DECOR_COLORS } = await import('../src/blocks.js');
+    const lire = (cle) => {
+      const f = VM.VILLES_MONDE.find((v) => v.cle === cle);
+      const c = { gris: 0, rouge: 0, nonBloc: 0, poses: 0 };
+      const R = Math.min(f.rayon, 50);
+      for (let dx = -R; dx <= R; dx++) for (let dz = -R; dz <= R; dz += 3) {
+        const x = Math.round(f.ancre.x + dx), z = Math.round(f.ancre.z + dz);
+        if (VM.solVillesMonde(x, z) !== 'lot') continue;
+        VM.batirColonneVillesMonde(x, z, (y, id) => {
+          c.poses++;
+          if (typeof id !== 'number') { c.nonBloc++; return; }
+          if (id < DECOR_START || id >= DECOR_START + DECOR_COLORS.length * 10) return;
+          const coul = DECOR_COLORS[Math.floor((id - DECOR_START) / 10)][0], motif = (id - DECOR_START) % 10;
+          if (['Gris', 'Gris clair', 'Kaki'].includes(coul) && motif === 0) c.gris++;
+          if (motif === 1 && ['Rouge', 'Chocolat'].includes(coul)) c.rouge++;
+        });
+      }
+      return c;
+    };
+    const ed = lire('edimbourg'), sy = lire('sydney');
+    verifier('Édimbourg est bâtie de grès gris, plus de la brique rouge de Manchester',
+      ed.poses > 1000 && ed.gris > 4 * ed.rouge, JSON.stringify(ed));
+    verifier('à Sydney, chaque fenêtre est un bloc — aucune baie n\'est un trou',
+      sy.poses > 1000 && sy.nonBloc === 0, JSON.stringify(sy));
   }
 
   // LES PASSAGES EN BIAIS SE DESSINENT (v421). Une tuile ne se tourne pas :

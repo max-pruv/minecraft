@@ -2711,7 +2711,7 @@ export function createVehicules({ scene, player }) {
   // touche pas une voiture centrée sur l'autre (4 − 0,9 − 1,13 = 2 blocs).
   const DEMI_LONG_RAME = 3.7, DEMI_LARG_RAME = 0.9;
   const PAS_TRAIN = [0.5, 1.5, 2.5, 3.5];   // on s'arrête près : RAYON_BORD (9) doit encore voir la motrice
-  // LA RAME REGARDE AUSSI LOIN QU'ELLE VA ROULER DANS L'IMAGE (v447). Elle
+  // LA RAME REGARDE AUSSI LOIN QU'ELLE VA ROULER DANS L'IMAGE (v451). Elle
   // roule en temps RÉEL (v305) : à quinze blocs par seconde, une image d'un
   // quart de seconde la fait avancer de quatre blocs — plus que les 3,5 de
   // `PAS_TRAIN`. D'« assez loin » à « déjà dedans » en une image, et un train
@@ -2728,7 +2728,7 @@ export function createVehicules({ scene, player }) {
     for (let s = PAS_TRAIN[0]; s < fin + PAS_RAME; s += PAS_RAME) pas.push(Math.min(s, fin));
     return pas;
   };
-  // `?rame=fixe` rejoue l'ancien regard (3,5 blocs), pour mesurer (v447)
+  // `?rame=fixe` rejoue l'ancien regard (3,5 blocs), pour mesurer (v451)
   let regardRameFixe = typeof location !== 'undefined' && /[?&]rame=fixe\b/.test(location.search);
   // Deux rectangles se touchent-ils ? Séparation d'axes : les quatre arêtes de
   // chacun servent d'axe ; s'il en est un où les projections ne se recouvrent
@@ -2901,7 +2901,7 @@ export function createVehicules({ scene, player }) {
     // quinze kilomètres à l'heure ; à cinquante, une voiture a besoin de vingt-
     // cinq blocs pour s'arrêter en douceur. On regarde donc jusqu'à sa distance
     // de freinage, plus une demi-seconde de réaction.
-    // ET LA VOITURE ROULE EN TEMPS RÉEL (v447) : ce qu'elle parcourt dans
+    // ET LA VOITURE ROULE EN TEMPS RÉEL (v451) : ce qu'elle parcourt dans
     // CETTE image (`dt`, la même durée que `update` lui donnera) au-delà d'un
     // tiers de seconde s'ajoute au regard, hors plafond — à une image d'une
     // seconde et demie, une voiture à cinquante parcourt vingt blocs avant la
@@ -3054,7 +3054,7 @@ export function createVehicules({ scene, player }) {
           // `monte.js` seuls, zéro sur la v363. Marge : une image à trois par
           // seconde, plus le demi-bloc d'avant le contact.
           // ET LA MARGE COUVRE L'IMAGE EN COURS, PAS SEULEMENT UNE IMAGE À TROIS
-          // PAR SECONDE (v447) : `update` va avancer la voiture de son allure
+          // PAR SECONDE (v451) : `update` va avancer la voiture de son allure
           // fois `dt` — au plus celle de sa grille — avant que la rue ne
           // regarde à nouveau. Une image plus longue que 0,35 s la faisait
           // passer d'« assez loin » à « déjà dedans », comme la rame. Sous
@@ -3486,7 +3486,7 @@ export function createVehicules({ scene, player }) {
     // et s'ils conduisent
     brancherAmis: (f) => { amis = f; },
     // l'ancien regard de la rame (3,5 blocs), pour mesurer et pour prouver
-    // que le témoin rougit sans le remède (v447)
+    // que le témoin rougit sans le remède (v451)
     regardRameFixe: (v) => { if (v !== undefined) regardRameFixe = !!v; return regardRameFixe; },
     // pour les sondes (v383) : ce que `cederLePassage` a vu à la dernière
     // image — qui gêne qui (`veut`), qui attend, qui vient de forcer (`repart`)
@@ -3589,7 +3589,7 @@ export function createVehicules({ scene, player }) {
       distance: Math.round(c.distance),
       attente: Math.round((c.attente || 0) * 10) / 10,
       bloque: !!c.bloque,                    // un train arrêté devant l'enfant (v304)
-      regard: c.rail ? Math.round((c.regard || 0) * 10) / 10 : null,   // jusqu'où la motrice regarde (v447)
+      regard: c.rail ? Math.round((c.regard || 0) * 10) / 10 : null,   // jusqu'où la motrice regarde (v451)
       // Une place encore VIDE (v235) n'est ni visible ni peinte : depuis que
       // les voitures naissent à la demande, `elements` porte des trous.
       visibles: c.elements.filter((m) => m && m.visible).length,

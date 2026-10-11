@@ -673,7 +673,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         }
         return true;
       };
-      // LES IMAGES LENTES SE PROVOQUENT, ELLES NE S'ATTENDENT PAS (v447). La
+      // LES IMAGES LENTES SE PROVOQUENT, ELLES NE S'ATTENDENT PAS (v451). La
       // rame roule en temps RÉEL (v305) : la panne n'existe que quand une
       // image dure plus que ce que son regard couvre. Au repos, l'ancien code
       // passait 7 poses sur 7 et le témoin tirait à pile ou face sous la

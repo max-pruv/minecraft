@@ -229,7 +229,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         return true;
       };
       // LENT=ms : chaque image brûle autant de fil principal, pour PROVOQUER
-      // les images lentes de la tablette au lieu d'attendre la charge (v447)
+      // les images lentes de la tablette au lieu d'attendre la charge (v451)
       const lent = Number(window.__lentMs || 0);
       if (lent > 0 && !window.__frein) {
         window.__frein = true;
