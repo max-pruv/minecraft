@@ -1022,6 +1022,9 @@
      après ce témoin (vol laissé en cours ? file de maillage à `rr` 12 ?) — la
      sonde à écrire relève `__game.player.flying`, la file et la position de
      `tab` à cet instant, puis on ramène `tab` au sol avant `souffler`.
+  Et le pic du choc ratait le coup deux passages sur cinq (0,06 contre 0,07
+  au calme, secousse vue) : une seule lecture 0,45 s après pour une fenêtre de
+  0,74 s. La mesure lit à chaque image pendant 1,5 s : 1,02 · 1,10 · 1,20.
   La v429 se prouve donc par la sonde (`sonde-sensations.cjs`, même mesure
   que le témoin), des deux côtés : pente 1,182 contre 0, atterrissage 0,74 à
   0,95 contre 0,057.

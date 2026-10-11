@@ -167,9 +167,17 @@ async function mesurerSensations() {
     const piqueAvant = Math.max(pic(), (await tenir(0.8), pic()));
     son = { bandeAvant, bandeDerive, piqueAvant };
     son.rapportCrisse = +(bandeDerive / Math.max(1e-12, bandeAvant)).toFixed(2);
+    // ON LIT À CHAQUE IMAGE PENDANT 1,5 s, ET L'ON GARDE LE PLUS GRAND (v429) :
+    // une seule lecture 0,45 s après le coup ratait le coup quand une image
+    // traînait — la fenêtre ne couvre que 0,74 s — et rendait 0,06 contre
+    // 0,07 au calme deux passages sur cinq, secousse pourtant vue.
+    const picMax = async (s) => {
+      let m = 0; const t0 = performance.now();
+      while (performance.now() - t0 < s * 1000) { m = Math.max(m, pic()); await image(); }
+      return m;
+    };
     P.choc = { force: 0.8, t: performance.now() };
-    await tenir(0.45);
-    son.piqueChoc = +pic().toFixed(4);
+    son.piqueChoc = +(await picMax(1.5)).toFixed(4);
     son.piqueAvant = +son.piqueAvant.toFixed(4);
     // ET L'ATTERRISSAGE S'ENTEND (v429) : `player.atterrissage` est un
     // événement daté que la physique pose au retour au sol (v408). On attend
@@ -178,8 +186,7 @@ async function mesurerSensations() {
     await tenir(1.6);
     son.piqueAvantSol = +Math.max(pic(), (await tenir(0.8), pic())).toFixed(4);
     P.atterrissage = { force: 1, t: performance.now(), air: 0.6, hauteur: 2 };
-    await tenir(0.45);
-    son.piqueSol = +pic().toFixed(4);
+    son.piqueSol = +(await picMax(1.5)).toFixed(4);
     try { sortie.disconnect(long); } catch { /* déjà */ }
     son.bandeAvant = +bandeAvant.toExponential(2); son.bandeDerive = +bandeDerive.toExponential(2);
     try { sortie.disconnect(an); } catch { /* déjà */ }
