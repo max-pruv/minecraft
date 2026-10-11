@@ -800,13 +800,13 @@ kaki, des UNIS — en motif « Briques », la couche HD (registre `londres`) y
 verrait de la brique et la patinerait en rouge.
 
 Et **une baie de ville engendrée est une fenêtre par étage (v451)** : la
-grammaire à travées posait deux  empilés, donc deux fenêtres dessinées.
-Elle pose les bandes de Paris () sous le drapeau
- de  seule (les mondes figés gardent l'ancienne baie,
-passé en 4e argument de ). Un changement de bloc de
-façade se mesure trois fois avant de livrer : le poids des morceaux HD (Rome
-0,59 → 0,52 Mo), l'empreinte des 490 morceaux (désarmée = la constante d'avant),
-et ce que la couche lit ( prennent le registre).
+grammaire à travées posait deux `ETAGE` empilés, donc deux fenêtres dessinées.
+Elle pose les bandes de Paris (`ETAGE_BAS/MI/HAUT`) sous le drapeau
+`baiesEnBandes` de `CONF_NEUF` seule (les mondes figés gardent l'ancienne baie ;
+4e argument de `batirColonneVillesMonde`). Un changement de bloc de façade se
+mesure trois fois avant de livrer : le poids des morceaux HD (Rome 0,59 → 0,52
+Mo), l'empreinte des 490 morceaux (désarmée = la constante d'avant), et ce que
+la couche lit (`etageBas/Mi/Haut` prennent le registre).
 
 ## Les pistes à leur vraie longueur (v448) — un ouvrage qui sort du disque est un repère, pas un relief
 
