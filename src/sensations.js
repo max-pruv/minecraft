@@ -32,6 +32,7 @@
 
 import * as THREE from 'three';
 import { voitureSons, bruitDeChoc, moteurRegime } from './sons.js';
+import { marquerRoues, glissade } from './traces.js';
 
 const PARAMS = new URLSearchParams(typeof location !== 'undefined' ? location.search : '');
 
@@ -456,6 +457,11 @@ export function sensationsAuVolant(a, player, dt) {
   }
   vieDeVoiture(a, player, dt, m);
   poursuiteVoiture(a, player, dt, m);
+  // LES TRACES DE PNEUS (v434) : tant que la voiture glisse — dérive au-delà
+  // du seuil du crissement, ou frein à main tiré en roulant —, chaque roue
+  // arrière laisse une bande sombre sur ce qui la porte. En l'air, rien.
+  const glisse = player.enLair ? 0 : glissade(player.derive, player.freinMainTire, m.v);
+  marquerRoues(a.mesh, a.sens.traces || (a.sens.traces = {}), glisse, player.pos.y);
 
   // LE SON SUIT CE QUE LA VOITURE FAIT : le rapport et le régime viennent de
   // la vitesse, la CHARGE de l'accélération (un moteur qui tire gronde plus

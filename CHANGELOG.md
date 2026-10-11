@@ -20,6 +20,35 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v434 — Le dérapage laisse des traces
+
+**Pourquoi.** Depuis le frein à main (v409), la voiture dérape comme dans GTA :
+la caisse part de travers, les pneus crissent. Mais rien ne restait sur la
+route : on pouvait faire un tête-à-queue sur une piste parfaitement propre.
+Ce qui dit qu'une voiture a glissé, dans un jeu de conduite, c'est la trace
+noire qu'elle laisse derrière elle.
+
+**Ce que ça change.** Tant que la voiture glisse — en dérive, ou frein à main
+tiré en roulant —, chaque roue arrière laisse une bande sombre sur ce qui la
+porte : la route, la pierre, l'herbe en pente, le tablier d'un pont. En ligne
+droite, rien. Les traces s'effacent d'elles-mêmes au bout d'une vingtaine de
+secondes, les plus vieilles d'abord, et il n'y en a jamais plus de 480 :
+toutes ensemble ne coûtent qu'un seul appel de dessin, et elles ne compilent
+rien en jeu (préparées pendant l'accueil).
+
+**Ce qui le prouve.** Quatre témoins neufs dans `monte.js`, rouges sur
+l'ancien code (aucune trace, aucun maillage) : pas de trace en ligne droite,
+28 en dérive et 48 au frein à main ; toutes posées à 121,01 sur une piste
+dont le dessus est à 121, dans un seul maillage ; aucune clé de programme
+neuve (une si l'on désarme la chauffe — vérifié) ; la borne tenue (480 sur
+480), l'effacement à mi-fondu puis plus rien. Le coût se mesure en rendu
+logiciel (`sonde-traces-cout.cjs`, ordre alterné) : 480 traces devant la
+caméra coûtent un cinquième de la cadence du banc ; comme les ombres, elles
+ne s'y dessinent pas. Captures de jour, de nuit et sur l'herbe
+(`sonde-captures-traces.cjs`).
+
+---
+
 ## v433 — Les terrasses de café reviennent à Paris
 
 **Pourquoi.** Depuis la v301, un rez-de-chaussée de Paris fait trois blocs —

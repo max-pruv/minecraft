@@ -972,6 +972,22 @@ borné à `PENTE_MAX`. `player.atterrissage` est un ÉVÉNEMENT daté, comme
 qu'on trouve en montant. Le témoin fige le champ par une propriété qui ignore
 ce qu'on lui écrit (v358), et lit la pente dans la matrice monde.
 
+**Les traces de pneus (v434).** `src/traces.js`, appelé par `sensations.js`
+(pose) et `fun.js` (effacement, chaque image). Quatre règles.
+**UN APPEL POUR TOUTES** : un `InstancedMesh` borné (`MAX_TRACES`), l'opacité
+par instance (le greffon `aAlpha` des flammes, clé `traces-alpha`), la plus
+vieille cède sa place, un essaim vide est caché. **AUCUN PROGRAMME EN JEU** :
+`chaufferTraces` compile l'essaim exact à l'accueil ; le témoin lit les clés
+(une neuve si la chauffe est désarmée, vérifié). **LA TRACE SE POSE SUR CE
+QUI PORTE LA ROUE** (`coteSousRoue`) : tablier, puis surface continue, puis
+dessus du bloc, un centième au-dessus, et rien si l'écart à la voiture
+dépasse un bloc. **COUPÉ DU DESSIN EN RENDU LOGICIEL** (mesuré : un
+cinquième de la cadence du banc, `sonde-traces-cout.cjs`) mais POSÉ quand
+même : un témoin qui juge ce que la tablette voit force
+`reglageTraces.dessin = true` (ou `?traces=1`). Et une piste de témoin qui
+dérape se pose LARGE : la dérive pousse la voiture de côté, et sur treize
+blocs elle tombait de la plate-forme (`enLair`, zéro trace au frein à main).
+
 ## Un contour dans l'autre sens, et les rues du Strip (v418) — ce qui empêchait le contour n'était pas l'absence de rue
 
 Deux règles.
