@@ -635,7 +635,7 @@ export class AdminPanel {
         dernier.ips != null ? `${dernier.ips} i/s` : '', dernier.pire ? `pire image ${dernier.pire} ms` : '',
         dernier.morceaux != null ? `${dernier.morceaux} morceaux (${dernier.hd || 0} HD)` : '',
         dernier.tasMo ? `${dernier.tasMo} Mo de tas` : '',
-        // v412 : ce que la scène tient côté carte graphique, estimé en octets (journal.js)
+        // v419 : ce que la scène tient côté carte graphique, estimé en octets (journal.js)
         dernier.gpu ? `≈ ${Math.round(dernier.gpu.texMo + dernier.gpu.geoMo)} Mo carte graphique` : '', doc.duree != null ? `${Math.round(doc.duree)} s de session` : '',
         erreurs ? `${erreurs} erreur(s)` : '',
         suspendus && suspendus.d ? `${suspendus.d.n} bloc(s) suspendu(s) à ${(suspendus.d.villes || []).join(', ')}` : '',

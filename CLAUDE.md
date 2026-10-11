@@ -770,6 +770,100 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Un contour dans l'autre sens, et les rues du Strip (v418) — ce qui empêchait le contour n'était pas l'absence de rue
+
+Deux règles.
+
+- **AVANT DE CROIRE QU'UN CONTOUR N'EXISTE PAS, ON LIT SA MEILLEURE NOTE.** La
+  phase 4 échouait pour une vingtaine d'anneaux qui traversent la place
+  centrale (Tokyo, Dubaï, São Paulo…). Instrumentée, la recherche trouvait des
+  contours SANS faute, refusés parce qu'ils suivaient la voie d'un autre anneau
+  (44 à 108 blocs de partage). Le remède est géométrique : le même contour dans
+  l'AUTRE sens roule sur l'autre voie des mêmes rues, et deux convois qui se
+  croisent ne se suivent pas (v211, v387). Seulement pour un anneau qui n'a pas
+  déjà son contresens. Relâcher les bornes de la recherche (24 îlots, 120
+  essais) est un non-résultat mesuré : Rio ne change pas, le coût monte.
+- **UNE RUE DANS LE DÉSERT EST UNE MATIÈRE, PAS UN LOT.** La bande du Strip ne
+  tenait qu'une rue de la trame. `desert.rues` pave la CHAUSSÉE des rues de la
+  trame à moins de `rues` unités de la bande : asphalte nu, ni lot ni
+  trottoir, donc aucun immeuble qui pourrait pousser autour d'une construction
+  d'enfant, et le relief ne lit pas `desert`. Un témoin exige zéro colonne
+  autre que sable et asphalte hors de la bande.
+
+## Le contresens ne renonce plus devant une voie mouillée (v416) — un refus se juge sur la règle finale, pas sur une mesure d'avant
+
+Une règle. Le contresens (phase 2 ter) était écarté dès que `traverseesDe`
+refusait sa voie extérieure (plus de `PONT_MAX` d'eau), AVANT qu'on regarde si
+les tabliers déjà publiés la couvraient, ou s'il pouvait contourner. Or la
+règle qui décide est `exigerChaussee` (l'eau n'est permise que sous un tablier
+publié) : un refus pris plus tôt par une mesure plus stricte écartait San Diego
+sans raison. Mesuré sur les 262 villes : seule San Diego change (1 → 2
+circuits), aucun tablier ni sol ne bouge. San José et Guayaquil restent à un
+circuit, et c'est la GÉOMÉTRIE : leur place occupe le nœud central, le grand
+anneau est leur seul cycle, et sa voie extérieure passe sur la mer (une
+quarantaine de blocs le long de la côte) ou sur la plage — un remède de SOL
+(`TASKS.md`). Une sonde de contour lit le bord dans SON sens de marche
+(intérieur à gauche) : interrogé à l'envers, `etatDeSegment` décale la voie du
+mauvais côté et ment.
+
+## Les tabliers s'allongent sous la voie (v414) — un ouvrage qu'on ne peut pas retirer s'agrandit, et la preuve lit les deux versions
+
+La dette de la v404 : 159 pas de voie sur l'eau hors de tout tablier. Quatre
+règles.
+
+- **LE REJET ET LA PUBLICATION SONT DEUX MESURES.** `traverseesDe` décide
+  QUELS anneaux une ville reçoit sur l'AXE, au bloc, exactement comme avant :
+  c'est ce qui garde la sélection identique (circuits, couverture, voiture en
+  vue au bit près, sonde sur les 262 villes). Le tablier PUBLIÉ, lui, est
+  l'union des suites mouillées de l'axe et de la VOIE que l'anneau roule (côté
+  centre ; l'autre voie est au contresens, qui mesure la sienne), au
+  demi-bloc. Les bordures et la voie d'en face ajoutaient des milliers de
+  colonnes le long des rivages où rien ne roule : mesuré, retiré.
+- **UNE TOLÉRANCE SE JUGE SUR LA COLONNE, ENCORE (v404).** La publication lit
+  l'eau sur la colonne que le monde écrit (son coin, `Math.floor`), pas sur le
+  point de la ligne : sur une trame tournée le coin est jusqu'à un bloc et demi
+  du point, et le chenal de Stockholm passait entre les deux.
+- **UN TABLIER NE SE RETIRE PAS, ET SA MATIÈRE NON PLUS.** Les allongements
+  portent `ext` et viennent APRÈS les tabliers d'avant dans la liste
+  (`pontDeVille` rend le premier qui couvre) : rangés autrement, 733 colonnes
+  de parapet passaient en chaussée — un ordre de liste est une règle.
+  L'allongement ne porte que sur l'eau, sur toute sa longueur : `coteRoulable`
+  lit le tablier sans regarder l'eau. Un anneau que les quarante points voient
+  au sec publie aussi le tablier du ruisseau qu'il coupe (la Kamo de Kyoto).
+- **LA PREUVE LIT LES DEUX VERSIONS DANS LE MÊME CODE.**
+  `pontVillesMonde(x, z, false)` rend les tabliers d'avant seuls : le témoin
+  compte les colonnes d'eau perdues ou changées (zéro) et gagnées (1 485, toutes
+  sur l'eau). Les témoins qui marchent l'AXE d'un pont ne lisent que les ponts :
+  un allongement longe la rive, et sa preuve est la voie. L'empreinte des 490
+  morceaux se relève (Rome) et se prouve désarmée (`ext` retirés → la
+  constante d'`origin/main`).
+## La flotte partage ses images (v413) — un plantage sans erreur se lit dans ce qui MONTE
+
+Max : « le jeu plante de temps en temps ». Onze plantages de l'iPhone en
+quarante minutes, en palier bas, HD éteinte, zéro erreur, cadence normale.
+Trois règles.
+
+- **UN PLANTAGE SANS ERREUR NI GEL SE CHERCHE DANS LA GRANDEUR QUI MONTE
+  PENDANT LA PARTIE.** Safari ne donne pas le tas (`tasMo` nul), mais le journal
+  de bord compte les géométries et les textures : la seconde grimpait d'un bout
+  à l'autre de chaque partie (409 → 702). La requête qui l'a montré :
+  `jsonb_array_elements(doc->'releves')` par session, un relevé sur quatre.
+- **UN CHARGEUR NE CONNAÎT QU'UN FICHIER : CE QUI SE RÉPÈTE ENTRE FICHIERS SE
+  RECONNAÎT À SES OCTETS.** Cinquante modèles, 225 images, CINQ distinctes ;
+  chaque modèle décodait sa copie (734 Mo pour la flotte entière). Le greffon
+  `partageDesTextures` (vehicules.js) hache le `bufferView` de l'image et rend
+  la texture déjà décodée. Avant de partager, on vérifie dans les fichiers
+  qu'une image n'y joue qu'un rôle : `assignTexture` lui pose son espace de
+  couleur, et une image teinte ici et normale là se contredirait.
+- **UNE RESSOURCE PARTAGÉE SE MARQUE AU MOMENT OÙ ELLE DEVIENT PARTAGÉE.**
+  `repeindre` clone la laque et la marque non partagée ; `liberer` jetait donc
+  la `map` du clone, c'est-à-dire la texture du prototype, à chaque voiture
+  repeinte qui quittait la rue. Les textures du cache portent `partagee`.
+
+Ce qui reste, déclaré dans `TASKS.md` : une relance de mise à jour semble
+compter comme un plantage dans le journal (une session v408 à zéro relevé cinq
+secondes après la fermeture de la v406), et nourrirait le disjoncteur de sûreté.
+
 ## Les anneaux contournent (v404) — un anneau est le bord d'un ensemble d'îlots
 
 La dette de la v387 : 147 anneaux de villes engendrées sur 809 sortaient de la
@@ -1525,6 +1619,28 @@ celle de la High Roller ne tiendrait pas, et c'est déclaré.
 Et une empreinte d'identité qui change se PROUVE : celle des 490 morceaux
 (v352) couvre Marrakech et Tokyo ; la branche, bâtisseurs neufs désarmés, rend
 l'ancienne au bit près — c'est ce qui a permis de la remplacer.
+
+## Le témoin de chargement vole au-dessus d'une ville (v417) — un réglage que le banc coupe se force dans le témoin qui le juge
+
+Une règle.
+
+- **UN TÉMOIN QUI JUGE CE QUE L'IPAD VIT DEMANDE LE RÉGLAGE DE L'IPAD.**
+  L'ordre en cône et la recharge à l'arrivée sont coupés en rendu logiciel
+  (v346, v360) : un témoin de chargement qui ne les force pas mesure l'ancien
+  ordre, que la tablette ne joue plus. Le jumeau urbain de « on ne rattrape
+  pas le bout du monde » (`monte.js`) ouvre sa page avec
+  `file=cone&recharge=arrivee` et lit `rechargeRegle.active` dans son message.
+  Mesuré : avec ce réglage, Paris et Londres tiennent deux fois la barre
+  (`max / 2`) à 95 et 120 b/s ; avec celui du banc, Paris tombe à 45 pour 60.
+  Le témoin du désert reste : il garde la campagne, où un morceau coûte trois
+  fois moins.
+
+Et **le gel de téléportation se mesurait sur un banc qui n'avait rien bâti.**
+`sonde-arrivee-journal.cjs` rejoue l'arrivée à Paris avec un journal fabriqué
+de 80 000 blocs : sur l'ancien code, 90 % du disque jamais atteints en vingt
+secondes et 3,3 s de fil principal à engendrer ; depuis la v403, comme sans
+journal. Une sonde de performance qui joue sans les données de l'enfant ne
+mesure pas l'enfant le plus touché.
 
 ## Le journal de l'enfant se range par morceau (v403) — un index vit DANS la structure qu'il indexe
 
@@ -2422,6 +2538,16 @@ Les deux rouges réseau récurrents du palier C. Trois règles.
   une voix restée au quart (`GAIN_APPEL`) et le régime qui varie ; vérifié
   rouge sur une copie où la voix reste au quart.
 
+## L'invité de New York (v412) — deux pages du banc se partagent un processeur, deux tablettes jamais
+
+Une règle. Un témoin à deux tablettes dont l'une rend une scène lourde
+(Manhattan, 0,4 image par seconde en logiciel) ouvre la page de l'AUTRE
+d'abord : ouverte pendant ce rendu, elle met 44 s à plus de 90 s à démarrer,
+sans erreur (13–18 s sinon). Le « TimeoutError de la ligne 674 », déclaré
+intermittence pendant trente versions, rendait 2 sur 2 rejoué seul : une
+« intermittence sous la charge » se REJOUE SEULE avant d'être crue, et si
+elle tombe à chaque fois, c'est une cause, pas un tirage.
+
 ## Le passager sans courtier (v410) — on se reconnaît à TOUTES ses identités
 
 Une règle. Une tablette a deux identités possibles : `peer.id` (le courtier)
@@ -3127,6 +3253,38 @@ Une règle.
   la terre, l'herbe, le sable et la pierre naturelle. Manhattan a son propre sol
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
+
+## La M40 (v415) — une ville bâtie à la main s'entre par une rue déclarée, et une vieille boucle se cherche
+
+Londres–Birmingham, le corridor « en attente » depuis la v323. Trois règles.
+
+- **UNE PORTE DE VILLE BÂTIE À LA MAIN RESTE À `BORD_VILLE`, ET L'ENTRÉE SE
+  DÉCLARE.** Les rues nommées de Londres s'arrêtent à quatre-vingts blocs du
+  centre, la porte est à quatre-vingt-douze : aucune rue existante n'y mène
+  (mesuré angle par angle). Pousser la porte plus loin (`bord` plus grand)
+  aurait mis l'axe DANS la ville (le témoin « elle ne traverse ni ville » lit
+  `cityAt` à `r − BORD_VILLE − 2`, et Londres est bâtie à la main — une ville
+  engendrée comme Tokyo n'y entre pas). `ENTREES_LONDRES` (londres.js), comme
+  Paris et Lille : une collectrice de la porte à un SOMMET d'une artère
+  (Pentonville Road), dans le sol de la ville mais hors des circuits.
+- **UNE BOUCLE DE CONSTRUCTION QUI LISTE SES EXCLUSIONS OUBLIE LA DERNIÈRE
+  VILLE.** La trame générique de `world.js` (« City buildings: one lot per grid
+  cell ») exclut six villes bâties à la main, pas Londres : hors de la place que
+  « le mobilier de Londres » réserve (77 blocs autour du centre), elle pose
+  encore ses maisons PAR-DESSUS la ville. L'une barrait l'entrée de la M40 (un
+  bloc à hauteur de carrosserie à dix blocs de la porte, `dans` du témoin), deux
+  colonnes de la route aussi. Ses lots cèdent désormais à la route et à
+  l'entrée ; le reste de l'anneau est une dette déclarée (`TASKS.md`), parce que
+  le retirer touche des toits où un enfant a pu bâtir.
+- **UN COL SE TROUVE PAR LE RELEVÉ, PAS PAR L'AXE.** La carte ASCII du relief
+  (`carte.mjs` du scratchpad) a montré une crête nord-sud de 46 à 55 blocs
+  barrant tout l'espace, Heathrow fermant le sud, et un seul col à 41-46 vers
+  la latitude de Birmingham. Le couloir le plus bas avec cap (v355) le trouve de
+  lui-même dès qu'on lui donne la sortie nord de Londres ; donné par l'ouest, il
+  rend « déblai ». La même sonde sert les routes suivantes : obstacles dans la
+  grille (aérodromes à r + 12 + portée de talus, villes, repères, rails,
+  autres routes), lissage par moyenne, `profilDe` sur chaque candidat, puis
+  `verif.mjs` qui relit le registre réel avec les grandeurs des témoins.
 
 ## Le Tōmei (v381) — une sonde de couloir lisse par moyenne, et la porte se juge avec son raccord
 
@@ -4127,7 +4285,7 @@ répondu en une requête : iPhone, en vol à l'ouest de Paris, 1 089 morceaux
   et c'est le nombre de sommets, pas le rayon ni le budget, qui décidera un
   jour de ce qu'un appareil peut montrer.
 
-## Le journal de bord ne crie plus au plantage pour rien (v412) — une session par page, et la mémoire en octets
+## Le journal de bord ne crie plus au plantage pour rien (v419) — une session par page, et la mémoire en octets
 
 « Le jeu plante de temps en temps. » Onze « plantages » en quarante minutes
 sur l'iPhone, et deux de suite rangent le palier bas pour de bon (v296). Quatre
@@ -4159,7 +4317,7 @@ règles.
   à l'ouverture, SANS remettre le compteur à zéro (`garderCompteur`) : elle
   n'a rien prouvé.
 - **UN COMPTE N'EST PAS UN POIDS.** Safari ne donne pas le tas ; c'est le
-  compte de textures qui a trahi la flotte (734 Mo, #418 de la session des
+  compte de textures qui a trahi la flotte (734 Mo, v413 de la session des
   textures). `estimerMemoire` (journal.js, pur, lu par forme) : largeur ×
   hauteur × 4 × 4/3 par SOURCE distincte (sans le tiers quand la texture ne
   fait pas de mipmaps — une `DataTexture`, et mon premier témoin l'oubliait),

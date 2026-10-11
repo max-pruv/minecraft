@@ -263,7 +263,7 @@ async function panneau(p) {
           && !!(rn && rn.nom === 'moyen' && rn.source === 'choix') && !!(ra && ra.source === 'sûreté')
           && !!(sa && !('sousChoix' in sa)),
         JSON.stringify({ etendue: bh.etendue, sh, rh: rh && { nom: rh.nom, source: rh.source, sousChoix: rh.sousChoix }, rn: rn && rn.source, ra: ra && ra.source, sa }));
-      // DEUX PAGES SUR LE MÊME STOCKAGE NE SE DÉCLARENT PAS PLANTÉES (v412).
+      // DEUX PAGES SUR LE MÊME STOCKAGE NE SE DÉCLARENT PAS PLANTÉES (v419).
       // L'iPhone de la famille a déclaré « plantée » une session qui a envoyé
       // sa fermeture propre trois minutes plus tard (lignes 82 et 83 de
       // `journal_appareil`) : une seconde page avait lu le drapeau de la
@@ -349,7 +349,7 @@ async function panneau(p) {
     verifier('au deuxième plantage de suite, le jeu passe en palier bas par sûreté — sans le ranger sous une adresse forcée',
       etat.palier === 'bas' && etat.source === 'sûreté' && etat.hd === 0 && etat.plantages === 2 && etat.range === null,
       JSON.stringify(etat));
-    // CE QUE LA SCÈNE TIENT CÔTÉ CARTE GRAPHIQUE SE COMPTE EN OCTETS (v412).
+    // CE QUE LA SCÈNE TIENT CÔTÉ CARTE GRAPHIQUE SE COMPTE EN OCTETS (v419).
     // Safari ne donne pas le tas ; un compte de textures n'est pas un poids.
     // L'estimation doit SUIVRE un objet : une texture de 1 024² sans mipmaps, une de
     // 512² avec, et une géométrie de six mégaoctets ajoutées la font monter d'autant, retirées
@@ -394,7 +394,7 @@ async function panneau(p) {
     verifier('une session qui dit au revoir remonte son journal, retire son drapeau et remet le compteur à zéro',
       !!fermeture && adieu.drapeau === null && adieu.plantages === '0',
       `${fermeture ? `fermeture en ${Date.now() - tF} ms (${fermeture.name})` : 'aucune ligne « fermeture » en 15 s'} · ${JSON.stringify(adieu)}`);
-    // UNE PAGE NÉE CACHÉE N'EST PAS UNE SESSION QUE L'ENFANT A VUE (v412).
+    // UNE PAGE NÉE CACHÉE N'EST PAS UNE SESSION QUE L'ENFANT A VUE (v419).
     // iOS peut ouvrir l'application sans la montrer, puis la tuer : les
     // sessions VIDES de `journal_appareil`. Elle se ferme sans remettre le
     // compteur à zéro ; sur l'ancien code elle reste ouverte (rouge).

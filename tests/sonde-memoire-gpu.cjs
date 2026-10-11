@@ -1,4 +1,4 @@
-// CE QUE COÛTE L'ESTIMATION DE LA MÉMOIRE GRAPHIQUE (v412) — à Paris, rr 12,
+// CE QUE COÛTE L'ESTIMATION DE LA MÉMOIRE GRAPHIQUE (v419) — à Paris, rr 12,
 // la scène la plus lourde du banc. Dix parcours, médiane et pire, et ce
 // qu'elle rend. Usage : node sonde-memoire-gpu.cjs
 const { Banc } = require('./banc.js');

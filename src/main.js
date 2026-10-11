@@ -51,6 +51,7 @@ import { segmentsDeTrain, traceSegment } from './trains.js';
 import { segmentsDeRoute, traceRoute, entreesDe } from './routes.js';
 import { ENTREES_PARIS } from './paris.js';
 import { ENTREES_LILLE } from './lille.js';
+import { ENTREES_LONDRES } from './londres.js';
 import { Player, raycastBlocks } from './player.js';
 import { actualiserPresence } from './presence.js';
 import { animerHumain, chargerHumains, humainsCharges, humainsPrets } from './humains.js';
@@ -96,13 +97,13 @@ const journal = new Journal({
   },
 });
 const BILAN_JOURNAL = journal.ouvrir();
-// UNE PAGE NÉE CACHÉE N'EST PAS UNE SESSION QUE L'ENFANT A VUE (v412). iOS peut
+// UNE PAGE NÉE CACHÉE N'EST PAS UNE SESSION QUE L'ENFANT A VUE (v419). iOS peut
 // ouvrir l'application sans la montrer, puis la tuer : sans ceci, elle laissait
 // sa ligne ouverte et le lancement suivant comptait un plantage — les sessions
 // VIDES (aucun relevé, aucun événement) de `journal_appareil`. Elle se ferme
 // sans remettre le compteur à zéro, et `rouvrir` la relance au premier plan.
 if (document.visibilityState === 'hidden') journal.fermer('arriere-plan', { garderCompteur: true });
-// Le battement : « cette page vit encore » (v412, journal.js).
+// Le battement : « cette page vit encore » (v419, journal.js).
 setInterval(() => journal.battre(), BATTEMENT_MS);
 window.addEventListener('error', (e) => journal.erreur(e.message || (e.error && e.error.message) || 'erreur',
   `${String(e.filename || '').split('/').pop()}:${e.lineno || 0}`));
@@ -2002,7 +2003,7 @@ function updateChunks() {
   // l'E429 à l'est. `ENTREES_*` suit l'ordre de `entreesDe`, et l'on prend
   // celle de CETTE route — le `[0]` d'avant aurait fait entrer les voitures de
   // Bruxelles par la porte de Paris.
-  const ENTREES = { paris: ENTREES_PARIS, lille: ENTREES_LILLE };
+  const ENTREES = { paris: ENTREES_PARIS, lille: ENTREES_LILLE, londres: ENTREES_LONDRES };
   // Une ville ENGENDRÉE n'a pas d'avenue d'entrée dessinée : le corridor y
   // arrive dans l'axe de sa trame (le point de passage est choisi pour cela),
   // donc sur la rue qui mène au centre. Les voitures la suivent jusqu'à douze
@@ -5735,7 +5736,7 @@ if (BILAN_JOURNAL.rapport) {
   journal.noter('plantage-precedent', { plantages: BILAN_JOURNAL.plantages, surete: !!SURETE });
   setTimeout(() => BILAN_JOURNAL.rapports.forEach((r) => envoyerJournal(r)), 2500);
 }
-// UNE SESSION AU BATTEMENT RÉCENT EST PEUT-ÊTRE UNE PAGE VIVANTE (v412) : on
+// UNE SESSION AU BATTEMENT RÉCENT EST PEUT-ÊTRE UNE PAGE VIVANTE (v419) : on
 // regarde si son battement avance avant de la dire plantée — deux fois, parce
 // qu'une page qui charge peut rater un battement.
 if (BILAN_JOURNAL.douteuses.length) {
@@ -5746,7 +5747,7 @@ if (BILAN_JOURNAL.douteuses.length) {
     for (const r of rapports) { journal.noter('plantage-precedent', { plantages: journal.plantages(), confirme: true }); envoyerJournal(r); }
   }, 7000);
 }
-// LA RELANCE VOULUE PAR LE JEU DIT AU REVOIR AVANT DE RECHARGER (v412) :
+// LA RELANCE VOULUE PAR LE JEU DIT AU REVOIR AVANT DE RECHARGER (v419) :
 // index.html l'appelle dans `reloadOnce` et `forcerMaj`. `pagehide` le fait
 // aussi ; on ne parie pas la sûreté de la famille sur un seul événement.
 window.__journalAuRevoir = (fin = 'mise-a-jour') => { try { envoyerJournal(journal.fermer(fin), true); } catch { /* jamais bloquant */ } };
@@ -7780,7 +7781,7 @@ function motDuPalier() {
 // faut pour relire une panne — où l'enfant est, ce que la page rend, ce
 // qu'elle tient. Pas de parcours de scène : ce qui coûte ne se relève pas.
 let pireImageJournal = 0;
-// CE QUE LA SCÈNE TIENT CÔTÉ CARTE GRAPHIQUE, EN OCTETS (v412, journal.js) :
+// CE QUE LA SCÈNE TIENT CÔTÉ CARTE GRAPHIQUE, EN OCTETS (v419, journal.js) :
 // un parcours de la scène au plus toutes les cinq secondes — la cadence des
 // relevés — et son coût en millisecondes voyage avec lui (`ms`), pour qu'on le
 // relise sur la tablette au lieu de le supposer nul.

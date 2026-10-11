@@ -1,4 +1,4 @@
-// LES FAUX PLANTAGES DU JOURNAL DE BORD (v412) — ce qui sépare les cas.
+// LES FAUX PLANTAGES DU JOURNAL DE BORD (v419) — ce qui sépare les cas.
 //
 // L'iPhone de la famille a rapporté des sessions « plantage » VIDES (aucun
 // relevé, aucun événement) juste après une mise à jour, et une session

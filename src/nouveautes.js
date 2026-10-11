@@ -6,12 +6,68 @@
 
 export const NOUVEAUTES = [
   {
-    v: 412,
+    v: 419,
     titre: 'Moins de fausses alertes',
     puces: [
       'Deux fenêtres ouvertes ne se gênent plus',
       'Le jeu reste en mode normal',
       'Les parents voient la mémoire utilisée',
+    ],
+  },
+  {
+    v: 418,
+    titre: 'Des rues autour du Strip',
+    puces: [
+      'Las Vegas roule sur de vraies rues',
+      'Plus de voiture dans les fontaines',
+    ],
+  },
+  {
+    v: 417,
+    titre: 'Le ciel des villes vérifié',
+    puces: [
+      'L\'avion ne dépasse pas la ville',
+      'Rien ne change pour toi',
+    ],
+  },
+  {
+    v: 416,
+    titre: 'San Diego dans les deux sens',
+    puces: [
+      'Un second circuit de voitures',
+      'Sur les ponts déjà là',
+    ],
+  },
+  {
+    v: 415,
+    titre: 'Londres rejoint Birmingham',
+    puces: [
+      'Une autoroute passe par le col',
+      'On entre dans Londres par King\'s Cross',
+    ],
+  },
+  {
+    v: 414,
+    titre: 'Des ponts sur les canaux',
+    puces: [
+      'Plus de voiture qui roule sur l’eau',
+      'Les ponts s’allongent au-dessus des rivières',
+      'Tes constructions ne bougent pas',
+    ],
+  },
+  {
+    v: 413,
+    titre: 'Le jeu ne plante plus',
+    puces: [
+      'Les voitures prennent moins de mémoire',
+      'On peut jouer longtemps sur iPhone',
+    ],
+  },
+  {
+    v: 412,
+    titre: 'New York à deux, vérifié',
+    puces: [
+      'Un ami te rejoint à New York',
     ],
   },
   {
