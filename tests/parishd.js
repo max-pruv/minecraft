@@ -429,6 +429,32 @@ function verifier(nom, ok, detail = '') {
       ici.n >= 20 && ici.fautes === 0 && avant.fautes > 0,
       `${ici.n} colonnes, ${ici.fautes} mal plantée(s) — règle d'avant : ${avant.n} colonnes, ${avant.fautes} mal plantée(s)`);
   }
+  {
+    // ── UN TOIT NE LISSE QU'UN IMMEUBLE AVEC LUI-MÊME (v446) ──────────────────
+    //
+    // Dette de la v289 : le champ de hauteurs lisse les colonnes d'un même
+    // immeuble (îlot, travée), et deux quartiers voisins se prêtent ces
+    // indices. On parcourt tout le disque de Paris : deux colonnes de lot
+    // voisines que le toit prend pour le même immeuble doivent avoir la même
+    // façade. Sur l'ancien code la clé n'est pas publiée : le témoin le dit.
+    const P = await import('../src/paris.js');
+    if (typeof HD.immeubleDeToit !== 'function') {
+      verifier('un toit ne lisse qu\'un immeuble avec lui-même, jamais par-dessus la limite de deux quartiers', false, 'immeubleDeToit absent');
+    } else {
+      let paires = 0, fautes = 0;
+      const lot = (x, z) => P.lotParisLibre(x, z) && P.solParis(x, z) === null && P.infoFacadeParis(x, z);
+      for (let x = P.PARIS.x - P.PARIS.r; x < P.PARIS.x + P.PARIS.r; x++) for (let z = P.PARIS.z - P.PARIS.r; z < P.PARIS.z + P.PARIS.r; z++) {
+        if (!lot(x, z)) continue;
+        for (const [dx, dz] of [[1, 0], [0, 1]]) {
+          if (!lot(x + dx, z + dz) || HD.immeubleDeToit(x, z) !== HD.immeubleDeToit(x + dx, z + dz)) continue;
+          paires++;
+          if (P.gabaritParis(x, z).facade !== P.gabaritParis(x + dx, z + dz).facade) fautes++;
+        }
+      }
+      verifier('un toit ne lisse qu\'un immeuble avec lui-même, jamais par-dessus la limite de deux quartiers',
+        paires > 1000 && fautes === 0, `${paires} paires de colonnes d'un même toit, ${fautes} aux façades de hauteurs différentes`);
+    }
+  }
 
   {
     // UN ARBRE HD PAR TRONC. On cherche un morceau de Paris qui plante des

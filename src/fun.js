@@ -108,7 +108,16 @@ export function initFun(ctx) {
        l'extrême droite, au-dessus des instruments de bord quand il y en a. */
     body.en-vehicule .fun-target { left:auto; right:20px; transform:none;
       bottom:calc(96px + var(--safe-bottom)); }
-    body.en-avion .fun-target { bottom:calc(314px + var(--safe-bottom)); }
+    /* En avion, « Descendre » est le troisième bouton rond de la colonne de
+       bord, au-dessus de ✈️ et de 🛞 — jamais au-dessus de la manette
+       (aviation, voir index.html). */
+    body.en-avion .fun-target { right:84px; bottom:calc(260px + var(--safe-bottom)); }
+    body.en-avion .fun-target #feed-btn, body.en-avion .fun-target #board-btn { display:none !important; }
+    body.en-avion .fun-target #ride-btn { width:56px; height:56px; padding:0; border-radius:50%;
+      display:flex !important; flex-direction:column; align-items:center; justify-content:center;
+      background:rgba(0,0,0,.35); border:2px solid rgba(255,255,255,.5); }
+    #ride-btn .ic { font-size:20px; line-height:1; }
+    #ride-btn .lb { font-size:7.5px; letter-spacing:.3px; margin-top:2px; text-transform:uppercase; }
     .fun-target button { padding:9px 14px; border-radius:12px; border:none; font-size:15px;
       background:rgba(20,26,40,.85); color:#fff; border:1px solid rgba(255,255,255,.25); }
     .emote-row { position:static; display:none; flex-direction:column; gap:8px; }
@@ -178,9 +187,11 @@ export function initFun(ctx) {
     <div id="fun-tab-body"></div>
   </div>`);
 
+  // Le défi de Cornichon se range dans la file centrale (aviation) : posé en
+  // bas au milieu, il couvrait la colonne des commandes de bord.
   const mathPop = el(`<div id="math-pop">
     <div id="math-q"></div><div class="opts" id="math-opts"></div>
-  </div>`);
+  </div>`, document.getElementById('file-centre'));
   const flash = el(`<div id="photo-flash"></div>`);
 
   panel.querySelector('.fun-close').addEventListener('click', () => { panel.style.display = 'none'; });
@@ -1270,10 +1281,16 @@ export function initFun(ctx) {
     // le bouton qui dit à l'enfant ce qui va se passer, et piloter n'est pas
     // se faire porter. La règle vit dans la fiche (`pilote`), comme le reste.
     const verbe = (d) => (d && d.pilote ? 'Piloter' : 'Monter');
-    rideB.textContent = passager ? '⬇️ Descendre'
+    // Aux commandes d'un avion, le bouton est rond dans la colonne de bord :
+    // l'icône et son mot, comme ✈️ et 🛞. Le texte reste « Descendre ».
+    const auxCommandes = riding && riding.def && riding.def.pilote;
+    const texteRide = passager ? '⬇️ Descendre'
       : riding ? '⬇️ Descendre'
         : ami ? `🚗 Monter avec ${ami.nom}`
           : `${m ? m.def.emoji : '🐴'} ${verbe(m && m.def)}`;
+    const htmlRide = auxCommandes ? '<span class="ic">⬇️</span><span class="lb">Descendre</span>' : null;
+    if (htmlRide) { if (rideB.innerHTML !== htmlRide) rideB.innerHTML = htmlRide; }
+    else if (rideB.textContent !== texteRide) rideB.textContent = texteRide;
     rideB.style.display = riding || m || ami || passager ? 'block' : 'none';
     // Le bouton « à bord » a son propre rythme : on le laisse faire, sinon les
     // deux se contrediraient quatre fois par seconde.

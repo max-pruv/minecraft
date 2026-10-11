@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Le regard d'un convoi est un temps (v444) — ce qui est sur le chemin se voit avant d'y être
+## Le regard d'un convoi est un temps (v447) — ce qui est sur le chemin se voit avant d'y être
 
 Un train traversait la voiture de l'enfant quand une image était lente
 (déclaré par la v440). Trois règles.
@@ -803,6 +803,32 @@ Un train traversait la voiture de l'enfant quand une image était lente
 Ce qui reste, déclaré : l'arrêt devant l'enfant reste LOCAL (la grille partagée
 ne change pas, v305) ; un saut d'horloge (l'invité qui adopte l'heure de
 l'hôte) peut encore poser une rame sur l'enfant — elle continue alors (v245).
+## Les commandes de l'avion se rangent (v445) — une file en flux ne peut rien recouvrir
+
+Max, deux captures d'iPhone en vol : six paires d'éléments qui se recouvrent
+(cadran de cap × minicarte × GPS × bandeau, défi de Cornichon × manette). Trois
+règles.
+
+- **CE QUI S'AFFICHE EN HAUT AU MILIEU VIT DANS UNE SEULE FILE EN FLUX.**
+  `#file-centre` (index.html) : cadran, GPS, proposition d'ami, défi de
+  Cornichon (`fun.js` l'y range), bandeau — `position: static` à l'intérieur,
+  donc un élément de plus se range à la suite et rien ne se recouvre par
+  construction. Elle commence sous la ligne du chronomètre
+  (`--rail-panel-top`), entre la colonne de gauche — et la minicarte quand
+  elle est ouverte (`body.minicarte-ouverte`, `--minimap-w`) — et la colonne
+  de droite. Plus aucune cote écrite à la main pour un bandeau.
+- **LA COLONNE DE BORD EST AUSSI HAUTE QUE LA MANETTE, ET « DESCENDRE » EN
+  FAIT PARTIE.** Aux commandes, ⬇️ DESCENDRE, ✈️ et 🛞 sont trois boutons
+  ronds de 56 px au même x, la vitesse en dessous, la manette (56 × 220) à
+  droite : le haut de la colonne est le haut de la manette (v265), rien dans le
+  quart du joystick (v272). Le bouton garde le texte « Descendre » (les témoins
+  lisent `includes`), en icône et mot.
+- **UN TÉMOIN DE MISE EN PAGE SE JOUE À LA TAILLE DE L'APPAREIL DE MAX.** Le
+  banc ouvre en 420 × 760 ; la capture était en 430 × 932. Les trois témoins
+  de `monte.js` se jouent aux deux, formulés sans dimension. Et le quiz de
+  l'invariant 2 met le vol en pause (`onPause` → `running = false`) : mesuré,
+  zéro bloc parcouru sous la question — on le RANGE, on ne le diffère pas.
+
 ## Les raccords d'autoroute s'arrêtent avant l'anneau (v442) — deux grilles ne partagent pas une voie
 
 Trois règles.
@@ -2501,6 +2527,17 @@ engendrées. Quatre règles.
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
 
+## Un toit ne déborde plus d'un quartier sur l'autre (v446) — un indice de trame n'est unique que dans sa trame
+
+Une règle. `infoFacadeParis` publie l'îlot et la travée (`ai`, `bi`) dans la
+trame de CHAQUE quartier : deux quartiers voisins se prêtent les mêmes indices.
+Une clé qui identifie un immeuble porte donc le quartier
+(`immeubleDeToit`, facadeshd.js) ; mesuré, c'étaient les seules paires où une
+même clé portait deux façades différentes (7 sur 176 616). Toute table future
+indexée par `(ai, bi)` — tirage, teinte, hauteur — se demande si elle traverse
+une limite de quartier. `buildChunkTampons(…, { toitsQuartier: false })` rejoue
+la clé d'avant, le temps d'un seul morceau, pour l'empreinte des 490 morceaux.
+
 ## Les colonnes Morris se plantent dans le vide (v443) — un meuble se pose en regardant ses voisins, par la même règle
 
 Une règle. Un meuble qui se pose au tirage ne connaît pas ses voisins : la
@@ -3829,6 +3866,24 @@ Une règle.
   la terre, l'herbe, le sable et la pierre naturelle. Manhattan a son propre sol
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
+
+## Les ponts de l'Anacostia (v444) — un pont de ville est du sol, et la cote du tablier se dit à tous ses lecteurs
+
+Deux règles.
+
+- **UN PONT DE RUE DANS UNE VILLE BÂTIE À LA MAIN EST UNE VOIE DU SOL, À LA
+  COTE DE LA VILLE.** `pontWashington` (washington.js) rend la matière de la
+  bande des deux ponts ; `world.js` l'écrit à `COTE_PONT_DC` (33) sur toute
+  colonne plus basse, et `coteRoulable` rend cette cote. C'est la règle de la
+  Tamise (v208) : `terrainHeight` ne bouge pas (109 881 colonnes identiques),
+  l'eau reste dessous. Le pont ne remplace que ce qui n'est PAS déjà une rue :
+  la bande d'un pont qui chevauche un carrefour de la grille y mettait du
+  trottoir (vu au relevé de la rue de v = 84).
+- **UNE EMPREINTE DE MORCEAUX QUI BOUGE SE PROUVE PAR LE DÉSARMEMENT ET PAR
+  CE QUI DIFFÈRE** (v419) : `pontWashington` rendant null, la branche rend la
+  constante de la v439 au bit près ; les 112 colonnes qui diffèrent sont
+  toutes dans les bandes des ponts. Et l'ajout d'une voie dans une ville à
+  circuits se remesure : les quatorze circuits de Washington sont identiques.
 
 ## L'US-101 (v439) — un relevé en couronne commence à la porte, et une optimisation de tracé reconstruit la porte
 

@@ -6,11 +6,35 @@
 
 export const NOUVEAUTES = [
   {
-    v: 444,
+    v: 447,
     titre: 'Le train voit ta voiture',
     puces: [
       'Il s\'arrête même quand le jeu rame',
       'Les voitures de la rue aussi',
+    ],
+  },
+  {
+    v: 446,
+    titre: 'Des toits bien rangés',
+    puces: [
+      'Chaque immeuble garde son propre toit',
+    ],
+  },
+  {
+    v: 445,
+    titre: 'Les commandes de l\'avion rangées',
+    puces: [
+      'Plus rien ne se chevauche en vol',
+      'Descendre rejoint la colonne de bord',
+      'Le quiz met l\'avion en pause',
+    ],
+  },
+  {
+    v: 444,
+    titre: 'Les ponts de Washington',
+    puces: [
+      'Deux ponts sur l\'Anacostia',
+      'Les voitures de New York entrent en ville',
     ],
   },
   {

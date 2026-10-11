@@ -479,6 +479,30 @@ const AVENUES = [
 
 const BANDES_AVENUES = rangerVoies(AVENUES);
 
+// LES PONTS DE L'ANACOSTIA (v444). L'I-95 Sud entre par le quartier au sud de
+// la rivière (u 20–66, v 60–96), et ce quartier n'avait AUCUN pont vers le
+// reste de la ville : ses voitures faisaient demi-tour sur une rue sans nom.
+// La vraie ville en a deux là : le pont de la 11e Rue, et le pont Sousa, qui
+// porte Pennsylvania Avenue SE. Ils prolongent les deux axes de la grille
+// (u = 28 et u = 56) d'une rive à l'autre, à la cote de la rue (`BASE`) : sur
+// l'eau et sur la berge qui descend, le tablier est posé à la cote de la
+// ville, l'eau reste dessous, et le relief ne bouge pas (`hauteurWashington`
+// ne lit pas ces voies). Un pont est du SOL : il passe AVANT l'eau et le sable
+// des berges, comme les ponts de Londres (`pontLondres`, v208).
+const PONTS = [
+  { nom: 'Pont de la 11e Rue', ...LIAISON, pts: [[28, 44], [28, 84]] },
+  { nom: 'Pont Sousa', ...LIAISON, pts: [[56, 38], [56, 66]] },
+];
+const BANDES_PONTS = rangerVoies(PONTS);
+export const PONTS_DC = PONTS;
+// La cote du tablier : celle de la rue (`BASE`, 33), écrite au-dessus du lit.
+export const COTE_PONT_DC = 33;
+export function pontWashington(x, z) {
+  const u = x - WASHINGTON.x, v = z - WASHINGTON.z;
+  if (u < 18 || u > 66 || v < 38 || v > 86) return null;
+  return solDesVoies(BANDES_PONTS, u, v, BITUME, TROTTOIR);
+}
+
 // Les ronds-points. À Washington, une avenue diagonale ne coupe pas la grille :
 // elle **crée une place**. Chacune porte une statue, un bassin ou les deux.
 // Logan Circle est rentré de cinq blocs (sa vraie ordonnée sort d'un bloc de
@@ -693,7 +717,15 @@ export function solWashington(x, z) {
   const cle = x * 4096 + z;
   const memo = MEMO_SOL.get(cle);
   if (memo !== undefined) return memo;
-  const sol = solWashingtonCalcul(x, z);
+  let sol = solWashingtonCalcul(x, z);
+  // Les ponts de l'Anacostia (v444) passent avant l'eau, la berge et ce qui
+  // les borde — mais une rue reste une rue : là où le pont rejoint la grille,
+  // le carrefour est celui de la grille. La chaussée l'emporte sur le
+  // trottoir, comme entre deux voies.
+  if (sol !== BITUME && sol !== LIGNE && sol !== PASSAGE) {
+    const pont = pontWashington(x, z);
+    if (pont !== null && (sol !== TROTTOIR || pont === BITUME)) sol = pont;
+  }
   if (MEMO_SOL.size > 40000) MEMO_SOL.clear();
   MEMO_SOL.set(cle, sol);
   return sol;

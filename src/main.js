@@ -2842,6 +2842,8 @@ document.getElementById('gps-stop').addEventListener('click', (e) => {
   toast('🧭 GPS arrêté.', 0xcfd8e8);
 });
 window.__gps = () => (gpsCible ? { ...gpsCible, ...guidage(player.pos.x, player.pos.z, player.yaw, gpsCible) } : null);
+// Pour les sondes et les témoins de mise en page : poser un trajet sans passer par la carte.
+window.__gpsVers = (x, z, nom) => demarrerGPS(x, z, nom);
 
 // LE GPS SE PARTAGE (v388). Max avait demandé la flèche (v306) ; à deux, un
 // enfant qui choisit Rome ne peut pas l'écrire à son ami. Sa destination
@@ -7201,6 +7203,8 @@ document.getElementById('map-tout').addEventListener('click', () => carte.toutVo
 document.getElementById('map-btn').addEventListener('click', () => {
   minimapVisible = !minimapVisible;
   minimapCanvas.style.display = minimapVisible ? 'block' : 'none';
+  // la file centrale se range à droite de la minicarte ouverte (aviation)
+  document.body.classList.toggle('minicarte-ouverte', minimapVisible);
   if (minimapVisible) {
     drawMap(minimapCanvas, 96);
     carteVue = { x: player.pos.x, z: player.pos.z };
