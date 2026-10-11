@@ -542,6 +542,19 @@
   pas mesurés contre leurs circuits — la sonde ne lit que les anneaux des
   villes engendrées ; et ces cinq demi-tours, que seul un demi-tour AVANT la
   porte (le corridor, `routes.js`, autre session) supprimerait.
+  Portail de la v440 (neuf suites) : rouges `carte.js` (glisser bridé ×4,
+  460 ms — déclaré), `manhattan.js` (trou de façade, taxi « 🐴 Monter »,
+  erreurs PeerJS — déclarés), `monte.js` : « la circulation s'arrête devant
+  la voiture de l'enfant » (8 au travers, déclaré témoin d'état du banc),
+  « un passant lancé sur la voiture de l'enfant… » (`encoreAuVolant: false` :
+  l'enfant n'était plus au volant, la pose a raté — déclaré v277), et un NEUF
+  « les roues avant braquent vers l'intérieur du virage » (`roues: 2`,
+  `braque: null` sur `voiture.glb` : le modèle d'attente, deux pivots de roue
+  trouvés au lieu de quatre — la flotte n'était pas arrivée ; témoin de
+  `sensations.js`, autre session). Preuve STRUCTURELLE (v291) pour les trois :
+  la v440 ne change que l'avenue d'entrée des autoroutes dans les villes
+  engendrées (`raccordDe` dans `entree()`), aucun de ces témoins ne roule sur
+  une autoroute ni dans une ville engendrée.
   **(5) LE HUIT DE TOKYO, MESURÉ RÉSOLU.** Au même point (53 383, 8 048) :
   0,25 % de paires au contact, toutes en travers entre deux convois (la
   cession locale), zéro dans une file — les contours des v432 et v435 ont

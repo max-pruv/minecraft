@@ -27,7 +27,9 @@ export async function resolve(s, c, n) {
   return n(s, c);
 }`));
 const src = (f) => pathToFileURL(path.join(RACINE, 'src', f)).href;
-const mode = process.argv[2] || 'jeu'; globalThis.__dbg = !!process.env.DBG;
+globalThis.__dbg = !!process.env.DBG;
+// le relevé que rend `raccords` à qui requiert ce fichier (plafond.js)
+let RESULTAT = null;
 
 async function monter() {
   const { World } = await import(src('world.js'));
@@ -95,7 +97,7 @@ function contacts(convs, P) {
   return { n, examines };
 }
 
-(async () => {
+async function principal(mode) {
   const M = await monter();
   if (mode === 'jeu') {
     const { w, P } = M;
@@ -244,7 +246,8 @@ function contacts(convs, P) {
     const ecarts = [...new Set([...Object.keys(table), ...Object.keys(RA.RACCORDS_COURTS)])].filter((k) => table[k] !== RA.RACCORDS_COURTS[k]).map((k) => [k, RA.RACCORDS_COURTS[k], table[k]]);
     console.log(JSON.stringify(bilan));
     console.log('TABLE', JSON.stringify(table));
-    console.log('BILAN', JSON.stringify({ ...bilan, ecarts, pires: lignes.filter((l) => l.jeu > 0).map((l) => [l.route + '|' + l.cle, l.long, l.jeu]) }));
+    RESULTAT = { ...bilan, ecarts, pires: lignes.filter((l) => l.jeu > 0).map((l) => [l.route + '|' + l.cle, l.long, l.jeu]) };
+    console.log('BILAN', JSON.stringify(RESULTAT));
   } else if (mode === 'ville') {
     // node tests/sonde-rue-dense.cjs ville madrid [secondes] : les voitures de
     // TOUS les convois de la ville posées par la grille, et les paires de deux
@@ -297,4 +300,12 @@ function contacts(convs, P) {
     console.log(JSON.stringify({ brut, garde }));
     for (const l of lignes) console.log(JSON.stringify(l));
   }
-})().catch((e) => { console.error(e); process.exit(1); });
+  return RESULTAT;
+}
+
+// LANCÉE SEULE, elle imprime ; REQUISE (plafond.js, v440), elle rend le relevé
+// du mode `raccords` — et l'aiguillage du portail voit que la suite en dépend
+// (un `spawn` ne se lit pas comme un `require`).
+async function mesurer(mode) { return principal(mode); }
+module.exports = { mesurer };
+if (require.main === module) principal(process.argv[2] || 'jeu').catch((e) => { console.error(e); process.exit(1); });

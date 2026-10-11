@@ -622,11 +622,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   // bouge rougit ce témoin et nomme le raccord à remesurer.
   {
     let b = null, err = '';
-    try {
-      const r = require('child_process').spawnSync(process.execPath, [require('path').join(__dirname, 'sonde-rue-dense.cjs'), 'raccords', '_', require('path').resolve(__dirname, '..')], { encoding: 'utf8', timeout: 180000 });
-      const l = (r.stdout || '').split('\n').find((x) => x.startsWith('BILAN '));
-      if (l) b = JSON.parse(l.slice(6)); else err = ((r.stderr || '') + (r.stdout || '')).slice(-300);
-    } catch (e) { err = String(e && e.message || e); }
+    try { b = await require('./sonde-rue-dense.cjs').mesurer('raccords'); } catch (e) { err = String(e && e.message || e); }
     verifier('rue : un raccord d\'autoroute ne roule pas dans la voie d\'un anneau — il s\'arrête avant, il ne reste que des demi-tours',
       !!b && b.raccords > 40 && b.blocs.long > 300 && b.blocs.jeu < 100 && b.touches.jeu <= 6,
       b ? JSON.stringify({ raccords: b.raccords, touches: b.touches, blocs: b.blocs, pires: b.pires }) : `sonde : ${err}`);
