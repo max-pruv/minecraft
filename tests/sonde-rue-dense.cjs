@@ -126,6 +126,54 @@ function contacts(convs, P) {
       if (r1.n > r0.n) pires.push([cle, c.cle.slice(0, 40), r0.n, r1.n]);
     }
     console.log(JSON.stringify({ convois: total, jouent, poses: POSES, posesQuiJouent: jeuPoses, examines: ex, contactsSansJeu: sans, contactsAvecJeu: avec, pires: pires.slice(0, 10) }));
+  } else if (mode === 'routes') {
+    // node tests/sonde-rue-dense.cjs routes : pour chaque autoroute, la
+    // longueur de son tracé (dans les villes) qui roule sur la voie d'un
+    // circuit de la ville — même sens (on s'y suit) ou en face — à moins de
+    // 1,6 bloc latéral : c'est là que deux grilles indépendantes se touchent.
+    const RO = await import(src('routes.js'));
+    const VM = await import(src('villesmonde.js'));
+    const [Pa, Li, Lo, Ni] = await Promise.all(['paris.js', 'lille.js', 'londres.js', 'nice.js'].map((f) => import(src(f))));
+    const ENTREES = { paris: Pa.ENTREES_PARIS, lille: Li.ENTREES_LILLE, londres: Lo.ENTREES_LONDRES, nice: Ni.ENTREES_NICE };
+    const { w, V, T } = M;
+    const entree = (cle, route) => {
+      const i = RO.entreesDe(cle).findIndex((e) => e.route === route);
+      if (i < 0) return undefined;
+      if (ENTREES[cle]) return ENTREES[cle][i];
+      const fiche = RO.segmentsDeRoute().find((sg) => sg.route.nom === route);
+      if (fiche && fiche.route.avenues && fiche.route.avenues[cle]) return fiche.route.avenues[cle];
+      const e = RO.entreesDe(cle)[i];
+      return VM.avenueDEntree(cle, e.x, e.z) || undefined;
+    };
+    const anneaux = VM.tracesCirculation((x, z) => w.terrainHeight(x, z));
+    const parVille = new Map();
+    for (const t of anneaux) { const l = parVille.get(t.cle) || []; l.push(t); parVille.set(t.cle, l); }
+    // les circuits d'une ville, posés comme la rue les pose (voie de droite)
+    const voiesDe = (cle) => (parVille.get(cle) || []).map((tr) => { const c = poser(M, tr); return c.parcours; });
+    const res = [];
+    for (const seg of RO.segmentsDeRoute()) {
+      const pts = RO.traceRoute(seg, { avant: entree(seg.de, seg.route.nom), apres: entree(seg.vers, seg.route.nom), coteDe: (x, z) => w.coteRoulable(x, z) + 1 });
+      const pr = new V.Parcours(pts);
+      for (const cle of [seg.de, seg.vers]) {
+        const ps = voiesDe(cle);
+        if (!ps.length) continue;
+        let meme = 0, face = 0, blvd = 0;
+        for (let d = 0; d < pr.longueur; d += 1) {
+          const q = pr.a(d), cq = pr.capLisse(d);
+          let mm = false, ff = false;
+          for (const p of ps) {
+            for (let e = 0; e < p.longueur; e += 1) {
+              const r = p.a(e); if ((r.x - q.x) ** 2 + (r.z - q.z) ** 2 > 2.56) continue;
+              const cs = Math.cos(p.capLisse(e) - cq); if (cs > 0.7) mm = true; else if (cs < -0.7) ff = true;
+            }
+          }
+          if (mm) meme++; if (ff) face++; if ((mm || ff) && M.VD.secondeVoieVilleMonde(q.x, q.z)) blvd++;
+        }
+        res.push([seg.route.nom, cle, meme, face, blvd]);
+      }
+    }
+    for (const r of res.filter((r) => r[2] + r[3] > 0)) console.log(JSON.stringify(r));
+    console.log('routes', res.length, 'touchées', res.filter((r) => r[2] + r[3] > 0).length);
   } else if (mode === 'ville') {
     // node tests/sonde-rue-dense.cjs ville madrid [secondes] : les voitures de
     // TOUS les convois de la ville posées par la grille, et les paires de deux
