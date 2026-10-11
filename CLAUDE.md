@@ -770,6 +770,39 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Le regard d'un convoi est un temps (v451) — ce qui est sur le chemin se voit avant d'y être
+
+Un train traversait la voiture de l'enfant quand une image était lente
+(déclaré par la v440). Trois règles.
+
+- **UN CONVOI QUI ROULE EN TEMPS RÉEL REGARDE CE QU'IL VA PARCOURIR DANS
+  L'IMAGE.** La rame ne regardait que `PAS_TRAIN` (3,5 blocs) : à quinze
+  blocs par seconde, une image d'un quart de seconde la faisait passer
+  d'« assez loin » à « déjà dedans », et « pas si l'on est déjà dedans »
+  (v245) la laissait continuer. `cederLePassage` est appelé APRÈS que
+  `horloge` a avancé et AVANT `c.update` : la grille dit donc EXACTEMENT où la
+  motrice sera à la fin de l'image (`distanceA(horloge − decalage)`), et le
+  regard couvre cette avance plus 3,5 blocs, au pas d'un bloc (`pasDeRame`).
+  Même à quai : une rame qui repart dans l'image roule aussi. Le métro partage
+  ce code. C'est le couloir des piétons (v351) et le balayage des voitures
+  (v395) du côté de la rame : une portée en blocs fixes est une portée en
+  temps qui rétrécit quand la cadence tombe.
+- **LES VOITURES DE LA RUE AJOUTENT L'IMAGE EN COURS, ET RIEN SOUS UN TIERS
+  DE SECONDE.** Leur regard (`porteeDe`) et leur marge d'urgence devant une
+  personne (v372, « une image à trois par seconde ») gagnent `v × (dt − 0,35)`
+  — `dt` est la durée que `update` leur donnera. Sous 0,35 s, la règle d'avant
+  au bit près : on ne change pas le comportement que les témoins de la rue
+  mesurent à cadence normale.
+- **UNE PANNE DE CADENCE SE PROVOQUE.** Au repos, l'ancien code passait 7 poses
+  sur 7 ; sous charge, c'était un tirage. La sonde et le témoin brûlent 700 ms
+  de fil principal par image pendant le croisement (`origin/main` 5/5
+  traversées, regard fixe désarmé `regardRameFixe` 2/3, remède 0/5) — la leçon
+  des poissons (v233) appliquée à une durée d'image. Le frein s'arrête à la
+  fin du témoin : une page de la suite continue après lui.
+
+Ce qui reste, déclaré : l'arrêt devant l'enfant reste LOCAL (la grille partagée
+ne change pas, v305) ; un saut d'horloge (l'invité qui adopte l'heure de
+l'hôte) peut encore poser une rame sur l'enfant — elle continue alors (v245).
 ## Un bâtisseur ne tire pas au hasard (v450) — ce qu'il pose est un monde, et deux fils le bâtissent
 
 Trois règles.

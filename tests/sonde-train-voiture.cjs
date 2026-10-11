@@ -170,6 +170,10 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // blocs devant sa motrice ; puis il relève, vingt secondes au plus, si une
     // voiture de la rame touche la sienne (rectangles orientés), et si la rame
     // s'est bien approchée — un train qui n'est jamais venu ne prouve rien.
+    await tab.evaluate(({ l, fixe }) => {
+      window.__lentMs = l;
+      const V = window.__game.vehicules; if (V && V.regardRameFixe) V.regardRameFixe(fixe);
+    }, { l: Number(process.env.LENT || 0), fixe: process.env.FIXE === '1' });
     await tab.evaluate(() => {
       const g = window.__game;
       for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
@@ -224,6 +228,14 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         }
         return true;
       };
+      // LENT=ms : chaque image brûle autant de fil principal, pour PROVOQUER
+      // les images lentes de la tablette au lieu d'attendre la charge (v451)
+      const lent = Number(window.__lentMs || 0);
+      if (lent > 0 && !window.__frein) {
+        window.__frein = true;
+        const brule = () => { const t = performance.now(); while (performance.now() - t < lent); requestAnimationFrame(brule); };
+        requestAnimationFrame(brule);
+      }
       window.__premierDedans = null; window.__depart = { py: +g.player.pos.y.toFixed(2), ty: +pt.y.toFixed(2) };
       const t0 = performance.now();
       let releves = 0, dedans = 0, bloque = 0, plusPres = Infinity;
@@ -250,6 +262,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         if (bloque > 12) break;                       // arrêté devant nous trois secondes : acquis
       }
       return { ci, nom: V.etat()[ci].nom, avance, vitesse: vit, releves, dedans, bloque, plusPres: +plusPres.toFixed(1),
+        regard: V.etat()[ci].regard, lent: Number(window.__lentMs || 0),
         secondes: +((performance.now() - t0) / 1000).toFixed(1), premier: window.__premierDedans, depart: window.__depart, finY: +g.player.pos.y.toFixed(2) };
     });
     verifier('un train s\'arrête devant la voiture de l\'enfant posée sur sa voie, au lieu de la traverser',

@@ -20,6 +20,39 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v451 — Le train voit la voiture de l'enfant, même quand le jeu rame
+
+**Pourquoi.** Un train traversait la voiture de l'enfant posée sur la voie,
+chaque fois qu'une image était lente — sur la tablette, ce sont les images de
+l'arrivée dans une ville. La rame roule en temps réel (v305) mais ne regardait
+que 3,5 blocs devant sa motrice : à quinze blocs par seconde, une image d'un
+quart de seconde la faisait passer d'« assez loin » à « déjà dedans », et une
+rame déjà dedans continue (v245). La session des intermittents l'avait trouvé
+et déclaré (témoin de `monte.js` laissé rouge). Les voitures de la rue avaient
+la même faille, en plus petit : leur marge d'urgence devant une personne
+valait une image à trois par seconde, pas l'image en cours.
+
+**Ce que ça change.** La rame regarde aussi loin qu'elle va rouler dans
+l'image (sa grille dit exactement où elle sera), plus la marge d'avant : ce
+qui est sur son chemin est vu avant d'y être, quelle que soit la cadence, et
+elle s'arrête devant la voiture (ou l'enfant à pied) au lieu de la traverser.
+Le métro, qui partage ce code, en profite aussi. Les voitures de la rue
+ajoutent à leur regard et à leur marge d'urgence ce qu'elles parcourent dans
+l'image au-delà d'un tiers de seconde ; sous ce tiers de seconde, la règle
+d'avant au bit près. La grille horaire partagée entre tablettes (v305) ne
+change pas : l'arrêt devant l'enfant reste local, comme avant.
+
+**Ce qui le prouve.** Images lentes PROVOQUÉES (700 ms brûlées par image,
+`sonde-train-voiture.cjs LENT=700`) : `origin/main` 5 traversées sur 5,
+branche 0 sur 5, branche au regard fixe d'avant (`regardRameFixe`) 2 sur 3 ;
+au repos, 0 sur 7 des deux côtés. Le témoin « un train s'arrête devant la
+voiture de l'enfant » de `monte.js` provoque désormais ces images lentes au
+lieu d'attendre la charge du portail. Voitures de la rue
+(`sonde-voiture-lente.cjs`, le passage du témoin de `monte.js` recopié) :
+branche 0 traversée sur 4 poses, `origin/main` 1 sur 7 (et trois poses où
+une voiture était déjà dedans au départ) — un tirage, pas une preuve : leur
+regard portait déjà quarante blocs. Ce volet se juge sur sa construction (la
+marge couvre l'avance de l'image), et il est déclaré comme tel.
 ## v450 — Le Colisée ne change plus, Édimbourg en pierre grise
 
 **Pourquoi.** Trois façades qui mentaient. Le Colisée du catalogue tirait ses

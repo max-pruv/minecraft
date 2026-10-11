@@ -94,7 +94,27 @@
     cadence décide où l'on touche (piège v273), et l'arrêt tombait à 300,9.
   - **Le train qui traverse la voiture** : cause trouvée, VRAIE PANNE,
     déclarée en tête de ce fichier ; le témoin reste rouge.
-- [ ] **UN TRAIN TRAVERSE LA VOITURE DE L'ENFANT QUAND UNE IMAGE EST LENTE
+- [ ] **PORTAIL DE LA v451 (le regard de la rame) — DOUBLE MESURE (règle v195).**
+  `maj.js` : « le loader dit combien de fichiers » (déclaré plus bas, rouge des
+  deux côtés). `monte.js` au portail : quatre rouges — « l'avant du joystick
+  est l'accélérateur », « le côté du joystick tourne le volant », « rien
+  d'autre ne vole le doigt » (le doigt tombe sur un `BUTTON` sans id, `joy`
+  caché) et « un mur pris de face ». Rejouée SEULE : branche 220 verts, ZÉRO
+  rouge ; `origin/main` (v443) 217 verts, deux rouges (« un mur pris de face »,
+  rebond −1,88, déclaré ; « à Rome, en biais, un passant traverse sur le
+  passage peint », déclaré). Les trois du joystick sont des rouges de charge
+  du portail, jamais vus seuls : à reprendre si un portail les rend encore,
+  en nommant le bouton (`elementFromPoint` rend `BUTTON.` sans classe).
+  Second portail (après la fusion de la v446) : `maj.js` ses deux rouges
+  déclarés ; `monte.js` « la caméra laisse la voiture glisser sur le côté »,
+  « la rue roule à l'allure d'une ville » (médiane 0, le bouchon déclaré) et
+  « un mur pris de face » ; `reseau.js` six rouges de reprise et « un hôte
+  sans courtier ». Rejouées SEULES : `monte.js` branche 226 verts, ZÉRO rouge
+  (« la rue roule » médiane 4,3) ; `reseau.js` branche 85 verts et un rouge
+  (« un hôte sans courtier est trouvé », l'intermittence déclarée plus bas),
+  `origin/main` (v446) 87 verts. Le regard de la rame et la marge des voitures
+  ne touchent pas au réseau.
+- [x] **(v451 — réparé : regard de la rame en temps, `pasDeRame` ; voir CLAUDE.md « Le regard d'un convoi est un temps ») UN TRAIN TRAVERSE LA VOITURE DE L'ENFANT QUAND UNE IMAGE EST LENTE
   (vraie panne, zone conduite — trouvée par la session banc-intermittents).**
   La rame ne regarde que 3,5 blocs devant sa motrice (`PAS_TRAIN`,
   `cederLePassage`, vehicules.js) et roule en temps RÉEL (v305) : à 14 b/s,
