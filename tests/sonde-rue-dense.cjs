@@ -126,6 +126,35 @@ function contacts(convs, P) {
       if (r1.n > r0.n) pires.push([cle, c.cle.slice(0, 40), r0.n, r1.n]);
     }
     console.log(JSON.stringify({ convois: total, jouent, poses: POSES, posesQuiJouent: jeuPoses, examines: ex, contactsSansJeu: sans, contactsAvecJeu: avec, pires: pires.slice(0, 10) }));
+  } else if (mode === 'ville') {
+    // node tests/sonde-rue-dense.cjs ville madrid [secondes] : les voitures de
+    // TOUS les convois de la ville posées par la grille, et les paires de deux
+    // convois différents qui se touchent, rangées par paire de convois
+    const cle = process.argv[3] || 'madrid', duree = +(process.argv[5] || 300);
+    const VM = await import(src('villesmonde.js'));
+    const traces = VM.tracesCirculation((x, z) => M.w.terrainHeight(x, z)).filter((t) => t.cle === cle);
+    const lignes = traces.map((tr) => { const c = poser(M, tr); if (tr.rang === 0) M.veh.bus(tr.pts, Math.abs(Math.round(tr.x + tr.z)), c); return { tr, c }; });
+    const convs = lignes.flatMap(({ c }) => [c, c.jumelle].filter(Boolean));
+    convs.forEach((c) => c.horaire());
+    const parPaire = {};
+    let n = 0;
+    for (let h = 0; h < duree; h += 0.2) {
+      const tout = convs.flatMap((c, k) => poses(c, h).map((q, i) => ({ ...q, k, i })));
+      for (let a = 0; a < tout.length; a++) for (let b = a + 1; b < tout.length; b++) {
+        const A = tout[a], B = tout[b];
+        if ((A.k === B.k && Math.abs(A.i - B.i) <= 1) || (A.x - B.x) ** 2 + (A.z - B.z) ** 2 > 49) continue;
+        if (!touche(rect(A.x, A.z, A.cap, 2.2), rect(B.x, B.z, B.cap, 2.2))) continue;
+        n++;
+        const cs = Math.cos(A.cap - B.cap), fam = Math.abs(cs) > 0.7 ? (cs > 0 ? 'meme' : 'face') : 'travers';
+        const kk = A.k === B.k ? `${A.k} soi ${fam}` : `${Math.min(A.k, B.k)}-${Math.max(A.k, B.k)} ${fam}`;
+        const e = parPaire[kk] || (parPaire[kk] = { n: 0, x: Math.round(A.x), z: Math.round(A.z), ex: [] }); e.n++;
+        // l'écart LATÉRAL (perpendiculaire au cap de A) et longitudinal
+        const ux = Math.sin(A.cap), uz = Math.cos(A.cap), dx = B.x - A.x, dz = B.z - A.z;
+        if (e.ex.length < 3 && e.n % 7 === 1) e.ex.push([Math.round(A.x), Math.round(A.z), +(dx * uz - dz * ux).toFixed(1), +(dx * ux + dz * uz).toFixed(1), +h.toFixed(1)]);
+      }
+    }
+    console.log(JSON.stringify({ convois: convs.map((c, k) => k + ':' + (c.jumeauDe ? 'J' : '') + c.cle.split('|').slice(1, 3).join('|') + ' nb' + c.nb), contacts: n }));
+    console.log(JSON.stringify(Object.entries(parPaire).sort((a, b) => b[1].n - a[1].n).slice(0, 12)));
   } else {
     const { w, P, VD, V } = M;
     const traces = P.circuitsParis((x, z) => w.coteRoulable(x, z));

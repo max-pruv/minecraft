@@ -479,6 +479,20 @@
   sur `origin/main` à (−2 581, 5 272), un nœud de circuits face à face,
   8,8 % sur la v423 — d'avant, à démonter. (5) Palier C : utilitaires et
   pickups (classe dans `FLOTTE`), variance par voiture, voie par tronçon.
+  **(5) et (2) FAITS en v433** : fourgonnette et pickup (`utilitaires.js`, une
+  voiture sur six hors New York, quinze maillages), jeu par voiture
+  (`Convoi.jeu`, fonction de la clé, du rang et de l'heure : la grille reste
+  partagée ; éteint sous six blocs/s, près d'un croisement, sur la voie
+  partagée avec la jumelle et dans l'anneau du bus — 392 contacts de grille
+  avec ou sans, `sonde-rue-dense.cjs jeu`), limitation par tronçon
+  (`allureDuTroncon`, `allureVilleMonde`). Seconde voie de Paris 306 → 446
+  blocs (rampe 5 en ville, seuil 20, recherche parmi les nombres que le
+  croisement accepte). RESTE : les deux circuits en huit de Paris (rangs 1 et
+  3, 193 et 44 blocs de deux voies) n'ont pas de jumelle — seul n = 4 passe
+  leur croisement à `2 n` voitures (0,18 `nb`) ; le remède est de casser le
+  huit en deux circuits (`paris.js`, autre session). Le jeu ne joue pas dans
+  l'anneau du bus (il y est à une demi-voiture) : le grand anneau de chaque
+  ville roule encore en un seul train.
   **(3) FAIT en v431** : balayage au quart sur les deux premiers blocs,
   plancher de file 1,0 en ligne droite (1,6 en virage) — médiane 1,9-2,0 →
   1,1-1,3 (Paris, Rome, Zurich, Tokyo). Les contacts « file » relevés à Tokyo
