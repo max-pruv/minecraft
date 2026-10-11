@@ -492,7 +492,18 @@
   leur croisement à `2 n` voitures (0,18 `nb`) ; le remède est de casser le
   huit en deux circuits (`paris.js`, autre session). Le jeu ne joue pas dans
   l'anneau du bus (il y est à une demi-voiture) : le grand anneau de chaque
-  ville roule encore en un seul train.
+  ville roule encore en un seul train. Le dépliage de la seconde voie
+  (`voiesDe`, point 4 de la zone) coûte jusqu'à 37 ms par circuit sous node
+  (Paris, puis 1 à 16) : un circuit par image, NON découpé — différer la
+  jumelle changerait le nombre de voitures de la file après sa naissance, donc
+  la grille d'une tablette à l'autre (v305) ; le découper en tranches AVANT la
+  naissance du convoi est la forme sûre, à faire si l'iPad le montre.
+  Portail de la v436 : `degats.js` « percuter une voiture de la rue l'abîme
+  AUSSI » (et le garage qui en dépend) rouge sous la charge — santé 1 ; REJOUÉE
+  SEULE : branche 0,99 deux fois, `origin/main` 0,99 deux fois. Le témoin
+  arrondit la santé au centième et l'élan (13 à 15 blocs) ne coûte que 0,5 à
+  1 % : sous la charge, l'arrondi rend 1. Dette du témoin (lire la santé non
+  arrondie, ou prendre plus d'élan), pas de la livraison.
   **(3) FAIT en v431** : balayage au quart sur les deux premiers blocs,
   plancher de file 1,0 en ligne droite (1,6 en virage) — médiane 1,9-2,0 →
   1,1-1,3 (Paris, Rome, Zurich, Tokyo). Les contacts « file » relevés à Tokyo
