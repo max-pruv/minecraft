@@ -751,7 +751,7 @@ export function chargerVoitureFlotte(entree) {
 
 const VU = 150;                 // au-delà, le convoi s'efface et se fige
 
-// LA RUE SE FABRIQUE PAR TRANCHES (v429). À l'arrivée d'une téléportation,
+// LA RUE SE FABRIQUE PAR TRANCHES (v431). À l'arrivée d'une téléportation,
 // `montrer` fabriquait dans la MÊME image toutes les voitures qui entraient
 // dans les quarante-cinq blocs : toute une rue d'un coup, 162 à 276 ms
 // mesurés (`sonde-arrivee-decoupe.cjs`, v420). C'est la file des passants
@@ -1613,7 +1613,7 @@ class Convoi {
     // Ce que chaque voiture vise (`cible`, posé par `cederLePassage`), ou la
     // grille, ou un peu plus pour rattraper ; elle y va au rythme d'une voiture
     // (`rapprocher`) — ce qu'elle n'a pas fait devient du retard.
-    // (un bloc entre deux pare-chocs EN LIGNE DROITE depuis la v429 : le
+    // (un bloc entre deux pare-chocs EN LIGNE DROITE depuis la v431 : le
     // balayage serré arrête la suiveuse vers 1,2, le plancher ne doit pas la
     // retenir à 1,6. Mais dans un virage la corde est plus courte que l'arc et
     // les coins se touchent — mesuré à Tokyo, 19 relevés « file à l'arrêt » —
@@ -2122,7 +2122,7 @@ function croisementsDe(parcours, grille) {
   // les paires d'instants dont les positions se touchent EN TRAVERS : c'est la
   // liste des croisements, en écart d'heure (les voisines le long du tracé
   // sont l'affaire du plancher, v283)
-  // (v429) les paires se cherchent dans une grille de six blocs — la portée
+  // (v431) les paires se cherchent dans une grille de six blocs — la portée
   // du test de distance — et non plus toutes contre toutes : 259 000 paires
   // examinées au dépliage d'un circuit, 22 à 36 ms sous `frame` (v420). Même
   // ensemble de paires, au bit près ; l'ordre de `ecarts` ne compte pas.
@@ -2740,7 +2740,7 @@ export function createVehicules({ scene, player }) {
     const balayer = (a) => {
       if (a.balayage) return a.balayage;
       a.balayage = []; a.pas = [];
-      // LES FILES SE SERRENT AU ROUGE (v429). Au pas d'un bloc et demi, la
+      // LES FILES SE SERRENT AU ROUGE (v431). Au pas d'un bloc et demi, la
       // voiture s'arrêtait entre 1,1 et 2,6 blocs de celle qui la précède
       // (médiane 1,9 à 2,4 mesurée, v423) ; une file au feu se lisait comme un
       // chapelet clairsemé. Les deux premiers blocs se balaient au quart : on
@@ -3297,7 +3297,7 @@ export function createVehicules({ scene, player }) {
   return {
     metro, course, chaine, circulation, bus, update, placeProche, diagPlace, place, emprunter, retirer, obstacleDevant, voitureContre, voitureA, dansRectangle, enMarche, voitureRueProche, voitureNommee,
     adopterHorloge, horloge: () => horloge,
-    // la fabrication par tranches (v429) : combien de voitures fabriquées et
+    // la fabrication par tranches (v431) : combien de voitures fabriquées et
     // différées depuis le lancement — ce qu'un témoin compte à l'arrivée
     fabrication: () => ({ faites: fabrication.faites, differees: fabrication.differees }),
     // le crochet des feux tricolores (v273), branché par main.js

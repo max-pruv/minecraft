@@ -1,5 +1,23 @@
 # Ce qui est en cours
 
+- [ ] **PORTAIL DES PONTS (v430) — DOUBLE MESURE (règle v195).** Portail
+  complet (base v419) coupé à sa limite de deux heures pendant `reseau.js` ;
+  rouges déjà déclarés : `carte.js` « la faire glisser non plus » (427 ms),
+  `manhattan.js` « le trou enlève aussi la géométrie », `monte.js` la chauffe de
+  New York et le trou en vol (chasseur 58/60). Non déclaré jusqu'ici :
+  `monte.js` « en vol au-dessus de Paris, le monde se maille hors du fil
+  principal » — l'avion n'avance pas (branche 10 blocs en 47 s ; `origin/main`
+  v424 rejouée SEULE, 19 blocs en 120 s, même rouge), avec « un morceau maillé
+  là-bas est le même ici » qui en dépend (2 à 5 comparés). Rejouée seule sur
+  `origin/main`, `monte.js` rend aussi la cascade « pas aux commandes » des
+  avions et « la voiture roule dans la nature » : la page qui vole au-dessus
+  de Paris rend moins d'une image par seconde. Hors de la livraison PAR
+  CONSTRUCTION : elle ne change le contact que sur une colonne qu'un pont
+  d'autoroute occupe au coin (`routeEn(floor)` ouvrage), et ni (−600, −520)
+  ni le vol à 96 blocs au-dessus de Paris n'en ont (relevé sous node). Piste :
+  mesurer la cadence de la page `MonteFil` (rr 12, au-dessus de Paris) seule,
+  puis après les témoins qui la précèdent.
+
 - [ ] **PORTAIL DU JOURNAL DE BORD (v426) — DOUBLE MESURE (règle v195).**
   Deux portails (bases v408 et v411) rouges sur `maj.js`, `carte.js`,
   `manhattan.js`, `monte.js`. Déclarés plus bas : la flèche du GPS et le
@@ -461,11 +479,20 @@
   sur `origin/main` à (−2 581, 5 272), un nœud de circuits face à face,
   8,8 % sur la v423 — d'avant, à démonter. (5) Palier C : utilitaires et
   pickups (classe dans `FLOTTE`), variance par voiture, voie par tronçon.
-  **(3) FAIT en v429** : balayage au quart sur les deux premiers blocs,
+  **(3) FAIT en v431** : balayage au quart sur les deux premiers blocs,
   plancher de file 1,0 en ligne droite (1,6 en virage) — médiane 1,9-2,0 →
   1,1-1,3 (Paris, Rome, Zurich, Tokyo). Les contacts « file » relevés à Tokyo
   sont au treizième rang au croisement du nœud (53 383, 8 048) : le huit
   (v395), pas le plancher.
+  Portail de la v431 (dix suites) : les deux témoins neufs verts (fabrication
+  1 voiture par image, 89 faites, 96 différées ; files médiane 1,23 sur 237).
+  Rouges : `carte.js` (flèche GPS 1,92), `manhattan.js` (trou de façade, taxi
+  « 🐴 Monter »), `monte.js` (flâneur, chauffe de New York, maillage en vol :
+  10 blocs en 91 s), `reseau.js` (compteur à deux après départ, messages
+  réseau) — tous déclarés sauf les messages réseau. `reseau.js` REJOUÉE SEULE
+  des deux côtés : branche 82 verts, deux rouges (« un hôte sans courtier est
+  trouvé… » et son voisin) ; `origin/main` 79 verts, cinq rouges dont ces
+  deux-là. Les messages réseau sont verts seuls des deux côtés : charge.
   Portail de la v423 (dix-sept suites) : verts sauf `plafond.js` (l'A1 :
   À MOI, la voiture du témoin butait sur la circulation densifiée —
   repointée, rejouée seule entièrement verte, 80,7 blocs, 15 voitures
@@ -1009,6 +1036,30 @@
   l'intermittence déjà mesurée rouge une fois sur quatre sur `origin/main`
   (tableau plus bas). Le témoin neuf « une voiture neuve n'hérite pas du
   dernier choc » est vert au portail.
+
+- [ ] **`monte.js` NE FINIT PLUS UNE FOIS SUR DEUX, ET C'EST UNE AFFAIRE DE
+  BANC (mesuré pour la v429).** Deux causes, une réglée.
+  1. **La limite du jour** (45 min, `education.js`) : la page `tab` vit plus
+     d'une heure, l'écran de fin de journée s'ouvrait et prenait le doigt
+     (`"cible":"hardstop"`) — au portail de la v429, trente-cinq rouges en
+     cascade (avions « pas aux commandes », voiture « pas au volant », les
+     neuf témoins des sensations à `vMax 0`). Réglé dans la suite :
+     `today().unlocks = 99`, la donnée qu'un parent pose (`leverLaLimite`).
+  2. **L'ouverture d'une page à part sous une page à 3,8 cœurs** : après « en
+     vol au-dessus de Paris, le monde se maille hors du fil principal »,
+     `souffler` lit une charge STABLE de 3,7 à 3,9 cœurs, et la page suivante
+     (`MonteRegard` l. 3901, `MonteMobilier` l. 4279) ne charge pas en 90 s.
+     Branche : 2 arrêts sur 2 rejeux seuls (98 et 110 verts) ; `origin/main` :
+     v404 arrêtée, v411 au bout (11 rouges). Piste : ce que `tab` fait encore
+     après ce témoin (vol laissé en cours ? file de maillage à `rr` 12 ?) — la
+     sonde à écrire relève `__game.player.flying`, la file et la position de
+     `tab` à cet instant, puis on ramène `tab` au sol avant `souffler`.
+  Et le pic du choc ratait le coup deux passages sur cinq (0,06 contre 0,07
+  au calme, secousse vue) : une seule lecture 0,45 s après pour une fenêtre de
+  0,74 s. La mesure lit à chaque image pendant 1,5 s : 1,02 · 1,10 · 1,20.
+  La v429 se prouve donc par la sonde (`sonde-sensations.cjs`, même mesure
+  que le témoin), des deux côtés : pente 1,182 contre 0, atterrissage 0,74 à
+  0,95 contre 0,057.
 
 - [ ] **AU PORTAIL DE LA v422 (les sensations au volant, fusionnée avec main
   v404 puis v411 puis v421), AUCUN ROUGE NE VIENT DE LA LIVRAISON.** Trois
@@ -5875,7 +5926,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   rendus. Piste : un passant ne se pose (et un personnage ne marche) que sur
   un morceau déjà là, comme la minicarte (v258) qui n'engendre jamais.
   (3) `nbSansCroisement` (vehicules.js) 22 à 36 ms au dépliage d'un circuit.
-  **(1) et (3) FAITS en v429** : fabrication par tranches (`FAB_MS`), grille de
+  **(1) et (3) FAITS en v431** : fabrication par tranches (`FAB_MS`), grille de
   croisements ; update des voitures 234/261/195 → 111/125/99 ms,
   `nbSansCroisement` 32/45/30 → 13/12/12. Reste sous `update` : `voiesDe`
   (la jumelle, 57 à 111 ms au dépliage) — il fixe le nombre de voitures de la

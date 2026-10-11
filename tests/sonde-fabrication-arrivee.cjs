@@ -1,4 +1,4 @@
-// LA RUE SE FABRIQUE PAR TRANCHES (v429) — combien de voitures apparaissent
+// LA RUE SE FABRIQUE PAR TRANCHES (v431) — combien de voitures apparaissent
 // dans une même image à l'arrivée d'une téléportation. On saute dans une
 // ville et l'on relève, image par image, la hausse du nombre de voitures
 // visibles (`etat().visibles`, que l'ancien code publie aussi) : sur
