@@ -770,6 +770,35 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Un bâtisseur ne tire pas au hasard (v450) — ce qu'il pose est un monde, et deux fils le bâtissent
+
+Trois règles.
+
+- **JAMAIS `Math.random()` DANS UN BÂTISSEUR.** Le worker de maillage (v251) et
+  le fil principal ont chacun leur graphe de modules, donc leur cache de
+  monuments : un tirage au hasard y bâtit DEUX mondes, celui qu'on voit et celui
+  qui arrête l'enfant — et deux tablettes en ont deux autres. Le Colisée du
+  catalogue l'a fait de la v346 à la v449 (173 blocs). Un tirage se fait à la
+  POSITION (`effondre(x, y, z)`, monuments.js ; `tirage` des villes) ; dans un
+  monument, la position DANS le monument, pour que le catalogue posé par un
+  enfant soit le même que celui de la ville.
+- **LA PREUVE EST UN FIL NEUF, PAS UN RAISONNEMENT.** `plafond.js` engendre les
+  763 repères du monde d'aujourd'hui et d'avant la v306 dans deux
+  `worker_threads` sous deux graines de `Math.random`, et compare au fil du
+  témoin (46 s, parallèle). Un repère neuf qui tire au hasard le fait rougir et
+  le nomme. Le grep (`grep -c Math.random src/*.js`) ne dit que les candidats :
+  hors des bâtisseurs, tout est animation, ciel ou son.
+- **UN CHAMP DE FICHE PEUT PORTER DEUX SENS, ET SEUL UN NOMBRE EST UN BLOC.**
+  `f.baie` était le bloc des fenêtres d'une ville engendrée — et la GÉOGRAPHIE
+  du port de Sydney. Lu comme bloc, l'objet s'écrivait 0 : 250 fenêtres étaient
+  des trous. `typeof … === 'number'` avant de poser ; le jour où un champ de
+  fiche gagne un second usage, on cherche ses lecteurs (`grep -n "f\.baie"`).
+
+Et **une ville engendrée dont l'archétype peint mal la pierre a sa palette à
+elle** (`PALETTES_VILLES`, villesmonde.js) : Édimbourg en gris, gris clair et
+kaki, des UNIS — en motif « Briques », la couche HD (registre `londres`) y
+verrait de la brique et la patinerait en rouge.
+
 ## Les pistes à leur vraie longueur (v448) — un ouvrage qui sort du disque est un repère, pas un relief
 
 Max : « les pistes de tous les aéroports sont beaucoup trop courtes pour

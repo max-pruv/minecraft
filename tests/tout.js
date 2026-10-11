@@ -145,7 +145,7 @@ const GARDIENS = {
   // Le tour du monde : neuf sites, dix monuments. Ils aplanissent leur parvis
   // (donc le témoin du relief) et s'ajoutent aux destinations de la carte.
   'src/capitales.js': ['carteMonde.js', 'plafond.js', 'carte.js'],
-  'src/monuments.js': ['carteMonde.js'],
+  'src/monuments.js': ['carteMonde.js', 'plafond.js'],    // un bâtisseur ne tire pas au hasard (v450)
   // Les familles de bâtiments : la bibliothèque de l'inventaire se prouve
   // dans monte.js (onglet, vignettes, pose).
   'src/batiments.js': ['monte.js'],

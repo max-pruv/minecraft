@@ -2887,6 +2887,18 @@ const FLEUVES_VILLES = {
   bale: [{ nom: 'Rhin', l: 2, pts: [[2, 60], [4, 10], [8, -2], [36, -10], [66, -8]] }],
 };
 
+// LA PIERRE D'UNE VILLE QUE SON ARCHÉTYPE PEINDRAIT MAL (v450). L'archétype
+// `britannique` est la brique rouge de Manchester et de Liverpool ; Édimbourg
+// est bâtie de grès de Craigleith, gris, noirci par deux siècles de fumée —
+// la « Auld Reekie ». On choisit dans la palette de décor (jamais on ne la
+// change, v199) : le gris pour le grès noirci, le gris clair pour la pierre
+// de taille ravalée de la New Town, le kaki pour le grès blond des façades
+// neuves. Des UNIS : en motif « Briques », la couche HD (registre `londres`)
+// y verrait de la brique et la patinerait en rouge.
+const PALETTES_VILLES = {
+  edimbourg: [uni(24), uni(23), uni(24), uni(22)],
+};
+
 function ficheGeneree(v) {
   const arch = ARCHETYPES[v.style] || ARCHETYPES.europe;
   // L'angle de trame : déterministe par ville, pour que deux voisines ne
@@ -2897,7 +2909,7 @@ function ficheGeneree(v) {
   const fiche = {
     lat0: v.lat, lon0: v.lon, echelle: 20, rayon: v.r,
     trame: { ang: arch.grille ? 0 : t * 1.4, pu: arch.pu, pv: arch.pv, w: 0.5, s: 0.85 },
-    palette: arch.palette, toit: arch.toit, hMaison: arch.hMaison,
+    palette: PALETTES_VILLES[v.cle] || arch.palette, toit: arch.toit, hMaison: arch.hMaison,
     couleurToits: arch.couleurToits,
   };
   if (arch.tours) {
@@ -3600,7 +3612,13 @@ export function batirColonneVillesMonde(x, z, poser) {
       //   — et l'allège blanche pleine largeur disparaît : c'est elle qui
       //     faisait les rayures d'étagère. La texture porte déjà son appui.
       const ci = Math.round(along);                          // le rang de colonne
-      const baie = f.baie || ARCHI.ETAGE;
+      // `f.baie` est un BLOC de baie choisi par la ville — et Sydney a une
+      // `baie` à elle, la GÉOGRAPHIE de son port ({ v0, v1, presquile }). Lue
+      // ici, cet objet devenait un identifiant de bloc illisible, écrit 0 :
+      // de l'air. Deux cent cinquante fenêtres de Sydney étaient des TROUS
+      // (v450, sonde `baies.mjs`) — le verre dans les murs, une cinquième fois.
+      // Seul un nombre est un bloc.
+      const baie = typeof f.baie === 'number' ? f.baie : ARCHI.ETAGE;
       const fen = bord && ((ci % 2) + 2) % 2 === 0;          // une baie sur deux, EN FAÇADE
       // Le nombre d'étages respecte la hauteur PROPRE de la ville (hMaison) :
       // la grammaire est partagée, l'échelle ne l'est pas — un bourg toscan
@@ -3644,7 +3662,7 @@ export function batirColonneVillesMonde(x, z, poser) {
       return;
     }
 
-    const baie = f.baie || ARCHI.ENTRESOL;      // les ruelles : de petites baies carrées
+    const baie = typeof f.baie === 'number' ? f.baie : ARCHI.ENTRESOL;      // les ruelles : de petites baies carrées
     for (let y = 0; y < bh; y++) {
       if (tour) {
         // même une tour a son pied commerçant : vitrines sur deux niveaux et
