@@ -3707,7 +3707,9 @@
   `monumentshd.js` : Tour Eiffel en treillis, Notre-Dame, Arc, pyramide du
   Louvre, Sacré-Cœur, Panthéon, Opéra, Invalides, Montparnasse). Dettes
   déclarées de la v289 :
-  - [ ] le champ de hauteurs lisse un immeuble avec lui-même (`infoFacadeParis`,
+  - [x] **FAIT EN v444** (mesuré : les seules paires fautives étaient 7 colonnes
+    de deux quartiers se prêtant (îlot, travée) ; la clé porte le quartier).
+    Historique : le champ de hauteurs lisse un immeuble avec lui-même (`infoFacadeParis`,
     îlot et travée) : deux LOTS voisins d'un même immeuble de hauteurs
     différentes se lissent l'un sur l'autre, ce qui fait un toit qui monte d'un
     lot à l'autre au lieu d'un mur pignon — à mesurer sur capture, rue par rue ;
