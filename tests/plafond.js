@@ -373,7 +373,12 @@ const EMPREINTE_MORCEAUX_V414 = '863d4203a441e3fd029ce2404fc6d6e706799e7f64fe489
 // la constante de la v446, au bit près ; et les 2 600 colonnes qui diffèrent
 // dans le disque de Londres sont toutes à 76 à 106 blocs du centre, sur les
 // cinquante-deux lots de la trame (scratchpad diff.mjs).
-const EMPREINTE_MORCEAUX_V357 = '19946cb7e91290f4f781a9e491a4b9fb3708e2dc865ec84bd647e624783f9cfe';
+// v448 : Londres, un des neuf lieux, voit passer le prolongement de la piste
+// d'Heathrow. `tronconsDePiste` désarmé (rend []), la branche rend 19946cb7…,
+// la constante de la v447, au bit près ; et les dix-huit colonnes qui
+// diffèrent dans les morceaux de Londres sont toutes dans la boîte d'un
+// tronçon de piste — aucune ailleurs, aucun autre lieu touché.
+const EMPREINTE_MORCEAUX_V357 = '938a330c6f883c7e249720b7274d988de6484768cfdb882dedd474da65bbac6d';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };

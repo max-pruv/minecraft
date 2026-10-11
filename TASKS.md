@@ -1,5 +1,19 @@
 # Ce qui est en cours
 
+- [ ] **SEPT PISTES SOUS LEUR CIBLE (v448) — DÉCLARÉES, LE REMÈDE EST UNE
+  DÉCISION.** Prolongées autant que leur place le permet, mesurées par sonde :
+  Heathrow 213/227 pour 300 (vallon à l'ouest, Londres à l'est), Barcelone 189
+  pour 260 (la mer des deux côtés), Schiphol 267/270 (polder, autoroute),
+  Francfort 214/232 (vallon, colline), Haneda 245/251 (colline, Tokyo), San
+  Francisco 195 pour 260 (la baie, une autoroute), Los Angeles 191/198 (ravin,
+  la ville). Toutes dépassent ce que l'approche assistée demande (≤ 196 blocs
+  d'arrêt mesurés) sauf LAX pour le Concorde, de justesse. Les remèdes : un
+  remblai plus profond que douze blocs (un viaduc de piste), ou déplacer
+  l'aérodrome — l'invariant 1 (le sol) est en jeu dans le second cas.
+  `PISTES_COURTES` (aeroport.js) nomme l'obstacle ; le témoin de
+  `carteMonde.js` rougit si l'une regagne sa cible sans être retirée de la
+  liste.
+
 - [ ] **PORTAIL DE LA v447 (la trame générique quitte Londres) — PREUVE
   STRUCTURELLE (v291).** Sept suites ; `plafond.js` (les trois témoins neufs,
   l'empreinte relevée), `carteMonde.js`, `washington.js`, `metro.js` vertes.
@@ -6947,7 +6961,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
 - [x] **Valencia Street ne roulait plus à San Francisco — FAIT en v223.** La
   transversale annoncée existe : la 16e Rue au nord et Cesar Chavez au sud,
   toutes deux réelles. Le tour de la Mission et de Mission Bay les emprunte.
-- [x] **Le socle du Shard est un treillis de verre — FAIT en v448 (mur-rideau, 0 bloc de verre sur 2 080)** — un bloc de `GLASS` dans
+- [x] **Le socle du Shard est un treillis de verre — FAIT en v449 (mur-rideau, 0 bloc de verre sur 2 080)** — un bloc de `GLASS` dans
   un mur creux est un trou (même règle qu'à San Francisco, v195). Vu en
   capture aérienne de la rive sud en v206, laissé tel quel : hors du sujet
   de la passe de rues.

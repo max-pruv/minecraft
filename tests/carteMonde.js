@@ -1795,7 +1795,7 @@ const VRAIES_KM = [
       Object.entries(mains).map(([v, c]) =>
         `${v} ${((c.verre / (c.batis || 1)) * 100).toFixed(1)}%`).join(' · '));
 
-    // ET LE SHARD AUSSI (v448) : sa pyramide était un treillis de verre, un
+    // ET LE SHARD AUSSI (v449) : sa pyramide était un treillis de verre, un
     // mur creux qu'on traversait du regard depuis la rive sud (dette v206).
     // Son bâtisseur est pur : on compte ce qu'il pose.
     const shard = await tab.evaluate(async () => {
@@ -4546,6 +4546,46 @@ const VRAIES_KM = [
     });
     verifier('rien de solide ne dépasse sur une piste',
       degage.length === 0, `${degage.length} bloc(s) sur une piste — ${degage.slice(0, 4).join(' · ')}`);
+
+    // LES PISTES SONT ASSEZ LONGUES POUR SE POSER (v445).
+    //
+    // Max : « les pistes de tous les aéroports sont beaucoup trop courtes pour
+    // vraiment atterrir ». On ROULE chaque piste dans un monde neuf, d'un bout
+    // à l'autre, sur trois lignes de sa bande : un bloc plein sous les roues,
+    // trois blocs d'air au-dessus. Et sa longueur atteint la cible de son
+    // profil, ou l'aéroport est déclaré avec l'obstacle qui la borne. Sur
+    // l'ancien code : 90 à 146 blocs, aucune piste à sa cible.
+    const longues = await tab.evaluate(async () => {
+      const A = await import('./src/aeroport.js');
+      if (!A.pistesDe) return { err: 'pas de pistes publiées' };
+      const { World } = await import('./src/world.js');
+      const { BLOCK } = await import('./src/blocks.js');
+      const w = new World();
+      const fautes = [], longueurs = [];
+      for (const a of A.AEROPORTS) {
+        const cible = A.CIBLE_PISTE[a.profil];
+        for (const p of A.pistesDe(a)) {
+          const long = p.ouest + p.est;
+          longueurs.push(`${a.cle}${p.z0 ? '/' + p.z0 : ''} ${long}`);
+          let trous = 0;
+          for (let dx = -p.ouest; dx <= p.est; dx++) {
+            for (const dz of [-p.demi + 1, 0, p.demi - 1]) {
+              const x = a.x + dx, z = a.z + p.z0 + dz, s = w.getBlock(x, a.sol, z);
+              if (s === BLOCK.AIR || s === BLOCK.WATER || [1, 2, 3].some((h) => w.getBlock(x, a.sol + h, z) !== BLOCK.AIR)) trous++;
+            }
+          }
+          if (trous) fautes.push(`${a.cle} z${p.z0} : ${trous} point(s) non roulable(s)`);
+          const declaree = !!A.PISTES_COURTES[a.cle];
+          if (long < cible && !declaree) fautes.push(`${a.cle} z${p.z0} : ${long} pour ${cible}, non déclarée`);
+          if (long < 189) fautes.push(`${a.cle} z${p.z0} : ${long}, plus courte que la plus courte mesurée`);
+        }
+        if (A.PISTES_COURTES[a.cle] && A.pistesDe(a).every((p) => p.ouest + p.est >= cible)) fautes.push(`${a.cle} déclarée courte mais à sa cible`);
+      }
+      return { fautes, longueurs };
+    });
+    verifier('chaque piste se roule d\'un bout à l\'autre et atteint sa cible — ou l\'obstacle qui la borne est déclaré',
+      !longues.err && longues.fautes.length === 0,
+      `${longues.err || ''} ${(longues.fautes || []).slice(0, 5).join(' · ')} — ${(longues.longueurs || []).join(', ')}`);
 
     // ET L'OUVRAGE RESTE DANS SES BORNES MESURÉES (v280).
     //

@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v448 — Le Shard n'est plus transparent
+## v449 — Le Shard n'est plus transparent
 
 **Pourquoi.** La pyramide du Shard posait 1 792 blocs de verre sur 2 080. Un
 bâtiment est creux : un mur de verre est un trou, et l'on voyait au travers de
@@ -34,6 +34,32 @@ sa ceinture d'acier tous les sept rangs. Sa forme et sa hauteur ne bougent pas.
 bâtisseur : 0 bloc de verre sur 2 080, contre 1 792 sur `origin/main` (rouge).
 L'empreinte des 490 morceaux ne bouge pas (le Shard n'y est pas) ; le verre et
 le mur-rideau arrêtent l'enfant de la même façon, aucun bloc d'enfant ne bouge.
+
+---
+
+## v448 — Des pistes assez longues pour se poser
+
+**Pourquoi.** Max : « les pistes de tous les aéroports sont beaucoup trop
+courtes pour vraiment atterrir ». Mesuré : 90 à 146 blocs de piste, pour un
+atterrissage assisté qui en demande 98 à 127 et un posé à la main qui en
+demande davantage — le Concorde n'avait presque nulle part où se poser.
+
+**Ce que ça change.** Les trente et une pistes des dix-neuf aéroports sont
+prolongées hors de leur disque, dans l'axe, par un ouvrage — asphalte sur
+remblai ou dans une tranchée, seuil repeint au nouveau bout : 300 blocs pour
+les grands aéroports, 260 pour ceux des villes, 220 pour les bases. Le relief
+ne bouge pas d'un bloc. Sept aéroports n'atteignent pas la cible parce qu'une
+ville, une route, une voie ferrée ou la mer les borne : ils gagnent ce que
+leur place permet.
+
+**Ce qui le prouve.** Chaque prolongement est mesuré par une sonde (bornes du
+remblai et de la tranchée, douze blocs de toute ville, route, voie ferrée,
+autre aéroport et monument, quarante de ce que les enfants ont bâti) ; un
+témoin de `carteMonde.js` roule chaque piste d'un bout à l'autre et compare sa
+longueur à la cible, et les deux empreintes du relief de `plafond.js` sont
+inchangées ; l'empreinte des 490 morceaux change à Londres seulement — dix-huit
+colonnes, toutes dans un tronçon de la piste d'Heathrow, et rend l'ancienne
+constante au bit près quand on retire les prolongements.
 
 ---
 

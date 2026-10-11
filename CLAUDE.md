@@ -770,6 +770,34 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les pistes à leur vraie longueur (v448) — un ouvrage qui sort du disque est un repère, pas un relief
+
+Max : « les pistes de tous les aéroports sont beaucoup trop courtes pour
+vraiment atterrir ». Mesuré : 90 à 146 blocs. Quatre règles.
+
+- **UN PROLONGEMENT EST UN REPÈRE DE PLUS, BÂTI EN TRONÇONS.**
+  `tronconsDePiste` (aeroport.js) rend des repères de 32 blocs (`piste: true`)
+  posés dans l'axe, au-delà du disque : remblai et tranchée écrits en blocs
+  (les bornes de la v280, `REMBLAI` 12, `DECAISSE` 9), jamais `terrainHeight`.
+  Les deux empreintes de `plafond.js` sont intactes, et une sonde compare le
+  relief des deux arbres sur 688 320 colonnes autour des dix-neuf aérodromes :
+  zéro différente. Un tronçon prend sa cote à l'aérodrome (`lm.ancre`), pas à
+  son centre.
+- **UN REPÈRE QUI N'EST PAS UN BÂTIMENT SE DÉCLARE À TOUS LES LECTEURS DE
+  REPÈRES.** `dansUneZoneATerre` aplanit le sol sous les repères du monde
+  (`conf.reperes`) : un tronçon y aurait changé le relief. Il est filtré là,
+  dans `REPERES` et dans `nearLandmark` (qui refuse un lot de ville). Les
+  mondes figés (`LANDMARKS_V317`) ne le portent pas.
+- **LA LONGUEUR SE MESURE CONTRE TOUT CE QUI BORNE.** `PROLONGEMENTS` est le
+  résultat d'une sonde (villes, routes, voies ferrées, autres aérodromes,
+  monuments, eau, et la profondeur que le remblai et la tranchée tiennent),
+  pas un goût ; `CIBLE_PISTE` dit ce qu'on vise par profil (300 · 260 · 220),
+  et `PISTES_COURTES` nomme, avec l'obstacle, les sept aérodromes qui n'y
+  arrivent pas. Un témoin de `carteMonde.js` roule chaque piste et rougit
+  pour une piste courte non déclarée — ou une déclarée qui ne l'est plus.
+- **LE PLAN EST PUBLIÉ UNE FOIS** : `pistesDe(a)` (axe, demi-largeur, bouts
+  ouest et est) est lu par le bâtisseur et le témoin ; l'approche assistée le lira.
+
 ## Les commandes de l'avion se rangent (v445) — une file en flux ne peut rien recouvrir
 
 Max, deux captures d'iPhone en vol : six paires d'éléments qui se recouvrent
@@ -2517,7 +2545,7 @@ blocs du centre). Trois règles.
   disparu. Un circuit validé par le sol ne dit rien de ce qu'une autre boucle
   bâtit par-dessus.
 
-Et **le Shard (v448)** : la règle du verre dans les murs (v195, v202) ne
+Et **le Shard (v449)** : la règle du verre dans les murs (v195, v202) ne
 regardait que les `batirColonne*` des villes ; un MONUMENT bâti en verre a le
 même défaut. Le témoin de `carteMonde.js` appelle son bâtisseur et compte le
 verre — tout monument de tour vitrée se vérifie de la même façon.
