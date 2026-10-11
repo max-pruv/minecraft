@@ -1,4 +1,4 @@
-// L'ARRIVÉE APRÈS UNE TÉLÉPORTATION, DÉCOUPÉE IMAGE PAR IMAGE (v418)
+// L'ARRIVÉE APRÈS UNE TÉLÉPORTATION, DÉCOUPÉE IMAGE PAR IMAGE (v420)
 //
 // Ce qui reste du gel de téléportation après la v403 : une pire image de 250 à
 // 300 ms en scène VIDE, non attribuée (`sonde-arrivee-journal.cjs`). Cette

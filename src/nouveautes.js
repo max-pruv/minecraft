@@ -6,11 +6,27 @@
 
 export const NOUVEAUTES = [
   {
-    v: 418,
+    v: 420,
     titre: 'L\'arrivée plus légère',
     puces: [
       'Moins d\'attente après une téléportation',
       'Moins de travail pour la tablette',
+    ],
+  },
+  {
+    v: 419,
+    titre: 'Paris rejoint Lyon',
+    puces: [
+      'L\'autoroute du Soleil à côté du TGV',
+      'On entre dans Paris par le sud',
+    ],
+  },
+  {
+    v: 418,
+    titre: 'Des rues autour du Strip',
+    puces: [
+      'Las Vegas roule sur de vraies rues',
+      'Plus de voiture dans les fontaines',
     ],
   },
   {

@@ -5347,7 +5347,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       }, placeCiel);
     }
 
-    // LE NOM DU PILOTE GRAPHIQUE SE LIT UNE FOIS (v418). `gl.getParameter` est
+    // LE NOM DU PILOTE GRAPHIQUE SE LIT UNE FOIS (v420). `gl.getParameter` est
     // un aller-retour SYNCHRONE avec le processus du GPU ; `renduLogiciel()` le
     // refaisait à chaque reconstruction de la file de maillage, et à l'arrivée
     // d'une téléportation à Paris cela pesait 120 à 336 ms dans la première

@@ -288,7 +288,7 @@ renderer.toneMappingExposure = 1.05;
 // monde qui n'arrive pas. `?ombres=1` les force (les témoins du regard),
 // `?ombres=0` les coupe. Sur l'iPad, la carte graphique est là.
 //
-// LA RÉPONSE SE LIT UNE FOIS (v418). `gl.getParameter` est un aller-retour
+// LA RÉPONSE SE LIT UNE FOIS (v420). `gl.getParameter` est un aller-retour
 // SYNCHRONE avec le processus du GPU, qui attend que la carte ait fini ce qu'on
 // lui a donné : `fileAuRegardVoulue` le demandait à chaque reconstruction de la
 // file de maillage, et à l'arrivée d'une téléportation cela coûtait 156 à

@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v418 — L'arrivée d'une téléportation découpée
+## v420 — L'arrivée d'une téléportation découpée
 
 **Pourquoi.** Après une téléportation, l'écran se fige encore un instant en
 arrivant dans une ville, et personne ne savait où passait ce temps : la v403
@@ -44,6 +44,65 @@ se voit pas en durée d'image au banc (pire image 283 à 367 ms contre 283 à
 383), parce que l'attente se cachait dans des images déjà lentes — il se
 transpose à la tablette comme un appel synchrone de moins par morceau.
 
+## v419 — Paris rejoint Lyon
+
+**Pourquoi.** Paris–Lyon était dans la liste du kit « monde fidèle » depuis la
+v310, laissé de côté tant que `paris.js` était la zone d'une autre session, et
+parce que le TGV court sur l'axe direct : une route qui le croise poserait son
+remblai sur le ballast. Et Paris n'avait qu'une destination pour toutes ses
+autoroutes : l'entrée de chaque route menait à la Gare du Nord, au nord de la
+ville — une route arrivant du sud aurait traversé tout Paris en diagonale.
+
+**Ce que ça change.** L'A6, l'autoroute du Soleil, sort de Paris plein sud par
+la porte d'Italie et descend vers Lyon à l'ouest du TGV, dans la plaine (à l'est
+du rail, un massif de près de soixante blocs), avec un seul pont sur un
+ruisseau. Dans
+Paris, une avenue mène de la porte à la place d'Italie, au bout des Gobelins
+et du boulevard Arago ; à Lyon, la route entre par l'axe de sa trame, de
+l'autre côté de la ville que l'A7. Vingt voitures font l'aller-retour, et de
+Lille on peut désormais rouler jusqu'à Marseille.
+
+**Ce qui le prouve.** Un témoin neuf de `carteMonde.js`, rouge sur l'ancien
+code (ni convoi ni entrée) : l'A6 n'a aucun rail sous son emprise, ne frôle ni
+Paris ni Lyon hors de ses tronçons radiaux, ses deux entrées de Paris roulent
+sur la chaussée sans un bloc à hauteur de carrosserie et finissent au bout
+d'une voie nommée, et celle de Lyon arrive sur la rue. Les témoins de toutes
+les routes (profil, déblai 4,1, remblai 1,1, aérodromes, sanctuaires, emprise
+partagée) la lisent sans changement. L'empreinte des 490 morceaux change —
+Paris en est un des neuf lieux — et se prouve : l'A6 retirée, la branche rend
+la constante d'avant au bit près, et les quatre-vingt-cinq colonnes qui
+diffèrent sont toutes à moins de 11,2 blocs de l'axe de l'entrée.
+
+---
+
+## v418 — Les voitures contournent la place, et Las Vegas a ses rues
+
+**Pourquoi.** Après la v404, des anneaux de voitures roulaient encore hors de
+la chaussée : 2 257 pas. Deux familles, mesurées. Dans une vingtaine de villes,
+des anneaux traversaient toujours la place centrale et sa fontaine : un contour existait,
+mais il aurait suivi la voie d'un autre anneau (deux convois l'un dans
+l'autre). Et à Las Vegas, la bande du Strip ne tient qu'une rue de la trame :
+les rues voisines tombaient dans le sable, 689 pas dans le désert.
+
+**Ce que ça change.** Un anneau qui ne peut pas contourner dans son sens le
+fait dans l'autre, sur l'autre voie de la même rue : il croise ses voisins au
+lieu de les suivre, et il ne passe plus par la fontaine (Barcelone, Sydney, Stockholm,
+La Havane, Turin, Budapest, Delhi, Dubaï, São Paulo, Prague…). À Las Vegas, une
+grille de rues entoure le Strip comme dans la vraie ville (Paradise, Koval,
+Frank Sinatra, Industrial) : de l'asphalte nu dans le sable, sans un immeuble
+de plus. La ville gagne un quatrième circuit.
+
+**Ce qui le prouve.** Le témoin des anneaux hors chaussée de `carteMonde.js`
+resserre ses barres (rouge sur `origin/main`), et un témoin neuf garde le
+désert de Las Vegas : rien que du sable et de l'asphalte hors de la bande,
+aucun lot. Une sonde compare les deux arbres ville par ville : aucun circuit
+perdu, la couverture ne baisse nulle part (Las Vegas 90,6 → 98,9 %), la
+voiture la plus proche du centre reste à moins de 30 blocs. Anneaux hors
+chaussée : 87 → 75, 2 257 → 1 228 pas ; Las Vegas 689 → 21 pas, trois →
+quatre circuits. Le coût du dépliage ne bouge pas, et l'empreinte des 490
+morceaux est celle d'`origin/main`.
+
+---
 ## v417 — Le monde arrive à temps au-dessus des villes
 
 **Pourquoi.** Le témoin qui vérifie que l'avion ne dépasse pas le monde en
