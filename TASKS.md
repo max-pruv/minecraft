@@ -66,8 +66,11 @@
     été vu ; `origin/main` : « le monde est bien là » et pas de lien), « seul,
     le bouton d'émotes se range ». `origin/main` seul ajoute la veille sans
     retour, « seule après le départ de l'hôte » et le passager sans courtier.
-    Piste du jumeau : le sondage du phare (`relaisLire` filtré par émetteur),
-    pas le bus — à sonder comme `sonde-relais-amorce.mjs`.
+    Piste du jumeau : le sondage du phare, pas le bus — `net.js` ne donne
+    que TROIS secondes à `relaisHoteRecent` (`Promise.race`, ~ligne 319) ;
+    une requête qui tarde (banc chargé, Wi-Fi lent) rend « introuvable » et
+    l'invité OUVRE le monde par-dessus l'hôte. À sonder comme
+    `sonde-relais-amorce.mjs`, avant de toucher à la borne.
   - **Le vol au-dessus de Paris** (`monte.js`) : vert seul depuis la v440
     (252 blocs en 12,8 s) ; son message dit la cadence (`sonde-vol-paris.cjs`).
   - **Le taxi** (`manhattan.js`) : compte du temps de JEU, fenêtre de côté
