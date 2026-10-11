@@ -598,6 +598,7 @@ const VRAIES_KM = [
       out.convoiI95Sud = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'I-95 Sud') || null;
       out.convoiTomei = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'Tōmei') || null;
       out.convoiM40 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'M40') || null;
+      out.convoiA6 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A6') || null;
       // WASHINGTON EST UNE BOÎTE (v367) : la route de New York s'arrête NET à
       // son bord sud (`boutNet`), au niveau de la rue d'Anacostia qui y
       // débouche, et ses voitures entrent par cette rue (`avenues`). On compte
@@ -748,6 +749,28 @@ const VRAIES_KM = [
             return { route: e.route, dans, vus, rue, artere };
           });
         } catch (e) { out.entreesLondresErreur = String(e); }
+        // LES ENTRÉES DE PARIS (v419) : l'A1 arrive à la Gare du Nord, l'A6 à la
+        // place d'Italie — chacune sur la chaussée d'un bout à l'autre, sans un
+        // bloc à hauteur de carrosserie, et finit sur le bout d'une voie nommée.
+        // Vers la Gare du Nord, l'entrée de l'A6 traverserait toute la ville.
+        try {
+          const PA = await import('./src/paris.js'), WO = await import('./src/world.js');
+          const ents = m.entreesDe('paris'), E = PA.ENTREES_PARIS || [];
+          out.entreesParis = ents.map((e, i) => {
+            const pts = E[i] || [];
+            let dans = null, vus = 0, rue = 0;
+            for (let k = 0; k + 1 < pts.length && !dans; k++) for (let t = 0; t <= 1; t += 0.01) {
+              const X = Math.floor(pts[k][0] + (pts[k + 1][0] - pts[k][0]) * t), Z = Math.floor(pts[k][1] + (pts[k + 1][1] - pts[k][1]) * t);
+              if (m.routeEn(X, Z)) continue;
+              const h = w.coteRoulable(X, Z); vus++;
+              if (WO.CHAUSSEE.has(w.getBlock(X, h, Z))) rue++;
+              if (w.isSolid(X, h + 1, Z) || w.isSolid(X, h + 2, Z)) { dans = [X, Z, w.getBlock(X, h + 1, Z)]; break; }
+            }
+            const fin = pts[pts.length - 1] || [0, 0], fu = fin[0] - PA.PARIS.x, fv = fin[1] - PA.PARIS.z;
+            const voie = PA.VOIES_PARIS.some((v) => v.pts.some(([a, b]) => Math.hypot(a - fu, b - fv) < 1));
+            return { route: e.route, dans, vus, rue, voie, long: Math.round(Math.hypot(fin[0] - (pts[0] || fin)[0], fin[1] - (pts[0] || fin)[1])) };
+          });
+        } catch (e) { out.entreesParisErreur = String(e); }
         // TOUTE ENTRÉE DE VILLE ENGENDRÉE (v311) : Bruxelles en a deux,
         // Amsterdam une. Chacune doit arriver sur la rue (trente blocs depuis
         // la porte) et, jusqu'au bout de l'avenue (douze blocs du centre), ne
@@ -1105,6 +1128,22 @@ const VRAIES_KM = [
       JSON.stringify(a1.absent ? a1 : { convoi: a1.convoiM40 ? { nom: a1.convoiM40.nom, voitures: (a1.convoiM40.modeles || []).length } : 'aucun convoi M40',
         surRail: a1.surRail && a1.surRail['M40'], frole: a1.frole && a1.frole['M40'], londres: a1.entreesLondres, erreur: a1.entreesLondresErreur,
         birmingham: (a1.entreesEngendrees || []).filter((e) => e.route === 'M40') }));
+
+    // L'A6 (v419) : Paris–Lyon, l'autoroute du Soleil, à l'ouest du TGV d'un
+    // bout à l'autre (à l'est, le massif). Elle sort de Paris par la porte
+    // d'Italie, plein sud, et son entrée déclarée mène à la place d'Italie ;
+    // elle entre dans Lyon par l'axe −133° de sa trame. Sur l'ancien code, la
+    // route n'existe pas : ni convoi, ni entrée.
+    verifier('l\'A6 relie Paris à Lyon à l\'ouest du TGV, entre dans Paris par une rue jusqu\'à la place d\'Italie, et des voitures y roulent',
+      !a1.absent && !a1.entreesParisErreur && !!a1.convoiA6 && a1.convoiA6.routier && (a1.convoiA6.modeles || []).length >= 10
+      && !!a1.surRail && !!a1.surRail['A6'] && a1.surRail['A6'][0] > 100 && a1.surRail['A6'][1] === 0
+      && !!a1.frole && a1.frole['A6'] === 0
+      && (a1.entreesParis || []).some((e) => e.route === 'A6' && e.long < 250)
+      && a1.entreesParis.every((e) => !e.dans && e.vus > 20 && e.rue >= e.vus * 0.95 && e.voie)
+      && (a1.entreesEngendrees || []).some((e) => e.ville === 'lyon' && e.route === 'A6' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7),
+      JSON.stringify(a1.absent ? a1 : { convoi: a1.convoiA6 ? { nom: a1.convoiA6.nom, voitures: (a1.convoiA6.modeles || []).length } : 'aucun convoi A6',
+        surRail: a1.surRail && a1.surRail['A6'], frole: a1.frole && a1.frole['A6'], paris: a1.entreesParis, erreur: a1.entreesParisErreur,
+        lyon: (a1.entreesEngendrees || []).filter((e) => e.route === 'A6') }));
 
     // AUCUNE ROUTE NE PREND L'EMPRISE D'UNE AUTRE (v355) : Montréal a deux
     // routes, et chaque colonne d'emprise doit appartenir au segment qu'on
@@ -3481,7 +3520,7 @@ const VRAIES_KM = [
           + ` · tours de quartier ${flotteVilles.quartiers} : chaussée ${flotteVilles.chaussee} %, ${flotteVilles.plein} pas dans du plein`);
     }
 
-    // --- TOUTES LES VOIES OCCUPÉES (v419) -------------------------------------
+    // --- TOUTES LES VOIES OCCUPÉES (v422) -------------------------------------
     //
     // Max, une capture de GTA VI : les voies y sont serrées et TOUTES occupées.
     // Mesuré avant : une seule file par sens partout — sur l'autoroute (deux

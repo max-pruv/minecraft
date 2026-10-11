@@ -6,12 +6,36 @@
 
 export const NOUVEAUTES = [
   {
-    v: 419,
+    v: 422,
     titre: 'Toutes les voies occupées',
     puces: [
       'Des voitures dans chaque voie',
       "Bien plus de voitures sur l'autoroute",
       'Elles se rangent avant de tourner',
+    ],
+  },
+  {
+    v: 421,
+    titre: 'Des passages piétons partout',
+    puces: [
+      'Rome et Zurich ont leurs bandes blanches',
+      'Les passants y traversent la rue',
+    ],
+  },
+  {
+    v: 420,
+    titre: 'L\'arrivée plus légère',
+    puces: [
+      'Moins d\'attente après une téléportation',
+      'Moins de travail pour la tablette',
+    ],
+  },
+  {
+    v: 419,
+    titre: 'Paris rejoint Lyon',
+    puces: [
+      'L\'autoroute du Soleil à côté du TGV',
+      'On entre dans Paris par le sud',
     ],
   },
   {

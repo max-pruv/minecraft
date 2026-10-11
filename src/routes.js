@@ -454,6 +454,35 @@ export const ROUTES = [
   // coudes ≤ 21°, aucun rail, aucun repère, Heathrow loin derrière.
   { nom: 'M40', villes: ['londres', 'birmingham'],
     via: [[-1191, -1493], [-1187, -1533], [-1183, -1546], [-1166, -1580], [-1135, -1632], [-1128, -1652], [-1127, -1680], [-1138, -1719], [-1152, -1748], [-1186, -1799], [-1201, -1818], [-1304, -1920], [-1370, -1965], [-1399, -1980], [-1456, -1998], [-1490, -2002], [-1529, -2000], [-1556, -1994], [-1582, -1984], [-1637, -1947], [-1709, -1905], [-1767, -1878], [-1798, -1874], [-1811, -1875], [-1824, -1881], [-1845, -1902]] },
+  // L'A6 (v419), PARIS–LYON, l'autoroute du Soleil. Le TGV va droit de gare à
+  // gare (57,6° depuis Paris) : règle de la v320, on choisit un côté et l'on
+  // n'en change plus. À l'EST du rail, un massif de 46 à plus de 60 blocs de
+  // z 500 à z 1 300 (scratchpad carte.mjs) ; à l'OUEST, une plaine de 30 à
+  // 38. La route passe donc à l'ouest, et y reste. À Paris, l'anneau du fondu
+  // monte à 41-43 blocs juste au bord du disque entre 65° et 80° (ring.mjs) :
+  // une porte là déblaie neuf blocs à vingt de la ville ; à 86° le bord est à
+  // 38. La porte est donc plein sud, la porte d'Italie, et l'entrée déclarée
+  // de paris.js mène à la place d'Italie (Gobelins, Arago) au lieu de la Gare
+  // du Nord, à l'autre bout de la ville. Lyon par −144° (entrees.mjs : sa
+  // trame est tournée de 46,7°, l'avenue proche de l'axe −133° fait
+  // trente-quatre blocs et demi de rue, et le TGV, qui arrive par −122°, est
+  // à vingt-six blocs de la porte — à −133° il en aurait dix). La plus longue
+  // avenue, −147°, a des bancs sur la chaussée à cinq et vingt blocs de la
+  // porte (dansav.mjs : les blocs pleins à hauteur de carrosserie) ; −144° et
+  // −145° sont propres. Mesuré sous node (couloir.mjs : couloir le plus bas
+  // avec cap sur une grille de dix blocs, rail à quarante-trois blocs
+  // interdit, trois pas droits après chaque virage, lissage par moyenne
+  // glissante, `profilDe` appelé sur chaque candidat, puis le registre réel
+  // relu colonne par colonne contre le rail et les autres routes ;
+  // elaguer.mjs retire un à un les points qui ne servent pas) : 720 tracés
+  // sur quinze couples de portes, refus 194 remblai · 143 ponts proches · 80
+  // introuvable (le rail ferme −141°) · 53 pont près d'une porte · 10 coude ;
+  // deux cent quatre-vingt-dix-huit admissibles ; celui-ci : 1 774 blocs, UN
+  // pont (s 657–660, un ruisseau), déblai 4,1, remblai 1,1, coudes ≤ 21°,
+  // aucun rail, aucun repère, aucun aérodrome à moins de sa marge et d'une
+  // portée de talus.
+  { nom: 'A6', villes: ['paris', 'lyon'],
+    via: [[-333, 699], [-336, 732], [-360, 781], [-364, 798], [-363, 806], [-280, 990], [-168, 1103], [-116, 1202], [-24, 1304], [-17, 1321], [2, 1393], [24, 1424], [308, 1705], [523, 1814], [536, 1828], [594, 1923], [659, 1983]] },
 ];
 
 // --- la section -----------------------------------------------------------------
@@ -854,7 +883,7 @@ export function traceRoute(seg, { avant = null, apres = null, coteDe = null } = 
     const o = L.terrePlein + L.demiChaussee / 2;          // le milieu de la chaussée de ce sens
     const y = (p ? coteA(seg, s) : 0) + 0.05;
     const rx = -q.fz, rz = q.fx;                             // la droite du sens A→B
-    // la demi-chaussée sous ce point : la seconde voie la lit (v419)
+    // la demi-chaussée sous ce point : la seconde voie la lit (v422)
     aller.push({ x: q.x + rx * o, y, z: q.z + rz * o, dc: L.demiChaussee });
     retour.push({ x: q.x - rx * o, y, z: q.z - rz * o, dc: L.demiChaussee });
   }

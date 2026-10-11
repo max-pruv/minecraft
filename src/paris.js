@@ -555,9 +555,15 @@ export const VOIES_PARIS = VOIES;
 // les autres pour le sol — chaussée, trottoir, les lots s'écartent — mais pas
 // pour les circuits : ce sont les voitures de la route qui l'empruntent, et
 // `CIRCUITS_PARIS` ne la connaît pas.
+//
+// L'ENTRÉE DE L'A6 (v419) arrive par le SUD, de la porte d'Italie à la place
+// d'Italie, où le boulevard Arago et l'avenue des Gobelins se rejoignent
+// (`pk(14, 25)`, le bout commun des deux voies) : c'est le trajet de la vraie
+// autoroute du Soleil. Vers la Gare du Nord, elle traverserait toute la ville.
+const ARRIVEE = { A6: pk(14, 25) };
 const ENTREES = entreesDe('paris').map((e) => ({
   nom: `Entrée ${e.route}`, l: BOULEVARD.chaussee / 2, t: BOULEVARD.trottoir,
-  pts: [[Math.round(e.x - PARIS.x), Math.round(e.z - PARIS.z)], pt('Gare du Nord')],
+  pts: [[Math.round(e.x - PARIS.x), Math.round(e.z - PARIS.z)], ARRIVEE[e.route] || pt('Gare du Nord')],
 }));
 export const ENTREES_PARIS = ENTREES.map((v) => v.pts.map(([u, w]) => [PARIS.x + u, PARIS.z + w]));
 

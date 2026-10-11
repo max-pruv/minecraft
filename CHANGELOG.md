@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v419 — Toutes les voies occupées
+## v422 — Toutes les voies occupées
 
 **Pourquoi.** Max a montré une capture de GTA VI à côté d'une de GTA V : des
 voies serrées, toutes occupées, un trafic dense. Chez nous, mesuré avant
@@ -46,6 +46,82 @@ la voiture qui précède est dans l'autre convoi, et le plancher de la v283
 s'étend à elle. Mesuré au banc, rejoué au même endroit sur `origin/main` :
 contacts entre voitures 0 % à Paris (0 % avant), 1,5 % à Tokyo (2,6 %), 8,8 %
 à Madrid (10,6 %, un nœud d'avant).
+## v421 — Des passages piétons dans les rues en biais
+
+**Pourquoi.** Dans les villes du monde, les bandes blanches d'un passage
+piéton étaient peintes DANS la tuile d'un bloc. Une tuile ne se tourne pas :
+seules les 65 villes dont les rues suivent le nord et l'est avaient leurs
+passages. Rome, Zurich et toutes les villes aux rues en biais n'en avaient
+aucun, et leurs passants ne traversaient qu'aux feux (v402).
+
+**Ce que ça change.** 197 villes engendrées ont désormais leurs passages
+piétons à l'abord de chaque carrefour, des bandes blanches dans l'axe de la
+rue, dessinées par le mailleur au-dessus de l'asphalte. Elles se voient sur
+toutes les tablettes, palier bas compris, et les passants y traversent quand
+aucune voiture n'arrive, dans l'axe de leur rue. Aucun bloc n'est écrit : le sol
+et les constructions des enfants ne bougent pas.
+
+**Ce qui le prouve.** Un témoin de `plafond.js` maille quarante-neuf morceaux au
+centre de quatre villes avec et sans les bandes : des sommets en plus à Rome
+(2 699) et à Zurich (7 035), aucun à Kyoto ni à Paris, et les blocs identiques.
+L'empreinte des 490 morceaux de la v352 est inchangée. Un témoin de `monte.js`
+pose six passants au bord d'un passage de Rome loin de tout feu et compte qui
+traverse SUR le passage : 2 sur 2, 2 sur 3, 3 sur 3 sur la branche ;
+`origin/main` n'a pas de passage en biais (rouge, et il le dit). Captures avant
+et après d'un carrefour de Rome et de Zurich : les bandes sur les quatre bras. Le coût est de 0,5 ms par morceau en médiane sous node,
+5 ms au pire.
+## v420 — L'arrivée d'une téléportation découpée
+
+**Pourquoi.** Après une téléportation, l'écran se fige encore un instant en
+arrivant dans une ville, et personne ne savait où passait ce temps : la v403
+avait retiré le gel des enfants qui ont beaucoup bâti, il restait une pire
+image de 250 à 380 ms que rien n'attribuait.
+
+**Ce que ça change.** Le jeu ne demande plus le nom de la carte graphique à
+chaque morceau franchi : c'était un aller-retour synchrone avec le processus
+du GPU, refait à chaque reconstruction de la file de maillage, 120 à 336 ms
+dans la première seconde d'une arrivée à Paris (profil). Et l'arrivée est
+découpée : en scène vide, la première image lente est la circulation qui
+fabrique d'un coup toutes ses voitures en vue (160 à 290 ms, `Convoi.montrer`),
+puis le fil principal qui engendre des morceaux pour les personnages (66 à
+94 ms) — deux dettes nommées pour les sessions qui tiennent ces fichiers.
+
+**Ce qui le prouve.** Un témoin dans `monte.js` : six morceaux franchis en
+vol, zéro demande du nom du pilote (huit sur l'ancien code). Une sonde,
+`sonde-arrivee-decoupe.cjs`, qui découpe chaque image de l'arrivée (travail,
+rendu, installation, génération) et profile la première seconde ; le gain ne
+se voit pas en durée d'image au banc (pire image 283 à 367 ms contre 283 à
+383), parce que l'attente se cachait dans des images déjà lentes — il se
+transpose à la tablette comme un appel synchrone de moins par morceau.
+
+## v419 — Paris rejoint Lyon
+
+**Pourquoi.** Paris–Lyon était dans la liste du kit « monde fidèle » depuis la
+v310, laissé de côté tant que `paris.js` était la zone d'une autre session, et
+parce que le TGV court sur l'axe direct : une route qui le croise poserait son
+remblai sur le ballast. Et Paris n'avait qu'une destination pour toutes ses
+autoroutes : l'entrée de chaque route menait à la Gare du Nord, au nord de la
+ville — une route arrivant du sud aurait traversé tout Paris en diagonale.
+
+**Ce que ça change.** L'A6, l'autoroute du Soleil, sort de Paris plein sud par
+la porte d'Italie et descend vers Lyon à l'ouest du TGV, dans la plaine (à l'est
+du rail, un massif de près de soixante blocs), avec un seul pont sur un
+ruisseau. Dans
+Paris, une avenue mène de la porte à la place d'Italie, au bout des Gobelins
+et du boulevard Arago ; à Lyon, la route entre par l'axe de sa trame, de
+l'autre côté de la ville que l'A7. Vingt voitures font l'aller-retour, et de
+Lille on peut désormais rouler jusqu'à Marseille.
+
+**Ce qui le prouve.** Un témoin neuf de `carteMonde.js`, rouge sur l'ancien
+code (ni convoi ni entrée) : l'A6 n'a aucun rail sous son emprise, ne frôle ni
+Paris ni Lyon hors de ses tronçons radiaux, ses deux entrées de Paris roulent
+sur la chaussée sans un bloc à hauteur de carrosserie et finissent au bout
+d'une voie nommée, et celle de Lyon arrive sur la rue. Les témoins de toutes
+les routes (profil, déblai 4,1, remblai 1,1, aérodromes, sanctuaires, emprise
+partagée) la lisent sans changement. L'empreinte des 490 morceaux change —
+Paris en est un des neuf lieux — et se prouve : l'A6 retirée, la branche rend
+la constante d'avant au bit près, et les quatre-vingt-cinq colonnes qui
+diffèrent sont toutes à moins de 11,2 blocs de l'axe de l'entrée.
 
 ---
 
