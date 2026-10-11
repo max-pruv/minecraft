@@ -2720,7 +2720,7 @@ export class World {
     if (pvm) return h > pvm.cote ? h : pvm.cote;
     // Et les neuf ponts de Paris, à la cote de la ville (v294).
     if (c && c.key === 'paris' && pontParis(x, z)) return h > c.base ? h : c.base;
-    // Et les deux ponts de l'Anacostia (v442), à la cote de la rue — sauf sous
+    // Et les deux ponts de l'Anacostia (v444), à la cote de la rue — sauf sous
     // la Washington d'avant, qui n'en a pas.
     if (h < COTE_PONT_DC && pontWashington(x, z) !== null && !this.conf.villesAvant
       && !(this.colonnesVilleAvant.size > 0 && this.colonnesVilleAvant.has(cleColonneParis(x, z)))) return COTE_PONT_DC;
@@ -3560,7 +3560,7 @@ export class World {
           const DC = dcAvant ? WASHINGTON_V367 : DC_NEUF;
           const solWashington = DC.solWashington;
           const sw = solWashington(wx, wz);
-          // LES PONTS DE L'ANACOSTIA (v442) : sur l'eau et la berge qui
+          // LES PONTS DE L'ANACOSTIA (v444) : sur l'eau et la berge qui
           // descend, le tablier est à la cote de la rue ; le lit et l'eau
           // restent dessous, le relief ne bouge pas. Le métro, lui, se creuse
           // depuis le vrai relief (`h`).

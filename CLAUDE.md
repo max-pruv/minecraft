@@ -770,6 +770,34 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les raccords d'autoroute s'arrêtent avant l'anneau (v442) — deux grilles ne partagent pas une voie
+
+Trois règles.
+
+- **UNE VOIE N'A QU'UNE GRILLE.** Dix-neuf des quarante-six raccords
+  route/ville engendrée roulaient dans la voie d'un anneau (569 blocs) : deux
+  grilles horaires indépendantes (v305) qu'aucun réglage ne cadence l'une
+  contre l'autre (Madrid 6,7 à 6,9 % de paires au contact). Le raccord s'arrête
+  quatre blocs (`MARGE`) avant la première voie d'anneau, même sens ou en face
+  à moins de 1,6 bloc (`finAvantAnneaux`, raccords.js) ; plus court que
+  `RACCORD_MIN`, le demi-tour se fait à la porte. Les pistes ont été mesurées
+  toutes deux (`sonde-rue-dense.cjs raccords`) : l'arrêt à la porte partage
+  encore 44 blocs et ne fait entrer personne ; le raccord court 20 blocs, tous
+  des demi-tours. « Le raccord devient une file de l'anneau » n'existe pas
+  sans téléporter une voiture d'une grille à l'autre.
+- **CE QUE LE DÉMARRAGE NE PEUT PAS PAYER ET QUE L'APPROCHE NE PEUT PAS
+  CHANGER SE MESURE HORS LIGNE.** Les autoroutes naissent au démarrage ; les
+  anneaux de leurs trente-six villes coûtent 877 ms sous node (derrière
+  « Jouer », v258) ; et raccourcir le raccord à l'approche changerait la grille
+  de toute la file d'une tablette à l'autre. La troncature est donc une TABLE
+  (`RACCORDS_COURTS`), comme `ANNEAUX_EN_PLUS`, et un témoin de `plafond.js` la
+  recalcule : un anneau qui bouge la fait rougir et nomme le raccord.
+- **UNE SONDE QU'UNE SUITE LIT SE REQUIERT, ELLE NE SE LANCE PAS.** Le premier
+  témoin lançait `sonde-rue-dense.cjs` par `spawnSync` : l'aiguillage du
+  portail (`sondeIsolee`) ne voit que `require` et `import`, et une sonde
+  modifiée aurait laissé `plafond.js` « déjà vert ». La sonde exporte
+  `mesurer(mode)` ; `?raccords=long` rejoue l'avenue entière au navigateur.
+
 ## La rue dense, palier C (v438) — une variance par voiture est une fonction de son heure
 
 Quatre règles.
@@ -2440,6 +2468,18 @@ engendrées. Quatre règles.
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
 
+## Les colonnes Morris se plantent dans le vide (v443) — un meuble se pose en regardant ses voisins, par la même règle
+
+Une règle. Un meuble qui se pose au tirage ne connaît pas ses voisins : la
+colonne Morris (v289) tombait contre une porte cochère ou à un bloc d'un banc
+(43 sur 76, mesuré). `morrisDegagee` (facadeshd.js) exige l'air libre sur
+quatre côtés et rejoue `mobilierTrottoir` sur les colonnes à deux blocs (avec
+`morrisAvant`, pour ne pas boucler) ; dans un voisinage, la plus petite valeur
+de tirage garde sa colonne. Un dégagement qui écarte plus de la moitié des
+candidats se compense par le tirage (0,012 → 0,024), sinon la ville perd la
+moitié de ses colonnes en silence. `morrisDegagees: false` rejoue l'ancienne
+règle pour l'empreinte des 490 morceaux.
+
 ## La voiture s'arrête devant une terrasse (v436) — une famille d'obstacle lit la même règle pour tous ceux qui butent
 
 Une règle. `mobilierDevant` (main.js) ne lisait que les blocs de mobilier
@@ -3757,7 +3797,7 @@ Une règle.
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
 
-## Les ponts de l'Anacostia (v442) — un pont de ville est du sol, et la cote du tablier se dit à tous ses lecteurs
+## Les ponts de l'Anacostia (v444) — un pont de ville est du sol, et la cote du tablier se dit à tous ses lecteurs
 
 Deux règles.
 

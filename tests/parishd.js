@@ -389,7 +389,47 @@ function verifier(nom, ok, detail = '') {
     verifier('chaque quartier de Paris a ses terrasses de café devant ses devantures (la devanture en bandes de la v301), et le mailleur les dessine',
       parQuartier.every((p) => p.terrasses >= 5) && cannage > 0,
       `${parQuartier.map((p) => `${p.q} ${p.terrasses} (règle d'avant ${p.avant})`).join(' · ')} — ${cannage} sommets de cannage dans (${plusFourni.kx}, ${plusFourni.kz}), ${plusFourni.n} terrasses`);
+  }  {
+    // ── UNE COLONNE MORRIS SE PLANTE DANS LE VIDE (v443) ─────────────────────
+    //
+    // Dette de la v289 : la colonne se posait au tirage, contre une porte
+    // cochère ou à un bloc d'un banc, d'une terrasse, d'une autre colonne.
+    // On relève toutes les colonnes de huit quartiers et l'on exige, pour
+    // chacune, l'air libre sur ses quatre côtés et aucun autre meuble à deux
+    // blocs. La règle d'avant (`morrisAvant`) est relevée aussi : elle doit
+    // rendre des fautes, sinon le témoin ne verrait pas la différence.
+    const { CITY_BLOCK, BLOCK: B } = await import('../src/blocks.js');
+    const w = new World(); w.hd = 1;
+    const mob = (x, z, o) => {
+      const by = w.sommetColonne(x, z);
+      if (w.getBlock(x, by, z) !== CITY_BLOCK.SIDEWALK || w.getBlock(x, by + 1, z) !== B.AIR) return null;
+      return HD.mobilierTrottoir((a, b, c) => w.getBlock(x + a, by + b, z + c), x, z, o);
+    };
+    const releve = (o) => {
+      let n = 0, fautes = 0;
+      for (const [qx, qz] of [[0.9, -0.35], [0.15, 0.85], [-1.7, 0.8], [0.6, -0.3], [-3.2, -2.2], [2.7, -1.6], [-5.3, -1.4], [2.3, 0.25]]) {
+        const [px, pz] = adresseParis(qx, qz);
+        for (let x = px - 40; x < px + 40; x++) for (let z = pz - 40; z < pz + 40; z++) {
+          const m = mob(x, z, o); if (!m || m.genre !== 'morris') continue;
+          n++;
+          const by = w.sommetColonne(x, z);
+          let faute = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => w.getBlock(x + a, by + 1, z + b) !== B.AIR);
+          for (let a = -2; a <= 2 && !faute; a++) for (let b = -2; b <= 2 && !faute; b++) {
+            if (!a && !b) continue;
+            const v = mob(x + a, z + b, o);
+            if (v && (v.genre === 'banc' || v.genre === 'terrasse' || v.genre === 'morris')) faute = true;
+          }
+          if (faute) fautes++;
+        }
+      }
+      return { n, fautes };
+    };
+    const ici = releve(undefined), avant = releve({ morrisAvant: true });
+    verifier('une colonne Morris se plante dans le vide : ni contre un mur ou une porte, ni à deux blocs d\'un banc, d\'une terrasse ou d\'une autre colonne',
+      ici.n >= 20 && ici.fautes === 0 && avant.fautes > 0,
+      `${ici.n} colonnes, ${ici.fautes} mal plantée(s) — règle d'avant : ${avant.n} colonnes, ${avant.fautes} mal plantée(s)`);
   }
+
   {
     // UN ARBRE HD PAR TRONC. On cherche un morceau de Paris qui plante des
     // arbres (autour du morceau témoin), on compte ses bases de tronc dans les
@@ -1054,10 +1094,18 @@ function verifier(nom, ok, detail = '') {
       g.player.pos.set(ax, site.by + 1.01, az); g.player.vel.set(0, 0, 0);
       g.player.yaw = yaw; g.player.pitch = 0; g.player.flying = false;
       const fx = -Math.sin(yaw), fz = -Math.cos(yaw);
-      g.animalManager.invoquer('voiture', ax + fx * 2.5, az + fz * 2.5);
-      await dodo(1500);
-      if (!(g.fun.montureConduite && g.fun.montureConduite())) document.getElementById('ride-btn').click();
-      await dodo(800);
+      const voit = g.animalManager.invoquer('voiture', ax + fx * 2.5, az + fz * 2.5);
+      // LA MONTE SE VÉRIFIE DANS LE JEU, ET SE RETENTE (v443) : au portail un
+      // seul clic tombait avant que la voiture soit prête (`monte: false`).
+      // On attend ses roues, puis au plus huit essais, l'état relu à chaque
+      // fois — jamais deux clics sans relire (bouton-bascule, v252).
+      const tv = performance.now();
+      while (performance.now() - tv < 30000 && !(voit && voit.mesh && voit.mesh.userData.roues)) await dodo(300);
+      for (let e = 0; e < 8 && !(g.fun.montureConduite && g.fun.montureConduite()); e++) {
+        g.player.pos.set(ax, site.by + 1.01, az); g.player.yaw = yaw;
+        document.getElementById('ride-btn').click();
+        await dodo(1000);
+      }
       g.player.pos.set(ax, site.by + 1.01, az); g.player.yaw = yaw;
       const monte = !!(g.fun.montureConduite && g.fun.montureConduite());
       // l'abscisse le long du couloir, comptée depuis le centre de la terrasse
