@@ -787,6 +787,20 @@
     body.en-avion #cmd-vol { height: 210px; }
     body.en-avion #fly-btn { right: 94px; bottom: calc(240px + var(--safe-bottom)); }
     body.en-avion #train-btn { display: flex; right: 94px; bottom: calc(174px + var(--safe-bottom)); }
+    /* LA COLONNE DE BORD, RESSERRÉE (aviation). Max : « améliore la position
+       des commandes de l'avion ». Sur sa capture, « Descendre » flottait AU-
+       DESSUS de la colonne et de la manette, et le tout — 138 × 256 px —
+       mangeait le quart bas-droit et l'avion avec. Trois boutons ronds de
+       56 px dans UNE colonne, du bas vers le haut : la vitesse, 🛞, ✈️ et
+       ⬇️ DESCENDRE ; la manette à sa droite, exactement aussi haute. Rien ne
+       dépasse le haut de la manette (v265), tout a le même x, chaque bouton
+       porte son mot, et rien n'entre dans le quart du joystick (v272). */
+    body.en-avion #gaz-base { right: 16px; width: 56px; height: 220px; border-radius: 28px; }
+    body.en-avion #cmd-vol { right: 80px; width: 64px; height: 220px; border-radius: 32px; }
+    body.en-avion #gaz-val { right: 80px; width: 64px; bottom: calc(100px + var(--safe-bottom)); }
+    body.en-avion #train-btn, body.en-avion #fly-btn { right: 84px; width: 56px; height: 56px; }
+    body.en-avion #train-btn { bottom: calc(136px + var(--safe-bottom)); }
+    body.en-avion #fly-btn { bottom: calc(198px + var(--safe-bottom)); }
     /* LE CADRAN DE CAP (v263) : aux commandes seulement, en haut au milieu —
        le cap en degrés, la ville devant et sa distance, et un repère qui
        glisse sur la règle quand on tourne. Sous le compteur du temps de
@@ -855,6 +869,28 @@
     /* L'ÉTIQUETTE DE CE QU'ON REGARDE — une bête, une monture. Elle est née
        avec l'attrape de créatures (retirée en v285) et son `id` le dit encore ;
        ce qu'elle nomme aujourd'hui, ce sont les animaux. */
+    /* LA FILE CENTRALE (aviation, octobre 2026). Max, deux captures d'iPhone :
+       le cadran de cap posé PAR-DESSUS la minicarte, et en dessous trois
+       textes l'un sur l'autre — « À l'arrêt », le GPS « fais demi-tour », la
+       minicarte. Chacun avait sa cote écrite à la main (52, 92, 120, 126 px du
+       haut…), réglée sans les autres : mesuré à 430 × 932, cadran × minicarte,
+       cadran × GPS, cadran × bandeau, GPS × bandeau, minicarte × GPS,
+       minicarte × bandeau — six paires.
+       Une seule boîte en flux, sous la ligne du chronomètre, entre la colonne
+       de gauche (et la minicarte quand elle est ouverte) et la colonne de
+       droite : ce qui s'y range ne peut pas se recouvrir, et un bandeau de
+       plus se rangera tout seul à la suite. Plus aucune cote à la main. */
+    #file-centre {
+      position: fixed; top: var(--rail-panel-top); left: var(--rail-w); right: 56px;
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      z-index: 8; pointer-events: none;
+    }
+    body.minicarte-ouverte #file-centre { left: calc(var(--rail-w) + var(--minimap-w) + 8px); }
+    #file-centre > * {
+      position: static !important; transform: none !important; max-width: 100%; box-sizing: border-box;
+      pointer-events: auto;
+    }
+    #file-centre > #toast, #file-centre > #cap-avion { pointer-events: none; }
     #creature-label {
       display: none; position: fixed; left: 50%; top: 18%; transform: translateX(-50%);
       font-size: 15px; font-weight: bold; text-shadow: 1px 1px 0 #000;
@@ -1128,7 +1164,7 @@
        --rail-w est la largeur réservée : les panneaux qui s'ouvrent à gauche
        s'alignent dessus et ne peuvent donc pas passer par-dessus la colonne. */
     :root {
-      --rail-btn: 44px; --rail-x: 8px;
+      --rail-btn: 44px; --rail-x: 8px; --minimap-w: 160px;
       --rail-w: calc(var(--rail-x) + var(--rail-btn) + 10px);
       /* les panneaux ouverts à gauche démarrent sous la barre du haut, où
          vivent le chronomètre et les compteurs centrés */
@@ -1238,7 +1274,7 @@
     }
     #minimap {
       display: none; position: fixed; top: var(--rail-panel-top); left: var(--rail-w); z-index: 6;
-      width: 160px; height: 160px; border: 2px solid rgba(255,255,255,0.6);
+      width: var(--minimap-w); height: var(--minimap-w); border: 2px solid rgba(255,255,255,0.6); box-sizing: border-box;
       border-radius: 10px; cursor: pointer; image-rendering: pixelated;
     }
     #map-modal {
@@ -1525,7 +1561,7 @@
         --chat-bottom: calc(258px + var(--safe-bottom));
       }
       #left-rail { top: calc(8px + var(--safe-top)); }
-      #minimap { width: 120px; height: 120px; }
+      :root { --minimap-w: 120px; }
       #edu-timer { top: calc(56px + var(--safe-top)); font-size: 14px; padding: 3px 10px; }
       #cap-avion { top: calc(92px + var(--safe-top)); min-width: 170px; padding: 4px 10px 6px; }
       #cap-ville { font-size: 15px; }
@@ -1975,7 +2011,6 @@
   <div id="block-name"></div>
   <div id="hotbar"></div>
   <div id="creature-label"></div>
-  <div id="toast"></div>
   <button id="pause-btn">⏸</button>
   <button id="inv-btn" title="Inventaire de blocs (E)">🎒</button>
   <!-- Colonne de gauche : tout ce qui s'y ajoute se range à la suite. -->
@@ -2143,9 +2178,14 @@
   <div id="link-banner"><span id="link-banner-txt"></span><button class="fermer-msg" id="link-banner-close" aria-label="Masquer">✕</button></div>
   <div id="edu-timer"><span id="edu-timer-txt"></span><button class="fermer-msg" id="edu-timer-close" aria-label="Masquer">✕</button></div>
   <!-- Le cadran de cap (v263) : ce que l'enfant lit aux commandes. -->
-  <div id="gps-ami"><span id="gps-ami-texte"></span><button id="gps-ami-oui">🧭 Y aller</button><button id="gps-ami-non" title="Non merci">✕</button></div>
-  <div id="gps"><span id="gps-fleche">⬆</span><div id="gps-texte"></div><button id="gps-stop" title="Arrêter le GPS">✕</button></div>
-  <div id="cap-avion"><div id="cap-degres"></div><div id="cap-ville"></div><div id="cap-regle"><div id="cap-repere"></div></div></div>
+  <!-- LA FILE CENTRALE (aviation) : tout ce qui s'affiche en haut au milieu s'y
+       range l'un sous l'autre — elle ne peut donc rien recouvrir par construction. -->
+  <div id="file-centre">
+    <div id="cap-avion"><div id="cap-degres"></div><div id="cap-ville"></div><div id="cap-regle"><div id="cap-repere"></div></div></div>
+    <div id="gps"><span id="gps-fleche">⬆</span><div id="gps-texte"></div><button id="gps-stop" title="Arrêter le GPS">✕</button></div>
+    <div id="gps-ami"><span id="gps-ami-texte"></span><button id="gps-ami-oui">🧭 Y aller</button><button id="gps-ami-non" title="Non merci">✕</button></div>
+    <div id="toast"></div>
+  </div>
   <div id="notif-carte">
     <button class="fermer-msg" id="notif-carte-close" aria-label="Fermer">✕</button>
     <b id="notif-carte-titre">🔔 Être prévenu quand un ami arrive ?</b>

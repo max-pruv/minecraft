@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 442,
+    titre: 'Les commandes de l\'avion rangées',
+    puces: [
+      'Plus rien ne se chevauche en vol',
+      'Descendre rejoint la colonne de bord',
+      'Le quiz met l\'avion en pause',
+    ],
+  },
+  {
     v: 441,
     titre: 'La voiture de l\'ami braque',
     puces: [
