@@ -479,6 +479,38 @@
   sur `origin/main` à (−2 581, 5 272), un nœud de circuits face à face,
   8,8 % sur la v423 — d'avant, à démonter. (5) Palier C : utilitaires et
   pickups (classe dans `FLOTTE`), variance par voiture, voie par tronçon.
+  **(5) et (2) FAITS en v438** : fourgonnette et pickup (`utilitaires.js`, une
+  voiture sur six hors New York, quinze maillages), jeu par voiture
+  (`Convoi.jeu`, fonction de la clé, du rang et de l'heure : la grille reste
+  partagée ; éteint sous six blocs/s, près d'un croisement, sur la voie
+  partagée avec la jumelle et dans l'anneau du bus — 392 contacts de grille
+  avec ou sans, `sonde-rue-dense.cjs jeu`), limitation par tronçon
+  (`allureDuTroncon`, `allureVilleMonde`). Seconde voie de Paris 306 → 446
+  blocs (rampe 5 en ville, seuil 20, recherche parmi les nombres que le
+  croisement accepte). RESTE : les deux circuits en huit de Paris (rangs 1 et
+  3, 193 et 44 blocs de deux voies) n'ont pas de jumelle — seul n = 4 passe
+  leur croisement à `2 n` voitures (0,18 `nb`) ; le remède est de casser le
+  huit en deux circuits (`paris.js`, autre session). Le jeu ne joue pas dans
+  l'anneau du bus (il y est à une demi-voiture) : le grand anneau de chaque
+  ville roule encore en un seul train. Le dépliage de la seconde voie
+  (`voiesDe`, point 4 de la zone) coûte jusqu'à 37 ms par circuit sous node
+  (Paris, puis 1 à 16) : un circuit par image, NON découpé — différer la
+  jumelle changerait le nombre de voitures de la file après sa naissance, donc
+  la grille d'une tablette à l'autre (v305) ; le découper en tranches AVANT la
+  naissance du convoi est la forme sûre, à faire si l'iPad le montre.
+  Portail de la v438 : `degats.js` « percuter une voiture de la rue l'abîme
+  AUSSI » (et le garage qui en dépend) rouge sous la charge — santé 1 ; REJOUÉE
+  SEULE : branche 0,99 deux fois, `origin/main` 0,99 deux fois. Le témoin
+  arrondit la santé au centième et l'élan (13 à 15 blocs) ne coûte que 0,5 à
+  1 % : sous la charge, l'arrondi rend 1. Dette du témoin (lire la santé non
+  arrondie, ou prendre plus d'élan), pas de la livraison.
+  Second portail de la v438 (après fusion de la v435) : rouges `carte.js`
+  (flèche du GPS 1,92, déclaré), `manhattan.js` (trou, taxi, déclarés),
+  `monte.js` « au feu, la voiture freine sur plusieurs relevés » (2 arrêts,
+  1 sec à 45 b/s², la forme déclarée en v415). A/B sur la même branche,
+  `sonde-circulation.cjs paris 40`, ordre alterné, jeu par voiture allumé et
+  éteint trois fois chacun : zéro arrêt sec sur 36 arrêts, aucun contact — le
+  jeu n'y est pour rien ; le témoin juge sur deux arrêts.
   **(3) FAIT en v431** : balayage au quart sur les deux premiers blocs,
   plancher de file 1,0 en ligne droite (1,6 en virage) — médiane 1,9-2,0 →
   1,1-1,3 (Paris, Rome, Zurich, Tokyo). Les contacts « file » relevés à Tokyo

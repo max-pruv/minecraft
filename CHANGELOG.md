@@ -20,6 +20,36 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v438 — Des fourgonnettes, des pickups, et chaque voiture son allure
+
+**Pourquoi.** La rue ne roulait que des voitures de sport et la berline
+citadine : pas une fourgonnette de livraison, pas un pickup. Dans une file,
+toutes les voitures roulaient comme un seul train — la variance d'allure était
+par file, pas par voiture. La limitation suivait le circuit : un boulevard et
+une rue de quartier du même tour roulaient à la même vitesse. Et les
+boulevards de Paris ne gardaient leur seconde voie que sur 306 de leurs
+1 231 blocs : chaque place la coupait, et deux circuits la perdaient sur un
+calcul qui ne regardait que deux nombres.
+
+**Ce que ça change.** Une voiture sur six hors de New York est un utilitaire :
+une fourgonnette blanche ou un pickup de la couleur de la rue, caisses dans la
+benne — et on peut les conduire. Dans une file, chaque voiture prend quelques
+dixièmes de seconde d'avance ou de retard : la file respire au lieu de rouler
+d'un bloc. Un circuit de Paris roule à cinquante sur ses boulevards, à
+quarante dans les rues, à trente dans les ruelles ; une ville engendrée à
+cinquante sur sa croix-boulevard. Les boulevards de Paris ont leurs deux voies
+occupées sur 446 blocs (six circuits sur huit au lieu de trois).
+
+**Ce qui le prouve.** Quatre témoins dans `carteMonde.js`, rouges sur
+`origin/main` : la flotte (une voiture sur six, deux modèles au manifeste —
+quatre roues, au sol, quinze maillages au plus contre trente-deux), le jeu par
+voiture (les voisines s'écartent de leur grille, dans la borne, et la règle se
+refait à l'identique : la même rue chez l'ami, v305), la limitation par
+tronçon, la seconde voie de Paris (306 → 446, barre 380). Et une preuve
+structurelle sous node (`sonde-rue-dense.cjs jeu`) : 179 convois, un tour
+d'horloge chacun, autant de contacts de grille avec le jeu que sans (392 et
+392).
+
 ## v437 — Le frein à main crisse
 
 **Pourquoi.** Au frein à main, les roues arrière se bloquent et glissent sur

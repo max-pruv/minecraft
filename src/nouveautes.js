@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 438,
+    titre: 'Fourgonnettes et pickups en ville',
+    puces: [
+      'Des utilitaires roulent dans les rues',
+      'Chaque voiture a sa propre allure',
+      'Plus vite sur les grands boulevards',
+      'Deux voies remplies à Paris',
+    ],
+  },
+  {
     v: 437,
     titre: 'Le frein à main crisse',
     puces: [

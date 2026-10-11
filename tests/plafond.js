@@ -600,7 +600,8 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     try { t = await require('./sonde-force-chocs.cjs').mesurer(require('path').resolve(__dirname, '..')); } catch (e) { err = String(e && e.message || e); }
     const lignes = t ? Object.values(t) : [];
     verifier('conduite : la force d\'un choc suit la vitesse — pleins gaz un mur plein, un mur lent moins d\'un quart, un frôlement moins d\'un dixième',
-      lignes.length === 6 && lignes.every((r) => r.plein.force === 1 && r.lent.murs > 0 && r.lent.murs < 0.25 && r.frole.murs > 0 && r.frole.murs < 0.1),
+      // le compte vient de la table (huit classes depuis les utilitaires, v438)
+      lignes.length >= 6 && lignes.every((r) => r.plein.force === 1 && r.lent.murs > 0 && r.lent.murs < 0.25 && r.frole.murs > 0 && r.frole.murs < 0.1),
       t ? JSON.stringify(t) : `sonde : ${err}`);
   }
   // --- LA PENTE ET LA BOSSE (palier 3 de la conduite) ---------------------

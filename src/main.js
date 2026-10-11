@@ -1,6 +1,6 @@
 // Entry point: scene setup, chunk streaming, input, HUD, and the game loop.
 
-import { secondeVoieParis, secondeVoieVilleMonde, voiesAutoroute } from './voiesdoubles.js';
+import { secondeVoieParis, secondeVoieVilleMonde, voiesAutoroute, allureDuTroncon, allureVilleMonde } from './voiesdoubles.js';
 import * as THREE from 'three';
 import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp, MEUBLE_ITEMS, MEUBLE_START, isMeuble, RUE_ITEMS, RUE_START, RUE, isRue, ARCHI, CITY_BLOCK, ROUTE_BLOCK } from './blocks.js';
 import { passageEn } from './passages.js';
@@ -3218,7 +3218,13 @@ function animerLesVilles(dt) {
   // la graine vient de la ville, pas de la file (v246, voir graineDeVille)
   // l'allure de la voie : une rue de ville engendrée, une avenue nommée (v372)
   const decalage = tr.voie === 'avenue' && tr.ville !== 'ny' ? DECALAGE_AVENUE : 0;
+  // LE TYPE DE VOIE PAR TRONÇON (v438) : la section de la rue au point du
+  // tracé — boulevard cinquante, collectrice quarante, locale trente — et non
+  // plus une seule limitation pour tout le circuit. Manhattan garde la sienne.
+  const allure = tr.ville === 'ny' ? null : decalage ? (x, z) => allureDuTroncon(tr.cle, x, z)
+    : (tr.voie || 'rue') === 'rue' ? allureVilleMonde : null;
   const conv = vehicules.circulation(tr.pts, graineDeVille(tr), { ville: tr.ville, voie: tr.voie || 'rue',
+    limite: allure ? (x, z) => ALLURE_VOIE[allure(x, z) || tr.voie || 'rue'] : undefined,
     // les avenues des villes bâties à la main : la voie de droite (v372)
     decalage,
     // la seconde voie des boulevards (v423) ; le bus prend la première place
