@@ -374,6 +374,54 @@ const verifier = (nom, ok, detail) => {
       reflets.avant === 0 && reflets.erreurs.every(e => e === 0) && reflets.caches === 0,
       reflets,
     );
+    // ---- CINQ IMAGES POUR TOUTE LA FLOTTE (v409) ------------------------------
+    //
+    // L'iPhone de Max plantait toutes les deux à sept minutes, en palier bas,
+    // sans une erreur, pendant que le compte de textures grimpait (journal de
+    // bord, 10 octobre). Les cinquante modèles déposés portent 225 images dont
+    // CINQ distinctes, et chaque modèle décodait les siennes. On charge huit
+    // modèles texturés et l'on compte les images décodées qu'ils tiennent :
+    // trente-six sur l'ancien code (quatre ou cinq par modèle), cinq au plus
+    // ici. Puis une voiture repeinte s'en va : `liberer` ne doit rendre AUCUNE
+    // texture du prototype au pilote (sur l'ancien code, la laque repeinte
+    // emportait sa teinte partagée).
+    const flotteTex = await p.evaluate(async () => {
+      const { chargerVoitureFlotte, FLOTTE, repeindre } = await import('/src/vehicules.js');
+      const { liberer } = await import('/src/liberer.js');
+      const fichiers = ['acura-nsx-type-s.glb', 'ferrari-f40.glb', 'mclaren-p1.glb', 'ford-gt.glb',
+        'bugatti-chiron.glb', 'porsche-918-spyder.glb', 'rolls-royce-spectre.glb', 'bmw-i8.glb'];
+      const sources = new Set(), cartes = new Set();
+      let modeles = 0;
+      const protos = [];
+      for (const f of fichiers) {
+        const e = FLOTTE.find((x) => x.fichier === f);
+        const proto = e && await chargerVoitureFlotte(e);
+        if (!proto) continue;
+        modeles++; protos.push([f, proto]);
+        proto.traverse((o) => {
+          if (!o.isMesh) return;
+          for (const m of [].concat(o.material)) for (const k of ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'emissiveMap', 'aoMap']) {
+            const t = m && m[k];
+            if (t) { cartes.add(t); sources.add(t.source); }
+          }
+        });
+      }
+      const nonPartagees = [...cartes].filter((t) => !t.userData.partagee).length;
+      let rendues = 0;
+      for (const t of cartes) t.addEventListener('dispose', () => { rendues++; });
+      const [f0, p0] = protos[0] || [];
+      if (p0) {
+        const v = p0.clone(true);
+        repeindre(v, f0, 0x2266cc);
+        liberer(v);
+      }
+      return { modeles, images: sources.size, textures: cartes.size, nonPartagees, rendues };
+    });
+    verifier(
+      "la flotte partage ses cinq images au lieu d'en décoder une copie par modèle",
+      flotteTex.modeles === 8 && flotteTex.images <= 5 && flotteTex.nonPartagees === 0 && flotteTex.rendues === 0,
+      flotteTex,
+    );
     verifier(
       "aucune erreur de jeu pendant les contrôles",
       p.erreurs.length === 0,
