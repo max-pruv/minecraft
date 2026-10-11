@@ -1,5 +1,27 @@
 # Ce qui est en cours
 
+- [ ] **PORTAIL DU JOURNAL DE BORD (v412→v415) — DOUBLE MESURE (règle v195).**
+  Deux portails (bases v408 et v411) rouges sur `maj.js`, `carte.js`,
+  `manhattan.js`, `monte.js`. Déclarés plus bas : la flèche du GPS et le
+  glisser bridé (`carte.js`), le trou de façade et le taxi (`manhattan.js`),
+  « vraiment là » et le palier (`maj.js`, v405), l'allure d'une ville, la
+  compilation à l'arrivée, le flanc frôlé (`monte.js`). Rejouées SEULES :
+  `maj.js` branche 41/41 verts, `origin/main` (v414) 38 verts et 2 rouges
+  (« le loader dit combien de fichiers » et « vraiment là ») ; `monte.js`
+  branche 194 verts, 5 rouges, dont 3 déjà déclarés des deux côtés ; la
+  cascade « pas au volant », « un mur pris de face » et « la voiture heurtée,
+  feux de détresse » disparaissent seuls. `origin/main` seul rend, lui, la
+  cascade « pas aux commandes » (30 rouges, passage coupé par la limite de
+  temps après 132 verts). Un rouge propre à la branche, seul : « en vol
+  au-dessus de Paris, le monde se maille hors du fil principal » (et son
+  voisin « bloc pour bloc ») — l'avion n'a parcouru que 19 blocs en 79 s,
+  une page quasi figée. Vert aux deux portails de la branche (95 et 145 s) et
+  vert sur `origin/main` seul (252 blocs en 34 s) : une intermittence de
+  cadence, une page sur trois. Ce que la livraison ajoute par image : rien ;
+  toutes les 2 s une lecture-écriture de `localStorage` ; toutes les 5 s un
+  parcours de scène mesuré à 4,7 ms médian à Paris. Piste : le témoin
+  attend un nombre de blocs parcourus, borné ; il devrait dire la cadence
+  dans son message.
 - [ ] **LE JOURNAL DE BORD APRÈS LA FLOTTE ALLÉGÉE (#418) — À RELIRE SUR L'iPHONE.** (1) Une
   fois la flotte allégée (#418) en production, lire `journal_appareil`
   (appareil `n4dhwysj5tmmsinqeou`) : plantages ou non, et le champ `gpu` des
