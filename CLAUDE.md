@@ -1882,9 +1882,17 @@ Trois règles.
   et demie — vingt-neuf rouges de `monte.js` rejouée seule. L'attente ne vaut
   que dans la fenêtre d'un saut (`estUnSaut`, 1,5 s, `world.arriveeEnCours`)
   et, pour un point, à portée du lieu d'arrivée (`arriveeLieu`) : des passants
-  d'essai posés ailleurs fabriquent comme avant. Et un témoin qui emmène
-  l'enfant au couloir ATTEND que le monde y soit rendu avant de lancer la
-  voiture (« se placer », v279).
+  d'essai posés ailleurs fabriquent comme avant. Un témoin qui emmène l'enfant
+  au couloir et ne mesure PAS une arrivée coupe l'attente
+  (`world.attendreArrivee = false`, rendu à la fin). Mon premier remède l'y
+  faisait ATTENDRE le monde, jusqu'à dix secondes : cela déplaçait l'heure de
+  la rue des témoins suivants de la même page, et « la rue roule à l'allure
+  d'une ville » — un tirage qui rougit aussi sur `origin/main`, 1 fois sur 3 —
+  rougissait 2 fois sur 3. **UN TÉMOIN QUI ATTEND CHANGE L'HEURE DE CEUX QUI LE
+  SUIVENT** : quand la circulation est une fonction de l'horloge (v305), une
+  attente ajoutée est un changement de situation pour la suite entière. Il a
+  fallu six variantes (chacune une retouche désarmée) et le code d'`origin/main`
+  sous mon `monte.js` pour le voir.
 - **CE QUI S'EFFACE À L'AUTRE BOUT DU MONDE NE MARCHE PLUS.** La présence fond
   en 0,8 s les personnages laissés derrière un saut, et la boucle les animait
   encore : leur `sweep` refabriquait les morceaux qu'on venait d'oublier
