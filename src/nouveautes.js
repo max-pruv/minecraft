@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 450,
+    titre: 'Le Colisée ne bouge plus',
+    puces: [
+      'Le même Colisée à chaque partie',
+      'Édimbourg est en pierre grise',
+      'Sydney a toutes ses fenêtres',
+    ],
+  },
+  {
     v: 449,
     titre: 'Le Shard n\'est plus transparent',
     puces: [
