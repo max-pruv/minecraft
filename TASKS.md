@@ -984,6 +984,15 @@
   Las Vegas et Rio, des anneaux choisis DANS la bande (une sélection, donc
   mesurer la couverture) ; pour les rivières, un contour qui publie son tablier
   (un tablier neuf est du sol : Rome est dans l'empreinte des 490 morceaux).
+- [ ] **PORTAIL DE LA v433 (les anneaux se cherchent ensemble).** Verts :
+  `carteMonde.js` (le verdict neuf et les barres resserrées), `plafond.js`,
+  `parishd.js`, fumée. Rouges, tous déjà déclarés : `maj.js` le badge (« 999 »
+  pour une tête de journal à 433, le bump se fait à la fusion) ; `carte.js`
+  « la faire glisser » (412 ms pour 400) ; `monte.js` la chauffe de New York
+  expirée (29/321) et le réverbère (Paris, « parcouru 0,48 »). Preuve par
+  construction plutôt que rejeu (v291) : la v433 ne change que les tracés de
+  Toronto, Dublin et Lima (comparé sur les deux arbres, aucun tablier), et
+  `monte.js` ne visite aucune des trois.
 - [ ] **PORTAIL DE LA v432 (la place se contourne), DOUBLE MESURE FAITE.**
   Voie : fumée, `parishd.js`, `carteMonde.js`, `plafond.js` verts. `maj.js` :
   le badge (« version servie v421 » pour une tête de journal à 422 — le bump
