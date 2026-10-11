@@ -194,6 +194,14 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
         continue;
       }
       const bx = Math.floor(x), bz = Math.floor(z);
+      // ON NE SONDE QUE LE MONDE DÉJÀ LÀ (v422). `sommetColonne` et `getBlock`
+      // ENGENDRENT le morceau qui manque, sur le fil principal : à l'arrivée
+      // d'une téléportation, quarante-quatre tirages par passant tombaient sur
+      // des morceaux que le worker n'avait pas encore rendus — vingt morceaux,
+      // 57 ms, dans la première seconde (`sonde-arrivee-engendre.cjs`). Un
+      // point sur un morceau absent n'est ni une rue ni un repli ; s'il n'en
+      // reste aucun, la naissance attend l'image suivante.
+      if (world.morceauxPrets && !world.morceauxPrets(bx, bz)) continue;
       // `sommetColonne` rend le y DU bloc de surface, pas de l'espace au-dessus.
       // Lu un cran trop bas, on interrogeait la terre sous la chaussée : aucun
       // passant ne trouvait jamais de rue, et tous retombaient sur le repli.
@@ -236,7 +244,10 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
       if (SOLS_TROTTOIR.has(sol0)) return [x, z];
       if (!surRue && SOLS_DE_RUE.has(sol0) && !CHAUSSEE.has(sol0)) surRue = [x, z];
     }
-    return surRue || horsChaussee || repli || [site.x+5,site.z+7];
+    if (surRue || horsChaussee || repli) return surRue || horsChaussee || repli;
+    // rien de prêt autour de l'enfant : on attend que le monde arrive (v422)
+    if (world.morceauxPrets && !site.urbain) return null;
+    return [site.x+5,site.z+7];
   }
 
   // LES NAISSANCES SE FONT PAR TRANCHES (v246). Dix-huit passants — quarante-
@@ -253,9 +264,15 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
   }
   function naitre() {
     const t0 = performance.now();
-    while (naissances.length && performance.now() - t0 < 5) {
-      const { site, k, debut } = naissances.shift();
-      faireNaitre(site, k, debut);
+    // une naissance dont le monde n'est pas encore là autour de l'enfant
+    // attend sa place dans la file (v422) ; on passe aux suivantes, et une
+    // ville que l'enfant a quittée ne fait plus naître personne
+    for (let i = 0; i < naissances.length && performance.now() - t0 < 5;) {
+      const n = naissances[i];
+      const loin = !n.site.urbain && Math.hypot(player.pos.x - n.site.x, player.pos.z - n.site.z) > n.site.r + PORTEE_REVEIL;
+      if (loin) { naissances.splice(i, 1); n.site.prevus--; continue; }
+      if (faireNaitre(n.site, n.k, n.debut)) naissances.splice(i, 1);
+      else i++;
     }
   }
   function faireNaitre(site, k, debut) {
@@ -264,7 +281,9 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
       const g = site.graine + k;
       // Un promeneur sur cinq est un chien.
       if (k % (site.urbain?16:5) === 4) {
-        const [cx, cz] = posteAutour(site, g + 7777, k % 3 !== 2);
+        const poste = posteAutour(site, g + 7777, k % 3 !== 2);
+        if (!poste) return false;
+        const [cx, cz] = poste;
         const chien = new Habitant(scene, world, player, toast, {
           name: 'chien', label: '🐕 Un chien', phrases: ['Wouf !', 'Wouf wouf !'],
           walkSpeed: 2.2, rayon: 10, largeur: 0.4, hauteur: 0.7,
@@ -273,7 +292,7 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
         chien.apparitionDouce = true;
         gens.push(chien);
         npcs.push(chien);
-        return;
+        return true;
       }
       const robe = tirage(g, 3, 17) < 0.3;
       const profil = {
@@ -285,7 +304,9 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
         bas: parmi(BAS, tirage(g, 17, 37)),
         drap: parmi(ROBES, tirage(g, 19, 41)),
       };
-      const [x, z] = posteAutour(site, g + tour * 131, debut > 0 || k % 3 !== 2);
+      const poste = posteAutour(site, g + tour * 131, debut > 0 || k % 3 !== 2);
+      if (!poste) return false;
+      const [x, z] = poste;
       const h = new Habitant(scene, world, player, toast, {
         name: 'passant', label: '🚶 Un passant', phrases: ['Bonjour !', 'Belle journée, non ?'],
         walkSpeed: 1.6, rayon: 8, largeur: 0.5, hauteur: 1.72,
@@ -302,6 +323,7 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
       gens.push(h);
       npcs.push(h);
     }
+    return true;
   }
 
   // Un compteur qui ne se répète pas : sans lui, un passant rapatrié
@@ -360,7 +382,9 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
         if (!h.pos) continue;
         const dh = Math.hypot(h.pos.x - player.pos.x, h.pos.z - player.pos.z);
         if (dh < TROP_LOIN || !h.presence || h.presence.valeur > 0) continue;
-        const [nx, nz] = posteAutour(site, site.graine + i + tour * 131, i % 3 !== 2, true);
+        const poste = posteAutour(site, site.graine + i + tour * 131, i % 3 !== 2, true);
+        if (!poste) continue;   // rien de prêt autour : il attend le tour suivant (v422)
+        const [nx, nz] = poste;
         // `poste` est le point autour duquel il flâne, `placeAt` le pose au sol
         // — c'est le même chemin que sa naissance, donc rien à réinventer.
         h.poste.set(nx, nz);

@@ -143,6 +143,16 @@ export class BaseNPC {
   }
 
   placeAt(x, z, fallbackY) {
+    // Poser quelqu'un lit la colonne (`surfaceY`), donc engendrerait le
+    // morceau s'il manque (v422) : on garde la place et l'on se pose quand le
+    // monde arrive — `update` attend jusque-là, sans tomber.
+    if (this.world.morceauxPrets && this.world.piedPieton?.(x, z) === undefined && !this.world.morceauxPrets(x, z)) {
+      this.pos.set(x, fallbackY + 0.1, z);
+      this.vel.set(0, 0, 0);
+      this.aPoser = fallbackY;
+      return;
+    }
+    this.aPoser = undefined;
     const y = this.surfaceY(x, z);
     this.pos.set(x, (y !== null ? y : fallbackY) + 0.1, z);
     this.vel.set(0, 0, 0);
@@ -158,6 +168,25 @@ export class BaseNPC {
     const dtReel = this._tReel ? Math.min(Math.max((tReel - this._tReel) / 1000, 0), DT_REEL_MAX) : dt;
     this._tReel = tReel;
     this.dtReel = dtReel;
+    // ON NE PENSE ET NE MARCHE QUE SUR UN MONDE DÉJÀ LÀ (v422). `sweep` et les
+    // sondes du programme (`trottoirA`, la sortie de la chaussée, le bord le
+    // plus proche) lisent les blocs par `getBlock`, qui ENGENDRE le morceau qui
+    // manque, sur le fil principal : à l'arrivée d'une téléportation, les
+    // personnages autour de l'enfant en faisaient naître des dizaines dans la
+    // première seconde, avant que le worker ne les rende. Tant que le monde
+    // sous ses pieds et à quelques pas n'est pas là, un personnage ATTEND,
+    // immobile — ni chute, ni pas, ni sonde — et reprend à la même place dès
+    // que les morceaux arrivent.
+    const marge = this.largeur / 2 + 4;
+    this.attendLeMonde = !!this.world.morceauxPrets
+      && !this.world.morceauxPrets(this.pos.x - marge, this.pos.z - marge, this.pos.x + marge, this.pos.z + marge);
+    if (this.attendLeMonde) {
+      this.vel.set(0, 0, 0);
+      this.mesh.position.copy(this.pos);
+      this.mesh.rotation.y = this.yaw;
+      return;
+    }
+    if (this.aPoser !== undefined) this.placeAt(this.pos.x, this.pos.z, this.aPoser);
     let { speed, yaw, reel } = this.think(dt);
     this.yaw = yaw;
     let vAnim = null;

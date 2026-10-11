@@ -1122,13 +1122,36 @@ const PORTEE_CARREFOUR = 7;   // le rayon où l'on cherche les coins d'un carref
 // les trois autres inchangées.
 const MEME_CARREFOUR = 3;
 const ECART_FEUX = 3;         // deux feux ne se touchent pas (voir plus bas)
-function feuxDeVille(cle, ancre, voies, sol, portee = PORTEE_CARREFOUR) {
+function feuxDeVille(cle, ancre, voies, solBrut, portee = PORTEE_CARREFOUR) {
   let table = FEUX_VILLE.get(cle);
   if (table) return table;
   table = new Set();
+  // LE SOL SE LIT UNE FOIS PAR COLONNE (v422). Chaque coin candidat relisait
+  // ses quatre voisins, et les fenêtres de deux carrefours voisins se
+  // recouvrent : à Paris (portée 17), 86 ms au PREMIER morceau de la ville —
+  // la moitié du froid qu'une téléportation paie sur le fil principal. Le sol
+  // est pur, la table est identique au bloc près (empreinte des feux).
+  // Une grille typée sur la boîte des carrefours, pas un dictionnaire : des
+  // clés flottantes coûtaient autant que ce qu'elles évitaient.
+  const croisements = carrefoursDeVoies(voies);
+  let x0 = Infinity, z0 = Infinity, x1 = -Infinity, z1 = -Infinity;
+  for (const q of croisements) {
+    const cx = Math.round(ancre.x + q.u), cz = Math.round(ancre.z + q.v);
+    if (cx < x0) x0 = cx; if (cx > x1) x1 = cx; if (cz < z0) z0 = cz; if (cz > z1) z1 = cz;
+  }
+  x0 -= portee + 1; z0 -= portee + 1; x1 += portee + 1; z1 += portee + 1;
+  const larg = x1 - x0 + 1, grille = croisements.length ? new Int32Array(larg * (z1 - z0 + 1)).fill(-1) : null;
+  const sol = (x, z) => {
+    const i = (x - x0) + (z - z0) * larg;
+    const v = grille[i];
+    if (v >= 0) return v;
+    const brut = solBrut(x, z);
+    if (Number.isInteger(brut) && brut >= 0) grille[i] = brut;   // le reste se relit
+    return brut;
+  };
   const pris = [], candidats = [];
   const estRue = (x, z) => CHAUSSEE.has(sol(x, z));
-  for (const q of carrefoursDeVoies(voies)) {
+  for (const q of croisements) {
     const cx = Math.round(ancre.x + q.u), cz = Math.round(ancre.z + q.v);
     if (pris.some(([px, pz]) => Math.hypot(px - cx, pz - cz) < MEME_CARREFOUR)) continue;
     pris.push([cx, cz]);
@@ -4092,6 +4115,25 @@ export class World {
       this.chunks.set(key, data);
     }
     return data;
+  }
+
+  // CE QUE LE FIL PRINCIPAL A DÉJÀ, SANS L'ENGENDRER (v422).
+  //
+  // `getBlock` engendre le morceau qu'on lui demande. Sur le fil principal,
+  // c'est vingt à quarante millisecondes dans l'image où on le demande — et à
+  // l'arrivée d'une téléportation, les passants qu'on pose et ceux qui
+  // marchent en demandaient vingt à trente d'un coup, avant que le worker ne
+  // les rende (`sonde-arrivee-engendre.cjs` : 93 à 157 ms dans la première
+  // seconde). Un passant ne se pose et ne marche que là où le monde est déjà
+  // là — la règle de la minicarte (v258), qui n'engendre jamais.
+  // Coordonnées de BLOC ; la boîte va de (x0, z0) à (x1, z1) inclus.
+  morceauxPrets(x0, z0, x1 = x0, z1 = z0) {
+    const c0 = Math.floor(Math.floor(x0) / CHUNK), c1 = Math.floor(Math.floor(x1) / CHUNK);
+    const d0 = Math.floor(Math.floor(z0) / CHUNK), d1 = Math.floor(Math.floor(z1) / CHUNK);
+    for (let cx = c0; cx <= c1; cx++) for (let cz = d0; cz <= d1; cz++) {
+      if (!this.chunks.has(World.key(cx, cz))) return false;
+    }
+    return true;
   }
 
   // OUBLIER CE QU'ON A DÉPASSÉ — sinon voler remplit la mémoire de la tablette.
