@@ -479,7 +479,7 @@
   sur `origin/main` à (−2 581, 5 272), un nœud de circuits face à face,
   8,8 % sur la v423 — d'avant, à démonter. (5) Palier C : utilitaires et
   pickups (classe dans `FLOTTE`), variance par voiture, voie par tronçon.
-  **(5) et (2) FAITS en v433** : fourgonnette et pickup (`utilitaires.js`, une
+  **(5) et (2) FAITS en v436** : fourgonnette et pickup (`utilitaires.js`, une
   voiture sur six hors New York, quinze maillages), jeu par voiture
   (`Convoi.jeu`, fonction de la clé, du rang et de l'heure : la grille reste
   partagée ; éteint sous six blocs/s, près d'un croisement, sur la voie
@@ -942,7 +942,28 @@
   200 blocs, donc hors de la livraison par construction (elle ne change que le
   sol de Las Vegas et des contours d'anneaux).
 - [ ] **LES ANNEAUX D'AVANT ROULENT PARFOIS HORS DE LA CHAUSSÉE (mesuré v387,
-  repris v404, v418, v432).** v432 : 1 228 → 840 pas, 75 → 61 anneaux, 22 → 9
+  repris v404, v418, v432, v435).** v435 (recherche conjointe) : 840 → 772
+  pas, 61 → 58 anneaux, 9 → 6 villes sur le centre — Toronto 31 → 0, Dublin
+  22 → 3, Lima 20 → 2. Tokyo (56) et Dubaï (32) : AUCUNE configuration sous les
+  trois promesses, mesuré (6 000 essais, sens retournables) — à Tokyo l'eau sans
+  tablier à l'est du centre (P 1..2) et un obstacle à l'ouest du nœud central
+  ferment tout détour qui ne suive pas l'anneau voisin ; à Dubaï l'anneau
+  d'arrivée (8 îlots) ne peut contourner que par Q = −1, la rue sud de l'anneau
+  qui l'entoure, dans le même sens, et au sud c'est l'eau. Le remède serait de
+  SOL (une rue au-delà de l'eau) ou de sélection (changer QUELS anneaux la ville
+  reçoit) : décision. La traîne, cause par cause (v435, carte des segments
+  bloqués ville par ville, `etatDeSegment` avec l'eau sans tablier, et la
+  recherche conjointe portée à 3 000 essais) — TOUT est de géométrie, aucun
+  remède sans toucher au SOL ni à la sélection : Agra #1 42 (le parc du Taj
+  Mahal ferme toute la rue nord, P −2..2, et l'intérieur est bloqué : aucun
+  contour), Bruxelles 18 et Innsbruck 12 (le réseau de rues tient en quelques
+  segments, le seul côté de l'anneau d'arrivée longe un parc ou le granite de
+  la place côté voie, et rien d'autre n'est roulable), Gênes 22 et Guayaquil
+  20 (la plage borde la place, et aucun segment ne la contourne), Turin 13,
+  Séoul 21, Amsterdam 19 (un détour existe sans faute, mais il suit la voie
+  d'un voisin sur un pas, 27 à 32 blocs pour une barre de 20, et le voisin ne
+  peut ni reculer ni changer de sens — son contresens existe déjà). San José et
+  Guayaquil à un circuit : inchangé (v416, la géométrie). v432 : 1 228 → 840 pas, 75 → 61 anneaux, 22 → 9
   villes dont une voie passe sur le centre (la vue sur la voie, la couverture à
   la règle du témoin, plusieurs ordres, une rangée d'un coup ; quatorze villes
   changent, aucune ne perd de couverture). Reste, mesuré par
@@ -977,6 +998,15 @@
   Las Vegas et Rio, des anneaux choisis DANS la bande (une sélection, donc
   mesurer la couverture) ; pour les rivières, un contour qui publie son tablier
   (un tablier neuf est du sol : Rome est dans l'empreinte des 490 morceaux).
+- [ ] **PORTAIL DE LA v435 (les anneaux se cherchent ensemble).** Verts :
+  `carteMonde.js` (le verdict neuf et les barres resserrées), `plafond.js`,
+  `parishd.js`, fumée. Rouges, tous déjà déclarés : `maj.js` le badge (« 999 »
+  pour une tête de journal à 433, le bump se fait à la fusion) ; `carte.js`
+  « la faire glisser » (412 ms pour 400) ; `monte.js` la chauffe de New York
+  expirée (29/321) et le réverbère (Paris, « parcouru 0,48 »). Preuve par
+  construction plutôt que rejeu (v291) : la v435 ne change que les tracés de
+  Toronto, Dublin et Lima (comparé sur les deux arbres, aucun tablier), et
+  `monte.js` ne visite aucune des trois.
 - [ ] **PORTAIL DE LA v432 (la place se contourne), DOUBLE MESURE FAITE.**
   Voie : fumée, `parishd.js`, `carteMonde.js`, `plafond.js` verts. `maj.js` :
   le badge (« version servie v421 » pour une tête de journal à 422 — le bump
@@ -1632,8 +1662,18 @@
   main » demanderait un second doigt sur l'accélérateur, et le joystick n'en a
   qu'un — décidé, pas oublié) ; (11) personne ne DESSINE encore le dérapage
   (traces de pneus, crissement : la session des sensations lit
-  `player.freinMainTire` et `player.derive`) ; (12) le frein à main ne se voit
+  `player.freinMainTire` et `player.derive`) — **TRACES FAITES en v434** (`traces.js`) ;
+  le crissement au frein à main reste à faire ; (12) le frein à main ne se voit
   pas chez l'ami au-delà de la dérive qui voyage déjà (`p.v.r`).
+- [ ] **AU PORTAIL DE LA v434 (traces de pneus), DES ROUGES QUI NE SONT PAS LA
+  LIVRAISON — mesurés.** `reseau.js` rejouée SEULE : branche 80 verts, trois
+  rouges ; `origin/main` (v430) 80 verts, les MÊMES trois rouges — « deux
+  enfants se retrouvent sans courtier » (`[[],[]]`), « sans courtier, le
+  conducteur voit son passager » (cascade, `volant: false`), « un hôte sans
+  courtier est trouvé par un invité » (`[[],[]]`). Au portail, la suite était
+  morte sur un délai à la ligne 1144 (VPN), passé vert rejoué seul des deux
+  côtés. `monte.js` rejouée seule sur la branche : 213 verts, deux rouges déjà
+  déclarés (chauffe de New York 56/321, « un mur pris de face »).
 - [ ] **AU PORTAIL DE LA v408 (la pente, la bosse et la file), DES ROUGES QUI NE
   SONT PAS LA LIVRAISON — mesurés.** Mes trois rouges (percuter une voiture de
   la rue, elle s'arrête en feux de détresse, son flanc frôlé) venaient du
@@ -3505,12 +3545,36 @@
     mesuré : cinq colonnes sur vingt-cinq morceaux, aucune côte à côte.
 
   Dettes déclarées de la v288 :
+  - [ ] **LE PORTAIL DE LA v433 (terrasses)**, coupé deux fois par la limite
+    de trente minutes des tâches de fond (la reprise a tout rejoué). Rejoués
+    SEULS des deux côtés (`/home/user/minecraft` et un arbre détaché sur
+    `origin/main` v428) :
+    `degats.js` « percuter une voiture de la rue l'abîme AUSSI » et « le garage
+    répare » : le témoin arrondissait la santé au centième — 0,99 sur
+    `origin/main`, 1 sur la branche selon l'élan (15 contre 15,5 blocs) ;
+    corrigé (dix-millième), vert seul (0,9974). `origin/main` rend seul un
+    rouge que la branche n'a pas : « deux murs pris à pleine vitesse laissent la
+    voiture ROULANTE » (santé 0,851, intermittence non déclarée jusqu'ici).
+    `monte.js` : « ne compile plus de programmes sur place » — la chauffe de New
+    York expire des deux côtés (43 et 54 sur 321) ; « au-dessus d'une ville
+    aussi, le monde se charge devant l'avion » rouge des deux côtés (Londres à
+    120 b/s : 64 sur la branche, 36 sur `origin/main`, barre 60 ; Londres n'a
+    pas de mobilier parisien). Au portail seulement : le réverbère, la monoplace,
+    le flâneur, le taux de contact (verts seuls). `visio.js` la radio pendant
+    l'appel (tirage déclaré). `maj.js` le badge (journal à 433, `sw.js` bumpé à
+    la fusion). `carte.js` le glisser bridé ×4, `manhattan.js` le trou et le
+    taxi (dettes déclarées).
+  - [x] les Champs-Élysées à `dx = −4,3 km` (dette ci-dessous) : MESURÉ en v433,
+    l'axe de l'avenue rend 103 colonnes de pavé et 8 de trottoir sur 111, et
+    l'adresse de la dette du pavé — rendu par Paris doublé (v306).
   - [~] une chaise de terrasse HD n'arrête ni un passant ni une voiture —
     LES PASSANTS ET L'ENFANT À PIED : fait en v425 (`mobilierTrottoir`,
     `world.obstaclePieton`, seulement le mobilier montré). Reste : la VOITURE
     (`mobilierDevant`, main.js, hors zone piétons) — elle lit `isProp` ; la
     même `mobilierTrottoir` lui servirait telle quelle ;
-  - [ ] **PLUS UNE TERRASSE DE CAFÉ À PARIS** (mesuré en v425, quatre
+  - [x] **FAIT EN v433** (la règle lit le vitrage `VITRINE_MI` des devantures
+    en bandes de la v301 : 40 à 178 terrasses par quartier). Historique :
+    **PLUS UNE TERRASSE DE CAFÉ À PARIS** (mesuré en v425, quatre
     quartiers, 25 morceaux détaillés chacun) : 324 à 387 potelets, 56 à 59
     corbeilles, 16 à 25 bancs, 7 à 12 colonnes Morris, ZÉRO terrasse. La règle
     (`mobilierTrottoir`) veut une `ARCHI.VITRINE` à un bloc au-dessus d'un

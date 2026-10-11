@@ -387,7 +387,7 @@ const EST_LAQUE = /paint_primary|pearl|bodywork|(?<![a-z])body(?![a-z])/i;
 
 // LE MODÈLE DE LA VOITURE n D'UNE VILLE — fonction PURE, sans rien bâtir.
 // New York ne tire que ses taxis et berlines ; ailleurs, une voiture sur six
-// est la berline citadine, une sur six un utilitaire (v433 : la fourgonnette
+// est la berline citadine, une sur six un utilitaire (v436 : la fourgonnette
 // et le pickup en alternance), les autres viennent de la flotte au pas de 17.
 // La règle ne lit que `n` : la même rue sur deux tablettes (v305).
 export function choixFlotte(n, ville) {
@@ -410,7 +410,7 @@ export function graineDeVille(tr) {
 
 export const FLOTTE = [
   {fichier:'berline-citadine', classe: 'citadine',nom:'Berline citadine',fabrique:()=>construireTaxi({taxi:false})},
-  // LES UTILITAIRES (v433, `utilitaires.js`) : une voiture sur six de la rue
+  // LES UTILITAIRES (v436, `utilitaires.js`) : une voiture sur six de la rue
   // hors New York. La fourgonnette garde son blanc de livraison, le pickup
   // prend toujours la teinte tirée pour lui (`laque`). Pas de volant dans la
   // cabine : `habitacle: false`, comme les carrosseries seules (v230).
@@ -934,7 +934,7 @@ export class ParcoursDecale extends Parcours {
 // de voie sur `2 R` blocs, pas d'un coup : une érosion puis une moyenne
 // glissante, circulaires. Rend { A, B, part } (Float32Array au bloc) ou null.
 export const RAMPE_VOIE = 8;
-// EN VILLE, LA RAMPE EST PLUS COURTE ET UNE PORTION PLUS COURTE COMPTE (v433).
+// EN VILLE, LA RAMPE EST PLUS COURTE ET UNE PORTION PLUS COURTE COMPTE (v436).
 // Chaque place coupe un boulevard de Paris (le tour en arc se prend sur une
 // seule voie) ; une rampe de huit blocs mangeait seize blocs de chaque côté
 // de chaque place, et le seuil de quarante blocs de deux voies écartait les
@@ -1597,7 +1597,7 @@ class Convoi {
     return { d: n * L + ds[lo] + dd * u, v: dt > 0 ? dd / dt : 0, pause: dd === 0 ? ts[hi] - r : 0 };
   }
 
-  // CHAQUE VOITURE A SON CONDUCTEUR (v433). La variance d'allure était par
+  // CHAQUE VOITURE A SON CONDUCTEUR (v436). La variance d'allure était par
   // CONVOI (`allureDuConducteur`, ±8 %) : toutes les voitures d'une file
   // roulaient comme un seul train. Une voiture ne peut pas rouler plus vite
   // que la grille sans casser la v305 (la même rue sur deux tablettes) — sauf
@@ -1700,7 +1700,7 @@ class Convoi {
     const ancien = this.retardAvant;           // tampon réutilisé : l'ancienne base
     ancien.set(this.base);
     for (let i = 0; i < n; i++) {
-      // LE JEU DE LA VOITURE (v433) : quelques dixièmes de seconde d'avance ou
+      // LE JEU DE LA VOITURE (v436) : quelques dixièmes de seconde d'avance ou
       // de retard sur la grille, une fonction de son heure — `jeu`, plus bas
       const hi = h0 - i * this.dtVoiture, e = this.jeu(i, hi + this.phase);
       const p = i === 0 && e === 0 ? pos0 : this.distanceA(hi - e);
@@ -2252,7 +2252,7 @@ function croisementsDe(parcours, grille) {
   CROISEMENTS.set(parcours, { grille, ecarts, instants });
   return ecarts;
 }
-// Les HEURES de grille (dans [0, P)) où le tracé passe sur lui-même (v433) :
+// Les HEURES de grille (dans [0, P)) où le tracé passe sur lui-même (v436) :
 // la variance par voiture s'y éteint, la cadence de `nbSansCroisement` reste
 // celle qu'on a calculée.
 export function instantsDeCroisement(parcours, grille) {
@@ -2278,7 +2278,7 @@ export function nbSansCroisement(parcours, grille, nb, plancher = 3, strict = fa
 
 // une voiture passe à un carrefour toutes les deux secondes au plus (v372)
 export const INTERVALLE_RUE = 2;
-// le jeu d'une voiture sur sa grille, en secondes (v433, `Convoi.jeu`)
+// le jeu d'une voiture sur sa grille, en secondes (v436, `Convoi.jeu`)
 export const JEU_MAX = 0.35;
 // éteint par une sonde (`jeuActif`), pour mesurer en A/B dans la même page
 let JEU_ACTIF = true;
@@ -2540,7 +2540,7 @@ export function createVehicules({ scene, player }) {
       let jumelle = null;
       if (voies && voies.longueur >= SECTION_MIN && nb >= 2) {
         const pB = new ParcoursDecale(p, voies.B);
-        // LE CROISEMENT N'EST PAS MONOTONE (v433). Deux nombres seulement
+        // LE CROISEMENT N'EST PAS MONOTONE (v436). Deux nombres seulement
         // étaient essayés (`nb` et 0,4 `nb`) avant la dichotomie : sur un
         // circuit en huit, la cadence du croisement de la ligne (`2 n`
         // voitures) refusait les deux et la jumelle était perdue — le
@@ -2598,7 +2598,7 @@ export function createVehicules({ scene, player }) {
       // modèles différents.
       modele: (i) => voitureDeVille(graine * 7 + i * 17, TEINTES[(graine + i) % TEINTES.length],options.ville),
     });
-    // Ce que le jeu par voiture lit (v433) : le tracé et la grille de la
+    // Ce que le jeu par voiture lit (v436) : le tracé et la grille de la
     // création (les croisements y sont déjà calculés), et la section à deux
     // voies — tout de suite en ville, à la demande sur l'autoroute, où la
     // jumelle naît plus tard : le jeu ne doit pas changer quand elle arrive.
@@ -2657,7 +2657,7 @@ export function createVehicules({ scene, player }) {
   // déclaré : un bus qui ne s'arrête pas.
   function bus(pts, graine = 0, suit = null) {
     const teintes = [0xd84a3a, 0xe8c83a, 0x3a9a4a, 0x3a6ac8, 0xf0813a];
-    // le bus est à une demi-voiture dans la file : l'anneau ne joue pas (v433)
+    // le bus est à une demi-voiture dans la file : l'anneau ne joue pas (v436)
     if (suit) suit.suiviParBus = true;
     return ajouter(pts, {
       nb: 1, vitesse: suit ? suit.vitesse : ALLURE_VOIE.rue, routier: true, freine: true,
@@ -3460,7 +3460,7 @@ export function createVehicules({ scene, player }) {
     // pour les tests (v372) : où la grille met la tête du convoi `cle` à
     // l'heure de rue `h` — c'est ce qu'une autre tablette compare à la sienne
     distanceA: (cle, h) => { const c = convois.find((x) => x.cle === cle); if (!c || !c.horaire()) return null; return c.distanceA(h - (c.decalage || 0)).d; },
-    // LE JEU PAR VOITURE (v433), pour les témoins : l'amplitude, la part du
+    // LE JEU PAR VOITURE (v436), pour les témoins : l'amplitude, la part du
     // tour où il joue, l'écart de chaque voisine à son intervalle de grille
     // (en secondes), et s'il se refait à l'identique — sans horloge ni hasard,
     // c'est ce qui le garde le même sur deux tablettes (v305).
@@ -3478,9 +3478,9 @@ export function createVehicules({ scene, player }) {
       const pur = avant.every((x, i) => x === apres[i]) && W.every((x, i) => x === T2.W[i]);
       return { A: +T.A.toFixed(3), part: +T.part.toFixed(3), kmax: T.kmax, ecarts, pur };
     },
-    // l'A/B du jeu par voiture (v433), pour les sondes
+    // l'A/B du jeu par voiture (v436), pour les sondes
     jeuActif: (on) => { JEU_ACTIF = !!on; for (const c of convois) delete c._jeuT; },
-    // LE TYPE DE VOIE PAR TRONÇON (v433), pour les témoins : la part du tour
+    // LE TYPE DE VOIE PAR TRONÇON (v436), pour les témoins : la part du tour
     // de ce convoi qui roule à chaque limitation (au conducteur près).
     allures: (cle) => {
       const c = convois.find((x) => x.cle === cle);

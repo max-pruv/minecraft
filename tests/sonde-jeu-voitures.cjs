@@ -1,4 +1,4 @@
-// LE JEU PAR VOITURE (v433) — dans une ville, ce que chaque file fait de son
+// LE JEU PAR VOITURE (v436) — dans une ville, ce que chaque file fait de son
 // jeu : combien de convois jouent, sur quelle part de leur tour, de combien
 // les voisines s'écartent de leur intervalle de grille (en secondes), si la
 // règle se refait à l'identique, et les modèles qui roulent (utilitaires

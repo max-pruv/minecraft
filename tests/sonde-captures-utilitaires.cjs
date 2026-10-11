@@ -1,4 +1,4 @@
-// CAPTURES DES UTILITAIRES (v433) : la fourgonnette et le pickup posés côte à
+// CAPTURES DES UTILITAIRES (v436) : la fourgonnette et le pickup posés côte à
 // côte devant la caméra, de trois quarts avant puis arrière, et le compte de
 // maillages de chacun (le prix en appels de dessin, v322).
 // Usage : node tests/sonde-captures-utilitaires.cjs <dossier>

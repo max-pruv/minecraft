@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## La rue dense, palier C (v433) — une variance par voiture est une fonction de son heure
+## La rue dense, palier C (v436) — une variance par voiture est une fonction de son heure
 
 Quatre règles.
 
@@ -811,6 +811,28 @@ recherche du nombre de la jumelle ne testait que `nb` et 0,4 `nb` avant sa
 dichotomie : elle liste désormais les nombres que le croisement accepte et
 cherche parmi eux. Les deux circuits en huit restent sans jumelle — seul n = 4
 passe leur croisement (0,18 `nb`) : déclaré.
+## Les anneaux se cherchent ensemble (v435) — ce qu'aucun ordre ne règle se cherche sur l'état de tous
+
+Toronto, Dublin, Lima : l'anneau d'arrivée sur la place, chaque contour trouvé
+seul suivait un voisin immobile. Trois règles.
+
+- **QUAND AUCUN ORDRE NE CHANGE LE RÉSULTAT, LA RECHERCHE EST SUR LE MAUVAIS
+  ESPACE.** Les vingt-quatre ordres de Tokyo rendaient les mêmes 56 pas :
+  essayer des ordres ne déplace que le moment où un voisin se fige.
+  `contournerEnsemble` (villesmonde.js) cherche sur l'état de TOUS les anneaux
+  à la fois (un îlot d'un anneau par pas, ou son sens s'il n'a pas de jumeau),
+  note = segments fautifs, puis partage au-delà de la barre, puis îlots changés.
+  Elle part de la configuration de la phase 4 et ne tourne que s'il reste des
+  pas : 259 villes identiques au bit près, tabliers compris (comparé).
+- **LA COUVERTURE SE GARDE POINT PAR POINT SUR LA CONFIGURATION ENTIÈRE.**
+  Plusieurs anneaux bougent : « les points que seul cet anneau voyait » ne
+  veut plus rien dire. `vusDeVille` rend un octet par point, et un essai qui
+  laisse sans voiture un seul point vu avant est refusé.
+- **UNE ABSENCE DE SOLUTION SE MONTRE AVANT DE SE DÉCLARER.** Tokyo et Dubaï
+  restent : une carte des segments bloqués (place, monuments, ET eau sans
+  tablier — ma première carte oubliait l'eau et laissait croire à un détour)
+  montre que le seul détour de l'anneau d'arrivée suit la voie d'un voisin
+  dans le même sens, et 6 000 essais (contre 80) ne trouvent rien.
 
 ## La place se contourne (v432) — une garde se mesure sur ce qu'elle protège, à la règle du témoin
 
@@ -1013,6 +1035,22 @@ borné à `PENTE_MAX`. `player.atterrissage` est un ÉVÉNEMENT daté, comme
 `choc` : on retient son `t` et l'on ne réagit qu'à un `t` neuf, jamais à celui
 qu'on trouve en montant. Le témoin fige le champ par une propriété qui ignore
 ce qu'on lui écrit (v358), et lit la pente dans la matrice monde.
+
+**Les traces de pneus (v434).** `src/traces.js`, appelé par `sensations.js`
+(pose) et `fun.js` (effacement, chaque image). Quatre règles.
+**UN APPEL POUR TOUTES** : un `InstancedMesh` borné (`MAX_TRACES`), l'opacité
+par instance (le greffon `aAlpha` des flammes, clé `traces-alpha`), la plus
+vieille cède sa place, un essaim vide est caché. **AUCUN PROGRAMME EN JEU** :
+`chaufferTraces` compile l'essaim exact à l'accueil ; le témoin lit les clés
+(une neuve si la chauffe est désarmée, vérifié). **LA TRACE SE POSE SUR CE
+QUI PORTE LA ROUE** (`coteSousRoue`) : tablier, puis surface continue, puis
+dessus du bloc, un centième au-dessus, et rien si l'écart à la voiture
+dépasse un bloc. **COUPÉ DU DESSIN EN RENDU LOGICIEL** (mesuré : un
+cinquième de la cadence du banc, `sonde-traces-cout.cjs`) mais POSÉ quand
+même : un témoin qui juge ce que la tablette voit force
+`reglageTraces.dessin = true` (ou `?traces=1`). Et une piste de témoin qui
+dérape se pose LARGE : la dérive pousse la voiture de côté, et sur treize
+blocs elle tombait de la plate-forme (`enLair`, zéro trace au frein à main).
 
 ## Un contour dans l'autre sens, et les rues du Strip (v418) — ce qui empêchait le contour n'était pas l'absence de rue
 
@@ -2377,6 +2415,23 @@ engendrées. Quatre règles.
   journal vide dans le jeu, trois rouges de `maj.js`. Après tout conflit dans un
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
+
+## Les terrasses de café reviennent (v433) — une règle qui lit un bloc se relit quand le bloc se découpe
+
+Une règle.
+
+- **QUAND UN BLOC SE DÉCOUPE EN BANDES, ON CHERCHE CE QUI LISAIT LE BLOC
+  ENTIER.** La v301 a fait d'un rez-de-chaussée trois blocs (soubassement,
+  vitrage, enseigne) ; la règle des terrasses (v288) cherchait encore
+  `ARCHI.VITRINE` à un bloc au-dessus du trottoir — c'est-à-dire le VITRAGE
+  (`VITRINE_MI`) désormais. Zéro terrasse dans six quartiers pendant cent
+  quarante versions, et aucun témoin ne le voyait : celui des potelets
+  comptait la fonte, pas le cannage. Mesuré par la sonde qui compte ce qui
+  borde le trottoir à y+1 quartier par quartier. `grep -n "ARCHI.<ancien>"`
+  le jour où l'on découpe un bloc, comme le verre dans les murs. L'ancien bloc
+  reste lu (un enfant a pu le poser). La règle d'avant se rejoue
+  (`buildChunkTampons(…, { devantures: false })`) : c'est elle que lit
+  l'empreinte des 490 morceaux, au bit près.
 
 ## Le mobilier de trottoir arrête les passants (v425) — on bute sur ce qu'on voit
 

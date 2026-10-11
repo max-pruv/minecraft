@@ -168,7 +168,7 @@ const GARDIENS = {
   'src/identity.js': ['reglages.js', 'parent.js'],
   'src/education.js': ['reglages.js', 'parent.js', 'manhattan.js'],
   'src/taxis.js': ['realisme.js', 'monte.js', 'sauvegarde.js', 'manhattan.js'],
-  'src/utilitaires.js': ['carteMonde.js', 'realisme.js', 'monte.js'], // v433 : la fourgonnette et le pickup de la rue
+  'src/utilitaires.js': ['carteMonde.js', 'realisme.js', 'monte.js'], // v436 : la fourgonnette et le pickup de la rue
   'src/vehicules.js': ['monte.js', 'washington.js', 'metro.js', 'manhattan.js', 'carteMonde.js', 'reseau.js'],
   'src/voiesdoubles.js': ['monte.js', 'carteMonde.js', 'reseau.js'],
   // LE FEU TRICOLORE (v273) : il s'allume dans le monde (carteMonde.js) et il
@@ -252,6 +252,7 @@ const GARDIENS = {
   // comme les bruits de blocs passent par sa sortie — d'où `reseau.js`.
   'src/sons.js': ['monte.js', 'reglages.js', 'reseau.js'],
   'src/sensations.js': ['monte.js', 'reglages.js', 'reseau.js'],
+  'src/traces.js': ['monte.js', 'reglages.js', 'reseau.js'],
   // Le socle du rendu : un registre de blocs, un atlas ou un mailleur faux
   // n'abîme pas une ville, il les abîme toutes.
   'src/blocks.js': SUITES,

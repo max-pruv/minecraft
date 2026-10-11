@@ -3584,7 +3584,7 @@ const VRAIES_KM = [
           : 'aucune jumelle sur l\'A1');
     }
 
-    // --- LA RUE DENSE, PALIER C (v433) ---------------------------------------
+    // --- LA RUE DENSE, PALIER C (v436) ---------------------------------------
     //
     // Trois choses, trois témoins, et chacun mesure la même grandeur sur
     // l'ancien code (qui rend « absent » sans s'effondrer).
@@ -5123,15 +5123,17 @@ const VRAIES_KM = [
         if (d < 5) surLaPlace.push(cle);
       }
       pires.sort((a, b) => b[0] - a[0]);
-      return { total: traces.length, anneaux, pas, fontaine, seuls, surLaPlace, pires: pires.slice(0, 5).map(([n, c]) => `${c} ${n}`),
+      const disputee = Object.fromEntries(['toronto', 'dublin', 'lima'].map((c) => [c, parCle[c] || 0]));
+      return { total: traces.length, anneaux, pas, fontaine, seuls, surLaPlace, disputee, pires: pires.slice(0, 5).map(([n, c]) => `${c} ${n}`),
         lv: { pas: parCle.lasvegas || 0, circuits: (parVille.get('lasvegas') || []).length, desertLots, desertRues } };
     });
     verifier('un anneau qui sortait de la chaussée contourne la place, la fontaine ou le parc',
       // v418 : 87 anneaux et 2 257 pas avant le contour à contresens et les
       // rues du Strip, 75 et 1 228 après. v432 (la vue sur la voie, la
       // couverture à la règle de ce fichier, plusieurs ordres, une rangée
-      // d'un coup) : 61 et 840. Barres au milieu.
-      contour.anneaux <= 68 && contour.pas <= 1034 && contour.total >= 809,
+      // d'un coup) : 61 et 840. v435 (la recherche conjointe) : 58 et 772.
+      // Barres au milieu.
+      contour.anneaux <= 59 && contour.pas <= 806 && contour.total >= 809,
       `${contour.anneaux}/${contour.total} anneaux, ${contour.pas} pas hors de la chaussée`
       + ` (dont ${contour.fontaine} dans une fontaine) · les pires : ${contour.pires.join(', ')}`);
     // v416 : San Diego gagne son contresens (3 → 2) ; restent San José et
@@ -5150,11 +5152,21 @@ const VRAIES_KM = [
     // vingt-deux villes (mesuré sur la v421). La garde de vue de la phase 4
     // lisait l'AXE de la rue à trente blocs ; la voiture roule sur sa VOIE, et
     // une voie à trente-six blocs montre encore une voiture (`VU_CONTOUR`).
-    // Mesuré : neuf villes ici (Rio, Tokyo, Dubaï, Toronto… — voir TASKS.md),
-    // vingt-deux sur `origin/main`. Barre au milieu.
+    // Mesuré : neuf villes en v432, vingt-deux sur la v421 ; six depuis la
+    // v435 (Toronto, Dublin et Lima se contournent ensemble, voir plus bas ;
+    // restent Rio, Tokyo, Dubaï — TASKS.md). Barre au milieu.
     verifier('l\'anneau qu\'on voit en arrivant fait le tour de la place au lieu de la traverser',
-      contour.surLaPlace.length <= 15,
+      contour.surLaPlace.length <= 7,
       `${contour.surLaPlace.length} ville(s) dont une voie passe sur le centre : ${contour.surLaPlace.join(', ')}`);
+    // DEUX ANNEAUX QUI SE DISPUTENT LA PLACE SE CHERCHENT ENSEMBLE (v435).
+    // À Toronto, Dublin et Lima, l'anneau qu'on voit en arrivant passait sur
+    // le centre, et chacun, cherché seul, ne trouvait que des contours sur la
+    // voie d'un voisin (aucun ordre n'y changeait rien). La recherche
+    // conjointe bouge les anneaux ensemble, sous les mêmes promesses.
+    // Mesuré : 31, 22 et 20 pas sur `origin/main` (v432), 0, 3 et 2 ici.
+    verifier('deux anneaux qui se disputent la place la contournent ensemble',
+      contour.disputee.toronto <= 5 && contour.disputee.dublin <= 5 && contour.disputee.lima <= 5,
+      `pas hors de la chaussée : ${JSON.stringify(contour.disputee)}`);
     verifier('les villes engendrées à un seul circuit en ont désormais deux, le contresens',
       contour.seuls.length <= 2,
       `${contour.seuls.length} ville(s) à un circuit : ${contour.seuls.join(', ')}`);

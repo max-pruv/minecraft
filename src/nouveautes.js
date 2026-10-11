@@ -6,6 +6,40 @@
 
 export const NOUVEAUTES = [
   {
+    v: 436,
+    titre: 'Fourgonnettes et pickups en ville',
+    puces: [
+      'Des utilitaires roulent dans les rues',
+      'Chaque voiture a sa propre allure',
+      'Plus vite sur les grands boulevards',
+      'Deux voies remplies à Paris',
+    ],
+  },
+  {
+    v: 435,
+    titre: 'Les anneaux se partagent la place',
+    puces: [
+      'Toronto, Dublin et Lima sans faute',
+      'Les voitures tournent autour du centre',
+    ],
+  },
+  {
+    v: 434,
+    titre: 'Le dérapage laisse des traces',
+    puces: [
+      'Des traces de pneus quand on glisse',
+      'Elles s\'effacent toutes seules',
+    ],
+  },
+  {
+    v: 433,
+    titre: 'Les cafés de Paris',
+    puces: [
+      'Des terrasses devant les boutiques',
+      'Tables rondes et chaises tressées',
+    ],
+  },
+  {
     v: 432,
     titre: 'Les voitures contournent la place',
     puces: [
