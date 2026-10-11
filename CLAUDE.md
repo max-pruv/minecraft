@@ -770,6 +770,32 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les commandes de l'avion se rangent (v445) — une file en flux ne peut rien recouvrir
+
+Max, deux captures d'iPhone en vol : six paires d'éléments qui se recouvrent
+(cadran de cap × minicarte × GPS × bandeau, défi de Cornichon × manette). Trois
+règles.
+
+- **CE QUI S'AFFICHE EN HAUT AU MILIEU VIT DANS UNE SEULE FILE EN FLUX.**
+  `#file-centre` (index.html) : cadran, GPS, proposition d'ami, défi de
+  Cornichon (`fun.js` l'y range), bandeau — `position: static` à l'intérieur,
+  donc un élément de plus se range à la suite et rien ne se recouvre par
+  construction. Elle commence sous la ligne du chronomètre
+  (`--rail-panel-top`), entre la colonne de gauche — et la minicarte quand
+  elle est ouverte (`body.minicarte-ouverte`, `--minimap-w`) — et la colonne
+  de droite. Plus aucune cote écrite à la main pour un bandeau.
+- **LA COLONNE DE BORD EST AUSSI HAUTE QUE LA MANETTE, ET « DESCENDRE » EN
+  FAIT PARTIE.** Aux commandes, ⬇️ DESCENDRE, ✈️ et 🛞 sont trois boutons
+  ronds de 56 px au même x, la vitesse en dessous, la manette (56 × 220) à
+  droite : le haut de la colonne est le haut de la manette (v265), rien dans le
+  quart du joystick (v272). Le bouton garde le texte « Descendre » (les témoins
+  lisent `includes`), en icône et mot.
+- **UN TÉMOIN DE MISE EN PAGE SE JOUE À LA TAILLE DE L'APPAREIL DE MAX.** Le
+  banc ouvre en 420 × 760 ; la capture était en 430 × 932. Les trois témoins
+  de `monte.js` se jouent aux deux, formulés sans dimension. Et le quiz de
+  l'invariant 2 met le vol en pause (`onPause` → `running = false`) : mesuré,
+  zéro bloc parcouru sous la question — on le RANGE, on ne le diffère pas.
+
 ## Les raccords d'autoroute s'arrêtent avant l'anneau (v442) — deux grilles ne partagent pas une voie
 
 Trois règles.

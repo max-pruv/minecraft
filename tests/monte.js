@@ -8263,6 +8263,93 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         JSON.stringify(lu));
       await diagPage.close();
     }
+
+    // LES COMMANDES DE BORD NE SE RECOUVRENT PLUS (aviation, octobre 2026).
+    //
+    // Max, deux captures d'iPhone (430 × 932) au-dessus de l'Amérique du Nord :
+    // le cadran de cap posé par-dessus la minicarte, un bandeau, le GPS et la
+    // minicarte l'un sur l'autre — illisibles —, « Descendre » qui flotte
+    // au-dessus de la colonne et de la manette. Mesuré sur `origin/main` à
+    // cette taille : six paires qui se recouvrent en haut de l'écran.
+    //
+    // Le témoin se formule SANS la taille de l'écran (v265) — des rectangles qui
+    // ne se recouvrent pas, une colonne d'un seul x, rien au-dessus du haut de
+    // la manette, rien dans le quart du joystick (v272, en fractions de la vue)
+    // — et il se joue à la taille de l'iPhone de Max ET à celle du banc.
+    // En vol, minicarte ouverte, GPS actif, un bandeau et le défi de Cornichon
+    // affichés : la situation de la capture, provoquée (v233).
+    for (const vue of [{ width: 430, height: 932 }, { width: 420, height: 760 }]) {
+      // `tab` est déjà fermée ici (dernier usage plus haut) : on ne met de côté
+      // qu'une page encore ouverte.
+      if (!tab.isClosed()) await banc.mettreDeCote(tab);
+      const hudPage = await banc.jouerSeul('MonteHud' + vue.width, { viewport: vue, tactile: true, rr: 2 });
+      const hud = await hudPage.evaluate(async () => {
+        const g = window.__game, am = g.animalManager;
+        const att = (ms) => new Promise((f) => setTimeout(f, ms));
+        for (const a of [...am.animals]) am.scene.remove(a.mesh);
+        am.animals.length = 0;
+        const x0 = -1500.5, z0 = -2500.5;
+        g.player.pos.set(x0, g.world.sommetColonne(Math.floor(x0), Math.floor(z0)) + 1.5, z0);
+        g.player.yaw = -Math.PI / 2;
+        await att(1200);
+        am.invoquer('chasseur', x0 + 3, z0);
+        await att(800);
+        for (let e = 0; e < 8 && !g.player.pilote; e++) { document.getElementById('ride-btn').click(); await att(500); }
+        if (!g.player.pilote) return { err: 'pas aux commandes' };
+        g.player.pos.y += 60; g.player.avionEtat = 'vol'; g.player.avionEnVol = true; g.player.vitesseAvion = 100;
+        if (getComputedStyle(document.getElementById('minimap')).display === 'none') document.getElementById('map-btn').click();
+        if (window.__gpsVers) window.__gpsVers(x0 + 2000, z0 - 9000, 'Minneapolis');
+        else if (g.carte && g.carte.surGPS) g.carte.surGPS(x0 + 2000, z0 - 9000, 'Minneapolis');
+        const { toast } = await import('./src/bandeau.js');
+        toast('🛑 À l\'arrêt. Le joystick fait rouler, ✈️ redécolle.', 0xffffff, 60000);
+        const mp = document.getElementById('math-pop');
+        if (mp) { document.getElementById('math-q').textContent = '🥒 Cornichon : « J\'ai 7 pommes et j\'en trouve 5 de plus. Combien j\'en ai ? »'; mp.style.display = 'block'; }
+        await att(900);
+        const boite = (id) => {
+          const e = document.getElementById(id); if (!e) return null;
+          const st = getComputedStyle(e), b = e.getBoundingClientRect();
+          if (st.display === 'none' || st.visibility === 'hidden' || b.width === 0) return null;
+          return { x: Math.round(b.left), y: Math.round(b.top), w: Math.round(b.width), h: Math.round(b.height) };
+        };
+        const ids = ['cap-avion', 'minimap', 'gps', 'toast', 'math-pop', 'fun-target', 'fly-btn', 'train-btn', 'gaz-base', 'gaz-val', 'edu-timer', 'left-rail', 'pause-btn'];
+        const R = {};
+        for (const id of ids) R[id] = boite(id);
+        if (mp) mp.style.display = 'none';
+        // ET LE QUIZ (invariant 2) ARRÊTE LE VOL : il couvre l'écran, l'avion
+        // ne doit pas continuer sous lui. On le lance en plein vol et l'on
+        // relève la position deux secondes plus tard.
+        const avant = g.player.pos.clone();
+        g.edu.startQuiz();
+        await att(2000);
+        const glisse = +g.player.pos.distanceTo(avant).toFixed(2);
+        return { vue: { w: innerWidth, h: innerHeight }, R, glisse, descendre: (document.getElementById('ride-btn') || {}).textContent || '' };
+      });
+      await hudPage.close();
+      if (!tab.isClosed()) await banc.ramener(tab);
+      const croise = (a, b) => !!a && !!b
+        && Math.min(a.x + a.w, b.x + b.w) > Math.max(a.x, b.x)
+        && Math.min(a.y + a.h, b.y + b.h) > Math.max(a.y, b.y);
+      const R = hud.R || {};
+      const k = Object.keys(R).filter((n) => R[n]), recouvre = [];
+      for (let i = 0; i < k.length; i++) for (let j = i + 1; j < k.length; j++) if (croise(R[k[i]], R[k[j]])) recouvre.push(k[i] + '×' + k[j]);
+      const tous = ['cap-avion', 'minimap', 'gps', 'toast', 'math-pop', 'fun-target', 'fly-btn', 'train-btn', 'gaz-base', 'gaz-val'];
+      const manquants = tous.filter((n) => !R[n]);
+      verifier(`en vol (${vue.width} × ${vue.height}), minicarte, cadran de cap, GPS, bandeau et défi de Cornichon ne se recouvrent pas, ni les commandes de bord`,
+        !hud.err && manquants.length === 0 && recouvre.length === 0,
+        `${hud.err || ''} manquants ${JSON.stringify(manquants)} recouvrements ${JSON.stringify(recouvre)} ${JSON.stringify(R)}`);
+      const col = ['fun-target', 'fly-btn', 'train-btn'].map((n) => R[n]);
+      const gz = R['gaz-base'];
+      const joy = (b) => !!b && b.x < hud.vue.w * 0.45 && b.y + b.h > hud.vue.h * 0.4;
+      verifier(`en vol (${vue.width} × ${vue.height}), ⬇️ Descendre, ✈️ et 🛞 forment UNE colonne collée à la manette, rien au-dessus de son haut ni dans le quart du joystick`,
+        !hud.err && !!gz && col.every(Boolean)
+        && col.every((b) => b.x === col[0].x && b.y >= gz.y && b.y + b.h <= gz.y + gz.h)
+        && gz.x > col[0].x && gz.x - (col[0].x + col[0].w) < 30
+        && !Object.keys(R).some((n) => ['fun-target', 'fly-btn', 'train-btn', 'gaz-base', 'gaz-val'].includes(n) && joy(R[n]))
+        && /Descendre/.test(hud.descendre),
+        `${hud.err || ''} ${JSON.stringify({ gz, col, vue: hud.vue, descendre: hud.descendre })}`);
+      verifier(`en vol (${vue.width} × ${vue.height}), le quiz de Cornichon met le vol en pause — l'avion ne file pas sous la question`,
+        !hud.err && hud.glisse < 0.5, `${hud.err || ''} déplacé de ${hud.glisse} blocs en 2 s de quiz`);
+    }
   } finally {
     await banc.fermer();
   }
