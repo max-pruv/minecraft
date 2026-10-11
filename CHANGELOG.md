@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v440 — Les voitures de l'autoroute n'entrent plus dans les anneaux de la ville
+## v442 — Les voitures de l'autoroute n'entrent plus dans les anneaux de la ville
 
 **Pourquoi.** Une autoroute entre dans une ville engendrée par son avenue
 d'entrée, l'axe de la trame jusqu'à la place. Or cet axe est souvent le côté
@@ -46,6 +46,70 @@ la règle rend aujourd'hui — vérifiés rouges sur la table vidée (569 blocs,
 19 raccords). Au navigateur, `sonde-circulation.cjs madrid` en ordre alterné :
 6,74 et 6,85 % avec l'avenue entière (`?raccords=long`), 1,47 et 1,02 % avec
 le raccord court.
+
+---
+
+## v441 — La voiture de l'ami braque et glisse
+
+**Pourquoi.** Depuis la v397 le volant et la glisse de la voiture d'un ami
+voyagent avec sa position : la tablette d'Alice recevait les deux nombres de
+Marlon… et personne ne les dessinait. Chez elle, les roues avant de Marlon
+restaient droites en plein virage, et ses dérapages ne laissaient aucune
+trace. En cherchant comment dessiner sa glisse « avec la même règle que pour
+soi », la règle elle-même s'est révélée fausse : la caisse en dérapage était
+dessinée EN MIROIR. La physique fait aller la vitesse dans la direction du
+corps plus la dérive ; la caisse tournait encore deux fois la dérive par-dessus.
+Mesuré dans la matrice au frein à main, virage à gauche : la caisse rendue à
+−0,06 rad de sa vitesse quand la physique la dit à +0,45 — le nez du mauvais
+côté, depuis la v422.
+
+**Ce que ça change.** Au volant, une voiture qui dérape a le nez vers
+l'intérieur du virage, comme dans GTA. À plusieurs, on voit les roues avant
+de la voiture de l'ami braquer avec son volant, et ses dérapages — dérive ou
+frein à main — laissent des traces de pneus chez nous aussi.
+
+**Ce qui le prouve.** Trois témoins neufs. Dans `monte.js`, la caisse rendue
+rapportée à ce que la physique dit : −0,18 puis 0,37 sur `origin/main`,
+1,00 ici. Dans
+`reseau.js`, à deux tablettes : la roue avant de la copie de Marlon lue dans
+la matrice chez Alice (zéro sur la v437), et ses traces de pneus qui naissent
+chez Alice quand il glisse (aucune sur la v437). Le frein à main voyage dans un
+champ court de la position (`p.v.m`) : une tablette restée en arrière l'ignore.
+
+---
+
+## v440 — Des essais encore plus justes
+
+**Pourquoi.** Sept témoins du portail rougissaient une fois sur deux sans
+qu'une ligne du jeu ait bougé, et chaque livraison payait leur démontage. Le
+plus gros était le banc lui-même : la page principale de `monte.js` restait
+EN JEU pendant chaque page secondaire, et une page de ciel (distance
+d'affichage douze) n'était jamais fermée — presque quatre cœurs sur quatre
+pris pendant les trois quarts de la suite. D'autres témoins mesuraient
+l'endroit où la cadence les avait laissés : un arrêt devant un réverbère
+compté en secondes de montre, un trou de façade lu sur la géométrie de TOUTE
+la ville, un atterrissage sur une piste d'essai plus courte que lui.
+
+**Ce que ça change.** Rien dans le jeu : seulement les témoins, et un
+nouveau geste du banc (`mettreDeCote`, `ramener`) qui réduit une page à
+seize pixels le temps qu'une autre mesure. Et une VRAIE panne trouvée en
+chemin, déclarée et non corrigée (elle est dans la zone de la conduite) :
+une rame de train peut traverser la voiture de l'enfant quand une image est
+lente, parce qu'elle ne regarde que 3,5 blocs devant elle et roule en temps
+réel.
+
+**Ce qui le prouve.** Chaque rouge rejoué seul des deux côtés, la cause
+séparée par une sonde, et chaque correction désarmée dans une copie pour
+vérifier qu'elle rougit encore : le réverbère (`origin/main` 3/3 rouge sous
+charge, branche 3/3 vert, désarmé 97 blocs au travers du poteau), le trou
+de façade (branche 3/3 vert, désarmé « jamais rebâti »), la chauffe de New
+York (expirait à 150 s, finie en 9,9 s), la fumée (3/3). Le témoin du train
+reste ROUGE : c'est la panne. Au portail, quatre suites rouges, toutes sur des
+dettes déjà déclarées : `carte.js` (glisser bridé ×4), `manhattan.js` (le
+taxi, 3,6 blocs en 247 s — son bouton apparaît désormais, mais il rampe
+encore sous la charge), `monte.js` (la rue à l'allure d'une ville),
+`reseau.js` (GPS relayé, départ de l'hôte, courtier : rejouée seule trois
+fois de chaque côté, la même distribution, 1/3 des deux côtés).
 
 ---
 

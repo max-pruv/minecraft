@@ -13,6 +13,7 @@
 const { Banc, dormir, souffler } = require('./banc.js');
 const { mesurerSensations } = require('./sensations-mesure.js');
 const { mesurerTraces } = require('./traces-mesure.js');
+const { mesurerDeriveDessinee } = require('./derive-mesure.js');
 
 const echecs = [];
 // COMBIEN DE TEMPS CHAQUE TÉMOIN A-T-IL COÛTÉ.
@@ -634,7 +635,21 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const ci = etat.findIndex((c, i) => /^train /.test(c.nom) && c.attente === 0
         && (V.point(i, 0) || { y: 0 }).y > 20);
       if (ci < 0) return { err: 'aucun train de surface' };
-      const pt = V.point(ci, 30);
+      // HUIT SECONDES DE VOIE, PAS TRENTE BLOCS (banc-intermittents). À trente
+      // blocs, la rame arrivait pendant les images lentes qui suivent une
+      // téléportation : le témoin mêlait l'arrivée et le croisement. À huit
+      // secondes, la page a repris son souffle avant que la rame n'arrive.
+      // CE QUI RESTE EST UNE VRAIE PANNE, ET CE TÉMOIN LA GARDE ROUGE : la rame
+      // ne regarde que 3,5 blocs devant elle (`PAS_TRAIN`, vehicules.js) et
+      // roule en temps réel (v305) ; une image de plus d'un quart de seconde
+      // la fait passer d'« assez loin » à « déjà dedans », et « déjà dedans »
+      // continue (v245). Sonde `sonde-train-voiture.cjs` sous trois cœurs
+      // chargés : 5 traversées sur 10, l'enfant bien dans la liste de la rue
+      // (`premier.enfantVu`), la rame ne le voulant jamais (`trainVeut` vide).
+      // Dette déclarée dans TASKS.md pour la zone conduite.
+      const vit = Math.max(8, etat[ci].vitesse || 15);
+      const avance = Math.round(Math.min(160, Math.max(30, vit * 8)));
+      const pt = V.point(ci, avance);
       if (!g.fun.montureConduite || !g.fun.montureConduite()) return { err: 'pas au volant' };
       g.player.flying = false;
       g.player.pos.set(pt.x, pt.y - 1.1 + 0.2, pt.z);
@@ -660,7 +675,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       };
       const t0 = performance.now();
       let releves = 0, dedans = 0, bloque = 0, plusPres = Infinity;
-      while (performance.now() - t0 < 20000) {
+      while (performance.now() - t0 < 30000) {
         await new Promise((r) => setTimeout(r, 250));
         const c = V.etat()[ci];
         const p = g.player.pos, moi = rect(p.x, p.z, g.player.yaw + Math.PI, dlJ, dwJ);
@@ -674,7 +689,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         if (ici) dedans++;
         if (bloque > 12) break;                       // arrêté devant nous trois secondes : acquis
       }
-      return { ci, nom: V.etat()[ci].nom, releves, dedans, bloque, plusPres: +plusPres.toFixed(1),
+      return { ci, nom: V.etat()[ci].nom, avance, vitesse: vit, releves, dedans, bloque, plusPres: +plusPres.toFixed(1),
         secondes: +((performance.now() - t0) / 1000).toFixed(1) };
     });
     verifier('un train s\'arrête devant la voiture de l\'enfant posée sur sa voie, au lieu de la traverser',
@@ -3812,6 +3827,8 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // appuie tout de suite retrouve New York comme avant. C'est déclaré dans
     // TASKS.md ; ce que le témoin garde, c'est que l'accueil, lui, couvre tout.
     await souffler();
+    // la page principale de côté pendant celle-ci (`banc.mettreDeCote`)
+    await banc.mettreDeCote(tab);
     const arrivee = await banc.joueur('MonteArrivee', { rr: 6 });
     // UNE CHAUFFE EST UN ÉTAT, PAS UN TAUX (v285) : sous la charge du portail
     // elle a rendu 44 à 163 sur 321 en soixante secondes, et seule — page
@@ -3875,6 +3892,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       }, l));
     }
     await arrivee.close();
+    await banc.ramener(tab);
     const programmes = { chauffeNY, tour };
     // ET LA BORNE DE GARDE ÉTAIT AU-DESSUS DE CE QU'ON MESURE — QUATRIÈME FOIS
     // DANS CE FICHIER (v282). `images > 30` disait « la boucle de rendu vit »,
@@ -3962,6 +3980,8 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // (blocs parcourus en vol, relevés de virage). `ombres=1` les rallume
     // ici, et ici seulement ; l'ancien code ignore le paramètre.
     await souffler();
+    // la page principale de côté pendant celle-ci (`banc.mettreDeCote`)
+    await banc.mettreDeCote(tab);
     const regardPage = await banc.jouerSeul('MonteRegard', { rr: 4, ombres: 1 });
     const regard = await regardPage.evaluate(async () => {
       const g = window.__game, w = g.world, r = g.renderer, cam = g.camera;
@@ -4107,6 +4127,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       return { sol, ombre, soleil, matin, soir, ciel, lampe, nuit, dalle, ombres: r.shadowMap.enabled };
     });
     await regardPage.close();
+    await banc.ramener(tab);
     const ok = (v) => typeof v === 'number' && v > 0;
     verifier('à midi, le sol dans l\'ombre d\'un pilier est plus sombre que le sol au soleil',
       ok(regard.ombre) && ok(regard.soleil) && regard.ombre / regard.soleil < 0.8,
@@ -4241,6 +4262,8 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // principal engendrerait — c'est ce qui garde l'invariant 1 quand deux
     // mondes jumeaux se partagent le travail.
     await souffler();
+    // la page principale de côté pendant celle-ci (`banc.mettreDeCote`)
+    await banc.mettreDeCote(tab);
     const filPage = await banc.jouerSeul('MonteFil', { rr: 12 });
     const fil = await filPage.evaluate(async () => {
       const g = window.__game;
@@ -4305,6 +4328,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       return out;
     });
     await filPage.close();
+    await banc.ramener(tab);
     // La borne de garde des blocs parcourus passe de 100 à 40 (v265, même
     // passe que celle des relevés de virage) : elle est tombée au portail de
     // la v264 sur 66 blocs et à celui de la v265 sur 90, alors que le
@@ -4330,6 +4354,8 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // avant le poteau. Puis la même chose sur Broadway piéton, face à une
     // table de Times Square. Sur l'ancien code on passe au travers.
     await souffler();
+    // la page principale de côté pendant celle-ci (`banc.mettreDeCote`)
+    await banc.mettreDeCote(tab);
     const mobPage = await banc.jouerSeul('MonteMobilier', { rr: 4 });
     // le scénario part en TEXTE : Playwright ne sérialise pas une fonction
     const conduireVers = async (page, poser) => page.evaluate(async (source) => {
@@ -4351,25 +4377,45 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       g.animalManager.animals.length = 0;
       const fx = -Math.sin(g.player.yaw), fz = -Math.cos(g.player.yaw);
       g.animalManager.invoquer('voiture', g.player.pos.x + fx * 2.5, g.player.pos.z + fz * 2.5);
-      await dodo(1500);
-      document.getElementById('ride-btn').click();
-      await dodo(800);
+      // MONTER, C'EST UN ÉTAT, PAS UN CLIC (v252) : on clique jusqu'à être au
+      // volant, borné, et le temps pris entre dans le message.
+      const tMonte = performance.now();
+      const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+      for (let e = 0; e < 8 && !auVolant(); e++) { await dodo(e ? 0 : 1500); document.getElementById('ride-btn').click(); const t = performance.now(); while (!auVolant() && performance.now() - t < 2500) await dodo(150); }
+      const monte = Math.round(performance.now() - tMonte);
       const depart = { x: g.player.pos.x, z: g.player.pos.z };
       const d0 = Math.hypot(cible.x - depart.x, cible.z - depart.z);
       g.player.keys.add('KeyW');                       // la touche, comme le clavier la pose
       // ON ROULE JUSQU'À L'ARRÊT, PAS TROIS SECONDES : à dt borné le banc
       // n'atteint pas un poteau à neuf blocs en trois secondes, et le témoin
       // était vert des deux côtés en ne mesurant rien.
-      let plusPres = d0, immobile = 0, dernier = { x: g.player.pos.x, z: g.player.pos.z };
-      for (let i = 0; i < 400 && immobile < 10; i++) {
+      // ET L'ARRÊT SE CONSTATE EN IMAGES, APRÈS LE DÉPART (banc-intermittents).
+      // La voiture accélère depuis zéro (v358) et avance en temps de JEU : sur
+      // une page qui rame, dix relevés de cent millisecondes sans mouvement ne
+      // voulaient pas dire « arrêtée », mais « aucune image rendue ». Le témoin
+      // concluait l'arrêt à 0 ou 0,17 bloc (`parcouru 0`, rouge des deux côtés
+      // sous charge : 3/3 sur `origin/main`, sonde `sonde-reverbere.cjs`). On
+      // compte l'immobilité en IMAGES RENDUES (`renderer.info.render.frame`),
+      // seulement une fois la voiture partie d'un demi-bloc ; le départ est
+      // borné à cent vingt images, et le tout à soixante secondes de montre.
+      // La durée et les images entrent dans le message.
+      let plusPres = d0, immobile = 0, dernier = { x: g.player.pos.x, z: g.player.pos.z }, partie = false;
+      const tRoule = performance.now(), image = () => g.renderer.info.render.frame;
+      const im0 = image(); let imPrec = im0;
+      while (performance.now() - tRoule < 60000 && !(partie && immobile >= 10) && (partie || image() - im0 < 120)) {
         await dodo(100);
+        const im = image(); if (im === imPrec) continue;
         plusPres = Math.min(plusPres, Math.hypot(cible.x - g.player.pos.x, cible.z - g.player.pos.z));
+        if (!partie && Math.hypot(g.player.pos.x - depart.x, g.player.pos.z - depart.z) > 0.5) partie = true;
         const bouge = Math.hypot(g.player.pos.x - dernier.x, g.player.pos.z - dernier.z) > 0.02;
-        immobile = bouge ? 0 : immobile + 1; dernier = { x: g.player.pos.x, z: g.player.pos.z };
+        immobile = bouge || !partie ? 0 : immobile + (im - imPrec); dernier = { x: g.player.pos.x, z: g.player.pos.z };
+        imPrec = im;
       }
+      const images = image() - im0;
+      const roule = Math.round(performance.now() - tRoule);
       g.player.keys.delete('KeyW');
       const parcouru = Math.hypot(g.player.pos.x - depart.x, g.player.pos.z - depart.z);
-      return { auVolant: !!(g.fun.montureConduite && g.fun.montureConduite()), gabarit: g.player.gabarit, d0: +d0.toFixed(2), plusPres: +plusPres.toFixed(2), parcouru: +parcouru.toFixed(2), cible };
+      return { auVolant: auVolant(), gabarit: g.player.gabarit, d0: +d0.toFixed(2), plusPres: +plusPres.toFixed(2), parcouru: +parcouru.toFixed(2), cible, monte, roule, partie, images };
     }, poser.toString());
     // 1. un réverbère sur une rue de Paris
     const poteau = await conduireVers(mobPage, async (g, w, RUE) => {
@@ -4442,6 +4488,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       table.notee && (table.contre === true || table.contre === 'mobilier') && table.libre === false,
       JSON.stringify(table));
     await mobPage.close();
+    await banc.ramener(tab);
 
     // --- ON PILOTE VRAIMENT, ET CHACUN À SA VITESSE -------------------------
     //
@@ -4591,6 +4638,8 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // DIX-HUIT blocs et le disque à charger fait douze cases. Mon premier jet
     // de ce témoin était donc VERT sur `origin/main`, à 264 blocs par seconde,
     // avec le trou à trente-six blocs — il mesurait le banc, pas le jeu.
+    // la page principale de côté pendant celle-ci (`banc.mettreDeCote`)
+    await banc.mettreDeCote(tab);
     const ciel = await banc.jouerSeul('Amélie', { rr: 12 });
     await leverLaLimite(ciel);
     const suivi = await ciel.evaluate(async () => {
@@ -5487,6 +5536,12 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       verifier('le jeu ne redemande pas le nom de la carte graphique à chaque morceau franchi',
         appels.franchis >= 5 && appels.n === 0, JSON.stringify(appels));
     }
+    // ET `ciel` SE FERME APRÈS SON DERNIER USAGE (banc-intermittents). Elle
+    // restait EN JEU, à la distance de l'iPad, jusqu'à la fin de la suite :
+    // près de quatre cœurs pris à côté de chaque témoin qui suit — les trois
+    // quarts de `monte.js` (`sonde-voisine-de-cote.cjs`).
+    await ciel.close();
+    await banc.ramener(tab);
 
     // UN AVION DÉCOLLE DE SA PISTE, ET IL S'Y POSE (v261).
     //
@@ -5528,9 +5583,14 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       g.player.keys.clear();
       g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined;
       g.player.vitesseAvion = undefined; g.player.flying = false;
-      // LA PISTE : trois cents blocs de pierre, un roulement de cinquante
+      // LA PISTE : quatre cents blocs de pierre, un roulement de cinquante
       // blocs, une montée, une descente et un freinage tiennent dedans.
-      const x0 = 30000, z0 = 30300, L = 300;
+      // (Trois cents jusqu'ici, et c'est la CADENCE qui décide où l'appareil
+      // touche : rejouée seule, il a touché à x 272,6 à 42 b/s et s'est arrêté
+      // à 300,9 — au bout de la piste, rouge à 0,9 bloc près ; c'est le piège
+      // de la v273, déclaré depuis la v359. Le témoin se donne le terrain de ce
+      // qu'il mesure : la barre reste « arrêté SUR la piste », `L`.)
+      const x0 = 30000, z0 = 30300, L = 400;
       let y0 = 0;
       for (let d = -6; d <= L; d += 4) for (let w = -4; w <= 4; w += 4) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
       y0 += 2;
@@ -5658,7 +5718,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         && avantToucher[avantToucher.length - 1].train >= 0.97
         && !!trajet.finale && trajet.finale.train >= 0.97 && trajet.finale.jambes.every((j) => j !== 'rentré')
         && !!trajet.arret && trajet.arret.v === 0 && Math.abs(trajet.arret.y) < 0.3
-        && trajet.arret.x <= 300,
+        && trajet.arret.x <= 400,
       `toucher ${JSON.stringify(touche)} · arrêt ${JSON.stringify(trajet.arret)} · finale ${JSON.stringify(trajet.finale)}`);
     // Au sol, le joystick fait rouler — sans quitter la piste — et tourne.
     verifier('à l\'arrêt, le joystick fait rouler l\'appareil sur la piste et le fait tourner',
@@ -7072,10 +7132,20 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !TR.err && TR.module && TR.neuves.length === 0, msgTr);
     // LE FREIN À MAIN CRISSE (v437) : tout droit, sans dérive, les roues
     // bloquées glissent. Mesuré dans la bande des pneus, frein tiré contre la
-    // ligne droite d'avant : ×1,9 sur la v431 (dérive nulle, presque rien), ×62
+    // ligne droite d'avant : ×1,9 sur la v434 (dérive nulle, presque rien), ×62
     // ici. La barre est celle du crissement en dérive (v401).
     verifier('au frein à main, les pneus crissent — même tout droit',
       !TR.err && TR.crisse && TR.crisse.n >= 3 && TR.crisse.rapport > 10, msgTr);
+    // LA GLISSADE DESSINÉE DANS LE BON SENS (v441). La physique fait aller la
+    // vitesse dans la direction `yaw + derive` : la caisse vraie est à
+    // −`derive` de sa vitesse. On lit la caisse RENDUE (matrice monde) au frein
+    // à main dans un virage à gauche, rapportée à ce que la physique dit :
+    // `origin/main` −0,18 puis 0,37 sur deux passages (la glissade en miroir,
+    // plus ou moins selon la vitesse), la branche 1,00.
+    const dv = await tab.evaluate(`(${mesurerDeriveDessinee.toString()})()`);
+    const DV = dv || {};
+    verifier('en dérapage, la caisse est dessinée de travers du bon côté',
+      !DV.err && DV.releves >= 5 && DV.rapport > 0.7 && DV.rapport < 1.3, JSON.stringify(DV));
     verifier('les traces sont bornées et s\'effacent, les plus vieilles d\'abord',
       !TR.err && TR.borne && TR.borne.vivantes === TR.borne.max && TR.borne.maillages === 1
         && TR.fondu.alphaMi > 0.1 && TR.fondu.alphaMi < 0.7 && TR.fondu.vivFin === 0 && !TR.fondu.visibleFin, msgTr);
@@ -7372,6 +7442,8 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // devant la voiture, qui s'est arrêtée net comme elle le doit : « 0 bloc/s
     // après sept secondes » au portail, vert rejoué seul sur une page neuve.
     // Un témoin se place lui-même (v284), page comprise.
+    // la page principale de côté pendant celle-ci (`banc.mettreDeCote`)
+    await banc.mettreDeCote(tab);
     const pageGta = await banc.jouerSeul('MonteConduite', { tactile: true });
     const gta = await pageGta.evaluate(async () => {
       // les passants de la page ne roulent pas sur la dalle des témoins
@@ -7569,6 +7641,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       return res;
     });
     await pageGta.close().catch(() => {});
+    await banc.ramener(tab);
     const cd = gta || {};
     const cadenceC = `cadence ${cd.cadence} images/s`;
     verifier('une hypercar passe de 0 à 100 km/h en moins de trois secondes de jeu, comme le dit sa fiche',

@@ -303,7 +303,7 @@ async function principal(mode) {
   return RESULTAT;
 }
 
-// LANCÉE SEULE, elle imprime ; REQUISE (plafond.js, v440), elle rend le relevé
+// LANCÉE SEULE, elle imprime ; REQUISE (plafond.js, v442), elle rend le relevé
 // du mode `raccords` — et l'aiguillage du portail voit que la suite en dépend
 // (un `spawn` ne se lit pas comme un `require`).
 async function mesurer(mode) { return principal(mode); }

@@ -1,4 +1,4 @@
-// LES RACCORDS D'AUTOROUTE NE PARTAGENT PAS LA VOIE D'UN ANNEAU (v440).
+// LES RACCORDS D'AUTOROUTE NE PARTAGENT PAS LA VOIE D'UN ANNEAU (v442).
 //
 // Une autoroute entre dans une ville engendrée par son avenue d'entrée (v310) :
 // l'axe de la trame, jusqu'à douze blocs de la place. Or cet axe est souvent

@@ -566,6 +566,26 @@ class Banc {
     return p;
   }
 
+  // METTRE UNE PAGE DE CÔTÉ (banc-intermittents). Une page EN JEU à côté
+  // d'une autre occupe 3,5 à 3,8 cœurs sur quatre — le rendu logiciel est du
+  // remplissage — et le gel CDP n'y change rien (`sonde-voisines.cjs`). Sa
+  // fenêtre réduite à 16 × 16, elle tombe à 0,15 cœur, et la chauffe de New
+  // York d'une page voisine passe de 22–24 s à 7 s (`sonde-voisine-de-cote.cjs`).
+  // Une suite qui garde sa page principale ouverte pendant qu'elle en mesure
+  // une autre la met de côté, puis la ramène telle qu'elle était.
+  async mettreDeCote(p) {
+    if (p.__vue) return;
+    p.__vue = p.viewportSize();
+    await p.setViewportSize({ width: 16, height: 16 });
+  }
+
+  async ramener(p) {
+    if (!p.__vue) return;
+    await p.setViewportSize(p.__vue);
+    p.__vue = null;
+    await dormir(300);                   // une image ou deux à la bonne taille
+  }
+
   // Ouvrir la carte comme l'enfant : le bouton, puis la vignette.
   async ouvrirLaCarte(p) {
     await p.evaluate(() => {

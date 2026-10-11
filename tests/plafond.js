@@ -610,7 +610,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       lignes.length >= 6 && lignes.every((r) => r.plein.force === 1 && r.lent.murs > 0 && r.lent.murs < 0.25 && r.frole.murs > 0 && r.frole.murs < 0.1),
       t ? JSON.stringify(t) : `sonde : ${err}`);
   }
-  // --- LES RACCORDS D'AUTOROUTE NE ROULENT PAS DANS LA VOIE D'UN ANNEAU (v440)
+  // --- LES RACCORDS D'AUTOROUTE NE ROULENT PAS DANS LA VOIE D'UN ANNEAU (v442)
   // Dix-neuf des quarante-six raccords route/ville engendrée partageaient la
   // voie d'un anneau (569 blocs ; Madrid 85, 6,8 % de paires au contact au
   // navigateur) : deux grilles indépendantes (v305) sur une voie. Le raccord
