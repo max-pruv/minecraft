@@ -20,6 +20,41 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v428 — Marseille rejoint Nice
+
+**Pourquoi.** Marseille–Nice était le dernier corridor court du kit côté
+Méditerranée, laissé de côté parce que Nice est une ville bâtie à la main et
+que l'axe direct est EN MER : 401 blocs d'eau sur 596. Et Marseille est
+« assise sous son pays » : la ville est à 33 blocs, son est et son nord-est
+montent à 46-50 dès vingt blocs du bord, et un massif de plus de 46 blocs
+ferme le nord-est.
+
+**Ce que ça change.** L'A8, la Provençale, sort de Marseille par le nord, entre
+le TGV et le massif, monte le long du massif jusqu'au col (42 à 46 blocs), le
+contourne, redescend dans la plaine et entre dans Nice par l'ouest. Dans Nice,
+une entrée mène de la porte au carrefour de l'avenue de la Californie et du
+boulevard René-Cassin. Trois ponts franchissent les ruisseaux du nord de
+Marseille ; vingt voitures font l'aller-retour, et l'on peut désormais rouler
+de Lyon à Nice.
+
+**Ce qui le prouve.** Un témoin neuf de `carteMonde.js`, rouge sur l'ancien
+code (ni convoi ni entrée de Nice) : l'A8 n'a aucun rail sous son emprise, ne
+frôle ni Marseille ni Nice hors de ses tronçons radiaux, l'entrée de Nice roule
+sur la chaussée sans un bloc à hauteur de carrosserie, et celle de Marseille
+arrive sur la rue. Les témoins de toutes les routes (profil, déblai 7,5,
+remblai 0,6, ponts et leurs joints, aérodromes, emprise partagée) la lisent
+sans changement. L'empreinte des 490 morceaux ne bouge pas : aucun de ses
+neuf lieux n'est sur l'A8, et elle rend la constante de la v419 au bit près,
+avec et sans la route. Le premier portail a trouvé deux points du joint du
+deuxième pont sans cube ni tablier : un sommet de coude tombait un bloc et
+demi avant le tablier ; déplacé, le joint est fermé sur les 19 500 points
+que le témoin lit.
+
+---
+
+
+---
+
 ## v427 — Des essais du jeu plus sûrs
 
 **Pourquoi.** Chaque livraison des sessions parallèles paie un portail de près

@@ -3473,6 +3473,37 @@ Une règle.
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
 
+## L'A8 (v428) — une sonde de couloir monte avec la route, et vérifie le rail sur la vraie emprise
+
+Marseille–Nice, par l'intérieur. Trois règles.
+
+- **UNE VILLE ASSISE SOUS SON PAYS FAIT ÉCHOUER LE COULOIR LE PLUS BAS, ET LE
+  REMÈDE EST DANS LE COÛT.** Marseille est à 33 et son pays monte à 46-50 dès
+  vingt blocs : le couloir le plus bas (v355) y rendait cent pour cent de refus
+  « déblai » — un défaut de la recherche (v329), pas du pays. Le coût d'une
+  case porte désormais une RAMPE : au-dessus de ce que 0,06 par bloc permet
+  depuis la porte (plus six), il croît au carré. La sonde cherche alors un
+  chemin que le profil peut suivre, et le trouve au nord, entre le TGV et le
+  massif.
+- **UNE ESTIMATION DE TALUS NE GARDE PAS UN RAIL.** Ma sonde estimait la
+  largeur du talus sur l'axe (l'écart au terrain sous l'axe, divisé par la
+  pente) ; le registre réel rendait vingt-cinq colonnes de talus sur la gare
+  TGV de Marseille, parce qu'un talus se règle sur le terrain de SA colonne,
+  pas sur celui de l'axe. Tout candidat retenu passe désormais par une
+  instance neuve de `routes.js` où sa fiche est inscrite, et `routeEn` lu
+  colonne par colonne (`exact`, scratchpad lib.mjs) : c'est la grandeur du
+  témoin, donc celle qu'on filtre (v313).
+- **UN SOMMET DE COUDE NE TOMBE PAS SUR LE JOINT D'UN PONT.** Le portail a
+  rendu deux points sans cube ni tablier à l'entrée du deuxième pont : le
+  sommet (1111, 3208) était à s 308,5, un bloc et demi avant le tablier, et
+  les colonnes du coin de son coude étaient déjà « tablier » (pas de cube)
+  sans qu'aucun ruban — orienté selon le tronçon d'après — ne les couvre. Le
+  comblement de coin de la v336 vaut DANS un pont, pas au joint. Ma sonde de
+  tracé mesurait les joints, mais sur le profil, pas sur les rubans ; le
+  témoin se rejoue sous node en vingt lignes (`joint.mjs`, scratchpad), et
+  c'est lui qu'on passe sur tout tracé retenu. Le sommet déplacé à s 304 :
+  zéro trou sur 19 500 points.
+
 ## L'A6 (v419) — une ville qui reçoit deux routes a deux arrivées
 
 Paris–Lyon, l'autoroute du Soleil, à l'ouest du TGV. Quatre règles.
