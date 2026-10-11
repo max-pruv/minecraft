@@ -7070,7 +7070,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         && TR.derive.maillages === 1, msgTr);
     verifier('les traces ne compilent rien en jeu (chauffées à l\'accueil)',
       !TR.err && TR.module && TR.neuves.length === 0, msgTr);
-    // LE FREIN À MAIN CRISSE (v435) : tout droit, sans dérive, les roues
+    // LE FREIN À MAIN CRISSE (v437) : tout droit, sans dérive, les roues
     // bloquées glissent. Mesuré dans la bande des pneus, frein tiré contre la
     // ligne droite d'avant : ×1,9 sur la v431 (dérive nulle, presque rien), ×62
     // ici. La barre est celle du crissement en dérive (v401).

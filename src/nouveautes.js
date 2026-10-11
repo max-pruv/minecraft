@@ -6,11 +6,27 @@
 
 export const NOUVEAUTES = [
   {
-    v: 435,
+    v: 437,
     titre: 'Le frein à main crisse',
     puces: [
       'Les pneus crissent au frein à main',
       'Même en ligne droite',
+    ],
+  },
+  {
+    v: 436,
+    titre: 'La voiture évite les cafés',
+    puces: [
+      'Elle s\'arrête devant les terrasses',
+      'Et devant les bancs du trottoir',
+    ],
+  },
+  {
+    v: 435,
+    titre: 'Les anneaux se partagent la place',
+    puces: [
+      'Toronto, Dublin et Lima sans faute',
+      'Les voitures tournent autour du centre',
     ],
   },
   {

@@ -928,7 +928,28 @@
   200 blocs, donc hors de la livraison par construction (elle ne change que le
   sol de Las Vegas et des contours d'anneaux).
 - [ ] **LES ANNEAUX D'AVANT ROULENT PARFOIS HORS DE LA CHAUSSÉE (mesuré v387,
-  repris v404, v418, v432).** v432 : 1 228 → 840 pas, 75 → 61 anneaux, 22 → 9
+  repris v404, v418, v432, v435).** v435 (recherche conjointe) : 840 → 772
+  pas, 61 → 58 anneaux, 9 → 6 villes sur le centre — Toronto 31 → 0, Dublin
+  22 → 3, Lima 20 → 2. Tokyo (56) et Dubaï (32) : AUCUNE configuration sous les
+  trois promesses, mesuré (6 000 essais, sens retournables) — à Tokyo l'eau sans
+  tablier à l'est du centre (P 1..2) et un obstacle à l'ouest du nœud central
+  ferment tout détour qui ne suive pas l'anneau voisin ; à Dubaï l'anneau
+  d'arrivée (8 îlots) ne peut contourner que par Q = −1, la rue sud de l'anneau
+  qui l'entoure, dans le même sens, et au sud c'est l'eau. Le remède serait de
+  SOL (une rue au-delà de l'eau) ou de sélection (changer QUELS anneaux la ville
+  reçoit) : décision. La traîne, cause par cause (v435, carte des segments
+  bloqués ville par ville, `etatDeSegment` avec l'eau sans tablier, et la
+  recherche conjointe portée à 3 000 essais) — TOUT est de géométrie, aucun
+  remède sans toucher au SOL ni à la sélection : Agra #1 42 (le parc du Taj
+  Mahal ferme toute la rue nord, P −2..2, et l'intérieur est bloqué : aucun
+  contour), Bruxelles 18 et Innsbruck 12 (le réseau de rues tient en quelques
+  segments, le seul côté de l'anneau d'arrivée longe un parc ou le granite de
+  la place côté voie, et rien d'autre n'est roulable), Gênes 22 et Guayaquil
+  20 (la plage borde la place, et aucun segment ne la contourne), Turin 13,
+  Séoul 21, Amsterdam 19 (un détour existe sans faute, mais il suit la voie
+  d'un voisin sur un pas, 27 à 32 blocs pour une barre de 20, et le voisin ne
+  peut ni reculer ni changer de sens — son contresens existe déjà). San José et
+  Guayaquil à un circuit : inchangé (v416, la géométrie). v432 : 1 228 → 840 pas, 75 → 61 anneaux, 22 → 9
   villes dont une voie passe sur le centre (la vue sur la voie, la couverture à
   la règle du témoin, plusieurs ordres, une rangée d'un coup ; quatorze villes
   changent, aucune ne perd de couverture). Reste, mesuré par
@@ -963,6 +984,15 @@
   Las Vegas et Rio, des anneaux choisis DANS la bande (une sélection, donc
   mesurer la couverture) ; pour les rivières, un contour qui publie son tablier
   (un tablier neuf est du sol : Rome est dans l'empreinte des 490 morceaux).
+- [ ] **PORTAIL DE LA v435 (les anneaux se cherchent ensemble).** Verts :
+  `carteMonde.js` (le verdict neuf et les barres resserrées), `plafond.js`,
+  `parishd.js`, fumée. Rouges, tous déjà déclarés : `maj.js` le badge (« 999 »
+  pour une tête de journal à 433, le bump se fait à la fusion) ; `carte.js`
+  « la faire glisser » (412 ms pour 400) ; `monte.js` la chauffe de New York
+  expirée (29/321) et le réverbère (Paris, « parcouru 0,48 »). Preuve par
+  construction plutôt que rejeu (v291) : la v435 ne change que les tracés de
+  Toronto, Dublin et Lima (comparé sur les deux arbres, aucun tablier), et
+  `monte.js` ne visite aucune des trois.
 - [ ] **PORTAIL DE LA v432 (la place se contourne), DOUBLE MESURE FAITE.**
   Voie : fumée, `parishd.js`, `carteMonde.js`, `plafond.js` verts. `maj.js` :
   le badge (« version servie v421 » pour une tête de journal à 422 — le bump
@@ -1619,9 +1649,9 @@
   qu'un — décidé, pas oublié) ; (11) personne ne DESSINE encore le dérapage
   (traces de pneus, crissement : la session des sensations lit
   `player.freinMainTire` et `player.derive`) — **TRACES FAITES en v434** (`traces.js`),
-  **CRISSEMENT AU FREIN À MAIN FAIT en v435** ; (12) le frein à main ne se voit
+  **CRISSEMENT AU FREIN À MAIN FAIT en v437** ; (12) le frein à main ne se voit
   pas chez l'ami au-delà de la dérive qui voyage déjà (`p.v.r`).
-- [ ] **AU PORTAIL DE LA v435 (le frein à main crisse), UN ROUGE NEUF QUI N'EST
+- [ ] **AU PORTAIL DE LA v437 (le frein à main crisse), UN ROUGE NEUF QUI N'EST
   PAS LA LIVRAISON — preuve structurelle (v291).** « à Rome aussi, en biais, un
   passant traverse sur le passage peint d'un carrefour sans feu » (`monte.js`,
   `traversees: 0` sur 6 poses) : la livraison ne change qu'un gain dans
@@ -3512,6 +3542,18 @@
     mesuré : cinq colonnes sur vingt-cinq morceaux, aucune côte à côte.
 
   Dettes déclarées de la v288 :
+  - [ ] **LE PORTAIL DE LA v436 (la voiture devant les terrasses).** Rouges :
+    `maj.js` (les deux loaders), `carte.js` (glisser bridé ×4), `washington.js`
+    (l'Air et l'Espace), `manhattan.js` (trou, taxi), `monte.js` (la rue à
+    l'allure d'une ville, le mur pris de face) — dettes déclarées. Et « au
+    volant, la voiture s'arrête devant un réverbère » (0 bloc parcouru),
+    rejoué SEUL par `sonde-reverbere.cjs` (le témoin lu dans `monte.js`) :
+    branche 3,64 · **0,16** · 3,65, `origin/main` 3,64 · 3,59 · 3,65. Ce n'est
+    pas `mobilierDevant` : la carte du mobilier sur dix-neuf blocs autour du
+    départ n'a que des potelets et des corbeilles (aucun meuble qui arrête) —
+    une intermittence d'un passage sur trois, déjà vue au portail de la v433
+    AVANT ce correctif (0,3 bloc). À démonter par une sonde qui publie ce qui
+    arrête la voiture (`player.contact`).
   - [ ] **LE PORTAIL DE LA v433 (terrasses)**, coupé deux fois par la limite
     de trente minutes des tâches de fond (la reprise a tout rejoué). Rejoués
     SEULS des deux côtés (`/home/user/minecraft` et un arbre détaché sur
@@ -3534,7 +3576,8 @@
   - [x] les Champs-Élysées à `dx = −4,3 km` (dette ci-dessous) : MESURÉ en v433,
     l'axe de l'avenue rend 103 colonnes de pavé et 8 de trottoir sur 111, et
     l'adresse de la dette du pavé — rendu par Paris doublé (v306).
-  - [~] une chaise de terrasse HD n'arrête ni un passant ni une voiture —
+  - [x] **FAIT EN v436** (la voiture : `mobilierDevant` lit `world.mobilierVu`).
+    Historique : une chaise de terrasse HD n'arrête ni un passant ni une voiture —
     LES PASSANTS ET L'ENFANT À PIED : fait en v425 (`mobilierTrottoir`,
     `world.obstaclePieton`, seulement le mobilier montré). Reste : la VOITURE
     (`mobilierDevant`, main.js, hors zone piétons) — elle lit `isProp` ; la

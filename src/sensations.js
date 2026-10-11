@@ -471,7 +471,7 @@ export function sensationsAuVolant(a, player, dt) {
   const charge = Math.max(0, Math.min(1, (m.acc * Math.sign(m.v || 1)) / (m.vmax * 1.2)));
   const derive = typeof player.derive === 'number' ? Math.abs(player.derive) : 0;
   const freinFort = -m.acc * Math.sign(m.v || 1) > 22 && Math.abs(m.v) > 6;
-  // LE FREIN À MAIN CRISSE (v435) : les roues arrière bloquées glissent sur
+  // LE FREIN À MAIN CRISSE (v437) : les roues arrière bloquées glissent sur
   // la route même tout droit, sans dérive — mesuré avant, la bande des pneus
   // n'y montait que d'un facteur deux, presque rien à l'oreille. Lu si présent
   // (`freinMainTire`, publié par la physique depuis la v409).

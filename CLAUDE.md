@@ -770,6 +770,29 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les anneaux se cherchent ensemble (v435) — ce qu'aucun ordre ne règle se cherche sur l'état de tous
+
+Toronto, Dublin, Lima : l'anneau d'arrivée sur la place, chaque contour trouvé
+seul suivait un voisin immobile. Trois règles.
+
+- **QUAND AUCUN ORDRE NE CHANGE LE RÉSULTAT, LA RECHERCHE EST SUR LE MAUVAIS
+  ESPACE.** Les vingt-quatre ordres de Tokyo rendaient les mêmes 56 pas :
+  essayer des ordres ne déplace que le moment où un voisin se fige.
+  `contournerEnsemble` (villesmonde.js) cherche sur l'état de TOUS les anneaux
+  à la fois (un îlot d'un anneau par pas, ou son sens s'il n'a pas de jumeau),
+  note = segments fautifs, puis partage au-delà de la barre, puis îlots changés.
+  Elle part de la configuration de la phase 4 et ne tourne que s'il reste des
+  pas : 259 villes identiques au bit près, tabliers compris (comparé).
+- **LA COUVERTURE SE GARDE POINT PAR POINT SUR LA CONFIGURATION ENTIÈRE.**
+  Plusieurs anneaux bougent : « les points que seul cet anneau voyait » ne
+  veut plus rien dire. `vusDeVille` rend un octet par point, et un essai qui
+  laisse sans voiture un seul point vu avant est refusé.
+- **UNE ABSENCE DE SOLUTION SE MONTRE AVANT DE SE DÉCLARER.** Tokyo et Dubaï
+  restent : une carte des segments bloqués (place, monuments, ET eau sans
+  tablier — ma première carte oubliait l'eau et laissait croire à un détour)
+  montre que le seul détour de l'anneau d'arrivée suit la voie d'un voisin
+  dans le même sens, et 6 000 essais (contre 80) ne trouvent rien.
+
 ## La place se contourne (v432) — une garde se mesure sur ce qu'elle protège, à la règle du témoin
 
 Vingt-deux villes avaient la voie de leur anneau d'arrivée sur la place. Quatre
@@ -988,7 +1011,7 @@ même : un témoin qui juge ce que la tablette voit force
 dérape se pose LARGE : la dérive pousse la voiture de côté, et sur treize
 blocs elle tombait de la plate-forme (`enLair`, zéro trace au frein à main).
 
-**Le frein à main crisse (v435).** Le crissement suivait la dérive, le
+**Le frein à main crisse (v437).** Le crissement suivait la dérive, le
 freinage fort et le virage trop vite ; le frein à main tiré tout droit n'en
 donne aucun (dérive nulle) et ne s'entendait pas (bande des pneus ×1,9).
 `freinMainTire` (lu si présent) au-dessus de deux blocs/s vise 0,75. Le
@@ -2357,6 +2380,19 @@ engendrées. Quatre règles.
   journal vide dans le jeu, trois rouges de `maj.js`. Après tout conflit dans un
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
+
+## La voiture s'arrête devant une terrasse (v436) — une famille d'obstacle lit la même règle pour tous ceux qui butent
+
+Une règle. `mobilierDevant` (main.js) ne lisait que les blocs de mobilier
+(`isProp`) ; la table, les chaises, le banc et la colonne de la couche HD ne
+sont pas des blocs. Il demande désormais `world.mobilierVu` — la règle de la
+v425, celle que les passants lisent, seulement le mobilier MONTRÉ (une
+tablette sans couche HD n'a pas de table invisible) —, une fois par colonne
+couverte. Pas de seconde copie de la règle : deux lecteurs, une fonction.
+« Pas si l'on est déjà dedans » reste jugé dans la famille « mobilier »
+(v252). Le témoin roule sur un trottoir jusqu'à l'arrêt, durée en
+progrès (cinq secondes sans avancer), jamais une immobilité d'une seconde :
+une page HD du banc rend une image par seconde.
 
 ## Les terrasses de café reviennent (v433) — une règle qui lit un bloc se relit quand le bloc se découpe
 
