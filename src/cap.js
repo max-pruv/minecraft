@@ -107,3 +107,19 @@ export function cadran(x, z, yaw, precedent = null, liste) {
     repere: Math.max(-1, Math.min(1, -v.ecart / CONE)),
   };
 }
+
+// LE CADRAN VERS UNE PISTE (aviation). Pendant l'approche assistée, et quand
+// on s'approche d'une piste à la main, le cadran ne nomme plus la ville
+// devant : il nomme la piste, sa distance, et son repère dit de quel côté
+// elle est — comme la flèche du GPS (v321). `cible` = { nom, x, z }.
+export function cadranVers(x, z, yaw, cible) {
+  const dx = cible.x - x, dz = cible.z - z;
+  const d = Math.hypot(dx, dz);
+  const ecart = ecartDeCap(yaw, capVers(dx, dz));
+  const degres = capDegres(yaw);
+  return {
+    degres, point: pointCardinal(degres), ville: cible.nom, cle: 'piste:' + cible.nom,
+    distance: d, lisible: distanceLisible(d), ecart, dansLeCone: Math.abs(ecart) <= CONE,
+    repere: Math.max(-1, Math.min(1, -ecart / CONE)), piste: true,
+  };
+}

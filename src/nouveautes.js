@@ -6,12 +6,38 @@
 
 export const NOUVEAUTES = [
   {
-    v: 450,
+    v: 453,
     titre: 'La rue sans à-coups',
     puces: [
       'Les voitures freinent doucement au feu',
       'Le bus a sa place dans la file',
       'Moins de bouchons à l\'entrée des villes',
+    ],
+  },
+  {
+    v: 452,
+    titre: '✈️ va chercher la piste',
+    puces: [
+      '✈️ trouve la piste la plus proche',
+      'L\'avion s\'aligne et se pose seul',
+      'Un second ✈️ remet les gaz',
+    ],
+  },
+  {
+    v: 451,
+    titre: 'Le train voit ta voiture',
+    puces: [
+      'Il s\'arrête même quand le jeu rame',
+      'Les voitures de la rue aussi',
+    ],
+  },
+  {
+    v: 450,
+    titre: 'Le Colisée ne bouge plus',
+    puces: [
+      'Le même Colisée à chaque partie',
+      'Édimbourg est en pierre grise',
+      'Sydney a toutes ses fenêtres',
     ],
   },
   {

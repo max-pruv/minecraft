@@ -146,6 +146,16 @@ const OR = BLOCK.GOLD;           // dorures
 const VG = BLOCK.WOOL_GREEN;     // cuivre oxydé, végétation
 const RG = BLOCK.WOOL_RED;       // toitures de tuile, laque rouge
 
+// Un tirage pur de la position (v450) : un nombre dans [0, 1), le même à
+// chaque lancement, dans le worker comme sur le fil principal. Jamais
+// `Math.random()` dans un bâtisseur : ce qu'il pose est un monde, pas un décor.
+export function effondre(x, y, z) {
+  let h = Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ Math.imul(z | 0, 2147483647);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  h ^= h >>> 16;
+  return (h >>> 0) / 4294967296;
+}
+
 export const MONUMENTS = [
   {
     id: 'tour-eiffel', nom: 'Tour Eiffel', ville: 'Paris', emoji: '🗼',
@@ -496,9 +506,18 @@ export const MONUMENTS = [
           }
         }
       }
+      // LES GRADINS EFFONDRÉS SE TIRENT À LA POSITION, PAS AU HASARD (v450).
+      // `Math.random()` rendait un Colisée différent à chaque lancement — 173
+      // blocs de Rome changeaient d'une exécution à l'autre — et le worker de
+      // maillage (v251) en bâtissait un AUTRE que le fil principal : on se
+      // cognait à des gradins qu'on ne voyait pas. Même règle (six sur dix
+      // tombent), même zone, mais un tirage par bloc (`effondre`) : un des
+      // Colisées que l'ancien tirage pouvait rendre, le même partout et pour
+      // toujours. Il dépend de la position DANS le monument, donc le Colisée
+      // du catalogue posé par un enfant est aussi celui de Rome.
       for (let x = 10; x <= a; x++) {
         for (let z = -b; z <= b; z++) {
-          for (let y = 11; y <= H; y++) if (Math.random() < 0.6) c.blocs.delete(`${x},${y},${z}`);
+          for (let y = 11; y <= H; y++) if (effondre(x, y, z) < 0.6) c.blocs.delete(`${x},${y},${z}`);
         }
       }
     },

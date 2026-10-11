@@ -20,7 +20,8 @@ import { aeroportPres, postesAvion } from './aeroport.js';
 import { couloirVoiture, cheminDeTraversee, axeCoupe } from './pietons.js';
 import { cadence, chronoReel } from './cadence.js';
 import { axeDuFeu, axeDuCap, etatFeu } from './feux.js';
-import { cadran } from './cap.js';
+import { cadran, cadranVers, distanceLisible } from './cap.js';
+import { D_ENTREE } from './approche.js';
 import { guidage, arriveEntre, nomDestination, rotationContinue, repereMinicarte, ARRIVEE } from './gps.js';
 import { POLE } from './pole.js';
 import { LIGNES as LIGNES_DC, traceLigneMetro, arretsDeLigne, circuitsWashington } from './washington.js';
@@ -2653,8 +2654,19 @@ function refuserOuVoler() {
     toast('✈️ On remet les gaz ! Le joystick monte, descend et tourne.', 0x9fd8ff);
     return true;
   }
+  if (aBord === 'approche') {
+    const ap = player.approche;
+    toast(`🛬 Cap sur la piste de ${ap.piste.nom} (${distanceLisible(Math.hypot(player.pos.x - ap.seuil, player.pos.z - ap.piste.z))}) — l'avion se pose tout seul. Le joystick corrige, ✈️ remet les gaz.`, 0x9fd8ff, 4200);
+    return true;
+  }
+  if (aBord === 'pasDePiste') {
+    const a = player.aerodromeVise;
+    toast(a ? `🛬 Pas de piste tout près : on se pose ici, train sorti. La prochaine fois, ${a.nom} est à ${distanceLisible(a.d)} — suis le cadran.`
+      : '🛬 Pas de piste tout près : on se pose ici, train sorti.', 0xffd166, 5000);
+    return true;
+  }
   if (aBord === 'atterrissage') {
-    toast('🛬 On se pose — train sorti, garde le cap jusqu\'à la piste.', 0x9fd8ff);
+    toast('🛬 On se pose ici — train sorti, garde le cap.', 0x9fd8ff);
     return true;
   }
   if (player.toggleFly()) return true;
@@ -2669,6 +2681,8 @@ player.surAvion = (quoi) => {
   else if (quoi === 'arret') toast('🛑 À l\'arrêt. Le joystick fait rouler, ✈️ redécolle.', 0x9fd8ff);
   // UN AVION NE SE POSE PAS DANS L'EAU (v267) : le message dit QUOI FAIRE,
   // jamais seulement ce qui est refusé — la règle de la maison.
+  else if (quoi === 'changePiste' && player.approche) toast(`🛬 Piste trop courte — cap sur celle de ${player.approche.piste.nom}.`, 0x9fd8ff);
+  else if (quoi === 'remiseLongue') toast('✈️ Trop loin pour s\'arrêter sur la piste — on remet les gaz et on refait un tour.', 0x9fd8ff);
   else if (quoi === 'remiseDesGaz') toast('🌊 De l\'eau en dessous ! On remet les gaz — va vers la terre.', 0xffd166);
 };
 
@@ -2910,8 +2924,27 @@ const capVilleEl = document.getElementById('cap-ville');
 const capRepereEl = document.getElementById('cap-repere');
 let capTexte = '';
 let dernierCadran = null;
+// CE QUE LE CADRAN VISE, quand ce n'est plus une ville (aviation) : la piste
+// de l'approche assistée — le point d'entrée en ralliement, le seuil en
+// finale — ; l'aéroport le plus proche quand ✈️ n'a trouvé aucune piste.
+// Hors de l'approche, le cadran nomme les villes (v263) : il ne les remplace
+// pas par une piste.
+function cibleDuCadran() {
+  const ap = player.approche;
+  if (ap) {
+    const recul = ap.phase === 'ralliement' ? D_ENTREE : 0;
+    return { nom: `🛬 ${ap.piste.nom}${ap.phase === 'ralliement' ? '' : ' · finale'}`, x: ap.seuil - ap.sens * recul, z: ap.piste.z };
+  }
+  if (player.sansPiste && Date.now() - player.sansPiste < 30000 && player.aerodromeVise) {
+    const a = player.aerodromeVise;
+    return { nom: `✈️ ${a.nom}`, x: a.x, z: a.z };
+  }
+  return null;
+}
 function majCadranDeCap() {
-  const c = cadran(player.pos.x, player.pos.z, player.yaw, dernierCadran && dernierCadran.cle);
+  const vise = cibleDuCadran();
+  const c = vise ? cadranVers(player.pos.x, player.pos.z, player.yaw, vise)
+    : cadran(player.pos.x, player.pos.z, player.yaw, dernierCadran && dernierCadran.cle);
   dernierCadran = c;
   const fleche = c.ville == null ? '' : c.dansLeCone ? '' : (c.ecart > 0 ? ' ◀' : ' ▶');
   const texte = `${c.degres}|${c.ville || ''}|${c.lisible || ''}|${fleche}`;

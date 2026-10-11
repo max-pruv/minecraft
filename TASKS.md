@@ -1,5 +1,15 @@
 # Ce qui est en cours
 
+- [ ] **L'APPROCHE ASSISTÉE (v452) : QUATRE POSÉS SUR 148 À REPRENDRE.**
+  `node tests/sonde-approche.cjs src` : trois touchers à 5,7 · 6,2 · 6,7 blocs
+  par seconde (Roissy 47 pour l'avion de ligne et le Concorde, Andrews pour le
+  chasseur, tous venus de l'ouest en virant), et le Concorde à Los Angeles qui
+  touche au seuil même (s 0, un demi-bloc avant la bande). Une première trace
+  du même départ rejouée seule se pose bien (s 82, 2 blocs/s) : la différence
+  tient à l'état du monde déjà engendré par les approches précédentes — à
+  démonter par une sonde qui rejoue UNE approche dans un monde neuf, puis la
+  même après les autres.
+
 - [ ] **SEPT PISTES SOUS LEUR CIBLE (v448) — DÉCLARÉES, LE REMÈDE EST UNE
   DÉCISION.** Prolongées autant que leur place le permet, mesurées par sonde :
   Heathrow 213/227 pour 300 (vallon à l'ouest, Londres à l'est), Barcelone 189
@@ -94,7 +104,27 @@
     cadence décide où l'on touche (piège v273), et l'arrêt tombait à 300,9.
   - **Le train qui traverse la voiture** : cause trouvée, VRAIE PANNE,
     déclarée en tête de ce fichier ; le témoin reste rouge.
-- [ ] **UN TRAIN TRAVERSE LA VOITURE DE L'ENFANT QUAND UNE IMAGE EST LENTE
+- [ ] **PORTAIL DE LA v451 (le regard de la rame) — DOUBLE MESURE (règle v195).**
+  `maj.js` : « le loader dit combien de fichiers » (déclaré plus bas, rouge des
+  deux côtés). `monte.js` au portail : quatre rouges — « l'avant du joystick
+  est l'accélérateur », « le côté du joystick tourne le volant », « rien
+  d'autre ne vole le doigt » (le doigt tombe sur un `BUTTON` sans id, `joy`
+  caché) et « un mur pris de face ». Rejouée SEULE : branche 220 verts, ZÉRO
+  rouge ; `origin/main` (v443) 217 verts, deux rouges (« un mur pris de face »,
+  rebond −1,88, déclaré ; « à Rome, en biais, un passant traverse sur le
+  passage peint », déclaré). Les trois du joystick sont des rouges de charge
+  du portail, jamais vus seuls : à reprendre si un portail les rend encore,
+  en nommant le bouton (`elementFromPoint` rend `BUTTON.` sans classe).
+  Second portail (après la fusion de la v446) : `maj.js` ses deux rouges
+  déclarés ; `monte.js` « la caméra laisse la voiture glisser sur le côté »,
+  « la rue roule à l'allure d'une ville » (médiane 0, le bouchon déclaré) et
+  « un mur pris de face » ; `reseau.js` six rouges de reprise et « un hôte
+  sans courtier ». Rejouées SEULES : `monte.js` branche 226 verts, ZÉRO rouge
+  (« la rue roule » médiane 4,3) ; `reseau.js` branche 85 verts et un rouge
+  (« un hôte sans courtier est trouvé », l'intermittence déclarée plus bas),
+  `origin/main` (v446) 87 verts. Le regard de la rame et la marge des voitures
+  ne touchent pas au réseau.
+- [x] **(v451 — réparé : regard de la rame en temps, `pasDeRame` ; voir CLAUDE.md « Le regard d'un convoi est un temps ») UN TRAIN TRAVERSE LA VOITURE DE L'ENFANT QUAND UNE IMAGE EST LENTE
   (vraie panne, zone conduite — trouvée par la session banc-intermittents).**
   La rame ne regarde que 3,5 blocs devant sa motrice (`PAS_TRAIN`,
   `cederLePassage`, vehicules.js) et roule en temps RÉEL (v305) : à 14 b/s,
@@ -677,7 +707,7 @@
   la v442 ne change que l'avenue d'entrée des autoroutes dans les villes
   engendrées (`raccordDe` dans `entree()`), aucun de ces témoins ne roule sur
   une autoroute ni dans une ville engendrée.
-  **FAIT en v450** : raccords des villes bâties à la main (633 → 26 blocs,
+  **FAIT en v453** : raccords des villes bâties à la main (633 → 26 blocs,
   dont Lille A1 47 → 0) ; le BUS prend la place de la voiture 0 de son anneau
   (36 004 contacts de grille → 0, les 263 anneaux jouent, 4 380 → 4 125
   voitures) ; la fabrique d'un circuit se fait par TRANCHES avant la naissance
@@ -3680,8 +3710,12 @@
        (les bandes `ETAGE_BAS/MI/HAUT` de Paris) demanderait que
        `villesmonde.js` pose ces bandes : c'est un changement de blocs, donc
        de la zone des villes engendrées, pas de la couche ;
-     - [ ] Édimbourg est en brique rouge parce que sa palette l'est ; la vraie
-       ville est de grès gris — une fiche, pas un registre ;
+     - [x] Édimbourg est en brique rouge parce que sa palette l'est ; la vraie
+       ville est de grès gris — une fiche, pas un registre. **Fait en v450**
+       (`PALETTES_VILLES` : gris, gris clair, kaki, des unis). Reste : dans la
+       couche HD (registre `londres`), un uni gris se lit `enduit`, pas
+       `pierre` — `UNIS_PIERRE` de `facadeshd.js` ne connaît pas le Gris, et
+       c'est la zone de la couche ;
      Et :
      le raccord ville/campagne (`raccordInterdit`) n'est interdit qu'à Paris —
      une colonne de raccord de Londres montre la surface plate, pas le sol HD.
@@ -3725,7 +3759,14 @@
      - [ ] la palette d'Édimbourg (brique rouge pour du grès gris) et la « baie
        de deux blocs » des villes engendrées sont des changements de BLOCS dans
        `villesmonde.js`, zone des villes engendrées. Dettes déclarées :
-     - [ ] **le Colisée du catalogue change à chaque lancement** :
+     Portail de la v450 (sept suites) : cinq vertes ; `carte.js` deux rouges —
+     « le fond de carte entier se rend vite, même à froid » 429 ms au portail
+     pour 400, vert rejoué SEUL des deux côtés (281 ms branche, 250
+     `origin/main`) : la charge du portail ; « la faire glisser non plus »
+     (543 ms) rouge seul des deux côtés (517 et 465), déjà déclaré. `monte.js`
+     « un mur pris de face » (rebond −1,88, couloir vide 41 090 / 40 988) : déjà
+     déclaré, aucune des trois villes touchées à moins de mille blocs.
+     - [x] **le Colisée du catalogue change à chaque lancement** (fait en v450 : `effondre(x, y, z)`, un tirage par bloc ; seule source de hasard dans un bâtisseur, mesurée sur les 763 repères ; et Sydney avait 250 fenêtres qui étaient des trous — `f.baie` lu comme bloc, corrigé) :
        `monuments.js:501` tire ses gradins effondrés à `Math.random()` — 173
        blocs du morceau (cx, cz + 1) de Rome différents entre deux exécutions
        (sonde `empreinte.mjs`, sur `origin/main` comme sur la branche). Le worker

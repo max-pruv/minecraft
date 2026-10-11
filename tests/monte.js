@@ -673,9 +673,24 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         }
         return true;
       };
+      // LES IMAGES LENTES SE PROVOQUENT, ELLES NE S'ATTENDENT PAS (v451). La
+      // rame roule en temps RÉEL (v305) : la panne n'existe que quand une
+      // image dure plus que ce que son regard couvre. Au repos, l'ancien code
+      // passait 7 poses sur 7 et le témoin tirait à pile ou face sous la
+      // charge du portail. Chaque image brûle donc 700 ms de fil principal le
+      // temps du croisement — l'arrivée d'une téléportation sur la tablette :
+      // `origin/main` 5 traversées sur 5, regard fixe (3,5 blocs) 2 sur 3,
+      // regard en temps 0 sur 5 (sonde-train-voiture.cjs, LENT=700).
+      window.__freinRame = true;
+      const brule = () => {
+        if (!window.__freinRame) return;
+        const t = performance.now(); while (performance.now() - t < 700);
+        requestAnimationFrame(brule);
+      };
+      requestAnimationFrame(brule);
       const t0 = performance.now();
       let releves = 0, dedans = 0, bloque = 0, plusPres = Infinity;
-      while (performance.now() - t0 < 30000) {
+      while (performance.now() - t0 < 40000) {
         await new Promise((r) => setTimeout(r, 250));
         const c = V.etat()[ci];
         const p = g.player.pos, moi = rect(p.x, p.z, g.player.yaw + Math.PI, dlJ, dwJ);
@@ -689,11 +704,17 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         if (ici) dedans++;
         if (bloque > 12) break;                       // arrêté devant nous trois secondes : acquis
       }
+      window.__freinRame = false;
+      // la rame s'arrête désormais à son REGARD (ce qu'elle parcourt dans une
+      // image, plus 3,5 blocs) : « elle est venue » se mesure à cette aune,
+      // plus la demi-rame et la demi-voiture
+      const regard = V.etat()[ci].regard;
       return { ci, nom: V.etat()[ci].nom, avance, vitesse: vit, releves, dedans, bloque, plusPres: +plusPres.toFixed(1),
+        regard, venue: Math.max(12, (regard || 0) + 6),
         secondes: +((performance.now() - t0) / 1000).toFixed(1) };
     });
     verifier('un train s\'arrête devant la voiture de l\'enfant posée sur sa voie, au lieu de la traverser',
-      !surLaVoie.err && surLaVoie.dedans === 0 && surLaVoie.plusPres < 12 && surLaVoie.bloque > 0,
+      !surLaVoie.err && surLaVoie.dedans === 0 && surLaVoie.plusPres < surLaVoie.venue && surLaVoie.bloque > 0,
       JSON.stringify(surLaVoie));
     await tab.evaluate(() => { if (window.__game.fun.montureConduite && window.__game.fun.montureConduite()) document.getElementById('ride-btn').click(); });
     await dormir(600);
@@ -8356,6 +8377,69 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         `${hud.err || ''} ${JSON.stringify({ gz, col, vue: hud.vue, descendre: hud.descendre })}`);
       verifier(`en vol (${vue.width} × ${vue.height}), le quiz de Cornichon met le vol en pause — l'avion ne file pas sous la question`,
         !hud.err && hud.glisse < 0.5, `${hud.err || ''} déplacé de ${hud.glisse} blocs en 2 s de quiz`);
+    }
+
+    // L'APPROCHE ASSISTÉE (aviation, octobre 2026). Max : « améliore la
+    // séquence d'atterrissage parce que l'avion est compliqué à gérer ».
+    // Jusqu'ici ✈️ descendait OÙ L'ON ÉTAIT (v261) : à quatre cents blocs d'une
+    // piste, l'avion se posait dans la campagne. Le témoin part en vol, de
+    // travers, à côté de l'axe d'une piste, appuie UNE fois sur ✈️ et lâche
+    // tout : l'avion doit toucher SUR la piste (dans sa largeur, entre ses
+    // bouts) et s'y arrêter. Sur l'ancien code il touche à l'aplomb de son
+    // départ. La durée de jeu est bornée par une durée de montre (le banc rend
+    // quelques images par seconde) et entre dans le message.
+    for (const [espece, cle] of [['chasseur', 'bas-sd'], ['avionligne', 'orly']]) {
+      if (!tab.isClosed()) await banc.mettreDeCote(tab);
+      const apPage = await banc.jouerSeul('MonteApproche' + espece, { rr: 2 });
+      const r = await apPage.evaluate(async ({ espece, cle }) => {
+        const g = window.__game, am = g.animalManager, P = g.player;
+        const att = (ms) => new Promise((f) => setTimeout(f, ms));
+        const { AEROPORTS, planAerodrome } = await import('./src/aeroport.js');
+        const a = AEROPORTS.find((q) => q.cle === cle);
+        let pistes = null;
+        try { pistes = (await import('./src/approche.js')).pistesDuMonde().filter((q) => q.cle === cle); } catch { /* ancien code */ }
+        if (!pistes) {
+          const PL = planAerodrome(a.profil, a.r);
+          const bout = Math.floor(Math.sqrt(PL.RAYON ** 2 - PL.DEMI_PISTE ** 2));
+          pistes = [{ z: a.z, x0: a.x - bout, x1: a.x + bout, demi: PL.DEMI_PISTE, sol: a.sol }];
+        }
+        for (const b of [...am.animals]) am.scene.remove(b.mesh);
+        am.animals.length = 0;
+        const x0 = a.x - 520, z0 = a.z + 160;
+        P.pos.set(x0, g.world.sommetColonne(Math.floor(x0), Math.floor(z0)) + 1.5, z0);
+        P.yaw = -Math.PI / 2;
+        await att(1500);
+        am.invoquer(espece, x0 + 3, z0);
+        await att(800);
+        for (let e = 0; e < 8 && !P.pilote; e++) { document.getElementById('ride-btn').click(); await att(500); }
+        if (!P.pilote) return { err: 'pas aux commandes' };
+        // en vol, au-dessus du relief, cap au nord-est — de travers à la piste
+        P.pos.y = Math.max(a.sol + 70, g.world.sommetColonne(Math.floor(x0), Math.floor(z0)) + 50);
+        P.avionEtat = 'vol'; P.avionEnVol = true; P.vitesseAvion = P.pilote.max * 0.8; P.yaw = -Math.PI / 4;
+        P.touchMove = { f: 0, s: 0 };
+        await att(300);
+        document.getElementById('fly-btn').dispatchEvent(new TouchEvent('touchstart', { cancelable: true, bubbles: true }));
+        const t0 = performance.now(), i0 = g.renderer ? g.renderer.info.render.frame : 0;
+        let toucher = null, etat = P.avionEtat, phases = new Set();
+        while (performance.now() - t0 < 240000) {
+          await att(100);
+          if (P.guideApproche) phases.add(P.guideApproche.phase);
+          if (!toucher && (P.avionEtat === 'freinage' || P.avionEtat === 'sol' || P.avionEtat === 'epave')) toucher = { x: P.pos.x, z: P.pos.z, y: P.pos.y };
+          etat = P.avionEtat;
+          if (toucher && (etat === 'sol' || etat === 'epave')) break;
+          if (!P.pilote) break;
+        }
+        const surPiste = (q) => !!q && pistes.some((pi) => Math.abs(q.z - pi.z) <= pi.demi + 0.5 && q.x >= pi.x0 && q.x <= pi.x1);
+        return { toucher, arret: { x: P.pos.x, z: P.pos.z }, etat, pilote: !!P.pilote, phases: [...phases],
+          surPisteToucher: surPiste(toucher), surPisteArret: surPiste({ x: P.pos.x, z: P.pos.z }),
+          s: Math.round((performance.now() - t0) / 1000), images: g.renderer ? g.renderer.info.render.frame - i0 : null,
+          pistes: pistes.map((pi) => ({ z: pi.z, x0: pi.x0, x1: pi.x1 })) };
+      }, { espece, cle });
+      await apPage.close();
+      if (!tab.isClosed()) await banc.ramener(tab);
+      verifier(`✈️ en vol près de ${cle} : l'approche assistée pose le ${espece} SUR la piste et l'y arrête`,
+        !r.err && r.surPisteToucher && r.surPisteArret && r.etat === 'sol' && r.pilote,
+        `${r.err || ''} ${JSON.stringify(r)}`);
     }
   } finally {
     await banc.fermer();

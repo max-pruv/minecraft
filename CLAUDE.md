@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## La rue sans à-coups (v450) — le bus a une place, un circuit se prépare, une suiveuse freine
+## La rue sans à-coups (v453) — le bus a une place, un circuit se prépare, une suiveuse freine
 
 Quatre sujets, une livraison. Cinq règles.
 
@@ -821,6 +821,97 @@ Quatre sujets, une livraison. Cinq règles.
   arrêtée par l'urgence puis rangée dans la file n'a pas freiné pour un feu),
   et le choc de `degats.js` prend vingt-six blocs d'élan au lieu de les
   trouver (3 à 16).
+
+## ✈️ va chercher la piste (v452) — une séquence assistée garde sa porte de sortie et se mesure piste par piste
+
+Max : « améliore la séquence d'atterrissage, l'avion est compliqué à gérer ».
+`src/approche.js` (pur, sans three) : piste la plus proche, ralliement,
+finale sur un plan, arrondi. Quatre règles.
+
+- **LA RÈGLE EST PURE ET SE REJOUE SOUS NODE SUR TOUTES LES PISTES.**
+  `guiderApproche` rend un cap, une vitesse verticale, une vitesse et le
+  train ; `player.js` l'applique comme un joystick. La sonde
+  (`tests/sonde-approche.cjs`) la rejoue sur les 31 pistes, trois appareils, quatre
+  départs : c'est elle qui a trouvé un avion qui virait au ras de la piste
+  dans l'aérogare de Roissy (on monte tout droit avant de virer), Fiumicino
+  qui tournait sans fin (deux tours manqués : une autre piste), et un toucher
+  avant le seuil de Los Angeles (`TOUCHER` 8).
+- **UNE APPROCHE ASSISTÉE NE FINIT JAMAIS AU BOUT DE LA PISTE.** Trop long
+  pour s'arrêter (`freinage` de la fiche plus dix blocs) ou trop de travers :
+  elle remet les gaz d'elle-même. Près du seuil la descente se borne à la
+  hauteur qui reste (un relief qui tenait l'avion haut le faisait plonger).
+- **LE GESTE PRIME, ET LE SECOND APPUI SORT.** Le joystick corrige (↔ décale,
+  ↕ monte ou descend sur le plan) ; un second ✈️ remet les gaz — la porte de
+  sortie de toute séquence imposée (v290, v366). Sans piste à portée, ✈️ se
+  pose sur place dès le premier appui (le témoin de la v261 l'exige) et le
+  cadran montre l'aéroport le plus proche. Hors de l'approche, le cadran nomme
+  les villes (v263) : mon premier jet y mettait la piste la plus proche dès
+  qu'on volait bas, et le témoin « cap sur Lyon » l'a refusé.
+- **ELLE SE MESURE SUR LES VRAIES PISTES.** Livrée après le prolongement des
+  pistes : sur les pistes d'avant, le Concorde ne trouvait aucune piste assez
+  longue et refaisait des tours (17 approches sur 17, mesuré).
+## Le regard d'un convoi est un temps (v451) — ce qui est sur le chemin se voit avant d'y être
+
+Un train traversait la voiture de l'enfant quand une image était lente
+(déclaré par la v440). Trois règles.
+
+- **UN CONVOI QUI ROULE EN TEMPS RÉEL REGARDE CE QU'IL VA PARCOURIR DANS
+  L'IMAGE.** La rame ne regardait que `PAS_TRAIN` (3,5 blocs) : à quinze
+  blocs par seconde, une image d'un quart de seconde la faisait passer
+  d'« assez loin » à « déjà dedans », et « pas si l'on est déjà dedans »
+  (v245) la laissait continuer. `cederLePassage` est appelé APRÈS que
+  `horloge` a avancé et AVANT `c.update` : la grille dit donc EXACTEMENT où la
+  motrice sera à la fin de l'image (`distanceA(horloge − decalage)`), et le
+  regard couvre cette avance plus 3,5 blocs, au pas d'un bloc (`pasDeRame`).
+  Même à quai : une rame qui repart dans l'image roule aussi. Le métro partage
+  ce code. C'est le couloir des piétons (v351) et le balayage des voitures
+  (v395) du côté de la rame : une portée en blocs fixes est une portée en
+  temps qui rétrécit quand la cadence tombe.
+- **LES VOITURES DE LA RUE AJOUTENT L'IMAGE EN COURS, ET RIEN SOUS UN TIERS
+  DE SECONDE.** Leur regard (`porteeDe`) et leur marge d'urgence devant une
+  personne (v372, « une image à trois par seconde ») gagnent `v × (dt − 0,35)`
+  — `dt` est la durée que `update` leur donnera. Sous 0,35 s, la règle d'avant
+  au bit près : on ne change pas le comportement que les témoins de la rue
+  mesurent à cadence normale.
+- **UNE PANNE DE CADENCE SE PROVOQUE.** Au repos, l'ancien code passait 7 poses
+  sur 7 ; sous charge, c'était un tirage. La sonde et le témoin brûlent 700 ms
+  de fil principal par image pendant le croisement (`origin/main` 5/5
+  traversées, regard fixe désarmé `regardRameFixe` 2/3, remède 0/5) — la leçon
+  des poissons (v233) appliquée à une durée d'image. Le frein s'arrête à la
+  fin du témoin : une page de la suite continue après lui.
+
+Ce qui reste, déclaré : l'arrêt devant l'enfant reste LOCAL (la grille partagée
+ne change pas, v305) ; un saut d'horloge (l'invité qui adopte l'heure de
+l'hôte) peut encore poser une rame sur l'enfant — elle continue alors (v245).
+## Un bâtisseur ne tire pas au hasard (v450) — ce qu'il pose est un monde, et deux fils le bâtissent
+
+Trois règles.
+
+- **JAMAIS `Math.random()` DANS UN BÂTISSEUR.** Le worker de maillage (v251) et
+  le fil principal ont chacun leur graphe de modules, donc leur cache de
+  monuments : un tirage au hasard y bâtit DEUX mondes, celui qu'on voit et celui
+  qui arrête l'enfant — et deux tablettes en ont deux autres. Le Colisée du
+  catalogue l'a fait de la v346 à la v449 (173 blocs). Un tirage se fait à la
+  POSITION (`effondre(x, y, z)`, monuments.js ; `tirage` des villes) ; dans un
+  monument, la position DANS le monument, pour que le catalogue posé par un
+  enfant soit le même que celui de la ville.
+- **LA PREUVE EST UN FIL NEUF, PAS UN RAISONNEMENT.** `plafond.js` engendre les
+  763 repères du monde d'aujourd'hui et d'avant la v306 dans deux
+  `worker_threads` sous deux graines de `Math.random`, et compare au fil du
+  témoin (46 s, parallèle). Un repère neuf qui tire au hasard le fait rougir et
+  le nomme. Le grep (`grep -c Math.random src/*.js`) ne dit que les candidats :
+  hors des bâtisseurs, tout est animation, ciel ou son.
+- **UN CHAMP DE FICHE PEUT PORTER DEUX SENS, ET SEUL UN NOMBRE EST UN BLOC.**
+  `f.baie` était le bloc des fenêtres d'une ville engendrée — et la GÉOGRAPHIE
+  du port de Sydney. Lu comme bloc, l'objet s'écrivait 0 : 250 fenêtres étaient
+  des trous. `typeof … === 'number'` avant de poser ; le jour où un champ de
+  fiche gagne un second usage, on cherche ses lecteurs (`grep -n "f\.baie"`).
+
+Et **une ville engendrée dont l'archétype peint mal la pierre a sa palette à
+elle** (`PALETTES_VILLES`, villesmonde.js) : Édimbourg en gris, gris clair et
+kaki, des UNIS — en motif « Briques », la couche HD (registre `londres`) y
+verrait de la brique et la patinerait en rouge.
+
 ## Les pistes à leur vraie longueur (v448) — un ouvrage qui sort du disque est un repère, pas un relief
 
 Max : « les pistes de tous les aéroports sont beaucoup trop courtes pour
@@ -847,7 +938,7 @@ vraiment atterrir ». Mesuré : 90 à 146 blocs. Quatre règles.
   arrivent pas. Un témoin de `carteMonde.js` roule chaque piste et rougit
   pour une piste courte non déclarée — ou une déclarée qui ne l'est plus.
 - **LE PLAN EST PUBLIÉ UNE FOIS** : `pistesDe(a)` (axe, demi-largeur, bouts
-  ouest et est) est lu par le bâtisseur et le témoin ; l'approche assistée le lira.
+  ouest et est) est lu par le bâtisseur, le témoin et l'approche assistée (v452).
 
 ## Les commandes de l'avion se rangent (v445) — une file en flux ne peut rien recouvrir
 
