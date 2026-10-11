@@ -158,6 +158,16 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
   await banc.ouvrir();
   try {
     const tab = await banc.jouerSeul('Marlon', { tactile: true });
+    // LA LIMITE DU JOUR SE LÈVE PAR SA DONNÉE (v429). Cette page vit toute la
+    // suite — plus d'une heure de jeu depuis que la suite a passé l'heure — et
+    // la limite quotidienne (45 min, education.js) y ouvrait l'écran de fin de
+    // journée : `#hardstop` prenait le doigt (`cible: "hardstop"`) et toute la
+    // seconde moitié tombait en cascade — avions « pas aux commandes »,
+    // voiture « pas au volant ». `jouerSeul` n'ouvre que le répit des quiz.
+    // Un parent débloque la limite (`unlocks`) : c'est ce qu'on pose, sans
+    // débrancher le code qu'on traverse.
+    const leverLaLimite = (p) => p.evaluate(() => { window.__game.edu.today().unlocks = 99; });
+    await leverLaLimite(tab);
 
     // --- une bête devant soi -------------------------------------------------
     verifier('l\'éléphant fait partie du monde', await poserDevant(tab, 'elephant'));
@@ -1619,6 +1629,59 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     }, null, { timeout: 15000, polling: 400 }).then((h) => h.jsonValue()).catch(() => null);
     verifier('et le bus de la ville roule sur le grand anneau',
       !!lebus && lebus.total >= 1, JSON.stringify(lebus));
+
+    // LA RUE SE FABRIQUE PAR TRANCHES (v431). À l'arrivée, `montrer`
+    // fabriquait toutes les voitures d'une rue dans la MÊME image (162 à 276 ms
+    // sous `frame`, v420). On saute à Paris et l'on relève, image par image,
+    // la hausse du nombre de voitures visibles : mesuré 9 d'un coup sur
+    // l'ancien code (`sonde-fabrication-arrivee.cjs`), 1 ici. Barre au milieu.
+    // Puis l'enfant retourne à Rome : le témoin d'après le suppose.
+    const fab = await tab.evaluate(async () => {
+      const { positionDe } = await import('./src/mondes.js');
+      const g = window.__game, p = positionDe('paris'), avant = g.player.pos.clone();
+      const vues = () => (window.__vehicules.etat() || []).reduce((n, c) => n + (c.visibles || 0), 0);
+      const hausses = []; let prec = vues(), actif = true, images = 0;
+      const tic = () => { const e = vues(); if (e > prec) hausses.push(e - prec); prec = e; images++; if (actif) requestAnimationFrame(tic); };
+      requestAnimationFrame(tic);
+      g.player.flying = true;
+      g.player.pos.set(p.x + 0.5, g.world.terrainHeight(p.x, p.z) + 6, p.z + 0.5); g.player.vel.set(0, 0, 0);
+      const t0 = performance.now();
+      while (vues() < 6 && performance.now() - t0 < 20000) await new Promise((f) => setTimeout(f, 200));
+      await new Promise((f) => setTimeout(f, 2000));
+      actif = false;
+      const r = { vues: vues(), images, maxParImage: Math.max(0, ...hausses), s: Math.round((performance.now() - t0) / 100) / 10,
+        fabrication: window.__vehicules.fabrication ? window.__vehicules.fabrication() : null };
+      g.player.pos.copy(avant); g.player.vel.set(0, 0, 0);
+      return r;
+    });
+    verifier('à l\'arrivée, la rue se fabrique par tranches, pas toute dans la même image',
+      fab.vues >= 6 && fab.maxParImage <= 5, JSON.stringify(fab));
+
+    // LES FILES SE SERRENT AU ROUGE (v431). Max, capture de GTA VI : des voies
+    // serrées. Une voiture arrêtée derrière une autre s'arrêtait entre 1,1 et
+    // 2,6 blocs de son pare-chocs (balayage au pas d'un bloc et demi) :
+    // médiane mesurée 2,0 à Rome sur l'ancien code (`sonde-rue-dense.cjs`),
+    // 1,1 à 1,2 ici. On relève, vingt secondes au-dessus de Rome, l'écart des
+    // voitures arrêtées derrière une voiture (`causes` = 1). Barre au milieu.
+    const serre = await tab.evaluate(async () => {
+      const g = window.__game, { positionDe } = await import('./src/mondes.js'), P = positionDe('rome'), avant = g.player.pos.clone();
+      g.player.flying = true; g.player.pos.set(P.x, 75, P.z); g.player.vel.set(0, 0, 0);
+      const gaps = [], t0 = performance.now();
+      await new Promise((f) => setTimeout(f, 8000));
+      while (performance.now() - t0 < 30000 && gaps.length < 400) {
+        await new Promise((f) => setTimeout(f, 500));
+        for (const c of g.vehicules.etat()) {
+          if (!c.routier || c.nom === 'bus') continue;
+          const vs = c.vitesses || [];
+          (c.ecarts || []).forEach((e, i) => { if (vs[i] < 0.3 && vs[i + 1] < 0.3 && c.causes[i + 1] === 1) gaps.push(e - 4.4); });
+        }
+      }
+      gaps.sort((x, y) => x - y);
+      g.player.pos.copy(avant); g.player.vel.set(0, 0, 0);
+      return { n: gaps.length, mediane: gaps.length ? +gaps[gaps.length >> 1].toFixed(2) : null, s: Math.round((performance.now() - t0) / 1000) };
+    });
+    verifier('au rouge, la file se serre pare-chocs contre pare-chocs',
+      serre.n >= 30 && serre.mediane <= 1.6, JSON.stringify(serre));
 
     // LES TRAINS INTERVILLES (v179) : dix-huit rames sur neuf navettes
     // réelles (Eurostar, TGV, Shinkansen, AVE, Frecciarossa, ICE), et elles
@@ -4528,6 +4591,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // de ce témoin était donc VERT sur `origin/main`, à 264 blocs par seconde,
     // avec le trou à trente-six blocs — il mesurait le banc, pas le jeu.
     const ciel = await banc.jouerSeul('Amélie', { rr: 12 });
+    await leverLaLimite(ciel);
     const suivi = await ciel.evaluate(async () => {
       const g = window.__game;
       const m = await import('./src/montures.js');
@@ -6973,6 +7037,14 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       // deux, c'est le rapport : 0,25 contre 0 sur l'ancien code.
       !S.err && S.son && S.secoue.max > 0.12 && S.secoue.max > 3 * S.calme.max
         && S.son.piqueChoc > 2 * S.son.piqueAvant, msg);
+    // LA PENTE (v429) : la physique publie `player.tangage` depuis la v408 et
+    // personne ne le dessinait. Figé à 0,3 rad, le nez doit monter de
+    // 4 × sin 0,3 ≈ 1,2 bloc au-dessus de la queue ; à 0, rester à plat. Sur
+    // l'ancien code la caisse ignore le champ : nez et queue à la même hauteur.
+    verifier('dans une côte, le nez de la voiture monte avec la pente',
+      !S.err && S.pente && Math.abs(S.pente.plat) < 0.3 && S.pente.cote - S.pente.plat > 0.6, msg);
+    verifier('et retomber sur ses roues s\'entend',
+      !S.err && S.son && S.son.piqueSol > 2 * S.son.piqueAvantSol, msg);
     verifier('dos à un mur, la caméra reste du côté de la voiture',
       !S.err && S.mur.libre, msg);
     verifier('et en descendant, le champ revient et la voiture se pose à plat',

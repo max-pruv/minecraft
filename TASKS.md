@@ -1,5 +1,23 @@
 # Ce qui est en cours
 
+- [ ] **PORTAIL DES PONTS (v430) — DOUBLE MESURE (règle v195).** Portail
+  complet (base v419) coupé à sa limite de deux heures pendant `reseau.js` ;
+  rouges déjà déclarés : `carte.js` « la faire glisser non plus » (427 ms),
+  `manhattan.js` « le trou enlève aussi la géométrie », `monte.js` la chauffe de
+  New York et le trou en vol (chasseur 58/60). Non déclaré jusqu'ici :
+  `monte.js` « en vol au-dessus de Paris, le monde se maille hors du fil
+  principal » — l'avion n'avance pas (branche 10 blocs en 47 s ; `origin/main`
+  v424 rejouée SEULE, 19 blocs en 120 s, même rouge), avec « un morceau maillé
+  là-bas est le même ici » qui en dépend (2 à 5 comparés). Rejouée seule sur
+  `origin/main`, `monte.js` rend aussi la cascade « pas aux commandes » des
+  avions et « la voiture roule dans la nature » : la page qui vole au-dessus
+  de Paris rend moins d'une image par seconde. Hors de la livraison PAR
+  CONSTRUCTION : elle ne change le contact que sur une colonne qu'un pont
+  d'autoroute occupe au coin (`routeEn(floor)` ouvrage), et ni (−600, −520)
+  ni le vol à 96 blocs au-dessus de Paris n'en ont (relevé sous node). Piste :
+  mesurer la cadence de la page `MonteFil` (rr 12, au-dessus de Paris) seule,
+  puis après les témoins qui la précèdent.
+
 - [ ] **PORTAIL DU JOURNAL DE BORD (v426) — DOUBLE MESURE (règle v195).**
   Deux portails (bases v408 et v411) rouges sur `maj.js`, `carte.js`,
   `manhattan.js`, `monte.js`. Déclarés plus bas : la flèche du GPS et le
@@ -461,6 +479,20 @@
   sur `origin/main` à (−2 581, 5 272), un nœud de circuits face à face,
   8,8 % sur la v423 — d'avant, à démonter. (5) Palier C : utilitaires et
   pickups (classe dans `FLOTTE`), variance par voiture, voie par tronçon.
+  **(3) FAIT en v431** : balayage au quart sur les deux premiers blocs,
+  plancher de file 1,0 en ligne droite (1,6 en virage) — médiane 1,9-2,0 →
+  1,1-1,3 (Paris, Rome, Zurich, Tokyo). Les contacts « file » relevés à Tokyo
+  sont au treizième rang au croisement du nœud (53 383, 8 048) : le huit
+  (v395), pas le plancher.
+  Portail de la v431 (dix suites) : les deux témoins neufs verts (fabrication
+  1 voiture par image, 89 faites, 96 différées ; files médiane 1,23 sur 237).
+  Rouges : `carte.js` (flèche GPS 1,92), `manhattan.js` (trou de façade, taxi
+  « 🐴 Monter »), `monte.js` (flâneur, chauffe de New York, maillage en vol :
+  10 blocs en 91 s), `reseau.js` (compteur à deux après départ, messages
+  réseau) — tous déclarés sauf les messages réseau. `reseau.js` REJOUÉE SEULE
+  des deux côtés : branche 82 verts, deux rouges (« un hôte sans courtier est
+  trouvé… » et son voisin) ; `origin/main` 79 verts, cinq rouges dont ces
+  deux-là. Les messages réseau sont verts seuls des deux côtés : charge.
   Portail de la v423 (dix-sept suites) : verts sauf `plafond.js` (l'A1 :
   À MOI, la voiture du témoin butait sur la circulation densifiée —
   repointée, rejouée seule entièrement verte, 80,7 blocs, 15 voitures
@@ -896,7 +928,22 @@
   200 blocs, donc hors de la livraison par construction (elle ne change que le
   sol de Las Vegas et des contours d'anneaux).
 - [ ] **LES ANNEAUX D'AVANT ROULENT PARFOIS HORS DE LA CHAUSSÉE (mesuré v387,
-  repris v404, v418).** v418 : 2 257 → 1 228 pas, 87 → 75 anneaux (contour
+  repris v404, v418, v432).** v432 : 1 228 → 840 pas, 75 → 61 anneaux, 22 → 9
+  villes dont une voie passe sur le centre (la vue sur la voie, la couverture à
+  la règle du témoin, plusieurs ordres, une rangée d'un coup ; quatorze villes
+  changent, aucune ne perd de couverture). Reste, mesuré par
+  `tests/sonde-anneaux-villes.cjs` : Rio 446 (les deux grands anneaux traversent la
+  forêt de Tijuca et la plage ; la recherche descend à UN segment fautif, P =
+  −25 de Q = 56 à 68, où la trame a un îlot fusionné au lieu d'une rue — une
+  rue à y percer est du SOL, décision de Max ; la couverture n'y est pour
+  rien, mesuré en ne comptant ni forêt ni sable), Tokyo 56 et Toronto 31 (les
+  deux anneaux d'arrivée traversent la place sur la même rue, en sens
+  contraires ; tout contour suit un voisin au-delà de la barre de partage ou
+  perd des points de couverture), Dubaï 32, Agra 42 (parc), puis Gênes 22,
+  Seoul 21, Guayaquil 20, Lima 20, Dublin 19, Amsterdam 19, Bruxelles 18,
+  Turin 13, Innsbruck 12. Piste : une recherche CONJOINTE des deux anneaux qui
+  se disputent la place (aujourd'hui ils se cherchent l'un après l'autre).
+  v418 : 2 257 → 1 228 pas, 87 → 75 anneaux (contour
   dans l'autre sens, rues autour du Strip : Las Vegas 689 → 21). Reste, mesuré :
   Rio (446 : la forêt de Tijuca au sud-ouest des deux grands anneaux, ~16 îlots
   à retirer, au-delà de la borne de 12 du contour — la relâcher ne change rien,
@@ -916,6 +963,29 @@
   Las Vegas et Rio, des anneaux choisis DANS la bande (une sélection, donc
   mesurer la couverture) ; pour les rivières, un contour qui publie son tablier
   (un tablier neuf est du sol : Rome est dans l'empreinte des 490 morceaux).
+- [ ] **PORTAIL DE LA v432 (la place se contourne), DOUBLE MESURE FAITE.**
+  Voie : fumée, `parishd.js`, `carteMonde.js`, `plafond.js` verts. `maj.js` :
+  le badge (« version servie v421 » pour une tête de journal à 422 — le bump
+  de `sw.js` se fait à la fusion) et « corps, programmes et fond de carte »
+  (personnages 7/9, déclaré). `carte.js` : « rendu à chaud » 158 ms et « la
+  faire glisser » 679 ms, déclarés. `monte.js` au portail : 39 rouges, tous de
+  commandes (joystick « hardstop », « pas aux commandes ») ; rejouée SEULE :
+  branche 107 verts / 3 rouges, `origin/main` 99 / 4. Propres à la branche,
+  tous deux déjà déclarés et vus sur `origin/main` (v395, v414) : « elle
+  ralentit assez pour qu'on la rejoigne » (9,1 m/s) et « la rue roule à
+  l'allure d'une ville » (Paris, bâtie à la main, que la v432 ne touche pas :
+  seules quatorze villes engendrées changent d'anneaux, sonde `ident`).
+  Après fusion de la v426 : portail rejoué, mêmes familles (`maj.js` loader,
+  déclarés ; `carte.js` flèche du GPS et glisser, déclarés ; `monte.js` 30
+  rouges de commandes sous charge). `monte.js` rejouée seule : les deux
+  passages dépassent l'heure de borne (la suite s'est alourdie avec les
+  sensations de la v422) — branche 189 verts / 13 rouges, `origin/main` v426
+  132 / 42 au moment de la coupure. Propres à la branche : les sensations
+  (même famille que `origin/main`, autre modèle tiré), le taux de paires au
+  contact, le passant au feu, le train devant la voiture, le flanc frôlé, le
+  passage en biais à Rome — tous déclarés plus haut. Preuve par construction :
+  `monte.js` n'éprouve qu'une des quatorze villes, Kyoto, et ses deux témoins
+  y sont verts ; Rome a des anneaux identiques au bit près.
 - [ ] **PORTAIL DE LA v414 (les tabliers s'allongent), DOUBLE MESURE FAITE.**
   (Portail joué sur la v408 fusionnée ; `origin/main` est passée à la v413
   pendant la double mesure. Après la fusion, rejouées SEULES sur le code
@@ -1004,6 +1074,30 @@
   l'intermittence déjà mesurée rouge une fois sur quatre sur `origin/main`
   (tableau plus bas). Le témoin neuf « une voiture neuve n'hérite pas du
   dernier choc » est vert au portail.
+
+- [ ] **`monte.js` NE FINIT PLUS UNE FOIS SUR DEUX, ET C'EST UNE AFFAIRE DE
+  BANC (mesuré pour la v429).** Deux causes, une réglée.
+  1. **La limite du jour** (45 min, `education.js`) : la page `tab` vit plus
+     d'une heure, l'écran de fin de journée s'ouvrait et prenait le doigt
+     (`"cible":"hardstop"`) — au portail de la v429, trente-cinq rouges en
+     cascade (avions « pas aux commandes », voiture « pas au volant », les
+     neuf témoins des sensations à `vMax 0`). Réglé dans la suite :
+     `today().unlocks = 99`, la donnée qu'un parent pose (`leverLaLimite`).
+  2. **L'ouverture d'une page à part sous une page à 3,8 cœurs** : après « en
+     vol au-dessus de Paris, le monde se maille hors du fil principal »,
+     `souffler` lit une charge STABLE de 3,7 à 3,9 cœurs, et la page suivante
+     (`MonteRegard` l. 3901, `MonteMobilier` l. 4279) ne charge pas en 90 s.
+     Branche : 2 arrêts sur 2 rejeux seuls (98 et 110 verts) ; `origin/main` :
+     v404 arrêtée, v411 au bout (11 rouges). Piste : ce que `tab` fait encore
+     après ce témoin (vol laissé en cours ? file de maillage à `rr` 12 ?) — la
+     sonde à écrire relève `__game.player.flying`, la file et la position de
+     `tab` à cet instant, puis on ramène `tab` au sol avant `souffler`.
+  Et le pic du choc ratait le coup deux passages sur cinq (0,06 contre 0,07
+  au calme, secousse vue) : une seule lecture 0,45 s après pour une fenêtre de
+  0,74 s. La mesure lit à chaque image pendant 1,5 s : 1,02 · 1,10 · 1,20.
+  La v429 se prouve donc par la sonde (`sonde-sensations.cjs`, même mesure
+  que le témoin), des deux côtés : pente 1,182 contre 0, atterrissage 0,74 à
+  0,95 contre 0,057.
 
 - [ ] **AU PORTAIL DE LA v422 (les sensations au volant, fusionnée avec main
   v404 puis v411 puis v421), AUCUN ROUGE NE VIENT DE LA LIVRAISON.** Trois
@@ -5526,7 +5620,17 @@ l'embarquement a eu lieu, pas par une hypothèse.
   · la part de lots passe de 14,2 à 11,2 % : un îlot de vingt et un porte
     quatre maisons de neuf, pas un bâtiment de vingt et un.
 
-- [ ] **IL RESTE DES ANNEAUX QUI SE PARTAGENT DIX-HUIT BLOCS (v270).** La
+- [ ] **IL RESTE DES ANNEAUX QUI SE PARTAGENT DIX-HUIT BLOCS (v270).** Remesuré
+  en v432 sur les VOIES (`tests/sonde-anneaux-villes.cjs`, deux voies à moins
+  de deux blocs et dans le même sens) : 16 villes partagent quelque chose, le
+  pire est Kyoto à 18, les quinze autres à 15 (Boston, Québec, Mumbai,
+  Édimbourg, La Mecque, Ispahan, Xi'an, Nankin, Jakarta, Manille, Alexandrie,
+  Tunis, Alger, Delhi 3, Las Vegas 3) : un côté d'îlot de dix-huit blocs, des
+  petites trames. NON-RÉSULTAT MESURÉ, à ne pas réécrire : retourner l'un des
+  deux anneaux (contresens, pour qu'ils se croisent au lieu de se suivre) ne
+  règle qu'une paire (Mumbai) et rend Boston pire (18 → 36), parce que l'autre
+  voie est déjà suivie par un troisième ; le pire ne bouge pas. La
+  v432 n'a rien aggravé (même liste, même pire). La
   contrainte de la v211 est désormais appliquée aux villes engendrées : 265
   villes en faute deviennent 0, le pire partage tombe de 576 blocs (Shanghai)
   à 18 (São Paulo). Dix-huit, c'est SOUS la barre d'un carrefour, donc ce
@@ -5894,6 +5998,13 @@ l'embarquement a eu lieu, pas par une hypothèse.
   rendus. Piste : un passant ne se pose (et un personnage ne marche) que sur
   un morceau déjà là, comme la minicarte (v258) qui n'engendre jamais.
   (3) `nbSansCroisement` (vehicules.js) 22 à 36 ms au dépliage d'un circuit.
+  **(1) et (3) FAITS en v431** : fabrication par tranches (`FAB_MS`), grille de
+  croisements ; update des voitures 234/261/195 → 111/125/99 ms,
+  `nbSansCroisement` 32/45/30 → 13/12/12. Reste sous `update` : `voiesDe`
+  (la jumelle, 57 à 111 ms au dépliage) — il fixe le nombre de voitures de la
+  file, donc la grille partagée (v305) ; le différer demanderait que les deux
+  tablettes le fassent au même instant de la grille. À reprendre.
+
   Fait dans ma zone (v420) : `renduLogiciel()` ne redemande plus le pilote
   (120 à 336 ms de `getParameter` par arrivée, zéro gain en durée d'image au
   banc, déclaré). À relire sur l'iPad avec `?diag=1` après les deux remèdes.

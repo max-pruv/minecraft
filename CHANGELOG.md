@@ -40,7 +40,122 @@ contournent déjà (v425).
 cinq, et le mailleur en dessine le cannage. L'empreinte des 490 morceaux
 change (`69c38928…`) et se prouve : la règle d'avant rejouée
 (`devantures: false`) rend `1f1e5a6d…`, la constante d'`origin/main`, au bit
-près. Jugé en capture, rue de Saint-Germain, de jour.
+près. Jugé en capture, rue de Saint-Germain, de jour. Et deux témoins de
+`degats.js` lisent la santé au dix-millième : arrondie au centième, elle
+rendait 0,99 ou 1 selon l'élan, un tirage des deux côtés du portail.
+
+---
+
+## v432 — Les voitures font le tour de la place
+
+**Pourquoi.** Dans vingt-deux villes engendrées (Tokyo, Séoul, Shanghai, Hong
+Kong, São Paulo, Los Angeles…), l'anneau de voitures qu'on voit en arrivant
+roulait en travers de la place centrale, sur son pavé, à moins de cinq blocs de
+l'endroit où la carte dépose l'enfant. Son contour existait (un îlot plus
+loin), mais la garde le refusait : elle mesurait l'AXE de la rue à trente
+blocs du centre, et la couverture avec un bloc et demi de marge de chaque
+côté. Et deux anneaux qui touchent la place se disputaient les mêmes rues.
+
+**Ce que ça change.** Dans quatorze villes, les voitures font le tour de la
+place par les rues au lieu de la traverser, et on en voit toujours une depuis
+le centre. 1 228 → 840 pas de voie hors de la chaussée sur toutes les villes,
+75 → 61 anneaux fautifs, 22 → 9 villes dont une voie passe sur le centre.
+Aucune ville ne perd de circuit, de couverture ni sa voiture en vue ; aucun
+tablier ni aucun bloc du sol ne bouge, et les 248 autres villes sont
+identiques au bit près.
+
+**Ce qui le prouve.** Deux témoins de `carteMonde.js` : le compte des pas hors
+de la chaussée (barres au milieu, 68 anneaux et 1 034 pas) et un verdict neuf,
+« l'anneau qu'on voit en arrivant fait le tour de la place » (9 villes ici, 22
+sur `origin/main`, barre 15). Sonde sous node ville par ville, avant et après :
+pas, circuits, couverture (règle v322), pire partage (18, inchangé), voiture
+en vue depuis le centre, coût du premier dépliage (inchangé pour les villes
+sans faute, 75 à 110 ms pour celles qu'on essaie, sous le pire de Rome).
+
+
+
+## v431 — Des files serrées, et une rue qui arrive sans à-coup
+
+**Pourquoi.** Deux défauts de la circulation, mesurés. À l'arrivée d'une
+téléportation, toutes les voitures de la rue se fabriquaient dans la même image
+(162 à 276 ms de jeu figé, sonde de la v420), et le calcul des croisements d'un
+circuit en coûtait encore 22 à 45 au dépliage. Et au feu rouge, une voiture
+s'arrêtait à deux blocs de la précédente en moyenne : une file au feu se lisait
+comme un chapelet clairsemé, loin des voies serrées de la capture de GTA VI
+que Max a montrée.
+
+**Ce que ça change.** Les voitures d'une rue apparaissent par petites tranches,
+quelques millisecondes par image, celles tout près de l'enfant tout de suite :
+la mise à jour des voitures à l'arrivée à Paris passe de 195-261 ms à 99-125.
+Au rouge, les voitures se serrent pare-chocs contre pare-chocs : l'écart à
+l'arrêt passe de 1,9-2,0 blocs à 1,1-1,3 à Paris, Rome, Zurich et Tokyo, sans
+contact de plus dans les files (en virage, elles gardent l'écart d'avant).
+
+**Ce qui le prouve.** Deux témoins neufs dans `monte.js`, mesurés rouges sur
+l'ancien code : « à l'arrivée, la rue se fabrique par tranches » (9 voitures
+dans une même image avant, 1 ici) et « au rouge, la file se serre » (médiane
+2,0 à Rome avant, 1,1-1,2 ici). L'identité des croisements est prouvée en
+comparant l'ancien et le nouveau module dans la même page : 295 comparaisons,
+zéro écart. Sondes : `sonde-arrivee-decoupe.cjs`, `sonde-rue-dense.cjs`,
+`sonde-fabrication-arrivee.cjs`.
+
+---
+
+## v430 — On passe tous les ponts
+
+**Pourquoi.** Max, capture d'iPhone : la voiture arrêtée sur une autoroute,
+le bandeau « Une voiture ne roule pas dans l'eau — fais demi-tour », et pas
+une goutte en vue. Le générateur décide qu'une colonne est un pont en lisant
+son COIN, et n'y écrit alors aucun bloc (le tablier est un ruban dessiné) ;
+le contrôle de l'eau de la voiture lisait le tablier au CENTRE de la colonne.
+Aux deux bouts de chaque pont, une colonne était « pont » pour l'un et
+« chaussée » pour l'autre : ni bloc ni tablier, de l'eau dessous, et la
+voiture s'arrêtait net. Et cet arrêt cachait un second défaut, déjà en
+production : là où il ne l'arrêtait pas, la voiture pouvait TOMBER dans ces
+colonnes sans bloc et finir sous le pont — vu une traversée sur six au
+premier pont de l'A1, des deux côtés.
+
+**Ce que ça change.** Les voitures franchissent tous les ponts d'autoroute,
+dans les deux sens, et restent dessus. Le contrôle de l'eau et le contact au
+sol lisent le tablier sur la colonne telle que le monde l'a écrite ; la vraie
+eau arrête toujours la voiture, et sous un pont on reste en bas.
+
+**Ce qui le prouve.** Un témoin de `plafond.js` fait traverser au vrai joueur
+(sous node) chaque pont de chaque route, dans les deux sens : 52 traversées,
+12 arrêtées par l'eau sur la v416, zéro ici (`sonde-ponts-eau.cjs`, rejouée
+seule en trois secondes). Un second témoin balaie la chaussée de tous les
+ponts au quart de bloc : 6 713 points sur 101 380 n'étaient portés par rien
+sur la v419 (le point de la chute vue au navigateur parmi eux), zéro ici. La
+règle de l'eau vit désormais dans le monde (`eauSousLaVoiture`), et le jeu et
+le témoin la lisent tous les deux.
+
+---
+
+## v429 — La voiture suit la pente
+
+**Pourquoi.** Depuis la v408 la physique fait monter la voiture dans les côtes
+et décoller sur les bosses, et publie la pente sous les roues
+(`player.tangage`) et chaque retour au sol (`player.atterrissage`) « pour ce
+qui dessine ». Personne ne les dessinait : dans une côte, la caisse restait à
+plat et s'enfonçait du nez dans la route qu'elle montait, et retomber d'une
+bosse ne faisait aucun bruit.
+
+**Ce que ça change.** Le nez monte dans les côtes et plonge dans les
+descentes (jusqu'à 26°), en plus du nez qui se lève à l'accélération ; en
+l'air, la voiture suit sa trajectoire. Retomber sur ses roues fait plonger la
+caisse sur ses ressorts et s'entend, d'autant plus fort que la chute est
+haute.
+
+**Ce qui le prouve.** Deux témoins neufs dans `monte.js`, sur la mesure
+partagée avec la sonde. La pente figée à 0,3 rad : le nez monte de 1,18 bloc
+au-dessus de la queue ici, 0 sur `origin/main` (v422) ; à plat, 0 des deux
+côtés. L'atterrissage posé comme la physique le pose : pic 0,74 à 0,95 contre
+0,07 avant ici, 0,057 contre 0,068 sur `origin/main`.
+Et le banc : la page de jeu de `monte.js` vit plus d'une heure, et la limite
+du jour (45 min) y ouvrait l'écran de fin de journée, qui prenait le doigt et
+faisait tomber trente-cinq témoins en cascade ; la suite lève désormais la
+limite par la donnée qu'un parent pose. Un second arrêt de la suite, sous une
+page à 3,8 cœurs, est rouge des deux côtés et déclaré dans `TASKS.md`.
 
 ---
 
@@ -318,6 +433,7 @@ se voit pas en durée d'image au banc (pire image 283 à 367 ms contre 283 à
 383), parce que l'attente se cachait dans des images déjà lentes — il se
 transpose à la tablette comme un appel synchrone de moins par morceau.
 
+
 ## v419 — Paris rejoint Lyon
 
 **Pourquoi.** Paris–Lyon était dans la liste du kit « monde fidèle » depuis la
@@ -377,6 +493,7 @@ quatre circuits. Le coût du dépliage ne bouge pas, et l'empreinte des 490
 morceaux est celle d'`origin/main`.
 
 ---
+
 ## v417 — Le monde arrive à temps au-dessus des villes
 
 **Pourquoi.** Le témoin qui vérifie que l'avion ne dépasse pas le monde en

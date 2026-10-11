@@ -770,6 +770,111 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## La place se contourne (v432) — une garde se mesure sur ce qu'elle protège, à la règle du témoin
+
+Vingt-deux villes avaient la voie de leur anneau d'arrivée sur la place. Quatre
+règles.
+
+- **UNE GARDE DE VUE SE LIT SUR LA VOIE, PAS SUR L'AXE.** La phase 4 refusait
+  un contour dont l'AXE de rue passait à plus de `VU_ANNEAU` (30) du centre ;
+  la voiture roule une demi-chaussée plus loin ou plus près. Ce que l'enfant
+  voit : une voiture à `VU_VOITURE`, sur un tracé où elles sont espacées de
+  cinquante-quatre blocs au pis — une voie à √(45² − 27²) = 36 blocs en montre
+  une (`VU_CONTOUR`). La SÉLECTION garde `VU_ANNEAU` : les anneaux qu'une ville
+  reçoit ne changent pas.
+- **UNE GARDE DE COUVERTURE A LA RÈGLE DU TÉMOIN, SANS MARGE.** Celle de la
+  v404 se donnait un bloc et demi de chaque côté : un point vu à 44 blocs
+  avant et après était « perdu ». On échantillonne comme le témoin v322 (pas
+  de deux blocs depuis chaque sommet, 45 blocs), sur une grille qui ne lit pas
+  moins que la sienne (`pointsDeVille(f, true)`).
+- **UNE GARDE COMPARE AU RECTANGLE ; LA CONFIGURATION D'AVANT, ELLE, A PU
+  GAGNER PAR CHANCE.** À Sydney, l'ancien contour à contresens voyait 3,2 blocs
+  plus loin que le rectangle ; la garde neuve l'aurait remplacé et perdu 0,7 %
+  de la ville. La configuration d'avant (garde de la v404) est donc jouée
+  d'abord et reste la référence : un autre essai ne la remplace que s'il
+  laisse moins de pas hors de la chaussée SANS voir moins de points. Les 248
+  villes où elle ne laisse aucune faute sont identiques au bit près, et ne
+  paient rien de plus.
+- **DEUX ANNEAUX QUI TOUCHENT LA PLACE SE DISPUTENT SES RUES : L'ORDRE SE
+  CHOISIT.** Celui qui contourne d'abord prend la voie de l'autre (Bangkok :
+  57 → 1 en mettant le dernier en tête). On essaie l'ordre naturel puis chaque
+  anneau fautif en tête, contours mémorisés par l'état des autres. Et quand
+  toute une suite de segments du même côté est fautive, la recherche recule la
+  RANGÉE d'un coup (Lisbonne, 33 → 0) ; un grand anneau peut changer un tiers
+  de ses îlots.
+
+Ce qui reste, déclaré dans `TASKS.md` : Rio (la forêt de Tijuca, où la trame a
+un îlot fusionné en travers de la seule rue qui en sortirait), Tokyo, Dubaï,
+Toronto (leurs contours suivent un voisin au-delà de la barre de partage ou
+perdent des points), Agra, et une poignée d'anneaux à moins de 25 pas.
+
+## La rue serrée, et fabriquée par tranches (v431) — un budget par image, et un balayage fin là où l'on s'arrête
+
+Trois règles.
+
+- **CE QUI SE FABRIQUE À L'ENTRÉE DANS LE CHAMP SE FABRIQUE PAR TRANCHES.**
+  À l'arrivée d'une téléportation, `Convoi.montrer` fabriquait toutes les
+  voitures de la rue dans la même image (v420 : 162 à 276 ms sous `frame`).
+  Un budget module (`FAB_MS`, 5 ms, ouvert par `update`) : une place hors
+  budget reste vide une image de plus — SAUF à moins de `FAB_PROCHE` (18
+  blocs) de l'enfant, qui ne doit pas traverser une voiture qu'il ne voit pas.
+  Le budget vaut l'infini tant qu'aucune image n'a commencé : un appel direct
+  de `montrer` fabrique tout. Mesuré (Paris, trois passages) : mise à jour des
+  voitures 234/261/195 → 111/125/99 ms ; neuf voitures dans une même image →
+  une. Ce qui reste, `voiesDe` (la jumelle, 57 à 111 ms au dépliage), ne se
+  diffère pas : il fixe le nombre de voitures de la file, donc la grille que
+  deux tablettes partagent (v305).
+- **UNE RECHERCHE DE PAIRES SE FAIT DANS UNE GRILLE DE SA PORTÉE.**
+  `croisementsDe` comparait 720 instants toutes-contre-toutes (259 000 paires)
+  pour un test de six blocs : une grille de six blocs rend le même ensemble
+  (295 comparaisons de `nbSansCroisement` contre l'ancien module chargé dans
+  la même page, zéro écart) en deux fois moins de temps.
+- **L'ÉCART À L'ARRÊT EST LE PAS DU BALAYAGE.** Au pas d'un bloc et demi, une
+  suiveuse s'arrête n'importe où entre 1,1 et 2,6 blocs (médiane 1,9 à 2,0) ;
+  les deux premiers blocs se balaient au quart (1,1 à 1,35). Et le plancher de
+  la file (v283) vaut un bloc en ligne droite, mais 1,6 là où le tracé tourne
+  sous la suiveuse ou devant elle : dans un virage la corde est plus courte que
+  l'arc, et les coins se touchent (mesuré à Tokyo). Avant de serrer un
+  plancher le long d'un tracé, on regarde ce qu'il vaut en ligne droite.
+
+## Un pont se lit sur la colonne que le monde écrit (v430) — et une règle de contact vit dans le monde
+
+Max, capture d'iPhone : le bandeau de l'eau sur une autoroute, la voiture
+arrêtée. Quatre règles.
+
+- **CE QUE LE GÉNÉRATEUR A DÉCIDÉ AU COIN D'UNE COLONNE SE LIT AU COIN.**
+  `world.js` demande `routeEn(wx, wz)` — le coin — pour savoir si une colonne
+  est un pont, et n'y écrit alors aucun bloc ; le contrôle de l'eau lisait
+  `tablierEn(bx + 0.5, bz + 0.5)`. Aux deux bouts de chaque pont, une colonne
+  n'avait ni bloc ni tablier pour le contrôle : 12 traversées sur 52 arrêtées
+  par une eau qu'on ne voit pas. `tablierDeColonne` lit le coin, puis le
+  centre. C'est la v414 (« une tolérance se juge sur la colonne ») du côté du
+  contact : toute question « y a-t-il un plancher sur CETTE colonne ? » se
+  pose là où le générateur l'a tranchée.
+- **ET LE CONTACT AUSSI — L'ARRÊT FAUTIF CACHAIT UNE CHUTE.** Retirer le faux
+  arrêt laissait la voiture entrer dans ces colonnes sans bloc ; quand le
+  point exact n'était pas encore sur le tablier, rien ne la portait et elle
+  finissait sous le pont (une traversée sur six au premier pont de l'A1, sur
+  la v419 comme sur la branche, `sonde-pont-tablier.cjs`). `accrocherAuSol`
+  et `verticaleVoiture` lisent `tablierSousLePoint` (le point, puis la colonne
+  qui le contient). Une intermittence de navigateur ne tranchait pas (un
+  tirage à la première traversée d'un banc) : la preuve est STRUCTURELLE,
+  la chaussée de tous les ponts balayée au quart de bloc sous node — 6 713
+  points sans appui avant, zéro après (`trousAuxCulees`). **Quand on retire
+  un garde-fou faux, on demande ce qu'il empêchait par accident.**
+- **UNE RÈGLE DE CONTACT QU'UNE SONDE DOIT REJOUER VIT DANS LE MONDE.**
+  `eauSousLaVoiture` (world.js) est la règle de `main.js`, sortie pour que
+  `sonde-ponts-eau.cjs` (le vrai joueur sous node, chaque pont, deux sens,
+  trois secondes) la lise telle quelle ; `plafond.js` l'appelle. Une copie de
+  sonde finit par diverger du jeu (v400). Et l'avance d'une voiture le long
+  d'une route se lit à l'ABSCISSE (`projeter`), jamais en projetant sur le
+  cap de départ : une route qui tourne fait plafonner la projection, et la
+  sonde déclarait « bloquées » quatre voitures qui roulaient.
+- **LE JOURNAL DE BORD A DIT OÙ, PAS QUAND.** La session de l'iPhone montrait
+  l'enfant à pied dans Paris ; la panne était ailleurs. Quand le journal ne
+  porte pas la capture, on balaie TOUTES les routes sous node à la recherche
+  de la situation (dix-huit secondes), au lieu de deviner un endroit.
+
 ## Toutes les voies occupées (v423) — la seconde voie est la même ligne, décalée
 
 Max, une capture de GTA VI à côté d'une de GTA V : « Good inspiration » — des
@@ -858,6 +963,14 @@ règles.
   dans l'image, et `sensations.js` reprend le suivi du bestiaire pour ne pas
   compter deux fois. Les avions gardent la poursuite d'avant à l'identique ;
   `?sensations=0` rejoue l'ancienne conduite, pour mesurer.
+
+**La pente se dessine (v429).** La physique publie `player.tangage` (v408,
+nez en haut positif — le signe de `rotation.x` sur un modèle au nez en −z) et
+le RÉÉCRIT à chaque image ; `sensations.js` l'ajoute au tangage de la caisse,
+borné à `PENTE_MAX`. `player.atterrissage` est un ÉVÉNEMENT daté, comme
+`choc` : on retient son `t` et l'on ne réagit qu'à un `t` neuf, jamais à celui
+qu'on trouve en montant. Le témoin fige le champ par une propriété qui ignore
+ce qu'on lui écrit (v358), et lit la pente dans la matrice monde.
 
 ## Un contour dans l'autre sens, et les rues du Strip (v418) — ce qui empêchait le contour n'était pas l'absence de rue
 
