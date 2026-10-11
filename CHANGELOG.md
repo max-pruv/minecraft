@@ -40,6 +40,11 @@ partagée avec la sonde. La pente figée à 0,3 rad : le nez monte de 1,18 bloc
 au-dessus de la queue ici, 0 sur `origin/main` (v422) ; à plat, 0 des deux
 côtés. L'atterrissage posé comme la physique le pose : pic 0,74 à 0,95 contre
 0,07 avant ici, 0,057 contre 0,068 sur `origin/main`.
+Et le banc : la page de jeu de `monte.js` vit plus d'une heure, et la limite
+du jour (45 min) y ouvrait l'écran de fin de journée, qui prenait le doigt et
+faisait tomber trente-cinq témoins en cascade ; la suite lève désormais la
+limite par la donnée qu'un parent pose. Un second arrêt de la suite, sous une
+page à 3,8 cœurs, est rouge des deux côtés et déclaré dans `TASKS.md`.
 
 ---
 
