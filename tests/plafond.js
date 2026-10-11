@@ -378,7 +378,10 @@ const EMPREINTE_MORCEAUX_V414 = '863d4203a441e3fd029ce2404fc6d6e706799e7f64fe489
 // la constante de la v447, au bit près ; et les dix-huit colonnes qui
 // diffèrent dans les morceaux de Londres sont toutes dans la boîte d'un
 // tronçon de piste — aucune ailleurs, aucun autre lieu touché.
-const EMPREINTE_MORCEAUX_V357 = '938a330c6f883c7e249720b7274d988de6484768cfdb882dedd474da65bbac6d';
+// v451 : les villes engendrées posent leurs baies sur trois bandes (Rome et
+// Tokyo sont dans les neuf lieux) — voulu. `baiesEnBandes` retiré de
+// `CONF_NEUF`, la branche rend 938a330c…, la constante de la v450, au bit près.
+const EMPREINTE_MORCEAUX_V357 = '1e4c50beffa5d0148b66a8d46f28df712ad9cf92786396e5d205007aaee252fd';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -2608,6 +2611,49 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       ed.poses > 1000 && ed.gris > 4 * ed.rouge, JSON.stringify(ed));
     verifier('à Sydney, chaque fenêtre est un bloc — aucune baie n\'est un trou',
       sy.poses > 1000 && sy.nonBloc === 0, JSON.stringify(sy));
+  }
+
+  // UNE BAIE PAR ÉTAGE, PAS DEUX (v451). Les villes engendrées posaient deux
+  // blocs `ETAGE` l'un sur l'autre par étage : deux fenêtres dessinées, au loin
+  // comme dans la couche HD. Elles posent désormais les trois bandes de Paris
+  // (allège, baie, linteau). On lit le bâtisseur de quatre villes : aucun
+  // `ETAGE` posé sur un `ETAGE`, des bandes, et dans l'ordre. Sur l'ancien
+  // code : des milliers d'empilements, zéro bande — rouge.
+  {
+    const VM = await import('../src/villesmonde.js');
+    const { ARCHI } = await import('../src/blocks.js');
+    const res = {};
+    for (const cle of ['rome', 'barcelone', 'tokyo', 'edimbourg']) {
+      const f = VM.VILLES_MONDE.find((v) => v.cle === cle);
+      const c = { empiles: 0, bandes: 0, desordre: 0 };
+      for (let dx = -40; dx <= 40; dx++) for (let dz = -40; dz <= 40; dz += 3) {
+        const x = Math.round(f.ancre.x + dx), z = Math.round(f.ancre.z + dz);
+        if (VM.solVillesMonde(x, z) !== 'lot') continue;
+        const col = [];
+        VM.batirColonneVillesMonde(x, z, (y, id) => { col[y] = id; }, true);
+        for (let y = 1; y < col.length; y++) {
+          if (col[y] === ARCHI.ETAGE && col[y - 1] === ARCHI.ETAGE) c.empiles++;
+          if (col[y] === ARCHI.ETAGE_MI) { c.bandes++; if (col[y - 1] !== ARCHI.ETAGE_BAS || col[y + 1] !== ARCHI.ETAGE_HAUT) c.desordre++; }
+        }
+      }
+      res[cle] = c;
+    }
+    // Et c'est le monde d'aujourd'hui qui le pose (`CONF_NEUF.baiesEnBandes`),
+    // pas seulement le bâtisseur qu'on interroge : neuf morceaux de Rome.
+    const W = await import('../src/world.js');
+    const w = new W.World(), R = VM.VILLES_MONDE.find((v) => v.cle === 'rome');
+    const monde = { empiles: 0, bandes: 0 };
+    for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
+      const d = w.ensureChunk(Math.floor(R.ancre.x / W.CHUNK) + dx, Math.floor(R.ancre.z / W.CHUNK) + dz);
+      for (let i = 0; i < d.length; i++) {
+        if (d[i] === ARCHI.ETAGE_MI) monde.bandes++;
+        if (d[i] === ARCHI.ETAGE && d[i + W.CHUNK * W.CHUNK] === ARCHI.ETAGE) monde.empiles++;   // y + 1
+      }
+    }
+    res.mondeDeRome = monde;
+    verifier('une baie de ville engendrée est une fenêtre par étage, sur trois bandes',
+      Object.values(res).every((c) => !('desordre' in c) || (c.empiles === 0 && c.bandes > 50 && c.desordre === 0)) && monde.bandes > 50 && monde.empiles === 0,
+      JSON.stringify(res));
   }
 
   // LES PASSAGES EN BIAIS SE DESSINENT (v421). Une tuile ne se tourne pas :

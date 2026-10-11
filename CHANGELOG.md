@@ -20,6 +20,30 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v451 — Une fenêtre par étage dans les villes du monde
+
+**Pourquoi.** Les villes engendrées (Rome, Barcelone, Tokyo, Édimbourg et les
+deux cent soixante autres) posaient, par étage, deux blocs `ETAGE` l'un sur
+l'autre. Ce bloc porte une fenêtre entière dans sa tuile : chaque étage
+montrait donc DEUX fenêtres empilées, au loin comme dans la couche HD (dette
+déclarée au palier C de la v394).
+
+**Ce que ça change.** Chaque étage a une seule grande fenêtre de trois blocs —
+l'allège, la baie, le linteau — comme à Paris depuis la v301, et elle s'allume
+d'un seul tenant la nuit. La forme des immeubles ne bouge pas d'un bloc : on
+change le dessin de la façade, pas sa matière solide. Les mondes figés (ceux
+qui jugent les blocs posés avant la v306 et la v309) gardent l'ancienne baie.
+
+**Ce qui le prouve.** Un témoin de `plafond.js` lit le bâtisseur de quatre
+villes et neuf morceaux de Rome engendrés : zéro `ETAGE` posé sur un `ETAGE`
+(144 · 111 · 62 · 170 et 145 sur `origin/main`), des bandes dans l'ordre. Le
+poids d'un morceau détaillé baisse (Rome 0,59 → 0,52 Mo en moyenne, 1,35 →
+1,18 au pire ; même nombre de faces). L'empreinte des 490 morceaux change
+(Rome et Tokyo y sont) : `baiesEnBandes` retiré de `CONF_NEUF`, la branche rend
+la constante de la v450 au bit près.
+
+---
+
 ## v450 — Le Colisée ne change plus, Édimbourg en pierre grise
 
 **Pourquoi.** Trois façades qui mentaient. Le Colisée du catalogue tirait ses

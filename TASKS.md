@@ -3657,7 +3657,7 @@
      Palier C livré (v394) : les 90 villes engendrées d'Europe (`registreEurope`,
      `STYLES.sud`, `STYLES.nord`). La consigne est remplie. Dettes déclarées
      du palier C, vues en capture :
-     - [ ] une baie de ville engendrée est faite de DEUX blocs `ETAGE`
+     - [x] (fait en v451, `baiesEnBandes`) une baie de ville engendrée est faite de DEUX blocs `ETAGE`
        empilés : la couche (comme la tuile plate) y dessine deux fenêtres
        l'une sur l'autre par étage — un registre « baie de deux blocs »
        (les bandes `ETAGE_BAS/MI/HAUT` de Paris) demanderait que

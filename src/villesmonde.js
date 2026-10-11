@@ -128,6 +128,7 @@ const PASSAGE_EO = CITY_BLOCK.CROSSWALK;
 const BOIS_PORTE = BLOCK.DARKPLANK;   // les portes des boutiques
 const BOIS_BANC = BLOCK.PLANK;        // les bancs des trottoirs
 const BOISF_ARBRE = BLOCK.LOG;        // les troncs des jardins de poche
+const BANDES_BAIE = [ARCHI.ETAGE_BAS, ARCHI.ETAGE_MI, ARCHI.ETAGE_HAUT];
 
 // Les enseignes des boutiques : le bandeau au-dessus de la vitrine (la
 // « fascia » des devanturiers) et l'auvent rayé qui s'avance sur le trottoir.
@@ -3456,7 +3457,7 @@ export function solVillesMonde(x, z) {
   return null;
 }
 
-export function batirColonneVillesMonde(x, z, poser) {
+export function batirColonneVillesMonde(x, z, poser, bandes = false) {
   for (const f of villesPres(x, z)) {
     const u = x - f.ancre.x, v = z - f.ancre.z;
     if (Math.hypot(u, v) > f.rayon) continue;
@@ -3651,6 +3652,14 @@ export function batirColonneVillesMonde(x, z, poser) {
           continue;
         }
         const yy = (y - 3) % 3;
+        // UNE BAIE PAR ÉTAGE, SUR TROIS BANDES (v451). Le bloc `ETAGE` porte
+        // une fenêtre entière dans sa tuile : empilé deux fois, il dessinait
+        // DEUX fenêtres l'une sur l'autre par étage — au loin comme dans la
+        // couche HD. Paris a les bandes depuis la v301 : l'allège, le bas de
+        // la baie, le haut — une seule fenêtre de trois blocs, qui s'allume
+        // d'un tenant (`yBaie`). Une ville qui choisit son bloc de baie
+        // (`f.baie`, un nombre) garde l'ancienne grammaire.
+        if (fen && baie === ARCHI.ETAGE && bandes) { poser(y + 1, BANDES_BAIE[yy]); continue; }
         // l'allège du plancher, puis les deux rangs de la baie : le dessin de
         // la fenêtre porte son propre encadrement, le mur fait le reste
         if (yy === 0) { poser(y + 1, mur); continue; }
