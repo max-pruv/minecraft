@@ -18,7 +18,7 @@
   mesurer la cadence de la page `MonteFil` (rr 12, au-dessus de Paris) seule,
   puis après les témoins qui la précèdent.
 
-- [x] **LOT 2 DES TÉMOINS INTERMITTENTS — FAIT en v428** (session
+- [x] **LOT 2 DES TÉMOINS INTERMITTENTS — FAIT en v431** (session
   banc-intermittents). Chaque rouge rejoué SEUL des deux côtés, la cause
   séparée par une sonde, le témoin corrigé, et désarmé dans une copie.
   - **Une page en jeu à côté coûte presque quatre cœurs.** `tab` (la page

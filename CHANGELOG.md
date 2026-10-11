@@ -20,6 +20,36 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v431 — Des essais encore plus justes
+
+**Pourquoi.** Sept témoins du portail rougissaient une fois sur deux sans
+qu'une ligne du jeu ait bougé, et chaque livraison payait leur démontage. Le
+plus gros était le banc lui-même : la page principale de `monte.js` restait
+EN JEU pendant chaque page secondaire, et une page de ciel (distance
+d'affichage douze) n'était jamais fermée — presque quatre cœurs sur quatre
+pris pendant les trois quarts de la suite. D'autres témoins mesuraient
+l'endroit où la cadence les avait laissés : un arrêt devant un réverbère
+compté en secondes de montre, un trou de façade lu sur la géométrie de TOUTE
+la ville, un atterrissage sur une piste d'essai plus courte que lui.
+
+**Ce que ça change.** Rien dans le jeu : seulement les témoins, et un
+nouveau geste du banc (`mettreDeCote`, `ramener`) qui réduit une page à
+seize pixels le temps qu'une autre mesure. Et une VRAIE panne trouvée en
+chemin, déclarée et non corrigée (elle est dans la zone de la conduite) :
+une rame de train peut traverser la voiture de l'enfant quand une image est
+lente, parce qu'elle ne regarde que 3,5 blocs devant elle et roule en temps
+réel.
+
+**Ce qui le prouve.** Chaque rouge rejoué seul des deux côtés, la cause
+séparée par une sonde, et chaque correction désarmée dans une copie pour
+vérifier qu'elle rougit encore : le réverbère (`origin/main` 3/3 rouge sous
+charge, branche 3/3 vert, désarmé 97 blocs au travers du poteau), le trou
+de façade (branche 3/3 vert, désarmé « jamais rebâti »), la chauffe de New
+York (expirait à 150 s, finie en 9,9 s), la fumée (3/3), le taxi (le bouton
+apparaît à chaque passage). Le témoin du train reste ROUGE : c'est la panne.
+
+---
+
 ## v430 — On passe tous les ponts
 
 **Pourquoi.** Max, capture d'iPhone : la voiture arrêtée sur une autoroute,
