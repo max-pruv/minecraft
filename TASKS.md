@@ -504,6 +504,13 @@
   arrondit la santé au centième et l'élan (13 à 15 blocs) ne coûte que 0,5 à
   1 % : sous la charge, l'arrondi rend 1. Dette du témoin (lire la santé non
   arrondie, ou prendre plus d'élan), pas de la livraison.
+  Second portail de la v436 (après fusion de la v435) : rouges `carte.js`
+  (flèche du GPS 1,92, déclaré), `manhattan.js` (trou, taxi, déclarés),
+  `monte.js` « au feu, la voiture freine sur plusieurs relevés » (2 arrêts,
+  1 sec à 45 b/s², la forme déclarée en v415). A/B sur la même branche,
+  `sonde-circulation.cjs paris 40`, ordre alterné, jeu par voiture allumé et
+  éteint trois fois chacun : zéro arrêt sec sur 36 arrêts, aucun contact — le
+  jeu n'y est pour rien ; le témoin juge sur deux arrêts.
   **(3) FAIT en v431** : balayage au quart sur les deux premiers blocs,
   plancher de file 1,0 en ligne droite (1,6 en virage) — médiane 1,9-2,0 →
   1,1-1,3 (Paris, Rome, Zurich, Tokyo). Les contacts « file » relevés à Tokyo
