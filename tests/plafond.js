@@ -422,6 +422,30 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
 
   verifier('le ciel est monté', HEIGHT >= 160, `${HEIGHT} blocs`);
 
+  // --- UNE VOITURE TRAVERSE CHAQUE PONT D'AUTOROUTE (v430) -------------------
+  // Max, capture d'iPhone : « Une voiture ne roule pas dans l'eau — fais
+  // demi-tour » sur une autoroute, pas une goutte en vue. Le générateur
+  // décide « pont » au coin d'une colonne, le contrôle de l'eau lisait le
+  // tablier au centre : aux bouts des ponts, une colonne sans bloc ni tablier.
+  // Le VRAI joueur traverse chaque pont de chaque route, dans les deux sens,
+  // le crochet branché sur la règle du monde (`sonde-ponts-eau.cjs`, qu'on
+  // rejoue seule en trois secondes). Sur la v416 : 12 traversées sur 52
+  // arrêtées par l'eau.
+  {
+    const { traverserLesPonts, trousAuxCulees } = require('./sonde-ponts-eau.cjs');
+    const o = await traverserLesPonts(require('path').resolve(__dirname, '../src')).catch((e) => ({ erreur: String(e) }));
+    verifier('une voiture traverse chaque pont d\'autoroute, dans les deux sens, sans que l\'eau l\'arrête',
+      !o.erreur && o.traversees >= 40 && o.arreteesParLEau.length === 0 && o.tombees.length === 0 && o.passees === o.traversees,
+      o.erreur || JSON.stringify({ regle: o.regle, traversees: o.traversees, passees: o.passees, eau: o.arreteesParLEau.slice(0, 4), autres: o.autres.slice(0, 4), tombees: o.tombees.slice(0, 4) }));
+    // Et le contact (v430) : une colonne que le générateur a décidée « pont »
+    // n'a aucun bloc ; un point de sa chaussée que ni le tablier, ni un bloc,
+    // ni le sol continu ne porte est un trou où la voiture tombait — 6 713
+    // points sur 101 380 sur la v419, la chute vue au navigateur parmi eux.
+    const t = await trousAuxCulees(require('path').resolve(__dirname, '../src')).catch((e) => ({ erreur: String(e) }));
+    verifier('au bout de chaque pont d\'autoroute, toute la chaussée porte la voiture',
+      !t.erreur && t.points > 50000 && t.trous === 0, t.erreur || JSON.stringify(t));
+  }
+
   // --- LE MODÈLE DE CONDUITE, PUR (v358) -------------------------------------
   // `conduite.js` est lu sous node : ce que la voiture FAIT d'une commande et
   // d'un choc se vérifie ici en millisecondes, sans navigateur. Sur l'ancien

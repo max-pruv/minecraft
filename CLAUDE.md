@@ -770,6 +770,44 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Un pont se lit sur la colonne que le monde écrit (v430) — et une règle de contact vit dans le monde
+
+Max, capture d'iPhone : le bandeau de l'eau sur une autoroute, la voiture
+arrêtée. Quatre règles.
+
+- **CE QUE LE GÉNÉRATEUR A DÉCIDÉ AU COIN D'UNE COLONNE SE LIT AU COIN.**
+  `world.js` demande `routeEn(wx, wz)` — le coin — pour savoir si une colonne
+  est un pont, et n'y écrit alors aucun bloc ; le contrôle de l'eau lisait
+  `tablierEn(bx + 0.5, bz + 0.5)`. Aux deux bouts de chaque pont, une colonne
+  n'avait ni bloc ni tablier pour le contrôle : 12 traversées sur 52 arrêtées
+  par une eau qu'on ne voit pas. `tablierDeColonne` lit le coin, puis le
+  centre. C'est la v414 (« une tolérance se juge sur la colonne ») du côté du
+  contact : toute question « y a-t-il un plancher sur CETTE colonne ? » se
+  pose là où le générateur l'a tranchée.
+- **ET LE CONTACT AUSSI — L'ARRÊT FAUTIF CACHAIT UNE CHUTE.** Retirer le faux
+  arrêt laissait la voiture entrer dans ces colonnes sans bloc ; quand le
+  point exact n'était pas encore sur le tablier, rien ne la portait et elle
+  finissait sous le pont (une traversée sur six au premier pont de l'A1, sur
+  la v419 comme sur la branche, `sonde-pont-tablier.cjs`). `accrocherAuSol`
+  et `verticaleVoiture` lisent `tablierSousLePoint` (le point, puis la colonne
+  qui le contient). Une intermittence de navigateur ne tranchait pas (un
+  tirage à la première traversée d'un banc) : la preuve est STRUCTURELLE,
+  la chaussée de tous les ponts balayée au quart de bloc sous node — 6 713
+  points sans appui avant, zéro après (`trousAuxCulees`). **Quand on retire
+  un garde-fou faux, on demande ce qu'il empêchait par accident.**
+- **UNE RÈGLE DE CONTACT QU'UNE SONDE DOIT REJOUER VIT DANS LE MONDE.**
+  `eauSousLaVoiture` (world.js) est la règle de `main.js`, sortie pour que
+  `sonde-ponts-eau.cjs` (le vrai joueur sous node, chaque pont, deux sens,
+  trois secondes) la lise telle quelle ; `plafond.js` l'appelle. Une copie de
+  sonde finit par diverger du jeu (v400). Et l'avance d'une voiture le long
+  d'une route se lit à l'ABSCISSE (`projeter`), jamais en projetant sur le
+  cap de départ : une route qui tourne fait plafonner la projection, et la
+  sonde déclarait « bloquées » quatre voitures qui roulaient.
+- **LE JOURNAL DE BORD A DIT OÙ, PAS QUAND.** La session de l'iPhone montrait
+  l'enfant à pied dans Paris ; la panne était ailleurs. Quand le journal ne
+  porte pas la capture, on balaie TOUTES les routes sous node à la recherche
+  de la situation (dix-huit secondes), au lieu de deviner un endroit.
+
 ## Toutes les voies occupées (v423) — la seconde voie est la même ligne, décalée
 
 Max, une capture de GTA VI à côté d'une de GTA V : « Good inspiration » — des

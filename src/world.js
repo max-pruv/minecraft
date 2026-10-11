@@ -3008,6 +3008,56 @@ export class World {
     const r = routeEn(x, z);
     return r && r.ouvrage ? r.cote : null;
   }
+  // LE TABLIER D'UNE COLONNE ENTIÈRE (v430), pour qui demande « y a-t-il un
+  // plancher sur cette colonne ? ». Le générateur décide « pont » au COIN de
+  // la colonne (`routeEn(wx, wz)`) et n'y écrit alors aucun bloc ; le contrôle
+  // de l'eau de la voiture lisait le CENTRE. Aux deux bouts de chaque pont, une
+  // colonne était « pont » pour le générateur et « chaussée » pour le contrôle :
+  // ni bloc ni tablier, de l'eau dessous, et la voiture refusait d'avancer —
+  // Max, capture d'iPhone, « Une voiture ne roule pas dans l'eau » sur une
+  // autoroute. Mesuré au vrai joueur sous node (sonde-ponts-eau.cjs) : douze
+  // traversées de pont sur cinquante-deux bloquées, zéro après. C'est la règle
+  // de la v414 (une tolérance se juge sur la colonne que le monde écrit) du
+  // côté du contact.
+  // ET LE CONTACT AUSSI (v430) : là où le générateur a décidé « pont » au coin
+  // d'une colonne, il n'y a écrit aucun bloc ; si le point exact n'est pas
+  // encore sur le tablier, la voiture tombait dans ce trou au bout du pont —
+  // mesuré, une traversée sur six sous le tablier du premier pont de l'A1
+  // (`sonde-pont-tablier.cjs`), l'arrêt « eau » d'avant l'empêchant d'y entrer.
+  // Le point exact d'abord, puis la colonne qui le contient.
+  tablierSousLePoint(x, z) {
+    const t = this.tablierEn(x, z);
+    return t !== null ? t : this.tablierEn(Math.floor(x), Math.floor(z));
+  }
+  tablierDeColonne(bx, bz) {
+    const c = this.tablierEn(bx, bz);
+    return c !== null ? c : this.tablierEn(bx + 0.5, bz + 0.5);
+  }
+  // DE L'EAU SOUS LE RECTANGLE D'UNE VOITURE (v272, ici depuis la v430) : la
+  // règle de `main.js` (« une voiture ne roule pas dans l'eau »), sortie dans
+  // le monde pour que la sonde des ponts la lise telle quelle — une copie de
+  // sonde finit par diverger du jeu (v400). Rectangle centré en (x, z), cap
+  // `cap` (avance en (sin cap, cos cap)), voiture à la cote `y`. Une colonne
+  // qui a un PLANCHER sous les roues — un bloc, ou le tablier d'un pont — ne
+  // compte pas, quoi qu'il y ait plus bas ; sinon, de l'eau au-dessus de son
+  // sommet, c'est de l'eau. Le plancher est la PREMIÈRE question : sur une
+  // rue, on ne descend aucune colonne.
+  eauSousLaVoiture(x, z, cap, y, demiLarg, demiLong = 2.2) {
+    const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux;
+    const y0 = Math.floor(y + 0.1);
+    for (let a = -demiLong; a <= demiLong + 1e-6; a += 1.1)
+      for (let b = -demiLarg; b <= demiLarg + 1e-6; b += demiLarg) {
+        const bx = Math.floor(x + ux * a + vx * b), bz = Math.floor(z + uz * a + vz * b);
+        if (this.isSolid(bx, y0 - 1, bz) || this.isSolid(bx, y0, bz)) continue;   // un plancher : on roule
+        // LE TABLIER D'UN PONT EST UN PLANCHER QUI N'EST PAS UN BLOC (v300),
+        // lu sur la colonne que le générateur a décidée (v430).
+        const tab = this.tablierDeColonne(bx, bz);
+        if (tab !== null && Math.abs(tab - y) < 1.5) continue;
+        const sol = this.sommetColonne(bx, bz);
+        if (this.getBlock(bx, sol + 1, bz) === BLOCK.WATER) return true;
+      }
+    return false;
+  }
   // LA COTE QUE LE PAYSAGE LOINTAIN DESSINE (v300) : le relief, sauf sous une
   // route, où c'est le sommet de la chaussée ou du talus. `horizon.js` lisait
   // `terrainHeight` au-dessus d'un DÉBLAI et refermait la tranchée d'une dalle
@@ -4360,7 +4410,7 @@ export class World {
     // est à portée du contact PRÉCÉDENT — sur le tablier on y reste, dessous
     // on y reste — jamais la plus haute d'office, qui téléporterait sous un
     // pont (cahier de Max, « contrat physique »).
-    const tab = this.tablierEn(pos.x, pos.z);
+    const tab = this.tablierSousLePoint(pos.x, pos.z);
     if (tab !== null && pos.y >= tab - 0.6 && pos.y < tab + ACCROCHE_SOL + pasH) {
       if (pos.y < tab + eps) { pos.y = tab + eps; if (vel.y < 0) vel.y = 0; return { s: tab, auSol: vel.y <= 0 }; }
       if (!vole && etaitAuSol && vel.y <= 0) { pos.y = tab + eps; vel.y = 0; return { s: tab, auSol: true }; }
