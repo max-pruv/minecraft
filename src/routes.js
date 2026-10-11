@@ -537,7 +537,7 @@ export const ROUTES = [
   // de la marge de tout aérodrome.
   { nom: 'US-101', villes: ['sf', 'losangeles'], bord: { losangeles: 40 },
     via: [[-38854, 6976], [-38849, 6984], [-38842, 6990], [-38822, 6997], [-38816, 6997], [-38810, 6995], [-38765, 6965], [-38756, 6962], [-38755, 6962], [-38740, 6967], [-38710, 6990], [-38661, 7049], [-38413, 7538], [-38238, 7835], [-38113, 8148], [-37752, 8793], [-37723, 8824], [-37516, 8962], [-37463, 8980]] },
-  // L'A1 CENTRE (v438), FLORENCE–ROME, le maillon qui manquait à l'autoroute
+  // L'A1 CENTRE (v445), FLORENCE–ROME, le maillon qui manquait à l'autoroute
   // du Soleil : Milan, Bologne et Florence d'un côté (A1 Nord, Autosole), Rome
   // et Naples de l'autre (A1 Sud). Le relevé de la v310 disait « un aérodrome
   // sur l'axe » ; il y a aussi la Frecciarossa, qui va de gare à gare le long

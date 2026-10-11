@@ -1259,7 +1259,7 @@ const VRAIES_KM = [
         surRail: a1.surRail && a1.surRail['US-101'], frole: a1.frole && a1.frole['US-101'], sf: a1.entreesSF, erreur: a1.entreesSFErreur,
         losangeles: (a1.entreesEngendrees || []).filter((e) => e.route === 'US-101') }));
 
-    // L'A1 CENTRE (v438) : Florence–Rome, le maillon qui manquait entre l'A1
+    // L'A1 CENTRE (v445) : Florence–Rome, le maillon qui manquait entre l'A1
     // Nord et l'Autosole d'un côté, l'A1 Sud de l'autre. À l'est de la
     // Frecciarossa d'un bout à l'autre, à l'est de l'aérodrome au nord de Rome ;
     // Florence par l'est, Rome par le nord-est. Sur l'ancien code, la route
@@ -3677,7 +3677,7 @@ const VRAIES_KM = [
           : 'aucune jumelle sur l\'A1');
     }
 
-    // --- LA RUE DENSE, PALIER C (v438) ---------------------------------------
+    // --- LA RUE DENSE, PALIER C (v445) ---------------------------------------
     //
     // Trois choses, trois témoins, et chacun mesure la même grandeur sur
     // l'ancien code (qui rend « absent » sans s'effondrer).

@@ -20,6 +20,31 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v445 — L'autoroute de Florence à Rome
+
+**Pourquoi.** L'autoroute du Soleil avait un trou au milieu : Milan, Bologne et
+Florence d'un côté, Rome et Naples de l'autre, et rien entre Florence et Rome.
+Le relevé de la v310 l'avait écartée (« un aérodrome sur l'axe »), puis la
+v323 « non faite à dessein » : Fiumicino ferme l'entrée nord de Rome.
+
+**Ce que ça change.** L'A1 Centre relie Florence à Rome, 1 158 blocs, à l'est
+de la Frecciarossa d'un bout à l'autre, où le pays est bas. Elle sort de
+Florence par l'est et entre dans Rome par le nord-est, à l'est de l'aérodrome,
+deux ponts en route. Des voitures y roulent, et l'on peut aller en voiture de
+Milan à Naples.
+
+**Ce qui le prouve.** Un témoin neuf de `carteMonde.js` : un convoi routier
+d'au moins dix modèles, plus de cent colonnes le long de la Frecciarossa et
+aucune dessus, aucune autre route frôlée, et les deux entrées de ville sur la
+rue, sans eau ni bloc à hauteur de carrosserie. Rouge sur `origin/main` (la
+route n'existe pas). Sous node, sur le registre réel : déblai 5,3 et remblai
+2,9 (barres 9 et 4), coudes sous 21°, joints des deux ponts fermés, l'axe à
+soixante et un blocs de la marge de l'aérodrome. Les témoins communs à toutes
+les routes (talus, emprise partagée, ponts de villes, joints) la lisent aussi.
+L'empreinte des 490 morceaux ne change pas (`ROUTES_RELEVEES`).
+
+---
+
 ## v444 — Les ponts de l'Anacostia
 
 **Pourquoi.** L'I-95 Sud entre dans Washington par le quartier au sud de

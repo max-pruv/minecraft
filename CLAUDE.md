@@ -3797,6 +3797,20 @@ Une règle.
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
 
+## L'A1 Centre (v445) — un corridor « non fait à dessein » se rouvre par une fenêtre que le premier relevé n'avait pas lue
+
+Une règle.
+
+- **UN REFUS DE CORRIDOR SE RELIT AVEC LES OUTILS D'AUJOURD'HUI.** Florence–Rome
+  était déclarée « NON FAITE à dessein » depuis la v323 : Fiumicino occupe la
+  seule entrée nord propre de Rome (−100°), 79 819 tracés refusés. Le relevé des
+  entrées angle par angle au demi-degré (`entrees.mjs`, v439) a trouvé une
+  fenêtre d'un degré et demi à −76°, entre deux îlots, à l'est de l'aérodrome ;
+  et la règle de la v320 (un rail le long de l'axe choisit le côté) a donné le
+  reste : la Frecciarossa et ses collines à l'ouest, le pays bas à l'est. Avant
+  de demander à Max de déplacer un aérodrome, on relit le refus avec les sondes
+  qu'on a écrites depuis.
+
 ## Les ponts de l'Anacostia (v444) — un pont de ville est du sol, et la cote du tablier se dit à tous ses lecteurs
 
 Deux règles.
