@@ -64,9 +64,12 @@ async function mesurerTraces() {
   // 1. EN LIGNE DROITE, LES PNEUS TIENNENT
   P.gaz = 1;
   const d0 = P.pos.x;
+  // `poses` compte depuis l'ouverture de la page : un témoin d'avant a pu en
+  // poser (au portail, 54 avant la ligne droite) — on compte à partir d'ici
+  const posesDepart = etat().poses;
   const tl = performance.now();
   while (P.pos.x < x0 + 30 && performance.now() - tl < 20000) await tenir(0.1);
-  const droit = { posees: etat().poses, parcouru: +(P.pos.x - d0).toFixed(1), v: +(P.vitesseVoiture || 0).toFixed(1) };
+  const droit = { posees: etat().poses - posesDepart, parcouru: +(P.pos.x - d0).toFixed(1), v: +(P.vitesseVoiture || 0).toFixed(1) };
 
   // 2. UNE DÉRIVE TENUE : la physique la RÉÉCRIT à chaque image (v401), on la
   // fige par une propriété qui ignore ce qu'on lui écrit
