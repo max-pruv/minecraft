@@ -3513,7 +3513,8 @@
   - [x] les Champs-Élysées à `dx = −4,3 km` (dette ci-dessous) : MESURÉ en v433,
     l'axe de l'avenue rend 103 colonnes de pavé et 8 de trottoir sur 111, et
     l'adresse de la dette du pavé — rendu par Paris doublé (v306).
-  - [~] une chaise de terrasse HD n'arrête ni un passant ni une voiture —
+  - [x] **FAIT EN v434** (la voiture : `mobilierDevant` lit `world.mobilierVu`).
+    Historique : une chaise de terrasse HD n'arrête ni un passant ni une voiture —
     LES PASSANTS ET L'ENFANT À PIED : fait en v425 (`mobilierTrottoir`,
     `world.obstaclePieton`, seulement le mobilier montré). Reste : la VOITURE
     (`mobilierDevant`, main.js, hors zone piétons) — elle lit `isProp` ; la

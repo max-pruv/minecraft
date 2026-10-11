@@ -992,6 +992,104 @@ function verifier(nom, ok, detail = '') {
     verifier('un passant lancé sur un banc ou une colonne du trottoir s\'arrête devant au lieu de passer au travers',
       !terr.err && terr.meubles.length >= 2 && terr.dedans.every((n) => n === 0) && terr.avance.filter((a) => a > 0.15).length >= terr.meubles.length - 1,
       JSON.stringify(terr));
+    // ── ET UNE TERRASSE ARRÊTE LA VOITURE DE L'ENFANT (v434) ────────────────
+    //
+    // La seconde moitié de la dette de la v288 : la table et les chaises d'un
+    // café n'étaient pas des blocs, et la voiture (`mobilierDevant`, main.js)
+    // ne lisait que les blocs de mobilier. On cherche une terrasse MONTRÉE
+    // devant laquelle le trottoir file droit le long de la façade, dégagé sur
+    // neuf blocs (rien de solide, aucun autre meuble montré), on prend le
+    // volant huit blocs avant elle, cap sur elle, et l'on roule jusqu'à l'arrêt.
+    // Ce qu'on mesure : la voiture n'est jamais entrée dans la colonne de la
+    // terrasse, et elle a roulé avant de s'arrêter. Sur l'ancien code, elle la
+    // traverse.
+    const auVolant = await tab.evaluate(async () => {
+      const g = window.__game, w = g.world;
+      const F = await import('./src/facadeshd.js');
+      const { CITY_BLOCK, BLOCK, isProp } = await import('./src/blocks.js');
+      const dodo = (ms) => new Promise((r) => setTimeout(r, ms));
+      const pcx = Math.floor(g.player.pos.x / 16), pcz = Math.floor(g.player.pos.z / 16);
+      const vu = w.mobilierVu || (() => false);
+      let site = null, vues = 0;
+      for (let dx = -g.RAYON_HD; dx <= g.RAYON_HD && !site; dx++) for (let dz = -g.RAYON_HD; dz <= g.RAYON_HD && !site; dz++) {
+        const e = g.chunkMeshes.get((pcx + dx) + ',' + (pcz + dz));
+        if (!e || !e.facades || !e.facades.visible) continue;
+        for (let lx = 0; lx < 16 && !site; lx++) for (let lz = 0; lz < 16 && !site; lz++) {
+          const bx = (pcx + dx) * 16 + lx, bz = (pcz + dz) * 16 + lz, by = w.sommetColonne(bx, bz);
+          if (w.getBlock(bx, by, bz) !== CITY_BLOCK.SIDEWALK) continue;
+          const m = F.mobilierTrottoir((a, b, c) => w.getBlock(bx + a, by + b, bz + c), bx, bz);
+          if (!m || m.genre !== 'terrasse') continue;
+          vues++;
+          const [vx, vz] = m.vers;
+          for (const [lx2, lz2] of [[-vz, vx], [vz, -vx]]) {
+            // le couloir : k de 1 à 9 en arrière de la terrasse, trois rangées
+            // (la colonne de la terrasse, ses deux voisines côté rue), à la cote
+            let ok = true;
+            for (let k = 1; k <= 9 && ok; k++) for (let r = 0; r <= 2 && ok; r++) {
+              const x = bx + lx2 * k - vx * r, z = bz + lz2 * k - vz * r;
+              if (Math.abs(w.sommetColonne(x, z) - by) > 0) ok = false;
+              else if (w.getBlock(x, by + 1, z) !== BLOCK.AIR || w.getBlock(x, by + 2, z) !== BLOCK.AIR) ok = false;
+              else if (vu(x + 0.5, z + 0.5, by + 1)) ok = false;
+            }
+            // et la façade continue de l'autre côté : la voiture ne s'y frotte pas
+            if (!ok) continue;
+            if (g.vehicules.placeProche({ x: bx + 0.5, y: by + 1, z: bz + 0.5 }, 14)) continue;
+            site = { bx, bz, by, vx, vz, lx: lx2, lz: lz2 };
+            break;
+          }
+        }
+      }
+      if (!site) return { err: `aucune terrasse montrée avec un couloir dégagé (${vues} vue(s))` };
+      // les passants à cent blocs, les bêtes retirées (v284, v371)
+      for (const s of g.passants.sites) for (const h of (s.peuple || [])) {
+        if (Math.hypot(h.pos.x - site.bx, h.pos.z - site.bz) > 40) continue;
+        h.traversee = null; h.ecart = null; h.placeAt(site.bx + 100, site.bz + 100, site.by + 1);
+      }
+      for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+      g.animalManager.animals.length = 0;
+      // le départ : huit blocs avant, la ligne à 1,2 bloc de la façade côté rue (demi-voiture 1,13)
+      const off = -0.7;
+      const ax = site.bx + 0.5 + site.vx * off + site.lx * 8, az = site.bz + 0.5 + site.vz * off + site.lz * 8;
+      const yaw = Math.atan2(site.lx, site.lz);   // le regard vers −lx, −lz : vers la terrasse
+      g.player.pos.set(ax, site.by + 1.01, az); g.player.vel.set(0, 0, 0);
+      g.player.yaw = yaw; g.player.pitch = 0; g.player.flying = false;
+      const fx = -Math.sin(yaw), fz = -Math.cos(yaw);
+      g.animalManager.invoquer('voiture', ax + fx * 2.5, az + fz * 2.5);
+      await dodo(1500);
+      if (!(g.fun.montureConduite && g.fun.montureConduite())) document.getElementById('ride-btn').click();
+      await dodo(800);
+      g.player.pos.set(ax, site.by + 1.01, az); g.player.yaw = yaw;
+      const monte = !!(g.fun.montureConduite && g.fun.montureConduite());
+      // l'abscisse le long du couloir, comptée depuis le centre de la terrasse
+      const abs = () => (g.player.pos.x - site.bx - 0.5) * site.lx + (g.player.pos.z - site.bz - 0.5) * site.lz;
+      const a0 = abs();
+      g.player.keys.add('KeyW');
+      // ON ROULE JUSQU'À L'ARRÊT (v252), jamais une durée fixe (v270)
+      // fini quand la voiture n'a plus progressé depuis cinq secondes : sur ce
+      // banc une page HD rend une image par seconde, et un arrêt d'une seconde
+      // n'est pas un arrêt
+      let plusPres = a0, progres = performance.now();
+      const t0 = performance.now();
+      while (performance.now() - t0 < 60000 && performance.now() - progres < 5000) {
+        await dodo(100);
+        const a = abs();
+        if (a < plusPres - 0.05) { plusPres = a; progres = performance.now(); }
+      }
+      // ce que le crochet répond un demi-bloc devant le capot, et qui il nomme
+      const cap = g.player.yaw + Math.PI;
+      const px = g.player.pos.x, pz = g.player.pos.z;
+      const devant = g.player.obstacleVehicule ? g.player.obstacleVehicule(px - site.lx * 0.5, pz - site.lz * 0.5, cap, px, pz) : 'absent';
+      g.player.keys.delete('KeyW');
+      const fin = abs();
+      if (g.fun.montureConduite && g.fun.montureConduite()) document.getElementById('ride-btn').click();
+      return { monte, depart: +a0.toFixed(2), plusPres: +plusPres.toFixed(2), fin: +fin.toFixed(2), parcouru: +(a0 - fin).toFixed(2), secondes: +((performance.now() - t0) / 1000).toFixed(1), site, devant, contact: g.player.contact || null };
+    });
+    // la voiture fait 4,4 blocs de long : son pare-chocs avant est à 2,2 du
+    // centre ; arrêtée devant la terrasse, le centre reste à plus de 2,2 de la
+    // colonne (dont le bord est à 0,5 du centre de la terrasse)
+    verifier('au volant, la voiture de l\'enfant s\'arrête devant une terrasse de café au lieu de la traverser',
+      !auVolant.err && auVolant.monte && auVolant.parcouru > 1.5 && auVolant.plusPres > 2.2,
+      JSON.stringify(auVolant));
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
     await tab.close();
 
