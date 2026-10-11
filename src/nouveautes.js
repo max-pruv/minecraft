@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 449,
+    titre: '✈️ va chercher la piste',
+    puces: [
+      '✈️ trouve la piste la plus proche',
+      'L\'avion s\'aligne et se pose seul',
+      'Un second ✈️ remet les gaz',
+    ],
+  },
+  {
     v: 448,
     titre: 'Des pistes assez longues',
     puces: [

@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { BLOCK, isSolid as blockIsSolid, isSlab } from './blocks.js';
 import { HEIGHT, WATER_LEVEL } from './world.js';
+import { pisteLaPlusProche, guiderApproche, aerodromeLePlusProche, angle as angleAp } from './approche.js';
 import { ficheDeVitesse, pasVoiture, reponseChoc, casesSousBoite, pointDImpact, DERIVE_MAX, boiteVoiture, chocContreVoiture, vitessePleine, normaleDeMur, sousLaCaisse, forceAtterrissage, DEBATTEMENT, RAPPEL, ENFONCE, vitesseDeSuivi, freinDeSuivi, PORTEE_SUIVI, SUIVI_DELTA } from './conduite.js';
 
 const WIDTH = 0.6;        // player AABB width (x and z)
@@ -191,13 +192,33 @@ export class Player {
     if (!this.pilote) return null;
     const etat = this.avionEtat || (this.avionEnVol ? 'vol' : 'sol');
     if (etat === 'vol' || (etat === 'decollage' && this.rotationFaite)) {
-      this.avionEtat = 'atterrissage';
-      return 'atterrissage';
+      // L'APPROCHE ASSISTÉE (aviation) : ✈️ va chercher la piste la plus
+      // proche ASSEZ LONGUE pour cet appareil, et l'avion s'y pose tout seul.
+      const choix = pisteLaPlusProche(this.pos.x, this.pos.z, this.yaw, undefined, this.pilote);
+      if (choix) {
+        this.approche = { piste: choix.piste, sens: choix.sens, seuil: choix.seuil, phase: 'ralliement' };
+        this.sansPiste = 0;
+        this.avionEtat = 'atterrissage';
+        return 'approche';
+      }
+      // AUCUNE PISTE À PORTÉE : le premier appui le DIT et montre la plus
+      // proche (cadran de cap) ; un second appui dans les six secondes se pose
+      // ICI, comme avant (v261) — la porte de sortie d'une règle imposée.
+      const maintenant = Date.now();
+      if (this.sansPiste && maintenant - this.sansPiste < 6000) {
+        this.sansPiste = 0; this.approche = null;
+        this.avionEtat = 'atterrissage';
+        return 'atterrissage';
+      }
+      this.sansPiste = maintenant;
+      this.aerodromeVise = aerodromeLePlusProche(this.pos.x, this.pos.z);
+      return 'pasDePiste';
     }
     if (etat === 'atterrissage') {
       // remise des gaz : on repart d'où l'on est, nez en l'air
       this.avionEtat = 'decollage'; this.rotationFaite = true; this.avionEnVol = true;
       this.altitudeDecollage = this.pos.y;
+      this.approche = null;
       return 'remise';
     }
     // au sol, ou encore en train de freiner : pleins gaz, le nez se lèvera
@@ -819,6 +840,21 @@ export class Player {
       // l'allure de roulage ; les deux trajets assistés (décollage,
       // atterrissage) la tiennent eux-mêmes — pleins gaz, puis l'approche —
       // et le cadran suit.
+      // L'APPROCHE ASSISTÉE se calcule AVANT la vitesse : elle la fixe.
+      let guide = null;
+      if (etat === 'atterrissage' && this.approche) {
+        guide = guiderApproche(this.approche, this.pos, this.yaw, this.vitesseAvion || 0, p,
+          (x, z) => this.world.sommetColonne(Math.floor(x), Math.floor(z)), { strafe, forward, dt });
+        this.guideApproche = guide;
+        if (this.approche.remise) {
+          this.approche.remise = false;
+          if (this.surAvion) this.surAvion('remiseLongue');
+        }
+        if (this.approche.change) {
+          this.approche.change = false;
+          if (this.surAvion) this.surAvion('changePiste');
+        }
+      } else this.guideApproche = null;
       let cible, accel = p.poussee;
       if (etat === 'sol') {
         // ET UN AVION SE REPOUSSE (v269). `Math.max(0, forward)` écrasait le
@@ -838,7 +874,7 @@ export class Player {
       } else if (etat === 'vol') {
         cible = this.gaz != null ? this.gaz * p.max : p.max;
       } else if (etat === 'atterrissage') {
-        cible = p.approche || Math.max(p.decrochage * 1.3, p.max * 0.5);
+        cible = guide ? guide.vitesse : (p.approche || Math.max(p.decrochage * 1.3, p.max * 0.5));
         if (this.gaz != null) this.gaz = cible / p.max;
       } else {
         cible = 0; accel = p.frein || p.poussee * 1.5;   // freinage
@@ -860,6 +896,11 @@ export class Player {
         const av = Math.abs(v);
         this.yaw -= strafe * VIRAGE_SOL * Math.min(1, av / 4) * Math.max(0.3, 1 - av / 80)
           * (v < 0 ? -1 : 1) * dt;
+      } else if (guide) {
+        // l'approche assistée tient le cap : elle vire au taux de la fiche
+        const e = angleAp(guide.capVise - this.yaw);
+        this.yaw += Math.sign(e) * Math.min(Math.abs(e), p.virage * dt);
+        this.virageGuide = Math.max(-1, Math.min(1, e / 0.4));
       } else {
         this.yaw -= strafe * p.virage * dt;
       }
@@ -868,7 +909,7 @@ export class Player {
       // Et la VIVACITÉ vient de la fiche — un chasseur s'incline sec, un
       // Concorde prend son temps — comme le reste de son caractère. Au sol,
       // les ailes restent à plat.
-      const cibleRoulis = auSol ? 0 : -strafe * ROULIS_MAX;
+      const cibleRoulis = auSol ? 0 : guide ? this.virageGuide * ROULIS_MAX * 0.7 : -strafe * ROULIS_MAX;
       const vif = Math.min(1, dt * 3 * (p.virage / 0.55));
       this.roulisAvion += (cibleRoulis - this.roulisAvion) * vif;
       this.vel.set(-Math.sin(this.yaw), 0, -Math.cos(this.yaw)).multiplyScalar(v);
@@ -926,7 +967,13 @@ export class Player {
         // REMISE DES GAZ : on ne force pas, on remonte et l'on va chercher
         // la terre. C'est le geste réel, et il n'a rien de violent — le jeu
         // dit à l'enfant quoi faire.
-        if (this.eauSousLAppareil()) {
+        if (guide) {
+          // Guidé : la hauteur suit le plan, et l'eau sous l'approche n'est
+          // pas une raison de remonter — la piste est au bout.
+          this.vel.y = guide.vy;
+          cibleAssiette = guide.phase === 'arrondi' ? ASSIETTE_ARRONDI : guide.phase === 'finale' ? ASSIETTE_APPROCHE
+            : Math.max(-ASSIETTE_MAX, Math.min(ASSIETTE_MAX, Math.atan2(guide.vy, Math.max(1, v)) * 1.4));
+        } else if (this.eauSousLAppareil()) {
           this.avionEtat = 'vol'; this.avionEnVol = true;
           if (this.gaz != null) this.gaz = 1;
           this.vel.y = Math.max(this.vel.y, MONTEE_DECOLLAGE * 0.6);
@@ -947,7 +994,7 @@ export class Player {
       // la piste ; rentré au-delà. Il rentre et sort en une seconde et demie.
       // En vol, c'est le bouton 🛞 qui décide (`trainVoulu`) : rentré par
       // défaut, sorti pour se poser soi-même.
-      const trainDehors = auSol || etat === 'atterrissage'
+      const trainDehors = auSol || (etat === 'atterrissage' && (!guide || guide.train))
         || (etat === 'decollage' && this.pos.y - this.altitudeDecollage < RENTRER_TRAIN_A)
         || (etat === 'vol' && this.trainVoulu === true);
       this.trainSorti = Math.max(0, Math.min(1,
@@ -977,6 +1024,7 @@ export class Player {
         // freine deux fois plus fort, et on le dit.
         this.ventre = this.trainSorti < 0.5;
         this.avionEtat = 'freinage'; this.avionEnVol = false;
+        this.approche = null; this.guideApproche = null;
         if (this.surAvion) this.surAvion(this.ventre ? 'ventre' : 'touche');
       } else if (etat === 'freinage' && this.vitesseAvion < 0.5) {
         this.avionEtat = 'sol'; this.vitesseAvion = 0; this.ventre = false; this.trainVoulu = undefined;

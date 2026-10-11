@@ -267,7 +267,7 @@ export function initFun(ctx) {
       // On rend la marche en descendant : sans cela l'enfant garderait la
       // physique de vol à pied. Même règle que le gabarit de la voiture, qui
       // se rend aussi en descendant (v212).
-      player.pilote = null;
+      player.pilote = null; player.approche = null;
       player.vitesseAvion = undefined;
       player.avionEnVol = false;
       player.roulisAvion = 0;
@@ -1068,7 +1068,7 @@ export function initFun(ctx) {
       // Sans cela il gardait à pied la boîte d'une voiture (v245).
       const quitte = riding;
       riding = null; quitte.montee = false;
-      player.boost = undefined; player.pilote = null;
+      player.boost = undefined; player.pilote = null; player.approche = null;
       player.vitesseAvion = undefined; player.avionEnVol = false; player.roulisAvion = 0;
       player.avionEtat = undefined; player.assietteAvion = 0; player.trainSorti = 1;
       player.gaz = null; player.vitesseVoiture = 0; player.trainVoulu = undefined; player.ventre = false;

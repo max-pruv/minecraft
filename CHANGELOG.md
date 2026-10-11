@@ -20,6 +20,37 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v449 — ✈️ va chercher la piste
+
+**Pourquoi.** Max : « améliore la séquence d'atterrissage parce que l'avion
+est compliqué à gérer ». En vol, ✈️ « Se poser » posait l'appareil LÀ OÙ IL
+ÉTAIT : dans un champ, sur une colline, en ville. Rejoindre une piste
+demandait de la trouver soi-même, de s'aligner à la main sur une bande de huit
+blocs vue de cent blocs de haut, et de descendre au bon moment — trois gestes
+qu'un enfant de sept ans ne fait pas.
+
+**Ce que ça change.** En vol, ✈️ choisit la piste la plus proche (dans un
+rayon de 2 600 blocs, assez longue pour cet appareil), s'en éloigne pour
+revenir dans l'axe, descend sur un plan régulier, sort le train, arrondit, se
+pose et freine jusqu'à l'arrêt. Le cadran de cap affiche la piste visée et sa
+distance. Le joystick corrige à tout moment ; un second appui sur ✈️ pendant
+l'approche remet les gaz et repart. S'il n'y a aucune piste à portée, le jeu
+le dit, montre la direction de l'aéroport le plus proche, et un second appui
+se pose sur place comme avant. Si l'approche est manquée (trop long, trop de
+travers), l'avion remet les gaz tout seul et refait un tour ; au deuxième
+tour raté, il change de piste.
+
+**Ce qui le prouve.** Une sonde sous node (`tests/sonde-approche.cjs`)
+rejoue l'approche assistée sur les trente et une pistes, avec les trois
+appareils et quatre points de départ : 148 approches, toutes arrêtées avant
+le bout de la piste, aucune remise des gaz ; trois touchent un peu fort (six à
+sept blocs par seconde) et le Concorde à Los Angeles touche au seuil même, un
+demi-bloc trop tôt — déclaré dans `TASKS.md` ; un témoin de `monte.js` fait poser par
+✈️ un chasseur et un avion de ligne sur deux pistes depuis un départ de
+travers, et exige le toucher et l'arrêt sur la bande.
+
+---
+
 ## v448 — Des pistes assez longues pour se poser
 
 **Pourquoi.** Max : « les pistes de tous les aéroports sont beaucoup trop

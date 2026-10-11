@@ -194,6 +194,7 @@ const GARDIENS = {
   'src/cadence.js': ['monte.js', 'maj.js', 'carte.js', 'parent.js', 'reglages.js'],
   // Le cadran de cap lit le registre et s'affiche aux commandes : la monte le garde.
   'src/cap.js': ['monte.js', 'carte.js'],
+  'src/approche.js': ['monte.js', 'carteMonde.js'],
   'src/gps.js': ['carte.js'],
   'src/fun.js': ['monte.js', 'carte.js', 'reglages.js', 'reseau.js', 'degats.js'],
   // LES DÉGÂTS DE LA VOITURE (v343) : la règle pure et ce qui se voit.
