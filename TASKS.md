@@ -288,6 +288,19 @@
   Portail : le témoin vert ; rouges déclarés `maj.js` (loader ×2) et
   `manhattan.js` (trou, taxi) — mêmes rouges seuls sur `origin/main` v406,
   mesurés le même jour (portail de la v410).
+- [ ] **LE PORTAIL DE LA v442 (les ponts de l'Anacostia), DOUBLE MESURE
+  FAITE.** Neuf suites ; `carteMonde.js` (le témoin neuf), `plafond.js`,
+  `washington.js`, `carte.js`, `parishd.js`, `metro.js` vertes. Rouges, tous
+  déjà déclarés : `maj.js` le loader qui compte ses fichiers ; `manhattan.js`
+  le trou de façade (22 326 → 51 734) et le taxi tactile ; `monte.js` le
+  passant au feu (3 au rouge sur 4, barre 3,2), « freine au feu » (3 arrêts
+  secs sur 6), la chauffe de New York (163/323), le réverbère. REJOUÉES SEULES,
+  branche fusionnée v441 et `origin/main` v441 : `maj.js` branche VERTE,
+  `origin/main` rouge (le loader, encore) ; `manhattan.js` le taxi rouge des
+  deux côtés (7,85 et 6,49 blocs en 200 s), la façade verte des deux côtés ;
+  `monte.js` branche VERTE entière, `origin/main` rouge sur « freine au feu »
+  et « un train s'arrête devant la voiture de l'enfant ». La livraison ne
+  touche ni le loader, ni Manhattan, ni la circulation, ni les piétons.
 - [ ] **LE PORTAIL DE LA v410 (le passager sans courtier), DOUBLE MESURE
   FAITE.** Dix suites ; `reseau.js` VERTE entière (le témoin neuf : assise en
   510 ms). Rouges, tous déjà déclarés : `maj.js` (loader, libération, palier
