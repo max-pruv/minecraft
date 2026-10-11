@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 431,
+    titre: 'Le dérapage laisse des traces',
+    puces: [
+      'Des traces de pneus quand on glisse',
+      'Elles s\'effacent toutes seules',
+    ],
+  },
+  {
     v: 430,
     titre: 'On passe tous les ponts',
     puces: [
