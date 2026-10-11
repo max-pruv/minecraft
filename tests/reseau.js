@@ -1458,8 +1458,13 @@ function verifier(nom, ok, detail = '') {
     // soixante secondes au plus, et ce qu'on a vu entre dans le message.
     const tJoin = Date.now();
     const entree = await jusqua(async () => inviteSain.evaluate(() => {
+      // `net.active` vaut vrai PENDANT la tentative (mesuré : 1,2 s, statut
+      // « Ouverture du monde… ») ; cliquer là, c'était cliquer avant la fin
+      // d'`openWorld`. Le fait est le statut qui retombe : vide en cas de
+      // succès, « ❌ … » en cas d'échec.
       const n = window.__game.net, st = document.getElementById('online-status');
-      return !!(n && n.active) || /❌/.test(st ? st.textContent : '');
+      const t = st ? st.textContent : '';
+      return !/Ouverture du monde/.test(t) && (!!(n && n.active) || /❌/.test(t));
     }), 60000);
     const vuJoin = await inviteSain.evaluate(() => ({
       actif: !!(window.__game.net && window.__game.net.active),
