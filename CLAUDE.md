@@ -770,6 +770,29 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les anneaux se cherchent ensemble (v433) — ce qu'aucun ordre ne règle se cherche sur l'état de tous
+
+Toronto, Dublin, Lima : l'anneau d'arrivée sur la place, chaque contour trouvé
+seul suivait un voisin immobile. Trois règles.
+
+- **QUAND AUCUN ORDRE NE CHANGE LE RÉSULTAT, LA RECHERCHE EST SUR LE MAUVAIS
+  ESPACE.** Les vingt-quatre ordres de Tokyo rendaient les mêmes 56 pas :
+  essayer des ordres ne déplace que le moment où un voisin se fige.
+  `contournerEnsemble` (villesmonde.js) cherche sur l'état de TOUS les anneaux
+  à la fois (un îlot d'un anneau par pas, ou son sens s'il n'a pas de jumeau),
+  note = segments fautifs, puis partage au-delà de la barre, puis îlots changés.
+  Elle part de la configuration de la phase 4 et ne tourne que s'il reste des
+  pas : 259 villes identiques au bit près, tabliers compris (comparé).
+- **LA COUVERTURE SE GARDE POINT PAR POINT SUR LA CONFIGURATION ENTIÈRE.**
+  Plusieurs anneaux bougent : « les points que seul cet anneau voyait » ne
+  veut plus rien dire. `vusDeVille` rend un octet par point, et un essai qui
+  laisse sans voiture un seul point vu avant est refusé.
+- **UNE ABSENCE DE SOLUTION SE MONTRE AVANT DE SE DÉCLARER.** Tokyo et Dubaï
+  restent : une carte des segments bloqués (place, monuments, ET eau sans
+  tablier — ma première carte oubliait l'eau et laissait croire à un détour)
+  montre que le seul détour de l'anneau d'arrivée suit la voie d'un voisin
+  dans le même sens, et 6 000 essais (contre 80) ne trouvent rien.
+
 ## La place se contourne (v432) — une garde se mesure sur ce qu'elle protège, à la règle du témoin
 
 Vingt-deux villes avaient la voie de leur anneau d'arrivée sur la place. Quatre

@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 433,
+    titre: 'Les anneaux se partagent la place',
+    puces: [
+      'Toronto, Dublin et Lima sans faute',
+      'Les voitures tournent autour du centre',
+    ],
+  },
+  {
     v: 432,
     titre: 'Les voitures contournent la place',
     puces: [

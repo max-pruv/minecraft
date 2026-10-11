@@ -928,7 +928,16 @@
   200 blocs, donc hors de la livraison par construction (elle ne change que le
   sol de Las Vegas et des contours d'anneaux).
 - [ ] **LES ANNEAUX D'AVANT ROULENT PARFOIS HORS DE LA CHAUSSÉE (mesuré v387,
-  repris v404, v418, v432).** v432 : 1 228 → 840 pas, 75 → 61 anneaux, 22 → 9
+  repris v404, v418, v432, v433).** v433 (recherche conjointe) : 840 → 772
+  pas, 61 → 58 anneaux, 9 → 6 villes sur le centre — Toronto 31 → 0, Dublin
+  22 → 3, Lima 20 → 2. Tokyo (56) et Dubaï (32) : AUCUNE configuration sous les
+  trois promesses, mesuré (6 000 essais, sens retournables) — à Tokyo l'eau sans
+  tablier à l'est du centre (P 1..2) et un obstacle à l'ouest du nœud central
+  ferment tout détour qui ne suive pas l'anneau voisin ; à Dubaï l'anneau
+  d'arrivée (8 îlots) ne peut contourner que par Q = −1, la rue sud de l'anneau
+  qui l'entoure, dans le même sens, et au sud c'est l'eau. Le remède serait de
+  SOL (une rue au-delà de l'eau) ou de sélection (changer QUELS anneaux la ville
+  reçoit) : décision. v432 : 1 228 → 840 pas, 75 → 61 anneaux, 22 → 9
   villes dont une voie passe sur le centre (la vue sur la voie, la couverture à
   la règle du témoin, plusieurs ordres, une rangée d'un coup ; quatorze villes
   changent, aucune ne perd de couverture). Reste, mesuré par
