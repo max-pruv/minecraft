@@ -1487,6 +1487,7 @@ function updateChunks() {
       if (estUnSaut({ cx: ax, cz: az }, { cx: pcx, cz: pcz }, RENDER_RADIUS)) {
         arriveeJusqua = performance.now() + FENETRE_ARRIVEE_MS;
         world.arriveeJusqua = performance.now() + ATTENTE_ARRIVEE_MS;   // v422
+        world.arriveeLieu = { x: player.pos.x, z: player.pos.z, r: (RENDER_RADIUS + 1) * CHUNK };
       }
     }
     lastPlayerChunk = chunkKey;
@@ -8110,6 +8111,14 @@ function frame(now) {
     for (const npc of npcs) {
       const distance = npc.pos.distanceTo(player.pos);
       if (!actualiserPresence(npc, distance, dt, !npc.sommeilForce)) continue;
+      // ET ON N'ANIME PAS CE QUI S'EFFACE À L'AUTRE BOUT DU MONDE (v422). Après
+      // une téléportation, la présence fond en 0,8 s les personnages laissés
+      // derrière — le village, le château —, et ils marchaient encore pendant
+      // ce temps : leur `sweep` refabriquait sur le fil principal les morceaux
+      // qu'on venait d'oublier (douze à vingt et un dans la première seconde).
+      // Au-delà de la portée où l'on anime (cent quarante blocs), on s'efface
+      // sur place.
+      if (distance > 140) continue;
       npc.__tempsAnimation = (npc.__tempsAnimation || 0) + dt;
       if(distance < 35 || npc.__tempsAnimation >= (distance < 80 ? .066 : .1)){
         npc.update(npc.__tempsAnimation); npc.__tempsAnimation = 0;

@@ -2611,6 +2611,13 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       }
       if (!ancre) return { err: 'aucun carré plat' };
       const majPlayer = g.player.update, sauve = g.player.pos.clone(), gab0 = g.player.gabarit, pousse0 = g.player.pousse;
+      // LE TÉMOIN SE PLACE, ET ATTEND QUE LE MONDE SOIT LÀ (v422) : la voiture
+      // l'emmène au couloir d'un saut, et pendant la fenêtre d'une arrivée un
+      // personnage n'engendre pas un morceau que le worker va rendre — il
+      // attend, immobile. On attend donc le monde autour du couloir, borné.
+      g.player.pos.set(ancre.x, ancre.y + 2, ancre.z); g.player.vel.set(0, 0, 0);
+      for (const t = performance.now(); performance.now() - t < 10000
+        && g.world.morceauxPrets && !g.world.morceauxPrets(ancre.x - 12, ancre.z - 12, ancre.x + 12, ancre.z + 12);) await new Promise((f) => setTimeout(f, 100));
       g.player.update = () => {};
       const dormir = (ms) => new Promise((f) => setTimeout(f, ms));
       const image = () => new Promise((f) => requestAnimationFrame(f));
@@ -2680,6 +2687,13 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       }
       if (!ancre) return { err: 'aucun carré plat' };
       const majPlayer = g.player.update, sauve = g.player.pos.clone(), gab0 = g.player.gabarit, pousse0 = g.player.pousse;
+      // LE TÉMOIN SE PLACE, ET ATTEND QUE LE MONDE SOIT LÀ (v422) : la voiture
+      // l'emmène au couloir d'un saut, et pendant la fenêtre d'une arrivée un
+      // personnage n'engendre pas un morceau que le worker va rendre — il
+      // attend, immobile. On attend donc le monde autour du couloir, borné.
+      g.player.pos.set(ancre.x, ancre.y + 2, ancre.z); g.player.vel.set(0, 0, 0);
+      for (const t = performance.now(); performance.now() - t < 10000
+        && g.world.morceauxPrets && !g.world.morceauxPrets(ancre.x - 12, ancre.z - 12, ancre.x + 12, ancre.z + 12);) await new Promise((f) => setTimeout(f, 100));
       g.player.update = () => {};
       const image = () => new Promise((f) => requestAnimationFrame(f));
       const h = new Habitant(g.scene, g.world, g.player, () => {}, {

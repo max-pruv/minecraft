@@ -201,7 +201,7 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
       // 57 ms, dans la première seconde (`sonde-arrivee-engendre.cjs`). Un
       // point sur un morceau absent n'est ni une rue ni un repli ; s'il n'en
       // reste aucun, la naissance attend l'image suivante.
-      if (world.morceauxPrets && world.arriveeEnCours() && !world.morceauxPrets(bx, bz)) continue;
+      if (world.morceauxPrets && world.arriveeEnCours(bx, bz) && !world.morceauxPrets(bx, bz)) continue;
       // `sommetColonne` rend le y DU bloc de surface, pas de l'espace au-dessus.
       // Lu un cran trop bas, on interrogeait la terre sous la chaussée : aucun
       // passant ne trouvait jamais de rue, et tous retombaient sur le repli.

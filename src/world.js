@@ -4129,8 +4129,13 @@ export class World {
   // Coordonnées de BLOC ; la boîte va de (x0, z0) à (x1, z1) inclus.
   // La fenêtre d'une arrivée (posée par main.js après un saut) : c'est là, et
   // là seulement, qu'on attend le worker plutôt que de fabriquer.
-  arriveeEnCours() {
-    return !!this.arriveeJusqua && (typeof performance !== 'undefined' ? performance.now() : Date.now()) < this.arriveeJusqua;
+  // Avec un point, seulement à portée du lieu d'arrivée (`arriveeLieu`, le
+  // disque que le worker est en train de rendre) : un personnage ailleurs
+  // n'a rien à attendre de cette arrivée-là.
+  arriveeEnCours(x, z) {
+    if (!this.arriveeJusqua || (typeof performance !== 'undefined' ? performance.now() : Date.now()) >= this.arriveeJusqua) return false;
+    const L = this.arriveeLieu;
+    return x === undefined || !L || Math.max(Math.abs(x - L.x), Math.abs(z - L.z)) <= L.r;
   }
 
   morceauxPrets(x0, z0, x1 = x0, z1 = z0) {
