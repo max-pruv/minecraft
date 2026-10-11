@@ -422,6 +422,30 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
 
   verifier('le ciel est monté', HEIGHT >= 160, `${HEIGHT} blocs`);
 
+  // --- UNE VOITURE TRAVERSE CHAQUE PONT D'AUTOROUTE (v430) -------------------
+  // Max, capture d'iPhone : « Une voiture ne roule pas dans l'eau — fais
+  // demi-tour » sur une autoroute, pas une goutte en vue. Le générateur
+  // décide « pont » au coin d'une colonne, le contrôle de l'eau lisait le
+  // tablier au centre : aux bouts des ponts, une colonne sans bloc ni tablier.
+  // Le VRAI joueur traverse chaque pont de chaque route, dans les deux sens,
+  // le crochet branché sur la règle du monde (`sonde-ponts-eau.cjs`, qu'on
+  // rejoue seule en trois secondes). Sur la v416 : 12 traversées sur 52
+  // arrêtées par l'eau.
+  {
+    const { traverserLesPonts, trousAuxCulees } = require('./sonde-ponts-eau.cjs');
+    const o = await traverserLesPonts(require('path').resolve(__dirname, '../src')).catch((e) => ({ erreur: String(e) }));
+    verifier('une voiture traverse chaque pont d\'autoroute, dans les deux sens, sans que l\'eau l\'arrête',
+      !o.erreur && o.traversees >= 40 && o.arreteesParLEau.length === 0 && o.tombees.length === 0 && o.passees === o.traversees,
+      o.erreur || JSON.stringify({ regle: o.regle, traversees: o.traversees, passees: o.passees, eau: o.arreteesParLEau.slice(0, 4), autres: o.autres.slice(0, 4), tombees: o.tombees.slice(0, 4) }));
+    // Et le contact (v430) : une colonne que le générateur a décidée « pont »
+    // n'a aucun bloc ; un point de sa chaussée que ni le tablier, ni un bloc,
+    // ni le sol continu ne porte est un trou où la voiture tombait — 6 713
+    // points sur 101 380 sur la v419, la chute vue au navigateur parmi eux.
+    const t = await trousAuxCulees(require('path').resolve(__dirname, '../src')).catch((e) => ({ erreur: String(e) }));
+    verifier('au bout de chaque pont d\'autoroute, toute la chaussée porte la voiture',
+      !t.erreur && t.points > 50000 && t.trous === 0, t.erreur || JSON.stringify(t));
+  }
+
   // --- LE MODÈLE DE CONDUITE, PUR (v358) -------------------------------------
   // `conduite.js` est lu sous node : ce que la voiture FAIT d'une commande et
   // d'un choc se vérifie ici en millisecondes, sans navigateur. Sur l'ancien
@@ -562,6 +586,22 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         essais.every((e) => e.contact && e.glisse > 40 && e.v > 15 && e.immobile === 0),
         JSON.stringify(essais));
     }
+  }
+  // --- LA FORCE DES CHOCS SUIT LA VITESSE (v424) ---------------------------
+  // La force publiée saturait à 1 dès 20 blocs/s normaux (`CHOC_PLEIN`) quand
+  // une voiture roule à 30-55 : un mur à 10 blocs/s coûtait un tiers de mur
+  // plein, un frôlement à 15° pleins gaz jusqu'à 0,46 (hypercar). Le VRAI
+  // joueur, sous node (`sonde-force-chocs.cjs`), six classes : pleins gaz
+  // reste un mur plein (les neuf murs de degats.js ne bougent pas), le mur
+  // lent coûte moins d'un quart de mur, le frôlement moins d'un dixième.
+  // Mesuré sur `origin/main` : lent 0,32 à 0,36, frôlé 0,14 à 0,46.
+  {
+    let t = null, err = '';
+    try { t = await require('./sonde-force-chocs.cjs').mesurer(require('path').resolve(__dirname, '..')); } catch (e) { err = String(e && e.message || e); }
+    const lignes = t ? Object.values(t) : [];
+    verifier('conduite : la force d\'un choc suit la vitesse — pleins gaz un mur plein, un mur lent moins d\'un quart, un frôlement moins d\'un dixième',
+      lignes.length === 6 && lignes.every((r) => r.plein.force === 1 && r.lent.murs > 0 && r.lent.murs < 0.25 && r.frole.murs > 0 && r.frole.murs < 0.1),
+      t ? JSON.stringify(t) : `sonde : ${err}`);
   }
   // --- LA PENTE ET LA BOSSE (palier 3 de la conduite) ---------------------
   // Mesuré sur `origin/main` (`tests/sonde-pente.cjs`, six côtes, six
@@ -3353,7 +3393,16 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
       for (let e = 0; e < 6 && !auVolant(); e++) { const b = document.getElementById('ride-btn'); if (b) b.click(); await dodo(1000); }
       if (!auVolant()) return { echec: 'pas monté' };
-      const out = { images: 0, bloque: 0, marches: 0, chutes: 0, surTablier: 0, horsTablier: 0, ecartMax: 0, blocs: 0, ms: 0 };
+      const out = { images: 0, bloque: 0, marches: 0, chutes: 0, surTablier: 0, horsTablier: 0, ecartMax: 0, blocs: 0, ms: 0, voitures: 0 };
+      // CE TÉMOIN MESURE LA ROUTE, PAS LE TRAFIC (v423). Depuis que l'autoroute
+      // a une file dans chaque voie et près de trois fois plus de voitures, la
+      // voiture posée au milieu de la chaussée bute sur la circulation (soixante
+      // images bloquée à 50,9 blocs au portail). Se placer veut dire faire le
+      // vide (v279) : la seule famille « voiture de la rue » est ignorée le
+      // temps de la mesure — murs, mobilier, eau et piétons comptent toujours —
+      // et ce qu'elle a écarté entre dans le message.
+      const obstacle = p.obstacleVehicule;
+      if (obstacle) p.obstacleVehicule = (...a) => { const f = obstacle(...a); if (f === 'voiture') { out.voitures++; return false; } return f; };
       let xa = p.pos.x, za = p.pos.z, ya = p.pos.y;
       const x0 = p.pos.x, z0 = p.pos.z, t0 = performance.now();
       p.touchMove.f = 1;
@@ -3381,6 +3430,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         requestAnimationFrame(tour);
       });
       p.touchMove.f = 0;
+      if (obstacle) p.obstacleVehicule = obstacle;
       out.blocs = +out.blocs.toFixed(1); out.ecartMax = +out.ecartMax.toFixed(2);
       out.x = +p.pos.x.toFixed(1); out.z = +p.pos.z.toFixed(1);
       out.sFin = +R.projeter(seg, p.pos.x, p.pos.z).s.toFixed(1);

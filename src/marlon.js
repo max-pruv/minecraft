@@ -144,7 +144,7 @@ export class BaseNPC {
 
   placeAt(x, z, fallbackY) {
     // Poser quelqu'un lit la colonne (`surfaceY`), donc engendrerait le
-    // morceau s'il manque (v422) : on garde la place et l'on se pose quand le
+    // morceau s'il manque (v433) : on garde la place et l'on se pose quand le
     // monde arrive — `update` attend jusque-là, sans tomber.
     if (this.world.morceauxPrets && this.world.arriveeEnCours(x, z) && this.world.piedPieton?.(x, z) === undefined && !this.world.morceauxPrets(x, z)) {
       this.pos.set(x, fallbackY + 0.1, z);
@@ -168,7 +168,7 @@ export class BaseNPC {
     const dtReel = this._tReel ? Math.min(Math.max((tReel - this._tReel) / 1000, 0), DT_REEL_MAX) : dt;
     this._tReel = tReel;
     this.dtReel = dtReel;
-    // ON NE PENSE ET NE MARCHE QUE SUR UN MONDE DÉJÀ LÀ (v422). `sweep` et les
+    // ON NE PENSE ET NE MARCHE QUE SUR UN MONDE DÉJÀ LÀ (v433). `sweep` et les
     // sondes du programme (`trottoirA`, la sortie de la chaussée, le bord le
     // plus proche) lisent les blocs par `getBlock`, qui ENGENDRE le morceau qui
     // manque, sur le fil principal : à l'arrivée d'une téléportation, les

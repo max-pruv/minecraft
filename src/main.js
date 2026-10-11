@@ -1,12 +1,14 @@
 // Entry point: scene setup, chunk streaming, input, HUD, and the game loop.
 
+import { secondeVoieParis, secondeVoieVilleMonde, voiesAutoroute } from './voiesdoubles.js';
 import * as THREE from 'three';
 import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp, MEUBLE_ITEMS, MEUBLE_START, isMeuble, RUE_ITEMS, RUE_START, RUE, isRue, ARCHI, CITY_BLOCK, ROUTE_BLOCK } from './blocks.js';
 import { passageEn } from './passages.js';
+import { mobilierTrottoir, MOBILIER_OBSTACLE, villeHD } from './facadeshd.js';
 import { PARIS as PARIS_ANCRE, circuitsParis, circuitsQuartiersParis, marquageParis } from './paris.js';
 import { circuitsLondres } from './londres.js';
 import { circuitsSF } from './sanfrancisco.js';
-import { circuitsNice } from './nice.js';
+import { circuitsNice, ENTREES_NICE } from './nice.js';
 import { circuitsLille } from './lille.js';
 import { buildPropMesh } from './props.js';
 import { AnimalManager } from './animals.js';
@@ -32,7 +34,7 @@ import { mondeDevant, ligneDiagConduite } from './conduite.js';
 import { PALIERS, PALIER_CLE, choisirPalier, VITESSE_JET,
   ETENDUE_CLE, ETENDUE_PAR_DEFAUT, ETENDUES, palierRetenu, palierPropose, etendueRange, reglageDe, planDetail,
   PARAMS_FORCANTS } from './palier.js';
-import { Journal, suretePalier, PLANTAGES_SURETE } from './journal.js';
+import { Journal, suretePalier, PLANTAGES_SURETE, BATTEMENT_MS, estimerMemoire } from './journal.js';
 import { liberer } from './liberer.js';
 import { createEffects } from './effects.js';
 import { createSky } from './sky.js';
@@ -98,6 +100,14 @@ const journal = new Journal({
   },
 });
 const BILAN_JOURNAL = journal.ouvrir();
+// UNE PAGE NÉE CACHÉE N'EST PAS UNE SESSION QUE L'ENFANT A VUE (v426). iOS peut
+// ouvrir l'application sans la montrer, puis la tuer : sans ceci, elle laissait
+// sa ligne ouverte et le lancement suivant comptait un plantage — les sessions
+// VIDES (aucun relevé, aucun événement) de `journal_appareil`. Elle se ferme
+// sans remettre le compteur à zéro, et `rouvrir` la relance au premier plan.
+if (document.visibilityState === 'hidden') journal.fermer('arriere-plan', { garderCompteur: true });
+// Le battement : « cette page vit encore » (v426, journal.js).
+setInterval(() => journal.battre(), BATTEMENT_MS);
 window.addEventListener('error', (e) => journal.erreur(e.message || (e.error && e.error.message) || 'erreur',
   `${String(e.filename || '').split('/').pop()}:${e.lineno || 0}`));
 window.addEventListener('unhandledrejection', (e) => journal.erreur(
@@ -871,7 +881,7 @@ function synchroniserLeWorker() {
   enAttente.clear();
   maillageDistant.postMessage({ type: 'edits', edits: world.edits, temps: world.editTimes, ctx: world.ctx, hd: world.hd, sansSolContinu: world.sansSolContinu });
 }
-// L'ENFANT ATTEND SON MORCEAU, IL NE LE FABRIQUE PAS (v422).
+// L'ENFANT ATTEND SON MORCEAU, IL NE LE FABRIQUE PAS (v433).
 //
 // Après une téléportation, le morceau sous ses pieds n'est pas encore rendu
 // par le worker ; `player.update` lisait ses blocs par `getBlock`, qui
@@ -1355,7 +1365,7 @@ function redemanderLeDetail(cx, cz, key) {
 // chaussée autour — un réverbère posé par l'enfant dans son jardin — elle
 // reste en +x.
 //
-// ET ON NE LIT PAS LE MORCEAU D'À CÔTÉ S'IL N'EST PAS LÀ (v422). Un réverbère
+// ET ON NE LIT PAS LE MORCEAU D'À CÔTÉ S'IL N'EST PAS LÀ (v433). Un réverbère
 // au bord d'un morceau regarde la colonne voisine, et `getBlock` engendrait ce
 // morceau sur le fil principal, dans l'image où le sien s'installait — quatre
 // à six morceaux dans la première seconde d'une arrivée. Un réverbère de ville
@@ -1486,7 +1496,7 @@ function updateChunks() {
       const [ax, az] = lastPlayerChunk.split(',').map(Number);
       if (estUnSaut({ cx: ax, cz: az }, { cx: pcx, cz: pcz }, RENDER_RADIUS)) {
         arriveeJusqua = performance.now() + FENETRE_ARRIVEE_MS;
-        world.arriveeJusqua = performance.now() + ATTENTE_ARRIVEE_MS;   // v422
+        world.arriveeJusqua = performance.now() + ATTENTE_ARRIVEE_MS;   // v433
         world.arriveeLieu = { x: player.pos.x, z: player.pos.z, r: (RENDER_RADIUS + 1) * CHUNK };
       }
     }
@@ -1717,24 +1727,11 @@ function updateChunks() {
   // il n'y a rien sous les roues — un bord de quai, une chute. Une borne
   // d'altitude serait une constante de plus à régler pour un coût qui
   // n'existe pas.
-  const eauDevant = (x, z, cap) => {
-    const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux;
-    const demiLong = 2.2, demiLarg = Math.max(0.3, player.gabarit / 2);
-    const y0 = Math.floor(player.pos.y + 0.1);
-    for (let a = -demiLong; a <= demiLong + 1e-6; a += 1.1)
-      for (let b = -demiLarg; b <= demiLarg + 1e-6; b += demiLarg) {
-        const bx = Math.floor(x + ux * a + vx * b), bz = Math.floor(z + uz * a + vz * b);
-        if (world.isSolid(bx, y0 - 1, bz) || world.isSolid(bx, y0, bz)) continue;  // un plancher : on roule
-        // LE TABLIER D'UN PONT EST UN PLANCHER QUI N'EST PAS UN BLOC (v300) :
-        // un ruban du mailleur, une cote dans `routes.js`. Sans cette ligne la
-        // voiture voyait l'eau sous le pont et refusait d'y entrer — mesuré,
-        // 60 images bloquées sur 78 à l'entrée du premier pont de l'A1.
-        if (world.tablierEn) { const tab = world.tablierEn(bx + 0.5, bz + 0.5); if (tab !== null && Math.abs(tab - player.pos.y) < 1.5) continue; }
-        const sol = world.sommetColonne(bx, bz);
-        if (world.getBlock(bx, sol + 1, bz) === BLOCK.WATER) return true;
-      }
-    return false;
-  };
+  // La règle elle-même vit dans le monde depuis la v430 (`eauSousLaVoiture`) :
+  // la sonde des ponts la lit telle quelle, et le tablier s'y lit sur la
+  // colonne que le générateur a décidée — aux deux bouts de chaque pont
+  // d'autoroute, la voiture refusait d'avancer (Max, capture d'iPhone).
+  const eauDevant = (x, z, cap) => world.eauSousLaVoiture(x, z, cap, player.pos.y, Math.max(0.3, player.gabarit / 2));
   // LE MESSAGE DIT QUOI FAIRE, ET IL NE SE RÉPÈTE PAS À CHAQUE IMAGE. Le
   // crochet est appelé soixante fois par seconde tant que l'enfant pousse
   // vers la mer : un bandeau par image serait illisible.
@@ -1810,8 +1807,28 @@ function updateChunks() {
   // voiture garée, avion au poste — dont la fiche porte un `gabarit`. Le
   // rectangle d'un véhicule posé se prend sur son cap, comme celui d'une
   // voiture de la rue ; sa longueur est celle d'une voiture.
+  // ET LE MOBILIER DE TROTTOIR QU'ON VOIT (v425). Les terrasses, les bancs et
+  // les colonnes de la couche HD (v288) n'étaient pas des blocs : un passant
+  // traversait la table d'un café. La règle qui les pose est celle que le
+  // mailleur dessine (`mobilierTrottoir`) ; on ne bute que sur ce qui est
+  // MONTRÉ — le détail du morceau visible (`montrerLeDetail`) —, sinon un
+  // appareil sans couche HD aurait des tables invisibles qui arrêtent.
+  const mobilierVu = (x, z, y) => {
+    const bx = Math.floor(x), bz = Math.floor(z);
+    const cx = Math.floor(bx / CHUNK), cz = Math.floor(bz / CHUNK);
+    const e = chunkMeshes.get(cx + ',' + cz);
+    if (!e || !e.facades || !e.facades.visible) return false;
+    const by = world.sommetColonne(bx, bz);
+    if (Math.abs(by + 1 - y) > 1.5 || world.getBlock(bx, by, bz) !== CITY_BLOCK.SIDEWALK) return false;
+    const v = villeHD(cx, cz, CHUNK);
+    if (!v || v.mobilier === false) return false;
+    const m = mobilierTrottoir((dx, dy, dz) => world.getBlock(bx + dx, by + dy, bz + dz), bx, bz);
+    return !!m && MOBILIER_OBSTACLE.has(m.genre);
+  };
+  world.mobilierVu = mobilierVu;
   world.obstaclePieton = (x, z, y) => {
     if (vehicules.voitureA(x, z, y)) return true;
+    if (mobilierVu(x, z, y)) return true;
     for (const a of animalManager.animals) {
       const g = a.def.gabarit;
       if (!(g > 1) || Math.abs(a.pos.y - y) > 2.5) continue;
@@ -2065,7 +2082,7 @@ function updateChunks() {
   // l'E429 à l'est. `ENTREES_*` suit l'ordre de `entreesDe`, et l'on prend
   // celle de CETTE route — le `[0]` d'avant aurait fait entrer les voitures de
   // Bruxelles par la porte de Paris.
-  const ENTREES = { paris: ENTREES_PARIS, lille: ENTREES_LILLE, londres: ENTREES_LONDRES };
+  const ENTREES = { paris: ENTREES_PARIS, lille: ENTREES_LILLE, londres: ENTREES_LONDRES, nice: ENTREES_NICE };
   // Une ville ENGENDRÉE n'a pas d'avenue d'entrée dessinée : le corridor y
   // arrive dans l'axe de sa trame (le point de passage est choisi pour cela),
   // donc sur la rue qui mène au centre. Les voitures la suivent jusqu'à douze
@@ -2088,7 +2105,8 @@ function updateChunks() {
     // L'AUTOROUTE ROULE À CENT VINGT, ET LA VILLE À CINQUANTE (v372) : la
     // limite se lit au point du tracé — dans le disque d'une ville, l'avenue
     // d'entrée ; dehors, l'autoroute — et la grille freine AVANT la porte.
-    vehicules.circulation(pts, 41, { ville: seg.de, voie: 'autoroute', nb: 20, route: seg.route.nom,
+    // deux voies par sens (v423) : la file à droite, sa jumelle à gauche
+    vehicules.circulation(pts, 41, { ville: seg.de, voie: 'autoroute', route: seg.route.nom, voies: voiesAutoroute, voiesAuBesoin: true,
       limite: (x, z) => (world.cityAt(x, z) || villeMondeEn(x, z) ? ALLURE_VOIE.avenue : ALLURE_VOIE.autoroute) });
   }
 })();
@@ -3236,9 +3254,12 @@ function animerLesVilles(dt) {
   }
   // la graine vient de la ville, pas de la file (v246, voir graineDeVille)
   // l'allure de la voie : une rue de ville engendrée, une avenue nommée (v372)
+  const decalage = tr.voie === 'avenue' && tr.ville !== 'ny' ? DECALAGE_AVENUE : 0;
   const conv = vehicules.circulation(tr.pts, graineDeVille(tr), { ville: tr.ville, voie: tr.voie || 'rue',
     // les avenues des villes bâties à la main : la voie de droite (v372)
-    decalage: tr.voie === 'avenue' && tr.ville !== 'ny' ? DECALAGE_AVENUE : 0 });
+    decalage,
+    // la seconde voie des boulevards (v423) ; le bus prend la première place
+    voies: decalage ? (x, z) => secondeVoieParis(x, z, decalage) : secondeVoieVilleMonde, bus: tr.rang === 0 });
   // le bus dessert le grand anneau — un par ville, à sa couleur, DANS la file
   // de ses voitures (v372) : il prend leur grille horaire
   if (tr.rang === 0) vehicules.bus(tr.pts, Math.abs(Math.round(tr.x + tr.z)), conv);
@@ -5796,8 +5817,23 @@ function envoyerJournal(doc, keepalive = false) {
 }
 if (BILAN_JOURNAL.rapport) {
   journal.noter('plantage-precedent', { plantages: BILAN_JOURNAL.plantages, surete: !!SURETE });
-  setTimeout(() => envoyerJournal(BILAN_JOURNAL.rapport), 2500);
+  setTimeout(() => BILAN_JOURNAL.rapports.forEach((r) => envoyerJournal(r)), 2500);
 }
+// UNE SESSION AU BATTEMENT RÉCENT EST PEUT-ÊTRE UNE PAGE VIVANTE (v426) : on
+// regarde si son battement avance avant de la dire plantée — deux fois, parce
+// qu'une page qui charge peut rater un battement.
+if (BILAN_JOURNAL.douteuses.length) {
+  setTimeout(() => journal.verifierDouteuses(false), 3000);
+  setTimeout(() => {
+    const { vivantes, rapports } = journal.verifierDouteuses(true);
+    if (vivantes.length) journal.noter('page-voisine', { vivantes: vivantes.length });
+    for (const r of rapports) { journal.noter('plantage-precedent', { plantages: journal.plantages(), confirme: true }); envoyerJournal(r); }
+  }, 7000);
+}
+// LA RELANCE VOULUE PAR LE JEU DIT AU REVOIR AVANT DE RECHARGER (v426) :
+// index.html l'appelle dans `reloadOnce` et `forcerMaj`. `pagehide` le fait
+// aussi ; on ne parie pas la sûreté de la famille sur un seul événement.
+window.__journalAuRevoir = (fin = 'mise-a-jour') => { try { envoyerJournal(journal.fermer(fin), true); } catch { /* jamais bloquant */ } };
 window.__journal = journal;
 
 function pushPlayTime(keepalive = false) {
@@ -7828,6 +7864,19 @@ function motDuPalier() {
 // faut pour relire une panne — où l'enfant est, ce que la page rend, ce
 // qu'elle tient. Pas de parcours de scène : ce qui coûte ne se relève pas.
 let pireImageJournal = 0;
+// CE QUE LA SCÈNE TIENT CÔTÉ CARTE GRAPHIQUE, EN OCTETS (v426, journal.js) :
+// un parcours de la scène au plus toutes les cinq secondes — la cadence des
+// relevés — et son coût en millisecondes voyage avec lui (`ms`), pour qu'on le
+// relise sur la tablette au lieu de le supposer nul.
+let memoireTenue = null;
+function memoireGPU(forcer = false) {
+  const now = performance.now();
+  if (!forcer && memoireTenue && now - memoireTenue.le < 5000) return memoireTenue;
+  const e = estimerMemoire([scene]);
+  memoireTenue = { le: now, texMo: Math.round(e.texMo * 10) / 10, geoMo: Math.round(e.geoMo * 10) / 10, sources: e.sources, geometries: e.geometries,
+    ms: Math.round((performance.now() - now) * 10) / 10 };
+  return memoireTenue;
+}
 function releverLeJournal() {
   const periode = mesurePalier.images.length ? mesurePalier.images[mesurePalier.images.length - 1] : 0;
   if (periode > pireImageJournal) pireImageJournal = periode;
@@ -7842,6 +7891,7 @@ function releverLeJournal() {
     ips, pire: Math.round(pireImageJournal), appels: info.render.calls, ktri: Math.round(info.render.triangles / 1000),
     morceaux: chunkMeshes.size, monde: world.chunks.size, hd: [...chunkMeshes.values()].reduce((n, e) => n + (e.detail ? 1 : 0), 0),
     geometries: info.memory.geometries, textures: info.memory.textures, tasMo: mem, corps: `${h.prets}/${h.total}`,
+    gpu: (({ texMo, geoMo, sources, ms }) => ({ texMo, geoMo, sources, ms }))(memoireGPU(true)),
     monture: player.pilote ? 'avion' : (player.gabarit > 1 ? 'voiture' : null), vol: !!player.flying, prog: info.programs ? info.programs.length : null,
     // les dégâts (v364) : le coût du dernier enfoncement et du feu, mesurés ici
     ...(fun.degats && fun.degats.bilan && fun.degats.bilan() ? { degats: fun.degats.bilan() } : {}),
@@ -7854,7 +7904,7 @@ function releverLeJournal() {
 function updateHud(dt) {
   const eye = player.eyePosition();
   // un morceau pas encore rendu par le worker n'est pas de l'eau : on ne
-  // l'engendre pas ici pour le savoir (v422)
+  // l'engendre pas ici pour le savoir (v433)
   const eyeBlock = !world.arriveeEnCours() || world.morceauxPrets(eye.x, eye.z) ? world.getBlock(Math.floor(eye.x), Math.floor(eye.y), Math.floor(eye.z)) : BLOCK.AIR;
   waterTint.style.display = eyeBlock === BLOCK.WATER ? 'block' : 'none';
 
@@ -7888,6 +7938,7 @@ function updateHud(dt) {
         : ` · morceau ${mesurePalier.morceaux.length} relevé(s), travail ${mesurePalier.travaux.length}${PALIER_SE_RANGE ? '' : ' — non rangé'}`) + '\n'
     + `morceaux ${chunkMeshes.size} (${[...chunkMeshes.values()].filter((e) => e.detail).length} avec façades HD) · corps ${h.prets}/${h.total} · programmes chauffés ${programmesChauffes()} · ${myName() || ''} ${player.pos.x.toFixed(0)},${player.pos.z.toFixed(0)}\n`
     + `journal : ${journal.doc.releves.length} relevé(s), ${journal.doc.erreurs} erreur(s), plantages de suite ${journal.plantages()}${PALIER && PALIER.source === 'sûreté' ? ' — SÛRETÉ' : ''}`
+    + ((m) => ` · carte graphique ≈ ${Math.round(m.texMo + m.geoMo)} Mo (textures ${m.texMo} sur ${m.sources} source(s), géométries ${m.geoMo}, ${m.ms} ms)`)(memoireGPU())
     + ` · façades HD ${detailTenu.n} morceau(x), ${(detailTenu.octets / 1048576).toFixed(0)} / ${(BUDGET_FACADES / 1048576).toFixed(0)} Mo, ${statsMaillage.detailsBudget} rendu(s) au budget`
     // AU VOLANT (v397) : ce que le banc ne sait pas mesurer — le monde maillé
     // devant la voiture et la roue libre — Max le relève sur la tablette.
@@ -7996,6 +8047,8 @@ window.__vehicules = {
   placeProche: (rayon) => vehicules?.placeProche(player.pos, rayon),
   diagPlace: (rayon) => vehicules?.diagPlace(player.pos, rayon),
   diagCeder: () => vehicules?.diagCeder(),
+  // la fabrication par tranches (v431) : voitures fabriquées et différées
+  fabrication: () => vehicules?.fabrication?.(),
 };
 window.__vie = { effectif: () => vie?.effectif(), sites: () => vie?.sites, eteindre: (v) => vie?.eteindre(v) };
 // Pour les tests : ce que la nuit fait aux fenêtres. `solide` est le niveau
@@ -8019,7 +8072,7 @@ window.__game = { fileMaillage: (m) => { fileDemandee = m; lastPlayerChunk = nul
   rechargeMaillage: (m) => { rechargeForcee = m || null; }, get fileDeMorceaux() { return meshQueue; },
   // la règle de la recharge, garde du rendu logiciel mise à part (v379) : un témoin
   // la lit au banc, où le rendu est toujours logiciel
-  get rechargeRegle() { return { arrivee: enArrivee(), rapide: fileRapide, regle: rechargeParRegle(), active: rechargeALArrivee() }; }, villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage, PALIERS, choisirPalier, mesurePalier, journal,
+  get rechargeRegle() { return { arrivee: enArrivee(), rapide: fileRapide, regle: rechargeParRegle(), active: rechargeALArrivee() }; }, villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage, PALIERS, choisirPalier, mesurePalier, journal, memoireGPU,
   RAYON_HD, BUDGET_FACADES, detailTenu, planDetail, get atlasHD() { return hd ? hd.atlas : null; },
   palierRetenu, palierPropose, etendueRange, reglageDe, PARAMS_FORCANTS,
   // CE QUE LE PALIER A RÉELLEMENT APPLIQUÉ, pas ce qu'il déclare : un témoin
@@ -8111,7 +8164,7 @@ function frame(now) {
     for (const npc of npcs) {
       const distance = npc.pos.distanceTo(player.pos);
       if (!actualiserPresence(npc, distance, dt, !npc.sommeilForce)) continue;
-      // ET ON N'ANIME PAS CE QUI S'EFFACE À L'AUTRE BOUT DU MONDE (v422). Après
+      // ET ON N'ANIME PAS CE QUI S'EFFACE À L'AUTRE BOUT DU MONDE (v433). Après
       // une téléportation, la présence fond en 0,8 s les personnages laissés
       // derrière — le village, le château —, et ils marchaient encore pendant
       // ce temps : leur `sweep` refabriquait sur le fil principal les morceaux
@@ -8204,7 +8257,7 @@ function frame(now) {
   }
 
   // la visée lit jusqu'à huit blocs devant les yeux : elle se tait tant que
-  // le monde autour n'est pas rendu (v422)
+  // le monde autour n'est pas rendu (v433)
   const hit = running && !attenteJoueur && (!world.arriveeEnCours() || mondePretAutour(8)) ? getTarget() : null;
   highlight.visible = !!hit;
   if (hit) highlight.position.set(hit.x + 0.5, hit.y + 0.5, hit.z + 0.5);

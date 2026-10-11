@@ -483,6 +483,35 @@ export const ROUTES = [
   // portée de talus.
   { nom: 'A6', villes: ['paris', 'lyon'],
     via: [[-333, 699], [-336, 732], [-360, 781], [-364, 798], [-363, 806], [-280, 990], [-168, 1103], [-116, 1202], [-24, 1304], [-17, 1321], [2, 1393], [24, 1424], [308, 1705], [523, 1814], [536, 1828], [594, 1923], [659, 1983]] },
+  // L'A8 (v428), MARSEILLE–NICE, la Provençale. L'axe direct est en mer
+  // (401 blocs d'eau sur 596) : la route passe par l'intérieur, et le relevé
+  // en couronne (scratchpad ring.mjs) ferme Marseille de presque tous les
+  // côtés — la ville est à 33, son est et son nord-est montent à 46-50 dès
+  // vingt blocs du disque (« une ville assise sous son pays ne s'entre que
+  // par son côté bas », v311), et un massif de plus de 46 blocs s'étend de
+  // x 980 à 1 220 au nord-est. Le côté bas est le nord, entre le TGV (qui
+  // arrive par −98°) et ce massif : la porte est à −78°, quatorze blocs sous
+  // le bord (`bord`, dix-sept blocs et demi d'avenue sur la rue,
+  // entrees.mjs), la route monte au nord le long du massif, le contourne par
+  // le col de 42-46 vers z 3 150, puis redescend dans la plaine jusqu'à
+  // Nice. Nice est bâtie à la main : la porte est plein ouest (182°), et
+  // l'entrée déclarée de nice.js mène au carrefour de la Californie et de
+  // René-Cassin. Mesuré sous node (couloir.mjs, la sonde de l'A6, plus une
+  // RAMPE : une case qui dépasse ce que 0,06 par bloc permet depuis la porte
+  // coûte au carré — sans elle, cent pour cent des tracés déblayaient trop
+  // au pied de Marseille, le défaut de la recherche de la v329) : 1 080
+  // tracés sur vingt-cinq couples de portes et de bords, refus 708 déblai ·
+  // 601 remblai · 272 ponts proches · 60 rail · 2 coude · 1 pont près d'une
+  // porte ; quatre-vingt-quatre admissibles. La porte à −82°, la meilleure
+  // de la sonde, passait le TGV dans le talus : relu au vrai `routeEn`, ses
+  // colonnes touchaient la gare de Marseille. Celui-ci : 829 blocs, trois
+  // ponts (s 259–263, 307–323, 404–416), déblai 7,5, remblai 0,6, pente
+  // 0,064, coudes ≤ 22°, aucune colonne sur le rail, aucun repère. Le
+  // sommet (1108, 3212) remplace (1111, 3208) : celui-ci tombait à s 308,5,
+  // un bloc et demi avant le deuxième pont, et le coin de son coude laissait
+  // deux points du joint sans cube ni tablier (le témoin du joint, plafond.js).
+  { nom: 'A8', villes: ['marseille', 'nice'], bord: { marseille: 14 },
+    via: [[956, 3410], [961, 3386], [963, 3346], [977, 3291], [987, 3276], [1016, 3255], [1087, 3233], [1101, 3222], [1108, 3212], [1126, 3174], [1143, 3142], [1156, 3131], [1190, 3118], [1208, 3118], [1226, 3123], [1438, 3240], [1475, 3246], [1522, 3247]] },
 ];
 
 // --- la section -----------------------------------------------------------------
@@ -883,8 +912,9 @@ export function traceRoute(seg, { avant = null, apres = null, coteDe = null } = 
     const o = L.terrePlein + L.demiChaussee / 2;          // le milieu de la chaussée de ce sens
     const y = (p ? coteA(seg, s) : 0) + 0.05;
     const rx = -q.fz, rz = q.fx;                             // la droite du sens A→B
-    aller.push({ x: q.x + rx * o, y, z: q.z + rz * o });
-    retour.push({ x: q.x - rx * o, y, z: q.z - rz * o });
+    // la demi-chaussée sous ce point : la seconde voie la lit (v423)
+    aller.push({ x: q.x + rx * o, y, z: q.z + rz * o, dc: L.demiChaussee });
+    retour.push({ x: q.x - rx * o, y, z: q.z - rz * o, dc: L.demiChaussee });
   }
   retour.reverse();
   // avant : de la ville A au corridor (sens ville → route), puis l'aller,
