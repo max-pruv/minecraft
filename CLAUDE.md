@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## La place se contourne (v427) — une garde se mesure sur ce qu'elle protège, à la règle du témoin
+## La place se contourne (v432) — une garde se mesure sur ce qu'elle protège, à la règle du témoin
 
 Vingt-deux villes avaient la voie de leur anneau d'arrivée sur la place. Quatre
 règles.
@@ -807,6 +807,73 @@ Ce qui reste, déclaré dans `TASKS.md` : Rio (la forêt de Tijuca, où la trame
 un îlot fusionné en travers de la seule rue qui en sortirait), Tokyo, Dubaï,
 Toronto (leurs contours suivent un voisin au-delà de la barre de partage ou
 perdent des points), Agra, et une poignée d'anneaux à moins de 25 pas.
+
+## La rue serrée, et fabriquée par tranches (v431) — un budget par image, et un balayage fin là où l'on s'arrête
+
+Trois règles.
+
+- **CE QUI SE FABRIQUE À L'ENTRÉE DANS LE CHAMP SE FABRIQUE PAR TRANCHES.**
+  À l'arrivée d'une téléportation, `Convoi.montrer` fabriquait toutes les
+  voitures de la rue dans la même image (v420 : 162 à 276 ms sous `frame`).
+  Un budget module (`FAB_MS`, 5 ms, ouvert par `update`) : une place hors
+  budget reste vide une image de plus — SAUF à moins de `FAB_PROCHE` (18
+  blocs) de l'enfant, qui ne doit pas traverser une voiture qu'il ne voit pas.
+  Le budget vaut l'infini tant qu'aucune image n'a commencé : un appel direct
+  de `montrer` fabrique tout. Mesuré (Paris, trois passages) : mise à jour des
+  voitures 234/261/195 → 111/125/99 ms ; neuf voitures dans une même image →
+  une. Ce qui reste, `voiesDe` (la jumelle, 57 à 111 ms au dépliage), ne se
+  diffère pas : il fixe le nombre de voitures de la file, donc la grille que
+  deux tablettes partagent (v305).
+- **UNE RECHERCHE DE PAIRES SE FAIT DANS UNE GRILLE DE SA PORTÉE.**
+  `croisementsDe` comparait 720 instants toutes-contre-toutes (259 000 paires)
+  pour un test de six blocs : une grille de six blocs rend le même ensemble
+  (295 comparaisons de `nbSansCroisement` contre l'ancien module chargé dans
+  la même page, zéro écart) en deux fois moins de temps.
+- **L'ÉCART À L'ARRÊT EST LE PAS DU BALAYAGE.** Au pas d'un bloc et demi, une
+  suiveuse s'arrête n'importe où entre 1,1 et 2,6 blocs (médiane 1,9 à 2,0) ;
+  les deux premiers blocs se balaient au quart (1,1 à 1,35). Et le plancher de
+  la file (v283) vaut un bloc en ligne droite, mais 1,6 là où le tracé tourne
+  sous la suiveuse ou devant elle : dans un virage la corde est plus courte que
+  l'arc, et les coins se touchent (mesuré à Tokyo). Avant de serrer un
+  plancher le long d'un tracé, on regarde ce qu'il vaut en ligne droite.
+
+## Un pont se lit sur la colonne que le monde écrit (v430) — et une règle de contact vit dans le monde
+
+Max, capture d'iPhone : le bandeau de l'eau sur une autoroute, la voiture
+arrêtée. Quatre règles.
+
+- **CE QUE LE GÉNÉRATEUR A DÉCIDÉ AU COIN D'UNE COLONNE SE LIT AU COIN.**
+  `world.js` demande `routeEn(wx, wz)` — le coin — pour savoir si une colonne
+  est un pont, et n'y écrit alors aucun bloc ; le contrôle de l'eau lisait
+  `tablierEn(bx + 0.5, bz + 0.5)`. Aux deux bouts de chaque pont, une colonne
+  n'avait ni bloc ni tablier pour le contrôle : 12 traversées sur 52 arrêtées
+  par une eau qu'on ne voit pas. `tablierDeColonne` lit le coin, puis le
+  centre. C'est la v414 (« une tolérance se juge sur la colonne ») du côté du
+  contact : toute question « y a-t-il un plancher sur CETTE colonne ? » se
+  pose là où le générateur l'a tranchée.
+- **ET LE CONTACT AUSSI — L'ARRÊT FAUTIF CACHAIT UNE CHUTE.** Retirer le faux
+  arrêt laissait la voiture entrer dans ces colonnes sans bloc ; quand le
+  point exact n'était pas encore sur le tablier, rien ne la portait et elle
+  finissait sous le pont (une traversée sur six au premier pont de l'A1, sur
+  la v419 comme sur la branche, `sonde-pont-tablier.cjs`). `accrocherAuSol`
+  et `verticaleVoiture` lisent `tablierSousLePoint` (le point, puis la colonne
+  qui le contient). Une intermittence de navigateur ne tranchait pas (un
+  tirage à la première traversée d'un banc) : la preuve est STRUCTURELLE,
+  la chaussée de tous les ponts balayée au quart de bloc sous node — 6 713
+  points sans appui avant, zéro après (`trousAuxCulees`). **Quand on retire
+  un garde-fou faux, on demande ce qu'il empêchait par accident.**
+- **UNE RÈGLE DE CONTACT QU'UNE SONDE DOIT REJOUER VIT DANS LE MONDE.**
+  `eauSousLaVoiture` (world.js) est la règle de `main.js`, sortie pour que
+  `sonde-ponts-eau.cjs` (le vrai joueur sous node, chaque pont, deux sens,
+  trois secondes) la lise telle quelle ; `plafond.js` l'appelle. Une copie de
+  sonde finit par diverger du jeu (v400). Et l'avance d'une voiture le long
+  d'une route se lit à l'ABSCISSE (`projeter`), jamais en projetant sur le
+  cap de départ : une route qui tourne fait plafonner la projection, et la
+  sonde déclarait « bloquées » quatre voitures qui roulaient.
+- **LE JOURNAL DE BORD A DIT OÙ, PAS QUAND.** La session de l'iPhone montrait
+  l'enfant à pied dans Paris ; la panne était ailleurs. Quand le journal ne
+  porte pas la capture, on balaie TOUTES les routes sous node à la recherche
+  de la situation (dix-huit secondes), au lieu de deviner un endroit.
 
 ## Toutes les voies occupées (v423) — la seconde voie est la même ligne, décalée
 
@@ -896,6 +963,14 @@ règles.
   dans l'image, et `sensations.js` reprend le suivi du bestiaire pour ne pas
   compter deux fois. Les avions gardent la poursuite d'avant à l'identique ;
   `?sensations=0` rejoue l'ancienne conduite, pour mesurer.
+
+**La pente se dessine (v429).** La physique publie `player.tangage` (v408,
+nez en haut positif — le signe de `rotation.x` sur un modèle au nez en −z) et
+le RÉÉCRIT à chaque image ; `sensations.js` l'ajoute au tangage de la caisse,
+borné à `PENTE_MAX`. `player.atterrissage` est un ÉVÉNEMENT daté, comme
+`choc` : on retient son `t` et l'on ne réagit qu'à un `t` neuf, jamais à celui
+qu'on trouve en montant. Le témoin fige le champ par une propriété qui ignore
+ce qu'on lui écrit (v358), et lit la pente dans la matrice monde.
 
 ## Un contour dans l'autre sens, et les rues du Strip (v418) — ce qui empêchait le contour n'était pas l'absence de rue
 
@@ -2735,6 +2810,40 @@ Les deux rouges réseau récurrents du palier C. Trois règles.
   une voix restée au quart (`GAIN_APPEL`) et le régime qui varie ; vérifié
   rouge sur une copie où la voix reste au quart.
 
+## Quatre témoins qui se placent (v427) — une page sur l'accueil n'est pas gratuite
+
+Quatre rouges récurrents des portails, tous démontés par une sonde. Cinq règles.
+
+- **UNE PAGE RESTÉE SUR L'ACCUEIL COÛTE UN CŒUR ET PLUS.** L'accueil rend le
+  monde derrière lui : deux pages ouvertes et oubliées occupent 2,4 à 3,7 cœurs
+  sur quatre (`sonde-voisines.cjs`, /proc/stat), et le gel CDP
+  (`Page.setWebLifecycleState`) n'y change RIEN — seule la fermeture. Un
+  témoin qui mesure une préparation, un débit ou une durée se joue quand il
+  est seul (`maj.js` « vraiment là » : 4 s seul, 39–44 s à côté de deux
+  voisines), et une page dont le verdict est rendu se ferme.
+- **`locator.click` ATTEND DEUX IMAGES IDENTIQUES.** À 0,07 image par seconde
+  (l'accueil de Manhattan en rendu logiciel), cela fait 24 s au repos et plus
+  de 30 sous charge : le témoin mesurait la cadence, pas le bouton. Sur une
+  page qui rend mal, on appuie par le document, après avoir vérifié ce que
+  l'enfant voit (actif, visible, à découvert par `elementFromPoint`) — et ce
+  qui s'ouvre entre deux (un second écran d'identité) se ferme avant de juger.
+- **UNE PAGE QUE LA SUITE GARDE OUVERTE JOUE SA JOURNÉE.** La cascade
+  « pas aux commandes » de `monte.js` tombait à 45,8 minutes de la suite :
+  l'arrêt quotidien de 45 minutes (invariant 2) sur `tab`. Le jeu se met en
+  pause, et tout témoin suivant mesure une partie arrêtée. `jouerSeul` pose
+  des déblocages du jour (`unlocks`), comme le code parental — la donnée qui
+  gouverne, jamais la règle (`sonde-limite-du-jour.cjs`). Devant une cascade
+  qui va et vient avec la DURÉE d'une suite, on additionne les durées des
+  témoins jusqu'au premier rouge avant toute autre hypothèse.
+- **UNE JOURNÉE SE RANGE SOUS LA DATE LOCALE.** Le répit de quiz du banc ne
+  valait que pour la journée du lancement : un portail qui passe minuit (20 h
+  à New York) retrouvait un quiz quinze minutes plus tard, en pleine suite.
+  `jouerSeul` rouvre le répit de la journée COURANTE (`sonde-quiz-minuit.cjs`).
+- **UNE VOITURE DE CONVOI À L'ARRÊT SE GARE OÙ ELLE VEUT.** Au coin de son
+  anneau, en biais : une pose écrite « un bloc derrière, trois de côté » pour
+  une voiture droite la manque. Le témoin attend que le crochet la rende, puis
+  se pose dans le repère de SA boîte.
+
 ## L'invité de New York (v412) — deux pages du banc se partagent un processeur, deux tablettes jamais
 
 Une règle. Un témoin à deux tablettes dont l'une rend une scène lourde
@@ -3476,6 +3585,37 @@ Une règle.
   la terre, l'herbe, le sable et la pierre naturelle. Manhattan a son propre sol
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
+
+## L'A8 (v428) — une sonde de couloir monte avec la route, et vérifie le rail sur la vraie emprise
+
+Marseille–Nice, par l'intérieur. Trois règles.
+
+- **UNE VILLE ASSISE SOUS SON PAYS FAIT ÉCHOUER LE COULOIR LE PLUS BAS, ET LE
+  REMÈDE EST DANS LE COÛT.** Marseille est à 33 et son pays monte à 46-50 dès
+  vingt blocs : le couloir le plus bas (v355) y rendait cent pour cent de refus
+  « déblai » — un défaut de la recherche (v329), pas du pays. Le coût d'une
+  case porte désormais une RAMPE : au-dessus de ce que 0,06 par bloc permet
+  depuis la porte (plus six), il croît au carré. La sonde cherche alors un
+  chemin que le profil peut suivre, et le trouve au nord, entre le TGV et le
+  massif.
+- **UNE ESTIMATION DE TALUS NE GARDE PAS UN RAIL.** Ma sonde estimait la
+  largeur du talus sur l'axe (l'écart au terrain sous l'axe, divisé par la
+  pente) ; le registre réel rendait vingt-cinq colonnes de talus sur la gare
+  TGV de Marseille, parce qu'un talus se règle sur le terrain de SA colonne,
+  pas sur celui de l'axe. Tout candidat retenu passe désormais par une
+  instance neuve de `routes.js` où sa fiche est inscrite, et `routeEn` lu
+  colonne par colonne (`exact`, scratchpad lib.mjs) : c'est la grandeur du
+  témoin, donc celle qu'on filtre (v313).
+- **UN SOMMET DE COUDE NE TOMBE PAS SUR LE JOINT D'UN PONT.** Le portail a
+  rendu deux points sans cube ni tablier à l'entrée du deuxième pont : le
+  sommet (1111, 3208) était à s 308,5, un bloc et demi avant le tablier, et
+  les colonnes du coin de son coude étaient déjà « tablier » (pas de cube)
+  sans qu'aucun ruban — orienté selon le tronçon d'après — ne les couvre. Le
+  comblement de coin de la v336 vaut DANS un pont, pas au joint. Ma sonde de
+  tracé mesurait les joints, mais sur le profil, pas sur les rubans ; le
+  témoin se rejoue sous node en vingt lignes (`joint.mjs`, scratchpad), et
+  c'est lui qu'on passe sur tout tracé retenu. Le sommet déplacé à s 304 :
+  zéro trou sur 19 500 points.
 
 ## L'A6 (v419) — une ville qui reçoit deux routes a deux arrivées
 

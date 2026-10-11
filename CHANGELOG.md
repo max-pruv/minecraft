@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v427 — Les voitures font le tour de la place
+## v432 — Les voitures font le tour de la place
 
 **Pourquoi.** Dans vingt-deux villes engendrées (Tokyo, Séoul, Shanghai, Hong
 Kong, São Paulo, Los Angeles…), l'anneau de voitures qu'on voit en arrivant
@@ -46,6 +46,172 @@ pas, circuits, couverture (règle v322), pire partage (18, inchangé), voiture
 en vue depuis le centre, coût du premier dépliage (inchangé pour les villes
 sans faute, 75 à 110 ms pour celles qu'on essaie, sous le pire de Rome).
 
+
+
+## v431 — Des files serrées, et une rue qui arrive sans à-coup
+
+**Pourquoi.** Deux défauts de la circulation, mesurés. À l'arrivée d'une
+téléportation, toutes les voitures de la rue se fabriquaient dans la même image
+(162 à 276 ms de jeu figé, sonde de la v420), et le calcul des croisements d'un
+circuit en coûtait encore 22 à 45 au dépliage. Et au feu rouge, une voiture
+s'arrêtait à deux blocs de la précédente en moyenne : une file au feu se lisait
+comme un chapelet clairsemé, loin des voies serrées de la capture de GTA VI
+que Max a montrée.
+
+**Ce que ça change.** Les voitures d'une rue apparaissent par petites tranches,
+quelques millisecondes par image, celles tout près de l'enfant tout de suite :
+la mise à jour des voitures à l'arrivée à Paris passe de 195-261 ms à 99-125.
+Au rouge, les voitures se serrent pare-chocs contre pare-chocs : l'écart à
+l'arrêt passe de 1,9-2,0 blocs à 1,1-1,3 à Paris, Rome, Zurich et Tokyo, sans
+contact de plus dans les files (en virage, elles gardent l'écart d'avant).
+
+**Ce qui le prouve.** Deux témoins neufs dans `monte.js`, mesurés rouges sur
+l'ancien code : « à l'arrivée, la rue se fabrique par tranches » (9 voitures
+dans une même image avant, 1 ici) et « au rouge, la file se serre » (médiane
+2,0 à Rome avant, 1,1-1,2 ici). L'identité des croisements est prouvée en
+comparant l'ancien et le nouveau module dans la même page : 295 comparaisons,
+zéro écart. Sondes : `sonde-arrivee-decoupe.cjs`, `sonde-rue-dense.cjs`,
+`sonde-fabrication-arrivee.cjs`.
+
+---
+
+## v430 — On passe tous les ponts
+
+**Pourquoi.** Max, capture d'iPhone : la voiture arrêtée sur une autoroute,
+le bandeau « Une voiture ne roule pas dans l'eau — fais demi-tour », et pas
+une goutte en vue. Le générateur décide qu'une colonne est un pont en lisant
+son COIN, et n'y écrit alors aucun bloc (le tablier est un ruban dessiné) ;
+le contrôle de l'eau de la voiture lisait le tablier au CENTRE de la colonne.
+Aux deux bouts de chaque pont, une colonne était « pont » pour l'un et
+« chaussée » pour l'autre : ni bloc ni tablier, de l'eau dessous, et la
+voiture s'arrêtait net. Et cet arrêt cachait un second défaut, déjà en
+production : là où il ne l'arrêtait pas, la voiture pouvait TOMBER dans ces
+colonnes sans bloc et finir sous le pont — vu une traversée sur six au
+premier pont de l'A1, des deux côtés.
+
+**Ce que ça change.** Les voitures franchissent tous les ponts d'autoroute,
+dans les deux sens, et restent dessus. Le contrôle de l'eau et le contact au
+sol lisent le tablier sur la colonne telle que le monde l'a écrite ; la vraie
+eau arrête toujours la voiture, et sous un pont on reste en bas.
+
+**Ce qui le prouve.** Un témoin de `plafond.js` fait traverser au vrai joueur
+(sous node) chaque pont de chaque route, dans les deux sens : 52 traversées,
+12 arrêtées par l'eau sur la v416, zéro ici (`sonde-ponts-eau.cjs`, rejouée
+seule en trois secondes). Un second témoin balaie la chaussée de tous les
+ponts au quart de bloc : 6 713 points sur 101 380 n'étaient portés par rien
+sur la v419 (le point de la chute vue au navigateur parmi eux), zéro ici. La
+règle de l'eau vit désormais dans le monde (`eauSousLaVoiture`), et le jeu et
+le témoin la lisent tous les deux.
+
+---
+
+## v429 — La voiture suit la pente
+
+**Pourquoi.** Depuis la v408 la physique fait monter la voiture dans les côtes
+et décoller sur les bosses, et publie la pente sous les roues
+(`player.tangage`) et chaque retour au sol (`player.atterrissage`) « pour ce
+qui dessine ». Personne ne les dessinait : dans une côte, la caisse restait à
+plat et s'enfonçait du nez dans la route qu'elle montait, et retomber d'une
+bosse ne faisait aucun bruit.
+
+**Ce que ça change.** Le nez monte dans les côtes et plonge dans les
+descentes (jusqu'à 26°), en plus du nez qui se lève à l'accélération ; en
+l'air, la voiture suit sa trajectoire. Retomber sur ses roues fait plonger la
+caisse sur ses ressorts et s'entend, d'autant plus fort que la chute est
+haute.
+
+**Ce qui le prouve.** Deux témoins neufs dans `monte.js`, sur la mesure
+partagée avec la sonde. La pente figée à 0,3 rad : le nez monte de 1,18 bloc
+au-dessus de la queue ici, 0 sur `origin/main` (v422) ; à plat, 0 des deux
+côtés. L'atterrissage posé comme la physique le pose : pic 0,74 à 0,95 contre
+0,07 avant ici, 0,057 contre 0,068 sur `origin/main`.
+Et le banc : la page de jeu de `monte.js` vit plus d'une heure, et la limite
+du jour (45 min) y ouvrait l'écran de fin de journée, qui prenait le doigt et
+faisait tomber trente-cinq témoins en cascade ; la suite lève désormais la
+limite par la donnée qu'un parent pose. Un second arrêt de la suite, sous une
+page à 3,8 cœurs, est rouge des deux côtés et déclaré dans `TASKS.md`.
+
+---
+
+## v428 — Marseille rejoint Nice
+
+**Pourquoi.** Marseille–Nice était le dernier corridor court du kit côté
+Méditerranée, laissé de côté parce que Nice est une ville bâtie à la main et
+que l'axe direct est EN MER : 401 blocs d'eau sur 596. Et Marseille est
+« assise sous son pays » : la ville est à 33 blocs, son est et son nord-est
+montent à 46-50 dès vingt blocs du bord, et un massif de plus de 46 blocs
+ferme le nord-est.
+
+**Ce que ça change.** L'A8, la Provençale, sort de Marseille par le nord, entre
+le TGV et le massif, monte le long du massif jusqu'au col (42 à 46 blocs), le
+contourne, redescend dans la plaine et entre dans Nice par l'ouest. Dans Nice,
+une entrée mène de la porte au carrefour de l'avenue de la Californie et du
+boulevard René-Cassin. Trois ponts franchissent les ruisseaux du nord de
+Marseille ; vingt voitures font l'aller-retour, et l'on peut désormais rouler
+de Lyon à Nice.
+
+**Ce qui le prouve.** Un témoin neuf de `carteMonde.js`, rouge sur l'ancien
+code (ni convoi ni entrée de Nice) : l'A8 n'a aucun rail sous son emprise, ne
+frôle ni Marseille ni Nice hors de ses tronçons radiaux, l'entrée de Nice roule
+sur la chaussée sans un bloc à hauteur de carrosserie, et celle de Marseille
+arrive sur la rue. Les témoins de toutes les routes (profil, déblai 7,5,
+remblai 0,6, ponts et leurs joints, aérodromes, emprise partagée) la lisent
+sans changement. L'empreinte des 490 morceaux ne bouge pas : aucun de ses
+neuf lieux n'est sur l'A8, et elle rend la constante de la v419 au bit près,
+avec et sans la route. Le premier portail a trouvé deux points du joint du
+deuxième pont sans cube ni tablier : un sommet de coude tombait un bloc et
+demi avant le tablier ; déplacé, le joint est fermé sur les 19 500 points
+que le témoin lit.
+
+---
+
+
+---
+
+## v427 — Des essais du jeu plus sûrs
+
+**Pourquoi.** Chaque livraison des sessions parallèles paie un portail de près
+de deux heures, puis une « double mesure » de rouges qui reviennent portail
+après portail, des deux côtés, sans qu'une ligne du jeu bouge. Quatre d'entre
+eux étaient parmi les plus fréquents : `realisme.js` qui meurt au clic
+« Jouer », `maj.js` « corps, programmes et fond de carte sont vraiment là »,
+la cascade « pas aux commandes » de `monte.js` (une fenêtre de quiz sur
+l'écran) et « son flanc frôlé ne nous arrête pas ». Un témoin qui change de
+verdict sans que le jeu change ne garde rien : il coûte des heures et cache
+les vrais rouges.
+
+**Ce que ça change.** Rien dans le jeu : quatre témoins se placent eux-mêmes.
+- `realisme.js` appuie comme un doigt. L'accueil de Manhattan rend 0,07 image
+  par seconde en rendu logiciel, et `locator.click` attend deux images
+  identiques : 24 s au repos, au-delà de 30 sous charge. Le témoin vérifie ce
+  que l'enfant voit (« Jouer » actif, à découvert — verdict neuf), ferme les
+  écrans d'identité qui s'enchaînent, puis clique par le document.
+- `maj.js` prépare seul. Deux pages restées sur l'accueil occupent 2,4 à 3,7
+  cœurs sur quatre (l'accueil rend le monde derrière lui) : la préparation
+  passait de 4 s à 39–44 s et touchait la borne de 45 s. Le témoin passe en
+  tête de suite, et la partie d'un témoin précédent se ferme après son
+  verdict.
+- La cascade « pas aux commandes » de `monte.js` était l'ARRÊT QUOTIDIEN :
+  elle tombait à 45,8 minutes de la suite, la limite de 45 minutes de jeu par
+  jour sur la page que la suite garde ouverte. Le banc ouvre la journée comme
+  le code parental (des déblocages du jour), et rouvre aussi le répit de quiz
+  de la journée COURANTE : une suite qui passait minuit retrouvait un quiz.
+- Le flanc frôlé se pose dans le repère de la voiture garée : elle s'arrête au
+  coin de son anneau, en biais, et la pose écrite pour une voiture droite la
+  manquait à chaque fois.
+
+**Ce qui le prouve.** Sous trois cœurs chargés, `realisme.js` meurt au clic
+sur `origin/main` et va au bout sur la branche (18/18). `maj.js` rejouée seule :
+branche 3/3 verte, `origin/main` 2/2 rouge (« vraiment là », « ne floute
+rien »). Sonde de la limite du jour : banc d'avant arrêté 2/2, banc neuf en jeu 2/2.
+Sonde de minuit : quiz à 15,8 et 15,5 s avec l'ancien répit, aucun avec le neuf. Flanc : 3/3 rouge seul des deux côtés avant, 3/3 vert après.
+Chaque témoin peut encore rougir, désarmé dans une copie : « Jouer » grisé ou
+recouvert → rouge ; le choc contre la rue lu sans sa boîte → choc franc, rouge ;
+la préparation libérée sans attendre la carte → carte absente à la libération.
+Sondes : `sonde-realisme-clic`, `sonde-jouer-couvert`, `sonde-prep-duree`,
+`sonde-voisines`, `sonde-quiz-minuit`, `sonde-limite-du-jour`, `sonde-flanc`.
+
+---
 
 ## v426 — Le journal de bord ne crie plus au plantage pour rien
 
@@ -241,6 +407,7 @@ se voit pas en durée d'image au banc (pire image 283 à 367 ms contre 283 à
 383), parce que l'attente se cachait dans des images déjà lentes — il se
 transpose à la tablette comme un appel synchrone de moins par morceau.
 
+
 ## v419 — Paris rejoint Lyon
 
 **Pourquoi.** Paris–Lyon était dans la liste du kit « monde fidèle » depuis la
@@ -300,6 +467,7 @@ quatre circuits. Le coût du dépliage ne bouge pas, et l'empreinte des 490
 morceaux est celle d'`origin/main`.
 
 ---
+
 ## v417 — Le monde arrive à temps au-dessus des villes
 
 **Pourquoi.** Le témoin qui vérifie que l'avion ne dépasse pas le monde en

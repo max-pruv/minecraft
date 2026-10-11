@@ -601,7 +601,7 @@ export class Player {
   verticaleVoiture(vyAvant, avantX, avantZ, dt) {
     const w = this.world;
     const s = w.solContinu ? w.solContinu(this.pos.x, this.pos.z) : null;
-    const tab = w.tablierEn ? w.tablierEn(this.pos.x, this.pos.z) : null;
+    const tab = w.tablierSousLePoint ? w.tablierSousLePoint(this.pos.x, this.pos.z) : null;
     const l1 = s === null || tab !== null ? null : this.lectureCaisse();
     // UNE MARCHE FRANCHIE DANS L'IMAGE (`franchirEnRoulant`, v286) : la caisse
     // vient d'être posée sur un cube, c'est le voxel qui décide, comme avant.

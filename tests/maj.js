@@ -40,6 +40,145 @@ function verifier(nom, ok, detail = '') {
   const banc = new Banc({ portJeu: 8361, portPairs: 9361 });
   await banc.ouvrir();
   try {
+    // CE TÉMOIN PASSE EN PREMIER, SEUL SUR LA MACHINE (banc-intermittents).
+    // Il jugeait la préparation à côté de TROIS autres pages : `tab` et
+    // `accueil` restées sur l'accueil, `onglet` en jeu. Mesuré
+    // (`sonde-voisines.cjs`, /proc/stat) : deux pages sur l'accueil occupent
+    // 2,4 à 3,7 cœurs sur quatre — l'accueil rend le monde derrière lui — et le
+    // gel CDP n'y change rien, seule la fermeture. Préparation seule 3,4 et
+    // 4,4 s ; avec deux voisines 38,5 et 43,9 s (`sonde-prep-duree.cjs`) :
+    // la borne de 45 s tombait au portail, et le verdict rougissait des deux
+    // côtés depuis la v265 (dette « vraiment là »). Le verdict ne change pas
+    // d'un caractère ; c'est sa SITUATION qui est désormais celle d'une
+    // tablette, où une seule page prépare.
+    // --- le jeu se prépare AVANT « Jouer », et le bouton attend (v258) --------
+    //
+    // Max : « ne devrait-il pas y avoir le temps de télécharger tous les
+    // fichiers nécessaires avant de permettre à l'utilisateur de démarrer le
+    // jeu, pour éviter une expérience de lag ? » Ce qui lague au début n'est
+    // pas un fichier mais ce qui se calcule au premier usage : les corps, les
+    // programmes, le fond de la carte. La page se prépare derrière l'accueil,
+    // une ligne dit où elle en est, et « Jouer » reste grisé jusque-là. On
+    // ÉPROUVE LE TRAJET DE L'ENFANT : il ouvre le jeu, le bouton attend, la
+    // ligne compte, et quand le bouton se libère tout est vraiment prêt. Sur
+    // l'ancien code, le bouton n'attend jamais et la ligne n'existe pas.
+    // (`prep: 1` : le banc demande d'ordinaire `?prep=0`.)
+    const prune = await banc.joueur('Prune', { prep: 1 });
+    const debutPrep = Date.now();
+    let premier = null, liberation = null, tours = 0;
+    const lignes = new Set();
+    const floutesEnPreparant = new Set();
+    while (!liberation && Date.now() - debutPrep < 60000) {
+      const e = await prune.evaluate(() => {
+        const b = document.getElementById('play-btn');
+        const l = document.getElementById('prep-line');
+        // LE VERRE DÉPOLI PENDANT LA PRÉPARATION, C'EST DES IMAGES EN MOINS.
+        // Un `backdrop-filter` est un calque que le navigateur relit et
+        // refloute ; mesuré, il coûte la moitié des images de l'accueil, et ce
+        // sont celles dont la chauffe des programmes (une compilation par
+        // image, v246) et le fond de carte ont besoin. On ne compte que les
+        // quelques éléments qui portent le verre : parcourir la page entière à
+        // chaque tour, c'est le témoin qui ralentirait la page qu'il mesure.
+        const PORTEURS = ['#who-screen', '#play-btn', '#app-version',
+          '#overlay .controls', '#profile-menu', '#online-menu'];
+        const flous = PORTEURS.filter((sel) => {
+          const el = document.querySelector(sel);
+          if (!el) return false;
+          const f = getComputedStyle(el);
+          const v = f.backdropFilter || f.webkitBackdropFilter || 'none';
+          return v !== 'none' && v !== '';
+        });
+        return { grise: !!(b && b.disabled), ligne: l ? l.textContent : null,
+          flous, prepare: document.body.classList.contains('prepare'),
+          prep: window.__preparation ? window.__preparation() : null };
+      }).catch(() => null);
+      if (e) {
+        if (!premier) premier = e;
+        if (e.ligne) lignes.add(e.ligne);
+        if (e.grise) { for (const f of e.flous) floutesEnPreparant.add(f); tours++; }
+        if (!e.grise) liberation = { ...e, apres: Date.now() - debutPrep };
+      }
+      await dormir(100);
+    }
+    // ET LE RETOUR DU VERRE S'ATTEND, IL NE SE LIT PAS À L'INSTANT DE LA
+    // LIBÉRATION (v277). La boucle ci-dessus s'arrête au PREMIER relevé non
+    // grisé ; or `verreQuandPret` (main.js) sonde toutes les 250 ms et la
+    // transition du flou dure une demi-seconde. Lu là, `body.prepare` est
+    // encore posée une fois sur quatre — mesuré, quatre passages de cette suite
+    // seule — et le verdict du verre tombait sur une course de MON fait, pas
+    // sur un défaut du jeu. C'est la famille de la v249 : un témoin qui lit
+    // l'effet d'un minuteur l'attend, et il borne.
+    //
+    // DEUX INSTANTANÉS, ET C'EST LE POINT. `liberation` reste le PREMIER relevé
+    // non grisé — l'état AU MOMENT où l'enfant peut jouer, que le verdict
+    // d'au-dessus lit et qu'il ne faut surtout pas adoucir en échantillonnant
+    // plus tard (les programmes continuent de se compiler). Le retour du verre
+    // a le sien.
+    let verreRevenu = liberation;
+    const finVerre = Date.now() + 4000;
+    while (liberation && (verreRevenu.prepare || verreRevenu.flous.length === 0)
+           && Date.now() < finVerre) {
+      await dormir(150);
+      const e = await prune.evaluate(() => {
+        const PORTEURS = ['#who-screen', '#play-btn', '#app-version',
+          '#overlay .controls', '#profile-menu', '#online-menu'];
+        const flous = PORTEURS.filter((sel) => {
+          const el = document.querySelector(sel);
+          if (!el) return false;
+          const f = getComputedStyle(el);
+          const v = f.backdropFilter || f.webkitBackdropFilter || 'none';
+          return !!v && v !== 'none';
+        });
+        return { flous, prepare: document.body.classList.contains('prepare') };
+      }).catch(() => null);
+      if (e) verreRevenu = { ...verreRevenu, ...e };
+    }
+    const attenduVerre = +((4000 - Math.max(0, finVerre - Date.now())) / 1000).toFixed(1);
+    console.log(`   🔎 préparation : ${[...lignes].slice(0, 3).join(' | ')} · libération ${JSON.stringify(liberation)}`);
+    verifier('avant « Jouer », le bouton attend que le jeu soit prêt, et une ligne dit ce qu\'il prépare',
+      !!premier && premier.grise === true && /Préparation/.test(premier.ligne || '') && /\d+\/\d+/.test(premier.ligne || ''),
+      JSON.stringify(premier));
+    // DEUX HORLOGES, ET LA BORNE APPARTENAIT À L'AUTRE (v276).
+    //
+    // Ce verdict exigeait `liberation.apres < 45000`. Or `apres` est l'horloge
+    // du BANC — elle part avant `banc.joueur()`, donc elle compte aussi
+    // l'ouverture de la page — tandis que les quarante-cinq secondes sont la
+    // borne que la PAGE s'applique à elle-même, comptée depuis `departPrep`.
+    // Mesuré au portail : `depuis` 43 761 ms (donc en deçà de sa propre borne,
+    // tout était là) pour `apres` 47 710. Le témoin rougissait en comparant une
+    // horloge à la borne de l'autre.
+    //
+    // Et la durée n'a rien à faire dans le verdict, parce que ce n'est pas ce
+    // qu'il annonce : ce qu'il annonce, c'est qu'AU MOMENT où le bouton se
+    // libère, tout est vraiment là. Si la page se libérait à sa borne en ayant
+    // fini, l'enfant n'y perdrait rien ; si elle se libérait sans avoir fini,
+    // c'est l'état qui le dit — c'est ce qui s'est passé, deux fois, et l'état
+    // l'a vu (8 programmes sur 25, fond de carte absent). La durée reste dans
+    // le MESSAGE, où elle sert à démonter un rouge, jamais à en faire un.
+    verifier('et quand il se libère, corps, programmes et fond de carte sont vraiment là',
+      !!liberation && !!liberation.prep && liberation.prep.humains === true
+      && liberation.prep.programmes >= liberation.prep.aChauffer && liberation.prep.carte === true,
+      JSON.stringify(liberation));
+    // PENDANT QU'IL PRÉPARE, IL NE FLOUTE RIEN — ET UNE FOIS PRÊT, SI.
+    //
+    // Ce témoin est vert sur `origin/main` par une autre raison qu'ici : là-bas
+    // il n'y a pas de verre du tout. Il est gardé quand même, et la règle de la
+    // v220 dit laquelle : il garde une CAPACITÉ qu'on vient de frôler, et que
+    // les passes de rebranding suivantes — qui posent du verre sur les
+    // Réglages, le journal, le HUD — frôleront encore. Vérifié rouge en
+    // désarmant la suspension : « floutés en préparant: #who-screen, #play-btn,
+    // #app-version, #overlay .controls ».
+    verifier('et pendant qu\'il prépare, la page ne floute rien — les images vont au jeu',
+      tours >= 3 && floutesEnPreparant.size === 0
+      && !!verreRevenu && verreRevenu.prepare === false && verreRevenu.flous.length > 0,
+      `${tours} relevé(s) grisés · floutés en préparant : ${[...floutesEnPreparant].join(', ') || 'aucun'}`
+      + ` · une fois prêt : ${verreRevenu ? verreRevenu.flous.join(', ') : '?'}`
+      + ` (attendu ${verreRevenu ? attenduVerre : '?'} s)`);
+    await prune.evaluate(() => { window.__game.edu.today().libreJusqua = 86400; document.getElementById('play-btn').click(); });
+    const lance = await prune.waitForFunction(() => window.__game.running, null, { timeout: 30000 }).then(() => true).catch(() => false);
+    verifier('et « Jouer » lance bien la partie une fois libéré', lance);
+    await prune.close();
+
     // Le service worker doit être VIVANT : c'est lui tout le sujet. Le banc le
     // débranche partout ailleurs, à raison — ici on le garde.
     // `prep: 1` (v258) : le geste de Max se fait sur l'accueil, pendant que
@@ -279,6 +418,13 @@ function verifier(nom, ok, detail = '') {
     await dormir(25000);   // trois fois le répit du préchargement
     verifier('le premier chargement ne télécharge pas le scanner de visages pendant qu\'on joue',
       scanner.length === 0, scanner.length ? `${scanner.length} fichier(s) : ${scanner.slice(0, 3).join(', ')}` : '');
+    // ET CETTE PARTIE SE FERME QUAND ELLE A RENDU SON VERDICT (banc-intermittents).
+    // Personne ne relit `onglet` ensuite, et il restait EN JEU jusqu'à la fin
+    // de la suite : un monde rendu en logiciel, un à deux cœurs occupés
+    // (`sonde-voisines.cjs`), à côté de chaque témoin qui suit. Un témoin se
+    // place lui-même, et « se placer » veut dire aussi ce qui traîne autour
+    // (v279, v284) — et ce qu'on laisse traîner derrière soi.
+    await onglet.close();
 
     // ET LE REMÈDE NE VA PAS TROP LOIN. Retirer le préchargement tout court
     // serait plus simple — et l'enfant qui touche « Reconnais-moi » depuis
@@ -295,133 +441,6 @@ function verifier(nom, ok, detail = '') {
     verifier('mais l\'enfant qui reste sur l\'accueil l\'obtient quand même',
       surAccueil.length > 0, `${surAccueil.length} requête(s)`);
 
-    // --- le jeu se prépare AVANT « Jouer », et le bouton attend (v258) --------
-    //
-    // Max : « ne devrait-il pas y avoir le temps de télécharger tous les
-    // fichiers nécessaires avant de permettre à l'utilisateur de démarrer le
-    // jeu, pour éviter une expérience de lag ? » Ce qui lague au début n'est
-    // pas un fichier mais ce qui se calcule au premier usage : les corps, les
-    // programmes, le fond de la carte. La page se prépare derrière l'accueil,
-    // une ligne dit où elle en est, et « Jouer » reste grisé jusque-là. On
-    // ÉPROUVE LE TRAJET DE L'ENFANT : il ouvre le jeu, le bouton attend, la
-    // ligne compte, et quand le bouton se libère tout est vraiment prêt. Sur
-    // l'ancien code, le bouton n'attend jamais et la ligne n'existe pas.
-    // (`prep: 1` : le banc demande d'ordinaire `?prep=0`.)
-    const prune = await banc.joueur('Prune', { prep: 1 });
-    const debutPrep = Date.now();
-    let premier = null, liberation = null, tours = 0;
-    const lignes = new Set();
-    const floutesEnPreparant = new Set();
-    while (!liberation && Date.now() - debutPrep < 60000) {
-      const e = await prune.evaluate(() => {
-        const b = document.getElementById('play-btn');
-        const l = document.getElementById('prep-line');
-        // LE VERRE DÉPOLI PENDANT LA PRÉPARATION, C'EST DES IMAGES EN MOINS.
-        // Un `backdrop-filter` est un calque que le navigateur relit et
-        // refloute ; mesuré, il coûte la moitié des images de l'accueil, et ce
-        // sont celles dont la chauffe des programmes (une compilation par
-        // image, v246) et le fond de carte ont besoin. On ne compte que les
-        // quelques éléments qui portent le verre : parcourir la page entière à
-        // chaque tour, c'est le témoin qui ralentirait la page qu'il mesure.
-        const PORTEURS = ['#who-screen', '#play-btn', '#app-version',
-          '#overlay .controls', '#profile-menu', '#online-menu'];
-        const flous = PORTEURS.filter((sel) => {
-          const el = document.querySelector(sel);
-          if (!el) return false;
-          const f = getComputedStyle(el);
-          const v = f.backdropFilter || f.webkitBackdropFilter || 'none';
-          return v !== 'none' && v !== '';
-        });
-        return { grise: !!(b && b.disabled), ligne: l ? l.textContent : null,
-          flous, prepare: document.body.classList.contains('prepare'),
-          prep: window.__preparation ? window.__preparation() : null };
-      }).catch(() => null);
-      if (e) {
-        if (!premier) premier = e;
-        if (e.ligne) lignes.add(e.ligne);
-        if (e.grise) { for (const f of e.flous) floutesEnPreparant.add(f); tours++; }
-        if (!e.grise) liberation = { ...e, apres: Date.now() - debutPrep };
-      }
-      await dormir(100);
-    }
-    // ET LE RETOUR DU VERRE S'ATTEND, IL NE SE LIT PAS À L'INSTANT DE LA
-    // LIBÉRATION (v277). La boucle ci-dessus s'arrête au PREMIER relevé non
-    // grisé ; or `verreQuandPret` (main.js) sonde toutes les 250 ms et la
-    // transition du flou dure une demi-seconde. Lu là, `body.prepare` est
-    // encore posée une fois sur quatre — mesuré, quatre passages de cette suite
-    // seule — et le verdict du verre tombait sur une course de MON fait, pas
-    // sur un défaut du jeu. C'est la famille de la v249 : un témoin qui lit
-    // l'effet d'un minuteur l'attend, et il borne.
-    //
-    // DEUX INSTANTANÉS, ET C'EST LE POINT. `liberation` reste le PREMIER relevé
-    // non grisé — l'état AU MOMENT où l'enfant peut jouer, que le verdict
-    // d'au-dessus lit et qu'il ne faut surtout pas adoucir en échantillonnant
-    // plus tard (les programmes continuent de se compiler). Le retour du verre
-    // a le sien.
-    let verreRevenu = liberation;
-    const finVerre = Date.now() + 4000;
-    while (liberation && (verreRevenu.prepare || verreRevenu.flous.length === 0)
-           && Date.now() < finVerre) {
-      await dormir(150);
-      const e = await prune.evaluate(() => {
-        const PORTEURS = ['#who-screen', '#play-btn', '#app-version',
-          '#overlay .controls', '#profile-menu', '#online-menu'];
-        const flous = PORTEURS.filter((sel) => {
-          const el = document.querySelector(sel);
-          if (!el) return false;
-          const f = getComputedStyle(el);
-          const v = f.backdropFilter || f.webkitBackdropFilter || 'none';
-          return !!v && v !== 'none';
-        });
-        return { flous, prepare: document.body.classList.contains('prepare') };
-      }).catch(() => null);
-      if (e) verreRevenu = { ...verreRevenu, ...e };
-    }
-    const attenduVerre = +((4000 - Math.max(0, finVerre - Date.now())) / 1000).toFixed(1);
-    console.log(`   🔎 préparation : ${[...lignes].slice(0, 3).join(' | ')} · libération ${JSON.stringify(liberation)}`);
-    verifier('avant « Jouer », le bouton attend que le jeu soit prêt, et une ligne dit ce qu\'il prépare',
-      !!premier && premier.grise === true && /Préparation/.test(premier.ligne || '') && /\d+\/\d+/.test(premier.ligne || ''),
-      JSON.stringify(premier));
-    // DEUX HORLOGES, ET LA BORNE APPARTENAIT À L'AUTRE (v276).
-    //
-    // Ce verdict exigeait `liberation.apres < 45000`. Or `apres` est l'horloge
-    // du BANC — elle part avant `banc.joueur()`, donc elle compte aussi
-    // l'ouverture de la page — tandis que les quarante-cinq secondes sont la
-    // borne que la PAGE s'applique à elle-même, comptée depuis `departPrep`.
-    // Mesuré au portail : `depuis` 43 761 ms (donc en deçà de sa propre borne,
-    // tout était là) pour `apres` 47 710. Le témoin rougissait en comparant une
-    // horloge à la borne de l'autre.
-    //
-    // Et la durée n'a rien à faire dans le verdict, parce que ce n'est pas ce
-    // qu'il annonce : ce qu'il annonce, c'est qu'AU MOMENT où le bouton se
-    // libère, tout est vraiment là. Si la page se libérait à sa borne en ayant
-    // fini, l'enfant n'y perdrait rien ; si elle se libérait sans avoir fini,
-    // c'est l'état qui le dit — c'est ce qui s'est passé, deux fois, et l'état
-    // l'a vu (8 programmes sur 25, fond de carte absent). La durée reste dans
-    // le MESSAGE, où elle sert à démonter un rouge, jamais à en faire un.
-    verifier('et quand il se libère, corps, programmes et fond de carte sont vraiment là',
-      !!liberation && !!liberation.prep && liberation.prep.humains === true
-      && liberation.prep.programmes >= liberation.prep.aChauffer && liberation.prep.carte === true,
-      JSON.stringify(liberation));
-    // PENDANT QU'IL PRÉPARE, IL NE FLOUTE RIEN — ET UNE FOIS PRÊT, SI.
-    //
-    // Ce témoin est vert sur `origin/main` par une autre raison qu'ici : là-bas
-    // il n'y a pas de verre du tout. Il est gardé quand même, et la règle de la
-    // v220 dit laquelle : il garde une CAPACITÉ qu'on vient de frôler, et que
-    // les passes de rebranding suivantes — qui posent du verre sur les
-    // Réglages, le journal, le HUD — frôleront encore. Vérifié rouge en
-    // désarmant la suspension : « floutés en préparant: #who-screen, #play-btn,
-    // #app-version, #overlay .controls ».
-    verifier('et pendant qu\'il prépare, la page ne floute rien — les images vont au jeu',
-      tours >= 3 && floutesEnPreparant.size === 0
-      && !!verreRevenu && verreRevenu.prepare === false && verreRevenu.flous.length > 0,
-      `${tours} relevé(s) grisés · floutés en préparant : ${[...floutesEnPreparant].join(', ') || 'aucun'}`
-      + ` · une fois prêt : ${verreRevenu ? verreRevenu.flous.join(', ') : '?'}`
-      + ` (attendu ${verreRevenu ? attenduVerre : '?'} s)`);
-    await prune.evaluate(() => { window.__game.edu.today().libreJusqua = 86400; document.getElementById('play-btn').click(); });
-    const lance = await prune.waitForFunction(() => window.__game.running, null, { timeout: 30000 }).then(() => true).catch(() => false);
-    verifier('et « Jouer » lance bien la partie une fois libéré', lance);
-    await prune.close();
 
     // --- le badge de version ouvre le journal des nouveautés (v254) --------
     //

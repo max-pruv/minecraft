@@ -231,6 +231,7 @@ function poursuiteVoiture(a, player, dt, m) {
 
 const ROULIS_MAX = 0.075;      // rad, ~4°
 const TANGAGE_MAX = 0.05;      // rad, ~3° au freinage
+const PENTE_MAX = 0.45;        // rad, ~26° : la pente dessinée au plus
 const BRAQUAGE_ROUES = 0.5;    // rad, ~29° à plein volant
 const _q = new THREE.Quaternion(), _qm = new THREE.Quaternion(), _up = new THREE.Vector3();
 
@@ -283,9 +284,29 @@ function vieDeVoiture(a, player, dt, m) {
   const h = Math.min(dt, 0.05);
   S.wr += ((roulisVise - S.roulis) * 70 - S.wr * 12) * h; S.roulis += S.wr * h;
   S.wt += ((tangageVise - S.tangage) * 70 - S.wt * 12) * h; S.tangage += S.wt * h;
+  // LA PENTE (v429) : depuis la v408 la physique publie `player.tangage`, la
+  // pente sous les roues (nez en haut positif, le même signe que le nôtre) et
+  // en l'air la moitié de la trajectoire. Elle s'AJOUTE au tangage de la
+  // caisse : dans une côte le nez monte, et il plonge encore un peu au
+  // freinage. Bornée, parce qu'un relief d'un bloc par bloc ferait 45°.
+  // Et l'ATTERRISSAGE (`player.atterrissage`, un événement daté) donne au
+  // ressort un coup vers le bas et s'entend, à la mesure de sa force.
+  const pente = typeof player.tangage === 'number'
+    ? Math.max(-PENTE_MAX, Math.min(PENTE_MAX, player.tangage)) : 0;
+  const at = player.atterrissage;
+  if (at && typeof at === 'object' && at.t !== S.atterriVu) {
+    const neuf = S.atterriVu !== undefined || S.atterriPret;
+    S.atterriVu = at.t;
+    if (neuf) {
+      const f = Math.max(0, Math.min(1, at.force || 0));
+      S.wt -= 1.5 * f;
+      if (f > 0.05) bruitDeChoc(0.6 * f);
+    }
+  }
+  S.atterriPret = true;
   mesh.rotation.order = 'YXZ';
   mesh.rotation.z = S.roulis;
-  mesh.rotation.x = S.tangage;
+  mesh.rotation.x = S.tangage + pente;
 
   // LA DÉRIVE : quand la physique en publie une, la caisse s'oriente à
   // `derive` du sens de la marche. Si le cap de la voiture le dit déjà (la

@@ -517,6 +517,31 @@ class Banc {
     }
     await p.evaluate(() => {
       window.__game.edu.today().libreJusqua = 86400;
+      // LE RÉPIT VAUT AUSSI APRÈS MINUIT (banc-intermittents). `today()` range
+      // la journée sous la DATE LOCALE (`todayKey`) : un portail qui passe
+      // minuit trouve une journée neuve, sans répit, et le compte à rebours du
+      // quiz repart — quinze minutes plus tard, une fenêtre de quiz couvre
+      // l'écran et toute une suite de `monte.js` rend « pas aux commandes »
+      // (la cascade du portail de la v359, `cible: "quiz"`). On rouvre donc le
+      // répit de la journée COURANTE toutes les dix secondes, par la même
+      // donnée — sans fabriquer de journée future, que l'espace parent
+      // compterait. Une page qui a voulu un quiz (`libreJusqua` déjà posé à
+      // une autre valeur) n'est pas touchée.
+      //
+      // ET LA LIMITE DU JOUR S'OUVRE COMME UN PARENT L'OUVRE (banc-intermittents).
+      // La cascade de `monte.js` — « pas aux commandes », « pas au volant »,
+      // trois avions au même compteur — tombait à 45,8 minutes de la suite :
+      // c'est l'ARRÊT QUOTIDIEN de 45 minutes de jeu (invariant 2) sur la page
+      // principale, que la suite garde ouverte d'un bout à l'autre. Le jeu se
+      // met en pause (`running` faux), et chaque témoin suivant mesure une
+      // partie arrêtée. Un portail lent (2 h) le franchit, un portail rapide
+      // non : le rouge allait et venait. On fait ce que fait le code parental
+      // (`grantExtraBlock`) : des déblocages du jour — huit, soit près de sept
+      // heures —, par la même donnée (`unlocks`), sans toucher à la règle.
+      const e = window.__game.edu;
+      const ouvrir = () => { const t = e.today(); if (t.libreJusqua === undefined) t.libreJusqua = 86400; if ((t.unlocks || 0) < 8) t.unlocks = 8; };
+      ouvrir();
+      setInterval(ouvrir, 10000);
       document.getElementById('play-btn').click();
     });
     await p.waitForFunction(() => window.__game.running, null, { timeout: 30000 });

@@ -8,7 +8,7 @@ import { mobilierTrottoir, MOBILIER_OBSTACLE, villeHD } from './facadeshd.js';
 import { PARIS as PARIS_ANCRE, circuitsParis, circuitsQuartiersParis, marquageParis } from './paris.js';
 import { circuitsLondres } from './londres.js';
 import { circuitsSF } from './sanfrancisco.js';
-import { circuitsNice } from './nice.js';
+import { circuitsNice, ENTREES_NICE } from './nice.js';
 import { circuitsLille } from './lille.js';
 import { buildPropMesh } from './props.js';
 import { AnimalManager } from './animals.js';
@@ -1680,24 +1680,11 @@ function updateChunks() {
   // il n'y a rien sous les roues — un bord de quai, une chute. Une borne
   // d'altitude serait une constante de plus à régler pour un coût qui
   // n'existe pas.
-  const eauDevant = (x, z, cap) => {
-    const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux;
-    const demiLong = 2.2, demiLarg = Math.max(0.3, player.gabarit / 2);
-    const y0 = Math.floor(player.pos.y + 0.1);
-    for (let a = -demiLong; a <= demiLong + 1e-6; a += 1.1)
-      for (let b = -demiLarg; b <= demiLarg + 1e-6; b += demiLarg) {
-        const bx = Math.floor(x + ux * a + vx * b), bz = Math.floor(z + uz * a + vz * b);
-        if (world.isSolid(bx, y0 - 1, bz) || world.isSolid(bx, y0, bz)) continue;  // un plancher : on roule
-        // LE TABLIER D'UN PONT EST UN PLANCHER QUI N'EST PAS UN BLOC (v300) :
-        // un ruban du mailleur, une cote dans `routes.js`. Sans cette ligne la
-        // voiture voyait l'eau sous le pont et refusait d'y entrer — mesuré,
-        // 60 images bloquées sur 78 à l'entrée du premier pont de l'A1.
-        if (world.tablierEn) { const tab = world.tablierEn(bx + 0.5, bz + 0.5); if (tab !== null && Math.abs(tab - player.pos.y) < 1.5) continue; }
-        const sol = world.sommetColonne(bx, bz);
-        if (world.getBlock(bx, sol + 1, bz) === BLOCK.WATER) return true;
-      }
-    return false;
-  };
+  // La règle elle-même vit dans le monde depuis la v430 (`eauSousLaVoiture`) :
+  // la sonde des ponts la lit telle quelle, et le tablier s'y lit sur la
+  // colonne que le générateur a décidée — aux deux bouts de chaque pont
+  // d'autoroute, la voiture refusait d'avancer (Max, capture d'iPhone).
+  const eauDevant = (x, z, cap) => world.eauSousLaVoiture(x, z, cap, player.pos.y, Math.max(0.3, player.gabarit / 2));
   // LE MESSAGE DIT QUOI FAIRE, ET IL NE SE RÉPÈTE PAS À CHAQUE IMAGE. Le
   // crochet est appelé soixante fois par seconde tant que l'enfant pousse
   // vers la mer : un bandeau par image serait illisible.
@@ -2048,7 +2035,7 @@ function updateChunks() {
   // l'E429 à l'est. `ENTREES_*` suit l'ordre de `entreesDe`, et l'on prend
   // celle de CETTE route — le `[0]` d'avant aurait fait entrer les voitures de
   // Bruxelles par la porte de Paris.
-  const ENTREES = { paris: ENTREES_PARIS, lille: ENTREES_LILLE, londres: ENTREES_LONDRES };
+  const ENTREES = { paris: ENTREES_PARIS, lille: ENTREES_LILLE, londres: ENTREES_LONDRES, nice: ENTREES_NICE };
   // Une ville ENGENDRÉE n'a pas d'avenue d'entrée dessinée : le corridor y
   // arrive dans l'axe de sa trame (le point de passage est choisi pour cela),
   // donc sur la rue qui mène au centre. Les voitures la suivent jusqu'à douze
@@ -8011,6 +7998,8 @@ window.__vehicules = {
   placeProche: (rayon) => vehicules?.placeProche(player.pos, rayon),
   diagPlace: (rayon) => vehicules?.diagPlace(player.pos, rayon),
   diagCeder: () => vehicules?.diagCeder(),
+  // la fabrication par tranches (v431) : voitures fabriquées et différées
+  fabrication: () => vehicules?.fabrication?.(),
 };
 window.__vie = { effectif: () => vie?.effectif(), sites: () => vie?.sites, eteindre: (v) => vie?.eteindre(v) };
 // Pour les tests : ce que la nuit fait aux fenêtres. `solide` est le niveau

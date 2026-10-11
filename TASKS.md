@@ -1,5 +1,23 @@
 # Ce qui est en cours
 
+- [ ] **PORTAIL DES PONTS (v430) — DOUBLE MESURE (règle v195).** Portail
+  complet (base v419) coupé à sa limite de deux heures pendant `reseau.js` ;
+  rouges déjà déclarés : `carte.js` « la faire glisser non plus » (427 ms),
+  `manhattan.js` « le trou enlève aussi la géométrie », `monte.js` la chauffe de
+  New York et le trou en vol (chasseur 58/60). Non déclaré jusqu'ici :
+  `monte.js` « en vol au-dessus de Paris, le monde se maille hors du fil
+  principal » — l'avion n'avance pas (branche 10 blocs en 47 s ; `origin/main`
+  v424 rejouée SEULE, 19 blocs en 120 s, même rouge), avec « un morceau maillé
+  là-bas est le même ici » qui en dépend (2 à 5 comparés). Rejouée seule sur
+  `origin/main`, `monte.js` rend aussi la cascade « pas aux commandes » des
+  avions et « la voiture roule dans la nature » : la page qui vole au-dessus
+  de Paris rend moins d'une image par seconde. Hors de la livraison PAR
+  CONSTRUCTION : elle ne change le contact que sur une colonne qu'un pont
+  d'autoroute occupe au coin (`routeEn(floor)` ouvrage), et ni (−600, −520)
+  ni le vol à 96 blocs au-dessus de Paris n'en ont (relevé sous node). Piste :
+  mesurer la cadence de la page `MonteFil` (rr 12, au-dessus de Paris) seule,
+  puis après les témoins qui la précèdent.
+
 - [ ] **PORTAIL DU JOURNAL DE BORD (v426) — DOUBLE MESURE (règle v195).**
   Deux portails (bases v408 et v411) rouges sur `maj.js`, `carte.js`,
   `manhattan.js`, `monte.js`. Déclarés plus bas : la flèche du GPS et le
@@ -126,6 +144,34 @@
   Et `rattraper` (degats3d.js) ne rejoue plus la tôle une fois l'historique
   plein — défaut d'avant, invisible tant que le feu venait au 3e choc.
 
+- [ ] **UN ÉCART QUI FAIT TRAVERSER LA RUE (v402).** Le témoin du feu de
+  `monte.js` l'a publié : un passant sur le trottoir, poussé par l'écart devant
+  une voiture qui tourne, ressort sur le trottoir d'EN FACE (`traversee` nul,
+  `ecart` vrai, 6,5 blocs), au vert. Vu deux fois sur quatre passages de
+  `monte.js` des deux côtés. Piste : un écart ne quitte pas le trottoir s'il
+  peut l'éviter (choisir le côté qui reste sur `TROTTOIR`). Zone piétons.
+- [ ] **LONDRES, ROME, ZURICH : AUCUN PASSAGE PEINT (v402).** Sur 267 villes
+  engendrées, seules les 65 à trame alignée (`t.net`) peignent un passage ;
+  Londres n'en peint aucun. Les passants n'y traversent qu'aux feux (Londres 1 à
+  3 fois par minute). Peindre un passage en biais demande une géométrie (la
+  couche du mailleur, comme les marquages de Paris), pas une tuile : hors zone
+  piétons (villesmonde.js, londres.js, le mailleur).
+- [x] **`monte.js` « son flanc frôlé ne nous arrête pas » — FAIT en v427.**
+  Rouge SEUL 3/3 des deux côtés (`sonde-flanc.cjs` rejoue la page « conduite »
+  seule) : la voiture d'un convoi à l'arrêt se gare au COIN de l'anneau
+  (x 410, en biais : axe 0,71 / −0,71), et la pose écrite pour une voiture
+  tournée vers +x passait à côté (`c: null`). Le témoin attend que le crochet
+  rende la voiture (`vue`, `attenteVue`) et se pose dans SON repère : 3/3
+  verts (force 0,215, 12,3 b/s, sur notre flanc). Désarmé (la boîte de la rue
+  ignorée, normale du mouvement) : choc franc, force 0,83, recul — rouge.
+- [x] **`realisme.js` MEURT AU CLIC « JOUER » — FAIT en v427.** Pas le bouton :
+  la stabilité que `locator.click` exige (deux images identiques). Sonde
+  `sonde-realisme-clic.cjs` : bouton actif, rien dessus, accueil de Manhattan à
+  0,07 image/s ; clic en 23,9 et 24,5 s au repos, expiré sous trois cœurs
+  chargés (et « Plus tard » avec). Les trois clics de l'accueil passent par le
+  document, et un verdict neuf dit si « Jouer » est actif et à découvert.
+  Sous la même charge : `origin/main` meurt au clic, la branche va au bout
+  (18/18, clic en 89 ms).
 - [x] **ROME, ZURICH : PASSAGES EN BIAIS — fait en v421** (`passages.js`, 197
   villes engendrées). Reste : **LONDRES ET LES VILLES BÂTIES À LA MAIN** n'ont
   toujours aucun passage peint hors Paris. Leurs avenues sont des polylignes
@@ -433,6 +479,20 @@
   sur `origin/main` à (−2 581, 5 272), un nœud de circuits face à face,
   8,8 % sur la v423 — d'avant, à démonter. (5) Palier C : utilitaires et
   pickups (classe dans `FLOTTE`), variance par voiture, voie par tronçon.
+  **(3) FAIT en v431** : balayage au quart sur les deux premiers blocs,
+  plancher de file 1,0 en ligne droite (1,6 en virage) — médiane 1,9-2,0 →
+  1,1-1,3 (Paris, Rome, Zurich, Tokyo). Les contacts « file » relevés à Tokyo
+  sont au treizième rang au croisement du nœud (53 383, 8 048) : le huit
+  (v395), pas le plancher.
+  Portail de la v431 (dix suites) : les deux témoins neufs verts (fabrication
+  1 voiture par image, 89 faites, 96 différées ; files médiane 1,23 sur 237).
+  Rouges : `carte.js` (flèche GPS 1,92), `manhattan.js` (trou de façade, taxi
+  « 🐴 Monter »), `monte.js` (flâneur, chauffe de New York, maillage en vol :
+  10 blocs en 91 s), `reseau.js` (compteur à deux après départ, messages
+  réseau) — tous déclarés sauf les messages réseau. `reseau.js` REJOUÉE SEULE
+  des deux côtés : branche 82 verts, deux rouges (« un hôte sans courtier est
+  trouvé… » et son voisin) ; `origin/main` 79 verts, cinq rouges dont ces
+  deux-là. Les messages réseau sont verts seuls des deux côtés : charge.
   Portail de la v423 (dix-sept suites) : verts sauf `plafond.js` (l'A1 :
   À MOI, la voiture du témoin butait sur la circulation densifiée —
   repointée, rejouée seule entièrement verte, 80,7 blocs, 15 voitures
@@ -527,6 +587,17 @@
   rail et les autres routes. La règle des repères et de SFO tient sur ce
   couloir ; elle est à remesurer sur le tracé, pas sur l'axe.
 
+- [ ] **LE PORTAIL DE L'A8 (v428), DOUBLE MESURE FAITE.** `plafond.js` :
+  deux points du joint du deuxième pont de l'A8 sans cube ni tablier — un
+  vrai défaut, reproduit sous node, corrigé (sommet de coude déplacé), suite
+  rejouée seule verte. `monte.js` au portail : neuf rouges ; rejouée SEULE,
+  trois, À L'IDENTIQUE sur la branche et sur `origin/main` v419 — les deux
+  voitures l'une dans l'autre (taux 4,8 contre 4,4), la chauffe de New York
+  (54/321) et le flanc frôlé (`c` nul). Les six autres (la rue à cinquante,
+  le réverbère, la marche arrière de la voiture et de l'avion, « pas au
+  volant », la rame qui ralentit) ne reviennent pas seuls : rouges de charge
+  de portail. `maj.js` (le fond de carte) et `manhattan.js` (le taxi, la
+  géométrie du trou) : les dettes déclarées plus bas.
 - [ ] **LE PORTAIL DE L'A6 (v419), DOUBLE MESURE FAITE.** Quatre suites
   rouges. `plafond.js` : le joint du premier pont de l'A6 rendait deux
   « trous » à d 7,92, faux — le point est dans l'emprise, le centre de sa
@@ -857,7 +928,7 @@
   200 blocs, donc hors de la livraison par construction (elle ne change que le
   sol de Las Vegas et des contours d'anneaux).
 - [ ] **LES ANNEAUX D'AVANT ROULENT PARFOIS HORS DE LA CHAUSSÉE (mesuré v387,
-  repris v404, v418, v427).** v427 : 1 228 → 840 pas, 75 → 61 anneaux, 22 → 9
+  repris v404, v418, v432).** v432 : 1 228 → 840 pas, 75 → 61 anneaux, 22 → 9
   villes dont une voie passe sur le centre (la vue sur la voie, la couverture à
   la règle du témoin, plusieurs ordres, une rangée d'un coup ; quatorze villes
   changent, aucune ne perd de couverture). Reste, mesuré par
@@ -892,7 +963,7 @@
   Las Vegas et Rio, des anneaux choisis DANS la bande (une sélection, donc
   mesurer la couverture) ; pour les rivières, un contour qui publie son tablier
   (un tablier neuf est du sol : Rome est dans l'empreinte des 490 morceaux).
-- [ ] **PORTAIL DE LA v427 (la place se contourne), DOUBLE MESURE FAITE.**
+- [ ] **PORTAIL DE LA v432 (la place se contourne), DOUBLE MESURE FAITE.**
   Voie : fumée, `parishd.js`, `carteMonde.js`, `plafond.js` verts. `maj.js` :
   le badge (« version servie v421 » pour une tête de journal à 422 — le bump
   de `sw.js` se fait à la fusion) et « corps, programmes et fond de carte »
@@ -902,7 +973,7 @@
   branche 107 verts / 3 rouges, `origin/main` 99 / 4. Propres à la branche,
   tous deux déjà déclarés et vus sur `origin/main` (v395, v414) : « elle
   ralentit assez pour qu'on la rejoigne » (9,1 m/s) et « la rue roule à
-  l'allure d'une ville » (Paris, bâtie à la main, que la v427 ne touche pas :
+  l'allure d'une ville » (Paris, bâtie à la main, que la v432 ne touche pas :
   seules quatorze villes engendrées changent d'anneaux, sonde `ident`).
   Après fusion de la v426 : portail rejoué, mêmes familles (`maj.js` loader,
   déclarés ; `carte.js` flèche du GPS et glisser, déclarés ; `monte.js` 30
@@ -1003,6 +1074,30 @@
   l'intermittence déjà mesurée rouge une fois sur quatre sur `origin/main`
   (tableau plus bas). Le témoin neuf « une voiture neuve n'hérite pas du
   dernier choc » est vert au portail.
+
+- [ ] **`monte.js` NE FINIT PLUS UNE FOIS SUR DEUX, ET C'EST UNE AFFAIRE DE
+  BANC (mesuré pour la v429).** Deux causes, une réglée.
+  1. **La limite du jour** (45 min, `education.js`) : la page `tab` vit plus
+     d'une heure, l'écran de fin de journée s'ouvrait et prenait le doigt
+     (`"cible":"hardstop"`) — au portail de la v429, trente-cinq rouges en
+     cascade (avions « pas aux commandes », voiture « pas au volant », les
+     neuf témoins des sensations à `vMax 0`). Réglé dans la suite :
+     `today().unlocks = 99`, la donnée qu'un parent pose (`leverLaLimite`).
+  2. **L'ouverture d'une page à part sous une page à 3,8 cœurs** : après « en
+     vol au-dessus de Paris, le monde se maille hors du fil principal »,
+     `souffler` lit une charge STABLE de 3,7 à 3,9 cœurs, et la page suivante
+     (`MonteRegard` l. 3901, `MonteMobilier` l. 4279) ne charge pas en 90 s.
+     Branche : 2 arrêts sur 2 rejeux seuls (98 et 110 verts) ; `origin/main` :
+     v404 arrêtée, v411 au bout (11 rouges). Piste : ce que `tab` fait encore
+     après ce témoin (vol laissé en cours ? file de maillage à `rr` 12 ?) — la
+     sonde à écrire relève `__game.player.flying`, la file et la position de
+     `tab` à cet instant, puis on ramène `tab` au sol avant `souffler`.
+  Et le pic du choc ratait le coup deux passages sur cinq (0,06 contre 0,07
+  au calme, secousse vue) : une seule lecture 0,45 s après pour une fenêtre de
+  0,74 s. La mesure lit à chaque image pendant 1,5 s : 1,02 · 1,10 · 1,20.
+  La v429 se prouve donc par la sonde (`sonde-sensations.cjs`, même mesure
+  que le témoin), des deux côtés : pente 1,182 contre 0, atterrissage 0,74 à
+  0,95 contre 0,057.
 
 - [ ] **AU PORTAIL DE LA v422 (les sensations au volant, fusionnée avec main
   v404 puis v411 puis v421), AUCUN ROUGE NE VIENT DE LA LIVRAISON.** Trois
@@ -2381,7 +2476,7 @@
   entrée nord propre de sa trame (−100° à −103°) — 79 819 tracés, tous refusés
   par sa marge ; l'autre entrée propre (−175°, −192°) arrive par la mer, deux
   cents blocs de viaduc. Déplacer un aérodrome est une décision de Max
-  (invariant 1) ; un viaduc en mer aussi. A109 Nairobi–Mombasa faite en v315. A3 Cologne–Francfort faite en v320 (au sud de l'ICE : au nord, l'aérodrome de Francfort ne laisse pas la place d'une emprise). E1 Kyoto–Nagoya faite en v323 (au sud du Shinkansen, où les deux trames ont une entrée propre ; un étang contourné par le nord, aucun pont). Autosole Bologne–Florence faite en v324 (aucun pont ; un point de passage sur le rayon de chaque entrée). A4 Milan–Turin faite en v327 (sept tracés sur 36 432, le déblai a fait le tri ; aucun pont). Yamuna Delhi–Agra faite en v328 (soixante-huit tracés sur 18 216, aucun pont). A1 Sud Rome–Naples faite en v329 (sortie est de Rome, puis un virage en plusieurs fois ; aucun pont). M1 Vienne–Budapest faite en v332 (1 573 admissibles sur 18 216, aucun pont). A1 Nord Milan–Bologne faite en v333 (au nord de la Frecciarossa, qui sort de Milan à 51° ; Milan par −16°, Bologne par −156° ; 31 admissibles sur 5 082, sept sans pont). **Séoul–Busan BLOQUÉE PAR LE RELIEF** (v333) : Busan (ville à 33) est cerclée côté terre d'une crête à 50–60 blocs entre r + 10 et r + 40, et la mer de l'autre ; 8 450 tracés, aucun admissible (1 236 déblai, le reste coude). Abaisser la crête est une décision de Max. A24 Berlin–Hambourg faite en v334 (Hambourg par l'est, porte à vingt-quatre blocs du bord ; un seul tracé sans pont sur 2 904). I-45 Dallas–Houston faite en v336 (Houston par le sud après l'avoir contournée par l'est ; trois ponts ; cinq admissibles sur 24 000 chemins lissés). A7 Lyon–Marseille faite en v337 (à l'ouest du TGV ; Lyon par 130°, Marseille par −136° ; trois ponts ; quatre admissibles sur 2 025). AP-2 Madrid–Barcelone faite en v338 (Barcelone par −170°, son côté bas ; quatre ponts ; neuf admissibles sur 16 000 chemins lissés, le joint mesuré sur chacun). Restent, hors des zones des autres sessions : Paris–Lyon (FAITE en v419), San Francisco–Los Angeles et Marseille–Nice (villes bâties à la main, réservées), New York–Boston et New York–Washington (Manhattan, entrée à instruire à la main), Londres–Birmingham (FAITE en v415), et les corridors bloqués ci-dessus. Hansalinie Cologne–Hambourg faite en v355 (Cologne par −108°, entre l'ICE et l'aérodrome ; Hambourg CONTOURNÉE par l'ouest, entrée par le nord-ouest −134° — l'Elbe ferme le sud du disque entre 38 et 70 blocs du centre, l'A24 l'est, un pont de l'Alster borde l'axe nord ; aucun pont ; 397 admissibles sur 1 500). Dette vue en passant en v355 : la porte de l'A3 à Francfort creusait un pont de la ville — FAITE en v362 (le talus s'arrête à un bloc au-delà du bout d'une route ; le témoin des ponts de villes lit les dix-huit villes à pont qu'une route touche). 401 Toronto–Montréal faite en v355 (Toronto par −18°, Montréal CONTOURNÉE par le sud et prise par son axe sud, 88° ; aucun pont ; seize admissibles sur 3 000). La sonde qui contourne une ville est le couloir le plus bas cherché sur une grille qui porte le CAP (huit directions, un huitième de tour au plus après deux pas droits), rails, autres routes et aérodromes interdits, puis Chaikin et simplification sous 22° de coude, `profilDe` appelé sur chaque candidat — scratchpad de la v355, décrite dans CLAUDE.md « Les routes qui contournent ». M40 Londres–Birmingham faite en v415 (sortie nord de Londres, entrée déclarée `ENTREES_LONDRES` jusqu'à Pentonville Road ; le col de la crête nord-sud à 41-46 ; Birmingham par 45°, l'axe de sa trame ; deux ponts, joints fermés ; 69 admissibles sur 480). **Dette vue en v415 : la trame générique de `world.js` (« one lot per grid cell ») tourne encore pour Londres** — elle n'est pas dans la liste des six villes exclues — et pose des maisons par-dessus la ville dans l'anneau de 77 à 102 blocs du centre ; v415 ne les retire que sur la route et son entrée. Les retirer partout est juste, mais touche des toits où un enfant a pu bâtir : il faut la marche de migration (ou la ville d'avant figée) qui va avec. A6 Paris–Lyon faite en v419 (à l'ouest du TGV d'un bout à l'autre — à l'est, un massif de 46 à plus de 60 ; Paris par 86°, la porte d'Italie, l'entrée déclarée de paris.js menant à la place d'Italie et non plus à la Gare du Nord ; Lyon par −144°, −147° ayant des bancs sur son avenue ; un pont ; 298 admissibles sur 720). Tōmei Tokyo–Nagoya fait en v381 (la bande côtière au sud du Shinkansen, entre la montagne et la mer : Haneda et Yokota ferment la plaine à l'ouest de Tokyo ; Tokyo par 132°, porte à vingt-quatre blocs du bord, Nagoya par 60° ; un pont ; 22 admissibles sur 300). Suivants dans l'ordre du relevé (courts, sans rail) : New York–Boston (eau 135), New York–Washington (eau 150 ; FAITE en v367, I-95 Sud : seconde porte de New York sur la rive de l'Hudson, Washington par le sud, `boutNet` et `avenues` ; vingt et un admissibles sur 2 500, aucun sans pont) — New York est Manhattan, une ville à part (pas dans VILLES_MONDE) : son entrée est à instruire à la main. Instruit en v355 sans le faire : Manhattan est un RECTANGLE de 480 × 2 300 blocs (`BORNES`, manhattan-plan.js, z de −1 300 à +1 000 autour de l'ancre) et non le disque de 152 du registre — `porte()` (r − 20 sur le rayon) poserait la porte SUR l'île, et le raccord de quarante blocs y écrirait son remblai dans les rues (« la route a le dernier mot sur sa colonne »). Il faut une porte déclarée hors de l'île, au bout d'un pont sur l'East River ou le Hudson, ce qui touche `porte()` ou `manhattan-*.js` : une livraison à elle. FAITE en v362 pour la porte : `portes: { ny: [x, z] }` dans la fiche de la route, sur la rive est hors du rectangle ; I-95 New York–Boston faite en v362 (porte NY à (276, −890) du centre, Boston par 145°, un pont, 86 admissibles sur 12 000) ; Londres–Birmingham FAITE en v415. **Los Angeles–San Diego BLOQUÉE** (v332) : une crête au-dessus de 46 blocs à l'est de Los Angeles (z 8 950 à 9 310), et le couloir côtier passe dans la marge de LAX — 265 120 tracés, aucun admissible (9 644 refus aérodrome, 25 076 pont près d'une porte : San Diego est entourée d'eau au nord-ouest). Déplacer LAX ou abaisser la crête est une décision de Max. **Manchester–Liverpool BLOQUÉE PAR LE RELIEF** (v324) : une crête au-dessus de 46 blocs barre tout l'espace entre les deux disques (villes à 33) ; 58 340 tracés, aucun admissible (8 970 déblai, 6 125 pont près d'une porte). Un tunnel ou un relief abaissé est une décision de Max. INSTRUITES en v323 sur l'axe direct, faute de la liste du kit (hors dépôt) — longueur · eau · rail à douze blocs · villes · aérodromes · repères : Manchester–Liverpool 222 · 11 · 0 · 0 · 0 · 0 ; Bologne–Florence 342 · 0 · 0 · 0 · 0 · 0 ; Milan–Turin 530 · 10 · 0 ; Delhi–Agra 656 · 41 · 0 (le Taj Mahal) ; Rome–Naples 683 · 81 · 0 ; Los Angeles–San Diego 718 · 25 · 0 ; Londres–Birmingham 767 · 29 · 0 ; Milan–Bologne 924 · 24 · 3 ; Vienne–Budapest 957 · 33 · 0 ; Tokyo–Nagoya 961 · 142 · 941 (Shinkansen) · Haneda sur l'axe ; New York–Boston 1 020 · 135 · 0 ; Berlin–Hambourg 1 293 · 42 · 0 ; New York–Washington 1 297 · 150 · 0 ; Lyon–Marseille 1 363 · 77 · 1 328 (TGV) ; Séoul–Busan 1 471 · 2 · 0 ; Paris–Lyon 1 625 · 54 · 1 588 (TGV) ; Dallas–Houston 1 781 · 44 · 0 ; Hambourg–Cologne 1 858 · 137 · 0 ; Madrid–Barcelone 2 068 · 199 · 2 033 (AVE) ; Toronto–Montréal 2 305 · 144 · 0 ; San Francisco–Los Angeles 2 403 · 131 · 0 · SFO et deux repères ; Marseille–Nice 596 · 401 · 0 · la Promenade des Anglais (l'axe direct est en mer). Ordre retenu : les courts sans rail ni eau d'abord. Restent à instruire les autres
+  (invariant 1) ; un viaduc en mer aussi. A109 Nairobi–Mombasa faite en v315. A3 Cologne–Francfort faite en v320 (au sud de l'ICE : au nord, l'aérodrome de Francfort ne laisse pas la place d'une emprise). E1 Kyoto–Nagoya faite en v323 (au sud du Shinkansen, où les deux trames ont une entrée propre ; un étang contourné par le nord, aucun pont). Autosole Bologne–Florence faite en v324 (aucun pont ; un point de passage sur le rayon de chaque entrée). A4 Milan–Turin faite en v327 (sept tracés sur 36 432, le déblai a fait le tri ; aucun pont). Yamuna Delhi–Agra faite en v328 (soixante-huit tracés sur 18 216, aucun pont). A1 Sud Rome–Naples faite en v329 (sortie est de Rome, puis un virage en plusieurs fois ; aucun pont). M1 Vienne–Budapest faite en v332 (1 573 admissibles sur 18 216, aucun pont). A1 Nord Milan–Bologne faite en v333 (au nord de la Frecciarossa, qui sort de Milan à 51° ; Milan par −16°, Bologne par −156° ; 31 admissibles sur 5 082, sept sans pont). **Séoul–Busan BLOQUÉE PAR LE RELIEF** (v333) : Busan (ville à 33) est cerclée côté terre d'une crête à 50–60 blocs entre r + 10 et r + 40, et la mer de l'autre ; 8 450 tracés, aucun admissible (1 236 déblai, le reste coude). Abaisser la crête est une décision de Max. A24 Berlin–Hambourg faite en v334 (Hambourg par l'est, porte à vingt-quatre blocs du bord ; un seul tracé sans pont sur 2 904). I-45 Dallas–Houston faite en v336 (Houston par le sud après l'avoir contournée par l'est ; trois ponts ; cinq admissibles sur 24 000 chemins lissés). A7 Lyon–Marseille faite en v337 (à l'ouest du TGV ; Lyon par 130°, Marseille par −136° ; trois ponts ; quatre admissibles sur 2 025). AP-2 Madrid–Barcelone faite en v338 (Barcelone par −170°, son côté bas ; quatre ponts ; neuf admissibles sur 16 000 chemins lissés, le joint mesuré sur chacun). Restent, hors des zones des autres sessions : Paris–Lyon (FAITE en v419), San Francisco–Los Angeles (ville bâtie à la main, couloir instruit plus haut) et Marseille–Nice (FAITE en v428), New York–Boston et New York–Washington (Manhattan, entrée à instruire à la main), Londres–Birmingham (FAITE en v415), et les corridors bloqués ci-dessus. Hansalinie Cologne–Hambourg faite en v355 (Cologne par −108°, entre l'ICE et l'aérodrome ; Hambourg CONTOURNÉE par l'ouest, entrée par le nord-ouest −134° — l'Elbe ferme le sud du disque entre 38 et 70 blocs du centre, l'A24 l'est, un pont de l'Alster borde l'axe nord ; aucun pont ; 397 admissibles sur 1 500). Dette vue en passant en v355 : la porte de l'A3 à Francfort creusait un pont de la ville — FAITE en v362 (le talus s'arrête à un bloc au-delà du bout d'une route ; le témoin des ponts de villes lit les dix-huit villes à pont qu'une route touche). 401 Toronto–Montréal faite en v355 (Toronto par −18°, Montréal CONTOURNÉE par le sud et prise par son axe sud, 88° ; aucun pont ; seize admissibles sur 3 000). La sonde qui contourne une ville est le couloir le plus bas cherché sur une grille qui porte le CAP (huit directions, un huitième de tour au plus après deux pas droits), rails, autres routes et aérodromes interdits, puis Chaikin et simplification sous 22° de coude, `profilDe` appelé sur chaque candidat — scratchpad de la v355, décrite dans CLAUDE.md « Les routes qui contournent ». M40 Londres–Birmingham faite en v415 (sortie nord de Londres, entrée déclarée `ENTREES_LONDRES` jusqu'à Pentonville Road ; le col de la crête nord-sud à 41-46 ; Birmingham par 45°, l'axe de sa trame ; deux ponts, joints fermés ; 69 admissibles sur 480). **Dette vue en v415 : la trame générique de `world.js` (« one lot per grid cell ») tourne encore pour Londres** — elle n'est pas dans la liste des six villes exclues — et pose des maisons par-dessus la ville dans l'anneau de 77 à 102 blocs du centre ; v415 ne les retire que sur la route et son entrée. Les retirer partout est juste, mais touche des toits où un enfant a pu bâtir : il faut la marche de migration (ou la ville d'avant figée) qui va avec. A6 Paris–Lyon faite en v419 (à l'ouest du TGV d'un bout à l'autre — à l'est, un massif de 46 à plus de 60 ; Paris par 86°, la porte d'Italie, l'entrée déclarée de paris.js menant à la place d'Italie et non plus à la Gare du Nord ; Lyon par −144°, −147° ayant des bancs sur son avenue ; un pont ; 298 admissibles sur 720). A8 Marseille–Nice faite en v428 (l'axe direct est en mer ; Marseille par −78°, son côté bas au nord entre le TGV et le massif, porte à quatorze blocs du bord ; le col de 42-46 vers z 3 150 ; Nice par 182°, entrée déclarée `ENTREES_NICE` jusqu'à la Californie ; trois ponts ; 84 admissibles sur 1 080, la sonde portant une RAMPE dans son coût ; la porte à −82° rejetée, son talus touchait la gare TGV au vrai `routeEn`). Tōmei Tokyo–Nagoya fait en v381 (la bande côtière au sud du Shinkansen, entre la montagne et la mer : Haneda et Yokota ferment la plaine à l'ouest de Tokyo ; Tokyo par 132°, porte à vingt-quatre blocs du bord, Nagoya par 60° ; un pont ; 22 admissibles sur 300). Suivants dans l'ordre du relevé (courts, sans rail) : New York–Boston (eau 135), New York–Washington (eau 150 ; FAITE en v367, I-95 Sud : seconde porte de New York sur la rive de l'Hudson, Washington par le sud, `boutNet` et `avenues` ; vingt et un admissibles sur 2 500, aucun sans pont) — New York est Manhattan, une ville à part (pas dans VILLES_MONDE) : son entrée est à instruire à la main. Instruit en v355 sans le faire : Manhattan est un RECTANGLE de 480 × 2 300 blocs (`BORNES`, manhattan-plan.js, z de −1 300 à +1 000 autour de l'ancre) et non le disque de 152 du registre — `porte()` (r − 20 sur le rayon) poserait la porte SUR l'île, et le raccord de quarante blocs y écrirait son remblai dans les rues (« la route a le dernier mot sur sa colonne »). Il faut une porte déclarée hors de l'île, au bout d'un pont sur l'East River ou le Hudson, ce qui touche `porte()` ou `manhattan-*.js` : une livraison à elle. FAITE en v362 pour la porte : `portes: { ny: [x, z] }` dans la fiche de la route, sur la rive est hors du rectangle ; I-95 New York–Boston faite en v362 (porte NY à (276, −890) du centre, Boston par 145°, un pont, 86 admissibles sur 12 000) ; Londres–Birmingham FAITE en v415. **Los Angeles–San Diego BLOQUÉE** (v332) : une crête au-dessus de 46 blocs à l'est de Los Angeles (z 8 950 à 9 310), et le couloir côtier passe dans la marge de LAX — 265 120 tracés, aucun admissible (9 644 refus aérodrome, 25 076 pont près d'une porte : San Diego est entourée d'eau au nord-ouest). Déplacer LAX ou abaisser la crête est une décision de Max. **Manchester–Liverpool BLOQUÉE PAR LE RELIEF** (v324) : une crête au-dessus de 46 blocs barre tout l'espace entre les deux disques (villes à 33) ; 58 340 tracés, aucun admissible (8 970 déblai, 6 125 pont près d'une porte). Un tunnel ou un relief abaissé est une décision de Max. INSTRUITES en v323 sur l'axe direct, faute de la liste du kit (hors dépôt) — longueur · eau · rail à douze blocs · villes · aérodromes · repères : Manchester–Liverpool 222 · 11 · 0 · 0 · 0 · 0 ; Bologne–Florence 342 · 0 · 0 · 0 · 0 · 0 ; Milan–Turin 530 · 10 · 0 ; Delhi–Agra 656 · 41 · 0 (le Taj Mahal) ; Rome–Naples 683 · 81 · 0 ; Los Angeles–San Diego 718 · 25 · 0 ; Londres–Birmingham 767 · 29 · 0 ; Milan–Bologne 924 · 24 · 3 ; Vienne–Budapest 957 · 33 · 0 ; Tokyo–Nagoya 961 · 142 · 941 (Shinkansen) · Haneda sur l'axe ; New York–Boston 1 020 · 135 · 0 ; Berlin–Hambourg 1 293 · 42 · 0 ; New York–Washington 1 297 · 150 · 0 ; Lyon–Marseille 1 363 · 77 · 1 328 (TGV) ; Séoul–Busan 1 471 · 2 · 0 ; Paris–Lyon 1 625 · 54 · 1 588 (TGV) ; Dallas–Houston 1 781 · 44 · 0 ; Hambourg–Cologne 1 858 · 137 · 0 ; Madrid–Barcelone 2 068 · 199 · 2 033 (AVE) ; Toronto–Montréal 2 305 · 144 · 0 ; San Francisco–Los Angeles 2 403 · 131 · 0 · SFO et deux repères ; Marseille–Nice 596 · 401 · 0 · la Promenade des Anglais (l'axe direct est en mer). Ordre retenu : les courts sans rail ni eau d'abord. Restent à instruire les autres
   candidats du kit (liste hors dépôt), un par un. INSTRUITES en v310 sur
   l'axe direct (longueur · eau · rail parallèle · obstacles) : Bruxelles–
   Amsterdam 790 · 56 · 0 · aucun ; Montréal–Québec 873 · 18 · 0 ; São Paulo–
@@ -5340,6 +5435,37 @@ l'embarquement a eu lieu, pas par une hypothèse.
   glisser bridé ×4 (425 ms, déclaré au portail de la v359) et `monte.js` les
   passants de Rome (21 % pour 20, le tirage de la v291, déclaré à la v319).
 
+- [ ] **LE PORTAIL DE LA v427 (des essais du jeu plus sûrs).** Dix-sept suites,
+  `maj.js` et `realisme.js` VERTES entières, `degats.js` verte. `monte.js`
+  a duré 57 minutes SANS la cascade de l'arrêt quotidien, flanc frôlé vert ;
+  trois rouges déjà déclarés, mêmes chiffres : « la rue roule à l'allure d'une
+  ville » (médiane 0), la chauffe de New York (55/321), le réverbère au volant
+  (`parcouru 0,17`) — ces deux derniers sont le lot suivant de cette session.
+  `manhattan.js` (trou de façade, taxi tactile) et `reseau.js` (la famille
+  « sans courtier » : `[[],[]]`, `actif: false`) : PREUVE STRUCTURELLE (v291),
+  ni l'une ni l'autre n'appelle `jouerSeul`, seul endroit du banc que la
+  livraison change, et la livraison ne touche pas ces deux fichiers.
+- [x] **LA CASCADE « pas aux commandes » DE `monte.js` — TROUVÉE EN v427 :
+  L'ARRÊT QUOTIDIEN.** Au portail de la v427 (avant correction), elle est
+  tombée à 45,8 minutes de la suite, au témoin près : « à pleins gaz… le mur
+  du son » (trois compteurs figés à 802 km/h : `majBoutonsVehicule` n'écrit
+  rien quand `running` est faux), « tirer le joystick fait RECULER »,
+  « un avion se repousse », « pas au volant ». C'est la limite de 45 minutes
+  de jeu par jour (invariant 2) sur `tab`, que la suite garde ouverte d'un
+  bout à l'autre : un portail lent la franchit, un rapide non. Sonde
+  `sonde-limite-du-jour.cjs` (jeu posé à cinq secondes de la limite) : banc
+  d'avant 2/2 arrêté, banc neuf 2/2 en jeu — `jouerSeul` pose huit
+  déblocages du jour (`unlocks`), comme le code parental.
+- [x] **LA CASCADE « cible: quiz » — UN SECOND MÉCANISME TROUVÉ EN v427 : MINUIT.**
+  `today()` range la journée sous la date LOCALE ; `jouerSeul` n'ouvrait le
+  répit que de la journée du lancement. Une suite qui passe minuit (minuit UTC
+  est 20 h à New York, l'heure des portails du soir) retrouve un compte à
+  rebours, et un quiz couvre l'écran quinze minutes plus tard. Sonde
+  `sonde-quiz-minuit.cjs` (minuit simulé, compte à rebours réduit à 15 s) :
+  répit d'avant, quiz à 15,8 et 15,5 s ; répit rouvert par le banc, aucun
+  quiz en 30 s (2/2). Que la cascade de la v359 soit CELLE-LÀ n'est pas
+  prouvé (l'heure de ce portail n'est plus lisible) ; le mécanisme l'est, et il
+  est retiré.
 - [ ] **PORTAIL DE LA v359 (Nice) : UNE CASCADE DE `monte.js` QUE LA SUITE
   SEULE NE REND PAS.** Au portail complet (base v349), `monte.js` a rendu
   trente-quatre rouges d'un seul tenant : tous les témoins d'avion et de
@@ -5471,7 +5597,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
     quatre maisons de neuf, pas un bâtiment de vingt et un.
 
 - [ ] **IL RESTE DES ANNEAUX QUI SE PARTAGENT DIX-HUIT BLOCS (v270).** Remesuré
-  en v427 sur les VOIES (`tests/sonde-anneaux-villes.cjs`, deux voies à moins
+  en v432 sur les VOIES (`tests/sonde-anneaux-villes.cjs`, deux voies à moins
   de deux blocs et dans le même sens) : 16 villes partagent quelque chose, le
   pire est Kyoto à 18, les quinze autres à 15 (Boston, Québec, Mumbai,
   Édimbourg, La Mecque, Ispahan, Xi'an, Nankin, Jakarta, Manille, Alexandrie,
@@ -5480,7 +5606,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   deux anneaux (contresens, pour qu'ils se croisent au lieu de se suivre) ne
   règle qu'une paire (Mumbai) et rend Boston pire (18 → 36), parce que l'autre
   voie est déjà suivie par un troisième ; le pire ne bouge pas. La
-  v427 n'a rien aggravé (même liste, même pire). La
+  v432 n'a rien aggravé (même liste, même pire). La
   contrainte de la v211 est désormais appliquée aux villes engendrées : 265
   villes en faute deviennent 0, le pire partage tombe de 576 blocs (Shanghai)
   à 18 (São Paulo). Dix-huit, c'est SOUS la barre d'un carrefour, donc ce
@@ -5556,7 +5682,15 @@ l'embarquement a eu lieu, pas par une hypothèse.
   faite et que la v269 a payée. À reprendre après la mesure sur tablette
   ci-dessus, qui dira si la file peut remonter sans les gels.
 
-- [ ] **`maj.js` : « corps, programmes et fond de carte sont vraiment là » —
+- [x] **`maj.js` « vraiment là » — FAIT en v427 : la cause était le banc.** Le
+  témoin préparait à côté de trois pages : deux sur l'accueil (2,4 à 3,7 cœurs
+  occupés à elles deux, `sonde-voisines.cjs` ; le gel CDP n'y change rien) et
+  une en jeu. Préparation seule 3,4 et 4,4 s, avec deux voisines 38,5 et 43,9 s
+  (`sonde-prep-duree.cjs`). Le témoin passe en tête de suite, seul ; `onglet`
+  se ferme après son verdict. `maj.js` rejouée seule : branche 3/3 verte
+  (« vraiment là » et « ne floute rien »), `origin/main` 2/2 rouge (libération
+  jamais vue en 60 s). L'entrée d'origine reste dessous, pour l'histoire.
+- [ ] *(close par l'entrée ci-dessus)* **`maj.js` : « corps, programmes et fond de carte sont vraiment là » —
   ROUGE DES DEUX CÔTÉS, REJOUÉE SEULE (v267).** Portail de la v308 : rouge
   (personnages 5/9 à 47 s, carte prête) ; rejouée SEULE, verte sur la branche
   (9/9, carte prête) et ROUGE sur `origin/main` v307 (8/9, carte absente) —
@@ -5840,6 +5974,13 @@ l'embarquement a eu lieu, pas par une hypothèse.
   rendus. Piste : un passant ne se pose (et un personnage ne marche) que sur
   un morceau déjà là, comme la minicarte (v258) qui n'engendre jamais.
   (3) `nbSansCroisement` (vehicules.js) 22 à 36 ms au dépliage d'un circuit.
+  **(1) et (3) FAITS en v431** : fabrication par tranches (`FAB_MS`), grille de
+  croisements ; update des voitures 234/261/195 → 111/125/99 ms,
+  `nbSansCroisement` 32/45/30 → 13/12/12. Reste sous `update` : `voiesDe`
+  (la jumelle, 57 à 111 ms au dépliage) — il fixe le nombre de voitures de la
+  file, donc la grille partagée (v305) ; le différer demanderait que les deux
+  tablettes le fassent au même instant de la grille. À reprendre.
+
   Fait dans ma zone (v420) : `renduLogiciel()` ne redemande plus le pilote
   (120 à 336 ms de `getParameter` par arrivée, zéro gain en durée d'image au
   banc, déclaré). À relire sur l'iPad avec `?diag=1` après les deux remèdes.

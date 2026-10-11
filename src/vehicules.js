@@ -751,6 +751,19 @@ export function chargerVoitureFlotte(entree) {
 
 const VU = 150;                 // au-delà, le convoi s'efface et se fige
 
+// LA RUE SE FABRIQUE PAR TRANCHES (v431). À l'arrivée d'une téléportation,
+// `montrer` fabriquait dans la MÊME image toutes les voitures qui entraient
+// dans les quarante-cinq blocs : toute une rue d'un coup, 162 à 276 ms
+// mesurés (`sonde-arrivee-decoupe.cjs`, v420). C'est la file des passants
+// (v246) : un budget de fabrication par image, et une place hors budget reste
+// vide une image de plus. Sauf tout près de l'enfant (`FAB_PROCHE`) : une
+// voiture qu'il touche presque se fabrique toujours, sinon il la traverserait
+// sans la voir. `fin` vaut l'infini tant que personne n'a ouvert d'image —
+// un témoin sous node qui appelle `montrer` sans `update` fabrique tout.
+export const FAB_MS = 5;
+export const FAB_PROCHE = 18;
+const fabrication = { fin: Infinity, faites: 0, differees: 0 };
+
 // MAIS CENT CINQUANTE BLOCS, C'EST LA PORTÉE DU REGARD À CIEL OUVERT.
 //
 // Sous terre, on ne voit rien du tout : un train enterré à douze blocs est
@@ -1600,7 +1613,12 @@ class Convoi {
     // Ce que chaque voiture vise (`cible`, posé par `cederLePassage`), ou la
     // grille, ou un peu plus pour rattraper ; elle y va au rythme d'une voiture
     // (`rapprocher`) — ce qu'elle n'a pas fait devient du retard.
-    const mini = 2 * this.demiLong + 1.6;
+    // (un bloc entre deux pare-chocs EN LIGNE DROITE depuis la v431 : le
+    // balayage serré arrête la suiveuse vers 1,2, le plancher ne doit pas la
+    // retenir à 1,6. Mais dans un virage la corde est plus courte que l'arc et
+    // les coins se touchent — mesuré à Tokyo, 19 relevés « file à l'arrêt » —
+    // on y garde le 1,6 d'avant.)
+    const miniDroit = 2 * this.demiLong + 1.0, miniVirage = 2 * this.demiLong + 1.6;
     for (let i = 0; i < n; i++) {
       const pas = this.base[i] - ancien[i];
       const vConv = dt > 0 ? Math.max(0, pas / dt) : 0;
@@ -1619,6 +1637,10 @@ class Convoi {
       if (r < 0) r = 0;
       // UN CONVOI NE SE TÉLESCOPE PAS (v283), par construction : la suiveuse
       // garde une longueur de voiture derrière celle qui la précède.
+      // (la courbure sous la suiveuse ET devant elle, là où est la précédente)
+      const dq = this.base[i] - r;
+      const mini = Math.abs(this.parcours.courbure(dq)) > 0.03 || Math.abs(this.parcours.courbure(dq + 3)) > 0.03
+        || Math.abs(this.parcours.courbure(dq + 5)) > 0.03 ? miniVirage : miniDroit;
       if (i > 0) {
         const plancher = this.retard[i - 1] - (this.base[i - 1] - this.base[i]) + mini;
         if (r < plancher) r = plancher;
@@ -1863,6 +1885,9 @@ class Convoi {
         if (dejaLa && dejaLa.visible) dejaLa.visible = false;
         continue;
       }
+      if (!this.elements[i] && performance.now() > fabrication.fin
+        && (p.x - joueur.x) ** 2 + (p.z - joueur.z) ** 2 > FAB_PROCHE * FAB_PROCHE) { fabrication.differees++; continue; }
+      if (!this.elements[i]) fabrication.faites++;
       const m = this.element(i);
       m.position.set(p.x, p.y, p.z);
       // Le modèle est dessiné le nez vers -z ; le cap donne la direction de la
@@ -2097,12 +2122,27 @@ function croisementsDe(parcours, grille) {
   // les paires d'instants dont les positions se touchent EN TRAVERS : c'est la
   // liste des croisements, en écart d'heure (les voisines le long du tracé
   // sont l'affaire du plancher, v283)
-  const ecarts = [];
-  for (let a = 0; a < N; a++) for (let b = a + 1; b < N; b++) {
-    const dt = (b - a) * h; if (dt < 3 || P - dt < 3) continue;
-    if ((X[a] - X[b]) ** 2 + (Z[a] - Z[b]) ** 2 > 36) continue;
-    if (Math.abs(Math.cos(C[a] - C[b])) > 0.7) continue;
-    if (rectsSeTouchent(rectSep(X[a], Z[a], C[a]), rectSep(X[b], Z[b], C[b]))) ecarts.push(dt);
+  // (v431) les paires se cherchent dans une grille de six blocs — la portée
+  // du test de distance — et non plus toutes contre toutes : 259 000 paires
+  // examinées au dépliage d'un circuit, 22 à 36 ms sous `frame` (v420). Même
+  // ensemble de paires, au bit près ; l'ordre de `ecarts` ne compte pas.
+  const ecarts = [], cases = new Map(), cle = (i, j) => i * 100003 + j;
+  for (let s = 0; s < N; s++) {
+    const k = cle(Math.floor(X[s] / 6), Math.floor(Z[s] / 6));
+    const l = cases.get(k); if (l) l.push(s); else cases.set(k, [s]);
+  }
+  for (let a = 0; a < N; a++) {
+    const ia = Math.floor(X[a] / 6), ja = Math.floor(Z[a] / 6);
+    for (let di = -1; di <= 1; di++) for (let dj = -1; dj <= 1; dj++) {
+      const l = cases.get(cle(ia + di, ja + dj)); if (!l) continue;
+      for (const b of l) {
+        if (b <= a) continue;
+        const dt = (b - a) * h; if (dt < 3 || P - dt < 3) continue;
+        if ((X[a] - X[b]) ** 2 + (Z[a] - Z[b]) ** 2 > 36) continue;
+        if (Math.abs(Math.cos(C[a] - C[b])) > 0.7) continue;
+        if (rectsSeTouchent(rectSep(X[a], Z[a], C[a]), rectSep(X[b], Z[b], C[b]))) ecarts.push(dt);
+      }
+    }
   }
   CROISEMENTS.set(parcours, { grille, ecarts });
   return ecarts;
@@ -2700,7 +2740,13 @@ export function createVehicules({ scene, player }) {
     const balayer = (a) => {
       if (a.balayage) return a.balayage;
       a.balayage = []; a.pas = [];
-      for (let pas = 0.5; pas <= a.portee; pas += 1.5) {
+      // LES FILES SE SERRENT AU ROUGE (v431). Au pas d'un bloc et demi, la
+      // voiture s'arrêtait entre 1,1 et 2,6 blocs de celle qui la précède
+      // (médiane 1,9 à 2,4 mesurée, v423) ; une file au feu se lisait comme un
+      // chapelet clairsemé. Les deux premiers blocs se balaient au quart : on
+      // s'arrête entre 1,1 et 1,35 bloc, pare-chocs contre pare-chocs comme
+      // dans une vraie rue. Au-delà, le pas d'avant (le coût ne bouge guère).
+      for (let pas = 0.5; pas <= a.portee; pas += pas < 2 ? 0.25 : 1.5) {
         const q = a.c.parcours.a(a.d + pas), cap = a.c.parcours.capLisse(a.d + pas);
         // (soixante centimètres de plus devant et derrière : on s'arrête un
         // peu AVANT le contact, pas dessus)
@@ -3070,6 +3116,7 @@ export function createVehicules({ scene, player }) {
       if (!w || player.pos.x < w.x0 || player.pos.x > w.x1 || player.pos.z < w.z0 || player.pos.z > w.z1) continue;
       c.voiesEnAttente = null; w.poser(); break;
     }
+    fabrication.fin = performance.now() + FAB_MS;
     for (const c of convois) c.update(dtReel, player.pos, horloge);
   }
   // LA VOITURE QUE L'ENFANT PERCUTE S'ARRÊTE (v372). La session de conduite
@@ -3250,6 +3297,9 @@ export function createVehicules({ scene, player }) {
   return {
     metro, course, chaine, circulation, bus, update, placeProche, diagPlace, place, emprunter, retirer, obstacleDevant, voitureContre, voitureA, dansRectangle, enMarche, voitureRueProche, voitureNommee,
     adopterHorloge, horloge: () => horloge,
+    // la fabrication par tranches (v431) : combien de voitures fabriquées et
+    // différées depuis le lancement — ce qu'un témoin compte à l'arrivée
+    fabrication: () => ({ faites: fabrication.faites, differees: fabrication.differees }),
     // le crochet des feux tricolores (v273), branché par main.js
     brancherFeux: (f) => { feuRouge = f; },
     // les amis de la partie (v305), branchés par main.js : où ils sont, leur cap,
