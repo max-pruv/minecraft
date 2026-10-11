@@ -691,8 +691,28 @@
   colline, Séoul (2 pas, le rocher de Namsan) et Chicago (1 pas, un tronc près
   du Bean) — anneaux d'avant, mêmes valeurs sur `origin/main`, déclarées dans
   `DETTE_PONTS` et rattachées à la dette ci-dessous.
+- [ ] **PORTAIL DE LA v418 (contour dans l'autre sens, rues du Strip), sept
+  suites, joué sur la v416 fusionnée.** Verts `parishd.js`, `carteMonde.js`
+  (deux témoins neufs, rouges sur `origin/main`), `plafond.js`. Rouges, tous
+  déjà déclarés : `maj.js` libération et les deux témoins du palier (« range
+  son verdict », « le TRAVAIL d'une image » — rouges une fois sur deux seuls) ;
+  `carte.js` appui long (deux) et glisser (429 ms) ; `monte.js` (56 min,
+  machine chargée) : flâneur, piéton frôlé, programmes, réverbère de Paris,
+  « on ne rattrape pas le bout du monde », flanc frôlé — tous vus aux portails
+  ou aux passages seuls précédents —, et « un mur pris de face » (rebond
+  −1,89), au couloir vide (41 090, 40 988) : aucune ville engendrée à moins de
+  200 blocs, donc hors de la livraison par construction (elle ne change que le
+  sol de Las Vegas et des contours d'anneaux).
 - [ ] **LES ANNEAUX D'AVANT ROULENT PARFOIS HORS DE LA CHAUSSÉE (mesuré v387,
-  repris v404).** Ils CONTOURNENT désormais (phase 4, `contourner`) : 147
+  repris v404, v418).** v418 : 2 257 → 1 228 pas, 87 → 75 anneaux (contour
+  dans l'autre sens, rues autour du Strip : Las Vegas 689 → 21). Reste, mesuré :
+  Rio (446 : la forêt de Tijuca au sud-ouest des deux grands anneaux, ~16 îlots
+  à retirer, au-delà de la borne de 12 du contour — la relâcher ne change rien,
+  mesuré —, et la bande de Copacabana), puis des anneaux de la phase 1 qui
+  traversent encore la place (Tokyo, Bangkok, Séoul, Shanghai, Dubaï, São
+  Paulo, ~25-30 pas chacun) : leur contour éloigne la voiture du centre
+  au-delà de `VU_ANNEAU` (30 blocs) ; Agra #1 (42, parc), Los Angeles (39),
+  Lisbonne (33, un lot). Ancien texte : Ils CONTOURNENT désormais (phase 4, `contourner`) : 147
   anneaux et 3 512 pas hors chaussée sur `origin/main` v389, 92 et 2 437 en
   v404 (fontaines 167 → 82). Ce qui reste, mesuré par la sonde de la v404 :
   Las Vegas (le désert hors de la bande du Strip, 689 pas : la bande ne tient

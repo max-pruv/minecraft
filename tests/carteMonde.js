@@ -4858,7 +4858,7 @@ const VRAIES_KM = [
       const fiches = new Map(vm.VILLES_MONDE.map((f) => [f.cle, f]));
       const { CITY_BLOCK, BLOCK } = await import('./src/blocks.js');
       let anneaux = 0, pas = 0, fontaine = 0;
-      const pires = [];
+      const pires = [], parCle = {};
       for (const tr of traces) {
         const f = fiches.get(tr.cle), t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
         const vus = new Set();
@@ -4883,20 +4883,41 @@ const VRAIES_KM = [
             n++;
           }
         }
-        if (n) { anneaux++; pas += n; pires.push([n, `${tr.cle}#${tr.rang}`]); }
+        if (n) { anneaux++; pas += n; pires.push([n, `${tr.cle}#${tr.rang}`]); parCle[tr.cle] = (parCle[tr.cle] || 0) + n; }
+      }
+      // LAS VEGAS (v418) : hors de la bande du Strip, le sol n'est que sable
+      // et asphalte nu — aucun lot, aucun trottoir, donc aucun immeuble dans
+      // le désert.
+      const lv = fiches.get('lasvegas'), lvt = lv.trame;
+      let desertLots = 0, desertRues = 0;
+      for (let du = -lv.rayon; du <= lv.rayon; du++) for (let dv = -lv.rayon; dv <= lv.rayon; dv++) {
+        if (du * du + dv * dv > lv.rayon * lv.rayon || Math.abs(du / lv.K) <= lv.desert.bande + 0.5) continue;
+        const s2 = vm.solVillesMonde(lv.ancre.x + du, lv.ancre.z + dv);
+        if (s2 === CITY_BLOCK.ASPHALT) desertRues++;
+        else if (s2 !== BLOCK.SAND) desertLots++;
       }
       let seuls = [];
       for (const [cle, g] of parVille) if (g.length === 1) seuls.push(cle);
       pires.sort((a, b) => b[0] - a[0]);
-      return { total: traces.length, anneaux, pas, fontaine, seuls, pires: pires.slice(0, 5).map(([n, c]) => `${c} ${n}`) };
+      return { total: traces.length, anneaux, pas, fontaine, seuls, pires: pires.slice(0, 5).map(([n, c]) => `${c} ${n}`),
+        lv: { pas: parCle.lasvegas || 0, circuits: (parVille.get('lasvegas') || []).length, desertLots, desertRues } };
     });
     verifier('un anneau qui sortait de la chaussée contourne la place, la fontaine ou le parc',
-      contour.anneaux <= 120 && contour.pas <= 3000 && contour.total >= 809,
+      // v418 : 87 anneaux et 2 257 pas avant le contour à contresens et les
+      // rues du Strip, 75 et 1 228 après ; barres au milieu.
+      contour.anneaux <= 81 && contour.pas <= 1740 && contour.total >= 809,
       `${contour.anneaux}/${contour.total} anneaux, ${contour.pas} pas hors de la chaussée`
       + ` (dont ${contour.fontaine} dans une fontaine) · les pires : ${contour.pires.join(', ')}`);
     // v416 : San Diego gagne son contresens (3 → 2) ; restent San José et
     // Guayaquil, dont le seul cycle a sa voie extérieure sur la mer ou la
     // plage — un remède de SOL, déclaré dans TASKS.md.
+    // LAS VEGAS A SA GRILLE DE RUES (v418). La bande du Strip ne tenait
+    // qu'une rue de la trame : 689 pas de voie dans le sable, trois circuits.
+    // Mesuré : 0 pas et quatre circuits ici ; sur `origin/main`, 689 et trois,
+    // sans une colonne d'asphalte hors de la bande.
+    verifier('à Las Vegas, les voitures roulent sur les rues qui longent le Strip, pas dans le sable',
+      contour.lv.pas <= 100 && contour.lv.circuits >= 4 && contour.lv.desertLots === 0 && contour.lv.desertRues > 0,
+      JSON.stringify(contour.lv));
     verifier('les villes engendrées à un seul circuit en ont désormais deux, le contresens',
       contour.seuls.length <= 2,
       `${contour.seuls.length} ville(s) à un circuit : ${contour.seuls.join(', ')}`);

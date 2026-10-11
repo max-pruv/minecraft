@@ -2611,7 +2611,7 @@ const FICHES = {
   },
   lasvegas: {
     lat0: 36.11, lon0: -115.17, echelle: 20, rayon: 44,
-    desert: { bande: 16 },                                         // le Strip — et le désert du Nevada tout autour
+    desert: { bande: 16, rues: 22 },                               // le Strip, sa grille de rues — et le désert du Nevada
     voies: [{ pts: [[-5, -42], [-4, 0], [-8, 42]], l: 2 }],
     trame: { ang: 0, pu: 7, pv: 6, w: 0.5, s: 0.9, tours: 0.55 },
     palette: [OR, ROSE, BLANC, uni(12)], toit: CREME, hMaison: [4, 8],
@@ -3276,6 +3276,22 @@ export function solVillesMonde(x, z) {
     if (f.cote && f.cote.quais && U < f.cote.base + f.cote.pente * V + 2) return PAVE;
     if (f.plage && V >= f.plage.v0 && V <= f.plage.v1) return SABLE;
     if (f.desert && !(f.desert.bande && Math.abs(U) <= f.desert.bande)) {
+      // LES RUES AUTOUR DU STRIP (v418). La bande ne tient qu'UNE rue de la
+      // trame (16 unités de fiche, 29 blocs, pour un pas de 32) : les rues
+      // voisines tombaient dans le sable, et aucun anneau de voitures ne
+      // pouvait faire le tour d'un îlot — 689 pas de voie dans le désert. Le
+      // vrai Strip est bordé d'une grille de rues (Paradise, Koval, Frank
+      // Sinatra, Industrial, Dean Martin) : à moins de `rues` unités de la
+      // bande, une colonne qui tombe sur la CHAUSSÉE d'une rue de la trame est
+      // de l'asphalte nu. Ni lot ni trottoir : aucun immeuble ne pousse dans
+      // le désert, et le relief ne lit pas `desert` (les empreintes de
+      // `plafond.js` ne bougent pas).
+      if (f.desert.rues && f.trame && Math.abs(U) <= f.desert.bande + f.desert.rues) {
+        const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
+        const a = u * co - v * si, b = u * si + v * co;
+        const dRue = Math.min(Math.abs(a - Math.round(a / t.pu) * t.pu), Math.abs(b - Math.round(b / t.pv) * t.pv));
+        if (dRue < t.w) return BITUME;
+      }
       // Gizeh est desert partout ; Las Vegas garde une bande pour le Strip.
       if (f.oasis && U > f.oasis.u0) return ((u + v) & 3) === 0 ? ARBRE : HERBE;
       return SABLE;
@@ -4305,8 +4321,23 @@ function anneauxCalcules(f) {
       if (g.contour) continue;
       const autres = gardes.flatMap((h, m) => (m === n ? [] : h.aretes));
       let seuls = null;
-      const k = contourner(f, g, ponts, true, autres, (k2) => !(g.proche && k2.dCentre > VU_ANNEAU)
-        && couvertureGardee(seuls ||= pointsSeuls(f, formes.map((fo) => fo.pts), n), k2.pts));
+      const garde = (k2) => !(g.proche && k2.dCentre > VU_ANNEAU)
+        && couvertureGardee(seuls ||= pointsSeuls(f, formes.map((fo) => fo.pts), n), k2.pts);
+      let k = contourner(f, g, ponts, true, autres, garde);
+      // UN CONTOUR QUI SUIVRAIT UN VOISIN SE FAIT DANS L'AUTRE SENS (v418).
+      // Mesuré : dans une vingtaine de villes (Tokyo, Dubaï, São Paulo,
+      // Séoul…), l'anneau qu'on voit en arrivant traversait encore la place
+      // centrale et sa fontaine, non qu'aucun contour n'existât, mais parce
+      // que tous suivaient la voie d'un autre anneau au-delà de la barre de
+      // partage (44 à 108 blocs). Dans l'autre sens, l'anneau roule sur
+      // l'AUTRE voie des mêmes rues : il CROISE ses voisins au lieu de les
+      // suivre (v211, v387). Seulement si l'anneau n'a pas déjà son contresens
+      // (phase 2 ter), qui roulerait alors dans le même sens que lui.
+      if (k && !k.pts && g.sens !== -1 && !gardes.some((h) => h !== g && h.sens === -1
+        && h.cU === g.cU && h.cV === g.cV && h.Ru === g.Ru && h.Rv === g.Rv)) {
+        const k2 = contourner(f, { ...g, sens: -1 }, ponts, true, autres, garde);
+        if (k2 && k2.pts) { k = k2; g.sens = -1; }
+      }
       if (!k || !k.pts) continue;
       g.contour = k;
       g.aretes = k.aretes;
