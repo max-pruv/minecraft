@@ -68,7 +68,7 @@
     cadence décide où l'on touche (piège v273), et l'arrêt tombait à 300,9.
   - **Le train qui traverse la voiture** : cause trouvée, VRAIE PANNE,
     déclarée en tête de ce fichier ; le témoin reste rouge.
-- [ ] **UN TRAIN TRAVERSE LA VOITURE DE L'ENFANT QUAND UNE IMAGE EST LENTE
+- [x] **(v442 — réparé : regard de la rame en temps, `pasDeRame` ; voir CLAUDE.md « Le regard d'un convoi est un temps ») UN TRAIN TRAVERSE LA VOITURE DE L'ENFANT QUAND UNE IMAGE EST LENTE
   (vraie panne, zone conduite — trouvée par la session banc-intermittents).**
   La rame ne regarde que 3,5 blocs devant sa motrice (`PAS_TRAIN`,
   `cederLePassage`, vehicules.js) et roule en temps RÉEL (v305) : à 14 b/s,

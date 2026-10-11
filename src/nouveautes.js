@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 442,
+    titre: 'Le train voit ta voiture',
+    puces: [
+      'Il s\'arrête même quand le jeu rame',
+      'Les voitures de la rue aussi',
+    ],
+  },
+  {
     v: 441,
     titre: 'La voiture de l\'ami braque',
     puces: [
