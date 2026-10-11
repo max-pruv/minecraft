@@ -1620,6 +1620,33 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('et le bus de la ville roule sur le grand anneau',
       !!lebus && lebus.total >= 1, JSON.stringify(lebus));
 
+    // LA RUE SE FABRIQUE PAR TRANCHES (v429). À l'arrivée, `montrer`
+    // fabriquait toutes les voitures d'une rue dans la MÊME image (162 à 276 ms
+    // sous `frame`, v420). On saute à Paris et l'on relève, image par image,
+    // la hausse du nombre de voitures visibles : mesuré 9 d'un coup sur
+    // l'ancien code (`sonde-fabrication-arrivee.cjs`), 1 ici. Barre au milieu.
+    // Puis l'enfant retourne à Rome : le témoin d'après le suppose.
+    const fab = await tab.evaluate(async () => {
+      const { positionDe } = await import('./src/mondes.js');
+      const g = window.__game, p = positionDe('paris'), avant = g.player.pos.clone();
+      const vues = () => (window.__vehicules.etat() || []).reduce((n, c) => n + (c.visibles || 0), 0);
+      const hausses = []; let prec = vues(), actif = true, images = 0;
+      const tic = () => { const e = vues(); if (e > prec) hausses.push(e - prec); prec = e; images++; if (actif) requestAnimationFrame(tic); };
+      requestAnimationFrame(tic);
+      g.player.flying = true;
+      g.player.pos.set(p.x + 0.5, g.world.terrainHeight(p.x, p.z) + 6, p.z + 0.5); g.player.vel.set(0, 0, 0);
+      const t0 = performance.now();
+      while (vues() < 6 && performance.now() - t0 < 20000) await new Promise((f) => setTimeout(f, 200));
+      await new Promise((f) => setTimeout(f, 2000));
+      actif = false;
+      const r = { vues: vues(), images, maxParImage: Math.max(0, ...hausses), s: Math.round((performance.now() - t0) / 100) / 10,
+        fabrication: window.__vehicules.fabrication ? window.__vehicules.fabrication() : null };
+      g.player.pos.copy(avant); g.player.vel.set(0, 0, 0);
+      return r;
+    });
+    verifier('à l\'arrivée, la rue se fabrique par tranches, pas toute dans la même image',
+      fab.vues >= 6 && fab.maxParImage <= 5, JSON.stringify(fab));
+
     // LES TRAINS INTERVILLES (v179) : dix-huit rames sur neuf navettes
     // réelles (Eurostar, TGV, Shinkansen, AVE, Frecciarossa, ICE), et elles
     // ROULENT — on suit la distance d'une rame jusqu'à la voir avancer, en

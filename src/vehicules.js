@@ -751,6 +751,19 @@ export function chargerVoitureFlotte(entree) {
 
 const VU = 150;                 // au-delà, le convoi s'efface et se fige
 
+// LA RUE SE FABRIQUE PAR TRANCHES (v429). À l'arrivée d'une téléportation,
+// `montrer` fabriquait dans la MÊME image toutes les voitures qui entraient
+// dans les quarante-cinq blocs : toute une rue d'un coup, 162 à 276 ms
+// mesurés (`sonde-arrivee-decoupe.cjs`, v420). C'est la file des passants
+// (v246) : un budget de fabrication par image, et une place hors budget reste
+// vide une image de plus. Sauf tout près de l'enfant (`FAB_PROCHE`) : une
+// voiture qu'il touche presque se fabrique toujours, sinon il la traverserait
+// sans la voir. `fin` vaut l'infini tant que personne n'a ouvert d'image —
+// un témoin sous node qui appelle `montrer` sans `update` fabrique tout.
+export const FAB_MS = 5;
+export const FAB_PROCHE = 18;
+const fabrication = { fin: Infinity, faites: 0, differees: 0 };
+
 // MAIS CENT CINQUANTE BLOCS, C'EST LA PORTÉE DU REGARD À CIEL OUVERT.
 //
 // Sous terre, on ne voit rien du tout : un train enterré à douze blocs est
@@ -1863,6 +1876,9 @@ class Convoi {
         if (dejaLa && dejaLa.visible) dejaLa.visible = false;
         continue;
       }
+      if (!this.elements[i] && performance.now() > fabrication.fin
+        && (p.x - joueur.x) ** 2 + (p.z - joueur.z) ** 2 > FAB_PROCHE * FAB_PROCHE) { fabrication.differees++; continue; }
+      if (!this.elements[i]) fabrication.faites++;
       const m = this.element(i);
       m.position.set(p.x, p.y, p.z);
       // Le modèle est dessiné le nez vers -z ; le cap donne la direction de la
@@ -2097,12 +2113,27 @@ function croisementsDe(parcours, grille) {
   // les paires d'instants dont les positions se touchent EN TRAVERS : c'est la
   // liste des croisements, en écart d'heure (les voisines le long du tracé
   // sont l'affaire du plancher, v283)
-  const ecarts = [];
-  for (let a = 0; a < N; a++) for (let b = a + 1; b < N; b++) {
-    const dt = (b - a) * h; if (dt < 3 || P - dt < 3) continue;
-    if ((X[a] - X[b]) ** 2 + (Z[a] - Z[b]) ** 2 > 36) continue;
-    if (Math.abs(Math.cos(C[a] - C[b])) > 0.7) continue;
-    if (rectsSeTouchent(rectSep(X[a], Z[a], C[a]), rectSep(X[b], Z[b], C[b]))) ecarts.push(dt);
+  // (v429) les paires se cherchent dans une grille de six blocs — la portée
+  // du test de distance — et non plus toutes contre toutes : 259 000 paires
+  // examinées au dépliage d'un circuit, 22 à 36 ms sous `frame` (v420). Même
+  // ensemble de paires, au bit près ; l'ordre de `ecarts` ne compte pas.
+  const ecarts = [], cases = new Map(), cle = (i, j) => i * 100003 + j;
+  for (let s = 0; s < N; s++) {
+    const k = cle(Math.floor(X[s] / 6), Math.floor(Z[s] / 6));
+    const l = cases.get(k); if (l) l.push(s); else cases.set(k, [s]);
+  }
+  for (let a = 0; a < N; a++) {
+    const ia = Math.floor(X[a] / 6), ja = Math.floor(Z[a] / 6);
+    for (let di = -1; di <= 1; di++) for (let dj = -1; dj <= 1; dj++) {
+      const l = cases.get(cle(ia + di, ja + dj)); if (!l) continue;
+      for (const b of l) {
+        if (b <= a) continue;
+        const dt = (b - a) * h; if (dt < 3 || P - dt < 3) continue;
+        if ((X[a] - X[b]) ** 2 + (Z[a] - Z[b]) ** 2 > 36) continue;
+        if (Math.abs(Math.cos(C[a] - C[b])) > 0.7) continue;
+        if (rectsSeTouchent(rectSep(X[a], Z[a], C[a]), rectSep(X[b], Z[b], C[b]))) ecarts.push(dt);
+      }
+    }
   }
   CROISEMENTS.set(parcours, { grille, ecarts });
   return ecarts;
@@ -3070,6 +3101,7 @@ export function createVehicules({ scene, player }) {
       if (!w || player.pos.x < w.x0 || player.pos.x > w.x1 || player.pos.z < w.z0 || player.pos.z > w.z1) continue;
       c.voiesEnAttente = null; w.poser(); break;
     }
+    fabrication.fin = performance.now() + FAB_MS;
     for (const c of convois) c.update(dtReel, player.pos, horloge);
   }
   // LA VOITURE QUE L'ENFANT PERCUTE S'ARRÊTE (v372). La session de conduite
@@ -3250,6 +3282,9 @@ export function createVehicules({ scene, player }) {
   return {
     metro, course, chaine, circulation, bus, update, placeProche, diagPlace, place, emprunter, retirer, obstacleDevant, voitureContre, voitureA, dansRectangle, enMarche, voitureRueProche, voitureNommee,
     adopterHorloge, horloge: () => horloge,
+    // la fabrication par tranches (v429) : combien de voitures fabriquées et
+    // différées depuis le lancement — ce qu'un témoin compte à l'arrivée
+    fabrication: () => ({ faites: fabrication.faites, differees: fabrication.differees }),
     // le crochet des feux tricolores (v273), branché par main.js
     brancherFeux: (f) => { feuRouge = f; },
     // les amis de la partie (v305), branchés par main.js : où ils sont, leur cap,

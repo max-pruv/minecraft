@@ -8011,6 +8011,8 @@ window.__vehicules = {
   placeProche: (rayon) => vehicules?.placeProche(player.pos, rayon),
   diagPlace: (rayon) => vehicules?.diagPlace(player.pos, rayon),
   diagCeder: () => vehicules?.diagCeder(),
+  // la fabrication par tranches (v429) : voitures fabriquées et différées
+  fabrication: () => vehicules?.fabrication?.(),
 };
 window.__vie = { effectif: () => vie?.effectif(), sites: () => vie?.sites, eteindre: (v) => vie?.eteindre(v) };
 // Pour les tests : ce que la nuit fait aux fenêtres. `solide` est le niveau
