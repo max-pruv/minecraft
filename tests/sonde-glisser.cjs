@@ -28,25 +28,28 @@ const { Banc, dormir } = require('./banc.js');
     await dormir(2500);
     // les fonctions de la carte qu'on peut envelopper (celles qui dessinent)
     const env = await nino.evaluate(() => {
-      const c = window.__carte; window.__msCarte = 0; const noms = [];
+      const c = window.__carte; window.__msCarte = 0; window.__pireAppel = 0; let prof = 0; const noms = [];
       for (const k of ['peindre', 'avancerFond', 'commencerFond', 'rendreCalque', 'preparer']) {
         if (typeof c[k] !== 'function') continue;
         const f = c[k]; noms.push(k);
-        c[k] = function (...a) { const t = performance.now(); try { return f.apply(this, a); } finally { window.__msCarte += performance.now() - t; } };
+        c[k] = function (...a) { const t = performance.now(); prof++; try { return f.apply(this, a); } finally { prof--; const d = performance.now() - t; if (!prof) { window.__msCarte += d; window.__pireAppel = Math.max(window.__pireAppel, d); } } };
       }
       return noms;
     });
     console.log('enveloppées :', env.join(', ') || '(aucune)');
+    // DÉSARMÉ : le fond se calcule d'un seul tenant (budget infini) — le
+    // chemin d'avant la v258 ; le témoin doit le voir
+    if (process.env.DESARME) await nino.evaluate(() => { const c = window.__carte, f = c.avancerFond; c.avancerFond = function () { return f.call(this, 1e9); }; });
     for (const bras of (process.env.BRAS || 'glisser,immobile,immobile,glisser,glisser,immobile').split(',')) {
-      await nino.evaluate(() => { window.__longues.length = 0; window.__msCarte = 0; });
+      await nino.evaluate(() => { window.__longues.length = 0; window.__msCarte = 0; window.__pireAppel = 0; });
       await nino.evaluate((bras) => new Promise((fin) => {
         const c = window.__carte; const t0 = performance.now(); let images = 0;
         const pas = () => { images++; if (bras === 'glisser') { c.vue.cx += 2; c.vue.cz += 1; } if (performance.now() - t0 < 3000) requestAnimationFrame(pas); else fin(images); };
         requestAnimationFrame(pas);
       }), bras);
       await dormir(1500);
-      const r = await nino.evaluate(() => ({ longues: window.__longues.slice(), msCarte: Math.round(window.__msCarte) }));
-      console.log(`${bras.padEnd(9)} pire ${Math.max(0, ...r.longues)} ms · tâches ${JSON.stringify(r.longues)} · dans la carte ${r.msCarte} ms`);
+      const r = await nino.evaluate(() => ({ longues: window.__longues.slice(), msCarte: Math.round(window.__msCarte), pireAppel: Math.round(window.__pireAppel) }));
+      console.log(`${bras.padEnd(9)} pire ${Math.max(0, ...r.longues)} ms · tâches ${JSON.stringify(r.longues)} · dans la carte ${r.msCarte} ms, pire appel ${r.pireAppel} ms`);
     }
   } catch (e) { console.log('ERREUR', e.message); } finally { process.exit(0); }
 })();

@@ -2926,6 +2926,54 @@ Les deux rouges réseau récurrents du palier C. Trois règles.
   une voix restée au quart (`GAIN_APPEL`) et le régime qui varie ; vérifié
   rouge sur une copie où la voix reste au quart.
 
+## Le lot 3 des témoins (v441) — un compteur se lit sur ce qu'il compte vraiment
+
+Cinq rouges récurrents du portail, chacun démonté par une sonde. Six règles.
+
+- **PAR LE NUAGE, ON POSE SON CURSEUR AVANT DE FRAPPER.** `BusNuage`
+  (relaisnuage.js) lit le dernier numéro du relais (`_amorcer`) pour ne pas
+  relire le passé ; l'invité écrivait son `nuage-coucou` PENDANT cette
+  lecture, et la réponse d'un hôte rapide tombait derrière le curseur posé
+  ensuite — jamais lue, « Personne n'a répondu dans ce monde ». Tout envoi
+  attend l'amorce (`_amorce`), l'ordre des envois est gardé. Sous node
+  (`sonde-relais-amorce.mjs`) : 6 perdues sur 100 avant, 0 après ; un témoin
+  déterministe en tête de `reseau.js` provoque la situation (v233). Une
+  intermittence « des deux côtés » peut être une course du JEU : la double
+  mesure (v195) dit « pas la livraison », jamais « pas le jeu » (v374).
+- **`renderer.info.render.frame` COMPTE DES RENDUS, PAS DES IMAGES.** La sonde
+  des reflets rend une face par image près d'une voiture (v245) : quarante
+  « images » valaient vingt tours de boucle à Manhattan (0,2 image par
+  seconde). Un témoin qui attend du jeu compte le TEMPS DE JEU dans la page —
+  chaque `requestAnimationFrame` ajoute son écart borné à un vingtième, la
+  règle de `main.js` — et met sa fenêtre de côté pendant la mesure (v440).
+- **UNE TÂCHE LONGUE N'EST PAS LA FONCTION QU'ON ÉPROUVE.** Le glisser de la
+  carte jugeait la plus longue tâche du fil : les tâches de plus d'une seconde
+  tombent aussi carte immobile, le plus long appel de la carte vaut 21 à
+  45 ms. On enveloppe ce qui dessine (méthodes du prototype, réassignées sur
+  l'instance ; la profondeur d'appel compte pour ne mesurer que l'appel
+  extérieur) et l'on juge l'appel. Désarmé (fond d'un seul tenant) : 1 988 ms.
+- **UNE CAUSE PUBLIÉE PEUT EN CONFONDRE DEUX ; ON REMONTE LA FILE.**
+  `etat().causes` vaut 1 pour un feu OU SA FILE, et la file est légitime
+  derrière un piéton aussi (v395) : les arrêts « au feu » du témoin étaient
+  des voitures de file, parfois derrière un piéton. `diagVoiture` donne la
+  cause fine et le bloquant ; le témoin remonte jusqu'à la racine.
+- **UN VERDICT QUI ATTEND UN ÉVÉNEMENT RARE SE JUGE PAS À PAS.** Un arrêt
+  complet au feu depuis une allure arrivait 0 à 2 fois en 90 s : un tirage.
+  Chaque paire de relevés d'une voiture retenue par un feu est un échantillon
+  (des centaines par fenêtre) ; piler, c'est perdre plus de dix blocs par
+  seconde entre deux relevés. Et une fenêtre qui fait le vide (passants
+  écartés) se tient À PART : le vide changeait le taux de voitures l'une dans
+  l'autre de la fenêtre voisine (0–2 % → 2–18 %).
+- **CE QUE LE TÉMOIN DU FEU A TROUVÉ RESTE ROUGE.** Une voiture de file passe
+  de 4,3 b/s à 0 en 112 ms derrière celle qui s'arrête au feu — l'arrêt
+  d'urgence au contact, que la v395 réservait aux contacts entre files. Zone
+  conduite, déclaré en tête de `TASKS.md` avec sa sonde (`sonde-rue-feu.cjs`).
+
+Et le vol au-dessus de Paris (« le monde se maille hors du fil principal ») :
+vert rejoué seul depuis que la v440 met `tab` de côté (252 blocs en 12,8 s) ;
+seule, la page vole 597 à 789 blocs en 30 s, avec une voisine en jeu 408
+(`sonde-vol-paris.cjs`). Son message porte la cadence.
+
 ## Une page en jeu coûte quatre cœurs (v440) — on la met de côté, et l'on compte en images
 
 Le second lot des rouges récurrents. Cinq règles.

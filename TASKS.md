@@ -53,6 +53,21 @@
   (« Ouverture du monde… », 1,2 s) : corrigé, on attend le statut qui
   retombe. « La voiture de la rue n'entre pas chez l'ami » 1/3 sur la
   branche : dette v383 (une pose sur une dizaine).
+- [x] **LOT 3 DES TÉMOINS INTERMITTENTS — FAIT en v441** (session banc-lot3).
+  - **La famille du nuage** (`reseau.js`, 1/3 des deux côtés) : une course du
+    JEU, pas de l'attente — l'invité frappait avant d'avoir posé son curseur
+    de lecture du relais. Corrigé (`relaisnuage.js`), 6/100 → 0/100 sous node,
+    témoin déterministe en tête de `reseau.js`.
+  - **Le vol au-dessus de Paris** (`monte.js`) : vert seul depuis la v440
+    (252 blocs en 12,8 s) ; son message dit la cadence (`sonde-vol-paris.cjs`).
+  - **Le taxi** (`manhattan.js`) : compte du temps de JEU, fenêtre de côté
+    (`sonde-taxi-images.cjs`) ; seul, 8,99 blocs en 1,1 s de jeu.
+  - **Le glisser bridé ×4** (`carte.js`) : juge le plus long appel de la carte
+    (21–45 ms ; désarmé 1 988 ms) ; la tâche du fil reste au message.
+  - **L'allure de la rue** (`monte.js`) : roule seule (médiane 4–5, p90 7–12) ;
+    son message porte les images rendues et les causes racines. **Le feu** :
+    fenêtre à part, passants écartés, cause racine, jugé pas à pas — vraie
+    panne trouvée, déclarée en tête de ce fichier, témoin rouge.
 - [x] **LOT 2 DES TÉMOINS INTERMITTENTS — FAIT en v440** (session
   banc-intermittents). Chaque rouge rejoué SEUL des deux côtés, la cause
   séparée par une sonde, le témoin corrigé, et désarmé dans une copie.
