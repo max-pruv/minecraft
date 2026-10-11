@@ -34,15 +34,15 @@ port) était lue comme le bloc des fenêtres : 250 fenêtres étaient des trous.
 tablette, dans ce qu'on voit comme dans ce qu'on touche : un tirage par bloc,
 même règle (six sur dix tombent), même zone — un des Colisées que l'ancien
 tirage pouvait rendre. Édimbourg est grise et blonde (gris, gris clair, kaki de
-la palette de décor). Les fenêtres de Sydney sont des fenêtres.
+la palette de décor), ses souches de cheminée en pierre sombre. Les fenêtres de Sydney sont des fenêtres.
 
 **Ce qui le prouve.** Une sonde a engendré les 763 repères du monde (aujourd'hui
 et d'avant la v306) sous deux graines de `Math.random` : seul le Colisée
 changeait — c'était la seule source de hasard dans un bâtisseur. Quatre témoins
 dans `plafond.js`, rouges sur `origin/main` : deux fils neufs sous deux graines
 bâtissent les mêmes 763 repères ; le fil principal et le worker le même
-Colisée ; Édimbourg 3 036 blocs de grès pour 338 de brique (0 contre 2 263
-avant) ; Sydney 0 baie qui ne soit pas un bloc (250 avant). L'empreinte des 490
+Colisée ; Édimbourg 3 036 blocs de grès et 0 de brique rouge (0 et 2 263
+avant, souches de cheminée comprises) ; Sydney 0 baie qui ne soit pas un bloc (250 avant). L'empreinte des 490
 morceaux ne bouge pas : aucun de ces trois lieux n'y est.
 
 ---

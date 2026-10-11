@@ -7,7 +7,7 @@ const { Banc, souffler } = require('./banc.js');
 const path = require('path');
 const dossier = process.argv[2] || '.';
 const tag = process.argv[3] || 'apres';
-const VUES = [['edimbourg', 'ciel'], ['edimbourg', 'rue'], ['Colisée', 'ciel']];
+const VUES = (process.argv[4] || 'edimbourg:ciel,edimbourg:rue,Colisée:ciel').split(',').map((v) => v.split(':'));
 
 (async () => {
   const banc = new Banc({ portJeu: 8398, portPairs: 9398 });

@@ -2895,8 +2895,10 @@ const FLEUVES_VILLES = {
 // de taille ravalée de la New Town, le kaki pour le grès blond des façades
 // neuves. Des UNIS : en motif « Briques », la couche HD (registre `londres`)
 // y verrait de la brique et la patinerait en rouge.
+// Et les souches de cheminée, à chaque coin de lot : la brique rouge de
+// l'archétype les faisait lire, vues du ciel, comme des toits de tuile.
 const PALETTES_VILLES = {
-  edimbourg: [uni(24), uni(23), uni(24), uni(22)],
+  edimbourg: { murs: [uni(24), uni(23), uni(24), uni(22)], cheminee: uni(25) },
 };
 
 function ficheGeneree(v) {
@@ -2909,7 +2911,9 @@ function ficheGeneree(v) {
   const fiche = {
     lat0: v.lat, lon0: v.lon, echelle: 20, rayon: v.r,
     trame: { ang: arch.grille ? 0 : t * 1.4, pu: arch.pu, pv: arch.pv, w: 0.5, s: 0.85 },
-    palette: PALETTES_VILLES[v.cle] || arch.palette, toit: arch.toit, hMaison: arch.hMaison,
+    palette: PALETTES_VILLES[v.cle] ? PALETTES_VILLES[v.cle].murs : arch.palette,
+    cheminee: PALETTES_VILLES[v.cle] && PALETTES_VILLES[v.cle].cheminee,
+    toit: arch.toit, hMaison: arch.hMaison,
     couleurToits: arch.couleurToits,
   };
   if (arch.tours) {
@@ -3656,8 +3660,8 @@ export function batirColonneVillesMonde(x, z, poser) {
       poser(bh2 + 2, toitLot);
       if (Math.abs(ra) > t.pu / 2 - t.s - 0.9 && Math.abs(rb) > t.pv / 2 - t.s - 0.9
         && tirage(a, b, 241) < 0.5) {
-        poser(bh2 + 3, brique(0));
-        poser(bh2 + 4, brique(0));
+        poser(bh2 + 3, f.cheminee || brique(0));
+        poser(bh2 + 4, f.cheminee || brique(0));
       }
       return;
     }
