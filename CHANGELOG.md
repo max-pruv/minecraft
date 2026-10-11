@@ -20,6 +20,35 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v441 — La voiture de l'ami braque et glisse
+
+**Pourquoi.** Depuis la v397 le volant et la glisse de la voiture d'un ami
+voyagent avec sa position : la tablette d'Alice recevait les deux nombres de
+Marlon… et personne ne les dessinait. Chez elle, les roues avant de Marlon
+restaient droites en plein virage, et ses dérapages ne laissaient aucune
+trace. En cherchant comment dessiner sa glisse « avec la même règle que pour
+soi », la règle elle-même s'est révélée fausse : la caisse en dérapage était
+dessinée EN MIROIR. La physique fait aller la vitesse dans la direction du
+corps plus la dérive ; la caisse tournait encore deux fois la dérive par-dessus.
+Mesuré dans la matrice au frein à main, virage à gauche : la caisse rendue à
+−0,06 rad de sa vitesse quand la physique la dit à +0,45 — le nez du mauvais
+côté, depuis la v422.
+
+**Ce que ça change.** Au volant, une voiture qui dérape a le nez vers
+l'intérieur du virage, comme dans GTA. À plusieurs, on voit les roues avant
+de la voiture de l'ami braquer avec son volant, et ses dérapages — dérive ou
+frein à main — laissent des traces de pneus chez nous aussi.
+
+**Ce qui le prouve.** Trois témoins neufs. Dans `monte.js`, la caisse rendue
+rapportée à ce que la physique dit : −0,18 puis 0,37 sur `origin/main`,
+1,00 ici. Dans
+`reseau.js`, à deux tablettes : la roue avant de la copie de Marlon lue dans
+la matrice chez Alice (zéro sur la v437), et ses traces de pneus qui naissent
+chez Alice quand il glisse (aucune sur la v437). Le frein à main voyage dans un
+champ court de la position (`p.v.m`) : une tablette restée en arrière l'ignore.
+
+---
+
 ## v440 — Des essais encore plus justes
 
 **Pourquoi.** Sept témoins du portail rougissaient une fois sur deux sans

@@ -13,6 +13,7 @@
 const { Banc, dormir, souffler } = require('./banc.js');
 const { mesurerSensations } = require('./sensations-mesure.js');
 const { mesurerTraces } = require('./traces-mesure.js');
+const { mesurerDeriveDessinee } = require('./derive-mesure.js');
 
 const echecs = [];
 // COMBIEN DE TEMPS CHAQUE TÉMOIN A-T-IL COÛTÉ.
@@ -7131,10 +7132,20 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !TR.err && TR.module && TR.neuves.length === 0, msgTr);
     // LE FREIN À MAIN CRISSE (v437) : tout droit, sans dérive, les roues
     // bloquées glissent. Mesuré dans la bande des pneus, frein tiré contre la
-    // ligne droite d'avant : ×1,9 sur la v431 (dérive nulle, presque rien), ×62
+    // ligne droite d'avant : ×1,9 sur la v434 (dérive nulle, presque rien), ×62
     // ici. La barre est celle du crissement en dérive (v401).
     verifier('au frein à main, les pneus crissent — même tout droit',
       !TR.err && TR.crisse && TR.crisse.n >= 3 && TR.crisse.rapport > 10, msgTr);
+    // LA GLISSADE DESSINÉE DANS LE BON SENS (v441). La physique fait aller la
+    // vitesse dans la direction `yaw + derive` : la caisse vraie est à
+    // −`derive` de sa vitesse. On lit la caisse RENDUE (matrice monde) au frein
+    // à main dans un virage à gauche, rapportée à ce que la physique dit :
+    // `origin/main` −0,18 puis 0,37 sur deux passages (la glissade en miroir,
+    // plus ou moins selon la vitesse), la branche 1,00.
+    const dv = await tab.evaluate(`(${mesurerDeriveDessinee.toString()})()`);
+    const DV = dv || {};
+    verifier('en dérapage, la caisse est dessinée de travers du bon côté',
+      !DV.err && DV.releves >= 5 && DV.rapport > 0.7 && DV.rapport < 1.3, JSON.stringify(DV));
     verifier('les traces sont bornées et s\'effacent, les plus vieilles d\'abord',
       !TR.err && TR.borne && TR.borne.vivantes === TR.borne.max && TR.borne.maillages === 1
         && TR.fondu.alphaMi > 0.1 && TR.fondu.alphaMi < 0.7 && TR.fondu.vivFin === 0 && !TR.fondu.visibleFin, msgTr);

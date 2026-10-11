@@ -221,6 +221,44 @@ function verifier(nom, ok, detail = '') {
     }, marlonChezAlice);
     await jusqua(async () => { const v = await volantVu(); return !!(v && v.braquage > 0.9 && v.derive > 0.15); }, 20000);
     const vuVolant = await volantVu();
+    // ET ALICE LES VOIT (v441) : jusqu'ici personne ne dessinait ces deux
+    // nombres. La roue avant de la copie de Marlon, lue dans la MATRICE monde
+    // (l'axe de son essieu contre la droite de la voiture, v422) : braquée à
+    // droite, l'avant de la roue part à droite — un angle NÉGATIF. Sur la
+    // v437 : zéro.
+    const roueChezAlice = await alice.evaluate(async (id) => {
+      const THREE = await import('three');
+      const rp = window.__game.remotePlayers.get(id);
+      const m = rp && rp.vehicule ? rp.vehicule.mesh : null;
+      const avant = m ? (m.userData.roues || []).find((r) => /^Wheel_F/i.test(r.name || '')) : null;
+      if (!avant || !avant.parent) return { roue: false };
+      m.updateMatrixWorld(true);
+      const q = new THREE.Quaternion(), axe = new THREE.Vector3(1, 0, 0);
+      avant.parent.getWorldQuaternion(q); axe.applyQuaternion(q); axe.y = 0; axe.normalize();
+      const rx = Math.cos(rp.cap), rz = -Math.sin(rp.cap);
+      let ang = Math.atan2(rz * axe.x - rx * axe.z, rx * axe.x + rz * axe.z);
+      if (ang > Math.PI / 2) ang -= Math.PI; if (ang <= -Math.PI / 2) ang += Math.PI;
+      return { roue: true, angle: +ang.toFixed(3) };
+    }, marlonChezAlice);
+    verifier('chez l\'ami, les roues avant de sa voiture braquent avec son volant',
+      roueChezAlice.roue && roueChezAlice.angle < -0.2, JSON.stringify(roueChezAlice));
+    // LES TRACES CHEZ L'AMI (v441) : Marlon glisse (dérive figée à 0,2) et
+    // avance — posé pas à pas, la physique n'y est pour rien : c'est la
+    // position que le réseau emporte, et c'est elle que la copie lit. Chez
+    // Alice, des traces naissent sous la voiture de Marlon. Sur la v437 : rien.
+    const posesAvant = await alice.evaluate(async () => { try { const T = await import('./src/traces.js'); T.reglageTraces.dessin = true; return T.etatTraces().poses; } catch { return null; } });
+    await hote.evaluate(() => {
+      const P = window.__game.player, fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw);
+      let n = 0;
+      const id = setInterval(() => { if (++n > 40) { clearInterval(id); return; } P.pos.x += fx * 0.35; P.pos.z += fz * 0.35; }, 100);
+    });
+    await jusqua(async () => {
+      const p = await alice.evaluate(async () => { try { return (await import('./src/traces.js')).etatTraces().poses; } catch { return null; } });
+      return posesAvant != null && p != null && p - posesAvant >= 4;
+    }, 20000);
+    const tracesChezAlice = await alice.evaluate(async () => { try { const e = (await import('./src/traces.js')).etatTraces(); return { poses: e.poses, ys: e.ys.slice(-3) }; } catch (e) { return { module: false }; } });
+    verifier('chez l\'ami, sa voiture qui glisse laisse ses traces de pneus',
+      posesAvant != null && tracesChezAlice.poses - posesAvant >= 4, JSON.stringify({ posesAvant, tracesChezAlice }));
     const chezMarlon = await hote.evaluate(() => {
       const P = window.__game.player; const b = P.braquage;
       P.touchMove.s = 0; delete P.derive; P.derive = 0;

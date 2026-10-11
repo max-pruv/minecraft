@@ -1058,6 +1058,24 @@ donne aucun (dérive nulle) et ne s'entendait pas (bande des pneus ×1,9).
 `freinMainTire` (lu si présent) au-dessus de deux blocs/s vise 0,75. Le
 témoin écoute la sortie pendant le freinage, contre la ligne droite d'avant.
 
+**La voiture de l'ami braque et glisse (v441).** Trois règles.
+**UN SIGNE ÉCRIT POUR UNE PHYSIQUE SE RELIT QUAND LA PHYSIQUE ARRIVE.** La
+caisse visait `derive − deja`, écrit quand le contrat ne disait pas encore
+dans quel sens la vitesse glisse ; `player.js` la fait aller vers
+`yaw + derive`, la caisse vraie est donc à −`derive` de sa vitesse, et l'on
+dessinait la glissade en miroir (rapport −0,18 lu dans la matrice,
+`derive-mesure.js`). Elle vise désormais `−derive − deja` : zéro quand le cap
+dit déjà tout. **UN NOMBRE QUI VOYAGE N'EST PAS UN NOMBRE DESSINÉ** :
+`userData.braquage` et `.derive` étaient posés sur la copie d'un ami depuis la
+v397 et lus par personne ; `vieDistante` (sensations.js, appelée par
+`updateRemotePlayers`) braque ses roues avant et pose ses traces, sa vitesse
+lue à la position que le réseau lui donne. **UN NOM DE CHAMP NE SERT PAS DE
+MARQUEUR** : `installerBraquage` marquait la voiture dans
+`userData.braquage`, que le réseau écrase avec un nombre — il réinstallait
+les groupes à chaque message ; le marqueur est `braquageInstalle`. Le frein à
+main voyage dans `p.v.m` (les deux chemins de la position le portent : `v`
+est recopié entier, v388).
+
 ## Un contour dans l'autre sens, et les rues du Strip (v418) — ce qui empêchait le contour n'était pas l'absence de rue
 
 Deux règles.
