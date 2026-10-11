@@ -373,7 +373,7 @@ export function pasVoiture(e, entree, fiche, dt) {
 // La force est la vitesse d'impact NORMALE rapportée à `vPleine`, la vitesse
 // d'un choc plein.
 //
-// LA FORCE SUIT LA VITESSE JUSQU'À LA POINTE DE LA CLASSE (v412). Elle valait
+// LA FORCE SUIT LA VITESSE JUSQU'À LA POINTE DE LA CLASSE (v424). Elle valait
 // `−vn / CHOC_PLEIN`, saturée à 1 dès 20 blocs/s normaux : une voiture roule à
 // 30-55, si bien que presque tout vrai crash valait 1 — un mur à 55 coûtait
 // autant qu'à 20, et un frôlement à 15° pleins gaz publiait 0,71 (une demi-
@@ -517,7 +517,7 @@ export function chocContreVoiture(moi, autre, vx, vz, vPleine = CHOC_PLEIN) {
   // choc. Collé derrière une voiture plus lente, joystick en avant, on la
   // touche à chaque image ; publiées, ces caresses useraient la voiture
   // jusqu'au feu au milieu d'un bouchon.
-  // Le seuil se lit en blocs/s (v412) : la force dépend désormais de la
+  // Le seuil se lit en blocs/s (v424) : la force dépend désormais de la
   // classe, une caresse de trois blocs/s non.
   const force = r.impact < CONTACT_DOUX ? 0 : r.force;
   return { vx: r.vx + ax, vz: r.vz + az, force, glisse: r.glisse, nx: n.nx, nz: n.nz };

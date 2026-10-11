@@ -1,7 +1,9 @@
 // Entry point: scene setup, chunk streaming, input, HUD, and the game loop.
 
+import { secondeVoieParis, secondeVoieVilleMonde, voiesAutoroute } from './voiesdoubles.js';
 import * as THREE from 'three';
 import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp, MEUBLE_ITEMS, MEUBLE_START, isMeuble, RUE_ITEMS, RUE_START, RUE, isRue, ARCHI, CITY_BLOCK, ROUTE_BLOCK } from './blocks.js';
+import { passageEn } from './passages.js';
 import { PARIS as PARIS_ANCRE, circuitsParis, circuitsQuartiersParis, marquageParis } from './paris.js';
 import { circuitsLondres } from './londres.js';
 import { circuitsSF } from './sanfrancisco.js';
@@ -51,6 +53,7 @@ import { segmentsDeTrain, traceSegment } from './trains.js';
 import { segmentsDeRoute, traceRoute, entreesDe } from './routes.js';
 import { ENTREES_PARIS } from './paris.js';
 import { ENTREES_LILLE } from './lille.js';
+import { ENTREES_LONDRES } from './londres.js';
 import { Player, raycastBlocks } from './player.js';
 import { actualiserPresence } from './presence.js';
 import { animerHumain, chargerHumains, humainsCharges, humainsPrets } from './humains.js';
@@ -286,13 +289,23 @@ renderer.toneMappingExposure = 1.05;
 // se charge deux fois moins vite : mieux vaut un monde sans ombres qu'un
 // monde qui n'arrive pas. `?ombres=1` les force (les témoins du regard),
 // `?ombres=0` les coupe. Sur l'iPad, la carte graphique est là.
+//
+// LA RÉPONSE SE LIT UNE FOIS (v420). `gl.getParameter` est un aller-retour
+// SYNCHRONE avec le processus du GPU, qui attend que la carte ait fini ce qu'on
+// lui a donné : `fileAuRegardVoulue` le demandait à chaque reconstruction de la
+// file de maillage, et à l'arrivée d'une téléportation cela coûtait 156 à
+// 336 ms dans la PREMIÈRE seconde (profil, `sonde-arrivee-decoupe.cjs`). Le
+// pilote ne change pas pendant la vie d'une page.
+let renduLogicielMemo;
 function renduLogiciel() {
+  if (renduLogicielMemo !== undefined) return renduLogicielMemo;
   try {
     const gl = renderer.getContext();
     const ext = gl.getExtension('WEBGL_debug_renderer_info');
     const nom = ext ? String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)) : '';
-    return /swiftshader|llvmpipe|softpipe|software|mesa offscreen/i.test(nom);
-  } catch { return false; }
+    renduLogicielMemo = /swiftshader|llvmpipe|softpipe|software|mesa offscreen/i.test(nom);
+  } catch { renduLogicielMemo = false; }
+  return renduLogicielMemo;
 }
 // LA TABLETTE DIT ELLE-MÊME OÙ PASSE LE TEMPS (v257). Max : « le jeu lag
 // énormément sur iPad » — et le banc ne peut pas mesurer la carte graphique
@@ -1377,14 +1390,13 @@ let lastPlayerChunk = null;
 //     `__game.rechargeMaillage` les bascule sur une page ouverte.
 const RECHARGE_DEMANDEE = new URLSearchParams(location.search).get('recharge');
 let rechargeForcee = RECHARGE_DEMANDEE === 'arrivee' || RECHARGE_DEMANDEE === 'image' ? RECHARGE_DEMANDEE : null;
-let logicielMemo = null;   // un appel GL synchrone : une fois, pas à chaque morceau
 // ET APRÈS UNE TÉLÉPORTATION (v379), le temps de remplir le disque : voir
 // `estUnSaut` dans plafond-sol.js. Coupée en rendu logiciel comme le reste.
 let arriveeJusqua = 0;
 const enArrivee = () => arriveeJusqua > 0 && performance.now() < arriveeJusqua && meshQueue.length > 0;
 const rechargeParRegle = () => fileRapide || enArrivee();
 const rechargeALArrivee = () => (rechargeForcee ? rechargeForcee === 'arrivee'
-  : rechargeParRegle() && !(logicielMemo ??= renduLogiciel()));
+  : rechargeParRegle() && !renduLogiciel());
 const EN_VOL_MAX = Math.max(1, Math.ceil(EN_ATTENTE_MAX / 2));
 function demander(suivant, pcx, pcz, lot) {
   const key = World.key(suivant.cx, suivant.cz);
@@ -1817,9 +1829,18 @@ function updateChunks() {
   };
   const PASSAGES_PEINTS = new Set([CITY_BLOCK.CROSSWALK, ROUTE_BLOCK.PASSAGE_NS]);
   const blocSol = (x, z) => { const bx = Math.floor(x), bz = Math.floor(z); return world.getBlock(bx, world.sommetColonne(bx, bz), bz); };
+  // ET LES PASSAGES EN BIAIS (v421, `passages.js`) : ils ne sont pas dans un
+  // bloc, ils se demandent à la règle qui les dessine. Rend le passage trouvé
+  // (sa direction sert à traverser DANS l'axe de la bande), `true` pour un
+  // bloc peint, ou `false`.
+  const estPeint = (x, z) => PASSAGES_PEINTS.has(blocSol(x, z)) || !!passageEn(x, z);
   const peintPres = (x, z) => {
     for (const [ux, uz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-      for (let s = 1; s <= 4; s++) if (PASSAGES_PEINTS.has(blocSol(x + ux * s, z + uz * s))) return true;
+      for (let s = 1; s <= 4; s++) {
+        if (PASSAGES_PEINTS.has(blocSol(x + ux * s, z + uz * s))) return true;
+        const p = passageEn(x + ux * s, z + uz * s);
+        if (p) return p;
+      }
     }
     return false;
   };
@@ -1828,7 +1849,7 @@ function updateChunks() {
     for (let s = 0.5; s < l; s += 0.5) {
       if (solPieton(x + ux * s, z + uz * s) !== 'c') continue;
       n++;
-      if (PASSAGES_PEINTS.has(blocSol(x + ux * s, z + uz * s))) oui++;
+      if (estPeint(x + ux * s, z + uz * s)) oui++;
     }
     // TOUT le chemin sur la peinture, pas la moitié : la bande fait 1,7 bloc et
     // les départs se cherchent par pas d'un bloc, une ligne entièrement peinte
@@ -1851,6 +1872,10 @@ function updateChunks() {
     // Londres n'ont aucune peinture (dette de peinture, `TASKS.md`).
     const peint = !feu && !paris && peintPres(x, z);
     if (!feu && !paris && !peint) return null;
+    // un passage en biais se traverse en travers de SA rue, pas sur un axe du
+    // monde : un chemin nord-sud sur une rue à 30° sort de la bande de 1,7 bloc
+    const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    if (peint && peint !== true) dirs.push([peint.uz, -peint.ux], [-peint.uz, peint.ux]);
     const vx = -Math.sin(cap), vz = -Math.cos(cap);
     let mieux = null, cout = Infinity;
     // LE DÉPART SE CHERCHE LE LONG DE LA BORDURE, trois blocs de chaque côté :
@@ -1858,7 +1883,7 @@ function updateChunks() {
     // et le passage est rarement pile devant lui. Mesuré sur 1 231 bords de
     // trottoir autour du centre de Paris : 588 chemins vers le trottoir d'en
     // face, dont 26 seulement sur un passage peint, depuis le point même.
-    for (const [ux, uz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    for (const [ux, uz] of dirs) {
       if (ux * vx + uz * vz < -0.17) continue;           // pas derrière soi
       for (const o of [0, 1, -1, 2, -2, 3, -3]) {
         if (Math.abs(o) >= cout) break;
@@ -1994,7 +2019,7 @@ function updateChunks() {
   // l'E429 à l'est. `ENTREES_*` suit l'ordre de `entreesDe`, et l'on prend
   // celle de CETTE route — le `[0]` d'avant aurait fait entrer les voitures de
   // Bruxelles par la porte de Paris.
-  const ENTREES = { paris: ENTREES_PARIS, lille: ENTREES_LILLE };
+  const ENTREES = { paris: ENTREES_PARIS, lille: ENTREES_LILLE, londres: ENTREES_LONDRES };
   // Une ville ENGENDRÉE n'a pas d'avenue d'entrée dessinée : le corridor y
   // arrive dans l'axe de sa trame (le point de passage est choisi pour cela),
   // donc sur la rue qui mène au centre. Les voitures la suivent jusqu'à douze
@@ -2017,7 +2042,8 @@ function updateChunks() {
     // L'AUTOROUTE ROULE À CENT VINGT, ET LA VILLE À CINQUANTE (v372) : la
     // limite se lit au point du tracé — dans le disque d'une ville, l'avenue
     // d'entrée ; dehors, l'autoroute — et la grille freine AVANT la porte.
-    vehicules.circulation(pts, 41, { ville: seg.de, voie: 'autoroute', nb: 20, route: seg.route.nom,
+    // deux voies par sens (v423) : la file à droite, sa jumelle à gauche
+    vehicules.circulation(pts, 41, { ville: seg.de, voie: 'autoroute', route: seg.route.nom, voies: voiesAutoroute, voiesAuBesoin: true,
       limite: (x, z) => (world.cityAt(x, z) || villeMondeEn(x, z) ? ALLURE_VOIE.avenue : ALLURE_VOIE.autoroute) });
   }
 })();
@@ -3165,9 +3191,12 @@ function animerLesVilles(dt) {
   }
   // la graine vient de la ville, pas de la file (v246, voir graineDeVille)
   // l'allure de la voie : une rue de ville engendrée, une avenue nommée (v372)
+  const decalage = tr.voie === 'avenue' && tr.ville !== 'ny' ? DECALAGE_AVENUE : 0;
   const conv = vehicules.circulation(tr.pts, graineDeVille(tr), { ville: tr.ville, voie: tr.voie || 'rue',
     // les avenues des villes bâties à la main : la voie de droite (v372)
-    decalage: tr.voie === 'avenue' && tr.ville !== 'ny' ? DECALAGE_AVENUE : 0 });
+    decalage,
+    // la seconde voie des boulevards (v423) ; le bus prend la première place
+    voies: decalage ? (x, z) => secondeVoieParis(x, z, decalage) : secondeVoieVilleMonde, bus: tr.rang === 0 });
   // le bus dessert le grand anneau — un par ville, à sa couleur, DANS la file
   // de ses voitures (v372) : il prend leur grille horaire
   if (tr.rang === 0) vehicules.bus(tr.pts, Math.abs(Math.round(tr.x + tr.z)), conv);

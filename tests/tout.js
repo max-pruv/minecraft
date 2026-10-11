@@ -169,6 +169,7 @@ const GARDIENS = {
   'src/education.js': ['reglages.js', 'parent.js', 'manhattan.js'],
   'src/taxis.js': ['realisme.js', 'monte.js', 'sauvegarde.js', 'manhattan.js'],
   'src/vehicules.js': ['monte.js', 'washington.js', 'metro.js', 'manhattan.js', 'carteMonde.js', 'reseau.js'],
+  'src/voiesdoubles.js': ['monte.js', 'carteMonde.js', 'reseau.js'],
   // LE FEU TRICOLORE (v273) : il s'allume dans le monde (carteMonde.js) et il
   // arrête la circulation (monte.js). Un module neuf sans gardien annule tous
   // les acquis du cache de reprise — c'est fait pour se voir tout de suite.
@@ -249,6 +250,7 @@ const GARDIENS = {
   // le réglage qui coupe tout dans `reglages.js`, et le carillon du chat
   // comme les bruits de blocs passent par sa sortie — d'où `reseau.js`.
   'src/sons.js': ['monte.js', 'reglages.js', 'reseau.js'],
+  'src/sensations.js': ['monte.js', 'reglages.js', 'reseau.js'],
   // Le socle du rendu : un registre de blocs, un atlas ou un mailleur faux
   // n'abîme pas une ville, il les abîme toutes.
   'src/blocks.js': SUITES,
@@ -271,6 +273,7 @@ const GARDIENS = {
   'src/vie.js': ['realisme.js', 'monte.js', 'manhattan.js'],
   'src/marlon.js': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
   'src/pietons.js': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
+  'src/passages.js': ['plafond.js', 'monte.js', 'carteMonde.js'],   // les passages en biais (v421)
   'src/face-worker.js': ['parent.js'],
 };
 

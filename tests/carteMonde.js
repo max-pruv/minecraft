@@ -597,6 +597,8 @@ const VRAIES_KM = [
       out.convoiI95 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'I-95') || null;
       out.convoiI95Sud = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'I-95 Sud') || null;
       out.convoiTomei = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'Tōmei') || null;
+      out.convoiM40 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'M40') || null;
+      out.convoiA6 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A6') || null;
       // WASHINGTON EST UNE BOÎTE (v367) : la route de New York s'arrête NET à
       // son bord sud (`boutNet`), au niveau de la rue d'Anacostia qui y
       // débouche, et ses voitures entrent par cette rue (`avenues`). On compte
@@ -723,6 +725,52 @@ const VRAIES_KM = [
           }
           return { route: e.route, dans, vus };
         });
+        // L'ENTRÉE DE LONDRES (v415) : de la porte nord de la M40 à Pentonville
+        // Road, plein sud. Même lecture qu'à Lille — les blocs à hauteur de
+        // carrosserie, la chaussée sous la roue — et le bout doit être sur une
+        // ARTÈRE (une collectrice nommée). La première mesure a trouvé une
+        // maison de la vieille trame générique en travers, à dix blocs de la
+        // porte : c'est ce que ce témoin garde.
+        try {
+          const LO = await import('./src/londres.js'), WO = await import('./src/world.js');
+          const ents = m.entreesDe('londres'), E = LO.ENTREES_LONDRES || [];
+          out.entreesLondres = ents.map((e, i) => {
+            const pts = E[i] || [];
+            let dans = null, vus = 0, rue = 0;
+            for (let k = 0; k + 1 < pts.length && !dans; k++) for (let t = 0; t <= 1; t += 0.02) {
+              const X = Math.floor(pts[k][0] + (pts[k + 1][0] - pts[k][0]) * t), Z = Math.floor(pts[k][1] + (pts[k + 1][1] - pts[k][1]) * t);
+              if (m.routeEn(X, Z)) continue;
+              const h = w.coteRoulable(X, Z); vus++;
+              if (WO.CHAUSSEE.has(w.getBlock(X, h, Z))) rue++;
+              if (w.isSolid(X, h + 1, Z) || w.isSolid(X, h + 2, Z)) { dans = [X, Z, w.getBlock(X, h + 1, Z)]; break; }
+            }
+            const fin = pts[pts.length - 1] || [0, 0], fu = fin[0] - LO.LONDRES.x, fv = fin[1] - LO.LONDRES.z;
+            const artere = LO.VOIES_LONDRES.filter((v) => v.type === 'collecteur').some((v) => v.pts.some(([a, b]) => Math.hypot(a - fu, b - fv) < 1));
+            return { route: e.route, dans, vus, rue, artere };
+          });
+        } catch (e) { out.entreesLondresErreur = String(e); }
+        // LES ENTRÉES DE PARIS (v419) : l'A1 arrive à la Gare du Nord, l'A6 à la
+        // place d'Italie — chacune sur la chaussée d'un bout à l'autre, sans un
+        // bloc à hauteur de carrosserie, et finit sur le bout d'une voie nommée.
+        // Vers la Gare du Nord, l'entrée de l'A6 traverserait toute la ville.
+        try {
+          const PA = await import('./src/paris.js'), WO = await import('./src/world.js');
+          const ents = m.entreesDe('paris'), E = PA.ENTREES_PARIS || [];
+          out.entreesParis = ents.map((e, i) => {
+            const pts = E[i] || [];
+            let dans = null, vus = 0, rue = 0;
+            for (let k = 0; k + 1 < pts.length && !dans; k++) for (let t = 0; t <= 1; t += 0.01) {
+              const X = Math.floor(pts[k][0] + (pts[k + 1][0] - pts[k][0]) * t), Z = Math.floor(pts[k][1] + (pts[k + 1][1] - pts[k][1]) * t);
+              if (m.routeEn(X, Z)) continue;
+              const h = w.coteRoulable(X, Z); vus++;
+              if (WO.CHAUSSEE.has(w.getBlock(X, h, Z))) rue++;
+              if (w.isSolid(X, h + 1, Z) || w.isSolid(X, h + 2, Z)) { dans = [X, Z, w.getBlock(X, h + 1, Z)]; break; }
+            }
+            const fin = pts[pts.length - 1] || [0, 0], fu = fin[0] - PA.PARIS.x, fv = fin[1] - PA.PARIS.z;
+            const voie = PA.VOIES_PARIS.some((v) => v.pts.some(([a, b]) => Math.hypot(a - fu, b - fv) < 1));
+            return { route: e.route, dans, vus, rue, voie, long: Math.round(Math.hypot(fin[0] - (pts[0] || fin)[0], fin[1] - (pts[0] || fin)[1])) };
+          });
+        } catch (e) { out.entreesParisErreur = String(e); }
         // TOUTE ENTRÉE DE VILLE ENGENDRÉE (v311) : Bruxelles en a deux,
         // Amsterdam une. Chacune doit arriver sur la rue (trente blocs depuis
         // la porte) et, jusqu'au bout de l'avenue (douze blocs du centre), ne
@@ -1064,6 +1112,38 @@ const VRAIES_KM = [
       && ['tokyo', 'nagoya'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'Tōmei' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7)),
       JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiTomei ? { nom: a1.convoiTomei.nom, voitures: (a1.convoiTomei.modeles || []).length } : 'aucun convoi Tōmei',
         surRail: a1.surRail && a1.surRail['Tōmei'], frole: a1.frole && a1.frole['Tōmei'], entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'Tōmei') }));
+
+    // LA M40 (v415) : Londres–Birmingham, par le col de la crête qui barre
+    // l'axe direct. Elle sort de Londres par le nord, sa porte donne sur une
+    // entrée déclarée qui mène à Pentonville Road, et elle entre dans
+    // Birmingham par l'axe de sa trame. Sur l'ancien code, la route n'existe
+    // pas : ni convoi, ni entrée de Londres.
+    verifier('la M40 relie Londres à Birmingham, entre dans Londres par une rue jusqu\'à Pentonville Road, et des voitures y roulent',
+      !a1.absent && !a1.entreesLondresErreur && !!a1.convoiM40 && a1.convoiM40.routier && (a1.convoiM40.modeles || []).length >= 10
+      && !!a1.surRail && !!a1.surRail['M40'] && a1.surRail['M40'][0] > 100 && a1.surRail['M40'][1] === 0
+      && !!a1.frole && a1.frole['M40'] === 0
+      && (a1.entreesLondres || []).some((e) => e.route === 'M40')
+      && a1.entreesLondres.every((e) => !e.dans && e.vus > 20 && e.rue >= e.vus * 0.95 && e.artere)
+      && (a1.entreesEngendrees || []).some((e) => e.ville === 'birmingham' && e.route === 'M40' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7),
+      JSON.stringify(a1.absent ? a1 : { convoi: a1.convoiM40 ? { nom: a1.convoiM40.nom, voitures: (a1.convoiM40.modeles || []).length } : 'aucun convoi M40',
+        surRail: a1.surRail && a1.surRail['M40'], frole: a1.frole && a1.frole['M40'], londres: a1.entreesLondres, erreur: a1.entreesLondresErreur,
+        birmingham: (a1.entreesEngendrees || []).filter((e) => e.route === 'M40') }));
+
+    // L'A6 (v419) : Paris–Lyon, l'autoroute du Soleil, à l'ouest du TGV d'un
+    // bout à l'autre (à l'est, le massif). Elle sort de Paris par la porte
+    // d'Italie, plein sud, et son entrée déclarée mène à la place d'Italie ;
+    // elle entre dans Lyon par l'axe −133° de sa trame. Sur l'ancien code, la
+    // route n'existe pas : ni convoi, ni entrée.
+    verifier('l\'A6 relie Paris à Lyon à l\'ouest du TGV, entre dans Paris par une rue jusqu\'à la place d\'Italie, et des voitures y roulent',
+      !a1.absent && !a1.entreesParisErreur && !!a1.convoiA6 && a1.convoiA6.routier && (a1.convoiA6.modeles || []).length >= 10
+      && !!a1.surRail && !!a1.surRail['A6'] && a1.surRail['A6'][0] > 100 && a1.surRail['A6'][1] === 0
+      && !!a1.frole && a1.frole['A6'] === 0
+      && (a1.entreesParis || []).some((e) => e.route === 'A6' && e.long < 250)
+      && a1.entreesParis.every((e) => !e.dans && e.vus > 20 && e.rue >= e.vus * 0.95 && e.voie)
+      && (a1.entreesEngendrees || []).some((e) => e.ville === 'lyon' && e.route === 'A6' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7),
+      JSON.stringify(a1.absent ? a1 : { convoi: a1.convoiA6 ? { nom: a1.convoiA6.nom, voitures: (a1.convoiA6.modeles || []).length } : 'aucun convoi A6',
+        surRail: a1.surRail && a1.surRail['A6'], frole: a1.frole && a1.frole['A6'], paris: a1.entreesParis, erreur: a1.entreesParisErreur,
+        lyon: (a1.entreesEngendrees || []).filter((e) => e.route === 'A6') }));
 
     // AUCUNE ROUTE NE PREND L'EMPRISE D'UNE AUTRE (v355) : Montréal a deux
     // routes, et chaque colonne d'emprise doit appartenir au segment qu'on
@@ -3440,6 +3520,35 @@ const VRAIES_KM = [
           + ` · tours de quartier ${flotteVilles.quartiers} : chaussée ${flotteVilles.chaussee} %, ${flotteVilles.plein} pas dans du plein`);
     }
 
+    // --- TOUTES LES VOIES OCCUPÉES (v423) -------------------------------------
+    //
+    // Max, une capture de GTA VI : les voies y sont serrées et TOUTES occupées.
+    // Mesuré avant : une seule file par sens partout — sur l'autoroute (deux
+    // voies par sens, `routes.js`) la file roulait À CHEVAL sur la ligne qui
+    // sépare les deux voies, à 4,0 blocs de l'axe ; sur les percées de premier
+    // rang de Paris (quatre voies, `voirie.js`) elle ne prenait que la voie
+    // intérieure. Les témoins lisent le TRACÉ de chaque convoi de la ville ou
+    // de la route (`point`, tous les deux blocs) et le classent par voie, à la
+    // section : ils ne lisent aucune variable de la règle, et mesurent la
+    // même chose sur l'ancien code.
+    const voiesOccupees = await require('./sonde-voies-occupees.cjs').mesurerVoies(tab);
+    {
+      const a = voiesOccupees.a1, p = voiesOccupees.paris;
+      verifier("sur l'autoroute, une file dans chaque voie, aucune à cheval sur la ligne",
+        a.droite >= 100 && a.gauche >= 100 && a.cheval * 10 < a.droite + a.gauche,
+        `A1 en pleine section, pas de tracé de deux blocs : voie de droite ${a.droite}, voie de gauche ${a.gauche}, `
+          + `à cheval ${a.cheval} (${a.files} file(s))`);
+      verifier('sur les boulevards de Paris, les deux voies de chaque sens sont occupées',
+        // mesuré : 58 sur `origin/main` (des tracés qui frôlent la voie
+        // extérieure aux places), 205 ici — la barre au milieu (v269)
+        p.exterieure >= 120 && p.interieure >= 40,
+        `percées de premier rang, pas de tracé de deux blocs : voie extérieure ${p.exterieure}, intérieure ${p.interieure} (${p.files} files)`);
+      verifier('la jumelle de la seconde voie suit la grille horaire de sa file (v305)',
+        !!voiesOccupees.grille && voiesOccupees.grille.retard > 0 && voiesOccupees.grille.ecartMax <= 0.01,
+        voiesOccupees.grille ? `la jumelle à l'heure de sa file moins ${voiesOccupees.grille.retard} s : ${voiesOccupees.grille.ecartMax} bloc d'écart au plus, à trois heures`
+          : 'aucune jumelle sur l\'A1');
+    }
+
     // --- LES RUES DE PARIS S'ÉLARGISSENT (v294) ------------------------------
     //
     // Max : « les rues de Paris sont trop étroites ». Mesuré sur le plan avant
@@ -4817,7 +4926,7 @@ const VRAIES_KM = [
       const fiches = new Map(vm.VILLES_MONDE.map((f) => [f.cle, f]));
       const { CITY_BLOCK, BLOCK } = await import('./src/blocks.js');
       let anneaux = 0, pas = 0, fontaine = 0;
-      const pires = [];
+      const pires = [], parCle = {};
       for (const tr of traces) {
         const f = fiches.get(tr.cle), t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
         const vus = new Set();
@@ -4842,20 +4951,101 @@ const VRAIES_KM = [
             n++;
           }
         }
-        if (n) { anneaux++; pas += n; pires.push([n, `${tr.cle}#${tr.rang}`]); }
+        if (n) { anneaux++; pas += n; pires.push([n, `${tr.cle}#${tr.rang}`]); parCle[tr.cle] = (parCle[tr.cle] || 0) + n; }
+      }
+      // LAS VEGAS (v418) : hors de la bande du Strip, le sol n'est que sable
+      // et asphalte nu — aucun lot, aucun trottoir, donc aucun immeuble dans
+      // le désert.
+      const lv = fiches.get('lasvegas'), lvt = lv.trame;
+      let desertLots = 0, desertRues = 0;
+      for (let du = -lv.rayon; du <= lv.rayon; du++) for (let dv = -lv.rayon; dv <= lv.rayon; dv++) {
+        if (du * du + dv * dv > lv.rayon * lv.rayon || Math.abs(du / lv.K) <= lv.desert.bande + 0.5) continue;
+        const s2 = vm.solVillesMonde(lv.ancre.x + du, lv.ancre.z + dv);
+        if (s2 === CITY_BLOCK.ASPHALT) desertRues++;
+        else if (s2 !== BLOCK.SAND) desertLots++;
       }
       let seuls = [];
       for (const [cle, g] of parVille) if (g.length === 1) seuls.push(cle);
       pires.sort((a, b) => b[0] - a[0]);
-      return { total: traces.length, anneaux, pas, fontaine, seuls, pires: pires.slice(0, 5).map(([n, c]) => `${c} ${n}`) };
+      return { total: traces.length, anneaux, pas, fontaine, seuls, pires: pires.slice(0, 5).map(([n, c]) => `${c} ${n}`),
+        lv: { pas: parCle.lasvegas || 0, circuits: (parVille.get('lasvegas') || []).length, desertLots, desertRues } };
     });
     verifier('un anneau qui sortait de la chaussée contourne la place, la fontaine ou le parc',
-      contour.anneaux <= 120 && contour.pas <= 3000 && contour.total >= 809,
+      // v418 : 87 anneaux et 2 257 pas avant le contour à contresens et les
+      // rues du Strip, 75 et 1 228 après ; barres au milieu.
+      contour.anneaux <= 81 && contour.pas <= 1740 && contour.total >= 809,
       `${contour.anneaux}/${contour.total} anneaux, ${contour.pas} pas hors de la chaussée`
       + ` (dont ${contour.fontaine} dans une fontaine) · les pires : ${contour.pires.join(', ')}`);
+    // v416 : San Diego gagne son contresens (3 → 2) ; restent San José et
+    // Guayaquil, dont le seul cycle a sa voie extérieure sur la mer ou la
+    // plage — un remède de SOL, déclaré dans TASKS.md.
+    // LAS VEGAS A SA GRILLE DE RUES (v418). La bande du Strip ne tenait
+    // qu'une rue de la trame : 689 pas de voie dans le sable, trois circuits.
+    // Mesuré : 0 pas et quatre circuits ici ; sur `origin/main`, 689 et trois,
+    // sans une colonne d'asphalte hors de la bande.
+    verifier('à Las Vegas, les voitures roulent sur les rues qui longent le Strip, pas dans le sable',
+      contour.lv.pas <= 100 && contour.lv.circuits >= 4 && contour.lv.desertLots === 0 && contour.lv.desertRues > 0,
+      JSON.stringify(contour.lv));
     verifier('les villes engendrées à un seul circuit en ont désormais deux, le contresens',
-      contour.seuls.length <= 6,
+      contour.seuls.length <= 2,
       `${contour.seuls.length} ville(s) à un circuit : ${contour.seuls.join(', ')}`);
+
+    // --- LES TABLIERS S'ALLONGENT SOUS LA VOIE (v414) -------------------------
+    //
+    // La dette de la v404 : 159 pas de voie sur l'eau hors de tout tablier
+    // (Shanghai 46, Kyoto 24, Chicago 22), parce qu'un tablier se mesurait sur
+    // l'AXE de la rue et que la voie, une demi-chaussée à côté, touche l'eau
+    // plus tôt là où la rive est en biais — ou parce que les quarante points
+    // du test d'eau ne voyaient pas un ruisseau (la Kamo de Kyoto). Le remède
+    // ALLONGE les tabliers, il n'en retire aucun : un enfant a pu bâtir dessus.
+    // On lit donc trois choses, par les fonctions pures, sur toutes les villes
+    // à pont : les pas de voie sur l'eau sans tablier ; les colonnes d'eau que
+    // les tabliers d'AVANT couvraient (`pontVillesMonde(x, z, false)`) et que
+    // les tabliers d'aujourd'hui ne couvrent plus, ou dont ils changent la
+    // matière ; et les colonnes gagnées, qui doivent toutes être de l'eau.
+    // Mesuré : 159 pas sur `origin/main`, 0 ici ; 0 perdue, 0 changée,
+    // 1 485 gagnées, toutes sur l'eau.
+    const allonge = await tab.evaluate(async () => {
+      const vm = await import('./src/villesmonde.js');
+      const traces = vm.tracesCirculation(() => 35);
+      let horsT = 0; const pires = new Map();
+      for (const tr of traces) {
+        const vus = new Set();
+        for (let i = 0; i < tr.pts.length; i++) {
+          const a = tr.pts[i], b = tr.pts[(i + 1) % tr.pts.length];
+          const m = Math.ceil(Math.hypot(b.x - a.x, b.z - a.z) / 0.5);
+          for (let k = 0; k < m; k++) {
+            const X = Math.floor(a.x + (b.x - a.x) * k / m), Z = Math.floor(a.z + (b.z - a.z) * k / m);
+            if (vus.has(X * 65536 + Z)) continue;
+            vus.add(X * 65536 + Z);
+            if (vm.solVillesMonde(X, Z) === null) { horsT++; pires.set(tr.cle, (pires.get(tr.cle) || 0) + 1); }
+          }
+        }
+      }
+      let perdues = 0, changees = 0, gagnees = 0, aSec = 0;
+      if (vm.eauVillesMonde) for (const f of vm.VILLES_MONDE) {
+        if (!f.trame || !vm.anneauxDeVille(f).ponts.length) continue;
+        const R = Math.ceil(f.rayon);
+        for (let u = -R; u <= R; u++) for (let v = -R; v <= R; v++) {
+          if (u * u + v * v > f.rayon * f.rayon) continue;
+          const X = f.ancre.x + u, Z = f.ancre.z + v;
+          const neuf = vm.pontVillesMonde(X, Z), avant = vm.pontVillesMonde(X, Z, false);
+          if (!neuf && !avant) continue;
+          if (!vm.eauVillesMonde(X, Z)) { if (neuf && !avant) aSec++; continue; }
+          if (avant && !neuf) perdues++;
+          else if (avant && neuf.id !== avant.id) changees++;
+          else if (neuf && !avant) gagnees++;
+        }
+      }
+      return { horsT, perdues, changees, gagnees, aSec, pires: [...pires].sort((p, q) => q[1] - p[1]).slice(0, 5) };
+    });
+    verifier('aucune voie ne roule sur l\'eau hors d\'un tablier : les tabliers s\'allongent sous la voie',
+      allonge.horsT <= 80,
+      `${allonge.horsT} pas de voie sur l'eau sans tablier · ${allonge.pires.map(([c, n]) => `${c} ${n}`).join(', ') || 'aucun'}`);
+    verifier('un tablier ne se retire pas : aucune colonne d\'avant perdue ni changée, et tout ce qui s\'ajoute est sur l\'eau',
+      allonge.perdues === 0 && allonge.changees === 0 && allonge.gagnees > 0 && allonge.aSec === 0,
+      `${allonge.perdues} perdue(s), ${allonge.changees} changée(s), ${allonge.gagnees} gagnée(s) sur l'eau`
+      + ` (et ${allonge.aSec} sur la rive : un allongement ne porte que sur l'eau)`);
 
     // --- LES RUES DES VILLES ENGENDRÉES À LA RÈGLE DU KIT (v307) -------------
     //
@@ -5250,11 +5440,16 @@ const VRAIES_KM = [
         const f = VILLES_MONDE.find((v) => v.cle === cle);
         if (!f || !f.trame) continue;
         const a = anneauxDeVille(f);
-        if (!CINQ.includes(cle) && !a.ponts.length) continue;
+        if (!CINQ.includes(cle) && !a.ponts.some((q2) => !q2.ext)) continue;   // que des allongements (Sydney, v414)
         const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
         const cote = coteDeVille(f);
         let pas = 0, sansSol = 0, surLaTete = 0, surEau = 0, pireSpan = 0, parLaRoute = 0;
-        for (const q of a.ponts) {
+        // UN ALLONGEMENT N'EST PAS UN PONT (v414) : il porte la VOIE là où la
+        // rive est en biais, et son axe peut longer la rive à sec. Sa preuve
+        // est ailleurs — aucun pas de voie sur l'eau hors tablier, et toutes
+        // ses colonnes sur l'eau (témoin « les tabliers s'allongent »). Ces
+        // verdicts-ci, qui marchent l'AXE, ne lisent que les ponts.
+        for (const q of a.ponts.filter((q2) => !q2.ext)) {
           pireSpan = Math.max(pireSpan, q.a1 - q.a0);
           const n = Math.round(q.a1 - q.a0);
           for (let k = 0; k <= n; k++) {
@@ -5268,7 +5463,7 @@ const VRAIES_KM = [
             if (w.terrainHeight(x, z) < WATER_LEVEL) surEau++;
           }
         }
-        ponts.push({ cle, tabliers: a.ponts.length, pas, sansSol, surLaTete, surEau, pireSpan, parLaRoute, cinq: CINQ.includes(cle) });
+        ponts.push({ cle, tabliers: a.ponts.filter((q2) => !q2.ext).length, pas, sansSol, surLaTete, surEau, pireSpan, parLaRoute, cinq: CINQ.includes(cle) });
       }
       // LES ENCOCHES AU BOUT DES TABLIERS (v381). Le tronçon mouillé se mesure
       // sur l'AXE ; une colonne du monde à côté de l'axe peut être de l'eau un

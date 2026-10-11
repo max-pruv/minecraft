@@ -6,12 +6,111 @@
 
 export const NOUVEAUTES = [
   {
-    v: 412,
+    v: 424,
     titre: 'Un choc à la vitesse',
     puces: [
       'Un mur lent abîme peu',
       'Frôler un mur ne casse rien',
       'Pleins gaz, ça cogne fort',
+    ],
+  },
+  {
+    v: 423,
+    titre: 'Toutes les voies occupées',
+    puces: [
+      'Des voitures dans chaque voie',
+      "Bien plus de voitures sur l'autoroute",
+      'Elles se rangent avant de tourner',
+    ],
+  },
+  {
+    v: 422,
+    titre: 'Conduire comme au cinéma',
+    puces: [
+      'La caméra recule quand on accélère',
+      'La voiture penche dans les virages',
+      'Les roues avant tournent avec toi',
+      'Les pneus crissent, les chocs s\'entendent',
+    ],
+  },
+  {
+    v: 421,
+    titre: 'Des passages piétons partout',
+    puces: [
+      'Rome et Zurich ont leurs bandes blanches',
+      'Les passants y traversent la rue',
+    ],
+  },
+  {
+    v: 420,
+    titre: 'L\'arrivée plus légère',
+    puces: [
+      'Moins d\'attente après une téléportation',
+      'Moins de travail pour la tablette',
+    ],
+  },
+  {
+    v: 419,
+    titre: 'Paris rejoint Lyon',
+    puces: [
+      'L\'autoroute du Soleil à côté du TGV',
+      'On entre dans Paris par le sud',
+    ],
+  },
+  {
+    v: 418,
+    titre: 'Des rues autour du Strip',
+    puces: [
+      'Las Vegas roule sur de vraies rues',
+      'Plus de voiture dans les fontaines',
+    ],
+  },
+  {
+    v: 417,
+    titre: 'Le ciel des villes vérifié',
+    puces: [
+      'L\'avion ne dépasse pas la ville',
+      'Rien ne change pour toi',
+    ],
+  },
+  {
+    v: 416,
+    titre: 'San Diego dans les deux sens',
+    puces: [
+      'Un second circuit de voitures',
+      'Sur les ponts déjà là',
+    ],
+  },
+  {
+    v: 415,
+    titre: 'Londres rejoint Birmingham',
+    puces: [
+      'Une autoroute passe par le col',
+      'On entre dans Londres par King\'s Cross',
+    ],
+  },
+  {
+    v: 414,
+    titre: 'Des ponts sur les canaux',
+    puces: [
+      'Plus de voiture qui roule sur l’eau',
+      'Les ponts s’allongent au-dessus des rivières',
+      'Tes constructions ne bougent pas',
+    ],
+  },
+  {
+    v: 413,
+    titre: 'Le jeu ne plante plus',
+    puces: [
+      'Les voitures prennent moins de mémoire',
+      'On peut jouer longtemps sur iPhone',
+    ],
+  },
+  {
+    v: 412,
+    titre: 'New York à deux, vérifié',
+    puces: [
+      'Un ami te rejoint à New York',
     ],
   },
   {

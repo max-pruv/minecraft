@@ -39,7 +39,7 @@ export const ZONES = ['avant', 'arriere', 'gauche', 'droite', 'toit'];
 // qu'elle passait sous 0,3, quelle que soit la santé. Et la force publiée par
 // la physique vaut 1 dès 20 blocs/s d'impact normal (`CHOC_PLEIN`, conduite.js)
 // quand une voiture roule à 40-60 : presque tout vrai crash sature à 1.
-// (Depuis la v412, la physique rapporte la force à 85 % de la pointe de la
+// (Depuis la v424, la physique rapporte la force à 85 % de la pointe de la
 // classe : un mur pleins gaz vaut toujours 1, un mur lent et un frôlement bien
 // moins — les murs promis ci-dessous ne bougent pas.) La normalisation reste à
 // la physique ; c'est ici que la perte se règle :

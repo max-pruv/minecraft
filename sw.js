@@ -2,7 +2,7 @@
 // once it has been opened online at least once.
 // Bump CACHE_VERSION on every release so clients pick up new files.
 
-const CACHE_VERSION = 'web-minecraft-v412';
+const CACHE_VERSION = 'web-minecraft-v424';
 
 // The face scanner (library + models, ~8 MB) lives in its own cache that
 // survives version bumps: those files are pinned and never change, so a
@@ -86,6 +86,7 @@ const ASSETS = [
   './src/sky.js',
   './src/siege.js',
   './src/sons.js',
+  './src/sensations.js',
   './src/villandry.js',
   './src/aeroport.js',
   './src/cadence.js',
@@ -98,6 +99,7 @@ const ASSETS = [
   './src/circuit.js',
   './src/circulation.js',
   './src/vehicules.js',
+  './src/voiesdoubles.js',
   './src/presence.js', './src/humains.js', './vendor/SkeletonUtils.js',
   './src/taxis.js',
   './src/modeles.js',
@@ -122,6 +124,7 @@ const ASSETS = [
   './src/villes200.js',
   './src/usine.js',
   './src/pietons.js',
+  './src/passages.js',
   './src/passants.js',
   './src/poissons.js',
   './src/trains.js',

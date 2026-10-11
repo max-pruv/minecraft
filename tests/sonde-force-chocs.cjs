@@ -1,4 +1,4 @@
-// LA FORCE DES CHOCS SUIT LA VITESSE (v412). Le VRAI joueur (player.js, three
+// LA FORCE DES CHOCS SUIT LA VITESSE (v424). Le VRAI joueur (player.js, three
 // prêté par un crochet de module), sous node, contre un mur droit : de face à
 // 10 blocs/s, de face pleins gaz (95 % de la pointe de la classe), et frôlé à
 // 15° pleins gaz. On lit `player.choc.force` et l'on en tire ce que les dégâts

@@ -341,7 +341,24 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // Les blocs d'un journal fabriqué de quarante mille, relevés sur la v391
 // (`origin/main`, avant l'index par morceau) : `empreinteJournal` (v403).
 const EMPREINTE_JOURNAL_V391 = '540f2b435ba355c9ec885f139968c87a16438f92846b695b8336548c868657e4';
-const EMPREINTE_MORCEAUX_V357 = '1f385723b8d1414b3f597cbcb2687f7ace542012cc29ba79326cbe90bebf5b7e';
+// v414 : les tabliers des villes engendrées s'allongent sous la voie (Rome est
+// dans les neuf lieux) : 1f385723… → 863d4203…. La preuve : le même code, les
+// allongements retirés de la liste des tabliers (`ext`), rend 1f385723…, la
+// constante d'`origin/main` (v404), au bit près — rien d'autre n'a bougé.
+// v415 (la M40) : voir plus bas.
+const EMPREINTE_MORCEAUX_V414 = '863d4203a441e3fd029ce2404fc6d6e706799e7f64fe489a86f51121e6be0586';
+// v415 : Londres, un des neuf lieux, porte l'entrée de la M40 (une collectrice
+// de la porte nord à Pentonville Road) et perd la maison de la trame générique
+// qui la barrait — voulu. La M40 retirée du registre (donc son entrée et le
+// lot qu'elle écartait), la branche rend 863d4203…, la constante
+// d'`origin/main` (v414, `EMPREINTE_MORCEAUX_V414`), au bit près.
+// v419 : Paris, un des neuf lieux, porte l'entrée de l'A6 (de la porte
+// d'Italie à la place d'Italie). L'A6 retirée du registre, la branche rend
+// 7521b9b6…, la constante de la v415, au bit près ; et les quatre-vingt-cinq
+// colonnes qui diffèrent dans les morceaux de Paris sont toutes à moins de
+// 11,2 blocs de l'axe de l'entrée — la demi-chaussée et le trottoir d'un
+// boulevard (scratchpad diffp.mjs).
+const EMPREINTE_MORCEAUX_V357 = '1f1e5a6dbde9100ea365bc060d6c0f077a88cfc9bbb8b08128ebc590462126e3';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -546,7 +563,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         JSON.stringify(essais));
     }
   }
-  // --- LA FORCE DES CHOCS SUIT LA VITESSE (v412) ---------------------------
+  // --- LA FORCE DES CHOCS SUIT LA VITESSE (v424) ---------------------------
   // La force publiée saturait à 1 dès 20 blocs/s normaux (`CHOC_PLEIN`) quand
   // une voiture roule à 30-55 : un mur à 10 blocs/s coûtait un tiers de mur
   // plein, un frôlement à 15° pleins gaz jusqu'à 0,46 (hypercar). Le VRAI
@@ -2357,6 +2374,37 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       JSON.stringify({ mesure: tr, barres: BARRES_TRAVAIL }));
   }
 
+  // LES PASSAGES EN BIAIS SE DESSINENT (v421). Une tuile ne se tourne pas :
+  // Rome et Zurich (trames en biais) n'avaient aucun passage piéton, Kyoto et
+  // Tokyo (trames alignées) peignent le leur dans un bloc. Les bandes en biais
+  // sont de la géométrie du mailleur, dans le tampon `solid` (aucun bloc écrit,
+  // aucun programme neuf). On maille quarante-neuf morceaux au centre de
+  // chaque ville avec et sans elles (`passagesBiais: false`) : des sommets en
+  // plus à Rome et à Zurich, AUCUN à Kyoto ni à Paris, et les blocs identiques.
+  // Sur l'ancien code l'option n'existe pas : zéro partout, rouge.
+  {
+    const { World, CHUNK } = await import('../src/world.js');
+    const { buildChunkTampons } = await import('../src/mesher.js');
+    const { positionDe } = await import('../src/mondes.js');
+    const res = {};
+    for (const cle of ['rome', 'zurich', 'kyoto', 'paris']) {
+      const p = positionDe(cle), c0x = Math.floor(p.x / CHUNK), c0z = Math.floor(p.z / CHUNK);
+      const w = new World();
+      let avec = 0, sans = 0, blocsEgaux = true;
+      for (let dx = -3; dx <= 3; dx++) for (let dz = -3; dz <= 3; dz++) {
+        const d0 = Buffer.from(w.ensureChunk(c0x + dx, c0z + dz)).toString('base64');
+        sans += buildChunkTampons(w, c0x + dx, c0z + dz, { passagesBiais: false }).solid.positions.length / 3;
+        avec += buildChunkTampons(w, c0x + dx, c0z + dz).solid.positions.length / 3;
+        if (Buffer.from(w.ensureChunk(c0x + dx, c0z + dz)).toString('base64') !== d0) blocsEgaux = false;
+      }
+      res[cle] = { sommetsEnPlus: avec - sans, blocsEgaux };
+    }
+    verifier('à Rome et à Zurich, les passages piétons en biais se dessinent — sans un bloc écrit, et rien ne change à Kyoto ni à Paris',
+      res.rome.sommetsEnPlus > 200 && res.zurich.sommetsEnPlus > 200 && res.kyoto.sommetsEnPlus === 0 && res.paris.sommetsEnPlus === 0
+        && Object.values(res).every((r) => r.blocsEgaux),
+      JSON.stringify(res));
+  }
+
   // LES BLOCS DE L'ENFANT, RANGÉS PAR MORCEAU (v403). `generateChunk` balayait
   // le journal entier pour chaque morceau : 80 000 entrées lues pour un morceau
   // de campagne qui n'en porte aucune (36,6 ms contre 1,25 sous node, journal
@@ -3321,7 +3369,16 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
       for (let e = 0; e < 6 && !auVolant(); e++) { const b = document.getElementById('ride-btn'); if (b) b.click(); await dodo(1000); }
       if (!auVolant()) return { echec: 'pas monté' };
-      const out = { images: 0, bloque: 0, marches: 0, chutes: 0, surTablier: 0, horsTablier: 0, ecartMax: 0, blocs: 0, ms: 0 };
+      const out = { images: 0, bloque: 0, marches: 0, chutes: 0, surTablier: 0, horsTablier: 0, ecartMax: 0, blocs: 0, ms: 0, voitures: 0 };
+      // CE TÉMOIN MESURE LA ROUTE, PAS LE TRAFIC (v423). Depuis que l'autoroute
+      // a une file dans chaque voie et près de trois fois plus de voitures, la
+      // voiture posée au milieu de la chaussée bute sur la circulation (soixante
+      // images bloquée à 50,9 blocs au portail). Se placer veut dire faire le
+      // vide (v279) : la seule famille « voiture de la rue » est ignorée le
+      // temps de la mesure — murs, mobilier, eau et piétons comptent toujours —
+      // et ce qu'elle a écarté entre dans le message.
+      const obstacle = p.obstacleVehicule;
+      if (obstacle) p.obstacleVehicule = (...a) => { const f = obstacle(...a); if (f === 'voiture') { out.voitures++; return false; } return f; };
       let xa = p.pos.x, za = p.pos.z, ya = p.pos.y;
       const x0 = p.pos.x, z0 = p.pos.z, t0 = performance.now();
       p.touchMove.f = 1;
@@ -3349,6 +3406,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         requestAnimationFrame(tour);
       });
       p.touchMove.f = 0;
+      if (obstacle) p.obstacleVehicule = obstacle;
       out.blocs = +out.blocs.toFixed(1); out.ecartMax = +out.ecartMax.toFixed(2);
       out.x = +p.pos.x.toFixed(1); out.z = +p.pos.z.toFixed(1);
       out.sFin = +R.projeter(seg, p.pos.x, p.pos.z).s.toFixed(1);
@@ -3434,7 +3492,13 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
           for (let s = bout - 2.5; s <= bout + 2.5; s += 0.1) for (let d = -8; d <= 8; d += 0.25) {
             if (R.largeurA && Math.abs(d) > R.largeurA(seg, s).demiEmprise - 0.5) continue;
             const a = R.pointA(seg, s), x = a.x - a.fz * d, z = a.z + a.fx * d;
-            const X = Math.floor(x), Z = Math.floor(z), c = R.routeEn(X + 0.5, Z + 0.5);
+            // Au bord de l'emprise, le point peut être dans la route quand le
+            // centre de SA colonne ne l'est pas (A6, v419 : d 7,92 pour une
+            // demi-emprise de 8,5, colonne voisine hors route) : on prend alors
+            // la cote de la route au POINT, et l'on demande un cube plein à
+            // cette cote dans la colonne, quel qu'il soit — le sol naturel y
+            // ferme la chaussée aussi bien. Au-dessus de l'eau, rien : trou.
+            const X = Math.floor(x), Z = Math.floor(z), c = R.routeEn(X + 0.5, Z + 0.5) || R.routeEn(x, z);
             const cube = c && !c.ouvrage && g.world.isSolid(X, Math.floor(c.cote) - 1, Z);
             total++;
             if (!cube && !sur(x, z)) { trous++; if (ex.length < 4) ex.push([+x.toFixed(1), +z.toFixed(1)]); }
