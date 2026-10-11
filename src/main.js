@@ -883,6 +883,14 @@ function synchroniserLeWorker() {
 // BORNÉ : au-delà d'une seconde et demie de montre, on joue quand même et le
 // fil principal l'engendre, comme avant. Sans worker (`?maillage=local`), le
 // mailleur d'ici l'engendre de toute façon : on n'attend rien.
+//
+// ET SEULEMENT À L'ARRIVÉE D'UN SAUT. Mon premier jet attendait partout : en
+// vol ou au volant, l'enfant franchit sans cesse le bord du monde rendu (au
+// banc, `rr=2`), et l'avion se figeait par à-coups d'une seconde et demie —
+// vingt-neuf rouges de `monte.js` rejouée seule. Hors de la fenêtre d'une
+// arrivée (`estUnSaut`, plus que la portée d'un coup), on fabrique comme avant :
+// c'est là que le monde manque d'un coup, ailleurs il ne manque qu'au bord.
+const ATTENTE_ARRIVEE_MS = 1500;
 const ATTENTE_JOUEUR_MAX_MS = 1500;
 let attenteJoueur = 0;
 function mondePretAutour(r) {
@@ -891,7 +899,7 @@ function mondePretAutour(r) {
     || world.morceauxPrets(p.x - r, p.z - r, p.x + r, p.z + r);
 }
 function joueurAttendLeMonde(now) {
-  if (mondePretAutour(3)) { attenteJoueur = 0; return false; }
+  if (!world.arriveeEnCours() || mondePretAutour(1)) { attenteJoueur = 0; return false; }
   if (!attenteJoueur) attenteJoueur = now;
   if (now - attenteJoueur > ATTENTE_JOUEUR_MAX_MS) { attenteJoueur = 0; return false; }
   return true;
@@ -1354,7 +1362,7 @@ function redemanderLeDetail(cx, cz, key) {
 // est posé là où un voisin est de la chaussée (`lampadaireDeVille`, v248) :
 // si aucun voisin connu n'en est, c'est le côté qu'on ne voit pas encore.
 function rueAutour(wx, wy, wz) {
-  const rue = (x, z) => world.morceauxPrets(x, z) ? CHAUSSEE.has(world.getBlock(x, wy, z)) : null;
+  const rue = (x, z) => !world.arriveeEnCours() || world.morceauxPrets(x, z) ? CHAUSSEE.has(world.getBlock(x, wy, z)) : null;
   return [rue(wx + 1, wz), rue(wx - 1, wz), rue(wx, wz + 1), rue(wx, wz - 1)];
 }
 const CAPS_RUE = [0, Math.PI, -Math.PI / 2, Math.PI / 2];
@@ -1476,7 +1484,10 @@ function updateChunks() {
   if (chunkKey !== lastPlayerChunk) {
     if (lastPlayerChunk) {
       const [ax, az] = lastPlayerChunk.split(',').map(Number);
-      if (estUnSaut({ cx: ax, cz: az }, { cx: pcx, cz: pcz }, RENDER_RADIUS)) arriveeJusqua = performance.now() + FENETRE_ARRIVEE_MS;
+      if (estUnSaut({ cx: ax, cz: az }, { cx: pcx, cz: pcz }, RENDER_RADIUS)) {
+        arriveeJusqua = performance.now() + FENETRE_ARRIVEE_MS;
+        world.arriveeJusqua = performance.now() + ATTENTE_ARRIVEE_MS;   // v422
+      }
     }
     lastPlayerChunk = chunkKey;
     rebuildQueue();
@@ -7843,7 +7854,7 @@ function updateHud(dt) {
   const eye = player.eyePosition();
   // un morceau pas encore rendu par le worker n'est pas de l'eau : on ne
   // l'engendre pas ici pour le savoir (v422)
-  const eyeBlock = world.morceauxPrets(eye.x, eye.z) ? world.getBlock(Math.floor(eye.x), Math.floor(eye.y), Math.floor(eye.z)) : BLOCK.AIR;
+  const eyeBlock = !world.arriveeEnCours() || world.morceauxPrets(eye.x, eye.z) ? world.getBlock(Math.floor(eye.x), Math.floor(eye.y), Math.floor(eye.z)) : BLOCK.AIR;
   waterTint.style.display = eyeBlock === BLOCK.WATER ? 'block' : 'none';
 
   fpsSamples.push(1 / dt);
@@ -8185,7 +8196,7 @@ function frame(now) {
 
   // la visée lit jusqu'à huit blocs devant les yeux : elle se tait tant que
   // le monde autour n'est pas rendu (v422)
-  const hit = running && !attenteJoueur && mondePretAutour(8) ? getTarget() : null;
+  const hit = running && !attenteJoueur && (!world.arriveeEnCours() || mondePretAutour(8)) ? getTarget() : null;
   highlight.visible = !!hit;
   if (hit) highlight.position.set(hit.x + 0.5, hit.y + 0.5, hit.z + 0.5);
 

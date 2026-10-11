@@ -4127,6 +4127,12 @@ export class World {
   // seconde). Un passant ne se pose et ne marche que là où le monde est déjà
   // là — la règle de la minicarte (v258), qui n'engendre jamais.
   // Coordonnées de BLOC ; la boîte va de (x0, z0) à (x1, z1) inclus.
+  // La fenêtre d'une arrivée (posée par main.js après un saut) : c'est là, et
+  // là seulement, qu'on attend le worker plutôt que de fabriquer.
+  arriveeEnCours() {
+    return !!this.arriveeJusqua && (typeof performance !== 'undefined' ? performance.now() : Date.now()) < this.arriveeJusqua;
+  }
+
   morceauxPrets(x0, z0, x1 = x0, z1 = z0) {
     const c0 = Math.floor(Math.floor(x0) / CHUNK), c1 = Math.floor(Math.floor(x1) / CHUNK);
     const d0 = Math.floor(Math.floor(z0) / CHUNK), d1 = Math.floor(Math.floor(z1) / CHUNK);

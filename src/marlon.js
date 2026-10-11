@@ -146,7 +146,7 @@ export class BaseNPC {
     // Poser quelqu'un lit la colonne (`surfaceY`), donc engendrerait le
     // morceau s'il manque (v422) : on garde la place et l'on se pose quand le
     // monde arrive — `update` attend jusque-là, sans tomber.
-    if (this.world.morceauxPrets && this.world.piedPieton?.(x, z) === undefined && !this.world.morceauxPrets(x, z)) {
+    if (this.world.morceauxPrets && this.world.arriveeEnCours() && this.world.piedPieton?.(x, z) === undefined && !this.world.morceauxPrets(x, z)) {
       this.pos.set(x, fallbackY + 0.1, z);
       this.vel.set(0, 0, 0);
       this.aPoser = fallbackY;
@@ -178,7 +178,7 @@ export class BaseNPC {
     // immobile — ni chute, ni pas, ni sonde — et reprend à la même place dès
     // que les morceaux arrivent.
     const marge = this.largeur / 2 + 4;
-    this.attendLeMonde = !!this.world.morceauxPrets
+    this.attendLeMonde = !!this.world.morceauxPrets && this.world.arriveeEnCours()
       && !this.world.morceauxPrets(this.pos.x - marge, this.pos.z - marge, this.pos.x + marge, this.pos.z + marge);
     if (this.attendLeMonde) {
       this.vel.set(0, 0, 0);

@@ -81,7 +81,7 @@ export function createPoissons({ scene, world, player }) {
     if (fond >= WATER_LEVEL - 1) return null;                  // pas d'eau, ou une flaque
     // un poisson ne naît que dans un monde déjà là : lire l'eau d'un morceau
     // absent l'engendrerait sur le fil principal (v422, 77 ms à l'arrivée)
-    if (world.morceauxPrets && !world.morceauxPrets(x, z)) return null;
+    if (world.morceauxPrets && world.arriveeEnCours() && !world.morceauxPrets(x, z)) return null;
     const y = Math.max(fond + 1.4, WATER_LEVEL - 1.6 - Math.random() * 3);
     if (!estEau(world, x, y, z)) return null;                  // une ville a posé son quai ici
     return { x, y, z };
