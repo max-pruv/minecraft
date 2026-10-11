@@ -1,5 +1,19 @@
 # Ce qui est en cours
 
+- [ ] **SEPT PISTES SOUS LEUR CIBLE (v446) — DÉCLARÉES, LE REMÈDE EST UNE
+  DÉCISION.** Prolongées autant que leur place le permet, mesurées par sonde :
+  Heathrow 213/227 pour 300 (vallon à l'ouest, Londres à l'est), Barcelone 189
+  pour 260 (la mer des deux côtés), Schiphol 267/270 (polder, autoroute),
+  Francfort 214/232 (vallon, colline), Haneda 245/251 (colline, Tokyo), San
+  Francisco 195 pour 260 (la baie, une autoroute), Los Angeles 191/198 (ravin,
+  la ville). Toutes dépassent ce que l'approche assistée demande (≤ 196 blocs
+  d'arrêt mesurés) sauf LAX pour le Concorde, de justesse. Les remèdes : un
+  remblai plus profond que douze blocs (un viaduc de piste), ou déplacer
+  l'aérodrome — l'invariant 1 (le sol) est en jeu dans le second cas.
+  `PISTES_COURTES` (aeroport.js) nomme l'obstacle ; le témoin de
+  `carteMonde.js` rougit si l'une regagne sa cible sans être retirée de la
+  liste.
+
 - [ ] **PORTAIL DES PONTS (v430) — DOUBLE MESURE (règle v195).** Portail
   complet (base v419) coupé à sa limite de deux heures pendant `reseau.js` ;
   rouges déjà déclarés : `carte.js` « la faire glisser non plus » (427 ms),

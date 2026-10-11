@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 446,
+    titre: 'Des pistes assez longues',
+    puces: [
+      'Les pistes vont jusqu\'à 300 blocs',
+      'Le Concorde peut enfin se poser',
+      'Le paysage n\'a pas bougé',
+    ],
+  },
+  {
     v: 445,
     titre: 'Les commandes de l\'avion rangées',
     puces: [
