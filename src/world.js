@@ -4183,6 +4183,7 @@ export class World {
   // disque que le worker est en train de rendre) : un personnage ailleurs
   // n'a rien à attendre de cette arrivée-là.
   arriveeEnCours(x, z) {
+    if (this.attendreArrivee === false) return false;   // un témoin qui ne mesure pas une arrivée
     if (!this.arriveeJusqua || (typeof performance !== 'undefined' ? performance.now() : Date.now()) >= this.arriveeJusqua) return false;
     const L = this.arriveeLieu;
     return x === undefined || !L || Math.max(Math.abs(x - L.x), Math.abs(z - L.z)) <= L.r;

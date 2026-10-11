@@ -2681,13 +2681,12 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       }
       if (!ancre) return { err: 'aucun carré plat' };
       const majPlayer = g.player.update, sauve = g.player.pos.clone(), gab0 = g.player.gabarit, pousse0 = g.player.pousse;
-      // LE TÉMOIN SE PLACE, ET ATTEND QUE LE MONDE SOIT LÀ (v436) : la voiture
-      // l'emmène au couloir d'un saut, et pendant la fenêtre d'une arrivée un
-      // personnage n'engendre pas un morceau que le worker va rendre — il
-      // attend, immobile. On attend donc le monde autour du couloir, borné.
-      g.player.pos.set(ancre.x, ancre.y + 2, ancre.z); g.player.vel.set(0, 0, 0);
-      for (const t = performance.now(); performance.now() - t < 10000
-        && g.world.morceauxPrets && !g.world.morceauxPrets(ancre.x - 12, ancre.z - 12, ancre.x + 12, ancre.z + 12);) await new Promise((f) => setTimeout(f, 100));
+      // CE TÉMOIN NE MESURE PAS UNE ARRIVÉE (v436) : la voiture l'emmène au
+      // couloir d'un saut, et pendant la fenêtre d'une arrivée un personnage
+      // dont le monde n'est pas rendu attend, immobile. On coupe l'attente le
+      // temps du témoin, sans attendre le monde : attendre déplaçait l'heure
+      // de la rue des témoins suivants (le tirage de « la rue roule »).
+      g.world.attendreArrivee = false;
       g.player.update = () => {};
       const dormir = (ms) => new Promise((f) => setTimeout(f, ms));
       const image = () => new Promise((f) => requestAnimationFrame(f));
@@ -2726,6 +2725,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         }
       } finally {
         g.player.update = majPlayer; g.player.gabarit = gab0; g.player.pousse = pousse0; g.player.pos.copy(sauve);
+        g.world.attendreArrivee = true;
         g.scene.remove(h.mesh);
       }
       return { passes };
@@ -2757,13 +2757,12 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       }
       if (!ancre) return { err: 'aucun carré plat' };
       const majPlayer = g.player.update, sauve = g.player.pos.clone(), gab0 = g.player.gabarit, pousse0 = g.player.pousse;
-      // LE TÉMOIN SE PLACE, ET ATTEND QUE LE MONDE SOIT LÀ (v436) : la voiture
-      // l'emmène au couloir d'un saut, et pendant la fenêtre d'une arrivée un
-      // personnage n'engendre pas un morceau que le worker va rendre — il
-      // attend, immobile. On attend donc le monde autour du couloir, borné.
-      g.player.pos.set(ancre.x, ancre.y + 2, ancre.z); g.player.vel.set(0, 0, 0);
-      for (const t = performance.now(); performance.now() - t < 10000
-        && g.world.morceauxPrets && !g.world.morceauxPrets(ancre.x - 12, ancre.z - 12, ancre.x + 12, ancre.z + 12);) await new Promise((f) => setTimeout(f, 100));
+      // CE TÉMOIN NE MESURE PAS UNE ARRIVÉE (v436) : la voiture l'emmène au
+      // couloir d'un saut, et pendant la fenêtre d'une arrivée un personnage
+      // dont le monde n'est pas rendu attend, immobile. On coupe l'attente le
+      // temps du témoin, sans attendre le monde : attendre déplaçait l'heure
+      // de la rue des témoins suivants (le tirage de « la rue roule »).
+      g.world.attendreArrivee = false;
       g.player.update = () => {};
       const image = () => new Promise((f) => requestAnimationFrame(f));
       const h = new Habitant(g.scene, g.world, g.player, () => {}, {
@@ -2804,6 +2803,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
           arrivee: +Math.abs(h.pos.x - ancre.x).toFixed(2) };
       } finally {
         g.player.update = majPlayer; g.player.gabarit = gab0; g.player.pousse = pousse0; g.player.pos.copy(sauve);
+        g.world.attendreArrivee = true;
         g.scene.remove(h.mesh);
       }
     });
