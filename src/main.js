@@ -8315,6 +8315,8 @@ requestAnimationFrame(() => {
     try { chaufferLaCoque(); } catch (e) { console.warn('chauffe de la coque', e); }
     // la fumée et les flammes des dégâts (v343) : deux matériaux neufs
     try { fun.degats.chauffer(renderer, camera, scene); } catch (e) { console.warn('chauffe des dégâts', e); }
+    // les traces de pneus (v431) : un matériau neuf, son essaim exact
+    try { fun.chaufferTraces(renderer, camera, scene); } catch (e) { console.warn('chauffe des traces', e); }
     chauffeFinie = true;
     requestAnimationFrame(pasNY);
   };
