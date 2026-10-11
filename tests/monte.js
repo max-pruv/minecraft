@@ -673,9 +673,24 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         }
         return true;
       };
+      // LES IMAGES LENTES SE PROVOQUENT, ELLES NE S'ATTENDENT PAS (v451). La
+      // rame roule en temps RÉEL (v305) : la panne n'existe que quand une
+      // image dure plus que ce que son regard couvre. Au repos, l'ancien code
+      // passait 7 poses sur 7 et le témoin tirait à pile ou face sous la
+      // charge du portail. Chaque image brûle donc 700 ms de fil principal le
+      // temps du croisement — l'arrivée d'une téléportation sur la tablette :
+      // `origin/main` 5 traversées sur 5, regard fixe (3,5 blocs) 2 sur 3,
+      // regard en temps 0 sur 5 (sonde-train-voiture.cjs, LENT=700).
+      window.__freinRame = true;
+      const brule = () => {
+        if (!window.__freinRame) return;
+        const t = performance.now(); while (performance.now() - t < 700);
+        requestAnimationFrame(brule);
+      };
+      requestAnimationFrame(brule);
       const t0 = performance.now();
       let releves = 0, dedans = 0, bloque = 0, plusPres = Infinity;
-      while (performance.now() - t0 < 30000) {
+      while (performance.now() - t0 < 40000) {
         await new Promise((r) => setTimeout(r, 250));
         const c = V.etat()[ci];
         const p = g.player.pos, moi = rect(p.x, p.z, g.player.yaw + Math.PI, dlJ, dwJ);
@@ -689,11 +704,17 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         if (ici) dedans++;
         if (bloque > 12) break;                       // arrêté devant nous trois secondes : acquis
       }
+      window.__freinRame = false;
+      // la rame s'arrête désormais à son REGARD (ce qu'elle parcourt dans une
+      // image, plus 3,5 blocs) : « elle est venue » se mesure à cette aune,
+      // plus la demi-rame et la demi-voiture
+      const regard = V.etat()[ci].regard;
       return { ci, nom: V.etat()[ci].nom, avance, vitesse: vit, releves, dedans, bloque, plusPres: +plusPres.toFixed(1),
+        regard, venue: Math.max(12, (regard || 0) + 6),
         secondes: +((performance.now() - t0) / 1000).toFixed(1) };
     });
     verifier('un train s\'arrête devant la voiture de l\'enfant posée sur sa voie, au lieu de la traverser',
-      !surLaVoie.err && surLaVoie.dedans === 0 && surLaVoie.plusPres < 12 && surLaVoie.bloque > 0,
+      !surLaVoie.err && surLaVoie.dedans === 0 && surLaVoie.plusPres < surLaVoie.venue && surLaVoie.bloque > 0,
       JSON.stringify(surLaVoie));
     await tab.evaluate(() => { if (window.__game.fun.montureConduite && window.__game.fun.montureConduite()) document.getElementById('ride-btn').click(); });
     await dormir(600);

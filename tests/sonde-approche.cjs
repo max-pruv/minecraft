@@ -1,4 +1,4 @@
-// Sonde de l'approche assistée (v449) — sous node, sans navigateur :
+// Sonde de l'approche assistée (v452) — sous node, sans navigateur :
 //   node tests/sonde-approche.cjs src
 // Rejoue guiderApproche (src/approche.js) sur chaque piste du monde, trois
 // appareils, quatre départs, et dit où l'avion touche et s'arrête.

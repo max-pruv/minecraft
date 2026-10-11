@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v449 — ✈️ va chercher la piste
+## v452 — ✈️ va chercher la piste
 
 **Pourquoi.** Max : « améliore la séquence d'atterrissage parce que l'avion
 est compliqué à gérer ». En vol, ✈️ « Se poser » posait l'appareil LÀ OÙ IL
@@ -48,6 +48,83 @@ sept blocs par seconde) et le Concorde à Los Angeles touche au seuil même, un
 demi-bloc trop tôt — déclaré dans `TASKS.md` ; un témoin de `monte.js` fait poser par
 ✈️ un chasseur et un avion de ligne sur deux pistes depuis un départ de
 travers, et exige le toucher et l'arrêt sur la bande.
+
+---
+
+## v451 — Le train voit la voiture de l'enfant, même quand le jeu rame
+
+**Pourquoi.** Un train traversait la voiture de l'enfant posée sur la voie,
+chaque fois qu'une image était lente — sur la tablette, ce sont les images de
+l'arrivée dans une ville. La rame roule en temps réel (v305) mais ne regardait
+que 3,5 blocs devant sa motrice : à quinze blocs par seconde, une image d'un
+quart de seconde la faisait passer d'« assez loin » à « déjà dedans », et une
+rame déjà dedans continue (v245). La session des intermittents l'avait trouvé
+et déclaré (témoin de `monte.js` laissé rouge). Les voitures de la rue avaient
+la même faille, en plus petit : leur marge d'urgence devant une personne
+valait une image à trois par seconde, pas l'image en cours.
+
+**Ce que ça change.** La rame regarde aussi loin qu'elle va rouler dans
+l'image (sa grille dit exactement où elle sera), plus la marge d'avant : ce
+qui est sur son chemin est vu avant d'y être, quelle que soit la cadence, et
+elle s'arrête devant la voiture (ou l'enfant à pied) au lieu de la traverser.
+Le métro, qui partage ce code, en profite aussi. Les voitures de la rue
+ajoutent à leur regard et à leur marge d'urgence ce qu'elles parcourent dans
+l'image au-delà d'un tiers de seconde ; sous ce tiers de seconde, la règle
+d'avant au bit près. La grille horaire partagée entre tablettes (v305) ne
+change pas : l'arrêt devant l'enfant reste local, comme avant.
+
+**Ce qui le prouve.** Images lentes PROVOQUÉES (700 ms brûlées par image,
+`sonde-train-voiture.cjs LENT=700`) : `origin/main` 5 traversées sur 5,
+branche 0 sur 5, branche au regard fixe d'avant (`regardRameFixe`) 2 sur 3 ;
+au repos, 0 sur 7 des deux côtés. Le témoin « un train s'arrête devant la
+voiture de l'enfant » de `monte.js` provoque désormais ces images lentes au
+lieu d'attendre la charge du portail. Voitures de la rue
+(`sonde-voiture-lente.cjs`, le passage du témoin de `monte.js` recopié) :
+branche 0 traversée sur 4 poses, `origin/main` 1 sur 7 (et trois poses où
+une voiture était déjà dedans au départ) — un tirage, pas une preuve : leur
+regard portait déjà quarante blocs. Ce volet se juge sur sa construction (la
+marge couvre l'avance de l'image), et il est déclaré comme tel.
+## v450 — Le Colisée ne change plus, Édimbourg en pierre grise
+
+**Pourquoi.** Trois façades qui mentaient. Le Colisée du catalogue tirait ses
+gradins effondrés à `Math.random()` : deux lancements bâtissaient deux Colisées
+(173 blocs de Rome), et le worker de maillage en bâtissait un autre que le fil
+principal — on pouvait se cogner à des gradins qu'on ne voyait pas, ou traverser
+ceux qu'on voyait. Édimbourg portait la brique rouge de Manchester, quand la
+vraie ville est de grès gris. Et à Sydney, la fiche `baie` (la géographie du
+port) était lue comme le bloc des fenêtres : 250 fenêtres étaient des trous.
+
+**Ce que ça change.** Le Colisée est le même à chaque lancement, sur chaque
+tablette, dans ce qu'on voit comme dans ce qu'on touche : un tirage par bloc,
+même règle (six sur dix tombent), même zone — un des Colisées que l'ancien
+tirage pouvait rendre. Édimbourg est grise et blonde (gris, gris clair, kaki de
+la palette de décor), ses souches de cheminée en pierre sombre. Les fenêtres de Sydney sont des fenêtres.
+
+**Ce qui le prouve.** Une sonde a engendré les 763 repères du monde (aujourd'hui
+et d'avant la v306) sous deux graines de `Math.random` : seul le Colisée
+changeait — c'était la seule source de hasard dans un bâtisseur. Quatre témoins
+dans `plafond.js`, rouges sur `origin/main` : deux fils neufs sous deux graines
+bâtissent les mêmes 763 repères ; le fil principal et le worker le même
+Colisée ; Édimbourg 3 036 blocs de grès et 0 de brique rouge (0 et 2 263
+avant, souches de cheminée comprises) ; Sydney 0 baie qui ne soit pas un bloc (250 avant). L'empreinte des 490
+morceaux ne bouge pas : aucun de ces trois lieux n'y est.
+
+---
+
+## v449 — Le Shard n'est plus transparent
+
+**Pourquoi.** La pyramide du Shard posait 1 792 blocs de verre sur 2 080. Un
+bâtiment est creux : un mur de verre est un trou, et l'on voyait au travers de
+la tour depuis la rive sud (dette vue en capture en v206, règle de la v195).
+
+**Ce que ça change.** Le Shard est une tour de verre comme celles de la City :
+un mur-rideau opaque, ses meneaux dessinés dans la texture, allumé la nuit, avec
+sa ceinture d'acier tous les sept rangs. Sa forme et sa hauteur ne bougent pas.
+
+**Ce qui le prouve.** Un témoin dans `carteMonde.js` compte ce que pose son
+bâtisseur : 0 bloc de verre sur 2 080, contre 1 792 sur `origin/main` (rouge).
+L'empreinte des 490 morceaux ne bouge pas (le Shard n'y est pas) ; le verre et
+le mur-rideau arrêtent l'enfant de la même façon, aucun bloc d'enfant ne bouge.
 
 ---
 

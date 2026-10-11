@@ -2711,6 +2711,25 @@ export function createVehicules({ scene, player }) {
   // touche pas une voiture centrée sur l'autre (4 − 0,9 − 1,13 = 2 blocs).
   const DEMI_LONG_RAME = 3.7, DEMI_LARG_RAME = 0.9;
   const PAS_TRAIN = [0.5, 1.5, 2.5, 3.5];   // on s'arrête près : RAYON_BORD (9) doit encore voir la motrice
+  // LA RAME REGARDE AUSSI LOIN QU'ELLE VA ROULER DANS L'IMAGE (v451). Elle
+  // roule en temps RÉEL (v305) : à quinze blocs par seconde, une image d'un
+  // quart de seconde la fait avancer de quatre blocs — plus que les 3,5 de
+  // `PAS_TRAIN`. D'« assez loin » à « déjà dedans » en une image, et un train
+  // déjà dedans continue (v245) : il traversait la voiture de l'enfant une pose
+  // sur deux sous charge (sonde-train-voiture.cjs). Le regard couvre donc ce
+  // que la motrice va VRAIMENT parcourir avant la prochaine décision — la
+  // grille dit où elle sera à l'heure de cette image, puisque `horloge` a déjà
+  // avancé (`update`) — plus la marge d'avant. Ce qui est sur son chemin est
+  // vu AVANT d'y être, quelle que soit la cadence. `avance` est en blocs.
+  const PAS_RAME = 1;
+  const pasDeRame = (avance) => {
+    const fin = Math.max(0, avance) + PAS_TRAIN[PAS_TRAIN.length - 1];
+    const pas = [];
+    for (let s = PAS_TRAIN[0]; s < fin + PAS_RAME; s += PAS_RAME) pas.push(Math.min(s, fin));
+    return pas;
+  };
+  // `?rame=fixe` rejoue l'ancien regard (3,5 blocs), pour mesurer (v451)
+  let regardRameFixe = typeof location !== 'undefined' && /[?&]rame=fixe\b/.test(location.search);
   // Deux rectangles se touchent-ils ? Séparation d'axes : les quatre arêtes de
   // chacun servent d'axe ; s'il en est un où les projections ne se recouvrent
   // pas, ils sont disjoints.
@@ -2816,10 +2835,16 @@ export function createVehicules({ scene, player }) {
         voitures.push({ c, ci, i, cle: -2 - ci * 1000 - i, d, x: q.x, y: q.y, z: q.z, ux, uz,
           rect, balayage: null, veut: null, rail: true });
       }
-      if (dedans || c.attente > 0) continue;
+      if (dedans) continue;
       const d0 = c.dElement(0), q0 = c.parcours.a(d0);
       if (Math.abs(q0.y - player.pos.y) > 3) continue;
-      for (const pas of PAS_TRAIN) {
+      // ce que la motrice va parcourir dans cette image : la grille si elle en
+      // a une (exact), sinon son allure fois la durée de l'image. Même à quai
+      // (`attente`) : une rame qui repart dans cette image roule aussi.
+      let avance = Math.max(c.vitesse || 0, c.vitesseActuelle || 0) * dt;
+      if (c._horaire) avance = Math.max(avance, c.distanceA(horloge - (c.decalage || 0)).d - d0);
+      c.regard = regardRameFixe ? PAS_TRAIN[PAS_TRAIN.length - 1] : avance + PAS_TRAIN[PAS_TRAIN.length - 1];
+      for (const pas of (regardRameFixe ? PAS_TRAIN : pasDeRame(avance))) {
         const q = c.parcours.a(d0 + pas), cap = c.parcours.capLisse(d0 + pas);
         if (seTouchent(rectangle(q.x, q.z, Math.sin(cap), Math.cos(cap), DEMI_LONG_RAME, DEMI_LARG_RAME), rectEnfant)) {
           c.bloque = true; break;
@@ -2876,9 +2901,14 @@ export function createVehicules({ scene, player }) {
     // quinze kilomètres à l'heure ; à cinquante, une voiture a besoin de vingt-
     // cinq blocs pour s'arrêter en douceur. On regarde donc jusqu'à sa distance
     // de freinage, plus une demi-seconde de réaction.
+    // ET LA VOITURE ROULE EN TEMPS RÉEL (v451) : ce qu'elle parcourt dans
+    // CETTE image (`dt`, la même durée que `update` lui donnera) au-delà d'un
+    // tiers de seconde s'ajoute au regard, hors plafond — à une image d'une
+    // seconde et demie, une voiture à cinquante parcourt vingt blocs avant la
+    // décision suivante. Sous 0,35 s, le regard d'avant au bit près.
     const porteeDe = (a) => {
       const c = a.c, v = Math.max(c.vLoc[a.i] >= 0 ? c.vLoc[a.i] : 0, c.vGrilleDe(a.i));
-      return Math.min(40, 6 + v * v / (2 * FREIN) + v * 0.5);
+      return Math.min(40, 6 + v * v / (2 * FREIN) + v * 0.5) + v * Math.max(0, dt - 0.35);
     };
     const balayer = (a) => {
       if (a.balayage) return a.balayage;
@@ -3023,9 +3053,16 @@ export function createVehicules({ scene, player }) {
           // Mesuré : trois et quatre relevés au travers, deux passages de
           // `monte.js` seuls, zéro sur la v363. Marge : une image à trois par
           // seconde, plus le demi-bloc d'avant le contact.
+          // ET LA MARGE COUVRE L'IMAGE EN COURS, PAS SEULEMENT UNE IMAGE À TROIS
+          // PAR SECONDE (v451) : `update` va avancer la voiture de son allure
+          // fois `dt` — au plus celle de sa grille — avant que la rue ne
+          // regarde à nouveau. Une image plus longue que 0,35 s la faisait
+          // passer d'« assez loin » à « déjà dedans », comme la rame. Sous
+          // 0,35 s, la règle est celle d'avant au bit près.
           if (b && b.enfant && !b.rail && g.v < 0.5) {
             const va = Math.max(0, a.c.vLoc[a.i] >= 0 ? a.c.vLoc[a.i] : a.c.vGrilleDe(a.i));
-            if (va * va / (2 * FREIN_URGENCE) + va * 0.35 + 0.5 >= g.s) { cible = 0; bloquant = b; a.contact = true; }
+            const vMax = Math.max(va, a.c.vGrilleDe(a.i)) * 1.1;   // ce que `update` peut lui donner
+            if (va * va / (2 * FREIN_URGENCE) + va * 0.35 + vMax * Math.max(0, dt - 0.35) + 0.5 >= g.s) { cible = 0; bloquant = b; a.contact = true; }
           }
         }
       }
@@ -3448,6 +3485,9 @@ export function createVehicules({ scene, player }) {
     // les amis de la partie (v305), branchés par main.js : où ils sont, leur cap,
     // et s'ils conduisent
     brancherAmis: (f) => { amis = f; },
+    // l'ancien regard de la rame (3,5 blocs), pour mesurer et pour prouver
+    // que le témoin rougit sans le remède (v451)
+    regardRameFixe: (v) => { if (v !== undefined) regardRameFixe = !!v; return regardRameFixe; },
     // pour les sondes (v383) : ce que `cederLePassage` a vu à la dernière
     // image — qui gêne qui (`veut`), qui attend, qui vient de forcer (`repart`)
     diagCeder: () => dernieres.map((a) => ({ cle: a.cle, x: +a.x.toFixed(1), z: +a.z.toFixed(1), ami: !!a.ami, enfant: !!a.enfant,
@@ -3549,6 +3589,7 @@ export function createVehicules({ scene, player }) {
       distance: Math.round(c.distance),
       attente: Math.round((c.attente || 0) * 10) / 10,
       bloque: !!c.bloque,                    // un train arrêté devant l'enfant (v304)
+      regard: c.rail ? Math.round((c.regard || 0) * 10) / 10 : null,   // jusqu'où la motrice regarde (v451)
       // Une place encore VIDE (v235) n'est ni visible ni peinte : depuis que
       // les voitures naissent à la demande, `elements` porte des trous.
       visibles: c.elements.filter((m) => m && m.visible).length,

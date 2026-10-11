@@ -6,12 +6,37 @@
 
 export const NOUVEAUTES = [
   {
-    v: 449,
+    v: 452,
     titre: '✈️ va chercher la piste',
     puces: [
       '✈️ trouve la piste la plus proche',
       'L\'avion s\'aligne et se pose seul',
       'Un second ✈️ remet les gaz',
+    ],
+  },
+  {
+    v: 451,
+    titre: 'Le train voit ta voiture',
+    puces: [
+      'Il s\'arrête même quand le jeu rame',
+      'Les voitures de la rue aussi',
+    ],
+  },
+  {
+    v: 450,
+    titre: 'Le Colisée ne bouge plus',
+    puces: [
+      'Le même Colisée à chaque partie',
+      'Édimbourg est en pierre grise',
+      'Sydney a toutes ses fenêtres',
+    ],
+  },
+  {
+    v: 449,
+    titre: 'Le Shard n\'est plus transparent',
+    puces: [
+      'La grande tour de Londres a ses vitres',
+      'On ne voit plus au travers',
     ],
   },
   {
