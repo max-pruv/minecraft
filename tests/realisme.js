@@ -78,6 +78,10 @@ async function appuyer(p, sel, texte) {
     // doigt n'attend pas deux images : on vérifie ce que l'enfant voit (actif,
     // visible, en dessus de tout), on le dit si ce n'est pas le cas, et l'on
     // clique par le document — le geste de `banc.jouerSeul` depuis toujours.
+    // (Une autre session portait ici le budget du clic à 120 s en supposant
+    // « Jouer » grisé pendant la préparation : le banc ouvre `prep=0`, et la
+    // sonde le lit actif. Un budget plus long aurait masqué la cadence sans
+    // la nommer ; c'est le geste qui change.)
     const bouton = await appuyer(p, "#play-btn");
     verifier("à l'accueil, « Jouer » est actif et rien ne le recouvre",
       bouton.actif && bouton.visible && bouton.dessus, bouton);

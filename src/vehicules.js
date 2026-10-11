@@ -784,6 +784,14 @@ export class Parcours {
     this.longueur = total;
   }
 
+  // Le point du tracé qui commence le segment sous une distance (v423).
+  pointA(distance) {
+    const d = ((distance % this.longueur) + this.longueur) % this.longueur;
+    let lo = 0, hi = this.cumul.length - 1;
+    while (lo < hi - 1) { const mi = (lo + hi) >> 1; if (this.cumul[mi] <= d) lo = mi; else hi = mi; }
+    return this.pts[lo % this.pts.length];
+  }
+
   // Position et cap à une distance donnée depuis le départ.
   a(distance) {
     const d = ((distance % this.longueur) + this.longueur) % this.longueur;
@@ -846,6 +854,162 @@ export class Parcours {
     }
     return max;
   }
+}
+
+// UN TRACÉ DÉCALÉ D'UNE VOIE (v423). La seconde voie d'un boulevard ou d'une
+// autoroute n'est pas un autre circuit : c'est le MÊME, décalé latéralement là
+// où la section a deux voies dans ce sens. Il garde la distance de son tracé
+// de base — c'est ce qui permet à deux convois côte à côte de partager une
+// seule grille horaire (v305) : la voiture de la seconde voie passe partout à
+// la même distance du départ, une demi-voiture plus tard. `lat` est échantillonné
+// au bloc (`n` pas sur la longueur), positif vers la droite du sens de marche.
+export class ParcoursDecale extends Parcours {
+  constructor(base, lat) {
+    super([]);
+    this.base = base;
+    this.lat = lat;
+    this.longueur = base.longueur;
+    // TABULÉ AU BLOC, UNE FOIS : chaque voiture se pose à chaque image, et la
+    // pose d'un point décalé en demandait trois au tracé de base
+    const L = base.longueur, n = Math.max(8, Math.ceil(L)), m = lat.length;
+    const X = new Float64Array(n + 1), Y = new Float64Array(n + 1), Z = new Float64Array(n + 1);
+    for (let k = 0; k <= n; k++) {
+      const d = k * L / n, q = base.a(d);
+      const f = d / L * m, i = Math.floor(f) % m, u = f - Math.floor(f);
+      const l = lat[i] + (lat[(i + 1) % m] - lat[i]) * u;
+      if (l === 0) { X[k] = q.x; Z[k] = q.z; } else {
+        // la droite d'une direction (ux, uz) est (−uz, ux) (v271), lue sur le
+        // cap de l'empattement : au coin d'un carrefour, le cap du segment saute
+        const c = base.capLisse(d, 2);
+        X[k] = q.x - Math.cos(c) * l; Z[k] = q.z + Math.sin(c) * l;
+      }
+      Y[k] = q.y;
+    }
+    this.n = n; this.X = X; this.Y = Y; this.Z = Z;
+  }
+  // le décalage latéral ici, interpolé : une jumelle qui en a moins d'une
+  // largeur de voiture partage la voie de sa file
+  decalageA(distance) {
+    const L = this.longueur, m = this.lat.length;
+    const f = (((distance % L) + L) % L) / L * m, i = Math.floor(f) % m, u = f - Math.floor(f);
+    return this.lat[i] + (this.lat[(i + 1) % m] - this.lat[i]) * u;
+  }
+  a(distance) {
+    const L = this.longueur, n = this.n;
+    const f = (((distance % L) + L) % L) / L * n, k = Math.min(n - 1, Math.floor(f)), u = f - k;
+    const X = this.X, Z = this.Z, Y = this.Y;
+    return { x: X[k] + (X[k + 1] - X[k]) * u, y: Y[k] + (Y[k + 1] - Y[k]) * u, z: Z[k] + (Z[k + 1] - Z[k]) * u,
+      cap: Math.atan2(X[k + 1] - X[k], Z[k + 1] - Z[k]) };
+  }
+}
+
+// OÙ LA SECTION A DEUX VOIES, le long d'un tracé (v423). `voies(x, z)` rend le
+// décalage de la jumelle (un nombre), ou [file, jumelle] quand la file elle-même
+// doit changer de voie (l'autoroute), ou 0 / null. Une portion de deux voies
+// plus courte que `2 R` blocs ne compte pas — un boulevard qu'on ne fait que
+// TRAVERSER au carrefour n'est pas un boulevard qu'on suit — et l'on change
+// de voie sur `2 R` blocs, pas d'un coup : une érosion puis une moyenne
+// glissante, circulaires. Rend { A, B, part } (Float32Array au bloc) ou null.
+export const RAMPE_VOIE = 8;
+export function voiesLeLong(parcours, voies, rampe = RAMPE_VOIE) {
+  // un échantillon par bloc, un tous les deux sur un long tracé (une
+  // autoroute fait deux mille blocs : la section ne change pas si vite)
+  const L = parcours.longueur, pas = L > 1000 ? 2 : 1, n = Math.max(8, Math.ceil(L / pas)), R = Math.ceil(rampe / pas);
+  const I = new Uint8Array(n), TA = new Float32Array(n), TB = new Float32Array(n);
+  let un = 0;
+  for (let k = 0; k < n; k++) {
+    const d = k * L / n, q = parcours.a(d), r = voies(q.x, q.z, parcours.pointA(d));
+    if (!r) continue;
+    // UN VIRAGE SE PREND SUR UNE SEULE VOIE (v423). Décalée d'une voie vers
+    // l'intérieur d'un coin de carrefour, la jumelle replie son tracé sur
+    // lui-même et touche la file (mesuré : Tokyo, contact dès seize voitures
+    // quand la même ligne sans décalage n'en a aucun). On se rabat avant le
+    // coin, on se redéploie après.
+    let e = parcours.a(d + 4).cap - parcours.a(d - 4).cap;
+    while (e > Math.PI) e -= 2 * Math.PI;
+    while (e < -Math.PI) e += 2 * Math.PI;
+    if (Math.abs(e) > 1.0) continue;
+    const [a, b] = Array.isArray(r) ? r : [0, r];
+    if (!b) continue;
+    I[k] = 1; TA[k] = a; TB[k] = b; un++;
+  }
+  if (!un) return null;
+  const E = new Uint8Array(n);
+  for (let k = 0; k < n; k++) {
+    let ok = 1;
+    for (let j = -R; j <= R && ok; j++) if (!I[(k + j + n) % n]) ok = 0;
+    E[k] = ok;
+  }
+  const A = new Float32Array(n), B = new Float32Array(n);
+  let part = 0;
+  for (let k = 0; k < n; k++) {
+    if (E[k]) part++;
+    let m = 0;
+    for (let j = -R; j <= R; j++) m += E[(k + j + n) % n];
+    m /= 2 * R + 1;
+    if (m > 0) { A[k] = TA[k] * m; B[k] = TB[k] * m; }
+  }
+  return part ? { A, B, part: part / n, longueur: part * L / n } : null;
+}
+
+// LA JUMELLE NE TOUCHE PERSONNE, ET CELA SE CALCULE (v423). Là où la section
+// n'a qu'une voie, la file et sa jumelle roulent sur la même ligne, une
+// demi-voiture d'écart dans la grille : la file s'y resserre de moitié. On
+// fait rouler tout le monde sur un tour — la file, la jumelle, le bus — et
+// deux voisines de la ligne (rangées par leur heure de passage) ne doivent
+// jamais se toucher. Sinon pas de jumelle : une file qui se traverse est pire
+// qu'une voie vide (v244).
+export function jumelleSansContact(pA, pB, grille, nb, rangB, nbB, avecBus) {
+  const { ts, ds } = grille, P = ts[ts.length - 1], L = pA.longueur;
+  if (!(P > 0)) return false;
+  const e = P / nb;
+  const dA = (t) => {
+    const k = Math.floor(t / P), r = t - k * P;
+    let lo = 0, hi = ts.length - 1;
+    while (hi - lo > 1) { const m = (lo + hi) >> 1; if (ts[m] <= r) lo = m; else hi = m; }
+    const u = ts[hi] > ts[lo] ? (r - ts[lo]) / (ts[hi] - ts[lo]) : 0;
+    return k * L + ds[lo] + (ds[hi] - ds[lo]) * u;
+  };
+  const rangs = [];
+  for (let k = 0; k < nb; k++) rangs.push({ s: k, p: pA, dl: DEMI_LONG_VOITURE + 0.3 });
+  for (let j = 0; j < nbB; j++) rangs.push({ s: j + rangB, p: pB, dl: DEMI_LONG_VOITURE + 0.3 });
+  if (avecBus) rangs.push({ s: 0.5, p: pA, dl: 3.6 });
+  rangs.sort((a, b) => a.s - b.s);
+  const rect = (q, cap, dl) => {
+    const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux, w = DEMI_LARG_VOITURE;
+    return [[q.x + ux * dl + vx * w, q.z + uz * dl + vz * w], [q.x + ux * dl - vx * w, q.z + uz * dl - vz * w],
+      [q.x - ux * dl - vx * w, q.z - uz * dl - vz * w], [q.x - ux * dl + vx * w, q.z - uz * dl + vz * w]];
+  };
+  // les deux tracés tabulés au bloc, une fois : un tour en coûte cinq cents
+  // poses de toute la ligne
+  const tab = new Map();
+  const table = (pc) => {
+    let t = tab.get(pc);
+    if (!t) {
+      const n = Math.max(8, Math.ceil(L)), X = new Float64Array(n + 1), Z = new Float64Array(n + 1), C = new Float64Array(n + 1);
+      for (let k = 0; k <= n; k++) { const d = k * L / n, q = pc.a(d); X[k] = q.x; Z[k] = q.z; C[k] = pc.capLisse(d); }
+      t = { n, X, Z, C }; tab.set(pc, t);
+    }
+    return t;
+  };
+  // (sans rien allouer par pose : un tour d'autoroute en fait vingt mille)
+  const m = rangs.length, PX = new Float64Array(m), PZ = new Float64Array(m), PC = new Float64Array(m);
+  const tables = rangs.map((r) => table(r.p));
+  for (let t = 0; t < P; t += Math.max(0.2, P / 500)) {
+    for (let i = 0; i < m; i++) {
+      const tb = tables[i], d = dA(t + P * 4 - rangs[i].s * e);
+      const f = (((d % L) + L) % L) / L * tb.n, k = Math.min(tb.n - 1, Math.floor(f)), u = f - k;
+      let dc = tb.C[k + 1] - tb.C[k];
+      if (dc > Math.PI) dc -= 2 * Math.PI; else if (dc < -Math.PI) dc += 2 * Math.PI;
+      PX[i] = tb.X[k] + (tb.X[k + 1] - tb.X[k]) * u; PZ[i] = tb.Z[k] + (tb.Z[k + 1] - tb.Z[k]) * u; PC[i] = tb.C[k] + dc * u;
+    }
+    for (let i = 0; i < m; i++) {
+      const j = (i + 1) % m;
+      if ((PX[i] - PX[j]) ** 2 + (PZ[i] - PZ[j]) ** 2 > 64) continue;
+      if (rectsSeTouchent(rect({ x: PX[i], z: PZ[i] }, PC[i], rangs[i].dl), rect({ x: PX[j], z: PZ[j] }, PC[j], rangs[j].dl))) return false;
+    }
+  }
+  return true;
 }
 
 // --- les modèles -------------------------------------------------------------
@@ -1332,6 +1496,13 @@ class Convoi {
       this.phase = this.tempsA(this.distance);
       // le bus prend la grille de son anneau, à mi-temps entre deux voitures
       if (this.suit && this.suit.horaire()) this.phase = this.suit.phase - (this.suit.dtVoiture || 0) / 2;
+      // LA JUMELLE D'UNE SECONDE VOIE (v423) : l'intervalle de sa file, et une
+      // demi-voiture (ou une et demie, quand le bus prend la première place)
+      // derrière elle — la même fonction de l'horloge sur toutes les tablettes
+      if (this.jumeauDe && this.jumeauDe.horaire()) {
+        this.dtVoiture = this.jumeauDe.dtVoiture;
+        this.phase = this.jumeauDe.phase - this.dtVoiture * this.rangJumeau;
+      }
       return this._horaire;
     }
     if (this.freine) {
@@ -1452,6 +1623,16 @@ class Convoi {
         const plancher = this.retard[i - 1] - (this.base[i - 1] - this.base[i]) + mini;
         if (r < plancher) r = plancher;
       }
+      // ET UNE LIGNE NON PLUS (v423) : là où la jumelle d'une seconde voie
+      // partage la voie de sa file, la voiture qui la précède sur la ligne est
+      // dans l'AUTRE convoi. La grille les garde à distance (`jumelleSansContact`) ;
+      // un freinage local (un feu, l'enfant) ne doit pas les faire entrer l'une
+      // dans l'autre. On lit l'autre convoi tel qu'il est à cette image.
+      const devant = this.devantSurLaLigne(i);
+      if (devant) {
+        const plancher = this.base[i] - devant.dElement(devant.iDevant) + mini;
+        if (r < plancher) r = plancher;
+      }
       // LE RETARD D'UNE VOITURE QUE PERSONNE NE VOIT SE REND (v372). Chaque feu
       // rouge en ajoute ; rendu à 30 % de l'allure, il s'accumulerait d'un feu
       // à l'autre et la file finirait par s'étirer sur des centaines de blocs
@@ -1470,6 +1651,23 @@ class Convoi {
       this.rapport[i] = vConv > 0.01 ? this.vLoc[i] / vConv : (this.vLoc[i] > 0.01 ? 1 : 0);
     }
     this.montrer(joueur);
+  }
+
+  // La voiture de l'AUTRE file qui précède la voiture i sur la ligne, là où
+  // les deux voies n'en font qu'une (v423), ou null. Les rangs se lisent dans
+  // la grille : la jumelle est `rangJumeau` intervalles derrière sa file.
+  devantSurLaLigne(i) {
+    const B = this.jumeauDe ? this : this.jumelle, A = this.jumeauDe || this;
+    if (!B || !B.baseFaite || !A.baseFaite || !(B.parcours instanceof ParcoursDecale)) return null;
+    const d = this.base[i] - this.retard[i];
+    if (Math.abs(B.parcours.decalageA(d)) > 2 * DEMI_LARG_VOITURE + 0.3) return null;
+    const r = B.rangJumeau;
+    let autre, j;
+    if (this === B) { autre = A; j = i + Math.floor(r); }       // la voiture de la file juste devant
+    else { autre = B; j = i - Math.ceil(r); }                   // la jumelle juste devant
+    if (j < 0 || j >= autre.nb || autre.pris.has(j)) return null;
+    autre.iDevant = j;
+    return autre;
   }
 
   // L'allure que la grille donne à la voiture i, là où ELLE est (v372).
@@ -1878,9 +2076,15 @@ export function nbSansChevauchement(parcours, grille, nbMax) {
 // donc le nombre de voitures pour qu'à aucun croisement aucune voiture n'en
 // trouve une autre — toutes les paires, pas seulement les voisines — et c'est
 // une fonction de l'horloge, la même sur deux tablettes (v305).
-export function nbSansCroisement(parcours, grille, nb, plancher = 3) {
+// Les croisements d'un tracé avec lui-même, en écart d'heure : ils ne
+// dépendent pas du nombre de voitures, et la seconde voie (v423) les
+// redemande pour chaque nombre qu'elle essaie — on les garde avec le tracé.
+const CROISEMENTS = new WeakMap();
+function croisementsDe(parcours, grille) {
+  const deja = CROISEMENTS.get(parcours);
+  if (deja && deja.grille === grille) return deja.ecarts;
   const { ts, ds } = grille, P = ts[ts.length - 1], L = parcours.longueur;
-  if (!(P > 0) || nb <= 3) return nb;
+  if (!(P > 0)) return [];
   const N = 720, h = P / N, X = new Float64Array(N), Z = new Float64Array(N), C = new Float64Array(N);
   let lo = 0;
   for (let s = 0; s < N; s++) {
@@ -1900,6 +2104,13 @@ export function nbSansCroisement(parcours, grille, nb, plancher = 3) {
     if (Math.abs(Math.cos(C[a] - C[b])) > 0.7) continue;
     if (rectsSeTouchent(rectSep(X[a], Z[a], C[a]), rectSep(X[b], Z[b], C[b]))) ecarts.push(dt);
   }
+  CROISEMENTS.set(parcours, { grille, ecarts });
+  return ecarts;
+}
+export function nbSansCroisement(parcours, grille, nb, plancher = 3, strict = false) {
+  const { ts } = grille, P = ts[ts.length - 1];
+  if (!(P > 0) || nb <= 3) return nb;
+  const ecarts = croisementsDe(parcours, grille);
   if (!ecarts.length) return nb;
   // une marge d'une seconde et demie : le temps de dégager un carrefour
   const libre = (n) => {
@@ -1908,11 +2119,16 @@ export function nbSansCroisement(parcours, grille, nb, plancher = 3) {
     return true;
   };
   for (let n = nb; n >= plancher; n--) if (libre(n)) return n;
-  return nb;
+  // `strict` (v423) : rien de libre, on le dit au lieu de rendre `nb`
+  return strict ? 0 : nb;
 }
 
 // une voiture passe à un carrefour toutes les deux secondes au plus (v372)
 export const INTERVALLE_RUE = 2;
+// UNE FILE ET SA JUMELLE SONT UNE SEULE LIGNE (v423) : la légitimité d'une
+// attente (un feu devant) s'y propage, et l'on n'y pile pas sur un contact.
+const memeLigne = (x, y) => x === y || (!!x && !!y && (x.jumeauDe === y || y.jumeauDe === x));
+
 export function voituresDuCircuit(longueur) {
   return Math.max(6, Math.min(60, Math.round(longueur / 18)));
 }
@@ -1921,13 +2137,15 @@ export function createVehicules({ scene, player }) {
   const convois = [];
 
   function ajouter(points, opts) {
-    const c = new Convoi(scene, new Parcours(points), opts);
+    const c = new Convoi(scene, opts.parcours || new Parcours(points), opts);
     // UNE CLÉ QUI NE DÉPEND QUE DU TRACÉ (v305). Le RANG d'un convoi dans la
     // liste dépend de l'ordre où l'enfant a approché les villes : il n'est pas
     // le même d'une tablette à l'autre. Pour dire « Marlon a pris la voiture
     // 7 de CE convoi », il faut un nom que les deux calculent pareil.
     const p0 = points[0] || { x: 0, z: 0 };
     c.cle = `${opts.nom}|${points.length}|${Math.round(p0.x)},${Math.round(p0.z)}|${Math.round(opts.depart || 0)}`;
+    // la jumelle d'une seconde voie (v423) : le même tracé, un autre nom
+    if (opts.jumeauDe) { c.jumeauDe = opts.jumeauDe; c.rangJumeau = opts.rangJumeau; c.cle += '|voie2'; }
     c.pris = new Set();
     convois.push(c);
     return c;
@@ -2129,9 +2347,59 @@ export function createVehicules({ scene, player }) {
     const nbMax = Math.min(60, Math.max(voituresDuCircuit(p.longueur), Math.round(grille.ts[grille.ts.length - 1] / INTERVALLE_RUE)));
     // les voisines ne se touchent pas (plancher), et la file ne se retrouve
     // pas elle-même à un croisement de son propre tracé (le huit de Paris)
-    const nb = options.nb ?? nbSansCroisement(p, grille,
-      Math.max(Math.ceil(nbMax * 2 / 3), nbSansChevauchement(p, grille, nbMax)), Math.ceil(nbMax / 3));
+    let nb = options.nb ?? (options.voiesAuBesoin
+      // L'AUTOROUTE DENSE (v423). Vingt voitures imposées pour un tour de mille
+      // six cents à cinq mille blocs : une tous les cent vingt blocs, le
+      // contraire d'une autoroute. Mesuré sur les vingt-quatre corridors : le
+      // plus grand nombre sans contact vaut une voiture toutes les deux
+      // secondes (le demi-tour lent dans la ville, à chaque bout), et la file
+      // qui laisse la place à sa jumelle en garde 0,44 à 0,47 — partout. On le
+      // prend tel quel, sans le chercher au démarrage (v258) : la jumelle le
+      // vérifie quand l'enfant approche, et deux files de 0,44 font 0,88.
+      ? Math.max(8, Math.floor(0.44 * Math.min(120, Math.round(grille.ts[grille.ts.length - 1] / INTERVALLE_RUE))))
+      : nbSansCroisement(p, grille,
+        Math.max(Math.ceil(nbMax * 2 / 3), nbSansChevauchement(p, grille, nbMax)), Math.ceil(nbMax / 3)));
+    // LA SECONDE VOIE (v423) : là où la section en a deux dans ce sens
+    // (`voiesdoubles.js`, lu par main.js), la file peut changer de voie (`A`,
+    // l'autoroute) et une jumelle roule dans l'autre (`B`).
+    // LA FILE LAISSE LA PLACE À SA JUMELLE (v423). Là où la section n'a qu'une
+    // voie, les deux files se rejoignent une demi-voiture l'une derrière
+    // l'autre : mesuré, au même nombre de voitures, 62 des 77 circuits de ville
+    // qui suivent un boulevard s'y touchaient dans le virage lent qui suit la
+    // fin du boulevard. On cherche donc le plus grand nombre `n` (jusqu'à
+    // 0,4 fois la file d'avant) où les deux files ne se touchent nulle part et
+    // ne se retrouvent pas à un croisement de leur tracé : `2 n` voitures sur
+    // la ligne au lieu de `nb`, et toutes les voies occupées sur le boulevard.
+    // Mesuré sur les 37 circuits concernés : le meilleur `n` vaut 0,4 à 0,5
+    // fois `nb` — la ligne garde 80 à 100 % de ses voitures, réparties sur
+    // deux voies là où il y en a deux. En dessous de 0,4, pas de jumelle.
+    // Un nombre IMPOSÉ (`options.nb`, l'autoroute) ne se cherche pas : la
+    // jumelle a le même, ou n'existe pas.
+    const rangB = options.bus ? 1.5 : 0.5;
+    const voiesDe = () => {
+      const voies = options.voies ? voiesLeLong(p, options.voies) : null;
+      const pA = voies && voies.A.some((l) => l !== 0) ? new ParcoursDecale(p, voies.A) : p;
+      let jumelle = null;
+      if (voies && voies.longueur >= 40 && nb >= 2) {
+        const pB = new ParcoursDecale(p, voies.B);
+        const marche = (n) => (options.nb || nbSansCroisement(p, grille, 2 * n, 2 * n, true) === 2 * n)
+          && jumelleSansContact(pA, pB, grille, n, rangB, options.bus ? n - 1 : n, !!options.bus);
+        let lo = options.nb || options.voiesAuBesoin ? nb : Math.max(2, Math.ceil(nb * 0.4)), hi = nb;
+        if (marche(hi)) lo = hi;
+        else if (lo === hi || !marche(lo)) lo = 0;
+        else while (hi - lo > 1) { const m = (lo + hi) >> 1; if (marche(m)) lo = m; else hi = m; }
+        if (lo) jumelle = { pB, nb: lo };
+      }
+      return { voies, pA, jumelle };
+    };
+    // L'AUTOROUTE SE CALCULE AU DÉMARRAGE (v300, derrière « Jouer », v258) :
+    // sa seconde voie attend que l'enfant approche du corridor
+    // (`voiesAuBesoin`) — cent cinquante millisecondes de moins à l'accueil.
+    const tout = options.voies && !options.voiesAuBesoin ? voiesDe() : null;
+    const voies = tout ? tout.voies : null, pA = tout ? tout.pA : p;
+    if (tout && tout.jumelle) nb = tout.jumelle.nb;
     const c = ajouter(pts, {
+      parcours: pA,
       nb, ecart: p.longueur / nb, vitesse, freine: true, routier: true,
       profil: { limite: options.limite || null, facteur, calcule: prof },
       route: options.route || null,
@@ -2161,6 +2429,34 @@ export function createVehicules({ scene, player }) {
     c.graine = graine;
     c.voie = voie;
     c.modeles = Array.from({ length: nb }, (_, i) => choixFlotte(graine * 7 + i * 17, options.ville).fichier);
+    // LA JUMELLE (v423). Une portion de deux voies d'au moins quarante blocs, et
+    // aucun contact sur un tour là où les deux files se rejoignent sur une
+    // seule voie. Le bus du grand anneau (`options.bus`) prend la première
+    // place de la ligne : la jumelle commence une voiture plus loin.
+    const poserJumelle = ({ voies, pA: pa, jumelle }) => {
+      c.voiesDoubles = voies ? { part: Math.round(voies.part * 1000) / 1000, longueur: Math.round(voies.longueur) } : null;
+      if (pa !== c.parcours) c.parcours = pa;
+      if (!voies || voies.longueur < 40) return;
+      if (!jumelle) { c.voiesDoubles.refus = 'contact'; return; }
+      const nbB = options.bus ? c.nb - 1 : c.nb, graineB = graine * 13 + 5;
+      const b = ajouter(pts, {
+        parcours: jumelle.pB, jumeauDe: c, rangJumeau: rangB,
+        nb: nbB, ecart: p.longueur / c.nb, vitesse, freine: true, routier: true,
+        profil: { limite: options.limite || null, facteur, calcule: prof },
+        route: options.route || null,
+        nom: 'voiture', emoji: '🚙', assise: 1.15, vu: VU_VOITURE,
+        modele: (i) => voitureDeVille(graineB * 7 + i * 17, TEINTES[(graineB + i) % TEINTES.length], options.ville),
+      });
+      b.graine = graineB; b.voie = voie;
+      b.modeles = Array.from({ length: nbB }, (_, i) => choixFlotte(graineB * 7 + i * 17, options.ville).fichier);
+      c.jumelle = b;
+    };
+    if (tout) poserJumelle(tout);
+    else if (options.voies) {
+      let x0 = Infinity, z0 = Infinity, x1 = -Infinity, z1 = -Infinity;
+      for (const q of pts) { if (q.x < x0) x0 = q.x; if (q.x > x1) x1 = q.x; if (q.z < z0) z0 = q.z; if (q.z > z1) z1 = q.z; }
+      c.voiesEnAttente = { x0: x0 - 300, z0: z0 - 300, x1: x1 + 300, z1: z1 + 300, poser: () => poserJumelle(voiesDe()) };
+    }
     return c;
   }
 
@@ -2443,6 +2739,9 @@ export function createVehicules({ scene, player }) {
         // c'est la HUITIÈME derrière qui repasse devant, à moins de quarante
         // blocs le long du tracé dans un tour lent
         if (b.c === a.c && b.i > a.i && b.i - a.i <= 2 && a.d - b.d > 0 && a.d - b.d < 40) continue;
+        // la jumelle d'une seconde voie partage la distance de la file (v423) :
+        // celle qui la SUIT sur la ligne est derrière, comme dans la file
+        if (b.c && b.c !== a.c && memeLigne(a.c, b.c) && a.d - b.d > 0 && a.d - b.d < 40) continue;
         const devantDansLaFile = b.c === a.c && (b.i === a.i - 1 || (a.i === 0 && b.i === a.c.nb - 1));
         // (et la grille ne voit pas un virage en épingle : deux voisines
         // séparées de sept blocs le long du tracé peuvent s'y toucher en
@@ -2526,7 +2825,7 @@ export function createVehicules({ scene, player }) {
           // le contact imminent ne vaut qu'EN TRAVERS d'une autre file : dans la
           // sienne, le plancher (v283) garde déjà la longueur d'une voiture, et
           // piler derrière celle qui précède faisait un arrêt sec au feu
-          if (vc < cible) { cible = vc; bloquant = b; a.contact = g.s === 0 && g.dejaLa && g.v < 0.5 && !(b && b.c === a.c); }
+          if (vc < cible) { cible = vc; bloquant = b; a.contact = g.s === 0 && g.dejaLa && g.v < 0.5 && !(b && memeLigne(b.c, a.c)); }
           // DEVANT L'ENFANT, UN AMI OU UN PIÉTON, ON PILE QUAND LE FREINAGE NE
           // SUFFIT PLUS (v372). Le freinage doux est pour le confort ; vue tard
           // — l'enfant posé devant elle, une image lente du banc —, une voiture
@@ -2586,7 +2885,7 @@ export function createVehicules({ scene, player }) {
       for (const k of a.veut.keys()) if (k < 0) { a.legit = true; a.c.repart[a.i] = 0; break; }
     }
     for (let passe = 0; passe < 6; passe++) {
-      for (const a of voitures) if (!a.legit && a.bloquant && a.bloquant.c === a.c && a.bloquant.legit) a.legit = true;
+      for (const a of voitures) if (!a.legit && a.bloquant && memeLigne(a.bloquant.c, a.c) && a.bloquant.legit) a.legit = true;
     }
     for (const a of voitures) {
       if (a.enfant || a.rail) continue;
@@ -2604,7 +2903,7 @@ export function createVehicules({ scene, player }) {
       const f = feuDe.get(a);
       a.cause = cible === Infinity ? null : !a.bloquant ? '?' : a.bloquant.pieton ? 'pieton'
         : a.bloquant.ami ? 'ami' : a.bloquant.enfant ? 'enfant' : a.bloquant.rail ? 'train'
-          : a.bloquant.c === c && a.bloquant.i === i - 1 ? (a.legit ? 'file-feu' : 'file') : (a.legit ? 'voiture-feu' : 'voiture');
+          : (a.bloquant.c === c && a.bloquant.i === i - 1) || (a.bloquant.c !== c && memeLigne(a.bloquant.c, c)) ? (a.legit ? 'file-feu' : 'file') : (a.legit ? 'voiture-feu' : 'voiture');
       if (f !== undefined && f < cible) { cible = f; c.repart[i] = 0; c.attenteDepuis[i] = 0; a.cause = 'feu'; }
       c.cible[i] = cible;
       c.urgence[i] = a.contact && cible === a.cible ? 1 : 0;
@@ -2764,6 +3063,13 @@ export function createVehicules({ scene, player }) {
     // la patience se compte en temps RÉEL (v372) : en `dt`, borné à un
     // vingtième, quatre secondes en duraient vingt-cinq sur un banc qui rame
     cederLePassage(dtReel);
+    // la seconde voie d'une autoroute, quand l'enfant approche (v423) — une
+    // par image au plus
+    for (const c of convois) {
+      const w = c.voiesEnAttente;
+      if (!w || player.pos.x < w.x0 || player.pos.x > w.x1 || player.pos.z < w.z0 || player.pos.z > w.z1) continue;
+      c.voiesEnAttente = null; w.poser(); break;
+    }
     for (const c of convois) c.update(dtReel, player.pos, horloge);
   }
   // LA VOITURE QUE L'ENFANT PERCUTE S'ARRÊTE (v372). La session de conduite
@@ -3004,6 +3310,9 @@ export function createVehicules({ scene, player }) {
     // qu'il fallait pour prouver que le métro est passé sous terre.
     etat: () => convois.map((c) => ({
       nom: c.nom, route: c.route || null,
+      // la seconde voie (v423) : jumelle d'une file, ou file qui en a une
+      jumeau: !!c.jumeauDe, jumelle: !!c.jumelle, voiesDoubles: c.voiesDoubles || null,
+      retardHoraire: c.jumeauDe && c.horaire() ? c.rangJumeau * c.dtVoiture : 0,
       // La LONGUEUR du tour, et le nombre d'arrêts marqués. C'est ce qui
       // permet à un témoin de dire combien de temps un enfant attend sur un
       // quai — et de le dire sur l'ANCIEN code comme sur le neuf, puisque la
