@@ -937,7 +937,19 @@
   d'arrivée (8 îlots) ne peut contourner que par Q = −1, la rue sud de l'anneau
   qui l'entoure, dans le même sens, et au sud c'est l'eau. Le remède serait de
   SOL (une rue au-delà de l'eau) ou de sélection (changer QUELS anneaux la ville
-  reçoit) : décision. v432 : 1 228 → 840 pas, 75 → 61 anneaux, 22 → 9
+  reçoit) : décision. La traîne, cause par cause (v433, carte des segments
+  bloqués ville par ville, `etatDeSegment` avec l'eau sans tablier, et la
+  recherche conjointe portée à 3 000 essais) — TOUT est de géométrie, aucun
+  remède sans toucher au SOL ni à la sélection : Agra #1 42 (le parc du Taj
+  Mahal ferme toute la rue nord, P −2..2, et l'intérieur est bloqué : aucun
+  contour), Bruxelles 18 et Innsbruck 12 (le réseau de rues tient en quelques
+  segments, le seul côté de l'anneau d'arrivée longe un parc ou le granite de
+  la place côté voie, et rien d'autre n'est roulable), Gênes 22 et Guayaquil
+  20 (la plage borde la place, et aucun segment ne la contourne), Turin 13,
+  Séoul 21, Amsterdam 19 (un détour existe sans faute, mais il suit la voie
+  d'un voisin sur un pas, 27 à 32 blocs pour une barre de 20, et le voisin ne
+  peut ni reculer ni changer de sens — son contresens existe déjà). San José et
+  Guayaquil à un circuit : inchangé (v416, la géométrie). v432 : 1 228 → 840 pas, 75 → 61 anneaux, 22 → 9
   villes dont une voie passe sur le centre (la vue sur la voie, la couverture à
   la règle du témoin, plusieurs ordres, une rangée d'un coup ; quatorze villes
   changent, aucune ne perd de couverture). Reste, mesuré par
