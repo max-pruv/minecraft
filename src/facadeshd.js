@@ -1464,7 +1464,7 @@ export function mobilierTrottoir(at, wx, wz, opts) {
   const versRue = rueA2(1, 0) ? [1, 0] : rueA2(-1, 0) ? [-1, 0] : rueA2(0, 1) ? [0, 1] : rueA2(0, -1) ? [0, -1] : null;
   const t = tirage(wx, wz, 919);
   if (versRue && t > 0.955) return { genre: 'banc', vers: versRue };
-  // le seuil double avec la règle du dégagement (v437), qui en écarte plus de la moitié
+  // le seuil double avec la règle du dégagement (v443), qui en écarte plus de la moitié
   const sm = opts && opts.morrisAvant ? 0.012 : 0.024;
   if (t < sm && [[1, 0], [-1, 0], [0, 1], [0, -1]].every(([dx, dz]) => tirage(wx + dx, wz + dz, 919) >= sm)) {
     if (opts && opts.morrisAvant) return { genre: 'morris' };
@@ -1473,7 +1473,7 @@ export function mobilierTrottoir(at, wx, wz, opts) {
   return null;
 }
 
-// UNE COLONNE MORRIS SE PLANTE DANS LE VIDE (v437). Le tirage seul la posait
+// UNE COLONNE MORRIS SE PLANTE DANS LE VIDE (v443). Le tirage seul la posait
 // contre une porte cochère, ou à un bloc d'un banc ou d'une terrasse : mesuré
 // sur huit quartiers, 37 colonnes sur 76 à moins de deux blocs d'un autre
 // meuble, deux collées à une porte. Elle exige désormais l'air libre sur ses

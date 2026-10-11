@@ -2375,7 +2375,7 @@ engendrées. Quatre règles.
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
 
-## Les colonnes Morris se plantent dans le vide (v437) — un meuble se pose en regardant ses voisins, par la même règle
+## Les colonnes Morris se plantent dans le vide (v443) — un meuble se pose en regardant ses voisins, par la même règle
 
 Une règle. Un meuble qui se pose au tirage ne connaît pas ses voisins : la
 colonne Morris (v289) tombait contre une porte cochère ou à un bloc d'un banc

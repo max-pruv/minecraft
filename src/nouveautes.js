@@ -6,7 +6,7 @@
 
 export const NOUVEAUTES = [
   {
-    v: 437,
+    v: 443,
     titre: 'Des colonnes bien placées',
     puces: [
       'Les colonnes d\'affiches ont de la place',

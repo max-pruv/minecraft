@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v437 — Les colonnes Morris se plantent dans le vide
+## v443 — Les colonnes Morris se plantent dans le vide
 
 **Pourquoi.** La colonne Morris de la v289 se posait au tirage, sans regarder
 autour d'elle. Mesuré sur huit quartiers : 43 colonnes sur 76 à moins de deux

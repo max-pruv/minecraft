@@ -390,7 +390,7 @@ function verifier(nom, ok, detail = '') {
       parQuartier.every((p) => p.terrasses >= 5) && cannage > 0,
       `${parQuartier.map((p) => `${p.q} ${p.terrasses} (règle d'avant ${p.avant})`).join(' · ')} — ${cannage} sommets de cannage dans (${plusFourni.kx}, ${plusFourni.kz}), ${plusFourni.n} terrasses`);
   }  {
-    // ── UNE COLONNE MORRIS SE PLANTE DANS LE VIDE (v437) ─────────────────────
+    // ── UNE COLONNE MORRIS SE PLANTE DANS LE VIDE (v443) ─────────────────────
     //
     // Dette de la v289 : la colonne se posait au tirage, contre une porte
     // cochère ou à un bloc d'un banc, d'une terrasse, d'une autre colonne.
@@ -1095,7 +1095,7 @@ function verifier(nom, ok, detail = '') {
       g.player.yaw = yaw; g.player.pitch = 0; g.player.flying = false;
       const fx = -Math.sin(yaw), fz = -Math.cos(yaw);
       const voit = g.animalManager.invoquer('voiture', ax + fx * 2.5, az + fz * 2.5);
-      // LA MONTE SE VÉRIFIE DANS LE JEU, ET SE RETENTE (v437) : au portail un
+      // LA MONTE SE VÉRIFIE DANS LE JEU, ET SE RETENTE (v443) : au portail un
       // seul clic tombait avant que la voiture soit prête (`monte: false`).
       // On attend ses roues, puis au plus huit essais, l'état relu à chaque
       // fois — jamais deux clics sans relire (bouton-bascule, v252).

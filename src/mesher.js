@@ -255,7 +255,7 @@ const masqueReserve = [];
 // de `RAYON_HD`, et le redemande quand un morceau y entre.
 export function buildChunkTampons(world, cx, cz, options = {}) {
   // (`devantures: false` rejoue la règle des terrasses d'avant la v433 : l'empreinte des morceaux)
-  // (`morrisDegagees: false` rejoue la colonne Morris d'avant la v437)
+  // (`morrisDegagees: false` rejoue la colonne Morris d'avant la v443)
   const optsMobilier = options.devantures === false || options.morrisDegagees === false
     ? { vitrineSeule: options.devantures === false, morrisAvant: options.morrisDegagees === false } : undefined;
   if (world.hasVisualEdits && !world.hasVisualEdits(cx, cz)) {
