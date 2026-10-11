@@ -2517,6 +2517,11 @@ blocs du centre). Trois règles.
   disparu. Un circuit validé par le sol ne dit rien de ce qu'une autre boucle
   bâtit par-dessus.
 
+Et **le Shard (v448)** : la règle du verre dans les murs (v195, v202) ne
+regardait que les `batirColonne*` des villes ; un MONUMENT bâti en verre a le
+même défaut. Le témoin de `carteMonde.js` appelle son bâtisseur et compte le
+verre — tout monument de tour vitrée se vérifie de la même façon.
+
 ## Un toit ne déborde plus d'un quartier sur l'autre (v446) — un indice de trame n'est unique que dans sa trame
 
 Une règle. `infoFacadeParis` publie l'îlot et la travée (`ai`, `bi`) dans la
