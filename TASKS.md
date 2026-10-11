@@ -1,5 +1,17 @@
 # Ce qui est en cours
 
+- [ ] **PORTAIL DE LA v447 (la trame générique quitte Londres) — PREUVE
+  STRUCTURELLE (v291).** Sept suites ; `plafond.js` (les trois témoins neufs,
+  l'empreinte relevée), `carteMonde.js`, `washington.js`, `metro.js` vertes.
+  Rouges, tous des familles déjà déclarées ici : `carte.js` « la faire glisser
+  non plus » (433 ms pour 400) ; `manhattan.js` le taxi tactile (6,95 blocs en
+  243 s) et PeerJS (« ID is taken ») ; `monte.js` « la rue roule à l'allure
+  d'une ville » et « au feu, la voiture freine » (Paris, circulation) et « un
+  train s'arrête devant la voiture de l'enfant » (12 relevés dedans, la panne
+  de `PAS_TRAIN` déclarée en v440). La livraison ne change des blocs que dans
+  le disque de Londres (zéro bloc hors du disque, mesuré bloc par bloc) ; ni la
+  carte, ni Manhattan, ni la circulation de Paris ne le lisent, et la rame ne
+  lit aucun bloc pour céder.
 - [ ] **PORTAIL DES PONTS (v430) — DOUBLE MESURE (règle v195).** Portail
   complet (base v419) coupé à sa limite de deux heures pendant `reseau.js` ;
   rouges déjà déclarés : `carte.js` « la faire glisser non plus » (427 ms),

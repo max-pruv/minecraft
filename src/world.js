@@ -2111,7 +2111,7 @@ const DATE_FIGEE_MAX = Math.max(...VILLES_FIGEES.map((f) => f.date));
 // une maison collée à un de ces murs garde son mur. Le lot reste ENTIER, pas
 // colonne par colonne : une demi-maison serait un décor éventré. La date se
 // relit à la fusion (v309).
-export const DATE_TRAME_LONDRES = Date.UTC(2026, 9, 11, 18, 0, 0);
+export const DATE_TRAME_LONDRES = Date.UTC(2026, 9, 11, 19, 11, 0);
 function dansTrameLondres(x, z, t) {
   if (!(t <= DATE_TRAME_LONDRES)) return false;
   const du = x - LONDRES.x, dv = z - LONDRES.z, r = LONDRES.r + 16;
