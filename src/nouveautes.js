@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 439,
+    titre: 'La route de Los Angeles',
+    puces: [
+      'Une autoroute de San Francisco à Los Angeles',
+      'Elle longe la mer, cinq ponts',
+    ],
+  },
+  {
     v: 438,
     titre: 'Fourgonnettes et pickups en ville',
     puces: [

@@ -20,6 +20,35 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v439 — La route de San Francisco à Los Angeles
+
+**Pourquoi.** Seize autoroutes reliaient déjà les villes, et la côte ouest des
+États-Unis n'en avait aucune : de San Francisco à Los Angeles, on ne pouvait
+que voler ou se téléporter. Le couloir avait été relevé en v419 sans être
+tracé : la ville est une presqu'île (la baie à l'est, le Pacifique à l'ouest,
+l'aérodrome de SFO au sud), et l'axe direct passe dans la marge de SFO et sur
+deux repères.
+
+**Ce que ça change.** L'US-101, 2 618 blocs. Elle sort de San Francisco par le
+sud-est, sur la terre ferme au bout de la baie — une entrée déclarée mène au
+bout de Third Street —, passe AU NORD de SFO, longe à l'est de l'aérodrome une
+bande de 38 à 41 blocs, franchit le col de la chaîne côtière, descend la
+plaine côtière et entre dans Los Angeles par l'ouest, sur la rue de sa trame.
+Cinq ponts, et des voitures qui roulent d'une ville à l'autre à cent vingt.
+
+**Ce qui le prouve.** Un témoin neuf (`carteMonde.js`) : convoi, aucune colonne
+d'emprise sur un rail ni volée à une autre route, l'axe loin de ses villes
+hors des tronçons radiaux, l'entrée de San Francisco sur la chaussée d'un bout
+à l'autre jusqu'à une artère, celle de Los Angeles sur la rue — rouge sur
+`origin/main` (« aucun convoi US-101 »), vert ici. Les témoins de toutes les
+routes la lisent avec les autres : profil (pente 0,06, déblai 7,2, remblai
+3,3), joints des ponts (32 890 points, zéro trou), sol sous les tabliers.
+L'empreinte des 490 morceaux change (San Francisco est un des neuf lieux) et se
+prouve : l'US-101 retirée, la constante de la v438 au bit près, et les cent
+colonnes qui diffèrent sont à moins de sept blocs de l'axe de l'entrée.
+
+---
+
 ## v438 — Des fourgonnettes, des pickups, et chaque voiture son allure
 
 **Pourquoi.** La rue ne roulait que des voitures de sport et la berline

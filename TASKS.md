@@ -621,7 +621,13 @@
   `reseau.js` ENTIÈREMENT vert (mon témoin compris) ; `monte.js` : le seul gel
   d'arrivée (24,8 %, déclaré) ; `manhattan.js` : trou, taxi, « Lost
   connection to server » de PeerJS — déclarés.
-- [ ] **SAN FRANCISCO–LOS ANGELES, INSTRUIT EN v419 SANS LE FAIRE** (relevé
+- [x] **SAN FRANCISCO–LOS ANGELES : FAIT EN v439 (l'US-101).** Le relevé
+  ci-dessous se trompait sur un point, mesuré : « sortir par l'est » passe
+  par la BAIE, dans le disque entre la porte (r − 20) et le bord. La porte
+  est au sud-est (68°), la route passe au nord de SFO, longe la plaine
+  côtière et entre dans Los Angeles plein ouest (bord 40). Relevé de v419,
+  gardé pour mémoire :
+  **SAN FRANCISCO–LOS ANGELES, INSTRUIT EN v419 SANS LE FAIRE** (relevé
   du scratchpad, carte.mjs et ring.mjs ; aucune sonde de tracé). L'axe direct
   (2 403 blocs) passe dans la marge de SFO (−38 774, 7 120, r 72, au sud de la
   ville) et sur deux repères, et la bande côtière disparaît au sud de z 8 000 :
@@ -642,6 +648,17 @@
   rail et les autres routes. La règle des repères et de SFO tient sur ce
   couloir ; elle est à remesurer sur le tracé, pas sur l'axe.
 
+- [ ] **LE PORTAIL DE L'US-101 (v439), SIX ROUGES, TOUS DÉJÀ DÉCLARÉS.**
+  Verts : `carteMonde.js` (le témoin neuf, rouge sur `origin/main` : « aucun
+  convoi US-101 »), `plafond.js`, `parishd.js`, `degats.js`, `washington.js`,
+  `reglages.js`. Rouges, rejoués SEULS sur la branche : `carte.js` (glisser
+  bridé, 473 ms) verte seule ; `manhattan.js` le trou de façade (22 326 →
+  51 734) et le taxi tactile ; `monte.js` la chauffe de New York (75/321), la
+  rue à cinquante et le feu (médiane 0), le flâneur, le réverbère, « la file
+  … puis se rend » (13 s) — tous déclarés plus bas avec leur double mesure,
+  et tous jugés à Paris, Rome, New York ou au couloir vide : l'US-101 ne
+  change que le registre des routes, l'entrée de San Francisco et un convoi
+  qui ne fabrique ses voitures qu'à portée de vue en Californie.
 - [ ] **LE PORTAIL DE L'A8 (v428), DOUBLE MESURE FAITE.** `plafond.js` :
   deux points du joint du deuxième pont de l'A8 sans cube ni tablier — un
   vrai défaut, reproduit sous node, corrigé (sommet de coude déplacé), suite

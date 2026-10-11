@@ -600,6 +600,7 @@ const VRAIES_KM = [
       out.convoiM40 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'M40') || null;
       out.convoiA6 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A6') || null;
       out.convoiA8 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A8') || null;
+      out.convoiUS101 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'US-101') || null;
       // WASHINGTON EST UNE BOÎTE (v367) : la route de New York s'arrête NET à
       // son bord sud (`boutNet`), au niveau de la rue d'Anacostia qui y
       // débouche, et ses voitures entrent par cette rue (`avenues`). On compte
@@ -790,6 +791,27 @@ const VRAIES_KM = [
             return { route: e.route, dans, vus, rue, n: pts.length };
           });
         } catch (e) { out.entreesNiceErreur = String(e); }
+        // L'ENTRÉE DE SAN FRANCISCO (v439) : de la porte sud-est de l'US-101,
+        // sur la terre ferme au bout de la baie, au bout de Third Street. Même
+        // lecture que Londres, et le bout doit être un sommet d'une ARTÈRE.
+        try {
+          const SFm = await import('./src/sanfrancisco.js'), WO = await import('./src/world.js');
+          const ents = m.entreesDe('sf'), E = SFm.ENTREES_SF || [];
+          out.entreesSF = ents.map((e, i) => {
+            const pts = E[i] || [];
+            let dans = null, vus = 0, rue = 0;
+            for (let k = 0; k + 1 < pts.length && !dans; k++) for (let t = 0; t <= 1; t += 0.01) {
+              const X = Math.floor(pts[k][0] + (pts[k + 1][0] - pts[k][0]) * t), Z = Math.floor(pts[k][1] + (pts[k + 1][1] - pts[k][1]) * t);
+              if (m.routeEn(X, Z)) continue;
+              const h = w.coteRoulable(X, Z); vus++;
+              if (WO.CHAUSSEE.has(w.getBlock(X, h, Z))) rue++;
+              if (w.isSolid(X, h + 1, Z) || w.isSolid(X, h + 2, Z)) { dans = [X, Z, w.getBlock(X, h + 1, Z)]; break; }
+            }
+            const fin = pts[pts.length - 1] || [0, 0], fu = fin[0] - SFm.SF.x, fv = fin[1] - SFm.SF.z;
+            const artere = (SFm.VOIES_SF || []).filter((v) => v.type === 'collecteur').some((v) => v.pts.some(([a, b]) => Math.hypot(a - fu, b - fv) < 1));
+            return { route: e.route, dans, vus, rue, artere };
+          });
+        } catch (e) { out.entreesSFErreur = String(e); }
         // TOUTE ENTRÉE DE VILLE ENGENDRÉE (v311) : Bruxelles en a deux,
         // Amsterdam une. Chacune doit arriver sur la rue (trente blocs depuis
         // la porte) et, jusqu'au bout de l'avenue (douze blocs du centre), ne
@@ -1179,6 +1201,23 @@ const VRAIES_KM = [
       JSON.stringify(a1.absent ? a1 : { convoi: a1.convoiA8 ? { nom: a1.convoiA8.nom, voitures: (a1.convoiA8.modeles || []).length } : 'aucun convoi A8',
         surRail: a1.surRail && a1.surRail['A8'], frole: a1.frole && a1.frole['A8'], nice: a1.entreesNice, erreur: a1.entreesNiceErreur,
         marseille: (a1.entreesEngendrees || []).filter((e) => e.route === 'A8') }));
+
+    // L'US-101 (v439) : San Francisco–Los Angeles. San Francisco est une
+    // presqu'île — la baie à l'est, le Pacifique à l'ouest, SFO au sud : la
+    // route sort par le sud-est, au nord de l'aérodrome, et son entrée
+    // déclarée mène au bout de Third Street ; elle longe la plaine côtière et
+    // entre dans Los Angeles par l'ouest. Sur l'ancien code, la route n'existe
+    // pas : ni convoi, ni entrée de San Francisco.
+    verifier('l\'US-101 relie San Francisco à Los Angeles au nord de SFO, entre dans San Francisco par une rue jusqu\'à Third Street, et des voitures y roulent',
+      !a1.absent && !a1.entreesSFErreur && !!a1.convoiUS101 && a1.convoiUS101.routier && (a1.convoiUS101.modeles || []).length >= 10
+      && !!a1.surRail && !!a1.surRail['US-101'] && a1.surRail['US-101'][0] > 100 && a1.surRail['US-101'][1] === 0
+      && !!a1.frole && a1.frole['US-101'] === 0
+      && (a1.entreesSF || []).some((e) => e.route === 'US-101')
+      && a1.entreesSF.every((e) => !e.dans && e.vus > 20 && e.rue >= e.vus * 0.95 && e.artere)
+      && (a1.entreesEngendrees || []).some((e) => e.ville === 'losangeles' && e.route === 'US-101' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7),
+      JSON.stringify(a1.absent ? a1 : { convoi: a1.convoiUS101 ? { nom: a1.convoiUS101.nom, voitures: (a1.convoiUS101.modeles || []).length } : 'aucun convoi US-101',
+        surRail: a1.surRail && a1.surRail['US-101'], frole: a1.frole && a1.frole['US-101'], sf: a1.entreesSF, erreur: a1.entreesSFErreur,
+        losangeles: (a1.entreesEngendrees || []).filter((e) => e.route === 'US-101') }));
 
     // AUCUNE ROUTE NE PREND L'EMPRISE D'UNE AUTRE (v355) : Montréal a deux
     // routes, et chaque colonne d'emprise doit appartenir au segment qu'on

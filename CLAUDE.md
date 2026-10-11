@@ -3702,6 +3702,35 @@ Une règle.
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
 
+## L'US-101 (v439) — un relevé en couronne commence à la porte, et une optimisation de tracé reconstruit la porte
+
+San Francisco–Los Angeles, le couloir instruit en v419. Quatre règles.
+
+- **UN RELEVÉ EN COURONNE COMMENCE À LA PORTE, PAS AU BORD.** Celui de la v419
+  disait « sortir par l'est (0° à 30°) » : il lisait le relief à partir de
+  r + 20. Mais la porte est à r − 20, et entre les deux, à l'est de San
+  Francisco, c'est la BAIE — soixante-dix blocs d'eau dans le disque. Le
+  relevé (`ring.mjs`) commence à r − 40 ; la porte est au sud-est (68°), sur
+  la terre ferme au bout de la baie, et la route passe au nord de SFO.
+- **UNE OPTIMISATION QUI DÉPLACE LE PREMIER POINT DE PASSAGE DÉPLACE LA
+  PORTE.** `porte()` vise le premier (et le dernier) point de passage : mon
+  affineur gardait la porte fixe et laissait bouger ses voisins, et la porte
+  réelle de Los Angeles tombait à −171°, sur un îlot (avenue de zéro bloc).
+  L'évaluation reconstruit les portes comme le registre (`complet(via)`), et
+  l'angle d'entrée est une contrainte : on choisit d'abord les angles propres
+  (`entrees.mjs`, ici une fenêtre d'un degré et demi à 180°) puis l'on fige le
+  dernier point sur ce rayon.
+- **UN AÉRODROME EST AUSSI UN REPÈRE.** SFO porte une boîte de 63 dans
+  `REPERES` : la sonde qui écarte les repères l'écarte d'un carré, plus large
+  que la marge du disque — c'est ce qui ferme l'ouest de l'aérodrome autant
+  que ses collines.
+- **LES CONTRAINTES DES TÉMOINS SONT DURES, LA LONGUEUR EST MOLLE.** Un
+  affineur qui additionne coudes, déblai et nombre de ponts échange un coude
+  de 33° contre un pont de moins. La note est lexicographique : d'abord les
+  violations (axe dans une marge, remblai > 4, déblai > 9, ponts à moins de
+  neuf blocs, coude > 22°, pont près d'une porte, angle de porte hors de la
+  fenêtre), puis seulement les ponts et la longueur.
+
 ## L'A8 (v428) — une sonde de couloir monte avec la route, et vérifie le rail sur la vraie emprise
 
 Marseille–Nice, par l'intérieur. Trois règles.
