@@ -505,10 +505,13 @@ export const ROUTES = [
   // porte ; quatre-vingt-quatre admissibles. La porte à −82°, la meilleure
   // de la sonde, passait le TGV dans le talus : relu au vrai `routeEn`, ses
   // colonnes touchaient la gare de Marseille. Celui-ci : 829 blocs, trois
-  // ponts (s 259–263, 310–323, 404–416), déblai 7,5, remblai 0,6, pente
-  // 0,064, coudes ≤ 21°, aucune colonne sur le rail, aucun repère.
+  // ponts (s 259–263, 307–323, 404–416), déblai 7,5, remblai 0,6, pente
+  // 0,064, coudes ≤ 22°, aucune colonne sur le rail, aucun repère. Le
+  // sommet (1108, 3212) remplace (1111, 3208) : celui-ci tombait à s 308,5,
+  // un bloc et demi avant le deuxième pont, et le coin de son coude laissait
+  // deux points du joint sans cube ni tablier (le témoin du joint, plafond.js).
   { nom: 'A8', villes: ['marseille', 'nice'], bord: { marseille: 14 },
-    via: [[956, 3410], [961, 3386], [963, 3346], [977, 3291], [987, 3276], [1016, 3255], [1087, 3233], [1101, 3222], [1111, 3208], [1126, 3174], [1143, 3142], [1156, 3131], [1190, 3118], [1208, 3118], [1226, 3123], [1438, 3240], [1475, 3246], [1522, 3247]] },
+    via: [[956, 3410], [961, 3386], [963, 3346], [977, 3291], [987, 3276], [1016, 3255], [1087, 3233], [1101, 3222], [1108, 3212], [1126, 3174], [1143, 3142], [1156, 3131], [1190, 3118], [1208, 3118], [1226, 3123], [1438, 3240], [1475, 3246], [1522, 3247]] },
 ];
 
 // --- la section -----------------------------------------------------------------
