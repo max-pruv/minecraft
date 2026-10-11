@@ -359,6 +359,14 @@
   médiane 4,9, p90 10,2, 4 contacts ; `origin/main` 4,8, 9,9, 18 contacts —
   et compilation New York, trou en vol, atterrissage, flanc frôlé :
   familles déclarées).
+  Second portail (10–11 octobre), joué en deux temps (le premier a été coupé
+  par la limite de temps au milieu de `reseau.js`) : rouges, TOUS déjà
+  déclarés — `maj.js` (loader, préparation), `carte.js` (flèche GPS 1,92),
+  `manhattan.js` (trou de façade), `monte.js` (trou en vol, recharge à
+  l'arrivée 11,5 s, mur de face, flanc frôlé) ; `reseau.js` rejouée seule
+  85/85 verts. Après la fusion de la v418 : `carteMonde.js` 173/173,
+  `plafond.js` 130/130, `monte.js` 198 verts et deux rouges déclarés (chauffe
+  de New York 163/321, flanc frôlé `c: null`).
 - [ ] **LA CIRCULATION VIVANTE, PALIERS SUIVANTS (v395, session
   `claude/circulation-vivante`).** Livré : limitations par voie, profil de
   vitesse dans la grille, grille par voiture, freinage local (feu, file,
