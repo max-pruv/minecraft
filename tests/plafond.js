@@ -352,7 +352,7 @@ const EMPREINTE_MORCEAUX_V414 = '863d4203a441e3fd029ce2404fc6d6e706799e7f64fe489
 // qui la barrait — voulu. La M40 retirée du registre (donc son entrée et le
 // lot qu'elle écartait), la branche rend 863d4203…, la constante
 // d'`origin/main` (v414, `EMPREINTE_MORCEAUX_V414`), au bit près.
-// v416 : Paris, un des neuf lieux, porte l'entrée de l'A6 (de la porte
+// v419 : Paris, un des neuf lieux, porte l'entrée de l'A6 (de la porte
 // d'Italie à la place d'Italie). L'A6 retirée du registre, la branche rend
 // 7521b9b6…, la constante de la v415, au bit près ; et les quatre-vingt-cinq
 // colonnes qui diffèrent dans les morceaux de Paris sont toutes à moins de
@@ -3436,7 +3436,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
             if (R.largeurA && Math.abs(d) > R.largeurA(seg, s).demiEmprise - 0.5) continue;
             const a = R.pointA(seg, s), x = a.x - a.fz * d, z = a.z + a.fx * d;
             // Au bord de l'emprise, le point peut être dans la route quand le
-            // centre de SA colonne ne l'est pas (A6, v416 : d 7,92 pour une
+            // centre de SA colonne ne l'est pas (A6, v419 : d 7,92 pour une
             // demi-emprise de 8,5, colonne voisine hors route) : on prend alors
             // la cote de la route au POINT, et l'on demande un cube plein à
             // cette cote dans la colonne, quel qu'il soit — le sol naturel y

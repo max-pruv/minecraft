@@ -6,11 +6,35 @@
 
 export const NOUVEAUTES = [
   {
-    v: 416,
+    v: 419,
     titre: 'Paris rejoint Lyon',
     puces: [
       'L\'autoroute du Soleil à côté du TGV',
       'On entre dans Paris par le sud',
+    ],
+  },
+  {
+    v: 418,
+    titre: 'Des rues autour du Strip',
+    puces: [
+      'Las Vegas roule sur de vraies rues',
+      'Plus de voiture dans les fontaines',
+    ],
+  },
+  {
+    v: 417,
+    titre: 'Le ciel des villes vérifié',
+    puces: [
+      'L\'avion ne dépasse pas la ville',
+      'Rien ne change pour toi',
+    ],
+  },
+  {
+    v: 416,
+    titre: 'San Diego dans les deux sens',
+    puces: [
+      'Un second circuit de voitures',
+      'Sur les ponts déjà là',
     ],
   },
   {

@@ -556,7 +556,7 @@ export const VOIES_PARIS = VOIES;
 // pour les circuits : ce sont les voitures de la route qui l'empruntent, et
 // `CIRCUITS_PARIS` ne la connaît pas.
 //
-// L'ENTRÉE DE L'A6 (v416) arrive par le SUD, de la porte d'Italie à la place
+// L'ENTRÉE DE L'A6 (v419) arrive par le SUD, de la porte d'Italie à la place
 // d'Italie, où le boulevard Arago et l'avenue des Gobelins se rejoignent
 // (`pk(14, 25)`, le bout commun des deux voies) : c'est le trajet de la vraie
 // autoroute du Soleil. Vers la Gare du Nord, elle traverserait toute la ville.

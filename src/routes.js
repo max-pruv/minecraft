@@ -454,7 +454,7 @@ export const ROUTES = [
   // coudes ≤ 21°, aucun rail, aucun repère, Heathrow loin derrière.
   { nom: 'M40', villes: ['londres', 'birmingham'],
     via: [[-1191, -1493], [-1187, -1533], [-1183, -1546], [-1166, -1580], [-1135, -1632], [-1128, -1652], [-1127, -1680], [-1138, -1719], [-1152, -1748], [-1186, -1799], [-1201, -1818], [-1304, -1920], [-1370, -1965], [-1399, -1980], [-1456, -1998], [-1490, -2002], [-1529, -2000], [-1556, -1994], [-1582, -1984], [-1637, -1947], [-1709, -1905], [-1767, -1878], [-1798, -1874], [-1811, -1875], [-1824, -1881], [-1845, -1902]] },
-  // L'A6 (v416), PARIS–LYON, l'autoroute du Soleil. Le TGV va droit de gare à
+  // L'A6 (v419), PARIS–LYON, l'autoroute du Soleil. Le TGV va droit de gare à
   // gare (57,6° depuis Paris) : règle de la v320, on choisit un côté et l'on
   // n'en change plus. À l'EST du rail, un massif de 46 à plus de 60 blocs de
   // z 500 à z 1 300 (scratchpad carte.mjs) ; à l'OUEST, une plaine de 30 à
