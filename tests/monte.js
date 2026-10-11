@@ -4283,7 +4283,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       });
       await patienter(2000);
       const s0 = { ms: g.statsMaillage.principalMs, distants: g.statsMaillage.distants, locaux: g.statsMaillage.locaux };
-      const t0 = performance.now(), x0 = g.player.pos.x;
+      const t0 = performance.now(), x0 = g.player.pos.x, f0 = g.renderer.info.render.frame;
       // ON ATTEND LE RÉSULTAT — DES BLOCS PARCOURUS — BORNÉ, JAMAIS UNE DURÉE
       // (v270, v272, quatrième famille). Huit secondes de MONTRE ne sont pas
       // huit secondes de JEU : `dt` est borné à un vingtième, donc à une demi-
@@ -4310,6 +4310,14 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const dt = (performance.now() - t0) / 1000;
       const out = { worker: g.maillageDistant, parcouru: Math.round(g.player.pos.x - x0),
         secondes: +dt.toFixed(1), atteint: g.player.pos.x - x0 >= CIBLE,
+        // LA CADENCE DANS LE MESSAGE (banc-lot3). Au portail de la v430 l'avion
+        // n'avait fait que dix blocs en 47 s : une page quasi figée, pas un
+        // monde qui se maille mal. Mesuré (`sonde-vol-paris.cjs`) : seule, cette
+        // page rend 4,2 à 5,6 images par seconde et vole 597 à 789 blocs en
+        // 30 s ; avec une page EN JEU à côté, 3,0 images et 408 blocs. Depuis
+        // que `tab` est mise de côté (v440), rejouée seule : 252 blocs en
+        // 12,8 s. Un rouge futur dit tout de suite s'il vient de la cadence.
+        imagesParSeconde: +((g.renderer.info.render.frame - f0) / dt).toFixed(2),
         msParSeconde: Math.round((g.statsMaillage.principalMs - s0.ms) / dt),
         distants: g.statsMaillage.distants - s0.distants, locaux: g.statsMaillage.locaux - s0.locaux };
       let compares = 0, differents = 0;
