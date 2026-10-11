@@ -3231,7 +3231,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const separes = (A, B) => { for (const R of [A, B]) for (let k = 0; k < 4; k++) { const ax = -(R[(k + 1) % 4][1] - R[k][1]), az = R[(k + 1) % 4][0] - R[k][0]; const pr = (S) => S.map((q) => q[0] * ax + q[1] * az); const p1 = pr(A), p2 = pr(B); if (Math.max(...p1) < Math.min(...p2) || Math.max(...p2) < Math.min(...p1)) return true; } return false; };
       const vit = [], suites = new Map(), feuS = new Map(), tempsS = new Map(), pires = []; let paires = 0, chev = 0, croisiere = null, publie = false;
       const t0 = performance.now();
-      // UN RELEVÉ PORTE L'HEURE DE L'IMAGE QU'IL LIT (v442). Lu à l'heure où
+      // UN RELEVÉ PORTE L'HEURE DE L'IMAGE QU'IL LIT (v444). Lu à l'heure où
       // on le lit, deux relevés à cent millisecondes l'un de l'autre pouvaient
       // tomber de part et d'autre d'une image d'une seconde (le portail en
       // rend) : une voiture qui freine à 7,5 b/s² sur cette seconde y passait

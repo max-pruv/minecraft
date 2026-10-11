@@ -1,4 +1,4 @@
-// L'ARRÊT AU FEU, HORODATÉ DE DEUX FAÇONS (v442) — la même suite de relevés
+// L'ARRÊT AU FEU, HORODATÉ DE DEUX FAÇONS (v444) — la même suite de relevés
 // de vitesse au-dessus de Paris, l'heure de chaque relevé prise (a) quand on le
 // LIT (l'ancien témoin de monte.js) et (b) à l'IMAGE dont il lit l'état (le
 // rappel d'image qui suit la boucle du jeu). Avec `gel` (ms), la page se fige

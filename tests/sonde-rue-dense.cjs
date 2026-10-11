@@ -14,9 +14,9 @@
 //     que le jeu fait, arrêt à la porte). plafond.js lit la ligne BILAN.
 //   node tests/sonde-rue-dense.cjs bus
 //     Le grand anneau de chaque ville et son bus : à mi-temps (v438) ou à la
-//     place de la voiture 0 (v441), les contacts de grille et le jeu.
+//     place de la voiture 0 (v442), les contacts de grille et le jeu.
 //   node tests/sonde-rue-dense.cjs tranches
-//     La fabrique par tranches (v442) contre le calcul d'un seul tenant.
+//     La fabrique par tranches (v443) contre le calcul d'un seul tenant.
 //   node tests/sonde-rue-dense.cjs boulevards
 //     Paris : le long de chaque circuit, où la section a deux voies
 //     (`secondeVoieParis`) et ce que la seconde voie en garde, portion par
@@ -190,7 +190,7 @@ async function principal(mode) {
     // node tests/sonde-rue-dense.cjs bus [villes] : le grand anneau de chaque
     // ville (et de Paris) et son bus, un tour d'horloge par la grille seule.
     // v438 : le bus à mi-temps entre les voitures 0 et 1, l'anneau sans jeu ;
-    // v441 : le bus à la place de la voiture 0, l'anneau joue. Les contacts
+    // v442 : le bus à la place de la voiture 0, l'anneau joue. Les contacts
     // « même axe » de la ligne (file, jumelle, bus), et ceux du bus.
     const VM = await import(src('villesmonde.js'));
     const nV = +(process.argv[3] || 300);
@@ -222,7 +222,7 @@ async function principal(mode) {
           }
         }
       }
-      res[miTemps ? 'v438' : 'v441'] = { anneaux: total, jouent, partJouee: +(posesJ / Math.max(1, poses0)).toFixed(3), voitures, jumelles, contacts: n, dontBus: nBus };
+      res[miTemps ? 'v438' : 'v442'] = { anneaux: total, jouent, partJouee: +(posesJ / Math.max(1, poses0)).toFixed(3), voitures, jumelles, contacts: n, dontBus: nBus };
     }
     RESULTAT = res;
     console.log('BUS', JSON.stringify(res));
