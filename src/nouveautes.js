@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 436,
+    titre: 'La voiture évite les cafés',
+    puces: [
+      'Elle s\'arrête devant les terrasses',
+      'Et devant les bancs du trottoir',
+    ],
+  },
+  {
     v: 435,
     titre: 'Les anneaux se partagent la place',
     puces: [

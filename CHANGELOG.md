@@ -20,6 +20,28 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v436 — La voiture s'arrête devant les terrasses
+
+**Pourquoi.** La table et les chaises d'un café de Paris sont dessinées par la
+couche HD (v288) : ce ne sont pas des blocs. Les passants les contournent
+depuis la v425 ; la voiture de l'enfant, elle, ne lisait que les blocs de
+mobilier (réverbères, jardinières) et passait au travers des terrasses
+revenues en v433.
+
+**Ce que ça change.** Au volant, la voiture s'arrête devant une terrasse, un
+banc, une colonne Morris — seulement ceux qu'on voit : une tablette sans
+couche HD n'a pas de table invisible qui arrête.
+
+**Ce qui le prouve.** Un témoin neuf de `parishd.js` prend le volant sur un
+trottoir de Paris, huit blocs avant une terrasse, et roule jusqu'à l'arrêt :
+elle s'arrête à 2,5 à 2,7 blocs du centre de la terrasse (son pare-chocs au
+bord de la colonne), et le crochet nomme « mobilier ». Rouge sur `origin/main`
+(v433, les terrasses sans le correctif) : la voiture entre jusqu'à 1,8 bloc,
+le capot au-dessus de la table, et c'est un mur qui l'arrête. Une sonde
+(`sonde-terrasse-voiture.cjs`) rejoue le témoin seul, lu dans `parishd.js`.
+
+---
+
 ## v435 — Les anneaux se partagent la place
 
 **Pourquoi.** À Toronto, Dublin et Lima, l'anneau de voitures qu'on voit en

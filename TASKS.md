@@ -3531,6 +3531,18 @@
     mesuré : cinq colonnes sur vingt-cinq morceaux, aucune côte à côte.
 
   Dettes déclarées de la v288 :
+  - [ ] **LE PORTAIL DE LA v436 (la voiture devant les terrasses).** Rouges :
+    `maj.js` (les deux loaders), `carte.js` (glisser bridé ×4), `washington.js`
+    (l'Air et l'Espace), `manhattan.js` (trou, taxi), `monte.js` (la rue à
+    l'allure d'une ville, le mur pris de face) — dettes déclarées. Et « au
+    volant, la voiture s'arrête devant un réverbère » (0 bloc parcouru),
+    rejoué SEUL par `sonde-reverbere.cjs` (le témoin lu dans `monte.js`) :
+    branche 3,64 · **0,16** · 3,65, `origin/main` 3,64 · 3,59 · 3,65. Ce n'est
+    pas `mobilierDevant` : la carte du mobilier sur dix-neuf blocs autour du
+    départ n'a que des potelets et des corbeilles (aucun meuble qui arrête) —
+    une intermittence d'un passage sur trois, déjà vue au portail de la v433
+    AVANT ce correctif (0,3 bloc). À démonter par une sonde qui publie ce qui
+    arrête la voiture (`player.contact`).
   - [ ] **LE PORTAIL DE LA v433 (terrasses)**, coupé deux fois par la limite
     de trente minutes des tâches de fond (la reprise a tout rejoué). Rejoués
     SEULS des deux côtés (`/home/user/minecraft` et un arbre détaché sur
@@ -3553,7 +3565,8 @@
   - [x] les Champs-Élysées à `dx = −4,3 km` (dette ci-dessous) : MESURÉ en v433,
     l'axe de l'avenue rend 103 colonnes de pavé et 8 de trottoir sur 111, et
     l'adresse de la dette du pavé — rendu par Paris doublé (v306).
-  - [~] une chaise de terrasse HD n'arrête ni un passant ni une voiture —
+  - [x] **FAIT EN v436** (la voiture : `mobilierDevant` lit `world.mobilierVu`).
+    Historique : une chaise de terrasse HD n'arrête ni un passant ni une voiture —
     LES PASSANTS ET L'ENFANT À PIED : fait en v425 (`mobilierTrottoir`,
     `world.obstaclePieton`, seulement le mobilier montré). Reste : la VOITURE
     (`mobilierDevant`, main.js, hors zone piétons) — elle lit `isProp` ; la
