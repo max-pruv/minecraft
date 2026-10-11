@@ -5978,6 +5978,15 @@ l'embarquement a eu lieu, pas par une hypothèse.
   taxi (déclarés) ; `reseau.js` « hôte sans courtier » (déclaré). Mon premier
   jet, lui, rendait 29 rouges de `monte.js` seule : voir CLAUDE.md (v433), la
   fenêtre d'arrivée.
+  SECOND PORTAIL (après fusion de la v432, arrêté à deux heures par la borne de
+  la tâche, `reseau.js` non terminée) : `carte.js` flèche du GPS et glisser
+  bridé, `manhattan.js` trou et taxi, `monte.js` compilation à New York
+  (déclarés) ; `monte.js` « s'arrête devant un réverbère » (`parcouru 0,18`,
+  l'intermittence déclarée en v362 — vert dans `monte.js` rejouée seule sur la
+  branche ; le témoin attend neuf secondes après son saut, la fenêtre d'arrivée
+  est close quand il roule) ; `degats.js` « très touchée elle fume » (le tirage
+  de la fumée à un instant, déclaré) ; `reseau.js` « seule après le départ de
+  l'hôte » (l'intermittence des compteurs, déclarée).
   (2) ~~`ensureChunk` sur le fil principal : 66 à 94 ms~~ **FAIT en v433** :
   personnages, passants, joueur, visée, HUD, poissons et réverbères ne
   fabriquent plus un morceau que le worker va rendre (Paris 23-40 → 0 morceau
