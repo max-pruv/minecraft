@@ -1621,6 +1621,17 @@
   `player.freinMainTire` et `player.derive`) — **TRACES FAITES en v434** (`traces.js`),
   **CRISSEMENT AU FREIN À MAIN FAIT en v435** ; (12) le frein à main ne se voit
   pas chez l'ami au-delà de la dérive qui voyage déjà (`p.v.r`).
+- [ ] **AU PORTAIL DE LA v435 (le frein à main crisse), UN ROUGE NEUF QUI N'EST
+  PAS LA LIVRAISON — preuve structurelle (v291).** « à Rome aussi, en biais, un
+  passant traverse sur le passage peint d'un carrefour sans feu » (`monte.js`,
+  `traversees: 0` sur 6 poses) : la livraison ne change qu'un gain dans
+  `voitureSons`, appelé par `sensationsAuVolant` seulement quand l'enfant
+  conduit une voiture — ce témoin ne conduit pas. À rejouer seul des deux côtés
+  par la session des passants (v421). Les autres rouges du même portail sont
+  déjà déclarés (loader et flèche du GPS, glisser bridé, façade et taxi
+  tactile, chauffe de New York, réverbère), et `reseau.js` est morte sur un
+  délai de `rejoindre` (ligne 1021) — rejouée seule au portail précédent,
+  verte des deux côtés sur ce passage.
 - [ ] **AU PORTAIL DE LA v434 (traces de pneus), DES ROUGES QUI NE SONT PAS LA
   LIVRAISON — mesurés.** `reseau.js` rejouée SEULE : branche 80 verts, trois
   rouges ; `origin/main` (v430) 80 verts, les MÊMES trois rouges — « deux
