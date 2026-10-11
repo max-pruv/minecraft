@@ -14,6 +14,22 @@ export const NOUVEAUTES = [
     ],
   },
   {
+    v: 435,
+    titre: 'Les anneaux se partagent la place',
+    puces: [
+      'Toronto, Dublin et Lima sans faute',
+      'Les voitures tournent autour du centre',
+    ],
+  },
+  {
+    v: 434,
+    titre: 'Le dérapage laisse des traces',
+    puces: [
+      'Des traces de pneus quand on glisse',
+      'Elles s\'effacent toutes seules',
+    ],
+  },
+  {
     v: 433,
     titre: 'Les cafés de Paris',
     puces: [
