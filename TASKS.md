@@ -1,5 +1,50 @@
 # Ce qui est en cours
 
+- [ ] **PORTAIL DU JOURNAL DE BORD (v426) — DOUBLE MESURE (règle v195).**
+  Deux portails (bases v408 et v411) rouges sur `maj.js`, `carte.js`,
+  `manhattan.js`, `monte.js`. Déclarés plus bas : la flèche du GPS et le
+  glisser bridé (`carte.js`), le trou de façade et le taxi (`manhattan.js`),
+  « vraiment là » et le palier (`maj.js`, v405), l'allure d'une ville, la
+  compilation à l'arrivée, le flanc frôlé (`monte.js`). Rejouées SEULES :
+  `maj.js` branche 41/41 verts, `origin/main` (v414) 38 verts et 2 rouges
+  (« le loader dit combien de fichiers » et « vraiment là ») ; `monte.js`
+  branche 194 verts, 5 rouges, dont 3 déjà déclarés des deux côtés ; la
+  cascade « pas au volant », « un mur pris de face » et « la voiture heurtée,
+  feux de détresse » disparaissent seuls. `origin/main` seul rend, lui, la
+  cascade « pas aux commandes » (30 rouges, passage coupé par la limite de
+  temps après 132 verts). Un rouge propre à la branche, seul : « en vol
+  au-dessus de Paris, le monde se maille hors du fil principal » (et son
+  voisin « bloc pour bloc ») — l'avion n'a parcouru que 19 blocs en 79 s,
+  une page quasi figée. Vert aux deux portails de la branche (95 et 145 s) et
+  vert sur `origin/main` seul (252 blocs en 34 s) : une intermittence de
+  cadence, une page sur trois. Ce que la livraison ajoute par image : rien ;
+  toutes les 2 s une lecture-écriture de `localStorage` ; toutes les 5 s un
+  parcours de scène mesuré à 4,7 ms médian à Paris. Piste : le témoin
+  attend un nombre de blocs parcourus, borné ; il devrait dire la cadence
+  dans son message.
+- [ ] **LE JOURNAL DE BORD APRÈS LA FLOTTE ALLÉGÉE (v413, #418) — À RELIRE SUR L'iPHONE.**
+  RELEVÉ DU 11 OCTOBRE (lu dans `journal_appareil`, données d'appareil) :
+  depuis la v413, l'iPhone n'a joué que deux sessions courtes, ZÉRO plantage
+  — ligne 92 (9 s, 15 textures) et ligne 93 (55 s, 99 textures au dernier
+  relevé, 343 géométries, 20 i/s, palier `bas` par sûreté). Dernière session
+  plantée avant la v413 : ligne 90 (v411), 352 textures et 1 411 géométries
+  après 21 relevés. Trop tôt pour dire que les textures plafonnent : une
+  minute de jeu ne dit rien d'une panne qui venait après plusieurs minutes.
+  À relire après une vraie partie, avec le champ `gpu` de la v426.
+  (1) Une
+  fois une vraie partie jouée, lire `journal_appareil`
+  (appareil `n4dhwysj5tmmsinqeou`) : plantages ou non, et le champ `gpu` des
+  relevés (texMo, geoMo) — qui plafonne ou non. (2) Si l'iPhone plante encore
+  avec une mémoire graphique stable, la piste déclarée est le clone de
+  géométrie des dégâts (`degats3d.js`, 66 à 87 chocs dans les parties
+  plantées) : mesurer ses octets AVANT d'y toucher, sans changer la règle des
+  dégâts (v343). (3) Les sessions vides : si des `plantage` sans aucun
+  événement reviennent après la v426, elles ne viennent ni de deux pages ni
+  d'une page née cachée — la sonde `sonde-journal-relance.cjs` dit quoi
+  rejouer. (4) Le verdict `bas` de sûreté rangé par les faux plantages
+  d'avant reste rangé : `rangerLePalier` ne l'écrase pas. Il se lève en
+  choisissant une étendue dans les Réglages ; à décider avec Max s'il faut
+  l'effacer d'office une fois.
 - [ ] **LE JOURNAL DE BORD COMPTE PEUT-ÊTRE UNE MISE À JOUR COMME UN PLANTAGE
   (v413).** Session 84 (iPhone, v408) : zéro relevé, zéro événement, envoyée
   cinq secondes après la fermeture propre de la v406 — la relance du service

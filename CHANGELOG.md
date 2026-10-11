@@ -20,6 +20,42 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v426 — Le journal de bord ne crie plus au plantage pour rien
+
+**Pourquoi.** « Le jeu plante de temps en temps » : l'iPhone de la famille a
+remonté onze sessions « plantage » en quarante minutes, et deux plantages de
+suite font passer le jeu en mode léger, rangé pour de bon (v296). Or deux de
+ces plantages étaient faux, et le journal ne pouvait pas le savoir. La session
+82 a été déclarée plantée, puis a envoyé sa fermeture propre trois minutes plus
+tard (ligne 83) : deux pages vivaient sur le même stockage, et un drapeau
+unique faisait lire la vivante comme morte. Et une page qui se fermait effaçait
+le drapeau de l'autre, si bien qu'un VRAI plantage pouvait passer inaperçu
+(mesuré sur l'ancien code). D'autres sessions arrivaient vides — aucun relevé,
+aucun événement —, ce que laisse une page qu'iOS ouvre sans la montrer puis
+tue. Enfin, Safari ne donne pas la mémoire utilisée : c'est un COMPTE de
+textures qui a trahi la flotte de voitures, et un compte n'est pas un poids.
+
+**Ce que ça change.** Chaque page a sa session, son journal et un battement
+toutes les deux secondes ; une session au battement récent n'est dite plantée
+que si son battement cesse d'avancer. Une page née cachée ne compte pas. La
+relance d'une mise à jour ferme le journal avant de recharger. La famille ne
+perd plus ses réglages pour une fausse alerte. Et chaque relevé porte une
+estimation en mégaoctets de ce que la scène tient côté carte graphique
+(textures, géométries), visible dans `?diag=1` et dans l'espace parent.
+
+**Ce qui le prouve.** Une sonde au banc (`sonde-journal-relance.cjs`) : la
+relance du service worker à 200 ms, 600 ms, 1,2 s, 2,5 s, 5 s ou pendant le
+chargement ne laisse aucun faux plantage, ni avant ni après ; deux pages sur le
+même stockage se déclaraient plantées à coup sûr, plus après. Trois témoins
+neufs dans `parent.js`, les deux du journal rouges sur l'ancien code : deux
+pages ne se déclarent pas plantées et une page morte l'est quand même ; une
+page née cachée ne laisse pas de session ouverte ; l'estimation suit un objet
+ajouté puis retiré, une source comptée une fois. Coût du parcours mesuré à
+Paris (rr 12, 11 889 objets) : 4,7 ms médian, 9,7 au pire, une fois toutes les
+cinq secondes.
+
+---
+
 ## v425 — Les passants contournent les terrasses de café
 
 **Pourquoi.** À Paris, la couche détaillée pose des terrasses de café, des bancs

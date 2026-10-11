@@ -4502,6 +4502,48 @@ répondu en une requête : iPhone, en vol à l'ouest de Paris, 1 089 morceaux
   et c'est le nombre de sommets, pas le rayon ni le budget, qui décidera un
   jour de ce qu'un appareil peut montrer.
 
+## Le journal de bord ne crie plus au plantage pour rien (v426) — une session par page, et la mémoire en octets
+
+« Le jeu plante de temps en temps. » Onze « plantages » en quarante minutes
+sur l'iPhone, et deux de suite rangent le palier bas pour de bon (v296). Quatre
+règles.
+
+- **UN DRAPEAU UNIQUE SUPPOSE UNE SEULE PAGE, ET L'APPAREIL EN A EU DEUX.**
+  La ligne 82 de `journal_appareil` est une session « plantée » qui envoie sa
+  fermeture propre trois minutes plus tard (ligne 83) : deux pages sur le même
+  stockage, la seconde lit le drapeau de la première, vivante, comme un
+  plantage — et une page qui se ferme efface le drapeau de l'autre, ce qui
+  CACHE un vrai plantage (mesuré sur l'ancien code). Chaque session a son
+  identifiant, son journal (`JOURNAL_CLE#id`) et sa ligne dans la table des
+  sessions ouvertes avec son dernier BATTEMENT (2 s) ; une session au
+  battement récent est douteuse, et c'est le battement qui n'avance pas qui la
+  dit morte (`verifierDouteuses`, 3 puis 7 s). L'ancien format (une chaîne)
+  est jugé comme avant : mort d'office. **Avant d'accuser le jeu, on relit
+  les lignes VOISINES du journal : deux lignes du même `debut` disent deux
+  pages.**
+- **L'HYPOTHÈSE DONNÉE SE MESURE AVANT D'ÊTRE CORRIGÉE.** La consigne
+  supposait que la relance du service worker tuait la page avant le journal.
+  La sonde (`sonde-journal-relance.cjs`) recharge à 200 ms, 600 ms, 1,2 s,
+  2,5 s, 5 s et pendant le chargement : zéro faux plantage sous Chromium. Le
+  geste reste (`reloadOnce` et `forcerMaj` ferment le journal avant de
+  recharger, `__journalAuRevoir`) parce qu'il ne coûte rien et ne parie pas
+  sur un seul événement de WebKit ; la cause, elle, était ailleurs.
+- **UNE PAGE NÉE CACHÉE N'EST PAS UNE SESSION QUE L'ENFANT A VUE.** Les
+  sessions VIDES (aucun relevé, aucun événement, pas même `premier-plan`) sont
+  ce que laisse une page qu'iOS ouvre sans la montrer puis tue. Elle se ferme
+  à l'ouverture, SANS remettre le compteur à zéro (`garderCompteur`) : elle
+  n'a rien prouvé.
+- **UN COMPTE N'EST PAS UN POIDS.** Safari ne donne pas le tas ; c'est le
+  compte de textures qui a trahi la flotte (734 Mo, v413 de la session des
+  textures). `estimerMemoire` (journal.js, pur, lu par forme) : largeur ×
+  hauteur × 4 × 4/3 par SOURCE distincte (sans le tiers quand la texture ne
+  fait pas de mipmaps — une `DataTexture`, et mon premier témoin l'oubliait),
+  octets des attributs et index par TABLEAU distinct. Un parcours par relevé
+  (5 s), et son coût voyage avec lui (`gpu.ms`) : 4,7 ms médian à Paris au
+  banc. C'est ce que la scène TIENT, pas ce que le pilote a chargé : à Paris,
+  126 sources contre 85 textures du pilote — les deux nombres ensemble disent
+  plus que chacun.
+
 ## Le journal de bord, et Paris qui pesait un gigaoctet (v296)
 
 Max : « un iPad d'ancienne génération, six ans peut-être, se connecte, ça ne

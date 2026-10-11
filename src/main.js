@@ -34,7 +34,7 @@ import { mondeDevant, ligneDiagConduite } from './conduite.js';
 import { PALIERS, PALIER_CLE, choisirPalier, VITESSE_JET,
   ETENDUE_CLE, ETENDUE_PAR_DEFAUT, ETENDUES, palierRetenu, palierPropose, etendueRange, reglageDe, planDetail,
   PARAMS_FORCANTS } from './palier.js';
-import { Journal, suretePalier, PLANTAGES_SURETE } from './journal.js';
+import { Journal, suretePalier, PLANTAGES_SURETE, BATTEMENT_MS, estimerMemoire } from './journal.js';
 import { liberer } from './liberer.js';
 import { createEffects } from './effects.js';
 import { createSky } from './sky.js';
@@ -100,6 +100,14 @@ const journal = new Journal({
   },
 });
 const BILAN_JOURNAL = journal.ouvrir();
+// UNE PAGE NÉE CACHÉE N'EST PAS UNE SESSION QUE L'ENFANT A VUE (v426). iOS peut
+// ouvrir l'application sans la montrer, puis la tuer : sans ceci, elle laissait
+// sa ligne ouverte et le lancement suivant comptait un plantage — les sessions
+// VIDES (aucun relevé, aucun événement) de `journal_appareil`. Elle se ferme
+// sans remettre le compteur à zéro, et `rouvrir` la relance au premier plan.
+if (document.visibilityState === 'hidden') journal.fermer('arriere-plan', { garderCompteur: true });
+// Le battement : « cette page vit encore » (v426, journal.js).
+setInterval(() => journal.battre(), BATTEMENT_MS);
 window.addEventListener('error', (e) => journal.erreur(e.message || (e.error && e.error.message) || 'erreur',
   `${String(e.filename || '').split('/').pop()}:${e.lineno || 0}`));
 window.addEventListener('unhandledrejection', (e) => journal.erreur(
@@ -5775,8 +5783,23 @@ function envoyerJournal(doc, keepalive = false) {
 }
 if (BILAN_JOURNAL.rapport) {
   journal.noter('plantage-precedent', { plantages: BILAN_JOURNAL.plantages, surete: !!SURETE });
-  setTimeout(() => envoyerJournal(BILAN_JOURNAL.rapport), 2500);
+  setTimeout(() => BILAN_JOURNAL.rapports.forEach((r) => envoyerJournal(r)), 2500);
 }
+// UNE SESSION AU BATTEMENT RÉCENT EST PEUT-ÊTRE UNE PAGE VIVANTE (v426) : on
+// regarde si son battement avance avant de la dire plantée — deux fois, parce
+// qu'une page qui charge peut rater un battement.
+if (BILAN_JOURNAL.douteuses.length) {
+  setTimeout(() => journal.verifierDouteuses(false), 3000);
+  setTimeout(() => {
+    const { vivantes, rapports } = journal.verifierDouteuses(true);
+    if (vivantes.length) journal.noter('page-voisine', { vivantes: vivantes.length });
+    for (const r of rapports) { journal.noter('plantage-precedent', { plantages: journal.plantages(), confirme: true }); envoyerJournal(r); }
+  }, 7000);
+}
+// LA RELANCE VOULUE PAR LE JEU DIT AU REVOIR AVANT DE RECHARGER (v426) :
+// index.html l'appelle dans `reloadOnce` et `forcerMaj`. `pagehide` le fait
+// aussi ; on ne parie pas la sûreté de la famille sur un seul événement.
+window.__journalAuRevoir = (fin = 'mise-a-jour') => { try { envoyerJournal(journal.fermer(fin), true); } catch { /* jamais bloquant */ } };
 window.__journal = journal;
 
 function pushPlayTime(keepalive = false) {
@@ -7807,6 +7830,19 @@ function motDuPalier() {
 // faut pour relire une panne — où l'enfant est, ce que la page rend, ce
 // qu'elle tient. Pas de parcours de scène : ce qui coûte ne se relève pas.
 let pireImageJournal = 0;
+// CE QUE LA SCÈNE TIENT CÔTÉ CARTE GRAPHIQUE, EN OCTETS (v426, journal.js) :
+// un parcours de la scène au plus toutes les cinq secondes — la cadence des
+// relevés — et son coût en millisecondes voyage avec lui (`ms`), pour qu'on le
+// relise sur la tablette au lieu de le supposer nul.
+let memoireTenue = null;
+function memoireGPU(forcer = false) {
+  const now = performance.now();
+  if (!forcer && memoireTenue && now - memoireTenue.le < 5000) return memoireTenue;
+  const e = estimerMemoire([scene]);
+  memoireTenue = { le: now, texMo: Math.round(e.texMo * 10) / 10, geoMo: Math.round(e.geoMo * 10) / 10, sources: e.sources, geometries: e.geometries,
+    ms: Math.round((performance.now() - now) * 10) / 10 };
+  return memoireTenue;
+}
 function releverLeJournal() {
   const periode = mesurePalier.images.length ? mesurePalier.images[mesurePalier.images.length - 1] : 0;
   if (periode > pireImageJournal) pireImageJournal = periode;
@@ -7821,6 +7857,7 @@ function releverLeJournal() {
     ips, pire: Math.round(pireImageJournal), appels: info.render.calls, ktri: Math.round(info.render.triangles / 1000),
     morceaux: chunkMeshes.size, monde: world.chunks.size, hd: [...chunkMeshes.values()].reduce((n, e) => n + (e.detail ? 1 : 0), 0),
     geometries: info.memory.geometries, textures: info.memory.textures, tasMo: mem, corps: `${h.prets}/${h.total}`,
+    gpu: (({ texMo, geoMo, sources, ms }) => ({ texMo, geoMo, sources, ms }))(memoireGPU(true)),
     monture: player.pilote ? 'avion' : (player.gabarit > 1 ? 'voiture' : null), vol: !!player.flying, prog: info.programs ? info.programs.length : null,
     // les dégâts (v364) : le coût du dernier enfoncement et du feu, mesurés ici
     ...(fun.degats && fun.degats.bilan && fun.degats.bilan() ? { degats: fun.degats.bilan() } : {}),
@@ -7865,6 +7902,7 @@ function updateHud(dt) {
         : ` · morceau ${mesurePalier.morceaux.length} relevé(s), travail ${mesurePalier.travaux.length}${PALIER_SE_RANGE ? '' : ' — non rangé'}`) + '\n'
     + `morceaux ${chunkMeshes.size} (${[...chunkMeshes.values()].filter((e) => e.detail).length} avec façades HD) · corps ${h.prets}/${h.total} · programmes chauffés ${programmesChauffes()} · ${myName() || ''} ${player.pos.x.toFixed(0)},${player.pos.z.toFixed(0)}\n`
     + `journal : ${journal.doc.releves.length} relevé(s), ${journal.doc.erreurs} erreur(s), plantages de suite ${journal.plantages()}${PALIER && PALIER.source === 'sûreté' ? ' — SÛRETÉ' : ''}`
+    + ((m) => ` · carte graphique ≈ ${Math.round(m.texMo + m.geoMo)} Mo (textures ${m.texMo} sur ${m.sources} source(s), géométries ${m.geoMo}, ${m.ms} ms)`)(memoireGPU())
     + ` · façades HD ${detailTenu.n} morceau(x), ${(detailTenu.octets / 1048576).toFixed(0)} / ${(BUDGET_FACADES / 1048576).toFixed(0)} Mo, ${statsMaillage.detailsBudget} rendu(s) au budget`
     // AU VOLANT (v397) : ce que le banc ne sait pas mesurer — le monde maillé
     // devant la voiture et la roue libre — Max le relève sur la tablette.
@@ -7996,7 +8034,7 @@ window.__game = { fileMaillage: (m) => { fileDemandee = m; lastPlayerChunk = nul
   rechargeMaillage: (m) => { rechargeForcee = m || null; }, get fileDeMorceaux() { return meshQueue; },
   // la règle de la recharge, garde du rendu logiciel mise à part (v379) : un témoin
   // la lit au banc, où le rendu est toujours logiciel
-  get rechargeRegle() { return { arrivee: enArrivee(), rapide: fileRapide, regle: rechargeParRegle(), active: rechargeALArrivee() }; }, villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage, PALIERS, choisirPalier, mesurePalier, journal,
+  get rechargeRegle() { return { arrivee: enArrivee(), rapide: fileRapide, regle: rechargeParRegle(), active: rechargeALArrivee() }; }, villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage, PALIERS, choisirPalier, mesurePalier, journal, memoireGPU,
   RAYON_HD, BUDGET_FACADES, detailTenu, planDetail, get atlasHD() { return hd ? hd.atlas : null; },
   palierRetenu, palierPropose, etendueRange, reglageDe, PARAMS_FORCANTS,
   // CE QUE LE PALIER A RÉELLEMENT APPLIQUÉ, pas ce qu'il déclare : un témoin
