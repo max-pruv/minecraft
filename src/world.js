@@ -1126,7 +1126,7 @@ function feuxDeVille(cle, ancre, voies, solBrut, portee = PORTEE_CARREFOUR) {
   let table = FEUX_VILLE.get(cle);
   if (table) return table;
   table = new Set();
-  // LE SOL SE LIT UNE FOIS PAR COLONNE (v433). Chaque coin candidat relisait
+  // LE SOL SE LIT UNE FOIS PAR COLONNE (v436). Chaque coin candidat relisait
   // ses quatre voisins, et les fenêtres de deux carrefours voisins se
   // recouvrent : à Paris (portée 17), 86 ms au PREMIER morceau de la ville —
   // la moitié du froid qu'une téléportation paie sur le fil principal. Le sol
@@ -4167,7 +4167,7 @@ export class World {
     return data;
   }
 
-  // CE QUE LE FIL PRINCIPAL A DÉJÀ, SANS L'ENGENDRER (v433).
+  // CE QUE LE FIL PRINCIPAL A DÉJÀ, SANS L'ENGENDRER (v436).
   //
   // `getBlock` engendre le morceau qu'on lui demande. Sur le fil principal,
   // c'est vingt à quarante millisecondes dans l'image où on le demande — et à

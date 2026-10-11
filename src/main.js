@@ -881,7 +881,7 @@ function synchroniserLeWorker() {
   enAttente.clear();
   maillageDistant.postMessage({ type: 'edits', edits: world.edits, temps: world.editTimes, ctx: world.ctx, hd: world.hd, sansSolContinu: world.sansSolContinu });
 }
-// L'ENFANT ATTEND SON MORCEAU, IL NE LE FABRIQUE PAS (v433).
+// L'ENFANT ATTEND SON MORCEAU, IL NE LE FABRIQUE PAS (v436).
 //
 // Après une téléportation, le morceau sous ses pieds n'est pas encore rendu
 // par le worker ; `player.update` lisait ses blocs par `getBlock`, qui
@@ -1365,7 +1365,7 @@ function redemanderLeDetail(cx, cz, key) {
 // chaussée autour — un réverbère posé par l'enfant dans son jardin — elle
 // reste en +x.
 //
-// ET ON NE LIT PAS LE MORCEAU D'À CÔTÉ S'IL N'EST PAS LÀ (v433). Un réverbère
+// ET ON NE LIT PAS LE MORCEAU D'À CÔTÉ S'IL N'EST PAS LÀ (v436). Un réverbère
 // au bord d'un morceau regarde la colonne voisine, et `getBlock` engendrait ce
 // morceau sur le fil principal, dans l'image où le sien s'installait — quatre
 // à six morceaux dans la première seconde d'une arrivée. Un réverbère de ville
@@ -1496,7 +1496,7 @@ function updateChunks() {
       const [ax, az] = lastPlayerChunk.split(',').map(Number);
       if (estUnSaut({ cx: ax, cz: az }, { cx: pcx, cz: pcz }, RENDER_RADIUS)) {
         arriveeJusqua = performance.now() + FENETRE_ARRIVEE_MS;
-        world.arriveeJusqua = performance.now() + ATTENTE_ARRIVEE_MS;   // v433
+        world.arriveeJusqua = performance.now() + ATTENTE_ARRIVEE_MS;   // v436
         world.arriveeLieu = { x: player.pos.x, z: player.pos.z, r: (RENDER_RADIUS + 1) * CHUNK };
       }
     }
@@ -7904,7 +7904,7 @@ function releverLeJournal() {
 function updateHud(dt) {
   const eye = player.eyePosition();
   // un morceau pas encore rendu par le worker n'est pas de l'eau : on ne
-  // l'engendre pas ici pour le savoir (v433)
+  // l'engendre pas ici pour le savoir (v436)
   const eyeBlock = !world.arriveeEnCours() || world.morceauxPrets(eye.x, eye.z) ? world.getBlock(Math.floor(eye.x), Math.floor(eye.y), Math.floor(eye.z)) : BLOCK.AIR;
   waterTint.style.display = eyeBlock === BLOCK.WATER ? 'block' : 'none';
 
@@ -8164,7 +8164,7 @@ function frame(now) {
     for (const npc of npcs) {
       const distance = npc.pos.distanceTo(player.pos);
       if (!actualiserPresence(npc, distance, dt, !npc.sommeilForce)) continue;
-      // ET ON N'ANIME PAS CE QUI S'EFFACE À L'AUTRE BOUT DU MONDE (v433). Après
+      // ET ON N'ANIME PAS CE QUI S'EFFACE À L'AUTRE BOUT DU MONDE (v436). Après
       // une téléportation, la présence fond en 0,8 s les personnages laissés
       // derrière — le village, le château —, et ils marchaient encore pendant
       // ce temps : leur `sweep` refabriquait sur le fil principal les morceaux
@@ -8257,7 +8257,7 @@ function frame(now) {
   }
 
   // la visée lit jusqu'à huit blocs devant les yeux : elle se tait tant que
-  // le monde autour n'est pas rendu (v433)
+  // le monde autour n'est pas rendu (v436)
   const hit = running && !attenteJoueur && (!world.arriveeEnCours() || mondePretAutour(8)) ? getTarget() : null;
   highlight.visible = !!hit;
   if (hit) highlight.position.set(hit.x + 0.5, hit.y + 0.5, hit.z + 0.5);
@@ -8377,6 +8377,8 @@ requestAnimationFrame(() => {
     try { chaufferLaCoque(); } catch (e) { console.warn('chauffe de la coque', e); }
     // la fumée et les flammes des dégâts (v343) : deux matériaux neufs
     try { fun.degats.chauffer(renderer, camera, scene); } catch (e) { console.warn('chauffe des dégâts', e); }
+    // les traces de pneus (v434) : un matériau neuf, son essaim exact
+    try { fun.chaufferTraces(renderer, camera, scene); } catch (e) { console.warn('chauffe des traces', e); }
     chauffeFinie = true;
     requestAnimationFrame(pasNY);
   };

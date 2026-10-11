@@ -194,7 +194,7 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
         continue;
       }
       const bx = Math.floor(x), bz = Math.floor(z);
-      // ON NE SONDE QUE LE MONDE DÉJÀ LÀ (v433). `sommetColonne` et `getBlock`
+      // ON NE SONDE QUE LE MONDE DÉJÀ LÀ (v436). `sommetColonne` et `getBlock`
       // ENGENDRENT le morceau qui manque, sur le fil principal : à l'arrivée
       // d'une téléportation, quarante-quatre tirages par passant tombaient sur
       // des morceaux que le worker n'avait pas encore rendus — vingt morceaux,
@@ -245,7 +245,7 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
       if (!surRue && SOLS_DE_RUE.has(sol0) && !CHAUSSEE.has(sol0)) surRue = [x, z];
     }
     if (surRue || horsChaussee || repli) return surRue || horsChaussee || repli;
-    // rien de prêt autour de l'enfant : on attend que le monde arrive (v433)
+    // rien de prêt autour de l'enfant : on attend que le monde arrive (v436)
     if (world.morceauxPrets && world.arriveeEnCours() && !site.urbain) return null;
     return [site.x+5,site.z+7];
   }
@@ -265,7 +265,7 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
   function naitre() {
     const t0 = performance.now();
     // une naissance dont le monde n'est pas encore là autour de l'enfant
-    // attend sa place dans la file (v433) ; on passe aux suivantes, et une
+    // attend sa place dans la file (v436) ; on passe aux suivantes, et une
     // ville que l'enfant a quittée ne fait plus naître personne
     for (let i = 0; i < naissances.length && performance.now() - t0 < 5;) {
       const n = naissances[i];
@@ -383,7 +383,7 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
         const dh = Math.hypot(h.pos.x - player.pos.x, h.pos.z - player.pos.z);
         if (dh < TROP_LOIN || !h.presence || h.presence.valeur > 0) continue;
         const poste = posteAutour(site, site.graine + i + tour * 131, i % 3 !== 2, true);
-        if (!poste) continue;   // rien de prêt autour : il attend le tour suivant (v433)
+        if (!poste) continue;   // rien de prêt autour : il attend le tour suivant (v436)
         const [nx, nz] = poste;
         // `poste` est le point autour duquel il flâne, `placeAt` le pose au sol
         // — c'est le même chemin que sa naissance, donc rien à réinventer.
