@@ -8279,7 +8279,9 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // En vol, minicarte ouverte, GPS actif, un bandeau et le défi de Cornichon
     // affichés : la situation de la capture, provoquée (v233).
     for (const vue of [{ width: 430, height: 932 }, { width: 420, height: 760 }]) {
-      await banc.mettreDeCote(tab);
+      // `tab` est déjà fermée ici (dernier usage plus haut) : on ne met de côté
+      // qu'une page encore ouverte.
+      if (!tab.isClosed()) await banc.mettreDeCote(tab);
       const hudPage = await banc.jouerSeul('MonteHud' + vue.width, { viewport: vue, tactile: true, rr: 2 });
       const hud = await hudPage.evaluate(async () => {
         const g = window.__game, am = g.animalManager;
@@ -8323,7 +8325,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         return { vue: { w: innerWidth, h: innerHeight }, R, glisse, descendre: (document.getElementById('ride-btn') || {}).textContent || '' };
       });
       await hudPage.close();
-      await banc.ramener(tab);
+      if (!tab.isClosed()) await banc.ramener(tab);
       const croise = (a, b) => !!a && !!b
         && Math.min(a.x + a.w, b.x + b.w) > Math.max(a.x, b.x)
         && Math.min(a.y + a.h, b.y + b.h) > Math.max(a.y, b.y);
