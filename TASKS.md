@@ -566,7 +566,13 @@
   `reseau.js` ENTIÈREMENT vert (mon témoin compris) ; `monte.js` : le seul gel
   d'arrivée (24,8 %, déclaré) ; `manhattan.js` : trou, taxi, « Lost
   connection to server » de PeerJS — déclarés.
-- [ ] **SAN FRANCISCO–LOS ANGELES, INSTRUIT EN v419 SANS LE FAIRE** (relevé
+- [x] **SAN FRANCISCO–LOS ANGELES : FAIT EN v436 (l'US-101).** Le relevé
+  ci-dessous se trompait sur un point, mesuré : « sortir par l'est » passe
+  par la BAIE, dans le disque entre la porte (r − 20) et le bord. La porte
+  est au sud-est (68°), la route passe au nord de SFO, longe la plaine
+  côtière et entre dans Los Angeles plein ouest (bord 40). Relevé de v419,
+  gardé pour mémoire :
+  **SAN FRANCISCO–LOS ANGELES, INSTRUIT EN v419 SANS LE FAIRE** (relevé
   du scratchpad, carte.mjs et ring.mjs ; aucune sonde de tracé). L'axe direct
   (2 403 blocs) passe dans la marge de SFO (−38 774, 7 120, r 72, au sud de la
   ville) et sur deux repères, et la bande côtière disparaît au sud de z 8 000 :
