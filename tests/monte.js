@@ -7081,7 +7081,8 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // vitesse dans la direction `yaw + derive` : la caisse vraie est à
     // −`derive` de sa vitesse. On lit la caisse RENDUE (matrice monde) au frein
     // à main dans un virage à gauche, rapportée à ce que la physique dit :
-    // `origin/main` (v430) −0,18 — la glissade en miroir —, la branche 1,00.
+    // `origin/main` −0,18 puis 0,37 sur deux passages (la glissade en miroir,
+    // plus ou moins selon la vitesse), la branche 1,00.
     const dv = await tab.evaluate(`(${mesurerDeriveDessinee.toString()})()`);
     const DV = dv || {};
     verifier('en dérapage, la caisse est dessinée de travers du bon côté',

@@ -40,7 +40,8 @@ de la voiture de l'ami braquer avec son volant, et ses dérapages — dérive ou
 frein à main — laissent des traces de pneus chez nous aussi.
 
 **Ce qui le prouve.** Trois témoins neufs. Dans `monte.js`, la caisse rendue
-rapportée à ce que la physique dit : −0,18 sur `origin/main`, 1,00 ici. Dans
+rapportée à ce que la physique dit : −0,18 puis 0,37 sur `origin/main`,
+1,00 ici. Dans
 `reseau.js`, à deux tablettes : la roue avant de la copie de Marlon lue dans
 la matrice chez Alice (zéro sur la v437), et ses traces de pneus qui naissent
 chez Alice quand il glisse (aucune sur la v437). Le frein à main voyage dans un
