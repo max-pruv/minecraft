@@ -254,6 +254,8 @@ const masqueReserve = [];
 // iPad de trois gigaoctets. Le fil principal ne demande le détail qu'à portée
 // de `RAYON_HD`, et le redemande quand un morceau y entre.
 export function buildChunkTampons(world, cx, cz, options = {}) {
+  // (`devantures: false` rejoue la règle des terrasses d'avant la v429 : l'empreinte des morceaux)
+  const optsMobilier = options.devantures === false ? { vitrineSeule: true } : undefined;
   if (world.hasVisualEdits && !world.hasVisualEdits(cx, cz)) {
     return { solid: null, water: null, lumineux: null, props: [], sol: null, facades: null, plat: null, platLumineux: null };
   }
@@ -547,7 +549,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
             // d'à côté, on ne connaît pas la trame.
             // la règle vit dans `mobilierTrottoir` (facadeshd.js) : le mailleur
             // dessine ce qu'elle rend, et les passants butent dessus (v425)
-            const m = mobilierTrottoir((dx, dy, dz) => localGet(x + dx, y + dy, z + dz), ox + x, oz + z);
+            const m = mobilierTrottoir((dx, dy, dz) => localGet(x + dx, y + dy, z + dz), ox + x, oz + z, optsMobilier);
             if (!m) continue;
             if (m.genre === 'potelet') poteletHD(facades, x, y, z, m.cote);
             else if (m.genre === 'corbeille') corbeilleHD(facades, x, y, z, m.cote);

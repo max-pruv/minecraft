@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 429,
+    titre: 'Les cafés de Paris',
+    puces: [
+      'Des terrasses devant les boutiques',
+      'Tables rondes et chaises tressées',
+    ],
+  },
+  {
     v: 428,
     titre: 'Marseille rejoint Nice',
     puces: [

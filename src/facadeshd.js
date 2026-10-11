@@ -1438,7 +1438,15 @@ export function terrasseHD(buf, x, y, z, wx, wz, vers) {
 // - loin du caniveau et sans devanture, un banc tourné vers la rue (la rue à
 //   deux blocs, derrière un autre trottoir) ou, plus rare, une colonne Morris
 //   — seulement là où le tirage est un creux local.
-export function mobilierTrottoir(at, wx, wz) {
+//
+// LA DEVANTURE EN BANDES (v429). Depuis la v301 un rez-de-chaussée de Paris
+// fait trois blocs — soubassement, vitrage, enseigne — et le bloc qu'on lit à
+// un au-dessus du trottoir est le VITRAGE (`VITRINE_MI`), plus `VITRINE` :
+// mesuré, zéro terrasse dans six quartiers sur cent quarante versions. Les
+// deux comptent, l'ancien bloc parce qu'un enfant a pu le poser.
+// `opts.vitrineSeule` rejoue la règle d'avant, pour l'empreinte (v421).
+const DEVANTURES = new Set([ARCHI.VITRINE, ARCHI.VITRINE_MI]);
+export function mobilierTrottoir(at, wx, wz, opts) {
   const bord = (dx, dz) => { const v = at(dx, 0, dz); return v === ARCHI.BORDURE || v === ARCHI.PAVE; };
   const cote = bord(1, 0) ? 'px' : bord(-1, 0) ? 'mx' : bord(0, 1) ? 'pz' : bord(0, -1) ? 'mz' : null;
   if (cote) {
@@ -1447,7 +1455,8 @@ export function mobilierTrottoir(at, wx, wz) {
     if ((leLong & 7) === 3 && tirage(wx, wz, 921) > 0.4) return { genre: 'corbeille', cote };
     return null;
   }
-  const vitrineA = (dx, dz) => at(dx, 1, dz) === ARCHI.VITRINE;
+  const seule = opts && opts.vitrineSeule;
+  const vitrineA = (dx, dz) => { const v = at(dx, 1, dz); return seule ? v === ARCHI.VITRINE : DEVANTURES.has(v); };
   const vers = vitrineA(1, 0) ? [1, 0] : vitrineA(-1, 0) ? [-1, 0] : vitrineA(0, 1) ? [0, 1] : vitrineA(0, -1) ? [0, -1] : null;
   if (vers) return tirage(wx, wz, 917) > 0.62 ? { genre: 'terrasse', vers } : null;
   if (at(0, 1, 0) !== BLOCK.AIR) return null;

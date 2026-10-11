@@ -58,7 +58,7 @@ export async function empreinteMorceaux(src) {
         const cx = c0x + dx * 3, cz = c0z + dz * 3;
         const data = w.ensureChunk(cx, cz);
         h.update(Buffer.from(data.buffer, data.byteOffset, data.byteLength));
-        const t = buildChunkTampons(w, cx, cz, { detail: (dx + dz) % 2 === 0, passagesBiais: false });
+        const t = buildChunkTampons(w, cx, cz, { detail: (dx + dz) % 2 === 0, passagesBiais: false, devantures: false });
         for (const k of Object.keys(t).sort()) {
           const g = t[k];
           if (g && typeof g === 'object' && g.positions) {

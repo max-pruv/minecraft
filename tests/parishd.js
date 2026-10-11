@@ -352,6 +352,45 @@ function verifier(nom, ok, detail = '') {
     verifier('des potelets de fonte bordent le trottoir', fonte > 0, `${fonte} sommets de fonte, ${rotin} de cannage`);
   }
   {
+    // ── PLUS UNE TERRASSE DE CAFÉ À PARIS (v429) ─────────────────────────────
+    //
+    // La règle (`mobilierTrottoir`) voulait une `ARCHI.VITRINE` à un bloc
+    // au-dessus du trottoir ; depuis les bandes de la v301 la devanture y est
+    // son VITRAGE (`VITRINE_MI`), et mesuré, quatre quartiers rendaient zéro
+    // terrasse. On compte ce que la règle rend sur neuf morceaux par quartier,
+    // ET ce que le mailleur dessine (le cannage des chaises) sur le morceau le
+    // plus fourni. `vitrineSeule` rejoue la règle d'avant : zéro, et le témoin
+    // le dit — c'est la preuve qu'il voit la différence.
+    const { CITY_BLOCK, BLOCK: B } = await import('../src/blocks.js');
+    const w = new World(); w.hd = 1;
+    const parQuartier = [];
+    let plusFourni = null;
+    for (const [nomQ, qx, qz] of [['Marais', 0.9, -0.35], ['Quartier latin', 0.15, 0.85], ['Saint-Germain', -1.7, 0.8], ['Monceau', -3.2, -2.2]]) {
+      const [mx, mz] = adresseParis(qx, qz);
+      let terr = 0, avant = 0;
+      for (let kx = Math.floor(mx / CHUNK) - 1; kx <= Math.floor(mx / CHUNK) + 1; kx++) for (let kz = Math.floor(mz / CHUNK) - 1; kz <= Math.floor(mz / CHUNK) + 1; kz++) {
+        w.ensureChunk(kx, kz);
+        let ici = 0;
+        for (let lx = 0; lx < CHUNK; lx++) for (let lz = 0; lz < CHUNK; lz++) {
+          const bx = kx * CHUNK + lx, bz = kz * CHUNK + lz, by = w.sommetColonne(bx, bz);
+          if (w.getBlock(bx, by, bz) !== CITY_BLOCK.SIDEWALK || w.getBlock(bx, by + 1, bz) !== B.AIR) continue;
+          const at = (a, b, c) => w.getBlock(bx + a, by + b, bz + c);
+          const m = HD.mobilierTrottoir(at, bx, bz);
+          if (m && m.genre === 'terrasse') { terr++; ici++; }
+          const m0 = HD.mobilierTrottoir(at, bx, bz, { vitrineSeule: true });
+          if (m0 && m0.genre === 'terrasse') avant++;
+        }
+        if (!plusFourni || ici > plusFourni.n) plusFourni = { n: ici, kx, kz };
+      }
+      parQuartier.push({ q: nomQ, terrasses: terr, avant });
+    }
+    const t = buildChunkTampons(w, plusFourni.kx, plusFourni.kz);
+    const cannage = compteTuile(t.facades, 'rotin');
+    verifier('chaque quartier de Paris a ses terrasses de café devant ses devantures (la devanture en bandes de la v301), et le mailleur les dessine',
+      parQuartier.every((p) => p.terrasses >= 5) && cannage > 0,
+      `${parQuartier.map((p) => `${p.q} ${p.terrasses} (règle d'avant ${p.avant})`).join(' · ')} — ${cannage} sommets de cannage dans (${plusFourni.kx}, ${plusFourni.kz}), ${plusFourni.n} terrasses`);
+  }
+  {
     // UN ARBRE HD PAR TRONC. On cherche un morceau de Paris qui plante des
     // arbres (autour du morceau témoin), on compte ses bases de tronc dans les
     // BLOCS, et l'on exige autant de fûts maillés — et plus une seule face de

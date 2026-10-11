@@ -20,6 +20,30 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v429 — Les terrasses de café reviennent à Paris
+
+**Pourquoi.** Depuis la v301, un rez-de-chaussée de Paris fait trois blocs —
+soubassement, vitrage, enseigne — et la règle des terrasses (v288) cherchait
+encore l'ancien bloc de devanture à un bloc au-dessus du trottoir. Mesuré sous
+node : zéro terrasse dans six quartiers (Marais, Quartier latin,
+Saint-Germain, Monceau, Belleville, Haussmann), pendant cent quarante
+versions, alors que le vitrage d'une devanture borde 135 à 776 colonnes de
+trottoir par quartier.
+
+**Ce que ça change.** Devant une devanture sur trois, une table ronde de
+fonte et deux chaises de cannage : 40 à 178 terrasses par quartier mesuré. Le
+palier bas (sans couche HD) ne reçoit rien de neuf, et les passants les
+contournent déjà (v425).
+
+**Ce qui le prouve.** Un témoin neuf de `parishd.js`, rouge sur l'ancien code
+(zéro terrasse dans quatre quartiers) : chaque quartier en porte au moins
+cinq, et le mailleur en dessine le cannage. L'empreinte des 490 morceaux
+change (`69c38928…`) et se prouve : la règle d'avant rejouée
+(`devantures: false`) rend `1f1e5a6d…`, la constante d'`origin/main`, au bit
+près. Jugé en capture, rue de Saint-Germain, de jour.
+
+---
+
 ## v428 — Marseille rejoint Nice
 
 **Pourquoi.** Marseille–Nice était le dernier corridor court du kit côté

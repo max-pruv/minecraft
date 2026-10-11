@@ -2223,6 +2223,23 @@ engendrées. Quatre règles.
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
 
+## Les terrasses de café reviennent (v429) — une règle qui lit un bloc se relit quand le bloc se découpe
+
+Une règle.
+
+- **QUAND UN BLOC SE DÉCOUPE EN BANDES, ON CHERCHE CE QUI LISAIT LE BLOC
+  ENTIER.** La v301 a fait d'un rez-de-chaussée trois blocs (soubassement,
+  vitrage, enseigne) ; la règle des terrasses (v288) cherchait encore
+  `ARCHI.VITRINE` à un bloc au-dessus du trottoir — c'est-à-dire le VITRAGE
+  (`VITRINE_MI`) désormais. Zéro terrasse dans six quartiers pendant cent
+  quarante versions, et aucun témoin ne le voyait : celui des potelets
+  comptait la fonte, pas le cannage. Mesuré par la sonde qui compte ce qui
+  borde le trottoir à y+1 quartier par quartier. `grep -n "ARCHI.<ancien>"`
+  le jour où l'on découpe un bloc, comme le verre dans les murs. L'ancien bloc
+  reste lu (un enfant a pu le poser). La règle d'avant se rejoue
+  (`buildChunkTampons(…, { devantures: false })`) : c'est elle que lit
+  l'empreinte des 490 morceaux, au bit près.
+
 ## Le mobilier de trottoir arrête les passants (v425) — on bute sur ce qu'on voit
 
 Deux règles.

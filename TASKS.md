@@ -3402,7 +3402,9 @@
     `world.obstaclePieton`, seulement le mobilier montré). Reste : la VOITURE
     (`mobilierDevant`, main.js, hors zone piétons) — elle lit `isProp` ; la
     même `mobilierTrottoir` lui servirait telle quelle ;
-  - [ ] **PLUS UNE TERRASSE DE CAFÉ À PARIS** (mesuré en v425, quatre
+  - [x] **FAIT EN v429** (la règle lit le vitrage `VITRINE_MI` des devantures
+    en bandes de la v301 : 40 à 178 terrasses par quartier). Historique :
+    **PLUS UNE TERRASSE DE CAFÉ À PARIS** (mesuré en v425, quatre
     quartiers, 25 morceaux détaillés chacun) : 324 à 387 potelets, 56 à 59
     corbeilles, 16 à 25 bancs, 7 à 12 colonnes Morris, ZÉRO terrasse. La règle
     (`mobilierTrottoir`) veut une `ARCHI.VITRINE` à un bloc au-dessus d'un
