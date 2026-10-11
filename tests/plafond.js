@@ -364,7 +364,11 @@ const EMPREINTE_MORCEAUX_V414 = '863d4203a441e3fd029ce2404fc6d6e706799e7f64fe489
 // colonnes qui diffèrent dans les morceaux de San Francisco sont toutes à
 // moins de sept blocs de l'axe de l'entrée — la demi-chaussée et le trottoir
 // d'une collectrice (scratchpad diffsf.mjs).
-const EMPREINTE_MORCEAUX_V357 = '239f48ab9f32f829be50f6e53f96ec0f43ed6d15fb2fdfaec0e1f0284917b37a';
+// v444 : Washington, un des neuf lieux, porte deux ponts de rue sur
+// l'Anacostia (11e Rue, Sousa). `pontWashington` désarmé (rend null), la
+// branche rend 239f48ab…, la constante de la v439, au bit près ; et les cent
+// douze colonnes qui diffèrent sont toutes dans les bandes des deux ponts.
+const EMPREINTE_MORCEAUX_V357 = 'fb4f9aed89ceb6e29a5ecc6731f5e9840673e0ba720fae16c0f60a86954ca403';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -629,7 +633,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     verifier('rue : la table des raccords courts est celle que la règle rend aujourd\'hui (un anneau qui bouge la fait remesurer)',
       !!b && b.ecarts.length === 0, b ? JSON.stringify(b.ecarts) : `sonde : ${err}`);
   }
-  // --- LE BUS A SA PLACE DANS SON ANNEAU, ET L'ANNEAU JOUE (v444) ----------
+  // --- LE BUS A SA PLACE DANS SON ANNEAU, ET L'ANNEAU JOUE (v447) ----------
   // Posé à mi-temps entre deux voitures (v372), le bus touchait ses voisines
   // par la grille seule (36 004 relevés sur un tour des 263 grands anneaux) et
   // l'anneau renonçait au jeu par voiture (v438). À la place de la voiture 0,
@@ -640,10 +644,10 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     let r = null, err = '';
     try { r = await require('./sonde-rue-dense.cjs').mesurer('bus'); } catch (e) { err = String(e && e.message || e); }
     verifier('rue : le bus a sa place entière dans son anneau — aucun contact de grille, et l\'anneau garde le jeu par voiture',
-      !!r && r.v444.anneaux > 200 && r.v444.contacts === 0 && r.v444.jouent === r.v444.anneaux && r.v438.dontBus > 1000,
+      !!r && r.v447.anneaux > 200 && r.v447.contacts === 0 && r.v447.jouent === r.v447.anneaux && r.v438.dontBus > 1000,
       r ? JSON.stringify(r) : `sonde : ${err}`);
   }
-  // --- UN CIRCUIT SE PRÉPARE PAR TRANCHES, PUIS NAÎT (v445) ----------------
+  // --- UN CIRCUIT SE PRÉPARE PAR TRANCHES, PUIS NAÎT (v447) ----------------
   // Un circuit de Paris se calculait d'un seul tenant dans l'image où il naît
   // (jusqu'à 34 à 59 ms sous node : grille, plancher, croisement, seconde
   // voie, essais de la jumelle). La fabrique rend la main entre ses étapes ;

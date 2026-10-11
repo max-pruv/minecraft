@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## La rue sans à-coups (v443) — le bus a une place, un circuit se prépare, une suiveuse freine
+## La rue sans à-coups (v447) — le bus a une place, un circuit se prépare, une suiveuse freine
 
 Quatre sujets, une livraison. Cinq règles.
 
@@ -788,15 +788,26 @@ Quatre sujets, une livraison. Cinq règles.
 - **CE QUI SE CALCULE AVANT UNE NAISSANCE SE CALCULE PAR TRANCHES, ET LA
   PREUVE EST L'IDENTITÉ.** `fabriqueCirculation` est un générateur qui rend la
   main entre ses étapes lourdes (plancher, croisement, voies le long du tracé,
-  chaque essai de la jumelle) ; `circulationParTranches` l'avance sur un budget
-  par image, et main.js ne fait naître le convoi (et son bus) qu'une fois fini.
+  chaque essai de la jumelle) ; `circulationParTranches` l'avance À CHAQUE
+  IMAGE sur un budget en DÉBIT (120 ms par seconde, entre 5 et 22 ms par
+  image, v237) et enchaîne les circuits tant qu'il en reste ; main.js ne fait
+  naître le convoi (et son bus) qu'une fois fini. Mon premier jet n'avançait
+  qu'aux tics de 125 ms de la cadence de ménage : Rome et Moscou arrivaient
+  sans une voiture en vue — le portail l'a dit (« la circulation naît à
+  l'approche »).
   Le témoin compare 56 circuits fabriqués des deux façons — voitures, jumelle,
   grille, voies — sans un écart : c'est ce qui garde la v305.
 - **UNE BORNE DURE SE PRÉCÈDE D'UN FREINAGE.** Le plancher de file (v283) est
   une contrainte de position : une suiveuse encore lancée à 3,7 b/s y était
-  arrêtée en une image (37 b/s²). Sa vitesse est bornée à ce qu'elle peut
-  perdre au freinage d'urgence avant le plancher. Mesuré au navigateur
-  (`sonde-feu-image.cjs`) : 5 arrêts secs sur 9 sur `origin/main`, 0 sur 12.
+  arrêtée en une image (37 b/s²). Sa vitesse est bornée à la vitesse de la
+  voiture de devant PLUS ce qu'elle peut perdre au freinage d'urgence avant
+  le plancher — et seulement quand c'est la voiture de devant de sa file qui
+  l'arrête (`cause === 1`). Mesuré au navigateur (`sonde-feu-image.cjs`) :
+  5 arrêts secs sur 9 sur `origin/main`, 0 sur 12. **UNE BORNE ABSOLUE
+  RALENTIT DES FILES ENTIÈRES** : mon premier jet bornait à zéro devant et
+  partout ; Moscou montrait 8 voitures en vue au lieu de 26. Une borne de
+  confort se pose RELATIVE à ce qui précède, et seulement là où sa cause
+  agit.
 - **UNE DETTE DE TÉMOIN SE VÉRIFIE AVANT D'ÊTRE REPOINTÉE.** `TASKS.md`
   déclarait l'arrêt sec au feu « jugé sur deux arrêts », et j'ai cru à un
   relevé mal horodaté sous la charge. La sonde, sans charge, sur
@@ -807,6 +818,32 @@ Quatre sujets, une livraison. Cinq règles.
   arrêtée par l'urgence puis rangée dans la file n'a pas freiné pour un feu),
   et le choc de `degats.js` prend vingt-six blocs d'élan au lieu de les
   trouver (3 à 16).
+
+## Les commandes de l'avion se rangent (v445) — une file en flux ne peut rien recouvrir
+
+Max, deux captures d'iPhone en vol : six paires d'éléments qui se recouvrent
+(cadran de cap × minicarte × GPS × bandeau, défi de Cornichon × manette). Trois
+règles.
+
+- **CE QUI S'AFFICHE EN HAUT AU MILIEU VIT DANS UNE SEULE FILE EN FLUX.**
+  `#file-centre` (index.html) : cadran, GPS, proposition d'ami, défi de
+  Cornichon (`fun.js` l'y range), bandeau — `position: static` à l'intérieur,
+  donc un élément de plus se range à la suite et rien ne se recouvre par
+  construction. Elle commence sous la ligne du chronomètre
+  (`--rail-panel-top`), entre la colonne de gauche — et la minicarte quand
+  elle est ouverte (`body.minicarte-ouverte`, `--minimap-w`) — et la colonne
+  de droite. Plus aucune cote écrite à la main pour un bandeau.
+- **LA COLONNE DE BORD EST AUSSI HAUTE QUE LA MANETTE, ET « DESCENDRE » EN
+  FAIT PARTIE.** Aux commandes, ⬇️ DESCENDRE, ✈️ et 🛞 sont trois boutons
+  ronds de 56 px au même x, la vitesse en dessous, la manette (56 × 220) à
+  droite : le haut de la colonne est le haut de la manette (v265), rien dans le
+  quart du joystick (v272). Le bouton garde le texte « Descendre » (les témoins
+  lisent `includes`), en icône et mot.
+- **UN TÉMOIN DE MISE EN PAGE SE JOUE À LA TAILLE DE L'APPAREIL DE MAX.** Le
+  banc ouvre en 420 × 760 ; la capture était en 430 × 932. Les trois témoins
+  de `monte.js` se jouent aux deux, formulés sans dimension. Et le quiz de
+  l'invariant 2 met le vol en pause (`onPause` → `running = false`) : mesuré,
+  zéro bloc parcouru sous la question — on le RANGE, on ne le diffère pas.
 
 ## Les raccords d'autoroute s'arrêtent avant l'anneau (v442) — deux grilles ne partagent pas une voie
 
@@ -2506,6 +2543,29 @@ engendrées. Quatre règles.
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
 
+## Un toit ne déborde plus d'un quartier sur l'autre (v446) — un indice de trame n'est unique que dans sa trame
+
+Une règle. `infoFacadeParis` publie l'îlot et la travée (`ai`, `bi`) dans la
+trame de CHAQUE quartier : deux quartiers voisins se prêtent les mêmes indices.
+Une clé qui identifie un immeuble porte donc le quartier
+(`immeubleDeToit`, facadeshd.js) ; mesuré, c'étaient les seules paires où une
+même clé portait deux façades différentes (7 sur 176 616). Toute table future
+indexée par `(ai, bi)` — tirage, teinte, hauteur — se demande si elle traverse
+une limite de quartier. `buildChunkTampons(…, { toitsQuartier: false })` rejoue
+la clé d'avant, le temps d'un seul morceau, pour l'empreinte des 490 morceaux.
+
+## Les colonnes Morris se plantent dans le vide (v443) — un meuble se pose en regardant ses voisins, par la même règle
+
+Une règle. Un meuble qui se pose au tirage ne connaît pas ses voisins : la
+colonne Morris (v289) tombait contre une porte cochère ou à un bloc d'un banc
+(43 sur 76, mesuré). `morrisDegagee` (facadeshd.js) exige l'air libre sur
+quatre côtés et rejoue `mobilierTrottoir` sur les colonnes à deux blocs (avec
+`morrisAvant`, pour ne pas boucler) ; dans un voisinage, la plus petite valeur
+de tirage garde sa colonne. Un dégagement qui écarte plus de la moitié des
+candidats se compense par le tirage (0,012 → 0,024), sinon la ville perd la
+moitié de ses colonnes en silence. `morrisDegagees: false` rejoue l'ancienne
+règle pour l'empreinte des 490 morceaux.
+
 ## La voiture s'arrête devant une terrasse (v436) — une famille d'obstacle lit la même règle pour tous ceux qui butent
 
 Une règle. `mobilierDevant` (main.js) ne lisait que les blocs de mobilier
@@ -3822,6 +3882,24 @@ Une règle.
   la terre, l'herbe, le sable et la pierre naturelle. Manhattan a son propre sol
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
+
+## Les ponts de l'Anacostia (v444) — un pont de ville est du sol, et la cote du tablier se dit à tous ses lecteurs
+
+Deux règles.
+
+- **UN PONT DE RUE DANS UNE VILLE BÂTIE À LA MAIN EST UNE VOIE DU SOL, À LA
+  COTE DE LA VILLE.** `pontWashington` (washington.js) rend la matière de la
+  bande des deux ponts ; `world.js` l'écrit à `COTE_PONT_DC` (33) sur toute
+  colonne plus basse, et `coteRoulable` rend cette cote. C'est la règle de la
+  Tamise (v208) : `terrainHeight` ne bouge pas (109 881 colonnes identiques),
+  l'eau reste dessous. Le pont ne remplace que ce qui n'est PAS déjà une rue :
+  la bande d'un pont qui chevauche un carrefour de la grille y mettait du
+  trottoir (vu au relevé de la rue de v = 84).
+- **UNE EMPREINTE DE MORCEAUX QUI BOUGE SE PROUVE PAR LE DÉSARMEMENT ET PAR
+  CE QUI DIFFÈRE** (v419) : `pontWashington` rendant null, la branche rend la
+  constante de la v439 au bit près ; les 112 colonnes qui diffèrent sont
+  toutes dans les bandes des ponts. Et l'ajout d'une voie dans une ville à
+  circuits se remesure : les quatorze circuits de Washington sont identiques.
 
 ## L'US-101 (v439) — un relevé en couronne commence à la porte, et une optimisation de tracé reconstruit la porte
 

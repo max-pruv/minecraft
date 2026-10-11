@@ -20,6 +20,108 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v446 — Un toit ne déborde plus d'un quartier sur l'autre
+
+**Pourquoi.** Le comble de Paris (v289) lisse les colonnes d'un même immeuble,
+qu'il reconnaît à son îlot et à sa travée. Ces indices sont ceux de la trame
+de CHAQUE quartier, et deux quartiers voisins se les prêtent : mesuré sur
+tout Paris, 16 paires de colonnes voisines de même (îlot, travée) dans deux
+quartiers, dont 7 aux façades de hauteurs différentes (14 et 17 blocs à la
+limite de Saint-Germain), lissées en un toit qui grimpe d'un immeuble à
+l'autre au lieu d'un pignon. C'était la dette déclarée en v289.
+
+**Ce que ça change.** La clé d'immeuble porte le quartier : un toit ne se
+lisse plus qu'avec lui-même. Le changement tient à sept endroits de la
+ville ; tout le reste est identique.
+
+**Ce qui le prouve.** Un témoin neuf de `parishd.js` parcourt tout le disque
+de Paris : 176 600 paires de colonnes d'un même toit, 0 aux façades
+différentes (7 sur `origin/main`, où la clé n'est pas publiée : rouge).
+L'empreinte des 490 morceaux change (`c195fbc1…`, un des morceaux porte une
+limite) et se prouve : la clé d'avant rejouée (`toitsQuartier: false`) rend
+la constante `fb4f9aed…` (celle de la v444) au bit près. Capture avant/après du toit à la limite
+de Saint-Germain : rien d'autre ne bouge.
+
+---
+
+## v445 — Les commandes de l'avion se rangent
+
+**Pourquoi.** Max, deux captures d'iPhone au-dessus de l'Amérique du Nord :
+le cadran de cap posé par-dessus la minicarte, et en dessous trois textes l'un
+sur l'autre — « À l'arrêt », le GPS « fais demi-tour », la minicarte —
+illisibles. En bas à droite, « Descendre » flottait au-dessus de la colonne
+✈️/🛞 et de la manette des gaz, et le tout mangeait le quart de l'écran où
+l'on voit l'avion ; le défi de Cornichon, lui, se posait sur les commandes.
+Chaque élément avait sa cote écrite à la main, réglée sans les autres :
+mesuré à 430 × 932, six paires qui se recouvrent.
+
+**Ce que ça change.** Tout ce qui s'affiche en haut au milieu — cadran de cap,
+GPS, proposition d'un ami, défi de Cornichon, bandeau — se range dans une
+seule file, sous le chronomètre, à droite de la minicarte quand elle est
+ouverte : rien ne peut plus s'y recouvrir. Aux commandes, ⬇️ DESCENDRE, ✈️ et
+🛞 sont trois boutons ronds d'une seule colonne, exactement à la hauteur de la
+manette (plus fine), la vitesse en dessous : moins de place prise sur l'avion,
+rien dans la zone du joystick. Et le quiz du Prof. Cornichon met le vol en
+pause, mesuré.
+
+**Ce qui le prouve.** Trois témoins de `monte.js`, joués à la taille de
+l'iPhone de Max ET à celle du banc, formulés sans dimension d'écran : aucun
+recouvrement entre minicarte, cadran, GPS, bandeau, défi et commandes ; une
+colonne d'un seul x, rien au-dessus du haut de la manette ni dans le quart du
+joystick ; l'avion ne bouge pas sous le quiz. Les deux premiers sont rouges
+sur `origin/main` (six recouvrements, dont le défi sur la manette), le
+troisième garde une capacité. Capture relue aux deux tailles avant de livrer.
+
+---
+
+## v444 — Les ponts de l'Anacostia
+
+**Pourquoi.** L'I-95 Sud entre dans Washington par le quartier au sud de
+l'Anacostia (v367), et ce quartier n'avait AUCUN pont vers le reste de la
+ville : les voitures qui arrivaient de New York faisaient demi-tour sur une rue
+sans nom, et l'enfant à pied restait coincé sur la rive sud.
+
+**Ce que ça change.** Deux ponts de rue, ceux de la vraie ville : le pont de
+la 11e Rue et le pont Sousa, qui porte Pennsylvania Avenue SE. Ils prolongent
+la grille d'une rive à l'autre, à la cote de la rue, l'eau dessous. Les
+voitures de l'I-95 Sud passent le pont Sousa et vont jusqu'au bout de
+Pennsylvania Avenue SE, dans la ville.
+
+**Ce qui le prouve.** Un témoin neuf de `carteMonde.js` : chaque pont franchit
+au moins dix colonnes d'eau, chaussée à la cote 33 d'un bout à l'autre, deux
+blocs libres au-dessus ; l'avenue traverse l'eau, finit sur Pennsylvania
+Avenue SE, aucun bloc à hauteur de carrosserie, aucune marche. Rouge sur
+`origin/main` (aucun pont). Le relief ne bouge pas : `terrainHeight` identique
+sur les 109 881 colonnes de Washington, les deux empreintes de `plafond.js`
+intactes. Les quatorze circuits de Washington sont les mêmes, au bit près (la
+contrainte de partage de la v211 inchangée). L'empreinte des 490 morceaux
+change (Washington est un des neuf lieux) : `pontWashington` désarmé, elle rend
+la constante de la v439 au bit près, et les 112 colonnes qui diffèrent sont
+toutes dans les bandes des deux ponts.
+
+---
+
+## v443 — Les colonnes Morris se plantent dans le vide
+
+**Pourquoi.** La colonne Morris de la v289 se posait au tirage, sans regarder
+autour d'elle. Mesuré sur huit quartiers : 43 colonnes sur 76 à moins de deux
+blocs d'un banc, d'une terrasse ou d'une autre colonne, et deux collées contre
+une porte cochère.
+
+**Ce que ça change.** Une colonne se plante désormais à l'air libre sur ses
+quatre côtés, seule dans son voisinage : ni contre un mur ou une porte, ni à
+deux blocs d'un autre meuble. Le tirage double pour en garder autant (60 sur
+les huit quartiers).
+
+**Ce qui le prouve.** Un témoin neuf de `parishd.js` relève toutes les
+colonnes de huit quartiers : 0 mal plantée sur 45 dans sa fenêtre, 29 sur 54
+avec la règle d'avant, 43 sur 76 sur `origin/main` (rouge). L'empreinte des
+490 morceaux change (`8bea731f…`) et se prouve : la règle d'avant rejouée
+(`morrisDegagees: false`) rend la constante `239f48ab…` au bit près. Jugé en
+capture à Saint-Germain.
+
+---
+
 ## v442 — Les voitures de l'autoroute n'entrent plus dans les anneaux de la ville
 
 **Pourquoi.** Une autoroute entre dans une ville engendrée par son avenue

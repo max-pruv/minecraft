@@ -14,9 +14,9 @@
 //     que le jeu fait, arrêt à la porte). plafond.js lit la ligne BILAN.
 //   node tests/sonde-rue-dense.cjs bus
 //     Le grand anneau de chaque ville et son bus : à mi-temps (v438) ou à la
-//     place de la voiture 0 (v444), les contacts de grille et le jeu.
+//     place de la voiture 0 (v447), les contacts de grille et le jeu.
 //   node tests/sonde-rue-dense.cjs tranches
-//     La fabrique par tranches (v445) contre le calcul d'un seul tenant.
+//     La fabrique par tranches (v447) contre le calcul d'un seul tenant.
 //   node tests/sonde-rue-dense.cjs boulevards
 //     Paris : le long de chaque circuit, où la section a deux voies
 //     (`secondeVoieParis`) et ce que la seconde voie en garde, portion par
@@ -190,7 +190,7 @@ async function principal(mode) {
     // node tests/sonde-rue-dense.cjs bus [villes] : le grand anneau de chaque
     // ville (et de Paris) et son bus, un tour d'horloge par la grille seule.
     // v438 : le bus à mi-temps entre les voitures 0 et 1, l'anneau sans jeu ;
-    // v444 : le bus à la place de la voiture 0, l'anneau joue. Les contacts
+    // v447 : le bus à la place de la voiture 0, l'anneau joue. Les contacts
     // « même axe » de la ligne (file, jumelle, bus), et ceux du bus.
     const VM = await import(src('villesmonde.js'));
     const nV = +(process.argv[3] || 300);
@@ -222,7 +222,7 @@ async function principal(mode) {
           }
         }
       }
-      res[miTemps ? 'v438' : 'v444'] = { anneaux: total, jouent, partJouee: +(posesJ / Math.max(1, poses0)).toFixed(3), voitures, jumelles, contacts: n, dontBus: nBus };
+      res[miTemps ? 'v438' : 'v447'] = { anneaux: total, jouent, partJouee: +(posesJ / Math.max(1, poses0)).toFixed(3), voitures, jumelles, contacts: n, dontBus: nBus };
     }
     RESULTAT = res;
     console.log('BUS', JSON.stringify(res));
@@ -266,7 +266,7 @@ async function principal(mode) {
     const anneaux = VM.tracesCirculation((x, z) => w.terrainHeight(x, z));
     const parVille = new Map();
     for (const t of anneaux) { const l = parVille.get(t.cle) || []; l.push(t); parVille.set(t.cle, l); }
-    // LES VILLES BÂTIES À LA MAIN (v443) : leurs circuits roulent sur les
+    // LES VILLES BÂTIES À LA MAIN (v447) : leurs circuits roulent sur les
     // avenues nommées, à droite (décalage 1,3), et leur entrée est déclarée
     const sol = (x, z) => w.coteRoulable(x, z);
     const MAIN = { paris: ['paris.js', ['circuitsParis', 'circuitsQuartiersParis'], 'ENTREES_PARIS'],

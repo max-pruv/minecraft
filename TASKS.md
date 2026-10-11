@@ -288,6 +288,36 @@
   Portail : le témoin vert ; rouges déclarés `maj.js` (loader ×2) et
   `manhattan.js` (trou, taxi) — mêmes rouges seuls sur `origin/main` v406,
   mesurés le même jour (portail de la v410).
+- [ ] **LE PORTAIL DE LA v446 (le toit qui ne déborde plus d'un quartier),
+  PREUVE STRUCTURELLE ET DOUBLE MESURE DE LA FUMÉE.** Dix-sept suites,
+  `--malgre-fumee` ; `parishd.js` (le témoin neuf : 176 600 paires, 0
+  fautive), `plafond.js` (empreinte des 490 morceaux) et `carteMonde.js`
+  VERTES. La fumée rouge sur « la ville reste habitée quand on la traverse à
+  pied » (pire 1, barre 3) : rejouée SEULE, branche 1 et 1, `origin/main` 3
+  puis 1 — la même intermittence des deux côtés. Rouges au portail :
+  `degats.js` « une voiture de la rue abîmée qu'on prend garde ses coups »
+  (NEUF ici, santé de la rue 0,96 — non déclaré jusqu'ici) ; `visio.js` la
+  radio pendant l'appel (avant 0,0000, déclaré) ; `maj.js` les deux loaders ;
+  `carte.js` glisser bridé ×4 (786 ms) ; `manhattan.js` le taxi tactile et la
+  console PeerJS ; `monte.js` la poule, la rue par tranches (6 par image),
+  Rome en biais, « freine au feu », Moscou (rues pleines, modèles et
+  couleurs) — tous déclarés. Aucun ne peut venir du diff, et cela se montre
+  sans rejeu : la clé de toit (`immeubleDeToit`) n'est lue que par le comble
+  de la couche détaillée, que le banc coupe en rendu logiciel (`RAYON_HD` 0,
+  v287) — seule `parishd.js` la force (`?hd=2`), et elle est verte.
+- [ ] **LE PORTAIL DE LA v444 (les ponts de l'Anacostia), DOUBLE MESURE
+  FAITE.** Neuf suites ; `carteMonde.js` (le témoin neuf), `plafond.js`,
+  `washington.js`, `carte.js`, `parishd.js`, `metro.js` vertes. Rouges, tous
+  déjà déclarés : `maj.js` le loader qui compte ses fichiers ; `manhattan.js`
+  le trou de façade (22 326 → 51 734) et le taxi tactile ; `monte.js` le
+  passant au feu (3 au rouge sur 4, barre 3,2), « freine au feu » (3 arrêts
+  secs sur 6), la chauffe de New York (163/323), le réverbère. REJOUÉES SEULES,
+  branche fusionnée v441 et `origin/main` v441 : `maj.js` branche VERTE,
+  `origin/main` rouge (le loader, encore) ; `manhattan.js` le taxi rouge des
+  deux côtés (7,85 et 6,49 blocs en 200 s), la façade verte des deux côtés ;
+  `monte.js` branche VERTE entière, `origin/main` rouge sur « freine au feu »
+  et « un train s'arrête devant la voiture de l'enfant ». La livraison ne
+  touche ni le loader, ni Manhattan, ni la circulation, ni les piétons.
 - [ ] **LE PORTAIL DE LA v410 (le passager sans courtier), DOUBLE MESURE
   FAITE.** Dix suites ; `reseau.js` VERTE entière (le témoin neuf : assise en
   510 ms). Rouges, tous déjà déclarés : `maj.js` (loader, libération, palier
@@ -621,7 +651,7 @@
   la v442 ne change que l'avenue d'entrée des autoroutes dans les villes
   engendrées (`raccordDe` dans `entree()`), aucun de ces témoins ne roule sur
   une autoroute ni dans une ville engendrée.
-  **FAIT en v443** : raccords des villes bâties à la main (633 → 26 blocs,
+  **FAIT en v447** : raccords des villes bâties à la main (633 → 26 blocs,
   dont Lille A1 47 → 0) ; le BUS prend la place de la voiture 0 de son anneau
   (36 004 contacts de grille → 0, les 263 anneaux jouent, 4 380 → 4 125
   voitures) ; la fabrique d'un circuit se fait par TRANCHES avant la naissance
@@ -1071,7 +1101,11 @@
   la seule rue qui touche l'eau des deux côtés dans la fenêtre relevée est à
   lz = 0. Les deux portes de New York (I-95 à l'est, I-95 Sud à l'ouest, v367)
   sont prêtes à recevoir ce pont.
-- [ ] **WASHINGTON PAR ANACOSTIA : LA RUE N'EST PAS RELIÉE À LA VILLE (v367).**
+- [x] **WASHINGTON PAR ANACOSTIA : LA RUE N'EST PAS RELIÉE À LA VILLE (v367).**
+  FAIT EN v444 : pont de la 11e Rue (u = 28) et pont Sousa (u = 56), du SOL de
+  washington.js (`pontWashington`, cote 33) ; `avenues.washington` passe le
+  pont Sousa jusqu'au bout de Pennsylvania Avenue SE. Relief et circuits
+  identiques, mesurés.
   L'I-95 Sud entre par la rue de u = 37 au sud de l'Anacostia (x −21191, de
   z 6197 à 6173) ; ce quartier (u 20–66, v 60–96) n'a AUCUN pont vers le reste
   de Washington — l'Anacostia le coupe en diagonale de (62, 44) à (−50, 98) —
@@ -3721,18 +3755,38 @@
   `monumentshd.js` : Tour Eiffel en treillis, Notre-Dame, Arc, pyramide du
   Louvre, Sacré-Cœur, Panthéon, Opéra, Invalides, Montparnasse). Dettes
   déclarées de la v289 :
-  - [ ] le champ de hauteurs lisse un immeuble avec lui-même (`infoFacadeParis`,
+  - [x] **FAIT EN v446** (mesuré : les seules paires fautives étaient 7 colonnes
+    de deux quartiers se prêtant (îlot, travée) ; la clé porte le quartier).
+    Historique : le champ de hauteurs lisse un immeuble avec lui-même (`infoFacadeParis`,
     îlot et travée) : deux LOTS voisins d'un même immeuble de hauteurs
     différentes se lissent l'un sur l'autre, ce qui fait un toit qui monte d'un
     lot à l'autre au lieu d'un mur pignon — à mesurer sur capture, rue par rue ;
   - [ ] un brisis qui monte à plus d'un bloc (coin de champ à 1,5 ou 2) est
     raide mais droit : le vrai brisis d'un immeuble de coin se brise à la ligne
     de bris ; la constante `RETRAIT` est la seule à régler, sur capture ;
-  - [ ] sur les places sans trottoir large (esplanades), la colonne Morris se
+  - [x] **FAIT EN v443** (`morrisDegagee` : air libre, seule à deux blocs ;
+    43 mal plantées sur 76 → 0). Historique :
+    sur les places sans trottoir large (esplanades), la colonne Morris se
     pose au tirage sans regarder si une devanture ou un banc est à côté ;
     mesuré : cinq colonnes sur vingt-cinq morceaux, aucune côte à côte.
 
   Dettes déclarées de la v288 :
+  - [ ] **LE PORTAIL DE LA v443 (colonnes Morris).** Rejoués seuls :
+    `monte.js` sur la branche (base v436) et sur `origin/main` (v440). Le cône
+    dans Paris (0,08 au portail) vert seul (0,27). Moscou « les rues pleines de
+    voitures » et « modèles ET couleurs » rouges DES DEUX CÔTÉS (non déclarés
+    jusqu'ici). Rome — le flâneur, la traversée en biais — rouges sur la base
+    v436, verts sur la v440, ramenés par la fusion ; l'avion au-dessus d'une
+    ville, rouge des deux côtés (déclaré en v433). `origin/main` rend seul « à
+    l'arrivée, la rue se fabrique par tranches » (7 par image). Au portail
+    seulement : `reseau.js` (six témoins de reprise et de message réseau),
+    `manhattan.js` « New York et le reste de la Terre partagent », la
+    circulation au travers de la voiture, l'avatar au volant. Aucun ne peut
+    venir du diff : la règle du mobilier ne tourne qu'où la fiche de ville
+    l'accepte — Paris (`mobilier: false` partout ailleurs, v390), et ni le
+    réseau ni la circulation n'en lisent rien. Le témoin de la voiture devant
+    une terrasse (v436, `monte: false` au portail : un seul clic sur
+    « Monter ») retente la monte, vert seul (arrêt à 2,39).
   - [ ] **LE PORTAIL DE LA v436 (la voiture devant les terrasses).** Rouges :
     `maj.js` (les deux loaders), `carte.js` (glisser bridé ×4), `washington.js`
     (l'Air et l'Espace), `manhattan.js` (trou, taxi), `monte.js` (la rue à

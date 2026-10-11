@@ -2056,7 +2056,7 @@ function updateChunks() {
   const entree = (cle, route) => {
     const i = entreesDe(cle).findIndex((e) => e.route === route);
     if (i < 0) return undefined;
-    // les villes bâties à la main aussi (v443) : leurs circuits roulent sur
+    // les villes bâties à la main aussi (v447) : leurs circuits roulent sur
     // l'avenue nommée où l'entrée finit
     const longue = PARAMS_JEU.get('raccords') === 'long';
     if (ENTREES[cle]) return longue ? ENTREES[cle][i] : raccordDe(route, cle, ENTREES[cle][i]);
@@ -2845,6 +2845,8 @@ document.getElementById('gps-stop').addEventListener('click', (e) => {
   toast('🧭 GPS arrêté.', 0xcfd8e8);
 });
 window.__gps = () => (gpsCible ? { ...gpsCible, ...guidage(player.pos.x, player.pos.z, player.yaw, gpsCible) } : null);
+// Pour les sondes et les témoins de mise en page : poser un trajet sans passer par la carte.
+window.__gpsVers = (x, z, nom) => demarrerGPS(x, z, nom);
 
 // LE GPS SE PARTAGE (v388). Max avait demandé la flèche (v306) ; à deux, un
 // enfant qui choisit Rome ne peut pas l'écrire à son ami. Sa destination
@@ -3205,7 +3207,7 @@ const PLACES_GARAGE = [[30, 7], [44, 7], [58, 7]];
 // l'axe laisse 0,17 bloc entre deux voitures qui se croisent (v372)
 const DECALAGE_AVENUE = 1.3;
 const garagistePret = cadence(3000);
-// UN CIRCUIT SE PRÉPARE PAR TRANCHES, PUIS NAÎT (v443) : `circulationParTranches`
+// UN CIRCUIT SE PRÉPARE PAR TRANCHES, PUIS NAÎT (v447) : `circulationParTranches`
 // (vehicules.js) avance sa fabrique sur le budget de l'image ; le convoi — et son bus — n'existent qu'une fois
 // le calcul fini, identique à un calcul d'un seul tenant. Le plus proche
 // d'abord, et ils S'ENCHAÎNENT dans le budget : le premier jet ne commençait
@@ -3275,7 +3277,7 @@ function finirCirculation(budget) {
   if (!conv) return false;
   circulationEnCours = null;
   // le bus dessert le grand anneau — un par ville, à sa couleur, à une place
-  // de la file de ses voitures (v372, v443) : il prend leur grille horaire
+  // de la file de ses voitures (v372, v447) : il prend leur grille horaire
   if (tr.rang === 0) vehicules.bus(tr.pts, Math.abs(Math.round(tr.x + tr.z)), conv);
   return true;
 }
@@ -7240,6 +7242,8 @@ document.getElementById('map-tout').addEventListener('click', () => carte.toutVo
 document.getElementById('map-btn').addEventListener('click', () => {
   minimapVisible = !minimapVisible;
   minimapCanvas.style.display = minimapVisible ? 'block' : 'none';
+  // la file centrale se range à droite de la minicarte ouverte (aviation)
+  document.body.classList.toggle('minicarte-ouverte', minimapVisible);
   if (minimapVisible) {
     drawMap(minimapCanvas, 96);
     carteVue = { x: player.pos.x, z: player.pos.z };
