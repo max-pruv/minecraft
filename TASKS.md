@@ -79,6 +79,15 @@
   passage peint », déclaré). Les trois du joystick sont des rouges de charge
   du portail, jamais vus seuls : à reprendre si un portail les rend encore,
   en nommant le bouton (`elementFromPoint` rend `BUTTON.` sans classe).
+  Second portail (après la fusion de la v446) : `maj.js` ses deux rouges
+  déclarés ; `monte.js` « la caméra laisse la voiture glisser sur le côté »,
+  « la rue roule à l'allure d'une ville » (médiane 0, le bouchon déclaré) et
+  « un mur pris de face » ; `reseau.js` six rouges de reprise et « un hôte
+  sans courtier ». Rejouées SEULES : `monte.js` branche 226 verts, ZÉRO rouge
+  (« la rue roule » médiane 4,3) ; `reseau.js` branche 85 verts et un rouge
+  (« un hôte sans courtier est trouvé », l'intermittence déclarée plus bas),
+  `origin/main` (v446) 87 verts. Le regard de la rame et la marge des voitures
+  ne touchent pas au réseau.
 - [x] **(v447 — réparé : regard de la rame en temps, `pasDeRame` ; voir CLAUDE.md « Le regard d'un convoi est un temps ») UN TRAIN TRAVERSE LA VOITURE DE L'ENFANT QUAND UNE IMAGE EST LENTE
   (vraie panne, zone conduite — trouvée par la session banc-intermittents).**
   La rame ne regarde que 3,5 blocs devant sa motrice (`PAS_TRAIN`,
