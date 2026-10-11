@@ -20,6 +20,30 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v421 — Des passages piétons dans les rues en biais
+
+**Pourquoi.** Dans les villes du monde, les bandes blanches d'un passage
+piéton étaient peintes DANS la tuile d'un bloc. Une tuile ne se tourne pas :
+seules les 65 villes dont les rues suivent le nord et l'est avaient leurs
+passages. Rome, Zurich et toutes les villes aux rues en biais n'en avaient
+aucun, et leurs passants ne traversaient qu'aux feux (v402).
+
+**Ce que ça change.** 197 villes engendrées ont désormais leurs passages
+piétons à l'abord de chaque carrefour, des bandes blanches dans l'axe de la
+rue, dessinées par le mailleur au-dessus de l'asphalte. Elles se voient sur
+toutes les tablettes, palier bas compris, et les passants y traversent quand
+aucune voiture n'arrive, dans l'axe de leur rue. Aucun bloc n'est écrit : le sol
+et les constructions des enfants ne bougent pas.
+
+**Ce qui le prouve.** Un témoin de `plafond.js` maille quarante-neuf morceaux au
+centre de quatre villes avec et sans les bandes : des sommets en plus à Rome
+(2 699) et à Zurich (7 035), aucun à Kyoto ni à Paris, et les blocs identiques.
+L'empreinte des 490 morceaux de la v352 est inchangée. Un témoin de `monte.js`
+pose six passants au bord d'un passage de Rome loin de tout feu et compte qui
+traverse SUR le passage : 2 sur 2, 2 sur 3, 3 sur 3 sur la branche ;
+`origin/main` n'a pas de passage en biais (rouge, et il le dit). Captures avant
+et après d'un carrefour de Rome et de Zurich : les bandes sur les quatre bras. Le coût est de 0,5 ms par morceau en médiane sous node,
+5 ms au pire.
 ## v420 — L'arrivée d'une téléportation découpée
 
 **Pourquoi.** Après une téléportation, l'écran se fige encore un instant en

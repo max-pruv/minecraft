@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 421,
+    titre: 'Des passages piétons partout',
+    puces: [
+      'Rome et Zurich ont leurs bandes blanches',
+      'Les passants y traversent la rue',
+    ],
+  },
+  {
     v: 420,
     titre: 'L\'arrivée plus légère',
     puces: [

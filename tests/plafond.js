@@ -2358,6 +2358,37 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       JSON.stringify({ mesure: tr, barres: BARRES_TRAVAIL }));
   }
 
+  // LES PASSAGES EN BIAIS SE DESSINENT (v421). Une tuile ne se tourne pas :
+  // Rome et Zurich (trames en biais) n'avaient aucun passage piéton, Kyoto et
+  // Tokyo (trames alignées) peignent le leur dans un bloc. Les bandes en biais
+  // sont de la géométrie du mailleur, dans le tampon `solid` (aucun bloc écrit,
+  // aucun programme neuf). On maille quarante-neuf morceaux au centre de
+  // chaque ville avec et sans elles (`passagesBiais: false`) : des sommets en
+  // plus à Rome et à Zurich, AUCUN à Kyoto ni à Paris, et les blocs identiques.
+  // Sur l'ancien code l'option n'existe pas : zéro partout, rouge.
+  {
+    const { World, CHUNK } = await import('../src/world.js');
+    const { buildChunkTampons } = await import('../src/mesher.js');
+    const { positionDe } = await import('../src/mondes.js');
+    const res = {};
+    for (const cle of ['rome', 'zurich', 'kyoto', 'paris']) {
+      const p = positionDe(cle), c0x = Math.floor(p.x / CHUNK), c0z = Math.floor(p.z / CHUNK);
+      const w = new World();
+      let avec = 0, sans = 0, blocsEgaux = true;
+      for (let dx = -3; dx <= 3; dx++) for (let dz = -3; dz <= 3; dz++) {
+        const d0 = Buffer.from(w.ensureChunk(c0x + dx, c0z + dz)).toString('base64');
+        sans += buildChunkTampons(w, c0x + dx, c0z + dz, { passagesBiais: false }).solid.positions.length / 3;
+        avec += buildChunkTampons(w, c0x + dx, c0z + dz).solid.positions.length / 3;
+        if (Buffer.from(w.ensureChunk(c0x + dx, c0z + dz)).toString('base64') !== d0) blocsEgaux = false;
+      }
+      res[cle] = { sommetsEnPlus: avec - sans, blocsEgaux };
+    }
+    verifier('à Rome et à Zurich, les passages piétons en biais se dessinent — sans un bloc écrit, et rien ne change à Kyoto ni à Paris',
+      res.rome.sommetsEnPlus > 200 && res.zurich.sommetsEnPlus > 200 && res.kyoto.sommetsEnPlus === 0 && res.paris.sommetsEnPlus === 0
+        && Object.values(res).every((r) => r.blocsEgaux),
+      JSON.stringify(res));
+  }
+
   // LES BLOCS DE L'ENFANT, RANGÉS PAR MORCEAU (v403). `generateChunk` balayait
   // le journal entier pour chaque morceau : 80 000 entrées lues pour un morceau
   // de campagne qui n'en porte aucune (36,6 ms contre 1,25 sous node, journal

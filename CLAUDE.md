@@ -2134,6 +2134,30 @@ engendrées. Quatre règles.
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
 
+## Les passages en biais (v421) — une bande qui suit une direction arbitraire est de la géométrie
+
+Trois règles.
+
+- **UNE TUILE NE SE TOURNE PAS, ET LA RÈGLE DU RAIL (v281) VAUT POUR LA
+  PEINTURE.** Les villes à trame alignée (`t.net`) peignent leurs passages dans
+  un bloc ; les 197 autres n'en avaient aucun. `passages.js` (pur) reprend la
+  règle de `solVillesMonde` (la bande de `wX + 0,4` à `wX + 2,1` du croisement,
+  dans toute la chaussée) dans le repère de la trame ; `bandesDeColonne`
+  découpe chaque bande par le carré de la colonne (Sutherland–Hodgman), et
+  `emettreBandesPassages` (solcontinu.js) les pose dans le tampon `solid`, un
+  centième au-dessus de l'asphalte, avec la tuile blanche du marquage : aucun
+  matériau, aucun programme, aucun appel de dessin, et le palier bas les voit.
+- **UNE SEULE RÈGLE, DEUX LECTEURS, ET LE PASSANT TRAVERSE DANS L'AXE DE SA
+  RUE.** `passagePieton` (main.js) demande `passageEn` comme il lit un bloc
+  peint ; un chemin nord-sud sur une rue à 30° sortait de la bande de 1,7 bloc,
+  le passage en biais ajoute donc la direction en travers de SA rue.
+- **UN CONTENU NEUF SE RETIRE DE L'EMPREINTE PAR UNE OPTION, PAS EN LA
+  RE-RELEVANT.** L'empreinte des 490 morceaux (v352) couvre Rome et Tokyo :
+  `buildChunkTampons(…, { passagesBiais: false })` la garde au bit près
+  (l'ancien code ignore l'option), et un témoin de `plafond.js` compare les
+  deux maillages. Ce qui reste, déclaré : Londres et les autres villes bâties
+  à la main, dont les avenues ne sont pas une trame.
+
 ## Un pas de côté ne traverse pas la rue (v411) — une projection droite n'est pas une trajectoire
 
 Trois règles.
