@@ -146,6 +146,19 @@
   (`monture: null`, intermittence vue sur `origin/main` v326). `reseau.js`
   REJOUÉE SEULE sur la branche : 79 verts, zéro rouge (mon témoin du GPS
   compris).
+- [ ] **LE PORTAIL DE LA v420 (le pilote graphique lu une fois).** Huit suites.
+  Rouges, tous déjà vus ou déclarés : `maj.js` libération (programmes 22/27,
+  carte faux) ; `carte.js` flèche du GPS et glisser bridé ×4 (402 ms pour
+  400) ; `manhattan.js` façade 11 684 → 46 592 et taxi ; `monte.js` 37 rouges,
+  la cascade « pas aux commandes » rejouée le même jour sur `origin/main` (21
+  rouges, v404). Preuve STRUCTURELLE pour la livraison : `renduLogiciel()`
+  rend la même valeur qu'avant, il ne la demande qu'une fois. **Signe neuf à
+  démonter (conduite) :** dans ce passage, le doigt du joystick tombait sur
+  `"cible":"quiz"` — un quiz du mode éducatif ouvert en pleine suite prend les
+  clics (« au volant, l'avant du joystick », « la zone du joystick ») ; sur
+  `origin/main` la même ligne dit `"cible":"game"`. Une suite de soixante
+  minutes dépasse peut-être le minuteur du quiz : à mesurer (`education.js`,
+  temps réel depuis la v234) avant d'accuser autre chose.
 - [ ] **LE PORTAIL DE LA v417 (le témoin vole au-dessus des villes), DOUBLE
   MESURE FAITE.** Le banc tournait à une charge stable de 3,8 cœurs (les pages
   `tab` et `ciel` de `monte.js`). `maj.js` : libération avec `carte: false`
@@ -5500,6 +5513,26 @@ l'embarquement a eu lieu, pas par une hypothèse.
   parcours du convoi, pas seulement son cap), et dire dans le message si la
   voiture la plus proche s'est éloignée ou rapprochée.
 
+- [ ] **L'ARRIVÉE D'UNE TÉLÉPORTATION, DÉCOUPÉE (v420) — deux dettes pour
+  d'autres zones.** `sonde-arrivee-decoupe.cjs` (Paris, scène vide, trois
+  passages, `PROFIL_MS=600 NIVEAUX=2,3,4`) : la pire image (283 à 383 ms) est
+  UNE tâche `FireAnimationFrame` de JavaScript (trace du fil principal). Temps
+  inclusif sous `frame`, première demi-seconde :
+  (1) **`Convoi.montrer` (vehicules.js, circulation-vivante) : 162 · 276 ·
+  276 ms.** Il fabrique (`this.element(i)`) toutes les voitures qui entrent
+  dans les quarante-cinq blocs dans la MÊME image ; à l'arrivée, c'est toute
+  la rue d'un coup. La piste est celle des passants (v246, `naitre` par
+  tranches de cinq millisecondes) : un budget de fabrication par image, la
+  place restant vide une image de plus.
+  (2) **`ensureChunk` sur le fil principal : 66 à 94 ms**, appelé par le
+  `sweep` des personnages (marlon.js) et `posteAutour` des passants
+  (passants.js, `sommetColonne`) — des morceaux que le worker n'a pas encore
+  rendus. Piste : un passant ne se pose (et un personnage ne marche) que sur
+  un morceau déjà là, comme la minicarte (v258) qui n'engendre jamais.
+  (3) `nbSansCroisement` (vehicules.js) 22 à 36 ms au dépliage d'un circuit.
+  Fait dans ma zone (v420) : `renduLogiciel()` ne redemande plus le pilote
+  (120 à 336 ms de `getParameter` par arrivée, zéro gain en durée d'image au
+  banc, déclaré). À relire sur l'iPad avec `?diag=1` après les deux remèdes.
 - [ ] **Ce qui reste du gel de téléportation après la v246 : le MAILLAGE
   des morceaux à l'arrivée.**
   *(Mesuré en v417, `sonde-arrivee-journal.cjs`, arrivée à Paris en scène

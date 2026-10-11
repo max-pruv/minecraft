@@ -287,13 +287,23 @@ renderer.toneMappingExposure = 1.05;
 // se charge deux fois moins vite : mieux vaut un monde sans ombres qu'un
 // monde qui n'arrive pas. `?ombres=1` les force (les témoins du regard),
 // `?ombres=0` les coupe. Sur l'iPad, la carte graphique est là.
+//
+// LA RÉPONSE SE LIT UNE FOIS (v420). `gl.getParameter` est un aller-retour
+// SYNCHRONE avec le processus du GPU, qui attend que la carte ait fini ce qu'on
+// lui a donné : `fileAuRegardVoulue` le demandait à chaque reconstruction de la
+// file de maillage, et à l'arrivée d'une téléportation cela coûtait 156 à
+// 336 ms dans la PREMIÈRE seconde (profil, `sonde-arrivee-decoupe.cjs`). Le
+// pilote ne change pas pendant la vie d'une page.
+let renduLogicielMemo;
 function renduLogiciel() {
+  if (renduLogicielMemo !== undefined) return renduLogicielMemo;
   try {
     const gl = renderer.getContext();
     const ext = gl.getExtension('WEBGL_debug_renderer_info');
     const nom = ext ? String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)) : '';
-    return /swiftshader|llvmpipe|softpipe|software|mesa offscreen/i.test(nom);
-  } catch { return false; }
+    renduLogicielMemo = /swiftshader|llvmpipe|softpipe|software|mesa offscreen/i.test(nom);
+  } catch { renduLogicielMemo = false; }
+  return renduLogicielMemo;
 }
 // LA TABLETTE DIT ELLE-MÊME OÙ PASSE LE TEMPS (v257). Max : « le jeu lag
 // énormément sur iPad » — et le banc ne peut pas mesurer la carte graphique
@@ -1378,14 +1388,13 @@ let lastPlayerChunk = null;
 //     `__game.rechargeMaillage` les bascule sur une page ouverte.
 const RECHARGE_DEMANDEE = new URLSearchParams(location.search).get('recharge');
 let rechargeForcee = RECHARGE_DEMANDEE === 'arrivee' || RECHARGE_DEMANDEE === 'image' ? RECHARGE_DEMANDEE : null;
-let logicielMemo = null;   // un appel GL synchrone : une fois, pas à chaque morceau
 // ET APRÈS UNE TÉLÉPORTATION (v379), le temps de remplir le disque : voir
 // `estUnSaut` dans plafond-sol.js. Coupée en rendu logiciel comme le reste.
 let arriveeJusqua = 0;
 const enArrivee = () => arriveeJusqua > 0 && performance.now() < arriveeJusqua && meshQueue.length > 0;
 const rechargeParRegle = () => fileRapide || enArrivee();
 const rechargeALArrivee = () => (rechargeForcee ? rechargeForcee === 'arrivee'
-  : rechargeParRegle() && !(logicielMemo ??= renduLogiciel()));
+  : rechargeParRegle() && !renduLogiciel());
 const EN_VOL_MAX = Math.max(1, Math.ceil(EN_ATTENTE_MAX / 2));
 function demander(suivant, pcx, pcz, lot) {
   const key = World.key(suivant.cx, suivant.cz);

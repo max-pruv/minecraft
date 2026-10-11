@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 420,
+    titre: 'L\'arrivée plus légère',
+    puces: [
+      'Moins d\'attente après une téléportation',
+      'Moins de travail pour la tablette',
+    ],
+  },
+  {
     v: 419,
     titre: 'Paris rejoint Lyon',
     puces: [

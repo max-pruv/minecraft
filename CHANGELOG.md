@@ -20,6 +20,30 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v420 — L'arrivée d'une téléportation découpée
+
+**Pourquoi.** Après une téléportation, l'écran se fige encore un instant en
+arrivant dans une ville, et personne ne savait où passait ce temps : la v403
+avait retiré le gel des enfants qui ont beaucoup bâti, il restait une pire
+image de 250 à 380 ms que rien n'attribuait.
+
+**Ce que ça change.** Le jeu ne demande plus le nom de la carte graphique à
+chaque morceau franchi : c'était un aller-retour synchrone avec le processus
+du GPU, refait à chaque reconstruction de la file de maillage, 120 à 336 ms
+dans la première seconde d'une arrivée à Paris (profil). Et l'arrivée est
+découpée : en scène vide, la première image lente est la circulation qui
+fabrique d'un coup toutes ses voitures en vue (160 à 290 ms, `Convoi.montrer`),
+puis le fil principal qui engendre des morceaux pour les personnages (66 à
+94 ms) — deux dettes nommées pour les sessions qui tiennent ces fichiers.
+
+**Ce qui le prouve.** Un témoin dans `monte.js` : six morceaux franchis en
+vol, zéro demande du nom du pilote (huit sur l'ancien code). Une sonde,
+`sonde-arrivee-decoupe.cjs`, qui découpe chaque image de l'arrivée (travail,
+rendu, installation, génération) et profile la première seconde ; le gain ne
+se voit pas en durée d'image au banc (pire image 283 à 367 ms contre 283 à
+383), parce que l'attente se cachait dans des images déjà lentes — il se
+transpose à la tablette comme un appel synchrone de moins par morceau.
+
 ## v419 — Paris rejoint Lyon
 
 **Pourquoi.** Paris–Lyon était dans la liste du kit « monde fidèle » depuis la
