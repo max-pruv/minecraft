@@ -368,7 +368,17 @@ const EMPREINTE_MORCEAUX_V414 = '863d4203a441e3fd029ce2404fc6d6e706799e7f64fe489
 // l'Anacostia (11e Rue, Sousa). `pontWashington` désarmé (rend null), la
 // branche rend 239f48ab…, la constante de la v439, au bit près ; et les cent
 // douze colonnes qui diffèrent sont toutes dans les bandes des deux ponts.
-const EMPREINTE_MORCEAUX_V357 = 'fb4f9aed89ceb6e29a5ecc6731f5e9840673e0ba720fae16c0f60a86954ca403';
+// v447 : la trame générique quitte Londres, un des neuf lieux — voulu. Le
+// drapeau `sansTrameLondres` retiré de `CONF_NEUF`, la branche rend fb4f9aed…,
+// la constante de la v446, au bit près ; et les 2 600 colonnes qui diffèrent
+// dans le disque de Londres sont toutes à 76 à 106 blocs du centre, sur les
+// cinquante-deux lots de la trame (scratchpad diff.mjs).
+// v448 : Londres, un des neuf lieux, voit passer le prolongement de la piste
+// d'Heathrow. `tronconsDePiste` désarmé (rend []), la branche rend 19946cb7…,
+// la constante de la v447, au bit près ; et les dix-huit colonnes qui
+// diffèrent dans les morceaux de Londres sont toutes dans la boîte d'un
+// tronçon de piste — aucune ailleurs, aucun autre lieu touché.
+const EMPREINTE_MORCEAUX_V357 = '938a330c6f883c7e249720b7274d988de6484768cfdb882dedd474da65bbac6d';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -633,7 +643,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     verifier('rue : la table des raccords courts est celle que la règle rend aujourd\'hui (un anneau qui bouge la fait remesurer)',
       !!b && b.ecarts.length === 0, b ? JSON.stringify(b.ecarts) : `sonde : ${err}`);
   }
-  // --- LE BUS A SA PLACE DANS SON ANNEAU, ET L'ANNEAU JOUE (v447) ----------
+  // --- LE BUS A SA PLACE DANS SON ANNEAU, ET L'ANNEAU JOUE (v450) ----------
   // Posé à mi-temps entre deux voitures (v372), le bus touchait ses voisines
   // par la grille seule (36 004 relevés sur un tour des 263 grands anneaux) et
   // l'anneau renonçait au jeu par voiture (v438). À la place de la voiture 0,
@@ -644,10 +654,10 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     let r = null, err = '';
     try { r = await require('./sonde-rue-dense.cjs').mesurer('bus'); } catch (e) { err = String(e && e.message || e); }
     verifier('rue : le bus a sa place entière dans son anneau — aucun contact de grille, et l\'anneau garde le jeu par voiture',
-      !!r && r.v447.anneaux > 200 && r.v447.contacts === 0 && r.v447.jouent === r.v447.anneaux && r.v438.dontBus > 1000,
+      !!r && r.v450.anneaux > 200 && r.v450.contacts === 0 && r.v450.jouent === r.v450.anneaux && r.v438.dontBus > 1000,
       r ? JSON.stringify(r) : `sonde : ${err}`);
   }
-  // --- UN CIRCUIT SE PRÉPARE PAR TRANCHES, PUIS NAÎT (v447) ----------------
+  // --- UN CIRCUIT SE PRÉPARE PAR TRANCHES, PUIS NAÎT (v450) ----------------
   // Un circuit de Paris se calculait d'un seul tenant dans l'image où il naît
   // (jusqu'à 34 à 59 ms sous node : grille, plancher, croisement, seconde
   // voie, essais de la jumelle). La fabrique rend la main entre ses étapes ;
@@ -2299,6 +2309,71 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     verifier(`et une cabane posée sur un ancien toit de ${ville} garde son toit`,
       !r.absent && !r.introuvable && r.porte,
       r.absent ? `pas de date des rues de ${ville}` : JSON.stringify(r));
+  }
+
+  // --- LA TRAME GÉNÉRIQUE QUITTE LONDRES (v447), SAUF SOUS CE QU'UN ENFANT --
+  // --- Y A BÂTI ---------------------------------------------------------------
+  //
+  // La boucle « one lot per grid cell » de world.js n'excluait pas Londres et
+  // y posait cinquante-deux maisons pastel de San Francisco, entre 77 et 102
+  // blocs du centre, par-dessus les rues et les immeubles de la ville. Quatre
+  // choses, lues dans le monde contre le même monde AVEC la trame (le drapeau
+  // `sansTrameLondres` retiré de la configuration) :
+  //  1. elles sont parties — deux mille colonnes au moins, toutes dans le
+  //     disque de Londres ; ROUGE sur `origin/main`, où le drapeau n'existe
+  //     pas et les deux mondes sont identiques ;
+  //  2. une cabane posée sur un de ces toits AVANT `DATE_TRAME_LONDRES` garde
+  //     la maison entière sous elle, au bloc près ;
+  //  3. un bloc posé APRÈS la date ne retient rien ;
+  //  4. le monde de la v308 (donc d'avant) garde ses maisons.
+  {
+    const W = await import('../src/world.js');
+    const { LONDRES } = await import('../src/londres.js');
+    const { isSolid } = await import('../src/blocks.js');
+    const C = W.CHUNK, r = LONDRES.r + 20;
+    const avecTrame = (w) => { w.conf = { ...w.conf, sansTrameLondres: false }; return w; };
+    const neuf = new W.World(), ref = avecTrame(new W.World());
+    const diff = []; let horsDisque = 0;
+    for (let cx = Math.floor((LONDRES.x - r) / C); cx <= Math.floor((LONDRES.x + r) / C); cx++)
+      for (let cz = Math.floor((LONDRES.z - r) / C); cz <= Math.floor((LONDRES.z + r) / C); cz++) {
+        const a = neuf.ensureChunk(cx, cz), b = ref.ensureChunk(cx, cz);
+        for (let lx = 0; lx < C; lx++) for (let lz = 0; lz < C; lz++) for (let y = 0; y < W.HEIGHT; y++) {
+          const i = W.World.index(lx, y, lz);
+          if (a[i] === b[i]) continue;
+          const x = cx * C + lx, z = cz * C + lz;
+          if (Math.hypot(x - LONDRES.x, z - LONDRES.z) > LONDRES.r) horsDisque++;
+          diff.push([x, z]); break;
+        }
+      }
+    verifier('à Londres, la trame générique ne pose plus ses maisons par-dessus la ville',
+      diff.length >= 2000 && horsDisque === 0,
+      `${diff.length} colonne(s) qui diffèrent du monde avec la trame, ${horsDisque} hors du disque`);
+    const date = W.DATE_TRAME_LONDRES;
+    let garde = { absent: true };
+    if (date && diff.length) {
+      // la colonne la plus haute du premier lot : son toit dans le monde avec la trame
+      const [x, z] = diff[Math.floor(diff.length / 2)];
+      let toit = 0;
+      for (let y = W.HEIGHT - 1; y > 0; y--) if (isSolid(ref.getBlock(x, y, z))) { toit = y; break; }
+      const k = `${x},${toit + 1},${z}`;
+      const avec = (t, w) => { w.installerEdits(new Map([[k, 8]]), new Map([[k, t]]), 'local'); return w; };
+      const avantN = avec(date - 60000, new W.World()), avantR = avec(date - 60000, avecTrame(new W.World()));
+      const apresN = avec(date + 60000, new W.World());
+      let ecartAvant = 0, ecartApres = 0;
+      // le lot de la trame (cellule de onze, rue de trois, baie d'un rang devant)
+      const lx0 = Math.floor(x / 11) * 11, lz0 = Math.floor(z / 11) * 11;
+      for (let bx = lx0 + 3; bx <= lx0 + 9; bx++) for (let bz = lz0 + 2; bz <= lz0 + 9; bz++) for (let y = 1; y <= toit + 2; y++) {
+        if (avantN.getBlock(bx, y, bz) !== avantR.getBlock(bx, y, bz)) ecartAvant++;
+      }
+      for (let y = 1; y <= toit; y++) if (apresN.getBlock(x, y, z) !== ref.getBlock(x, y, z)) ecartApres++;
+      const v308 = new W.World({ v308: true });
+      garde = { x, z, toit, ecartAvant, ecartApres, blocApres: apresN.getBlock(x, toit + 1, z),
+        v308Toit: isSolid(v308.getBlock(x, toit, z)) };
+    }
+    verifier('et une cabane posée sur un de ces toits avant la date garde la maison entière sous elle',
+      !garde.absent && garde.ecartAvant === 0, JSON.stringify(garde));
+    verifier('un bloc posé après la date ne retient pas la maison, et le monde d\'avant la garde',
+      !garde.absent && garde.ecartApres > 0 && garde.blocApres === 8 && garde.v308Toit, JSON.stringify(garde));
   }
 
   // --- LE FONDU DOUX DES VILLES (v309) : le pays descend à un bloc par bloc --

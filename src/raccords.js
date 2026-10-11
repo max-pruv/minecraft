@@ -38,7 +38,7 @@ export const RACCORDS_COURTS = {
   'Yamuna|agra': 29, 'A1 Sud|naples': 0, 'M1|budapest': 0, 'A1 Nord|milan': 0,
   '401|toronto': 39, 'Hansalinie|cologne': 8, 'Hansalinie|hambourg': 0,
   'I-95|boston': 7.5, 'Tōmei|tokyo': 1, 'A8|marseille': 0, 'US-101|losangeles': 7.5,
-  // les villes bâties à la main (v447) : leur entrée finit sur une avenue
+  // les villes bâties à la main (v450) : leur entrée finit sur une avenue
   // nommée que des circuits roulent — Lille dès la rue de Paris
   'A1|paris': 262.5, 'A6|paris': 202, 'A1|lille': 11.5, 'A8|nice': 17.5,
 };

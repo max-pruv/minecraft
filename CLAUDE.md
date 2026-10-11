@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## La rue sans à-coups (v447) — le bus a une place, un circuit se prépare, une suiveuse freine
+## La rue sans à-coups (v450) — le bus a une place, un circuit se prépare, une suiveuse freine
 
 Quatre sujets, une livraison. Cinq règles.
 
@@ -821,6 +821,33 @@ Quatre sujets, une livraison. Cinq règles.
   arrêtée par l'urgence puis rangée dans la file n'a pas freiné pour un feu),
   et le choc de `degats.js` prend vingt-six blocs d'élan au lieu de les
   trouver (3 à 16).
+## Les pistes à leur vraie longueur (v448) — un ouvrage qui sort du disque est un repère, pas un relief
+
+Max : « les pistes de tous les aéroports sont beaucoup trop courtes pour
+vraiment atterrir ». Mesuré : 90 à 146 blocs. Quatre règles.
+
+- **UN PROLONGEMENT EST UN REPÈRE DE PLUS, BÂTI EN TRONÇONS.**
+  `tronconsDePiste` (aeroport.js) rend des repères de 32 blocs (`piste: true`)
+  posés dans l'axe, au-delà du disque : remblai et tranchée écrits en blocs
+  (les bornes de la v280, `REMBLAI` 12, `DECAISSE` 9), jamais `terrainHeight`.
+  Les deux empreintes de `plafond.js` sont intactes, et une sonde compare le
+  relief des deux arbres sur 688 320 colonnes autour des dix-neuf aérodromes :
+  zéro différente. Un tronçon prend sa cote à l'aérodrome (`lm.ancre`), pas à
+  son centre.
+- **UN REPÈRE QUI N'EST PAS UN BÂTIMENT SE DÉCLARE À TOUS LES LECTEURS DE
+  REPÈRES.** `dansUneZoneATerre` aplanit le sol sous les repères du monde
+  (`conf.reperes`) : un tronçon y aurait changé le relief. Il est filtré là,
+  dans `REPERES` et dans `nearLandmark` (qui refuse un lot de ville). Les
+  mondes figés (`LANDMARKS_V317`) ne le portent pas.
+- **LA LONGUEUR SE MESURE CONTRE TOUT CE QUI BORNE.** `PROLONGEMENTS` est le
+  résultat d'une sonde (villes, routes, voies ferrées, autres aérodromes,
+  monuments, eau, et la profondeur que le remblai et la tranchée tiennent),
+  pas un goût ; `CIBLE_PISTE` dit ce qu'on vise par profil (300 · 260 · 220),
+  et `PISTES_COURTES` nomme, avec l'obstacle, les sept aérodromes qui n'y
+  arrivent pas. Un témoin de `carteMonde.js` roule chaque piste et rougit
+  pour une piste courte non déclarée — ou une déclarée qui ne l'est plus.
+- **LE PLAN EST PUBLIÉ UNE FOIS** : `pistesDe(a)` (axe, demi-largeur, bouts
+  ouest et est) est lu par le bâtisseur et le témoin ; l'approche assistée le lira.
 
 ## Les commandes de l'avion se rangent (v445) — une file en flux ne peut rien recouvrir
 
@@ -2545,6 +2572,34 @@ engendrées. Quatre règles.
   journal vide dans le jeu, trois rouges de `maj.js`. Après tout conflit dans un
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
+
+## La trame générique quitte Londres (v447) — une boucle qui liste ses exclusions se relit à chaque ville bâtie à la main
+
+La dette vue en v415 : la boucle « one lot per grid cell » posait cinquante-deux
+maisons pastel sur l'anneau extérieur de Londres (2 600 colonnes, 77 à 106
+blocs du centre). Trois règles.
+
+- **UNE VILLE BÂTIE À LA MAIN SE DÉCLARE À TOUTES LES BOUCLES QUI BÂTISSENT.**
+  Londres se bâtit colonne par colonne depuis la v178 ; la liste d'exclusion de
+  la trame générique ne l'a jamais connue, et la place que réserve « le mobilier
+  de Londres » (boîte de 70) cachait le défaut au centre. Le jour où l'on ajoute
+  une ville bâtie à la main, on cherche `includes(city.key)` dans `world.js`.
+- **CE QU'ON RETIRE D'UN DÉCOR SE RETIRE PAR LOT, PAS PAR COLONNE.** Un lot que
+  touche un bloc d'enfant posé avant `DATE_TRAME_LONDRES` (le marquage couvre
+  les huit voisines, `colonnesTrameLondres`, tenu comme `colonnesVilleAvant`)
+  reste ENTIER, baie comprise (`lotTrameLondresGarde`) : une demi-maison serait
+  un décor éventré. Drapeau `sansTrameLondres` de `CONF_NEUF` seule ; `CONF_V308`
+  le porte à faux, `CONF_AVANT` ne le porte pas. La date se relit à la fusion.
+- **UN DÉCOR QUI RECOUVRE UNE RUE SE MESURE AUSSI EN VOITURES.** Les circuits de
+  Londres ne lisent que le sol de la ville (`solLondres`, `coteRoulable`) : ils
+  n'ont pas bougé, et 36 pas de carrosserie dans un mur de maison pastel ont
+  disparu. Un circuit validé par le sol ne dit rien de ce qu'une autre boucle
+  bâtit par-dessus.
+
+Et **le Shard (v449)** : la règle du verre dans les murs (v195, v202) ne
+regardait que les `batirColonne*` des villes ; un MONUMENT bâti en verre a le
+même défaut. Le témoin de `carteMonde.js` appelle son bâtisseur et compte le
+verre — tout monument de tour vitrée se vérifie de la même façon.
 
 ## Un toit ne déborde plus d'un quartier sur l'autre (v446) — un indice de trame n'est unique que dans sa trame
 

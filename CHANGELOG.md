@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v447 — La rue sans à-coups
+## v450 — La rue sans à-coups
 
 **Pourquoi.** Quatre défauts de la circulation, mesurés avant d'écrire. Les
 autoroutes entraient encore dans la voie d'un circuit dans les villes bâties à
@@ -52,6 +52,74 @@ feu 5 sur 9 sur `origin/main`, 1 sur 17 ici. Deux témoins repointés : le feu
 de `monte.js` se juge sur toute la descente (une voiture arrêtée par
 l'urgence n'a pas freiné pour un feu), et le choc de `degats.js` prend
 vingt-six blocs d'élan au lieu de les trouver.
+## v449 — Le Shard n'est plus transparent
+
+**Pourquoi.** La pyramide du Shard posait 1 792 blocs de verre sur 2 080. Un
+bâtiment est creux : un mur de verre est un trou, et l'on voyait au travers de
+la tour depuis la rive sud (dette vue en capture en v206, règle de la v195).
+
+**Ce que ça change.** Le Shard est une tour de verre comme celles de la City :
+un mur-rideau opaque, ses meneaux dessinés dans la texture, allumé la nuit, avec
+sa ceinture d'acier tous les sept rangs. Sa forme et sa hauteur ne bougent pas.
+
+**Ce qui le prouve.** Un témoin dans `carteMonde.js` compte ce que pose son
+bâtisseur : 0 bloc de verre sur 2 080, contre 1 792 sur `origin/main` (rouge).
+L'empreinte des 490 morceaux ne bouge pas (le Shard n'y est pas) ; le verre et
+le mur-rideau arrêtent l'enfant de la même façon, aucun bloc d'enfant ne bouge.
+
+---
+
+## v448 — Des pistes assez longues pour se poser
+
+**Pourquoi.** Max : « les pistes de tous les aéroports sont beaucoup trop
+courtes pour vraiment atterrir ». Mesuré : 90 à 146 blocs de piste, pour un
+atterrissage assisté qui en demande 98 à 127 et un posé à la main qui en
+demande davantage — le Concorde n'avait presque nulle part où se poser.
+
+**Ce que ça change.** Les trente et une pistes des dix-neuf aéroports sont
+prolongées hors de leur disque, dans l'axe, par un ouvrage — asphalte sur
+remblai ou dans une tranchée, seuil repeint au nouveau bout : 300 blocs pour
+les grands aéroports, 260 pour ceux des villes, 220 pour les bases. Le relief
+ne bouge pas d'un bloc. Sept aéroports n'atteignent pas la cible parce qu'une
+ville, une route, une voie ferrée ou la mer les borne : ils gagnent ce que
+leur place permet.
+
+**Ce qui le prouve.** Chaque prolongement est mesuré par une sonde (bornes du
+remblai et de la tranchée, douze blocs de toute ville, route, voie ferrée,
+autre aéroport et monument, quarante de ce que les enfants ont bâti) ; un
+témoin de `carteMonde.js` roule chaque piste d'un bout à l'autre et compare sa
+longueur à la cible, et les deux empreintes du relief de `plafond.js` sont
+inchangées ; l'empreinte des 490 morceaux change à Londres seulement — dix-huit
+colonnes, toutes dans un tronçon de la piste d'Heathrow, et rend l'ancienne
+constante au bit près quand on retire les prolongements.
+
+---
+
+## v447 — Londres sans maisons posées par-dessus
+
+**Pourquoi.** La boucle générique de `world.js` (« un lot par case de
+grille ») excluait six villes bâties à la main, pas Londres. Entre 77 et 102
+blocs du centre — là où la place réservée au mobilier de la ville s'arrête —
+elle posait cinquante-deux maisons pastel de San Francisco, pleines, PAR-DESSUS
+la ville : 2 600 colonnes, dont 1 401 de chaussée ou de trottoir et 920 sur les
+immeubles de Londres. Des voitures de la ville les traversaient (36 pas de
+circuit dans un mur). La v415 n'avait retiré que celle qui barrait la M40.
+
+**Ce que ça change.** L'anneau extérieur de Londres montre enfin ses rues et ses
+immeubles à elle, et les voitures n'y traversent plus de maison. Une maison
+pastel sur laquelle (ou contre laquelle) un enfant a déjà bâti reste entière :
+rien n'enferme une cabane, rien ne retire un toit sous elle. Les mondes d'avant
+ne changent pas.
+
+**Ce qui le prouve.** Trois témoins dans `plafond.js`, rouges sur
+`origin/main` : la trame ne pose plus rien (2 600 colonnes changées, aucune
+hors du disque) ; une cabane posée avant la date garde la maison entière sous
+elle (rouge, 187 blocs d'écart, quand la règle est désarmée) ; un bloc posé
+après ne retient rien, et le monde de la v308 garde ses maisons. L'empreinte
+des 490 morceaux est relevée (`19946cb7…`) ; le drapeau retiré, la branche rend
+`fb4f9aed…`, la constante de la v446, au bit près. Circuits de Londres
+identiques (ils ne lisent que le sol de la ville) : 36 pas de carrosserie dans
+un mur de moins.
 
 ---
 

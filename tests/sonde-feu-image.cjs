@@ -1,4 +1,4 @@
-// L'ARRÊT AU FEU (v447) — les relevés de vitesse des voitures visibles
+// L'ARRÊT AU FEU (v450) — les relevés de vitesse des voitures visibles
 // au-dessus de Paris, et les arrêts qui passent de 3 b/s ou plus à l'arrêt
 // (un arrêt « sec » au-delà de 10 b/s², la règle du témoin de monte.js),
 // comptés trois fois : cause « feu » à l'ARRIVÉE et heure de LECTURE (l'ancien
@@ -6,7 +6,7 @@
 // DESCENTE. Mesuré sur `origin/main` (quatre fois 70 s) : lecture et image
 // rendent les mêmes arrêts secs — l'horodatage n'y était pour rien —, et à la
 // descente 5 secs sur 9 arrêts : des suiveuses recollées au plancher de la
-// file en une image (corrigé en v447, 0 sur 12). Avec `gel` (ms), la page se
+// file en une image (corrigé en v450, 0 sur 12). Avec `gel` (ms), la page se
 // fige ce temps toutes les deux secondes : la charge d'un portail, provoquée.
 // Usage : node tests/sonde-feu-image.cjs [secondes] [gel ms]
 const { Banc, souffler } = require('./banc.js');

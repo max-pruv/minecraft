@@ -1008,7 +1008,7 @@ export function jumelleSansContact(pA, pB, grille, nb, rangB, nbB, avecBus) {
   const rangs = [];
   for (let k = 0; k < nb; k++) rangs.push({ s: k, p: pA, dl: DEMI_LONG_VOITURE + 0.3 });
   for (let j = 0; j < nbB; j++) rangs.push({ s: j + rangB, p: pB, dl: DEMI_LONG_VOITURE + 0.3 });
-  // le bus à la place de la voiture 0 (v447), ou à mi-temps (v372)
+  // le bus à la place de la voiture 0 (v450), ou à mi-temps (v372)
   if (avecBus) { if (!BUS_A_MI_TEMPS) rangs.shift(); rangs.push({ s: BUS_A_MI_TEMPS ? 0.5 : 0, p: pA, dl: 3.6 }); }
   rangs.sort((a, b) => a.s - b.s);
   const rect = (q, cap, dl) => {
@@ -1530,7 +1530,7 @@ class Convoi {
       // par leur nombre, et une queue qui retombe sur la tête au tour suivant
       this.dtVoiture = this._horaire.P / Math.max(1, this.nb);
       this.phase = this.tempsA(this.distance);
-      // LE BUS PREND LA PLACE DE LA VOITURE 0 DE SON ANNEAU (v447). Posé à
+      // LE BUS PREND LA PLACE DE LA VOITURE 0 DE SON ANNEAU (v450). Posé à
       // mi-temps entre deux voitures (v372), il touchait ses voisines par la
       // grille seule — 35 963 relevés sur les 262 grands anneaux, un tour
       // d'horloge (`sonde-rue-dense.cjs bus`) — et l'anneau entier renonçait
@@ -1622,7 +1622,7 @@ class Convoi {
   // `W` vaut donc zéro sous six blocs par seconde, à trois secondes d'un
   // croisement, et là où les deux voies n'en font qu'une — et l'on ne joue
   // pas du tout dans un anneau que le bus suit (il est à une demi-voiture).
-  // (Le bus a sa place entière depuis la v447 : l'anneau joue aussi.)
+  // (Le bus a sa place entière depuis la v450 : l'anneau joue aussi.)
   // Ailleurs, deux voisines restent à `dt − 2 A` l'une de l'autre, au-dessus
   // de six blocs par seconde : douze blocs au moins entre leurs centres.
   jeuTable() {
@@ -1746,7 +1746,7 @@ class Convoi {
       // CONTACT IMMINENT : l'autre est déjà au ras du capot — on s'arrête là,
       // sans attendre le freinage (v372)
       if (this.urgence[i]) v = 0;
-      // LA SUIVEUSE FREINE AVANT LE PLANCHER, ELLE N'Y EST PAS ARRÊTÉE (v447).
+      // LA SUIVEUSE FREINE AVANT LE PLANCHER, ELLE N'Y EST PAS ARRÊTÉE (v450).
       // Le plancher de la file (v283, un bloc en ligne droite depuis la v431)
       // est une borne dure : une suiveuse qui avançait encore à 3,7 blocs par
       // seconde dans la file d'un feu y était recollée à l'arrêt EN UNE IMAGE
@@ -2504,7 +2504,7 @@ export function createVehicules({ scene, player }) {
     0x8a2b3a, 0x2f7f8f, 0xc86a2a, 0x5a4a8a, 0x1f4a2f, 0xb0b4bc,
     0x7a1f1f, 0x2a3f7a, 0xd8a83a, 0x3f7a5a, 0x6a2f6a, 0x8a8a6a,
   ];
-  // LE DÉPLIAGE SE FAIT PAR TRANCHES, AVANT LA NAISSANCE (v447). Un circuit de
+  // LE DÉPLIAGE SE FAIT PAR TRANCHES, AVANT LA NAISSANCE (v450). Un circuit de
   // Paris coûtait d'un seul tenant jusqu'à cinquante-neuf millisecondes sous
   // node — la grille, le nombre de voitures, la seconde voie et les essais de
   // la jumelle (`voiesDe`), dans l'image où il naît. La fabrique est un
@@ -2739,7 +2739,7 @@ export function createVehicules({ scene, player }) {
   // déclaré : un bus qui ne s'arrête pas.
   function bus(pts, graine = 0, suit = null) {
     const teintes = [0xd84a3a, 0xe8c83a, 0x3a9a4a, 0x3a6ac8, 0xf0813a];
-    // le bus prend la place de la voiture 0 de son anneau (v447) : elle ne
+    // le bus prend la place de la voiture 0 de son anneau (v450) : elle ne
     // naît pas, ne se dessine pas, ne compte pas pour céder (`pris`, v305)
     if (suit) { suit.suiviParBus = true; if (!BUS_A_MI_TEMPS) suit.pris.add(0); delete suit._jeuT; }
     return ajouter(pts, {
@@ -3563,7 +3563,7 @@ export function createVehicules({ scene, player }) {
     },
     // l'A/B du jeu par voiture (v438), pour les sondes
     jeuActif: (on) => { JEU_ACTIF = !!on; for (const c of convois) delete c._jeuT; },
-    // l'A/B du bus (v447), pour les sondes : à poser AVANT que les anneaux naissent
+    // l'A/B du bus (v450), pour les sondes : à poser AVANT que les anneaux naissent
     busAMiTemps: (on) => { BUS_A_MI_TEMPS = !!on; for (const c of convois) delete c._jeuT; },
     // LE TYPE DE VOIE PAR TRONÇON (v438), pour les témoins : la part du tour
     // de ce convoi qui roule à chaque limitation (au conducteur près).

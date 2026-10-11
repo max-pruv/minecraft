@@ -3242,7 +3242,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
           // freine à 3,5 b/s² passe de 13 à 0 entre deux relevés sans piler
           // (vu : un « sec » sur 26 s de portail). Pile, c'est plus que le
           // freinage d'urgence (7,5) avec marge : 10 b/s².
-          // UN ARRÊT AU FEU L'EST SUR TOUTE SA DESCENTE (v447) : une voiture que
+          // UN ARRÊT AU FEU L'EST SUR TOUTE SA DESCENTE (v450) : une voiture que
           // l'urgence ou une autre voiture arrête, puis qui se retrouve dans la
           // file du feu, n'a pas freiné pour un feu. Et ce que ce verdict a vu
           // de vrai (v438, « un sec à 45 b/s² ») était la suiveuse d'une file

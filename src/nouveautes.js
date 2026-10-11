@@ -6,12 +6,38 @@
 
 export const NOUVEAUTES = [
   {
-    v: 447,
+    v: 450,
     titre: 'La rue sans à-coups',
     puces: [
       'Les voitures freinent doucement au feu',
       'Le bus a sa place dans la file',
       'Moins de bouchons à l\'entrée des villes',
+    ],
+  },
+  {
+    v: 449,
+    titre: 'Le Shard n\'est plus transparent',
+    puces: [
+      'La grande tour de Londres a ses vitres',
+      'On ne voit plus au travers',
+    ],
+  },
+  {
+    v: 448,
+    titre: 'Des pistes assez longues',
+    puces: [
+      'Les pistes vont jusqu\'à 300 blocs',
+      'Le Concorde peut enfin se poser',
+      'Le paysage n\'a pas bougé',
+    ],
+  },
+  {
+    v: 447,
+    titre: 'Londres sans maisons en trop',
+    puces: [
+      'Les rues du bord de Londres sont libres',
+      'Les voitures ne traversent plus de maison',
+      'Ce que tu as bâti reste en place',
     ],
   },
   {
