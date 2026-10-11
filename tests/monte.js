@@ -158,6 +158,16 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
   await banc.ouvrir();
   try {
     const tab = await banc.jouerSeul('Marlon', { tactile: true });
+    // LA LIMITE DU JOUR SE LÈVE PAR SA DONNÉE (v423). Cette page vit toute la
+    // suite — plus d'une heure de jeu depuis que la suite a passé l'heure — et
+    // la limite quotidienne (45 min, education.js) y ouvrait l'écran de fin de
+    // journée : `#hardstop` prenait le doigt (`cible: "hardstop"`) et toute la
+    // seconde moitié tombait en cascade — avions « pas aux commandes »,
+    // voiture « pas au volant ». `jouerSeul` n'ouvre que le répit des quiz.
+    // Un parent débloque la limite (`unlocks`) : c'est ce qu'on pose, sans
+    // débrancher le code qu'on traverse.
+    const leverLaLimite = (p) => p.evaluate(() => { window.__game.edu.today().unlocks = 99; });
+    await leverLaLimite(tab);
 
     // --- une bête devant soi -------------------------------------------------
     verifier('l\'éléphant fait partie du monde', await poserDevant(tab, 'elephant'));
@@ -4528,6 +4538,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // de ce témoin était donc VERT sur `origin/main`, à 264 blocs par seconde,
     // avec le trou à trente-six blocs — il mesurait le banc, pas le jeu.
     const ciel = await banc.jouerSeul('Amélie', { rr: 12 });
+    await leverLaLimite(ciel);
     const suivi = await ciel.evaluate(async () => {
       const g = window.__game;
       const m = await import('./src/montures.js');
