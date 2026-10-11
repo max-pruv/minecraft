@@ -20,6 +20,33 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v429 — Des files serrées, et une rue qui arrive sans à-coup
+
+**Pourquoi.** Deux défauts de la circulation, mesurés. À l'arrivée d'une
+téléportation, toutes les voitures de la rue se fabriquaient dans la même image
+(162 à 276 ms de jeu figé, sonde de la v420), et le calcul des croisements d'un
+circuit en coûtait encore 22 à 45 au dépliage. Et au feu rouge, une voiture
+s'arrêtait à deux blocs de la précédente en moyenne : une file au feu se lisait
+comme un chapelet clairsemé, loin des voies serrées de la capture de GTA VI
+que Max a montrée.
+
+**Ce que ça change.** Les voitures d'une rue apparaissent par petites tranches,
+quelques millisecondes par image, celles tout près de l'enfant tout de suite :
+la mise à jour des voitures à l'arrivée à Paris passe de 195-261 ms à 99-125.
+Au rouge, les voitures se serrent pare-chocs contre pare-chocs : l'écart à
+l'arrêt passe de 1,9-2,0 blocs à 1,1-1,3 à Paris, Rome, Zurich et Tokyo, sans
+contact de plus dans les files (en virage, elles gardent l'écart d'avant).
+
+**Ce qui le prouve.** Deux témoins neufs dans `monte.js`, mesurés rouges sur
+l'ancien code : « à l'arrivée, la rue se fabrique par tranches » (9 voitures
+dans une même image avant, 1 ici) et « au rouge, la file se serre » (médiane
+2,0 à Rome avant, 1,1-1,2 ici). L'identité des croisements est prouvée en
+comparant l'ancien et le nouveau module dans la même page : 295 comparaisons,
+zéro écart. Sondes : `sonde-arrivee-decoupe.cjs`, `sonde-rue-dense.cjs`,
+`sonde-fabrication-arrivee.cjs`.
+
+---
+
 ## v428 — Marseille rejoint Nice
 
 **Pourquoi.** Marseille–Nice était le dernier corridor court du kit côté

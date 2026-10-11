@@ -770,6 +770,35 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## La rue serrée, et fabriquée par tranches (v429) — un budget par image, et un balayage fin là où l'on s'arrête
+
+Trois règles.
+
+- **CE QUI SE FABRIQUE À L'ENTRÉE DANS LE CHAMP SE FABRIQUE PAR TRANCHES.**
+  À l'arrivée d'une téléportation, `Convoi.montrer` fabriquait toutes les
+  voitures de la rue dans la même image (v420 : 162 à 276 ms sous `frame`).
+  Un budget module (`FAB_MS`, 5 ms, ouvert par `update`) : une place hors
+  budget reste vide une image de plus — SAUF à moins de `FAB_PROCHE` (18
+  blocs) de l'enfant, qui ne doit pas traverser une voiture qu'il ne voit pas.
+  Le budget vaut l'infini tant qu'aucune image n'a commencé : un appel direct
+  de `montrer` fabrique tout. Mesuré (Paris, trois passages) : mise à jour des
+  voitures 234/261/195 → 111/125/99 ms ; neuf voitures dans une même image →
+  une. Ce qui reste, `voiesDe` (la jumelle, 57 à 111 ms au dépliage), ne se
+  diffère pas : il fixe le nombre de voitures de la file, donc la grille que
+  deux tablettes partagent (v305).
+- **UNE RECHERCHE DE PAIRES SE FAIT DANS UNE GRILLE DE SA PORTÉE.**
+  `croisementsDe` comparait 720 instants toutes-contre-toutes (259 000 paires)
+  pour un test de six blocs : une grille de six blocs rend le même ensemble
+  (295 comparaisons de `nbSansCroisement` contre l'ancien module chargé dans
+  la même page, zéro écart) en deux fois moins de temps.
+- **L'ÉCART À L'ARRÊT EST LE PAS DU BALAYAGE.** Au pas d'un bloc et demi, une
+  suiveuse s'arrête n'importe où entre 1,1 et 2,6 blocs (médiane 1,9 à 2,0) ;
+  les deux premiers blocs se balaient au quart (1,1 à 1,35). Et le plancher de
+  la file (v283) vaut un bloc en ligne droite, mais 1,6 là où le tracé tourne
+  sous la suiveuse ou devant elle : dans un virage la corde est plus courte que
+  l'arc, et les coins se touchent (mesuré à Tokyo). Avant de serrer un
+  plancher le long d'un tracé, on regarde ce qu'il vaut en ligne droite.
+
 ## Toutes les voies occupées (v423) — la seconde voie est la même ligne, décalée
 
 Max, une capture de GTA VI à côté d'une de GTA V : « Good inspiration » — des

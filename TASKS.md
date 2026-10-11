@@ -461,6 +461,11 @@
   sur `origin/main` à (−2 581, 5 272), un nœud de circuits face à face,
   8,8 % sur la v423 — d'avant, à démonter. (5) Palier C : utilitaires et
   pickups (classe dans `FLOTTE`), variance par voiture, voie par tronçon.
+  **(3) FAIT en v429** : balayage au quart sur les deux premiers blocs,
+  plancher de file 1,0 en ligne droite (1,6 en virage) — médiane 1,9-2,0 →
+  1,1-1,3 (Paris, Rome, Zurich, Tokyo). Les contacts « file » relevés à Tokyo
+  sont au treizième rang au croisement du nœud (53 383, 8 048) : le huit
+  (v395), pas le plancher.
   Portail de la v423 (dix-sept suites) : verts sauf `plafond.js` (l'A1 :
   À MOI, la voiture du témoin butait sur la circulation densifiée —
   repointée, rejouée seule entièrement verte, 80,7 blocs, 15 voitures
@@ -5870,6 +5875,13 @@ l'embarquement a eu lieu, pas par une hypothèse.
   rendus. Piste : un passant ne se pose (et un personnage ne marche) que sur
   un morceau déjà là, comme la minicarte (v258) qui n'engendre jamais.
   (3) `nbSansCroisement` (vehicules.js) 22 à 36 ms au dépliage d'un circuit.
+  **(1) et (3) FAITS en v429** : fabrication par tranches (`FAB_MS`), grille de
+  croisements ; update des voitures 234/261/195 → 111/125/99 ms,
+  `nbSansCroisement` 32/45/30 → 13/12/12. Reste sous `update` : `voiesDe`
+  (la jumelle, 57 à 111 ms au dépliage) — il fixe le nombre de voitures de la
+  file, donc la grille partagée (v305) ; le différer demanderait que les deux
+  tablettes le fassent au même instant de la grille. À reprendre.
+
   Fait dans ma zone (v420) : `renduLogiciel()` ne redemande plus le pilote
   (120 à 336 ms de `getParameter` par arrivée, zéro gain en durée d'image au
   banc, déclaré). À relire sur l'iPad avec `?diag=1` après les deux remèdes.
