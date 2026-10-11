@@ -18,6 +18,21 @@
   mesurer la cadence de la page `MonteFil` (rr 12, au-dessus de Paris) seule,
   puis après les témoins qui la précèdent.
 
+- [ ] **PORTAIL DE LA v433 (lot 2 des témoins), DOUBLE MESURE (v195, v269).**
+  Rouges du portail : `carte.js` glisser bridé ×4 (610 ms), `manhattan.js`
+  « le taxi roule » (3,6 blocs en 247 s), `monte.js` « la rue à l'allure
+  d'une ville » et « freine au feu » (médiane 0) — dettes déjà déclarées. Et
+  `reseau.js` : rejouée SEULE trois fois de chaque côté, en alternance, la
+  même distribution — GPS relayé rouge 1/3 (branche et `origin/main` v432),
+  « seule après le départ de l'hôte » 1/3 des deux côtés, « un hôte sans
+  courtier est trouvé » 1/3 des deux côtés, toujours avec « deux enfants
+  sans courtier du tout » (famille du nuage, déclarée). Le témoin du courtier
+  dit désormais ce qu'il a vu : « ❌ Personne n'a répondu dans ce monde »
+  après 22,9 s — la piste est le relais par le nuage, pas l'attente. Mon
+  premier remède cliquait à `net.active`, vrai PENDANT la tentative
+  (« Ouverture du monde… », 1,2 s) : corrigé, on attend le statut qui
+  retombe. « La voiture de la rue n'entre pas chez l'ami » 1/3 sur la
+  branche : dette v383 (une pose sur une dizaine).
 - [x] **LOT 2 DES TÉMOINS INTERMITTENTS — FAIT en v433** (session
   banc-intermittents). Chaque rouge rejoué SEUL des deux côtés, la cause
   séparée par une sonde, le témoin corrigé, et désarmé dans une copie.

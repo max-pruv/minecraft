@@ -2841,6 +2841,12 @@ Le second lot des rouges récurrents. Cinq règles.
   (`sonde-train-voiture.cjs`, 5 traversées sur 10 sous charge). Zone conduite :
   déclarée en tête de `TASKS.md`, le témoin n'a pas été adouci.
 
+- **UNE SESSION ACTIVE N'EST PAS UNE PARTIE REJOINTE.** `net.active` vaut vrai
+  dès que la tentative commence (« Ouverture du monde… »). Un témoin qui
+  attend « l'invité est entré » attend le STATUT qui retombe (vide, ou
+  « ❌ »), pas le drapeau — mon premier remède cliquait 0,8 s plus tôt que
+  les deux secondes fixes qu'il remplaçait, et rendait le témoin plus rouge.
+
 ## Quatre témoins qui se placent (v427) — une page sur l'accueil n'est pas gratuite
 
 Quatre rouges récurrents des portails, tous démontés par une sonde. Cinq règles.
