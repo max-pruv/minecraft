@@ -20,6 +20,27 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v437 — Les colonnes Morris se plantent dans le vide
+
+**Pourquoi.** La colonne Morris de la v289 se posait au tirage, sans regarder
+autour d'elle. Mesuré sur huit quartiers : 43 colonnes sur 76 à moins de deux
+blocs d'un banc, d'une terrasse ou d'une autre colonne, et deux collées contre
+une porte cochère.
+
+**Ce que ça change.** Une colonne se plante désormais à l'air libre sur ses
+quatre côtés, seule dans son voisinage : ni contre un mur ou une porte, ni à
+deux blocs d'un autre meuble. Le tirage double pour en garder autant (60 sur
+les huit quartiers).
+
+**Ce qui le prouve.** Un témoin neuf de `parishd.js` relève toutes les
+colonnes de huit quartiers : 0 mal plantée sur 45 dans sa fenêtre, 29 sur 54
+avec la règle d'avant, 43 sur 76 sur `origin/main` (rouge). L'empreinte des
+490 morceaux change (`6bef419e…`) et se prouve : la règle d'avant rejouée
+(`morrisDegagees: false`) rend la constante `1f1e5a6d…` au bit près. Jugé en
+capture à Saint-Germain.
+
+---
+
 ## v436 — La voiture s'arrête devant les terrasses
 
 **Pourquoi.** La table et les chaises d'un café de Paris sont dessinées par la
