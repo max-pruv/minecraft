@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 424,
+    titre: 'Un choc à la vitesse',
+    puces: [
+      'Un mur lent abîme peu',
+      'Frôler un mur ne casse rien',
+      'Pleins gaz, ça cogne fort',
+    ],
+  },
+  {
     v: 423,
     titre: 'Toutes les voies occupées',
     puces: [

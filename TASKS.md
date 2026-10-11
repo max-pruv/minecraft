@@ -47,14 +47,35 @@
   carte (dette ci-dessous, v267) et le badge à `v404` (bump pas encore fait).
   Piste : le témoin juge sur trente images ; il devrait attendre un nombre
   d'images avant de conclure, borné, la durée dans le message.
+- [ ] **UNE SUITE QUI FRANCHIT MINUIT UTC VOIT LE QUIZ (v424, banc).**
+  `jouerSeul` (banc.js) pose `edu.today().libreJusqua = 86400` sur la journée
+  EN COURS ; une suite qui passe minuit change de journée, la nouvelle n'a
+  pas de répit, et le quiz du professeur Cornichon recouvre l'écran : `monte.js`
+  rejouée seule sur la branche de la v424 entre 23 h 40 et 0 h 20 a rendu 35
+  rouges (`"cible":"quiz"` dans le relevé du doigt), puis 6 rouges, la même
+  distribution que `origin/main` (6), au passage suivant. Remède à écrire
+  côté banc : poser le répit sur la donnée qui le gouverne pour toute journée
+  (ou reposer `libreJusqua` à chaque `today()` neuf), pas en débranchant le quiz.
+- [ ] **PORTAIL DE LA v424 (règle de la v195).** `monte.js` rejouée seule,
+  passages alternés : `origin/main` 197 · 194 verts, branche 194 verts (le
+  passage d'avant a été faussé par minuit, ci-dessus). Les rouges restants
+  sont des deux côtés : « la rue roule à l'allure d'une ville » et « au feu,
+  la voiture freine » (même relevé, médiane 0 : circulation), « le mur de
+  face » (rouge sur `origin/main` avec force 0,52, l'arrêt ou le rebond, pas la
+  force), la téléportation qui compile, le trou en vol, le flanc frôlé.
 - [ ] **LA TOLÉRANCE DES VOITURES (v405) — ce qui reste, déclaré.** (1) Sur la
   tablette : Max essaie neuf murs pleins gaz (la voiture doit caler au 9e,
   fumer dès le 2e de face) et dit si le rythme lui va — les constantes sont
   `PERTE_SANTE` et `COURBE_FORCE` (degats.js), la promesse `CHOCS_AVANT_PANNE`.
-  (2) La force publiée sature à 1 dès 20 b/s normaux (`CHOC_PLEIN`,
-  conduite.js, session physique) : un mur à 60 b/s coûte autant qu'à 20, et un
-  frôlement rasant à 60 b/s publie 0,78 (0,6 mur). Une force qui suivrait la
-  vitesse jusqu'à 60 se décide côté physique. (3) Au-delà de 24 chocs
+  (2) ~~La force publiée sature à 1 dès 20 b/s normaux~~ — FAIT en v424 : la
+  force suit la vitesse jusqu'à 85 % de la pointe de la classe (mur lent 0,07 à
+  0,19 de mur, frôlé 0,08, pleins gaz 1). Reste, déclaré : au-delà de 85 % de
+  la pointe la force sature encore (un mur à la pointe vaut un mur pleins gaz),
+  et sur la tablette, un mur pris après deux ou trois secondes de gaz (0,6 de
+  la pointe) ne coûte plus qu'un demi-mur — si Max trouve la voiture trop
+  solide en ville, c'est `POINTE_PLEINE` (conduite.js) qu'on descend, jusqu'à
+  0,78 au plus bas (sinon un frôlement repasse au-dessus d'un dixième de mur).
+  (3) Au-delà de 24 chocs
   (`MAX_CHOCS`), l'ami ne rejoue que les 24 derniers : il peut voir une
   voiture moins abîmée que le conducteur (le feu voyage à part, la panne non).
   Et `rattraper` (degats3d.js) ne rejoue plus la tôle une fois l'historique
@@ -1406,7 +1427,11 @@
   trouve AUCUNE ligne de cinquante blocs de chaussée voxel en pente) ; (6) personne ne
   DESSINE encore `tangage` ni `atterrissage` (session des sensations) ; (7) la
   vitesse est le long de la route, le déplacement horizontal ne la réduit pas
-  du cosinus de la pente (1,4 % à 0,17) ; (8) en l'air, on ne braque pas et
+  du cosinus de la pente (1,4 % à 0,17) — **MESURÉ en v424, ne se voit pas** :
+  15 542 tirages de campagne hors villes et hors eau (pente sur six blocs),
+  médiane 0, 90e centile 0,17 (1,4 %), 97e 0,33 (5,1 %) ; au-delà ce sont
+  des falaises voxel qu'on ne roule pas. Erreur moyenne 2,1 % falaises
+  comprises. Pas écrite ; (8) en l'air, on ne braque pas et
   le moteur ne pousse pas, et une crête vive à 40 blocs/s fait voler une
   seconde (mesuré, `sonde-pente.cjs`) — c'est voulu (GTA), à juger avec
   Marlon sur la tablette ; (9) LE FREIN À MAIN (palier C) — **FAIT en v409** :

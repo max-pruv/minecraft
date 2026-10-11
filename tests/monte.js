@@ -7465,8 +7465,11 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !cd.err && cd.rasant && cd.rasant.contact && cd.rasant.contact.choc && cd.rasant.contact.choc.force < 0.5
         && cd.rasant.x > 150 && cd.rasant.v > 12 && Math.abs(cd.rasant.capDeg) < 3,
       JSON.stringify(cd.rasant));
+    // la force suit la vitesse jusqu'à la pointe de la classe (v424) : posée à
+    // 22 sans gaz, la Jesko frappe le mur à une dizaine de blocs/s, 0,22 (0,52
+    // à l'ancienne échelle) — un choc publié, d'une taille sensée
     verifier('un mur pris de face : la voiture s\'arrête, avec un petit rebond, et le choc dit où',
-      !cd.err && cd.face && cd.face.face && cd.face.face.choc && cd.face.face.choc.force > 0.3
+      !cd.err && cd.face && cd.face.face && cd.face.face.choc && cd.face.face.choc.force > 0.15
         && cd.face.rebond < -0.3 && Math.abs(cd.face.v) < 0.5 && Math.abs(cd.face.face.choc.x - 41090) < 1,
       JSON.stringify(cd.face));
     verifier('une voiture de la rue percutée : choc publié, et la nôtre rebondit au lieu de la traverser',
@@ -7476,8 +7479,11 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('une vraie voiture de la rue, par le vrai crochet : son flanc frôlé ne nous arrête pas — un choc léger, sur NOTRE flanc, et l\'on continue',
       !cd.err && vf.lu && vf.c && vf.c.contact === 'voiture' && vf.c.force > 0.05 && vf.c.force < 0.4 && vf.c.v > 9 && vf.c.lat > 0.9 && Math.abs(vf.c.long) < 1.8,
       JSON.stringify(vf));
+    // « franc » (v424) : la force suit la vitesse jusqu'à la pointe de la
+    // classe — dix-huit blocs/s dans la Jesko (pointe 55) publient 0,39, plus
+    // 0,9 ; le flanc frôlé, lui, reste sous 0,1.
     verifier('et percutée par l\'arrière, le crochet rend sa boîte : un choc franc sur notre nez, et l\'on rebondit',
-      !cd.err && va.lu && va.c && va.c.contact === 'voiture' && va.c.force > 0.5 && va.c.v < 0 && va.c.long > 1.8,
+      !cd.err && va.lu && va.c && va.c.contact === 'voiture' && va.c.force > 0.3 && va.c.v < 0 && va.c.long > 1.8,
       JSON.stringify(va));
     verifier('une voiture en panne ne repart plus — le joystick ne fait plus rien',
       !cd.err && cd.panne && cd.panne.v < 0.01 && cd.panne.x < 0.05 && cd.panne.tourne < 0.001,

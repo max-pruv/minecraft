@@ -20,6 +20,32 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v424 — La force d'un choc suit la vitesse
+
+**Pourquoi.** La force d'un choc, que la conduite publie et que les dégâts
+transforment en usure, valait 1 dès vingt blocs par seconde d'impact. Une
+voiture roule à trente ou cinquante-cinq : presque tout vrai crash valait un
+« mur plein », qu'on le prenne à vingt ou à cinquante-cinq. Et un mur frôlé à
+quinze degrés pleins gaz publiait jusqu'à 0,68 — près d'un demi-mur d'usure
+pour une éraflure (la dette déclarée par la v405).
+
+**Ce que ça change.** La force d'un choc suit désormais la vitesse jusqu'à la
+pointe de la classe : un mur pris à 85 % de sa pointe (quatre à cinq secondes
+de gaz) vaut un mur plein, comme avant — la voiture fume toujours dès le
+deuxième, cale au neuvième. Un mur à dix blocs par seconde n'en coûte plus que
+un quinzième à un cinquième selon la voiture, et frôler un mur pleins gaz moins
+d'un dixième. Une caresse pare-chocs contre pare-chocs reste une caresse (le
+seuil se lit en blocs par seconde).
+
+**Ce qui le prouve.** Un témoin neuf de `plafond.js` fait rouler le vrai joueur
+sous node contre un mur droit, dans les six classes : pleins gaz 1, mur lent
+0,07 à 0,19 de mur, frôlé 0,08 — rouge sur `origin/main` (lent 0,32 à 0,36,
+frôlé 0,14 à 0,46). Le témoin des deux murs des dégâts prend un vrai élan de
+cent quarante blocs ; celui de la voiture de la rue percutée par l'arrière lit
+la force que dix-huit blocs/s donnent dans une hypercar.
+
+---
+
 ## v423 — Toutes les voies occupées
 
 **Pourquoi.** Max a montré une capture de GTA VI à côté d'une de GTA V : des
