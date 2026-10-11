@@ -6055,7 +6055,10 @@ l'embarquement a eu lieu, pas par une hypothèse.
   portail : un TIRAGE qui existe sur `origin/main` v435 (rouge 1 fois sur 3,
   médiane 0, files arrêtées au feu, 17 à 19 voitures en vue contre 10 à 12),
   que mes attentes au couloir rendaient fréquent (2 sur 3 avec le code
-  d'`origin/main`) ; retirées. Dette : le témoin dépend de la phase des feux à
+  d'`origin/main`) ; retirées. Et ma fenêtre d'arrivée le rendait fréquent
+  aussi (2 sur 3, désarmée 1 sur 3) : des passants immobiles sur la chaussée
+  arrêtaient les voitures, qui attendent sans limite un piéton — retirés de la
+  liste de la circulation, 3 verts sur 3. Dette : le témoin dépend de la phase des feux à
   l'instant où il commence — ce n'est pas un gardien tant qu'il ne mesure pas
   sur plusieurs cycles de feu.
   (2) ~~`ensureChunk` sur le fil principal : 66 à 94 ms~~ **FAIT en v436** :

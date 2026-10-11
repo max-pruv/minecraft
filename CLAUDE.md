@@ -1893,6 +1893,13 @@ Trois règles.
   attente ajoutée est un changement de situation pour la suite entière. Il a
   fallu six variantes (chacune une retouche désarmée) et le code d'`origin/main`
   sous mon `monte.js` pour le voir.
+- **UN PIÉTON QUI ATTEND SON MONDE N'EST PAS ENCORE DANS LA RUE.** Les voitures
+  attendent SANS LIMITE devant un piéton (v395) ; des passants immobilisés sur
+  la chaussée pendant la fenêtre d'une arrivée nouaient leurs files aux feux
+  pour longtemps. Mesuré sur la page du témoin « la rue roule » : fenêtre
+  désarmée 1 rouge sur 3 (comme `origin/main`), armée 2 sur 3, et la liste de la
+  circulation filtrée (`brancherPietons`, main.js, sans `attendLeMonde`) 3 verts
+  sur 3. Quand on immobilise un acteur, on se demande qui l'attend.
 - **CE QUI S'EFFACE À L'AUTRE BOUT DU MONDE NE MARCHE PLUS.** La présence fond
   en 0,8 s les personnages laissés derrière un saut, et la boucle les animait
   encore : leur `sweep` refabriquait les morceaux qu'on venait d'oublier
