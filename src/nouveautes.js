@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 447,
+    titre: 'Londres sans maisons en trop',
+    puces: [
+      'Les rues du bord de Londres sont libres',
+      'Les voitures ne traversent plus de maison',
+      'Ce que tu as bâti reste en place',
+    ],
+  },
+  {
     v: 446,
     titre: 'Des toits bien rangés',
     puces: [
