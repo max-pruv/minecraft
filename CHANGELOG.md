@@ -50,7 +50,7 @@ du fil principal par appelant : Paris 23 à 40 → 0 morceau en deux secondes,
 Londres, Rome, Tokyo 0 à 1 (le seul qui reste est parfois l'enfant, 4 à 10 ms).
 Un personnage qu'on ne voit plus, à plus de cent quarante blocs, ne marche plus
 pendant qu'il s'efface. Un témoin de `monte.js` saute à Berlin et compte :
-0 morceau en 1,2 s (86 sur `origin/main`), puis 18 à 22 passants posés, aucun en
+1 morceau en 1,2 s, 6 à 10 ms (86 et 325 ms sur `origin/main`), puis 18 à 22 passants posés, aucun en
 attente, dans le vide ou dans un mur. L'empreinte de toutes les tables de feux
 (`Math.random` figé, neuf villes, 169 morceaux chacune) est identique des deux
 côtés. Ce que le banc ne voit pas, et c'est dit : la pire image de l'arrivée en
