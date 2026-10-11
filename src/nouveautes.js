@@ -6,6 +6,13 @@
 
 export const NOUVEAUTES = [
   {
+    v: 440,
+    titre: 'Des essais encore plus justes',
+    puces: [
+      'Les essais ne se gênent plus',
+    ],
+  },
+  {
     v: 439,
     titre: 'La route de Los Angeles',
     puces: [

@@ -20,6 +20,41 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v440 — Des essais encore plus justes
+
+**Pourquoi.** Sept témoins du portail rougissaient une fois sur deux sans
+qu'une ligne du jeu ait bougé, et chaque livraison payait leur démontage. Le
+plus gros était le banc lui-même : la page principale de `monte.js` restait
+EN JEU pendant chaque page secondaire, et une page de ciel (distance
+d'affichage douze) n'était jamais fermée — presque quatre cœurs sur quatre
+pris pendant les trois quarts de la suite. D'autres témoins mesuraient
+l'endroit où la cadence les avait laissés : un arrêt devant un réverbère
+compté en secondes de montre, un trou de façade lu sur la géométrie de TOUTE
+la ville, un atterrissage sur une piste d'essai plus courte que lui.
+
+**Ce que ça change.** Rien dans le jeu : seulement les témoins, et un
+nouveau geste du banc (`mettreDeCote`, `ramener`) qui réduit une page à
+seize pixels le temps qu'une autre mesure. Et une VRAIE panne trouvée en
+chemin, déclarée et non corrigée (elle est dans la zone de la conduite) :
+une rame de train peut traverser la voiture de l'enfant quand une image est
+lente, parce qu'elle ne regarde que 3,5 blocs devant elle et roule en temps
+réel.
+
+**Ce qui le prouve.** Chaque rouge rejoué seul des deux côtés, la cause
+séparée par une sonde, et chaque correction désarmée dans une copie pour
+vérifier qu'elle rougit encore : le réverbère (`origin/main` 3/3 rouge sous
+charge, branche 3/3 vert, désarmé 97 blocs au travers du poteau), le trou
+de façade (branche 3/3 vert, désarmé « jamais rebâti »), la chauffe de New
+York (expirait à 150 s, finie en 9,9 s), la fumée (3/3). Le témoin du train
+reste ROUGE : c'est la panne. Au portail, quatre suites rouges, toutes sur des
+dettes déjà déclarées : `carte.js` (glisser bridé ×4), `manhattan.js` (le
+taxi, 3,6 blocs en 247 s — son bouton apparaît désormais, mais il rampe
+encore sous la charge), `monte.js` (la rue à l'allure d'une ville),
+`reseau.js` (GPS relayé, départ de l'hôte, courtier : rejouée seule trois
+fois de chaque côté, la même distribution, 1/3 des deux côtés).
+
+---
+
 ## v439 — La route de San Francisco à Los Angeles
 
 **Pourquoi.** Seize autoroutes reliaient déjà les villes, et la côte ouest des

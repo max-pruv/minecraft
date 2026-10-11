@@ -2926,6 +2926,43 @@ Les deux rouges réseau récurrents du palier C. Trois règles.
   une voix restée au quart (`GAIN_APPEL`) et le régime qui varie ; vérifié
   rouge sur une copie où la voix reste au quart.
 
+## Une page en jeu coûte quatre cœurs (v440) — on la met de côté, et l'on compte en images
+
+Le second lot des rouges récurrents. Cinq règles.
+
+- **UNE PAGE EN JEU À CÔTÉ COÛTE PRESQUE TOUT LE BANC.** La page principale
+  de `monte.js` restait en jeu pendant chacune des six pages secondaires, et
+  `ciel` (rr 12) n'était jamais fermée. Mesuré (`sonde-voisine-de-cote.cjs`) :
+  une voisine en jeu 3,5 à 3,8 cœurs, réduite à 16 × 16 pixels 0,15 ; la
+  chauffe de New York d'une page neuve passe de 22–24 s à 7 s.
+  `banc.mettreDeCote(p)` / `banc.ramener(p)` encadrent toute page secondaire,
+  et une page se ferme après son dernier usage. Le gel CDP ne sert à rien
+  (v427) ; c'est la SURFACE qui coûte.
+- **UNE IMMOBILITÉ SE COMPTE EN IMAGES, PAS EN SECONDES.** Le témoin du
+  réverbère jugeait « arrêté » sur dix relevés de montre sans mouvement : à
+  une image par seconde, la voiture n'était pas encore partie. On attend un
+  départ (un demi-bloc), puis l'on compte les images RENDUES
+  (`renderer.info.render.frame`) sans avancer.
+- **UNE GÉOMÉTRIE SE LIT SUR L'OBJET TOUCHÉ, PAS SUR LA VILLE.** Le trou de
+  façade de Manhattan comptait la géométrie de TOUS les immeubles (dette de la
+  v291) : il mesurait la file de chargement. Il lit l'immeuble que
+  `batimentA` nomme, attend qu'il soit REBÂTI, et compare ses instances.
+- **UNE PISTE D'ESSAI EST PLUS LONGUE QUE CE QU'ON Y FAIT.** L'atterrissage
+  manuel touchait à 300,9 sur une piste de 300 : la cadence décide où l'on
+  touche (v273), donc la piste en a 400 et la barre suit.
+- **UN TÉMOIN QUI TROUVE UNE VRAIE PANNE RESTE ROUGE.** Le train qui traverse
+  la voiture de l'enfant n'était pas une intermittence de banc : la rame ne
+  regarde que 3,5 blocs devant elle (`PAS_TRAIN`) et roule en temps réel, donc
+  une image lente la fait passer d'« assez loin » à « déjà dedans »
+  (`sonde-train-voiture.cjs`, 5 traversées sur 10 sous charge). Zone conduite :
+  déclarée en tête de `TASKS.md`, le témoin n'a pas été adouci.
+
+- **UNE SESSION ACTIVE N'EST PAS UNE PARTIE REJOINTE.** `net.active` vaut vrai
+  dès que la tentative commence (« Ouverture du monde… »). Un témoin qui
+  attend « l'invité est entré » attend le STATUT qui retombe (vide, ou
+  « ❌ »), pas le drapeau — mon premier remède cliquait 0,8 s plus tôt que
+  les deux secondes fixes qu'il remplaçait, et rendait le témoin plus rouge.
+
 ## Quatre témoins qui se placent (v427) — une page sur l'accueil n'est pas gratuite
 
 Quatre rouges récurrents des portails, tous démontés par une sonde. Cinq règles.
