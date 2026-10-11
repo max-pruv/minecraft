@@ -96,8 +96,11 @@ export class BusNuage {
     // l'invité ne la lisait jamais — « Personne n'a répondu dans ce monde »,
     // une fois sur dix (`tests/sonde-relais-amorce.mjs` : 2 sur 20 avant, 0
     // après). Tout envoi attend le curseur ; l'ordre des envois est gardé.
-    this._amorce = this._amorcer();
-    this._amorce.then(() => this._boucler());
+    // Borné à trois secondes : une lecture qui ne revient jamais (un réseau
+    // capricieux, un `fetch` sans réponse) ne doit pas retenir tous les envois.
+    const amorce = this._amorcer();
+    this._amorce = Promise.race([amorce, new Promise((f) => setTimeout(f, 3000))]);
+    amorce.then(() => this._boucler());
     return true;
   }
 
