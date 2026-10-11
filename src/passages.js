@@ -1,4 +1,4 @@
-// LES PASSAGES PIÉTONS EN BIAIS (v412) — la règle pure, lue par le mailleur
+// LES PASSAGES PIÉTONS EN BIAIS (v421) — la règle pure, lue par le mailleur
 // (qui dessine les bandes), par main.js (où un passant traverse) et, sous
 // node, par les témoins. Aucun bloc écrit : l'invariant 1 tient par
 // construction.

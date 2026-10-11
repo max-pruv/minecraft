@@ -1,4 +1,4 @@
-// LES PASSAGES EN BIAIS, VUS (v412). Une vue de rue et une vue d'en haut à un
+// LES PASSAGES EN BIAIS, VUS (v421). Une vue de rue et une vue d'en haut à un
 // carrefour de Rome et de Zurich. Le banc sert le dépôt d'où l'on lance le
 // script : lancé depuis un arbre d'`origin/main`, il photographie l'avant.
 // Le carrefour se cherche avec la règle de la branche (`passages.js`, lu par

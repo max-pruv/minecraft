@@ -271,7 +271,7 @@ const GARDIENS = {
   'src/vie.js': ['realisme.js', 'monte.js', 'manhattan.js'],
   'src/marlon.js': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
   'src/pietons.js': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
-  'src/passages.js': ['plafond.js', 'monte.js', 'carteMonde.js'],   // les passages en biais (v412)
+  'src/passages.js': ['plafond.js', 'monte.js', 'carteMonde.js'],   // les passages en biais (v421)
   'src/face-worker.js': ['parent.js'],
 };
 

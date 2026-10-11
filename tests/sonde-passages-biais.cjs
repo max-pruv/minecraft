@@ -1,4 +1,4 @@
-// À ROME, UN PASSANT TRAVERSE SUR LE PASSAGE EN BIAIS (v412) — le témoin de
+// À ROME, UN PASSANT TRAVERSE SUR LE PASSAGE EN BIAIS (v421) — le témoin de
 // `monte.js`, joué seul. La fonction est LUE dans monte.js (v400).
 //   node tests/sonde-passages-biais.cjs [ville] [chemin/vers/un/autre/arbre/tests]
 const path = require('path'), fs = require('fs');

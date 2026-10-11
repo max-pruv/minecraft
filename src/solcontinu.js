@@ -419,7 +419,7 @@ export function emettreRubans(buf, world, cx, cz, chunk) {
   return rubans.length;
 }
 
-// LES PASSAGES PIÉTONS EN BIAIS (v412, `passages.js`). Une tuile ne se tourne
+// LES PASSAGES PIÉTONS EN BIAIS (v421, `passages.js`). Une tuile ne se tourne
 // pas : là où la trame d'une ville engendrée est en biais, les bandes du
 // passage sont des polygones posés un centième au-dessus de la chaussée —
 // de la géométrie dans le tampon `solid`, avec la tuile blanche du marquage

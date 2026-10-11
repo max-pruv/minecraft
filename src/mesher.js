@@ -603,7 +603,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
   // s'émettent même sans sol continu (`?solcontinu=0`), sinon les rails
   // disparaîtraient avec la surface (v302).
   const rubans = emettreRubans(solid, world, cx, cz, CHUNK);
-  // les passages piétons des trames en biais (v412) : de la géométrie aussi
+  // les passages piétons des trames en biais (v421) : de la géométrie aussi
   // (`passagesBiais: false` les retire : l'empreinte des morceaux de la v352
   // garde ainsi la sortie d'avant, au bit près — un contenu neuf a ses témoins)
   if (options.passagesBiais !== false) emettreBandesPassages(solid, world, cx, cz, CHUNK, localGet, topY);
