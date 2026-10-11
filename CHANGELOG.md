@@ -20,6 +20,34 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v447 — Londres sans maisons posées par-dessus
+
+**Pourquoi.** La boucle générique de `world.js` (« un lot par case de
+grille ») excluait six villes bâties à la main, pas Londres. Entre 77 et 102
+blocs du centre — là où la place réservée au mobilier de la ville s'arrête —
+elle posait cinquante-deux maisons pastel de San Francisco, pleines, PAR-DESSUS
+la ville : 2 600 colonnes, dont 1 401 de chaussée ou de trottoir et 920 sur les
+immeubles de Londres. Des voitures de la ville les traversaient (36 pas de
+circuit dans un mur). La v415 n'avait retiré que celle qui barrait la M40.
+
+**Ce que ça change.** L'anneau extérieur de Londres montre enfin ses rues et ses
+immeubles à elle, et les voitures n'y traversent plus de maison. Une maison
+pastel sur laquelle (ou contre laquelle) un enfant a déjà bâti reste entière :
+rien n'enferme une cabane, rien ne retire un toit sous elle. Les mondes d'avant
+ne changent pas.
+
+**Ce qui le prouve.** Trois témoins dans `plafond.js`, rouges sur
+`origin/main` : la trame ne pose plus rien (2 600 colonnes changées, aucune
+hors du disque) ; une cabane posée avant la date garde la maison entière sous
+elle (rouge, 187 blocs d'écart, quand la règle est désarmée) ; un bloc posé
+après ne retient rien, et le monde de la v308 garde ses maisons. L'empreinte
+des 490 morceaux est relevée (`19946cb7…`) ; le drapeau retiré, la branche rend
+`fb4f9aed…`, la constante de la v446, au bit près. Circuits de Londres
+identiques (ils ne lisent que le sol de la ville) : 36 pas de carrosserie dans
+un mur de moins.
+
+---
+
 ## v446 — Un toit ne déborde plus d'un quartier sur l'autre
 
 **Pourquoi.** Le comble de Paris (v289) lisse les colonnes d'un même immeuble,
