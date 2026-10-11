@@ -259,7 +259,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
     rejouerToitsAvant(true);
     try { return buildChunkTampons(world, cx, cz, { ...options, toitsQuartier: undefined }); } finally { rejouerToitsAvant(false); }
   }
-  // (`ferronnerieEntiere: false` rejoue les UV de garde-corps d'avant la v447)
+  // (`ferronnerieEntiere: false` rejoue les UV de garde-corps d'avant la v453)
   if (options.ferronnerieEntiere === false) {
     rejouerFerAvant(true);
     try { return buildChunkTampons(world, cx, cz, { ...options, ferronnerieEntiere: undefined }); } finally { rejouerFerAvant(false); }

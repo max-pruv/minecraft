@@ -6,10 +6,62 @@
 
 export const NOUVEAUTES = [
   {
-    v: 447,
+    v: 453,
     titre: 'De jolies petites grilles',
     puces: [
       'Les balcons des petites fenêtres sont dessinés',
+    ],
+  },
+  {
+    v: 452,
+    titre: '✈️ va chercher la piste',
+    puces: [
+      '✈️ trouve la piste la plus proche',
+      'L\'avion s\'aligne et se pose seul',
+      'Un second ✈️ remet les gaz',
+    ],
+  },
+  {
+    v: 451,
+    titre: 'Le train voit ta voiture',
+    puces: [
+      'Il s\'arrête même quand le jeu rame',
+      'Les voitures de la rue aussi',
+    ],
+  },
+  {
+    v: 450,
+    titre: 'Le Colisée ne bouge plus',
+    puces: [
+      'Le même Colisée à chaque partie',
+      'Édimbourg est en pierre grise',
+      'Sydney a toutes ses fenêtres',
+    ],
+  },
+  {
+    v: 449,
+    titre: 'Le Shard n\'est plus transparent',
+    puces: [
+      'La grande tour de Londres a ses vitres',
+      'On ne voit plus au travers',
+    ],
+  },
+  {
+    v: 448,
+    titre: 'Des pistes assez longues',
+    puces: [
+      'Les pistes vont jusqu\'à 300 blocs',
+      'Le Concorde peut enfin se poser',
+      'Le paysage n\'a pas bougé',
+    ],
+  },
+  {
+    v: 447,
+    titre: 'Londres sans maisons en trop',
+    puces: [
+      'Les rues du bord de Londres sont libres',
+      'Les voitures ne traversent plus de maison',
+      'Ce que tu as bâti reste en place',
     ],
   },
   {

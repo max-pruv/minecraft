@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v447 — Les garde-corps des petites fenêtres ont leurs anneaux entiers
+## v453 — Les garde-corps des petites fenêtres ont leurs anneaux entiers
 
 **Pourquoi.** Le motif de fer forgé d'un garde-corps est fait pour une travée
 de façade : un barreau tous les seize pixels et un anneau entre deux. Sur les
@@ -41,6 +41,168 @@ plus étroits que le bloc dans neuf morceaux : 1 212 lus, 0 coupés (1 212 sur
 `origin/main` : rouge). L'empreinte des 490 morceaux change (`9c35eeb6…`) ;
 désarmée (`ferronnerieEntiere: false`), elle rend la constante d'avant
 (`fb4f9aed…`, celle de `plafond.js`) au bit près.
+
+---
+
+## v452 — ✈️ va chercher la piste
+
+**Pourquoi.** Max : « améliore la séquence d'atterrissage parce que l'avion
+est compliqué à gérer ». En vol, ✈️ « Se poser » posait l'appareil LÀ OÙ IL
+ÉTAIT : dans un champ, sur une colline, en ville. Rejoindre une piste
+demandait de la trouver soi-même, de s'aligner à la main sur une bande de huit
+blocs vue de cent blocs de haut, et de descendre au bon moment — trois gestes
+qu'un enfant de sept ans ne fait pas.
+
+**Ce que ça change.** En vol, ✈️ choisit la piste la plus proche (dans un
+rayon de 2 600 blocs, assez longue pour cet appareil), s'en éloigne pour
+revenir dans l'axe, descend sur un plan régulier, sort le train, arrondit, se
+pose et freine jusqu'à l'arrêt. Le cadran de cap affiche la piste visée et sa
+distance. Le joystick corrige à tout moment ; un second appui sur ✈️ pendant
+l'approche remet les gaz et repart. S'il n'y a aucune piste à portée, l'avion
+se pose sur place comme avant, et le jeu montre l'aéroport le plus proche
+pour la fois suivante. Si l'approche est manquée (trop long, trop de
+travers), l'avion remet les gaz tout seul et refait un tour ; au deuxième
+tour raté, il change de piste.
+
+**Ce qui le prouve.** Une sonde sous node (`tests/sonde-approche.cjs`)
+rejoue l'approche assistée sur les trente et une pistes, avec les trois
+appareils et quatre points de départ : 148 approches, toutes arrêtées avant
+le bout de la piste, aucune remise des gaz ; trois touchent un peu fort (six à
+sept blocs par seconde) et le Concorde à Los Angeles touche au seuil même, un
+demi-bloc trop tôt — déclaré dans `TASKS.md` ; un témoin de `monte.js` fait poser par
+✈️ un chasseur et un avion de ligne sur deux pistes depuis un départ de
+travers, et exige le toucher et l'arrêt sur la bande.
+
+---
+
+## v451 — Le train voit la voiture de l'enfant, même quand le jeu rame
+
+**Pourquoi.** Un train traversait la voiture de l'enfant posée sur la voie,
+chaque fois qu'une image était lente — sur la tablette, ce sont les images de
+l'arrivée dans une ville. La rame roule en temps réel (v305) mais ne regardait
+que 3,5 blocs devant sa motrice : à quinze blocs par seconde, une image d'un
+quart de seconde la faisait passer d'« assez loin » à « déjà dedans », et une
+rame déjà dedans continue (v245). La session des intermittents l'avait trouvé
+et déclaré (témoin de `monte.js` laissé rouge). Les voitures de la rue avaient
+la même faille, en plus petit : leur marge d'urgence devant une personne
+valait une image à trois par seconde, pas l'image en cours.
+
+**Ce que ça change.** La rame regarde aussi loin qu'elle va rouler dans
+l'image (sa grille dit exactement où elle sera), plus la marge d'avant : ce
+qui est sur son chemin est vu avant d'y être, quelle que soit la cadence, et
+elle s'arrête devant la voiture (ou l'enfant à pied) au lieu de la traverser.
+Le métro, qui partage ce code, en profite aussi. Les voitures de la rue
+ajoutent à leur regard et à leur marge d'urgence ce qu'elles parcourent dans
+l'image au-delà d'un tiers de seconde ; sous ce tiers de seconde, la règle
+d'avant au bit près. La grille horaire partagée entre tablettes (v305) ne
+change pas : l'arrêt devant l'enfant reste local, comme avant.
+
+**Ce qui le prouve.** Images lentes PROVOQUÉES (700 ms brûlées par image,
+`sonde-train-voiture.cjs LENT=700`) : `origin/main` 5 traversées sur 5,
+branche 0 sur 5, branche au regard fixe d'avant (`regardRameFixe`) 2 sur 3 ;
+au repos, 0 sur 7 des deux côtés. Le témoin « un train s'arrête devant la
+voiture de l'enfant » de `monte.js` provoque désormais ces images lentes au
+lieu d'attendre la charge du portail. Voitures de la rue
+(`sonde-voiture-lente.cjs`, le passage du témoin de `monte.js` recopié) :
+branche 0 traversée sur 4 poses, `origin/main` 1 sur 7 (et trois poses où
+une voiture était déjà dedans au départ) — un tirage, pas une preuve : leur
+regard portait déjà quarante blocs. Ce volet se juge sur sa construction (la
+marge couvre l'avance de l'image), et il est déclaré comme tel.
+## v450 — Le Colisée ne change plus, Édimbourg en pierre grise
+
+**Pourquoi.** Trois façades qui mentaient. Le Colisée du catalogue tirait ses
+gradins effondrés à `Math.random()` : deux lancements bâtissaient deux Colisées
+(173 blocs de Rome), et le worker de maillage en bâtissait un autre que le fil
+principal — on pouvait se cogner à des gradins qu'on ne voyait pas, ou traverser
+ceux qu'on voyait. Édimbourg portait la brique rouge de Manchester, quand la
+vraie ville est de grès gris. Et à Sydney, la fiche `baie` (la géographie du
+port) était lue comme le bloc des fenêtres : 250 fenêtres étaient des trous.
+
+**Ce que ça change.** Le Colisée est le même à chaque lancement, sur chaque
+tablette, dans ce qu'on voit comme dans ce qu'on touche : un tirage par bloc,
+même règle (six sur dix tombent), même zone — un des Colisées que l'ancien
+tirage pouvait rendre. Édimbourg est grise et blonde (gris, gris clair, kaki de
+la palette de décor), ses souches de cheminée en pierre sombre. Les fenêtres de Sydney sont des fenêtres.
+
+**Ce qui le prouve.** Une sonde a engendré les 763 repères du monde (aujourd'hui
+et d'avant la v306) sous deux graines de `Math.random` : seul le Colisée
+changeait — c'était la seule source de hasard dans un bâtisseur. Quatre témoins
+dans `plafond.js`, rouges sur `origin/main` : deux fils neufs sous deux graines
+bâtissent les mêmes 763 repères ; le fil principal et le worker le même
+Colisée ; Édimbourg 3 036 blocs de grès et 0 de brique rouge (0 et 2 263
+avant, souches de cheminée comprises) ; Sydney 0 baie qui ne soit pas un bloc (250 avant). L'empreinte des 490
+morceaux ne bouge pas : aucun de ces trois lieux n'y est.
+
+---
+
+## v449 — Le Shard n'est plus transparent
+
+**Pourquoi.** La pyramide du Shard posait 1 792 blocs de verre sur 2 080. Un
+bâtiment est creux : un mur de verre est un trou, et l'on voyait au travers de
+la tour depuis la rive sud (dette vue en capture en v206, règle de la v195).
+
+**Ce que ça change.** Le Shard est une tour de verre comme celles de la City :
+un mur-rideau opaque, ses meneaux dessinés dans la texture, allumé la nuit, avec
+sa ceinture d'acier tous les sept rangs. Sa forme et sa hauteur ne bougent pas.
+
+**Ce qui le prouve.** Un témoin dans `carteMonde.js` compte ce que pose son
+bâtisseur : 0 bloc de verre sur 2 080, contre 1 792 sur `origin/main` (rouge).
+L'empreinte des 490 morceaux ne bouge pas (le Shard n'y est pas) ; le verre et
+le mur-rideau arrêtent l'enfant de la même façon, aucun bloc d'enfant ne bouge.
+
+---
+
+## v448 — Des pistes assez longues pour se poser
+
+**Pourquoi.** Max : « les pistes de tous les aéroports sont beaucoup trop
+courtes pour vraiment atterrir ». Mesuré : 90 à 146 blocs de piste, pour un
+atterrissage assisté qui en demande 98 à 127 et un posé à la main qui en
+demande davantage — le Concorde n'avait presque nulle part où se poser.
+
+**Ce que ça change.** Les trente et une pistes des dix-neuf aéroports sont
+prolongées hors de leur disque, dans l'axe, par un ouvrage — asphalte sur
+remblai ou dans une tranchée, seuil repeint au nouveau bout : 300 blocs pour
+les grands aéroports, 260 pour ceux des villes, 220 pour les bases. Le relief
+ne bouge pas d'un bloc. Sept aéroports n'atteignent pas la cible parce qu'une
+ville, une route, une voie ferrée ou la mer les borne : ils gagnent ce que
+leur place permet.
+
+**Ce qui le prouve.** Chaque prolongement est mesuré par une sonde (bornes du
+remblai et de la tranchée, douze blocs de toute ville, route, voie ferrée,
+autre aéroport et monument, quarante de ce que les enfants ont bâti) ; un
+témoin de `carteMonde.js` roule chaque piste d'un bout à l'autre et compare sa
+longueur à la cible, et les deux empreintes du relief de `plafond.js` sont
+inchangées ; l'empreinte des 490 morceaux change à Londres seulement — dix-huit
+colonnes, toutes dans un tronçon de la piste d'Heathrow, et rend l'ancienne
+constante au bit près quand on retire les prolongements.
+
+---
+
+## v447 — Londres sans maisons posées par-dessus
+
+**Pourquoi.** La boucle générique de `world.js` (« un lot par case de
+grille ») excluait six villes bâties à la main, pas Londres. Entre 77 et 102
+blocs du centre — là où la place réservée au mobilier de la ville s'arrête —
+elle posait cinquante-deux maisons pastel de San Francisco, pleines, PAR-DESSUS
+la ville : 2 600 colonnes, dont 1 401 de chaussée ou de trottoir et 920 sur les
+immeubles de Londres. Des voitures de la ville les traversaient (36 pas de
+circuit dans un mur). La v415 n'avait retiré que celle qui barrait la M40.
+
+**Ce que ça change.** L'anneau extérieur de Londres montre enfin ses rues et ses
+immeubles à elle, et les voitures n'y traversent plus de maison. Une maison
+pastel sur laquelle (ou contre laquelle) un enfant a déjà bâti reste entière :
+rien n'enferme une cabane, rien ne retire un toit sous elle. Les mondes d'avant
+ne changent pas.
+
+**Ce qui le prouve.** Trois témoins dans `plafond.js`, rouges sur
+`origin/main` : la trame ne pose plus rien (2 600 colonnes changées, aucune
+hors du disque) ; une cabane posée avant la date garde la maison entière sous
+elle (rouge, 187 blocs d'écart, quand la règle est désarmée) ; un bloc posé
+après ne retient rien, et le monde de la v308 garde ses maisons. L'empreinte
+des 490 morceaux est relevée (`19946cb7…`) ; le drapeau retiré, la branche rend
+`fb4f9aed…`, la constante de la v446, au bit près. Circuits de Londres
+identiques (ils ne lisent que le sol de la ville) : 36 pas de carrosserie dans
+un mur de moins.
 
 ---
 

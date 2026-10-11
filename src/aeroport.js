@@ -292,6 +292,145 @@ export function amenagerHall(set, { u0, u1, D, h, versMonde, portes, allee, fonc
   }
 }
 
+// LES PROLONGEMENTS DE PISTE — `[ouest, est]` en blocs au-delà du BORD du
+// disque pavé sur l'axe (`floor(√(RAYON² − z0²))`), par aérodrome et par axe
+// (v445).
+//
+// Max : « les pistes de tous les aéroports, qui sont beaucoup trop courtes pour
+// vraiment atterrir ». La v280 avait fait passer la piste par le diamètre ; il
+// restait ce que le disque permet — 90 à 146 blocs — pour un atterrissage
+// assisté qui en réclame 98 à 127 (la seconde d'arrondi à la vitesse
+// d'approche, puis le freinage de la fiche, et dix blocs), et ce qu'un enfant
+// fait à la main en réclame davantage. La cible est un RÉSULTAT : 300 pour les
+// grands, 260 pour une ville, 220 pour une base.
+//
+// UN PROLONGEMENT SE MESURE, IL NE S'ÉCRIT PAS (v223). Chaque nombre sort de
+// la sonde `pistes.mjs` : colonne par colonne le long de chaque axe et dans
+// chaque sens, la bande de la piste (demi-largeur + 2) doit rester dans les
+// bornes de l'ouvrage (`REMBLAI`, `DECAISSE`), et à DOUZE blocs au moins de
+// toute ville, voie ferrée, gare, route, autre aérodrome et repère ; à
+// quarante de ce que les enfants ont bâti. On prend dans chaque sens ce qu'il
+// faut pour la cible, en reportant sur l'autre sens ce qu'un sens refuse.
+// Ce qui n'atteint pas la cible est déclaré dans `TASKS.md`, avec l'obstacle.
+//
+// C'EST UN OUVRAGE, JAMAIS UN RELIEF : remblai et tranchée sont des blocs que
+// les tronçons écrivent (`tronconsDePiste`), et `terrainHeight` ne bouge pas.
+// Les tronçons ne vivent que dans les repères du monde d'aujourd'hui : les
+// mondes figés (`LANDMARKS_V317`, donc `CONF_AVANT`, `CONF_V308`) gardent leurs
+// pistes d'avant, comme ils gardent leurs monuments.
+export const PROLONGEMENTS = {
+  cdg: { 47: [150, 16], 64: [185, 13], [-64]: [136, 62], [-47]: [112, 54] },
+  orly: { 0: [78, 78] },
+  lhr: { 0: [66, 11], 15: [79, 16] },
+  jfk: { 0: [100, 52], 15: [126, 30] },
+  mad: { 0: [125, 39], 15: [84, 84] },
+  bcn: { 0: [34, 43] },
+  ams: { 0: [76, 63], 15: [80, 66] },
+  fra: { 0: [16, 70], 15: [37, 71] },
+  fco: { 0: [9, 127] },
+  hnd: { 0: [6, 107], 15: [13, 110] },
+  dxb: { 0: [80, 80], 15: [82, 82] },
+  del: { 0: [70, 70] },
+  sfo: { 0: [17, 54] },
+  lax: { 0: [35, 20], 15: [32, 34] },
+  ist: { 0: [82, 82], 15: [84, 84] },
+  'bas-sd': { 0: [17, 111] },
+  'bas-adw': { 0: [64, 64] },
+  'bas-llv': { 0: [64, 64] },
+  'bas-ykt': { 0: [64, 64] },
+};
+// LA CIBLE, ET CE QUI N'Y ARRIVE PAS — déclaré ici avec l'obstacle mesuré, lu
+// par le témoin. Une piste plus courte que sa cible sans être nommée ici
+// rougit ; une piste nommée ici qui atteint sa cible rougit aussi.
+export const CIBLE_PISTE = { roissy: 300, hub: 300, ville: 260, base: 220 };
+export const PISTES_COURTES = {
+  lhr: 'à l\'ouest un vallon plus profond que le remblai, à l\'est Londres',
+  bcn: 'la mer des deux côtés, plus profonde que le remblai',
+  ams: 'à l\'ouest un polder trop bas, à l\'est une autoroute',
+  fra: 'à l\'ouest un vallon, à l\'est une colline plus haute que la tranchée',
+  hnd: 'à l\'ouest une colline, à l\'est Tokyo',
+  sfo: 'à l\'ouest la baie, à l\'est une autoroute',
+  lax: 'à l\'ouest un ravin, à l\'est Los Angeles',
+};
+export function prolongementDe(cle, z0) {
+  const t = PROLONGEMENTS[cle];
+  return (t && t[z0]) || [0, 0];
+}
+
+// LES PISTES D'UN AÉRODROME, publiées une fois : axe, demi-largeur, bout pavé
+// par le bâtisseur, et les deux extrémités du ruban prolongé. Lu par les
+// tronçons, par l'approche assistée et par les témoins.
+export function pistesDe(a, avecProlongement = true) {
+  let axes, demi, rayon;
+  if (a.profil === 'roissy') { axes = PISTES_ROISSY; demi = DEMI_PISTE_ROISSY; rayon = 82; }
+  else {
+    const P = planAerodrome(a.profil, a.r);
+    axes = [P.PISTE, P.PISTE2].filter((z, i) => i === 0 || z); demi = P.DEMI_PISTE; rayon = P.RAYON;
+  }
+  return axes.map((z0) => {
+    const bout = Math.floor(Math.sqrt(Math.max(0, rayon * rayon - (Math.abs(z0) + demi) ** 2)));
+    const bord = Math.floor(Math.sqrt(Math.max(0, rayon * rayon - z0 * z0)));
+    const [o, e] = avecProlongement ? prolongementDe(a.cle, z0) : [0, 0];
+    return { z0, demi, rayon, bout, ouest: o ? bord + o : bout, est: e ? bord + e : bout,
+      roissy: a.profil === 'roissy' };
+  });
+}
+
+// LES TRONÇONS DE PROLONGEMENT — des repères de trente-deux blocs, posés à la
+// cote de l'aérodrome (`ancre`). Un ruban de deux cents blocs en un seul repère
+// aurait une boîte de cent : chaque morceau d'un carré de deux cents blocs de
+// côté rejouerait tout le ruban. Trente-deux blocs, et un morceau n'en rejoue
+// que deux ou trois.
+//
+// Chaque tronçon REPEINT le dernier bout de la piste d'origine (seize blocs
+// avant `bout`) : les seuils et les numéros qui y étaient peints marquaient le
+// bout d'avant, et une piste qui en montre deux au milieu dit à l'enfant qu'il
+// peut s'arrêter là. Dans le disque, on ne repeint que la bande roulante ; le
+// bas-côté, le remblai et la tranchée ne s'écrivent que DEHORS, là où le
+// bâtisseur de l'aérodrome n'a rien posé.
+const TRONCON = 32;
+export function tronconsDePiste(a) {
+  const out = [];
+  for (const p of pistesDe(a)) {
+    for (const sens of [-1, 1]) {
+      const fin = sens < 0 ? p.ouest : p.est;
+      if (fin <= p.bout) continue;
+      const debut = p.bout - 16;
+      for (let d0 = debut; d0 <= fin; d0 += TRONCON) {
+        const d1 = Math.min(fin, d0 + TRONCON - 1), mi = Math.round((d0 + d1) / 2);
+        out.push({
+          name: `${a.nom} — piste prolongée`, piste: true,
+          x: a.x + sens * mi, z: a.z + p.z0, box: Math.max(Math.ceil((d1 - d0) / 2) + 1, p.demi + 3),
+          ancre: { x: a.x, z: a.z },
+          build: (poser) => batirTroncon(poser, p, sens, mi, d0, d1, fin),
+        });
+      }
+    }
+  }
+  return out;
+}
+function batirTroncon(poser, p, sens, mi, d0, d1, fin) {
+  const { z0, demi, rayon, bout, roissy } = p;
+  const phase = -bout + 4;   // l'axe discontinu de Roissy part de là
+  for (let d = d0; d <= d1; d++) {
+    const x = sens * d, lx = x - sens * mi;
+    for (let dz = -demi - 2; dz <= demi + 2; dz++) {
+      const z = z0 + dz, dehors = x * x + z * z > rayon * rayon;
+      const bande = Math.abs(dz) <= demi;
+      if (!bande && !dehors) continue;
+      if (dehors) {
+        for (let k = 2; k <= REMBLAI; k++) poser(lx, -k + 1, dz, BETON);   // le remblai
+        for (let k = 0; k < DECAISSE; k++) poser(lx, k + 1, dz, BLOCK.AIR); // la tranchée
+      }
+      let id = bande ? ASPHALTE : BETON;
+      if (dz === 0 && (roissy ? (((x - phase) % 6) + 6) % 6 < 3 : ((x % 6) + 6) % 6 < 3)) id = BLANC;
+      if (roissy && Math.abs(dz) === demi) id = BLANC;                     // les bords
+      if (d > fin - 8 && (dz === -3 || dz === -1 || dz === 1 || dz === 3)) id = BLANC; // le seuil
+      poser(lx, 0, dz, id);
+    }
+  }
+}
+
 export const PISTES_ROISSY = [-64, -47, 47, 64];
 export const DEMI_PISTE_ROISSY = 4;
 // ET LA COTE DE SON AIRE AUSSI. Mon premier jet en avait DEUX : `STAND = 30`

@@ -431,7 +431,7 @@ function verifier(nom, ok, detail = '') {
   }
 
   {
-    // ── UN GARDE-CORPS DE BAIE TIENT DES TRAVÉES ENTIÈRES (v447) ──────────────
+    // ── UN GARDE-CORPS DE BAIE TIENT DES TRAVÉES ENTIÈRES (v453) ──────────────
     //
     // Dette de la v288 : sur une baie étroite (le registre ancien, 0,32 de
     // large), le motif `fer` coupait ses anneaux en arcs — un glyphe. On lit

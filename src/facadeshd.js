@@ -530,7 +530,7 @@ class Face {
   }
 
   // Le garde-corps en fer forgé : un plan ajouré (alpha), vu des deux côtés.
-  // UN GARDE-CORPS DE BAIE TIENT UN NOMBRE ENTIER DE TRAVÉES (v447). Le motif
+  // UN GARDE-CORPS DE BAIE TIENT UN NOMBRE ENTIER DE TRAVÉES (v453). Le motif
   // `fer` a un barreau tous les seize pixels et un anneau entre deux ; tiré
   // en coordonnées de bloc (u = s), une baie étroite du Marais (0,32 de
   // large) en coupait les anneaux en arcs et se lisait comme un glyphe. Une

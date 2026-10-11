@@ -145,7 +145,7 @@ const GARDIENS = {
   // Le tour du monde : neuf sites, dix monuments. Ils aplanissent leur parvis
   // (donc le témoin du relief) et s'ajoutent aux destinations de la carte.
   'src/capitales.js': ['carteMonde.js', 'plafond.js', 'carte.js'],
-  'src/monuments.js': ['carteMonde.js'],
+  'src/monuments.js': ['carteMonde.js', 'plafond.js'],    // un bâtisseur ne tire pas au hasard (v450)
   // Les familles de bâtiments : la bibliothèque de l'inventaire se prouve
   // dans monte.js (onglet, vignettes, pose).
   'src/batiments.js': ['monte.js'],
@@ -194,6 +194,7 @@ const GARDIENS = {
   'src/cadence.js': ['monte.js', 'maj.js', 'carte.js', 'parent.js', 'reglages.js'],
   // Le cadran de cap lit le registre et s'affiche aux commandes : la monte le garde.
   'src/cap.js': ['monte.js', 'carte.js'],
+  'src/approche.js': ['monte.js', 'carteMonde.js'],
   'src/gps.js': ['carte.js'],
   'src/fun.js': ['monte.js', 'carte.js', 'reglages.js', 'reseau.js', 'degats.js'],
   // LES DÉGÂTS DE LA VOITURE (v343) : la règle pure et ce qui se voit.
