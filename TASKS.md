@@ -1,5 +1,11 @@
 # Ce qui est en cours
 
+- [ ] **L'AVION DE L'AMI ET SON ÉPAVE (v453) — SANS TÉMOIN À DEUX TABLETTES.**
+  `p.v` porte désormais un avion (fiche `pilote`) et ses dégâts ; aucun témoin
+  de `reseau.js` ne vérifie encore que l'autre tablette voit l'appareil, puis
+  l'épave en feu après un crash. À écrire sur le modèle de la v344 (l'ami voit
+  la voiture froissée) : deux pages, l'une s'écrase, l'autre lit le maillage.
+
 - [ ] **L'APPROCHE ASSISTÉE (v452) : QUATRE POSÉS SUR 148 À REPRENDRE.**
   `node tests/sonde-approche.cjs src` : trois touchers à 5,7 · 6,2 · 6,7 blocs
   par seconde (Roissy 47 pour l'avion de ligne et le Concorde, Andrews pour le

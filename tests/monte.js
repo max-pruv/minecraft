@@ -6473,6 +6473,107 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         && !!manuel.arret && Math.abs(manuel.arret.v) < 0.1 && Math.abs(manuel.arret.y) < 0.3,
       `${manuel.err || ''} toucher ${JSON.stringify(manuel.toucheLaPiste)} · arrêt ${JSON.stringify(manuel.arret)} en ${manuel.arretMs} ms après le relâcher · gaz min ${manuel.gazMin}`);
 
+    // UN MAUVAIS ATTERRISSAGE CASSE L'AVION (v444).
+    //
+    // Max : « un avion devrait se crasher s'il atterrit mal ». Deux trajets
+    // d'enfant, sur une dalle qui n'est PAS une piste : un piqué pleins gaz
+    // (on touche à la pointe, au-delà de `toucherMax` — la fiche, lue ici), et
+    // un posé train rentré dans un champ. Dans les deux cas l'avion devient une
+    // épave en feu, hors service, et l'enfant est déposé DEBOUT à côté, plus
+    // aux commandes, avec un bandeau qui dit quoi faire. Sur l'ancien code, le
+    // premier freine et s'arrête, le second glisse sur le ventre : aucun ne
+    // casse rien.
+    const crash = await (async () => {
+      const cdp = await tab.context().newCDPSession(tab);
+      const dormirIci = (ms) => new Promise((f) => setTimeout(f, ms));
+      const toucher = (type, points) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points });
+      const out = {};
+      for (const cas of ['vite', 'ventre']) {
+        const prep = await tab.evaluate(async (cas) => {
+          const g = window.__game;
+          const { BLOCK } = await import('./src/blocks.js');
+          const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+          for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 400)); }
+          for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh);
+          g.animalManager.animals.length = 0;
+          g.player.keys.clear(); g.player.touchMove.f = 0; g.player.touchMove.s = 0;
+          g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined; g.player.flying = false;
+          const x0 = 30000, z0 = 30600, L = 300, W = 20;
+          let y0 = 0;
+          for (let d = -6; d <= L; d += 4) for (let w = -W; w <= W; w += 4) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
+          y0 += 2;
+          const dalle = [];
+          for (let d = -6; d <= L; d++) for (let w = -W; w <= W; w++) {
+            g.world.setBlock(x0 + d, y0, z0 + w, BLOCK.STONE); dalle.push([x0 + d, y0, z0 + w]);
+            for (let h = 1; h <= 6; h++) if (g.world.getBlock(x0 + d, y0 + h, z0 + w) !== 0) { g.world.setBlock(x0 + d, y0 + h, z0 + w, 0); dalle.push([x0 + d, y0 + h, z0 + w]); }
+          }
+          window.__dalleCrash = { x0, y0, z0, dalle };
+          g.player.yaw = -Math.PI / 2; g.player.pitch = 0;
+          g.player.pos.set(x0, y0 + 1.01, z0 + 0.5); g.player.vel.set(0, 0, 0);
+          await new Promise((f) => setTimeout(f, 1200));
+          g.animalManager.invoquer('avionligne', x0 + 3, z0);
+          await new Promise((f) => setTimeout(f, 800));
+          for (let e = 0; e < 8 && !g.player.pilote; e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 500)); }
+          if (!g.player.pilote) return { err: 'pas aux commandes' };
+          const p = g.player.pilote;
+          g.player.pos.set(x0, y0 + 14, z0 + 0.5);
+          g.player.avionEtat = 'vol'; g.player.avionEnVol = true;
+          g.player.vitesseAvion = cas === 'vite' ? p.max : 47;
+          g.player.trainSorti = cas === 'vite' ? 1 : 0; g.player.trainVoulu = cas === 'vite';
+          g.player.gaz = cas === 'vite' ? 1 : 0;
+          const r = document.getElementById('gaz-base').getBoundingClientRect();
+          return { toucherMax: p.toucherMax, max: p.max, cadran: { x: r.left + r.width / 2, haut: r.top + 14, bas: r.bottom - 14 } };
+        }, cas);
+        if (prep.err) { out[cas] = prep; continue; }
+        const joy = { x: 70, y: 640, id: 1 };
+        const gaz = { x: prep.cadran.x, y: cas === 'vite' ? prep.cadran.haut : prep.cadran.bas, id: 2 };
+        await toucher('touchStart', [joy]);
+        await toucher('touchStart', [joy, gaz]);
+        await dormirIci(150);
+        await toucher('touchMove', [{ ...joy, y: joy.y + 50 }, gaz]);
+        const t0 = Date.now();
+        let fin = null;
+        while (Date.now() - t0 < 40000) {
+          await dormirIci(200);
+          fin = await tab.evaluate(() => ({ etat: window.__game.player.avionEtat, crash: window.__game.player.crash || null, toucher: window.__game.player.dernierToucher || null }));
+          if (fin.etat === 'epave' || fin.etat === 'sol' || fin.etat === 'freinage') break;
+        }
+        await toucher('touchEnd', []);
+        const apres = await tab.evaluate(async () => {
+          const g = window.__game, t1 = performance.now();
+          while (performance.now() - t1 < 15000 && g.player.pilote) await new Promise((f) => setTimeout(f, 200));
+          await new Promise((f) => setTimeout(f, 1500));
+          const epave = g.animalManager.animals.find((b) => b.def.pilote);
+          const e = epave ? g.fun.degats.etat(epave.mesh) : null;
+          const toast = document.getElementById('toast');
+          return {
+            pilote: !!g.player.pilote, auVolant: !!(g.fun.montureConduite && g.fun.montureConduite()), sol: !!g.player.onGround,
+            loin: epave ? +Math.hypot(g.player.pos.x - epave.mesh.position.x, g.player.pos.z - epave.mesh.position.z).toFixed(1) : null,
+            enFeu: !!(e && e.enFeu), horsService: !!(epave && epave.mesh.userData.horsService),
+            bandeau: toast ? toast.textContent : '', duree: Math.round(performance.now() - t1),
+          };
+        });
+        out[cas] = { ...prep, fin, apres };
+        await tab.evaluate(() => {
+          const g = window.__game, P = window.__dalleCrash;
+          for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh);
+          g.animalManager.animals.length = 0;
+          g.player.pilote = null; g.player.avionEtat = undefined; g.player.avionEnVol = false; g.player.gaz = null;
+          if (P) for (const [x, y, z] of P.dalle) g.world.setBlock(x, y, z, 0);
+        });
+      }
+      return out;
+    })();
+    const casse = (c, raison) => c && !c.err && c.fin && c.fin.etat === 'epave' && c.fin.crash && c.fin.crash.raison === raison
+      && c.apres && !c.apres.pilote && !c.apres.auVolant && c.apres.sol && c.apres.loin != null && c.apres.loin < 12
+      && c.apres.enFeu && c.apres.horsService;
+    verifier('un piqué pleins gaz qui touche au-delà de la vitesse de la fiche casse l\'avion — épave en feu, l\'enfant debout à côté',
+      casse(crash.vite, 'vite') && crash.vite.fin.toucher && crash.vite.fin.toucher.vh > crash.vite.toucherMax,
+      JSON.stringify(crash.vite));
+    verifier('posé train rentré hors d\'une piste, l\'avion casse aussi — et le jeu dit quoi faire',
+      casse(crash.ventre, 'ventre') && /🛞|train/i.test(crash.ventre.apres.bandeau),
+      JSON.stringify(crash.ventre));
+
     // LE CADRAN DE CAP : LA VILLE VISÉE AU LOIN (v263).
     //
     // Max : « un cadran de pilote en avion : la ville visée au loin ». Aux

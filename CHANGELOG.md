@@ -20,6 +20,32 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v453 — Un mauvais atterrissage casse l'avion
+
+**Pourquoi.** Max : « un avion devrait se crasher s'il atterrit mal ».
+Jusqu'ici tout toucher finissait en freinage : un piqué pleins gaz, un posé
+train rentré dans un champ, un avion dans les arbres ou dans la mer — rien ne
+se passait, et rien n'apprenait à bien se poser.
+
+**Ce que ça change.** Un avion qui touche trop vite (au-delà de sa vitesse
+d'atterrissage), trop fort à la verticale, sur le ventre hors d'une piste, sur
+un terrain trop accidenté, dans l'eau, dans les arbres ou contre un bâtiment
+devient une épave : fumée, flammes, carcasse hors service. L'enfant n'a rien —
+il est déposé debout à côté, en sécurité, et un bandeau dit ce qui s'est passé
+et quoi faire la prochaine fois (sortir le train, ralentir, laisser ✈️ se
+poser). Un atterrissage correct sur une piste ou sur un champ plat ne casse
+rien, et un posé assisté par ✈️ sur une piste ne casse jamais. L'ami qui
+joue avec toi voit désormais ton avion, et son épave en feu.
+
+**Ce qui le prouve.** La règle est pure (`jugerToucher`, degats.js) et ses
+seuils vivent dans la fiche de chaque appareil (`toucherMax`, `chuteMax`) ;
+un témoin de `degats.js` la vérifie sous node cas par cas. Deux témoins de
+`monte.js` jouent le trajet de l'enfant — un piqué pleins gaz et un posé train
+rentré sur une dalle qui n'est pas une piste — et exigent l'épave en feu,
+l'enfant debout à côté, plus aux commandes, et le bandeau.
+
+---
+
 ## v452 — ✈️ va chercher la piste
 
 **Pourquoi.** Max : « améliore la séquence d'atterrissage parce que l'avion

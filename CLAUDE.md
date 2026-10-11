@@ -770,6 +770,30 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Un mauvais atterrissage casse l'avion (v453) — un seuil de crash vit dans la fiche, et l'enfant n'a jamais rien
+
+Max : « un avion devrait se crasher s'il atterrit mal ». Trois règles.
+
+- **LA RÈGLE EST PURE, LES SEUILS SONT DANS LA FICHE.** `jugerToucher`
+  (degats.js) lit la mesure du toucher (vitesse, chute, train, sol : piste,
+  champ plat, relief, eau, arbres) et `toucherMax`, `chuteMax` de la fiche
+  `pilote` ; le témoin de `degats.js` lit les mêmes seuils. Un appareil neuf
+  déclare les siens, ou ne s'écrase jamais.
+- **L'ENFANT N'A RIEN, ET LE MESSAGE DIT QUOI FAIRE.** L'avion devient une
+  épave (`etat: 'epave'`, la fumée et les flammes des dégâts de la v343,
+  `horsService`) et l'enfant est déposé debout à côté (`deposer`), plus aux
+  commandes ; le bandeau dit la raison et le geste (sortir le train,
+  ralentir, laisser ✈️ se poser).
+- **UN POSÉ ASSISTÉ SUR UNE PISTE NE CASSE JAMAIS.** La garde est dans
+  `player.js` : sous l'approche, sur la piste, sol correct, pas de jugement.
+  La sonde de l'approche rend quelques touchers à six blocs par seconde (4 sur
+  148) : la garde est ce qui rend l'aide sûre, pas la sonde.
+- **CE QUI SE VOIT VOYAGE AVEC LA POSITION, ET L'AVION AUSSI.** `p.v` ne
+  portait qu'un véhicule à siège : un ami aux commandes d'un avion était vu à
+  pied. Il porte désormais tout ce qui a une fiche `pilote`, avec ses dégâts
+  (`d`, v344) — l'ami voit l'appareil et son épave. Aucun témoin à deux
+  tablettes ne le garde encore : déclaré dans `TASKS.md`.
+
 ## ✈️ va chercher la piste (v452) — une séquence assistée garde sa porte de sortie et se mesure piste par piste
 
 Max : « améliore la séquence d'atterrissage, l'avion est compliqué à gérer ».

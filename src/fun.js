@@ -257,7 +257,7 @@ export function initFun(ctx) {
       animalManager.animals = animalManager.animals.filter((o) => o !== a);
     } });
 
-  function toggleRide(a) {
+  function toggleRide(a, silencieux = false) {
     if (riding) {
       const quitte = riding;
       riding = null;
@@ -285,7 +285,7 @@ export function initFun(ctx) {
       moteurCoupe(); radioCoupe();
       quitte.montee = false;
       degats.descend();   // dégâts (v343) : plus d'état publié à pied
-      if (!rangerAuGarage(quitte)) toast('🐴 Tu es descendu·e.', 0xd8c9a4);
+      if (!silencieux && !rangerAuGarage(quitte)) toast('🐴 Tu es descendu·e.', 0xd8c9a4);
       return;
     }
     if (!montable(a)) return;
@@ -395,6 +395,9 @@ export function initFun(ctx) {
     if (!passager) return;
     const veh = vehiculeDistant ? vehiculeDistant(passager.de) : null;
     if (!veh) { descendreDePassager(true); return; }
+    // le véhicule de l'ami s'est cassé (aviation) : on descend aussi, sain et sauf
+    const ev = degats.etat(veh.mesh);
+    if (ev && (ev.enFeu || ev.eteint)) { descendreDePassager(true); toast('🧯 Le véhicule de ton ami est cassé — tu en es sorti·e, sain et sauf.', 0x9fe0a8, 4000); return; }
     const sieges = veh.def.sieges || [];
     const siege = sieges[Math.min(passager.s, sieges.length - 1)] || veh.def.siege;
     veh.mesh.updateMatrixWorld(true);
@@ -1087,6 +1090,24 @@ export function initFun(ctx) {
       toggleRide(null);
       degats.deposer(enFeu);
       return;
+    }
+    // L'AVION CASSÉ (aviation) : la physique a jugé le toucher (`epave`,
+    // player.js). La carcasse prend feu tout de suite (`ecraser`) ; une
+    // seconde plus tard — le temps que l'ami reçoive l'épave en feu par la
+    // position (v344) et que l'enfant lise le bandeau — on le DÉPOSE debout à
+    // côté, sain et sauf. Cassé en l'air, on attend qu'il ait touché le sol.
+    if (player.avionEtat === 'epave' && riding.def.pilote) {
+      const a = riding, t = performance.now();
+      if (!a.ecraseA) { a.ecraseA = t; degats.ecraser(a); }
+      if (t - a.ecraseA > 1100 && (player.onGround || t - a.ecraseA > 3500)) {
+        toggleRide(null, true);
+        a.ecraseA = 0;
+        const sol = world.sommetColonne(Math.floor(a.pos.x), Math.floor(a.pos.z)) + 1;
+        if (a.pos.y > sol + 0.5) { a.pos.y = sol; a.mesh.position.y = sol; }
+        a.mesh.rotation.order = 'YXZ'; a.mesh.rotation.z = 0.22; a.mesh.rotation.x = -0.06;   // l'épave penche
+        degats.deposer(a, null);
+        return;
+      }
     }
     // PILOTER : la fiche de l'espèce décide, jamais ce fichier. `player.js`
     // remplace alors la marche par la physique de vol — poussée, roulis,
