@@ -1645,7 +1645,10 @@ function updateChunks() {
   });
   // et la rue freine devant les piétons (v372) : à cinquante à l'heure, qu'un
   // passant s'écarte ne suffit plus à garantir qu'on ne renverse personne
-  vehicules.brancherPietons(() => npcs);
+  // un personnage qui attend que son monde arrive (v436) n'est pas encore
+  // dans la rue : la circulation, qui attend sans limite devant un piéton, ne
+  // l'attend pas — sinon ses files se nouaient aux feux pendant l'arrivée
+  vehicules.brancherPietons(() => npcs.filter((h) => !h.attendLeMonde));
   // la voiture de l'enfant s'arrête devant la circulation (player.js, v245)
   // ET LE MOBILIER NON PLUS (v252). Un réverbère, une jardinière, un banc,
   // une table de Times Square sont des props NON SOLIDES pour la marche —
