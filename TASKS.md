@@ -5190,7 +5190,17 @@ l'embarquement a eu lieu, pas par une hypothèse.
   · la part de lots passe de 14,2 à 11,2 % : un îlot de vingt et un porte
     quatre maisons de neuf, pas un bâtiment de vingt et un.
 
-- [ ] **IL RESTE DES ANNEAUX QUI SE PARTAGENT DIX-HUIT BLOCS (v270).** La
+- [ ] **IL RESTE DES ANNEAUX QUI SE PARTAGENT DIX-HUIT BLOCS (v270).** Remesuré
+  en v422 sur les VOIES (`tests/sonde-anneaux-villes.cjs`, deux voies à moins
+  de deux blocs et dans le même sens) : 16 villes partagent quelque chose, le
+  pire est Kyoto à 18, les quinze autres à 15 (Boston, Québec, Mumbai,
+  Édimbourg, La Mecque, Ispahan, Xi'an, Nankin, Jakarta, Manille, Alexandrie,
+  Tunis, Alger, Delhi 3, Las Vegas 3) : un côté d'îlot de dix-huit blocs, des
+  petites trames. NON-RÉSULTAT MESURÉ, à ne pas réécrire : retourner l'un des
+  deux anneaux (contresens, pour qu'ils se croisent au lieu de se suivre) ne
+  règle qu'une paire (Mumbai) et rend Boston pire (18 → 36), parce que l'autre
+  voie est déjà suivie par un troisième ; le pire ne bouge pas. La
+  v422 n'a rien aggravé (même liste, même pire). La
   contrainte de la v211 est désormais appliquée aux villes engendrées : 265
   villes en faute deviennent 0, le pire partage tombe de 576 blocs (Shanghai)
   à 18 (São Paulo). Dix-huit, c'est SOUS la barre d'un carrefour, donc ce
