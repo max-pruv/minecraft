@@ -46,7 +46,7 @@ recouvrement entre minicarte, cadran, GPS, bandeau, défi et commandes ; une
 colonne d'un seul x, rien au-dessus du haut de la manette ni dans le quart du
 joystick ; l'avion ne bouge pas sous le quiz. Les deux premiers sont rouges
 sur `origin/main` (six recouvrements, dont le défi sur la manette), le
-troisième garde une capacité. Captures avant/après dans la PR.
+troisième garde une capacité. Capture relue aux deux tailles avant de livrer.
 
 ---
 
