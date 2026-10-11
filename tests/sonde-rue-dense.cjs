@@ -7,6 +7,11 @@
 //     avec son jeu — jamais le freinage local) ; deux voisines de la file (ou de
 //     la ligne, avec la jumelle) qui se touchent comptent. Le même tour sans le
 //     jeu (`_jeuT = null`) : le jeu ne doit pas ajouter un seul contact.
+//   node tests/sonde-rue-dense.cjs raccords [_ racine]
+//     Chaque raccord route/ville engendrée : où son avenue rencontre la voie
+//     d'un anneau, la table `RACCORDS_COURTS` qu'en tire la règle, et le
+//     partage qui reste sur tout le tracé (avenue entière, raccord court, ce
+//     que le jeu fait, arrêt à la porte). plafond.js lit la ligne BILAN.
 //   node tests/sonde-rue-dense.cjs boulevards
 //     Paris : le long de chaque circuit, où la section a deux voies
 //     (`secondeVoieParis`) et ce que la seconde voie en garde, portion par
@@ -22,7 +27,9 @@ export async function resolve(s, c, n) {
   return n(s, c);
 }`));
 const src = (f) => pathToFileURL(path.join(RACINE, 'src', f)).href;
-const mode = process.argv[2] || 'jeu'; globalThis.__dbg = !!process.env.DBG;
+globalThis.__dbg = !!process.env.DBG;
+// le relevé que rend `raccords` à qui requiert ce fichier (plafond.js)
+let RESULTAT = null;
 
 async function monter() {
   const { World } = await import(src('world.js'));
@@ -90,7 +97,7 @@ function contacts(convs, P) {
   return { n, examines };
 }
 
-(async () => {
+async function principal(mode) {
   const M = await monter();
   if (mode === 'jeu') {
     const { w, P } = M;
@@ -174,6 +181,73 @@ function contacts(convs, P) {
     }
     for (const r of res.filter((r) => r[2] + r[3] > 0)) console.log(JSON.stringify(r));
     console.log('routes', res.length, 'touchées', res.filter((r) => r[2] + r[3] > 0).length);
+  } else if (mode === 'raccords') {
+    // node tests/sonde-rue-dense.cjs raccords : pour chaque raccord route/ville
+    // engendrée, où l'avenue d'entrée rencontre la VOIE d'un anneau (même sens
+    // ou en face, à moins de 1,6 bloc), donc où elle doit s'arrêter pour ne
+    // jamais partager une voie (`finAvantAnneaux`, raccords.js) ; puis le
+    // partage qui reste sur tout le tracé, raccord court et arrêt à la porte.
+    const RO = await import(src('routes.js'));
+    const VM = await import(src('villesmonde.js'));
+    const RA = await import(src('raccords.js'));
+    const { w, V } = M;
+    const anneaux = VM.tracesCirculation((x, z) => w.terrainHeight(x, z));
+    const parVille = new Map();
+    for (const t of anneaux) { const l = parVille.get(t.cle) || []; l.push(t); parVille.set(t.cle, l); }
+    const voiesCache = new Map();
+    const voiesDe = (cle) => {
+      if (voiesCache.has(cle)) return voiesCache.get(cle);
+      const ps = (parVille.get(cle) || []).map((tr) => poser(M, tr).parcours);
+      const ech = RA.echantillonner(ps);
+      voiesCache.set(cle, { ps, ech });
+      return voiesCache.get(cle);
+    };
+    const avenueDe = (cle, route) => {
+      const i = RO.entreesDe(cle).findIndex((e) => e.route === route);
+      if (i < 0) return undefined;
+      const e = RO.entreesDe(cle)[i];
+      return VM.avenueDEntree(cle, e.x, e.z) || undefined;
+    };
+    const partage = (pts, ech, nom) => { const pr = new V.Parcours(pts); let n = 0; for (let d = 0; d < pr.longueur; d += 1) { const q = pr.a(d); if (RA.voieOccupee(ech, q.x, q.z, pr.capLisse(d))) { n++; if (process.env.DBG && nom) console.log('  partage', nom, Math.round(q.x), Math.round(q.z), Math.round(d), '/', Math.round(pr.longueur)); } } return n; };
+    const table = {};
+    const lignes = [];
+    for (const seg of RO.segmentsDeRoute()) {
+      const av = {}, fins = {};
+      for (const cle of [seg.de, seg.vers]) {
+        const a = avenueDe(cle, seg.route.nom); av[cle] = a;
+        if (!a || !parVille.has(cle)) continue;
+        const L = Math.hypot(a[1][0] - a[0][0], a[1][1] - a[0][1]);
+        const fin = RA.finAvantAnneaux(a, voiesDe(cle).ech);
+        fins[cle] = { L: +L.toFixed(1), fin };
+        if (fin < L - 0.01) table[seg.route.nom + '|' + cle] = fin;
+      }
+      const cote = (x, z) => w.coteRoulable(x, z) + 1;
+      const court = (cle) => { const a = av[cle]; if (!a || !fins[cle]) return a; return RA.raccourcir(a, fins[cle].fin); };
+      const variantes = {
+        long: RO.traceRoute(seg, { avant: av[seg.de], apres: av[seg.vers], coteDe: cote }),
+        court: RO.traceRoute(seg, { avant: court(seg.de), apres: court(seg.vers), coteDe: cote }),
+        // ce que le JEU fait : main.js passe l'avenue par la table (`raccordDe`)
+        jeu: RO.traceRoute(seg, { avant: RA.raccordDe(seg.route.nom, seg.de, av[seg.de]), apres: RA.raccordDe(seg.route.nom, seg.vers, av[seg.vers]), coteDe: cote }),
+        porte: RO.traceRoute(seg, { avant: parVille.has(seg.de) ? undefined : av[seg.de], apres: parVille.has(seg.vers) ? undefined : av[seg.vers], coteDe: cote }),
+      };
+      for (const cle of [seg.de, seg.vers]) {
+        if (!parVille.has(cle)) continue;
+        const { ech } = voiesDe(cle);
+        const r = { route: seg.route.nom, cle, ...fins[cle] };
+        for (const [k, pts] of Object.entries(variantes)) r[k] = partage(pts, ech, k === 'court' ? seg.route.nom + '|' + cle : null);
+        lignes.push(r);
+      }
+    }
+    for (const l of lignes.filter((l) => l.long + l.court + l.porte > 0 || (l.fin !== undefined && l.fin < l.L - 0.01))) console.log(JSON.stringify(l));
+    const som = (k) => lignes.reduce((s, l) => s + l[k], 0);
+    const K = ['long', 'court', 'jeu', 'porte'];
+    const bilan = { raccords: lignes.length, touches: Object.fromEntries(K.map((k) => [k, lignes.filter((l) => l[k] > 0).length])), blocs: Object.fromEntries(K.map((k) => [k, som(k)])) };
+    // la table du jeu est-elle celle que la règle donne aujourd'hui ?
+    const ecarts = [...new Set([...Object.keys(table), ...Object.keys(RA.RACCORDS_COURTS)])].filter((k) => table[k] !== RA.RACCORDS_COURTS[k]).map((k) => [k, RA.RACCORDS_COURTS[k], table[k]]);
+    console.log(JSON.stringify(bilan));
+    console.log('TABLE', JSON.stringify(table));
+    RESULTAT = { ...bilan, ecarts, pires: lignes.filter((l) => l.jeu > 0).map((l) => [l.route + '|' + l.cle, l.long, l.jeu]) };
+    console.log('BILAN', JSON.stringify(RESULTAT));
   } else if (mode === 'ville') {
     // node tests/sonde-rue-dense.cjs ville madrid [secondes] : les voitures de
     // TOUS les convois de la ville posées par la grille, et les paires de deux
@@ -226,4 +300,12 @@ function contacts(convs, P) {
     console.log(JSON.stringify({ brut, garde }));
     for (const l of lignes) console.log(JSON.stringify(l));
   }
-})().catch((e) => { console.error(e); process.exit(1); });
+  return RESULTAT;
+}
+
+// LANCÉE SEULE, elle imprime ; REQUISE (plafond.js, v442), elle rend le relevé
+// du mode `raccords` — et l'aiguillage du portail voit que la suite en dépend
+// (un `spawn` ne se lit pas comme un `require`).
+async function mesurer(mode) { return principal(mode); }
+module.exports = { mesurer };
+if (require.main === module) principal(process.argv[2] || 'jeu').catch((e) => { console.error(e); process.exit(1); });

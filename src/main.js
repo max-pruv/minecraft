@@ -52,6 +52,7 @@ import { createPassants } from './passants.js';
 import { createPoissons } from './poissons.js';
 import { segmentsDeTrain, traceSegment } from './trains.js';
 import { segmentsDeRoute, traceRoute, entreesDe } from './routes.js';
+import { raccordDe } from './raccords.js';
 import { ENTREES_PARIS } from './paris.js';
 import { ENTREES_LILLE } from './lille.js';
 import { ENTREES_LONDRES } from './londres.js';
@@ -60,6 +61,7 @@ import { actualiserPresence } from './presence.js';
 import { animerHumain, chargerHumains, humainsCharges, humainsPrets } from './humains.js';
 import { MODELES_MONTURE, MONTURES } from './montures.js';
 import { initFun } from './fun.js';
+import { vieDistante } from './sensations.js';
 import { Identity, prefetchScanner } from './identity.js';
 import { ProfileSync } from './sync.js';
 import { AdminPanel, isAdminName } from './admin.js';
@@ -2060,7 +2062,11 @@ function updateChunks() {
     const fiche = segmentsDeRoute().find((sg) => sg.route.nom === route);
     if (fiche && fiche.route.avenues && fiche.route.avenues[cle]) return fiche.route.avenues[cle];
     const e = entreesDe(cle)[i];
-    return avenueDEntree(cle, e.x, e.z) || undefined;
+    // LE RACCORD S'ARRÊTE AVANT LA VOIE D'UN ANNEAU (v442) : deux grilles
+    // (v305) dans une même voie ne se cadencent pas. La table est mesurée
+    // (raccords.js) ; `?raccords=long` rejoue l'avenue entière, pour l'A/B.
+    const av = avenueDEntree(cle, e.x, e.z) || undefined;
+    return PARAMS_JEU.get('raccords') === 'long' ? av : raccordDe(route, cle, av);
   };
   for (const seg of segmentsDeRoute()) {
     const avant = entree(seg.de, seg.route.nom), apres = entree(seg.vers, seg.route.nom);
@@ -2836,6 +2842,8 @@ document.getElementById('gps-stop').addEventListener('click', (e) => {
   toast('🧭 GPS arrêté.', 0xcfd8e8);
 });
 window.__gps = () => (gpsCible ? { ...gpsCible, ...guidage(player.pos.x, player.pos.z, player.yaw, gpsCible) } : null);
+// Pour les sondes et les témoins de mise en page : poser un trajet sans passer par la carte.
+window.__gpsVers = (x, z, nom) => demarrerGPS(x, z, nom);
 
 // LE GPS SE PARTAGE (v388). Max avait demandé la flèche (v306) ; à deux, un
 // enfant qui choisit Rome ne peut pas l'écrire à son ami. Sa destination
@@ -4524,7 +4532,7 @@ function syncRemotePlayers(list) {
     // feu. `p.v.d` est court et une tablette restée sur l'ancienne version
     // l'ignore (le receveur cède).
     if (rp.vehicule) fun.degats.distant(rp.vehicule.mesh, (p.v && p.v.d) || null);
-    if (rp.vehicule) { const u = rp.vehicule.mesh.userData; u.braquage = (p.v && +p.v.b) || 0; u.derive = (p.v && +p.v.r) || 0; }
+    if (rp.vehicule) { const u = rp.vehicule.mesh.userData; u.braquage = (p.v && +p.v.b) || 0; u.derive = (p.v && +p.v.r) || 0; u.freinMain = !!(p.v && p.v.m); }
     rp.passager = p.p || null;
     proposerGPSAmi(p.id, rp, p.g || null);   // sa destination, proposée (v388)
   }
@@ -4621,6 +4629,7 @@ function updateRemotePlayers(dt) {
       const vm = rp.vehicule.mesh;
       vm.position.copy(rp.pos);
       vm.rotation.y = rp.cap;
+      vieDistante(vm, dt);   // roues avant braquées et traces de pneus (v441)
       asseoir(rp.mesh, rp.vehicule, rp.vehicule.def.siege, rp.animTime);
       continue;
     }
@@ -4717,6 +4726,8 @@ function startNetSession(code, isHost, patience) {
       // et une tablette restée sur l'ancienne version les ignore.
       if (Math.abs(player.braquage || 0) > 0.005) p.v.b = Math.round(player.braquage * 100) / 100;
       if (Math.abs(player.derive || 0) > 0.0005) p.v.r = Math.round(player.derive * 1000) / 1000;
+      // le frein à main tiré (v441) : l'ami voit les traces qu'il laisse
+      if (player.freinMainTire) p.v.m = 1;
     }
     const pa = fun.passagerDe ? fun.passagerDe() : null;
     if (pa) p.p = { de: pa.de, s: pa.s };
@@ -7192,6 +7203,8 @@ document.getElementById('map-tout').addEventListener('click', () => carte.toutVo
 document.getElementById('map-btn').addEventListener('click', () => {
   minimapVisible = !minimapVisible;
   minimapCanvas.style.display = minimapVisible ? 'block' : 'none';
+  // la file centrale se range à droite de la minicarte ouverte (aviation)
+  document.body.classList.toggle('minicarte-ouverte', minimapVisible);
   if (minimapVisible) {
     drawMap(minimapCanvas, 96);
     carteVue = { x: player.pos.x, z: player.pos.z };

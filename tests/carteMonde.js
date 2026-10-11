@@ -609,6 +609,7 @@ const VRAIES_KM = [
       // rue, et les blocs à hauteur de carrosserie sur l'avenue.
       try {
         const sw = m.segmentsDeRoute().find((sg) => sg.route.nom === 'I-95 Sud');
+        const CH = (await import('./src/world.js')).CHAUSSEE;
         if (sw) {
           let col = 0, dansVille = 0;
           const fin = m.pointA(sw, sw.longueur);
@@ -623,7 +624,33 @@ const VRAIES_KM = [
               if (w.isSolid(X, h + 1, Z2) || w.isSolid(X, h + 2, Z2)) bloque.push([X, Z2]); } }
           let marche = 0; for (let k = 1; k < cotes.length; k++) marche = Math.max(marche, Math.abs(cotes[k] - cotes[k - 1]));
           const [ex, ez] = av[av.length - 1], c = w.cityAt(Math.floor(ex), Math.floor(ez));
-          out.washington = { col, dansVille, bloque: bloque.length, marche, rue: !!c && (await import('./src/world.js')).CHAUSSEE.has(w.getBlock(Math.floor(ex), w.coteRoulable(Math.floor(ex), Math.floor(ez)), Math.floor(ez))) };
+          // L'AVENUE TRAVERSE L'ANACOSTIA (v444) jusqu'à Pennsylvania Avenue
+          // SE : on compte les pas de l'avenue au-dessus de l'eau, et l'on lit
+          // que son bout est un sommet de Pennsylvania Avenue SE.
+          let traverse = 0;
+          for (let k = 0; k + 1 < av.length; k++) { const [x0, z0] = av[k], [x1, z1] = av[k + 1], L = Math.hypot(x1 - x0, z1 - z0);
+            for (let t = 0; t <= L; t += 0.5) { const X = Math.floor(x0 + (x1 - x0) * t / L), Z2 = Math.floor(z0 + (z1 - z0) * t / L);
+              if (w.getBlock(X, 29, Z2) === b.BLOCK.WATER && w.coteRoulable(X, Z2) >= 33) traverse++; } }
+          const WA = await import('./src/washington.js');
+          const PE = (WA.VOIES_WASHINGTON || []).find((v) => v.nom === 'Pennsylvania Avenue SE');
+          const penn = !!PE && PE.pts.some(([a, bb]) => Math.hypot(a - (ex - WA.WASHINGTON.x), bb - (ez - WA.WASHINGTON.z)) < 1);
+          out.washington = { col, dansVille, bloque: bloque.length, marche, traverse, penn, rue: !!c && (await import('./src/world.js')).CHAUSSEE.has(w.getBlock(Math.floor(ex), w.coteRoulable(Math.floor(ex), Math.floor(ez)), Math.floor(ez))) };
+          // LES DEUX PONTS DE L'ANACOSTIA (v444), chacun d'une rive à
+          // l'autre : la chaussée du tablier à la cote de la rue, deux blocs
+          // libres au-dessus, et de l'eau dessous.
+          out.pontsDC = (WA.PONTS_DC || []).map((pt) => {
+            const [[u0, v0], [u1, v1]] = pt.pts, L = Math.hypot(u1 - u0, v1 - v0);
+            let n = 0, eau = 0, rue = 0, libre = 0, cote = 0;
+            const WO2 = WA.WASHINGTON;
+            for (let t = 0; t <= L; t += 0.5) {
+              const X = Math.floor(WO2.x + u0 + (u1 - u0) * t / L), Z2 = Math.floor(WO2.z + v0 + (v1 - v0) * t / L);
+              const h = w.coteRoulable(X, Z2); n++;
+              if (w.getBlock(X, 29, Z2) === b.BLOCK.WATER) { eau++; if (h === 33) cote++; }
+              if (CH.has(w.getBlock(X, h, Z2))) rue++;
+              if (!w.isSolid(X, h + 1, Z2) && !w.isSolid(X, h + 2, Z2)) libre++;
+            }
+            return { nom: pt.nom, n, eau, cote, rue, libre };
+          });
         }
       } catch (e) { out.washingtonErreur = String(e); }
       // LA PORTE DE MANHATTAN (v362) : Manhattan est un RECTANGLE (`BORNES`),
@@ -1141,6 +1168,18 @@ const VRAIES_KM = [
       && (a1.manhattan || []).filter((e) => e.route === 'I-95 Sud').length === 1 && !!a1.frole && a1.frole['I-95 Sud'] === 0,
       JSON.stringify(a1.absent ? a1 : { convoi: a1.convoiI95Sud ? { nom: a1.convoiI95Sud.nom, voitures: (a1.convoiI95Sud.modeles || []).length } : 'aucun convoi I-95 Sud',
         washington: a1.washington, erreur: a1.washingtonErreur, portesNY: a1.manhattan, frole: a1.frole && a1.frole['I-95 Sud'] }));
+
+    // WASHINGTON PAR ANACOSTIA (v444) : le quartier où entre l'I-95 Sud n'avait
+    // aucun pont vers la ville, et ses voitures faisaient demi-tour sur une rue
+    // sans nom. Les deux ponts de la vraie ville (la 11e Rue, Sousa) prolongent
+    // la grille d'une rive à l'autre, à la cote de la rue ; l'avenue d'entrée
+    // passe le pont Sousa et finit au bout de Pennsylvania Avenue SE. Sur
+    // l'ancien code, ni pont (`PONTS_DC` n'existe pas) ni traversée.
+    verifier('à Washington, deux ponts franchissent l\'Anacostia à la cote de la rue, et les voitures de l\'I-95 Sud vont jusqu\'à Pennsylvania Avenue SE',
+      !a1.absent && !a1.washingtonErreur && (a1.pontsDC || []).length === 2
+      && a1.pontsDC.every((p) => p.eau >= 10 && p.cote === p.eau && p.rue === p.n && p.libre === p.n)
+      && !!a1.washington && a1.washington.traverse >= 10 && a1.washington.penn && a1.washington.bloque === 0 && a1.washington.marche <= 1,
+      JSON.stringify(a1.absent ? a1 : { ponts: a1.pontsDC, avenue: a1.washington, erreur: a1.washingtonErreur }));
 
     // LE TŌMEI (v381) : Tokyo–Nagoya, par la bande côtière au sud du
     // Shinkansen — Haneda et Yokota ferment la plaine à l'ouest de Tokyo, et le
@@ -1755,6 +1794,21 @@ const VRAIES_KM = [
       troues.length === 0,
       Object.entries(mains).map(([v, c]) =>
         `${v} ${((c.verre / (c.batis || 1)) * 100).toFixed(1)}%`).join(' · '));
+
+    // ET LE SHARD AUSSI (v449) : sa pyramide était un treillis de verre, un
+    // mur creux qu'on traversait du regard depuis la rive sud (dette v206).
+    // Son bâtisseur est pur : on compte ce qu'il pose.
+    const shard = await tab.evaluate(async () => {
+      const { MONUMENTS_LONDRES } = await import('./src/londres.js');
+      const { BLOCK } = await import('./src/blocks.js');
+      const m = MONUMENTS_LONDRES.find((q) => q.nom === 'The Shard');
+      let verre = 0, batis = 0;
+      m.build((du, y, dv, id) => { batis++; if (id === BLOCK.GLASS) verre++; });
+      return { verre, batis };
+    });
+    verifier('et le Shard est une tour, pas un treillis de verre : ses murs sont opaques',
+      shard.batis > 0 && shard.verre <= shard.batis * 0.02,
+      `${shard.verre} bloc(s) de verre sur ${shard.batis}`);
 
     const sansVie = Object.entries(facades).filter(([v, c]) =>
       !(c.lampes >= 40 && (v === 'marrakech' || c.feux >= 8) && c.bancs >= 25 && c.diversite >= 20));
@@ -4492,6 +4546,46 @@ const VRAIES_KM = [
     });
     verifier('rien de solide ne dépasse sur une piste',
       degage.length === 0, `${degage.length} bloc(s) sur une piste — ${degage.slice(0, 4).join(' · ')}`);
+
+    // LES PISTES SONT ASSEZ LONGUES POUR SE POSER (v445).
+    //
+    // Max : « les pistes de tous les aéroports sont beaucoup trop courtes pour
+    // vraiment atterrir ». On ROULE chaque piste dans un monde neuf, d'un bout
+    // à l'autre, sur trois lignes de sa bande : un bloc plein sous les roues,
+    // trois blocs d'air au-dessus. Et sa longueur atteint la cible de son
+    // profil, ou l'aéroport est déclaré avec l'obstacle qui la borne. Sur
+    // l'ancien code : 90 à 146 blocs, aucune piste à sa cible.
+    const longues = await tab.evaluate(async () => {
+      const A = await import('./src/aeroport.js');
+      if (!A.pistesDe) return { err: 'pas de pistes publiées' };
+      const { World } = await import('./src/world.js');
+      const { BLOCK } = await import('./src/blocks.js');
+      const w = new World();
+      const fautes = [], longueurs = [];
+      for (const a of A.AEROPORTS) {
+        const cible = A.CIBLE_PISTE[a.profil];
+        for (const p of A.pistesDe(a)) {
+          const long = p.ouest + p.est;
+          longueurs.push(`${a.cle}${p.z0 ? '/' + p.z0 : ''} ${long}`);
+          let trous = 0;
+          for (let dx = -p.ouest; dx <= p.est; dx++) {
+            for (const dz of [-p.demi + 1, 0, p.demi - 1]) {
+              const x = a.x + dx, z = a.z + p.z0 + dz, s = w.getBlock(x, a.sol, z);
+              if (s === BLOCK.AIR || s === BLOCK.WATER || [1, 2, 3].some((h) => w.getBlock(x, a.sol + h, z) !== BLOCK.AIR)) trous++;
+            }
+          }
+          if (trous) fautes.push(`${a.cle} z${p.z0} : ${trous} point(s) non roulable(s)`);
+          const declaree = !!A.PISTES_COURTES[a.cle];
+          if (long < cible && !declaree) fautes.push(`${a.cle} z${p.z0} : ${long} pour ${cible}, non déclarée`);
+          if (long < 189) fautes.push(`${a.cle} z${p.z0} : ${long}, plus courte que la plus courte mesurée`);
+        }
+        if (A.PISTES_COURTES[a.cle] && A.pistesDe(a).every((p) => p.ouest + p.est >= cible)) fautes.push(`${a.cle} déclarée courte mais à sa cible`);
+      }
+      return { fautes, longueurs };
+    });
+    verifier('chaque piste se roule d\'un bout à l\'autre et atteint sa cible — ou l\'obstacle qui la borne est déclaré',
+      !longues.err && longues.fautes.length === 0,
+      `${longues.err || ''} ${(longues.fautes || []).slice(0, 5).join(' · ')} — ${(longues.longueurs || []).join(', ')}`);
 
     // ET L'OUVRAGE RESTE DANS SES BORNES MESURÉES (v280).
     //

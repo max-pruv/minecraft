@@ -6,11 +6,87 @@
 
 export const NOUVEAUTES = [
   {
-    v: 441,
+    v: 450,
     titre: 'On se retrouve du premier coup',
     puces: [
       'Rejoindre un ami marche partout',
       'Les essais mesurent le vrai jeu',
+    ],
+  },
+  {
+    v: 449,
+    titre: 'Le Shard n\'est plus transparent',
+    puces: [
+      'La grande tour de Londres a ses vitres',
+      'On ne voit plus au travers',
+    ],
+  },
+  {
+    v: 448,
+    titre: 'Des pistes assez longues',
+    puces: [
+      'Les pistes vont jusqu\'à 300 blocs',
+      'Le Concorde peut enfin se poser',
+      'Le paysage n\'a pas bougé',
+    ],
+  },
+  {
+    v: 447,
+    titre: 'Londres sans maisons en trop',
+    puces: [
+      'Les rues du bord de Londres sont libres',
+      'Les voitures ne traversent plus de maison',
+      'Ce que tu as bâti reste en place',
+    ],
+  },
+  {
+    v: 446,
+    titre: 'Des toits bien rangés',
+    puces: [
+      'Chaque immeuble garde son propre toit',
+    ],
+  },
+  {
+    v: 445,
+    titre: 'Les commandes de l\'avion rangées',
+    puces: [
+      'Plus rien ne se chevauche en vol',
+      'Descendre rejoint la colonne de bord',
+      'Le quiz met l\'avion en pause',
+    ],
+  },
+  {
+    v: 444,
+    titre: 'Les ponts de Washington',
+    puces: [
+      'Deux ponts sur l\'Anacostia',
+      'Les voitures de New York entrent en ville',
+    ],
+  },
+  {
+    v: 443,
+    titre: 'Des colonnes bien placées',
+    puces: [
+      'Les colonnes d\'affiches ont de la place',
+      'Plus jamais devant une porte',
+    ],
+  },
+  {
+    v: 442,
+    titre: 'Moins de bouchons en ville',
+    puces: [
+      'Les voitures de l\'autoroute font demi-tour',
+      'Elles gardent leur propre voie',
+      'Madrid roule bien mieux',
+    ],
+  },
+  {
+    v: 441,
+    titre: 'La voiture de l\'ami braque',
+    puces: [
+      'Ses roues tournent avec son volant',
+      'Ses dérapages laissent des traces',
+      'La voiture glisse du bon côté',
     ],
   },
   {

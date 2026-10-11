@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v441 — On se retrouve par le nuage du premier coup
+## v450 — On se retrouve par le nuage du premier coup
 
 **Pourquoi.** Quand le jeu à plusieurs passe par le nuage (pas de courtier,
 Wi-Fi d'hôtel, d'école), un enfant qui rejoignait le monde d'un autre lisait
@@ -54,6 +54,237 @@ immobile ; désarmé (fond d'un seul tenant), 1 988 ms. Le feu :
 `sonde-rue-feu.cjs` — pire perte 14 à 38 b/s², toujours une voiture de file
 (`1×file<feu`) ; témoin rouge, dette en tête de `TASKS.md`. Le vol au-dessus
 de Paris, vert seul depuis la v440 (252 blocs en 12,8 s), dit sa cadence.
+
+---
+
+## v449 — Le Shard n'est plus transparent
+
+**Pourquoi.** La pyramide du Shard posait 1 792 blocs de verre sur 2 080. Un
+bâtiment est creux : un mur de verre est un trou, et l'on voyait au travers de
+la tour depuis la rive sud (dette vue en capture en v206, règle de la v195).
+
+**Ce que ça change.** Le Shard est une tour de verre comme celles de la City :
+un mur-rideau opaque, ses meneaux dessinés dans la texture, allumé la nuit, avec
+sa ceinture d'acier tous les sept rangs. Sa forme et sa hauteur ne bougent pas.
+
+**Ce qui le prouve.** Un témoin dans `carteMonde.js` compte ce que pose son
+bâtisseur : 0 bloc de verre sur 2 080, contre 1 792 sur `origin/main` (rouge).
+L'empreinte des 490 morceaux ne bouge pas (le Shard n'y est pas) ; le verre et
+le mur-rideau arrêtent l'enfant de la même façon, aucun bloc d'enfant ne bouge.
+
+---
+
+## v448 — Des pistes assez longues pour se poser
+
+**Pourquoi.** Max : « les pistes de tous les aéroports sont beaucoup trop
+courtes pour vraiment atterrir ». Mesuré : 90 à 146 blocs de piste, pour un
+atterrissage assisté qui en demande 98 à 127 et un posé à la main qui en
+demande davantage — le Concorde n'avait presque nulle part où se poser.
+
+**Ce que ça change.** Les trente et une pistes des dix-neuf aéroports sont
+prolongées hors de leur disque, dans l'axe, par un ouvrage — asphalte sur
+remblai ou dans une tranchée, seuil repeint au nouveau bout : 300 blocs pour
+les grands aéroports, 260 pour ceux des villes, 220 pour les bases. Le relief
+ne bouge pas d'un bloc. Sept aéroports n'atteignent pas la cible parce qu'une
+ville, une route, une voie ferrée ou la mer les borne : ils gagnent ce que
+leur place permet.
+
+**Ce qui le prouve.** Chaque prolongement est mesuré par une sonde (bornes du
+remblai et de la tranchée, douze blocs de toute ville, route, voie ferrée,
+autre aéroport et monument, quarante de ce que les enfants ont bâti) ; un
+témoin de `carteMonde.js` roule chaque piste d'un bout à l'autre et compare sa
+longueur à la cible, et les deux empreintes du relief de `plafond.js` sont
+inchangées ; l'empreinte des 490 morceaux change à Londres seulement — dix-huit
+colonnes, toutes dans un tronçon de la piste d'Heathrow, et rend l'ancienne
+constante au bit près quand on retire les prolongements.
+
+---
+
+## v447 — Londres sans maisons posées par-dessus
+
+**Pourquoi.** La boucle générique de `world.js` (« un lot par case de
+grille ») excluait six villes bâties à la main, pas Londres. Entre 77 et 102
+blocs du centre — là où la place réservée au mobilier de la ville s'arrête —
+elle posait cinquante-deux maisons pastel de San Francisco, pleines, PAR-DESSUS
+la ville : 2 600 colonnes, dont 1 401 de chaussée ou de trottoir et 920 sur les
+immeubles de Londres. Des voitures de la ville les traversaient (36 pas de
+circuit dans un mur). La v415 n'avait retiré que celle qui barrait la M40.
+
+**Ce que ça change.** L'anneau extérieur de Londres montre enfin ses rues et ses
+immeubles à elle, et les voitures n'y traversent plus de maison. Une maison
+pastel sur laquelle (ou contre laquelle) un enfant a déjà bâti reste entière :
+rien n'enferme une cabane, rien ne retire un toit sous elle. Les mondes d'avant
+ne changent pas.
+
+**Ce qui le prouve.** Trois témoins dans `plafond.js`, rouges sur
+`origin/main` : la trame ne pose plus rien (2 600 colonnes changées, aucune
+hors du disque) ; une cabane posée avant la date garde la maison entière sous
+elle (rouge, 187 blocs d'écart, quand la règle est désarmée) ; un bloc posé
+après ne retient rien, et le monde de la v308 garde ses maisons. L'empreinte
+des 490 morceaux est relevée (`19946cb7…`) ; le drapeau retiré, la branche rend
+`fb4f9aed…`, la constante de la v446, au bit près. Circuits de Londres
+identiques (ils ne lisent que le sol de la ville) : 36 pas de carrosserie dans
+un mur de moins.
+
+---
+
+## v446 — Un toit ne déborde plus d'un quartier sur l'autre
+
+**Pourquoi.** Le comble de Paris (v289) lisse les colonnes d'un même immeuble,
+qu'il reconnaît à son îlot et à sa travée. Ces indices sont ceux de la trame
+de CHAQUE quartier, et deux quartiers voisins se les prêtent : mesuré sur
+tout Paris, 16 paires de colonnes voisines de même (îlot, travée) dans deux
+quartiers, dont 7 aux façades de hauteurs différentes (14 et 17 blocs à la
+limite de Saint-Germain), lissées en un toit qui grimpe d'un immeuble à
+l'autre au lieu d'un pignon. C'était la dette déclarée en v289.
+
+**Ce que ça change.** La clé d'immeuble porte le quartier : un toit ne se
+lisse plus qu'avec lui-même. Le changement tient à sept endroits de la
+ville ; tout le reste est identique.
+
+**Ce qui le prouve.** Un témoin neuf de `parishd.js` parcourt tout le disque
+de Paris : 176 600 paires de colonnes d'un même toit, 0 aux façades
+différentes (7 sur `origin/main`, où la clé n'est pas publiée : rouge).
+L'empreinte des 490 morceaux change (`c195fbc1…`, un des morceaux porte une
+limite) et se prouve : la clé d'avant rejouée (`toitsQuartier: false`) rend
+la constante `fb4f9aed…` (celle de la v444) au bit près. Capture avant/après du toit à la limite
+de Saint-Germain : rien d'autre ne bouge.
+
+---
+
+## v445 — Les commandes de l'avion se rangent
+
+**Pourquoi.** Max, deux captures d'iPhone au-dessus de l'Amérique du Nord :
+le cadran de cap posé par-dessus la minicarte, et en dessous trois textes l'un
+sur l'autre — « À l'arrêt », le GPS « fais demi-tour », la minicarte —
+illisibles. En bas à droite, « Descendre » flottait au-dessus de la colonne
+✈️/🛞 et de la manette des gaz, et le tout mangeait le quart de l'écran où
+l'on voit l'avion ; le défi de Cornichon, lui, se posait sur les commandes.
+Chaque élément avait sa cote écrite à la main, réglée sans les autres :
+mesuré à 430 × 932, six paires qui se recouvrent.
+
+**Ce que ça change.** Tout ce qui s'affiche en haut au milieu — cadran de cap,
+GPS, proposition d'un ami, défi de Cornichon, bandeau — se range dans une
+seule file, sous le chronomètre, à droite de la minicarte quand elle est
+ouverte : rien ne peut plus s'y recouvrir. Aux commandes, ⬇️ DESCENDRE, ✈️ et
+🛞 sont trois boutons ronds d'une seule colonne, exactement à la hauteur de la
+manette (plus fine), la vitesse en dessous : moins de place prise sur l'avion,
+rien dans la zone du joystick. Et le quiz du Prof. Cornichon met le vol en
+pause, mesuré.
+
+**Ce qui le prouve.** Trois témoins de `monte.js`, joués à la taille de
+l'iPhone de Max ET à celle du banc, formulés sans dimension d'écran : aucun
+recouvrement entre minicarte, cadran, GPS, bandeau, défi et commandes ; une
+colonne d'un seul x, rien au-dessus du haut de la manette ni dans le quart du
+joystick ; l'avion ne bouge pas sous le quiz. Les deux premiers sont rouges
+sur `origin/main` (six recouvrements, dont le défi sur la manette), le
+troisième garde une capacité. Capture relue aux deux tailles avant de livrer.
+
+---
+
+## v444 — Les ponts de l'Anacostia
+
+**Pourquoi.** L'I-95 Sud entre dans Washington par le quartier au sud de
+l'Anacostia (v367), et ce quartier n'avait AUCUN pont vers le reste de la
+ville : les voitures qui arrivaient de New York faisaient demi-tour sur une rue
+sans nom, et l'enfant à pied restait coincé sur la rive sud.
+
+**Ce que ça change.** Deux ponts de rue, ceux de la vraie ville : le pont de
+la 11e Rue et le pont Sousa, qui porte Pennsylvania Avenue SE. Ils prolongent
+la grille d'une rive à l'autre, à la cote de la rue, l'eau dessous. Les
+voitures de l'I-95 Sud passent le pont Sousa et vont jusqu'au bout de
+Pennsylvania Avenue SE, dans la ville.
+
+**Ce qui le prouve.** Un témoin neuf de `carteMonde.js` : chaque pont franchit
+au moins dix colonnes d'eau, chaussée à la cote 33 d'un bout à l'autre, deux
+blocs libres au-dessus ; l'avenue traverse l'eau, finit sur Pennsylvania
+Avenue SE, aucun bloc à hauteur de carrosserie, aucune marche. Rouge sur
+`origin/main` (aucun pont). Le relief ne bouge pas : `terrainHeight` identique
+sur les 109 881 colonnes de Washington, les deux empreintes de `plafond.js`
+intactes. Les quatorze circuits de Washington sont les mêmes, au bit près (la
+contrainte de partage de la v211 inchangée). L'empreinte des 490 morceaux
+change (Washington est un des neuf lieux) : `pontWashington` désarmé, elle rend
+la constante de la v439 au bit près, et les 112 colonnes qui diffèrent sont
+toutes dans les bandes des deux ponts.
+
+---
+
+## v443 — Les colonnes Morris se plantent dans le vide
+
+**Pourquoi.** La colonne Morris de la v289 se posait au tirage, sans regarder
+autour d'elle. Mesuré sur huit quartiers : 43 colonnes sur 76 à moins de deux
+blocs d'un banc, d'une terrasse ou d'une autre colonne, et deux collées contre
+une porte cochère.
+
+**Ce que ça change.** Une colonne se plante désormais à l'air libre sur ses
+quatre côtés, seule dans son voisinage : ni contre un mur ou une porte, ni à
+deux blocs d'un autre meuble. Le tirage double pour en garder autant (60 sur
+les huit quartiers).
+
+**Ce qui le prouve.** Un témoin neuf de `parishd.js` relève toutes les
+colonnes de huit quartiers : 0 mal plantée sur 45 dans sa fenêtre, 29 sur 54
+avec la règle d'avant, 43 sur 76 sur `origin/main` (rouge). L'empreinte des
+490 morceaux change (`8bea731f…`) et se prouve : la règle d'avant rejouée
+(`morrisDegagees: false`) rend la constante `239f48ab…` au bit près. Jugé en
+capture à Saint-Germain.
+
+---
+
+## v442 — Les voitures de l'autoroute n'entrent plus dans les anneaux de la ville
+
+**Pourquoi.** Une autoroute entre dans une ville engendrée par son avenue
+d'entrée, l'axe de la trame jusqu'à la place. Or cet axe est souvent le côté
+d'un anneau de la ville : dix-neuf des quarante-six raccords route/ville
+roulaient dans la MÊME voie qu'un ou plusieurs convois de l'anneau, même sens
+ou en face (569 blocs en tout ; Madrid 85, Agra 68, Amsterdam 69, Kyoto 53).
+Deux grilles horaires indépendantes sur une voie ne se cadencent pas l'une
+contre l'autre : à Madrid, 6,7 à 6,9 % des paires de voitures étaient l'une
+dans l'autre.
+
+**Ce que ça change.** Les voitures de l'autoroute entrent dans la ville aussi
+loin que la rue est à elles, puis font demi-tour quatre blocs avant la voie
+d'un anneau. Madrid tombe à 1,0 à 1,5 % de paires au contact — ce qui reste
+est en travers, entre deux anneaux, réglé par la priorité au carrefour. Les
+deux autres pistes ont été mesurées : arrêter l'autoroute à la porte partage
+encore 44 blocs (les demi-tours) et ne fait plus entrer personne ; faire du
+raccord une voiture de l'anneau n'existe pas sans téléporter.
+
+**Ce qui le prouve.** Deux témoins neufs (`plafond.js`), sur le vrai tracé que
+le jeu donne à la rue et les vraies voies des anneaux, sous node : il ne reste
+que cinq demi-tours (20 blocs), et la table des raccords courts est celle que
+la règle rend aujourd'hui — vérifiés rouges sur la table vidée (569 blocs,
+19 raccords). Au navigateur, `sonde-circulation.cjs madrid` en ordre alterné :
+6,74 et 6,85 % avec l'avenue entière (`?raccords=long`), 1,47 et 1,02 % avec
+le raccord court.
+
+---
+
+## v441 — La voiture de l'ami braque et glisse
+
+**Pourquoi.** Depuis la v397 le volant et la glisse de la voiture d'un ami
+voyagent avec sa position : la tablette d'Alice recevait les deux nombres de
+Marlon… et personne ne les dessinait. Chez elle, les roues avant de Marlon
+restaient droites en plein virage, et ses dérapages ne laissaient aucune
+trace. En cherchant comment dessiner sa glisse « avec la même règle que pour
+soi », la règle elle-même s'est révélée fausse : la caisse en dérapage était
+dessinée EN MIROIR. La physique fait aller la vitesse dans la direction du
+corps plus la dérive ; la caisse tournait encore deux fois la dérive par-dessus.
+Mesuré dans la matrice au frein à main, virage à gauche : la caisse rendue à
+−0,06 rad de sa vitesse quand la physique la dit à +0,45 — le nez du mauvais
+côté, depuis la v422.
+
+**Ce que ça change.** Au volant, une voiture qui dérape a le nez vers
+l'intérieur du virage, comme dans GTA. À plusieurs, on voit les roues avant
+de la voiture de l'ami braquer avec son volant, et ses dérapages — dérive ou
+frein à main — laissent des traces de pneus chez nous aussi.
+
+**Ce qui le prouve.** Trois témoins neufs. Dans `monte.js`, la caisse rendue
+rapportée à ce que la physique dit : −0,18 puis 0,37 sur `origin/main`,
+1,00 ici. Dans
+`reseau.js`, à deux tablettes : la roue avant de la copie de Marlon lue dans
+la matrice chez Alice (zéro sur la v437), et ses traces de pneus qui naissent
+chez Alice quand il glisse (aucune sur la v437). Le frein à main voyage dans un
+champ court de la position (`p.v.m`) : une tablette restée en arrière l'ignore.
 
 ---
 
