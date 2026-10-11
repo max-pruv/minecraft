@@ -1,4 +1,4 @@
-// LA DÉRIVE DESSINÉE (v438) — la mesure du témoin de `monte.js`, partagée avec
+// LA DÉRIVE DESSINÉE (v441) — la mesure du témoin de `monte.js`, partagée avec
 // `sonde-derive-signe.cjs`. Au frein à main, volant à gauche, sur une piste
 // posée dans le ciel : à chaque image, l'angle de la caisse RENDUE (sa matrice
 // monde, nez en −z) moins la direction de la vitesse, et `player.derive`. La

@@ -1,13 +1,13 @@
 // Entry point: scene setup, chunk streaming, input, HUD, and the game loop.
 
-import { secondeVoieParis, secondeVoieVilleMonde, voiesAutoroute } from './voiesdoubles.js';
+import { secondeVoieParis, secondeVoieVilleMonde, voiesAutoroute, allureDuTroncon, allureVilleMonde } from './voiesdoubles.js';
 import * as THREE from 'three';
 import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp, MEUBLE_ITEMS, MEUBLE_START, isMeuble, RUE_ITEMS, RUE_START, RUE, isRue, ARCHI, CITY_BLOCK, ROUTE_BLOCK } from './blocks.js';
 import { passageEn } from './passages.js';
 import { mobilierTrottoir, MOBILIER_OBSTACLE, villeHD } from './facadeshd.js';
 import { PARIS as PARIS_ANCRE, circuitsParis, circuitsQuartiersParis, marquageParis } from './paris.js';
 import { circuitsLondres } from './londres.js';
-import { circuitsSF } from './sanfrancisco.js';
+import { circuitsSF, ENTREES_SF } from './sanfrancisco.js';
 import { circuitsNice, ENTREES_NICE } from './nice.js';
 import { circuitsLille } from './lille.js';
 import { buildPropMesh } from './props.js';
@@ -2046,7 +2046,7 @@ function updateChunks() {
   // l'E429 à l'est. `ENTREES_*` suit l'ordre de `entreesDe`, et l'on prend
   // celle de CETTE route — le `[0]` d'avant aurait fait entrer les voitures de
   // Bruxelles par la porte de Paris.
-  const ENTREES = { paris: ENTREES_PARIS, lille: ENTREES_LILLE, londres: ENTREES_LONDRES, nice: ENTREES_NICE };
+  const ENTREES = { paris: ENTREES_PARIS, lille: ENTREES_LILLE, londres: ENTREES_LONDRES, nice: ENTREES_NICE, sf: ENTREES_SF };
   // Une ville ENGENDRÉE n'a pas d'avenue d'entrée dessinée : le corridor y
   // arrive dans l'axe de sa trame (le point de passage est choisi pour cela),
   // donc sur la rue qui mène au centre. Les voitures la suivent jusqu'à douze
@@ -3219,7 +3219,13 @@ function animerLesVilles(dt) {
   // la graine vient de la ville, pas de la file (v246, voir graineDeVille)
   // l'allure de la voie : une rue de ville engendrée, une avenue nommée (v372)
   const decalage = tr.voie === 'avenue' && tr.ville !== 'ny' ? DECALAGE_AVENUE : 0;
+  // LE TYPE DE VOIE PAR TRONÇON (v438) : la section de la rue au point du
+  // tracé — boulevard cinquante, collectrice quarante, locale trente — et non
+  // plus une seule limitation pour tout le circuit. Manhattan garde la sienne.
+  const allure = tr.ville === 'ny' ? null : decalage ? (x, z) => allureDuTroncon(tr.cle, x, z)
+    : (tr.voie || 'rue') === 'rue' ? allureVilleMonde : null;
   const conv = vehicules.circulation(tr.pts, graineDeVille(tr), { ville: tr.ville, voie: tr.voie || 'rue',
+    limite: allure ? (x, z) => ALLURE_VOIE[allure(x, z) || tr.voie || 'rue'] : undefined,
     // les avenues des villes bâties à la main : la voie de droite (v372)
     decalage,
     // la seconde voie des boulevards (v423) ; le bus prend la première place
@@ -4616,7 +4622,7 @@ function updateRemotePlayers(dt) {
       const vm = rp.vehicule.mesh;
       vm.position.copy(rp.pos);
       vm.rotation.y = rp.cap;
-      vieDistante(vm, dt);   // roues avant braquées et traces de pneus (v438)
+      vieDistante(vm, dt);   // roues avant braquées et traces de pneus (v441)
       asseoir(rp.mesh, rp.vehicule, rp.vehicule.def.siege, rp.animTime);
       continue;
     }
@@ -4713,7 +4719,7 @@ function startNetSession(code, isHost, patience) {
       // et une tablette restée sur l'ancienne version les ignore.
       if (Math.abs(player.braquage || 0) > 0.005) p.v.b = Math.round(player.braquage * 100) / 100;
       if (Math.abs(player.derive || 0) > 0.0005) p.v.r = Math.round(player.derive * 1000) / 1000;
-      // le frein à main tiré (v438) : l'ami voit les traces qu'il laisse
+      // le frein à main tiré (v441) : l'ami voit les traces qu'il laisse
       if (player.freinMainTire) p.v.m = 1;
     }
     const pa = fun.passagerDe ? fun.passagerDe() : null;

@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v438 — La voiture de l'ami braque et glisse
+## v441 — La voiture de l'ami braque et glisse
 
 **Pourquoi.** Depuis la v397 le volant et la glisse de la voiture d'un ami
 voyagent avec sa position : la tablette d'Alice recevait les deux nombres de
@@ -48,6 +48,100 @@ chez Alice quand il glisse (aucune sur la v437). Le frein à main voyage dans un
 champ court de la position (`p.v.m`) : une tablette restée en arrière l'ignore.
 
 ---
+
+## v440 — Des essais encore plus justes
+
+**Pourquoi.** Sept témoins du portail rougissaient une fois sur deux sans
+qu'une ligne du jeu ait bougé, et chaque livraison payait leur démontage. Le
+plus gros était le banc lui-même : la page principale de `monte.js` restait
+EN JEU pendant chaque page secondaire, et une page de ciel (distance
+d'affichage douze) n'était jamais fermée — presque quatre cœurs sur quatre
+pris pendant les trois quarts de la suite. D'autres témoins mesuraient
+l'endroit où la cadence les avait laissés : un arrêt devant un réverbère
+compté en secondes de montre, un trou de façade lu sur la géométrie de TOUTE
+la ville, un atterrissage sur une piste d'essai plus courte que lui.
+
+**Ce que ça change.** Rien dans le jeu : seulement les témoins, et un
+nouveau geste du banc (`mettreDeCote`, `ramener`) qui réduit une page à
+seize pixels le temps qu'une autre mesure. Et une VRAIE panne trouvée en
+chemin, déclarée et non corrigée (elle est dans la zone de la conduite) :
+une rame de train peut traverser la voiture de l'enfant quand une image est
+lente, parce qu'elle ne regarde que 3,5 blocs devant elle et roule en temps
+réel.
+
+**Ce qui le prouve.** Chaque rouge rejoué seul des deux côtés, la cause
+séparée par une sonde, et chaque correction désarmée dans une copie pour
+vérifier qu'elle rougit encore : le réverbère (`origin/main` 3/3 rouge sous
+charge, branche 3/3 vert, désarmé 97 blocs au travers du poteau), le trou
+de façade (branche 3/3 vert, désarmé « jamais rebâti »), la chauffe de New
+York (expirait à 150 s, finie en 9,9 s), la fumée (3/3). Le témoin du train
+reste ROUGE : c'est la panne. Au portail, quatre suites rouges, toutes sur des
+dettes déjà déclarées : `carte.js` (glisser bridé ×4), `manhattan.js` (le
+taxi, 3,6 blocs en 247 s — son bouton apparaît désormais, mais il rampe
+encore sous la charge), `monte.js` (la rue à l'allure d'une ville),
+`reseau.js` (GPS relayé, départ de l'hôte, courtier : rejouée seule trois
+fois de chaque côté, la même distribution, 1/3 des deux côtés).
+
+---
+
+## v439 — La route de San Francisco à Los Angeles
+
+**Pourquoi.** Seize autoroutes reliaient déjà les villes, et la côte ouest des
+États-Unis n'en avait aucune : de San Francisco à Los Angeles, on ne pouvait
+que voler ou se téléporter. Le couloir avait été relevé en v419 sans être
+tracé : la ville est une presqu'île (la baie à l'est, le Pacifique à l'ouest,
+l'aérodrome de SFO au sud), et l'axe direct passe dans la marge de SFO et sur
+deux repères.
+
+**Ce que ça change.** L'US-101, 2 618 blocs. Elle sort de San Francisco par le
+sud-est, sur la terre ferme au bout de la baie — une entrée déclarée mène au
+bout de Third Street —, passe AU NORD de SFO, longe à l'est de l'aérodrome une
+bande de 38 à 41 blocs, franchit le col de la chaîne côtière, descend la
+plaine côtière et entre dans Los Angeles par l'ouest, sur la rue de sa trame.
+Cinq ponts, et des voitures qui roulent d'une ville à l'autre à cent vingt.
+
+**Ce qui le prouve.** Un témoin neuf (`carteMonde.js`) : convoi, aucune colonne
+d'emprise sur un rail ni volée à une autre route, l'axe loin de ses villes
+hors des tronçons radiaux, l'entrée de San Francisco sur la chaussée d'un bout
+à l'autre jusqu'à une artère, celle de Los Angeles sur la rue — rouge sur
+`origin/main` (« aucun convoi US-101 »), vert ici. Les témoins de toutes les
+routes la lisent avec les autres : profil (pente 0,06, déblai 7,2, remblai
+3,3), joints des ponts (32 890 points, zéro trou), sol sous les tabliers.
+L'empreinte des 490 morceaux change (San Francisco est un des neuf lieux) et se
+prouve : l'US-101 retirée, la constante de la v438 au bit près, et les cent
+colonnes qui diffèrent sont à moins de sept blocs de l'axe de l'entrée.
+
+---
+
+## v438 — Des fourgonnettes, des pickups, et chaque voiture son allure
+
+**Pourquoi.** La rue ne roulait que des voitures de sport et la berline
+citadine : pas une fourgonnette de livraison, pas un pickup. Dans une file,
+toutes les voitures roulaient comme un seul train — la variance d'allure était
+par file, pas par voiture. La limitation suivait le circuit : un boulevard et
+une rue de quartier du même tour roulaient à la même vitesse. Et les
+boulevards de Paris ne gardaient leur seconde voie que sur 306 de leurs
+1 231 blocs : chaque place la coupait, et deux circuits la perdaient sur un
+calcul qui ne regardait que deux nombres.
+
+**Ce que ça change.** Une voiture sur six hors de New York est un utilitaire :
+une fourgonnette blanche ou un pickup de la couleur de la rue, caisses dans la
+benne — et on peut les conduire. Dans une file, chaque voiture prend quelques
+dixièmes de seconde d'avance ou de retard : la file respire au lieu de rouler
+d'un bloc. Un circuit de Paris roule à cinquante sur ses boulevards, à
+quarante dans les rues, à trente dans les ruelles ; une ville engendrée à
+cinquante sur sa croix-boulevard. Les boulevards de Paris ont leurs deux voies
+occupées sur 446 blocs (six circuits sur huit au lieu de trois).
+
+**Ce qui le prouve.** Quatre témoins dans `carteMonde.js`, rouges sur
+`origin/main` : la flotte (une voiture sur six, deux modèles au manifeste —
+quatre roues, au sol, quinze maillages au plus contre trente-deux), le jeu par
+voiture (les voisines s'écartent de leur grille, dans la borne, et la règle se
+refait à l'identique : la même rue chez l'ami, v305), la limitation par
+tronçon, la seconde voie de Paris (306 → 446, barre 380). Et une preuve
+structurelle sous node (`sonde-rue-dense.cjs jeu`) : 179 convois, un tour
+d'horloge chacun, autant de contacts de grille avec le jeu que sans (392 et
+392).
 
 ## v437 — Le frein à main crisse
 

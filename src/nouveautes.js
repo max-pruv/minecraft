@@ -6,12 +6,37 @@
 
 export const NOUVEAUTES = [
   {
-    v: 438,
+    v: 441,
     titre: 'La voiture de l\'ami braque',
     puces: [
       'Ses roues tournent avec son volant',
       'Ses dérapages laissent des traces',
       'La voiture glisse du bon côté',
+    ],
+  },
+  {
+    v: 440,
+    titre: 'Des essais encore plus justes',
+    puces: [
+      'Les essais ne se gênent plus',
+    ],
+  },
+  {
+    v: 439,
+    titre: 'La route de Los Angeles',
+    puces: [
+      'Une autoroute de San Francisco à Los Angeles',
+      'Elle longe la mer, cinq ponts',
+    ],
+  },
+  {
+    v: 438,
+    titre: 'Fourgonnettes et pickups en ville',
+    puces: [
+      'Des utilitaires roulent dans les rues',
+      'Chaque voiture a sa propre allure',
+      'Plus vite sur les grands boulevards',
+      'Deux voies remplies à Paris',
     ],
   },
   {

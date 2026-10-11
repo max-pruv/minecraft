@@ -770,6 +770,47 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## La rue dense, palier C (v438) — une variance par voiture est une fonction de son heure
+
+Quatre règles.
+
+- **UNE VOITURE NE PEUT AVOIR SON ALLURE QUE SI SON ÉCART À LA GRILLE EST UNE
+  FONCTION DE L'HORLOGE.** `Convoi.jeu(i, τ)` (vehicules.js) rend quelques
+  dixièmes de seconde d'avance ou de retard (`JEU_MAX`, 0,35 s ; ±10 %
+  d'allure), une ondulation dont la période et la phase viennent de la CLÉ du
+  convoi et du rang — jamais du hasard local : deux tablettes posent la même
+  voiture au même endroit (v305). Un témoin refait la table et la rejoue à
+  l'identique.
+- **LE JEU S'ÉTEINT LÀ OÙ LA FILE EST CALCULÉE AU PLUS JUSTE.** Le poids `W`
+  vaut zéro sous six blocs par seconde (le virage le plus lent fixe le nombre
+  de voitures, `nbSansChevauchement`), à trois secondes d'un croisement du
+  tracé avec lui-même (`instantsDeCroisement`), là où la jumelle partage la
+  voie de sa file, et dans un anneau que le bus suit. Il se décide sur ce
+  qui est connu à la CRÉATION — sur l'autoroute, la section de deux voies,
+  pas la jumelle qui naît plus tard : le jeu ne change pas quand elle arrive.
+  Preuve STRUCTURELLE (`sonde-rue-dense.cjs jeu`) : 179 convois sous node,
+  un tour d'horloge chacun, 392 contacts de grille sans le jeu, 392 avec.
+- **UNE FLOTTE QUI S'AGRANDIT GARDE SES POINTES UNIQUES.** La fourgonnette
+  et le pickup (`utilitaires.js`, fabriqués, originaux) ont leur classe dans
+  `FLOTTE` et leur fiche dans `conduite.js` (31 et 32 blocs/s) :
+  `ficheDeVitesse` retrouve la classe à sa pointe. Une silhouette entière vient
+  d'un profil extrudé : quinze maillages contre trente-deux pour un modèle
+  de la flotte — une rue qui gagne des utilitaires dessine moins.
+- **LA LIMITATION SE DEMANDE À LA SECTION, AU POINT DU TRACÉ.**
+  `allureDuTroncon` (voiesdoubles.js) lit les voies nommées de chaque ville
+  bâtie à la main et leur type du kit (boulevard 50, collectrice 40, locale
+  30) ; `allureVilleMonde` le boulevard de la croix. Manhattan garde la
+  sienne.
+
+Et **la seconde voie de Paris se perdait aux places, et dans une recherche qui
+supposait le croisement monotone.** 306 blocs de deux voies occupés sur 1 231 :
+la rampe de huit blocs mangeait seize blocs autour de chaque place
+(`RAMPE_VILLE` 5 en ville, l'autoroute garde 8), le seuil de quarante écartait
+les circuits qui ne suivent qu'un tronçon (`SECTION_MIN` 20). 446 après. La
+recherche du nombre de la jumelle ne testait que `nb` et 0,4 `nb` avant sa
+dichotomie : elle liste désormais les nombres que le croisement accepte et
+cherche parmi eux. Les deux circuits en huit restent sans jumelle — seul n = 4
+passe leur croisement (0,18 `nb`) : déclaré.
 ## Les anneaux se cherchent ensemble (v435) — ce qu'aucun ordre ne règle se cherche sur l'état de tous
 
 Toronto, Dublin, Lima : l'anneau d'arrivée sur la place, chaque contour trouvé
@@ -1017,7 +1058,7 @@ donne aucun (dérive nulle) et ne s'entendait pas (bande des pneus ×1,9).
 `freinMainTire` (lu si présent) au-dessus de deux blocs/s vise 0,75. Le
 témoin écoute la sortie pendant le freinage, contre la ligne droite d'avant.
 
-**La voiture de l'ami braque et glisse (v438).** Trois règles.
+**La voiture de l'ami braque et glisse (v441).** Trois règles.
 **UN SIGNE ÉCRIT POUR UNE PHYSIQUE SE RELIT QUAND LA PHYSIQUE ARRIVE.** La
 caisse visait `derive − deja`, écrit quand le contrat ne disait pas encore
 dans quel sens la vitesse glisse ; `player.js` la fait aller vers
@@ -2903,6 +2944,43 @@ Les deux rouges réseau récurrents du palier C. Trois règles.
   une voix restée au quart (`GAIN_APPEL`) et le régime qui varie ; vérifié
   rouge sur une copie où la voix reste au quart.
 
+## Une page en jeu coûte quatre cœurs (v440) — on la met de côté, et l'on compte en images
+
+Le second lot des rouges récurrents. Cinq règles.
+
+- **UNE PAGE EN JEU À CÔTÉ COÛTE PRESQUE TOUT LE BANC.** La page principale
+  de `monte.js` restait en jeu pendant chacune des six pages secondaires, et
+  `ciel` (rr 12) n'était jamais fermée. Mesuré (`sonde-voisine-de-cote.cjs`) :
+  une voisine en jeu 3,5 à 3,8 cœurs, réduite à 16 × 16 pixels 0,15 ; la
+  chauffe de New York d'une page neuve passe de 22–24 s à 7 s.
+  `banc.mettreDeCote(p)` / `banc.ramener(p)` encadrent toute page secondaire,
+  et une page se ferme après son dernier usage. Le gel CDP ne sert à rien
+  (v427) ; c'est la SURFACE qui coûte.
+- **UNE IMMOBILITÉ SE COMPTE EN IMAGES, PAS EN SECONDES.** Le témoin du
+  réverbère jugeait « arrêté » sur dix relevés de montre sans mouvement : à
+  une image par seconde, la voiture n'était pas encore partie. On attend un
+  départ (un demi-bloc), puis l'on compte les images RENDUES
+  (`renderer.info.render.frame`) sans avancer.
+- **UNE GÉOMÉTRIE SE LIT SUR L'OBJET TOUCHÉ, PAS SUR LA VILLE.** Le trou de
+  façade de Manhattan comptait la géométrie de TOUS les immeubles (dette de la
+  v291) : il mesurait la file de chargement. Il lit l'immeuble que
+  `batimentA` nomme, attend qu'il soit REBÂTI, et compare ses instances.
+- **UNE PISTE D'ESSAI EST PLUS LONGUE QUE CE QU'ON Y FAIT.** L'atterrissage
+  manuel touchait à 300,9 sur une piste de 300 : la cadence décide où l'on
+  touche (v273), donc la piste en a 400 et la barre suit.
+- **UN TÉMOIN QUI TROUVE UNE VRAIE PANNE RESTE ROUGE.** Le train qui traverse
+  la voiture de l'enfant n'était pas une intermittence de banc : la rame ne
+  regarde que 3,5 blocs devant elle (`PAS_TRAIN`) et roule en temps réel, donc
+  une image lente la fait passer d'« assez loin » à « déjà dedans »
+  (`sonde-train-voiture.cjs`, 5 traversées sur 10 sous charge). Zone conduite :
+  déclarée en tête de `TASKS.md`, le témoin n'a pas été adouci.
+
+- **UNE SESSION ACTIVE N'EST PAS UNE PARTIE REJOINTE.** `net.active` vaut vrai
+  dès que la tentative commence (« Ouverture du monde… »). Un témoin qui
+  attend « l'invité est entré » attend le STATUT qui retombe (vide, ou
+  « ❌ »), pas le drapeau — mon premier remède cliquait 0,8 s plus tôt que
+  les deux secondes fixes qu'il remplaçait, et rendait le témoin plus rouge.
+
 ## Quatre témoins qui se placent (v427) — une page sur l'accueil n'est pas gratuite
 
 Quatre rouges récurrents des portails, tous démontés par une sonde. Cinq règles.
@@ -3678,6 +3756,35 @@ Une règle.
   la terre, l'herbe, le sable et la pierre naturelle. Manhattan a son propre sol
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
+
+## L'US-101 (v439) — un relevé en couronne commence à la porte, et une optimisation de tracé reconstruit la porte
+
+San Francisco–Los Angeles, le couloir instruit en v419. Quatre règles.
+
+- **UN RELEVÉ EN COURONNE COMMENCE À LA PORTE, PAS AU BORD.** Celui de la v419
+  disait « sortir par l'est (0° à 30°) » : il lisait le relief à partir de
+  r + 20. Mais la porte est à r − 20, et entre les deux, à l'est de San
+  Francisco, c'est la BAIE — soixante-dix blocs d'eau dans le disque. Le
+  relevé (`ring.mjs`) commence à r − 40 ; la porte est au sud-est (68°), sur
+  la terre ferme au bout de la baie, et la route passe au nord de SFO.
+- **UNE OPTIMISATION QUI DÉPLACE LE PREMIER POINT DE PASSAGE DÉPLACE LA
+  PORTE.** `porte()` vise le premier (et le dernier) point de passage : mon
+  affineur gardait la porte fixe et laissait bouger ses voisins, et la porte
+  réelle de Los Angeles tombait à −171°, sur un îlot (avenue de zéro bloc).
+  L'évaluation reconstruit les portes comme le registre (`complet(via)`), et
+  l'angle d'entrée est une contrainte : on choisit d'abord les angles propres
+  (`entrees.mjs`, ici une fenêtre d'un degré et demi à 180°) puis l'on fige le
+  dernier point sur ce rayon.
+- **UN AÉRODROME EST AUSSI UN REPÈRE.** SFO porte une boîte de 63 dans
+  `REPERES` : la sonde qui écarte les repères l'écarte d'un carré, plus large
+  que la marge du disque — c'est ce qui ferme l'ouest de l'aérodrome autant
+  que ses collines.
+- **LES CONTRAINTES DES TÉMOINS SONT DURES, LA LONGUEUR EST MOLLE.** Un
+  affineur qui additionne coudes, déblai et nombre de ponts échange un coude
+  de 33° contre un pont de moins. La note est lexicographique : d'abord les
+  violations (axe dans une marge, remblai > 4, déblai > 9, ponts à moins de
+  neuf blocs, coude > 22°, pont près d'une porte, angle de porte hors de la
+  fenêtre), puis seulement les ponts et la longueur.
 
 ## L'A8 (v428) — une sonde de couloir monte avec la route, et vérifie le rail sur la vraie emprise
 

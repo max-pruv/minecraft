@@ -1,4 +1,4 @@
-// LE SIGNE DE LA DÉRIVE DESSINÉE (v438) : au frein à main dans un virage à
+// LE SIGNE DE LA DÉRIVE DESSINÉE (v441) : au frein à main dans un virage à
 // gauche, l'angle de la caisse RENDUE (matrice monde) contre la direction de la
 // vitesse, et la dérive que la physique publie. Imprime les médianes.
 const { Banc, souffler } = require('./banc.js');

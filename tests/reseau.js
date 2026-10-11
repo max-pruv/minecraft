@@ -221,7 +221,7 @@ function verifier(nom, ok, detail = '') {
     }, marlonChezAlice);
     await jusqua(async () => { const v = await volantVu(); return !!(v && v.braquage > 0.9 && v.derive > 0.15); }, 20000);
     const vuVolant = await volantVu();
-    // ET ALICE LES VOIT (v438) : jusqu'ici personne ne dessinait ces deux
+    // ET ALICE LES VOIT (v441) : jusqu'ici personne ne dessinait ces deux
     // nombres. La roue avant de la copie de Marlon, lue dans la MATRICE monde
     // (l'axe de son essieu contre la droite de la voiture, v422) : braquée à
     // droite, l'avant de la roue part à droite — un angle NÉGATIF. Sur la
@@ -242,7 +242,7 @@ function verifier(nom, ok, detail = '') {
     }, marlonChezAlice);
     verifier('chez l\'ami, les roues avant de sa voiture braquent avec son volant',
       roueChezAlice.roue && roueChezAlice.angle < -0.2, JSON.stringify(roueChezAlice));
-    // LES TRACES CHEZ L'AMI (v438) : Marlon glisse (dérive figée à 0,2) et
+    // LES TRACES CHEZ L'AMI (v441) : Marlon glisse (dérive figée à 0,2) et
     // avance — posé pas à pas, la physique n'y est pour rien : c'est la
     // position que le réseau emporte, et c'est elle que la copie lit. Chez
     // Alice, des traces naissent sous la voiture de Marlon. Sur la v437 : rien.
@@ -1486,7 +1486,28 @@ function verifier(nom, ok, detail = '') {
       document.getElementById('join-code').value = c;
       document.getElementById('join-btn').click();
     }, codeTenu);
-    await dormir(2000);
+    // ON ATTEND QUE L'INVITÉ SOIT ENTRÉ DANS LE MONDE, PAS DEUX SECONDES
+    // (banc-intermittents). Son courtier répond « introuvable », puis il
+    // essaie le nuage : cela prend plus de deux secondes sur un banc chargé,
+    // et « Entrer dans le monde » ne fait rien tant que la session n'est pas
+    // active (`!net.active`, main.js) — l'invité restait au menu et le témoin
+    // rendait `[[],[]]`, `actif: false`, une fois sur deux des deux côtés. On
+    // attend le FAIT (session active, ou un message d'échec à l'écran),
+    // soixante secondes au plus, et ce qu'on a vu entre dans le message.
+    const tJoin = Date.now();
+    const entree = await jusqua(async () => inviteSain.evaluate(() => {
+      // `net.active` vaut vrai PENDANT la tentative (mesuré : 1,2 s, statut
+      // « Ouverture du monde… ») ; cliquer là, c'était cliquer avant la fin
+      // d'`openWorld`. Le fait est le statut qui retombe : vide en cas de
+      // succès, « ❌ … » en cas d'échec.
+      const n = window.__game.net, st = document.getElementById('online-status');
+      const t = st ? st.textContent : '';
+      return !/Ouverture du monde/.test(t) && (!!(n && n.active) || /❌/.test(t));
+    }), 60000);
+    const vuJoin = await inviteSain.evaluate(() => ({
+      actif: !!(window.__game.net && window.__game.net.active),
+      statut: (document.getElementById('online-status') || {}).textContent || '' }));
+    vuJoin.ms = Date.now() - tJoin; vuJoin.borne = !entree;
     await inviteSain.evaluate(() => document.getElementById('online-play-btn')?.click());
     await hotePhare.evaluate(() => document.getElementById('online-play-btn')?.click());
     const retrouves = await jusqua(async () => {
@@ -1494,7 +1515,7 @@ function verifier(nom, ok, detail = '') {
       return a.includes('Basile') && b.includes('Léo');
     }, 120000);
     verifier('un hôte sans courtier est trouvé par un invité dont le courtier marche',
-      retrouves, JSON.stringify([await nomsVus(hotePhare), await nomsVus(inviteSain)]));
+      retrouves, JSON.stringify([await nomsVus(hotePhare), await nomsVus(inviteSain)]) + ' · rejoindre : ' + JSON.stringify(vuJoin));
     const rolesTenus = await inviteSain.evaluate(() => ({
       hote: window.__game.net ? window.__game.net.isHost : null,
       actif: !!(window.__game.net && window.__game.net.active),

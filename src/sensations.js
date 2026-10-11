@@ -245,7 +245,7 @@ const _q = new THREE.Quaternion(), _qm = new THREE.Quaternion(), _up = new THREE
 // braquage, comme un vrai essieu directeur.
 function installerBraquage(mesh) {
   const roues = mesh.userData.roues;
-  // le marqueur a son propre nom (v438) : `userData.braquage` est le NOMBRE
+  // le marqueur a son propre nom (v441) : `userData.braquage` est le NOMBRE
   // que le réseau pose sur la copie d'une voiture d'ami (v397), et le prendre
   // pour marqueur réinstallait les groupes à chaque message
   if (!roues || !roues.length || mesh.userData.braquageInstalle === roues) return;
@@ -363,7 +363,7 @@ function vieDeVoiture(a, player, dt, m) {
   mesh.userData.sensations = S;
 }
 
-// LA VOITURE D'UN AMI (v438). Le volant et la glisse voyagent avec la
+// LA VOITURE D'UN AMI (v441). Le volant et la glisse voyagent avec la
 // position depuis la v397 (`p.v.b`, `p.v.r`) et le receveur les posait sur
 // `userData.braquage` et `.derive` de sa copie — que personne ne dessinait.
 // Même règle que pour soi : les roues avant braquent autour du haut de la
