@@ -394,6 +394,19 @@
   rail et les autres routes. La règle des repères et de SFO tient sur ce
   couloir ; elle est à remesurer sur le tracé, pas sur l'axe.
 
+- [ ] **LE PORTAIL DE L'A6 (v416), DOUBLE MESURE FAITE.** Quatre suites
+  rouges. `plafond.js` : le joint du premier pont de l'A6 rendait deux
+  « trous » à d 7,92, faux — le point est dans l'emprise, le centre de sa
+  colonne (−97, 1236) ne l'est pas et porte le sol naturel plein à la cote
+  de l'accotement ; le témoin lit désormais la cote au point, et la suite
+  rejouée seule sur la branche est verte. `carte.js` : la flèche du GPS
+  (gauche 1,92 rad) et le glisser bridé ×4 (414 ms pour 400) — rejouée
+  seule, verte sur la branche, rouge sur `origin/main` v415 (glisser 410 ms) :
+  intermittence des deux côtés. `maj.js` : le fond de carte au moment où
+  « Jouer » se libère, rouge rejouée seule sur la branche ET sur
+  `origin/main` (qui ajoute « la page ne floute rien »). `monte.js` (55 min) :
+  la chauffe de New York expirée (54/321) et le flanc frôlé (`c` nul) — les
+  deux dettes chroniques déclarées plus bas, non rejouées une fois de plus.
 - [ ] **LE PORTAIL DE LA M40 (après fusion de la v411), DOUBLE MESURE FAITE.**
   Mêmes rouges que ci-dessous, plus deux : `degats.js` « très touchée elle
   fume, ne prend JAMAIS feu… » rouge À L'IDENTIQUE sur `origin/main` (v414),
