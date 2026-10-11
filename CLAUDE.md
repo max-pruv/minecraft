@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## La rue dense, palier C (v436) — une variance par voiture est une fonction de son heure
+## La rue dense, palier C (v438) — une variance par voiture est une fonction de son heure
 
 Quatre règles.
 
@@ -1051,6 +1051,12 @@ même : un témoin qui juge ce que la tablette voit force
 `reglageTraces.dessin = true` (ou `?traces=1`). Et une piste de témoin qui
 dérape se pose LARGE : la dérive pousse la voiture de côté, et sur treize
 blocs elle tombait de la plate-forme (`enLair`, zéro trace au frein à main).
+
+**Le frein à main crisse (v437).** Le crissement suivait la dérive, le
+freinage fort et le virage trop vite ; le frein à main tiré tout droit n'en
+donne aucun (dérive nulle) et ne s'entendait pas (bande des pneus ×1,9).
+`freinMainTire` (lu si présent) au-dessus de deux blocs/s vise 0,75. Le
+témoin écoute la sortie pendant le freinage, contre la ligne droite d'avant.
 
 ## Un contour dans l'autre sens, et les rues du Strip (v418) — ce qui empêchait le contour n'était pas l'absence de rue
 
@@ -2415,6 +2421,19 @@ engendrées. Quatre règles.
   journal vide dans le jeu, trois rouges de `maj.js`. Après tout conflit dans un
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
+
+## La voiture s'arrête devant une terrasse (v436) — une famille d'obstacle lit la même règle pour tous ceux qui butent
+
+Une règle. `mobilierDevant` (main.js) ne lisait que les blocs de mobilier
+(`isProp`) ; la table, les chaises, le banc et la colonne de la couche HD ne
+sont pas des blocs. Il demande désormais `world.mobilierVu` — la règle de la
+v425, celle que les passants lisent, seulement le mobilier MONTRÉ (une
+tablette sans couche HD n'a pas de table invisible) —, une fois par colonne
+couverte. Pas de seconde copie de la règle : deux lecteurs, une fonction.
+« Pas si l'on est déjà dedans » reste jugé dans la famille « mobilier »
+(v252). Le témoin roule sur un trottoir jusqu'à l'arrêt, durée en
+progrès (cinq secondes sans avancer), jamais une immobilité d'une seconde :
+une page HD du banc rend une image par seconde.
 
 ## Les terrasses de café reviennent (v433) — une règle qui lit un bloc se relit quand le bloc se découpe
 

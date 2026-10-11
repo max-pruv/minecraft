@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v436 — Des fourgonnettes, des pickups, et chaque voiture son allure
+## v438 — Des fourgonnettes, des pickups, et chaque voiture son allure
 
 **Pourquoi.** La rue ne roulait que des voitures de sport et la berline
 citadine : pas une fourgonnette de livraison, pas un pickup. Dans une file,
@@ -49,6 +49,48 @@ tronçon, la seconde voie de Paris (306 → 446, barre 380). Et une preuve
 structurelle sous node (`sonde-rue-dense.cjs jeu`) : 179 convois, un tour
 d'horloge chacun, autant de contacts de grille avec le jeu que sans (392 et
 392).
+
+## v437 — Le frein à main crisse
+
+**Pourquoi.** Au frein à main, les roues arrière se bloquent et glissent sur
+la route — dans un jeu de conduite, ça s'entend. Ici, tout droit, on
+n'entendait presque rien : le crissement ne suivait que la dérive, et freiner
+à main en ligne droite n'en donne pas. Mesuré dans la bande des pneus : à
+peine deux fois le bruit de la ligne droite.
+
+**Ce que ça change.** Dès que l'enfant tire le frein à main en roulant, les
+pneus crissent, en ligne droite comme en virage, et se taisent quand la
+voiture s'arrête ou qu'on relâche.
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js`, qui lit la SORTIE du jeu
+(un analyseur dans la bande des pneus, jamais un drapeau) : frein tiré contre
+la ligne droite d'avant, ×1,9 sur la v434, ×62 ici, pour une barre à ×10 —
+celle du crissement en dérive.
+
+---
+
+## v436 — La voiture s'arrête devant les terrasses
+
+**Pourquoi.** La table et les chaises d'un café de Paris sont dessinées par la
+couche HD (v288) : ce ne sont pas des blocs. Les passants les contournent
+depuis la v425 ; la voiture de l'enfant, elle, ne lisait que les blocs de
+mobilier (réverbères, jardinières) et passait au travers des terrasses
+revenues en v433.
+
+**Ce que ça change.** Au volant, la voiture s'arrête devant une terrasse, un
+banc, une colonne Morris — seulement ceux qu'on voit : une tablette sans
+couche HD n'a pas de table invisible qui arrête.
+
+**Ce qui le prouve.** Un témoin neuf de `parishd.js` prend le volant sur un
+trottoir de Paris, huit blocs avant une terrasse, et roule jusqu'à l'arrêt :
+elle s'arrête à 2,5 à 2,7 blocs du centre de la terrasse (son pare-chocs au
+bord de la colonne), et le crochet nomme « mobilier ». Rouge sur `origin/main`
+(v433, les terrasses sans le correctif) : la voiture entre jusqu'à 1,8 bloc,
+le capot au-dessus de la table, et c'est un mur qui l'arrête. Une sonde
+(`sonde-terrasse-voiture.cjs`) rejoue le témoin seul, lu dans `parishd.js`.
+
+---
+
 ## v435 — Les anneaux se partagent la place
 
 **Pourquoi.** À Toronto, Dublin et Lima, l'anneau de voitures qu'on voit en

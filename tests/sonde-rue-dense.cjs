@@ -1,4 +1,4 @@
-// LA RUE DENSE, PALIERS C (v436) — sous node, la VRAIE circulation
+// LA RUE DENSE, PALIERS C (v438) — sous node, la VRAIE circulation
 // (`createVehicules`, les circuits comme main.js les pose), sans rien dessiner.
 //
 //   node tests/sonde-rue-dense.cjs jeu [villes engendrées à prendre]

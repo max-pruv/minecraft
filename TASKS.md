@@ -479,7 +479,7 @@
   sur `origin/main` à (−2 581, 5 272), un nœud de circuits face à face,
   8,8 % sur la v423 — d'avant, à démonter. (5) Palier C : utilitaires et
   pickups (classe dans `FLOTTE`), variance par voiture, voie par tronçon.
-  **(5) et (2) FAITS en v436** : fourgonnette et pickup (`utilitaires.js`, une
+  **(5) et (2) FAITS en v438** : fourgonnette et pickup (`utilitaires.js`, une
   voiture sur six hors New York, quinze maillages), jeu par voiture
   (`Convoi.jeu`, fonction de la clé, du rang et de l'heure : la grille reste
   partagée ; éteint sous six blocs/s, près d'un croisement, sur la voie
@@ -498,13 +498,13 @@
   jumelle changerait le nombre de voitures de la file après sa naissance, donc
   la grille d'une tablette à l'autre (v305) ; le découper en tranches AVANT la
   naissance du convoi est la forme sûre, à faire si l'iPad le montre.
-  Portail de la v436 : `degats.js` « percuter une voiture de la rue l'abîme
+  Portail de la v438 : `degats.js` « percuter une voiture de la rue l'abîme
   AUSSI » (et le garage qui en dépend) rouge sous la charge — santé 1 ; REJOUÉE
   SEULE : branche 0,99 deux fois, `origin/main` 0,99 deux fois. Le témoin
   arrondit la santé au centième et l'élan (13 à 15 blocs) ne coûte que 0,5 à
   1 % : sous la charge, l'arrondi rend 1. Dette du témoin (lire la santé non
   arrondie, ou prendre plus d'élan), pas de la livraison.
-  Second portail de la v436 (après fusion de la v435) : rouges `carte.js`
+  Second portail de la v438 (après fusion de la v435) : rouges `carte.js`
   (flèche du GPS 1,92, déclaré), `manhattan.js` (trou, taxi, déclarés),
   `monte.js` « au feu, la voiture freine sur plusieurs relevés » (2 arrêts,
   1 sec à 45 b/s², la forme déclarée en v415). A/B sur la même branche,
@@ -1680,9 +1680,20 @@
   main » demanderait un second doigt sur l'accélérateur, et le joystick n'en a
   qu'un — décidé, pas oublié) ; (11) personne ne DESSINE encore le dérapage
   (traces de pneus, crissement : la session des sensations lit
-  `player.freinMainTire` et `player.derive`) — **TRACES FAITES en v434** (`traces.js`) ;
-  le crissement au frein à main reste à faire ; (12) le frein à main ne se voit
+  `player.freinMainTire` et `player.derive`) — **TRACES FAITES en v434** (`traces.js`),
+  **CRISSEMENT AU FREIN À MAIN FAIT en v437** ; (12) le frein à main ne se voit
   pas chez l'ami au-delà de la dérive qui voyage déjà (`p.v.r`).
+- [ ] **AU PORTAIL DE LA v437 (le frein à main crisse), UN ROUGE NEUF QUI N'EST
+  PAS LA LIVRAISON — preuve structurelle (v291).** « à Rome aussi, en biais, un
+  passant traverse sur le passage peint d'un carrefour sans feu » (`monte.js`,
+  `traversees: 0` sur 6 poses) : la livraison ne change qu'un gain dans
+  `voitureSons`, appelé par `sensationsAuVolant` seulement quand l'enfant
+  conduit une voiture — ce témoin ne conduit pas. À rejouer seul des deux côtés
+  par la session des passants (v421). Les autres rouges du même portail sont
+  déjà déclarés (loader et flèche du GPS, glisser bridé, façade et taxi
+  tactile, chauffe de New York, réverbère), et `reseau.js` est morte sur un
+  délai de `rejoindre` (ligne 1021) — rejouée seule au portail précédent,
+  verte des deux côtés sur ce passage.
 - [ ] **AU PORTAIL DE LA v434 (traces de pneus), DES ROUGES QUI NE SONT PAS LA
   LIVRAISON — mesurés.** `reseau.js` rejouée SEULE : branche 80 verts, trois
   rouges ; `origin/main` (v430) 80 verts, les MÊMES trois rouges — « deux
@@ -3563,6 +3574,18 @@
     mesuré : cinq colonnes sur vingt-cinq morceaux, aucune côte à côte.
 
   Dettes déclarées de la v288 :
+  - [ ] **LE PORTAIL DE LA v436 (la voiture devant les terrasses).** Rouges :
+    `maj.js` (les deux loaders), `carte.js` (glisser bridé ×4), `washington.js`
+    (l'Air et l'Espace), `manhattan.js` (trou, taxi), `monte.js` (la rue à
+    l'allure d'une ville, le mur pris de face) — dettes déclarées. Et « au
+    volant, la voiture s'arrête devant un réverbère » (0 bloc parcouru),
+    rejoué SEUL par `sonde-reverbere.cjs` (le témoin lu dans `monte.js`) :
+    branche 3,64 · **0,16** · 3,65, `origin/main` 3,64 · 3,59 · 3,65. Ce n'est
+    pas `mobilierDevant` : la carte du mobilier sur dix-neuf blocs autour du
+    départ n'a que des potelets et des corbeilles (aucun meuble qui arrête) —
+    une intermittence d'un passage sur trois, déjà vue au portail de la v433
+    AVANT ce correctif (0,3 bloc). À démonter par une sonde qui publie ce qui
+    arrête la voiture (`player.contact`).
   - [ ] **LE PORTAIL DE LA v433 (terrasses)**, coupé deux fois par la limite
     de trente minutes des tâches de fond (la reprise a tout rejoué). Rejoués
     SEULS des deux côtés (`/home/user/minecraft` et un arbre détaché sur
@@ -3585,7 +3608,8 @@
   - [x] les Champs-Élysées à `dx = −4,3 km` (dette ci-dessous) : MESURÉ en v433,
     l'axe de l'avenue rend 103 colonnes de pavé et 8 de trottoir sur 111, et
     l'adresse de la dette du pavé — rendu par Paris doublé (v306).
-  - [~] une chaise de terrasse HD n'arrête ni un passant ni une voiture —
+  - [x] **FAIT EN v436** (la voiture : `mobilierDevant` lit `world.mobilierVu`).
+    Historique : une chaise de terrasse HD n'arrête ni un passant ni une voiture —
     LES PASSANTS ET L'ENFANT À PIED : fait en v425 (`mobilierTrottoir`,
     `world.obstaclePieton`, seulement le mobilier montré). Reste : la VOITURE
     (`mobilierDevant`, main.js, hors zone piétons) — elle lit `isProp` ; la

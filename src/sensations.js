@@ -471,9 +471,15 @@ export function sensationsAuVolant(a, player, dt) {
   const charge = Math.max(0, Math.min(1, (m.acc * Math.sign(m.v || 1)) / (m.vmax * 1.2)));
   const derive = typeof player.derive === 'number' ? Math.abs(player.derive) : 0;
   const freinFort = -m.acc * Math.sign(m.v || 1) > 22 && Math.abs(m.v) > 6;
+  // LE FREIN À MAIN CRISSE (v437) : les roues arrière bloquées glissent sur
+  // la route même tout droit, sans dérive — mesuré avant, la bande des pneus
+  // n'y montait que d'un facteur deux, presque rien à l'oreille. Lu si présent
+  // (`freinMainTire`, publié par la physique depuis la v409).
+  const freinMain = player.freinMainTire && Math.abs(m.v) > 2;
   const crisseVise = Math.min(1, Math.max(
     derive > 0.12 ? (derive - 0.12) * 4 : 0,
     freinFort ? 0.6 : 0,
+    freinMain ? 0.75 : 0,
     Math.abs(m.lat) > 16 ? (Math.abs(m.lat) - 16) / 14 : 0));
   a.sens.crisse += (crisseVise - a.sens.crisse) * Math.min(1, dt * 8);
   const ev = player.etatVoiture || {};

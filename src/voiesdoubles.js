@@ -104,7 +104,7 @@ export function voiesAutoroute(x, z, pt) {
 
 export const VOIES_DOUBLES = Object.freeze({ VOIE_EXTERIEURE, DEUX_VOIES });
 
-// LE TYPE DE VOIE PAR TRONÇON (v436). La limitation suivait le CIRCUIT (rue
+// LE TYPE DE VOIE PAR TRONÇON (v438). La limitation suivait le CIRCUIT (rue
 // engendrée, avenue nommée, autoroute) : sur un même anneau, un boulevard et
 // une rue de quartier roulaient à la même allure. La section se demande à la
 // ville, au point du tracé — la même règle du kit (`voirie.js`) que le sol :

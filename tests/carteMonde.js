@@ -3584,7 +3584,7 @@ const VRAIES_KM = [
           : 'aucune jumelle sur l\'A1');
     }
 
-    // --- LA RUE DENSE, PALIER C (v436) ---------------------------------------
+    // --- LA RUE DENSE, PALIER C (v438) ---------------------------------------
     //
     // Trois choses, trois témoins, et chacun mesure la même grandeur sur
     // l'ancien code (qui rend « absent » sans s'effondrer).

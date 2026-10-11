@@ -1,4 +1,4 @@
-// LES UTILITAIRES ET LES PICKUPS DE LA RUE (v436). Max : « Improve all
+// LES UTILITAIRES ET LES PICKUPS DE LA RUE (v438). Max : « Improve all
 // cities ». La rue ne roulait que des berlines et des voitures de sport —
 // cinquante modèles d'exception et la berline citadine : pas une
 // fourgonnette de livraison, pas un pickup de chantier. Une vraie rue, ce sont
@@ -174,7 +174,7 @@ export function construireUtilitaire({ couleur = 0xeef0f0 } = {}) {
   tas.glass.push(vitre([[0.08, 1.35, zA + 0.004], [W / 2 - 0.16, 1.35, zA + 0.004], [W / 2 - 0.16, H - 0.18, zA + 0.004], [0.08, H - 0.18, zA + 0.004]].map(([x, y, z]) => [-x, y, z])));
   tas.glass.push(vitre([[0.08, 1.35, zA + 0.004], [W / 2 - 0.16, 1.35, zA + 0.004], [W / 2 - 0.16, H - 0.18, zA + 0.004], [0.08, H - 0.18, zA + 0.004]]));
   avantArriere(tas, L, W, 0.82, 1.0);
-  return finir(g, Object.entries(tas).reduce((m, [k, v]) => m.set(k, v), new Map()), mat, 'fourgon-v436');
+  return finir(g, Object.entries(tas).reduce((m, [k, v]) => m.set(k, v), new Map()), mat, 'fourgon-v438');
 }
 
 // LE PICKUP. Profil bas (capot, benne) ; la cabine double s'y pose.
@@ -211,5 +211,5 @@ export function construirePickup({ couleur = 0x3d4a57, chargement = false } = {}
     tas.bois.push(poser(new THREE.BoxGeometry(0.5, 0.35, 0.5), [0.35, 1.31, zC1 + 0.7], [0, 0.3, 0]));
   }
   avantArriere(tas, L, W, 0.86, 0.92);
-  return finir(g, Object.entries(tas).reduce((m, [k, v]) => m.set(k, v), new Map()), mat, 'pickup-v436');
+  return finir(g, Object.entries(tas).reduce((m, [k, v]) => m.set(k, v), new Map()), mat, 'pickup-v438');
 }

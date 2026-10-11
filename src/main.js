@@ -1608,16 +1608,26 @@ function updateChunks() {
   // Manhattan. Même garde que pour la circulation : on ne bloque que si l'on
   // n'est pas DÉJÀ dedans (player.js), sinon une voiture garée contre un
   // banc ne repartirait plus.
+  // ET LA TERRASSE DE CAFÉ NON PLUS (v436). La table et les chaises de la
+  // couche HD (v288) ne sont pas des blocs : la voiture les traversait. On
+  // demande la règle qui les pose (`world.mobilierVu`, v425 — seulement le
+  // mobilier MONTRÉ, sinon une tablette sans couche HD aurait des tables
+  // invisibles qui arrêtent), une fois par colonne couverte.
   const mobilierDevant = (x, z, cap) => {
     const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux;
     const demiLong = 2.2, demiLarg = Math.max(0.3, player.gabarit / 2);
     const y0 = Math.floor(player.pos.y + 0.1);
+    const vu = world.mobilierVu, lues = vu ? new Set() : null;
     for (let a = -demiLong; a <= demiLong + 1e-6; a += 0.5)
       for (let b = -demiLarg; b <= demiLarg + 1e-6; b += 0.5) {
         const sx = x + ux * a + vx * b, sz = z + uz * a + vz * b;
         if (villeRealiste.obstacleA(sx, sz)) return true;
         const bx = Math.floor(sx), bz = Math.floor(sz);
         if (isProp(world.getBlock(bx, y0, bz)) || isProp(world.getBlock(bx, y0 + 1, bz))) return true;
+        if (vu) {
+          const k = bx * 65536 + bz;
+          if (!lues.has(k)) { lues.add(k); if (vu(bx + 0.5, bz + 0.5, player.pos.y)) return true; }
+        }
       }
     return false;
   };
@@ -3208,7 +3218,7 @@ function animerLesVilles(dt) {
   // la graine vient de la ville, pas de la file (v246, voir graineDeVille)
   // l'allure de la voie : une rue de ville engendrée, une avenue nommée (v372)
   const decalage = tr.voie === 'avenue' && tr.ville !== 'ny' ? DECALAGE_AVENUE : 0;
-  // LE TYPE DE VOIE PAR TRONÇON (v436) : la section de la rue au point du
+  // LE TYPE DE VOIE PAR TRONÇON (v438) : la section de la rue au point du
   // tracé — boulevard cinquante, collectrice quarante, locale trente — et non
   // plus une seule limitation pour tout le circuit. Manhattan garde la sienne.
   const allure = tr.ville === 'ny' ? null : decalage ? (x, z) => allureDuTroncon(tr.cle, x, z)
