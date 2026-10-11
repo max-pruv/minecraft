@@ -5529,6 +5529,16 @@ l'embarquement a eu lieu, pas par une hypothèse.
   la rue d'un coup. La piste est celle des passants (v246, `naitre` par
   tranches de cinq millisecondes) : un budget de fabrication par image, la
   place restant vide une image de plus.
+  PORTAIL DE LA v422 (règle de la v195) : rouges au portail, sous une charge
+  stable de 3,5 à 3,8 cœurs ; rejouées SEULES sur la branche : `reglages.js`
+  verte (70) ; `monte.js` 4 rouges — « la téléportation ne compile plus de
+  programmes », « une voiture roule dans la nature », « son flanc frôlé » (tous
+  trois rouges sur `origin/main` rejouée seule, avec 19 autres) et le tirage
+  « deux voitures l'une dans l'autre en taux » (0 · 0 · 5 % sur la branche,
+  1,2 sur `origin/main`, déclaré plus haut) ; `manhattan.js` trou de façade et
+  taxi (déclarés) ; `reseau.js` « hôte sans courtier » (déclaré). Mon premier
+  jet, lui, rendait 29 rouges de `monte.js` seule : voir CLAUDE.md (v422), la
+  fenêtre d'arrivée.
   (2) ~~`ensureChunk` sur le fil principal : 66 à 94 ms~~ **FAIT en v422** :
   personnages, passants, joueur, visée, HUD, poissons et réverbères ne
   fabriquent plus un morceau que le worker va rendre (Paris 23-40 → 0 morceau
