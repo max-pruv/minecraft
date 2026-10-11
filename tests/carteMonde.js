@@ -624,7 +624,7 @@ const VRAIES_KM = [
               if (w.isSolid(X, h + 1, Z2) || w.isSolid(X, h + 2, Z2)) bloque.push([X, Z2]); } }
           let marche = 0; for (let k = 1; k < cotes.length; k++) marche = Math.max(marche, Math.abs(cotes[k] - cotes[k - 1]));
           const [ex, ez] = av[av.length - 1], c = w.cityAt(Math.floor(ex), Math.floor(ez));
-          // L'AVENUE TRAVERSE L'ANACOSTIA (v437) jusqu'à Pennsylvania Avenue
+          // L'AVENUE TRAVERSE L'ANACOSTIA (v440) jusqu'à Pennsylvania Avenue
           // SE : on compte les pas de l'avenue au-dessus de l'eau, et l'on lit
           // que son bout est un sommet de Pennsylvania Avenue SE.
           let traverse = 0;
@@ -635,7 +635,7 @@ const VRAIES_KM = [
           const PE = (WA.VOIES_WASHINGTON || []).find((v) => v.nom === 'Pennsylvania Avenue SE');
           const penn = !!PE && PE.pts.some(([a, bb]) => Math.hypot(a - (ex - WA.WASHINGTON.x), bb - (ez - WA.WASHINGTON.z)) < 1);
           out.washington = { col, dansVille, bloque: bloque.length, marche, traverse, penn, rue: !!c && (await import('./src/world.js')).CHAUSSEE.has(w.getBlock(Math.floor(ex), w.coteRoulable(Math.floor(ex), Math.floor(ez)), Math.floor(ez))) };
-          // LES DEUX PONTS DE L'ANACOSTIA (v437), chacun d'une rive à
+          // LES DEUX PONTS DE L'ANACOSTIA (v440), chacun d'une rive à
           // l'autre : la chaussée du tablier à la cote de la rue, deux blocs
           // libres au-dessus, et de l'eau dessous.
           out.pontsDC = (WA.PONTS_DC || []).map((pt) => {
@@ -1169,7 +1169,7 @@ const VRAIES_KM = [
       JSON.stringify(a1.absent ? a1 : { convoi: a1.convoiI95Sud ? { nom: a1.convoiI95Sud.nom, voitures: (a1.convoiI95Sud.modeles || []).length } : 'aucun convoi I-95 Sud',
         washington: a1.washington, erreur: a1.washingtonErreur, portesNY: a1.manhattan, frole: a1.frole && a1.frole['I-95 Sud'] }));
 
-    // WASHINGTON PAR ANACOSTIA (v437) : le quartier où entre l'I-95 Sud n'avait
+    // WASHINGTON PAR ANACOSTIA (v440) : le quartier où entre l'I-95 Sud n'avait
     // aucun pont vers la ville, et ses voitures faisaient demi-tour sur une rue
     // sans nom. Les deux ponts de la vraie ville (la 11e Rue, Sousa) prolongent
     // la grille d'une rive à l'autre, à la cote de la rue ; l'avenue d'entrée

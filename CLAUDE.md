@@ -3702,6 +3702,24 @@ Une règle.
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
 
+## Les ponts de l'Anacostia (v440) — un pont de ville est du sol, et la cote du tablier se dit à tous ses lecteurs
+
+Deux règles.
+
+- **UN PONT DE RUE DANS UNE VILLE BÂTIE À LA MAIN EST UNE VOIE DU SOL, À LA
+  COTE DE LA VILLE.** `pontWashington` (washington.js) rend la matière de la
+  bande des deux ponts ; `world.js` l'écrit à `COTE_PONT_DC` (33) sur toute
+  colonne plus basse, et `coteRoulable` rend cette cote. C'est la règle de la
+  Tamise (v208) : `terrainHeight` ne bouge pas (109 881 colonnes identiques),
+  l'eau reste dessous. Le pont ne remplace que ce qui n'est PAS déjà une rue :
+  la bande d'un pont qui chevauche un carrefour de la grille y mettait du
+  trottoir (vu au relevé de la rue de v = 84).
+- **UNE EMPREINTE DE MORCEAUX QUI BOUGE SE PROUVE PAR LE DÉSARMEMENT ET PAR
+  CE QUI DIFFÈRE** (v419) : `pontWashington` rendant null, la branche rend la
+  constante de la v439 au bit près ; les 112 colonnes qui diffèrent sont
+  toutes dans les bandes des ponts. Et l'ajout d'une voie dans une ville à
+  circuits se remesure : les quatorze circuits de Washington sont identiques.
+
 ## L'US-101 (v439) — un relevé en couronne commence à la porte, et une optimisation de tracé reconstruit la porte
 
 San Francisco–Los Angeles, le couloir instruit en v419. Quatre règles.

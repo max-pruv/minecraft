@@ -20,6 +20,33 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v440 — Les ponts de l'Anacostia
+
+**Pourquoi.** L'I-95 Sud entre dans Washington par le quartier au sud de
+l'Anacostia (v367), et ce quartier n'avait AUCUN pont vers le reste de la
+ville : les voitures qui arrivaient de New York faisaient demi-tour sur une rue
+sans nom, et l'enfant à pied restait coincé sur la rive sud.
+
+**Ce que ça change.** Deux ponts de rue, ceux de la vraie ville : le pont de
+la 11e Rue et le pont Sousa, qui porte Pennsylvania Avenue SE. Ils prolongent
+la grille d'une rive à l'autre, à la cote de la rue, l'eau dessous. Les
+voitures de l'I-95 Sud passent le pont Sousa et vont jusqu'au bout de
+Pennsylvania Avenue SE, dans la ville.
+
+**Ce qui le prouve.** Un témoin neuf de `carteMonde.js` : chaque pont franchit
+au moins dix colonnes d'eau, chaussée à la cote 33 d'un bout à l'autre, deux
+blocs libres au-dessus ; l'avenue traverse l'eau, finit sur Pennsylvania
+Avenue SE, aucun bloc à hauteur de carrosserie, aucune marche. Rouge sur
+`origin/main` (aucun pont). Le relief ne bouge pas : `terrainHeight` identique
+sur les 109 881 colonnes de Washington, les deux empreintes de `plafond.js`
+intactes. Les quatorze circuits de Washington sont les mêmes, au bit près (la
+contrainte de partage de la v211 inchangée). L'empreinte des 490 morceaux
+change (Washington est un des neuf lieux) : `pontWashington` désarmé, elle rend
+la constante de la v439 au bit près, et les 112 colonnes qui diffèrent sont
+toutes dans les bandes des deux ponts.
+
+---
+
 ## v439 — La route de San Francisco à Los Angeles
 
 **Pourquoi.** Seize autoroutes reliaient déjà les villes, et la côte ouest des

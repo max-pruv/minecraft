@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 440,
+    titre: 'Les ponts de Washington',
+    puces: [
+      'Deux ponts sur l\'Anacostia',
+      'Les voitures de New York entrent en ville',
+    ],
+  },
+  {
     v: 439,
     titre: 'La route de Los Angeles',
     puces: [

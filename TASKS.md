@@ -966,7 +966,11 @@
   la seule rue qui touche l'eau des deux côtés dans la fenêtre relevée est à
   lz = 0. Les deux portes de New York (I-95 à l'est, I-95 Sud à l'ouest, v367)
   sont prêtes à recevoir ce pont.
-- [ ] **WASHINGTON PAR ANACOSTIA : LA RUE N'EST PAS RELIÉE À LA VILLE (v367).**
+- [x] **WASHINGTON PAR ANACOSTIA : LA RUE N'EST PAS RELIÉE À LA VILLE (v367).**
+  FAIT EN v440 : pont de la 11e Rue (u = 28) et pont Sousa (u = 56), du SOL de
+  washington.js (`pontWashington`, cote 33) ; `avenues.washington` passe le
+  pont Sousa jusqu'au bout de Pennsylvania Avenue SE. Relief et circuits
+  identiques, mesurés.
   L'I-95 Sud entre par la rue de u = 37 au sud de l'Anacostia (x −21191, de
   z 6197 à 6173) ; ce quartier (u 20–66, v 60–96) n'a AUCUN pont vers le reste
   de Washington — l'Anacostia le coupe en diagonale de (62, 44) à (−50, 98) —

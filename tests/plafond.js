@@ -364,7 +364,11 @@ const EMPREINTE_MORCEAUX_V414 = '863d4203a441e3fd029ce2404fc6d6e706799e7f64fe489
 // colonnes qui diffèrent dans les morceaux de San Francisco sont toutes à
 // moins de sept blocs de l'axe de l'entrée — la demi-chaussée et le trottoir
 // d'une collectrice (scratchpad diffsf.mjs).
-const EMPREINTE_MORCEAUX_V357 = '239f48ab9f32f829be50f6e53f96ec0f43ed6d15fb2fdfaec0e1f0284917b37a';
+// v440 : Washington, un des neuf lieux, porte deux ponts de rue sur
+// l'Anacostia (11e Rue, Sousa). `pontWashington` désarmé (rend null), la
+// branche rend 239f48ab…, la constante de la v439, au bit près ; et les cent
+// douze colonnes qui diffèrent sont toutes dans les bandes des deux ponts.
+const EMPREINTE_MORCEAUX_V357 = 'fb4f9aed89ceb6e29a5ecc6731f5e9840673e0ba720fae16c0f60a86954ca403';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
