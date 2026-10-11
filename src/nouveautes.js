@@ -6,12 +6,40 @@
 
 export const NOUVEAUTES = [
   {
-    v: 422,
+    v: 425,
     titre: 'Moins de fausses alertes',
     puces: [
       'Deux fenêtres ouvertes ne se gênent plus',
       'Le jeu reste en mode normal',
       'Les parents voient la mémoire utilisée',
+    ],
+  },
+  {
+    v: 424,
+    titre: 'Un choc à la vitesse',
+    puces: [
+      'Un mur lent abîme peu',
+      'Frôler un mur ne casse rien',
+      'Pleins gaz, ça cogne fort',
+    ],
+  },
+  {
+    v: 423,
+    titre: 'Toutes les voies occupées',
+    puces: [
+      'Des voitures dans chaque voie',
+      "Bien plus de voitures sur l'autoroute",
+      'Elles se rangent avant de tourner',
+    ],
+  },
+  {
+    v: 422,
+    titre: 'Conduire comme au cinéma',
+    puces: [
+      'La caméra recule quand on accélère',
+      'La voiture penche dans les virages',
+      'Les roues avant tournent avec toi',
+      'Les pneus crissent, les chocs s\'entendent',
     ],
   },
   {
