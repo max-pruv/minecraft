@@ -60,6 +60,17 @@ async function mesurerTraces() {
   P.yaw = -Math.PI / 2; P.pos.set(x0, y0 + 1.01, z0 + 0.5); P.vel.set(0, 0, 0);
   await tenir(0.8);
   const clesAvant = cles();
+  // LE CRISSEMENT SE LIT SUR LA SORTIE DU JEU (v268), dans la bande des pneus
+  // (2,5 à 3,4 kHz), jamais sur un drapeau
+  const ctx = window.__sons && window.__sons.contexte();
+  const sortie = window.__sons && window.__sons.sortie();
+  let bande = () => null;
+  if (ctx && sortie) {
+    const an = ctx.createAnalyser(); an.fftSize = 2048; sortie.connect(an);
+    const freq = new Float32Array(an.frequencyBinCount), hz = ctx.sampleRate / an.fftSize;
+    bande = () => { an.getFloatFrequencyData(freq); let s = 0, n = 0; for (let i = Math.floor(2500 / hz); i <= Math.ceil(3400 / hz); i++) { s += Math.pow(10, freq[i] / 10); n++; } return s / n; };
+  }
+  const moy = (t) => { const u = t.filter((x) => x != null && isFinite(x)); return u.length ? u.reduce((a, b) => a + b, 0) / u.length : null; };
 
   // 1. EN LIGNE DROITE, LES PNEUS TIENNENT
   P.gaz = 1;
@@ -68,7 +79,8 @@ async function mesurerTraces() {
   // poser (au portail, 54 avant la ligne droite) — on compte à partir d'ici
   const posesDepart = etat().poses;
   const tl = performance.now();
-  while (P.pos.x < x0 + 30 && performance.now() - tl < 20000) await tenir(0.1);
+  const bandesDroit = [];
+  while (P.pos.x < x0 + 30 && performance.now() - tl < 20000) { await tenir(0.1); if (P.pos.x > x0 + 15) bandesDroit.push(bande()); }
   const droit = { posees: etat().poses - posesDepart, parcouru: +(P.pos.x - d0).toFixed(1), v: +(P.vitesseVoiture || 0).toFixed(1) };
 
   // 2. UNE DÉRIVE TENUE : la physique la RÉÉCRIT à chaque image (v401), on la
@@ -88,14 +100,17 @@ async function mesurerTraces() {
   const v0 = +(P.vitesseVoiture || 0).toFixed(1);
   P.freinMain = true;
   const tf = performance.now();
-  let tire = false, images = 0; const diag = [];
+  let tire = false, images = 0; const diag = [], bandesFrein = []; let deriveFrein = 0;
   while (Math.abs(P.vitesseVoiture || 0) > 2.5 && performance.now() - tf < 8000) {
     await tenir(0.1); images++;
     tire = tire || !!P.freinMainTire;
+    if (images >= 3 && Math.abs(P.vitesseVoiture || 0) > 4) { bandesFrein.push(bande()); deriveFrein = Math.max(deriveFrein, Math.abs(P.derive || 0)); }
     if (images < 6 && T) diag.push([+(P.vitesseVoiture||0).toFixed(1), !!P.enLair, +T.glissade(P.derive, P.freinMainTire, P.vitesseVoiture).toFixed(2), etat().poses]);
   }
   P.freinMain = false; P.gaz = null;
   await tenir(0.4);
+  const bD = moy(bandesDroit), bF = moy(bandesFrein);
+  const crisse = { droit: bD, frein: bF, rapport: bD && bF ? +(bF / bD).toFixed(2) : null, n: bandesFrein.length, deriveMax: +deriveFrein.toFixed(3) };
   const frein = { posees: etat().poses - avantFrein, tire, v0, images, diag, parcouru: +(P.pos.x - xd).toFixed(1) };
 
   // 4. AUCUN PROGRAMME NEUF
@@ -127,7 +142,7 @@ async function mesurerTraces() {
   }
   // on descend : la voiture reste, ses traces aussi — on ne s'en sert plus
   for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await tenir(0.4); }
-  return { module: !!T, y0, droit, derive, frein, neuves, fondu, borne };
+  return { module: !!T, y0, droit, derive, frein, crisse, neuves, fondu, borne };
 }
 
 if (typeof module !== 'undefined') module.exports = { mesurerTraces };

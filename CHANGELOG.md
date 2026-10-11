@@ -20,6 +20,25 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v437 — Le frein à main crisse
+
+**Pourquoi.** Au frein à main, les roues arrière se bloquent et glissent sur
+la route — dans un jeu de conduite, ça s'entend. Ici, tout droit, on
+n'entendait presque rien : le crissement ne suivait que la dérive, et freiner
+à main en ligne droite n'en donne pas. Mesuré dans la bande des pneus : à
+peine deux fois le bruit de la ligne droite.
+
+**Ce que ça change.** Dès que l'enfant tire le frein à main en roulant, les
+pneus crissent, en ligne droite comme en virage, et se taisent quand la
+voiture s'arrête ou qu'on relâche.
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js`, qui lit la SORTIE du jeu
+(un analyseur dans la bande des pneus, jamais un drapeau) : frein tiré contre
+la ligne droite d'avant, ×1,9 sur la v434, ×62 ici, pour une barre à ×10 —
+celle du crissement en dérive.
+
+---
+
 ## v436 — La voiture s'arrête devant les terrasses
 
 **Pourquoi.** La table et les chaises d'un café de Paris sont dessinées par la

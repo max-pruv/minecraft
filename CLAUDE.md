@@ -1011,6 +1011,12 @@ même : un témoin qui juge ce que la tablette voit force
 dérape se pose LARGE : la dérive pousse la voiture de côté, et sur treize
 blocs elle tombait de la plate-forme (`enLair`, zéro trace au frein à main).
 
+**Le frein à main crisse (v437).** Le crissement suivait la dérive, le
+freinage fort et le virage trop vite ; le frein à main tiré tout droit n'en
+donne aucun (dérive nulle) et ne s'entendait pas (bande des pneus ×1,9).
+`freinMainTire` (lu si présent) au-dessus de deux blocs/s vise 0,75. Le
+témoin écoute la sortie pendant le freinage, contre la ligne droite d'avant.
+
 ## Un contour dans l'autre sens, et les rues du Strip (v418) — ce qui empêchait le contour n'était pas l'absence de rue
 
 Deux règles.
