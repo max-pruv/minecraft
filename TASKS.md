@@ -791,6 +791,18 @@
   Las Vegas et Rio, des anneaux choisis DANS la bande (une sélection, donc
   mesurer la couverture) ; pour les rivières, un contour qui publie son tablier
   (un tablier neuf est du sol : Rome est dans l'empreinte des 490 morceaux).
+- [ ] **PORTAIL DE LA v422 (la place se contourne), DOUBLE MESURE FAITE.**
+  Voie : fumée, `parishd.js`, `carteMonde.js`, `plafond.js` verts. `maj.js` :
+  le badge (« version servie v421 » pour une tête de journal à 422 — le bump
+  de `sw.js` se fait à la fusion) et « corps, programmes et fond de carte »
+  (personnages 7/9, déclaré). `carte.js` : « rendu à chaud » 158 ms et « la
+  faire glisser » 679 ms, déclarés. `monte.js` au portail : 39 rouges, tous de
+  commandes (joystick « hardstop », « pas aux commandes ») ; rejouée SEULE :
+  branche 107 verts / 3 rouges, `origin/main` 99 / 4. Propres à la branche,
+  tous deux déjà déclarés et vus sur `origin/main` (v395, v414) : « elle
+  ralentit assez pour qu'on la rejoigne » (9,1 m/s) et « la rue roule à
+  l'allure d'une ville » (Paris, bâtie à la main, que la v422 ne touche pas :
+  seules quatorze villes engendrées changent d'anneaux, sonde `ident`).
 - [ ] **PORTAIL DE LA v414 (les tabliers s'allongent), DOUBLE MESURE FAITE.**
   (Portail joué sur la v408 fusionnée ; `origin/main` est passée à la v413
   pendant la double mesure. Après la fusion, rejouées SEULES sur le code
