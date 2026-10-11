@@ -699,9 +699,13 @@ function verifier(nom, ok, detail = '') {
       }
       const nous = d.etat(c.mesh);
       window.__rue = { conv, m, x0, z1 };
-      return { ecart, cibleTouchee: m === cible.m, sante: e ? Math.round(e.sante * 100) / 100 : null,
+      // LA SANTÉ SE LIT AU DIX-MILLIÈME (v429) : depuis la v424 un choc à dix
+      // blocs par seconde ne coûte que quelques millièmes, et arrondie au
+      // centième la santé rendait 0,99 ou 1 selon l'élan (15 blocs ou 15,5) —
+      // un tirage que le portail a pris pour une panne, des deux côtés.
+      return { ecart, cibleTouchee: m === cible.m, sante: e ? Math.round(e.sante * 10000) / 10000 : null,
         clones: propres.length, communs: propres.filter((pc) => pc.mesh.geometry === pc.geoOrig).length, partagees,
-        notreSante: nous ? Math.round(nous.sante * 100) / 100 : 1 };
+        notreSante: nous ? Math.round(nous.sante * 10000) / 10000 : 1 };
     });
     verifier('percuter une voiture de la rue l\'abîme AUSSI : sa tôle à elle, clonée, jamais la géométrie que la rue partage',
       !rue.err && rue.cibleTouchee && rue.sante < 1 && rue.clones > 0 && rue.communs === 0 && rue.partagees > 0 && rue.notreSante < 1,
@@ -773,7 +777,7 @@ function verifier(nom, ok, detail = '') {
       await tenir(0.4);
       let restants = 0;
       a.mesh.traverse((o) => { if (o.isMesh && clones.has(o.geometry)) restants++; });
-      return { santeAvant: Math.round(santeAvant * 100) / 100, clones: clones.size, descendu, rangee, remonte,
+      return { santeAvant: Math.round(santeAvant * 10000) / 10000, clones: clones.size, descendu, rangee, remonte,
         etat: d.etat(a.mesh) ? d.etat(a.mesh).sante : null, publie: g.player.etatVoiture, restants };
     });
     verifier('le garage répare par le trajet : abîmée, rangée (on descend dedans), ressortie — elle est NEUVE',
