@@ -770,6 +770,34 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## ✈️ va chercher la piste (v452) — une séquence assistée garde sa porte de sortie et se mesure piste par piste
+
+Max : « améliore la séquence d'atterrissage, l'avion est compliqué à gérer ».
+`src/approche.js` (pur, sans three) : piste la plus proche, ralliement,
+finale sur un plan, arrondi. Quatre règles.
+
+- **LA RÈGLE EST PURE ET SE REJOUE SOUS NODE SUR TOUTES LES PISTES.**
+  `guiderApproche` rend un cap, une vitesse verticale, une vitesse et le
+  train ; `player.js` l'applique comme un joystick. La sonde
+  (`tests/sonde-approche.cjs`) la rejoue sur les 31 pistes, trois appareils, quatre
+  départs : c'est elle qui a trouvé un avion qui virait au ras de la piste
+  dans l'aérogare de Roissy (on monte tout droit avant de virer), Fiumicino
+  qui tournait sans fin (deux tours manqués : une autre piste), et un toucher
+  avant le seuil de Los Angeles (`TOUCHER` 8).
+- **UNE APPROCHE ASSISTÉE NE FINIT JAMAIS AU BOUT DE LA PISTE.** Trop long
+  pour s'arrêter (`freinage` de la fiche plus dix blocs) ou trop de travers :
+  elle remet les gaz d'elle-même. Près du seuil la descente se borne à la
+  hauteur qui reste (un relief qui tenait l'avion haut le faisait plonger).
+- **LE GESTE PRIME, ET LE SECOND APPUI SORT.** Le joystick corrige (↔ décale,
+  ↕ monte ou descend sur le plan) ; un second ✈️ remet les gaz — la porte de
+  sortie de toute séquence imposée (v290, v366). Sans piste à portée, ✈️ se
+  pose sur place dès le premier appui (le témoin de la v261 l'exige) et le
+  cadran montre l'aéroport le plus proche. Hors de l'approche, le cadran nomme
+  les villes (v263) : mon premier jet y mettait la piste la plus proche dès
+  qu'on volait bas, et le témoin « cap sur Lyon » l'a refusé.
+- **ELLE SE MESURE SUR LES VRAIES PISTES.** Livrée après le prolongement des
+  pistes : sur les pistes d'avant, le Concorde ne trouvait aucune piste assez
+  longue et refaisait des tours (17 approches sur 17, mesuré).
 ## Le regard d'un convoi est un temps (v451) — ce qui est sur le chemin se voit avant d'y être
 
 Un train traversait la voiture de l'enfant quand une image était lente
@@ -858,7 +886,7 @@ vraiment atterrir ». Mesuré : 90 à 146 blocs. Quatre règles.
   arrivent pas. Un témoin de `carteMonde.js` roule chaque piste et rougit
   pour une piste courte non déclarée — ou une déclarée qui ne l'est plus.
 - **LE PLAN EST PUBLIÉ UNE FOIS** : `pistesDe(a)` (axe, demi-largeur, bouts
-  ouest et est) est lu par le bâtisseur et le témoin ; l'approche assistée le lira.
+  ouest et est) est lu par le bâtisseur, le témoin et l'approche assistée (v452).
 
 ## Les commandes de l'avion se rangent (v445) — une file en flux ne peut rien recouvrir
 

@@ -1,5 +1,15 @@
 # Ce qui est en cours
 
+- [ ] **L'APPROCHE ASSISTÉE (v452) : QUATRE POSÉS SUR 148 À REPRENDRE.**
+  `node tests/sonde-approche.cjs src` : trois touchers à 5,7 · 6,2 · 6,7 blocs
+  par seconde (Roissy 47 pour l'avion de ligne et le Concorde, Andrews pour le
+  chasseur, tous venus de l'ouest en virant), et le Concorde à Los Angeles qui
+  touche au seuil même (s 0, un demi-bloc avant la bande). Une première trace
+  du même départ rejouée seule se pose bien (s 82, 2 blocs/s) : la différence
+  tient à l'état du monde déjà engendré par les approches précédentes — à
+  démonter par une sonde qui rejoue UNE approche dans un monde neuf, puis la
+  même après les autres.
+
 - [ ] **SEPT PISTES SOUS LEUR CIBLE (v448) — DÉCLARÉES, LE REMÈDE EST UNE
   DÉCISION.** Prolongées autant que leur place le permet, mesurées par sonde :
   Heathrow 213/227 pour 300 (vallon à l'ouest, Londres à l'est), Barcelone 189
