@@ -479,7 +479,7 @@ const AVENUES = [
 
 const BANDES_AVENUES = rangerVoies(AVENUES);
 
-// LES PONTS DE L'ANACOSTIA (v440). L'I-95 Sud entre par le quartier au sud de
+// LES PONTS DE L'ANACOSTIA (v442). L'I-95 Sud entre par le quartier au sud de
 // la rivière (u 20–66, v 60–96), et ce quartier n'avait AUCUN pont vers le
 // reste de la ville : ses voitures faisaient demi-tour sur une rue sans nom.
 // La vraie ville en a deux là : le pont de la 11e Rue, et le pont Sousa, qui
@@ -718,7 +718,7 @@ export function solWashington(x, z) {
   const memo = MEMO_SOL.get(cle);
   if (memo !== undefined) return memo;
   let sol = solWashingtonCalcul(x, z);
-  // Les ponts de l'Anacostia (v440) passent avant l'eau, la berge et ce qui
+  // Les ponts de l'Anacostia (v442) passent avant l'eau, la berge et ce qui
   // les borde — mais une rue reste une rue : là où le pont rejoint la grille,
   // le carrefour est celui de la grille. La chaussée l'emporte sur le
   // trottoir, comme entre deux voies.

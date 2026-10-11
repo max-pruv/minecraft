@@ -245,8 +245,11 @@ const _q = new THREE.Quaternion(), _qm = new THREE.Quaternion(), _up = new THREE
 // braquage, comme un vrai essieu directeur.
 function installerBraquage(mesh) {
   const roues = mesh.userData.roues;
-  if (!roues || !roues.length || mesh.userData.braquage === roues) return;
-  mesh.userData.braquage = roues;
+  // le marqueur a son propre nom (v441) : `userData.braquage` est le NOMBRE
+  // que le réseau pose sur la copie d'une voiture d'ami (v397), et le prendre
+  // pour marqueur réinstallait les groupes à chaque message
+  if (!roues || !roues.length || mesh.userData.braquageInstalle === roues) return;
+  mesh.userData.braquageInstalle = roues;
   const avant = [];
   mesh.updateMatrixWorld(true);
   mesh.getWorldQuaternion(_qm);
@@ -309,10 +312,15 @@ function vieDeVoiture(a, player, dt, m) {
   mesh.rotation.z = S.roulis;
   mesh.rotation.x = S.tangage + pente;
 
-  // LA DÉRIVE : quand la physique en publie une, la caisse s'oriente à
-  // `derive` du sens de la marche. Si le cap de la voiture le dit déjà (la
-  // physique fait glisser la vitesse, pas le cap), on n'ajoute rien : on ne
-  // tourne que la part qui ne se voit pas encore.
+  // LA DÉRIVE : quand la physique en publie une, la caisse est à −`derive` du
+  // sens de la marche — la physique fait aller la VITESSE dans la direction
+  // `yaw + derive` (player.js), le cap est le corps (v358). Si le cap de la
+  // voiture le dit déjà, on n'ajoute rien : on ne tourne que la part qui ne
+  // se voit pas encore. JUSQU'À LA v437 LE SIGNE ÉTAIT INVERSÉ : on visait
+  // +`derive`, la caisse tournait donc encore de deux fois la dérive, et la
+  // glissade se dessinait EN MIROIR — mesuré dans la matrice monde au frein à
+  // main dans un virage à gauche, la caisse rendue à −0,06 rad de sa vitesse
+  // quand la physique la dit à +0,45 (`derive-mesure.js`).
   let derive = 0;
   if (typeof player.derive === 'number' && Math.abs(m.v) > 1) {
     const vx = player.vel.x, vz = player.vel.z;
@@ -321,7 +329,7 @@ function vieDeVoiture(a, player, dt, m) {
       let deja = player.yaw - capMarche;
       while (deja > Math.PI) deja -= Math.PI * 2;
       while (deja < -Math.PI) deja += Math.PI * 2;
-      derive = Math.max(-0.6, Math.min(0.6, player.derive - deja));
+      derive = Math.max(-0.6, Math.min(0.6, -player.derive - deja));
     }
   }
   S.derive += (derive - S.derive) * Math.min(1, dt * 8);
@@ -353,6 +361,27 @@ function vieDeVoiture(a, player, dt, m) {
     }
   }
   mesh.userData.sensations = S;
+}
+
+// LA VOITURE D'UN AMI (v441). Le volant et la glisse voyagent avec la
+// position depuis la v397 (`p.v.b`, `p.v.r`) et le receveur les posait sur
+// `userData.braquage` et `.derive` de sa copie — que personne ne dessinait.
+// Même règle que pour soi : les roues avant braquent autour du haut de la
+// voiture, et les roues arrière laissent leurs traces quand elle glisse (la
+// dérive au-delà du seuil, ou le frein à main, `userData.freinMain`, lu dans
+// `p.v.m`). Sa vitesse se lit à la position que le réseau lui donne. La caisse,
+// elle, est déjà juste : la copie prend le cap du conducteur, qui EST le corps.
+export function vieDistante(mesh, dt) {
+  const u = mesh.userData;
+  const S = u.sensDistant || (u.sensDistant = { volant: 0, x: mesh.position.x, z: mesh.position.z, v: 0, traces: {} });
+  installerBraquage(mesh);
+  S.volant += (-(+u.braquage || 0) * BRAQUAGE_ROUES - S.volant) * Math.min(1, dt * 10);
+  for (const g of u.directrices || []) g.quaternion.setFromAxisAngle(g.userData.axe, S.volant);
+  const d = Math.hypot(mesh.position.x - S.x, mesh.position.z - S.z);
+  S.x = mesh.position.x; S.z = mesh.position.z;
+  const v = d > 4 ? 0 : d / Math.max(dt, 1e-3);
+  S.v += (v - S.v) * Math.min(1, dt * 6);
+  marquerRoues(mesh, S.traces, glissade(u.derive, u.freinMain, S.v), mesh.position.y);
 }
 
 // Rendre une voiture qu'on quitte : à plat, roues droites. Une voiture garée

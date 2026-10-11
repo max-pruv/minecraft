@@ -364,7 +364,7 @@ const EMPREINTE_MORCEAUX_V414 = '863d4203a441e3fd029ce2404fc6d6e706799e7f64fe489
 // colonnes qui diffèrent dans les morceaux de San Francisco sont toutes à
 // moins de sept blocs de l'axe de l'entrée — la demi-chaussée et le trottoir
 // d'une collectrice (scratchpad diffsf.mjs).
-// v440 : Washington, un des neuf lieux, porte deux ponts de rue sur
+// v442 : Washington, un des neuf lieux, porte deux ponts de rue sur
 // l'Anacostia (11e Rue, Sousa). `pontWashington` désarmé (rend null), la
 // branche rend 239f48ab…, la constante de la v439, au bit près ; et les cent
 // douze colonnes qui diffèrent sont toutes dans les bandes des deux ponts.

@@ -18,6 +18,72 @@
   mesurer la cadence de la page `MonteFil` (rr 12, au-dessus de Paris) seule,
   puis après les témoins qui la précèdent.
 
+- [ ] **PORTAIL DE LA v440 (lot 2 des témoins), DOUBLE MESURE (v195, v269).**
+  Rouges du portail : `carte.js` glisser bridé ×4 (610 ms), `manhattan.js`
+  « le taxi roule » (3,6 blocs en 247 s), `monte.js` « la rue à l'allure
+  d'une ville » et « freine au feu » (médiane 0) — dettes déjà déclarées. Et
+  `reseau.js` : rejouée SEULE trois fois de chaque côté, en alternance, la
+  même distribution — GPS relayé rouge 1/3 (branche et `origin/main` v432),
+  « seule après le départ de l'hôte » 1/3 des deux côtés, « un hôte sans
+  courtier est trouvé » 1/3 des deux côtés, toujours avec « deux enfants
+  sans courtier du tout » (famille du nuage, déclarée). Le témoin du courtier
+  dit désormais ce qu'il a vu : « ❌ Personne n'a répondu dans ce monde »
+  après 22,9 s — la piste est le relais par le nuage, pas l'attente. Mon
+  premier remède cliquait à `net.active`, vrai PENDANT la tentative
+  (« Ouverture du monde… », 1,2 s) : corrigé, on attend le statut qui
+  retombe. « La voiture de la rue n'entre pas chez l'ami » 1/3 sur la
+  branche : dette v383 (une pose sur une dizaine).
+- [x] **LOT 2 DES TÉMOINS INTERMITTENTS — FAIT en v440** (session
+  banc-intermittents). Chaque rouge rejoué SEUL des deux côtés, la cause
+  séparée par une sonde, le témoin corrigé, et désarmé dans une copie.
+  - **Une page en jeu à côté coûte presque quatre cœurs.** `tab` (la page
+    principale de `monte.js`) restait en jeu pendant chaque page secondaire,
+    et `ciel` (rr 12) n'était JAMAIS fermée : elle tournait à côté des trois
+    quarts de la suite. Mesuré (`sonde-voisine-de-cote.cjs`) : voisine en jeu
+    3,5–3,8 cœurs, fenêtre réduite à 16 × 16 0,15 ; la chauffe de New York
+    d'une page neuve 22–24 s → 7 s. `banc.mettreDeCote` / `banc.ramener`
+    autour des six pages secondaires, `ciel` fermée après son dernier usage.
+    `monte.js` seule : « se téléporter… ne compile plus » VERT, chauffe finie
+    en 9,9 s (expirait à 150 s avec 53–55/321 au portail) ; « le bout du monde
+    qui se charge » 113 pour 48.
+  - **Le réverbère au volant** comptait l'arrêt en temps de montre : dix
+    relevés immobiles avant le départ, à une image par seconde. Compté en
+    IMAGES rendues, après un départ d'un demi-bloc (`sonde-reverbere.cjs`) :
+    sous trois cœurs chargés, `origin/main` 3/3 rouge (`parcouru` 0 à 0,58),
+    branche 3/3 vert (3,65 blocs, arrêt à 2,3 du poteau). Désarmé (le crochet
+    du mobilier coupé) : 97 blocs, au travers du poteau — rouge.
+  - **Le trou de façade** (`manhattan.js`, dette de la v291) juge la
+    géométrie de l'IMMEUBLE touché (`batimentA`), rebâti : branche 3/3 vert
+    (immeuble 1094, 4 288 → 4 284 instances) ; `origin/main` rouge sur
+    l'ancien compte de ville (11 684 → 46 592). Désarmé (un bloc retiré ne
+    fait plus rebâtir) : « 4 288 → 4 288, jamais rebâti » — rouge, pendant que
+    l'ancien compte de ville montait quand même (14 460 → 54 973).
+  - **Le taxi de Manhattan** attend que son modèle soit POSÉ, puis le bouton
+    (60 s au plus) : le bouton apparaît désormais à chaque passage. Ce qui
+    reste : la distance roulée en quarante images (4,72 et 8,32 blocs pour
+    une barre de 8 sur deux passages) — non touché, à démonter.
+  - **« Très touchée elle fume »** (`degats.js`, dette v406) lit le plus fort
+    compte de fumée sur trois secondes de jeu : 3/3 vert (3 à 4 particules).
+  - **L'atterrissage manuel** se pose sur une piste d'essai de 400 blocs : la
+    cadence décide où l'on touche (piège v273), et l'arrêt tombait à 300,9.
+  - **Le train qui traverse la voiture** : cause trouvée, VRAIE PANNE,
+    déclarée en tête de ce fichier ; le témoin reste rouge.
+- [ ] **UN TRAIN TRAVERSE LA VOITURE DE L'ENFANT QUAND UNE IMAGE EST LENTE
+  (vraie panne, zone conduite — trouvée par la session banc-intermittents).**
+  La rame ne regarde que 3,5 blocs devant sa motrice (`PAS_TRAIN`,
+  `cederLePassage`, vehicules.js) et roule en temps RÉEL (v305) : à 14 b/s,
+  une image de plus d'un quart de seconde la fait passer d'« assez loin » à
+  « déjà dedans », et un train déjà dedans continue (v245). Sur la tablette,
+  ce sont les images de l'arrivée dans une ville. Sonde
+  `tests/sonde-train-voiture.cjs` (le témoin de `monte.js` rejoué seul, pose
+  à huit secondes de voie) : au repos 1 traversée sur 7 (branche), 2 sur 3
+  (`origin/main`, pose à trente blocs) ; sous trois cœurs chargés, 5 sur 10 —
+  à chaque fois l'enfant est DANS la liste de la rue (`enfantVu`) et la rame
+  ne le veut jamais (`veut` vide). Piste : une portée de regard en TEMPS
+  (vitesse × durée de la dernière image, plus la marge), comme le couloir des
+  piétons (v351) et le balayage des voitures (v395). Le témoin « un train
+  s'arrête devant la voiture de l'enfant » reste rouge tant que ce n'est pas
+  fait : il garde une vraie panne.
 - [ ] **PORTAIL DU JOURNAL DE BORD (v426) — DOUBLE MESURE (règle v195).**
   Deux portails (bases v408 et v411) rouges sur `maj.js`, `carte.js`,
   `manhattan.js`, `monte.js`. Déclarés plus bas : la flèche du GPS et le
@@ -967,7 +1033,7 @@
   lz = 0. Les deux portes de New York (I-95 à l'est, I-95 Sud à l'ouest, v367)
   sont prêtes à recevoir ce pont.
 - [x] **WASHINGTON PAR ANACOSTIA : LA RUE N'EST PAS RELIÉE À LA VILLE (v367).**
-  FAIT EN v440 : pont de la 11e Rue (u = 28) et pont Sousa (u = 56), du SOL de
+  FAIT EN v442 : pont de la 11e Rue (u = 28) et pont Sousa (u = 56), du SOL de
   washington.js (`pontWashington`, cote 33) ; `avenues.washington` passe le
   pont Sousa jusqu'au bout de Pennsylvania Avenue SE. Relief et circuits
   identiques, mesurés.
@@ -1687,7 +1753,8 @@
   voiture (blocs et secondes de route) et la dernière roue libre : Max le
   relève en hypercar dans Paris (cible : au moins une seconde et demie de
   route devant soi à 55 blocs/s). (2) PERSONNE NE DESSINE ENCORE le braquage
-  ni la dérive, ni chez soi ni chez l'ami : c'est la session des sensations
+  ni la dérive, ni chez soi ni chez l'ami — **FAIT : chez soi en v422 (signe de la caisse
+  corrigé en v441), chez l'ami en v441** (`vieDistante`) : c'est la session des sensations
   (`conduite-sensations`), qui lit `player.braquage` pour la sienne et
   `userData.braquage` pour celle d'un ami. (3) Une voiture de la rue ne se
   pousse pas (horloge partagée, v305) : collé derrière une plus lente,
@@ -1726,7 +1793,20 @@
   (traces de pneus, crissement : la session des sensations lit
   `player.freinMainTire` et `player.derive`) — **TRACES FAITES en v434** (`traces.js`),
   **CRISSEMENT AU FREIN À MAIN FAIT en v437** ; (12) le frein à main ne se voit
-  pas chez l'ami au-delà de la dérive qui voyage déjà (`p.v.r`).
+  pas chez l'ami au-delà de la dérive qui voyage déjà (`p.v.r`) — **FAIT en v441** : `p.v.m`, et ses traces
+  naissent chez l'ami.
+- [ ] **AU PORTAIL DE LA v441 (la voiture de l'ami braque), DES ROUGES QUI NE
+  SONT PAS LA LIVRAISON — mesurés.** « en virage, la caméra laisse la voiture
+  glisser sur le côté du cadre » (`monte.js`) : 4,5° au portail pour une barre
+  à 6 ; rejoué SEUL, branche 9,2 · 16,2, `origin/main` 18,1 · 12,7 · 9,6 — la
+  même distribution, et le témoin lit la caméra contre `player.yaw`, que la
+  livraison ne touche pas (elle ne tourne que le maillage). Un TIRAGE sous la
+  charge, à surveiller. Rouges AUSSI sur `origin/main` rejouée seule : le
+  passant de Rome en biais, « un passant lancé sur la voiture de l'enfant…
+  la contourne » (traverses 11 au portail, 4 sur `origin/main` — NEUF ET
+  DÉCLARÉ), la chauffe de New York, et dans `visio.js` « pendant l'appel la
+  radio parle plus bas » (avant 0,0000 des deux côtés : la radio ne joue pas
+  avant l'appel — NEUF ET DÉCLARÉ). `reseau.js` : la famille « sans courtier ».
 - [ ] **AU PORTAIL DE LA v437 (le frein à main crisse), UN ROUGE NEUF QUI N'EST
   PAS LA LIVRAISON — preuve structurelle (v291).** « à Rome aussi, en biais, un
   passant traverse sur le passage peint d'un carrefour sans feu » (`monte.js`,

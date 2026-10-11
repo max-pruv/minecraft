@@ -6,11 +6,27 @@
 
 export const NOUVEAUTES = [
   {
-    v: 440,
+    v: 442,
     titre: 'Les ponts de Washington',
     puces: [
       'Deux ponts sur l\'Anacostia',
       'Les voitures de New York entrent en ville',
+    ],
+  },
+  {
+    v: 441,
+    titre: 'La voiture de l\'ami braque',
+    puces: [
+      'Ses roues tournent avec son volant',
+      'Ses dérapages laissent des traces',
+      'La voiture glisse du bon côté',
+    ],
+  },
+  {
+    v: 440,
+    titre: 'Des essais encore plus justes',
+    puces: [
+      'Les essais ne se gênent plus',
     ],
   },
   {
