@@ -6,11 +6,72 @@
 
 export const NOUVEAUTES = [
   {
-    v: 420,
+    v: 427,
     titre: 'Marseille rejoint Nice',
     puces: [
       'Une autoroute passe par les collines',
       'On entre dans Nice par l\'ouest',
+    ],
+  },
+  {
+    v: 426,
+    titre: 'Moins de fausses alertes',
+    puces: [
+      'Deux fenêtres ouvertes ne se gênent plus',
+      'Le jeu reste en mode normal',
+      'Les parents voient la mémoire utilisée',
+    ],
+  },
+  {
+    v: 425,
+    titre: 'Les passants contournent les bancs',
+    puces: [
+      'Plus personne ne traverse un banc',
+      'Ni une colonne d’affiches',
+    ],
+  },
+  {
+    v: 424,
+    titre: 'Un choc à la vitesse',
+    puces: [
+      'Un mur lent abîme peu',
+      'Frôler un mur ne casse rien',
+      'Pleins gaz, ça cogne fort',
+    ],
+  },
+  {
+    v: 423,
+    titre: 'Toutes les voies occupées',
+    puces: [
+      'Des voitures dans chaque voie',
+      "Bien plus de voitures sur l'autoroute",
+      'Elles se rangent avant de tourner',
+    ],
+  },
+  {
+    v: 422,
+    titre: 'Conduire comme au cinéma',
+    puces: [
+      'La caméra recule quand on accélère',
+      'La voiture penche dans les virages',
+      'Les roues avant tournent avec toi',
+      'Les pneus crissent, les chocs s\'entendent',
+    ],
+  },
+  {
+    v: 421,
+    titre: 'Des passages piétons partout',
+    puces: [
+      'Rome et Zurich ont leurs bandes blanches',
+      'Les passants y traversent la rue',
+    ],
+  },
+  {
+    v: 420,
+    titre: 'L\'arrivée plus légère',
+    puces: [
+      'Moins d\'attente après une téléportation',
+      'Moins de travail pour la tablette',
     ],
   },
   {

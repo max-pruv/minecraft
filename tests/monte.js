@@ -11,6 +11,7 @@
 //     cd tests && npm install && npm run monte
 
 const { Banc, dormir, souffler } = require('./banc.js');
+const { mesurerSensations } = require('./sensations-mesure.js');
 
 const echecs = [];
 // COMBIEN DE TEMPS CHAQUE TÉMOIN A-T-IL COÛTÉ.
@@ -1059,8 +1060,13 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // Borne basse 3,0 : le rapprochement anti-mur peut raccourcir le recul
     // (plancher à 3,2) si un obstacle traîne derrière le parc — c'est un
     // comportement voulu, pas un défaut.
+    // ET LE PLAFOND SUIT LA VITESSE DEPUIS LA v401 : la caméra recule jusqu'à
+    // 1,32 fois le recul de la fiche quand la voiture roule (6,4 → 8,45). Le
+    // portail de la v401 l'a rendue rouge à 7,07 sur la borne fixe de 6,5,
+    // une voiture qui roulait encore — le plafond se calcule, il ne se recopie
+    // pas (v269).
     verifier('au volant, la caméra suit la voiture de derrière, comme GTA',
-      poursuite.recul > 3.0 && poursuite.recul < 6.5 && poursuite.devant < 0,
+      poursuite.recul > 3.0 && poursuite.recul < 6.4 * 1.32 + 0.1 && poursuite.devant < 0,
       `${poursuite.recul} blocs en retrait (devant=${poursuite.devant})`);
     verifier('et elle prend de la hauteur pour voir la route par-dessus le toit',
       poursuite.hauteur > 1.2 && poursuite.hauteur < 3, `${poursuite.hauteur} bloc`);
@@ -2234,16 +2240,24 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // passants au bord d'un passage peint loin de tout feu (relevé ici, sans rien
     // demander au jeu), face à la rue, et compte qui change de trottoir SUR le
     // passage — en secondes de montre et de jeu, comme le témoin du feu.
-    const auPassage = await tab.evaluate(async () => {
+    const auPassageDans = (cle, biais) => tab.evaluate(async ({ cle, biais }) => {
       const g = window.__game;
       const { positionDe } = await import('./src/mondes.js');
       const { TROTTOIR, CHAUSSEE } = await import('./src/world.js');
       const { RUE, ARCHI, CITY_BLOCK, ROUTE_BLOCK } = await import('./src/blocks.js');
       const PEINT = new Set([CITY_BLOCK.CROSSWALK, ROUTE_BLOCK.PASSAGE_NS]);
+      // LES PASSAGES EN BIAIS (v421) ne sont pas dans un bloc : on les demande à
+      // la règle qui les dessine. L'ancien code n'a pas ce module : le témoin le
+      // dit au lieu de s'effondrer.
+      let passageEn = null;
+      if (biais) {
+        try { ({ passageEn } = await import('./src/passages.js')); } catch (e) { return { err: 'pas de passages en biais (src/passages.js absent)' }; }
+      }
+      const peint = (x, z) => (biais ? !!passageEn(x, z) : PEINT.has(blk(x, z)));
       const w = g.world, sauve = g.player.pos.clone();
       const blk = (x, z) => { const bx = Math.floor(x), bz = Math.floor(z); return w.getBlock(bx, w.sommetColonne(bx, bz), bz); };
       const sol = (x, z) => { const b = blk(x, z); return TROTTOIR.has(b) ? 't' : (CHAUSSEE.has(b) || b === ARCHI.BORDURE) ? 'c' : 'a'; };
-      const p = positionDe('kyoto');
+      const p = positionDe(cle);
       g.player.flying = true; g.player.vel.set(0, 0, 0);
       g.player.pos.set(p.x + 0.5, w.terrainHeight(p.x, p.z) + 8, p.z + 0.5);
       let site = null;
@@ -2253,21 +2267,28 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         if (site) break;
         await new Promise((f) => setTimeout(f, 500));
       }
-      if (!site) { g.player.pos.copy(sauve); return { err: 'Kyoto pas peuplée en 25 s' }; }
+      if (!site) { g.player.pos.copy(sauve); return { err: `${cle} pas peuplée en 25 s` }; }
       const feux = [];
       for (let x = p.x - 40; x < p.x + 40; x++) for (let z = p.z - 40; z < p.z + 40; z++) {
         const y = w.sommetColonne(x, z);
         for (let k = 0; k <= 2; k++) if (w.getBlock(x, y + k, z) === RUE.FEUX) { feux.push([x + 0.5, z + 0.5]); break; }
       }
+      // en biais, les passages sont plus rares sur le chemin d'un passant posé :
+      // dix poses et vingt-cinq secondes de jeu au lieu de huit et quinze
+      const MAXP = biais ? 10 : 8, JEU = biais ? 25 : 15;
       const poses = [];
-      for (let x = p.x - 36; x < p.x + 36 && poses.length < 8; x++) for (let z = p.z - 36; z < p.z + 36 && poses.length < 8; z++) {
+      for (let x = p.x - 36; x < p.x + 36 && poses.length < MAXP; x++) for (let z = p.z - 36; z < p.z + 36 && poses.length < MAXP; z++) {
         const cx = x + 0.5, cz = z + 0.5;
         if (sol(cx, cz) !== 't' || feux.some(([a, b]) => (a - cx) ** 2 + (b - cz) ** 2 <= 49)) continue;
         if (poses.some((q) => Math.hypot(q.x - cx, q.z - cz) < 6)) continue;
-        for (const [ux, uz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        // les directions : les axes du monde, et en biais celle qui traverse la
+        // rue d'un passage tout proche (en travers de SA rue)
+        const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+        if (biais) for (let k = 1; k <= 3; k++) for (const [ax, az] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const q = passageEn(cx + ax * k, cz + az * k); if (q) dirs.push([q.uz, -q.ux], [-q.uz, q.ux]); }
+        for (const [ux, uz] of dirs) {
           if (sol(cx + ux * 1.2, cz + uz * 1.2) !== 'c') continue;
           let n = 0, o = 0, fin = false;
-          for (let s = 1; s <= 16; s++) { const q = sol(cx + ux * s, cz + uz * s); if (q === 'a') break; if (q === 'c') { n++; if (PEINT.has(blk(cx + ux * s, cz + uz * s))) o++; } else if (n >= 3) { fin = true; break; } }
+          for (let s = 1; s <= 16; s++) { const q = sol(cx + ux * s, cz + uz * s); if (q === 'a') break; if (q === 'c') { n++; if (peint(cx + ux * s, cz + uz * s)) o++; } else if (n >= 3) { fin = true; break; } }
           if (fin && o * 2 >= n) { poses.push({ x: cx, z: cz, ux, uz }); break; }
         }
       }
@@ -2287,7 +2308,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       let traversees = 0, surPassage = 0; const detail = [];
       const t0 = performance.now(), f0 = g.renderer.info.render.frame;
       const jeu = () => (g.renderer.info.render.frame - f0) * 0.05;
-      while ((jeu() < 15 || performance.now() - t0 < 60000) && performance.now() - t0 < 180000) {
+      while ((jeu() < JEU || performance.now() - t0 < 60000) && performance.now() - t0 < 180000) {
         for (const h of gens) {
           const c = sol(h.pos.x, h.pos.z);
           let e = suivi.get(h);
@@ -2306,7 +2327,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
               let n = 0, o = 0;
               for (let t = 0; t <= L; t += 0.5) {
                 const x = e.sortie.x + (h.pos.x - e.sortie.x) * t / L, z = e.sortie.z + (h.pos.z - e.sortie.z) * t / L;
-                if (sol(x, z) !== 'c') continue; n++; if (PEINT.has(blk(x, z))) o++;
+                if (sol(x, z) !== 'c') continue; n++; if (peint(x, z)) o++;
               }
               if (n && o * 2 >= n) surPassage++;
               detail.push({ peint: `${o}/${n}`, L: +L.toFixed(1), tr: e.sortie.tr, ecart: e.sortie.ecart });
@@ -2318,11 +2339,30 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         await new Promise((f) => setTimeout(f, 250));
       }
       g.player.pos.copy(sauve);
-      return { poses: poses.length, feux: feux.length, traversees, surPassage, detail, secondesDeJeu: +jeu().toFixed(1), secondes: +((performance.now() - t0) / 1000).toFixed(1) };
-    });
+      return { ville: cle, poses: poses.length, feux: feux.length, traversees, surPassage, detail, secondesDeJeu: +jeu().toFixed(1), secondes: +((performance.now() - t0) / 1000).toFixed(1) };
+    }, { cle, biais });
+    const auPassage = await auPassageDans('kyoto', false);
     verifier('hors de Paris aussi, un passant traverse sur le passage peint d\'un carrefour sans feu',
       !auPassage.err && auPassage.poses >= 4 && auPassage.traversees >= 2 && auPassage.surPassage >= 0.8 * auPassage.traversees,
       JSON.stringify(auPassage));
+
+    // ---- ET SUR LES PASSAGES EN BIAIS (v421) --------------------------------
+    //
+    // Rome, Zurich, Tokyo… toutes les trames en biais n'avaient AUCUN passage :
+    // une tuile ne se tourne pas. Les bandes sont désormais de la géométrie
+    // (`passages.js`, dessinées par le mailleur), et `passagePieton` les lit à
+    // la même règle. Même témoin qu'à Kyoto, à Rome : huit passants posés au
+    // bord d'un passage loin de tout feu, face à la rue, et l'on compte qui
+    // change de trottoir SUR le passage. Sur l'ancien code, pas de passage :
+    // rouge, et il le dit.
+    const auPassageBiais = await auPassageDans('rome', true);
+    verifier('à Rome aussi, en biais, un passant traverse sur le passage peint d\'un carrefour sans feu',
+      // une traversée AU FEU (`tr` porte l'axe du feu) n'est pas sur un passage
+      // peint : le passant a pu marcher jusqu'à un carrefour à feux (vu au
+      // portail, 0/24 peint, `tr: 1`). On juge les traversées sans feu.
+      !auPassageBiais.err && auPassageBiais.poses >= 4 && auPassageBiais.surPassage >= 1
+        && auPassageBiais.surPassage >= 0.6 * auPassageBiais.detail.filter((d) => d.tr === null).length,
+      JSON.stringify(auPassageBiais));
 
     // ---- UN PASSANT NE TRAVERSE PAS LA VOITURE DE L'ENFANT (v259) -------------
     //
@@ -5347,6 +5387,42 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       }, placeCiel);
     }
 
+    // LE NOM DU PILOTE GRAPHIQUE SE LIT UNE FOIS (v420). `gl.getParameter` est
+    // un aller-retour SYNCHRONE avec le processus du GPU ; `renduLogiciel()` le
+    // refaisait à chaque reconstruction de la file de maillage, et à l'arrivée
+    // d'une téléportation à Paris cela pesait 120 à 336 ms dans la première
+    // seconde (profil, `sonde-arrivee-decoupe.cjs`). On compte les appels en
+    // traversant six morceaux : zéro attendu, l'ancien code en fait un par
+    // morceau franchi.
+    {
+      const appels = await ciel.evaluate(async () => {
+        const g = window.__game, gl = g.renderer.getContext();
+        const origine = gl.getParameter;
+        let n = 0;
+        gl.getParameter = function (...a) { if (a[0] === 0x9246) n++; return origine.apply(this, a); };   // UNMASKED_RENDERER_WEBGL
+        const patienter = (ms) => new Promise((fin) => {
+          const t0 = performance.now();
+          const tic = () => (performance.now() - t0 < ms ? requestAnimationFrame(tic) : fin());
+          requestAnimationFrame(tic);
+        });
+        const p = g.player, x0 = p.pos.x, z0 = p.pos.z, y0 = p.pos.y, vol = p.flying;
+        p.flying = true;
+        let franchis = 0, dernier = null;
+        for (let k = 0; k <= 6; k++) {
+          p.pos.set(x0 + k * 16, 140, z0); p.vel.set(0, 0, 0);
+          await patienter(300);
+          const c = Math.floor(p.pos.x / 16);
+          if (dernier !== null && c !== dernier) franchis++;
+          dernier = c;
+        }
+        gl.getParameter = origine;
+        p.pos.set(x0, y0, z0); p.vel.set(0, 0, 0); p.flying = vol;
+        return { n, franchis };
+      });
+      verifier('le jeu ne redemande pas le nom de la carte graphique à chaque morceau franchi',
+        appels.franchis >= 5 && appels.n === 0, JSON.stringify(appels));
+    }
+
     // UN AVION DÉCOLLE DE SA PISTE, ET IL S'Y POSE (v261).
     //
     // Max : « une vraie motion de décollage : accélération sur la piste puis
@@ -6857,6 +6933,51 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !sons.err && sons.descendu && sons.apresDescente < sons.auRalenti / 4,
       `${sons.err || ''} ${JSON.stringify(sons)}`);
 
+    // LES SENSATIONS AU VOLANT (v422).
+    //
+    // Max : « l'impression de conduire dans GTA ». La caméra de poursuite
+    // était rivée à six blocs quatre derrière la voiture quelle que soit
+    // l'allure, la caisse ne bougeait pas, les roues avant restaient droites,
+    // et l'on n'entendait ni les pneus ni un choc. Une seule mesure, partagée
+    // avec la sonde (`sensations-mesure.js`), sur une plate-forme posée dans
+    // le ciel : elle se place elle-même (v279) et attend chaque résultat,
+    // bornée (v270).
+    //
+    // Mesuré des deux côtés, même mesure, avant d'écrire les barres :
+    //   `origin/main` (v336) : champ 75 → 75, recul 6,4 → 6,4, caisse 0,
+    //     roue 0, bande des pneus ×1,7, choc 0,088 contre 0,088 avant,
+    //     caméra immobile (0), et la caméra DERRIÈRE le mur (segment bouché).
+    //   la branche : champ 75 → 83,8, recul 6,4 → 7,4, caisse −0,070 (vers
+    //     la droite dans un virage à gauche), roue +0,50 rad, pneus ×370,
+    //     choc 0,90 contre 0,073, secousse 0,23 bloc, segment libre.
+    // Les barres sont posées entre les deux régimes, loin de l'un et de l'autre.
+    const sens = await tab.evaluate(`(${mesurerSensations.toString()})()`);
+    const S = sens || {};
+    const msg = JSON.stringify(S);
+    verifier('au volant, la caméra recule et le champ s\'ouvre avec la vitesse',
+      !S.err && S.ligne.vMax > 5 && S.ligne.fovMax > S.repos.fov + 2.5
+        && S.ligne.reculMax > S.def.recul + 0.3, msg);
+    // LE SIGNE SE LIT DANS LA MATRICE MONDE (v231, v244) : le haut de la caisse
+    // contre la gauche de la voiture. Un virage à gauche fait pencher vers la
+    // DROITE — produit négatif. Une caisse penchée du mauvais côté passerait
+    // toute mesure d'amplitude.
+    verifier('dans un virage à gauche, la caisse penche vers l\'extérieur — à droite',
+      !S.err && S.virage.releves >= 10 && S.virage.penche !== null && S.virage.penche < -0.01, msg);
+    verifier('et les roues avant braquent vers l\'intérieur du virage',
+      !S.err && S.virage.roues >= 4 && S.virage.braque !== null && S.virage.braque > 0.1, msg);
+    verifier('une voiture qui dérape fait crisser ses pneus',
+      !S.err && S.son && S.son.rapportCrisse > 10, msg);
+    verifier('un choc secoue la caméra et s\'entend',
+      // le calme n'est pas zéro : la caméra rattrape encore son recul d'un
+      // demi-bloc après l'arrêt (0,018 mesuré au portail). Ce qui sépare les
+      // deux, c'est le rapport : 0,25 contre 0 sur l'ancien code.
+      !S.err && S.son && S.secoue.max > 0.12 && S.secoue.max > 3 * S.calme.max
+        && S.son.piqueChoc > 2 * S.son.piqueAvant, msg);
+    verifier('dos à un mur, la caméra reste du côté de la voiture',
+      !S.err && S.mur.libre, msg);
+    verifier('et en descendant, le champ revient et la voiture se pose à plat',
+      !S.err && Math.abs(S.aPied.fov - S.repos.fov) < 0.5 && S.aPied.penche === 0, msg);
+
     // LA MARCHE ARRIÈRE, VOITURE ET AVION (v269).
     //
     // Max : « aussi impossible de faire marche arrière avec un avion ou une
@@ -7344,8 +7465,11 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !cd.err && cd.rasant && cd.rasant.contact && cd.rasant.contact.choc && cd.rasant.contact.choc.force < 0.5
         && cd.rasant.x > 150 && cd.rasant.v > 12 && Math.abs(cd.rasant.capDeg) < 3,
       JSON.stringify(cd.rasant));
+    // la force suit la vitesse jusqu'à la pointe de la classe (v424) : posée à
+    // 22 sans gaz, la Jesko frappe le mur à une dizaine de blocs/s, 0,22 (0,52
+    // à l'ancienne échelle) — un choc publié, d'une taille sensée
     verifier('un mur pris de face : la voiture s\'arrête, avec un petit rebond, et le choc dit où',
-      !cd.err && cd.face && cd.face.face && cd.face.face.choc && cd.face.face.choc.force > 0.3
+      !cd.err && cd.face && cd.face.face && cd.face.face.choc && cd.face.face.choc.force > 0.15
         && cd.face.rebond < -0.3 && Math.abs(cd.face.v) < 0.5 && Math.abs(cd.face.face.choc.x - 41090) < 1,
       JSON.stringify(cd.face));
     verifier('une voiture de la rue percutée : choc publié, et la nôtre rebondit au lieu de la traverser',
@@ -7355,8 +7479,11 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('une vraie voiture de la rue, par le vrai crochet : son flanc frôlé ne nous arrête pas — un choc léger, sur NOTRE flanc, et l\'on continue',
       !cd.err && vf.lu && vf.c && vf.c.contact === 'voiture' && vf.c.force > 0.05 && vf.c.force < 0.4 && vf.c.v > 9 && vf.c.lat > 0.9 && Math.abs(vf.c.long) < 1.8,
       JSON.stringify(vf));
+    // « franc » (v424) : la force suit la vitesse jusqu'à la pointe de la
+    // classe — dix-huit blocs/s dans la Jesko (pointe 55) publient 0,39, plus
+    // 0,9 ; le flanc frôlé, lui, reste sous 0,1.
     verifier('et percutée par l\'arrière, le crochet rend sa boîte : un choc franc sur notre nez, et l\'on rebondit',
-      !cd.err && va.lu && va.c && va.c.contact === 'voiture' && va.c.force > 0.5 && va.c.v < 0 && va.c.long > 1.8,
+      !cd.err && va.lu && va.c && va.c.contact === 'voiture' && va.c.force > 0.3 && va.c.v < 0 && va.c.long > 1.8,
       JSON.stringify(va));
     verifier('une voiture en panne ne repart plus — le joystick ne fait plus rien',
       !cd.err && cd.panne && cd.panne.v < 0.01 && cd.panne.x < 0.05 && cd.panne.tourne < 0.001,

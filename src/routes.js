@@ -483,7 +483,7 @@ export const ROUTES = [
   // portée de talus.
   { nom: 'A6', villes: ['paris', 'lyon'],
     via: [[-333, 699], [-336, 732], [-360, 781], [-364, 798], [-363, 806], [-280, 990], [-168, 1103], [-116, 1202], [-24, 1304], [-17, 1321], [2, 1393], [24, 1424], [308, 1705], [523, 1814], [536, 1828], [594, 1923], [659, 1983]] },
-  // L'A8 (v420), MARSEILLE–NICE, la Provençale. L'axe direct est en mer
+  // L'A8 (v427), MARSEILLE–NICE, la Provençale. L'axe direct est en mer
   // (401 blocs d'eau sur 596) : la route passe par l'intérieur, et le relevé
   // en couronne (scratchpad ring.mjs) ferme Marseille de presque tous les
   // côtés — la ville est à 33, son est et son nord-est montent à 46-50 dès
@@ -912,8 +912,9 @@ export function traceRoute(seg, { avant = null, apres = null, coteDe = null } = 
     const o = L.terrePlein + L.demiChaussee / 2;          // le milieu de la chaussée de ce sens
     const y = (p ? coteA(seg, s) : 0) + 0.05;
     const rx = -q.fz, rz = q.fx;                             // la droite du sens A→B
-    aller.push({ x: q.x + rx * o, y, z: q.z + rz * o });
-    retour.push({ x: q.x - rx * o, y, z: q.z - rz * o });
+    // la demi-chaussée sous ce point : la seconde voie la lit (v423)
+    aller.push({ x: q.x + rx * o, y, z: q.z + rz * o, dc: L.demiChaussee });
+    retour.push({ x: q.x - rx * o, y, z: q.z - rz * o, dc: L.demiChaussee });
   }
   retour.reverse();
   // avant : de la ville A au corridor (sens ville → route), puis l'aller,
