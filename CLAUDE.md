@@ -770,6 +770,59 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Toutes les voies occupées (v423) — la seconde voie est la même ligne, décalée
+
+Max, une capture de GTA VI à côté d'une de GTA V : « Good inspiration » — des
+voies serrées et TOUTES occupées. Mesuré avant : une seule file par sens
+partout ; sur l'autoroute (deux voies par sens) la file roulait À CHEVAL sur
+la ligne entre les deux, à 4,0 blocs de l'axe, et vingt voitures imposées
+faisaient une voiture tous les cent vingt blocs. Six règles.
+
+- **LA SECONDE VOIE N'EST PAS UN AUTRE CIRCUIT, C'EST LE MÊME, DÉCALÉ.**
+  `ParcoursDecale` (vehicules.js) garde la DISTANCE de son tracé de base et
+  pose ses points à `lat(d)` blocs à droite : la jumelle passe partout à la
+  même distance du départ que sa file, `rangJumeau` intervalles plus tard. Une
+  seule grille horaire pour deux voies, donc la même circulation sur deux
+  tablettes (v305) ; un témoin exige l'égalité exacte des deux distances à
+  trois heures. Elle a sa propre clé (`|voie2`). La contrainte de partage
+  (v211, v387) n'a pas à la voir : deux convois côte à côte sur les deux voies
+  d'un même sens se SUIVENT, et c'est ici une seule ligne.
+- **LA SECTION SE DEMANDE À CE QUI LA DESSINE** (`voiesdoubles.js`, pur) : les
+  percées de premier rang de Paris (`sectionDeVoie`), la croix-boulevard des
+  villes engendrées (`t.axe`, même repère que `solVillesMonde`), la pleine
+  section d'autoroute (`dc` porté par chaque point de `traceRoute`). Une
+  portion plus courte que seize blocs ne compte pas (on TRAVERSE un boulevard
+  au carrefour, on ne le suit pas), on change de voie sur seize blocs, et l'on
+  se rabat avant un virage : décalée vers l'intérieur d'un coin, la jumelle
+  replie son tracé et touche sa file.
+- **LÀ OÙ LA SECTION N'A QU'UNE VOIE, LES DEUX FILES N'EN FONT QU'UNE — ET LA
+  LIGNE NE DOIT PAS SE TOUCHER.** Mesuré : au même nombre de voitures, presque
+  toutes les jumelles touchaient leur file dans le virage lent qui suit le
+  boulevard (une demi-voiture d'écart dans le temps). La file laisse donc la
+  place à sa jumelle : le plus grand `n` (au moins 0,4 `nb`) où
+  `jumelleSansContact` fait rouler toute la ligne sur un tour sans contact ;
+  mesuré, le meilleur vaut 0,4 à 0,5 `nb` — la même ligne, ses voitures
+  réparties sur deux voies. Le bus prend la première place de la ligne.
+- **LA DENSITÉ D'UNE FILE EST BORNÉE PAR SON VIRAGE LE PLUS LENT, ET CELA SE
+  MESURE.** Une grille horaire espace les voitures en TEMPS : à 2,5 blocs par
+  seconde dans un coin, deux secondes font cinq blocs, une longueur de voiture.
+  Le plus grand nombre sans contact vaut une voiture toutes les deux secondes,
+  à 0,5 % près, sur les 205 anneaux mesurés — le plafond actuel. On ne
+  densifie pas une rue en serrant sa grille ; on la densifie par les voies.
+- **UN CALCUL QU'ON NE LIT QU'À L'APPROCHE NE SE FAIT PAS AU DÉMARRAGE**
+  (v378, v387) : les autoroutes naissent au démarrage, leur seconde voie quand
+  l'enfant approche du corridor (`voiesAuBesoin`, une par image) — trois
+  cents millisecondes de moins derrière « Jouer ». Et la file d'autoroute vaut
+  0,44 fois une voiture toutes les deux secondes (le partage mesuré sur les
+  vingt-quatre corridors), sa jumelle autant : 480 → 1 354 voitures.
+- **ET UNE LIGNE NE SE TÉLESCOPE PAS.** La grille garde la file et sa
+  jumelle à distance ; un freinage local (un feu) non : mesuré à Paris, 10 %
+  de paires au contact, toutes entre la jumelle et sa file, contre 0 sur
+  `origin/main`. Là où elles partagent la voie, la voiture qui précède sur la
+  ligne est dans l'AUTRE convoi (`devantSurLaLigne`), et le plancher de la
+  v283 s'étend à elle : 0 %. Et la légitimité d'une attente se propage dans
+  la LIGNE (`memeLigne`), pas seulement dans la file.
+
 ## Les sensations au volant (v422) — la caméra regarde la voiture, et un mur se cherche cellule par cellule
 
 Chantier « conduite » (six sessions, octobre 2026) ; celle-ci tient ce que

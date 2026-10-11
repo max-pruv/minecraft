@@ -350,6 +350,41 @@
   à trois une fois. Intermittence des voitures `physical` à l'arrivée ; la
   sonde nommera le matériau le jour où elle le voit.
 
+- [ ] **LA RUE DENSE, PALIERS B ET C (v423, session `claude/circulation-vivante`).**
+  Livré en v423 : la seconde voie (jumelle sur la même grille) sur les
+  autoroutes (24/24), les croix-boulevards engendrées (35 circuits, 93 % des
+  voies occupées) et les percées de Paris (76 %) ; l'autoroute densifiée
+  (480 → 1 354 voitures). Mesuré, à reprendre : (1) **la densité d'une rue de
+  ville est au plafond de son virage le plus lent** — le plus grand nombre
+  sans contact vaut une voiture toutes les deux secondes à 0,5 % près sur 205
+  anneaux ; seul un virage plus rapide (des coins arrondis, ce qui touche la
+  voie de droite au coin intérieur) la monterait. (2) **Paris ne garde que
+  630 de ses 1 231 blocs de boulevard** sur deux voies : les places
+  (contournement en arc) coupent les portions ; 2 circuits sur 8 refusés au
+  contact. (3) **Files au rouge** : écart pare-chocs médian 1,9 à 2,4 blocs
+  (plancher `mini` = longueur + 1,6, arrêt 0,6 avant le contact) — à serrer
+  vers 1,2 si la capture le demande. (4) Madrid : 10,6 % de paires au contact
+  sur `origin/main` à (−2 581, 5 272), un nœud de circuits face à face,
+  8,8 % sur la v423 — d'avant, à démonter. (5) Palier C : utilitaires et
+  pickups (classe dans `FLOTTE`), variance par voiture, voie par tronçon.
+  Portail de la v423 (dix-sept suites) : verts sauf `plafond.js` (l'A1 :
+  À MOI, la voiture du témoin butait sur la circulation densifiée —
+  repointée, rejouée seule entièrement verte, 80,7 blocs, 15 voitures
+  écartées), `maj.js` (libération `null`, flou — déclarés), `carte.js`
+  (glisser 464 ms — déclaré), `manhattan.js` (trou, PeerJS — déclarés),
+  `monte.js` (« la rue roule » médiane 0 dans un bouchon — déclaré v397 ;
+  REJOUÉ SEUL des deux côtés par `sonde-circulation.cjs paris 40` : branche
+  médiane 4,9, p90 10,2, 4 contacts ; `origin/main` 4,8, 9,9, 18 contacts —
+  et compilation New York, trou en vol, atterrissage, flanc frôlé :
+  familles déclarées).
+  Second portail (10–11 octobre), joué en deux temps (le premier a été coupé
+  par la limite de temps au milieu de `reseau.js`) : rouges, TOUS déjà
+  déclarés — `maj.js` (loader, préparation), `carte.js` (flèche GPS 1,92),
+  `manhattan.js` (trou de façade), `monte.js` (trou en vol, recharge à
+  l'arrivée 11,5 s, mur de face, flanc frôlé) ; `reseau.js` rejouée seule
+  85/85 verts. Après la fusion de la v418 : `carteMonde.js` 173/173,
+  `plafond.js` 130/130, `monte.js` 198 verts et deux rouges déclarés (chauffe
+  de New York 163/321, flanc frôlé `c: null`).
 - [ ] **LA CIRCULATION VIVANTE, PALIERS SUIVANTS (v395, session
   `claude/circulation-vivante`).** Livré : limitations par voie, profil de
   vitesse dans la grille, grille par voiture, freinage local (feu, file,

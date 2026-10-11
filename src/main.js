@@ -1,5 +1,6 @@
 // Entry point: scene setup, chunk streaming, input, HUD, and the game loop.
 
+import { secondeVoieParis, secondeVoieVilleMonde, voiesAutoroute } from './voiesdoubles.js';
 import * as THREE from 'three';
 import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp, MEUBLE_ITEMS, MEUBLE_START, isMeuble, RUE_ITEMS, RUE_START, RUE, isRue, ARCHI, CITY_BLOCK, ROUTE_BLOCK } from './blocks.js';
 import { passageEn } from './passages.js';
@@ -2041,7 +2042,8 @@ function updateChunks() {
     // L'AUTOROUTE ROULE À CENT VINGT, ET LA VILLE À CINQUANTE (v372) : la
     // limite se lit au point du tracé — dans le disque d'une ville, l'avenue
     // d'entrée ; dehors, l'autoroute — et la grille freine AVANT la porte.
-    vehicules.circulation(pts, 41, { ville: seg.de, voie: 'autoroute', nb: 20, route: seg.route.nom,
+    // deux voies par sens (v423) : la file à droite, sa jumelle à gauche
+    vehicules.circulation(pts, 41, { ville: seg.de, voie: 'autoroute', route: seg.route.nom, voies: voiesAutoroute, voiesAuBesoin: true,
       limite: (x, z) => (world.cityAt(x, z) || villeMondeEn(x, z) ? ALLURE_VOIE.avenue : ALLURE_VOIE.autoroute) });
   }
 })();
@@ -3189,9 +3191,12 @@ function animerLesVilles(dt) {
   }
   // la graine vient de la ville, pas de la file (v246, voir graineDeVille)
   // l'allure de la voie : une rue de ville engendrée, une avenue nommée (v372)
+  const decalage = tr.voie === 'avenue' && tr.ville !== 'ny' ? DECALAGE_AVENUE : 0;
   const conv = vehicules.circulation(tr.pts, graineDeVille(tr), { ville: tr.ville, voie: tr.voie || 'rue',
     // les avenues des villes bâties à la main : la voie de droite (v372)
-    decalage: tr.voie === 'avenue' && tr.ville !== 'ny' ? DECALAGE_AVENUE : 0 });
+    decalage,
+    // la seconde voie des boulevards (v423) ; le bus prend la première place
+    voies: decalage ? (x, z) => secondeVoieParis(x, z, decalage) : secondeVoieVilleMonde, bus: tr.rang === 0 });
   // le bus dessert le grand anneau — un par ville, à sa couleur, DANS la file
   // de ses voitures (v372) : il prend leur grille horaire
   if (tr.rang === 0) vehicules.bus(tr.pts, Math.abs(Math.round(tr.x + tr.z)), conv);

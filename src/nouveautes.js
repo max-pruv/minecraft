@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 423,
+    titre: 'Toutes les voies occupées',
+    puces: [
+      'Des voitures dans chaque voie',
+      "Bien plus de voitures sur l'autoroute",
+      'Elles se rangent avant de tourner',
+    ],
+  },
+  {
     v: 422,
     titre: 'Conduire comme au cinéma',
     puces: [
