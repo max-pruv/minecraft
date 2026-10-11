@@ -6,10 +6,26 @@
 
 export const NOUVEAUTES = [
   {
-    v: 431,
+    v: 433,
     titre: 'Des essais encore plus justes',
     puces: [
       'Les essais ne se gênent plus',
+    ],
+  },
+  {
+    v: 432,
+    titre: 'Les voitures contournent la place',
+    puces: [
+      'Elles font le tour par les rues',
+      'Toujours une voiture en vue en arrivant',
+    ],
+  },
+  {
+    v: 431,
+    titre: 'Des files serrées au feu',
+    puces: [
+      'Les voitures s\'arrêtent tout près',
+      'La rue arrive sans à-coup',
     ],
   },
   {
