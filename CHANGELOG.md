@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v446 — Des pistes assez longues pour se poser
+## v448 — Des pistes assez longues pour se poser
 
 **Pourquoi.** Max : « les pistes de tous les aéroports sont beaucoup trop
 courtes pour vraiment atterrir ». Mesuré : 90 à 146 blocs de piste, pour un
@@ -43,6 +43,58 @@ longueur à la cible, et les deux empreintes du relief de `plafond.js` sont
 inchangées ; l'empreinte des 490 morceaux change à Londres seulement — dix-huit
 colonnes, toutes dans un tronçon de la piste d'Heathrow, et rend l'ancienne
 constante au bit près quand on retire les prolongements.
+
+---
+
+## v447 — Londres sans maisons posées par-dessus
+
+**Pourquoi.** La boucle générique de `world.js` (« un lot par case de
+grille ») excluait six villes bâties à la main, pas Londres. Entre 77 et 102
+blocs du centre — là où la place réservée au mobilier de la ville s'arrête —
+elle posait cinquante-deux maisons pastel de San Francisco, pleines, PAR-DESSUS
+la ville : 2 600 colonnes, dont 1 401 de chaussée ou de trottoir et 920 sur les
+immeubles de Londres. Des voitures de la ville les traversaient (36 pas de
+circuit dans un mur). La v415 n'avait retiré que celle qui barrait la M40.
+
+**Ce que ça change.** L'anneau extérieur de Londres montre enfin ses rues et ses
+immeubles à elle, et les voitures n'y traversent plus de maison. Une maison
+pastel sur laquelle (ou contre laquelle) un enfant a déjà bâti reste entière :
+rien n'enferme une cabane, rien ne retire un toit sous elle. Les mondes d'avant
+ne changent pas.
+
+**Ce qui le prouve.** Trois témoins dans `plafond.js`, rouges sur
+`origin/main` : la trame ne pose plus rien (2 600 colonnes changées, aucune
+hors du disque) ; une cabane posée avant la date garde la maison entière sous
+elle (rouge, 187 blocs d'écart, quand la règle est désarmée) ; un bloc posé
+après ne retient rien, et le monde de la v308 garde ses maisons. L'empreinte
+des 490 morceaux est relevée (`19946cb7…`) ; le drapeau retiré, la branche rend
+`fb4f9aed…`, la constante de la v446, au bit près. Circuits de Londres
+identiques (ils ne lisent que le sol de la ville) : 36 pas de carrosserie dans
+un mur de moins.
+
+---
+
+## v446 — Un toit ne déborde plus d'un quartier sur l'autre
+
+**Pourquoi.** Le comble de Paris (v289) lisse les colonnes d'un même immeuble,
+qu'il reconnaît à son îlot et à sa travée. Ces indices sont ceux de la trame
+de CHAQUE quartier, et deux quartiers voisins se les prêtent : mesuré sur
+tout Paris, 16 paires de colonnes voisines de même (îlot, travée) dans deux
+quartiers, dont 7 aux façades de hauteurs différentes (14 et 17 blocs à la
+limite de Saint-Germain), lissées en un toit qui grimpe d'un immeuble à
+l'autre au lieu d'un pignon. C'était la dette déclarée en v289.
+
+**Ce que ça change.** La clé d'immeuble porte le quartier : un toit ne se
+lisse plus qu'avec lui-même. Le changement tient à sept endroits de la
+ville ; tout le reste est identique.
+
+**Ce qui le prouve.** Un témoin neuf de `parishd.js` parcourt tout le disque
+de Paris : 176 600 paires de colonnes d'un même toit, 0 aux façades
+différentes (7 sur `origin/main`, où la clé n'est pas publiée : rouge).
+L'empreinte des 490 morceaux change (`c195fbc1…`, un des morceaux porte une
+limite) et se prouve : la clé d'avant rejouée (`toitsQuartier: false`) rend
+la constante `fb4f9aed…` (celle de la v444) au bit près. Capture avant/après du toit à la limite
+de Saint-Germain : rien d'autre ne bouge.
 
 ---
 

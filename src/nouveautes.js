@@ -6,12 +6,28 @@
 
 export const NOUVEAUTES = [
   {
-    v: 446,
+    v: 448,
     titre: 'Des pistes assez longues',
     puces: [
       'Les pistes vont jusqu\'à 300 blocs',
       'Le Concorde peut enfin se poser',
       'Le paysage n\'a pas bougé',
+    ],
+  },
+  {
+    v: 447,
+    titre: 'Londres sans maisons en trop',
+    puces: [
+      'Les rues du bord de Londres sont libres',
+      'Les voitures ne traversent plus de maison',
+      'Ce que tu as bâti reste en place',
+    ],
+  },
+  {
+    v: 446,
+    titre: 'Des toits bien rangés',
+    puces: [
+      'Chaque immeuble garde son propre toit',
     ],
   },
   {

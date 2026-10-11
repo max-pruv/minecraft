@@ -1119,16 +1119,28 @@ function sommetToit(get, x, z, y0) {
 
 // l'immeuble d'une colonne (l'îlot et la travée que `formeParis` publie), mémoïsé :
 // un coin partagé entre deux immeubles de hauteurs différentes ne lisse pas l'un
-// sur l'autre
-const cacheImmeuble = new Map();
+// sur l'autre. ET LE QUARTIER EST DANS LA CLÉ (v446) : les indices d'îlot et de
+// travée sont ceux de la trame de CHAQUE quartier, et deux quartiers voisins
+// se les prêtent — mesuré sur tout Paris, 16 paires de colonnes voisines de
+// même (îlot, travée) dans deux quartiers, dont 7 aux façades de hauteurs
+// différentes, lissées en un toit qui grimpe au lieu d'un pignon. C'étaient
+// les seules : d'un même immeuble, la façade ne change jamais.
+// `toitsAvant` (le temps d'un morceau, posé par le mailleur sur
+// `toitsQuartier: false`) rejoue la clé d'avant, pour l'empreinte des 490
+// morceaux ; chaque clé a son cache.
+let toitsAvant = false;
+export function rejouerToitsAvant(oui) { toitsAvant = !!oui; }
+const cacheImmeuble = new Map(), cacheImmeubleAvant = new Map();
+export function immeubleDeToit(wx, wz) { return immeuble(wx, wz); }
 function immeuble(wx, wz) {
+  const cache = toitsAvant ? cacheImmeubleAvant : cacheImmeuble;
   const k = wx * 65536 + wz;
-  let v = cacheImmeuble.get(k);
+  let v = cache.get(k);
   if (v === undefined) {
-    if (cacheImmeuble.size > 8192) cacheImmeuble.clear();
+    if (cache.size > 8192) cache.clear();
     const info = infoFacadeParis(wx, wz);
-    v = info ? `${info.ai},${info.bi}` : '';
-    cacheImmeuble.set(k, v);
+    v = info ? (toitsAvant ? `${info.ai},${info.bi}` : `${info.quartier},${info.ai},${info.bi}`) : '';
+    cache.set(k, v);
   }
   return v;
 }

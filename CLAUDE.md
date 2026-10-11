@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Les pistes à leur vraie longueur (v446) — un ouvrage qui sort du disque est un repère, pas un relief
+## Les pistes à leur vraie longueur (v448) — un ouvrage qui sort du disque est un repère, pas un relief
 
 Max : « les pistes de tous les aéroports sont beaucoup trop courtes pour
 vraiment atterrir ». Mesuré : 90 à 146 blocs. Quatre règles.
@@ -2521,6 +2521,40 @@ engendrées. Quatre règles.
   journal vide dans le jeu, trois rouges de `maj.js`. Après tout conflit dans un
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
+
+## La trame générique quitte Londres (v447) — une boucle qui liste ses exclusions se relit à chaque ville bâtie à la main
+
+La dette vue en v415 : la boucle « one lot per grid cell » posait cinquante-deux
+maisons pastel sur l'anneau extérieur de Londres (2 600 colonnes, 77 à 106
+blocs du centre). Trois règles.
+
+- **UNE VILLE BÂTIE À LA MAIN SE DÉCLARE À TOUTES LES BOUCLES QUI BÂTISSENT.**
+  Londres se bâtit colonne par colonne depuis la v178 ; la liste d'exclusion de
+  la trame générique ne l'a jamais connue, et la place que réserve « le mobilier
+  de Londres » (boîte de 70) cachait le défaut au centre. Le jour où l'on ajoute
+  une ville bâtie à la main, on cherche `includes(city.key)` dans `world.js`.
+- **CE QU'ON RETIRE D'UN DÉCOR SE RETIRE PAR LOT, PAS PAR COLONNE.** Un lot que
+  touche un bloc d'enfant posé avant `DATE_TRAME_LONDRES` (le marquage couvre
+  les huit voisines, `colonnesTrameLondres`, tenu comme `colonnesVilleAvant`)
+  reste ENTIER, baie comprise (`lotTrameLondresGarde`) : une demi-maison serait
+  un décor éventré. Drapeau `sansTrameLondres` de `CONF_NEUF` seule ; `CONF_V308`
+  le porte à faux, `CONF_AVANT` ne le porte pas. La date se relit à la fusion.
+- **UN DÉCOR QUI RECOUVRE UNE RUE SE MESURE AUSSI EN VOITURES.** Les circuits de
+  Londres ne lisent que le sol de la ville (`solLondres`, `coteRoulable`) : ils
+  n'ont pas bougé, et 36 pas de carrosserie dans un mur de maison pastel ont
+  disparu. Un circuit validé par le sol ne dit rien de ce qu'une autre boucle
+  bâtit par-dessus.
+
+## Un toit ne déborde plus d'un quartier sur l'autre (v446) — un indice de trame n'est unique que dans sa trame
+
+Une règle. `infoFacadeParis` publie l'îlot et la travée (`ai`, `bi`) dans la
+trame de CHAQUE quartier : deux quartiers voisins se prêtent les mêmes indices.
+Une clé qui identifie un immeuble porte donc le quartier
+(`immeubleDeToit`, facadeshd.js) ; mesuré, c'étaient les seules paires où une
+même clé portait deux façades différentes (7 sur 176 616). Toute table future
+indexée par `(ai, bi)` — tirage, teinte, hauteur — se demande si elle traverse
+une limite de quartier. `buildChunkTampons(…, { toitsQuartier: false })` rejoue
+la clé d'avant, le temps d'un seul morceau, pour l'empreinte des 490 morceaux.
 
 ## Les colonnes Morris se plantent dans le vide (v443) — un meuble se pose en regardant ses voisins, par la même règle
 

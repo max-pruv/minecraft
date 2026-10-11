@@ -1532,7 +1532,7 @@ function repereAvant(lm) {
 export const CONF_NEUF = {
   cle: 'neuf', villes: CITIES, aeroports: AEROPORTS, gaulois: GAULOIS, volcan: VOLCANO,
   places: PLACES, reperes: LANDMARKS, hauteurParis, parisAvant: false, fonduDoux: true,
-  mursDeQuai: true, falaises: true, villesAvant: false, climat: true,
+  mursDeQuai: true, falaises: true, villesAvant: false, climat: true, sansTrameLondres: true,
 };
 // LE MONDE DE LA v306 À LA v308 — celui d'aujourd'hui sans le fondu doux des
 // villes (v309). La marche 6 → 7 juge sur lui ce qui y a été posé, et la marche
@@ -1542,7 +1542,7 @@ export const CONF_NEUF = {
 // Et ces deux mondes-là ont les villes d'avant leur passe au kit (Londres
 // v339, `londres-v332.js` ; Nice v359, `nice-v340.js`) : c'est celles qu'on y
 // voyait (`villesAvant`).
-export const CONF_V308 = { ...CONF_NEUF, reperes: LANDMARKS_V317, fonduDoux: false, mursDeQuai: false, falaises: false, villesAvant: true, climat: false };
+export const CONF_V308 = { ...CONF_NEUF, reperes: LANDMARKS_V317, fonduDoux: false, mursDeQuai: false, falaises: false, villesAvant: true, climat: false, sansTrameLondres: false };
 export const CONF_AVANT = {
   cle: 'avant-v306', villes: CITIES_AVANT, aeroports: AEROPORTS_AVANT_V306, gaulois: GAULOIS_AVANT,
   volcan: VOLCANO_AVANT, places: PLACES_AVANT, reperes: LANDMARKS_V317.map(repereAvant),
@@ -2111,6 +2111,22 @@ const VILLES_FIGEES = [
   { ancre: { x: WASHINGTON.x, z: WASHINGTON.z, r: 268 }, date: DATE_RUES_WASHINGTON },
 ];
 const DATE_FIGEE_MAX = Math.max(...VILLES_FIGEES.map((f) => f.date));
+// LA TRAME GÉNÉRIQUE QUITTE LONDRES, SAUF SOUS CE QU'UN ENFANT A BÂTI (v447).
+// La boucle « one lot per grid cell » n'excluait pas Londres : entre 77 et 102
+// blocs du centre elle posait cinquante-deux maisons pastel de San Francisco,
+// pleines, PAR-DESSUS les rues, les trottoirs et les immeubles de la ville
+// (mesuré : 2 548 colonnes, dont 1 401 de chaussée ou de trottoir). Elles
+// partent — sauf un lot dont une colonne (ou une voisine) porte un bloc posé
+// ou creusé avant cette date : une cabane sur un de ces toits garde son toit,
+// une maison collée à un de ces murs garde son mur. Le lot reste ENTIER, pas
+// colonne par colonne : une demi-maison serait un décor éventré. La date se
+// relit à la fusion (v309).
+export const DATE_TRAME_LONDRES = Date.UTC(2026, 9, 11, 19, 11, 0);
+function dansTrameLondres(x, z, t) {
+  if (!(t <= DATE_TRAME_LONDRES)) return false;
+  const du = x - LONDRES.x, dv = z - LONDRES.z, r = LONDRES.r + 16;
+  return du * du + dv * dv <= r * r;
+}
 const DC_NEUF = { solWashington, batirColonneWashington, VOIES_CIRCUITS_DC };
 function dansVilleAvant(x, z, t) {
   if (!(t <= DATE_FIGEE_MAX)) return false;
@@ -2680,6 +2696,7 @@ export class World {
     this.monumentsTouches = new Set();  // les monuments HD qu'un enfant a modifiés (v292)
     this.morceauxAvantClimat = new Set(); // les morceaux (et leurs voisins) bâtis avant les climats (v345)
     this.colonnesCedees = new Set();    // les colonnes de Paris où la ville cède à ce qu'un enfant a bâti (v306)
+    this.colonnesTrameLondres = new Set(); // les colonnes de Londres où la trame générique d'avant reste (v447)
     this.colonnesVilleAvant = new Set();  // celles de Londres, de Nice, de San Francisco, de Lille et de Washington où la ville d'avant le kit reste (v339, v359, v361, v370, v370)
     this.cacheSol = new Map();          // "x,z" -> { nat, cote } : la fiche d'une colonne (sol continu, v297)
     this.sansSolContinu = false;        // ?solcontinu=0 : la mesure A/B, jamais un réglage
@@ -4015,6 +4032,10 @@ export class World {
             let gene = false;
             for (let wx = x0; wx <= x1 && !gene; wx++) for (let wz = z0; wz <= z1 && !gene; wz++) gene = !!routeEn(wx, wz) || surEntreeLondres(wx, wz);
             if (gene) continue;
+            // Et depuis la v447 elle n'en pose plus du tout, sauf un lot que
+            // ce qu'un enfant a bâti avant `DATE_TRAME_LONDRES` touche (la
+            // baie de façade déborde d'un rang devant le lot, z0 − 1).
+            if (this.conf.sansTrameLondres && !this.lotTrameLondresGarde(x0, x1, z0 - 1, z1)) continue;
           }
 
           if (city.key === 'paris') {
@@ -4256,6 +4277,7 @@ export class World {
     this.editTimes.set(k, t);
     if (dansParisCede(x, z, t)) marquerParisCede(this.colonnesCedees, x, z);
     if (dansVilleAvant(x, z, t)) marquerParisCede(this.colonnesVilleAvant, x, z);
+    if (dansTrameLondres(x, z, t)) marquerParisCede(this.colonnesTrameLondres, x, z);
     if (t <= DATE_CLIMATS) this.marquerAvantClimat(x, z);
     if (!remote && this.onOp) this.onOp(k, id, t);
     if (this.onBloc) this.onBloc(x, y, z, id);
@@ -4498,19 +4520,32 @@ export class World {
     for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) this.morceauxAvantClimat.add(World.key(cx + dx, cz + dz));
   }
 
+  // Un lot de la trame générique de Londres reste-t-il ? (v447) Oui si une de
+  // ses colonnes est marquée — le marquage couvre déjà les huit voisines d'un
+  // bloc d'enfant.
+  lotTrameLondresGarde(x0, x1, z0, z1) {
+    if (this.colonnesTrameLondres.size === 0) return false;
+    for (let x = x0; x <= x1; x++) for (let z = z0; z <= z1; z++) {
+      if (this.colonnesTrameLondres.has(cleColonneParis(x, z))) return true;
+    }
+    return false;
+  }
+
   indexerMonumentsTouches() {
     // l'index des colonnes où Paris cède (v306) se refait avec lui : les
     // deux sont appelés partout où un journal s'installe d'un bloc
     this.colonnesCedees.clear();
     this.colonnesVilleAvant.clear();
+    this.colonnesTrameLondres.clear();
     this.morceauxAvantClimat.clear();
     for (const [k, t] of this.editTimes) {
-      if (!(t <= DATE_PARIS_DOUBLE || t <= DATE_FIGEE_MAX || t <= DATE_CLIMATS)) continue;
+      if (!(t <= DATE_PARIS_DOUBLE || t <= DATE_FIGEE_MAX || t <= DATE_CLIMATS || t <= DATE_TRAME_LONDRES)) continue;
       const virgule = k.indexOf(','), derniere = k.lastIndexOf(',');
       const x = +k.slice(0, virgule), z = +k.slice(derniere + 1);
       if (t <= DATE_CLIMATS) this.marquerAvantClimat(x, z);
       if (dansParisCede(x, z, t)) marquerParisCede(this.colonnesCedees, x, z);
       if (dansVilleAvant(x, z, t)) marquerParisCede(this.colonnesVilleAvant, x, z);
+      if (dansTrameLondres(x, z, t)) marquerParisCede(this.colonnesTrameLondres, x, z);
     }
     this.monumentsTouches.clear();
     if (REPERES_HD.length === 0) return;
@@ -4641,6 +4676,7 @@ export class World {
     this.monumentsTouches.clear();
     this.colonnesCedees.clear();
     this.colonnesVilleAvant.clear();
+    this.colonnesTrameLondres.clear();
     this.loadEdits();
     this.allDirty = true;
   }
@@ -4656,6 +4692,7 @@ export class World {
     this.monumentsTouches.clear();
     this.colonnesCedees.clear();
     this.colonnesVilleAvant.clear();
+    this.colonnesTrameLondres.clear();
     this.chunks.clear();
     this.tops.clear();
     this.allDirty = true;
