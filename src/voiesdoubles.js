@@ -103,3 +103,65 @@ export function voiesAutoroute(x, z, pt) {
 }
 
 export const VOIES_DOUBLES = Object.freeze({ VOIE_EXTERIEURE, DEUX_VOIES });
+
+// LE TYPE DE VOIE PAR TRONÇON (v438). La limitation suivait le CIRCUIT (rue
+// engendrée, avenue nommée, autoroute) : sur un même anneau, un boulevard et
+// une rue de quartier roulaient à la même allure. La section se demande à la
+// ville, au point du tracé — la même règle du kit (`voirie.js`) que le sol :
+//   · boulevard (deux voies par sens) → cinquante, `avenue` ;
+//   · collectrice (une voie par sens) → quarante, `rue` ;
+//   · locale (une seule voie) → trente, `ruelle`.
+// Hors de toute voie nommée (le tour d'une place, un raccord), la rue. Les
+// avenues de Washington ne portent pas de type (le plan de L'Enfant, larges
+// partout) : cinquante. Rend le NOM de l'allure ; `circulation.js` la chiffre.
+import { VOIES_LONDRES, LONDRES } from './londres.js';
+import { VOIES_NICE, NICE } from './nice.js';
+import { VOIES_LILLE, LILLE } from './lille.js';
+import { VOIES_SF, SF } from './sanfrancisco.js';
+import { VOIES_CIRCUITS_DC, WASHINGTON } from './washington.js';
+
+const ALLURE_DU_TYPE = { boulevard: 'avenue', collecteur: 'rue', locale: 'ruelle' };
+const RANG_ALLURE = { ruelle: 0, rue: 1, avenue: 2 };
+const SOURCES = {
+  paris: () => [VOIES_PARIS, PARIS], londres: () => [VOIES_LONDRES, LONDRES], nice: () => [VOIES_NICE, NICE],
+  lille: () => [VOIES_LILLE, LILLE], sf: () => [VOIES_SF, SF], dc: () => [VOIES_CIRCUITS_DC, WASHINGTON],
+};
+const voiesTypees = new Map();
+function voiesDe(cle) {
+  if (voiesTypees.has(cle)) return voiesTypees.get(cle);
+  const s = SOURCES[cle];
+  let out = null;
+  if (s) {
+    const [liste, o] = s();
+    out = liste.map((v) => {
+      const pts = v.pts.map(([u, w]) => [o.x + u, o.z + w]);
+      const l = (v.l || 3.2) + 1.5;
+      let x0 = Infinity, z0 = Infinity, x1 = -Infinity, z1 = -Infinity;
+      for (const [x, z] of pts) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); }
+      return { pts, l, allure: ALLURE_DU_TYPE[v.type] || 'avenue', x0: x0 - l, z0: z0 - l, x1: x1 + l, z1: z1 + l };
+    });
+  }
+  voiesTypees.set(cle, out);
+  return out;
+}
+// L'allure d'un point d'un circuit de la ville bâtie à la main `cle`, ou null
+// si la ville n'est pas connue (Manhattan garde son avenue).
+export function allureDuTroncon(cle, x, z) {
+  const voies = voiesDe(cle);
+  if (!voies) return null;
+  let best = null;
+  for (const v of voies) {
+    if (x < v.x0 || x > v.x1 || z < v.z0 || z > v.z1) continue;
+    if (best && RANG_ALLURE[v.allure] <= RANG_ALLURE[best]) continue;
+    for (let i = 0; i + 1 < v.pts.length; i++) {
+      const [ax, az] = v.pts[i], [bx, bz] = v.pts[i + 1];
+      if (distanceSegment(x, z, ax, az, bx, bz) < v.l) { best = v.allure; break; }
+    }
+  }
+  return best || 'rue';
+}
+// UNE VILLE ENGENDRÉE : le boulevard de la croix centrale (`t.axe`, la même
+// lecture que sa seconde voie) roule à cinquante, la trame à quarante.
+export function allureVilleMonde(x, z) {
+  return secondeVoieVilleMonde(x, z) ? 'avenue' : 'rue';
+}

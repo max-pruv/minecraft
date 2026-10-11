@@ -358,9 +358,9 @@ const EMPREINTE_MORCEAUX_V414 = '863d4203a441e3fd029ce2404fc6d6e706799e7f64fe489
 // colonnes qui diffèrent dans les morceaux de Paris sont toutes à moins de
 // 11,2 blocs de l'axe de l'entrée — la demi-chaussée et le trottoir d'un
 // boulevard (scratchpad diffp.mjs).
-// v436 : San Francisco, un des neuf lieux, porte l'entrée de l'US-101 (de la
+// v439 : San Francisco, un des neuf lieux, porte l'entrée de l'US-101 (de la
 // porte sud-est au bout de Third Street). L'US-101 retirée du registre, la
-// branche rend 1f1e5a6d…, la constante de la v435, au bit près ; et les cent
+// branche rend 1f1e5a6d…, la constante de la v438, au bit près ; et les cent
 // colonnes qui diffèrent dans les morceaux de San Francisco sont toutes à
 // moins de sept blocs de l'axe de l'entrée — la demi-chaussée et le trottoir
 // d'une collectrice (scratchpad diffsf.mjs).
@@ -606,7 +606,8 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     try { t = await require('./sonde-force-chocs.cjs').mesurer(require('path').resolve(__dirname, '..')); } catch (e) { err = String(e && e.message || e); }
     const lignes = t ? Object.values(t) : [];
     verifier('conduite : la force d\'un choc suit la vitesse — pleins gaz un mur plein, un mur lent moins d\'un quart, un frôlement moins d\'un dixième',
-      lignes.length === 6 && lignes.every((r) => r.plein.force === 1 && r.lent.murs > 0 && r.lent.murs < 0.25 && r.frole.murs > 0 && r.frole.murs < 0.1),
+      // le compte vient de la table (huit classes depuis les utilitaires, v438)
+      lignes.length >= 6 && lignes.every((r) => r.plein.force === 1 && r.lent.murs > 0 && r.lent.murs < 0.25 && r.frole.murs > 0 && r.frole.murs < 0.1),
       t ? JSON.stringify(t) : `sonde : ${err}`);
   }
   // --- LA PENTE ET LA BOSSE (palier 3 de la conduite) ---------------------

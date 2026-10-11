@@ -479,6 +479,61 @@
   sur `origin/main` à (−2 581, 5 272), un nœud de circuits face à face,
   8,8 % sur la v423 — d'avant, à démonter. (5) Palier C : utilitaires et
   pickups (classe dans `FLOTTE`), variance par voiture, voie par tronçon.
+  **(5) et (2) FAITS en v438** : fourgonnette et pickup (`utilitaires.js`, une
+  voiture sur six hors New York, quinze maillages), jeu par voiture
+  (`Convoi.jeu`, fonction de la clé, du rang et de l'heure : la grille reste
+  partagée ; éteint sous six blocs/s, près d'un croisement, sur la voie
+  partagée avec la jumelle et dans l'anneau du bus — 392 contacts de grille
+  avec ou sans, `sonde-rue-dense.cjs jeu`), limitation par tronçon
+  (`allureDuTroncon`, `allureVilleMonde`). Seconde voie de Paris 306 → 446
+  blocs (rampe 5 en ville, seuil 20, recherche parmi les nombres que le
+  croisement accepte). RESTE : les deux circuits en huit de Paris (rangs 1 et
+  3, 193 et 44 blocs de deux voies) n'ont pas de jumelle — seul n = 4 passe
+  leur croisement à `2 n` voitures (0,18 `nb`) ; le remède est de casser le
+  huit en deux circuits (`paris.js`, autre session). Le jeu ne joue pas dans
+  l'anneau du bus (il y est à une demi-voiture) : le grand anneau de chaque
+  ville roule encore en un seul train. Le dépliage de la seconde voie
+  (`voiesDe`, point 4 de la zone) coûte jusqu'à 37 ms par circuit sous node
+  (Paris, puis 1 à 16) : un circuit par image, NON découpé — différer la
+  jumelle changerait le nombre de voitures de la file après sa naissance, donc
+  la grille d'une tablette à l'autre (v305) ; le découper en tranches AVANT la
+  naissance du convoi est la forme sûre, à faire si l'iPad le montre.
+  Portail de la v438 : `degats.js` « percuter une voiture de la rue l'abîme
+  AUSSI » (et le garage qui en dépend) rouge sous la charge — santé 1 ; REJOUÉE
+  SEULE : branche 0,99 deux fois, `origin/main` 0,99 deux fois. Le témoin
+  arrondit la santé au centième et l'élan (13 à 15 blocs) ne coûte que 0,5 à
+  1 % : sous la charge, l'arrondi rend 1. Dette du témoin (lire la santé non
+  arrondie, ou prendre plus d'élan), pas de la livraison.
+  Second portail de la v438 (après fusion de la v435) : rouges `carte.js`
+  (flèche du GPS 1,92, déclaré), `manhattan.js` (trou, taxi, déclarés),
+  `monte.js` « au feu, la voiture freine sur plusieurs relevés » (2 arrêts,
+  1 sec à 45 b/s², la forme déclarée en v415). A/B sur la même branche,
+  `sonde-circulation.cjs paris 40`, ordre alterné, jeu par voiture allumé et
+  éteint trois fois chacun : zéro arrêt sec sur 36 arrêts, aucun contact — le
+  jeu n'y est pour rien ; le témoin juge sur deux arrêts.
+  **(4) MADRID, DÉMONTÉ (après la v438), PAS CORRIGÉ.** Au navigateur à
+  (−2 581, 5 272), `sonde-circulation.cjs madrid 40 avec -2581 5272` (paires
+  par convois) : 6,4 % de paires au contact, et le nœud n'est PAS entre
+  anneaux — c'est le raccord de l'autoroute A-4 (`voiture|1030|…`) qui roule
+  sur l'avenue d'entrée, l'axe de la trame, dans la MÊME voie que trois
+  anneaux (même sens et en face) : deux grilles indépendantes (v305) sur une
+  voie, qu'aucune grille ne peut cadencer l'une contre l'autre. Sous node
+  (`sonde-rue-dense.cjs routes`) : 18 des 45 raccords route/ville partagent une
+  voie d'anneau, dont cinq sur 31 à 85 blocs de la croix-boulevard
+  (Amsterdam 69, Madrid 85, Delhi 48, Agra 68, Toronto 31) et Kyoto 53 hors
+  boulevard ; les autres (≈ 10 + 10 blocs) sont des croisements de rue.
+  ESSAYÉ ET RETIRÉ : faire prendre au raccord la voie EXTÉRIEURE du boulevard
+  (`[b, b]`) — le nœud se déplace sur les JUMELLES des anneaux, qui
+  l'occupent (6,6 % au même point, les « face » disparus, les « même sens »
+  doublés). Pistes, décisions de plan : arrêter l'autoroute à la porte dans
+  une ville engendrée dont la croix porte des anneaux (les voitures n'y
+  entrent plus — c'est le contraire de la v300), ou faire du raccord une file
+  de l'anneau qui passe là (une seule grille). `routes.js` et `villesmonde.js`
+  sont d'autres sessions.
+  **(5) LE HUIT DE TOKYO, MESURÉ RÉSOLU.** Au même point (53 383, 8 048) :
+  0,25 % de paires au contact, toutes en travers entre deux convois (la
+  cession locale), zéro dans une file — les contours des v432 et v435 ont
+  défait le croisement.
   **(3) FAIT en v431** : balayage au quart sur les deux premiers blocs,
   plancher de file 1,0 en ligne droite (1,6 en virage) — médiane 1,9-2,0 →
   1,1-1,3 (Paris, Rome, Zurich, Tokyo). Les contacts « file » relevés à Tokyo
@@ -566,7 +621,7 @@
   `reseau.js` ENTIÈREMENT vert (mon témoin compris) ; `monte.js` : le seul gel
   d'arrivée (24,8 %, déclaré) ; `manhattan.js` : trou, taxi, « Lost
   connection to server » de PeerJS — déclarés.
-- [x] **SAN FRANCISCO–LOS ANGELES : FAIT EN v436 (l'US-101).** Le relevé
+- [x] **SAN FRANCISCO–LOS ANGELES : FAIT EN v439 (l'US-101).** Le relevé
   ci-dessous se trompait sur un point, mesuré : « sortir par l'est » passe
   par la BAIE, dans le disque entre la porte (r − 20) et le bord. La porte
   est au sud-est (68°), la route passe au nord de SFO, longe la plaine
@@ -593,6 +648,17 @@
   rail et les autres routes. La règle des repères et de SFO tient sur ce
   couloir ; elle est à remesurer sur le tracé, pas sur l'axe.
 
+- [ ] **LE PORTAIL DE L'US-101 (v439), SIX ROUGES, TOUS DÉJÀ DÉCLARÉS.**
+  Verts : `carteMonde.js` (le témoin neuf, rouge sur `origin/main` : « aucun
+  convoi US-101 »), `plafond.js`, `parishd.js`, `degats.js`, `washington.js`,
+  `reglages.js`. Rouges, rejoués SEULS sur la branche : `carte.js` (glisser
+  bridé, 473 ms) verte seule ; `manhattan.js` le trou de façade (22 326 →
+  51 734) et le taxi tactile ; `monte.js` la chauffe de New York (75/321), la
+  rue à cinquante et le feu (médiane 0), le flâneur, le réverbère, « la file
+  … puis se rend » (13 s) — tous déclarés plus bas avec leur double mesure,
+  et tous jugés à Paris, Rome, New York ou au couloir vide : l'US-101 ne
+  change que le registre des routes, l'entrée de San Francisco et un convoi
+  qui ne fabrique ses voitures qu'à portée de vue en Californie.
 - [ ] **LE PORTAIL DE L'A8 (v428), DOUBLE MESURE FAITE.** `plafond.js` :
   deux points du joint du deuxième pont de l'A8 sans cube ni tablier — un
   vrai défaut, reproduit sous node, corrigé (sommet de coude déplacé), suite
@@ -1654,9 +1720,20 @@
   main » demanderait un second doigt sur l'accélérateur, et le joystick n'en a
   qu'un — décidé, pas oublié) ; (11) personne ne DESSINE encore le dérapage
   (traces de pneus, crissement : la session des sensations lit
-  `player.freinMainTire` et `player.derive`) — **TRACES FAITES en v434** (`traces.js`) ;
-  le crissement au frein à main reste à faire ; (12) le frein à main ne se voit
+  `player.freinMainTire` et `player.derive`) — **TRACES FAITES en v434** (`traces.js`),
+  **CRISSEMENT AU FREIN À MAIN FAIT en v437** ; (12) le frein à main ne se voit
   pas chez l'ami au-delà de la dérive qui voyage déjà (`p.v.r`).
+- [ ] **AU PORTAIL DE LA v437 (le frein à main crisse), UN ROUGE NEUF QUI N'EST
+  PAS LA LIVRAISON — preuve structurelle (v291).** « à Rome aussi, en biais, un
+  passant traverse sur le passage peint d'un carrefour sans feu » (`monte.js`,
+  `traversees: 0` sur 6 poses) : la livraison ne change qu'un gain dans
+  `voitureSons`, appelé par `sensationsAuVolant` seulement quand l'enfant
+  conduit une voiture — ce témoin ne conduit pas. À rejouer seul des deux côtés
+  par la session des passants (v421). Les autres rouges du même portail sont
+  déjà déclarés (loader et flèche du GPS, glisser bridé, façade et taxi
+  tactile, chauffe de New York, réverbère), et `reseau.js` est morte sur un
+  délai de `rejoindre` (ligne 1021) — rejouée seule au portail précédent,
+  verte des deux côtés sur ce passage.
 - [ ] **AU PORTAIL DE LA v434 (traces de pneus), DES ROUGES QUI NE SONT PAS LA
   LIVRAISON — mesurés.** `reseau.js` rejouée SEULE : branche 80 verts, trois
   rouges ; `origin/main` (v430) 80 verts, les MÊMES trois rouges — « deux
@@ -3537,6 +3614,18 @@
     mesuré : cinq colonnes sur vingt-cinq morceaux, aucune côte à côte.
 
   Dettes déclarées de la v288 :
+  - [ ] **LE PORTAIL DE LA v436 (la voiture devant les terrasses).** Rouges :
+    `maj.js` (les deux loaders), `carte.js` (glisser bridé ×4), `washington.js`
+    (l'Air et l'Espace), `manhattan.js` (trou, taxi), `monte.js` (la rue à
+    l'allure d'une ville, le mur pris de face) — dettes déclarées. Et « au
+    volant, la voiture s'arrête devant un réverbère » (0 bloc parcouru),
+    rejoué SEUL par `sonde-reverbere.cjs` (le témoin lu dans `monte.js`) :
+    branche 3,64 · **0,16** · 3,65, `origin/main` 3,64 · 3,59 · 3,65. Ce n'est
+    pas `mobilierDevant` : la carte du mobilier sur dix-neuf blocs autour du
+    départ n'a que des potelets et des corbeilles (aucun meuble qui arrête) —
+    une intermittence d'un passage sur trois, déjà vue au portail de la v433
+    AVANT ce correctif (0,3 bloc). À démonter par une sonde qui publie ce qui
+    arrête la voiture (`player.contact`).
   - [ ] **LE PORTAIL DE LA v433 (terrasses)**, coupé deux fois par la limite
     de trente minutes des tâches de fond (la reprise a tout rejoué). Rejoués
     SEULS des deux côtés (`/home/user/minecraft` et un arbre détaché sur
@@ -3559,7 +3648,8 @@
   - [x] les Champs-Élysées à `dx = −4,3 km` (dette ci-dessous) : MESURÉ en v433,
     l'axe de l'avenue rend 103 colonnes de pavé et 8 de trottoir sur 111, et
     l'adresse de la dette du pavé — rendu par Paris doublé (v306).
-  - [~] une chaise de terrasse HD n'arrête ni un passant ni une voiture —
+  - [x] **FAIT EN v436** (la voiture : `mobilierDevant` lit `world.mobilierVu`).
+    Historique : une chaise de terrasse HD n'arrête ni un passant ni une voiture —
     LES PASSANTS ET L'ENFANT À PIED : fait en v425 (`mobilierTrottoir`,
     `world.obstaclePieton`, seulement le mobilier montré). Reste : la VOITURE
     (`mobilierDevant`, main.js, hors zone piétons) — elle lit `isProp` ; la

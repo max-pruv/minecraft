@@ -512,7 +512,7 @@ export const ROUTES = [
   // deux points du joint sans cube ni tablier (le témoin du joint, plafond.js).
   { nom: 'A8', villes: ['marseille', 'nice'], bord: { marseille: 14 },
     via: [[956, 3410], [961, 3386], [963, 3346], [977, 3291], [987, 3276], [1016, 3255], [1087, 3233], [1101, 3222], [1108, 3212], [1126, 3174], [1143, 3142], [1156, 3131], [1190, 3118], [1208, 3118], [1226, 3123], [1438, 3240], [1475, 3246], [1522, 3247]] },
-  // L'US-101 (v436), SAN FRANCISCO–LOS ANGELES. L'axe direct (2 403 blocs)
+  // L'US-101 (v439), SAN FRANCISCO–LOS ANGELES. L'axe direct (2 403 blocs)
   // passe dans la marge de SFO et sur deux repères. San Francisco est une
   // presqu'île : la baie à l'est DANS le disque, le Pacifique à l'ouest, et au
   // sud SFO (−38 774, 7 120) avec, à l'ouest de l'aérodrome, des collines de

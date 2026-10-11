@@ -770,6 +770,47 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## La rue dense, palier C (v438) — une variance par voiture est une fonction de son heure
+
+Quatre règles.
+
+- **UNE VOITURE NE PEUT AVOIR SON ALLURE QUE SI SON ÉCART À LA GRILLE EST UNE
+  FONCTION DE L'HORLOGE.** `Convoi.jeu(i, τ)` (vehicules.js) rend quelques
+  dixièmes de seconde d'avance ou de retard (`JEU_MAX`, 0,35 s ; ±10 %
+  d'allure), une ondulation dont la période et la phase viennent de la CLÉ du
+  convoi et du rang — jamais du hasard local : deux tablettes posent la même
+  voiture au même endroit (v305). Un témoin refait la table et la rejoue à
+  l'identique.
+- **LE JEU S'ÉTEINT LÀ OÙ LA FILE EST CALCULÉE AU PLUS JUSTE.** Le poids `W`
+  vaut zéro sous six blocs par seconde (le virage le plus lent fixe le nombre
+  de voitures, `nbSansChevauchement`), à trois secondes d'un croisement du
+  tracé avec lui-même (`instantsDeCroisement`), là où la jumelle partage la
+  voie de sa file, et dans un anneau que le bus suit. Il se décide sur ce
+  qui est connu à la CRÉATION — sur l'autoroute, la section de deux voies,
+  pas la jumelle qui naît plus tard : le jeu ne change pas quand elle arrive.
+  Preuve STRUCTURELLE (`sonde-rue-dense.cjs jeu`) : 179 convois sous node,
+  un tour d'horloge chacun, 392 contacts de grille sans le jeu, 392 avec.
+- **UNE FLOTTE QUI S'AGRANDIT GARDE SES POINTES UNIQUES.** La fourgonnette
+  et le pickup (`utilitaires.js`, fabriqués, originaux) ont leur classe dans
+  `FLOTTE` et leur fiche dans `conduite.js` (31 et 32 blocs/s) :
+  `ficheDeVitesse` retrouve la classe à sa pointe. Une silhouette entière vient
+  d'un profil extrudé : quinze maillages contre trente-deux pour un modèle
+  de la flotte — une rue qui gagne des utilitaires dessine moins.
+- **LA LIMITATION SE DEMANDE À LA SECTION, AU POINT DU TRACÉ.**
+  `allureDuTroncon` (voiesdoubles.js) lit les voies nommées de chaque ville
+  bâtie à la main et leur type du kit (boulevard 50, collectrice 40, locale
+  30) ; `allureVilleMonde` le boulevard de la croix. Manhattan garde la
+  sienne.
+
+Et **la seconde voie de Paris se perdait aux places, et dans une recherche qui
+supposait le croisement monotone.** 306 blocs de deux voies occupés sur 1 231 :
+la rampe de huit blocs mangeait seize blocs autour de chaque place
+(`RAMPE_VILLE` 5 en ville, l'autoroute garde 8), le seuil de quarante écartait
+les circuits qui ne suivent qu'un tronçon (`SECTION_MIN` 20). 446 après. La
+recherche du nombre de la jumelle ne testait que `nb` et 0,4 `nb` avant sa
+dichotomie : elle liste désormais les nombres que le croisement accepte et
+cherche parmi eux. Les deux circuits en huit restent sans jumelle — seul n = 4
+passe leur croisement (0,18 `nb`) : déclaré.
 ## Les anneaux se cherchent ensemble (v435) — ce qu'aucun ordre ne règle se cherche sur l'état de tous
 
 Toronto, Dublin, Lima : l'anneau d'arrivée sur la place, chaque contour trouvé
@@ -1010,6 +1051,12 @@ même : un témoin qui juge ce que la tablette voit force
 `reglageTraces.dessin = true` (ou `?traces=1`). Et une piste de témoin qui
 dérape se pose LARGE : la dérive pousse la voiture de côté, et sur treize
 blocs elle tombait de la plate-forme (`enLair`, zéro trace au frein à main).
+
+**Le frein à main crisse (v437).** Le crissement suivait la dérive, le
+freinage fort et le virage trop vite ; le frein à main tiré tout droit n'en
+donne aucun (dérive nulle) et ne s'entendait pas (bande des pneus ×1,9).
+`freinMainTire` (lu si présent) au-dessus de deux blocs/s vise 0,75. Le
+témoin écoute la sortie pendant le freinage, contre la ligne droite d'avant.
 
 ## Un contour dans l'autre sens, et les rues du Strip (v418) — ce qui empêchait le contour n'était pas l'absence de rue
 
@@ -2375,6 +2422,19 @@ engendrées. Quatre règles.
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
 
+## La voiture s'arrête devant une terrasse (v436) — une famille d'obstacle lit la même règle pour tous ceux qui butent
+
+Une règle. `mobilierDevant` (main.js) ne lisait que les blocs de mobilier
+(`isProp`) ; la table, les chaises, le banc et la colonne de la couche HD ne
+sont pas des blocs. Il demande désormais `world.mobilierVu` — la règle de la
+v425, celle que les passants lisent, seulement le mobilier MONTRÉ (une
+tablette sans couche HD n'a pas de table invisible) —, une fois par colonne
+couverte. Pas de seconde copie de la règle : deux lecteurs, une fonction.
+« Pas si l'on est déjà dedans » reste jugé dans la famille « mobilier »
+(v252). Le témoin roule sur un trottoir jusqu'à l'arrêt, durée en
+progrès (cinq secondes sans avancer), jamais une immobilité d'une seconde :
+une page HD du banc rend une image par seconde.
+
 ## Les terrasses de café reviennent (v433) — une règle qui lit un bloc se relit quand le bloc se découpe
 
 Une règle.
@@ -3642,7 +3702,7 @@ Une règle.
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
 
-## L'US-101 (v436) — un relevé en couronne commence à la porte, et une optimisation de tracé reconstruit la porte
+## L'US-101 (v439) — un relevé en couronne commence à la porte, et une optimisation de tracé reconstruit la porte
 
 San Francisco–Los Angeles, le couloir instruit en v419. Quatre règles.
 

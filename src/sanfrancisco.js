@@ -391,7 +391,7 @@ const VOIES = [
   { nom: 'Cesar Chavez Street', pts: [de(-3.85, 3.45), de(-2.0, 3.55), de(-0.55, 3.68)] },
 ].map(aLaRegle);
 
-// L'ENTRÉE DE L'US-101 (v436), comme celles de Londres et de Nice : du bout du
+// L'ENTRÉE DE L'US-101 (v439), comme celles de Londres et de Nice : du bout du
 // corridor (`routes.js`, vingt blocs sous le bord du disque, au sud-est, sur
 // la terre ferme au bout de la baie) jusqu'au bout de Third Street, l'artère de
 // Dogpatch et de Bayview, en ligne droite vers le nord. Une collectrice,

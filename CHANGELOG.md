@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v436 — La route de San Francisco à Los Angeles
+## v439 — La route de San Francisco à Los Angeles
 
 **Pourquoi.** Seize autoroutes reliaient déjà les villes, et la côte ouest des
 États-Unis n'en avait aucune : de San Francisco à Los Angeles, on ne pouvait
@@ -44,8 +44,79 @@ hors des tronçons radiaux, l'entrée de San Francisco sur la chaussée d'un bou
 routes la lisent avec les autres : profil (pente 0,06, déblai 7,2, remblai
 3,3), joints des ponts (32 890 points, zéro trou), sol sous les tabliers.
 L'empreinte des 490 morceaux change (San Francisco est un des neuf lieux) et se
-prouve : l'US-101 retirée, la constante de la v435 au bit près, et les cent
+prouve : l'US-101 retirée, la constante de la v438 au bit près, et les cent
 colonnes qui diffèrent sont à moins de sept blocs de l'axe de l'entrée.
+
+---
+
+## v438 — Des fourgonnettes, des pickups, et chaque voiture son allure
+
+**Pourquoi.** La rue ne roulait que des voitures de sport et la berline
+citadine : pas une fourgonnette de livraison, pas un pickup. Dans une file,
+toutes les voitures roulaient comme un seul train — la variance d'allure était
+par file, pas par voiture. La limitation suivait le circuit : un boulevard et
+une rue de quartier du même tour roulaient à la même vitesse. Et les
+boulevards de Paris ne gardaient leur seconde voie que sur 306 de leurs
+1 231 blocs : chaque place la coupait, et deux circuits la perdaient sur un
+calcul qui ne regardait que deux nombres.
+
+**Ce que ça change.** Une voiture sur six hors de New York est un utilitaire :
+une fourgonnette blanche ou un pickup de la couleur de la rue, caisses dans la
+benne — et on peut les conduire. Dans une file, chaque voiture prend quelques
+dixièmes de seconde d'avance ou de retard : la file respire au lieu de rouler
+d'un bloc. Un circuit de Paris roule à cinquante sur ses boulevards, à
+quarante dans les rues, à trente dans les ruelles ; une ville engendrée à
+cinquante sur sa croix-boulevard. Les boulevards de Paris ont leurs deux voies
+occupées sur 446 blocs (six circuits sur huit au lieu de trois).
+
+**Ce qui le prouve.** Quatre témoins dans `carteMonde.js`, rouges sur
+`origin/main` : la flotte (une voiture sur six, deux modèles au manifeste —
+quatre roues, au sol, quinze maillages au plus contre trente-deux), le jeu par
+voiture (les voisines s'écartent de leur grille, dans la borne, et la règle se
+refait à l'identique : la même rue chez l'ami, v305), la limitation par
+tronçon, la seconde voie de Paris (306 → 446, barre 380). Et une preuve
+structurelle sous node (`sonde-rue-dense.cjs jeu`) : 179 convois, un tour
+d'horloge chacun, autant de contacts de grille avec le jeu que sans (392 et
+392).
+
+## v437 — Le frein à main crisse
+
+**Pourquoi.** Au frein à main, les roues arrière se bloquent et glissent sur
+la route — dans un jeu de conduite, ça s'entend. Ici, tout droit, on
+n'entendait presque rien : le crissement ne suivait que la dérive, et freiner
+à main en ligne droite n'en donne pas. Mesuré dans la bande des pneus : à
+peine deux fois le bruit de la ligne droite.
+
+**Ce que ça change.** Dès que l'enfant tire le frein à main en roulant, les
+pneus crissent, en ligne droite comme en virage, et se taisent quand la
+voiture s'arrête ou qu'on relâche.
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js`, qui lit la SORTIE du jeu
+(un analyseur dans la bande des pneus, jamais un drapeau) : frein tiré contre
+la ligne droite d'avant, ×1,9 sur la v434, ×62 ici, pour une barre à ×10 —
+celle du crissement en dérive.
+
+---
+
+## v436 — La voiture s'arrête devant les terrasses
+
+**Pourquoi.** La table et les chaises d'un café de Paris sont dessinées par la
+couche HD (v288) : ce ne sont pas des blocs. Les passants les contournent
+depuis la v425 ; la voiture de l'enfant, elle, ne lisait que les blocs de
+mobilier (réverbères, jardinières) et passait au travers des terrasses
+revenues en v433.
+
+**Ce que ça change.** Au volant, la voiture s'arrête devant une terrasse, un
+banc, une colonne Morris — seulement ceux qu'on voit : une tablette sans
+couche HD n'a pas de table invisible qui arrête.
+
+**Ce qui le prouve.** Un témoin neuf de `parishd.js` prend le volant sur un
+trottoir de Paris, huit blocs avant une terrasse, et roule jusqu'à l'arrêt :
+elle s'arrête à 2,5 à 2,7 blocs du centre de la terrasse (son pare-chocs au
+bord de la colonne), et le crochet nomme « mobilier ». Rouge sur `origin/main`
+(v433, les terrasses sans le correctif) : la voiture entre jusqu'à 1,8 bloc,
+le capot au-dessus de la table, et c'est un mur qui l'arrête. Une sonde
+(`sonde-terrasse-voiture.cjs`) rejoue le témoin seul, lu dans `parishd.js`.
 
 ---
 
