@@ -883,7 +883,7 @@ export function traceRoute(seg, { avant = null, apres = null, coteDe = null } = 
     const o = L.terrePlein + L.demiChaussee / 2;          // le milieu de la chaussée de ce sens
     const y = (p ? coteA(seg, s) : 0) + 0.05;
     const rx = -q.fz, rz = q.fx;                             // la droite du sens A→B
-    // la demi-chaussée sous ce point : la seconde voie la lit (v422)
+    // la demi-chaussée sous ce point : la seconde voie la lit (v423)
     aller.push({ x: q.x + rx * o, y, z: q.z + rz * o, dc: L.demiChaussee });
     retour.push({ x: q.x - rx * o, y, z: q.z - rz * o, dc: L.demiChaussee });
   }

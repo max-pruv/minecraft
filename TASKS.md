@@ -350,8 +350,8 @@
   à trois une fois. Intermittence des voitures `physical` à l'arrivée ; la
   sonde nommera le matériau le jour où elle le voit.
 
-- [ ] **LA RUE DENSE, PALIERS B ET C (v422, session `claude/circulation-vivante`).**
-  Livré en v422 : la seconde voie (jumelle sur la même grille) sur les
+- [ ] **LA RUE DENSE, PALIERS B ET C (v423, session `claude/circulation-vivante`).**
+  Livré en v423 : la seconde voie (jumelle sur la même grille) sur les
   autoroutes (24/24), les croix-boulevards engendrées (35 circuits, 93 % des
   voies occupées) et les percées de Paris (76 %) ; l'autoroute densifiée
   (480 → 1 354 voitures). Mesuré, à reprendre : (1) **la densité d'une rue de
@@ -365,9 +365,9 @@
   (plancher `mini` = longueur + 1,6, arrêt 0,6 avant le contact) — à serrer
   vers 1,2 si la capture le demande. (4) Madrid : 10,6 % de paires au contact
   sur `origin/main` à (−2 581, 5 272), un nœud de circuits face à face,
-  8,8 % sur la v422 — d'avant, à démonter. (5) Palier C : utilitaires et
+  8,8 % sur la v423 — d'avant, à démonter. (5) Palier C : utilitaires et
   pickups (classe dans `FLOTTE`), variance par voiture, voie par tronçon.
-  Portail de la v422 (dix-sept suites) : verts sauf `plafond.js` (l'A1 :
+  Portail de la v423 (dix-sept suites) : verts sauf `plafond.js` (l'A1 :
   À MOI, la voiture du témoin butait sur la circulation densifiée —
   repointée, rejouée seule entièrement verte, 80,7 blocs, 15 voitures
   écartées), `maj.js` (libération `null`, flou — déclarés), `carte.js`
@@ -899,6 +899,33 @@
   l'intermittence déjà mesurée rouge une fois sur quatre sur `origin/main`
   (tableau plus bas). Le témoin neuf « une voiture neuve n'hérite pas du
   dernier choc » est vert au portail.
+
+- [ ] **AU PORTAIL DE LA v422 (les sensations au volant, fusionnée avec main
+  v404 puis v411 puis v421), AUCUN ROUGE NE VIENT DE LA LIVRAISON.** Trois
+  portails coupés à deux heures (le conteneur borne une commande de fond) et
+  repris ; chaque rouge rejoué SEUL des deux côtés.
+
+  | suite | branche seule | `origin/main` seul |
+  | --- | --- | --- |
+  | `visio.js` | ✅ | ❌ la radio pendant l'appel (0,0047) |
+  | `carte.js` | ❌ le glisser bridé (1 004 ms) | ❌ le même (888 ms) + l'appui long et le GPS (8) |
+  | `maj.js` | ❌ loader, libération, flou (3) | ❌ les trois mêmes |
+  | `manhattan.js` | ❌ façade, taxi « 🐴 Monter » jamais visible, délai | ❌ façade, taxi « 🚗 Monter » jamais visible, délai |
+  | `degats.js` | ✅ 2/2 | ❌ 1 fois sur 2 « très touchée elle fume » (fumée 0 au relevé) |
+  | `monte.js` | 💥 page neuve qui ne charge pas en 90 s sous une page à 3,8 cœurs (98 verts) | v404 : 💥 la même ; v411 : au bout, 11 rouges |
+
+  Les rouges de `monte.js` au portail (le recul au joystick, « pas au
+  volant » dans la nature, le flanc frôlé, le piéton frôlé, la compilation à
+  New York, le trou en vol) sont tous dans les 11 de `origin/main` v411 rejoué
+  seul. Les témoins des sensations ont rougi au portail parce que la voiture
+  n'avait jamais été montée (`vMax 0`, `parcouru 0` — la même cascade « pas au
+  volant » que `origin/main`) ; la sonde (`sonde-sensations.cjs`) sur le code
+  fusionné v411 rend champ 75 → 83,8, recul 6,4 → 7,4, caisse −0,062, roue
+  +0,21, crissement ×411, choc 1,13, secousse 0,15 : tous dans leurs barres.
+  Dette : `monte.js` dépasse désormais une heure seule et s'arrête une fois
+  sur deux sur l'ouverture d'une page à part (`MonteRegard`, ligne 3867) — à
+  démonter par une sonde qui mesure la charge de la page de jeu laissée
+  ouverte avant cette ouverture.
 
 - [ ] **AU PORTAIL DE LA v358 (la conduite), LES ROUGES RESTANTS SONT DÉJÀ
   CONNUS, rejoués SEULS des deux côtés.** `monte.js` « l'écran ne se fige pas
@@ -1944,6 +1971,116 @@
   second dépend du premier) — REJOUÉE SEULE : branche ces deux-là, `origin/main`
   v318 la libération (programmes 17/25). Même intermittence de préparation des
   deux côtés, déjà déclarée (v267).
+- [ ] **LE PORTAIL DE LA v381 (sensations au volant) : UN ROUGE DE MOI, CORRIGÉ,
+  ET TROIS DETTES DÉJÀ DÉCLARÉES, REJOUÉES SEULES DES DEUX CÔTÉS.**
+  `monte.js` « la caméra suit la voiture de derrière » (7,07 pour une borne
+  fixe de 6,5) : à moi, la caméra recule désormais avec la vitesse — le
+  plafond suit la fiche (6,4 × 1,32), rejoué seul vert. `monte.js` « l'écran
+  ne se fige pas en arrivant sur une ville » (3 283 ms · 25,2 % au portail,
+  3 517 · 24,4 rejoué seul) : la dette connue. `monte.js` rejouée seule a
+  aussi rendu « se téléporter ne compile plus de programmes » rouge avec ZÉRO
+  programme neuf dans les cinq villes — vert au portail : c'est la famille qui
+  va et vient (ci-dessus), et la livraison n'ajoute ni matériau ni maillage.
+  `manhattan.js` : le trou de façade (9 203 et 14 460 → 51 734 des deux côtés)
+  et `#ride-btn` — sur `origin/main` rejoué seul la suite MEURT sur l'appui
+  (« element is not stable »), sur la branche le bouton reste caché quinze
+  secondes (une bête) : la même intermittence, vue des deux côtés. `maj.js` :
+  le loader qui compte les fichiers, intermittent (ci-dessous).
+
+  **Puis main est passé à la v351 : fusion, et second portail complet (alors v352).**
+  Neuf suites vertes ; sept rouges, chacune REJOUÉE SEULE des deux côtés, et
+  `monte.js` et `reseau.js` deux fois (la règle v269 : la distribution, pas un
+  passage). Aucun rouge propre à la branche :
+
+  | témoin | portail | branche seule | `origin/main` seul |
+  | --- | --- | --- | --- |
+  | `reseau.js` la même circulation sur deux tablettes | ❌ 63 blocs | ❌ 28 · ❌ 27 | ❌ 26 · ❌ 117 |
+  | `reseau.js` un départ propre nettoie tout le monde | ✅ | ❌ · ✅ | ✅ · ❌ |
+  | `reseau.js` « le serveur ne répond pas » (VPN, message, réseau bloqué) | ❌ | ✅ · ❌ | ✅ · ✅ |
+  | `reseau.js` la voiture de la rue attend celle de l'enfant chez l'ami | ✅ | ❌ · ✅ | ✅ · ✅ |
+  | `reseau.js` un monde rempli ne retarde pas les retrouvailles | ✅ | ✅ · ✅ | ✅ · ❌ |
+  | `monte.js` en vol, le bout du monde qui se charge | ❌ chasseur 58/60 | ❌ · ✅ | ✅ · ❌ |
+  | `monte.js` voler ne remplit pas la mémoire (parcouru) | ❌ 204 | ❌ 286 · ❌ 226 | ✅ 762 · ❌ 170 |
+  | `monte.js` l'écran figé à l'arrivée | ❌ 64,8 % | ❌ 58,9 · ❌ 62,6 | ❌ 47 · ❌ 68,8 |
+  | `monte.js` la téléportation qui compile | ❌ | ❌ · ❌ | ❌ · ❌ |
+  | `monte.js` la monoplace ralentit (< 9) | ❌ 9,0 | ✅ · ✅ | ❌ 9,1 · ❌ 9,1 |
+  | `monte.js` reflets au volant (> 8 tours) | ❌ 8 | ✅ · ✅ | ✅ · ✅ |
+  | `monte.js` passants hors de la chaussée (Rome) | ✅ | ❌ 43 % · ✅ | ✅ · ✅ |
+  | `maj.js` la libération / « ne floute rien » | ❌ ❌ | ❌ ❌ | ❌ (17/27 programmes) |
+  | `maj.js` les deux loaders | ❌ ❌ | ✅ ✅ | ✅ ✅ |
+  | `carte.js` le glisser bridé ×4 (barre 400) | ❌ 880 | ❌ 790 | ❌ 489 |
+  | `washington.js` on entre dans l'Air et l'Espace | ❌ | ✅ | ❌ |
+  | `manhattan.js` l'attente de la ligne 282 | ❌ | ❌ | ❌ |
+  | `reglages.js` ouvrir un monde en ligne (40 s) | ❌ | ✅ | ✅ |
+
+  **La circulation partagée de `reseau.js` est NEUVE dans ce fichier et
+  rouge à chaque passage des deux côtés** : écart médian de 26 à 117 blocs pour
+  une barre à 20, quand le commentaire du témoin annonce 2 à 10 sur le code
+  neuf de la v305. C'est un défaut de PRODUCTION, la plus grosse dette de ce
+  portail, et rien de la v370 n'y touche (ni `net.js`, ni `vehicules.js`, ni
+  l'horloge de la rue). À démonter : l'heure de la rue voyage-t-elle encore
+  avec celle du ciel, et à quelle cadence ? Une sonde qui lit
+  `vehicules.horloge` sur les deux pages au même instant le dira.
+
+  Preuve STRUCTURELLE pour les rouges de vol, de mémoire et de passants : les
+  témoins posent `player.pilote` à la main, sans monture ; le seul code neuf
+  par image est alors `sensationsAPied`, qui rend la main tant que le champ n'a
+  pas bougé, et la caméra d'un avion monté reste `poursuiteAvion`, la
+  poursuite d'avant à l'identique. Le portail entier a tourné lentement
+  (`monte.js` 32 min contre 23 d'habitude, `souffler` lisant 3,7 cœurs
+  occupés avant chaque page) : la cadence décide de ces témoins-là.
+
+  **Puis main est passé à la v365 : fusion, la livraison devient v366, et
+  troisième portail complet (107 min).** Treize suites vertes — `degats.js`,
+  `maj.js`, `realisme.js` comprises. Quatre rouges :
+
+  | témoin | portail | branche seule | `origin/main` (v365) seul |
+  | --- | --- | --- | --- |
+  | `monte.js` un choc secoue la caméra | ❌ secousse 0,235 pour 3 × calme 0,081 | (voir plus bas) | — |
+  | `monte.js` l'écran figé à l'arrivée | ❌ 2 417 ms · 35,5 % | | dette déclarée |
+  | `reseau.js` la voiture prise garde sa couleur | ❌ | ✅ 77/77 | ❌ 4 autres rouges réseau |
+  | `manhattan.js` plantage au départ de l'invité (l. 674 / 684) | 💥 | 💥 💥 💥 | 💥 💥 💥 |
+  | `manhattan.js` trou de façade, taxi tactile | ❌ ❌ | ❌ ❌ | ❌ ❌ |
+  | `carte.js` flèche du GPS à gauche, glisser bridé ×4 | ❌ ❌ | | déclarées |
+
+  Le choc est à moi : le calme se mesurait 0,8 s après l'arrêt, quand la
+  caméra revenait encore de son recul de vitesse (0,081 au portail, 0,018
+  seule). Il s'attend désormais — un fait du monde, la caméra posée, borné à
+  huit secondes, la durée dans le message — jamais le verdict.
+
+  **`manhattan.js` meurt au départ de l'invité, des DEUX côtés, à chaque
+  passage** (ordre alterné ABBA, plus le portail et un rejeu : 4/4 sur la
+  branche, 3/3 sur `origin/main`) : la page de l'invité n'a pas de
+  `window.__game` en 90 s pendant que l'hôte tourne dans Manhattan à 0,4
+  image par seconde, ou le bloc de l'hôte n'arrive pas en 30 s. C'est une
+  dette de PRODUCTION neuve et entière — elle cache les témoins réseau de New
+  York à chaque portail. À démonter par une sonde : l'invité charge-t-il en
+  rendu logiciel quand une autre page de Manhattan tient les quatre cœurs ?
+  (`charge.js` dira l'occupation au moment du `goto`.)
+
+  **Puis main est passé à la v369 : fusion, la livraison devient v370, et
+  quatrième portail complet (107 min).** Quatorze suites vertes. Trois
+  rouges, tous démontés :
+
+  | témoin | portail | branche seule | `origin/main` (v369) seul |
+  | --- | --- | --- | --- |
+  | `manhattan.js` trou de façade, taxi tactile, plantage au départ de l'invité (après la reprise cloud) | ❌ ❌ 💥 | — | dettes ci-dessus, même endroit |
+  | `monte.js` l'écran figé à l'arrivée (2 233 ms · 21,1 %) | ❌ | — | dette déclarée |
+  | `reseau.js` la voiture prise garde sa couleur | ❌ | ❌ 1 sur 3 avant correction, ✅ 4/4 après | ✅ 4/4 |
+  | `reseau.js` deux tablettes voient la même circulation | ✅ | ❌ 2 sur 7 (28 · 43) | ❌ 2 sur 6 (24 · 26) |
+
+  **La couleur était un défaut du TÉMOIN.** Il visait une place peinte et
+  comparait la monture à la teinte VISÉE ; quand le premier appui ne monte
+  pas, le convoi a roulé et l'appui suivant prend la voisine (rouge 9055034
+  visée, McLaren 3112847 prise). Il lit désormais la place réellement prise
+  (`pris`) et compare à SA teinte — et un passage de la branche a justement
+  pris la voisine, vert. **La circulation partagée est une intermittence de
+  PRODUCTION** (écart médian de 4 à 43 blocs pour une barre à 20, même
+  distribution des deux côtés) ; rien de la v370 ne touche à la rue ni au
+  réseau. Dette déclarée : l'horloge de la rue glisse sous une seconde
+  d'écart (`adopterHorloge`), et une page qui rend une image par seconde lit
+  une position d'une seconde de retard — la sonde à écrire horodate les deux
+  relevés côté page avant d'accuser l'une ou l'autre.
 - [ ] **LE PORTAIL DE LA v347 (les steppes, préparée comme v346) : TOUS LES
   ROUGES DÉJÀ DÉCLARÉS.** Huit suites choisies par la table des gardiens,
   45 min. `metro.js`, `carteMonde.js`, `plafond.js` (le témoin des steppes

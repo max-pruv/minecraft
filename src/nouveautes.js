@@ -6,12 +6,22 @@
 
 export const NOUVEAUTES = [
   {
-    v: 422,
+    v: 423,
     titre: 'Toutes les voies occupées',
     puces: [
       'Des voitures dans chaque voie',
       "Bien plus de voitures sur l'autoroute",
       'Elles se rangent avant de tourner',
+    ],
+  },
+  {
+    v: 422,
+    titre: 'Conduire comme au cinéma',
+    puces: [
+      'La caméra recule quand on accélère',
+      'La voiture penche dans les virages',
+      'Les roues avant tournent avec toi',
+      'Les pneus crissent, les chocs s\'entendent',
     ],
   },
   {

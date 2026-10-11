@@ -250,6 +250,7 @@ const GARDIENS = {
   // le réglage qui coupe tout dans `reglages.js`, et le carillon du chat
   // comme les bruits de blocs passent par sa sortie — d'où `reseau.js`.
   'src/sons.js': ['monte.js', 'reglages.js', 'reseau.js'],
+  'src/sensations.js': ['monte.js', 'reglages.js', 'reseau.js'],
   // Le socle du rendu : un registre de blocs, un atlas ou un mailleur faux
   // n'abîme pas une ville, il les abîme toutes.
   'src/blocks.js': SUITES,

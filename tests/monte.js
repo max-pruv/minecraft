@@ -11,6 +11,7 @@
 //     cd tests && npm install && npm run monte
 
 const { Banc, dormir, souffler } = require('./banc.js');
+const { mesurerSensations } = require('./sensations-mesure.js');
 
 const echecs = [];
 // COMBIEN DE TEMPS CHAQUE TÉMOIN A-T-IL COÛTÉ.
@@ -1059,8 +1060,13 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // Borne basse 3,0 : le rapprochement anti-mur peut raccourcir le recul
     // (plancher à 3,2) si un obstacle traîne derrière le parc — c'est un
     // comportement voulu, pas un défaut.
+    // ET LE PLAFOND SUIT LA VITESSE DEPUIS LA v401 : la caméra recule jusqu'à
+    // 1,32 fois le recul de la fiche quand la voiture roule (6,4 → 8,45). Le
+    // portail de la v401 l'a rendue rouge à 7,07 sur la borne fixe de 6,5,
+    // une voiture qui roulait encore — le plafond se calcule, il ne se recopie
+    // pas (v269).
     verifier('au volant, la caméra suit la voiture de derrière, comme GTA',
-      poursuite.recul > 3.0 && poursuite.recul < 6.5 && poursuite.devant < 0,
+      poursuite.recul > 3.0 && poursuite.recul < 6.4 * 1.32 + 0.1 && poursuite.devant < 0,
       `${poursuite.recul} blocs en retrait (devant=${poursuite.devant})`);
     verifier('et elle prend de la hauteur pour voir la route par-dessus le toit',
       poursuite.hauteur > 1.2 && poursuite.hauteur < 3, `${poursuite.hauteur} bloc`);
@@ -6926,6 +6932,51 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('et en descendant, le silence revient',
       !sons.err && sons.descendu && sons.apresDescente < sons.auRalenti / 4,
       `${sons.err || ''} ${JSON.stringify(sons)}`);
+
+    // LES SENSATIONS AU VOLANT (v422).
+    //
+    // Max : « l'impression de conduire dans GTA ». La caméra de poursuite
+    // était rivée à six blocs quatre derrière la voiture quelle que soit
+    // l'allure, la caisse ne bougeait pas, les roues avant restaient droites,
+    // et l'on n'entendait ni les pneus ni un choc. Une seule mesure, partagée
+    // avec la sonde (`sensations-mesure.js`), sur une plate-forme posée dans
+    // le ciel : elle se place elle-même (v279) et attend chaque résultat,
+    // bornée (v270).
+    //
+    // Mesuré des deux côtés, même mesure, avant d'écrire les barres :
+    //   `origin/main` (v336) : champ 75 → 75, recul 6,4 → 6,4, caisse 0,
+    //     roue 0, bande des pneus ×1,7, choc 0,088 contre 0,088 avant,
+    //     caméra immobile (0), et la caméra DERRIÈRE le mur (segment bouché).
+    //   la branche : champ 75 → 83,8, recul 6,4 → 7,4, caisse −0,070 (vers
+    //     la droite dans un virage à gauche), roue +0,50 rad, pneus ×370,
+    //     choc 0,90 contre 0,073, secousse 0,23 bloc, segment libre.
+    // Les barres sont posées entre les deux régimes, loin de l'un et de l'autre.
+    const sens = await tab.evaluate(`(${mesurerSensations.toString()})()`);
+    const S = sens || {};
+    const msg = JSON.stringify(S);
+    verifier('au volant, la caméra recule et le champ s\'ouvre avec la vitesse',
+      !S.err && S.ligne.vMax > 5 && S.ligne.fovMax > S.repos.fov + 2.5
+        && S.ligne.reculMax > S.def.recul + 0.3, msg);
+    // LE SIGNE SE LIT DANS LA MATRICE MONDE (v231, v244) : le haut de la caisse
+    // contre la gauche de la voiture. Un virage à gauche fait pencher vers la
+    // DROITE — produit négatif. Une caisse penchée du mauvais côté passerait
+    // toute mesure d'amplitude.
+    verifier('dans un virage à gauche, la caisse penche vers l\'extérieur — à droite',
+      !S.err && S.virage.releves >= 10 && S.virage.penche !== null && S.virage.penche < -0.01, msg);
+    verifier('et les roues avant braquent vers l\'intérieur du virage',
+      !S.err && S.virage.roues >= 4 && S.virage.braque !== null && S.virage.braque > 0.1, msg);
+    verifier('une voiture qui dérape fait crisser ses pneus',
+      !S.err && S.son && S.son.rapportCrisse > 10, msg);
+    verifier('un choc secoue la caméra et s\'entend',
+      // le calme n'est pas zéro : la caméra rattrape encore son recul d'un
+      // demi-bloc après l'arrêt (0,018 mesuré au portail). Ce qui sépare les
+      // deux, c'est le rapport : 0,25 contre 0 sur l'ancien code.
+      !S.err && S.son && S.secoue.max > 0.12 && S.secoue.max > 3 * S.calme.max
+        && S.son.piqueChoc > 2 * S.son.piqueAvant, msg);
+    verifier('dos à un mur, la caméra reste du côté de la voiture',
+      !S.err && S.mur.libre, msg);
+    verifier('et en descendant, le champ revient et la voiture se pose à plat',
+      !S.err && Math.abs(S.aPied.fov - S.repos.fov) < 0.5 && S.aPied.penche === 0, msg);
 
     // LA MARCHE ARRIÈRE, VOITURE ET AVION (v269).
     //

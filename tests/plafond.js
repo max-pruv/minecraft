@@ -3354,7 +3354,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       for (let e = 0; e < 6 && !auVolant(); e++) { const b = document.getElementById('ride-btn'); if (b) b.click(); await dodo(1000); }
       if (!auVolant()) return { echec: 'pas monté' };
       const out = { images: 0, bloque: 0, marches: 0, chutes: 0, surTablier: 0, horsTablier: 0, ecartMax: 0, blocs: 0, ms: 0, voitures: 0 };
-      // CE TÉMOIN MESURE LA ROUTE, PAS LE TRAFIC (v422). Depuis que l'autoroute
+      // CE TÉMOIN MESURE LA ROUTE, PAS LE TRAFIC (v423). Depuis que l'autoroute
       // a une file dans chaque voie et près de trois fois plus de voitures, la
       // voiture posée au milieu de la chaussée bute sur la circulation (soixante
       // images bloquée à 50,9 blocs au portail). Se placer veut dire faire le
