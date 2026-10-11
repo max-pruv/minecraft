@@ -3231,6 +3231,16 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const separes = (A, B) => { for (const R of [A, B]) for (let k = 0; k < 4; k++) { const ax = -(R[(k + 1) % 4][1] - R[k][1]), az = R[(k + 1) % 4][0] - R[k][0]; const pr = (S) => S.map((q) => q[0] * ax + q[1] * az); const p1 = pr(A), p2 = pr(B); if (Math.max(...p1) < Math.min(...p2) || Math.max(...p2) < Math.min(...p1)) return true; } return false; };
       const vit = [], suites = new Map(), feuS = new Map(), tempsS = new Map(), pires = []; let paires = 0, chev = 0, croisiere = null, publie = false;
       const t0 = performance.now();
+      // UN RELEVÉ PORTE L'HEURE DE L'IMAGE QU'IL LIT (v442). Lu à l'heure où
+      // on le lit, deux relevés à cent millisecondes l'un de l'autre pouvaient
+      // tomber de part et d'autre d'une image d'une seconde (le portail en
+      // rend) : une voiture qui freine à 7,5 b/s² sur cette seconde y passait
+      // de 13 à 0 « en 0,3 s » — le « sec à 45 b/s² » de la v438, jugé sur
+      // deux arrêts. L'heure est celle du rappel d'image qui suit la mise à
+      // jour du jeu (`requestAnimationFrame`, inscrit après la boucle du jeu).
+      let tImage = performance.now(), suivre = true;
+      const image = () => { tImage = performance.now(); if (suivre) requestAnimationFrame(image); };
+      requestAnimationFrame(image);
       let arrets = 0, progressifs = 0, secs = 0;
       const compter = () => {
         arrets = 0; progressifs = 0; secs = 0; pires.length = 0;
@@ -3262,7 +3272,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
             const k = ci + ':' + p[3]; const s = suites.get(k) || []; s.push(v); suites.set(k, s);
             // ce qui la retient (`causes`, v372) : un arrêt AU FEU se juge seul ;
             // l'ancien code ne le publie pas, et tout arrêt y compte
-            const ts = tempsS.get(k) || []; ts.push(performance.now()); tempsS.set(k, ts);
+            const ts = tempsS.get(k) || []; ts.push(tImage); tempsS.set(k, ts);
             const fs = feuS.get(k) || []; fs.push(Array.isArray(c.causes) && c.causes.length ? c.causes[p[3]] : 1); feuS.set(k, fs);
             tout.push(p);
           }
@@ -3274,7 +3284,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         }
         if (vit.length > 1500 && paires >= 60 && (performance.now() - t0) > 20000) { compter(); if (arrets >= 2) break; }
       }
-      compter();
+      compter(); suivre = false;
       vit.sort((a, b) => a - b);
       const q = (f) => (vit.length ? +vit[Math.floor(f * (vit.length - 1))].toFixed(1) : null);
       return { publie, croisiere, releves: vit.length, mediane: q(0.5), p90: q(0.9), arrets, progressifs, secs, pires,

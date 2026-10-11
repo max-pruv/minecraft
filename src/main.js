@@ -2056,7 +2056,10 @@ function updateChunks() {
   const entree = (cle, route) => {
     const i = entreesDe(cle).findIndex((e) => e.route === route);
     if (i < 0) return undefined;
-    if (ENTREES[cle]) return ENTREES[cle][i];
+    // les villes bâties à la main aussi (v441) : leurs circuits roulent sur
+    // l'avenue nommée où l'entrée finit
+    const longue = PARAMS_JEU.get('raccords') === 'long';
+    if (ENTREES[cle]) return longue ? ENTREES[cle][i] : raccordDe(route, cle, ENTREES[cle][i]);
     // Une ville qui n'est pas un disque (Washington, v367) a son avenue
     // DÉCLARÉE dans la fiche de la route, comme sa porte.
     const fiche = segmentsDeRoute().find((sg) => sg.route.nom === route);
@@ -2066,7 +2069,7 @@ function updateChunks() {
     // (v305) dans une même voie ne se cadencent pas. La table est mesurée
     // (raccords.js) ; `?raccords=long` rejoue l'avenue entière, pour l'A/B.
     const av = avenueDEntree(cle, e.x, e.z) || undefined;
-    return PARAMS_JEU.get('raccords') === 'long' ? av : raccordDe(route, cle, av);
+    return longue ? av : raccordDe(route, cle, av);
   };
   for (const seg of segmentsDeRoute()) {
     const avant = entree(seg.de, seg.route.nom), apres = entree(seg.vers, seg.route.nom);
@@ -3202,10 +3205,26 @@ const PLACES_GARAGE = [[30, 7], [44, 7], [58, 7]];
 // l'axe laisse 0,17 bloc entre deux voitures qui se croisent (v372)
 const DECALAGE_AVENUE = 1.3;
 const garagistePret = cadence(3000);
+// UN CIRCUIT SE PRÉPARE PAR TRANCHES, PUIS NAÎT (v442) : `circulationParTranches`
+// (vehicules.js) avance sa fabrique sur `TRANCHE_CIRCULATION_MS` par image ;
+// le convoi — et son bus — n'existent qu'une fois le calcul fini, identique à
+// un calcul d'un seul tenant. Un circuit à la fois, le plus proche d'abord.
+const TRANCHE_CIRCULATION_MS = 5;
+let circulationEnCours = null;
 function animerLesVilles(dt) {
   if (passants) passants.update(dt);
   if (poissons) poissons.update(dt);
   if (!vehicules || !circulationPrete()) return;
+  if (circulationEnCours) {
+    const { tr, prep } = circulationEnCours;
+    const conv = prep.avancer(TRANCHE_CIRCULATION_MS);
+    if (!conv) return;
+    circulationEnCours = null;
+    // le bus dessert le grand anneau — un par ville, à sa couleur, à une place
+    // de la file de ses voitures (v372, v441) : il prend leur grille horaire
+    if (tr.rang === 0) vehicules.bus(tr.pts, Math.abs(Math.round(tr.x + tr.z)), conv);
+    return;
+  }
   // Le plus proche d'abord : c'est celui que l'enfant va voir en premier.
   let choisi = -1, plusPres = 220;
   for (let i = 0; i < circulationsEnAttente.length; i++) {
@@ -3229,16 +3248,14 @@ function animerLesVilles(dt) {
   // plus une seule limitation pour tout le circuit. Manhattan garde la sienne.
   const allure = tr.ville === 'ny' ? null : decalage ? (x, z) => allureDuTroncon(tr.cle, x, z)
     : (tr.voie || 'rue') === 'rue' ? allureVilleMonde : null;
-  const conv = vehicules.circulation(tr.pts, graineDeVille(tr), { ville: tr.ville, voie: tr.voie || 'rue',
+  const prep = (vehicules.circulationParTranches || vehicules.circulation)(tr.pts, graineDeVille(tr), { ville: tr.ville, voie: tr.voie || 'rue',
     limite: allure ? (x, z) => ALLURE_VOIE[allure(x, z) || tr.voie || 'rue'] : undefined,
     // les avenues des villes bâties à la main : la voie de droite (v372)
     decalage,
     // la seconde voie des boulevards (v423) ; le bus prend la première place
     voies: decalage ? (x, z) => secondeVoieParis(x, z, decalage) : secondeVoieVilleMonde, bus: tr.rang === 0 });
-  // le bus dessert le grand anneau — un par ville, à sa couleur, DANS la file
-  // de ses voitures (v372) : il prend leur grille horaire
-  if (tr.rang === 0) vehicules.bus(tr.pts, Math.abs(Math.round(tr.x + tr.z)), conv);
   circulationsEnAttente.splice(choisi, 1);
+  circulationEnCours = { tr, prep: prep.avancer ? prep : { avancer: () => prep } };
 }
 // L'AÉROPORTISTE : sur le tarmac de l'aérodrome le plus proche, trois
 // appareils attendent toujours.

@@ -12,6 +12,11 @@
 //     d'un anneau, la table `RACCORDS_COURTS` qu'en tire la règle, et le
 //     partage qui reste sur tout le tracé (avenue entière, raccord court, ce
 //     que le jeu fait, arrêt à la porte). plafond.js lit la ligne BILAN.
+//   node tests/sonde-rue-dense.cjs bus
+//     Le grand anneau de chaque ville et son bus : à mi-temps (v438) ou à la
+//     place de la voiture 0 (v441), les contacts de grille et le jeu.
+//   node tests/sonde-rue-dense.cjs tranches
+//     La fabrique par tranches (v442) contre le calcul d'un seul tenant.
 //   node tests/sonde-rue-dense.cjs boulevards
 //     Paris : le long de chaque circuit, où la section a deux voies
 //     (`secondeVoieParis`) et ce que la seconde voie en garde, portion par
@@ -28,7 +33,7 @@ export async function resolve(s, c, n) {
 }`));
 const src = (f) => pathToFileURL(path.join(RACINE, 'src', f)).href;
 globalThis.__dbg = !!process.env.DBG;
-// le relevé que rend `raccords` à qui requiert ce fichier (plafond.js)
+// le relevé que rendent `raccords` et `bus` à qui requiert ce fichier (plafond.js)
 let RESULTAT = null;
 
 async function monter() {
@@ -181,6 +186,73 @@ async function principal(mode) {
     }
     for (const r of res.filter((r) => r[2] + r[3] > 0)) console.log(JSON.stringify(r));
     console.log('routes', res.length, 'touchées', res.filter((r) => r[2] + r[3] > 0).length);
+  } else if (mode === 'bus') {
+    // node tests/sonde-rue-dense.cjs bus [villes] : le grand anneau de chaque
+    // ville (et de Paris) et son bus, un tour d'horloge par la grille seule.
+    // v438 : le bus à mi-temps entre les voitures 0 et 1, l'anneau sans jeu ;
+    // v441 : le bus à la place de la voiture 0, l'anneau joue. Les contacts
+    // « même axe » de la ligne (file, jumelle, bus), et ceux du bus.
+    const VM = await import(src('villesmonde.js'));
+    const nV = +(process.argv[3] || 300);
+    const traces = [
+      ...M.P.circuitsParis((x, z) => M.w.coteRoulable(x, z)).map((t) => ({ ...t, voie: 'avenue' })),
+      ...VM.tracesCirculation((x, z) => M.w.terrainHeight(x, z)),
+    ].filter((t) => t.rang === 0).slice(0, nV);
+    const res = {};
+    for (const miTemps of [true, false]) {
+      M.veh.busAMiTemps(miTemps);
+      const lignes = traces.map((tr) => { const c = poser(M, tr); const b = M.veh.bus(tr.pts, Math.abs(Math.round(tr.x + tr.z)), c); return { c, b }; });
+      let n = 0, nBus = 0, jouent = 0, total = 0, poses0 = 0, posesJ = 0, voitures = 0, jumelles = 0;
+      for (const { c, b } of lignes) {
+        c.horaire(); if (c.jumelle) c.jumelle.horaire(); b.horaire();
+        const P = c._horaire ? c._horaire.P : 0; if (!(P > 0)) continue;
+        total++; if (c.jeuTable()) jouent++;
+        voitures += c.nb - c.pris.size + (c.jumelle ? c.jumelle.nb : 0); if (c.jumelle) jumelles++;
+        const convs = [c, c.jumelle].filter(Boolean);
+        for (let h = 0; h < P; h += 0.1) {
+          const j0 = JOUE, p0 = POSES;
+          const tout = convs.flatMap((x) => poses(x, h).map((q) => ({ ...q, dl: 2.5 })));
+          posesJ += JOUE - j0; poses0 += POSES - p0;
+          const qb = poses(b, h)[0]; if (qb) tout.push({ ...qb, dl: 3.6, bus: true });
+          for (let i = 0; i < tout.length; i++) for (let j = i + 1; j < tout.length; j++) {
+            const A = tout[i], B = tout[j];
+            if ((A.x - B.x) ** 2 + (A.z - B.z) ** 2 > 64) continue;
+            if (Math.abs(Math.cos(A.cap - B.cap)) < 0.7) continue;
+            if (touche(rect(A.x, A.z, A.cap, A.dl), rect(B.x, B.z, B.cap, B.dl))) { n++; if (A.bus || B.bus) nBus++; }
+          }
+        }
+      }
+      res[miTemps ? 'v438' : 'v441'] = { anneaux: total, jouent, partJouee: +(posesJ / Math.max(1, poses0)).toFixed(3), voitures, jumelles, contacts: n, dontBus: nBus };
+    }
+    RESULTAT = res;
+    console.log('BUS', JSON.stringify(res));
+  } else if (mode === 'tranches') {
+    // node tests/sonde-rue-dense.cjs tranches : chaque circuit de Paris et de
+    // douze villes engendrées fabriqué deux fois — d'un seul tenant
+    // (`circulation`) et par tranches d'une étape (`circulationParTranches`,
+    // budget nul) : le même convoi (voitures, jumelle, grille, voies), et
+    // combien d'étapes, la plus longue et le tout en millisecondes.
+    const VM = await import(src('villesmonde.js'));
+    const { V, VD, veh, w } = M;
+    const traces = [
+      ...M.P.circuitsParis((x, z) => w.coteRoulable(x, z)).map((t) => ({ ...t, voie: 'avenue' })),
+      ...VM.tracesCirculation((x, z) => w.terrainHeight(x, z)).slice(0, 48),
+    ];
+    const opts = (tr) => { const decalage = tr.voie === 'avenue' && tr.ville !== 'ny' ? 1.3 : 0;
+      return { ville: tr.ville, voie: tr.voie || 'rue', decalage, voies: decalage ? (x, z) => VD.secondeVoieParis(x, z, decalage) : VD.secondeVoieVilleMonde, bus: tr.rang === 0 }; };
+    const signe = (c) => { c.horaire(); return JSON.stringify([c.nb, c.jumelle ? c.jumelle.nb : 0, +c._horaire.P.toFixed(6), Math.round(c.parcours.longueur * 1000), c.voiesDoubles, c.jumelle ? c.jumelle.rangJumeau : null]); };
+    let egaux = 0, diff = [], etapesMax = 0, pireMs = 0, entierMax = 0, avecJumelle = 0, multi = 0;
+    for (const tr of traces) {
+      const t0 = performance.now(); const a = veh.circulation(tr.pts, V.graineDeVille(tr), opts(tr)); const tA = performance.now() - t0;
+      const prep = veh.circulationParTranches(tr.pts, V.graineDeVille(tr), opts(tr));
+      let b = null; while (!(b = prep.avancer(0)));
+      entierMax = Math.max(entierMax, tA); pireMs = Math.max(pireMs, prep.pire); etapesMax = Math.max(etapesMax, prep.tranches);
+      if (a.jumelle) avecJumelle++;
+      if (prep.tranches >= 4) multi++;
+      if (signe(a) === signe(b)) egaux++; else diff.push([tr.cle || tr.ville, signe(a), signe(b)]);
+    }
+    RESULTAT = { circuits: traces.length, egaux, diff: diff.slice(0, 5), avecJumelle, enQuatreEtapesOuPlus: multi, etapesMax, entierMaxMs: +entierMax.toFixed(1), pireEtapeMs: +pireMs.toFixed(1) };
+    console.log('TRANCHES', JSON.stringify(RESULTAT));
   } else if (mode === 'raccords') {
     // node tests/sonde-rue-dense.cjs raccords : pour chaque raccord route/ville
     // engendrée, où l'avenue d'entrée rencontre la VOIE d'un anneau (même sens
@@ -194,6 +266,18 @@ async function principal(mode) {
     const anneaux = VM.tracesCirculation((x, z) => w.terrainHeight(x, z));
     const parVille = new Map();
     for (const t of anneaux) { const l = parVille.get(t.cle) || []; l.push(t); parVille.set(t.cle, l); }
+    // LES VILLES BÂTIES À LA MAIN (v441) : leurs circuits roulent sur les
+    // avenues nommées, à droite (décalage 1,3), et leur entrée est déclarée
+    const sol = (x, z) => w.coteRoulable(x, z);
+    const MAIN = { paris: ['paris.js', ['circuitsParis', 'circuitsQuartiersParis'], 'ENTREES_PARIS'],
+      londres: ['londres.js', ['circuitsLondres'], 'ENTREES_LONDRES'], nice: ['nice.js', ['circuitsNice'], 'ENTREES_NICE'],
+      lille: ['lille.js', ['circuitsLille'], 'ENTREES_LILLE'], sf: ['sanfrancisco.js', ['circuitsSF'], 'ENTREES_SF'] };
+    const ENTREES = {};
+    for (const [cle, [f, fns, E]] of Object.entries(MAIN)) {
+      const Mo = await import(src(f));
+      ENTREES[cle] = Mo[E];
+      parVille.set(cle, fns.flatMap((fn) => Mo[fn](sol)).map((t) => ({ ...t, voie: 'avenue', ville: cle })));
+    }
     const voiesCache = new Map();
     const voiesDe = (cle) => {
       if (voiesCache.has(cle)) return voiesCache.get(cle);
@@ -205,6 +289,7 @@ async function principal(mode) {
     const avenueDe = (cle, route) => {
       const i = RO.entreesDe(cle).findIndex((e) => e.route === route);
       if (i < 0) return undefined;
+      if (ENTREES[cle]) return ENTREES[cle][i];
       const e = RO.entreesDe(cle)[i];
       return VM.avenueDEntree(cle, e.x, e.z) || undefined;
     };
@@ -216,7 +301,7 @@ async function principal(mode) {
       for (const cle of [seg.de, seg.vers]) {
         const a = avenueDe(cle, seg.route.nom); av[cle] = a;
         if (!a || !parVille.has(cle)) continue;
-        const L = Math.hypot(a[1][0] - a[0][0], a[1][1] - a[0][1]);
+        let L = 0; for (let k = 0; k + 1 < a.length; k++) L += Math.hypot(a[k + 1][0] - a[k][0], a[k + 1][1] - a[k][1]);
         const fin = RA.finAvantAnneaux(a, voiesDe(cle).ech);
         fins[cle] = { L: +L.toFixed(1), fin };
         if (fin < L - 0.01) table[seg.route.nom + '|' + cle] = fin;
@@ -303,9 +388,9 @@ async function principal(mode) {
   return RESULTAT;
 }
 
-// LANCÉE SEULE, elle imprime ; REQUISE (plafond.js, v442), elle rend le relevé
-// du mode `raccords` — et l'aiguillage du portail voit que la suite en dépend
-// (un `spawn` ne se lit pas comme un `require`).
+// LANCÉE SEULE, elle imprime ; REQUISE (plafond.js, v440), elle rend le relevé
+// des modes `raccords` et `bus` — et l'aiguillage du portail voit que la suite
+// en dépend (un `spawn` ne se lit pas comme un `require`).
 async function mesurer(mode) { return principal(mode); }
 module.exports = { mesurer };
 if (require.main === module) principal(process.argv[2] || 'jeu').catch((e) => { console.error(e); process.exit(1); });
