@@ -770,6 +770,95 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Toutes les voies occupées (v423) — la seconde voie est la même ligne, décalée
+
+Max, une capture de GTA VI à côté d'une de GTA V : « Good inspiration » — des
+voies serrées et TOUTES occupées. Mesuré avant : une seule file par sens
+partout ; sur l'autoroute (deux voies par sens) la file roulait À CHEVAL sur
+la ligne entre les deux, à 4,0 blocs de l'axe, et vingt voitures imposées
+faisaient une voiture tous les cent vingt blocs. Six règles.
+
+- **LA SECONDE VOIE N'EST PAS UN AUTRE CIRCUIT, C'EST LE MÊME, DÉCALÉ.**
+  `ParcoursDecale` (vehicules.js) garde la DISTANCE de son tracé de base et
+  pose ses points à `lat(d)` blocs à droite : la jumelle passe partout à la
+  même distance du départ que sa file, `rangJumeau` intervalles plus tard. Une
+  seule grille horaire pour deux voies, donc la même circulation sur deux
+  tablettes (v305) ; un témoin exige l'égalité exacte des deux distances à
+  trois heures. Elle a sa propre clé (`|voie2`). La contrainte de partage
+  (v211, v387) n'a pas à la voir : deux convois côte à côte sur les deux voies
+  d'un même sens se SUIVENT, et c'est ici une seule ligne.
+- **LA SECTION SE DEMANDE À CE QUI LA DESSINE** (`voiesdoubles.js`, pur) : les
+  percées de premier rang de Paris (`sectionDeVoie`), la croix-boulevard des
+  villes engendrées (`t.axe`, même repère que `solVillesMonde`), la pleine
+  section d'autoroute (`dc` porté par chaque point de `traceRoute`). Une
+  portion plus courte que seize blocs ne compte pas (on TRAVERSE un boulevard
+  au carrefour, on ne le suit pas), on change de voie sur seize blocs, et l'on
+  se rabat avant un virage : décalée vers l'intérieur d'un coin, la jumelle
+  replie son tracé et touche sa file.
+- **LÀ OÙ LA SECTION N'A QU'UNE VOIE, LES DEUX FILES N'EN FONT QU'UNE — ET LA
+  LIGNE NE DOIT PAS SE TOUCHER.** Mesuré : au même nombre de voitures, presque
+  toutes les jumelles touchaient leur file dans le virage lent qui suit le
+  boulevard (une demi-voiture d'écart dans le temps). La file laisse donc la
+  place à sa jumelle : le plus grand `n` (au moins 0,4 `nb`) où
+  `jumelleSansContact` fait rouler toute la ligne sur un tour sans contact ;
+  mesuré, le meilleur vaut 0,4 à 0,5 `nb` — la même ligne, ses voitures
+  réparties sur deux voies. Le bus prend la première place de la ligne.
+- **LA DENSITÉ D'UNE FILE EST BORNÉE PAR SON VIRAGE LE PLUS LENT, ET CELA SE
+  MESURE.** Une grille horaire espace les voitures en TEMPS : à 2,5 blocs par
+  seconde dans un coin, deux secondes font cinq blocs, une longueur de voiture.
+  Le plus grand nombre sans contact vaut une voiture toutes les deux secondes,
+  à 0,5 % près, sur les 205 anneaux mesurés — le plafond actuel. On ne
+  densifie pas une rue en serrant sa grille ; on la densifie par les voies.
+- **UN CALCUL QU'ON NE LIT QU'À L'APPROCHE NE SE FAIT PAS AU DÉMARRAGE**
+  (v378, v387) : les autoroutes naissent au démarrage, leur seconde voie quand
+  l'enfant approche du corridor (`voiesAuBesoin`, une par image) — trois
+  cents millisecondes de moins derrière « Jouer ». Et la file d'autoroute vaut
+  0,44 fois une voiture toutes les deux secondes (le partage mesuré sur les
+  vingt-quatre corridors), sa jumelle autant : 480 → 1 354 voitures.
+- **ET UNE LIGNE NE SE TÉLESCOPE PAS.** La grille garde la file et sa
+  jumelle à distance ; un freinage local (un feu) non : mesuré à Paris, 10 %
+  de paires au contact, toutes entre la jumelle et sa file, contre 0 sur
+  `origin/main`. Là où elles partagent la voie, la voiture qui précède sur la
+  ligne est dans l'AUTRE convoi (`devantSurLaLigne`), et le plancher de la
+  v283 s'étend à elle : 0 %. Et la légitimité d'une attente se propage dans
+  la LIGNE (`memeLigne`), pas seulement dans la file.
+
+## Les sensations au volant (v422) — la caméra regarde la voiture, et un mur se cherche cellule par cellule
+
+Chantier « conduite » (six sessions, octobre 2026) ; celle-ci tient ce que
+l'enfant VOIT et ENTEND. Tout vit dans `src/sensations.js`, branché par un
+appel dans `updateRide` (fun.js) ; la physique ne s'y lit qu'en lecture. Cinq
+règles.
+
+- **LE CONTRAT SE LIT SI PRÉSENT, ET CE QUI MANQUE SE DÉDUIT.** `braquage`,
+  `derive`, `choc`, `etatVoiture`, `embarquement` viennent d'autres sessions :
+  sans eux, le braquage se déduit de la vitesse de cap, le choc d'une vitesse
+  qui s'effondre plus vite qu'aucun frein (`FREIN_VOITURE`). Pendant
+  `embarquement.phase`, la caméra n'est pas à nous ; à la fin, on la reprend
+  en trois quarts de seconde depuis où elle était.
+- **UN SEGMENT SE PARCOURT CELLULE PAR CELLULE, IL NE S'ÉCHANTILLONNE PAS.**
+  L'ancienne recherche partait à 3,2 blocs par pas de 0,6 : un mur entre le
+  pare-chocs (2,2) et 3,2 n'était jamais vu, et la caméra se posait derrière
+  lui. `segmentLibre` (DDA) du toit vers chaque poste, du plus loin au plus
+  près ; sous le pare-chocs la caméra s'élève au-dessus du coffre. On se
+  rapproche tout de suite, on recule en douceur.
+- **LA CAMÉRA REGARDE LA VOITURE, PAS L'AXE DE LA VOITURE.** Depuis une place
+  en retard (v278), regarder dans l'axe faisait SORTIR la voiture du cadre en
+  virage — vu en capture, aucun témoin ne le voyait. La visée est à mi-chemin
+  entre la caméra et l'axe, et le retard est borné (`RETARD_MAX`, 0,55 rad).
+- **LES SIGNES SE LISENT DANS LA MATRICE.** Roulis : le haut de la caisse
+  contre sa gauche, négatif dans un virage à gauche. Roue avant : l'axe de
+  l'essieu contre la droite de la voiture, positif (vers la gauche) dans un
+  virage à gauche. Les roues avant braquent dans un groupe inséré entre le
+  pivot et son parent, autour du haut de la VOITURE exprimé dans le repère du
+  parent — un nœud de modèle porte n'importe quelle rotation.
+- **UNE BORNE DE TÉLÉPORT SUIT LA VITESSE.** Les roues se figeaient au-delà de
+  deux blocs par image (animals.js), c'est-à-dire précisément quand on va vite
+  sur une tablette lente. La borne vaut deux fois ce que la voiture peut faire
+  dans l'image, et `sensations.js` reprend le suivi du bestiaire pour ne pas
+  compter deux fois. Les avions gardent la poursuite d'avant à l'identique ;
+  `?sensations=0` rejoue l'ancienne conduite, pour mesurer.
+
 ## Un contour dans l'autre sens, et les rues du Strip (v418) — ce qui empêchait le contour n'était pas l'absence de rue
 
 Deux règles.
@@ -2134,7 +2223,7 @@ engendrées. Quatre règles.
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
 
-## Le mobilier de trottoir arrête les passants (v422) — on bute sur ce qu'on voit
+## Le mobilier de trottoir arrête les passants (v425) — on bute sur ce qu'on voit
 
 Deux règles.
 
@@ -2872,6 +2961,32 @@ Le dérapage contrôlé à la GTA. Quatre règles.
   l'identique (sonde dans le brouillon, deux arbres). Le moteur ne pousse pas
   pendant le frein à main : un drift « gaz + frein » demanderait un second
   doigt sur l'accélérateur, que le joystick n'a pas — décidé, déclaré.
+
+## La force d'un choc suit la vitesse (v424) — conduite, la dette des dégâts
+
+La force publiée (`player.choc.force`) saturait à 1 dès 20 blocs/s normaux
+(`CHOC_PLEIN`) : un mur à 55 coûtait autant qu'à 20, un frôlement à 15° pleins
+gaz publiait 0,68. Trois règles.
+
+- **LE CHOC PLEIN SE LIT À LA POINTE DE SA CLASSE.** `reponseChoc` et
+  `chocContreVoiture` prennent `vPleine` ; le joueur passe
+  `vitessePleine(fiche)` = `POINTE_PLEINE` (0,85) × la pointe — la vitesse
+  qu'on a après quatre ou cinq secondes de gaz. Un mur pleins gaz vaut donc 1
+  comme avant, et les murs promis par degats.js (`CHOCS_AVANT_PANNE`,
+  `CHOCS_AVANT_FEU`) ne bougent pas : rien n'a été recalibré là-bas. Sans
+  `vPleine`, l'ancienne échelle (un appelant qui ne connaît pas la classe).
+  Pourquoi pas un seuil plus bas : sin 15° × 0,95 / `POINTE_PLEINE` au carré
+  doit rester sous un dixième de mur, ce qui exige au moins 0,78.
+- **UN SEUIL QUI DISAIT « DOUX » EN FORCE SE DIT EN VITESSE.** `CONTACT_DOUX`
+  valait 0,15 de force (trois blocs/s à l'ancienne échelle) ; la force
+  dépendant de la classe, il est en blocs/s d'impact (`impact`, rendu par
+  `reponseChoc`). Quand on change l'unité d'une grandeur, on cherche tout seuil
+  écrit dans l'ancienne unité.
+- **« PLEINE VITESSE » DANS UN TÉMOIN SE MESURE.** Le témoin des deux murs
+  (`degats.js`) prenait trente-sept blocs d'élan : 0,58 de la pointe, ce qui
+  saturait à 20 b/s et ne sature plus. La dalle s'étend, cent quarante blocs
+  d'élan (0,89). Le vrai joueur sous node (`sonde-force-chocs.cjs`, appelée
+  par `plafond.js`) garde la règle dans les six classes.
 
 ## La pente, la bosse et la file (v408) — conduite, palier 3
 

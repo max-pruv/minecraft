@@ -878,7 +878,7 @@ function verifier(nom, ok, detail = '') {
       apres.sousFacades && apres.anciens > 0 && apres.anciensAvecFacades === 0 && apres.rendus > 0,
       `en ${apres.attente} ms · ${JSON.stringify(apres)}`);
     verifier('l\'atlas HD est peint et le rayon forcé est celui de l\'adresse', res.atlas === true && res.rayon === 2, `atlas ${res.atlas}, rayon ${res.rayon}`);
-    // ── UNE TERRASSE ARRÊTE UN PASSANT (v422) ──────────────────────────────
+    // ── UNE TERRASSE ARRÊTE UN PASSANT (v425) ──────────────────────────────
     //
     // Dette de la v288 : la table et les chaises d'un café, dessinées par la
     // couche HD, n'étaient pas des blocs — un passant marchait au travers. On

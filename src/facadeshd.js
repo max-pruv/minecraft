@@ -1425,7 +1425,7 @@ export function terrasseHD(buf, x, y, z, wx, wz, vers) {
 }
 
 // LE MOBILIER D'UN TROTTOIR, LA RÈGLE (v288, v289 ; sortie du mailleur en
-// v422). Le mailleur dessine ce qu'elle rend ; les passants et l'enfant à pied
+// v425). Le mailleur dessine ce qu'elle rend ; les passants et l'enfant à pied
 // butent sur ce qui a un corps (`world.obstaclePieton`, main.js). Une seule
 // règle, deux lecteurs : deux copies finiraient par poser une table là où l'on
 // passe au travers. `at(dx, dy, dz)` lit le bloc relatif à celui du trottoir ;

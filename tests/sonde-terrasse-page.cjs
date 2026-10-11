@@ -1,4 +1,4 @@
-// UNE TERRASSE ARRÊTE UN PASSANT (v422) — le témoin de `parishd.js`, joué seul
+// UNE TERRASSE ARRÊTE UN PASSANT (v425) — le témoin de `parishd.js`, joué seul
 // sur une page de Paris (hd=2). La fonction est LUE dans parishd.js (v400).
 //   node tests/sonde-terrasse-page.cjs [chemin/vers/un/autre/arbre/tests]
 const path = require('path'), fs = require('fs');

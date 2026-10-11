@@ -546,7 +546,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
             // devanture sur trois. Le monde répond tout seul : on lit le sol
             // d'à côté, on ne connaît pas la trame.
             // la règle vit dans `mobilierTrottoir` (facadeshd.js) : le mailleur
-            // dessine ce qu'elle rend, et les passants butent dessus (v422)
+            // dessine ce qu'elle rend, et les passants butent dessus (v425)
             const m = mobilierTrottoir((dx, dy, dz) => localGet(x + dx, y + dy, z + dz), ox + x, oz + z);
             if (!m) continue;
             if (m.genre === 'potelet') poteletHD(facades, x, y, z, m.cote);
