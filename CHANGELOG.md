@@ -45,8 +45,13 @@ séparée par une sonde, et chaque correction désarmée dans une copie pour
 vérifier qu'elle rougit encore : le réverbère (`origin/main` 3/3 rouge sous
 charge, branche 3/3 vert, désarmé 97 blocs au travers du poteau), le trou
 de façade (branche 3/3 vert, désarmé « jamais rebâti »), la chauffe de New
-York (expirait à 150 s, finie en 9,9 s), la fumée (3/3), le taxi (le bouton
-apparaît à chaque passage). Le témoin du train reste ROUGE : c'est la panne.
+York (expirait à 150 s, finie en 9,9 s), la fumée (3/3). Le témoin du train
+reste ROUGE : c'est la panne. Au portail, quatre suites rouges, toutes sur des
+dettes déjà déclarées : `carte.js` (glisser bridé ×4), `manhattan.js` (le
+taxi, 3,6 blocs en 247 s — son bouton apparaît désormais, mais il rampe
+encore sous la charge), `monte.js` (la rue à l'allure d'une ville),
+`reseau.js` (GPS relayé, départ de l'hôte, courtier : rejouée seule trois
+fois de chaque côté, la même distribution, 1/3 des deux côtés).
 
 ---
 
