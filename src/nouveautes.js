@@ -6,11 +6,35 @@
 
 export const NOUVEAUTES = [
   {
-    v: 431,
+    v: 434,
     titre: 'Le dérapage laisse des traces',
     puces: [
       'Des traces de pneus quand on glisse',
       'Elles s\'effacent toutes seules',
+    ],
+  },
+  {
+    v: 433,
+    titre: 'Les cafés de Paris',
+    puces: [
+      'Des terrasses devant les boutiques',
+      'Tables rondes et chaises tressées',
+    ],
+  },
+  {
+    v: 432,
+    titre: 'Les voitures contournent la place',
+    puces: [
+      'Elles font le tour par les rues',
+      'Toujours une voiture en vue en arrivant',
+    ],
+  },
+  {
+    v: 431,
+    titre: 'Des files serrées au feu',
+    puces: [
+      'Les voitures s\'arrêtent tout près',
+      'La rue arrive sans à-coup',
     ],
   },
   {

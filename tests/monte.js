@@ -1631,6 +1631,59 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('et le bus de la ville roule sur le grand anneau',
       !!lebus && lebus.total >= 1, JSON.stringify(lebus));
 
+    // LA RUE SE FABRIQUE PAR TRANCHES (v431). À l'arrivée, `montrer`
+    // fabriquait toutes les voitures d'une rue dans la MÊME image (162 à 276 ms
+    // sous `frame`, v420). On saute à Paris et l'on relève, image par image,
+    // la hausse du nombre de voitures visibles : mesuré 9 d'un coup sur
+    // l'ancien code (`sonde-fabrication-arrivee.cjs`), 1 ici. Barre au milieu.
+    // Puis l'enfant retourne à Rome : le témoin d'après le suppose.
+    const fab = await tab.evaluate(async () => {
+      const { positionDe } = await import('./src/mondes.js');
+      const g = window.__game, p = positionDe('paris'), avant = g.player.pos.clone();
+      const vues = () => (window.__vehicules.etat() || []).reduce((n, c) => n + (c.visibles || 0), 0);
+      const hausses = []; let prec = vues(), actif = true, images = 0;
+      const tic = () => { const e = vues(); if (e > prec) hausses.push(e - prec); prec = e; images++; if (actif) requestAnimationFrame(tic); };
+      requestAnimationFrame(tic);
+      g.player.flying = true;
+      g.player.pos.set(p.x + 0.5, g.world.terrainHeight(p.x, p.z) + 6, p.z + 0.5); g.player.vel.set(0, 0, 0);
+      const t0 = performance.now();
+      while (vues() < 6 && performance.now() - t0 < 20000) await new Promise((f) => setTimeout(f, 200));
+      await new Promise((f) => setTimeout(f, 2000));
+      actif = false;
+      const r = { vues: vues(), images, maxParImage: Math.max(0, ...hausses), s: Math.round((performance.now() - t0) / 100) / 10,
+        fabrication: window.__vehicules.fabrication ? window.__vehicules.fabrication() : null };
+      g.player.pos.copy(avant); g.player.vel.set(0, 0, 0);
+      return r;
+    });
+    verifier('à l\'arrivée, la rue se fabrique par tranches, pas toute dans la même image',
+      fab.vues >= 6 && fab.maxParImage <= 5, JSON.stringify(fab));
+
+    // LES FILES SE SERRENT AU ROUGE (v431). Max, capture de GTA VI : des voies
+    // serrées. Une voiture arrêtée derrière une autre s'arrêtait entre 1,1 et
+    // 2,6 blocs de son pare-chocs (balayage au pas d'un bloc et demi) :
+    // médiane mesurée 2,0 à Rome sur l'ancien code (`sonde-rue-dense.cjs`),
+    // 1,1 à 1,2 ici. On relève, vingt secondes au-dessus de Rome, l'écart des
+    // voitures arrêtées derrière une voiture (`causes` = 1). Barre au milieu.
+    const serre = await tab.evaluate(async () => {
+      const g = window.__game, { positionDe } = await import('./src/mondes.js'), P = positionDe('rome'), avant = g.player.pos.clone();
+      g.player.flying = true; g.player.pos.set(P.x, 75, P.z); g.player.vel.set(0, 0, 0);
+      const gaps = [], t0 = performance.now();
+      await new Promise((f) => setTimeout(f, 8000));
+      while (performance.now() - t0 < 30000 && gaps.length < 400) {
+        await new Promise((f) => setTimeout(f, 500));
+        for (const c of g.vehicules.etat()) {
+          if (!c.routier || c.nom === 'bus') continue;
+          const vs = c.vitesses || [];
+          (c.ecarts || []).forEach((e, i) => { if (vs[i] < 0.3 && vs[i + 1] < 0.3 && c.causes[i + 1] === 1) gaps.push(e - 4.4); });
+        }
+      }
+      gaps.sort((x, y) => x - y);
+      g.player.pos.copy(avant); g.player.vel.set(0, 0, 0);
+      return { n: gaps.length, mediane: gaps.length ? +gaps[gaps.length >> 1].toFixed(2) : null, s: Math.round((performance.now() - t0) / 1000) };
+    });
+    verifier('au rouge, la file se serre pare-chocs contre pare-chocs',
+      serre.n >= 30 && serre.mediane <= 1.6, JSON.stringify(serre));
+
     // LES TRAINS INTERVILLES (v179) : dix-huit rames sur neuf navettes
     // réelles (Eurostar, TGV, Shinkansen, AVE, Frecciarossa, ICE), et elles
     // ROULENT — on suit la distance d'une rame jusqu'à la voir avancer, en
@@ -6998,7 +7051,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('et en descendant, le champ revient et la voiture se pose à plat',
       !S.err && Math.abs(S.aPied.fov - S.repos.fov) < 0.5 && S.aPied.penche === 0, msg);
 
-    // LES TRACES DE PNEUS (v431). La voiture dérape depuis la v409 et rien au
+    // LES TRACES DE PNEUS (v434). La voiture dérape depuis la v409 et rien au
     // sol ne le disait. Mesuré des deux côtés, même mesure (`traces-mesure.js`,
     // `sonde-traces.cjs`) :
     //   `origin/main` (v430) : 0 trace en dérive, 0 au frein à main, aucun

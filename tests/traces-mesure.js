@@ -1,4 +1,4 @@
-// LES TRACES DE PNEUS (v431) — la mesure du témoin de `monte.js`, partagée
+// LES TRACES DE PNEUS (v434) — la mesure du témoin de `monte.js`, partagée
 // avec la sonde (`sonde-traces.cjs`) : une copie de sonde finit par diverger
 // du témoin (v400).
 //

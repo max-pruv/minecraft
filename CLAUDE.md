@@ -770,6 +770,73 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## La place se contourne (v432) — une garde se mesure sur ce qu'elle protège, à la règle du témoin
+
+Vingt-deux villes avaient la voie de leur anneau d'arrivée sur la place. Quatre
+règles.
+
+- **UNE GARDE DE VUE SE LIT SUR LA VOIE, PAS SUR L'AXE.** La phase 4 refusait
+  un contour dont l'AXE de rue passait à plus de `VU_ANNEAU` (30) du centre ;
+  la voiture roule une demi-chaussée plus loin ou plus près. Ce que l'enfant
+  voit : une voiture à `VU_VOITURE`, sur un tracé où elles sont espacées de
+  cinquante-quatre blocs au pis — une voie à √(45² − 27²) = 36 blocs en montre
+  une (`VU_CONTOUR`). La SÉLECTION garde `VU_ANNEAU` : les anneaux qu'une ville
+  reçoit ne changent pas.
+- **UNE GARDE DE COUVERTURE A LA RÈGLE DU TÉMOIN, SANS MARGE.** Celle de la
+  v404 se donnait un bloc et demi de chaque côté : un point vu à 44 blocs
+  avant et après était « perdu ». On échantillonne comme le témoin v322 (pas
+  de deux blocs depuis chaque sommet, 45 blocs), sur une grille qui ne lit pas
+  moins que la sienne (`pointsDeVille(f, true)`).
+- **UNE GARDE COMPARE AU RECTANGLE ; LA CONFIGURATION D'AVANT, ELLE, A PU
+  GAGNER PAR CHANCE.** À Sydney, l'ancien contour à contresens voyait 3,2 blocs
+  plus loin que le rectangle ; la garde neuve l'aurait remplacé et perdu 0,7 %
+  de la ville. La configuration d'avant (garde de la v404) est donc jouée
+  d'abord et reste la référence : un autre essai ne la remplace que s'il
+  laisse moins de pas hors de la chaussée SANS voir moins de points. Les 248
+  villes où elle ne laisse aucune faute sont identiques au bit près, et ne
+  paient rien de plus.
+- **DEUX ANNEAUX QUI TOUCHENT LA PLACE SE DISPUTENT SES RUES : L'ORDRE SE
+  CHOISIT.** Celui qui contourne d'abord prend la voie de l'autre (Bangkok :
+  57 → 1 en mettant le dernier en tête). On essaie l'ordre naturel puis chaque
+  anneau fautif en tête, contours mémorisés par l'état des autres. Et quand
+  toute une suite de segments du même côté est fautive, la recherche recule la
+  RANGÉE d'un coup (Lisbonne, 33 → 0) ; un grand anneau peut changer un tiers
+  de ses îlots.
+
+Ce qui reste, déclaré dans `TASKS.md` : Rio (la forêt de Tijuca, où la trame a
+un îlot fusionné en travers de la seule rue qui en sortirait), Tokyo, Dubaï,
+Toronto (leurs contours suivent un voisin au-delà de la barre de partage ou
+perdent des points), Agra, et une poignée d'anneaux à moins de 25 pas.
+
+## La rue serrée, et fabriquée par tranches (v431) — un budget par image, et un balayage fin là où l'on s'arrête
+
+Trois règles.
+
+- **CE QUI SE FABRIQUE À L'ENTRÉE DANS LE CHAMP SE FABRIQUE PAR TRANCHES.**
+  À l'arrivée d'une téléportation, `Convoi.montrer` fabriquait toutes les
+  voitures de la rue dans la même image (v420 : 162 à 276 ms sous `frame`).
+  Un budget module (`FAB_MS`, 5 ms, ouvert par `update`) : une place hors
+  budget reste vide une image de plus — SAUF à moins de `FAB_PROCHE` (18
+  blocs) de l'enfant, qui ne doit pas traverser une voiture qu'il ne voit pas.
+  Le budget vaut l'infini tant qu'aucune image n'a commencé : un appel direct
+  de `montrer` fabrique tout. Mesuré (Paris, trois passages) : mise à jour des
+  voitures 234/261/195 → 111/125/99 ms ; neuf voitures dans une même image →
+  une. Ce qui reste, `voiesDe` (la jumelle, 57 à 111 ms au dépliage), ne se
+  diffère pas : il fixe le nombre de voitures de la file, donc la grille que
+  deux tablettes partagent (v305).
+- **UNE RECHERCHE DE PAIRES SE FAIT DANS UNE GRILLE DE SA PORTÉE.**
+  `croisementsDe` comparait 720 instants toutes-contre-toutes (259 000 paires)
+  pour un test de six blocs : une grille de six blocs rend le même ensemble
+  (295 comparaisons de `nbSansCroisement` contre l'ancien module chargé dans
+  la même page, zéro écart) en deux fois moins de temps.
+- **L'ÉCART À L'ARRÊT EST LE PAS DU BALAYAGE.** Au pas d'un bloc et demi, une
+  suiveuse s'arrête n'importe où entre 1,1 et 2,6 blocs (médiane 1,9 à 2,0) ;
+  les deux premiers blocs se balaient au quart (1,1 à 1,35). Et le plancher de
+  la file (v283) vaut un bloc en ligne droite, mais 1,6 là où le tracé tourne
+  sous la suiveuse ou devant elle : dans un virage la corde est plus courte que
+  l'arc, et les coins se touchent (mesuré à Tokyo). Avant de serrer un
+  plancher le long d'un tracé, on regarde ce qu'il vaut en ligne droite.
+
 ## Un pont se lit sur la colonne que le monde écrit (v430) — et une règle de contact vit dans le monde
 
 Max, capture d'iPhone : le bandeau de l'eau sur une autoroute, la voiture
@@ -905,7 +972,7 @@ borné à `PENTE_MAX`. `player.atterrissage` est un ÉVÉNEMENT daté, comme
 qu'on trouve en montant. Le témoin fige le champ par une propriété qui ignore
 ce qu'on lui écrit (v358), et lit la pente dans la matrice monde.
 
-**Les traces de pneus (v431).** `src/traces.js`, appelé par `sensations.js`
+**Les traces de pneus (v434).** `src/traces.js`, appelé par `sensations.js`
 (pose) et `fun.js` (effacement, chaque image). Quatre règles.
 **UN APPEL POUR TOUTES** : un `InstancedMesh` borné (`MAX_TRACES`), l'opacité
 par instance (le greffon `aAlpha` des flammes, clé `traces-alpha`), la plus
@@ -2284,6 +2351,23 @@ engendrées. Quatre règles.
   journal vide dans le jeu, trois rouges de `maj.js`. Après tout conflit dans un
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
+
+## Les terrasses de café reviennent (v433) — une règle qui lit un bloc se relit quand le bloc se découpe
+
+Une règle.
+
+- **QUAND UN BLOC SE DÉCOUPE EN BANDES, ON CHERCHE CE QUI LISAIT LE BLOC
+  ENTIER.** La v301 a fait d'un rez-de-chaussée trois blocs (soubassement,
+  vitrage, enseigne) ; la règle des terrasses (v288) cherchait encore
+  `ARCHI.VITRINE` à un bloc au-dessus du trottoir — c'est-à-dire le VITRAGE
+  (`VITRINE_MI`) désormais. Zéro terrasse dans six quartiers pendant cent
+  quarante versions, et aucun témoin ne le voyait : celui des potelets
+  comptait la fonte, pas le cannage. Mesuré par la sonde qui compte ce qui
+  borde le trottoir à y+1 quartier par quartier. `grep -n "ARCHI.<ancien>"`
+  le jour où l'on découpe un bloc, comme le verre dans les murs. L'ancien bloc
+  reste lu (un enfant a pu le poser). La règle d'avant se rejoue
+  (`buildChunkTampons(…, { devantures: false })`) : c'est elle que lit
+  l'empreinte des 490 morceaux, au bit près.
 
 ## Le mobilier de trottoir arrête les passants (v425) — on bute sur ce qu'on voit
 

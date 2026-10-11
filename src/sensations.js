@@ -457,7 +457,7 @@ export function sensationsAuVolant(a, player, dt) {
   }
   vieDeVoiture(a, player, dt, m);
   poursuiteVoiture(a, player, dt, m);
-  // LES TRACES DE PNEUS (v431) : tant que la voiture glisse — dérive au-delà
+  // LES TRACES DE PNEUS (v434) : tant que la voiture glisse — dérive au-delà
   // du seuil du crissement, ou frein à main tiré en roulant —, chaque roue
   // arrière laisse une bande sombre sur ce qui la porte. En l'air, rien.
   const glisse = player.enLair ? 0 : glissade(player.derive, player.freinMainTire, m.v);

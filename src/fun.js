@@ -238,7 +238,7 @@ export function initFun(ctx) {
   // degats3d.js (ce qui se voit) ; ici, quatre crochets : chaque image au
   // volant, la descente, le garage qui répare, et chaque image pour la fumée.
   // `retirer` : une carcasse s'en va (v238 : ce qu'on retire se rend).
-  brancherTraces(scene, world);   // les traces de pneus (v431)
+  brancherTraces(scene, world);   // les traces de pneus (v434)
   const degats = creerDegats({ scene, world, player,
     lumiere: () => (isNight && isNight() ? 0.3 : 1),
     retirer: (a) => {
@@ -1308,7 +1308,7 @@ export function initFun(ctx) {
     // assiette et ses roues droites, et le champ de la caméra revient.
     if (riding !== derniereMonture) { reposerVoiture(derniereMonture); derniereMonture = riding; }
     if (!riding) sensationsAPied(player, dt);
-    avancerTraces(dt);   // les traces de pneus s'effacent, montées ou pas (v431)
+    avancerTraces(dt);   // les traces de pneus s'effacent, montées ou pas (v434)
     embarquement.update(dt);   // APRÈS updateRide : la caméra de poursuite est posée, on s'y fond
     updateBord();
     updatePassager();
@@ -1357,7 +1357,7 @@ export function initFun(ctx) {
     // les dégâts de la voiture (v343) : main.js les chauffe et les envoie aux
     // amis, les témoins les lisent
     degats,
-    chaufferTraces,   // la chauffe des traces de pneus, pendant l'accueil (v431)
+    chaufferTraces,   // la chauffe des traces de pneus, pendant l'accueil (v434)
     // LA SÉQUENCE D'EMBARQUEMENT (v366). `descendre({ presse: true })` pose
     // l'enfant à côté sans animation (la voiture qui prend feu) ;
     // `avatarEnSequence` dit à main.js de ne pas asseoir l'avatar cette image.

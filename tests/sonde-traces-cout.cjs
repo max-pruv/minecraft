@@ -1,4 +1,4 @@
-// LE COÛT DES TRACES DE PNEUS EN RENDU LOGICIEL (v431) : 480 traces devant la
+// LE COÛT DES TRACES DE PNEUS EN RENDU LOGICIEL (v434) : 480 traces devant la
 // caméra, l'essaim visible contre caché, en ordre alterné (ABBA, v268). Elle
 // imprime les cadences, pas un verdict.
 const { Banc, souffler } = require('./banc.js');

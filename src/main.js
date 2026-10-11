@@ -7998,6 +7998,8 @@ window.__vehicules = {
   placeProche: (rayon) => vehicules?.placeProche(player.pos, rayon),
   diagPlace: (rayon) => vehicules?.diagPlace(player.pos, rayon),
   diagCeder: () => vehicules?.diagCeder(),
+  // la fabrication par tranches (v431) : voitures fabriquées et différées
+  fabrication: () => vehicules?.fabrication?.(),
 };
 window.__vie = { effectif: () => vie?.effectif(), sites: () => vie?.sites, eteindre: (v) => vie?.eteindre(v) };
 // Pour les tests : ce que la nuit fait aux fenêtres. `solide` est le niveau
@@ -8315,7 +8317,7 @@ requestAnimationFrame(() => {
     try { chaufferLaCoque(); } catch (e) { console.warn('chauffe de la coque', e); }
     // la fumée et les flammes des dégâts (v343) : deux matériaux neufs
     try { fun.degats.chauffer(renderer, camera, scene); } catch (e) { console.warn('chauffe des dégâts', e); }
-    // les traces de pneus (v431) : un matériau neuf, son essaim exact
+    // les traces de pneus (v434) : un matériau neuf, son essaim exact
     try { fun.chaufferTraces(renderer, camera, scene); } catch (e) { console.warn('chauffe des traces', e); }
     chauffeFinie = true;
     requestAnimationFrame(pasNY);

@@ -1,4 +1,4 @@
-// LES TRACES DE PNEUS (v431) — la mesure du témoin de `monte.js`, rejouée
+// LES TRACES DE PNEUS (v434) — la mesure du témoin de `monte.js`, rejouée
 // seule : sur la branche, et sur `origin/main` dans un arbre détaché (on y
 // recopie ce fichier et `traces-mesure.js`). Elle imprime tous les chiffres,
 // pas un verdict.
