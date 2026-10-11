@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v433 — Des essais encore plus justes
+## v440 — Des essais encore plus justes
 
 **Pourquoi.** Sept témoins du portail rougissaient une fois sur deux sans
 qu'une ligne du jeu ait bougé, et chaque livraison payait leur démontage. Le
@@ -47,6 +47,190 @@ charge, branche 3/3 vert, désarmé 97 blocs au travers du poteau), le trou
 de façade (branche 3/3 vert, désarmé « jamais rebâti »), la chauffe de New
 York (expirait à 150 s, finie en 9,9 s), la fumée (3/3), le taxi (le bouton
 apparaît à chaque passage). Le témoin du train reste ROUGE : c'est la panne.
+
+---
+
+## v439 — La route de San Francisco à Los Angeles
+
+**Pourquoi.** Seize autoroutes reliaient déjà les villes, et la côte ouest des
+États-Unis n'en avait aucune : de San Francisco à Los Angeles, on ne pouvait
+que voler ou se téléporter. Le couloir avait été relevé en v419 sans être
+tracé : la ville est une presqu'île (la baie à l'est, le Pacifique à l'ouest,
+l'aérodrome de SFO au sud), et l'axe direct passe dans la marge de SFO et sur
+deux repères.
+
+**Ce que ça change.** L'US-101, 2 618 blocs. Elle sort de San Francisco par le
+sud-est, sur la terre ferme au bout de la baie — une entrée déclarée mène au
+bout de Third Street —, passe AU NORD de SFO, longe à l'est de l'aérodrome une
+bande de 38 à 41 blocs, franchit le col de la chaîne côtière, descend la
+plaine côtière et entre dans Los Angeles par l'ouest, sur la rue de sa trame.
+Cinq ponts, et des voitures qui roulent d'une ville à l'autre à cent vingt.
+
+**Ce qui le prouve.** Un témoin neuf (`carteMonde.js`) : convoi, aucune colonne
+d'emprise sur un rail ni volée à une autre route, l'axe loin de ses villes
+hors des tronçons radiaux, l'entrée de San Francisco sur la chaussée d'un bout
+à l'autre jusqu'à une artère, celle de Los Angeles sur la rue — rouge sur
+`origin/main` (« aucun convoi US-101 »), vert ici. Les témoins de toutes les
+routes la lisent avec les autres : profil (pente 0,06, déblai 7,2, remblai
+3,3), joints des ponts (32 890 points, zéro trou), sol sous les tabliers.
+L'empreinte des 490 morceaux change (San Francisco est un des neuf lieux) et se
+prouve : l'US-101 retirée, la constante de la v438 au bit près, et les cent
+colonnes qui diffèrent sont à moins de sept blocs de l'axe de l'entrée.
+
+---
+
+## v438 — Des fourgonnettes, des pickups, et chaque voiture son allure
+
+**Pourquoi.** La rue ne roulait que des voitures de sport et la berline
+citadine : pas une fourgonnette de livraison, pas un pickup. Dans une file,
+toutes les voitures roulaient comme un seul train — la variance d'allure était
+par file, pas par voiture. La limitation suivait le circuit : un boulevard et
+une rue de quartier du même tour roulaient à la même vitesse. Et les
+boulevards de Paris ne gardaient leur seconde voie que sur 306 de leurs
+1 231 blocs : chaque place la coupait, et deux circuits la perdaient sur un
+calcul qui ne regardait que deux nombres.
+
+**Ce que ça change.** Une voiture sur six hors de New York est un utilitaire :
+une fourgonnette blanche ou un pickup de la couleur de la rue, caisses dans la
+benne — et on peut les conduire. Dans une file, chaque voiture prend quelques
+dixièmes de seconde d'avance ou de retard : la file respire au lieu de rouler
+d'un bloc. Un circuit de Paris roule à cinquante sur ses boulevards, à
+quarante dans les rues, à trente dans les ruelles ; une ville engendrée à
+cinquante sur sa croix-boulevard. Les boulevards de Paris ont leurs deux voies
+occupées sur 446 blocs (six circuits sur huit au lieu de trois).
+
+**Ce qui le prouve.** Quatre témoins dans `carteMonde.js`, rouges sur
+`origin/main` : la flotte (une voiture sur six, deux modèles au manifeste —
+quatre roues, au sol, quinze maillages au plus contre trente-deux), le jeu par
+voiture (les voisines s'écartent de leur grille, dans la borne, et la règle se
+refait à l'identique : la même rue chez l'ami, v305), la limitation par
+tronçon, la seconde voie de Paris (306 → 446, barre 380). Et une preuve
+structurelle sous node (`sonde-rue-dense.cjs jeu`) : 179 convois, un tour
+d'horloge chacun, autant de contacts de grille avec le jeu que sans (392 et
+392).
+
+## v437 — Le frein à main crisse
+
+**Pourquoi.** Au frein à main, les roues arrière se bloquent et glissent sur
+la route — dans un jeu de conduite, ça s'entend. Ici, tout droit, on
+n'entendait presque rien : le crissement ne suivait que la dérive, et freiner
+à main en ligne droite n'en donne pas. Mesuré dans la bande des pneus : à
+peine deux fois le bruit de la ligne droite.
+
+**Ce que ça change.** Dès que l'enfant tire le frein à main en roulant, les
+pneus crissent, en ligne droite comme en virage, et se taisent quand la
+voiture s'arrête ou qu'on relâche.
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js`, qui lit la SORTIE du jeu
+(un analyseur dans la bande des pneus, jamais un drapeau) : frein tiré contre
+la ligne droite d'avant, ×1,9 sur la v434, ×62 ici, pour une barre à ×10 —
+celle du crissement en dérive.
+
+---
+
+## v436 — La voiture s'arrête devant les terrasses
+
+**Pourquoi.** La table et les chaises d'un café de Paris sont dessinées par la
+couche HD (v288) : ce ne sont pas des blocs. Les passants les contournent
+depuis la v425 ; la voiture de l'enfant, elle, ne lisait que les blocs de
+mobilier (réverbères, jardinières) et passait au travers des terrasses
+revenues en v433.
+
+**Ce que ça change.** Au volant, la voiture s'arrête devant une terrasse, un
+banc, une colonne Morris — seulement ceux qu'on voit : une tablette sans
+couche HD n'a pas de table invisible qui arrête.
+
+**Ce qui le prouve.** Un témoin neuf de `parishd.js` prend le volant sur un
+trottoir de Paris, huit blocs avant une terrasse, et roule jusqu'à l'arrêt :
+elle s'arrête à 2,5 à 2,7 blocs du centre de la terrasse (son pare-chocs au
+bord de la colonne), et le crochet nomme « mobilier ». Rouge sur `origin/main`
+(v433, les terrasses sans le correctif) : la voiture entre jusqu'à 1,8 bloc,
+le capot au-dessus de la table, et c'est un mur qui l'arrête. Une sonde
+(`sonde-terrasse-voiture.cjs`) rejoue le témoin seul, lu dans `parishd.js`.
+
+---
+
+## v435 — Les anneaux se partagent la place
+
+**Pourquoi.** À Toronto, Dublin et Lima, l'anneau de voitures qu'on voit en
+arrivant roulait encore sur la place centrale : 31, 22 et 20 pas de voie hors
+de la chaussée. Son contour existait, mais chaque anneau se cherchait SEUL,
+pendant que ses voisins restaient immobiles : tout contour suivait alors la
+voie d'un voisin au-delà de la barre de partage. Aucun ordre n'y changeait
+rien (mesuré : les vingt-quatre ordres de Tokyo rendent les mêmes 56 pas).
+
+**Ce que ça change.** Une recherche CONJOINTE, qui ne tourne que là où la
+phase 4 laisse des pas hors de la chaussée : un pas de la recherche change un
+îlot d'un anneau quelconque, et la note est celle de tous à la fois. Toronto
+31 → 0, Dublin 22 → 3, Lima 20 → 2 ; 840 → 772 pas sur toutes les villes,
+61 → 58 anneaux fautifs, 9 → 6 villes dont une voie passe sur le centre.
+Aucun point de la ville ne perd sa voiture (comparé point par point), la
+voiture reste en vue depuis la place, et les 259 autres villes sont
+identiques au bit près, tabliers compris. Tokyo et Dubaï restent : mesuré,
+aucune configuration ne tient (de l'eau sans tablier et la place autour du
+nœud central, le seul détour suit un voisin dans le même sens).
+
+**Ce qui le prouve.** Un verdict neuf de `carteMonde.js`, « deux anneaux qui
+se disputent la place la contournent ensemble » (31/22/20 sur `origin/main`,
+0/3/2 ici, barre 5), et les deux barres du compte des pas et de la place
+resserrées au milieu (59 anneaux, 806 pas ; 7 villes). Sonde
+`tests/sonde-anneaux-villes.cjs` sur les 262 villes, avant et après ;
+comparaison des tracés et des tabliers des deux arbres (3 villes changées,
+0 tablier).
+
+
+## v434 — Le dérapage laisse des traces
+
+**Pourquoi.** Depuis le frein à main (v409), la voiture dérape comme dans GTA :
+la caisse part de travers, les pneus crissent. Mais rien ne restait sur la
+route : on pouvait faire un tête-à-queue sur une piste parfaitement propre.
+Ce qui dit qu'une voiture a glissé, dans un jeu de conduite, c'est la trace
+noire qu'elle laisse derrière elle.
+
+**Ce que ça change.** Tant que la voiture glisse — en dérive, ou frein à main
+tiré en roulant —, chaque roue arrière laisse une bande sombre sur ce qui la
+porte : la route, la pierre, l'herbe en pente, le tablier d'un pont. En ligne
+droite, rien. Les traces s'effacent d'elles-mêmes au bout d'une vingtaine de
+secondes, les plus vieilles d'abord, et il n'y en a jamais plus de 480 :
+toutes ensemble ne coûtent qu'un seul appel de dessin, et elles ne compilent
+rien en jeu (préparées pendant l'accueil).
+
+**Ce qui le prouve.** Quatre témoins neufs dans `monte.js`, rouges sur
+l'ancien code (aucune trace, aucun maillage) : pas de trace en ligne droite,
+28 en dérive et 48 au frein à main ; toutes posées à 121,01 sur une piste
+dont le dessus est à 121, dans un seul maillage ; aucune clé de programme
+neuve (une si l'on désarme la chauffe — vérifié) ; la borne tenue (480 sur
+480), l'effacement à mi-fondu puis plus rien. Le coût se mesure en rendu
+logiciel (`sonde-traces-cout.cjs`, ordre alterné) : 480 traces devant la
+caméra coûtent un cinquième de la cadence du banc ; comme les ombres, elles
+ne s'y dessinent pas. Captures de jour, de nuit et sur l'herbe
+(`sonde-captures-traces.cjs`).
+
+---
+
+## v433 — Les terrasses de café reviennent à Paris
+
+**Pourquoi.** Depuis la v301, un rez-de-chaussée de Paris fait trois blocs —
+soubassement, vitrage, enseigne — et la règle des terrasses (v288) cherchait
+encore l'ancien bloc de devanture à un bloc au-dessus du trottoir. Mesuré sous
+node : zéro terrasse dans six quartiers (Marais, Quartier latin,
+Saint-Germain, Monceau, Belleville, Haussmann), pendant cent quarante
+versions, alors que le vitrage d'une devanture borde 135 à 776 colonnes de
+trottoir par quartier.
+
+**Ce que ça change.** Devant une devanture sur trois, une table ronde de
+fonte et deux chaises de cannage : 40 à 178 terrasses par quartier mesuré. Le
+palier bas (sans couche HD) ne reçoit rien de neuf, et les passants les
+contournent déjà (v425).
+
+**Ce qui le prouve.** Un témoin neuf de `parishd.js`, rouge sur l'ancien code
+(zéro terrasse dans quatre quartiers) : chaque quartier en porte au moins
+cinq, et le mailleur en dessine le cannage. L'empreinte des 490 morceaux
+change (`69c38928…`) et se prouve : la règle d'avant rejouée
+(`devantures: false`) rend `1f1e5a6d…`, la constante d'`origin/main`, au bit
+près. Jugé en capture, rue de Saint-Germain, de jour. Et deux témoins de
+`degats.js` lisent la santé au dix-millième : arrondie au centième, elle
+rendait 0,99 ou 1 selon l'élan, un tirage des deux côtés du portail.
 
 ---
 

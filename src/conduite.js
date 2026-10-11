@@ -43,6 +43,11 @@ export const EMPATTEMENT = 2.7;       // L, blocs (une voiture de 4,4)
 // voir PLAFOND_SOL.
 export const CLASSES = {
   citadine: { vmax: 30, a0: 8.5, mu: 18 },
+  // LES UTILITAIRES DE LA RUE (v438) : la fourgonnette et le pickup
+  // (`utilitaires.js`). Plus lourds, moins accrocheurs ; chaque pointe reste
+  // UNIQUE (`ficheDeVitesse` retrouve la classe par elle).
+  utilitaire: { vmax: 31, a0: 7.5, mu: 16 },
+  pickup:   { vmax: 32, a0: 8.5, mu: 17 },
   berline:  { vmax: 34, a0: 9.0, mu: 19 },
   suv:      { vmax: 33, a0: 8.5, mu: 17 },
   gt:       { vmax: 42, a0: 11.0, mu: 22 },

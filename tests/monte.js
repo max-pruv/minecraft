@@ -12,6 +12,7 @@
 
 const { Banc, dormir, souffler } = require('./banc.js');
 const { mesurerSensations } = require('./sensations-mesure.js');
+const { mesurerTraces } = require('./traces-mesure.js');
 
 const echecs = [];
 // COMBIEN DE TEMPS CHAQUE TÉMOIN A-T-IL COÛTÉ.
@@ -7108,6 +7109,35 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !S.err && S.mur.libre, msg);
     verifier('et en descendant, le champ revient et la voiture se pose à plat',
       !S.err && Math.abs(S.aPied.fov - S.repos.fov) < 0.5 && S.aPied.penche === 0, msg);
+
+    // LES TRACES DE PNEUS (v434). La voiture dérape depuis la v409 et rien au
+    // sol ne le disait. Mesuré des deux côtés, même mesure (`traces-mesure.js`,
+    // `sonde-traces.cjs`) :
+    //   `origin/main` (v430) : 0 trace en dérive, 0 au frein à main, aucun
+    //     maillage — le module n'existe pas, et la mesure le dit ;
+    //   la branche : 0 en ligne droite, 29 en dérive, 44 au frein à main,
+    //     toutes à 121,01 sur une piste dont le dessus est à 121, UN maillage,
+    //     aucune clé de programme neuve (UNE si l'on désarme la chauffe), la
+    //     borne tenue (480 sur 480), à mi-fondu 0,28, puis plus rien.
+    const tr = await tab.evaluate(`(${mesurerTraces.toString()})()`);
+    const TR = tr || {};
+    const msgTr = JSON.stringify(TR);
+    verifier('une voiture qui dérape laisse des traces de pneus — pas en ligne droite',
+      !TR.err && TR.module && TR.droit.posees === 0 && TR.derive.posees >= 6 && TR.frein.posees >= 6, msgTr);
+    verifier('les traces sont posées sur la route, dans un seul maillage',
+      !TR.err && TR.derive.ys.length > 0 && TR.derive.ys.every((y) => Math.abs(y - (TR.y0 + 1.01)) < 0.005)
+        && TR.derive.maillages === 1, msgTr);
+    verifier('les traces ne compilent rien en jeu (chauffées à l\'accueil)',
+      !TR.err && TR.module && TR.neuves.length === 0, msgTr);
+    // LE FREIN À MAIN CRISSE (v437) : tout droit, sans dérive, les roues
+    // bloquées glissent. Mesuré dans la bande des pneus, frein tiré contre la
+    // ligne droite d'avant : ×1,9 sur la v431 (dérive nulle, presque rien), ×62
+    // ici. La barre est celle du crissement en dérive (v401).
+    verifier('au frein à main, les pneus crissent — même tout droit',
+      !TR.err && TR.crisse && TR.crisse.n >= 3 && TR.crisse.rapport > 10, msgTr);
+    verifier('les traces sont bornées et s\'effacent, les plus vieilles d\'abord',
+      !TR.err && TR.borne && TR.borne.vivantes === TR.borne.max && TR.borne.maillages === 1
+        && TR.fondu.alphaMi > 0.1 && TR.fondu.alphaMi < 0.7 && TR.fondu.vivFin === 0 && !TR.fondu.visibleFin, msgTr);
 
     // LA MARCHE ARRIÈRE, VOITURE ET AVION (v269).
     //

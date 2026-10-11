@@ -13,6 +13,7 @@ import * as THREE from 'three';
 import { COUCHE_CARROSSERIE, voirLeDecor } from './couches.js';
 import { SIGNATURES_GLB, SIGNATURES_JEU, EST_PEINTURE } from './signatures.js';
 import { construireTaxi } from './taxis.js';
+import { construireUtilitaire, construirePickup } from './utilitaires.js';
 import { Atelier } from './modeles.js';
 import { liberer } from './liberer.js';
 import { profilVitesse, grilleDuProfil, rapprocher, allureDevant, passeAOrange, FREIN, FREIN_URGENCE, ALLURE_VOIE, allureDuConducteur } from './circulation.js';
@@ -386,10 +387,13 @@ const EST_LAQUE = /paint_primary|pearl|bodywork|(?<![a-z])body(?![a-z])/i;
 
 // LE MODÈLE DE LA VOITURE n D'UNE VILLE — fonction PURE, sans rien bâtir.
 // New York ne tire que ses taxis et berlines ; ailleurs, une voiture sur six
-// est la berline citadine, les autres viennent de la flotte au pas de 17.
+// est la berline citadine, une sur six un utilitaire (v438 : la fourgonnette
+// et le pickup en alternance), les autres viennent de la flotte au pas de 17.
+// La règle ne lit que `n` : la même rue sur deux tablettes (v305).
 export function choixFlotte(n, ville) {
   const choix = FLOTTE.filter((e) => (ville === 'ny' ? e.ville === 'ny' : e.ville !== 'ny'));
   if (ville !== 'ny' && n % 6 === 0) return FLOTTE.find((e) => e.fichier === 'berline-citadine');
+  if (ville !== 'ny' && n % 6 === 3) return FLOTTE.find((e) => e.fichier === (((n % 12) + 12) % 12 === 3 ? 'fourgonnette' : 'pickup'));
   return choix[((n % choix.length) + choix.length) % choix.length];
 }
 
@@ -406,6 +410,12 @@ export function graineDeVille(tr) {
 
 export const FLOTTE = [
   {fichier:'berline-citadine', classe: 'citadine',nom:'Berline citadine',fabrique:()=>construireTaxi({taxi:false})},
+  // LES UTILITAIRES (v438, `utilitaires.js`) : une voiture sur six de la rue
+  // hors New York. La fourgonnette garde son blanc de livraison, le pickup
+  // prend toujours la teinte tirée pour lui (`laque`). Pas de volant dans la
+  // cabine : `habitacle: false`, comme les carrosseries seules (v230).
+  {fichier:'fourgonnette', classe: 'utilitaire', nom:'Fourgonnette de livraison', habitacle: false, laque: 'jamais', fabrique:()=>construireUtilitaire()},
+  {fichier:'pickup', classe: 'pickup', nom:'Pickup de chantier', habitacle: false, laque: 'toujours', fabrique:()=>construirePickup({chargement: true})},
   {fichier:'ny-crown-victoria', classe: 'berline',ville:'ny',nom:'Ford Crown Victoria · taxi jaune',fabrique:()=>construireTaxi()},
   {fichier:'ny-town-sedan', classe: 'berline',ville:'ny',nom:'Berline new-yorkaise',fabrique:()=>construireTaxi({taxi:false})},
   { fichier: 'acura-nsx-type-s.glb', classe: 'gt', nom: 'Acura NSX Type S' },
@@ -924,6 +934,18 @@ export class ParcoursDecale extends Parcours {
 // de voie sur `2 R` blocs, pas d'un coup : une érosion puis une moyenne
 // glissante, circulaires. Rend { A, B, part } (Float32Array au bloc) ou null.
 export const RAMPE_VOIE = 8;
+// EN VILLE, LA RAMPE EST PLUS COURTE ET UNE PORTION PLUS COURTE COMPTE (v438).
+// Chaque place coupe un boulevard de Paris (le tour en arc se prend sur une
+// seule voie) ; une rampe de huit blocs mangeait seize blocs de chaque côté
+// de chaque place, et le seuil de quarante blocs de deux voies écartait les
+// circuits qui ne suivent qu'un tronçon. Mesuré sur les huit circuits de
+// Paris (`sonde-rue-dense.cjs boulevards`) : 306 blocs de seconde voie sur
+// 1 231 ; rampe 5 et seuil 20, 446 ; avec le croisement non monotone (plus
+// bas), voir le témoin. À cinquante km/h, dix blocs font trois quarts de
+// seconde : un changement de voie franc, pas un saut. L'autoroute, à cent
+// vingt, garde ses huit.
+export const RAMPE_VILLE = 5;
+export const SECTION_MIN = 20;
 export function voiesLeLong(parcours, voies, rampe = RAMPE_VOIE) {
   // un échantillon par bloc, un tous les deux sur un long tracé (une
   // autoroute fait deux mille blocs : la section ne change pas si vite)
@@ -1575,6 +1597,86 @@ class Convoi {
     return { d: n * L + ds[lo] + dd * u, v: dt > 0 ? dd / dt : 0, pause: dd === 0 ? ts[hi] - r : 0 };
   }
 
+  // CHAQUE VOITURE A SON CONDUCTEUR (v438). La variance d'allure était par
+  // CONVOI (`allureDuConducteur`, ±8 %) : toutes les voitures d'une file
+  // roulaient comme un seul train. Une voiture ne peut pas rouler plus vite
+  // que la grille sans casser la v305 (la même rue sur deux tablettes) — sauf
+  // si son écart à la grille est lui-même une FONCTION de son heure. `jeu`
+  // rend ce décalage, en secondes de grille : une ondulation de
+  // `JEU_MAX` au plus (moins quand la file est serrée), de période un
+  // `k`-ième de tour, de phase tirée de la clé du convoi et du rang — jamais
+  // du hasard local. Elle donne ±10 % d'allure d'une voiture à l'autre.
+  //
+  // ET ELLE S'ÉTEINT LÀ OÙ LA FILE EST CALCULÉE AU PLUS JUSTE. Le nombre de
+  // voitures est le plus grand sans contact dans le virage le plus lent
+  // (`nbSansChevauchement`) ; un croisement du tracé avec lui-même est
+  // cadencé (`nbSansCroisement`) ; là où la jumelle partage la voie de sa
+  // file, les deux sont à une demi-voiture (`jumelleSansContact`). Le poids
+  // `W` vaut donc zéro sous six blocs par seconde, à trois secondes d'un
+  // croisement, et là où les deux voies n'en font qu'une — et l'on ne joue
+  // pas du tout dans un anneau que le bus suit (il est à une demi-voiture).
+  // Ailleurs, deux voisines restent à `dt − 2 A` l'une de l'autre, au-dessus
+  // de six blocs par seconde : douze blocs au moins entre leurs centres.
+  jeuTable() {
+    if (this._jeuT !== undefined) return this._jeuT;
+    this._jeuT = null;
+    if (!JEU_ACTIF) return null;
+    if (this.jeuDe) { this._jeuT = this.jeuDe.jeuTable(); return this._jeuT; }
+    const H = this.horaire();
+    if (!this.profil || this.suit || this.suiviParBus || !H || !this.grilleCreation || !this.parcoursBase) return null;
+    const A = Math.min(JEU_MAX, 0.3 * this.dtVoiture - 0.25);
+    if (!(A >= 0.05)) return null;
+    const { ts, ds, P, L } = H;
+    const N = Math.max(32, Math.min(4000, Math.ceil(P / 0.25))), pas = P / N;
+    const instants = instantsDeCroisement(this.parcoursBase, this.grilleCreation);
+    let sec = this.sectionVoies;
+    if (typeof sec === 'function') sec = sec();
+    if (sec && !this.jumelleTardive && !this.jumelle) sec = null;
+    const W = new Float32Array(N);
+    let lo = 0;
+    for (let k = 0; k < N; k++) {
+      const r = k * pas;
+      while (lo < ts.length - 2 && ts[lo + 1] <= r) lo++;
+      const dt = ts[lo + 1] - ts[lo], dd = ds[lo + 1] - ds[lo];
+      const d = ds[lo] + (dt > 0 ? dd * (r - ts[lo]) / dt : 0), v = dt > 0 ? dd / dt : 0;
+      let w = Math.max(0, Math.min(1, (v - 6) / 5));
+      for (let j = 0; j < instants.length && w > 0; j++) {
+        let e = Math.abs(r - instants[j]); if (e > P / 2) e = P - e;
+        if (e < 3) w = 0;
+      }
+      if (w > 0 && sec) {
+        const n = sec.A.length, q = Math.min(n - 1, Math.floor((((d % L) + L) % L) / L * n));
+        w *= Math.max(0, Math.min(1, (Math.abs(sec.B[q] - sec.A[q]) - (2 * DEMI_LARG_VOITURE + 0.3)) / 0.5));
+      }
+      W[k] = w;
+    }
+    // le zéro s'élargit de deux secondes, puis tout se lisse sur quatre : la
+    // pente du poids reste sous un quart par seconde (l'heure ne recule jamais)
+    const R = Math.max(1, Math.round(2 / pas)), M = new Float32Array(N), S = new Float32Array(N);
+    for (let k = 0; k < N; k++) { let m = 1; for (let j = -R; j <= R; j++) m = Math.min(m, W[(k + j + N) % N]); M[k] = m; }
+    for (let k = 0; k < N; k++) { let m = 0; for (let j = -R; j <= R; j++) m += M[(k + j + N) % N]; S[k] = m / (2 * R + 1); }
+    let part = 0; for (let k = 0; k < N; k++) if (S[k] > 0.05) part++;
+    this._jeuT = { W: S, N, P, A, kmax: Math.max(1, Math.floor(P / 30)), part: part / N };
+    return this._jeuT;
+  }
+  jeu(i, tau) {
+    const T = this.jeuTable();
+    if (!T) return 0;
+    let r = tau % T.P; if (r < 0) r += T.P;
+    const f = r / T.P * T.N, k = Math.floor(f) % T.N, u = f - Math.floor(f);
+    const w = T.W[k] + (T.W[(k + 1) % T.N] - T.W[k]) * u;
+    if (w <= 0) return 0;
+    if (this._hJeu === undefined) {
+      let h = 0x811c9dc5; const c = this.cle || '';
+      for (let j = 0; j < c.length; j++) h = Math.imul(h ^ c.charCodeAt(j), 0x01000193);
+      this._hJeu = h >>> 0;
+    }
+    let h = Math.imul(this._hJeu ^ Math.imul(i + 1, 0x9e3779b1), 0x85ebca6b) >>> 0;
+    h ^= h >>> 13; h = Math.imul(h, 0xc2b2ae35) >>> 0; h ^= h >>> 16;
+    const kk = 1 + (h % T.kmax), phi = ((h >>> 8) / 16777216) * Math.PI * 2;
+    return T.A * w * Math.sin(2 * Math.PI * kk * r / T.P + phi);
+  }
+
   // CHAQUE VOITURE SUIT LA GRILLE À SON HEURE, PAS À LA DISTANCE DE LA TÊTE
   // (v372). Un convoi avançait d'un bloc : toutes ses voitures avançaient d'un
   // bloc, à la vitesse que la grille donnait à la TÊTE — une voiture dans un
@@ -1598,7 +1700,10 @@ class Convoi {
     const ancien = this.retardAvant;           // tampon réutilisé : l'ancienne base
     ancien.set(this.base);
     for (let i = 0; i < n; i++) {
-      const p = i === 0 ? pos0 : this.distanceA(h0 - i * this.dtVoiture);
+      // LE JEU DE LA VOITURE (v438) : quelques dixièmes de seconde d'avance ou
+      // de retard sur la grille, une fonction de son heure — `jeu`, plus bas
+      const hi = h0 - i * this.dtVoiture, e = this.jeu(i, hi + this.phase);
+      const p = i === 0 && e === 0 ? pos0 : this.distanceA(hi - e);
       this.base[i] = p.d; this.vGrille[i] = p.v;
     }
     this.distance = pos0.d;
@@ -2126,7 +2231,7 @@ function croisementsDe(parcours, grille) {
   // du test de distance — et non plus toutes contre toutes : 259 000 paires
   // examinées au dépliage d'un circuit, 22 à 36 ms sous `frame` (v420). Même
   // ensemble de paires, au bit près ; l'ordre de `ecarts` ne compte pas.
-  const ecarts = [], cases = new Map(), cle = (i, j) => i * 100003 + j;
+  const ecarts = [], instants = [], cases = new Map(), cle = (i, j) => i * 100003 + j;
   for (let s = 0; s < N; s++) {
     const k = cle(Math.floor(X[s] / 6), Math.floor(Z[s] / 6));
     const l = cases.get(k); if (l) l.push(s); else cases.set(k, [s]);
@@ -2140,12 +2245,20 @@ function croisementsDe(parcours, grille) {
         const dt = (b - a) * h; if (dt < 3 || P - dt < 3) continue;
         if ((X[a] - X[b]) ** 2 + (Z[a] - Z[b]) ** 2 > 36) continue;
         if (Math.abs(Math.cos(C[a] - C[b])) > 0.7) continue;
-        if (rectsSeTouchent(rectSep(X[a], Z[a], C[a]), rectSep(X[b], Z[b], C[b]))) ecarts.push(dt);
+        if (rectsSeTouchent(rectSep(X[a], Z[a], C[a]), rectSep(X[b], Z[b], C[b]))) { ecarts.push(dt); instants.push(a * h, b * h); }
       }
     }
   }
-  CROISEMENTS.set(parcours, { grille, ecarts });
+  CROISEMENTS.set(parcours, { grille, ecarts, instants });
   return ecarts;
+}
+// Les HEURES de grille (dans [0, P)) où le tracé passe sur lui-même (v438) :
+// la variance par voiture s'y éteint, la cadence de `nbSansCroisement` reste
+// celle qu'on a calculée.
+export function instantsDeCroisement(parcours, grille) {
+  croisementsDe(parcours, grille);
+  const c = CROISEMENTS.get(parcours);
+  return c && c.grille === grille ? c.instants || [] : [];
 }
 export function nbSansCroisement(parcours, grille, nb, plancher = 3, strict = false) {
   const { ts } = grille, P = ts[ts.length - 1];
@@ -2165,6 +2278,10 @@ export function nbSansCroisement(parcours, grille, nb, plancher = 3, strict = fa
 
 // une voiture passe à un carrefour toutes les deux secondes au plus (v372)
 export const INTERVALLE_RUE = 2;
+// le jeu d'une voiture sur sa grille, en secondes (v438, `Convoi.jeu`)
+export const JEU_MAX = 0.35;
+// éteint par une sonde (`jeuActif`), pour mesurer en A/B dans la même page
+let JEU_ACTIF = true;
 // UNE FILE ET SA JUMELLE SONT UNE SEULE LIGNE (v423) : la légitimité d'une
 // attente (un feu devant) s'y propage, et l'on n'y pile pas sur un contact.
 const memeLigne = (x, y) => x === y || (!!x && !!y && (x.jumeauDe === y || y.jumeauDe === x));
@@ -2297,7 +2414,8 @@ export function createVehicules({ scene, player }) {
         // d'origine — une voiture dont la couleur fait l'identité (un taxi,
         // une Ferrari rouge) ne doit pas disparaître de la rue. La laque
         // seule est repeinte : vitres, chromes et carbone gardent leur rendu.
-        const laque = entree.fichier !== 'berline-citadine' && ville !== 'ny' && n % 3 !== 0;
+        const laque = entree.laque ? entree.laque === 'toujours'
+          : entree.fichier !== 'berline-citadine' && ville !== 'ny' && n % 3 !== 0;
         g.userData.laque = laque ? teinte : null;
         // ce que la rue a réellement peint, quelle que soit la règle : c'est
         // ce qui part avec la voiture quand l'enfant la prend (v305)
@@ -2417,18 +2535,34 @@ export function createVehicules({ scene, player }) {
     // jumelle a le même, ou n'existe pas.
     const rangB = options.bus ? 1.5 : 0.5;
     const voiesDe = () => {
-      const voies = options.voies ? voiesLeLong(p, options.voies) : null;
+      const voies = options.voies ? voiesLeLong(p, options.voies, options.voiesAuBesoin ? RAMPE_VOIE : RAMPE_VILLE) : null;
       const pA = voies && voies.A.some((l) => l !== 0) ? new ParcoursDecale(p, voies.A) : p;
       let jumelle = null;
-      if (voies && voies.longueur >= 40 && nb >= 2) {
+      if (voies && voies.longueur >= SECTION_MIN && nb >= 2) {
         const pB = new ParcoursDecale(p, voies.B);
-        const marche = (n) => (options.nb || nbSansCroisement(p, grille, 2 * n, 2 * n, true) === 2 * n)
-          && jumelleSansContact(pA, pB, grille, n, rangB, options.bus ? n - 1 : n, !!options.bus);
-        let lo = options.nb || options.voiesAuBesoin ? nb : Math.max(2, Math.ceil(nb * 0.4)), hi = nb;
-        if (marche(hi)) lo = hi;
-        else if (lo === hi || !marche(lo)) lo = 0;
-        else while (hi - lo > 1) { const m = (lo + hi) >> 1; if (marche(m)) lo = m; else hi = m; }
-        if (lo) jumelle = { pB, nb: lo };
+        // LE CROISEMENT N'EST PAS MONOTONE (v438). Deux nombres seulement
+        // étaient essayés (`nb` et 0,4 `nb`) avant la dichotomie : sur un
+        // circuit en huit, la cadence du croisement de la ligne (`2 n`
+        // voitures) refusait les deux et la jumelle était perdue — le
+        // boulevard de Rivoli (175 blocs de deux voies) sans seconde voie.
+        // Les nombres que le croisement accepte se listent (c'est un calcul
+        // sur des écarts déjà connus), et la dichotomie du contact se fait
+        // parmi eux.
+        const croise = (n) => !!options.nb || nbSansCroisement(p, grille, 2 * n, 2 * n, true) === 2 * n;
+        const contact = (n) => jumelleSansContact(pA, pB, grille, n, rangB, options.bus ? n - 1 : n, !!options.bus);
+        const bas = options.nb || options.voiesAuBesoin ? nb : Math.max(2, Math.ceil(nb * 0.4));
+        const cands = [];
+        for (let n = bas; n <= nb; n++) if (croise(n)) cands.push(n);
+        let choix = 0;
+        if (cands.length) {
+          if (contact(cands[cands.length - 1])) choix = cands[cands.length - 1];
+          else if (cands.length > 1 && contact(cands[0])) {
+            let lo = 0, hi = cands.length - 1;
+            while (hi - lo > 1) { const m = (lo + hi) >> 1; if (contact(cands[m])) lo = m; else hi = m; }
+            choix = cands[lo];
+          }
+        }
+        if (choix) jumelle = { pB, nb: choix };
       }
       return { voies, pA, jumelle };
     };
@@ -2464,6 +2598,13 @@ export function createVehicules({ scene, player }) {
       // modèles différents.
       modele: (i) => voitureDeVille(graine * 7 + i * 17, TEINTES[(graine + i) % TEINTES.length],options.ville),
     });
+    // Ce que le jeu par voiture lit (v438) : le tracé et la grille de la
+    // création (les croisements y sont déjà calculés), et la section à deux
+    // voies — tout de suite en ville, à la demande sur l'autoroute, où la
+    // jumelle naît plus tard : le jeu ne doit pas changer quand elle arrive.
+    c.parcoursBase = p; c.grilleCreation = grille;
+    c.sectionVoies = tout ? tout.voies : (options.voies && options.voiesAuBesoin ? () => voiesLeLong(p, options.voies) : null);
+    c.jumelleTardive = !!options.voiesAuBesoin;
     // Ce que ce convoi VA montrer, sans rien fabriquer : un témoin de
     // diversité le lit avant que la moindre voiture ne soit née.
     c.graine = graine;
@@ -2476,7 +2617,7 @@ export function createVehicules({ scene, player }) {
     const poserJumelle = ({ voies, pA: pa, jumelle }) => {
       c.voiesDoubles = voies ? { part: Math.round(voies.part * 1000) / 1000, longueur: Math.round(voies.longueur) } : null;
       if (pa !== c.parcours) c.parcours = pa;
-      if (!voies || voies.longueur < 40) return;
+      if (!voies || voies.longueur < SECTION_MIN) return;
       if (!jumelle) { c.voiesDoubles.refus = 'contact'; return; }
       const nbB = options.bus ? c.nb - 1 : c.nb, graineB = graine * 13 + 5;
       const b = ajouter(pts, {
@@ -2487,7 +2628,7 @@ export function createVehicules({ scene, player }) {
         nom: 'voiture', emoji: '🚙', assise: 1.15, vu: VU_VOITURE,
         modele: (i) => voitureDeVille(graineB * 7 + i * 17, TEINTES[(graineB + i) % TEINTES.length], options.ville),
       });
-      b.graine = graineB; b.voie = voie;
+      b.graine = graineB; b.voie = voie; b.jeuDe = c;
       b.modeles = Array.from({ length: nbB }, (_, i) => choixFlotte(graineB * 7 + i * 17, options.ville).fichier);
       c.jumelle = b;
     };
@@ -2516,6 +2657,8 @@ export function createVehicules({ scene, player }) {
   // déclaré : un bus qui ne s'arrête pas.
   function bus(pts, graine = 0, suit = null) {
     const teintes = [0xd84a3a, 0xe8c83a, 0x3a9a4a, 0x3a6ac8, 0xf0813a];
+    // le bus est à une demi-voiture dans la file : l'anneau ne joue pas (v438)
+    if (suit) suit.suiviParBus = true;
     return ajouter(pts, {
       nb: 1, vitesse: suit ? suit.vitesse : ALLURE_VOIE.rue, routier: true, freine: true,
       profil: suit ? suit.profil : { limite: null, facteur: 1 },
@@ -3317,6 +3460,38 @@ export function createVehicules({ scene, player }) {
     // pour les tests (v372) : où la grille met la tête du convoi `cle` à
     // l'heure de rue `h` — c'est ce qu'une autre tablette compare à la sienne
     distanceA: (cle, h) => { const c = convois.find((x) => x.cle === cle); if (!c || !c.horaire()) return null; return c.distanceA(h - (c.decalage || 0)).d; },
+    // LE JEU PAR VOITURE (v438), pour les témoins : l'amplitude, la part du
+    // tour où il joue, l'écart de chaque voisine à son intervalle de grille
+    // (en secondes), et s'il se refait à l'identique — sans horloge ni hasard,
+    // c'est ce qui le garde le même sur deux tablettes (v305).
+    jeu: (cle) => {
+      const c = convois.find((x) => x.cle === cle);
+      if (!c || !c.horaire()) return null;
+      const T = c.jeuTable();
+      if (!T) return { A: 0, part: 0, ecarts: [], pur: true };
+      const ecarts = [];
+      if (c.baseFaite) for (let i = 0; i + 1 < c.nb; i++) ecarts.push(+(c.tempsA(c.base[i]) - c.tempsA(c.base[i + 1]) - c.dtVoiture).toFixed(3));
+      const avant = [0, 1, 2, 3, 4, 5].map((i) => c.jeu(i, T.P * i / 7));
+      const W = Array.from(T.W);
+      delete c._jeuT; delete c._hJeu;
+      const T2 = c.jeuTable(), apres = [0, 1, 2, 3, 4, 5].map((i) => c.jeu(i, T2.P * i / 7));
+      const pur = avant.every((x, i) => x === apres[i]) && W.every((x, i) => x === T2.W[i]);
+      return { A: +T.A.toFixed(3), part: +T.part.toFixed(3), kmax: T.kmax, ecarts, pur };
+    },
+    // l'A/B du jeu par voiture (v438), pour les sondes
+    jeuActif: (on) => { JEU_ACTIF = !!on; for (const c of convois) delete c._jeuT; },
+    // LE TYPE DE VOIE PAR TRONÇON (v438), pour les témoins : la part du tour
+    // de ce convoi qui roule à chaque limitation (au conducteur près).
+    allures: (cle) => {
+      const c = convois.find((x) => x.cle === cle);
+      if (!c || !c.horaire() || !c.profilCalcule) return null;
+      const f = (c.profil && c.profil.facteur) || 1, vs = c.profilCalcule.vs, out = {};
+      for (const [nom, v] of Object.entries(ALLURE_VOIE)) {
+        let n = 0; for (const x of vs) if (Math.abs(x - v * f) < 0.05) n++;
+        if (n) out[nom] = +(n / vs.length).toFixed(3);
+      }
+      return out;
+    },
     // pour les tests : un point du tracé `avance` blocs devant la voiture i
     devantVoiture: (ci, i, avance = 0) => { const c = convois[ci]; if (!c) return null; const q = c.parcours.a(c.dElement(i) + avance); return { x: q.x, y: q.y, z: q.z }; },
     poserPieton: (x, y, z) => { const n = { pos: { x, y, z } }; pietonsPoses.push(n); return n; },

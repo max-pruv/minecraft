@@ -32,6 +32,7 @@
 
 import * as THREE from 'three';
 import { voitureSons, bruitDeChoc, moteurRegime } from './sons.js';
+import { marquerRoues, glissade } from './traces.js';
 
 const PARAMS = new URLSearchParams(typeof location !== 'undefined' ? location.search : '');
 
@@ -456,6 +457,11 @@ export function sensationsAuVolant(a, player, dt) {
   }
   vieDeVoiture(a, player, dt, m);
   poursuiteVoiture(a, player, dt, m);
+  // LES TRACES DE PNEUS (v434) : tant que la voiture glisse — dérive au-delà
+  // du seuil du crissement, ou frein à main tiré en roulant —, chaque roue
+  // arrière laisse une bande sombre sur ce qui la porte. En l'air, rien.
+  const glisse = player.enLair ? 0 : glissade(player.derive, player.freinMainTire, m.v);
+  marquerRoues(a.mesh, a.sens.traces || (a.sens.traces = {}), glisse, player.pos.y);
 
   // LE SON SUIT CE QUE LA VOITURE FAIT : le rapport et le régime viennent de
   // la vitesse, la CHARGE de l'accélération (un moteur qui tire gronde plus
@@ -465,9 +471,15 @@ export function sensationsAuVolant(a, player, dt) {
   const charge = Math.max(0, Math.min(1, (m.acc * Math.sign(m.v || 1)) / (m.vmax * 1.2)));
   const derive = typeof player.derive === 'number' ? Math.abs(player.derive) : 0;
   const freinFort = -m.acc * Math.sign(m.v || 1) > 22 && Math.abs(m.v) > 6;
+  // LE FREIN À MAIN CRISSE (v437) : les roues arrière bloquées glissent sur
+  // la route même tout droit, sans dérive — mesuré avant, la bande des pneus
+  // n'y montait que d'un facteur deux, presque rien à l'oreille. Lu si présent
+  // (`freinMainTire`, publié par la physique depuis la v409).
+  const freinMain = player.freinMainTire && Math.abs(m.v) > 2;
   const crisseVise = Math.min(1, Math.max(
     derive > 0.12 ? (derive - 0.12) * 4 : 0,
     freinFort ? 0.6 : 0,
+    freinMain ? 0.75 : 0,
     Math.abs(m.lat) > 16 ? (Math.abs(m.lat) - 16) / 14 : 0));
   a.sens.crisse += (crisseVise - a.sens.crisse) * Math.min(1, dt * 8);
   const ev = player.etatVoiture || {};

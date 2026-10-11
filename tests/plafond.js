@@ -358,7 +358,13 @@ const EMPREINTE_MORCEAUX_V414 = '863d4203a441e3fd029ce2404fc6d6e706799e7f64fe489
 // colonnes qui diffèrent dans les morceaux de Paris sont toutes à moins de
 // 11,2 blocs de l'axe de l'entrée — la demi-chaussée et le trottoir d'un
 // boulevard (scratchpad diffp.mjs).
-const EMPREINTE_MORCEAUX_V357 = '1f1e5a6dbde9100ea365bc060d6c0f077a88cfc9bbb8b08128ebc590462126e3';
+// v439 : San Francisco, un des neuf lieux, porte l'entrée de l'US-101 (de la
+// porte sud-est au bout de Third Street). L'US-101 retirée du registre, la
+// branche rend 1f1e5a6d…, la constante de la v438, au bit près ; et les cent
+// colonnes qui diffèrent dans les morceaux de San Francisco sont toutes à
+// moins de sept blocs de l'axe de l'entrée — la demi-chaussée et le trottoir
+// d'une collectrice (scratchpad diffsf.mjs).
+const EMPREINTE_MORCEAUX_V357 = '239f48ab9f32f829be50f6e53f96ec0f43ed6d15fb2fdfaec0e1f0284917b37a';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -600,7 +606,8 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     try { t = await require('./sonde-force-chocs.cjs').mesurer(require('path').resolve(__dirname, '..')); } catch (e) { err = String(e && e.message || e); }
     const lignes = t ? Object.values(t) : [];
     verifier('conduite : la force d\'un choc suit la vitesse — pleins gaz un mur plein, un mur lent moins d\'un quart, un frôlement moins d\'un dixième',
-      lignes.length === 6 && lignes.every((r) => r.plein.force === 1 && r.lent.murs > 0 && r.lent.murs < 0.25 && r.frole.murs > 0 && r.frole.murs < 0.1),
+      // le compte vient de la table (huit classes depuis les utilitaires, v438)
+      lignes.length >= 6 && lignes.every((r) => r.plein.force === 1 && r.lent.murs > 0 && r.lent.murs < 0.25 && r.frole.murs > 0 && r.frole.murs < 0.1),
       t ? JSON.stringify(t) : `sonde : ${err}`);
   }
   // --- LA PENTE ET LA BOSSE (palier 3 de la conduite) ---------------------

@@ -770,6 +770,70 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## La rue dense, palier C (v438) — une variance par voiture est une fonction de son heure
+
+Quatre règles.
+
+- **UNE VOITURE NE PEUT AVOIR SON ALLURE QUE SI SON ÉCART À LA GRILLE EST UNE
+  FONCTION DE L'HORLOGE.** `Convoi.jeu(i, τ)` (vehicules.js) rend quelques
+  dixièmes de seconde d'avance ou de retard (`JEU_MAX`, 0,35 s ; ±10 %
+  d'allure), une ondulation dont la période et la phase viennent de la CLÉ du
+  convoi et du rang — jamais du hasard local : deux tablettes posent la même
+  voiture au même endroit (v305). Un témoin refait la table et la rejoue à
+  l'identique.
+- **LE JEU S'ÉTEINT LÀ OÙ LA FILE EST CALCULÉE AU PLUS JUSTE.** Le poids `W`
+  vaut zéro sous six blocs par seconde (le virage le plus lent fixe le nombre
+  de voitures, `nbSansChevauchement`), à trois secondes d'un croisement du
+  tracé avec lui-même (`instantsDeCroisement`), là où la jumelle partage la
+  voie de sa file, et dans un anneau que le bus suit. Il se décide sur ce
+  qui est connu à la CRÉATION — sur l'autoroute, la section de deux voies,
+  pas la jumelle qui naît plus tard : le jeu ne change pas quand elle arrive.
+  Preuve STRUCTURELLE (`sonde-rue-dense.cjs jeu`) : 179 convois sous node,
+  un tour d'horloge chacun, 392 contacts de grille sans le jeu, 392 avec.
+- **UNE FLOTTE QUI S'AGRANDIT GARDE SES POINTES UNIQUES.** La fourgonnette
+  et le pickup (`utilitaires.js`, fabriqués, originaux) ont leur classe dans
+  `FLOTTE` et leur fiche dans `conduite.js` (31 et 32 blocs/s) :
+  `ficheDeVitesse` retrouve la classe à sa pointe. Une silhouette entière vient
+  d'un profil extrudé : quinze maillages contre trente-deux pour un modèle
+  de la flotte — une rue qui gagne des utilitaires dessine moins.
+- **LA LIMITATION SE DEMANDE À LA SECTION, AU POINT DU TRACÉ.**
+  `allureDuTroncon` (voiesdoubles.js) lit les voies nommées de chaque ville
+  bâtie à la main et leur type du kit (boulevard 50, collectrice 40, locale
+  30) ; `allureVilleMonde` le boulevard de la croix. Manhattan garde la
+  sienne.
+
+Et **la seconde voie de Paris se perdait aux places, et dans une recherche qui
+supposait le croisement monotone.** 306 blocs de deux voies occupés sur 1 231 :
+la rampe de huit blocs mangeait seize blocs autour de chaque place
+(`RAMPE_VILLE` 5 en ville, l'autoroute garde 8), le seuil de quarante écartait
+les circuits qui ne suivent qu'un tronçon (`SECTION_MIN` 20). 446 après. La
+recherche du nombre de la jumelle ne testait que `nb` et 0,4 `nb` avant sa
+dichotomie : elle liste désormais les nombres que le croisement accepte et
+cherche parmi eux. Les deux circuits en huit restent sans jumelle — seul n = 4
+passe leur croisement (0,18 `nb`) : déclaré.
+## Les anneaux se cherchent ensemble (v435) — ce qu'aucun ordre ne règle se cherche sur l'état de tous
+
+Toronto, Dublin, Lima : l'anneau d'arrivée sur la place, chaque contour trouvé
+seul suivait un voisin immobile. Trois règles.
+
+- **QUAND AUCUN ORDRE NE CHANGE LE RÉSULTAT, LA RECHERCHE EST SUR LE MAUVAIS
+  ESPACE.** Les vingt-quatre ordres de Tokyo rendaient les mêmes 56 pas :
+  essayer des ordres ne déplace que le moment où un voisin se fige.
+  `contournerEnsemble` (villesmonde.js) cherche sur l'état de TOUS les anneaux
+  à la fois (un îlot d'un anneau par pas, ou son sens s'il n'a pas de jumeau),
+  note = segments fautifs, puis partage au-delà de la barre, puis îlots changés.
+  Elle part de la configuration de la phase 4 et ne tourne que s'il reste des
+  pas : 259 villes identiques au bit près, tabliers compris (comparé).
+- **LA COUVERTURE SE GARDE POINT PAR POINT SUR LA CONFIGURATION ENTIÈRE.**
+  Plusieurs anneaux bougent : « les points que seul cet anneau voyait » ne
+  veut plus rien dire. `vusDeVille` rend un octet par point, et un essai qui
+  laisse sans voiture un seul point vu avant est refusé.
+- **UNE ABSENCE DE SOLUTION SE MONTRE AVANT DE SE DÉCLARER.** Tokyo et Dubaï
+  restent : une carte des segments bloqués (place, monuments, ET eau sans
+  tablier — ma première carte oubliait l'eau et laissait croire à un détour)
+  montre que le seul détour de l'anneau d'arrivée suit la voie d'un voisin
+  dans le même sens, et 6 000 essais (contre 80) ne trouvent rien.
+
 ## La place se contourne (v432) — une garde se mesure sur ce qu'elle protège, à la règle du témoin
 
 Vingt-deux villes avaient la voie de leur anneau d'arrivée sur la place. Quatre
@@ -971,6 +1035,28 @@ borné à `PENTE_MAX`. `player.atterrissage` est un ÉVÉNEMENT daté, comme
 `choc` : on retient son `t` et l'on ne réagit qu'à un `t` neuf, jamais à celui
 qu'on trouve en montant. Le témoin fige le champ par une propriété qui ignore
 ce qu'on lui écrit (v358), et lit la pente dans la matrice monde.
+
+**Les traces de pneus (v434).** `src/traces.js`, appelé par `sensations.js`
+(pose) et `fun.js` (effacement, chaque image). Quatre règles.
+**UN APPEL POUR TOUTES** : un `InstancedMesh` borné (`MAX_TRACES`), l'opacité
+par instance (le greffon `aAlpha` des flammes, clé `traces-alpha`), la plus
+vieille cède sa place, un essaim vide est caché. **AUCUN PROGRAMME EN JEU** :
+`chaufferTraces` compile l'essaim exact à l'accueil ; le témoin lit les clés
+(une neuve si la chauffe est désarmée, vérifié). **LA TRACE SE POSE SUR CE
+QUI PORTE LA ROUE** (`coteSousRoue`) : tablier, puis surface continue, puis
+dessus du bloc, un centième au-dessus, et rien si l'écart à la voiture
+dépasse un bloc. **COUPÉ DU DESSIN EN RENDU LOGICIEL** (mesuré : un
+cinquième de la cadence du banc, `sonde-traces-cout.cjs`) mais POSÉ quand
+même : un témoin qui juge ce que la tablette voit force
+`reglageTraces.dessin = true` (ou `?traces=1`). Et une piste de témoin qui
+dérape se pose LARGE : la dérive pousse la voiture de côté, et sur treize
+blocs elle tombait de la plate-forme (`enLair`, zéro trace au frein à main).
+
+**Le frein à main crisse (v437).** Le crissement suivait la dérive, le
+freinage fort et le virage trop vite ; le frein à main tiré tout droit n'en
+donne aucun (dérive nulle) et ne s'entendait pas (bande des pneus ×1,9).
+`freinMainTire` (lu si présent) au-dessus de deux blocs/s vise 0,75. Le
+témoin écoute la sortie pendant le freinage, contre la ligne droite d'avant.
 
 ## Un contour dans l'autre sens, et les rues du Strip (v418) — ce qui empêchait le contour n'était pas l'absence de rue
 
@@ -2336,6 +2422,36 @@ engendrées. Quatre règles.
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
 
+## La voiture s'arrête devant une terrasse (v436) — une famille d'obstacle lit la même règle pour tous ceux qui butent
+
+Une règle. `mobilierDevant` (main.js) ne lisait que les blocs de mobilier
+(`isProp`) ; la table, les chaises, le banc et la colonne de la couche HD ne
+sont pas des blocs. Il demande désormais `world.mobilierVu` — la règle de la
+v425, celle que les passants lisent, seulement le mobilier MONTRÉ (une
+tablette sans couche HD n'a pas de table invisible) —, une fois par colonne
+couverte. Pas de seconde copie de la règle : deux lecteurs, une fonction.
+« Pas si l'on est déjà dedans » reste jugé dans la famille « mobilier »
+(v252). Le témoin roule sur un trottoir jusqu'à l'arrêt, durée en
+progrès (cinq secondes sans avancer), jamais une immobilité d'une seconde :
+une page HD du banc rend une image par seconde.
+
+## Les terrasses de café reviennent (v433) — une règle qui lit un bloc se relit quand le bloc se découpe
+
+Une règle.
+
+- **QUAND UN BLOC SE DÉCOUPE EN BANDES, ON CHERCHE CE QUI LISAIT LE BLOC
+  ENTIER.** La v301 a fait d'un rez-de-chaussée trois blocs (soubassement,
+  vitrage, enseigne) ; la règle des terrasses (v288) cherchait encore
+  `ARCHI.VITRINE` à un bloc au-dessus du trottoir — c'est-à-dire le VITRAGE
+  (`VITRINE_MI`) désormais. Zéro terrasse dans six quartiers pendant cent
+  quarante versions, et aucun témoin ne le voyait : celui des potelets
+  comptait la fonte, pas le cannage. Mesuré par la sonde qui compte ce qui
+  borde le trottoir à y+1 quartier par quartier. `grep -n "ARCHI.<ancien>"`
+  le jour où l'on découpe un bloc, comme le verre dans les murs. L'ancien bloc
+  reste lu (un enfant a pu le poser). La règle d'avant se rejoue
+  (`buildChunkTampons(…, { devantures: false })`) : c'est elle que lit
+  l'empreinte des 490 morceaux, au bit près.
+
 ## Le mobilier de trottoir arrête les passants (v425) — on bute sur ce qu'on voit
 
 Deux règles.
@@ -2810,7 +2926,7 @@ Les deux rouges réseau récurrents du palier C. Trois règles.
   une voix restée au quart (`GAIN_APPEL`) et le régime qui varie ; vérifié
   rouge sur une copie où la voix reste au quart.
 
-## Une page en jeu coûte quatre cœurs (v433) — on la met de côté, et l'on compte en images
+## Une page en jeu coûte quatre cœurs (v440) — on la met de côté, et l'on compte en images
 
 Le second lot des rouges récurrents. Cinq règles.
 
@@ -3622,6 +3738,35 @@ Une règle.
   la terre, l'herbe, le sable et la pierre naturelle. Manhattan a son propre sol
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
+
+## L'US-101 (v439) — un relevé en couronne commence à la porte, et une optimisation de tracé reconstruit la porte
+
+San Francisco–Los Angeles, le couloir instruit en v419. Quatre règles.
+
+- **UN RELEVÉ EN COURONNE COMMENCE À LA PORTE, PAS AU BORD.** Celui de la v419
+  disait « sortir par l'est (0° à 30°) » : il lisait le relief à partir de
+  r + 20. Mais la porte est à r − 20, et entre les deux, à l'est de San
+  Francisco, c'est la BAIE — soixante-dix blocs d'eau dans le disque. Le
+  relevé (`ring.mjs`) commence à r − 40 ; la porte est au sud-est (68°), sur
+  la terre ferme au bout de la baie, et la route passe au nord de SFO.
+- **UNE OPTIMISATION QUI DÉPLACE LE PREMIER POINT DE PASSAGE DÉPLACE LA
+  PORTE.** `porte()` vise le premier (et le dernier) point de passage : mon
+  affineur gardait la porte fixe et laissait bouger ses voisins, et la porte
+  réelle de Los Angeles tombait à −171°, sur un îlot (avenue de zéro bloc).
+  L'évaluation reconstruit les portes comme le registre (`complet(via)`), et
+  l'angle d'entrée est une contrainte : on choisit d'abord les angles propres
+  (`entrees.mjs`, ici une fenêtre d'un degré et demi à 180°) puis l'on fige le
+  dernier point sur ce rayon.
+- **UN AÉRODROME EST AUSSI UN REPÈRE.** SFO porte une boîte de 63 dans
+  `REPERES` : la sonde qui écarte les repères l'écarte d'un carré, plus large
+  que la marge du disque — c'est ce qui ferme l'ouest de l'aérodrome autant
+  que ses collines.
+- **LES CONTRAINTES DES TÉMOINS SONT DURES, LA LONGUEUR EST MOLLE.** Un
+  affineur qui additionne coudes, déblai et nombre de ponts échange un coude
+  de 33° contre un pont de moins. La note est lexicographique : d'abord les
+  violations (axe dans une marge, remblai > 4, déblai > 9, ponts à moins de
+  neuf blocs, coude > 22°, pont près d'une porte, angle de porte hors de la
+  fenêtre), puis seulement les ponts et la longueur.
 
 ## L'A8 (v428) — une sonde de couloir monte avec la route, et vérifie le rail sur la vraie emprise
 

@@ -1,13 +1,13 @@
 // Entry point: scene setup, chunk streaming, input, HUD, and the game loop.
 
-import { secondeVoieParis, secondeVoieVilleMonde, voiesAutoroute } from './voiesdoubles.js';
+import { secondeVoieParis, secondeVoieVilleMonde, voiesAutoroute, allureDuTroncon, allureVilleMonde } from './voiesdoubles.js';
 import * as THREE from 'three';
 import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp, MEUBLE_ITEMS, MEUBLE_START, isMeuble, RUE_ITEMS, RUE_START, RUE, isRue, ARCHI, CITY_BLOCK, ROUTE_BLOCK } from './blocks.js';
 import { passageEn } from './passages.js';
 import { mobilierTrottoir, MOBILIER_OBSTACLE, villeHD } from './facadeshd.js';
 import { PARIS as PARIS_ANCRE, circuitsParis, circuitsQuartiersParis, marquageParis } from './paris.js';
 import { circuitsLondres } from './londres.js';
-import { circuitsSF } from './sanfrancisco.js';
+import { circuitsSF, ENTREES_SF } from './sanfrancisco.js';
 import { circuitsNice, ENTREES_NICE } from './nice.js';
 import { circuitsLille } from './lille.js';
 import { buildPropMesh } from './props.js';
@@ -1608,16 +1608,26 @@ function updateChunks() {
   // Manhattan. Même garde que pour la circulation : on ne bloque que si l'on
   // n'est pas DÉJÀ dedans (player.js), sinon une voiture garée contre un
   // banc ne repartirait plus.
+  // ET LA TERRASSE DE CAFÉ NON PLUS (v436). La table et les chaises de la
+  // couche HD (v288) ne sont pas des blocs : la voiture les traversait. On
+  // demande la règle qui les pose (`world.mobilierVu`, v425 — seulement le
+  // mobilier MONTRÉ, sinon une tablette sans couche HD aurait des tables
+  // invisibles qui arrêtent), une fois par colonne couverte.
   const mobilierDevant = (x, z, cap) => {
     const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux;
     const demiLong = 2.2, demiLarg = Math.max(0.3, player.gabarit / 2);
     const y0 = Math.floor(player.pos.y + 0.1);
+    const vu = world.mobilierVu, lues = vu ? new Set() : null;
     for (let a = -demiLong; a <= demiLong + 1e-6; a += 0.5)
       for (let b = -demiLarg; b <= demiLarg + 1e-6; b += 0.5) {
         const sx = x + ux * a + vx * b, sz = z + uz * a + vz * b;
         if (villeRealiste.obstacleA(sx, sz)) return true;
         const bx = Math.floor(sx), bz = Math.floor(sz);
         if (isProp(world.getBlock(bx, y0, bz)) || isProp(world.getBlock(bx, y0 + 1, bz))) return true;
+        if (vu) {
+          const k = bx * 65536 + bz;
+          if (!lues.has(k)) { lues.add(k); if (vu(bx + 0.5, bz + 0.5, player.pos.y)) return true; }
+        }
       }
     return false;
   };
@@ -2035,7 +2045,7 @@ function updateChunks() {
   // l'E429 à l'est. `ENTREES_*` suit l'ordre de `entreesDe`, et l'on prend
   // celle de CETTE route — le `[0]` d'avant aurait fait entrer les voitures de
   // Bruxelles par la porte de Paris.
-  const ENTREES = { paris: ENTREES_PARIS, lille: ENTREES_LILLE, londres: ENTREES_LONDRES, nice: ENTREES_NICE };
+  const ENTREES = { paris: ENTREES_PARIS, lille: ENTREES_LILLE, londres: ENTREES_LONDRES, nice: ENTREES_NICE, sf: ENTREES_SF };
   // Une ville ENGENDRÉE n'a pas d'avenue d'entrée dessinée : le corridor y
   // arrive dans l'axe de sa trame (le point de passage est choisi pour cela),
   // donc sur la rue qui mène au centre. Les voitures la suivent jusqu'à douze
@@ -3208,7 +3218,13 @@ function animerLesVilles(dt) {
   // la graine vient de la ville, pas de la file (v246, voir graineDeVille)
   // l'allure de la voie : une rue de ville engendrée, une avenue nommée (v372)
   const decalage = tr.voie === 'avenue' && tr.ville !== 'ny' ? DECALAGE_AVENUE : 0;
+  // LE TYPE DE VOIE PAR TRONÇON (v438) : la section de la rue au point du
+  // tracé — boulevard cinquante, collectrice quarante, locale trente — et non
+  // plus une seule limitation pour tout le circuit. Manhattan garde la sienne.
+  const allure = tr.ville === 'ny' ? null : decalage ? (x, z) => allureDuTroncon(tr.cle, x, z)
+    : (tr.voie || 'rue') === 'rue' ? allureVilleMonde : null;
   const conv = vehicules.circulation(tr.pts, graineDeVille(tr), { ville: tr.ville, voie: tr.voie || 'rue',
+    limite: allure ? (x, z) => ALLURE_VOIE[allure(x, z) || tr.voie || 'rue'] : undefined,
     // les avenues des villes bâties à la main : la voie de droite (v372)
     decalage,
     // la seconde voie des boulevards (v423) ; le bus prend la première place
@@ -8317,6 +8333,8 @@ requestAnimationFrame(() => {
     try { chaufferLaCoque(); } catch (e) { console.warn('chauffe de la coque', e); }
     // la fumée et les flammes des dégâts (v343) : deux matériaux neufs
     try { fun.degats.chauffer(renderer, camera, scene); } catch (e) { console.warn('chauffe des dégâts', e); }
+    // les traces de pneus (v434) : un matériau neuf, son essaim exact
+    try { fun.chaufferTraces(renderer, camera, scene); } catch (e) { console.warn('chauffe des traces', e); }
     chauffeFinie = true;
     requestAnimationFrame(pasNY);
   };
