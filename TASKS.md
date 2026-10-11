@@ -31,6 +31,22 @@
   carte (dette ci-dessous, v267) et le badge à `v404` (bump pas encore fait).
   Piste : le témoin juge sur trente images ; il devrait attendre un nombre
   d'images avant de conclure, borné, la durée dans le message.
+- [ ] **UNE SUITE QUI FRANCHIT MINUIT UTC VOIT LE QUIZ (v412, banc).**
+  `jouerSeul` (banc.js) pose `edu.today().libreJusqua = 86400` sur la journée
+  EN COURS ; une suite qui passe minuit change de journée, la nouvelle n'a
+  pas de répit, et le quiz du professeur Cornichon recouvre l'écran : `monte.js`
+  rejouée seule sur la branche de la v412 entre 23 h 40 et 0 h 20 a rendu 35
+  rouges (`"cible":"quiz"` dans le relevé du doigt), puis 6 rouges, la même
+  distribution que `origin/main` (6), au passage suivant. Remède à écrire
+  côté banc : poser le répit sur la donnée qui le gouverne pour toute journée
+  (ou reposer `libreJusqua` à chaque `today()` neuf), pas en débranchant le quiz.
+- [ ] **PORTAIL DE LA v412 (règle de la v195).** `monte.js` rejouée seule,
+  passages alternés : `origin/main` 197 · 194 verts, branche 194 verts (le
+  passage d'avant a été faussé par minuit, ci-dessus). Les rouges restants
+  sont des deux côtés : « la rue roule à l'allure d'une ville » et « au feu,
+  la voiture freine » (même relevé, médiane 0 : circulation), « le mur de
+  face » (rouge sur `origin/main` avec force 0,52, l'arrêt ou le rebond, pas la
+  force), la téléportation qui compile, le trou en vol, le flanc frôlé.
 - [ ] **LA TOLÉRANCE DES VOITURES (v405) — ce qui reste, déclaré.** (1) Sur la
   tablette : Max essaie neuf murs pleins gaz (la voiture doit caler au 9e,
   fumer dès le 2e de face) et dit si le rythme lui va — les constantes sont
