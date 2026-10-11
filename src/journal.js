@@ -37,7 +37,7 @@ export const SESSION_CLE = 'web-minecraft-session-ouverte-v1';  // les sessions 
 export const PLANTAGES_CLE = 'web-minecraft-plantages-v1';      // plantages consécutifs
 export const TABLE_JOURNAL = 'journal_appareil';
 
-// UNE SESSION, UNE ENTRÉE (v425). L'iPhone de la famille a déclaré « plantée »
+// UNE SESSION, UNE ENTRÉE (v426). L'iPhone de la famille a déclaré « plantée »
 // une session qui a envoyé sa fermeture propre trois minutes plus tard (lignes
 // 82 et 83 de `journal_appareil`) : DEUX PAGES vivaient sur le même stockage,
 // la seconde a lu le drapeau de la première — vivante — comme un plantage, et
@@ -290,10 +290,10 @@ export class Journal {
   // La session se termine PROPREMENT : au revoir (`fermeture`), relance voulue
   // par le jeu (`mise-a-jour`), ou passage en arrière-plan (`arriere-plan`).
   // Sa ligne quitte la table — et seulement la SIENNE : une autre page ouverte
-  // garde la sienne (v425). Le compteur de plantages retombe : une session qui
+  // garde la sienne (v426). Le compteur de plantages retombe : une session qui
   // a su dire au revoir n'est pas un plantage, et un plantage ancien ne doit
   // pas compter contre une relance qui a tenu. SAUF `garderCompteur` : une page
-  // née cachée, que l'enfant n'a jamais vue, n'a rien prouvé (v425).
+  // née cachée, que l'enfant n'a jamais vue, n'a rien prouvé (v426).
   fermer(fin = 'fermeture', { garderCompteur = false } = {}) {
     if (!this.ouvert) return null;
     this.ouvert = false;
@@ -314,7 +314,7 @@ export class Journal {
   }
 }
 
-// ── CE QUE LA SCÈNE TIENT CÔTÉ CARTE GRAPHIQUE, EN OCTETS (v425) ─────────────
+// ── CE QUE LA SCÈNE TIENT CÔTÉ CARTE GRAPHIQUE, EN OCTETS (v426) ─────────────
 //
 // Safari ne donne pas le tas (`tasMo` nul dans tous les relevés de l'iPhone),
 // et c'est le COMPTE de textures qui a trahi les 734 Mo de la flotte (v413) —

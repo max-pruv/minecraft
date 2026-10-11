@@ -6,12 +6,20 @@
 
 export const NOUVEAUTES = [
   {
-    v: 425,
+    v: 426,
     titre: 'Moins de fausses alertes',
     puces: [
       'Deux fenêtres ouvertes ne se gênent plus',
       'Le jeu reste en mode normal',
       'Les parents voient la mémoire utilisée',
+    ],
+  },
+  {
+    v: 425,
+    titre: 'Les passants contournent les bancs',
+    puces: [
+      'Plus personne ne traverse un banc',
+      'Ni une colonne d’affiches',
     ],
   },
   {

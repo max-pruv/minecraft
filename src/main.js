@@ -4,6 +4,7 @@ import { secondeVoieParis, secondeVoieVilleMonde, voiesAutoroute } from './voies
 import * as THREE from 'three';
 import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp, MEUBLE_ITEMS, MEUBLE_START, isMeuble, RUE_ITEMS, RUE_START, RUE, isRue, ARCHI, CITY_BLOCK, ROUTE_BLOCK } from './blocks.js';
 import { passageEn } from './passages.js';
+import { mobilierTrottoir, MOBILIER_OBSTACLE, villeHD } from './facadeshd.js';
 import { PARIS as PARIS_ANCRE, circuitsParis, circuitsQuartiersParis, marquageParis } from './paris.js';
 import { circuitsLondres } from './londres.js';
 import { circuitsSF } from './sanfrancisco.js';
@@ -99,13 +100,13 @@ const journal = new Journal({
   },
 });
 const BILAN_JOURNAL = journal.ouvrir();
-// UNE PAGE NÉE CACHÉE N'EST PAS UNE SESSION QUE L'ENFANT A VUE (v425). iOS peut
+// UNE PAGE NÉE CACHÉE N'EST PAS UNE SESSION QUE L'ENFANT A VUE (v426). iOS peut
 // ouvrir l'application sans la montrer, puis la tuer : sans ceci, elle laissait
 // sa ligne ouverte et le lancement suivant comptait un plantage — les sessions
 // VIDES (aucun relevé, aucun événement) de `journal_appareil`. Elle se ferme
 // sans remettre le compteur à zéro, et `rouvrir` la relance au premier plan.
 if (document.visibilityState === 'hidden') journal.fermer('arriere-plan', { garderCompteur: true });
-// Le battement : « cette page vit encore » (v425, journal.js).
+// Le battement : « cette page vit encore » (v426, journal.js).
 setInterval(() => journal.battre(), BATTEMENT_MS);
 window.addEventListener('error', (e) => journal.erreur(e.message || (e.error && e.error.message) || 'erreur',
   `${String(e.filename || '').split('/').pop()}:${e.lineno || 0}`));
@@ -1772,8 +1773,28 @@ function updateChunks() {
   // voiture garée, avion au poste — dont la fiche porte un `gabarit`. Le
   // rectangle d'un véhicule posé se prend sur son cap, comme celui d'une
   // voiture de la rue ; sa longueur est celle d'une voiture.
+  // ET LE MOBILIER DE TROTTOIR QU'ON VOIT (v425). Les terrasses, les bancs et
+  // les colonnes de la couche HD (v288) n'étaient pas des blocs : un passant
+  // traversait la table d'un café. La règle qui les pose est celle que le
+  // mailleur dessine (`mobilierTrottoir`) ; on ne bute que sur ce qui est
+  // MONTRÉ — le détail du morceau visible (`montrerLeDetail`) —, sinon un
+  // appareil sans couche HD aurait des tables invisibles qui arrêtent.
+  const mobilierVu = (x, z, y) => {
+    const bx = Math.floor(x), bz = Math.floor(z);
+    const cx = Math.floor(bx / CHUNK), cz = Math.floor(bz / CHUNK);
+    const e = chunkMeshes.get(cx + ',' + cz);
+    if (!e || !e.facades || !e.facades.visible) return false;
+    const by = world.sommetColonne(bx, bz);
+    if (Math.abs(by + 1 - y) > 1.5 || world.getBlock(bx, by, bz) !== CITY_BLOCK.SIDEWALK) return false;
+    const v = villeHD(cx, cz, CHUNK);
+    if (!v || v.mobilier === false) return false;
+    const m = mobilierTrottoir((dx, dy, dz) => world.getBlock(bx + dx, by + dy, bz + dz), bx, bz);
+    return !!m && MOBILIER_OBSTACLE.has(m.genre);
+  };
+  world.mobilierVu = mobilierVu;
   world.obstaclePieton = (x, z, y) => {
     if (vehicules.voitureA(x, z, y)) return true;
+    if (mobilierVu(x, z, y)) return true;
     for (const a of animalManager.animals) {
       const g = a.def.gabarit;
       if (!(g > 1) || Math.abs(a.pos.y - y) > 2.5) continue;
@@ -5764,7 +5785,7 @@ if (BILAN_JOURNAL.rapport) {
   journal.noter('plantage-precedent', { plantages: BILAN_JOURNAL.plantages, surete: !!SURETE });
   setTimeout(() => BILAN_JOURNAL.rapports.forEach((r) => envoyerJournal(r)), 2500);
 }
-// UNE SESSION AU BATTEMENT RÉCENT EST PEUT-ÊTRE UNE PAGE VIVANTE (v425) : on
+// UNE SESSION AU BATTEMENT RÉCENT EST PEUT-ÊTRE UNE PAGE VIVANTE (v426) : on
 // regarde si son battement avance avant de la dire plantée — deux fois, parce
 // qu'une page qui charge peut rater un battement.
 if (BILAN_JOURNAL.douteuses.length) {
@@ -5775,7 +5796,7 @@ if (BILAN_JOURNAL.douteuses.length) {
     for (const r of rapports) { journal.noter('plantage-precedent', { plantages: journal.plantages(), confirme: true }); envoyerJournal(r); }
   }, 7000);
 }
-// LA RELANCE VOULUE PAR LE JEU DIT AU REVOIR AVANT DE RECHARGER (v425) :
+// LA RELANCE VOULUE PAR LE JEU DIT AU REVOIR AVANT DE RECHARGER (v426) :
 // index.html l'appelle dans `reloadOnce` et `forcerMaj`. `pagehide` le fait
 // aussi ; on ne parie pas la sûreté de la famille sur un seul événement.
 window.__journalAuRevoir = (fin = 'mise-a-jour') => { try { envoyerJournal(journal.fermer(fin), true); } catch { /* jamais bloquant */ } };
@@ -7809,7 +7830,7 @@ function motDuPalier() {
 // faut pour relire une panne — où l'enfant est, ce que la page rend, ce
 // qu'elle tient. Pas de parcours de scène : ce qui coûte ne se relève pas.
 let pireImageJournal = 0;
-// CE QUE LA SCÈNE TIENT CÔTÉ CARTE GRAPHIQUE, EN OCTETS (v425, journal.js) :
+// CE QUE LA SCÈNE TIENT CÔTÉ CARTE GRAPHIQUE, EN OCTETS (v426, journal.js) :
 // un parcours de la scène au plus toutes les cinq secondes — la cadence des
 // relevés — et son coût en millisecondes voyage avec lui (`ms`), pour qu'on le
 // relise sur la tablette au lieu de le supposer nul.
