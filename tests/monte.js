@@ -1647,6 +1647,32 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('à l\'arrivée, la rue se fabrique par tranches, pas toute dans la même image',
       fab.vues >= 6 && fab.maxParImage <= 5, JSON.stringify(fab));
 
+    // LES FILES SE SERRENT AU ROUGE (v429). Max, capture de GTA VI : des voies
+    // serrées. Une voiture arrêtée derrière une autre s'arrêtait entre 1,1 et
+    // 2,6 blocs de son pare-chocs (balayage au pas d'un bloc et demi) :
+    // médiane mesurée 2,0 à Rome sur l'ancien code (`sonde-rue-dense.cjs`),
+    // 1,1 à 1,2 ici. On relève, vingt secondes au-dessus de Rome, l'écart des
+    // voitures arrêtées derrière une voiture (`causes` = 1). Barre au milieu.
+    const serre = await tab.evaluate(async () => {
+      const g = window.__game, { positionDe } = await import('./src/mondes.js'), P = positionDe('rome'), avant = g.player.pos.clone();
+      g.player.flying = true; g.player.pos.set(P.x, 75, P.z); g.player.vel.set(0, 0, 0);
+      const gaps = [], t0 = performance.now();
+      await new Promise((f) => setTimeout(f, 8000));
+      while (performance.now() - t0 < 30000 && gaps.length < 400) {
+        await new Promise((f) => setTimeout(f, 500));
+        for (const c of g.vehicules.etat()) {
+          if (!c.routier || c.nom === 'bus') continue;
+          const vs = c.vitesses || [];
+          (c.ecarts || []).forEach((e, i) => { if (vs[i] < 0.3 && vs[i + 1] < 0.3 && c.causes[i + 1] === 1) gaps.push(e - 4.4); });
+        }
+      }
+      gaps.sort((x, y) => x - y);
+      g.player.pos.copy(avant); g.player.vel.set(0, 0, 0);
+      return { n: gaps.length, mediane: gaps.length ? +gaps[gaps.length >> 1].toFixed(2) : null, s: Math.round((performance.now() - t0) / 1000) };
+    });
+    verifier('au rouge, la file se serre pare-chocs contre pare-chocs',
+      serre.n >= 30 && serre.mediane <= 1.6, JSON.stringify(serre));
+
     // LES TRAINS INTERVILLES (v179) : dix-huit rames sur neuf navettes
     // réelles (Eurostar, TGV, Shinkansen, AVE, Frecciarossa, ICE), et elles
     // ROULENT — on suit la distance d'une rame jusqu'à la voir avancer, en

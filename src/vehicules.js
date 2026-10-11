@@ -1613,7 +1613,12 @@ class Convoi {
     // Ce que chaque voiture vise (`cible`, posé par `cederLePassage`), ou la
     // grille, ou un peu plus pour rattraper ; elle y va au rythme d'une voiture
     // (`rapprocher`) — ce qu'elle n'a pas fait devient du retard.
-    const mini = 2 * this.demiLong + 1.6;
+    // (un bloc entre deux pare-chocs EN LIGNE DROITE depuis la v429 : le
+    // balayage serré arrête la suiveuse vers 1,2, le plancher ne doit pas la
+    // retenir à 1,6. Mais dans un virage la corde est plus courte que l'arc et
+    // les coins se touchent — mesuré à Tokyo, 19 relevés « file à l'arrêt » —
+    // on y garde le 1,6 d'avant.)
+    const miniDroit = 2 * this.demiLong + 1.0, miniVirage = 2 * this.demiLong + 1.6;
     for (let i = 0; i < n; i++) {
       const pas = this.base[i] - ancien[i];
       const vConv = dt > 0 ? Math.max(0, pas / dt) : 0;
@@ -1632,6 +1637,10 @@ class Convoi {
       if (r < 0) r = 0;
       // UN CONVOI NE SE TÉLESCOPE PAS (v283), par construction : la suiveuse
       // garde une longueur de voiture derrière celle qui la précède.
+      // (la courbure sous la suiveuse ET devant elle, là où est la précédente)
+      const dq = this.base[i] - r;
+      const mini = Math.abs(this.parcours.courbure(dq)) > 0.03 || Math.abs(this.parcours.courbure(dq + 3)) > 0.03
+        || Math.abs(this.parcours.courbure(dq + 5)) > 0.03 ? miniVirage : miniDroit;
       if (i > 0) {
         const plancher = this.retard[i - 1] - (this.base[i - 1] - this.base[i]) + mini;
         if (r < plancher) r = plancher;
@@ -2731,7 +2740,13 @@ export function createVehicules({ scene, player }) {
     const balayer = (a) => {
       if (a.balayage) return a.balayage;
       a.balayage = []; a.pas = [];
-      for (let pas = 0.5; pas <= a.portee; pas += 1.5) {
+      // LES FILES SE SERRENT AU ROUGE (v429). Au pas d'un bloc et demi, la
+      // voiture s'arrêtait entre 1,1 et 2,6 blocs de celle qui la précède
+      // (médiane 1,9 à 2,4 mesurée, v423) ; une file au feu se lisait comme un
+      // chapelet clairsemé. Les deux premiers blocs se balaient au quart : on
+      // s'arrête entre 1,1 et 1,35 bloc, pare-chocs contre pare-chocs comme
+      // dans une vraie rue. Au-delà, le pas d'avant (le coût ne bouge guère).
+      for (let pas = 0.5; pas <= a.portee; pas += pas < 2 ? 0.25 : 1.5) {
         const q = a.c.parcours.a(a.d + pas), cap = a.c.parcours.capLisse(a.d + pas);
         // (soixante centimètres de plus devant et derrière : on s'arrête un
         // peu AVANT le contact, pas dessus)
