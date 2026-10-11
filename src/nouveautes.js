@@ -6,12 +6,37 @@
 
 export const NOUVEAUTES = [
   {
-    v: 442,
+    v: 445,
     titre: 'Les commandes de l\'avion rangées',
     puces: [
       'Plus rien ne se chevauche en vol',
       'Descendre rejoint la colonne de bord',
       'Le quiz met l\'avion en pause',
+    ],
+  },
+  {
+    v: 444,
+    titre: 'Les ponts de Washington',
+    puces: [
+      'Deux ponts sur l\'Anacostia',
+      'Les voitures de New York entrent en ville',
+    ],
+  },
+  {
+    v: 443,
+    titre: 'Des colonnes bien placées',
+    puces: [
+      'Les colonnes d\'affiches ont de la place',
+      'Plus jamais devant une porte',
+    ],
+  },
+  {
+    v: 442,
+    titre: 'Moins de bouchons en ville',
+    puces: [
+      'Les voitures de l\'autoroute font demi-tour',
+      'Elles gardent leur propre voie',
+      'Madrid roule bien mieux',
     ],
   },
   {

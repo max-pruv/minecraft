@@ -1464,8 +1464,35 @@ export function mobilierTrottoir(at, wx, wz, opts) {
   const versRue = rueA2(1, 0) ? [1, 0] : rueA2(-1, 0) ? [-1, 0] : rueA2(0, 1) ? [0, 1] : rueA2(0, -1) ? [0, -1] : null;
   const t = tirage(wx, wz, 919);
   if (versRue && t > 0.955) return { genre: 'banc', vers: versRue };
-  if (t < 0.012 && [[1, 0], [-1, 0], [0, 1], [0, -1]].every(([dx, dz]) => tirage(wx + dx, wz + dz, 919) >= 0.012)) return { genre: 'morris' };
+  // le seuil double avec la règle du dégagement (v443), qui en écarte plus de la moitié
+  const sm = opts && opts.morrisAvant ? 0.012 : 0.024;
+  if (t < sm && [[1, 0], [-1, 0], [0, 1], [0, -1]].every(([dx, dz]) => tirage(wx + dx, wz + dz, 919) >= sm)) {
+    if (opts && opts.morrisAvant) return { genre: 'morris' };
+    return morrisDegagee(at, wx, wz, opts) ? { genre: 'morris' } : null;
+  }
   return null;
+}
+
+// UNE COLONNE MORRIS SE PLANTE DANS LE VIDE (v443). Le tirage seul la posait
+// contre une porte cochère, ou à un bloc d'un banc ou d'une terrasse : mesuré
+// sur huit quartiers, 37 colonnes sur 76 à moins de deux blocs d'un autre
+// meuble, deux collées à une porte. Elle exige désormais l'air libre sur ses
+// quatre côtés (ni mur, ni porte) et aucun banc, terrasse ni autre colonne à
+// deux blocs —
+// la même règle, lue sur les colonnes voisines (`morrisAvant` rejoue celle
+// d'avant, pour l'empreinte).
+function morrisDegagee(at, wx, wz, opts) {
+  for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (at(dx, 1, dz) !== BLOCK.AIR) return false;
+  for (let a = -2; a <= 2; a++) for (let b = -2; b <= 2; b++) {
+    if (!a && !b) continue;
+    if (at(a, 0, b) !== CITY_BLOCK.SIDEWALK || at(a, 1, b) !== BLOCK.AIR) continue;
+    // deux colonnes candidates dans le même voisinage : la plus petite valeur
+    // de tirage garde la sienne
+    if (tirage(wx + a, wz + b, 919) < tirage(wx, wz, 919)) return false;
+    const m = mobilierTrottoir((x, y, z) => at(a + x, y, b + z), wx + a, wz + b, { ...opts, morrisAvant: true });
+    if (m && (m.genre === 'banc' || m.genre === 'terrasse')) return false;
+  }
+  return true;
 }
 // Ce qui a un corps qu'on contourne : une terrasse (table et chaises), un banc,
 // une colonne. Un potelet ou une corbeille se frôlent : on passe à côté.

@@ -60,7 +60,7 @@ import {
 } from './paris.js';
 import {
   WASHINGTON, WASHINGTON_R, surTerreWashington, dansEauWashington, hauteurWashington, solWashington,
-  batirColonneWashington, MONUMENTS_DC, QUAIS_METRO,
+  batirColonneWashington, MONUMENTS_DC, QUAIS_METRO, pontWashington, COTE_PONT_DC,
   VOIES_CIRCUITS_DC,
 } from './washington.js';
 import {
@@ -2720,6 +2720,10 @@ export class World {
     if (pvm) return h > pvm.cote ? h : pvm.cote;
     // Et les neuf ponts de Paris, à la cote de la ville (v294).
     if (c && c.key === 'paris' && pontParis(x, z)) return h > c.base ? h : c.base;
+    // Et les deux ponts de l'Anacostia (v444), à la cote de la rue — sauf sous
+    // la Washington d'avant, qui n'en a pas.
+    if (h < COTE_PONT_DC && pontWashington(x, z) !== null && !this.conf.villesAvant
+      && !(this.colonnesVilleAvant.size > 0 && this.colonnesVilleAvant.has(cleColonneParis(x, z)))) return COTE_PONT_DC;
     return h;
   }
 
@@ -3556,6 +3560,11 @@ export class World {
           const DC = dcAvant ? WASHINGTON_V367 : DC_NEUF;
           const solWashington = DC.solWashington;
           const sw = solWashington(wx, wz);
+          // LES PONTS DE L'ANACOSTIA (v444) : sur l'eau et la berge qui
+          // descend, le tablier est à la cote de la rue ; le lit et l'eau
+          // restent dessous, le relief ne bouge pas. Le métro, lui, se creuse
+          // depuis le vrai relief (`h`).
+          const hp = !dcAvant && h < COTE_PONT_DC && pontWashington(wx, wz) !== null ? COTE_PONT_DC : h;
           // Les ormes du Mall et les bosquets des parcs poussent ici — fût et
           // couronne — comme dans toute ville de la boucle générique. Sans cet
           // appel, ARBRE était posé À PLAT : de la pelouse sur le gravier des
@@ -3564,11 +3573,11 @@ export class World {
           // LE FEU PASSE AVANT LE RÉVERBÈRE : un coin de carrefour n'en reçoit
           // jamais un (`lampadaireDeVille` écarte les coins), mais l'ordre dit
           // ce qui compte quand les deux pourraient répondre.
-          if (!arbreDeVille(data, x, z, h, wx, wz, solWashington, sw)
-            && !feuDeVille(data, x, z, h, wx, wz, sw,
+          if (!arbreDeVille(data, x, z, hp, wx, wz, solWashington, sw)
+            && !feuDeVille(data, x, z, hp, wx, wz, sw,
               feuxDeVille(dcAvant ? 'dc-v367' : 'dc', WASHINGTON, DC.VOIES_CIRCUITS_DC, solWashington))
-            && !lampadaireDeVille(data, x, z, h, wx, wz, solWashington, sw) && sw !== null) {
-            data[World.index(x, h, z)] = sw;
+            && !lampadaireDeVille(data, x, z, hp, wx, wz, solWashington, sw) && sw !== null) {
+            data[World.index(x, hp, z)] = sw;
           }
           DC.batirColonneWashington(wx, wz, h, (dy, id) => {
             const wy = h + dy;

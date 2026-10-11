@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Les commandes de l'avion se rangent (v442) — une file en flux ne peut rien recouvrir
+## Les commandes de l'avion se rangent (v445) — une file en flux ne peut rien recouvrir
 
 Max, deux captures d'iPhone en vol : six paires d'éléments qui se recouvrent
 (cadran de cap × minicarte × GPS × bandeau, défi de Cornichon × manette). Trois
@@ -795,6 +795,34 @@ règles.
   de `monte.js` se jouent aux deux, formulés sans dimension. Et le quiz de
   l'invariant 2 met le vol en pause (`onPause` → `running = false`) : mesuré,
   zéro bloc parcouru sous la question — on le RANGE, on ne le diffère pas.
+
+## Les raccords d'autoroute s'arrêtent avant l'anneau (v442) — deux grilles ne partagent pas une voie
+
+Trois règles.
+
+- **UNE VOIE N'A QU'UNE GRILLE.** Dix-neuf des quarante-six raccords
+  route/ville engendrée roulaient dans la voie d'un anneau (569 blocs) : deux
+  grilles horaires indépendantes (v305) qu'aucun réglage ne cadence l'une
+  contre l'autre (Madrid 6,7 à 6,9 % de paires au contact). Le raccord s'arrête
+  quatre blocs (`MARGE`) avant la première voie d'anneau, même sens ou en face
+  à moins de 1,6 bloc (`finAvantAnneaux`, raccords.js) ; plus court que
+  `RACCORD_MIN`, le demi-tour se fait à la porte. Les pistes ont été mesurées
+  toutes deux (`sonde-rue-dense.cjs raccords`) : l'arrêt à la porte partage
+  encore 44 blocs et ne fait entrer personne ; le raccord court 20 blocs, tous
+  des demi-tours. « Le raccord devient une file de l'anneau » n'existe pas
+  sans téléporter une voiture d'une grille à l'autre.
+- **CE QUE LE DÉMARRAGE NE PEUT PAS PAYER ET QUE L'APPROCHE NE PEUT PAS
+  CHANGER SE MESURE HORS LIGNE.** Les autoroutes naissent au démarrage ; les
+  anneaux de leurs trente-six villes coûtent 877 ms sous node (derrière
+  « Jouer », v258) ; et raccourcir le raccord à l'approche changerait la grille
+  de toute la file d'une tablette à l'autre. La troncature est donc une TABLE
+  (`RACCORDS_COURTS`), comme `ANNEAUX_EN_PLUS`, et un témoin de `plafond.js` la
+  recalcule : un anneau qui bouge la fait rougir et nomme le raccord.
+- **UNE SONDE QU'UNE SUITE LIT SE REQUIERT, ELLE NE SE LANCE PAS.** Le premier
+  témoin lançait `sonde-rue-dense.cjs` par `spawnSync` : l'aiguillage du
+  portail (`sondeIsolee`) ne voit que `require` et `import`, et une sonde
+  modifiée aurait laissé `plafond.js` « déjà vert ». La sonde exporte
+  `mesurer(mode)` ; `?raccords=long` rejoue l'avenue entière au navigateur.
 
 ## La rue dense, palier C (v438) — une variance par voiture est une fonction de son heure
 
@@ -2466,6 +2494,18 @@ engendrées. Quatre règles.
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
 
+## Les colonnes Morris se plantent dans le vide (v443) — un meuble se pose en regardant ses voisins, par la même règle
+
+Une règle. Un meuble qui se pose au tirage ne connaît pas ses voisins : la
+colonne Morris (v289) tombait contre une porte cochère ou à un bloc d'un banc
+(43 sur 76, mesuré). `morrisDegagee` (facadeshd.js) exige l'air libre sur
+quatre côtés et rejoue `mobilierTrottoir` sur les colonnes à deux blocs (avec
+`morrisAvant`, pour ne pas boucler) ; dans un voisinage, la plus petite valeur
+de tirage garde sa colonne. Un dégagement qui écarte plus de la moitié des
+candidats se compense par le tirage (0,012 → 0,024), sinon la ville perd la
+moitié de ses colonnes en silence. `morrisDegagees: false` rejoue l'ancienne
+règle pour l'empreinte des 490 morceaux.
+
 ## La voiture s'arrête devant une terrasse (v436) — une famille d'obstacle lit la même règle pour tous ceux qui butent
 
 Une règle. `mobilierDevant` (main.js) ne lisait que les blocs de mobilier
@@ -3782,6 +3822,24 @@ Une règle.
   la terre, l'herbe, le sable et la pierre naturelle. Manhattan a son propre sol
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
+
+## Les ponts de l'Anacostia (v444) — un pont de ville est du sol, et la cote du tablier se dit à tous ses lecteurs
+
+Deux règles.
+
+- **UN PONT DE RUE DANS UNE VILLE BÂTIE À LA MAIN EST UNE VOIE DU SOL, À LA
+  COTE DE LA VILLE.** `pontWashington` (washington.js) rend la matière de la
+  bande des deux ponts ; `world.js` l'écrit à `COTE_PONT_DC` (33) sur toute
+  colonne plus basse, et `coteRoulable` rend cette cote. C'est la règle de la
+  Tamise (v208) : `terrainHeight` ne bouge pas (109 881 colonnes identiques),
+  l'eau reste dessous. Le pont ne remplace que ce qui n'est PAS déjà une rue :
+  la bande d'un pont qui chevauche un carrefour de la grille y mettait du
+  trottoir (vu au relevé de la rue de v = 84).
+- **UNE EMPREINTE DE MORCEAUX QUI BOUGE SE PROUVE PAR LE DÉSARMEMENT ET PAR
+  CE QUI DIFFÈRE** (v419) : `pontWashington` rendant null, la branche rend la
+  constante de la v439 au bit près ; les 112 colonnes qui diffèrent sont
+  toutes dans les bandes des ponts. Et l'ajout d'une voie dans une ville à
+  circuits se remesure : les quatorze circuits de Washington sont identiques.
 
 ## L'US-101 (v439) — un relevé en couronne commence à la porte, et une optimisation de tracé reconstruit la porte
 
