@@ -483,7 +483,7 @@ export const ROUTES = [
   // portée de talus.
   { nom: 'A6', villes: ['paris', 'lyon'],
     via: [[-333, 699], [-336, 732], [-360, 781], [-364, 798], [-363, 806], [-280, 990], [-168, 1103], [-116, 1202], [-24, 1304], [-17, 1321], [2, 1393], [24, 1424], [308, 1705], [523, 1814], [536, 1828], [594, 1923], [659, 1983]] },
-  // L'A8 (v427), MARSEILLE–NICE, la Provençale. L'axe direct est en mer
+  // L'A8 (v428), MARSEILLE–NICE, la Provençale. L'axe direct est en mer
   // (401 blocs d'eau sur 596) : la route passe par l'intérieur, et le relevé
   // en couronne (scratchpad ring.mjs) ferme Marseille de presque tous les
   // côtés — la ville est à 33, son est et son nord-est montent à 46-50 dès

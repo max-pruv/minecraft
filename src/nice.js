@@ -324,7 +324,7 @@ const VOIES = [
   { nom: 'Avenue Malausséna', pts: [[-4, -51], [-4, -30]] },
 ].map(aLaRegle);
 
-// L'ENTRÉE DE L'A8 (v427), comme celles de Paris, de Lille et de Londres :
+// L'ENTRÉE DE L'A8 (v428), comme celles de Paris, de Lille et de Londres :
 // du bout du corridor (`routes.js`, vingt blocs sous le bord du disque, à
 // l'ouest) jusqu'au carrefour de l'avenue de la Californie et du boulevard
 // René-Cassin, la seule artère qui touche l'ouest de la ville. Une

@@ -2697,6 +2697,40 @@ Les deux rouges réseau récurrents du palier C. Trois règles.
   une voix restée au quart (`GAIN_APPEL`) et le régime qui varie ; vérifié
   rouge sur une copie où la voix reste au quart.
 
+## Quatre témoins qui se placent (v427) — une page sur l'accueil n'est pas gratuite
+
+Quatre rouges récurrents des portails, tous démontés par une sonde. Cinq règles.
+
+- **UNE PAGE RESTÉE SUR L'ACCUEIL COÛTE UN CŒUR ET PLUS.** L'accueil rend le
+  monde derrière lui : deux pages ouvertes et oubliées occupent 2,4 à 3,7 cœurs
+  sur quatre (`sonde-voisines.cjs`, /proc/stat), et le gel CDP
+  (`Page.setWebLifecycleState`) n'y change RIEN — seule la fermeture. Un
+  témoin qui mesure une préparation, un débit ou une durée se joue quand il
+  est seul (`maj.js` « vraiment là » : 4 s seul, 39–44 s à côté de deux
+  voisines), et une page dont le verdict est rendu se ferme.
+- **`locator.click` ATTEND DEUX IMAGES IDENTIQUES.** À 0,07 image par seconde
+  (l'accueil de Manhattan en rendu logiciel), cela fait 24 s au repos et plus
+  de 30 sous charge : le témoin mesurait la cadence, pas le bouton. Sur une
+  page qui rend mal, on appuie par le document, après avoir vérifié ce que
+  l'enfant voit (actif, visible, à découvert par `elementFromPoint`) — et ce
+  qui s'ouvre entre deux (un second écran d'identité) se ferme avant de juger.
+- **UNE PAGE QUE LA SUITE GARDE OUVERTE JOUE SA JOURNÉE.** La cascade
+  « pas aux commandes » de `monte.js` tombait à 45,8 minutes de la suite :
+  l'arrêt quotidien de 45 minutes (invariant 2) sur `tab`. Le jeu se met en
+  pause, et tout témoin suivant mesure une partie arrêtée. `jouerSeul` pose
+  des déblocages du jour (`unlocks`), comme le code parental — la donnée qui
+  gouverne, jamais la règle (`sonde-limite-du-jour.cjs`). Devant une cascade
+  qui va et vient avec la DURÉE d'une suite, on additionne les durées des
+  témoins jusqu'au premier rouge avant toute autre hypothèse.
+- **UNE JOURNÉE SE RANGE SOUS LA DATE LOCALE.** Le répit de quiz du banc ne
+  valait que pour la journée du lancement : un portail qui passe minuit (20 h
+  à New York) retrouvait un quiz quinze minutes plus tard, en pleine suite.
+  `jouerSeul` rouvre le répit de la journée COURANTE (`sonde-quiz-minuit.cjs`).
+- **UNE VOITURE DE CONVOI À L'ARRÊT SE GARE OÙ ELLE VEUT.** Au coin de son
+  anneau, en biais : une pose écrite « un bloc derrière, trois de côté » pour
+  une voiture droite la manque. Le témoin attend que le crochet la rende, puis
+  se pose dans le repère de SA boîte.
+
 ## L'invité de New York (v412) — deux pages du banc se partagent un processeur, deux tablettes jamais
 
 Une règle. Un témoin à deux tablettes dont l'une rend une scène lourde
@@ -3439,7 +3473,7 @@ Une règle.
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
 
-## L'A8 (v427) — une sonde de couloir monte avec la route, et vérifie le rail sur la vraie emprise
+## L'A8 (v428) — une sonde de couloir monte avec la route, et vérifie le rail sur la vraie emprise
 
 Marseille–Nice, par l'intérieur. Trois règles.
 

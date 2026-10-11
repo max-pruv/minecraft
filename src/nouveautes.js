@@ -6,11 +6,18 @@
 
 export const NOUVEAUTES = [
   {
-    v: 427,
+    v: 428,
     titre: 'Marseille rejoint Nice',
     puces: [
       'Une autoroute passe par les collines',
       'On entre dans Nice par l\'ouest',
+    ],
+  },
+  {
+    v: 427,
+    titre: 'Des essais du jeu plus sûrs',
+    puces: [
+      'Les essais trouvent les vraies pannes',
     ],
   },
   {

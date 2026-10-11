@@ -772,7 +772,7 @@ const VRAIES_KM = [
             return { route: e.route, dans, vus, rue, voie, long: Math.round(Math.hypot(fin[0] - (pts[0] || fin)[0], fin[1] - (pts[0] || fin)[1])) };
           });
         } catch (e) { out.entreesParisErreur = String(e); }
-        // L'ENTRÉE DE NICE (v427) : de la porte ouest de l'A8 au carrefour de la
+        // L'ENTRÉE DE NICE (v428) : de la porte ouest de l'A8 au carrefour de la
         // Californie et de René-Cassin. Même lecture que Paris et Londres.
         try {
           const NI = await import('./src/nice.js'), WO = await import('./src/world.js');
@@ -1164,7 +1164,7 @@ const VRAIES_KM = [
         surRail: a1.surRail && a1.surRail['A6'], frole: a1.frole && a1.frole['A6'], paris: a1.entreesParis, erreur: a1.entreesParisErreur,
         lyon: (a1.entreesEngendrees || []).filter((e) => e.route === 'A6') }));
 
-    // L'A8 (v427) : Marseille–Nice, la Provençale. L'axe direct est en mer ; la
+    // L'A8 (v428) : Marseille–Nice, la Provençale. L'axe direct est en mer ; la
     // route sort de Marseille par le nord, entre le TGV et le massif, le
     // contourne par le col, et entre dans Nice par l'ouest, où une entrée
     // déclarée mène au carrefour de la Californie. Sur l'ancien code, la route
