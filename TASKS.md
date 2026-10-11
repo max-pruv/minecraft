@@ -57,7 +57,17 @@
   - **La famille du nuage** (`reseau.js`, 1/3 des deux côtés) : une course du
     JEU, pas de l'attente — l'invité frappait avant d'avoir posé son curseur
     de lecture du relais. Corrigé (`relaisnuage.js`), 6/100 → 0/100 sous node,
-    témoin déterministe en tête de `reseau.js`.
+    témoin déterministe en tête de `reseau.js`. CE QUI RESTE, double mesure
+    (`reseau.js` rejouée SEULE) : branche 79 verts / 6 rouges (deux passages
+    plus tôt : 79 / 6 et 35 / coupé), `origin/main` v440 73 verts / 11 rouges.
+    Des deux côtés : les portières à deux tablettes (entrer, descendre, la
+    voiture refaite pendant la marche), « un hôte sans courtier est trouvé »
+    (branche : l'invité ouvre un monde jumeau, `hote: true` — le PHARE n'a pas
+    été vu ; `origin/main` : « le monde est bien là » et pas de lien), « seul,
+    le bouton d'émotes se range ». `origin/main` seul ajoute la veille sans
+    retour, « seule après le départ de l'hôte » et le passager sans courtier.
+    Piste du jumeau : le sondage du phare (`relaisLire` filtré par émetteur),
+    pas le bus — à sonder comme `sonde-relais-amorce.mjs`.
   - **Le vol au-dessus de Paris** (`monte.js`) : vert seul depuis la v440
     (252 blocs en 12,8 s) ; son message dit la cadence (`sonde-vol-paris.cjs`).
   - **Le taxi** (`manhattan.js`) : compte du temps de JEU, fenêtre de côté
