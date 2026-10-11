@@ -284,7 +284,7 @@ function vieDeVoiture(a, player, dt, m) {
   const h = Math.min(dt, 0.05);
   S.wr += ((roulisVise - S.roulis) * 70 - S.wr * 12) * h; S.roulis += S.wr * h;
   S.wt += ((tangageVise - S.tangage) * 70 - S.wt * 12) * h; S.tangage += S.wt * h;
-  // LA PENTE (v423) : depuis la v408 la physique publie `player.tangage`, la
+  // LA PENTE (v429) : depuis la v408 la physique publie `player.tangage`, la
   // pente sous les roues (nez en haut positif, le même signe que le nôtre) et
   // en l'air la moitié de la trajectoire. Elle s'AJOUTE au tangage de la
   // caisse : dans une côte le nez monte, et il plonge encore un peu au

@@ -770,6 +770,59 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Toutes les voies occupées (v423) — la seconde voie est la même ligne, décalée
+
+Max, une capture de GTA VI à côté d'une de GTA V : « Good inspiration » — des
+voies serrées et TOUTES occupées. Mesuré avant : une seule file par sens
+partout ; sur l'autoroute (deux voies par sens) la file roulait À CHEVAL sur
+la ligne entre les deux, à 4,0 blocs de l'axe, et vingt voitures imposées
+faisaient une voiture tous les cent vingt blocs. Six règles.
+
+- **LA SECONDE VOIE N'EST PAS UN AUTRE CIRCUIT, C'EST LE MÊME, DÉCALÉ.**
+  `ParcoursDecale` (vehicules.js) garde la DISTANCE de son tracé de base et
+  pose ses points à `lat(d)` blocs à droite : la jumelle passe partout à la
+  même distance du départ que sa file, `rangJumeau` intervalles plus tard. Une
+  seule grille horaire pour deux voies, donc la même circulation sur deux
+  tablettes (v305) ; un témoin exige l'égalité exacte des deux distances à
+  trois heures. Elle a sa propre clé (`|voie2`). La contrainte de partage
+  (v211, v387) n'a pas à la voir : deux convois côte à côte sur les deux voies
+  d'un même sens se SUIVENT, et c'est ici une seule ligne.
+- **LA SECTION SE DEMANDE À CE QUI LA DESSINE** (`voiesdoubles.js`, pur) : les
+  percées de premier rang de Paris (`sectionDeVoie`), la croix-boulevard des
+  villes engendrées (`t.axe`, même repère que `solVillesMonde`), la pleine
+  section d'autoroute (`dc` porté par chaque point de `traceRoute`). Une
+  portion plus courte que seize blocs ne compte pas (on TRAVERSE un boulevard
+  au carrefour, on ne le suit pas), on change de voie sur seize blocs, et l'on
+  se rabat avant un virage : décalée vers l'intérieur d'un coin, la jumelle
+  replie son tracé et touche sa file.
+- **LÀ OÙ LA SECTION N'A QU'UNE VOIE, LES DEUX FILES N'EN FONT QU'UNE — ET LA
+  LIGNE NE DOIT PAS SE TOUCHER.** Mesuré : au même nombre de voitures, presque
+  toutes les jumelles touchaient leur file dans le virage lent qui suit le
+  boulevard (une demi-voiture d'écart dans le temps). La file laisse donc la
+  place à sa jumelle : le plus grand `n` (au moins 0,4 `nb`) où
+  `jumelleSansContact` fait rouler toute la ligne sur un tour sans contact ;
+  mesuré, le meilleur vaut 0,4 à 0,5 `nb` — la même ligne, ses voitures
+  réparties sur deux voies. Le bus prend la première place de la ligne.
+- **LA DENSITÉ D'UNE FILE EST BORNÉE PAR SON VIRAGE LE PLUS LENT, ET CELA SE
+  MESURE.** Une grille horaire espace les voitures en TEMPS : à 2,5 blocs par
+  seconde dans un coin, deux secondes font cinq blocs, une longueur de voiture.
+  Le plus grand nombre sans contact vaut une voiture toutes les deux secondes,
+  à 0,5 % près, sur les 205 anneaux mesurés — le plafond actuel. On ne
+  densifie pas une rue en serrant sa grille ; on la densifie par les voies.
+- **UN CALCUL QU'ON NE LIT QU'À L'APPROCHE NE SE FAIT PAS AU DÉMARRAGE**
+  (v378, v387) : les autoroutes naissent au démarrage, leur seconde voie quand
+  l'enfant approche du corridor (`voiesAuBesoin`, une par image) — trois
+  cents millisecondes de moins derrière « Jouer ». Et la file d'autoroute vaut
+  0,44 fois une voiture toutes les deux secondes (le partage mesuré sur les
+  vingt-quatre corridors), sa jumelle autant : 480 → 1 354 voitures.
+- **ET UNE LIGNE NE SE TÉLESCOPE PAS.** La grille garde la file et sa
+  jumelle à distance ; un freinage local (un feu) non : mesuré à Paris, 10 %
+  de paires au contact, toutes entre la jumelle et sa file, contre 0 sur
+  `origin/main`. Là où elles partagent la voie, la voiture qui précède sur la
+  ligne est dans l'AUTRE convoi (`devantSurLaLigne`), et le plancher de la
+  v283 s'étend à elle : 0 %. Et la légitimité d'une attente se propage dans
+  la LIGNE (`memeLigne`), pas seulement dans la file.
+
 ## Les sensations au volant (v422) — la caméra regarde la voiture, et un mur se cherche cellule par cellule
 
 Chantier « conduite » (six sessions, octobre 2026) ; celle-ci tient ce que
@@ -806,7 +859,7 @@ règles.
   compter deux fois. Les avions gardent la poursuite d'avant à l'identique ;
   `?sensations=0` rejoue l'ancienne conduite, pour mesurer.
 
-**La pente se dessine (v423).** La physique publie `player.tangage` (v408,
+**La pente se dessine (v429).** La physique publie `player.tangage` (v408,
 nez en haut positif — le signe de `rotation.x` sur un modèle au nez en −z) et
 le RÉÉCRIT à chaque image ; `sensations.js` l'ajoute au tangage de la caisse,
 borné à `PENTE_MAX`. `player.atterrissage` est un ÉVÉNEMENT daté, comme
@@ -2178,6 +2231,24 @@ engendrées. Quatre règles.
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
 
+## Le mobilier de trottoir arrête les passants (v425) — on bute sur ce qu'on voit
+
+Deux règles.
+
+- **LA RÈGLE QUI POSE UN OBJET EST LA RÈGLE QUI LE REND SOLIDE.** Le mailleur
+  décidait seul où poser une terrasse, un banc, une colonne Morris (v288,
+  v289). `mobilierTrottoir` (facadeshd.js, pure) rend le genre et l'orientation
+  pour une colonne de trottoir ; le mailleur dessine, `world.obstaclePieton`
+  (main.js) bute sur ce qui a un corps (`MOBILIER_OBSTACLE` : terrasse, banc,
+  colonne). Prouvé par l'empreinte des 490 morceaux, identique : sortir la
+  règle n'a pas changé un sommet.
+- **ON NE BUTE QUE SUR CE QUI EST MONTRÉ.** Le mobilier n'existe que dans les
+  façades détaillées d'un morceau à portée de `RAYON_HD`, et pas au palier bas.
+  `mobilierVu` exige le détail VISIBLE du morceau (`montrerLeDetail`) ; sinon une
+  tablette sans couche HD aurait des tables invisibles qui arrêtent — un mur
+  invisible, la panne même que la v292 a interdite. Et l'enfant à pied lit le
+  même crochet (v278) : il contourne la terrasse comme les passants.
+
 ## Les passages en biais (v421) — une bande qui suit une direction arbitraire est de la géométrie
 
 Trois règles.
@@ -2634,6 +2705,40 @@ Les deux rouges réseau récurrents du palier C. Trois règles.
   une voix restée au quart (`GAIN_APPEL`) et le régime qui varie ; vérifié
   rouge sur une copie où la voix reste au quart.
 
+## Quatre témoins qui se placent (v427) — une page sur l'accueil n'est pas gratuite
+
+Quatre rouges récurrents des portails, tous démontés par une sonde. Cinq règles.
+
+- **UNE PAGE RESTÉE SUR L'ACCUEIL COÛTE UN CŒUR ET PLUS.** L'accueil rend le
+  monde derrière lui : deux pages ouvertes et oubliées occupent 2,4 à 3,7 cœurs
+  sur quatre (`sonde-voisines.cjs`, /proc/stat), et le gel CDP
+  (`Page.setWebLifecycleState`) n'y change RIEN — seule la fermeture. Un
+  témoin qui mesure une préparation, un débit ou une durée se joue quand il
+  est seul (`maj.js` « vraiment là » : 4 s seul, 39–44 s à côté de deux
+  voisines), et une page dont le verdict est rendu se ferme.
+- **`locator.click` ATTEND DEUX IMAGES IDENTIQUES.** À 0,07 image par seconde
+  (l'accueil de Manhattan en rendu logiciel), cela fait 24 s au repos et plus
+  de 30 sous charge : le témoin mesurait la cadence, pas le bouton. Sur une
+  page qui rend mal, on appuie par le document, après avoir vérifié ce que
+  l'enfant voit (actif, visible, à découvert par `elementFromPoint`) — et ce
+  qui s'ouvre entre deux (un second écran d'identité) se ferme avant de juger.
+- **UNE PAGE QUE LA SUITE GARDE OUVERTE JOUE SA JOURNÉE.** La cascade
+  « pas aux commandes » de `monte.js` tombait à 45,8 minutes de la suite :
+  l'arrêt quotidien de 45 minutes (invariant 2) sur `tab`. Le jeu se met en
+  pause, et tout témoin suivant mesure une partie arrêtée. `jouerSeul` pose
+  des déblocages du jour (`unlocks`), comme le code parental — la donnée qui
+  gouverne, jamais la règle (`sonde-limite-du-jour.cjs`). Devant une cascade
+  qui va et vient avec la DURÉE d'une suite, on additionne les durées des
+  témoins jusqu'au premier rouge avant toute autre hypothèse.
+- **UNE JOURNÉE SE RANGE SOUS LA DATE LOCALE.** Le répit de quiz du banc ne
+  valait que pour la journée du lancement : un portail qui passe minuit (20 h
+  à New York) retrouvait un quiz quinze minutes plus tard, en pleine suite.
+  `jouerSeul` rouvre le répit de la journée COURANTE (`sonde-quiz-minuit.cjs`).
+- **UNE VOITURE DE CONVOI À L'ARRÊT SE GARE OÙ ELLE VEUT.** Au coin de son
+  anneau, en biais : une pose écrite « un bloc derrière, trois de côté » pour
+  une voiture droite la manque. Le témoin attend que le crochet la rende, puis
+  se pose dans le repère de SA boîte.
+
 ## L'invité de New York (v412) — deux pages du banc se partagent un processeur, deux tablettes jamais
 
 Une règle. Un témoin à deux tablettes dont l'une rend une scène lourde
@@ -2898,6 +3003,32 @@ Le dérapage contrôlé à la GTA. Quatre règles.
   l'identique (sonde dans le brouillon, deux arbres). Le moteur ne pousse pas
   pendant le frein à main : un drift « gaz + frein » demanderait un second
   doigt sur l'accélérateur, que le joystick n'a pas — décidé, déclaré.
+
+## La force d'un choc suit la vitesse (v424) — conduite, la dette des dégâts
+
+La force publiée (`player.choc.force`) saturait à 1 dès 20 blocs/s normaux
+(`CHOC_PLEIN`) : un mur à 55 coûtait autant qu'à 20, un frôlement à 15° pleins
+gaz publiait 0,68. Trois règles.
+
+- **LE CHOC PLEIN SE LIT À LA POINTE DE SA CLASSE.** `reponseChoc` et
+  `chocContreVoiture` prennent `vPleine` ; le joueur passe
+  `vitessePleine(fiche)` = `POINTE_PLEINE` (0,85) × la pointe — la vitesse
+  qu'on a après quatre ou cinq secondes de gaz. Un mur pleins gaz vaut donc 1
+  comme avant, et les murs promis par degats.js (`CHOCS_AVANT_PANNE`,
+  `CHOCS_AVANT_FEU`) ne bougent pas : rien n'a été recalibré là-bas. Sans
+  `vPleine`, l'ancienne échelle (un appelant qui ne connaît pas la classe).
+  Pourquoi pas un seuil plus bas : sin 15° × 0,95 / `POINTE_PLEINE` au carré
+  doit rester sous un dixième de mur, ce qui exige au moins 0,78.
+- **UN SEUIL QUI DISAIT « DOUX » EN FORCE SE DIT EN VITESSE.** `CONTACT_DOUX`
+  valait 0,15 de force (trois blocs/s à l'ancienne échelle) ; la force
+  dépendant de la classe, il est en blocs/s d'impact (`impact`, rendu par
+  `reponseChoc`). Quand on change l'unité d'une grandeur, on cherche tout seuil
+  écrit dans l'ancienne unité.
+- **« PLEINE VITESSE » DANS UN TÉMOIN SE MESURE.** Le témoin des deux murs
+  (`degats.js`) prenait trente-sept blocs d'élan : 0,58 de la pointe, ce qui
+  saturait à 20 b/s et ne sature plus. La dalle s'étend, cent quarante blocs
+  d'élan (0,89). Le vrai joueur sous node (`sonde-force-chocs.cjs`, appelée
+  par `plafond.js`) garde la règle dans les six classes.
 
 ## La pente, la bosse et la file (v408) — conduite, palier 3
 
@@ -3349,6 +3480,37 @@ Une règle.
   la terre, l'herbe, le sable et la pierre naturelle. Manhattan a son propre sol
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
+
+## L'A8 (v428) — une sonde de couloir monte avec la route, et vérifie le rail sur la vraie emprise
+
+Marseille–Nice, par l'intérieur. Trois règles.
+
+- **UNE VILLE ASSISE SOUS SON PAYS FAIT ÉCHOUER LE COULOIR LE PLUS BAS, ET LE
+  REMÈDE EST DANS LE COÛT.** Marseille est à 33 et son pays monte à 46-50 dès
+  vingt blocs : le couloir le plus bas (v355) y rendait cent pour cent de refus
+  « déblai » — un défaut de la recherche (v329), pas du pays. Le coût d'une
+  case porte désormais une RAMPE : au-dessus de ce que 0,06 par bloc permet
+  depuis la porte (plus six), il croît au carré. La sonde cherche alors un
+  chemin que le profil peut suivre, et le trouve au nord, entre le TGV et le
+  massif.
+- **UNE ESTIMATION DE TALUS NE GARDE PAS UN RAIL.** Ma sonde estimait la
+  largeur du talus sur l'axe (l'écart au terrain sous l'axe, divisé par la
+  pente) ; le registre réel rendait vingt-cinq colonnes de talus sur la gare
+  TGV de Marseille, parce qu'un talus se règle sur le terrain de SA colonne,
+  pas sur celui de l'axe. Tout candidat retenu passe désormais par une
+  instance neuve de `routes.js` où sa fiche est inscrite, et `routeEn` lu
+  colonne par colonne (`exact`, scratchpad lib.mjs) : c'est la grandeur du
+  témoin, donc celle qu'on filtre (v313).
+- **UN SOMMET DE COUDE NE TOMBE PAS SUR LE JOINT D'UN PONT.** Le portail a
+  rendu deux points sans cube ni tablier à l'entrée du deuxième pont : le
+  sommet (1111, 3208) était à s 308,5, un bloc et demi avant le tablier, et
+  les colonnes du coin de son coude étaient déjà « tablier » (pas de cube)
+  sans qu'aucun ruban — orienté selon le tronçon d'après — ne les couvre. Le
+  comblement de coin de la v336 vaut DANS un pont, pas au joint. Ma sonde de
+  tracé mesurait les joints, mais sur le profil, pas sur les rubans ; le
+  témoin se rejoue sous node en vingt lignes (`joint.mjs`, scratchpad), et
+  c'est lui qu'on passe sur tout tracé retenu. Le sommet déplacé à s 304 :
+  zéro trou sur 19 500 points.
 
 ## L'A6 (v419) — une ville qui reçoit deux routes a deux arrivées
 
@@ -4412,6 +4574,48 @@ répondu en une requête : iPhone, en vol à l'ouest de Paris, 1 089 morceaux
   une baie de façade coûte cinquante-six à soixante-neuf sommets par face,
   et c'est le nombre de sommets, pas le rayon ni le budget, qui décidera un
   jour de ce qu'un appareil peut montrer.
+
+## Le journal de bord ne crie plus au plantage pour rien (v426) — une session par page, et la mémoire en octets
+
+« Le jeu plante de temps en temps. » Onze « plantages » en quarante minutes
+sur l'iPhone, et deux de suite rangent le palier bas pour de bon (v296). Quatre
+règles.
+
+- **UN DRAPEAU UNIQUE SUPPOSE UNE SEULE PAGE, ET L'APPAREIL EN A EU DEUX.**
+  La ligne 82 de `journal_appareil` est une session « plantée » qui envoie sa
+  fermeture propre trois minutes plus tard (ligne 83) : deux pages sur le même
+  stockage, la seconde lit le drapeau de la première, vivante, comme un
+  plantage — et une page qui se ferme efface le drapeau de l'autre, ce qui
+  CACHE un vrai plantage (mesuré sur l'ancien code). Chaque session a son
+  identifiant, son journal (`JOURNAL_CLE#id`) et sa ligne dans la table des
+  sessions ouvertes avec son dernier BATTEMENT (2 s) ; une session au
+  battement récent est douteuse, et c'est le battement qui n'avance pas qui la
+  dit morte (`verifierDouteuses`, 3 puis 7 s). L'ancien format (une chaîne)
+  est jugé comme avant : mort d'office. **Avant d'accuser le jeu, on relit
+  les lignes VOISINES du journal : deux lignes du même `debut` disent deux
+  pages.**
+- **L'HYPOTHÈSE DONNÉE SE MESURE AVANT D'ÊTRE CORRIGÉE.** La consigne
+  supposait que la relance du service worker tuait la page avant le journal.
+  La sonde (`sonde-journal-relance.cjs`) recharge à 200 ms, 600 ms, 1,2 s,
+  2,5 s, 5 s et pendant le chargement : zéro faux plantage sous Chromium. Le
+  geste reste (`reloadOnce` et `forcerMaj` ferment le journal avant de
+  recharger, `__journalAuRevoir`) parce qu'il ne coûte rien et ne parie pas
+  sur un seul événement de WebKit ; la cause, elle, était ailleurs.
+- **UNE PAGE NÉE CACHÉE N'EST PAS UNE SESSION QUE L'ENFANT A VUE.** Les
+  sessions VIDES (aucun relevé, aucun événement, pas même `premier-plan`) sont
+  ce que laisse une page qu'iOS ouvre sans la montrer puis tue. Elle se ferme
+  à l'ouverture, SANS remettre le compteur à zéro (`garderCompteur`) : elle
+  n'a rien prouvé.
+- **UN COMPTE N'EST PAS UN POIDS.** Safari ne donne pas le tas ; c'est le
+  compte de textures qui a trahi la flotte (734 Mo, v413 de la session des
+  textures). `estimerMemoire` (journal.js, pur, lu par forme) : largeur ×
+  hauteur × 4 × 4/3 par SOURCE distincte (sans le tiers quand la texture ne
+  fait pas de mipmaps — une `DataTexture`, et mon premier témoin l'oubliait),
+  octets des attributs et index par TABLEAU distinct. Un parcours par relevé
+  (5 s), et son coût voyage avec lui (`gpu.ms`) : 4,7 ms médian à Paris au
+  banc. C'est ce que la scène TIENT, pas ce que le pilote a chargé : à Paris,
+  126 sources contre 85 textures du pilote — les deux nombres ensemble disent
+  plus que chacun.
 
 ## Le journal de bord, et Paris qui pesait un gigaoctet (v296)
 

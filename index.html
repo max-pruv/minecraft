@@ -2524,6 +2524,7 @@
         } catch { /* pas de cache */ }
         const u = new URL(location.href);
         u.searchParams.set('maj', Date.now().toString(36));
+        try { if (window.__journalAuRevoir) window.__journalAuRevoir('mise-a-jour'); } catch { /* jamais bloquant */ }
         location.replace(u.toString());
       };
       window.__forceUpdate = forcerMaj;
@@ -2582,6 +2583,8 @@
         // `wm-maj-installe`, lu par main.js).
         try { sessionStorage.setItem('wm-maj-fete', '1'); sessionStorage.setItem('wm-maj-installe', '1'); } catch { /* mode privé */ }
         showLoader(raison);
+        // Le journal de bord se ferme AVANT (v426) : une relance n'est pas un plantage.
+        try { if (window.__journalAuRevoir) window.__journalAuRevoir('mise-a-jour'); } catch { /* jamais bloquant */ }
         location.reload();
       };
 

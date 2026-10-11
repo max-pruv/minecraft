@@ -599,6 +599,7 @@ const VRAIES_KM = [
       out.convoiTomei = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'Tōmei') || null;
       out.convoiM40 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'M40') || null;
       out.convoiA6 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A6') || null;
+      out.convoiA8 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A8') || null;
       // WASHINGTON EST UNE BOÎTE (v367) : la route de New York s'arrête NET à
       // son bord sud (`boutNet`), au niveau de la rue d'Anacostia qui y
       // débouche, et ses voitures entrent par cette rue (`avenues`). On compte
@@ -771,6 +772,24 @@ const VRAIES_KM = [
             return { route: e.route, dans, vus, rue, voie, long: Math.round(Math.hypot(fin[0] - (pts[0] || fin)[0], fin[1] - (pts[0] || fin)[1])) };
           });
         } catch (e) { out.entreesParisErreur = String(e); }
+        // L'ENTRÉE DE NICE (v428) : de la porte ouest de l'A8 au carrefour de la
+        // Californie et de René-Cassin. Même lecture que Paris et Londres.
+        try {
+          const NI = await import('./src/nice.js'), WO = await import('./src/world.js');
+          const ents = m.entreesDe('nice'), E = NI.ENTREES_NICE || [];
+          out.entreesNice = ents.map((e, i) => {
+            const pts = E[i] || [];
+            let dans = null, vus = 0, rue = 0;
+            for (let k = 0; k + 1 < pts.length && !dans; k++) for (let t = 0; t <= 1; t += 0.01) {
+              const X = Math.floor(pts[k][0] + (pts[k + 1][0] - pts[k][0]) * t), Z = Math.floor(pts[k][1] + (pts[k + 1][1] - pts[k][1]) * t);
+              if (m.routeEn(X, Z)) continue;
+              const h = w.coteRoulable(X, Z); vus++;
+              if (WO.CHAUSSEE.has(w.getBlock(X, h, Z))) rue++;
+              if (w.isSolid(X, h + 1, Z) || w.isSolid(X, h + 2, Z)) { dans = [X, Z, w.getBlock(X, h + 1, Z)]; break; }
+            }
+            return { route: e.route, dans, vus, rue, n: pts.length };
+          });
+        } catch (e) { out.entreesNiceErreur = String(e); }
         // TOUTE ENTRÉE DE VILLE ENGENDRÉE (v311) : Bruxelles en a deux,
         // Amsterdam une. Chacune doit arriver sur la rue (trente blocs depuis
         // la porte) et, jusqu'au bout de l'avenue (douze blocs du centre), ne
@@ -1144,6 +1163,22 @@ const VRAIES_KM = [
       JSON.stringify(a1.absent ? a1 : { convoi: a1.convoiA6 ? { nom: a1.convoiA6.nom, voitures: (a1.convoiA6.modeles || []).length } : 'aucun convoi A6',
         surRail: a1.surRail && a1.surRail['A6'], frole: a1.frole && a1.frole['A6'], paris: a1.entreesParis, erreur: a1.entreesParisErreur,
         lyon: (a1.entreesEngendrees || []).filter((e) => e.route === 'A6') }));
+
+    // L'A8 (v428) : Marseille–Nice, la Provençale. L'axe direct est en mer ; la
+    // route sort de Marseille par le nord, entre le TGV et le massif, le
+    // contourne par le col, et entre dans Nice par l'ouest, où une entrée
+    // déclarée mène au carrefour de la Californie. Sur l'ancien code, la route
+    // n'existe pas : ni convoi, ni entrée de Nice.
+    verifier('l\'A8 relie Marseille à Nice par l\'intérieur, entre dans Nice par une rue jusqu\'à la Californie, et des voitures y roulent',
+      !a1.absent && !a1.entreesNiceErreur && !!a1.convoiA8 && a1.convoiA8.routier && (a1.convoiA8.modeles || []).length >= 10
+      && !!a1.surRail && !!a1.surRail['A8'] && a1.surRail['A8'][0] > 100 && a1.surRail['A8'][1] === 0
+      && !!a1.frole && a1.frole['A8'] === 0
+      && (a1.entreesNice || []).some((e) => e.route === 'A8')
+      && a1.entreesNice.every((e) => !e.dans && e.vus > 20 && e.rue >= e.vus * 0.95)
+      && (a1.entreesEngendrees || []).some((e) => e.ville === 'marseille' && e.route === 'A8' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7),
+      JSON.stringify(a1.absent ? a1 : { convoi: a1.convoiA8 ? { nom: a1.convoiA8.nom, voitures: (a1.convoiA8.modeles || []).length } : 'aucun convoi A8',
+        surRail: a1.surRail && a1.surRail['A8'], frole: a1.frole && a1.frole['A8'], nice: a1.entreesNice, erreur: a1.entreesNiceErreur,
+        marseille: (a1.entreesEngendrees || []).filter((e) => e.route === 'A8') }));
 
     // AUCUNE ROUTE NE PREND L'EMPRISE D'UNE AUTRE (v355) : Montréal a deux
     // routes, et chaque colonne d'emprise doit appartenir au segment qu'on
@@ -3518,6 +3553,35 @@ const VRAIES_KM = [
           + ` · densité la plus basse ${pireDens.map((v) => `${v.cle} ${v.densite}`).join(', ')} voit./1000 blocs`
           + (sans.length ? ` · SANS circuit : ${sans.join(', ')}` : '')
           + ` · tours de quartier ${flotteVilles.quartiers} : chaussée ${flotteVilles.chaussee} %, ${flotteVilles.plein} pas dans du plein`);
+    }
+
+    // --- TOUTES LES VOIES OCCUPÉES (v423) -------------------------------------
+    //
+    // Max, une capture de GTA VI : les voies y sont serrées et TOUTES occupées.
+    // Mesuré avant : une seule file par sens partout — sur l'autoroute (deux
+    // voies par sens, `routes.js`) la file roulait À CHEVAL sur la ligne qui
+    // sépare les deux voies, à 4,0 blocs de l'axe ; sur les percées de premier
+    // rang de Paris (quatre voies, `voirie.js`) elle ne prenait que la voie
+    // intérieure. Les témoins lisent le TRACÉ de chaque convoi de la ville ou
+    // de la route (`point`, tous les deux blocs) et le classent par voie, à la
+    // section : ils ne lisent aucune variable de la règle, et mesurent la
+    // même chose sur l'ancien code.
+    const voiesOccupees = await require('./sonde-voies-occupees.cjs').mesurerVoies(tab);
+    {
+      const a = voiesOccupees.a1, p = voiesOccupees.paris;
+      verifier("sur l'autoroute, une file dans chaque voie, aucune à cheval sur la ligne",
+        a.droite >= 100 && a.gauche >= 100 && a.cheval * 10 < a.droite + a.gauche,
+        `A1 en pleine section, pas de tracé de deux blocs : voie de droite ${a.droite}, voie de gauche ${a.gauche}, `
+          + `à cheval ${a.cheval} (${a.files} file(s))`);
+      verifier('sur les boulevards de Paris, les deux voies de chaque sens sont occupées',
+        // mesuré : 58 sur `origin/main` (des tracés qui frôlent la voie
+        // extérieure aux places), 205 ici — la barre au milieu (v269)
+        p.exterieure >= 120 && p.interieure >= 40,
+        `percées de premier rang, pas de tracé de deux blocs : voie extérieure ${p.exterieure}, intérieure ${p.interieure} (${p.files} files)`);
+      verifier('la jumelle de la seconde voie suit la grille horaire de sa file (v305)',
+        !!voiesOccupees.grille && voiesOccupees.grille.retard > 0 && voiesOccupees.grille.ecartMax <= 0.01,
+        voiesOccupees.grille ? `la jumelle à l'heure de sa file moins ${voiesOccupees.grille.retard} s : ${voiesOccupees.grille.ecartMax} bloc d'écart au plus, à trois heures`
+          : 'aucune jumelle sur l\'A1');
     }
 
     // --- LES RUES DE PARIS S'ÉLARGISSENT (v294) ------------------------------

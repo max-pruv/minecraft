@@ -171,7 +171,7 @@ async function mesurerSensations() {
     await tenir(0.45);
     son.piqueChoc = +pic().toFixed(4);
     son.piqueAvant = +son.piqueAvant.toFixed(4);
-    // ET L'ATTERRISSAGE S'ENTEND (v423) : `player.atterrissage` est un
+    // ET L'ATTERRISSAGE S'ENTEND (v429) : `player.atterrissage` est un
     // événement daté que la physique pose au retour au sol (v408). On attend
     // que le choc se taise — la fenêtre de l'analyseur couvre 0,74 s — puis
     // on pose l'événement comme la physique le ferait.
@@ -236,7 +236,7 @@ async function mesurerSensations() {
     camZ: +cam.position.z.toFixed(2), murZ: k, hauteur: +(cam.position.y - P.pos.y).toFixed(2) };
   for (let x = Math.floor(zx) - 5; x <= Math.floor(zx) + 5; x++) for (let y = y0 + 1; y <= y0 + 9; y++) g.world.setBlock(x, y, k, 0);
 
-  // 6. LA PENTE (v423) ---------------------------------------------------------
+  // 6. LA PENTE (v429) ---------------------------------------------------------
   // La physique publie `player.tangage` (v408, nez en haut positif) et le
   // réécrit à chaque image : on le FIGE (v358 : un témoin qui pose un champ
   // que la physique réécrit doit le figer), voiture arrêtée sur le plat, et

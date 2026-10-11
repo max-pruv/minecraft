@@ -6,11 +6,61 @@
 
 export const NOUVEAUTES = [
   {
-    v: 423,
+    v: 429,
     titre: 'La voiture suit la pente',
     puces: [
       'Le nez monte dans les côtes',
       'Retomber sur ses roues s\'entend',
+    ],
+  },
+  {
+    v: 428,
+    titre: 'Marseille rejoint Nice',
+    puces: [
+      'Une autoroute passe par les collines',
+      'On entre dans Nice par l\'ouest',
+    ],
+  },
+  {
+    v: 427,
+    titre: 'Des essais du jeu plus sûrs',
+    puces: [
+      'Les essais trouvent les vraies pannes',
+    ],
+  },
+  {
+    v: 426,
+    titre: 'Moins de fausses alertes',
+    puces: [
+      'Deux fenêtres ouvertes ne se gênent plus',
+      'Le jeu reste en mode normal',
+      'Les parents voient la mémoire utilisée',
+    ],
+  },
+  {
+    v: 425,
+    titre: 'Les passants contournent les bancs',
+    puces: [
+      'Plus personne ne traverse un banc',
+      'Ni une colonne d’affiches',
+    ],
+  },
+  {
+    v: 424,
+    titre: 'Un choc à la vitesse',
+    puces: [
+      'Un mur lent abîme peu',
+      'Frôler un mur ne casse rien',
+      'Pleins gaz, ça cogne fort',
+    ],
+  },
+  {
+    v: 423,
+    titre: 'Toutes les voies occupées',
+    puces: [
+      'Des voitures dans chaque voie',
+      "Bien plus de voitures sur l'autoroute",
+      'Elles se rangent avant de tourner',
     ],
   },
   {

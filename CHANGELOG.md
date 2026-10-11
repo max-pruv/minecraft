@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v423 — La voiture suit la pente
+## v429 — La voiture suit la pente
 
 **Pourquoi.** Depuis la v408 la physique fait monter la voiture dans les côtes
 et décoller sur les bosses, et publie la pente sous les roues
@@ -48,6 +48,199 @@ page à 3,8 cœurs, est rouge des deux côtés et déclaré dans `TASKS.md`.
 
 ---
 
+## v428 — Marseille rejoint Nice
+
+**Pourquoi.** Marseille–Nice était le dernier corridor court du kit côté
+Méditerranée, laissé de côté parce que Nice est une ville bâtie à la main et
+que l'axe direct est EN MER : 401 blocs d'eau sur 596. Et Marseille est
+« assise sous son pays » : la ville est à 33 blocs, son est et son nord-est
+montent à 46-50 dès vingt blocs du bord, et un massif de plus de 46 blocs
+ferme le nord-est.
+
+**Ce que ça change.** L'A8, la Provençale, sort de Marseille par le nord, entre
+le TGV et le massif, monte le long du massif jusqu'au col (42 à 46 blocs), le
+contourne, redescend dans la plaine et entre dans Nice par l'ouest. Dans Nice,
+une entrée mène de la porte au carrefour de l'avenue de la Californie et du
+boulevard René-Cassin. Trois ponts franchissent les ruisseaux du nord de
+Marseille ; vingt voitures font l'aller-retour, et l'on peut désormais rouler
+de Lyon à Nice.
+
+**Ce qui le prouve.** Un témoin neuf de `carteMonde.js`, rouge sur l'ancien
+code (ni convoi ni entrée de Nice) : l'A8 n'a aucun rail sous son emprise, ne
+frôle ni Marseille ni Nice hors de ses tronçons radiaux, l'entrée de Nice roule
+sur la chaussée sans un bloc à hauteur de carrosserie, et celle de Marseille
+arrive sur la rue. Les témoins de toutes les routes (profil, déblai 7,5,
+remblai 0,6, ponts et leurs joints, aérodromes, emprise partagée) la lisent
+sans changement. L'empreinte des 490 morceaux ne bouge pas : aucun de ses
+neuf lieux n'est sur l'A8, et elle rend la constante de la v419 au bit près,
+avec et sans la route. Le premier portail a trouvé deux points du joint du
+deuxième pont sans cube ni tablier : un sommet de coude tombait un bloc et
+demi avant le tablier ; déplacé, le joint est fermé sur les 19 500 points
+que le témoin lit.
+
+---
+
+
+---
+
+## v427 — Des essais du jeu plus sûrs
+
+**Pourquoi.** Chaque livraison des sessions parallèles paie un portail de près
+de deux heures, puis une « double mesure » de rouges qui reviennent portail
+après portail, des deux côtés, sans qu'une ligne du jeu bouge. Quatre d'entre
+eux étaient parmi les plus fréquents : `realisme.js` qui meurt au clic
+« Jouer », `maj.js` « corps, programmes et fond de carte sont vraiment là »,
+la cascade « pas aux commandes » de `monte.js` (une fenêtre de quiz sur
+l'écran) et « son flanc frôlé ne nous arrête pas ». Un témoin qui change de
+verdict sans que le jeu change ne garde rien : il coûte des heures et cache
+les vrais rouges.
+
+**Ce que ça change.** Rien dans le jeu : quatre témoins se placent eux-mêmes.
+- `realisme.js` appuie comme un doigt. L'accueil de Manhattan rend 0,07 image
+  par seconde en rendu logiciel, et `locator.click` attend deux images
+  identiques : 24 s au repos, au-delà de 30 sous charge. Le témoin vérifie ce
+  que l'enfant voit (« Jouer » actif, à découvert — verdict neuf), ferme les
+  écrans d'identité qui s'enchaînent, puis clique par le document.
+- `maj.js` prépare seul. Deux pages restées sur l'accueil occupent 2,4 à 3,7
+  cœurs sur quatre (l'accueil rend le monde derrière lui) : la préparation
+  passait de 4 s à 39–44 s et touchait la borne de 45 s. Le témoin passe en
+  tête de suite, et la partie d'un témoin précédent se ferme après son
+  verdict.
+- La cascade « pas aux commandes » de `monte.js` était l'ARRÊT QUOTIDIEN :
+  elle tombait à 45,8 minutes de la suite, la limite de 45 minutes de jeu par
+  jour sur la page que la suite garde ouverte. Le banc ouvre la journée comme
+  le code parental (des déblocages du jour), et rouvre aussi le répit de quiz
+  de la journée COURANTE : une suite qui passait minuit retrouvait un quiz.
+- Le flanc frôlé se pose dans le repère de la voiture garée : elle s'arrête au
+  coin de son anneau, en biais, et la pose écrite pour une voiture droite la
+  manquait à chaque fois.
+
+**Ce qui le prouve.** Sous trois cœurs chargés, `realisme.js` meurt au clic
+sur `origin/main` et va au bout sur la branche (18/18). `maj.js` rejouée seule :
+branche 3/3 verte, `origin/main` 2/2 rouge (« vraiment là », « ne floute
+rien »). Sonde de la limite du jour : banc d'avant arrêté 2/2, banc neuf en jeu 2/2.
+Sonde de minuit : quiz à 15,8 et 15,5 s avec l'ancien répit, aucun avec le neuf. Flanc : 3/3 rouge seul des deux côtés avant, 3/3 vert après.
+Chaque témoin peut encore rougir, désarmé dans une copie : « Jouer » grisé ou
+recouvert → rouge ; le choc contre la rue lu sans sa boîte → choc franc, rouge ;
+la préparation libérée sans attendre la carte → carte absente à la libération.
+Sondes : `sonde-realisme-clic`, `sonde-jouer-couvert`, `sonde-prep-duree`,
+`sonde-voisines`, `sonde-quiz-minuit`, `sonde-limite-du-jour`, `sonde-flanc`.
+
+---
+
+## v426 — Le journal de bord ne crie plus au plantage pour rien
+
+**Pourquoi.** « Le jeu plante de temps en temps » : l'iPhone de la famille a
+remonté onze sessions « plantage » en quarante minutes, et deux plantages de
+suite font passer le jeu en mode léger, rangé pour de bon (v296). Or deux de
+ces plantages étaient faux, et le journal ne pouvait pas le savoir. La session
+82 a été déclarée plantée, puis a envoyé sa fermeture propre trois minutes plus
+tard (ligne 83) : deux pages vivaient sur le même stockage, et un drapeau
+unique faisait lire la vivante comme morte. Et une page qui se fermait effaçait
+le drapeau de l'autre, si bien qu'un VRAI plantage pouvait passer inaperçu
+(mesuré sur l'ancien code). D'autres sessions arrivaient vides — aucun relevé,
+aucun événement —, ce que laisse une page qu'iOS ouvre sans la montrer puis
+tue. Enfin, Safari ne donne pas la mémoire utilisée : c'est un COMPTE de
+textures qui a trahi la flotte de voitures, et un compte n'est pas un poids.
+
+**Ce que ça change.** Chaque page a sa session, son journal et un battement
+toutes les deux secondes ; une session au battement récent n'est dite plantée
+que si son battement cesse d'avancer. Une page née cachée ne compte pas. La
+relance d'une mise à jour ferme le journal avant de recharger. La famille ne
+perd plus ses réglages pour une fausse alerte. Et chaque relevé porte une
+estimation en mégaoctets de ce que la scène tient côté carte graphique
+(textures, géométries), visible dans `?diag=1` et dans l'espace parent.
+
+**Ce qui le prouve.** Une sonde au banc (`sonde-journal-relance.cjs`) : la
+relance du service worker à 200 ms, 600 ms, 1,2 s, 2,5 s, 5 s ou pendant le
+chargement ne laisse aucun faux plantage, ni avant ni après ; deux pages sur le
+même stockage se déclaraient plantées à coup sûr, plus après. Trois témoins
+neufs dans `parent.js`, les deux du journal rouges sur l'ancien code : deux
+pages ne se déclarent pas plantées et une page morte l'est quand même ; une
+page née cachée ne laisse pas de session ouverte ; l'estimation suit un objet
+ajouté puis retiré, une source comptée une fois. Coût du parcours mesuré à
+Paris (rr 12, 11 889 objets) : 4,7 ms médian, 9,7 au pire, une fois toutes les
+cinq secondes.
+
+---
+
+## v425 — Les passants contournent les terrasses de café
+
+**Pourquoi.** À Paris, la couche détaillée pose des terrasses de café, des bancs
+et des colonnes Morris sur les trottoirs (v288, v289). Ce n'étaient pas des
+blocs : un passant marchait au travers de la table d'un café, et l'enfant à pied
+aussi. La dette était déclarée depuis la v288.
+
+**Ce que ça change.** Un passant qui arrive sur une terrasse, un banc ou une
+colonne Morris s'arrête devant et fait le tour, comme devant une voiture garée.
+Seulement là où ce mobilier est AFFICHÉ : une tablette sans couche détaillée
+n'a pas de table invisible qui arrête. Les potelets et les corbeilles se
+frôlent, on passe à côté.
+
+**Ce qui le prouve.** La règle qui pose le mobilier est sortie du mailleur
+(`mobilierTrottoir`, facadeshd.js) : le mailleur dessine ce qu'elle rend, les
+passants butent dessus — une seule règle, deux lecteurs. L'empreinte des 490
+morceaux (Paris détaillé compris) est inchangée au bit près. Un témoin de
+`parishd.js` lance six passants droit sur les bancs et les colonnes montrés
+autour de l'enfant : aucun n'entre dans le meuble, contre six sur six la règle
+désarmée. Et la mesure a trouvé autre chose : dans quatre quartiers de Paris,
+la règle de la v288 ne pose AUCUNE terrasse — plus une devanture `VITRINE` au
+bord d'un trottoir ; c'est déclaré dans `TASKS.md`.
+
+---
+
+## v424 — La force d'un choc suit la vitesse
+
+**Pourquoi.** La force d'un choc, que la conduite publie et que les dégâts
+transforment en usure, valait 1 dès vingt blocs par seconde d'impact. Une
+voiture roule à trente ou cinquante-cinq : presque tout vrai crash valait un
+« mur plein », qu'on le prenne à vingt ou à cinquante-cinq. Et un mur frôlé à
+quinze degrés pleins gaz publiait jusqu'à 0,68 — près d'un demi-mur d'usure
+pour une éraflure (la dette déclarée par la v405).
+
+**Ce que ça change.** La force d'un choc suit désormais la vitesse jusqu'à la
+pointe de la classe : un mur pris à 85 % de sa pointe (quatre à cinq secondes
+de gaz) vaut un mur plein, comme avant — la voiture fume toujours dès le
+deuxième, cale au neuvième. Un mur à dix blocs par seconde n'en coûte plus que
+un quinzième à un cinquième selon la voiture, et frôler un mur pleins gaz moins
+d'un dixième. Une caresse pare-chocs contre pare-chocs reste une caresse (le
+seuil se lit en blocs par seconde).
+
+**Ce qui le prouve.** Un témoin neuf de `plafond.js` fait rouler le vrai joueur
+sous node contre un mur droit, dans les six classes : pleins gaz 1, mur lent
+0,07 à 0,19 de mur, frôlé 0,08 — rouge sur `origin/main` (lent 0,32 à 0,36,
+frôlé 0,14 à 0,46). Le témoin des deux murs des dégâts prend un vrai élan de
+cent quarante blocs ; celui de la voiture de la rue percutée par l'arrière lit
+la force que dix-huit blocs/s donnent dans une hypercar.
+
+---
+
+## v423 — Toutes les voies occupées
+
+**Pourquoi.** Max a montré une capture de GTA VI à côté d'une de GTA V : des
+voies serrées, toutes occupées, un trafic dense. Chez nous, mesuré avant
+d'écrire : une seule file de voitures par sens partout, même sur les
+boulevards à quatre voies de Paris et des grandes villes — la seconde voie de
+chaque sens restait vide —, et sur l'autoroute la file roulait à cheval sur la
+ligne qui sépare les deux voies, avec vingt voitures pour des tours de mille
+six cents à cinq mille blocs : une voiture tous les cent vingt blocs.
+
+**Ce que ça change.** Sur l'autoroute, une file dans chaque voie, et près de
+trois fois plus de voitures (480 → 1 354 sur les vingt-quatre corridors). Sur
+les boulevards de Paris et la croix centrale des villes engendrées, la seconde
+voie de chaque sens a sa file : les voitures d'un même circuit se répartissent
+sur les deux voies, se rabattent sur une seule avant le virage et se
+redéploient après. Tout le monde voit la même rue (même grille horaire).
+
+**Ce qui le prouve.** Trois témoins neufs dans `carteMonde.js`, vérifiés rouges
+sur l'ancien code : sur l'A1, une file dans chaque voie et aucune à cheval ; à
+Paris, les deux voies de chaque sens occupées sur les percées de premier rang ;
+la jumelle passe partout à l'heure de sa file (écart nul à trois heures).
+Et une ligne ne se télescope pas : là où les deux files n'ont qu'une voie,
+la voiture qui précède est dans l'autre convoi, et le plancher de la v283
+s'étend à elle. Mesuré au banc, rejoué au même endroit sur `origin/main` :
+contacts entre voitures 0 % à Paris (0 % avant), 1,5 % à Tokyo (2,6 %), 8,8 %
+à Madrid (10,6 %, un nœud d'avant).
 ## v422 — Conduire comme au cinéma
 
 **Pourquoi.** Max (4 octobre 2026) : « une grosse refonte de la façon de

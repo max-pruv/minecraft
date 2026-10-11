@@ -21,6 +21,7 @@
 import { BLOCK, CITY_BLOCK, DECOR_START, ARCHI } from './blocks.js';
 import { rangerVoies, solDesVoies, fabriqueCircuits, reculDesAvenues } from './voies.js';
 import { positionDe } from './mondes.js';
+import { entreesDe } from './routes.js';
 import { sectionDeRue } from './voirie.js';
 
 const uni = (c) => DECOR_START + c * 10;
@@ -323,7 +324,20 @@ const VOIES = [
   { nom: 'Avenue Malausséna', pts: [[-4, -51], [-4, -30]] },
 ].map(aLaRegle);
 
-const BANDES = rangerVoies(VOIES);
+// L'ENTRÉE DE L'A8 (v428), comme celles de Paris, de Lille et de Londres :
+// du bout du corridor (`routes.js`, vingt blocs sous le bord du disque, à
+// l'ouest) jusqu'au carrefour de l'avenue de la Californie et du boulevard
+// René-Cassin, la seule artère qui touche l'ouest de la ville. Une
+// collectrice, comme les artères. Elle est une voie pour le sol — chaussée,
+// trottoirs, les lots s'écartent — mais pas pour les circuits : ce sont les
+// voitures de la route qui l'empruntent (`main.js`).
+const ENTREES = entreesDe('nice').map((e) => ({
+  nom: `Entrée ${e.route}`, type: COLLECTRICE.type, l: COLLECTRICE.chaussee / 2, t: COLLECTRICE.trottoir,
+  pts: [[Math.round(e.x - NICE.x), Math.round(e.z - NICE.z)], surFrance(-114)],
+}));
+export const ENTREES_NICE = ENTREES.map((v) => v.pts.map(([u, w]) => [NICE.x + u, NICE.z + w]));
+
+const BANDES = rangerVoies([...VOIES, ...ENTREES]);
 
 // --- où roulent les voitures -------------------------------------------------
 //
