@@ -20,6 +20,35 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v442 — Les voitures de l'autoroute n'entrent plus dans les anneaux de la ville
+
+**Pourquoi.** Une autoroute entre dans une ville engendrée par son avenue
+d'entrée, l'axe de la trame jusqu'à la place. Or cet axe est souvent le côté
+d'un anneau de la ville : dix-neuf des quarante-six raccords route/ville
+roulaient dans la MÊME voie qu'un ou plusieurs convois de l'anneau, même sens
+ou en face (569 blocs en tout ; Madrid 85, Agra 68, Amsterdam 69, Kyoto 53).
+Deux grilles horaires indépendantes sur une voie ne se cadencent pas l'une
+contre l'autre : à Madrid, 6,7 à 6,9 % des paires de voitures étaient l'une
+dans l'autre.
+
+**Ce que ça change.** Les voitures de l'autoroute entrent dans la ville aussi
+loin que la rue est à elles, puis font demi-tour quatre blocs avant la voie
+d'un anneau. Madrid tombe à 1,0 à 1,5 % de paires au contact — ce qui reste
+est en travers, entre deux anneaux, réglé par la priorité au carrefour. Les
+deux autres pistes ont été mesurées : arrêter l'autoroute à la porte partage
+encore 44 blocs (les demi-tours) et ne fait plus entrer personne ; faire du
+raccord une voiture de l'anneau n'existe pas sans téléporter.
+
+**Ce qui le prouve.** Deux témoins neufs (`plafond.js`), sur le vrai tracé que
+le jeu donne à la rue et les vraies voies des anneaux, sous node : il ne reste
+que cinq demi-tours (20 blocs), et la table des raccords courts est celle que
+la règle rend aujourd'hui — vérifiés rouges sur la table vidée (569 blocs,
+19 raccords). Au navigateur, `sonde-circulation.cjs madrid` en ordre alterné :
+6,74 et 6,85 % avec l'avenue entière (`?raccords=long`), 1,47 et 1,02 % avec
+le raccord court.
+
+---
+
 ## v441 — La voiture de l'ami braque et glisse
 
 **Pourquoi.** Depuis la v397 le volant et la glisse de la voiture d'un ami

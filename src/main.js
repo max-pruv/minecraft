@@ -52,6 +52,7 @@ import { createPassants } from './passants.js';
 import { createPoissons } from './poissons.js';
 import { segmentsDeTrain, traceSegment } from './trains.js';
 import { segmentsDeRoute, traceRoute, entreesDe } from './routes.js';
+import { raccordDe } from './raccords.js';
 import { ENTREES_PARIS } from './paris.js';
 import { ENTREES_LILLE } from './lille.js';
 import { ENTREES_LONDRES } from './londres.js';
@@ -2061,7 +2062,11 @@ function updateChunks() {
     const fiche = segmentsDeRoute().find((sg) => sg.route.nom === route);
     if (fiche && fiche.route.avenues && fiche.route.avenues[cle]) return fiche.route.avenues[cle];
     const e = entreesDe(cle)[i];
-    return avenueDEntree(cle, e.x, e.z) || undefined;
+    // LE RACCORD S'ARRÊTE AVANT LA VOIE D'UN ANNEAU (v442) : deux grilles
+    // (v305) dans une même voie ne se cadencent pas. La table est mesurée
+    // (raccords.js) ; `?raccords=long` rejoue l'avenue entière, pour l'A/B.
+    const av = avenueDEntree(cle, e.x, e.z) || undefined;
+    return PARAMS_JEU.get('raccords') === 'long' ? av : raccordDe(route, cle, av);
   };
   for (const seg of segmentsDeRoute()) {
     const avant = entree(seg.de, seg.route.nom), apres = entree(seg.vers, seg.route.nom);
