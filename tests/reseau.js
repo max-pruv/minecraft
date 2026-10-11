@@ -1448,7 +1448,23 @@ function verifier(nom, ok, detail = '') {
       document.getElementById('join-code').value = c;
       document.getElementById('join-btn').click();
     }, codeTenu);
-    await dormir(2000);
+    // ON ATTEND QUE L'INVITÉ SOIT ENTRÉ DANS LE MONDE, PAS DEUX SECONDES
+    // (banc-intermittents). Son courtier répond « introuvable », puis il
+    // essaie le nuage : cela prend plus de deux secondes sur un banc chargé,
+    // et « Entrer dans le monde » ne fait rien tant que la session n'est pas
+    // active (`!net.active`, main.js) — l'invité restait au menu et le témoin
+    // rendait `[[],[]]`, `actif: false`, une fois sur deux des deux côtés. On
+    // attend le FAIT (session active, ou un message d'échec à l'écran),
+    // soixante secondes au plus, et ce qu'on a vu entre dans le message.
+    const tJoin = Date.now();
+    const entree = await jusqua(async () => inviteSain.evaluate(() => {
+      const n = window.__game.net, st = document.getElementById('online-status');
+      return !!(n && n.active) || /❌/.test(st ? st.textContent : '');
+    }), 60000);
+    const vuJoin = await inviteSain.evaluate(() => ({
+      actif: !!(window.__game.net && window.__game.net.active),
+      statut: (document.getElementById('online-status') || {}).textContent || '' }));
+    vuJoin.ms = Date.now() - tJoin; vuJoin.borne = !entree;
     await inviteSain.evaluate(() => document.getElementById('online-play-btn')?.click());
     await hotePhare.evaluate(() => document.getElementById('online-play-btn')?.click());
     const retrouves = await jusqua(async () => {
@@ -1456,7 +1472,7 @@ function verifier(nom, ok, detail = '') {
       return a.includes('Basile') && b.includes('Léo');
     }, 120000);
     verifier('un hôte sans courtier est trouvé par un invité dont le courtier marche',
-      retrouves, JSON.stringify([await nomsVus(hotePhare), await nomsVus(inviteSain)]));
+      retrouves, JSON.stringify([await nomsVus(hotePhare), await nomsVus(inviteSain)]) + ' · rejoindre : ' + JSON.stringify(vuJoin));
     const rolesTenus = await inviteSain.evaluate(() => ({
       hote: window.__game.net ? window.__game.net.isHost : null,
       actif: !!(window.__game.net && window.__game.net.active),

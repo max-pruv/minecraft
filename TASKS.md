@@ -18,6 +18,57 @@
   mesurer la cadence de la page `MonteFil` (rr 12, au-dessus de Paris) seule,
   puis après les témoins qui la précèdent.
 
+- [x] **LOT 2 DES TÉMOINS INTERMITTENTS — FAIT en v428** (session
+  banc-intermittents). Chaque rouge rejoué SEUL des deux côtés, la cause
+  séparée par une sonde, le témoin corrigé, et désarmé dans une copie.
+  - **Une page en jeu à côté coûte presque quatre cœurs.** `tab` (la page
+    principale de `monte.js`) restait en jeu pendant chaque page secondaire,
+    et `ciel` (rr 12) n'était JAMAIS fermée : elle tournait à côté des trois
+    quarts de la suite. Mesuré (`sonde-voisine-de-cote.cjs`) : voisine en jeu
+    3,5–3,8 cœurs, fenêtre réduite à 16 × 16 0,15 ; la chauffe de New York
+    d'une page neuve 22–24 s → 7 s. `banc.mettreDeCote` / `banc.ramener`
+    autour des six pages secondaires, `ciel` fermée après son dernier usage.
+    `monte.js` seule : « se téléporter… ne compile plus » VERT, chauffe finie
+    en 9,9 s (expirait à 150 s avec 53–55/321 au portail) ; « le bout du monde
+    qui se charge » 113 pour 48.
+  - **Le réverbère au volant** comptait l'arrêt en temps de montre : dix
+    relevés immobiles avant le départ, à une image par seconde. Compté en
+    IMAGES rendues, après un départ d'un demi-bloc (`sonde-reverbere.cjs`) :
+    sous trois cœurs chargés, `origin/main` 3/3 rouge (`parcouru` 0 à 0,58),
+    branche 3/3 vert (3,65 blocs, arrêt à 2,3 du poteau). Désarmé (le crochet
+    du mobilier coupé) : 97 blocs, au travers du poteau — rouge.
+  - **Le trou de façade** (`manhattan.js`, dette de la v291) juge la
+    géométrie de l'IMMEUBLE touché (`batimentA`), rebâti : branche 3/3 vert
+    (immeuble 1094, 4 288 → 4 284 instances) ; `origin/main` rouge sur
+    l'ancien compte de ville (11 684 → 46 592). Désarmé (un bloc retiré ne
+    fait plus rebâtir) : « 4 288 → 4 288, jamais rebâti » — rouge, pendant que
+    l'ancien compte de ville montait quand même (14 460 → 54 973).
+  - **Le taxi de Manhattan** attend que son modèle soit POSÉ, puis le bouton
+    (60 s au plus) : le bouton apparaît désormais à chaque passage. Ce qui
+    reste : la distance roulée en quarante images (4,72 et 8,32 blocs pour
+    une barre de 8 sur deux passages) — non touché, à démonter.
+  - **« Très touchée elle fume »** (`degats.js`, dette v406) lit le plus fort
+    compte de fumée sur trois secondes de jeu : 3/3 vert (3 à 4 particules).
+  - **L'atterrissage manuel** se pose sur une piste d'essai de 400 blocs : la
+    cadence décide où l'on touche (piège v273), et l'arrêt tombait à 300,9.
+  - **Le train qui traverse la voiture** : cause trouvée, VRAIE PANNE,
+    déclarée en tête de ce fichier ; le témoin reste rouge.
+- [ ] **UN TRAIN TRAVERSE LA VOITURE DE L'ENFANT QUAND UNE IMAGE EST LENTE
+  (vraie panne, zone conduite — trouvée par la session banc-intermittents).**
+  La rame ne regarde que 3,5 blocs devant sa motrice (`PAS_TRAIN`,
+  `cederLePassage`, vehicules.js) et roule en temps RÉEL (v305) : à 14 b/s,
+  une image de plus d'un quart de seconde la fait passer d'« assez loin » à
+  « déjà dedans », et un train déjà dedans continue (v245). Sur la tablette,
+  ce sont les images de l'arrivée dans une ville. Sonde
+  `tests/sonde-train-voiture.cjs` (le témoin de `monte.js` rejoué seul, pose
+  à huit secondes de voie) : au repos 1 traversée sur 7 (branche), 2 sur 3
+  (`origin/main`, pose à trente blocs) ; sous trois cœurs chargés, 5 sur 10 —
+  à chaque fois l'enfant est DANS la liste de la rue (`enfantVu`) et la rame
+  ne le veut jamais (`veut` vide). Piste : une portée de regard en TEMPS
+  (vitesse × durée de la dernière image, plus la marge), comme le couloir des
+  piétons (v351) et le balayage des voitures (v395). Le témoin « un train
+  s'arrête devant la voiture de l'enfant » reste rouge tant que ce n'est pas
+  fait : il garde une vraie panne.
 - [ ] **PORTAIL DU JOURNAL DE BORD (v426) — DOUBLE MESURE (règle v195).**
   Deux portails (bases v408 et v411) rouges sur `maj.js`, `carte.js`,
   `manhattan.js`, `monte.js`. Déclarés plus bas : la flèche du GPS et le

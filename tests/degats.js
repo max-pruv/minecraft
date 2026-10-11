@@ -716,9 +716,18 @@ function verifier(nom, ok, detail = '') {
       });
       // très touchée : elle fume — et ne prend JAMAIS feu
       for (let k = 0; k < 8; k++) d.choc(R.m, { force: 1, lx: 0, lz: -2.2 }, true);
-      await tenir(0.8);
+      // ELLE FUME SUR UNE FENÊTRE, PAS À UN INSTANT (banc-intermittents, dette
+      // déclarée à la v406). Un compte de particules visibles lu à UN instant
+      // valait 0, 1 ou 2 pour la même santé, des deux côtés : la fumée naît
+      // par bouffées, et un relevé tombait entre deux. On garde le plus fort
+      // compte sur trois secondes de jeu, un relevé par image — c'est
+      // « elle fume », et une voiture qui ne fume jamais rend toujours zéro.
+      let fumee = 0, releves = 0;
+      for (let k = 0; k < 30 && !(fumee > 0 && releves >= 8); k++) {
+        await tenir(0.1);
+        fumee = Math.max(fumee, d.particulesVisibles().fumee); releves++;
+      }
       const e = d.etat(R.m);
-      const fumee = d.particulesVisibles().fumee;
       // et quand elle s'en va (un ami l'a prise : `retirer`, v305), ses clones
       // sont rendus au pilote (v238)
       const propres = (d.pieces(R.m) || []).filter((pc) => pc.propre).map((pc) => pc.mesh.geometry);
@@ -727,7 +736,7 @@ function verifier(nom, ok, detail = '') {
       const i = R.conv.elements.indexOf(R.m);
       const retiree = g.vehicules.retirer(`${R.conv.cle}#${i}`);
       await tenir(0.6);
-      return { enFeu: e.enFeu, eteint: e.eteint, sante: Math.round(e.sante * 100) / 100, fumee, retiree,
+      return { enFeu: e.enFeu, eteint: e.eteint, sante: Math.round(e.sante * 100) / 100, fumee, releves, retiree,
         prises: propres.length, rendues, suivies: d.rue().length };
     });
     verifier('très touchée elle fume, ne prend JAMAIS feu, et partie ses géométries froissées sont rendues (v238)',
