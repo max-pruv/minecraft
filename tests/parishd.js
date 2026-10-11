@@ -1094,10 +1094,18 @@ function verifier(nom, ok, detail = '') {
       g.player.pos.set(ax, site.by + 1.01, az); g.player.vel.set(0, 0, 0);
       g.player.yaw = yaw; g.player.pitch = 0; g.player.flying = false;
       const fx = -Math.sin(yaw), fz = -Math.cos(yaw);
-      g.animalManager.invoquer('voiture', ax + fx * 2.5, az + fz * 2.5);
-      await dodo(1500);
-      if (!(g.fun.montureConduite && g.fun.montureConduite())) document.getElementById('ride-btn').click();
-      await dodo(800);
+      const voit = g.animalManager.invoquer('voiture', ax + fx * 2.5, az + fz * 2.5);
+      // LA MONTE SE VÉRIFIE DANS LE JEU, ET SE RETENTE (v437) : au portail un
+      // seul clic tombait avant que la voiture soit prête (`monte: false`).
+      // On attend ses roues, puis au plus huit essais, l'état relu à chaque
+      // fois — jamais deux clics sans relire (bouton-bascule, v252).
+      const tv = performance.now();
+      while (performance.now() - tv < 30000 && !(voit && voit.mesh && voit.mesh.userData.roues)) await dodo(300);
+      for (let e = 0; e < 8 && !(g.fun.montureConduite && g.fun.montureConduite()); e++) {
+        g.player.pos.set(ax, site.by + 1.01, az); g.player.yaw = yaw;
+        document.getElementById('ride-btn').click();
+        await dodo(1000);
+      }
       g.player.pos.set(ax, site.by + 1.01, az); g.player.yaw = yaw;
       const monte = !!(g.fun.montureConduite && g.fun.montureConduite());
       // l'abscisse le long du couloir, comptée depuis le centre de la terrasse
