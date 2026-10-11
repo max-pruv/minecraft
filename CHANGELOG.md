@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v415 — Toutes les voies occupées
+## v419 — Toutes les voies occupées
 
 **Pourquoi.** Max a montré une capture de GTA VI à côté d'une de GTA V : des
 voies serrées, toutes occupées, un trafic dense. Chez nous, mesuré avant
@@ -49,6 +49,110 @@ contacts entre voitures 0 % à Paris (0 % avant), 1,5 % à Tokyo (2,6 %), 8,8 %
 
 ---
 
+## v418 — Les voitures contournent la place, et Las Vegas a ses rues
+
+**Pourquoi.** Après la v404, des anneaux de voitures roulaient encore hors de
+la chaussée : 2 257 pas. Deux familles, mesurées. Dans une vingtaine de villes,
+des anneaux traversaient toujours la place centrale et sa fontaine : un contour existait,
+mais il aurait suivi la voie d'un autre anneau (deux convois l'un dans
+l'autre). Et à Las Vegas, la bande du Strip ne tient qu'une rue de la trame :
+les rues voisines tombaient dans le sable, 689 pas dans le désert.
+
+**Ce que ça change.** Un anneau qui ne peut pas contourner dans son sens le
+fait dans l'autre, sur l'autre voie de la même rue : il croise ses voisins au
+lieu de les suivre, et il ne passe plus par la fontaine (Barcelone, Sydney, Stockholm,
+La Havane, Turin, Budapest, Delhi, Dubaï, São Paulo, Prague…). À Las Vegas, une
+grille de rues entoure le Strip comme dans la vraie ville (Paradise, Koval,
+Frank Sinatra, Industrial) : de l'asphalte nu dans le sable, sans un immeuble
+de plus. La ville gagne un quatrième circuit.
+
+**Ce qui le prouve.** Le témoin des anneaux hors chaussée de `carteMonde.js`
+resserre ses barres (rouge sur `origin/main`), et un témoin neuf garde le
+désert de Las Vegas : rien que du sable et de l'asphalte hors de la bande,
+aucun lot. Une sonde compare les deux arbres ville par ville : aucun circuit
+perdu, la couverture ne baisse nulle part (Las Vegas 90,6 → 98,9 %), la
+voiture la plus proche du centre reste à moins de 30 blocs. Anneaux hors
+chaussée : 87 → 75, 2 257 → 1 228 pas ; Las Vegas 689 → 21 pas, trois →
+quatre circuits. Le coût du dépliage ne bouge pas, et l'empreinte des 490
+morceaux est celle d'`origin/main`.
+
+---
+## v417 — Le monde arrive à temps au-dessus des villes
+
+**Pourquoi.** Le témoin qui vérifie que l'avion ne dépasse pas le monde en
+train de se charger volait au-dessus d'un désert, où un morceau coûte trois
+fois moins qu'à Paris. Il disait « ça tient » là où l'enfant ne vole jamais, et
+rien ne disait si les vitesses des avions (95 et 120 blocs par seconde)
+tenaient au-dessus d'une vraie ville. Et le gel à l'arrivée d'une
+téléportation se mesurait sur un banc qui n'avait jamais rien construit.
+
+**Ce que ça change.** Rien dans le jeu : c'est une livraison de mesure. Les
+vitesses des avions tiennent au-dessus de Paris et de Londres avec le réglage
+que la tablette joue en vol (ordre en cône, recharge à l'arrivée) : le monde
+est chargé 122 à 152 blocs devant l'avion, pour 48 à 60 demandés. Et la v403
+avait déjà retiré le gel de téléportation des enfants qui ont beaucoup bâti :
+avec 80 000 blocs, l'ancien code ne finissait pas de charger Paris en vingt
+secondes.
+
+**Ce qui le prouve.** Un témoin dans `monte.js` qui traverse Paris et Londres
+en avion, au réglage de la tablette (vert, deux fois la barre ; avec l'ordre du
+banc, Paris rend 45 pour 60 : il peut rougir). Une sonde,
+`sonde-arrivee-journal.cjs` : à l'arrivée à Paris en scène vide avec 80 000
+blocs, l'ancien code met 14 s à charger la moitié du disque et passe 3,3 s du
+fil principal à fabriquer des morceaux ; la v403, 3,4 s et 0,3 s, comme sans
+journal.
+
+## v416 — San Diego a son second circuit
+
+**Pourquoi.** Trois villes engendrées n'avaient qu'un circuit de voitures
+(San Diego, San José, Guayaquil) : la v404 avait donné à huit ports la même
+boucle dans l'autre sens, et ces trois-là restaient. Mesuré : à San Diego, le
+contresens était écarté avant même qu'on cherche à le faire passer ailleurs,
+parce que sa voie extérieure longeait l'eau sur plus de vingt-quatre blocs
+(la longueur d'un pont) — alors que les tabliers déjà posés la couvrent.
+
+**Ce que ça change.** À San Diego, les voitures font le tour dans les deux
+sens, sur la chaussée et les ponts existants ; aucun bloc du sol ne change.
+San José et Guayaquil gardent un circuit, et c'est mesuré : leur place
+centrale occupe le nœud du milieu, le grand anneau est le seul cycle de leur
+trame, et sa voie extérieure passe sur la mer (San José, une quarantaine de
+blocs le long de la côte) ou sur la plage (Guayaquil). Les deux remèdes
+changent le sol (un rayon plus grand, une place déplacée, un quai sur
+pilotis) : c'est une décision, déclarée.
+
+**Ce qui le prouve.** Le témoin « villes à un seul circuit » de
+`carteMonde.js` passe sa barre de six à deux : 3 sur `origin/main`, 2 ici.
+Une sonde compare les deux arbres ville par ville : seule San Diego change
+(1 → 2 circuits, couverture 100 %, voiture à 30 blocs du centre), aucun pas
+de voie sur l'eau hors tablier, partage nul avec son anneau.
+
+---
+
+## v415 — Londres rejoint Birmingham
+
+**Pourquoi.** Londres–Birmingham était le corridor court sans rail du kit
+« en attente » depuis la v323 : une autre session élargissait les rues de
+Londres. C'est livré (v339) ; restait à trouver un passage. L'axe direct est
+barré par une crête de 46 à 55 blocs, nord-sud, et l'ouest de Londres bute sur
+un mur de collines qui finit dans la marge de Heathrow.
+
+**Ce que ça change.** La M40 sort de Londres par le nord, monte vers le seul
+col de la crête (41 à 46 blocs, à la latitude de Birmingham), passe deux
+ruisseaux sur des ponts et entre dans Birmingham par l'axe de sa trame. Dans
+Londres, une entrée en ligne droite mène de la porte nord à Pentonville Road,
+devant King's Cross ; vingt voitures font l'aller-retour. Une maison de la
+vieille trame générique, qui se posait encore dans l'anneau extérieur de
+Londres et barrait cette entrée, cède désormais à la route et à son entrée.
+
+**Ce qui le prouve.** Un témoin neuf de `carteMonde.js` (rouge sur l'ancien
+code : ni convoi ni entrée) : la M40 n'a aucun rail sous son emprise, ne frôle
+aucune de ses villes, son entrée de Londres est sur la chaussée d'un bout à
+l'autre sans un bloc à hauteur de carrosserie et finit sur une artère, celle de
+Birmingham arrive sur la rue. Les témoins de toutes les routes la lisent aussi
+(profil à six pour cent, asphalte et contact au sol, tablier libre, aucune
+emprise volée, joints des ponts fermés). L'empreinte des 490 morceaux change
+(Londres est un des neuf lieux) et se prouve : M40 retirée, la branche rend
+celle d'`origin/main` au bit près.
 ## v414 — Des ponts sous toutes les voies
 
 **Pourquoi.** Dans quatorze villes engendrées, des voitures roulaient sur
@@ -365,6 +469,7 @@ centre reste à 30 blocs, aucun tablier n'est retiré (642 colonnes d'eau en
 gagnent un), et le relief ne bouge pas. Le prix, déclaré : le premier
 dépliage d'une ville coûte plus cher (Rome ≈ 57 → 85-100 ms, une fois, à 220
 blocs de la ville).
+
 ## v403 — Le monde se charge aussi vite chez qui a beaucoup bâti
 
 **Pourquoi.** Chaque morceau de monde que le jeu fabrique reçoit les blocs que

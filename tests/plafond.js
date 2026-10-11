@@ -345,7 +345,14 @@ const EMPREINTE_JOURNAL_V391 = '540f2b435ba355c9ec885f139968c87a16438f92846b695b
 // dans les neuf lieux) : 1f385723… → 863d4203…. La preuve : le même code, les
 // allongements retirés de la liste des tabliers (`ext`), rend 1f385723…, la
 // constante d'`origin/main` (v404), au bit près — rien d'autre n'a bougé.
-const EMPREINTE_MORCEAUX_V357 = '863d4203a441e3fd029ce2404fc6d6e706799e7f64fe489a86f51121e6be0586';
+// v415 (la M40) : voir plus bas.
+const EMPREINTE_MORCEAUX_V414 = '863d4203a441e3fd029ce2404fc6d6e706799e7f64fe489a86f51121e6be0586';
+// v415 : Londres, un des neuf lieux, porte l'entrée de la M40 (une collectrice
+// de la porte nord à Pentonville Road) et perd la maison de la trame générique
+// qui la barrait — voulu. La M40 retirée du registre (donc son entrée et le
+// lot qu'elle écartait), la branche rend 863d4203…, la constante
+// d'`origin/main` (v414, `EMPREINTE_MORCEAUX_V414`), au bit près.
+const EMPREINTE_MORCEAUX_V357 = '7521b9b630f9c648e00fdfe9d2ee3456a7b4f6211cf2188b1cf75515f857ee47';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -3310,7 +3317,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       for (let e = 0; e < 6 && !auVolant(); e++) { const b = document.getElementById('ride-btn'); if (b) b.click(); await dodo(1000); }
       if (!auVolant()) return { echec: 'pas monté' };
       const out = { images: 0, bloque: 0, marches: 0, chutes: 0, surTablier: 0, horsTablier: 0, ecartMax: 0, blocs: 0, ms: 0, voitures: 0 };
-      // CE TÉMOIN MESURE LA ROUTE, PAS LE TRAFIC (v415). Depuis que l'autoroute
+      // CE TÉMOIN MESURE LA ROUTE, PAS LE TRAFIC (v419). Depuis que l'autoroute
       // a une file dans chaque voie et près de trois fois plus de voitures, la
       // voiture posée au milieu de la chaussée bute sur la circulation (soixante
       // images bloquée à 50,9 blocs au portail). Se placer veut dire faire le

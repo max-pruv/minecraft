@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Toutes les voies occupées (v415) — la seconde voie est la même ligne, décalée
+## Toutes les voies occupées (v419) — la seconde voie est la même ligne, décalée
 
 Max, une capture de GTA VI à côté d'une de GTA V : « Good inspiration » — des
 voies serrées et TOUTES occupées. Mesuré avant : une seule file par sens
@@ -822,6 +822,42 @@ faisaient une voiture tous les cent vingt blocs. Six règles.
   ligne est dans l'AUTRE convoi (`devantSurLaLigne`), et le plancher de la
   v283 s'étend à elle : 0 %. Et la légitimité d'une attente se propage dans
   la LIGNE (`memeLigne`), pas seulement dans la file.
+
+## Un contour dans l'autre sens, et les rues du Strip (v418) — ce qui empêchait le contour n'était pas l'absence de rue
+
+Deux règles.
+
+- **AVANT DE CROIRE QU'UN CONTOUR N'EXISTE PAS, ON LIT SA MEILLEURE NOTE.** La
+  phase 4 échouait pour une vingtaine d'anneaux qui traversent la place
+  centrale (Tokyo, Dubaï, São Paulo…). Instrumentée, la recherche trouvait des
+  contours SANS faute, refusés parce qu'ils suivaient la voie d'un autre anneau
+  (44 à 108 blocs de partage). Le remède est géométrique : le même contour dans
+  l'AUTRE sens roule sur l'autre voie des mêmes rues, et deux convois qui se
+  croisent ne se suivent pas (v211, v387). Seulement pour un anneau qui n'a pas
+  déjà son contresens. Relâcher les bornes de la recherche (24 îlots, 120
+  essais) est un non-résultat mesuré : Rio ne change pas, le coût monte.
+- **UNE RUE DANS LE DÉSERT EST UNE MATIÈRE, PAS UN LOT.** La bande du Strip ne
+  tenait qu'une rue de la trame. `desert.rues` pave la CHAUSSÉE des rues de la
+  trame à moins de `rues` unités de la bande : asphalte nu, ni lot ni
+  trottoir, donc aucun immeuble qui pourrait pousser autour d'une construction
+  d'enfant, et le relief ne lit pas `desert`. Un témoin exige zéro colonne
+  autre que sable et asphalte hors de la bande.
+
+## Le contresens ne renonce plus devant une voie mouillée (v416) — un refus se juge sur la règle finale, pas sur une mesure d'avant
+
+Une règle. Le contresens (phase 2 ter) était écarté dès que `traverseesDe`
+refusait sa voie extérieure (plus de `PONT_MAX` d'eau), AVANT qu'on regarde si
+les tabliers déjà publiés la couvraient, ou s'il pouvait contourner. Or la
+règle qui décide est `exigerChaussee` (l'eau n'est permise que sous un tablier
+publié) : un refus pris plus tôt par une mesure plus stricte écartait San Diego
+sans raison. Mesuré sur les 262 villes : seule San Diego change (1 → 2
+circuits), aucun tablier ni sol ne bouge. San José et Guayaquil restent à un
+circuit, et c'est la GÉOMÉTRIE : leur place occupe le nœud central, le grand
+anneau est leur seul cycle, et sa voie extérieure passe sur la mer (une
+quarantaine de blocs le long de la côte) ou sur la plage — un remède de SOL
+(`TASKS.md`). Une sonde de contour lit le bord dans SON sens de marche
+(intérieur à gauche) : interrogé à l'envers, `etatDeSegment` décale la voie du
+mauvais côté et ment.
 
 ## Les tabliers s'allongent sous la voie (v414) — un ouvrage qu'on ne peut pas retirer s'agrandit, et la preuve lit les deux versions
 
@@ -1636,6 +1672,28 @@ celle de la High Roller ne tiendrait pas, et c'est déclaré.
 Et une empreinte d'identité qui change se PROUVE : celle des 490 morceaux
 (v352) couvre Marrakech et Tokyo ; la branche, bâtisseurs neufs désarmés, rend
 l'ancienne au bit près — c'est ce qui a permis de la remplacer.
+
+## Le témoin de chargement vole au-dessus d'une ville (v417) — un réglage que le banc coupe se force dans le témoin qui le juge
+
+Une règle.
+
+- **UN TÉMOIN QUI JUGE CE QUE L'IPAD VIT DEMANDE LE RÉGLAGE DE L'IPAD.**
+  L'ordre en cône et la recharge à l'arrivée sont coupés en rendu logiciel
+  (v346, v360) : un témoin de chargement qui ne les force pas mesure l'ancien
+  ordre, que la tablette ne joue plus. Le jumeau urbain de « on ne rattrape
+  pas le bout du monde » (`monte.js`) ouvre sa page avec
+  `file=cone&recharge=arrivee` et lit `rechargeRegle.active` dans son message.
+  Mesuré : avec ce réglage, Paris et Londres tiennent deux fois la barre
+  (`max / 2`) à 95 et 120 b/s ; avec celui du banc, Paris tombe à 45 pour 60.
+  Le témoin du désert reste : il garde la campagne, où un morceau coûte trois
+  fois moins.
+
+Et **le gel de téléportation se mesurait sur un banc qui n'avait rien bâti.**
+`sonde-arrivee-journal.cjs` rejoue l'arrivée à Paris avec un journal fabriqué
+de 80 000 blocs : sur l'ancien code, 90 % du disque jamais atteints en vingt
+secondes et 3,3 s de fil principal à engendrer ; depuis la v403, comme sans
+journal. Une sonde de performance qui joue sans les données de l'enfant ne
+mesure pas l'enfant le plus touché.
 
 ## Le journal de l'enfant se range par morceau (v403) — un index vit DANS la structure qu'il indexe
 
@@ -3248,6 +3306,38 @@ Une règle.
   la terre, l'herbe, le sable et la pierre naturelle. Manhattan a son propre sol
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
+
+## La M40 (v415) — une ville bâtie à la main s'entre par une rue déclarée, et une vieille boucle se cherche
+
+Londres–Birmingham, le corridor « en attente » depuis la v323. Trois règles.
+
+- **UNE PORTE DE VILLE BÂTIE À LA MAIN RESTE À `BORD_VILLE`, ET L'ENTRÉE SE
+  DÉCLARE.** Les rues nommées de Londres s'arrêtent à quatre-vingts blocs du
+  centre, la porte est à quatre-vingt-douze : aucune rue existante n'y mène
+  (mesuré angle par angle). Pousser la porte plus loin (`bord` plus grand)
+  aurait mis l'axe DANS la ville (le témoin « elle ne traverse ni ville » lit
+  `cityAt` à `r − BORD_VILLE − 2`, et Londres est bâtie à la main — une ville
+  engendrée comme Tokyo n'y entre pas). `ENTREES_LONDRES` (londres.js), comme
+  Paris et Lille : une collectrice de la porte à un SOMMET d'une artère
+  (Pentonville Road), dans le sol de la ville mais hors des circuits.
+- **UNE BOUCLE DE CONSTRUCTION QUI LISTE SES EXCLUSIONS OUBLIE LA DERNIÈRE
+  VILLE.** La trame générique de `world.js` (« City buildings: one lot per grid
+  cell ») exclut six villes bâties à la main, pas Londres : hors de la place que
+  « le mobilier de Londres » réserve (77 blocs autour du centre), elle pose
+  encore ses maisons PAR-DESSUS la ville. L'une barrait l'entrée de la M40 (un
+  bloc à hauteur de carrosserie à dix blocs de la porte, `dans` du témoin), deux
+  colonnes de la route aussi. Ses lots cèdent désormais à la route et à
+  l'entrée ; le reste de l'anneau est une dette déclarée (`TASKS.md`), parce que
+  le retirer touche des toits où un enfant a pu bâtir.
+- **UN COL SE TROUVE PAR LE RELEVÉ, PAS PAR L'AXE.** La carte ASCII du relief
+  (`carte.mjs` du scratchpad) a montré une crête nord-sud de 46 à 55 blocs
+  barrant tout l'espace, Heathrow fermant le sud, et un seul col à 41-46 vers
+  la latitude de Birmingham. Le couloir le plus bas avec cap (v355) le trouve de
+  lui-même dès qu'on lui donne la sortie nord de Londres ; donné par l'ouest, il
+  rend « déblai ». La même sonde sert les routes suivantes : obstacles dans la
+  grille (aérodromes à r + 12 + portée de talus, villes, repères, rails,
+  autres routes), lissage par moyenne, `profilDe` sur chaque candidat, puis
+  `verif.mjs` qui relit le registre réel avec les grandeurs des témoins.
 
 ## Le Tōmei (v381) — une sonde de couloir lisse par moyenne, et la porte se juge avec son raccord
 
