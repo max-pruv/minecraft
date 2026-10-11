@@ -304,12 +304,25 @@ function verifier(nom, ok, detail = "") {
     });
     verifier("le viseur atteint une façade dans le même monde", !!hit);
     if (hit) {
-      const geometrieAvant = await p.evaluate(() =>
-        [...__game.villeRealiste.buildings.values()].reduce(
-          (n, g) => n + (g.userData.instances || 0),
-          0,
-        ),
-      );
+      // LA GÉOMÉTRIE DE L'IMMEUBLE QUI PERD UN BLOC, PAS CELLE DE LA VILLE
+      // (banc-intermittents, dette de la v291). Le témoin comptait les
+      // instances de TOUS les immeubles installés : le même rouge rendait
+      // 22 326 → 51 734 sur `origin/main` et 11 684 → 51 734 sur la branche,
+      // parce que la file continuait d'installer d'autres immeubles pendant
+      // l'attente. Un seul nombre pour deux choses ne se démonte pas (v223).
+      // On nomme l'immeuble que le viseur touche (`batimentA`, la même lecture
+      // que `setBlock` pour sa révision), on garde SON groupe, et l'on attend
+      // que le rendu le REBÂTISSE (un autre groupe sous le même nom).
+      const avant = await p.evaluate(async (c) => {
+        const { versManhattan } = await import("/src/manhattan-world.js");
+        const { batimentA } = await import("/src/manhattan-plan.js");
+        const q = versManhattan(c.x, c.z), b = batimentA(q.x, q.z);
+        const vr = __game.villeRealiste, g = b ? vr.buildings.get(b.id) : null;
+        window.__trouAvant = g;
+        return { id: b ? b.id : null, instances: g ? g.userData.instances || 0 : null,
+          ville: [...vr.buildings.values()].reduce((n, x) => n + (x.userData.instances || 0), 0) };
+      }, hit);
+      const geometrieAvant = avant.ville;
       await p.touchscreen.tap(350, 230);
       await dormir(1400);
       verifier(
@@ -329,16 +342,23 @@ function verifier(nom, ok, detail = "") {
         { timeout: 60000 },
       ).then(() => true).catch(() => false);
       if (!fileVide) console.log("   (file de Manhattan encore pleine après 60 s)");
-      const geometrieApres = await p.evaluate(() =>
-        [...__game.villeRealiste.buildings.values()].reduce(
-          (n, g) => n + (g.userData.instances || 0),
-          0,
-        ),
-      );
+      const tRebati = Date.now();
+      const rebati = avant.id === null ? false : await p.waitForFunction(
+        (id) => { const g = __game.villeRealiste.buildings.get(id); return !!g && g !== window.__trouAvant; },
+        avant.id, { timeout: 60000, polling: 250 },
+      ).then(() => true).catch(() => false);
+      const apres = await p.evaluate((id) => {
+        const vr = __game.villeRealiste, g = id === null ? null : vr.buildings.get(id);
+        return { instances: g ? g.userData.instances || 0 : null,
+          ville: [...vr.buildings.values()].reduce((n, x) => n + (x.userData.instances || 0), 0) };
+      }, avant.id);
+      const geometrieApres = apres.ville;
       verifier(
         "le trou enlève aussi la géométrie visible de la façade",
-        geometrieApres < geometrieAvant,
-        `${geometrieAvant} → ${geometrieApres}`,
+        rebati && avant.instances !== null && apres.instances !== null && apres.instances < avant.instances,
+        `immeuble ${avant.id} : ${avant.instances} → ${apres.instances} instances`
+          + ` (${rebati ? `rebâti en ${((Date.now() - tRebati) / 1000).toFixed(1)} s` : "jamais rebâti en 60 s"})`
+          + ` · ville ${geometrieAvant} → ${geometrieApres}`,
       );
     }
     await p.evaluate((NY) => {
@@ -524,10 +544,21 @@ function verifier(nom, ok, detail = "") {
     // échouer PROPREMENT sur l'ancien code, pas s'effondrer » vaut aussi pour
     // le neuf : on attend, borné, puis on REND un verdict, et la durée comme
     // ce que le bouton annonce entrent dans le message.
+    // ON ATTEND LE MODÈLE, PUIS LE BOUTON (banc-intermittents). Le taxi se
+    // charge de façon asynchrone et reste à (0, 0, 0) jusque-là — neuf
+    // secondes sur page neuve (`sonde-taxi-ny.cjs`), bien plus sur une page
+    // de Manhattan qui rend 0,4 image par seconde (v259) au milieu d'un
+    // portail : quinze secondes de montre n'étaient pas le fait, c'était une
+    // durée. On attend que la voiture soit POSÉE à sa place, puis le bouton,
+    // soixante secondes au plus en tout ; le temps pris entre dans le message.
     const t0Taxi = Date.now();
+    const taxiPose = await p.waitForFunction((NY) => __game.animalManager.animals.some((a) =>
+      a.mesh && Math.hypot(a.mesh.position.x - NY.x, a.mesh.position.z - NY.z - 22) < 3),
+    NY, { timeout: 60000, polling: 250 }).then(() => true).catch(() => false);
+    const msPose = Date.now() - t0Taxi;
     const taxiPret = await p
       .locator("#ride-btn")
-      .waitFor({ state: "visible", timeout: 15000 })
+      .waitFor({ state: "visible", timeout: Math.max(5000, 60000 - (Date.now() - t0Taxi)) })
       .then(() => true)
       .catch(() => false);
     if (!taxiPret) {
@@ -539,6 +570,7 @@ function verifier(nom, ok, detail = "") {
           betes: __game.animalManager.animals.length,
         };
       });
+      vu.taxiPose = taxiPose; vu.msPose = msPose;
       verifier(
         "le taxi roule avec les contrôles tactiles",
         false,

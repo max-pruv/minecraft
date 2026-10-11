@@ -600,6 +600,7 @@ const VRAIES_KM = [
       out.convoiM40 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'M40') || null;
       out.convoiA6 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A6') || null;
       out.convoiA8 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A8') || null;
+      out.convoiUS101 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'US-101') || null;
       // WASHINGTON EST UNE BOÎTE (v367) : la route de New York s'arrête NET à
       // son bord sud (`boutNet`), au niveau de la rue d'Anacostia qui y
       // débouche, et ses voitures entrent par cette rue (`avenues`). On compte
@@ -790,6 +791,27 @@ const VRAIES_KM = [
             return { route: e.route, dans, vus, rue, n: pts.length };
           });
         } catch (e) { out.entreesNiceErreur = String(e); }
+        // L'ENTRÉE DE SAN FRANCISCO (v439) : de la porte sud-est de l'US-101,
+        // sur la terre ferme au bout de la baie, au bout de Third Street. Même
+        // lecture que Londres, et le bout doit être un sommet d'une ARTÈRE.
+        try {
+          const SFm = await import('./src/sanfrancisco.js'), WO = await import('./src/world.js');
+          const ents = m.entreesDe('sf'), E = SFm.ENTREES_SF || [];
+          out.entreesSF = ents.map((e, i) => {
+            const pts = E[i] || [];
+            let dans = null, vus = 0, rue = 0;
+            for (let k = 0; k + 1 < pts.length && !dans; k++) for (let t = 0; t <= 1; t += 0.01) {
+              const X = Math.floor(pts[k][0] + (pts[k + 1][0] - pts[k][0]) * t), Z = Math.floor(pts[k][1] + (pts[k + 1][1] - pts[k][1]) * t);
+              if (m.routeEn(X, Z)) continue;
+              const h = w.coteRoulable(X, Z); vus++;
+              if (WO.CHAUSSEE.has(w.getBlock(X, h, Z))) rue++;
+              if (w.isSolid(X, h + 1, Z) || w.isSolid(X, h + 2, Z)) { dans = [X, Z, w.getBlock(X, h + 1, Z)]; break; }
+            }
+            const fin = pts[pts.length - 1] || [0, 0], fu = fin[0] - SFm.SF.x, fv = fin[1] - SFm.SF.z;
+            const artere = (SFm.VOIES_SF || []).filter((v) => v.type === 'collecteur').some((v) => v.pts.some(([a, b]) => Math.hypot(a - fu, b - fv) < 1));
+            return { route: e.route, dans, vus, rue, artere };
+          });
+        } catch (e) { out.entreesSFErreur = String(e); }
         // TOUTE ENTRÉE DE VILLE ENGENDRÉE (v311) : Bruxelles en a deux,
         // Amsterdam une. Chacune doit arriver sur la rue (trente blocs depuis
         // la porte) et, jusqu'au bout de l'avenue (douze blocs du centre), ne
@@ -1179,6 +1201,23 @@ const VRAIES_KM = [
       JSON.stringify(a1.absent ? a1 : { convoi: a1.convoiA8 ? { nom: a1.convoiA8.nom, voitures: (a1.convoiA8.modeles || []).length } : 'aucun convoi A8',
         surRail: a1.surRail && a1.surRail['A8'], frole: a1.frole && a1.frole['A8'], nice: a1.entreesNice, erreur: a1.entreesNiceErreur,
         marseille: (a1.entreesEngendrees || []).filter((e) => e.route === 'A8') }));
+
+    // L'US-101 (v439) : San Francisco–Los Angeles. San Francisco est une
+    // presqu'île — la baie à l'est, le Pacifique à l'ouest, SFO au sud : la
+    // route sort par le sud-est, au nord de l'aérodrome, et son entrée
+    // déclarée mène au bout de Third Street ; elle longe la plaine côtière et
+    // entre dans Los Angeles par l'ouest. Sur l'ancien code, la route n'existe
+    // pas : ni convoi, ni entrée de San Francisco.
+    verifier('l\'US-101 relie San Francisco à Los Angeles au nord de SFO, entre dans San Francisco par une rue jusqu\'à Third Street, et des voitures y roulent',
+      !a1.absent && !a1.entreesSFErreur && !!a1.convoiUS101 && a1.convoiUS101.routier && (a1.convoiUS101.modeles || []).length >= 10
+      && !!a1.surRail && !!a1.surRail['US-101'] && a1.surRail['US-101'][0] > 100 && a1.surRail['US-101'][1] === 0
+      && !!a1.frole && a1.frole['US-101'] === 0
+      && (a1.entreesSF || []).some((e) => e.route === 'US-101')
+      && a1.entreesSF.every((e) => !e.dans && e.vus > 20 && e.rue >= e.vus * 0.95 && e.artere)
+      && (a1.entreesEngendrees || []).some((e) => e.ville === 'losangeles' && e.route === 'US-101' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7),
+      JSON.stringify(a1.absent ? a1 : { convoi: a1.convoiUS101 ? { nom: a1.convoiUS101.nom, voitures: (a1.convoiUS101.modeles || []).length } : 'aucun convoi US-101',
+        surRail: a1.surRail && a1.surRail['US-101'], frole: a1.frole && a1.frole['US-101'], sf: a1.entreesSF, erreur: a1.entreesSFErreur,
+        losangeles: (a1.entreesEngendrees || []).filter((e) => e.route === 'US-101') }));
 
     // AUCUNE ROUTE NE PREND L'EMPRISE D'UNE AUTRE (v355) : Montréal a deux
     // routes, et chaque colonne d'emprise doit appartenir au segment qu'on
@@ -3582,6 +3621,113 @@ const VRAIES_KM = [
         !!voiesOccupees.grille && voiesOccupees.grille.retard > 0 && voiesOccupees.grille.ecartMax <= 0.01,
         voiesOccupees.grille ? `la jumelle à l'heure de sa file moins ${voiesOccupees.grille.retard} s : ${voiesOccupees.grille.ecartMax} bloc d'écart au plus, à trois heures`
           : 'aucune jumelle sur l\'A1');
+    }
+
+    // --- LA RUE DENSE, PALIER C (v438) ---------------------------------------
+    //
+    // Trois choses, trois témoins, et chacun mesure la même grandeur sur
+    // l'ancien code (qui rend « absent » sans s'effondrer).
+    //   · Les utilitaires : la règle de la flotte (`choixFlotte`, pure) en met
+    //     une voiture sur six dans la rue hors New York, et les deux modèles
+    //     se fabriquent comme le manifeste les veut — quatre pivots de roue,
+    //     au sol, au gabarit annoncé, et pour MOINS d'appels de dessin qu'un
+    //     modèle de la flotte (trente-deux, v201).
+    //   · Le jeu par voiture : dans Paris, les voisines d'une file s'écartent
+    //     de leur intervalle de grille (0 sur l'ancien code, où elles roulent
+    //     en un seul train), au plus de deux fois `JEU_MAX`, et la règle se
+    //     refait à l'identique — c'est ce qui la garde la même chez l'ami.
+    //   · La voie par tronçon : un circuit de Paris roule à cinquante sur ses
+    //     boulevards et à quarante ailleurs, au lieu d'une seule limitation.
+    const paliersC = await tab.evaluate(async () => {
+      const g = window.__game, V = g.vehicules, dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      const ve = await import('./src/vehicules.js');
+      const out = {};
+      // (a) la flotte
+      const fl = ve.FLOTTE.filter((e) => e.fichier === 'fourgonnette' || e.fichier === 'pickup');
+      let util = 0; for (let n = 0; n < 600; n++) { const e = ve.choixFlotte(n, 'paris'); if (e && (e.fichier === 'fourgonnette' || e.fichier === 'pickup')) util++; }
+      out.flotte = { modeles: fl.length, part: +(util / 600).toFixed(3), classes: fl.map((e) => e.classe) };
+      if (fl.length) {
+        const C = await import('./src/conduite.js');
+        const vmax = Object.values(C.CLASSES).map((f) => f.vmax);
+        out.flotte.pointesUniques = new Set(vmax).size === vmax.length && fl.every((e) => !!C.CLASSES[e.classe]);
+        out.flotte.mesures = fl.map((e) => {
+          const m = e.fabrique(); m.updateMatrixWorld(true);
+          let x0 = Infinity, y0 = Infinity, z0 = Infinity, x1 = -Infinity, y1 = -Infinity, z1 = -Infinity, maillages = 0; const roues = [];
+          m.traverse((o) => {
+            if (/^Wheel_(FL|FR|RL|RR)$/.test(o.name || '')) roues.push(o.name);
+            if (!o.isMesh) return; maillages++;
+            const p = o.geometry.attributes.position, w = o.matrixWorld.elements;
+            for (let i = 0; i < p.count; i++) {
+              const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+              const X = w[0] * x + w[4] * y + w[8] * z + w[12], Y = w[1] * x + w[5] * y + w[9] * z + w[13], Z = w[2] * x + w[6] * y + w[10] * z + w[14];
+              x0 = Math.min(x0, X); x1 = Math.max(x1, X); y0 = Math.min(y0, Y); y1 = Math.max(y1, Y); z0 = Math.min(z0, Z); z1 = Math.max(z1, Z);
+            }
+          });
+          return { fichier: e.fichier, roues: roues.length, maillages, sol: +y0.toFixed(2), long: +(z1 - z0).toFixed(2), larg: +(x1 - x0).toFixed(2) };
+        });
+      }
+      // (b) et (c) dans Paris
+      const m = await import('./src/mondes.js'); const P = m.positionDe('paris');
+      const avant = g.player.pos.clone(), volait = g.player.flying;
+      g.player.flying = true; g.player.pos.set(P.x + 30, 70, P.z - 10); g.player.vel.set(0, 0, 0);
+      const t0 = performance.now();
+      let cles = [];
+      while (performance.now() - t0 < 40000) {
+        await dodo(500);
+        // la clé porte le premier point du tracé (v305) : `voiture|n|x,z|…`
+        const pres = (c) => { const [x, z] = String(c.cle).split('|')[2].split(',').map(Number); return Math.hypot(x - P.x, z - P.z) < 600; };
+        cles = (V.etat() || []).filter((c) => c.nom === 'voiture' && !c.route && pres(c)).map((c) => c.cle);
+        if (cles.length >= 8 && performance.now() - t0 > 8000) break;
+      }
+      out.paris = { convois: cles.length, secondes: Math.round((performance.now() - t0) / 1000) };
+      if (V.jeu) {
+        let jouent = 0, purs = 0; const ec = [];
+        for (const k of cles) { const j = V.jeu(k); if (!j) continue; if (j.pur) purs++; if (j.A > 0) { jouent++; ec.push(...j.ecarts.map(Math.abs)); } }
+        ec.sort((a, b) => a - b);
+        out.jeu = { jouent, purs, ecarts: ec.length, p90: ec.length ? ec[Math.floor(0.9 * (ec.length - 1))] : null, max: ec.length ? ec[ec.length - 1] : null, maxPermis: 2 * ve.JEU_MAX + 0.02,
+          joue: ec.length ? +(ec.filter((x) => x > 0.05).length / ec.length).toFixed(3) : 0 };
+      }
+      if (V.allures) {
+        let deux = 0, mesures = 0;
+        for (const k of cles) { const a = V.allures(k); if (!a) continue; mesures++; if ((a.avenue || 0) > 0.02 && (a.rue || 0) > 0.02) deux++; }
+        out.allures = { mesures, deux };
+      }
+      // (d) les boulevards de Paris : combien de blocs de deux voies ont leur
+      // jumelle (la somme des sections des files qui en ont une)
+      let deuxVoies = 0, files = 0, avecJumelle = 0;
+      for (const c of V.etat() || []) {
+        if (c.nom !== 'voiture' || c.jumeau || !c.voiesDoubles || !cles.includes(c.cle)) continue;
+        files++; if (c.jumelle) { avecJumelle++; deuxVoies += c.voiesDoubles.longueur || 0; }
+      }
+      out.boulevards = { files, avecJumelle, deuxVoies };
+      g.player.pos.copy(avant); g.player.flying = volait;
+      return out;
+    });
+    {
+      const f = paliersC.flotte, ms = f.mesures || [];
+      verifier('la rue roule aussi des utilitaires : une voiture sur six, fourgonnette et pickup, fabriqués au manifeste et moins chers qu\'un modèle de la flotte',
+        f.modeles === 2 && f.part >= 0.15 && f.pointesUniques && ms.length === 2
+          && ms.every((x) => x.roues === 4 && Math.abs(x.sol) < 0.02 && x.long > 4.2 && x.long < 5.1 && x.larg < 2.4 && x.maillages <= 20),
+        JSON.stringify(f));
+      const j = paliersC.jeu;
+      verifier('chaque voiture a son conducteur : les voisines d\'une file s\'écartent de leur grille, dans la borne, et la règle se refait à l\'identique (v305)',
+        !!j && paliersC.paris.convois >= 6 && j.jouent * 2 >= paliersC.paris.convois && j.purs === paliersC.paris.convois
+          // mesuré 0,08 à 0,41 au 90ᵉ centile selon l'instant (le jeu s'éteint
+          // dans les virages lents) ; zéro exactement sur l'ancien code : la
+          // barre lit la PART des voisines hors de leur intervalle
+          && j.joue >= 0.06 && j.max <= j.maxPermis,
+        j ? `${JSON.stringify(paliersC.paris)} · ${JSON.stringify(j)}` : `le jeu par voiture est absent (${JSON.stringify(paliersC.paris)})`);
+      const a = paliersC.allures;
+      verifier('la limitation suit le tronçon : un circuit de Paris roule à cinquante sur ses boulevards et à quarante ailleurs',
+        !!a && a.mesures >= 6 && a.deux >= 2,
+        a ? `${a.deux} circuits sur ${a.mesures} ont les deux limitations` : 'les allures par tronçon sont absentes');
+      // mesuré sous node (`sonde-rue-dense.cjs boulevards`) : 306 blocs de
+      // deux voies portent une jumelle sur `origin/main`, 446 ici ; la barre
+      // au milieu (v269)
+      const b = paliersC.boulevards;
+      verifier('les boulevards de Paris gardent leur seconde voie après les places',
+        b.deuxVoies >= 380 && b.avecJumelle >= 5,
+        `${b.avecJumelle} files sur ${b.files} ont leur jumelle, ${b.deuxVoies} blocs de deux voies occupés`);
     }
 
     // --- LES RUES DE PARIS S'ÉLARGISSENT (v294) ------------------------------

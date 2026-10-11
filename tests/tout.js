@@ -168,8 +168,10 @@ const GARDIENS = {
   'src/identity.js': ['reglages.js', 'parent.js'],
   'src/education.js': ['reglages.js', 'parent.js', 'manhattan.js'],
   'src/taxis.js': ['realisme.js', 'monte.js', 'sauvegarde.js', 'manhattan.js'],
+  'src/utilitaires.js': ['carteMonde.js', 'realisme.js', 'monte.js'], // v438 : la fourgonnette et le pickup de la rue
   'src/vehicules.js': ['monte.js', 'washington.js', 'metro.js', 'manhattan.js', 'carteMonde.js', 'reseau.js'],
   'src/voiesdoubles.js': ['monte.js', 'carteMonde.js', 'reseau.js'],
+  'src/raccords.js': ['plafond.js', 'monte.js', 'carteMonde.js'],   // les raccords d'autoroute courts (v440)
   // LE FEU TRICOLORE (v273) : il s'allume dans le monde (carteMonde.js) et il
   // arrête la circulation (monte.js). Un module neuf sans gardien annule tous
   // les acquis du cache de reprise — c'est fait pour se voir tout de suite.

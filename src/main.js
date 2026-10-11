@@ -1,13 +1,13 @@
 // Entry point: scene setup, chunk streaming, input, HUD, and the game loop.
 
-import { secondeVoieParis, secondeVoieVilleMonde, voiesAutoroute } from './voiesdoubles.js';
+import { secondeVoieParis, secondeVoieVilleMonde, voiesAutoroute, allureDuTroncon, allureVilleMonde } from './voiesdoubles.js';
 import * as THREE from 'three';
 import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp, MEUBLE_ITEMS, MEUBLE_START, isMeuble, RUE_ITEMS, RUE_START, RUE, isRue, ARCHI, CITY_BLOCK, ROUTE_BLOCK } from './blocks.js';
 import { passageEn } from './passages.js';
 import { mobilierTrottoir, MOBILIER_OBSTACLE, villeHD } from './facadeshd.js';
 import { PARIS as PARIS_ANCRE, circuitsParis, circuitsQuartiersParis, marquageParis } from './paris.js';
 import { circuitsLondres } from './londres.js';
-import { circuitsSF } from './sanfrancisco.js';
+import { circuitsSF, ENTREES_SF } from './sanfrancisco.js';
 import { circuitsNice, ENTREES_NICE } from './nice.js';
 import { circuitsLille } from './lille.js';
 import { buildPropMesh } from './props.js';
@@ -52,6 +52,7 @@ import { createPassants } from './passants.js';
 import { createPoissons } from './poissons.js';
 import { segmentsDeTrain, traceSegment } from './trains.js';
 import { segmentsDeRoute, traceRoute, entreesDe } from './routes.js';
+import { raccordDe } from './raccords.js';
 import { ENTREES_PARIS } from './paris.js';
 import { ENTREES_LILLE } from './lille.js';
 import { ENTREES_LONDRES } from './londres.js';
@@ -60,6 +61,7 @@ import { actualiserPresence } from './presence.js';
 import { animerHumain, chargerHumains, humainsCharges, humainsPrets } from './humains.js';
 import { MODELES_MONTURE, MONTURES } from './montures.js';
 import { initFun } from './fun.js';
+import { vieDistante } from './sensations.js';
 import { Identity, prefetchScanner } from './identity.js';
 import { ProfileSync } from './sync.js';
 import { AdminPanel, isAdminName } from './admin.js';
@@ -2045,7 +2047,7 @@ function updateChunks() {
   // l'E429 à l'est. `ENTREES_*` suit l'ordre de `entreesDe`, et l'on prend
   // celle de CETTE route — le `[0]` d'avant aurait fait entrer les voitures de
   // Bruxelles par la porte de Paris.
-  const ENTREES = { paris: ENTREES_PARIS, lille: ENTREES_LILLE, londres: ENTREES_LONDRES, nice: ENTREES_NICE };
+  const ENTREES = { paris: ENTREES_PARIS, lille: ENTREES_LILLE, londres: ENTREES_LONDRES, nice: ENTREES_NICE, sf: ENTREES_SF };
   // Une ville ENGENDRÉE n'a pas d'avenue d'entrée dessinée : le corridor y
   // arrive dans l'axe de sa trame (le point de passage est choisi pour cela),
   // donc sur la rue qui mène au centre. Les voitures la suivent jusqu'à douze
@@ -2060,7 +2062,11 @@ function updateChunks() {
     const fiche = segmentsDeRoute().find((sg) => sg.route.nom === route);
     if (fiche && fiche.route.avenues && fiche.route.avenues[cle]) return fiche.route.avenues[cle];
     const e = entreesDe(cle)[i];
-    return avenueDEntree(cle, e.x, e.z) || undefined;
+    // LE RACCORD S'ARRÊTE AVANT LA VOIE D'UN ANNEAU (v442) : deux grilles
+    // (v305) dans une même voie ne se cadencent pas. La table est mesurée
+    // (raccords.js) ; `?raccords=long` rejoue l'avenue entière, pour l'A/B.
+    const av = avenueDEntree(cle, e.x, e.z) || undefined;
+    return PARAMS_JEU.get('raccords') === 'long' ? av : raccordDe(route, cle, av);
   };
   for (const seg of segmentsDeRoute()) {
     const avant = entree(seg.de, seg.route.nom), apres = entree(seg.vers, seg.route.nom);
@@ -3218,7 +3224,13 @@ function animerLesVilles(dt) {
   // la graine vient de la ville, pas de la file (v246, voir graineDeVille)
   // l'allure de la voie : une rue de ville engendrée, une avenue nommée (v372)
   const decalage = tr.voie === 'avenue' && tr.ville !== 'ny' ? DECALAGE_AVENUE : 0;
+  // LE TYPE DE VOIE PAR TRONÇON (v438) : la section de la rue au point du
+  // tracé — boulevard cinquante, collectrice quarante, locale trente — et non
+  // plus une seule limitation pour tout le circuit. Manhattan garde la sienne.
+  const allure = tr.ville === 'ny' ? null : decalage ? (x, z) => allureDuTroncon(tr.cle, x, z)
+    : (tr.voie || 'rue') === 'rue' ? allureVilleMonde : null;
   const conv = vehicules.circulation(tr.pts, graineDeVille(tr), { ville: tr.ville, voie: tr.voie || 'rue',
+    limite: allure ? (x, z) => ALLURE_VOIE[allure(x, z) || tr.voie || 'rue'] : undefined,
     // les avenues des villes bâties à la main : la voie de droite (v372)
     decalage,
     // la seconde voie des boulevards (v423) ; le bus prend la première place
@@ -4518,7 +4530,7 @@ function syncRemotePlayers(list) {
     // feu. `p.v.d` est court et une tablette restée sur l'ancienne version
     // l'ignore (le receveur cède).
     if (rp.vehicule) fun.degats.distant(rp.vehicule.mesh, (p.v && p.v.d) || null);
-    if (rp.vehicule) { const u = rp.vehicule.mesh.userData; u.braquage = (p.v && +p.v.b) || 0; u.derive = (p.v && +p.v.r) || 0; }
+    if (rp.vehicule) { const u = rp.vehicule.mesh.userData; u.braquage = (p.v && +p.v.b) || 0; u.derive = (p.v && +p.v.r) || 0; u.freinMain = !!(p.v && p.v.m); }
     rp.passager = p.p || null;
     proposerGPSAmi(p.id, rp, p.g || null);   // sa destination, proposée (v388)
   }
@@ -4615,6 +4627,7 @@ function updateRemotePlayers(dt) {
       const vm = rp.vehicule.mesh;
       vm.position.copy(rp.pos);
       vm.rotation.y = rp.cap;
+      vieDistante(vm, dt);   // roues avant braquées et traces de pneus (v441)
       asseoir(rp.mesh, rp.vehicule, rp.vehicule.def.siege, rp.animTime);
       continue;
     }
@@ -4711,6 +4724,8 @@ function startNetSession(code, isHost, patience) {
       // et une tablette restée sur l'ancienne version les ignore.
       if (Math.abs(player.braquage || 0) > 0.005) p.v.b = Math.round(player.braquage * 100) / 100;
       if (Math.abs(player.derive || 0) > 0.0005) p.v.r = Math.round(player.derive * 1000) / 1000;
+      // le frein à main tiré (v441) : l'ami voit les traces qu'il laisse
+      if (player.freinMainTire) p.v.m = 1;
     }
     const pa = fun.passagerDe ? fun.passagerDe() : null;
     if (pa) p.p = { de: pa.de, s: pa.s };

@@ -358,7 +358,13 @@ const EMPREINTE_MORCEAUX_V414 = '863d4203a441e3fd029ce2404fc6d6e706799e7f64fe489
 // colonnes qui diffèrent dans les morceaux de Paris sont toutes à moins de
 // 11,2 blocs de l'axe de l'entrée — la demi-chaussée et le trottoir d'un
 // boulevard (scratchpad diffp.mjs).
-const EMPREINTE_MORCEAUX_V357 = '1f1e5a6dbde9100ea365bc060d6c0f077a88cfc9bbb8b08128ebc590462126e3';
+// v439 : San Francisco, un des neuf lieux, porte l'entrée de l'US-101 (de la
+// porte sud-est au bout de Third Street). L'US-101 retirée du registre, la
+// branche rend 1f1e5a6d…, la constante de la v438, au bit près ; et les cent
+// colonnes qui diffèrent dans les morceaux de San Francisco sont toutes à
+// moins de sept blocs de l'axe de l'entrée — la demi-chaussée et le trottoir
+// d'une collectrice (scratchpad diffsf.mjs).
+const EMPREINTE_MORCEAUX_V357 = '239f48ab9f32f829be50f6e53f96ec0f43ed6d15fb2fdfaec0e1f0284917b37a';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -600,8 +606,28 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     try { t = await require('./sonde-force-chocs.cjs').mesurer(require('path').resolve(__dirname, '..')); } catch (e) { err = String(e && e.message || e); }
     const lignes = t ? Object.values(t) : [];
     verifier('conduite : la force d\'un choc suit la vitesse — pleins gaz un mur plein, un mur lent moins d\'un quart, un frôlement moins d\'un dixième',
-      lignes.length === 6 && lignes.every((r) => r.plein.force === 1 && r.lent.murs > 0 && r.lent.murs < 0.25 && r.frole.murs > 0 && r.frole.murs < 0.1),
+      // le compte vient de la table (huit classes depuis les utilitaires, v438)
+      lignes.length >= 6 && lignes.every((r) => r.plein.force === 1 && r.lent.murs > 0 && r.lent.murs < 0.25 && r.frole.murs > 0 && r.frole.murs < 0.1),
       t ? JSON.stringify(t) : `sonde : ${err}`);
+  }
+  // --- LES RACCORDS D'AUTOROUTE NE ROULENT PAS DANS LA VOIE D'UN ANNEAU (v442)
+  // Dix-neuf des quarante-six raccords route/ville engendrée partageaient la
+  // voie d'un anneau (569 blocs ; Madrid 85, 6,8 % de paires au contact au
+  // navigateur) : deux grilles indépendantes (v305) sur une voie. Le raccord
+  // s'arrête désormais avant la première voie d'anneau, par une table mesurée
+  // (`RACCORDS_COURTS`, raccords.js). Le VRAI tracé que main.js donne à la rue,
+  // sous node (`sonde-rue-dense.cjs raccords`), contre les vraies voies des
+  // anneaux : il ne reste que les demi-tours (20 blocs sur 5 raccords, mesuré),
+  // et la table est celle que la règle donne aujourd'hui — un anneau qui
+  // bouge rougit ce témoin et nomme le raccord à remesurer.
+  {
+    let b = null, err = '';
+    try { b = await require('./sonde-rue-dense.cjs').mesurer('raccords'); } catch (e) { err = String(e && e.message || e); }
+    verifier('rue : un raccord d\'autoroute ne roule pas dans la voie d\'un anneau — il s\'arrête avant, il ne reste que des demi-tours',
+      !!b && b.raccords > 40 && b.blocs.long > 300 && b.blocs.jeu < 100 && b.touches.jeu <= 6,
+      b ? JSON.stringify({ raccords: b.raccords, touches: b.touches, blocs: b.blocs, pires: b.pires }) : `sonde : ${err}`);
+    verifier('rue : la table des raccords courts est celle que la règle rend aujourd\'hui (un anneau qui bouge la fait remesurer)',
+      !!b && b.ecarts.length === 0, b ? JSON.stringify(b.ecarts) : `sonde : ${err}`);
   }
   // --- LA PENTE ET LA BOSSE (palier 3 de la conduite) ---------------------
   // Mesuré sur `origin/main` (`tests/sonde-pente.cjs`, six côtes, six
