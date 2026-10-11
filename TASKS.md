@@ -511,6 +511,29 @@
   `sonde-circulation.cjs paris 40`, ordre alterné, jeu par voiture allumé et
   éteint trois fois chacun : zéro arrêt sec sur 36 arrêts, aucun contact — le
   jeu n'y est pour rien ; le témoin juge sur deux arrêts.
+  **(4) MADRID, DÉMONTÉ (après la v438), PAS CORRIGÉ.** Au navigateur à
+  (−2 581, 5 272), `sonde-circulation.cjs madrid 40 avec -2581 5272` (paires
+  par convois) : 6,4 % de paires au contact, et le nœud n'est PAS entre
+  anneaux — c'est le raccord de l'autoroute A-4 (`voiture|1030|…`) qui roule
+  sur l'avenue d'entrée, l'axe de la trame, dans la MÊME voie que trois
+  anneaux (même sens et en face) : deux grilles indépendantes (v305) sur une
+  voie, qu'aucune grille ne peut cadencer l'une contre l'autre. Sous node
+  (`sonde-rue-dense.cjs routes`) : 18 des 45 raccords route/ville partagent une
+  voie d'anneau, dont cinq sur 31 à 85 blocs de la croix-boulevard
+  (Amsterdam 69, Madrid 85, Delhi 48, Agra 68, Toronto 31) et Kyoto 53 hors
+  boulevard ; les autres (≈ 10 + 10 blocs) sont des croisements de rue.
+  ESSAYÉ ET RETIRÉ : faire prendre au raccord la voie EXTÉRIEURE du boulevard
+  (`[b, b]`) — le nœud se déplace sur les JUMELLES des anneaux, qui
+  l'occupent (6,6 % au même point, les « face » disparus, les « même sens »
+  doublés). Pistes, décisions de plan : arrêter l'autoroute à la porte dans
+  une ville engendrée dont la croix porte des anneaux (les voitures n'y
+  entrent plus — c'est le contraire de la v300), ou faire du raccord une file
+  de l'anneau qui passe là (une seule grille). `routes.js` et `villesmonde.js`
+  sont d'autres sessions.
+  **(5) LE HUIT DE TOKYO, MESURÉ RÉSOLU.** Au même point (53 383, 8 048) :
+  0,25 % de paires au contact, toutes en travers entre deux convois (la
+  cession locale), zéro dans une file — les contours des v432 et v435 ont
+  défait le croisement.
   **(3) FAIT en v431** : balayage au quart sur les deux premiers blocs,
   plancher de file 1,0 en ligne droite (1,6 en virage) — médiane 1,9-2,0 →
   1,1-1,3 (Paris, Rome, Zurich, Tokyo). Les contacts « file » relevés à Tokyo
