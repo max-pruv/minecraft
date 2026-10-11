@@ -1618,8 +1618,8 @@
   main » demanderait un second doigt sur l'accélérateur, et le joystick n'en a
   qu'un — décidé, pas oublié) ; (11) personne ne DESSINE encore le dérapage
   (traces de pneus, crissement : la session des sensations lit
-  `player.freinMainTire` et `player.derive`) — **TRACES FAITES en v434** (`traces.js`) ;
-  le crissement au frein à main reste à faire ; (12) le frein à main ne se voit
+  `player.freinMainTire` et `player.derive`) — **TRACES FAITES en v434** (`traces.js`),
+  **CRISSEMENT AU FREIN À MAIN FAIT en v435** ; (12) le frein à main ne se voit
   pas chez l'ami au-delà de la dérive qui voyage déjà (`p.v.r`).
 - [ ] **AU PORTAIL DE LA v434 (traces de pneus), DES ROUGES QUI NE SONT PAS LA
   LIVRAISON — mesurés.** `reseau.js` rejouée SEULE : branche 80 verts, trois

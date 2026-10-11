@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 435,
+    titre: 'Le frein à main crisse',
+    puces: [
+      'Les pneus crissent au frein à main',
+      'Même en ligne droite',
+    ],
+  },
+  {
     v: 434,
     titre: 'Le dérapage laisse des traces',
     puces: [
