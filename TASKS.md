@@ -3714,11 +3714,29 @@
   - [ ] un brisis qui monte à plus d'un bloc (coin de champ à 1,5 ou 2) est
     raide mais droit : le vrai brisis d'un immeuble de coin se brise à la ligne
     de bris ; la constante `RETRAIT` est la seule à régler, sur capture ;
-  - [ ] sur les places sans trottoir large (esplanades), la colonne Morris se
+  - [x] **FAIT EN v443** (`morrisDegagee` : air libre, seule à deux blocs ;
+    43 mal plantées sur 76 → 0). Historique :
+    sur les places sans trottoir large (esplanades), la colonne Morris se
     pose au tirage sans regarder si une devanture ou un banc est à côté ;
     mesuré : cinq colonnes sur vingt-cinq morceaux, aucune côte à côte.
 
   Dettes déclarées de la v288 :
+  - [ ] **LE PORTAIL DE LA v443 (colonnes Morris).** Rejoués seuls :
+    `monte.js` sur la branche (base v436) et sur `origin/main` (v440). Le cône
+    dans Paris (0,08 au portail) vert seul (0,27). Moscou « les rues pleines de
+    voitures » et « modèles ET couleurs » rouges DES DEUX CÔTÉS (non déclarés
+    jusqu'ici). Rome — le flâneur, la traversée en biais — rouges sur la base
+    v436, verts sur la v440, ramenés par la fusion ; l'avion au-dessus d'une
+    ville, rouge des deux côtés (déclaré en v433). `origin/main` rend seul « à
+    l'arrivée, la rue se fabrique par tranches » (7 par image). Au portail
+    seulement : `reseau.js` (six témoins de reprise et de message réseau),
+    `manhattan.js` « New York et le reste de la Terre partagent », la
+    circulation au travers de la voiture, l'avatar au volant. Aucun ne peut
+    venir du diff : la règle du mobilier ne tourne qu'où la fiche de ville
+    l'accepte — Paris (`mobilier: false` partout ailleurs, v390), et ni le
+    réseau ni la circulation n'en lisent rien. Le témoin de la voiture devant
+    une terrasse (v436, `monte: false` au portail : un seul clic sur
+    « Monter ») retente la monte, vert seul (arrêt à 2,39).
   - [ ] **LE PORTAIL DE LA v436 (la voiture devant les terrasses).** Rouges :
     `maj.js` (les deux loaders), `carte.js` (glisser bridé ×4), `washington.js`
     (l'Air et l'Espace), `manhattan.js` (trou, taxi), `monte.js` (la rue à

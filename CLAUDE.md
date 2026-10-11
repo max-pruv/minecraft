@@ -2468,6 +2468,18 @@ engendrées. Quatre règles.
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
 
+## Les colonnes Morris se plantent dans le vide (v443) — un meuble se pose en regardant ses voisins, par la même règle
+
+Une règle. Un meuble qui se pose au tirage ne connaît pas ses voisins : la
+colonne Morris (v289) tombait contre une porte cochère ou à un bloc d'un banc
+(43 sur 76, mesuré). `morrisDegagee` (facadeshd.js) exige l'air libre sur
+quatre côtés et rejoue `mobilierTrottoir` sur les colonnes à deux blocs (avec
+`morrisAvant`, pour ne pas boucler) ; dans un voisinage, la plus petite valeur
+de tirage garde sa colonne. Un dégagement qui écarte plus de la moitié des
+candidats se compense par le tirage (0,012 → 0,024), sinon la ville perd la
+moitié de ses colonnes en silence. `morrisDegagees: false` rejoue l'ancienne
+règle pour l'empreinte des 490 morceaux.
+
 ## La voiture s'arrête devant une terrasse (v436) — une famille d'obstacle lit la même règle pour tous ceux qui butent
 
 Une règle. `mobilierDevant` (main.js) ne lisait que les blocs de mobilier
