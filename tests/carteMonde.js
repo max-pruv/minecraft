@@ -609,6 +609,7 @@ const VRAIES_KM = [
       // rue, et les blocs à hauteur de carrosserie sur l'avenue.
       try {
         const sw = m.segmentsDeRoute().find((sg) => sg.route.nom === 'I-95 Sud');
+        const CH = (await import('./src/world.js')).CHAUSSEE;
         if (sw) {
           let col = 0, dansVille = 0;
           const fin = m.pointA(sw, sw.longueur);
@@ -623,7 +624,33 @@ const VRAIES_KM = [
               if (w.isSolid(X, h + 1, Z2) || w.isSolid(X, h + 2, Z2)) bloque.push([X, Z2]); } }
           let marche = 0; for (let k = 1; k < cotes.length; k++) marche = Math.max(marche, Math.abs(cotes[k] - cotes[k - 1]));
           const [ex, ez] = av[av.length - 1], c = w.cityAt(Math.floor(ex), Math.floor(ez));
-          out.washington = { col, dansVille, bloque: bloque.length, marche, rue: !!c && (await import('./src/world.js')).CHAUSSEE.has(w.getBlock(Math.floor(ex), w.coteRoulable(Math.floor(ex), Math.floor(ez)), Math.floor(ez))) };
+          // L'AVENUE TRAVERSE L'ANACOSTIA (v437) jusqu'à Pennsylvania Avenue
+          // SE : on compte les pas de l'avenue au-dessus de l'eau, et l'on lit
+          // que son bout est un sommet de Pennsylvania Avenue SE.
+          let traverse = 0;
+          for (let k = 0; k + 1 < av.length; k++) { const [x0, z0] = av[k], [x1, z1] = av[k + 1], L = Math.hypot(x1 - x0, z1 - z0);
+            for (let t = 0; t <= L; t += 0.5) { const X = Math.floor(x0 + (x1 - x0) * t / L), Z2 = Math.floor(z0 + (z1 - z0) * t / L);
+              if (w.getBlock(X, 29, Z2) === b.BLOCK.WATER && w.coteRoulable(X, Z2) >= 33) traverse++; } }
+          const WA = await import('./src/washington.js');
+          const PE = (WA.VOIES_WASHINGTON || []).find((v) => v.nom === 'Pennsylvania Avenue SE');
+          const penn = !!PE && PE.pts.some(([a, bb]) => Math.hypot(a - (ex - WA.WASHINGTON.x), bb - (ez - WA.WASHINGTON.z)) < 1);
+          out.washington = { col, dansVille, bloque: bloque.length, marche, traverse, penn, rue: !!c && (await import('./src/world.js')).CHAUSSEE.has(w.getBlock(Math.floor(ex), w.coteRoulable(Math.floor(ex), Math.floor(ez)), Math.floor(ez))) };
+          // LES DEUX PONTS DE L'ANACOSTIA (v437), chacun d'une rive à
+          // l'autre : la chaussée du tablier à la cote de la rue, deux blocs
+          // libres au-dessus, et de l'eau dessous.
+          out.pontsDC = (WA.PONTS_DC || []).map((pt) => {
+            const [[u0, v0], [u1, v1]] = pt.pts, L = Math.hypot(u1 - u0, v1 - v0);
+            let n = 0, eau = 0, rue = 0, libre = 0, cote = 0;
+            const WO2 = WA.WASHINGTON;
+            for (let t = 0; t <= L; t += 0.5) {
+              const X = Math.floor(WO2.x + u0 + (u1 - u0) * t / L), Z2 = Math.floor(WO2.z + v0 + (v1 - v0) * t / L);
+              const h = w.coteRoulable(X, Z2); n++;
+              if (w.getBlock(X, 29, Z2) === b.BLOCK.WATER) { eau++; if (h === 33) cote++; }
+              if (CH.has(w.getBlock(X, h, Z2))) rue++;
+              if (!w.isSolid(X, h + 1, Z2) && !w.isSolid(X, h + 2, Z2)) libre++;
+            }
+            return { nom: pt.nom, n, eau, cote, rue, libre };
+          });
         }
       } catch (e) { out.washingtonErreur = String(e); }
       // LA PORTE DE MANHATTAN (v362) : Manhattan est un RECTANGLE (`BORNES`),
@@ -1141,6 +1168,18 @@ const VRAIES_KM = [
       && (a1.manhattan || []).filter((e) => e.route === 'I-95 Sud').length === 1 && !!a1.frole && a1.frole['I-95 Sud'] === 0,
       JSON.stringify(a1.absent ? a1 : { convoi: a1.convoiI95Sud ? { nom: a1.convoiI95Sud.nom, voitures: (a1.convoiI95Sud.modeles || []).length } : 'aucun convoi I-95 Sud',
         washington: a1.washington, erreur: a1.washingtonErreur, portesNY: a1.manhattan, frole: a1.frole && a1.frole['I-95 Sud'] }));
+
+    // WASHINGTON PAR ANACOSTIA (v437) : le quartier où entre l'I-95 Sud n'avait
+    // aucun pont vers la ville, et ses voitures faisaient demi-tour sur une rue
+    // sans nom. Les deux ponts de la vraie ville (la 11e Rue, Sousa) prolongent
+    // la grille d'une rive à l'autre, à la cote de la rue ; l'avenue d'entrée
+    // passe le pont Sousa et finit au bout de Pennsylvania Avenue SE. Sur
+    // l'ancien code, ni pont (`PONTS_DC` n'existe pas) ni traversée.
+    verifier('à Washington, deux ponts franchissent l\'Anacostia à la cote de la rue, et les voitures de l\'I-95 Sud vont jusqu\'à Pennsylvania Avenue SE',
+      !a1.absent && !a1.washingtonErreur && (a1.pontsDC || []).length === 2
+      && a1.pontsDC.every((p) => p.eau >= 10 && p.cote === p.eau && p.rue === p.n && p.libre === p.n)
+      && !!a1.washington && a1.washington.traverse >= 10 && a1.washington.penn && a1.washington.bloque === 0 && a1.washington.marche <= 1,
+      JSON.stringify(a1.absent ? a1 : { ponts: a1.pontsDC, avenue: a1.washington, erreur: a1.washingtonErreur }));
 
     // LE TŌMEI (v381) : Tokyo–Nagoya, par la bande côtière au sud du
     // Shinkansen — Haneda et Yokota ferment la plaine à l'ouest de Tokyo, et le
