@@ -1754,12 +1754,16 @@ class Convoi {
       // deux fois par minute au-dessus de Paris). On ne lui laisse que la
       // vitesse qu'elle peut perdre au freinage d'urgence avant le plancher :
       // elle y arrive en freinant.
-      if (i > 0 && v > 0) {
+      if (i > 0 && v > 0 && this.cause[i] === 1 && this.cible[i] !== Infinity) {
         const ici = ancien[i] - this.retard[i];
         const miniIci = Math.abs(this.parcours.courbure(ici)) > 0.03 || Math.abs(this.parcours.courbure(ici + 3)) > 0.03
           || Math.abs(this.parcours.courbure(ici + 5)) > 0.03 ? miniVirage : miniDroit;
+        // RELATIVE À CELLE DE DEVANT : une file qui roule à quatorze blocs par
+        // seconde à douze blocs d'écart ne freine pas (le premier jet bornait
+        // comme si la précédente était arrêtée, et toute la file traînait).
         const reste = (this.base[i - 1] - this.retard[i - 1]) - ici - miniIci;
-        const vMax = Math.sqrt(2 * FREIN_URGENCE * Math.max(0, reste));
+        const vDevant = this.vLoc[i - 1] >= 0 ? this.vLoc[i - 1] : vConv;
+        const vMax = vDevant + Math.sqrt(2 * FREIN_URGENCE * Math.max(0, reste));
         if (v > vMax) v = vMax;
       }
       let r = this.retard[i] + pas - v * dt;
