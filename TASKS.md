@@ -146,6 +146,19 @@
   (`monture: null`, intermittence vue sur `origin/main` v326). `reseau.js`
   REJOUÉE SEULE sur la branche : 79 verts, zéro rouge (mon témoin du GPS
   compris).
+- [ ] **LE PORTAIL DE LA v418 (le pilote graphique lu une fois).** Huit suites.
+  Rouges, tous déjà vus ou déclarés : `maj.js` libération (programmes 22/27,
+  carte faux) ; `carte.js` flèche du GPS et glisser bridé ×4 (402 ms pour
+  400) ; `manhattan.js` façade 11 684 → 46 592 et taxi ; `monte.js` 37 rouges,
+  la cascade « pas aux commandes » rejouée le même jour sur `origin/main` (21
+  rouges, v404). Preuve STRUCTURELLE pour la livraison : `renduLogiciel()`
+  rend la même valeur qu'avant, il ne la demande qu'une fois. **Signe neuf à
+  démonter (conduite) :** dans ce passage, le doigt du joystick tombait sur
+  `"cible":"quiz"` — un quiz du mode éducatif ouvert en pleine suite prend les
+  clics (« au volant, l'avant du joystick », « la zone du joystick ») ; sur
+  `origin/main` la même ligne dit `"cible":"game"`. Une suite de soixante
+  minutes dépasse peut-être le minuteur du quiz : à mesurer (`education.js`,
+  temps réel depuis la v234) avant d'accuser autre chose.
 - [ ] **LE PORTAIL DE LA v417 (le témoin vole au-dessus des villes), DOUBLE
   MESURE FAITE.** Le banc tournait à une charge stable de 3,8 cœurs (les pages
   `tab` et `ciel` de `monte.js`). `maj.js` : libération avec `carte: false`
