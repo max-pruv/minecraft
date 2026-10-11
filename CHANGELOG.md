@@ -40,7 +40,9 @@ remblai et de la tranchée, douze blocs de toute ville, route, voie ferrée,
 autre aéroport et monument, quarante de ce que les enfants ont bâti) ; un
 témoin de `carteMonde.js` roule chaque piste d'un bout à l'autre et compare sa
 longueur à la cible, et les deux empreintes du relief de `plafond.js` sont
-inchangées.
+inchangées ; l'empreinte des 490 morceaux change à Londres seulement — dix-huit
+colonnes, toutes dans un tronçon de la piste d'Heathrow, et rend l'ancienne
+constante au bit près quand on retire les prolongements.
 
 ---
 

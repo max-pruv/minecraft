@@ -368,7 +368,12 @@ const EMPREINTE_MORCEAUX_V414 = '863d4203a441e3fd029ce2404fc6d6e706799e7f64fe489
 // l'Anacostia (11e Rue, Sousa). `pontWashington` désarmé (rend null), la
 // branche rend 239f48ab…, la constante de la v439, au bit près ; et les cent
 // douze colonnes qui diffèrent sont toutes dans les bandes des deux ponts.
-const EMPREINTE_MORCEAUX_V357 = 'fb4f9aed89ceb6e29a5ecc6731f5e9840673e0ba720fae16c0f60a86954ca403';
+// v446 : Londres, un des neuf lieux, voit passer le prolongement de la piste
+// d'Heathrow. `tronconsDePiste` désarmé (rend []), la branche rend fb4f9aed…,
+// la constante de la v444, au bit près ; et les dix-huit colonnes qui
+// diffèrent dans les morceaux de Londres sont toutes dans la boîte d'un
+// tronçon de piste — aucune ailleurs, aucun autre lieu touché.
+const EMPREINTE_MORCEAUX_V357 = '4f53310dca0d17a822355a8f6713216df1e7ed8e5a5fb0e26cb974e3a465f3d0';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
