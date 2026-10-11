@@ -3276,7 +3276,7 @@ export function solVillesMonde(x, z) {
     if (f.cote && f.cote.quais && U < f.cote.base + f.cote.pente * V + 2) return PAVE;
     if (f.plage && V >= f.plage.v0 && V <= f.plage.v1) return SABLE;
     if (f.desert && !(f.desert.bande && Math.abs(U) <= f.desert.bande)) {
-      // LES RUES AUTOUR DU STRIP (v417). La bande ne tient qu'UNE rue de la
+      // LES RUES AUTOUR DU STRIP (v418). La bande ne tient qu'UNE rue de la
       // trame (16 unités de fiche, 29 blocs, pour un pas de 32) : les rues
       // voisines tombaient dans le sable, et aucun anneau de voitures ne
       // pouvait faire le tour d'un îlot — 689 pas de voie dans le désert. Le
@@ -4324,7 +4324,7 @@ function anneauxCalcules(f) {
       const garde = (k2) => !(g.proche && k2.dCentre > VU_ANNEAU)
         && couvertureGardee(seuls ||= pointsSeuls(f, formes.map((fo) => fo.pts), n), k2.pts);
       let k = contourner(f, g, ponts, true, autres, garde);
-      // UN CONTOUR QUI SUIVRAIT UN VOISIN SE FAIT DANS L'AUTRE SENS (v417).
+      // UN CONTOUR QUI SUIVRAIT UN VOISIN SE FAIT DANS L'AUTRE SENS (v418).
       // Mesuré : dans une vingtaine de villes (Tokyo, Dubaï, São Paulo,
       // Séoul…), l'anneau qu'on voit en arrivant traversait encore la place
       // centrale et sa fontaine, non qu'aucun contour n'existât, mais parce

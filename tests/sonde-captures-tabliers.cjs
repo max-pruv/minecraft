@@ -12,7 +12,7 @@ const VUES = [
   { nom: 'kyoto', cle: 'kyoto', P: 7, Q: -1.6 },
   { nom: 'shanghai', cle: 'shanghai', P: 62.4, Q: 60 },
   { nom: 'stockholm', cle: 'stockholm', P: -13, Q: 25.4 },
-  // v417 : le Strip et sa grille de rues, vus de haut
+  // v418 : le Strip et sa grille de rues, vus de haut
   { nom: 'lasvegas', cle: 'lasvegas', P: 0, Q: 0, h: 90 },
 ];
 // argv[4] : les vues à prendre, par nom (toutes sinon)

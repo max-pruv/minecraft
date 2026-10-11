@@ -146,6 +146,20 @@
   (`monture: null`, intermittence vue sur `origin/main` v326). `reseau.js`
   REJOUÉE SEULE sur la branche : 79 verts, zéro rouge (mon témoin du GPS
   compris).
+- [ ] **LE PORTAIL DE LA v417 (le témoin vole au-dessus des villes), DOUBLE
+  MESURE FAITE.** Le banc tournait à une charge stable de 3,8 cœurs (les pages
+  `tab` et `ciel` de `monte.js`). `maj.js` : libération avec `carte: false`
+  (déclarée). `monte.js` : le premier jet de mon témoin OUVRAIT une troisième
+  page (trou 16 pour 60 à Paris — la leçon de la v346) ; repointé dans `ciel`,
+  placé après ses autres témoins, et la page rendue à sa place en sortant (sans
+  cela la conduite de `pageGta` tombait à 2,8 images par seconde : quatre
+  rouges de conduite de plus). Rejouée SEULE, version finale : 195 verts,
+  3 rouges — « la rue roule à l'allure d'une ville », la compilation à New York,
+  le flanc frôlé — tous trois rouges sur `origin/main` (v404) rejouée seule
+  (21 rouges ce jour-là, dont la cascade « pas aux commandes » des avions et le
+  trou du chasseur au-dessus du désert, 58 pour 60). Mon témoin : Paris 137 ·
+  112, barres 48 · 60. Un passage est mort au démarrage d'une page (90 s,
+  `banc.joueur`), la panne déclarée sous la v397.
 - [ ] **LE PORTAIL DE LA v404 (les anneaux contournent), DOUBLE MESURE FAITE.**
   Verts : `fumee.js`, `carteMonde.js` (les deux témoins neufs), `plafond.js`
   (empreintes, celle des 490 morceaux comprise). `carte.js` : « la flèche du
@@ -677,8 +691,20 @@
   colline, Séoul (2 pas, le rocher de Namsan) et Chicago (1 pas, un tronc près
   du Bean) — anneaux d'avant, mêmes valeurs sur `origin/main`, déclarées dans
   `DETTE_PONTS` et rattachées à la dette ci-dessous.
+- [ ] **PORTAIL DE LA v418 (contour dans l'autre sens, rues du Strip), sept
+  suites, joué sur la v416 fusionnée.** Verts `parishd.js`, `carteMonde.js`
+  (deux témoins neufs, rouges sur `origin/main`), `plafond.js`. Rouges, tous
+  déjà déclarés : `maj.js` libération et les deux témoins du palier (« range
+  son verdict », « le TRAVAIL d'une image » — rouges une fois sur deux seuls) ;
+  `carte.js` appui long (deux) et glisser (429 ms) ; `monte.js` (56 min,
+  machine chargée) : flâneur, piéton frôlé, programmes, réverbère de Paris,
+  « on ne rattrape pas le bout du monde », flanc frôlé — tous vus aux portails
+  ou aux passages seuls précédents —, et « un mur pris de face » (rebond
+  −1,89), au couloir vide (41 090, 40 988) : aucune ville engendrée à moins de
+  200 blocs, donc hors de la livraison par construction (elle ne change que le
+  sol de Las Vegas et des contours d'anneaux).
 - [ ] **LES ANNEAUX D'AVANT ROULENT PARFOIS HORS DE LA CHAUSSÉE (mesuré v387,
-  repris v404, v417).** v417 : 2 257 → 1 228 pas, 87 → 75 anneaux (contour
+  repris v404, v418).** v418 : 2 257 → 1 228 pas, 87 → 75 anneaux (contour
   dans l'autre sens, rues autour du Strip : Las Vegas 689 → 21). Reste, mesuré :
   Rio (446 : la forêt de Tijuca au sud-ouest des deux grands anneaux, ~16 îlots
   à retirer, au-delà de la borne de 12 du contour — la relâcher ne change rien,
@@ -5441,7 +5467,16 @@ l'embarquement a eu lieu, pas par une hypothèse.
   voiture la plus proche s'est éloignée ou rapprochée.
 
 - [ ] **Ce qui reste du gel de téléportation après la v246 : le MAILLAGE
-  des morceaux à l'arrivée.** Les programmes de la flotte et des humains ne
+  des morceaux à l'arrivée.**
+  *(Mesuré en v417, `sonde-arrivee-journal.cjs`, arrivée à Paris en scène
+  vide, deux passages : avec un journal de 80 000 blocs l'ancien code (v400)
+  met 14 s à mailler la moitié du disque, n'en atteint jamais 90 % en 20 s
+  (505/625), passe 3,2 à 3,4 s du fil principal à engendrer et rend des images
+  de 567 à 717 ms ; depuis la v403, 3,4 s · 4,7 à 5,0 s · 0,3 s · 283 ms —
+  comme sans journal (3,2 · 4,6 · 0,3 · 250 à 300). Le gel de téléportation
+  des enfants qui ont beaucoup bâti était là. Ce qui reste en scène vide :
+  une pire image de 250 à 300 ms sans journal, non attribuée — le dessin, lui,
+  est SwiftShader et se relit sur la tablette, `?diag=1`.)* Les programmes de la flotte et des humains ne
   se compilent plus sur place (zéro programme neuf à l'arrivée à Paris, vingt
   avant) et les passants naissent par tranches ; sur le banc en rendu
   logiciel la pire image de la téléportation passe de 550 à 450 ms et le
@@ -5651,7 +5686,15 @@ l'embarquement a eu lieu, pas par une hypothèse.
   pied avance à **15 % du temps réel** (six blocs en trente secondes au lieu de
   quatre-vingt-dix), ce qui a fait échouer trois sondes avant qu'on le voie.
 
-- [ ] **Le témoin de chargement du monde vole au-dessus d'un désert.** « En vol,
+- [x] **Le témoin de chargement du monde vole au-dessus d'un désert.** *(fait
+  en v417 : jumeau urbain dans `monte.js`, Paris et Londres traversés en temps
+  réel avec le réglage de la tablette — `file=cone&recharge=arrivee`. Mesuré à
+  la sonde, médiane de six relevés, barre `max / 2` (48 · 60) : Paris 137 · 122,
+  Londres 152 · 128 à 95 · 120 b/s ; campagne 192. Les vitesses des avions
+  TIENNENT au-dessus d'une ville avec le réglage de l'iPad. Avec l'ordre du banc
+  (`file=regard&recharge=image`) Paris rend 66 · 45 et Londres 64 · 58 : c'est
+  ce réglage-là, pas la vitesse, qui ferait rougir. Ce qui reste à mesurer sur
+  la tablette : `?diag=1` en vol au-dessus de Paris, la ligne « roulage ».)* « En vol,
   on ne rattrape pas le bout du monde qui se charge » (`monte.js`) se place à
   (30 000, 30 000), un couloir vierge où un morceau coûte 6,8 ms. Au-dessus de
   Paris il en coûte 23,5. Le témoin est donc vert alors que l'enfant, lui, ne

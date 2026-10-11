@@ -4885,7 +4885,7 @@ const VRAIES_KM = [
         }
         if (n) { anneaux++; pas += n; pires.push([n, `${tr.cle}#${tr.rang}`]); parCle[tr.cle] = (parCle[tr.cle] || 0) + n; }
       }
-      // LAS VEGAS (v417) : hors de la bande du Strip, le sol n'est que sable
+      // LAS VEGAS (v418) : hors de la bande du Strip, le sol n'est que sable
       // et asphalte nu — aucun lot, aucun trottoir, donc aucun immeuble dans
       // le désert.
       const lv = fiches.get('lasvegas'), lvt = lv.trame;
@@ -4903,7 +4903,7 @@ const VRAIES_KM = [
         lv: { pas: parCle.lasvegas || 0, circuits: (parVille.get('lasvegas') || []).length, desertLots, desertRues } };
     });
     verifier('un anneau qui sortait de la chaussée contourne la place, la fontaine ou le parc',
-      // v417 : 87 anneaux et 2 257 pas avant le contour à contresens et les
+      // v418 : 87 anneaux et 2 257 pas avant le contour à contresens et les
       // rues du Strip, 75 et 1 228 après ; barres au milieu.
       contour.anneaux <= 81 && contour.pas <= 1740 && contour.total >= 809,
       `${contour.anneaux}/${contour.total} anneaux, ${contour.pas} pas hors de la chaussée`
@@ -4911,7 +4911,7 @@ const VRAIES_KM = [
     // v416 : San Diego gagne son contresens (3 → 2) ; restent San José et
     // Guayaquil, dont le seul cycle a sa voie extérieure sur la mer ou la
     // plage — un remède de SOL, déclaré dans TASKS.md.
-    // LAS VEGAS A SA GRILLE DE RUES (v417). La bande du Strip ne tenait
+    // LAS VEGAS A SA GRILLE DE RUES (v418). La bande du Strip ne tenait
     // qu'une rue de la trame : 689 pas de voie dans le sable, trois circuits.
     // Mesuré : 0 pas et quatre circuits ici ; sur `origin/main`, 689 et trois,
     // sans une colonne d'asphalte hors de la bande.
