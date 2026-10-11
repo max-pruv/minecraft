@@ -1620,6 +1620,34 @@ Et une empreinte d'identité qui change se PROUVE : celle des 490 morceaux
 (v352) couvre Marrakech et Tokyo ; la branche, bâtisseurs neufs désarmés, rend
 l'ancienne au bit près — c'est ce qui a permis de la remplacer.
 
+## L'arrivée d'une téléportation découpée (v420) — un appel GL synchrone se lit une fois, et une trace nomme ce qu'un profil appelle « (program) »
+
+Trois règles.
+
+- **UN APPEL GL QUI REND UNE CONSTANTE SE MÉMORISE, POUR TOUS SES LECTEURS.**
+  `gl.getParameter` est un aller-retour synchrone avec le processus du GPU.
+  `renduLogiciel()` le refaisait à chaque reconstruction de la file de
+  maillage (`fileAuRegardVoulue`) : 120 à 336 ms dans la première seconde
+  d'une arrivée à Paris. La v360 l'avait déjà vu et mémorisé pour UN lecteur
+  (`logicielMemo`) — le verre dans les murs, une fois de plus. La réponse se
+  garde DANS la fonction, et un témoin compte les demandes du nom du pilote
+  (0x9246) en vol : zéro, huit sur l'ancien code.
+- **UN GAIN QUI NE SE VOIT PAS EN DURÉE D'IMAGE SE DIT TEL QUEL.** Au banc la
+  pire image de l'arrivée ne bouge pas (283 à 367 ms contre 283 à 383) :
+  l'attente se cachait dans des images déjà lentes. Ce qui se transpose à la
+  tablette, c'est un appel synchrone de moins par morceau franchi, pas des
+  millisecondes du banc.
+- **« (program) » DANS UN PROFIL N'EST PAS UNE CAUSE ; UNE TRACE LA NOMME.** Le
+  profil de la première seconde donnait 350 à 440 ms de « (program) » ; la
+  trace du fil principal (`Tracing`, `devtools.timeline`) a montré que l'image
+  lente est une seule tâche `FireAnimationFrame` de 245 ms de JavaScript. Le
+  temps INCLUSIF sous `frame` (`sonde-arrivee-decoupe.cjs`, `NIVEAUX=2,3,4`)
+  a nommé les lignes : `Convoi.montrer` (vehicules.js) fabrique toutes les
+  voitures en vue dans la même image (160 à 290 ms), `ensureChunk` sur le fil
+  principal pour le `sweep` des personnages et `posteAutour` des passants
+  (66 à 94 ms), `nbSansCroisement` (22 à 36 ms). Ces fichiers sont d'autres
+  sessions : dettes nommées dans `TASKS.md`, avec les chiffres.
+
 ## Le témoin de chargement vole au-dessus d'une ville (v417) — un réglage que le banc coupe se force dans le témoin qui le juge
 
 Une règle.
@@ -2105,6 +2133,30 @@ engendrées. Quatre règles.
   journal vide dans le jeu, trois rouges de `maj.js`. Après tout conflit dans un
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
+
+## Les passages en biais (v421) — une bande qui suit une direction arbitraire est de la géométrie
+
+Trois règles.
+
+- **UNE TUILE NE SE TOURNE PAS, ET LA RÈGLE DU RAIL (v281) VAUT POUR LA
+  PEINTURE.** Les villes à trame alignée (`t.net`) peignent leurs passages dans
+  un bloc ; les 197 autres n'en avaient aucun. `passages.js` (pur) reprend la
+  règle de `solVillesMonde` (la bande de `wX + 0,4` à `wX + 2,1` du croisement,
+  dans toute la chaussée) dans le repère de la trame ; `bandesDeColonne`
+  découpe chaque bande par le carré de la colonne (Sutherland–Hodgman), et
+  `emettreBandesPassages` (solcontinu.js) les pose dans le tampon `solid`, un
+  centième au-dessus de l'asphalte, avec la tuile blanche du marquage : aucun
+  matériau, aucun programme, aucun appel de dessin, et le palier bas les voit.
+- **UNE SEULE RÈGLE, DEUX LECTEURS, ET LE PASSANT TRAVERSE DANS L'AXE DE SA
+  RUE.** `passagePieton` (main.js) demande `passageEn` comme il lit un bloc
+  peint ; un chemin nord-sud sur une rue à 30° sortait de la bande de 1,7 bloc,
+  le passage en biais ajoute donc la direction en travers de SA rue.
+- **UN CONTENU NEUF SE RETIRE DE L'EMPREINTE PAR UNE OPTION, PAS EN LA
+  RE-RELEVANT.** L'empreinte des 490 morceaux (v352) couvre Rome et Tokyo :
+  `buildChunkTampons(…, { passagesBiais: false })` la garde au bit près
+  (l'ancien code ignore l'option), et un témoin de `plafond.js` compare les
+  deux maillages. Ce qui reste, déclaré : Londres et les autres villes bâties
+  à la main, dont les avenues ne sont pas une trame.
 
 ## Un pas de côté ne traverse pas la rue (v411) — une projection droite n'est pas une trajectoire
 
@@ -3254,6 +3306,38 @@ Une règle.
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
 
+## L'A6 (v419) — une ville qui reçoit deux routes a deux arrivées
+
+Paris–Lyon, l'autoroute du Soleil, à l'ouest du TGV. Quatre règles.
+
+- **UNE DESTINATION ÉCRITE POUR LA PREMIÈRE ROUTE NE VAUT PAS POUR LA
+  SECONDE.** L'entrée de Paris (v300) menait chaque route à la Gare du Nord :
+  juste pour l'A1, qui arrive du nord ; l'A6, qui arrive du sud, aurait
+  traversé toute la ville en diagonale par-dessus les îlots. `ARRIVEE`
+  (paris.js) donne à chaque route son bout — le bout d'une voie nommée (la
+  place d'Italie, où finissent les Gobelins et Arago) —, la Gare du Nord
+  restant le défaut. C'est le `[0]` de la v310 vu du côté de la ville : quand
+  on ajoute la seconde route d'une ville, on cherche ce qui avait été écrit
+  pour la première.
+- **LE BORD D'UNE VILLE DOUBLÉE PEUT ÊTRE UNE CRÊTE.** Le fondu de Paris
+  monte à 41-43 blocs exactement au bord du disque entre 65° et 80° ; une
+  porte à vingt blocs dessous y déblaie neuf blocs (9,2 mesuré, barre 9), à
+  86° le bord est à 38 (4,1). Le relevé en couronne se lit dès la colonne du
+  bord (`d = 0`), pas seulement au-delà.
+- **UNE EMPREINTE D'IDENTITÉ QUI BOUGE SE PROUVE AUSSI PAR CE QUI DIFFÈRE.**
+  Paris est un des neuf lieux de l'empreinte des 490 morceaux : l'entrée de
+  l'A6 la change. L'A6 retirée du registre, la branche rend la constante
+  d'avant au bit près ; et les colonnes qui diffèrent (quatre-vingt-cinq)
+  sont toutes à moins de 11,2 blocs de l'axe de l'entrée — sa demi-chaussée
+  et son trottoir. La première preuve dit « rien d'autre n'a bougé dans le
+  code », la seconde « rien d'autre n'a bougé dans le monde ».
+- **UNE AVENUE D'ENTRÉE SE LIT AUSSI À HAUTEUR DE CARROSSERIE AVANT DE CHOISIR
+  L'ANGLE.** À Lyon, l'angle qui donnait la plus longue avenue (−147°) avait
+  des bancs (planches) sur la chaussée à cinq et vingt blocs de la porte ; le
+  témoin des entrées l'aurait vu, le relevé des angles non. `dansav.mjs` lit,
+  angle par angle, les blocs pleins au-dessus de la cote roulable : la porte
+  de l'A6 est à −144°.
+
 ## La M40 (v415) — une ville bâtie à la main s'entre par une rue déclarée, et une vieille boucle se cherche
 
 Londres–Birmingham, le corridor « en attente » depuis la v323. Trois règles.
@@ -4285,7 +4369,7 @@ répondu en une requête : iPhone, en vol à l'ouest de Paris, 1 089 morceaux
   et c'est le nombre de sommets, pas le rayon ni le budget, qui décidera un
   jour de ce qu'un appareil peut montrer.
 
-## Le journal de bord ne crie plus au plantage pour rien (v419) — une session par page, et la mémoire en octets
+## Le journal de bord ne crie plus au plantage pour rien (v422) — une session par page, et la mémoire en octets
 
 « Le jeu plante de temps en temps. » Onze « plantages » en quarante minutes
 sur l'iPhone, et deux de suite rangent le palier bas pour de bon (v296). Quatre
