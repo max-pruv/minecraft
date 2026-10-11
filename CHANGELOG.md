@@ -20,6 +20,36 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v430 — On passe tous les ponts
+
+**Pourquoi.** Max, capture d'iPhone : la voiture arrêtée sur une autoroute,
+le bandeau « Une voiture ne roule pas dans l'eau — fais demi-tour », et pas
+une goutte en vue. Le générateur décide qu'une colonne est un pont en lisant
+son COIN, et n'y écrit alors aucun bloc (le tablier est un ruban dessiné) ;
+le contrôle de l'eau de la voiture lisait le tablier au CENTRE de la colonne.
+Aux deux bouts de chaque pont, une colonne était « pont » pour l'un et
+« chaussée » pour l'autre : ni bloc ni tablier, de l'eau dessous, et la
+voiture s'arrêtait net. Et cet arrêt cachait un second défaut, déjà en
+production : là où il ne l'arrêtait pas, la voiture pouvait TOMBER dans ces
+colonnes sans bloc et finir sous le pont — vu une traversée sur six au
+premier pont de l'A1, des deux côtés.
+
+**Ce que ça change.** Les voitures franchissent tous les ponts d'autoroute,
+dans les deux sens, et restent dessus. Le contrôle de l'eau et le contact au
+sol lisent le tablier sur la colonne telle que le monde l'a écrite ; la vraie
+eau arrête toujours la voiture, et sous un pont on reste en bas.
+
+**Ce qui le prouve.** Un témoin de `plafond.js` fait traverser au vrai joueur
+(sous node) chaque pont de chaque route, dans les deux sens : 52 traversées,
+12 arrêtées par l'eau sur la v416, zéro ici (`sonde-ponts-eau.cjs`, rejouée
+seule en trois secondes). Un second témoin balaie la chaussée de tous les
+ponts au quart de bloc : 6 713 points sur 101 380 n'étaient portés par rien
+sur la v419 (le point de la chute vue au navigateur parmi eux), zéro ici. La
+règle de l'eau vit désormais dans le monde (`eauSousLaVoiture`), et le jeu et
+le témoin la lisent tous les deux.
+
+---
+
 ## v429 — La voiture suit la pente
 
 **Pourquoi.** Depuis la v408 la physique fait monter la voiture dans les côtes
@@ -322,6 +352,7 @@ se voit pas en durée d'image au banc (pire image 283 à 367 ms contre 283 à
 383), parce que l'attente se cachait dans des images déjà lentes — il se
 transpose à la tablette comme un appel synchrone de moins par morceau.
 
+
 ## v419 — Paris rejoint Lyon
 
 **Pourquoi.** Paris–Lyon était dans la liste du kit « monde fidèle » depuis la
@@ -381,6 +412,7 @@ quatre circuits. Le coût du dépliage ne bouge pas, et l'empreinte des 490
 morceaux est celle d'`origin/main`.
 
 ---
+
 ## v417 — Le monde arrive à temps au-dessus des villes
 
 **Pourquoi.** Le témoin qui vérifie que l'avion ne dépasse pas le monde en

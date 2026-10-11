@@ -1,5 +1,23 @@
 # Ce qui est en cours
 
+- [ ] **PORTAIL DES PONTS (v430) — DOUBLE MESURE (règle v195).** Portail
+  complet (base v419) coupé à sa limite de deux heures pendant `reseau.js` ;
+  rouges déjà déclarés : `carte.js` « la faire glisser non plus » (427 ms),
+  `manhattan.js` « le trou enlève aussi la géométrie », `monte.js` la chauffe de
+  New York et le trou en vol (chasseur 58/60). Non déclaré jusqu'ici :
+  `monte.js` « en vol au-dessus de Paris, le monde se maille hors du fil
+  principal » — l'avion n'avance pas (branche 10 blocs en 47 s ; `origin/main`
+  v424 rejouée SEULE, 19 blocs en 120 s, même rouge), avec « un morceau maillé
+  là-bas est le même ici » qui en dépend (2 à 5 comparés). Rejouée seule sur
+  `origin/main`, `monte.js` rend aussi la cascade « pas aux commandes » des
+  avions et « la voiture roule dans la nature » : la page qui vole au-dessus
+  de Paris rend moins d'une image par seconde. Hors de la livraison PAR
+  CONSTRUCTION : elle ne change le contact que sur une colonne qu'un pont
+  d'autoroute occupe au coin (`routeEn(floor)` ouvrage), et ni (−600, −520)
+  ni le vol à 96 blocs au-dessus de Paris n'en ont (relevé sous node). Piste :
+  mesurer la cadence de la page `MonteFil` (rr 12, au-dessus de Paris) seule,
+  puis après les témoins qui la précèdent.
+
 - [ ] **PORTAIL DU JOURNAL DE BORD (v426) — DOUBLE MESURE (règle v195).**
   Deux portails (bases v408 et v411) rouges sur `maj.js`, `carte.js`,
   `manhattan.js`, `monte.js`. Déclarés plus bas : la flèche du GPS et le
