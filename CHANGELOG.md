@@ -49,7 +49,10 @@ au repos, 0 sur 7 des deux côtés. Le témoin « un train s'arrête devant la
 voiture de l'enfant » de `monte.js` provoque désormais ces images lentes au
 lieu d'attendre la charge du portail. Voitures de la rue
 (`sonde-voiture-lente.cjs`, le passage du témoin de `monte.js` recopié) :
-branche 0 traversée sur 4 poses, `origin/main` VOIT_AVANT.
+branche 0 traversée sur 4 poses, `origin/main` 1 sur 7 (et trois poses où
+une voiture était déjà dedans au départ) — un tirage, pas une preuve : leur
+regard portait déjà quarante blocs. Ce volet se juge sur sa construction (la
+marge couvre l'avance de l'image), et il est déclaré comme tel.
 
 ---
 
