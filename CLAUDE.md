@@ -770,6 +770,44 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## La rue sans à-coups (v443) — le bus a une place, un circuit se prépare, une suiveuse freine
+
+Quatre sujets, une livraison. Cinq règles.
+
+- **UNE RÈGLE DE RACCORD SE MESURE AUSSI DANS LES VILLES BÂTIES À LA MAIN.**
+  La sonde des raccords (v442) ne lisait que les anneaux des villes
+  engendrées ; l'entrée de l'A1 à Lille roulait 47 blocs dans la voie d'un
+  circuit de la rue de Paris. Les cinq villes bâties à la main sont dans la
+  sonde et dans `RACCORDS_COURTS` (633 → 26 blocs, tous des demi-tours).
+- **UN VÉHICULE DE PLUS DANS UNE GRILLE PREND UNE PLACE ENTIÈRE.** Le bus à
+  mi-temps entre deux voitures (v372) les touchait par la grille seule (36 004
+  relevés sur 263 anneaux) et forçait l'anneau à renoncer au jeu par voiture
+  (v438). Il prend la place de la voiture 0 (`pris`, posé par `bus()`) : zéro
+  contact, jeu partout, une voiture de moins par anneau. `busAMiTemps(true)`
+  rejoue l'ancienne règle pour les sondes, jamais un réglage.
+- **CE QUI SE CALCULE AVANT UNE NAISSANCE SE CALCULE PAR TRANCHES, ET LA
+  PREUVE EST L'IDENTITÉ.** `fabriqueCirculation` est un générateur qui rend la
+  main entre ses étapes lourdes (plancher, croisement, voies le long du tracé,
+  chaque essai de la jumelle) ; `circulationParTranches` l'avance sur un budget
+  par image, et main.js ne fait naître le convoi (et son bus) qu'une fois fini.
+  Le témoin compare 56 circuits fabriqués des deux façons — voitures, jumelle,
+  grille, voies — sans un écart : c'est ce qui garde la v305.
+- **UNE BORNE DURE SE PRÉCÈDE D'UN FREINAGE.** Le plancher de file (v283) est
+  une contrainte de position : une suiveuse encore lancée à 3,7 b/s y était
+  arrêtée en une image (37 b/s²). Sa vitesse est bornée à ce qu'elle peut
+  perdre au freinage d'urgence avant le plancher. Mesuré au navigateur
+  (`sonde-feu-image.cjs`) : 5 arrêts secs sur 9 sur `origin/main`, 0 sur 12.
+- **UNE DETTE DE TÉMOIN SE VÉRIFIE AVANT D'ÊTRE REPOINTÉE.** `TASKS.md`
+  déclarait l'arrêt sec au feu « jugé sur deux arrêts », et j'ai cru à un
+  relevé mal horodaté sous la charge. La sonde, sans charge, sur
+  `origin/main`, a rendu les mêmes arrêts secs à l'heure de lecture et à
+  l'heure de l'image : l'hypothèse était fausse et le défaut était dans le
+  JEU. Repointer le témoin sur l'hypothèse aurait caché une vraie panne. Le
+  témoin juge désormais un arrêt « au feu » sur toute sa descente (une voiture
+  arrêtée par l'urgence puis rangée dans la file n'a pas freiné pour un feu),
+  et le choc de `degats.js` prend vingt-six blocs d'élan au lieu de les
+  trouver (3 à 16).
+
 ## Les raccords d'autoroute s'arrêtent avant l'anneau (v442) — deux grilles ne partagent pas une voie
 
 Trois règles.

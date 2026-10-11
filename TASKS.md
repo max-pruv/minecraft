@@ -621,6 +621,20 @@
   la v442 ne change que l'avenue d'entrée des autoroutes dans les villes
   engendrées (`raccordDe` dans `entree()`), aucun de ces témoins ne roule sur
   une autoroute ni dans une ville engendrée.
+  **FAIT en v443** : raccords des villes bâties à la main (633 → 26 blocs,
+  dont Lille A1 47 → 0) ; le BUS prend la place de la voiture 0 de son anneau
+  (36 004 contacts de grille → 0, les 263 anneaux jouent, 4 380 → 4 125
+  voitures) ; la fabrique d'un circuit se fait par TRANCHES avant la naissance
+  (56 circuits identiques au bit près, étape la plus longue 4,4 ms) ; la
+  suiveuse freine avant le plancher de file (arrêts secs au feu 5/9 → 0/12,
+  `sonde-feu-image.cjs`) ; les deux témoins repointés (`monte.js` juge un
+  arrêt au feu sur toute sa descente, `degats.js` prend 26 blocs d'élan).
+  RESTE : les deux circuits en huit de Paris (rangs 1 et 3) n'ont pas de
+  jumelle — seul `n = 4` passe leur croisement ; le remède est de CASSER
+  chaque huit en deux circuits dans `paris.js` (autre session), puis de
+  remesurer `sonde-rue-dense.cjs boulevards`. Et les cinq demi-tours de
+  raccord (Turin 9, Hambourg 6…), qu'un demi-tour avant la porte (le
+  corridor, `routes.js`) supprimerait.
   **(5) LE HUIT DE TOKYO, MESURÉ RÉSOLU.** Au même point (53 383, 8 048) :
   0,25 % de paires au contact, toutes en travers entre deux convois (la
   cession locale), zéro dans une file — les contours des v432 et v435 ont
