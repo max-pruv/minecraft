@@ -5,7 +5,7 @@ import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_
 import { PARIS as PARIS_ANCRE, circuitsParis, circuitsQuartiersParis, marquageParis } from './paris.js';
 import { circuitsLondres } from './londres.js';
 import { circuitsSF } from './sanfrancisco.js';
-import { circuitsNice } from './nice.js';
+import { circuitsNice, ENTREES_NICE } from './nice.js';
 import { circuitsLille } from './lille.js';
 import { buildPropMesh } from './props.js';
 import { AnimalManager } from './animals.js';
@@ -1995,7 +1995,7 @@ function updateChunks() {
   // l'E429 à l'est. `ENTREES_*` suit l'ordre de `entreesDe`, et l'on prend
   // celle de CETTE route — le `[0]` d'avant aurait fait entrer les voitures de
   // Bruxelles par la porte de Paris.
-  const ENTREES = { paris: ENTREES_PARIS, lille: ENTREES_LILLE, londres: ENTREES_LONDRES };
+  const ENTREES = { paris: ENTREES_PARIS, lille: ENTREES_LILLE, londres: ENTREES_LONDRES, nice: ENTREES_NICE };
   // Une ville ENGENDRÉE n'a pas d'avenue d'entrée dessinée : le corridor y
   // arrive dans l'axe de sa trame (le point de passage est choisi pour cela),
   // donc sur la rue qui mène au centre. Les voitures la suivent jusqu'à douze

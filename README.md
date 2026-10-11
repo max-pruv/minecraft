@@ -223,7 +223,7 @@ src/washington.js  the capital: L'Enfant's plan, the Mall, and the Metro
 src/dcmonuments.js its 32 landmarks — real interiors, you walk in — and 3 bridges
 src/chine.js src/pole.js src/espace.js src/gaulois.js src/villandry.js
 src/aeroport.js src/circuit.js src/ville.js src/parc.js src/voies.js
-src/routes.js     the interurban roads (A1 Paris–Lille, E429 Lille–Bruxelles, E19 Bruxelles–Amsterdam, A20 Montréal–Québec, BR-116 São Paulo–Rio, A-4 Madrid–Séville, A109 Nairobi–Mombasa, A3 Cologne–Francfort, E1 Kyoto–Nagoya, Autosole Bologne–Florence, A4 Milan–Turin, Yamuna Delhi–Agra, A1 Sud Rome–Naples, M1 Vienne–Budapest, A1 Nord Milan–Bologne, A24 Berlin–Hambourg, I-45 Dallas–Houston, A7 Lyon–Marseille, AP-2 Madrid–Barcelone, 401 Toronto–Montréal, Hansalinie Cologne–Hambourg, I-95 New York–Boston, I-95 Sud New York–Washington, Tōmei Tokyo–Nagoya, M40 Londres–Birmingham, A6 Paris–Lyon: profile, section, bridges, traffic)
+src/routes.js     the interurban roads (A1 Paris–Lille, E429 Lille–Bruxelles, E19 Bruxelles–Amsterdam, A20 Montréal–Québec, BR-116 São Paulo–Rio, A-4 Madrid–Séville, A109 Nairobi–Mombasa, A3 Cologne–Francfort, E1 Kyoto–Nagoya, Autosole Bologne–Florence, A4 Milan–Turin, Yamuna Delhi–Agra, A1 Sud Rome–Naples, M1 Vienne–Budapest, A1 Nord Milan–Bologne, A24 Berlin–Hambourg, I-45 Dallas–Houston, A7 Lyon–Marseille, AP-2 Madrid–Barcelone, 401 Toronto–Montréal, Hansalinie Cologne–Hambourg, I-95 New York–Boston, I-95 Sud New York–Washington, Tōmei Tokyo–Nagoya, M40 Londres–Birmingham, A6 Paris–Lyon, A8 Marseille–Nice: profile, section, bridges, traffic)
 
   learning and parents
 src/education.js  quiz bank, adaptive difficulty, stats, persistence
