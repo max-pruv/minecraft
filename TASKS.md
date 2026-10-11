@@ -1611,7 +1611,8 @@
   voiture (blocs et secondes de route) et la dernière roue libre : Max le
   relève en hypercar dans Paris (cible : au moins une seconde et demie de
   route devant soi à 55 blocs/s). (2) PERSONNE NE DESSINE ENCORE le braquage
-  ni la dérive, ni chez soi ni chez l'ami : c'est la session des sensations
+  ni la dérive, ni chez soi ni chez l'ami — **FAIT : chez soi en v422 (signe de la caisse
+  corrigé en v438), chez l'ami en v438** (`vieDistante`) : c'est la session des sensations
   (`conduite-sensations`), qui lit `player.braquage` pour la sienne et
   `userData.braquage` pour celle d'un ami. (3) Une voiture de la rue ne se
   pousse pas (horloge partagée, v305) : collé derrière une plus lente,
@@ -1650,7 +1651,8 @@
   (traces de pneus, crissement : la session des sensations lit
   `player.freinMainTire` et `player.derive`) — **TRACES FAITES en v434** (`traces.js`),
   **CRISSEMENT AU FREIN À MAIN FAIT en v437** ; (12) le frein à main ne se voit
-  pas chez l'ami au-delà de la dérive qui voyage déjà (`p.v.r`).
+  pas chez l'ami au-delà de la dérive qui voyage déjà (`p.v.r`) — **FAIT en v438** : `p.v.m`, et ses traces
+  naissent chez l'ami.
 - [ ] **AU PORTAIL DE LA v437 (le frein à main crisse), UN ROUGE NEUF QUI N'EST
   PAS LA LIVRAISON — preuve structurelle (v291).** « à Rome aussi, en biais, un
   passant traverse sur le passage peint d'un carrefour sans feu » (`monte.js`,

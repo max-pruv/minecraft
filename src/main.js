@@ -60,6 +60,7 @@ import { actualiserPresence } from './presence.js';
 import { animerHumain, chargerHumains, humainsCharges, humainsPrets } from './humains.js';
 import { MODELES_MONTURE, MONTURES } from './montures.js';
 import { initFun } from './fun.js';
+import { vieDistante } from './sensations.js';
 import { Identity, prefetchScanner } from './identity.js';
 import { ProfileSync } from './sync.js';
 import { AdminPanel, isAdminName } from './admin.js';
@@ -4518,7 +4519,7 @@ function syncRemotePlayers(list) {
     // feu. `p.v.d` est court et une tablette restée sur l'ancienne version
     // l'ignore (le receveur cède).
     if (rp.vehicule) fun.degats.distant(rp.vehicule.mesh, (p.v && p.v.d) || null);
-    if (rp.vehicule) { const u = rp.vehicule.mesh.userData; u.braquage = (p.v && +p.v.b) || 0; u.derive = (p.v && +p.v.r) || 0; }
+    if (rp.vehicule) { const u = rp.vehicule.mesh.userData; u.braquage = (p.v && +p.v.b) || 0; u.derive = (p.v && +p.v.r) || 0; u.freinMain = !!(p.v && p.v.m); }
     rp.passager = p.p || null;
     proposerGPSAmi(p.id, rp, p.g || null);   // sa destination, proposée (v388)
   }
@@ -4615,6 +4616,7 @@ function updateRemotePlayers(dt) {
       const vm = rp.vehicule.mesh;
       vm.position.copy(rp.pos);
       vm.rotation.y = rp.cap;
+      vieDistante(vm, dt);   // roues avant braquées et traces de pneus (v438)
       asseoir(rp.mesh, rp.vehicule, rp.vehicule.def.siege, rp.animTime);
       continue;
     }
@@ -4711,6 +4713,8 @@ function startNetSession(code, isHost, patience) {
       // et une tablette restée sur l'ancienne version les ignore.
       if (Math.abs(player.braquage || 0) > 0.005) p.v.b = Math.round(player.braquage * 100) / 100;
       if (Math.abs(player.derive || 0) > 0.0005) p.v.r = Math.round(player.derive * 1000) / 1000;
+      // le frein à main tiré (v438) : l'ami voit les traces qu'il laisse
+      if (player.freinMainTire) p.v.m = 1;
     }
     const pa = fun.passagerDe ? fun.passagerDe() : null;
     if (pa) p.p = { de: pa.de, s: pa.s };
