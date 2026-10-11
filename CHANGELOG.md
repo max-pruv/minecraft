@@ -20,6 +20,32 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v453 — Une fenêtre par étage
+
+**Pourquoi.** Dans les villes engendrées — Rome, Berlin, Tokyo, Édimbourg et
+deux cent cinquante-cinq autres —, chaque baie était faite de DEUX blocs
+`ETAGE` empilés, et chacun porte une fenêtre entière : la façade dessinait
+deux fenêtres l'une sur l'autre par étage, de loin comme de près (couche HD).
+Mesuré sous node : 38 719 piles sur 98 187 lots lus, dans 259 villes sur 269.
+Paris a la réponse depuis la v301 — un niveau est trois bandes, une fenêtre.
+
+**Ce que ça change.** Les villes engendrées posent les bandes de Paris :
+l'allège et son appui, le bas de la baie, son haut et le linteau. Une fenêtre
+haute par étage, au lieu de deux petites. Dans la couche HD, les registres des
+autres villes gardent ce qu'ils avaient : pas de garde-corps de fer à Berlin
+ni à Tokyo, la guillotine et son rail à Manchester ou à Sydney, le linteau de
+pierre au-dessus. La forme des immeubles ne change pas d'un bloc : ce qu'un
+enfant a bâti contre une façade reste devant la même surface. Les façades
+détaillées pèsent un dixième de moins (Rome 0,65 → 0,58 Mo par morceau).
+
+**Ce qui le prouve.** Deux témoins neufs dans `plafond.js`, rouges sur la
+v452 : zéro pile d'ETAGE (38 719 avant), et la solidité de chaque couche de
+chaque lot identique avec et sans bandes. L'empreinte des 490 morceaux change
+(Rome, Marrakech, Tokyo) ; bandes désarmées (`reglageBaies.bandes`), elle rend
+la constante de la v452 au bit près.
+
+---
+
 ## v452 — ✈️ va chercher la piste
 
 **Pourquoi.** Max : « améliore la séquence d'atterrissage parce que l'avion

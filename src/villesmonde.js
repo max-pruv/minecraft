@@ -1515,6 +1515,10 @@ function buildTajPalace(poser) {
 // couches, sinon chaque couche répétée redessine une fenêtre, et le palais
 // devient une tour de bureaux (vu en capture à Madrid).
 const BANDES = [ARCHI.ETAGE_BAS, ARCHI.ETAGE_MI, ARCHI.ETAGE_HAUT];
+// La baie de deux blocs rejouée (v453) : `bandes: false` rend les deux `ETAGE`
+// empilés d'avant, au bit près — c'est ce que lit l'empreinte des 490 morceaux
+// pour prouver que rien d'autre n'a bougé. Jamais un réglage du jeu.
+export const reglageBaies = { bandes: true };
 function facadeEtages(poser, x0, x1, z0, z1, y0, y1, mur) {
   for (let x = x0; x <= x1; x++) for (let z = z0; z <= z1; z++) {
     const bord = x === x0 || x === x1 || z === z0 || z === z1;
@@ -3651,6 +3655,22 @@ export function batirColonneVillesMonde(x, z, poser) {
           continue;
         }
         const yy = (y - 3) % 3;
+        // UNE BAIE, PAS DEUX (v453). Les deux rangs de la baie étaient deux
+        // blocs `ETAGE`, et chacun porte une fenêtre entière : la tuile plate
+        // comme la couche HD dessinaient deux fenêtres l'une sur l'autre par
+        // étage — 38 719 piles mesurées sur 98 187 lots (une colonne sur
+        // trois), dans 259 villes sur 269. Paris a la réponse depuis la v301 :
+        // un niveau est trois BANDES qui se raccordent — l'allège et son appui,
+        // le bas de la baie, son haut et le linteau. La FORME ne change pas
+        // (les bandes sont aussi pleines que l'ETAGE et le mur qu'elles
+        // remplacent), seul le dessin change : un bloc posé contre la façade
+        // reste devant la même surface — le témoin de plafond.js le prouve
+        // bloc à bloc, et c'est pour cela que la ville d'avant n'a pas à se
+        // figer (`VILLES_FIGEES` garde des rues qui bougent, pas des dessins).
+        if (fen && baie === ARCHI.ETAGE && reglageBaies.bandes) {
+          poser(y + 1, BANDES[yy]);
+          continue;
+        }
         // l'allège du plancher, puis les deux rangs de la baie : le dessin de
         // la fenêtre porte son propre encadrement, le mur fait le reste
         if (yy === 0) { poser(y + 1, mur); continue; }

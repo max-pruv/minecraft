@@ -770,6 +770,36 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Une fenêtre par étage (v453) — un changement de DESSIN se prouve par la forme
+
+Les villes engendrées posaient deux blocs `ETAGE` par baie : deux fenêtres
+dessinées l'une sur l'autre (38 719 piles, 259 villes sur 269). Elles posent
+les bandes de Paris (`BANDES`, villesmonde.js). Trois règles.
+
+- **UN CHANGEMENT DE BLOCS QUI GARDE LA FORME N'A PAS À FIGER LA VILLE.**
+  `VILLES_FIGEES` garde la ville d'avant sous ce qu'un enfant a bâti quand une
+  RUE ou un LOT bouge (v303, v339) : une maison pourrait se retrouver
+  enfermée. Ici chaque bande remplace un bloc plein par un bloc plein, au même
+  endroit — un bloc posé contre une façade reste devant la même surface, et un
+  bloc d'enfant posé SUR la façade l'emporte toujours (`edits`). Ce qui le
+  prouve est un témoin de forme, pas un raisonnement : `plafond.js` bâtit
+  chaque lot (un sur trois, 98 187) avec et sans bandes et compare la
+  solidité couche par couche (zéro différence), et rien ne change hors des
+  bandes. Une passe qui change la FORME d'un bâtisseur se fige ; une passe
+  qui ne change que son DESSIN se prouve par ce témoin.
+- **UNE BANDE HORS DE PARIS GARDE CE QUE LE REGISTRE DONNAIT AU BLOC
+  D'ÉTAGE.** `etageMi` posait un garde-corps sans condition : juste à Paris,
+  faux à Berlin (`nord`, `gardeCorps: false`), que le témoin du palier C garde
+  sans fer. Les bandes lisent désormais `gardeCorps`, `guillotine` (le rail au
+  milieu de la baie de deux blocs, `RAIL_GUILLOTINE`) et `linteau` ; les
+  styles de Paris n'ont aucune de ces clés, et l'empreinte des 490 morceaux
+  (Paris HD compris) rend la constante d'avant, bandes désarmées.
+- **LE DÉSARMEMENT VIT DANS LE MODULE, PAS DANS UN MONDE FIGÉ.**
+  `reglageBaies.bandes` (villesmonde.js) rejoue les deux `ETAGE` au bit près
+  pour l'empreinte et le témoin de forme ; jamais un réglage du jeu. Pas de
+  drapeau de `CONF_*` : les migrations jugent l'appui d'un bloc sur la forme,
+  que les bandes ne changent pas.
+
 ## ✈️ va chercher la piste (v452) — une séquence assistée garde sa porte de sortie et se mesure piste par piste
 
 Max : « améliore la séquence d'atterrissage, l'avion est compliqué à gérer ».
