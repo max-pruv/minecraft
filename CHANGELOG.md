@@ -87,7 +87,7 @@ les huit quartiers).
 colonnes de huit quartiers : 0 mal plantée sur 45 dans sa fenêtre, 29 sur 54
 avec la règle d'avant, 43 sur 76 sur `origin/main` (rouge). L'empreinte des
 490 morceaux change (`8bea731f…`) et se prouve : la règle d'avant rejouée
-(`morrisDegagees: false`) rend la constante `fb4f9aed…` (celle de la v444) au bit près. Jugé en
+(`morrisDegagees: false`) rend la constante `239f48ab…` au bit près. Jugé en
 capture à Saint-Germain.
 
 ---
