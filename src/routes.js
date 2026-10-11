@@ -537,6 +537,24 @@ export const ROUTES = [
   // de la marge de tout aérodrome.
   { nom: 'US-101', villes: ['sf', 'losangeles'], bord: { losangeles: 40 },
     via: [[-38854, 6976], [-38849, 6984], [-38842, 6990], [-38822, 6997], [-38816, 6997], [-38810, 6995], [-38765, 6965], [-38756, 6962], [-38755, 6962], [-38740, 6967], [-38710, 6990], [-38661, 7049], [-38413, 7538], [-38238, 7835], [-38113, 8148], [-37752, 8793], [-37723, 8824], [-37516, 8962], [-37463, 8980]] },
+  // L'A1 CENTRE (v438), FLORENCE–ROME, le maillon qui manquait à l'autoroute
+  // du Soleil : Milan, Bologne et Florence d'un côté (A1 Nord, Autosole), Rome
+  // et Naples de l'autre (A1 Sud). Le relevé de la v310 disait « un aérodrome
+  // sur l'axe » ; il y a aussi la Frecciarossa, qui va de gare à gare le long
+  // de l'axe direct (règle de la v320 : on choisit un côté), et des collines de
+  // 46 à 55 de part et d'autre du rail vers z 3 600–3 800. Le côté bas est
+  // l'EST : 33 à 41 de x 3 600 à 3 950. Florence par l'est (2°, quarante blocs
+  // d'avenue sur la rue ; au sud, le rail sort de la gare à vingt blocs de la
+  // porte), Rome par le nord-est (−76°, vingt-trois blocs et demi d'avenue,
+  // une fenêtre d'un degré et demi entre deux îlots, entrees.mjs), à l'est de
+  // l'aérodrome (FCO, 3 655, 3 967). Mesuré sous node (couloir.mjs, rail
+  // interdit à quarante-trois blocs, puis affiner.mjs et verif.mjs, comme
+  // l'US-101) : 1 158 blocs, deux ponts (s 135–145, 741–747, joints fermés),
+  // déblai 5,3, remblai 2,9, coudes ≤ 21°, aucune colonne sur le rail, un
+  // repère ou une autre route, l'axe à soixante et un blocs de la marge de
+  // l'aérodrome.
+  { nom: 'A1 Centre', villes: ['florence', 'rome'],
+    via: [[3300, 3219], [3311, 3223], [3424, 3317], [3776, 3656], [3818, 3724], [3827, 3755], [3814, 3910], [3785, 4055]] },
 ];
 
 // --- la section -----------------------------------------------------------------

@@ -601,6 +601,7 @@ const VRAIES_KM = [
       out.convoiA6 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A6') || null;
       out.convoiA8 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A8') || null;
       out.convoiUS101 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'US-101') || null;
+      out.convoiA1Centre = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A1 Centre') || null;
       // WASHINGTON EST UNE BOÎTE (v367) : la route de New York s'arrête NET à
       // son bord sud (`boutNet`), au niveau de la rue d'Anacostia qui y
       // débouche, et ses voitures entrent par cette rue (`avenues`). On compte
@@ -1257,6 +1258,20 @@ const VRAIES_KM = [
       JSON.stringify(a1.absent ? a1 : { convoi: a1.convoiUS101 ? { nom: a1.convoiUS101.nom, voitures: (a1.convoiUS101.modeles || []).length } : 'aucun convoi US-101',
         surRail: a1.surRail && a1.surRail['US-101'], frole: a1.frole && a1.frole['US-101'], sf: a1.entreesSF, erreur: a1.entreesSFErreur,
         losangeles: (a1.entreesEngendrees || []).filter((e) => e.route === 'US-101') }));
+
+    // L'A1 CENTRE (v438) : Florence–Rome, le maillon qui manquait entre l'A1
+    // Nord et l'Autosole d'un côté, l'A1 Sud de l'autre. À l'est de la
+    // Frecciarossa d'un bout à l'autre, à l'est de l'aérodrome au nord de Rome ;
+    // Florence par l'est, Rome par le nord-est. Sur l'ancien code, la route
+    // n'existe pas : ni convoi, ni entrée.
+    verifier('l\'A1 Centre relie Florence à Rome à l\'est de la Frecciarossa, et des voitures y roulent',
+      !a1.absent && !!a1.convoiA1Centre && a1.convoiA1Centre.routier && (a1.convoiA1Centre.modeles || []).length >= 10
+      && !!a1.surRail && !!a1.surRail['A1 Centre'] && a1.surRail['A1 Centre'][0] > 100 && a1.surRail['A1 Centre'][1] === 0
+      && !!a1.frole && a1.frole['A1 Centre'] === 0
+      && ['florence', 'rome'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'A1 Centre' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7)),
+      JSON.stringify(a1.absent ? a1 : { convoi: a1.convoiA1Centre ? { nom: a1.convoiA1Centre.nom, voitures: (a1.convoiA1Centre.modeles || []).length } : 'aucun convoi A1 Centre',
+        surRail: a1.surRail && a1.surRail['A1 Centre'], frole: a1.frole && a1.frole['A1 Centre'],
+        entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'A1 Centre') }));
 
     // AUCUNE ROUTE NE PREND L'EMPRISE D'UNE AUTRE (v355) : Montréal a deux
     // routes, et chaque colonne d'emprise doit appartenir au segment qu'on
