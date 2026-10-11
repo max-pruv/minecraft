@@ -20,6 +20,23 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v449 — Le Shard n'est plus transparent
+
+**Pourquoi.** La pyramide du Shard posait 1 792 blocs de verre sur 2 080. Un
+bâtiment est creux : un mur de verre est un trou, et l'on voyait au travers de
+la tour depuis la rive sud (dette vue en capture en v206, règle de la v195).
+
+**Ce que ça change.** Le Shard est une tour de verre comme celles de la City :
+un mur-rideau opaque, ses meneaux dessinés dans la texture, allumé la nuit, avec
+sa ceinture d'acier tous les sept rangs. Sa forme et sa hauteur ne bougent pas.
+
+**Ce qui le prouve.** Un témoin dans `carteMonde.js` compte ce que pose son
+bâtisseur : 0 bloc de verre sur 2 080, contre 1 792 sur `origin/main` (rouge).
+L'empreinte des 490 morceaux ne bouge pas (le Shard n'y est pas) ; le verre et
+le mur-rideau arrêtent l'enfant de la même façon, aucun bloc d'enfant ne bouge.
+
+---
+
 ## v448 — Des pistes assez longues pour se poser
 
 **Pourquoi.** Max : « les pistes de tous les aéroports sont beaucoup trop

@@ -6961,7 +6961,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
 - [x] **Valencia Street ne roulait plus à San Francisco — FAIT en v223.** La
   transversale annoncée existe : la 16e Rue au nord et Cesar Chavez au sud,
   toutes deux réelles. Le tour de la Mission et de Mission Bay les emprunte.
-- [ ] **Le socle du Shard est un treillis de verre** — un bloc de `GLASS` dans
+- [x] **Le socle du Shard est un treillis de verre — FAIT en v449 (mur-rideau, 0 bloc de verre sur 2 080)** — un bloc de `GLASS` dans
   un mur creux est un trou (même règle qu'à San Francisco, v195). Vu en
   capture aérienne de la rive sud en v206, laissé tel quel : hors du sujet
   de la passe de rues.

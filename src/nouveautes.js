@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 449,
+    titre: 'Le Shard n\'est plus transparent',
+    puces: [
+      'La grande tour de Londres a ses vitres',
+      'On ne voit plus au travers',
+    ],
+  },
+  {
     v: 448,
     titre: 'Des pistes assez longues',
     puces: [

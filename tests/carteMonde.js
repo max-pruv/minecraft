@@ -1795,6 +1795,21 @@ const VRAIES_KM = [
       Object.entries(mains).map(([v, c]) =>
         `${v} ${((c.verre / (c.batis || 1)) * 100).toFixed(1)}%`).join(' · '));
 
+    // ET LE SHARD AUSSI (v449) : sa pyramide était un treillis de verre, un
+    // mur creux qu'on traversait du regard depuis la rive sud (dette v206).
+    // Son bâtisseur est pur : on compte ce qu'il pose.
+    const shard = await tab.evaluate(async () => {
+      const { MONUMENTS_LONDRES } = await import('./src/londres.js');
+      const { BLOCK } = await import('./src/blocks.js');
+      const m = MONUMENTS_LONDRES.find((q) => q.nom === 'The Shard');
+      let verre = 0, batis = 0;
+      m.build((du, y, dv, id) => { batis++; if (id === BLOCK.GLASS) verre++; });
+      return { verre, batis };
+    });
+    verifier('et le Shard est une tour, pas un treillis de verre : ses murs sont opaques',
+      shard.batis > 0 && shard.verre <= shard.batis * 0.02,
+      `${shard.verre} bloc(s) de verre sur ${shard.batis}`);
+
     const sansVie = Object.entries(facades).filter(([v, c]) =>
       !(c.lampes >= 40 && (v === 'marrakech' || c.feux >= 8) && c.bancs >= 25 && c.diversite >= 20));
     verifier('et du mobilier : lampadaires, bancs — et la diversité se compte',
