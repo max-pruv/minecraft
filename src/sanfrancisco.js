@@ -26,6 +26,7 @@ import { BLOCK, CITY_BLOCK, DECOR_START, ARCHI } from './blocks.js';
 import { rangerVoies, solDesVoies, fabriqueCircuits, reculDesAvenues } from './voies.js';
 import { positionDe } from './mondes.js';
 import { sectionDeRue } from './voirie.js';
+import { entreesDe } from './routes.js';
 
 const uni = (c) => DECOR_START + c * 10;
 
@@ -390,7 +391,21 @@ const VOIES = [
   { nom: 'Cesar Chavez Street', pts: [de(-3.85, 3.45), de(-2.0, 3.55), de(-0.55, 3.68)] },
 ].map(aLaRegle);
 
-const BANDES = rangerVoies(VOIES);
+// L'ENTRÉE DE L'US-101 (v436), comme celles de Londres et de Nice : du bout du
+// corridor (`routes.js`, vingt blocs sous le bord du disque, au sud-est, sur
+// la terre ferme au bout de la baie) jusqu'au bout de Third Street, l'artère de
+// Dogpatch et de Bayview, en ligne droite vers le nord. Une collectrice,
+// comme l'artère. Elle est une voie pour le sol — chaussée, trottoirs, les
+// lots s'écartent — mais pas pour les circuits : ce sont les voitures de la
+// route qui l'empruntent (`main.js`).
+const BOUT_TROISIEME = de(-1.0, 4.4);
+const ENTREES = entreesDe('sf').map((e) => ({
+  nom: `Entrée ${e.route}`, type: COLLECTRICE.type, l: COLLECTRICE.chaussee / 2, t: COLLECTRICE.trottoir,
+  pts: [[Math.round(e.x - SF.x), Math.round(e.z - SF.z)], BOUT_TROISIEME],
+}));
+export const ENTREES_SF = ENTREES.map((v) => v.pts.map(([u, w]) => [SF.x + u, SF.z + w]));
+
+const BANDES = rangerVoies([...VOIES, ...ENTREES]);
 export const __voiesSF = VOIES;
 
 // --- où roulent les voitures -------------------------------------------------

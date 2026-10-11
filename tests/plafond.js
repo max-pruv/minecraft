@@ -358,7 +358,13 @@ const EMPREINTE_MORCEAUX_V414 = '863d4203a441e3fd029ce2404fc6d6e706799e7f64fe489
 // colonnes qui diffèrent dans les morceaux de Paris sont toutes à moins de
 // 11,2 blocs de l'axe de l'entrée — la demi-chaussée et le trottoir d'un
 // boulevard (scratchpad diffp.mjs).
-const EMPREINTE_MORCEAUX_V357 = '1f1e5a6dbde9100ea365bc060d6c0f077a88cfc9bbb8b08128ebc590462126e3';
+// v436 : San Francisco, un des neuf lieux, porte l'entrée de l'US-101 (de la
+// porte sud-est au bout de Third Street). L'US-101 retirée du registre, la
+// branche rend 1f1e5a6d…, la constante de la v435, au bit près ; et les cent
+// colonnes qui diffèrent dans les morceaux de San Francisco sont toutes à
+// moins de sept blocs de l'axe de l'entrée — la demi-chaussée et le trottoir
+// d'une collectrice (scratchpad diffsf.mjs).
+const EMPREINTE_MORCEAUX_V357 = '239f48ab9f32f829be50f6e53f96ec0f43ed6d15fb2fdfaec0e1f0284917b37a';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };

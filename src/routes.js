@@ -512,6 +512,31 @@ export const ROUTES = [
   // deux points du joint sans cube ni tablier (le témoin du joint, plafond.js).
   { nom: 'A8', villes: ['marseille', 'nice'], bord: { marseille: 14 },
     via: [[956, 3410], [961, 3386], [963, 3346], [977, 3291], [987, 3276], [1016, 3255], [1087, 3233], [1101, 3222], [1108, 3212], [1126, 3174], [1143, 3142], [1156, 3131], [1190, 3118], [1208, 3118], [1226, 3123], [1438, 3240], [1475, 3246], [1522, 3247]] },
+  // L'US-101 (v436), SAN FRANCISCO–LOS ANGELES. L'axe direct (2 403 blocs)
+  // passe dans la marge de SFO et sur deux repères. San Francisco est une
+  // presqu'île : la baie à l'est DANS le disque, le Pacifique à l'ouest, et au
+  // sud SFO (−38 774, 7 120) avec, à l'ouest de l'aérodrome, des collines de
+  // 46 à 55 et des étangs (carte.mjs, ring.mjs du scratchpad). Le seul
+  // passage est AU NORD de SFO : la porte est au sud-est de la ville (68°),
+  // sur la terre ferme au bout de la baie, et l'entrée déclarée de
+  // sanfrancisco.js mène au bout de Third Street. La route longe ensuite, à l'est de
+  // l'aérodrome, une bande de 38 à 41 blocs, passe le col de la chaîne
+  // côtière vers z 7 500, descend la plaine côtière (33 à 41) jusqu'au
+  // sud-ouest, et entre dans Los Angeles par l'OUEST (180°, quarante blocs
+  // sous le bord : à −128°, la plus longue avenue, le pays monte à 47 au nord
+  // de la ville et la route y déblaie plus de neuf blocs ; plein ouest, vingt-
+  // trois blocs et demi d'avenue sur la rue, entrees.mjs). Mesuré sous node
+  // (couloir.mjs : couloir le plus bas avec cap sur une grille de dix blocs,
+  // la RAMPE de l'A8, l'eau interdite à moins de quarante blocs des portes,
+  // les collines à l'ouest de SFO exclues ; puis affiner.mjs, qui déplace un
+  // point de passage à la fois sous les contraintes des témoins, et
+  // verif.mjs, qui relit le registre réel colonne par colonne) : 2 618 blocs,
+  // cinq ponts (s 69–77, 394–408, 972–979, 1 259–1 267, 1 509–1 525, joints
+  // fermés), déblai 7,2, remblai 3,3, coudes ≤ 22°, aucune colonne sur un
+  // rail, un repère ou une autre route, l'axe à trente-cinq blocs au moins
+  // de la marge de tout aérodrome.
+  { nom: 'US-101', villes: ['sf', 'losangeles'], bord: { losangeles: 40 },
+    via: [[-38854, 6976], [-38849, 6984], [-38842, 6990], [-38822, 6997], [-38816, 6997], [-38810, 6995], [-38765, 6965], [-38756, 6962], [-38755, 6962], [-38740, 6967], [-38710, 6990], [-38661, 7049], [-38413, 7538], [-38238, 7835], [-38113, 8148], [-37752, 8793], [-37723, 8824], [-37516, 8962], [-37463, 8980]] },
 ];
 
 // --- la section -----------------------------------------------------------------
