@@ -20,6 +20,30 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v447 — Les garde-corps des petites fenêtres ont leurs anneaux entiers
+
+**Pourquoi.** Le motif de fer forgé d'un garde-corps est fait pour une travée
+de façade : un barreau tous les seize pixels et un anneau entre deux. Sur les
+baies étroites (le Marais, Montmartre, la Cité : 0,28 à 0,32 bloc de large),
+le motif était tiré en coordonnées de bloc et coupait ses anneaux en arcs :
+le garde-corps se lisait comme un glyphe, pas comme une grille. Mesuré dans
+neuf morceaux de trois quartiers : 1 212 garde-corps de baie, 1 212 coupés.
+C'était la dette déclarée en v288.
+
+**Ce que ça change.** Un garde-corps plus étroit que le bloc tient un nombre
+entier de travées, du barreau au barreau (deux au moins), un peu étirées.
+Le balcon filant d'un bloc entier garde son motif, qui se raccorde d'une
+fenêtre à l'autre. Rien ne change au palier bas : le fer n'existe que dans la
+couche détaillée.
+
+**Ce qui le prouve.** Un témoin neuf de `parishd.js` lit tous les quads de fer
+plus étroits que le bloc dans neuf morceaux : 1 212 lus, 0 coupés (1 212 sur
+`origin/main` : rouge). L'empreinte des 490 morceaux change (`9c35eeb6…`) ;
+désarmée (`ferronnerieEntiere: false`), elle rend la constante d'avant
+(`fb4f9aed…`, celle de `plafond.js`) au bit près.
+
+---
+
 ## v446 — Un toit ne déborde plus d'un quartier sur l'autre
 
 **Pourquoi.** Le comble de Paris (v289) lisse les colonnes d'un même immeuble,

@@ -3828,7 +3828,7 @@
     `manhattan.js` le trou (déclaré) ; `monte.js` la compilation à l'arrivée,
     le flanc frôlé et « un mur pris de face » (déclarés). Le témoin du
     mobilier (`parishd.js`) vert au portail.
-  - [ ] la ferronnerie d'un garde-corps sur une baie étroite (Marais, 0,28 de
+  - [x] FAIT en v447 (`uvFerronnerie`, travées entières : 1 212 garde-corps, 0 coupés) — la ferronnerie d'un garde-corps sur une baie étroite (Marais, 0,28 de
     large) se lit comme un glyphe : la tuile `fer` est faite pour une travée
     entière — une tuile à part pour les petites baies ;
   - [ ] les Champs-Élysées à `dx = −4,3 km` rendent de l'herbe et non

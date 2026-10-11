@@ -429,6 +429,38 @@ function verifier(nom, ok, detail = '') {
       ici.n >= 20 && ici.fautes === 0 && avant.fautes > 0,
       `${ici.n} colonnes, ${ici.fautes} mal plantée(s) — règle d'avant : ${avant.n} colonnes, ${avant.fautes} mal plantée(s)`);
   }
+
+  {
+    // ── UN GARDE-CORPS DE BAIE TIENT DES TRAVÉES ENTIÈRES (v447) ──────────────
+    //
+    // Dette de la v288 : sur une baie étroite (le registre ancien, 0,32 de
+    // large), le motif `fer` coupait ses anneaux en arcs — un glyphe. On lit
+    // dans les tampons tous les quads de fer (leur matière, v394) plus étroits
+    // que le bloc et l'on exige que leurs deux bouts tombent sur un barreau
+    // (huit pixels modulo seize). Sur l'ancien code, ils tombent n'importe où.
+    const rf = HD.rectHD('fer'), N = HD.PX_HD || 128;
+    const w = new World(); w.hd = 1;
+    let quads = 0, coupes = 0;
+    for (const [qx, qz] of [[0.9, -0.35], [0.15, 0.85], [-0.8, -0.9]]) {
+      const [mx, mz] = adresseParis(qx, qz);
+      for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
+        const g = buildChunkTampons(w, Math.floor(mx / CHUNK) + dx, Math.floor(mz / CHUNK) + dz).facades;
+        if (!g) continue;
+        for (let v = 0; v + 3 < nb(g); v += 4) {
+          if (Math.abs(g.matiere[v * 2] - 0.55) > 1e-5 || Math.abs(g.matiere[v * 2 + 1] - 0.85) > 1e-5) continue;
+          const us = [0, 1, 2, 3].map((k) => (g.uvs[(v + k) * 2] - rf[0]) / rf[2] * N);
+          const a = Math.min(...us), b = Math.max(...us);
+          if (b - a > N - 1) continue;                     // le balcon filant : le bloc entier
+          quads++;
+          const surBarreau = (x) => Math.abs((((x - 8) % 16) + 16) % 16) < 0.5 || Math.abs((((x - 8) % 16) + 16) % 16 - 16) < 0.5;
+          if (!surBarreau(a) || !surBarreau(b)) coupes++;
+        }
+      }
+    }
+    verifier('un garde-corps de baie tient des travées entières de ferronnerie, sans anneau coupé',
+      quads > 50 && coupes === 0, `${quads} garde-corps de baie lus, ${coupes} coupés en travers d'un motif`);
+  }
+
   {
     // ── UN TOIT NE LISSE QU'UN IMMEUBLE AVEC LUI-MÊME (v446) ──────────────────
     //

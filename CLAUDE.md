@@ -2494,6 +2494,18 @@ engendrées. Quatre règles.
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
 
+## Les garde-corps des baies étroites (v447) — un motif qui a un pas se pose en nombre entier de pas
+
+Une règle. Une tuile à motif périodique (la ferronnerie : un barreau tous les
+seize pixels) tirée en coordonnées de bloc se coupe n'importe où sur une face
+plus étroite que le bloc : 1 212 garde-corps de baie sur 1 212, mesuré.
+`uvFerronnerie` (facadeshd.js) donne à une face étroite un nombre entier de
+travées, du barreau au barreau, et laisse le bloc entier en coordonnées de
+bloc — c'est lui qui se raccorde d'une fenêtre à l'autre. Toute tuile
+périodique posée sur une face de largeur variable se demande la même chose.
+`ferronnerieEntiere: false` rejoue l'ancienne règle, le temps d'un morceau,
+pour l'empreinte des 490 morceaux.
+
 ## Un toit ne déborde plus d'un quartier sur l'autre (v446) — un indice de trame n'est unique que dans sa trame
 
 Une règle. `infoFacadeParis` publie l'îlot et la travée (`ai`, `bi`) dans la
