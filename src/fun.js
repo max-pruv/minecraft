@@ -26,6 +26,7 @@ import { garagesDe, garageAutour, inscrireGarage, garer, sortir } from './garage
 import { allureDe } from './vehicules.js';
 import { moteurDemarre, moteurRegime, moteurCoupe, radioDemarre, radioCoupe } from './sons.js';
 import { creerDegats } from './degats3d.js';
+import { sensationsAuVolant, sensationsAPied, reposerVoiture } from './sensations.js';
 import { creerEmbarquement } from './embarquement.js';
 
 // Le sac (`web-minecraft-bag-v1`), la quête (`web-minecraft-quest-v1`), le
@@ -33,16 +34,8 @@ import { creerEmbarquement } from './embarquement.js';
 // (`web-minecraft-chantier-v1::…`) ne sont plus ni lus ni écrits depuis la
 // v255 ; leurs clés restent en place, et sync.js continue de faire voyager le
 // sac et la quête tels quels. On n'efface rien.
-// LA CAMÉRA DE POURSUITE SUIT LE VÉHICULE AVEC UN RETARD (v278).
-//
-// Combien de fois par seconde de JEU le retard se réduit de moitié, à peu près :
-// plus le chiffre est petit, plus la voiture glisse loin sur le côté du cadre en
-// virage — et c'est ce glissement qui montre son flanc, ce que Max demande.
-// Trop petit, la caméra devient molle et le cadre part en vrille au volant ;
-// trop grand, elle recolle au coffre et l'on n'a rien changé. Le chiffre se
-// mesure (`?camlag=`), et la mesure est l'ANGLE entre le cap de la caméra et
-// celui de la voiture pendant un virage tenu.
-const REACTIVITE_CAM = Number(new URLSearchParams(location.search).get('camlag')) || 3.2;
+// La caméra de poursuite et son retard (`?camlag=`, v278) vivent dans
+// `sensations.js` depuis la v401.
 const RECORDS_KEY = 'web-minecraft-records-v1';
 const PHOTOS_KEY = 'web-minecraft-photos-v1';
 
@@ -1166,7 +1159,7 @@ export function initFun(ctx) {
           f.scale.z = allumee ? Math.max(0.05, (1.5 + 8.5 * poussee) * f.userData.rayon * vacille) : 0.001;
         }
       }
-    } else if (a.mesh.rotation.z || a.mesh.rotation.x) {
+    } else if (a.def.moteur !== 'voiture' && (a.mesh.rotation.z || a.mesh.rotation.x)) {
       a.mesh.rotation.z = 0;      // on rend l'assiette en descendant
       a.mesh.rotation.x = 0;
       for (const f of a.mesh.userData.tuyeres || []) f.visible = false;
@@ -1175,7 +1168,7 @@ export function initFun(ctx) {
     // moteur au ralenti à l'arrêt, qui monte avec l'allure. Le plafond vient
     // de `player.js`, là où il se calcule — la classe du modèle le fixe
     // (v260) et le recopier ici le rendrait faux à la première qu'on ajoute.
-    if (!player.pilote && a.def.moteur) {
+    if (!player.pilote && a.def.moteur && !a.def.poursuite) {
       const plafond = player.vitesseVoitureMax || 1;
       moteurRegime(Math.abs(player.vitesseVoiture || 0) / plafond);
     }
@@ -1193,55 +1186,13 @@ export function initFun(ctx) {
     // voiture et la caméra, elle avance devant lui plutôt que d'entrer
     // dans la roche.
     if (a.def.poursuite) {
-      // ET LA CAMÉRA A SON PROPRE CAP, EN RETARD SUR CELUI DE LA VOITURE (v278).
-      //
-      // Max : « la vue de la voiture, je la trouve pas très cool. Je pense
-      // qu'il faudrait la zoom out un petit peu et faire comme dans GTA, quand
-      // la voiture tourne, on voit vraiment la voiture qui tourne, on voit le
-      // flanc de la voiture sur le côté. »
-      //
-      // La cause est d'une ligne : le recul se calculait sur `player.yaw`, LU
-      // DANS LA MÊME IMAGE. La caméra pivotait donc exactement avec le
-      // véhicule, à angle constant derrière lui — on ne voyait jamais que son
-      // coffre, quel que soit le virage. Elle suit désormais avec un retard :
-      // en virage, la voiture glisse sur le côté du cadre et montre son flanc ;
-      // en ligne droite, le retard se résorbe et la vue redevient celle d'avant.
-      //
-      // C'EST UNE ANIMATION, DONC ELLE SUIT LE TEMPS DU JEU (`dt`, v226) : si
-      // elle comptait en temps réel, un ralentissement ferait tourner la caméra
-      // plus vite que le monde et l'image se déchirerait. Ce qui décide du
-      // rendu, c'est la RÉACTIVITÉ — combien de fois par seconde de jeu le
-      // retard se réduit de moitié — et elle se mesure (`?camlag=`).
-      //
-      // Au premier tour de boucle il n'y a pas de retard à avoir : le cap part
-      // sur celui du véhicule, sinon la caméra balaie tout l'horizon en montant
-      // dans la voiture.
-      if (a.camYaw == null) a.camYaw = player.yaw;
-      let ecart = player.yaw - a.camYaw;
-      while (ecart > Math.PI) ecart -= Math.PI * 2;
-      while (ecart < -Math.PI) ecart += Math.PI * 2;
-      a.camYaw += ecart * Math.min(1, dt * REACTIVITE_CAM);
-      const c = a.def.poursuite, cy = Math.cos(a.camYaw), sy = Math.sin(a.camYaw);
-      // La ligne de caméra part du TOIT du véhicule et monte vers l'arrière :
-      // échantillonnée trop bas, une simple bordure de trottoir la faisait
-      // plonger dans l'aileron. Et jamais plus près que la carrosserie
-      // elle-même (3,2) : en deçà, on regarde l'intérieur du moteur.
-      const TOIT = 1.4, PLANCHER_RECUL = 3.2;
-      const hauteurA = (d) => TOIT + (c.hauteur - TOIT) * (d / c.recul);
-      let recul = c.recul;
-      for (let d = PLANCHER_RECUL; d <= c.recul; d += 0.6) {
-        const bx = player.pos.x + sy * d, bz = player.pos.z + cy * d;
-        if (player.world.isSolid(Math.floor(bx),
-          Math.floor(player.pos.y + hauteurA(d)), Math.floor(bz))) {
-          recul = Math.max(PLANCHER_RECUL, d - 0.6);
-          break;
-        }
-      }
-      player.camera.position.set(
-        player.pos.x + sy * recul,
-        player.pos.y + hauteurA(recul),
-        player.pos.z + cy * recul,
-      );
+      // LA POURSUITE ET LA CAISSE QUI VIT (v401) : la caméra qui recule et
+      // ouvre son champ avec la vitesse, qui ne traverse pas les murs, qui
+      // regarde dans le virage et tremble au choc ; la caisse qui penche et
+      // plonge ; les roues qui braquent ; le son des rapports et des pneus.
+      // Tout vit dans `sensations.js`. Les avions gardent leur caméra d'avant,
+      // à l'identique (v278).
+      sensationsAuVolant(a, player, dt);
     } else if (a.def.oeil != null) player.camera.position.y = player.pos.y + a.def.oeil;
     else player.camera.position.y += a.def.assise || a.def.height * 0.6;
   }
@@ -1330,6 +1281,7 @@ export function initFun(ctx) {
 
   // ---- hooks & lifecycle ----------------------------------------------------
   let lastCtxKey = null;
+  let derniereMonture = null;
 
   function update(dt) {
     updateEmotes(dt);
@@ -1350,6 +1302,10 @@ export function initFun(ctx) {
     }
     updateRide(dt);
     degats.update(dt, player.camera, animalManager.animals);   // fumée, feu, carcasses (v343)
+    // CE QU'ON QUITTE SE REPOSE (v401) : la voiture garée reprend son
+    // assiette et ses roues droites, et le champ de la caméra revient.
+    if (riding !== derniereMonture) { reposerVoiture(derniereMonture); derniereMonture = riding; }
+    if (!riding) sensationsAPied(player, dt);
     embarquement.update(dt);   // APRÈS updateRide : la caméra de poursuite est posée, on s'y fond
     updateBord();
     updatePassager();

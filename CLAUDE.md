@@ -770,6 +770,42 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les sensations au volant (v422) — la caméra regarde la voiture, et un mur se cherche cellule par cellule
+
+Chantier « conduite » (six sessions, octobre 2026) ; celle-ci tient ce que
+l'enfant VOIT et ENTEND. Tout vit dans `src/sensations.js`, branché par un
+appel dans `updateRide` (fun.js) ; la physique ne s'y lit qu'en lecture. Cinq
+règles.
+
+- **LE CONTRAT SE LIT SI PRÉSENT, ET CE QUI MANQUE SE DÉDUIT.** `braquage`,
+  `derive`, `choc`, `etatVoiture`, `embarquement` viennent d'autres sessions :
+  sans eux, le braquage se déduit de la vitesse de cap, le choc d'une vitesse
+  qui s'effondre plus vite qu'aucun frein (`FREIN_VOITURE`). Pendant
+  `embarquement.phase`, la caméra n'est pas à nous ; à la fin, on la reprend
+  en trois quarts de seconde depuis où elle était.
+- **UN SEGMENT SE PARCOURT CELLULE PAR CELLULE, IL NE S'ÉCHANTILLONNE PAS.**
+  L'ancienne recherche partait à 3,2 blocs par pas de 0,6 : un mur entre le
+  pare-chocs (2,2) et 3,2 n'était jamais vu, et la caméra se posait derrière
+  lui. `segmentLibre` (DDA) du toit vers chaque poste, du plus loin au plus
+  près ; sous le pare-chocs la caméra s'élève au-dessus du coffre. On se
+  rapproche tout de suite, on recule en douceur.
+- **LA CAMÉRA REGARDE LA VOITURE, PAS L'AXE DE LA VOITURE.** Depuis une place
+  en retard (v278), regarder dans l'axe faisait SORTIR la voiture du cadre en
+  virage — vu en capture, aucun témoin ne le voyait. La visée est à mi-chemin
+  entre la caméra et l'axe, et le retard est borné (`RETARD_MAX`, 0,55 rad).
+- **LES SIGNES SE LISENT DANS LA MATRICE.** Roulis : le haut de la caisse
+  contre sa gauche, négatif dans un virage à gauche. Roue avant : l'axe de
+  l'essieu contre la droite de la voiture, positif (vers la gauche) dans un
+  virage à gauche. Les roues avant braquent dans un groupe inséré entre le
+  pivot et son parent, autour du haut de la VOITURE exprimé dans le repère du
+  parent — un nœud de modèle porte n'importe quelle rotation.
+- **UNE BORNE DE TÉLÉPORT SUIT LA VITESSE.** Les roues se figeaient au-delà de
+  deux blocs par image (animals.js), c'est-à-dire précisément quand on va vite
+  sur une tablette lente. La borne vaut deux fois ce que la voiture peut faire
+  dans l'image, et `sensations.js` reprend le suivi du bestiaire pour ne pas
+  compter deux fois. Les avions gardent la poursuite d'avant à l'identique ;
+  `?sensations=0` rejoue l'ancienne conduite, pour mesurer.
+
 ## Un contour dans l'autre sens, et les rues du Strip (v418) — ce qui empêchait le contour n'était pas l'absence de rue
 
 Deux règles.
