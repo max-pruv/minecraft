@@ -676,7 +676,7 @@ function verifier(nom, ok, detail = '') {
         }
       }
       if (!cible) return { err: 'aucune voiture de la rue arrêtée devant l\'enfant', attente: Math.round(performance.now() - t1) };
-      // L'ÉLAN SE PREND, IL NE SE TROUVE PAS (v444). La voiture de la rue
+      // L'ÉLAN SE PREND, IL NE SE TROUVE PAS (v446). La voiture de la rue
       // s'arrête de trois à seize blocs devant l'enfant : à ces élans le choc
       // ne coûte que 0,5 à 1 % (v424, la force suit la vitesse), et sous la
       // charge du portail la santé rendait 1 — rouge des deux côtés, pour une

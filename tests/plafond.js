@@ -629,7 +629,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     verifier('rue : la table des raccords courts est celle que la règle rend aujourd\'hui (un anneau qui bouge la fait remesurer)',
       !!b && b.ecarts.length === 0, b ? JSON.stringify(b.ecarts) : `sonde : ${err}`);
   }
-  // --- LE BUS A SA PLACE DANS SON ANNEAU, ET L'ANNEAU JOUE (v442) ----------
+  // --- LE BUS A SA PLACE DANS SON ANNEAU, ET L'ANNEAU JOUE (v444) ----------
   // Posé à mi-temps entre deux voitures (v372), le bus touchait ses voisines
   // par la grille seule (36 004 relevés sur un tour des 263 grands anneaux) et
   // l'anneau renonçait au jeu par voiture (v438). À la place de la voiture 0,
@@ -640,10 +640,10 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     let r = null, err = '';
     try { r = await require('./sonde-rue-dense.cjs').mesurer('bus'); } catch (e) { err = String(e && e.message || e); }
     verifier('rue : le bus a sa place entière dans son anneau — aucun contact de grille, et l\'anneau garde le jeu par voiture',
-      !!r && r.v442.anneaux > 200 && r.v442.contacts === 0 && r.v442.jouent === r.v442.anneaux && r.v438.dontBus > 1000,
+      !!r && r.v444.anneaux > 200 && r.v444.contacts === 0 && r.v444.jouent === r.v444.anneaux && r.v438.dontBus > 1000,
       r ? JSON.stringify(r) : `sonde : ${err}`);
   }
-  // --- UN CIRCUIT SE PRÉPARE PAR TRANCHES, PUIS NAÎT (v443) ----------------
+  // --- UN CIRCUIT SE PRÉPARE PAR TRANCHES, PUIS NAÎT (v445) ----------------
   // Un circuit de Paris se calculait d'un seul tenant dans l'image où il naît
   // (jusqu'à 34 à 59 ms sous node : grille, plancher, croisement, seconde
   // voie, essais de la jumelle). La fabrique rend la main entre ses étapes ;
