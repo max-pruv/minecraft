@@ -6,7 +6,7 @@
 
 export const NOUVEAUTES = [
   {
-    v: 429,
+    v: 433,
     titre: 'Les cafés de Paris',
     puces: [
       'Des terrasses devant les boutiques',

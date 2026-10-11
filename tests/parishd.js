@@ -352,7 +352,7 @@ function verifier(nom, ok, detail = '') {
     verifier('des potelets de fonte bordent le trottoir', fonte > 0, `${fonte} sommets de fonte, ${rotin} de cannage`);
   }
   {
-    // ── PLUS UNE TERRASSE DE CAFÉ À PARIS (v429) ─────────────────────────────
+    // ── PLUS UNE TERRASSE DE CAFÉ À PARIS (v433) ─────────────────────────────
     //
     // La règle (`mobilierTrottoir`) voulait une `ARCHI.VITRINE` à un bloc
     // au-dessus du trottoir ; depuis les bandes de la v301 la devanture y est

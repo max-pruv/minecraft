@@ -254,7 +254,7 @@ const masqueReserve = [];
 // iPad de trois gigaoctets. Le fil principal ne demande le détail qu'à portée
 // de `RAYON_HD`, et le redemande quand un morceau y entre.
 export function buildChunkTampons(world, cx, cz, options = {}) {
-  // (`devantures: false` rejoue la règle des terrasses d'avant la v429 : l'empreinte des morceaux)
+  // (`devantures: false` rejoue la règle des terrasses d'avant la v433 : l'empreinte des morceaux)
   const optsMobilier = options.devantures === false ? { vitrineSeule: true } : undefined;
   if (world.hasVisualEdits && !world.hasVisualEdits(cx, cz)) {
     return { solid: null, water: null, lumineux: null, props: [], sol: null, facades: null, plat: null, platLumineux: null };

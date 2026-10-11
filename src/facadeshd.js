@@ -1439,7 +1439,7 @@ export function terrasseHD(buf, x, y, z, wx, wz, vers) {
 //   deux blocs, derrière un autre trottoir) ou, plus rare, une colonne Morris
 //   — seulement là où le tirage est un creux local.
 //
-// LA DEVANTURE EN BANDES (v429). Depuis la v301 un rez-de-chaussée de Paris
+// LA DEVANTURE EN BANDES (v433). Depuis la v301 un rez-de-chaussée de Paris
 // fait trois blocs — soubassement, vitrage, enseigne — et le bloc qu'on lit à
 // un au-dessus du trottoir est le VITRAGE (`VITRINE_MI`), plus `VITRINE` :
 // mesuré, zéro terrasse dans six quartiers sur cent quarante versions. Les

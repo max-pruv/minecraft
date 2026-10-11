@@ -3397,12 +3397,34 @@
     mesuré : cinq colonnes sur vingt-cinq morceaux, aucune côte à côte.
 
   Dettes déclarées de la v288 :
+  - [ ] **LE PORTAIL DE LA v433 (terrasses)**, coupé deux fois par la limite
+    de trente minutes des tâches de fond (la reprise a tout rejoué). Rejoués
+    SEULS des deux côtés (`/home/user/minecraft` et un arbre détaché sur
+    `origin/main` v428) :
+    `degats.js` « percuter une voiture de la rue l'abîme AUSSI » et « le garage
+    répare » : le témoin arrondissait la santé au centième — 0,99 sur
+    `origin/main`, 1 sur la branche selon l'élan (15 contre 15,5 blocs) ;
+    corrigé (dix-millième), vert seul (0,9974). `origin/main` rend seul un
+    rouge que la branche n'a pas : « deux murs pris à pleine vitesse laissent la
+    voiture ROULANTE » (santé 0,851, intermittence non déclarée jusqu'ici).
+    `monte.js` : « ne compile plus de programmes sur place » — la chauffe de New
+    York expire des deux côtés (43 et 54 sur 321) ; « au-dessus d'une ville
+    aussi, le monde se charge devant l'avion » rouge des deux côtés (Londres à
+    120 b/s : 64 sur la branche, 36 sur `origin/main`, barre 60 ; Londres n'a
+    pas de mobilier parisien). Au portail seulement : le réverbère, la monoplace,
+    le flâneur, le taux de contact (verts seuls). `visio.js` la radio pendant
+    l'appel (tirage déclaré). `maj.js` le badge (journal à 433, `sw.js` bumpé à
+    la fusion). `carte.js` le glisser bridé ×4, `manhattan.js` le trou et le
+    taxi (dettes déclarées).
+  - [x] les Champs-Élysées à `dx = −4,3 km` (dette ci-dessous) : MESURÉ en v433,
+    l'axe de l'avenue rend 103 colonnes de pavé et 8 de trottoir sur 111, et
+    l'adresse de la dette du pavé — rendu par Paris doublé (v306).
   - [~] une chaise de terrasse HD n'arrête ni un passant ni une voiture —
     LES PASSANTS ET L'ENFANT À PIED : fait en v425 (`mobilierTrottoir`,
     `world.obstaclePieton`, seulement le mobilier montré). Reste : la VOITURE
     (`mobilierDevant`, main.js, hors zone piétons) — elle lit `isProp` ; la
     même `mobilierTrottoir` lui servirait telle quelle ;
-  - [x] **FAIT EN v429** (la règle lit le vitrage `VITRINE_MI` des devantures
+  - [x] **FAIT EN v433** (la règle lit le vitrage `VITRINE_MI` des devantures
     en bandes de la v301 : 40 à 178 terrasses par quartier). Historique :
     **PLUS UNE TERRASSE DE CAFÉ À PARIS** (mesuré en v425, quatre
     quartiers, 25 morceaux détaillés chacun) : 324 à 387 potelets, 56 à 59

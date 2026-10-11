@@ -699,7 +699,7 @@ function verifier(nom, ok, detail = '') {
       }
       const nous = d.etat(c.mesh);
       window.__rue = { conv, m, x0, z1 };
-      // LA SANTÉ SE LIT AU DIX-MILLIÈME (v429) : depuis la v424 un choc à dix
+      // LA SANTÉ SE LIT AU DIX-MILLIÈME (v433) : depuis la v424 un choc à dix
       // blocs par seconde ne coûte que quelques millièmes, et arrondie au
       // centième la santé rendait 0,99 ou 1 selon l'élan (15 blocs ou 15,5) —
       // un tirage que le portail a pris pour une panne, des deux côtés.

@@ -2223,7 +2223,7 @@ engendrées. Quatre règles.
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
 
-## Les terrasses de café reviennent (v429) — une règle qui lit un bloc se relit quand le bloc se découpe
+## Les terrasses de café reviennent (v433) — une règle qui lit un bloc se relit quand le bloc se découpe
 
 Une règle.
 

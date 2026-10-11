@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v429 — Les terrasses de café reviennent à Paris
+## v433 — Les terrasses de café reviennent à Paris
 
 **Pourquoi.** Depuis la v301, un rez-de-chaussée de Paris fait trois blocs —
 soubassement, vitrage, enseigne — et la règle des terrasses (v288) cherchait

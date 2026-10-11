@@ -63,7 +63,7 @@ const VUES = [
   // adresse, et la ville entière vue de haut, pour juger les îlots.
   { nom: 'marais-km', dx: 0.9, dz: -0.5, yaw: Math.PI / 2, pitch: 0.12, h: 1.6, rue: true },
   { nom: 'paris-haut', dx: -1.0, dz: 0.6, yaw: 0, pitch: -1.0, h: 110 },
-  // v429 : les terrasses de café reviennent devant les devantures en bandes
+  // v433 : les terrasses de café reviennent devant les devantures en bandes
   // (Saint-Germain, relevées sous node par `mobilierTrottoir`) ; la caméra est
   // sur la chaussée d'en face, à hauteur d'enfant, de biais le long de la rue
   { nom: 'terrasse', x: -440, z: 427, yaw: -Math.PI / 2 + 0.45, pitch: 0.08, h: 1.4 },
