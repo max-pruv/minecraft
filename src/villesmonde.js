@@ -4418,6 +4418,29 @@ function anneauxCalcules(f) {
         if (pas < mieux && pointsVus(f, formes.map((fo) => fo.pts)) >= vusAvant) { meilleur = ordre; mieux = pas; }
       }
       jouer(meilleur || naturel, meilleur ? 'neuve' : 'avant');
+      // ET CE QUE L'ORDRE NE RÈGLE PAS SE CHERCHE ENSEMBLE (v435) : voir
+      // `contournerEnsemble`. Seulement s'il reste des pas, et seulement
+      // pour en laisser moins sans qu'un point de la ville perde sa voiture.
+      let pasFin = meilleur ? mieux : pasAvant;
+      if (pasFin) {
+        const traces0 = formes.map((fo) => fo.pts);
+        const vus0 = vusDeVille(f, traces0);
+        const ens = contournerEnsemble(f, gardes, ponts, (ks) => {
+          const traces = traces0.map((p, n) => (ks[n] ? ks[n].pts : p));
+          if (gardes.some((g, n) => g.proche && ks[n] && distanceAuTrace(0, 0, aPlat(ks[n].pts)) > VU_CONTOUR)) return false;
+          const pas = traces.reduce((s, p) => s + pasHorsChaussee(f, p, ponts), 0);
+          if (pas >= pasFin) return false;
+          const vus = vusDeVille(f, traces);
+          for (let i = 0; i < vus0.length; i++) if (vus0[i] && !vus[i]) return false;
+          pasFin = pas;
+          return true;
+        });
+        if (ens) ens.forEach((k, n) => {
+          if (!k) return;
+          const g = gardes[n];
+          g.contour = k; g.aretes = k.aretes; g.sens = k.sens; formes[n].pts = k.pts;
+        });
+      }
     }
     // Les tabliers d'avant d'abord, l'allongement ensuite : voir `pontDeVille`.
     const out = { formes, ponts: ponts.filter((q) => !q.ext).concat(ponts.filter((q) => q.ext)) };
@@ -4679,6 +4702,17 @@ function couvertureGardee(seuls, neuf) {
   for (let i = 0; i < seuls.length; i += 2) if (!vuPar(seuls[i], seuls[i + 1], ech, VU_VOITURE - TOL_VU)) return false;
   return true;
 }
+// Quels points de la ville une voiture voit (un octet par point), avec la
+// règle du témoin : la garde de la recherche conjointe (v435) les compare un
+// à un.
+function vusDeVille(f, traces) {
+  const echs = traces.map(echantillons), points = pointsDeVille(f, true);
+  const vus = new Uint8Array(points.length / 2);
+  for (let i = 0; i < points.length; i += 2) {
+    for (const e of echs) if (vuPar(points[i], points[i + 1], e, VU_VOITURE)) { vus[i / 2] = 1; break; }
+  }
+  return vus;
+}
 // Combien de points de la ville une voiture voit, avec la règle du témoin.
 function pointsVus(f, traces) {
   const echs = traces.map(echantillons), points = pointsDeVille(f, true);
@@ -4835,7 +4869,7 @@ function contourner(f, c, ponts, quai = true, autres = [], accepte = null) {
     let aRevoir = cur.fautifs;
     if (!aRevoir.length) {
       if (!cur.exces) {
-        if (!accepte || accepte(cur.k)) return { ...cur.k, change: cur.change };
+        if (!accepte || accepte(cur.k)) return { ...cur.k, change: cur.change, ilots: cur.ilots };
         continue;
       }
       // sans faute, mais sur la voie d'un autre anneau : on bouge ces côtés-là
@@ -4899,6 +4933,184 @@ function contourner(f, c, ponts, quai = true, autres = [], accepte = null) {
     }
   }
   return { pts: null };
+}
+
+// DEUX ANNEAUX QUI SE DISPUTENT LA PLACE SE CHERCHENT ENSEMBLE (v435).
+// Tokyo, Toronto, Dubaï : les deux anneaux d'arrivée passent par le nœud
+// central, sur la même rue en sens contraires, et un troisième (Tokyo) a
+// déjà contourné la place par la rue d'à côté. Chacun, cherché SEUL, trouve
+// son contour — et ce contour suit la voie d'un voisin au-delà de la barre
+// de partage, parce que le voisin ne bouge pas pendant qu'il cherche. Aucun
+// ordre n'y change rien (mesuré : les 24 ordres de Tokyo rendent les mêmes
+// 56 pas). On cherche donc sur l'état de TOUS les anneaux à la fois : un pas
+// de la recherche change un îlot d'UN anneau (ou recule une rangée), la note
+// est la somme des segments fautifs, puis la voie partagée au-delà de la
+// barre, puis le nombre d'îlots changés. Les trois promesses sont celles de
+// la phase 4 : le partage par voie, la vue du centre pour l'anneau qu'on voit
+// (`VU_CONTOUR`), et AUCUN point de la ville qui perde sa voiture — lu sur la
+// configuration entière, point par point.
+//
+// Elle ne tourne que pour une ville où la phase 4 laisse des pas hors de la
+// chaussée, et elle ne rend une configuration que si elle en laisse MOINS :
+// une ville qu'elle n'améliore pas reste identique au bit près.
+const ENSEMBLE_ESSAIS = 80;
+const ENSEMBLE_PATIENCE = 30;
+function ilotsDuRect(t, c) {
+  const i0 = Math.round((c.cU - c.Ru) / t.pu), i1 = Math.round((c.cU + c.Ru) / t.pu);
+  const j0 = Math.round((c.cV - c.Rv) / t.pv), j1 = Math.round((c.cV + c.Rv) / t.pv);
+  const s = new Set();
+  for (let i = i0; i < i1; i++) for (let j = j0; j < j1; j++) s.add(cleNoeud(i, j));
+  return s;
+}
+function contournerEnsemble(f, gardes, ponts, accepte) {
+  const t = f.trame, w2 = t.w / 2, R = gardes.length;
+  const mel = (k, g) => { let x = Math.imul(k ^ g, 0x9e3779b1); x ^= x >>> 15; x = Math.imul(x, 0x85ebca6b); return (x ^ (x >>> 13)) >>> 0; };
+  const fautifsDe = (bord, sens) => bord.filter((e) => {
+    const s = etatDeSegment(f, e[0], e[1], e[2], e[3], sens, true);
+    if (s.bloque) return true;
+    for (let k = 0; k < s.eaux.length; k += 2) if (!surUnTablier(f, ponts, s.eaux[k], s.eaux[k + 1])) return true;
+    return false;
+  });
+  const areteDe = (e, sens) => e[2]
+    ? { axe: 0, b: e[1] * t.pv, a0: Math.min(e[0], e[0] + e[2]) * t.pu, a1: Math.max(e[0], e[0] + e[2]) * t.pu, s: -e[2] * sens }
+    : { axe: 1, b: e[0] * t.pu, a0: Math.min(e[1], e[1] + e[3]) * t.pv, a1: Math.max(e[1], e[1] + e[3]) * t.pv, s: e[3] * sens };
+  // Un anneau dans un état donné (ses îlots, son sens) : son bord, ses
+  // segments fautifs, ses côtés. Mémoïsé : la recherche repasse souvent par
+  // le même état d'un anneau.
+  const caches = gardes.map(() => new Map());
+  const anneau = (r, ilots, h1, h2, sens) => {
+    const cle = h1 + ',' + h2 + ',' + sens;
+    let a = caches[r].get(cle);
+    if (a) return a;
+    const bord = bordDIlots(ilots);
+    a = bord ? { ilots, h1, h2, sens, bord, fautifs: fautifsDe(bord, sens), aretes: bord.map((e) => areteDe(e, sens)) } : null;
+    caches[r].set(cle, a);
+    return a;
+  };
+  const hacher = (ilots) => { let h1 = 0, h2 = 0; for (const k of ilots) { h1 ^= mel(k, 0x1234567); h2 ^= mel(k, 0x7654321); } return [h1, h2]; };
+  // l'état de départ : la configuration que la phase 4 a retenue
+  const depart = gardes.map((g, r) => {
+    const ilots = g.contour && g.contour.ilots ? g.contour.ilots : ilotsDuRect(t, g);
+    const [h1, h2] = hacher(ilots);
+    return anneau(r, ilots, h1, h2, g.sens || 1);
+  });
+  if (depart.some((a) => !a)) return null;
+  // Le contresens d'un anneau ne peut pas changer de sens : il roulerait
+  // alors avec son jumeau.
+  const jumeau = gardes.map((g) => gardes.some((h) => h !== g && h.cU === g.cU && h.cV === g.cV && h.Ru === g.Ru && h.Rv === g.Rv));
+  const exces = (as) => as.map((a, r) => Math.max(0, partageDAretes(a.aretes, as.flatMap((b, m) => (m === r ? [] : b.aretes))) - PARTAGE_MAX));
+  const noter = (as, change) => {
+    const ex = exces(as);
+    return { as, change, f: as.reduce((n, a) => n + a.fautifs.length, 0), x: ex.reduce((n, e) => n + e, 0), ex };
+  };
+  const avant = (a, b) => (a.f - b.f) || (a.x - b.x) || (a.change - b.change);
+  const tas = [];
+  const pousser = (x) => {
+    tas.push(x);
+    for (let i = tas.length - 1; i > 0;) { const p = (i - 1) >> 1; if (avant(tas[i], tas[p]) >= 0) break; [tas[i], tas[p]] = [tas[p], tas[i]]; i = p; }
+  };
+  const tirer = () => {
+    const haut = tas[0], der = tas.pop();
+    if (tas.length) {
+      tas[0] = der;
+      for (let i = 0; ;) {
+        const l = 2 * i + 1, rr = l + 1;
+        let m = i;
+        if (l < tas.length && avant(tas[l], tas[m]) < 0) m = l;
+        if (rr < tas.length && avant(tas[rr], tas[m]) < 0) m = rr;
+        if (m === i) break;
+        [tas[i], tas[m]] = [tas[m], tas[i]]; i = m;
+      }
+    }
+    return haut;
+  };
+  const signature = (as) => as.map((a) => a.h1 + ',' + a.h2 + ',' + a.sens).join('|');
+  const vus = new Set();
+  const e0 = noter(depart, 0);
+  vus.add(signature(depart));
+  pousser(e0);
+  const changeMax = gardes.map((g) => Math.max(CONTOUR_CHANGE_MAX, Math.ceil(ilotsDuRect(t, g).size * 0.3)));
+  const changes = (as) => as.map((a, r) => { let n = 0; for (const k of a.ilots) if (!depart[r].ilots.has(k)) n++; for (const k of depart[r].ilots) if (!a.ilots.has(k)) n++; return n; });
+  // les formes : celles de `contourner`, pour chaque anneau qui a changé
+  const formeDe = (a) => {
+    const cotes = [];
+    for (const e of a.bord) {
+      const d = cotes[cotes.length - 1];
+      if (d && d.dx === e[2] && d.dy === e[3]) { d.n++; continue; }
+      cotes.push({ i: e[0], j: e[1], dx: e[2], dy: e[3], n: 1 });
+    }
+    if (cotes.length > 1 && cotes[0].dx === cotes[cotes.length - 1].dx && cotes[0].dy === cotes[cotes.length - 1].dy) {
+      const der = cotes.pop();
+      cotes[0] = { ...der, n: der.n + cotes[0].n };
+    }
+    const pts = [], aretes = [];
+    let dCentre = Infinity;
+    for (let k = 0; k < cotes.length; k++) {
+      const c = cotes[k], d = cotes[(k + 1) % cotes.length];
+      const h = c.dx ? c : d, v = c.dx ? d : c;
+      pts.push([v.i * t.pu - v.dy * a.sens * w2, h.j * t.pv + h.dx * a.sens * w2]);
+      const P0 = c.i * t.pu, Q0 = c.j * t.pv, P1 = P0 + c.dx * c.n * t.pu, Q1 = Q0 + c.dy * c.n * t.pv;
+      if (c.dx) aretes.push({ axe: 0, b: Q0, a0: Math.min(P0, P1), a1: Math.max(P0, P1), s: -c.dx * a.sens });
+      else aretes.push({ axe: 1, b: P0, a0: Math.min(Q0, Q1), a1: Math.max(Q0, Q1), s: c.dy * a.sens });
+      const dp = Math.max(Math.min(P0, P1), 0, -Math.max(P0, P1)), dq = Math.max(Math.min(Q0, Q1), 0, -Math.max(Q0, Q1));
+      dCentre = Math.min(dCentre, Math.hypot(dp, dq));
+    }
+    if (a.sens === -1) pts.reverse();
+    return { pts, aretes, dCentre, sens: a.sens, ilots: a.ilots, ensemble: true };
+  };
+  const formesDe = (as) => as.map((a, r) => (a === depart[r] ? null : formeDe(a)));
+  let meilleur = null, mieuxF = e0.f, quand = 0;
+  for (let essai = 0; essai < ENSEMBLE_ESSAIS && tas.length; essai++) {
+    if (essai - quand > ENSEMBLE_PATIENCE) break;
+    const cur = tirer();
+    // Une configuration est candidate si aucune voie ne dépasse la barre de
+    // partage et si chaque anneau est soit sans faute, soit tel qu'avant.
+    if (!cur.x && cur.f < mieuxF && cur.as.every((a, r) => !a.fautifs.length || a === depart[r])) {
+      if (accepte(formesDe(cur.as))) { meilleur = cur; mieuxF = cur.f; quand = essai; if (!cur.f) break; }
+    }
+    const ch = changes(cur.as);
+    // les anneaux à bouger : ceux qui ont des segments fautifs, puis ceux
+    // dont la voie dépasse la barre de partage
+    for (let r = 0; r < R; r++) {
+      const a = cur.as[r];
+      let aRevoir = a.fautifs;
+      if (!aRevoir.length && cur.ex[r]) {
+        const autres = cur.as.flatMap((b, m) => (m === r ? [] : b.aretes));
+        aRevoir = a.bord.filter((e, n) => partageDAretes([a.aretes[n]], autres) > 0);
+      }
+      if (!aRevoir.length) continue;
+      const voisins = [];
+      if (ch[r] < changeMax[r]) {
+        for (const e of aRevoir.slice(0, 2)) {
+          const [i, j, dx, dy] = e;
+          const dedans = dx === 1 ? [i, j] : dx === -1 ? [i - 1, j - 1] : dy === 1 ? [i - 1, j] : [i, j - 1];
+          const dehors = dx === 1 ? [i, j - 1] : dx === -1 ? [i - 1, j] : dy === 1 ? [i, j] : [i - 1, j - 1];
+          for (const [ilot, ajout] of [[dedans, false], [dehors, true]]) {
+            const k = cleNoeud(ilot[0], ilot[1]);
+            if (ajout === a.ilots.has(k)) continue;
+            if (!ajout && a.ilots.size === 1) continue;
+            const nv = new Set(a.ilots);
+            if (ajout) nv.add(k); else nv.delete(k);
+            voisins.push([nv, a.h1 ^ mel(k, 0x1234567), a.h2 ^ mel(k, 0x7654321), a.sens]);
+          }
+        }
+      }
+      // l'autre sens, pour un anneau qui n'a pas déjà son contresens
+      if (!jumeau[r] && a.fautifs.length) voisins.push([a.ilots, a.h1, a.h2, -a.sens]);
+      for (const [nv, h1, h2, sens] of voisins) {
+        const b = anneau(r, nv, h1, h2, sens);
+        if (!b) continue;
+        const as = cur.as.slice();
+        as[r] = b;
+        const sig = signature(as);
+        if (vus.has(sig)) continue;
+        vus.add(sig);
+        pousser(noter(as, cur.change + 1));
+      }
+    }
+  }
+  if (!meilleur) return null;
+  return formesDe(meilleur.as);
 }
 
 // UN ANNEAU ROULE SUR LA CHAUSSÉE, ET CELA SE MESURE SUR SA VOIE (v387). On

@@ -20,6 +20,35 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v435 — Les anneaux se partagent la place
+
+**Pourquoi.** À Toronto, Dublin et Lima, l'anneau de voitures qu'on voit en
+arrivant roulait encore sur la place centrale : 31, 22 et 20 pas de voie hors
+de la chaussée. Son contour existait, mais chaque anneau se cherchait SEUL,
+pendant que ses voisins restaient immobiles : tout contour suivait alors la
+voie d'un voisin au-delà de la barre de partage. Aucun ordre n'y changeait
+rien (mesuré : les vingt-quatre ordres de Tokyo rendent les mêmes 56 pas).
+
+**Ce que ça change.** Une recherche CONJOINTE, qui ne tourne que là où la
+phase 4 laisse des pas hors de la chaussée : un pas de la recherche change un
+îlot d'un anneau quelconque, et la note est celle de tous à la fois. Toronto
+31 → 0, Dublin 22 → 3, Lima 20 → 2 ; 840 → 772 pas sur toutes les villes,
+61 → 58 anneaux fautifs, 9 → 6 villes dont une voie passe sur le centre.
+Aucun point de la ville ne perd sa voiture (comparé point par point), la
+voiture reste en vue depuis la place, et les 259 autres villes sont
+identiques au bit près, tabliers compris. Tokyo et Dubaï restent : mesuré,
+aucune configuration ne tient (de l'eau sans tablier et la place autour du
+nœud central, le seul détour suit un voisin dans le même sens).
+
+**Ce qui le prouve.** Un verdict neuf de `carteMonde.js`, « deux anneaux qui
+se disputent la place la contournent ensemble » (31/22/20 sur `origin/main`,
+0/3/2 ici, barre 5), et les deux barres du compte des pas et de la place
+resserrées au milieu (59 anneaux, 806 pas ; 7 villes). Sonde
+`tests/sonde-anneaux-villes.cjs` sur les 262 villes, avant et après ;
+comparaison des tracés et des tabliers des deux arbres (3 villes changées,
+0 tablier).
+
+
 ## v434 — Le dérapage laisse des traces
 
 **Pourquoi.** Depuis le frein à main (v409), la voiture dérape comme dans GTA :
