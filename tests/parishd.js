@@ -992,7 +992,7 @@ function verifier(nom, ok, detail = '') {
     verifier('un passant lancé sur un banc ou une colonne du trottoir s\'arrête devant au lieu de passer au travers',
       !terr.err && terr.meubles.length >= 2 && terr.dedans.every((n) => n === 0) && terr.avance.filter((a) => a > 0.15).length >= terr.meubles.length - 1,
       JSON.stringify(terr));
-    // ── ET UNE TERRASSE ARRÊTE LA VOITURE DE L'ENFANT (v434) ────────────────
+    // ── ET UNE TERRASSE ARRÊTE LA VOITURE DE L'ENFANT (v436) ────────────────
     //
     // La seconde moitié de la dette de la v288 : la table et les chaises d'un
     // café n'étaient pas des blocs, et la voiture (`mobilierDevant`, main.js)

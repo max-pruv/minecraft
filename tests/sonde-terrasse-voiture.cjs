@@ -1,4 +1,4 @@
-// UNE TERRASSE ARRÊTE LA VOITURE DE L'ENFANT (v434) — le témoin de
+// UNE TERRASSE ARRÊTE LA VOITURE DE L'ENFANT (v436) — le témoin de
 // `parishd.js`, joué seul sur une page de Paris (hd=2). La fonction est LUE
 // dans parishd.js (v400) : une copie de sonde finit par diverger du témoin.
 //   node tests/sonde-terrasse-voiture.cjs [chemin/vers/un/autre/arbre/tests]

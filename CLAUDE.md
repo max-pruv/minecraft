@@ -2336,7 +2336,7 @@ engendrées. Quatre règles.
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
 
-## La voiture s'arrête devant une terrasse (v434) — une famille d'obstacle lit la même règle pour tous ceux qui butent
+## La voiture s'arrête devant une terrasse (v436) — une famille d'obstacle lit la même règle pour tous ceux qui butent
 
 Une règle. `mobilierDevant` (main.js) ne lisait que les blocs de mobilier
 (`isProp`) ; la table, les chaises, le banc et la colonne de la couche HD ne

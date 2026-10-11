@@ -1608,7 +1608,7 @@ function updateChunks() {
   // Manhattan. Même garde que pour la circulation : on ne bloque que si l'on
   // n'est pas DÉJÀ dedans (player.js), sinon une voiture garée contre un
   // banc ne repartirait plus.
-  // ET LA TERRASSE DE CAFÉ NON PLUS (v434). La table et les chaises de la
+  // ET LA TERRASSE DE CAFÉ NON PLUS (v436). La table et les chaises de la
   // couche HD (v288) ne sont pas des blocs : la voiture les traversait. On
   // demande la règle qui les pose (`world.mobilierVu`, v425 — seulement le
   // mobilier MONTRÉ, sinon une tablette sans couche HD aurait des tables

@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v434 — La voiture s'arrête devant les terrasses
+## v436 — La voiture s'arrête devant les terrasses
 
 **Pourquoi.** La table et les chaises d'un café de Paris sont dessinées par la
 couche HD (v288) : ce ne sont pas des blocs. Les passants les contournent
