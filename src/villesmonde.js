@@ -4418,7 +4418,7 @@ function anneauxCalcules(f) {
         if (pas < mieux && pointsVus(f, formes.map((fo) => fo.pts)) >= vusAvant) { meilleur = ordre; mieux = pas; }
       }
       jouer(meilleur || naturel, meilleur ? 'neuve' : 'avant');
-      // ET CE QUE L'ORDRE NE RÈGLE PAS SE CHERCHE ENSEMBLE (v433) : voir
+      // ET CE QUE L'ORDRE NE RÈGLE PAS SE CHERCHE ENSEMBLE (v435) : voir
       // `contournerEnsemble`. Seulement s'il reste des pas, et seulement
       // pour en laisser moins sans qu'un point de la ville perde sa voiture.
       let pasFin = meilleur ? mieux : pasAvant;
@@ -4703,7 +4703,7 @@ function couvertureGardee(seuls, neuf) {
   return true;
 }
 // Quels points de la ville une voiture voit (un octet par point), avec la
-// règle du témoin : la garde de la recherche conjointe (v433) les compare un
+// règle du témoin : la garde de la recherche conjointe (v435) les compare un
 // à un.
 function vusDeVille(f, traces) {
   const echs = traces.map(echantillons), points = pointsDeVille(f, true);
@@ -4935,7 +4935,7 @@ function contourner(f, c, ponts, quai = true, autres = [], accepte = null) {
   return { pts: null };
 }
 
-// DEUX ANNEAUX QUI SE DISPUTENT LA PLACE SE CHERCHENT ENSEMBLE (v433).
+// DEUX ANNEAUX QUI SE DISPUTENT LA PLACE SE CHERCHENT ENSEMBLE (v435).
 // Tokyo, Toronto, Dubaï : les deux anneaux d'arrivée passent par le nœud
 // central, sur la même rue en sens contraires, et un troisième (Tokyo) a
 // déjà contourné la place par la rue d'à côté. Chacun, cherché SEUL, trouve

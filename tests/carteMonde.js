@@ -5024,7 +5024,7 @@ const VRAIES_KM = [
       // v418 : 87 anneaux et 2 257 pas avant le contour à contresens et les
       // rues du Strip, 75 et 1 228 après. v432 (la vue sur la voie, la
       // couverture à la règle de ce fichier, plusieurs ordres, une rangée
-      // d'un coup) : 61 et 840. v433 (la recherche conjointe) : 58 et 772.
+      // d'un coup) : 61 et 840. v435 (la recherche conjointe) : 58 et 772.
       // Barres au milieu.
       contour.anneaux <= 59 && contour.pas <= 806 && contour.total >= 809,
       `${contour.anneaux}/${contour.total} anneaux, ${contour.pas} pas hors de la chaussée`
@@ -5046,12 +5046,12 @@ const VRAIES_KM = [
     // lisait l'AXE de la rue à trente blocs ; la voiture roule sur sa VOIE, et
     // une voie à trente-six blocs montre encore une voiture (`VU_CONTOUR`).
     // Mesuré : neuf villes en v432, vingt-deux sur la v421 ; six depuis la
-    // v433 (Toronto, Dublin et Lima se contournent ensemble, voir plus bas ;
+    // v435 (Toronto, Dublin et Lima se contournent ensemble, voir plus bas ;
     // restent Rio, Tokyo, Dubaï — TASKS.md). Barre au milieu.
     verifier('l\'anneau qu\'on voit en arrivant fait le tour de la place au lieu de la traverser',
       contour.surLaPlace.length <= 7,
       `${contour.surLaPlace.length} ville(s) dont une voie passe sur le centre : ${contour.surLaPlace.join(', ')}`);
-    // DEUX ANNEAUX QUI SE DISPUTENT LA PLACE SE CHERCHENT ENSEMBLE (v433).
+    // DEUX ANNEAUX QUI SE DISPUTENT LA PLACE SE CHERCHENT ENSEMBLE (v435).
     // À Toronto, Dublin et Lima, l'anneau qu'on voit en arrivant passait sur
     // le centre, et chacun, cherché seul, ne trouvait que des contours sur la
     // voie d'un voisin (aucun ordre n'y changeait rien). La recherche

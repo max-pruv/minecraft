@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Les anneaux se cherchent ensemble (v433) — ce qu'aucun ordre ne règle se cherche sur l'état de tous
+## Les anneaux se cherchent ensemble (v435) — ce qu'aucun ordre ne règle se cherche sur l'état de tous
 
 Toronto, Dublin, Lima : l'anneau d'arrivée sur la place, chaque contour trouvé
 seul suivait un voisin immobile. Trois règles.
@@ -994,6 +994,22 @@ borné à `PENTE_MAX`. `player.atterrissage` est un ÉVÉNEMENT daté, comme
 `choc` : on retient son `t` et l'on ne réagit qu'à un `t` neuf, jamais à celui
 qu'on trouve en montant. Le témoin fige le champ par une propriété qui ignore
 ce qu'on lui écrit (v358), et lit la pente dans la matrice monde.
+
+**Les traces de pneus (v434).** `src/traces.js`, appelé par `sensations.js`
+(pose) et `fun.js` (effacement, chaque image). Quatre règles.
+**UN APPEL POUR TOUTES** : un `InstancedMesh` borné (`MAX_TRACES`), l'opacité
+par instance (le greffon `aAlpha` des flammes, clé `traces-alpha`), la plus
+vieille cède sa place, un essaim vide est caché. **AUCUN PROGRAMME EN JEU** :
+`chaufferTraces` compile l'essaim exact à l'accueil ; le témoin lit les clés
+(une neuve si la chauffe est désarmée, vérifié). **LA TRACE SE POSE SUR CE
+QUI PORTE LA ROUE** (`coteSousRoue`) : tablier, puis surface continue, puis
+dessus du bloc, un centième au-dessus, et rien si l'écart à la voiture
+dépasse un bloc. **COUPÉ DU DESSIN EN RENDU LOGICIEL** (mesuré : un
+cinquième de la cadence du banc, `sonde-traces-cout.cjs`) mais POSÉ quand
+même : un témoin qui juge ce que la tablette voit force
+`reglageTraces.dessin = true` (ou `?traces=1`). Et une piste de témoin qui
+dérape se pose LARGE : la dérive pousse la voiture de côté, et sur treize
+blocs elle tombait de la plate-forme (`enLair`, zéro trace au frein à main).
 
 ## Un contour dans l'autre sens, et les rues du Strip (v418) — ce qui empêchait le contour n'était pas l'absence de rue
 
@@ -2358,6 +2374,23 @@ engendrées. Quatre règles.
   journal vide dans le jeu, trois rouges de `maj.js`. Après tout conflit dans un
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
+
+## Les terrasses de café reviennent (v433) — une règle qui lit un bloc se relit quand le bloc se découpe
+
+Une règle.
+
+- **QUAND UN BLOC SE DÉCOUPE EN BANDES, ON CHERCHE CE QUI LISAIT LE BLOC
+  ENTIER.** La v301 a fait d'un rez-de-chaussée trois blocs (soubassement,
+  vitrage, enseigne) ; la règle des terrasses (v288) cherchait encore
+  `ARCHI.VITRINE` à un bloc au-dessus du trottoir — c'est-à-dire le VITRAGE
+  (`VITRINE_MI`) désormais. Zéro terrasse dans six quartiers pendant cent
+  quarante versions, et aucun témoin ne le voyait : celui des potelets
+  comptait la fonte, pas le cannage. Mesuré par la sonde qui compte ce qui
+  borde le trottoir à y+1 quartier par quartier. `grep -n "ARCHI.<ancien>"`
+  le jour où l'on découpe un bloc, comme le verre dans les murs. L'ancien bloc
+  reste lu (un enfant a pu le poser). La règle d'avant se rejoue
+  (`buildChunkTampons(…, { devantures: false })`) : c'est elle que lit
+  l'empreinte des 490 morceaux, au bit près.
 
 ## Le mobilier de trottoir arrête les passants (v425) — on bute sur ce qu'on voit
 
