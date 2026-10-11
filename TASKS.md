@@ -22,8 +22,17 @@
   parcours de scène mesuré à 4,7 ms médian à Paris. Piste : le témoin
   attend un nombre de blocs parcourus, borné ; il devrait dire la cadence
   dans son message.
-- [ ] **LE JOURNAL DE BORD APRÈS LA FLOTTE ALLÉGÉE (#418) — À RELIRE SUR L'iPHONE.** (1) Une
-  fois la flotte allégée (#418) en production, lire `journal_appareil`
+- [ ] **LE JOURNAL DE BORD APRÈS LA FLOTTE ALLÉGÉE (v413, #418) — À RELIRE SUR L'iPHONE.**
+  RELEVÉ DU 11 OCTOBRE (lu dans `journal_appareil`, données d'appareil) :
+  depuis la v413, l'iPhone n'a joué que deux sessions courtes, ZÉRO plantage
+  — ligne 92 (9 s, 15 textures) et ligne 93 (55 s, 99 textures au dernier
+  relevé, 343 géométries, 20 i/s, palier `bas` par sûreté). Dernière session
+  plantée avant la v413 : ligne 90 (v411), 352 textures et 1 411 géométries
+  après 21 relevés. Trop tôt pour dire que les textures plafonnent : une
+  minute de jeu ne dit rien d'une panne qui venait après plusieurs minutes.
+  À relire après une vraie partie, avec le champ `gpu` de la v419.
+  (1) Une
+  fois une vraie partie jouée, lire `journal_appareil`
   (appareil `n4dhwysj5tmmsinqeou`) : plantages ou non, et le champ `gpu` des
   relevés (texMo, geoMo) — qui plafonne ou non. (2) Si l'iPhone plante encore
   avec une mémoire graphique stable, la piste déclarée est le clone de
