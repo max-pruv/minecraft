@@ -2424,7 +2424,7 @@ Les deux rouges réseau récurrents du palier C. Trois règles.
 
 ## Quatre témoins qui se placent (v413) — une page sur l'accueil n'est pas gratuite
 
-Quatre rouges récurrents des portails, tous démontés par une sonde. Quatre règles.
+Quatre rouges récurrents des portails, tous démontés par une sonde. Cinq règles.
 
 - **UNE PAGE RESTÉE SUR L'ACCUEIL COÛTE UN CŒUR ET PLUS.** L'accueil rend le
   monde derrière lui : deux pages ouvertes et oubliées occupent 2,4 à 3,7 cœurs
@@ -2439,6 +2439,14 @@ Quatre rouges récurrents des portails, tous démontés par une sonde. Quatre r�
   page qui rend mal, on appuie par le document, après avoir vérifié ce que
   l'enfant voit (actif, visible, à découvert par `elementFromPoint`) — et ce
   qui s'ouvre entre deux (un second écran d'identité) se ferme avant de juger.
+- **UNE PAGE QUE LA SUITE GARDE OUVERTE JOUE SA JOURNÉE.** La cascade
+  « pas aux commandes » de `monte.js` tombait à 45,8 minutes de la suite :
+  l'arrêt quotidien de 45 minutes (invariant 2) sur `tab`. Le jeu se met en
+  pause, et tout témoin suivant mesure une partie arrêtée. `jouerSeul` pose
+  des déblocages du jour (`unlocks`), comme le code parental — la donnée qui
+  gouverne, jamais la règle (`sonde-limite-du-jour.cjs`). Devant une cascade
+  qui va et vient avec la DURÉE d'une suite, on additionne les durées des
+  témoins jusqu'au premier rouge avant toute autre hypothèse.
 - **UNE JOURNÉE SE RANGE SOUS LA DATE LOCALE.** Le répit de quiz du banc ne
   valait que pour la journée du lancement : un portail qui passe minuit (20 h
   à New York) retrouvait un quiz quinze minutes plus tard, en pleine suite.

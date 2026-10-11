@@ -7,7 +7,7 @@
 export const NOUVEAUTES = [
   {
     v: 413,
-    titre: 'Les essais du jeu sont plus sûrs',
+    titre: 'Des essais du jeu plus sûrs',
     puces: [
       'Moins de fausses alertes',
     ],

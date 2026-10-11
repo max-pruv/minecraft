@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v413 — Les essais du jeu sont plus sûrs
+## v413 — Des essais du jeu plus sûrs
 
 **Pourquoi.** Chaque livraison des sessions parallèles paie un portail de près
 de deux heures, puis une « double mesure » de rouges qui reviennent portail
@@ -43,9 +43,11 @@ les vrais rouges.
   passait de 4 s à 39–44 s et touchait la borne de 45 s. Le témoin passe en
   tête de suite, et la partie d'un témoin précédent se ferme après son
   verdict.
-- Le banc rouvre le répit de quiz de la journée COURANTE : une suite qui
-  passait minuit retrouvait un compte à rebours, et un quiz quinze minutes
-  plus tard.
+- La cascade « pas aux commandes » de `monte.js` était l'ARRÊT QUOTIDIEN :
+  elle tombait à 45,8 minutes de la suite, la limite de 45 minutes de jeu par
+  jour sur la page que la suite garde ouverte. Le banc ouvre la journée comme
+  le code parental (des déblocages du jour), et rouvre aussi le répit de quiz
+  de la journée COURANTE : une suite qui passait minuit retrouvait un quiz.
 - Le flanc frôlé se pose dans le repère de la voiture garée : elle s'arrête au
   coin de son anneau, en biais, et la pose écrite pour une voiture droite la
   manquait à chaque fois.
@@ -53,13 +55,13 @@ les vrais rouges.
 **Ce qui le prouve.** Sous trois cœurs chargés, `realisme.js` meurt au clic
 sur `origin/main` et va au bout sur la branche (18/18). `maj.js` rejouée seule :
 branche 3/3 verte, `origin/main` 2/2 rouge (« vraiment là », « ne floute
-rien »). Sonde de minuit : quiz à 15,8 et 15,5 s avec l'ancien répit, aucun
-avec le neuf. Flanc : 3/3 rouge seul des deux côtés avant, 3/3 vert après.
+rien »). Sonde de la limite du jour : banc d'avant arrêté 2/2, banc neuf en jeu 2/2.
+Sonde de minuit : quiz à 15,8 et 15,5 s avec l'ancien répit, aucun avec le neuf. Flanc : 3/3 rouge seul des deux côtés avant, 3/3 vert après.
 Chaque témoin peut encore rougir, désarmé dans une copie : « Jouer » grisé ou
 recouvert → rouge ; le choc contre la rue lu sans sa boîte → choc franc, rouge ;
 la préparation libérée sans attendre la carte → carte absente à la libération.
 Sondes : `sonde-realisme-clic`, `sonde-jouer-couvert`, `sonde-prep-duree`,
-`sonde-voisines`, `sonde-quiz-minuit`, `sonde-flanc`.
+`sonde-voisines`, `sonde-quiz-minuit`, `sonde-limite-du-jour`, `sonde-flanc`.
 
 ---
 

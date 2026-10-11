@@ -4846,7 +4846,18 @@ l'embarquement a eu lieu, pas par une hypothèse.
   glisser bridé ×4 (425 ms, déclaré au portail de la v359) et `monte.js` les
   passants de Rome (21 % pour 20, le tirage de la v291, déclaré à la v319).
 
-- [x] **LA CASCADE « cible: quiz » — UN MÉCANISME TROUVÉ EN v413 : MINUIT.**
+- [x] **LA CASCADE « pas aux commandes » DE `monte.js` — TROUVÉE EN v413 :
+  L'ARRÊT QUOTIDIEN.** Au portail de la v413 (avant correction), elle est
+  tombée à 45,8 minutes de la suite, au témoin près : « à pleins gaz… le mur
+  du son » (trois compteurs figés à 802 km/h : `majBoutonsVehicule` n'écrit
+  rien quand `running` est faux), « tirer le joystick fait RECULER »,
+  « un avion se repousse », « pas au volant ». C'est la limite de 45 minutes
+  de jeu par jour (invariant 2) sur `tab`, que la suite garde ouverte d'un
+  bout à l'autre : un portail lent la franchit, un rapide non. Sonde
+  `sonde-limite-du-jour.cjs` (jeu posé à cinq secondes de la limite) : banc
+  d'avant 2/2 arrêté, banc neuf 2/2 en jeu — `jouerSeul` pose huit
+  déblocages du jour (`unlocks`), comme le code parental.
+- [x] **LA CASCADE « cible: quiz » — UN SECOND MÉCANISME TROUVÉ EN v413 : MINUIT.**
   `today()` range la journée sous la date LOCALE ; `jouerSeul` n'ouvrait le
   répit que de la journée du lancement. Une suite qui passe minuit (minuit UTC
   est 20 h à New York, l'heure des portails du soir) retrouve un compte à
