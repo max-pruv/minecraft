@@ -1653,6 +1653,18 @@
   **CRISSEMENT AU FREIN À MAIN FAIT en v437** ; (12) le frein à main ne se voit
   pas chez l'ami au-delà de la dérive qui voyage déjà (`p.v.r`) — **FAIT en v438** : `p.v.m`, et ses traces
   naissent chez l'ami.
+- [ ] **AU PORTAIL DE LA v438 (la voiture de l'ami braque), DES ROUGES QUI NE
+  SONT PAS LA LIVRAISON — mesurés.** « en virage, la caméra laisse la voiture
+  glisser sur le côté du cadre » (`monte.js`) : 4,5° au portail pour une barre
+  à 6 ; rejoué SEUL, branche 9,2 · 16,2, `origin/main` 18,1 · 12,7 · 9,6 — la
+  même distribution, et le témoin lit la caméra contre `player.yaw`, que la
+  livraison ne touche pas (elle ne tourne que le maillage). Un TIRAGE sous la
+  charge, à surveiller. Rouges AUSSI sur `origin/main` rejouée seule : le
+  passant de Rome en biais, « un passant lancé sur la voiture de l'enfant…
+  la contourne » (traverses 11 au portail, 4 sur `origin/main` — NEUF ET
+  DÉCLARÉ), la chauffe de New York, et dans `visio.js` « pendant l'appel la
+  radio parle plus bas » (avant 0,0000 des deux côtés : la radio ne joue pas
+  avant l'appel — NEUF ET DÉCLARÉ). `reseau.js` : la famille « sans courtier ».
 - [ ] **AU PORTAIL DE LA v437 (le frein à main crisse), UN ROUGE NEUF QUI N'EST
   PAS LA LIVRAISON — preuve structurelle (v291).** « à Rome aussi, en biais, un
   passant traverse sur le passage peint d'un carrefour sans feu » (`monte.js`,
