@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v413 — Des essais du jeu plus sûrs
+## v422 — Des essais du jeu plus sûrs
 
 **Pourquoi.** Chaque livraison des sessions parallèles paie un portail de près
 de deux heures, puis une « double mesure » de rouges qui reviennent portail
@@ -62,6 +62,252 @@ recouvert → rouge ; le choc contre la rue lu sans sa boîte → choc franc, ro
 la préparation libérée sans attendre la carte → carte absente à la libération.
 Sondes : `sonde-realisme-clic`, `sonde-jouer-couvert`, `sonde-prep-duree`,
 `sonde-voisines`, `sonde-quiz-minuit`, `sonde-limite-du-jour`, `sonde-flanc`.
+
+---
+
+## v421 — Des passages piétons dans les rues en biais
+
+**Pourquoi.** Dans les villes du monde, les bandes blanches d'un passage
+piéton étaient peintes DANS la tuile d'un bloc. Une tuile ne se tourne pas :
+seules les 65 villes dont les rues suivent le nord et l'est avaient leurs
+passages. Rome, Zurich et toutes les villes aux rues en biais n'en avaient
+aucun, et leurs passants ne traversaient qu'aux feux (v402).
+
+**Ce que ça change.** 197 villes engendrées ont désormais leurs passages
+piétons à l'abord de chaque carrefour, des bandes blanches dans l'axe de la
+rue, dessinées par le mailleur au-dessus de l'asphalte. Elles se voient sur
+toutes les tablettes, palier bas compris, et les passants y traversent quand
+aucune voiture n'arrive, dans l'axe de leur rue. Aucun bloc n'est écrit : le sol
+et les constructions des enfants ne bougent pas.
+
+**Ce qui le prouve.** Un témoin de `plafond.js` maille quarante-neuf morceaux au
+centre de quatre villes avec et sans les bandes : des sommets en plus à Rome
+(2 699) et à Zurich (7 035), aucun à Kyoto ni à Paris, et les blocs identiques.
+L'empreinte des 490 morceaux de la v352 est inchangée. Un témoin de `monte.js`
+pose six passants au bord d'un passage de Rome loin de tout feu et compte qui
+traverse SUR le passage : 2 sur 2, 2 sur 3, 3 sur 3 sur la branche ;
+`origin/main` n'a pas de passage en biais (rouge, et il le dit). Captures avant
+et après d'un carrefour de Rome et de Zurich : les bandes sur les quatre bras. Le coût est de 0,5 ms par morceau en médiane sous node,
+5 ms au pire.
+## v420 — L'arrivée d'une téléportation découpée
+
+**Pourquoi.** Après une téléportation, l'écran se fige encore un instant en
+arrivant dans une ville, et personne ne savait où passait ce temps : la v403
+avait retiré le gel des enfants qui ont beaucoup bâti, il restait une pire
+image de 250 à 380 ms que rien n'attribuait.
+
+**Ce que ça change.** Le jeu ne demande plus le nom de la carte graphique à
+chaque morceau franchi : c'était un aller-retour synchrone avec le processus
+du GPU, refait à chaque reconstruction de la file de maillage, 120 à 336 ms
+dans la première seconde d'une arrivée à Paris (profil). Et l'arrivée est
+découpée : en scène vide, la première image lente est la circulation qui
+fabrique d'un coup toutes ses voitures en vue (160 à 290 ms, `Convoi.montrer`),
+puis le fil principal qui engendre des morceaux pour les personnages (66 à
+94 ms) — deux dettes nommées pour les sessions qui tiennent ces fichiers.
+
+**Ce qui le prouve.** Un témoin dans `monte.js` : six morceaux franchis en
+vol, zéro demande du nom du pilote (huit sur l'ancien code). Une sonde,
+`sonde-arrivee-decoupe.cjs`, qui découpe chaque image de l'arrivée (travail,
+rendu, installation, génération) et profile la première seconde ; le gain ne
+se voit pas en durée d'image au banc (pire image 283 à 367 ms contre 283 à
+383), parce que l'attente se cachait dans des images déjà lentes — il se
+transpose à la tablette comme un appel synchrone de moins par morceau.
+
+## v419 — Paris rejoint Lyon
+
+**Pourquoi.** Paris–Lyon était dans la liste du kit « monde fidèle » depuis la
+v310, laissé de côté tant que `paris.js` était la zone d'une autre session, et
+parce que le TGV court sur l'axe direct : une route qui le croise poserait son
+remblai sur le ballast. Et Paris n'avait qu'une destination pour toutes ses
+autoroutes : l'entrée de chaque route menait à la Gare du Nord, au nord de la
+ville — une route arrivant du sud aurait traversé tout Paris en diagonale.
+
+**Ce que ça change.** L'A6, l'autoroute du Soleil, sort de Paris plein sud par
+la porte d'Italie et descend vers Lyon à l'ouest du TGV, dans la plaine (à l'est
+du rail, un massif de près de soixante blocs), avec un seul pont sur un
+ruisseau. Dans
+Paris, une avenue mène de la porte à la place d'Italie, au bout des Gobelins
+et du boulevard Arago ; à Lyon, la route entre par l'axe de sa trame, de
+l'autre côté de la ville que l'A7. Vingt voitures font l'aller-retour, et de
+Lille on peut désormais rouler jusqu'à Marseille.
+
+**Ce qui le prouve.** Un témoin neuf de `carteMonde.js`, rouge sur l'ancien
+code (ni convoi ni entrée) : l'A6 n'a aucun rail sous son emprise, ne frôle ni
+Paris ni Lyon hors de ses tronçons radiaux, ses deux entrées de Paris roulent
+sur la chaussée sans un bloc à hauteur de carrosserie et finissent au bout
+d'une voie nommée, et celle de Lyon arrive sur la rue. Les témoins de toutes
+les routes (profil, déblai 4,1, remblai 1,1, aérodromes, sanctuaires, emprise
+partagée) la lisent sans changement. L'empreinte des 490 morceaux change —
+Paris en est un des neuf lieux — et se prouve : l'A6 retirée, la branche rend
+la constante d'avant au bit près, et les quatre-vingt-cinq colonnes qui
+diffèrent sont toutes à moins de 11,2 blocs de l'axe de l'entrée.
+
+---
+
+## v418 — Les voitures contournent la place, et Las Vegas a ses rues
+
+**Pourquoi.** Après la v404, des anneaux de voitures roulaient encore hors de
+la chaussée : 2 257 pas. Deux familles, mesurées. Dans une vingtaine de villes,
+des anneaux traversaient toujours la place centrale et sa fontaine : un contour existait,
+mais il aurait suivi la voie d'un autre anneau (deux convois l'un dans
+l'autre). Et à Las Vegas, la bande du Strip ne tient qu'une rue de la trame :
+les rues voisines tombaient dans le sable, 689 pas dans le désert.
+
+**Ce que ça change.** Un anneau qui ne peut pas contourner dans son sens le
+fait dans l'autre, sur l'autre voie de la même rue : il croise ses voisins au
+lieu de les suivre, et il ne passe plus par la fontaine (Barcelone, Sydney, Stockholm,
+La Havane, Turin, Budapest, Delhi, Dubaï, São Paulo, Prague…). À Las Vegas, une
+grille de rues entoure le Strip comme dans la vraie ville (Paradise, Koval,
+Frank Sinatra, Industrial) : de l'asphalte nu dans le sable, sans un immeuble
+de plus. La ville gagne un quatrième circuit.
+
+**Ce qui le prouve.** Le témoin des anneaux hors chaussée de `carteMonde.js`
+resserre ses barres (rouge sur `origin/main`), et un témoin neuf garde le
+désert de Las Vegas : rien que du sable et de l'asphalte hors de la bande,
+aucun lot. Une sonde compare les deux arbres ville par ville : aucun circuit
+perdu, la couverture ne baisse nulle part (Las Vegas 90,6 → 98,9 %), la
+voiture la plus proche du centre reste à moins de 30 blocs. Anneaux hors
+chaussée : 87 → 75, 2 257 → 1 228 pas ; Las Vegas 689 → 21 pas, trois →
+quatre circuits. Le coût du dépliage ne bouge pas, et l'empreinte des 490
+morceaux est celle d'`origin/main`.
+
+---
+## v417 — Le monde arrive à temps au-dessus des villes
+
+**Pourquoi.** Le témoin qui vérifie que l'avion ne dépasse pas le monde en
+train de se charger volait au-dessus d'un désert, où un morceau coûte trois
+fois moins qu'à Paris. Il disait « ça tient » là où l'enfant ne vole jamais, et
+rien ne disait si les vitesses des avions (95 et 120 blocs par seconde)
+tenaient au-dessus d'une vraie ville. Et le gel à l'arrivée d'une
+téléportation se mesurait sur un banc qui n'avait jamais rien construit.
+
+**Ce que ça change.** Rien dans le jeu : c'est une livraison de mesure. Les
+vitesses des avions tiennent au-dessus de Paris et de Londres avec le réglage
+que la tablette joue en vol (ordre en cône, recharge à l'arrivée) : le monde
+est chargé 122 à 152 blocs devant l'avion, pour 48 à 60 demandés. Et la v403
+avait déjà retiré le gel de téléportation des enfants qui ont beaucoup bâti :
+avec 80 000 blocs, l'ancien code ne finissait pas de charger Paris en vingt
+secondes.
+
+**Ce qui le prouve.** Un témoin dans `monte.js` qui traverse Paris et Londres
+en avion, au réglage de la tablette (vert, deux fois la barre ; avec l'ordre du
+banc, Paris rend 45 pour 60 : il peut rougir). Une sonde,
+`sonde-arrivee-journal.cjs` : à l'arrivée à Paris en scène vide avec 80 000
+blocs, l'ancien code met 14 s à charger la moitié du disque et passe 3,3 s du
+fil principal à fabriquer des morceaux ; la v403, 3,4 s et 0,3 s, comme sans
+journal.
+
+## v416 — San Diego a son second circuit
+
+**Pourquoi.** Trois villes engendrées n'avaient qu'un circuit de voitures
+(San Diego, San José, Guayaquil) : la v404 avait donné à huit ports la même
+boucle dans l'autre sens, et ces trois-là restaient. Mesuré : à San Diego, le
+contresens était écarté avant même qu'on cherche à le faire passer ailleurs,
+parce que sa voie extérieure longeait l'eau sur plus de vingt-quatre blocs
+(la longueur d'un pont) — alors que les tabliers déjà posés la couvrent.
+
+**Ce que ça change.** À San Diego, les voitures font le tour dans les deux
+sens, sur la chaussée et les ponts existants ; aucun bloc du sol ne change.
+San José et Guayaquil gardent un circuit, et c'est mesuré : leur place
+centrale occupe le nœud du milieu, le grand anneau est le seul cycle de leur
+trame, et sa voie extérieure passe sur la mer (San José, une quarantaine de
+blocs le long de la côte) ou sur la plage (Guayaquil). Les deux remèdes
+changent le sol (un rayon plus grand, une place déplacée, un quai sur
+pilotis) : c'est une décision, déclarée.
+
+**Ce qui le prouve.** Le témoin « villes à un seul circuit » de
+`carteMonde.js` passe sa barre de six à deux : 3 sur `origin/main`, 2 ici.
+Une sonde compare les deux arbres ville par ville : seule San Diego change
+(1 → 2 circuits, couverture 100 %, voiture à 30 blocs du centre), aucun pas
+de voie sur l'eau hors tablier, partage nul avec son anneau.
+
+---
+
+## v415 — Londres rejoint Birmingham
+
+**Pourquoi.** Londres–Birmingham était le corridor court sans rail du kit
+« en attente » depuis la v323 : une autre session élargissait les rues de
+Londres. C'est livré (v339) ; restait à trouver un passage. L'axe direct est
+barré par une crête de 46 à 55 blocs, nord-sud, et l'ouest de Londres bute sur
+un mur de collines qui finit dans la marge de Heathrow.
+
+**Ce que ça change.** La M40 sort de Londres par le nord, monte vers le seul
+col de la crête (41 à 46 blocs, à la latitude de Birmingham), passe deux
+ruisseaux sur des ponts et entre dans Birmingham par l'axe de sa trame. Dans
+Londres, une entrée en ligne droite mène de la porte nord à Pentonville Road,
+devant King's Cross ; vingt voitures font l'aller-retour. Une maison de la
+vieille trame générique, qui se posait encore dans l'anneau extérieur de
+Londres et barrait cette entrée, cède désormais à la route et à son entrée.
+
+**Ce qui le prouve.** Un témoin neuf de `carteMonde.js` (rouge sur l'ancien
+code : ni convoi ni entrée) : la M40 n'a aucun rail sous son emprise, ne frôle
+aucune de ses villes, son entrée de Londres est sur la chaussée d'un bout à
+l'autre sans un bloc à hauteur de carrosserie et finit sur une artère, celle de
+Birmingham arrive sur la rue. Les témoins de toutes les routes la lisent aussi
+(profil à six pour cent, asphalte et contact au sol, tablier libre, aucune
+emprise volée, joints des ponts fermés). L'empreinte des 490 morceaux change
+(Londres est un des neuf lieux) et se prouve : M40 retirée, la branche rend
+celle d'`origin/main` au bit près.
+## v414 — Des ponts sous toutes les voies
+
+**Pourquoi.** Dans quatorze villes engendrées, des voitures roulaient sur
+l'eau sans pont : 159 pas de voie sur un fleuve ou un canal, hors de tout
+tablier (Shanghai 46, Kyoto 24, Chicago 22, Bangkok 18, Istanbul 14,
+Stockholm 13…). Deux causes, mesurées : un tablier se mesurait sur l'AXE de la
+rue, et la voie, une demi-chaussée à côté, touche l'eau plus tôt là où la rive
+est en biais ; et un anneau que ses quarante points de contrôle voyaient au
+sec pouvait encore couper un ruisseau (la Kamo de Kyoto) — sans aucun pont.
+La v404 l'avait déclaré, avec la règle : on ne retire jamais un tablier (un
+enfant a pu bâtir dessus), on les allonge.
+
+**Ce que ça change.** Les ponts s'allongent au-dessus de l'eau là où passe la
+voie, et les petits canaux traversés ont enfin leur pont (trois sur la Kamo à
+Kyoto, vus en capture, le bus passe dessus). Aucune voiture ne roule plus sur
+l'eau. Aucune ville ne change de circuits, de voitures en vue ni de
+couverture ; aucun pont d'avant ne bouge ni ne change de pierre.
+
+**Ce qui le prouve.** Deux témoins neufs dans `carteMonde.js`, rouges sur
+`origin/main` : les pas de voie sur l'eau hors tablier (159 → 0) et « un
+tablier ne se retire pas » — par les fonctions pures, sur toutes les villes à
+pont, aucune colonne d'eau d'avant perdue ni changée de matière, 1 485 colonnes
+gagnées, toutes sur l'eau. Une sonde compare les deux arbres ville par ville :
+circuits, couverture et distance de la voiture au centre identiques au bit
+près. L'empreinte des 490 morceaux change (Rome en est) et se prouve : le même
+code, les allongements retirés, rend la constante d'`origin/main` au bit près.
+Le prix : déplier les anneaux de toutes les villes coûte 15 % de plus
+(1 070 → 1 250 ms au total, une ville à la fois à l'approche), la pire ville
+inchangée (Rome ≈ 90 ms) ; rien au démarrage.
+## v413 — Le jeu ne plante plus en roulant : la flotte partage ses images
+
+**Pourquoi.** Max : « le jeu plante de temps en temps ». Le journal de bord de
+l'iPhone (`journal_appareil`) a compté onze plantages en quarante minutes le
+10 octobre, des parties d'une à sept minutes. Le palier de sûreté était déjà
+au plus bas, la couche HD éteinte. Les journaux ne montrent ni erreur ni gel :
+la cadence reste entre 25 et 60 images par seconde, et la page meurt au milieu
+d'un relevé normal. Une seule grandeur montait d'un bout à l'autre de chaque
+partie, le nombre de textures (409 → 702 en cinq minutes). La cause est dans
+les fichiers : les cinquante modèles de voitures portent 225 images, dont
+seulement CINQ distinctes, octet pour octet. Le chargeur décodait la copie de
+chaque modèle et l'envoyait à la carte graphique, soit environ 15 Mo par
+modèle et 734 Mo pour la flotte entière, que la rue découvre à mesure que
+l'enfant roule. iOS ne prévient pas : il ferme la page. Deuxième fuite, plus
+petite : une voiture repeinte qui quittait la rue rendait au pilote la texture
+de son prototype, qu'il fallait alors renvoyer à la carte graphique pour la
+voiture suivante.
+
+**Ce que ça change.** Le chargeur reconnaît une image à son empreinte et rend
+la texture déjà décodée : toute la flotte tient dans cinq images, quelques
+mégaoctets au lieu de plusieurs centaines. Les textures partagées sont
+marquées, et une voiture qui s'en va ne les jette plus. Les voitures ne
+changent pas d'un pixel : chaque image garde son rôle (teinte ou relief) dans
+les cinquante fichiers, vérifié.
+
+**Ce qui le prouve.** Un témoin neuf dans `realisme.js` charge huit modèles
+texturés et compte les images décodées qu'ils tiennent : 36 sur l'ancien code,
+5 ici. Il repeint ensuite une voiture et la libère : aucune texture du
+prototype n'est rendue au pilote, contre dix sur l'ancien code. La preuve
+sur le téléphone viendra du journal de bord : des parties longues sans
+plantage, et un compte de textures qui ne grimpe plus.
 
 ---
 
@@ -318,6 +564,7 @@ centre reste à 30 blocs, aucun tablier n'est retiré (642 colonnes d'eau en
 gagnent un), et le relief ne bouge pas. Le prix, déclaré : le premier
 dépliage d'une ville coûte plus cher (Rome ≈ 57 → 85-100 ms, une fois, à 220
 blocs de la ville).
+
 ## v403 — Le monde se charge aussi vite chez qui a beaucoup bâti
 
 **Pourquoi.** Chaque morceau de monde que le jeu fabrique reçoit les blocs que

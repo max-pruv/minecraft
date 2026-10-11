@@ -514,6 +514,61 @@ export function allureDe(fichier, secours = 3.4) {
 }
 
 const chargementsFlotte = new Map();
+
+// CINQ IMAGES POUR TOUTE LA FLOTTE, ET CHAQUE MODÈLE DÉCODAIT LES SIENNES (v409).
+//
+// Max : « le jeu plante de temps en temps ». Le journal de bord de l'iPhone
+// (`journal_appareil`, 10 octobre) : onze plantages en quarante minutes, en
+// palier bas, couche HD éteinte, AUCUNE erreur, une cadence de 25 à 60 images —
+// et un compte de textures qui grimpe d'un bout à l'autre de la partie
+// (409 → 702 en cinq minutes, 103 → 606 ailleurs). Mesuré dans les fichiers :
+// les cinquante modèles déposés portent 225 images, et il n'y en a que CINQ
+// distinctes (deux teintes de 1 024 et trois normales, octet pour octet). Le
+// chargeur glTF ne connaît qu'un fichier à la fois : chaque modèle décodait sa
+// copie et l'envoyait à la carte graphique — 14 à 15 Mo par modèle, 734 Mo pour
+// la flotte entière, que la rue découvre à mesure que l'enfant roule. iOS ne
+// prévient pas : il ferme la page.
+//
+// On reconnaît donc une image à son EMPREINTE (ses octets, pas son nom, que les
+// fichiers ne portent pas) et l'on rend la texture déjà décodée. Vérifié dans
+// les cinquante fichiers : chaque image n'y joue qu'UN rôle (teinte ou normale)
+// et aucune ne déclare de sampler — `assignTexture` lui donne donc le même
+// espace de couleur d'un modèle à l'autre. La texture partagée est marquée
+// (`partager`) : `liberer` ne la rend jamais au pilote quand une voiture
+// repeinte s'en va — sans cela elle repartait à la carte graphique à chaque
+// voiture qui revient, ce qu'elle faisait déjà avec la texture du prototype.
+const TEXTURES_FLOTTE = new Map();          // empreinte → Promise<Texture|null>
+export const texturesFlotte = () => TEXTURES_FLOTTE.size;
+function empreinteOctets(tampon) {
+  const o = new Uint8Array(tampon);
+  let h = 0x811c9dc5;
+  for (let i = 0; i < o.length; i++) h = Math.imul(h ^ o[i], 0x01000193);
+  return o.length + ':' + (h >>> 0).toString(36);
+}
+function partageDesTextures(parser) {
+  return {
+    name: 'grandtour_textures_partagees',
+    loadTexture(index) {
+      const def = parser.json.textures[index];
+      const image = def && parser.json.images[def.source];
+      // une texture étendue (basisu, webp) ou une image hors du fichier suit le
+      // chemin du chargeur, tel quel
+      if (!image || def.extensions || image.bufferView === undefined) return null;
+      const sampler = JSON.stringify((parser.json.samplers || [])[def.sampler] || {});
+      return parser.getDependency('bufferView', image.bufferView).then((tampon) => {
+        const cle = empreinteOctets(tampon) + '|' + (image.mimeType || '') + '|' + sampler;
+        let p = TEXTURES_FLOTTE.get(cle);
+        if (!p) {
+          p = parser.loadTextureImage(index, def.source, parser.textureLoader)
+            .then((t) => { if (t) { t.userData.partagee = true; } return t; });
+          TEXTURES_FLOTTE.set(cle, p);
+        }
+        return p;
+      });
+    },
+  };
+}
+
 // UN MODÈLE SE MESURE, IL NE SE DÉCLARE PAS.
 //
 // Les cinquante-et-un modèles d'origine suivent un manifeste
@@ -651,7 +706,7 @@ export function chargerVoitureFlotte(entree) {
     if(rt)modele.traverse(o=>{if(o.isMesh&&(o.material.isMeshStandardMaterial||o.material.isMeshPhysicalMaterial))refleter(o,o.material,.75);});
     const p=Promise.resolve(modele);chargementsFlotte.set(entree.fichier,p);return p;
   }
-  const chargement = new GLTFLoader().loadAsync('./vendor/voitures/' + entree.fichier)
+  const chargement = new GLTFLoader().register(partageDesTextures).loadAsync('./vendor/voitures/' + entree.fichier)
     .then((gltf) => {
       const cadre = new THREE.Group();
       // On remet le modèle au manifeste AVANT de l'accrocher : la rotation et
