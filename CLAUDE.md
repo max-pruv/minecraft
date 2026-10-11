@@ -1620,6 +1620,36 @@ Et une empreinte d'identité qui change se PROUVE : celle des 490 morceaux
 (v352) couvre Marrakech et Tokyo ; la branche, bâtisseurs neufs désarmés, rend
 l'ancienne au bit près — c'est ce qui a permis de la remplacer.
 
+## L'arrivée n'engendre plus le monde (v422) — sur le fil principal, on lit ce qui est là, on ne le fabrique pas
+
+Trois règles.
+
+- **`getBlock` FABRIQUE CE QU'IL NE TROUVE PAS, ET SUR LE FIL PRINCIPAL C'EST UNE
+  IMAGE PERDUE.** Depuis le worker (v251), le fil principal reçoit les blocs des
+  morceaux qu'il rend ; tout ce qui lit le sol AVANT — passants posés, `sweep`,
+  sondes de programme, joueur, visée, HUD, poissons, réverbères — engendrait le
+  morceau lui-même. `world.morceauxPrets(x0, z0, x1, z1)` répond sans fabriquer ;
+  un personnage dont le monde (± 4 blocs) n'est pas là ATTEND dans `update`,
+  avant `think` (ni chute, ni pas, ni sonde) ; `placeAt` diffère la pose
+  (`aPoser`) ; `posteAutour` saute un point sur un morceau absent et rend `null`
+  s'il n'y a rien, la naissance reste dans la file ; l'enfant attend son morceau
+  (`joueurAttendLeMonde`, borné à 1,5 s, jamais sans worker ni dans un morceau
+  maillé ici). La règle de la minicarte (v258), pour tout ce qui sonde.
+- **UNE FILE QUI ATTEND NE SE BLOQUE PAS SUR SA TÊTE.** Mon premier jet faisait
+  `break` sur une naissance impossible : celle de la ville QUITTÉE, dont les
+  points sont ramenés dans son disque, attendait pour toujours un monde qui ne
+  viendrait pas, et Berlin n'a eu aucun passant (le témoin l'a dit : 0). On
+  passe aux suivantes, et une ville hors de portée ne fait plus naître personne.
+- **UNE TABLE CALCULÉE AU PREMIER MORCEAU D'UNE VILLE SE MÉMORISE SUR UNE
+  GRILLE, PAS UN DICTIONNAIRE.** `feuxDeVille` relisait `solParis` jusqu'à cinq
+  fois par colonne (86 ms au premier morceau de Paris) ; un `Map` à clés
+  flottantes coûtait autant qu'il évitait, une `Int32Array` sur la boîte des
+  carrefours rend la même table (empreinte des feux identique, `Math.random`
+  figé) pour un cinquième de moins.
+
+Ce que le banc ne montre pas, et c'est dit : la pire image de l'arrivée ne bouge
+pas (267-417 ms contre 300-350) — elle est `Convoi.montrer` (vehicules.js).
+
 ## L'arrivée d'une téléportation découpée (v420) — un appel GL synchrone se lit une fois, et une trace nomme ce qu'un profil appelle « (program) »
 
 Trois règles.

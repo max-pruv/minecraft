@@ -5529,11 +5529,12 @@ l'embarquement a eu lieu, pas par une hypothèse.
   la rue d'un coup. La piste est celle des passants (v246, `naitre` par
   tranches de cinq millisecondes) : un budget de fabrication par image, la
   place restant vide une image de plus.
-  (2) **`ensureChunk` sur le fil principal : 66 à 94 ms**, appelé par le
-  `sweep` des personnages (marlon.js) et `posteAutour` des passants
-  (passants.js, `sommetColonne`) — des morceaux que le worker n'a pas encore
-  rendus. Piste : un passant ne se pose (et un personnage ne marche) que sur
-  un morceau déjà là, comme la minicarte (v258) qui n'engendre jamais.
+  (2) ~~`ensureChunk` sur le fil principal : 66 à 94 ms~~ **FAIT en v422** :
+  personnages, passants, joueur, visée, HUD, poissons et réverbères ne
+  fabriquent plus un morceau que le worker va rendre (Paris 23-40 → 0 morceau
+  en deux secondes ; témoin de `monte.js` à Berlin, 86 → 0). La pire image en
+  scène vide n'a PAS bougé (267-417 contre 300-350 ms, trois passages
+  alternés) : c'est (1).
   (3) `nbSansCroisement` (vehicules.js) 22 à 36 ms au dépliage d'un circuit.
   Fait dans ma zone (v420) : `renduLogiciel()` ne redemande plus le pilote
   (120 à 336 ms de `getParameter` par arrivée, zéro gain en durée d'image au
@@ -5558,6 +5559,14 @@ l'embarquement a eu lieu, pas par une hypothèse.
   mesure qui compte est sur l'iPad de Max ; si le lag y persiste, la piste
   est de mailler moins à l'arrivée (rayon réduit les deux premières
   secondes) ou plus vite (45 % du coût est la génération du relief).
+  *(Mesuré en v422, `sonde-arrivee-decoupe.cjs`, Paris, scène vide : depuis la
+  v422 le fil principal ne maille ni n'engendre plus rien à l'arrivée
+  (`maillageLocal` 0, `generation` 0 sur vingt secondes, contre 23 à 317 ms sur
+  `origin/main`) ; le maillage est tout entier dans le worker. Ce qui reste du
+  gel sur le fil principal est (1) de l'entrée ci-dessus — `Convoi.montrer` —
+  et le dessin, qui se relit sur la tablette. Mailler moins les deux premières
+  secondes ne réduirait que l'attente du monde, pas l'image figée : à ne
+  reprendre que si `?diag=1` sur l'iPad montre un TROU, pas un gel.)*
 
 - [ ] **Le témoin du mur a mesuré « à pied » au volant, deux fois, au
   portail de la v249** (à pied 1,1 bloc du mur, gabarit 2,2, monture

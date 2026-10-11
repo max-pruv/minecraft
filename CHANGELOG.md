@@ -20,6 +20,39 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v422 — L'arrivée n'engendre plus le monde sur le fil principal
+
+**Pourquoi.** Après une téléportation, le worker rend les morceaux autour de
+l'enfant en quelques images. Mais pendant ces images-là, tout ce qui regardait
+le sol — les passants qu'on pose, ceux qui marchent et sondent la rue, l'enfant
+lui-même, la visée, le voile de l'eau, les poissons, l'orientation des
+réverbères — demandait ses blocs à `getBlock`, qui FABRIQUAIT le morceau
+manquant sur le fil principal, dans l'image même. À Paris : 23 à 40 morceaux,
+93 à 157 ms dans la première seconde ; à Berlin, 86 morceaux et 325 ms dans la
+première seconde et quart. Et le premier morceau d'une ville payait sa table des
+feux : 86 ms à Paris, `solParis` relu jusqu'à cinq fois par colonne.
+
+**Ce que ça change.** Un personnage dont le monde n'est pas encore là attend,
+immobile, et reprend à sa place dès que le morceau arrive ; un passant ne naît
+que sur un morceau déjà rendu ; l'enfant attend son propre morceau (une ou deux
+images, une seconde et demie au plus) au lieu de le fabriquer ; un réverbère au
+bord d'un morceau se tourne vers le côté qu'on ne voit pas encore plutôt que de
+le fabriquer. La table des feux lit son sol une fois par colonne : le premier
+morceau de Paris coûte environ un cinquième de moins sous node (109 à 131 ms contre 122 à 155, machine chargée, cinq passages de chaque côté). Rien ne change dans le
+monde : mêmes blocs, mêmes feux, mêmes passants, juste pas fabriqués au
+mauvais moment.
+
+**Ce qui le prouve.** `sonde-arrivee-engendre.cjs` range chaque `generateChunk`
+du fil principal par appelant : Paris 23 à 40 → 0 morceau en deux secondes,
+Londres, Rome, Tokyo 0 à 1. Un témoin de `monte.js` saute à Berlin et compte :
+0 morceau en 1,2 s (86 sur `origin/main`), puis 18 à 22 passants posés, aucun en
+attente, dans le vide ou dans un mur. L'empreinte de toutes les tables de feux
+(`Math.random` figé, neuf villes, 169 morceaux chacune) est identique des deux
+côtés. Ce que le banc ne voit pas, et c'est dit : la pire image de l'arrivée en
+scène vide reste 267 à 417 ms (300 à 350 sur `origin/main`, trois passages
+alternés) — elle est portée par la fabrication des voitures (`Convoi.montrer`),
+une autre zone, déclarée.
+
 ## v421 — Des passages piétons dans les rues en biais
 
 **Pourquoi.** Dans les villes du monde, les bandes blanches d'un passage
