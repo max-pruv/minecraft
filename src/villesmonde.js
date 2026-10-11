@@ -3922,7 +3922,7 @@ export const VU_VOITURE = 45;
 // blocs le long du tracé reste dans les quarante-cinq (√(30² + 12²) = 32).
 export const VU_ANNEAU = 30;
 
-// LE CONTOUR D'UN ANNEAU QU'ON VOIT SE JUGE SUR SA VOIE (v422). Les voitures
+// LE CONTOUR D'UN ANNEAU QU'ON VOIT SE JUGE SUR SA VOIE (v427). Les voitures
 // d'un tracé sont espacées de cinquante-quatre blocs au pis (un tiers de
 // `voituresDuCircuit`) : une voie à trente-six blocs du centre en montre
 // encore une à `VU_VOITURE` (√(45² − 27²) = 36). Ne vaut que pour le contour
@@ -4324,7 +4324,7 @@ function anneauxCalcules(f) {
     // point que seul ce rectangle voyait doit être vu par son contour
     // (`couvertureGardee`). Sinon il garde son rectangle : jamais pire.
     //
-    // LA VUE SE LIT SUR LA VOIE, ET L'ORDRE SE CHOISIT (v422). Deux choses
+    // LA VUE SE LIT SUR LA VOIE, ET L'ORDRE SE CHOISIT (v427). Deux choses
     // laissaient une vingtaine d'anneaux de la phase 1 en travers de la place
     // centrale (Tokyo, Séoul, Shanghai, Hong Kong, São Paulo…). La garde de
     // vue mesurait l'AXE de la rue à `VU_ANNEAU` du centre ; la voiture, elle,
@@ -4569,7 +4569,7 @@ function bordDIlots(ilots) {
 const _pointsDeVille = new Map();
 // `tout` garde aussi les colonnes que `eauDeVille` dit mouillées : le témoin
 // n'écarte que celles que le MONDE met sous l'eau, et une comparaison de
-// couverture doit lire au moins tout ce qu'il lit (v422).
+// couverture doit lire au moins tout ce qu'il lit (v427).
 function pointsDeVille(f, tout = false) {
   const cleP = f.cle + (tout ? '+' : '');
   let pts = _pointsDeVille.get(cleP);
@@ -4633,7 +4633,7 @@ function couvertureGardeeMarge(seuls, neuf) {
   return true;
 }
 
-// LA COUVERTURE SE GARDE AVEC LA RÈGLE DU TÉMOIN, PAS AVEC UNE MARGE (v422).
+// LA COUVERTURE SE GARDE AVEC LA RÈGLE DU TÉMOIN, PAS AVEC UNE MARGE (v427).
 // Le témoin (v322) échantillonne chaque tracé tous les deux blocs au plus et
 // dit un point vu s'il est à moins de `VU_VOITURE` d'un échantillon. La garde
 // de la v404 se donnait un bloc et demi de marge de chaque côté : un point vu
@@ -4818,7 +4818,7 @@ function contourner(f, c, ponts, quai = true, autres = [], accepte = null) {
   };
   const e0 = etat(depart, h1, h2, bord0, 0);
   // Un grand anneau peut perdre une rangée sans cesser d'être lui-même : la
-  // borne de douze îlots monte au tiers de l'anneau (v422).
+  // borne de douze îlots monte au tiers de l'anneau (v427).
   const changeMax = Math.max(CONTOUR_CHANGE_MAX, Math.ceil(depart.size * 0.3));
   pousser(e0);
   // UNE RECHERCHE QUI NE PROGRESSE PAS S'ARRÊTE. Mesuré : les contours
@@ -4842,7 +4842,7 @@ function contourner(f, c, ponts, quai = true, autres = [], accepte = null) {
       aRevoir = cur.bord.filter((e) => partageDAretes([areteDe(e)], autres) > 0);
     }
     if (cur.change >= changeMax) continue;
-    // UNE RANGÉE ENTIÈRE D'UN COUP (v422). Quand toute une suite de segments
+    // UNE RANGÉE ENTIÈRE D'UN COUP (v427). Quand toute une suite de segments
     // du même côté est fautive — un parc, une bande de sable le long d'un
     // côté —, retirer ou ajouter les îlots un à un demande autant d'essais
     // qu'il y a d'îlots, et la patience s'épuisait avant (Lisbonne : 33 pas

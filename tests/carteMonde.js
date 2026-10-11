@@ -3520,6 +3520,35 @@ const VRAIES_KM = [
           + ` · tours de quartier ${flotteVilles.quartiers} : chaussée ${flotteVilles.chaussee} %, ${flotteVilles.plein} pas dans du plein`);
     }
 
+    // --- TOUTES LES VOIES OCCUPÉES (v423) -------------------------------------
+    //
+    // Max, une capture de GTA VI : les voies y sont serrées et TOUTES occupées.
+    // Mesuré avant : une seule file par sens partout — sur l'autoroute (deux
+    // voies par sens, `routes.js`) la file roulait À CHEVAL sur la ligne qui
+    // sépare les deux voies, à 4,0 blocs de l'axe ; sur les percées de premier
+    // rang de Paris (quatre voies, `voirie.js`) elle ne prenait que la voie
+    // intérieure. Les témoins lisent le TRACÉ de chaque convoi de la ville ou
+    // de la route (`point`, tous les deux blocs) et le classent par voie, à la
+    // section : ils ne lisent aucune variable de la règle, et mesurent la
+    // même chose sur l'ancien code.
+    const voiesOccupees = await require('./sonde-voies-occupees.cjs').mesurerVoies(tab);
+    {
+      const a = voiesOccupees.a1, p = voiesOccupees.paris;
+      verifier("sur l'autoroute, une file dans chaque voie, aucune à cheval sur la ligne",
+        a.droite >= 100 && a.gauche >= 100 && a.cheval * 10 < a.droite + a.gauche,
+        `A1 en pleine section, pas de tracé de deux blocs : voie de droite ${a.droite}, voie de gauche ${a.gauche}, `
+          + `à cheval ${a.cheval} (${a.files} file(s))`);
+      verifier('sur les boulevards de Paris, les deux voies de chaque sens sont occupées',
+        // mesuré : 58 sur `origin/main` (des tracés qui frôlent la voie
+        // extérieure aux places), 205 ici — la barre au milieu (v269)
+        p.exterieure >= 120 && p.interieure >= 40,
+        `percées de premier rang, pas de tracé de deux blocs : voie extérieure ${p.exterieure}, intérieure ${p.interieure} (${p.files} files)`);
+      verifier('la jumelle de la seconde voie suit la grille horaire de sa file (v305)',
+        !!voiesOccupees.grille && voiesOccupees.grille.retard > 0 && voiesOccupees.grille.ecartMax <= 0.01,
+        voiesOccupees.grille ? `la jumelle à l'heure de sa file moins ${voiesOccupees.grille.retard} s : ${voiesOccupees.grille.ecartMax} bloc d'écart au plus, à trois heures`
+          : 'aucune jumelle sur l\'A1');
+    }
+
     // --- LES RUES DE PARIS S'ÉLARGISSENT (v294) ------------------------------
     //
     // Max : « les rues de Paris sont trop étroites ». Mesuré sur le plan avant
@@ -4937,7 +4966,7 @@ const VRAIES_KM = [
       }
       let seuls = [];
       for (const [cle, g] of parVille) if (g.length === 1) seuls.push(cle);
-      // v422 : la voie la plus proche du centre (là où l'enfant arrive), ville
+      // v427 : la voie la plus proche du centre (là où l'enfant arrive), ville
       // par ville ; à moins de cinq blocs, elle traverse la place.
       const surLaPlace = [];
       for (const [cle, g] of parVille) {
@@ -4957,7 +4986,7 @@ const VRAIES_KM = [
     });
     verifier('un anneau qui sortait de la chaussée contourne la place, la fontaine ou le parc',
       // v418 : 87 anneaux et 2 257 pas avant le contour à contresens et les
-      // rues du Strip, 75 et 1 228 après. v422 (la vue sur la voie, la
+      // rues du Strip, 75 et 1 228 après. v427 (la vue sur la voie, la
       // couverture à la règle de ce fichier, plusieurs ordres, une rangée
       // d'un coup) : 61 et 840. Barres au milieu.
       contour.anneaux <= 68 && contour.pas <= 1034 && contour.total >= 809,
@@ -4973,7 +5002,7 @@ const VRAIES_KM = [
     verifier('à Las Vegas, les voitures roulent sur les rues qui longent le Strip, pas dans le sable',
       contour.lv.pas <= 100 && contour.lv.circuits >= 4 && contour.lv.desertLots === 0 && contour.lv.desertRues > 0,
       JSON.stringify(contour.lv));
-    // L'ANNEAU QU'ON VOIT EN ARRIVANT NE TRAVERSE PLUS LA PLACE (v422). Sa
+    // L'ANNEAU QU'ON VOIT EN ARRIVANT NE TRAVERSE PLUS LA PLACE (v427). Sa
     // voie passait sur le centre même — à moins de cinq blocs de l'endroit où
     // la carte dépose l'enfant, en travers du pavé de la place — dans
     // vingt-deux villes (mesuré sur la v421). La garde de vue de la phase 4

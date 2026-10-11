@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v422 — Les voitures font le tour de la place
+## v427 — Les voitures font le tour de la place
 
 **Pourquoi.** Dans vingt-deux villes engendrées (Tokyo, Séoul, Shanghai, Hong
 Kong, São Paulo, Los Angeles…), l'anneau de voitures qu'on voit en arrivant
@@ -46,6 +46,153 @@ pas, circuits, couverture (règle v322), pire partage (18, inchangé), voiture
 en vue depuis le centre, coût du premier dépliage (inchangé pour les villes
 sans faute, 75 à 110 ms pour celles qu'on essaie, sous le pire de Rome).
 
+
+## v426 — Le journal de bord ne crie plus au plantage pour rien
+
+**Pourquoi.** « Le jeu plante de temps en temps » : l'iPhone de la famille a
+remonté onze sessions « plantage » en quarante minutes, et deux plantages de
+suite font passer le jeu en mode léger, rangé pour de bon (v296). Or deux de
+ces plantages étaient faux, et le journal ne pouvait pas le savoir. La session
+82 a été déclarée plantée, puis a envoyé sa fermeture propre trois minutes plus
+tard (ligne 83) : deux pages vivaient sur le même stockage, et un drapeau
+unique faisait lire la vivante comme morte. Et une page qui se fermait effaçait
+le drapeau de l'autre, si bien qu'un VRAI plantage pouvait passer inaperçu
+(mesuré sur l'ancien code). D'autres sessions arrivaient vides — aucun relevé,
+aucun événement —, ce que laisse une page qu'iOS ouvre sans la montrer puis
+tue. Enfin, Safari ne donne pas la mémoire utilisée : c'est un COMPTE de
+textures qui a trahi la flotte de voitures, et un compte n'est pas un poids.
+
+**Ce que ça change.** Chaque page a sa session, son journal et un battement
+toutes les deux secondes ; une session au battement récent n'est dite plantée
+que si son battement cesse d'avancer. Une page née cachée ne compte pas. La
+relance d'une mise à jour ferme le journal avant de recharger. La famille ne
+perd plus ses réglages pour une fausse alerte. Et chaque relevé porte une
+estimation en mégaoctets de ce que la scène tient côté carte graphique
+(textures, géométries), visible dans `?diag=1` et dans l'espace parent.
+
+**Ce qui le prouve.** Une sonde au banc (`sonde-journal-relance.cjs`) : la
+relance du service worker à 200 ms, 600 ms, 1,2 s, 2,5 s, 5 s ou pendant le
+chargement ne laisse aucun faux plantage, ni avant ni après ; deux pages sur le
+même stockage se déclaraient plantées à coup sûr, plus après. Trois témoins
+neufs dans `parent.js`, les deux du journal rouges sur l'ancien code : deux
+pages ne se déclarent pas plantées et une page morte l'est quand même ; une
+page née cachée ne laisse pas de session ouverte ; l'estimation suit un objet
+ajouté puis retiré, une source comptée une fois. Coût du parcours mesuré à
+Paris (rr 12, 11 889 objets) : 4,7 ms médian, 9,7 au pire, une fois toutes les
+cinq secondes.
+
+---
+
+## v425 — Les passants contournent les terrasses de café
+
+**Pourquoi.** À Paris, la couche détaillée pose des terrasses de café, des bancs
+et des colonnes Morris sur les trottoirs (v288, v289). Ce n'étaient pas des
+blocs : un passant marchait au travers de la table d'un café, et l'enfant à pied
+aussi. La dette était déclarée depuis la v288.
+
+**Ce que ça change.** Un passant qui arrive sur une terrasse, un banc ou une
+colonne Morris s'arrête devant et fait le tour, comme devant une voiture garée.
+Seulement là où ce mobilier est AFFICHÉ : une tablette sans couche détaillée
+n'a pas de table invisible qui arrête. Les potelets et les corbeilles se
+frôlent, on passe à côté.
+
+**Ce qui le prouve.** La règle qui pose le mobilier est sortie du mailleur
+(`mobilierTrottoir`, facadeshd.js) : le mailleur dessine ce qu'elle rend, les
+passants butent dessus — une seule règle, deux lecteurs. L'empreinte des 490
+morceaux (Paris détaillé compris) est inchangée au bit près. Un témoin de
+`parishd.js` lance six passants droit sur les bancs et les colonnes montrés
+autour de l'enfant : aucun n'entre dans le meuble, contre six sur six la règle
+désarmée. Et la mesure a trouvé autre chose : dans quatre quartiers de Paris,
+la règle de la v288 ne pose AUCUNE terrasse — plus une devanture `VITRINE` au
+bord d'un trottoir ; c'est déclaré dans `TASKS.md`.
+
+---
+
+## v424 — La force d'un choc suit la vitesse
+
+**Pourquoi.** La force d'un choc, que la conduite publie et que les dégâts
+transforment en usure, valait 1 dès vingt blocs par seconde d'impact. Une
+voiture roule à trente ou cinquante-cinq : presque tout vrai crash valait un
+« mur plein », qu'on le prenne à vingt ou à cinquante-cinq. Et un mur frôlé à
+quinze degrés pleins gaz publiait jusqu'à 0,68 — près d'un demi-mur d'usure
+pour une éraflure (la dette déclarée par la v405).
+
+**Ce que ça change.** La force d'un choc suit désormais la vitesse jusqu'à la
+pointe de la classe : un mur pris à 85 % de sa pointe (quatre à cinq secondes
+de gaz) vaut un mur plein, comme avant — la voiture fume toujours dès le
+deuxième, cale au neuvième. Un mur à dix blocs par seconde n'en coûte plus que
+un quinzième à un cinquième selon la voiture, et frôler un mur pleins gaz moins
+d'un dixième. Une caresse pare-chocs contre pare-chocs reste une caresse (le
+seuil se lit en blocs par seconde).
+
+**Ce qui le prouve.** Un témoin neuf de `plafond.js` fait rouler le vrai joueur
+sous node contre un mur droit, dans les six classes : pleins gaz 1, mur lent
+0,07 à 0,19 de mur, frôlé 0,08 — rouge sur `origin/main` (lent 0,32 à 0,36,
+frôlé 0,14 à 0,46). Le témoin des deux murs des dégâts prend un vrai élan de
+cent quarante blocs ; celui de la voiture de la rue percutée par l'arrière lit
+la force que dix-huit blocs/s donnent dans une hypercar.
+
+---
+
+## v423 — Toutes les voies occupées
+
+**Pourquoi.** Max a montré une capture de GTA VI à côté d'une de GTA V : des
+voies serrées, toutes occupées, un trafic dense. Chez nous, mesuré avant
+d'écrire : une seule file de voitures par sens partout, même sur les
+boulevards à quatre voies de Paris et des grandes villes — la seconde voie de
+chaque sens restait vide —, et sur l'autoroute la file roulait à cheval sur la
+ligne qui sépare les deux voies, avec vingt voitures pour des tours de mille
+six cents à cinq mille blocs : une voiture tous les cent vingt blocs.
+
+**Ce que ça change.** Sur l'autoroute, une file dans chaque voie, et près de
+trois fois plus de voitures (480 → 1 354 sur les vingt-quatre corridors). Sur
+les boulevards de Paris et la croix centrale des villes engendrées, la seconde
+voie de chaque sens a sa file : les voitures d'un même circuit se répartissent
+sur les deux voies, se rabattent sur une seule avant le virage et se
+redéploient après. Tout le monde voit la même rue (même grille horaire).
+
+**Ce qui le prouve.** Trois témoins neufs dans `carteMonde.js`, vérifiés rouges
+sur l'ancien code : sur l'A1, une file dans chaque voie et aucune à cheval ; à
+Paris, les deux voies de chaque sens occupées sur les percées de premier rang ;
+la jumelle passe partout à l'heure de sa file (écart nul à trois heures).
+Et une ligne ne se télescope pas : là où les deux files n'ont qu'une voie,
+la voiture qui précède est dans l'autre convoi, et le plancher de la v283
+s'étend à elle. Mesuré au banc, rejoué au même endroit sur `origin/main` :
+contacts entre voitures 0 % à Paris (0 % avant), 1,5 % à Tokyo (2,6 %), 8,8 %
+à Madrid (10,6 %, un nœud d'avant).
+## v422 — Conduire comme au cinéma
+
+**Pourquoi.** Max (4 octobre 2026) : « une grosse refonte de la façon de
+conduire… comme GTA ». Au volant, la caméra restait rivée à six blocs quatre
+derrière la voiture quelle que soit l'allure, le champ ne bougeait pas, la
+caisse ne penchait pas, les roues avant restaient droites, et l'on n'entendait
+ni les pneus ni un choc. Pire : dos à un mur collé au pare-chocs arrière, la
+caméra se posait DE L'AUTRE CÔTÉ du mur — l'ancienne recherche ne regardait
+qu'à partir de 3,2 blocs, par pas de 0,6.
+
+**Ce que ça change.** La caméra recule et s'abaisse un peu quand on prend de
+la vitesse, et son champ s'ouvre (75° à l'arrêt, 84° à vingt-six blocs par
+seconde, jusqu'à 89° à soixante) ; elle suit avec un retard élastique, regarde
+la voiture et un peu dans le virage, ne traverse plus les murs, et tremble au
+choc. La voiture vit : la caisse penche vers l'extérieur du virage, le nez se
+lève à l'accélération et plonge au freinage, les roues avant braquent, les
+roues roulent à la vitesse vraie (elles se figeaient au-delà de deux blocs par
+image). Le moteur passe ses rapports et gronde quand il tire ; les pneus
+crissent en dérive, au freinage fort et dans un virage trop vite ; un choc
+s'entend ; un moteur abîmé tousse, en panne il se tait, en feu il crépite —
+ces trois-là attendent les champs que publieront la physique et les dégâts.
+Les avions gardent leur caméra à l'identique.
+
+**Ce qui le prouve.** Sept témoins neufs dans `monte.js`, une seule mesure
+partagée avec la sonde (`sensations-mesure.js`) sur une plate-forme posée dans
+le ciel. Sur `origin/main` : champ 75 → 75, recul 6,4 → 6,4, caisse 0, roue 0,
+pneus ×1,7, pic du choc 0,088 contre 0,088, caméra immobile, et la caméra derrière le
+mur. Ici : champ 75 → 83,8, recul 6,4 → 7,4, caisse −0,070 vers l'extérieur
+(lue dans la matrice monde), roue +0,50 rad vers l'intérieur, pneus ×370, pic du
+choc 0,90 contre 0,073, secousse 0,23 bloc, caméra du côté de la voiture. Le coût
+se mesure en ordre alterné sur la même page (`?sensations=0` rejoue l'ancienne
+conduite) : aucun appel de dessin ni programme de shader de plus (67 des deux
+côtés).
 ## v421 — Des passages piétons dans les rues en biais
 
 **Pourquoi.** Dans les villes du monde, les bandes blanches d'un passage
@@ -911,6 +1058,9 @@ radio varient déjà de 0,68 à 1 ; la radio relancée sans appel et la radio
 après l'appel rendent la même distribution, gain revenu à 1 cinq fois sur
 cinq. Le témoin juge le gain et un niveau au-dessus de la moitié, et il rougit
 sur une copie où la voix reste au quart (gain 0,25).
+
+---
+
 ## v392 — Nice et Lille en relief
 
 **Pourquoi.** Le palier A avait donné son relief à Londres ; Nice et Lille, les
@@ -2619,6 +2769,9 @@ de quatre sites ont la couleur que la règle du générateur leur donne (0 sur
 674 avant) ; et les 48 876 autres gardent leur herbe, le relief rempli dans le
 même nombre d'images. Le témoin « même forme, bloc pour bloc » des falaises
 compare le relief sans les arbres, qui ne sont pas du sol.
+
+---
+
 ## v339 — Les rues de Londres à la règle du kit
 
 **Pourquoi.** Paris est passé à la section de rue du kit (`roadSection`) en

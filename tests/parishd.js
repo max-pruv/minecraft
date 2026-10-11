@@ -878,6 +878,81 @@ function verifier(nom, ok, detail = '') {
       apres.sousFacades && apres.anciens > 0 && apres.anciensAvecFacades === 0 && apres.rendus > 0,
       `en ${apres.attente} ms · ${JSON.stringify(apres)}`);
     verifier('l\'atlas HD est peint et le rayon forcé est celui de l\'adresse', res.atlas === true && res.rayon === 2, `atlas ${res.atlas}, rayon ${res.rayon}`);
+    // ── UNE TERRASSE ARRÊTE UN PASSANT (v425) ──────────────────────────────
+    //
+    // Dette de la v288 : la table et les chaises d'un café, dessinées par la
+    // couche HD, n'étaient pas des blocs — un passant marchait au travers. On
+    // cherche les terrasses MONTRÉES autour de l'enfant (la règle que dessine le
+    // mailleur, `mobilierTrottoir`), on lance un passant droit dessus depuis
+    // trois blocs, la tête dans le guidon (son programme coupé), et l'on compte
+    // les relevés où il est DANS la colonne de la terrasse. Sur l'ancien code,
+    // la règle n'est pas exportée : le témoin le dit, rouge.
+    const terr = await tab.evaluate(async () => {
+      const g = window.__game, w = g.world;
+      let F;
+      try { F = await import('./src/facadeshd.js'); } catch (e) { return { err: e.message }; }
+      if (!F.mobilierTrottoir) return { err: 'mobilierTrottoir absent' };
+      const { CITY_BLOCK } = await import('./src/blocks.js');
+      const dodo = (ms) => new Promise((r) => setTimeout(r, ms));
+      const pcx = Math.floor(g.player.pos.x / 16), pcz = Math.floor(g.player.pos.z / 16);
+      const cibles = [];
+      for (let dx = -g.RAYON_HD; dx <= g.RAYON_HD && cibles.length < 6; dx++) for (let dz = -g.RAYON_HD; dz <= g.RAYON_HD && cibles.length < 6; dz++) {
+        const e = g.chunkMeshes.get((pcx + dx) + ',' + (pcz + dz));
+        if (!e || !e.facades || !e.facades.visible) continue;
+        for (let lx = 0; lx < 16 && cibles.length < 6; lx++) for (let lz = 0; lz < 16 && cibles.length < 6; lz++) {
+          const bx = (pcx + dx) * 16 + lx, bz = (pcz + dz) * 16 + lz, by = w.sommetColonne(bx, bz);
+          if (w.getBlock(bx, by, bz) !== CITY_BLOCK.SIDEWALK) continue;
+          const m = F.mobilierTrottoir((a, b, c) => w.getBlock(bx + a, by + b, bz + c), bx, bz);
+          if (!m || !F.MOBILIER_OBSTACLE.has(m.genre)) continue;
+          // le départ : trois blocs de trottoir à la même cote, le long de la
+          // façade pour une terrasse ou un banc, sur un axe pour une colonne
+          const dirs = m.vers ? [[-m.vers[1], m.vers[0]], [m.vers[1], -m.vers[0]]] : [[1, 0], [-1, 0], [0, 1], [0, -1]];
+          for (const [lx2, lz2] of dirs) {
+            let ok = true;
+            for (let k = 1; k <= 2 && ok; k++) { const sx = bx + lx2 * k, sz = bz + lz2 * k; if (w.getBlock(sx, w.sommetColonne(sx, sz), sz) !== CITY_BLOCK.SIDEWALK || w.sommetColonne(sx, sz) !== by) ok = false; }
+            if (!ok) continue;
+            cibles.push({ genre: m.genre, bx, bz, by, sx: bx + lx2 * 2 + 0.5, sz: bz + lz2 * 2 + 0.5, ux: -lx2, uz: -lz2 }); break;
+          }
+        }
+      }
+      if (cibles.length < 2) return { err: `${cibles.length} meuble(s) montré(s) avec un départ` };
+      const site = g.passants.sites.find((q) => q.peuple && q.peuple.filter((h) => h.name === 'passant').length >= cibles.length);
+      if (!site) return { err: 'aucune ville peuplée assez', cibles: cibles.length };
+      const gens = site.peuple.filter((h) => h.name === 'passant').slice(0, cibles.length);
+      const pensees = gens.map((h) => h.think);
+      gens.forEach((h, i) => {
+        const c = cibles[i];
+        h.traversee = null; h.ecart = null; h.repos = 0;
+        h.placeAt(c.sx, c.sz, c.by + 1);
+        const yaw = Math.atan2(-c.ux, -c.uz);
+        h.think = () => ({ speed: h.walkSpeed, yaw });
+      });
+      // LA FIN SE JUGE AU RÉSULTAT, PAS À UNE DURÉE (v270) : sur ce banc un
+      // passant avance d'un quart de bloc par seconde de montre (dt borné, deux
+      // images par seconde). Chacun est fini quand il est entré dans le meuble,
+      // ou quand il n'a plus bougé depuis cinq secondes ; quarante au plus.
+      const dedans = gens.map(() => 0), avance = gens.map(() => 0), bouge = gens.map(() => performance.now());
+      const t0 = performance.now();
+      while (performance.now() - t0 < 40000) {
+        await dodo(100);
+        const t = performance.now();
+        gens.forEach((h, i) => {
+          const c = cibles[i];
+          if (Math.floor(h.pos.x) === c.bx && Math.floor(h.pos.z) === c.bz) dedans[i]++;
+          const a = (h.pos.x - c.sx) * c.ux + (h.pos.z - c.sz) * c.uz;
+          if (a > avance[i] + 0.05) { avance[i] = a; bouge[i] = t; }
+        });
+        if (gens.every((h, i) => dedans[i] > 0 || t - bouge[i] > 5000)) break;
+      }
+      const secondes = +((performance.now() - t0) / 1000).toFixed(1);
+      gens.forEach((h, i) => { h.think = pensees[i]; });
+      // ce que le crochet répond le long du chemin, pour démonter un rouge
+      const ligne = cibles.slice(0, 2).map((c) => { let t = ''; for (let s = 0; s <= 3.5; s += 0.5) t += w.obstaclePieton(c.sx + c.ux * s, c.sz + c.uz * s, c.by + 1) ? 'X' : '.'; return t; });
+      return { meubles: cibles.map((c) => c.genre), dedans, avance: avance.map((a) => +a.toFixed(1)), ligne, secondes };
+    });
+    verifier('un passant lancé sur un banc ou une colonne du trottoir s\'arrête devant au lieu de passer au travers',
+      !terr.err && terr.meubles.length >= 2 && terr.dedans.every((n) => n === 0) && terr.avance.filter((a) => a > 0.15).length >= terr.meubles.length - 1,
+      JSON.stringify(terr));
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
     await tab.close();
 
