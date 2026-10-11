@@ -1754,17 +1754,29 @@ class Convoi {
       // deux fois par minute au-dessus de Paris). On ne lui laisse que la
       // vitesse qu'elle peut perdre au freinage d'urgence avant le plancher :
       // elle y arrive en freinant.
-      if (i > 0 && v > 0 && this.cause[i] === 1 && this.cible[i] !== Infinity) {
+      const devant = this.devantSurLaLigne(i);
+      if (v > 0 && this.cause[i] === 1 && this.cible[i] !== Infinity && (i > 0 || devant)) {
         const ici = ancien[i] - this.retard[i];
         const miniIci = Math.abs(this.parcours.courbure(ici)) > 0.03 || Math.abs(this.parcours.courbure(ici + 3)) > 0.03
           || Math.abs(this.parcours.courbure(ici + 5)) > 0.03 ? miniVirage : miniDroit;
         // RELATIVE À CELLE DE DEVANT : une file qui roule à quatorze blocs par
         // seconde à douze blocs d'écart ne freine pas (le premier jet bornait
         // comme si la précédente était arrêtée, et toute la file traînait).
-        const reste = (this.base[i - 1] - this.retard[i - 1]) - ici - miniIci;
-        const vDevant = this.vLoc[i - 1] >= 0 ? this.vLoc[i - 1] : vConv;
-        const vMax = vDevant + Math.sqrt(2 * FREIN_URGENCE * Math.max(0, reste));
-        if (v > vMax) v = vMax;
+        // La distance d'arrêt de la suiveuse ne dépasse pas l'écart plus celle
+        // de la précédente : v² ≤ vDevant² + 2·a·reste. (La somme
+        // vDevant + √(2·a·reste), plus large, laissait des arrêts secs : 3 sur 8.)
+        const borne = (dDevant, vDevant) => {
+          const reste = dDevant - ici - miniIci;
+          const vMax = Math.sqrt(vDevant * vDevant + 2 * FREIN_URGENCE * Math.max(0, reste));
+          if (v > vMax) v = vMax;
+        };
+        if (i > 0) borne(this.base[i - 1] - this.retard[i - 1], this.vLoc[i - 1] >= 0 ? this.vLoc[i - 1] : vConv);
+        // ET SUR LA LIGNE (v423) : devant elle, la voiture de l'autre convoi
+        // a son propre plancher, qui recolle aussi en une image
+        if (devant) {
+          const j = devant.iDevant;
+          borne(devant.dElement(j), devant.vLoc && devant.vLoc[j] >= 0 ? devant.vLoc[j] : vConv);
+        }
       }
       let r = this.retard[i] + pas - v * dt;
       if (r < 0) r = 0;
@@ -1783,7 +1795,6 @@ class Convoi {
       // dans l'AUTRE convoi. La grille les garde à distance (`jumelleSansContact`) ;
       // un freinage local (un feu, l'enfant) ne doit pas les faire entrer l'une
       // dans l'autre. On lit l'autre convoi tel qu'il est à cette image.
-      const devant = this.devantSurLaLigne(i);
       if (devant) {
         const plancher = this.base[i] - devant.dElement(devant.iDevant) + mini;
         if (r < plancher) r = plancher;

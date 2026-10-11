@@ -799,11 +799,14 @@ Quatre sujets, une livraison. Cinq règles.
   grille, voies — sans un écart : c'est ce qui garde la v305.
 - **UNE BORNE DURE SE PRÉCÈDE D'UN FREINAGE.** Le plancher de file (v283) est
   une contrainte de position : une suiveuse encore lancée à 3,7 b/s y était
-  arrêtée en une image (37 b/s²). Sa vitesse est bornée à la vitesse de la
-  voiture de devant PLUS ce qu'elle peut perdre au freinage d'urgence avant
-  le plancher — et seulement quand c'est la voiture de devant de sa file qui
-  l'arrête (`cause === 1`). Mesuré au navigateur (`sonde-feu-image.cjs`) :
-  5 arrêts secs sur 9 sur `origin/main`, 0 sur 12. **UNE BORNE ABSOLUE
+  arrêtée en une image (37 b/s²). Sa distance d'arrêt ne dépasse pas l'écart
+  plus celle de la voiture de devant (v² ≤ vDevant² + 2·a·reste, a le
+  freinage d'urgence) — devant dans sa file ET devant sur la ligne (v423, la
+  voiture de l'autre convoi a son propre plancher) — et seulement quand un feu
+  ou sa file la retient (`cause === 1`). La somme vDevant + √(2·a·reste),
+  plus large, laissait encore 3 secs sur 8. Mesuré au navigateur (`sonde-feu-image.cjs`) :
+  5 arrêts secs sur 9 sur `origin/main`, 1 sur 17 ici (huit passes ; le
+  reste est entre 14 et 33 b/s², déclaré). **UNE BORNE ABSOLUE
   RALENTIT DES FILES ENTIÈRES** : mon premier jet bornait à zéro devant et
   partout ; Moscou montrait 8 voitures en vue au lieu de 26. Une borne de
   confort se pose RELATIVE à ce qui précède, et seulement là où sa cause

@@ -656,8 +656,11 @@
   (36 004 contacts de grille → 0, les 263 anneaux jouent, 4 380 → 4 125
   voitures) ; la fabrique d'un circuit se fait par TRANCHES avant la naissance
   (56 circuits identiques au bit près, étape la plus longue 4,4 ms) ; la
-  suiveuse freine avant le plancher de file (arrêts secs au feu 5/9 → 0/12,
-  `sonde-feu-image.cjs`) ; les deux témoins repointés (`monte.js` juge un
+  suiveuse freine avant le plancher de file, dans sa file et sur la ligne
+  (arrêts secs au feu 5/9 → 1/17, `sonde-feu-image.cjs`, huit passes ; le
+  reste, 14 à 33 b/s², vient d'un `v` interne plus haut que `vLoc` après un
+  recollage, que `rapprocher` ramène en une image — à reprendre en partant
+  de `vLoc` plutôt que de `v`) ; les deux témoins repointés (`monte.js` juge un
   arrêt au feu sur toute sa descente, `degats.js` prend 26 blocs d'élan).
   RESTE : les deux circuits en huit de Paris (rangs 1 et 3) n'ont pas de
   jumelle — seul `n = 4` passe leur croisement ; le remède est de CASSER
