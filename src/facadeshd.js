@@ -1424,6 +1424,44 @@ export function terrasseHD(buf, x, y, z, wx, wz, vers) {
   }
 }
 
+// LE MOBILIER D'UN TROTTOIR, LA RÈGLE (v288, v289 ; sortie du mailleur en
+// v422). Le mailleur dessine ce qu'elle rend ; les passants et l'enfant à pied
+// butent sur ce qui a un corps (`world.obstaclePieton`, main.js). Une seule
+// règle, deux lecteurs : deux copies finiraient par poser une table là où l'on
+// passe au travers. `at(dx, dy, dz)` lit le bloc relatif à celui du trottoir ;
+// (wx, wz) est la colonne du monde, pour le tirage. Le monde répond tout seul :
+// on lit le sol d'à côté, on ne connaît pas la trame.
+//
+// - un potelet tous les deux blocs au bord du caniveau, une corbeille entre
+//   deux potelets tous les huit blocs environ ;
+// - une terrasse devant une devanture sur trois ;
+// - loin du caniveau et sans devanture, un banc tourné vers la rue (la rue à
+//   deux blocs, derrière un autre trottoir) ou, plus rare, une colonne Morris
+//   — seulement là où le tirage est un creux local.
+export function mobilierTrottoir(at, wx, wz) {
+  const bord = (dx, dz) => { const v = at(dx, 0, dz); return v === ARCHI.BORDURE || v === ARCHI.PAVE; };
+  const cote = bord(1, 0) ? 'px' : bord(-1, 0) ? 'mx' : bord(0, 1) ? 'pz' : bord(0, -1) ? 'mz' : null;
+  if (cote) {
+    const leLong = (cote === 'px' || cote === 'mx') ? wz : wx;
+    if ((leLong & 1) === 0) return { genre: 'potelet', cote };
+    if ((leLong & 7) === 3 && tirage(wx, wz, 921) > 0.4) return { genre: 'corbeille', cote };
+    return null;
+  }
+  const vitrineA = (dx, dz) => at(dx, 1, dz) === ARCHI.VITRINE;
+  const vers = vitrineA(1, 0) ? [1, 0] : vitrineA(-1, 0) ? [-1, 0] : vitrineA(0, 1) ? [0, 1] : vitrineA(0, -1) ? [0, -1] : null;
+  if (vers) return tirage(wx, wz, 917) > 0.62 ? { genre: 'terrasse', vers } : null;
+  if (at(0, 1, 0) !== BLOCK.AIR) return null;
+  const rueA2 = (dx, dz) => { const v = at(2 * dx, 0, 2 * dz); return (v === ARCHI.BORDURE || v === ARCHI.PAVE) && at(dx, 0, dz) === CITY_BLOCK.SIDEWALK; };
+  const versRue = rueA2(1, 0) ? [1, 0] : rueA2(-1, 0) ? [-1, 0] : rueA2(0, 1) ? [0, 1] : rueA2(0, -1) ? [0, -1] : null;
+  const t = tirage(wx, wz, 919);
+  if (versRue && t > 0.955) return { genre: 'banc', vers: versRue };
+  if (t < 0.012 && [[1, 0], [-1, 0], [0, 1], [0, -1]].every(([dx, dz]) => tirage(wx + dx, wz + dz, 919) >= 0.012)) return { genre: 'morris' };
+  return null;
+}
+// Ce qui a un corps qu'on contourne : une terrasse (table et chaises), un banc,
+// une colonne. Un potelet ou une corbeille se frôlent : on passe à côté.
+export const MOBILIER_OBSTACLE = new Set(['terrasse', 'banc', 'morris']);
+
 // LA COLONNE MORRIS (v289) : le fût vert sombre couvert d'affiches, sur un
 // socle de fonte, sous une corniche et un dôme à écailles coiffé d'un fleuron.
 // Elle se plante au milieu d'un trottoir, loin du caniveau, là où aucune

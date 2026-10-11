@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp, MEUBLE_ITEMS, MEUBLE_START, isMeuble, RUE_ITEMS, RUE_START, RUE, isRue, ARCHI, CITY_BLOCK, ROUTE_BLOCK } from './blocks.js';
 import { passageEn } from './passages.js';
+import { mobilierTrottoir, MOBILIER_OBSTACLE, villeHD } from './facadeshd.js';
 import { PARIS as PARIS_ANCRE, circuitsParis, circuitsQuartiersParis, marquageParis } from './paris.js';
 import { circuitsLondres } from './londres.js';
 import { circuitsSF } from './sanfrancisco.js';
@@ -1763,8 +1764,28 @@ function updateChunks() {
   // voiture garée, avion au poste — dont la fiche porte un `gabarit`. Le
   // rectangle d'un véhicule posé se prend sur son cap, comme celui d'une
   // voiture de la rue ; sa longueur est celle d'une voiture.
+  // ET LE MOBILIER DE TROTTOIR QU'ON VOIT (v422). Les terrasses, les bancs et
+  // les colonnes de la couche HD (v288) n'étaient pas des blocs : un passant
+  // traversait la table d'un café. La règle qui les pose est celle que le
+  // mailleur dessine (`mobilierTrottoir`) ; on ne bute que sur ce qui est
+  // MONTRÉ — le détail du morceau visible (`montrerLeDetail`) —, sinon un
+  // appareil sans couche HD aurait des tables invisibles qui arrêtent.
+  const mobilierVu = (x, z, y) => {
+    const bx = Math.floor(x), bz = Math.floor(z);
+    const cx = Math.floor(bx / CHUNK), cz = Math.floor(bz / CHUNK);
+    const e = chunkMeshes.get(cx + ',' + cz);
+    if (!e || !e.facades || !e.facades.visible) return false;
+    const by = world.sommetColonne(bx, bz);
+    if (Math.abs(by + 1 - y) > 1.5 || world.getBlock(bx, by, bz) !== CITY_BLOCK.SIDEWALK) return false;
+    const v = villeHD(cx, cz, CHUNK);
+    if (!v || v.mobilier === false) return false;
+    const m = mobilierTrottoir((dx, dy, dz) => world.getBlock(bx + dx, by + dy, bz + dz), bx, bz);
+    return !!m && MOBILIER_OBSTACLE.has(m.genre);
+  };
+  world.mobilierVu = mobilierVu;
   world.obstaclePieton = (x, z, y) => {
     if (vehicules.voitureA(x, z, y)) return true;
+    if (mobilierVu(x, z, y)) return true;
     for (const a of animalManager.animals) {
       const g = a.def.gabarit;
       if (!(g > 1) || Math.abs(a.pos.y - y) > 2.5) continue;
