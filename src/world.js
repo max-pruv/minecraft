@@ -5,7 +5,7 @@ import { buildVillandry } from './villandry.js';
 import { aUnModeleHD, porteeHD } from './paris-monuments-hd.js';
 import { echelleDe, etirerBatisseur } from './echelle-monuments.js';
 import { carrefoursDeVoies } from './voies.js';
-import { buildAeroport, buildAerodrome, AEROPORTS, AEROPORTS_AVANT_V306 } from './aeroport.js';
+import { buildAeroport, buildAerodrome, AEROPORTS, AEROPORTS_AVANT_V306, tronconsDePiste } from './aeroport.js';
 import {
   USINE, hauteurUsine, solUsine, buildUsine, buildParcUsine, dansLUsine,
 } from './usine.js';
@@ -1418,10 +1418,17 @@ const LANDMARKS = LANDMARKS_V317.map((lm) => {
   // d'avant (`LANDMARKS_V317`) garde la colonne d'un bloc.
   if (e) return { ...lm, build: etirerBatisseur(lm.tour || lm.build, e.paliers), echelle: e };
   return lm.tour ? { ...lm, build: lm.tour } : lm;
-});
+}).concat(
+  // LES PISTES PROLONGÉES (v445) — seulement dans le monde d'aujourd'hui : les
+  // mondes figés gardent leurs pistes d'avant (`LANDMARKS_V317`).
+  AEROPORTS.flatMap(tronconsDePiste),
+);
 
 // La même liste, sans les constructeurs : ce que la carte a le droit de lire.
-export const REPERES = LANDMARKS.map(({ name, x, z, box, seuil }) => ({ name, x, z, box, seuil }));
+// Les tronçons de piste n'y sont pas : ce sont des morceaux d'un aérodrome, pas
+// des lieux, et la carte n'a pas à en annoncer quarante.
+export const REPERES = LANDMARKS.filter((lm) => !lm.piste)
+  .map(({ name, x, z, box, seuil }) => ({ name, x, z, box, seuil }));
 
 // LES REPÈRES QUI ONT UN MODÈLE EN RELIEF (v292). Le mailleur ne balaie pas
 // les quatre cents repères du monde à chaque morceau : il lit cette liste-là,
@@ -1585,7 +1592,10 @@ function dansUneZoneATerre(x, z, conf = CONF_NEUF) {
       // elle est la plus célèbre.
       ...conf.villes.map((c) => ({ x: c.x, z: c.z, r: c.r + 24 })),
       ...conf.places.filter((p) => p.r > 0).map((p) => ({ x: p.x, z: p.z, r: p.r + 40 })),
-      ...conf.reperes.map((l) => ({ x: l.x, z: l.z, r: (l.box || 10) + 30 })),
+      // Pas les tronçons de piste (v445) : ils ne déplacent pas le relief, ils
+      // écrivent un ouvrage par-dessus — et une zone à terre en plus changerait
+      // `terrainHeight` sous eux.
+      ...conf.reperes.filter((l) => !l.piste).map((l) => ({ x: l.x, z: l.z, r: (l.box || 10) + 30 })),
     ];
     zonesIndex = new Map();
     zonesIndexes.set(conf.cle, zonesIndex);
@@ -3974,7 +3984,7 @@ export class World {
     };
     // Landmarks get an open plaza — no buildings on top of them.
     const nearLandmark = (ccx, ccz) =>
-      this.conf.reperes.some((lm) => Math.abs(ccx - lm.x) < lm.box + 7 && Math.abs(ccz - lm.z) < lm.box + 7);
+      this.conf.reperes.some((lm) => !lm.piste && Math.abs(ccx - lm.x) < lm.box + 7 && Math.abs(ccz - lm.z) < lm.box + 7);
 
     // Fill from the build level down to the terrain so hillside houses
     // never float (essential on San Francisco's slopes).
@@ -4145,7 +4155,10 @@ export class World {
     for (const lm of this.conf.reperes) {
       if (lm.x + lm.box < baseX || lm.x - lm.box >= baseX + CHUNK ||
           lm.z + lm.box < baseZ || lm.z - lm.box >= baseZ + CHUNK) continue;
-      let baseY = this.terrainHeight(lm.x, lm.z);
+      // Un repère qui prolonge un ouvrage prend la cote de son ANCRE (v445) :
+      // un tronçon de piste hors du disque est à la cote de l'aérodrome, pas à
+      // celle du relief sous lui.
+      let baseY = lm.ancre ? this.terrainHeight(lm.ancre.x, lm.ancre.z) : this.terrainHeight(lm.x, lm.z);
       if (lm.waterBase) baseY = Math.max(baseY, WATER_LEVEL - 1);
       lm.build((dx, dy, dz, id) => {
         const lx = lm.x + dx - baseX, lz = lm.z + dz - baseZ;
