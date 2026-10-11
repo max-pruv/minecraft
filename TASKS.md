@@ -68,7 +68,7 @@
     cadence décide où l'on touche (piège v273), et l'arrêt tombait à 300,9.
   - **Le train qui traverse la voiture** : cause trouvée, VRAIE PANNE,
     déclarée en tête de ce fichier ; le témoin reste rouge.
-- [x] **(v442 — réparé : regard de la rame en temps, `pasDeRame` ; voir CLAUDE.md « Le regard d'un convoi est un temps ») UN TRAIN TRAVERSE LA VOITURE DE L'ENFANT QUAND UNE IMAGE EST LENTE
+- [x] **(v444 — réparé : regard de la rame en temps, `pasDeRame` ; voir CLAUDE.md « Le regard d'un convoi est un temps ») UN TRAIN TRAVERSE LA VOITURE DE L'ENFANT QUAND UNE IMAGE EST LENTE
   (vraie panne, zone conduite — trouvée par la session banc-intermittents).**
   La rame ne regarde que 3,5 blocs devant sa motrice (`PAS_TRAIN`,
   `cederLePassage`, vehicules.js) et roule en temps RÉEL (v305) : à 14 b/s,
@@ -596,6 +596,31 @@
   entrent plus — c'est le contraire de la v300), ou faire du raccord une file
   de l'anneau qui passe là (une seule grille). `routes.js` et `villesmonde.js`
   sont d'autres sessions.
+  **(4) FAIT en v442** (session `claude/raccords-anneaux`) : le raccord
+  s'arrête quatre blocs avant la première voie d'anneau (`RACCORDS_COURTS`,
+  raccords.js, table mesurée et gardée par `plafond.js`). Sous node, 569 blocs
+  partagés sur 19 raccords → 20 sur 5, tous des DEMI-TOURS (Turin 9, Hambourg
+  6, Cologne 2, Naples 2, Francfort 1 : le demi-tour à la porte, quand la voie
+  d'un anneau passe à moins de quatre blocs, coupe cette voie). L'arrêt à la
+  porte partout rendait 44 sur 13. Au navigateur, Madrid 6,74 / 6,85 % →
+  1,47 / 1,02 % (le reste en travers entre anneaux). RESTE : les raccords des
+  villes bâties à la main (Paris, Lille, Londres, Nice, San Francisco) ne sont
+  pas mesurés contre leurs circuits — la sonde ne lit que les anneaux des
+  villes engendrées ; et ces cinq demi-tours, que seul un demi-tour AVANT la
+  porte (le corridor, `routes.js`, autre session) supprimerait.
+  Portail de la v442 (neuf suites) : rouges `carte.js` (glisser bridé ×4,
+  460 ms — déclaré), `manhattan.js` (trou de façade, taxi « 🐴 Monter »,
+  erreurs PeerJS — déclarés), `monte.js` : « la circulation s'arrête devant
+  la voiture de l'enfant » (8 au travers, déclaré témoin d'état du banc),
+  « un passant lancé sur la voiture de l'enfant… » (`encoreAuVolant: false` :
+  l'enfant n'était plus au volant, la pose a raté — déclaré v277), et un NEUF
+  « les roues avant braquent vers l'intérieur du virage » (`roues: 2`,
+  `braque: null` sur `voiture.glb` : le modèle d'attente, deux pivots de roue
+  trouvés au lieu de quatre — la flotte n'était pas arrivée ; témoin de
+  `sensations.js`, autre session). Preuve STRUCTURELLE (v291) pour les trois :
+  la v442 ne change que l'avenue d'entrée des autoroutes dans les villes
+  engendrées (`raccordDe` dans `entree()`), aucun de ces témoins ne roule sur
+  une autoroute ni dans une ville engendrée.
   **(5) LE HUIT DE TOKYO, MESURÉ RÉSOLU.** Au même point (53 383, 8 048) :
   0,25 % de paires au contact, toutes en travers entre deux convois (la
   cession locale), zéro dans une file — les contours des v432 et v435 ont
@@ -3689,11 +3714,29 @@
   - [ ] un brisis qui monte à plus d'un bloc (coin de champ à 1,5 ou 2) est
     raide mais droit : le vrai brisis d'un immeuble de coin se brise à la ligne
     de bris ; la constante `RETRAIT` est la seule à régler, sur capture ;
-  - [ ] sur les places sans trottoir large (esplanades), la colonne Morris se
+  - [x] **FAIT EN v443** (`morrisDegagee` : air libre, seule à deux blocs ;
+    43 mal plantées sur 76 → 0). Historique :
+    sur les places sans trottoir large (esplanades), la colonne Morris se
     pose au tirage sans regarder si une devanture ou un banc est à côté ;
     mesuré : cinq colonnes sur vingt-cinq morceaux, aucune côte à côte.
 
   Dettes déclarées de la v288 :
+  - [ ] **LE PORTAIL DE LA v443 (colonnes Morris).** Rejoués seuls :
+    `monte.js` sur la branche (base v436) et sur `origin/main` (v440). Le cône
+    dans Paris (0,08 au portail) vert seul (0,27). Moscou « les rues pleines de
+    voitures » et « modèles ET couleurs » rouges DES DEUX CÔTÉS (non déclarés
+    jusqu'ici). Rome — le flâneur, la traversée en biais — rouges sur la base
+    v436, verts sur la v440, ramenés par la fusion ; l'avion au-dessus d'une
+    ville, rouge des deux côtés (déclaré en v433). `origin/main` rend seul « à
+    l'arrivée, la rue se fabrique par tranches » (7 par image). Au portail
+    seulement : `reseau.js` (six témoins de reprise et de message réseau),
+    `manhattan.js` « New York et le reste de la Terre partagent », la
+    circulation au travers de la voiture, l'avatar au volant. Aucun ne peut
+    venir du diff : la règle du mobilier ne tourne qu'où la fiche de ville
+    l'accepte — Paris (`mobilier: false` partout ailleurs, v390), et ni le
+    réseau ni la circulation n'en lisent rien. Le témoin de la voiture devant
+    une terrasse (v436, `monte: false` au portail : un seul clic sur
+    « Monter ») retente la monte, vert seul (arrêt à 2,39).
   - [ ] **LE PORTAIL DE LA v436 (la voiture devant les terrasses).** Rouges :
     `maj.js` (les deux loaders), `carte.js` (glisser bridé ×4), `washington.js`
     (l'Air et l'Espace), `manhattan.js` (trou, taxi), `monte.js` (la rue à

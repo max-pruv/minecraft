@@ -11,7 +11,7 @@ const ville = process.argv[2] || 'paris', duree = Number(process.argv[3] || 40),
   await banc.ouvrir();
   try {
     await souffler();
-    const page = await banc.jouerSeul('SondeRue' + ville);
+    const page = await banc.jouerSeul('SondeRue' + ville, process.env.PARAMS ? { params: process.env.PARAMS } : {});
     const r = await page.evaluate(async ({ ville, duree, sansJeu, ou }) => {
       const m = await import('./src/mondes.js'); const P = m.positionDe(ville); const g = window.__game;
       if (sansJeu && g.vehicules.jeuActif) g.vehicules.jeuActif(false);

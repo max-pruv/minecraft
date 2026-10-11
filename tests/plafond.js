@@ -610,6 +610,25 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       lignes.length >= 6 && lignes.every((r) => r.plein.force === 1 && r.lent.murs > 0 && r.lent.murs < 0.25 && r.frole.murs > 0 && r.frole.murs < 0.1),
       t ? JSON.stringify(t) : `sonde : ${err}`);
   }
+  // --- LES RACCORDS D'AUTOROUTE NE ROULENT PAS DANS LA VOIE D'UN ANNEAU (v442)
+  // Dix-neuf des quarante-six raccords route/ville engendrée partageaient la
+  // voie d'un anneau (569 blocs ; Madrid 85, 6,8 % de paires au contact au
+  // navigateur) : deux grilles indépendantes (v305) sur une voie. Le raccord
+  // s'arrête désormais avant la première voie d'anneau, par une table mesurée
+  // (`RACCORDS_COURTS`, raccords.js). Le VRAI tracé que main.js donne à la rue,
+  // sous node (`sonde-rue-dense.cjs raccords`), contre les vraies voies des
+  // anneaux : il ne reste que les demi-tours (20 blocs sur 5 raccords, mesuré),
+  // et la table est celle que la règle donne aujourd'hui — un anneau qui
+  // bouge rougit ce témoin et nomme le raccord à remesurer.
+  {
+    let b = null, err = '';
+    try { b = await require('./sonde-rue-dense.cjs').mesurer('raccords'); } catch (e) { err = String(e && e.message || e); }
+    verifier('rue : un raccord d\'autoroute ne roule pas dans la voie d\'un anneau — il s\'arrête avant, il ne reste que des demi-tours',
+      !!b && b.raccords > 40 && b.blocs.long > 300 && b.blocs.jeu < 100 && b.touches.jeu <= 6,
+      b ? JSON.stringify({ raccords: b.raccords, touches: b.touches, blocs: b.blocs, pires: b.pires }) : `sonde : ${err}`);
+    verifier('rue : la table des raccords courts est celle que la règle rend aujourd\'hui (un anneau qui bouge la fait remesurer)',
+      !!b && b.ecarts.length === 0, b ? JSON.stringify(b.ecarts) : `sonde : ${err}`);
+  }
   // --- LA PENTE ET LA BOSSE (palier 3 de la conduite) ---------------------
   // Mesuré sur `origin/main` (`tests/sonde-pente.cjs`, six côtes, six
   // descentes et six plats de la campagne, une sportive à plein gaz) : 26,4

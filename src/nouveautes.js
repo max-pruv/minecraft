@@ -6,11 +6,28 @@
 
 export const NOUVEAUTES = [
   {
-    v: 442,
+    v: 444,
     titre: 'Le train voit ta voiture',
     puces: [
       'Il s\'arrête même quand le jeu rame',
       'Les voitures de la rue aussi',
+    ],
+  },
+  {
+    v: 443,
+    titre: 'Des colonnes bien placées',
+    puces: [
+      'Les colonnes d\'affiches ont de la place',
+      'Plus jamais devant une porte',
+    ],
+  },
+  {
+    v: 442,
+    titre: 'Moins de bouchons en ville',
+    puces: [
+      'Les voitures de l\'autoroute font demi-tour',
+      'Elles gardent leur propre voie',
+      'Madrid roule bien mieux',
     ],
   },
   {

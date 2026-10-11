@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v442 — Le train voit la voiture de l'enfant, même quand le jeu rame
+## v444 — Le train voit la voiture de l'enfant, même quand le jeu rame
 
 **Pourquoi.** Un train traversait la voiture de l'enfant posée sur la voie,
 chaque fois qu'une image était lente — sur la tablette, ce sont les images de
@@ -53,6 +53,53 @@ branche 0 traversée sur 4 poses, `origin/main` 1 sur 7 (et trois poses où
 une voiture était déjà dedans au départ) — un tirage, pas une preuve : leur
 regard portait déjà quarante blocs. Ce volet se juge sur sa construction (la
 marge couvre l'avance de l'image), et il est déclaré comme tel.
+## v443 — Les colonnes Morris se plantent dans le vide
+
+**Pourquoi.** La colonne Morris de la v289 se posait au tirage, sans regarder
+autour d'elle. Mesuré sur huit quartiers : 43 colonnes sur 76 à moins de deux
+blocs d'un banc, d'une terrasse ou d'une autre colonne, et deux collées contre
+une porte cochère.
+
+**Ce que ça change.** Une colonne se plante désormais à l'air libre sur ses
+quatre côtés, seule dans son voisinage : ni contre un mur ou une porte, ni à
+deux blocs d'un autre meuble. Le tirage double pour en garder autant (60 sur
+les huit quartiers).
+
+**Ce qui le prouve.** Un témoin neuf de `parishd.js` relève toutes les
+colonnes de huit quartiers : 0 mal plantée sur 45 dans sa fenêtre, 29 sur 54
+avec la règle d'avant, 43 sur 76 sur `origin/main` (rouge). L'empreinte des
+490 morceaux change (`8bea731f…`) et se prouve : la règle d'avant rejouée
+(`morrisDegagees: false`) rend la constante `239f48ab…` au bit près. Jugé en
+capture à Saint-Germain.
+
+---
+
+## v442 — Les voitures de l'autoroute n'entrent plus dans les anneaux de la ville
+
+**Pourquoi.** Une autoroute entre dans une ville engendrée par son avenue
+d'entrée, l'axe de la trame jusqu'à la place. Or cet axe est souvent le côté
+d'un anneau de la ville : dix-neuf des quarante-six raccords route/ville
+roulaient dans la MÊME voie qu'un ou plusieurs convois de l'anneau, même sens
+ou en face (569 blocs en tout ; Madrid 85, Agra 68, Amsterdam 69, Kyoto 53).
+Deux grilles horaires indépendantes sur une voie ne se cadencent pas l'une
+contre l'autre : à Madrid, 6,7 à 6,9 % des paires de voitures étaient l'une
+dans l'autre.
+
+**Ce que ça change.** Les voitures de l'autoroute entrent dans la ville aussi
+loin que la rue est à elles, puis font demi-tour quatre blocs avant la voie
+d'un anneau. Madrid tombe à 1,0 à 1,5 % de paires au contact — ce qui reste
+est en travers, entre deux anneaux, réglé par la priorité au carrefour. Les
+deux autres pistes ont été mesurées : arrêter l'autoroute à la porte partage
+encore 44 blocs (les demi-tours) et ne fait plus entrer personne ; faire du
+raccord une voiture de l'anneau n'existe pas sans téléporter.
+
+**Ce qui le prouve.** Deux témoins neufs (`plafond.js`), sur le vrai tracé que
+le jeu donne à la rue et les vraies voies des anneaux, sous node : il ne reste
+que cinq demi-tours (20 blocs), et la table des raccords courts est celle que
+la règle rend aujourd'hui — vérifiés rouges sur la table vidée (569 blocs,
+19 raccords). Au navigateur, `sonde-circulation.cjs madrid` en ordre alterné :
+6,74 et 6,85 % avec l'avenue entière (`?raccords=long`), 1,47 et 1,02 % avec
+le raccord court.
 
 ---
 
