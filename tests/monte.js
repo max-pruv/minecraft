@@ -6973,6 +6973,14 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       // deux, c'est le rapport : 0,25 contre 0 sur l'ancien code.
       !S.err && S.son && S.secoue.max > 0.12 && S.secoue.max > 3 * S.calme.max
         && S.son.piqueChoc > 2 * S.son.piqueAvant, msg);
+    // LA PENTE (v423) : la physique publie `player.tangage` depuis la v408 et
+    // personne ne le dessinait. Figé à 0,3 rad, le nez doit monter de
+    // 4 × sin 0,3 ≈ 1,2 bloc au-dessus de la queue ; à 0, rester à plat. Sur
+    // l'ancien code la caisse ignore le champ : nez et queue à la même hauteur.
+    verifier('dans une côte, le nez de la voiture monte avec la pente',
+      !S.err && S.pente && Math.abs(S.pente.plat) < 0.3 && S.pente.cote - S.pente.plat > 0.6, msg);
+    verifier('et retomber sur ses roues s\'entend',
+      !S.err && S.son && S.son.piqueSol > 2 * S.son.piqueAvantSol, msg);
     verifier('dos à un mur, la caméra reste du côté de la voiture',
       !S.err && S.mur.libre, msg);
     verifier('et en descendant, le champ revient et la voiture se pose à plat',

@@ -806,6 +806,14 @@ règles.
   compter deux fois. Les avions gardent la poursuite d'avant à l'identique ;
   `?sensations=0` rejoue l'ancienne conduite, pour mesurer.
 
+**La pente se dessine (v423).** La physique publie `player.tangage` (v408,
+nez en haut positif — le signe de `rotation.x` sur un modèle au nez en −z) et
+le RÉÉCRIT à chaque image ; `sensations.js` l'ajoute au tangage de la caisse,
+borné à `PENTE_MAX`. `player.atterrissage` est un ÉVÉNEMENT daté, comme
+`choc` : on retient son `t` et l'on ne réagit qu'à un `t` neuf, jamais à celui
+qu'on trouve en montant. Le témoin fige le champ par une propriété qui ignore
+ce qu'on lui écrit (v358), et lit la pente dans la matrice monde.
+
 ## Un contour dans l'autre sens, et les rues du Strip (v418) — ce qui empêchait le contour n'était pas l'absence de rue
 
 Deux règles.

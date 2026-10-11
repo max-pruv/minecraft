@@ -171,6 +171,15 @@ async function mesurerSensations() {
     await tenir(0.45);
     son.piqueChoc = +pic().toFixed(4);
     son.piqueAvant = +son.piqueAvant.toFixed(4);
+    // ET L'ATTERRISSAGE S'ENTEND (v423) : `player.atterrissage` est un
+    // événement daté que la physique pose au retour au sol (v408). On attend
+    // que le choc se taise — la fenêtre de l'analyseur couvre 0,74 s — puis
+    // on pose l'événement comme la physique le ferait.
+    await tenir(1.6);
+    son.piqueAvantSol = +Math.max(pic(), (await tenir(0.8), pic())).toFixed(4);
+    P.atterrissage = { force: 1, t: performance.now(), air: 0.6, hauteur: 2 };
+    await tenir(0.45);
+    son.piqueSol = +pic().toFixed(4);
     try { sortie.disconnect(long); } catch { /* déjà */ }
     son.bandeAvant = +bandeAvant.toExponential(2); son.bandeDerive = +bandeDerive.toExponential(2);
     try { sortie.disconnect(an); } catch { /* déjà */ }
@@ -227,10 +236,31 @@ async function mesurerSensations() {
     camZ: +cam.position.z.toFixed(2), murZ: k, hauteur: +(cam.position.y - P.pos.y).toFixed(2) };
   for (let x = Math.floor(zx) - 5; x <= Math.floor(zx) + 5; x++) for (let y = y0 + 1; y <= y0 + 9; y++) g.world.setBlock(x, y, k, 0);
 
+  // 6. LA PENTE (v423) ---------------------------------------------------------
+  // La physique publie `player.tangage` (v408, nez en haut positif) et le
+  // réécrit à chaque image : on le FIGE (v358 : un témoin qui pose un champ
+  // que la physique réécrit doit le figer), voiture arrêtée sur le plat, et
+  // l'on lit dans la MATRICE MONDE la hauteur du nez contre celle de la
+  // queue — deux blocs devant et derrière le centre, le nez en −z.
+  P.yaw = 0; P.pos.set(ax, y0 + 1.01, az); P.vel.set(0, 0, 0); P.vitesseVoiture = 0;
+  const nezMoinsQueue = () => {
+    a.mesh.updateMatrixWorld(true);
+    const n = new THREE.Vector3(0, 0, -2).applyMatrix4(a.mesh.matrixWorld);
+    const q = new THREE.Vector3(0, 0, 2).applyMatrix4(a.mesh.matrixWorld);
+    return +(n.y - q.y).toFixed(3);
+  };
+  const figer = (v) => Object.defineProperty(P, 'tangage', { configurable: true, get: () => v, set: () => {} });
+  figer(0); await tenir(1.0);
+  const plat = nezMoinsQueue();
+  figer(0.3); await tenir(1.0);
+  const cote = nezMoinsQueue();
+  delete P.tangage; P.tangage = 0;
+  const pente = { plat, cote };
+
   for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await tenir(0.4); }
   await tenir(0.8);
   const aPied = { fov: +cam.fov.toFixed(2), penche: +a.mesh.rotation.z.toFixed(4) };
-  return { modele: a.mesh.userData.flotte, def, repos, ligne, virage, son, calme, secoue, mur, aPied };
+  return { modele: a.mesh.userData.flotte, def, repos, ligne, virage, son, calme, secoue, mur, pente, aPied };
 }
 
 if (typeof module !== 'undefined') module.exports = { mesurerSensations };
