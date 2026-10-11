@@ -12,21 +12,29 @@ const { Banc } = require('./banc.js');
   try {
     for (let passe = 0; passe < Number(process.env.PASSES || 2); passe++) {
       const p = await banc.jouerSeul('RueFeu' + passe, { tactile: true });
-      const r = await p.evaluate(async () => {
+      const r = await p.evaluate(async (VIDE) => {
         const m = await import('./src/mondes.js'); const P = m.positionDe('paris'); const g = window.__game;
         g.player.pos.set(P.x + 30, 70, P.z - 10); g.player.vel.set(0, 0, 0); g.player.flying = true;
         const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
-        const suites = new Map(); const vit = [];
+        const suites = new Map(); const vit = []; let feuDirect = 0;
         const f0 = g.renderer.info.render.frame, t0 = performance.now();
         while (performance.now() - t0 < 60000) {
           await dodo(100);
+          if (VIDE) for (const site of (g.passants && g.passants.sites) || []) for (const h of site.peuple || []) {
+            if (h && h.pos && Math.hypot(h.pos.x - g.player.pos.x, h.pos.z - g.player.pos.z) < 250) h.pos.set(P.x + 4000, h.pos.y, P.z + 4000);
+          }
           g.vehicules.etat().forEach((c, ci) => {
             if (!c.routier || c.nom !== 'voiture') return;
             for (const q of c.places) {
               const v = c.vitesses[q[3]]; vit.push(v);
               const k = ci + ':' + q[3]; const s = suites.get(k) || [];
               let fine = null;
-              if (v < 3.5) { const d = g.vehicules.diagVoiture(ci, q[3]); fine = d ? (d.cause || '-') : 'x'; }
+              if (v < 3.5) {
+                const d = g.vehicules.diagVoiture(ci, q[3]); fine = d ? (d.cause || '-') : 'x';
+                // ce qui retient la voiture de devant, une file plus haut
+                if (d && d.bloquant) { const [bc, bi] = d.bloquant.split(':').map(Number); const b = g.vehicules.diagVoiture(bc, bi); fine += '<' + (b ? (b.cause || '-') : 'x'); }
+                if (d && d.cause === 'feu' && v < 0.3) feuDirect++;
+              }
               s.push([v, performance.now(), c.causes[q[3]], fine]); suites.set(k, s);
             }
           });
@@ -37,14 +45,14 @@ const { Banc } = require('./banc.js');
           let j = i - 1; while (j >= 0 && s[j][0] < 3 && s[j][0] >= 0.3) j--;
           if (j >= 0 && s[j][0] >= 3 && s[i][2] === 1) {
             const dec = s[j][0] / Math.max(1e-3, (s[i][1] - s[j][1]) / 1000);
-            arrets.push({ k, dec: +dec.toFixed(1), sec: dec > 10, causeArret: s[i][3], causeAvant: s[j][3], suite: s.slice(j, i + 1).map((x) => x[3]).join('>') });
+            arrets.push({ k, dec: +dec.toFixed(1), sec: dec > 10, causeArret: s[i][3], causeAvant: s[j][3], suite: s.slice(Math.max(0, j - 3), i + 2).map((x) => [+x[0].toFixed(1), Math.round(x[1] - s[j][1]), x[3]]) });
           }
           while (i < s.length && s[i][0] < 0.3) i++;
         }
         vit.sort((a, b) => a - b);
         return { images: g.renderer.info.render.frame - f0, releves: vit.length, mediane: vit[Math.floor(vit.length / 2)],
-          arrets: arrets.length, secs: arrets.filter((a) => a.sec), causesArret: arrets.reduce((o, a) => { o[a.causeArret] = (o[a.causeArret] || 0) + 1; return o; }, {}) };
-      });
+          arrets: arrets.length, feuDirect, secs: arrets.filter((a) => a.sec), causesArret: arrets.reduce((o, a) => { o[a.causeArret] = (o[a.causeArret] || 0) + 1; return o; }, {}) };
+      }, !!process.env.VIDE);
       console.log('passe', passe, JSON.stringify(r));
       await p.close();
     }

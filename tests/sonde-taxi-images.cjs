@@ -32,6 +32,7 @@ const { Banc } = require('./banc.js');
       const doigt = await p.context().newCDPSession(p);
       await doigt.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 100, y: 320 }] });
       await doigt.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 100, y: 270 }] });
+      if (process.env.PETIT) await p.setViewportSize({ width: 16, height: 16 });
       const r = await p.evaluate(async () => {
         const g = __game, z0 = g.player.pos.z, f0 = g.renderer.info.render.frame;
         let tours = 0, jeu = 0, last = performance.now();
@@ -41,7 +42,7 @@ const { Banc } = require('./banc.js');
           const tic = (now) => {
             tours++; jeu += Math.min(Math.max((now - last) / 1000, 0), 0.05); last = now;
             if (tours % 5 === 0) rel.push([tours, g.renderer.info.render.frame - f0, +jeu.toFixed(2), +(z0 - g.player.pos.z).toFixed(1)]);
-            if (performance.now() - t0 > 40000) return fin();
+            if (performance.now() - t0 > 20000) return fin();
             requestAnimationFrame(tic);
           };
           requestAnimationFrame(tic);

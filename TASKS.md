@@ -1,5 +1,25 @@
 # Ce qui est en cours
 
+- [ ] **AU FEU, LA VOITURE DE FILE PILE DERRIÈRE CELLE QUI S'ARRÊTE (vraie
+  panne, zone conduite — trouvée par la session banc-lot3).** Le témoin
+  « au feu, la voiture freine sur plusieurs relevés » de `monte.js` comptait
+  comme « au feu » tout arrêt de cause 1 (`etat().causes`), c'est-à-dire aussi
+  la FILE d'un feu, légitime derrière un feu, un piéton, l'enfant ou un train
+  (v395) : ses arrêts « au feu » étaient des voitures de file, parfois
+  derrière un PIÉTON. Il a désormais sa fenêtre à lui (passants écartés,
+  l'idiome v284) et remonte la file jusqu'à sa cause racine
+  (`diagVoiture`) : seul un feu au bout compte. Jugé pas à pas (chaque paire de
+  relevés d'une voiture retenue par un feu, depuis 3 b/s), sur une page neuve
+  rejouée cinq fois : la pire perte vaut 14 à 38 b/s² — et la pire est TOUJOURS
+  une voiture de file (convoi 116 de Paris) qui passe de 4,3 b/s à 0 en
+  112 ms derrière une voiture arrêtée au feu (`1×file<feu`). Ce saut ne peut
+  pas venir de `rapprocher` (0,375 b/s par image au plus) : c'est l'arrêt
+  d'urgence au contact (`urgence[i]` → `v = 0`), que la v395 réservait aux
+  contacts ENTRE files. Dans la même fenêtre, passants écartés, le taux de
+  voitures l'une dans l'autre monte à 2–18 % (0 à 2 avec les passants) :
+  probablement la même suiveuse qui rattrape sa tête. Le témoin reste rouge,
+  il garde une vraie panne. Sonde : `tests/sonde-rue-feu.cjs` (`VIDE=1`).
+
 - [ ] **PORTAIL DES PONTS (v430) — DOUBLE MESURE (règle v195).** Portail
   complet (base v419) coupé à sa limite de deux heures pendant `reseau.js` ;
   rouges déjà déclarés : `carte.js` « la faire glisser non plus » (427 ms),
