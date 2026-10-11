@@ -254,7 +254,7 @@ const masqueReserve = [];
 // iPad de trois gigaoctets. Le fil principal ne demande le détail qu'à portée
 // de `RAYON_HD`, et le redemande quand un morceau y entre.
 export function buildChunkTampons(world, cx, cz, options = {}) {
-  // (`toitsQuartier: false` rejoue la clé de toit d'avant la v445, le temps du morceau)
+  // (`toitsQuartier: false` rejoue la clé de toit d'avant la v446, le temps du morceau)
   if (options.toitsQuartier === false) {
     rejouerToitsAvant(true);
     try { return buildChunkTampons(world, cx, cz, { ...options, toitsQuartier: undefined }); } finally { rejouerToitsAvant(false); }

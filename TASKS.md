@@ -288,7 +288,7 @@
   Portail : le témoin vert ; rouges déclarés `maj.js` (loader ×2) et
   `manhattan.js` (trou, taxi) — mêmes rouges seuls sur `origin/main` v406,
   mesurés le même jour (portail de la v410).
-- [ ] **LE PORTAIL DE LA v445 (le toit qui ne déborde plus d'un quartier),
+- [ ] **LE PORTAIL DE LA v446 (le toit qui ne déborde plus d'un quartier),
   PREUVE STRUCTURELLE ET DOUBLE MESURE DE LA FUMÉE.** Dix-sept suites,
   `--malgre-fumee` ; `parishd.js` (le témoin neuf : 176 600 paires, 0
   fautive), `plafond.js` (empreinte des 490 morceaux) et `carteMonde.js`
@@ -3741,7 +3741,7 @@
   `monumentshd.js` : Tour Eiffel en treillis, Notre-Dame, Arc, pyramide du
   Louvre, Sacré-Cœur, Panthéon, Opéra, Invalides, Montparnasse). Dettes
   déclarées de la v289 :
-  - [x] **FAIT EN v445** (mesuré : les seules paires fautives étaient 7 colonnes
+  - [x] **FAIT EN v446** (mesuré : les seules paires fautives étaient 7 colonnes
     de deux quartiers se prêtant (îlot, travée) ; la clé porte le quartier).
     Historique : le champ de hauteurs lisse un immeuble avec lui-même (`infoFacadeParis`,
     îlot et travée) : deux LOTS voisins d'un même immeuble de hauteurs

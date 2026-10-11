@@ -71,7 +71,7 @@ const VUES = [
   // v443 : des colonnes Morris dégagées (relevées sous node), vues à cinq blocs
   { nom: 'morris-degagee', x: -417, z: 379, yaw: Math.PI / 2 - 0.35, pitch: 0.2, h: 1.4 },
   { nom: 'morris-degagee-2', x: -318, z: 353, yaw: Math.PI / 2 - 0.35, pitch: 0.2, h: 1.4 },
-  // v445 : un toit à la limite de Saint-Germain et d'Haussmann (−433, 422),
+  // v446 : un toit à la limite de Saint-Germain et d'Haussmann (−433, 422),
   // où deux quartiers se prêtaient la même clé d'immeuble
   { nom: 'toit-quartiers', x: -441, z: 428, yaw: -Math.PI / 2 + 0.6, pitch: -0.35, h: 24 },
   { nom: 'terrasse-monceau', x: -509, z: 247, yaw: -Math.PI / 2 + 0.5, pitch: 0.1, h: 1.4 },

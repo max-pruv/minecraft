@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v445 — Un toit ne déborde plus d'un quartier sur l'autre
+## v446 — Un toit ne déborde plus d'un quartier sur l'autre
 
 **Pourquoi.** Le comble de Paris (v289) lisse les colonnes d'un même immeuble,
 qu'il reconnaît à son îlot et à sa travée. Ces indices sont ceux de la trame
@@ -41,6 +41,36 @@ L'empreinte des 490 morceaux change (`c195fbc1…`, un des morceaux porte une
 limite) et se prouve : la clé d'avant rejouée (`toitsQuartier: false`) rend
 la constante `fb4f9aed…` (celle de la v444) au bit près. Capture avant/après du toit à la limite
 de Saint-Germain : rien d'autre ne bouge.
+
+---
+
+## v445 — Les commandes de l'avion se rangent
+
+**Pourquoi.** Max, deux captures d'iPhone au-dessus de l'Amérique du Nord :
+le cadran de cap posé par-dessus la minicarte, et en dessous trois textes l'un
+sur l'autre — « À l'arrêt », le GPS « fais demi-tour », la minicarte —
+illisibles. En bas à droite, « Descendre » flottait au-dessus de la colonne
+✈️/🛞 et de la manette des gaz, et le tout mangeait le quart de l'écran où
+l'on voit l'avion ; le défi de Cornichon, lui, se posait sur les commandes.
+Chaque élément avait sa cote écrite à la main, réglée sans les autres :
+mesuré à 430 × 932, six paires qui se recouvrent.
+
+**Ce que ça change.** Tout ce qui s'affiche en haut au milieu — cadran de cap,
+GPS, proposition d'un ami, défi de Cornichon, bandeau — se range dans une
+seule file, sous le chronomètre, à droite de la minicarte quand elle est
+ouverte : rien ne peut plus s'y recouvrir. Aux commandes, ⬇️ DESCENDRE, ✈️ et
+🛞 sont trois boutons ronds d'une seule colonne, exactement à la hauteur de la
+manette (plus fine), la vitesse en dessous : moins de place prise sur l'avion,
+rien dans la zone du joystick. Et le quiz du Prof. Cornichon met le vol en
+pause, mesuré.
+
+**Ce qui le prouve.** Trois témoins de `monte.js`, joués à la taille de
+l'iPhone de Max ET à celle du banc, formulés sans dimension d'écran : aucun
+recouvrement entre minicarte, cadran, GPS, bandeau, défi et commandes ; une
+colonne d'un seul x, rien au-dessus du haut de la manette ni dans le quart du
+joystick ; l'avion ne bouge pas sous le quiz. Les deux premiers sont rouges
+sur `origin/main` (six recouvrements, dont le défi sur la manette), le
+troisième garde une capacité. Capture relue aux deux tailles avant de livrer.
 
 ---
 

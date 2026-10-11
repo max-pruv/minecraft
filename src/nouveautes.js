@@ -6,10 +6,19 @@
 
 export const NOUVEAUTES = [
   {
-    v: 445,
+    v: 446,
     titre: 'Des toits bien rangés',
     puces: [
       'Chaque immeuble garde son propre toit',
+    ],
+  },
+  {
+    v: 445,
+    titre: 'Les commandes de l\'avion rangées',
+    puces: [
+      'Plus rien ne se chevauche en vol',
+      'Descendre rejoint la colonne de bord',
+      'Le quiz met l\'avion en pause',
     ],
   },
   {
