@@ -522,6 +522,12 @@
   déclarée) — après la fusion de la v386, `maj.js` et `plafond.js` rejoués
   SEULS sur la branche, et `maj.js` seul sur `origin/main` v386 : verts tous
   les trois.
+  Portail de la v454 (garde-corps des baies étroites) : mêmes rouges, tous
+  déclarés ci-dessus — `visio.js` radio, `maj.js` loader, `carte.js` fond à
+  froid 436 ms et glisser 525 ms, `monte.js` circulation devant l'enfant, Rome
+  en biais, Moscou, mur de face ; `reseau.js` coupé à la limite de deux heures
+  du banc, sans un rouge jusque-là. Hors du diff par construction : `uvFerronnerie`
+  n'est lue que par la couche détaillée, que le banc coupe en rendu logiciel.
 
 - [ ] **LE PORTAIL DE LA v395 (la rue à l'allure d'une ville), DOUBLE MESURE
   Portail du rebase sur la v380 : `monte.js` rouge sur « en vol, on ne rattrape pas le bout du monde » (chasseur 58/60) — rejouée SEULE sur la branche : 184 verts, zéro rouge (chasseur 72/60). `reseau.js` verte ; `manhattan.js` façade 22 326 → 51 734, déclarée.
@@ -3920,7 +3926,7 @@
     `manhattan.js` le trou (déclaré) ; `monte.js` la compilation à l'arrivée,
     le flanc frôlé et « un mur pris de face » (déclarés). Le témoin du
     mobilier (`parishd.js`) vert au portail.
-  - [ ] la ferronnerie d'un garde-corps sur une baie étroite (Marais, 0,28 de
+  - [x] FAIT en v454 (`uvFerronnerie`, travées entières : 1 212 garde-corps, 0 coupés) — la ferronnerie d'un garde-corps sur une baie étroite (Marais, 0,28 de
     large) se lit comme un glyphe : la tuile `fer` est faite pour une travée
     entière — une tuile à part pour les petites baies ;
   - [ ] les Champs-Élysées à `dx = −4,3 km` rendent de l'herbe et non

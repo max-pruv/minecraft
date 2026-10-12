@@ -6,6 +6,13 @@
 
 export const NOUVEAUTES = [
   {
+    v: 454,
+    titre: 'De jolies petites grilles',
+    puces: [
+      'Les balcons des petites fenêtres sont dessinés',
+    ],
+  },
+  {
     v: 453,
     titre: 'La rue sans à-coups',
     puces: [
