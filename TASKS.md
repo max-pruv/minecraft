@@ -36,6 +36,14 @@
   le disque de Londres (zéro bloc hors du disque, mesuré bloc par bloc) ; ni la
   carte, ni Manhattan, ni la circulation de Paris ne le lisent, et la rame ne
   lit aucun bloc pour céder.
+- [ ] **PORTAIL DE LA v453 (la rue sans à-coups).** Coupé à sa limite de deux
+  heures pendant `reseau.js` (délai de `rejoindre`, famille déclarée). Rouges,
+  tous déjà déclarés ici : `carte.js` appui long, flèche du GPS, fond de carte
+  à froid (418 ms) et glisser bridé ×4 (516 ms) ; `manhattan.js` le taxi
+  tactile ; `monte.js` l'avatar au volant (`avatar:false`), « au feu, la
+  voiture freine » (2 arrêts secs sur 6 833 relevés, médiane 4,5 — la sonde
+  `sonde-feu-image.cjs` reste la mesure de la livraison), Moscou (rues
+  pleines, livrées). Non rejoué : consigne de budget de Max.
 - [ ] **PORTAIL DES PONTS (v430) — DOUBLE MESURE (règle v195).** Portail
   complet (base v419) coupé à sa limite de deux heures pendant `reseau.js` ;
   rouges déjà déclarés : `carte.js` « la faire glisser non plus » (427 ms),
