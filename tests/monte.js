@@ -3263,7 +3263,14 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
           // freine à 3,5 b/s² passe de 13 à 0 entre deux relevés sans piler
           // (vu : un « sec » sur 26 s de portail). Pile, c'est plus que le
           // freinage d'urgence (7,5) avec marge : 10 b/s².
-          if (j >= 0 && s[j] >= 3 && feuS.get(cle)[k] === 1) {
+          // UN ARRÊT AU FEU L'EST SUR TOUTE SA DESCENTE (v450) : une voiture que
+          // l'urgence ou une autre voiture arrête, puis qui se retrouve dans la
+          // file du feu, n'a pas freiné pour un feu. Et ce que ce verdict a vu
+          // de vrai (v438, « un sec à 45 b/s² ») était la suiveuse d'une file
+          // recollée au plancher en une image — corrigé dans vehicules.js,
+          // mesuré par `sonde-feu-image.cjs` (5 secs sur 9 arrêts sur
+          // `origin/main`, 0 sur 12 ici).
+          if (j >= 0 && s[j] >= 3 && feuS.get(cle).slice(j, k + 1).every((f) => f === 1)) {
             const ts = tempsS.get(cle), dec = s[j] / Math.max(1e-3, (ts[k] - ts[j]) / 1000);
             arrets++; if (dec <= 10) progressifs++; else { secs++; pires.push(+dec.toFixed(1)); }
           }

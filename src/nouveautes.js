@@ -6,10 +6,19 @@
 
 export const NOUVEAUTES = [
   {
-    v: 453,
+    v: 454,
     titre: 'De jolies petites grilles',
     puces: [
       'Les balcons des petites fenêtres sont dessinés',
+    ],
+  },
+  {
+    v: 453,
+    titre: 'La rue sans à-coups',
+    puces: [
+      'Les voitures freinent doucement au feu',
+      'Le bus a sa place dans la file',
+      'Moins de bouchons à l\'entrée des villes',
     ],
   },
   {

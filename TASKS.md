@@ -36,6 +36,14 @@
   le disque de Londres (zéro bloc hors du disque, mesuré bloc par bloc) ; ni la
   carte, ni Manhattan, ni la circulation de Paris ne le lisent, et la rame ne
   lit aucun bloc pour céder.
+- [ ] **PORTAIL DE LA v453 (la rue sans à-coups).** Coupé à sa limite de deux
+  heures pendant `reseau.js` (délai de `rejoindre`, famille déclarée). Rouges,
+  tous déjà déclarés ici : `carte.js` appui long, flèche du GPS, fond de carte
+  à froid (418 ms) et glisser bridé ×4 (516 ms) ; `manhattan.js` le taxi
+  tactile ; `monte.js` l'avatar au volant (`avatar:false`), « au feu, la
+  voiture freine » (2 arrêts secs sur 6 833 relevés, médiane 4,5 — la sonde
+  `sonde-feu-image.cjs` reste la mesure de la livraison), Moscou (rues
+  pleines, livrées). Non rejoué : consigne de budget de Max.
 - [ ] **PORTAIL DES PONTS (v430) — DOUBLE MESURE (règle v195).** Portail
   complet (base v419) coupé à sa limite de deux heures pendant `reseau.js` ;
   rouges déjà déclarés : `carte.js` « la faire glisser non plus » (427 ms),
@@ -514,7 +522,7 @@
   déclarée) — après la fusion de la v386, `maj.js` et `plafond.js` rejoués
   SEULS sur la branche, et `maj.js` seul sur `origin/main` v386 : verts tous
   les trois.
-  Portail de la v453 (garde-corps des baies étroites) : mêmes rouges, tous
+  Portail de la v454 (garde-corps des baies étroites) : mêmes rouges, tous
   déclarés ci-dessus — `visio.js` radio, `maj.js` loader, `carte.js` fond à
   froid 436 ms et glisser 525 ms, `monte.js` circulation devant l'enfant, Rome
   en biais, Moscou, mur de face ; `reseau.js` coupé à la limite de deux heures
@@ -713,6 +721,23 @@
   la v442 ne change que l'avenue d'entrée des autoroutes dans les villes
   engendrées (`raccordDe` dans `entree()`), aucun de ces témoins ne roule sur
   une autoroute ni dans une ville engendrée.
+  **FAIT en v453** : raccords des villes bâties à la main (633 → 26 blocs,
+  dont Lille A1 47 → 0) ; le BUS prend la place de la voiture 0 de son anneau
+  (36 004 contacts de grille → 0, les 263 anneaux jouent, 4 380 → 4 125
+  voitures) ; la fabrique d'un circuit se fait par TRANCHES avant la naissance
+  (56 circuits identiques au bit près, étape la plus longue 4,4 ms) ; la
+  suiveuse freine avant le plancher de file, dans sa file et sur la ligne
+  (arrêts secs au feu 5/9 → 1/17, `sonde-feu-image.cjs`, huit passes ; le
+  reste, 14 à 33 b/s², vient d'un `v` interne plus haut que `vLoc` après un
+  recollage, que `rapprocher` ramène en une image — à reprendre en partant
+  de `vLoc` plutôt que de `v`) ; les deux témoins repointés (`monte.js` juge un
+  arrêt au feu sur toute sa descente, `degats.js` prend 26 blocs d'élan).
+  RESTE : les deux circuits en huit de Paris (rangs 1 et 3) n'ont pas de
+  jumelle — seul `n = 4` passe leur croisement ; le remède est de CASSER
+  chaque huit en deux circuits dans `paris.js` (autre session), puis de
+  remesurer `sonde-rue-dense.cjs boulevards`. Et les cinq demi-tours de
+  raccord (Turin 9, Hambourg 6…), qu'un demi-tour avant la porte (le
+  corridor, `routes.js`) supprimerait.
   **(5) LE HUIT DE TOKYO, MESURÉ RÉSOLU.** Au même point (53 383, 8 048) :
   0,25 % de paires au contact, toutes en travers entre deux convois (la
   cession locale), zéro dans une file — les contours des v432 et v435 ont
@@ -3901,7 +3926,7 @@
     `manhattan.js` le trou (déclaré) ; `monte.js` la compilation à l'arrivée,
     le flanc frôlé et « un mur pris de face » (déclarés). Le témoin du
     mobilier (`parishd.js`) vert au portail.
-  - [x] FAIT en v453 (`uvFerronnerie`, travées entières : 1 212 garde-corps, 0 coupés) — la ferronnerie d'un garde-corps sur une baie étroite (Marais, 0,28 de
+  - [x] FAIT en v454 (`uvFerronnerie`, travées entières : 1 212 garde-corps, 0 coupés) — la ferronnerie d'un garde-corps sur une baie étroite (Marais, 0,28 de
     large) se lit comme un glyphe : la tuile `fer` est faite pour une travée
     entière — une tuile à part pour les petites baies ;
   - [ ] les Champs-Élysées à `dx = −4,3 km` rendent de l'herbe et non
