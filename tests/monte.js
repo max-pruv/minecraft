@@ -6543,13 +6543,16 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
           const g = window.__game, t1 = performance.now();
           while (performance.now() - t1 < 15000 && g.player.pilote) await new Promise((f) => setTimeout(f, 200));
           await new Promise((f) => setTimeout(f, 1500));
+          // debout : on attend qu'il ait touché le sol (borné), la durée entre dans le message
+          const t2 = performance.now();
+          while (performance.now() - t2 < 6000 && !g.player.onGround) await new Promise((f) => setTimeout(f, 200));
           const epave = g.animalManager.animals.find((b) => b.def.pilote);
           const e = epave ? g.fun.degats.etat(epave.mesh) : null;
           const toast = document.getElementById('toast');
           return {
             pilote: !!g.player.pilote, auVolant: !!(g.fun.montureConduite && g.fun.montureConduite()), sol: !!g.player.onGround,
             loin: epave ? +Math.hypot(g.player.pos.x - epave.mesh.position.x, g.player.pos.z - epave.mesh.position.z).toFixed(1) : null,
-            enFeu: !!(e && e.enFeu), horsService: !!(epave && epave.mesh.userData.horsService),
+            enFeu: !!(e && e.enFeu), horsService: !!(epave && (epave.horsService || epave.mesh.userData.horsService)), y: +g.player.pos.y.toFixed(2),
             bandeau: toast ? toast.textContent : '', duree: Math.round(performance.now() - t1),
           };
         });
