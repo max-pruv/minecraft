@@ -87,7 +87,7 @@ import * as NICE_V340 from './nice-v340.js';
 import * as SF_V343 from './sanfrancisco-v343.js';
 import * as LILLE_V344 from './lille-v344.js';
 import * as WASHINGTON_V367 from './washington-v367.js';
-import { surLaVoie, presDeLaVoie, voieEn, brancherSol, gareEn, rubansVoieDans } from './trains.js';
+import { surLaVoie, presDeLaVoie, voieEn, brancherSol, gareEn, rubansVoieDans, PAS_PILE, EP_TABLIER, EMPRISE } from './trains.js';
 import { routeEn, rubansDans, brancherSol as brancherSolRoutes } from './routes.js';
 
 // LES CALOTTES POLAIRES. Le planisphère déclare « terre » tout ce qui passe
@@ -113,7 +113,8 @@ export const NEIGE_TOUNDRA = 46;
 const DENSITE_MAX = 0.08;
 // L'HEURE DE LA RÈGLE DES CLIMATS (v345), relue à la fusion (v309) : un bloc
 // posé avant a été posé sur le monde d'avant, et son morceau garde ses arbres.
-export const DATE_CLIMATS = Date.parse('2026-10-04T22:10:00Z');
+// Relue à la fusion de la v469 (le climat méditerranéen ajoute des arbres).
+export const DATE_CLIMATS = Date.parse('2026-10-16T09:22:00Z');
 export function solDeToundra(x, z, h) {
   if (h >= NEIGE_TOUNDRA) return BLOCK.SNOW;
   return fbm(x * 0.07, z * 0.07, SEED + 941) > 0.64 ? BLOCK.GRAVEL : BLOCK.GRASS;
@@ -3051,7 +3052,7 @@ export class World {
     const r = routeEn(x, z);
     if (r) return r;
     const v = voieEn(x, z);
-    return v ? { seg: v.seg, d: v.d, cote: v.cote, piece: v.piece, ouvrage: false, rail: true } : null;
+    return v ? { seg: v.seg, d: v.d, cote: v.cote, piece: v.piece, ouvrage: !!v.ouvrage, rail: true } : null;
   }
   rubansDans(x0, z0, x1, z1) {
     const r = rubansDans(x0, z0, x1, z1), v = rubansVoieDans(x0, z0, x1, z1);
@@ -3060,7 +3061,11 @@ export class World {
   // La cote du tablier d'un pont au-dessus de ce point, ou null.
   tablierEn(x, z) {
     const r = routeEn(x, z);
-    return r && r.ouvrage ? r.cote : null;
+    if (r) return r.ouvrage ? r.cote : null;
+    // le tablier d'un viaduc ferroviaire (v465) : le même plancher, lu aux
+    // mêmes cotes que le ruban qui le dessine
+    const v = voieEn(x, z);
+    return v && v.ouvrage ? v.cote : null;
   }
   // LE TABLIER D'UNE COLONNE ENTIÈRE (v430), pour qui demande « y a-t-il un
   // plancher sur cette colonne ? ». Le générateur décide « pont » au COIN de
@@ -3162,6 +3167,7 @@ export class World {
     if (cl === 'toundra' || cl === 'desert') return 0;
     if (cl === 'steppe') return f * 0.05;
     if (cl === 'tropiques') return Math.max(f, 0.6);
+    if (cl === 'mediterranee') return f * 0.45;
     return f;
   }
 
@@ -3233,6 +3239,10 @@ export class World {
     // les tropiques humides (v349) : la forêt dense partout, plus serrée encore
     // que la taïga sur les creux du bruit de forêt
     else if (cl === 'tropiques') density = forest > 0.48 ? 0.08 : 0.035;
+    // le climat méditerranéen (v469) : un pays ouvert de maquis, des oliviers
+    // et des pins parasols épars — moins de bois que la forêt tempérée, un
+    // peu plus d'arbres isolés dans la plaine
+    else if (cl === 'mediterranee') density = forest > 0.62 ? 0.03 : forest > 0.48 ? 0.012 : 0.006;
     if (tirage >= density) return null;
     const h = this.terrainHeight(x, z);
     if (h <= WATER_LEVEL + 1 || h >= 58) return null; // only on grass
@@ -3254,6 +3264,9 @@ export class World {
     if (cl === 'toundra') return { h, trunk: 2, kind: 2 };
     // sous les tropiques : de grands feuillus, et un palmier sur quatre
     if (cl === 'tropiques') return roll < 0.75 ? { h, trunk: trunk + 1, kind: 0 } : { h, trunk: 6 + Math.floor(hash2i(x, z, SEED + 786) * 3), kind: 3 };
+    // sous le soleil méditerranéen (v469) : des oliviers, trapus, et un pin
+    // parasol sur trois, haut fût nu et couronne plate
+    if (cl === 'mediterranee') return roll < 0.65 ? { h, trunk: 2 + Math.floor(hash2i(x, z, SEED + 787) * 2), kind: 5 } : { h, trunk: trunk + 1, kind: 4 };
     const kind = roll < 0.55 ? 0 : roll < 0.85 ? 1 : 2;
     return { h, trunk: kind === 2 ? trunk + 1 : trunk, kind };
   }
@@ -3461,6 +3474,17 @@ export class World {
           // train roule sur le dessus des rails — les quatre lisent la même
           // cote. Plus un bloc d'obsidienne ni de planche sur la voie.
           const y = voie.bloc;
+          if (voie.ouvrage) {
+            // LE VIADUC (v465) : le tablier est un ruban (`rubansVoieDans`) ;
+            // la colonne garde son eau et son lit, et ne reçoit qu'une PILE
+            // tous les `PAS_PILE` blocs, du lit jusque sous le tablier.
+            for (let wy = Math.max(h + 1, WATER_LEVEL + 1); wy <= Math.max(y + 7, h + 2) && wy < HEIGHT; wy++) data[World.index(x, wy, z)] = BLOCK.AIR;
+            if (Math.floor(voie.abs) % PAS_PILE === 0 && voie.d < EMPRISE - 1) {
+              const sommet = Math.floor(voie.cote - EP_TABLIER) - 1;
+              for (let wy = Math.max(0, h + 1); wy <= sommet && wy < HEIGHT; wy++) data[World.index(x, wy, z)] = BLOCK.STONEBRICK;
+            }
+            continue;
+          }
           for (let wy = Math.max(0, Math.min(h, WATER_LEVEL)); wy < y; wy++) {
             if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = BLOCK.STONEBRICK;
           }
@@ -3953,6 +3977,24 @@ export class World {
             put(tx + fx * 3, topY - 1, tz + fz * 3, BLOCK.LEAVES, true);
           }
           put(tx, topY + 1, tz, BLOCK.LEAVES, true);
+        } else if (kind === 4) {
+          // pin parasol (v469) : une ombrelle plate au bout d'un haut fût,
+          // trois blocs de rayon au plus (le balayage déborde de trois)
+          for (const [y, r] of [[topY, 3], [topY + 1, 2]]) {
+            for (let dx = -r; dx <= r; dx++) for (let dz = -r; dz <= r; dz++) {
+              if (dx * dx + dz * dz > r * r + 1) continue;
+              put(tx + dx, y, tz + dz, BLOCK.LEAVES, true);
+            }
+          }
+        } else if (kind === 5) {
+          // olivier (v469) : un tronc court, une couronne ronde et large
+          for (let dy = 0; dy <= 2; dy++) {
+            const r = dy === 1 ? 2 : 1;
+            for (let dx = -r; dx <= r; dx++) for (let dz = -r; dz <= r; dz++) {
+              if (Math.abs(dx) === r && Math.abs(dz) === r && r > 1) continue;
+              put(tx + dx, topY + dy, tz + dz, BLOCK.LEAVES, true);
+            }
+          }
         } else if (kind === 1) {
           // pine: stacked shrinking rings of needles
           const layers = [[topY - 2, 2], [topY - 1, 2], [topY, 1], [topY + 1, 1], [topY + 2, 0]];

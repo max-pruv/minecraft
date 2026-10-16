@@ -13,7 +13,7 @@ const srcBranche = path.resolve(process.argv[4] || path.join(__dirname, '..', 's
   const { passageEn } = await import(path.join(srcBranche, 'passages.js'));
   const { positionDe } = await import(path.join(srcBranche, 'mondes.js'));
   const vues = [];
-  for (const cle of ['rome', 'zurich']) {
+  for (const cle of (process.env.VILLES || 'rome,zurich').split(',')) {
     const p = positionDe(cle);
     let best = null;
     for (let r = 8; r < 60 && !best; r++) for (let k = 0; k < 48 && !best; k++) {

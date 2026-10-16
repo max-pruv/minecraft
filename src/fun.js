@@ -22,7 +22,7 @@ import { liberer } from './liberer.js';
 import { toast } from './bandeau.js';
 import { PLACES, PARK, WATER_LEVEL } from './world.js';
 import { monumentBati } from './monuments.js';
-import { garagesDe, garageAutour, inscrireGarage, garer, sortir } from './garages.js';
+import { garagesDe, garageAutour, inscrireGarage, garer, sortir, planDePose } from './garages.js';
 import { allureDe } from './vehicules.js';
 import { moteurDemarre, moteurRegime, moteurCoupe, radioDemarre, radioCoupe } from './sons.js';
 import { creerDegats } from './degats3d.js';
@@ -257,7 +257,7 @@ export function initFun(ctx) {
       animalManager.animals = animalManager.animals.filter((o) => o !== a);
     } });
 
-  function toggleRide(a) {
+  function toggleRide(a, silencieux = false) {
     if (riding) {
       const quitte = riding;
       riding = null;
@@ -285,7 +285,7 @@ export function initFun(ctx) {
       moteurCoupe(); radioCoupe();
       quitte.montee = false;
       degats.descend();   // dégâts (v343) : plus d'état publié à pied
-      if (!rangerAuGarage(quitte)) toast('🐴 Tu es descendu·e.', 0xd8c9a4);
+      if (!silencieux && !rangerAuGarage(quitte)) toast('🐴 Tu es descendu·e.', 0xd8c9a4);
       return;
     }
     if (!montable(a)) return;
@@ -395,6 +395,9 @@ export function initFun(ctx) {
     if (!passager) return;
     const veh = vehiculeDistant ? vehiculeDistant(passager.de) : null;
     if (!veh) { descendreDePassager(true); return; }
+    // le véhicule de l'ami s'est cassé (aviation) : on descend aussi, sain et sauf
+    const ev = degats.etat(veh.mesh);
+    if (ev && (ev.enFeu || ev.eteint)) { descendreDePassager(true); toast('🧯 Le véhicule de ton ami est cassé — tu en es sorti·e, sain et sauf.', 0x9fe0a8, 4000); return; }
     const sieges = veh.def.sieges || [];
     const siege = sieges[Math.min(passager.s, sieges.length - 1)] || veh.def.siege;
     veh.mesh.updateMatrixWorld(true);
@@ -656,17 +659,6 @@ export function initFun(ctx) {
     const recul = Math.max(m.emprise.l, m.emprise.p) / 2 + 6;
     const cx = Math.round(player.pos.x - Math.sin(player.yaw) * recul);
     const cz = Math.round(player.pos.z - Math.cos(player.yaw) * recul);
-    // Le sol de référence : le point le plus bas sous l'emprise. Poser sur le
-    // point le plus haut enterrerait la moitié du monument dans une pente.
-    let sol = Infinity;
-    for (let dx = -m.emprise.l / 2; dx <= m.emprise.l / 2; dx += 4) {
-      for (let dz = -m.emprise.p / 2; dz <= m.emprise.p / 2; dz += 4) {
-        const s = world.sommetColonne(cx + dx, cz + dz);
-        if (s < sol) sol = s;
-      }
-    }
-    if (!isFinite(sol)) sol = world.terrainHeight(cx, cz);
-
     // UN GARAGE A UNE FAÇADE, LA TOUR EIFFEL N'EN A PAS.
     //
     // La bibliothèque posait tout sans jamais faire pivoter : personne ne s'en
@@ -679,10 +671,11 @@ export function initFun(ctx) {
     // entières et aucun bloc ne se perd en chemin. La façade regarde alors
     // l'enfant qui vient de la poser.
     const quart = m.garage ? ((Math.round(player.yaw / (Math.PI / 2)) % 4) + 4) % 4 : 0;
-    const cosT = [1, 0, -1, 0][quart], sinT = [0, 1, 0, -1][quart];
-    const ox = Math.round((m.emprise.minX + m.emprise.maxX) / 2);
-    const oz = Math.round((m.emprise.minZ + m.emprise.maxZ) / 2);
-    const tourner = (bx, bz) => [bx * cosT + bz * sinT, bz * cosT - bx * sinT];
+    // Le sol, la cote et les blocs : `planDePose` (garages.js) — le point le
+    // plus bas de l'emprise pour un monument, le SEUIL pour un bâtiment de
+    // plain-pied (v470), et jamais un bloc d'enfant remplacé pour ce dernier.
+    const plan = planDePose(m, world, cx, cz, quart);
+    const { y0, tourner, ox, oz } = plan;
 
     const t = Date.now();
     const lot = [];
@@ -690,11 +683,7 @@ export function initFun(ctx) {
     const crieur = world.onOp;
     world.onOp = null;
     try {
-      for (const [bx, by, bz, bid] of m.blocs) {
-        const [rx, rz] = tourner(bx - ox, bz - oz);
-        const x = cx + rx;
-        const y = sol + 1 + (by - m.emprise.minY);
-        const z = cz + rz;
+      for (const [x, y, z, bid] of plan.ecritures) {
         world.setBlock(x, y, z, bid, t);
         lot.push([`${x},${y},${z}`, bid, t]);
       }
@@ -714,7 +703,7 @@ export function initFun(ctx) {
       // garée au fond serait déclarée dehors.
       const [gx, gz] = tourner(-ox, -oz);
       inscrireGarage(world.ctx, {
-        x: cx + gx, y: sol + 1, z: cz + gz,
+        x: cx + gx, y: y0, z: cz + gz,
         l: quart % 2 ? m.garage.p : m.garage.l,
         p: quart % 2 ? m.garage.l : m.garage.p,
         places: m.garage.places.map(([px, pz]) => {
@@ -1087,6 +1076,28 @@ export function initFun(ctx) {
       toggleRide(null);
       degats.deposer(enFeu);
       return;
+    }
+    // L'AVION CASSÉ (aviation) : la physique a jugé le toucher (`epave`,
+    // player.js). La carcasse prend feu tout de suite (`ecraser`) ; une
+    // seconde plus tard — le temps que l'ami reçoive l'épave en feu par la
+    // position (v344) et que l'enfant lise le bandeau — on le DÉPOSE debout à
+    // côté, sain et sauf. Cassé en l'air, on attend qu'il ait touché le sol.
+    if (player.avionEtat === 'epave' && riding.def.pilote) {
+      const a = riding, t = performance.now();
+      if (!a.ecraseA) { a.ecraseA = t; degats.ecraser(a); }
+      if (t - a.ecraseA > 1100 && (player.onGround || t - a.ecraseA > 3500)) {
+        toggleRide(null, true);
+        // Aux commandes, chaque image pose `flying` (plus bas) et descendre ne le
+        // rend pas : déposé ainsi, l'enfant restait suspendu au-dessus du sol,
+        // `onGround` faux (sonde-crash-depot.cjs). Après un crash on est à pied.
+        player.flying = false;
+        a.ecraseA = 0;
+        const sol = world.sommetColonne(Math.floor(a.pos.x), Math.floor(a.pos.z)) + 1;
+        if (a.pos.y > sol + 0.5) { a.pos.y = sol; a.mesh.position.y = sol; }
+        a.mesh.rotation.order = 'YXZ'; a.mesh.rotation.z = 0.22; a.mesh.rotation.x = -0.06;   // l'épave penche
+        degats.deposer(a, null);
+        return;
+      }
     }
     // PILOTER : la fiche de l'espèce décide, jamais ce fichier. `player.js`
     // remplace alors la marche par la physique de vol — poussée, roulis,
