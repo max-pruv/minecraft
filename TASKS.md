@@ -284,12 +284,17 @@
   Et `rattraper` (degats3d.js) ne rejoue plus la tôle une fois l'historique
   plein — défaut d'avant, invisible tant que le feu venait au 3e choc.
 
-- [ ] **UN ÉCART QUI FAIT TRAVERSER LA RUE (v402).** Le témoin du feu de
-  `monte.js` l'a publié : un passant sur le trottoir, poussé par l'écart devant
-  une voiture qui tourne, ressort sur le trottoir d'EN FACE (`traversee` nul,
-  `ecart` vrai, 6,5 blocs), au vert. Vu deux fois sur quatre passages de
-  `monte.js` des deux côtés. Piste : un écart ne quitte pas le trottoir s'il
-  peut l'éviter (choisir le côté qui reste sur `TROTTOIR`). Zone piétons.
+- [x] **UN ÉCART QUI FAIT TRAVERSER LA RUE (v402) — doublon, réglé en v411,
+  REMESURÉ le 16 octobre 2026 sur la v454.** Le témoin du feu de `monte.js`
+  l'avait publié (un passant poussé par l'écart ressortait sur le trottoir
+  d'EN FACE, `traversee` nul, `ecart` vrai, deux passages sur quatre). Rejoué
+  pour en voir la DISTRIBUTION (règle v269) : `sonde-ecart-trottoir.cjs` trois
+  fois, identique (119 écarts ; ancienne règle 90 descentes et 1 en face,
+  `coteDEcart` 0 et 0, 19 contacts de bordure déclarés plus haut) ; `monte.js`
+  SEULE trois fois : le témoin du feu rend 6 traversées sur 6 au rouge,
+  `poussees: []` et `auVert: 0` les trois fois, et le témoin de la v411
+  (« ne descend pas sur la chaussée ») 0 descendu sur 5 scénarios les trois
+  fois. Rien à corriger.
 - [ ] **LONDRES, ROME, ZURICH : AUCUN PASSAGE PEINT (v402).** Sur 267 villes
   engendrées, seules les 65 à trame alignée (`t.net`) peignent un passage ;
   Londres n'en peint aucun. Les passants n'y traversent qu'aux feux (Londres 1 à
