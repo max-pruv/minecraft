@@ -6,6 +6,20 @@
 
 export const NOUVEAUTES = [
   {
+    v: 456,
+    titre: 'Des essais plus sûrs',
+    puces: [
+      'Les essais du jeu démarrent à coup sûr',
+    ],
+  },
+  {
+    v: 455,
+    titre: 'Les monuments de Paris vérifiés',
+    puces: [
+      'Aucun cube ne dépasse des monuments',
+    ],
+  },
+  {
     v: 454,
     titre: 'De jolies petites grilles',
     puces: [

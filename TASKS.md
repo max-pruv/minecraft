@@ -319,9 +319,11 @@
   `carte.js` (flèche du GPS) et `manhattan.js` (trou, taxi) déclarés,
   `monte.js` les deux rouges des deux côtés de la v411 (compilation à
   l'arrivée, flanc frôlé). Le témoin de Rome : vert au portail.
-- [ ] **`realisme.js` MEURT AU CLIC « JOUER » (v385-v402, intermittent).**
-  `locator.click: Timeout 30000ms` sur `#play-btn`, machine au repos ; vu sur la
-  v381 et la v384 (mort), la v382 (vivant) : antérieur, pas de la zone piétons.
+- [x] **`realisme.js` MEURT AU CLIC « JOUER » (v385-v402) — CLOS en v456.**
+  Doublon de l'entrée de la v427 (cause : `locator.click` attend deux images
+  identiques sur un accueil à 0,07 image/s). Revérifié sur la v454 : rejouée
+  SEULE 3/3 vertes (19/19, clic 6 · 28 · 14 ms) ; copie où un voile recouvre
+  « Jouer » : le verdict rougit (`dessus: false`), 18 autres verts.
 
 - [x] **LES DEUX ROUGES RÉSEAU RÉCURRENTS (v393).** « Un départ propre
   nettoie tout le monde » : CORRIGÉ dans le jeu — `net.stop()` n'envoyait
@@ -1212,7 +1214,24 @@
   200 blocs, donc hors de la livraison par construction (elle ne change que le
   sol de Las Vegas et des contours d'anneaux).
 - [ ] **LES ANNEAUX D'AVANT ROULENT PARFOIS HORS DE LA CHAUSSÉE (mesuré v387,
-  repris v404, v418, v432, v435).** v435 (recherche conjointe) : 840 → 772
+  repris v404, v418, v432, v435, remesuré sur la v454, 16 oct. 2026).** Remesure (sous node,
+  `sonde-anneaux-villes.cjs` puis classement colonne par colonne) : 772 pas, 58
+  anneaux, inchangé depuis la v435, et TOUTE la cause se nomme — herbe 218,
+  feuillage 154, sable 136, pavé de place 125, pierre (fontaine, roche) 49,
+  eau sans tablier 17, trottoir 6, et **66 PAS SUR LE PARAPET D'UN TABLIER
+  PUBLIÉ, dans 28 villes** : c'est TOUTE la traîne de moins de dix pas
+  (Munich 8, Shanghai 6, Porto 5, Lyon, Dublin, Hambourg, Budapest, Reykjavik
+  3…). Le parapet est une colonne de pierre à la cote du tablier, roulable à
+  plat : la voiture n'y bute pas, mais le témoin la compte hors chaussée et
+  `pasHorsChaussee` (la règle interne) la compte « eau sous un tablier », donc
+  propre — c'est pour cela qu'aucune recherche ne la voit. Le remède serait de
+  changer la MATIÈRE de ces colonnes de tablier (parapet → chaussée sous la
+  voie) : interdit par la règle v414 (« un tablier ne se retire pas, et sa
+  matière non plus ») et visible par l'enfant — décision de Max. Non-résultat
+  mesuré, qu'on ne réessaie pas : juger les segments de la recherche de contour
+  au demi-bloc (le pas du témoin) au lieu du bloc et demi, la sélection et la
+  configuration d'avant gardées au bit près, rend 772 → 771 (Seattle) et la
+  couverture de la sonde à Seattle baisse de 99,1 à 98,1 % : retiré. v435 (recherche conjointe) : 840 → 772
   pas, 61 → 58 anneaux, 9 → 6 villes sur le centre — Toronto 31 → 0, Dublin
   22 → 3, Lima 20 → 2. Tokyo (56) et Dubaï (32) : AUCUNE configuration sous les
   trois promesses, mesuré (6 000 essais, sens retournables) — à Tokyo l'eau sans
@@ -1341,7 +1360,9 @@
   contresens de San Diego (sonde : aucune autre ville, aucun tablier, aucun
   sol).
 - [ ] **DEUX VILLES ENGENDRÉES N'ONT QU'UN CIRCUIT (v387 : onze ; v404 :
-  trois ; v416 : deux — San Diego a son contresens).** Mesuré en v416 : à San
+  trois ; v416 : deux — San Diego a son contresens).** Remesuré sur la v454 : San
+  José et Guayaquil toujours à un circuit, Guayaquil 20 pas (18 de sable, 2 de
+  parapet) ; aucun remède sans SOL, décision de Max, inchangée. Mesuré en v416 : à San
   José et Guayaquil la place occupe le nœud central, ses quatre demi-rues sont
   fermées, et le grand anneau est le SEUL cycle de la trame (3 × 3 nœuds dans
   le disque). Son contresens roule sur la voie extérieure : à San José elle
@@ -2224,18 +2245,35 @@
   jamais été non plus. À mesurer des deux côtés, sur le franchissement.
   (6) `?diag=1` et la carte ne disent pas encore à l'enfant « ta maison a suivi
   son quartier » ; le journal le dit, le jeu non.
-- [ ] **LES RUES DE PARIS À LA RÈGLE (v303) : CE QUI RESTE, DÉCLARÉ.** (1) Les
-  quartiers les plus petits (Saint-Germain, le Marais, le Faubourg, l'Étoile :
-  1 500 à 3 000 colonnes, bordés par la Seine et les percées) n'ont presque
-  plus de lots — ils en avaient déjà peu (168, 41, 91, 55 colonnes) et une trame
-  de 15 à 29 blocs n'y loge plus un îlot entier ; leur rayon (`Q(…, r0)`) est
-  en kilomètres du plan, pas à l'échelle d'un mètre. Mesuré au portail : 41 → 2
-  au Marais, 168 → 2 à Saint-Germain, 91 → 10 au Faubourg ; leurs disques
-  agrandis de trois quarts n'en rendent presque rien (ce sont Rivoli, les
-  Grands Boulevards et le boulevard Saint-Germain qui les occupent). Le remède
-  est Paris doublé, décidé par Max. (2) Les PLACES gardent
-  leurs rayons (Concorde 4,5, l'Étoile 8) : un boulevard de 21 blocs y arrive
-  plus large que la place — Paris doublé (v306) ne les agrandit pas, à dessein.
+- [ ] **LES RUES DE PARIS À LA RÈGLE (v303) : CE QUI RESTE, DÉCLARÉ.** (1)
+  RENDU par Paris doublé (v306), remesuré en v455 sur tout le disque : les
+  colonnes de lot valent Marais 248 (3,9 %), Saint-Germain 916 (12,8 %),
+  Faubourg Saint-Antoine 359 (5,9 %), Étoile 1 478 (12,1 %), contre 2, 2, 10
+  et 0 au portail de la v303. Le Marais et le Faubourg restent les plus
+  pauvres (Rivoli, les Grands Boulevards, Saint-Antoine les traversent).
+  (2) LES PLACES gardent leurs rayons (République 3, Nation 2,6, la Madeleine
+  1,6, la Concorde 4,5) quand un boulevard de 13 blocs de chaussée (17,4 aux
+  Champs) y arrive : une pastille de pavé au milieu de l'asphalte, et l'axe
+  de l'anneau (`RONDS`) passe sur l'îlot — 327 colonnes sur 864 lues, neuf
+  places à percée trop étroites. ESSAYÉ ET RETIRÉ (session paris-reste,
+  octobre 2026) : rayon ≥ demi-chaussée la plus large qui arrive, 5,8 au
+  moins, sur les neuf places SANS monument. Le sol était propre — 343
+  colonnes de `solParis` changées, toutes dans les places, ZÉRO lot, relief
+  intact, circuits relus sur le monde 93-100 % → 94-100 % de chaussée, aucun
+  pas dans un plein — mais le portail a rendu ce que la rue y perd : le
+  circuit 0 perd sa jumelle (`refus: contact`, section 189 → 168), les
+  boulevards tombent de 446 à 250 blocs de deux voies occupés
+  (`sonde-rue-dense.cjs boulevards`) ; le bus touche ses voisines (139
+  relevés, `mesurer('bus')`) ; `RACCORDS_COURTS` de l'A1 à la Gare du Nord est
+  à remesurer (262,5). Retirer une voie occupée se voit : DÉCISION DE MAX
+  (plus grandes places, ou seconde voie). Si oui : le remède est écrit
+  (calcul dans `paris.js` après `VOIES_PARIS`, `PLACES` refaite après), deux
+  témoins prêts (`plafond.js`), et le témoin des circuits de `carteMonde.js`
+  (« ni ne coupe par le milieu d'une place ») doit lire l'îlot (`r −
+  anneau`), pas `r − 1,5` ; l'empreinte des 490 morceaux et celle du journal
+  se relèvent (désarmé = constante au bit près, mesuré). Restent aussi les
+  places à monument (Opéra 2,2, Montparnasse, Panthéon, Bastille, Louvre,
+  l'Étoile 8 pour les Champs) et le Trocadéro (anneau de 1,75 bloc).
   (3) Les autres villes bâties à la main (Londres,
   Nice, Lille, San Francisco, Washington) n'ont pas encore la règle — même
   geste, ville par ville, avec la trame figée et la protection des
@@ -2245,10 +2283,9 @@
   décision de Max. Prix déclaré de la v307 : 602 → 440 anneaux, 158 974 →
   127 734 blocs de rue portant un convoi — RENDU en v387 : candidats en pas de
   trame (côtés impairs), contresens et anneaux de quartier, 445 → 809
-  anneaux, 129 373 → 200 322 blocs de voie portant un convoi. (4) Une colonne protégée de l'ancienne ville
-  peut se trouver au milieu d'une rue neuve : les circuits de voitures,
-  mesurés sur le plan, la traverseraient. Mesure à faire sur un vrai journal
-  (le compte des colonnes protégées se lit dans `world.colonnesParisAvant`).
+  anneaux, 129 373 → 200 322 blocs de voie portant un convoi. (4) OBSOLÈTE depuis la v306 : l'ancienne ville ne se garde plus sous les
+  colonnes bâties, c'est la ville NEUVE qui cède (`colonnesCedees`), et elle
+  garde ses rues — seul un lot devient une cour pavée.
   (5) Un bloc de l'ancienne version reçu du nuage APRÈS que son morceau a été
   engendré ne protège sa colonne qu'au prochain chargement.
 - [ ] **LE PORTAIL DE LA v303 : TROIS ROUGES DANS `monte.js` ET `manhattan.js`,
@@ -3131,7 +3168,10 @@
   avec la table de paliers pour dire de combien monte chaque couche. Le même
   prix vaut pour les monuments étirés par la v342 et la v350 (Buckingham,
   l'Opéra de Lille, les Archives nationales).
-- [ ] **DES CUBES DÉPASSENT ENCORE DES MODÈLES ÉTIRÉS (v335), mesuré. Au-dessus
+- [x] **DES CUBES DÉPASSENT ENCORE DES MODÈLES ÉTIRÉS (v335), mesuré. FAIT en v455 :
+  les vingt-quatre du parvis étaient un faux positif — posé au ras du sol, il
+  touche le sol de la ville ; sonde et témoin lisent le monde sous trois blocs,
+  zéro cube sur les huit monuments, témoin jusqu'au sol. Au-dessus
   d'un enfant : FAIT en v350** (Opéra 15 → 0, Panthéon 6 → 0, Notre-Dame 8 → 0,
   témoin dans `plafond.js`). Restent les vingt-quatre cubes du parvis de
   Notre-Dame, au sol, d'avant la v335. Sonde
@@ -3217,11 +3257,21 @@
   de trois morceaux). À mesurer d'abord par tuile, avec
   `sonde-facades-lourdes.mjs` (scratch de la session, à recopier dans
   `tests/`).
-- [ ] **LES TEXTURES MONTENT DE 16 À 266 EN VINGT SECONDES DE VOL** (sonde
+- [x] **LES TEXTURES MONTENT DE 16 À 266 EN VINGT SECONDES DE VOL** (sonde
   mémoire, tous les bras, hd 0 compris : 6 → 293). Ce sont les modèles de la
   flotte qui se chargent à l'approche d'une ville (`Body_PrimaryPaint` dans
   les gros maillages) — pas le sujet du jour, mais un poste de mémoire GPU à
   mesurer sur la tablette avec `?diag=1`, et à borner s'il compte.
+  **Fermé sur v454, croissance normale et bornée** (`tests/sonde-textures-vol.cjs`,
+  vol à 35 b/s au-dessus de Paris, rr 12) : le pilote tient 6 → 84 à 102 en
+  vingt secondes, puis plafonne à **107** sur quatre-vingts secondes. Chaque
+  objet sur lequel three pose son écouteur de « dispose » est relevé : **zéro
+  hors de la scène** (pas de fuite, v238). Il y a 56 textures de matériau
+  distinctes, toutes partagées (la flotte depuis la v413 — les 266 d'avant
+  étaient ses copies par modèle —, les corps Rocketbox), plus UNE texture d'os
+  20 × 20 (`skeleton.boneTexture`, 81 os, 6,4 Ko) par personnage DESSINÉ :
+  invisibles à un relevé des matériaux, rendues par `liberer` avec le
+  squelette. Pas de doublon, pas de fuite ; rien à corriger.
 - [ ] **LE COMPTEUR DE PLANTAGES RETOMBE À ZÉRO SUR UNE FERMETURE PROPRE — y
   compris celle du rechargement de mise à jour.** Un appareil qui meurt, se
   met à jour (fermeture propre), puis meurt encore repart à un. C'est voulu
