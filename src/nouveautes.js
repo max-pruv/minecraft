@@ -6,6 +6,93 @@
 
 export const NOUVEAUTES = [
   {
+    v: 465,
+    titre: 'Le train passe sur un pont',
+    puces: [
+      'Sur la mer, le train roule sur un viaduc',
+      'On voit l\'eau passer sous les rails',
+    ],
+  },
+  {
+    v: 464,
+    titre: 'Les mises à jour sans souci',
+    puces: [
+      'Une mise à jour n’est plus un plantage',
+    ],
+  },
+  {
+    v: 463,
+    titre: 'L\'usine explique ses postes',
+    puces: [
+      'Chaque poste de l\'usine dit ce qu\'il fait',
+      'La presse, les robots, la peinture',
+      'Puis on conduit la voiture neuve',
+    ],
+  },
+  {
+    v: 462,
+    titre: 'Un avion mal posé casse',
+    puces: [
+      'Trop vite ou trop dur : épave',
+      'Tu es déposé, sain et sauf',
+      'Le jeu dit comment mieux faire',
+    ],
+  },
+  {
+    v: 461,
+    titre: 'De Florence à Rome en voiture',
+    puces: [
+      'Une autoroute relie Florence et Rome',
+      'On roule de Milan à Naples',
+    ],
+  },
+  {
+    v: 460,
+    titre: 'Washington se raconte',
+    puces: [
+      'Des panneaux à lire devant les monuments',
+      'Des questions sur Washington dans le quiz',
+    ],
+  },
+  {
+    v: 459,
+    titre: 'La grande roue de Las Vegas',
+    puces: [
+      'La High Roller est une vraie roue',
+      'Elle domine la tour Eiffel de Las Vegas',
+    ],
+  },
+  {
+    v: 458,
+    titre: 'On entre dans le Panthéon',
+    puces: [
+      'À Rome, le Panthéon se visite',
+      'Lève la tête : le ciel par l\'oculus',
+    ],
+  },
+  {
+    v: 457,
+    titre: 'Une fenêtre par étage',
+    puces: [
+      'Rome, Tokyo, Berlin : de vraies grandes fenêtres',
+      'Plus deux fenêtres empilées',
+    ],
+  },
+  {
+    v: 456,
+    titre: 'Des essais plus sûrs',
+    puces: [
+      'Les essais du jeu démarrent à coup sûr',
+    ],
+  },
+  {
+    v: 455,
+    titre: 'Les monuments de Paris vérifiés',
+    puces: [
+      'Aucun cube ne dépasse des monuments',
+    ],
+  },
+  {
     v: 454,
     titre: 'De jolies petites grilles',
     puces: [

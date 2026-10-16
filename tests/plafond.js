@@ -378,7 +378,10 @@ const EMPREINTE_MORCEAUX_V414 = '863d4203a441e3fd029ce2404fc6d6e706799e7f64fe489
 // la constante de la v447, au bit près ; et les dix-huit colonnes qui
 // diffèrent dans les morceaux de Londres sont toutes dans la boîte d'un
 // tronçon de piste — aucune ailleurs, aucun autre lieu touché.
-const EMPREINTE_MORCEAUX_V357 = '938a330c6f883c7e249720b7274d988de6484768cfdb882dedd474da65bbac6d';
+// v457 : les baies des villes engendrées passent en bandes (Rome, Marrakech et
+// Tokyo sont des neuf lieux). `reglageBaies.bandes` à faux, la branche rend
+// 938a330c…, la constante de la v452, au bit près.
+const EMPREINTE_MORCEAUX_V357 = '1e4c50beffa5d0148b66a8d46f28df712ad9cf92786396e5d205007aaee252fd';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -441,6 +444,91 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   const w = new World();
 
   verifier('le ciel est monté', HEIGHT >= 160, `${HEIGHT} blocs`);
+
+  // --- L'USINE SE VISITE À PIED, POSTE PAR POSTE (v463) ----------------------
+  //
+  // La chaîne de la Giga-usine se construit de poste en poste depuis la v168 ;
+  // rien ne disait à l'enfant ce qui s'y passe. Chaque poste porte désormais
+  // son panneau, et l'on vérifie le trajet de l'enfant sur le bâtisseur lui-même
+  // (une fonction pure, comme les terminaux de la v330) : on entre par la porte
+  // ouest, on rejoint chaque poste sans voler, et l'on ressort à l'est.
+  {
+    const U = await import('../src/usine.js');
+    const postes = U.POSTES || [];
+    const panneaux = postes.filter((p) => typeof p.panneau === 'string'
+      && p.panneau.split(/\s+/).length <= 25).length;
+    const lit = typeof U.posteSousLesPieds === 'function';
+    const p = U.USINE();
+    const reconnus = lit ? postes.filter((q, i) => U.posteSousLesPieds(p.x + q.u, 34, p.z + 1) === i).length : 0;
+    const dehors = lit ? U.posteSousLesPieds(p.x + 40, 34, p.z) : 0;
+    const enVol = lit ? U.posteSousLesPieds(p.x - 32, 34 + 30, p.z) : 0;
+    verifier('chaque poste de l\'usine a son panneau, court, lu quand on y entre à pied',
+      panneaux === postes.length && postes.length === 5 && reconnus === 5 && dehors === -1 && enVol === -1,
+      JSON.stringify({ postes: postes.length, panneaux, reconnus, dehors, enVol }));
+
+    const plein = new Set();
+    U.buildUsine((u, y, v) => { if (y >= 1 && y <= 2) plein.add(u + ',' + v); });
+    const H = U.HALL || { u0: -78, u1: 2, v0: -20, v1: 20 };
+    const libre = (u, v) => !plein.has(u + ',' + v);
+    const vu = new Set(['' + (H.u0 - 2) + ',0']);
+    const file = [[H.u0 - 2, 0]];
+    while (file.length) {
+      const [u, v] = file.shift();
+      for (const [du, dv] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const a = u + du, b = v + dv, k = a + ',' + b;
+        if (a < H.u0 - 3 || a > H.u1 + 3 || b < H.v0 - 3 || b > H.v1 + 3) continue;
+        if (vu.has(k) || !libre(a, b)) continue;
+        vu.add(k); file.push([a, b]);
+      }
+    }
+    const atteints = postes.filter((q) => [-3, -2, -1, 0, 1, 2, 3].some((v) => vu.has(q.u + ',' + v))).length;
+    const ressort = vu.has((H.u1 + 2) + ',0');
+    verifier('on traverse l\'usine à pied, de la porte ouest à la porte est, par chaque poste',
+      atteints === postes.length && ressort, JSON.stringify({ atteints, ressort, cases: vu.size }));
+  }
+
+  // --- ON ENTRE DANS LE PANTHÉON DE ROME (v458) -------------------------------
+  // Premier monument visitable hors de Paris et de Londres. Méthode de la
+  // marche des terminaux (v330) : on part de la PLACE, devant le portique, et
+  // l'on cherche de proche en proche où l'on peut poser les pieds (un sol
+  // plein, deux blocs d'air au-dessus) — sans sauter une marche. Le repère se
+  // choisit par le disque qui le contient (v335) : « Panthéon » est aussi à
+  // Paris. Sur l'ancien bâtisseur la rotonde est pleine et le portique est sur
+  // une marche : le centre n'est jamais atteint.
+  {
+    const { CONF_NEUF } = await import('../src/world.js');
+    const { VILLES_MONDE } = await import('../src/villesmonde.js');
+    const rome = VILLES_MONDE.find((f) => f.cle === 'rome');
+    const lm = rome && CONF_NEUF.reperes.find((l) => l.name === 'Panthéon'
+      && Math.hypot(l.x - rome.ancre.x, l.z - rome.ancre.z) < rome.rayon);
+    let r = { trouve: !!lm };
+    if (lm) {
+      const sol = w.terrainHeight(lm.x, lm.z);
+      const libre = (du, dv) => w.getBlock(lm.x + du, sol, lm.z + dv) !== 0
+        && w.getBlock(lm.x + du, sol + 1, lm.z + dv) === 0
+        && w.getBlock(lm.x + du, sol + 2, lm.z + dv) === 0;
+      const depart = [0, -lm.box - 4];
+      const vus = new Set([depart.join(',')]);
+      const file = libre(...depart) ? [depart] : [];
+      while (file.length) {
+        const [du, dv] = file.shift();
+        for (const [eu, ev] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const nu = du + eu, nv = dv + ev;
+          if (Math.abs(nu) > lm.box + 6 || Math.abs(nv) > lm.box + 6) continue;
+          const k = `${nu},${nv}`;
+          if (vus.has(k) || !libre(nu, nv)) continue;
+          vus.add(k); file.push([nu, nv]);
+        }
+      }
+      let ciel = true;               // l'oculus : rien au-dessus du centre
+      for (let y = sol + 1; y < HEIGHT; y++) if (w.getBlock(lm.x, y, lm.z) !== 0) { ciel = false; break; }
+      let voute = false;             // à deux blocs du centre, la coupole au-dessus de la tête
+      for (let y = sol + 3; y < sol + 14; y++) if (w.getBlock(lm.x + 2, y, lm.z) !== 0) { voute = true; break; }
+      r = { trouve: true, place: libre(...depart), centre: vus.has('0,0'), cases: vus.size, ciel, voute };
+    }
+    verifier('on entre dans le Panthéon de Rome : depuis la place, à pied, jusqu\'au centre de la rotonde, sous la coupole et l\'oculus ouvert',
+      r.trouve && r.place && r.centre && r.ciel && r.voute, JSON.stringify(r));
+  }
 
   // --- UNE VOITURE TRAVERSE CHAQUE PONT D'AUTOROUTE (v430) -------------------
   // Max, capture d'iPhone : « Une voiture ne roule pas dans l'eau — fais
@@ -975,7 +1063,11 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       // des monuments remis à l'échelle autour de lui.
       // (Le campanile de Venise, les tours de Tokyo : remis à l'échelle par
       // leur bâtisseur neuf en v357, ils sont dans la table du module.)
-      'Barcelone|Sagrada Família': 172, 'Las Vegas|Le Luxor': 107 };
+      'Barcelone|Sagrada Família': 172, 'Las Vegas|Le Luxor': 107,
+      // v459 : la High Roller (167 m) à son vrai rayon sur sa gare
+      // d'embarquement ; sur l'ancien code, seize blocs sous la demi-tour
+      // Eiffel (165 m) à quarante-cinq — l'inversion que la v353 déclarait.
+      'Las Vegas|La High Roller': 167 };
     const EV = EM && EM.ECHELLES_VILLES ? EM.ECHELLES_VILLES : {};
     const EMAIN = EM && EM.ECHELLES_MAIN ? EM.ECHELLES_MAIN : {};
     const ciel = [...new Map([...Object.entries({ ...EV, ...EMAIN }).map(([k, e]) => [k, e.vraie]), ...Object.entries(FIXES)])]
@@ -1261,34 +1353,51 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   // modèle — l'attique de l'Opéra (15), les angles arrière de l'entablement du
   // Panthéon (6), le pied de la flèche de Notre-Dame (8). Même lecture que
   // `sonde-monuments-hd.cjs` : une cellule de voxel exposée par le côté, que le
-  // modèle ne couvre pas, au-dessus de la hauteur d'un enfant. Les vingt-quatre
-  // du parvis de Notre-Dame, au sol, précèdent la v335 (dette déclarée).
+  // modèle ne couvre pas.
+  //
+  // ET JUSQU'AU SOL, EN LISANT LE MONDE (v463). Les « vingt-quatre cubes du
+  // parvis de Notre-Dame », déclarés en dette depuis la v335, n'étaient pas
+  // des cubes : le parvis est posé à la couche 0, celle du bloc de surface, et
+  // ses flancs touchent le sol de la ville (0 voisine d'air sur 29, mesuré).
+  // Juger l'exposition contre les seules cellules du bâtisseur les comptait
+  // à l'air. Sous la hauteur d'un enfant, une voisine hors du bâtisseur se lit
+  // donc dans le monde engendré — là où l'enfant marche.
   {
     const W = await import('../src/world.js');
     const HD = await import('../src/paris-monuments-hd.js');
     const { BLOCK } = await import('../src/blocks.js');
+    const monde = new W.World();
     const fautes = [];
-    let exposees = 0;
+    let exposees = 0, exposeesBas = 0;
     for (const lm of W.REPERES_HD) {
       const solide = new Set();
       const cellules = new Map();
       lm.build((x, y, z, id) => cellules.set(`${x},${y},${z}`, id));
       for (const [k, id] of cellules) if (id !== BLOCK.AIR) solide.add(k);
+      const base = monde.terrainHeight(lm.x, lm.z);
+      const air = (x, y, z) => {
+        const k = `${x},${y},${z}`;
+        if (cellules.has(k)) return !solide.has(k);
+        if (y > 3) return true;
+        return monde.getBlock(lm.x + x, base + y, lm.z + z) === BLOCK.AIR;
+      };
       const couvre = HD.cellulesCouvertes(lm.name);
-      let n = 0;
+      let n = 0, nBas = 0;
       for (const k of solide) {
         const [x, y, z] = k.split(',').map(Number);
-        if (y <= 3) continue;
-        const cote = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dz]) => !solide.has(`${x + dx},${y},${z + dz}`));
+        if (y < 0) continue;
+        const cote = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dz]) => air(x + dx, y, z + dz));
         if (!cote) continue;
         exposees++;
-        if (!couvre.has(k)) n++;
+        if (y <= 3) exposeesBas++;
+        if (!couvre.has(k)) { n++; if (y <= 3) nBas++; }
       }
-      if (n) fautes.push(`${lm.name} ${n}`);
+      if (n) fautes.push(`${lm.name} ${n} (dont ${nBas} à hauteur d'enfant)`);
     }
-    verifier('les modèles étirés de Paris couvrent leur voxel au-dessus d\'un enfant',
-      exposees > 5000 && fautes.length === 0,
-      fautes.length ? `cubes qui dépassent : ${fautes.join(' · ')}` : `${exposees} cellules de flanc, toutes couvertes`);
+    verifier('les modèles étirés de Paris couvrent leur voxel, jusqu\'au sol',
+      exposees > 5000 && exposeesBas > 500 && fautes.length === 0,
+      fautes.length ? `cubes qui dépassent : ${fautes.join(' · ')}`
+        : `${exposees} cellules de flanc dont ${exposeesBas} à hauteur d'enfant, toutes couvertes`);
   }
 
   const { ZONE_WASHINGTON: Z } = await import('../src/washington.js');
@@ -2532,6 +2641,46 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       JSON.stringify({ mesure: tr, barres: BARRES_TRAVAIL }));
   }
 
+  // UNE BAIE, PAS DEUX (v457). Les villes engendrées posaient deux blocs
+  // `ETAGE` l'un sur l'autre par étage : deux fenêtres dessinées l'une sur
+  // l'autre (38 719 piles, 259 villes sur 269). Elles posent les bandes de
+  // Paris. La FORME ne change pas d'un bloc — c'est ce qui dispense la ville
+  // d'avant de se figer : un bloc qu'un enfant a posé contre une façade reste
+  // devant la même surface pleine. Le témoin engendre chaque colonne de lot
+  // (une sur trois) des deux façons, `reglageBaies.bandes` à vrai puis à faux,
+  // et compare la solidité couche par couche ; puis il compte les piles.
+  {
+    const VM = await import('../src/villesmonde.js');
+    const B = await import('../src/blocks.js');
+    const reg = VM.reglageBaies;
+    let lots = 0, piles = 0, bandes = 0, formes = 0, ailleurs = 0, villesPiles = new Set();
+    for (const f of VM.VILLES_MONDE) {
+      for (let u = -f.rayon; u <= f.rayon; u += 3) for (let v = -f.rayon; v <= f.rayon; v += 3) {
+        const x = Math.round(f.ancre.x + u), z = Math.round(f.ancre.z + v);
+        if (VM.solVillesMonde(x, z) !== 'lot') continue;
+        lots++;
+        const neuf = [], vieux = [];
+        if (reg) reg.bandes = true;
+        VM.batirColonneVillesMonde(x, z, (dy, id) => { neuf[dy] = id; });
+        if (reg) { reg.bandes = false; VM.batirColonneVillesMonde(x, z, (dy, id) => { vieux[dy] = id; }); reg.bandes = true; }
+        for (let y = 0; y < Math.max(neuf.length, vieux.length); y++) {
+          const a = neuf[y] ?? 0, b = vieux[y] ?? 0;
+          if (a === B.ARCHI.ETAGE && neuf[y + 1] === B.ARCHI.ETAGE) { piles++; villesPiles.add(f.cle); }
+          if (a === B.ARCHI.ETAGE_MI && neuf[y + 1] === B.ARCHI.ETAGE_HAUT) bandes++;
+          if (!reg) continue;
+          if (B.isSolid(a) !== B.isSolid(b) || B.isTransparent(a) !== B.isTransparent(b)) formes++;
+          if (a !== b && !B.ARCHI_BANDES.has(a)) ailleurs++;
+        }
+      }
+    }
+    verifier('une baie de ville engendrée est une fenêtre, pas deux (les bandes de Paris)',
+      lots > 50000 && piles === 0 && bandes > 30000,
+      `${piles} piles d'ETAGE dans ${villesPiles.size} villes (${[...villesPiles].slice(0, 4).join(', ')}), ${bandes} baies en bandes, ${lots} lots lus`);
+    verifier('les bandes ne changent pas la forme d\'une façade : ce qu\'un enfant a bâti devant reste devant',
+      !!reg && formes === 0 && ailleurs === 0,
+      reg ? `${formes} couches de solidité différente, ${ailleurs} blocs changés hors des bandes` : 'pas de reglageBaies (ancien code)');
+  }
+
   // UN BÂTISSEUR NE TIRE PAS AU HASARD (v450). Le Colisée du catalogue
   // tirait ses gradins effondrés à `Math.random()` : deux lancements, deux
   // Colisées (173 blocs de Rome), et le worker de maillage en bâtissait un
@@ -3018,14 +3167,14 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         `${pas} pas, ${sansRail} sans ses quatre files de prismes · ${obs} obsidienne, ${planches} planche(s) sur ${colonnes} colonnes`);
       verifier('le sol continu suit le profil de la voie, dans la tranchée comme sur le remblai',
         // `tranchee > 100` est une borne de GARDE (la mesure a eu lieu), posée
-        // à la moitié : la rampe du viaduc (v455) relève la voie de deux blocs
+        // à la moitié : la rampe du viaduc (v465) relève la voie de deux blocs
         // au plus avant une rivière, et une tranchée de deux blocs y devient une
         // tranchée d'un bloc — 240 → 170 colonnes dans cette fenêtre, mesuré.
         continu && colonnes > 3000 && talus > 200 && surface >= colonnes * 0.85 && ecartSurf < 1e-6 && tranchee > 100 && tranchJuste === tranchee,
         `${surface} colonnes de surface sur ${colonnes} (${talus} de talus), écart max à la cote ${ecartSurf.toFixed(4)} · en tranchée ou remblai de deux blocs et plus : ${tranchJuste}/${tranchee}, et ${falaise} au bord d'une falaise (${((performance.now() - t0) / 1000).toFixed(1)} s)`);
     }
 
-    // LE VIADUC DE LA MANCHE (v455). Sur l'eau, la voie était une chaussée de
+    // LE VIADUC DE LA MANCHE (v465). Sur l'eau, la voie était une chaussée de
     // pierre au ras des flots : de la mer à droite et à gauche, une digue
     // dessous, chaque rivière barrée d'un mur. Le viaduc garde l'eau sous le
     // tablier (des piles tous les `PAS_PILE` blocs), le tablier est un ruban
@@ -3069,7 +3218,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       }
       verifier('l\'Eurostar passe la Manche sur un viaduc : la mer sous le tablier, des piles, aucune digue',
         neuf && pas > 150 && colonnes > 1000 && eau > colonnes * 0.8 && piles > 0 && digue === 0 && bas >= 31 + T.DEGAGE - 1e-6,
-        `${pas} pas sur la mer · ${colonnes} colonnes : ${eau} d'eau libre, ${piles} de pile, ${digue} autres · tablier au plus bas à ${bas.toFixed(2)} (surface 31)${neuf ? '' : ' — pas de viaduc (code d\'avant la v455)'}`);
+        `${pas} pas sur la mer · ${colonnes} colonnes : ${eau} d'eau libre, ${piles} de pile, ${digue} autres · tablier au plus bas à ${bas.toFixed(2)} (surface 31)${neuf ? '' : ' — pas de viaduc (code d\'avant la v465)'}`);
       verifier('le tablier du viaduc se dessine et porte l\'enfant aux mêmes cotes que les rails',
         neuf && pas > 150 && sansTablier === 0 && sansContact === 0 && ecartContact < 1e-6,
         `${sansTablier} pas sans ruban de tablier, ${sansContact} sans contact sur ${pas}, écart contact/rail ${ecartContact.toFixed(4)} (${((performance.now() - t0) / 1000).toFixed(1)} s)`);

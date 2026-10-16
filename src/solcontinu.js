@@ -400,7 +400,7 @@ export function emettreRubans(buf, world, cx, cz, chunk) {
     } else if (r.genre === 'tablier') {
       const EP = 0.8, GARDE = 0.9;
       // le dessus, le dessous
-      // la peau du dessus : l'asphalte d'une route, le gravier d'un viaduc ferroviaire (v455)
+      // la peau du dessus : l'asphalte d'une route, le gravier d'un viaduc ferroviaire (v465)
       const dessus = r.peau === 'gravier' ? BLOCK_INFO[BLOCK.GRAVEL].tiles[0] : BITUME;
       quad(buf, [coin(r.o0, r.ya, 0), coin(r.o1, r.ya, 0), coin(r.o0, r.yb, 1), coin(r.o1, r.yb, 1)], dessus, HAUT, baseX, baseZ);
       quad(buf, [coin(r.o0, r.ya - EP, 0), coin(r.o1, r.ya - EP, 0), coin(r.o0, r.yb - EP, 1), coin(r.o1, r.yb - EP, 1)], PIERRE, BAS, baseX, baseZ);

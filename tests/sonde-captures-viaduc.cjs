@@ -1,5 +1,5 @@
-// CAPTURES DU VIADUC DE LA MANCHE (v455) : l'Eurostar sur la mer, vu de côté
-// à hauteur du tablier, à `rr=9` (le banc ouvre à 2). Avant la v455, une digue
+// CAPTURES DU VIADUC DE LA MANCHE (v465) : l'Eurostar sur la mer, vu de côté
+// à hauteur du tablier, à `rr=9` (le banc ouvre à 2). Avant la v465, une digue
 // de pierre au ras des flots ; après, un tablier sur piles.
 // Usage : node tests/sonde-captures-viaduc.cjs <dossier> [suffixe]
 const { Banc, souffler } = require('./banc.js');

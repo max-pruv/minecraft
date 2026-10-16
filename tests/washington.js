@@ -169,6 +169,44 @@ const descendre = async (p, ms) => {
     bouchesNoyees.length === 0 && D.BOUCHES_METRO.length === 20,
     bouchesNoyees.map((b) => b.nom).join(', ') || `${D.BOUCHES_METRO.length} bouches`);
 
+  // --- Les panneaux à lire sur place : la règle, sous node (v460) -----------
+  // Une horloge fabriquée : on éprouve « une fois par visite », « jamais en
+  // rafale » et « une visite neuve rouvre le panneau » sans dépendre de la
+  // cadence du banc. Sur l'ancien code le module n'existe pas : rouge propre.
+  const G = await import('../src/guides.js').catch(() => null);
+  if (!G) {
+    verifier('des panneaux racontent Washington sur place', false, 'src/guides.js est absent');
+  } else {
+    let t = 0; const dits = [];
+    const gd = G.creerGuides({ dire: (x) => dits.push(x), maintenant: () => t });
+    const L = G.GUIDES_DC.find((g) => g.id === 'lincoln');
+    const O = G.GUIDES_DC.find((g) => g.id === 'obelisque');
+    const C = G.GUIDES_DC.find((g) => g.id === 'cerisiers');
+    // On marche vers le Lincoln, puis on tourne autour pendant vingt secondes.
+    for (let k = 40; k >= -6; k--) { t += 300; gd.update(L.x + k, L.z); }
+    const unSeul = dits.length;
+    // On s'éloigne franchement, on revient : visite neuve.
+    for (let k = 0; k <= 45; k++) { t += 300; gd.update(L.x + k, L.z); }
+    for (let k = 45; k >= 0; k--) { t += 300; gd.update(L.x + k, L.z); }
+    const apresRetour = dits.length;
+    // Deux lieux en même temps (rayons élargis à dessein) : jamais deux panneaux
+    // à moins d'ESPACEMENT_MS, mais le second finit par passer.
+    let t2 = 0; const temps = [];
+    const g2 = G.creerGuides({ dire: () => temps.push(t2), maintenant: () => t2,
+      guides: [{ ...O, r: 200 }, { ...C, r: 200 }] });
+    for (let i = 0; i < 80; i++) { t2 += 250; g2.update(O.x, O.z); }
+    const ecart = temps.length === 2 ? temps[1] - temps[0] : 0;
+    const chevauchent = [];
+    for (const a of G.GUIDES_DC) for (const b of G.GUIDES_DC) {
+      if (a.id < b.id && Math.hypot(a.x - b.x, a.z - b.z) < a.r + b.r) chevauchent.push(`${a.id}/${b.id}`);
+    }
+    verifier('des panneaux racontent Washington sur place',
+      G.GUIDES_DC.length >= 7 && unSeul === 1 && apresRetour === 2
+        && temps.length === 2 && ecart >= G.ESPACEMENT_MS && chevauchent.length === 0,
+      `${G.GUIDES_DC.length} lieux ; en tournant au Lincoln ${unSeul} panneau, après une nouvelle visite ${apresRetour} ; `
+        + `deux lieux à la fois : ${temps.length} panneaux, ${ecart} ms d'écart ; rayons qui se recouvrent ${JSON.stringify(chevauchent)}`);
+  }
+
   const banc = new Banc({ portJeu: 8331, portPairs: 9331 });
   await banc.ouvrir();
   try {
@@ -707,6 +745,33 @@ const descendre = async (p, ms) => {
       `plafond à ${dansMusee.plafond}, ${dansMusee.murs} mur(s), à (u ${dansMusee.x - P.x}, v ${dansMusee.z - P.z}, y ${dansMusee.y}), sol du musée ${solMusee}`);
     verifier('et des avions sont suspendus au-dessus de la tête',
       suspendus >= 4, `${suspendus} colonnes portent quelque chose en l'air`);
+
+    // --- L'enfant marche jusqu'au Lincoln : le panneau passe, une fois (v460) --
+    // On avance d'un bloc toutes les 120 ms de vraie vie depuis le Mall, on
+    // fait les cent pas devant la statue, et l'on relève ce que le bandeau
+    // affiche. Les guides comptent en temps réel : la cadence du banc n'y
+    // change rien, seule la position compte.
+    const vuPanneau = await tab.evaluate(async ({ x0, z0 }) => {
+      const g = window.__game;
+      const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
+      const el = document.getElementById('toast');
+      const affiches = [];
+      let avant = '';
+      const noter = () => {
+        const txt = el ? el.textContent : '';
+        if (el && txt !== avant && el.style.opacity === '1' && txt.includes('Lincoln')) affiches.push(txt);
+        avant = txt;
+      };
+      const poser = (u) => { g.player.pos.x = x0 + u; g.player.pos.z = z0 + 2; };
+      for (let u = -140; u >= -172; u--) { poser(u); await dormir(120); noter(); }
+      for (let i = 0; i < 40; i++) { poser(-172 + (i % 2 ? 3 : -3)); await dormir(120); noter(); }
+      const journal = window.__guides ? window.__guides.journal.map((j) => j.id) : null;
+      return { affiches: affiches.length, texte: affiches[0] || el.textContent, journal };
+    }, { x0: P.x, z0: P.z });
+    verifier('en marchant jusqu\'au Lincoln, son panneau passe une fois',
+      vuPanneau.affiches === 1 && !!vuPanneau.journal
+        && vuPanneau.journal.filter((id) => id === 'lincoln').length === 1,
+      `${vuPanneau.affiches} affichage(s), journal ${JSON.stringify(vuPanneau.journal)}, « ${vuPanneau.texte} »`);
   } finally {
     await banc.fermer();
   }

@@ -203,7 +203,7 @@ export function profilDe(s) {
     // jamais sous les flots : c'est de là que part le lissage.
     h[k] = Math.max(sol[k], NIVEAU_EAU) + 1;
   }
-  // LE VIADUC (v455). Sur l'eau, la voie était une chaussée de pierre au ras
+  // LE VIADUC (v465). Sur l'eau, la voie était une chaussée de pierre au ras
   // des flots : la Manche traversée sur une digue, chaque rivière barrée d'un
   // mur. Une suite d'au moins `VIADUC_MIN` pas d'eau sous l'axe est un
   // OUVRAGE : son tablier passe à `DEGAGE` blocs au-dessus de la surface, et
@@ -238,7 +238,7 @@ export function profilDe(s) {
 // Le niveau de la mer. `world.js` l'a aussi, mais l'importer d'ici créerait un
 // cycle : trains.js est importé PAR world.js.
 const NIVEAU_EAU = 30;
-// LE VIADUC (v455) : le tablier à quatre blocs au-dessus de la surface de
+// LE VIADUC (v465) : le tablier à quatre blocs au-dessus de la surface de
 // l'eau (qui est à `NIVEAU_EAU + 1`), une pile tous les `PAS_PILE` blocs, et
 // un ruban de tablier qui déborde de `CULEE` pas sur le ballast de chaque rive
 // (le joint du pont de l'A1, v302). `VIADUC_ACTIF` à faux rejoue la chaussée
@@ -287,7 +287,7 @@ export function voieEn(x, z) {
     const t = tSegment(s, x, z);
     const cote = coteContinue(s, t);
     if (cote === null) continue;
-    // Sur un viaduc (v455), la plate-forme est le TABLIER, un ruban : la
+    // Sur un viaduc (v465), la plate-forme est le TABLIER, un ruban : la
     // colonne n'a ni ballast ni talus, l'eau reste dessous.
     const pr = profilDe(s), kv = Math.round(t * (pr.length - 1));
     const ouvrage = !!pr.viaduc[kv];
@@ -353,7 +353,7 @@ export function rubansVoieDans(x0, z0, x1, z1) {
       for (const o of [-ENTRAXE, ENTRAXE]) {
         out.push({ ...base, ...tr, tuile: 'traverse', o0: o - TRAVERSE_LARG / 2, o1: o + TRAVERSE_LARG / 2, dy0: 0.01, dy1: TRAVERSE_HAUT, bouts: true });
       }
-      // LE TABLIER DU VIADUC (v455) : le ruban du pont de l'A1 (dessus, dessous,
+      // LE TABLIER DU VIADUC (v465) : le ruban du pont de l'A1 (dessus, dessous,
       // parapets), peau de gravier, aux MÊMES cotes que les rails — et il
       // déborde de `CULEE` pas sur le ballast des rives, pour qu'aucun joint
       // ne s'ouvre sur l'eau (v302).

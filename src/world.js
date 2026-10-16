@@ -3038,7 +3038,7 @@ export class World {
   tablierEn(x, z) {
     const r = routeEn(x, z);
     if (r) return r.ouvrage ? r.cote : null;
-    // le tablier d'un viaduc ferroviaire (v455) : le même plancher, lu aux
+    // le tablier d'un viaduc ferroviaire (v465) : le même plancher, lu aux
     // mêmes cotes que le ruban qui le dessine
     const v = voieEn(x, z);
     return v && v.ouvrage ? v.cote : null;
@@ -3443,7 +3443,7 @@ export class World {
           // cote. Plus un bloc d'obsidienne ni de planche sur la voie.
           const y = voie.bloc;
           if (voie.ouvrage) {
-            // LE VIADUC (v455) : le tablier est un ruban (`rubansVoieDans`) ;
+            // LE VIADUC (v465) : le tablier est un ruban (`rubansVoieDans`) ;
             // la colonne garde son eau et son lit, et ne reçoit qu'une PILE
             // tous les `PAS_PILE` blocs, du lit jusque sous le tablier.
             for (let wy = Math.max(h + 1, WATER_LEVEL + 1); wy <= Math.max(y + 7, h + 2) && wy < HEIGHT; wy++) data[World.index(x, wy, z)] = BLOCK.AIR;
