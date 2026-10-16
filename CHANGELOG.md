@@ -20,6 +20,32 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v455 — L'autoroute de Florence à Rome
+
+**Pourquoi.** L'Autostrada del Sole s'arrêtait à Florence et reprenait à
+Rome : Milan–Bologne (A1 Nord), Bologne–Florence (Autosole) et Rome–Naples
+(A1 Sud) existaient, mais pas le tronçon du milieu. C'était le dernier
+corridor instruit au tableau de `TASKS.md` qui n'était ni fait ni bloqué :
+l'axe direct est celui de la Frecciarossa, et Fiumicino est à son bout.
+
+**Ce que ça change.** Une autoroute de 1 203 blocs relie Florence à Rome, à
+l'est du rail d'un bout à l'autre. Elle sort de Florence plein est, contourne
+le massif des Apennins par l'est, descend la plaine au nord de Rome à l'est de
+l'aérodrome et entre dans la ville par une avenue de dix-huit blocs. Des
+voitures y roulent ; on peut désormais aller en voiture de Milan à Naples.
+
+**Ce qui le prouve.** Un témoin neuf dans `carteMonde.js` (rouge sur l'ancien
+code : pas de route, pas de convoi) : le convoi roule, aucune colonne
+d'emprise sur le rail, les deux entrées sur la rue sans bloc ni eau. Sous
+node, sur le vrai registre : 11 981 colonnes d'emprise, zéro sur un rail, un
+repère ou une autre route, zéro dans une ville ou dans la marge d'un
+aérodrome ; trois ponts, 76 traversées de pont sur 76 (toutes les routes),
+zéro trou aux culées sur 140 304 points, zéro trou au joint sur 19 890 ; la
+table des raccords courts inchangée (l'entrée de Florence par 32°, la
+première trouvée, roulait dans un anneau et l'aurait exigée). Les deux
+empreintes du relief de `plafond.js` sont intactes : une route écrit des
+blocs, elle ne touche pas `terrainHeight`.
+
 ## v454 — Les garde-corps des petites fenêtres ont leurs anneaux entiers
 
 **Pourquoi.** Le motif de fer forgé d'un garde-corps est fait pour une travée

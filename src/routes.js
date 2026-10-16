@@ -537,6 +537,34 @@ export const ROUTES = [
   // de la marge de tout aérodrome.
   { nom: 'US-101', villes: ['sf', 'losangeles'], bord: { losangeles: 40 },
     via: [[-38854, 6976], [-38849, 6984], [-38842, 6990], [-38822, 6997], [-38816, 6997], [-38810, 6995], [-38765, 6965], [-38756, 6962], [-38755, 6962], [-38740, 6967], [-38710, 6990], [-38661, 7049], [-38413, 7538], [-38238, 7835], [-38113, 8148], [-37752, 8793], [-37723, 8824], [-37516, 8962], [-37463, 8980]] },
+  // L'A1 CENTRE (v455), FLORENCE–ROME : le maillon qui manquait à l'Autostrada
+  // del Sole — Milan–Bologne (A1 Nord), Bologne–Florence (Autosole) et
+  // Rome–Naples (A1 Sud) étaient faites. L'axe direct est celui de la
+  // Frecciarossa, droite de gare à gare, et Fiumicino est à son bout, au nord
+  // de Rome (boîte de repère de 63). On choisit un côté et l'on n'en change
+  // plus (v320) : l'EST, parce qu'à l'ouest c'est la mer dès z 3 360. Le
+  // relevé (carte.mjs du scratchpad) montre un massif de 44 à plus de 48 blocs
+  // en travers, de x 3 240 à 3 800 entre z 3 600 et 3 800 ; la route le
+  // contourne par l'est (36 à 44), puis descend la plaine au nord de Rome à
+  // l'est de l'aérodrome. Rome par −66° (dix-huit blocs et demi d'avenue sur
+  // la rue). Mesuré sous node (couloir.mjs : couloir le plus bas avec cap sur
+  // une grille de dix blocs, rails, aérodromes, repères et autres routes dans
+  // la grille, la RAMPE de l'A8 ; puis moyenne glissante et réparation des
+  // coudes, `profilDe` APPELÉ sur chaque candidat) : 144 tracés, 39
+  // admissibles, tous sortant de Florence par 32°. MAIS LA TABLE DES RACCORDS
+  // L'A REFUSÉE : à 32° comme à 34°, 50°, 54° et 120°, l'avenue d'entrée roule
+  // dans la voie d'un anneau dès la porte (`finAvantAnneaux` rend 0, la
+  // règle de la v442), alors qu'à 0°, −10°, 80° et 90° elle ne touche rien —
+  // 80° et 90° sont contre le rail. Florence sort donc plein est (quarante
+  // blocs d'avenue) et tourne de 18° puis de 20° vers le tracé de 32° (la
+  // règle de la v329, tourner en plusieurs fois). Relu sur le registre réel
+  // (verif.mjs, joint.mjs, sonde-ponts-eau.cjs, sonde-rue-dense.cjs) : 1 203
+  // blocs, trois ponts (s 123–148, 194–216, 241–244 : l'eau à l'est de
+  // Florence, joints fermés), déblai 2,1, remblai 2,0, coudes ≤ 19°, zéro
+  // colonne d'emprise sur un rail, un repère ou une autre route, l'axe à 74
+  // blocs au moins du rail et à 98 au-delà de la marge de Fiumicino.
+  { nom: 'A1 Centre', villes: ['florence', 'rome'],
+    via: [[3316, 3217], [3355, 3226], [3391, 3244], [3663, 3474], [3737, 3557], [3798, 3637], [3828, 3710], [3850, 3782], [3848, 3853], [3841, 3924], [3833, 4031], [3825, 4092], [3818, 4107], [3810, 4118]] },
 ];
 
 // --- la section -----------------------------------------------------------------
