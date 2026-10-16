@@ -9,7 +9,7 @@ export const NOUVEAUTES = [
     v: 455,
     titre: 'Les mises à jour ne gênent plus',
     puces: [
-      'Une mise à jour ne compte plus comme un plantage',
+      'Une mise à jour n’est plus un plantage',
     ],
   },
   {
