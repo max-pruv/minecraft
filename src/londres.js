@@ -1059,7 +1059,11 @@ function buildShard(poser) {
     const n = Math.max(1, Math.round(r));
     for (let du = -n; du <= n; du++) for (let dv = -n; dv <= n; dv++) {
       if (Math.abs(du) === n || Math.abs(dv) === n) {
-        poser(du, y, dv, y % 7 === 0 ? ACIER : VERRE);
+        // Le mur-rideau, pas le verre (v449) : un bloc de verre dans un mur
+        // creux est un TROU (v195) — on voyait au travers du Shard depuis la
+        // rive sud. Le rideau porte ses meneaux dans sa texture, est opaque
+        // et s'allume la nuit, comme les tours de la City (`tour` plus haut).
+        poser(du, y, dv, y % 7 === 0 ? ACIER : CITY_BLOCK.CURTAIN);
       }
     }
   }

@@ -770,6 +770,271 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## La rue sans à-coups (v453) — le bus a une place, un circuit se prépare, une suiveuse freine
+
+Quatre sujets, une livraison. Cinq règles.
+
+- **UNE RÈGLE DE RACCORD SE MESURE AUSSI DANS LES VILLES BÂTIES À LA MAIN.**
+  La sonde des raccords (v442) ne lisait que les anneaux des villes
+  engendrées ; l'entrée de l'A1 à Lille roulait 47 blocs dans la voie d'un
+  circuit de la rue de Paris. Les cinq villes bâties à la main sont dans la
+  sonde et dans `RACCORDS_COURTS` (633 → 26 blocs, tous des demi-tours).
+- **UN VÉHICULE DE PLUS DANS UNE GRILLE PREND UNE PLACE ENTIÈRE.** Le bus à
+  mi-temps entre deux voitures (v372) les touchait par la grille seule (36 004
+  relevés sur 263 anneaux) et forçait l'anneau à renoncer au jeu par voiture
+  (v438). Il prend la place de la voiture 0 (`pris`, posé par `bus()`) : zéro
+  contact, jeu partout, une voiture de moins par anneau. `busAMiTemps(true)`
+  rejoue l'ancienne règle pour les sondes, jamais un réglage.
+- **CE QUI SE CALCULE AVANT UNE NAISSANCE SE CALCULE PAR TRANCHES, ET LA
+  PREUVE EST L'IDENTITÉ.** `fabriqueCirculation` est un générateur qui rend la
+  main entre ses étapes lourdes (plancher, croisement, voies le long du tracé,
+  chaque essai de la jumelle) ; `circulationParTranches` l'avance À CHAQUE
+  IMAGE sur un budget en DÉBIT (120 ms par seconde, entre 5 et 22 ms par
+  image, v237) et enchaîne les circuits tant qu'il en reste ; main.js ne fait
+  naître le convoi (et son bus) qu'une fois fini. Mon premier jet n'avançait
+  qu'aux tics de 125 ms de la cadence de ménage : Rome et Moscou arrivaient
+  sans une voiture en vue — le portail l'a dit (« la circulation naît à
+  l'approche »).
+  Le témoin compare 56 circuits fabriqués des deux façons — voitures, jumelle,
+  grille, voies — sans un écart : c'est ce qui garde la v305.
+- **UNE BORNE DURE SE PRÉCÈDE D'UN FREINAGE.** Le plancher de file (v283) est
+  une contrainte de position : une suiveuse encore lancée à 3,7 b/s y était
+  arrêtée en une image (37 b/s²). Sa distance d'arrêt ne dépasse pas l'écart
+  plus celle de la voiture de devant (v² ≤ vDevant² + 2·a·reste, a le
+  freinage d'urgence) — devant dans sa file ET devant sur la ligne (v423, la
+  voiture de l'autre convoi a son propre plancher) — et seulement quand un feu
+  ou sa file la retient (`cause === 1`). La somme vDevant + √(2·a·reste),
+  plus large, laissait encore 3 secs sur 8. Mesuré au navigateur (`sonde-feu-image.cjs`) :
+  5 arrêts secs sur 9 sur `origin/main`, 1 sur 17 ici (huit passes ; le
+  reste est entre 14 et 33 b/s², déclaré). **UNE BORNE ABSOLUE
+  RALENTIT DES FILES ENTIÈRES** : mon premier jet bornait à zéro devant et
+  partout ; Moscou montrait 8 voitures en vue au lieu de 26. Une borne de
+  confort se pose RELATIVE à ce qui précède, et seulement là où sa cause
+  agit.
+- **UNE DETTE DE TÉMOIN SE VÉRIFIE AVANT D'ÊTRE REPOINTÉE.** `TASKS.md`
+  déclarait l'arrêt sec au feu « jugé sur deux arrêts », et j'ai cru à un
+  relevé mal horodaté sous la charge. La sonde, sans charge, sur
+  `origin/main`, a rendu les mêmes arrêts secs à l'heure de lecture et à
+  l'heure de l'image : l'hypothèse était fausse et le défaut était dans le
+  JEU. Repointer le témoin sur l'hypothèse aurait caché une vraie panne. Le
+  témoin juge désormais un arrêt « au feu » sur toute sa descente (une voiture
+  arrêtée par l'urgence puis rangée dans la file n'a pas freiné pour un feu),
+  et le choc de `degats.js` prend vingt-six blocs d'élan au lieu de les
+  trouver (3 à 16).
+
+## ✈️ va chercher la piste (v452) — une séquence assistée garde sa porte de sortie et se mesure piste par piste
+
+Max : « améliore la séquence d'atterrissage, l'avion est compliqué à gérer ».
+`src/approche.js` (pur, sans three) : piste la plus proche, ralliement,
+finale sur un plan, arrondi. Quatre règles.
+
+- **LA RÈGLE EST PURE ET SE REJOUE SOUS NODE SUR TOUTES LES PISTES.**
+  `guiderApproche` rend un cap, une vitesse verticale, une vitesse et le
+  train ; `player.js` l'applique comme un joystick. La sonde
+  (`tests/sonde-approche.cjs`) la rejoue sur les 31 pistes, trois appareils, quatre
+  départs : c'est elle qui a trouvé un avion qui virait au ras de la piste
+  dans l'aérogare de Roissy (on monte tout droit avant de virer), Fiumicino
+  qui tournait sans fin (deux tours manqués : une autre piste), et un toucher
+  avant le seuil de Los Angeles (`TOUCHER` 8).
+- **UNE APPROCHE ASSISTÉE NE FINIT JAMAIS AU BOUT DE LA PISTE.** Trop long
+  pour s'arrêter (`freinage` de la fiche plus dix blocs) ou trop de travers :
+  elle remet les gaz d'elle-même. Près du seuil la descente se borne à la
+  hauteur qui reste (un relief qui tenait l'avion haut le faisait plonger).
+- **LE GESTE PRIME, ET LE SECOND APPUI SORT.** Le joystick corrige (↔ décale,
+  ↕ monte ou descend sur le plan) ; un second ✈️ remet les gaz — la porte de
+  sortie de toute séquence imposée (v290, v366). Sans piste à portée, ✈️ se
+  pose sur place dès le premier appui (le témoin de la v261 l'exige) et le
+  cadran montre l'aéroport le plus proche. Hors de l'approche, le cadran nomme
+  les villes (v263) : mon premier jet y mettait la piste la plus proche dès
+  qu'on volait bas, et le témoin « cap sur Lyon » l'a refusé.
+- **ELLE SE MESURE SUR LES VRAIES PISTES.** Livrée après le prolongement des
+  pistes : sur les pistes d'avant, le Concorde ne trouvait aucune piste assez
+  longue et refaisait des tours (17 approches sur 17, mesuré).
+## Le regard d'un convoi est un temps (v451) — ce qui est sur le chemin se voit avant d'y être
+
+Un train traversait la voiture de l'enfant quand une image était lente
+(déclaré par la v440). Trois règles.
+
+- **UN CONVOI QUI ROULE EN TEMPS RÉEL REGARDE CE QU'IL VA PARCOURIR DANS
+  L'IMAGE.** La rame ne regardait que `PAS_TRAIN` (3,5 blocs) : à quinze
+  blocs par seconde, une image d'un quart de seconde la faisait passer
+  d'« assez loin » à « déjà dedans », et « pas si l'on est déjà dedans »
+  (v245) la laissait continuer. `cederLePassage` est appelé APRÈS que
+  `horloge` a avancé et AVANT `c.update` : la grille dit donc EXACTEMENT où la
+  motrice sera à la fin de l'image (`distanceA(horloge − decalage)`), et le
+  regard couvre cette avance plus 3,5 blocs, au pas d'un bloc (`pasDeRame`).
+  Même à quai : une rame qui repart dans l'image roule aussi. Le métro partage
+  ce code. C'est le couloir des piétons (v351) et le balayage des voitures
+  (v395) du côté de la rame : une portée en blocs fixes est une portée en
+  temps qui rétrécit quand la cadence tombe.
+- **LES VOITURES DE LA RUE AJOUTENT L'IMAGE EN COURS, ET RIEN SOUS UN TIERS
+  DE SECONDE.** Leur regard (`porteeDe`) et leur marge d'urgence devant une
+  personne (v372, « une image à trois par seconde ») gagnent `v × (dt − 0,35)`
+  — `dt` est la durée que `update` leur donnera. Sous 0,35 s, la règle d'avant
+  au bit près : on ne change pas le comportement que les témoins de la rue
+  mesurent à cadence normale.
+- **UNE PANNE DE CADENCE SE PROVOQUE.** Au repos, l'ancien code passait 7 poses
+  sur 7 ; sous charge, c'était un tirage. La sonde et le témoin brûlent 700 ms
+  de fil principal par image pendant le croisement (`origin/main` 5/5
+  traversées, regard fixe désarmé `regardRameFixe` 2/3, remède 0/5) — la leçon
+  des poissons (v233) appliquée à une durée d'image. Le frein s'arrête à la
+  fin du témoin : une page de la suite continue après lui.
+
+Ce qui reste, déclaré : l'arrêt devant l'enfant reste LOCAL (la grille partagée
+ne change pas, v305) ; un saut d'horloge (l'invité qui adopte l'heure de
+l'hôte) peut encore poser une rame sur l'enfant — elle continue alors (v245).
+## Un bâtisseur ne tire pas au hasard (v450) — ce qu'il pose est un monde, et deux fils le bâtissent
+
+Trois règles.
+
+- **JAMAIS `Math.random()` DANS UN BÂTISSEUR.** Le worker de maillage (v251) et
+  le fil principal ont chacun leur graphe de modules, donc leur cache de
+  monuments : un tirage au hasard y bâtit DEUX mondes, celui qu'on voit et celui
+  qui arrête l'enfant — et deux tablettes en ont deux autres. Le Colisée du
+  catalogue l'a fait de la v346 à la v449 (173 blocs). Un tirage se fait à la
+  POSITION (`effondre(x, y, z)`, monuments.js ; `tirage` des villes) ; dans un
+  monument, la position DANS le monument, pour que le catalogue posé par un
+  enfant soit le même que celui de la ville.
+- **LA PREUVE EST UN FIL NEUF, PAS UN RAISONNEMENT.** `plafond.js` engendre les
+  763 repères du monde d'aujourd'hui et d'avant la v306 dans deux
+  `worker_threads` sous deux graines de `Math.random`, et compare au fil du
+  témoin (46 s, parallèle). Un repère neuf qui tire au hasard le fait rougir et
+  le nomme. Le grep (`grep -c Math.random src/*.js`) ne dit que les candidats :
+  hors des bâtisseurs, tout est animation, ciel ou son.
+- **UN CHAMP DE FICHE PEUT PORTER DEUX SENS, ET SEUL UN NOMBRE EST UN BLOC.**
+  `f.baie` était le bloc des fenêtres d'une ville engendrée — et la GÉOGRAPHIE
+  du port de Sydney. Lu comme bloc, l'objet s'écrivait 0 : 250 fenêtres étaient
+  des trous. `typeof … === 'number'` avant de poser ; le jour où un champ de
+  fiche gagne un second usage, on cherche ses lecteurs (`grep -n "f\.baie"`).
+
+Et **une ville engendrée dont l'archétype peint mal la pierre a sa palette à
+elle** (`PALETTES_VILLES`, villesmonde.js) : Édimbourg en gris, gris clair et
+kaki, des UNIS — en motif « Briques », la couche HD (registre `londres`) y
+verrait de la brique et la patinerait en rouge.
+
+## Les pistes à leur vraie longueur (v448) — un ouvrage qui sort du disque est un repère, pas un relief
+
+Max : « les pistes de tous les aéroports sont beaucoup trop courtes pour
+vraiment atterrir ». Mesuré : 90 à 146 blocs. Quatre règles.
+
+- **UN PROLONGEMENT EST UN REPÈRE DE PLUS, BÂTI EN TRONÇONS.**
+  `tronconsDePiste` (aeroport.js) rend des repères de 32 blocs (`piste: true`)
+  posés dans l'axe, au-delà du disque : remblai et tranchée écrits en blocs
+  (les bornes de la v280, `REMBLAI` 12, `DECAISSE` 9), jamais `terrainHeight`.
+  Les deux empreintes de `plafond.js` sont intactes, et une sonde compare le
+  relief des deux arbres sur 688 320 colonnes autour des dix-neuf aérodromes :
+  zéro différente. Un tronçon prend sa cote à l'aérodrome (`lm.ancre`), pas à
+  son centre.
+- **UN REPÈRE QUI N'EST PAS UN BÂTIMENT SE DÉCLARE À TOUS LES LECTEURS DE
+  REPÈRES.** `dansUneZoneATerre` aplanit le sol sous les repères du monde
+  (`conf.reperes`) : un tronçon y aurait changé le relief. Il est filtré là,
+  dans `REPERES` et dans `nearLandmark` (qui refuse un lot de ville). Les
+  mondes figés (`LANDMARKS_V317`) ne le portent pas.
+- **LA LONGUEUR SE MESURE CONTRE TOUT CE QUI BORNE.** `PROLONGEMENTS` est le
+  résultat d'une sonde (villes, routes, voies ferrées, autres aérodromes,
+  monuments, eau, et la profondeur que le remblai et la tranchée tiennent),
+  pas un goût ; `CIBLE_PISTE` dit ce qu'on vise par profil (300 · 260 · 220),
+  et `PISTES_COURTES` nomme, avec l'obstacle, les sept aérodromes qui n'y
+  arrivent pas. Un témoin de `carteMonde.js` roule chaque piste et rougit
+  pour une piste courte non déclarée — ou une déclarée qui ne l'est plus.
+- **LE PLAN EST PUBLIÉ UNE FOIS** : `pistesDe(a)` (axe, demi-largeur, bouts
+  ouest et est) est lu par le bâtisseur, le témoin et l'approche assistée (v452).
+
+## Les commandes de l'avion se rangent (v445) — une file en flux ne peut rien recouvrir
+
+Max, deux captures d'iPhone en vol : six paires d'éléments qui se recouvrent
+(cadran de cap × minicarte × GPS × bandeau, défi de Cornichon × manette). Trois
+règles.
+
+- **CE QUI S'AFFICHE EN HAUT AU MILIEU VIT DANS UNE SEULE FILE EN FLUX.**
+  `#file-centre` (index.html) : cadran, GPS, proposition d'ami, défi de
+  Cornichon (`fun.js` l'y range), bandeau — `position: static` à l'intérieur,
+  donc un élément de plus se range à la suite et rien ne se recouvre par
+  construction. Elle commence sous la ligne du chronomètre
+  (`--rail-panel-top`), entre la colonne de gauche — et la minicarte quand
+  elle est ouverte (`body.minicarte-ouverte`, `--minimap-w`) — et la colonne
+  de droite. Plus aucune cote écrite à la main pour un bandeau.
+- **LA COLONNE DE BORD EST AUSSI HAUTE QUE LA MANETTE, ET « DESCENDRE » EN
+  FAIT PARTIE.** Aux commandes, ⬇️ DESCENDRE, ✈️ et 🛞 sont trois boutons
+  ronds de 56 px au même x, la vitesse en dessous, la manette (56 × 220) à
+  droite : le haut de la colonne est le haut de la manette (v265), rien dans le
+  quart du joystick (v272). Le bouton garde le texte « Descendre » (les témoins
+  lisent `includes`), en icône et mot.
+- **UN TÉMOIN DE MISE EN PAGE SE JOUE À LA TAILLE DE L'APPAREIL DE MAX.** Le
+  banc ouvre en 420 × 760 ; la capture était en 430 × 932. Les trois témoins
+  de `monte.js` se jouent aux deux, formulés sans dimension. Et le quiz de
+  l'invariant 2 met le vol en pause (`onPause` → `running = false`) : mesuré,
+  zéro bloc parcouru sous la question — on le RANGE, on ne le diffère pas.
+
+## Les raccords d'autoroute s'arrêtent avant l'anneau (v442) — deux grilles ne partagent pas une voie
+
+Trois règles.
+
+- **UNE VOIE N'A QU'UNE GRILLE.** Dix-neuf des quarante-six raccords
+  route/ville engendrée roulaient dans la voie d'un anneau (569 blocs) : deux
+  grilles horaires indépendantes (v305) qu'aucun réglage ne cadence l'une
+  contre l'autre (Madrid 6,7 à 6,9 % de paires au contact). Le raccord s'arrête
+  quatre blocs (`MARGE`) avant la première voie d'anneau, même sens ou en face
+  à moins de 1,6 bloc (`finAvantAnneaux`, raccords.js) ; plus court que
+  `RACCORD_MIN`, le demi-tour se fait à la porte. Les pistes ont été mesurées
+  toutes deux (`sonde-rue-dense.cjs raccords`) : l'arrêt à la porte partage
+  encore 44 blocs et ne fait entrer personne ; le raccord court 20 blocs, tous
+  des demi-tours. « Le raccord devient une file de l'anneau » n'existe pas
+  sans téléporter une voiture d'une grille à l'autre.
+- **CE QUE LE DÉMARRAGE NE PEUT PAS PAYER ET QUE L'APPROCHE NE PEUT PAS
+  CHANGER SE MESURE HORS LIGNE.** Les autoroutes naissent au démarrage ; les
+  anneaux de leurs trente-six villes coûtent 877 ms sous node (derrière
+  « Jouer », v258) ; et raccourcir le raccord à l'approche changerait la grille
+  de toute la file d'une tablette à l'autre. La troncature est donc une TABLE
+  (`RACCORDS_COURTS`), comme `ANNEAUX_EN_PLUS`, et un témoin de `plafond.js` la
+  recalcule : un anneau qui bouge la fait rougir et nomme le raccord.
+- **UNE SONDE QU'UNE SUITE LIT SE REQUIERT, ELLE NE SE LANCE PAS.** Le premier
+  témoin lançait `sonde-rue-dense.cjs` par `spawnSync` : l'aiguillage du
+  portail (`sondeIsolee`) ne voit que `require` et `import`, et une sonde
+  modifiée aurait laissé `plafond.js` « déjà vert ». La sonde exporte
+  `mesurer(mode)` ; `?raccords=long` rejoue l'avenue entière au navigateur.
+
+## La rue dense, palier C (v438) — une variance par voiture est une fonction de son heure
+
+Quatre règles.
+
+- **UNE VOITURE NE PEUT AVOIR SON ALLURE QUE SI SON ÉCART À LA GRILLE EST UNE
+  FONCTION DE L'HORLOGE.** `Convoi.jeu(i, τ)` (vehicules.js) rend quelques
+  dixièmes de seconde d'avance ou de retard (`JEU_MAX`, 0,35 s ; ±10 %
+  d'allure), une ondulation dont la période et la phase viennent de la CLÉ du
+  convoi et du rang — jamais du hasard local : deux tablettes posent la même
+  voiture au même endroit (v305). Un témoin refait la table et la rejoue à
+  l'identique.
+- **LE JEU S'ÉTEINT LÀ OÙ LA FILE EST CALCULÉE AU PLUS JUSTE.** Le poids `W`
+  vaut zéro sous six blocs par seconde (le virage le plus lent fixe le nombre
+  de voitures, `nbSansChevauchement`), à trois secondes d'un croisement du
+  tracé avec lui-même (`instantsDeCroisement`), là où la jumelle partage la
+  voie de sa file, et dans un anneau que le bus suit. Il se décide sur ce
+  qui est connu à la CRÉATION — sur l'autoroute, la section de deux voies,
+  pas la jumelle qui naît plus tard : le jeu ne change pas quand elle arrive.
+  Preuve STRUCTURELLE (`sonde-rue-dense.cjs jeu`) : 179 convois sous node,
+  un tour d'horloge chacun, 392 contacts de grille sans le jeu, 392 avec.
+- **UNE FLOTTE QUI S'AGRANDIT GARDE SES POINTES UNIQUES.** La fourgonnette
+  et le pickup (`utilitaires.js`, fabriqués, originaux) ont leur classe dans
+  `FLOTTE` et leur fiche dans `conduite.js` (31 et 32 blocs/s) :
+  `ficheDeVitesse` retrouve la classe à sa pointe. Une silhouette entière vient
+  d'un profil extrudé : quinze maillages contre trente-deux pour un modèle
+  de la flotte — une rue qui gagne des utilitaires dessine moins.
+- **LA LIMITATION SE DEMANDE À LA SECTION, AU POINT DU TRACÉ.**
+  `allureDuTroncon` (voiesdoubles.js) lit les voies nommées de chaque ville
+  bâtie à la main et leur type du kit (boulevard 50, collectrice 40, locale
+  30) ; `allureVilleMonde` le boulevard de la croix. Manhattan garde la
+  sienne.
+
+Et **la seconde voie de Paris se perdait aux places, et dans une recherche qui
+supposait le croisement monotone.** 306 blocs de deux voies occupés sur 1 231 :
+la rampe de huit blocs mangeait seize blocs autour de chaque place
+(`RAMPE_VILLE` 5 en ville, l'autoroute garde 8), le seuil de quarante écartait
+les circuits qui ne suivent qu'un tronçon (`SECTION_MIN` 20). 446 après. La
+recherche du nombre de la jumelle ne testait que `nb` et 0,4 `nb` avant sa
+dichotomie : elle liste désormais les nombres que le croisement accepte et
+cherche parmi eux. Les deux circuits en huit restent sans jumelle — seul n = 4
+passe leur croisement (0,18 `nb`) : déclaré.
 ## Les anneaux se cherchent ensemble (v435) — ce qu'aucun ordre ne règle se cherche sur l'état de tous
 
 Toronto, Dublin, Lima : l'anneau d'arrivée sur la place, chaque contour trouvé
@@ -1010,6 +1275,30 @@ même : un témoin qui juge ce que la tablette voit force
 `reglageTraces.dessin = true` (ou `?traces=1`). Et une piste de témoin qui
 dérape se pose LARGE : la dérive pousse la voiture de côté, et sur treize
 blocs elle tombait de la plate-forme (`enLair`, zéro trace au frein à main).
+
+**Le frein à main crisse (v437).** Le crissement suivait la dérive, le
+freinage fort et le virage trop vite ; le frein à main tiré tout droit n'en
+donne aucun (dérive nulle) et ne s'entendait pas (bande des pneus ×1,9).
+`freinMainTire` (lu si présent) au-dessus de deux blocs/s vise 0,75. Le
+témoin écoute la sortie pendant le freinage, contre la ligne droite d'avant.
+
+**La voiture de l'ami braque et glisse (v441).** Trois règles.
+**UN SIGNE ÉCRIT POUR UNE PHYSIQUE SE RELIT QUAND LA PHYSIQUE ARRIVE.** La
+caisse visait `derive − deja`, écrit quand le contrat ne disait pas encore
+dans quel sens la vitesse glisse ; `player.js` la fait aller vers
+`yaw + derive`, la caisse vraie est donc à −`derive` de sa vitesse, et l'on
+dessinait la glissade en miroir (rapport −0,18 lu dans la matrice,
+`derive-mesure.js`). Elle vise désormais `−derive − deja` : zéro quand le cap
+dit déjà tout. **UN NOMBRE QUI VOYAGE N'EST PAS UN NOMBRE DESSINÉ** :
+`userData.braquage` et `.derive` étaient posés sur la copie d'un ami depuis la
+v397 et lus par personne ; `vieDistante` (sensations.js, appelée par
+`updateRemotePlayers`) braque ses roues avant et pose ses traces, sa vitesse
+lue à la position que le réseau lui donne. **UN NOM DE CHAMP NE SERT PAS DE
+MARQUEUR** : `installerBraquage` marquait la voiture dans
+`userData.braquage`, que le réseau écrase avec un nombre — il réinstallait
+les groupes à chaque message ; le marqueur est `braquageInstalle`. Le frein à
+main voyage dans `p.v.m` (les deux chemins de la position le portent : `v`
+est recopié entier, v388).
 
 ## Un contour dans l'autre sens, et les rues du Strip (v418) — ce qui empêchait le contour n'était pas l'absence de rue
 
@@ -1861,7 +2150,7 @@ Et une empreinte d'identité qui change se PROUVE : celle des 490 morceaux
 (v352) couvre Marrakech et Tokyo ; la branche, bâtisseurs neufs désarmés, rend
 l'ancienne au bit près — c'est ce qui a permis de la remplacer.
 
-## L'arrivée n'engendre plus le monde (v436) — sur le fil principal, on lit ce qui est là, on ne le fabrique pas
+## L'arrivée n'engendre plus le monde (v455) — sur le fil principal, on lit ce qui est là, on ne le fabrique pas
 
 Trois règles.
 
@@ -2433,6 +2722,82 @@ engendrées. Quatre règles.
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
 
+## Les garde-corps des baies étroites (v454) — un motif qui a un pas se pose en nombre entier de pas
+
+Une règle. Une tuile à motif périodique (la ferronnerie : un barreau tous les
+seize pixels) tirée en coordonnées de bloc se coupe n'importe où sur une face
+plus étroite que le bloc : 1 212 garde-corps de baie sur 1 212, mesuré.
+`uvFerronnerie` (facadeshd.js) donne à une face étroite un nombre entier de
+travées, du barreau au barreau, et laisse le bloc entier en coordonnées de
+bloc — c'est lui qui se raccorde d'une fenêtre à l'autre. Toute tuile
+périodique posée sur une face de largeur variable se demande la même chose.
+`ferronnerieEntiere: false` rejoue l'ancienne règle, le temps d'un morceau,
+pour l'empreinte des 490 morceaux.
+
+## La trame générique quitte Londres (v447) — une boucle qui liste ses exclusions se relit à chaque ville bâtie à la main
+
+La dette vue en v415 : la boucle « one lot per grid cell » posait cinquante-deux
+maisons pastel sur l'anneau extérieur de Londres (2 600 colonnes, 77 à 106
+blocs du centre). Trois règles.
+
+- **UNE VILLE BÂTIE À LA MAIN SE DÉCLARE À TOUTES LES BOUCLES QUI BÂTISSENT.**
+  Londres se bâtit colonne par colonne depuis la v178 ; la liste d'exclusion de
+  la trame générique ne l'a jamais connue, et la place que réserve « le mobilier
+  de Londres » (boîte de 70) cachait le défaut au centre. Le jour où l'on ajoute
+  une ville bâtie à la main, on cherche `includes(city.key)` dans `world.js`.
+- **CE QU'ON RETIRE D'UN DÉCOR SE RETIRE PAR LOT, PAS PAR COLONNE.** Un lot que
+  touche un bloc d'enfant posé avant `DATE_TRAME_LONDRES` (le marquage couvre
+  les huit voisines, `colonnesTrameLondres`, tenu comme `colonnesVilleAvant`)
+  reste ENTIER, baie comprise (`lotTrameLondresGarde`) : une demi-maison serait
+  un décor éventré. Drapeau `sansTrameLondres` de `CONF_NEUF` seule ; `CONF_V308`
+  le porte à faux, `CONF_AVANT` ne le porte pas. La date se relit à la fusion.
+- **UN DÉCOR QUI RECOUVRE UNE RUE SE MESURE AUSSI EN VOITURES.** Les circuits de
+  Londres ne lisent que le sol de la ville (`solLondres`, `coteRoulable`) : ils
+  n'ont pas bougé, et 36 pas de carrosserie dans un mur de maison pastel ont
+  disparu. Un circuit validé par le sol ne dit rien de ce qu'une autre boucle
+  bâtit par-dessus.
+
+Et **le Shard (v449)** : la règle du verre dans les murs (v195, v202) ne
+regardait que les `batirColonne*` des villes ; un MONUMENT bâti en verre a le
+même défaut. Le témoin de `carteMonde.js` appelle son bâtisseur et compte le
+verre — tout monument de tour vitrée se vérifie de la même façon.
+
+## Un toit ne déborde plus d'un quartier sur l'autre (v446) — un indice de trame n'est unique que dans sa trame
+
+Une règle. `infoFacadeParis` publie l'îlot et la travée (`ai`, `bi`) dans la
+trame de CHAQUE quartier : deux quartiers voisins se prêtent les mêmes indices.
+Une clé qui identifie un immeuble porte donc le quartier
+(`immeubleDeToit`, facadeshd.js) ; mesuré, c'étaient les seules paires où une
+même clé portait deux façades différentes (7 sur 176 616). Toute table future
+indexée par `(ai, bi)` — tirage, teinte, hauteur — se demande si elle traverse
+une limite de quartier. `buildChunkTampons(…, { toitsQuartier: false })` rejoue
+la clé d'avant, le temps d'un seul morceau, pour l'empreinte des 490 morceaux.
+
+## Les colonnes Morris se plantent dans le vide (v443) — un meuble se pose en regardant ses voisins, par la même règle
+
+Une règle. Un meuble qui se pose au tirage ne connaît pas ses voisins : la
+colonne Morris (v289) tombait contre une porte cochère ou à un bloc d'un banc
+(43 sur 76, mesuré). `morrisDegagee` (facadeshd.js) exige l'air libre sur
+quatre côtés et rejoue `mobilierTrottoir` sur les colonnes à deux blocs (avec
+`morrisAvant`, pour ne pas boucler) ; dans un voisinage, la plus petite valeur
+de tirage garde sa colonne. Un dégagement qui écarte plus de la moitié des
+candidats se compense par le tirage (0,012 → 0,024), sinon la ville perd la
+moitié de ses colonnes en silence. `morrisDegagees: false` rejoue l'ancienne
+règle pour l'empreinte des 490 morceaux.
+
+## La voiture s'arrête devant une terrasse (v436) — une famille d'obstacle lit la même règle pour tous ceux qui butent
+
+Une règle. `mobilierDevant` (main.js) ne lisait que les blocs de mobilier
+(`isProp`) ; la table, les chaises, le banc et la colonne de la couche HD ne
+sont pas des blocs. Il demande désormais `world.mobilierVu` — la règle de la
+v425, celle que les passants lisent, seulement le mobilier MONTRÉ (une
+tablette sans couche HD n'a pas de table invisible) —, une fois par colonne
+couverte. Pas de seconde copie de la règle : deux lecteurs, une fonction.
+« Pas si l'on est déjà dedans » reste jugé dans la famille « mobilier »
+(v252). Le témoin roule sur un trottoir jusqu'à l'arrêt, durée en
+progrès (cinq secondes sans avancer), jamais une immobilité d'une seconde :
+une page HD du banc rend une image par seconde.
+
 ## Les terrasses de café reviennent (v433) — une règle qui lit un bloc se relit quand le bloc se découpe
 
 Une règle.
@@ -2923,6 +3288,43 @@ Les deux rouges réseau récurrents du palier C. Trois règles.
   gain de sortie rendu, plus un niveau au-dessus de la MOITIÉ — milieu entre
   une voix restée au quart (`GAIN_APPEL`) et le régime qui varie ; vérifié
   rouge sur une copie où la voix reste au quart.
+
+## Une page en jeu coûte quatre cœurs (v440) — on la met de côté, et l'on compte en images
+
+Le second lot des rouges récurrents. Cinq règles.
+
+- **UNE PAGE EN JEU À CÔTÉ COÛTE PRESQUE TOUT LE BANC.** La page principale
+  de `monte.js` restait en jeu pendant chacune des six pages secondaires, et
+  `ciel` (rr 12) n'était jamais fermée. Mesuré (`sonde-voisine-de-cote.cjs`) :
+  une voisine en jeu 3,5 à 3,8 cœurs, réduite à 16 × 16 pixels 0,15 ; la
+  chauffe de New York d'une page neuve passe de 22–24 s à 7 s.
+  `banc.mettreDeCote(p)` / `banc.ramener(p)` encadrent toute page secondaire,
+  et une page se ferme après son dernier usage. Le gel CDP ne sert à rien
+  (v427) ; c'est la SURFACE qui coûte.
+- **UNE IMMOBILITÉ SE COMPTE EN IMAGES, PAS EN SECONDES.** Le témoin du
+  réverbère jugeait « arrêté » sur dix relevés de montre sans mouvement : à
+  une image par seconde, la voiture n'était pas encore partie. On attend un
+  départ (un demi-bloc), puis l'on compte les images RENDUES
+  (`renderer.info.render.frame`) sans avancer.
+- **UNE GÉOMÉTRIE SE LIT SUR L'OBJET TOUCHÉ, PAS SUR LA VILLE.** Le trou de
+  façade de Manhattan comptait la géométrie de TOUS les immeubles (dette de la
+  v291) : il mesurait la file de chargement. Il lit l'immeuble que
+  `batimentA` nomme, attend qu'il soit REBÂTI, et compare ses instances.
+- **UNE PISTE D'ESSAI EST PLUS LONGUE QUE CE QU'ON Y FAIT.** L'atterrissage
+  manuel touchait à 300,9 sur une piste de 300 : la cadence décide où l'on
+  touche (v273), donc la piste en a 400 et la barre suit.
+- **UN TÉMOIN QUI TROUVE UNE VRAIE PANNE RESTE ROUGE.** Le train qui traverse
+  la voiture de l'enfant n'était pas une intermittence de banc : la rame ne
+  regarde que 3,5 blocs devant elle (`PAS_TRAIN`) et roule en temps réel, donc
+  une image lente la fait passer d'« assez loin » à « déjà dedans »
+  (`sonde-train-voiture.cjs`, 5 traversées sur 10 sous charge). Zone conduite :
+  déclarée en tête de `TASKS.md`, le témoin n'a pas été adouci.
+
+- **UNE SESSION ACTIVE N'EST PAS UNE PARTIE REJOINTE.** `net.active` vaut vrai
+  dès que la tentative commence (« Ouverture du monde… »). Un témoin qui
+  attend « l'invité est entré » attend le STATUT qui retombe (vide, ou
+  « ❌ »), pas le drapeau — mon premier remède cliquait 0,8 s plus tôt que
+  les deux secondes fixes qu'il remplaçait, et rendait le témoin plus rouge.
 
 ## Quatre témoins qui se placent (v427) — une page sur l'accueil n'est pas gratuite
 
@@ -3699,6 +4101,53 @@ Une règle.
   la terre, l'herbe, le sable et la pierre naturelle. Manhattan a son propre sol
   et n'est pas touchée. Washington garde ses berges du Potomac, qui ne sont pas
   dans le disque de la ville.
+
+## Les ponts de l'Anacostia (v444) — un pont de ville est du sol, et la cote du tablier se dit à tous ses lecteurs
+
+Deux règles.
+
+- **UN PONT DE RUE DANS UNE VILLE BÂTIE À LA MAIN EST UNE VOIE DU SOL, À LA
+  COTE DE LA VILLE.** `pontWashington` (washington.js) rend la matière de la
+  bande des deux ponts ; `world.js` l'écrit à `COTE_PONT_DC` (33) sur toute
+  colonne plus basse, et `coteRoulable` rend cette cote. C'est la règle de la
+  Tamise (v208) : `terrainHeight` ne bouge pas (109 881 colonnes identiques),
+  l'eau reste dessous. Le pont ne remplace que ce qui n'est PAS déjà une rue :
+  la bande d'un pont qui chevauche un carrefour de la grille y mettait du
+  trottoir (vu au relevé de la rue de v = 84).
+- **UNE EMPREINTE DE MORCEAUX QUI BOUGE SE PROUVE PAR LE DÉSARMEMENT ET PAR
+  CE QUI DIFFÈRE** (v419) : `pontWashington` rendant null, la branche rend la
+  constante de la v439 au bit près ; les 112 colonnes qui diffèrent sont
+  toutes dans les bandes des ponts. Et l'ajout d'une voie dans une ville à
+  circuits se remesure : les quatorze circuits de Washington sont identiques.
+
+## L'US-101 (v439) — un relevé en couronne commence à la porte, et une optimisation de tracé reconstruit la porte
+
+San Francisco–Los Angeles, le couloir instruit en v419. Quatre règles.
+
+- **UN RELEVÉ EN COURONNE COMMENCE À LA PORTE, PAS AU BORD.** Celui de la v419
+  disait « sortir par l'est (0° à 30°) » : il lisait le relief à partir de
+  r + 20. Mais la porte est à r − 20, et entre les deux, à l'est de San
+  Francisco, c'est la BAIE — soixante-dix blocs d'eau dans le disque. Le
+  relevé (`ring.mjs`) commence à r − 40 ; la porte est au sud-est (68°), sur
+  la terre ferme au bout de la baie, et la route passe au nord de SFO.
+- **UNE OPTIMISATION QUI DÉPLACE LE PREMIER POINT DE PASSAGE DÉPLACE LA
+  PORTE.** `porte()` vise le premier (et le dernier) point de passage : mon
+  affineur gardait la porte fixe et laissait bouger ses voisins, et la porte
+  réelle de Los Angeles tombait à −171°, sur un îlot (avenue de zéro bloc).
+  L'évaluation reconstruit les portes comme le registre (`complet(via)`), et
+  l'angle d'entrée est une contrainte : on choisit d'abord les angles propres
+  (`entrees.mjs`, ici une fenêtre d'un degré et demi à 180°) puis l'on fige le
+  dernier point sur ce rayon.
+- **UN AÉRODROME EST AUSSI UN REPÈRE.** SFO porte une boîte de 63 dans
+  `REPERES` : la sonde qui écarte les repères l'écarte d'un carré, plus large
+  que la marge du disque — c'est ce qui ferme l'ouest de l'aérodrome autant
+  que ses collines.
+- **LES CONTRAINTES DES TÉMOINS SONT DURES, LA LONGUEUR EST MOLLE.** Un
+  affineur qui additionne coudes, déblai et nombre de ponts échange un coude
+  de 33° contre un pont de moins. La note est lexicographique : d'abord les
+  violations (axe dans une marge, remblai > 4, déblai > 9, ponts à moins de
+  neuf blocs, coude > 22°, pont près d'une porte, angle de porte hors de la
+  fenêtre), puis seulement les ponts et la longueur.
 
 ## L'A8 (v428) — une sonde de couloir monte avec la route, et vérifie le rail sur la vraie emprise
 

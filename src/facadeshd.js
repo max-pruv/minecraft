@@ -88,6 +88,20 @@ export const TUILES_HD = [
 ];
 export const COLS_HD = 8;
 export const PX_HD = 128;
+// La travée du motif `fer` (matierehd.js) : un barreau tous les seize pixels,
+// le premier à huit. Rend [u0, u1] pour une ferronnerie de s0 à s1 : le bloc
+// entier garde ses coordonnées, une ferronnerie plus étroite tient un nombre
+// entier de travées (deux au moins), du barreau au barreau.
+// `ferAvant` rejoue la règle d'avant (u = s) le temps d'un morceau, pour la
+// preuve de l'empreinte (mesher : `ferronnerieEntiere: false`).
+const TRAVEE_FER = 16 / PX_HD;
+let ferAvant = false;
+export function rejouerFerAvant(oui) { ferAvant = !!oui; }
+export function uvFerronnerie(s0, s1) {
+  if (ferAvant || s1 - s0 >= 0.999) return [s0, s1];
+  const n = Math.max(2, Math.round((s1 - s0) / TRAVEE_FER));
+  return [TRAVEE_FER / 2, TRAVEE_FER / 2 + n * TRAVEE_FER];
+}
 const INDEX_HD = new Map(TUILES_HD.map((n, i) => [n, i]));
 
 // Le rectangle d'une tuile dans l'atlas, origine + taille, avec la marge d'un
@@ -516,11 +530,20 @@ class Face {
   }
 
   // Le garde-corps en fer forgé : un plan ajouré (alpha), vu des deux côtés.
+  // UN GARDE-CORPS DE BAIE TIENT UN NOMBRE ENTIER DE TRAVÉES (v454). Le motif
+  // `fer` a un barreau tous les seize pixels et un anneau entre deux ; tiré
+  // en coordonnées de bloc (u = s), une baie étroite du Marais (0,32 de
+  // large) en coupait les anneaux en arcs et se lisait comme un glyphe. Une
+  // ferronnerie plus étroite que le bloc tient donc `travees(s1 − s0)`
+  // travées entières, du barreau au barreau, un peu étirées ; le balcon
+  // filant (0 à 1) garde le motif d'avant, qui se raccorde d'un bloc à
+  // l'autre.
   ferronnerie(s0, s1, t0, t1, d) {
+    const [u0, u1] = uvFerronnerie(s0, s1);
     this.quad([[s0, t0, d], [s1, t0, d], [s1, t1, d], [s0, t1, d]], [0, 0, 1], 'fer', 1, 0,
-      [[s0, 0], [s1, 0], [s1, 1], [s0, 1]]);
+      [[u0, 0], [u1, 0], [u1, 1], [u0, 1]]);
     this.quad([[s1, t0, d], [s0, t0, d], [s0, t1, d], [s1, t1, d]], [0, 0, -1], 'fer', 0.85, 0,
-      [[s1, 0], [s0, 0], [s0, 1], [s1, 1]]);
+      [[u1, 0], [u0, 0], [u0, 1], [u1, 1]]);
   }
 
   // Le châssis d'une baie : UN quad ajouré (alpha), la tuile `croisee` — les
@@ -1119,16 +1142,28 @@ function sommetToit(get, x, z, y0) {
 
 // l'immeuble d'une colonne (l'îlot et la travée que `formeParis` publie), mémoïsé :
 // un coin partagé entre deux immeubles de hauteurs différentes ne lisse pas l'un
-// sur l'autre
-const cacheImmeuble = new Map();
+// sur l'autre. ET LE QUARTIER EST DANS LA CLÉ (v446) : les indices d'îlot et de
+// travée sont ceux de la trame de CHAQUE quartier, et deux quartiers voisins
+// se les prêtent — mesuré sur tout Paris, 16 paires de colonnes voisines de
+// même (îlot, travée) dans deux quartiers, dont 7 aux façades de hauteurs
+// différentes, lissées en un toit qui grimpe au lieu d'un pignon. C'étaient
+// les seules : d'un même immeuble, la façade ne change jamais.
+// `toitsAvant` (le temps d'un morceau, posé par le mailleur sur
+// `toitsQuartier: false`) rejoue la clé d'avant, pour l'empreinte des 490
+// morceaux ; chaque clé a son cache.
+let toitsAvant = false;
+export function rejouerToitsAvant(oui) { toitsAvant = !!oui; }
+const cacheImmeuble = new Map(), cacheImmeubleAvant = new Map();
+export function immeubleDeToit(wx, wz) { return immeuble(wx, wz); }
 function immeuble(wx, wz) {
+  const cache = toitsAvant ? cacheImmeubleAvant : cacheImmeuble;
   const k = wx * 65536 + wz;
-  let v = cacheImmeuble.get(k);
+  let v = cache.get(k);
   if (v === undefined) {
-    if (cacheImmeuble.size > 8192) cacheImmeuble.clear();
+    if (cache.size > 8192) cache.clear();
     const info = infoFacadeParis(wx, wz);
-    v = info ? `${info.ai},${info.bi}` : '';
-    cacheImmeuble.set(k, v);
+    v = info ? (toitsAvant ? `${info.ai},${info.bi}` : `${info.quartier},${info.ai},${info.bi}`) : '';
+    cache.set(k, v);
   }
   return v;
 }
@@ -1464,8 +1499,35 @@ export function mobilierTrottoir(at, wx, wz, opts) {
   const versRue = rueA2(1, 0) ? [1, 0] : rueA2(-1, 0) ? [-1, 0] : rueA2(0, 1) ? [0, 1] : rueA2(0, -1) ? [0, -1] : null;
   const t = tirage(wx, wz, 919);
   if (versRue && t > 0.955) return { genre: 'banc', vers: versRue };
-  if (t < 0.012 && [[1, 0], [-1, 0], [0, 1], [0, -1]].every(([dx, dz]) => tirage(wx + dx, wz + dz, 919) >= 0.012)) return { genre: 'morris' };
+  // le seuil double avec la règle du dégagement (v443), qui en écarte plus de la moitié
+  const sm = opts && opts.morrisAvant ? 0.012 : 0.024;
+  if (t < sm && [[1, 0], [-1, 0], [0, 1], [0, -1]].every(([dx, dz]) => tirage(wx + dx, wz + dz, 919) >= sm)) {
+    if (opts && opts.morrisAvant) return { genre: 'morris' };
+    return morrisDegagee(at, wx, wz, opts) ? { genre: 'morris' } : null;
+  }
   return null;
+}
+
+// UNE COLONNE MORRIS SE PLANTE DANS LE VIDE (v443). Le tirage seul la posait
+// contre une porte cochère, ou à un bloc d'un banc ou d'une terrasse : mesuré
+// sur huit quartiers, 37 colonnes sur 76 à moins de deux blocs d'un autre
+// meuble, deux collées à une porte. Elle exige désormais l'air libre sur ses
+// quatre côtés (ni mur, ni porte) et aucun banc, terrasse ni autre colonne à
+// deux blocs —
+// la même règle, lue sur les colonnes voisines (`morrisAvant` rejoue celle
+// d'avant, pour l'empreinte).
+function morrisDegagee(at, wx, wz, opts) {
+  for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (at(dx, 1, dz) !== BLOCK.AIR) return false;
+  for (let a = -2; a <= 2; a++) for (let b = -2; b <= 2; b++) {
+    if (!a && !b) continue;
+    if (at(a, 0, b) !== CITY_BLOCK.SIDEWALK || at(a, 1, b) !== BLOCK.AIR) continue;
+    // deux colonnes candidates dans le même voisinage : la plus petite valeur
+    // de tirage garde la sienne
+    if (tirage(wx + a, wz + b, 919) < tirage(wx, wz, 919)) return false;
+    const m = mobilierTrottoir((x, y, z) => at(a + x, y, b + z), wx + a, wz + b, { ...opts, morrisAvant: true });
+    if (m && (m.genre === 'banc' || m.genre === 'terrasse')) return false;
+  }
+  return true;
 }
 // Ce qui a un corps qu'on contourne : une terrasse (table et chaises), un banc,
 // une colonne. Un potelet ou une corbeille se frôlent : on passe à côté.

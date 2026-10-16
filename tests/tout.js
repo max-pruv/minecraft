@@ -145,7 +145,7 @@ const GARDIENS = {
   // Le tour du monde : neuf sites, dix monuments. Ils aplanissent leur parvis
   // (donc le témoin du relief) et s'ajoutent aux destinations de la carte.
   'src/capitales.js': ['carteMonde.js', 'plafond.js', 'carte.js'],
-  'src/monuments.js': ['carteMonde.js'],
+  'src/monuments.js': ['carteMonde.js', 'plafond.js'],    // un bâtisseur ne tire pas au hasard (v450)
   // Les familles de bâtiments : la bibliothèque de l'inventaire se prouve
   // dans monte.js (onglet, vignettes, pose).
   'src/batiments.js': ['monte.js'],
@@ -168,8 +168,10 @@ const GARDIENS = {
   'src/identity.js': ['reglages.js', 'parent.js'],
   'src/education.js': ['reglages.js', 'parent.js', 'manhattan.js'],
   'src/taxis.js': ['realisme.js', 'monte.js', 'sauvegarde.js', 'manhattan.js'],
+  'src/utilitaires.js': ['carteMonde.js', 'realisme.js', 'monte.js'], // v438 : la fourgonnette et le pickup de la rue
   'src/vehicules.js': ['monte.js', 'washington.js', 'metro.js', 'manhattan.js', 'carteMonde.js', 'reseau.js'],
   'src/voiesdoubles.js': ['monte.js', 'carteMonde.js', 'reseau.js'],
+  'src/raccords.js': ['plafond.js', 'monte.js', 'carteMonde.js'],   // les raccords d'autoroute courts (v440)
   // LE FEU TRICOLORE (v273) : il s'allume dans le monde (carteMonde.js) et il
   // arrête la circulation (monte.js). Un module neuf sans gardien annule tous
   // les acquis du cache de reprise — c'est fait pour se voir tout de suite.
@@ -192,6 +194,7 @@ const GARDIENS = {
   'src/cadence.js': ['monte.js', 'maj.js', 'carte.js', 'parent.js', 'reglages.js'],
   // Le cadran de cap lit le registre et s'affiche aux commandes : la monte le garde.
   'src/cap.js': ['monte.js', 'carte.js'],
+  'src/approche.js': ['monte.js', 'carteMonde.js'],
   'src/gps.js': ['carte.js'],
   'src/fun.js': ['monte.js', 'carte.js', 'reglages.js', 'reseau.js', 'degats.js'],
   // LES DÉGÂTS DE LA VOITURE (v343) : la règle pure et ce qui se voit.

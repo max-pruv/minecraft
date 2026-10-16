@@ -676,11 +676,22 @@ function verifier(nom, ok, detail = '') {
         }
       }
       if (!cible) return { err: 'aucune voiture de la rue arrêtée devant l\'enfant', attente: Math.round(performance.now() - t1) };
+      // L'ÉLAN SE PREND, IL NE SE TROUVE PAS (v450). La voiture de la rue
+      // s'arrête de trois à seize blocs devant l'enfant : à ces élans le choc
+      // ne coûte que 0,5 à 1 % (v424, la force suit la vitesse), et sous la
+      // charge du portail la santé rendait 1 — rouge des deux côtés, pour une
+      // distance tirée au hasard de la file. On recule à vingt-six blocs de
+      // la voiture arrêtée (le mur de cette dalle est à 70) et l'on mesure
+      // l'élan qu'on a VRAIMENT pris.
+      const ecartTrouve = Math.round((g.player.pos.x - cible.m.position.x) * 10) / 10;
+      g.player.pos.set(cible.m.position.x + 26, y1 + 1.01, z1); g.player.yaw = Math.PI / 2; g.player.vitesseVoiture = 0; g.player.vel.set(0, 0, 0);
+      await tenir(0.2);
       const ecart = Math.round((g.player.pos.x - cible.m.position.x) * 10) / 10;
       g.player.gaz = 1;
       const t2 = performance.now();
       const touchees = () => (d.rue ? d.rue() : []);
-      while (performance.now() - t2 < 10000 && !touchees().length) await tenir(0.1);
+      let vChoc = 0;
+      while (performance.now() - t2 < 10000 && !touchees().length) { vChoc = Math.max(vChoc, Math.abs(g.player.vitesseVoiture || 0)); await tenir(0.1); }
       g.player.gaz = 0;
       await tenir(0.5);
       const m = touchees()[0] || null;
@@ -703,12 +714,12 @@ function verifier(nom, ok, detail = '') {
       // blocs par seconde ne coûte que quelques millièmes, et arrondie au
       // centième la santé rendait 0,99 ou 1 selon l'élan (15 blocs ou 15,5) —
       // un tirage que le portail a pris pour une panne, des deux côtés.
-      return { ecart, cibleTouchee: m === cible.m, sante: e ? Math.round(e.sante * 10000) / 10000 : null,
+      return { ecartTrouve, ecart, vChoc: +vChoc.toFixed(1), cibleTouchee: m === cible.m, sante: e ? Math.round(e.sante * 10000) / 10000 : null,
         clones: propres.length, communs: propres.filter((pc) => pc.mesh.geometry === pc.geoOrig).length, partagees,
         notreSante: nous ? Math.round(nous.sante * 10000) / 10000 : 1 };
     });
     verifier('percuter une voiture de la rue l\'abîme AUSSI : sa tôle à elle, clonée, jamais la géométrie que la rue partage',
-      !rue.err && rue.cibleTouchee && rue.sante < 1 && rue.clones > 0 && rue.communs === 0 && rue.partagees > 0 && rue.notreSante < 1,
+      !rue.err && rue.ecart >= 20 && rue.cibleTouchee && rue.sante < 1 && rue.clones > 0 && rue.communs === 0 && rue.partagees > 0 && rue.notreSante < 1,
       JSON.stringify(rue));
     const rue2 = await tab.evaluate(async () => {
       const g = window.__game, d = g.fun.degats, R = window.__rue;
@@ -720,9 +731,18 @@ function verifier(nom, ok, detail = '') {
       });
       // très touchée : elle fume — et ne prend JAMAIS feu
       for (let k = 0; k < 8; k++) d.choc(R.m, { force: 1, lx: 0, lz: -2.2 }, true);
-      await tenir(0.8);
+      // ELLE FUME SUR UNE FENÊTRE, PAS À UN INSTANT (banc-intermittents, dette
+      // déclarée à la v406). Un compte de particules visibles lu à UN instant
+      // valait 0, 1 ou 2 pour la même santé, des deux côtés : la fumée naît
+      // par bouffées, et un relevé tombait entre deux. On garde le plus fort
+      // compte sur trois secondes de jeu, un relevé par image — c'est
+      // « elle fume », et une voiture qui ne fume jamais rend toujours zéro.
+      let fumee = 0, releves = 0;
+      for (let k = 0; k < 30 && !(fumee > 0 && releves >= 8); k++) {
+        await tenir(0.1);
+        fumee = Math.max(fumee, d.particulesVisibles().fumee); releves++;
+      }
       const e = d.etat(R.m);
-      const fumee = d.particulesVisibles().fumee;
       // et quand elle s'en va (un ami l'a prise : `retirer`, v305), ses clones
       // sont rendus au pilote (v238)
       const propres = (d.pieces(R.m) || []).filter((pc) => pc.propre).map((pc) => pc.mesh.geometry);
@@ -731,7 +751,7 @@ function verifier(nom, ok, detail = '') {
       const i = R.conv.elements.indexOf(R.m);
       const retiree = g.vehicules.retirer(`${R.conv.cle}#${i}`);
       await tenir(0.6);
-      return { enFeu: e.enFeu, eteint: e.eteint, sante: Math.round(e.sante * 100) / 100, fumee, retiree,
+      return { enFeu: e.enFeu, eteint: e.eteint, sante: Math.round(e.sante * 100) / 100, fumee, releves, retiree,
         prises: propres.length, rendues, suivies: d.rue().length };
     });
     verifier('très touchée elle fume, ne prend JAMAIS feu, et partie ses géométries froissées sont rendues (v238)',

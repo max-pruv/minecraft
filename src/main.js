@@ -1,13 +1,13 @@
 // Entry point: scene setup, chunk streaming, input, HUD, and the game loop.
 
-import { secondeVoieParis, secondeVoieVilleMonde, voiesAutoroute } from './voiesdoubles.js';
+import { secondeVoieParis, secondeVoieVilleMonde, voiesAutoroute, allureDuTroncon, allureVilleMonde } from './voiesdoubles.js';
 import * as THREE from 'three';
 import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp, MEUBLE_ITEMS, MEUBLE_START, isMeuble, RUE_ITEMS, RUE_START, RUE, isRue, ARCHI, CITY_BLOCK, ROUTE_BLOCK } from './blocks.js';
 import { passageEn } from './passages.js';
 import { mobilierTrottoir, MOBILIER_OBSTACLE, villeHD } from './facadeshd.js';
 import { PARIS as PARIS_ANCRE, circuitsParis, circuitsQuartiersParis, marquageParis } from './paris.js';
 import { circuitsLondres } from './londres.js';
-import { circuitsSF } from './sanfrancisco.js';
+import { circuitsSF, ENTREES_SF } from './sanfrancisco.js';
 import { circuitsNice, ENTREES_NICE } from './nice.js';
 import { circuitsLille } from './lille.js';
 import { buildPropMesh } from './props.js';
@@ -20,7 +20,8 @@ import { aeroportPres, postesAvion } from './aeroport.js';
 import { couloirVoiture, cheminDeTraversee, axeCoupe } from './pietons.js';
 import { cadence, chronoReel } from './cadence.js';
 import { axeDuFeu, axeDuCap, etatFeu } from './feux.js';
-import { cadran } from './cap.js';
+import { cadran, cadranVers, distanceLisible } from './cap.js';
+import { D_ENTREE } from './approche.js';
 import { guidage, arriveEntre, nomDestination, rotationContinue, repereMinicarte, ARRIVEE } from './gps.js';
 import { POLE } from './pole.js';
 import { LIGNES as LIGNES_DC, traceLigneMetro, arretsDeLigne, circuitsWashington } from './washington.js';
@@ -52,6 +53,7 @@ import { createPassants } from './passants.js';
 import { createPoissons } from './poissons.js';
 import { segmentsDeTrain, traceSegment } from './trains.js';
 import { segmentsDeRoute, traceRoute, entreesDe } from './routes.js';
+import { raccordDe } from './raccords.js';
 import { ENTREES_PARIS } from './paris.js';
 import { ENTREES_LILLE } from './lille.js';
 import { ENTREES_LONDRES } from './londres.js';
@@ -60,6 +62,7 @@ import { actualiserPresence } from './presence.js';
 import { animerHumain, chargerHumains, humainsCharges, humainsPrets } from './humains.js';
 import { MODELES_MONTURE, MONTURES } from './montures.js';
 import { initFun } from './fun.js';
+import { vieDistante } from './sensations.js';
 import { Identity, prefetchScanner } from './identity.js';
 import { ProfileSync } from './sync.js';
 import { AdminPanel, isAdminName } from './admin.js';
@@ -1658,16 +1661,26 @@ function updateChunks() {
   // Manhattan. Même garde que pour la circulation : on ne bloque que si l'on
   // n'est pas DÉJÀ dedans (player.js), sinon une voiture garée contre un
   // banc ne repartirait plus.
+  // ET LA TERRASSE DE CAFÉ NON PLUS (v436). La table et les chaises de la
+  // couche HD (v288) ne sont pas des blocs : la voiture les traversait. On
+  // demande la règle qui les pose (`world.mobilierVu`, v425 — seulement le
+  // mobilier MONTRÉ, sinon une tablette sans couche HD aurait des tables
+  // invisibles qui arrêtent), une fois par colonne couverte.
   const mobilierDevant = (x, z, cap) => {
     const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux;
     const demiLong = 2.2, demiLarg = Math.max(0.3, player.gabarit / 2);
     const y0 = Math.floor(player.pos.y + 0.1);
+    const vu = world.mobilierVu, lues = vu ? new Set() : null;
     for (let a = -demiLong; a <= demiLong + 1e-6; a += 0.5)
       for (let b = -demiLarg; b <= demiLarg + 1e-6; b += 0.5) {
         const sx = x + ux * a + vx * b, sz = z + uz * a + vz * b;
         if (villeRealiste.obstacleA(sx, sz)) return true;
         const bx = Math.floor(sx), bz = Math.floor(sz);
         if (isProp(world.getBlock(bx, y0, bz)) || isProp(world.getBlock(bx, y0 + 1, bz))) return true;
+        if (vu) {
+          const k = bx * 65536 + bz;
+          if (!lues.has(k)) { lues.add(k); if (vu(bx + 0.5, bz + 0.5, player.pos.y)) return true; }
+        }
       }
     return false;
   };
@@ -2085,7 +2098,7 @@ function updateChunks() {
   // l'E429 à l'est. `ENTREES_*` suit l'ordre de `entreesDe`, et l'on prend
   // celle de CETTE route — le `[0]` d'avant aurait fait entrer les voitures de
   // Bruxelles par la porte de Paris.
-  const ENTREES = { paris: ENTREES_PARIS, lille: ENTREES_LILLE, londres: ENTREES_LONDRES, nice: ENTREES_NICE };
+  const ENTREES = { paris: ENTREES_PARIS, lille: ENTREES_LILLE, londres: ENTREES_LONDRES, nice: ENTREES_NICE, sf: ENTREES_SF };
   // Une ville ENGENDRÉE n'a pas d'avenue d'entrée dessinée : le corridor y
   // arrive dans l'axe de sa trame (le point de passage est choisi pour cela),
   // donc sur la rue qui mène au centre. Les voitures la suivent jusqu'à douze
@@ -2094,13 +2107,20 @@ function updateChunks() {
   const entree = (cle, route) => {
     const i = entreesDe(cle).findIndex((e) => e.route === route);
     if (i < 0) return undefined;
-    if (ENTREES[cle]) return ENTREES[cle][i];
+    // les villes bâties à la main aussi (v450) : leurs circuits roulent sur
+    // l'avenue nommée où l'entrée finit
+    const longue = PARAMS_JEU.get('raccords') === 'long';
+    if (ENTREES[cle]) return longue ? ENTREES[cle][i] : raccordDe(route, cle, ENTREES[cle][i]);
     // Une ville qui n'est pas un disque (Washington, v367) a son avenue
     // DÉCLARÉE dans la fiche de la route, comme sa porte.
     const fiche = segmentsDeRoute().find((sg) => sg.route.nom === route);
     if (fiche && fiche.route.avenues && fiche.route.avenues[cle]) return fiche.route.avenues[cle];
     const e = entreesDe(cle)[i];
-    return avenueDEntree(cle, e.x, e.z) || undefined;
+    // LE RACCORD S'ARRÊTE AVANT LA VOIE D'UN ANNEAU (v442) : deux grilles
+    // (v305) dans une même voie ne se cadencent pas. La table est mesurée
+    // (raccords.js) ; `?raccords=long` rejoue l'avenue entière, pour l'A/B.
+    const av = avenueDEntree(cle, e.x, e.z) || undefined;
+    return longue ? av : raccordDe(route, cle, av);
   };
   for (const seg of segmentsDeRoute()) {
     const avant = entree(seg.de, seg.route.nom), apres = entree(seg.vers, seg.route.nom);
@@ -2684,8 +2704,19 @@ function refuserOuVoler() {
     toast('✈️ On remet les gaz ! Le joystick monte, descend et tourne.', 0x9fd8ff);
     return true;
   }
+  if (aBord === 'approche') {
+    const ap = player.approche;
+    toast(`🛬 Cap sur la piste de ${ap.piste.nom} (${distanceLisible(Math.hypot(player.pos.x - ap.seuil, player.pos.z - ap.piste.z))}) — l'avion se pose tout seul. Le joystick corrige, ✈️ remet les gaz.`, 0x9fd8ff, 4200);
+    return true;
+  }
+  if (aBord === 'pasDePiste') {
+    const a = player.aerodromeVise;
+    toast(a ? `🛬 Pas de piste tout près : on se pose ici, train sorti. La prochaine fois, ${a.nom} est à ${distanceLisible(a.d)} — suis le cadran.`
+      : '🛬 Pas de piste tout près : on se pose ici, train sorti.', 0xffd166, 5000);
+    return true;
+  }
   if (aBord === 'atterrissage') {
-    toast('🛬 On se pose — train sorti, garde le cap jusqu\'à la piste.', 0x9fd8ff);
+    toast('🛬 On se pose ici — train sorti, garde le cap.', 0x9fd8ff);
     return true;
   }
   if (player.toggleFly()) return true;
@@ -2700,6 +2731,8 @@ player.surAvion = (quoi) => {
   else if (quoi === 'arret') toast('🛑 À l\'arrêt. Le joystick fait rouler, ✈️ redécolle.', 0x9fd8ff);
   // UN AVION NE SE POSE PAS DANS L'EAU (v267) : le message dit QUOI FAIRE,
   // jamais seulement ce qui est refusé — la règle de la maison.
+  else if (quoi === 'changePiste' && player.approche) toast(`🛬 Piste trop courte — cap sur celle de ${player.approche.piste.nom}.`, 0x9fd8ff);
+  else if (quoi === 'remiseLongue') toast('✈️ Trop loin pour s\'arrêter sur la piste — on remet les gaz et on refait un tour.', 0x9fd8ff);
   else if (quoi === 'remiseDesGaz') toast('🌊 De l\'eau en dessous ! On remet les gaz — va vers la terre.', 0xffd166);
 };
 
@@ -2876,6 +2909,8 @@ document.getElementById('gps-stop').addEventListener('click', (e) => {
   toast('🧭 GPS arrêté.', 0xcfd8e8);
 });
 window.__gps = () => (gpsCible ? { ...gpsCible, ...guidage(player.pos.x, player.pos.z, player.yaw, gpsCible) } : null);
+// Pour les sondes et les témoins de mise en page : poser un trajet sans passer par la carte.
+window.__gpsVers = (x, z, nom) => demarrerGPS(x, z, nom);
 
 // LE GPS SE PARTAGE (v388). Max avait demandé la flèche (v306) ; à deux, un
 // enfant qui choisit Rome ne peut pas l'écrire à son ami. Sa destination
@@ -2939,8 +2974,27 @@ const capVilleEl = document.getElementById('cap-ville');
 const capRepereEl = document.getElementById('cap-repere');
 let capTexte = '';
 let dernierCadran = null;
+// CE QUE LE CADRAN VISE, quand ce n'est plus une ville (aviation) : la piste
+// de l'approche assistée — le point d'entrée en ralliement, le seuil en
+// finale — ; l'aéroport le plus proche quand ✈️ n'a trouvé aucune piste.
+// Hors de l'approche, le cadran nomme les villes (v263) : il ne les remplace
+// pas par une piste.
+function cibleDuCadran() {
+  const ap = player.approche;
+  if (ap) {
+    const recul = ap.phase === 'ralliement' ? D_ENTREE : 0;
+    return { nom: `🛬 ${ap.piste.nom}${ap.phase === 'ralliement' ? '' : ' · finale'}`, x: ap.seuil - ap.sens * recul, z: ap.piste.z };
+  }
+  if (player.sansPiste && Date.now() - player.sansPiste < 30000 && player.aerodromeVise) {
+    const a = player.aerodromeVise;
+    return { nom: `✈️ ${a.nom}`, x: a.x, z: a.z };
+  }
+  return null;
+}
 function majCadranDeCap() {
-  const c = cadran(player.pos.x, player.pos.z, player.yaw, dernierCadran && dernierCadran.cle);
+  const vise = cibleDuCadran();
+  const c = vise ? cadranVers(player.pos.x, player.pos.z, player.yaw, vise)
+    : cadran(player.pos.x, player.pos.z, player.yaw, dernierCadran && dernierCadran.cle);
   dernierCadran = c;
   const fleche = c.ville == null ? '' : c.dansLeCone ? '' : (c.ecart > 0 ? ' ◀' : ' ▶');
   const texte = `${c.degres}|${c.ville || ''}|${c.lisible || ''}|${fleche}`;
@@ -3236,37 +3290,79 @@ const PLACES_GARAGE = [[30, 7], [44, 7], [58, 7]];
 // l'axe laisse 0,17 bloc entre deux voitures qui se croisent (v372)
 const DECALAGE_AVENUE = 1.3;
 const garagistePret = cadence(3000);
+// UN CIRCUIT SE PRÉPARE PAR TRANCHES, PUIS NAÎT (v450) : `circulationParTranches`
+// (vehicules.js) avance sa fabrique sur le budget de l'image ; le convoi — et son bus — n'existent qu'une fois
+// le calcul fini, identique à un calcul d'un seul tenant. Le plus proche
+// d'abord, et ils S'ENCHAÎNENT dans le budget : le premier jet ne commençait
+// un circuit qu'au tic de ménage suivant la fin du précédent (125 ms), et les
+// rues de Rome et de Moscou restaient vides à l'arrivée — le portail l'a dit.
+// Le budget est la seule borne quand il y a du travail ; la cadence ne sert
+// qu'à regarder s'il y en a.
+// ET LE BUDGET EST UN DÉBIT, pas une durée par image (v237) : à cinq images
+// par seconde, cinq millisecondes par image ne font que vingt-cinq par seconde
+// — l'arrivée dans une ville, là où les images sont lentes, aurait vu ses
+// voitures naître six fois plus tard. `CIRCULATION_MS_PAR_SECONDE` réparti sur
+// les images telles qu'elles viennent, entre 5 et 22 ms (le plafond du
+// maillage, v229).
+const CIRCULATION_MS_PAR_SECONDE = 120;
+let circulationEnCours = null, circulationT = 0;
 function animerLesVilles(dt) {
   if (passants) passants.update(dt);
   if (poissons) poissons.update(dt);
-  if (!vehicules || !circulationPrete()) return;
-  // Le plus proche d'abord : c'est celui que l'enfant va voir en premier.
-  let choisi = -1, plusPres = 220;
-  for (let i = 0; i < circulationsEnAttente.length; i++) {
-    const tr = circulationsEnAttente[i];
-    const d = Math.hypot(player.pos.x - tr.x, player.pos.z - tr.z);
-    if (d < plusPres) { plusPres = d; choisi = i; }
+  if (!vehicules) return;
+  const t0 = performance.now(), ecoule = circulationT ? (t0 - circulationT) / 1000 : 0;
+  circulationT = t0;
+  const budget = Math.max(5, Math.min(22, CIRCULATION_MS_PAR_SECONDE * ecoule));
+  if (circulationEnCours) { if (!finirCirculation(budget)) return; }
+  else if (!circulationPrete()) return;
+  while (performance.now() - t0 < budget) {
+    // Le plus proche d'abord : c'est celui que l'enfant va voir en premier.
+    let choisi = -1, plusPres = 220;
+    for (let i = 0; i < circulationsEnAttente.length; i++) {
+      const tr = circulationsEnAttente[i];
+      const d = Math.hypot(player.pos.x - tr.x, player.pos.z - tr.z);
+      if (d < plusPres) { plusPres = d; choisi = i; }
+    }
+    if (choisi < 0) return;
+    const tr = circulationsEnAttente[choisi];
+    // Une ville engendrée arrive pliée : on calcule ses anneaux maintenant (un
+    // calcul d'un seul tenant, sa propre image), et ils naissent ensuite (v372).
+    if (tr.deplier) {
+      circulationsEnAttente.splice(choisi, 1, ...tr.deplier());
+      return;
+    }
+    circulationsEnAttente.splice(choisi, 1);
+    demarrerCirculation(tr);
+    if (!finirCirculation(budget - (performance.now() - t0))) return;
   }
-  if (choisi < 0) return;
-  const tr = circulationsEnAttente[choisi];
-  // Une ville engendrée arrive pliée : on calcule ses anneaux maintenant, et
-  // ils naissent aux tours suivants, comme les autres (v372).
-  if (tr.deplier) {
-    circulationsEnAttente.splice(choisi, 1, ...tr.deplier());
-    return;
-  }
+}
+function demarrerCirculation(tr) {
   // la graine vient de la ville, pas de la file (v246, voir graineDeVille)
   // l'allure de la voie : une rue de ville engendrée, une avenue nommée (v372)
   const decalage = tr.voie === 'avenue' && tr.ville !== 'ny' ? DECALAGE_AVENUE : 0;
-  const conv = vehicules.circulation(tr.pts, graineDeVille(tr), { ville: tr.ville, voie: tr.voie || 'rue',
+  // LE TYPE DE VOIE PAR TRONÇON (v438) : la section de la rue au point du
+  // tracé — boulevard cinquante, collectrice quarante, locale trente — et non
+  // plus une seule limitation pour tout le circuit. Manhattan garde la sienne.
+  const allure = tr.ville === 'ny' ? null : decalage ? (x, z) => allureDuTroncon(tr.cle, x, z)
+    : (tr.voie || 'rue') === 'rue' ? allureVilleMonde : null;
+  const prep = (vehicules.circulationParTranches || vehicules.circulation)(tr.pts, graineDeVille(tr), { ville: tr.ville, voie: tr.voie || 'rue',
+    limite: allure ? (x, z) => ALLURE_VOIE[allure(x, z) || tr.voie || 'rue'] : undefined,
     // les avenues des villes bâties à la main : la voie de droite (v372)
     decalage,
     // la seconde voie des boulevards (v423) ; le bus prend la première place
     voies: decalage ? (x, z) => secondeVoieParis(x, z, decalage) : secondeVoieVilleMonde, bus: tr.rang === 0 });
-  // le bus dessert le grand anneau — un par ville, à sa couleur, DANS la file
-  // de ses voitures (v372) : il prend leur grille horaire
+  circulationEnCours = { tr, prep: prep.avancer ? prep : { avancer: () => prep } };
+}
+// avance la préparation en cours sur `budget` ms ; vrai si elle a fini
+function finirCirculation(budget) {
+  const { tr, prep } = circulationEnCours;
+  const conv = prep.avancer(Math.max(0, budget));
+  if (!conv) return false;
+  circulationEnCours = null;
+  // le bus dessert le grand anneau — un par ville, à sa couleur, à une place
+  // de la file de ses voitures (v372, v450) : il prend leur grille horaire
   if (tr.rang === 0) vehicules.bus(tr.pts, Math.abs(Math.round(tr.x + tr.z)), conv);
-  circulationsEnAttente.splice(choisi, 1);
+  return true;
 }
 // L'AÉROPORTISTE : sur le tarmac de l'aérodrome le plus proche, trois
 // appareils attendent toujours.
@@ -4558,7 +4654,7 @@ function syncRemotePlayers(list) {
     // feu. `p.v.d` est court et une tablette restée sur l'ancienne version
     // l'ignore (le receveur cède).
     if (rp.vehicule) fun.degats.distant(rp.vehicule.mesh, (p.v && p.v.d) || null);
-    if (rp.vehicule) { const u = rp.vehicule.mesh.userData; u.braquage = (p.v && +p.v.b) || 0; u.derive = (p.v && +p.v.r) || 0; }
+    if (rp.vehicule) { const u = rp.vehicule.mesh.userData; u.braquage = (p.v && +p.v.b) || 0; u.derive = (p.v && +p.v.r) || 0; u.freinMain = !!(p.v && p.v.m); }
     rp.passager = p.p || null;
     proposerGPSAmi(p.id, rp, p.g || null);   // sa destination, proposée (v388)
   }
@@ -4655,6 +4751,7 @@ function updateRemotePlayers(dt) {
       const vm = rp.vehicule.mesh;
       vm.position.copy(rp.pos);
       vm.rotation.y = rp.cap;
+      vieDistante(vm, dt);   // roues avant braquées et traces de pneus (v441)
       asseoir(rp.mesh, rp.vehicule, rp.vehicule.def.siege, rp.animTime);
       continue;
     }
@@ -4751,6 +4848,8 @@ function startNetSession(code, isHost, patience) {
       // et une tablette restée sur l'ancienne version les ignore.
       if (Math.abs(player.braquage || 0) > 0.005) p.v.b = Math.round(player.braquage * 100) / 100;
       if (Math.abs(player.derive || 0) > 0.0005) p.v.r = Math.round(player.derive * 1000) / 1000;
+      // le frein à main tiré (v441) : l'ami voit les traces qu'il laisse
+      if (player.freinMainTire) p.v.m = 1;
     }
     const pa = fun.passagerDe ? fun.passagerDe() : null;
     if (pa) p.p = { de: pa.de, s: pa.s };
@@ -7226,6 +7325,8 @@ document.getElementById('map-tout').addEventListener('click', () => carte.toutVo
 document.getElementById('map-btn').addEventListener('click', () => {
   minimapVisible = !minimapVisible;
   minimapCanvas.style.display = minimapVisible ? 'block' : 'none';
+  // la file centrale se range à droite de la minicarte ouverte (aviation)
+  document.body.classList.toggle('minicarte-ouverte', minimapVisible);
   if (minimapVisible) {
     drawMap(minimapCanvas, 96);
     carteVue = { x: player.pos.x, z: player.pos.z };
