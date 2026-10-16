@@ -770,6 +770,21 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## L'A1 Centre (v455) — une porte de ville se juge aussi contre les anneaux et les ponts de la ville
+
+Une règle. La sonde de couloir mesure le relief, les rails, les aérodromes, les
+repères et les autres routes ; elle ne voit ni les VOIES des anneaux de la
+ville ni ses TABLIERS. À Florence, la porte que la sonde préférait (32°) avait
+une avenue d'entrée qui roulait dans la voie d'un anneau dès la porte
+(`finAvantAnneaux` rend 0 : il aurait fallu une ligne de `RACCORDS_COURTS`),
+et plein est le talus du bout de la route descendait sur la culée d'un pont de
+l'Arno (dix-huit pas de tablier sans sol, vus par le portail). Avant de
+chercher le tracé, on balaie les angles d'entrée contre les trois lectures :
+l'avenue (`entrees.mjs`), le raccord (`sonde-rue-dense.cjs raccords`, cinq
+secondes par angle), les tabliers de la ville sous `routeEn` (tab.mjs, la
+boucle du témoin des ponts de villes) — puis le tracé tourne en plusieurs fois
+depuis la porte retenue.
+
 ## La rue sans à-coups (v453) — le bus a une place, un circuit se prépare, une suiveuse freine
 
 Quatre sujets, une livraison. Cinq règles.

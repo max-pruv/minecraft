@@ -28,8 +28,8 @@ Rome : Milan–Bologne (A1 Nord), Bologne–Florence (Autosole) et Rome–Naples
 corridor instruit au tableau de `TASKS.md` qui n'était ni fait ni bloqué :
 l'axe direct est celui de la Frecciarossa, et Fiumicino est à son bout.
 
-**Ce que ça change.** Une autoroute de 1 203 blocs relie Florence à Rome, à
-l'est du rail d'un bout à l'autre. Elle sort de Florence plein est, contourne
+**Ce que ça change.** Une autoroute de 1 217 blocs relie Florence à Rome, à
+l'est du rail d'un bout à l'autre. Elle sort de Florence vers l'est, contourne
 le massif des Apennins par l'est, descend la plaine au nord de Rome à l'est de
 l'aérodrome et entre dans la ville par une avenue de dix-huit blocs. Des
 voitures y roulent ; on peut désormais aller en voiture de Milan à Naples.
@@ -37,12 +37,14 @@ voitures y roulent ; on peut désormais aller en voiture de Milan à Naples.
 **Ce qui le prouve.** Un témoin neuf dans `carteMonde.js` (rouge sur l'ancien
 code : pas de route, pas de convoi) : le convoi roule, aucune colonne
 d'emprise sur le rail, les deux entrées sur la rue sans bloc ni eau. Sous
-node, sur le vrai registre : 11 981 colonnes d'emprise, zéro sur un rail, un
+node, sur le vrai registre : 12 084 colonnes d'emprise, zéro sur un rail, un
 repère ou une autre route, zéro dans une ville ou dans la marge d'un
 aérodrome ; trois ponts, 76 traversées de pont sur 76 (toutes les routes),
-zéro trou aux culées sur 140 304 points, zéro trou au joint sur 19 890 ; la
+zéro trou aux culées sur 138 423 points, zéro trou au joint sur 19 890 ; la
 table des raccords courts inchangée (l'entrée de Florence par 32°, la
-première trouvée, roulait dans un anneau et l'aurait exigée). Les deux
+première trouvée, roulait dans un anneau et l'aurait exigée) ; aucun tablier
+de ville creusé (plein est, le talus descendait sur un pont de l'Arno : le
+portail l'a dit, dix-huit pas, et la sortie est passée à −10°). Les deux
 empreintes du relief de `plafond.js` sont intactes : une route écrit des
 blocs, elle ne touche pas `terrainHeight`.
 

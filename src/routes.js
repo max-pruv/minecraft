@@ -555,16 +555,20 @@ export const ROUTES = [
   // L'A REFUSÉE : à 32° comme à 34°, 50°, 54° et 120°, l'avenue d'entrée roule
   // dans la voie d'un anneau dès la porte (`finAvantAnneaux` rend 0, la
   // règle de la v442), alors qu'à 0°, −10°, 80° et 90° elle ne touche rien —
-  // 80° et 90° sont contre le rail. Florence sort donc plein est (quarante
-  // blocs d'avenue) et tourne de 18° puis de 20° vers le tracé de 32° (la
-  // règle de la v329, tourner en plusieurs fois). Relu sur le registre réel
-  // (verif.mjs, joint.mjs, sonde-ponts-eau.cjs, sonde-rue-dense.cjs) : 1 203
-  // blocs, trois ponts (s 123–148, 194–216, 241–244 : l'eau à l'est de
-  // Florence, joints fermés), déblai 2,1, remblai 2,0, coudes ≤ 19°, zéro
-  // colonne d'emprise sur un rail, un repère ou une autre route, l'axe à 74
-  // blocs au moins du rail et à 98 au-delà de la marge de Fiumicino.
+  // 80° et 90° sont contre le rail. Et plein est (0°), le TALUS de la route
+  // au bout de la porte descendait sur la culée d'un pont de la ville, au bord
+  // de l'Arno (dix-huit pas de tablier sans sol, le témoin des ponts de
+  // villes). Florence sort donc à −10° (quarante blocs d'avenue, quinze blocs
+  // au nord de ce pont) et tourne de 16° en trois fois vers le tracé de 32°
+  // (la règle de la v329, tourner en plusieurs fois). Relu sur le registre
+  // réel (verif.mjs, joint.mjs, tab.mjs, sonde-ponts-eau.cjs,
+  // sonde-rue-dense.cjs) : 1 217 blocs, trois ponts (s 135–157, 187–196,
+  // 217–229 : l'eau à l'est de Florence, joints fermés), déblai 2,2, remblai
+  // 1,9, coudes ≤ 21°, zéro colonne d'emprise sur un rail, un repère ou une
+  // autre route, aucun tablier de ville creusé, l'axe à 83 blocs au moins du
+  // rail et à 98 au-delà de la marge de Fiumicino.
   { nom: 'A1 Centre', villes: ['florence', 'rome'],
-    via: [[3316, 3217], [3355, 3226], [3391, 3244], [3663, 3474], [3737, 3557], [3798, 3637], [3828, 3710], [3850, 3782], [3848, 3853], [3841, 3924], [3833, 4031], [3825, 4092], [3818, 4107], [3810, 4118]] },
+    via: [[3315, 3203], [3355, 3207], [3392, 3222], [3663, 3474], [3737, 3557], [3798, 3637], [3828, 3710], [3850, 3782], [3848, 3853], [3841, 3924], [3833, 4031], [3825, 4092], [3818, 4107], [3810, 4118]] },
 ];
 
 // --- la section -----------------------------------------------------------------
