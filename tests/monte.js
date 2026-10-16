@@ -1773,6 +1773,9 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const s2 = window.__game.passants.sites.find((x) => x.peuple);
       let n = 0;
       s2.peuple.forEach((h, i) => {
+        // la ville se peuple par tranches (v241) : un passant né pendant les
+        // huit secondes n'a pas de position d'avant — on ne le compte pas
+        if (!av[i]) return;
         if (Math.hypot(h.pos.x - av[i][0], h.pos.z - av[i][1]) > 0.6) n++;
       });
       return n;
