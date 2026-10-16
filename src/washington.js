@@ -1124,6 +1124,28 @@ export const LIGNES = [
     nom: 'Jaune', teinte: 0xe8c33a, emoji: '🟡', pont: true,
     arrets: ["L'Enfant Plaza", 'Pentagon'],
   },
+  // L'ORANGE ET L'ARGENT (v468). Dans la vraie ville, elles partagent le
+  // tunnel de la Bleue de Rosslyn à Stadium-Armory : trois couleurs sur les
+  // MÊMES voies. Ici, c'est tout ce qui tombe dans l'emprise — Eastern Market
+  // à Foggy Bottom, sur les rails mêmes de la Bleue (`tronc`). Ce qui sort de
+  // l'emprise ne se dessine pas : à l'est, Potomac Avenue est à quatre-vingt-
+  // dix-neuf blocs du Capitole pour une boîte qui s'arrête à soixante-sept ;
+  // à l'ouest, Rosslyn est en Virginie, à (−260, −35), au-delà du bord
+  // (−244). Leur dernier quai est donc Foggy Bottom, et leur tunnel à elles
+  // part SOUS LE POTOMAC VERS ROSSLYN, jusqu'au bord de l'emprise (`vers`) :
+  // c'est là que la rame fait demi-tour, et qu'elle attend son tour.
+  {
+    nom: 'Orange', teinte: 0xe8822a, emoji: '🟠', tronc: 'Bleue', vers: { u: -232, v: -42 },
+    arrets: ['Eastern Market', 'Capitol South', 'Federal Center SO', "L'Enfant Plaza",
+      'Smithsonian', 'Federal Triangle', 'Metro Center', 'McPherson Square',
+      'Farragut West', 'Foggy Bottom'],
+  },
+  {
+    nom: 'Argent', teinte: 0xb4b9c0, emoji: '⚪', tronc: 'Bleue', vers: { u: -232, v: -42 },
+    arrets: ['Eastern Market', 'Capitol South', 'Federal Center SO', "L'Enfant Plaza",
+      'Smithsonian', 'Federal Triangle', 'Metro Center', 'McPherson Square',
+      'Farragut West', 'Foggy Bottom'],
+  },
 ];
 
 const PROFONDEUR = 14;         // le ballast, sous le sol
@@ -1139,6 +1161,7 @@ const PONT_Y = WATER_LEVEL_DC + 4;   // le tablier du pont de la Jaune
 
 // Chaque ligne, échantillonnée bloc par bloc, avec sa cote.
 function calculerTrace(ligne) {
+  if (ligne.tronc) return calculerBranche(ligne);
   const arrets = ligne.arrets.map((n) => PAR_NOM.get(n));
   const pts = [];
   for (let i = 0; i < arrets.length - 1; i++) {
@@ -1196,7 +1219,35 @@ function calculerTrace(ligne) {
   return pts;
 }
 
-const TRACES = new Map(LIGNES.map((l) => [l.nom, calculerTrace(l)]));
+// UNE LIGNE QUI EMPRUNTE LE TUNNEL D'UNE AUTRE EN REPREND LES POINTS (v468).
+// Recalculée à part, son enveloppe basse descendrait autrement — la branche
+// plonge sous le fleuve et tire le profil — et deux rames « sur la même
+// voie » rouleraient à deux cotes : deux tunnels l'un dans l'autre. On
+// recopie donc le tronc point pour point, cote comprise, jusqu'au dernier
+// quai commun ; seule la branche se calcule, la cote du quai pour départ.
+function calculerBranche(ligne) {
+  const base = TRACES.get(ligne.tronc);
+  const fin = ligne.arrets[ligne.arrets.length - 1];
+  const iFin = base.findIndex((p) => p.arret && p.arret.nom === fin);
+  const pts = base.slice(0, iFin + 1).map((p, i) => ({ ...p, tronc: i < iFin }));
+  const a = pts[iFin], b = ligne.vers;
+  const n = Math.max(1, Math.round(Math.hypot(b.u - a.u, b.v - a.v)));
+  const branche = [];
+  for (let k = 1; k <= n; k++) {
+    branche.push({ u: a.u + (b.u - a.u) * k / n, v: a.v + (b.v - a.v) * k / n, arret: null });
+  }
+  // l'enveloppe basse de la branche, le quai commun pour origine : quatorze
+  // blocs sous la rue (sous le LIT du fleuve), jamais plus raide que la voie
+  const bas = branche.map((p) => solDeWashington(WASHINGTON.x + p.u, WASHINGTON.z + p.v) - PROFONDEUR);
+  const y = [a.y, ...bas];
+  for (let i = 1; i < y.length; i++) y[i] = Math.min(y[i], y[i - 1] + PENTE);
+  for (let i = y.length - 2; i >= 1; i--) y[i] = Math.min(y[i], y[i + 1] + PENTE);
+  branche.forEach((p, i) => { p.y = Math.round(y[i + 1]); });
+  return [...pts, ...branche];
+}
+
+const TRACES = new Map();
+for (const l of LIGNES) TRACES.set(l.nom, calculerTrace(l));
 
 // Les stations, avec la cote de leur quai. Une station desservie par deux
 // lignes garde la plus profonde : la voûte du dessous commande.
@@ -1368,6 +1419,52 @@ export function arretsDeLigne(nom) {
     rangs.push(n + 5 + (n - 1 - i));
   });
   return rangs;
+}
+
+// LA GRILLE HORAIRE DU MÉTRO (v468). La position d'une rame est une fonction
+// de l'heure (v305) : deux rames sur les mêmes rails ne se traversent pas si
+// leurs grilles les espacent. Sur le tronc commun, une Orange qui suit une
+// Bleue d'un sixième de tour passe partout un sixième de tour après elle —
+// À CONDITION que les deux tours durent exactement autant, sinon l'écart
+// dérive et elles finissent l'une dans l'autre. La branche la plus courte
+// attend donc la différence au bout de son tunnel (`pauses`), là où rien
+// d'autre ne roule. Les tours commencent tous au même point (le tiroir
+// d'Eastern Market) : à phase égale, deux rames du tronc sont au même
+// endroit ; à un sixième de tour d'écart, à un sixième de tour l'une de
+// l'autre, quai compris.
+export const HORAIRE_METRO = { vitesse: 8, pause: 3, nb: 4, ecart: 7.6 };
+const longueurBoucle = (nom) => {
+  const t = traceLigneMetro(nom);
+  let L = 0;
+  for (let i = 0; i < t.length; i++) {
+    const a = t[i], b = t[(i + 1) % t.length];
+    L += Math.hypot(b.x - a.x, b.z - a.z);
+  }
+  return L;
+};
+const dureeBase = (nom) => longueurBoucle(nom) / HORAIRE_METRO.vitesse
+  + arretsDeLigne(nom).length * HORAIRE_METRO.pause;
+// Les places sur le tour, en sixièmes : la Bleue garde ses trois rames
+// régulières, l'Orange et l'Argent s'intercalent. Trois rames de branche,
+// pas six : une rame occupe son tunnel de Rosslyn autant que la Bleue sa
+// branche de Virginie (c'est ce qui égalise les tours), et deux rames de
+// branche à moins d'un tiers de tour se rattraperaient au bout du tunnel.
+export const PLACES_METRO = { Bleue: [0, 2, 4], Orange: [1, 5], Argent: [3] };
+
+export function optionsMetro(nom) {
+  const ligne = LIGNES.find((l) => l.nom === nom);
+  const arretsIndex = arretsDeLigne(nom);
+  const pauses = arretsIndex.map(() => HORAIRE_METRO.pause);
+  const famille = ligne.tronc || (LIGNES.some((l) => l.tronc === nom) ? nom : null);
+  if (!famille) return { arretsIndex, rames: 3 };
+  if (ligne.tronc) {
+    // l'attente au bout du tunnel de Rosslyn : le bout du premier côté
+    const n = TRACES.get(nom).length;
+    arretsIndex.push(n - 1);
+    pauses.push(dureeBase(ligne.tronc) - dureeBase(nom));
+  }
+  const places = PLACES_METRO[nom] || [0];
+  return { arretsIndex, pauses, phases: places.map((k) => k / 6), rames: places.length };
 }
 
 export function traceLigneMetro(nom) {

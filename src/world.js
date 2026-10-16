@@ -113,7 +113,7 @@ export const NEIGE_TOUNDRA = 46;
 const DENSITE_MAX = 0.08;
 // L'HEURE DE LA RÈGLE DES CLIMATS (v345), relue à la fusion (v309) : un bloc
 // posé avant a été posé sur le monde d'avant, et son morceau garde ses arbres.
-// Relue à la fusion de la v466 (le climat méditerranéen ajoute des arbres).
+// Relue à la fusion de la v469 (le climat méditerranéen ajoute des arbres).
 export const DATE_CLIMATS = Date.parse('2026-10-16T09:22:00Z');
 export function solDeToundra(x, z, h) {
   if (h >= NEIGE_TOUNDRA) return BLOCK.SNOW;
@@ -3216,7 +3216,7 @@ export class World {
     // les tropiques humides (v349) : la forêt dense partout, plus serrée encore
     // que la taïga sur les creux du bruit de forêt
     else if (cl === 'tropiques') density = forest > 0.48 ? 0.08 : 0.035;
-    // le climat méditerranéen (v466) : un pays ouvert de maquis, des oliviers
+    // le climat méditerranéen (v469) : un pays ouvert de maquis, des oliviers
     // et des pins parasols épars — moins de bois que la forêt tempérée, un
     // peu plus d'arbres isolés dans la plaine
     else if (cl === 'mediterranee') density = forest > 0.62 ? 0.03 : forest > 0.48 ? 0.012 : 0.006;
@@ -3241,7 +3241,7 @@ export class World {
     if (cl === 'toundra') return { h, trunk: 2, kind: 2 };
     // sous les tropiques : de grands feuillus, et un palmier sur quatre
     if (cl === 'tropiques') return roll < 0.75 ? { h, trunk: trunk + 1, kind: 0 } : { h, trunk: 6 + Math.floor(hash2i(x, z, SEED + 786) * 3), kind: 3 };
-    // sous le soleil méditerranéen (v466) : des oliviers, trapus, et un pin
+    // sous le soleil méditerranéen (v469) : des oliviers, trapus, et un pin
     // parasol sur trois, haut fût nu et couronne plate
     if (cl === 'mediterranee') return roll < 0.65 ? { h, trunk: 2 + Math.floor(hash2i(x, z, SEED + 787) * 2), kind: 5 } : { h, trunk: trunk + 1, kind: 4 };
     const kind = roll < 0.55 ? 0 : roll < 0.85 ? 1 : 2;
@@ -3955,7 +3955,7 @@ export class World {
           }
           put(tx, topY + 1, tz, BLOCK.LEAVES, true);
         } else if (kind === 4) {
-          // pin parasol (v466) : une ombrelle plate au bout d'un haut fût,
+          // pin parasol (v469) : une ombrelle plate au bout d'un haut fût,
           // trois blocs de rayon au plus (le balayage déborde de trois)
           for (const [y, r] of [[topY, 3], [topY + 1, 2]]) {
             for (let dx = -r; dx <= r; dx++) for (let dz = -r; dz <= r; dz++) {
@@ -3964,7 +3964,7 @@ export class World {
             }
           }
         } else if (kind === 5) {
-          // olivier (v466) : un tronc court, une couronne ronde et large
+          // olivier (v469) : un tronc court, une couronne ronde et large
           for (let dy = 0; dy <= 2; dy++) {
             const r = dy === 1 ? 2 : 1;
             for (let dx = -r; dx <= r; dx++) for (let dz = -r; dz <= r; dz++) {

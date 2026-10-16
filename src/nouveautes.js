@@ -6,11 +6,36 @@
 
 export const NOUVEAUTES = [
   {
-    v: 466,
+    v: 469,
     titre: 'Le soleil méditerranéen',
     puces: [
       'Herbe dorée autour de la Méditerranée',
       'Des oliviers et des pins parasols',
+    ],
+  },
+  {
+    v: 468,
+    titre: 'Le métro Orange et Argent',
+    puces: [
+      'Deux lignes de plus à Washington',
+      'Elles roulent dans le tunnel de la Bleue',
+    ],
+  },
+  {
+    v: 467,
+    titre: 'Des passages piétons à Londres',
+    puces: [
+      'Des zébras aux carrefours de Londres',
+      'Aussi à Nice, Lille, San Francisco, Washington',
+      'Les passants traversent dessus',
+    ],
+  },
+  {
+    v: 466,
+    titre: 'Paris plus léger',
+    puces: [
+      'Les façades prennent moins de mémoire',
+      'La tablette voit Paris de plus loin',
     ],
   },
   {

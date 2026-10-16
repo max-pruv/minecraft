@@ -381,10 +381,10 @@ const EMPREINTE_MORCEAUX_V414 = '863d4203a441e3fd029ce2404fc6d6e706799e7f64fe489
 // v457 : les baies des villes engendrées passent en bandes (Rome, Marrakech et
 // Tokyo sont des neuf lieux). `reglageBaies.bandes` à faux, la branche rend
 // 938a330c…, la constante de la v452, au bit près.
-// v466 : Rome, Marrakech et San Francisco ont leur campagne au climat
+// v469 : Rome, Marrakech et San Francisco ont leur campagne au climat
 // méditerranéen (herbe teinte, oliviers, pins parasols). Les contours
 // 'mediterranee' retirés de CLIMATS dans une copie de src, la branche rend
-// 1e4c50be…, la constante de la v457, au bit près.
+// 1e4c50be…, la constante de la v468, au bit près.
 const EMPREINTE_MORCEAUX_V357 = 'b3bb35e392e9798a45ed581923b3133f31259bb58aab3aeef2bf1a81caa00095';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
@@ -2002,7 +2002,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const steppe = lire([[50, 65], [47, 105], [47, -107], [-45, -68]]);
     // LES TROPIQUES HUMIDES (v349) : l'Amazonie, le Congo, Bornéo
     const tropiques = lire([[-5, -62], [0, 22], [1, 114]]);
-    // LE CLIMAT MÉDITERRANÉEN (v466) : l'Andalousie, la Toscane, le
+    // LE CLIMAT MÉDITERRANÉEN (v469) : l'Andalousie, la Toscane, le
     // Péloponnèse, la vallée centrale de Californie
     const mediterranee = lire([[37.6, -4.2], [43.1, 11.4], [37.5, 22.3], [37.2, -120.3]]);
     // le Kansas, témoin de la campagne tempérée : rien n'y est teint
@@ -2655,6 +2655,42 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       JSON.stringify({ mesure: tr, barres: BARRES_TRAVAIL }));
   }
 
+  // UNE BAIE SE SOUDE (v467). La couche HD de Paris pesait jusqu'à onze
+  // mégaoctets par morceau dense de l'ouest (v299 : l'iPhone de Max tué par la
+  // mémoire), et c'est le NOMBRE DE SOMMETS qui décide. Un sommet sur six y
+  // était le double exact d'un autre (deux quads du même plan qui se touchent).
+  // Deux témoins, sur les huit morceaux les plus lourds (`sonde-baies.mjs`) :
+  //  • le POIDS : médiane et pire en Mo, soudé contre `baiesSoudees: false`
+  //    (l'ancien tampon, au bit près — c'est lui que lit l'empreinte des 490
+  //    morceaux). Sur l'ancien code l'option n'existe pas : les deux pèsent
+  //    pareil, et le témoin est rouge ;
+  //  • l'IMAGE : chaque coin de chaque triangle porte, bit à bit, les mêmes
+  //    dix-huit mots qu'avant. Mêmes triangles, mêmes valeurs : ce qu'on voit
+  //    ne peut pas changer.
+  {
+    const { poidsOuestParis, memesTriangles, LOURDS_OUEST } = await import('./sonde-baies.mjs');
+    const t0 = Date.now();
+    const neuf = await poidsOuestParis('../src', {}, 8, LOURDS_OUEST);
+    const vieux = await poidsOuestParis('../src', { baiesSoudees: false }, 8, LOURDS_OUEST);
+    const r = (x) => +x.toFixed(2);
+    verifier('une baie se soude : les morceaux les plus lourds de l\'ouest de Paris pèsent au moins un dixième de moins',
+      neuf.mediane < 0.9 * vieux.mediane && neuf.pire < 0.92 * vieux.pire,
+      `médiane ${r(vieux.mediane)} → ${r(neuf.mediane)} Mo, pire ${r(vieux.pire)} → ${r(neuf.pire)} Mo, sommets ${vieux.lourds.map((m) => m.sommets).join('/')} → ${neuf.lourds.map((m) => m.sommets).join('/')}, ${Date.now() - t0} ms`);
+    const { World, CHUNK } = await import('../src/world.js');
+    const { buildChunkTampons } = await import('../src/mesher.js');
+    const { positionDe } = await import('../src/mondes.js');
+    const P = positionDe('paris'), w = new World(); w.hd = 1;
+    const res = LOURDS_OUEST.slice(0, 4).map(([dx, dz]) => {
+      const cx = Math.floor(P.x / CHUNK) + dx, cz = Math.floor(P.z / CHUNK) + dz;
+      const a = buildChunkTampons(w, cx, cz, { detail: true }).facades;
+      const b = buildChunkTampons(w, cx, cz, { detail: true, baiesSoudees: false }).facades;
+      return { ...memesTriangles(a, b), sommets: `${b.positions.length / 3}→${a.positions.length / 3}` };
+    });
+    verifier('une baie soudée dessine les mêmes triangles, des mêmes valeurs, bit à bit',
+      res.every((x) => x.ok && x.coins > 0) && res.some((x) => x.sommets.split('→')[0] !== x.sommets.split('→')[1]),
+      JSON.stringify(res));
+  }
+
   // UNE BAIE, PAS DEUX (v457). Les villes engendrées posaient deux blocs
   // `ETAGE` l'un sur l'autre par étage : deux fenêtres dessinées l'une sur
   // l'autre (38 719 piles, 259 villes sur 269). Elles posent les bandes de
@@ -2830,6 +2866,36 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     verifier('à Rome et à Zurich, les passages piétons en biais se dessinent — sans un bloc écrit, et rien ne change à Kyoto ni à Paris',
       res.rome.sommetsEnPlus > 200 && res.zurich.sommetsEnPlus > 200 && res.kyoto.sommetsEnPlus === 0 && res.paris.sommetsEnPlus === 0
         && Object.values(res).every((r) => r.blocsEgaux),
+      JSON.stringify(res));
+  }
+
+  // ET LES AVENUES DES VILLES BÂTIES À LA MAIN (v467). Londres, Nice, Lille,
+  // San Francisco et Washington n'ont pas de trame : leurs passages se posent
+  // aux croisements de leurs avenues nommées (`carrefoursDeVoies`), en
+  // géométrie. Quarante-neuf morceaux au centre de chaque ville, avec et sans
+  // (`passagesVilles: false`) : des sommets en plus dans les cinq, aucun à
+  // Paris (son marquage est dans la tuile) ni à Rome (déjà en biais), les blocs
+  // identiques. Sur l'ancien code l'option n'existe pas : zéro, rouge.
+  {
+    const { World, CHUNK } = await import('../src/world.js');
+    const { buildChunkTampons } = await import('../src/mesher.js');
+    const { positionDe } = await import('../src/mondes.js');
+    const res = {};
+    for (const cle of ['londres', 'nice', 'lille', 'sf', 'washington', 'paris', 'rome']) {
+      const p = positionDe(cle), c0x = Math.floor(p.x / CHUNK), c0z = Math.floor(p.z / CHUNK);
+      const w = new World();
+      let avec = 0, sans = 0, blocsEgaux = true;
+      for (let dx = -3; dx <= 3; dx++) for (let dz = -3; dz <= 3; dz++) {
+        const d0 = Buffer.from(w.ensureChunk(c0x + dx, c0z + dz)).toString('base64');
+        sans += buildChunkTampons(w, c0x + dx, c0z + dz, { passagesVilles: false }).solid.positions.length / 3;
+        avec += buildChunkTampons(w, c0x + dx, c0z + dz).solid.positions.length / 3;
+        if (Buffer.from(w.ensureChunk(c0x + dx, c0z + dz)).toString('base64') !== d0) blocsEgaux = false;
+      }
+      res[cle] = { sommetsEnPlus: avec - sans, blocsEgaux };
+    }
+    verifier('à Londres, Nice, Lille, San Francisco et Washington, les carrefours des avenues ont leur passage peint — sans un bloc écrit',
+      ['londres', 'nice', 'lille', 'sf', 'washington'].every((c) => res[c].sommetsEnPlus > 500)
+        && res.paris.sommetsEnPlus === 0 && res.rome.sommetsEnPlus === 0 && Object.values(res).every((r) => r.blocsEgaux),
       JSON.stringify(res));
   }
 
@@ -3181,14 +3247,14 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         `${pas} pas, ${sansRail} sans ses quatre files de prismes · ${obs} obsidienne, ${planches} planche(s) sur ${colonnes} colonnes`);
       verifier('le sol continu suit le profil de la voie, dans la tranchée comme sur le remblai',
         // `tranchee > 100` est une borne de GARDE (la mesure a eu lieu), posée
-        // à la moitié : la rampe du viaduc (v465) relève la voie de deux blocs
+        // à la moitié : la rampe du viaduc (v467) relève la voie de deux blocs
         // au plus avant une rivière, et une tranchée de deux blocs y devient une
         // tranchée d'un bloc — 240 → 170 colonnes dans cette fenêtre, mesuré.
         continu && colonnes > 3000 && talus > 200 && surface >= colonnes * 0.85 && ecartSurf < 1e-6 && tranchee > 100 && tranchJuste === tranchee,
         `${surface} colonnes de surface sur ${colonnes} (${talus} de talus), écart max à la cote ${ecartSurf.toFixed(4)} · en tranchée ou remblai de deux blocs et plus : ${tranchJuste}/${tranchee}, et ${falaise} au bord d'une falaise (${((performance.now() - t0) / 1000).toFixed(1)} s)`);
     }
 
-    // LE VIADUC DE LA MANCHE (v465). Sur l'eau, la voie était une chaussée de
+    // LE VIADUC DE LA MANCHE (v467). Sur l'eau, la voie était une chaussée de
     // pierre au ras des flots : de la mer à droite et à gauche, une digue
     // dessous, chaque rivière barrée d'un mur. Le viaduc garde l'eau sous le
     // tablier (des piles tous les `PAS_PILE` blocs), le tablier est un ruban
@@ -3232,7 +3298,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       }
       verifier('l\'Eurostar passe la Manche sur un viaduc : la mer sous le tablier, des piles, aucune digue',
         neuf && pas > 150 && colonnes > 1000 && eau > colonnes * 0.8 && piles > 0 && digue === 0 && bas >= 31 + T.DEGAGE - 1e-6,
-        `${pas} pas sur la mer · ${colonnes} colonnes : ${eau} d'eau libre, ${piles} de pile, ${digue} autres · tablier au plus bas à ${bas.toFixed(2)} (surface 31)${neuf ? '' : ' — pas de viaduc (code d\'avant la v465)'}`);
+        `${pas} pas sur la mer · ${colonnes} colonnes : ${eau} d'eau libre, ${piles} de pile, ${digue} autres · tablier au plus bas à ${bas.toFixed(2)} (surface 31)${neuf ? '' : ' — pas de viaduc (code d\'avant la v467)'}`);
       verifier('le tablier du viaduc se dessine et porte l\'enfant aux mêmes cotes que les rails',
         neuf && pas > 150 && sansTablier === 0 && sansContact === 0 && ecartContact < 1e-6,
         `${sansTablier} pas sans ruban de tablier, ${sansContact} sans contact sur ${pas}, écart contact/rail ${ecartContact.toFixed(4)} (${((performance.now() - t0) / 1000).toFixed(1)} s)`);
@@ -3368,8 +3434,8 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
             if (y <= W.WATER_LEVEL + 1 || y >= 58 || W.dansUneCalotte(z) || w.cityAt(x, z) || VM.dansVilleMonde(x, z) || h.bati[i] > 0) continue;
             if (Math.abs(pos[i * 3 + 1] - (y + 0.5)) > 1e-3) continue;
             // les biomes ronds ont leur sol à eux
-            // un climat réel teint son herbe (v341 à v466) et a son témoin à
-            // lui : depuis la v466, le site près de Nice est méditerranéen
+            // un climat réel teint son herbe (v341 à v469) et a son témoin à
+            // lui : depuis la v469, le site près de Nice est méditerranéen
             if (w.climat && w.climat(x, z)) continue;
             if (Math.hypot(x - W.DESERT.x, z - W.DESERT.z) < W.DESERT.r || Math.hypot(x - W.MARS.x, z - W.MARS.z) < W.MARS.r
               || Math.hypot(x - W.VOLCANO.x, z - W.VOLCANO.z) < W.VOLCANO.r) continue;

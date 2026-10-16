@@ -1799,6 +1799,9 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const s2 = window.__game.passants.sites.find((x) => x.peuple);
       let n = 0;
       s2.peuple.forEach((h, i) => {
+        // la ville se peuple par tranches (v241) : un passant né pendant les
+        // huit secondes n'a pas de position d'avant — on ne le compte pas
+        if (!av[i]) return;
         if (Math.hypot(h.pos.x - av[i][0], h.pos.z - av[i][1]) > 0.6) n++;
       });
       return n;
@@ -2489,6 +2492,20 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !auPassageBiais.err && auPassageBiais.poses >= 4 && auPassageBiais.surPassage >= 1
         && auPassageBiais.surPassage >= 0.6 * auPassageBiais.detail.filter((d) => d.tr === null).length,
       JSON.stringify(auPassageBiais));
+
+    // ---- ET AUX CARREFOURS DES AVENUES DE LONDRES (v467) -------------------
+    //
+    // Londres n'a pas de trame : ses rues sont des avenues nommées, et jusqu'ici
+    // aucun passage n'y était peint — on n'y traversait qu'au feu (1 à 3 fois
+    // par minute au centre). Les passages se posent désormais aux croisements
+    // des avenues (`passages.js`, même règle que les bandes en biais), et
+    // `passagePieton` les lit. Même témoin qu'à Rome. Sur l'ancien code,
+    // `passageEn` ne rend rien à Londres : aucune pose, rouge.
+    const auPassageLondres = await auPassageDans('londres', true);
+    verifier('à Londres, un passant traverse sur le passage peint d\'un carrefour d\'avenues sans feu',
+      !auPassageLondres.err && auPassageLondres.poses >= 4 && auPassageLondres.surPassage >= 1
+        && auPassageLondres.surPassage >= 0.6 * auPassageLondres.detail.filter((d) => d.tr === null).length,
+      JSON.stringify(auPassageLondres));
 
     // ---- UN PASSANT NE TRAVERSE PAS LA VOITURE DE L'ENFANT (v259) -------------
     //

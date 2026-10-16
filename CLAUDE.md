@@ -770,6 +770,29 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les passages des avenues (v467) — un passage se mesure le long de SA rue
+
+Une règle. Dans une ville bâtie à la main, un carrefour est le croisement de
+deux avenues nommées (`carrefoursDeVoies`) ; le passage se pose sur chacune, à
+`demi-chaussée croisée / sin(angle) + 0,4` du croisement, mesuré le long de
+l'avenue — sur un croisement oblique, la chaussée croisée est plus longue à
+franchir, et la bande tomberait dedans. Trois avenues concourantes donnent un
+seul « bras » par avenue (le plus large dégagement), un croisement sous 30°
+n'a pas de passage, et seul le bitume du `sol*` de la ville en porte.
+`passagesVilles: false` le retire pour l'empreinte des 490 morceaux.
+## Une baie se soude (v469) — une optimisation de maillage se prouve par les triangles
+
+Une règle. Deux quads du même plan qui se touchent émettent des coins
+IDENTIQUES (position, normale, UV, tuile, teinte, matière, lueur) : sur les
+morceaux denses de Paris, un sommet de façade sur six. `souderTampons`
+(facadeshd.js) les fusionne sur les BITS des flottants envoyés au pilote,
+jamais sur une tolérance. La preuve n'est pas une capture : c'est que chaque
+coin de chaque triangle porte les mêmes dix-huit mots qu'avant
+(`memesTriangles`, `sonde-baies.mjs`) — mêmes triangles, mêmes valeurs, la
+même image par construction. `baiesSoudees: false` rejoue l'ancien tampon pour
+l'empreinte des 490 morceaux. Avant d'alléger une géométrie en changeant sa
+forme, on cherche ce qui se fusionne sans la changer.
+
 ## Le viaduc de la Manche (v465) — un ouvrage de voie se déclare au contact, et un profil relevé se borne aux gares
 
 Deux règles.
@@ -866,6 +889,25 @@ l'avenue (`entrees.mjs`), le raccord (`sonde-rue-dense.cjs raccords`, cinq
 secondes par angle), les tabliers de la ville sous `routeEn` (tab.mjs, la
 boucle du témoin des ponts de villes) — puis le tracé tourne en plusieurs fois
 depuis la porte retenue.
+
+## L'Orange et l'Argent (v468) — deux lignes sur les mêmes rails ont des tours de même durée
+
+Deux règles.
+
+- **UNE LIGNE QUI EMPRUNTE LE TUNNEL D'UNE AUTRE EN RECOPIE LES POINTS.**
+  `calculerBranche` (washington.js) reprend le tracé de la Bleue point pour
+  point, cote comprise, jusqu'au dernier quai commun ; seule la branche se
+  calcule. Recalculée à part, l'enveloppe basse descendrait autrement et
+  deux rames « sur la même voie » rouleraient à deux cotes.
+- **SUR DES RAILS PARTAGÉS, L'ÉCART ENTRE RAMES EST UNE PHASE, ET IL NE TIENT
+  QUE SI LES TOURS DURENT EXACTEMENT AUTANT.** Les tours commencent au même
+  point ; à périodes égales, une rame qui en suit une autre d'un sixième de
+  tour la suit partout sur le tronc. La branche la plus courte attend la
+  différence au bout de son tunnel, là où rien d'autre ne roule
+  (`optionsMetro` : `pauses`, `phases`). Sans l'égalisation, 1 191 contacts
+  sur un tour (sonde). Une rame de branche occupe son tunnel autant que la
+  Bleue sa branche : deux rames de branche à moins d'un tiers de tour se
+  rattraperaient au bout — d'où trois rames de branche, pas six.
 
 ## La rue sans à-coups (v453) — le bus a une place, un circuit se prépare, une suiveuse freine
 
@@ -3899,7 +3941,7 @@ humides réelles, la forêt dense de grands feuillus et un palmier sur quatre
 tempérée). Une teinte se juge en capture et pas seulement au témoin : le vert
 réglé à (60, 160, 50) virait au fluo à l'écran, et le témoin le trouvait
 très bien teint.
-**Le climat méditerranéen (v466)** suit la même table, en dernier (les
+**Le climat méditerranéen (v469)** suit la même table, en dernier (les
 déserts, la steppe d'Anatolie et le Karoo passent avant). Deux arbres neufs :
 `kind` 4, pin parasol, et 5, olivier. **Une couronne neuve tient dans trois
 blocs autour du tronc** : `generateChunk` ne balaie les arbres que trois

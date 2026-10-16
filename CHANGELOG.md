@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v466 — Le soleil méditerranéen : herbe sèche, oliviers et pins parasols
+## v469 — Le soleil méditerranéen : herbe sèche, oliviers et pins parasols
 
 **Pourquoi.** Après les déserts, la toundra, la taïga, les steppes et les
 forêts tropicales, la campagne autour de la Méditerranée restait celle de la
@@ -45,7 +45,98 @@ parasols pour 203 arbres, 7 688 sommets d'herbe teints sur 12 116 ; sur
 capture : réglée d'abord à (82, 110, 62), elle sortait presque noire. L'empreinte des
 490 morceaux se relève (Rome, Marrakech et San Francisco ont leur campagne
 méditerranéenne) : sans les contours méditerranéens, elle rend celle de la
-v465 au bit près.
+v468 au bit près.
+
+---
+
+## v468 — L'Orange et l'Argent dans le tunnel de la Bleue
+
+**Pourquoi.** Le métro de Washington n'avait que quatre lignes sur six. Dans
+la vraie ville, l'Orange et l'Argent partagent le tunnel de la Bleue de
+Rosslyn à Stadium-Armory : trois couleurs sur les mêmes rails. Le risque, en
+les ajoutant, était connu (v305) : deux rames sur la même voie se traversent
+si rien ne les espace — mesuré à la sonde, 1 191 relevés de contact sur un
+tour si les tours n'ont pas la même durée.
+
+**Ce que ça change.** Sur le tronc Eastern Market → Foggy Bottom, une rame
+passe toutes les trente-trois secondes de jeu, et ce n'est plus toujours une
+Bleue : Bleue, Orange, Bleue, Argent, Bleue, Orange. Les deux nouvelles
+lignes reprennent le tracé de la Bleue point pour point (même cote, mêmes
+quais), puis ont leur propre tunnel sous le Potomac vers Rosslyn, jusqu'au
+bord de l'emprise. Potomac Avenue (à l'est) et Rosslyn (en Virginie) sont
+hors de la ville : leur dernier quai est Foggy Bottom, et c'est dit dans le
+code. Ce qui les espace est la grille horaire : les trois lignes ont un tour
+de la même durée (199,3 s) — la branche la plus courte attend la différence
+au bout de son tunnel, là où rien d'autre ne roule — et chaque rame a sa
+place sur le tour, au sixième près.
+
+**Ce qui le prouve.** Trois témoins neufs dans `washington.js` : l'Orange et
+l'Argent roulent ; sur un tour d'horloge entier, par la grille du jeu, wagon
+par wagon, aucune rame de la famille n'entre dans une autre (rouge sur
+l'ancien code faute de lignes, et rouge à la sonde sans l'égalisation des
+tours : 1 191 contacts) ; et le trajet de l'enfant — sur le quai de
+Smithsonian, une rame Orange arrive, on monte, elle nous emmène à la station
+suivante, on descend. L'empreinte des 490 morceaux est identique à
+`origin/main`. Déclaré dans `TASKS.md` : au-delà du cercle de 187 blocs, le
+monde ne creuse pas le métro (déjà vrai pour la Bleue en Virginie, mesuré sur
+`origin/main` : les quais d'Arlington Cemetery et de Pentagon sont de la
+pierre) — le tunnel de Rosslyn y est donc dans la roche aussi.
+
+---
+
+## v467 — Les passages piétons des villes bâties à la main
+
+**Pourquoi.** Les passages peints n'existaient que dans les villes engendrées
+(dans la tuile pour les trames alignées, en géométrie pour les trames en biais,
+v421) et à Paris. Londres, Nice, Lille, San Francisco et Washington — dont les
+rues sont des avenues nommées tracées sur le vrai plan, sans trame — n'en
+avaient aucun : on n'y traversait qu'aux feux, 1 à 3 fois par minute au centre
+de Londres.
+
+**Ce que ça change.** Chaque croisement de deux avenues porte son passage à
+larges bandes sur chacune des deux avenues, à la règle de la v421 (la bande
+commence 0,4 bloc après la chaussée croisée, mesurée le long de l'avenue, et
+fait 1,7 bloc ; les bandes de cinquante centimètres courent dans l'axe de la
+circulation). C'est de la géométrie du mailleur — aucun bloc écrit, aucun
+appel de dessin de plus — et `passagePieton` lit la même règle : les passants
+y traversent. Londres 138 bras de carrefour, Nice 37, Lille 25, San Francisco
+54, Washington 150. Paris garde son marquage.
+
+**Ce qui le prouve.** Deux témoins neufs, rouges sur l'ancien code :
+`plafond.js` maille quarante-neuf morceaux au centre de chaque ville avec et
+sans (`passagesVilles: false`) — Londres +11 033 sommets, Nice +4 375, Lille
++3 139, San Francisco +2 046, Washington +4 812, Paris et Rome 0, les blocs
+identiques ; `monte.js` pose des passants au bord d'un passage de Londres loin
+de tout feu et compte qui traverse dessus. L'empreinte des 490 morceaux se
+garde par l'option de désarmement (`morceaux-temoin.mjs`). Les deux empreintes
+du relief sont intactes : rien n'est écrit dans le monde.
+## v466 — Paris pèse moins lourd sur la tablette
+
+**Pourquoi.** La couche de relief de Paris (façades, balcons, corniches)
+pesait jusqu'à onze mégaoctets par morceau dans les quartiers denses de
+l'ouest, et c'est elle qui a tué l'iPhone de Max en v299. Ce qui décide du
+poids, c'est le nombre de sommets. Mesuré par tuile sur les huit morceaux les
+plus lourds : 128 000 sommets de façades en moyenne, dont 85 000 de
+`pierre-lisse` (corniches, chaînages, appuis, balcons, ébrasements) — et UN
+SOMMET SUR SIX était le double exact d'un autre : deux quads du même plan qui
+se touchent (le mur autour d'une baie, le mur du bloc voisin, les deux bandes
+d'un ébrasement ou d'un châssis sur deux blocs) émettaient chacun leurs coins.
+
+**Ce que ça change.** Rien à l'écran, et c'est voulu : les sommets identiques
+sont soudés (`souderTampons`, facadeshd.js) et les triangles pointent sur le
+survivant. Mêmes triangles, mêmes valeurs, octet pour octet. La mémoire, elle,
+baisse : médiane 9,65 → 8,23 Mo, pire 11,37 → 10,08 Mo par morceau dense, soit
+15 % de détail en plus à budget égal (v299). Le prix : la soudure coûte au
+worker 14 à 20 ms par morceau détaillé (sur 150 à 200), seulement à portée de
+la couche HD.
+
+**Ce qui le prouve.** Deux témoins neufs dans `plafond.js` : le poids des huit
+morceaux les plus lourds, soudé contre `baiesSoudees: false` (rouge sur
+`origin/main`, où les deux pèsent pareil) ; et l'image — chaque coin de chaque
+triangle porte, bit à bit, les dix-huit mots d'avant (zéro écart sur 825 000
+coins). L'empreinte des 490 morceaux change (`4e5897ac…`) et se prouve par
+désarmement : avec `baiesSoudees: false`, elle rend la constante de la v357 au
+bit près. La sonde est `tests/sonde-baies.mjs`.
 
 ---
 
