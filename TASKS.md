@@ -7285,7 +7285,15 @@ l'embarquement a eu lieu, pas par une hypothèse.
   tunnel de la Bleue dans la vraie ville ; les guides qui racontent ce qu'on
   visite. Le mémorial Roosevelt, lui, est revenu en v162.
 
-- [ ] **Ce que Washington a à apprendre** — la ville est pleine de choses qui
+- [ ] **Moscou sans voitures en vue, au portail seulement (v460)** — `monte.js`
+  « à Moscou… les rues sont pleines de voitures » (et la diversité, qui en
+  dépend) rouge au portail de la v460. Rejoué seul par une sonde qui recopie
+  le passage : 6 voitures en 4 s, 2/2 sur la branche, 2/2 sur `origin/main`.
+  Preuve structurelle : la v460 n'ajoute hors de Washington que sept
+  distances toutes les 250 ms. À démonter : distribution au portail des deux
+  côtés (v269), cousin du « Rome et Moscou sans voiture » de la v453.
+
+- [x] **Ce que Washington a à apprendre** (v460 : sept panneaux sur place, `src/guides.js`, et quatorze questions « Washington » dans la Découverte) — la ville est pleine de choses qui
   se racontent : pourquoi les avenues coupent la grille en diagonale, pourquoi
   aucun immeuble ne dépasse le dôme, pourquoi les cerisiers du Tidal Basin
   viennent du Japon, pourquoi Georgetown n'a pas de métro. Rien de tout cela

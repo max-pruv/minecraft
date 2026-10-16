@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 460,
+    titre: 'Washington se raconte',
+    puces: [
+      'Des panneaux à lire devant les monuments',
+      'Des questions sur Washington dans le quiz',
+    ],
+  },
+  {
     v: 459,
     titre: 'La grande roue de Las Vegas',
     puces: [

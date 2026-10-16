@@ -20,6 +20,32 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v460 — Washington se raconte
+
+**Pourquoi.** La capitale est pleine d'histoires — pourquoi la ville est si
+basse, d'où viennent les cerisiers, pourquoi les avenues coupent la grille en
+diagonale, pourquoi Georgetown n'a pas de métro — et toutes vivaient dans les
+commentaires de `washington.js`. Un enfant de sept ans ne lit pas le code :
+rien de tout cela ne l'atteignait (dette « Ce que Washington a à apprendre »).
+
+**Ce que ça change.** En arrivant devant sept lieux (le Capitole, l'obélisque,
+le Lincoln Memorial, les cerisiers du Tidal Basin, la Maison-Blanche, Dupont
+Circle, Georgetown), un panneau de deux phrases s'affiche en haut de l'écran
+(`src/guides.js`). Une fois par visite : il faut s'éloigner pour qu'il
+repasse. Jamais deux d'un coup : neuf secondes de vraie vie entre deux
+panneaux. Les mêmes faits, vérifiés, deviennent quatorze questions de la
+Découverte (« Washington ») dans le quiz — rien n'est retiré au mode éducatif.
+
+**Ce qui le prouve.** Trois témoins neufs, rouges sur `origin/main` : la règle
+sous node (`washington.js` : un panneau en tournant au Lincoln, deux après une
+nouvelle visite, 9 000 ms entre deux lieux, aucun rayon qui en recouvre un
+autre) ; le trajet de l'enfant (`washington.js` : il marche jusqu'au Lincoln,
+le bandeau affiche son panneau une fois) ; la banque de questions
+(`parent.js` : quatre propositions distinctes par question, les faits des
+panneaux présents).
+
+---
+
 ## v459 — La grande roue de Las Vegas domine la tour Eiffel du Strip
 
 **Pourquoi.** La dette des monuments plus bas que leur ville est soldée : plus
