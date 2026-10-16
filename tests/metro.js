@@ -211,6 +211,113 @@ let RAYON = 38;
       `pire : ${pire.ligne} ${pire.de}→${pire.vers} ${pire.attente} s avec ${pire.convois} train(s)`
       + ` · toutes : ${quais.map((l) => l.attente).join(' ')}`);
 
+    // --- LA LIGNE 1 DE PARIS : LE TRAJET DE L'ENFANT (v455) -------------------
+    //
+    // L'anneau a suivi la caserne en banlieue (v293) : Paris n'avait plus de
+    // métro. La ligne 1 passe sous les Champs-Élysées, Rivoli et le Faubourg.
+    // La descente case par case de chaque bouche au quai se prouve sous node
+    // (`sonde-metro-paris.mjs`, lue par plafond.js) ; ici on éprouve ce que le
+    // banc seul peut éprouver : l'édicule se voit de la rue, on se tient sur le
+    // quai, la rame jaune se présente, on monte, et elle nous emmène à la
+    // station suivante. Le temps se compte en secondes de JEU (dt borné, v270).
+    const l1 = await tab.evaluate(async () => {
+      const v = await import('./src/ville.js');
+      if (!v.BOUCHES_LIGNE1) return null;
+      const b = v.BOUCHES_LIGNE1.find((x) => x && x.nom === 'Concorde') || v.BOUCHES_LIGNE1.find(Boolean);
+      return { nom: b.nom, tx: b.tx, tz: b.tz, q: { x: b.q.x, z: b.q.z, dx: b.q.dx, dz: b.q.dz }, cote: b.cote,
+        yr: v.LIGNE1.voie, quais: v.QUAIS_LIGNE1.map((q) => ({ nom: q.nom, x: q.x, z: q.z })) };
+    }).catch(() => null);
+    if (!l1) {
+      verifier('Paris a sa ligne 1 de métro, avec ses bouches et ses quais', false, 'ville.js ne publie pas de ligne 1');
+    } else {
+      // l'édicule, vu de la rue : du vert Guimard au-dessus du trottoir
+      await tab.evaluate(({ tx, tz }) => {
+        const g = window.__game;
+        g.player.pos.x = tx; g.player.pos.z = tz;
+        g.player.pos.y = g.world.terrainHeight(Math.floor(tx), Math.floor(tz)) + 2;
+      }, l1);
+      await dormir(4000);
+      const edicule = await tab.evaluate(({ tx, tz }) => {
+        const w = window.__game.world;
+        let vert = 0, trou = 0;
+        for (let dx = -8; dx <= 8; dx++) for (let dz = -8; dz <= 8; dz++) {
+          const x = Math.floor(tx) + dx, z = Math.floor(tz) + dz, h = w.terrainHeight(x, z);
+          for (let y = h + 1; y <= h + 5; y++) if (w.getBlock(x, y, z) === 40 + 13 * 10) vert++;
+          if (w.getBlock(x, h, z) === 0 && w.getBlock(x, h - 1, z) === 0) trou++;
+        }
+        return { vert, trou };
+      }, l1);
+      verifier('la bouche de la ligne 1 se voit de la rue (le vert Guimard, la trémie)',
+        edicule.vert >= 2 && edicule.trou >= 3, `${l1.nom} : ${JSON.stringify(edicule)}`);
+
+      // sur le quai, côté de la bouche, à cinq blocs de l'axe
+      const surQuai = { x: l1.q.x - l1.q.dz * 5 * l1.cote, z: l1.q.z + l1.q.dx * 5 * l1.cote };
+      await tab.evaluate(({ p, yr }) => {
+        const g = window.__game;
+        g.player.pos.x = p.x; g.player.pos.z = p.z; g.player.pos.y = yr + 2.05;
+        window.__simL1 = 0;
+        let prec = performance.now();
+        const tic = (now) => {
+          window.__simL1 += Math.min(Math.max((now - prec) / 1000, 0), 0.05);
+          prec = now;
+          requestAnimationFrame(tic);
+        };
+        requestAnimationFrame(tic);
+      }, { p: surQuai, yr: l1.yr });
+      const debout = await tab.evaluate(({ yr }) => {
+        const g = window.__game, p = g.player.pos;
+        const x = Math.floor(p.x), z = Math.floor(p.z);
+        return { sol: g.world.getBlock(x, yr + 1, z) !== 0, tete: g.world.getBlock(x, yr + 2, z) === 0 && g.world.getBlock(x, yr + 3, z) === 0 };
+      }, { yr: l1.yr });
+      verifier('on tient debout sur le quai de la ligne 1', debout.sol && debout.tete, JSON.stringify(debout));
+
+      // la rame jaune se présente : 45 s de JEU, une fois et demie l'intervalle
+      let vu = false, sim = 0, approche = null;
+      for (let i = 0; i < 300 && !vu && sim < 45; i++) {
+        const e = await tab.evaluate(() => {
+          const b = document.getElementById('board-btn');
+          const cible = b && b.closest('.fun-target');
+          const visible = !!(b && getComputedStyle(b).display !== 'none' && cible && getComputedStyle(cible).display !== 'none');
+          const p = window.__game.player.pos;
+          let best = null;
+          for (const c of (window.__vehicules.etat() || [])) {
+            if (c.nom !== 'métro ligne 1') continue;
+            for (const q of c.places) {
+              const d = Math.hypot(q[0] - p.x, q[1] - p.z);
+              if (!best || d < best.d) best = { d: +d.toFixed(1), dy: +(c.y - p.y).toFixed(1) };
+            }
+          }
+          return { visible, texte: b ? b.textContent : '', best, sim: window.__simL1 };
+        });
+        sim = e.sim;
+        if (e.best && (!approche || e.best.d < approche.d)) approche = e.best;
+        if (e.visible && /🟡/.test(e.texte)) { vu = true; break; }
+        await dormir(800);
+      }
+      verifier('une rame jaune de la ligne 1 se présente, et on propose d\'y monter', vu,
+        `${sim.toFixed(0)} s de jeu, la plus proche vue à ${approche ? `${approche.d} blocs, Δy ${approche.dy}` : '—'}`);
+      if (vu) {
+        await tab.evaluate(() => document.getElementById('board-btn').click());
+        const proche = (p) => l1.quais.reduce((a, q) => (Math.hypot(q.x - p.x, q.z - p.z) < Math.hypot(a.x - p.x, a.z - p.z) ? q : a));
+        const ou = () => tab.evaluate(() => { const p = window.__game.player.pos; return { x: p.x, y: p.y, z: p.z, sim: window.__simL1 }; });
+        const dep = await ou();
+        const depart = proche(dep).nom;
+        // ARRIVÉ, c'est À QUAI à une autre station (à moins de douze blocs de
+        // son centre), pas seulement plus près d'elle : la rame fait trente
+        // blocs, et l'on peut s'y asseoir loin de la station de départ.
+        const aQuai = (p) => { const q = proche(p); return Math.hypot(q.x - p.x, q.z - p.z) < 12 ? q.nom : null; };
+        let arr = depart, ici = dep;
+        for (let i = 0; i < 400 && (arr === depart || arr === null) && ici.sim - dep.sim < 60; i++) {
+          await dormir(800);
+          ici = await ou();
+          arr = aQuai(ici);
+        }
+        verifier('et la ligne 1 nous emmène à la station suivante, sous la rue', arr !== depart && ici.y < l1.yr + 4,
+          `${depart} → ${arr} en ${(ici.sim - dep.sim).toFixed(0)} s de jeu, rame à y=${ici.y.toFixed(1)}`);
+        await tab.evaluate(() => document.getElementById('board-btn').click());
+      }
+    }
+
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
   } finally {

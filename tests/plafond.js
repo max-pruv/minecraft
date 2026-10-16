@@ -378,7 +378,10 @@ const EMPREINTE_MORCEAUX_V414 = '863d4203a441e3fd029ce2404fc6d6e706799e7f64fe489
 // la constante de la v447, au bit près ; et les dix-huit colonnes qui
 // diffèrent dans les morceaux de Londres sont toutes dans la boîte d'un
 // tronçon de piste — aucune ailleurs, aucun autre lieu touché.
-const EMPREINTE_MORCEAUX_V357 = '938a330c6f883c7e249720b7274d988de6484768cfdb882dedd474da65bbac6d';
+// v455 : la ligne 1 du métro passe sous Paris, un des neuf lieux. Désarmée
+// (`METRO_PARIS.actif = false`, ville.js), la branche rend 938a330c…, la
+// constante de la v454, au bit près.
+const EMPREINTE_MORCEAUX_V357 = '9a19619233b779ce4491929ae3f1b418329fc6b1bffeb5edfef3b9746327a673';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -2530,6 +2533,25 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     verifier('un morceau de ville coûte moins de lectures de relief et de blocs que sur la v351',
       Object.entries(BARRES_TRAVAIL).every(([v, b]) => tr[v].reliefs <= b.reliefs && tr[v].lus <= b.lus),
       JSON.stringify({ mesure: tr, barres: BARRES_TRAVAIL }));
+  }
+
+  // LA LIGNE 1 DE PARIS SE PARCOURT COMME L'ENFANT LA VIT (v455). La sonde
+  // (`sonde-metro-paris.mjs`, lue telle quelle) engendre le vrai monde sous
+  // node : de la rue au quai case par case pour chaque bouche, le passage des
+  // rames libre sur les deux voies, aucune poche d'air dans la Seine, rien de
+  // la bouche sur la chaussée ni dans le passage d'un circuit. Rouge sur la
+  // v454 : Paris n'avait plus de métro (l'anneau a suivi la caserne en v293).
+  {
+    const { mesurerLigne1 } = await import('./sonde-metro-paris.mjs');
+    const t0 = Date.now();
+    const r = await mesurerLigne1();
+    const ratees = (r.descentes || []).filter((d) => !d.arrive).map((d) => d.nom);
+    verifier('la ligne 1 de Paris : seize stations, une bouche par station sauf Nation, et de chaque bouche on descend au quai',
+      !r.absente && r.stations === 16 && r.bouches >= 15 && ratees.length === 0,
+      r.absente ? 'aucune ligne 1 (ville.js ne la publie pas)' : `${r.bouches}/${r.stations} bouches, descentes ratées : ${ratees.join(', ') || 'aucune'}, ${Date.now() - t0} ms`);
+    verifier('rien ne barre les rames, la Seine reste pleine, et aucune bouche ne mure une rue ni un circuit',
+      !r.absente && r.lus > 1000 && r.gabarit === 0 && r.poches === 0 && r.surChaussee === 0 && r.mure === 0 && r.circuits > 0,
+      r.absente ? 'aucune ligne 1' : JSON.stringify({ gabarit: r.gabarit, lus: r.lus, poches: r.poches, surChaussee: r.surChaussee, mure: r.mure, circuits: r.circuits }));
   }
 
   // UN BÂTISSEUR NE TIRE PAS AU HASARD (v450). Le Colisée du catalogue

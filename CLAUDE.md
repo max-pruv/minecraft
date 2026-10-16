@@ -770,6 +770,30 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## La ligne 1 sous Paris (v455) — un escalier en biais monte de 0,7, et un creusement se borne sous le lit
+
+Trois règles.
+
+- **SUR UNE AVENUE EN BIAIS, UN ESCALIER MONTE DE 0,7 BLOC PAR BLOC.** Deux
+  colonnes voisines peuvent être à 1,4 bloc l'une de l'autre le long d'un axe
+  tourné ; à une marche par bloc, l'arrondi y fait une marche de deux — un mur
+  pour l'enfant. La sonde (`sonde-metro-paris.mjs`) marche case par case de la
+  rue au quai : c'est elle qui l'a trouvé, pas la relecture.
+- **UN CREUSEMENT SOUS UNE VILLE AU BORD D'UN FLEUVE SE BORNE SOUS LE LIT.**
+  Rivoli et le Faubourg longent la Seine du plan à moins de huit blocs : la
+  voûte d'une station s'arrête à 27, le lit (l'eau de 28 à 30), sinon une voûte
+  de carreaux dépasse dans le fleuve et l'eau a une poche d'air. Le profil est
+  plat (seize blocs sous la rue) : il ne dépend d'aucun monde, donc le worker,
+  le fil principal et deux tablettes creusent le même tunnel.
+- **DES BOUCHES VOISINES SE CHOISISSENT ENSEMBLE.** Prises dans l'ordre de la
+  ligne, l'escalier de Saint-Paul prenait la place de celui de la Bastille, et
+  un escalier en passait un autre à la rue. `placesDe` rend les places de
+  chaque station (trottoir ou herbe à la trémie, jamais un lot ni l'eau, et un
+  escalier ne descend jamais dans le tunnel ou une autre station — il passe
+  au-dessus avec un bloc de terre) ; une recherche bornée les sert ensemble.
+  Ce qui touche la rue ne se pose que sur du trottoir : un témoin le lit sur
+  le monde, contre les vingt circuits de Paris.
+
 ## La rue sans à-coups (v453) — le bus a une place, un circuit se prépare, une suiveuse freine
 
 Quatre sujets, une livraison. Cinq règles.

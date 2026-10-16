@@ -161,7 +161,7 @@ const GARDIENS = {
   'src/dcmonuments.js': ['washington.js'],
   // La ville : c'est elle qui bâtit le métro de Paris, la caserne et le
   // commissariat.
-  'src/ville.js': ['metro.js', 'carte.js'],
+  'src/ville.js': ['metro.js', 'carte.js', 'plafond.js'],
   'src/player.js': ['plafond.js', 'monte.js', 'manhattan.js'],
   'src/conduite.js': ['plafond.js', 'monte.js', 'manhattan.js', 'carteMonde.js', 'washington.js', 'metro.js'],
   'src/admin.js': ['parent.js', 'reglages.js'],
