@@ -378,7 +378,11 @@ const EMPREINTE_MORCEAUX_V414 = '863d4203a441e3fd029ce2404fc6d6e706799e7f64fe489
 // la constante de la v447, au bit près ; et les dix-huit colonnes qui
 // diffèrent dans les morceaux de Londres sont toutes dans la boîte d'un
 // tronçon de piste — aucune ailleurs, aucun autre lieu touché.
-const EMPREINTE_MORCEAUX_V357 = '938a330c6f883c7e249720b7274d988de6484768cfdb882dedd474da65bbac6d';
+// v455 : Rome, Marrakech et San Francisco ont leur campagne au climat
+// méditerranéen (herbe teinte, oliviers, pins parasols). Les contours
+// 'mediterranee' retirés de CLIMATS dans une copie de src, la branche rend
+// 938a330c…, la constante de la v454, au bit près.
+const EMPREINTE_MORCEAUX_V357 = '3e41aad37392b2afe645e3a477c1c68271059832c2bd62d0aa93ad28d10bc304';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -3144,6 +3148,9 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
             if (y <= W.WATER_LEVEL + 1 || y >= 58 || W.dansUneCalotte(z) || w.cityAt(x, z) || VM.dansVilleMonde(x, z) || h.bati[i] > 0) continue;
             if (Math.abs(pos[i * 3 + 1] - (y + 0.5)) > 1e-3) continue;
             // les biomes ronds ont leur sol à eux
+            // un climat réel teint son herbe (v341 à v455) et a son témoin à
+            // lui : depuis la v455, le site près de Nice est méditerranéen
+            if (w.climat && w.climat(x, z)) continue;
             if (Math.hypot(x - W.DESERT.x, z - W.DESERT.z) < W.DESERT.r || Math.hypot(x - W.MARS.x, z - W.MARS.z) < W.MARS.r
               || Math.hypot(x - W.VOLCANO.x, z - W.VOLCANO.z) < W.VOLCANO.r) continue;
             const th = (a, b) => w.terrainHeight(a, b);
