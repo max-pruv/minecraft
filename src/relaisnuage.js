@@ -88,7 +88,19 @@ export class BusNuage {
     // On ne relit pas le passé du monde : seuls les messages postérieurs à
     // notre arrivée nous concernent. Sans cela, un enfant qui rejoint rejouait
     // toute la conversation précédente.
-    this._amorcer().then(() => this._boucler());
+    //
+    // ET L'ON N'ÉCRIT RIEN AVANT D'AVOIR POSÉ LE CURSEUR (banc-lot3). L'invité
+    // frappait (`nuage-coucou`) pendant que `_amorcer` lisait encore le dernier
+    // numéro : un hôte qui relevait sa boîte et répondait dans cet intervalle
+    // écrivait une réponse de numéro INFÉRIEUR au curseur posé ensuite, et
+    // l'invité ne la lisait jamais — « Personne n'a répondu dans ce monde »,
+    // une fois sur dix (`tests/sonde-relais-amorce.mjs` : 2 sur 20 avant, 0
+    // après). Tout envoi attend le curseur ; l'ordre des envois est gardé.
+    // Borné à trois secondes : une lecture qui ne revient jamais (un réseau
+    // capricieux, un `fetch` sans réponse) ne doit pas retenir tous les envois.
+    const amorce = this._amorcer();
+    this._amorce = Promise.race([amorce, new Promise((f) => setTimeout(f, 3000))]);
+    amorce.then(() => this._boucler());
     return true;
   }
 
@@ -174,7 +186,8 @@ export class BusNuage {
 
   envoyer(vers, msg) {
     if (!this.disponible) return;
-    this.cloud.relaisEcrire(this.code, this.monId, vers, msg).catch(() => {});
+    const ecrire = () => this.cloud.relaisEcrire(this.code, this.monId, vers, msg).catch(() => {});
+    if (this._amorce) this._amorce.then(ecrire); else ecrire();
   }
 
   oublier(idDistant) { this.conns.delete(idDistant); }

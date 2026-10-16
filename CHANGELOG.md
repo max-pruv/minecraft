@@ -20,6 +20,40 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v471 — On se retrouve par le nuage du premier coup
+
+**Pourquoi.** Quand le jeu à plusieurs passe par le nuage (pas de courtier,
+Wi-Fi d'hôtel, d'école), un enfant qui rejoignait le monde d'un autre lisait
+parfois « ❌ Personne n'a répondu dans ce monde » alors que l'hôte était là.
+Quatre témoins de `reseau.js` en rougissaient une fois sur trois, des deux
+côtés, depuis des versions. La cause n'était pas l'attente : la tablette qui
+rejoint frappait à la porte AVANT d'avoir noté où elle commençait à lire le
+relais, et un hôte qui répondait vite écrivait sa réponse juste avant ce
+repère — elle n'était jamais lue. Et trois autres témoins récurrents du
+portail mesuraient le banc plutôt que le jeu.
+
+**Ce que ça change.** Par le nuage, l'enfant qui rejoint ne note rien avant
+d'avoir posé son repère de lecture : la réponse de l'hôte arrive toujours.
+Côté essais, trois témoins disent enfin ce qu'ils mesurent : le taxi de New
+York compte du temps de JEU (une image rendue n'en est pas une : la sonde des
+reflets dessine aussi), le glisser de la carte juge le temps passé DANS la
+carte (pas une image de jeu bridée qui tombe à côté), et le feu de la rue a sa
+fenêtre à lui, ne compte plus comme « au feu » une voiture de file arrêtée
+derrière un piéton — et a trouvé une vraie panne, déclarée : une voiture de
+file pile derrière celle qui s'arrête au feu.
+
+**Ce qui le prouve.** Le nuage : `sonde-relais-amorce.mjs` (le vrai bus, un
+relais en mémoire, latences tirées au hasard) rend 6 présentations perdues sur
+100 avant, 0 sur 100 après ; un témoin déterministe en tête de `reseau.js`
+provoque la situation (rouge sur l'ancien code, vert ici). Le taxi :
+`sonde-taxi-images.cjs` — 8 tours de boucle et 13 rendus en 40 s, d'où le
+tirage 4,72 / 8,32 ; `manhattan.js` rejouée seule : 31 verts, taxi 8,99 blocs
+en 1,1 s de jeu. Le glisser : `sonde-glisser.cjs`, en ordre alterné — plus
+long appel de la carte 21 à 45 ms, tâches de plus d'une seconde aussi carte
+immobile ; désarmé (fond d'un seul tenant), 1 988 ms. Le feu :
+`sonde-rue-feu.cjs` — pire perte 14 à 38 b/s², toujours une voiture de file
+(`1×file<feu`) ; témoin rouge, dette en tête de `TASKS.md`. Le vol au-dessus
+de Paris, vert seul depuis la v440 (252 blocs en 12,8 s), dit sa cadence.
 ## v470 — Un garage posé sur une pente ne s'enterre plus
 
 **Pourquoi.** La bibliothèque pose tout sur le point le plus bas de l'emprise :

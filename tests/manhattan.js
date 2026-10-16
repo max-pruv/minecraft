@@ -600,12 +600,31 @@ function verifier(nom, ok, detail = "") {
     // quarante secondes, la nouvelle 3,3 : RIEN ne pouvait tenir huit blocs en
     // quinze secondes. On compte donc quarante images rendues (deux secondes
     // de jeu), bornées à deux minutes et demie de montre.
-    const image0 = await p.evaluate(() => __game.renderer.info.render.frame);
+    // ET UNE IMAGE RENDUE N'EST PAS UNE IMAGE DE JEU (banc-lot3). Les
+    // quarante « images » se comptaient par `renderer.info.render.frame`, qui
+    // avance d'un cran par `render()` — et la sonde des reflets en fait un de
+    // plus par image près d'une voiture (une face par image, v245). Mesuré
+    // (`sonde-taxi-images.cjs`) : 8 tours de boucle et 13 rendus en 40 s, soit
+    // 0,4 s de jeu, 1,6 à 2 blocs ; quarante rendus valaient donc 1,2 s de jeu,
+    // et le témoin rendait 4,72 puis 8,32 blocs pour une barre de 8 — un tirage
+    // sur la cadence. On compte désormais le TEMPS DE JEU lui-même, dans la
+    // page, avec la règle de `main.js` (chaque image ajoute son écart borné à un
+    // vingtième) : trois secondes de jeu, bornées à cinq minutes de montre. Et
+    // la fenêtre est réduite pendant la conduite (v440 : c'est la surface qui
+    // coûte) — 0,2 → 0,6 image par seconde ; le doigt reste posé.
+    await p.evaluate(() => {
+      window.__jeuTaxi = 0; let last = performance.now();
+      const tic = (now) => { window.__jeuTaxi += Math.min(Math.max((now - last) / 1000, 0), 0.05); last = now; if (window.__jeuTaxi < 60) requestAnimationFrame(tic); };
+      requestAnimationFrame(tic);
+    });
+    await banc.mettreDeCote(p);
     await p
-      .waitForFunction((a) => __game.player.pos.z < a.z - 8 || __game.renderer.info.render.frame - a.i > 40, { z: depart, i: image0 }, {
-        timeout: 150000,
+      .waitForFunction((a) => __game.player.pos.z < a - 8 || window.__jeuTaxi > 3, depart, {
+        timeout: 300000, polling: 500,
       })
       .catch(() => {});
+    const jeuTaxi = await p.evaluate(() => +window.__jeuTaxi.toFixed(2));
+    await banc.ramener(p);
     await doigt.send("Input.dispatchTouchEvent", {
       type: "touchEnd",
       touchPoints: [],
@@ -617,7 +636,7 @@ function verifier(nom, ok, detail = "") {
     verifier(
       "le taxi roule avec les contrôles tactiles",
       avance > 8,
-      `${avance} blocs en ${Date.now() - t0Taxi} ms de montre`,
+      `${avance} blocs en ${jeuTaxi} s de jeu, ${Date.now() - t0Taxi} ms de montre`,
     );
     // DESCENDRE NE DOIT PAS TUER LA SUITE (v358) : ce `tap` a levé son délai
     // au portail de la v358 et neuf témoins n'ont pas été atteints. On

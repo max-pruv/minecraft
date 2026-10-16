@@ -3286,7 +3286,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // On s'arrête quand c'est acquis, borné à quatre-vingt-dix secondes (v270) :
     // un arrêt complet au feu n'arrive qu'à la voiture que le rouge prend
     // avant le carrefour, deux ou trois fois par minute au-dessus de Paris.
-    const allure = await tab.evaluate(async () => {
+    const mesurerLaRue = (mode) => tab.evaluate(async (mode) => {
       const m = await import('./src/mondes.js'); const P = m.positionDe('paris'); const g = window.__game;
       g.player.pos.set(P.x + 30, 70, P.z - 10); g.player.vel.set(0, 0, 0); g.player.flying = true;
       const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
@@ -3294,13 +3294,25 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         return [[x + ux * dl + vx * 1.13, z + uz * dl + vz * 1.13], [x + ux * dl - vx * 1.13, z + uz * dl - vz * 1.13], [x - ux * dl - vx * 1.13, z - uz * dl - vz * 1.13], [x - ux * dl + vx * 1.13, z - uz * dl + vz * 1.13]]; };
       const separes = (A, B) => { for (const R of [A, B]) for (let k = 0; k < 4; k++) { const ax = -(R[(k + 1) % 4][1] - R[k][1]), az = R[(k + 1) % 4][0] - R[k][0]; const pr = (S) => S.map((q) => q[0] * ax + q[1] * az); const p1 = pr(A), p2 = pr(B); if (Math.max(...p1) < Math.min(...p2) || Math.max(...p2) < Math.min(...p1)) return true; } return false; };
       const vit = [], suites = new Map(), feuS = new Map(), tempsS = new Map(), pires = []; let paires = 0, chev = 0, croisiere = null, publie = false;
-      const t0 = performance.now();
+      const racines = {}, fineS = new Map();
+      const t0 = performance.now(), f0 = g.renderer.info.render.frame;
       let arrets = 0, progressifs = 0, secs = 0;
+      // UN ARRÊT PART D'UNE ALLURE (banc-lot3). Les deux arrêts « secs » de la
+      // sonde étaient des voitures de file qui RAMPAIENT à 3,3 b/s et
+      // s'arrêtaient d'un relevé à l'autre — un quart de bloc, invisible. Le
+      // verdict du feu juge les arrêts depuis cinq blocs par seconde (18 km/h,
+      // un arrêt d'un bloc un quart en confort) ; l'ancien code roulait à cinq
+      // au plus (v372), il n'en donne donc pas, et le verdict le dit.
+      const DEPUIS = mode === 'feu' ? 5 : 3;
+      // et il FINIT sous un bloc par seconde dans la fenêtre du feu : depuis
+      // cinq, un arrêt complet n'arrivait que 0 à 1 fois en 90 s (sonde), un
+      // freinage jusqu'au pas d'homme 2 à 4 fois — c'est le même freinage.
+      const ARRET = mode === 'feu' ? 1 : 0.3;
       const compter = () => {
         arrets = 0; progressifs = 0; secs = 0; pires.length = 0;
         for (const [cle, s] of suites) for (let k = 0; k < s.length; k++) {
-          if (s[k] >= 0.3) continue;
-          let j = k - 1; while (j >= 0 && s[j] < 3 && s[j] >= 0.3) j--;
+          if (s[k] >= ARRET) continue;
+          let j = k - 1; while (j >= 0 && s[j] < DEPUIS && s[j] >= ARRET) j--;
           // UN ARRÊT SEC SE JUGE EN DÉCÉLÉRATION, PAS EN NOMBRE DE RELEVÉS : au
           // portail une image peut durer deux secondes, et une voiture qui
           // freine à 3,5 b/s² passe de 13 à 0 entre deux relevés sans piler
@@ -3313,15 +3325,27 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
           // recollée au plancher en une image — corrigé dans vehicules.js,
           // mesuré par `sonde-feu-image.cjs` (5 secs sur 9 arrêts sur
           // `origin/main`, 0 sur 12 ici).
-          if (j >= 0 && s[j] >= 3 && feuS.get(cle).slice(j, k + 1).every((f) => f === 1)) {
-            const ts = tempsS.get(cle), dec = s[j] / Math.max(1e-3, (ts[k] - ts[j]) / 1000);
+          if (j >= 0 && s[j] >= DEPUIS && feuS.get(cle).slice(j, k + 1).every((f) => f === 1)) {
+            const ts = tempsS.get(cle), dec = (s[j] - s[k]) / Math.max(1e-3, (ts[k] - ts[j]) / 1000);
             arrets++; if (dec <= 10) progressifs++; else { secs++; pires.push(+dec.toFixed(1)); }
           }
-          while (k < s.length && s[k] < 0.3) k++;
+          while (k < s.length && s[k] < ARRET) k++;
+        }
+      };
+      // ON FAIT LE VIDE DES PASSANTS (banc-lot3, l'idiome v284 et v371). Depuis
+      // qu'ils traversent (v371, v402), presque toute voiture lente de ce
+      // quartier est retenue par un piéton : sur deux fenêtres de 90 s,
+      // 736 et 1 285 relevés retenus par un piéton contre 40 et 26 par un feu,
+      // et ZÉRO arrêt au feu (`racines`). Ce verdict éprouve le feu ; on écarte
+      // les passants à chaque relevé, la rue garde ses feux et ses voitures.
+      const viderLesPassants = () => {
+        for (const site of (g.passants && g.passants.sites) || []) for (const h of site.peuple || []) {
+          if (h && h.pos && Math.hypot(h.pos.x - g.player.pos.x, h.pos.z - g.player.pos.z) < 250) h.pos.set(P.x + 4000, h.pos.y, P.z + 4000);
         }
       };
       while (performance.now() - t0 < 90000) {
         await dodo(100);
+        if (mode === 'feu') viderLesPassants();
         const tout = [];
         g.vehicules.etat().forEach((c, ci) => {
           if (!c.routier || c.nom !== 'voiture') return;
@@ -3334,7 +3358,28 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
             // ce qui la retient (`causes`, v372) : un arrêt AU FEU se juge seul ;
             // l'ancien code ne le publie pas, et tout arrêt y compte
             const ts = tempsS.get(k) || []; ts.push(performance.now()); tempsS.set(k, ts);
-            const fs = feuS.get(k) || []; fs.push(Array.isArray(c.causes) && c.causes.length ? c.causes[p[3]] : 1); feuS.set(k, fs);
+            // LA CAUSE RACINE (banc-lot3). `causes` vaut 1 pour « un feu OU LA
+            // FILE d'un feu », et une file est légitime derrière un feu,
+            // l'enfant, un piéton ou un train (v395) : la voiture qui suit une
+            // voiture qui a PILÉ devant un piéton était comptée « au feu », et
+            // piler y est voulu. Mesuré (`sonde-rue-feu.cjs`, trois minutes) :
+            // tous les arrêts du témoin étaient des voitures de file —
+            // `file-feu<pieton`, `file-feu<feu`, `file-feu<voiture-feu`. On
+            // remonte la file jusqu'à ce qui la retient, et seul un FEU au bout
+            // fait un arrêt au feu. L'ancien code ne publie pas `diagVoiture` :
+            // tout arrêt de cause 1 y compte, comme avant.
+            let cause = Array.isArray(c.causes) && c.causes.length ? c.causes[p[3]] : 1;
+            if (mode === 'feu' && cause === 1 && v < 6 && g.vehicules.diagVoiture) {
+              let d = g.vehicules.diagVoiture(ci, p[3]), n = 0;
+              while (d && d.cause && d.cause.startsWith('file') && d.bloquant && n++ < 12) {
+                const [bc, bi] = d.bloquant.split(':').map(Number); d = g.vehicules.diagVoiture(bc, bi);
+              }
+              const racine = d ? d.cause : null;
+              const fn = fineS.get(k) || []; fn[(suites.get(k) || []).length - 1] = (n ? n + '×file<' : '') + racine; fineS.set(k, fn);
+              racines[racine || '-'] = (racines[racine || '-'] || 0) + 1;
+              if (racine !== 'feu') cause = 2;
+            }
+            const fs = feuS.get(k) || []; fs.push(cause); feuS.set(k, fs);
             tout.push(p);
           }
         });
@@ -3343,14 +3388,40 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
           paires++;
           if (!separes(rect(tout[i][0], tout[i][1], tout[i][2], 2.2), rect(tout[j][0], tout[j][1], tout[j][2], 2.2))) chev++;
         }
-        if (vit.length > 1500 && paires >= 60 && (performance.now() - t0) > 20000) { compter(); if (arrets >= 2) break; }
+        // l'allure n'attend pas d'arrêt : ses verdicts n'en jugent pas ; le feu
+        // attend deux arrêts au feu, quatre-vingt-dix secondes au plus
+        if (mode === 'feu') { if ((performance.now() - t0) > 30000) break; }
+        else if (vit.length > 1500 && paires >= 60 && (performance.now() - t0) > 20000) break;
       }
       compter();
+      // LE FREINAGE AU FEU, PAS À PAS (banc-lot3). Un arrêt complet depuis une
+      // allure n'arrive que 0 à 2 fois en 90 s (sonde) : attendre l'arrêt est
+      // un tirage. On juge chaque PAIRE de relevés consécutifs où une voiture
+      // retenue par un feu perd de la vitesse depuis trois blocs par seconde au
+      // moins : piler, c'est en perdre plus de dix par seconde entre deux
+      // relevés. Des centaines de paires par fenêtre : la situation a lieu.
+      let pasFeu = 0, pireFeu = 0, pirePas = null;
+      if (mode === 'feu') for (const [cle, s] of suites) {
+        const ts = tempsS.get(cle), fs = feuS.get(cle);
+        for (let k = 1; k < s.length; k++) {
+          if (fs[k] !== 1 || s[k - 1] < 3 || s[k] >= s[k - 1]) continue;
+          pasFeu++;
+          const dec = (s[k - 1] - s[k]) / Math.max(1e-3, (ts[k] - ts[k - 1]) / 1000);
+          if (dec > pireFeu) { pireFeu = dec; pirePas = [cle, s[k - 1], s[k], Math.round(ts[k] - ts[k - 1]), (fineS.get(cle) || [])[k] || null]; }
+        }
+      }
       vit.sort((a, b) => a - b);
       const q = (f) => (vit.length ? +vit[Math.floor(f * (vit.length - 1))].toFixed(1) : null);
       return { publie, croisiere, releves: vit.length, mediane: q(0.5), p90: q(0.9), arrets, progressifs, secs, pires,
-        paires, chev, taux: paires ? +(100 * chev / paires).toFixed(1) : null, secondes: Math.round((performance.now() - t0) / 1000) };
-    });
+        paires, chev, taux: paires ? +(100 * chev / paires).toFixed(1) : null, secondes: Math.round((performance.now() - t0) / 1000),
+        // la cadence et ce qui retient la rue (banc-lot3) : « la rue ne roule
+        // pas » et « la page ne rend pas » ne se confondent plus
+        images: g.renderer.info.render.frame - f0, racines, pasFeu, pireFeu: +pireFeu.toFixed(1), pirePas };
+    }, mode);
+    const allure = await mesurerLaRue('allure');
+    // le feu dans SA fenêtre : les passants écartés changeraient le taux de
+    // voitures l'une dans l'autre de la fenêtre d'à côté (3 et 7 % mesurés)
+    const rueAuFeu = await mesurerLaRue('feu');
     // 40 km/h en ville, 50 sur une avenue : la croisière d'une avenue à
     // 12 blocs par seconde au moins (43 km/h, la limitation et le conducteur
     // le plus lent, −8 %) ; et ce que font les voitures visibles, freinages et
@@ -3362,7 +3433,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('la rue roule à l\'allure d\'une ville — cinquante sur une avenue',
       allure.publie && allure.croisiere >= 12 && allure.releves >= 500 && allure.p90 >= 6.5, JSON.stringify(allure));
     verifier('et au feu, la voiture freine sur plusieurs relevés au lieu de piler',
-      allure.arrets >= 1 && allure.secs === 0, JSON.stringify(allure));
+      rueAuFeu.pasFeu >= 20 && rueAuFeu.pireFeu <= 10, JSON.stringify(rueAuFeu));
     // La barre est un TAUX : moins d'une paire examinée sur vingt-cinq (4 %),
     // sur au moins soixante paires — mesuré 0 à 3,7 % ici.
     verifier('et deux voitures ne sont jamais l\'une dans l\'autre — en taux, sur les paires examinées',
@@ -4355,7 +4426,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       });
       await patienter(2000);
       const s0 = { ms: g.statsMaillage.principalMs, distants: g.statsMaillage.distants, locaux: g.statsMaillage.locaux };
-      const t0 = performance.now(), x0 = g.player.pos.x;
+      const t0 = performance.now(), x0 = g.player.pos.x, f0 = g.renderer.info.render.frame;
       // ON ATTEND LE RÉSULTAT — DES BLOCS PARCOURUS — BORNÉ, JAMAIS UNE DURÉE
       // (v270, v272, quatrième famille). Huit secondes de MONTRE ne sont pas
       // huit secondes de JEU : `dt` est borné à un vingtième, donc à une demi-
@@ -4382,6 +4453,14 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const dt = (performance.now() - t0) / 1000;
       const out = { worker: g.maillageDistant, parcouru: Math.round(g.player.pos.x - x0),
         secondes: +dt.toFixed(1), atteint: g.player.pos.x - x0 >= CIBLE,
+        // LA CADENCE DANS LE MESSAGE (banc-lot3). Au portail de la v430 l'avion
+        // n'avait fait que dix blocs en 47 s : une page quasi figée, pas un
+        // monde qui se maille mal. Mesuré (`sonde-vol-paris.cjs`) : seule, cette
+        // page rend 4,2 à 5,6 images par seconde et vole 597 à 789 blocs en
+        // 30 s ; avec une page EN JEU à côté, 3,0 images et 408 blocs. Depuis
+        // que `tab` est mise de côté (v440), rejouée seule : 252 blocs en
+        // 12,8 s. Un rouge futur dit tout de suite s'il vient de la cadence.
+        imagesParSeconde: +((g.renderer.info.render.frame - f0) / dt).toFixed(2),
         msParSeconde: Math.round((g.statsMaillage.principalMs - s0.ms) / dt),
         distants: g.statsMaillage.distants - s0.distants, locaux: g.statsMaillage.locaux - s0.locaux };
       let compares = 0, differents = 0;

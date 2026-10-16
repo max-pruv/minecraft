@@ -62,6 +62,40 @@ function verifier(nom, ok, detail = '') {
   const nuageRelais = await servirLeNuage(9721);
   const AVEC_NUAGE = { portNuage: 9721 };
   try {
+    // --- L'INVITÉ NE FRAPPE QU'APRÈS AVOIR POSÉ SON CURSEUR (banc-lot3) -------
+    //
+    // La famille du nuage rougissait une fois sur trois DES DEUX CÔTÉS :
+    // « ❌ Personne n'a répondu dans ce monde ». Ce n'était pas l'attente : le
+    // bus de l'invité écrivait son `nuage-coucou` pendant qu'il lisait encore
+    // le dernier numéro du relais (`_amorcer`), et la réponse d'un hôte rapide
+    // tombait DERRIÈRE le curseur posé ensuite — jamais lue. Mesuré sous node
+    // (`sonde-relais-amorce.mjs`, latences tirées de 20 à 600 ms) : 6 perdues
+    // sur 100 avant, 0 sur 100 après. Ici la même situation, PROVOQUÉE (v233) :
+    // la lecture du dernier numéro prend 600 ms, l'hôte relève sa boîte à
+    // 200 ms. Le vrai `BusNuage`, un relais en mémoire.
+    {
+      const { BusNuage } = await import('../src/relaisnuage.js');
+      const rows = []; let seq = 0; let lent = false;
+      const cloud = { configured: true,
+        async relaisLire(c, apres = 0, lim = 200) { await dormir(10); return rows.filter((r) => r.code === c && r.id > apres).slice(0, lim); },
+        async relaisDernier(c) { await dormir(lent ? 600 : 10); const r = rows.filter((x) => x.code === c); return r.length ? r[r.length - 1].id : 0; },
+        async relaisEcrire(c, de, vers, msg) { await dormir(10); rows.push({ id: ++seq, code: c, de, vers, msg }); },
+        async relaisNettoyer() {} };
+      const hoteBus = new BusNuage(cloud, 'amorce', 'hote', {});
+      hoteBus.surPair = (c) => c.send({ t: 'hello', name: 'Hote' });
+      hoteBus.demarrer(); await dormir(100);
+      lent = true;
+      const inviteBus = new BusNuage(cloud, 'amorce', 'invite', {});
+      inviteBus.demarrer();
+      let recu = false;
+      inviteBus.connecter('hote').on('data', (m) => { if (m && m.t === 'hello') recu = true; });
+      await dormir(200); await hoteBus.relever();       // l'hôte répond pendant l'amorce
+      const t0 = Date.now(); while (!recu && Date.now() - t0 < 4000) await dormir(50);
+      hoteBus.arreter(); inviteBus.arreter();
+      verifier('par le nuage, la réponse d\'un hôte rapide n\'est pas perdue derrière le curseur de l\'invité',
+        recu, `${rows.length} message(s) au relais : ${JSON.stringify(rows.map((r) => [r.id, r.de, r.msg && r.msg.t]))}`);
+    }
+
     // --- à trois, tout le monde se voit ---------------------------------------
     // Les invités ne sont pas reliés entre eux : leurs positions transitent par
     // l'hôte. C'est le chemin le plus fragile, donc celui qu'on ouvre.
