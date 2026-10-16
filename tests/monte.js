@@ -5578,12 +5578,6 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       verifier('le jeu ne redemande pas le nom de la carte graphique à chaque morceau franchi',
         appels.franchis >= 5 && appels.n === 0, JSON.stringify(appels));
     }
-    // ET `ciel` SE FERME APRÈS SON DERNIER USAGE (banc-intermittents). Elle
-    // restait EN JEU, à la distance de l'iPad, jusqu'à la fin de la suite :
-    // près de quatre cœurs pris à côté de chaque témoin qui suit — les trois
-    // quarts de `monte.js` (`sonde-voisine-de-cote.cjs`).
-    await ciel.close();
-    await banc.ramener(tab);
 
     // À L'ARRIVÉE, LE FIL PRINCIPAL N'ENGENDRE PAS LE MONDE (v436). Le worker
     // rend les morceaux autour de l'enfant ; les passants qu'on pose
@@ -5642,6 +5636,13 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       verifier('les passants de la ville d\'arrivée se posent quand le monde est là : ni en attente, ni dans le vide, ni dans un mur',
         arr.passants >= 6 && arr.attente === 0 && arr.enLAir === 0 && arr.dedans === 0, JSON.stringify(arr));
     }
+
+    // ET `ciel` SE FERME APRÈS SON DERNIER USAGE (banc-intermittents). Elle
+    // restait EN JEU, à la distance de l'iPad, jusqu'à la fin de la suite :
+    // près de quatre cœurs pris à côté de chaque témoin qui suit — les trois
+    // quarts de `monte.js` (`sonde-voisine-de-cote.cjs`).
+    await ciel.close();
+    await banc.ramener(tab);
 
     // UN AVION DÉCOLLE DE SA PISTE, ET IL S'Y POSE (v261).
     //
