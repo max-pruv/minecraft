@@ -453,7 +453,7 @@ const BLOCS = 40000;
       surPlace.changed === false && (surPlace.bouges || []).length === 0,
       JSON.stringify(surPlace));
 
-    // ---- UN GARAGE SUR UNE PENTE (v455) ------------------------------------
+    // ---- UN GARAGE SUR UNE PENTE (v470) ------------------------------------
     //
     // La bibliothèque posait tout sur le point le plus bas de l'emprise : un
     // garage sur une pente avait son fond dans la colline, la pièce pleine de

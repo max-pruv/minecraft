@@ -131,7 +131,7 @@ export function fusionnerGarages(a, b) {
   return out;
 }
 
-// ---- la pose d'un bâtiment de la bibliothèque (v455) ---------------------
+// ---- la pose d'un bâtiment de la bibliothèque (v470) ---------------------
 //
 // UN BÂTIMENT DE PLAIN-PIED SE POSE AU NIVEAU DE SON SEUIL. La bibliothèque
 // posait tout sur le point le plus bas de l'emprise : juste pour un monument
@@ -188,7 +188,7 @@ export function planDePose(m, monde, cx, cz, quart = 0) {
   // bitume qui remplace le dessus du terrain est un « sol de ville » que le
   // sol continu (v308) raccorde au relief — sur une pente, il en lissait les
   // premiers rangs et laissait au bord du reste une lèvre de deux dixièmes de
-  // bloc où l'enfant à pied butait (sonde, v455). Posé dessus, tout le
+  // bloc où l'enfant à pied butait (sonde, v470). Posé dessus, tout le
   // plancher reste en cubes : une marche d'un bloc au seuil, que l'enfant
   // saute et que la voiture franchit.
   const y0 = sol + 1;

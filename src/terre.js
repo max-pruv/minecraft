@@ -285,6 +285,32 @@ const CLIMATS = [
   ['tropiques', 'kerala', [74, 8, 77, 8, 76.5, 12, 74.5, 15.5, 73, 18, 72.5, 17]],
   ['tropiques', 'bengale-assam', [88, 21.5, 92, 21, 97, 24, 95.5, 27.5, 92, 27, 89, 26]],
   ['tropiques', 'queensland', [143.5, -11, 145.5, -14.5, 146.5, -19, 145.5, -19, 144.5, -16, 142.5, -11]],
+  // LE CLIMAT MÉDITERRANÉEN (v469) : l'été sec qui jaunit l'herbe, le maquis,
+  // les oliviers et les pins parasols. Le pourtour de la Méditerranée (sud et
+  // est de l'Ibérie, Provence et Languedoc, Italie et ses îles, Grèce, côtes
+  // de l'Anatolie et du Levant, Maghreb au nord de l'Atlas), et les cinq
+  // autres régions du monde qui ont ce climat : la Californie, le Chili
+  // central, le Cap, le sud-ouest et le sud de l'Australie. En DERNIER : les
+  // déserts (Néguev, Mojave), la steppe d'Anatolie et le Karoo passent avant.
+  ['mediterranee', 'iberie', [-9.5, 37, -9.5, 40, -8, 41.5, -6, 40, -4, 40.5, -2, 41.5, 0, 41.5, 3.3, 42.3,
+    3.2, 41.8, 0, 39.5, -0.5, 38, -2, 36.5, -5, 36, -6.5, 36.8, -8, 36.9]],
+  ['mediterranee', 'provence', [3, 43.2, 3.5, 43.9, 5, 44.3, 6.5, 44.2, 7.6, 43.9, 7.6, 43.7, 6.5, 43, 5, 43.2, 4, 43.4]],
+  ['mediterranee', 'italie', [7.5, 43.8, 10, 44.1, 12.4, 44, 13.6, 43.6, 15, 42, 17, 41, 18.6, 40.2, 16.5, 37.5,
+    15.5, 36.5, 12, 36.5, 8, 38.8, 8, 41.3, 9.6, 41.3, 9.8, 43]],
+  ['mediterranee', 'grece', [19, 42, 20, 40.5, 22, 41, 24, 41, 26, 41.2, 27, 40.3, 26, 38, 28, 36.5, 26.5, 35,
+    23.5, 35, 21, 36.7, 19.3, 40]],
+  ['mediterranee', 'anatolie-levant', [26, 40.3, 28, 40.4, 29, 39, 29.5, 37.5, 32, 36.8, 34, 36.9, 36, 37, 37, 36.5,
+    36.5, 35.5, 35.8, 34, 35, 32.5, 34.4, 31.4, 34, 31.8, 34.6, 33.3, 35.5, 34.6, 35.8, 35.8, 34, 36.2, 32, 36,
+    30, 36, 28, 36.5, 26, 38]],
+  ['mediterranee', 'maghreb', [-9.8, 30.5, -9.5, 33, -6, 35.8, -2, 35.2, 1, 36.6, 6, 37, 9, 37.3, 11.1, 37.1,
+    10.5, 35.5, 10, 34, 8, 34.5, 3, 34.8, -1, 34.5, -5, 32.5, -8, 31]],
+  ['mediterranee', 'californie', [-124, 40.5, -122, 40.5, -121.5, 38.5, -119.5, 36.5, -118, 34.7, -116.5, 33.8,
+    -116.5, 32.5, -117.2, 32.5, -118.5, 34, -120.6, 34.5, -122, 36.5, -123, 38, -124, 40]],
+  ['mediterranee', 'chili-central', [-72, -30, -70.3, -30, -70, -33, -70.5, -36, -72.5, -37.5, -73.5, -37, -72.2, -33, -71.6, -30]],
+  ['mediterranee', 'cap', [17.8, -31.5, 19.5, -32.5, 19.8, -34, 22, -34.2, 23, -33.9, 21, -33.6, 19.5, -33.5, 19, -31.8]],
+  ['mediterranee', 'australie-sud-ouest', [114.8, -28, 116.5, -29, 117.5, -31.5, 119, -33.5, 118, -35, 116, -35,
+    115, -34.3, 115.5, -32, 114.8, -29.5]],
+  ['mediterranee', 'adelaide', [137.5, -33, 139, -33.2, 139.5, -35, 138.5, -35.8, 136.5, -35.8, 137.5, -34.5]],
 ];
 const FORMES_CLIMAT = CLIMATS.map(([climat, nom, pts]) => {
   let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
@@ -348,10 +374,13 @@ export function climatCertain(lat, lon, marge) {
 // Les tropiques humides (v349) → (78, 150, 60), un vert profond — plus saturé
 // en capture, il virait au vert fluo —
 // et le feuillage (40, 120, 32).
-export const CLIMATS_TEINTES = ['', 'toundra', 'taiga', 'steppe', 'tropiques'];
-export const INDICE_CLIMAT = { toundra: 1, taiga: 2, steppe: 3, tropiques: 4 };
-export const TEINTE_HERBE = [null, [1.21, 0.74, 1.29], [0.62, 0.70, 1.03], [1.71, 0.98, 1.48], [0.75, 0.89, 0.97]];
-export const TEINTE_FEUILLES = [null, [0.85, 0.8, 1.0], [0.63, 0.71, 1.16], [1.25, 0.95, 1.05], [0.74, 1.03, 0.84]];
+// Le climat méditerranéen (v469) → (165, 150, 72), l'herbe sèche de l'été,
+// plus olive que la paille de la steppe ; le feuillage gris-vert des
+// oliviers (110, 128, 90) — à (82, 110, 62) il sortait presque noir en capture.
+export const CLIMATS_TEINTES = ['', 'toundra', 'taiga', 'steppe', 'tropiques', 'mediterranee'];
+export const INDICE_CLIMAT = { toundra: 1, taiga: 2, steppe: 3, tropiques: 4, mediterranee: 5 };
+export const TEINTE_HERBE = [null, [1.21, 0.74, 1.29], [0.62, 0.70, 1.03], [1.71, 0.98, 1.48], [0.75, 0.89, 0.97], [1.59, 0.89, 1.16]];
+export const TEINTE_FEUILLES = [null, [0.85, 0.8, 1.0], [0.63, 0.71, 1.16], [1.25, 0.95, 1.05], [0.74, 1.03, 0.84], [2.04, 1.1, 2.37]];
 // LES MÊMES, POUR LA COULEUR DE SOMMET DU MONDE PROCHE. three tient une
 // couleur de sommet pour LINÉAIRE et décode la tuile sRGB avant de les
 // multiplier : un facteur 0,62 posé tel quel n'assombrit l'écran que de 0,80.

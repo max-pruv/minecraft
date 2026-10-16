@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v455 — Un garage posé sur une pente ne s'enterre plus
+## v470 — Un garage posé sur une pente ne s'enterre plus
 
 **Pourquoi.** La bibliothèque pose tout sur le point le plus bas de l'emprise :
 juste pour un monument, fatal pour un garage sur une pente. Le fond du garage
@@ -50,6 +50,404 @@ blocs dans la pièce (les neuf de l'établi).
 Ce qui reste, déclaré : la marche d'un bloc au seuil (un plancher à fleur du
 sol est lu comme un sol de ville par le sol continu, qui y laisse une lèvre de
 deux dixièmes) et la place invisible d'un garage démoli.
+## v469 — Le soleil méditerranéen : herbe sèche, oliviers et pins parasols
+
+**Pourquoi.** Après les déserts, la toundra, la taïga, les steppes et les
+forêts tropicales, la campagne autour de la Méditerranée restait celle de la
+Normandie : prairie vert vif, chênes et sapins en Andalousie, en Toscane, en
+Grèce et en Californie. C'est le climat que la famille connaît le mieux, et
+celui qui se voyait le plus faux.
+
+**Ce que ça change.** Onze régions réelles (le pourtour de la Méditerranée,
+la Californie, le Chili central, le Cap, le sud-ouest et le sud de
+l'Australie) ont l'herbe dorée de l'été sec et un pays ouvert de maquis : des
+oliviers trapus au feuillage gris-vert et des pins parasols, haut fût et
+couronne plate — deux arbres neufs, originaux. La carte et le paysage
+lointain prennent la même couleur. Le relief ne bouge pas d'un bloc ; là où
+un enfant a bâti avant la règle, les arbres d'avant restent.
+
+**Ce qui le prouve.** Un témoin neuf de `plafond.js` lit seize morceaux en
+Andalousie, en Toscane, dans le Péloponnèse et en Californie contre le même
+monde sans la règle : 0 bloc de forme différente, 131 oliviers et 72 pins
+parasols pour 203 arbres, 7 688 sommets d'herbe teints sur 12 116 ; sur
+`origin/main` zéro olivier, zéro teinte (rouge). Le Kansas reste identique
+(217 arbres des deux côtés, 0 teinte). La teinte du feuillage a été jugée en
+capture : réglée d'abord à (82, 110, 62), elle sortait presque noire. L'empreinte des
+490 morceaux se relève (Rome, Marrakech et San Francisco ont leur campagne
+méditerranéenne) : sans les contours méditerranéens, elle rend celle de la
+v468 au bit près.
+
+---
+
+## v468 — L'Orange et l'Argent dans le tunnel de la Bleue
+
+**Pourquoi.** Le métro de Washington n'avait que quatre lignes sur six. Dans
+la vraie ville, l'Orange et l'Argent partagent le tunnel de la Bleue de
+Rosslyn à Stadium-Armory : trois couleurs sur les mêmes rails. Le risque, en
+les ajoutant, était connu (v305) : deux rames sur la même voie se traversent
+si rien ne les espace — mesuré à la sonde, 1 191 relevés de contact sur un
+tour si les tours n'ont pas la même durée.
+
+**Ce que ça change.** Sur le tronc Eastern Market → Foggy Bottom, une rame
+passe toutes les trente-trois secondes de jeu, et ce n'est plus toujours une
+Bleue : Bleue, Orange, Bleue, Argent, Bleue, Orange. Les deux nouvelles
+lignes reprennent le tracé de la Bleue point pour point (même cote, mêmes
+quais), puis ont leur propre tunnel sous le Potomac vers Rosslyn, jusqu'au
+bord de l'emprise. Potomac Avenue (à l'est) et Rosslyn (en Virginie) sont
+hors de la ville : leur dernier quai est Foggy Bottom, et c'est dit dans le
+code. Ce qui les espace est la grille horaire : les trois lignes ont un tour
+de la même durée (199,3 s) — la branche la plus courte attend la différence
+au bout de son tunnel, là où rien d'autre ne roule — et chaque rame a sa
+place sur le tour, au sixième près.
+
+**Ce qui le prouve.** Trois témoins neufs dans `washington.js` : l'Orange et
+l'Argent roulent ; sur un tour d'horloge entier, par la grille du jeu, wagon
+par wagon, aucune rame de la famille n'entre dans une autre (rouge sur
+l'ancien code faute de lignes, et rouge à la sonde sans l'égalisation des
+tours : 1 191 contacts) ; et le trajet de l'enfant — sur le quai de
+Smithsonian, une rame Orange arrive, on monte, elle nous emmène à la station
+suivante, on descend. L'empreinte des 490 morceaux est identique à
+`origin/main`. Déclaré dans `TASKS.md` : au-delà du cercle de 187 blocs, le
+monde ne creuse pas le métro (déjà vrai pour la Bleue en Virginie, mesuré sur
+`origin/main` : les quais d'Arlington Cemetery et de Pentagon sont de la
+pierre) — le tunnel de Rosslyn y est donc dans la roche aussi.
+
+---
+
+## v467 — Les passages piétons des villes bâties à la main
+
+**Pourquoi.** Les passages peints n'existaient que dans les villes engendrées
+(dans la tuile pour les trames alignées, en géométrie pour les trames en biais,
+v421) et à Paris. Londres, Nice, Lille, San Francisco et Washington — dont les
+rues sont des avenues nommées tracées sur le vrai plan, sans trame — n'en
+avaient aucun : on n'y traversait qu'aux feux, 1 à 3 fois par minute au centre
+de Londres.
+
+**Ce que ça change.** Chaque croisement de deux avenues porte son passage à
+larges bandes sur chacune des deux avenues, à la règle de la v421 (la bande
+commence 0,4 bloc après la chaussée croisée, mesurée le long de l'avenue, et
+fait 1,7 bloc ; les bandes de cinquante centimètres courent dans l'axe de la
+circulation). C'est de la géométrie du mailleur — aucun bloc écrit, aucun
+appel de dessin de plus — et `passagePieton` lit la même règle : les passants
+y traversent. Londres 138 bras de carrefour, Nice 37, Lille 25, San Francisco
+54, Washington 150. Paris garde son marquage.
+
+**Ce qui le prouve.** Deux témoins neufs, rouges sur l'ancien code :
+`plafond.js` maille quarante-neuf morceaux au centre de chaque ville avec et
+sans (`passagesVilles: false`) — Londres +11 033 sommets, Nice +4 375, Lille
++3 139, San Francisco +2 046, Washington +4 812, Paris et Rome 0, les blocs
+identiques ; `monte.js` pose des passants au bord d'un passage de Londres loin
+de tout feu et compte qui traverse dessus. L'empreinte des 490 morceaux se
+garde par l'option de désarmement (`morceaux-temoin.mjs`). Les deux empreintes
+du relief sont intactes : rien n'est écrit dans le monde.
+## v466 — Paris pèse moins lourd sur la tablette
+
+**Pourquoi.** La couche de relief de Paris (façades, balcons, corniches)
+pesait jusqu'à onze mégaoctets par morceau dans les quartiers denses de
+l'ouest, et c'est elle qui a tué l'iPhone de Max en v299. Ce qui décide du
+poids, c'est le nombre de sommets. Mesuré par tuile sur les huit morceaux les
+plus lourds : 128 000 sommets de façades en moyenne, dont 85 000 de
+`pierre-lisse` (corniches, chaînages, appuis, balcons, ébrasements) — et UN
+SOMMET SUR SIX était le double exact d'un autre : deux quads du même plan qui
+se touchent (le mur autour d'une baie, le mur du bloc voisin, les deux bandes
+d'un ébrasement ou d'un châssis sur deux blocs) émettaient chacun leurs coins.
+
+**Ce que ça change.** Rien à l'écran, et c'est voulu : les sommets identiques
+sont soudés (`souderTampons`, facadeshd.js) et les triangles pointent sur le
+survivant. Mêmes triangles, mêmes valeurs, octet pour octet. La mémoire, elle,
+baisse : médiane 9,65 → 8,23 Mo, pire 11,37 → 10,08 Mo par morceau dense, soit
+15 % de détail en plus à budget égal (v299). Le prix : la soudure coûte au
+worker 14 à 20 ms par morceau détaillé (sur 150 à 200), seulement à portée de
+la couche HD.
+
+**Ce qui le prouve.** Deux témoins neufs dans `plafond.js` : le poids des huit
+morceaux les plus lourds, soudé contre `baiesSoudees: false` (rouge sur
+`origin/main`, où les deux pèsent pareil) ; et l'image — chaque coin de chaque
+triangle porte, bit à bit, les dix-huit mots d'avant (zéro écart sur 825 000
+coins). L'empreinte des 490 morceaux change (`4e5897ac…`) et se prouve par
+désarmement : avec `baiesSoudees: false`, elle rend la constante de la v357 au
+bit près. La sonde est `tests/sonde-baies.mjs`.
+
+---
+
+## v465 — Le viaduc de la Manche
+
+**Pourquoi.** Sur l'eau, la voie ferrée était une chaussée de pierre posée au
+ras des flots : l'Eurostar traversait la Manche sur une digue de deux cent
+quatre-vingts blocs, le Shinkansen la baie de Tokyo de même, et chaque rivière
+que croisait une ligne était barrée d'un mur plein. Mesuré sous l'Eurostar :
+zéro colonne d'eau sous la voie, le tablier à la cote de la surface.
+
+**Ce que ça change.** Une suite d'au moins trois pas d'eau sous l'axe est un
+viaduc : le tablier passe à quatre blocs au-dessus de la mer, une pile de
+pierre tous les dix blocs, et l'eau reste dessous. Le tablier est dessiné
+comme celui du pont de l'A1 (dessus de gravier, dessous, parapets) et porte
+l'enfant à la cote exacte des rails ; le train suit le même profil. Les dix-huit
+gares n'ont pas bougé d'un bloc ; à terre, la rampe qui monte au viaduc relève
+la voie de deux blocs au plus, à plus de 440 blocs de tout ce que les enfants
+ont bâti. `terrainHeight` n'a pas bougé : les deux empreintes du relief et
+celle des 490 morceaux sont identiques.
+
+**Ce qui le prouve.** Trois témoins neufs dans `plafond.js`, rouges sur la v464 :
+la Manche marchée colonne par colonne (1 521 colonnes d'eau libre et 159 de
+pile sur 1 680, contre zéro d'eau avant), le ruban et le contact sur chacun des
+240 pas (écart au rail 0), et les dix-huit gares comparées au profil d'avant
+(`viaducs(false)`). Captures avant/après : `tests/sonde-captures-viaduc.cjs`.
+
+---
+
+## v464 — Une mise à jour n'est plus comptée comme un plantage
+
+**Pourquoi.** Le journal de bord (v296) range le palier bas après deux
+plantages de suite, et `TASKS.md` soupçonnait depuis la v413 qu'une mise à
+jour en comptait un. Rejouée pour de vrai au banc — une version neuve publiée
+pendant la partie, l'application qui s'endort, revient et recharge — la
+mesure le confirme : la page qui part dit au revoir (`fermer('mise-a-jour')`),
+puis un `visibilitychange` pendant le déchargement la ROUVRE ; sa ligne reste
+dans la table des sessions, la page neuve la juge douteuse, puis morte sept
+secondes plus tard. Compteur 0 → 1 à chaque mise à jour : deux mises à jour,
+et la tablette passait au palier bas sans avoir jamais planté.
+
+**Ce que ça change.** Une page qui a dit au revoir (au revoir, relance voulue
+par le jeu) ne se rouvre plus ; seul un retour du cache de navigation
+(`pageshow` persisté) la relève. Une mise à jour ne dégrade plus l'appareil.
+
+**Ce qui le prouve.** `tests/sonde-journal-maj.cjs` rejoue la vraie mise à
+jour et trace les fermetures de la page qui part : sur la v454, `rouvrir()`
+après `pagehide`, compteur 1 et « plantage-precedent confirmé » ; ici, 0. Un
+témoin neuf dans `maj.js` (« une mise à jour ne compte pas comme un
+plantage »), vérifié rouge, remède désarmé ; `maj.js` devient gardien de
+`src/journal.js`.
+
+---
+
+## v463 — L'usine se visite : chaque poste dit ce qu'on y fait
+
+**Pourquoi.** La Giga-usine d'Austin (v168) a sa chaîne : la voiture y passe
+de la presse à la carrosserie, à la peinture, à l'assemblage et au contrôle,
+puis on la conduit sur le parking. Mais rien ne disait à l'enfant ce qui se
+passe à chaque poste — des machines, des robots, un tunnel, sans un mot.
+
+**Ce que ça change.** En entrant à pied dans un poste du hall, un bandeau dit,
+en une phrase pour un enfant de sept ans, ce qu'on y fait : la presse qui
+frappe la tôle comme un emporte-pièce, les robots qui soudent, la voiture
+grise qui ressort en couleur, le « mariage » de la batterie et de la caisse,
+le contrôle avant le parking. Une fois par entrée, jamais en vol. Rien d'autre
+ne bouge : ni le bâtiment, ni le sol, ni la conduite.
+
+**Ce qui le prouve.** Trois témoins. Dans `plafond.js`, sous node : les cinq
+postes ont leur panneau (25 mots au plus) et le poste se reconnaît sous les
+pieds, pas dehors ni en vol — rouge sur l'ancien code (aucun panneau) ; et le
+trajet à pied sur le bâtisseur lui-même, de la porte ouest à la porte est par
+chaque poste (vert des deux côtés à dessein : il garde la visite). Dans
+`monte.js`, l'enfant posé à pied dans le hall, puis devant le tunnel, lit le
+bandeau de la peinture à l'écran. Les deux empreintes du relief sont
+intactes : aucun bloc écrit, aucun repère déplacé.
+
+---
+## v462 — Un mauvais atterrissage casse l'avion
+
+**Pourquoi.** Max : « un avion devrait se crasher s'il atterrit mal ».
+Jusqu'ici tout toucher finissait en freinage : un piqué pleins gaz, un posé
+train rentré dans un champ, un avion dans les arbres ou dans la mer — rien ne
+se passait, et rien n'apprenait à bien se poser.
+
+**Ce que ça change.** Un avion qui touche trop vite (au-delà de sa vitesse
+d'atterrissage), trop fort à la verticale, sur le ventre hors d'une piste, sur
+un terrain trop accidenté, dans l'eau, dans les arbres ou contre un bâtiment
+devient une épave : fumée, flammes, carcasse hors service. L'enfant n'a rien —
+il est déposé debout à côté, en sécurité, et un bandeau dit ce qui s'est passé
+et quoi faire la prochaine fois (sortir le train, ralentir, laisser ✈️ se
+poser). Un atterrissage correct sur une piste ou sur un champ plat ne casse
+rien, et un posé assisté par ✈️ sur une piste ne casse jamais. L'ami qui
+joue avec toi voit désormais ton avion, et son épave en feu.
+
+**Ce qui le prouve.** La règle est pure (`jugerToucher`, degats.js) et ses
+seuils vivent dans la fiche de chaque appareil (`toucherMax`, `chuteMax`) ;
+un témoin de `degats.js` la vérifie sous node cas par cas. Deux témoins de
+`monte.js` jouent le trajet de l'enfant — un piqué pleins gaz et un posé train
+rentré sur une dalle qui n'est pas une piste — et exigent l'épave en feu,
+l'enfant debout à côté, plus aux commandes, et le bandeau.
+
+## v461 — L'autoroute de Florence à Rome
+
+**Pourquoi.** L'Autostrada del Sole s'arrêtait à Florence et reprenait à
+Rome : Milan–Bologne (A1 Nord), Bologne–Florence (Autosole) et Rome–Naples
+(A1 Sud) existaient, mais pas le tronçon du milieu. C'était le dernier
+corridor instruit au tableau de `TASKS.md` qui n'était ni fait ni bloqué :
+l'axe direct est celui de la Frecciarossa, et Fiumicino est à son bout.
+
+**Ce que ça change.** Une autoroute de 1 217 blocs relie Florence à Rome, à
+l'est du rail d'un bout à l'autre. Elle sort de Florence vers l'est, contourne
+le massif des Apennins par l'est, descend la plaine au nord de Rome à l'est de
+l'aérodrome et entre dans la ville par une avenue de dix-huit blocs. Des
+voitures y roulent ; on peut désormais aller en voiture de Milan à Naples.
+
+**Ce qui le prouve.** Un témoin neuf dans `carteMonde.js` (rouge sur l'ancien
+code : pas de route, pas de convoi) : le convoi roule, aucune colonne
+d'emprise sur le rail, les deux entrées sur la rue sans bloc ni eau. Sous
+node, sur le vrai registre : 12 084 colonnes d'emprise, zéro sur un rail, un
+repère ou une autre route, zéro dans une ville ou dans la marge d'un
+aérodrome ; trois ponts, 76 traversées de pont sur 76 (toutes les routes),
+zéro trou aux culées sur 138 423 points, zéro trou au joint sur 19 890 ; la
+table des raccords courts inchangée (l'entrée de Florence par 32°, la
+première trouvée, roulait dans un anneau et l'aurait exigée) ; aucun tablier
+de ville creusé (plein est, le talus descendait sur un pont de l'Arno : le
+portail l'a dit, dix-huit pas, et la sortie est passée à −10°). Les deux
+empreintes du relief de `plafond.js` sont intactes : une route écrit des
+blocs, elle ne touche pas `terrainHeight`.
+
+---
+
+## v460 — Washington se raconte
+
+**Pourquoi.** La capitale est pleine d'histoires — pourquoi la ville est si
+basse, d'où viennent les cerisiers, pourquoi les avenues coupent la grille en
+diagonale, pourquoi Georgetown n'a pas de métro — et toutes vivaient dans les
+commentaires de `washington.js`. Un enfant de sept ans ne lit pas le code :
+rien de tout cela ne l'atteignait (dette « Ce que Washington a à apprendre »).
+
+**Ce que ça change.** En arrivant devant sept lieux (le Capitole, l'obélisque,
+le Lincoln Memorial, les cerisiers du Tidal Basin, la Maison-Blanche, Dupont
+Circle, Georgetown), un panneau de deux phrases s'affiche en haut de l'écran
+(`src/guides.js`). Une fois par visite : il faut s'éloigner pour qu'il
+repasse. Jamais deux d'un coup : neuf secondes de vraie vie entre deux
+panneaux. Les mêmes faits, vérifiés, deviennent quatorze questions de la
+Découverte (« Washington ») dans le quiz — rien n'est retiré au mode éducatif.
+
+**Ce qui le prouve.** Trois témoins neufs, rouges sur `origin/main` : la règle
+sous node (`washington.js` : un panneau en tournant au Lincoln, deux après une
+nouvelle visite, 9 000 ms entre deux lieux, aucun rayon qui en recouvre un
+autre) ; le trajet de l'enfant (`washington.js` : il marche jusqu'au Lincoln,
+le bandeau affiche son panneau une fois) ; la banque de questions
+(`parent.js` : quatre propositions distinctes par question, les faits des
+panneaux présents).
+
+---
+
+## v459 — La grande roue de Las Vegas domine la tour Eiffel du Strip
+
+**Pourquoi.** La dette des monuments plus bas que leur ville est soldée : plus
+une seule entrée `lot` dans `BAS_DECLARES` ni dans `VILLES_SANS_CIEL`, et le
+témoin de `plafond.js` le confirme (tout monument sous la médiane de ses
+immeubles est déclaré `vrai`). Restait l'inversion déclarée en v353 : la High
+Roller (167 m, la plus haute roue du monde) était un gabarit de seize blocs,
+sous la demi-tour Eiffel de l'hôtel Paris (165 m) à quarante-cinq. Le ciel de
+Las Vegas disait l'inverse du vrai.
+
+**Ce que ça change.** La High Roller a son bâtisseur (dans la boîte de son
+repère, qui ne bouge pas) : une roue de rayon neuf — une roue ne s'étire pas —
+sur sa gare d'embarquement, ses deux chevalets et ses cabines de verre, sommet
+à vingt-huit blocs. Le ciel de Las Vegas se comprime (`k` 0,25, le plus grand
+au centième qui garde l'ordre) : la demi-tour Eiffel descend à vingt-huit, le
+plancher de ses seize couches d'auteur, et le Luxor (107 m) reste dessous à
+quinze. Le monde d'avant garde le gabarit (`LANDMARKS_V317`).
+
+**Ce qui le prouve.** Un témoin d'ordre de `plafond.js` porte la High Roller :
+rouge sur l'ancien code (demi-tour Eiffel 45 > roue 16), vert ici (28 et 28).
+Les anneaux de voitures de Las Vegas et de toutes les villes sont identiques au
+bit près (empreinte comparée sous node), aucun bloc de la roue à hauteur de
+carrosserie sur un anneau ; le sol ne bouge pas. Captures de rue et du ciel.
+
+## v458 — On entre dans le Panthéon de Rome
+
+**Pourquoi.** « Intérieurs — les monuments se visitent » attendait dans
+`TASKS.md`, et hors de Paris et de Londres aucun monument ne s'ouvrait. Le
+Panthéon de Rome était un bloc plein : la rotonde remplie de pierre jusqu'à la
+coupole, et son portique posé sur une marche d'un bloc au-dessus de la place.
+Un enfant qui y marchait butait sur la façade.
+
+**Ce que ça change.** Le portique est de plain-pied avec la place, la porte
+s'ouvre dans l'axe entre les deux colonnes du milieu, et la rotonde est creuse :
+un dallage de marbre en damier, l'autel et sa niche dorée au fond, quatre
+édicules aux murs, et au-dessus la coque de la coupole avec son oculus ouvert
+sur le ciel. La silhouette, la boîte (6) et la hauteur (dix blocs, à la hauteur
+de ses voisins) ne changent pas ; le monde d'avant garde son gabarit
+(`LANDMARKS_V317`).
+
+**Ce qui le prouve.** Un témoin de `plafond.js` marche depuis la place,
+quatre blocs devant la boîte, de proche en proche (un sol plein, deux blocs
+d'air), et doit atteindre le centre de la rotonde, sous la voûte et l'oculus
+ouvert : vert ici (524 cases atteintes), rouge sur `origin/main` (le centre
+jamais atteint, le ciel fermé). Le repère se choisit par le disque de Rome :
+« Panthéon » est aussi à Paris. L'empreinte des 490 morceaux est intacte
+(938a330c…, le Panthéon n'y tombe pas), les deux empreintes du relief aussi.
+Captures dehors, dedans et sous l'oculus : `tests/sonde-captures-pantheon.cjs`.
+
+---
+
+## v457 — Une fenêtre par étage
+
+**Pourquoi.** Dans les villes engendrées — Rome, Berlin, Tokyo, Édimbourg et
+deux cent cinquante-cinq autres —, chaque baie était faite de DEUX blocs
+`ETAGE` empilés, et chacun porte une fenêtre entière : la façade dessinait
+deux fenêtres l'une sur l'autre par étage, de loin comme de près (couche HD).
+Mesuré sous node : 38 719 piles sur 98 187 lots lus, dans 259 villes sur 269.
+Paris a la réponse depuis la v301 — un niveau est trois bandes, une fenêtre.
+
+**Ce que ça change.** Les villes engendrées posent les bandes de Paris :
+l'allège et son appui, le bas de la baie, son haut et le linteau. Une fenêtre
+haute par étage, au lieu de deux petites. Dans la couche HD, les registres des
+autres villes gardent ce qu'ils avaient : pas de garde-corps de fer à Berlin
+ni à Tokyo, la guillotine et son rail à Manchester ou à Sydney, le linteau de
+pierre au-dessus. La forme des immeubles ne change pas d'un bloc : ce qu'un
+enfant a bâti contre une façade reste devant la même surface. Les façades
+détaillées pèsent un dixième de moins (Rome 0,65 → 0,58 Mo par morceau).
+
+**Ce qui le prouve.** Deux témoins neufs dans `plafond.js`, rouges sur la
+v452 : zéro pile d'ETAGE (38 719 avant), et la solidité de chaque couche de
+chaque lot identique avec et sans bandes. L'empreinte des 490 morceaux change
+(Rome, Marrakech, Tokyo) ; bandes désarmées (`reglageBaies.bandes`), elle rend
+la constante de la v452 au bit près.
+
+---
+
+## v456 — Les essais du jeu se lancent à tous les coups
+
+**Pourquoi.** Une suite d'essai (`realisme.js`) était notée « morte au clic
+« Jouer », intermittente » depuis la v385. La cause avait été trouvée en v427
+— le banc attendait deux images identiques avant de cliquer, sur un accueil
+qui rend une image toutes les quatorze secondes — mais l'entrée restait
+ouverte, et personne n'avait revérifié depuis.
+
+**Ce que ça change.** Rien à l'écran : c'est la boîte à outils des essais.
+L'entrée est close sur mesure, et l'on sait que le témoin du bouton « Jouer »
+voit vraiment un bouton caché.
+
+**Ce qui le prouve.** `realisme.js` rejouée SEULE trois fois sur la v454 :
+19/19 verts à chaque passage, clic en 6, 28 et 14 ms. Sur une copie où un voile
+recouvre « Jouer », le verdict « actif et rien ne le recouvre » rougit
+(`dessus: false`) et la suite va quand même au bout (18 autres verts) : le
+témoin peut rougir sans s'effondrer. Portail : seul rouge `maj.js` « le loader
+ne s'efface qu'une fois les corps et les programmes prêts », intermittence déjà
+déclarée des deux côtés dans `TASKS.md` ; la livraison ne touche pas au code.
+
+---
+
+## v455 — Les monuments de Paris sont vérifiés jusqu'au sol
+
+**Pourquoi.** `TASKS.md` déclarait depuis la v335 « vingt-quatre cubes du
+parvis de Notre-Dame » qui dépassaient de son modèle en relief, à hauteur
+d'enfant, et le témoin des modèles étirés ne regardait qu'au-dessus de trois
+blocs. Mesuré monument par monument (`sonde-monuments-hd.cjs`) : les huit
+monuments de Paris n'avaient plus un seul cube au-dessus d'un enfant, et les
+vingt-quatre du parvis n'étaient pas des cubes. Le parvis est posé à la couche
+du bloc de surface ; ses flancs touchent le sol de la ville (zéro voisine
+d'air sur vingt-neuf dans le monde engendré). La sonde jugeait l'exposition
+contre les seules cellules du bâtisseur, et comptait ce sol comme de l'air.
+
+**Ce que ça change.** Rien à l'écran : aucun modèle n'avait à être recalé,
+et l'enfant ne voit aucun cube dépasser d'un monument de Paris. La sonde et
+le témoin lisent désormais le monde sous la hauteur d'un enfant, et le
+témoin descend jusqu'au sol : un cube qui dépasserait à hauteur d'enfant ne
+passerait plus inaperçu.
+
+**Ce qui le prouve.** Le témoin de `plafond.js` rend 11 922 cellules de flanc,
+dont 1 079 à hauteur d'enfant, toutes couvertes. Il est rouge quand on retire
+la façade et les murs de la nef du modèle de Notre-Dame (314 cubes, dont 6 à
+hauteur d'enfant), et lu sans le monde il rend exactement les vingt-quatre du
+parvis. Les deux empreintes du relief sont intactes (aucun fichier de `src/`
+qui bâtit n'a changé).
 
 ---
 
