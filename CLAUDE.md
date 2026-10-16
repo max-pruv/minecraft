@@ -770,6 +770,103 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Le viaduc de la Manche (v465) — un ouvrage de voie se déclare au contact, et un profil relevé se borne aux gares
+
+Deux règles.
+
+- **UN OUVRAGE FERROVIAIRE EST LE PONT DE L'A1, PIÈCE POUR PIÈCE.** Une suite
+  d'au moins `VIADUC_MIN` pas d'eau sous l'axe porte `viaduc` dans le profil
+  (`profilDe`) ; `voieEn` rend `ouvrage`, `corridorEn` le transmet, `tablierEn`
+  lit la voie après la route, et `rubansVoieDans` émet le ruban `tablier`
+  (peau de gravier) qui déborde de `CULEE` pas sur le ballast. Le générateur
+  n'écrit sur l'eau que des piles. Contact, dessin et train lisent
+  `coteContinue` : un seul profil, trois lecteurs (v302).
+- **RELEVER UN PROFIL SE BORNE AUX GARES, ET LA BORNE SE MESURE CONTRE LE
+  PROFIL D'AVANT.** Le tablier monte à `DEGAGE` blocs, et le lissage en cône
+  propage le relèvement d'un tiers de bloc par bloc : rien ne se relève à moins
+  de `GARDE_GARE` pas d'un bout, et un témoin compare les dix-huit gares à
+  `viaducs(false)` (zéro déplacée). La rampe à terre, elle, bouge (deux blocs au
+  plus) : déclarée dans `TASKS.md`.
+## Un mauvais atterrissage casse l'avion (v462) — un seuil de crash vit dans la fiche, et l'enfant n'a jamais rien
+
+Max : « un avion devrait se crasher s'il atterrit mal ». Trois règles.
+
+- **LA RÈGLE EST PURE, LES SEUILS SONT DANS LA FICHE.** `jugerToucher`
+  (degats.js) lit la mesure du toucher (vitesse, chute, train, sol : piste,
+  champ plat, relief, eau, arbres) et `toucherMax`, `chuteMax` de la fiche
+  `pilote` ; le témoin de `degats.js` lit les mêmes seuils. Un appareil neuf
+  déclare les siens, ou ne s'écrase jamais.
+- **L'ENFANT N'A RIEN, ET LE MESSAGE DIT QUOI FAIRE.** L'avion devient une
+  épave (`etat: 'epave'`, la fumée et les flammes des dégâts de la v343,
+  `horsService`) et l'enfant est déposé debout à côté (`deposer`), plus aux
+  commandes ; le bandeau dit la raison et le geste (sortir le train,
+  ralentir, laisser ✈️ se poser).
+- **UN POSÉ ASSISTÉ SUR UNE PISTE NE CASSE JAMAIS.** La garde est dans
+  `player.js` : sous l'approche, sur la piste, sol correct, pas de jugement.
+  La sonde de l'approche rend quelques touchers à six blocs par seconde (4 sur
+  148) : la garde est ce qui rend l'aide sûre, pas la sonde.
+- **CE QUI SE VOIT VOYAGE AVEC LA POSITION, ET L'AVION AUSSI.** `p.v` ne
+  portait qu'un véhicule à siège : un ami aux commandes d'un avion était vu à
+  pied. Il porte désormais tout ce qui a une fiche `pilote`, avec ses dégâts
+  (`d`, v344) — l'ami voit l'appareil et son épave. Aucun témoin à deux
+  tablettes ne le garde encore : déclaré dans `TASKS.md`.
+
+## Une fenêtre par étage (v457) — un changement de DESSIN se prouve par la forme
+
+Les villes engendrées posaient deux blocs `ETAGE` par baie : deux fenêtres
+dessinées l'une sur l'autre (38 719 piles, 259 villes sur 269). Elles posent
+les bandes de Paris (`BANDES`, villesmonde.js). Trois règles.
+
+- **UN CHANGEMENT DE BLOCS QUI GARDE LA FORME N'A PAS À FIGER LA VILLE.**
+  `VILLES_FIGEES` garde la ville d'avant sous ce qu'un enfant a bâti quand une
+  RUE ou un LOT bouge (v303, v339) : une maison pourrait se retrouver
+  enfermée. Ici chaque bande remplace un bloc plein par un bloc plein, au même
+  endroit — un bloc posé contre une façade reste devant la même surface, et un
+  bloc d'enfant posé SUR la façade l'emporte toujours (`edits`). Ce qui le
+  prouve est un témoin de forme, pas un raisonnement : `plafond.js` bâtit
+  chaque lot (un sur trois, 98 187) avec et sans bandes et compare la
+  solidité couche par couche (zéro différence), et rien ne change hors des
+  bandes. Une passe qui change la FORME d'un bâtisseur se fige ; une passe
+  qui ne change que son DESSIN se prouve par ce témoin.
+- **UNE BANDE HORS DE PARIS GARDE CE QUE LE REGISTRE DONNAIT AU BLOC
+  D'ÉTAGE.** `etageMi` posait un garde-corps sans condition : juste à Paris,
+  faux à Berlin (`nord`, `gardeCorps: false`), que le témoin du palier C garde
+  sans fer. Les bandes lisent désormais `gardeCorps`, `guillotine` (le rail au
+  milieu de la baie de deux blocs, `RAIL_GUILLOTINE`) et `linteau` ; les
+  styles de Paris n'ont aucune de ces clés, et l'empreinte des 490 morceaux
+  (Paris HD compris) rend la constante d'avant, bandes désarmées.
+- **LE DÉSARMEMENT VIT DANS LE MODULE, PAS DANS UN MONDE FIGÉ.**
+  `reglageBaies.bandes` (villesmonde.js) rejoue les deux `ETAGE` au bit près
+  pour l'empreinte et le témoin de forme ; jamais un réglage du jeu. Pas de
+  drapeau de `CONF_*` : les migrations jugent l'appui d'un bloc sur la forme,
+  que les bandes ne changent pas.
+
+## Un cube au ras du sol touche le sol (v455) — l'exposition d'une cellule de monument se lit dans le monde
+
+Une règle. Les « vingt-quatre cubes du parvis de Notre-Dame » (dette v335)
+étaient la couche 0 du bâtisseur, celle du bloc de surface : ses flancs
+touchent le sol de la ville, pas l'air. Une sonde ou un témoin qui juge
+l'exposition d'une cellule contre les seules cellules du BÂTISSEUR compte ce
+sol comme de l'air ; sous la hauteur d'un enfant, une voisine hors du
+bâtisseur se lit dans le monde engendré (`sonde-monuments-hd.cjs`, témoin de
+`plafond.js`, qui descend désormais jusqu'au sol). Avant de recaler un modèle
+sur une dette chiffrée, on vérifie que le chiffre compte ce que l'enfant voit.
+
+## L'A1 Centre (v461) — une porte de ville se juge aussi contre les anneaux et les ponts de la ville
+
+Une règle. La sonde de couloir mesure le relief, les rails, les aérodromes, les
+repères et les autres routes ; elle ne voit ni les VOIES des anneaux de la
+ville ni ses TABLIERS. À Florence, la porte que la sonde préférait (32°) avait
+une avenue d'entrée qui roulait dans la voie d'un anneau dès la porte
+(`finAvantAnneaux` rend 0 : il aurait fallu une ligne de `RACCORDS_COURTS`),
+et plein est le talus du bout de la route descendait sur la culée d'un pont de
+l'Arno (dix-huit pas de tablier sans sol, vus par le portail). Avant de
+chercher le tracé, on balaie les angles d'entrée contre les trois lectures :
+l'avenue (`entrees.mjs`), le raccord (`sonde-rue-dense.cjs raccords`, cinq
+secondes par angle), les tabliers de la ville sous `routeEn` (tab.mjs, la
+boucle du témoin des ponts de villes) — puis le tracé tourne en plusieurs fois
+depuis la porte retenue.
+
 ## La rue sans à-coups (v453) — le bus a une place, un circuit se prépare, une suiveuse freine
 
 Quatre sujets, une livraison. Cinq règles.
@@ -3802,7 +3899,7 @@ humides réelles, la forêt dense de grands feuillus et un palmier sur quatre
 tempérée). Une teinte se juge en capture et pas seulement au témoin : le vert
 réglé à (60, 160, 50) virait au fluo à l'écran, et le témoin le trouvait
 très bien teint.
-**Le climat méditerranéen (v455)** suit la même table, en dernier (les
+**Le climat méditerranéen (v466)** suit la même table, en dernier (les
 déserts, la steppe d'Anatolie et le Karoo passent avant). Deux arbres neufs :
 `kind` 4, pin parasol, et 5, olivier. **Une couronne neuve tient dans trois
 blocs autour du tronc** : `generateChunk` ne balaie les arbres que trois
@@ -5191,6 +5288,17 @@ répondu en une requête : iPhone, en vol à l'ouest de Paris, 1 089 morceaux
   une baie de façade coûte cinquante-six à soixante-neuf sommets par face,
   et c'est le nombre de sommets, pas le rayon ni le budget, qui décidera un
   jour de ce qu'un appareil peut montrer.
+
+## Une page qui a dit au revoir ne se rouvre pas (v464)
+
+Une règle. Une vraie mise à jour, rejouée au banc (`sonde-journal-maj.cjs`), a
+montré `rouvrir()` APRÈS `fermer('mise-a-jour')` et `pagehide` : un
+`visibilitychange` pendant le déchargement rouvrait la session de la page qui
+partait, et la page neuve la confirmait plantée (compteur 1 par mise à jour,
+palier bas à la deuxième). **L'état de visibilité pendant un déchargement ne se
+lit pas** : une fin voulue (`fermeture`, `mise-a-jour`) pose `parti`, et seul un
+`pageshow` persisté (le cache de navigation) relève la page. Un témoin de mise à
+jour lit le journal de la page NEUVE après sa vérification des douteuses (7 s).
 
 ## Le journal de bord ne crie plus au plantage pour rien (v426) — une session par page, et la mémoire en octets
 

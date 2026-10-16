@@ -488,6 +488,10 @@ export const MONTURES = [
   //   approche    la vitesse tenue en finale, jusqu'au toucher des roues
   //   roulage     l'allure au sol, au joystick
   //   frein       ce que les freins retirent par seconde, roues au sol
+  //   toucherMax  au-delà de cette vitesse au toucher, l'avion se casse (aviation)
+  //   chuteMax    au-delà de cette vitesse de chute au toucher, aussi — un peu
+  //               plus d'une fois et demie l'approche, et trois fois et demie
+  //               ce que l'arrondi assisté laisse (deux blocs par seconde)
   //
   // Le roulement avant la rotation vaut rotation² / (2 × poussée) : 49 blocs
   // pour l'avion de ligne, 57 pour le Concorde, 13 pour le chasseur — sur
@@ -634,7 +638,8 @@ export const MONTURES = [
     montable: true, allure: 1, assise: 2.6, poursuite: { recul: 18, hauteur: 7 },
     nourrissable: false, immobile: true, vole: true, gabarit: 2.4,
     pilote: { max: 95, poussee: 18, decrochage: 30, virage: 0.55,
-      rotation: 42, approche: 45, roulage: 6, frein: 30, kmh: 900 },
+      rotation: 42, approche: 45, roulage: 6, frein: 30, kmh: 900,
+      toucherMax: 64, chuteMax: 7 },
     moteur: 'avion' },
 
   { key: 'concorde', name: 'Concorde', cry: 'Whoooosh !', emoji: '🛩️', speed: 0.01,
@@ -645,7 +650,8 @@ export const MONTURES = [
     // il décroche haut — c'est pour cela que les vraies pistes du Concorde
     // étaient les plus longues.
     pilote: { max: 120, poussee: 34, decrochage: 55, virage: 0.40,
-      rotation: 62, approche: 62, roulage: 6, frein: 45, kmh: 2180 },
+      rotation: 62, approche: 62, roulage: 6, frein: 45, kmh: 2180,
+      toucherMax: 84, chuteMax: 7 },
     moteur: 'avion' },
 
   { key: 'chasseur', name: 'Avion de chasse', cry: 'Vriiiii !', emoji: '🚀', speed: 0.01,
@@ -655,6 +661,7 @@ export const MONTURES = [
     // Même pointe que le Concorde, mais il grimpe trois fois plus vite et
     // vire trois fois plus court : c'est ce qui fait un chasseur.
     pilote: { max: 120, poussee: 90, decrochage: 40, virage: 1.30,
-      rotation: 48, approche: 50, roulage: 7, frein: 60, kmh: 2200 },
+      rotation: 48, approche: 50, roulage: 7, frein: 60, kmh: 2200,
+      toucherMax: 70, chuteMax: 8 },
     moteur: 'avion' },
 ];

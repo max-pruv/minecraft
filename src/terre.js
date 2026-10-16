@@ -285,7 +285,7 @@ const CLIMATS = [
   ['tropiques', 'kerala', [74, 8, 77, 8, 76.5, 12, 74.5, 15.5, 73, 18, 72.5, 17]],
   ['tropiques', 'bengale-assam', [88, 21.5, 92, 21, 97, 24, 95.5, 27.5, 92, 27, 89, 26]],
   ['tropiques', 'queensland', [143.5, -11, 145.5, -14.5, 146.5, -19, 145.5, -19, 144.5, -16, 142.5, -11]],
-  // LE CLIMAT MÉDITERRANÉEN (v455) : l'été sec qui jaunit l'herbe, le maquis,
+  // LE CLIMAT MÉDITERRANÉEN (v466) : l'été sec qui jaunit l'herbe, le maquis,
   // les oliviers et les pins parasols. Le pourtour de la Méditerranée (sud et
   // est de l'Ibérie, Provence et Languedoc, Italie et ses îles, Grèce, côtes
   // de l'Anatolie et du Levant, Maghreb au nord de l'Atlas), et les cinq
@@ -374,7 +374,7 @@ export function climatCertain(lat, lon, marge) {
 // Les tropiques humides (v349) → (78, 150, 60), un vert profond — plus saturé
 // en capture, il virait au vert fluo —
 // et le feuillage (40, 120, 32).
-// Le climat méditerranéen (v455) → (165, 150, 72), l'herbe sèche de l'été,
+// Le climat méditerranéen (v466) → (165, 150, 72), l'herbe sèche de l'été,
 // plus olive que la paille de la steppe ; le feuillage gris-vert des
 // oliviers (110, 128, 90) — à (82, 110, 62) il sortait presque noir en capture.
 export const CLIMATS_TEINTES = ['', 'toundra', 'taiga', 'steppe', 'tropiques', 'mediterranee'];

@@ -1231,6 +1231,29 @@ const DISCOVERY_SETS = {
       ['Combien y a-t-il d\'os dans le corps d\'un adulte ?', '206', ['106', '306', '406']],
     ],
   },
+  // CE QUE WASHINGTON RACONTE (v460) : les mêmes faits que les panneaux de
+  // `guides.js`, vérifiés, sans un chiffre inventé. Un enfant qui a lu le
+  // panneau devant le Lincoln retrouve la question dans le quiz.
+  washington: {
+    1: [
+      ['Dans quel bâtiment le Congrès vote-t-il les lois des États-Unis ?', 'le Capitole', ['la Maison-Blanche', 'le Lincoln Memorial', 'la Cour suprême']],
+      ['Qui habite à la Maison-Blanche ?', 'le président des États-Unis', ['le roi d\'Angleterre', 'le maire de New York', 'le chef des pompiers']],
+      ['Quel pays a offert les cerisiers de Washington ?', 'le Japon', ['la Chine', 'la France', 'le Canada']],
+      ['Quelle est la forme du monument de Washington ?', 'un obélisque', ['une pyramide', 'une coupole', 'une arche']],
+      ['Quel président est assis dans le Lincoln Memorial ?', 'Abraham Lincoln', ['George Washington', 'Thomas Jefferson', 'Theodore Roosevelt']],
+      ['De quelle couleur est la maison du président à Washington ?', 'blanche', ['rouge', 'verte', 'jaune']],
+    ],
+    2: [
+      ['Qui a dessiné le plan de Washington en 1791 ?', 'Pierre L\'Enfant, un Français', ['Gustave Eiffel', 'Christophe Colomb', 'Napoléon']],
+      ['Pourquoi les immeubles de Washington sont-ils bas ?', 'une loi limite leur hauteur', ['le sol est trop mou', 'il y a trop de vent', 'les ascenseurs sont interdits']],
+      ['Combien mesure le monument de Washington ?', '169 mètres', ['69 mètres', '300 mètres', '1 000 mètres']],
+      ['Combien de colonnes entourent le Lincoln Memorial ?', '36', ['12', '50', '100']],
+      ['Pourquoi la pierre du monument de Washington change-t-elle de couleur ?', 'le chantier s\'est arrêté longtemps', ['la pluie l\'a salie', 'on l\'a peinte en deux couleurs', 'un éclair l\'a frappée']],
+      ['En quelle année Tokyo a-t-elle offert ses cerisiers à Washington ?', '1912', ['1812', '1969', '2001']],
+      ['Quel quartier de Washington n\'a pas de station de métro ?', 'Georgetown', ['Capitol Hill', 'Chinatown', 'Dupont Circle']],
+      ['Comment sont les grandes avenues de Washington sur le plan ?', 'en diagonale', ['toutes en cercle', 'en zigzag', 'toutes parallèles']],
+    ],
+  },
 };
 
 // Empreinte courte et stable d'un énoncé : elle sert de clé, de sorte qu'on
@@ -1257,6 +1280,7 @@ const DISCOVERY_GENS = [
   discoveryGen('histoire'), discoveryGen('arts'),
   discoveryGen('nature'), discoveryGen('corps'), discoveryGen('espace'),
   discoveryGen('maison'), discoveryGen('sport'), discoveryGen('monde'),
+  discoveryGen('washington'),
 ];
 
 // Exposé pour l'audit de la banque : compter les questions réellement
@@ -1282,7 +1306,7 @@ const SKILL_LABELS = {
   geoFR: 'géographie France', geoUSA: 'géographie USA', civics: 'civisme', science: 'sciences',
   histoire: 'histoire', arts: 'arts et musique', nature: 'nature et animaux',
   corps: 'le corps humain', espace: "l'espace", maison: 'vie quotidienne',
-  sport: 'sport', monde: 'le monde',
+  sport: 'sport', monde: 'le monde', washington: 'Washington',
 };
 
 const SKILL_META = {};
