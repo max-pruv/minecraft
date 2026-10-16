@@ -16,7 +16,7 @@ import { construireTaxi } from './taxis.js';
 import { construireUtilitaire, construirePickup } from './utilitaires.js';
 import { Atelier } from './modeles.js';
 import { liberer } from './liberer.js';
-import { profilVitesse, grilleDuProfil, rapprocher, allureDevant, passeAOrange, FREIN, FREIN_URGENCE, ALLURE_VOIE, allureDuConducteur, feuDeCroisement, croisementsDeTraces, ECART_DEVANT_VILLE, ECART_DEVANT_ROUTE } from './circulation.js';
+import { profilVitesse, grilleDuProfil, rapprocher, allureDevant, passeAOrange, FREIN, FREIN_URGENCE, ALLURE_VOIE, allureDuConducteur } from './circulation.js';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
 import { CLASSES, MARCHE } from './conduite.js';
 
@@ -2848,36 +2848,6 @@ export function createVehicules({ scene, player }) {
   const pietonsPoses = [];
   // le dernier choc de l'enfant qu'on a lu (`player.choc`, v372)
   let dernierChoc = 0;
-  // LES CROISEMENTS DE LA ROUTE ET DE LA VILLE (v455). L'avenue d'entrée
-  // d'une autoroute n'est pas une voie nommée : ses carrefours n'ont pas de
-  // feu (v274), et les quatre files de l'autoroute s'y nouaient avec les
-  // circuits de la ville — à (−325, 195), une tête de file arrêtée quinze à
-  // trente secondes, la patience ne dénouant qu'une voiture à la fois. On
-  // cherche, une fois par paire de convois (un d'autoroute, un de la ville),
-  // où leurs tracés se coupent, et chaque convoi y voit un feu sans poteau :
-  // la règle de `feux.js`, l'axe 0 pour la route et l'axe 1 pour la ville, à
-  // l'heure de la rue — la même sur deux tablettes (v305). Ce n'est que du
-  // TRACÉ : la grille horaire ne change pas.
-  let tourDeRoleActif = true;
-  const croisementsParPaire = new Map();
-  let croisementsCache = null, croisementsDate = -1;
-  function croisementsRouteVille() {
-    const date = convois.length + ':' + (convois.length ? convois[convois.length - 1].cle : '');
-    if (croisementsDate === date && croisementsCache) return croisementsCache;
-    const routes = convois.filter((c) => c.voie === 'autoroute' && c.routier);
-    const villes = convois.filter((c) => c.routier && c.voie && c.voie !== 'autoroute' && c.nom !== 'bus');
-    const m = new Map();
-    for (const r of routes) for (const v of villes) {
-      const k = r.cle + ' ~ ' + v.cle;
-      let x = croisementsParPaire.get(k);
-      if (!x) { x = croisementsDeTraces(r.parcours, v.parcours); croisementsParPaire.set(k, x); }
-      if (!x.length) continue;
-      (m.get(r) || m.set(r, []).get(r)).push(...x.map((q) => ({ x: q.x, z: q.z, autre: ECART_DEVANT_VILLE })));
-      (m.get(v) || m.set(v, []).get(v)).push(...x.map((q) => ({ x: q.x, z: q.z, autre: ECART_DEVANT_ROUTE })));
-    }
-    croisementsCache = m; croisementsDate = date;
-    return m;
-  }
   function cederLePassage(dt) {
     const px = player.pos.x, pz = player.pos.z;
     const voitures = [];
@@ -3193,17 +3163,9 @@ export function createVehicules({ scene, player }) {
     // mutuellement un carrefour s'y bloqueraient pour toujours (mesuré : une
     // file de Paris arrêtée trente secondes derrière la queue d'une autre).
     const feuDe = new Map();
-    const croisements = tourDeRoleActif ? croisementsRouteVille() : null;
     for (const a of voitures) {
-      if (a.enfant || a.rail || (!feuRouge && !croisements)) continue;
-      let f = feuRouge ? feuRouge(a.x, a.z, Math.atan2(a.ux, a.uz)) : null;
-      // LE FEU DU CARREFOUR SANS FEU (v455) : l'entrée d'une autoroute et les
-      // rues de la ville qu'elle coupe, réglées par l'heure de la rue
-      const liste = croisements && a.c && croisements.get(a.c);
-      if (liste) {
-        const fc = feuDeCroisement(a.x, a.z, a.ux, a.uz, liste, a.c.voie === 'autoroute', horloge * 1000);
-        if (fc && f !== true && (!f || fc.s < f.s)) f = fc;
-      }
+      if (a.enfant || a.rail || !feuRouge) continue;
+      const f = feuRouge(a.x, a.z, Math.atan2(a.ux, a.uz));
       if (!f) continue;
       const s = f === true ? 0 : f.s;
       const v = a.c.vLoc[a.i] >= 0 ? a.c.vLoc[a.i] : a.c.vGrilleDe(a.i);
@@ -3606,9 +3568,6 @@ export function createVehicules({ scene, player }) {
     // les amis de la partie (v305), branchés par main.js : où ils sont, leur cap,
     // et s'ils conduisent
     brancherAmis: (f) => { amis = f; },
-    // le feu des croisements route / ville (v455), désarmable pour la sonde et le témoin
-    tourDeRole: (v) => { if (v !== undefined) tourDeRoleActif = !!v; return tourDeRoleActif; },
-    croisementsRouteVille: () => [...croisementsRouteVille().entries()].map(([c, l]) => ({ cle: c.cle, voie: c.voie, n: l.length, pts: l.map((q) => [Math.round(q.x), Math.round(q.z)]) })),
     // l'ancien regard de la rame (3,5 blocs), pour mesurer et pour prouver
     // que le témoin rougit sans le remède (v451)
     regardRameFixe: (v) => { if (v !== undefined) regardRameFixe = !!v; return regardRameFixe; },

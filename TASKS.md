@@ -3170,6 +3170,36 @@
   ne tranche pas quand l'un des deux est un bus à l'arrêt. À mesurer AVANT
   d'écrire : la durée d'un arrêt de bus, et qui attend qui, image par image.
   Le témoin de la fumée attend désormais deux minutes, la durée dans le message.
+  **DÉMONTÉ (v455, sans remède livré)** : il n'y a plus de bus dans la file
+  (v450 : il prend la place de la voiture 0). La tête de la queue est au
+  carrefour de (−325, 195), où le circuit 472 de la ville (rue de la trame,
+  `voiture|472|-353,54`) COUPE l'avenue d'entrée de l'A1 (`ENTREES_PARIS[0]`,
+  de la porte à la Gare du Nord) — quatre files d'autoroute (`558`, aller et
+  retour, et leurs jumelles `|voie2`), SANS FEU : l'entrée n'est pas une voie
+  nommée et les feux de Paris naissent des croisements de `VOIES` (v274) ; au
+  sol, les rues de la trame s'arrêtent même aux trottoirs de l'entrée (relevé
+  ASCII : quatre blocs de trottoir de chaque côté, le circuit les traverse).
+  Et le nœud ne tient pas qu'au travers : l'aller et le retour de `558` se
+  frôlent FACE À FACE sur l'avenue d'entrée (voies à ≈ 2,6 blocs pour des
+  voitures de 2,26), avec les jumelles dans la même voie — des voitures de
+  `558` arrêtées dix secondes et plus à (−324, 199) sans circuit de la ville
+  devant elles. Sonde : `tests/sonde-bus-ouest.cjs` (passages de chaque côté,
+  pire arrêt, passages forcés). Sur la v454, quatre passages : ville 12 à 26
+  franchissements par minute, route 15 à 20, pire arrêt 15 à 31 s. DEUX
+  NON-RÉSULTATS MESURÉS, à ne pas réécrire : (1) un tour de rôle dans la
+  décision de céder (la route a la main sur la part verte de l'axe 0 de
+  `etatFeu`, à l'heure de la rue) — 19/16 et 12/16 franchissements, 31-35 s,
+  et zéro franchissement tant que deux voitures déjà engagées se cédaient
+  « légitimement » ; (2) un feu sans poteau aux croisements des TRACÉS route ×
+  ville (ligne d'arrêt par voie coupée) — 8/22, 10/17, 14/13, 19/9, jusqu'à
+  60 s : il ne vide pas un carrefour où l'aller et le retour de la même file
+  se gênent. Le remède est de TRACÉ, hors de cette zone : écarter l'aller et
+  le retour de l'entrée (la voie de droite de `traceRoute`, main.js) et, si
+  l'on veut une régulation, un vrai feu posé au sol à ce carrefour (world.js,
+  `feuxDeVille` reçoit les croisements de l'entrée avec la trame).
+  Le nœud de Madrid (point 4 plus haut) est déjà tombé à 1,47 / 1,02 % de
+  paires au contact en v442 (raccords arrêtés avant l'anneau) ; le reste est
+  en travers entre anneaux — non rejoué ici.
 
 - [ ] **LE BUDGET DE FAÇADES (v299) EST POSÉ, PAS MESURÉ SUR L'APPAREIL.**
   128 Mo par palier : au-dessus des 98 Mo que le vieil iPad a tenus au centre

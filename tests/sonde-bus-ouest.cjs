@@ -6,6 +6,11 @@
 // immobilité d'une tête de file, et combien de fois la patience a forcé
 // (`repart`) — c'est elle qui dénouait le nœud, une voiture toutes les quatre
 // secondes. Usage : node tests/sonde-bus-ouest.cjs [secondes] [PARAMS=…]
+// (SANS=1 désarme `vehicules.tourDeRole(false)` si un remède l'expose.)
+// Mesuré sur la v454, quatre passages d'une minute : la ville franchit 12 à
+// 26 fois, la route 15 à 20, pire tête de file arrêtée 15 à 31 s, la
+// patience force 9 à 32 fois. Le même code d'un passage à l'autre : on juge
+// une DISTRIBUTION (v269), jamais un passage.
 const { Banc, souffler } = require('./banc.js');
 const duree = Number(process.argv[2] || 60);
 const C = [-325, 195];
