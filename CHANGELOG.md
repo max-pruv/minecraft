@@ -20,32 +20,6 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v455 — Les places de Paris à la largeur de leurs boulevards
-
-**Pourquoi.** Depuis la règle du kit (v303), un boulevard de Paris a treize
-blocs de chaussée et les Champs-Élysées dix-sept ; les places, elles, avaient
-gardé les rayons d'avant — République 3, Nation 2,6, la Madeleine 1,6, la
-Concorde 4,5. Un boulevard de treize blocs arrivait sur un rond de six : une
-pastille de pavé au milieu de l'asphalte, et la voiture qui fait le tour de la
-place roulait sur son îlot. C'était déclaré dans `TASKS.md` depuis la v303.
-
-**Ce que ça change.** Les neuf places sans monument où arrive une avenue
-(Hôtel de Ville, Châtelet, Concorde, Madeleine, République, Nation, Gare du
-Nord, Gare de Lyon, Porte Maillot) sont au moins aussi larges que la chaussée
-qui y arrive : un îlot central de pavé et un anneau de trois blocs où les
-voitures tournent. Aucun immeuble ne cède — c'est de la rue qui devient place
-—, aucun bloc d'enfant ne bouge, le relief ne change pas.
-
-**Ce qui le prouve.** Deux témoins neufs dans `plafond.js`, rouges sur la
-v454 : 9 places plus étroites que leur boulevard, 327 colonnes d'îlot sous
-l'axe de l'anneau ; zéro et zéro ici. Sous node, `solParis` ne diffère que
-sur 343 colonnes, toutes dans les places (320 asphalte → pavé, 23 trottoir →
-asphalte, zéro lot) ; les huit circuits de voitures, relus sur le monde,
-passent de 93-100 % à 94-100 % de chaussée, aucun pas dans un plein.
-L'empreinte des 490 morceaux se relève : l'élargissement désarmé, la branche
-rend la constante d'avant au bit près. Les deux empreintes du relief sont
-intactes.
-
 ## v454 — Les garde-corps des petites fenêtres ont leurs anneaux entiers
 
 **Pourquoi.** Le motif de fer forgé d'un garde-corps est fait pour une travée

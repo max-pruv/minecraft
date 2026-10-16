@@ -2249,14 +2249,29 @@
   Faubourg Saint-Antoine 359 (5,9 %), Étoile 1 478 (12,1 %), contre 2, 2, 10
   et 0 au portail de la v303. Le Marais et le Faubourg restent les plus
   pauvres (Rivoli, les Grands Boulevards, Saint-Antoine les traversent).
-  (2) LES PLACES : FAIT en v455 pour les neuf places SANS monument où arrive
-  une avenue (rayon ≥ demi-chaussée la plus large, 5,8 au moins ; zéro lot
-  pris, deux témoins dans `plafond.js`). Reste : les places qui portent un
-  monument gardent leur rayon (Opéra 2,2, Montparnasse 2,2, Panthéon 2,2,
-  Bastille 3, Louvre 5, l'Étoile 8 pour les Champs de 17,4) — leur tour
-  (`TOURS`) passe autour du socle, et agrandir la place y déplacerait les
-  circuits contre le monument : à mesurer avant d'écrire ; et le Trocadéro
-  (3,5, aucune percée n'y arrive), dont l'anneau fait 1,75 bloc.
+  (2) LES PLACES gardent leurs rayons (République 3, Nation 2,6, la Madeleine
+  1,6, la Concorde 4,5) quand un boulevard de 13 blocs de chaussée (17,4 aux
+  Champs) y arrive : une pastille de pavé au milieu de l'asphalte, et l'axe
+  de l'anneau (`RONDS`) passe sur l'îlot — 327 colonnes sur 864 lues, neuf
+  places à percée trop étroites. ESSAYÉ ET RETIRÉ (session paris-reste,
+  octobre 2026) : rayon ≥ demi-chaussée la plus large qui arrive, 5,8 au
+  moins, sur les neuf places SANS monument. Le sol était propre — 343
+  colonnes de `solParis` changées, toutes dans les places, ZÉRO lot, relief
+  intact, circuits relus sur le monde 93-100 % → 94-100 % de chaussée, aucun
+  pas dans un plein — mais le portail a rendu ce que la rue y perd : le
+  circuit 0 perd sa jumelle (`refus: contact`, section 189 → 168), les
+  boulevards tombent de 446 à 250 blocs de deux voies occupés
+  (`sonde-rue-dense.cjs boulevards`) ; le bus touche ses voisines (139
+  relevés, `mesurer('bus')`) ; `RACCORDS_COURTS` de l'A1 à la Gare du Nord est
+  à remesurer (262,5). Retirer une voie occupée se voit : DÉCISION DE MAX
+  (plus grandes places, ou seconde voie). Si oui : le remède est écrit
+  (calcul dans `paris.js` après `VOIES_PARIS`, `PLACES` refaite après), deux
+  témoins prêts (`plafond.js`), et le témoin des circuits de `carteMonde.js`
+  (« ni ne coupe par le milieu d'une place ») doit lire l'îlot (`r −
+  anneau`), pas `r − 1,5` ; l'empreinte des 490 morceaux et celle du journal
+  se relèvent (désarmé = constante au bit près, mesuré). Restent aussi les
+  places à monument (Opéra 2,2, Montparnasse, Panthéon, Bastille, Louvre,
+  l'Étoile 8 pour les Champs) et le Trocadéro (anneau de 1,75 bloc).
   (3) Les autres villes bâties à la main (Londres,
   Nice, Lille, San Francisco, Washington) n'ont pas encore la règle — même
   geste, ville par ville, avec la trame figée et la protection des

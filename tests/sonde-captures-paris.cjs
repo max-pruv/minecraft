@@ -74,9 +74,6 @@ const VUES = [
   // v446 : un toit à la limite de Saint-Germain et d'Haussmann (−433, 422),
   // où deux quartiers se prêtaient la même clé d'immeuble
   { nom: 'toit-quartiers', x: -441, z: 428, yaw: -Math.PI / 2 + 0.6, pitch: -0.35, h: 24 },
-  // v455 : la place de la République à la largeur de son boulevard
-  { nom: 'republique-rue', dx: 1.15, dz: -1.5, yaw: Math.PI / 2, pitch: 0.06, h: 1.6 },
-  { nom: 'republique-ciel', dx: 0.9, dz: -1.5, yaw: 0, pitch: -1.25, h: 40 },
   { nom: 'terrasse-monceau', x: -509, z: 247, yaw: -Math.PI / 2 + 0.5, pitch: 0.1, h: 1.4 },
 ];
 
