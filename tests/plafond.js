@@ -2532,6 +2532,42 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       JSON.stringify({ mesure: tr, barres: BARRES_TRAVAIL }));
   }
 
+  // UNE BAIE SE SOUDE (v455). La couche HD de Paris pesait jusqu'à onze
+  // mégaoctets par morceau dense de l'ouest (v299 : l'iPhone de Max tué par la
+  // mémoire), et c'est le NOMBRE DE SOMMETS qui décide. Un sommet sur six y
+  // était le double exact d'un autre (deux quads du même plan qui se touchent).
+  // Deux témoins, sur les huit morceaux les plus lourds (`sonde-baies.mjs`) :
+  //  • le POIDS : médiane et pire en Mo, soudé contre `baiesSoudees: false`
+  //    (l'ancien tampon, au bit près — c'est lui que lit l'empreinte des 490
+  //    morceaux). Sur l'ancien code l'option n'existe pas : les deux pèsent
+  //    pareil, et le témoin est rouge ;
+  //  • l'IMAGE : chaque coin de chaque triangle porte, bit à bit, les mêmes
+  //    dix-huit mots qu'avant. Mêmes triangles, mêmes valeurs : ce qu'on voit
+  //    ne peut pas changer.
+  {
+    const { poidsOuestParis, memesTriangles, LOURDS_OUEST } = await import('./sonde-baies.mjs');
+    const t0 = Date.now();
+    const neuf = await poidsOuestParis('../src', {}, 8, LOURDS_OUEST);
+    const vieux = await poidsOuestParis('../src', { baiesSoudees: false }, 8, LOURDS_OUEST);
+    const r = (x) => +x.toFixed(2);
+    verifier('une baie se soude : les morceaux les plus lourds de l\'ouest de Paris pèsent au moins un dixième de moins',
+      neuf.mediane < 0.9 * vieux.mediane && neuf.pire < 0.92 * vieux.pire,
+      `médiane ${r(vieux.mediane)} → ${r(neuf.mediane)} Mo, pire ${r(vieux.pire)} → ${r(neuf.pire)} Mo, sommets ${vieux.lourds.map((m) => m.sommets).join('/')} → ${neuf.lourds.map((m) => m.sommets).join('/')}, ${Date.now() - t0} ms`);
+    const { World, CHUNK } = await import('../src/world.js');
+    const { buildChunkTampons } = await import('../src/mesher.js');
+    const { positionDe } = await import('../src/mondes.js');
+    const P = positionDe('paris'), w = new World(); w.hd = 1;
+    const res = LOURDS_OUEST.slice(0, 4).map(([dx, dz]) => {
+      const cx = Math.floor(P.x / CHUNK) + dx, cz = Math.floor(P.z / CHUNK) + dz;
+      const a = buildChunkTampons(w, cx, cz, { detail: true }).facades;
+      const b = buildChunkTampons(w, cx, cz, { detail: true, baiesSoudees: false }).facades;
+      return { ...memesTriangles(a, b), sommets: `${b.positions.length / 3}→${a.positions.length / 3}` };
+    });
+    verifier('une baie soudée dessine les mêmes triangles, des mêmes valeurs, bit à bit',
+      res.every((x) => x.ok && x.coins > 0) && res.some((x) => x.sommets.split('→')[0] !== x.sommets.split('→')[1]),
+      JSON.stringify(res));
+  }
+
   // UN BÂTISSEUR NE TIRE PAS AU HASARD (v450). Le Colisée du catalogue
   // tirait ses gradins effondrés à `Math.random()` : deux lancements, deux
   // Colisées (173 blocs de Rome), et le worker de maillage en bâtissait un

@@ -616,7 +616,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
     cellulesSol: surface ? surface.cellules : 0,
     rubans,
     sol: sol ? sol.toTampons() : null,
-    facades: facades ? facades.toTampons() : null,
+    facades: facades ? facades.toTampons(options.baiesSoudees !== false) : null,
     plat: plat ? plat.toTampons() : null,
     platLumineux: platLumineux ? platLumineux.toTampons() : null,
     facadesDetaillees,
