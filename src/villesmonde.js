@@ -706,6 +706,38 @@ function buildRoueDuPrater(poser) {
   poser(0, C, 0, ACIER);
 }
 
+// La High Roller (v455) : 167 m de haut pour 158 de diamètre, la plus haute
+// roue du monde — et `buildGrandeRoue` (seize blocs) passait sous la demi-tour
+// Eiffel (165 m). Une roue ne s'étire pas : celle-ci a le plus grand rayon que
+// tient la boîte de son repère (neuf, comme le Prater), sa jante à dix blocs du
+// sol au-dessus de sa gare d'embarquement (la vraie passe à huit mètres et demi
+// sur la sienne), ses rayons, ses deux chevalets, et ses cabines de verre. Son
+// sommet (vingt-huit) est celui que la demi-tour Eiffel ne dépasse pas dans le
+// ciel de Las Vegas (`CIELS`, echelle-monuments.js).
+function buildHighRoller(poser) {
+  const R = 9, C = R + 10;
+  for (let x = -3; x <= 3; x++) for (let z = -3; z <= 3; z++) {
+    if (Math.abs(x) < 3 && Math.abs(z) < 3) continue;
+    for (let y = 1; y <= 3; y++) poser(x, y, z, y === 2 ? VERRE : BLANC);
+  }
+  for (let x = -3; x <= 3; x++) for (let z = -3; z <= 3; z++) poser(x, 4, z, BLANC);
+  for (let a = 0; a < 360; a += 4) {
+    const r = (a * Math.PI) / 180;
+    const y = C + Math.round(Math.sin(r) * R), z = Math.round(Math.cos(r) * R);
+    poser(0, y, z, BLANC);
+    if (a % 24 === 0) { poser(1, y - 1, z, VERRE); poser(-1, y - 1, z, VERRE); }
+  }
+  for (let a = 0; a < 360; a += 30) {
+    const r = (a * Math.PI) / 180;
+    for (let k = 1; k < R; k++) poser(0, C + Math.round(Math.sin(r) * k), Math.round(Math.cos(r) * k), ACIER);
+  }
+  for (const x of [-1, 1]) for (let y = 5; y <= C; y++) {
+    const e = Math.round((C - y) * 0.3);
+    poser(x, y, -e, BLANC); poser(x, y, e, BLANC);
+  }
+  poser(0, C, 0, ACIER);
+}
+
 // La halle de Pike Place et son enseigne rouge.
 function buildPikePlace(poser) {
   for (let dz = -4; dz <= 4; dz++) {
@@ -2625,7 +2657,7 @@ const FICHES = {
           }
         }
       } },
-      { nom: 'La High Roller', lat: 36.1173, lon: -115.1685, box: 9, build: buildGrandeRoue },
+      { nom: 'La High Roller', lat: 36.1173, lon: -115.1685, box: 9, build: buildGrandeRoue, tour: buildHighRoller },
       { nom: 'La demi-tour Eiffel', lat: 36.1125, lon: -115.1707, box: 4, build: tourBoule(16, [], ACIER, ACIER), tour: buildDemiEiffel },
     ],
     lieux: [['Le Strip', 36.1147, -115.1728]],

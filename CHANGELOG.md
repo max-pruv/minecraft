@@ -20,6 +20,30 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v455 — La grande roue de Las Vegas domine la tour Eiffel du Strip
+
+**Pourquoi.** La dette des monuments plus bas que leur ville est soldée : plus
+une seule entrée `lot` dans `BAS_DECLARES` ni dans `VILLES_SANS_CIEL`, et le
+témoin de `plafond.js` le confirme (tout monument sous la médiane de ses
+immeubles est déclaré `vrai`). Restait l'inversion déclarée en v353 : la High
+Roller (167 m, la plus haute roue du monde) était un gabarit de seize blocs,
+sous la demi-tour Eiffel de l'hôtel Paris (165 m) à quarante-cinq. Le ciel de
+Las Vegas disait l'inverse du vrai.
+
+**Ce que ça change.** La High Roller a son bâtisseur (dans la boîte de son
+repère, qui ne bouge pas) : une roue de rayon neuf — une roue ne s'étire pas —
+sur sa gare d'embarquement, ses deux chevalets et ses cabines de verre, sommet
+à vingt-huit blocs. Le ciel de Las Vegas se comprime (`k` 0,25, le plus grand
+au centième qui garde l'ordre) : la demi-tour Eiffel descend à vingt-huit, le
+plancher de ses seize couches d'auteur, et le Luxor (107 m) reste dessous à
+quinze. Le monde d'avant garde le gabarit (`LANDMARKS_V317`).
+
+**Ce qui le prouve.** Un témoin d'ordre de `plafond.js` porte la High Roller :
+rouge sur l'ancien code (demi-tour Eiffel 45 > roue 16), vert ici (28 et 28).
+Les anneaux de voitures de Las Vegas et de toutes les villes sont identiques au
+bit près (empreinte comparée sous node), aucun bloc de la roue à hauteur de
+carrosserie sur un anneau ; le sol ne bouge pas. Captures de rue et du ciel.
+
 ## v454 — Les garde-corps des petites fenêtres ont leurs anneaux entiers
 
 **Pourquoi.** Le motif de fer forgé d'un garde-corps est fait pour une travée

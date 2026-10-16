@@ -434,8 +434,12 @@ export const CIELS = Object.freeze({
   // vu en capture ; à onze, une fois et demie les toits, il reste un opéra.
   Lille: [7, 0.4], Londres: [8, 0.75], Washington: [13, 0.26],
   // v353 : les autres villes engendrées qui portent des repères.
-  Barcelone: 13, Munich: [13, 0.55], Venise: 8, 'Las Vegas': 15, Miami: 13, 'La Havane': 13,
+  Barcelone: 13, Munich: [13, 0.55], Venise: 8, 'Las Vegas': [15, 0.25], Miami: 13, 'La Havane': 13,
   Tokyo: 13, Kyoto: 12,
+  // v455 : Las Vegas passe sous la High Roller (167 m), une roue qui ne
+  // s'étire pas et tient vingt-huit blocs dans sa boîte : la demi-tour Eiffel
+  // (165 m), seize couches d'auteur, ne descend pas sous vingt-huit, atteint à
+  // `k` 0,25 (le plus grand au centième) ; elle était à quarante-cinq.
   // v357 : les villes dont les tours ont reçu une emprise.
   Bruxelles: 13, Marrakech: 7, Chicago: 14, 'Séoul': 13, Shanghai: 13, 'Hong Kong': 13,
 });

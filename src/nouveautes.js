@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 455,
+    titre: 'La grande roue de Las Vegas',
+    puces: [
+      'La High Roller est une vraie roue',
+      'Elle domine la tour Eiffel de Las Vegas',
+    ],
+  },
+  {
     v: 454,
     titre: 'De jolies petites grilles',
     puces: [
