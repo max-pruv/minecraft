@@ -7237,7 +7237,10 @@ l'embarquement a eu lieu, pas par une hypothèse.
 
 - [ ] **Notifications push** — l'invitation atteint l'application fermée.
 
-- [ ] **Intérieurs** — les monuments se visitent.
+- [ ] **Intérieurs** — les monuments se visitent. *(v455 : le Panthéon de
+  Rome, creux, portique de plain-pied, oculus ouvert — le premier hors de Paris
+  et de Londres. Méthode et témoin à reprendre pour les suivants : `plafond.js`,
+  « on entre dans le Panthéon de Rome ».)*
 
 ---
 

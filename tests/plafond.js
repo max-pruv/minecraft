@@ -442,6 +442,49 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
 
   verifier('le ciel est monté', HEIGHT >= 160, `${HEIGHT} blocs`);
 
+  // --- ON ENTRE DANS LE PANTHÉON DE ROME (v455) -------------------------------
+  // Premier monument visitable hors de Paris et de Londres. Méthode de la
+  // marche des terminaux (v330) : on part de la PLACE, devant le portique, et
+  // l'on cherche de proche en proche où l'on peut poser les pieds (un sol
+  // plein, deux blocs d'air au-dessus) — sans sauter une marche. Le repère se
+  // choisit par le disque qui le contient (v335) : « Panthéon » est aussi à
+  // Paris. Sur l'ancien bâtisseur la rotonde est pleine et le portique est sur
+  // une marche : le centre n'est jamais atteint.
+  {
+    const { CONF_NEUF } = await import('../src/world.js');
+    const { VILLES_MONDE } = await import('../src/villesmonde.js');
+    const rome = VILLES_MONDE.find((f) => f.cle === 'rome');
+    const lm = rome && CONF_NEUF.reperes.find((l) => l.name === 'Panthéon'
+      && Math.hypot(l.x - rome.ancre.x, l.z - rome.ancre.z) < rome.rayon);
+    let r = { trouve: !!lm };
+    if (lm) {
+      const sol = w.terrainHeight(lm.x, lm.z);
+      const libre = (du, dv) => w.getBlock(lm.x + du, sol, lm.z + dv) !== 0
+        && w.getBlock(lm.x + du, sol + 1, lm.z + dv) === 0
+        && w.getBlock(lm.x + du, sol + 2, lm.z + dv) === 0;
+      const depart = [0, -lm.box - 4];
+      const vus = new Set([depart.join(',')]);
+      const file = libre(...depart) ? [depart] : [];
+      while (file.length) {
+        const [du, dv] = file.shift();
+        for (const [eu, ev] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const nu = du + eu, nv = dv + ev;
+          if (Math.abs(nu) > lm.box + 6 || Math.abs(nv) > lm.box + 6) continue;
+          const k = `${nu},${nv}`;
+          if (vus.has(k) || !libre(nu, nv)) continue;
+          vus.add(k); file.push([nu, nv]);
+        }
+      }
+      let ciel = true;               // l'oculus : rien au-dessus du centre
+      for (let y = sol + 1; y < HEIGHT; y++) if (w.getBlock(lm.x, y, lm.z) !== 0) { ciel = false; break; }
+      let voute = false;             // à deux blocs du centre, la coupole au-dessus de la tête
+      for (let y = sol + 3; y < sol + 14; y++) if (w.getBlock(lm.x + 2, y, lm.z) !== 0) { voute = true; break; }
+      r = { trouve: true, place: libre(...depart), centre: vus.has('0,0'), cases: vus.size, ciel, voute };
+    }
+    verifier('on entre dans le Panthéon de Rome : depuis la place, à pied, jusqu\'au centre de la rotonde, sous la coupole et l\'oculus ouvert',
+      r.trouve && r.place && r.centre && r.ciel && r.voute, JSON.stringify(r));
+  }
+
   // --- UNE VOITURE TRAVERSE CHAQUE PONT D'AUTOROUTE (v430) -------------------
   // Max, capture d'iPhone : « Une voiture ne roule pas dans l'eau — fais
   // demi-tour » sur une autoroute, pas une goutte en vue. Le générateur

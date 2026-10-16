@@ -20,6 +20,33 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v455 — On entre dans le Panthéon de Rome
+
+**Pourquoi.** « Intérieurs — les monuments se visitent » attendait dans
+`TASKS.md`, et hors de Paris et de Londres aucun monument ne s'ouvrait. Le
+Panthéon de Rome était un bloc plein : la rotonde remplie de pierre jusqu'à la
+coupole, et son portique posé sur une marche d'un bloc au-dessus de la place.
+Un enfant qui y marchait butait sur la façade.
+
+**Ce que ça change.** Le portique est de plain-pied avec la place, la porte
+s'ouvre dans l'axe entre les deux colonnes du milieu, et la rotonde est creuse :
+un dallage de marbre en damier, l'autel et sa niche dorée au fond, quatre
+édicules aux murs, et au-dessus la coque de la coupole avec son oculus ouvert
+sur le ciel. La silhouette, la boîte (6) et la hauteur (dix blocs, à la hauteur
+de ses voisins) ne changent pas ; le monde d'avant garde son gabarit
+(`LANDMARKS_V317`).
+
+**Ce qui le prouve.** Un témoin de `plafond.js` marche depuis la place,
+quatre blocs devant la boîte, de proche en proche (un sol plein, deux blocs
+d'air), et doit atteindre le centre de la rotonde, sous la voûte et l'oculus
+ouvert : vert ici (524 cases atteintes), rouge sur `origin/main` (le centre
+jamais atteint, le ciel fermé). Le repère se choisit par le disque de Rome :
+« Panthéon » est aussi à Paris. L'empreinte des 490 morceaux est intacte
+(938a330c…, le Panthéon n'y tombe pas), les deux empreintes du relief aussi.
+Captures dehors, dedans et sous l'oculus : `tests/sonde-captures-pantheon.cjs`.
+
+---
+
 ## v454 — Les garde-corps des petites fenêtres ont leurs anneaux entiers
 
 **Pourquoi.** Le motif de fer forgé d'un garde-corps est fait pour une travée

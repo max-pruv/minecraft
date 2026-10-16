@@ -1384,20 +1384,47 @@ function buildHotelDeVilleToronto(poser) {
 // hauteur de ses voisins, sous le Colisée) — son
 // oculus ouvert au ciel, et le portique de seize colonnes au nord, sous son
 // fronton. Le gabarit en faisait une coupole sur tambour, sans portique.
+//
+// ET IL SE VISITE (v455) : c'est le premier monument qu'on traverse hors de
+// Paris et de Londres. La rotonde est CREUSE — un mur d'un bloc, la coupole
+// une coque, l'oculus de trois blocs ouvert sur le ciel —, le portique est
+// AU NIVEAU DE LA PLACE (y = 0, plus de marche) et la porte de bronze, trois
+// blocs sur trois, s'ouvre dans l'axe, entre les deux colonnes du milieu. Au
+// fond, face à la porte, l'autel et sa niche dorée ; aux murs, quatre
+// édicules ; au centre, sous l'oculus, rien : c'est là qu'on lève la tête.
+// Du mobilier en BLOCS (v330), et la silhouette, la boîte et la hauteur sont
+// celles d'avant au bloc près : seul l'intérieur change.
 function buildPantheonRome(poser) {
-  tambour(poser, 1, 5, 4, CREME, PIERRE);
+  const AIR = BLOCK.AIR;
+  const R = 4;
+  // la rotonde : le mur au pourtour, l'air dedans, le dallage de marbre
+  for (let x = -R; x <= R; x++) for (let z = -R; z <= R; z++) {
+    const d = Math.hypot(x, z);
+    if (d > R + 0.35) continue;
+    const mur = d > R - 0.65;
+    if (!mur) poser(x, 0, z, ((x + z) & 1) ? BLANC : PIERRE);
+    for (let y = 1; y <= 5; y++) poser(x, y, z, mur ? (((x + z) & 1) === 0 ? PIERRE : CREME) : AIR);
+  }
+  // la coupole : une coque, et l'oculus au sommet
   for (let k = 0; k < 5; k++) {
     const rr = 4.35 * Math.sqrt(1 - ((k + 0.5) / 5.5) ** 2);
     for (let x = -4; x <= 4; x++) for (let z = -4; z <= 4; z++) {
       const d = Math.hypot(x, z);
-      if (d > rr + 0.2 || (k === 4 && d < 0.8)) continue;
-      poser(x, 6 + k, z, PIERRE);
+      if (d > rr + 0.2) continue;
+      const coque = d > rr - 1 && !(k === 4 && d < 1.5);
+      poser(x, 6 + k, z, coque ? PIERRE : AIR);
     }
   }
-  plein(poser, 1, -3, 3, -6, -5, PIERRE);
-  for (const x of [-3, -1, 1, 3]) for (let y = 2; y <= 5; y++) { poser(x, y, -6, BLANC); poser(x, y, -5, BLANC); }
+  // le portique, de plain-pied avec la place
+  plein(poser, 0, -3, 3, -6, -5, PIERRE);
+  for (const x of [-3, -1, 1, 3]) for (let y = 1; y <= 5; y++) { poser(x, y, -6, BLANC); poser(x, y, -5, BLANC); }
   plein(poser, 6, -3, 3, -6, -5, CREME);
   plein(poser, 7, -1, 1, -6, -5, CREME);
+  // la porte, dans l'axe
+  for (let x = -1; x <= 1; x++) for (let y = 1; y <= 3; y++) poser(x, y, -4, AIR);
+  // l'autel au fond, sa niche dorée ; quatre édicules aux murs
+  poser(0, 1, 3, BLANC); poser(0, 2, 3, OR);
+  for (const [x, z] of [[-3, -1], [3, -1], [-3, 1], [3, 1]]) poser(x, 1, z, BLANC);
 }
 
 // Le dôme du Rocher : l'octogone revêtu de faïence bleue, son tambour, et la

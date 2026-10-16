@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 455,
+    titre: 'On entre dans le Panthéon',
+    puces: [
+      'À Rome, le Panthéon se visite',
+      'Lève la tête : le ciel par l\'oculus',
+    ],
+  },
+  {
     v: 454,
     titre: 'De jolies petites grilles',
     puces: [
