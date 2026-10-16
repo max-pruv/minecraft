@@ -3363,7 +3363,7 @@ function aeroportiste(dt) {
   }
 }
 
-// Les panneaux de la chaîne (v455) : en entrant à pied dans un poste, l'enfant
+// Les panneaux de la chaîne (v459) : en entrant à pied dans un poste, l'enfant
 // lit ce qu'on y fait. Une fois par entrée — rester sur place ne répète rien.
 let posteLu = -1;
 function guideUsine() {
