@@ -20,6 +20,32 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v467 — Les passages piétons des villes bâties à la main
+
+**Pourquoi.** Les passages peints n'existaient que dans les villes engendrées
+(dans la tuile pour les trames alignées, en géométrie pour les trames en biais,
+v421) et à Paris. Londres, Nice, Lille, San Francisco et Washington — dont les
+rues sont des avenues nommées tracées sur le vrai plan, sans trame — n'en
+avaient aucun : on n'y traversait qu'aux feux, 1 à 3 fois par minute au centre
+de Londres.
+
+**Ce que ça change.** Chaque croisement de deux avenues porte son passage à
+larges bandes sur chacune des deux avenues, à la règle de la v421 (la bande
+commence 0,4 bloc après la chaussée croisée, mesurée le long de l'avenue, et
+fait 1,7 bloc ; les bandes de cinquante centimètres courent dans l'axe de la
+circulation). C'est de la géométrie du mailleur — aucun bloc écrit, aucun
+appel de dessin de plus — et `passagePieton` lit la même règle : les passants
+y traversent. Londres 138 bras de carrefour, Nice 37, Lille 25, San Francisco
+54, Washington 150. Paris garde son marquage.
+
+**Ce qui le prouve.** Deux témoins neufs, rouges sur l'ancien code :
+`plafond.js` maille quarante-neuf morceaux au centre de chaque ville avec et
+sans (`passagesVilles: false`) — Londres +11 033 sommets, Nice +4 375, Lille
++3 139, San Francisco +2 046, Washington +4 812, Paris et Rome 0, les blocs
+identiques ; `monte.js` pose des passants au bord d'un passage de Londres loin
+de tout feu et compte qui traverse dessus. L'empreinte des 490 morceaux se
+garde par l'option de désarmement (`morceaux-temoin.mjs`). Les deux empreintes
+du relief sont intactes : rien n'est écrit dans le monde.
 ## v466 — Paris pèse moins lourd sur la tablette
 
 **Pourquoi.** La couche de relief de Paris (façades, balcons, corniches)

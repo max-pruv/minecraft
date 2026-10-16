@@ -2641,7 +2641,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       JSON.stringify({ mesure: tr, barres: BARRES_TRAVAIL }));
   }
 
-  // UNE BAIE SE SOUDE (v466). La couche HD de Paris pesait jusqu'à onze
+  // UNE BAIE SE SOUDE (v467). La couche HD de Paris pesait jusqu'à onze
   // mégaoctets par morceau dense de l'ouest (v299 : l'iPhone de Max tué par la
   // mémoire), et c'est le NOMBRE DE SOMMETS qui décide. Un sommet sur six y
   // était le double exact d'un autre (deux quads du même plan qui se touchent).
@@ -2852,6 +2852,36 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     verifier('à Rome et à Zurich, les passages piétons en biais se dessinent — sans un bloc écrit, et rien ne change à Kyoto ni à Paris',
       res.rome.sommetsEnPlus > 200 && res.zurich.sommetsEnPlus > 200 && res.kyoto.sommetsEnPlus === 0 && res.paris.sommetsEnPlus === 0
         && Object.values(res).every((r) => r.blocsEgaux),
+      JSON.stringify(res));
+  }
+
+  // ET LES AVENUES DES VILLES BÂTIES À LA MAIN (v467). Londres, Nice, Lille,
+  // San Francisco et Washington n'ont pas de trame : leurs passages se posent
+  // aux croisements de leurs avenues nommées (`carrefoursDeVoies`), en
+  // géométrie. Quarante-neuf morceaux au centre de chaque ville, avec et sans
+  // (`passagesVilles: false`) : des sommets en plus dans les cinq, aucun à
+  // Paris (son marquage est dans la tuile) ni à Rome (déjà en biais), les blocs
+  // identiques. Sur l'ancien code l'option n'existe pas : zéro, rouge.
+  {
+    const { World, CHUNK } = await import('../src/world.js');
+    const { buildChunkTampons } = await import('../src/mesher.js');
+    const { positionDe } = await import('../src/mondes.js');
+    const res = {};
+    for (const cle of ['londres', 'nice', 'lille', 'sf', 'washington', 'paris', 'rome']) {
+      const p = positionDe(cle), c0x = Math.floor(p.x / CHUNK), c0z = Math.floor(p.z / CHUNK);
+      const w = new World();
+      let avec = 0, sans = 0, blocsEgaux = true;
+      for (let dx = -3; dx <= 3; dx++) for (let dz = -3; dz <= 3; dz++) {
+        const d0 = Buffer.from(w.ensureChunk(c0x + dx, c0z + dz)).toString('base64');
+        sans += buildChunkTampons(w, c0x + dx, c0z + dz, { passagesVilles: false }).solid.positions.length / 3;
+        avec += buildChunkTampons(w, c0x + dx, c0z + dz).solid.positions.length / 3;
+        if (Buffer.from(w.ensureChunk(c0x + dx, c0z + dz)).toString('base64') !== d0) blocsEgaux = false;
+      }
+      res[cle] = { sommetsEnPlus: avec - sans, blocsEgaux };
+    }
+    verifier('à Londres, Nice, Lille, San Francisco et Washington, les carrefours des avenues ont leur passage peint — sans un bloc écrit',
+      ['londres', 'nice', 'lille', 'sf', 'washington'].every((c) => res[c].sommetsEnPlus > 500)
+        && res.paris.sommetsEnPlus === 0 && res.rome.sommetsEnPlus === 0 && Object.values(res).every((r) => r.blocsEgaux),
       JSON.stringify(res));
   }
 
@@ -3203,14 +3233,14 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         `${pas} pas, ${sansRail} sans ses quatre files de prismes · ${obs} obsidienne, ${planches} planche(s) sur ${colonnes} colonnes`);
       verifier('le sol continu suit le profil de la voie, dans la tranchée comme sur le remblai',
         // `tranchee > 100` est une borne de GARDE (la mesure a eu lieu), posée
-        // à la moitié : la rampe du viaduc (v465) relève la voie de deux blocs
+        // à la moitié : la rampe du viaduc (v467) relève la voie de deux blocs
         // au plus avant une rivière, et une tranchée de deux blocs y devient une
         // tranchée d'un bloc — 240 → 170 colonnes dans cette fenêtre, mesuré.
         continu && colonnes > 3000 && talus > 200 && surface >= colonnes * 0.85 && ecartSurf < 1e-6 && tranchee > 100 && tranchJuste === tranchee,
         `${surface} colonnes de surface sur ${colonnes} (${talus} de talus), écart max à la cote ${ecartSurf.toFixed(4)} · en tranchée ou remblai de deux blocs et plus : ${tranchJuste}/${tranchee}, et ${falaise} au bord d'une falaise (${((performance.now() - t0) / 1000).toFixed(1)} s)`);
     }
 
-    // LE VIADUC DE LA MANCHE (v465). Sur l'eau, la voie était une chaussée de
+    // LE VIADUC DE LA MANCHE (v467). Sur l'eau, la voie était une chaussée de
     // pierre au ras des flots : de la mer à droite et à gauche, une digue
     // dessous, chaque rivière barrée d'un mur. Le viaduc garde l'eau sous le
     // tablier (des piles tous les `PAS_PILE` blocs), le tablier est un ruban
@@ -3254,7 +3284,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       }
       verifier('l\'Eurostar passe la Manche sur un viaduc : la mer sous le tablier, des piles, aucune digue',
         neuf && pas > 150 && colonnes > 1000 && eau > colonnes * 0.8 && piles > 0 && digue === 0 && bas >= 31 + T.DEGAGE - 1e-6,
-        `${pas} pas sur la mer · ${colonnes} colonnes : ${eau} d'eau libre, ${piles} de pile, ${digue} autres · tablier au plus bas à ${bas.toFixed(2)} (surface 31)${neuf ? '' : ' — pas de viaduc (code d\'avant la v465)'}`);
+        `${pas} pas sur la mer · ${colonnes} colonnes : ${eau} d'eau libre, ${piles} de pile, ${digue} autres · tablier au plus bas à ${bas.toFixed(2)} (surface 31)${neuf ? '' : ' — pas de viaduc (code d\'avant la v467)'}`);
       verifier('le tablier du viaduc se dessine et porte l\'enfant aux mêmes cotes que les rails',
         neuf && pas > 150 && sansTablier === 0 && sansContact === 0 && ecartContact < 1e-6,
         `${sansTablier} pas sans ruban de tablier, ${sansContact} sans contact sur ${pas}, écart contact/rail ${ecartContact.toFixed(4)} (${((performance.now() - t0) / 1000).toFixed(1)} s)`);

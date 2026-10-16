@@ -770,6 +770,16 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les passages des avenues (v467) — un passage se mesure le long de SA rue
+
+Une règle. Dans une ville bâtie à la main, un carrefour est le croisement de
+deux avenues nommées (`carrefoursDeVoies`) ; le passage se pose sur chacune, à
+`demi-chaussée croisée / sin(angle) + 0,4` du croisement, mesuré le long de
+l'avenue — sur un croisement oblique, la chaussée croisée est plus longue à
+franchir, et la bande tomberait dedans. Trois avenues concourantes donnent un
+seul « bras » par avenue (le plus large dégagement), un croisement sous 30°
+n'a pas de passage, et seul le bitume du `sol*` de la ville en porte.
+`passagesVilles: false` le retire pour l'empreinte des 490 morceaux.
 ## Une baie se soude (v466) — une optimisation de maillage se prouve par les triangles
 
 Une règle. Deux quads du même plan qui se touchent émettent des coins
