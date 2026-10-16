@@ -280,7 +280,7 @@
   `ecart` vrai, 6,5 blocs), au vert. Vu deux fois sur quatre passages de
   `monte.js` des deux côtés. Piste : un écart ne quitte pas le trottoir s'il
   peut l'éviter (choisir le côté qui reste sur `TROTTOIR`). Zone piétons.
-- [ ] **LONDRES, ROME, ZURICH : AUCUN PASSAGE PEINT (v402).** Sur 267 villes
+- [x] **LONDRES, ROME, ZURICH : AUCUN PASSAGE PEINT (v402) — FAIT (Rome, Zurich en v421 ; Londres, Nice, Lille, San Francisco, Washington en v455, aux croisements des avenues nommées, `passages.js`).** Sur 267 villes
   engendrées, seules les 65 à trame alignée (`t.net`) peignent un passage ;
   Londres n'en peint aucun. Les passants n'y traversent qu'aux feux (Londres 1 à
   3 fois par minute). Peindre un passage en biais demande une géométrie (la
@@ -1089,8 +1089,8 @@
   hors traversée 0 et 5 relevés sur ~1 800 sur la branche, 3 et 2 sur
   `origin/main` : aucun « né sur la chaussée », aucun flâneur. Le témoin lit un
   instantané au sortir du témoin précédent ; c'est le palier suivant.
-- [ ] **TRAVERSER À LONDRES ET AUX PASSAGES DES VILLES ENGENDRÉES SANS FEU
-  (v371).** Les passages peints sans feu ne sont lus qu'à Paris
+- [x] **TRAVERSER À LONDRES ET AUX PASSAGES DES VILLES ENGENDRÉES SANS FEU
+  (v371) — FAIT en v455** (`passagePieton` lit `passageEn`, qui couvre les avenues des villes bâties à la main ; témoin `monte.js` à Londres). Reste : Paris garde son marquage dans la tuile ; les places (Trafalgar) n'ont pas de passage, leur sol n'est pas du bitume. Les passages peints sans feu ne sont lus qu'à Paris
   (`marquageParis`) ; ailleurs on ne traverse qu'au feu. Londres : 1 à 3
   traversées par minute au centre, parce que la plupart des coins n'ont pas de
   feu. À voir : `CITY_BLOCK.CROSSWALK` des villes engendrées.

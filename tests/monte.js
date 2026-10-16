@@ -2464,6 +2464,20 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         && auPassageBiais.surPassage >= 0.6 * auPassageBiais.detail.filter((d) => d.tr === null).length,
       JSON.stringify(auPassageBiais));
 
+    // ---- ET AUX CARREFOURS DES AVENUES DE LONDRES (v455) -------------------
+    //
+    // Londres n'a pas de trame : ses rues sont des avenues nommées, et jusqu'ici
+    // aucun passage n'y était peint — on n'y traversait qu'au feu (1 à 3 fois
+    // par minute au centre). Les passages se posent désormais aux croisements
+    // des avenues (`passages.js`, même règle que les bandes en biais), et
+    // `passagePieton` les lit. Même témoin qu'à Rome. Sur l'ancien code,
+    // `passageEn` ne rend rien à Londres : aucune pose, rouge.
+    const auPassageLondres = await auPassageDans('londres', true);
+    verifier('à Londres, un passant traverse sur le passage peint d\'un carrefour d\'avenues sans feu',
+      !auPassageLondres.err && auPassageLondres.poses >= 4 && auPassageLondres.surPassage >= 1
+        && auPassageLondres.surPassage >= 0.6 * auPassageLondres.detail.filter((d) => d.tr === null).length,
+      JSON.stringify(auPassageLondres));
+
     // ---- UN PASSANT NE TRAVERSE PAS LA VOITURE DE L'ENFANT (v259) -------------
     //
     // Max, capture à la Bastille : des passants au travers de sa voiture. Un

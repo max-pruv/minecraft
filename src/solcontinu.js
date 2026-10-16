@@ -50,7 +50,7 @@
 // node. Il ne lit le monde que par `terrainHeight`, `getBlock` et `cityAt`.
 import { BLOCK, BLOCK_INFO, CITY_BLOCK, ARCHI, ROUTE_BLOCK, isProp } from './blocks.js';
 import { tileRect } from './tuiles.js';
-import { bandesDeColonne } from './passages.js';
+import { bandesDeColonne, morceauAvecPassagesMain } from './passages.js';
 import { villeMondeEn } from './villesmonde.js';
 import { TEINTE_HERBE_LIN as TEINTE_HERBE } from './terre.js';
 
@@ -429,15 +429,19 @@ export function emettreRubans(buf, world, cx, cz, chunk) {
 // `localGet` lit le morceau lui-même (coordonnées locales) : aucun bloc lu hors
 // du morceau, aucun `getBlock` du monde — le travail d'un morceau (v352) ne
 // bouge pas pour des bandes peintes.
-export function emettreBandesPassages(buf, world, cx, cz, chunk, localGet, topY) {
+// `quoi.biais` (v421) et `quoi.villes` (v455, les avenues des villes bâties à
+// la main) se désarment chacun : l'empreinte des 490 morceaux les retire tous
+// deux, et un témoin compare chaque famille à son absence.
+export function emettreBandesPassages(buf, world, cx, cz, chunk, localGet, topY, quoi = { biais: true, villes: true }) {
   const baseX = cx * chunk, baseZ = cz * chunk;
   // une question par morceau d'abord : aucun coin dans une ville en biais, rien
   let ville = false;
-  for (const [dx, dz] of [[0, 0], [chunk, 0], [0, chunk], [chunk, chunk], [chunk / 2, chunk / 2]]) {
+  if (quoi.biais) for (const [dx, dz] of [[0, 0], [chunk, 0], [0, chunk], [chunk, chunk], [chunk / 2, chunk / 2]]) {
     const f = villeMondeEn(baseX + dx, baseZ + dz);
     if (f && f.trame && !f.trame.net && !f.trame.ruelles) { ville = true; break; }
   }
-  if (!ville) return 0;
+  const main = !ville && quoi.villes && morceauAvecPassagesMain(baseX, baseZ, chunk);
+  if (!ville && !main) return 0;
   const rect = tileRect(BLOCK_INFO[BLOCK.SNOW].tiles[0]);
   let n = 0;
   for (let x = baseX; x < baseX + chunk; x++) for (let z = baseZ; z < baseZ + chunk; z++) {
@@ -445,7 +449,7 @@ export function emettreBandesPassages(buf, world, cx, cz, chunk, localGet, topY)
     let y = topY;
     while (y > 0 && localGet(lx, y, lz) === BLOCK.AIR) y--;
     if (localGet(lx, y, lz) !== CITY_BLOCK.ASPHALT) continue;
-    const bandes = bandesDeColonne(x, z);
+    const bandes = bandesDeColonne(x, z, quoi);
     for (const poly of bandes) {
       const base = buf.positions.length / 3, yt = y + 1.01;
       for (const [px, pz] of poly) {
