@@ -3798,12 +3798,11 @@
      Palier C livré (v394) : les 90 villes engendrées d'Europe (`registreEurope`,
      `STYLES.sud`, `STYLES.nord`). La consigne est remplie. Dettes déclarées
      du palier C, vues en capture :
-     - [ ] une baie de ville engendrée est faite de DEUX blocs `ETAGE`
+     - [x] une baie de ville engendrée est faite de DEUX blocs `ETAGE`
        empilés : la couche (comme la tuile plate) y dessine deux fenêtres
-       l'une sur l'autre par étage — un registre « baie de deux blocs »
-       (les bandes `ETAGE_BAS/MI/HAUT` de Paris) demanderait que
-       `villesmonde.js` pose ces bandes : c'est un changement de blocs, donc
-       de la zone des villes engendrées, pas de la couche ;
+       l'une sur l'autre par étage. **Fait en v453** : `villesmonde.js` pose
+       les bandes `ETAGE_BAS/MI/HAUT` de Paris (38 719 piles → 0), et les
+       bandes hors de Paris lisent `gardeCorps`, `guillotine`, `linteau` ;
      - [x] Édimbourg est en brique rouge parce que sa palette l'est ; la vraie
        ville est de grès gris — une fiche, pas un registre. **Fait en v450**
        (`PALETTES_VILLES` : gris, gris clair, kaki, des unis). Reste : dans la

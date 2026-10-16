@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 457,
+    titre: 'Une fenêtre par étage',
+    puces: [
+      'Rome, Tokyo, Berlin : de vraies grandes fenêtres',
+      'Plus deux fenêtres empilées',
+    ],
+  },
+  {
     v: 456,
     titre: 'Des essais plus sûrs',
     puces: [
