@@ -1074,7 +1074,7 @@ const VRAIES_KM = [
       JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiA1Nord ? { nom: a1.convoiA1Nord.nom, voitures: (a1.convoiA1Nord.modeles || []).length } : 'aucun convoi A1 Nord',
         surRail: a1.surRail && a1.surRail['A1 Nord'], entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'A1 Nord') }));
 
-    // L'A1 CENTRE (v455) : Florence–Rome, le maillon qui manquait — l'Autostrada
+    // L'A1 CENTRE (v460) : Florence–Rome, le maillon qui manquait — l'Autostrada
     // del Sole va désormais de Milan à Naples. La Frecciarossa est sur l'axe
     // direct : la route reste à l'EST du rail d'un bout à l'autre, contourne
     // le massif par l'est et entre dans Rome à l'est de Fiumicino. Rouge sur
