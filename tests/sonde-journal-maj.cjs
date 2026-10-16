@@ -10,7 +10,7 @@
 // (`plantagesAvant`, le compteur après la vérification des douteuses à 7 s),
 // et la TRACE des fermetures de la page qui part (sessionStorage).
 // Mesuré v454 : compteur 0 → 1, « plantage-precedent confirmé » ; la trace
-// montrait `rouvrir()` APRÈS `fermer('mise-a-jour')` et `pagehide`. v462 : 0.
+// montrait `rouvrir()` APRÈS `fermer('mise-a-jour')` et `pagehide`. v464 : 0.
 // Usage : node sonde-journal-maj.cjs
 const { Banc, dormir, jusqua } = require('./banc.js');
 

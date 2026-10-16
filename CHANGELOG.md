@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v462 — Une mise à jour n'est plus comptée comme un plantage
+## v464 — Une mise à jour n'est plus comptée comme un plantage
 
 **Pourquoi.** Le journal de bord (v296) range le palier bas après deux
 plantages de suite, et `TASKS.md` soupçonnait depuis la v413 qu'une mise à
@@ -44,6 +44,54 @@ plantage »), vérifié rouge, remède désarmé ; `maj.js` devient gardien de
 `src/journal.js`.
 
 ---
+
+## v463 — L'usine se visite : chaque poste dit ce qu'on y fait
+
+**Pourquoi.** La Giga-usine d'Austin (v168) a sa chaîne : la voiture y passe
+de la presse à la carrosserie, à la peinture, à l'assemblage et au contrôle,
+puis on la conduit sur le parking. Mais rien ne disait à l'enfant ce qui se
+passe à chaque poste — des machines, des robots, un tunnel, sans un mot.
+
+**Ce que ça change.** En entrant à pied dans un poste du hall, un bandeau dit,
+en une phrase pour un enfant de sept ans, ce qu'on y fait : la presse qui
+frappe la tôle comme un emporte-pièce, les robots qui soudent, la voiture
+grise qui ressort en couleur, le « mariage » de la batterie et de la caisse,
+le contrôle avant le parking. Une fois par entrée, jamais en vol. Rien d'autre
+ne bouge : ni le bâtiment, ni le sol, ni la conduite.
+
+**Ce qui le prouve.** Trois témoins. Dans `plafond.js`, sous node : les cinq
+postes ont leur panneau (25 mots au plus) et le poste se reconnaît sous les
+pieds, pas dehors ni en vol — rouge sur l'ancien code (aucun panneau) ; et le
+trajet à pied sur le bâtisseur lui-même, de la porte ouest à la porte est par
+chaque poste (vert des deux côtés à dessein : il garde la visite). Dans
+`monte.js`, l'enfant posé à pied dans le hall, puis devant le tunnel, lit le
+bandeau de la peinture à l'écran. Les deux empreintes du relief sont
+intactes : aucun bloc écrit, aucun repère déplacé.
+
+---
+## v462 — Un mauvais atterrissage casse l'avion
+
+**Pourquoi.** Max : « un avion devrait se crasher s'il atterrit mal ».
+Jusqu'ici tout toucher finissait en freinage : un piqué pleins gaz, un posé
+train rentré dans un champ, un avion dans les arbres ou dans la mer — rien ne
+se passait, et rien n'apprenait à bien se poser.
+
+**Ce que ça change.** Un avion qui touche trop vite (au-delà de sa vitesse
+d'atterrissage), trop fort à la verticale, sur le ventre hors d'une piste, sur
+un terrain trop accidenté, dans l'eau, dans les arbres ou contre un bâtiment
+devient une épave : fumée, flammes, carcasse hors service. L'enfant n'a rien —
+il est déposé debout à côté, en sécurité, et un bandeau dit ce qui s'est passé
+et quoi faire la prochaine fois (sortir le train, ralentir, laisser ✈️ se
+poser). Un atterrissage correct sur une piste ou sur un champ plat ne casse
+rien, et un posé assisté par ✈️ sur une piste ne casse jamais. L'ami qui
+joue avec toi voit désormais ton avion, et son épave en feu.
+
+**Ce qui le prouve.** La règle est pure (`jugerToucher`, degats.js) et ses
+seuils vivent dans la fiche de chaque appareil (`toucherMax`, `chuteMax`) ;
+un témoin de `degats.js` la vérifie sous node cas par cas. Deux témoins de
+`monte.js` jouent le trajet de l'enfant — un piqué pleins gaz et un posé train
+rentré sur une dalle qui n'est pas une piste — et exigent l'épave en feu,
+l'enfant debout à côté, plus aux commandes, et le bandeau.
 
 ## v461 — L'autoroute de Florence à Rome
 

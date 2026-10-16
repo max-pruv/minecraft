@@ -47,7 +47,7 @@ import { decor, voirTout } from './couches.js';
 import { contexteAudio, sortieAudio, reglerSon, sonActif, etatSon, radioEnCours, generationAudio } from './sons.js';
 import { traceAnneau } from './ville.js';
 import { traceCourse } from './circuit.js';
-import { USINE, PARC, traceChaine } from './usine.js';
+import { USINE, PARC, traceChaine, POSTES, posteSousLesPieds } from './usine.js';
 import { circulationsAPlier, tracesCirculationMain, avenueDEntree, villeMondeEn } from './villesmonde.js';
 import { ALLURE_VOIE } from './circulation.js';
 import { createPassants } from './passants.js';
@@ -2254,7 +2254,7 @@ window.addEventListener('pagehide', () => {
   // qu'on comprenne quand ni pourquoi.
   if (net) { try { net.stop(); } catch { /* déjà parti */ } net = null; }
 });
-// Une page rendue par le cache de navigation revit : sa session repart (v462,
+// Une page rendue par le cache de navigation revit : sa session repart (v464,
 // journal.js — une page partie ne se rouvre pas autrement).
 window.addEventListener('pageshow', (e) => { if (e.persisted) journal.revenir(); });
 document.addEventListener('visibilitychange', () => {
@@ -2679,7 +2679,21 @@ function refuserOuVoler() {
 }
 
 // Ce que l'avion fait tout seul se DIT : les roues qui touchent, l'arrêt.
-player.surAvion = (quoi) => {
+// L'AVION CASSÉ (aviation) : le message dit ce qui s'est passé, que l'enfant
+// est SAIN ET SAUF, et QUOI FAIRE — un avion neuf attend au parking de
+// l'aéroport, et ✈️ « Se poser » sait se poser tout seul. Jamais d'accusation.
+const MESSAGES_CRASH = {
+  vite: '💥 Trop vite pour te poser ! L\'avion est cassé, tu es sain et sauf. Un avion neuf t\'attend à l\'aéroport — et ✈️ « Se poser » le pose tout seul.',
+  dur: '💥 Atterrissage trop dur ! L\'avion est cassé, tu es sain et sauf. Descends doucement, train sorti (🛞) — ou laisse ✈️ te poser sur une piste.',
+  ventre: '💥 Sur le ventre, hors d\'une piste ! L\'avion est cassé, tu es sain et sauf. Sors le train (🛞) avant de toucher le sol.',
+  arbres: '🌲 Dans les arbres ! L\'avion est cassé, tu es sain et sauf. Pose-toi sur une piste ou un grand champ plat.',
+  relief: '⛰️ Terrain trop accidenté ! L\'avion est cassé, tu es sain et sauf. Pose-toi sur une piste ou un grand champ bien plat.',
+  bati: '🏢 Contre un bâtiment ! L\'avion est cassé, tu es sain et sauf. Vole plus haut au-dessus des villes.',
+  eau: '🌊 Dans l\'eau ! L\'avion est cassé, tu es sain et sauf. Nage jusqu\'à la terre, un avion neuf t\'attend à l\'aéroport.',
+};
+window.__messagesCrash = MESSAGES_CRASH;
+player.surAvion = (quoi, raison) => {
+  if (quoi === 'crash') { toast(MESSAGES_CRASH[raison] || MESSAGES_CRASH.dur, 0xffb347, 7000); return; }
   if (quoi === 'touche') toast('🛬 Posé·e ! On freine…', 0x9fd8ff);
   else if (quoi === 'ventre') toast('💥 Sur le ventre ! Sors le train (🛞) avant de te poser.', 0xffd166);
   else if (quoi === 'arret') toast('🛑 À l\'arrêt. Le joystick fait rouler, ✈️ redécolle.', 0x9fd8ff);
@@ -3365,6 +3379,17 @@ function aeroportiste(dt) {
     // d'un vrai aéroport.
     if (ne && cap !== undefined) ne.yaw = cap;
   }
+}
+
+// Les panneaux de la chaîne (v463) : en entrant à pied dans un poste, l'enfant
+// lit ce qu'on y fait. Une fois par entrée — rester sur place ne répète rien.
+let posteLu = -1;
+function guideUsine() {
+  const pu = USINE();
+  if (Math.abs(player.pos.x - pu.x) > 120 || Math.abs(player.pos.z - pu.z) > 120) { posteLu = -1; return; }
+  const i = player.flying ? -1 : posteSousLesPieds(player.pos.x, player.pos.y, player.pos.z);
+  if (i >= 0 && i !== posteLu) toast(POSTES[i].panneau, 0xffd75e, 6000);
+  posteLu = i;
 }
 
 function garagiste(dt) {
@@ -4646,7 +4671,7 @@ function synchroniserVehiculeDistant(rp, v) {
   if (!v) return;
   const fabrique = MODELES_MONTURE[v.k];
   const def = MONTURES.find((d) => d.key === v.k);
-  if (!fabrique || !def || !def.siege) return;
+  if (!fabrique || !def || !(def.siege || def.pilote)) return;
   const mesh = fabrique(v.f ? { flotte: v.f, peinture: typeof v.c === 'number' ? v.c : null } : undefined);
   mesh.position.copy(rp.pos);
   scene.add(mesh);
@@ -4705,8 +4730,10 @@ function updateRemotePlayers(dt) {
       const vm = rp.vehicule.mesh;
       vm.position.copy(rp.pos);
       vm.rotation.y = rp.cap;
-      vieDistante(vm, dt);   // roues avant braquées et traces de pneus (v441)
-      asseoir(rp.mesh, rp.vehicule, rp.vehicule.def.siege, rp.animTime);
+      if (rp.vehicule.def.siege) vieDistante(vm, dt);   // roues avant braquées et traces de pneus (v441)
+      // un avion n'a pas de siège dessiné : l'ami est dedans, à sa position
+      if (rp.vehicule.def.siege) asseoir(rp.mesh, rp.vehicule, rp.vehicule.def.siege, rp.animTime);
+      else { poserDebout(rp); rp.mesh.position.copy(rp.pos); }
       continue;
     }
     const chez = rp.passager ? vehiculeDuConducteur(rp.passager.de) : null;
@@ -4786,7 +4813,9 @@ function startNetSession(code, isHost, patience) {
     // était vu à pied, glissant à toute vitesse (Max). Le modèle de flotte
     // voyage aussi, pour que ce soit SA voiture qu'on voit.
     const a = fun.montureConduite ? fun.montureConduite() : null;
-    if (a && a.def && a.def.siege) {
+    // L'AVION AUSSI (aviation) : l'ami voit l'appareil — et son épave en feu
+    // par les dégâts (`d`, v344) — même s'il n'a pas de siège dessiné.
+    if (a && a.def && (a.def.siege || a.def.pilote)) {
       const u = (a.mesh && a.mesh.userData) || {};
       p.v = { k: a.def.key, f: u.flotte || null };
       // SA COULEUR ET SON ORIGINE (v305) : l'ami la voit dans la teinte que la
@@ -8200,6 +8229,7 @@ function frame(now) {
     signalerElanDeVol();
     animalManager.update(dt);
     garagiste(dt);
+    guideUsine();
     aeroportiste(dt);
     animerLesVilles(dt);
     // Les personnages lointains — la garnison du château, les astronautes de

@@ -1,5 +1,11 @@
 # Ce qui est en cours
 
+- [ ] **L'AVION DE L'AMI ET SON ÉPAVE (v453) — SANS TÉMOIN À DEUX TABLETTES.**
+  `p.v` porte désormais un avion (fiche `pilote`) et ses dégâts ; aucun témoin
+  de `reseau.js` ne vérifie encore que l'autre tablette voit l'appareil, puis
+  l'épave en feu après un crash. À écrire sur le modèle de la v344 (l'ami voit
+  la voiture froissée) : deux pages, l'une s'écrase, l'autre lit le maillage.
+
 - [ ] **L'APPROCHE ASSISTÉE (v452) : QUATRE POSÉS SUR 148 À REPRENDRE.**
   `node tests/sonde-approche.cjs src` : trois touchers à 5,7 · 6,2 · 6,7 blocs
   par seconde (Roissy 47 pour l'avion de ligne et le Concorde, Andrews pour le
@@ -194,7 +200,7 @@
   choisissant une étendue dans les Réglages ; à décider avec Max s'il faut
   l'effacer d'office une fois.
 - [x] **LE JOURNAL DE BORD COMPTAIT UNE MISE À JOUR COMME UN PLANTAGE — corrigé
-  en v462.** Mesuré par `tests/sonde-journal-maj.cjs` (vraie mise à jour, service
+  en v464.** Mesuré par `tests/sonde-journal-maj.cjs` (vraie mise à jour, service
   worker vivant, veille puis retour) : la page qui part rouvrait sa session par un
   `visibilitychange` APRÈS `fermer('mise-a-jour')` et `pagehide` ; la page neuve
   la confirmait morte à 7 s (compteur 1). Une page partie ne se rouvre plus
