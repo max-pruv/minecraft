@@ -16,7 +16,7 @@ import { construireTaxi } from './taxis.js';
 import { construireUtilitaire, construirePickup } from './utilitaires.js';
 import { Atelier } from './modeles.js';
 import { liberer } from './liberer.js';
-import { profilVitesse, grilleDuProfil, rapprocher, allureDevant, passeAOrange, FREIN, FREIN_URGENCE, ALLURE_VOIE, allureDuConducteur } from './circulation.js';
+import { profilVitesse, grilleDuProfil, rapprocher, allureDevant, passeAOrange, FREIN, FREIN_URGENCE, ALLURE_VOIE, allureDuConducteur, tourDeRole } from './circulation.js';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
 import { CLASSES, MARCHE } from './conduite.js';
 
@@ -2848,6 +2848,8 @@ export function createVehicules({ scene, player }) {
   const pietonsPoses = [];
   // le dernier choc de l'enfant qu'on a lu (`player.choc`, v372)
   let dernierChoc = 0;
+  // le tour de rôle route / ville (v455), désarmable pour la sonde et le témoin
+  let tourDeRoleActif = true;
   function cederLePassage(dt) {
     const px = player.pos.x, pz = player.pos.z;
     const voitures = [];
@@ -3108,10 +3110,28 @@ export function createVehicules({ scene, player }) {
     // Ce que chaque voiture peut viser, et ce qui la retient.
     for (const a of voitures) {
       if (a.enfant || a.rail) continue;
-      let cible = Infinity, bloquant = null;
+      let cible = Infinity, bloquant = null, parTour = false;
       if (a.veut) {
         for (const [cle, g] of a.veut) {
           const b = parCle.get(cle);
+          // le tour de rôle entre la route et la ville (v455) : en travers
+          // d'une autre file, celle qui a la main passe, l'autre cède
+          // légitimement — l'heure de la rue décide, pas l'ordre d'arrivée
+          const tour = tourDeRoleActif && b && b.c && !b.rail && !b.enfant && a.c && b.c !== a.c && !memeLigne(a.c, b.c)
+            && b.ux * a.ux + b.uz * a.uz < 0.7
+            // une voiture déjà sur le chemin de l'autre (d'un côté ou de
+            // l'autre) : la règle ordinaire, la paire mutuelle et la patience —
+            // le tour de rôle ne règle que l'ENTRÉE dans le carrefour ; dans
+            // le carrefour, deux voitures qui se touchent s'attendraient sinon
+            // pour toujours, légitimement (mesuré : zéro passage en une minute)
+            && !g.dejaLa && !(b.veut && b.veut.has(a.cle) && b.veut.get(a.cle).dejaLa)
+            ? tourDeRole(a.c.voie === 'autoroute', b.c.voie === 'autoroute', false, horloge * 1000) : 0;
+          if (tour > 0) continue;
+          if (tour < 0) {
+            const vc = allureDevant(g.s - 0.5, g.v);
+            if (vc < cible) { cible = vc; bloquant = b; parTour = true; a.contact = g.s === 0 && g.dejaLa && g.v < 0.5; }
+            continue;
+          }
           if (b && b.veut && b.veut.has(a.cle)) {
             // paire mutuelle : la plus engagée passe — celle que l'autre voit le
             // plus loin devant elle ; à égalité, la plus petite
@@ -3127,7 +3147,7 @@ export function createVehicules({ scene, player }) {
           // le contact imminent ne vaut qu'EN TRAVERS d'une autre file : dans la
           // sienne, le plancher (v283) garde déjà la longueur d'une voiture, et
           // piler derrière celle qui précède faisait un arrêt sec au feu
-          if (vc < cible) { cible = vc; bloquant = b; a.contact = g.s === 0 && g.dejaLa && g.v < 0.5 && !(b && memeLigne(b.c, a.c)); }
+          if (vc < cible) { cible = vc; bloquant = b; parTour = false; a.contact = g.s === 0 && g.dejaLa && g.v < 0.5 && !(b && memeLigne(b.c, a.c)); }
           // DEVANT L'ENFANT, UN AMI OU UN PIÉTON, ON PILE QUAND LE FREINAGE NE
           // SUFFIT PLUS (v372). Le freinage doux est pour le confort ; vue tard
           // — l'enfant posé devant elle, une image lente du banc —, une voiture
@@ -3150,7 +3170,7 @@ export function createVehicules({ scene, player }) {
         }
       }
       a.cible = cible; a.bloquant = bloquant;
-      a.legit = !!(bloquant && (bloquant.enfant || bloquant.rail));
+      a.legit = !!(bloquant && (bloquant.enfant || bloquant.rail)) || parTour;
     }
     // UNE FILE DERRIÈRE UN FEU NE FORCE PAS LE PASSAGE (v372). La patience de
     // quatre secondes (v244) dénoue les paires qui se regardent en travers d'un
@@ -3568,6 +3588,7 @@ export function createVehicules({ scene, player }) {
     // les amis de la partie (v305), branchés par main.js : où ils sont, leur cap,
     // et s'ils conduisent
     brancherAmis: (f) => { amis = f; },
+    tourDeRole: (v) => { if (v !== undefined) tourDeRoleActif = !!v; return tourDeRoleActif; },
     // l'ancien regard de la rame (3,5 blocs), pour mesurer et pour prouver
     // que le témoin rougit sans le remède (v451)
     regardRameFixe: (v) => { if (v !== undefined) regardRameFixe = !!v; return regardRameFixe; },

@@ -1,7 +1,7 @@
 // LA CONDUITE DE LA RUE (v372) — à quelle allure roule une voiture que
 // l'enfant ne conduit pas, où elle freine, comment elle repart.
 //
-// Pur : aucun import, ni three, ni document. Un témoin le lit sous node, comme
+// Pur : un seul import, pur lui aussi (`feux.js`, v455), ni three ni document. Un témoin le lit sous node, comme
 // `feux.js` et `cap.js`, et `vehicules.js` le lit pour bâtir la grille horaire
 // des convois (v305) : deux tables qui décrivent la même conduite finiraient
 // par diverger.
@@ -131,6 +131,30 @@ export function grilleDuProfil({ ds, vs }) {
 // voiture ne descend sous lui qu'en urgence.
 export function allureDevant(s, vObstacle = 0) {
   return vitesseAvant(s, Math.max(0, vObstacle), FREIN);
+}
+
+// LE TOUR DE RÔLE ENTRE LA ROUTE ET LA VILLE (v455). L'avenue d'entrée d'une
+// autoroute coupe des rues de la ville sans feu : elle n'est pas dans les
+// voies nommées, et c'est d'elles que naissent les feux (v274). Quatre files
+// d'autoroute (aller, retour, leurs jumelles) contre un circuit de la ville :
+// en travers, chacune attendait l'autre, et seule la patience de quatre
+// secondes (v244) dénouait le nœud — une voiture à la fois. Mesuré à
+// (−325, 195), une tête de file arrêtée quinze secondes et la queue jusqu'au
+// témoin de la fumée, trente blocs plus loin.
+//
+// Le remède est la règle d'un feu, sans feu : la route a la main pendant la
+// part verte de l'axe 0 du cycle des feux, la ville pendant celle de l'axe 1.
+// C'est une fonction de l'HEURE DE LA RUE (v305) : deux tablettes donnent la
+// main au même côté au même instant. Celle qui n'a pas la main cède et c'est
+// légitime (pas de patience, donc pas de passage en force) ; celle qui l'a
+// ne cède pas — SAUF à une voiture déjà sur son chemin (« pas si l'on est
+// déjà dedans », v245) : une voiture engagée au vert de son côté dégage.
+// Rend 1 (a passe), −1 (a cède, légitimement), 0 (la règle ordinaire).
+import { etatFeu } from './feux.js';
+export function tourDeRole(aRoute, bRoute, dejaLa, heureMs) {
+  if (aRoute === bRoute) return 0;
+  if (dejaLa) return -1;
+  return etatFeu(aRoute ? 0 : 1, heureMs) === 'vert' ? 1 : -1;
 }
 
 // UNE VOITURE AU FEU ORANGE PASSE SI ELLE NE PEUT PLUS S'ARRÊTER. C'est la
