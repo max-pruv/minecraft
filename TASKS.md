@@ -319,9 +319,11 @@
   `carte.js` (flèche du GPS) et `manhattan.js` (trou, taxi) déclarés,
   `monte.js` les deux rouges des deux côtés de la v411 (compilation à
   l'arrivée, flanc frôlé). Le témoin de Rome : vert au portail.
-- [ ] **`realisme.js` MEURT AU CLIC « JOUER » (v385-v402, intermittent).**
-  `locator.click: Timeout 30000ms` sur `#play-btn`, machine au repos ; vu sur la
-  v381 et la v384 (mort), la v382 (vivant) : antérieur, pas de la zone piétons.
+- [x] **`realisme.js` MEURT AU CLIC « JOUER » (v385-v402) — CLOS en v456.**
+  Doublon de l'entrée de la v427 (cause : `locator.click` attend deux images
+  identiques sur un accueil à 0,07 image/s). Revérifié sur la v454 : rejouée
+  SEULE 3/3 vertes (19/19, clic 6 · 28 · 14 ms) ; copie où un voile recouvre
+  « Jouer » : le verdict rougit (`dessus: false`), 18 autres verts.
 
 - [x] **LES DEUX ROUGES RÉSEAU RÉCURRENTS (v393).** « Un départ propre
   nettoie tout le monde » : CORRIGÉ dans le jeu — `net.stop()` n'envoyait
@@ -3166,7 +3168,10 @@
   avec la table de paliers pour dire de combien monte chaque couche. Le même
   prix vaut pour les monuments étirés par la v342 et la v350 (Buckingham,
   l'Opéra de Lille, les Archives nationales).
-- [ ] **DES CUBES DÉPASSENT ENCORE DES MODÈLES ÉTIRÉS (v335), mesuré. Au-dessus
+- [x] **DES CUBES DÉPASSENT ENCORE DES MODÈLES ÉTIRÉS (v335), mesuré. FAIT en v455 :
+  les vingt-quatre du parvis étaient un faux positif — posé au ras du sol, il
+  touche le sol de la ville ; sonde et témoin lisent le monde sous trois blocs,
+  zéro cube sur les huit monuments, témoin jusqu'au sol. Au-dessus
   d'un enfant : FAIT en v350** (Opéra 15 → 0, Panthéon 6 → 0, Notre-Dame 8 → 0,
   témoin dans `plafond.js`). Restent les vingt-quatre cubes du parvis de
   Notre-Dame, au sol, d'avant la v335. Sonde
