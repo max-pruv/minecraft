@@ -211,7 +211,7 @@ let RAYON = 38;
       `pire : ${pire.ligne} ${pire.de}→${pire.vers} ${pire.attente} s avec ${pire.convois} train(s)`
       + ` · toutes : ${quais.map((l) => l.attente).join(' ')}`);
 
-    // --- LA LIGNE 1 DE PARIS : LE TRAJET DE L'ENFANT (v456) -------------------
+    // --- LA LIGNE 1 DE PARIS : LE TRAJET DE L'ENFANT (v473) -------------------
     //
     // L'anneau a suivi la caserne en banlieue (v293) : Paris n'avait plus de
     // métro. La ligne 1 passe sous les Champs-Élysées, Rivoli et le Faubourg.

@@ -6,12 +6,149 @@
 
 export const NOUVEAUTES = [
   {
-    v: 456,
+    v: 473,
     titre: 'Le métro sous Paris',
     puces: [
       'La ligne 1 jaune passe sous Paris',
       'Seize stations, de Maillot à Vincennes',
       'Descends par la bouche verte et monte',
+    ],
+  },
+  {
+    v: 472,
+    titre: 'On arrive sans à-coup',
+    puces: [
+      'Les passants attendent que la ville soit là',
+      'Moins de travail juste après un voyage',
+    ],
+  },
+  {
+    v: 471,
+    titre: 'On se retrouve du premier coup',
+    puces: [
+      'Rejoindre un ami marche partout',
+      'Les essais mesurent le vrai jeu',
+    ],
+  },
+  {
+    v: 470,
+    titre: 'Un garage sur une colline',
+    puces: [
+      'Le garage ne s\'enterre plus dans la pente',
+      'On y entre à pied et en voiture',
+    ],
+  },
+  {
+    v: 469,
+    titre: 'Le soleil méditerranéen',
+    puces: [
+      'Herbe dorée autour de la Méditerranée',
+      'Des oliviers et des pins parasols',
+    ],
+  },
+  {
+    v: 468,
+    titre: 'Le métro Orange et Argent',
+    puces: [
+      'Deux lignes de plus à Washington',
+      'Elles roulent dans le tunnel de la Bleue',
+    ],
+  },
+  {
+    v: 467,
+    titre: 'Des passages piétons à Londres',
+    puces: [
+      'Des zébras aux carrefours de Londres',
+      'Aussi à Nice, Lille, San Francisco, Washington',
+      'Les passants traversent dessus',
+    ],
+  },
+  {
+    v: 466,
+    titre: 'Paris plus léger',
+    puces: [
+      'Les façades prennent moins de mémoire',
+      'La tablette voit Paris de plus loin',
+    ],
+  },
+  {
+    v: 465,
+    titre: 'Le train passe sur un pont',
+    puces: [
+      'Sur la mer, le train roule sur un viaduc',
+      'On voit l\'eau passer sous les rails',
+    ],
+  },
+  {
+    v: 464,
+    titre: 'Les mises à jour sans souci',
+    puces: [
+      'Une mise à jour n’est plus un plantage',
+    ],
+  },
+  {
+    v: 463,
+    titre: 'L\'usine explique ses postes',
+    puces: [
+      'Chaque poste de l\'usine dit ce qu\'il fait',
+      'La presse, les robots, la peinture',
+      'Puis on conduit la voiture neuve',
+    ],
+  },
+  {
+    v: 462,
+    titre: 'Un avion mal posé casse',
+    puces: [
+      'Trop vite ou trop dur : épave',
+      'Tu es déposé, sain et sauf',
+      'Le jeu dit comment mieux faire',
+    ],
+  },
+  {
+    v: 461,
+    titre: 'De Florence à Rome en voiture',
+    puces: [
+      'Une autoroute relie Florence et Rome',
+      'On roule de Milan à Naples',
+    ],
+  },
+  {
+    v: 460,
+    titre: 'Washington se raconte',
+    puces: [
+      'Des panneaux à lire devant les monuments',
+      'Des questions sur Washington dans le quiz',
+    ],
+  },
+  {
+    v: 459,
+    titre: 'La grande roue de Las Vegas',
+    puces: [
+      'La High Roller est une vraie roue',
+      'Elle domine la tour Eiffel de Las Vegas',
+    ],
+  },
+  {
+    v: 458,
+    titre: 'On entre dans le Panthéon',
+    puces: [
+      'À Rome, le Panthéon se visite',
+      'Lève la tête : le ciel par l\'oculus',
+    ],
+  },
+  {
+    v: 457,
+    titre: 'Une fenêtre par étage',
+    puces: [
+      'Rome, Tokyo, Berlin : de vraies grandes fenêtres',
+      'Plus deux fenêtres empilées',
+    ],
+  },
+  {
+    v: 456,
+    titre: 'Des essais plus sûrs',
+    puces: [
+      'Les essais du jeu démarrent à coup sûr',
     ],
   },
   {

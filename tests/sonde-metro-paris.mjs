@@ -1,4 +1,4 @@
-// LA LIGNE 1 DE PARIS SE MESURE COMME L'ENFANT LA VIT (v456), sous node, sur
+// LA LIGNE 1 DE PARIS SE MESURE COMME L'ENFANT LA VIT (v473), sous node, sur
 // le vrai monde engendré : on descend de la rue au quai case par case (une
 // marche d'un bloc au plus, deux blocs d'air au-dessus des pieds), le passage
 // des rames est libre sur tout le tracé, aucune voûte n'ouvre le fleuve, et
