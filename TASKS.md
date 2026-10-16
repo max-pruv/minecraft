@@ -3187,11 +3187,21 @@
   de trois morceaux). À mesurer d'abord par tuile, avec
   `sonde-facades-lourdes.mjs` (scratch de la session, à recopier dans
   `tests/`).
-- [ ] **LES TEXTURES MONTENT DE 16 À 266 EN VINGT SECONDES DE VOL** (sonde
+- [x] **LES TEXTURES MONTENT DE 16 À 266 EN VINGT SECONDES DE VOL** (sonde
   mémoire, tous les bras, hd 0 compris : 6 → 293). Ce sont les modèles de la
   flotte qui se chargent à l'approche d'une ville (`Body_PrimaryPaint` dans
   les gros maillages) — pas le sujet du jour, mais un poste de mémoire GPU à
   mesurer sur la tablette avec `?diag=1`, et à borner s'il compte.
+  **Fermé sur v454, croissance normale et bornée** (`tests/sonde-textures-vol.cjs`,
+  vol à 35 b/s au-dessus de Paris, rr 12) : le pilote tient 6 → 84 à 102 en
+  vingt secondes, puis plafonne à **107** sur quatre-vingts secondes. Chaque
+  objet sur lequel three pose son écouteur de « dispose » est relevé : **zéro
+  hors de la scène** (pas de fuite, v238). Il y a 56 textures de matériau
+  distinctes, toutes partagées (la flotte depuis la v413 — les 266 d'avant
+  étaient ses copies par modèle —, les corps Rocketbox), plus UNE texture d'os
+  20 × 20 (`skeleton.boneTexture`, 81 os, 6,4 Ko) par personnage DESSINÉ :
+  invisibles à un relevé des matériaux, rendues par `liberer` avec le
+  squelette. Pas de doublon, pas de fuite ; rien à corriger.
 - [ ] **LE COMPTEUR DE PLANTAGES RETOMBE À ZÉRO SUR UNE FERMETURE PROPRE — y
   compris celle du rechargement de mise à jour.** Un appareil qui meurt, se
   met à jour (fermeture propre), puis meurt encore repart à un. C'est voulu
