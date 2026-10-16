@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 470,
+    titre: 'Un garage sur une colline',
+    puces: [
+      'Le garage ne s\'enterre plus dans la pente',
+      'On y entre à pied et en voiture',
+    ],
+  },
+  {
     v: 469,
     titre: 'Le soleil méditerranéen',
     puces: [

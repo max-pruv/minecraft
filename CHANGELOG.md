@@ -20,6 +20,36 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v470 — Un garage posé sur une pente ne s'enterre plus
+
+**Pourquoi.** La bibliothèque pose tout sur le point le plus bas de l'emprise :
+juste pour un monument, fatal pour un garage sur une pente. Le fond du garage
+disparaissait dans la colline et la pièce restait pleine de terre — mesuré sous
+node sur une pente de cinq blocs : 360 blocs de terre dans la pièce, la place
+de stationnement comprise. On n'y entrait plus, ni à pied ni en voiture.
+
+**Ce que ça change.** Un bâtiment de plain-pied (tout garage) se pose au niveau
+de son SEUIL, la colonne devant sa porte : le plancher repose sur le sol à cet
+endroit, des fondations de pierre comblent le vide dessous quand la pente
+descend, et la terre est dégagée jusqu'au toit quand elle monte. Seuls l'air et
+le terrain naturel sont remplacés : un bloc que l'enfant avait posé dans
+l'emprise reste où il est. Les monuments gardent leur pose d'avant, au bloc
+près (`planDePose`, garages.js, une seule règle pour les deux).
+
+**Ce qui le prouve.** Quatre témoins dans `sauvegarde.js`, sur une pente
+cherchée par la sonde (façade de quatre à huit blocs plus basse que le fond) :
+on entre à pied jusqu'au fond AU NIVEAU DU PLANCHER, le bloc de l'enfant posé
+dans l'emprise est intact, on entre en voiture par la porte et elle se range,
+et après un rechargement elle est au garage, sur le plancher. Les deux
+premiers sont rouges sur `origin/main` (l'enfant arrive au fond en grimpant
+sur la terre, cote 40 pour un plancher à 39 ; le mur du garage remplace son
+bloc) ; les deux derniers sont verts des deux côtés — la voiture n'allait pas
+assez loin pour toucher la terre — et gardent le trajet. Sous node : 360 → 9
+blocs dans la pièce (les neuf de l'établi).
+
+Ce qui reste, déclaré : la marche d'un bloc au seuil (un plancher à fleur du
+sol est lu comme un sol de ville par le sol continu, qui y laisse une lèvre de
+deux dixièmes) et la place invisible d'un garage démoli.
 ## v469 — Le soleil méditerranéen : herbe sèche, oliviers et pins parasols
 
 **Pourquoi.** Après les déserts, la toundra, la taïga, les steppes et les
