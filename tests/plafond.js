@@ -3017,7 +3017,11 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         continu && pas === 400 && sansRail === 0 && obs === 0 && planches === 0,
         `${pas} pas, ${sansRail} sans ses quatre files de prismes · ${obs} obsidienne, ${planches} planche(s) sur ${colonnes} colonnes`);
       verifier('le sol continu suit le profil de la voie, dans la tranchée comme sur le remblai',
-        continu && colonnes > 3000 && talus > 200 && surface >= colonnes * 0.85 && ecartSurf < 1e-6 && tranchee > 200 && tranchJuste === tranchee,
+        // `tranchee > 100` est une borne de GARDE (la mesure a eu lieu), posée
+        // à la moitié : la rampe du viaduc (v455) relève la voie de deux blocs
+        // au plus avant une rivière, et une tranchée de deux blocs y devient une
+        // tranchée d'un bloc — 240 → 170 colonnes dans cette fenêtre, mesuré.
+        continu && colonnes > 3000 && talus > 200 && surface >= colonnes * 0.85 && ecartSurf < 1e-6 && tranchee > 100 && tranchJuste === tranchee,
         `${surface} colonnes de surface sur ${colonnes} (${talus} de talus), écart max à la cote ${ecartSurf.toFixed(4)} · en tranchée ou remblai de deux blocs et plus : ${tranchJuste}/${tranchee}, et ${falaise} au bord d'une falaise (${((performance.now() - t0) / 1000).toFixed(1)} s)`);
     }
 
