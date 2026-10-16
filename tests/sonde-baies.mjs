@@ -1,4 +1,4 @@
-// QUI TIENT LES SOMMETS D'UNE FAÇADE DE PARIS (v455). Sous node : on maille
+// QUI TIENT LES SOMMETS D'UNE FAÇADE DE PARIS (v466). Sous node : on maille
 // en détail les morceaux de l'ouest de Paris (la moitié du disque à l'ouest
 // de Notre-Dame, où l'iPhone de Max est mort en v299), on garde les plus
 // lourds, et l'on range leurs sommets de `facades` par TUILE. C'est la sonde

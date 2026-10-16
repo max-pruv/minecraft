@@ -398,7 +398,7 @@ export class GeomBufferHD {
     }
   }
 
-  // `souder` (v455) : voir `souderTampons`, plus bas.
+  // `souder` (v466) : voir `souderTampons`, plus bas.
   toTampons(souder = false) {
     if (this.indices.length === 0) return null;
     const sommets = this.positions.length / 3;
@@ -416,7 +416,7 @@ export class GeomBufferHD {
   }
 }
 
-// UNE BAIE SE SOUDE (v455). Un quad émet quatre sommets à lui, et deux quads
+// UNE BAIE SE SOUDE (v466). Un quad émet quatre sommets à lui, et deux quads
 // voisins du même plan — le mur autour d'une baie (`murAutour`, trois ou
 // quatre quads), le mur d'un bloc et celui du bloc d'à côté, les deux bandes
 // d'un ébrasement, d'un fond de vitre, d'un châssis découpé sur deux blocs —
@@ -931,12 +931,31 @@ function nobleBas(f, st) {
   f.boite(0.8, 0.88, 0.7, 0.86, 0, 0.18, 'pierre-lisse');
 }
 
+// LES BANDES HORS DE PARIS (v457). Les villes engendrées posent désormais leurs
+// baies en bandes, comme Paris : les registres des autres villes y gardent ce
+// que le bloc d'un étage (`etage`) leur donnait — pas de garde-corps là où le
+// registre n'en veut pas (`gardeCorps: false`), le rail de la guillotine au
+// milieu de la baie de deux blocs (donc dans le bas, à 0,85), son chambranle
+// sur les deux bandes, et le linteau au-dessus. Les styles de Paris n'ont
+// aucune de ces clés : leurs bandes sont celles de la v301, au bit près.
+const RAIL_GUILLOTINE = (1 + HAUT_BAIE) / 2;   // le milieu de la baie, compté depuis le bas de la bande basse
+
+function chambranle(f, s0, s1, t0, t1) {
+  f.plan(s0 - 0.03, s0, t0, t1, 0.012, 'pierre-lisse');
+  f.plan(s1, s1 + 0.03, t0, t1, 0.012, 'pierre-lisse');
+}
+
 function etageMi(f, allumee, st, bas) {
   const [s0, s1] = st.baie;
   f.murAutour(s0, s1, 0, 1, st.mur);
   f.bandeDeBaie(s0, s1, 0, 1, allumee, { haut: false }, 0, PART_BAS);
   if (bas === ARCHI.NOBLE_BAS && st.filant) f.ferronnerie(0, 1, 0, 0.3, 0.22);        // la ferronnerie du balcon
-  else f.ferronnerie(s0 - 0.02, s1 + 0.02, 0, 0.24, 0.06);                            // le garde-corps de la baie
+  else if (st.gardeCorps !== false) f.ferronnerie(s0 - 0.02, s1 + 0.02, 0, 0.24, 0.06); // le garde-corps de la baie
+  if (st.guillotine) {
+    const tm = Math.min(0.97, RAIL_GUILLOTINE);
+    f.plan(s0, s1, tm - 0.025, tm + 0.025, -0.05, 'pierre-lisse');
+    chambranle(f, s0, s1, 0, 1);
+  }
   if (st.volets) volets(f, s0, s1, 0, 1);
 }
 
@@ -944,6 +963,8 @@ function etageHaut(f, allumee, st) {
   const [s0, s1] = st.baie;
   f.murAutour(s0, s1, 0, HAUT_BAIE, st.mur);
   f.bandeDeBaie(s0, s1, 0, HAUT_BAIE, allumee, { bas: false }, PART_BAS, 1);
+  if (st.guillotine) chambranle(f, s0, s1, 0, HAUT_BAIE);
+  if (st.linteau) f.boite(s0 - 0.05, s1 + 0.05, HAUT_BAIE, HAUT_BAIE + 0.09, 0, 0.02, st.linteau, 1.15);
   if (st.volets) volets(f, s0, s1, 0, HAUT_BAIE);
   if (st.filant) f.boite(0, 1, 0.94, 1.0, 0, 0.03, 'pierre-lisse');                   // le bandeau d'étage
 }

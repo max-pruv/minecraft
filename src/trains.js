@@ -195,12 +195,34 @@ export function profilDe(s) {
   if (!SOL) return null;
   const n = Math.max(2, Math.round(s.longueur));
   const h = new Array(n + 1);
+  const sol = new Array(n + 1);
   for (let k = 0; k <= n; k++) {
     const t = k / n;
     const x = Math.round(s.x0 + (s.x1 - s.x0) * t), z = Math.round(s.z0 + (s.z1 - s.z0) * t);
-    // jamais sous les flots : sur la mer, la voie devient un viaduc au ras
-    // de l'eau, et c'est de là que part le lissage.
-    h[k] = Math.max(SOL(x, z), NIVEAU_EAU) + 1;
+    sol[k] = SOL(x, z);
+    // jamais sous les flots : c'est de là que part le lissage.
+    h[k] = Math.max(sol[k], NIVEAU_EAU) + 1;
+  }
+  // LE VIADUC (v465). Sur l'eau, la voie était une chaussée de pierre au ras
+  // des flots : la Manche traversée sur une digue, chaque rivière barrée d'un
+  // mur. Une suite d'au moins `VIADUC_MIN` pas d'eau sous l'axe est un
+  // OUVRAGE : son tablier passe à `DEGAGE` blocs au-dessus de la surface, et
+  // le générateur n'écrit que des piles. Une suite plus courte reste une buse
+  // (le remblai d'avant). Les gares ne bougent pas : rien ne se relève à
+  // moins de `GARDE_GARE` pas d'un bout, et le lissage ne remonte un relèvement
+  // que d'un tiers de bloc par bloc (le témoin le vérifie au bloc près).
+  const viaduc = new Uint8Array(n + 1);
+  for (let k = 0; k <= n;) {
+    if (sol[k] >= NIVEAU_EAU) { k++; continue; }
+    let j = k;
+    while (j + 1 <= n && sol[j + 1] < NIVEAU_EAU) j++;
+    if (j - k + 1 >= VIADUC_MIN && VIADUC_ACTIF) {
+      for (let q = k; q <= j; q++) {
+        viaduc[q] = 1;
+        if (q >= GARDE_GARE && q <= n - GARDE_GARE) h[q] = Math.max(h[q], NIVEAU_EAU + 1 + DEGAGE);
+      }
+    }
+    k = j + 1;
   }
   const bas = h.slice(), haut = h.slice();
   for (let k = 1; k <= n; k++) bas[k] = Math.min(bas[k], bas[k - 1] + PENTE);
@@ -208,6 +230,7 @@ export function profilDe(s) {
   for (let k = 1; k <= n; k++) haut[k] = Math.max(haut[k], haut[k - 1] - PENTE);
   for (let k = n - 1; k >= 0; k--) haut[k] = Math.max(haut[k], haut[k + 1] - PENTE);
   p = h.map((_, k) => (bas[k] + haut[k]) / 2);
+  p.viaduc = viaduc;
   PROFILS.set(s, p);
   return p;
 }
@@ -215,6 +238,19 @@ export function profilDe(s) {
 // Le niveau de la mer. `world.js` l'a aussi, mais l'importer d'ici créerait un
 // cycle : trains.js est importé PAR world.js.
 const NIVEAU_EAU = 30;
+// LE VIADUC (v465) : le tablier à quatre blocs au-dessus de la surface de
+// l'eau (qui est à `NIVEAU_EAU + 1`), une pile tous les `PAS_PILE` blocs, et
+// un ruban de tablier qui déborde de `CULEE` pas sur le ballast de chaque rive
+// (le joint du pont de l'A1, v302). `VIADUC_ACTIF` à faux rejoue la chaussée
+// d'avant — pour l'empreinte et les témoins, jamais un réglage.
+export const DEGAGE = 4;
+export const VIADUC_MIN = 3;
+export const PAS_PILE = 10;
+export const EP_TABLIER = 0.8;
+const CULEE = 2;
+const GARDE_GARE = 7 + 16;   // `GARE_LONG` (déclaré plus bas) et seize pas de rampe
+let VIADUC_ACTIF = true;
+export function viaducs(actif) { VIADUC_ACTIF = !!actif; PROFILS.clear(); }
 
 // Où en est-on le long d'un segment, entre 0 et 1 ?
 function tSegment(s, x, z) {
@@ -248,9 +284,15 @@ export function voieEn(x, z) {
   for (const s of pres(x, z)) {
     const d = dSegment(s, x, z);
     if (d >= EMPRISE + DEBLAI_MAX / TALUS_PENTE || (best && d >= best.d)) continue;
-    const cote = coteContinue(s, tSegment(s, x, z));
+    const t = tSegment(s, x, z);
+    const cote = coteContinue(s, t);
     if (cote === null) continue;
-    if (d < EMPRISE) { best = { d, seg: s, cote, bloc: Math.floor(cote) - 1, piece: 'ballast' }; continue; }
+    // Sur un viaduc (v465), la plate-forme est le TABLIER, un ruban : la
+    // colonne n'a ni ballast ni talus, l'eau reste dessous.
+    const pr = profilDe(s), kv = Math.round(t * (pr.length - 1));
+    const ouvrage = !!pr.viaduc[kv];
+    if (d < EMPRISE) { best = { d, seg: s, cote, bloc: Math.floor(cote) - 1, piece: 'ballast', ouvrage, abs: t * s.longueur }; continue; }
+    if (ouvrage) continue;
     // LE TALUS se raccorde au terrain de CETTE colonne : au bout, la surface
     // est le sol naturel, et la couture avec la colonne voisine tient.
     const terr = SOL(x, z) + 1;
@@ -274,6 +316,16 @@ export function voieEn(x, z) {
 // `dy0..dy1` au-dessus de la cote, la tuile d'un bloc du jeu pour sa peau ;
 // `bouts` demande les deux faces d'extrémité (une traverse se voit par le
 // bout, un rail est continu).
+// Le pas d'abscisse `k` (un bloc, `k / L` du segment) porte-t-il un tablier ?
+export function surViaduc(s, k, L = s.longueur) {
+  const p = profilDe(s);
+  if (!p) return false;
+  const n = p.length - 1;
+  const a = Math.max(0, Math.round(((k - CULEE) / L) * n)), b = Math.min(n, Math.round(((k + 1 + CULEE) / L) * n));
+  for (let q = a; q <= b; q++) if (p.viaduc[q]) return true;
+  return false;
+}
+
 export function rubansVoieDans(x0, z0, x1, z1) {
   const out = [];
   const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
@@ -301,6 +353,11 @@ export function rubansVoieDans(x0, z0, x1, z1) {
       for (const o of [-ENTRAXE, ENTRAXE]) {
         out.push({ ...base, ...tr, tuile: 'traverse', o0: o - TRAVERSE_LARG / 2, o1: o + TRAVERSE_LARG / 2, dy0: 0.01, dy1: TRAVERSE_HAUT, bouts: true });
       }
+      // LE TABLIER DU VIADUC (v465) : le ruban du pont de l'A1 (dessus, dessous,
+      // parapets), peau de gravier, aux MÊMES cotes que les rails — et il
+      // déborde de `CULEE` pas sur le ballast des rives, pour qu'aucun joint
+      // ne s'ouvre sur l'eau (v302).
+      if (surViaduc(s, k, L)) out.push({ ...base, genre: 'tablier', peau: 'gravier', o0: -EMPRISE, o1: EMPRISE, dy: 0 });
     }
   }
   return out;
