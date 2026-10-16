@@ -1020,6 +1020,32 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('et la chaîne marque l\'arrêt à ses postes',
       vuUsine.arret, vuUsine.arret ? 'un arrêt tenu' : 'jamais vue à l\'arrêt');
 
+    // Les panneaux des postes (v455) : on descend à pied dans le hall, devant
+    // le tunnel de peinture, et le bandeau dit ce qu'on y fait. Le trajet de
+    // l'enfant, pas la fonction : on se pose, on marche, on lit l'écran.
+    await tab.evaluate(async () => {
+      const { USINE } = await import('./src/usine.js');
+      const g = window.__game;
+      const p = USINE();
+      g.player.flying = false;
+      g.player.pos.set(p.x - 44, g.world.terrainHeight(p.x - 44, p.z - 3) + 1.05, p.z - 3);
+      g.player.vel.set(0, 0, 0);
+      window.__panneauVu = '';
+    });
+    await dormir(600);
+    await tab.evaluate(async () => {
+      const { USINE } = await import('./src/usine.js');
+      const g = window.__game, p = USINE();
+      g.player.pos.set(p.x - 33, g.world.terrainHeight(p.x - 33, p.z - 3) + 1.05, p.z - 3);
+      g.player.vel.set(0, 0, 0);
+    });
+    const panneau = await tab.waitForFunction(() => {
+      const t = (document.getElementById('toast') || {}).textContent || '';
+      return /peinture/i.test(t) ? t : null;
+    }, null, { timeout: 12000, polling: 150 }).then((h) => h.jsonValue()).catch(() => '');
+    verifier('dans le hall, chaque poste dit à l\'enfant ce qu\'on y fait',
+      /peinture/i.test(panneau), panneau || 'aucun bandeau de poste');
+
     // Le garagiste : on approche du parc, trois voitures neuves attendent.
     await tab.evaluate(async () => {
       const { USINE } = await import('./src/usine.js');

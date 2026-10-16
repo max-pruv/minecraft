@@ -442,6 +442,48 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
 
   verifier('le ciel est monté', HEIGHT >= 160, `${HEIGHT} blocs`);
 
+  // --- L'USINE SE VISITE À PIED, POSTE PAR POSTE (v455) ----------------------
+  //
+  // La chaîne de la Giga-usine se construit de poste en poste depuis la v168 ;
+  // rien ne disait à l'enfant ce qui s'y passe. Chaque poste porte désormais
+  // son panneau, et l'on vérifie le trajet de l'enfant sur le bâtisseur lui-même
+  // (une fonction pure, comme les terminaux de la v330) : on entre par la porte
+  // ouest, on rejoint chaque poste sans voler, et l'on ressort à l'est.
+  {
+    const U = await import('../src/usine.js');
+    const postes = U.POSTES || [];
+    const panneaux = postes.filter((p) => typeof p.panneau === 'string'
+      && p.panneau.split(/\s+/).length <= 25).length;
+    const lit = typeof U.posteSousLesPieds === 'function';
+    const p = U.USINE();
+    const reconnus = lit ? postes.filter((q, i) => U.posteSousLesPieds(p.x + q.u, 34, p.z + 1) === i).length : 0;
+    const dehors = lit ? U.posteSousLesPieds(p.x + 40, 34, p.z) : 0;
+    const enVol = lit ? U.posteSousLesPieds(p.x - 32, 34 + 30, p.z) : 0;
+    verifier('chaque poste de l\'usine a son panneau, court, lu quand on y entre à pied',
+      panneaux === postes.length && postes.length === 5 && reconnus === 5 && dehors === -1 && enVol === -1,
+      JSON.stringify({ postes: postes.length, panneaux, reconnus, dehors, enVol }));
+
+    const plein = new Set();
+    U.buildUsine((u, y, v) => { if (y >= 1 && y <= 2) plein.add(u + ',' + v); });
+    const H = U.HALL || { u0: -78, u1: 2, v0: -20, v1: 20 };
+    const libre = (u, v) => !plein.has(u + ',' + v);
+    const vu = new Set(['' + (H.u0 - 2) + ',0']);
+    const file = [[H.u0 - 2, 0]];
+    while (file.length) {
+      const [u, v] = file.shift();
+      for (const [du, dv] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const a = u + du, b = v + dv, k = a + ',' + b;
+        if (a < H.u0 - 3 || a > H.u1 + 3 || b < H.v0 - 3 || b > H.v1 + 3) continue;
+        if (vu.has(k) || !libre(a, b)) continue;
+        vu.add(k); file.push([a, b]);
+      }
+    }
+    const atteints = postes.filter((q) => [-3, -2, -1, 0, 1, 2, 3].some((v) => vu.has(q.u + ',' + v))).length;
+    const ressort = vu.has((H.u1 + 2) + ',0');
+    verifier('on traverse l\'usine à pied, de la porte ouest à la porte est, par chaque poste',
+      atteints === postes.length && ressort, JSON.stringify({ atteints, ressort, cases: vu.size }));
+  }
+
   // --- UNE VOITURE TRAVERSE CHAQUE PONT D'AUTOROUTE (v430) -------------------
   // Max, capture d'iPhone : « Une voiture ne roule pas dans l'eau — fais
   // demi-tour » sur une autoroute, pas une goutte en vue. Le générateur
