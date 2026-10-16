@@ -7206,7 +7206,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   tunnel de la Bleue dans la vraie ville ; les guides qui racontent ce qu'on
   visite. Le mémorial Roosevelt, lui, est revenu en v162.
 
-- [ ] **Ce que Washington a à apprendre** — la ville est pleine de choses qui
+- [x] **Ce que Washington a à apprendre** (v455 : sept panneaux sur place, `src/guides.js`, et quatorze questions « Washington » dans la Découverte) — la ville est pleine de choses qui
   se racontent : pourquoi les avenues coupent la grille en diagonale, pourquoi
   aucun immeuble ne dépasse le dôme, pourquoi les cerisiers du Tidal Basin
   viennent du Japon, pourquoi Georgetown n'a pas de métro. Rien de tout cela

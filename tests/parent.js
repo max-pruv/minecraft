@@ -100,6 +100,33 @@ async function panneau(p) {
 }
 
 (async () => {
+  // --- Ce que Washington raconte arrive dans le quiz (v455) -------------------
+  // Une banque pure, lue sous node : la catégorie existe, chaque question a
+  // quatre propositions distinctes dont une seule juste, et les faits des
+  // panneaux de `guides.js` y sont (cerisiers, L'Enfant, la loi de hauteur,
+  // Georgetown). Sur l'ancien code la catégorie n'existe pas : rouge propre.
+  {
+    const E = await import('../src/education.js');
+    const dec = E.__CATEGORIES_REF().find((c) => c.name === 'Découverte');
+    const g = dec && dec.gens.find((x) => x.skill === 'washington');
+    const vus = new Map(), fautes = [];
+    if (g) {
+      for (let i = 0; i < 400; i++) {
+        const q = g.gen(1 + (i % 3));
+        vus.set(q.key, q);
+        const props = [q.correct, ...q.wrongs];
+        if (props.length !== 4 || new Set(props).size !== 4) fautes.push(q.prompt);
+      }
+    }
+    const textes = [...vus.values()].map((q) => q.prompt + ' ' + q.correct).join(' | ');
+    const faits = ['Japon', "L'Enfant", 'hauteur', 'Georgetown', 'Lincoln', 'Capitole'];
+    const manquent = faits.filter((f) => !textes.includes(f));
+    verifier('le quiz pose des questions sur Washington',
+      !!g && vus.size >= 12 && fautes.length === 0 && manquent.length === 0,
+      g ? `${vus.size} questions, fautes ${JSON.stringify(fautes)}, faits manquants ${JSON.stringify(manquent)}`
+        : 'pas de catégorie « washington » dans la Découverte');
+  }
+
   const banc = new Banc();
   await banc.ouvrir();
   const nuage = await servirLeNuage(9741);

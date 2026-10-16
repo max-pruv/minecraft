@@ -29,6 +29,7 @@ import { buildChunkTampons } from './mesher.js';
 import { materiauHD, geometrieHD } from './matierehd.js';
 import { Carte, MAP_COLORS } from './carte.js';
 import { toast } from './bandeau.js';
+import { creerGuides, DUREE_PANNEAU_MS } from './guides.js';
 import { Horizon, rayonHorizon } from './horizon.js';
 import { fileDeMaillage, VITESSE_CONE, estUnSaut, FENETRE_ARRIVEE_MS, trouDevant, debitRecent } from './plafond-sol.js';
 import { mondeDevant, ligneDiagConduite } from './conduite.js';
@@ -8119,6 +8120,12 @@ window.__lumiere = () => ({
 // pour les tests : déclencher la proposition d'alertes sans attendre la minute
 window.__proposerNotifs = proposerNotifs;
 window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
+// Les panneaux à lire sur place : une fois par visite, en temps réel (v455).
+const guides = creerGuides({
+  dire: (texte) => toast(texte, 0xffe8a3, DUREE_PANNEAU_MS),
+  maintenant: () => performance.now(),
+});
+window.__guides = guides;
 window.__game = { fileMaillage: (m) => { fileDemandee = m; lastPlayerChunk = null; },
   // l'A/B de la recharge dans UNE page (v360) : 'arrivee', 'image', ou null (la règle)
   rechargeMaillage: (m) => { rechargeForcee = m || null; }, get fileDeMorceaux() { return meshQueue; },
@@ -8270,6 +8277,7 @@ function frame(now) {
   fun.update(dt);
   majBoutonsVehicule();
   if (running) majGPS();   // à pied comme au volant (v306)
+  if (running) guides.update(player.pos.x, player.pos.z);   // les panneaux de Washington (v455)
   majGPSAmi();             // la proposition d'un ami s'efface seule (v388)
   asseoirLeConducteur(dt);
   effects.update(dt);
