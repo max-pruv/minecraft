@@ -7317,13 +7317,34 @@ l'embarquement a eu lieu, pas par une hypothèse.
   pas, elles se relèvent — et il faut refaire les monuments, qui ne
   grandissent pas avec la carte.
 
-- [ ] **Le métro de Paris, pour de vrai** — l'anneau souterrain de v163 est
-  resté à trente-huit blocs de rayon pendant que la ville en prenait 185 :
-  il fait donc désormais la boucle du centre historique, ce qui est juste mais
-  petit. Paris mérite ses vraies lignes (1, 4, 6) avec leurs stations, par le
-  creuseur de Washington. Et la caserne et le commissariat, eux, sont restés
-  au cœur — plausible (la Préfecture est bien sur la Cité) mais à reprendre en
-  façades de pierre plutôt qu'en halles de béton.
+- [x] **Le métro de Paris, pour de vrai — la ligne 1 en v473.** Seize
+  stations de la Porte Maillot au Château de Vincennes, quinze bouches. Ce qui
+  reste, déclaré :
+  - **Nation n'a pas de bouche.** Le quai est sous le débouché du cours de
+    Vincennes (douze blocs à l'est de la place) ; au nord les trottoirs sont
+    des bandes de quatre à six blocs qui tournent, au sud c'est la Seine du
+    plan. Un escalier droit fait 22 blocs (quinze de dénivelée à 0,7 par bloc,
+    la pente qui évite les marches de deux blocs sur une avenue en biais) :
+    aucun ne tient. La piste : un escalier à retour (deux volées) ou une
+    mezzanine, dans `placesDe` (ville.js).
+  - **La Défense est hors du disque** (9,5 km de Notre-Dame, le disque en fait
+    7,7) : la ligne s'arrête à la Porte Maillot.
+  - **Les lignes 4 et 6**, par le même creuseur (`creuserMetroParis` est
+    générique sur un tracé ; il faudra un `TRACE` par ligne et des
+    correspondances). La 4 croise la Seine deux fois : la profondeur de
+    seize blocs sous la rue la passe déjà sous le lit (27).
+  - **La caserne et le commissariat**, restés en halles de béton.
+  - **Portail de la v473 : cinq rouges, aucun de cette livraison.** Quatre
+    déjà déclarés (`degats.js` « percuter une voiture de la rue l'abîme
+    AUSSI », `reseau.js` « un hôte sans courtier est trouvé » et « il le
+    REJOINT », `carte.js` « la flèche du GPS », `manhattan.js` « le taxi roule
+    avec les contrôles tactiles »). Le cinquième, `monte.js` « en dérapage, la
+    caisse est dessinée de travers du bon côté », rendait `releves: 3` (barre
+    5) avec le bon rapport (1,00) ; rejoué SEUL sur la branche
+    (`sonde-derive-signe.cjs`) : vert trois fois sur trois, 26 · 22 · 23
+    relevés, rapport 1. C'est la cadence de la page sous la charge du portail
+    — le témoin lit un nombre de relevés, pas une durée de jeu : à reprendre
+    par la session des sensations (attendre cinq relevés, borné).
 
 - [x] **Le rouge ancien des suites réseau du portail — CLOS en v195/v196.**
   Les treize suites sont vertes. Sept vieux rouges ont été démontés, et

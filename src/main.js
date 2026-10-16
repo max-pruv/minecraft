@@ -45,7 +45,7 @@ import { createVie } from './vie.js';
 import { createVehicules, lancerReflets, avancerReflets, refletsVoiture, chaufferLesProgrammes, programmesChauffes, programmesAChauffer, graineDeVille, construireVoitureRoute, signaturesAChauffer, materielDeSignature, FLOTTE, chargerVoitureFlotte } from './vehicules.js';
 import { decor, voirTout } from './couches.js';
 import { contexteAudio, sortieAudio, reglerSon, sonActif, etatSon, radioEnCours, generationAudio } from './sons.js';
-import { traceAnneau } from './ville.js';
+import { traceAnneau, traceLigne1Paris, arretsLigne1Paris } from './ville.js';
 import { traceCourse } from './circuit.js';
 import { USINE, PARC, traceChaine, POSTES, posteSousLesPieds } from './usine.js';
 import { circulationsAPlier, tracesCirculationMain, avenueDEntree, villeMondeEn } from './villesmonde.js';
@@ -2135,6 +2135,17 @@ function updateChunks() {
     vehicules.circulation(pts, 41, { ville: seg.de, voie: 'autoroute', route: seg.route.nom, voies: voiesAutoroute, voiesAuBesoin: true,
       limite: (x, z) => (world.cityAt(x, z) || villeMondeEn(x, z) ? ALLURE_VOIE.avenue : ALLURE_VOIE.autoroute) });
   }
+  // La ligne 1 de Paris (v473), de la Porte Maillot au Château de Vincennes,
+  // créée EN DERNIER : des témoins lisent les premiers convois par leur rang
+  // (la monoplace est la troisième). Elle est
+  // jaune comme sur le plan, huit rames pour qu'on n'attende pas plus d'une
+  // demi-minute sur un tour de près de quatre minutes (1 271 blocs à dix blocs
+  // par seconde, trente arrêts de trois secondes) : 28 s entre deux rames.
+  vehicules.metro(traceLigne1Paris(), {
+    nom: 'métro ligne 1', emoji: '🟡', teinte: 0xf2c200,
+    nb: 4, vitesse: 10, rames: 8, pause: 3, arretsIndex: arretsLigne1Paris(),
+    souterrain: true,
+  });
 })();
 
 // --- block highlight -----------------------------------------------------------

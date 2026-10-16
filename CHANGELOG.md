@@ -20,6 +20,39 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v473 — La ligne 1 du métro passe sous Paris
+
+**Pourquoi.** Paris n'avait plus de métro. L'anneau souterrain de la v163 a
+suivi la caserne quand elle a déménagé en banlieue (v293) ; depuis, sous la
+capitale doublée, il n'y avait rien — ni bouche, ni quai, ni rame.
+
+**Ce que ça change.** La ligne 1, la jaune, de la Porte Maillot au Château de
+Vincennes : seize stations sous les Champs-Élysées, la rue de Rivoli et le
+Faubourg, aux adresses du plan (en kilomètres depuis Notre-Dame). Des quais
+latéraux carrelés de blanc avec la plaque bleue, une voûte elliptique, deux
+voies, un tiroir de retournement à chaque terminus. Quinze bouches sur le
+trottoir — un escalier qui descend jusqu'au quai, la trémie et sa balustrade
+vertes, l'arche Guimard ou son mât jaune. Huit rames : une toutes les
+vingt-huit secondes, trois secondes à chaque quai. Le petit anneau reste sous
+la caserne : il ne gêne personne et le retirer réécrirait un lieu où l'on a pu
+jouer. La Défense est hors du disque de Paris, et Nation n'a pas de bouche
+(aucun trottoir assez long hors de l'eau et des voies) : on y arrive en rame.
+
+**Ce qui le prouve.** Quatre témoins neufs, tous rouges sur la v472. Sous node
+(`plafond.js`, par `sonde-metro-paris.mjs`) : de chacune des quinze bouches on
+descend au quai case par case, marches d'un bloc ; le passage des rames est
+libre sur 3 052 points ; la Seine, qui longe la ligne à cinq stations, reste
+pleine (zéro poche d'air : la voûte s'arrête sous le lit) ; rien de la bouche
+sur la chaussée ni dans le passage d'un des vingt circuits. Au banc
+(`metro.js`) : l'édicule se voit de la rue, on se tient sur le quai, la rame
+jaune se présente, on monte et elle nous emmène à la station suivante. Le
+relief n'a pas bougé (les deux empreintes de `plafond.js` intactes, rien ne
+touche `terrainHeight`), et l'empreinte des 490 morceaux, qui couvre Paris,
+change — désarmée (`METRO_PARIS.actif = false`), la branche rend celle de la
+v472 au bit près.
+
+---
+
 ## v472 — L'arrivée n'engendre plus le monde sur le fil principal
 
 **Pourquoi.** Après une téléportation, le worker rend les morceaux autour de

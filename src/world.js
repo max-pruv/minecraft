@@ -11,7 +11,7 @@ import {
 } from './usine.js';
 import { buildGaulois } from './gaulois.js';
 import { buildEspace } from './espace.js';
-import { buildVille } from './ville.js';
+import { buildVille, creuserMetroParis } from './ville.js';
 import { buildCircuit } from './circuit.js';
 import { POLE, buildPole } from './pole.js';
 import { PARC_ATTRACTIONS, buildParc, lieuxDuParc } from './parc.js';
@@ -1557,6 +1557,7 @@ export const CONF_NEUF = {
   cle: 'neuf', villes: CITIES, aeroports: AEROPORTS, gaulois: GAULOIS, volcan: VOLCANO,
   places: PLACES, reperes: LANDMARKS, hauteurParis, parisAvant: false, fonduDoux: true,
   mursDeQuai: true, falaises: true, villesAvant: false, climat: true, sansTrameLondres: true,
+  metroParis: true,
 };
 // LE MONDE DE LA v306 À LA v308 — celui d'aujourd'hui sans le fondu doux des
 // villes (v309). La marche 6 → 7 juge sur lui ce qui y a été posé, et la marche
@@ -1566,7 +1567,7 @@ export const CONF_NEUF = {
 // Et ces deux mondes-là ont les villes d'avant leur passe au kit (Londres
 // v339, `londres-v332.js` ; Nice v359, `nice-v340.js`) : c'est celles qu'on y
 // voyait (`villesAvant`).
-export const CONF_V308 = { ...CONF_NEUF, reperes: LANDMARKS_V317, fonduDoux: false, mursDeQuai: false, falaises: false, villesAvant: true, climat: false, sansTrameLondres: false };
+export const CONF_V308 = { ...CONF_NEUF, reperes: LANDMARKS_V317, fonduDoux: false, mursDeQuai: false, falaises: false, villesAvant: true, climat: false, sansTrameLondres: false, metroParis: false };
 export const CONF_AVANT = {
   cle: 'avant-v306', villes: CITIES_AVANT, aeroports: AEROPORTS_AVANT_V306, gaulois: GAULOIS_AVANT,
   volcan: VOLCANO_AVANT, places: PLACES_AVANT, reperes: LANDMARKS_V317.map(repereAvant),
@@ -3723,6 +3724,13 @@ export class World {
             if (cede) data[World.index(x, h, z)] = BLOCK.COBBLE;
             else PV.batirColonneParis(wx, wz, (dy, id) => {
               const wy = h + dy - 1;
+              if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id;
+            });
+          }
+          // LA LIGNE 1 DU MÉTRO (v473) : creusée sous la ville, après elle, comme
+          // le métro de Washington. Seulement dans le monde d'aujourd'hui.
+          if (this.conf.metroParis && !this.conf.parisAvant) {
+            creuserMetroParis(wx, wz, h, (wy, id) => {
               if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id;
             });
           }

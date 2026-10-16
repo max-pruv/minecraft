@@ -385,7 +385,10 @@ const EMPREINTE_MORCEAUX_V414 = '863d4203a441e3fd029ce2404fc6d6e706799e7f64fe489
 // méditerranéen (herbe teinte, oliviers, pins parasols). Les contours
 // 'mediterranee' retirés de CLIMATS dans une copie de src, la branche rend
 // 1e4c50be…, la constante de la v468, au bit près.
-const EMPREINTE_MORCEAUX_V357 = 'b3bb35e392e9798a45ed581923b3133f31259bb58aab3aeef2bf1a81caa00095';
+// v473 : la ligne 1 du métro passe sous Paris, un des neuf lieux. Désarmée
+// (`METRO_PARIS.actif = false`, ville.js), la branche rend b3bb35e3…, la
+// constante de la v472, au bit près.
+const EMPREINTE_MORCEAUX_V357 = 'df0e4dfc95d47d80bcc916c18f23d91eb1bde39a5d266597a4443716cb58ae81';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -2653,6 +2656,25 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     verifier('un morceau de ville coûte moins de lectures de relief et de blocs que sur la v351',
       Object.entries(BARRES_TRAVAIL).every(([v, b]) => tr[v].reliefs <= b.reliefs && tr[v].lus <= b.lus),
       JSON.stringify({ mesure: tr, barres: BARRES_TRAVAIL }));
+  }
+
+  // LA LIGNE 1 DE PARIS SE PARCOURT COMME L'ENFANT LA VIT (v473). La sonde
+  // (`sonde-metro-paris.mjs`, lue telle quelle) engendre le vrai monde sous
+  // node : de la rue au quai case par case pour chaque bouche, le passage des
+  // rames libre sur les deux voies, aucune poche d'air dans la Seine, rien de
+  // la bouche sur la chaussée ni dans le passage d'un circuit. Rouge sur la
+  // v472 : Paris n'avait plus de métro (l'anneau a suivi la caserne en v293).
+  {
+    const { mesurerLigne1 } = await import('./sonde-metro-paris.mjs');
+    const t0 = Date.now();
+    const r = await mesurerLigne1();
+    const ratees = (r.descentes || []).filter((d) => !d.arrive).map((d) => d.nom);
+    verifier('la ligne 1 de Paris : seize stations, une bouche par station sauf Nation, et de chaque bouche on descend au quai',
+      !r.absente && r.stations === 16 && r.bouches >= 15 && ratees.length === 0,
+      r.absente ? 'aucune ligne 1 (ville.js ne la publie pas)' : `${r.bouches}/${r.stations} bouches, descentes ratées : ${ratees.join(', ') || 'aucune'}, ${Date.now() - t0} ms`);
+    verifier('rien ne barre les rames, la Seine reste pleine, et aucune bouche ne mure une rue ni un circuit',
+      !r.absente && r.lus > 1000 && r.gabarit === 0 && r.poches === 0 && r.surChaussee === 0 && r.mure === 0 && r.circuits > 0,
+      r.absente ? 'aucune ligne 1' : JSON.stringify({ gabarit: r.gabarit, lus: r.lus, poches: r.poches, surChaussee: r.surChaussee, mure: r.mure, circuits: r.circuits }));
   }
 
   // UNE BAIE SE SOUDE (v467). La couche HD de Paris pesait jusqu'à onze
