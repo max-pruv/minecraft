@@ -7202,9 +7202,22 @@ l'embarquement a eu lieu, pas par une hypothèse.
 
 - [ ] **Le reste de Washington** — la Cathédrale nationale et Georgetown
   University, sorties de l'emprise quand l'échelle a triplé (elles attendent
-  que le monde grandisse) ; les lignes Orange et Argent, qui partagent le
-  tunnel de la Bleue dans la vraie ville ; les guides qui racontent ce qu'on
-  visite. Le mémorial Roosevelt, lui, est revenu en v162.
+  que le monde grandisse) ; les guides qui racontent ce qu'on visite. Le
+  mémorial Roosevelt, lui, est revenu en v162. *(L'Orange et l'Argent roulent
+  depuis la v455, sur les rails de la Bleue d'Eastern Market à Foggy Bottom.)*
+
+- [ ] **Le métro de Washington n'est pas creusé hors du cercle de 187 blocs**
+  (mesuré v455, déjà vrai sur `origin/main`). La ville est une BOÎTE, mais
+  `cityAtParmi` lit le cercle du registre (`r: 187`) : au-delà, le bâtisseur
+  de Washington ne passe pas, et `creuserMetro` non plus. Les quais
+  d'Arlington Cemetery (230 blocs du centre) et de Pentagon (209) sont de la
+  PIERRE ; 305 points de voie de la Bleue sur 986 ont un bloc plein dans le
+  gabarit (sonde : `getBlock` à y+1..3 sur `traceLigneMetro`) — les rames y
+  roulent dans la roche. Le tunnel de l'Orange et de l'Argent vers Rosslyn
+  (v455) aussi, sur 77 points sur 732. Remède : creuser le métro (seulement
+  lui, sous terre) dans toute colonne de la boîte, dans `world.js` — mais
+  ses bouches remontent à la surface d'Arlington, et les colonnes hors du
+  cercle ont pu recevoir des blocs d'enfant : à mesurer avant d'écrire.
 
 - [ ] **Ce que Washington a à apprendre** — la ville est pleine de choses qui
   se racontent : pourquoi les avenues coupent la grille en diagonale, pourquoi

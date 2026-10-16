@@ -550,7 +550,7 @@ const descendre = async (p, ms) => {
     // La pastille de couleur dit QUELLE ligne : un enfant qui ne lit pas
     // encore bien reconnaît un rond bleu avant un mot.
     verifier('et la pastille dit de quelle ligne il s\'agit',
-      /🔵|🔴|🟢|🟡/.test(aBord.texte), aBord.texte);
+      /🔵|🔴|🟢|🟡|🟠|⚪/.test(aBord.texte), aBord.texte);
 
     await tab.evaluate(() => document.getElementById('board-btn').click());
     const embarque = await pose(tab);
@@ -637,6 +637,119 @@ const descendre = async (p, ms) => {
     }, { x: P.x + tablier.u, y: tablier.y, z: P.z + tablier.v });
     verifier('et le train y roule sous le ciel, au-dessus de l\'eau',
       pont.tablier && pont.cielOuvert && pont.eau, JSON.stringify(pont));
+
+    // --- 6. l'Orange et l'Argent sur les rails de la Bleue (v455) -------------
+    // Dans la vraie ville, trois couleurs partagent le tunnel de Rosslyn à
+    // Stadium-Armory. Ici : Eastern Market → Foggy Bottom, puis leur propre
+    // tunnel sous le Potomac vers Rosslyn. Deux témoins : elles roulent, et
+    // aucune rame n'entre dans une autre — sur UN TOUR D'HORLOGE entier, par la
+    // grille du jeu (`distanceA`), wagon par wagon : une position lue à une
+    // seule heure est un tirage (v318).
+    const famille = await tab.evaluate(async () => {
+      const W = await import('./src/washington.js');
+      const V = await import('./src/vehicules.js');
+      const conv = (window.__vehicules.etat() || [])
+        .filter((c) => /^métro (Bleue|Orange|Argent)$/.test(c.nom || ''));
+      const parc = {};
+      for (const n of ['Bleue', 'Orange', 'Argent']) {
+        if (W.LIGNES.some((l) => l.nom === n)) parc[n] = new V.Parcours(W.traceLigneMetro(n));
+      }
+      const H = window.__game.vehicules.horloge();
+      const ecart = (W.HORAIRE_METRO && W.HORAIRE_METRO.ecart) || 7.6;
+      let P = 0;
+      for (const c of conv) {
+        const L = parc[c.nom.slice(6)].longueur;
+        // la période : l'heure où la tête a fait un tour de plus
+        let lo = 0, hi = 2000;
+        const d0 = window.__game.vehicules.distanceA(c.cle, H);
+        for (let k = 0; k < 50; k++) {
+          const m = (lo + hi) / 2;
+          if (window.__game.vehicules.distanceA(c.cle, H + m) - d0 < L) lo = m; else hi = m;
+        }
+        P = Math.max(P, hi);
+      }
+      let pire = 1e9, quand = null, contacts = 0, releves = 0;
+      for (let t = 0; t < P; t += 0.25) {
+        const pos = conv.map((c) => {
+          const d = window.__game.vehicules.distanceA(c.cle, H + t);
+          const p = parc[c.nom.slice(6)];
+          return Array.from({ length: 4 }, (_, i) => p.a(d - i * ecart));
+        });
+        for (let a = 0; a < conv.length; a++) {
+          for (let b = a + 1; b < conv.length; b++) {
+            let m = 1e9;
+            for (const qa of pos[a]) for (const qb of pos[b]) m = Math.min(m, Math.hypot(qa.x - qb.x, qa.z - qb.z));
+            releves++;
+            if (m < 5) contacts++;
+            if (m < pire) { pire = m; quand = `${conv[a].nom}/${conv[b].nom} à t=${t}`; }
+          }
+        }
+      }
+      return {
+        noms: conv.map((c) => c.nom), P: +P.toFixed(1), pire: +pire.toFixed(1), quand, contacts, releves,
+      };
+    });
+    verifier('l\'Orange et l\'Argent roulent dans le tunnel de la Bleue',
+      famille.noms.some((n) => /Orange/.test(n)) && famille.noms.some((n) => /Argent/.test(n)),
+      famille.noms.join(', '));
+    verifier('et sur un tour d\'horloge, aucune rame n\'entre dans une autre',
+      famille.noms.length >= 4 && famille.releves > 0 && famille.contacts === 0,
+      `${famille.contacts} contact(s) sur ${famille.releves} relevés, au plus près ${famille.pire} blocs`
+      + ` (${famille.quand}), tour de ${famille.P} s`);
+
+    // Le trajet de l'enfant : sur le quai de Smithsonian, une rame ORANGE
+    // arrive, on monte, elle nous emmène à la station suivante, on descend.
+    // On n'attend pas trois minutes de jeu qu'elle passe : la rue est une
+    // fonction de l'heure (v305), on avance l'horloge jusqu'à quatre secondes
+    // avant son arrivée — exactement ce que fait une tablette qui adopte
+    // l'heure de l'hôte.
+    const smith = D.QUAIS_METRO.find((q) => q.nom === 'Smithsonian');
+    await poserLe(tab, P.x + smith.u, smith.y + 2, P.z + smith.v);
+    const rdv = await tab.evaluate(async ({ px, pz, su, sv }) => {
+      const V = await import('./src/vehicules.js');
+      const W = await import('./src/washington.js');
+      if (!W.LIGNES.some((l) => l.nom === 'Orange')) return null;
+      const c = window.__vehicules.etat().find((x) => x.nom === 'métro Orange');
+      if (!c) return null;
+      const p = new V.Parcours(W.traceLigneMetro('Orange'));
+      const H = window.__game.vehicules.horloge();
+      for (let t = 0; t < 400; t += 0.25) {
+        const q = p.a(window.__game.vehicules.distanceA(c.cle, H + t));
+        if (Math.hypot(q.x - (px + su), q.z - (pz + sv)) < 3) {
+          window.__game.vehicules.adopterHorloge(H + t - 4);
+          return { t };
+        }
+      }
+      return { t: null };
+    }, { px: P.x, pz: P.z, su: smith.u, sv: smith.v });
+    let orange = null;
+    for (let i = 0; i < 120 && rdv && rdv.t !== null; i++) {
+      const b = await bouton(tab, 'board-btn');
+      if (b.visible && /🟠/.test(b.texte)) { orange = b; break; }
+      await dormir(500);
+    }
+    verifier('sur le quai, une rame Orange arrive et propose de monter',
+      !!orange, `${JSON.stringify(rdv)} · ${orange ? orange.texte : 'pas de bouton 🟠'}`);
+    let trajet = { depart: null, arrivee: null };
+    if (orange) {
+      await tab.evaluate(() => document.getElementById('board-btn').click());
+      const monte = await pose(tab);
+      trajet.depart = stationLaPlusProche(monte).nom;
+      trajet.arrivee = trajet.depart;
+      await tab.evaluate(() => { window.__simDC = 0; });
+      for (let i = 0; i < 300 && trajet.arrivee === trajet.depart; i++) {
+        await dormir(800);
+        const ici = await pose(tab);
+        const st = stationLaPlusProche(ici);
+        if (st.d < 6) trajet.arrivee = st.nom;
+        if ((await tab.evaluate(() => window.__simDC)) > 40) break;
+      }
+      await tab.evaluate(() => document.getElementById('board-btn').click());
+      await dormir(1500);
+      trajet.descendu = !(await bouton(tab, 'board-btn')).texte.startsWith('⬇️');
+    }
+    verifier('elle nous emmène à la station suivante, et l\'on en descend',
+      !!orange && trajet.arrivee !== trajet.depart && trajet.descendu, JSON.stringify(trajet));
 
     // --- 6. l'Air et l'Espace : des avions au-dessus de la tête ---------------
     // Le musée le plus visité d'Amérique. On entre, on lève les yeux : le

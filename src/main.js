@@ -24,7 +24,7 @@ import { cadran, cadranVers, distanceLisible } from './cap.js';
 import { D_ENTREE } from './approche.js';
 import { guidage, arriveEntre, nomDestination, rotationContinue, repereMinicarte, ARRIVEE } from './gps.js';
 import { POLE } from './pole.js';
-import { LIGNES as LIGNES_DC, traceLigneMetro, arretsDeLigne, circuitsWashington } from './washington.js';
+import { LIGNES as LIGNES_DC, traceLigneMetro, optionsMetro, HORAIRE_METRO, circuitsWashington } from './washington.js';
 import { buildChunkTampons } from './mesher.js';
 import { materiauHD, geometrieHD } from './matierehd.js';
 import { Carte, MAP_COLORS } from './carte.js';
@@ -1985,7 +1985,9 @@ function updateChunks() {
   for (const ligne of LIGNES_DC) {
     vehicules.metro(traceLigneMetro(ligne.nom), {
       nom: `métro ${ligne.nom}`, emoji: ligne.emoji, teinte: ligne.teinte,
-      nb: 4, vitesse: 8, rames: 3, pause: 3, arretsIndex: arretsDeLigne(ligne.nom),
+      // la grille vient de la ligne (v455) : l'Orange et l'Argent roulent sur
+      // les rails de la Bleue, et c'est l'horaire qui les espace
+      ...HORAIRE_METRO, ...optionsMetro(ligne.nom),
       souterrain: true,
       // La Jaune sort de terre sur son pont du Potomac : à l'air libre, la
       // rame se voit de loin comme n'importe quel train de surface.

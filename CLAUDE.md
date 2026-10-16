@@ -770,6 +770,25 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## L'Orange et l'Argent (v455) — deux lignes sur les mêmes rails ont des tours de même durée
+
+Deux règles.
+
+- **UNE LIGNE QUI EMPRUNTE LE TUNNEL D'UNE AUTRE EN RECOPIE LES POINTS.**
+  `calculerBranche` (washington.js) reprend le tracé de la Bleue point pour
+  point, cote comprise, jusqu'au dernier quai commun ; seule la branche se
+  calcule. Recalculée à part, l'enveloppe basse descendrait autrement et
+  deux rames « sur la même voie » rouleraient à deux cotes.
+- **SUR DES RAILS PARTAGÉS, L'ÉCART ENTRE RAMES EST UNE PHASE, ET IL NE TIENT
+  QUE SI LES TOURS DURENT EXACTEMENT AUTANT.** Les tours commencent au même
+  point ; à périodes égales, une rame qui en suit une autre d'un sixième de
+  tour la suit partout sur le tronc. La branche la plus courte attend la
+  différence au bout de son tunnel, là où rien d'autre ne roule
+  (`optionsMetro` : `pauses`, `phases`). Sans l'égalisation, 1 191 contacts
+  sur un tour (sonde). Une rame de branche occupe son tunnel autant que la
+  Bleue sa branche : deux rames de branche à moins d'un tiers de tour se
+  rattraperaient au bout — d'où trois rames de branche, pas six.
+
 ## La rue sans à-coups (v453) — le bus a une place, un circuit se prépare, une suiveuse freine
 
 Quatre sujets, une livraison. Cinq règles.
