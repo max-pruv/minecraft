@@ -38,10 +38,14 @@ près (`planDePose`, garages.js, une seule règle pour les deux).
 
 **Ce qui le prouve.** Quatre témoins dans `sauvegarde.js`, sur une pente
 cherchée par la sonde (façade de quatre à huit blocs plus basse que le fond) :
-on entre à pied jusqu'au fond, le bloc de l'enfant posé dans l'emprise est
-intact, on entre en voiture par la porte et elle se range, et après un
-rechargement elle est au garage, sur le plancher. Sous node : 360 → 9 blocs
-dans la pièce (les neuf de l'établi).
+on entre à pied jusqu'au fond AU NIVEAU DU PLANCHER, le bloc de l'enfant posé
+dans l'emprise est intact, on entre en voiture par la porte et elle se range,
+et après un rechargement elle est au garage, sur le plancher. Les deux
+premiers sont rouges sur `origin/main` (l'enfant arrive au fond en grimpant
+sur la terre, cote 40 pour un plancher à 39 ; le mur du garage remplace son
+bloc) ; les deux derniers sont verts des deux côtés — la voiture n'allait pas
+assez loin pour toucher la terre — et gardent le trajet. Sous node : 360 → 9
+blocs dans la pièce (les neuf de l'établi).
 
 Ce qui reste, déclaré : la marche d'un bloc au seuil (un plancher à fleur du
 sol est lu comme un sol de ville par le sol continu, qui y laisse une lèvre de

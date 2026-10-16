@@ -499,15 +499,20 @@ const BLOCS = 40000;
       // la marche du seuil se saute, comme pour entrer dans toute maison
       await lou.keyboard.down('KeyW');
       await lou.keyboard.down('Space');
-      const r = await lou.evaluate((s) => new Promise((fin) => {
-        const g = window.__game; let sim = 0, prec = performance.now(), zmin = g.player.pos.z;
+      // AU FOND ET AU NIVEAU DU PLANCHER : sur l'ancien code l'enfant passait
+      // aussi — en grimpant sur la terre qui remplissait la pièce (y 41,2
+      // pour un plancher à 38). On relève donc la plus basse cote où il touche
+      // le sol une fois au fond de la pièce.
+      const r = await lou.evaluate(({ s, b }) => new Promise((fin) => {
+        const g = window.__game; let sim = 0, prec = performance.now(), zmin = g.player.pos.z, yFond = Infinity;
         const tic = (t) => {
           sim += Math.min(Math.max((t - prec) / 1000, 0), 0.05); prec = t;
           zmin = Math.min(zmin, g.player.pos.z);
-          if (sim >= s) fin({ z: g.player.pos.z, zmin, y: g.player.pos.y }); else requestAnimationFrame(tic);
+          if (g.player.pos.z < b.z - 2 && g.player.onGround) yFond = Math.min(yFond, g.player.pos.y);
+          if (sim >= s) fin({ z: g.player.pos.z, zmin, y: g.player.pos.y, yFond: isFinite(yFond) ? yFond : null }); else requestAnimationFrame(tic);
         };
         requestAnimationFrame(tic);
-      }), secondes);
+      }), { s: secondes, b: pente.box });
       await lou.keyboard.up('KeyW'); await lou.keyboard.up('Space');
       return r;
     };
@@ -556,7 +561,7 @@ const BLOCS = 40000;
       }
     }
     verifier('🅿️ un garage posé sur une pente ne s\'enterre pas : on y entre à pied jusqu\'au fond',
-      !pente.err && aPied && aPied.zmin < pente.box.z - 4,
+      !pente.err && aPied && aPied.zmin < pente.box.z - 4 && aPied.yFond !== null && aPied.yFond < pente.box.y + 1.5,
       JSON.stringify({ pente, aPied }));
     verifier('🅿️ et le bloc que l\'enfant avait posé dans l\'emprise est resté',
       !pente.err && pente.enfant.intact, JSON.stringify(pente.enfant || pente));
