@@ -1124,7 +1124,7 @@ export const LIGNES = [
     nom: 'Jaune', teinte: 0xe8c33a, emoji: '🟡', pont: true,
     arrets: ["L'Enfant Plaza", 'Pentagon'],
   },
-  // L'ORANGE ET L'ARGENT (v455). Dans la vraie ville, elles partagent le
+  // L'ORANGE ET L'ARGENT (v468). Dans la vraie ville, elles partagent le
   // tunnel de la Bleue de Rosslyn à Stadium-Armory : trois couleurs sur les
   // MÊMES voies. Ici, c'est tout ce qui tombe dans l'emprise — Eastern Market
   // à Foggy Bottom, sur les rails mêmes de la Bleue (`tronc`). Ce qui sort de
@@ -1219,7 +1219,7 @@ function calculerTrace(ligne) {
   return pts;
 }
 
-// UNE LIGNE QUI EMPRUNTE LE TUNNEL D'UNE AUTRE EN REPREND LES POINTS (v455).
+// UNE LIGNE QUI EMPRUNTE LE TUNNEL D'UNE AUTRE EN REPREND LES POINTS (v468).
 // Recalculée à part, son enveloppe basse descendrait autrement — la branche
 // plonge sous le fleuve et tire le profil — et deux rames « sur la même
 // voie » rouleraient à deux cotes : deux tunnels l'un dans l'autre. On
@@ -1421,7 +1421,7 @@ export function arretsDeLigne(nom) {
   return rangs;
 }
 
-// LA GRILLE HORAIRE DU MÉTRO (v455). La position d'une rame est une fonction
+// LA GRILLE HORAIRE DU MÉTRO (v468). La position d'une rame est une fonction
 // de l'heure (v305) : deux rames sur les mêmes rails ne se traversent pas si
 // leurs grilles les espacent. Sur le tronc commun, une Orange qui suit une
 // Bleue d'un sixième de tour passe partout un sixième de tour après elle —

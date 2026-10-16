@@ -1434,11 +1434,11 @@ class Convoi {
     // s'immobiliser — et `pause` combien de temps les portes restent ouvertes.
     this.arrets = (opts.arrets || []).slice().sort((a, b) => a - b);
     this.pause = opts.pause ?? 5;
-    // UNE PAUSE PAR QUAI (v455) : `pausesA(d)` rend celle du quai à la
+    // UNE PAUSE PAR QUAI (v468) : `pausesA(d)` rend celle du quai à la
     // distance d — l'attente au bout du tunnel de Rosslyn n'est pas celle
     // d'une station. Sans `pauses`, la même partout, comme avant.
     this.pausesParArret = opts.pausesParArret || null;
-    // LA PHASE IMPOSÉE (v455), en fraction de tour : les rames qui partagent
+    // LA PHASE IMPOSÉE (v468), en fraction de tour : les rames qui partagent
     // des rails se placent sur la grille par l'heure, pas par une distance.
     this.phaseFraction = opts.phaseFraction ?? null;
     this.attente = 0;
@@ -2391,7 +2391,7 @@ export function createVehicules({ scene, player }) {
     const rames = opts.phases ? opts.phases.length : (opts.rames ?? 2);
     for (let k = 0; k < rames; k++) {
       // des rames qui partagent des rails avec une autre ligne reçoivent leur
-      // place sur le tour en TEMPS (v455) ; les autres, en distance, comme avant
+      // place sur le tour en TEMPS (v468) ; les autres, en distance, comme avant
       const phaseFraction = opts.phases ? opts.phases[k] : null;
       ajouter(points, {
         nb: opts.nb ?? 4, ecart: opts.ecart ?? 7.6, vitesse: opts.vitesse ?? 7,
