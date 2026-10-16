@@ -20,6 +20,26 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v455 — Les essais du jeu se lancent à tous les coups
+
+**Pourquoi.** Une suite d'essai (`realisme.js`) était notée « morte au clic
+« Jouer », intermittente » depuis la v385. La cause avait été trouvée en v427
+— le banc attendait deux images identiques avant de cliquer, sur un accueil
+qui rend une image toutes les quatorze secondes — mais l'entrée restait
+ouverte, et personne n'avait revérifié depuis.
+
+**Ce que ça change.** Rien à l'écran : c'est la boîte à outils des essais.
+L'entrée est close sur mesure, et l'on sait que le témoin du bouton « Jouer »
+voit vraiment un bouton caché.
+
+**Ce qui le prouve.** `realisme.js` rejouée SEULE trois fois sur la v454 :
+19/19 verts à chaque passage, clic en 6, 28 et 14 ms. Sur une copie où un voile
+recouvre « Jouer », le verdict « actif et rien ne le recouvre » rougit
+(`dessus: false`) et la suite va quand même au bout (18 autres verts) : le
+témoin peut rougir sans s'effondrer.
+
+---
+
 ## v454 — Les garde-corps des petites fenêtres ont leurs anneaux entiers
 
 **Pourquoi.** Le motif de fer forgé d'un garde-corps est fait pour une travée
