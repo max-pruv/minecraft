@@ -811,7 +811,7 @@ bâtisseur se lit dans le monde engendré (`sonde-monuments-hd.cjs`, témoin de
 `plafond.js`, qui descend désormais jusqu'au sol). Avant de recaler un modèle
 sur une dette chiffrée, on vérifie que le chiffre compte ce que l'enfant voit.
 
-## L'A1 Centre (v460) — une porte de ville se juge aussi contre les anneaux et les ponts de la ville
+## L'A1 Centre (v461) — une porte de ville se juge aussi contre les anneaux et les ponts de la ville
 
 Une règle. La sonde de couloir mesure le relief, les rails, les aérodromes, les
 repères et les autres routes ; elle ne voit ni les VOIES des anneaux de la
