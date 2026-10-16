@@ -715,7 +715,7 @@ const descendre = async (p, ms) => {
       const H = window.__game.vehicules.horloge();
       for (let t = 0; t < 400; t += 0.25) {
         const q = p.a(window.__game.vehicules.distanceA(c.cle, H + t));
-        if (Math.hypot(q.x - (px + su), q.z - (pz + sv)) < 3) {
+        if (Math.hypot(q.x - (px + su), q.z - (pz + sv)) < 6) {   // la voie est à quatre blocs de l'axe du quai
           window.__game.vehicules.adopterHorloge(H + t - 4);
           return { t };
         }
