@@ -133,28 +133,75 @@ export function allureDevant(s, vObstacle = 0) {
   return vitesseAvant(s, Math.max(0, vObstacle), FREIN);
 }
 
-// LE TOUR DE RÔLE ENTRE LA ROUTE ET LA VILLE (v455). L'avenue d'entrée d'une
-// autoroute coupe des rues de la ville sans feu : elle n'est pas dans les
-// voies nommées, et c'est d'elles que naissent les feux (v274). Quatre files
+// LE FEU DU CARREFOUR SANS FEU (v455). L'avenue d'entrée d'une autoroute
+// coupe des rues de la ville sans feu : elle n'est pas dans les voies
+// nommées, et c'est d'elles que naissent les feux (v274). Quatre files
 // d'autoroute (aller, retour, leurs jumelles) contre un circuit de la ville :
 // en travers, chacune attendait l'autre, et seule la patience de quatre
-// secondes (v244) dénouait le nœud — une voiture à la fois. Mesuré à
-// (−325, 195), une tête de file arrêtée quinze secondes et la queue jusqu'au
-// témoin de la fumée, trente blocs plus loin.
+// secondes (v244) dénouait le nœud, une voiture à la fois. Mesuré à
+// (−325, 195) : une tête de file arrêtée quinze à trente secondes, et la queue
+// jusqu'au point du témoin de la fumée.
 //
-// Le remède est la règle d'un feu, sans feu : la route a la main pendant la
-// part verte de l'axe 0 du cycle des feux, la ville pendant celle de l'axe 1.
-// C'est une fonction de l'HEURE DE LA RUE (v305) : deux tablettes donnent la
-// main au même côté au même instant. Celle qui n'a pas la main cède et c'est
-// légitime (pas de patience, donc pas de passage en force) ; celle qui l'a
-// ne cède pas — SAUF à une voiture déjà sur son chemin (« pas si l'on est
-// déjà dedans », v245) : une voiture engagée au vert de son côté dégage.
-// Rend 1 (a passe), −1 (a cède, légitimement), 0 (la règle ordinaire).
+// UN TOUR DE RÔLE DANS LA DÉCISION DE CÉDER NE SUFFIT PAS — mesuré : donner
+// la main à un côté quand deux voitures se voient en travers laissait celles
+// déjà engagées se nouer DANS le carrefour, et la file passait autant (19 et
+// 12 contre 26 et 12 en une minute). Ce qui vide un carrefour, c'est une ligne
+// d'arrêt AVANT lui : la règle d'un feu, sans poteau, l'axe 0 pour la route et
+// l'axe 1 pour la ville, à l'heure de la rue — la même sur deux tablettes
+// (v305). Le carrefour se trouve sur les TRACÉS, pas sur le sol.
 import { etatFeu } from './feux.js';
-export function tourDeRole(aRoute, bRoute, dejaLa, heureMs) {
-  if (aRoute === bRoute) return 0;
-  if (dejaLa) return -1;
-  return etatFeu(aRoute ? 0 : 1, heureMs) === 'vert' ? 1 : -1;
+// à combien du point de croisement s'arrête le centre d'une voiture : la
+// demi-chaussée de ce qu'elle coupe, plus sa demi-longueur et un bloc
+export const ECART_DEVANT_VILLE = 4.5 + 2.2;    // la route devant une rue de la ville
+export const ECART_DEVANT_ROUTE = 7.5 + 2.2;    // la ville devant l'avenue d'entrée
+const VOIT_CROISEMENT = 40, COTE_CROISEMENT = 3;
+// Pour une voiture en (x, z) qui va vers (ux, uz) : faut-il s'arrêter avant un
+// des croisements `liste` ({ x, z, autre }) ? Rend `{ s, orange }` ou null,
+// comme un feu de la ville (`feuRougeDevant`, main.js).
+export function feuDeCroisement(x, z, ux, uz, liste, route, heureMs) {
+  const etat = etatFeu(route ? 0 : 1, heureMs);
+  if (etat === 'vert') return null;
+  let mieux = null;
+  for (const q of liste) {
+    const ex = q.x - x, ez = q.z - z;
+    if (Math.abs(ex * uz - ez * ux) > COTE_CROISEMENT) continue;
+    const devant = ex * ux + ez * uz;
+    // déjà sur la ligne ou dans le carrefour : on le dégage
+    if (devant < q.autre || devant > VOIT_CROISEMENT) continue;
+    const s = devant - q.autre;
+    if (!mieux || s < mieux.s) mieux = { s, orange: etat === 'orange' };
+  }
+  return mieux;
+}
+// Où deux tracés (`Parcours`) se coupent : on les échantillonne tous les
+// deux blocs, une grille de huit range les segments du premier, et l'on garde
+// un point par croisement (deux à moins de six blocs n'en font qu'un).
+export function croisementsDeTraces(pa, pb, pas = 2) {
+  const ech = (p) => { const out = []; for (let d = 0; d <= p.longueur; d += pas) { const q = p.a(d); out.push([q.x, q.z]); } return out; };
+  const A = ech(pa), B = ech(pb), G = 8, grille = new Map();
+  for (let i = 0; i + 1 < A.length; i++) {
+    const k = Math.floor((A[i][0] + A[i + 1][0]) / 2 / G) + ':' + Math.floor((A[i][1] + A[i + 1][1]) / 2 / G);
+    (grille.get(k) || grille.set(k, []).get(k)).push(i);
+  }
+  const out = [];
+  for (let j = 0; j + 1 < B.length; j++) {
+    const [p, q] = [B[j], B[j + 1]];
+    const cx = Math.floor((p[0] + q[0]) / 2 / G), cz = Math.floor((p[1] + q[1]) / 2 / G);
+    for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
+      for (const i of grille.get((cx + dx) + ':' + (cz + dz)) || []) {
+        const [r, s] = [A[i], A[i + 1]];
+        const d1x = q[0] - p[0], d1z = q[1] - p[1], d2x = s[0] - r[0], d2z = s[1] - r[1];
+        const den = d1x * d2z - d1z * d2x; if (Math.abs(den) < 1e-9) continue;
+        const t = ((r[0] - p[0]) * d2z - (r[1] - p[1]) * d2x) / den, u = ((r[0] - p[0]) * d1z - (r[1] - p[1]) * d1x) / den;
+        if (t < 0 || t > 1 || u < 0 || u > 1) continue;
+        // un tracé qui en LONGE un autre n'est pas un croisement
+        if (Math.abs(d1x * d2x + d1z * d2z) / (Math.hypot(d1x, d1z) * Math.hypot(d2x, d2z)) > 0.7) continue;
+        const x = p[0] + t * d1x, z = p[1] + t * d1z;
+        if (!out.some((o) => Math.hypot(o.x - x, o.z - z) < 6)) out.push({ x, z });
+      }
+    }
+  }
+  return out;
 }
 
 // UNE VOITURE AU FEU ORANGE PASSE SI ELLE NE PEUT PLUS S'ARRÊTER. C'est la
