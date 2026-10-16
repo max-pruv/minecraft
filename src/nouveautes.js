@@ -6,6 +6,13 @@
 
 export const NOUVEAUTES = [
   {
+    v: 455,
+    titre: 'Les monuments de Paris vérifiés',
+    puces: [
+      'Aucun cube ne dépasse des monuments',
+    ],
+  },
+  {
     v: 454,
     titre: 'De jolies petites grilles',
     puces: [

@@ -3150,7 +3150,10 @@
   avec la table de paliers pour dire de combien monte chaque couche. Le même
   prix vaut pour les monuments étirés par la v342 et la v350 (Buckingham,
   l'Opéra de Lille, les Archives nationales).
-- [ ] **DES CUBES DÉPASSENT ENCORE DES MODÈLES ÉTIRÉS (v335), mesuré. Au-dessus
+- [x] **DES CUBES DÉPASSENT ENCORE DES MODÈLES ÉTIRÉS (v335), mesuré. FAIT en v455 :
+  les vingt-quatre du parvis étaient un faux positif — posé au ras du sol, il
+  touche le sol de la ville ; sonde et témoin lisent le monde sous trois blocs,
+  zéro cube sur les huit monuments, témoin jusqu'au sol. Au-dessus
   d'un enfant : FAIT en v350** (Opéra 15 → 0, Panthéon 6 → 0, Notre-Dame 8 → 0,
   témoin dans `plafond.js`). Restent les vingt-quatre cubes du parvis de
   Notre-Dame, au sol, d'avant la v335. Sonde
