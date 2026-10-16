@@ -770,6 +770,24 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Le viaduc de la Manche (v455) — un ouvrage de voie se déclare au contact, et un profil relevé se borne aux gares
+
+Deux règles.
+
+- **UN OUVRAGE FERROVIAIRE EST LE PONT DE L'A1, PIÈCE POUR PIÈCE.** Une suite
+  d'au moins `VIADUC_MIN` pas d'eau sous l'axe porte `viaduc` dans le profil
+  (`profilDe`) ; `voieEn` rend `ouvrage`, `corridorEn` le transmet, `tablierEn`
+  lit la voie après la route, et `rubansVoieDans` émet le ruban `tablier`
+  (peau de gravier) qui déborde de `CULEE` pas sur le ballast. Le générateur
+  n'écrit sur l'eau que des piles. Contact, dessin et train lisent
+  `coteContinue` : un seul profil, trois lecteurs (v302).
+- **RELEVER UN PROFIL SE BORNE AUX GARES, ET LA BORNE SE MESURE CONTRE LE
+  PROFIL D'AVANT.** Le tablier monte à `DEGAGE` blocs, et le lissage en cône
+  propage le relèvement d'un tiers de bloc par bloc : rien ne se relève à moins
+  de `GARDE_GARE` pas d'un bout, et un témoin compare les dix-huit gares à
+  `viaducs(false)` (zéro déplacée). La rampe à terre, elle, bouge (deux blocs au
+  plus) : déclarée dans `TASKS.md`.
+
 ## La rue sans à-coups (v453) — le bus a une place, un circuit se prépare, une suiveuse freine
 
 Quatre sujets, une livraison. Cinq règles.
