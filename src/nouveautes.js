@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 468,
+    titre: 'Le métro Orange et Argent',
+    puces: [
+      'Deux lignes de plus à Washington',
+      'Elles roulent dans le tunnel de la Bleue',
+    ],
+  },
+  {
     v: 467,
     titre: 'Des passages piétons à Londres',
     puces: [

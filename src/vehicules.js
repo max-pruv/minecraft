@@ -1434,6 +1434,13 @@ class Convoi {
     // s'immobiliser — et `pause` combien de temps les portes restent ouvertes.
     this.arrets = (opts.arrets || []).slice().sort((a, b) => a - b);
     this.pause = opts.pause ?? 5;
+    // UNE PAUSE PAR QUAI (v468) : `pausesA(d)` rend celle du quai à la
+    // distance d — l'attente au bout du tunnel de Rosslyn n'est pas celle
+    // d'une station. Sans `pauses`, la même partout, comme avant.
+    this.pausesParArret = opts.pausesParArret || null;
+    // LA PHASE IMPOSÉE (v468), en fraction de tour : les rames qui partagent
+    // des rails se placent sur la grille par l'heure, pas par une distance.
+    this.phaseFraction = opts.phaseFraction ?? null;
     this.attente = 0;
     // UN CONVOI NE FABRIQUE PAS CE QUE PERSONNE NE VOIT (v235).
     //
@@ -1562,11 +1569,11 @@ class Convoi {
       }
       ts.push(t - (d - 2 * L) / v - t0); ds.push(L);
     } else {
-      const v = this.vitesse, pause = this.pause;
+      const v = this.vitesse;
       let t = 0, prec = 0;
       // un quai à zéro se prend en fin de tour : c'est là que la rame arrive
-      const quais = this.arrets.map((q) => (((q % L) + L) % L) || L).sort((x, y) => x - y);
-      for (const q of quais) {
+      const quais = this.arrets.map((q) => [(((q % L) + L) % L) || L, this.pauseA(q)]).sort((x, y) => x[0] - y[0]);
+      for (const [q, pause] of quais) {
         if (q < prec) continue;
         t += (q - prec) / v; ts.push(t); ds.push(q);
         t += pause; ts.push(t); ds.push(q);
@@ -1576,9 +1583,14 @@ class Convoi {
     }
     const P = ts[ts.length - 1];
     this._horaire = { ts: Float64Array.from(ts), ds: Float64Array.from(ds), P, L };
-    // la phase : à l'horloge zéro, le convoi est là où il naissait avant
-    this.phase = this.tempsA(this.distance);
+    // la phase : à l'horloge zéro, le convoi est là où il naissait avant —
+    // ou là où sa ligne lui a donné sa place sur le tour
+    this.phase = this.phaseFraction !== null ? this.phaseFraction * P : this.tempsA(this.distance);
     return this._horaire;
+  }
+
+  pauseA(d) {
+    return this.pausesParArret ? (this.pausesParArret.get(d) ?? this.pause) : this.pause;
   }
 
   // Le temps de grille où la tête ARRIVE à la distance d (avant sa pause).
@@ -1914,7 +1926,7 @@ class Convoi {
           const franchi = d1 >= d0 ? (a > d0 + EPS && a <= d1) : (a > d0 + EPS || a <= d1);
           if (!franchi) continue;
           this.distance = avant + ((a - d0 + L) % L);
-          this.attente = this.pause;
+          this.attente = this.pauseA(a);
           break;
         }
       }
@@ -2366,6 +2378,8 @@ export function createVehicules({ scene, player }) {
     // distance : c'est le creusement du tunnel qui sait où sont les quais, et
     // lui compte en points de tracé. On convertit ici, une fois.
     const arrets = (opts.arretsIndex || []).map((i) => p.cumul[Math.min(i, p.cumul.length - 1)]);
+    const pausesParArret = opts.pauses
+      ? new Map(arrets.map((d, k) => [d, opts.pauses[k] ?? opts.pause ?? 5])) : null;
     // COMBIEN DE RAMES ? Autant qu'il en faut pour qu'on n'attende pas.
     //
     // Deux suffisaient tant que le métro ne s'arrêtait jamais. Depuis qu'il
@@ -2374,11 +2388,16 @@ export function createVehicules({ scene, player }) {
     // quai à ne rien voir venir. Trois rames ramènent l'attente sous la
     // demi-minute, ce qui est déjà l'intervalle du vrai métro aux heures
     // creuses.
-    const rames = opts.rames ?? 2;
+    const rames = opts.phases ? opts.phases.length : (opts.rames ?? 2);
     for (let k = 0; k < rames; k++) {
+      // des rames qui partagent des rails avec une autre ligne reçoivent leur
+      // place sur le tour en TEMPS (v468) ; les autres, en distance, comme avant
+      const phaseFraction = opts.phases ? opts.phases[k] : null;
       ajouter(points, {
-        nb: opts.nb ?? 4, ecart: 7.6, vitesse: opts.vitesse ?? 7,
-        depart: (k * p.longueur) / rames, nom, emoji: opts.emoji || '🚇', assise: 1.1,
+        nb: opts.nb ?? 4, ecart: opts.ecart ?? 7.6, vitesse: opts.vitesse ?? 7,
+        depart: phaseFraction !== null ? phaseFraction * p.longueur : (k * p.longueur) / rames,
+        phaseFraction, pausesParArret,
+        nom, emoji: opts.emoji || '🚇', assise: 1.1,
         arrets, pause: opts.pause, souterrain: opts.souterrain, decouvert: opts.decouvert, rail: true,
         modele: (i) => construireRame(i === 0, teintes[k % teintes.length]),
       });

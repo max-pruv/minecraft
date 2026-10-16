@@ -20,6 +20,41 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v468 — L'Orange et l'Argent dans le tunnel de la Bleue
+
+**Pourquoi.** Le métro de Washington n'avait que quatre lignes sur six. Dans
+la vraie ville, l'Orange et l'Argent partagent le tunnel de la Bleue de
+Rosslyn à Stadium-Armory : trois couleurs sur les mêmes rails. Le risque, en
+les ajoutant, était connu (v305) : deux rames sur la même voie se traversent
+si rien ne les espace — mesuré à la sonde, 1 191 relevés de contact sur un
+tour si les tours n'ont pas la même durée.
+
+**Ce que ça change.** Sur le tronc Eastern Market → Foggy Bottom, une rame
+passe toutes les trente-trois secondes de jeu, et ce n'est plus toujours une
+Bleue : Bleue, Orange, Bleue, Argent, Bleue, Orange. Les deux nouvelles
+lignes reprennent le tracé de la Bleue point pour point (même cote, mêmes
+quais), puis ont leur propre tunnel sous le Potomac vers Rosslyn, jusqu'au
+bord de l'emprise. Potomac Avenue (à l'est) et Rosslyn (en Virginie) sont
+hors de la ville : leur dernier quai est Foggy Bottom, et c'est dit dans le
+code. Ce qui les espace est la grille horaire : les trois lignes ont un tour
+de la même durée (199,3 s) — la branche la plus courte attend la différence
+au bout de son tunnel, là où rien d'autre ne roule — et chaque rame a sa
+place sur le tour, au sixième près.
+
+**Ce qui le prouve.** Trois témoins neufs dans `washington.js` : l'Orange et
+l'Argent roulent ; sur un tour d'horloge entier, par la grille du jeu, wagon
+par wagon, aucune rame de la famille n'entre dans une autre (rouge sur
+l'ancien code faute de lignes, et rouge à la sonde sans l'égalisation des
+tours : 1 191 contacts) ; et le trajet de l'enfant — sur le quai de
+Smithsonian, une rame Orange arrive, on monte, elle nous emmène à la station
+suivante, on descend. L'empreinte des 490 morceaux est identique à
+`origin/main`. Déclaré dans `TASKS.md` : au-delà du cercle de 187 blocs, le
+monde ne creuse pas le métro (déjà vrai pour la Bleue en Virginie, mesuré sur
+`origin/main` : les quais d'Arlington Cemetery et de Pentagon sont de la
+pierre) — le tunnel de Rosslyn y est donc dans la roche aussi.
+
+---
+
 ## v467 — Les passages piétons des villes bâties à la main
 
 **Pourquoi.** Les passages peints n'existaient que dans les villes engendrées
