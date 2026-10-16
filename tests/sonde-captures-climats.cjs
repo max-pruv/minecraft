@@ -17,6 +17,8 @@ const TOUTES = [
   { nom: 'steppe-sol', lat: 47, lon: -107, h: 4, pitch: -0.05, yaw: 1.2 },
   { nom: 'tropiques-ciel', lat: -5, lon: -62, h: 40, pitch: -0.4, yaw: 0.6 },
   { nom: 'tropiques-sol', lat: 1, lon: 114, h: 4, pitch: -0.05, yaw: 2.0 },
+  { nom: 'mediterranee-ciel', lat: 37.6, lon: -4.2, h: 30, pitch: -0.35, yaw: 0.6 },
+  { nom: 'mediterranee-sol', lat: 43.1, lon: 11.4, h: 4, pitch: -0.05, yaw: 1.2 },
 ];
 const filtre = process.argv[4];
 const VUES = filtre ? TOUTES.filter((v) => v.nom.startsWith(filtre)) : TOUTES;

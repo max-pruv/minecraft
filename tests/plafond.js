@@ -381,7 +381,11 @@ const EMPREINTE_MORCEAUX_V414 = '863d4203a441e3fd029ce2404fc6d6e706799e7f64fe489
 // v457 : les baies des villes engendrées passent en bandes (Rome, Marrakech et
 // Tokyo sont des neuf lieux). `reglageBaies.bandes` à faux, la branche rend
 // 938a330c…, la constante de la v452, au bit près.
-const EMPREINTE_MORCEAUX_V357 = '1e4c50beffa5d0148b66a8d46f28df712ad9cf92786396e5d205007aaee252fd';
+// v469 : Rome, Marrakech et San Francisco ont leur campagne au climat
+// méditerranéen (herbe teinte, oliviers, pins parasols). Les contours
+// 'mediterranee' retirés de CLIMATS dans une copie de src, la branche rend
+// 1e4c50be…, la constante de la v468, au bit près.
+const EMPREINTE_MORCEAUX_V357 = 'b3bb35e392e9798a45ed581923b3133f31259bb58aab3aeef2bf1a81caa00095';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -1960,7 +1964,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     };
     const sol = (q) => q !== BLOCK.AIR && q !== BLOCK.WATER && q !== BLOCK.LOG && q !== BLOCK.BIRCH && q !== BLOCK.LEAVES;
     const lire = (sites) => {
-      const r = { colonnes: 0, herbe: 0, roche: 0, neige: 0, forme: 0, arbres: 0, arbresSans: 0, pins: 0, palmiers: 0, teints: 0, sommets: 0 };
+      const r = { colonnes: 0, herbe: 0, roche: 0, neige: 0, forme: 0, arbres: 0, arbresSans: 0, pins: 0, palmiers: 0, oliviers: 0, parasols: 0, teints: 0, sommets: 0 };
       for (const [lat, lon] of sites) {
         const p = point(lat, lon);
         for (let cx = 0; cx < 4; cx++) for (let cz = 0; cz < 4; cz++) {
@@ -1978,6 +1982,8 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
             const arbre = (a === BLOCK.LOG || a === BLOCK.BIRCH) && w.treeAt(x, z);
             if (arbre && arbre.kind === 1) r.pins++;
             if (arbre && arbre.kind === 3) r.palmiers++;
+            if (arbre && arbre.kind === 5) r.oliviers++;
+            if (arbre && arbre.kind === 4) r.parasols++;
           }
           // la teinte : les sommets d'herbe que le mailleur a colorés
           if (cx === 1 && cz === 1) {
@@ -1996,6 +2002,9 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const steppe = lire([[50, 65], [47, 105], [47, -107], [-45, -68]]);
     // LES TROPIQUES HUMIDES (v349) : l'Amazonie, le Congo, Bornéo
     const tropiques = lire([[-5, -62], [0, 22], [1, 114]]);
+    // LE CLIMAT MÉDITERRANÉEN (v469) : l'Andalousie, la Toscane, le
+    // Péloponnèse, la vallée centrale de Californie
+    const mediterranee = lire([[37.6, -4.2], [43.1, 11.4], [37.5, 22.3], [37.2, -120.3]]);
     // le Kansas, témoin de la campagne tempérée : rien n'y est teint
     const kansas = lire([[38.5, -98.5]]);
     // LE RACCOURCI DU MORCEAU : un climat déclaré certain pour un morceau
@@ -2029,7 +2038,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         for (let y = h + 1; y <= h + 9; y++) { if (m.getBlock(x, y, z) === sans.getBlock(x, y, z)) garde.pareil++; else garde.autres++; }
       }
     }
-    return { toundra, taiga, steppe, tropiques, kansas, certains, desaccords, garde };
+    return { toundra, taiga, steppe, tropiques, mediterranee, kansas, certains, desaccords, garde };
   })();
   verifier('dans la toundra, du lichen, de la roche nue et la neige plus bas, presque sans arbre (Nunavut, Iamalie, Sibérie arctique)',
     climats.toundra.colonnes > 2000 && climats.toundra.forme === 0 && climats.toundra.roche + climats.toundra.neige >= climats.toundra.colonnes * 0.05
@@ -2048,6 +2057,11 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     climats.tropiques.colonnes > 2000 && climats.tropiques.forme === 0 && climats.tropiques.arbres >= climats.tropiques.arbresSans * 2
       && climats.tropiques.palmiers >= climats.tropiques.arbres * 0.15 && climats.tropiques.teints >= climats.tropiques.sommets * 0.3,
     JSON.stringify(climats.tropiques));
+  verifier('sous le soleil méditerranéen, l\'herbe sèche, des oliviers et des pins parasols ; la même forme bloc pour bloc (Andalousie, Toscane, Péloponnèse, Californie)',
+    climats.mediterranee.colonnes > 2000 && climats.mediterranee.forme === 0 && climats.mediterranee.oliviers > 0
+      && climats.mediterranee.parasols > 0 && climats.mediterranee.oliviers + climats.mediterranee.parasols >= climats.mediterranee.arbres * 0.9
+      && climats.mediterranee.teints >= climats.mediterranee.sommets * 0.3,
+    JSON.stringify(climats.mediterranee));
   verifier('le climat certain d\'un morceau est celui de toutes ses colonnes',
     climats.certains > 3000 && climats.desaccords === 0, `${climats.certains} morceaux certains, ${climats.desaccords} colonnes en désaccord`);
   verifier('là où un enfant a bâti avant la règle, les arbres d\'avant restent',
@@ -3420,6 +3434,9 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
             if (y <= W.WATER_LEVEL + 1 || y >= 58 || W.dansUneCalotte(z) || w.cityAt(x, z) || VM.dansVilleMonde(x, z) || h.bati[i] > 0) continue;
             if (Math.abs(pos[i * 3 + 1] - (y + 0.5)) > 1e-3) continue;
             // les biomes ronds ont leur sol à eux
+            // un climat réel teint son herbe (v341 à v469) et a son témoin à
+            // lui : depuis la v469, le site près de Nice est méditerranéen
+            if (w.climat && w.climat(x, z)) continue;
             if (Math.hypot(x - W.DESERT.x, z - W.DESERT.z) < W.DESERT.r || Math.hypot(x - W.MARS.x, z - W.MARS.z) < W.MARS.r
               || Math.hypot(x - W.VOLCANO.x, z - W.VOLCANO.z) < W.VOLCANO.r) continue;
             const th = (a, b) => w.terrainHeight(a, b);
