@@ -1101,6 +1101,10 @@ export function initFun(ctx) {
       if (!a.ecraseA) { a.ecraseA = t; degats.ecraser(a); }
       if (t - a.ecraseA > 1100 && (player.onGround || t - a.ecraseA > 3500)) {
         toggleRide(null, true);
+        // Aux commandes, chaque image pose `flying` (plus bas) et descendre ne le
+        // rend pas : déposé ainsi, l'enfant restait suspendu au-dessus du sol,
+        // `onGround` faux (sonde-crash-depot.cjs). Après un crash on est à pied.
+        player.flying = false;
         a.ecraseA = 0;
         const sol = world.sommetColonne(Math.floor(a.pos.x), Math.floor(a.pos.z)) + 1;
         if (a.pos.y > sol + 0.5) { a.pos.y = sol; a.mesh.position.y = sol; }

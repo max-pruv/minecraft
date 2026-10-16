@@ -4207,14 +4207,6 @@ Tenu à jour à chaque livraison, comme `CHANGELOG.md`. Le journal dit ce qui es
 ---
 
 
-- **v453 (branche `claude/aviation-atterrissage`, NON fusionnée) — deux témoins du crash rouges.**
-  « un piqué pleins gaz… casse l'avion » et « posé train rentré hors d'une piste » (`monte.js`) :
-  épave en feu ✓, `horsService` ✓ (lu sur la bête depuis 4b822d9), enfant déposé à 2,4 blocs ✓,
-  mais `onGround` reste faux et `pos.y` FIGÉ à 30,05 pendant 6 s après le dépôt (`deposer` pose à
-  `a.pos.y + 0.05`). Le joueur ne tombe ni ne se pose : physique arrêtée après la descente, ou dépôt
-  hors de la dalle de test sans mise à jour. À démonter par une sonde (running ? player.update appelé ?
-  colonne sous le point de dépôt ?) avant de fusionner.
-
 ## v290 — Le palier mesurait la période de l'écran (corrigé, à confirmer sur l'appareil)
 
 Capture `?diag=1` de Max, iPad : « → **bas** (morceau 37,0 ms ou image 17,0 ms
