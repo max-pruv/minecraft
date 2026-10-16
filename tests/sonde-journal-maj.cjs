@@ -5,13 +5,12 @@
 // bon (v296). La sonde de la v426 rechargeait la page à la main ; celle-ci
 // rejoue la VRAIE mise à jour : le banc publie une CACHE_VERSION neuve, le
 // service worker vivant l'installe, et c'est le jeu qui recharge
-// (`reloadOnce` / `forcerMaj`). Trois chemins, puis le lancement suivant :
-//   A. le geste de Max — l'application s'endort, revient, et recharge ;
-//   D. un lancement neuf alors qu'une version attend sur le serveur ;
-//   C. le CONTRÔLE — la page est tuée net (Page.crash) : il faut qu'il compte,
-//      sinon la sonde ne pourrait rien voir (v273).
-// Chaque fois, on lit ce que la page suivante a compté (`plantagesAvant`), le
-// compteur rangé, et la `fin` de chaque journal parti vers le nuage.
+// (`reloadOnce`) : le geste de Max — l'application s'endort, revient, et
+// recharge — puis le lancement suivant. On lit ce que la page neuve a compté
+// (`plantagesAvant`, le compteur après la vérification des douteuses à 7 s),
+// et la TRACE des fermetures de la page qui part (sessionStorage).
+// Mesuré v454 : compteur 0 → 1, « plantage-precedent confirmé » ; la trace
+// montrait `rouvrir()` APRÈS `fermer('mise-a-jour')` et `pagehide`. v455 : 0.
 // Usage : node sonde-journal-maj.cjs
 const { Banc, dormir, jusqua } = require('./banc.js');
 
@@ -70,16 +69,6 @@ async function mesurer({ portJeu = 8419, portPairs = 9419 } = {}) {
     await dormir(9000);                       // les douteuses se tranchent à 7 s
     res.A = { recharge: a, ...(await lire(p)), trace: await trace(p), envois: [...envois], nav: nav.splice(0) };
 
-    // D — un lancement neuf alors qu'une version attend.
-    banc.jeu.publierVersion('web-minecraft-v991-sondeD');
-    envois.length = 0;
-    await p.goto(url, { waitUntil: 'load' });
-    await jusqua(async () => p.evaluate(() => !!window.__journal).catch(() => false), 90000);
-    await marquer(p);
-    const d = await recharge(p, 60000);
-    await dormir(9000);
-    res.D = { recharge: d, ...(await lire(p)), trace: await trace(p), envois: [...envois], nav: nav.splice(0) };
-
     // Le lancement suivant, sans mise à jour : ce que le compteur garde.
     envois.length = 0;
     await p.goto(url, { waitUntil: 'load' });
@@ -87,16 +76,6 @@ async function mesurer({ portJeu = 8419, portPairs = 9419 } = {}) {
     await dormir(9000);
     res.suivant = { ...(await lire(p)), envois: [...envois], nav: nav.splice(0) };
 
-    // C — le contrôle : une page tuée net doit compter.
-    const cdp = await p.context().newCDPSession(p);
-    await cdp.send('Page.crash').catch(() => {});
-    await dormir(1000);
-    const q = await p.context().newPage();
-    envois.length = 0;
-    await q.goto(url, { waitUntil: 'load' });
-    await jusqua(async () => q.evaluate(() => !!window.__journal).catch(() => false), 90000);
-    await dormir(9000);
-    res.C = { ...(await lire(q)), envois: [...envois] };
   } catch (e) { res.echec = e.message; }
   await banc.fermer();
   return res;

@@ -153,6 +153,7 @@ export class Journal {
     this.dernierePersistance = 0;
     this.dernierReleve = 0;
     this.douteuses = {};   // id → battement vu à l'ouverture
+    this.parti = false;     // la page a dit au revoir : plus de réouverture (v455)
   }
 
   lire(cle) { try { return this.stockage.get(cle); } catch { return null; } }
@@ -295,6 +296,9 @@ export class Journal {
   // pas compter contre une relance qui a tenu. SAUF `garderCompteur` : une page
   // née cachée, que l'enfant n'a jamais vue, n'a rien prouvé (v426).
   fermer(fin = 'fermeture', { garderCompteur = false } = {}) {
+    // Une page qui part (au revoir, relance voulue) ne se rouvre plus (v455) :
+    // voir `rouvrir`. L'arrière-plan, lui, reviendra.
+    if (fin !== 'arriere-plan') this.parti = true;
     if (!this.ouvert) return null;
     this.ouvert = false;
     const doc = this.document(fin);
@@ -305,12 +309,29 @@ export class Journal {
   }
 
   // Retour au premier plan : la session repart, sa ligne avec elle.
+  //
+  // SAUF SI LA PAGE A DIT AU REVOIR (v455). Mesuré par une vraie mise à jour
+  // (`sonde-journal-maj.cjs`) : `fermer('mise-a-jour')`, puis `pagehide`, puis
+  // un `visibilitychange` PENDANT le déchargement qui lisait « visible » — et
+  // la page qui partait rouvrait sa session. Sa ligne restait dans la table, la
+  // page neuve la voyait douteuse, et sept secondes plus tard la déclarait
+  // plantée : chaque mise à jour poussait le disjoncteur de sûreté (deux
+  // plantages → palier bas). On ne parie pas sur l'état de visibilité pendant
+  // un déchargement ; seul un retour du cache de navigation (`revenir`) relève
+  // une page partie.
   rouvrir() {
-    if (this.ouvert) return;
+    if (this.ouvert || this.parti) return;
     this.ouvert = true;
     this.majSessions((t) => { t[this.id] = this.maintenant(); });
     this.noter('premier-plan');
     this.persister(true);
+  }
+
+  // La page revient du cache de navigation (`pageshow` persisté) : elle vit de
+  // nouveau, sa session repart.
+  revenir() {
+    this.parti = false;
+    this.rouvrir();
   }
 }
 

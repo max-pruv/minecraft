@@ -2253,6 +2253,9 @@ window.addEventListener('pagehide', () => {
   // qu'on comprenne quand ni pourquoi.
   if (net) { try { net.stop(); } catch { /* déjà parti */ } net = null; }
 });
+// Une page rendue par le cache de navigation revit : sa session repart (v455,
+// journal.js — une page partie ne se rouvre pas autrement).
+window.addEventListener('pageshow', (e) => { if (e.persisted) journal.revenir(); });
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') {
     world.saveEdits(); savePosition();

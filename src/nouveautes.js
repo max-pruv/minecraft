@@ -6,6 +6,13 @@
 
 export const NOUVEAUTES = [
   {
+    v: 455,
+    titre: 'Les mises à jour ne gênent plus',
+    puces: [
+      'Une mise à jour ne compte plus comme un plantage',
+    ],
+  },
+  {
     v: 454,
     titre: 'De jolies petites grilles',
     puces: [

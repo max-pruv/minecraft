@@ -334,6 +334,23 @@ function verifier(nom, ok, detail = '') {
       verifier('et le jeu se relance normalement après', rejouable);
     }
 
+    // UNE MISE À JOUR N'EST PAS UN PLANTAGE (v455). La page qui part disait au
+    // revoir (`fermer('mise-a-jour')`), puis un `visibilitychange` pendant le
+    // déchargement la ROUVRAIT : sa ligne restait, la page neuve la jugeait
+    // douteuse puis morte à 7 s. Deux mises à jour, et le disjoncteur de sûreté
+    // (v296) rangeait le palier bas pour de bon. Mesuré sur la v454 : compteur
+    // 1, « plantage-precedent confirmé ». On lit la page neuve après ses 7 s.
+    if (recharge) {
+      await dormir(9000);
+      const bilan = await tab.evaluate(() => {
+        const j = window.__journal;
+        return j ? { compteur: j.plantages(), avant: j.doc.plantagesAvant,
+          confirmes: j.doc.evenements.filter((e) => e.type === 'plantage-precedent').length } : null;
+      }).catch((e) => ({ erreur: e.message }));
+      verifier('une mise à jour ne compte pas comme un plantage dans le journal de bord',
+        !!bilan && bilan.compteur === 0 && bilan.confirmes === 0, JSON.stringify(bilan));
+    }
+
     // LE LOADER NE CACHE JAMAIS UN « JOUER » QUI EST DÉJÀ CLIQUABLE (v286).
     //
     // Max : « après la mise à jour, sur la home le jeu lag 1 à 2 min, ça a été le

@@ -101,7 +101,7 @@ const GARDIENS = {
   // reprend la main sur la qualité, `carte.js` la distance d'affichage vue de la
   // carte.
   'src/palier.js': ['monte.js', 'maj.js', 'reglages.js', 'carte.js', 'parishd.js'],
-  'src/journal.js': ['parent.js', 'reglages.js'],
+  'src/journal.js': ['parent.js', 'reglages.js', 'maj.js'],
   // le sol continu (v297) : lu par le mailleur et par toute physique au sol
   'src/solcontinu.js': ['plafond.js', 'monte.js', 'manhattan.js', 'carte.js', 'carteMonde.js', 'parishd.js', 'washington.js'],
   'src/routes.js': ['plafond.js', 'carteMonde.js', 'carte.js', 'monte.js'],

@@ -193,14 +193,18 @@
   d'avant reste rangé : `rangerLePalier` ne l'écrase pas. Il se lève en
   choisissant une étendue dans les Réglages ; à décider avec Max s'il faut
   l'effacer d'office une fois.
-- [ ] **LE JOURNAL DE BORD COMPTE PEUT-ÊTRE UNE MISE À JOUR COMME UN PLANTAGE
-  (v413).** Session 84 (iPhone, v408) : zéro relevé, zéro événement, envoyée
-  cinq secondes après la fermeture propre de la v406 — la relance du service
-  worker tue sans doute la page neuve avant `pagehide`. Même forme pour la
-  session 70 (v404). Si c'est le cas, chaque mise à jour pousse le disjoncteur
-  de sûreté (`suretePalier`, deux plantages) vers le palier bas. À mesurer :
-  `?apresmaj=1`, et ne compter comme plantage qu'une session qui a écrit au
-  moins un relevé, ou marquer la session fermée avant `reloadOnce`.
+- [x] **LE JOURNAL DE BORD COMPTAIT UNE MISE À JOUR COMME UN PLANTAGE — corrigé
+  en v455.** Mesuré par `tests/sonde-journal-maj.cjs` (vraie mise à jour, service
+  worker vivant, veille puis retour) : la page qui part rouvrait sa session par un
+  `visibilitychange` APRÈS `fermer('mise-a-jour')` et `pagehide` ; la page neuve
+  la confirmait morte à 7 s (compteur 1). Une page partie ne se rouvre plus
+  (`parti`, journal.js), sauf `pageshow` persisté. Reste déclaré : la sonde lit la
+  visibilité par le getter patché du banc ; ce que WebKit rend PENDANT un
+  déchargement n'est pas mesuré — le remède ne dépend plus de cette valeur. Le
+  chemin « lancement neuf alors qu'une version attend » n'a pas rechargé en 60 s
+  au banc : non mesuré. À relire dans `journal_appareil` après la prochaine mise
+  à jour de l'iPhone : plus de `plantage` vide juste après une fermeture
+  `mise-a-jour`.
 - [ ] **LA v413 SE JUGE DANS LE JOURNAL DE BORD DE L'IPHONE.** Le partage des
   textures de la flotte retire la cause mesurée (734 Mo de copies) ; il faut
   lire `journal_appareil` après la prochaine partie longue : plus de
