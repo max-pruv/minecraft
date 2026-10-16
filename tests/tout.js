@@ -101,7 +101,7 @@ const GARDIENS = {
   // reprend la main sur la qualité, `carte.js` la distance d'affichage vue de la
   // carte.
   'src/palier.js': ['monte.js', 'maj.js', 'reglages.js', 'carte.js', 'parishd.js'],
-  'src/journal.js': ['parent.js', 'reglages.js'],
+  'src/journal.js': ['parent.js', 'reglages.js', 'maj.js'],
   // le sol continu (v297) : lu par le mailleur et par toute physique au sol
   'src/solcontinu.js': ['plafond.js', 'monte.js', 'manhattan.js', 'carte.js', 'carteMonde.js', 'parishd.js', 'washington.js'],
   'src/routes.js': ['plafond.js', 'carteMonde.js', 'carte.js', 'monte.js'],
@@ -132,7 +132,7 @@ const GARDIENS = {
   // La Terre elle-même : ses côtes et son relief décident du sol partout.
   'src/terre.js': ['carteMonde.js', 'plafond.js', 'carte.js'],
   // Londres, ville entière du tour du monde.
-  'src/londres.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'parishd.js'],    // la couche HD lit Londres (v390)
+  'src/londres.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'parishd.js', 'monte.js'],    // la couche HD lit Londres (v390)
   'src/londres-v332.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // la Londres d'avant le kit, sous ce qu'un enfant a bâti (v339)
   // La machine à villes : les cinquante grandes du tour du monde.
   'src/villesmonde.js': ['carteMonde.js', 'carte.js', 'plafond.js', 'monte.js', 'parishd.js'],    // la couche HD lit les villes d'Europe (v394)
@@ -271,6 +271,7 @@ const GARDIENS = {
   // d'attrape — et c'est la VOIX du jeu : « fais demi-tour », « Sauvegarde
   // allégée », « un parent vient de changer tes réglages ». Ses gardiens sont donc
   // ceux de `main.js`, plus les suites où un message est lui-même un verdict.
+  'src/guides.js': ['washington.js'],
   'src/bandeau.js': ['carte.js', 'monte.js', 'washington.js', 'manhattan.js',
     'maj.js', 'reglages.js', 'reseau.js'],
   'src/personnages.js': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
