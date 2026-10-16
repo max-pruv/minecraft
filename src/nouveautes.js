@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 455,
+    titre: 'Le soleil méditerranéen',
+    puces: [
+      'Herbe dorée autour de la Méditerranée',
+      'Des oliviers et des pins parasols',
+    ],
+  },
+  {
     v: 454,
     titre: 'De jolies petites grilles',
     puces: [

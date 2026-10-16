@@ -3139,6 +3139,7 @@ export class World {
     if (cl === 'toundra' || cl === 'desert') return 0;
     if (cl === 'steppe') return f * 0.05;
     if (cl === 'tropiques') return Math.max(f, 0.6);
+    if (cl === 'mediterranee') return f * 0.45;
     return f;
   }
 
@@ -3210,6 +3211,10 @@ export class World {
     // les tropiques humides (v349) : la forêt dense partout, plus serrée encore
     // que la taïga sur les creux du bruit de forêt
     else if (cl === 'tropiques') density = forest > 0.48 ? 0.08 : 0.035;
+    // le climat méditerranéen (v455) : un pays ouvert de maquis, des oliviers
+    // et des pins parasols épars — moins de bois que la forêt tempérée, un
+    // peu plus d'arbres isolés dans la plaine
+    else if (cl === 'mediterranee') density = forest > 0.62 ? 0.03 : forest > 0.48 ? 0.012 : 0.006;
     if (tirage >= density) return null;
     const h = this.terrainHeight(x, z);
     if (h <= WATER_LEVEL + 1 || h >= 58) return null; // only on grass
@@ -3231,6 +3236,9 @@ export class World {
     if (cl === 'toundra') return { h, trunk: 2, kind: 2 };
     // sous les tropiques : de grands feuillus, et un palmier sur quatre
     if (cl === 'tropiques') return roll < 0.75 ? { h, trunk: trunk + 1, kind: 0 } : { h, trunk: 6 + Math.floor(hash2i(x, z, SEED + 786) * 3), kind: 3 };
+    // sous le soleil méditerranéen (v455) : des oliviers, trapus, et un pin
+    // parasol sur trois, haut fût nu et couronne plate
+    if (cl === 'mediterranee') return roll < 0.65 ? { h, trunk: 2 + Math.floor(hash2i(x, z, SEED + 787) * 2), kind: 5 } : { h, trunk: trunk + 1, kind: 4 };
     const kind = roll < 0.55 ? 0 : roll < 0.85 ? 1 : 2;
     return { h, trunk: kind === 2 ? trunk + 1 : trunk, kind };
   }
@@ -3930,6 +3938,24 @@ export class World {
             put(tx + fx * 3, topY - 1, tz + fz * 3, BLOCK.LEAVES, true);
           }
           put(tx, topY + 1, tz, BLOCK.LEAVES, true);
+        } else if (kind === 4) {
+          // pin parasol (v455) : une ombrelle plate au bout d'un haut fût,
+          // trois blocs de rayon au plus (le balayage déborde de trois)
+          for (const [y, r] of [[topY, 3], [topY + 1, 2]]) {
+            for (let dx = -r; dx <= r; dx++) for (let dz = -r; dz <= r; dz++) {
+              if (dx * dx + dz * dz > r * r + 1) continue;
+              put(tx + dx, y, tz + dz, BLOCK.LEAVES, true);
+            }
+          }
+        } else if (kind === 5) {
+          // olivier (v455) : un tronc court, une couronne ronde et large
+          for (let dy = 0; dy <= 2; dy++) {
+            const r = dy === 1 ? 2 : 1;
+            for (let dx = -r; dx <= r; dx++) for (let dz = -r; dz <= r; dz++) {
+              if (Math.abs(dx) === r && Math.abs(dz) === r && r > 1) continue;
+              put(tx + dx, topY + dy, tz + dz, BLOCK.LEAVES, true);
+            }
+          }
         } else if (kind === 1) {
           // pine: stacked shrinking rings of needles
           const layers = [[topY - 2, 2], [topY - 1, 2], [topY, 1], [topY + 1, 1], [topY + 2, 0]];

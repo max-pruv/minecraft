@@ -1851,7 +1851,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     };
     const sol = (q) => q !== BLOCK.AIR && q !== BLOCK.WATER && q !== BLOCK.LOG && q !== BLOCK.BIRCH && q !== BLOCK.LEAVES;
     const lire = (sites) => {
-      const r = { colonnes: 0, herbe: 0, roche: 0, neige: 0, forme: 0, arbres: 0, arbresSans: 0, pins: 0, palmiers: 0, teints: 0, sommets: 0 };
+      const r = { colonnes: 0, herbe: 0, roche: 0, neige: 0, forme: 0, arbres: 0, arbresSans: 0, pins: 0, palmiers: 0, oliviers: 0, parasols: 0, teints: 0, sommets: 0 };
       for (const [lat, lon] of sites) {
         const p = point(lat, lon);
         for (let cx = 0; cx < 4; cx++) for (let cz = 0; cz < 4; cz++) {
@@ -1869,6 +1869,8 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
             const arbre = (a === BLOCK.LOG || a === BLOCK.BIRCH) && w.treeAt(x, z);
             if (arbre && arbre.kind === 1) r.pins++;
             if (arbre && arbre.kind === 3) r.palmiers++;
+            if (arbre && arbre.kind === 5) r.oliviers++;
+            if (arbre && arbre.kind === 4) r.parasols++;
           }
           // la teinte : les sommets d'herbe que le mailleur a colorés
           if (cx === 1 && cz === 1) {
@@ -1887,6 +1889,9 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const steppe = lire([[50, 65], [47, 105], [47, -107], [-45, -68]]);
     // LES TROPIQUES HUMIDES (v349) : l'Amazonie, le Congo, Bornéo
     const tropiques = lire([[-5, -62], [0, 22], [1, 114]]);
+    // LE CLIMAT MÉDITERRANÉEN (v455) : l'Andalousie, la Toscane, le
+    // Péloponnèse, la vallée centrale de Californie
+    const mediterranee = lire([[37.6, -4.2], [43.1, 11.4], [37.5, 22.3], [37.2, -120.3]]);
     // le Kansas, témoin de la campagne tempérée : rien n'y est teint
     const kansas = lire([[38.5, -98.5]]);
     // LE RACCOURCI DU MORCEAU : un climat déclaré certain pour un morceau
@@ -1920,7 +1925,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         for (let y = h + 1; y <= h + 9; y++) { if (m.getBlock(x, y, z) === sans.getBlock(x, y, z)) garde.pareil++; else garde.autres++; }
       }
     }
-    return { toundra, taiga, steppe, tropiques, kansas, certains, desaccords, garde };
+    return { toundra, taiga, steppe, tropiques, mediterranee, kansas, certains, desaccords, garde };
   })();
   verifier('dans la toundra, du lichen, de la roche nue et la neige plus bas, presque sans arbre (Nunavut, Iamalie, Sibérie arctique)',
     climats.toundra.colonnes > 2000 && climats.toundra.forme === 0 && climats.toundra.roche + climats.toundra.neige >= climats.toundra.colonnes * 0.05
@@ -1939,6 +1944,11 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     climats.tropiques.colonnes > 2000 && climats.tropiques.forme === 0 && climats.tropiques.arbres >= climats.tropiques.arbresSans * 2
       && climats.tropiques.palmiers >= climats.tropiques.arbres * 0.15 && climats.tropiques.teints >= climats.tropiques.sommets * 0.3,
     JSON.stringify(climats.tropiques));
+  verifier('sous le soleil méditerranéen, l\'herbe sèche, des oliviers et des pins parasols ; la même forme bloc pour bloc (Andalousie, Toscane, Péloponnèse, Californie)',
+    climats.mediterranee.colonnes > 2000 && climats.mediterranee.forme === 0 && climats.mediterranee.oliviers > 0
+      && climats.mediterranee.parasols > 0 && climats.mediterranee.oliviers + climats.mediterranee.parasols >= climats.mediterranee.arbres * 0.9
+      && climats.mediterranee.teints >= climats.mediterranee.sommets * 0.3,
+    JSON.stringify(climats.mediterranee));
   verifier('le climat certain d\'un morceau est celui de toutes ses colonnes',
     climats.certains > 3000 && climats.desaccords === 0, `${climats.certains} morceaux certains, ${climats.desaccords} colonnes en désaccord`);
   verifier('là où un enfant a bâti avant la règle, les arbres d\'avant restent',

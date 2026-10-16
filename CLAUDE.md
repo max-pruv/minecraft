@@ -3802,6 +3802,13 @@ humides réelles, la forêt dense de grands feuillus et un palmier sur quatre
 tempérée). Une teinte se juge en capture et pas seulement au témoin : le vert
 réglé à (60, 160, 50) virait au fluo à l'écran, et le témoin le trouvait
 très bien teint.
+**Le climat méditerranéen (v455)** suit la même table, en dernier (les
+déserts, la steppe d'Anatolie et le Karoo passent avant). Deux arbres neufs :
+`kind` 4, pin parasol, et 5, olivier. **Une couronne neuve tient dans trois
+blocs autour du tronc** : `generateChunk` ne balaie les arbres que trois
+colonnes au-delà du morceau, et une couronne plus large serait coupée net au
+bord. Et le feuillage gris-vert s'est jugé en capture : à (82, 110, 62) il
+sortait presque noir, le témoin le trouvait très bien teint.
 
 ## Les déserts chauds (v341) — le climat est une donnée de géographie, comme la côte
 

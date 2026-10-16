@@ -20,6 +20,32 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v455 — Le soleil méditerranéen : herbe sèche, oliviers et pins parasols
+
+**Pourquoi.** Après les déserts, la toundra, la taïga, les steppes et les
+forêts tropicales, la campagne autour de la Méditerranée restait celle de la
+Normandie : prairie vert vif, chênes et sapins en Andalousie, en Toscane, en
+Grèce et en Californie. C'est le climat que la famille connaît le mieux, et
+celui qui se voyait le plus faux.
+
+**Ce que ça change.** Onze régions réelles (le pourtour de la Méditerranée,
+la Californie, le Chili central, le Cap, le sud-ouest et le sud de
+l'Australie) ont l'herbe dorée de l'été sec et un pays ouvert de maquis : des
+oliviers trapus au feuillage gris-vert et des pins parasols, haut fût et
+couronne plate — deux arbres neufs, originaux. La carte et le paysage
+lointain prennent la même couleur. Le relief ne bouge pas d'un bloc ; là où
+un enfant a bâti avant la règle, les arbres d'avant restent.
+
+**Ce qui le prouve.** Un témoin neuf de `plafond.js` lit seize morceaux en
+Andalousie, en Toscane, dans le Péloponnèse et en Californie contre le même
+monde sans la règle : 0 bloc de forme différente, 131 oliviers et 72 pins
+parasols pour 203 arbres, 7 688 sommets d'herbe teints sur 12 116 ; sur
+`origin/main` zéro olivier, zéro teinte (rouge). Le Kansas reste identique
+(217 arbres des deux côtés, 0 teinte). La teinte du feuillage a été jugée en
+capture : réglée d'abord à (82, 110, 62), elle sortait presque noire.
+
+---
+
 ## v454 — Les garde-corps des petites fenêtres ont leurs anneaux entiers
 
 **Pourquoi.** Le motif de fer forgé d'un garde-corps est fait pour une travée
