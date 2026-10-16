@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Une fenêtre par étage (v453) — un changement de DESSIN se prouve par la forme
+## Une fenêtre par étage (v455) — un changement de DESSIN se prouve par la forme
 
 Les villes engendrées posaient deux blocs `ETAGE` par baie : deux fenêtres
 dessinées l'une sur l'autre (38 719 piles, 259 villes sur 269). Elles posent
@@ -799,6 +799,58 @@ les bandes de Paris (`BANDES`, villesmonde.js). Trois règles.
   pour l'empreinte et le témoin de forme ; jamais un réglage du jeu. Pas de
   drapeau de `CONF_*` : les migrations jugent l'appui d'un bloc sur la forme,
   que les bandes ne changent pas.
+
+## La rue sans à-coups (v453) — le bus a une place, un circuit se prépare, une suiveuse freine
+
+Quatre sujets, une livraison. Cinq règles.
+
+- **UNE RÈGLE DE RACCORD SE MESURE AUSSI DANS LES VILLES BÂTIES À LA MAIN.**
+  La sonde des raccords (v442) ne lisait que les anneaux des villes
+  engendrées ; l'entrée de l'A1 à Lille roulait 47 blocs dans la voie d'un
+  circuit de la rue de Paris. Les cinq villes bâties à la main sont dans la
+  sonde et dans `RACCORDS_COURTS` (633 → 26 blocs, tous des demi-tours).
+- **UN VÉHICULE DE PLUS DANS UNE GRILLE PREND UNE PLACE ENTIÈRE.** Le bus à
+  mi-temps entre deux voitures (v372) les touchait par la grille seule (36 004
+  relevés sur 263 anneaux) et forçait l'anneau à renoncer au jeu par voiture
+  (v438). Il prend la place de la voiture 0 (`pris`, posé par `bus()`) : zéro
+  contact, jeu partout, une voiture de moins par anneau. `busAMiTemps(true)`
+  rejoue l'ancienne règle pour les sondes, jamais un réglage.
+- **CE QUI SE CALCULE AVANT UNE NAISSANCE SE CALCULE PAR TRANCHES, ET LA
+  PREUVE EST L'IDENTITÉ.** `fabriqueCirculation` est un générateur qui rend la
+  main entre ses étapes lourdes (plancher, croisement, voies le long du tracé,
+  chaque essai de la jumelle) ; `circulationParTranches` l'avance À CHAQUE
+  IMAGE sur un budget en DÉBIT (120 ms par seconde, entre 5 et 22 ms par
+  image, v237) et enchaîne les circuits tant qu'il en reste ; main.js ne fait
+  naître le convoi (et son bus) qu'une fois fini. Mon premier jet n'avançait
+  qu'aux tics de 125 ms de la cadence de ménage : Rome et Moscou arrivaient
+  sans une voiture en vue — le portail l'a dit (« la circulation naît à
+  l'approche »).
+  Le témoin compare 56 circuits fabriqués des deux façons — voitures, jumelle,
+  grille, voies — sans un écart : c'est ce qui garde la v305.
+- **UNE BORNE DURE SE PRÉCÈDE D'UN FREINAGE.** Le plancher de file (v283) est
+  une contrainte de position : une suiveuse encore lancée à 3,7 b/s y était
+  arrêtée en une image (37 b/s²). Sa distance d'arrêt ne dépasse pas l'écart
+  plus celle de la voiture de devant (v² ≤ vDevant² + 2·a·reste, a le
+  freinage d'urgence) — devant dans sa file ET devant sur la ligne (v423, la
+  voiture de l'autre convoi a son propre plancher) — et seulement quand un feu
+  ou sa file la retient (`cause === 1`). La somme vDevant + √(2·a·reste),
+  plus large, laissait encore 3 secs sur 8. Mesuré au navigateur (`sonde-feu-image.cjs`) :
+  5 arrêts secs sur 9 sur `origin/main`, 1 sur 17 ici (huit passes ; le
+  reste est entre 14 et 33 b/s², déclaré). **UNE BORNE ABSOLUE
+  RALENTIT DES FILES ENTIÈRES** : mon premier jet bornait à zéro devant et
+  partout ; Moscou montrait 8 voitures en vue au lieu de 26. Une borne de
+  confort se pose RELATIVE à ce qui précède, et seulement là où sa cause
+  agit.
+- **UNE DETTE DE TÉMOIN SE VÉRIFIE AVANT D'ÊTRE REPOINTÉE.** `TASKS.md`
+  déclarait l'arrêt sec au feu « jugé sur deux arrêts », et j'ai cru à un
+  relevé mal horodaté sous la charge. La sonde, sans charge, sur
+  `origin/main`, a rendu les mêmes arrêts secs à l'heure de lecture et à
+  l'heure de l'image : l'hypothèse était fausse et le défaut était dans le
+  JEU. Repointer le témoin sur l'hypothèse aurait caché une vraie panne. Le
+  témoin juge désormais un arrêt « au feu » sur toute sa descente (une voiture
+  arrêtée par l'urgence puis rangée dans la file n'a pas freiné pour un feu),
+  et le choc de `degats.js` prend vingt-six blocs d'élan au lieu de les
+  trouver (3 à 16).
 
 ## ✈️ va chercher la piste (v452) — une séquence assistée garde sa porte de sortie et se mesure piste par piste
 
@@ -2641,6 +2693,18 @@ engendrées. Quatre règles.
   journal vide dans le jeu, trois rouges de `maj.js`. Après tout conflit dans un
   fichier de données JS, `node -e "import('./src/…')"` ; après un conflit de
   journal, `git diff origin/main` doit ne montrer que des lignes ajoutées.
+
+## Les garde-corps des baies étroites (v454) — un motif qui a un pas se pose en nombre entier de pas
+
+Une règle. Une tuile à motif périodique (la ferronnerie : un barreau tous les
+seize pixels) tirée en coordonnées de bloc se coupe n'importe où sur une face
+plus étroite que le bloc : 1 212 garde-corps de baie sur 1 212, mesuré.
+`uvFerronnerie` (facadeshd.js) donne à une face étroite un nombre entier de
+travées, du barreau au barreau, et laisse le bloc entier en coordonnées de
+bloc — c'est lui qui se raccorde d'une fenêtre à l'autre. Toute tuile
+périodique posée sur une face de largeur variable se demande la même chose.
+`ferronnerieEntiere: false` rejoue l'ancienne règle, le temps d'un morceau,
+pour l'empreinte des 490 morceaux.
 
 ## La trame générique quitte Londres (v447) — une boucle qui liste ses exclusions se relit à chaque ville bâtie à la main
 

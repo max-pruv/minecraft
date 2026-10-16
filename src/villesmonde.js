@@ -1515,7 +1515,7 @@ function buildTajPalace(poser) {
 // couches, sinon chaque couche répétée redessine une fenêtre, et le palais
 // devient une tour de bureaux (vu en capture à Madrid).
 const BANDES = [ARCHI.ETAGE_BAS, ARCHI.ETAGE_MI, ARCHI.ETAGE_HAUT];
-// La baie de deux blocs rejouée (v453) : `bandes: false` rend les deux `ETAGE`
+// La baie de deux blocs rejouée (v455) : `bandes: false` rend les deux `ETAGE`
 // empilés d'avant, au bit près — c'est ce que lit l'empreinte des 490 morceaux
 // pour prouver que rien d'autre n'a bougé. Jamais un réglage du jeu.
 export const reglageBaies = { bandes: true };
@@ -3655,7 +3655,7 @@ export function batirColonneVillesMonde(x, z, poser) {
           continue;
         }
         const yy = (y - 3) % 3;
-        // UNE BAIE, PAS DEUX (v453). Les deux rangs de la baie étaient deux
+        // UNE BAIE, PAS DEUX (v455). Les deux rangs de la baie étaient deux
         // blocs `ETAGE`, et chacun porte une fenêtre entière : la tuile plate
         // comme la couche HD dessinaient deux fenêtres l'une sur l'autre par
         // étage — 38 719 piles mesurées sur 98 187 lots (une colonne sur
