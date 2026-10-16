@@ -436,7 +436,7 @@ export const CIELS = Object.freeze({
   // v353 : les autres villes engendrées qui portent des repères.
   Barcelone: 13, Munich: [13, 0.55], Venise: 8, 'Las Vegas': [15, 0.25], Miami: 13, 'La Havane': 13,
   Tokyo: 13, Kyoto: 12,
-  // v455 : Las Vegas passe sous la High Roller (167 m), une roue qui ne
+  // v459 : Las Vegas passe sous la High Roller (167 m), une roue qui ne
   // s'étire pas et tient vingt-huit blocs dans sa boîte : la demi-tour Eiffel
   // (165 m), seize couches d'auteur, ne descend pas sous vingt-huit, atteint à
   // `k` 0,25 (le plus grand au centième) ; elle était à quarante-cinq.
