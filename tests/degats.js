@@ -36,6 +36,24 @@ function verifier(nom, ok, detail = '') {
   const D = await import('../src/degats.js').catch(() => null);
   verifier('la règle des dégâts existe, et elle se lit sans navigateur', !!D);
   if (D) {
+    // LE TOUCHER D'UN AVION SE JUGE PAR SA FICHE (v444) : les seuils
+    // (`toucherMax`, `chuteMax`) viennent de `pilote`, la règle les lit — un
+    // seuil changé dans la fiche change le verdict, sans toucher à la règle.
+    const J = D.jugerToucher;
+    const f = { toucherMax: 64, chuteMax: 7 }, f2 = { toucherMax: 84, chuteMax: 7 };
+    const bon = { vh: 50, vz: 3, train: 1, surPiste: true, sol: 'ok', pente: 0 };
+    const verdicts = J ? {
+      bon: J(bon, f), vite: J({ ...bon, vh: 70 }, f), viteConcorde: J({ ...bon, vh: 70 }, f2),
+      dur: J({ ...bon, vz: 9 }, f), ventrePiste: J({ ...bon, train: 0 }, f),
+      ventreChamp: J({ ...bon, train: 0, surPiste: false }, f), champ: J({ ...bon, surPiste: false }, f),
+      relief: J({ ...bon, surPiste: false, pente: 4 }, f), eau: J({ ...bon, sol: 'eau' }, f), arbres: J({ ...bon, sol: 'arbre' }, f),
+    } : null;
+    verifier('un avion casse trop vite, trop dur, sur le ventre hors piste, dans l\'eau ou les arbres — et pas sur une piste ni un champ plat, train sorti',
+      !!verdicts && verdicts.bon === null && verdicts.vite === 'vite' && verdicts.viteConcorde === null && verdicts.dur === 'dur'
+        && verdicts.ventrePiste === null && verdicts.ventreChamp === 'ventre' && verdicts.champ === null
+        && verdicts.relief === 'relief' && verdicts.eau === 'eau' && verdicts.arbres === 'arbres',
+      JSON.stringify(verdicts));
+
     // la santé baisse avec la force ; un frôlement ne compte pas
     const faible = D.etatNeuf(), fort = D.etatNeuf(), frole = D.etatNeuf();
     D.subirChoc(faible, { force: 0.3, lx: 0, lz: -2.2 });

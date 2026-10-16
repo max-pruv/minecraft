@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 462,
+    titre: 'Un avion mal posé casse',
+    puces: [
+      'Trop vite ou trop dur : épave',
+      'Tu es déposé, sain et sauf',
+      'Le jeu dit comment mieux faire',
+    ],
+  },
+  {
     v: 461,
     titre: 'De Florence à Rome en voiture',
     puces: [

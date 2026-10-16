@@ -220,3 +220,27 @@ export function depuisReseau(d) {
   else e.enFeu = false;
   return e;
 }
+
+// UN AVION QUI SE POSE MAL SE CASSE (aviation, octobre 2026). Max : « un avion
+// devrait se crasher s'il atterrit mal ». Version ENFANT, comme la voiture : on
+// casse l'AVION, jamais l'enfant — il est déposé debout à côté, sain et sauf,
+// et le jeu lui dit quoi faire (Max l'a déjà dit : « pas un mode violent comme
+// GTA »). La règle est pure ; les seuils vivent dans la FICHE de l'appareil
+// (`pilote.toucherMax`, `pilote.chuteMax`, montures.js) et le témoin les lit.
+//
+// Ce qu'on juge, au toucher des roues : `vh` la vitesse au sol, `vz` la vitesse
+// de chute (positive vers le bas), `train` (0 rentré, 1 sorti), `surPiste`,
+// `sol` ('ok', 'eau', 'arbre'), et `pente` — l'écart de hauteur du terrain
+// autour de l'appareil. Rend la raison, ou null : un atterrissage correct sur
+// une piste, ou sur un bon terrain plat train sorti, ne casse rien.
+export const PENTE_MAX = 2;          // plus de deux blocs d'écart sous l'appareil : pas un terrain où se poser
+export const RAISONS_CRASH = ['eau', 'arbres', 'bati', 'relief', 'vite', 'dur', 'ventre'];
+export function jugerToucher({ vh = 0, vz = 0, train = 1, surPiste = false, sol = 'ok', pente = 0 }, p = {}) {
+  if (sol === 'eau') return 'eau';
+  if (sol === 'arbre') return 'arbres';
+  if (vz > (p.chuteMax || 7)) return 'dur';
+  if (vh > (p.toucherMax || (p.approche || 40) * 1.4)) return 'vite';
+  if (!surPiste && train < 0.5) return 'ventre';
+  if (!surPiste && pente > PENTE_MAX) return 'relief';
+  return null;
+}
