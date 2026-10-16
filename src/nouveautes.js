@@ -6,12 +6,21 @@
 
 export const NOUVEAUTES = [
   {
-    v: 462,
+    v: 463,
     titre: 'L\'usine explique ses postes',
     puces: [
       'Chaque poste de l\'usine dit ce qu\'il fait',
       'La presse, les robots, la peinture',
       'Puis on conduit la voiture neuve',
+    ],
+  },
+  {
+    v: 462,
+    titre: 'Un avion mal posé casse',
+    puces: [
+      'Trop vite ou trop dur : épave',
+      'Tu es déposé, sain et sauf',
+      'Le jeu dit comment mieux faire',
     ],
   },
   {

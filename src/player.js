@@ -4,7 +4,8 @@
 import * as THREE from 'three';
 import { BLOCK, isSolid as blockIsSolid, isSlab } from './blocks.js';
 import { HEIGHT, WATER_LEVEL } from './world.js';
-import { pisteLaPlusProche, guiderApproche, aerodromeLePlusProche, angle as angleAp } from './approche.js';
+import { pisteLaPlusProche, guiderApproche, aerodromeLePlusProche, angle as angleAp, surUnePiste } from './approche.js';
+import { jugerToucher } from './degats.js';
 import { ficheDeVitesse, pasVoiture, reponseChoc, casesSousBoite, pointDImpact, DERIVE_MAX, boiteVoiture, chocContreVoiture, vitessePleine, normaleDeMur, sousLaCaisse, forceAtterrissage, DEBATTEMENT, RAPPEL, ENFONCE, vitesseDeSuivi, freinDeSuivi, PORTEE_SUIVI, SUIVI_DELTA } from './conduite.js';
 
 const WIDTH = 0.6;        // player AABB width (x and z)
@@ -222,6 +223,33 @@ export class Player {
     this.avionEtat = 'decollage'; this.rotationFaite = false;
     this.altitudeDecollage = this.pos.y;
     return 'decollage';
+  }
+
+  // CE QUE LE TOUCHER DONNE À JUGER (aviation) — la vitesse, la chute, le
+  // train, la piste, ce qu'il y a sous les roues et l'écart du terrain autour
+  // (cinq colonnes : le centre, deux devant-derrière à trois blocs, deux de
+  // côté à deux blocs). Publié pour les témoins (`player.dernierToucher`).
+  mesureToucher(v, vy) {
+    const x = this.pos.x, z = this.pos.z, fx = -Math.sin(this.yaw), fz = -Math.cos(this.yaw);
+    const sous = this.world.getBlock(Math.floor(x), Math.floor(this.pos.y - 0.5), Math.floor(z));
+    const sol = sous === BLOCK.WATER ? 'eau' : (sous === BLOCK.LEAVES || sous === BLOCK.LOG || sous === BLOCK.BIRCH) ? 'arbre' : 'ok';
+    const h = [];
+    for (const [a, b] of [[0, 0], [3, 0], [-3, 0], [0, 2], [0, -2]]) {
+      h.push(this.world.sommetColonne(Math.floor(x + fx * a - fz * b), Math.floor(z + fz * a + fx * b)));
+    }
+    const m = { vh: Math.abs(v), vz: Math.max(0, -(vy || 0)), train: this.trainSorti === undefined ? 1 : this.trainSorti,
+      surPiste: !!surUnePiste(x, z), sol, pente: Math.max(...h) - Math.min(...h) };
+    this.dernierToucher = m;
+    return m;
+  }
+
+  // L'AVION SE CASSE : l'état `epave`, que `fun.js` lit pour mettre le feu à
+  // la carcasse et déposer l'enfant, sain et sauf ; et le jeu le dit.
+  ecraserAvion(raison) {
+    this.avionEtat = 'epave'; this.avionEnVol = false; this.vitesseAvion = 0;
+    this.approche = null; this.guideApproche = null;
+    this.crash = { raison, t: performance.now() };
+    if (this.surAvion) this.surAvion('crash', raison);
   }
 
   // Le sol sous un appareil qui roule : la cote du bloc plein sous l'origine.
@@ -815,6 +843,16 @@ export class Player {
       if (this.assietteAvion === undefined) this.assietteAvion = 0;
       if (this.trainSorti === undefined) this.trainSorti = 1;
       if (this.roulisAvion === undefined) this.roulisAvion = 0;
+      // L'ÉPAVE (aviation) : l'avion est cassé, `fun.js` va déposer l'enfant.
+      // Plus rien ne pousse ; s'il s'est cassé en l'air, il tombe.
+      if (this.avionEtat === 'epave') {
+        this.vitesseAvion = 0; this.gaz = null;
+        this.vel.set(0, this.onGround ? 0 : Math.max(-30, (this.vel.y || 0) - 26 * dt), 0);
+        this.onGround = false;
+        this.sweepAxis(1, this.vel.y * dt);
+        this.syncCamera();
+        return;
+      }
       // LES COMMANDES SONT CELLES QUE MAX A DEMANDÉES (v228) : « le bouton
       // avion le fait décoller, et le joystick manage la hauteur, direction,
       // altitude, gauche droite ». Et depuis la v261 le même bouton fait
@@ -939,9 +977,26 @@ export class Player {
         // surface au lieu de couler. Le décrochage continue de le faire
         // descendre partout ailleurs — c'est ce qui permet de se poser
         // soi-même sur une vraie piste.
-        if (this.pos.y <= PLANCHER_EAU && this.vel.y < 0 && this.eauSousLAppareil()) {
-          this.vel.y = 0;
-          this.pos.y = Math.max(this.pos.y, PLANCHER_EAU);
+        // ET DEPUIS L'AVIATION D'OCTOBRE 2026, toucher la mer EST un mauvais
+        // atterrissage : le plancher de la v267 tenait l'avion à trois blocs
+        // de la surface, à planer pour toujours. Max : « un avion devrait se
+        // crasher s'il atterrit mal ». On ne coule toujours pas : on casse
+        // l'avion à la surface, et l'enfant nage jusqu'au bord (l'approche
+        // assistée, elle, remet toujours les gaz au-dessus de l'eau).
+        if (this.pos.y <= WATER_LEVEL + 1.2 && this.vel.y < 0 && this.eauSousLAppareil()) {
+          this.pos.y = Math.max(this.pos.y, WATER_LEVEL + 0.6);
+          this.ecraserAvion('eau');
+          this.syncCamera();
+          return;
+        }
+        // L'ARRONDI AIDÉ, À LA MAIN AUSSI (aviation) : train sorti, à moins
+        // de six blocs du sol, la chute se borne comme un vrai arrondi — un
+        // enfant qui pousse le manche jusqu'au sol touche à deux ou trois
+        // blocs par seconde au lieu de vingt-six. Train rentré, rien ne
+        // l'aide : c'est le mauvais atterrissage qui casse l'avion.
+        if (this.vel.y < 0 && (this.trainSorti === undefined ? 1 : this.trainSorti) > 0.9) {
+          const hs = this.pos.y - (this.world.sommetColonne(Math.floor(this.pos.x), Math.floor(this.pos.z)) + 1);
+          if (hs < HAUTEUR_ARRONDI) this.vel.y = Math.max(this.vel.y, -Math.max(2, hs * 1.5));
         }
         cibleAssiette = Math.max(-ASSIETTE_MAX, Math.min(ASSIETTE_MAX,
           Math.atan2(this.vel.y, Math.max(1, v)) * 1.4));
@@ -1008,7 +1063,19 @@ export class Player {
         this.sweepAxis(1, vol.y / pas);
         this.sweepAxis(2, vol.z / pas);
       }
+      const vyAvant = this.vel.y;
       this.contactSolContinu(etaitAuSolAvion, Math.hypot(this.pos.x - avantXa, this.pos.z - avantZa), etat === 'vol' || etat === 'decollage');
+      // UNE COLLISION EN VOL CASSE L'AVION (aviation) : un mur, une colline,
+      // un arbre qui arrêtent l'appareil en l'air.
+      if (!auSol && v > 8 && ((vx0 !== 0 && this.vel.x === 0) || (vz0 !== 0 && this.vel.z === 0))) {
+        const fx = Math.floor(this.pos.x - Math.sin(this.yaw) * 1.5), fz = Math.floor(this.pos.z - Math.cos(this.yaw) * 1.5);
+        let id = 0;
+        for (let dy = 0; dy < 3 && !id; dy++) id = this.world.getBlock(fx, Math.floor(this.pos.y + dy), fz);
+        this.ecraserAvion(id === BLOCK.LEAVES || id === BLOCK.LOG || id === BLOCK.BIRCH ? 'arbres'
+          : (id === BLOCK.GRASS || id === BLOCK.DIRT || id === BLOCK.STONE || id === BLOCK.SAND || id === BLOCK.SNOW) ? 'relief' : 'bati');
+        this.syncCamera();
+        return;
+      }
       // Bloqué par une marche en roulant : on la franchit si elle ne fait
       // qu'un bloc.
       if (auSol && v > 0.5 && ((vx0 !== 0 && this.vel.x === 0) || (vz0 !== 0 && this.vel.z === 0))) {
@@ -1016,6 +1083,15 @@ export class Player {
       }
       // LES ROUES TOUCHENT : on freine. Et à l'arrêt, on roule au joystick.
       if ((etat === 'atterrissage' || etat === 'vol') && this.onGround) {
+        // LE TOUCHER SE JUGE (aviation) : trop vite, trop dur, sur le ventre
+        // hors d'une piste, dans les arbres, sur un terrain trop accidenté —
+        // l'avion se casse. La règle est pure (`jugerToucher`, degats.js), les
+        // seuils sont dans la fiche.
+        const mesure = this.mesureToucher(v, vyAvant);
+        // UN POSÉ ASSISTÉ SUR UNE PISTE NE CASSE JAMAIS : c'est ✈️ qui pilote,
+        // et l'enfant n'a rien fait de mal. La règle ne juge que ce qu'il pose.
+        const raison = this.approche && mesure.surPiste && mesure.sol === 'ok' ? null : jugerToucher(mesure, p);
+        if (raison) { this.ecraserAvion(raison); this.syncCamera(); return; }
         // Posé soi-même sans sortir le train, c'est sur le ventre : ça
         // freine deux fois plus fort, et on le dit.
         this.ventre = this.trainSorti < 0.5;

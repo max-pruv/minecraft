@@ -64,7 +64,7 @@ export function USINE() {
 // Ces chiffres servent trois fois — le bâtisseur, le tracé du convoi et les
 // arrêts — et ne sont donc écrits qu'une fois.
 //
-// Chaque poste porte son PANNEAU (v462) : ce qu'on y fait, dit pour un enfant
+// Chaque poste porte son PANNEAU (v463) : ce qu'on y fait, dit pour un enfant
 // de sept ans, en une phrase ou deux. Il s'affiche quand l'enfant entre dans
 // le poste à pied (`posteSousLesPieds`, lu par main.js) — un bandeau, pas un
 // bloc : la règle de la v256 (« on ne plante plus de panneau ») vaut toujours.
