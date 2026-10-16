@@ -770,7 +770,18 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## La ligne 1 sous Paris (v455) — un escalier en biais monte de 0,7, et un creusement se borne sous le lit
+## Un cube au ras du sol touche le sol (v455) — l'exposition d'une cellule de monument se lit dans le monde
+
+Une règle. Les « vingt-quatre cubes du parvis de Notre-Dame » (dette v335)
+étaient la couche 0 du bâtisseur, celle du bloc de surface : ses flancs
+touchent le sol de la ville, pas l'air. Une sonde ou un témoin qui juge
+l'exposition d'une cellule contre les seules cellules du BÂTISSEUR compte ce
+sol comme de l'air ; sous la hauteur d'un enfant, une voisine hors du
+bâtisseur se lit dans le monde engendré (`sonde-monuments-hd.cjs`, témoin de
+`plafond.js`, qui descend désormais jusqu'au sol). Avant de recaler un modèle
+sur une dette chiffrée, on vérifie que le chiffre compte ce que l'enfant voit.
+
+## La ligne 1 sous Paris (v456) — un escalier en biais monte de 0,7, et un creusement se borne sous le lit
 
 Trois règles.
 

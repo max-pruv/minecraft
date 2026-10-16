@@ -378,9 +378,9 @@ const EMPREINTE_MORCEAUX_V414 = '863d4203a441e3fd029ce2404fc6d6e706799e7f64fe489
 // la constante de la v447, au bit près ; et les dix-huit colonnes qui
 // diffèrent dans les morceaux de Londres sont toutes dans la boîte d'un
 // tronçon de piste — aucune ailleurs, aucun autre lieu touché.
-// v455 : la ligne 1 du métro passe sous Paris, un des neuf lieux. Désarmée
+// v456 : la ligne 1 du métro passe sous Paris, un des neuf lieux. Désarmée
 // (`METRO_PARIS.actif = false`, ville.js), la branche rend 938a330c…, la
-// constante de la v454, au bit près.
+// constante de la v455, au bit près.
 const EMPREINTE_MORCEAUX_V357 = '9a19619233b779ce4491929ae3f1b418329fc6b1bffeb5edfef3b9746327a673';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
@@ -1264,34 +1264,51 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   // modèle — l'attique de l'Opéra (15), les angles arrière de l'entablement du
   // Panthéon (6), le pied de la flèche de Notre-Dame (8). Même lecture que
   // `sonde-monuments-hd.cjs` : une cellule de voxel exposée par le côté, que le
-  // modèle ne couvre pas, au-dessus de la hauteur d'un enfant. Les vingt-quatre
-  // du parvis de Notre-Dame, au sol, précèdent la v335 (dette déclarée).
+  // modèle ne couvre pas.
+  //
+  // ET JUSQU'AU SOL, EN LISANT LE MONDE (v455). Les « vingt-quatre cubes du
+  // parvis de Notre-Dame », déclarés en dette depuis la v335, n'étaient pas
+  // des cubes : le parvis est posé à la couche 0, celle du bloc de surface, et
+  // ses flancs touchent le sol de la ville (0 voisine d'air sur 29, mesuré).
+  // Juger l'exposition contre les seules cellules du bâtisseur les comptait
+  // à l'air. Sous la hauteur d'un enfant, une voisine hors du bâtisseur se lit
+  // donc dans le monde engendré — là où l'enfant marche.
   {
     const W = await import('../src/world.js');
     const HD = await import('../src/paris-monuments-hd.js');
     const { BLOCK } = await import('../src/blocks.js');
+    const monde = new W.World();
     const fautes = [];
-    let exposees = 0;
+    let exposees = 0, exposeesBas = 0;
     for (const lm of W.REPERES_HD) {
       const solide = new Set();
       const cellules = new Map();
       lm.build((x, y, z, id) => cellules.set(`${x},${y},${z}`, id));
       for (const [k, id] of cellules) if (id !== BLOCK.AIR) solide.add(k);
+      const base = monde.terrainHeight(lm.x, lm.z);
+      const air = (x, y, z) => {
+        const k = `${x},${y},${z}`;
+        if (cellules.has(k)) return !solide.has(k);
+        if (y > 3) return true;
+        return monde.getBlock(lm.x + x, base + y, lm.z + z) === BLOCK.AIR;
+      };
       const couvre = HD.cellulesCouvertes(lm.name);
-      let n = 0;
+      let n = 0, nBas = 0;
       for (const k of solide) {
         const [x, y, z] = k.split(',').map(Number);
-        if (y <= 3) continue;
-        const cote = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dz]) => !solide.has(`${x + dx},${y},${z + dz}`));
+        if (y < 0) continue;
+        const cote = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dz]) => air(x + dx, y, z + dz));
         if (!cote) continue;
         exposees++;
-        if (!couvre.has(k)) n++;
+        if (y <= 3) exposeesBas++;
+        if (!couvre.has(k)) { n++; if (y <= 3) nBas++; }
       }
-      if (n) fautes.push(`${lm.name} ${n}`);
+      if (n) fautes.push(`${lm.name} ${n} (dont ${nBas} à hauteur d'enfant)`);
     }
-    verifier('les modèles étirés de Paris couvrent leur voxel au-dessus d\'un enfant',
-      exposees > 5000 && fautes.length === 0,
-      fautes.length ? `cubes qui dépassent : ${fautes.join(' · ')}` : `${exposees} cellules de flanc, toutes couvertes`);
+    verifier('les modèles étirés de Paris couvrent leur voxel, jusqu\'au sol',
+      exposees > 5000 && exposeesBas > 500 && fautes.length === 0,
+      fautes.length ? `cubes qui dépassent : ${fautes.join(' · ')}`
+        : `${exposees} cellules de flanc dont ${exposeesBas} à hauteur d'enfant, toutes couvertes`);
   }
 
   const { ZONE_WASHINGTON: Z } = await import('../src/washington.js');
@@ -2535,12 +2552,12 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       JSON.stringify({ mesure: tr, barres: BARRES_TRAVAIL }));
   }
 
-  // LA LIGNE 1 DE PARIS SE PARCOURT COMME L'ENFANT LA VIT (v455). La sonde
+  // LA LIGNE 1 DE PARIS SE PARCOURT COMME L'ENFANT LA VIT (v456). La sonde
   // (`sonde-metro-paris.mjs`, lue telle quelle) engendre le vrai monde sous
   // node : de la rue au quai case par case pour chaque bouche, le passage des
   // rames libre sur les deux voies, aucune poche d'air dans la Seine, rien de
   // la bouche sur la chaussée ni dans le passage d'un circuit. Rouge sur la
-  // v454 : Paris n'avait plus de métro (l'anneau a suivi la caserne en v293).
+  // v455 : Paris n'avait plus de métro (l'anneau a suivi la caserne en v293).
   {
     const { mesurerLigne1 } = await import('./sonde-metro-paris.mjs');
     const t0 = Date.now();

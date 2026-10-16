@@ -3680,7 +3680,7 @@ export class World {
               if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id;
             });
           }
-          // LA LIGNE 1 DU MÉTRO (v455) : creusée sous la ville, après elle, comme
+          // LA LIGNE 1 DU MÉTRO (v456) : creusée sous la ville, après elle, comme
           // le métro de Washington. Seulement dans le monde d'aujourd'hui.
           if (this.conf.metroParis && !this.conf.parisAvant) {
             creuserMetroParis(wx, wz, h, (wy, id) => {

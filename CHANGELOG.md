@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v455 — La ligne 1 du métro passe sous Paris
+## v456 — La ligne 1 du métro passe sous Paris
 
 **Pourquoi.** Paris n'avait plus de métro. L'anneau souterrain de la v163 a
 suivi la caserne quand elle a déménagé en banlieue (v293) ; depuis, sous la
@@ -38,7 +38,7 @@ la caserne : il ne gêne personne et le retirer réécrirait un lieu où l'on a 
 jouer. La Défense est hors du disque de Paris, et Nation n'a pas de bouche
 (aucun trottoir assez long hors de l'eau et des voies) : on y arrive en rame.
 
-**Ce qui le prouve.** Quatre témoins neufs, tous rouges sur la v454. Sous node
+**Ce qui le prouve.** Quatre témoins neufs, tous rouges sur la v455. Sous node
 (`plafond.js`, par `sonde-metro-paris.mjs`) : de chacune des quinze bouches on
 descend au quai case par case, marches d'un bloc ; le passage des rames est
 libre sur 3 052 points ; la Seine, qui longe la ligne à cinq stations, reste
@@ -49,7 +49,34 @@ jaune se présente, on monte et elle nous emmène à la station suivante. Le
 relief n'a pas bougé (les deux empreintes de `plafond.js` intactes, rien ne
 touche `terrainHeight`), et l'empreinte des 490 morceaux, qui couvre Paris,
 change — désarmée (`METRO_PARIS.actif = false`), la branche rend celle de la
-v454 au bit près.
+v455 au bit près.
+
+---
+
+## v455 — Les monuments de Paris sont vérifiés jusqu'au sol
+
+**Pourquoi.** `TASKS.md` déclarait depuis la v335 « vingt-quatre cubes du
+parvis de Notre-Dame » qui dépassaient de son modèle en relief, à hauteur
+d'enfant, et le témoin des modèles étirés ne regardait qu'au-dessus de trois
+blocs. Mesuré monument par monument (`sonde-monuments-hd.cjs`) : les huit
+monuments de Paris n'avaient plus un seul cube au-dessus d'un enfant, et les
+vingt-quatre du parvis n'étaient pas des cubes. Le parvis est posé à la couche
+du bloc de surface ; ses flancs touchent le sol de la ville (zéro voisine
+d'air sur vingt-neuf dans le monde engendré). La sonde jugeait l'exposition
+contre les seules cellules du bâtisseur, et comptait ce sol comme de l'air.
+
+**Ce que ça change.** Rien à l'écran : aucun modèle n'avait à être recalé,
+et l'enfant ne voit aucun cube dépasser d'un monument de Paris. La sonde et
+le témoin lisent désormais le monde sous la hauteur d'un enfant, et le
+témoin descend jusqu'au sol : un cube qui dépasserait à hauteur d'enfant ne
+passerait plus inaperçu.
+
+**Ce qui le prouve.** Le témoin de `plafond.js` rend 11 922 cellules de flanc,
+dont 1 079 à hauteur d'enfant, toutes couvertes. Il est rouge quand on retire
+la façade et les murs de la nef du modèle de Notre-Dame (314 cubes, dont 6 à
+hauteur d'enfant), et lu sans le monde il rend exactement les vingt-quatre du
+parvis. Les deux empreintes du relief sont intactes (aucun fichier de `src/`
+qui bâtit n'a changé).
 
 ---
 

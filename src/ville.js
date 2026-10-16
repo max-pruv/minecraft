@@ -344,7 +344,7 @@ export function buildVille(poser) {
 
 
 // =============================================================================
-// LA LIGNE 1 DU MÉTRO DE PARIS (v455) — sous les Champs-Élysées, Rivoli et
+// LA LIGNE 1 DU MÉTRO DE PARIS (v456) — sous les Champs-Élysées, Rivoli et
 // le Faubourg, de la Porte Maillot au Château de Vincennes.
 //
 // L'anneau de la v163 a suivi la caserne en banlieue (v293) : il reste sous
@@ -363,7 +363,7 @@ export function buildVille(poser) {
 // ils gagnent sur le tunnel. Une cabane posée sur le tracé reste entière.
 //
 // Le PROFIL EST PLAT, et c'est mesuré : hors de la Seine, le relief vaut 33 ou
-// 34 sous toute l'emprise (sonde de la v455). Une cote constante ne dépend
+// 34 sous toute l'emprise (sonde de la v456). Une cote constante ne dépend
 // d'aucun monde, donc deux tablettes, le worker et le fil principal creusent
 // le même tunnel par construction.
 //
@@ -389,7 +389,7 @@ export const LIGNE1 = {
   quai: 3.4,                // le bord du quai, depuis l'axe
   tiroir: 9,
 };
-// Interrupteur de mesure : `actif = false` rend le monde d'avant la v455 au bit
+// Interrupteur de mesure : `actif = false` rend le monde d'avant la v456 au bit
 // près (empreinte des 490 morceaux, plafond.js).
 export const METRO_PARIS = { actif: true };
 
@@ -474,7 +474,7 @@ const MARCHES = SOL_PARIS - (LIGNE1.voie + 1);   // du quai à la rue
 // l'avenue, et l'avenue est en biais sur la grille : deux colonnes voisines
 // peuvent alors être à 1,4 bloc l'une de l'autre le long de l'escalier, et à
 // une marche par bloc l'arrondi y faisait une marche de DEUX blocs — un mur
-// pour l'enfant (la sonde de la v455 l'a trouvé). À 0,7, l'écart entre deux
+// pour l'enfant (la sonde de la v456 l'a trouvé). À 0,7, l'écart entre deux
 // voisines reste sous un bloc.
 const PENTE_ESC = 0.7;
 export const LONG_ESC = Math.ceil(MARCHES / PENTE_ESC);

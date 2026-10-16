@@ -1937,7 +1937,7 @@ function updateChunks() {
   // L'heure des feux est celle de la rue (v305), pas celle de la page.
   world.heureRue = () => (vehicules ? vehicules.horloge() * 1000 : performance.now());
   vehicules.metro(traceAnneau(VILLE, world.terrainHeight(VILLE.x, VILLE.z)));
-  // La ligne 1 de Paris (v455), de la Porte Maillot au Château de Vincennes :
+  // La ligne 1 de Paris (v456), de la Porte Maillot au Château de Vincennes :
   // jaune comme sur le plan, huit rames pour qu'on n'attende pas plus d'une
   // demi-minute sur un tour de près de quatre minutes (1 271 blocs à dix blocs
   // par seconde, trente arrêts de trois secondes) : 28 s entre deux rames.
