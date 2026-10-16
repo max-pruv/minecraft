@@ -398,10 +398,11 @@ export class GeomBufferHD {
     }
   }
 
-  toTampons() {
+  // `souder` (v466) : voir `souderTampons`, plus bas.
+  toTampons(souder = false) {
     if (this.indices.length === 0) return null;
     const sommets = this.positions.length / 3;
-    return {
+    const t = {
       positions: new Float32Array(this.positions),
       normals: new Float32Array(this.normals),
       uvs: new Float32Array(this.uvs),
@@ -411,7 +412,74 @@ export class GeomBufferHD {
       lueur: new Float32Array(this.lueur),
       indices: sommets > 65535 ? new Uint32Array(this.indices) : new Uint16Array(this.indices),
     };
+    return souder ? souderTampons(t) : t;
   }
+}
+
+// UNE BAIE SE SOUDE (v466). Un quad émet quatre sommets à lui, et deux quads
+// voisins du même plan — le mur autour d'une baie (`murAutour`, trois ou
+// quatre quads), le mur d'un bloc et celui du bloc d'à côté, les deux bandes
+// d'un ébrasement, d'un fond de vitre, d'un châssis découpé sur deux blocs —
+// ont à leurs coins communs des sommets IDENTIQUES : même position, même
+// normale, mêmes UV (elles suivent le monde), même tuile, même teinte, même
+// matière. Mesuré sur les morceaux les plus lourds de l'ouest de Paris : un
+// sommet sur six est le double d'un autre. On n'en garde qu'un, et les
+// triangles pointent dessus : ce sont les MÊMES triangles, faits des MÊMES
+// valeurs, octet pour octet — l'image ne peut pas changer, seule la mémoire
+// baisse. La comparaison se fait sur les bits des flottants tels qu'ils
+// partent au pilote (Float32), jamais sur une tolérance : deux sommets qui
+// diffèrent d'un ulp restent deux.
+const CHAMPS_SOUDURE = [['positions', 3], ['normals', 3], ['uvs', 2], ['tiles', 4], ['colors', 3], ['matiere', 2], ['lueur', 1]];
+export function souderTampons(t) {
+  const n = t.positions.length / 3;
+  const P = new Uint32Array(t.positions.buffer, t.positions.byteOffset, n * 3);
+  const U = new Uint32Array(t.uvs.buffer, t.uvs.byteOffset, n * 2);
+  const N = new Uint32Array(t.normals.buffer, t.normals.byteOffset, n * 3);
+  const T = new Uint32Array(t.tiles.buffer, t.tiles.byteOffset, n * 4);
+  const C = new Uint32Array(t.colors.buffer, t.colors.byteOffset, n * 3);
+  const Mt = new Uint32Array(t.matiere.buffer, t.matiere.byteOffset, n * 2);
+  const L = new Uint32Array(t.lueur.buffer, t.lueur.byteOffset, n);
+  let cap = 1; while (cap < n * 2) cap <<= 1;
+  const masque = cap - 1;
+  const table = new Int32Array(cap).fill(-1);
+  const garde = new Int32Array(n);            // le premier sommet de chaque classe, dans l'ordre d'émission
+  const vers = new Int32Array(n);              // ancien index → nouvel index
+  // le seau se tire sur la position, les UV et la normale ; l'égalité se juge sur les dix-huit mots
+  const memes = (a, b) =>
+    P[a * 3] === P[b * 3] && P[a * 3 + 1] === P[b * 3 + 1] && P[a * 3 + 2] === P[b * 3 + 2] &&
+    U[a * 2] === U[b * 2] && U[a * 2 + 1] === U[b * 2 + 1] &&
+    N[a * 3] === N[b * 3] && N[a * 3 + 1] === N[b * 3 + 1] && N[a * 3 + 2] === N[b * 3 + 2] &&
+    T[a * 4] === T[b * 4] && T[a * 4 + 1] === T[b * 4 + 1] && T[a * 4 + 2] === T[b * 4 + 2] && T[a * 4 + 3] === T[b * 4 + 3] &&
+    C[a * 3] === C[b * 3] && C[a * 3 + 1] === C[b * 3 + 1] && C[a * 3 + 2] === C[b * 3 + 2] &&
+    Mt[a * 2] === Mt[b * 2] && Mt[a * 2 + 1] === Mt[b * 2 + 1] && L[a] === L[b];
+  let u = 0;
+  for (let i = 0; i < n; i++) {
+    let h = Math.imul(P[i * 3] ^ 2166136261, 16777619);
+    h = Math.imul(h ^ P[i * 3 + 1], 16777619);
+    h = Math.imul(h ^ P[i * 3 + 2], 16777619);
+    h = Math.imul(h ^ U[i * 2], 16777619);
+    h = Math.imul(h ^ U[i * 2 + 1], 16777619);
+    h = Math.imul(h ^ N[i * 3] ^ (N[i * 3 + 2] >>> 7), 16777619);
+    h = (h ^ (h >>> 15)) & masque;
+    for (;;) {
+      const e = table[h];
+      if (e < 0) { table[h] = u; garde[u] = i; vers[i] = u; u++; break; }
+      if (memes(garde[e], i)) { vers[i] = e; break; }
+      h = (h + 1) & masque;
+    }
+  }
+  if (u === n) return t;
+  const out = {};
+  for (const [k, c] of CHAMPS_SOUDURE) {
+    const a = t[k], b = new Float32Array(u * c);
+    for (let v = 0; v < u; v++) { const g = garde[v] * c, d = v * c; for (let j = 0; j < c; j++) b[d + j] = a[g + j]; }
+    out[k] = b;
+  }
+  const ind = u > 65535 ? new Uint32Array(t.indices.length) : new Uint16Array(t.indices.length);
+  const src = t.indices;
+  for (let i = 0; i < ind.length; i++) ind[i] = vers[src[i]];
+  out.indices = ind;
+  return out;
 }
 
 // --- le repère d'une face ----------------------------------------------------------

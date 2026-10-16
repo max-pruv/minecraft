@@ -20,6 +20,36 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v466 — Paris pèse moins lourd sur la tablette
+
+**Pourquoi.** La couche de relief de Paris (façades, balcons, corniches)
+pesait jusqu'à onze mégaoctets par morceau dans les quartiers denses de
+l'ouest, et c'est elle qui a tué l'iPhone de Max en v299. Ce qui décide du
+poids, c'est le nombre de sommets. Mesuré par tuile sur les huit morceaux les
+plus lourds : 128 000 sommets de façades en moyenne, dont 85 000 de
+`pierre-lisse` (corniches, chaînages, appuis, balcons, ébrasements) — et UN
+SOMMET SUR SIX était le double exact d'un autre : deux quads du même plan qui
+se touchent (le mur autour d'une baie, le mur du bloc voisin, les deux bandes
+d'un ébrasement ou d'un châssis sur deux blocs) émettaient chacun leurs coins.
+
+**Ce que ça change.** Rien à l'écran, et c'est voulu : les sommets identiques
+sont soudés (`souderTampons`, facadeshd.js) et les triangles pointent sur le
+survivant. Mêmes triangles, mêmes valeurs, octet pour octet. La mémoire, elle,
+baisse : médiane 9,65 → 8,23 Mo, pire 11,37 → 10,08 Mo par morceau dense, soit
+15 % de détail en plus à budget égal (v299). Le prix : la soudure coûte au
+worker 14 à 20 ms par morceau détaillé (sur 150 à 200), seulement à portée de
+la couche HD.
+
+**Ce qui le prouve.** Deux témoins neufs dans `plafond.js` : le poids des huit
+morceaux les plus lourds, soudé contre `baiesSoudees: false` (rouge sur
+`origin/main`, où les deux pèsent pareil) ; et l'image — chaque coin de chaque
+triangle porte, bit à bit, les dix-huit mots d'avant (zéro écart sur 825 000
+coins). L'empreinte des 490 morceaux change (`4e5897ac…`) et se prouve par
+désarmement : avec `baiesSoudees: false`, elle rend la constante de la v357 au
+bit près. La sonde est `tests/sonde-baies.mjs`.
+
+---
+
 ## v465 — Le viaduc de la Manche
 
 **Pourquoi.** Sur l'eau, la voie ferrée était une chaussée de pierre posée au

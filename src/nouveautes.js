@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 466,
+    titre: 'Paris plus léger',
+    puces: [
+      'Les façades prennent moins de mémoire',
+      'La tablette voit Paris de plus loin',
+    ],
+  },
+  {
     v: 465,
     titre: 'Le train passe sur un pont',
     puces: [
