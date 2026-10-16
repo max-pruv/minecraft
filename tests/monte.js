@@ -2760,6 +2760,12 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       }
       if (!ancre) return { err: 'aucun carré plat' };
       const majPlayer = g.player.update, sauve = g.player.pos.clone(), gab0 = g.player.gabarit, pousse0 = g.player.pousse;
+      // CE TÉMOIN NE MESURE PAS UNE ARRIVÉE (v436) : la voiture l'emmène au
+      // couloir d'un saut, et pendant la fenêtre d'une arrivée un personnage
+      // dont le monde n'est pas rendu attend, immobile. On coupe l'attente le
+      // temps du témoin, sans attendre le monde : attendre déplaçait l'heure
+      // de la rue des témoins suivants (le tirage de « la rue roule »).
+      g.world.attendreArrivee = false;
       g.player.update = () => {};
       const dormir = (ms) => new Promise((f) => setTimeout(f, ms));
       const image = () => new Promise((f) => requestAnimationFrame(f));
@@ -2798,6 +2804,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         }
       } finally {
         g.player.update = majPlayer; g.player.gabarit = gab0; g.player.pousse = pousse0; g.player.pos.copy(sauve);
+        g.world.attendreArrivee = true;
         g.scene.remove(h.mesh);
       }
       return { passes };
@@ -2829,6 +2836,12 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       }
       if (!ancre) return { err: 'aucun carré plat' };
       const majPlayer = g.player.update, sauve = g.player.pos.clone(), gab0 = g.player.gabarit, pousse0 = g.player.pousse;
+      // CE TÉMOIN NE MESURE PAS UNE ARRIVÉE (v436) : la voiture l'emmène au
+      // couloir d'un saut, et pendant la fenêtre d'une arrivée un personnage
+      // dont le monde n'est pas rendu attend, immobile. On coupe l'attente le
+      // temps du témoin, sans attendre le monde : attendre déplaçait l'heure
+      // de la rue des témoins suivants (le tirage de « la rue roule »).
+      g.world.attendreArrivee = false;
       g.player.update = () => {};
       const image = () => new Promise((f) => requestAnimationFrame(f));
       const h = new Habitant(g.scene, g.world, g.player, () => {}, {
@@ -2869,6 +2882,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
           arrivee: +Math.abs(h.pos.x - ancre.x).toFixed(2) };
       } finally {
         g.player.update = majPlayer; g.player.gabarit = gab0; g.player.pousse = pousse0; g.player.pos.copy(sauve);
+        g.world.attendreArrivee = true;
         g.scene.remove(h.mesh);
       }
     });
@@ -5686,6 +5700,65 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       verifier('le jeu ne redemande pas le nom de la carte graphique à chaque morceau franchi',
         appels.franchis >= 5 && appels.n === 0, JSON.stringify(appels));
     }
+
+    // À L'ARRIVÉE, LE FIL PRINCIPAL N'ENGENDRE PAS LE MONDE (v436). Le worker
+    // rend les morceaux autour de l'enfant ; les passants qu'on pose
+    // (`posteAutour`), ceux qui marchent (`sweep`), l'enfant lui-même, la visée,
+    // le HUD et les poissons lisaient les blocs par `getBlock`, qui ENGENDRAIT
+    // le morceau manquant sur le fil principal — 23 à 40 morceaux, 93 à 157 ms
+    // dans la première seconde d'une arrivée à Paris (`sonde-arrivee-engendre.cjs`).
+    // On compte les `generateChunk` du fil principal pendant 1,2 s après un
+    // saut dans une ville que cette page n'a jamais vue ; puis on laisse la
+    // ville se peupler et l'on vérifie que personne n'est resté en attente,
+    // dans le vide ou dans un mur.
+    {
+      const arr = await ciel.evaluate(async () => {
+        const g = window.__game, w = g.world, p = g.player;
+        const { positionDe } = await import('./src/mondes.js');
+        const patienter = (ms) => new Promise((fin) => {
+          const t0 = performance.now();
+          const tic = () => (performance.now() - t0 < ms ? requestAnimationFrame(tic) : fin());
+          requestAnimationFrame(tic);
+        });
+        const gen = w.generateChunk;
+        let n = 0, ms = 0, suivre = true;
+        const qui = new Map();
+        w.generateChunk = function (cx, cz) {
+          const a = performance.now(); const d = gen.call(this, cx, cz);
+          if (suivre) {
+            n++; ms += performance.now() - a;
+            const l = (new Error().stack || '').split('\n').slice(2).find((x) => !/world\.js/.test(x)) || '';
+            const k = l.trim().replace(/^at /, '').replace(/https?:\/\/[^/]+\/src\//, '').replace(/\?[^:)]*/, '');
+            qui.set(k, (qui.get(k) || 0) + 1);
+          }
+          return d;
+        };
+        const x0 = p.pos.x, y0 = p.pos.y, z0 = p.pos.z, vol = p.flying;
+        const C = positionDe('berlin');
+        p.flying = true; p.pos.set(C.x + 0.5, w.terrainHeight(C.x, C.z) + 4, C.z + 0.5); p.vel.set(0, 0, 0);
+        await patienter(1200);
+        suivre = false;
+        w.generateChunk = gen;
+        // la ville se peuple : personne en attente, dans le vide ou dans un mur
+        await patienter(9000);
+        const site = g.passants.sites.find((s) => Math.hypot(s.x - C.x, s.z - C.z) < 50);
+        const gens = (site && site.peuple) || [];
+        let attente = 0, enLAir = 0, dedans = 0;
+        for (const h of gens) {
+          if (h.attendLeMonde || h.aPoser !== undefined) { attente++; continue; }
+          const bx = Math.floor(h.pos.x), bz = Math.floor(h.pos.z), by = Math.floor(h.pos.y + 0.2);
+          if (w.isSolid(bx, by, bz) || w.isSolid(bx, by + 1, bz)) dedans++;
+          else if (h.pos.y - (w.sommetColonne(bx, bz) + 1) > 2.5 && !w.isSolid(bx, by - 1, bz)) enLAir++;
+        }
+        p.pos.set(x0, y0, z0); p.vel.set(0, 0, 0); p.flying = vol;
+        return { n, ms: Math.round(ms), qui: [...qui], passants: gens.length, attente, enLAir, dedans };
+      });
+      verifier('à l\'arrivée d\'une téléportation, le fil principal n\'engendre pas les morceaux que le worker va rendre',
+        arr.n <= 2, `${arr.n} morceau(x) en 1,2 s, ${arr.ms} ms (ancien code, même passage à Berlin : 86 morceaux, 325 ms) · ${JSON.stringify(arr.qui)}`);
+      verifier('les passants de la ville d\'arrivée se posent quand le monde est là : ni en attente, ni dans le vide, ni dans un mur',
+        arr.passants >= 6 && arr.attente === 0 && arr.enLAir === 0 && arr.dedans === 0, JSON.stringify(arr));
+    }
+
     // ET `ciel` SE FERME APRÈS SON DERNIER USAGE (banc-intermittents). Elle
     // restait EN JEU, à la distance de l'iPad, jusqu'à la fin de la suite :
     // près de quatre cœurs pris à côté de chaque témoin qui suit — les trois

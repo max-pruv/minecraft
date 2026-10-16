@@ -649,7 +649,7 @@ world.loadEdits();
 // tampons prêts pour la carte graphique, plus les blocs pour les collisions.
 // Le fil principal ne fait plus que les installer. `?maillage=local` rend
 // l'ancien chemin, pour mesurer et pour les témoins.
-const statsMaillage = { principalMs: 0, locaux: 0, distants: 0, refuses: 0, recus: [], detailsDemandes: 0, detailsRendus: 0, detailsBudget: 0,
+const statsMaillage = { principalMs: 0, attentesJoueur: 0, locaux: 0, distants: 0, refuses: 0, recus: [], detailsDemandes: 0, detailsRendus: 0, detailsBudget: 0,
   // CE QUE COÛTE L'INSTALLATION SUR LE FIL PRINCIPAL, ET LE TEMPS À SEC DU
   // WORKER (v360) — les deux pistes que la v352 avait laissées non mesurées.
   installMs: 0, workerMs: 0, workerInactifMs: 0, lots: 0, renduMs: 0, travailMs: 0, images: 0, fileVide: 0, transitMs: 0 };
@@ -884,6 +884,39 @@ function synchroniserLeWorker() {
   generationDistante++;
   enAttente.clear();
   maillageDistant.postMessage({ type: 'edits', edits: world.edits, temps: world.editTimes, ctx: world.ctx, hd: world.hd, sansSolContinu: world.sansSolContinu });
+}
+// L'ENFANT ATTEND SON MORCEAU, IL NE LE FABRIQUE PAS (v436).
+//
+// Après une téléportation, le morceau sous ses pieds n'est pas encore rendu
+// par le worker ; `player.update` lisait ses blocs par `getBlock`, qui
+// l'ENGENDRAIT sur le fil principal — et c'est le premier morceau de la
+// ville, celui qui paie les tables de la ville (les feux de Paris) : 71 à
+// 91 ms dans une seule image (`sonde-arrivee-engendre.cjs`). Le worker le
+// rend quelques images plus tard, avec ce coût payé ailleurs. Tant qu'il
+// manque, l'enfant reste où il est — ni chute ni pas — et la visée se tait.
+// BORNÉ : au-delà d'une seconde et demie de montre, on joue quand même et le
+// fil principal l'engendre, comme avant. Sans worker (`?maillage=local`), le
+// mailleur d'ici l'engendre de toute façon : on n'attend rien.
+//
+// ET SEULEMENT À L'ARRIVÉE D'UN SAUT. Mon premier jet attendait partout : en
+// vol ou au volant, l'enfant franchit sans cesse le bord du monde rendu (au
+// banc, `rr=2`), et l'avion se figeait par à-coups d'une seconde et demie —
+// vingt-neuf rouges de `monte.js` rejouée seule. Hors de la fenêtre d'une
+// arrivée (`estUnSaut`, plus que la portée d'un coup), on fabrique comme avant :
+// c'est là que le monde manque d'un coup, ailleurs il ne manque qu'au bord.
+const ATTENTE_ARRIVEE_MS = 1500;
+const ATTENTE_JOUEUR_MAX_MS = 1500;
+let attenteJoueur = 0;
+function mondePretAutour(r) {
+  const p = player.pos;
+  return !maillageDistant || world.maillageLocal?.(Math.floor(p.x / CHUNK), Math.floor(p.z / CHUNK))
+    || world.morceauxPrets(p.x - r, p.z - r, p.x + r, p.z + r);
+}
+function joueurAttendLeMonde(now) {
+  if (!world.arriveeEnCours() || mondePretAutour(1)) { attenteJoueur = 0; return false; }
+  if (!attenteJoueur) attenteJoueur = now;
+  if (now - attenteJoueur > ATTENTE_JOUEUR_MAX_MS) { attenteJoueur = 0; return false; }
+  return true;
 }
 function recevoirMorceau(m) {
   const key = World.key(m.cx, m.cz);
@@ -1335,13 +1368,23 @@ function redemanderLeDetail(cx, cz, key) {
 // la crosse du modèle, portée en +x, vers la première chaussée voisine. Sans
 // chaussée autour — un réverbère posé par l'enfant dans son jardin — elle
 // reste en +x.
+//
+// ET ON NE LIT PAS LE MORCEAU D'À CÔTÉ S'IL N'EST PAS LÀ (v436). Un réverbère
+// au bord d'un morceau regarde la colonne voisine, et `getBlock` engendrait ce
+// morceau sur le fil principal, dans l'image où le sien s'installait — quatre
+// à six morceaux dans la première seconde d'une arrivée. Un réverbère de ville
+// est posé là où un voisin est de la chaussée (`lampadaireDeVille`, v248) :
+// si aucun voisin connu n'en est, c'est le côté qu'on ne voit pas encore.
+function rueAutour(wx, wy, wz) {
+  const rue = (x, z) => !world.arriveeEnCours() || world.morceauxPrets(x, z) ? CHAUSSEE.has(world.getBlock(x, wy, z)) : null;
+  return [rue(wx + 1, wz), rue(wx - 1, wz), rue(wx, wz + 1), rue(wx, wz - 1)];
+}
+const CAPS_RUE = [0, Math.PI, -Math.PI / 2, Math.PI / 2];
 function versLaRue(wx, wy, wz) {
-  const rue = (x, z) => CHAUSSEE.has(world.getBlock(x, wy, z));
-  if (rue(wx + 1, wz)) return 0;
-  if (rue(wx - 1, wz)) return Math.PI;
-  if (rue(wx, wz + 1)) return -Math.PI / 2;
-  if (rue(wx, wz - 1)) return Math.PI / 2;
-  return 0;
+  const r = rueAutour(wx, wy, wz);
+  let k = r.indexOf(true);
+  if (k < 0) k = r.indexOf(null);
+  return k < 0 ? 0 : CAPS_RUE[k];
 }
 
 // ET UN FEU REGARDE LA FILE QU'IL ARRÊTE, PAS LA PREMIÈRE RUE VENUE (v273).
@@ -1350,14 +1393,14 @@ function versLaRue(wx, wy, wz) {
 // là. Ses lentilles sont portées en −z par le modèle (props.js), d'où le
 // quart de tour par rapport à la crosse d'un réverbère, qui est en +x.
 function versLaRueAxe(wx, wy, wz, axe) {
-  const rue = (x, z) => CHAUSSEE.has(world.getBlock(x, wy, z));
+  const r = rueAutour(wx, wy, wz);
   const q = Math.PI / 2;
   if (axe === 0) {
-    if (rue(wx + 1, wz)) return -q;
-    if (rue(wx - 1, wz)) return q;
+    if (r[0]) return -q;
+    if (r[1]) return q;
   } else {
-    if (rue(wx, wz + 1)) return Math.PI;
-    if (rue(wx, wz - 1)) return 0;
+    if (r[2]) return Math.PI;
+    if (r[3]) return 0;
   }
   return versLaRue(wx, wy, wz) - q;
 }
@@ -1455,7 +1498,11 @@ function updateChunks() {
   if (chunkKey !== lastPlayerChunk) {
     if (lastPlayerChunk) {
       const [ax, az] = lastPlayerChunk.split(',').map(Number);
-      if (estUnSaut({ cx: ax, cz: az }, { cx: pcx, cz: pcz }, RENDER_RADIUS)) arriveeJusqua = performance.now() + FENETRE_ARRIVEE_MS;
+      if (estUnSaut({ cx: ax, cz: az }, { cx: pcx, cz: pcz }, RENDER_RADIUS)) {
+        arriveeJusqua = performance.now() + FENETRE_ARRIVEE_MS;
+        world.arriveeJusqua = performance.now() + ATTENTE_ARRIVEE_MS;   // v436
+        world.arriveeLieu = { x: player.pos.x, z: player.pos.z, r: (RENDER_RADIUS + 1) * CHUNK };
+      }
     }
     lastPlayerChunk = chunkKey;
     rebuildQueue();
@@ -1602,7 +1649,10 @@ function updateChunks() {
   });
   // et la rue freine devant les piétons (v372) : à cinquante à l'heure, qu'un
   // passant s'écarte ne suffit plus à garantir qu'on ne renverse personne
-  vehicules.brancherPietons(() => npcs);
+  // un personnage qui attend que son monde arrive (v436) n'est pas encore
+  // dans la rue : la circulation, qui attend sans limite devant un piéton, ne
+  // l'attend pas — sinon ses files se nouaient aux feux pendant l'arrivée
+  vehicules.brancherPietons(() => npcs.filter((h) => !h.attendLeMonde));
   // la voiture de l'enfant s'arrête devant la circulation (player.js, v245)
   // ET LE MOBILIER NON PLUS (v252). Un réverbère, une jardinière, un banc,
   // une table de Times Square sont des props NON SOLIDES pour la marche —
@@ -7992,7 +8042,9 @@ function releverLeJournal() {
 
 function updateHud(dt) {
   const eye = player.eyePosition();
-  const eyeBlock = world.getBlock(Math.floor(eye.x), Math.floor(eye.y), Math.floor(eye.z));
+  // un morceau pas encore rendu par le worker n'est pas de l'eau : on ne
+  // l'engendre pas ici pour le savoir (v436)
+  const eyeBlock = !world.arriveeEnCours() || world.morceauxPrets(eye.x, eye.z) ? world.getBlock(Math.floor(eye.x), Math.floor(eye.y), Math.floor(eye.z)) : BLOCK.AIR;
   waterTint.style.display = eyeBlock === BLOCK.WATER ? 'block' : 'none';
 
   fpsSamples.push(1 / dt);
@@ -8227,7 +8279,8 @@ function frame(now) {
   if (now - derniereMesureVue > 500) { derniereMesureVue = now; ajusterLaVue(); }
 
   if (running) {
-    player.update(dt);
+    if (joueurAttendLeMonde(now)) statsMaillage.attentesJoueur++;
+    else player.update(dt);
     signalerElanDeVol();
     animalManager.update(dt);
     garagiste(dt);
@@ -8257,6 +8310,14 @@ function frame(now) {
     for (const npc of npcs) {
       const distance = npc.pos.distanceTo(player.pos);
       if (!actualiserPresence(npc, distance, dt, !npc.sommeilForce)) continue;
+      // ET ON N'ANIME PAS CE QUI S'EFFACE À L'AUTRE BOUT DU MONDE (v436). Après
+      // une téléportation, la présence fond en 0,8 s les personnages laissés
+      // derrière — le village, le château —, et ils marchaient encore pendant
+      // ce temps : leur `sweep` refabriquait sur le fil principal les morceaux
+      // qu'on venait d'oublier (douze à vingt et un dans la première seconde).
+      // Au-delà de la portée où l'on anime (cent quarante blocs), on s'efface
+      // sur place.
+      if (distance > 140) continue;
       npc.__tempsAnimation = (npc.__tempsAnimation || 0) + dt;
       if(distance < 35 || npc.__tempsAnimation >= (distance < 80 ? .066 : .1)){
         npc.update(npc.__tempsAnimation); npc.__tempsAnimation = 0;
@@ -8342,7 +8403,9 @@ function frame(now) {
     if (!carteTours) repeindreBandeCarte(4, 8);
   }
 
-  const hit = running ? getTarget() : null;
+  // la visée lit jusqu'à huit blocs devant les yeux : elle se tait tant que
+  // le monde autour n'est pas rendu (v436)
+  const hit = running && !attenteJoueur && (!world.arriveeEnCours() || mondePretAutour(8)) ? getTarget() : null;
   highlight.visible = !!hit;
   if (hit) highlight.position.set(hit.x + 0.5, hit.y + 0.5, hit.z + 0.5);
 

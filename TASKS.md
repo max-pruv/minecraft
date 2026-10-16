@@ -6552,11 +6552,51 @@ l'embarquement a eu lieu, pas par une hypothèse.
   la rue d'un coup. La piste est celle des passants (v246, `naitre` par
   tranches de cinq millisecondes) : un budget de fabrication par image, la
   place restant vide une image de plus.
-  (2) **`ensureChunk` sur le fil principal : 66 à 94 ms**, appelé par le
-  `sweep` des personnages (marlon.js) et `posteAutour` des passants
-  (passants.js, `sommetColonne`) — des morceaux que le worker n'a pas encore
-  rendus. Piste : un passant ne se pose (et un personnage ne marche) que sur
-  un morceau déjà là, comme la minicarte (v258) qui n'engendre jamais.
+  PORTAIL DE LA v472 (règle de la v195) : rouges au portail, sous une charge
+  stable de 3,5 à 3,8 cœurs ; rejouées SEULES sur la branche : `reglages.js`
+  verte (70) ; `monte.js` 4 rouges — « la téléportation ne compile plus de
+  programmes », « une voiture roule dans la nature », « son flanc frôlé » (tous
+  trois rouges sur `origin/main` rejouée seule, avec 19 autres) et le tirage
+  « deux voitures l'une dans l'autre en taux » (0 · 0 · 5 % sur la branche,
+  1,2 sur `origin/main`, déclaré plus haut) ; `manhattan.js` trou de façade et
+  taxi (déclarés) ; `reseau.js` « hôte sans courtier » (déclaré). Mon premier
+  jet, lui, rendait 29 rouges de `monte.js` seule : voir CLAUDE.md (v472), la
+  fenêtre d'arrivée.
+  TROISIÈME PORTAIL (après fusion de la v454, arrêté à deux heures pendant
+  `reseau.js`) : la fusion avait placé `ciel.close()` (venu de main) devant le
+  témoin de l'arrivée, qui lit encore cette page — « Target page closed », la
+  fin de `monte.js` perdue, 2 sur 2 ; corrigé (fermeture après le témoin).
+  Rejouées SEULES ensuite : `monte.js` 227 verts, rouges les deux de Moscou
+  (déclarés) ; `reseau.js` 84 verts, rouge « hôte sans courtier » et « il le
+  REJOINT » (déclarés). Au portail aussi, tous déclarés : `reglages.js`
+  « un choix … part au serveur », `monte.js` la rue par tranches, le flâneur
+  sur la chaussée, la rue à l'allure d'une ville, le monde devant l'avion en
+  ville, `manhattan.js` taxi, `reseau.js` portière droite (vert seule).
+  SECOND PORTAIL (après fusion de la v432, arrêté à deux heures par la borne de
+  la tâche, `reseau.js` non terminée) : `carte.js` flèche du GPS et glisser
+  bridé, `manhattan.js` trou et taxi, `monte.js` compilation à New York
+  (déclarés) ; `monte.js` « s'arrête devant un réverbère » (`parcouru 0,18`,
+  l'intermittence déclarée en v362 — vert dans `monte.js` rejouée seule sur la
+  branche ; le témoin attend neuf secondes après son saut, la fenêtre d'arrivée
+  est close quand il roule) ; `degats.js` « très touchée elle fume » (le tirage
+  de la fumée à un instant, déclaré) ; `reseau.js` « seule après le départ de
+  l'hôte » (l'intermittence des compteurs, déclarée).
+  Et « la rue roule à l'allure d'une ville » (`monte.js`), rouge au troisième
+  portail : un TIRAGE qui existe sur `origin/main` v435 (rouge 1 fois sur 3,
+  médiane 0, files arrêtées au feu, 17 à 19 voitures en vue contre 10 à 12),
+  que mes attentes au couloir rendaient fréquent (2 sur 3 avec le code
+  d'`origin/main`) ; retirées. Et ma fenêtre d'arrivée le rendait fréquent
+  aussi (2 sur 3, désarmée 1 sur 3) : des passants immobiles sur la chaussée
+  arrêtaient les voitures, qui attendent sans limite un piéton — retirés de la
+  liste de la circulation, 3 verts sur 3. Dette : le témoin dépend de la phase des feux à
+  l'instant où il commence — ce n'est pas un gardien tant qu'il ne mesure pas
+  sur plusieurs cycles de feu.
+  (2) ~~`ensureChunk` sur le fil principal : 66 à 94 ms~~ **FAIT en v472** :
+  personnages, passants, joueur, visée, HUD, poissons et réverbères ne
+  fabriquent plus un morceau que le worker va rendre (Paris 23-40 → 0 morceau
+  en deux secondes ; témoin de `monte.js` à Berlin, 86 → 0). La pire image en
+  scène vide n'a PAS bougé (267-417 contre 300-350 ms, trois passages
+  alternés) : c'est (1).
   (3) `nbSansCroisement` (vehicules.js) 22 à 36 ms au dépliage d'un circuit.
   **(1) et (3) FAITS en v431** : fabrication par tranches (`FAB_MS`), grille de
   croisements ; update des voitures 234/261/195 → 111/125/99 ms,
@@ -6588,6 +6628,14 @@ l'embarquement a eu lieu, pas par une hypothèse.
   mesure qui compte est sur l'iPad de Max ; si le lag y persiste, la piste
   est de mailler moins à l'arrivée (rayon réduit les deux premières
   secondes) ou plus vite (45 % du coût est la génération du relief).
+  *(Mesuré en v472, `sonde-arrivee-decoupe.cjs`, Paris, scène vide : depuis la
+  v472 le fil principal ne maille ni n'engendre plus rien à l'arrivée
+  (`maillageLocal` 0, `generation` 0 sur vingt secondes, contre 23 à 317 ms sur
+  `origin/main`) ; le maillage est tout entier dans le worker. Ce qui reste du
+  gel sur le fil principal est (1) de l'entrée ci-dessus — `Convoi.montrer` —
+  et le dessin, qui se relit sur la tablette. Mailler moins les deux premières
+  secondes ne réduirait que l'attente du monde, pas l'image figée : à ne
+  reprendre que si `?diag=1` sur l'iPad montre un TROU, pas un gel.)*
 
 - [ ] **Le témoin du mur a mesuré « à pied » au volant, deux fois, au
   portail de la v249** (à pied 1,1 bloc du mur, gabarit 2,2, monture

@@ -2289,6 +2289,64 @@ Et une empreinte d'identité qui change se PROUVE : celle des 490 morceaux
 (v352) couvre Marrakech et Tokyo ; la branche, bâtisseurs neufs désarmés, rend
 l'ancienne au bit près — c'est ce qui a permis de la remplacer.
 
+## L'arrivée n'engendre plus le monde (v472) — sur le fil principal, on lit ce qui est là, on ne le fabrique pas
+
+Trois règles.
+
+- **`getBlock` FABRIQUE CE QU'IL NE TROUVE PAS, ET SUR LE FIL PRINCIPAL C'EST UNE
+  IMAGE PERDUE.** Depuis le worker (v251), le fil principal reçoit les blocs des
+  morceaux qu'il rend ; tout ce qui lit le sol AVANT — passants posés, `sweep`,
+  sondes de programme, joueur, visée, HUD, poissons, réverbères — engendrait le
+  morceau lui-même. `world.morceauxPrets(x0, z0, x1, z1)` répond sans fabriquer ;
+  un personnage dont le monde (± 4 blocs) n'est pas là ATTEND dans `update`,
+  avant `think` (ni chute, ni pas, ni sonde) ; `placeAt` diffère la pose
+  (`aPoser`) ; `posteAutour` saute un point sur un morceau absent et rend `null`
+  s'il n'y a rien, la naissance reste dans la file ; l'enfant attend son morceau
+  (`joueurAttendLeMonde`, son seul morceau ±1, borné à 1,5 s, jamais sans
+  worker ni dans un morceau maillé ici). La règle de la minicarte (v258), pour tout ce qui sonde.
+- **ON N'ATTEND LE WORKER QU'À L'ARRIVÉE, ET LÀ OÙ L'ON ARRIVE.** Mon premier
+  jet attendait partout : en vol et au volant, l'enfant franchit sans cesse le
+  bord du monde rendu (au banc, `rr=2`) et se figeait par à-coups d'une seconde
+  et demie — vingt-neuf rouges de `monte.js` rejouée seule. L'attente ne vaut
+  que dans la fenêtre d'un saut (`estUnSaut`, 1,5 s, `world.arriveeEnCours`)
+  et, pour un point, à portée du lieu d'arrivée (`arriveeLieu`) : des passants
+  d'essai posés ailleurs fabriquent comme avant. Un témoin qui emmène l'enfant
+  au couloir et ne mesure PAS une arrivée coupe l'attente
+  (`world.attendreArrivee = false`, rendu à la fin). Mon premier remède l'y
+  faisait ATTENDRE le monde, jusqu'à dix secondes : cela déplaçait l'heure de
+  la rue des témoins suivants de la même page, et « la rue roule à l'allure
+  d'une ville » — un tirage qui rougit aussi sur `origin/main`, 1 fois sur 3 —
+  rougissait 2 fois sur 3. **UN TÉMOIN QUI ATTEND CHANGE L'HEURE DE CEUX QUI LE
+  SUIVENT** : quand la circulation est une fonction de l'horloge (v305), une
+  attente ajoutée est un changement de situation pour la suite entière. Il a
+  fallu six variantes (chacune une retouche désarmée) et le code d'`origin/main`
+  sous mon `monte.js` pour le voir.
+- **UN PIÉTON QUI ATTEND SON MONDE N'EST PAS ENCORE DANS LA RUE.** Les voitures
+  attendent SANS LIMITE devant un piéton (v395) ; des passants immobilisés sur
+  la chaussée pendant la fenêtre d'une arrivée nouaient leurs files aux feux
+  pour longtemps. Mesuré sur la page du témoin « la rue roule » : fenêtre
+  désarmée 1 rouge sur 3 (comme `origin/main`), armée 2 sur 3, et la liste de la
+  circulation filtrée (`brancherPietons`, main.js, sans `attendLeMonde`) 3 verts
+  sur 3. Quand on immobilise un acteur, on se demande qui l'attend.
+- **CE QUI S'EFFACE À L'AUTRE BOUT DU MONDE NE MARCHE PLUS.** La présence fond
+  en 0,8 s les personnages laissés derrière un saut, et la boucle les animait
+  encore : leur `sweep` refabriquait les morceaux qu'on venait d'oublier
+  (douze à vingt et un). Au-delà de cent quarante blocs, on s'efface sur place.
+- **UNE FILE QUI ATTEND NE SE BLOQUE PAS SUR SA TÊTE.** Mon premier jet faisait
+  `break` sur une naissance impossible : celle de la ville QUITTÉE, dont les
+  points sont ramenés dans son disque, attendait pour toujours un monde qui ne
+  viendrait pas, et Berlin n'a eu aucun passant (le témoin l'a dit : 0). On
+  passe aux suivantes, et une ville hors de portée ne fait plus naître personne.
+- **UNE TABLE CALCULÉE AU PREMIER MORCEAU D'UNE VILLE SE MÉMORISE SUR UNE
+  GRILLE, PAS UN DICTIONNAIRE.** `feuxDeVille` relisait `solParis` jusqu'à cinq
+  fois par colonne (86 ms au premier morceau de Paris) ; un `Map` à clés
+  flottantes coûtait autant qu'il évitait, une `Int32Array` sur la boîte des
+  carrefours rend la même table (empreinte des feux identique, `Math.random`
+  figé) pour un cinquième de moins.
+
+Ce que le banc ne montre pas, et c'est dit : la pire image de l'arrivée ne bouge
+pas (267-417 ms contre 300-350) — elle est `Convoi.montrer` (vehicules.js).
+
 ## L'arrivée d'une téléportation découpée (v420) — un appel GL synchrone se lit une fois, et une trace nomme ce qu'un profil appelle « (program) »
 
 Trois règles.
