@@ -100,7 +100,7 @@ async function panneau(p) {
 }
 
 (async () => {
-  // --- Ce que Washington raconte arrive dans le quiz (v455) -------------------
+  // --- Ce que Washington raconte arrive dans le quiz (v460) -------------------
   // Une banque pure, lue sous node : la catégorie existe, chaque question a
   // quatre propositions distinctes dont une seule juste, et les faits des
   // panneaux de `guides.js` y sont (cerisiers, L'Enfant, la loi de hauteur,

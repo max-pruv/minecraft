@@ -14,7 +14,12 @@
 // La sonde IMPRIME les deux, monument par monument, à la hauteur où ils sont —
 // et c'est cette mesure qui décide ce qu'on corrige, pas l'intuition.
 (async () => {
-  const { REPERES_HD } = await import('../src/world.js');
+  const { REPERES_HD, World } = await import('../src/world.js');
+  // Sous la hauteur d'un enfant, une voisine hors du bâtisseur se lit dans le
+  // MONDE (v455) : le parvis de Notre-Dame, à la couche du bloc de surface,
+  // touche le sol de la ville, et le juger contre les seules cellules du
+  // bâtisseur en faisait vingt-quatre « cubes » qui n'en étaient pas.
+  const monde = new World();
   const { geometrieMonument, cellulesCouvertes } = await import('../src/paris-monuments-hd.js');
   const { BLOCK } = await import('../src/blocks.js');
   const HAUTEUR_ENFANT = 3;   // ce qu'un enfant de sept ans peut toucher, en blocs
@@ -81,14 +86,21 @@
     // reste se paie en CUBES QUI DÉPASSENT : du voxel resté visible à côté du
     // modèle, honnête, et qui arrête ce qu'il a l'air d'arrêter.
     const couvre = cellulesCouvertes(lm.name);
+    const base = monde.terrainHeight(lm.x, lm.z);
+    const air = (x, y, z) => {
+      const k = `${x},${y},${z}`;
+      if (cellules.has(k)) return !solide.has(k);
+      if (y > HAUTEUR_ENFANT) return true;
+      return monde.getBlock(lm.x + x, base + y, lm.z + z) === BLOCK.AIR;
+    };
     const expose = (x, y, z) => [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]]
-      .some(([dx, dy, dz]) => !solide.has(`${x+dx},${y+dy},${z+dz}`));
+      .some(([dx, dy, dz]) => air(x+dx, y+dy, z+dz));
     // Un CUBE se lit à sa face LATÉRALE : une cellule dont seul le dessus est à
     // l'air est du SOL — le parvis de Notre-Dame, l'esplanade de la tour — et le
     // sol garde très bien sa tuile de trottoir HD. La compter en cube ferait
     // accuser le modèle de ne pas dessiner une dalle qu'il n'a pas à dessiner.
     const cube = (x, y, z) => [[1,0,0],[-1,0,0],[0,0,1],[0,0,-1]]
-      .some(([dx, dy, dz]) => !solide.has(`${x+dx},${y+dy},${z+dz}`));
+      .some(([dx, dy, dz]) => air(x+dx, y+dy, z+dz));
     let exposees = 0, masque = 0, nues = 0, nuesBas = 0, cubes = 0, cubesBas = 0;
     for (const k of masquees) {
       const [x, y, z] = k.split(',').map(Number);

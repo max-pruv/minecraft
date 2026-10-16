@@ -169,7 +169,7 @@ const descendre = async (p, ms) => {
     bouchesNoyees.length === 0 && D.BOUCHES_METRO.length === 20,
     bouchesNoyees.map((b) => b.nom).join(', ') || `${D.BOUCHES_METRO.length} bouches`);
 
-  // --- Les panneaux à lire sur place : la règle, sous node (v455) -----------
+  // --- Les panneaux à lire sur place : la règle, sous node (v460) -----------
   // Une horloge fabriquée : on éprouve « une fois par visite », « jamais en
   // rafale » et « une visite neuve rouvre le panneau » sans dépendre de la
   // cadence du banc. Sur l'ancien code le module n'existe pas : rouge propre.
@@ -746,7 +746,7 @@ const descendre = async (p, ms) => {
     verifier('et des avions sont suspendus au-dessus de la tête',
       suspendus >= 4, `${suspendus} colonnes portent quelque chose en l'air`);
 
-    // --- L'enfant marche jusqu'au Lincoln : le panneau passe, une fois (v455) --
+    // --- L'enfant marche jusqu'au Lincoln : le panneau passe, une fois (v460) --
     // On avance d'un bloc toutes les 120 ms de vraie vie depuis le Mall, on
     // fait les cent pas devant la statue, et l'on relève ce que le bandeau
     // affiche. Les guides comptent en temps réel : la cadence du banc n'y

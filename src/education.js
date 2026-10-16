@@ -1231,7 +1231,7 @@ const DISCOVERY_SETS = {
       ['Combien y a-t-il d\'os dans le corps d\'un adulte ?', '206', ['106', '306', '406']],
     ],
   },
-  // CE QUE WASHINGTON RACONTE (v455) : les mêmes faits que les panneaux de
+  // CE QUE WASHINGTON RACONTE (v460) : les mêmes faits que les panneaux de
   // `guides.js`, vérifiés, sans un chiffre inventé. Un enfant qui a lu le
   // panneau devant le Lincoln retrouve la question dans le quiz.
   washington: {

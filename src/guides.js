@@ -1,4 +1,4 @@
-// LES GUIDES DE WASHINGTON — un panneau à lire sur place (v455).
+// LES GUIDES DE WASHINGTON — un panneau à lire sur place (v460).
 //
 // Ce que la ville raconte vivait dans les commentaires de `washington.js` :
 // pourquoi les avenues coupent la grille en diagonale, pourquoi la ville est

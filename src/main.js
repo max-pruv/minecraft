@@ -8120,7 +8120,7 @@ window.__lumiere = () => ({
 // pour les tests : déclencher la proposition d'alertes sans attendre la minute
 window.__proposerNotifs = proposerNotifs;
 window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
-// Les panneaux à lire sur place : une fois par visite, en temps réel (v455).
+// Les panneaux à lire sur place : une fois par visite, en temps réel (v460).
 const guides = creerGuides({
   dire: (texte) => toast(texte, 0xffe8a3, DUREE_PANNEAU_MS),
   maintenant: () => performance.now(),
@@ -8277,7 +8277,7 @@ function frame(now) {
   fun.update(dt);
   majBoutonsVehicule();
   if (running) majGPS();   // à pied comme au volant (v306)
-  if (running) guides.update(player.pos.x, player.pos.z);   // les panneaux de Washington (v455)
+  if (running) guides.update(player.pos.x, player.pos.z);   // les panneaux de Washington (v460)
   majGPSAmi();             // la proposition d'un ami s'efface seule (v388)
   asseoirLeConducteur(dt);
   effects.update(dt);
