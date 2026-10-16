@@ -284,13 +284,18 @@
   Et `rattraper` (degats3d.js) ne rejoue plus la tôle une fois l'historique
   plein — défaut d'avant, invisible tant que le feu venait au 3e choc.
 
-- [ ] **UN ÉCART QUI FAIT TRAVERSER LA RUE (v402).** Le témoin du feu de
-  `monte.js` l'a publié : un passant sur le trottoir, poussé par l'écart devant
-  une voiture qui tourne, ressort sur le trottoir d'EN FACE (`traversee` nul,
-  `ecart` vrai, 6,5 blocs), au vert. Vu deux fois sur quatre passages de
-  `monte.js` des deux côtés. Piste : un écart ne quitte pas le trottoir s'il
-  peut l'éviter (choisir le côté qui reste sur `TROTTOIR`). Zone piétons.
-- [x] **LONDRES, ROME, ZURICH : AUCUN PASSAGE PEINT (v402) — FAIT (Rome, Zurich en v421 ; Londres, Nice, Lille, San Francisco, Washington en v465, aux croisements des avenues nommées, `passages.js`).** Sur 267 villes
+- [x] **UN ÉCART QUI FAIT TRAVERSER LA RUE (v402) — doublon, réglé en v411,
+  REMESURÉ le 16 octobre 2026 sur la v454.** Le témoin du feu de `monte.js`
+  l'avait publié (un passant poussé par l'écart ressortait sur le trottoir
+  d'EN FACE, `traversee` nul, `ecart` vrai, deux passages sur quatre). Rejoué
+  pour en voir la DISTRIBUTION (règle v269) : `sonde-ecart-trottoir.cjs` trois
+  fois, identique (119 écarts ; ancienne règle 90 descentes et 1 en face,
+  `coteDEcart` 0 et 0, 19 contacts de bordure déclarés plus haut) ; `monte.js`
+  SEULE trois fois : le témoin du feu rend 6 traversées sur 6 au rouge,
+  `poussees: []` et `auVert: 0` les trois fois, et le témoin de la v411
+  (« ne descend pas sur la chaussée ») 0 descendu sur 5 scénarios les trois
+  fois. Rien à corriger.
+- [x] **LONDRES, ROME, ZURICH : AUCUN PASSAGE PEINT (v402) — FAIT (Rome, Zurich en v421 ; Londres, Nice, Lille, San Francisco, Washington en v466, aux croisements des avenues nommées, `passages.js`).** Sur 267 villes
   engendrées, seules les 65 à trame alignée (`t.net`) peignent un passage ;
   Londres n'en peint aucun. Les passants n'y traversent qu'aux feux (Londres 1 à
   3 fois par minute). Peindre un passage en biais demande une géométrie (la
@@ -1102,7 +1107,7 @@
   `origin/main` : aucun « né sur la chaussée », aucun flâneur. Le témoin lit un
   instantané au sortir du témoin précédent ; c'est le palier suivant.
 - [x] **TRAVERSER À LONDRES ET AUX PASSAGES DES VILLES ENGENDRÉES SANS FEU
-  (v371) — FAIT en v465** (`passagePieton` lit `passageEn`, qui couvre les avenues des villes bâties à la main ; témoin `monte.js` à Londres). Reste : Paris garde son marquage dans la tuile ; les places (Trafalgar) n'ont pas de passage, leur sol n'est pas du bitume. Les passages peints sans feu ne sont lus qu'à Paris
+  (v371) — FAIT en v466** (`passagePieton` lit `passageEn`, qui couvre les avenues des villes bâties à la main ; témoin `monte.js` à Londres). Reste : Paris garde son marquage dans la tuile ; les places (Trafalgar) n'ont pas de passage, leur sol n'est pas du bitume. Les passages peints sans feu ne sont lus qu'à Paris
   (`marquageParis`) ; ailleurs on ne traverse qu'au feu. Londres : 1 à 3
   traversées par minute au centre, parce que la plupart des coins n'ont pas de
   feu. À voir : `CITY_BLOCK.CROSSWALK` des villes engendrées.
@@ -2322,9 +2327,14 @@
   (`transport-v298/examples/rail-profile-candidates.json`) creusent jusqu'à
   vingt-deux blocs et ne sont pas approuvés ; une pente réaliste se décide
   avec la mesure des terrassements (le profil est un cône, `PENTE` dans
-  `trains.js`). (2) Sur la mer, la voie est une chaussée au ras des flots (v179),
-  pas un viaduc sur piles : le mécanisme d'ouvrage de l'A1 (tablier en ruban,
-  `tablierEn`) existe et n'est pas branché au rail. (3) Au-delà de
+  `trains.js`). (2) FAIT en v465 : sur l'eau (trois pas au moins sous l'axe), la voie est
+  un viaduc — tablier en ruban à `DEGAGE` (4) blocs au-dessus de la mer, une
+  pile tous les dix blocs, contact par `tablierEn` aux cotes des rails. Ce qui
+  reste : la rampe d'accès relève jusqu'à 1 329 pas de voie À TERRE de deux
+  blocs au plus (à plus de 440 blocs des sanctuaires) — un bloc d'enfant posé
+  sur ce ballast-là avant la v465 serait enfoui d'autant, sans marche de
+  migration ; et la pile est un mur plein de la largeur de la voie, pas deux
+  fûts. (3) Au-delà de
   `DEBLAI_MAX` (13) le talus s'arrête et la paroi reste raide — mesuré, remblai
   19,2 sur Madrid–Barcelone (k 1 804), 15,3 sur Londres–Paris (k 533) ; un
   remblai de dix-neuf blocs est un viaduc dans la vraie vie. (4) La gare reste

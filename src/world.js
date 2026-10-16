@@ -87,7 +87,7 @@ import * as NICE_V340 from './nice-v340.js';
 import * as SF_V343 from './sanfrancisco-v343.js';
 import * as LILLE_V344 from './lille-v344.js';
 import * as WASHINGTON_V367 from './washington-v367.js';
-import { surLaVoie, presDeLaVoie, voieEn, brancherSol, gareEn, rubansVoieDans } from './trains.js';
+import { surLaVoie, presDeLaVoie, voieEn, brancherSol, gareEn, rubansVoieDans, PAS_PILE, EP_TABLIER, EMPRISE } from './trains.js';
 import { routeEn, rubansDans, brancherSol as brancherSolRoutes } from './routes.js';
 
 // LES CALOTTES POLAIRES. Le planisphère déclare « terre » tout ce qui passe
@@ -3028,7 +3028,7 @@ export class World {
     const r = routeEn(x, z);
     if (r) return r;
     const v = voieEn(x, z);
-    return v ? { seg: v.seg, d: v.d, cote: v.cote, piece: v.piece, ouvrage: false, rail: true } : null;
+    return v ? { seg: v.seg, d: v.d, cote: v.cote, piece: v.piece, ouvrage: !!v.ouvrage, rail: true } : null;
   }
   rubansDans(x0, z0, x1, z1) {
     const r = rubansDans(x0, z0, x1, z1), v = rubansVoieDans(x0, z0, x1, z1);
@@ -3037,7 +3037,11 @@ export class World {
   // La cote du tablier d'un pont au-dessus de ce point, ou null.
   tablierEn(x, z) {
     const r = routeEn(x, z);
-    return r && r.ouvrage ? r.cote : null;
+    if (r) return r.ouvrage ? r.cote : null;
+    // le tablier d'un viaduc ferroviaire (v465) : le même plancher, lu aux
+    // mêmes cotes que le ruban qui le dessine
+    const v = voieEn(x, z);
+    return v && v.ouvrage ? v.cote : null;
   }
   // LE TABLIER D'UNE COLONNE ENTIÈRE (v430), pour qui demande « y a-t-il un
   // plancher sur cette colonne ? ». Le générateur décide « pont » au COIN de
@@ -3438,6 +3442,17 @@ export class World {
           // train roule sur le dessus des rails — les quatre lisent la même
           // cote. Plus un bloc d'obsidienne ni de planche sur la voie.
           const y = voie.bloc;
+          if (voie.ouvrage) {
+            // LE VIADUC (v465) : le tablier est un ruban (`rubansVoieDans`) ;
+            // la colonne garde son eau et son lit, et ne reçoit qu'une PILE
+            // tous les `PAS_PILE` blocs, du lit jusque sous le tablier.
+            for (let wy = Math.max(h + 1, WATER_LEVEL + 1); wy <= Math.max(y + 7, h + 2) && wy < HEIGHT; wy++) data[World.index(x, wy, z)] = BLOCK.AIR;
+            if (Math.floor(voie.abs) % PAS_PILE === 0 && voie.d < EMPRISE - 1) {
+              const sommet = Math.floor(voie.cote - EP_TABLIER) - 1;
+              for (let wy = Math.max(0, h + 1); wy <= sommet && wy < HEIGHT; wy++) data[World.index(x, wy, z)] = BLOCK.STONEBRICK;
+            }
+            continue;
+          }
           for (let wy = Math.max(0, Math.min(h, WATER_LEVEL)); wy < y; wy++) {
             if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = BLOCK.STONEBRICK;
           }

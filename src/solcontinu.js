@@ -400,7 +400,9 @@ export function emettreRubans(buf, world, cx, cz, chunk) {
     } else if (r.genre === 'tablier') {
       const EP = 0.8, GARDE = 0.9;
       // le dessus, le dessous
-      quad(buf, [coin(r.o0, r.ya, 0), coin(r.o1, r.ya, 0), coin(r.o0, r.yb, 1), coin(r.o1, r.yb, 1)], BITUME, HAUT, baseX, baseZ);
+      // la peau du dessus : l'asphalte d'une route, le gravier d'un viaduc ferroviaire (v466)
+      const dessus = r.peau === 'gravier' ? BLOCK_INFO[BLOCK.GRAVEL].tiles[0] : BITUME;
+      quad(buf, [coin(r.o0, r.ya, 0), coin(r.o1, r.ya, 0), coin(r.o0, r.yb, 1), coin(r.o1, r.yb, 1)], dessus, HAUT, baseX, baseZ);
       quad(buf, [coin(r.o0, r.ya - EP, 0), coin(r.o1, r.ya - EP, 0), coin(r.o0, r.yb - EP, 1), coin(r.o1, r.yb - EP, 1)], PIERRE, BAS, baseX, baseZ);
       // les deux flancs (de l'épaisseur jusqu'au garde-corps), tournés vers l'extérieur
       // Le comblement d'un coude (routes.js, v336) n'a de garde-corps que du
@@ -429,7 +431,7 @@ export function emettreRubans(buf, world, cx, cz, chunk) {
 // `localGet` lit le morceau lui-même (coordonnées locales) : aucun bloc lu hors
 // du morceau, aucun `getBlock` du monde — le travail d'un morceau (v352) ne
 // bouge pas pour des bandes peintes.
-// `quoi.biais` (v421) et `quoi.villes` (v465, les avenues des villes bâties à
+// `quoi.biais` (v421) et `quoi.villes` (v466, les avenues des villes bâties à
 // la main) se désarment chacun : l'empreinte des 490 morceaux les retire tous
 // deux, et un témoin compare chaque famille à son absence.
 export function emettreBandesPassages(buf, world, cx, cz, chunk, localGet, topY, quoi = { biais: true, villes: true }) {

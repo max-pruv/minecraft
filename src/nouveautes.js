@@ -6,12 +6,20 @@
 
 export const NOUVEAUTES = [
   {
-    v: 465,
+    v: 466,
     titre: 'Des passages piétons à Londres',
     puces: [
       'Des zébras aux carrefours de Londres',
       'Aussi à Nice, Lille, San Francisco, Washington',
       'Les passants traversent dessus',
+    ],
+  },
+  {
+    v: 465,
+    titre: 'Le train passe sur un pont',
+    puces: [
+      'Sur la mer, le train roule sur un viaduc',
+      'On voit l\'eau passer sous les rails',
     ],
   },
   {

@@ -2819,7 +2819,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       JSON.stringify(res));
   }
 
-  // ET LES AVENUES DES VILLES BÂTIES À LA MAIN (v465). Londres, Nice, Lille,
+  // ET LES AVENUES DES VILLES BÂTIES À LA MAIN (v466). Londres, Nice, Lille,
   // San Francisco et Washington n'ont pas de trame : leurs passages se posent
   // aux croisements de leurs avenues nommées (`carrefoursDeVoies`), en
   // géométrie. Quarante-neuf morceaux au centre de chaque ville, avec et sans
@@ -3196,8 +3196,79 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         continu && pas === 400 && sansRail === 0 && obs === 0 && planches === 0,
         `${pas} pas, ${sansRail} sans ses quatre files de prismes · ${obs} obsidienne, ${planches} planche(s) sur ${colonnes} colonnes`);
       verifier('le sol continu suit le profil de la voie, dans la tranchée comme sur le remblai',
-        continu && colonnes > 3000 && talus > 200 && surface >= colonnes * 0.85 && ecartSurf < 1e-6 && tranchee > 200 && tranchJuste === tranchee,
+        // `tranchee > 100` est une borne de GARDE (la mesure a eu lieu), posée
+        // à la moitié : la rampe du viaduc (v466) relève la voie de deux blocs
+        // au plus avant une rivière, et une tranchée de deux blocs y devient une
+        // tranchée d'un bloc — 240 → 170 colonnes dans cette fenêtre, mesuré.
+        continu && colonnes > 3000 && talus > 200 && surface >= colonnes * 0.85 && ecartSurf < 1e-6 && tranchee > 100 && tranchJuste === tranchee,
         `${surface} colonnes de surface sur ${colonnes} (${talus} de talus), écart max à la cote ${ecartSurf.toFixed(4)} · en tranchée ou remblai de deux blocs et plus : ${tranchJuste}/${tranchee}, et ${falaise} au bord d'une falaise (${((performance.now() - t0) / 1000).toFixed(1)} s)`);
+    }
+
+    // LE VIADUC DE LA MANCHE (v466). Sur l'eau, la voie était une chaussée de
+    // pierre au ras des flots : de la mer à droite et à gauche, une digue
+    // dessous, chaque rivière barrée d'un mur. Le viaduc garde l'eau sous le
+    // tablier (des piles tous les `PAS_PILE` blocs), le tablier est un ruban
+    // du mailleur à `DEGAGE` blocs au-dessus de la surface, et le CONTACT lit
+    // la même cote que le dessin (v302, v430). On marche l'Eurostar sur la
+    // Manche, colonne par colonne. Sur l'ancien code : zéro colonne d'eau sous
+    // la voie (une digue de pierre de la mer au ballast), aucun tablier, et
+    // les gares restent où elles sont des deux côtés.
+    {
+      let T = null; try { T = await import('../src/trains.js'); } catch { /* le témoin le dit */ }
+      const { BLOCK } = await import('../src/blocks.js');
+      const t0 = performance.now();
+      const seg = T.segmentsDeTrain().find((q) => q.de === 'londres' && q.vers === 'paris');
+      const L = seg.longueur, ux = (seg.x1 - seg.x0) / L, uz = (seg.z1 - seg.z0) / L, nx = -uz, nz = ux;
+      const neuf = !!(T.viaducs && T.surViaduc);
+      let colonnes = 0, eau = 0, digue = 0, piles = 0, pas = 0, sansTablier = 0, sansContact = 0, ecartContact = 0, bas = Infinity;
+      for (let k = 290; k < 530; k++) {
+        const ax = seg.x0 + ux * k, az = seg.z0 + uz * k;
+        if (w.terrainHeight(Math.round(ax), Math.round(az)) >= 30) continue;   // un îlot : pas la mer
+        pas++;
+        const cote = T.coteContinue(seg, k / L);
+        bas = Math.min(bas, cote);
+        if (!neuf || !T.surViaduc(seg, k, L)) sansTablier++;
+        const tab = neuf ? w.tablierSousLePoint(ax + ux * 0.5, az + uz * 0.5) : null;
+        if (tab === null) sansContact++;
+        else ecartContact = Math.max(ecartContact, Math.abs(tab - T.coteContinue(seg, (k + 0.5) / L)));
+        for (let o = -3; o <= 3; o++) {
+          const x = Math.round(ax + nx * o), z = Math.round(az + nz * o);
+          const h = w.terrainHeight(x, z);
+          if (h >= 30) continue;
+          colonnes++;
+          let pierre = 0, flots = 0;
+          for (let y = h + 1; y <= 30; y++) {
+            const id = w.getBlock(x, y, z);
+            if (id === BLOCK.WATER) flots++; else if (id === BLOCK.STONEBRICK || id === BLOCK.GRAVEL) pierre++;
+          }
+          if (flots === 30 - h) eau++;
+          else if (pierre === 30 - h) { if (w.getBlock(x, 31, z) === BLOCK.STONEBRICK || w.getBlock(x, 31, z) === BLOCK.GRAVEL) piles++; else digue++; }
+          else digue++;
+        }
+      }
+      verifier('l\'Eurostar passe la Manche sur un viaduc : la mer sous le tablier, des piles, aucune digue',
+        neuf && pas > 150 && colonnes > 1000 && eau > colonnes * 0.8 && piles > 0 && digue === 0 && bas >= 31 + T.DEGAGE - 1e-6,
+        `${pas} pas sur la mer · ${colonnes} colonnes : ${eau} d'eau libre, ${piles} de pile, ${digue} autres · tablier au plus bas à ${bas.toFixed(2)} (surface 31)${neuf ? '' : ' — pas de viaduc (code d\'avant la v466)'}`);
+      verifier('le tablier du viaduc se dessine et porte l\'enfant aux mêmes cotes que les rails',
+        neuf && pas > 150 && sansTablier === 0 && sansContact === 0 && ecartContact < 1e-6,
+        `${sansTablier} pas sans ruban de tablier, ${sansContact} sans contact sur ${pas}, écart contact/rail ${ecartContact.toFixed(4)} (${((performance.now() - t0) / 1000).toFixed(1)} s)`);
+      // LES GARES NE BOUGENT PAS : relever la voie sur l'eau ne remonte le
+      // profil que d'un tiers de bloc par bloc, et rien ne se relève à moins
+      // de `GARDE_GARE` pas d'un bout. Un bloc d'enfant posé sur un quai reste
+      // sur son quai. On compare le profil à celui de la chaussée d'avant
+      // (`viaducs(false)`), segment par segment.
+      if (neuf) {
+        let gares = 0, bougees = 0, terre = 0, maxTerre = 0;
+        for (const s of T.segmentsDeTrain()) {
+          T.viaducs(false); const a = T.profilDe(s).slice(); T.viaducs(true); const b = T.profilDe(s);
+          const n = a.length - 1;
+          for (const k of [0, n]) { gares++; if (Math.abs(a[k] - b[k]) > 1e-9) bougees++; }
+          for (let k = 0; k <= n; k++) if (!b.viaduc[k] && Math.abs(a[k] - b[k]) > 1e-9) { terre++; maxTerre = Math.max(maxTerre, Math.abs(a[k] - b[k])); }
+        }
+        verifier('relever la voie sur l\'eau ne bouge aucune gare, et la rampe à terre reste sous deux blocs',
+          gares === 18 && bougees === 0 && maxTerre <= 2 + 1e-9,
+          `${bougees} gare(s) déplacée(s) sur ${gares} · ${terre} pas de rampe à terre, au plus ${maxTerre.toFixed(2)} bloc`);
+      }
     }
   }
 
