@@ -706,6 +706,38 @@ function buildRoueDuPrater(poser) {
   poser(0, C, 0, ACIER);
 }
 
+// La High Roller (v459) : 167 m de haut pour 158 de diamètre, la plus haute
+// roue du monde — et `buildGrandeRoue` (seize blocs) passait sous la demi-tour
+// Eiffel (165 m). Une roue ne s'étire pas : celle-ci a le plus grand rayon que
+// tient la boîte de son repère (neuf, comme le Prater), sa jante à dix blocs du
+// sol au-dessus de sa gare d'embarquement (la vraie passe à huit mètres et demi
+// sur la sienne), ses rayons, ses deux chevalets, et ses cabines de verre. Son
+// sommet (vingt-huit) est celui que la demi-tour Eiffel ne dépasse pas dans le
+// ciel de Las Vegas (`CIELS`, echelle-monuments.js).
+function buildHighRoller(poser) {
+  const R = 9, C = R + 10;
+  for (let x = -3; x <= 3; x++) for (let z = -3; z <= 3; z++) {
+    if (Math.abs(x) < 3 && Math.abs(z) < 3) continue;
+    for (let y = 1; y <= 3; y++) poser(x, y, z, y === 2 ? VERRE : BLANC);
+  }
+  for (let x = -3; x <= 3; x++) for (let z = -3; z <= 3; z++) poser(x, 4, z, BLANC);
+  for (let a = 0; a < 360; a += 4) {
+    const r = (a * Math.PI) / 180;
+    const y = C + Math.round(Math.sin(r) * R), z = Math.round(Math.cos(r) * R);
+    poser(0, y, z, BLANC);
+    if (a % 24 === 0) { poser(1, y - 1, z, VERRE); poser(-1, y - 1, z, VERRE); }
+  }
+  for (let a = 0; a < 360; a += 30) {
+    const r = (a * Math.PI) / 180;
+    for (let k = 1; k < R; k++) poser(0, C + Math.round(Math.sin(r) * k), Math.round(Math.cos(r) * k), ACIER);
+  }
+  for (const x of [-1, 1]) for (let y = 5; y <= C; y++) {
+    const e = Math.round((C - y) * 0.3);
+    poser(x, y, -e, BLANC); poser(x, y, e, BLANC);
+  }
+  poser(0, C, 0, ACIER);
+}
+
 // La halle de Pike Place et son enseigne rouge.
 function buildPikePlace(poser) {
   for (let dz = -4; dz <= 4; dz++) {
@@ -1384,20 +1416,47 @@ function buildHotelDeVilleToronto(poser) {
 // hauteur de ses voisins, sous le Colisée) — son
 // oculus ouvert au ciel, et le portique de seize colonnes au nord, sous son
 // fronton. Le gabarit en faisait une coupole sur tambour, sans portique.
+//
+// ET IL SE VISITE (v458) : c'est le premier monument qu'on traverse hors de
+// Paris et de Londres. La rotonde est CREUSE — un mur d'un bloc, la coupole
+// une coque, l'oculus de trois blocs ouvert sur le ciel —, le portique est
+// AU NIVEAU DE LA PLACE (y = 0, plus de marche) et la porte de bronze, trois
+// blocs sur trois, s'ouvre dans l'axe, entre les deux colonnes du milieu. Au
+// fond, face à la porte, l'autel et sa niche dorée ; aux murs, quatre
+// édicules ; au centre, sous l'oculus, rien : c'est là qu'on lève la tête.
+// Du mobilier en BLOCS (v330), et la silhouette, la boîte et la hauteur sont
+// celles d'avant au bloc près : seul l'intérieur change.
 function buildPantheonRome(poser) {
-  tambour(poser, 1, 5, 4, CREME, PIERRE);
+  const AIR = BLOCK.AIR;
+  const R = 4;
+  // la rotonde : le mur au pourtour, l'air dedans, le dallage de marbre
+  for (let x = -R; x <= R; x++) for (let z = -R; z <= R; z++) {
+    const d = Math.hypot(x, z);
+    if (d > R + 0.35) continue;
+    const mur = d > R - 0.65;
+    if (!mur) poser(x, 0, z, ((x + z) & 1) ? BLANC : PIERRE);
+    for (let y = 1; y <= 5; y++) poser(x, y, z, mur ? (((x + z) & 1) === 0 ? PIERRE : CREME) : AIR);
+  }
+  // la coupole : une coque, et l'oculus au sommet
   for (let k = 0; k < 5; k++) {
     const rr = 4.35 * Math.sqrt(1 - ((k + 0.5) / 5.5) ** 2);
     for (let x = -4; x <= 4; x++) for (let z = -4; z <= 4; z++) {
       const d = Math.hypot(x, z);
-      if (d > rr + 0.2 || (k === 4 && d < 0.8)) continue;
-      poser(x, 6 + k, z, PIERRE);
+      if (d > rr + 0.2) continue;
+      const coque = d > rr - 1 && !(k === 4 && d < 1.5);
+      poser(x, 6 + k, z, coque ? PIERRE : AIR);
     }
   }
-  plein(poser, 1, -3, 3, -6, -5, PIERRE);
-  for (const x of [-3, -1, 1, 3]) for (let y = 2; y <= 5; y++) { poser(x, y, -6, BLANC); poser(x, y, -5, BLANC); }
+  // le portique, de plain-pied avec la place
+  plein(poser, 0, -3, 3, -6, -5, PIERRE);
+  for (const x of [-3, -1, 1, 3]) for (let y = 1; y <= 5; y++) { poser(x, y, -6, BLANC); poser(x, y, -5, BLANC); }
   plein(poser, 6, -3, 3, -6, -5, CREME);
   plein(poser, 7, -1, 1, -6, -5, CREME);
+  // la porte, dans l'axe
+  for (let x = -1; x <= 1; x++) for (let y = 1; y <= 3; y++) poser(x, y, -4, AIR);
+  // l'autel au fond, sa niche dorée ; quatre édicules aux murs
+  poser(0, 1, 3, BLANC); poser(0, 2, 3, OR);
+  for (const [x, z] of [[-3, -1], [3, -1], [-3, 1], [3, 1]]) poser(x, 1, z, BLANC);
 }
 
 // Le dôme du Rocher : l'octogone revêtu de faïence bleue, son tambour, et la
@@ -1515,6 +1574,10 @@ function buildTajPalace(poser) {
 // couches, sinon chaque couche répétée redessine une fenêtre, et le palais
 // devient une tour de bureaux (vu en capture à Madrid).
 const BANDES = [ARCHI.ETAGE_BAS, ARCHI.ETAGE_MI, ARCHI.ETAGE_HAUT];
+// La baie de deux blocs rejouée (v457) : `bandes: false` rend les deux `ETAGE`
+// empilés d'avant, au bit près — c'est ce que lit l'empreinte des 490 morceaux
+// pour prouver que rien d'autre n'a bougé. Jamais un réglage du jeu.
+export const reglageBaies = { bandes: true };
 function facadeEtages(poser, x0, x1, z0, z1, y0, y1, mur) {
   for (let x = x0; x <= x1; x++) for (let z = z0; z <= z1; z++) {
     const bord = x === x0 || x === x1 || z === z0 || z === z1;
@@ -2625,7 +2688,7 @@ const FICHES = {
           }
         }
       } },
-      { nom: 'La High Roller', lat: 36.1173, lon: -115.1685, box: 9, build: buildGrandeRoue },
+      { nom: 'La High Roller', lat: 36.1173, lon: -115.1685, box: 9, build: buildGrandeRoue, tour: buildHighRoller },
       { nom: 'La demi-tour Eiffel', lat: 36.1125, lon: -115.1707, box: 4, build: tourBoule(16, [], ACIER, ACIER), tour: buildDemiEiffel },
     ],
     lieux: [['Le Strip', 36.1147, -115.1728]],
@@ -3651,6 +3714,22 @@ export function batirColonneVillesMonde(x, z, poser) {
           continue;
         }
         const yy = (y - 3) % 3;
+        // UNE BAIE, PAS DEUX (v457). Les deux rangs de la baie étaient deux
+        // blocs `ETAGE`, et chacun porte une fenêtre entière : la tuile plate
+        // comme la couche HD dessinaient deux fenêtres l'une sur l'autre par
+        // étage — 38 719 piles mesurées sur 98 187 lots (une colonne sur
+        // trois), dans 259 villes sur 269. Paris a la réponse depuis la v301 :
+        // un niveau est trois BANDES qui se raccordent — l'allège et son appui,
+        // le bas de la baie, son haut et le linteau. La FORME ne change pas
+        // (les bandes sont aussi pleines que l'ETAGE et le mur qu'elles
+        // remplacent), seul le dessin change : un bloc posé contre la façade
+        // reste devant la même surface — le témoin de plafond.js le prouve
+        // bloc à bloc, et c'est pour cela que la ville d'avant n'a pas à se
+        // figer (`VILLES_FIGEES` garde des rues qui bougent, pas des dessins).
+        if (fen && baie === ARCHI.ETAGE && reglageBaies.bandes) {
+          poser(y + 1, BANDES[yy]);
+          continue;
+        }
         // l'allège du plancher, puis les deux rangs de la baie : le dessin de
         // la fenêtre porte son propre encadrement, le mur fait le reste
         if (yy === 0) { poser(y + 1, mur); continue; }

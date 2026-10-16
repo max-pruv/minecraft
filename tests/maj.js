@@ -334,7 +334,7 @@ function verifier(nom, ok, detail = '') {
       verifier('et le jeu se relance normalement après', rejouable);
     }
 
-    // UNE MISE À JOUR N'EST PAS UN PLANTAGE (v455). La page qui part disait au
+    // UNE MISE À JOUR N'EST PAS UN PLANTAGE (v462). La page qui part disait au
     // revoir (`fermer('mise-a-jour')`), puis un `visibilitychange` pendant le
     // déchargement la ROUVRAIT : sa ligne restait, la page neuve la jugeait
     // douteuse puis morte à 7 s. Deux mises à jour, et le disjoncteur de sûreté
