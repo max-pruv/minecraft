@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v450 — On se retrouve par le nuage du premier coup
+## v455 — On se retrouve par le nuage du premier coup
 
 **Pourquoi.** Quand le jeu à plusieurs passe par le nuage (pas de courtier,
 Wi-Fi d'hôtel, d'école), un enfant qui rejoignait le monde d'un autre lisait
@@ -54,6 +54,153 @@ immobile ; désarmé (fond d'un seul tenant), 1 988 ms. Le feu :
 `sonde-rue-feu.cjs` — pire perte 14 à 38 b/s², toujours une voiture de file
 (`1×file<feu`) ; témoin rouge, dette en tête de `TASKS.md`. Le vol au-dessus
 de Paris, vert seul depuis la v440 (252 blocs en 12,8 s), dit sa cadence.
+## v454 — Les garde-corps des petites fenêtres ont leurs anneaux entiers
+
+**Pourquoi.** Le motif de fer forgé d'un garde-corps est fait pour une travée
+de façade : un barreau tous les seize pixels et un anneau entre deux. Sur les
+baies étroites (le Marais, Montmartre, la Cité : 0,28 à 0,32 bloc de large),
+le motif était tiré en coordonnées de bloc et coupait ses anneaux en arcs :
+le garde-corps se lisait comme un glyphe, pas comme une grille. Mesuré dans
+neuf morceaux de trois quartiers : 1 212 garde-corps de baie, 1 212 coupés.
+C'était la dette déclarée en v288.
+
+**Ce que ça change.** Un garde-corps plus étroit que le bloc tient un nombre
+entier de travées, du barreau au barreau (deux au moins), un peu étirées.
+Le balcon filant d'un bloc entier garde son motif, qui se raccorde d'une
+fenêtre à l'autre. Rien ne change au palier bas : le fer n'existe que dans la
+couche détaillée.
+
+**Ce qui le prouve.** Un témoin neuf de `parishd.js` lit tous les quads de fer
+plus étroits que le bloc dans neuf morceaux : 1 212 lus, 0 coupés (1 212 sur
+`origin/main` : rouge). L'empreinte des 490 morceaux change (`9c35eeb6…`) ;
+désarmée (`ferronnerieEntiere: false`), elle rend la constante d'avant
+(`fb4f9aed…`, celle de `plafond.js`) au bit près.
+
+---
+
+## v453 — La rue sans à-coups
+
+**Pourquoi.** Quatre défauts de la circulation, mesurés avant d'écrire. Les
+autoroutes entraient encore dans la voie d'un circuit dans les villes bâties à
+la main (l'A1 à Lille, 47 blocs dans la file de la rue de Paris) : la v442
+n'avait mesuré que les villes engendrées. Le bus du grand anneau roulait à
+mi-temps entre deux voitures de sa file : la grille seule les mettait au
+contact (36 004 relevés sur 263 anneaux), et tout l'anneau renonçait pour lui
+à l'allure propre de chaque voiture (v438). Un circuit calculait sa jumelle
+et ses voies d'un seul tenant au moment de naître, 15 à 34 ms dans une
+image. Et au feu, une voiture de la file pilait encore : rattrapée par le
+plancher de sa file, elle passait de 3,7 blocs par seconde à l'arrêt en une
+image (5 arrêts secs sur 9 au-dessus de Paris).
+
+**Ce que ça change.** Dans les cinq villes bâties à la main, les voitures de
+l'autoroute font demi-tour avant la voie d'un circuit. Le bus prend la place
+d'une voiture de son anneau : il ne touche plus personne, et les voitures de
+tous les anneaux gardent chacune leur allure (4 380 → 4 125 voitures). Un
+circuit se prépare par petites tranches, quelques millisecondes par image,
+puis naît d'un coup avec son bus. Et dans la file d'un feu, une voiture
+freine pour s'arrêter derrière celle de devant au lieu d'y être recollée.
+
+**Ce qui le prouve.** `sonde-rue-dense.cjs`, rejouée par `plafond.js` :
+raccords 633 → 26 blocs partagés (les cinq demi-tours qui restent sont
+déclarés), la table recalculée sans un écart ; bus 36 004 → 0 contacts, 263
+anneaux sur 263 qui jouent ; 56 circuits fabriqués par tranches identiques au
+bit près au calcul d'un seul tenant (voitures, jumelle, grille, voies), en 4
+à 12 étapes, la plus longue 4,5 ms. `sonde-feu-image.cjs` : arrêts secs au
+feu 5 sur 9 sur `origin/main`, 1 sur 17 ici. Deux témoins repointés : le feu
+de `monte.js` se juge sur toute la descente (une voiture arrêtée par
+l'urgence n'a pas freiné pour un feu), et le choc de `degats.js` prend
+vingt-six blocs d'élan au lieu de les trouver.
+
+---
+
+## v452 — ✈️ va chercher la piste
+
+**Pourquoi.** Max : « améliore la séquence d'atterrissage parce que l'avion
+est compliqué à gérer ». En vol, ✈️ « Se poser » posait l'appareil LÀ OÙ IL
+ÉTAIT : dans un champ, sur une colline, en ville. Rejoindre une piste
+demandait de la trouver soi-même, de s'aligner à la main sur une bande de huit
+blocs vue de cent blocs de haut, et de descendre au bon moment — trois gestes
+qu'un enfant de sept ans ne fait pas.
+
+**Ce que ça change.** En vol, ✈️ choisit la piste la plus proche (dans un
+rayon de 2 600 blocs, assez longue pour cet appareil), s'en éloigne pour
+revenir dans l'axe, descend sur un plan régulier, sort le train, arrondit, se
+pose et freine jusqu'à l'arrêt. Le cadran de cap affiche la piste visée et sa
+distance. Le joystick corrige à tout moment ; un second appui sur ✈️ pendant
+l'approche remet les gaz et repart. S'il n'y a aucune piste à portée, l'avion
+se pose sur place comme avant, et le jeu montre l'aéroport le plus proche
+pour la fois suivante. Si l'approche est manquée (trop long, trop de
+travers), l'avion remet les gaz tout seul et refait un tour ; au deuxième
+tour raté, il change de piste.
+
+**Ce qui le prouve.** Une sonde sous node (`tests/sonde-approche.cjs`)
+rejoue l'approche assistée sur les trente et une pistes, avec les trois
+appareils et quatre points de départ : 148 approches, toutes arrêtées avant
+le bout de la piste, aucune remise des gaz ; trois touchent un peu fort (six à
+sept blocs par seconde) et le Concorde à Los Angeles touche au seuil même, un
+demi-bloc trop tôt — déclaré dans `TASKS.md` ; un témoin de `monte.js` fait poser par
+✈️ un chasseur et un avion de ligne sur deux pistes depuis un départ de
+travers, et exige le toucher et l'arrêt sur la bande.
+
+---
+
+## v451 — Le train voit la voiture de l'enfant, même quand le jeu rame
+
+**Pourquoi.** Un train traversait la voiture de l'enfant posée sur la voie,
+chaque fois qu'une image était lente — sur la tablette, ce sont les images de
+l'arrivée dans une ville. La rame roule en temps réel (v305) mais ne regardait
+que 3,5 blocs devant sa motrice : à quinze blocs par seconde, une image d'un
+quart de seconde la faisait passer d'« assez loin » à « déjà dedans », et une
+rame déjà dedans continue (v245). La session des intermittents l'avait trouvé
+et déclaré (témoin de `monte.js` laissé rouge). Les voitures de la rue avaient
+la même faille, en plus petit : leur marge d'urgence devant une personne
+valait une image à trois par seconde, pas l'image en cours.
+
+**Ce que ça change.** La rame regarde aussi loin qu'elle va rouler dans
+l'image (sa grille dit exactement où elle sera), plus la marge d'avant : ce
+qui est sur son chemin est vu avant d'y être, quelle que soit la cadence, et
+elle s'arrête devant la voiture (ou l'enfant à pied) au lieu de la traverser.
+Le métro, qui partage ce code, en profite aussi. Les voitures de la rue
+ajoutent à leur regard et à leur marge d'urgence ce qu'elles parcourent dans
+l'image au-delà d'un tiers de seconde ; sous ce tiers de seconde, la règle
+d'avant au bit près. La grille horaire partagée entre tablettes (v305) ne
+change pas : l'arrêt devant l'enfant reste local, comme avant.
+
+**Ce qui le prouve.** Images lentes PROVOQUÉES (700 ms brûlées par image,
+`sonde-train-voiture.cjs LENT=700`) : `origin/main` 5 traversées sur 5,
+branche 0 sur 5, branche au regard fixe d'avant (`regardRameFixe`) 2 sur 3 ;
+au repos, 0 sur 7 des deux côtés. Le témoin « un train s'arrête devant la
+voiture de l'enfant » de `monte.js` provoque désormais ces images lentes au
+lieu d'attendre la charge du portail. Voitures de la rue
+(`sonde-voiture-lente.cjs`, le passage du témoin de `monte.js` recopié) :
+branche 0 traversée sur 4 poses, `origin/main` 1 sur 7 (et trois poses où
+une voiture était déjà dedans au départ) — un tirage, pas une preuve : leur
+regard portait déjà quarante blocs. Ce volet se juge sur sa construction (la
+marge couvre l'avance de l'image), et il est déclaré comme tel.
+## v450 — Le Colisée ne change plus, Édimbourg en pierre grise
+
+**Pourquoi.** Trois façades qui mentaient. Le Colisée du catalogue tirait ses
+gradins effondrés à `Math.random()` : deux lancements bâtissaient deux Colisées
+(173 blocs de Rome), et le worker de maillage en bâtissait un autre que le fil
+principal — on pouvait se cogner à des gradins qu'on ne voyait pas, ou traverser
+ceux qu'on voyait. Édimbourg portait la brique rouge de Manchester, quand la
+vraie ville est de grès gris. Et à Sydney, la fiche `baie` (la géographie du
+port) était lue comme le bloc des fenêtres : 250 fenêtres étaient des trous.
+
+**Ce que ça change.** Le Colisée est le même à chaque lancement, sur chaque
+tablette, dans ce qu'on voit comme dans ce qu'on touche : un tirage par bloc,
+même règle (six sur dix tombent), même zone — un des Colisées que l'ancien
+tirage pouvait rendre. Édimbourg est grise et blonde (gris, gris clair, kaki de
+la palette de décor), ses souches de cheminée en pierre sombre. Les fenêtres de Sydney sont des fenêtres.
+
+**Ce qui le prouve.** Une sonde a engendré les 763 repères du monde (aujourd'hui
+et d'avant la v306) sous deux graines de `Math.random` : seul le Colisée
+changeait — c'était la seule source de hasard dans un bâtisseur. Quatre témoins
+dans `plafond.js`, rouges sur `origin/main` : deux fils neufs sous deux graines
+bâtissent les mêmes 763 repères ; le fil principal et le worker le même
+Colisée ; Édimbourg 3 036 blocs de grès et 0 de brique rouge (0 et 2 263
+avant, souches de cheminée comprises) ; Sydney 0 baie qui ne soit pas un bloc (250 avant). L'empreinte des 490
+morceaux ne bouge pas : aucun de ces trois lieux n'y est.
 
 ---
 

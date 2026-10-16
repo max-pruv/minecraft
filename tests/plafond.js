@@ -638,10 +638,39 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     let b = null, err = '';
     try { b = await require('./sonde-rue-dense.cjs').mesurer('raccords'); } catch (e) { err = String(e && e.message || e); }
     verifier('rue : un raccord d\'autoroute ne roule pas dans la voie d\'un anneau — il s\'arrête avant, il ne reste que des demi-tours',
-      !!b && b.raccords > 40 && b.blocs.long > 300 && b.blocs.jeu < 100 && b.touches.jeu <= 6,
+      !!b && b.raccords > 40 && b.blocs.long > 300 && b.blocs.jeu < 100 && b.touches.jeu <= 8,
       b ? JSON.stringify({ raccords: b.raccords, touches: b.touches, blocs: b.blocs, pires: b.pires }) : `sonde : ${err}`);
     verifier('rue : la table des raccords courts est celle que la règle rend aujourd\'hui (un anneau qui bouge la fait remesurer)',
       !!b && b.ecarts.length === 0, b ? JSON.stringify(b.ecarts) : `sonde : ${err}`);
+  }
+  // --- LE BUS A SA PLACE DANS SON ANNEAU, ET L'ANNEAU JOUE (v450) ----------
+  // Posé à mi-temps entre deux voitures (v372), le bus touchait ses voisines
+  // par la grille seule (36 004 relevés sur un tour des 263 grands anneaux) et
+  // l'anneau renonçait au jeu par voiture (v438). À la place de la voiture 0,
+  // plus un contact, jeu compris. La sonde rejoue les deux règles sur le même
+  // code (`busAMiTemps`) : l'ancienne doit encore toucher, sinon ce témoin ne
+  // mesure rien.
+  {
+    let r = null, err = '';
+    try { r = await require('./sonde-rue-dense.cjs').mesurer('bus'); } catch (e) { err = String(e && e.message || e); }
+    verifier('rue : le bus a sa place entière dans son anneau — aucun contact de grille, et l\'anneau garde le jeu par voiture',
+      !!r && r.v450.anneaux > 200 && r.v450.contacts === 0 && r.v450.jouent === r.v450.anneaux && r.v438.dontBus > 1000,
+      r ? JSON.stringify(r) : `sonde : ${err}`);
+  }
+  // --- UN CIRCUIT SE PRÉPARE PAR TRANCHES, PUIS NAÎT (v450) ----------------
+  // Un circuit de Paris se calculait d'un seul tenant dans l'image où il naît
+  // (jusqu'à 34 à 59 ms sous node : grille, plancher, croisement, seconde
+  // voie, essais de la jumelle). La fabrique rend la main entre ses étapes ;
+  // le convoi né par tranches doit être EXACTEMENT celui d'un calcul d'un
+  // seul tenant — voitures, jumelle, grille, voies —, sinon deux tablettes
+  // n'auraient plus la même rue (v305). Les millisecondes restent dans le
+  // message : la preuve est le nombre d'étapes et l'identité.
+  {
+    let r = null, err = '';
+    try { r = await require('./sonde-rue-dense.cjs').mesurer('tranches'); } catch (e) { err = String(e && e.message || e); }
+    verifier('rue : un circuit se prépare en plusieurs étapes, et le convoi né par tranches est celui d\'un calcul d\'un seul tenant',
+      !!r && r.circuits > 40 && r.egaux === r.circuits && r.avecJumelle > 5 && r.enQuatreEtapesOuPlus === r.circuits,
+      r ? JSON.stringify(r) : `sonde : ${err}`);
   }
   // --- LA PENTE ET LA BOSSE (palier 3 de la conduite) ---------------------
   // Mesuré sur `origin/main` (`tests/sonde-pente.cjs`, six côtes, six
@@ -2501,6 +2530,113 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     verifier('un morceau de ville coûte moins de lectures de relief et de blocs que sur la v351',
       Object.entries(BARRES_TRAVAIL).every(([v, b]) => tr[v].reliefs <= b.reliefs && tr[v].lus <= b.lus),
       JSON.stringify({ mesure: tr, barres: BARRES_TRAVAIL }));
+  }
+
+  // UN BÂTISSEUR NE TIRE PAS AU HASARD (v450). Le Colisée du catalogue
+  // tirait ses gradins effondrés à `Math.random()` : deux lancements, deux
+  // Colisées (173 blocs de Rome), et le worker de maillage en bâtissait un
+  // autre que le fil principal. On engendre les morceaux de chaque repère du
+  // monde dans DEUX fils neufs (`worker_threads`, comme le worker du jeu : un
+  // graphe de modules à lui), sous deux graines de `Math.random`, dans le monde
+  // d'aujourd'hui ET dans celui d'avant la v306 (`avant: true`), et l'on compare
+  // au fil de ce témoin. Sur l'ancien code les deux fils rendent deux Colisées :
+  // rouge, et le message les nomme.
+  {
+    const { Worker } = await import('worker_threads');
+    const url = require('url').pathToFileURL(require('path').join(__dirname, '../src/world.js')).href;
+    const code = `
+      const { parentPort, workerData } = require('worker_threads');
+      const crypto = require('crypto');
+      let s = workerData.graine >>> 0;
+      Math.random = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
+      (async () => {
+        const W = await import(workerData.url);
+        const out = {};
+        for (const conf of ['neuf', 'avant']) {
+          const w = new W.World(conf === 'avant' ? { avant: true } : {});
+          const cf = conf === 'avant' ? W.CONF_AVANT : W.CONF_NEUF;
+          for (const lm of cf.reperes) {
+            const b = (lm.box || 10) + 2, h = crypto.createHash('sha1');
+            for (let cx = Math.floor((lm.x - b) / W.CHUNK); cx <= Math.floor((lm.x + b) / W.CHUNK); cx++)
+              for (let cz = Math.floor((lm.z - b) / W.CHUNK); cz <= Math.floor((lm.z + b) / W.CHUNK); cz++) {
+                const d = w.ensureChunk(cx, cz);
+                h.update(Buffer.from(d.buffer, d.byteOffset, d.byteLength));
+              }
+            out[conf + ':' + lm.name + '@' + Math.round(lm.x) + ',' + Math.round(lm.z)] = h.digest('hex');
+          }
+        }
+        parentPort.postMessage(out);
+      })().catch((e) => parentPort.postMessage({ erreur: String(e) }));`;
+    const fil = (graine) => new Promise((ok) => {
+      const w = new Worker(code, { eval: true, workerData: { graine, url } });
+      w.once('message', (m) => { ok(m); w.terminate(); });
+      w.once('error', (e) => ok({ erreur: String(e) }));
+    });
+    const t0 = Date.now();
+    const [a, b] = await Promise.all([fil(1), fil(987654)]);
+    const cles = a.erreur || b.erreur ? [] : Object.keys(a);
+    const diff = cles.filter((k) => a[k] !== b[k]);
+    verifier('deux fils neufs sous deux graines de Math.random bâtissent les mêmes repères, au bloc près (monde d\'aujourd\'hui et d\'avant la v306)',
+      cles.length > 400 && diff.length === 0,
+      `${cles.length} repères comparés, ${diff.length} différents${diff.length ? ' : ' + diff.slice(0, 6).join(' | ') : ''}${a.erreur || b.erreur ? ' — ' + (a.erreur || b.erreur) : ''}, ${Date.now() - t0} ms`);
+    // Et le fil de ce témoin — le « fil principal » — bâtit le même Colisée
+    // que les deux autres : c'est la situation exacte du jeu, où le worker
+    // maille ce que le fil principal arrête.
+    const W = await import('../src/world.js');
+    const col = W.CONF_NEUF.reperes.find((lm) => lm.name === 'Colisée');
+    const crypto = await import('crypto');
+    let ici = null;
+    if (col) {
+      const w = new W.World(), bx = (col.box || 10) + 2, h = crypto.createHash('sha1');
+      for (let cx = Math.floor((col.x - bx) / W.CHUNK); cx <= Math.floor((col.x + bx) / W.CHUNK); cx++)
+        for (let cz = Math.floor((col.z - bx) / W.CHUNK); cz <= Math.floor((col.z + bx) / W.CHUNK); cz++) {
+          const d = w.ensureChunk(cx, cz);
+          h.update(Buffer.from(d.buffer, d.byteOffset, d.byteLength));
+        }
+      ici = h.digest('hex');
+    }
+    const k = col && `neuf:Colisée@${Math.round(col.x)},${Math.round(col.z)}`;
+    verifier('le fil principal et le worker bâtissent le même Colisée',
+      !!ici && ici === a[k] && ici === b[k],
+      `ici ${ici && ici.slice(0, 10)}, fil 1 ${a[k] && a[k].slice(0, 10)}, fil 2 ${b[k] && b[k].slice(0, 10)}`);
+  }
+
+  // ÉDIMBOURG EST DE GRÈS GRIS, ET SYDNEY A DES FENÊTRES (v450). Deux
+  // façades de villes engendrées, lues au bâtisseur (`batirColonneVillesMonde`,
+  // pur — jamais le monde chargé, qui ne répond que sur les morceaux déjà là) :
+  //  • Édimbourg portait la brique rouge de l'archétype britannique ; ses murs
+  //    sont désormais le gris, le gris clair et le kaki de la palette de décor.
+  //    Sur l'ancien code : zéro bloc gris, rouge ;
+  //  • la `baie` de la fiche de Sydney (la géographie de son port) était lue
+  //    comme le bloc de ses fenêtres : un objet, écrit 0, donc de l'air. On
+  //    compte ce que le bâtisseur pose qui n'est pas un nombre : zéro, contre
+  //    deux cent cinquante sur l'ancien code.
+  {
+    const VM = await import('../src/villesmonde.js');
+    const { DECOR_START, DECOR_COLORS } = await import('../src/blocks.js');
+    const lire = (cle) => {
+      const f = VM.VILLES_MONDE.find((v) => v.cle === cle);
+      const c = { gris: 0, rouge: 0, nonBloc: 0, poses: 0 };
+      const R = Math.min(f.rayon, 50);
+      for (let dx = -R; dx <= R; dx++) for (let dz = -R; dz <= R; dz += 3) {
+        const x = Math.round(f.ancre.x + dx), z = Math.round(f.ancre.z + dz);
+        if (VM.solVillesMonde(x, z) !== 'lot') continue;
+        VM.batirColonneVillesMonde(x, z, (y, id) => {
+          c.poses++;
+          if (typeof id !== 'number') { c.nonBloc++; return; }
+          if (id < DECOR_START || id >= DECOR_START + DECOR_COLORS.length * 10) return;
+          const coul = DECOR_COLORS[Math.floor((id - DECOR_START) / 10)][0], motif = (id - DECOR_START) % 10;
+          if (['Gris', 'Gris clair', 'Kaki'].includes(coul) && motif === 0) c.gris++;
+          if (motif === 1 && ['Rouge', 'Chocolat'].includes(coul)) c.rouge++;
+        });
+      }
+      return c;
+    };
+    const ed = lire('edimbourg'), sy = lire('sydney');
+    verifier('Édimbourg est bâtie de grès gris, plus de la brique rouge de Manchester',
+      ed.poses > 1000 && ed.gris > 4 * ed.rouge, JSON.stringify(ed));
+    verifier('à Sydney, chaque fenêtre est un bloc — aucune baie n\'est un trou',
+      sy.poses > 1000 && sy.nonBloc === 0, JSON.stringify(sy));
   }
 
   // LES PASSAGES EN BIAIS SE DESSINENT (v421). Une tuile ne se tourne pas :

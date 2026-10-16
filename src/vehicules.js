@@ -1008,7 +1008,8 @@ export function jumelleSansContact(pA, pB, grille, nb, rangB, nbB, avecBus) {
   const rangs = [];
   for (let k = 0; k < nb; k++) rangs.push({ s: k, p: pA, dl: DEMI_LONG_VOITURE + 0.3 });
   for (let j = 0; j < nbB; j++) rangs.push({ s: j + rangB, p: pB, dl: DEMI_LONG_VOITURE + 0.3 });
-  if (avecBus) rangs.push({ s: 0.5, p: pA, dl: 3.6 });
+  // le bus à la place de la voiture 0 (v450), ou à mi-temps (v372)
+  if (avecBus) { if (!BUS_A_MI_TEMPS) rangs.shift(); rangs.push({ s: BUS_A_MI_TEMPS ? 0.5 : 0, p: pA, dl: 3.6 }); }
   rangs.sort((a, b) => a.s - b.s);
   const rect = (q, cap, dl) => {
     const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux, w = DEMI_LARG_VOITURE;
@@ -1529,8 +1530,14 @@ class Convoi {
       // par leur nombre, et une queue qui retombe sur la tête au tour suivant
       this.dtVoiture = this._horaire.P / Math.max(1, this.nb);
       this.phase = this.tempsA(this.distance);
-      // le bus prend la grille de son anneau, à mi-temps entre deux voitures
-      if (this.suit && this.suit.horaire()) this.phase = this.suit.phase - (this.suit.dtVoiture || 0) / 2;
+      // LE BUS PREND LA PLACE DE LA VOITURE 0 DE SON ANNEAU (v450). Posé à
+      // mi-temps entre deux voitures (v372), il touchait ses voisines par la
+      // grille seule — 35 963 relevés sur les 262 grands anneaux, un tour
+      // d'horloge (`sonde-rue-dense.cjs bus`) — et l'anneau entier renonçait
+      // au jeu par voiture pour ne pas aggraver (v438). À une place entière
+      // (la voiture 0 n'existe pas : `pris`, posé par `bus()`), zéro contact,
+      // jeu compris : une voiture de moins par grand anneau.
+      if (this.suit && this.suit.horaire()) this.phase = this.suit.phase - (BUS_A_MI_TEMPS ? (this.suit.dtVoiture || 0) / 2 : 0);
       // LA JUMELLE D'UNE SECONDE VOIE (v423) : l'intervalle de sa file, et une
       // demi-voiture (ou une et demie, quand le bus prend la première place)
       // derrière elle — la même fonction de l'horloge sur toutes les tablettes
@@ -1615,6 +1622,7 @@ class Convoi {
   // `W` vaut donc zéro sous six blocs par seconde, à trois secondes d'un
   // croisement, et là où les deux voies n'en font qu'une — et l'on ne joue
   // pas du tout dans un anneau que le bus suit (il est à une demi-voiture).
+  // (Le bus a sa place entière depuis la v450 : l'anneau joue aussi.)
   // Ailleurs, deux voisines restent à `dt − 2 A` l'une de l'autre, au-dessus
   // de six blocs par seconde : douze blocs au moins entre leurs centres.
   jeuTable() {
@@ -1623,7 +1631,7 @@ class Convoi {
     if (!JEU_ACTIF) return null;
     if (this.jeuDe) { this._jeuT = this.jeuDe.jeuTable(); return this._jeuT; }
     const H = this.horaire();
-    if (!this.profil || this.suit || this.suiviParBus || !H || !this.grilleCreation || !this.parcoursBase) return null;
+    if (!this.profil || this.suit || (this.suiviParBus && BUS_A_MI_TEMPS) || !H || !this.grilleCreation || !this.parcoursBase) return null;
     const A = Math.min(JEU_MAX, 0.3 * this.dtVoiture - 0.25);
     if (!(A >= 0.05)) return null;
     const { ts, ds, P, L } = H;
@@ -1738,6 +1746,38 @@ class Convoi {
       // CONTACT IMMINENT : l'autre est déjà au ras du capot — on s'arrête là,
       // sans attendre le freinage (v372)
       if (this.urgence[i]) v = 0;
+      // LA SUIVEUSE FREINE AVANT LE PLANCHER, ELLE N'Y EST PAS ARRÊTÉE (v450).
+      // Le plancher de la file (v283, un bloc en ligne droite depuis la v431)
+      // est une borne dure : une suiveuse qui avançait encore à 3,7 blocs par
+      // seconde dans la file d'un feu y était recollée à l'arrêt EN UNE IMAGE
+      // (37 b/s², mesuré par `sonde-feu-image.cjs` sur `origin/main`, une à
+      // deux fois par minute au-dessus de Paris). On ne lui laisse que la
+      // vitesse qu'elle peut perdre au freinage d'urgence avant le plancher :
+      // elle y arrive en freinant.
+      const devant = this.devantSurLaLigne(i);
+      if (v > 0 && this.cause[i] === 1 && this.cible[i] !== Infinity && (i > 0 || devant)) {
+        const ici = ancien[i] - this.retard[i];
+        const miniIci = Math.abs(this.parcours.courbure(ici)) > 0.03 || Math.abs(this.parcours.courbure(ici + 3)) > 0.03
+          || Math.abs(this.parcours.courbure(ici + 5)) > 0.03 ? miniVirage : miniDroit;
+        // RELATIVE À CELLE DE DEVANT : une file qui roule à quatorze blocs par
+        // seconde à douze blocs d'écart ne freine pas (le premier jet bornait
+        // comme si la précédente était arrêtée, et toute la file traînait).
+        // La distance d'arrêt de la suiveuse ne dépasse pas l'écart plus celle
+        // de la précédente : v² ≤ vDevant² + 2·a·reste. (La somme
+        // vDevant + √(2·a·reste), plus large, laissait des arrêts secs : 3 sur 8.)
+        const borne = (dDevant, vDevant) => {
+          const reste = dDevant - ici - miniIci;
+          const vMax = Math.sqrt(vDevant * vDevant + 2 * FREIN_URGENCE * Math.max(0, reste));
+          if (v > vMax) v = vMax;
+        };
+        if (i > 0) borne(this.base[i - 1] - this.retard[i - 1], this.vLoc[i - 1] >= 0 ? this.vLoc[i - 1] : vConv);
+        // ET SUR LA LIGNE (v423) : devant elle, la voiture de l'autre convoi
+        // a son propre plancher, qui recolle aussi en une image
+        if (devant) {
+          const j = devant.iDevant;
+          borne(devant.dElement(j), devant.vLoc && devant.vLoc[j] >= 0 ? devant.vLoc[j] : vConv);
+        }
+      }
       let r = this.retard[i] + pas - v * dt;
       if (r < 0) r = 0;
       // UN CONVOI NE SE TÉLESCOPE PAS (v283), par construction : la suiveuse
@@ -1755,7 +1795,6 @@ class Convoi {
       // dans l'AUTRE convoi. La grille les garde à distance (`jumelleSansContact`) ;
       // un freinage local (un feu, l'enfant) ne doit pas les faire entrer l'une
       // dans l'autre. On lit l'autre convoi tel qu'il est à cette image.
-      const devant = this.devantSurLaLigne(i);
       if (devant) {
         const plancher = this.base[i] - devant.dElement(devant.iDevant) + mini;
         if (r < plancher) r = plancher;
@@ -2282,6 +2321,9 @@ export const INTERVALLE_RUE = 2;
 export const JEU_MAX = 0.35;
 // éteint par une sonde (`jeuActif`), pour mesurer en A/B dans la même page
 let JEU_ACTIF = true;
+// `true` rejoue la v438 (le bus à mi-temps, l'anneau sans jeu) : pour les
+// sondes et la preuve des témoins, jamais un réglage (`busAMiTemps`)
+let BUS_A_MI_TEMPS = false;
 // UNE FILE ET SA JUMELLE SONT UNE SEULE LIGNE (v423) : la légitimité d'une
 // attente (un feu devant) s'y propage, et l'on n'y pile pas sur un contact.
 const memeLigne = (x, y) => x === y || (!!x && !!y && (x.jumeauDe === y || y.jumeauDe === x));
@@ -2462,7 +2504,37 @@ export function createVehicules({ scene, player }) {
     0x8a2b3a, 0x2f7f8f, 0xc86a2a, 0x5a4a8a, 0x1f4a2f, 0xb0b4bc,
     0x7a1f1f, 0x2a3f7a, 0xd8a83a, 0x3f7a5a, 0x6a2f6a, 0x8a8a6a,
   ];
-  function circulation(pts, graine = 0, options = {}) {
+  // LE DÉPLIAGE SE FAIT PAR TRANCHES, AVANT LA NAISSANCE (v450). Un circuit de
+  // Paris coûtait d'un seul tenant jusqu'à cinquante-neuf millisecondes sous
+  // node — la grille, le nombre de voitures, la seconde voie et les essais de
+  // la jumelle (`voiesDe`), dans l'image où il naît. La fabrique est un
+  // générateur : chaque étape lourde (le plancher, le croisement, les voies
+  // le long du tracé, CHAQUE essai de contact de la jumelle) rend la main, et
+  // `circulationParTranches` l'avance sur un budget par image. Le convoi ne
+  // naît qu'une fois tout calculé : son nombre de voitures, celui de sa
+  // jumelle et sa grille sont ceux d'un calcul d'un seul tenant, au bit près —
+  // différer la jumelle APRÈS la naissance aurait changé la file d'une
+  // tablette à l'autre (v305). `circulation` déroule tout d'un coup.
+  function finir(g) { let r; do { r = g.next(); } while (!r.done); return r.value; }
+  function circulation(pts, graine = 0, options = {}) { return finir(fabriqueCirculation(pts, graine, options)); }
+  function circulationParTranches(pts, graine = 0, options = {}) {
+    const g = fabriqueCirculation(pts, graine, options);
+    let fait = null, tranches = 0, pire = 0;
+    return {
+      get tranches() { return tranches; }, get pire() { return pire; },
+      avancer(budgetMs = 5) {
+        if (fait) return fait;
+        const t0 = performance.now();
+        for (;;) {
+          const t = performance.now(), r = g.next(); tranches++;
+          pire = Math.max(pire, performance.now() - t);
+          if (r.done) { fait = r.value; return fait; }
+          if (performance.now() - t0 >= budgetMs) return null;
+        }
+      },
+    };
+  }
+  function* fabriqueCirculation(pts, graine = 0, options = {}) {
     // ON ROULE À DROITE SUR LES AVENUES (v372). Les circuits des villes bâties
     // à la main suivent l'AXE de leurs avenues, et deux circuits qui partagent
     // une avenue dans les deux sens s'y rencontraient de face, sur la même
@@ -2494,6 +2566,7 @@ export function createVehicules({ scene, player }) {
     // on fait rouler deux voisines sur un tour, et l'on garde le plus grand
     // nombre où elles ne se touchent jamais (`nbSansChevauchement`).
     const grille = grilleDuProfil(prof);
+    yield;
     // Un tracé très tortueux (un tour de quartier de Paris) ne garderait que
     // trois voitures : on n'en retire jamais plus d'un tiers, et ce qui reste
     // de contacts se règle en roulant — la suiveuse freine sur celle qui la
@@ -2505,6 +2578,8 @@ export function createVehicules({ scene, player }) {
     const nbMax = Math.min(60, Math.max(voituresDuCircuit(p.longueur), Math.round(grille.ts[grille.ts.length - 1] / INTERVALLE_RUE)));
     // les voisines ne se touchent pas (plancher), et la file ne se retrouve
     // pas elle-même à un croisement de son propre tracé (le huit de Paris)
+    let plancher = 0;
+    if (options.nb == null && !options.voiesAuBesoin) { plancher = nbSansChevauchement(p, grille, nbMax); yield; }
     let nb = options.nb ?? (options.voiesAuBesoin
       // L'AUTOROUTE DENSE (v423). Vingt voitures imposées pour un tour de mille
       // six cents à cinq mille blocs : une tous les cent vingt blocs, le
@@ -2516,7 +2591,8 @@ export function createVehicules({ scene, player }) {
       // vérifie quand l'enfant approche, et deux files de 0,44 font 0,88.
       ? Math.max(8, Math.floor(0.44 * Math.min(120, Math.round(grille.ts[grille.ts.length - 1] / INTERVALLE_RUE))))
       : nbSansCroisement(p, grille,
-        Math.max(Math.ceil(nbMax * 2 / 3), nbSansChevauchement(p, grille, nbMax)), Math.ceil(nbMax / 3)));
+        Math.max(Math.ceil(nbMax * 2 / 3), plancher), Math.ceil(nbMax / 3)));
+    yield;
     // LA SECONDE VOIE (v423) : là où la section en a deux dans ce sens
     // (`voiesdoubles.js`, lu par main.js), la file peut changer de voie (`A`,
     // l'autoroute) et une jumelle roule dans l'autre (`B`).
@@ -2534,8 +2610,10 @@ export function createVehicules({ scene, player }) {
     // Un nombre IMPOSÉ (`options.nb`, l'autoroute) ne se cherche pas : la
     // jumelle a le même, ou n'existe pas.
     const rangB = options.bus ? 1.5 : 0.5;
-    const voiesDe = () => {
+    const voiesDe = () => finir(voiesDeTranches());
+    function* voiesDeTranches() {
       const voies = options.voies ? voiesLeLong(p, options.voies, options.voiesAuBesoin ? RAMPE_VOIE : RAMPE_VILLE) : null;
+      yield;
       const pA = voies && voies.A.some((l) => l !== 0) ? new ParcoursDecale(p, voies.A) : p;
       let jumelle = null;
       if (voies && voies.longueur >= SECTION_MIN && nb >= 2) {
@@ -2555,21 +2633,25 @@ export function createVehicules({ scene, player }) {
         for (let n = bas; n <= nb; n++) if (croise(n)) cands.push(n);
         let choix = 0;
         if (cands.length) {
+          yield;
           if (contact(cands[cands.length - 1])) choix = cands[cands.length - 1];
-          else if (cands.length > 1 && contact(cands[0])) {
-            let lo = 0, hi = cands.length - 1;
-            while (hi - lo > 1) { const m = (lo + hi) >> 1; if (contact(cands[m])) lo = m; else hi = m; }
-            choix = cands[lo];
+          else if (cands.length > 1) {
+            yield;
+            if (contact(cands[0])) {
+              let lo = 0, hi = cands.length - 1;
+              while (hi - lo > 1) { const m = (lo + hi) >> 1; yield; if (contact(cands[m])) lo = m; else hi = m; }
+              choix = cands[lo];
+            }
           }
         }
         if (choix) jumelle = { pB, nb: choix };
       }
       return { voies, pA, jumelle };
-    };
+    }
     // L'AUTOROUTE SE CALCULE AU DÉMARRAGE (v300, derrière « Jouer », v258) :
     // sa seconde voie attend que l'enfant approche du corridor
     // (`voiesAuBesoin`) — cent cinquante millisecondes de moins à l'accueil.
-    const tout = options.voies && !options.voiesAuBesoin ? voiesDe() : null;
+    const tout = options.voies && !options.voiesAuBesoin ? yield* voiesDeTranches() : null;
     const voies = tout ? tout.voies : null, pA = tout ? tout.pA : p;
     if (tout && tout.jumelle) nb = tout.jumelle.nb;
     const c = ajouter(pts, {
@@ -2657,8 +2739,9 @@ export function createVehicules({ scene, player }) {
   // déclaré : un bus qui ne s'arrête pas.
   function bus(pts, graine = 0, suit = null) {
     const teintes = [0xd84a3a, 0xe8c83a, 0x3a9a4a, 0x3a6ac8, 0xf0813a];
-    // le bus est à une demi-voiture dans la file : l'anneau ne joue pas (v438)
-    if (suit) suit.suiviParBus = true;
+    // le bus prend la place de la voiture 0 de son anneau (v450) : elle ne
+    // naît pas, ne se dessine pas, ne compte pas pour céder (`pris`, v305)
+    if (suit) { suit.suiviParBus = true; if (!BUS_A_MI_TEMPS) suit.pris.add(0); delete suit._jeuT; }
     return ajouter(pts, {
       nb: 1, vitesse: suit ? suit.vitesse : ALLURE_VOIE.rue, routier: true, freine: true,
       profil: suit ? suit.profil : { limite: null, facteur: 1 },
@@ -2711,6 +2794,25 @@ export function createVehicules({ scene, player }) {
   // touche pas une voiture centrée sur l'autre (4 − 0,9 − 1,13 = 2 blocs).
   const DEMI_LONG_RAME = 3.7, DEMI_LARG_RAME = 0.9;
   const PAS_TRAIN = [0.5, 1.5, 2.5, 3.5];   // on s'arrête près : RAYON_BORD (9) doit encore voir la motrice
+  // LA RAME REGARDE AUSSI LOIN QU'ELLE VA ROULER DANS L'IMAGE (v451). Elle
+  // roule en temps RÉEL (v305) : à quinze blocs par seconde, une image d'un
+  // quart de seconde la fait avancer de quatre blocs — plus que les 3,5 de
+  // `PAS_TRAIN`. D'« assez loin » à « déjà dedans » en une image, et un train
+  // déjà dedans continue (v245) : il traversait la voiture de l'enfant une pose
+  // sur deux sous charge (sonde-train-voiture.cjs). Le regard couvre donc ce
+  // que la motrice va VRAIMENT parcourir avant la prochaine décision — la
+  // grille dit où elle sera à l'heure de cette image, puisque `horloge` a déjà
+  // avancé (`update`) — plus la marge d'avant. Ce qui est sur son chemin est
+  // vu AVANT d'y être, quelle que soit la cadence. `avance` est en blocs.
+  const PAS_RAME = 1;
+  const pasDeRame = (avance) => {
+    const fin = Math.max(0, avance) + PAS_TRAIN[PAS_TRAIN.length - 1];
+    const pas = [];
+    for (let s = PAS_TRAIN[0]; s < fin + PAS_RAME; s += PAS_RAME) pas.push(Math.min(s, fin));
+    return pas;
+  };
+  // `?rame=fixe` rejoue l'ancien regard (3,5 blocs), pour mesurer (v451)
+  let regardRameFixe = typeof location !== 'undefined' && /[?&]rame=fixe\b/.test(location.search);
   // Deux rectangles se touchent-ils ? Séparation d'axes : les quatre arêtes de
   // chacun servent d'axe ; s'il en est un où les projections ne se recouvrent
   // pas, ils sont disjoints.
@@ -2816,10 +2918,16 @@ export function createVehicules({ scene, player }) {
         voitures.push({ c, ci, i, cle: -2 - ci * 1000 - i, d, x: q.x, y: q.y, z: q.z, ux, uz,
           rect, balayage: null, veut: null, rail: true });
       }
-      if (dedans || c.attente > 0) continue;
+      if (dedans) continue;
       const d0 = c.dElement(0), q0 = c.parcours.a(d0);
       if (Math.abs(q0.y - player.pos.y) > 3) continue;
-      for (const pas of PAS_TRAIN) {
+      // ce que la motrice va parcourir dans cette image : la grille si elle en
+      // a une (exact), sinon son allure fois la durée de l'image. Même à quai
+      // (`attente`) : une rame qui repart dans cette image roule aussi.
+      let avance = Math.max(c.vitesse || 0, c.vitesseActuelle || 0) * dt;
+      if (c._horaire) avance = Math.max(avance, c.distanceA(horloge - (c.decalage || 0)).d - d0);
+      c.regard = regardRameFixe ? PAS_TRAIN[PAS_TRAIN.length - 1] : avance + PAS_TRAIN[PAS_TRAIN.length - 1];
+      for (const pas of (regardRameFixe ? PAS_TRAIN : pasDeRame(avance))) {
         const q = c.parcours.a(d0 + pas), cap = c.parcours.capLisse(d0 + pas);
         if (seTouchent(rectangle(q.x, q.z, Math.sin(cap), Math.cos(cap), DEMI_LONG_RAME, DEMI_LARG_RAME), rectEnfant)) {
           c.bloque = true; break;
@@ -2876,9 +2984,14 @@ export function createVehicules({ scene, player }) {
     // quinze kilomètres à l'heure ; à cinquante, une voiture a besoin de vingt-
     // cinq blocs pour s'arrêter en douceur. On regarde donc jusqu'à sa distance
     // de freinage, plus une demi-seconde de réaction.
+    // ET LA VOITURE ROULE EN TEMPS RÉEL (v451) : ce qu'elle parcourt dans
+    // CETTE image (`dt`, la même durée que `update` lui donnera) au-delà d'un
+    // tiers de seconde s'ajoute au regard, hors plafond — à une image d'une
+    // seconde et demie, une voiture à cinquante parcourt vingt blocs avant la
+    // décision suivante. Sous 0,35 s, le regard d'avant au bit près.
     const porteeDe = (a) => {
       const c = a.c, v = Math.max(c.vLoc[a.i] >= 0 ? c.vLoc[a.i] : 0, c.vGrilleDe(a.i));
-      return Math.min(40, 6 + v * v / (2 * FREIN) + v * 0.5);
+      return Math.min(40, 6 + v * v / (2 * FREIN) + v * 0.5) + v * Math.max(0, dt - 0.35);
     };
     const balayer = (a) => {
       if (a.balayage) return a.balayage;
@@ -3023,9 +3136,16 @@ export function createVehicules({ scene, player }) {
           // Mesuré : trois et quatre relevés au travers, deux passages de
           // `monte.js` seuls, zéro sur la v363. Marge : une image à trois par
           // seconde, plus le demi-bloc d'avant le contact.
+          // ET LA MARGE COUVRE L'IMAGE EN COURS, PAS SEULEMENT UNE IMAGE À TROIS
+          // PAR SECONDE (v451) : `update` va avancer la voiture de son allure
+          // fois `dt` — au plus celle de sa grille — avant que la rue ne
+          // regarde à nouveau. Une image plus longue que 0,35 s la faisait
+          // passer d'« assez loin » à « déjà dedans », comme la rame. Sous
+          // 0,35 s, la règle est celle d'avant au bit près.
           if (b && b.enfant && !b.rail && g.v < 0.5) {
             const va = Math.max(0, a.c.vLoc[a.i] >= 0 ? a.c.vLoc[a.i] : a.c.vGrilleDe(a.i));
-            if (va * va / (2 * FREIN_URGENCE) + va * 0.35 + 0.5 >= g.s) { cible = 0; bloquant = b; a.contact = true; }
+            const vMax = Math.max(va, a.c.vGrilleDe(a.i)) * 1.1;   // ce que `update` peut lui donner
+            if (va * va / (2 * FREIN_URGENCE) + va * 0.35 + vMax * Math.max(0, dt - 0.35) + 0.5 >= g.s) { cible = 0; bloquant = b; a.contact = true; }
           }
         }
       }
@@ -3438,7 +3558,7 @@ export function createVehicules({ scene, player }) {
   }
 
   return {
-    metro, course, chaine, circulation, bus, update, placeProche, diagPlace, place, emprunter, retirer, obstacleDevant, voitureContre, voitureA, dansRectangle, enMarche, voitureRueProche, voitureNommee,
+    metro, course, chaine, circulation, circulationParTranches, bus, update, placeProche, diagPlace, place, emprunter, retirer, obstacleDevant, voitureContre, voitureA, dansRectangle, enMarche, voitureRueProche, voitureNommee,
     adopterHorloge, horloge: () => horloge,
     // la fabrication par tranches (v431) : combien de voitures fabriquées et
     // différées depuis le lancement — ce qu'un témoin compte à l'arrivée
@@ -3448,6 +3568,9 @@ export function createVehicules({ scene, player }) {
     // les amis de la partie (v305), branchés par main.js : où ils sont, leur cap,
     // et s'ils conduisent
     brancherAmis: (f) => { amis = f; },
+    // l'ancien regard de la rame (3,5 blocs), pour mesurer et pour prouver
+    // que le témoin rougit sans le remède (v451)
+    regardRameFixe: (v) => { if (v !== undefined) regardRameFixe = !!v; return regardRameFixe; },
     // pour les sondes (v383) : ce que `cederLePassage` a vu à la dernière
     // image — qui gêne qui (`veut`), qui attend, qui vient de forcer (`repart`)
     diagCeder: () => dernieres.map((a) => ({ cle: a.cle, x: +a.x.toFixed(1), z: +a.z.toFixed(1), ami: !!a.ami, enfant: !!a.enfant,
@@ -3480,6 +3603,8 @@ export function createVehicules({ scene, player }) {
     },
     // l'A/B du jeu par voiture (v438), pour les sondes
     jeuActif: (on) => { JEU_ACTIF = !!on; for (const c of convois) delete c._jeuT; },
+    // l'A/B du bus (v450), pour les sondes : à poser AVANT que les anneaux naissent
+    busAMiTemps: (on) => { BUS_A_MI_TEMPS = !!on; for (const c of convois) delete c._jeuT; },
     // LE TYPE DE VOIE PAR TRONÇON (v438), pour les témoins : la part du tour
     // de ce convoi qui roule à chaque limitation (au conducteur près).
     allures: (cle) => {
@@ -3549,6 +3674,7 @@ export function createVehicules({ scene, player }) {
       distance: Math.round(c.distance),
       attente: Math.round((c.attente || 0) * 10) / 10,
       bloque: !!c.bloque,                    // un train arrêté devant l'enfant (v304)
+      regard: c.rail ? Math.round((c.regard || 0) * 10) / 10 : null,   // jusqu'où la motrice regarde (v451)
       // Une place encore VIDE (v235) n'est ni visible ni peinte : depuis que
       // les voitures naissent à la demande, `elements` porte des trous.
       visibles: c.elements.filter((m) => m && m.visible).length,

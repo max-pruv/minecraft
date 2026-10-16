@@ -88,6 +88,20 @@ export const TUILES_HD = [
 ];
 export const COLS_HD = 8;
 export const PX_HD = 128;
+// La travée du motif `fer` (matierehd.js) : un barreau tous les seize pixels,
+// le premier à huit. Rend [u0, u1] pour une ferronnerie de s0 à s1 : le bloc
+// entier garde ses coordonnées, une ferronnerie plus étroite tient un nombre
+// entier de travées (deux au moins), du barreau au barreau.
+// `ferAvant` rejoue la règle d'avant (u = s) le temps d'un morceau, pour la
+// preuve de l'empreinte (mesher : `ferronnerieEntiere: false`).
+const TRAVEE_FER = 16 / PX_HD;
+let ferAvant = false;
+export function rejouerFerAvant(oui) { ferAvant = !!oui; }
+export function uvFerronnerie(s0, s1) {
+  if (ferAvant || s1 - s0 >= 0.999) return [s0, s1];
+  const n = Math.max(2, Math.round((s1 - s0) / TRAVEE_FER));
+  return [TRAVEE_FER / 2, TRAVEE_FER / 2 + n * TRAVEE_FER];
+}
 const INDEX_HD = new Map(TUILES_HD.map((n, i) => [n, i]));
 
 // Le rectangle d'une tuile dans l'atlas, origine + taille, avec la marge d'un
@@ -516,11 +530,20 @@ class Face {
   }
 
   // Le garde-corps en fer forgé : un plan ajouré (alpha), vu des deux côtés.
+  // UN GARDE-CORPS DE BAIE TIENT UN NOMBRE ENTIER DE TRAVÉES (v454). Le motif
+  // `fer` a un barreau tous les seize pixels et un anneau entre deux ; tiré
+  // en coordonnées de bloc (u = s), une baie étroite du Marais (0,32 de
+  // large) en coupait les anneaux en arcs et se lisait comme un glyphe. Une
+  // ferronnerie plus étroite que le bloc tient donc `travees(s1 − s0)`
+  // travées entières, du barreau au barreau, un peu étirées ; le balcon
+  // filant (0 à 1) garde le motif d'avant, qui se raccorde d'un bloc à
+  // l'autre.
   ferronnerie(s0, s1, t0, t1, d) {
+    const [u0, u1] = uvFerronnerie(s0, s1);
     this.quad([[s0, t0, d], [s1, t0, d], [s1, t1, d], [s0, t1, d]], [0, 0, 1], 'fer', 1, 0,
-      [[s0, 0], [s1, 0], [s1, 1], [s0, 1]]);
+      [[u0, 0], [u1, 0], [u1, 1], [u0, 1]]);
     this.quad([[s1, t0, d], [s0, t0, d], [s0, t1, d], [s1, t1, d]], [0, 0, -1], 'fer', 0.85, 0,
-      [[s1, 0], [s0, 0], [s0, 1], [s1, 1]]);
+      [[u1, 0], [u0, 0], [u0, 1], [u1, 1]]);
   }
 
   // Le châssis d'une baie : UN quad ajouré (alpha), la tuile `croisee` — les

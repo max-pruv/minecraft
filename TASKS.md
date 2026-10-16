@@ -19,6 +19,15 @@
   voitures l'une dans l'autre monte à 2–18 % (0 à 2 avec les passants) :
   probablement la même suiveuse qui rattrape sa tête. Le témoin reste rouge,
   il garde une vraie panne. Sonde : `tests/sonde-rue-feu.cjs` (`VIDE=1`).
+- [ ] **L'APPROCHE ASSISTÉE (v452) : QUATRE POSÉS SUR 148 À REPRENDRE.**
+  `node tests/sonde-approche.cjs src` : trois touchers à 5,7 · 6,2 · 6,7 blocs
+  par seconde (Roissy 47 pour l'avion de ligne et le Concorde, Andrews pour le
+  chasseur, tous venus de l'ouest en virant), et le Concorde à Los Angeles qui
+  touche au seuil même (s 0, un demi-bloc avant la bande). Une première trace
+  du même départ rejouée seule se pose bien (s 82, 2 blocs/s) : la différence
+  tient à l'état du monde déjà engendré par les approches précédentes — à
+  démonter par une sonde qui rejoue UNE approche dans un monde neuf, puis la
+  même après les autres.
 
 - [ ] **SEPT PISTES SOUS LEUR CIBLE (v448) — DÉCLARÉES, LE REMÈDE EST UNE
   DÉCISION.** Prolongées autant que leur place le permet, mesurées par sonde :
@@ -46,6 +55,14 @@
   le disque de Londres (zéro bloc hors du disque, mesuré bloc par bloc) ; ni la
   carte, ni Manhattan, ni la circulation de Paris ne le lisent, et la rame ne
   lit aucun bloc pour céder.
+- [ ] **PORTAIL DE LA v453 (la rue sans à-coups).** Coupé à sa limite de deux
+  heures pendant `reseau.js` (délai de `rejoindre`, famille déclarée). Rouges,
+  tous déjà déclarés ici : `carte.js` appui long, flèche du GPS, fond de carte
+  à froid (418 ms) et glisser bridé ×4 (516 ms) ; `manhattan.js` le taxi
+  tactile ; `monte.js` l'avatar au volant (`avatar:false`), « au feu, la
+  voiture freine » (2 arrêts secs sur 6 833 relevés, médiane 4,5 — la sonde
+  `sonde-feu-image.cjs` reste la mesure de la livraison), Moscou (rues
+  pleines, livrées). Non rejoué : consigne de budget de Max.
 - [ ] **PORTAIL DES PONTS (v430) — DOUBLE MESURE (règle v195).** Portail
   complet (base v419) coupé à sa limite de deux heures pendant `reseau.js` ;
   rouges déjà déclarés : `carte.js` « la faire glisser non plus » (427 ms),
@@ -79,7 +96,7 @@
   (« Ouverture du monde… », 1,2 s) : corrigé, on attend le statut qui
   retombe. « La voiture de la rue n'entre pas chez l'ami » 1/3 sur la
   branche : dette v383 (une pose sur une dizaine).
-- [x] **LOT 3 DES TÉMOINS INTERMITTENTS — FAIT en v450** (session banc-lot3).
+- [x] **LOT 3 DES TÉMOINS INTERMITTENTS — FAIT en v455** (session banc-lot3).
   - **La famille du nuage** (`reseau.js`, 1/3 des deux côtés) : une course du
     JEU, pas de l'attente — l'invité frappait avant d'avoir posé son curseur
     de lecture du relais. Corrigé (`relaisnuage.js`), 6/100 → 0/100 sous node,
@@ -142,7 +159,27 @@
     cadence décide où l'on touche (piège v273), et l'arrêt tombait à 300,9.
   - **Le train qui traverse la voiture** : cause trouvée, VRAIE PANNE,
     déclarée en tête de ce fichier ; le témoin reste rouge.
-- [ ] **UN TRAIN TRAVERSE LA VOITURE DE L'ENFANT QUAND UNE IMAGE EST LENTE
+- [ ] **PORTAIL DE LA v451 (le regard de la rame) — DOUBLE MESURE (règle v195).**
+  `maj.js` : « le loader dit combien de fichiers » (déclaré plus bas, rouge des
+  deux côtés). `monte.js` au portail : quatre rouges — « l'avant du joystick
+  est l'accélérateur », « le côté du joystick tourne le volant », « rien
+  d'autre ne vole le doigt » (le doigt tombe sur un `BUTTON` sans id, `joy`
+  caché) et « un mur pris de face ». Rejouée SEULE : branche 220 verts, ZÉRO
+  rouge ; `origin/main` (v443) 217 verts, deux rouges (« un mur pris de face »,
+  rebond −1,88, déclaré ; « à Rome, en biais, un passant traverse sur le
+  passage peint », déclaré). Les trois du joystick sont des rouges de charge
+  du portail, jamais vus seuls : à reprendre si un portail les rend encore,
+  en nommant le bouton (`elementFromPoint` rend `BUTTON.` sans classe).
+  Second portail (après la fusion de la v446) : `maj.js` ses deux rouges
+  déclarés ; `monte.js` « la caméra laisse la voiture glisser sur le côté »,
+  « la rue roule à l'allure d'une ville » (médiane 0, le bouchon déclaré) et
+  « un mur pris de face » ; `reseau.js` six rouges de reprise et « un hôte
+  sans courtier ». Rejouées SEULES : `monte.js` branche 226 verts, ZÉRO rouge
+  (« la rue roule » médiane 4,3) ; `reseau.js` branche 85 verts et un rouge
+  (« un hôte sans courtier est trouvé », l'intermittence déclarée plus bas),
+  `origin/main` (v446) 87 verts. Le regard de la rame et la marge des voitures
+  ne touchent pas au réseau.
+- [x] **(v451 — réparé : regard de la rame en temps, `pasDeRame` ; voir CLAUDE.md « Le regard d'un convoi est un temps ») UN TRAIN TRAVERSE LA VOITURE DE L'ENFANT QUAND UNE IMAGE EST LENTE
   (vraie panne, zone conduite — trouvée par la session banc-intermittents).**
   La rame ne regarde que 3,5 blocs devant sa motrice (`PAS_TRAIN`,
   `cederLePassage`, vehicules.js) et roule en temps RÉEL (v305) : à 14 b/s,
@@ -532,6 +569,12 @@
   déclarée) — après la fusion de la v386, `maj.js` et `plafond.js` rejoués
   SEULS sur la branche, et `maj.js` seul sur `origin/main` v386 : verts tous
   les trois.
+  Portail de la v454 (garde-corps des baies étroites) : mêmes rouges, tous
+  déclarés ci-dessus — `visio.js` radio, `maj.js` loader, `carte.js` fond à
+  froid 436 ms et glisser 525 ms, `monte.js` circulation devant l'enfant, Rome
+  en biais, Moscou, mur de face ; `reseau.js` coupé à la limite de deux heures
+  du banc, sans un rouge jusque-là. Hors du diff par construction : `uvFerronnerie`
+  n'est lue que par la couche détaillée, que le banc coupe en rendu logiciel.
 
 - [ ] **LE PORTAIL DE LA v395 (la rue à l'allure d'une ville), DOUBLE MESURE
   Portail du rebase sur la v380 : `monte.js` rouge sur « en vol, on ne rattrape pas le bout du monde » (chasseur 58/60) — rejouée SEULE sur la branche : 184 verts, zéro rouge (chasseur 72/60). `reseau.js` verte ; `manhattan.js` façade 22 326 → 51 734, déclarée.
@@ -725,6 +768,23 @@
   la v442 ne change que l'avenue d'entrée des autoroutes dans les villes
   engendrées (`raccordDe` dans `entree()`), aucun de ces témoins ne roule sur
   une autoroute ni dans une ville engendrée.
+  **FAIT en v453** : raccords des villes bâties à la main (633 → 26 blocs,
+  dont Lille A1 47 → 0) ; le BUS prend la place de la voiture 0 de son anneau
+  (36 004 contacts de grille → 0, les 263 anneaux jouent, 4 380 → 4 125
+  voitures) ; la fabrique d'un circuit se fait par TRANCHES avant la naissance
+  (56 circuits identiques au bit près, étape la plus longue 4,4 ms) ; la
+  suiveuse freine avant le plancher de file, dans sa file et sur la ligne
+  (arrêts secs au feu 5/9 → 1/17, `sonde-feu-image.cjs`, huit passes ; le
+  reste, 14 à 33 b/s², vient d'un `v` interne plus haut que `vLoc` après un
+  recollage, que `rapprocher` ramène en une image — à reprendre en partant
+  de `vLoc` plutôt que de `v`) ; les deux témoins repointés (`monte.js` juge un
+  arrêt au feu sur toute sa descente, `degats.js` prend 26 blocs d'élan).
+  RESTE : les deux circuits en huit de Paris (rangs 1 et 3) n'ont pas de
+  jumelle — seul `n = 4` passe leur croisement ; le remède est de CASSER
+  chaque huit en deux circuits dans `paris.js` (autre session), puis de
+  remesurer `sonde-rue-dense.cjs boulevards`. Et les cinq demi-tours de
+  raccord (Turin 9, Hambourg 6…), qu'un demi-tour avant la porte (le
+  corridor, `routes.js`) supprimerait.
   **(5) LE HUIT DE TOKYO, MESURÉ RÉSOLU.** Au même point (53 383, 8 048) :
   0,25 % de paires au contact, toutes en travers entre deux convois (la
   cession locale), zéro dans une file — les contours des v432 et v435 ont
@@ -3711,8 +3771,12 @@
        (les bandes `ETAGE_BAS/MI/HAUT` de Paris) demanderait que
        `villesmonde.js` pose ces bandes : c'est un changement de blocs, donc
        de la zone des villes engendrées, pas de la couche ;
-     - [ ] Édimbourg est en brique rouge parce que sa palette l'est ; la vraie
-       ville est de grès gris — une fiche, pas un registre ;
+     - [x] Édimbourg est en brique rouge parce que sa palette l'est ; la vraie
+       ville est de grès gris — une fiche, pas un registre. **Fait en v450**
+       (`PALETTES_VILLES` : gris, gris clair, kaki, des unis). Reste : dans la
+       couche HD (registre `londres`), un uni gris se lit `enduit`, pas
+       `pierre` — `UNIS_PIERRE` de `facadeshd.js` ne connaît pas le Gris, et
+       c'est la zone de la couche ;
      Et :
      le raccord ville/campagne (`raccordInterdit`) n'est interdit qu'à Paris —
      une colonne de raccord de Londres montre la surface plate, pas le sol HD.
@@ -3756,7 +3820,14 @@
      - [ ] la palette d'Édimbourg (brique rouge pour du grès gris) et la « baie
        de deux blocs » des villes engendrées sont des changements de BLOCS dans
        `villesmonde.js`, zone des villes engendrées. Dettes déclarées :
-     - [ ] **le Colisée du catalogue change à chaque lancement** :
+     Portail de la v450 (sept suites) : cinq vertes ; `carte.js` deux rouges —
+     « le fond de carte entier se rend vite, même à froid » 429 ms au portail
+     pour 400, vert rejoué SEUL des deux côtés (281 ms branche, 250
+     `origin/main`) : la charge du portail ; « la faire glisser non plus »
+     (543 ms) rouge seul des deux côtés (517 et 465), déjà déclaré. `monte.js`
+     « un mur pris de face » (rebond −1,88, couloir vide 41 090 / 40 988) : déjà
+     déclaré, aucune des trois villes touchées à moins de mille blocs.
+     - [x] **le Colisée du catalogue change à chaque lancement** (fait en v450 : `effondre(x, y, z)`, un tirage par bloc ; seule source de hasard dans un bâtisseur, mesurée sur les 763 repères ; et Sydney avait 250 fenêtres qui étaient des trous — `f.baie` lu comme bloc, corrigé) :
        `monuments.js:501` tire ses gradins effondrés à `Math.random()` — 173
        blocs du morceau (cx, cz + 1) de Rome différents entre deux exécutions
        (sonde `empreinte.mjs`, sur `origin/main` comme sur la branche). Le worker
@@ -3902,7 +3973,7 @@
     `manhattan.js` le trou (déclaré) ; `monte.js` la compilation à l'arrivée,
     le flanc frôlé et « un mur pris de face » (déclarés). Le témoin du
     mobilier (`parishd.js`) vert au portail.
-  - [ ] la ferronnerie d'un garde-corps sur une baie étroite (Marais, 0,28 de
+  - [x] FAIT en v454 (`uvFerronnerie`, travées entières : 1 212 garde-corps, 0 coupés) — la ferronnerie d'un garde-corps sur une baie étroite (Marais, 0,28 de
     large) se lit comme un glyphe : la tuile `fer` est faite pour une travée
     entière — une tuile à part pour les petites baies ;
   - [ ] les Champs-Élysées à `dx = −4,3 km` rendent de l'herbe et non
