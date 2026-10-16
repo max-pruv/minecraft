@@ -6,14 +6,15 @@
 
 export const NOUVEAUTES = [
   {
-<<<<<<< HEAD
     v: 465,
     titre: 'Des passages piétons à Londres',
     puces: [
       'Des zébras aux carrefours de Londres',
       'Aussi à Nice, Lille, San Francisco, Washington',
       'Les passants traversent dessus',
-=======
+    ],
+  },
+  {
     v: 464,
     titre: 'Les mises à jour sans souci',
     puces: [
@@ -90,7 +91,6 @@ export const NOUVEAUTES = [
     titre: 'Les monuments de Paris vérifiés',
     puces: [
       'Aucun cube ne dépasse des monuments',
->>>>>>> origin/main
     ],
   },
   {
