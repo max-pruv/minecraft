@@ -150,11 +150,13 @@ export function allureDevant(s, vObstacle = 0) {
 // l'axe 1 pour la ville, à l'heure de la rue — la même sur deux tablettes
 // (v305). Le carrefour se trouve sur les TRACÉS, pas sur le sol.
 import { etatFeu } from './feux.js';
-// à combien du point de croisement s'arrête le centre d'une voiture : la
-// demi-chaussée de ce qu'elle coupe, plus sa demi-longueur et un bloc
-export const ECART_DEVANT_VILLE = 4.5 + 2.2;    // la route devant une rue de la ville
-export const ECART_DEVANT_ROUTE = 7.5 + 2.2;    // la ville devant l'avenue d'entrée
-const VOIT_CROISEMENT = 40, COTE_CROISEMENT = 3;
+// Un croisement est le point où deux VOIES se coupent (chaque voie d'une
+// file : l'aller, le retour, les jumelles) : à combien de lui s'arrête le
+// centre d'une voiture — la demi-largeur d'une voiture de l'autre voie, sa
+// propre demi-longueur, et un bloc.
+export const ECART_DEVANT_VILLE = 1.13 + 2.2 + 1.2;   // la route devant la voie d'un circuit
+export const ECART_DEVANT_ROUTE = 1.13 + 2.2 + 1.2;   // la ville devant une voie de l'entrée
+const VOIT_CROISEMENT = 40, COTE_CROISEMENT = 1.5, ENGAGE_CROISEMENT = 8;
 // Pour une voiture en (x, z) qui va vers (ux, uz) : faut-il s'arrêter avant un
 // des croisements `liste` ({ x, z, autre }) ? Rend `{ s, orange }` ou null,
 // comme un feu de la ville (`feuRougeDevant`, main.js).
@@ -166,7 +168,9 @@ export function feuDeCroisement(x, z, ux, uz, liste, route, heureMs) {
     const ex = q.x - x, ez = q.z - z;
     if (Math.abs(ex * uz - ez * ux) > COTE_CROISEMENT) continue;
     const devant = ex * ux + ez * uz;
-    // déjà sur la ligne ou dans le carrefour : on le dégage
+    // déjà sur la ligne ou dans le carrefour (entre deux voies qu'il coupe) :
+    // on le dégage, et les voies suivantes ne l'arrêtent pas au milieu
+    if (devant > -ENGAGE_CROISEMENT && devant < q.autre) return null;
     if (devant < q.autre || devant > VOIT_CROISEMENT) continue;
     const s = devant - q.autre;
     if (!mieux || s < mieux.s) mieux = { s, orange: etat === 'orange' };
@@ -175,7 +179,8 @@ export function feuDeCroisement(x, z, ux, uz, liste, route, heureMs) {
 }
 // Où deux tracés (`Parcours`) se coupent : on les échantillonne tous les
 // deux blocs, une grille de huit range les segments du premier, et l'on garde
-// un point par croisement (deux à moins de six blocs n'en font qu'un).
+// un point par croisement de deux voies (deux à moins d'un bloc et demi n'en
+// font qu'un : l'aller et le retour d'une file sont deux voies).
 export function croisementsDeTraces(pa, pb, pas = 2) {
   const ech = (p) => { const out = []; for (let d = 0; d <= p.longueur; d += pas) { const q = p.a(d); out.push([q.x, q.z]); } return out; };
   const A = ech(pa), B = ech(pb), G = 8, grille = new Map();
@@ -197,7 +202,7 @@ export function croisementsDeTraces(pa, pb, pas = 2) {
         // un tracé qui en LONGE un autre n'est pas un croisement
         if (Math.abs(d1x * d2x + d1z * d2z) / (Math.hypot(d1x, d1z) * Math.hypot(d2x, d2z)) > 0.7) continue;
         const x = p[0] + t * d1x, z = p[1] + t * d1z;
-        if (!out.some((o) => Math.hypot(o.x - x, o.z - z) < 6)) out.push({ x, z });
+        if (!out.some((o) => Math.hypot(o.x - x, o.z - z) < 1.5)) out.push({ x, z });
       }
     }
   }
