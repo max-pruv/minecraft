@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Les passages des avenues (v466) — un passage se mesure le long de SA rue
+## Les passages des avenues (v467) — un passage se mesure le long de SA rue
 
 Une règle. Dans une ville bâtie à la main, un carrefour est le croisement de
 deux avenues nommées (`carrefoursDeVoies`) ; le passage se pose sur chacune, à
@@ -780,6 +780,19 @@ franchir, et la bande tomberait dedans. Trois avenues concourantes donnent un
 seul « bras » par avenue (le plus large dégagement), un croisement sous 30°
 n'a pas de passage, et seul le bitume du `sol*` de la ville en porte.
 `passagesVilles: false` le retire pour l'empreinte des 490 morceaux.
+## Une baie se soude (v466) — une optimisation de maillage se prouve par les triangles
+
+Une règle. Deux quads du même plan qui se touchent émettent des coins
+IDENTIQUES (position, normale, UV, tuile, teinte, matière, lueur) : sur les
+morceaux denses de Paris, un sommet de façade sur six. `souderTampons`
+(facadeshd.js) les fusionne sur les BITS des flottants envoyés au pilote,
+jamais sur une tolérance. La preuve n'est pas une capture : c'est que chaque
+coin de chaque triangle porte les mêmes dix-huit mots qu'avant
+(`memesTriangles`, `sonde-baies.mjs`) — mêmes triangles, mêmes valeurs, la
+même image par construction. `baiesSoudees: false` rejoue l'ancien tampon pour
+l'empreinte des 490 morceaux. Avant d'alléger une géométrie en changeant sa
+forme, on cherche ce qui se fusionne sans la changer.
+
 ## Le viaduc de la Manche (v465) — un ouvrage de voie se déclare au contact, et un profil relevé se borne aux gares
 
 Deux règles.

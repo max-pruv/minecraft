@@ -2490,7 +2490,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         && auPassageBiais.surPassage >= 0.6 * auPassageBiais.detail.filter((d) => d.tr === null).length,
       JSON.stringify(auPassageBiais));
 
-    // ---- ET AUX CARREFOURS DES AVENUES DE LONDRES (v466) -------------------
+    // ---- ET AUX CARREFOURS DES AVENUES DE LONDRES (v467) -------------------
     //
     // Londres n'a pas de trame : ses rues sont des avenues nommées, et jusqu'ici
     // aucun passage n'y était peint — on n'y traversait qu'au feu (1 à 3 fois

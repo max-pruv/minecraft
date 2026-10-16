@@ -295,7 +295,7 @@
   `poussees: []` et `auVert: 0` les trois fois, et le témoin de la v411
   (« ne descend pas sur la chaussée ») 0 descendu sur 5 scénarios les trois
   fois. Rien à corriger.
-- [x] **LONDRES, ROME, ZURICH : AUCUN PASSAGE PEINT (v402) — FAIT (Rome, Zurich en v421 ; Londres, Nice, Lille, San Francisco, Washington en v466, aux croisements des avenues nommées, `passages.js`).** Sur 267 villes
+- [x] **LONDRES, ROME, ZURICH : AUCUN PASSAGE PEINT (v402) — FAIT (Rome, Zurich en v421 ; Londres, Nice, Lille, San Francisco, Washington en v467, aux croisements des avenues nommées, `passages.js`).** Sur 267 villes
   engendrées, seules les 65 à trame alignée (`t.net`) peignent un passage ;
   Londres n'en peint aucun. Les passants n'y traversent qu'aux feux (Londres 1 à
   3 fois par minute). Peindre un passage en biais demande une géométrie (la
@@ -1107,7 +1107,7 @@
   `origin/main` : aucun « né sur la chaussée », aucun flâneur. Le témoin lit un
   instantané au sortir du témoin précédent ; c'est le palier suivant.
 - [x] **TRAVERSER À LONDRES ET AUX PASSAGES DES VILLES ENGENDRÉES SANS FEU
-  (v371) — FAIT en v466** (`passagePieton` lit `passageEn`, qui couvre les avenues des villes bâties à la main ; témoin `monte.js` à Londres). Reste : Paris garde son marquage dans la tuile ; les places (Trafalgar) n'ont pas de passage, leur sol n'est pas du bitume. Les passages peints sans feu ne sont lus qu'à Paris
+  (v371) — FAIT en v467** (`passagePieton` lit `passageEn`, qui couvre les avenues des villes bâties à la main ; témoin `monte.js` à Londres). Reste : Paris garde son marquage dans la tuile ; les places (Trafalgar) n'ont pas de passage, leur sol n'est pas du bitume. Les passages peints sans feu ne sont lus qu'à Paris
   (`marquageParis`) ; ailleurs on ne traverse qu'au feu. Londres : 1 à 3
   traversées par minute au centre, parce que la plupart des coins n'ont pas de
   feu. À voir : `CITY_BLOCK.CROSSWALK` des villes engendrées.
@@ -3268,15 +3268,25 @@
   à Paris en v299 dira ce que `journal_appareil` voit (façades HD, tas, fin).
   Si ça meurt encore, `?facadesmo=64` puis `?palier=bas` sont les échelons ;
   si ça tient large, le budget peut monter, avec le chiffre en commentaire.
-- [ ] **UNE BAIE DE FAÇADE COÛTE 56 À 69 SOMMETS PAR FACE — c'est le remède de
-  fond.** Mesuré sur les morceaux de l'ouest de Paris : 146 000 à 156 000
-  sommets de façades (`pierre-lisse` 68 000, `menuiserie` 61 000) pour 2 600 à
-  3 200 sommets de faces plates. Le budget borne ce qu'on tient ; ce qui
-  élargirait la portée à budget égal, c'est une baie moins bavarde (huisserie
-  en deux quads au lieu de moulures par sommet, volets sans épaisseur au-delà
-  de trois morceaux). À mesurer d'abord par tuile, avec
-  `sonde-facades-lourdes.mjs` (scratch de la session, à recopier dans
-  `tests/`).
+- [ ] **UNE BAIE DE FAÇADE COÛTE 56 À 69 SOMMETS PAR FACE — soudée en v466,
+  le reste mesuré.** Sonde par tuile (`tests/sonde-baies.mjs`, huit morceaux
+  les plus lourds de l'ouest) : 128 000 sommets de façades, dont 85 000 de
+  `pierre-lisse`. Par émetteur (échantillonné) : corniches 23 %, chaînages
+  21 %, `nobleBas` 13 %, `etageHaut` 9 %, ébrasements des bandes 11 %, appuis
+  et assises 10 %. Fait : la soudure des sommets identiques (un sur six,
+  −15 % de Mo, image identique bit à bit). Ce qui reste, et ce qu'on sait :
+  - les côtés d'une boîte filante (dalle de balcon, bandeau, corniche,
+    assise) contre la même boîte du bloc voisin sont cachés — borne haute
+    mesurée en les retirant tous : −8 % ; il faut savoir que le voisin émet
+    la MÊME boîte (même bloc, même style, même tirage `r`), sinon on ouvre un
+    trou au bout d'un balcon ;
+  - corniche à ressauts : le mur derrière (4 sommets) et le dessus des trois
+    premiers ressauts (12) sont enfermés ; les consoles sous la dalle ont leur
+    dessus caché (8) — quelques pour cent, exacts ;
+  - la soudure coûte 14 à 20 ms par morceau détaillé sous node : la mesurer
+    sur l'iPad (`?diag=1`, temps du worker) avant d'aller plus loin ;
+  - un « plan au lieu d'une boîte » (appui, bandeau) change ce qu'on voit
+    (le dessus et le dessous se lisent) : décision de Max, pas une optimisation.
 - [x] **LES TEXTURES MONTENT DE 16 À 266 EN VINGT SECONDES DE VOL** (sonde
   mémoire, tous les bras, hd 0 compris : 6 → 293). Ce sont les modèles de la
   flotte qui se chargent à l'approche d'une ville (`Body_PrimaryPaint` dans

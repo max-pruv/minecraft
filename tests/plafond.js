@@ -2641,6 +2641,42 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       JSON.stringify({ mesure: tr, barres: BARRES_TRAVAIL }));
   }
 
+  // UNE BAIE SE SOUDE (v467). La couche HD de Paris pesait jusqu'à onze
+  // mégaoctets par morceau dense de l'ouest (v299 : l'iPhone de Max tué par la
+  // mémoire), et c'est le NOMBRE DE SOMMETS qui décide. Un sommet sur six y
+  // était le double exact d'un autre (deux quads du même plan qui se touchent).
+  // Deux témoins, sur les huit morceaux les plus lourds (`sonde-baies.mjs`) :
+  //  • le POIDS : médiane et pire en Mo, soudé contre `baiesSoudees: false`
+  //    (l'ancien tampon, au bit près — c'est lui que lit l'empreinte des 490
+  //    morceaux). Sur l'ancien code l'option n'existe pas : les deux pèsent
+  //    pareil, et le témoin est rouge ;
+  //  • l'IMAGE : chaque coin de chaque triangle porte, bit à bit, les mêmes
+  //    dix-huit mots qu'avant. Mêmes triangles, mêmes valeurs : ce qu'on voit
+  //    ne peut pas changer.
+  {
+    const { poidsOuestParis, memesTriangles, LOURDS_OUEST } = await import('./sonde-baies.mjs');
+    const t0 = Date.now();
+    const neuf = await poidsOuestParis('../src', {}, 8, LOURDS_OUEST);
+    const vieux = await poidsOuestParis('../src', { baiesSoudees: false }, 8, LOURDS_OUEST);
+    const r = (x) => +x.toFixed(2);
+    verifier('une baie se soude : les morceaux les plus lourds de l\'ouest de Paris pèsent au moins un dixième de moins',
+      neuf.mediane < 0.9 * vieux.mediane && neuf.pire < 0.92 * vieux.pire,
+      `médiane ${r(vieux.mediane)} → ${r(neuf.mediane)} Mo, pire ${r(vieux.pire)} → ${r(neuf.pire)} Mo, sommets ${vieux.lourds.map((m) => m.sommets).join('/')} → ${neuf.lourds.map((m) => m.sommets).join('/')}, ${Date.now() - t0} ms`);
+    const { World, CHUNK } = await import('../src/world.js');
+    const { buildChunkTampons } = await import('../src/mesher.js');
+    const { positionDe } = await import('../src/mondes.js');
+    const P = positionDe('paris'), w = new World(); w.hd = 1;
+    const res = LOURDS_OUEST.slice(0, 4).map(([dx, dz]) => {
+      const cx = Math.floor(P.x / CHUNK) + dx, cz = Math.floor(P.z / CHUNK) + dz;
+      const a = buildChunkTampons(w, cx, cz, { detail: true }).facades;
+      const b = buildChunkTampons(w, cx, cz, { detail: true, baiesSoudees: false }).facades;
+      return { ...memesTriangles(a, b), sommets: `${b.positions.length / 3}→${a.positions.length / 3}` };
+    });
+    verifier('une baie soudée dessine les mêmes triangles, des mêmes valeurs, bit à bit',
+      res.every((x) => x.ok && x.coins > 0) && res.some((x) => x.sommets.split('→')[0] !== x.sommets.split('→')[1]),
+      JSON.stringify(res));
+  }
+
   // UNE BAIE, PAS DEUX (v457). Les villes engendrées posaient deux blocs
   // `ETAGE` l'un sur l'autre par étage : deux fenêtres dessinées l'une sur
   // l'autre (38 719 piles, 259 villes sur 269). Elles posent les bandes de
@@ -2819,7 +2855,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       JSON.stringify(res));
   }
 
-  // ET LES AVENUES DES VILLES BÂTIES À LA MAIN (v466). Londres, Nice, Lille,
+  // ET LES AVENUES DES VILLES BÂTIES À LA MAIN (v467). Londres, Nice, Lille,
   // San Francisco et Washington n'ont pas de trame : leurs passages se posent
   // aux croisements de leurs avenues nommées (`carrefoursDeVoies`), en
   // géométrie. Quarante-neuf morceaux au centre de chaque ville, avec et sans
@@ -3197,14 +3233,14 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         `${pas} pas, ${sansRail} sans ses quatre files de prismes · ${obs} obsidienne, ${planches} planche(s) sur ${colonnes} colonnes`);
       verifier('le sol continu suit le profil de la voie, dans la tranchée comme sur le remblai',
         // `tranchee > 100` est une borne de GARDE (la mesure a eu lieu), posée
-        // à la moitié : la rampe du viaduc (v466) relève la voie de deux blocs
+        // à la moitié : la rampe du viaduc (v467) relève la voie de deux blocs
         // au plus avant une rivière, et une tranchée de deux blocs y devient une
         // tranchée d'un bloc — 240 → 170 colonnes dans cette fenêtre, mesuré.
         continu && colonnes > 3000 && talus > 200 && surface >= colonnes * 0.85 && ecartSurf < 1e-6 && tranchee > 100 && tranchJuste === tranchee,
         `${surface} colonnes de surface sur ${colonnes} (${talus} de talus), écart max à la cote ${ecartSurf.toFixed(4)} · en tranchée ou remblai de deux blocs et plus : ${tranchJuste}/${tranchee}, et ${falaise} au bord d'une falaise (${((performance.now() - t0) / 1000).toFixed(1)} s)`);
     }
 
-    // LE VIADUC DE LA MANCHE (v466). Sur l'eau, la voie était une chaussée de
+    // LE VIADUC DE LA MANCHE (v467). Sur l'eau, la voie était une chaussée de
     // pierre au ras des flots : de la mer à droite et à gauche, une digue
     // dessous, chaque rivière barrée d'un mur. Le viaduc garde l'eau sous le
     // tablier (des piles tous les `PAS_PILE` blocs), le tablier est un ruban
@@ -3248,7 +3284,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       }
       verifier('l\'Eurostar passe la Manche sur un viaduc : la mer sous le tablier, des piles, aucune digue',
         neuf && pas > 150 && colonnes > 1000 && eau > colonnes * 0.8 && piles > 0 && digue === 0 && bas >= 31 + T.DEGAGE - 1e-6,
-        `${pas} pas sur la mer · ${colonnes} colonnes : ${eau} d'eau libre, ${piles} de pile, ${digue} autres · tablier au plus bas à ${bas.toFixed(2)} (surface 31)${neuf ? '' : ' — pas de viaduc (code d\'avant la v466)'}`);
+        `${pas} pas sur la mer · ${colonnes} colonnes : ${eau} d'eau libre, ${piles} de pile, ${digue} autres · tablier au plus bas à ${bas.toFixed(2)} (surface 31)${neuf ? '' : ' — pas de viaduc (code d\'avant la v467)'}`);
       verifier('le tablier du viaduc se dessine et porte l\'enfant aux mêmes cotes que les rails',
         neuf && pas > 150 && sansTablier === 0 && sansContact === 0 && ecartContact < 1e-6,
         `${sansTablier} pas sans ruban de tablier, ${sansContact} sans contact sur ${pas}, écart contact/rail ${ecartContact.toFixed(4)} (${((performance.now() - t0) / 1000).toFixed(1)} s)`);

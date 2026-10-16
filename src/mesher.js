@@ -607,7 +607,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
   // (`passagesBiais: false` les retire : l'empreinte des morceaux de la v352
   // garde ainsi la sortie d'avant, au bit près — un contenu neuf a ses témoins)
   // (`passagesVilles: false` retire ceux des avenues des villes bâties à la
-  // main, v466, pour la même empreinte)
+  // main, v467, pour la même empreinte)
   const biais = options.passagesBiais !== false, villes = options.passagesVilles !== false;
   if (biais || villes) emettreBandesPassages(solid, world, cx, cz, CHUNK, localGet, topY, { biais, villes });
 
@@ -619,7 +619,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
     cellulesSol: surface ? surface.cellules : 0,
     rubans,
     sol: sol ? sol.toTampons() : null,
-    facades: facades ? facades.toTampons() : null,
+    facades: facades ? facades.toTampons(options.baiesSoudees !== false) : null,
     plat: plat ? plat.toTampons() : null,
     platLumineux: platLumineux ? platLumineux.toTampons() : null,
     facadesDetaillees,
