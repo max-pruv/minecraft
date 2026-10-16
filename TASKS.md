@@ -6395,6 +6395,16 @@ l'embarquement a eu lieu, pas par une hypothèse.
   taxi (déclarés) ; `reseau.js` « hôte sans courtier » (déclaré). Mon premier
   jet, lui, rendait 29 rouges de `monte.js` seule : voir CLAUDE.md (v455), la
   fenêtre d'arrivée.
+  TROISIÈME PORTAIL (après fusion de la v454, arrêté à deux heures pendant
+  `reseau.js`) : la fusion avait placé `ciel.close()` (venu de main) devant le
+  témoin de l'arrivée, qui lit encore cette page — « Target page closed », la
+  fin de `monte.js` perdue, 2 sur 2 ; corrigé (fermeture après le témoin).
+  Rejouées SEULES ensuite : `monte.js` 227 verts, rouges les deux de Moscou
+  (déclarés) ; `reseau.js` 84 verts, rouge « hôte sans courtier » et « il le
+  REJOINT » (déclarés). Au portail aussi, tous déclarés : `reglages.js`
+  « un choix … part au serveur », `monte.js` la rue par tranches, le flâneur
+  sur la chaussée, la rue à l'allure d'une ville, le monde devant l'avion en
+  ville, `manhattan.js` taxi, `reseau.js` portière droite (vert seule).
   SECOND PORTAIL (après fusion de la v432, arrêté à deux heures par la borne de
   la tâche, `reseau.js` non terminée) : `carte.js` flèche du GPS et glisser
   bridé, `manhattan.js` trou et taxi, `monte.js` compilation à New York
