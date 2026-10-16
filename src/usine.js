@@ -63,14 +63,41 @@ export function USINE() {
 // Les cinq postes de la chaîne, en u (est-ouest) le long de la ligne v = 0.
 // Ces chiffres servent trois fois — le bâtisseur, le tracé du convoi et les
 // arrêts — et ne sont donc écrits qu'une fois.
+//
+// Chaque poste porte son PANNEAU (v463) : ce qu'on y fait, dit pour un enfant
+// de sept ans, en une phrase ou deux. Il s'affiche quand l'enfant entre dans
+// le poste à pied (`posteSousLesPieds`, lu par main.js) — un bandeau, pas un
+// bloc : la règle de la v256 (« on ne plante plus de panneau ») vaut toujours.
 export const POSTES = [
-  { u: -70, nom: 'la presse' },
-  { u: -52, nom: 'la carrosserie' },
-  { u: -32, nom: 'la peinture' },
-  { u: -14, nom: "l'assemblage" },
-  { u: -4, nom: 'le test' },
+  { u: -70, nom: 'la presse',
+    panneau: "🔨 La presse : elle frappe la tôle comme un emporte-pièce dans la pâte. Voilà les portes et le capot !" },
+  { u: -52, nom: 'la carrosserie',
+    panneau: "🤖 La carrosserie : les robots soudent les pièces ensemble. Les étincelles, c'est le métal qui fond pour se coller." },
+  { u: -32, nom: 'la peinture',
+    panneau: "🎨 La peinture : la voiture entre toute grise dans le tunnel… et ressort en couleur !" },
+  { u: -14, nom: "l'assemblage",
+    panneau: "🔋 Le mariage : on glisse la grosse batterie sous la caisse, puis on pose les roues, les sièges et les portes." },
+  { u: -4, nom: 'le test',
+    panneau: "✅ Le contrôle : on vérifie les phares, les freins, tout ! Les voitures finies t'attendent sur le parking." },
 ];
 const HALL = { u0: -78, u1: 2, v0: -20, v1: 20, h: 12 };     // le grand hall
+
+// Le poste où se tient l'enfant, ou -1 : dans le hall, au sol (sous le toit),
+// le poste le plus proche à moins de sept blocs le long de la chaîne. Pure,
+// pour que plafond.js la lise sous node.
+export function posteSousLesPieds(x, y, z) {
+  const p = USINE();
+  const u = x - p.x, v = z - p.z;
+  if (u < HALL.u0 || u > HALL.u1 || v < HALL.v0 || v > HALL.v1) return -1;
+  if (y > 33 + 1 + HALL.h) return -1;
+  let best = -1, dmin = 7;
+  POSTES.forEach((poste, i) => {
+    const d = Math.abs(u - poste.u);
+    if (d < dmin) { dmin = d; best = i; }
+  });
+  return best;
+}
+export { HALL };
 const TUNNEL = { u0: -38, u1: -26 };                          // la cabine de peinture
 export const PARC = { u0: 14, u1: 86, v0: -30, v1: 30 };      // le parking géant
 

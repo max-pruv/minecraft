@@ -607,7 +607,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
   // (`passagesBiais: false` les retire : l'empreinte des morceaux de la v352
   // garde ainsi la sortie d'avant, au bit près — un contenu neuf a ses témoins)
   // (`passagesVilles: false` retire ceux des avenues des villes bâties à la
-  // main, v455, pour la même empreinte)
+  // main, v465, pour la même empreinte)
   const biais = options.passagesBiais !== false, villes = options.passagesVilles !== false;
   if (biais || villes) emettreBandesPassages(solid, world, cx, cz, CHUNK, localGet, topY, { biais, villes });
 

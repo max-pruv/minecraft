@@ -658,7 +658,29 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
 
   // DÉPOSER L'ENFANT À CÔTÉ, debout, sur une case libre : côté conducteur
   // d'abord (la gauche), puis l'autre, puis derrière.
-  function deposer(a) {
+  // L'AVION CASSÉ (aviation) : pas de carrosserie froissée choc par choc — un
+  // atterrissage raté n'est pas un mur — mais la même fin que la voiture en
+  // feu : fumée noire, flammes, carcasse calcinée qui s'en va au bout de
+  // `DUREE_CARCASSE`, et `horsService` (on ne la reprend pas). Un choc
+  // d'histoire, pour que `versReseau` le dise à l'ami (il ne publie qu'une
+  // histoire non vide) ; marqué déjà appliqué, pour ne rien enfoncer. Aucun
+  // matériau, aucun programme neuf : ce sont les essaims chauffés à l'accueil.
+  function ecraser(a) {
+    const rec = fiche(a.mesh);
+    rec.animal = a;
+    const e = rec.etat;
+    if (!e.chocs.length) e.chocs.push({ f: 1, x: 0, z: -D.DEMI_LONG });
+    e.sante = 0; e.moteur = 0; e.enPanne = true; e.enFeu = true; e.eteint = false;
+    e.feu = Math.max(e.feu || 0, D.DELAI_SORTIE);   // l'enfant sort tout de suite
+    rec.appliques = e.chocs.length;
+    rec.prep = rec.prep || preparer(rec.root);
+    rec.nbEnfants = rec.root.children.length;
+    rec.tReel = performance.now();
+    a.horsService = true;
+    return rec.etat;
+  }
+
+  function deposer(a, message) {
     const cap = a.mesh.rotation.y, c = Math.cos(cap), s = Math.sin(cap);
     const y = a.pos.y;
     const libre = (x, z) => !world || !world.isSolid
@@ -669,7 +691,7 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
       if (libre(wx, wz)) { player.pos.set(wx, y + 0.05, wz); player.vel.set(0, 0, 0); break; }
     }
     if (player.camera && player.eyePosition) player.camera.position.copy(player.eyePosition());
-    toast('🧯 Ouf ! Tu es sorti·e à temps, sain et sauf. Prends une autre voiture !', 0x9fe0a8, 4000);
+    if (message !== null) toast(message || '🧯 Ouf ! Tu es sorti·e à temps, sain et sauf. Prends une autre voiture !', 0x9fe0a8, 4000);
   }
 
   // ---- les particules -------------------------------------------------------
@@ -919,7 +941,7 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
   }
 
   return {
-    auVolant, descend, deposer, update, choc, reparer, distant, chauffer, garderEpave,
+    auVolant, descend, deposer, ecraser, update, choc, reparer, distant, chauffer, garderEpave,
     brancherRue: (f) => { voitureRue = f; },
     // à plusieurs (v363) : le nom d'une voiture de la rue, et l'envoi
     brancherNoms: (f) => { nommer = f; },

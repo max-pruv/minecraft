@@ -1020,6 +1020,32 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('et la chaîne marque l\'arrêt à ses postes',
       vuUsine.arret, vuUsine.arret ? 'un arrêt tenu' : 'jamais vue à l\'arrêt');
 
+    // Les panneaux des postes (v463) : on descend à pied dans le hall, devant
+    // le tunnel de peinture, et le bandeau dit ce qu'on y fait. Le trajet de
+    // l'enfant, pas la fonction : on se pose, on marche, on lit l'écran.
+    await tab.evaluate(async () => {
+      const { USINE } = await import('./src/usine.js');
+      const g = window.__game;
+      const p = USINE();
+      g.player.flying = false;
+      g.player.pos.set(p.x - 44, g.world.terrainHeight(p.x - 44, p.z - 3) + 1.05, p.z - 3);
+      g.player.vel.set(0, 0, 0);
+      window.__panneauVu = '';
+    });
+    await dormir(600);
+    await tab.evaluate(async () => {
+      const { USINE } = await import('./src/usine.js');
+      const g = window.__game, p = USINE();
+      g.player.pos.set(p.x - 33, g.world.terrainHeight(p.x - 33, p.z - 3) + 1.05, p.z - 3);
+      g.player.vel.set(0, 0, 0);
+    });
+    const panneau = await tab.waitForFunction(() => {
+      const t = (document.getElementById('toast') || {}).textContent || '';
+      return /peinture/i.test(t) ? t : null;
+    }, null, { timeout: 12000, polling: 150 }).then((h) => h.jsonValue()).catch(() => '');
+    verifier('dans le hall, chaque poste dit à l\'enfant ce qu\'on y fait',
+      /peinture/i.test(panneau), panneau || 'aucun bandeau de poste');
+
     // Le garagiste : on approche du parc, trois voitures neuves attendent.
     await tab.evaluate(async () => {
       const { USINE } = await import('./src/usine.js');
@@ -2464,7 +2490,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         && auPassageBiais.surPassage >= 0.6 * auPassageBiais.detail.filter((d) => d.tr === null).length,
       JSON.stringify(auPassageBiais));
 
-    // ---- ET AUX CARREFOURS DES AVENUES DE LONDRES (v455) -------------------
+    // ---- ET AUX CARREFOURS DES AVENUES DE LONDRES (v465) -------------------
     //
     // Londres n'a pas de trame : ses rues sont des avenues nommées, et jusqu'ici
     // aucun passage n'y était peint — on n'y traversait qu'au feu (1 à 3 fois
@@ -6493,6 +6519,110 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         && manuel.toucheLaPiste.train >= 0.9 && !manuel.toucheLaPiste.ventre
         && !!manuel.arret && Math.abs(manuel.arret.v) < 0.1 && Math.abs(manuel.arret.y) < 0.3,
       `${manuel.err || ''} toucher ${JSON.stringify(manuel.toucheLaPiste)} · arrêt ${JSON.stringify(manuel.arret)} en ${manuel.arretMs} ms après le relâcher · gaz min ${manuel.gazMin}`);
+
+    // UN MAUVAIS ATTERRISSAGE CASSE L'AVION (v444).
+    //
+    // Max : « un avion devrait se crasher s'il atterrit mal ». Deux trajets
+    // d'enfant, sur une dalle qui n'est PAS une piste : un piqué pleins gaz
+    // (on touche à la pointe, au-delà de `toucherMax` — la fiche, lue ici), et
+    // un posé train rentré dans un champ. Dans les deux cas l'avion devient une
+    // épave en feu, hors service, et l'enfant est déposé DEBOUT à côté, plus
+    // aux commandes, avec un bandeau qui dit quoi faire. Sur l'ancien code, le
+    // premier freine et s'arrête, le second glisse sur le ventre : aucun ne
+    // casse rien.
+    const crash = await (async () => {
+      const cdp = await tab.context().newCDPSession(tab);
+      const dormirIci = (ms) => new Promise((f) => setTimeout(f, ms));
+      const toucher = (type, points) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points });
+      const out = {};
+      for (const cas of ['vite', 'ventre']) {
+        const prep = await tab.evaluate(async (cas) => {
+          const g = window.__game;
+          const { BLOCK } = await import('./src/blocks.js');
+          const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+          for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 400)); }
+          for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh);
+          g.animalManager.animals.length = 0;
+          g.player.keys.clear(); g.player.touchMove.f = 0; g.player.touchMove.s = 0;
+          g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined; g.player.flying = false;
+          const x0 = 30000, z0 = 30600, L = 300, W = 20;
+          let y0 = 0;
+          for (let d = -6; d <= L; d += 4) for (let w = -W; w <= W; w += 4) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
+          y0 += 2;
+          const dalle = [];
+          for (let d = -6; d <= L; d++) for (let w = -W; w <= W; w++) {
+            g.world.setBlock(x0 + d, y0, z0 + w, BLOCK.STONE); dalle.push([x0 + d, y0, z0 + w]);
+            for (let h = 1; h <= 6; h++) if (g.world.getBlock(x0 + d, y0 + h, z0 + w) !== 0) { g.world.setBlock(x0 + d, y0 + h, z0 + w, 0); dalle.push([x0 + d, y0 + h, z0 + w]); }
+          }
+          window.__dalleCrash = { x0, y0, z0, dalle };
+          g.player.yaw = -Math.PI / 2; g.player.pitch = 0;
+          g.player.pos.set(x0, y0 + 1.01, z0 + 0.5); g.player.vel.set(0, 0, 0);
+          await new Promise((f) => setTimeout(f, 1200));
+          g.animalManager.invoquer('avionligne', x0 + 3, z0);
+          await new Promise((f) => setTimeout(f, 800));
+          for (let e = 0; e < 8 && !g.player.pilote; e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 500)); }
+          if (!g.player.pilote) return { err: 'pas aux commandes' };
+          const p = g.player.pilote;
+          g.player.pos.set(x0, y0 + 14, z0 + 0.5);
+          g.player.avionEtat = 'vol'; g.player.avionEnVol = true;
+          g.player.vitesseAvion = cas === 'vite' ? p.max : 47;
+          g.player.trainSorti = cas === 'vite' ? 1 : 0; g.player.trainVoulu = cas === 'vite';
+          g.player.gaz = cas === 'vite' ? 1 : 0;
+          const r = document.getElementById('gaz-base').getBoundingClientRect();
+          return { toucherMax: p.toucherMax, max: p.max, cadran: { x: r.left + r.width / 2, haut: r.top + 14, bas: r.bottom - 14 } };
+        }, cas);
+        if (prep.err) { out[cas] = prep; continue; }
+        const joy = { x: 70, y: 640, id: 1 };
+        const gaz = { x: prep.cadran.x, y: cas === 'vite' ? prep.cadran.haut : prep.cadran.bas, id: 2 };
+        await toucher('touchStart', [joy]);
+        await toucher('touchStart', [joy, gaz]);
+        await dormirIci(150);
+        await toucher('touchMove', [{ ...joy, y: joy.y + 50 }, gaz]);
+        const t0 = Date.now();
+        let fin = null;
+        while (Date.now() - t0 < 40000) {
+          await dormirIci(200);
+          fin = await tab.evaluate(() => ({ etat: window.__game.player.avionEtat, crash: window.__game.player.crash || null, toucher: window.__game.player.dernierToucher || null }));
+          if (fin.etat === 'epave' || fin.etat === 'sol' || fin.etat === 'freinage') break;
+        }
+        await toucher('touchEnd', []);
+        const apres = await tab.evaluate(async () => {
+          const g = window.__game, t1 = performance.now();
+          while (performance.now() - t1 < 15000 && g.player.pilote) await new Promise((f) => setTimeout(f, 200));
+          await new Promise((f) => setTimeout(f, 1500));
+          // debout : on attend qu'il ait touché le sol (borné), la durée entre dans le message
+          const t2 = performance.now();
+          while (performance.now() - t2 < 6000 && !g.player.onGround) await new Promise((f) => setTimeout(f, 200));
+          const epave = g.animalManager.animals.find((b) => b.def.pilote);
+          const e = epave ? g.fun.degats.etat(epave.mesh) : null;
+          const toast = document.getElementById('toast');
+          return {
+            pilote: !!g.player.pilote, auVolant: !!(g.fun.montureConduite && g.fun.montureConduite()), sol: !!g.player.onGround,
+            loin: epave ? +Math.hypot(g.player.pos.x - epave.mesh.position.x, g.player.pos.z - epave.mesh.position.z).toFixed(1) : null,
+            enFeu: !!(e && e.enFeu), horsService: !!(epave && (epave.horsService || epave.mesh.userData.horsService)), y: +g.player.pos.y.toFixed(2),
+            bandeau: toast ? toast.textContent : '', duree: Math.round(performance.now() - t1),
+          };
+        });
+        out[cas] = { ...prep, fin, apres };
+        await tab.evaluate(() => {
+          const g = window.__game, P = window.__dalleCrash;
+          for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh);
+          g.animalManager.animals.length = 0;
+          g.player.pilote = null; g.player.avionEtat = undefined; g.player.avionEnVol = false; g.player.gaz = null;
+          if (P) for (const [x, y, z] of P.dalle) g.world.setBlock(x, y, z, 0);
+        });
+      }
+      return out;
+    })();
+    const casse = (c, raison) => c && !c.err && c.fin && c.fin.etat === 'epave' && c.fin.crash && c.fin.crash.raison === raison
+      && c.apres && !c.apres.pilote && !c.apres.auVolant && c.apres.sol && c.apres.loin != null && c.apres.loin < 12
+      && c.apres.enFeu && c.apres.horsService;
+    verifier('un piqué pleins gaz qui touche au-delà de la vitesse de la fiche casse l\'avion — épave en feu, l\'enfant debout à côté',
+      casse(crash.vite, 'vite') && crash.vite.fin.toucher && crash.vite.fin.toucher.vh > crash.vite.toucherMax,
+      JSON.stringify(crash.vite));
+    verifier('posé train rentré hors d\'une piste, l\'avion casse aussi — et le jeu dit quoi faire',
+      casse(crash.ventre, 'ventre') && /🛞|train/i.test(crash.ventre.apres.bandeau),
+      JSON.stringify(crash.ventre));
 
     // LE CADRAN DE CAP : LA VILLE VISÉE AU LOIN (v263).
     //

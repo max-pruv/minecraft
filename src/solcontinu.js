@@ -429,7 +429,7 @@ export function emettreRubans(buf, world, cx, cz, chunk) {
 // `localGet` lit le morceau lui-même (coordonnées locales) : aucun bloc lu hors
 // du morceau, aucun `getBlock` du monde — le travail d'un morceau (v352) ne
 // bouge pas pour des bandes peintes.
-// `quoi.biais` (v421) et `quoi.villes` (v455, les avenues des villes bâties à
+// `quoi.biais` (v421) et `quoi.villes` (v465, les avenues des villes bâties à
 // la main) se désarment chacun : l'empreinte des 490 morceaux les retire tous
 // deux, et un témoin compare chaque famille à son absence.
 export function emettreBandesPassages(buf, world, cx, cz, chunk, localGet, topY, quoi = { biais: true, villes: true }) {

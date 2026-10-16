@@ -127,7 +127,7 @@ function decouper(poly, amin, amax, bmin, bmax) {
   return p;
 }
 
-// --- LES VILLES BÂTIES À LA MAIN (v455) -------------------------------------
+// --- LES VILLES BÂTIES À LA MAIN (v465) -------------------------------------
 //
 // Londres, Nice, Lille, San Francisco et Washington n'ont pas de trame : leurs
 // rues sont des AVENUES NOMMÉES (`VOIES`), tracées sur le vrai plan, et leurs
