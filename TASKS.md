@@ -1212,7 +1212,7 @@
   200 blocs, donc hors de la livraison par construction (elle ne change que le
   sol de Las Vegas et des contours d'anneaux).
 - [ ] **LES ANNEAUX D'AVANT ROULENT PARFOIS HORS DE LA CHAUSSÉE (mesuré v387,
-  repris v404, v418, v432, v435, remesuré v455).** v455 (sous node, sur la v454,
+  repris v404, v418, v432, v435, remesuré sur la v454, 16 oct. 2026).** Remesure (sous node,
   `sonde-anneaux-villes.cjs` puis classement colonne par colonne) : 772 pas, 58
   anneaux, inchangé depuis la v435, et TOUTE la cause se nomme — herbe 218,
   feuillage 154, sable 136, pavé de place 125, pierre (fontaine, roche) 49,
