@@ -1937,15 +1937,6 @@ function updateChunks() {
   // L'heure des feux est celle de la rue (v305), pas celle de la page.
   world.heureRue = () => (vehicules ? vehicules.horloge() * 1000 : performance.now());
   vehicules.metro(traceAnneau(VILLE, world.terrainHeight(VILLE.x, VILLE.z)));
-  // La ligne 1 de Paris (v456), de la Porte Maillot au Château de Vincennes :
-  // jaune comme sur le plan, huit rames pour qu'on n'attende pas plus d'une
-  // demi-minute sur un tour de près de quatre minutes (1 271 blocs à dix blocs
-  // par seconde, trente arrêts de trois secondes) : 28 s entre deux rames.
-  vehicules.metro(traceLigne1Paris(), {
-    nom: 'métro ligne 1', emoji: '🟡', teinte: 0xf2c200,
-    nb: 4, vitesse: 10, rames: 8, pause: 3, arretsIndex: arretsLigne1Paris(),
-    souterrain: true,
-  });
   vehicules.course(traceCourse(CIRCUIT, world.terrainHeight(CIRCUIT.x, CIRCUIT.z)));
   // La chaîne de la Giga-usine : les voitures marquent l'arrêt à chaque poste
   // — presse, carrosserie, peinture, assemblage, test — puis font le tour du
@@ -2091,6 +2082,17 @@ function updateChunks() {
     vehicules.circulation(pts, 41, { ville: seg.de, voie: 'autoroute', route: seg.route.nom, voies: voiesAutoroute, voiesAuBesoin: true,
       limite: (x, z) => (world.cityAt(x, z) || villeMondeEn(x, z) ? ALLURE_VOIE.avenue : ALLURE_VOIE.autoroute) });
   }
+  // La ligne 1 de Paris (v456), de la Porte Maillot au Château de Vincennes,
+  // créée EN DERNIER : des témoins lisent les premiers convois par leur rang
+  // (la monoplace est la troisième). Elle est
+  // jaune comme sur le plan, huit rames pour qu'on n'attende pas plus d'une
+  // demi-minute sur un tour de près de quatre minutes (1 271 blocs à dix blocs
+  // par seconde, trente arrêts de trois secondes) : 28 s entre deux rames.
+  vehicules.metro(traceLigne1Paris(), {
+    nom: 'métro ligne 1', emoji: '🟡', teinte: 0xf2c200,
+    nb: 4, vitesse: 10, rames: 8, pause: 3, arretsIndex: arretsLigne1Paris(),
+    souterrain: true,
+  });
 })();
 
 // --- block highlight -----------------------------------------------------------

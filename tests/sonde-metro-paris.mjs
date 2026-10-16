@@ -60,7 +60,7 @@ export async function mesurerLigne1(src = new URL('../src/', import.meta.url).hr
   };
   const descentes = [];
   for (const b of V.BOUCHES_LIGNE1) {
-    if (!b) { descentes.push({ nom: '?', arrive: false, sansBouche: true }); continue; }
+    if (!b) continue;   // une station sans bouche (Nation) : comptée dans `bouches`
     const q = b.q;
     const surQuai = (x, y, z) => {
       if (y !== yr + 2) return false;
