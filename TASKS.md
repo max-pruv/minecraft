@@ -7227,11 +7227,15 @@ l'embarquement a eu lieu, pas par une hypothèse.
   voir en ligne, sinon Alice ne verra qu'un enfant qui glisse à toute vitesse.
 
 - [ ] **Les garages, la suite** — v188 en pose deux dans la bibliothèque et
-  garde la voiture qu'on y laisse. Ce qui manque : un garage posé sur une
-  PENTE s'enterre, parce que la pose cherche le point le plus bas sous
-  l'emprise (juste pour un monument, fatal pour un bâtiment de plain-pied) ;
-  un garage démoli laisse une place de parking invisible ; et rien ne garde
-  encore les autres véhicules — la voiture seule est `garable`.
+  garde la voiture qu'on y laisse. La pente est faite en v455 (`planDePose` :
+  le seuil, des fondations dessous, la terre dégagée dessus, aucun bloc
+  d'enfant remplacé). Ce qui manque : un garage démoli laisse une place de
+  parking invisible ; rien ne garde encore les autres véhicules — la voiture
+  seule est `garable` ; et le seuil garde une marche d'un bloc — un plancher
+  à fleur du sol (dalle, bitume) est un sol de ville que le sol continu
+  raccorde au relief (v308) et y laisse une lèvre de 0,2 bloc où l'enfant à
+  pied bute (sonde v455) : le rendre plat exige que `colonneNaturelle` sache
+  qu'un dessus a été posé, zone du sol continu.
 
 - [ ] **Apprendre** — guides dans les villes, questions audio.
 

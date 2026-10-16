@@ -453,9 +453,141 @@ const BLOCS = 40000;
       surPlace.changed === false && (surPlace.bouges || []).length === 0,
       JSON.stringify(surPlace));
 
+    // ---- UN GARAGE SUR UNE PENTE (v455) ------------------------------------
+    //
+    // La bibliothèque posait tout sur le point le plus bas de l'emprise : un
+    // garage sur une pente avait son fond dans la colline, la pièce pleine de
+    // terre, et l'on n'y entrait plus. On éprouve le trajet de l'enfant : une
+    // pente CHERCHÉE (la façade plus basse que le fond, v285), un bloc à lui
+    // déjà posé dans l'emprise, le garage posé devant soi, on y entre à pied,
+    // puis en voiture, on la range, et on la retrouve après rechargement.
+    const lou = await banc.jouerSeul('Lou');
+    const pente = await lou.evaluate(async () => {
+      const g = window.__game, w = g.world;
+      const mods = await import('./src/monuments.js');
+      const m = mods.monumentBati('garage');
+      const p0 = g.player.pos;
+      let site = null;
+      for (let r = 40; r <= 900 && !site; r += 9) {
+        for (let a = 0; a < 24 && !site; a++) {
+          const x = Math.round(p0.x + r * Math.cos(a * Math.PI / 12)), z = Math.round(p0.z + r * Math.sin(a * Math.PI / 12));
+          if (w.cityAt(x, z)) continue;
+          const hf = w.terrainHeight(x, z + 10), hb = w.terrainHeight(x, z - 10);
+          if (hb - hf < 4 || hb - hf > 8 || hf <= 33) continue;
+          if (Math.abs(w.terrainHeight(x - 6, z) - w.terrainHeight(x + 6, z)) > 1) continue;
+          if (w.terrainHeight(x, z + 16) > hf + 1 || w.terrainHeight(x, z + 16) < hf - 1) continue;
+          site = { x, z, hf, hb };
+        }
+      }
+      if (!site) return { err: 'pas de pente trouvée' };
+      for (const a of g.animalManager.animals) g.animalManager.scene.remove(a.mesh);
+      g.animalManager.animals.length = 0;
+      // un bloc de l'enfant, posé AVANT, dans l'emprise (contre le mur gauche)
+      const yk = w.sommetColonne(site.x - 4, site.z - 4) + 1;
+      w.setBlock(site.x - 4, yk, site.z - 4, 23, 1);
+      const recul = Math.max(m.emprise.l, m.emprise.p) / 2 + 6;
+      g.player.pos.set(site.x + 0.5, w.sommetColonne(site.x, site.z + recul) + 1.05, site.z + recul + 0.5);
+      g.player.yaw = 0;
+      g.fun.poserBati(m);
+      const gar = await import('./src/garages.js');
+      const box = Object.values(gar.garagesDe(g.world.ctx)).pop();
+      return { ...site, box, enfant: { x: site.x - 4, y: yk, z: site.z - 4, intact: w.getBlock(site.x - 4, yk, site.z - 4) === 23 } };
+    });
+    // On marche (puis on roule) droit vers le fond, cap −z, jusqu'à la place
+    // ou jusqu'à ne plus avancer : un mur — ou de la terre — arrête à chaque pas.
+    const allerAuFond = async (secondes) => {
+      // la marche du seuil se saute, comme pour entrer dans toute maison
+      await lou.keyboard.down('KeyW');
+      await lou.keyboard.down('Space');
+      const r = await lou.evaluate((s) => new Promise((fin) => {
+        const g = window.__game; let sim = 0, prec = performance.now(), zmin = g.player.pos.z;
+        const tic = (t) => {
+          sim += Math.min(Math.max((t - prec) / 1000, 0), 0.05); prec = t;
+          zmin = Math.min(zmin, g.player.pos.z);
+          if (sim >= s) fin({ z: g.player.pos.z, zmin, y: g.player.pos.y }); else requestAnimationFrame(tic);
+        };
+        requestAnimationFrame(tic);
+      }), secondes);
+      await lou.keyboard.up('KeyW'); await lou.keyboard.up('Space');
+      return r;
+    };
+    let aPied = null, enVoiture = null, rangee = null;
+    if (!pente.err && pente.box) {
+      const b = pente.box;
+      await lou.evaluate((b) => { const g = window.__game; g.player.pos.set(b.x + 0.5, g.world.sommetColonne(b.x, b.z + 12) + 1.05, b.z + 12.5); g.player.vel.set(0, 0, 0); g.player.yaw = 0; }, b);
+      await dormir(300);
+      aPied = await allerAuFond(6);
+      // en voiture, depuis le même seuil
+      enVoiture = await lou.evaluate(async (b) => {
+        const g = window.__game, w = g.world;
+        const att = (ms) => new Promise((r) => setTimeout(r, ms));
+        g.player.pos.set(b.x + 0.5, w.sommetColonne(b.x, b.z + 14) + 1.05, b.z + 14.5); g.player.yaw = 0;
+        const auto = g.animalManager.invoquer('voiture', b.x + 0.5, b.z + 14.5);
+        if (!auto) return { err: 'pas de voiture' };
+        auto.pos.set(b.x + 0.5, w.sommetColonne(b.x, b.z + 14) + 1, b.z + 14.5); auto.yaw = 0;
+        const btn = document.getElementById('ride-btn');
+        for (let e = 0; e < 6 && !g.fun.montureConduite?.(); e++) { btn.click(); await att(600); }
+        return { monte: !!(g.fun.montureConduite ? g.fun.montureConduite() : true) };
+      }, pente.box);
+      if (!enVoiture.err) {
+        await lou.keyboard.down('KeyW');
+        const fin = await lou.evaluate((b) => new Promise((ok) => {
+          const g = window.__game; let sim = 0, prec = performance.now(), zPrec = g.player.pos.z, immobile = 0;
+          const tic = (t) => {
+            const d = Math.min(Math.max((t - prec) / 1000, 0), 0.05); sim += d; prec = t;
+            const z = g.player.pos.z;
+            immobile = Math.abs(z - zPrec) < 0.002 ? immobile + d : 0; zPrec = z;
+            if (z < b.z + 1 || sim > 25 || immobile > 3) ok({ z, y: g.player.pos.y, sim: Math.round(sim * 10) / 10 }); else requestAnimationFrame(tic);
+          };
+          requestAnimationFrame(tic);
+        }), pente.box);
+        await lou.keyboard.up('KeyW');
+        Object.assign(enVoiture, fin);
+        rangee = await lou.evaluate(async () => {
+          const g = window.__game;
+          const att = (ms) => new Promise((r) => setTimeout(r, ms));
+          await att(1500);
+          const btn = document.getElementById('ride-btn');
+          for (let e = 0; e < 6 && g.fun.montureConduite?.(); e++) { btn.click(); await att(600); }
+          const gar = await import('./src/garages.js');
+          const v = Object.values(gar.garagesDe(g.world.ctx)).find((x) => x.voiture);
+          return v ? { flotte: v.voiture.flotte, y: v.voiture.y, gy: v.y } : null;
+        });
+      }
+    }
+    verifier('🅿️ un garage posé sur une pente ne s\'enterre pas : on y entre à pied jusqu\'au fond',
+      !pente.err && aPied && aPied.zmin < pente.box.z - 4,
+      JSON.stringify({ pente, aPied }));
+    verifier('🅿️ et le bloc que l\'enfant avait posé dans l\'emprise est resté',
+      !pente.err && pente.enfant.intact, JSON.stringify(pente.enfant || pente));
+    verifier('🅿️ on y entre en voiture par la porte, et la voiture y est rangée',
+      !!enVoiture && !enVoiture.err && enVoiture.z < pente.box.z + 1 && !!rangee,
+      JSON.stringify({ enVoiture, rangee }));
+    let retrouveeLou = null;
+    if (rangee) {
+      await lou.reload({ waitUntil: 'load', timeout: 90000 });
+      await lou.waitForFunction(() => !!window.__game, null, { timeout: 90000 });
+      await lou.evaluate(() => { window.__game.edu.today().libreJusqua = 86400; document.getElementById('play-btn').click(); });
+      await lou.waitForFunction(() => window.__game.running, null, { timeout: 90000 });
+      retrouveeLou = await lou.evaluate(async (b) => {
+        const g = window.__game;
+        g.player.pos.set(b.x + 0.5, b.y + 6, b.z + 14.5);
+        const gar = await import('./src/garages.js');
+        for (let k = 0; k < 40; k++) {
+          const a = g.animalManager.animals.find((x) => x.garage);
+          if (a) return { flotte: (a.mesh && a.mesh.userData.flotte) || null, y: a.pos.y, gy: b.y, rangee: !!Object.values(gar.garagesDe(g.world.ctx)).find((x) => x.voiture) };
+          await new Promise((r) => setTimeout(r, 500));
+        }
+        return { absente: true };
+      }, pente.box);
+    }
+    verifier('🅿️ après un rechargement, elle est au garage, sur le plancher',
+      !!retrouveeLou && !retrouveeLou.absente && retrouveeLou.flotte === rangee.flotte && Math.abs(retrouveeLou.y - (retrouveeLou.gy + 1)) < 1.5,
+      JSON.stringify({ retrouveeLou, rangee }));
+
     verifier('aucune erreur JavaScript de bout en bout',
-      tab.erreurs.length === 0 && autre.erreurs.length === 0,
-      JSON.stringify([tab.erreurs.slice(0, 2), autre.erreurs.slice(0, 2)]));
+      tab.erreurs.length === 0 && autre.erreurs.length === 0 && lou.erreurs.length === 0,
+      JSON.stringify([tab.erreurs.slice(0, 2), autre.erreurs.slice(0, 2), lou.erreurs.slice(0, 2)]));
   } finally {
     await banc.fermer();
     nuage.fermer();
