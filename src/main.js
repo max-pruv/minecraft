@@ -47,7 +47,7 @@ import { decor, voirTout } from './couches.js';
 import { contexteAudio, sortieAudio, reglerSon, sonActif, etatSon, radioEnCours, generationAudio } from './sons.js';
 import { traceAnneau } from './ville.js';
 import { traceCourse } from './circuit.js';
-import { USINE, PARC, traceChaine } from './usine.js';
+import { USINE, PARC, traceChaine, POSTES, posteSousLesPieds } from './usine.js';
 import { circulationsAPlier, tracesCirculationMain, avenueDEntree, villeMondeEn } from './villesmonde.js';
 import { ALLURE_VOIE } from './circulation.js';
 import { createPassants } from './passants.js';
@@ -3376,6 +3376,17 @@ function aeroportiste(dt) {
     // d'un vrai aéroport.
     if (ne && cap !== undefined) ne.yaw = cap;
   }
+}
+
+// Les panneaux de la chaîne (v463) : en entrant à pied dans un poste, l'enfant
+// lit ce qu'on y fait. Une fois par entrée — rester sur place ne répète rien.
+let posteLu = -1;
+function guideUsine() {
+  const pu = USINE();
+  if (Math.abs(player.pos.x - pu.x) > 120 || Math.abs(player.pos.z - pu.z) > 120) { posteLu = -1; return; }
+  const i = player.flying ? -1 : posteSousLesPieds(player.pos.x, player.pos.y, player.pos.z);
+  if (i >= 0 && i !== posteLu) toast(POSTES[i].panneau, 0xffd75e, 6000);
+  posteLu = i;
 }
 
 function garagiste(dt) {
@@ -8215,6 +8226,7 @@ function frame(now) {
     signalerElanDeVol();
     animalManager.update(dt);
     garagiste(dt);
+    guideUsine();
     aeroportiste(dt);
     animerLesVilles(dt);
     // Les personnages lointains — la garnison du château, les astronautes de

@@ -20,6 +20,30 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v463 — L'usine se visite : chaque poste dit ce qu'on y fait
+
+**Pourquoi.** La Giga-usine d'Austin (v168) a sa chaîne : la voiture y passe
+de la presse à la carrosserie, à la peinture, à l'assemblage et au contrôle,
+puis on la conduit sur le parking. Mais rien ne disait à l'enfant ce qui se
+passe à chaque poste — des machines, des robots, un tunnel, sans un mot.
+
+**Ce que ça change.** En entrant à pied dans un poste du hall, un bandeau dit,
+en une phrase pour un enfant de sept ans, ce qu'on y fait : la presse qui
+frappe la tôle comme un emporte-pièce, les robots qui soudent, la voiture
+grise qui ressort en couleur, le « mariage » de la batterie et de la caisse,
+le contrôle avant le parking. Une fois par entrée, jamais en vol. Rien d'autre
+ne bouge : ni le bâtiment, ni le sol, ni la conduite.
+
+**Ce qui le prouve.** Trois témoins. Dans `plafond.js`, sous node : les cinq
+postes ont leur panneau (25 mots au plus) et le poste se reconnaît sous les
+pieds, pas dehors ni en vol — rouge sur l'ancien code (aucun panneau) ; et le
+trajet à pied sur le bâtisseur lui-même, de la porte ouest à la porte est par
+chaque poste (vert des deux côtés à dessein : il garde la visite). Dans
+`monte.js`, l'enfant posé à pied dans le hall, puis devant le tunnel, lit le
+bandeau de la peinture à l'écran. Les deux empreintes du relief sont
+intactes : aucun bloc écrit, aucun repère déplacé.
+
+---
 ## v462 — Un mauvais atterrissage casse l'avion
 
 **Pourquoi.** Max : « un avion devrait se crasher s'il atterrit mal ».
