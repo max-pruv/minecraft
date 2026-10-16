@@ -6,12 +6,36 @@
 
 export const NOUVEAUTES = [
   {
-    v: 459,
+    v: 462,
     titre: 'L\'usine explique ses postes',
     puces: [
       'Chaque poste de l\'usine dit ce qu\'il fait',
       'La presse, les robots, la peinture',
       'Puis on conduit la voiture neuve',
+    ],
+  },
+  {
+    v: 461,
+    titre: 'De Florence à Rome en voiture',
+    puces: [
+      'Une autoroute relie Florence et Rome',
+      'On roule de Milan à Naples',
+    ],
+  },
+  {
+    v: 460,
+    titre: 'Washington se raconte',
+    puces: [
+      'Des panneaux à lire devant les monuments',
+      'Des questions sur Washington dans le quiz',
+    ],
+  },
+  {
+    v: 459,
+    titre: 'La grande roue de Las Vegas',
+    puces: [
+      'La High Roller est une vraie roue',
+      'Elle domine la tour Eiffel de Las Vegas',
     ],
   },
   {

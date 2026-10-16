@@ -598,6 +598,7 @@ const VRAIES_KM = [
       out.convoiI95Sud = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'I-95 Sud') || null;
       out.convoiTomei = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'Tōmei') || null;
       out.convoiM40 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'M40') || null;
+      out.convoiA1Centre = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A1 Centre') || null;
       out.convoiA6 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A6') || null;
       out.convoiA8 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'A8') || null;
       out.convoiUS101 = (g.vehicules && g.vehicules.etat ? g.vehicules.etat() : []).find((c) => c.route === 'US-101') || null;
@@ -1072,6 +1073,18 @@ const VRAIES_KM = [
       && ['milan', 'bologne'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'A1 Nord' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7)),
       JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiA1Nord ? { nom: a1.convoiA1Nord.nom, voitures: (a1.convoiA1Nord.modeles || []).length } : 'aucun convoi A1 Nord',
         surRail: a1.surRail && a1.surRail['A1 Nord'], entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'A1 Nord') }));
+
+    // L'A1 CENTRE (v461) : Florence–Rome, le maillon qui manquait — l'Autostrada
+    // del Sole va désormais de Milan à Naples. La Frecciarossa est sur l'axe
+    // direct : la route reste à l'EST du rail d'un bout à l'autre, contourne
+    // le massif par l'est et entre dans Rome à l'est de Fiumicino. Rouge sur
+    // l'ancien code (pas de route, pas de convoi).
+    verifier('l\'A1 Centre relie Florence à Rome sans toucher la Frecciarossa, et des voitures entrent dans les deux villes par une rue propre',
+      !a1.absent && !!a1.convoiA1Centre && a1.convoiA1Centre.routier && (a1.convoiA1Centre.modeles || []).length >= 10
+      && !!a1.surRail && !!a1.surRail['A1 Centre'] && a1.surRail['A1 Centre'][0] > 100 && a1.surRail['A1 Centre'][1] === 0
+      && ['florence', 'rome'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'A1 Centre' && !e.dans && e.eau === 0 && e.vus >= 20 && e.rue >= e.n * 0.7)),
+      JSON.stringify(a1.absent ? a1 : { convoi: a1.convoiA1Centre ? { nom: a1.convoiA1Centre.nom, voitures: (a1.convoiA1Centre.modeles || []).length } : 'aucun convoi A1 Centre',
+        surRail: a1.surRail && a1.surRail['A1 Centre'], entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'A1 Centre') }));
 
     // L'A24 (v334) : Berlin–Hambourg, la plaine de l'Elbe. Hambourg s'entre par
     // l'est, porte à vingt-quatre blocs du bord : au nord-est, l'eau touche son

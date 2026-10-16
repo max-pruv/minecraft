@@ -271,6 +271,7 @@ const GARDIENS = {
   // d'attrape — et c'est la VOIX du jeu : « fais demi-tour », « Sauvegarde
   // allégée », « un parent vient de changer tes réglages ». Ses gardiens sont donc
   // ceux de `main.js`, plus les suites où un message est lui-même un verdict.
+  'src/guides.js': ['washington.js'],
   'src/bandeau.js': ['carte.js', 'monte.js', 'washington.js', 'manhattan.js',
     'maj.js', 'reglages.js', 'reseau.js'],
   'src/personnages.js': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],

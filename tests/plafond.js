@@ -445,7 +445,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
 
   verifier('le ciel est monté', HEIGHT >= 160, `${HEIGHT} blocs`);
 
-  // --- L'USINE SE VISITE À PIED, POSTE PAR POSTE (v459) ----------------------
+  // --- L'USINE SE VISITE À PIED, POSTE PAR POSTE (v462) ----------------------
   //
   // La chaîne de la Giga-usine se construit de poste en poste depuis la v168 ;
   // rien ne disait à l'enfant ce qui s'y passe. Chaque poste porte désormais
@@ -1063,7 +1063,11 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       // des monuments remis à l'échelle autour de lui.
       // (Le campanile de Venise, les tours de Tokyo : remis à l'échelle par
       // leur bâtisseur neuf en v357, ils sont dans la table du module.)
-      'Barcelone|Sagrada Família': 172, 'Las Vegas|Le Luxor': 107 };
+      'Barcelone|Sagrada Família': 172, 'Las Vegas|Le Luxor': 107,
+      // v459 : la High Roller (167 m) à son vrai rayon sur sa gare
+      // d'embarquement ; sur l'ancien code, seize blocs sous la demi-tour
+      // Eiffel (165 m) à quarante-cinq — l'inversion que la v353 déclarait.
+      'Las Vegas|La High Roller': 167 };
     const EV = EM && EM.ECHELLES_VILLES ? EM.ECHELLES_VILLES : {};
     const EMAIN = EM && EM.ECHELLES_MAIN ? EM.ECHELLES_MAIN : {};
     const ciel = [...new Map([...Object.entries({ ...EV, ...EMAIN }).map(([k, e]) => [k, e.vraie]), ...Object.entries(FIXES)])]
@@ -1351,7 +1355,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   // `sonde-monuments-hd.cjs` : une cellule de voxel exposée par le côté, que le
   // modèle ne couvre pas.
   //
-  // ET JUSQU'AU SOL, EN LISANT LE MONDE (v459). Les « vingt-quatre cubes du
+  // ET JUSQU'AU SOL, EN LISANT LE MONDE (v462). Les « vingt-quatre cubes du
   // parvis de Notre-Dame », déclarés en dette depuis la v335, n'étaient pas
   // des cubes : le parvis est posé à la couche 0, celle du bloc de surface, et
   // ses flancs touchent le sol de la ville (0 voisine d'air sur 29, mesuré).

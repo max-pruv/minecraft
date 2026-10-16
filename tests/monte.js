@@ -1020,7 +1020,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('et la chaîne marque l\'arrêt à ses postes',
       vuUsine.arret, vuUsine.arret ? 'un arrêt tenu' : 'jamais vue à l\'arrêt');
 
-    // Les panneaux des postes (v459) : on descend à pied dans le hall, devant
+    // Les panneaux des postes (v462) : on descend à pied dans le hall, devant
     // le tunnel de peinture, et le bandeau dit ce qu'on y fait. Le trajet de
     // l'enfant, pas la fonction : on se pose, on marche, on lit l'écran.
     await tab.evaluate(async () => {

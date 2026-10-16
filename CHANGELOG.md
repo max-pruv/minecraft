@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v459 — L'usine se visite : chaque poste dit ce qu'on y fait
+## v462 — L'usine se visite : chaque poste dit ce qu'on y fait
 
 **Pourquoi.** La Giga-usine d'Austin (v168) a sa chaîne : la voiture y passe
 de la presse à la carrosserie, à la peinture, à l'assemblage et au contrôle,
@@ -44,6 +44,86 @@ bandeau de la peinture à l'écran. Les deux empreintes du relief sont
 intactes : aucun bloc écrit, aucun repère déplacé.
 
 ---
+
+## v461 — L'autoroute de Florence à Rome
+
+**Pourquoi.** L'Autostrada del Sole s'arrêtait à Florence et reprenait à
+Rome : Milan–Bologne (A1 Nord), Bologne–Florence (Autosole) et Rome–Naples
+(A1 Sud) existaient, mais pas le tronçon du milieu. C'était le dernier
+corridor instruit au tableau de `TASKS.md` qui n'était ni fait ni bloqué :
+l'axe direct est celui de la Frecciarossa, et Fiumicino est à son bout.
+
+**Ce que ça change.** Une autoroute de 1 217 blocs relie Florence à Rome, à
+l'est du rail d'un bout à l'autre. Elle sort de Florence vers l'est, contourne
+le massif des Apennins par l'est, descend la plaine au nord de Rome à l'est de
+l'aérodrome et entre dans la ville par une avenue de dix-huit blocs. Des
+voitures y roulent ; on peut désormais aller en voiture de Milan à Naples.
+
+**Ce qui le prouve.** Un témoin neuf dans `carteMonde.js` (rouge sur l'ancien
+code : pas de route, pas de convoi) : le convoi roule, aucune colonne
+d'emprise sur le rail, les deux entrées sur la rue sans bloc ni eau. Sous
+node, sur le vrai registre : 12 084 colonnes d'emprise, zéro sur un rail, un
+repère ou une autre route, zéro dans une ville ou dans la marge d'un
+aérodrome ; trois ponts, 76 traversées de pont sur 76 (toutes les routes),
+zéro trou aux culées sur 138 423 points, zéro trou au joint sur 19 890 ; la
+table des raccords courts inchangée (l'entrée de Florence par 32°, la
+première trouvée, roulait dans un anneau et l'aurait exigée) ; aucun tablier
+de ville creusé (plein est, le talus descendait sur un pont de l'Arno : le
+portail l'a dit, dix-huit pas, et la sortie est passée à −10°). Les deux
+empreintes du relief de `plafond.js` sont intactes : une route écrit des
+blocs, elle ne touche pas `terrainHeight`.
+
+---
+
+## v460 — Washington se raconte
+
+**Pourquoi.** La capitale est pleine d'histoires — pourquoi la ville est si
+basse, d'où viennent les cerisiers, pourquoi les avenues coupent la grille en
+diagonale, pourquoi Georgetown n'a pas de métro — et toutes vivaient dans les
+commentaires de `washington.js`. Un enfant de sept ans ne lit pas le code :
+rien de tout cela ne l'atteignait (dette « Ce que Washington a à apprendre »).
+
+**Ce que ça change.** En arrivant devant sept lieux (le Capitole, l'obélisque,
+le Lincoln Memorial, les cerisiers du Tidal Basin, la Maison-Blanche, Dupont
+Circle, Georgetown), un panneau de deux phrases s'affiche en haut de l'écran
+(`src/guides.js`). Une fois par visite : il faut s'éloigner pour qu'il
+repasse. Jamais deux d'un coup : neuf secondes de vraie vie entre deux
+panneaux. Les mêmes faits, vérifiés, deviennent quatorze questions de la
+Découverte (« Washington ») dans le quiz — rien n'est retiré au mode éducatif.
+
+**Ce qui le prouve.** Trois témoins neufs, rouges sur `origin/main` : la règle
+sous node (`washington.js` : un panneau en tournant au Lincoln, deux après une
+nouvelle visite, 9 000 ms entre deux lieux, aucun rayon qui en recouvre un
+autre) ; le trajet de l'enfant (`washington.js` : il marche jusqu'au Lincoln,
+le bandeau affiche son panneau une fois) ; la banque de questions
+(`parent.js` : quatre propositions distinctes par question, les faits des
+panneaux présents).
+
+---
+
+## v459 — La grande roue de Las Vegas domine la tour Eiffel du Strip
+
+**Pourquoi.** La dette des monuments plus bas que leur ville est soldée : plus
+une seule entrée `lot` dans `BAS_DECLARES` ni dans `VILLES_SANS_CIEL`, et le
+témoin de `plafond.js` le confirme (tout monument sous la médiane de ses
+immeubles est déclaré `vrai`). Restait l'inversion déclarée en v353 : la High
+Roller (167 m, la plus haute roue du monde) était un gabarit de seize blocs,
+sous la demi-tour Eiffel de l'hôtel Paris (165 m) à quarante-cinq. Le ciel de
+Las Vegas disait l'inverse du vrai.
+
+**Ce que ça change.** La High Roller a son bâtisseur (dans la boîte de son
+repère, qui ne bouge pas) : une roue de rayon neuf — une roue ne s'étire pas —
+sur sa gare d'embarquement, ses deux chevalets et ses cabines de verre, sommet
+à vingt-huit blocs. Le ciel de Las Vegas se comprime (`k` 0,25, le plus grand
+au centième qui garde l'ordre) : la demi-tour Eiffel descend à vingt-huit, le
+plancher de ses seize couches d'auteur, et le Luxor (107 m) reste dessous à
+quinze. Le monde d'avant garde le gabarit (`LANDMARKS_V317`).
+
+**Ce qui le prouve.** Un témoin d'ordre de `plafond.js` porte la High Roller :
+rouge sur l'ancien code (demi-tour Eiffel 45 > roue 16), vert ici (28 et 28).
+Les anneaux de voitures de Las Vegas et de toutes les villes sont identiques au
+bit près (empreinte comparée sous node), aucun bloc de la roue à hauteur de
+carrosserie sur un anneau ; le sol ne bouge pas. Captures de rue et du ciel.
 
 ## v458 — On entre dans le Panthéon de Rome
 
