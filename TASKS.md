@@ -2906,7 +2906,7 @@
   107, Notre-Dame 96…) passait au-dessus de la tour Eiffel : vu en capture,
   retiré. Si Max veut la vraie hauteur malgré tout, c'est UNE constante
   (`EIFFEL_BLOCS` ou la courbe de `blocsDuCiel`, echelle-monuments.js).
-- [ ] **LES MONUMENTS DES AUTRES VILLES PLUS BAS QUE LEURS IMMEUBLES** (v335,
+- [x] **LES MONUMENTS DES AUTRES VILLES PLUS BAS QUE LEURS IMMEUBLES — SOLDÉ (v459, remesuré)** : plus aucune entrée `lot` dans `BAS_DECLARES` ni `VILLES_SANS_CIEL` ; tout monument sous la médiane de ses immeubles est `vrai`. Reste, décision de carte : Pise (Duomo dans l'emprise de la tour). (v335,
   mesuré, élargi par Max : « lance sur toutes les villes »). Le témoin de
   `plafond.js` mesure 215 monuments dans leurs villes contre la médiane des
   immeubles autour. **Lot 3, les villes engendrées : FAIT en v342** — chaque
@@ -3146,7 +3146,7 @@
   Même portail : les autres rouges sont les dettes déjà déclarées (`maj.js`
   « corps, programmes et fond de carte », `manhattan.js:282`, `monte.js`
   compilation à la téléportation, gel d'arrivée, piéton `voituresRue: 0`).
-- [ ] **LE CIEL DE LAS VEGAS GARDE SA ROUE ET SA PYRAMIDE (v353), déclaré.** La
+- [x] **LE CIEL DE LAS VEGAS GARDE SA ROUE ET SA PYRAMIDE (v353) — LA ROUE FAITE en v459.** La High Roller a son bâtisseur (rayon 9 dans `box: 9`, sur sa gare, sommet 28) et le ciel de Las Vegas se comprime à `k` 0,25 : la demi-tour Eiffel descend de 45 à 28 (le plancher de ses seize couches), sous la roue ; un témoin d'ordre de `plafond.js` la garde. Le Luxor reste une pyramide à quinze. Portail : douze suites vertes ; rouges, tous déjà déclarés ici — `carte.js` la flèche du GPS (gauche 1,92 rad, la valeur de la v327), `monte.js` cinq témoins de conduite et de rue (caméra en virage, flâneur sur la chaussée, allure de la rue et freinage au feu, mur de face). Preuve structurelle : seuls changent un repère et le ciel de Las Vegas (−36 102, 7 730), loin de Rome, Paris et des dalles d'essai où jouent ces témoins. Texte d'origine : La
   High Roller (167 m, 16 blocs) est sous la demi-tour Eiffel (165 m, 26) : une
   roue ne s'étire pas, comme le Prater. Le Luxor (107 m) reste à quinze blocs :
   étirée, une pyramide devient un obélisque. **Remesuré en v365 : la boîte ne

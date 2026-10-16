@@ -1021,7 +1021,11 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       // des monuments remis à l'échelle autour de lui.
       // (Le campanile de Venise, les tours de Tokyo : remis à l'échelle par
       // leur bâtisseur neuf en v357, ils sont dans la table du module.)
-      'Barcelone|Sagrada Família': 172, 'Las Vegas|Le Luxor': 107 };
+      'Barcelone|Sagrada Família': 172, 'Las Vegas|Le Luxor': 107,
+      // v459 : la High Roller (167 m) à son vrai rayon sur sa gare
+      // d'embarquement ; sur l'ancien code, seize blocs sous la demi-tour
+      // Eiffel (165 m) à quarante-cinq — l'inversion que la v353 déclarait.
+      'Las Vegas|La High Roller': 167 };
     const EV = EM && EM.ECHELLES_VILLES ? EM.ECHELLES_VILLES : {};
     const EMAIN = EM && EM.ECHELLES_MAIN ? EM.ECHELLES_MAIN : {};
     const ciel = [...new Map([...Object.entries({ ...EV, ...EMAIN }).map(([k, e]) => [k, e.vraie]), ...Object.entries(FIXES)])]
