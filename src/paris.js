@@ -354,13 +354,8 @@ const lieu = (nom) => LIEUX.find((p) => p.nom === nom);
 // chaque accès. On recopie donc une fiche PLATE, identique pour tous, avec
 // les inverses des demi-axes déjà calculés — l'ellipse se teste alors sans
 // une seule division.
-const PLACES = LIEUX.filter((p) => p.jardin || p.r).map((p) => ({
-  u: p.u, v: p.v,
-  jardin: !!p.jardin,
-  ru: p.ru || 0, rv: p.rv || 0,
-  iru: p.ru ? 1 / (p.ru * p.ru) : 0, irv: p.rv ? 1 / (p.rv * p.rv) : 0,
-  r: p.r || 0, sol: p.sol || 0,
-}));
+// (La fiche plate `PLACES` se fait plus bas, une fois les places mises à la
+// largeur des avenues qui y arrivent — v455.)
 const SOCLES = LIEUX.filter((p) => p.socle)
   .map((p) => ({ u: p.u, v: p.v, bu: p.socle[0] + 1, bv: p.socle[1] + 1, tour: !p.sansTour }));
 
@@ -549,6 +544,51 @@ for (const v of VOIES) { const sec = sectionDeVoie(v.nom); v.l = sec.chaussee / 
 // et une dimension de ville ne se recopie pas dans un banc d'essai.
 export const VOIES_PARIS = VOIES;
 
+// UNE PLACE EST AU MOINS AUSSI LARGE QUE LA CHAUSSÉE QUI Y ARRIVE (v455).
+// Depuis la règle du kit (v303), un boulevard a treize blocs de chaussée et
+// les Champs-Élysées dix-sept ; les places, elles, gardaient les rayons de la
+// v294 (République 3, Nation 2,6, la Madeleine 1,6, la Concorde 4,5) : un
+// boulevard de treize blocs arrivait sur un rond de six, une pastille de pavé
+// au milieu de l'asphalte. Le rayon d'une place SANS monument devient au moins
+// la demi-chaussée de la plus large voie qui passe à moins d'un bloc de son
+// bord. Mesuré sur le disque entier avant de l'écrire : ZÉRO colonne de lot
+// dans les couronnes ajoutées — aucun immeuble ne cède, c'est de la rue qui
+// devient place —, et l'eau et les quais sont lus AVANT les places dans
+// `solParis`, donc aucune place ne pave la Seine. Une place qui porte un
+// monument (`socle`) garde son rayon : son tour (`TOURS`) passe autour du
+// socle, pas de la place. C'est du SOL, jamais du relief : `hauteurParis` ne
+// lit pas les places, et les deux empreintes de `plafond.js` ne bougent pas.
+const distSegment = (px, pz, [ax, az], [bx, bz]) => {
+  const dx = bx - ax, dz = bz - az, l = dx * dx + dz * dz;
+  const t = l ? Math.max(0, Math.min(1, ((px - ax) * dx + (pz - az) * dz) / l)) : 0;
+  return Math.hypot(px - ax - t * dx, pz - az - t * dz);
+};
+const PLACE_MIN = 5.8;
+for (const p of LIEUX) {
+  if (!p.r || p.socle) continue;
+  let demi = 0;
+  for (const voie of VOIES) {
+    let d = Infinity;
+    for (let i = 0; i + 1 < voie.pts.length; i++) d = Math.min(d, distSegment(p.u, p.v, voie.pts[i], voie.pts[i + 1]));
+    if (d < p.r + 1 && voie.l > demi) demi = voie.l;
+  }
+  // Et l'anneau entier : une place où roule une avenue a au moins deux fois
+  // la largeur de son anneau (`ANNEAU_PLACE`, trois blocs, déclaré plus bas),
+  // sinon l'anneau n'est que la moitié du rayon et une voiture de 2,26 blocs
+  // y roule sur l'îlot (la gare de Lyon, 2,5 de rayon pour une collectrice).
+  // 5,8 et non 6 : à six blocs la gare de Lyon prenait UNE colonne d'immeuble
+  // (à 5,83 de son centre, mesuré) ; à 5,8 l'anneau fait 2,9 blocs et la
+  // voiture, sur son axe, reste à 0,3 bloc de l'îlot.
+  if (demi) p.r = Math.max(p.r, demi, PLACE_MIN);
+}
+const PLACES = LIEUX.filter((p) => p.jardin || p.r).map((p) => ({
+  u: p.u, v: p.v,
+  jardin: !!p.jardin,
+  ru: p.ru || 0, rv: p.rv || 0,
+  iru: p.ru ? 1 / (p.ru * p.ru) : 0, irv: p.rv ? 1 / (p.rv * p.rv) : 0,
+  r: p.r || 0, sol: p.sol || 0,
+}));
+
 // L'ENTRÉE DE L'A1 (v300) : de là où le corridor s'arrête dans le disque
 // (`routes.js`, à vingt blocs du bord, où le relief de la ville est plat)
 // jusqu'à la Gare du Nord, en avenue à double sens. Elle est une voie comme
@@ -694,7 +734,7 @@ const ROULANT = new Set([BITUME, PAVE, QUAI]);
 // La largeur de l'anneau de bitume d'une place ronde, lue par `solParis` (qui
 // le pave) et par `RONDS` (qui y fait rouler la voiture, au milieu) : une seule
 // règle, deux lecteurs.
-export const ANNEAU_PLACE = 3;
+export const ANNEAU_PLACE = 3;   // recopié dans l'élargissement des places (v455), plus haut
 const anneauDe = (p) => Math.min(ANNEAU_PLACE, p.r * 0.5);
 const RONDS = LIEUX.filter((p) => p.r).map((p) => ({ u: p.u, v: p.v, r: p.r - anneauDe(p) / 2 }));
 

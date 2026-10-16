@@ -2224,18 +2224,20 @@
   jamais été non plus. À mesurer des deux côtés, sur le franchissement.
   (6) `?diag=1` et la carte ne disent pas encore à l'enfant « ta maison a suivi
   son quartier » ; le journal le dit, le jeu non.
-- [ ] **LES RUES DE PARIS À LA RÈGLE (v303) : CE QUI RESTE, DÉCLARÉ.** (1) Les
-  quartiers les plus petits (Saint-Germain, le Marais, le Faubourg, l'Étoile :
-  1 500 à 3 000 colonnes, bordés par la Seine et les percées) n'ont presque
-  plus de lots — ils en avaient déjà peu (168, 41, 91, 55 colonnes) et une trame
-  de 15 à 29 blocs n'y loge plus un îlot entier ; leur rayon (`Q(…, r0)`) est
-  en kilomètres du plan, pas à l'échelle d'un mètre. Mesuré au portail : 41 → 2
-  au Marais, 168 → 2 à Saint-Germain, 91 → 10 au Faubourg ; leurs disques
-  agrandis de trois quarts n'en rendent presque rien (ce sont Rivoli, les
-  Grands Boulevards et le boulevard Saint-Germain qui les occupent). Le remède
-  est Paris doublé, décidé par Max. (2) Les PLACES gardent
-  leurs rayons (Concorde 4,5, l'Étoile 8) : un boulevard de 21 blocs y arrive
-  plus large que la place — Paris doublé (v306) ne les agrandit pas, à dessein.
+- [ ] **LES RUES DE PARIS À LA RÈGLE (v303) : CE QUI RESTE, DÉCLARÉ.** (1)
+  RENDU par Paris doublé (v306), remesuré en v455 sur tout le disque : les
+  colonnes de lot valent Marais 248 (3,9 %), Saint-Germain 916 (12,8 %),
+  Faubourg Saint-Antoine 359 (5,9 %), Étoile 1 478 (12,1 %), contre 2, 2, 10
+  et 0 au portail de la v303. Le Marais et le Faubourg restent les plus
+  pauvres (Rivoli, les Grands Boulevards, Saint-Antoine les traversent).
+  (2) LES PLACES : FAIT en v455 pour les neuf places SANS monument où arrive
+  une avenue (rayon ≥ demi-chaussée la plus large, 5,8 au moins ; zéro lot
+  pris, deux témoins dans `plafond.js`). Reste : les places qui portent un
+  monument gardent leur rayon (Opéra 2,2, Montparnasse 2,2, Panthéon 2,2,
+  Bastille 3, Louvre 5, l'Étoile 8 pour les Champs de 17,4) — leur tour
+  (`TOURS`) passe autour du socle, et agrandir la place y déplacerait les
+  circuits contre le monument : à mesurer avant d'écrire ; et le Trocadéro
+  (3,5, aucune percée n'y arrive), dont l'anneau fait 1,75 bloc.
   (3) Les autres villes bâties à la main (Londres,
   Nice, Lille, San Francisco, Washington) n'ont pas encore la règle — même
   geste, ville par ville, avec la trame figée et la protection des
@@ -2245,10 +2247,9 @@
   décision de Max. Prix déclaré de la v307 : 602 → 440 anneaux, 158 974 →
   127 734 blocs de rue portant un convoi — RENDU en v387 : candidats en pas de
   trame (côtés impairs), contresens et anneaux de quartier, 445 → 809
-  anneaux, 129 373 → 200 322 blocs de voie portant un convoi. (4) Une colonne protégée de l'ancienne ville
-  peut se trouver au milieu d'une rue neuve : les circuits de voitures,
-  mesurés sur le plan, la traverseraient. Mesure à faire sur un vrai journal
-  (le compte des colonnes protégées se lit dans `world.colonnesParisAvant`).
+  anneaux, 129 373 → 200 322 blocs de voie portant un convoi. (4) OBSOLÈTE depuis la v306 : l'ancienne ville ne se garde plus sous les
+  colonnes bâties, c'est la ville NEUVE qui cède (`colonnesCedees`), et elle
+  garde ses rues — seul un lot devient une cour pavée.
   (5) Un bloc de l'ancienne version reçu du nuage APRÈS que son morceau a été
   engendré ne protège sa colonne qu'au prochain chargement.
 - [ ] **LE PORTAIL DE LA v303 : TROIS ROUGES DANS `monte.js` ET `manhattan.js`,

@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 455,
+    titre: 'De vraies places à Paris',
+    puces: [
+      'République et Nation sont de grandes places',
+      'Les voitures en font le tour',
+    ],
+  },
+  {
     v: 454,
     titre: 'De jolies petites grilles',
     puces: [

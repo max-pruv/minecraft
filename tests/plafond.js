@@ -378,7 +378,12 @@ const EMPREINTE_MORCEAUX_V414 = '863d4203a441e3fd029ce2404fc6d6e706799e7f64fe489
 // la constante de la v447, au bit près ; et les dix-huit colonnes qui
 // diffèrent dans les morceaux de Londres sont toutes dans la boîte d'un
 // tronçon de piste — aucune ailleurs, aucun autre lieu touché.
-const EMPREINTE_MORCEAUX_V357 = '938a330c6f883c7e249720b7274d988de6484768cfdb882dedd474da65bbac6d';
+// v455 : les places de Paris prennent la largeur de leur boulevard. Preuve :
+// la même branche, l'élargissement désarmé, rend 938a330c…, la constante
+// d'avant au bit près ; et `solParis` ne diffère que sur 343 colonnes, toutes
+// dans les disques des places (320 asphalte → pavé, 23 trottoir → asphalte,
+// zéro lot).
+const EMPREINTE_MORCEAUX_V357 = 'f71e9499951330a1982f5a9509997ec2c0d750e1f9ccbb75cbf73da8c7a6ef65';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -441,6 +446,51 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   const w = new World();
 
   verifier('le ciel est monté', HEIGHT >= 160, `${HEIGHT} blocs`);
+
+  // --- UNE PLACE DE PARIS EST AUSSI LARGE QUE SON BOULEVARD (v455) ----------
+  // Depuis la règle du kit (v303) un boulevard a treize blocs de chaussée ;
+  // République, Nation, la Madeleine gardaient 3, 2,6, 1,6 de rayon — une
+  // pastille de pavé au milieu de l'asphalte, et la voiture qui fait le tour
+  // de la place (`RONDS`, l'axe de l'anneau) roulait sur son îlot. Deux
+  // choses, sur le plan (`solParis`) : chaque place sans monument où arrive
+  // une avenue est au moins aussi large que la chaussée la plus large qui y
+  // arrive, et l'axe de son anneau ne passe sur aucune colonne de son îlot.
+  // Sur la v454 : 8 places trop étroites, 327 colonnes d'îlot sous l'axe.
+  // Trocadéro et la gare de Lyon, où n'arrive aucune percée, restent petites
+  // (anneau de 1,6 à 1,75 bloc) : déclaré dans `TASKS.md`.
+  {
+    const M = await import('../src/paris.js');
+    const dseg = (px, pz, [ax, az], [bx, bz]) => {
+      const dx = bx - ax, dz = bz - az, l = dx * dx + dz * dz;
+      const t = l ? Math.max(0, Math.min(1, ((px - ax) * dx + (pz - az) * dz) / l)) : 0;
+      return Math.hypot(px - ax - t * dx, pz - az - t * dz);
+    };
+    const etroites = [], ilot = [];
+    let places = 0, lus = 0;
+    for (const p of M.LIEUX.filter((q) => q.r && !q.socle)) {
+      let large = 0;
+      for (const v of M.VOIES_PARIS) {
+        let d = Infinity;
+        for (let i = 0; i + 1 < v.pts.length; i++) d = Math.min(d, dseg(p.u, p.v, v.pts[i], v.pts[i + 1]));
+        if (d < p.r + 1) large = Math.max(large, M.sectionDeVoie(v.nom).chaussee);
+      }
+      if (!large) continue;
+      places++;
+      if (2 * p.r < large) etroites.push(`${p.nom} ${2 * p.r}<${large}`);
+      const axe = p.r - Math.min(M.ANNEAU_PLACE, p.r * 0.5) / 2;
+      let f = 0;
+      for (let k = 0; k < 96; k++) {
+        const a = 2 * Math.PI * k / 96;
+        lus++;
+        if (M.solParis(Math.floor(M.PARIS.x + p.u + Math.cos(a) * axe), Math.floor(M.PARIS.z + p.v + Math.sin(a) * axe)) === p.sol) f++;
+      }
+      if (f) ilot.push(`${p.nom} ${f}`);
+    }
+    verifier('une place de Paris est aussi large que le boulevard qui y arrive',
+      places >= 8 && etroites.length === 0, `${places} places à percée, trop étroites : ${etroites.join(', ') || 'aucune'}`);
+    verifier('la voiture qui fait le tour d\'une place de Paris ne roule pas sur son îlot',
+      lus > 0 && ilot.length === 0, `${lus} points de l'axe lus, sur l'îlot : ${ilot.join(', ') || 'aucun'}`);
+  }
 
   // --- UNE VOITURE TRAVERSE CHAQUE PONT D'AUTOROUTE (v430) -------------------
   // Max, capture d'iPhone : « Une voiture ne roule pas dans l'eau — fais
