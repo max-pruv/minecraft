@@ -2327,9 +2327,14 @@
   (`transport-v298/examples/rail-profile-candidates.json`) creusent jusqu'à
   vingt-deux blocs et ne sont pas approuvés ; une pente réaliste se décide
   avec la mesure des terrassements (le profil est un cône, `PENTE` dans
-  `trains.js`). (2) Sur la mer, la voie est une chaussée au ras des flots (v179),
-  pas un viaduc sur piles : le mécanisme d'ouvrage de l'A1 (tablier en ruban,
-  `tablierEn`) existe et n'est pas branché au rail. (3) Au-delà de
+  `trains.js`). (2) FAIT en v465 : sur l'eau (trois pas au moins sous l'axe), la voie est
+  un viaduc — tablier en ruban à `DEGAGE` (4) blocs au-dessus de la mer, une
+  pile tous les dix blocs, contact par `tablierEn` aux cotes des rails. Ce qui
+  reste : la rampe d'accès relève jusqu'à 1 329 pas de voie À TERRE de deux
+  blocs au plus (à plus de 440 blocs des sanctuaires) — un bloc d'enfant posé
+  sur ce ballast-là avant la v465 serait enfoui d'autant, sans marche de
+  migration ; et la pile est un mur plein de la largeur de la voie, pas deux
+  fûts. (3) Au-delà de
   `DEBLAI_MAX` (13) le talus s'arrête et la paroi reste raide — mesuré, remblai
   19,2 sur Madrid–Barcelone (k 1 804), 15,3 sur Londres–Paris (k 533) ; un
   remblai de dix-neuf blocs est un viaduc dans la vraie vie. (4) La gare reste

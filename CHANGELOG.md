@@ -20,6 +20,32 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v465 — Le viaduc de la Manche
+
+**Pourquoi.** Sur l'eau, la voie ferrée était une chaussée de pierre posée au
+ras des flots : l'Eurostar traversait la Manche sur une digue de deux cent
+quatre-vingts blocs, le Shinkansen la baie de Tokyo de même, et chaque rivière
+que croisait une ligne était barrée d'un mur plein. Mesuré sous l'Eurostar :
+zéro colonne d'eau sous la voie, le tablier à la cote de la surface.
+
+**Ce que ça change.** Une suite d'au moins trois pas d'eau sous l'axe est un
+viaduc : le tablier passe à quatre blocs au-dessus de la mer, une pile de
+pierre tous les dix blocs, et l'eau reste dessous. Le tablier est dessiné
+comme celui du pont de l'A1 (dessus de gravier, dessous, parapets) et porte
+l'enfant à la cote exacte des rails ; le train suit le même profil. Les dix-huit
+gares n'ont pas bougé d'un bloc ; à terre, la rampe qui monte au viaduc relève
+la voie de deux blocs au plus, à plus de 440 blocs de tout ce que les enfants
+ont bâti. `terrainHeight` n'a pas bougé : les deux empreintes du relief et
+celle des 490 morceaux sont identiques.
+
+**Ce qui le prouve.** Trois témoins neufs dans `plafond.js`, rouges sur la v464 :
+la Manche marchée colonne par colonne (1 521 colonnes d'eau libre et 159 de
+pile sur 1 680, contre zéro d'eau avant), le ruban et le contact sur chacun des
+240 pas (écart au rail 0), et les dix-huit gares comparées au profil d'avant
+(`viaducs(false)`). Captures avant/après : `tests/sonde-captures-viaduc.cjs`.
+
+---
+
 ## v464 — Une mise à jour n'est plus comptée comme un plantage
 
 **Pourquoi.** Le journal de bord (v296) range le palier bas après deux
