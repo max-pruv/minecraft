@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v455 — On entre dans le Panthéon de Rome
+## v458 — On entre dans le Panthéon de Rome
 
 **Pourquoi.** « Intérieurs — les monuments se visitent » attendait dans
 `TASKS.md`, et hors de Paris et de Londres aucun monument ne s'ouvrait. Le
@@ -44,6 +44,81 @@ jamais atteint, le ciel fermé). Le repère se choisit par le disque de Rome :
 « Panthéon » est aussi à Paris. L'empreinte des 490 morceaux est intacte
 (938a330c…, le Panthéon n'y tombe pas), les deux empreintes du relief aussi.
 Captures dehors, dedans et sous l'oculus : `tests/sonde-captures-pantheon.cjs`.
+
+---
+
+## v457 — Une fenêtre par étage
+
+**Pourquoi.** Dans les villes engendrées — Rome, Berlin, Tokyo, Édimbourg et
+deux cent cinquante-cinq autres —, chaque baie était faite de DEUX blocs
+`ETAGE` empilés, et chacun porte une fenêtre entière : la façade dessinait
+deux fenêtres l'une sur l'autre par étage, de loin comme de près (couche HD).
+Mesuré sous node : 38 719 piles sur 98 187 lots lus, dans 259 villes sur 269.
+Paris a la réponse depuis la v301 — un niveau est trois bandes, une fenêtre.
+
+**Ce que ça change.** Les villes engendrées posent les bandes de Paris :
+l'allège et son appui, le bas de la baie, son haut et le linteau. Une fenêtre
+haute par étage, au lieu de deux petites. Dans la couche HD, les registres des
+autres villes gardent ce qu'ils avaient : pas de garde-corps de fer à Berlin
+ni à Tokyo, la guillotine et son rail à Manchester ou à Sydney, le linteau de
+pierre au-dessus. La forme des immeubles ne change pas d'un bloc : ce qu'un
+enfant a bâti contre une façade reste devant la même surface. Les façades
+détaillées pèsent un dixième de moins (Rome 0,65 → 0,58 Mo par morceau).
+
+**Ce qui le prouve.** Deux témoins neufs dans `plafond.js`, rouges sur la
+v452 : zéro pile d'ETAGE (38 719 avant), et la solidité de chaque couche de
+chaque lot identique avec et sans bandes. L'empreinte des 490 morceaux change
+(Rome, Marrakech, Tokyo) ; bandes désarmées (`reglageBaies.bandes`), elle rend
+la constante de la v452 au bit près.
+
+---
+
+## v456 — Les essais du jeu se lancent à tous les coups
+
+**Pourquoi.** Une suite d'essai (`realisme.js`) était notée « morte au clic
+« Jouer », intermittente » depuis la v385. La cause avait été trouvée en v427
+— le banc attendait deux images identiques avant de cliquer, sur un accueil
+qui rend une image toutes les quatorze secondes — mais l'entrée restait
+ouverte, et personne n'avait revérifié depuis.
+
+**Ce que ça change.** Rien à l'écran : c'est la boîte à outils des essais.
+L'entrée est close sur mesure, et l'on sait que le témoin du bouton « Jouer »
+voit vraiment un bouton caché.
+
+**Ce qui le prouve.** `realisme.js` rejouée SEULE trois fois sur la v454 :
+19/19 verts à chaque passage, clic en 6, 28 et 14 ms. Sur une copie où un voile
+recouvre « Jouer », le verdict « actif et rien ne le recouvre » rougit
+(`dessus: false`) et la suite va quand même au bout (18 autres verts) : le
+témoin peut rougir sans s'effondrer. Portail : seul rouge `maj.js` « le loader
+ne s'efface qu'une fois les corps et les programmes prêts », intermittence déjà
+déclarée des deux côtés dans `TASKS.md` ; la livraison ne touche pas au code.
+
+---
+
+## v455 — Les monuments de Paris sont vérifiés jusqu'au sol
+
+**Pourquoi.** `TASKS.md` déclarait depuis la v335 « vingt-quatre cubes du
+parvis de Notre-Dame » qui dépassaient de son modèle en relief, à hauteur
+d'enfant, et le témoin des modèles étirés ne regardait qu'au-dessus de trois
+blocs. Mesuré monument par monument (`sonde-monuments-hd.cjs`) : les huit
+monuments de Paris n'avaient plus un seul cube au-dessus d'un enfant, et les
+vingt-quatre du parvis n'étaient pas des cubes. Le parvis est posé à la couche
+du bloc de surface ; ses flancs touchent le sol de la ville (zéro voisine
+d'air sur vingt-neuf dans le monde engendré). La sonde jugeait l'exposition
+contre les seules cellules du bâtisseur, et comptait ce sol comme de l'air.
+
+**Ce que ça change.** Rien à l'écran : aucun modèle n'avait à être recalé,
+et l'enfant ne voit aucun cube dépasser d'un monument de Paris. La sonde et
+le témoin lisent désormais le monde sous la hauteur d'un enfant, et le
+témoin descend jusqu'au sol : un cube qui dépasserait à hauteur d'enfant ne
+passerait plus inaperçu.
+
+**Ce qui le prouve.** Le témoin de `plafond.js` rend 11 922 cellules de flanc,
+dont 1 079 à hauteur d'enfant, toutes couvertes. Il est rouge quand on retire
+la façade et les murs de la nef du modèle de Notre-Dame (314 cubes, dont 6 à
+hauteur d'enfant), et lu sans le monde il rend exactement les vingt-quatre du
+parvis. Les deux empreintes du relief sont intactes (aucun fichier de `src/`
+qui bâtit n'a changé).
 
 ---
 
