@@ -5265,6 +5265,17 @@ répondu en une requête : iPhone, en vol à l'ouest de Paris, 1 089 morceaux
   et c'est le nombre de sommets, pas le rayon ni le budget, qui décidera un
   jour de ce qu'un appareil peut montrer.
 
+## Une page qui a dit au revoir ne se rouvre pas (v464)
+
+Une règle. Une vraie mise à jour, rejouée au banc (`sonde-journal-maj.cjs`), a
+montré `rouvrir()` APRÈS `fermer('mise-a-jour')` et `pagehide` : un
+`visibilitychange` pendant le déchargement rouvrait la session de la page qui
+partait, et la page neuve la confirmait plantée (compteur 1 par mise à jour,
+palier bas à la deuxième). **L'état de visibilité pendant un déchargement ne se
+lit pas** : une fin voulue (`fermeture`, `mise-a-jour`) pose `parti`, et seul un
+`pageshow` persisté (le cache de navigation) relève la page. Un témoin de mise à
+jour lit le journal de la page NEUVE après sa vérification des douteuses (7 s).
+
 ## Le journal de bord ne crie plus au plantage pour rien (v426) — une session par page, et la mémoire en octets
 
 « Le jeu plante de temps en temps. » Onze « plantages » en quarante minutes

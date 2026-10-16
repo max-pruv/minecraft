@@ -20,6 +20,31 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v464 — Une mise à jour n'est plus comptée comme un plantage
+
+**Pourquoi.** Le journal de bord (v296) range le palier bas après deux
+plantages de suite, et `TASKS.md` soupçonnait depuis la v413 qu'une mise à
+jour en comptait un. Rejouée pour de vrai au banc — une version neuve publiée
+pendant la partie, l'application qui s'endort, revient et recharge — la
+mesure le confirme : la page qui part dit au revoir (`fermer('mise-a-jour')`),
+puis un `visibilitychange` pendant le déchargement la ROUVRE ; sa ligne reste
+dans la table des sessions, la page neuve la juge douteuse, puis morte sept
+secondes plus tard. Compteur 0 → 1 à chaque mise à jour : deux mises à jour,
+et la tablette passait au palier bas sans avoir jamais planté.
+
+**Ce que ça change.** Une page qui a dit au revoir (au revoir, relance voulue
+par le jeu) ne se rouvre plus ; seul un retour du cache de navigation
+(`pageshow` persisté) la relève. Une mise à jour ne dégrade plus l'appareil.
+
+**Ce qui le prouve.** `tests/sonde-journal-maj.cjs` rejoue la vraie mise à
+jour et trace les fermetures de la page qui part : sur la v454, `rouvrir()`
+après `pagehide`, compteur 1 et « plantage-precedent confirmé » ; ici, 0. Un
+témoin neuf dans `maj.js` (« une mise à jour ne compte pas comme un
+plantage »), vérifié rouge, remède désarmé ; `maj.js` devient gardien de
+`src/journal.js`.
+
+---
+
 ## v463 — L'usine se visite : chaque poste dit ce qu'on y fait
 
 **Pourquoi.** La Giga-usine d'Austin (v168) a sa chaîne : la voiture y passe
