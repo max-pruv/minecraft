@@ -6,11 +6,25 @@
 
 export const NOUVEAUTES = [
   {
-    v: 455,
+    v: 457,
     titre: 'Une fenêtre par étage',
     puces: [
       'Rome, Tokyo, Berlin : de vraies grandes fenêtres',
       'Plus deux fenêtres empilées',
+    ],
+  },
+  {
+    v: 456,
+    titre: 'Des essais plus sûrs',
+    puces: [
+      'Les essais du jeu démarrent à coup sûr',
+    ],
+  },
+  {
+    v: 455,
+    titre: 'Les monuments de Paris vérifiés',
+    puces: [
+      'Aucun cube ne dépasse des monuments',
     ],
   },
   {

@@ -378,7 +378,7 @@ const EMPREINTE_MORCEAUX_V414 = '863d4203a441e3fd029ce2404fc6d6e706799e7f64fe489
 // la constante de la v447, au bit près ; et les dix-huit colonnes qui
 // diffèrent dans les morceaux de Londres sont toutes dans la boîte d'un
 // tronçon de piste — aucune ailleurs, aucun autre lieu touché.
-// v455 : les baies des villes engendrées passent en bandes (Rome, Marrakech et
+// v457 : les baies des villes engendrées passent en bandes (Rome, Marrakech et
 // Tokyo sont des neuf lieux). `reglageBaies.bandes` à faux, la branche rend
 // 938a330c…, la constante de la v452, au bit près.
 const EMPREINTE_MORCEAUX_V357 = '1e4c50beffa5d0148b66a8d46f28df712ad9cf92786396e5d205007aaee252fd';
@@ -1264,34 +1264,51 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   // modèle — l'attique de l'Opéra (15), les angles arrière de l'entablement du
   // Panthéon (6), le pied de la flèche de Notre-Dame (8). Même lecture que
   // `sonde-monuments-hd.cjs` : une cellule de voxel exposée par le côté, que le
-  // modèle ne couvre pas, au-dessus de la hauteur d'un enfant. Les vingt-quatre
-  // du parvis de Notre-Dame, au sol, précèdent la v335 (dette déclarée).
+  // modèle ne couvre pas.
+  //
+  // ET JUSQU'AU SOL, EN LISANT LE MONDE (v455). Les « vingt-quatre cubes du
+  // parvis de Notre-Dame », déclarés en dette depuis la v335, n'étaient pas
+  // des cubes : le parvis est posé à la couche 0, celle du bloc de surface, et
+  // ses flancs touchent le sol de la ville (0 voisine d'air sur 29, mesuré).
+  // Juger l'exposition contre les seules cellules du bâtisseur les comptait
+  // à l'air. Sous la hauteur d'un enfant, une voisine hors du bâtisseur se lit
+  // donc dans le monde engendré — là où l'enfant marche.
   {
     const W = await import('../src/world.js');
     const HD = await import('../src/paris-monuments-hd.js');
     const { BLOCK } = await import('../src/blocks.js');
+    const monde = new W.World();
     const fautes = [];
-    let exposees = 0;
+    let exposees = 0, exposeesBas = 0;
     for (const lm of W.REPERES_HD) {
       const solide = new Set();
       const cellules = new Map();
       lm.build((x, y, z, id) => cellules.set(`${x},${y},${z}`, id));
       for (const [k, id] of cellules) if (id !== BLOCK.AIR) solide.add(k);
+      const base = monde.terrainHeight(lm.x, lm.z);
+      const air = (x, y, z) => {
+        const k = `${x},${y},${z}`;
+        if (cellules.has(k)) return !solide.has(k);
+        if (y > 3) return true;
+        return monde.getBlock(lm.x + x, base + y, lm.z + z) === BLOCK.AIR;
+      };
       const couvre = HD.cellulesCouvertes(lm.name);
-      let n = 0;
+      let n = 0, nBas = 0;
       for (const k of solide) {
         const [x, y, z] = k.split(',').map(Number);
-        if (y <= 3) continue;
-        const cote = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dz]) => !solide.has(`${x + dx},${y},${z + dz}`));
+        if (y < 0) continue;
+        const cote = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dz]) => air(x + dx, y, z + dz));
         if (!cote) continue;
         exposees++;
-        if (!couvre.has(k)) n++;
+        if (y <= 3) exposeesBas++;
+        if (!couvre.has(k)) { n++; if (y <= 3) nBas++; }
       }
-      if (n) fautes.push(`${lm.name} ${n}`);
+      if (n) fautes.push(`${lm.name} ${n} (dont ${nBas} à hauteur d'enfant)`);
     }
-    verifier('les modèles étirés de Paris couvrent leur voxel au-dessus d\'un enfant',
-      exposees > 5000 && fautes.length === 0,
-      fautes.length ? `cubes qui dépassent : ${fautes.join(' · ')}` : `${exposees} cellules de flanc, toutes couvertes`);
+    verifier('les modèles étirés de Paris couvrent leur voxel, jusqu\'au sol',
+      exposees > 5000 && exposeesBas > 500 && fautes.length === 0,
+      fautes.length ? `cubes qui dépassent : ${fautes.join(' · ')}`
+        : `${exposees} cellules de flanc dont ${exposeesBas} à hauteur d'enfant, toutes couvertes`);
   }
 
   const { ZONE_WASHINGTON: Z } = await import('../src/washington.js');
@@ -2535,7 +2552,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       JSON.stringify({ mesure: tr, barres: BARRES_TRAVAIL }));
   }
 
-  // UNE BAIE, PAS DEUX (v455). Les villes engendrées posaient deux blocs
+  // UNE BAIE, PAS DEUX (v457). Les villes engendrées posaient deux blocs
   // `ETAGE` l'un sur l'autre par étage : deux fenêtres dessinées l'une sur
   // l'autre (38 719 piles, 259 villes sur 269). Elles posent les bandes de
   // Paris. La FORME ne change pas d'un bloc — c'est ce qui dispense la ville

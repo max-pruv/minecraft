@@ -863,7 +863,7 @@ function nobleBas(f, st) {
   f.boite(0.8, 0.88, 0.7, 0.86, 0, 0.18, 'pierre-lisse');
 }
 
-// LES BANDES HORS DE PARIS (v455). Les villes engendrées posent désormais leurs
+// LES BANDES HORS DE PARIS (v457). Les villes engendrées posent désormais leurs
 // baies en bandes, comme Paris : les registres des autres villes y gardent ce
 // que le bloc d'un étage (`etage`) leur donnait — pas de garde-corps là où le
 // registre n'en veut pas (`gardeCorps: false`), le rail de la guillotine au
