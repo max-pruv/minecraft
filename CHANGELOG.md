@@ -20,6 +20,28 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v456 — Les essais du jeu se lancent à tous les coups
+
+**Pourquoi.** Une suite d'essai (`realisme.js`) était notée « morte au clic
+« Jouer », intermittente » depuis la v385. La cause avait été trouvée en v427
+— le banc attendait deux images identiques avant de cliquer, sur un accueil
+qui rend une image toutes les quatorze secondes — mais l'entrée restait
+ouverte, et personne n'avait revérifié depuis.
+
+**Ce que ça change.** Rien à l'écran : c'est la boîte à outils des essais.
+L'entrée est close sur mesure, et l'on sait que le témoin du bouton « Jouer »
+voit vraiment un bouton caché.
+
+**Ce qui le prouve.** `realisme.js` rejouée SEULE trois fois sur la v454 :
+19/19 verts à chaque passage, clic en 6, 28 et 14 ms. Sur une copie où un voile
+recouvre « Jouer », le verdict « actif et rien ne le recouvre » rougit
+(`dessus: false`) et la suite va quand même au bout (18 autres verts) : le
+témoin peut rougir sans s'effondrer. Portail : seul rouge `maj.js` « le loader
+ne s'efface qu'une fois les corps et les programmes prêts », intermittence déjà
+déclarée des deux côtés dans `TASKS.md` ; la livraison ne touche pas au code.
+
+---
+
 ## v455 — Les monuments de Paris sont vérifiés jusqu'au sol
 
 **Pourquoi.** `TASKS.md` déclarait depuis la v335 « vingt-quatre cubes du
