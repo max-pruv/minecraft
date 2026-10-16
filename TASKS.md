@@ -1212,7 +1212,24 @@
   200 blocs, donc hors de la livraison par construction (elle ne change que le
   sol de Las Vegas et des contours d'anneaux).
 - [ ] **LES ANNEAUX D'AVANT ROULENT PARFOIS HORS DE LA CHAUSSÉE (mesuré v387,
-  repris v404, v418, v432, v435).** v435 (recherche conjointe) : 840 → 772
+  repris v404, v418, v432, v435, remesuré sur la v454, 16 oct. 2026).** Remesure (sous node,
+  `sonde-anneaux-villes.cjs` puis classement colonne par colonne) : 772 pas, 58
+  anneaux, inchangé depuis la v435, et TOUTE la cause se nomme — herbe 218,
+  feuillage 154, sable 136, pavé de place 125, pierre (fontaine, roche) 49,
+  eau sans tablier 17, trottoir 6, et **66 PAS SUR LE PARAPET D'UN TABLIER
+  PUBLIÉ, dans 28 villes** : c'est TOUTE la traîne de moins de dix pas
+  (Munich 8, Shanghai 6, Porto 5, Lyon, Dublin, Hambourg, Budapest, Reykjavik
+  3…). Le parapet est une colonne de pierre à la cote du tablier, roulable à
+  plat : la voiture n'y bute pas, mais le témoin la compte hors chaussée et
+  `pasHorsChaussee` (la règle interne) la compte « eau sous un tablier », donc
+  propre — c'est pour cela qu'aucune recherche ne la voit. Le remède serait de
+  changer la MATIÈRE de ces colonnes de tablier (parapet → chaussée sous la
+  voie) : interdit par la règle v414 (« un tablier ne se retire pas, et sa
+  matière non plus ») et visible par l'enfant — décision de Max. Non-résultat
+  mesuré, qu'on ne réessaie pas : juger les segments de la recherche de contour
+  au demi-bloc (le pas du témoin) au lieu du bloc et demi, la sélection et la
+  configuration d'avant gardées au bit près, rend 772 → 771 (Seattle) et la
+  couverture de la sonde à Seattle baisse de 99,1 à 98,1 % : retiré. v435 (recherche conjointe) : 840 → 772
   pas, 61 → 58 anneaux, 9 → 6 villes sur le centre — Toronto 31 → 0, Dublin
   22 → 3, Lima 20 → 2. Tokyo (56) et Dubaï (32) : AUCUNE configuration sous les
   trois promesses, mesuré (6 000 essais, sens retournables) — à Tokyo l'eau sans
@@ -1341,7 +1358,9 @@
   contresens de San Diego (sonde : aucune autre ville, aucun tablier, aucun
   sol).
 - [ ] **DEUX VILLES ENGENDRÉES N'ONT QU'UN CIRCUIT (v387 : onze ; v404 :
-  trois ; v416 : deux — San Diego a son contresens).** Mesuré en v416 : à San
+  trois ; v416 : deux — San Diego a son contresens).** Remesuré sur la v454 : San
+  José et Guayaquil toujours à un circuit, Guayaquil 20 pas (18 de sable, 2 de
+  parapet) ; aucun remède sans SOL, décision de Max, inchangée. Mesuré en v416 : à San
   José et Guayaquil la place occupe le nœud central, ses quatre demi-rues sont
   fermées, et le grand anneau est le SEUL cycle de la trame (3 × 3 nœuds dans
   le disque). Son contresens roule sur la voie extérieure : à San José elle
@@ -3190,11 +3209,21 @@
   de trois morceaux). À mesurer d'abord par tuile, avec
   `sonde-facades-lourdes.mjs` (scratch de la session, à recopier dans
   `tests/`).
-- [ ] **LES TEXTURES MONTENT DE 16 À 266 EN VINGT SECONDES DE VOL** (sonde
+- [x] **LES TEXTURES MONTENT DE 16 À 266 EN VINGT SECONDES DE VOL** (sonde
   mémoire, tous les bras, hd 0 compris : 6 → 293). Ce sont les modèles de la
   flotte qui se chargent à l'approche d'une ville (`Body_PrimaryPaint` dans
   les gros maillages) — pas le sujet du jour, mais un poste de mémoire GPU à
   mesurer sur la tablette avec `?diag=1`, et à borner s'il compte.
+  **Fermé sur v454, croissance normale et bornée** (`tests/sonde-textures-vol.cjs`,
+  vol à 35 b/s au-dessus de Paris, rr 12) : le pilote tient 6 → 84 à 102 en
+  vingt secondes, puis plafonne à **107** sur quatre-vingts secondes. Chaque
+  objet sur lequel three pose son écouteur de « dispose » est relevé : **zéro
+  hors de la scène** (pas de fuite, v238). Il y a 56 textures de matériau
+  distinctes, toutes partagées (la flotte depuis la v413 — les 266 d'avant
+  étaient ses copies par modèle —, les corps Rocketbox), plus UNE texture d'os
+  20 × 20 (`skeleton.boneTexture`, 81 os, 6,4 Ko) par personnage DESSINÉ :
+  invisibles à un relevé des matériaux, rendues par `liberer` avec le
+  squelette. Pas de doublon, pas de fuite ; rien à corriger.
 - [ ] **LE COMPTEUR DE PLANTAGES RETOMBE À ZÉRO SUR UNE FERMETURE PROPRE — y
   compris celle du rechargement de mise à jour.** Un appareil qui meurt, se
   met à jour (fermeture propre), puis meurt encore repart à un. C'est voulu
