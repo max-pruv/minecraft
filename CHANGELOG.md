@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v453 — Un mauvais atterrissage casse l'avion
+## v455 — Un mauvais atterrissage casse l'avion
 
 **Pourquoi.** Max : « un avion devrait se crasher s'il atterrit mal ».
 Jusqu'ici tout toucher finissait en freinage : un piqué pleins gaz, un posé
@@ -43,6 +43,63 @@ un témoin de `degats.js` la vérifie sous node cas par cas. Deux témoins de
 `monte.js` jouent le trajet de l'enfant — un piqué pleins gaz et un posé train
 rentré sur une dalle qui n'est pas une piste — et exigent l'épave en feu,
 l'enfant debout à côté, plus aux commandes, et le bandeau.
+
+## v454 — Les garde-corps des petites fenêtres ont leurs anneaux entiers
+
+**Pourquoi.** Le motif de fer forgé d'un garde-corps est fait pour une travée
+de façade : un barreau tous les seize pixels et un anneau entre deux. Sur les
+baies étroites (le Marais, Montmartre, la Cité : 0,28 à 0,32 bloc de large),
+le motif était tiré en coordonnées de bloc et coupait ses anneaux en arcs :
+le garde-corps se lisait comme un glyphe, pas comme une grille. Mesuré dans
+neuf morceaux de trois quartiers : 1 212 garde-corps de baie, 1 212 coupés.
+C'était la dette déclarée en v288.
+
+**Ce que ça change.** Un garde-corps plus étroit que le bloc tient un nombre
+entier de travées, du barreau au barreau (deux au moins), un peu étirées.
+Le balcon filant d'un bloc entier garde son motif, qui se raccorde d'une
+fenêtre à l'autre. Rien ne change au palier bas : le fer n'existe que dans la
+couche détaillée.
+
+**Ce qui le prouve.** Un témoin neuf de `parishd.js` lit tous les quads de fer
+plus étroits que le bloc dans neuf morceaux : 1 212 lus, 0 coupés (1 212 sur
+`origin/main` : rouge). L'empreinte des 490 morceaux change (`9c35eeb6…`) ;
+désarmée (`ferronnerieEntiere: false`), elle rend la constante d'avant
+(`fb4f9aed…`, celle de `plafond.js`) au bit près.
+
+---
+
+## v453 — La rue sans à-coups
+
+**Pourquoi.** Quatre défauts de la circulation, mesurés avant d'écrire. Les
+autoroutes entraient encore dans la voie d'un circuit dans les villes bâties à
+la main (l'A1 à Lille, 47 blocs dans la file de la rue de Paris) : la v442
+n'avait mesuré que les villes engendrées. Le bus du grand anneau roulait à
+mi-temps entre deux voitures de sa file : la grille seule les mettait au
+contact (36 004 relevés sur 263 anneaux), et tout l'anneau renonçait pour lui
+à l'allure propre de chaque voiture (v438). Un circuit calculait sa jumelle
+et ses voies d'un seul tenant au moment de naître, 15 à 34 ms dans une
+image. Et au feu, une voiture de la file pilait encore : rattrapée par le
+plancher de sa file, elle passait de 3,7 blocs par seconde à l'arrêt en une
+image (5 arrêts secs sur 9 au-dessus de Paris).
+
+**Ce que ça change.** Dans les cinq villes bâties à la main, les voitures de
+l'autoroute font demi-tour avant la voie d'un circuit. Le bus prend la place
+d'une voiture de son anneau : il ne touche plus personne, et les voitures de
+tous les anneaux gardent chacune leur allure (4 380 → 4 125 voitures). Un
+circuit se prépare par petites tranches, quelques millisecondes par image,
+puis naît d'un coup avec son bus. Et dans la file d'un feu, une voiture
+freine pour s'arrêter derrière celle de devant au lieu d'y être recollée.
+
+**Ce qui le prouve.** `sonde-rue-dense.cjs`, rejouée par `plafond.js` :
+raccords 633 → 26 blocs partagés (les cinq demi-tours qui restent sont
+déclarés), la table recalculée sans un écart ; bus 36 004 → 0 contacts, 263
+anneaux sur 263 qui jouent ; 56 circuits fabriqués par tranches identiques au
+bit près au calcul d'un seul tenant (voitures, jumelle, grille, voies), en 4
+à 12 étapes, la plus longue 4,5 ms. `sonde-feu-image.cjs` : arrêts secs au
+feu 5 sur 9 sur `origin/main`, 1 sur 17 ici. Deux témoins repointés : le feu
+de `monte.js` se juge sur toute la descente (une voiture arrêtée par
+l'urgence n'a pas freiné pour un feu), et le choc de `degats.js` prend
+vingt-six blocs d'élan au lieu de les trouver.
 
 ---
 
