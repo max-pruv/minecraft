@@ -21,7 +21,7 @@ const b = src.indexOf('}, { cle, biais });', a) + '}, { cle, biais });'.length;
       // eslint-disable-next-line no-eval
       const auPassageDans = eval(src.slice(a, b).replace('const auPassageDans = ', ''));
       const r = await auPassageDans('rome', true);
-      console.log(JSON.stringify({ passe: i, traversees: r.traversees, surPassage: r.surPassage, poses: r.poses, detail: r.detail, err: r.err }));
+      console.log(JSON.stringify({ passe: i, traversees: r.traversees, surPassage: r.surPassage, secondes: r.secondes, jeu: r.secondesDeJeu, err: r.err }));
       await tab.close();
     }
   } finally { await banc.fermer(); process.exit(0); }
