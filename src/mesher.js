@@ -618,7 +618,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
     props,
     cellulesSol: surface ? surface.cellules : 0,
     rubans,
-    // LE SOL SE SOUDE AUSSI (v474) : le sol HD reste fabriqué pour tout le
+    // LE SOL SE SOUDE AUSSI (v482) : le sol HD reste fabriqué pour tout le
     // disque (le loin ne doit pas changer d'un pixel), et ses quads de pavé,
     // de bordure et de marquage partagent leurs coins comme les baies (v469).
     // Mesuré sur le disque de Paris : 69,4 → 51,7 Mo, mêmes triangles.
