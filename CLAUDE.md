@@ -550,6 +550,34 @@ que « ne jamais relancer jusqu'au vert », par l'autre bout.
 
 ---
 
+## Le tempo du banc (v482) — une cadence se divise, une fenêtre calée sur le monde non
+
+`?tempo=N` (`src/tempo.js`, pur) divise les minuteries de synchronisation du
+jeu sur le banc, et seulement là. Trois règles.
+
+- **EN PRODUCTION, `t(ms)` REND `ms` AU BIT PRÈS.** Le tempo ne se lit que sur
+  127.0.0.1/localhost, et seulement pour accélérer (entier de 2 à 8). Un
+  témoin sous node (`reglages.js`) relit chaque cadence à sa valeur réelle :
+  un tempo mal câblé publierait un jeu qui republie toutes les cinq secondes.
+- **LA SUITE DÉCLARE SON TEMPO, ET SES ATTENTES LE SUIVENT.**
+  `banc.fixerTempo(4)` en tête, `banc.enTempo(ms)` pour toute attente adossée
+  à une minuterie du jeu, `window.__tempo` vérifié dans la page (sinon une
+  suite « accélérée » mesurerait l'échelle réelle en annonçant le contraire).
+  `BANC_TEMPO=1` / `npm run long -- --tempo=1` l'emporte : une course révélée
+  à tempo 4 peut ne pas exister dans le vrai jeu.
+- **CE QUI BORNE UNE OPÉRATION RÉSEAU OU TOLÈRE UN TRAVAIL RÉEL NE PASSE PAS
+  SOUS TEMPO.** Le réseau et le processeur du banc ne vont pas plus vite.
+  Mesuré (`sonde-tempo-nuage.cjs`) : le silence toléré de `net.js` divisé par
+  quatre, deux tablettes sans courtier ne se retrouvaient plus (0/4 contre
+  4/4) et le passager ne s'asseyait plus (0/3 contre 3/3) — un pair du nuage
+  n'a pas de canal à sonder, et une page qui charge son monde se tait des
+  secondes réelles. `net.js` ne lit pas ce module, et le témoin le garde.
+  L'horloge scolaire, `cadence.js`, la borne de `dt` et les débits de
+  `monte.js` n'y passent jamais. Et **un gain de durée se compare sur des
+  passages au même verdict** : `reseau.js` « gagnait » 253 s à tempo 4 parce
+  que quatre rouges intermittents de la référence étaient verts — un rouge
+  coûte ses bornes d'attente.
+
 ## UN CLASSEMENT AUTOMATIQUE NE PROPOSE QUE CE QU'ON A DÉJÀ FAIT TOURNER (v291)
 
 Max, capture d'iPhone sur la production : « A problem repeatedly occurred », et

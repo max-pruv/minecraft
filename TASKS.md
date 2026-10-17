@@ -5634,10 +5634,9 @@ l'embarquement a eu lieu, pas par une hypothèse.
   Trois leviers, chacun à mesurer AVANT d'y toucher (ce dépôt a déjà payé
   quatre fois pour avoir expliqué une lenteur sans l'instrumenter, v224) :
 
-  1. **`?tempo=`** — la cadence de banc sur les ~20 minuteries du jeu, dette
-     déjà déclarée plus bas avec la liste de ce qui ne doit JAMAIS passer sous
-     tempo (l'horloge scolaire, `chronoReel`, la borne de `dt`, les débits que
-     `monte.js` mesure). Deuxième poste mesuré : 8 à 12 minutes.
+  1. **`?tempo=`** — fait en v482 pour `reglages.js` (519 → 403 s) ; le
+     réseau est mesuré hors de portée (son silence toléré est calé sur des
+     durées réelles) : voir « Accélérer le portail, étape 2 » plus bas.
   2. **Mutualiser les pages de `reseau.js`** : un hôte ouvert une fois pour
      plusieurs scénarios au lieu d'un couple par témoin.
   3. **La passe sur les verdicts en fenêtre FIXE** (règle de la v270, jamais
@@ -6548,37 +6547,41 @@ l'embarquement a eu lieu, pas par une hypothèse.
   pas — remplacer la borne en PAS par une borne en BLOCS parcourus, comme
   « ne plus avancer » l'a déjà fait.
 
-- [ ] **Accélérer le portail, étape 2 : une cadence de banc sur les
-  minuteries du jeu (`?tempo=N`).** L'étape 1 (v255) a rendu l'attente du
-  banc — instrument de charge instantané, repos en condition, suites
-  courtes d'abord. Le poste qui reste est dans le JEU : `reseau.js` (19 min)
-  et `reglages.js` (7 min) attendent des minuteries de production — 167 s de
-  `dormir` de seuil et 3 486 s de bornes `jusqua` adossées à `STALE_MS`
-  20 000 (net.js:59), `HEARTBEAT_MS` 5 000 (:58), `SOMMEIL_MAX_MS` 300 000
-  (:62), `GRACE_REVEIL_MS` 15 000 (:64), `RELANCE_MS` 3 000 (:68),
-  `PRESENTATION_MS` 20 000 (:69), `OUVERTURE_MS` 9 000 (:75), le renoncement
-  du relais nuage 12 000 (net.js:626), la sonde nuage 4 000 (:494), le phare
-  15 000 (:456), `onCodePris` 1 500 (:1482), `_veilleVideo` 2 000 (:1843), la
-  republication 15 000 (main.js:4106), **`pullPlayTime` 60 000** (:4108),
-  `prefsPush` 20 000 (:2199), `refreshEduMenuBtn` 10 000 (:2622),
-  `savePosition` 3 000 (:1032), le retour au sol 4 000 (:1021), le garagiste
-  et l'aéroportiste `cadence(3000)` (:1508/:1541), `REPIT_MS` 8 000 et
-  `REESSAI_MS` 5 000 (identity.js:201-202). Forme : `src/tempo.js`, qui lit
-  `tempo` dans l'adresse, REFUSE toute valeur ≠ 1 hors `127.0.0.1`/
-  `localhost`, et expose `t(ms) = ms / TEMPO` ; le banc passe `&tempo=4`.
-  **Ne passent JAMAIS sous tempo** : l'horloge scolaire (`SESSION_MIN_USINE`,
-  `DAILY_LIMIT_SECONDS`, `MIN_ANSWER_DELAY`, `FAST_WRONG_DELAY`,
-  `FREEZE_SECONDS` — `reglages.js` affirme « dix minutes » mot pour mot),
-  `chronoReel` et tout `cadence.js` (c'est un défaut de comptage du temps qui
-  a motivé le module), la borne de `dt` (physique), `passants.js:143
-  cadence(2000)` et `vehicules.js:1596 patience = 4` tant que `monte.js`
-  affirme des débits en temps réel, et `CALMES_DAFFILEE` (un compte, pas un
-  délai). Garde-fou obligatoire : un témoin sous node par constante,
-  `STALE_MS === 20000`, `REPIT_MS === 8000`…, sinon un tempo mal câblé
-  publie un jeu qui coupe les liens en cinq secondes. Gain estimé sur les
-  comptes : huit à douze minutes ; à mesurer, jamais à annoncer avant.
-  Et l'on garde un `npm run long -- --tempo=1` pour la nuit : une course
-  révélée à tempo 4 peut ne pas exister dans le vrai jeu.
+- [x] **Accélérer le portail, étape 2 : une cadence de banc sur les
+  minuteries du jeu (`?tempo=N`) — FAIT pour la synchronisation des réglages
+  (v482), MESURÉ IMPOSSIBLE pour le réseau.** `src/tempo.js` (pur) : `t(ms)`
+  rend `ms` au bit près hors de 127.0.0.1/localhost ou sans `?tempo=`, divise
+  par un entier de 2 à 8 sur le banc. `banc.fixerTempo(n)` se déclare par
+  suite, `banc.enTempo(ms)` pour ses attentes, `BANC_TEMPO=1` ou
+  `npm run long -- --tempo=1` (tour de nuit, rejoue tout) l'emporte.
+  `main.js` passe le battement des réglages (20 s), la republication (15 s),
+  la relève du temps de jeu (60 s), le bouton Éducation (10 s).
+  **`reglages.js` seule : 519 s → 403 s puis 383 s, tous
+  verts.** Le témoin sous node relit chaque cadence à l'échelle réelle, les
+  adresses (publique, réseau local, tempo < 1 ou > 8 → 1) et que `net.js`
+  n'en lit aucune.
+  - **LE RÉSEAU NE PASSE PAS SOUS TEMPO, ET C'EST MESURÉ.** `STALE_MS` et
+    `HEARTBEAT_MS` divisés par quatre (`sonde-tempo-nuage.cjs`, couples
+    neufs sans courtier) : 0 couple sur 4 se retrouve et le passager ne
+    s'assoit plus chez son ami (0/3, bouton vu, `passagerDe` nul), contre
+    4/4 et 3/3 à l'échelle réelle. Un pair du nuage n'a pas de canal à
+    sonder, le silence seul le retire, et une page qui charge son monde se
+    tait des secondes RÉELLES. `RELANCE_MS`/`PRESENTATION_MS`/`OUVERTURE_MS`,
+    les sondes du nuage et le renoncement du relais sont des opérations
+    réseau ; `MUET_MAX_MS` est calé sur un blocage réel de 29 s. Les ~100 s de
+    `dormir` de `reseau.js` adossés au silence (24 000, 25 000, 26 000 ×2) ne
+    peuvent donc pas se diviser par ce chemin. Piste non mesurée, à n'ouvrir
+    qu'avec une sonde : un tempo qui ne touche QUE les pairs sondables (canal
+    direct ouvert), dont le silence n'est de toute façon jugé qu'à
+    `MUET_MAX_MS`.
+  - **La mesure de `reseau.js` à tempo 4 ne prouvait rien**, et c'est à
+    retenir : 1 967 → 1 714 s, mais la référence avait SIX rouges
+    intermittents (déjà déclarés) dont quatre étaient verts au passage à
+    tempo 4 — un rouge coûte ses bornes d'attente (131 s, 167 s). Un gain de
+    durée se compare sur des passages au même verdict.
+  - Reste (non fait, à mesurer avant) : `identity.js` (`REPIT_MS`,
+    `REESSAI_MS`) et les minuteries de `parent.js` ; `savePosition`, le retour
+    au sol, le garagiste et l'aéroportiste (aucune suite ne les attend).
 
 - [ ] **Accélérer le portail, étape 3 : deux machines.** Partition écrite en
   dur à côté de `SUITES` (part A ≈ reseau + carte + hote + visio + metro +
