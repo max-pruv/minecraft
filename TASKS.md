@@ -1,5 +1,21 @@
 # Ce qui est en cours
 
+- [ ] **LES VRAIS ARBRES (v475) : UNE DEMI-COURONNE À LA FRONTIÈRE DE
+  `RAYON_HD`.** Un arbre dont la couronne déborde sur le morceau voisin est
+  émis par le morceau qui porte son fût ; ses feuilles DANS le voisin sont
+  cachées (`plat`) seulement si ce voisin est détaillé lui aussi. Au bord
+  exact de la portée, un arbre peut donc montrer son relief ET les cubes de
+  sa couronne côté loin, le temps que le voisin entre à portée. Accepté
+  (le remaillage suit l'enfant, `entry.hd`), non mesuré en capture ; le
+  remède serait de faire taire les feuilles d'un morceau sans détail quand le
+  fût est dans un morceau détaillé — une lecture de plus par morceau.
+- [ ] **L'OMBRE DES FAÇADES HD DE PARIS EST JETÉE PAR LEURS UV MONDE (depuis
+  la v287).** La passe d'ombre de three échantillonne `map` aux UV bruts ;
+  les façades portent des UV en unités du monde repliées par le shader de la
+  couche, hors de l'atlas pour la passe d'ombre : alpha nul, ombre absente là
+  où `alphaTest` coupe. Vu en préparant les arbres (v475), dont les cartes
+  ont des UV absolues pour cette raison. À mesurer en capture d'ombre portée
+  à Paris avant de toucher `facadeshd.js` (session hd-fabrique).
 - [ ] **AU FEU, LA VOITURE DE FILE PILE DERRIÈRE CELLE QUI S'ARRÊTE (vraie
   panne, zone conduite — trouvée par la session banc-lot3).** Le témoin
   « au feu, la voiture freine sur plusieurs relevés » de `monte.js` comptait

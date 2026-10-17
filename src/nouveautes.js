@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 475,
+    titre: 'De vrais arbres',
+    puces: [
+      'Les arbres ont un tronc et des branches',
+      'Sapins, palmiers, oliviers, bouleaux',
+      'Les blocs ne changent pas : grimpe dessus',
+    ],
+  },
+  {
     v: 474,
     titre: 'Chaque bosse compte',
     puces: [
