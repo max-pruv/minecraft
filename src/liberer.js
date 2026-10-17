@@ -49,7 +49,7 @@ export function partagerTout(objet) {
   objet.traverse((o) => {
     if (o.geometry) partager(o.geometry);
     const m = o.material;
-    // ET LES TEXTURES DE SES MATÉRIAUX (v480) : un matériau cloné partage
+    // ET LES TEXTURES DE SES MATÉRIAUX (v495) : un matériau cloné partage
     // sa carte avec le prototype, et `liberer` rend la carte d'un matériau
     // qu'il rend — sans cette marque, une voiture repeinte qui s'en va
     // emportait la texture de tout son modèle.

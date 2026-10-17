@@ -73,6 +73,7 @@ import { CloudSave } from './cloud.js';
 import { EducationMode, GRADES, todayKey } from './education.js';
 import { lienDuJeu, dessinerQR, partagerLien, lienWhatsApp, lienSMS } from './partage.js';
 import { jouerLeSon, arreterLeSon, surSonEnAttente, Photographe, micOuvert } from './visio.js';
+import { initCommandes } from './commandes.js';
 
 // New York appartient à la Terre. Les anciennes adresses deviennent un lieu de départ.
 const VISITE_MANHATTAN = ['manhattan'].includes(new URLSearchParams(location.search).get('lieu')) || new URLSearchParams(location.search).get('carte') === 'manhattan';
@@ -2592,6 +2593,7 @@ const joyBase = document.getElementById('joy-base');
 const joyKnob = document.getElementById('joy-knob');
 const JOY_RADIUS = 50;
 let breakMode = true;
+let commandes = null;   // commandes.js, branché après initFun
 
 const touch = {
   joyId: null, joyX: 0, joyY: 0,
@@ -2599,7 +2601,11 @@ const touch = {
   holdTimer: null, repeatTimer: null,
 };
 
+// HORS CONSTRUCTION, TOUCHER L'ÉCRAN NE POSE NI NE CASSE RIEN (commandes
+// simplifiées) : on regarde autour de soi sans abîmer le monde. Construire
+// est un mode qu'on choisit, avec son bouton et sa pilule « Terminer ».
 function touchAction() {
+  if (commandes && !commandes.enConstruction()) return;
   (breakMode ? breakBlock : placeBlock)();
 }
 
@@ -2694,6 +2700,7 @@ document.getElementById('mode-btn').addEventListener('touchstart', (e) => {
   e.preventDefault();
   breakMode = !breakMode;
   e.target.textContent = breakMode ? '⛏️' : '🧱';
+  if (commandes) commandes.outil(breakMode);
 }, { passive: false });
 
 // Une voiture ne vole pas — et l'enfant doit savoir POURQUOI le bouton ne
@@ -2817,11 +2824,20 @@ let etatVehicule = '';
 function majBoutonsVehicule() {
   const enAvion = running && !!player.pilote;
   const enVehicule = running && (enAvion || player.gabarit > 1);
-  const cle = `${enVehicule}|${enAvion}`;
+  // `en-jeu` : la partie est à l'écran (le menu ouvert la met en pause sans
+  // la quitter) ; `en-vol` : l'enfant vole à pied.
+  const enJeu = overlay.style.display === 'none' && pauseBtn.style.display === 'block';
+  const enVol = !enVehicule && !!player.flying;
+  const cle = `${enVehicule}|${enAvion}|${enJeu}|${enVol}`;
   if (cle !== etatVehicule) {
     etatVehicule = cle;
     document.body.classList.toggle('en-vehicule', enVehicule);
     document.body.classList.toggle('en-avion', enAvion);
+    document.body.classList.toggle('en-jeu', enJeu);
+    document.body.classList.toggle('en-vol', enVol);
+    // On ne construit pas au volant : monter dans un véhicule termine la
+    // construction, et l'on revient à pied en mode Explorer.
+    if (enVehicule && commandes) commandes.construire(false);
   }
   if (!enVehicule) return;
   // LA MANETTE ET LE COMPTEUR NE S'ÉCRIVENT QU'EN AVION (v272). Ils ne sont
@@ -7840,8 +7856,18 @@ const SEASON = (() => {
   if (m >= 2 && m <= 4) return { label: 'le printemps', emoji: '🌸', color: 0xf0a8c8, fall: 1.6 };
   if (m >= 5 && m <= 7) return { label: "l'été", emoji: '✨', color: 0xf2e07a, fall: -0.4 };
   if (m >= 8 && m <= 10) return { label: "l'automne", emoji: '🍂', color: 0xd8843a, fall: 2.2 };
-  return { label: "l'hiver", emoji: '❄️', color: 0xffffff, fall: 3 };
+  return { label: "l'hiver", emoji: '❄️', color: 0xffffff, fall: 3, duCiel: true };
 })();
+
+// LE NUAGE DE SAISON EST POSÉ SUR LE SOL, PAS SUR L'ENFANT (v484). Il suivait
+// `player.pos` de −3 à +23 blocs : en vol, cent soixante carrés orange
+// flottaient autour de l'avion à cent blocs du sol — les « cubes orange dans
+// le ciel » vus sur les captures de Max et du banc depuis la v237, que la sonde
+// de scène ne trouvait pas parce que c'est UN objet `Points` collé à la caméra.
+// La neige tombe du ciel (bande haute) ; feuilles, pétales et lucioles restent
+// à hauteur d'arbre (bande basse). Au-dessus de la bande, rien ne se dessine.
+const BANDE_SAISON = SEASON.duCiel ? [-3, 23] : [-1, 9];
+const HAUT_SAISON = BANDE_SAISON[1] - BANDE_SAISON[0];
 
 const SEASON_COUNT = 160;
 const seasonGeo = new THREE.BufferGeometry();
@@ -7849,7 +7875,7 @@ const seasonGeo = new THREE.BufferGeometry();
   const pts = new Float32Array(SEASON_COUNT * 3);
   for (let i = 0; i < SEASON_COUNT; i++) {
     pts[i * 3] = (Math.random() - 0.5) * 60;
-    pts[i * 3 + 1] = Math.random() * 26 - 3;
+    pts[i * 3 + 1] = BANDE_SAISON[0] + Math.random() * HAUT_SAISON;
     pts[i * 3 + 2] = (Math.random() - 0.5) * 60;
   }
   seasonGeo.setAttribute('position', new THREE.BufferAttribute(pts, 3));
@@ -7870,13 +7896,18 @@ function updateSeasons(dt) {
   const pos = seasonGeo.attributes.position;
   for (let i = 0; i < SEASON_COUNT; i++) {
     let y = pos.getY(i) - SEASON.fall * dt;
-    if (y < -3) y += 26;
-    if (y > 23) y -= 26;
+    if (y < BANDE_SAISON[0]) y += HAUT_SAISON;
+    if (y > BANDE_SAISON[1]) y -= HAUT_SAISON;
     pos.setY(i, y);
     pos.setX(i, pos.getX(i) + Math.sin(seasonTime * 1.3 + i) * dt * 0.8); // flutter
   }
   pos.needsUpdate = true;
-  seasonPoints.position.set(player.pos.x, player.pos.y, player.pos.z);
+  // au-dessus d'un lac ou de la mer, c'est la surface de l'eau qui porte le nuage
+  const sol = Math.max(world.terrainHeight(Math.floor(player.pos.x), Math.floor(player.pos.z)), WATER_LEVEL) + 1;
+  seasonPoints.position.set(player.pos.x, sol, player.pos.z);
+  // plus haut que la bande (en vol), on ne voit le nuage que par en dessous :
+  // on ne le dessine pas
+  if (player.pos.y > sol + BANDE_SAISON[1] + 6) seasonPoints.visible = false;
 }
 
 const clouds = [];
@@ -8098,7 +8129,33 @@ function updateHud(dt) {
       roueLibre: player.roueLibre, pente: player.pente, atterrissage: player.atterrissage, suivi: player.suivi, derapage: player.derapage }) : '')
     + texteRoulage()
     + texteDegats()
-    + texteEmbarquement();
+    + texteEmbarquement()
+    + texteBlocVise();
+}
+
+// LE BLOC VISÉ SE NOMME, ET DIT QUI L'A POSÉ (v490). Le nom sous le réticule
+// est celui du bloc EN MAIN ; devant « des trucs bizarres dans Paris » (v295,
+// v298), la question était « qui a posé ÇA ? », et il a fallu le journal de
+// bord pour y répondre. Le monde le sait : un bloc du journal de l'enfant est
+// dans `world.edits`, avec sa date dans `world.editTimes` ; tout le reste, le
+// générateur l'a écrit. La visée est celle de la surbrillance — calculée à
+// chaque image de toute façon — retenue SEULEMENT sous `?diag=1` : hors
+// diagnostic, rien de plus ne se calcule ni ne s'écrit.
+let blocVise = null;
+function dateDuBloc(t) {
+  if (!t) return 'date inconnue';
+  const d = new Date(t), z = (n) => String(n).padStart(2, '0');
+  return `le ${z(d.getDate())}/${z(d.getMonth() + 1)}/${d.getFullYear()} à ${z(d.getHours())}h${z(d.getMinutes())}`;
+}
+function texteBlocVise() {
+  const h = blocVise;
+  if (!h) return '\nvisé : rien';
+  // l'identifiant se relit ici, à l'image du journal : la visée date de
+  // l'image d'avant, et un bloc posé entre les deux se nommerait de travers
+  const k = `${h.x},${h.y},${h.z}`, id = world.getBlock(h.x, h.y, h.z);
+  const nom = (BLOCK_INFO[id] && BLOCK_INFO[id].name) || `bloc ${id}`;
+  const origine = world.edits.has(k) ? `posé à la main ${dateDuBloc(world.editTimes.get(k))}` : 'posé par le jeu';
+  return `\nvisé : ${nom} (${h.x}, ${h.y}, ${h.z}) · ${origine}`;
 }
 
 // La dernière montée ou descente (v396) : c'est la ligne que Max lit sur la
@@ -8171,6 +8228,45 @@ fun.degats.brancherReseau((m) => { if (net && net.active) net.broadcast(m); });
 // place assise que main.js calcule : un seul corps, une seule assise.
 fun.brancherAvatar({ obtenir: obtenirAvatarLocal, placeAssise, pose: POSE_AU_VOLANT });
 fun.brancherPortieres((m) => { if (net && net.active) net.broadcast(m); });   // v377
+
+// LES COMMANDES SIMPLIFIÉES : un menu unique qui met le jeu en pause sans
+// quitter la partie, et le mode Construire. Les boutons d'avant restent dans
+// la page ; le menu les appuie.
+let menuTournait = false;
+commandes = initCommandes({
+  peutOuvrir: () => running && !edu.quizActive && !edu.hardStopActive,
+  pauser: () => { menuTournait = running; running = false; },
+  reprendre: () => {
+    if (!menuTournait || overlay.style.display !== 'none') return;
+    menuTournait = false;
+    if (IS_TOUCH || dragLook) running = true; else startGame();
+  },
+  lieu: () => {
+    const v = world.cityAt ? world.cityAt(player.pos.x, player.pos.z) : null;
+    return [myName(), v && v.name].filter(Boolean).join(' · ');
+  },
+  apprendre: () => edu.togglePanel(),
+  // Seul, « Jouer avec un ami » mène à l'écran des mondes en ligne — le
+  // chemin qu'un enfant prenait par l'accueil.
+  jouerAvecUnAmi: () => {
+    if (edu.quizActive || edu.hardStopActive) return;
+    leaveToMainMenu();
+    document.getElementById('online-btn')?.click();
+  },
+  outilCasse: () => breakMode,
+  choisirOutil: (casser) => {
+    breakMode = !!casser;
+    const mb = document.getElementById('mode-btn');
+    if (mb) mb.textContent = breakMode ? '⛏️' : '🧱';
+  },
+});
+if (IS_TOUCH) {
+  document.body.classList.add('tactile');
+  // la barre de blocs rejoint la file du haut, sous la pilule « Terminer »
+  const fc = document.getElementById('file-centre'), hb = document.getElementById('hotbar');
+  if (fc && hb) fc.insertBefore(hb, document.getElementById('construction-pill').nextSibling);
+}
+window.__commandes = commandes;
 
 // --- main loop -------------------------------------------------------------------------
 
@@ -8417,6 +8513,7 @@ function frame(now) {
   // la visée lit jusqu'à huit blocs devant les yeux : elle se tait tant que
   // le monde autour n'est pas rendu (v436)
   const hit = running && !attenteJoueur && (!world.arriveeEnCours() || mondePretAutour(8)) ? getTarget() : null;
+  if (DIAG) blocVise = hit;
   highlight.visible = !!hit;
   if (hit) highlight.position.set(hit.x + 0.5, hit.y + 0.5, hit.z + 0.5);
 

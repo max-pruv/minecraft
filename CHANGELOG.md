@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v480 — Les voitures de la rue rendent leur mémoire
+## v495 — Les voitures de la rue rendent leur mémoire
 
 **Pourquoi.** Une pousse de mémoire graphique restait après la v238, et elle
 ne venait pas des bêtes. Une voiture de la rue naît quand l'enfant approche
@@ -47,6 +47,441 @@ de 62 à 26 Mo de géométries en scène. Un témoin dans `monte.js` (passage da
 qu'elles possèdent est rendu, RIEN du prototype ne l'est, aucune ne reste en
 scène, et la rue revient au retour — vert seul sur la branche, rouge sur
 `origin/main`.
+
+## v494 — Des commandes plus simples
+
+**Pourquoi.** L'écran de jeu d'un téléphone portait jusqu'à quinze boutons :
+pause, sac, réglages, maison, caméra, messages, joueurs, souvenirs, photo, la
+pioche, la barre de blocs, saut, vol… — des emojis dans des carrés sombres
+éparpillés sur les quatre bords, et pas de règle pour dire lequel sert à quoi.
+Toucher l'écran pour regarder autour de soi cassait un bloc. Max a demandé de
+simplifier, puis, sur la maquette : « plus de transparence, moins de texte ».
+
+**Ce que ça change.** Une main pour bouger, une main pour agir. À gauche le
+joystick, dessiné en anneau fin même au repos ; à droite une seule pilule
+d'action (« Monter », « Conduire cette voiture », « Descendre »…) et trois
+boutons ronds au plus — Voler, Sauter, Construire. En haut à droite, UN bouton
+☰ ouvre un petit menu qui met la partie en pause : Mon sac, Mes photos, Prendre
+une photo, Carte du monde, Jouer avec un ami, Messages et Caméra quand on est en
+ligne, Apprendre, Réglages, Retour à l'accueil, et Reprendre. Construire devient
+un mode qu'on choisit : la barre de blocs (en haut, sous la pilule
+« Construction · Terminer »), Poser, Casser, Sauter — et hors de ce mode,
+toucher l'écran ne casse plus rien. Au volant : le joystick, Descendre et le
+frein à main ; aux commandes d'un avion, la colonne de bord reste où elle est.
+Les boutons sont en verre presque transparent, les icônes au trait fin et
+blanches, sans mot dessous ; seules les pilules portent du texte, sur une ligne.
+Aucune fonction ne disparaît : chaque ancien bouton est encore dans le menu.
+
+**Ce qui le prouve.** Sept témoins neufs dans `maj.js`, joués à 420 × 760 et à
+430 × 932 : à pied quatre boutons d'action au plus, ronds de 44 px, sans mot
+visible, rien qui se recouvre ni n'entre dans le quart du joystick ; une seule
+pilule, dont le mot le plus long tient sans être coupé ; en construction la
+barre, Poser et Casser, toujours sans recouvrement ; toucher l'écran ne casse
+rien hors construction et casse en construction ; chaque bouton remplacé existe
+encore, hors de l'écran, avec sa ligne de menu qui l'appuie ; le menu met en
+pause et « Reprendre » rend la partie ; et le contraste des icônes (3:1) et des
+pilules (4,5:1), fonds translucides composés sur le ciel de midi ET de minuit.
+Deux témoins repointés : le geste tactile de Manhattan passe par Construire,
+et « ils reviennent à pied » attend le bouton Construire au lieu de la pioche.
+Une sonde (`sonde-commandes.cjs`) rend les cinq états, jour et nuit, sur iPhone
+et iPad.
+
+---
+
+## v493 — On entre dans Sainte-Sophie
+
+**Pourquoi.** Hors de Paris et de Londres, un seul monument se visitait : le
+Panthéon de Rome (v458). Sainte-Sophie, à Istanbul, était un bloc plein — on
+en faisait le tour, jamais l'intérieur. Et le premier candidat, le Colisée,
+s'est révélé impraticable à la mesure : le Colisée du catalogue fait
+soixante-seize blocs de long (onze fois sa taille à l'échelle de Rome), son
+emprise contient le Forum romain, et son arène est pleine des immeubles de la
+ville, qu'il ne recouvre pas.
+
+**Ce que ça change.** On entre dans Sainte-Sophie de plain-pied, par l'ouest,
+à travers l'exonarthex : les bas-côtés sous leur voûte, quatre grands piliers,
+et au centre la nef qui monte treize blocs jusque sous la coupole, devenue
+une coque tapissée d'or. Au fond, le mihrab doré et le minbar. Le dehors est celui d'avant
+au bloc près.
+
+**Ce qui le prouve.** Un témoin de `plafond.js` marche de proche en proche
+depuis la place jusqu'au centre de la nef et lit la hauteur sous la coupole —
+rouge sur l'ancien bâtisseur (centre jamais atteint, zéro bloc d'air). Les
+anneaux de voitures d'Istanbul sont identiques au bit près, et le témoin des
+deux fils garde le bâtisseur sans hasard. `maj.js`, `carte.js` et
+`monte.js` ont rougi au portail : `carte.js` est verte rejouée seule des deux
+côtés, et `monte.js` rejouée seule rend la même famille de rouges sur la
+branche (7) et sur `origin/main` (9) — dette déclarée dans `TASKS.md`.
+
+---
+
+## v492 — Cinq villes passent du gabarit à la fiche
+
+**Pourquoi.** Max a demandé « cinquante villes détaillées ». Le monde a 269
+villes : 46 ont une fiche (leur fleuve, leur pierre, leurs monuments aux vraies
+coordonnées), 223 sortent encore d'un gabarit — la même ville à un angle près,
+sans un nom de lieu. Dublin n'avait pas la Liffey, Toulouse pas la Garonne ni
+sa brique rose, Nantes ni la Loire ni son château.
+
+**Ce que ça change.** Un premier lot de cinq villes passe à la fiche :
+**Dublin** (la Liffey, le Spire au milieu d'O'Connell Street, Temple Bar,
+Trinity College, le Ha'penny Bridge), **Toulouse** (la ville rose en brique,
+la Garonne, le Capitole, Saint-Sernin, les Jacobins, le Pont-Neuf),
+**Melbourne** (la Yarra, Flinders Street, Federation Square, le Queen Victoria
+Market), **Nantes** (le tuffeau et l'ardoise, la Loire, le château des ducs de
+Bretagne dans ses douves, le passage Pommeraye) et **Montpellier** (la pierre
+blonde, l'arc de triomphe et la promenade du Peyrou, la Comédie). Chaque lieu
+devient une étiquette de la carte et une destination. Tout est écrit en
+latitude et longitude réelles, et la géométrie se calcule.
+
+Ce qui ne change pas, à dessein : le rayon de chaque ville (celui du registre),
+sa trame de rues, ses anneaux de voitures. Ce qui change sous les pieds : le
+relief, sous les quatre fleuves neufs seulement — 2 708 colonnes, toutes dans
+le disque de leur ville et son fondu, aucune au-delà (mesuré colonne par
+colonne, avant et après). Les villes au bout d'une route ou d'une ligne de
+train (Marseille, Lyon, Milan…) attendent : un monument devant l'entrée
+fermerait l'avenue d'entrée.
+
+**Ce qui le prouve.** Un témoin neuf dans `carteMonde.js` (rouge sur l'ancien
+code) : chaque ville du lot garde le rayon du registre et ses anneaux de la
+v473, son ancre au sec, n'est ni dans la fenêtre d'empreinte ni au bout d'une
+route, chaque monument tient sa zone à terre dans celle de la ville (sinon il
+changerait le relief au-dehors), chaque lieu est dans la ville et chaque fleuve
+y met de l'eau. Mesurés à part : zéro tablier perdu (1 243 colonnes gagnées,
+toutes sous les ponts des fleuves neufs) ; le château de Nantes, à quatre blocs
+de demi-côté, coupait un anneau (828 → 339 blocs de circuit) — il en a trois,
+sa vraie taille, et les quatre anneaux restent. Les témoins de `plafond.js` sur
+les monuments (hauteur contre les immeubles, ciel de chaque ville, perches)
+lisent les trois monuments neufs, déclarés là où il le faut avec leur raison.
+Captures de rue et de ciel des cinq villes, avant et après.
+=======
+
+## v491 — Les réacteurs s'allument sans à-coup
+
+**Pourquoi.** Les flammes des réacteurs (v264) naissent cachées, et le moteur
+de rendu ne compile un programme qu'à la première image où il le dessine : les
+deux programmes de la flamme se compilaient donc dans l'image du premier ✈️ —
+une compilation dans l'image d'un geste, la famille du gel de la v246. Sur
+l'iPad, où Safari compile en centaines de millisecondes, c'est un à-coup au
+moment précis où l'enfant décolle. La dette attendait dans `TASKS.md` depuis la
+v264.
+
+**Ce que ça change.** La flamme se chauffe pendant l'accueil, avec la flotte :
+on en rend une, visible, dans une scène à part, avec les lampes du monde. Le
+premier décollage ne compile plus rien. Mesuré au passage pour les autres
+premiers gestes dans un avion : l'appareil posé, l'escalier et l'échelle
+d'embarquement (v389) et l'épave en feu (v462) n'apportaient aucun programme
+neuf — ils lisent des matériaux déjà chauffés.
+
+**Ce qui le prouve.** Un témoin de `monte.js` : aux commandes du Concorde, on
+pousse la manette des gaz, les quatre tuyères s'allument, et l'on lit les CLÉS
+de programme (v363) — zéro neuve ; chauffe désarmée, deux. La sonde
+`sonde-flamme-chauffe.cjs` sépare les quatre cas (appareil, flammes, accès,
+épave) : 0 · 2 · 0 · 0 avant, 0 · 0 · 0 · 0 après.
+
+---
+
+## v490 — Le bloc visé dit qui l'a posé
+
+**Pourquoi.** Devant les constructions suspendues dans le ciel de Paris (v295,
+v298), la seule question qui comptait était « qui a posé ça ? » — et la
+tablette ne savait pas y répondre : le nom sous le réticule est celui du bloc
+EN MAIN, jamais celui qu'on regarde. Il a fallu lire le journal de bord dans le
+nuage pour trancher.
+
+**Ce que ça change.** Avec `?diag=1`, une ligne de plus dans le diagnostic du
+haut de l'écran : « visé : Bricks (x, y, z) · posé à la main le 17/10/2026 à
+15h42 », ou « · posé par le jeu » pour un bloc que le générateur a écrit. Le
+monde le sait déjà : un bloc d'enfant est dans son journal, avec sa date. Hors
+`?diag=1`, rien de plus ne se calcule ni ne s'affiche, et rien n'entre dans le
+quart bas-gauche.
+
+**Ce qui le prouve.** Un témoin de `monte.js`, dans la page `?diag=1` qui
+existait déjà : il lit le texte affiché, sol à ses pieds (« posé par le jeu »)
+puis le même bloc remplacé par une brique datée (« posé à la main » avec la
+date). Rouge sur `origin/main` (aucune ligne « visé »), vert ici.
+
+---
+
+## v489 — On monte dans le métro par sa porte
+
+**Pourquoi.** Dans une voiture (v366) et dans un avion (v389, v400), l'enfant
+marche jusqu'à la porte, elle s'ouvre, il entre. Dans un train ou un métro,
+rien de tout cela : « Monter à bord » le collait au siège d'un coup, et
+« Descendre » le laissait debout là où était le siège, au milieu de la rame.
+La tâche était déclarée depuis la v400 et attendait la porte du modèle.
+
+**Ce que ça change.** Quand la rame est à quai, l'enfant marche jusqu'à la
+porte du flanc où il se trouve (celui du quai), elle coulisse, il entre d'un
+pas, et la porte se referme derrière lui. En descendant, la porte s'ouvre, il
+sort et se pose debout SUR LE QUAI — la place la plus haute et la plus proche
+des deux flancs, jamais dans un mur, jamais dans l'eau, jamais dans le vide.
+Un second appui termine tout de suite (à bord, ou sur le quai). Une rame qui
+roule, ou dont l'arrêt finit avant la séquence, se prend d'un coup, comme
+avant : la porte ne file jamais sous l'enfant, et une rame qui repart pendant
+la séquence la termine.
+
+**Ce qui le prouve.** Quatre témoins dans `monte.js`, sur une page qui joue la
+séquence et une ligne d'essai posée sur le couloir plat — la rame à quai est
+provoquée, pas attendue (`sonde-porte-rame.cjs`, rejouable seule en trente
+secondes) : les phases (marche, ouverture, entrée), « à bord » faux pendant
+toute la marche et vrai seulement une fois dedans, la porte qui coulisse de
+0,86 bloc puis se referme, la descente posée debout à 1,65 bloc du flanc ; le
+second appui et la rame qui roule ; aucun programme compilé, aucun bloc écrit.
+Rouges sous `embarq=0` (l'ancien geste, rejoué au bit près). Ce qui ne se
+juge que sur l'iPad (la vue, une vraie gare, un vrai quai de Washington) est
+dans `TASKS.md`.
+
+---
+
+## v488 — Un service worker vraiment coincé a son témoin
+
+**Pourquoi.** La v220 avait réparé le filet de mise à jour (une minuterie armée
+APRÈS l'installation qu'elle devait sauver) et borné `forcerMaj`, le dernier
+recours, qui attendait `unregister()` derrière l'installation bloquée. Mais rien
+ne gardait ces deux remèdes : les deux témoins écrits alors étaient verts des
+deux côtés, parce que leur blocage finissait toujours par rendre la main et que
+l'ancien code s'en sortait sans filet. C'est la mise à jour de toute la
+famille : si elle se recasse, plus aucune tablette ne reçoit rien.
+
+**Ce que ça change.** Pour la famille, rien de visible : les deux remèdes
+tenaient. Une installation qui ne finit JAMAIS est désormais éprouvée à chaque
+portail : au bout de quarante-cinq secondes la page repart de zéro et tourne sur
+les fichiers du serveur, puis le loader s'efface et « Jouer » est là.
+
+**Ce qui le prouve.** Deux témoins dans `maj.js`, qui appellent
+`sonde-sw-coince.cjs` telle quelle. Le blocage ne s'épuise pas : le service
+worker publié porte un `install` dont la promesse ne se tient jamais (Chromium
+borne un événement à cinq minutes). Mesuré : rechargée à 49,6 s, `main.js`
+redemandé au serveur, l'installation toujours coincée. Vérifiés ROUGES sur deux
+copies : filet désarmé (loader « 126 / 126 fichiers » à jamais) et `forcerMaj`
+sans borne (loader « On va chercher la dernière version… » à jamais).
+
+---
+
+## v487 — La voiture garée suit son garage
+
+**Pourquoi.** Un garage est rangé par sa position. Quand la carte a bougé sous
+les constructions des enfants — les villes qui s'écartent (v242), les toits de
+Paris relevés (v301), Paris doublé et déplacé (v306), le fondu doux (v309) —
+les murs du garage partaient avec leur quartier, mais sa fiche restait à
+l'ancienne adresse : la voiture garée ressortait au milieu de nulle part, et le
+garage arrivé ne la reconnaissait plus. Rien ne dit qu'un enfant en ait posé un
+là (la session ne lit pas les profils) : c'est une promesse qu'on remet debout,
+pas une panne vue.
+
+**Ce que ça change.** La fiche d'un garage, ses places et la voiture qui y dort
+suivent désormais leurs murs, à chaque marche de la carte : d'un seul tenant
+avec le groupe de blocs qui les porte pour Paris doublé et le fondu doux, avec
+leur colonne pour la carte 3 et les toits. Sur un document d'une tablette
+restée en arrière comme sur un appareil qui a déjà emmené les murs sans la
+fiche — dans ce cas la fiche retrouve son groupe à l'arrivée. Un garage posé
+après une refonte ne bouge pas ; dans le doute, la fiche reste où elle était.
+
+**Ce qui le prouve.** Quatre témoins neufs, rouges sur l'ancien code. Trois
+dans `plafond.js`, sous node : un garage de l'ancien Paris arrive au même
+endroit d'un document d'avant et en orpheline, le plancher entier (99 blocs)
+sous sa fiche, sa voiture et sa place au même écart ; un garage posé après la
+date reste, une seconde passe rend le même objet, un document sans garages en
+reste sans ; un garage de Rome suit la carte 3, et un appareil déjà à la
+carte 7 retrouve sa fiche à la migration de stockage (carte 8). Un dans
+`sauvegarde.js`, par la vraie fusion du nuage, pour les deux documents. Et la
+découpe des deux marches de groupes en un plan et une écriture rend, sur un
+document fabriqué, des blocs identiques à l'octet à ceux d'`origin/main`.
+
+---
+
+## v486 — Changi, l'aéroport de Singapour, sur une terre gagnée sur la mer
+
+**Pourquoi.** Il manquait Changi parmi les grands aéroports. Singapour, dans
+le jeu, est un disque de terre au milieu de la mer — le planisphère n'a pas
+l'île — et la sonde de la v223 ne trouvait aucun disque de soixante-dix blocs
+au sec dans les trois cents blocs autour : Delhi avait pris sa place.
+
+**Ce que ça change.** Changi est là, à l'est-nord-est de la ville, sur une
+île à lui — comme le vrai, bâti sur des remblais gagnés sur la mer. Un grand
+aéroport à deux pistes, son terminal meublé, trois avions au poste, et deux
+pistes de trois cents blocs qui finissent à l'est en digue sur la mer. On y
+atterrit avec ✈️ comme partout ailleurs.
+
+**Ce qui le prouve.** Un témoin neuf (`plafond.js`) engendre le même pays
+avec et sans Changi dans le même code : hors de la zone de l'aérodrome, zéro
+colonne changée sur 152 956, et l'île existe (0,8 % d'eau sous le disque).
+Mesuré à la livraison avec la même découpe sur `origin/main` et sur la
+branche : 242 980 colonnes, le même relief (03de9ee4…) des deux côtés. Le
+monde d'avant la v306, qui juge les anciennes marches de migration, est
+identique à la production autour de Changi. Les témoins des pistes, de
+l'ouvrage, des postes et des terminaux, qui bouclent sur tous les aérodromes,
+lisent Changi sans une ligne de plus : pistes 300 et 300, sans un trou ;
+remblai 4 et décaissé 3 sur la bande.
+
+---
+
+## v485 — La savane : herbe dorée et acacias
+
+**Pourquoi.** Après les déserts, la toundra, la taïga, les steppes, les
+forêts tropicales et le climat méditerranéen, la savane restait la prairie
+verte de Normandie, avec ses chênes et ses sapins : au Serengeti, en Zambie,
+dans le Cerrado et dans le nord de l'Australie.
+
+**Ce que ça change.** Sept régions réelles (la bande soudanienne sous le
+Sahel, l'Afrique de l'Est, l'Afrique australe, l'ouest de Madagascar, le
+Cerrado, les Llanos, le nord de l'Australie) ont les hautes herbes dorées de
+la saison sèche et des arbres isolés : des acacias, un arbre neuf et
+original au fût fourchu et à l'ombrelle plate, et quelques buissons
+épineux. La carte et le paysage lointain prennent la même couleur. Le
+relief ne bouge pas d'un bloc ; là où un enfant a bâti avant la règle, les
+arbres d'avant restent.
+
+**Ce qui le prouve.** Un témoin neuf de `plafond.js` lit vingt morceaux au
+Serengeti, en Zambie, dans le Cerrado, dans le Top End et au nord du Ghana
+contre le même monde sans la règle : 0 bloc de forme différente, 98 acacias
+pour 119 arbres (308 sans la règle), 7 460 sommets d'herbe teints sur
+12 032 ; sur `origin/main`, zéro acacia (rouge). Les sites tempérés
+(Kansas, Iowa, Pampa, Ukraine) restent hors zone, les deux empreintes du
+relief et celle des 490 morceaux ne bougent pas, `plafond.js` 160 verts. La
+teinte a été jugée en capture, au sol et du ciel.
+
+---
+
+
+---
+
+## v484 — Plus de cubes orange dans le ciel
+
+**Pourquoi.** Des carrés orange flottaient dans le ciel, sur les captures de Max
+comme sur celles du banc, depuis la v237 au moins. C'étaient les feuilles
+d'automne : cent soixante points collés à l'enfant, de trois blocs sous ses
+pieds à vingt-trois au-dessus. En vol, ils montaient avec lui — un essaim de
+carrés autour de l'avion à cent blocs du sol. Une sonde de scène cherchait
+« un petit maillage loin dans le champ » et ne pouvait pas les voir : c'est UN
+objet `Points` à trois blocs de la caméra. Une capture à 100 blocs d'altitude,
+les pixels orange regroupés en amas et un lancer de rayon à travers chacun les
+a nommés en une exécution.
+
+**Ce que ça change.** Le nuage de saison est posé sur le sol (ou sur l'eau),
+plus sur l'enfant. Feuilles, pétales et lucioles restent à hauteur d'arbre (un
+bloc sous le sol à neuf au-dessus) ; la neige seule tombe du ciel. En vol,
+au-dessus de la bande, rien ne se dessine.
+
+**Ce qui le prouve.** Deux témoins de `monte.js`, page à part : à soixante
+blocs du sol, aucune particule de saison visible plus haut que trente blocs
+(sur `origin/main` : visible, jusqu'à 82,9) ; au sol, hors hiver, aucune plus
+haut que dix (sur `origin/main` : 23).
+
+---
+
+## v483 — La course et les bêtes comptent les vraies secondes
+
+**Pourquoi.** Le jeu borne le temps d'une image à un vingtième de seconde, pour
+que rien ne traverse les murs quand une tablette rame. Les minuteurs écrits
+`-= dt` héritaient de cette borne. À cinq images par seconde, une seconde de
+jeu durait quatre secondes de montre. Le bestiaire se peuplait quatre fois
+moins vite au moment où l'enfant arrive quelque part. Le chronomètre de la
+course du parc donnait 2,3 s pour 8,6 s réelles : sur une tablette qui rame,
+on battait donc son record sans courir plus vite. C'était la dernière famille
+du piège de `dt` déclarée dans `TASKS.md` (v226, v234).
+
+**Ce que ça change.** La naissance des bêtes, le chronomètre et le délai de la
+course, la veille des garages, le rythme des défis de calcul de Cornichon et
+le rafraîchissement du bouton « Monter » comptent désormais en temps réel
+(`chronoReel`, cadence.js). Ces durées sont bornées à deux secondes par image,
+et une pause n'entre jamais dans le chronomètre. Les animations (une bête qui
+fuit, une émote qui flotte, une roue qui tourne) restent en temps de jeu. Les
+records déjà écrits ne bougent pas : les remettre à zéro est une décision de
+Max, déclarée dans `TASKS.md`.
+
+**Ce qui le prouve.** Deux témoins dans `monte.js`, sur une page à part, à
+cadence basse PROVOQUÉE (190 ms de fil brûlées par image, 4,7 images par
+seconde). Ils lisent une fenêtre de temps réel connue grâce à la fonction
+partagée `minuteurs-mesure.js`, que lit aussi `sonde-minuteurs.cjs` :
+- naissances : 0,25 de la cadence prévue sur `origin/main`, 0,87 ici
+  (barre 0,6) ;
+- record : 0,27 du temps réel sur `origin/main`, 0,99 ici (barre 0,8).
+
+La table des gardiens de `cadence.js` gagne ceux de ses deux nouveaux clients.
+
+---
+
+## v482 — Le sol de Paris se soude
+
+**Pourquoi.** Depuis la v296, le détail des façades n'est fabriqué qu'à portée
+de l'enfant, mais le sol HD de Paris — pavés, bordures de granit, marquages,
+trottoir relevé — et les faces plates restent fabriqués pour TOUT le disque,
+pour que le loin ne change pas d'un pixel. La dette demandait de remesurer ce
+qu'ils coûtent encore, après le budget en mégaoctets (v299) et les baies
+soudées (v469). Mesuré sous node, sur les 1 754 morceaux du disque : le sol HD
+pèse 69,4 Mo et les faces plates 303 Mo, mais ces faces REMPLACENT celles du
+voxel (454 Mo sans la couche HD, 432 avec) : le surcoût réel de la couche hors
+de portée est de 47,7 Mo pour la ville entière, environ 16 Mo dans les 625
+morceaux qu'un appareil tient à la fois. Et un sommet du sol sur quatre était
+le double exact d'un autre — le coin commun de deux pavés.
+
+**Ce que ça change.** Rien à l'écran : le sol HD est soudé comme les baies,
+mêmes triangles, mêmes valeurs. 69,4 → 51,7 Mo sur le disque de Paris (Rome
+12,4 → 8,1, Londres 3,4 → 2,2), un dixième de milliseconde par morceau dans le
+worker. Le palier bas ne reçoit rien de neuf (il n'a pas de couche HD). La
+piste « sol seulement à deux fois la portée HD » n'est PAS livrée : elle ne
+rendrait plus que huit mégaoctets environ et coûterait une couture visible sur
+la chaussée — déclarée dans `TASKS.md` avec ses chiffres.
+
+**Ce qui le prouve.** Un témoin neuf dans `plafond.js` sur 106 morceaux de
+Paris : un quart d'octets en moins (4,34 → 3,25 Mo, rapport 0,749) et zéro coin
+de triangle en écart, bit à bit ; rouge sur l'ancien code (rapport 1,000).
+L'empreinte des 490 morceaux, soudure désarmée (`solSoude: false`), rend la
+constante d'avant au bit près. Et les faces plates et le voxel n'ont AUCUN
+sommet doublé (0 % sur 216 008, mesuré) : rien à souder là.
+## v481 — Au feu, le témoin lit l'heure de la rue
+
+**Pourquoi.** Le témoin « au feu, la voiture freine sur plusieurs relevés au
+lieu de piler » (`monte.js`) était rouge, et `TASKS.md` en accusait l'arrêt
+d'urgence au contact. Mesuré, la plupart de ses « coups de frein » n'en
+étaient pas : la rue avance en temps réel par image (v305), une image de banc
+dure jusqu'à une seconde, et les relevés tombent tous les dixièmes de seconde
+ENTRE les images. Deux relevés à 112 ms d'écart encadraient une image de
+0,7 s ; la voiture y freinait à 7,5 b/s², et le témoin divisait par 0,112.
+
+**Ce que ça change.** Rien dans le jeu. Le témoin date chaque relevé à
+l'horloge de la rue (`vehicules.horloge()`) ; sa barre reste à 10 b/s². Il
+reste rouge de temps en temps, et cette fois pour de vrai : trois mécanismes
+rares, aucun d'eux l'arrêt d'urgence, sont décrits et chiffrés dans
+`TASKS.md`, avec deux défauts de la grille trouvés en chemin.
+
+**Ce qui le prouve.** `tests/sonde-feu-horloge.cjs`, même pose que le témoin :
+sur 142 paires de relevés d'une voiture retenue par un feu, 7 dépassent
+10 b/s² à l'horloge de la page et 0 à celle de la rue (les 7 y valent 1,5 à
+7,5). Contrôle, freinage désarmé à 100 b/s² : 14 paires sur 166 au-delà de 10
+à l'horloge de la rue (pire 32,8) — la mesure voit un vrai coup de frein. Sur
+dix passages d'une minute, il en reste un peu moins d'une paire sur deux cents
+au-delà de 10 : ce sont elles que la dette décrit.
+## v480 — L'approche assistée voit le mur du seuil
+
+**Pourquoi.** La sonde de l'approche assistée (v452) déclarait quatre posés
+sur 148 à reprendre, et `TASKS.md` en accusait « l'état du monde déjà
+engendré ». Rejoué seul dans un monde neuf, chacun se reproduit à l'identique :
+ce n'était pas le monde. Trois des quatre étaient un défaut de la SONDE — elle
+prenait le sommet d'une colonne pour le sol, et des couronnes d'arbres sans
+tronc flottent à neuf et dix blocs au-dessus des pistes de Roissy et
+d'Andrews ; l'avion vole dessous. Le quatrième était vrai : à Los Angeles, un
+mur de pierre d'une seule colonne borde le seuil, huit blocs au-dessus de la
+piste, et le balayage des obstacles, par pas de trois, l'enjambait — le
+Concorde venu de l'ouest y entrait.
+
+**Ce que ça change.** ✈️ « Se poser » lit les obstacles avant le seuil bloc
+par bloc, sur toute la largeur de l'avion, et passe au-dessus du mur de Los
+Angeles. Au-dessus de la piste, il ne regarde que ce qui croise la boîte de
+l'avion sur sa descente : à Andrews, le plan relevé par le balayage plus fin
+aurait mené le chasseur dans une couronne flottante, il la survole.
+
+**Ce qui le prouve.** La sonde juge désormais le contact comme le joueur (un
+bloc dans la boîte est un heurt, le sol est sous les roues) : 148 posés sur
+148, aucun toucher au-delà de deux blocs par seconde, arrêt le plus long
+inchangé (196 blocs) ; la même sonde sur `origin/main` rend le heurt de Los
+Angeles. Un témoin de `monte.js` rejoue Los Angeles et Andrews sous node
+(8 s) : rouge sur `origin/main`, vert ici, et la partie Andrews a été vue rouge
+la règle au-dessus de la piste désarmée.
+
+---
 
 ## v479 — Le journal de bord se taille tout seul
 
@@ -102,6 +537,9 @@ gardée par un bloc d'enfant garde son sol tandis que le tunnel passe dessous
 (vérifié rouge garde désarmée). L'empreinte des 490 morceaux est identique
 (Washington en fait partie) et les deux empreintes du relief ne bougent pas :
 creuser n'écrit que des blocs.
+
+---
+
 ## v477 — Les voitures ne roulent plus sur le parapet des ponts
 
 **Pourquoi.** Aux coins des anneaux de circulation des villes engendrées, la

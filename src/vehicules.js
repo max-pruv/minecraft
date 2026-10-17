@@ -19,6 +19,7 @@ import { liberer, partagerTout } from './liberer.js';
 import { profilVitesse, grilleDuProfil, rapprocher, allureDevant, passeAOrange, FREIN, FREIN_URGENCE, ALLURE_VOIE, allureDuConducteur } from './circulation.js';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
 import { CLASSES, MARCHE } from './conduite.js';
+import { flammeDeChauffe } from './avions.js';
 
 // --- les reflets --------------------------------------------------------------
 //
@@ -245,6 +246,13 @@ let fabriqueesChauffees = false;
 function chaufferLesFabriquees(renderer, scene, camera) {
   if (fabriqueesChauffees) return;
   fabriqueesChauffees = true;
+  // la flamme des réacteurs (v491, avions.js) : née cachée, elle compilait son
+  // programme au premier ✈️. Une scène à part, les lampes du monde.
+  try {
+    const ici = new THREE.Scene();
+    ici.add(flammeDeChauffe());
+    renderer.compile(ici, camera, scene);
+  } catch (e) { console.warn('chauffe de la flamme', e); }
   for (const entree of FLOTTE) {
     if (!entree.fabrique) continue;
     const chargement = chargerVoitureFlotte(entree);
@@ -714,7 +722,7 @@ export function chargerVoitureFlotte(entree) {
   if(entree.fabrique){
     const modele=entree.fabrique(),rt=refletsVoiture();
     if(rt)modele.traverse(o=>{if(o.isMesh&&(o.material.isMeshStandardMaterial||o.material.isMeshPhysicalMaterial))refleter(o,o.material,.75);});
-    partagerTout(modele);   // le prototype ne se rend jamais (v480)
+    partagerTout(modele);   // le prototype ne se rend jamais (v495)
     const p=Promise.resolve(modele);chargementsFlotte.set(entree.fichier,p);return p;
   }
   const chargement = new GLTFLoader().register(partageDesTextures).loadAsync('./vendor/voitures/' + entree.fichier)
@@ -754,7 +762,7 @@ export function chargerVoitureFlotte(entree) {
       const rayon = boite ? (boite.max.y - boite.min.y) / 2 : 0;
       porteur.userData.rayonRoue = rayon > 0.1 ? rayon : 0.34;
       porteur.userData.forme = forme;      // « manifeste » ou « mesuré » : le témoin le lit
-      // LE PROTOTYPE EST À TOUTE LA FLOTTE (v480). Chaque voiture du modèle en
+      // LE PROTOTYPE EST À TOUTE LA FLOTTE (v495). Chaque voiture du modèle en
       // est un clone (`clone(true)` partage géométries et matériaux) : rendre
       // au pilote ce qu'une voiture qui s'en va porte ne doit jamais toucher
       // à ce qu'elle tient du prototype. Sans cette marque, `retirer` (un ami
@@ -783,7 +791,7 @@ export const FAB_MS = 5;
 export const FAB_PROCHE = 18;
 const fabrication = { fin: Infinity, faites: 0, differees: 0 };
 
-// CE QUI QUITTE DURABLEMENT LE CHAMP SE REND (v480). Une voiture de convoi
+// CE QUI QUITTE DURABLEMENT LE CHAMP SE REND (v495). Une voiture de convoi
 // naît à la demande (v235) et n'était jamais détruite : cachée au-delà de sa
 // portée, elle restait dans la scène pour toute la session, avec ses trente
 // maillages, ses matériaux repeints et — avant qu'on la rende aussi — la coque
@@ -1093,12 +1101,19 @@ function construireRame(motrice, couleur = 0x2a6ad8) {
   for (const s of [-1, 1]) {
     a.boite(0x9fd8ee, { p: [s * larg * 0.5, y0 + h * 0.62, 0], e: [0.06, 0.42, L * 0.86] });
   }
-  // les portes, deux par flanc
+  // les portes, deux par flanc. Celle de l'arrière (dz +1,9) COULISSE : c'est
+  // par elle que l'enfant monte (v489, embarquement.js). Elle vit dans un
+  // MEMBRE à part, sur les deux flancs à la fois (un seul appel de dessin de
+  // plus par voiture, même matériau, même programme) ; derrière elle, la baie
+  // sombre que l'ouverture découvre.
   for (const s of [-1, 1]) {
-    for (const dz of [-1.9, 1.9]) {
-      a.boite(0x1a2a44, { p: [s * larg * 0.51, y0 + h * 0.42, dz], e: [0.06, 1.0, 0.9] });
-    }
+    a.boite(0x1a2a44, { p: [s * larg * 0.51, y0 + h * 0.42, -1.9], e: [0.06, 1.0, 0.9] });
+    a.boite(0x0c1016, { p: [s * larg * 0.5, y0 + h * 0.42, 1.9], e: [0.04, 0.98, 0.88] });
   }
+  const yPorte = y0 + h * 0.42;
+  a.membre('porte', [0, yPorte, 1.9]);
+  for (const s of [-1, 1]) a.boite(0x1a2a44, { p: [s * larg * 0.51, yPorte, 1.9], e: [0.06, 1.0, 0.9] });
+  a.membre('tronc');
   // la bande de livrée
   a.cylindre(0xf0f0ea, { p: [0, y0 + 0.28, 0], r: [Math.PI / 2, 0, 0], e: [larg * 1.01, L * 0.98, 0.22], haut: 0.5, bas: 0.5, seg: 12 });
   // le pare-brise et les feux de la motrice
@@ -1120,7 +1135,16 @@ function construireRame(motrice, couleur = 0x2a6ad8) {
       }
     }
   }
-  return a.finir();
+  const g = a.finir();
+  // L'ACCÈS SE DÉCLARE AVEC LE MODÈLE (v489), comme celui d'un avion (v381) :
+  // le seuil dans le repère de la voiture (nez en −z), les deux flancs, le
+  // membre qui coulisse le long de z et de combien. Le pied de l'enfant à bord
+  // est à `assise` (1,1) au-dessus de la voie : c'est aussi le seuil.
+  g.userData.porte = {
+    type: 'coulissante', ouvrant: 'porte', axe: 'z', z: 1.9, course: 0.86,
+    x: larg / 2, y: 1.1, demiLong: L / 2 + (motrice ? 0.75 : 0.4), cotes: [-1, 1],
+  };
+  return g;
 }
 
 // Une monoplace : museau pointu, ailerons avant et arrière, roues à l'air libre,
@@ -1488,7 +1512,7 @@ class Convoi {
   }
 
   // Rend au pilote le maillage de la voiture i, et vide sa place — la place,
-  // elle, reste (v480). Ce que le maillage tient du prototype de la flotte
+  // elle, reste (v495). Ce que le maillage tient du prototype de la flotte
   // est marqué partagé et ne part pas (`partagerTout`).
   rendre(i) {
     const m = this.elements[i];
@@ -2080,7 +2104,7 @@ class Convoi {
       const d2 = (p.x - joueur.x) ** 2 + (p.z - joueur.z) ** 2;
       const dedans = d2 < portee2;
       // Hors du champ : on ne fabrique rien, et l'on cache ce qui existe déjà
-      // — ou, loin au-delà, on le rend (v480).
+      // — ou, loin au-delà, on le rend (v495).
       if (!dedans) {
         const dejaLa = this.elements[i];
         if (dejaLa && d2 > rendre2) this.rendre(i);
@@ -2507,11 +2531,11 @@ export function createVehicules({ scene, player }) {
     const chargement = chargerVoitureFlotte(entree);
     if (chargement) {
       chargement.then((proto) => {
-        // rendue avant que son modèle n'arrive (v480) : on n'y accroche rien
+        // rendue avant que son modèle n'arrive (v495) : on n'y accroche rien
         if (!proto || !g.userData.membres || g.userData.rendue) return;
         for (const nom of ['caisse', 'verriere', 'tronc']) {
           const membre = g.userData.membres[nom];
-          // LA COQUE D'ATTENTE SE REND AUSSI (v480) : trois géométries
+          // LA COQUE D'ATTENTE SE REND AUSSI (v495) : trois géométries
           // fusionnées et deux matériaux à elle, par voiture, qu'on retirait
           // du groupe sans jamais les rendre au pilote.
           if (membre) { g.remove(membre); liberer(membre); }
@@ -3590,7 +3614,7 @@ export function createVehicules({ scene, player }) {
     const peinture = mesh.userData ? (mesh.userData.peinture ?? null) : null;
     scene.remove(mesh);
     // le maillage de la rue est remplacé par une monture neuve (v194) : on le
-    // rend au pilote, comme `retirer` (v480)
+    // rend au pilote, comme `retirer` (v495)
     liberer(mesh);
     c.elements[i] = null;
     // LA PLACE RESTE, VIDE (v305). Depuis la v194 on RETIRAIT la place du

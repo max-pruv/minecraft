@@ -1,4 +1,4 @@
-// DEUX VOISINES D'UN CONVOI, REJOUÉ SEUL (v480).
+// DEUX VOISINES D'UN CONVOI, REJOUÉ SEUL (v495).
 // Le passage de `monte.js` recopié, posé au-dessus de Paris comme son
 // prédécesseur : sert la double mesure de la règle v195. Trois passages.
 const { Banc, souffler } = require('./banc.js');

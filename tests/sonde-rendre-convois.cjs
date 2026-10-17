@@ -1,4 +1,4 @@
-// LES VOITURES DE LA RUE RENDENT LEUR MÉMOIRE QUAND L'ENFANT S'EN VA (v480).
+// LES VOITURES DE LA RUE RENDENT LEUR MÉMOIRE QUAND L'ENFANT S'EN VA (v495).
 // Le passage du témoin de `monte.js` vit ICI, et `monte.js` le requiert : une
 // copie de sonde finit par diverger du témoin (v400). Seule, elle se rejoue
 // en deux minutes au lieu d'une suite entière (v384).

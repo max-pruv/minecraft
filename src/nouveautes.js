@@ -6,11 +6,135 @@
 
 export const NOUVEAUTES = [
   {
-    v: 480,
+    v: 495,
     titre: 'Les voitures rendent la mémoire',
     puces: [
       'Une rue quittée ne pèse plus rien',
       'Les voitures reviennent quand tu reviens',
+    ],
+  },
+  {
+    v: 494,
+    titre: 'Des commandes plus simples',
+    puces: [
+      'Un seul menu en haut à droite',
+      'Construire devient un bouton à part',
+      'Des boutons transparents, sans texte',
+    ],
+  },
+  {
+    v: 493,
+    titre: 'On entre dans Sainte-Sophie',
+    puces: [
+      'Entre par la grande porte, à Istanbul',
+      'Lève la tête sous la coupole',
+    ],
+  },
+  {
+    v: 492,
+    titre: 'Cinq villes plus vraies',
+    puces: [
+      'Dublin, Toulouse, Melbourne, Nantes, Montpellier',
+      'Leurs fleuves, leur pierre, leurs monuments',
+      'Leurs lieux sur la carte',
+    ],
+  },
+  {
+    v: 491,
+    titre: 'Les réacteurs sans à-coup',
+    puces: [
+      'Les flammes sont prêtes dès l\'accueil',
+      'Le décollage ne fige plus l\'image',
+    ],
+  },
+  {
+    v: 490,
+    titre: 'Qui a posé ce bloc ?',
+    puces: [
+      'Le diagnostic nomme le bloc visé',
+      'Posé par le jeu, ou à la main',
+    ],
+  },
+  {
+    v: 489,
+    titre: 'On monte dans le métro',
+    puces: [
+      'Tu marches jusqu’à la porte du train',
+      'Elle coulisse, tu entres, elle se ferme',
+      'Tu descends debout sur le quai',
+    ],
+  },
+  {
+    v: 488,
+    titre: 'Une mise à jour jamais coincée',
+    puces: [
+      'Même bloquée, la mise à jour arrive',
+      'Le jeu repart tout seul, sans rien effacer',
+    ],
+  },
+  {
+    v: 487,
+    titre: 'La voiture suit son garage',
+    puces: [
+      'Ta voiture garée reste dans son garage',
+      'Même quand la carte a bougé dessous',
+    ],
+  },
+  {
+    v: 486,
+    titre: 'Un aéroport à Singapour',
+    puces: [
+      'Changi est né sur la mer',
+      'Deux longues pistes au bord de l\'eau',
+    ],
+  },
+  {
+    v: 485,
+    titre: 'La savane',
+    puces: [
+      'Herbe dorée en Afrique et au Brésil',
+      'Des acacias plats comme des parasols',
+      'Le nord de l\'Australie aussi',
+    ],
+  },
+  {
+    v: 484,
+    titre: 'Un ciel sans cubes orange',
+    puces: [
+      'Les feuilles d\'automne restent près des arbres',
+      'Plus de carrés orange autour de l\'avion',
+    ],
+  },
+  {
+    v: 483,
+    titre: 'Le chrono dit vrai',
+    puces: [
+      'La course compte les vraies secondes',
+      'Les animaux arrivent même quand ça rame',
+    ],
+  },
+  {
+    v: 482,
+    titre: 'Paris plus léger',
+    puces: [
+      'Le sol de Paris prend moins de mémoire',
+      'Rien ne change à l\'écran',
+    ],
+  },
+  {
+    v: 481,
+    titre: 'Les feux mieux surveillés',
+    puces: [
+      "L'essai du feu lit l'heure de la rue",
+      'Plus de faux coups de frein comptés',
+    ],
+  },
+  {
+    v: 480,
+    titre: 'L’avion évite le mur',
+    puces: [
+      'Se poser à Los Angeles ne cogne plus',
+      'L’avion survole les arbres au-dessus des pistes',
     ],
   },
   {
