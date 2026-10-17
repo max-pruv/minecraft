@@ -8098,7 +8098,33 @@ function updateHud(dt) {
       roueLibre: player.roueLibre, pente: player.pente, atterrissage: player.atterrissage, suivi: player.suivi, derapage: player.derapage }) : '')
     + texteRoulage()
     + texteDegats()
-    + texteEmbarquement();
+    + texteEmbarquement()
+    + texteBlocVise();
+}
+
+// LE BLOC VISÉ SE NOMME, ET DIT QUI L'A POSÉ (v474). Le nom sous le réticule
+// est celui du bloc EN MAIN ; devant « des trucs bizarres dans Paris » (v295,
+// v298), la question était « qui a posé ÇA ? », et il a fallu le journal de
+// bord pour y répondre. Le monde le sait : un bloc du journal de l'enfant est
+// dans `world.edits`, avec sa date dans `world.editTimes` ; tout le reste, le
+// générateur l'a écrit. La visée est celle de la surbrillance — calculée à
+// chaque image de toute façon — retenue SEULEMENT sous `?diag=1` : hors
+// diagnostic, rien de plus ne se calcule ni ne s'écrit.
+let blocVise = null;
+function dateDuBloc(t) {
+  if (!t) return 'date inconnue';
+  const d = new Date(t), z = (n) => String(n).padStart(2, '0');
+  return `le ${z(d.getDate())}/${z(d.getMonth() + 1)}/${d.getFullYear()} à ${z(d.getHours())}h${z(d.getMinutes())}`;
+}
+function texteBlocVise() {
+  const h = blocVise;
+  if (!h) return '\nvisé : rien';
+  // l'identifiant se relit ici, à l'image du journal : la visée date de
+  // l'image d'avant, et un bloc posé entre les deux se nommerait de travers
+  const k = `${h.x},${h.y},${h.z}`, id = world.getBlock(h.x, h.y, h.z);
+  const nom = (BLOCK_INFO[id] && BLOCK_INFO[id].name) || `bloc ${id}`;
+  const origine = world.edits.has(k) ? `posé à la main ${dateDuBloc(world.editTimes.get(k))}` : 'posé par le jeu';
+  return `\nvisé : ${nom} (${h.x}, ${h.y}, ${h.z}) · ${origine}`;
 }
 
 // La dernière montée ou descente (v396) : c'est la ligne que Max lit sur la
@@ -8417,6 +8443,7 @@ function frame(now) {
   // la visée lit jusqu'à huit blocs devant les yeux : elle se tait tant que
   // le monde autour n'est pas rendu (v436)
   const hit = running && !attenteJoueur && (!world.arriveeEnCours() || mondePretAutour(8)) ? getTarget() : null;
+  if (DIAG) blocVise = hit;
   highlight.visible = !!hit;
   if (hit) highlight.position.set(hit.x + 0.5, hit.y + 0.5, hit.z + 0.5);
 

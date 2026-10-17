@@ -8588,6 +8588,42 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       verifier('avec ?diag=1, en roulant, la tablette affiche le trou devant soi et le débit de morceaux',
         !lu.arret && /^roulage : \d+ b\/s · trou devant \d+ blocs · débit \d+ morceaux\/s/.test(lu.ligne),
         JSON.stringify(lu));
+
+      // LE BLOC VISÉ SE NOMME, ET DIT QUI L'A POSÉ (v474). On lit ce que la
+      // tablette affiche, pas une variable : l'enfant regarde le sol à ses
+      // pieds (le jeu l'a écrit), puis le même bloc remplacé par une brique
+      // datée (le journal de l'enfant). Sur l'ancien code la ligne « visé »
+      // n'existe pas : rouge, et le message montre ce qui était affiché.
+      const B = (await import('../src/blocks.js')).BLOCK;
+      const vise = await diagPage.evaluate(async ({ EAU, BRIQUE }) => {
+        const g = window.__game, p = g.player, w = g.world;
+        const patienter = (ms) => new Promise((fin) => {
+          const t0 = performance.now();
+          const tic = () => (performance.now() - t0 < ms ? requestAnimationFrame(tic) : fin());
+          requestAnimationFrame(tic);
+        });
+        const ligne = () => (((document.getElementById('debug') || {}).textContent || '').split('\n').find((l) => l.startsWith('visé')) || '');
+        const bx = Math.floor(p.pos.x), bz = Math.floor(p.pos.z);
+        let by = -1;
+        for (let y = Math.floor(p.pos.y) + 2; y > 0; y--) { const id = w.getBlock(bx, y, bz); if (id !== 0 && id !== EAU) { by = y; break; } }
+        p.pos.set(bx + 0.5, by + 1.05, bz + 0.5); p.vel.set(0, 0, 0); p.flying = true; p.pitch = -Math.PI / 2 + 0.01;
+        const attendre = async (motif) => {
+          const t0 = performance.now(); let l = '';
+          while (performance.now() - t0 < 10000) { await patienter(200); l = ligne(); if (motif.test(l)) break; }
+          return l;
+        };
+        const cible = `(${bx}, ${by}, ${bz})`;
+        const jeu = await attendre(new RegExp('\\(' + bx + ', ' + by + ', ' + bz + '\\)'));
+        const t = new Date(2026, 9, 17, 15, 42).getTime();
+        w.setBlock(bx, by, bz, BRIQUE, t);
+        const main = await attendre(/^visé : Bricks .*posé à la main/);
+        p.flying = false;
+        return { cible, jeu, main };
+      }, { EAU: B.WATER, BRIQUE: B.BRICK });
+      verifier('avec ?diag=1, le bloc visé se nomme et dit qui l\'a posé — le jeu, ou la main avec sa date',
+        vise.jeu.includes(vise.cible) && /· posé par le jeu$/.test(vise.jeu)
+          && vise.main.includes(vise.cible) && vise.main.startsWith('visé : Bricks ') && /· posé à la main le 17\/10\/2026 à 15h42$/.test(vise.main),
+        JSON.stringify(vise));
       await diagPage.close();
     }
 
