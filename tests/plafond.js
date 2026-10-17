@@ -388,7 +388,7 @@ const EMPREINTE_MORCEAUX_V414 = '863d4203a441e3fd029ce2404fc6d6e706799e7f64fe489
 // v473 : la ligne 1 du métro passe sous Paris, un des neuf lieux. Désarmée
 // (`METRO_PARIS.actif = false`, ville.js), la branche rend b3bb35e3…, la
 // constante de la v472, au bit près.
-// v498 : la ligne A du métro passe sous Rome, un des neuf lieux. Désarmée
+// v500 : la ligne A du métro passe sous Rome, un des neuf lieux. Désarmée
 // (`METRO_MONDE.actif = false`, metromonde.js), la branche rend df0e4dfc…, la
 // constante de la v473, au bit près.
 // l'écart d'une voie à l'axe du métro (metromonde.js, GABARIT.ecart)
@@ -2849,7 +2849,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       r.absente ? 'aucune ligne 1' : JSON.stringify({ gabarit: r.gabarit, lus: r.lus, poches: r.poches, surChaussee: r.surChaussee, mure: r.mure, circuits: r.circuits }));
   }
 
-  // LA LIGNE A DE ROME SE PARCOURT COMME L'ENFANT LA VIT (v498), par la même
+  // LA LIGNE A DE ROME SE PARCOURT COMME L'ENFANT LA VIT (v500), par la même
   // sonde que la ligne 1 de Paris, recopiée pour une ville engendrée
   // (`sonde-metro-monde.mjs`, lue telle quelle) : de chaque bouche au quai case
   // par case, le passage des rames libre, aucune poche d'air dans le Tibre, rien
@@ -3100,6 +3100,134 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     verifier('le fil principal et le worker bâtissent le même Colisée',
       !!ici && ici === a[k] && ici === b[k],
       `ici ${ici && ici.slice(0, 10)}, fil 1 ${a[k] && a[k].slice(0, 10)}, fil 2 ${b[k] && b[k].slice(0, 10)}`);
+  }
+
+  // LES VRAIS ARBRES (v499, arbreshd.js). Max : « de vrais arbres, pas des
+  // arbres façon Minecraft ». Le voxel reste le squelette ; à portée du
+  // détail, chaque arbre RECONNU dans les blocs (un fût, ses feuilles
+  // connectées) est dessiné en relief dans `facades` et ses cubes partent dans
+  // `plat`. Six témoins, sous node, sur le morceau de forêt le plus dense près
+  // de (−1 500, −2 500) — cherché, pas écrit (v285) :
+  //  • le tronc s'EFFILE (le rayon à la base est plus grand qu'en haut) et il y
+  //    a des cartes de feuilles : ce n'est plus un cube sur un poteau ;
+  //  • on ne tait QUE ce que le modèle couvre (v292) : les faces qui quittent
+  //    `solid` sont exactement celles qui entrent dans `plat` — et une cabane
+  //    de rondins posée par un enfant, sans feuilles, reste dans `solid` ;
+  //  • les blocs du morceau sont identiques à l'octet, armé ou non (invariant
+  //    1, par construction et par mesure) ;
+  //  • deux mondes neufs, Math.random remplacé entre les deux, rendent les
+  //    mêmes tampons, et le module ne contient pas `Math.random` (v450) ;
+  //  • chaque essence a sa silhouette : le pin ses aiguilles, le palmier ses
+  //    palmes, le bouleau son écorce blanche, et des couleurs différentes ;
+  //  • sans `world.arbres`, les tampons sont ceux d'avant au bit près — c'est
+  //    ce qui garde l'empreinte des 490 morceaux sans la relever.
+  // Sur l'ancien code le module n'existe pas : on le dit, on ne s'effondre pas.
+  {
+    const W = await import('../src/world.js');
+    const { buildChunkTampons } = await import('../src/mesher.js');
+    const { BLOCK } = await import('../src/blocks.js');
+    const crypto = await import('crypto');
+    let A = null;
+    try { A = await import('../src/arbreshd.js'); } catch (e) { A = null; }
+    if (!A || typeof A.arbreVrai !== 'function') {
+      verifier('les vrais arbres : un tronc qui s\'effile et des cartes de feuilles (arbreshd.js)', false, 'arbreshd.js absent');
+    } else {
+      const { GeomBufferHD, rectHD } = await import('../src/facadeshd.js');
+      const t0 = Date.now();
+      // le morceau de forêt le plus dense : on compte les arbres de `treeAt`
+      const w0 = new W.World();
+      let best = null;
+      for (let dx = -12; dx <= 12; dx++) for (let dz = -12; dz <= 12; dz++) {
+        const cx = Math.floor(-1500 / W.CHUNK) + dx, cz = Math.floor(-2500 / W.CHUNK) + dz;
+        let n = 0;
+        for (let lx = 0; lx < W.CHUNK; lx++) for (let lz = 0; lz < W.CHUNK; lz++) if (w0.treeAt(cx * W.CHUNK + lx, cz * W.CHUNK + lz)) n++;
+        if (!best || n > best.n) best = { cx, cz, n };
+      }
+      const faces = (g) => (g ? g.indices.length / 6 : 0);
+      const sha = (t) => { const h = crypto.createHash('sha256'); for (const k of Object.keys(t).sort()) { const a = t[k]; if (a && a.buffer) h.update(Buffer.from(a.buffer, a.byteOffset, a.byteLength)); } return h.digest('hex'); };
+      const monde = (arbres) => { const w = new W.World(); w.arbres = arbres; return w; };
+      const wa = monde(1), ws = monde(0);
+      const arme = buildChunkTampons(wa, best.cx, best.cz, { detail: true });
+      const sans = buildChunkTampons(ws, best.cx, best.cz, { detail: true });
+      const desarme = buildChunkTampons(monde(1), best.cx, best.cz, { detail: true, vraisArbres: false });
+      const loin = buildChunkTampons(monde(1), best.cx, best.cz, { detail: false });
+      // (1) un tronc qui s'effile, des feuilles : un chêne seul, bâti par le module
+      const buf = new GeomBufferHD();
+      A.arbreVrai(buf, 3, 40, 3, 1000, 2000, 5, { x0: 1, x1: 5, y0: 43, y1: 46, z0: 1, z1: 5 }, 'chene', 0);
+      const dans = (u, v, nom) => { const r = rectHD(nom); return u >= r[0] && u <= r[0] + r[2] && v >= r[1] && v <= r[1] + r[3]; };
+      // le rayon d'un anneau du fût : la demi-étendue en x des sommets d'écorce
+      // d'une bande de hauteur — le fût se courbe, l'axe de l'arbre ne dit rien ;
+      // le haut se lit à trois blocs, SOUS le départ des branches
+      let feuilles = 0, ecorce = 0;
+      const bas = [Infinity, -Infinity], haut = [Infinity, -Infinity];
+      for (let i = 0; i < buf.positions.length / 3; i++) {
+        const x = buf.positions[i * 3], y = buf.positions[i * 3 + 1];
+        const u = buf.uvs[i * 2], v = buf.uvs[i * 2 + 1];
+        if (dans(u, v, 'ecorce')) {
+          ecorce++;
+          if (y <= 40.6) { bas[0] = Math.min(bas[0], x); bas[1] = Math.max(bas[1], x); }
+          if (y >= 43 && y <= 43.5) { haut[0] = Math.min(haut[0], x); haut[1] = Math.max(haut[1], x); }
+        }
+        if (dans(u, v, 'feuilles')) feuilles++;
+      }
+      const rBas = (bas[1] - bas[0]) / 2, rHaut = (haut[1] - haut[0]) / 2;
+      verifier('les vrais arbres : un chêne est un tronc qui s\'effile (plus large en bas qu\'en haut) et des cartes de feuilles, pas un cube sur un poteau',
+        ecorce > 40 && feuilles > 100 && rBas > 0.25 && rHaut > 0 && rHaut < rBas * 0.75,
+        `rayon à la base ${rBas.toFixed(2)}, à trois blocs ${rHaut.toFixed(2)}, ${ecorce} sommets d'écorce, ${feuilles} de feuilles`);
+      // (2) le morceau de forêt : des arbres reconnus et émis, et la conservation des faces
+      verifier('dans le morceau de forêt le plus dense, les arbres sont reconnus et dessinés en relief, et seuls leurs cubes partent dans le loin',
+        best.n >= 10 && arme.arbres >= best.n * 0.8 && arme.arbresEmis === arme.arbres && !!arme.facades && arme.facades.positions.length / 3 > 1000
+          && faces(arme.solid) + faces(arme.plat) === faces(sans.solid) && faces(arme.plat) > 0 && !sans.facades && !sans.plat,
+        `morceau (${best.cx}, ${best.cz}) : ${best.n} arbres de treeAt, ${arme.arbres} reconnus, ${arme.arbresEmis} émis, ${arme.facades ? arme.facades.positions.length / 3 : 0} sommets ; faces solid ${faces(arme.solid)} + plat ${faces(arme.plat)} = ${faces(sans.solid)} sans`);
+      // (3) les blocs ne bougent pas, et sans l'option ou sans détail, rien ne change
+      const da = wa.ensureChunk(best.cx, best.cz), ds = ws.ensureChunk(best.cx, best.cz);
+      let memes = da.length === ds.length;
+      for (let i = 0; memes && i < da.length; i++) if (da[i] !== ds[i]) memes = false;
+      verifier('les vrais arbres ne posent ni ne retirent aucun bloc, et `vraisArbres: false` comme un morceau sans détail rendent les tampons d\'avant au bit près',
+        memes && sha(desarme.solid) === sha(sans.solid) && !desarme.facades && !desarme.plat && sha(loin.solid) === sha(sans.solid) && !loin.facades && !loin.plat && loin.arbres === -1,
+        `blocs identiques ${memes} ; désarmé = avant ${sha(desarme.solid) === sha(sans.solid)} ; loin = avant ${sha(loin.solid) === sha(sans.solid)} (au loin, le morceau se dit arboré : ${loin.arbres})`);
+      // (4) une cabane de rondins sans feuilles n'est pas un arbre
+      const wc = monde(1);
+      const h0 = wc.terrainHeight(best.cx * W.CHUNK + 8, best.cz * W.CHUNK + 8);
+      for (let dx = 0; dx < 3; dx++) for (let dz = 0; dz < 3; dz++) for (let dy = 1; dy <= 3; dy++) wc.setBlock(best.cx * W.CHUNK + 7 + dx, h0 + dy, best.cz * W.CHUNK + 7 + dz, BLOCK.LOG, 1);
+      const cab = buildChunkTampons(wc, best.cx, best.cz, { detail: true });
+      const wc0 = monde(0);
+      for (let dx = 0; dx < 3; dx++) for (let dz = 0; dz < 3; dz++) for (let dy = 1; dy <= 3; dy++) wc0.setBlock(best.cx * W.CHUNK + 7 + dx, h0 + dy, best.cz * W.CHUNK + 7 + dz, BLOCK.LOG, 1);
+      const cab0 = buildChunkTampons(wc0, best.cx, best.cz, { detail: true });
+      verifier('une cabane de rondins posée par un enfant n\'est pas un arbre : elle reste dans `solid`, visible, et les arbres autour restent reconnus',
+        cab.arbres === arme.arbres && faces(cab.solid) + faces(cab.plat) === faces(cab0.solid) && faces(cab.solid) > faces(arme.solid),
+        `${cab.arbres} arbres (${arme.arbres} sans la cabane) ; faces solid ${faces(cab.solid)} + plat ${faces(cab.plat)} = ${faces(cab0.solid)} (${faces(arme.solid)} de solid sans la cabane)`);
+      // (5) déterminisme : Math.random remplacé, le même arbre ; et jamais Math.random dans le module
+      const vrai = Math.random;
+      let s = 123456789;
+      Math.random = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
+      const encore = buildChunkTampons(monde(1), best.cx, best.cz, { detail: true });
+      Math.random = vrai;
+      // (le code, pas ses commentaires, qui nomment la règle)
+      const source = require('fs').readFileSync(require('path').join(__dirname, '../src/arbreshd.js'), 'utf8').split('\n').filter((l) => !/^\s*\/\//.test(l)).join('\n');
+      verifier('deux mondes neufs, Math.random remplacé entre les deux, dessinent les mêmes arbres, et arbreshd.js ne tire jamais au hasard',
+        sha(encore.facades) === sha(arme.facades) && sha(encore.plat) === sha(arme.plat) && !/Math\.random/.test(source),
+        `facades ${sha(arme.facades).slice(0, 12)} / ${sha(encore.facades).slice(0, 12)}`);
+      // (6) chaque essence a sa silhouette et sa couleur
+      const silhouettes = {};
+      for (const ess of ['chene', 'pin', 'bouleau', 'palmier', 'parasol', 'olivier', 'acacia', 'feuillu', 'ville']) {
+        const b = new GeomBufferHD();
+        A.arbreVrai(b, 3, 40, 3, 1000, 2000, 5, { x0: 1, x1: 5, y0: 43, y1: 46, z0: 1, z1: 5 }, ess, 0);
+        const tuiles = {};
+        let couleur = null;
+        for (let i = 0; i < b.positions.length / 3; i++) {
+          const u = b.uvs[i * 2], v = b.uvs[i * 2 + 1];
+          for (const nom of ['ecorce', 'bouleau', 'feuilles', 'aiguilles', 'palme']) if (dans(u, v, nom)) { tuiles[nom] = (tuiles[nom] || 0) + 1; if (nom !== 'ecorce' && nom !== 'bouleau' && !couleur) couleur = [b.colors[i * 3], b.colors[i * 3 + 1], b.colors[i * 3 + 2]].map((c) => +c.toFixed(3)).join(','); }
+        }
+        silhouettes[ess] = { sommets: b.positions.length / 3, tuiles, couleur };
+      }
+      const S = silhouettes;
+      const couleurs = new Set(Object.values(S).map((x) => x.couleur));
+      verifier('chaque essence a sa silhouette : le pin et le pin parasol des aiguilles, le palmier des palmes, le bouleau son écorce blanche, les autres des feuilles — et neuf couleurs de feuillage',
+        Object.values(S).every((x) => x.sommets > 60) && S.pin.tuiles.aiguilles > 0 && !S.pin.tuiles.feuilles && S.parasol.tuiles.aiguilles > 0
+          && S.palmier.tuiles.palme > 0 && S.bouleau.tuiles.bouleau > 0 && !S.bouleau.tuiles.ecorce && S.chene.tuiles.feuilles > 0 && S.olivier.tuiles.feuilles > 0 && couleurs.size === 9,
+        `${Object.entries(S).map(([k, x]) => `${k} ${x.sommets}s ${JSON.stringify(x.tuiles)}`).join(' · ')} ; ${couleurs.size} couleurs ; ${Date.now() - t0} ms`);
+    }
   }
 
   // ÉDIMBOURG EST DE GRÈS GRIS, ET SYDNEY A DES FENÊTRES (v450). Deux

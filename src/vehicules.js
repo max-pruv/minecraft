@@ -2091,7 +2091,7 @@ class Convoi {
     const aLAir = this.decouvert && this.decouvert(tete);
     const portee = aLAir ? VU : this.vu;
     const trainee = this.etendue();
-    // ET « DANS LE TUNNEL » EST AUSSI UNE HAUTEUR (v498). La portée de quarante
+    // ET « DANS LE TUNNEL » EST AUSSI UNE HAUTEUR (v500). La portée de quarante
     // blocs ne regardait que le plan : debout dans la rue, au-dessus de la
     // ligne A de Rome ou de la 1 de Paris, on dessinait les wagons dans la
     // roche — mesuré à Rome, deux rames sur cinq `visible` à dix-sept blocs

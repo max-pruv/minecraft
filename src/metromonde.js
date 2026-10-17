@@ -1,5 +1,5 @@
 // =============================================================================
-// LES MÉTROS DES VILLES ENGENDRÉES (v498) — la ligne A de Rome d'abord.
+// LES MÉTROS DES VILLES ENGENDRÉES (v500) — la ligne A de Rome d'abord.
 //
 // La méthode est celle de Washington et de la ligne 1 de Paris (v473, ville.js),
 // recopiée pour une ville qui n'a pas de plan à elle : sa géographie est une
@@ -8,7 +8,7 @@
 // pleins qui tombent dedans abandonnés, le mobilier ensuite, le gabarit des
 // rames en tout dernier : rien ne se met en travers d'un train.
 //
-// POURQUOI ROME, ET C'EST MESURÉ (sonde de la v498, les trois villes que la
+// POURQUOI ROME, ET C'EST MESURÉ (sonde de la v500, les trois villes que la
 // tâche nommait, les vraies stations à l'intérieur du disque) :
 //
 //   ville  | stations | espacement (blocs) | relief sous l'emprise | eau  | monuments à moins de box + 14
@@ -55,7 +55,7 @@ const GRIS = uni(24);
 const ROUGE = uni(0);             // le rouge du « M » romain, sur son mât
 const BLANC = uni(27);
 
-// Interrupteur de mesure : `actif = false` rend le monde d'avant la v498 au bit
+// Interrupteur de mesure : `actif = false` rend le monde d'avant la v500 au bit
 // près (empreinte des 490 morceaux, plafond.js — Rome est un des neuf lieux).
 export const METRO_MONDE = { actif: true };
 
@@ -395,7 +395,7 @@ function construireLigne(def) {
   const arrets = [];
   trace.forEach((p, i) => { if (p.arret) { arrets.push(i); arrets.push(n + 5 + (n - 1 - i)); } });
 
-  // LES BOUCHES SE CHOISISSENT AU PREMIER MORCEAU QUI EN A BESOIN (v498). La
+  // LES BOUCHES SE CHOISISSENT AU PREMIER MORCEAU QUI EN A BESOIN (v500). La
   // recherche coûte deux cents millisecondes (des dizaines de milliers de
   // colonnes de sol lues) : au chargement du module, le jeu les paierait
   // derrière « Jouer » et le worker aussi, pour une ville que l'enfant ne verra

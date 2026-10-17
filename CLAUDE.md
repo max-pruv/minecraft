@@ -1261,7 +1261,7 @@ Trois règles.
   Ce qui touche la rue ne se pose que sur du trottoir : un témoin le lit sur
   le monde, contre les vingt circuits de Paris.
 
-## La ligne A sous Rome (v498) — un métro de ville engendrée lit sa fiche, et sa bouche suit la trame
+## La ligne A sous Rome (v500) — un métro de ville engendrée lit sa fiche, et sa bouche suit la trame
 
 `src/metromonde.js` : la méthode de la v473, pour une ville qui n'a qu'une
 fiche. Une ligne de plus est une entrée de `LIGNES_DEF` (ville, stations en
@@ -1815,6 +1815,15 @@ règles.
   dans l'image, et `sensations.js` reprend le suivi du bestiaire pour ne pas
   compter deux fois. Les avions gardent la poursuite d'avant à l'identique ;
   `?sensations=0` rejoue l'ancienne conduite, pour mesurer.
+
+**Dos à un mur, la caméra plonge (v498).** Rapprochée par un mur derrière le
+coffre, elle gardait l'assiette du regard libre et la voiture sortait par le
+bas du cadre (milieu projeté à −1,17) — ni le témoin du recul ni celui du
+flanc ne le voyaient, une capture l'a montré. `plongee` ajoute au tangage
+l'écart d'angle sous lequel on voit la caisse (zéro au recul de la fiche), et
+sous le plancher la caméra monte de `MONTEE_PRES` par bloc gagné. **Une
+caméra qu'on déplace pour éviter un obstacle se juge par ce qu'elle montre :
+on lit la projection de ce qu'elle doit filmer, pas sa position.**
 
 **La pente se dessine (v429).** La physique publie `player.tangage` (v408,
 nez en haut positif — le signe de `rotation.x` sur un modèle au nez en −z) et
@@ -13039,3 +13048,58 @@ Depuis la v245 ce n'est plus un masquage à chaque capture mais une COUCHE
 sonde ne voient pas. `realisme.js` renouvelle les reflets quatre fois dans la
 vraie scène et vérifie le code WebGL ainsi que l'absence de maillage laissé
 caché.
+
+## Les vrais arbres (v499) — un arbre se reconnaît à la règle qui l'a planté
+
+Max : « Change tous les arbres pour avoir de vrais arbres, pas des arbres façon
+Minecraft. » `src/arbreshd.js` (pur, lu par le worker) : la couche HD dessine
+chaque arbre reconnu dans les blocs d'un morceau — fût qui s'effile, branches,
+cartes de feuilles, silhouette et couleur par essence et par climat — dans
+`facades`, et ses cubes partent dans `plat`. Le voxel reste le squelette : aucun
+bloc ne change, les deux empreintes de `plafond.js` et celle des 490 morceaux
+sont intactes (`world.arbres` n'est posé que par `main.js`, jamais sur
+`new World()`). Six règles.
+
+- **UN ARBRE SE RECONNAÎT À LA SIGNATURE EXACTE DE `treeAt`, JAMAIS À LA
+  SILHOUETTE DE SES CUBES.** Mon premier jet lisait l'essence dans la forme de
+  la couronne : en forêt dense, les couronnes se touchent et le flood en prend
+  plusieurs — 14 écarts sur 22, des chênes lus palmiers. On demande à la règle
+  qui a planté l'arbre (`treeAt(x, z)` : même base, même hauteur de fût, même
+  bloc) ; un fût que `treeAt` ne connaît pas n'est un arbre de ville que s'il
+  en a le motif strict (deux feuilles dans sa colonne, aucun bois adjacent à la
+  base, pas de débord à ±2). Une cabane de rondins posée par un enfant reste
+  en cubes (témoin) : c'est « on ne tait que ce que le modèle couvre » (v292)
+  du côté de la reconnaissance.
+- **LE CLIMAT SE DEMANDE UNE FOIS PAR MORCEAU, ET `treeAt` LE REÇOIT.** Appelé
+  colonne par colonne avec `this.climat(x, z)`, `treeAt` coûtait +18 ms par
+  morceau de taïga (`climatReel`, des polygones) : `treeAt(x, z, cm)` prend le
+  climat du morceau (`climatDuMorceau`, v345), et le générateur ne change pas
+  d'un bloc — c'est le témoin « blocs identiques » qui le garde.
+- **AU LOIN, ON NE RECONNAÎT PAS : LE MORCEAU SE DIT ARBORÉ (`arbres: -1`).**
+  La reconnaissance (flood à 26 voisins dans une bande en y, marque timbrée et
+  pile à plat) coûte 10 à 14 ms sur le morceau de forêt le plus dense ; faite
+  partout elle aurait coûté cela à chaque morceau du disque, détail ou pas. Un
+  morceau sans détail garde ses cubes dans `solid` et rend −1 : `main.js` sait
+  qu'il faudra le remailler à portée (`entry.hd`), et le prix au loin tombe à
+  0,3–1,4 ms. Ce qu'on ne montre pas, on ne le calcule pas (v296).
+- **LES UV D'UNE CARTE ALPHA SONT ABSOLUES DANS L'ATLAS, POUR L'OMBRE.** La
+  passe d'ombre de three copie `map` et `alphaTest` et échantillonne aux UV
+  BRUTS, pas repliés par le shader de la couche : des UV en unités du monde
+  tombent sur le bord vide de l'atlas et l'ombre est jetée entière. Rectangle
+  `NEUTRE`, UV absolues : l'ombre d'une carte de feuilles est découpée par ses
+  feuilles. (Les façades HD de Paris, en UV monde, portent ce défaut d'ombre
+  depuis la v287 : dette déclarée, hors sujet ici.)
+- **UNE TEINTE SE JUGE EN CAPTURE, LE TÉMOIN NE VOIT QU'UNE COULEUR POSÉE
+  (v345, v351).** Pin et parasol à (40, 90, 50) sortaient noirs en capture ;
+  éclaircis à (58, 118, 66) et (56, 108, 58). Et un pin de 650 sommets en sept
+  étages était trop lourd ET trop sombre : trois à cinq étages de quatre
+  cartes, et trois branches à trois côtés par verticille.
+- **UN TÉMOIN DE RAYON LIT L'ÉTENDUE DES SOMMETS D'UNE BANDE, PAS L'AXE.** Le
+  fût est courbe et porte des branches : mesurer « le rayon » le long de l'axe
+  d'auteur rendait n'importe quoi. On lit la demi-étendue en x des sommets
+  d'écorce d'une bande basse contre une bande haute, trois blocs sous les
+  branches (0,32 contre 0,15).
+
+Ce qui reste, déclaré dans `TASKS.md` : une demi-couronne possible à la
+frontière de `RAYON_HD` (un arbre à cheval sur deux morceaux dont un seul est
+détaillé), et l'ombre des façades HD de Paris.

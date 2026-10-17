@@ -1,4 +1,4 @@
-// LE FLÂNEUR POSÉ SUR LA CHAUSSÉE, REJOUÉ SEUL (v498) — le témoin de `monte.js`
+// LE FLÂNEUR POSÉ SUR LA CHAUSSÉE, REJOUÉ SEUL (v500) — le témoin de `monte.js`
 // (« un flâneur posé au milieu de la chaussée en sort et flâne au bord ») lu
 // TEL QUEL dans monte.js, joué N fois à Rome sur une page neuve, pour comparer
 // une distribution des deux côtés (règle v269).

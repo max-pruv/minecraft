@@ -1,5 +1,64 @@
 # Ce qui est en cours
 
+- [ ] **PORTAIL DE LA v499 (les vrais arbres), sur le code fusionné à la
+  v487 : dix-sept suites, aucun rouge de la livraison.** Les deux premiers
+  passages (avant la fusion) ont rendu deux rouges qui étaient à moi, corrigés
+  avant le troisième : l'empreinte des 490 morceaux (`756ed744…` pour
+  `df0e4dfc…`), parce que le retour du mailleur portait `arbres: 0` et
+  `arbresEmis: 0` et que l'empreinte hache aussi les champs scalaires — les
+  champs ne sont présents que quand les arbres sont armés, et la constante
+  revient des deux côtés ; et `maj.js` « la version installée en tête », le
+  bump n'étant pas encore fait. Au troisième passage, tous déjà déclarés ici
+  avec leur double mesure : `carte.js` « la flèche du GPS pointe vers la
+  destination » (gauche 1,92 rad, l'intermittence de la v321) et « le fond
+  de carte entier se rend vite » (414 ms pour 400, la charge du portail) ;
+  `manhattan.js` « le taxi roule avec les contrôles tactiles » (3,6 blocs en
+  2,95 s de jeu pour 399 s de montre : la cadence de Manhattan, rouge des deux
+  côtés) ; `monte.js` « au volant, le personnage est assis » (`avatar:false`,
+  l'intermittence de la zone conduite), « deux voisines d'un convoi », « rue
+  vide » (vus `[0,7,14,3,0,0,0,14]`), Moscou « pleines de voitures » et « modèles
+  ET couleurs » (tous mesurés des deux côtés aux portails des v484 et v486), et
+  « en dérapage, la caisse est dessinée de travers du bon côté » (zéro relevé,
+  5,8 blocs/s : la voiture n'a pas pris sa vitesse sous la charge) — rejouée
+  SEULE sur la branche par `sonde-derive-signe.cjs` : 25 relevés, rapport 1,00,
+  comme au portail de la v473 ; `reseau.js` « un hôte sans courtier est trouvé »
+  et « il le REJOINT » (déclarés en v473), et « et le message dit quoi faire » /
+  « un réseau qui bloque tout renvoie vers un autre réseau » (le scénario du VPN
+  rend « Le serveur de jeu ne répond pas », le message du courtier muet — après
+  l'avertissement du banc sur le prénom « Lou » resservi) : rejouée SEULE,
+  les deux sont VERTS sur la branche ET sur `origin/main` (le message du Wi-Fi
+  qui bloque, code du monde compris) — la charge du portail, même distribution
+  des deux côtés. Sur la branche seule, le banc a ensuite lâché dans « un hôte
+  sans courtier est trouvé » (`net` nul après les 90 s d'attente,
+  `reseau.js:1293`, une attente qui JETTE au lieu de rendre un verdict —
+  v291) ; `origin/main` seule l'a passé. C'est le scénario déclaré en v473
+  (rouge des deux côtés au portail), hors de tout ce que la couche touche.
+  Second rejeu seul de la branche : le VPN vert encore (3 sur 3 avec `main`),
+  « sans courtier » rouge (0 sur 2 sur la branche, 1 sur 1 vert sur `main`),
+  et des rouges qui n'étaient ni au portail ni au premier rejeu (le passager
+  par la portière, la voiture de l'ami refaite en marche, la voiture de la
+  rue derrière l'enfant chez l'ami, le compteur après le départ de l'hôte) :
+  neuf défauts, aucun deux fois de suite — la suite tire au sort sur ce banc,
+  et rien de la livraison n'entre dans `net.js` ni dans le nuage.
+  La couche est inerte sur ces pages : `world.arbres` ne vaut 1 que si
+  `RAYON_HD > 0`, et le banc rend en logiciel — seules les pages `hd=` de
+  `parishd.js` et `plafond.js` (node) l'arment, et elles sont vertes.
+- [ ] **LES VRAIS ARBRES (v499) : UNE DEMI-COURONNE À LA FRONTIÈRE DE
+  `RAYON_HD`.** Un arbre dont la couronne déborde sur le morceau voisin est
+  émis par le morceau qui porte son fût ; ses feuilles DANS le voisin sont
+  cachées (`plat`) seulement si ce voisin est détaillé lui aussi. Au bord
+  exact de la portée, un arbre peut donc montrer son relief ET les cubes de
+  sa couronne côté loin, le temps que le voisin entre à portée. Accepté
+  (le remaillage suit l'enfant, `entry.hd`), non mesuré en capture ; le
+  remède serait de faire taire les feuilles d'un morceau sans détail quand le
+  fût est dans un morceau détaillé — une lecture de plus par morceau.
+- [ ] **L'OMBRE DES FAÇADES HD DE PARIS EST JETÉE PAR LEURS UV MONDE (depuis
+  la v287).** La passe d'ombre de three échantillonne `map` aux UV bruts ;
+  les façades portent des UV en unités du monde repliées par le shader de la
+  couche, hors de l'atlas pour la passe d'ombre : alpha nul, ombre absente là
+  où `alphaTest` coupe. Vu en préparant les arbres (v499), dont les cartes
+  ont des UV absolues pour cette raison. À mesurer en capture d'ombre portée
+  à Paris avant de toucher `facadeshd.js` (session hd-fabrique).
 - [ ] **LA COURONNE LOINTAINE DU PALIER « LOIN » (v497) SE MESURE SUR
   L'IPHONE.** Au banc (rendu logiciel) : +3,36 Mo, découpe +2 à 4 ms quatre
   fois par seconde, remplissage complet 68 à 82 ms par tranches de 3 ms. Le
@@ -5659,13 +5718,33 @@ l'embarquement a eu lieu, pas par une hypothèse.
   lecture-là. Rien ne le garde aujourd'hui : les deux témoins de la v279
   mesurent la ville que le banc peuple, qui n'est pas Manhattan.
 
-- [ ] **LE RECUL DE LA CAMÉRA N'A ÉTÉ JUGÉ QUE SUR LE BANC (v279).** 6,4 au lieu
-  de 5,2, choisi sur trois captures du boulevard Voltaire depuis le même point.
-  Max juge sur captures, et il n'a pas encore vu celles-ci ; s'il le trouve trop
-  loin ou trop près, c'est une ligne de `montures.js`
-  (`poursuite: { recul, hauteur }`, la hauteur suivant la distance à 0,404).
-  Les vues de poursuite des AVIONS (18, 22, 13) n'ont pas été touchées : la
-  demande portait sur la voiture.
+- [ ] **AU PORTAIL DE LA v498 (caméra dos à un mur), DEUX SUITES ROUGES, AUCUNE
+  DE LA LIVRAISON (règle v195).** Deux portails, puis chaque suite rejouée SEULE
+  des deux côtés (`origin/main` v478 dans un arbre détaché). `monte.js` :
+  branche 226 verts / 8 rouges, `origin/main` 226 / 7 ; communs aux deux : « au
+  feu, la voiture freine », « on ne marche pas dans une rue vide », les deux de
+  Moscou ; le reste (voisines d'un convoi, flâneur et passage de Rome, l'avatar
+  `{"avatar":false}` déjà déclaré plus haut, « la rue roule ») sort d'un côté
+  ou de l'autre selon le passage — la famille de la circulation. `reseau.js` :
+  branche 86 / 4 (« deux enfants se retrouvent sans courtier », son passager,
+  « un hôte sans courtier est trouvé », « il le REJOINT » : `[[],[]]`),
+  `origin/main` 78 / 2 puis coupé par la borne de temps (« seule après le
+  départ de l'hôte », la reconnexion) — l'intermittence du relais déclarée plus
+  haut. Preuve structurelle : la livraison ne change que le TANGAGE de la
+  caméra de poursuite (`plongee`) et sa hauteur sous le plancher de recul ;
+  rien du réseau ni de la circulation ne la lit.
+  Après la fusion de la v496, `monte.js` rejouée seule : branche 240 / 6,
+  `origin/main` v496 240 / 5. Commun : « une voiture de la rue heurtée par
+  l'enfant s'arrête » (`{"id":null}` des deux côtés, jamais trouvée) et « la
+  rue vide ». « La rue se fabrique par tranches » rouge une fois sur la branche
+  (`vues: 5` voitures en vue à l'arrivée), vert aux cinq autres passages des
+  deux côtés (5 à 14 vues) : un tirage du nombre de voitures dans le cadre.
+
+- [x] **LE RECUL DE LA CAMÉRA N'A ÉTÉ JUGÉ QUE SUR LE BANC (v279) — captures
+  prises en v498** (`tests/sonde-captures-camera-volant.cjs`, envoyées à Max) :
+  arrêt, ligne droite, virage à gauche et à droite, rue étroite, mur derrière.
+  Le recul reste à 6,4 ; s'il le trouve trop loin ou trop près, c'est toujours
+  une ligne de `montures.js`. Les vues des AVIONS n'ont pas été touchées.
 
 - [ ] **LES CINQ ROUGES DE `manhattan.js` AU PORTAIL DE LA v279 — QUATRE
   MESURÉS SUR `origin/main`, ET LE CINQUIÈME RESTE OUVERT.** Rejoué SEUL des
@@ -5937,36 +6016,12 @@ l'embarquement a eu lieu, pas par une hypothèse.
   témoin mesure ce que l'enfant obtient : marcher droit sur une voiture garée,
   et s'arrêter devant au lieu de ressortir de l'autre côté.
 
-- [ ] **LA VUE EN VOITURE EST TROP SERRÉE, ET ELLE NE MONTRE PAS LE VIRAGE
-  (Max, après v276).** « La vue de la voiture, je la trouve pas très cool. Il
-  faudrait la zoomer out un petit peu et faire comme dans GTA : quand la
-  voiture tourne, on voit vraiment la voiture qui tourne, on voit le flanc de
-  la voiture sur le côté. »
-
-  La vue de poursuite EXISTE déjà (`poursuite` dans la fiche, montures.js,
-  décidée par Max après deux essais de vue intérieure) — elle est seulement
-  trop près et trop rigide :
-
-  ```
-  montures.js   voiture … poursuite: { recul: 5.2, hauteur: 2.1 }
-  fun.js:1293   if (a.def.poursuite) { … cos(player.yaw), sin(player.yaw) … }
-  ```
-
-  Deux défauts distincts, et le second est le vrai sujet. **Le recul** se
-  règle dans la fiche, comme pour les avions (13, 18, 22 selon l'appareil) :
-  c'est un chiffre, il se mesure sur captures. **La rigidité** est
-  structurelle : la caméra lit `player.yaw` à l'image même, donc elle tourne
-  EXACTEMENT avec la voiture et l'on ne voit jamais le flanc. Il lui faut un
-  cap PROPRE qui rattrape celui du véhicule avec du retard — c'est ce retard,
-  et lui seul, qui fait qu'on voit la voiture s'inscrire dans son virage.
-
-  Deux pièges connus du dépôt à reprendre ici : le retard se compte en TEMPS
-  RÉEL et non en `dt` (v226), sinon la caméra traîne deux fois plus sur une
-  tablette qui rame ; et **un signe se regarde, il ne se déduit pas** (v231,
-  v249) — une caméra qui retarde du mauvais côté montre le flanc opposé au
-  virage, et aucune mesure d'amplitude ne l'en distingue. Deux captures, un
-  virage à gauche et un à droite, AVANT d'écrire le témoin.
-
+- [x] **LA VUE EN VOITURE EST TROP SERRÉE, ET ELLE NE MONTRE PAS LE VIRAGE
+  (Max, après v276).** Fait par la v278 (cap en retard), la v279 (recul 6,4),
+  la v422 (visée sur la voiture, retard borné, mur cherché cellule par cellule)
+  et la v498 (dos à un mur, la caméra monte et plonge : la voiture ne sort plus
+  par le bas du cadre). Mesuré dans la matrice : virage à gauche → flanc gauche
+  (β 10,8°), à droite → flanc droit (β −13°). Reste à la juger sur l'iPad.
 
 - [ ] **LE TÉMOIN DES REDÉMARRAGES AU VERT COMPTE UN INSTANT, PAS UN
   ÉVÉNEMENT (v275).** « Et la circulation s'arrête au feu rouge, puis repart
@@ -7946,17 +8001,17 @@ l'embarquement a eu lieu, pas par une hypothèse.
   l'autre sens.
 
 - [ ] **Les métros des grandes villes générées** — le creuseur de Washington
-  sait faire ; après les trains intervilles. **Rome fait (v498, la ligne A,
+  sait faire ; après les trains intervilles. **Rome fait (v500, la ligne A,
   `src/metromonde.js`).** La suite, et ce qui reste déclaré :
   - les autres villes : une entrée de `LIGNES_DEF`. Refaire d'abord la sonde
     de choix (espacement, eau, monuments). Tokyo (20 blocs/km) ne tient pas
     une station par vraie station de la Ginza (huit blocs) : une station sur
     deux, ou un quai plus court — décision de contenu. Berlin : la U5 longe la
     Spree et passe sous quatre monuments, à mesurer contre leurs boîtes.
-  - une construction d'enfant posée sur le trottoir AVANT la v498, là où
+  - une construction d'enfant posée sur le trottoir AVANT la v500, là où
     s'ouvre désormais une trémie, garde ses blocs (réappliqués) mais peut
     surplomber le trou — comme à Paris (v473). Rien ne le mesure encore.
-  - **LES PORTAILS DE LA v498.** Second portail (code fusionné sur la v481) :
+  - **LES PORTAILS DE LA v500.** Second portail (code fusionné sur la v481) :
     13 suites vertes, 9 rouges, tous déjà déclarés — `degats.js` « percuter
     une voiture de la rue l'abîme AUSSI » ; `maj.js` « le loader dit combien
     de fichiers » ; `carte.js` la flèche du GPS ; `monte.js` « deux voisines

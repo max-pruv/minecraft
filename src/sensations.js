@@ -100,6 +100,28 @@ export function segmentLibre(isSolid, a, b) {
 }
 
 const TOIT = 1.4, PLANCHER_RECUL = 3.2;
+
+// DOS À UN MUR, LA CAMÉRA PLONGE VERS LA VOITURE (v498). Rapprochée par un mur
+// derrière le coffre, elle gardait l'assiette du regard libre : jugé en
+// capture, la voiture sortait par le BAS du cadre (centre projeté à −1,17,
+// hors de l'écran) et l'on ne voyait que l'intérieur de la carrosserie. On
+// ajoute au tangage ce qu'il faut pour que la voiture reste là où la vue
+// normale la montre : l'angle sous lequel la caméra voit le milieu de la
+// caisse (`CAISSE` au-dessus des roues), moins celui de la vue de la fiche.
+// Il vaut ZÉRO au recul de la fiche, et la caméra ne fait que suivre son
+// recul déjà lissé — le regard libre de l'enfant (v249) reste entier.
+export const CAISSE = 0.6;
+// Et plus près que le plancher, elle MONTE d'un bloc par bloc gagné (0,6
+// avant) : à 1,85 bloc derrière un mur, elle passait à 2,55 au-dessus des
+// roues, au ras du coffre, et la plongée montrait la caisse en gros plan ;
+// à 3,3 elle regarde par-dessus, comme GTA dos à un mur.
+export const MONTEE_PRES = 1.15;
+export function plongee(recul, haut, r) {
+  if (recul == null || haut == null) return 0;
+  const voulu = Math.atan2(r.hauteur - CAISSE, r.recul);
+  const vu = Math.atan2(haut - CAISSE, Math.max(0.3, recul));
+  return Math.min(0, voulu - vu);
+}
 const _yeux = new THREE.Vector3(), _cam = new THREE.Vector3();
 
 // L'ANCIENNE POURSUITE, telle quelle, pour ce qui VOLE. Les témoins des avions
@@ -169,9 +191,9 @@ function poursuiteVoiture(a, player, dt, m) {
   // carrosserie : c'est ce que fait GTA dos à un mur.
   const isSolid = (x, y, z) => player.world.isSolid(x, y, z);
   _yeux.set(player.pos.x, player.pos.y + TOIT, player.pos.z);
-  let recul = 0, haut = hauteurA(0) + PLANCHER_RECUL * 0.6;
+  let recul = 0, haut = hauteurA(0) + PLANCHER_RECUL * MONTEE_PRES;
   for (let d = r.recul; d >= 0; d -= 0.35) {
-    const h = hauteurA(d) + Math.max(0, PLANCHER_RECUL - d) * 0.6;
+    const h = hauteurA(d) + Math.max(0, PLANCHER_RECUL - d) * MONTEE_PRES;
     _cam.set(player.pos.x + sy * d, player.pos.y + h, player.pos.z + cy * d);
     // un demi-bloc de marge derrière la caméra : le plan proche ne doit pas
     // mordre dans le mur qu'on vient d'éviter
@@ -221,7 +243,7 @@ function poursuiteVoiture(a, player, dt, m) {
   // du côté où l'on tourne (braquage positif à droite, donc un cap qui
   // diminue). Le tangage reste celui de l'enfant (le regard libre, v249).
   S.regard += (-m.braquage * REGARD_VIRAGE - S.regard) * Math.min(1, dt * 4);
-  cam.rotation.set(player.pitch, S.camYaw + ecart * 0.4 + S.regard, roulisCam, 'YXZ');
+  cam.rotation.set(player.pitch + plongee(S.recul, S.haut, r), S.camYaw + ecart * 0.4 + S.regard, roulisCam, 'YXZ');
 
   // LE CHAMP S'OUVRE AVEC LA VITESSE. On ne recalcule la projection que s'il a
   // bougé d'un centième de degré.

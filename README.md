@@ -21,7 +21,9 @@ rendering budgets, licensing and limitations.
   16×160×16 chunks as you walk. The sky reaches 160 blocks so landmarks can be
   built at something close to their real proportions; the ground is capped
   independently at 80 so raising the ceiling never shifts a saved world.
-- **Trees** with trunks and canopies that correctly span chunk borders.
+- **Trees** with trunks and canopies that correctly span chunk borders —
+  and, within the HD range, drawn as real trees (tapering trunk, branches,
+  leaf cards, one silhouette per species and climate) over the same blocks.
 - **Break & place blocks** — 31 block types: terrain blocks, sandstone, gravel,
   mossy cobble, three wood tones, ice, gold, diamond, obsidian, bookshelf, six
   wool colors, and four half-slabs (with true half-height physics — perfect for

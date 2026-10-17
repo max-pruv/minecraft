@@ -1145,6 +1145,37 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       `${poursuite.recul} blocs en retrait (devant=${poursuite.devant})`);
     verifier('et elle prend de la hauteur pour voir la route par-dessus le toit',
       poursuite.hauteur > 1.2 && poursuite.hauteur < 3, `${poursuite.hauteur} bloc`);
+
+    // DOS À UN MUR, LA VOITURE RESTE DANS LE CADRE (v498). La caméra se
+    // rapproche quand un mur est derrière le coffre (v422) ; elle gardait
+    // l'assiette du regard, et en capture la voiture sortait par le BAS de
+    // l'écran — son milieu projeté à −1,17, l'enfant ne voyait que l'intérieur
+    // de la carrosserie. On LIT la projection du milieu de la caisse, pas une
+    // variable de la caméra. Le mur est posé par le témoin, à 3,2 blocs
+    // derrière le centre, et les blocs d'avant sont rendus à la fin.
+    const dosAuMur = await tab.evaluate(async () => {
+      const g = window.__game, P = g.player, w = g.world;
+      P.keys.clear(); P.gaz = 0; P.vitesseVoiture = 0; P.vel.set(0, 0, 0); P.pitch = -0.08;
+      const bx = Math.sin(P.yaw), bz = Math.cos(P.yaw), y0 = Math.floor(P.pos.y);
+      const avant = [];
+      for (let l = -6; l <= 6; l++) for (let y = -1; y <= 7; y++) {
+        const x = Math.floor(P.pos.x + bx * 3.2 + bz * l), z = Math.floor(P.pos.z + bz * 3.2 - bx * l);
+        const k = `${x},${y0 + y},${z}`;
+        if (avant.some((e) => e.k === k)) continue;
+        avant.push({ k, x, y: y0 + y, z, id: w.getBlock(x, y0 + y, z) });
+        w.setBlock(x, y0 + y, z, 11);
+      }
+      let jeu = 0, p = performance.now();
+      await new Promise((fin) => { const f = (t) => { jeu += Math.min(0.05, (t - p) / 1000); p = t; if (jeu >= 2) fin(); else requestAnimationFrame(f); }; requestAnimationFrame(f); });
+      const cam = P.camera;
+      const v = new (cam.position.constructor)(P.pos.x, P.pos.y + 0.6, P.pos.z).project(cam);
+      const recul = Math.hypot(cam.position.x - P.pos.x, cam.position.z - P.pos.z);
+      for (const e of avant) w.setBlock(e.x, e.y, e.z, e.id);
+      return { ecranX: +v.x.toFixed(2), ecranY: +v.y.toFixed(2), recul: +recul.toFixed(2), jeu: +jeu.toFixed(1) };
+    });
+    verifier('dos à un mur, la caméra se rapproche ET plonge : la voiture reste dans le cadre',
+      dosAuMur.recul < 3.2 && Math.abs(dosAuMur.ecranY) < 0.9 && Math.abs(dosAuMur.ecranX) < 0.9,
+      JSON.stringify(dosAuMur));
     verifier('le volant, lui, reste dans l\'habitacle — visible par les vitres',
       poursuite.volant || !poursuite.attenduVolant,
       poursuite.volant ? 'volant trouvé'

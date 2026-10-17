@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v498 — La ligne A du métro passe sous Rome
+## v500 — La ligne A du métro passe sous Rome
 
 **Pourquoi.** Aucune des deux cent soixante villes engendrées n'avait de
 métro : le creuseur de Washington et de Paris ne savait lire qu'un plan écrit à
@@ -72,7 +72,74 @@ viaduc ») faisait neuf mots pour une barre à huit : le témoin du journal de
 `maj.js` la refusait. Elle dit désormais « Sur la mer, le train passe en
 viaduc ».
 
+## v499 — De vrais arbres, le voxel reste le squelette
 
+**Pourquoi.** Max : « Change tous les arbres pour avoir de vrais arbres, pas
+des arbres façon Minecraft. » Un arbre du jeu était un fût d'un bloc et une
+couronne de cubes : de près, un cube vert sur un poteau, le même du Kansas à
+la taïga, et les marronniers des Champs-Élysées comme les palmiers de Bornéo.
+La couche HD de Paris (v287) dessinait déjà ses immeubles en relief et ses
+arbres en ellipsoïdes ; le reste du monde n'avait rien.
+
+**Ce que ça change.** À portée de la couche HD, chaque arbre est dessiné en
+vrai : un tronc qui s'effile et se courbe, des branches maîtresses, un
+feuillage en cartes de feuilles, et la silhouette de son essence — chêne,
+bouleau à l'écorce blanche, pin de la taïga en sapin, pin parasol en ombrelle,
+olivier, palmier aux palmes retombantes, feuillu des tropiques, arbre
+d'alignement taillé des villes — avec sa couleur par essence et par climat.
+Aucun bloc ne change : les troncs et les feuilles sont les mêmes qu'avant, on
+grimpe dessus, on les casse, on y pose une cabane, et la cabane de rondins
+d'un enfant reste en cubes. De loin, les cubes d'avant restent, au même prix.
+En rendu logiciel la couche est coupée comme pour Paris ; `?arbres=0` rend les
+cubes partout. Mesuré sous node : un morceau de la forêt la plus dense (22
+arbres) coûte 514 Ko de tampons et 10 à 14 ms de plus au worker à portée,
+moins d'un millième de seconde au loin ; un morceau de taïga 638 Ko, de
+tropiques 624, d'oliviers 220 ; les seize arbres d'un morceau des
+Champs-Élysées 3 808 sommets contre 1 344 en ellipsoïdes. À l'écran, au banc,
+0,23 Mo par morceau de forêt en moyenne, 0,5 au pire, 32 appels de dessin.
+
+**Ce qui le prouve.** Six témoins neufs dans `plafond.js` : le chêne s'effile
+(rayon 0,32 bloc à la base contre 0,15 à trois blocs, et 180 sommets de
+feuilles) ; sur le morceau de forêt le plus dense, chaque arbre
+reconnu est émis et les faces des cubes cachés sont exactement celles qui
+partent dans `plat` (377 faces de solid + 1 043 de plat = 1 420 de solid avant) ; les blocs sont identiques
+bloc pour bloc, le mailleur désarmé (`vraisArbres: false`) et le morceau au
+loin rendent les tampons d'avant au bit près, et l'empreinte des 490 morceaux
+reste la constante de la v357 ; une cabane de rondins posée par un enfant n'est
+pas prise pour un arbre ; le worker et le fil principal émettent les mêmes
+sommets, `Math.random` remplacé par deux graines, et aucun `Math.random` dans
+le module ; les neuf essences ont chacune leur tuile et leur couleur. Trois
+témoins à l'écran dans `parishd.js`, dans la forêt (−1 560, −2 488) : quinze
+arbres dessinés et quinze cachés à portée, zéro avec `?arbres=0` ; la ligne de
+pixels à travers un tronc fait 67 pixels en relief contre 166 en cubes ; un
+morceau de forêt tient sous un mégaoctet et demi. Les trois sont rouges avec
+`?arbres=0`. Captures envoyées à Max : forêt au sol, de près, en vol et du
+ciel ; taïga ; tropiques ; Méditerranée ; Champs-Élysées du trottoir et en vol.
+Portail complet sur le code fusionné à la v487 : treize suites vertes, et les
+rouges de `carte`, `manhattan`, `monte` et `reseau` tous déjà déclarés dans
+`TASKS.md` avec leur double mesure (le détail y est, sous « Portail de la
+v499 »).
+## v498 — Dos à un mur, la caméra voit encore la voiture
+
+**Pourquoi.** Max : « la zoomer out un petit peu et faire comme dans GTA :
+quand la voiture tourne, on voit le flanc ». Le recul (6,4, v279), le cap en
+retard (v278) et la visée sur la voiture (v422) étaient livrés, mais jugés
+seulement au banc, et personne n'avait regardé la caméra contre un mur. Une
+sonde de captures (virage à gauche, à droite, rue étroite, mur derrière le
+coffre) l'a montré : rapprochée par le mur, la caméra gardait l'assiette du
+regard, et la voiture sortait par le BAS de l'écran (milieu projeté à −1,17) —
+on ne voyait que l'intérieur de la carrosserie.
+
+**Ce que ça change.** Dos à un mur, la caméra monte d'un bloc par bloc gagné
+et plonge vers la voiture juste assez pour la garder à sa place habituelle
+dans le cadre : on la voit en entier, par-dessus. En ligne droite, en virage
+et dans une rue étroite, rien ne bouge (mêmes chiffres au centième).
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js` pose un mur à 3,2 blocs
+derrière la voiture et lit la projection du milieu de la caisse : −1,17 avant,
+−0,29 après (barre 0,9). Et `sonde-captures-camera-volant.cjs` lit dans la
+matrice le flanc que la caméra regarde : virage à gauche → flanc gauche
+(β 10,8°), à droite → flanc droit (β −13°), un seul signe chacun.
 ## v497 — En « Loin », on voit trois fois plus loin
 
 **Pourquoi.** Max : « Je voudrais que le mode Loin, quand on voit de loin, soit

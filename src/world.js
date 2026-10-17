@@ -3498,7 +3498,11 @@ export class World {
     return false;
   }
 
-  treeAt(x, z) {
+  // `cm` (v499) : le climat du morceau s'il est certain (`climatDuMorceau`),
+  // pour ne pas redemander `climatReel` — des polygones — à chaque colonne :
+  // la couche des vrais arbres demande la signature de chaque fût reconnu.
+  // Sans lui, la colonne demande son climat elle-même, comme avant.
+  treeAt(x, z, cm = undefined) {
     if (dansUneCalotte(z)) return null;                             // rien ne pousse sur les calottes
     if (presDeLaVoie(x, z) || voieEn(x, z)) return null;            // la voie ferrée reste dégagée, talus compris (v302)
     if (routeEn(x, z)) return null;                                  // et la route aussi, talus compris (v300)
@@ -3561,7 +3565,7 @@ export class World {
     // règle (`morceauxAvantClimat`) : un arbre neuf n'y pousse pas dans sa
     // maison, un arbre d'avant n'y disparaît pas sous sa cabane.
     if (tirage >= DENSITE_MAX) return null;
-    let cl = this.climat(x, z);
+    let cl = cm !== undefined ? cm : this.climat(x, z);
     if (cl && cl !== 'desert' && this.morceauxAvantClimat.has(World.key(Math.floor(x / CHUNK), Math.floor(z / CHUNK)))) cl = null;
     if (cl === 'taiga') density = forest > 0.48 ? 0.06 : 0.025;
     else if (cl === 'toundra') density = 0.0006;
@@ -4275,7 +4279,7 @@ export class World {
       }
     }
 
-    // LES MÉTROS DES VILLES ENGENDRÉES (v498, metromonde.js) : creusés sous la
+    // LES MÉTROS DES VILLES ENGENDRÉES (v500, metromonde.js) : creusés sous la
     // ville, après elle, comme la ligne 1 de Paris. Seulement dans le monde
     // d'aujourd'hui (`CONF_V308` et `CONF_AVANT` ne les portent pas : on juge un
     // bloc d'avant sur le monde où il a été posé). Une case de huit sans métro

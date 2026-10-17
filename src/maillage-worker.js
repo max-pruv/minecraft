@@ -39,6 +39,7 @@ self.onmessage = (e) => {
     // refait l'index des monuments touchés (v292). Un journal installé à la
     // main laisserait le worker dessiner un monument qu'un enfant a creusé.
     monde.hd = m.hd || 0;
+    monde.arbres = m.arbres || 0;   // les vrais arbres (v499), à portée du détail
     monde.sansSolContinu = !!m.sansSolContinu;
     monde.installerEdits(m.edits, m.temps, m.ctx || 'local');
     return;
@@ -88,7 +89,7 @@ self.onmessage = (e) => {
       self.postMessage({ type: 'morceau', cx, cz, generation: m.generation, data: copie, ms, inactif, envoye: performance.timeOrigin + performance.now(),
         cumul: { ms: cumulMs, hors: cumulHors },
         top: monde.chunkTop(cx, cz), solid: t.solid, water: t.water, lumineux: t.lumineux, props: t.props,
-        sol: t.sol, facades: t.facades, plat: t.plat, platLumineux: t.platLumineux, hd: t.hd, detail: t.detail }, transfert);
+        sol: t.sol, facades: t.facades, plat: t.plat, platLumineux: t.platLumineux, hd: t.hd, detail: t.detail, arbres: t.arbres, arbresEmis: t.arbresEmis }, transfert);
       inactif = 0;
       cumulHors += performance.now() - t0 - ms;
     }

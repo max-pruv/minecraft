@@ -1,4 +1,4 @@
-// LES MÉTROS DES VILLES ENGENDRÉES SE MESURENT COMME L'ENFANT LES VIT (v498),
+// LES MÉTROS DES VILLES ENGENDRÉES SE MESURENT COMME L'ENFANT LES VIT (v500),
 // sous node, sur le vrai monde engendré — la sonde de la ligne 1 de Paris
 // (`sonde-metro-paris.mjs`), recopiée pour une ville qui n'a qu'une fiche : de
 // la rue au quai case par case pour chaque bouche (une marche d'un bloc au

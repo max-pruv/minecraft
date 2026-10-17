@@ -606,6 +606,15 @@ activerTuilage(litMaterial);
 
 const world = new urbain.TerreUrbaine();
 world.hd = RAYON_HD > 0 ? 1 : 0;
+// LES VRAIS ARBRES (v499, arbreshd.js) : à portée de `RAYON_HD`, les arbres
+// d'un morceau — campagne, villes, Paris — sont dessinés en relief (tronc qui
+// s'effile, branches, cartes de feuilles) dans le tampon `facades`, et leurs
+// cubes partent dans `plat`, le loin. Même portée, même budget, même matériau
+// que le détail de Paris : rien de neuf à compiler, un appel de dessin par
+// morceau. Coupés avec la couche (rendu logiciel, palier bas) ; `?arbres=0`
+// les coupe seuls, pour mesurer ; `?hd=N&arbres=1` les force au banc.
+const ARBRES_DEMANDES = new URLSearchParams(location.search).get('arbres');
+world.arbres = RAYON_HD > 0 && ARBRES_DEMANDES !== '0' ? 1 : 0;
 // `?solcontinu=0` : le voxel d'avant, pour MESURER (A/B au banc). Ce n'est pas
 // un réglage et aucun palier ne le pose : le sol continu vaut pour tous les
 // appareils, parce qu'un sol qui change de forme avec le palier changerait la
@@ -909,7 +918,7 @@ function synchroniserLeWorker() {
   if (!maillageDistant) return;
   generationDistante++;
   enAttente.clear();
-  maillageDistant.postMessage({ type: 'edits', edits: world.edits, temps: world.editTimes, ctx: world.ctx, hd: world.hd, sansSolContinu: world.sansSolContinu });
+  maillageDistant.postMessage({ type: 'edits', edits: world.edits, temps: world.editTimes, ctx: world.ctx, hd: world.hd, arbres: world.arbres, sansSolContinu: world.sansSolContinu });
 }
 // L'ENFANT ATTEND SON MORCEAU, IL NE LE FABRIQUE PAS (v436).
 //
@@ -1199,8 +1208,9 @@ function installerMorceau(cx, cz, tampons) {
   const water = geometrieDepuisTampons(tampons.water);
   const lumineux = geometrieDepuisTampons(tampons.lumineux);
   const entry = { solid: null, water: null, lumineux: null, props: null, sol: null, facades: null, plat: null, platLumineux: null,
-    // ce morceau touche la couche HD, et il a été maillé AVEC ses façades détaillées (v296)
-    hd: !!tampons.hd, detail: !!tampons.detail };
+    // ce morceau touche la couche HD (ou porte des arbres, v499), et il a été
+    // maillé AVEC ses façades détaillées (v296)
+    hd: !!tampons.hd || !!tampons.arbres, detail: !!tampons.detail, arbres: Math.max(0, tampons.arbres || 0) };
   const pcx = Math.floor(player.pos.x / CHUNK), pcz = Math.floor(player.pos.z / CHUNK);
   const ombre = Math.abs(cx - pcx) <= RAYON_OMBRE && Math.abs(cz - pcz) <= RAYON_OMBRE;
   if (solid) {
@@ -1355,7 +1365,10 @@ function montrerLeDetail(entry, cx, cz, pcx, pcz) {
   if (!entry.facades && !entry.plat && !entry.platLumineux) return;
   // Sans façades détaillées — pas encore fabriquées, ou rendues (v296) — le
   // morceau montre ses faces plates, quelle que soit la distance.
-  const pres = !!entry.facades && Math.abs(cx - pcx) <= RAYON_HD && Math.abs(cz - pcz) <= RAYON_HD;
+  // (un morceau détaillé dont le détail est vide — les feuilles d'un arbre
+  // voisin, sans fût ici — cache quand même ses cubes : le voisin dessine
+  // l'arbre, v499)
+  const pres = entry.detail && Math.abs(cx - pcx) <= RAYON_HD && Math.abs(cz - pcz) <= RAYON_HD;
   if (entry.facades) entry.facades.visible = pres;
   if (entry.plat) entry.plat.visible = !pres;
   if (entry.platLumineux) entry.platLumineux.visible = !pres;
@@ -2173,7 +2186,7 @@ function updateChunks() {
     nb: 4, vitesse: 10, rames: 8, pause: 3, arretsIndex: arretsLigne1Paris(),
     souterrain: true,
   });
-  // Les métros des villes engendrées (v498, metromonde.js), après la ligne 1 :
+  // Les métros des villes engendrées (v500, metromonde.js), après la ligne 1 :
   // la ligne A de Rome, douze stations de Cipro à Re di Roma. Un tour fait près
   // de six cents blocs (deux voies et les tiroirs) à dix blocs par seconde, plus
   // vingt-quatre arrêts de trois secondes : 130 s, cinq rames, 26 s d'attente.

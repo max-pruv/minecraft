@@ -1,4 +1,4 @@
-// LE PASSAGE PEINT DE ROME, REJOUÉ SEUL (v498) — le témoin de `monte.js`
+// LE PASSAGE PEINT DE ROME, REJOUÉ SEUL (v500) — le témoin de `monte.js`
 // (« à Rome aussi, en biais, un passant traverse sur le passage peint ») lu
 // TEL QUEL dans monte.js et joué N fois sur une page neuve, pour comparer une
 // DISTRIBUTION des deux côtés (règle v269), pas un passage de chaque côté.

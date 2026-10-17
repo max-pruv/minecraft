@@ -6,12 +6,29 @@
 
 export const NOUVEAUTES = [
   {
-    v: 498,
+    v: 500,
     titre: 'Le métro sous Rome',
     puces: [
       'La ligne A orange passe sous Rome',
       'Douze stations, de Cipro à Re di Roma',
       'Cherche le mât rouge au M blanc',
+    ],
+  },
+  {
+    v: 499,
+    titre: 'De vrais arbres',
+    puces: [
+      'Les arbres ont un tronc et des branches',
+      'Sapins, palmiers, oliviers, bouleaux',
+      'Les blocs ne changent pas : grimpe dessus',
+    ],
+  },
+  {
+    v: 498,
+    titre: 'La caméra suit la voiture',
+    puces: [
+      'Dos à un mur, on voit la voiture',
+      'La caméra monte et regarde par-dessus',
     ],
   },
   {
