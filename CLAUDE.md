@@ -1021,6 +1021,14 @@ lat/lon réelles, teinte). Quatre règles.
   accesseur : la zone d'une ligne (`ZONES`) le déclenche avant de creuser.
   Pur, donc le worker et le fil principal trouvent les mêmes bouches.
 
+Et **« DANS LE TUNNEL » EST AUSSI UNE HAUTEUR.** `VU_SOUTERRAIN` (v162) ne
+regardait que le plan : debout dans la rue au-dessus d'une ligne, ses rames se
+dessinaient dans la roche (deux sur cinq `visible` à Rome). `montrer` les cache
+au-delà de `HAUT_TUNNEL` (huit blocs) au-dessus de la rame. Un témoin de
+passants l'a trouvé, pas un témoin de métro : on a séparé les causes par
+quatre variantes jouées chacune plusieurs fois (rames seules, creusement seul,
+rames déplacées loin, correction), jamais par une deuxième hypothèse.
+
 La preuve compare le monde DÉSARMÉ (`METRO_MONDE.actif = false`) bloc à bloc
 au-dessus de la rue (`sonde-metro-monde.mjs`) ; les deux mondes se lisent
 chacun sous SON réglage, parce qu'un morceau s'engendre à la première lecture

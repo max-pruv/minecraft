@@ -56,6 +56,17 @@ L'empreinte des 490 morceaux (Rome est un des neuf lieux) change, et désarmée
 (`METRO_MONDE.actif = false`) la branche rend celle d'`origin/main` (v481)
 au bit près ; les deux empreintes du relief ne bougent pas.
 
+Et un convoi souterrain ne se dessine plus dans la roche sous les pieds de
+l'enfant. La règle de la v162 (« un convoi souterrain ne se montre que quand
+on est dans le tunnel avec lui ») n'était qu'une portée de quarante blocs sur
+le plan : debout dans la rue au-dessus de la ligne, on dessinait les wagons
+sous dix-sept blocs de terre. C'est le portail qui l'a dit, par un témoin de
+passants à Rome (« un passant traverse sur le passage peint ») : 8 passes
+vertes sur 14 avec les rames, 13 sur 13 sur `origin/main` ; les mêmes rames
+déplacées à soixante mille blocs, 8 sur 8 ; le creusement sans les rames, 4
+sur 4 (`sonde-passage-rome.cjs`). Au-delà de huit blocs au-dessus de la rame,
+rien ne se dessine : 8 sur 8. Paris et Washington en profitent aussi.
+
 Et une puce du journal du jeu (v465, « Sur la mer, le train roule sur un
 viaduc ») faisait neuf mots pour une barre à huit : le témoin du journal de
 `maj.js` la refusait. Elle dit désormais « Sur la mer, le train passe en
