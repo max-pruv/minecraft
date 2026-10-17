@@ -1275,6 +1275,81 @@ function verifier(nom, ok, detail = '') {
     verifier('à Londres, aucune erreur JavaScript', lon.erreurs.length === 0, JSON.stringify(lon.erreurs.slice(0, 3)));
     await lon.close();
 
+    // LES VRAIS ARBRES À L'ÉCRAN (v499). Deux pages dans la forêt la plus
+    // dense près de (−1 500, −2 500), la couche forcée (`hd=2`) : l'une avec
+    // les arbres en relief, l'autre avec `?arbres=0`. Ce que l'enfant voit :
+    //  • à portée, un morceau de forêt porte ses arbres dans `facades` (visible)
+    //    et ses cubes dans `plat` (caché) ; avec `?arbres=0`, rien de tel ;
+    //  • UN FÛT EN RELIEF EST PLUS FIN QUE SON CUBE : la caméra à trois blocs
+    //    d'un tronc, à mi-hauteur sous la couronne, lit la ligne de pixels qui
+    //    traverse le tronc — les pixels d'écorce (ni verts ni bleus) autour du
+    //    centre — et la largeur est bien plus petite qu'avec les cubes ;
+    //  • ce que pèse un morceau de forêt se mesure : moins d'un mégaoctet et
+    //    demi de tampons par morceau, pour le budget du palier.
+    // Sur l'ancien code, `?arbres=0` est ignoré : les deux largeurs sont
+    // égales, rouge.
+    {
+      const mesurer = async (page) => page.evaluate(async () => {
+        const g = window.__game, w = g.world;
+        const dodo = (ms) => new Promise((r) => setTimeout(r, ms));
+        // un chêne de forêt (kind 0, fût d'au moins cinq) à côté d'une clairière :
+        // aucun autre arbre à moins de six blocs côté caméra
+        let cible = null;
+        for (let r = 0; r < 40 && !cible; r++) for (let dx = -r; dx <= r && !cible; dx++) for (const dz of [-r, r]) {
+          const x = -1560 + dx, z = -2488 + dz, t = w.treeAt(x, z);
+          if (!t || t.kind !== 0 || t.trunk < 5) continue;
+          let libre = true;
+          for (let ex = -6; ex <= 6 && libre; ex++) for (let ez = 1; ez <= 7 && libre; ez++) if (ex !== 0 || ez === 0) { if (w.treeAt(x + ex, z + ez)) libre = false; }
+          if (libre) cible = { x, z, t };
+        }
+        if (!cible) return { erreur: 'aucun chêne au bord d\'une clairière' };
+        const { x, z, t } = cible;
+        g.player.flying = true;
+        g.player.pos.set(x + 0.5, t.h + 2.2, z + 0.5 + 3.5);
+        g.player.vel.set(0, 0, 0);
+        g.player.yaw = 0; g.player.pitch = 0;
+        window.__setDayTime(0.42);
+        const cx = Math.floor(x / 16), cz = Math.floor(z / 16);
+        const t0 = performance.now();
+        let e = null;
+        while (performance.now() - t0 < 90000) {
+          await dodo(500);
+          e = g.chunkMeshes.get(`${cx},${cz}`);
+          if (e && (!w.arbres || e.facades)) { await dodo(1500); break; }
+        }
+        // la ligne de pixels au centre de l'écran
+        const r = g.renderer, cam = g.camera;
+        r.render(g.scene, cam);
+        const gl = r.getContext();
+        const W = gl.drawingBufferWidth, H = gl.drawingBufferHeight, y = Math.floor(H / 2);
+        const px = new Uint8Array(W * 4);
+        gl.readPixels(0, y, W, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+        const ecorce = (i) => { const R = px[i * 4], G = px[i * 4 + 1], B = px[i * 4 + 2]; return R >= G && R >= B && R < 170; };
+        const c = Math.floor(W / 2);
+        let g0 = c, g1 = c;
+        while (g0 > 0 && ecorce(g0 - 1)) g0--;
+        while (g1 < W - 1 && ecorce(g1 + 1)) g1++;
+        const largeur = ecorce(c) ? g1 - g0 + 1 : 0;
+        let dessines = 0, caches = 0, mo = 0, n = 0;
+        for (const m of g.chunkMeshes.values()) { if (m.facades && m.facades.visible) { dessines++; mo += m.octetsFacades || 0; n++; } if (m.plat && !m.plat.visible) caches++; }
+        return { x, z, trunk: t.trunk, arbres: w.arbres, largeur, W, dessines, caches, moParMorceau: n ? +(mo / n / 1048576).toFixed(2) : 0, pireMo: +(Math.max(0, ...[...g.chunkMeshes.values()].map((m) => m.octetsFacades || 0)) / 1048576).toFixed(2), appels: g.renderer.info.render.calls, attente: Math.round(performance.now() - t0) };
+      });
+      const sylvestre = await banc.jouerSeul('Sylvestre', { rr: 4, params: '&hd=2' });
+      const avec = await mesurer(sylvestre);
+      await sylvestre.close();
+      const sylvain = await banc.jouerSeul('Sylvain', { rr: 4, params: '&hd=2&arbres=0' });
+      const sansA = await mesurer(sylvain);
+      await sylvain.close();
+      verifier('dans la forêt, à portée, les arbres sont dessinés en relief et leurs cubes cachés ; avec ?arbres=0, ni l\'un ni l\'autre',
+        !avec.erreur && avec.dessines >= 5 && avec.caches >= 5 && sansA.dessines === 0 && sansA.caches === 0,
+        `${JSON.stringify(avec)} · sans ${JSON.stringify(sansA)}`);
+      verifier('un fût en relief est plus fin que son cube : la ligne de pixels à travers le tronc, à trois blocs',
+        avec.largeur > 20 && sansA.largeur > 0 && avec.largeur < sansA.largeur * 0.8,
+        `${avec.largeur} px en relief contre ${sansA.largeur} px en cubes (écran de ${avec.W})`);
+      verifier('un morceau de forêt en relief pèse moins d\'un mégaoctet et demi de tampons',
+        avec.moParMorceau > 0 && avec.pireMo < 1.5, `${avec.moParMorceau} Mo par morceau en moyenne, ${avec.pireMo} au pire`);
+    }
+
     const bas = await banc.jouerSeul('Firmin', { rr: 4, params: '&hd=0' });
     const res0 = await bas.evaluate(async ([x, z]) => {
       const g = window.__game;
