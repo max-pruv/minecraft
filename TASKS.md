@@ -7339,6 +7339,9 @@ l'embarquement a eu lieu, pas par une hypothèse.
     aussi au portail de la v473, zone dégâts) ; `maj.js` : la puce de la v465
     faisait neuf mots — raccourcie dans la même livraison. `reseau.js` 100 %
     vert, « un hôte sans courtier est trouvé » et « il le REJOINT » compris.
+    Second portail : `degats.js` vert ; un seul rouge, `maj.js` « le loader
+    dit combien de fichiers sont rangés » — l'intermittent déclaré (même
+    distribution des deux côtés), vert au premier portail de la même branche.
   - **Portail de la v473 : cinq rouges, aucun de cette livraison.** Quatre
     déjà déclarés (`degats.js` « percuter une voiture de la rue l'abîme
     AUSSI », `reseau.js` « un hôte sans courtier est trouvé » et « il le
