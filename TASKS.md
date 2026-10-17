@@ -1,5 +1,15 @@
 # Ce qui est en cours
 
+- [ ] **PORTAIL DE LA v474 (les cubes orange) : cinq rouges, aucun de la
+  livraison** (qui ne déplace qu'un `Points` d'ambiance, lu par rien d'autre).
+  `maj.js` : la puce v465 à neuf mots, rouge sur `origin/main`, corrigée ici.
+  `degats.js` « percuter une voiture de la rue l'abîme AUSSI » : vert seul des
+  deux côtés. `monte.js` rejouée SEULE des deux côtés : `origin/main` 229 verts,
+  4 rouges (« deux voisines d'un convoi », « au feu… au lieu de piler », « rue
+  vide », « un mur pris de face ») ; branche 233 verts, 2 rouges (« la rue roule
+  à l'allure d'une ville », le tirage 1 sur 3 déclaré en v472 ; « rue vide »).
+  Tous des tirages de circulation vus des deux côtés.
+
 - [ ] **AU FEU, LA VOITURE DE FILE PILE DERRIÈRE CELLE QUI S'ARRÊTE (vraie
   panne, zone conduite — trouvée par la session banc-lot3).** Le témoin
   « au feu, la voiture freine sur plusieurs relevés » de `monte.js` comptait
