@@ -7501,7 +7501,15 @@ l'embarquement a eu lieu, pas par une hypothèse.
 - [ ] **Intérieurs** — les monuments se visitent. *(v458 : le Panthéon de
   Rome, creux, portique de plain-pied, oculus ouvert — le premier hors de Paris
   et de Londres. Méthode et témoin à reprendre pour les suivants : `plafond.js`,
-  « on entre dans le Panthéon de Rome ».)*
+  « on entre dans le Panthéon de Rome ». v474 : Sainte-Sophie, même méthode.)*
+  **Le Colisée de Rome ne se visite pas sans une décision de plan** (mesuré
+  v474) : il vient du catalogue (`depuisCatalogue('colisee')`, 77 × 63 blocs à
+  2,5 m par bloc — onze fois sa taille à l'échelle de Rome), son emprise
+  contient le Forum romain (à 0,62 du demi-axe, au bord de l'arène), et son
+  arène, ses arcades et ses gradins (posés en damier, sans rien dessous) ne
+  recouvrent pas la ville : des immeubles poussent dans l'arène. Le rendre
+  visitable veut un `tour` à lui ; le réduire change la boîte, donc les zones
+  du relief (`boiteDuMonument`) — décision de Max.
 
 ---
 

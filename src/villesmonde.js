@@ -1863,7 +1863,19 @@ function buildSaintMarc(poser) {
 // les deux demi-coupoles est et ouest, la grande coupole basse sur sa couronne
 // de quarante fenêtres, et les quatre minarets ottomans. Elle reste au sud de
 // Topkapi.
+//
+// ET ELLE SE VISITE (v474), sur la méthode du Panthéon de Rome (v458). Le
+// dehors est celui d'avant au bloc près — seul l'intérieur passe à l'air. On
+// entre de plain-pied par l'ouest (y = 0, la porte de trois blocs dans
+// l'exonarthex puis dans le mur du narthex), les bas-côtés sont voûtés à la
+// couche 4, et la nef centrale monte jusque sous la coupole, devenue une
+// coque : tambour en couronne, calotte creuse, fermée au sommet. Les quatre
+// grands piliers portent la coupole aux coins du carré central ; au fond, à
+// l'est, le mihrab doré et le minbar. Étirée par sa table (echelle-monuments,
+// couches 1 à 5 → 1 à 11, la coupole au-dessus), la nef fait une vingtaine
+// de blocs sous la calotte. Rien n'y est tiré au hasard (v450).
 function buildSainteSophie(poser) {
+  const AIR = BLOCK.AIR;
   for (let y = 1; y <= 4; y++) {
     plein(poser, y, -5, 5, -3, 6, OCRE);
     for (const [a, b] of [[-6, -3], [-6, 5], [6, -3], [6, 5]]) poser(a, y, b, OCRE);
@@ -1879,6 +1891,30 @@ function buildSainteSophie(poser) {
   tambour(P, 5, 5, 4, OCRE, BLANC);
   calotte(P, 6, 4, ACIER, 3);
   P(0, 9, 0, OR);
+  // l'intérieur : le dallage de marbre, les bas-côtés sous la voûte de la
+  // couche 4, la nef ouverte jusqu'à la coupole sous le cercle central
+  for (let x = -4; x <= 4; x++) for (let z = -2; z <= 5; z++) {
+    poser(x, 0, z, ((x + z) & 1) ? BLANC : PIERRE);
+    const sousLaCoupole = Math.hypot(x, z - 1) < 3.4;
+    for (let y = 1; y <= (sousLaCoupole ? 4 : 3); y++) poser(x, y, z, AIR);
+  }
+  // la coupole en coque : le tambour en couronne, la calotte creuse
+  for (let x = -4; x <= 4; x++) for (let z = -4; z <= 4; z++) {
+    const d = Math.hypot(x, z);
+    if (d < 3.35) P(x, 5, z, AIR);
+    if (d < 3.31) P(x, 6, z, AIR);
+    if (d < 2.96) P(x, 7, z, AIR);
+  }
+  // les quatre grands piliers aux coins du carré central
+  for (const [a, b] of [[-3, -2], [3, -2], [-3, 4], [3, 4]]) for (let y = 1; y <= 4; y++) poser(a, y, b, PIERRE);
+  // la porte, dans l'axe, à travers l'exonarthex et le mur du narthex
+  for (const x of [-6, -5]) for (let z = 0; z <= 2; z++) {
+    poser(x, 0, z, PIERRE);
+    for (let y = 1; y <= 2; y++) poser(x, y, z, AIR);
+  }
+  // au fond, le mihrab doré dans sa niche, le minbar à sa droite
+  poser(4, 1, 1, OR); poser(4, 2, 1, OR);
+  poser(4, 1, 3, BLANC); poser(3, 1, 3, BLANC);
   for (const [a, b] of [[-7, -3], [-7, 7], [7, -3], [7, 7]]) minaretFin(poser, a, b, 20, PIERRE, ACIER, [12, 17]);
 }
 
