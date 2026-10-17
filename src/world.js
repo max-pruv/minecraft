@@ -113,8 +113,9 @@ export const NEIGE_TOUNDRA = 46;
 const DENSITE_MAX = 0.08;
 // L'HEURE DE LA RÈGLE DES CLIMATS (v345), relue à la fusion (v309) : un bloc
 // posé avant a été posé sur le monde d'avant, et son morceau garde ses arbres.
-// Relue à la fusion de la v469 (le climat méditerranéen ajoute des arbres).
-export const DATE_CLIMATS = Date.parse('2026-10-16T09:22:00Z');
+// Relue à la fusion de la v469 (le climat méditerranéen ajoute des arbres),
+// puis de la v474 (la savane en ajoute et en retire).
+export const DATE_CLIMATS = Date.parse('2026-10-17T14:36:00Z');
 export function solDeToundra(x, z, h) {
   if (h >= NEIGE_TOUNDRA) return BLOCK.SNOW;
   return fbm(x * 0.07, z * 0.07, SEED + 941) > 0.64 ? BLOCK.GRAVEL : BLOCK.GRASS;
