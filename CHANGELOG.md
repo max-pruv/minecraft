@@ -20,6 +20,31 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v503 — Les blocs passent en bas
+
+**Pourquoi.** Max, sur le mode construction : « ça va pas du tout. On affiche
+les briques dans une toute petite zone. Ça devrait être en bas. Et le bouton
+terminer prend beaucoup trop de place. » Mesuré sur la v496 : la barre de
+blocs vivait dans la file du haut, cases de **30 px** (sous les 44 qu'il faut à
+un doigt d'enfant), et la pilule « Construction · Terminer » faisait 188 px de
+large.
+
+**Ce que ça change.** En construction, sur tablette et téléphone, la barre de
+blocs est une bande en bas de l'écran, sur toute la largeur : cases de 50 px,
+sept visibles d'un coup sur l'iPhone, les autres au bout du doigt (elle
+défile). Poser, Casser, Sauter et l'anneau du joystick montent de la hauteur de
+la barre ; le joystick garde tout le quart bas-gauche au-dessus d'elle.
+« Terminer » devient une petite coche ronde, de la taille des autres boutons.
+L'ordinateur ne change pas.
+
+**Ce qui le prouve.** Six témoins neufs dans `maj.js`, joués aux deux tailles
+(le banc 420 × 760, l'iPhone de Max 430 × 932) : la barre est en bas, large, à
+cases de 44 px au moins, et défile ; dans le quart du joystick au-dessus
+d'elle le doigt tombe sur le canvas et fait marcher l'enfant, PUIS une case de
+la barre se touche et se choisit ; « Terminer » fait 44 × 44, son mot dans
+`aria-label` et `.lb`, sans rien recouvrir. Le témoin de contraste lit la
+coche à 3:1, midi et minuit. Avant/après : `tests/sonde-construction-bas.cjs`.
+
 ## v502 — ✈️ se pose devant, pas derrière
 
 **Pourquoi.** Max : « quand on est en avion et qu'on clique sur se poser, il
@@ -53,6 +78,7 @@ pire, 32 pistes sur 33 éprouvées (29 avant ; la seconde piste intérieure de
 Roissy perd toujours contre sa jumelle). Sans le correctif du ralliement, six
 des nouvelles arrivées « cap sur la piste » tournaient deux cents secondes sans
 toucher.
+
 ## v501 — Les essais des réglages n'attendent plus vingt secondes réelles
 
 **Pourquoi.** Max veut un portail plus rapide à qualité égale. `reglages.js`

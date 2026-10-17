@@ -2656,7 +2656,7 @@ const touch = {
 
 // HORS CONSTRUCTION, TOUCHER L'ÉCRAN NE POSE NI NE CASSE RIEN (commandes
 // simplifiées) : on regarde autour de soi sans abîmer le monde. Construire
-// est un mode qu'on choisit, avec son bouton et sa pilule « Terminer ».
+// est un mode qu'on choisit, avec son bouton et son petit « Terminer » rond.
 function touchAction() {
   if (commandes && !commandes.enConstruction()) return;
   (breakMode ? breakBlock : placeBlock)();
@@ -8324,10 +8324,9 @@ commandes = initCommandes({
   },
 });
 if (IS_TOUCH) {
+  // la barre de blocs reste en bas, sur toute la largeur, en construction
+  // (v502, décision de Max) : la feuille de style la pose, le DOM ne bouge pas
   document.body.classList.add('tactile');
-  // la barre de blocs rejoint la file du haut, sous la pilule « Terminer »
-  const fc = document.getElementById('file-centre'), hb = document.getElementById('hotbar');
-  if (fc && hb) fc.insertBefore(hb, document.getElementById('construction-pill').nextSibling);
 }
 window.__commandes = commandes;
 

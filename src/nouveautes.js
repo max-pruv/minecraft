@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 503,
+    titre: 'Les blocs passent en bas',
+    puces: [
+      'La barre de blocs est en bas',
+      'Glisse-la du doigt pour voir les autres',
+      'Une petite coche pour finir de construire',
+    ],
+  },
+  {
     v: 502,
     titre: 'L\'avion se pose devant',
     puces: [

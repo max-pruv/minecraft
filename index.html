@@ -2142,40 +2142,64 @@
       -webkit-backdrop-filter: var(--hud-flou); backdrop-filter: var(--hud-flou);
     }
 
-    /* CONSTRUIRE : Poser, Casser, Sauter — et la pilule « Terminer » en haut. */
+    /* CONSTRUIRE : Poser, Casser, Sauter, et un petit « Terminer » rond en
+       haut. LA BARRE DE BLOCS EST EN BAS, sur toute la largeur — décision de
+       Max (v502), qui annule celle de la v445/v494 : en haut, ses cases
+       faisaient trente pixels, une « toute petite zone ». Elle mord donc le
+       bas du quart du joystick, et ce qui compte se dit en relatif : le
+       joystick garde tout le quart AU-DESSUS de la barre (rien du DOM n'y
+       entre, le témoin de maj.js le lit), et tout ce qui vivait au ras du bas
+       de l'écran monte de la hauteur de la barre (`--bande-blocs`). */
+    body.hud-simple.construction { --bande-blocs: calc(72px + var(--safe-bottom)); }
     body.hud-simple.construction #construire-btn, body.hud-simple.construction #fly-btn,
     body.hud-simple.construction .fun-target { display: none !important; }
-    body.hud-simple.construction #poser-btn { display: flex; right: 20px; bottom: calc(28px + var(--safe-bottom)); }
-    body.hud-simple.construction #casser-btn { display: flex; right: 76px; bottom: calc(52px + var(--safe-bottom)); }
-    body.hud-simple.construction #jump-btn { right: 20px; bottom: calc(84px + var(--safe-bottom)); }
+    body.hud-simple.construction #poser-btn { display: flex; right: 20px; bottom: calc(16px + var(--bande-blocs, 12px)); }
+    body.hud-simple.construction #casser-btn { display: flex; right: 76px; bottom: calc(40px + var(--bande-blocs, 12px)); }
+    body.hud-simple.construction #jump-btn { right: 20px; bottom: calc(72px + var(--bande-blocs, 12px)); }
+    body.hud-simple.construction.en-vol #down-btn { right: 76px; bottom: calc(96px + var(--bande-blocs, 12px)); }
+    body.hud-simple.tactile.construction #joy-repos { bottom: calc(40px + var(--bande-blocs, 12px)); }
     body.hud-simple #poser-btn.actif, body.hud-simple #casser-btn.actif {
       background: rgba(255, 255, 255, 0.92); color: var(--encre, #111A2E); border-color: #fff;
     }
     body.hud-simple #poser-btn.actif .ico, body.hud-simple #casser-btn.actif .ico { filter: none; }
     body.hud-simple.construction.en-jeu #construction-pill { display: flex; }
-    #construction-pill {
-      align-items: center; gap: 10px; height: 36px; padding: 0 4px 0 14px; border-radius: 18px;
-      background: var(--hud-pilule); color: var(--encre, #111A2E); border: 1px solid rgba(255, 255, 255, 0.95);
-      font: 700 13px/1 var(--corps, system-ui, sans-serif); white-space: nowrap;
-      -webkit-backdrop-filter: var(--hud-flou); backdrop-filter: var(--hud-flou);
-    }
+    #construction-pill { align-items: center; justify-content: center; background: none; border: 0; padding: 0; }
+    /* « Terminer » est un bouton rond comme les autres : une coche, le mot
+       dans `aria-label` et `.lb` (visuellement caché, jamais `display: none`). */
     #construction-fin {
-      height: 28px; padding: 0 12px; border: 0; border-radius: 14px; background: var(--encre, #111A2E);
-      color: #fff; font: 700 12px/1 var(--corps, system-ui, sans-serif); cursor: pointer;
+      position: relative; display: flex; align-items: center; justify-content: center;
+      width: var(--hud-taille, 44px); height: var(--hud-taille, 44px); border-radius: 50%; padding: 0;
+      background: var(--hud-voile); border: 1px solid var(--hud-liseré); color: #fff; font-size: 0;
+      -webkit-backdrop-filter: var(--hud-flou); backdrop-filter: var(--hud-flou);
+      -webkit-tap-highlight-color: transparent; cursor: pointer;
     }
-    /* Sur tablette, la barre de blocs ne se montre qu'en construction, et
-       elle vit dans la file du haut : posée en bas au milieu, elle mordait
-       le quart du joystick. */
+    #construction-fin .ic { display: flex; line-height: 0; }
+    #construction-fin .lb {
+      display: block; position: absolute; width: 1px; height: 1px; overflow: hidden;
+      clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; margin: 0;
+    }
+    #construction-fin:active { transform: scale(0.94); }
+    :root.rendu-logiciel #construction-fin { -webkit-backdrop-filter: none; backdrop-filter: none; }
+    /* Sur tablette, la barre de blocs ne se montre qu'en construction. */
     body.hud-simple.tactile:not(.construction) #hotbar,
     body.hud-simple.tactile:not(.construction) #block-name,
     body.hud-simple.tactile:not(.construction) #crosshair { display: none !important; }
-    body.hud-simple.tactile #file-centre > #hotbar {
-      gap: 4px; padding: 4px; border-radius: 14px; background: var(--hud-voile); border: 1px solid var(--hud-liseré);
-      overflow-x: auto; flex-wrap: nowrap;
+    body.hud-simple.tactile.construction #hotbar {
+      left: calc(8px + env(safe-area-inset-left, 0px)); right: calc(8px + env(safe-area-inset-right, 0px));
+      bottom: calc(6px + var(--safe-bottom)); transform: none;
+      gap: 6px; padding: 5px; border-radius: 16px; background: var(--hud-voile); border: 1px solid var(--hud-liseré);
+      overflow-x: auto; overflow-y: hidden; flex-wrap: nowrap; touch-action: pan-x;
+      -webkit-overflow-scrolling: touch; scrollbar-width: none; z-index: 8;
     }
-    body.hud-simple.tactile #file-centre > #hotbar .slot { width: 30px; height: 30px; border-width: 2px; border-radius: 8px; flex: none; }
-    body.hud-simple.tactile #file-centre > #hotbar .slot canvas { width: 22px; height: 22px; }
-    body.hud-simple.tactile #file-centre > #hotbar .slot .num { display: none; }
+    body.hud-simple.tactile.construction #hotbar::-webkit-scrollbar { display: none; }
+    body.hud-simple.tactile.construction #hotbar .slot {
+      width: 50px; height: 50px; border-width: 2px; border-radius: 11px; flex: none;
+      border-color: rgba(255, 255, 255, 0.35); background: rgba(12, 16, 24, 0.35);
+    }
+    body.hud-simple.tactile.construction #hotbar .slot.selected { border-color: #fff; border-width: 3px; background: rgba(255, 255, 255, 0.28); }
+    body.hud-simple.tactile.construction #hotbar .slot canvas { width: 36px; height: 36px; }
+    body.hud-simple.tactile.construction #hotbar .slot .num { display: none; }
+    body.hud-simple.tactile.construction #hotbar .slot-more { font-size: 26px; }
     body.hud-simple.tactile #block-name { pointer-events: none; bottom: auto; top: 40%; }
 
     /* AU VOLANT : le joystick, « Descendre » et le frein à main. */
@@ -2425,7 +2449,7 @@
   <!-- LA FILE CENTRALE (aviation) : tout ce qui s'affiche en haut au milieu s'y
        range l'un sous l'autre — elle ne peut donc rien recouvrir par construction. -->
   <div id="file-centre">
-    <div id="construction-pill"><span>Construction</span><button id="construction-fin">Terminer</button></div>
+    <div id="construction-pill"><button id="construction-fin" aria-label="Terminer la construction"><span class="ic"></span><span class="lb">Terminer</span></button></div>
     <div id="cap-avion"><div id="cap-degres"></div><div id="cap-ville"></div><div id="cap-regle"><div id="cap-repere"></div></div></div>
     <div id="gps"><span id="gps-fleche">⬆</span><div id="gps-texte"></div><button id="gps-stop" title="Arrêter le GPS">✕</button></div>
     <div id="gps-ami"><span id="gps-ami-texte"></span><button id="gps-ami-oui">🧭 Y aller</button><button id="gps-ami-non" title="Non merci">✕</button></div>
