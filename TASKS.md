@@ -3584,12 +3584,20 @@
   piste suivante est les neuf corps réalisables (8,2 Mo compressés, bien plus
   décodés) et les textures : à mesurer avec `sonde-memoire-paris.cjs` élargie
   aux textures.
-- [ ] **`sol` ET `plat` RESTENT FABRIQUÉS POUR TOUT LE DISQUE** (v296). Le sol
-  HD (marquages, bordures, trottoir relevé) et les faces plates pèsent 0,02 à
-  0,06 Mo par morceau, soit 10 à 30 Mo pour la ville entière : gardés partout
-  pour que le loin ne change pas d'un pixel. Si un appareil le paie encore, la
-  piste est de ne fabriquer `sol` qu'à `RAYON_HD × 2` et de laisser le voxel
-  de rue au-delà — au prix d'une couture visible sur la chaussée.
+- [ ] **`sol` ET `plat` RESTENT FABRIQUÉS POUR TOUT LE DISQUE** (v296,
+  remesuré en v482). Sous node, sur les 1 754 morceaux du disque de Paris,
+  détail éteint : sol HD 69,4 Mo, faces plates 303 Mo — mais celles-ci
+  REMPLACENT les faces du voxel (454 Mo sans couche HD, 432 avec) ; le surcoût
+  réel hors de portée était de 47,7 Mo pour la ville, soit ~16 Mo dans les 625
+  morceaux d'une fenêtre `rr 12`. La v482 a soudé le sol (69,4 → 51,7 Mo, même
+  image) : il reste ~30 Mo pour la ville, ~10 Mo par fenêtre. Les faces plates
+  et le voxel n'ont aucun sommet doublé (0 % sur 216 008) : rien à souder là.
+  La piste « `sol` seulement à `RAYON_HD × 2`, le voxel de rue au-delà »
+  rendrait au plus ~8 Mo à `rr 12` (~16 à `rr 16`) au prix d'une couture
+  visible sur la chaussée : NON livrée, la mesure ne le justifie pas tant que
+  le budget des façades (128 Mo) domine. À reprendre si le journal de bord
+  montre un appareil tué avec moins de détail que cela (décision de Max, sur
+  capture avant/après de la couture).
 - [x] **UN JOURNAL S'ENVOIE À CHAQUE FERMETURE — TAILLÉ EN v479, CÔTÉ
   SERVEUR.** Mesuré avant : 98 lignes, 264 Ko (index compris), 1,2 Ko par
   session et 1,6 Ko par plantage une fois compressés par Postgres — bien loin
@@ -5634,7 +5642,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   Trois leviers, chacun à mesurer AVANT d'y toucher (ce dépôt a déjà payé
   quatre fois pour avoir expliqué une lenteur sans l'instrumenter, v224) :
 
-  1. **`?tempo=`** — fait en v482 pour `reglages.js` (519 → 403 s) ; le
+  1. **`?tempo=`** — fait en v484 pour `reglages.js` (519 → 403 s) ; le
      réseau est mesuré hors de portée (son silence toléré est calé sur des
      durées réelles) : voir « Accélérer le portail, étape 2 » plus bas.
   2. **Mutualiser les pages de `reseau.js`** : un hôte ouvert une fois pour
@@ -6549,7 +6557,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
 
 - [x] **Accélérer le portail, étape 2 : une cadence de banc sur les
   minuteries du jeu (`?tempo=N`) — FAIT pour la synchronisation des réglages
-  (v482), MESURÉ IMPOSSIBLE pour le réseau.** `src/tempo.js` (pur) : `t(ms)`
+  (v484), MESURÉ IMPOSSIBLE pour le réseau.** `src/tempo.js` (pur) : `t(ms)`
   rend `ms` au bit près hors de 127.0.0.1/localhost ou sans `?tempo=`, divise
   par un entier de 2 à 8 sur le banc. `banc.fixerTempo(n)` se déclare par
   suite, `banc.enTempo(ms)` pour ses attentes, `BANC_TEMPO=1` ou
@@ -6962,8 +6970,10 @@ l'embarquement a eu lieu, pas par une hypothèse.
   principal est inactif 81 % du temps, il ne peut pas subir cette panne. On
   mesure des géométries.
 
-- [ ] **`animals.js` et `creatures.js` comptent leur cadence de naissance en
-  `dt`.** `this.spawnTimer -= dt` avec un `dt` borné à un vingtième : à trois
+- [x] **`animals.js` et `creatures.js` comptent leur cadence de naissance en
+  `dt`.** *(fait en v483 : `creatures.js` n'existe plus (v285) ; la naissance
+  des bêtes compte en `chronoReel`. Mesuré à 4,7 images par seconde provoquées :
+  0,25 → 0,87 de la cadence prévue, témoin dans `monte.js`.)* `this.spawnTimer -= dt` avec un `dt` borné à un vingtième : à trois
   images par seconde, 1,2 s de minuteur en réclame 2,4 réelles. C'est la
   cinquième occurrence du piège de `dt`, et elle est NOMMÉE ici plutôt que
   laissée à un futur grep — `src/cadence.js` porte déjà le remède
@@ -7044,8 +7054,16 @@ l'embarquement a eu lieu, pas par une hypothèse.
   côté-là : onze maillages par personnage, chacun avec sa matrice, recalculés
   à chaque image.
 
-- [ ] **Quatre minuteurs de plus comptent en `dt`, et deux comptent vraiment
-  (relevé fait en v234).** Le grep enfin passé — `grep -rn -- "-= dt\|+= dt"
+- [x] **Quatre minuteurs de plus comptent en `dt`, et deux comptent vraiment
+  (relevé fait en v234).** *(fait en v483 pour `animals.js` et `fun.js` :
+  naissance des bêtes, `raceTime`, `raceCooldown`, et en plus `garageTimer`
+  (veille des garages, ménage), `mathTimer` (rythme des défis de Cornichon,
+  durée de la vraie vie) et `targetTimer` (le bouton « Monter » tardait 1,7 s
+  à trois images par seconde). Restent en temps de jeu, à dessein : `dying`,
+  `fleeTime`, `stateTime`, `animTime`, `cryTimer` (animals.js), les émotes et le
+  trésor qui tourne (fun.js). Record mesuré : 2,3 s pour 8,6 s réelles sur
+  `origin/main`, 8,5 ici. Le reste du relevé, hors de cette zone, est l'entrée
+  « Les cadences de ménage hors de `animals.js` et `fun.js` ».)* Le grep enfin passé — `grep -rn -- "-= dt\|+= dt"
   src/*.js` — rend **quarante-neuf** minuteurs hors `education.js`. La grande
   majorité sont des ANIMATIONS et doivent rester en temps de jeu (une bête qui
   fuit, une balle qui rebondit, une flamme qui s'éteint). Quatre ne le doivent
@@ -7067,6 +7085,31 @@ l'embarquement a eu lieu, pas par une hypothèse.
   Chacun se corrige par `chronoReel` (cadence.js) et demande son témoin. À
   faire en une livraison à part : trois fichiers de plus, et le record de la
   course mérite d'être regardé avec Max avant d'être remis à zéro ou pas.
+
+  Portail de la v483 (coupé à la limite de deux heures pendant `reseau.js`,
+  rejouée SEULE ensuite : 88 verts) : les deux témoins neufs verts (0,98 et
+  1,00) ; rouges, tous déjà déclarés — `maj.js` les deux loaders, `monte.js`
+  Rome en biais, « freine au feu », la rue vide, Moscou ; et la puce trop
+  longue de la v465 (« Sur la mer, le train roule sur un viaduc »), présente
+  sur `origin/main`, donc en production.
+
+- [ ] **DÉCISION DE MAX : les records de course écrits avant la v483.** Le
+  chronomètre comptait en temps de jeu : sur une tablette qui ramait, un
+  record pouvait valoir le quart du temps réellement couru (mesuré 2,3 s pour
+  8,6 s à cinq images par seconde). La v483 compte juste à partir de
+  maintenant et ne touche pas `records.bestRace`. Les remettre à zéro (pour
+  Marlon et Alice) ou les garder : à trancher par Max, pas par le code.
+
+- [ ] **Les cadences de ménage hors de `animals.js` et `fun.js` (relevé v483).**
+  Le grep (`grep -rn -- "-= dt\|+= dt" src/*.js`) rend soixante et une
+  lignes. Hors de la zone de la v483, quatre candidats ressemblent à du
+  MÉNAGE, sans mesure ni témoin : `poissons.js:118` (`entretien`, naissances
+  du banc de poissons, même famille que les bêtes), `main.js:7968`
+  (`planeTimer`, les avions qui passent), `main.js:7812` (`weatherTimer`, le
+  changement de temps) et `siege.js:177` (`reste`, les phases du siège). Les
+  autres sont des animations ou déjà en temps réel (`dtReel` de marlon.js,
+  degats.js, vehicules.js). Chacun se corrige par `chronoReel` et demande son
+  témoin, à cadence provoquée (`minuteurs-mesure.js` montre la forme).
 
 - [x] **Les minuteurs de `education.js` comptaient en `dt` — FAIT en v234.**
   La question posée était « qu'est-ce qui est JUSTE ». Réponse : tout ce que

@@ -4,7 +4,7 @@ import { secondeVoieParis, secondeVoieVilleMonde, voiesAutoroute, allureDuTronco
 import * as THREE from 'three';
 import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp, MEUBLE_ITEMS, MEUBLE_START, isMeuble, RUE_ITEMS, RUE_START, RUE, isRue, ARCHI, CITY_BLOCK, ROUTE_BLOCK } from './blocks.js';
 import { passageEn } from './passages.js';
-// Les cadences de la synchronisation, sous tempo (`tempo.js`, v482) : au banc,
+// Les cadences de la synchronisation, sous tempo (`tempo.js`, v484) : au banc,
 // `?tempo=4` les divise par quatre ; en production elles valent leur valeur.
 import { t as enTempo, TEMPO } from './tempo.js';
 import { mobilierTrottoir, MOBILIER_OBSTACLE, villeHD } from './facadeshd.js';

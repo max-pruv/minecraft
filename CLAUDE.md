@@ -550,7 +550,7 @@ que « ne jamais relancer jusqu'au vert », par l'autre bout.
 
 ---
 
-## Le tempo du banc (v482) — une cadence se divise, une fenêtre calée sur le monde non
+## Le tempo du banc (v484) — une cadence se divise, une fenêtre calée sur le monde non
 
 `?tempo=N` (`src/tempo.js`, pur) divise les minuteries de synchronisation du
 jeu sur le banc, et seulement là. Trois règles.
@@ -859,6 +859,15 @@ même image par construction. `baiesSoudees: false` rejoue l'ancien tampon pour
 l'empreinte des 490 morceaux. Avant d'alléger une géométrie en changeant sa
 forme, on cherche ce qui se fusionne sans la changer.
 
+## Le sol se soude (v482) — ce qui reste fabriqué partout se mesure contre ce qu'il remplace
+
+Une règle. Le sol HD et les faces plates de Paris restent fabriqués pour tout
+le disque (v296) ; le coût se compte contre le VOXEL qu'ils remplacent (plat +
+solid 432 Mo contre 454 sans couche), pas en valeur brute (372 Mo). Le seul
+surcoût réel était le sol (47,7 Mo pour la ville), et un sommet sur quatre y
+était doublé : `sol` passe par `souderTampons` comme les façades (v469),
+`solSoude: false` pour l'empreinte des 490 morceaux. Le voxel et `plat` n'ont
+aucun sommet doublé (UV d'atlas par face) : ne pas y chercher.
 ## Le viaduc de la Manche (v465) — un ouvrage de voie se déclare au contact, et un profil relevé se borne aux gares
 
 Deux règles.
@@ -1019,6 +1028,24 @@ Trois règles.
   au-dessus avec un bloc de terre) ; une recherche bornée les sert ensemble.
   Ce qui touche la rue ne se pose que sur du trottoir : un témoin le lit sur
   le monde, contre les vingt circuits de Paris.
+
+## La course et les bêtes en temps réel (v483) — un chrono qui écrit un record est une pendule
+
+Deux règles.
+
+- **CE QUI ÉCRIT UN RECORD, OU DÉCIDE SI LE MONDE EST PEUPLÉ, COMPTE EN
+  `chronoReel`.** La naissance des bêtes (`animals.js`) et le chronomètre de la
+  course du parc (`fun.js`, `records.bestRace`) comptaient en `dt` borné : à
+  cinq images par seconde, la tablette qui rame peuplait quatre fois moins vite
+  et « courait » quatre fois plus vite. Mesuré 2,3 s de record pour 8,6 s
+  réelles. Le relevé des `-= dt` restants est dans `TASKS.md`, classé ;
+  une animation reste en temps de jeu.
+- **LE CHRONO SE LIT À CHAQUE IMAGE, PAUSE COMPRISE, ET SE DÉPENSE EN JEU
+  SEULEMENT.** `chronoFun()` est appelé en tête de `fun.update`, que `main.js`
+  appelle même en pause : l'écart d'une pause est absorbé là et n'entre jamais
+  dans `raceTime`. Un chrono lu seulement en jeu rendrait, au retour d'un quiz,
+  deux secondes de plus au coureur. Le témoin lit une fonction partagée
+  (`minuteurs-mesure.js`) que la sonde lit aussi (v400).
 
 ## La rue sans à-coups (v453) — le bus a une place, un circuit se prépare, une suiveuse freine
 

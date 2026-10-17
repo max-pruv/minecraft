@@ -86,7 +86,7 @@ const GARDIENS = {
   'src/nouveautes.js': ['maj.js'],
   'src/cloud.js': ['reseau.js', 'reglages.js', 'manhattan.js', 'parent.js'],
   'src/relaisnuage.js': ['reseau.js'],
-  // Le tempo du banc (v482) : lu par `main.js`, donc gardé par ses gardiens ;
+  // Le tempo du banc (v484) : lu par `main.js`, donc gardé par ses gardiens ;
   // `reglages.js` est la suite qui le déclare et le relit sous node.
   'src/tempo.js': ['reglages.js', 'carte.js', 'monte.js', 'washington.js', 'manhattan.js', 'degats.js'],
   'src/sync.js': ['sauvegarde.js', 'reglages.js', 'manhattan.js'],
@@ -194,7 +194,7 @@ const GARDIENS = {
   // vie de rue (fumée + monte) et dans les durées (maj).
   // `education.js` en est client depuis la v234 : ses deux gardiens rejoignent
   // la liste, sinon un changement d'horloge ne réveille pas l'espace parent.
-  'src/cadence.js': ['monte.js', 'maj.js', 'carte.js', 'parent.js', 'reglages.js'],
+  'src/cadence.js': ['monte.js', 'maj.js', 'carte.js', 'parent.js', 'reglages.js', 'manhattan.js', 'degats.js', 'reseau.js'],
   // Le cadran de cap lit le registre et s'affiche aux commandes : la monte le garde.
   'src/cap.js': ['monte.js', 'carte.js'],
   'src/approche.js': ['monte.js', 'carteMonde.js'],
@@ -615,7 +615,7 @@ function lancer(fichier) {
 }
 
 (async () => {
-  // `--tempo=1` (v482) : le tour de nuit, minuteries du jeu à l'échelle
+  // `--tempo=1` (v484) : le tour de nuit, minuteries du jeu à l'échelle
   // réelle même dans les suites qui déclarent un tempo (`banc.fixerTempo`).
   // Une course révélée à tempo 4 peut ne pas exister dans le vrai jeu, et
   // l'inverse. Il rejoue tout : un acquis pris à tempo 4 ne vaut pas pour lui.

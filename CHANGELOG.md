@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v482 — Les essais des réglages n'attendent plus vingt secondes réelles
+## v484 — Les essais des réglages n'attendent plus vingt secondes réelles
 
 **Pourquoi.** Max veut un portail plus rapide à qualité égale. `reglages.js`
 passait l'essentiel de son temps à attendre des minuteries de production : le
@@ -46,6 +46,66 @@ adresses (publique, réseau local, < 1, > 8), le réseau qui n'en lit aucun
 `sonde-tempo-nuage.cjs` porte la mesure qui écarte le réseau, et `reglages.js`
 passe aussi à `BANC_TEMPO=1`.
 
+## v483 — La course et les bêtes comptent les vraies secondes
+
+**Pourquoi.** Le jeu borne le temps d'une image à un vingtième de seconde, pour
+que rien ne traverse les murs quand une tablette rame. Les minuteurs écrits
+`-= dt` héritaient de cette borne. À cinq images par seconde, une seconde de
+jeu durait quatre secondes de montre. Le bestiaire se peuplait quatre fois
+moins vite au moment où l'enfant arrive quelque part. Le chronomètre de la
+course du parc donnait 2,3 s pour 8,6 s réelles : sur une tablette qui rame,
+on battait donc son record sans courir plus vite. C'était la dernière famille
+du piège de `dt` déclarée dans `TASKS.md` (v226, v234).
+
+**Ce que ça change.** La naissance des bêtes, le chronomètre et le délai de la
+course, la veille des garages, le rythme des défis de calcul de Cornichon et
+le rafraîchissement du bouton « Monter » comptent désormais en temps réel
+(`chronoReel`, cadence.js). Ces durées sont bornées à deux secondes par image,
+et une pause n'entre jamais dans le chronomètre. Les animations (une bête qui
+fuit, une émote qui flotte, une roue qui tourne) restent en temps de jeu. Les
+records déjà écrits ne bougent pas : les remettre à zéro est une décision de
+Max, déclarée dans `TASKS.md`.
+
+**Ce qui le prouve.** Deux témoins dans `monte.js`, sur une page à part, à
+cadence basse PROVOQUÉE (190 ms de fil brûlées par image, 4,7 images par
+seconde). Ils lisent une fenêtre de temps réel connue grâce à la fonction
+partagée `minuteurs-mesure.js`, que lit aussi `sonde-minuteurs.cjs` :
+- naissances : 0,25 de la cadence prévue sur `origin/main`, 0,87 ici
+  (barre 0,6) ;
+- record : 0,27 du temps réel sur `origin/main`, 0,99 ici (barre 0,8).
+
+La table des gardiens de `cadence.js` gagne ceux de ses deux nouveaux clients.
+
+---
+
+## v482 — Le sol de Paris se soude
+
+**Pourquoi.** Depuis la v296, le détail des façades n'est fabriqué qu'à portée
+de l'enfant, mais le sol HD de Paris — pavés, bordures de granit, marquages,
+trottoir relevé — et les faces plates restent fabriqués pour TOUT le disque,
+pour que le loin ne change pas d'un pixel. La dette demandait de remesurer ce
+qu'ils coûtent encore, après le budget en mégaoctets (v299) et les baies
+soudées (v469). Mesuré sous node, sur les 1 754 morceaux du disque : le sol HD
+pèse 69,4 Mo et les faces plates 303 Mo, mais ces faces REMPLACENT celles du
+voxel (454 Mo sans la couche HD, 432 avec) : le surcoût réel de la couche hors
+de portée est de 47,7 Mo pour la ville entière, environ 16 Mo dans les 625
+morceaux qu'un appareil tient à la fois. Et un sommet du sol sur quatre était
+le double exact d'un autre — le coin commun de deux pavés.
+
+**Ce que ça change.** Rien à l'écran : le sol HD est soudé comme les baies,
+mêmes triangles, mêmes valeurs. 69,4 → 51,7 Mo sur le disque de Paris (Rome
+12,4 → 8,1, Londres 3,4 → 2,2), un dixième de milliseconde par morceau dans le
+worker. Le palier bas ne reçoit rien de neuf (il n'a pas de couche HD). La
+piste « sol seulement à deux fois la portée HD » n'est PAS livrée : elle ne
+rendrait plus que huit mégaoctets environ et coûterait une couture visible sur
+la chaussée — déclarée dans `TASKS.md` avec ses chiffres.
+
+**Ce qui le prouve.** Un témoin neuf dans `plafond.js` sur 106 morceaux de
+Paris : un quart d'octets en moins (4,34 → 3,25 Mo, rapport 0,749) et zéro coin
+de triangle en écart, bit à bit ; rouge sur l'ancien code (rapport 1,000).
+L'empreinte des 490 morceaux, soudure désarmée (`solSoude: false`), rend la
+constante d'avant au bit près. Et les faces plates et le voxel n'ont AUCUN
+sommet doublé (0 % sur 216 008, mesuré) : rien à souder là.
 ## v481 — Au feu, le témoin lit l'heure de la rue
 
 **Pourquoi.** Le témoin « au feu, la voiture freine sur plusieurs relevés au

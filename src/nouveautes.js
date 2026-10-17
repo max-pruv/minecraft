@@ -6,11 +6,27 @@
 
 export const NOUVEAUTES = [
   {
-    v: 482,
+    v: 484,
     titre: 'Des essais plus rapides',
     puces: [
       'Les essais des réglages vont plus vite',
       'Rien ne change dans ton jeu',
+    ],
+  },
+  {
+    v: 483,
+    titre: 'Le chrono dit vrai',
+    puces: [
+      'La course compte les vraies secondes',
+      'Les animaux arrivent même quand ça rame',
+    ],
+  },
+  {
+    v: 482,
+    titre: 'Paris plus léger',
+    puces: [
+      'Le sol de Paris prend moins de mémoire',
+      'Rien ne change à l\'écran',
     ],
   },
   {

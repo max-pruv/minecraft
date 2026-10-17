@@ -236,7 +236,7 @@ const DPR_BANC = Number(process.env.BANC_DPR) || 1;
 // sonde aveugle, v273, troisième fois). L'A/B doit donc se faire DANS la suite,
 // et il lui faut un interrupteur ici.
 const VERRE_BANC = process.env.BANC_VERRE;
-// LA CADENCE DU BANC SUR LES MINUTERIES DU JEU (v482, `src/tempo.js`).
+// LA CADENCE DU BANC SUR LES MINUTERIES DU JEU (v484, `src/tempo.js`).
 //
 // Une suite qui attend des minuteries de production (le silence de vingt
 // secondes, le battement des réglages) le DÉCLARE : `banc.fixerTempo(4)` en

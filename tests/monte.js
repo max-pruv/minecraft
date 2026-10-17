@@ -14,6 +14,7 @@ const { Banc, dormir, souffler } = require('./banc.js');
 const { mesurerSensations } = require('./sensations-mesure.js');
 const { mesurerTraces } = require('./traces-mesure.js');
 const { mesurerDeriveDessinee } = require('./derive-mesure.js');
+const { mesurerMinuteurs } = require('./minuteurs-mesure.js');
 
 const echecs = [];
 // COMBIEN DE TEMPS CHAQUE TÉMOIN A-T-IL COÛTÉ.
@@ -8768,6 +8769,30 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       verifier(`✈️ en vol près de ${cle} : l'approche assistée pose le ${espece} SUR la piste et l'y arrête`,
         !r.err && r.surPisteToucher && r.surPisteArret && r.etat === 'sol' && r.pilote,
         `${r.err || ''} ${JSON.stringify(r)}`);
+    }
+
+    // CE QUI SE COMPTE EN SECONDES DE LA VRAIE VIE NE RALENTIT PAS AVEC
+    // L'IMAGE (v483). La naissance des bêtes (une cadence de ménage, v226) et
+    // le chronomètre de la course du parc — qui écrit un RECORD que Marlon et
+    // Alice comparent — comptaient en `dt` borné : à cinq images par seconde,
+    // la tablette qui rame peuplait quatre fois moins vite et courait quatre
+    // fois plus vite. La cadence basse se PROVOQUE (190 ms de fil brûlées par
+    // image, v234) sur une page à part, et l'on lit une fenêtre de temps réel.
+    // `origin/main` : naissances 0,25 · record 2,3 s pour 8,6 s réelles (0,27) ;
+    // ici 0,87 · 8,5 s pour 8,6 (0,99), à 4,7–4,8 images par seconde
+    // (`sonde-minuteurs.cjs`, la même fonction).
+    {
+      if (!tab.isClosed()) await banc.mettreDeCote(tab);
+      const minPage = await banc.jouerSeul('MonteMinuteurs', { rr: 2 });
+      const m = await mesurerMinuteurs(minPage);
+      await minPage.close();
+      if (!tab.isClosed()) await banc.ramener(tab);
+      const n = m.naissances || {}, c = m.course || {};
+      verifier('à cinq images par seconde, les bêtes naissent au rythme de la montre, pas de l\'image',
+        !m.err && n.cadence < 12 && n.part >= 0.6, `${m.err || ''} ${JSON.stringify(n)}`);
+      verifier('à cinq images par seconde, le chronomètre de la course compte les secondes de la montre',
+        !m.err && n.cadence < 12 && c.depart && c.partRecord !== null && c.partRecord >= 0.8,
+        `${m.err || ''} ${JSON.stringify(c)}`);
     }
   } finally {
     await banc.fermer();
