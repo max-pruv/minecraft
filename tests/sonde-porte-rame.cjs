@@ -47,11 +47,18 @@ async function passage() {
   // l'enfant sur le quai (le sol), à trois blocs du flanc gauche de la voiture
   const poser = async (m) => {
     m.updateMatrixWorld(true);
+    // à la cote de la VOIE (l'origine de la rame), pas au sommet de la
+    // colonne : un arbre ou une marche du relief y mettrait l'enfant hors de
+    // la portée en hauteur d'embarquement (|Δy| ≤ 2,5)
     const w = m.localToWorld(new THREE.Vector3(-3, 0, -0.5));
-    g.player.pos.set(w.x, g.world.sommetColonne(Math.floor(w.x), Math.floor(w.z)) + 1, w.z);
+    g.player.pos.set(w.x, m.position.y, w.z);
     g.player.vel.set(0, 0, 0); g.player.flying = false;
-    await images(3);
+    await images(2);
+    g.player.pos.set(w.x, m.position.y, w.z); g.player.vel.set(0, 0, 0);
   };
+  // ce que l'appui va trouver : un rouge doit dire s'il a vu la rame (v272)
+  const vise = () => { const q = window.__vehicules.placeProche(9), c = e();
+    return { place: q ? `${q.nom} ${q.id} à ${q.d.toFixed(1)}` : null, dy: q ? +(q.y - g.player.pos.y).toFixed(1) : null, attente: c.attente }; };
   const decalage = (m) => { const p = m.userData.porte, mb = m.userData.membres[p.ouvrant]; return +Math.abs(mb.position[p.axe] - p[p.axe]).toFixed(3); };
   const releve = async (m, ms, fin) => {
     const out = [], t0 = performance.now();
@@ -71,12 +78,13 @@ async function passage() {
   let m = await aQuai();
   if (!m) return { err: 'la rame n\'est jamais à quai', etat: e() };
   await poser(m);
+  const viseMonter = vise();
   bouton();
   let r = await releve(m, 30000, (o) => o.length > 3 && !o[o.length - 1].ph && o[o.length - 1].bord);
   res.monter = { phases: [...new Set(r.map((x) => x.ph).filter(Boolean))], n: r.length,
     bordPendant: r.filter((x) => x.bord && ['approche', 'ouverture', 'entree'].includes(x.ph)).length,
     porteMax: Math.max(...r.map((x) => x.porte)), avatarPendant: r.some((x) => x.avatar),
-    fin: r[r.length - 1] };
+    fin: r[r.length - 1], vise: viseMonter };
 
   // 2. DESCENDRE : l'état bascule au premier appui, la porte s'ouvre, l'enfant
   // se pose sur le quai, la porte se referme
@@ -111,9 +119,10 @@ async function passage() {
     if (mv && e().attente === 0) {
       mv.updateMatrixWorld(true);
       const w = mv.localToWorld(new THREE.Vector3(-2.5, 0, 0));
-      g.player.pos.set(w.x, h + 1, w.z); g.player.vel.set(0, 0, 0);
+      g.player.pos.set(w.x, mv.position.y, w.z); g.player.vel.set(0, 0, 0);
+      const v0 = vise();
       bouton(); await images(1);
-      res.roule = { bord: bord(), ph: g.player.embarquement ? g.player.embarquement.phase : null };
+      res.roule = { bord: bord(), ph: g.player.embarquement ? g.player.embarquement.phase : null, vise: v0 };
       if (bord()) { bouton(); await images(2); }
     }
   }
