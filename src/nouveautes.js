@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 496,
+    titre: 'La statue de la Liberté',
+    puces: [
+      'Elle est sur son île, dans la baie',
+      'Manhattan a des feux tricolores',
+      'Voitures et passants attendent leur tour',
+    ],
+  },
+  {
     v: 495,
     titre: 'Les voitures rendent la mémoire',
     puces: [

@@ -3,7 +3,8 @@
 // Plan interprété et comprimé ; 1 unité de rue correspond à environ un mètre
 // jouable. Les tours emblématiques restent sous le plafond de construction.
 // Géométrie et matériaux originaux, aucun asset de GTA.
-import { BLOCK, CITY_BLOCK } from "./blocks.js";
+import { BLOCK, CITY_BLOCK, DECOR_START } from "./blocks.js";
+import { axeDuFeu } from "./feux.js";
 
 export const MANHATTAN_ID = "manhattan-v1"; // lecture des sauvegardes v239 uniquement
 export const ECHELLE_PLAN = 0.4;
@@ -517,4 +518,243 @@ export function circuitsManhattan() {
       }
   }
   return traces;
+}
+
+// ---- LIBERTY ISLAND (v496) ----------------------------------------------
+// L'EMPLACEMENT SE MESURE (v223) : la statue de l'ancienne Manhattan (v186)
+// est restée dans `world.js` à (-64, 177) — sous le Midtown du plan d'aujourd'hui,
+// enterrée par `TerreUrbaine`. Sa vraie place se demande au PLAN : une
+// SIMILITUDE (rotation et échelle uniques) ajustée sur quatre repères du sud
+// de l'île — le Flatiron, One World Trade Center, Trinity Church, la Battery —
+// le plan étant comprimé autrement au Midtown. Elle retrouve d'elle-même
+// l'angle de la vraie grille (-29,8° pour 29°), 121 blocs par kilomètre, un
+// résidu de 12 blocs au pire, et rend pour le vrai centre de Liberty Island
+// (40,6892 N, 74,0445 O) le point (-161, 1250). Une affine à six paramètres
+// extrapolait de 86 blocs selon les repères choisis : non-résultat mesuré.
+// C'est en pleine baie, à 250 blocs du bout de l'île : terrain à 23 (sept
+// blocs d'eau), sans route, sans voie ferrée, sans repère ni aérodrome autour.
+// Hors du rectangle `BORNES` : l'île est un OUVRAGE écrit en blocs par
+// `TerreUrbaine`, jamais un relief — `terrainHeight` ne bouge pas d'un bloc.
+export const ILE_LIBERTE = {
+  x: -161,
+  z: 1250,
+  a: 19, // demi-longueur, le long de la vraie île (nord-ouest – sud-est)
+  b: 12, // demi-largeur
+  ux: 0.884,
+  uz: 0.468,
+};
+const ILE = ILE_LIBERTE;
+// Sur la carte, l'adresse est devant l'escalier du fort, côté Manhattan — le
+// même nom que le repère de l'ancienne Manhattan, que la carte remplace.
+LIEUX.push({ name: "Statue de la Liberté", x: ILE.x, z: ILE.z - 10, r: 20 });
+// Dans l'ellipse de l'île (une marge négative rentre vers l'intérieur).
+export function dansIleLiberte(x, z, marge = 0) {
+  const dx = x - ILE.x,
+    dz = z - ILE.z;
+  const u = dx * ILE.ux + dz * ILE.uz,
+    v = -dx * ILE.uz + dz * ILE.ux;
+  return (u / (ILE.a + marge)) ** 2 + (v / (ILE.b + marge)) ** 2 < 1;
+}
+// La boîte qui contient tout ce que l'île écrit, statue comprise.
+export const BOITE_LIBERTE = {
+  x0: ILE.x - ILE.a - 1,
+  x1: ILE.x + ILE.a + 1,
+  z0: ILE.z - ILE.a - 1,
+  z1: ILE.z + ILE.a + 1,
+};
+// Le sol de l'île est celui de Manhattan : deux blocs au-dessus de l'eau.
+export const SOL_ILE = SOL;
+// Le fort en étoile à onze branches (Fort Wood, 1811) : son rayon selon l'angle.
+export const rayonFort = (dx, dz) =>
+  7 + 2.2 * Math.abs(Math.cos(Math.atan2(dz, dx) * 5.5));
+export const HAUT_FORT = 3;
+
+// LA STATUE, MODÈLE ORIGINAL (invariant 4), À SA HAUTEUR DANS LE CIEL DE NEW
+// YORK. Quatre-vingt-treize mètres du sol au flambeau. Le ciel de ce plan n'est
+// pas une seule courbe, mais il a un ORDRE, et la statue s'y range : Trinity
+// Church (86 m) à 23 blocs, le Flatiron (87 m) à 41, la statue (93 m) à 42,
+// One Times Square (111 m) à 62. Moitié socle et fort, moitié statue, comme la
+// vraie (47 m de socle, 46 de statue). Les EMPRISES suivent le sol, les
+// HAUTEURS l'étage (« deux échelles dans la même ville ») : le fort fait vingt
+// blocs de large, le socle neuf.
+// `set(dx, dy, dz, id)` : dy = 0 est le premier bloc au-dessus du sol de l'île.
+// Elle regarde le large, vers les Narrows : la similitude ci-dessus met le
+// sud-est réel à +x dans le plan. Sa droite est donc +z, et c'est le bras
+// droit qui lève le flambeau ; l'escalier du fort regarde Manhattan (-z).
+export const HAUT_STATUE = 42;
+export function statueLiberte(set) {
+  const GRANIT = CITY_BLOCK.GRANITE,
+    PIERRE = DECOR_START + 27 * 10,
+    CUIVRE = CITY_BLOCK.COPPER,
+    OR = BLOCK.GOLD;
+  // le fort : une terrasse de pierre en étoile, et l'escalier côté Manhattan
+  for (let dz = -10; dz <= 10; dz++)
+    for (let dx = -10; dx <= 10; dx++) {
+      if (Math.hypot(dx, dz) > rayonFort(dx, dz)) continue;
+      let h = HAUT_FORT;
+      if (Math.abs(dx) <= 1 && dz <= -4) h = Math.max(0, HAUT_FORT + 4 + dz);
+      for (let y = 0; y < h; y++) set(dx, y, dz, GRANIT);
+    }
+  // le socle, en gradins, avec son balcon
+  const socle = [
+    [3, 6, 4],
+    [7, 15, 3],
+    [16, 16, 4],
+    [17, 18, 3],
+    [19, 19, 2],
+  ];
+  for (const [y0, y1, r] of socle)
+    for (let y = y0; y <= y1; y++)
+      for (let dz = -r; dz <= r; dz++)
+        for (let dx = -r; dx <= r; dx++) set(dx, y, dz, PIERRE);
+  // la robe, pleine, qui s'affine en montant (coins retirés : elle n'est pas
+  // une colonne carrée)
+  for (let y = 20; y <= 33; y++) {
+    const r = y < 25 ? 3 : 2;
+    for (let dz = -r; dz <= r; dz++)
+      for (let dx = -r; dx <= r; dx++)
+        if (Math.abs(dx) + Math.abs(dz) <= r + 1) set(dx, y, dz, CUIVRE);
+  }
+  // la tête, puis la couronne à sept rayons
+  for (let y = 34; y <= 36; y++)
+    for (let dz = -1; dz <= 1; dz++)
+      for (let dx = -1; dx <= 1; dx++) set(dx, y, dz, CUIVRE);
+  set(0, 37, 0, CUIVRE);
+  for (let k = 0; k < 7; k++) {
+    const a = (k / 7) * Math.PI * 2;
+    set(Math.round(Math.cos(a) * 2), 37, Math.round(Math.sin(a) * 2), CUIVRE);
+  }
+  // le bras droit levé, et le flambeau d'or
+  for (let y = 31; y <= 39; y++) set(0, y, 3, CUIVRE);
+  set(0, 40, 3, OR);
+  set(0, HAUT_STATUE - 1, 3, OR);
+  // la tablette, tenue contre le flanc gauche
+  for (let y = 26; y <= 29; y++) {
+    set(0, y, -3, PIERRE);
+    set(1, y, -3, PIERRE);
+  }
+}
+
+// ---- LES FEUX DE MANHATTAN (v496) -----------------------------------------
+// LA MÊME RÈGLE QUE LE RESTE DU MONDE (`feux.js`, v273, v274) : un feu a un
+// AXE, et cet axe se lit dans sa POSITION (`axeDuFeu`). Quatre feux par
+// carrefour, un par coin, sur le trottoir : les coins en diagonale regardent
+// la même file. L'axe 0 est la rue qui court le long de x (les rues
+// transversales), l'axe 1 celle qui court le long de z (les avenues) — les
+// trames tournées du sud le restent, aucune ne dépasse 32°.
+// Les coins se mesurent sur les files des circuits : une voiture d'avenue
+// roule à 1,4 bloc de l'axe, une voiture de rue à 0,95 ; le feu de son axe
+// est à moins de cinq blocs de côté (`ARRET_FEU_COTE` de main.js) et devant
+// elle avant le passage piéton. Un passant au coin en a un à moins de cinq
+// blocs, ce qui fait du carrefour un carrefour à feux pour lui aussi.
+const COIN_AVENUE = 5, // de l'axe de l'avenue au coin (trottoir de 4 à 6)
+  COIN_RUE = 3.6; // de l'axe de la rue au coin (trottoir de 2,4 à 4)
+// Un carrefour se cherche sur sa trame (le plan de 1811 au nord de la 14e Rue,
+// les trames tournées au sud) ; il faut de la chaussée au centre et dans les
+// deux rues, et un sol de piéton (trottoir, promenade, place) aux quatre coins.
+const PIETON = new Set(["sidewalk", "path", "plaza"]);
+function carrefoursAuteur() {
+  const out = [];
+  const essayer = (cx, cz, A, B) => {
+    const x = cx * K,
+      z = cz * K;
+    if (surface(x, z) !== "road") return;
+    const route = (d, [ux, uz]) =>
+      surface(x + ux * d, z + uz * d) === "road" ||
+      surface(x - ux * d, z - uz * d) === "road";
+    if (!route(RUE / 2, A) || !route(AVENUE / 2, B)) return;
+    // pas dans Times Square ni sur Broadway en biais : quatre vrais coins
+    for (const [sb, sa] of [
+      [1, 1],
+      [1, -1],
+      [-1, 1],
+      [-1, -1],
+    ])
+      if (
+        !PIETON.has(
+          surface(
+            x + sb * COIN_AVENUE * B[0] + sa * COIN_RUE * A[0],
+            z + sb * COIN_AVENUE * B[1] + sa * COIN_RUE * A[1],
+          ),
+        )
+      )
+        return;
+    out.push({ x, z, A, B });
+  };
+  for (let u = -500; u <= 500; u += AVENUE_AUTEUR)
+    for (let v = -3216; v <= 1056; v += RUE_AUTEUR)
+      if (!trameAuteur(u, v)) essayer(u, v, [0, 1], [1, 0]);
+  for (const t of TRAMES_AUTEUR) {
+    const c = Math.cos(t.angle),
+      sn = Math.sin(t.angle);
+    for (let u = -800; u <= 800; u += AVENUE_AUTEUR)
+      for (
+        let v = Math.floor((t.z0 - 400) / RUE_AUTEUR) * RUE_AUTEUR;
+        v <= t.z1 + 400;
+        v += RUE_AUTEUR
+      ) {
+        const [x, z] = tournerAuteur(u, v, t, true);
+        if (trameAuteur(x, z) === t) essayer(x, z, [-sn, c], [c, sn]);
+      }
+  }
+  return out;
+}
+// Les quatre feux d'un carrefour. `face` est la direction vers laquelle
+// regardent les optiques : vers les voitures qui arrivent.
+const COINS = [
+  // [b, a, axe, sens de la file] — sens : +1 si la file va vers +A (ou +B)
+  [COIN_AVENUE, -COIN_RUE, 1, 1],
+  [-COIN_AVENUE, COIN_RUE, 1, -1],
+  [-COIN_AVENUE, -COIN_RUE, 0, 1],
+  [COIN_AVENUE, COIN_RUE, 0, -1],
+];
+let feuxMemo = null;
+const feuxParSecteur = new Map();
+export function feuxManhattan() {
+  if (feuxMemo) return feuxMemo;
+  feuxMemo = [];
+  for (const [ci, c] of carrefoursAuteur().entries())
+    for (const [b, a, axe, sens] of COINS) {
+      // la file que ce feu commande, et le sens où l'on glisse pour trouver
+      // la position qui porte son axe (un bloc et demi au plus, jamais de
+      // côté), en restant sur le sol des piétons
+      const [lx, lz] = axe ? c.A : c.B;
+      const x0 = c.x + b * c.B[0] + a * c.A[0],
+        z0 = c.z + b * c.B[1] + a * c.A[1];
+      for (const d of [0, 0.5, -0.5, 1, -1, 1.5, -1.5]) {
+        const x = x0 + d * lx,
+          z = z0 + d * lz;
+        if (axeDuFeu(x, z) !== axe || !PIETON.has(surface(x, z))) continue;
+        feuxMemo.push({
+          x,
+          z,
+          axe,
+          carrefour: ci,
+          cx: c.x,
+          cz: c.z,
+          fx: -sens * lx,
+          fz: -sens * lz,
+        });
+        break;
+      }
+    }
+  for (const f of feuxMemo) {
+    const k = `${Math.floor(f.x / 64)},${Math.floor(f.z / 64)}`;
+    if (!feuxParSecteur.has(k)) feuxParSecteur.set(k, []);
+    feuxParSecteur.get(k).push(f);
+  }
+  return feuxMemo;
+}
+export function feuxSecteur(sx, sz) {
+  feuxManhattan();
+  return feuxParSecteur.get(`${sx},${sz}`) || [];
+}
+// Les feux à moins de `r` blocs d'un point du plan.
+export function feuxAutour(x, z, r) {
+  const out = [];
+  for (let sz = Math.floor((z - r) / 64); sz <= Math.floor((z + r) / 64); sz++)
+    for (let sx = Math.floor((x - r) / 64); sx <= Math.floor((x + r) / 64); sx++)
+      for (const f of feuxSecteur(sx, sz))
+        if ((f.x - x) ** 2 + (f.z - z) ** 2 < r * r) out.push(f);
+  return out;
 }

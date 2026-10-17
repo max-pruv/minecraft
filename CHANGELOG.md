@@ -20,6 +20,46 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v496 — La statue de la Liberté, et les feux de Manhattan
+
+Deux sujets, deux lignes au journal du jeu, deux témoins.
+
+**Pourquoi.** La statue de la Liberté de l'ancienne Manhattan (v186) n'avait
+pas suivi le plan de la v240 : son repère était resté à (-64, 177), c'est-à-dire
+sous le Midtown d'aujourd'hui, où la ville l'écrase — et la carte y envoyait
+l'enfant. Dans la baie, rien. Et à Manhattan les feux étaient des potences de
+décor, toujours au vert : aucune voiture ne s'y arrêtait, aucun passant n'y
+traversait (`reglerLesFeux` et `passagePieton` s'arrêtaient à l'entrée de la
+ville).
+
+**Ce que ça change.** Liberty Island est dans la baie, à sa vraie place par
+rapport au plan : deux cent cinquante blocs au sud-ouest de la Battery, mesurés
+par une similitude ajustée sur les repères du sud de l'île (elle retrouve
+l'angle de la vraie grille, −29,8°). Une île de quarante blocs, son quai de
+granit, le fort en étoile à onze branches et son escalier côté Manhattan, le
+socle à balcon, et une statue de cuivre qui regarde les Narrows, flambeau d'or
+levé, tablette au bras gauche : quarante-deux blocs, entre le Flatiron (41) et
+One Times Square (62), comme dans le vrai ciel. On la voit de la Battery (une
+silhouette lointaine que les blocs recouvrent en arrivant), et la carte y
+mène, devant l'escalier du fort. L'île est un ouvrage écrit en blocs : le
+relief ne bouge pas d'un bloc. Et Manhattan a ses feux : quatre par carrefour,
+696 carrefours, avec la règle du reste du monde (`feux.js`) — la voiture
+s'arrête au feu de son axe, le passant traverse quand c'est son tour, et
+l'optique allumée dit la même chose aux deux.
+
+**Ce qui le prouve.** Trois témoins neufs dans `tests/manhattan.js`. La statue : la place refaite par le témoin (écart sous
+quinze blocs), sept blocs d'eau dessous, zéro bloc changé hors de l'ellipse,
+zéro colonne de relief changée, ni route, ni voie, ni circuit, ni aérodrome à
+portée, la hauteur entre le Flatiron et One Times Square, un seul lieu de ce
+nom sur la carte. Les feux : 2 783 feux, chacun sur le trottoir avec l'axe que
+sa position donne, et 301 coins de circuit sur 316 avec un feu de leur axe
+devant eux ; puis, dans la page, trente secondes d'heure de rue où la voiture
+d'avenue et la voiture de rue s'arrêtent exactement quand leur feu n'est pas
+vert, jamais deux verts ensemble, l'optique allumée conforme, et un passage à
+feux trouvé au coin. Rouges sur `origin/main` : pas d'île, pas de feux.
+
+---
+
 ## v495 — Les voitures de la rue rendent leur mémoire
 
 **Pourquoi.** Une pousse de mémoire graphique restait après la v238, et elle

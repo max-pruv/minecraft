@@ -7121,9 +7121,52 @@ l'embarquement a eu lieu, pas par une hypothèse.
   cède en dernier — c'est la règle — mais le jour où le plan de Manhattan
   gagne Brooklyn et Queens, JFK doit revenir à sa vraie place.
 
-- [ ] **Manhattan sur la Terre : suite du réalisme.** Priorités : circulation
-  commandée par les feux, berges et ponts raccordés au relief, intérieurs,
-  Statue de la Liberté, diversité des façades et transitions LOD plus douces.
+- [ ] **PORTAIL DE LA v496 (Liberty Island, feux de Manhattan) — DOUBLE
+  MESURE (règle v195).** Onze suites vertes, dont `manhattan.js` (34 verts).
+  Rouges : `maj.js` une puce de la v465 en neuf mots (corrigée, rejouée seule
+  42 verts) ; `carte.js` la flèche du GPS (dette v321) ; `monte.js` quatre.
+  Rejouée SEULE : branche 230 verts, `origin/main` (v473) 230 verts. Mêmes
+  rouges des deux côtés : « au feu, la voiture freine au lieu de piler »
+  (déclaré en tête, v471) et « on ne marche pas dans une rue vide »
+  (`[0,4,12,2,0,0,0,21]` contre `[0,3,8,1,0,0,1,18]`). « Un mur pris de
+  face » (rebond −1,89) : rouge sur `origin/main` seul et au portail de la
+  branche. « Au frein à main, les pneus crissent — même tout droit »
+  (`droit.posees: 0`) : une fois, branche seule, dans le couloir d'essai à
+  (41 000, 41 000). Preuve STRUCTURELLE (v291) : hors de Manhattan, la v496
+  ne change aucun chemin — `reglerLesFeux` et `passagePieton` n'ont changé
+  que sous `renduDansManhattan`, l'île ne se bâtit que dans sa boîte, et les
+  essaims d'optiques sont dans la racine cachée du rendu de la ville. Une
+  intermittence à suivre si un portail la rend encore.
+  Second portail, après la fusion de la v487 (puis de la v495 : la livraison est la
+  v496) : onze vertes ; `maj.js` le loader qui compte ses fichiers (déclaré,
+  vert seul) ; `manhattan.js` le taxi tactile (7,82 blocs en 3,05 s de jeu,
+  302 s de montre — déclaré) ; `monte.js` l'allure d'une ville, le feu, la rue
+  vide (les trois ci-dessus). `manhattan.js` rejouée SEULE sur l'arbre
+  fusionné : 34 verts sur 34, taxi compris (10,58 blocs).
+
+- [ ] **Manhattan sur la Terre : suite du réalisme.** Faits en v496 : la
+  Statue de la Liberté sur Liberty Island, et la circulation commandée par les
+  feux. Restent : berges et ponts raccordés au relief, intérieurs, diversité
+  des façades et transitions LOD plus douces. Ce que la v496 laisse, déclaré :
+  - **Le repère de l'ancienne statue est toujours dans `world.js`** (`LIBERTE`
+    de `manhattan.js`, (-64, 177) : sous le Midtown du plan d'aujourd'hui,
+    écrasé par `TerreUrbaine`, et sa bosse de relief aussi). La carte ne
+    l'affiche plus (le monde redéclare le nom), mais le `World` nu du worker
+    le bâtit encore. Le retirer touche `terrainHeight` du `World` nu et la
+    liste `LANDMARKS` : hors de la zone de cette livraison, à faire avec une
+    mesure des migrations qui lisent ce relief.
+  - **Quinze coins de circuit sur 316 n'ont pas de feu** : les carrefours dont
+    un coin tombe dans Central Park, sur Broadway en biais ou dans Times
+    Square (pas quatre coins piétons). Le circuit de la 7e Avenue (le tracé
+    écrit à la main, x -100/-120) en fait partie.
+  - **À 0,4 image par seconde, la voiture lit un état de feu vieux d'une
+    image** (`f.etat`, rafraîchi par `reglerLesFeux` deux fois par seconde
+    AU PLUS) quand le passant lit l'heure de la rue : sous une tablette qui
+    rame, un passant peut partir au tout début du rouge pendant qu'une voiture
+    voit encore l'orange. Vrai partout dans le monde, pas seulement ici.
+  - **La statue ne se visite pas** (ni escalier dans le socle, ni couronne) :
+    on monte sur la terrasse du fort.
+
   Les publicités restent fixes et les voitures sont des interprétations
   géométriques, pas des modèles constructeur. Mesurer Safari sur iPad physique.
   Réconcilier les emplacements de secours si deux appareils importent hors

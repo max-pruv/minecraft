@@ -734,12 +734,15 @@ export class Carte {
       ...CITIES.map((c) => ({ c, fort: true, seuil: 99 })),
       ...PLACES.map((ancien) => { const c = nouveauxLieux.get(ancien.name) || ancien;
         return { c, fort: true, seuil: majeur(c) ? 99 : 1.9 }; }),
-      ...REPERES.map((c) => ({ c, fort: false, seuil: c.seuil || 1.6 })),
+      // un repère que le monde redéclare sous le même nom (la statue de la
+      // Liberté de l'ancienne Manhattan, v496) prend la place que le monde
+      // lui donne, comme les lieux juste au-dessus
+      ...REPERES.map((c) => ({ c: nouveauxLieux.get(c.name) || c, fort: false, seuil: c.seuil || 1.6 })),
       // Les quartiers de Manhattan, à courte distance seulement. Sur un plan
       // de New York, ce sont eux qu'on lit avant les noms de rue — et ils
       // disent que l'île n'est pas une ville uniforme mais une file de
       // villages soudés.
-      ...(this.world.mapPlacesExtra || quartiersDuMonde()).filter(c => !nouveauxLieux.size || !nomsExistants.has(c.name)).map((c) => ({ c, fort: false, seuil: 1.8 })),
+      ...(this.world.mapPlacesExtra || quartiersDuMonde()).filter(c => !nouveauxLieux.size || (!nomsExistants.has(c.name) && !REPERES.some((r) => r.name === c.name))).map((c) => ({ c, fort: false, seuil: 1.8 })),
       // Et les places de Paris : l'Étoile, la Concorde, la Bastille, le
       // Luxembourg, Montmartre. Un plan de Paris se lit par ses places, comme
       // New York par ses quartiers.

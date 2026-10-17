@@ -1939,7 +1939,8 @@ function updateChunks() {
     return n > 0 && oui === n;
   };
   world.passagePieton = (x, z, cap) => {
-    if (renduDansManhattan) return null;
+    // À Manhattan aussi (v496) : ses carrefours ont leurs feux, et son sol
+    // porte les blocs de chaussée et de trottoir que `solPieton` lit.
     let feu = null;
     for (const f of feuxProches) if ((f.x - x) * (f.x - x) + (f.z - z) * (f.z - z) <= 25) { feu = f; break; }
     const paris = !feu && (x - PARIS_ANCRE.x) * (x - PARIS_ANCRE.x) + (z - PARIS_ANCRE.z) * (z - PARIS_ANCRE.z) < PARIS_ANCRE.r * PARIS_ANCRE.r;
@@ -7706,11 +7707,16 @@ function eclairerLaRue() {
 const feuxPrets = cadence(500);
 let feuxProches = [];
 function reglerLesFeux() {
-  if (renduDansManhattan || !feuxPrets()) return;
+  if (!feuxPrets()) return;
   // l'heure de la rue, pas celle de la page (v305) : deux amis au même
   // carrefour voient le même feu, et les voitures qu'il arrête sont les mêmes
   const t = vehicules ? vehicules.horloge() * 1000 : performance.now();
   const px = player.pos.x, pz = player.pos.z;
+  // À MANHATTAN (v496), les feux ne sont pas des blocs de morceau : le plan
+  // les pose aux coins de ses carrefours, et le rendu de la ville allume leurs
+  // optiques. Même règle (`feux.js`), même horloge, même liste pour la
+  // circulation et pour les passants.
+  if (renduDansManhattan) { feuxProches = villeRealiste.feuxAutour(px, pz, t, PORTEE_FEU); return; }
   const pcx = Math.floor(px / CHUNK), pcz = Math.floor(pz / CHUNK);
   const proches = [];
   for (let dx = -7; dx <= 7; dx++) {
@@ -7783,6 +7789,7 @@ function feuRougeDevant(x, z, cap) {
   if (!proche || proche.etat === 'vert') return null;
   return { s: Math.max(0, proche.devant - ARRET_FEU_VISE), orange: proche.etat === 'orange' };
 }
+window.__feuRougeDevant = feuRougeDevant;   // ce que lit la voiture (témoins)
 window.__feux = () => feuxProches.map((f) => ({ x: Math.round(f.x), z: Math.round(f.z), axe: f.axe, etat: f.etat,
   vives: f.lampes.map((l) => l.visible) }));
 

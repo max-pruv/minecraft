@@ -214,6 +214,185 @@ function verifier(nom, ok, detail = "") {
         preuves.routes.collisions === 0,
       JSON.stringify(preuves.routes),
     );
+    // ---- LA STATUE DE LA LIBERTÉ SUR LIBERTY ISLAND (v496) ----------------
+    // Celle de l'ancienne Manhattan (v186) était restée à (-64, 177) dans
+    // `world.js`, c'est-à-dire sous le Midtown du plan d'aujourd'hui, enterrée
+    // par `TerreUrbaine` ; et la carte y envoyait l'enfant. Le témoin REFAIT la
+    // mesure de la place (une projection ajustée sur les repères du sud du
+    // plan), lit les blocs que le monde engendre contre ceux de la Terre seule,
+    // et la hauteur dans le ciel du plan. Sur `origin/main` : pas d'île.
+    const liberte = await p.evaluate(async () => {
+      try {
+        const { World, WATER_LEVEL } = await import("/src/world.js");
+        const { TerreUrbaine, ORIGINE_MANHATTAN: O } = await import("/src/manhattan-world.js");
+        const P = await import("/src/manhattan-plan.js");
+        const { routeEn } = await import("/src/routes.js");
+        const { voieEn } = await import("/src/trains.js");
+        const { AEROPORTS } = await import("/src/aeroport.js");
+        if (!P.ILE_LIBERTE) return { err: "pas d'île de la Liberté dans le plan" };
+        const I = P.ILE_LIBERTE;
+        // la place : affine (lon, lat) → plan, ajustée sur le sud du plan
+        const m = (n) => P.MONUMENTS.find((b) => b.name.startsWith(n));
+        const c = (b) => [(b.x0 + b.x1) / 2, (b.z0 + b.z1) / 2];
+        const bat = P.QUARTIERS.find((q) => q.name === "Battery Park");
+        const pts = [
+          [40.7411, -73.9897, ...c(m("Flatiron"))],
+          [40.713, -74.0132, ...c(m("One World"))],
+          [40.7081, -74.0121, ...c(m("Trinity"))],
+          [40.7033, -74.017, bat.x, bat.z],
+        ];
+        // une SIMILITUDE (rotation et échelle uniques) : une affine à six
+        // paramètres extrapole de 86 blocs selon les repères choisis
+        const kl = 111.32 * Math.cos((40.73 * Math.PI) / 180);
+        const xy = (la, lo) => [(lo + 74) * kl, -(la - 40.73) * 111.32];   // le plan a son nord en -z
+        const N = pts.length, mp = [0, 0], mw = [0, 0];
+        for (const q of pts) {
+          const r = xy(q[0], q[1]);
+          mp[0] += r[0] / N; mp[1] += r[1] / N; mw[0] += q[2] / N; mw[1] += q[3] / N;
+        }
+        let n0 = 0, n1 = 0, den = 0;
+        for (const q of pts) {
+          const r = xy(q[0], q[1]), a = r[0] - mp[0], b = r[1] - mp[1], u = q[2] - mw[0], v = q[3] - mw[1];
+          n0 += u * a + v * b; n1 += v * a - u * b; den += a * a + b * b;
+        }
+        const ca = n0 / den, sa = n1 / den, r = xy(40.68925, -74.0445);
+        const ra = r[0] - mp[0], rb = r[1] - mp[1];
+        const vraie = [ca * ra - sa * rb + mw[0], sa * ra + ca * rb + mw[1]];
+        const angle = +((Math.atan2(sa, ca) * 180) / Math.PI).toFixed(1);
+        const ecart = Math.hypot(vraie[0] - I.x, vraie[1] - I.z);
+        // les blocs : rien ne change hors de l'ellipse, ni le relief nulle part
+        const w = new TerreUrbaine(), base = new World();
+        const X = O.x + I.x, Z = O.z + I.z;
+        let horsIle = 0, ile = 0, relief = 0, sommet = 0, routes = 0, circuits = 0;
+        for (let z = Z - 32; z <= Z + 32; z++)
+          for (let x = X - 32; x <= X + 32; x++) {
+            if (w.terrainHeight(x, z) !== base.terrainHeight(x, z)) relief++;
+            if (routeEn(x, z) || voieEn(x, z)) routes++;
+            const dedans = P.dansIleLiberte(x - O.x + 0.5, z - O.z + 0.5);
+            for (let y = WATER_LEVEL - 8; y < 100; y++) {
+              const a = w.getBlock(x, y, z);
+              if (a !== base.getBlock(x, y, z)) dedans ? ile++ : horsIle++;
+              if (dedans && a && a !== base.getBlock(x, WATER_LEVEL, z) && y > sommet) sommet = y;
+            }
+          }
+        for (const t of P.circuitsManhattan())
+          for (const q of t.pts) if (Math.hypot(q.x - I.x, q.z - I.z) < I.a + 20) circuits++;
+        const aeroport = AEROPORTS.filter((a) => Math.hypot(a.x - X, a.z - Z) < a.r + I.a + 20).length;
+        // le ciel : au-dessus du Flatiron (87 m), sous One Times Square (111 m)
+        const ciel = { haut: sommet - P.SOL_ILE, flatiron: m("Flatiron").h, times: m("One Times").h };
+        const eau = WATER_LEVEL - base.terrainHeight(X, Z);
+        // la carte : un seul lieu de ce nom, et il est sur l'île
+        const lieux = __carte.catalogueDesLieux().filter((l) => l.c.name === "Statue de la Liberté");
+        const carte = lieux.map((l) => P.dansIleLiberte(l.c.x - O.x, l.c.z - O.z));
+        return { ecart: +ecart.toFixed(1), vraie: vraie.map(Math.round), angle, ile, horsIle, relief, routes, circuits, aeroport, eau, ciel, carte };
+      } catch (e) {
+        return { err: String(e && e.message || e) };
+      }
+    });
+    verifier(
+      "la statue de la Liberté est sur son île, à sa vraie place par rapport au plan, et rien d'autre ne sort de l'eau",
+      !liberte.err && liberte.ecart < 15 && liberte.eau >= 3 && liberte.ile > 1000 &&
+        liberte.horsIle === 0 && liberte.relief === 0 && liberte.routes === 0 &&
+        liberte.circuits === 0 && liberte.aeroport === 0 &&
+        liberte.ciel.haut > liberte.ciel.flatiron && liberte.ciel.haut < liberte.ciel.times &&
+        liberte.carte.length === 1 && liberte.carte[0] === true,
+      JSON.stringify(liberte),
+    );
+
+    // ---- LES FEUX COMMANDENT LA CIRCULATION DE MANHATTAN (v496) -----------
+    // Les feux de Manhattan étaient des potences de décor, toujours vertes, et
+    // `reglerLesFeux` ne tournait pas dans la ville : aucune voiture ne s'y
+    // arrêtait, aucun passant n'y traversait (`passagePieton` rendait null).
+    // Trois choses : la règle (chaque feu porte l'axe que sa POSITION donne,
+    // `axeDuFeu`, et les circuits en ont un de leur axe devant eux) ; la liste
+    // que lit la voiture (`__feuRougeDevant`, lu dans la même tâche que
+    // `__feux`) ; et le passant au coin, qui trouve un passage à feux. Le banc
+    // rend 0,4 image par seconde : on échantillonne l'heure RÉELLE de la rue
+    // pendant trente secondes, plus d'un cycle de feux (22 s).
+    const feuxRegle = await p.evaluate(async () => {
+      try {
+        const P = await import("/src/manhattan-plan.js");
+        const { axeDuFeu } = await import("/src/feux.js");
+        if (!P.feuxManhattan) return { err: "pas de feux dans le plan" };
+        const F = P.feuxManhattan();
+        const sol = new Set(["sidewalk", "path", "plaza"]);
+        const malAxe = F.filter((f) => axeDuFeu(f.x, f.z) !== f.axe).length;
+        const horsTrottoir = F.filter((f) => !sol.has(P.surface(f.x, f.z))).length;
+        let coins = 0, vus = 0;
+        for (const t of P.circuitsManhattan()) {
+          const q = t.pts;
+          for (let i = 0; i < q.length; i++) {
+            const a = q[(i - 1 + q.length) % q.length], b = q[i];
+            const L = Math.hypot(b.x - a.x, b.z - a.z), ux = (b.x - a.x) / L, uz = (b.z - a.z) / L;
+            const axe = Math.abs(ux) >= Math.abs(uz) ? 0 : 1, recul = Math.min(16, L * 0.9);
+            const x = b.x - ux * recul, z = b.z - uz * recul;
+            coins++;
+            if (P.feuxAutour(x, z, 45).some((f) => {
+              if (f.axe !== axe) return false;
+              const ex = f.x - x, ez = f.z - z, dev = ex * ux + ez * uz;
+              return Math.abs(ex * uz - ez * ux) <= 5 && dev >= 3 && dev <= 40;
+            })) vus++;
+          }
+        }
+        return { feux: F.length, malAxe, horsTrottoir, coins, vus };
+      } catch (e) {
+        return { err: String(e && e.message || e) };
+      }
+    });
+    verifier(
+      "chaque carrefour de Manhattan a ses feux, et les circuits ont devant eux un feu de leur axe",
+      !feuxRegle.err && feuxRegle.feux > 1000 && feuxRegle.malAxe === 0 &&
+        feuxRegle.horsTrottoir === 0 && feuxRegle.vus >= feuxRegle.coins * 0.9,
+      JSON.stringify(feuxRegle),
+    );
+    const t0Feux = Date.now();
+    const feuxVivants = await p.evaluate(async () => {
+      const P = await import("/src/manhattan-plan.js");
+      const { ORIGINE_MANHATTAN: O } = await import("/src/manhattan-world.js");
+      if (!P.feuxManhattan || !window.__feuRougeDevant) return { err: "pas de feux à Manhattan" };
+      const g = __game, j = g.player;
+      // le carrefour du plan de 1811 le plus proche du joueur
+      const F = P.feuxManhattan().filter((f) => f.fx === 0 && f.fz === -1 && f.axe === 1);
+      let f1 = null, d = Infinity;
+      for (const f of F) {
+        const e = Math.hypot(f.cx + O.x - j.pos.x, f.cz + O.z - j.pos.z);
+        if (e < d) { d = e; f1 = f; }
+      }
+      const cx = f1.cx, cz = f1.cz;
+      const echantillons = [], debut = performance.now();
+      let attente = 0;
+      while (performance.now() - debut < 30000) {
+        await new Promise((r) => setTimeout(r, 900));
+        const liste = __feux();
+        if (!liste.length) { attente++; continue; }
+        const lu = (axe) => liste.find((f) => f.axe === axe &&
+          Math.hypot(f.x - O.x - cx, f.z - O.z - cz) < 8 &&
+          (axe ? f.z - O.z < cz : f.x - O.x < cx));
+        const a1 = lu(1), a0 = lu(0);
+        if (!a1 || !a0) { attente++; continue; }
+        // une voiture d'avenue vers +z, et une de rue vers +x, avant le
+        // carrefour sur leur file — l'avenue à huit blocs du feu : entre deux
+        // rues (19 blocs), quinze la mettraient dans le carrefour d'avant, où
+        // l'on dégage au lieu de s'arrêter
+        const s1 = __feuRougeDevant(O.x + cx + 1.4, O.z + cz - 12, 0);
+        const s0 = __feuRougeDevant(O.x + cx - 20, O.z + cz - 0.95, Math.PI / 2);
+        const vives = [a1, a0].every((f) => f.vives.filter(Boolean).length === 1 &&
+          f.vives[["rouge", "orange", "vert"].indexOf(f.etat)]);
+        echantillons.push({ e1: a1.etat, e0: a0.etat, s1: !!s1, s0: !!s0, vives });
+      }
+      // le passant au coin, face à l'avenue
+      const p = g.world.passagePieton(O.x + cx + 5.6, O.z + cz - 4.2, Math.PI / 2);
+      return { attente, carrefour: [cx, cz], echantillons, passage: p && { axe: p.axe, longueur: p.longueur } };
+    });
+    const ech = feuxVivants.echantillons || [];
+    verifier(
+      "à Manhattan, la voiture s'arrête au feu de son axe, le passant y trouve son passage, et le feu allumé dit la même chose",
+      !feuxVivants.err && ech.length >= 6 &&
+        ech.every((e) => e.vives && e.s1 === (e.e1 !== "vert") && e.s0 === (e.e0 !== "vert") && !(e.e1 === "vert" && e.e0 === "vert")) &&
+        ech.some((e) => e.s1) && ech.some((e) => !e.s1) && ech.some((e) => e.s0) && ech.some((e) => !e.s0) &&
+        feuxVivants.passage && (feuxVivants.passage.axe === 0 || feuxVivants.passage.axe === 1),
+      JSON.stringify({ ...feuxVivants, echantillons: ech.map((e) => `${e.e1[0]}${e.s1 ? "!" : "."}/${e.e0[0]}${e.s0 ? "!" : "."}${e.vives ? "" : "✗"}`).join(" "), duree_ms: Date.now() - t0Feux }),
+    );
     // ---- LES PASSANTS DE MANHATTAN MARCHENT AU LONG CAP (v350) ------------
     // Dette de la v278 : un site URBAIN gardait `surTrottoir` faux, donc le
     // vieux programme (pause longue, cap au hasard). Le trottoir de Manhattan
@@ -233,20 +412,27 @@ function verifier(nom, ok, detail = "") {
       if (!s || !s.peuple) return { err: 'aucun passant à New York' };
       const gens = s.peuple.filter((h) => h.name === 'passant');
       const promeneurs = gens.filter((h) => h.promene && h.promene()).length;
-      let chemin = 0, surChaussee = 0, n = 0;
+      let chemin = 0, surChaussee = 0, n = 0, auFeu = 0;
       for (const h of gens) {
         h.ecart = null;
         const x0 = h.pos.x, z0 = h.pos.z;
-        let px = x0, pz = z0;
+        let px = x0, pz = z0, attend = false, c = 0;
         for (let k = 0; k < 200; k++) {
           h.update(0.05);
-          chemin += Math.hypot(h.pos.x - px, h.pos.z - pz);
+          if (h.traversee) attend = true;
+          c += Math.hypot(h.pos.x - px, h.pos.z - pz);
           px = h.pos.x; pz = h.pos.z;
         }
+        // DEPUIS LA v496 un passant attend au feu : l'attente et la traversée
+        // se comptent en temps RÉEL, qui n'avance pas dans cette boucle
+        // synchrone — il resterait au bord pour toujours. Il n'entre pas
+        // dans le débit, et l'on dit combien.
+        if (attend) { auFeu++; if (g.world.ruePietonne && g.world.ruePietonne(h.pos.x, h.pos.z) === false) surChaussee++; continue; }
+        chemin += c;
         n++;
         if (g.world.ruePietonne && g.world.ruePietonne(h.pos.x, h.pos.z) === false) surChaussee++;
       }
-      return { total: gens.length, promeneurs, debit: n ? +(chemin / (n * 10)).toFixed(2) : 0, surChaussee };
+      return { total: gens.length, promeneurs, debit: n ? +(chemin / (n * 10)).toFixed(2) : 0, surChaussee, auFeu };
     });
     verifier(
       "les passants de Manhattan marchent au long cap, sur le trottoir",
