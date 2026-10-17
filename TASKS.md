@@ -212,6 +212,17 @@
   piétons (v351) et le balayage des voitures (v395). Le témoin « un train
   s'arrête devant la voiture de l'enfant » reste rouge tant que ce n'est pas
   fait : il garde une vraie panne.
+- [ ] **AU PORTAIL DE LA v474 (la savane), TROIS ROUGES DE `monte.js` QUI NE
+  SONT PAS LA LIVRAISON — preuve STRUCTURELLE (v291).** « deux voisines d'un
+  convoi gardent leur longueur d'écart » (minVrai 3,69, à Paris (−330, 310)),
+  « une voiture de la rue heurtée… feux de détresse » (`id: null` : aucune
+  voiture trouvée) et « l'on ne marche pas dans une rue vide »
+  (`[0, 7, 12, 1, 0, 0, 2, 10]`, 3 arrêts vides). Les deux derniers sont déjà
+  déclarés comme intermittences de portail (v408, v426). La v474 ne change
+  rien hors des sept contours de savane : `climat` vaut null à Paris des deux
+  côtés, et `DATE_CLIMATS` ne marque que des blocs posés AVANT elle — le banc
+  n'en pose aucun. `monte.js` n'a pas été rejouée seule (budget de Max) :
+  la double mesure reste à faire si l'écart du convoi revient.
 - [ ] **PORTAIL DU JOURNAL DE BORD (v426) — DOUBLE MESURE (règle v195).**
   Deux portails (bases v408 et v411) rouges sur `maj.js`, `carte.js`,
   `manhattan.js`, `monte.js`. Déclarés plus bas : la flèche du GPS et le
