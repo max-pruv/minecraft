@@ -20,6 +20,27 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v498 — Dos à un mur, la caméra voit encore la voiture
+
+**Pourquoi.** Max : « la zoomer out un petit peu et faire comme dans GTA :
+quand la voiture tourne, on voit le flanc ». Le recul (6,4, v279), le cap en
+retard (v278) et la visée sur la voiture (v422) étaient livrés, mais jugés
+seulement au banc, et personne n'avait regardé la caméra contre un mur. Une
+sonde de captures (virage à gauche, à droite, rue étroite, mur derrière le
+coffre) l'a montré : rapprochée par le mur, la caméra gardait l'assiette du
+regard, et la voiture sortait par le BAS de l'écran (milieu projeté à −1,17) —
+on ne voyait que l'intérieur de la carrosserie.
+
+**Ce que ça change.** Dos à un mur, la caméra monte d'un bloc par bloc gagné
+et plonge vers la voiture juste assez pour la garder à sa place habituelle
+dans le cadre : on la voit en entier, par-dessus. En ligne droite, en virage
+et dans une rue étroite, rien ne bouge (mêmes chiffres au centième).
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js` pose un mur à 3,2 blocs
+derrière la voiture et lit la projection du milieu de la caisse : −1,17 avant,
+−0,29 après (barre 0,9). Et `sonde-captures-camera-volant.cjs` lit dans la
+matrice le flanc que la caméra regarde : virage à gauche → flanc gauche
+(β 10,8°), à droite → flanc droit (β −13°), un seul signe chacun.
 ## v497 — En « Loin », on voit trois fois plus loin
 
 **Pourquoi.** Max : « Je voudrais que le mode Loin, quand on voit de loin, soit

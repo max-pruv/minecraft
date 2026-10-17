@@ -1773,6 +1773,15 @@ règles.
   compter deux fois. Les avions gardent la poursuite d'avant à l'identique ;
   `?sensations=0` rejoue l'ancienne conduite, pour mesurer.
 
+**Dos à un mur, la caméra plonge (v498).** Rapprochée par un mur derrière le
+coffre, elle gardait l'assiette du regard libre et la voiture sortait par le
+bas du cadre (milieu projeté à −1,17) — ni le témoin du recul ni celui du
+flanc ne le voyaient, une capture l'a montré. `plongee` ajoute au tangage
+l'écart d'angle sous lequel on voit la caisse (zéro au recul de la fiche), et
+sous le plancher la caméra monte de `MONTEE_PRES` par bloc gagné. **Une
+caméra qu'on déplace pour éviter un obstacle se juge par ce qu'elle montre :
+on lit la projection de ce qu'elle doit filmer, pas sa position.**
+
 **La pente se dessine (v429).** La physique publie `player.tangage` (v408,
 nez en haut positif — le signe de `rotation.x` sur un modèle au nez en −z) et
 le RÉÉCRIT à chaque image ; `sensations.js` l'ajoute au tangage de la caisse,

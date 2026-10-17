@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 498,
+    titre: 'La caméra suit la voiture',
+    puces: [
+      'Dos à un mur, on voit la voiture',
+      'La caméra monte et regarde par-dessus',
+    ],
+  },
+  {
     v: 497,
     titre: 'En Loin, on voit très loin',
     puces: [
