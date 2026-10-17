@@ -2043,6 +2043,20 @@
   DÉCLARÉ), la chauffe de New York, et dans `visio.js` « pendant l'appel la
   radio parle plus bas » (avant 0,0000 des deux côtés : la radio ne joue pas
   avant l'appel — NEUF ET DÉCLARÉ). `reseau.js` : la famille « sans courtier ».
+- [ ] **AU PORTAIL DE LA v474 (la fiche d'un garage suit ses murs), QUATRE
+  ROUGES DE `monte.js` QUI NE SONT PAS LA LIVRAISON — preuve structurelle
+  (v291).** La livraison ne change que les marches de migration (stockage au
+  démarrage, documents du nuage) : sur une page du banc, sans garage et sans
+  blocs d'avant, elles rendent les mêmes blocs (plans de Paris doublé et du
+  fondu doux identiques à l'octet, mesuré contre `origin/main`) et ne touchent
+  ni la circulation ni les passants. Trois sont déjà déclarés (passage peint
+  hors de Paris, Kyoto 4/6 sur le passage ; l'arrêt au feu, `pireFeu` 13,2 ;
+  la rue vide, `[0, 3, 12, 0, 0, 2, 3, 13]`). Le quatrième est NEUF ici :
+  « deux voisines d'un convoi gardent leur longueur d'écart » —
+  `minTrace` 3,35 pour une borne à 4,4 (une longueur de voiture), 1 498 paires,
+  `ou` (−330, 310), Paris.
+  À rejouer seul des deux côtés par la session des voitures. `carte.js` : la
+  flèche du GPS (gauche 1,92 rad), déclarée.
 - [ ] **AU PORTAIL DE LA v437 (le frein à main crisse), UN ROUGE NEUF QUI N'EST
   PAS LA LIVRAISON — preuve structurelle (v291).** « à Rome aussi, en biais, un
   passant traverse sur le passage peint d'un carrefour sans feu » (`monte.js`,
