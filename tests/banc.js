@@ -236,10 +236,31 @@ const DPR_BANC = Number(process.env.BANC_DPR) || 1;
 // sonde aveugle, v273, troisième fois). L'A/B doit donc se faire DANS la suite,
 // et il lui faut un interrupteur ici.
 const VERRE_BANC = process.env.BANC_VERRE;
+// LA CADENCE DU BANC SUR LES MINUTERIES DU JEU (v474, `src/tempo.js`).
+//
+// Une suite qui attend des minuteries de production (le silence de vingt
+// secondes, le battement des réglages) le DÉCLARE : `banc.fixerTempo(4)` en
+// tête de fichier, et chaque attente qui suit une de ces minuteries s'écrit
+// `enTempo(ms)`. Le jeu et le témoin divisent alors le MÊME délai. Une suite
+// qui ne le déclare pas joue à l'échelle réelle, au bit près.
+//
+// `BANC_TEMPO=1 node reseau.js` l'emporte sur la déclaration : c'est le tour
+// de nuit, parce qu'une course révélée à tempo 4 peut ne pas exister dans le
+// vrai jeu — et l'inverse.
+let TEMPO_BANC = 1;
+const TEMPO_FORCE = process.env.BANC_TEMPO;
+function fixerTempo(n) {
+  TEMPO_BANC = TEMPO_FORCE !== undefined ? (Number(TEMPO_FORCE) || 1) : n;
+  if (TEMPO_BANC !== 1) console.log(`   ⏩ tempo ${TEMPO_BANC} : les minuteries de synchronisation du jeu vont ${TEMPO_BANC} fois plus vite (BANC_TEMPO=1 pour l'échelle réelle)`);
+  return TEMPO_BANC;
+}
+const tempoBanc = () => TEMPO_BANC;
+const enTempo = (ms) => ms / TEMPO_BANC;
+const paramTempo = () => (TEMPO_BANC === 1 ? '' : `&tempo=${TEMPO_BANC}`);
 const adresse = (portJeu, portPairs, portNuage, rr = 2, prep = false, dpr = DPR_BANC) =>
   `http://127.0.0.1:${portJeu}/index.html?peerhost=127.0.0.1:${portPairs}`
   + `&cloud=${portNuage ? `http://127.0.0.1:${portNuage}&cloudkey=test` : ''}&stay=1&rr=${rr}${prep ? '' : '&prep=0'}&dpr=${dpr}`
-  + (VERRE_BANC === undefined ? '' : `&verre=${VERRE_BANC}`);
+  + (VERRE_BANC === undefined ? '' : `&verre=${VERRE_BANC}`) + paramTempo();
 
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -857,6 +878,6 @@ async function souffler(limiteMs = 30000, coeursMax = 2.5) {
   }
 }
 
-module.exports = { Banc, vu, nomsVus, endormir, reveiller, dormir, jusqua, relaisSourd, pincer, souffler,
+module.exports = { Banc, fixerTempo, tempoBanc, enTempo, paramTempo, vu, nomsVus, endormir, reveiller, dormir, jusqua, relaisSourd, pincer, souffler,
   // réutilisés par les autres suites, qui montent leur propre décor
   servirLeJeuPour: servirLeJeu, servirLesPairsPour: servirLesPairs, trouverChromium };

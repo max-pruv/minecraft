@@ -92,6 +92,7 @@ const ASSETS = [
   './src/villandry.js',
   './src/aeroport.js',
   './src/cadence.js',
+  './src/tempo.js',
   './src/cap.js',
   './src/approche.js',
   './src/gps.js',
