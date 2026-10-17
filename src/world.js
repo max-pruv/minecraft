@@ -3491,16 +3491,18 @@ export class World {
     // le climat (v345) : la taïga est une forêt presque partout, la toundra
     // et le désert n'en ont pas — ce que `treeAt` y plante
     const cl = this.conf.climat ? this.climat(x, z) : null;
-    const bq = this.conf.clairieres ? 0.15 + 0.85 * this.bosquet(x, z) : 1;
-    if (cl === 'taiga') return Math.max(f, 0.55) * bq;
+    // les bosquets (v513) : la forêt se dessine en massifs, les clairières
+    // entre eux sont de la prairie — demandés seulement là où il y a une
+    // forêt à découper (la carte appelle ceci pour chaque point)
+    const bq = () => (this.conf.clairieres ? 0.15 + 0.85 * this.bosquet(x, z) : 1);
+    if (cl === 'taiga') return Math.max(f, 0.55) * bq();
     if (cl === 'toundra' || cl === 'desert') return 0;
     if (cl === 'steppe') return f * 0.05;
-    if (cl === 'tropiques') return Math.max(f, 0.6) * bq;
-    if (cl === 'mediterranee') return f * 0.45 * bq;
+    if (cl === 'tropiques') return Math.max(f, 0.6) * bq();
     if (cl === 'savane') return f * 0.15;
-    // les bosquets (v513) : la forêt se dessine en massifs, les clairières
-    // entre eux sont de la prairie
-    return f * bq;
+    if (f === 0) return 0;
+    if (cl === 'mediterranee') return f * 0.45 * bq();
+    return f * bq();
   }
 
   // LES BOSQUETS ET LES CLAIRIÈRES (v513). Max : « moins de densité d'arbres
