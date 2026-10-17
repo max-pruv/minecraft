@@ -2,7 +2,7 @@
 //   node tests/sonde-approche.cjs src
 // Rejoue guiderApproche (src/approche.js) sur chaque piste du monde, trois
 // appareils, quatre départs, et dit où l'avion touche et s'arrête.
-// `mesurer(src, { piste, k, dep })` est lue par `monte.js` (v474) : un témoin
+// `mesurer(src, { piste, k, dep })` est lue par `monte.js` (v480) : un témoin
 // rejoue les cas qui comptent avec la même règle de contact que la sonde.
 async function mesurer(SRCarg, filtre = {}, bavard = false) {
 // Simule l'approche assistée sous node, pour chaque piste du monde, depuis
@@ -49,7 +49,7 @@ for (const [k, f] of Object.entries(FICHES)) {
         vy = g.vy;
         pos.x += -Math.sin(yaw) * v * dt; pos.z += -Math.cos(yaw) * v * dt; pos.y += vy * dt;
         // CE QUI ARRÊTE L'AVION EST DANS SA BOÎTE, PAS AU SOMMET DE LA COLONNE
-        // (v474) : une couronne flottante au-dessus d'une piste a son sommet
+        // (v480) : une couronne flottante au-dessus d'une piste a son sommet
         // à dix blocs, et l'on vole dessous. Le sol, c'est le premier bloc
         // plein SOUS l'avion ; un heurt, un bloc plein dans sa hauteur
         // (celle du joueur, 1,8 — `sweepAxis` de player.js).

@@ -147,12 +147,12 @@ export function guiderApproche(ap, pos, yaw, v, fiche, solA, entree = {}, plein 
   // loin ; et si la piste devient alors trop courte dans ce sens, on prend
   // l'autre sens de la même piste.
   if (ap.toucher === undefined) {
-    // AU BLOC PRÈS (v474). Par pas de trois, le balayage enjambait le mur d'une
+    // AU BLOC PRÈS (v480). Par pas de trois, le balayage enjambait le mur d'une
     // colonne qui borde le seuil de Los Angeles (huit blocs au-dessus de la
     // piste) : le Concorde y entrait. Un obstacle d'une colonne se lit une
     // colonne à la fois, sur la largeur de l'appareil.
     //
-    // ET AU-DESSUS DE LA PISTE, CE QUI CROISE LA BOÎTE SUR LE PLAN (v474). Des
+    // ET AU-DESSUS DE LA PISTE, CE QUI CROISE LA BOÎTE SUR LE PLAN (v480). Des
     // couronnes d'arbres sans tronc flottent au-dessus des pistes de Roissy et
     // d'Andrews, neuf et dix blocs plus haut. Leur SOMMET ne dit rien : on vole
     // dessous, et compter le sommet de chaque colonne ferait reculer le toucher
