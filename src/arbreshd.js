@@ -277,8 +277,14 @@ function fut(buf, p0, pm, p1, r0, r1, nSeg, nCotes, tuile, teinte) {
 // un `DoubleSide` changerait la clé de programme, v246). La normale est celle
 // du VOLUME (`n`, vers l'extérieur de la couronne), pas celle du plan : une
 // couronne de cartes est éclairée comme une boule, non comme des tôles.
+// Une carte rentre de trois texels dans sa tuile (`RETRAIT`) : au-delà du
+// demi-texel de `rectHD`, les mipmaps mélangent le bord d'une tuile avec sa
+// voisine de l'atlas, opaque et d'une autre couleur — une arête sombre sur
+// le bord de chaque carte.
+const RETRAIT = 3 / 1024;
 function carte(buf, c, U, V, n, tuile, teinte, uv) {
-  const rect = rectHD(tuile);
+  const r = rectHD(tuile);
+  const rect = [r[0] + RETRAIT, r[1] + RETRAIT, r[2] - 2 * RETRAIT, r[3] - 2 * RETRAIT];
   const u0 = rect[0] + (uv ? uv[0] : 0) * rect[2], u1 = rect[0] + (uv ? uv[2] : 1) * rect[2];
   const v0 = rect[1] + (uv ? uv[1] : 0) * rect[3], v1 = rect[1] + (uv ? uv[3] : 1) * rect[3];
   const P = [

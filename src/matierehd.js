@@ -79,6 +79,11 @@ function peintre(img, fn) {
   fn(p, rempli, N);
 }
 
+// L'alpha des pixels vides des tuiles de feuillage (v475) : sous l'alphaTest
+// de la couche (0,5), donc coupé, mais une COULEUR que les mipmaps mélangent
+// sans frange noire.
+const ALPHA_VIDE = 76;
+
 const PEINTRES = {
   // La pierre de taille : quatre assises par étage, joints décalés, chaque
   // pierre sa nuance, et un voile de salissure qui monte du sol.
@@ -368,7 +373,12 @@ const PEINTRES = {
     }
     rempli((x, y) => {
       const i = y * N + x;
-      if (!img[i]) { p(x, y, 0, 0, 0, 0); return; }
+      // Un pixel vide porte la COULEUR de la tuile, sous l'alphaTest (0,5) :
+      // les mipmaps mélangent les voisins, et du noir transparent y ferait
+      // une frange sombre autour de chaque feuille et sur le bord des cartes
+      // (la boîte noire vue en capture autour d'une couronne, elle, était le
+      // curseur de bloc du jeu sur un cube de feuilles visé).
+      if (!img[i]) { p(x, y, 222, 226, 216, ALPHA_VIDE); return; }
       const v = 196 + lum[i] * 58 + (bruit(x, y, 81) - 0.5) * 20;
       p(x, y, v - 4, v, v - 10, 255);
     });
@@ -393,7 +403,7 @@ const PEINTRES = {
     }
     rempli((x, y) => {
       const i = y * N + x;
-      if (!img[i]) { p(x, y, 0, 0, 0, 0); return; }
+      if (!img[i]) { p(x, y, 212, 218, 218, ALPHA_VIDE); return; }
       const v = 190 + lum[i] * 56 + (bruit(x, y, 82) - 0.5) * 16;
       p(x, y, v - 6, v, v, 255);
     });
@@ -420,7 +430,7 @@ const PEINTRES = {
     }
     rempli((x, y) => {
       const i = y * N + x;
-      if (!img[i]) { p(x, y, 0, 0, 0, 0); return; }
+      if (!img[i]) { p(x, y, 206, 216, 200, ALPHA_VIDE); return; }
       const v = 186 + lum[i] * 60 + (bruit(x, y, 83) - 0.5) * 16;
       p(x, y, v - 10, v, v - 16, 255);
     });
