@@ -110,6 +110,11 @@
   moyenne 3,9 pour 49. Au portail de la v487, `[0,3,4,0,0,0,0,31]`. La v487
   ne touche que la chauffe de la flamme : en production, à démonter par une
   sonde (passants nés, posés, visibles — la leçon v223).
+  Au second portail de la v487 : `reseau.js` vert ; trois rouges déjà déclarés
+  comme intermittences, tous verts au premier portail et au rejeu seul de la
+  même branche — « le loader dit combien de fichiers sont rangés » (`maj.js`),
+  « un mur pris de face » et « la caméra laisse la voiture glisser »
+  (`monte.js`).
 - [x] **L'AVION DE L'AMI ET SON ÉPAVE (v453) — témoin écrit en v476.** Trois
   verdicts dans `reseau.js` (l'ami voit l'appareil, il le voit prendre feu,
   l'épave reste là où il s'est écrasé), verts ; rouges tous trois quand `p.v`
