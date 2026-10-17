@@ -2713,6 +2713,37 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       JSON.stringify(res));
   }
 
+  // LE SOL SE SOUDE AUSSI (v474). Le sol HD reste fabriqué pour TOUT le disque
+  // de Paris — la tuile plate et la rue du loin ne changent pas d'un pixel
+  // (v296) — et c'était, mesuré sur le disque entier, 69 Mo de tampons sur
+  // 1 754 morceaux : un sommet sur quatre y est le double d'un autre (le coin
+  // commun de deux pavés, de deux bandes de marquage). Même preuve que les
+  // baies : le POIDS baisse d'un cinquième au moins contre `solSoude: false`
+  // (sur l'ancien code l'option n'existe pas, les deux pèsent pareil : rouge),
+  // et chaque coin de chaque triangle garde ses dix-huit mots, bit à bit.
+  {
+    const { memesTriangles } = await import('./sonde-baies.mjs');
+    const { World, CHUNK } = await import('../src/world.js');
+    const { buildChunkTampons } = await import('../src/mesher.js');
+    const { positionDe } = await import('../src/mondes.js');
+    const P = positionDe('paris'), w = new World(); w.hd = 1;
+    const c0x = Math.floor(P.x / CHUNK), c0z = Math.floor(P.z / CHUNK), R = Math.ceil(P.r / CHUNK);
+    const o = (t) => t ? Object.values(t).reduce((n, v) => n + (v.byteLength || 0), 0) : 0;
+    let neuf = 0, vieux = 0, lus = 0, coins = 0, ecarts = 0, fautes = 0;
+    const t0 = Date.now();
+    for (let dx = -R; dx <= R; dx += 4) for (let dz = -R; dz <= R; dz += 4) {
+      const a = buildChunkTampons(w, c0x + dx, c0z + dz, { detail: false }).sol;
+      if (!a) continue;
+      const b = buildChunkTampons(w, c0x + dx, c0z + dz, { detail: false, solSoude: false }).sol;
+      lus++; neuf += o(a); vieux += o(b);
+      const m = memesTriangles(a, b); coins += m.coins; ecarts += Math.max(0, m.ecarts); if (!m.ok) fautes++;
+    }
+    const Mo = (x) => (x / 1048576).toFixed(2);
+    verifier('le sol HD se soude : un cinquième de moins, les mêmes triangles des mêmes valeurs',
+      lus > 50 && neuf < 0.8 * vieux && fautes === 0 && coins > 0,
+      `${lus} morceaux, ${Mo(vieux)} → ${Mo(neuf)} Mo, ${coins} coins, ${fautes} morceau(x) en écart (${ecarts} coins), ${Date.now() - t0} ms`);
+  }
+
   // UNE BAIE, PAS DEUX (v457). Les villes engendrées posaient deux blocs
   // `ETAGE` l'un sur l'autre par étage : deux fenêtres dessinées l'une sur
   // l'autre (38 719 piles, 259 villes sur 269). Elles posent les bandes de

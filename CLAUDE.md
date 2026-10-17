@@ -793,6 +793,15 @@ même image par construction. `baiesSoudees: false` rejoue l'ancien tampon pour
 l'empreinte des 490 morceaux. Avant d'alléger une géométrie en changeant sa
 forme, on cherche ce qui se fusionne sans la changer.
 
+## Le sol se soude (v474) — ce qui reste fabriqué partout se mesure contre ce qu'il remplace
+
+Une règle. Le sol HD et les faces plates de Paris restent fabriqués pour tout
+le disque (v296) ; le coût se compte contre le VOXEL qu'ils remplacent (plat +
+solid 432 Mo contre 454 sans couche), pas en valeur brute (372 Mo). Le seul
+surcoût réel était le sol (47,7 Mo pour la ville), et un sommet sur quatre y
+était doublé : `sol` passe par `souderTampons` comme les façades (v469),
+`solSoude: false` pour l'empreinte des 490 morceaux. Le voxel et `plat` n'ont
+aucun sommet doublé (UV d'atlas par face) : ne pas y chercher.
 ## Le viaduc de la Manche (v465) — un ouvrage de voie se déclare au contact, et un profil relevé se borne aux gares
 
 Deux règles.

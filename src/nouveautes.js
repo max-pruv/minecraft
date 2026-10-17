@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 474,
+    titre: 'Paris plus léger',
+    puces: [
+      'Le sol de Paris prend moins de mémoire',
+      'Rien ne change à l\'écran',
+    ],
+  },
+  {
     v: 473,
     titre: 'Le métro sous Paris',
     puces: [
