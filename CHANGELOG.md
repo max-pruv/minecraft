@@ -20,6 +20,34 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v474 — Les voitures de la rue rendent leur mémoire
+
+**Pourquoi.** Une pousse de mémoire graphique restait après la v238, et elle
+ne venait pas des bêtes. Une voiture de la rue naît quand l'enfant approche
+(v235) et n'était jamais détruite : cachée au-delà de sa portée, elle restait
+dans la scène pour toute la partie, avec ses trente maillages et sa laque. Et
+quand son vrai modèle arrivait, la coque d'attente qu'il remplaçait était
+retirée sans être rendue. Mesuré après Paris, Rome, Londres et Berlin, puis
+loin de toute ville : 132 voitures, 3 595 maillages, 1 105 géométries toujours
+en scène — aucune visible. Sur un iPad, dont la mémoire graphique est celle du
+système, cela grossit à chaque ville traversée.
+
+**Ce que ça change.** Rien à l'écran. Une voiture passée cent blocs au-delà de
+sa portée rend au pilote ce qui est à elle ; sa place reste au convoi, sur la
+même grille horaire (v305), et elle se refait quand l'enfant revient. La coque
+d'attente se rend quand le modèle arrive. Et le prototype de chaque modèle de
+la flotte est marqué partagé : une voiture prise par un ami, ou une monture
+qui s'en va, ne renvoie plus la géométrie et les matériaux de TOUT son modèle
+à la carte graphique — ils se recompilaient à l'image suivante.
+
+**Ce qui le prouve.** La même traversée de quatre villes : loin de tout, 0
+voiture gardée au lieu de 132, et l'estimation du journal de bord (v426) passe
+de 62 à 26 Mo de géométries en scène. Un témoin dans `monte.js` (passage dans
+`sonde-rendre-convois.cjs`) : Rome fabrique ses voitures, on part loin, tout ce
+qu'elles possèdent est rendu, RIEN du prototype ne l'est, aucune ne reste en
+scène, et la rue revient au retour — vert seul sur la branche, rouge sur
+`origin/main`.
+
 ## v473 — La ligne 1 du métro passe sous Paris
 
 **Pourquoi.** Paris n'avait plus de métro. L'anneau souterrain de la v163 a

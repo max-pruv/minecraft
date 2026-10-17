@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 474,
+    titre: 'Les voitures rendent la mémoire',
+    puces: [
+      'Une rue quittée ne pèse plus rien',
+      'Les voitures reviennent quand tu reviens',
+    ],
+  },
+  {
     v: 473,
     titre: 'Le métro sous Paris',
     puces: [

@@ -770,6 +770,33 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les voitures de la rue se rendent (v474) — un prototype se marque partagé là où il naît
+
+Trois règles.
+
+- **CE QUI NAÎT À LA DEMANDE SE REND QUAND IL QUITTE DURABLEMENT LE CHAMP.**
+  Une voiture de convoi (v235) restait en scène toute la session, cachée :
+  132 voitures et 3 595 maillages après quatre villes (`sonde-memoire-convois.cjs`).
+  `Convoi.rendre(i)` la retire et la `liberer` à `MARGE_RENDRE` (cent blocs)
+  au-delà de sa portée — la marge évite de rendre et refaire une voiture qui
+  longe la limite. La PLACE reste (la grille horaire, v305 ; `pris` n'est pas
+  touché) et se refait par tranches (v431) au retour. Un modèle qui arrive après
+  le rendu ne s'accroche pas (`userData.rendue`).
+- **UN PROTOTYPE CLONÉ SE MARQUE PARTAGÉ OÙ IL NAÎT, TEXTURES COMPRISES.**
+  `clone(true)` partage géométries et matériaux : sans la marque, `liberer` sur
+  une voiture (`retirer`, une monture qui s'en va) rendait la géométrie et les
+  matériaux de TOUT le modèle, recompilés à l'image suivante. `chargerVoitureFlotte`
+  appelle `partagerTout`, qui marque aussi les textures des matériaux ; tout
+  clone qui veut une ressource à lui pose `partagee: false` (`repeindre`,
+  `degats3d`). Le témoin exige les deux sens : tout ce qu'une voiture possède
+  est rendu, RIEN du prototype ne l'est.
+- **CE QU'ON REMPLACE DANS UN GROUPE SE REND.** La coque d'attente retirée à
+  l'arrivée du modèle n'était jamais rendue — `g.remove` n'est pas `liberer`.
+  `grep -n "g.remove(membre)" src/*.js` : la monture (`montures.js`) porte le
+  même défaut, déclaré. Et l'estimation du journal (v426) ne compte que ce que
+  la scène tient : une rue vide n'y montre plus les prototypes que le pilote
+  garde (bornés à la flotte).
+
 ## Les passages des avenues (v467) — un passage se mesure le long de SA rue
 
 Une règle. Dans une ville bâtie à la main, un carrefour est le croisement de

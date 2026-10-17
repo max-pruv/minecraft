@@ -6812,8 +6812,14 @@ l'embarquement a eu lieu, pas par une hypothèse.
   ligne la même archive contre des journaux Terre différents. Les journaux
   d'origine sont conservés ; ne jamais les supprimer pour « nettoyer ».
 
-- [ ] **Une pousse de mémoire graphique subsiste après la v238, et elle ne vient
-  PAS des créatures.** Mesuré, dix allers-retours de cent cinquante blocs qui
+- [x] **Une pousse de mémoire graphique subsiste après la v238, et elle ne vient
+  PAS des créatures.** *(fait en v474 : les voitures de convoi se rendent à
+  `MARGE_RENDRE` au-delà de leur portée, la coque d'attente se rend quand le
+  modèle arrive, et le prototype de la flotte est marqué partagé — mesuré après
+  quatre villes puis loin de tout, 132 voitures et 3 595 maillages gardés → 0,
+  estimation du journal 62 → 26 Mo de géométries en scène ; témoin dans
+  `monte.js`, passage dans `sonde-rendre-convois.cjs`. Les passants, gardés par
+  ville visitée, restent à mesurer.)* Mesuré, dix allers-retours de cent cinquante blocs qui
   forcent le renouvellement : `origin/main` +459 géométries, la branche corrigée
   +348. Le remède de la v238 est pourtant COMPLET pour les bêtes — à l'unité,
   dix créatures prennent 157 géométries et en rendent 157, zéro perdue. Le
@@ -6826,6 +6832,23 @@ l'embarquement a eu lieu, pas par une hypothèse.
   **Ne pas conclure sur la cadence du banc** : il rend en logiciel, son fil
   principal est inactif 81 % du temps, il ne peut pas subir cette panne. On
   mesure des géométries.
+
+- [ ] **La monture voiture garde sa coque d'attente (`montures.js`, v474).**
+  Même défaut que la rue avant la v474 : quand le modèle de la flotte arrive,
+  `voitureNeuve` retire du groupe les membres `caisse`, `verriere` et `tronc`
+  de la coque sans les rendre — trois géométries fusionnées et deux matériaux
+  par voiture invoquée. Une ligne (`liberer(membre)` après `g.remove`), comme
+  dans `voitureDeVille`. Hors de la zone de la session des convois : déclaré.
+  Le prototype, lui, est désormais marqué partagé : la monture qui s'en va ne
+  rend plus la géométrie de tout son modèle.
+
+- [ ] **Le prototype de la flotte et ses textures restent sur la carte
+  graphique toute la session.** C'est voulu et BORNÉ (cinquante modèles au plus,
+  cinq images distinctes depuis la v413) — mais l'estimation du journal de bord
+  (`estimerMemoire`) ne compte que ce que la scène tient : quand la rue est
+  vide, elle ne voit plus ces prototypes alors que le pilote les garde. Un
+  relevé `?diag=1` loin de toute ville sous-estime donc la mémoire de ce que
+  la flotte a déjà chargé.
 
 - [ ] **`animals.js` et `creatures.js` comptent leur cadence de naissance en
   `dt`.** `this.spawnTimer -= dt` avec un `dt` borné à un vingtième : à trois
