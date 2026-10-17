@@ -1,5 +1,22 @@
 # Ce qui est en cours
 
+- [ ] **LA COURONNE LOINTAINE DU PALIER « LOIN » (v497) SE MESURE SUR
+  L'IPHONE.** Au banc (rendu logiciel) : +3,36 Mo, découpe +2 à 4 ms quatre
+  fois par seconde, remplissage complet 68 à 82 ms par tranches de 3 ms. Le
+  coût de REMPLISSAGE des pixels ne se transpose pas (v237). À relever sur
+  l'iPhone de Max : `?palier=haut&diag=1` contre `?palier=haut&loin=0&diag=1`
+  (cadence, pire image), en vol et au sol. Si le jeu plante encore sous
+  « Loin », `?loin=0` est la porte de sortie et `loin` se baisse dans la fiche.
+  Au portail de la v497, `monte.js` a rendu cinq rouges tous DÉJÀ déclarés
+  ci-dessous (« deux voisines d'un convoi », « au feu… au lieu de piler »,
+  « feux de détresse », « rue vide », « un mur pris de face ») — preuve
+  STRUCTURELLE (v291) : aucune page de `monte.js` ne demande `?palier=haut`,
+  donc `RAYON_LOIN` y vaut 0 et la couronne n'existe pas ; le reste du chemin
+  (grille fine sans options, brouillard, plan lointain) est celui d'avant.
+  Second portail, rebasé sur la v495 (puis sur la v496) : sept suites vertes (`maj.js` 46
+  témoins, ceux de la couronne compris) ; `monte.js` trois des cinq (convoi,
+  feu, rue vide) et `manhattan.js` « sans erreur de jeu » (PeerJS, déclaré).
+
 - [ ] **Rouges de portail mesurés des deux côtés au portail de la v494 (les
   commandes simplifiées)** — double mesure de la v195, suites rejouées SEULES
   sur la branche et sur `origin/main` v487 (`git worktree`). `carte.js` : verte
