@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 488,
+    titre: 'Une mise à jour jamais coincée',
+    puces: [
+      'Même bloquée, la mise à jour arrive',
+      'Le jeu repart tout seul, sans rien effacer',
+    ],
+  },
+  {
     v: 487,
     titre: 'La voiture suit son garage',
     puces: [

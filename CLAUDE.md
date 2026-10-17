@@ -3621,6 +3621,18 @@ Les deux rouges réseau récurrents du palier C. Trois règles.
   une voix restée au quart (`GAIN_APPEL`) et le régime qui varie ; vérifié
   rouge sur une copie où la voix reste au quart.
 
+## Un service worker vraiment coincé (v488) — un blocage qu'on provoque se fabrique dans le code, pas dans le réseau
+
+Une règle. Les deux témoins de la v220 bloquaient le RÉSEAU (une requête qui
+ne répond pas) : le navigateur finissait toujours par l'épuiser, et l'ancien
+code s'en sortait sans filet — verts des deux côtés. Un `install` dont la
+promesse ne se tient jamais, glissé dans le `sw.js` publié
+(`sonde-sw-coince.cjs`, par `publierVersion`), ne s'épuise pas dans la fenêtre
+du filet. Le témoin juge l'ÉTAT (rechargée, version neuve ou fichiers du
+serveur), et il est rouge sur une copie au filet désarmé comme sur une copie
+où `forcerMaj` attend `unregister()` sans borne. Avant de croire qu'une panne
+« ne se fabrique pas », on cherche la couche où le navigateur n'a pas de délai.
+
 ## Un freinage de la rue se date à l'heure de la rue (v481)
 
 Deux règles.
