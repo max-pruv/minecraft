@@ -41,6 +41,7 @@ const ASSETS = [
   './src/world.js',
   './src/mesher.js',
   './src/facadeshd.js',
+  './src/arbreshd.js',
   './src/matierehd.js',
   './src/tuiles.js',
   './src/maillage-worker.js',

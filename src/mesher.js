@@ -22,6 +22,7 @@ const NEUTRE = [0, 0, 1, 1];
 import { CHUNK, HEIGHT, REPERES_HD } from './world.js';
 import { TEINTE_HERBE_LIN as TEINTE_HERBE, TEINTE_FEUILLES_LIN as TEINTE_FEUILLES } from './terre.js';
 import { emettreMonument, cellulesDuMorceau } from './paris-monuments-hd.js';
+import { reconnaitreArbres, emettreArbres } from './arbreshd.js';
 import { grilleSol, emettreSolContinu, emettreRubans, emettreBandesPassages } from './solcontinu.js';
 
 // Faces: corner positions (CCW from outside), normal, tile slot (0 top / 1 side / 2 bottom), shade.
@@ -285,9 +286,18 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
   const hd = !!villeDuMorceau;
   const detail = hd && options.detail !== false;
   const sol = hd ? new GeomBufferHD() : null;
-  const facades = detail ? new GeomBufferHD() : null;
-  const plat = hd ? new GeomBuffer() : null;
+  let facades = detail ? new GeomBufferHD() : null;
+  let plat = hd ? new GeomBuffer() : null;
   const platLumineux = hd ? new GeomBuffer() : null;
+  // LES VRAIS ARBRES (v474, arbreshd.js) : quand le monde les demande
+  // (`world.arbres`, à portée de `RAYON_HD` comme le détail de Paris) et que le
+  // morceau porte du bois ou des feuilles, les arbres RECONNUS partent dans
+  // `plat` (leurs cubes, le loin) et dans `facades` (le modèle, le près). Sans
+  // détail demandé, un morceau de campagne garde ses arbres dans `solid`, au
+  // prix d'avant. `vraisArbres: false` rejoue l'ancienne règle (l'ellipsoïde
+  // de la v288 à Paris, les cubes partout ailleurs) : l'empreinte des 490
+  // morceaux se relève ainsi.
+  const vraisArbres = !!world.arbres && options.vraisArbres !== false;
   // le tirage des vitres allumées se fait en coordonnées du MONDE : en
   // coordonnées locales, le même motif se répéterait dans chaque morceau
   const ox = cx * CHUNK, oz = cz * CHUNK;
@@ -362,15 +372,38 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
   };
 
   // Les objets décoratifs sont de vrais maillages 3D, pas des cubes : on les
-  // relève à part, en un balayage trivial.
+  // relève à part, en un balayage trivial. (Et l'on note si le morceau porte
+  // du bois ou des feuilles : la reconnaissance des arbres ne se paie que là.)
+  let vegetal = false, vegLo = HEIGHT, vegHi = 0;
   for (let y = 0; y <= topY; y++) {
     for (let z = 0; z < CHUNK; z++) {
       for (let x = 0; x < CHUNK; x++) {
         const id = data[x + z * CHUNK + y * CHUNK * CHUNK];
-        if (id !== BLOCK.AIR && OBJET[id]) props.push({ x, y, z, id });
+        if (id === BLOCK.AIR) continue;
+        if (OBJET[id]) props.push({ x, y, z, id });
+        else if (id === BLOCK.LEAVES || id === BLOCK.LOG || id === BLOCK.BIRCH) { vegetal = true; if (y < vegLo) vegLo = y; if (y > vegHi) vegHi = y; }
       }
     }
   }
+  // Les arbres reconnus du morceau : leurs cases (fûts du bord compris) et la
+  // liste de ceux dont la base est ici. Dans un morceau HD (Paris) les cubes
+  // d'un arbre vont au loin même sans détail, comme avant ; ailleurs, seulement
+  // quand le détail est demandé — sinon ils restent dans `solid`.
+  // (la signature d'un fût est `treeAt`, avec le climat du morceau quand il
+  // est certain : redemandé par colonne, `climatReel` coûtait dix-huit
+  // millisecondes par morceau de taïga)
+  const climatArbres = vraisArbres && vegetal && (hd || options.detail !== false) && world.climatDuMorceau ? world.climatDuMorceau(cx, cz) : undefined;
+  // Un morceau de campagne maillé SANS détail (le loin) ne reconnaît rien :
+  // ses arbres restent dans `solid`, et il dit seulement qu'il porte du bois
+  // ou des feuilles (`arbres: -1`) pour être redemandé avec son détail à
+  // l'approche — la reconnaissance coûtait 3,5 ms par morceau de forêt au loin.
+  const arbres = vraisArbres && vegetal && (hd || options.detail !== false)
+    ? reconnaitreArbres(localGet, (lx, lz) => (world.treeAt ? world.treeAt(ox + lx, oz + lz, climatArbres) : null), CHUNK, vegLo - 10, vegHi + 1, HEIGHT) : null;
+  const arbresDetail = !!arbres && arbres.liste.length > 0 && options.detail !== false;
+  const arbresAuLoin = !!arbres && arbres.cellules.size > 0 && (hd || options.detail !== false);
+  if (arbresAuLoin && !plat) plat = new GeomBuffer();
+  if (arbresDetail && !facades) facades = new GeomBufferHD();
+  const estArbre = arbresAuLoin ? (x, y, z) => arbres.cellules.has(x + z * CHUNK + y * CHUNK * CHUNK) : () => false;
 
   // --- fusion, face par face ------------------------------------------------
   const dims = [CHUNK, topY + 1, CHUNK];
@@ -446,7 +479,8 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
           const toitHd = hd && face.slot === 0 && TOIT_HD.has(id);
           // La face d'un bloc de monument part dans le LOIN : de près, le
           // modèle d'auteur la remplace ; de loin, elle est le monument.
-          const facadeHd = monumentHd || (hd && ((face.slot === 1 && (FACADE_HD.has(id) || murHD(id, villeDuMorceau))) || ARBRE_HD.has(id) || toitHd));
+          const arbreHd = estArbre(x, y, z);
+          const facadeHd = monumentHd || arbreHd || (hd && ((face.slot === 1 && (FACADE_HD.has(id) || murHD(id, villeDuMorceau))) || (!vraisArbres && ARBRE_HD.has(id)) || toitHd));
           const it = teintes && ((id === BLOCK.GRASS && face.slot === 0) || id === BLOCK.LEAVES) ? teintes[x + z * CHUNK] : 0;
           const teinte = it ? (id === BLOCK.LEAVES ? TEINTE_FEUILLES[it] : TEINTE_HERBE[it]) : null;
           // LA CLÉ DE FUSION EST UN NOMBRE (v352) : la chaîne qu'elle était
@@ -456,8 +490,8 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
           // propre à sa place dans la tranche (l'ancien `@u,v`).
           const cle = (bloqueV || !uniforme)
             ? -1 - (u + v * nU)
-            : ((((id * 3 + (yTop === 1 ? 0 : yTop === 0.5 ? 1 : 2)) * 5 + (ao ? AO_LEVELS.indexOf(ao[0]) : 4)) * 2
-              + (allume ? 1 : 0)) * 2 + (monumentHd ? 1 : 0)) * 256 + it;
+            : (((((id * 3 + (yTop === 1 ? 0 : yTop === 0.5 ? 1 : 2)) * 5 + (ao ? AO_LEVELS.indexOf(ao[0]) : 4)) * 2
+              + (allume ? 1 : 0)) * 2 + (monumentHd ? 1 : 0)) * 2 + (arbreHd ? 1 : 0)) * 256 + it;
           masque[u + v * nU] = { cle, id, yTop, ao, tile: BLOCK_INFO[id].tiles[face.slot], isWater, allume, x, y, z, solHD, facadeHd, teinte };
           vide = false;
         }
@@ -574,7 +608,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
             if (detail && localGet(x, y + 1, z) === BLOCK.AIR) toitDessusHD(facades, x, y, z, ox + x, oz + z, localGet);
           } else if (id === BLOCK.TERRACOTTA) {
             if (detail && localGet(x, y + 1, z) === BLOCK.AIR && localGet(x, y - 1, z) === BLOCK.TERRACOTTA) mitresHD(facades, x, y, z);
-          } else if (detail && id === BLOCK.LOG && localGet(x, y - 1, z) !== BLOCK.LOG) {
+          } else if (detail && !vraisArbres && id === BLOCK.LOG && localGet(x, y - 1, z) !== BLOCK.LOG) {
             // UN ARBRE PAR TRONC : la base du fût, et la boîte des feuilles
             // au-dessus, mesurée sur les blocs (débord compris, dans les
             // morceaux voisins aussi).
@@ -596,6 +630,11 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
       }
     }
   }
+
+  // LES VRAIS ARBRES (v474) : un modèle par fût reconnu dont la base est dans
+  // le morceau, dans `facades`, avec l'essence que `treeAt` a plantée
+  let arbresEmis = 0;
+  if (arbresDetail) arbresEmis = emettreArbres(facades, arbres, ox, oz, CHUNK, teintes);
 
   const surface = grille ? emettreSolContinu(solid, world, cx, cz, CHUNK, grille, teintes) : null;
   // les tabliers des ponts et le marquage des routes (v300), avec la surface
@@ -625,6 +664,11 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
     facadesDetaillees,
     monumentsDetailles: detailles,
     hd,
-    detail,
+    // les arbres du morceau (v474) : combien en sont reconnus ici, et si le
+    // morceau a été maillé AVEC leurs modèles — `main.js` le relaie comme le
+    // détail de Paris
+    arbres: arbres ? arbres.liste.length : (vraisArbres && vegetal ? -1 : 0),
+    arbresEmis,
+    detail: detail || arbresDetail,
   };
 }

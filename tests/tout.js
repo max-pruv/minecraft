@@ -108,6 +108,7 @@ const GARDIENS = {
   // La couche HD de Paris (v287) : ses tampons et son relais près/loin dans
   // `parishd.js` ; ce qu'elle coûte à la rue dans `monte.js`.
   'src/facadeshd.js': ['parishd.js', 'monte.js', 'plafond.js'],
+  'src/arbreshd.js': ['parishd.js', 'plafond.js'],
   // Les monuments en relief (v292) : la couche HD les dessine (`parishd.js`),
   // ils ne posent aucun bloc (`plafond.js`), et l'enfant marche autour d'eux
   // (`monte.js`). `carteMonde.js` garde les rues qui les longent.
