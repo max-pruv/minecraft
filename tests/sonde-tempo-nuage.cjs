@@ -15,7 +15,7 @@ const { Banc, fixerTempo, nomsVus, dormir, jusqua } = require('./banc.js');
 const { servirLeNuage } = require('./nuage.js');
 
 (async () => {
-  fixerTempo(Number(process.env.T || 4));
+  if (fixerTempo) fixerTempo(Number(process.env.T || 4));
   const N = Number(process.env.N || 4);
   const banc = new Banc();
   await banc.ouvrir();
