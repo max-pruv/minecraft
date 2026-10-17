@@ -20,8 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-<<<<<<< HEAD
-## v488 — Cinq villes passent du gabarit à la fiche
+## v492 — Cinq villes passent du gabarit à la fiche
 
 **Pourquoi.** Max a demandé « cinquante villes détaillées ». Le monde a 269
 villes : 46 ont une fiche (leur fleuve, leur pierre, leurs monuments aux vraies
@@ -61,6 +60,110 @@ les monuments (hauteur contre les immeubles, ciel de chaque ville, perches)
 lisent les trois monuments neufs, déclarés là où il le faut avec leur raison.
 Captures de rue et de ciel des cinq villes, avant et après.
 =======
+
+## v491 — Les réacteurs s'allument sans à-coup
+
+**Pourquoi.** Les flammes des réacteurs (v264) naissent cachées, et le moteur
+de rendu ne compile un programme qu'à la première image où il le dessine : les
+deux programmes de la flamme se compilaient donc dans l'image du premier ✈️ —
+une compilation dans l'image d'un geste, la famille du gel de la v246. Sur
+l'iPad, où Safari compile en centaines de millisecondes, c'est un à-coup au
+moment précis où l'enfant décolle. La dette attendait dans `TASKS.md` depuis la
+v264.
+
+**Ce que ça change.** La flamme se chauffe pendant l'accueil, avec la flotte :
+on en rend une, visible, dans une scène à part, avec les lampes du monde. Le
+premier décollage ne compile plus rien. Mesuré au passage pour les autres
+premiers gestes dans un avion : l'appareil posé, l'escalier et l'échelle
+d'embarquement (v389) et l'épave en feu (v462) n'apportaient aucun programme
+neuf — ils lisent des matériaux déjà chauffés.
+
+**Ce qui le prouve.** Un témoin de `monte.js` : aux commandes du Concorde, on
+pousse la manette des gaz, les quatre tuyères s'allument, et l'on lit les CLÉS
+de programme (v363) — zéro neuve ; chauffe désarmée, deux. La sonde
+`sonde-flamme-chauffe.cjs` sépare les quatre cas (appareil, flammes, accès,
+épave) : 0 · 2 · 0 · 0 avant, 0 · 0 · 0 · 0 après.
+
+---
+
+## v490 — Le bloc visé dit qui l'a posé
+
+**Pourquoi.** Devant les constructions suspendues dans le ciel de Paris (v295,
+v298), la seule question qui comptait était « qui a posé ça ? » — et la
+tablette ne savait pas y répondre : le nom sous le réticule est celui du bloc
+EN MAIN, jamais celui qu'on regarde. Il a fallu lire le journal de bord dans le
+nuage pour trancher.
+
+**Ce que ça change.** Avec `?diag=1`, une ligne de plus dans le diagnostic du
+haut de l'écran : « visé : Bricks (x, y, z) · posé à la main le 17/10/2026 à
+15h42 », ou « · posé par le jeu » pour un bloc que le générateur a écrit. Le
+monde le sait déjà : un bloc d'enfant est dans son journal, avec sa date. Hors
+`?diag=1`, rien de plus ne se calcule ni ne s'affiche, et rien n'entre dans le
+quart bas-gauche.
+
+**Ce qui le prouve.** Un témoin de `monte.js`, dans la page `?diag=1` qui
+existait déjà : il lit le texte affiché, sol à ses pieds (« posé par le jeu »)
+puis le même bloc remplacé par une brique datée (« posé à la main » avec la
+date). Rouge sur `origin/main` (aucune ligne « visé »), vert ici.
+
+---
+
+## v489 — On monte dans le métro par sa porte
+
+**Pourquoi.** Dans une voiture (v366) et dans un avion (v389, v400), l'enfant
+marche jusqu'à la porte, elle s'ouvre, il entre. Dans un train ou un métro,
+rien de tout cela : « Monter à bord » le collait au siège d'un coup, et
+« Descendre » le laissait debout là où était le siège, au milieu de la rame.
+La tâche était déclarée depuis la v400 et attendait la porte du modèle.
+
+**Ce que ça change.** Quand la rame est à quai, l'enfant marche jusqu'à la
+porte du flanc où il se trouve (celui du quai), elle coulisse, il entre d'un
+pas, et la porte se referme derrière lui. En descendant, la porte s'ouvre, il
+sort et se pose debout SUR LE QUAI — la place la plus haute et la plus proche
+des deux flancs, jamais dans un mur, jamais dans l'eau, jamais dans le vide.
+Un second appui termine tout de suite (à bord, ou sur le quai). Une rame qui
+roule, ou dont l'arrêt finit avant la séquence, se prend d'un coup, comme
+avant : la porte ne file jamais sous l'enfant, et une rame qui repart pendant
+la séquence la termine.
+
+**Ce qui le prouve.** Quatre témoins dans `monte.js`, sur une page qui joue la
+séquence et une ligne d'essai posée sur le couloir plat — la rame à quai est
+provoquée, pas attendue (`sonde-porte-rame.cjs`, rejouable seule en trente
+secondes) : les phases (marche, ouverture, entrée), « à bord » faux pendant
+toute la marche et vrai seulement une fois dedans, la porte qui coulisse de
+0,86 bloc puis se referme, la descente posée debout à 1,65 bloc du flanc ; le
+second appui et la rame qui roule ; aucun programme compilé, aucun bloc écrit.
+Rouges sous `embarq=0` (l'ancien geste, rejoué au bit près). Ce qui ne se
+juge que sur l'iPad (la vue, une vraie gare, un vrai quai de Washington) est
+dans `TASKS.md`.
+
+---
+
+## v488 — Un service worker vraiment coincé a son témoin
+
+**Pourquoi.** La v220 avait réparé le filet de mise à jour (une minuterie armée
+APRÈS l'installation qu'elle devait sauver) et borné `forcerMaj`, le dernier
+recours, qui attendait `unregister()` derrière l'installation bloquée. Mais rien
+ne gardait ces deux remèdes : les deux témoins écrits alors étaient verts des
+deux côtés, parce que leur blocage finissait toujours par rendre la main et que
+l'ancien code s'en sortait sans filet. C'est la mise à jour de toute la
+famille : si elle se recasse, plus aucune tablette ne reçoit rien.
+
+**Ce que ça change.** Pour la famille, rien de visible : les deux remèdes
+tenaient. Une installation qui ne finit JAMAIS est désormais éprouvée à chaque
+portail : au bout de quarante-cinq secondes la page repart de zéro et tourne sur
+les fichiers du serveur, puis le loader s'efface et « Jouer » est là.
+
+**Ce qui le prouve.** Deux témoins dans `maj.js`, qui appellent
+`sonde-sw-coince.cjs` telle quelle. Le blocage ne s'épuise pas : le service
+worker publié porte un `install` dont la promesse ne se tient jamais (Chromium
+borne un événement à cinq minutes). Mesuré : rechargée à 49,6 s, `main.js`
+redemandé au serveur, l'installation toujours coincée. Vérifiés ROUGES sur deux
+copies : filet désarmé (loader « 126 / 126 fichiers » à jamais) et `forcerMaj`
+sans borne (loader « On va chercher la dernière version… » à jamais).
+
+---
+
 ## v487 — La voiture garée suit son garage
 
 **Pourquoi.** Un garage est rangé par sa position. Quand la carte a bougé sous
@@ -450,7 +553,6 @@ qu'on conduit et sur celle de la rue reçue d'un ami ; quarante chocs, l'ami lit
 la santé 0,2 et la panne du conducteur (0,52 et roulante avant). Le troisième
 garde la forme du message tant que l'histoire n'a pas débordé (vert des deux
 côtés, à dessein). Suite `degats.js` verte, 46 témoins.
->>>>>>> origin/main
 
 ---
 

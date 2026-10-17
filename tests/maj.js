@@ -15,6 +15,7 @@
 //     cd tests && npm run maj
 
 const { Banc, dormir, jusqua } = require('./banc.js');
+const { epreuve, juger } = require('./sonde-sw-coince.cjs');
 const fs = require('fs');
 const path = require('path');
 
@@ -350,6 +351,22 @@ function verifier(nom, ok, detail = '') {
       verifier('une mise à jour ne compte pas comme un plantage dans le journal de bord',
         !!bilan && bilan.compteur === 0 && bilan.confirmes === 0, JSON.stringify(bilan));
     }
+
+    // UN SERVICE WORKER VRAIMENT COINCÉ SE RATTRAPE (dette v220). Le filet de
+    // mise à jour et la borne de `forcerMaj` n'avaient aucun témoin : les deux
+    // de la v220 provoquaient un blocage que le navigateur finissait par
+    // épuiser, et l'ancien code s'en sortait sans filet. Ici l'installation ne
+    // finit JAMAIS (`sonde-sw-coince.cjs`, appelée telle quelle), et l'on juge
+    // un ÉTAT : la page rechargée, sous la version neuve ou sur les fichiers du
+    // serveur. Vérifié rouge deux fois sur une copie : filet désarmé (marque
+    // gardée, loader « 126 / 126 » à jamais) et `forcerMaj` sans borne (loader
+    // « On va chercher la dernière version… » à jamais).
+    const mCoince = await epreuve(banc, 'Anatole');
+    const vCoince = juger(mCoince);
+    verifier('une installation qui ne finit jamais : on repart de zéro, et l\'enfant tourne sur les fichiers du serveur',
+      mCoince.controle && vCoince.repart, JSON.stringify(mCoince));
+    verifier('et après ce départ, le loader s\'efface et « Jouer » est là', vCoince.jouable,
+      `${mCoince.msRecharge} ms jusqu'au rechargement`);
 
     // LE LOADER NE CACHE JAMAIS UN « JOUER » QUI EST DÉJÀ CLIQUABLE (v286).
     //

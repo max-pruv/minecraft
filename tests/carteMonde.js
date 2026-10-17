@@ -278,7 +278,7 @@ const VRAIES_KM = [
           // beffroi planté au centre exact d'une place dégagée passait pour
           // couché. La leçon du fleuron du Taj, version place publique.
           // ET UNE ENCEINTE AUX MURS IMPAIRS PASSE ENTRE LES COLONNES LUES
-          // (v488) : le château de Nantes a ses courtines à ±3, le pas de deux
+          // (v492) : le château de Nantes a ses courtines à ±3, le pas de deux
           // ne lit que les colonnes paires, et il était « couché » à 0. Rien
           // trouvé ? on relit chaque colonne de la boîte.
           for (const pas of [2, 1]) {
@@ -329,7 +329,7 @@ const VRAIES_KM = [
     // pour tous les autres, moins de trois blocs, c'est un monument couché.
     const couches = tour.monuments.filter((m) => m.hMax < m.hMin);
     // 142 dans les quarante-six fiches, et trois de plus dans les villes
-    // passées à la fiche en v488 (le Spire, le château de Nantes, l'arc de
+    // passées à la fiche en v492 (le Spire, le château de Nantes, l'arc de
     // Montpellier).
     verifier('les cent quarante-cinq monuments des villes à fiche se dressent, chacun chez lui',
       tour.monuments.length === 145 && couches.length === 0,
@@ -5925,7 +5925,7 @@ const VRAIES_KM = [
       `${fleuves.ponts.length} villes à pont lues · creusés par une route : `
       + (fleuves.ponts.filter((p) => p.parLaRoute).map((p) => `${p.cle} ${p.parLaRoute}`).join(', ') || 'aucun'));
 
-    // LES VILLES QUI PASSENT DU GABARIT À LA FICHE (v488, lot 1). Max :
+    // LES VILLES QUI PASSENT DU GABARIT À LA FICHE (v492, lot 1). Max :
     // « cinquante villes détaillées ». Une fiche fausse est pire qu'une fiche
     // absente : chaque ville du lot garde le rayon du registre (la découpe
     // « hors villes » ne bouge pas), son ancre au sec, n'est ni Cologne ni

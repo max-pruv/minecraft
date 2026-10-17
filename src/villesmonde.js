@@ -2964,7 +2964,7 @@ const PALETTES_VILLES = {
   edimbourg: { murs: [uni(24), uni(23), uni(24), uni(22)], cheminee: uni(25) },
 };
 
-// LES VILLES QUI PASSENT DU GABARIT À LA FICHE (lot 1, v488). Max : « cinquante
+// LES VILLES QUI PASSENT DU GABARIT À LA FICHE (lot 1, v492). Max : « cinquante
 // villes détaillées ». Une ville engendrée garde ce que le gabarit lui donne de
 // juste — son rayon (le registre fait foi, donc la découpe « hors villes » ne
 // bouge pas), sa côte automatique, son tissu — et reçoit ici ce qu'une fiche

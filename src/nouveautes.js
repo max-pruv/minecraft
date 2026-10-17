@@ -6,12 +6,45 @@
 
 export const NOUVEAUTES = [
   {
-    v: 488,
+    v: 492,
     titre: 'Cinq villes plus vraies',
     puces: [
       'Dublin, Toulouse, Melbourne, Nantes, Montpellier',
       'Leurs fleuves, leur pierre, leurs monuments',
       'Leurs lieux sur la carte',
+    ],
+  },
+  {
+    v: 491,
+    titre: 'Les réacteurs sans à-coup',
+    puces: [
+      'Les flammes sont prêtes dès l\'accueil',
+      'Le décollage ne fige plus l\'image',
+    ],
+  },
+  {
+    v: 490,
+    titre: 'Qui a posé ce bloc ?',
+    puces: [
+      'Le diagnostic nomme le bloc visé',
+      'Posé par le jeu, ou à la main',
+    ],
+  },
+  {
+    v: 489,
+    titre: 'On monte dans le métro',
+    puces: [
+      'Tu marches jusqu’à la porte du train',
+      'Elle coulisse, tu entres, elle se ferme',
+      'Tu descends debout sur le quai',
+    ],
+  },
+  {
+    v: 488,
+    titre: 'Une mise à jour jamais coincée',
+    puces: [
+      'Même bloquée, la mise à jour arrive',
+      'Le jeu repart tout seul, sans rien effacer',
     ],
   },
   {
