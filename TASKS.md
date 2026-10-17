@@ -3360,11 +3360,31 @@
   20 × 20 (`skeleton.boneTexture`, 81 os, 6,4 Ko) par personnage DESSINÉ :
   invisibles à un relevé des matériaux, rendues par `liberer` avec le
   squelette. Pas de doublon, pas de fuite ; rien à corriger.
-- [ ] **LE COMPTEUR DE PLANTAGES RETOMBE À ZÉRO SUR UNE FERMETURE PROPRE — y
-  compris celle du rechargement de mise à jour.** Un appareil qui meurt, se
-  met à jour (fermeture propre), puis meurt encore repart à un. C'est voulu
-  pour une session qui a tenu ; pour un rechargement de quelques secondes,
-  c'est discutable. À trancher quand un journal le montrera.
+- [ ] **LE COMPTEUR DE PLANTAGES RETOMBE À ZÉRO SUR UNE FERMETURE PROPRE —
+  RELEVÉ EN v474, PAS ENCORE TRANCHABLE, DÉCISION DE MAX.** Un appareil qui
+  meurt, se ferme proprement, puis meurt encore repart à un. Relu dans
+  `journal_appareil` (champs d'appareil seulement : `fin`, `duree`,
+  `plantagesAvant`, l'heure ; aucune donnée d'enfant), 98 lignes, 5 appareils :
+  - deux séries montrent un compteur revenu à zéro au milieu de plantages
+    (appareil `n4dhwy`, le 4 octobre en v339 : deux plantages, une fermeture de
+    40 s, un plantage compté à zéro ; le 10 octobre en v406 : six plantages, une
+    fermeture de 12 s, trois plantages repartis de zéro). MAIS les deux datent
+    d'AVANT la v426, quand deux pages partageaient un seul drapeau et qu'une
+    page qui se fermait remettait le compteur de l'autre à zéro : leurs
+    `plantagesAvant` ne se recollent pas en une seule suite (la fermeture de
+    12 s s'est ouverte à zéro juste après un plantage compté cinq). Ce n'est
+    donc pas la preuve de la règle d'aujourd'hui.
+  - depuis la v426 : AUCUN plantage remonté (le dernier est en v411), et quatre
+    fermetures `mise-a-jour` (v437 à v473), jamais entre deux plantages.
+  - dans les deux séries le disjoncteur (deux plantages) avait déjà tranché avant
+    la fermeture : la remise à zéro n'a empêché aucun palier bas mesuré.
+  Les pistes CHANGENT le comportement du disjoncteur et ne se livrent pas sans
+  Max : (a) ne remettre à zéro qu'après N secondes de jeu (30, la fenêtre du
+  palier v284) ; (b) garder le compteur sur `mise-a-jour`, comme sur une page
+  née cachée (`garderCompteur`, v426) ; (c) ne rien changer. La requête à
+  rejouer quand des plantages reviendront : `select appareil, version, fin,
+  doc->>'duree', doc->>'plantagesAvant', created_at from journal_appareil
+  order by appareil, id`.
 
 - [ ] **PROGRAMME « MONDE FIDÈLE » (kit de Max, septembre 2026) — livraison 2
   sur 6 faite.** Le cahier : terrain continu partagé par le rendu, les
@@ -3467,13 +3487,19 @@
   pour que le loin ne change pas d'un pixel. Si un appareil le paie encore, la
   piste est de ne fabriquer `sol` qu'à `RAYON_HD × 2` et de laisser le voxel
   de rue au-delà — au prix d'une couture visible sur la chaussée.
-- [ ] **UN JOURNAL S'ENVOIE À CHAQUE FERMETURE — il faudra le tailler.** Une
-  ligne par session, jusqu'à 24 Ko : à quatre sessions par jour et par
-  tablette, c'est un mégaoctet par semaine dans `journal_appareil`. Rien ne
-  l'efface aujourd'hui ; l'espace parent n'en lit que trente. À faire quand la
-  table dépassera quelques milliers de lignes : une purge des lignes de plus de
-  trente jours qui ne sont pas des plantages (SQL, ou au lancement par une
-  tablette).
+- [x] **UN JOURNAL S'ENVOIE À CHAQUE FERMETURE — TAILLÉ EN v474, CÔTÉ
+  SERVEUR.** Mesuré avant : 98 lignes, 264 Ko (index compris), 1,2 Ko par
+  session et 1,6 Ko par plantage une fois compressés par Postgres — bien loin
+  du mégaoctet par semaine redouté, et AUCUNE ligne de plus de trente jours.
+  Un déclencheur (`journal_appareil_purge`, SQL recopié dans `cloud.js`) retire
+  à chaque insertion les sessions de plus de trente jours dont la fin est
+  `fermeture`, `mise-a-jour` ou `arriere-plan` — une liste d'AUTORISATION : un
+  plantage, une fin nulle ou inconnue restent. Prouvé dans une transaction
+  annulée : sur sept lignes fabriquées, les trois vieilles fins propres
+  partent, le plantage de 90 jours, la fin nulle, l'inconnue et la fermeture de
+  29 jours restent, les 98 vraies lignes ne bougent pas ; une insertion en rôle
+  `anon` déclenche la purge aussi. Ce qui reste : les PLANTAGES s'accumulent
+  sans fin (36 en trois semaines, 57 Ko) — à revoir quand ils pèseront.
 
 - [x] **LA STRUCTURE DE RONDINS DANS LE CIEL DE PARIS — TRANCHÉE EN v298 PAR LE
   JOURNAL DE BORD.** La session de l'iPhone de Max du 26 septembre (15:45 UTC,

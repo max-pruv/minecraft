@@ -5461,6 +5461,23 @@ répondu en une requête : iPhone, en vol à l'ouest de Paris, 1 089 morceaux
   et c'est le nombre de sommets, pas le rayon ni le budget, qui décidera un
   jour de ce qu'un appareil peut montrer.
 
+## Le journal de bord se taille côté serveur (v474) — une purge efface par liste d'autorisation
+
+Deux règles.
+
+- **CE QU'UNE TABLETTE N'A PAS LE DROIT D'EFFACER SE PURGE DANS LA BASE.**
+  `journal_appareil` n'a pas de politique `delete` pour `anon`, et il ne lui en
+  faut pas : un déclencheur `security definer` (`journal_appareil_purge`, SQL
+  recopié dans `cloud.js`) retire à chaque insertion les sessions de plus de
+  `JOURNAL_GARDE_JOURS` jours. Une purge au lancement d'une tablette dépendrait
+  d'une tablette à jour et ouvrirait l'effacement à tout le monde.
+- **UNE PURGE NOMME CE QU'ELLE EFFACE, JAMAIS CE QU'ELLE GARDE.** `fin in
+  (JOURNAL_FINS_PURGEABLES)` et non `fin <> 'plantage'` : une fin nulle, une fin
+  qu'une version future inventera, un plantage ne partent jamais. Le témoin de
+  `parent.js` compare le SQL recopié aux constantes. Et l'outil de migration
+  attend une confirmation humaine pour un `drop` ou un `revoke` (il expire sans
+  rien appliquer) : on écrit la migration sans eux.
+
 ## Une page qui a dit au revoir ne se rouvre pas (v464)
 
 Une règle. Une vraie mise à jour, rejouée au banc (`sonde-journal-maj.cjs`), a

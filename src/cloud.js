@@ -24,6 +24,12 @@ const SUPABASE_ANON_KEY = 'sb_publishable_o9J7dculBThdKCQLbdvHng_Zm-QuMQU';
 
 const PUSH_INTERVAL = 15000;
 
+// Ce que la purge du journal de bord garde, recopié du SQL ci-dessous
+// (`journal_appareil_purger`) pour que l'espace parent le dise et qu'un témoin
+// compare les deux : un plantage n'y figure jamais (v474).
+export const JOURNAL_GARDE_JOURS = 30;
+export const JOURNAL_FINS_PURGEABLES = ['fermeture', 'mise-a-jour', 'arriere-plan'];
+
 export class CloudSave {
   constructor(world, toast) {
     this.world = world;
@@ -296,6 +302,26 @@ export class CloudSave {
   //   alter table journal_appareil enable row level security;
   //   create policy "anon read"  on journal_appareil for select using (true);
   //   create policy "anon write" on journal_appareil for insert with check (true);
+  //
+  // LA TABLE SE TAILLE TOUTE SEULE (v474). Une ligne par session, jamais
+  // effacée : la purge vit CÔTÉ SERVEUR, parce qu'une tablette n'a aucun droit
+  // d'effacer (pas de politique `delete` pour anon, et il n'en faut pas) et
+  // qu'une purge au lancement dépendrait d'une tablette à jour. Chaque
+  // insertion retire les sessions de plus de `JOURNAL_GARDE_JOURS` jours dont
+  // la fin est dans `JOURNAL_FINS_PURGEABLES` — une LISTE D'AUTORISATION : un
+  // plantage, une fin inconnue ou nulle ne partent jamais.
+  //
+  //   create index journal_appareil_created_at on journal_appareil (created_at);
+  //   create function journal_appareil_purger() returns trigger
+  //   language plpgsql security definer set search_path = public as $$
+  //   begin
+  //     delete from public.journal_appareil
+  //      where created_at < now() - interval '30 days'
+  //        and fin in ('fermeture', 'mise-a-jour', 'arriere-plan');
+  //     return null;
+  //   end $$;
+  //   create trigger journal_appareil_purge after insert on journal_appareil
+  //     for each statement execute function journal_appareil_purger();
   async journalPousser({ appareil, name, version, fin, doc }, keepalive = false) {
     if (!this.configured || !appareil || !doc) return false;
     const res = await fetch(`${this.url}/rest/v1/journal_appareil`, {

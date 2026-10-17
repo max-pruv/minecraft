@@ -459,6 +459,26 @@ async function panneau(p) {
       vuJournal.lignes >= 2 && vuJournal.plantage && vuJournal.paris && vuJournal.fermeture && vuJournal.gpu,
       JSON.stringify(vuJournal));
 
+    // v474 : la table `journal_appareil` se taille côté serveur (un déclencheur,
+    // cloud.js). Le parent doit savoir ce qui part, et ce que le SQL recopié
+    // dans cloud.js efface doit être ce que les constantes disent — avec un
+    // plantage qui ne part JAMAIS. Sur l'ancien code, ni avis ni constantes.
+    const garde = await p.evaluate(() => {
+      const z = window.__game.admin.el.querySelector('#adm-journal .adm-jr-garde');
+      return z ? z.textContent.replace(/\s+/g, ' ') : null;
+    });
+    const C = await import('../src/cloud.js');
+    const source = require('fs').readFileSync(require('path').join(__dirname, '../src/cloud.js'), 'utf8');
+    const sql = (source.match(/delete from public\.journal_appareil[\s\S]*?;/) || [''])[0];
+    const finsSql = [...((sql.match(/fin in \(([^)]*)\)/) || ['', ''])[1].matchAll(/'([^']+)'/g))].map((m) => m[1]);
+    const joursSql = Number((sql.match(/interval '(\d+) days'/) || [])[1]);
+    const fins = C.JOURNAL_FINS_PURGEABLES || [];
+    verifier('le journal de bord se taille côté serveur, sans jamais effacer un plantage, et le parent le sait',
+      !!garde && new RegExp(`${C.JOURNAL_GARDE_JOURS} jours`).test(garde) && /plantages restent/.test(garde)
+        && fins.length > 0 && !fins.includes('plantage') && !finsSql.includes('plantage')
+        && finsSql.join() === fins.join() && joursSql === C.JOURNAL_GARDE_JOURS,
+      JSON.stringify({ garde, fins, finsSql, joursSql, jours: C.JOURNAL_GARDE_JOURS }));
+
     verifier('aucune faute de page dans l’espace parent', p.erreurs.length === 0,
       JSON.stringify(p.erreurs));
   } catch (e) {

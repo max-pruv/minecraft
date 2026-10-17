@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 474,
+    titre: 'Le journal se range seul',
+    puces: [
+      'Les vieux journaux sans panne s’effacent',
+      'Les plantages restent pour les parents',
+    ],
+  },
+  {
     v: 473,
     titre: 'Le métro sous Paris',
     puces: [

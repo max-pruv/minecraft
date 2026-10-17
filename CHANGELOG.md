@@ -20,6 +20,32 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v474 — Le journal de bord se taille tout seul
+
+**Pourquoi.** Chaque tablette envoie une ligne à `journal_appareil` à chaque
+fin de session (v296), et rien ne l'effaçait jamais. Mesuré : 98 lignes,
+264 Ko, aucune de plus de trente jours — pas une panne, mais une table qui ne
+pouvait que grossir, et dont l'espace parent ne lit que trente lignes.
+
+**Ce que ça change.** Côté serveur, chaque nouvelle ligne retire les sessions
+terminées normalement (au revoir, mise à jour, arrière-plan) de plus de trente
+jours. Les plantages restent toujours, comme toute fin inconnue. L'espace
+parent le dit au-dessus du journal, et nomme enfin les fins « mise à jour ».
+Le disjoncteur de sûreté ne change pas : le compteur de plantages vit sur la
+tablette, la purge ne le touche pas. Le second sujet (le compteur remis à zéro
+par une fermeture propre) est relevé dans `TASKS.md` : les deux cas visibles
+datent d'avant la v426, aucun plantage depuis la v411 — décision de Max.
+
+**Ce qui le prouve.** Une transaction annulée sur la vraie base : sur sept
+lignes fabriquées, les trois vieilles fins propres partent, le plantage de
+90 jours, la fin nulle, la fin inconnue et la fermeture de 29 jours restent, les
+98 vraies lignes ne bougent pas, et une insertion en rôle `anon` déclenche la
+purge. Un témoin de `parent.js` lit l'avis dans l'espace parent et exige que le
+SQL recopié dans `cloud.js` efface exactement les fins que le jeu déclare,
+jamais `plantage`.
+
+---
+
 ## v473 — La ligne 1 du métro passe sous Paris
 
 **Pourquoi.** Paris n'avait plus de métro. L'anneau souterrain de la v163 a
