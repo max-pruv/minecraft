@@ -8539,7 +8539,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       });
       juger(await emb.evaluate(passage), verifier);
     }
-    // ON MONTE DANS UNE RAME PAR SA PORTE (v488). `bord` collait l'enfant au
+    // ON MONTE DANS UNE RAME PAR SA PORTE (v489). `bord` collait l'enfant au
     // siège d'un coup. Le passage vit dans `sonde-porte-rame.cjs` (rejouable
     // seul en trente secondes, rouge sous `EMBARQ=0`) : il pose sa propre
     // ligne sur le couloir plat, avec une pause à chaque arrêt — on provoque
@@ -8708,7 +8708,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // bouts) et s'y arrêter. Sur l'ancien code il touche à l'aplomb de son
     // départ. La durée de jeu est bornée par une durée de montre (le banc rend
     // quelques images par seconde) et entre dans le message.
-    // CE QUI BORDE LE SEUIL ET CE QUI FLOTTE AU-DESSUS DE LA PISTE (v488).
+    // CE QUI BORDE LE SEUIL ET CE QUI FLOTTE AU-DESSUS DE LA PISTE (v489).
     // Sous node, par la sonde de l'approche (même règle de contact : un bloc
     // dans la boîte de l'avion est un heurt, le sol est sous les roues). Le
     // Concorde venu de l'ouest à Los Angeles entrait dans le mur d'une colonne

@@ -1,5 +1,17 @@
 # Ce qui est en cours
 
+- [ ] **`monte.js` « deux voisines d'un convoi gardent leur longueur d'écart »
+  ROUGE au portail de la v488 — sans rapport avec la livraison.** Mesuré :
+  `minTrace` 3,59 pour une barre à 4,4 (une longueur de voiture), `minVrai`
+  3,26, 140 relevés, 1 429 paires, à Paris vers (−330, 310), voiture 2 du
+  convoi. Preuve STRUCTURELLE que ce n'est pas la v488 (règle v291) : son diff
+  ne touche que `tests/maj.js`, sa sonde (lue par `maj.js` seule), la chaîne de
+  `CACHE_VERSION` et les textes de `nouveautes.js` (lus au clic sur le badge) ;
+  `monte.js` joue sans service worker un code identique à la v487. Au même
+  portail, « au feu, la voiture freine » et « l'on ne marche pas dans une rue
+  vide » rougissent comme déclaré plus bas. À rejouer SEUL des deux côtés
+  avant d'expliquer : la piste la plus proche est la voiture de file qui pile
+  derrière le feu (entrée ci-dessous), qui rapproche aussi deux voisines.
 - [ ] **Rouges de portail mesurés des deux côtés au portail de la v486 (Changi)**
   — double mesure de la v195, `monte.js` rejouée SEULE sur la branche et sur
   `origin/main` v473 (`git worktree`) : « à Moscou, les rues sont pleines de
@@ -5274,7 +5286,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   et le « flanc frôlé » de la v397, rouge à l'identique sur `origin/main`).
   PREUVE STRUCTURELLE en plus : le code neuf n'est atteint que sous
   `embarq: 1` en descendant d'un avion au sol ; aucune de ces pages ne le fait.
-- [x] **MONTER DANS UN TRAIN OU UN MÉTRO PAR SA PORTE — LIVRÉ EN v488.**
+- [x] **MONTER DANS UN TRAIN OU UN MÉTRO PAR SA PORTE — LIVRÉ EN v489.**
   `construireRame` déclare `userData.porte` (porte arrière coulissante des
   deux flancs, un membre) ; `monterRame` / `descendreRame` (embarquement.js),
   branchées dans `embarquer` / `debarquer` (fun.js), ne jouent que si la rame
@@ -5289,7 +5301,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   - [ ] **Les amis ne voient pas la porte d'une rame s'ouvrir**, pas plus que
     celle d'un avion (v389) : il faudrait un message court comme `portiere`,
     donc `net.js`.
-  - [ ] **Au portail de la v488, rouges qui ne sont pas la livraison** (preuve
+  - [ ] **Au portail de la v489, rouges qui ne sont pas la livraison** (preuve
     structurelle, v291 : la séquence ne joue que sur un appui au bouton près
     d'une rame) : `visio.js` la radio pendant l'appel (avant 0,0089, pendant
     0,0057 — déjà déclaré) ; `maj.js` le loader d'installation (déclaré) ;
@@ -7264,7 +7276,18 @@ l'embarquement a eu lieu, pas par une hypothèse.
   demande pas un seul fichier au serveur pendant cinquante-huit secondes.
   Corrigé ; le témoin est vert.
 
-- [ ] **Un service worker vraiment coincé n'a aucun témoin.** Le blocage de
+- [x] **Un service worker vraiment coincé a son témoin — FAIT en v488.**
+  Le blocage qui ne s'épuise pas se fabrique dans le CODE que le navigateur
+  exécute, pas dans le réseau : le service worker publié porte un `install`
+  dont la promesse ne se tient jamais. `sonde-sw-coince.cjs` (appelée par
+  `maj.js`) juge un état — page rechargée, sous la version neuve ou sur les
+  fichiers du serveur. Rouge sur deux copies (filet désarmé, `forcerMaj` sans
+  borne). Ce qu'on attendait et qui n'existe pas : le retour suivant ne
+  rebloque pas l'enfant (`register()` reste suspendu, la vérification au
+  retour n'est pas posée). Ce qui reste vrai, et déclaré : pendant le
+  blocage, le badge annonce l'ancienne version alors que les fichiers sont
+  neufs. Constat d'origine :
+  Un service worker vraiment coincé n'avait aucun témoin. Le blocage de
   `forcerMaj` est établi par la sonde — le filet l'appelle à vingt secondes,
   `wm-maj-forcee` passe à 1, et plus rien pendant vingt-huit secondes — mais
   rien ne le garde. Deux témoins ont été écrits et retirés : verts des deux

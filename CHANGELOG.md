@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v488 — On monte dans le métro par sa porte
+## v489 — On monte dans le métro par sa porte
 
 **Pourquoi.** Dans une voiture (v366) et dans un avion (v389, v400), l'enfant
 marche jusqu'à la porte, elle s'ouvre, il entre. Dans un train ou un métro,
@@ -48,6 +48,31 @@ second appui et la rame qui roule ; aucun programme compilé, aucun bloc écrit.
 Rouges sous `embarq=0` (l'ancien geste, rejoué au bit près). Ce qui ne se
 juge que sur l'iPad (la vue, une vraie gare, un vrai quai de Washington) est
 dans `TASKS.md`.
+
+---
+
+## v488 — Un service worker vraiment coincé a son témoin
+
+**Pourquoi.** La v220 avait réparé le filet de mise à jour (une minuterie armée
+APRÈS l'installation qu'elle devait sauver) et borné `forcerMaj`, le dernier
+recours, qui attendait `unregister()` derrière l'installation bloquée. Mais rien
+ne gardait ces deux remèdes : les deux témoins écrits alors étaient verts des
+deux côtés, parce que leur blocage finissait toujours par rendre la main et que
+l'ancien code s'en sortait sans filet. C'est la mise à jour de toute la
+famille : si elle se recasse, plus aucune tablette ne reçoit rien.
+
+**Ce que ça change.** Pour la famille, rien de visible : les deux remèdes
+tenaient. Une installation qui ne finit JAMAIS est désormais éprouvée à chaque
+portail : au bout de quarante-cinq secondes la page repart de zéro et tourne sur
+les fichiers du serveur, puis le loader s'efface et « Jouer » est là.
+
+**Ce qui le prouve.** Deux témoins dans `maj.js`, qui appellent
+`sonde-sw-coince.cjs` telle quelle. Le blocage ne s'épuise pas : le service
+worker publié porte un `install` dont la promesse ne se tient jamais (Chromium
+borne un événement à cinq minutes). Mesuré : rechargée à 49,6 s, `main.js`
+redemandé au serveur, l'installation toujours coincée. Vérifiés ROUGES sur deux
+copies : filet désarmé (loader « 126 / 126 fichiers » à jamais) et `forcerMaj`
+sans borne (loader « On va chercher la dernière version… » à jamais).
 
 ---
 

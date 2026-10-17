@@ -1,4 +1,4 @@
-// SONDE (v488) : on monte dans une rame PAR SA PORTE, et l'on en descend —
+// SONDE (v489) : on monte dans une rame PAR SA PORTE, et l'on en descend —
 // le passage de monte.js, seul, sur une page qui joue la séquence
 // (`embarq: 1`), pour le mesurer des deux côtés en deux minutes. Copie
 // conforme : `passage` est exportée et monte.js l'appelle telle quelle.

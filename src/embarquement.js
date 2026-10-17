@@ -64,10 +64,10 @@ export const DUREES = {
   // l'avion (v381) : la marche jusqu'au pied de l'escalier peut faire le
   // tour du nez, on la borne plus large ; puis on monte les marches
   marcheAvionMax: 2.0, gravir: 0.9, ouvertureAvion: 0.45, entreeAvion: 0.5, fermetureAvion: 0.45,
-  // la rame (v488) : la porte coulisse, on entre d'un pas
+  // la rame (v489) : la porte coulisse, on entre d'un pas
   ouvertureRame: 0.4, entreeRame: 0.5, fermetureRame: 0.4, sortieRame: 0.55,
 };
-// LA RAME DOIT ÊTRE À QUAI POUR TOUTE LA SÉQUENCE (v488) : une marche bornée à
+// LA RAME DOIT ÊTRE À QUAI POUR TOUTE LA SÉQUENCE (v489) : une marche bornée à
 // 1,1 s, la porte, le pas d'entrée — un peu plus de deux secondes de jeu. Une
 // rame dont la pause finit avant ne joue pas la séquence (l'ancien geste,
 // d'un coup), et une rame qui repart pendant la séquence la termine (assis tout
@@ -550,7 +550,7 @@ export function creerEmbarquement(ctx) {
     }
   }
 
-  // ---- monter dans un train ou un métro par sa porte (v488) ----------------
+  // ---- monter dans un train ou un métro par sa porte (v489) ----------------
   // `bord` (fun.js) collait l'enfant au siège d'une rame d'un coup. La même
   // discipline que l'avion (v381, v400) : l'accès se déclare avec le MODÈLE
   // (`userData.porte` posé par `construireRame`, une porte coulissante en
@@ -635,7 +635,7 @@ export function creerEmbarquement(ctx) {
   }
   function updateRame() {
     const g = s.a.mesh, porte = s.porte;
-    // la rame repart : on ne la suit pas en marchant, on termine (v488)
+    // la rame repart : on ne la suit pas en marchant, on termine (v489)
     if (g.position.distanceTo(s.ancre) > BOUGE_RAME
       && !(s.sens === 'monter' && s.phase === 'fermeture')) { terminer('la rame est repartie'); return; }
     const regard = (pL) => versMonde(g, pL.clone().add(new THREE.Vector3(0, 1.1, 0)));

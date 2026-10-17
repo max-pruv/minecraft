@@ -6,12 +6,20 @@
 
 export const NOUVEAUTES = [
   {
-    v: 488,
+    v: 489,
     titre: 'On monte dans le métro',
     puces: [
       'Tu marches jusqu’à la porte du train',
       'Elle coulisse, tu entres, elle se ferme',
       'Tu descends debout sur le quai',
+    ],
+  },
+  {
+    v: 488,
+    titre: 'Une mise à jour jamais coincée',
+    puces: [
+      'Même bloquée, la mise à jour arrive',
+      'Le jeu repart tout seul, sans rien effacer',
     ],
   },
   {
