@@ -16,7 +16,7 @@
 // comme les autres fusions de ce fichier.
 import { fusionnerGarages } from './garages.js';
 import { migrerBlocsCarte3, migrerPositionsCarte3, menagerBlocsCielParis, releverBlocsToitsParis, releverPositionsParis,
-  migrerBlocsParisDouble, migrerPositionsParisDouble, migrerBlocsFonduDoux, migrerPositionsFonduDoux } from './world.js';
+  migrerBlocsParisDouble, migrerPositionsParisDouble, migrerBlocsFonduDoux, migrerPositionsFonduDoux, migrerChaineCarte } from './world.js';
 
 const STATE_TS = '_t'; // when the pushing device last wrote this document
 
@@ -335,7 +335,11 @@ export class ProfileSync {
     // touche encore quelque chose (voir `releverToitsParis`, world.js).
     // ET PAR PARIS DOUBLÉ (v306), EN DERNIER : les trois marches d'avant
     // jugent sur le monde où les blocs ont été posés, celle-ci les emmène.
-    const editsRecus = migrerBlocsFonduDoux(migrerBlocsParisDouble(menagerBlocsCielParis(releverBlocsToitsParis(migrerBlocsCarte3(normalizeEdits(remote.edits)).tout).tout).tout).tout).tout;
+    // ET LES FICHES DES GARAGES AVEC LEURS BLOCS (v474) : chaque marche les
+    // juge sur les blocs reçus tels qu'ils étaient avant elle — la chaîne est
+    // donc faite d'un seul tenant (`migrerChaineCarte`, world.js).
+    const chaine = migrerChaineCarte(normalizeEdits(remote.edits), remote.garages);
+    const editsRecus = chaine.edits;
     const posRecues = migrerPositionsFonduDoux(migrerPositionsParisDouble(releverPositionsParis(migrerPositionsCarte3(remote.pos).pos).pos).pos).pos;
     out.pos = filtrerParMonde(mergePos(local.pos, posRecues), vivant);
     out.edits = filtrerParMonde(mergeAllEdits(local.edits, editsRecus), vivant);
@@ -351,7 +355,7 @@ export class ProfileSync {
     // Alice rejoint le monde, sa page se recharge dans la seconde et sa
     // session meurt — sur une tablette neuve, où le champ n'existe pas encore.
     // Tout champ ajouté ici doit suivre la même règle.
-    const garages = filtrerParMonde(fusionnerGarages(local.garages, remote.garages), vivant);
+    const garages = filtrerParMonde(fusionnerGarages(local.garages, chaine.garages), vivant);
     if (Object.keys(garages).length) out.garages = garages;
     // single-valued preferences: the device that wrote most recently wins
     out.pet = pick('pet');
