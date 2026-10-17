@@ -5327,13 +5327,11 @@ l'embarquement a eu lieu, pas par une hypothèse.
   lecture-là. Rien ne le garde aujourd'hui : les deux témoins de la v279
   mesurent la ville que le banc peuple, qui n'est pas Manhattan.
 
-- [ ] **LE RECUL DE LA CAMÉRA N'A ÉTÉ JUGÉ QUE SUR LE BANC (v279).** 6,4 au lieu
-  de 5,2, choisi sur trois captures du boulevard Voltaire depuis le même point.
-  Max juge sur captures, et il n'a pas encore vu celles-ci ; s'il le trouve trop
-  loin ou trop près, c'est une ligne de `montures.js`
-  (`poursuite: { recul, hauteur }`, la hauteur suivant la distance à 0,404).
-  Les vues de poursuite des AVIONS (18, 22, 13) n'ont pas été touchées : la
-  demande portait sur la voiture.
+- [x] **LE RECUL DE LA CAMÉRA N'A ÉTÉ JUGÉ QUE SUR LE BANC (v279) — captures
+  prises en v474** (`tests/sonde-captures-camera-volant.cjs`, envoyées à Max) :
+  arrêt, ligne droite, virage à gauche et à droite, rue étroite, mur derrière.
+  Le recul reste à 6,4 ; s'il le trouve trop loin ou trop près, c'est toujours
+  une ligne de `montures.js`. Les vues des AVIONS n'ont pas été touchées.
 
 - [ ] **LES CINQ ROUGES DE `manhattan.js` AU PORTAIL DE LA v279 — QUATRE
   MESURÉS SUR `origin/main`, ET LE CINQUIÈME RESTE OUVERT.** Rejoué SEUL des
@@ -5605,36 +5603,12 @@ l'embarquement a eu lieu, pas par une hypothèse.
   témoin mesure ce que l'enfant obtient : marcher droit sur une voiture garée,
   et s'arrêter devant au lieu de ressortir de l'autre côté.
 
-- [ ] **LA VUE EN VOITURE EST TROP SERRÉE, ET ELLE NE MONTRE PAS LE VIRAGE
-  (Max, après v276).** « La vue de la voiture, je la trouve pas très cool. Il
-  faudrait la zoomer out un petit peu et faire comme dans GTA : quand la
-  voiture tourne, on voit vraiment la voiture qui tourne, on voit le flanc de
-  la voiture sur le côté. »
-
-  La vue de poursuite EXISTE déjà (`poursuite` dans la fiche, montures.js,
-  décidée par Max après deux essais de vue intérieure) — elle est seulement
-  trop près et trop rigide :
-
-  ```
-  montures.js   voiture … poursuite: { recul: 5.2, hauteur: 2.1 }
-  fun.js:1293   if (a.def.poursuite) { … cos(player.yaw), sin(player.yaw) … }
-  ```
-
-  Deux défauts distincts, et le second est le vrai sujet. **Le recul** se
-  règle dans la fiche, comme pour les avions (13, 18, 22 selon l'appareil) :
-  c'est un chiffre, il se mesure sur captures. **La rigidité** est
-  structurelle : la caméra lit `player.yaw` à l'image même, donc elle tourne
-  EXACTEMENT avec la voiture et l'on ne voit jamais le flanc. Il lui faut un
-  cap PROPRE qui rattrape celui du véhicule avec du retard — c'est ce retard,
-  et lui seul, qui fait qu'on voit la voiture s'inscrire dans son virage.
-
-  Deux pièges connus du dépôt à reprendre ici : le retard se compte en TEMPS
-  RÉEL et non en `dt` (v226), sinon la caméra traîne deux fois plus sur une
-  tablette qui rame ; et **un signe se regarde, il ne se déduit pas** (v231,
-  v249) — une caméra qui retarde du mauvais côté montre le flanc opposé au
-  virage, et aucune mesure d'amplitude ne l'en distingue. Deux captures, un
-  virage à gauche et un à droite, AVANT d'écrire le témoin.
-
+- [x] **LA VUE EN VOITURE EST TROP SERRÉE, ET ELLE NE MONTRE PAS LE VIRAGE
+  (Max, après v276).** Fait par la v278 (cap en retard), la v279 (recul 6,4),
+  la v422 (visée sur la voiture, retard borné, mur cherché cellule par cellule)
+  et la v474 (dos à un mur, la caméra monte et plonge : la voiture ne sort plus
+  par le bas du cadre). Mesuré dans la matrice : virage à gauche → flanc gauche
+  (β 10,8°), à droite → flanc droit (β −13°). Reste à la juger sur l'iPad.
 
 - [ ] **LE TÉMOIN DES REDÉMARRAGES AU VERT COMPTE UN INSTANT, PAS UN
   ÉVÉNEMENT (v275).** « Et la circulation s'arrête au feu rouge, puis repart
