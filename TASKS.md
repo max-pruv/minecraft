@@ -7442,18 +7442,20 @@ l'embarquement a eu lieu, pas par une hypothèse.
   mémorial Roosevelt, lui, est revenu en v162. *(L'Orange et l'Argent roulent
   depuis la v468, sur les rails de la Bleue d'Eastern Market à Foggy Bottom.)*
 
-- [ ] **Le métro de Washington n'est pas creusé hors du cercle de 187 blocs**
-  (mesuré v468, déjà vrai sur `origin/main`). La ville est une BOÎTE, mais
-  `cityAtParmi` lit le cercle du registre (`r: 187`) : au-delà, le bâtisseur
-  de Washington ne passe pas, et `creuserMetro` non plus. Les quais
-  d'Arlington Cemetery (230 blocs du centre) et de Pentagon (209) sont de la
-  PIERRE ; 305 points de voie de la Bleue sur 986 ont un bloc plein dans le
-  gabarit (sonde : `getBlock` à y+1..3 sur `traceLigneMetro`) — les rames y
-  roulent dans la roche. Le tunnel de l'Orange et de l'Argent vers Rosslyn
-  (v468) aussi, sur 77 points sur 732. Remède : creuser le métro (seulement
-  lui, sous terre) dans toute colonne de la boîte, dans `world.js` — mais
-  ses bouches remontent à la surface d'Arlington, et les colonnes hors du
-  cercle ont pu recevoir des blocs d'enfant : à mesurer avant d'écrire.
+- [x] **Le métro de Washington n'est pas creusé hors du cercle de 187 blocs**
+  — fait en v474 : le métro seul est creusé dans toute l'emprise de la zone
+  (`creuserMetroWashington`, `EMPRISE_METRO_DC`), 0 point de voie muré sur
+  les six lignes, vingt quais praticables. Ce qui reste, déclaré :
+  - une colonne (et ses huit voisines) où un enfant a posé ou creusé un bloc
+    avant `DATE_METRO_BOITE_DC` ne reçoit pas la surface du métro (bouche,
+    rampe) : si un enfant a bâti sur la future bouche d'Arlington ou de
+    Pentagon, l'escalier s'arrête à trois blocs sous le sol. Pas mesurable
+    d'ici (les données des enfants ne se lisent pas).
+  - l'esplanade du Pentagone (monument posé après le creusement) couvre
+    cinq colonnes de la tranchée de la Jaune devant Pentagon, hors du
+    gabarit : un plafond de dalle, pas un mur pour la rame.
+  - des couronnes d'arbres de campagne surplombent la tranchée et l'escalier
+    couvert ; les troncs dans une ouverture sont refusés (`metroOuvertDC`).
 
 - [ ] **Moscou sans voitures en vue, au portail seulement (v460)** — `monte.js`
   « à Moscou… les rues sont pleines de voitures » (et la diversité, qui en

@@ -909,6 +909,27 @@ Deux règles.
   Bleue sa branche : deux rames de branche à moins d'un tiers de tour se
   rattraperaient au bout — d'où trois rames de branche, pas six.
 
+## Le métro de Washington jusqu'au bout de la boîte (v474) — un ouvrage se creuse dans son emprise, pas dans le disque de la ville
+
+Deux règles.
+
+- **UN OUVRAGE SOUTERRAIN SE CREUSE DANS L'EMPRISE QU'IL OCCUPE.** Le
+  bâtisseur de Washington ne passait que dans le cercle du registre (187
+  blocs) ; la boîte et les tiroirs des terminus vont au-delà, et les rames y
+  roulaient dans la roche (309 points de la Bleue). Hors du cercle, `world.js`
+  appelle `creuserMetroWashington` — le métro seul, jamais une maison — dans
+  `EMPRISE_METRO_DC` (la zone, plus de quoi poser un pylône). Creuser n'écrit
+  que des blocs : les empreintes du relief et des 490 morceaux ne bougent pas.
+  Les mondes d'avant (`villesAvant`) ne creusent pas.
+- **CE QUI OUVRE LA SURFACE CÈDE À UN BLOC D'ENFANT, ET SE CHOISIT CONTRE CE
+  QUI SE POSE APRÈS.** Une colonne marquée par un bloc d'avant
+  `DATE_METRO_BOITE_DC` (et ses huit voisines, `colonnesMetroDC`) ne reçoit
+  que ce qui est à trois blocs et plus sous le sol ; un arbre à trois blocs
+  d'un tel bloc reste. Une bouche hors du cercle (jamais creusée avant) se
+  choisit avec la règle entière : les monuments sont posés APRÈS le
+  creusement, et celle de Pentagon débouchait dans le Pentagone. La date se
+  relit à la fusion (v309).
+
 ## La ligne 1 sous Paris (v473) — un escalier en biais monte de 0,7, et un creusement se borne sous le lit
 
 Trois règles.

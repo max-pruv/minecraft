@@ -159,6 +159,15 @@ function partDeVille(u, v) {
   return 1 - d / MARGE;
 }
 
+// Ce que le métro creuse : la zone, plus de quoi poser le pylône d'une bouche
+// qui sort dans la marge. Creuser ne bouge pas le relief (`terrainHeight`).
+const dansEmpriseMetro = (u, v) => u >= BOITE.u0 - MARGE && u <= BOITE.u1 + MARGE
+  && v >= BOITE.v0 - MARGE && v <= BOITE.v1 + MARGE;
+export const EMPRISE_METRO_DC = {
+  x0: WASHINGTON.x + BOITE.u0 - MARGE - 4, x1: WASHINGTON.x + BOITE.u1 + MARGE + 4,
+  z0: WASHINGTON.z + BOITE.v0 - MARGE - 4, z1: WASHINGTON.z + BOITE.v1 + MARGE + 4,
+};
+
 export const ZONE_WASHINGTON = {
   x0: WASHINGTON.x + BOITE.u0 - MARGE, x1: WASHINGTON.x + BOITE.u1 + MARGE,
   z0: WASHINGTON.z + BOITE.v0 - MARGE, z1: WASHINGTON.z + BOITE.v1 + MARGE,
@@ -1278,13 +1287,21 @@ export const BOUCHES_METRO = QUAIS_METRO.map((q) => {
   const marches = Math.max(4, sol - 1 - (q.y + 1));
   const paliers = Math.floor(marches / 6);
   const longueur = DEMI_VOUTE + 1 + marches + paliers * 2;
+  // UNE STATION HORS DU CERCLE (v474) — Arlington Cemetery, Pentagon — n'a
+  // jamais été creusée avant : sa bouche se choisit avec la règle entière.
+  // Elle peut sortir dans la marge de la zone (le métro y est creusé, v474)
+  // si la boîte n'a rien de mieux, et TOUT ce qui est au-dessus de la mezzanine compte contre un monument :
+  // posé après le creusement, il bouche l'escalier. Sur l'ancienne règle,
+  // celle de Pentagon débouchait dans le Pentagone. Celles du cercle gardent
+  // leur règle : on n'ouvre pas un escalier neuf sous une maison d'enfant.
+  const horsCercle = Math.hypot(q.u, q.v) > WASHINGTON_R;
   const note = ([nu, nv]) => {
     let mal = 0;
     for (let d = DEMI_VOUTE + 1; d <= longueur + 2; d++) {
       const u = q.u + nu * d, v = q.v + nv * d;
       if (surEauWashington(u, v)) mal += 100;
-      if (!dansBoite(u, v)) mal += 100;
-      if (d >= longueur - 4 && surMonument(u, v)) mal += 30;
+      if (!dansBoite(u, v)) mal += horsCercle && dansEmpriseMetro(u, v) ? 5 : 100;
+      if (horsCercle ? d > DEMI_VOUTE + 6 && surMonument(u, v) : d >= longueur - 4 && surMonument(u, v)) mal += 30;
       if (d === longueur) {
         mal += Math.abs(solDeWashington(WASHINGTON.x + u, WASHINGTON.z + v) - sol) * 4;
       }
@@ -1641,6 +1658,22 @@ function creuserMetro(u, v, h, poser) {
   for (const [y, id] of apres) poser(y - h, id);
   for (const [y0, y1] of gabarit) for (let y = y0; y <= y1; y++) poser(y - h, BLOCK.AIR);
   return true;
+}
+
+// LE MÉTRO SEUL, sous toute la BOÎTE (v474). La ville s'arrête au cercle du
+// registre (`cityAt`, 187 blocs), mais la boîte va jusqu'au coin de
+// Georgetown et au Pentagone : hors du cercle, le bâtisseur ne passait pas,
+// et la Bleue roulait dans la roche jusqu'à Arlington. `world.js` appelle
+// ceci sur les colonnes de terre de la boîte que la ville ne bâtit pas —
+// le métro et ses bouches, jamais une maison. Jusqu'au bord de la ZONE et
+// pas seulement de la boîte (`EMPRISE_METRO_DC`) : les tiroirs des terminus
+// (Pentagon, Eastern Market, Dupont Circle, Union Station) font leur
+// demi-tour jusqu'à huit blocs au-delà, et la rame y roulait dans la roche ;
+// la bouche de Pentagon sort dans la marge, son pylône un peu plus loin.
+export function creuserMetroWashington(x, z, h, poser) {
+  const E = EMPRISE_METRO_DC;
+  if (x < E.x0 || x > E.x1 || z < E.z0 || z > E.z1) return false;
+  return creuserMetro(x - WASHINGTON.x, z - WASHINGTON.z, h, poser);
 }
 
 // --- le bâti ordinaire ---------------------------------------------------------
