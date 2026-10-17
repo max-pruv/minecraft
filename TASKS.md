@@ -1767,6 +1767,16 @@
   appelé pour ce morceau de campagne ; l'écart se prend désormais par paire
   alternée (désarmé de 6 ms : rouge, 7,2).
 
+- [ ] **AU PORTAIL DE LA v474 (règle de la v195), DEUX ROUGES, AUCUN DE LA
+  LIVRAISON.** `maj.js` « il couvre toutes les versions du journal » : la puce
+  de la v465 (« Sur la mer, le train roule sur un viaduc ») dépasse la barre —
+  telle quelle sur `origin/main`, zone de la session du viaduc. `degats.js`
+  « percuter une voiture de la rue l'abîme AUSSI » : `ecart` 17,9 pour une
+  barre de 20, relevé AVANT tout choc (le recul à 26 blocs de la v450, la
+  voiture de la rue repart pendant les 0,2 s) ; rejouée seule, branche 1 rouge
+  sur 2 (22,5 vert), `origin/main` 1 sur 1 (15,9). Piste : relire l'écart après
+  que la voiture visée est vraiment arrêtée, ou recaler le recul sur sa
+  position relue.
 - [ ] **LES DÉGÂTS (v343) : CE QUI RESTE, DÉCLARÉ.**
   - ~~Cinquante-quatre appels de dessin pendant un feu~~ — **fait en v348** :
     deux `InstancedMesh`, 30 → 2 appels mesurés, gardé par un témoin. Le coût
