@@ -3169,6 +3169,7 @@ export class World {
     if (cl === 'steppe') return f * 0.05;
     if (cl === 'tropiques') return Math.max(f, 0.6);
     if (cl === 'mediterranee') return f * 0.45;
+    if (cl === 'savane') return f * 0.15;
     return f;
   }
 
@@ -3244,6 +3245,9 @@ export class World {
     // et des pins parasols épars — moins de bois que la forêt tempérée, un
     // peu plus d'arbres isolés dans la plaine
     else if (cl === 'mediterranee') density = forest > 0.62 ? 0.03 : forest > 0.48 ? 0.012 : 0.006;
+    // la savane (v474) : des arbres isolés partout dans les hautes herbes,
+    // quelques bosquets le long des creux — jamais de bois fermé
+    else if (cl === 'savane') density = forest > 0.62 ? 0.012 : 0.004;
     if (tirage >= density) return null;
     const h = this.terrainHeight(x, z);
     if (h <= WATER_LEVEL + 1 || h >= 58) return null; // only on grass
@@ -3268,6 +3272,9 @@ export class World {
     // sous le soleil méditerranéen (v469) : des oliviers, trapus, et un pin
     // parasol sur trois, haut fût nu et couronne plate
     if (cl === 'mediterranee') return roll < 0.65 ? { h, trunk: 2 + Math.floor(hash2i(x, z, SEED + 787) * 2), kind: 5 } : { h, trunk: trunk + 1, kind: 4 };
+    // dans la savane (v474) : des acacias en parasol, et un buisson épineux
+    // sur cinq (la silhouette trapue de l'olivier, sur un tronc d'un bloc)
+    if (cl === 'savane') return roll < 0.8 ? { h, trunk: 3 + Math.floor(hash2i(x, z, SEED + 788) * 2), kind: 6 } : { h, trunk: 1, kind: 5 };
     const kind = roll < 0.55 ? 0 : roll < 0.85 ? 1 : 2;
     return { h, trunk: kind === 2 ? trunk + 1 : trunk, kind };
   }
@@ -3993,6 +4000,22 @@ export class World {
               if (dx * dx + dz * dz > r * r + 1) continue;
               put(tx + dx, y, tz + dz, BLOCK.LEAVES, true);
             }
+          }
+        } else if (kind === 6) {
+          // acacia (v474) : le fût se fourche en deux branches obliques, et
+          // une ombrelle UNIQUE, mince et large, coiffe le tout — trois blocs
+          // de rayon au plus (le balayage déborde de trois), un petit dôme au
+          // milieu. Plus plat que le pin parasol, qui a deux étages.
+          const [bx, bz] = hash2i(tx, tz, SEED + 789) < 0.5 ? [1, 1] : [1, -1];
+          put(tx + bx, topY + 1, tz + bz, BLOCK.LOG, false);
+          put(tx - bx, topY + 1, tz - bz, BLOCK.LOG, false);
+          for (let dx = -3; dx <= 3; dx++) for (let dz = -3; dz <= 3; dz++) {
+            if (dx * dx + dz * dz > 10) continue;
+            put(tx + dx, topY + 2, tz + dz, BLOCK.LEAVES, true);
+          }
+          for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
+            if (dx && dz) continue;
+            put(tx + dx, topY + 3, tz + dz, BLOCK.LEAVES, true);
           }
         } else if (kind === 5) {
           // olivier (v469) : un tronc court, une couronne ronde et large

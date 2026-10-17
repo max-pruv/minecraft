@@ -311,6 +311,26 @@ const CLIMATS = [
   ['mediterranee', 'australie-sud-ouest', [114.8, -28, 116.5, -29, 117.5, -31.5, 119, -33.5, 118, -35, 116, -35,
     115, -34.3, 115.5, -32, 114.8, -29.5]],
   ['mediterranee', 'adelaide', [137.5, -33, 139, -33.2, 139.5, -35, 138.5, -35.8, 136.5, -35.8, 137.5, -34.5]],
+  // LA SAVANE (v474) : les hautes herbes dorées de la saison sèche et les
+  // arbres isolés, entre les forêts humides et les steppes. La bande
+  // soudanienne (sous le Sahel, de la Casamance au Nil Blanc), les savanes
+  // d'Afrique de l'Est (Serengeti, Masai Mara, Ouganda), le miombo et le
+  // bushveld d'Afrique australe (de l'Angola au Mozambique et au Limpopo),
+  // l'ouest de Madagascar, le Cerrado brésilien, les Llanos de l'Orénoque,
+  // le Top End et la savane du nord de l'Australie. Après TOUT le reste : les
+  // déserts (Kalahari), le Sahel, la Corne, les forêts humides (Congo,
+  // Amazonie, Queensland) et l'anneau semi-aride de l'Australie passent avant.
+  ['savane', 'soudanienne', [-16.5, 12.5, -5, 13, 5, 13, 15, 12, 25, 11.5, 34, 12.5, 35, 9, 33, 6, 30, 4,
+    25, 4.5, 20, 5, 15, 5, 11, 6.5, 8, 6.5, 4, 7.5, -2, 7.5, -8, 8, -11, 10, -15, 11]],
+  ['savane', 'afrique-est', [33, 4, 38, 4, 40, 2, 41, -2, 39.5, -6, 39.5, -10, 35, -11, 30.5, -8, 29.5, -3, 30.5, 0, 31, 3]],
+  ['savane', 'afrique-australe', [12, -6, 20, -6, 25, -6, 29, -5, 30.5, -8, 35, -11, 40.5, -10.5, 40.5, -15,
+    35, -24, 32.5, -26, 30, -28, 26, -26.5, 22, -24, 20, -19, 15, -17, 12, -17, 13.5, -12, 12, -9]],
+  ['savane', 'madagascar-ouest', [44, -16, 47, -13.5, 48.5, -15, 47, -23, 45, -25, 43.5, -22]],
+  ['savane', 'cerrado', [-60, -10, -55, -11, -50, -8, -46, -5, -42, -3, -40, -5, -38, -9, -42, -17, -48, -23,
+    -52, -22, -55, -20, -58, -17, -60, -15]],
+  ['savane', 'llanos', [-73, 7, -67, 8.5, -62, 9.5, -61, 8, -64, 6, -68, 4, -72, 3.5, -73.5, 4.5]],
+  ['savane', 'australie-nord', [122, -16.5, 126, -14, 130, -12, 132, -11, 136, -12, 136.5, -15, 140, -17.5,
+    142, -11, 143.5, -11, 145, -15, 146.5, -19, 148.5, -21, 149, -24, 145, -23, 142, -19, 137, -17, 130, -16]],
 ];
 const FORMES_CLIMAT = CLIMATS.map(([climat, nom, pts]) => {
   let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
@@ -377,10 +397,12 @@ export function climatCertain(lat, lon, marge) {
 // Le climat méditerranéen (v469) → (165, 150, 72), l'herbe sèche de l'été,
 // plus olive que la paille de la steppe ; le feuillage gris-vert des
 // oliviers (110, 128, 90) — à (82, 110, 62) il sortait presque noir en capture.
-export const CLIMATS_TEINTES = ['', 'toundra', 'taiga', 'steppe', 'tropiques', 'mediterranee'];
-export const INDICE_CLIMAT = { toundra: 1, taiga: 2, steppe: 3, tropiques: 4, mediterranee: 5 };
-export const TEINTE_HERBE = [null, [1.21, 0.74, 1.29], [0.62, 0.70, 1.03], [1.71, 0.98, 1.48], [0.75, 0.89, 0.97], [1.59, 0.89, 1.16]];
-export const TEINTE_FEUILLES = [null, [0.85, 0.8, 1.0], [0.63, 0.71, 1.16], [1.25, 0.95, 1.05], [0.74, 1.03, 0.84], [2.04, 1.1, 2.37]];
+// La savane (v474) → (200, 172, 78), l'or des hautes herbes sèches, plus
+// chaud et plus jaune que la steppe ; le feuillage des acacias (86, 120, 44).
+export const CLIMATS_TEINTES = ['', 'toundra', 'taiga', 'steppe', 'tropiques', 'mediterranee', 'savane'];
+export const INDICE_CLIMAT = { toundra: 1, taiga: 2, steppe: 3, tropiques: 4, mediterranee: 5, savane: 6 };
+export const TEINTE_HERBE = [null, [1.21, 0.74, 1.29], [0.62, 0.70, 1.03], [1.71, 0.98, 1.48], [0.75, 0.89, 0.97], [1.59, 0.89, 1.16], [1.92, 1.02, 1.26]];
+export const TEINTE_FEUILLES = [null, [0.85, 0.8, 1.0], [0.63, 0.71, 1.16], [1.25, 0.95, 1.05], [0.74, 1.03, 0.84], [2.04, 1.1, 2.37], [1.59, 1.03, 1.16]];
 // LES MÊMES, POUR LA COULEUR DE SOMMET DU MONDE PROCHE. three tient une
 // couleur de sommet pour LINÉAIRE et décode la tuile sRGB avant de les
 // multiplier : un facteur 0,62 posé tel quel n'assombrit l'écran que de 0,80.
