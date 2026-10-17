@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 483,
+    titre: 'Le chrono dit vrai',
+    puces: [
+      'La course compte les vraies secondes',
+      'Les animaux arrivent même quand ça rame',
+    ],
+  },
+  {
     v: 482,
     titre: 'Paris plus léger',
     puces: [
