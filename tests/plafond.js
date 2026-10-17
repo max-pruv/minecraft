@@ -3662,6 +3662,65 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         Object.values(r).every((v) => v.retires === 0), Object.entries(r).map(([k, v]) => `${k} ${v.retires}`).join(', '));
     }
 
+    // LA COURONNE LOINTAINE DU PALIER « LOIN » (v497). Une seconde grille,
+    // quatre fois plus lâche, prolonge la fine de 632 à 2 560 blocs. Ce qu'on
+    // éprouve, sur le vrai monde de la page, rien de maillé : elle porte
+    // vraiment jusque-là dans l'axe du regard ; elle ne dessine AUCUNE case
+    // entièrement dans le carré de la fine (la fine a le dernier mot) ; elle
+    // est posée sous la fine (`ABAISSE_LOIN`), pour gagner au tampon de
+    // profondeur là où elles se recouvrent ; au-delà de sa portée elle ne
+    // dessine rien (le brouillard y est plein) ; et elle tient en moins de
+    // quatre mégaoctets — la taille d'une grille fine d'iPad. Une grille fine
+    // tirée jusqu'à 2 560 blocs en tiendrait plus de vingt. Rouge sur l'ancien
+    // code : le constructeur ignore ses options.
+    {
+      const r = await tab.evaluate(async () => {
+        const H = await import('./src/horizon.js');
+        const w = window.__game.world;
+        const x = 1200, z = -900;   // de la campagne, loin des villes
+        const fine = new H.Horizon(w, 632);
+        const loin = new H.Horizon(w, 2560, { pas: H.PAS_LOIN || 32, interieur: fine, abaisse: H.ABAISSE_LOIN || 2, bords: false });
+        for (const h of [fine, loin]) while (h.maj(x, z, 1e9) > 0 && h.etat().manquantes > 0) { /* tout remplir */ }
+        fine.majDecoupe(() => false, x, z, 0, -1);
+        loin.majDecoupe(() => false, x, z, 0, -1);
+        const idx = loin.geo.index.array, pos = loin.geo.attributes.position.array, n = loin.geo.drawRange.count;
+        const f0x = fine.ox * 8, f1x = (fine.ox + fine.CASES) * 8, f0z = fine.oz * 8, f1z = (fine.oz + fine.CASES) * 8;
+        let portee = 0, dansFine = 0, auDela = 0;
+        const pasL = loin.pas || 8;
+        for (let k = 0; k < n; k += 6) {
+          const a = idx[k], d = idx[k + 4];   // les deux coins opposés de la case
+          const ax = pos[a * 3], az = pos[a * 3 + 2], dx = pos[d * 3], dz = pos[d * 3 + 2];
+          if (ax >= f0x && dx <= f1x && az >= f0z && dz <= f1z) dansFine++;
+          const cx = ax - x, cz = az - z;
+          if (Math.hypot(cx, cz) > 2560 + 2 * pasL) auDela++;
+          if (Math.abs(cx) < -cz * 0.6) portee = Math.max(portee, -cz);
+        }
+        // la hauteur : un sommet de la couronne contre la même colonne lue par la fine
+        let sous = 0, lus = 0;
+        for (let i = 0; i < fine.N * fine.N; i += 37) {
+          const px = fine.geo.attributes.position.array[i * 3], pz = fine.geo.attributes.position.array[i * 3 + 2];
+          if (px % 32 || pz % 32) continue;
+          const j = ((px / 32) - loin.ox) * loin.N + ((pz / 32) - loin.oz);
+          if (j < 0 || j >= loin.N * loin.N) continue;
+          lus++;
+          if (pos[j * 3 + 1] <= fine.geo.attributes.position.array[i * 3 + 1] - 1.5) sous++;
+        }
+        let octets = 0;
+        for (const a of Object.values(loin.geo.attributes)) octets += a.array.byteLength;
+        octets += loin.geo.index.array.byteLength + loin.bat.instanceMatrix.array.byteLength + loin.bat.instanceColor.array.byteLength;
+        for (const k of ['hauteurs', 'pret', 'bati', 'toits', 'estNY', 'climats']) octets += loin[k].byteLength;
+        const out = { pasFine: fine.pas, abaisseFine: fine.abaisse, pasLoin: loin.pas, cases: n / 6, portee: Math.round(portee),
+          dansFine, auDela, sous, lus, mo: +(octets / 1048576).toFixed(2) };
+        fine.geo.dispose(); loin.geo.dispose();
+        return out;
+      });
+      verifier('« Loin » : la couronne lointaine porte à 2 560 blocs et laisse son carré à la grille fine',
+        r.pasFine === 8 && r.abaisseFine === 0 && r.pasLoin === 32 && r.portee >= 2400
+          && r.dansFine === 0 && r.auDela === 0 && r.cases > 1000, JSON.stringify(r));
+      verifier('« Loin » : la couronne est posée sous la fine, et tient en moins de 4 Mo',
+        r.lus > 20 && r.sous === r.lus && r.mo < 4, JSON.stringify(r));
+    }
+
     // LES FALAISES ET LES BERGES, VUES DE LOIN (v340). Le monde proche montre
     // la roche d'une falaise et le sable d'une grève depuis la v326 ;
     // `horizon.js` gardait le vert de la carte partout. On remplit un paysage

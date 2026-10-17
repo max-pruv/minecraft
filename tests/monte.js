@@ -1146,7 +1146,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('et elle prend de la hauteur pour voir la route par-dessus le toit',
       poursuite.hauteur > 1.2 && poursuite.hauteur < 3, `${poursuite.hauteur} bloc`);
 
-    // DOS À UN MUR, LA VOITURE RESTE DANS LE CADRE (v497). La caméra se
+    // DOS À UN MUR, LA VOITURE RESTE DANS LE CADRE (v498). La caméra se
     // rapproche quand un mur est derrière le coffre (v422) ; elle gardait
     // l'assiette du regard, et en capture la voiture sortait par le BAS de
     // l'écran — son milieu projeté à −1,17, l'enfant ne voyait que l'intérieur

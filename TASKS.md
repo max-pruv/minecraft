@@ -1,5 +1,22 @@
 # Ce qui est en cours
 
+- [ ] **LA COURONNE LOINTAINE DU PALIER « LOIN » (v497) SE MESURE SUR
+  L'IPHONE.** Au banc (rendu logiciel) : +3,36 Mo, découpe +2 à 4 ms quatre
+  fois par seconde, remplissage complet 68 à 82 ms par tranches de 3 ms. Le
+  coût de REMPLISSAGE des pixels ne se transpose pas (v237). À relever sur
+  l'iPhone de Max : `?palier=haut&diag=1` contre `?palier=haut&loin=0&diag=1`
+  (cadence, pire image), en vol et au sol. Si le jeu plante encore sous
+  « Loin », `?loin=0` est la porte de sortie et `loin` se baisse dans la fiche.
+  Au portail de la v497, `monte.js` a rendu cinq rouges tous DÉJÀ déclarés
+  ci-dessous (« deux voisines d'un convoi », « au feu… au lieu de piler »,
+  « feux de détresse », « rue vide », « un mur pris de face ») — preuve
+  STRUCTURELLE (v291) : aucune page de `monte.js` ne demande `?palier=haut`,
+  donc `RAYON_LOIN` y vaut 0 et la couronne n'existe pas ; le reste du chemin
+  (grille fine sans options, brouillard, plan lointain) est celui d'avant.
+  Second portail, rebasé sur la v495 (puis sur la v496) : sept suites vertes (`maj.js` 46
+  témoins, ceux de la couronne compris) ; `monte.js` trois des cinq (convoi,
+  feu, rue vide) et `manhattan.js` « sans erreur de jeu » (PeerJS, déclaré).
+
 - [ ] **Rouges de portail mesurés des deux côtés au portail de la v494 (les
   commandes simplifiées)** — double mesure de la v195, suites rejouées SEULES
   sur la branche et sur `origin/main` v487 (`git worktree`). `carte.js` : verte
@@ -5642,7 +5659,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   lecture-là. Rien ne le garde aujourd'hui : les deux témoins de la v279
   mesurent la ville que le banc peuple, qui n'est pas Manhattan.
 
-- [ ] **AU PORTAIL DE LA v497 (caméra dos à un mur), DEUX SUITES ROUGES, AUCUNE
+- [ ] **AU PORTAIL DE LA v498 (caméra dos à un mur), DEUX SUITES ROUGES, AUCUNE
   DE LA LIVRAISON (règle v195).** Deux portails, puis chaque suite rejouée SEULE
   des deux côtés (`origin/main` v478 dans un arbre détaché). `monte.js` :
   branche 226 verts / 8 rouges, `origin/main` 226 / 7 ; communs aux deux : « au
@@ -5665,7 +5682,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   deux côtés (5 à 14 vues) : un tirage du nombre de voitures dans le cadre.
 
 - [x] **LE RECUL DE LA CAMÉRA N'A ÉTÉ JUGÉ QUE SUR LE BANC (v279) — captures
-  prises en v497** (`tests/sonde-captures-camera-volant.cjs`, envoyées à Max) :
+  prises en v498** (`tests/sonde-captures-camera-volant.cjs`, envoyées à Max) :
   arrêt, ligne droite, virage à gauche et à droite, rue étroite, mur derrière.
   Le recul reste à 6,4 ; s'il le trouve trop loin ou trop près, c'est toujours
   une ligne de `montures.js`. Les vues des AVIONS n'ont pas été touchées.
@@ -5943,7 +5960,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
 - [x] **LA VUE EN VOITURE EST TROP SERRÉE, ET ELLE NE MONTRE PAS LE VIRAGE
   (Max, après v276).** Fait par la v278 (cap en retard), la v279 (recul 6,4),
   la v422 (visée sur la voiture, retard borné, mur cherché cellule par cellule)
-  et la v497 (dos à un mur, la caméra monte et plonge : la voiture ne sort plus
+  et la v498 (dos à un mur, la caméra monte et plonge : la voiture ne sort plus
   par le bas du cadre). Mesuré dans la matrice : virage à gauche → flanc gauche
   (β 10,8°), à droite → flanc droit (β −13°). Reste à la juger sur l'iPad.
 
