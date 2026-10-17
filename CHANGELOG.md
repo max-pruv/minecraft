@@ -20,6 +20,37 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v489 — On monte dans le métro par sa porte
+
+**Pourquoi.** Dans une voiture (v366) et dans un avion (v389, v400), l'enfant
+marche jusqu'à la porte, elle s'ouvre, il entre. Dans un train ou un métro,
+rien de tout cela : « Monter à bord » le collait au siège d'un coup, et
+« Descendre » le laissait debout là où était le siège, au milieu de la rame.
+La tâche était déclarée depuis la v400 et attendait la porte du modèle.
+
+**Ce que ça change.** Quand la rame est à quai, l'enfant marche jusqu'à la
+porte du flanc où il se trouve (celui du quai), elle coulisse, il entre d'un
+pas, et la porte se referme derrière lui. En descendant, la porte s'ouvre, il
+sort et se pose debout SUR LE QUAI — la place la plus haute et la plus proche
+des deux flancs, jamais dans un mur, jamais dans l'eau, jamais dans le vide.
+Un second appui termine tout de suite (à bord, ou sur le quai). Une rame qui
+roule, ou dont l'arrêt finit avant la séquence, se prend d'un coup, comme
+avant : la porte ne file jamais sous l'enfant, et une rame qui repart pendant
+la séquence la termine.
+
+**Ce qui le prouve.** Quatre témoins dans `monte.js`, sur une page qui joue la
+séquence et une ligne d'essai posée sur le couloir plat — la rame à quai est
+provoquée, pas attendue (`sonde-porte-rame.cjs`, rejouable seule en trente
+secondes) : les phases (marche, ouverture, entrée), « à bord » faux pendant
+toute la marche et vrai seulement une fois dedans, la porte qui coulisse de
+0,86 bloc puis se referme, la descente posée debout à 1,65 bloc du flanc ; le
+second appui et la rame qui roule ; aucun programme compilé, aucun bloc écrit.
+Rouges sous `embarq=0` (l'ancien geste, rejoué au bit près). Ce qui ne se
+juge que sur l'iPad (la vue, une vraie gare, un vrai quai de Washington) est
+dans `TASKS.md`.
+
+---
+
 ## v488 — Un service worker vraiment coincé a son témoin
 
 **Pourquoi.** La v220 avait réparé le filet de mise à jour (une minuterie armée

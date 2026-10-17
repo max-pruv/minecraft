@@ -64,7 +64,16 @@ export const DUREES = {
   // l'avion (v381) : la marche jusqu'au pied de l'escalier peut faire le
   // tour du nez, on la borne plus large ; puis on monte les marches
   marcheAvionMax: 2.0, gravir: 0.9, ouvertureAvion: 0.45, entreeAvion: 0.5, fermetureAvion: 0.45,
+  // la rame (v489) : la porte coulisse, on entre d'un pas
+  ouvertureRame: 0.4, entreeRame: 0.5, fermetureRame: 0.4, sortieRame: 0.55,
 };
+// LA RAME DOIT ÊTRE À QUAI POUR TOUTE LA SÉQUENCE (v489) : une marche bornée à
+// 1,1 s, la porte, le pas d'entrée — un peu plus de deux secondes de jeu. Une
+// rame dont la pause finit avant ne joue pas la séquence (l'ancien geste,
+// d'un coup), et une rame qui repart pendant la séquence la termine (assis tout
+// de suite, ou posé sur le quai) : la porte ne file jamais sous l'enfant.
+export const ATTENTE_RAME_MIN = 2.5;   // secondes de pause qu'il reste au quai
+const BOUGE_RAME = 0.3;                // blocs : au-delà, la rame est repartie
 const PAS = 3.2;               // la marche de l'enfant (blocs/s), qu'on presse si c'est loin
 const LONG_VOITURE = 2.2;      // demi-longueur d'une voiture (4,4 blocs)
 const ECART_PORTE = 0.42;      // où l'on se tient, au-delà du flanc
@@ -103,7 +112,7 @@ export function creerEmbarquement(ctx) {
   let vu = null, dernier = null;
   function publier() {
     if (vu && vu !== s) {
-      dernier = { sens: vu.sens, quoi: vu.avion ? 'avion' : vu.chez ? 'ami' : 'voiture',
+      dernier = { sens: vu.sens, quoi: vu.avion ? 'avion' : vu.rame ? 'rame' : vu.chez ? 'ami' : 'voiture',
         temps: vu.temps || 0, fin: vu.fin || 'jusqu\'au bout', cote: vu.cote, refus: refusSortie };
     }
     vu = s;
@@ -541,6 +550,158 @@ export function creerEmbarquement(ctx) {
     }
   }
 
+  // ---- monter dans un train ou un métro par sa porte (v489) ----------------
+  // `bord` (fun.js) collait l'enfant au siège d'une rame d'un coup. La même
+  // discipline que l'avion (v381, v400) : l'accès se déclare avec le MODÈLE
+  // (`userData.porte` posé par `construireRame`, une porte coulissante en
+  // MEMBRE), la séquence ne joue que si la rame est À QUAI (fun.js le lit dans
+  // la pause du convoi, `ATTENTE_RAME_MIN`), l'état ne ment jamais (`bord`
+  // bascule dans `fin`, une fois entré), un second appui termine, tout compte
+  // en temps de JEU, et `embarq=0` rejoue l'ancien geste au bit près. On monte
+  // par le flanc où l'on est : c'est celui du quai.
+  // `r` : { mesh, fin, encore } — `fin` fait de l'enfant un passager (`bord`),
+  // `encore` dit si la place existe toujours dans le convoi.
+  function coulisser(g, porte, k) {
+    const m = g.userData.membres && g.userData.membres[porte.ouvrant];
+    if (m) m.position[porte.axe] = porte[porte.axe] + porte.course * k;
+  }
+  // le cap du joueur qui regarde vers le flanc `cote` (dos à la rame)
+  function capVersLocal(g, pL, cote) {
+    const w0 = versMonde(g, pL), w1 = versMonde(g, pL.clone().add(new THREE.Vector3(cote, 0, 0)));
+    return Math.atan2(-(w1.x - w0.x), -(w1.z - w0.z));
+  }
+  function geoRame(porte) {
+    return { demiLarg: porte.x, zPorte: porte.z };
+  }
+  function monterRame(r) {
+    if (s) { terminer(); return true; }
+    const g = r && r.mesh, porte = g && g.userData ? g.userData.porte : null;
+    if (!SEQUENCE_ACTIVE || !av || !porte || porte.type !== 'coulissante') return false;
+    const P = versLocal(g, player.pos);
+    const cote = P.x < 0 ? -1 : 1;
+    const d = geoRame(porte);
+    const D = pointPorte(d, cote);
+    const pts = chemin(P, D, d, porte.demiLong);
+    const L = longueurDe(pts);
+    const T = Math.max(DUREES.marcheMin, Math.min(DUREES.marcheMax, L / PAS));
+    s = { sens: 'monter', rame: r, phase: 'approche', t: 0, a: { mesh: g }, d, cote, D, pts, L, T, porte,
+      y0: player.pos.y, ancre: g.position.clone(), temps: 0 };
+    publier();
+    return true;
+  }
+  // DESCENDRE : `bord` est déjà nul (fun.js, au premier appui). La porte
+  // s'ouvre (dedans, caché), l'enfant sort sur le quai, elle se referme. La
+  // place se MESURE (v223) : un sol plein sous les pieds, la carrure libre, pas
+  // d'eau, du côté où il y a un quai ; sinon rien à animer (rend faux).
+  function placeQuai(g, local, y0, nom) {
+    const w = versMonde(g, local);
+    const raisons = [];
+    for (const dy of [0, 1, -1, 2]) {
+      const y = y0 + dy;
+      const r = libre(w.x, y, w.z)
+        || (world.isSolid(Math.floor(w.x), Math.floor(y - 0.5), Math.floor(w.z)) ? '' : 'vide');
+      if (!r) return new THREE.Vector3(w.x, Math.floor(y - 0.5) + 1, w.z);
+      raisons.push(r);
+    }
+    refusSortie[nom] = raisons.join('/');
+    return null;
+  }
+  function descendreRame(r) {
+    if (s) terminer();
+    const g = r && r.mesh, porte = g && g.userData ? g.userData.porte : null;
+    if (!SEQUENCE_ACTIVE || !av || !porte || porte.type !== 'coulissante') return false;
+    refusSortie = {};
+    const d = geoRame(porte);
+    const y0 = player.pos.y;
+    // LE QUAI EST PLUS HAUT QUE LE BALLAST : une gare de train pose son quai
+    // à 2,7 blocs de la rame (`QUAI_DEDANS`, trains.js), le ballast est entre
+    // les deux. On essaie les deux flancs à trois écarts et l'on garde la place
+    // la plus HAUTE, la plus proche à hauteur égale.
+    let cote = 0, monde = null;
+    for (const c of porte.cotes || [-1, 1]) {
+      for (const e of [0.9, 1.7, 2.5]) {
+        const m = placeQuai(g, new THREE.Vector3(c * (d.demiLarg + e), 0, d.zPorte), y0, c < 0 ? 'gauche' : 'droite');
+        if (m && (!monde || m.y > monde.y + 0.5)) { monde = m; cote = c; }
+      }
+    }
+    if (!monde) return false;
+    const cam = { p: player.camera.position.clone(), q: player.camera.quaternion.clone() };
+    const dedans = new THREE.Vector3(0, porte.y, d.zPorte);
+    s = { sens: 'descendre', rame: r, phase: 'ouverture', t: 0, a: { mesh: g }, d, cote, porte,
+      D: pointPorte(d, cote), dedans, monde, piedL: versLocal(g, monde), ancre: g.position.clone(), cam, temps: 0 };
+    player.pos.copy(versMonde(g, dedans)); player.vel.set(0, 0, 0);
+    publier();
+    return true;
+  }
+  function updateRame() {
+    const g = s.a.mesh, porte = s.porte;
+    // la rame repart : on ne la suit pas en marchant, on termine (v489)
+    if (g.position.distanceTo(s.ancre) > BOUGE_RAME
+      && !(s.sens === 'monter' && s.phase === 'fermeture')) { terminer('la rame est repartie'); return; }
+    const regard = (pL) => versMonde(g, pL.clone().add(new THREE.Vector3(0, 1.1, 0)));
+    if (s.sens === 'monter') {
+      if (s.phase === 'approche') {
+        const k = Math.min(1, s.t / s.T);
+        const { p, dir } = pointA(s.pts, s.L * lisse(k));
+        p.y = s.y0 - g.position.y;
+        player.pos.copy(versMonde(g, p)); player.vel.set(0, 0, 0);
+        avatarDebout(g, p, capVers(dir.x, dir.z), s.L / s.T, s.temps);
+        appliquerCamera(lisse(Math.min(1, s.t / 0.35)), camSequence(s, regard(p)));
+        if (k >= 1) { s.phase = 'ouverture'; s.t = 0; }
+      } else if (s.phase === 'ouverture') {
+        const k = Math.min(1, s.t / DUREES.ouvertureRame);
+        coulisser(g, porte, lisse(k));
+        const p = s.D.clone(); p.y = s.y0 - g.position.y;
+        avatarDebout(g, p, s.cote * Math.PI / 2, 0, s.temps);
+        player.pos.copy(versMonde(g, p)); player.vel.set(0, 0, 0);
+        appliquerCamera(1, camSequence(s, regard(p)));
+        if (k >= 1) { s.phase = 'entree'; s.t = 0; }
+      } else if (s.phase === 'entree') {
+        // un pas par la porte, jusqu'au milieu de la voiture
+        const k = Math.min(1, s.t / DUREES.entreeRame);
+        const p = s.D.clone().lerp(new THREE.Vector3(0, 0, s.d.zPorte), lisse(k));
+        p.y = lerp(s.y0 - g.position.y, porte.y, lisse(k));
+        avatarDebout(g, p, s.cote * Math.PI / 2, 1.6, s.temps);
+        player.pos.copy(versMonde(g, p)); player.vel.set(0, 0, 0);
+        appliquerCamera(1, camSequence(s, regard(p)));
+        if (k >= 1) {
+          avatarRetire();
+          s.rame.fin();               // à bord : `bord` bascule ICI
+          s.phase = 'fermeture'; s.t = 0;
+        }
+      } else if (s.phase === 'fermeture') {
+        const k = Math.min(1, s.t / DUREES.fermetureRame);
+        coulisser(g, porte, 1 - lisse(k));
+        appliquerCamera(1 - lisse(k), camSequence(s, regard(new THREE.Vector3(0, porte.y, s.d.zPorte))));
+        if (k >= 1) { coulisser(g, porte, 0); s = null; }
+      }
+    } else {
+      if (s.phase === 'ouverture') {
+        const k = Math.min(1, s.t / DUREES.ouvertureRame);
+        coulisser(g, porte, lisse(k));
+        avatarRetire();
+        player.pos.copy(versMonde(g, s.dedans)); player.vel.set(0, 0, 0);
+        appliquerCamera(lisse(k), camSequence(s, regard(s.D)), s.cam);
+        if (k >= 1) { s.phase = 'sortie'; s.t = 0; }
+      } else if (s.phase === 'sortie') {
+        const k = Math.min(1, s.t / DUREES.sortieRame);
+        const p = s.dedans.clone().lerp(s.piedL, lisse(k));
+        avatarDebout(g, p, s.cote * Math.PI / 2 + Math.PI, 1.6, s.temps);
+        player.pos.copy(versMonde(g, p)); player.vel.set(0, 0, 0);
+        appliquerCamera(1, camSequence(s, regard(p)));
+        if (k >= 1) { s.phase = 'fermeture'; s.t = 0; player.yaw = capVersLocal(g, s.piedL, s.cote); }
+      } else if (s.phase === 'fermeture') {
+        const k = Math.min(1, s.t / DUREES.fermetureRame);
+        coulisser(g, porte, 1 - lisse(k));
+        player.pos.copy(s.monde); player.vel.set(0, 0, 0);
+        const w = 1 - lisse(k);
+        avatarDebout(g, s.piedL, s.cote * Math.PI / 2 + Math.PI, 0, s.temps).visible = w > 0.3;
+        appliquerCamera(w, camSequence(s, regard(s.piedL)));
+        if (k >= 1) { coulisser(g, porte, 0); avatarRetire(); av.obtenir().visible = true; s = null; }
+      }
+    }
+  }
+
   // ---- monter chez un ami (v377) -----------------------------------------
   // Le passager d'un ami (v253) collait l'enfant au siège d'un coup. Il entre
   // désormais par la portière DROITE de la voiture de l'ami (`cote: 1`, déjà
@@ -725,10 +886,24 @@ export function creerEmbarquement(ctx) {
     if (!s || !s.portes) return;
     ouvrir(s.portes[String(s.cote)], k);
   }
-  function terminer() {
+  function terminer(raison = 'second appui') {
     if (!s) return;
     const fini = s;
-    fini.fin = 'second appui';
+    fini.fin = raison;
+    if (fini.rame) {
+      coulisser(fini.a.mesh, fini.porte, 0);
+      avatarRetire();
+      if (fini.sens === 'monter') {
+        if (fini.phase !== 'fermeture') fini.rame.fin();
+      } else {
+        player.pos.copy(fini.monde); player.vel.set(0, 0, 0);
+        player.yaw = capVersLocal(fini.a.mesh, fini.piedL, fini.cote);
+        av.obtenir().visible = true;
+      }
+      s = null;
+      publier();
+      return;
+    }
     if (fini.avion) {
       if (fini.sens === 'descendre') {
         player.pos.copy(fini.monde); player.vel.set(0, 0, 0);
@@ -764,6 +939,18 @@ export function creerEmbarquement(ctx) {
   function annuler() {
     if (!s) return;
     s.fin = 'annulée';
+    if (s.rame) {
+      // la rame n'existe plus : on reste où l'on est (sur le quai), ou l'on
+      // se pose sur la place mesurée si l'on descendait
+      coulisser(s.a.mesh, s.porte, 0);
+      avatarRetire();
+      if (s.sens === 'descendre') { player.pos.copy(s.monde); player.vel.set(0, 0, 0); }
+      const a0 = av && av.obtenir ? av.obtenir() : null;
+      if (a0) a0.visible = true;
+      s = null;
+      publier();
+      return;
+    }
     if (s.avion) {
       ouvrant(s.a.mesh, s.porte, 0);
       retirerAcces(s);
@@ -788,10 +975,12 @@ export function creerEmbarquement(ctx) {
     if (distantes.size) animerDistantes(dt);
     if (!s) return;
     if (s.chez) { if (!suivreLaVoiture(dt) || !s) return; }
+    else if (s.rame) { if (!s.rame.encore()) { annuler(); return; } }
     else if (!ctx.existe(s.a) || !s.a.mesh) { annuler(); return; }
     const a = s.a, g = a.mesh;
     s.t += dt; s.temps += dt;
     if (s.avion) { updateAvion(dt); publier(); return; }
+    if (s.rame) { updateRame(); publier(); return; }
     if (!s.portes && s.phase !== 'approche') {
       // le modèle est peut-être arrivé pendant la marche
       s.portes = equiperPortieres(g, portiereRefusee(g));
@@ -881,13 +1070,13 @@ export function creerEmbarquement(ctx) {
   }
 
   return {
-    monter, monterChez, descendre, descendreDeChez, terminer, annuler, update, porteDistante,
+    monter, monterChez, monterRame, descendre, descendreDeChez, descendreRame, terminer: () => terminer(), annuler, update, porteDistante,
     brancherReseau(f) { diffuser = f; },
     enCours: () => !!s,
     // l'avatar est-il à nous cette image ? (main.js ne l'assied pas alors)
     avatarPilote: () => !!s && !(s.sens === 'monter' && s.phase === 'fermeture'),
     brancherAvatar(h) { av = h; },
-    etat: () => (s ? { sens: s.sens, phase: s.phase, t: s.t, cote: s.cote, portes: !!s.portes, avion: !!s.avion, refus: refusSortie, rebranchee: s.rebranchee || 0, absent: s.absent || 0 } : null),
+    etat: () => (s ? { sens: s.sens, phase: s.phase, t: s.t, cote: s.cote, portes: !!s.portes, avion: !!s.avion, rame: !!s.rame, refus: refusSortie, rebranchee: s.rebranchee || 0, absent: s.absent || 0 } : null),
     refusSortie: () => refusSortie,
     dernier: () => dernier,
   };
