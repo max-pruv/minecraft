@@ -11,7 +11,12 @@
   à l'allure d'une ville » et « un mur pris de face », absents rejouée seule :
   les intermittences déjà déclarées plus bas. Preuve structurelle : la v488 ne
   touche que cinq villes engendrées (Dublin, Toulouse, Melbourne, Nantes,
-  Montpellier), aucune n'est sur le trajet de `monte.js`.
+  Montpellier), aucune n'est sur le trajet de `monte.js`. Second portail
+  (après fusion de la v487) : huit suites vertes, `monte.js` rouge sur quatre
+  témoins tous déjà déclarés — « à Rome aussi, en biais » (passage peint),
+  « deux voisines d'un convoi gardent leur écart » (minVrai 3,61 à Paris
+  (−330, 310), comme en v485), « l'on ne marche pas dans une rue vide » (vus
+  `[0,9,8,0,0,0,2,17]`) et « un mur pris de face » (rebond 0).
 - [ ] **Rouges de portail mesurés des deux côtés au portail de la v486 (Changi)**
   — double mesure de la v195, `monte.js` rejouée SEULE sur la branche et sur
   `origin/main` v473 (`git worktree`) : « à Moscou, les rues sont pleines de
