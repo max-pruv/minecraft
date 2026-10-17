@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v476 — Les voitures ne roulent plus sur le parapet des ponts
+## v477 — Les voitures ne roulent plus sur le parapet des ponts
 
 **Pourquoi.** Aux coins des anneaux de circulation des villes engendrées, la
 voie d'une voiture traversait la bande de pierre d'un tablier voisin : 66 pas
@@ -43,6 +43,31 @@ identique) ; `carteMonde.js` compte les pas de voie sur un parapet (66 sur
 `origin/main`, 0 ici), et la barre des pas hors de la chaussée descend (772 →
 706 pas, 58 → 18 anneaux). L'empreinte des 490 morceaux ne bouge pas, règle
 armée comme désarmée.
+
+---
+
+## v476 — On retrouve son ami du premier coup, et il voit ton avion
+
+**Pourquoi.** Deux sujets. (1) Quand l'hôte joue sans courtier (par le nuage)
+et que l'invité, lui, en a un, l'invité ouvrait parfois un DEUXIÈME monde sous
+le même code au lieu de rejoindre son ami — le « monde jumeau », chacun bâtit
+dans sa copie sans voir l'autre. Le témoin « un hôte sans courtier est trouvé »
+rougissait une fois sur deux des deux côtés. (2) Depuis la v462 l'ami voit
+l'avion de son ami et son épave, mais aucun témoin à deux tablettes ne le
+gardait.
+
+**Ce que ça change.** (1) L'invité lit le phare de l'hôte sur dix secondes au
+lieu de trois : il le trouve et le rejoint. La cause n'était pas le réseau :
+en entrant dans un monde, la tablette se fige plusieurs secondes et lisait la
+réponse — pourtant arrivée — trop tard. (2) Rien de neuf à l'écran : ce que
+l'ami voyait déjà est désormais gardé.
+
+**Ce qui le prouve.** `tests/sonde-phare.cjs` rejoue la scène quatre fois :
+avant, sondages de 2,9 à 4,2 s, tous « tenu », 2 invités sur 4 (deux refus ou
+jumeaux) ; après, 4 sur 4, le fil principal gelé jusqu'à 15 s pendant
+l'entrée. Trois témoins neufs dans `reseau.js` (l'ami voit l'appareil, il le
+voit prendre feu, l'épave reste là où il s'est écrasé et fume), verts, et
+rouges tous trois quand la position ne porte plus l'avion.
 
 ---
 

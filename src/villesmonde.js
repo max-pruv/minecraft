@@ -5437,7 +5437,7 @@ export function coteDeVille(f) {
   return Math.floor(f.sol || 33);
 }
 
-// `reglageParapets.voie` à faux rejoue les parapets d'avant la v476, au bit
+// `reglageParapets.voie` à faux rejoue les parapets d'avant la v477, au bit
 // près : c'est ce que lit l'empreinte des 490 morceaux (plafond.js). Jamais un
 // réglage du jeu.
 export const reglageParapets = { voie: true };
@@ -5505,7 +5505,7 @@ function pontDeVille(f, u, v, allongement = true) {
     // au premier regard, refais-le » : une route posée sur l'eau sans rien
     // dessous n'est pas un pont. Une pile tous les sept blocs, sous l'axe.
     const pile = d < 1.5 && ((Math.round(le) % 7) + 7) % 7 === 0;
-    // UN PARAPET SOUS UNE VOIE EST DE LA CHAUSSÉE (v476). Aux coins, la voie
+    // UN PARAPET SOUS UNE VOIE EST DE LA CHAUSSÉE (v477). Aux coins, la voie
     // d'un anneau traverse la bande de pierre d'un tablier voisin : 79 pas de
     // voie sur un parapet dans vingt-sept villes, mesurés. Le parapet est à la
     // cote du tablier — seule sa MATIÈRE change, jamais la forme — et

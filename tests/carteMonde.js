@@ -5246,7 +5246,7 @@ const VRAIES_KM = [
               || (f.cote && f.cote.quais && U < f.cote.base + f.cote.pente * V + 2);
             if (s === CITY_BLOCK.GRANITE && quai) continue;
             if (s === BLOCK.WATER) fontaine++;
-            // v476 : le parapet d'un tablier (la colonne d'eau porte la pierre
+            // v477 : le parapet d'un tablier (la colonne d'eau porte la pierre
             // du tablier) compté à part.
             const pt = vm.pontVillesMonde(X, Z);
             if (pt && pt.id === s) parapet++;
@@ -5292,12 +5292,12 @@ const VRAIES_KM = [
       // rues du Strip, 75 et 1 228 après. v432 (la vue sur la voie, la
       // couverture à la règle de ce fichier, plusieurs ordres, une rangée
       // d'un coup) : 61 et 840. v435 (la recherche conjointe) : 58 et 772.
-      // v476 (le parapet sous la voie devient chaussée) : 18 et 706. Barres
+      // v477 (le parapet sous la voie devient chaussée) : 18 et 706. Barres
       // au milieu.
       contour.anneaux <= 38 && contour.pas <= 739 && contour.total >= 809,
       `${contour.anneaux}/${contour.total} anneaux, ${contour.pas} pas hors de la chaussée`
       + ` (dont ${contour.fontaine} dans une fontaine, ${contour.parapet} sur un parapet) · les pires : ${contour.pires.join(', ')}`);
-    // UN PARAPET SOUS LA VOIE EST DE LA CHAUSSÉE (v476). La voie d'un anneau
+    // UN PARAPET SOUS LA VOIE EST DE LA CHAUSSÉE (v477). La voie d'un anneau
     // traversait aux coins la bande de pierre d'un tablier voisin : 66 pas
     // sur un parapet dans vingt-sept villes sur `origin/main` (v473), zéro ici.
     verifier('aucune voie d\'anneau ne roule sur le parapet d\'un tablier',

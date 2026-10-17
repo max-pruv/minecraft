@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Le parapet sous la voie (v476) — une matière de tablier se lit sous la ligne qui roule
+## Le parapet sous la voie (v477) — une matière de tablier se lit sous la ligne qui roule
 
 Une règle. Aux coins des anneaux, la voie d'une voiture traversait la bande de
 pierre d'un tablier voisin (66 pas, vingt-sept villes) ; `pasHorsChaussee` les
@@ -3498,6 +3498,21 @@ Les deux rouges réseau récurrents du palier C. Trois règles.
   gain de sortie rendu, plus un niveau au-dessus de la MOITIÉ — milieu entre
   une voix restée au quart (`GAIN_APPEL`) et le régime qui varie ; vérifié
   rouge sur une copie où la voix reste au quart.
+
+## Le phare se lit sur dix secondes (v476) — une borne de requête mesure le fil, pas le réseau
+
+Une règle. Une requête au nuage bornée par `Promise.race` contre un minuteur
+ne mesure pas le réseau : le minuteur et la lecture de la réponse attendent
+TOUS DEUX le fil principal, et une tablette qui entre dans un monde le gèle
+jusqu'à quinze secondes (`sonde-phare.cjs`). Le sondage du phare, contre un
+nuage local au repos, rendait 2,9 à 4,2 s — verdict « tenu » chaque fois —
+et la borne de trois secondes le perdait trois fois sur quatre : l'invité
+concluait « introuvable » et OUVRAIT le monde par-dessus l'hôte. Une borne
+dont l'échec mène à une action irréversible (un monde jumeau) se pose bien
+au-dessus de ce qu'on mesure (`PHARE_MS`, dix secondes) ; celle de
+`tenterDevenirHote` reste à trois, parce que son échec ne bouscule rien.
+Et l'avion de l'ami a son témoin à deux tablettes (`reseau.js`), rouge quand
+`p.v` ne porte plus que ce qui a un siège.
 
 ## Le lot 3 des témoins (v471) — un compteur se lit sur ce qu'il compte vraiment
 

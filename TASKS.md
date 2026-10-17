@@ -19,11 +19,10 @@
   voitures l'une dans l'autre monte à 2–18 % (0 à 2 avec les passants) :
   probablement la même suiveuse qui rattrape sa tête. Le témoin reste rouge,
   il garde une vraie panne. Sonde : `tests/sonde-rue-feu.cjs` (`VIDE=1`).
-- [ ] **L'AVION DE L'AMI ET SON ÉPAVE (v453) — SANS TÉMOIN À DEUX TABLETTES.**
-  `p.v` porte désormais un avion (fiche `pilote`) et ses dégâts ; aucun témoin
-  de `reseau.js` ne vérifie encore que l'autre tablette voit l'appareil, puis
-  l'épave en feu après un crash. À écrire sur le modèle de la v344 (l'ami voit
-  la voiture froissée) : deux pages, l'une s'écrase, l'autre lit le maillage.
+- [x] **L'AVION DE L'AMI ET SON ÉPAVE (v453) — témoin écrit en v476.** Trois
+  verdicts dans `reseau.js` (l'ami voit l'appareil, il le voit prendre feu,
+  l'épave reste là où il s'est écrasé), verts ; rouges tous trois quand `p.v`
+  ne porte plus que ce qui a un siège (l'état d'avant la v462).
 
 - [ ] **L'APPROCHE ASSISTÉE (v452) : QUATRE POSÉS SUR 148 À REPRENDRE.**
   `node tests/sonde-approche.cjs src` : trois touchers à 5,7 · 6,2 · 6,7 blocs
@@ -126,11 +125,12 @@
     été vu ; `origin/main` : « le monde est bien là » et pas de lien), « seul,
     le bouton d'émotes se range ». `origin/main` seul ajoute la veille sans
     retour, « seule après le départ de l'hôte » et le passager sans courtier.
-    Piste du jumeau : le sondage du phare, pas le bus — `net.js` ne donne
-    que TROIS secondes à `relaisHoteRecent` (`Promise.race`, ~ligne 319) ;
-    une requête qui tarde (banc chargé, Wi-Fi lent) rend « introuvable » et
-    l'invité OUVRE le monde par-dessus l'hôte. À sonder comme
-    `sonde-relais-amorce.mjs`, avant de toucher à la borne.
+    Le jumeau, réglé en v476 : `tests/sonde-phare.cjs` a mesuré le sondage du
+    phare à 2,9 · 3,4 · 4,2 · 3,5 s sur un banc AU REPOS (nuage local, verdict
+    « tenu » chaque fois) — le fil principal de l'invité gèle jusqu'à 15 s en
+    entrant. La borne de trois secondes perdait la course 3 fois sur 4 et
+    l'invité ouvrait par-dessus l'hôte (2 jumeaux ou refus sur 4) ; à dix
+    secondes (`PHARE_MS`), 4 invités sur 4. Reste à revoir au portail.
   - **Le vol au-dessus de Paris** (`monte.js`) : vert seul depuis la v440
     (252 blocs en 12,8 s) ; son message dit la cadence (`sonde-vol-paris.cjs`).
   - **Le taxi** (`manhattan.js`) : compte du temps de JEU, fenêtre de côté
@@ -1297,8 +1297,8 @@
   200 blocs, donc hors de la livraison par construction (elle ne change que le
   sol de Las Vegas et des contours d'anneaux).
 - [ ] **LES ANNEAUX D'AVANT ROULENT PARFOIS HORS DE LA CHAUSSÉE (mesuré v387,
-  repris v404, v418, v432, v435, remesuré sur la v454, 16 oct. 2026 ; v476,
-  17 oct.).** v476 : LE PARAPET SOUS LA VOIE EST DE LA CHAUSSÉE — les 66 pas sur
+  repris v404, v418, v432, v435, remesuré sur la v454, 16 oct. 2026 ; v477,
+  17 oct.).** v477 : LE PARAPET SOUS LA VOIE EST DE LA CHAUSSÉE — les 66 pas sur
   un parapet (27 villes) passent à 0, 772 → 706 pas, 58 → 18 anneaux, sélection
   et empreinte des 490 morceaux identiques ; seule la matière de 66 colonnes de
   tablier change, toutes sur l'eau, toutes sous la ligne d'une voie (la forme ne
@@ -7417,6 +7417,14 @@ l'embarquement a eu lieu, pas par une hypothèse.
     correspondances). La 4 croise la Seine deux fois : la profondeur de
     seize blocs sous la rue la passe déjà sous le lit (27).
   - **La caserne et le commissariat**, restés en halles de béton.
+  - **Portail de la v476 : deux rouges, aucun des deux sujets.** `degats.js`
+    « percuter une voiture de la rue l'abîme AUSSI » (déclaré ci-dessus, rouge
+    aussi au portail de la v473, zone dégâts) ; `maj.js` : la puce de la v465
+    faisait neuf mots — raccourcie dans la même livraison. `reseau.js` 100 %
+    vert, « un hôte sans courtier est trouvé » et « il le REJOINT » compris.
+    Second portail : `degats.js` vert ; un seul rouge, `maj.js` « le loader
+    dit combien de fichiers sont rangés » — l'intermittent déclaré (même
+    distribution des deux côtés), vert au premier portail de la même branche.
   - **Portail de la v473 : cinq rouges, aucun de cette livraison.** Quatre
     déjà déclarés (`degats.js` « percuter une voiture de la rue l'abîme
     AUSSI », `reseau.js` « un hôte sans courtier est trouvé » et « il le
