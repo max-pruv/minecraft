@@ -351,7 +351,6 @@ function verifier(nom, ok, detail = '') {
       verifier('une mise à jour ne compte pas comme un plantage dans le journal de bord',
         !!bilan && bilan.compteur === 0 && bilan.confirmes === 0, JSON.stringify(bilan));
     }
-    await tab.close().catch(() => {});
 
     // UN SERVICE WORKER VRAIMENT COINCÉ SE RATTRAPE (dette v220). Le filet de
     // mise à jour et la borne de `forcerMaj` n'avaient aucun témoin : les deux
