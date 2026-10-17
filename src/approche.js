@@ -127,10 +127,11 @@ export function repereDePiste(ap, x, z) {
 // LE GUIDAGE. `ap` = { piste, sens, seuil, phase, decalage } (muté : la phase
 // avance) ; `pos` la position, `yaw`, `v` la vitesse ; `fiche` le `pilote` de
 // la monture ; `solA(x, z)` la cote du relief (sommet de colonne) ;
-// `entree` = { strafe, forward } le joystick. Rend le cap visé, la vitesse
+// `entree` = { strafe, forward } le joystick ; `plein(x, y, z)`, si donné, dit
+// si un bloc est plein (ce qui flotte au-dessus d'une piste). Rend le cap visé, la vitesse
 // verticale voulue, la vitesse visée, si le train doit sortir et la hauteur au-
 // dessus de la piste.
-export function guiderApproche(ap, pos, yaw, v, fiche, solA, entree = {}) {
+export function guiderApproche(ap, pos, yaw, v, fiche, solA, entree = {}, plein = null) {
   const p = ap.piste, sens = ap.sens;
   const yPiste = p.sol + 1;
   const approche = fiche.approche || Math.max(fiche.decrochage * 1.3, fiche.max * 0.5);
@@ -146,12 +147,38 @@ export function guiderApproche(ap, pos, yaw, v, fiche, solA, entree = {}) {
   // loin ; et si la piste devient alors trop courte dans ce sens, on prend
   // l'autre sens de la même piste.
   if (ap.toucher === undefined) {
+    // AU BLOC PRÈS (v474). Par pas de trois, le balayage enjambait le mur d'une
+    // colonne qui borde le seuil de Los Angeles (huit blocs au-dessus de la
+    // piste) : le Concorde y entrait. Un obstacle d'une colonne se lit une
+    // colonne à la fois, sur la largeur de l'appareil.
+    //
+    // ET AU-DESSUS DE LA PISTE, CE QUI CROISE LA BOÎTE SUR LE PLAN (v474). Des
+    // couronnes d'arbres sans tronc flottent au-dessus des pistes de Roissy et
+    // d'Andrews, neuf et dix blocs plus haut. Leur SOMMET ne dit rien : on vole
+    // dessous, et compter le sommet de chaque colonne ferait reculer le toucher
+    // de proche en proche jusqu'au bout de la piste (mesuré : 238 sur 300).
+    // `plein(x, y, z)` demande ce qui se trouve à la hauteur du plan, de
+    // l'avion moins un bloc et demi à trois blocs au-dessus ; ce qui s'y trouve,
+    // on le passe par-dessus. Sans `plein` (un ancien appelant), la règle
+    // d'avant.
     const viser = (sn, seuil) => {
       let T = TOUCHER;
-      for (let ss = -D_ENTREE - 40; ss <= 0; ss += 3) {
-        for (const ll of [-3, 0, 3]) {
+      for (let ss = -D_ENTREE - 40; ss <= 0; ss++) {
+        for (let ll = -3; ll <= 3; ll++) {
           const ho = solA(seuil + sn * ss, p.z + ll * sn) + 1 - yPiste;
           if (ho > -2) T = Math.max(T, ss + (ho + 3) / PENTE);
+        }
+      }
+      if (plein) {
+        for (let ss = 1; ss <= T; ss++) {
+          const hp = (T - ss) * PENTE;
+          const y0 = Math.max(yPiste, Math.floor(yPiste + hp - 1.5)), y1 = Math.floor(yPiste + hp + 3);
+          for (let ll = -3; ll <= 3; ll++) {
+            const x = seuil + sn * ss, z = p.z + ll * sn;
+            let gene = false;
+            for (let y = y0; y <= y1 && !gene; y++) gene = plein(x, y, z);
+            if (gene) T = Math.max(T, ss + 1 + (solA(x, z) + 1 - yPiste + 3) / PENTE);
+          }
         }
       }
       return T;
@@ -166,8 +193,8 @@ export function guiderApproche(ap, pos, yaw, v, fiche, solA, entree = {}) {
     ap.toucher = T;
     // TROP COURTE DANS LES DEUX SENS, une fois les obstacles comptés : on va
     // chercher la piste suivante, comme un vrai pilote qu'on dérouterait.
-    if (requise(T) > p.x1 - p.x0 && changerDePiste(ap, pos, yaw, fiche)) return guiderApproche(ap, pos, yaw, v, fiche, solA, entree);
-    return guiderApproche(ap, pos, yaw, v, fiche, solA, entree);
+    if (requise(T) > p.x1 - p.x0 && changerDePiste(ap, pos, yaw, fiche)) return guiderApproche(ap, pos, yaw, v, fiche, solA, entree, plein);
+    return guiderApproche(ap, pos, yaw, v, fiche, solA, entree, plein);
   }
   let capVise, yVise, vitesse = approche;
   const R = Math.max(30, v / Math.max(0.2, fiche.virage || 0.5));   // le rayon de virage

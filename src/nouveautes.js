@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 474,
+    titre: 'L’avion évite le mur',
+    puces: [
+      'Se poser à Los Angeles ne cogne plus',
+      'L’avion survole les arbres au-dessus des pistes',
+    ],
+  },
+  {
     v: 473,
     titre: 'Le métro sous Paris',
     puces: [

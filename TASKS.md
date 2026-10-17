@@ -25,15 +25,15 @@
   l'épave en feu après un crash. À écrire sur le modèle de la v344 (l'ami voit
   la voiture froissée) : deux pages, l'une s'écrase, l'autre lit le maillage.
 
-- [ ] **L'APPROCHE ASSISTÉE (v452) : QUATRE POSÉS SUR 148 À REPRENDRE.**
-  `node tests/sonde-approche.cjs src` : trois touchers à 5,7 · 6,2 · 6,7 blocs
-  par seconde (Roissy 47 pour l'avion de ligne et le Concorde, Andrews pour le
-  chasseur, tous venus de l'ouest en virant), et le Concorde à Los Angeles qui
-  touche au seuil même (s 0, un demi-bloc avant la bande). Une première trace
-  du même départ rejouée seule se pose bien (s 82, 2 blocs/s) : la différence
-  tient à l'état du monde déjà engendré par les approches précédentes — à
-  démonter par une sonde qui rejoue UNE approche dans un monde neuf, puis la
-  même après les autres.
+- [ ] **DES COURONNES D'ARBRES SANS TRONC FLOTTENT AU-DESSUS DES PISTES (vu en
+  v474).** Roissy (piste z 47, s 18 à 28, feuilles à y 43-44 pour une piste à
+  34) et Andrews (s 11, y 46 pour 37) : un arbre dont le tronc a été effacé par
+  le revêtement garde sa couronne. L'approche assistée les survole désormais
+  (`plein` de `guiderApproche`), mais un avion qui roule dessous les traverse
+  visuellement (son modèle est plus haut que sa boîte de 1,8). Le remède est
+  dans la génération des aérodromes (`aeroport.js`, zone d'une autre session) :
+  dégager l'air au-dessus de toute colonne de piste. Mesure : balayer
+  `sommetColonne` sur chaque piste de `pistesDuMonde()` contre `p.sol`.
 
 - [ ] **SEPT PISTES SOUS LEUR CIBLE (v448) — DÉCLARÉES, LE REMÈDE EST UNE
   DÉCISION.** Prolongées autant que leur place le permet, mesurées par sonde :

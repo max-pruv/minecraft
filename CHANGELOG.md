@@ -20,6 +20,35 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v474 — L'approche assistée voit le mur du seuil
+
+**Pourquoi.** La sonde de l'approche assistée (v452) déclarait quatre posés
+sur 148 à reprendre, et `TASKS.md` en accusait « l'état du monde déjà
+engendré ». Rejoué seul dans un monde neuf, chacun se reproduit à l'identique :
+ce n'était pas le monde. Trois des quatre étaient un défaut de la SONDE — elle
+prenait le sommet d'une colonne pour le sol, et des couronnes d'arbres sans
+tronc flottent à neuf et dix blocs au-dessus des pistes de Roissy et
+d'Andrews ; l'avion vole dessous. Le quatrième était vrai : à Los Angeles, un
+mur de pierre d'une seule colonne borde le seuil, huit blocs au-dessus de la
+piste, et le balayage des obstacles, par pas de trois, l'enjambait — le
+Concorde venu de l'ouest y entrait.
+
+**Ce que ça change.** ✈️ « Se poser » lit les obstacles avant le seuil bloc
+par bloc, sur toute la largeur de l'avion, et passe au-dessus du mur de Los
+Angeles. Au-dessus de la piste, il ne regarde que ce qui croise la boîte de
+l'avion sur sa descente : à Andrews, le plan relevé par le balayage plus fin
+aurait mené le chasseur dans une couronne flottante, il la survole.
+
+**Ce qui le prouve.** La sonde juge désormais le contact comme le joueur (un
+bloc dans la boîte est un heurt, le sol est sous les roues) : 148 posés sur
+148, aucun toucher au-delà de deux blocs par seconde, arrêt le plus long
+inchangé (196 blocs) ; la même sonde sur `origin/main` rend le heurt de Los
+Angeles. Un témoin de `monte.js` rejoue Los Angeles et Andrews sous node
+(8 s) : rouge sur `origin/main`, vert ici, et la partie Andrews a été vue rouge
+la règle au-dessus de la piste désarmée.
+
+---
+
 ## v473 — La ligne 1 du métro passe sous Paris
 
 **Pourquoi.** Paris n'avait plus de métro. L'anneau souterrain de la v163 a
