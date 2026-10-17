@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 485,
+    titre: 'La savane',
+    puces: [
+      'Herbe dorée en Afrique et au Brésil',
+      'Des acacias plats comme des parasols',
+      'Le nord de l\'Australie aussi',
+    ],
+  },
+  {
     v: 484,
     titre: 'Un ciel sans cubes orange',
     puces: [

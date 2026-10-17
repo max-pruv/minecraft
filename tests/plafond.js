@@ -1967,7 +1967,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     };
     const sol = (q) => q !== BLOCK.AIR && q !== BLOCK.WATER && q !== BLOCK.LOG && q !== BLOCK.BIRCH && q !== BLOCK.LEAVES;
     const lire = (sites) => {
-      const r = { colonnes: 0, herbe: 0, roche: 0, neige: 0, forme: 0, arbres: 0, arbresSans: 0, pins: 0, palmiers: 0, oliviers: 0, parasols: 0, teints: 0, sommets: 0 };
+      const r = { colonnes: 0, herbe: 0, roche: 0, neige: 0, forme: 0, arbres: 0, arbresSans: 0, pins: 0, palmiers: 0, oliviers: 0, parasols: 0, acacias: 0, teints: 0, sommets: 0 };
       for (const [lat, lon] of sites) {
         const p = point(lat, lon);
         for (let cx = 0; cx < 4; cx++) for (let cz = 0; cz < 4; cz++) {
@@ -1987,6 +1987,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
             if (arbre && arbre.kind === 3) r.palmiers++;
             if (arbre && arbre.kind === 5) r.oliviers++;
             if (arbre && arbre.kind === 4) r.parasols++;
+            if (arbre && arbre.kind === 6) r.acacias++;
           }
           // la teinte : les sommets d'herbe que le mailleur a colorés
           if (cx === 1 && cz === 1) {
@@ -2008,6 +2009,9 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     // LE CLIMAT MÉDITERRANÉEN (v469) : l'Andalousie, la Toscane, le
     // Péloponnèse, la vallée centrale de Californie
     const mediterranee = lire([[37.6, -4.2], [43.1, 11.4], [37.5, 22.3], [37.2, -120.3]]);
+    // LA SAVANE (v485) : le Serengeti, la Zambie, le Cerrado, le Top End,
+    // la savane soudanienne du nord du Ghana
+    const savane = lire([[-2.3, 34.8], [-14.5, 27.5], [-13, -50], [-15.5, 133], [10.5, -1.5]]);
     // le Kansas, témoin de la campagne tempérée : rien n'y est teint
     const kansas = lire([[38.5, -98.5]]);
     // LE RACCOURCI DU MORCEAU : un climat déclaré certain pour un morceau
@@ -2041,7 +2045,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         for (let y = h + 1; y <= h + 9; y++) { if (m.getBlock(x, y, z) === sans.getBlock(x, y, z)) garde.pareil++; else garde.autres++; }
       }
     }
-    return { toundra, taiga, steppe, tropiques, mediterranee, kansas, certains, desaccords, garde };
+    return { toundra, taiga, steppe, tropiques, mediterranee, savane, kansas, certains, desaccords, garde };
   })();
   verifier('dans la toundra, du lichen, de la roche nue et la neige plus bas, presque sans arbre (Nunavut, Iamalie, Sibérie arctique)',
     climats.toundra.colonnes > 2000 && climats.toundra.forme === 0 && climats.toundra.roche + climats.toundra.neige >= climats.toundra.colonnes * 0.05
@@ -2065,6 +2069,11 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       && climats.mediterranee.parasols > 0 && climats.mediterranee.oliviers + climats.mediterranee.parasols >= climats.mediterranee.arbres * 0.9
       && climats.mediterranee.teints >= climats.mediterranee.sommets * 0.3,
     JSON.stringify(climats.mediterranee));
+  verifier('dans la savane, l\'herbe dorée et des acacias isolés, presque sans bois ; la même forme bloc pour bloc (Serengeti, Zambie, Cerrado, Top End, Ghana)',
+    climats.savane.colonnes > 2000 && climats.savane.forme === 0 && climats.savane.acacias > 0
+      && climats.savane.acacias >= climats.savane.arbres * 0.6 && climats.savane.arbres * 2 <= climats.savane.arbresSans
+      && climats.savane.teints >= climats.savane.sommets * 0.3,
+    JSON.stringify(climats.savane));
   verifier('le climat certain d\'un morceau est celui de toutes ses colonnes',
     climats.certains > 3000 && climats.desaccords === 0, `${climats.certains} morceaux certains, ${climats.desaccords} colonnes en désaccord`);
   verifier('là où un enfant a bâti avant la règle, les arbres d\'avant restent',

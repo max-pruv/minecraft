@@ -20,6 +20,36 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v485 — La savane : herbe dorée et acacias
+
+**Pourquoi.** Après les déserts, la toundra, la taïga, les steppes, les
+forêts tropicales et le climat méditerranéen, la savane restait la prairie
+verte de Normandie, avec ses chênes et ses sapins : au Serengeti, en Zambie,
+dans le Cerrado et dans le nord de l'Australie.
+
+**Ce que ça change.** Sept régions réelles (la bande soudanienne sous le
+Sahel, l'Afrique de l'Est, l'Afrique australe, l'ouest de Madagascar, le
+Cerrado, les Llanos, le nord de l'Australie) ont les hautes herbes dorées de
+la saison sèche et des arbres isolés : des acacias, un arbre neuf et
+original au fût fourchu et à l'ombrelle plate, et quelques buissons
+épineux. La carte et le paysage lointain prennent la même couleur. Le
+relief ne bouge pas d'un bloc ; là où un enfant a bâti avant la règle, les
+arbres d'avant restent.
+
+**Ce qui le prouve.** Un témoin neuf de `plafond.js` lit vingt morceaux au
+Serengeti, en Zambie, dans le Cerrado, dans le Top End et au nord du Ghana
+contre le même monde sans la règle : 0 bloc de forme différente, 98 acacias
+pour 119 arbres (308 sans la règle), 7 460 sommets d'herbe teints sur
+12 032 ; sur `origin/main`, zéro acacia (rouge). Les sites tempérés
+(Kansas, Iowa, Pampa, Ukraine) restent hors zone, les deux empreintes du
+relief et celle des 490 morceaux ne bougent pas, `plafond.js` 160 verts. La
+teinte a été jugée en capture, au sol et du ciel.
+
+---
+
+
+---
+
 ## v484 — Plus de cubes orange dans le ciel
 
 **Pourquoi.** Des carrés orange flottaient dans le ciel, sur les captures de Max

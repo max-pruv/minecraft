@@ -967,7 +967,7 @@ Deux règles.
   Bleue sa branche : deux rames de branche à moins d'un tiers de tour se
   rattraperaient au bout — d'où trois rames de branche, pas six.
 
-## Le métro de Washington jusqu'au bout de la boîte (v478) — un ouvrage se creuse dans son emprise, pas dans le disque de la ville
+## Le métro de Washington jusqu'au bout de la boîte (v485) — un ouvrage se creuse dans son emprise, pas dans le disque de la ville
 
 Deux règles.
 
@@ -4233,6 +4233,15 @@ blocs autour du tronc** : `generateChunk` ne balaie les arbres que trois
 colonnes au-delà du morceau, et une couronne plus large serait coupée net au
 bord. Et le feuillage gris-vert s'est jugé en capture : à (82, 110, 62) il
 sortait presque noir, le témoin le trouvait très bien teint.
+**La savane (v485)** ferme la table, après TOUT le reste : le Kalahari, le
+Sahel, la Corne, les forêts humides du Congo et du Queensland et l'anneau
+semi-aride de l'Australie passent avant, ce qui laisse aux sept contours
+(soudanienne, Afrique de l'Est et australe, ouest de Madagascar, Cerrado,
+Llanos, nord de l'Australie) des bords grossiers sans risque. Un arbre neuf,
+`kind` 6, l'acacia : un fût fourchu et une ombrelle UNIQUE de trois blocs de
+rayon — plus plate que le pin parasol, qui a deux étages — et un buisson
+épineux sur cinq (l'olivier sur un tronc d'un bloc). Les sites du témoin
+tempéré (Kansas, Iowa, Pampa, Ukraine) restent hors zone, vérifié sous node.
 
 ## Les déserts chauds (v341) — le climat est une donnée de géographie, comme la côte
 
