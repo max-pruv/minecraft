@@ -770,6 +770,31 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les tours de monument sur la voie de droite (v475) — un témoin de circuit lit la voie, pas l'axe
+
+Deux règles.
+
+- **UNE VOITURE D'AVENUE ROULE À 1,3 BLOC À DROITE DE SON TRACÉ, ET TOUT CE
+  QUI JUGE UN CIRCUIT SE JUGE LÀ.** Depuis la v395 (`decalerADroite`,
+  `DECALAGE_AVENUE` de main.js, `VOIE_DE_DROITE` de paris.js), le tracé d'un
+  circuit n'est plus le chemin d'aucune voiture. Le témoin des monuments de
+  Paris lisait l'axe et rendait zéro pendant que vingt-sept pas de carrosserie
+  entraient dans les vitrines du tour de l'Opéra et des Invalides. Un témoin de
+  circuit décale le tracé avec les fonctions de `vehicules.js`, jamais une
+  copie ; trois autres lisent encore l'axe, déclarés dans `TASKS.md`.
+- **UNE RUE TROP ÉTROITE POUR DEUX VOIES PREND UN SENS.** Le tour d'un monument
+  fait quatre blocs ; deux voies de 2,26 en demandent près de cinq. Quand tous
+  les circuits qui le prennent le font dans le même sens (`SENS_TOURS_PARIS`,
+  calculé au chargement sur `CIRCUITS`), l'axe se déplace de ce qu'il faut
+  pour que la voiture reste dans la rue — et pas plus : rentrer les quatre
+  côtés de l'Opéra resserrait le virage et coûtait sa seconde voie au circuit
+  de Rivoli (446 → 260 blocs de deux voies). Une retouche de tracé se remesure
+  aussi en voies doubles (`sonde-rue-dense.cjs boulevards`), en raccords et en
+  bus, pas seulement en pas de carrosserie. Un tour pris dans les deux sens
+  garde son axe au milieu. Un circuit ajouté qui prend un tour à contresens le
+  remet à deux voies tout seul — et le témoin le dira s'il touche une façade.
+  Élargir la rue aurait changé le sol sous ce que les enfants ont bâti.
+
 ## Les passages des avenues (v467) — un passage se mesure le long de SA rue
 
 Une règle. Dans une ville bâtie à la main, un carrefour est le croisement de

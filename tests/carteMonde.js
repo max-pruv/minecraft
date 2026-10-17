@@ -3465,7 +3465,17 @@ const VRAIES_KM = [
       const socles = m.LIEUX.filter((p) => p.socle && AVEC_RUE.includes(p.nom))
         .map((p) => ({ nom: p.nom, u: p.u, v: p.v, bu: p.socle[0] + 1, bv: p.socle[1] + 1 }));
       const solDe = (x, z) => (w.coteRoulable ? w.coteRoulable(x, z) : w.terrainHeight(x, z));
-      const circuits = m.circuitsParis(solDe);
+      // LE TÉMOIN LIT LA VOIE, PAS L'AXE (v475). Depuis la v395 un convoi
+      // d'avenue roule à 1,3 bloc à droite de son tracé (main.js,
+      // `decalerADroite`) : sur l'axe, ce témoin rendait zéro pendant que la
+      // voiture de la voie extérieure entrait de vingt et un pas dans les
+      // vitrines du tour de l'Opéra et de six dans celles des Invalides. Il
+      // décale donc chaque circuit comme `vehicules.js` le fait, avec ses
+      // propres fonctions, et la bande s'élargit d'autant.
+      const ve = await import('./src/vehicules.js');
+      const VOIE = typeof m.VOIE_DE_DROITE === 'number' ? m.VOIE_DE_DROITE : 1.3;
+      const circuits = m.circuitsParis(solDe)
+        .map((c) => ({ ...c, pts: ve.sansEpis(ve.decalerADroite(ve.sansEpis(c.pts.map((p) => ({ ...p }))), VOIE)) }));
       // LE TÉMOIN LIT LA BANDE QUE LE TOUR EMPRUNTE, PAS LE SOCLE (v318). Il
       // ne jugeait que les points de circuit tombés DANS la boîte d'un socle ;
       // depuis que les circuits font le tour à `AXE_TOUR` (v221), aucun n'y
@@ -3478,7 +3488,7 @@ const VRAIES_KM = [
       // points en travers de la marche, aux deux hauteurs d'une voiture. Et un
       // compte de pas lus nul est ROUGE : c'est toute la panne d'avant.
       const DEMI = 1.13;                       // la demi-largeur d'une voiture
-      const AXE = typeof m.AXE_TOUR === 'number' ? m.AXE_TOUR : 2;
+      const AXE = (typeof m.AXE_TOUR === 'number' ? m.AXE_TOUR : 2) + 0.5 + VOIE;
       const par = {}, lusPar = {}, exemples = [];
       let dur = 0, lus = 0;
       for (const c of circuits) {
@@ -3509,9 +3519,9 @@ const VRAIES_KM = [
           }
         }
       }
-      return { dur, lus, par, lusPar, exemples, circuits: circuits.length };
+      return { dur, lus, par, lusPar, exemples, circuits: circuits.length, sens: m.SENS_TOURS_PARIS || 'absent' };
     });
-    verifier('aucune voiture ne traverse un monument de Paris',
+    verifier('aucune voiture ne traverse un monument de Paris, sur la voie qu\'elle roule',
       !monuments.absent && monuments.circuits === 8 && monuments.lus > 0 && monuments.dur === 0,
       JSON.stringify(monuments));
 
