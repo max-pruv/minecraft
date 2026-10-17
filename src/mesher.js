@@ -289,7 +289,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
   let facades = detail ? new GeomBufferHD() : null;
   let plat = hd ? new GeomBuffer() : null;
   const platLumineux = hd ? new GeomBuffer() : null;
-  // LES VRAIS ARBRES (v474, arbreshd.js) : quand le monde les demande
+  // LES VRAIS ARBRES (v488, arbreshd.js) : quand le monde les demande
   // (`world.arbres`, à portée de `RAYON_HD` comme le détail de Paris) et que le
   // morceau porte du bois ou des feuilles, les arbres RECONNUS partent dans
   // `plat` (leurs cubes, le loin) et dans `facades` (le modèle, le près). Sans
@@ -631,7 +631,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
     }
   }
 
-  // LES VRAIS ARBRES (v474) : un modèle par fût reconnu dont la base est dans
+  // LES VRAIS ARBRES (v488) : un modèle par fût reconnu dont la base est dans
   // le morceau, dans `facades`, avec l'essence que `treeAt` a plantée
   let arbresEmis = 0;
   if (arbresDetail) arbresEmis = emettreArbres(facades, arbres, ox, oz, CHUNK, teintes);
@@ -657,14 +657,19 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
     props,
     cellulesSol: surface ? surface.cellules : 0,
     rubans,
-    sol: sol ? sol.toTampons() : null,
+    // LE SOL SE SOUDE AUSSI (v482) : le sol HD reste fabriqué pour tout le
+    // disque (le loin ne doit pas changer d'un pixel), et ses quads de pavé,
+    // de bordure et de marquage partagent leurs coins comme les baies (v469).
+    // Mesuré sur le disque de Paris : 69,4 → 51,7 Mo, mêmes triangles.
+    // `solSoude: false` rejoue l'ancien tampon pour l'empreinte des 490 morceaux.
+    sol: sol ? sol.toTampons(options.solSoude !== false) : null,
     facades: facades ? facades.toTampons(options.baiesSoudees !== false) : null,
     plat: plat ? plat.toTampons() : null,
     platLumineux: platLumineux ? platLumineux.toTampons() : null,
     facadesDetaillees,
     monumentsDetailles: detailles,
     hd,
-    // les arbres du morceau (v474) : combien en sont reconnus ici, et si le
+    // les arbres du morceau (v488) : combien en sont reconnus ici, et si le
     // morceau a été maillé AVEC leurs modèles — `main.js` le relaie comme le
     // détail de Paris
     // (seulement quand les arbres sont armés : l'empreinte des 490 morceaux

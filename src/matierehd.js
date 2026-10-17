@@ -79,7 +79,7 @@ function peintre(img, fn) {
   fn(p, rempli, N);
 }
 
-// L'alpha des pixels vides des tuiles de feuillage (v475) : sous l'alphaTest
+// L'alpha des pixels vides des tuiles de feuillage (v488) : sous l'alphaTest
 // de la couche (0,5), donc coupé, mais une COULEUR que les mipmaps mélangent
 // sans frange noire.
 const ALPHA_VIDE = 76;
@@ -347,7 +347,7 @@ const PEINTRES = {
       p(x, y, lum, lum + 6, lum - 30, trou ? 0 : 255);
     });
   },
-  // LES VRAIS ARBRES (v474, arbreshd.js). Une carte de feuillage est un quad
+  // LES VRAIS ARBRES (v488, arbreshd.js). Une carte de feuillage est un quad
   // posé dans le volume de la couronne : ce qui compte est son BORD, qui doit
   // s'effacer — un rectangle plein ferait des tôles. Les feuilles sont des
   // petites ellipses semées dans un disque, de plus en plus rares vers le bord ;

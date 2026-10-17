@@ -169,6 +169,72 @@ const descendre = async (p, ms) => {
     bouchesNoyees.length === 0 && D.BOUCHES_METRO.length === 20,
     bouchesNoyees.map((b) => b.nom).join(', ') || `${D.BOUCHES_METRO.length} bouches`);
 
+  // --- Le métro sous toute la boîte, pas seulement le cercle (v478) --------
+  // La ville s'arrête au cercle du registre (187 blocs) ; la boîte et les
+  // tiroirs des terminus vont au-delà. Sur l'ancien code, rien n'y était
+  // creusé : 309 points de la Bleue sur 986 avaient un bloc plein dans le
+  // gabarit, et les quais d'Arlington Cemetery et de Pentagon étaient de la
+  // pierre. Le témoin lit le MONDE engendré (`getBlock`), comme la rame.
+  {
+    const { World, DATE_METRO_BOITE_DC } = await import('../src/world.js');
+    const { isSolid, BLOCK } = await import('../src/blocks.js');
+    const w = new World();
+    const murs = [];
+    for (const l of D.LIGNES) {
+      let n = 0;
+      for (const p of D.traceLigneMetro(l.nom)) {
+        const x = Math.floor(p.x), y = Math.floor(p.y), z = Math.floor(p.z);
+        if ([1, 2, 3].some((k) => isSolid(w.getBlock(x, y + k, z)))) n++;
+      }
+      if (n) murs.push(`${l.nom} ${n}`);
+    }
+    verifier('aucune rame ne roule dans la roche, même hors du cercle de la ville',
+      murs.length === 0, murs.join(', ') || 'zéro point de voie avec un bloc dans le gabarit');
+    // Le quai : à deux blocs du centre le long de la voie (ni pylône, ni banc),
+    // un sol de carrelage et deux blocs d'air au-dessus.
+    const quais = D.QUAIS_METRO.filter((q) => {
+      const x = D.WASHINGTON.x + Math.round(q.u + q.du * 2), z = D.WASHINGTON.z + Math.round(q.v + q.dv * 2);
+      return isSolid(w.getBlock(x, q.y + 2, z)) || isSolid(w.getBlock(x, q.y + 3, z))
+        || w.getBlock(x, q.y + 1, z) === BLOCK.STONE;
+    });
+    verifier('et chaque quai est praticable, Arlington Cemetery et Pentagon compris',
+      quais.length === 0, quais.map((q) => q.nom).join(', ') || `${D.QUAIS_METRO.length} quais`);
+    // Un bloc d'enfant posé hors du cercle avant la date : la bouche ne creuse
+    // pas sous sa maison (le sol reste), le tunnel profond passe toujours.
+    if (typeof D.creuserMetroWashington !== 'function' || !DATE_METRO_BOITE_DC) {
+      verifier('et une bouche hors du cercle ne creuse pas sous ce qu\'un enfant a bâti', false,
+        'creuserMetroWashington absent');
+    } else {
+      let cible = null;
+      for (let u = D.BOITE.u0; u <= D.BOITE.u1 && !cible; u++) for (let v = D.BOITE.v0; v <= D.BOITE.v1 && !cible; v++) {
+        if (Math.hypot(u, v) < 195) continue;
+        const x = D.WASHINGTON.x + u, z = D.WASHINGTON.z + v;
+        if (w.cityAt(x, z) || D.dansEauWashington(x, z)) continue;
+        const h = w.terrainHeight(x, z);
+        let creuse = false;
+        D.creuserMetroWashington(x, z, h, (dy, id) => { if (dy === 0 && id === BLOCK.AIR) creuse = true; });
+        if (creuse) cible = { x, z, h };
+      }
+      // et un second bloc posé au-dessus de la Bleue, à Arlington : sous lui,
+      // le tunnel (quatorze blocs sous le sol) se creuse quand même
+      const voie = D.traceLigneMetro('Bleue').find((p) => Math.hypot(p.x - D.WASHINGTON.x, p.z - D.WASHINGTON.z) > 200
+        && !w.cityAt(Math.floor(p.x), Math.floor(p.z)) && !D.dansEauWashington(Math.floor(p.x), Math.floor(p.z)));
+      const vx = Math.floor(voie.x), vz = Math.floor(voie.z), vy = Math.floor(voie.y);
+      const garde = new World();
+      const k = `${cible.x},${cible.h + 1},${cible.z}`;
+      const k2 = `${vx},${w.terrainHeight(vx, vz) + 1},${vz}`;
+      garde.installerEdits(new Map([[k, BLOCK.PLANK], [k2, BLOCK.PLANK]]),
+        new Map([[k, DATE_METRO_BOITE_DC - 3600e3], [k2, DATE_METRO_BOITE_DC - 3600e3]]));
+      const apres = new World();
+      apres.installerEdits(new Map([[k, BLOCK.PLANK]]), new Map([[k, DATE_METRO_BOITE_DC + 3600e3]]));
+      const sousGarde = garde.getBlock(cible.x, cible.h, cible.z), sousApres = apres.getBlock(cible.x, cible.h, cible.z);
+      const murs2 = [1, 2, 3].filter((d) => isSolid(garde.getBlock(vx, vy + d, vz))).length;
+      verifier('et une bouche hors du cercle ne creuse pas sous ce qu\'un enfant a bâti',
+        isSolid(sousGarde) && sousApres === BLOCK.AIR && murs2 === 0,
+        `(${cible.x - D.WASHINGTON.x}, ${cible.z - D.WASHINGTON.z}) : sol ${sousGarde} sous le bloc d'avant, ${sousApres} sous celui d'après, ${murs2} bloc(s) dans le gabarit sous le bloc posé au-dessus de la Bleue en (${vx - D.WASHINGTON.x}, ${vz - D.WASHINGTON.z})`);
+    }
+  }
+
   // --- Les panneaux à lire sur place : la règle, sous node (v460) -----------
   // Une horloge fabriquée : on éprouve « une fois par visite », « jamais en
   // rafale » et « une visite neuve rouvre le panneau » sans dépendre de la

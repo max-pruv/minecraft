@@ -12,6 +12,7 @@
 import { SESSION_MIN_USINE } from './education.js';
 import { hashPin } from './identity.js';
 import { GRADES } from './education.js';
+import { JOURNAL_GARDE_JOURS } from './cloud.js';
 
 const ADMIN_NAME = 'Max';
 const PARENT_CODE = '135246';
@@ -624,8 +625,10 @@ export class AdminPanel {
       const m = ua.match(/iPad|iPhone|Macintosh|Android|Windows|Linux/);
       return m ? m[0] : 'appareil';
     };
-    const mots = { plantage: 'PLANTAGE présumé', fermeture: 'au revoir', 'arriere-plan': 'arrière-plan' };
-    zone.innerHTML = '<h3>Journal de bord des appareils</h3>' + lignes.map((l) => {
+    const mots = { plantage: 'PLANTAGE présumé', fermeture: 'au revoir', 'arriere-plan': 'arrière-plan', 'mise-a-jour': 'mise à jour' };
+    // v479 : la table se taille côté serveur (cloud.js) — on dit ce qui part.
+    const garde = `<div class="adm-dim adm-jr-garde">Les sessions terminées normalement s'effacent après ${JOURNAL_GARDE_JOURS} jours ; les plantages restent.</div>`;
+    zone.innerHTML = '<h3>Journal de bord des appareils</h3>' + garde + lignes.map((l) => {
       const doc = l.doc || {};
       const dernier = (doc.releves || []).slice(-1)[0] || {};
       const erreurs = doc.erreurs || 0;
