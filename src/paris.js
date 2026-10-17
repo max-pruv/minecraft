@@ -719,7 +719,7 @@ const RONDS = LIEUX.filter((p) => p.r).map((p) => ({ u: p.u, v: p.v, r: p.r - an
 const TOURS = SOCLES.filter((p) => p.tour)
   .map((p) => ({ u: p.u, v: p.v, hu: p.bu + AXE_TOUR + 0.5, hv: p.bv + AXE_TOUR + 0.5 }));
 
-// ET LA VOITURE ROULE À DROITE DE L'AXE, PAS SUR L'AXE (v474). Depuis la v395
+// ET LA VOITURE ROULE À DROITE DE L'AXE, PAS SUR L'AXE (v475). Depuis la v395
 // un convoi d'avenue roule à `VOIE_DE_DROITE` blocs à droite du tracé (main.js,
 // `DECALAGE_AVENUE`, appliqué par `decalerADroite`). Le tour d'un monument fait
 // quatre blocs : axé à son milieu, la voiture de la voie extérieure en sort de

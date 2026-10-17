@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Les tours de monument sur la voie de droite (v474) — un témoin de circuit lit la voie, pas l'axe
+## Les tours de monument sur la voie de droite (v475) — un témoin de circuit lit la voie, pas l'axe
 
 Deux règles.
 
@@ -3446,6 +3446,15 @@ dix bordures (force 0,3) mettaient la voiture en feu. Quatre règles.
   voit la voiture de l'ami en panne plus tôt : le receveur cède, et c'est
   accepté. Et une ancienne tablette ignore une histoire `rc` de plus de douze
   chocs : `rue_choc` reste son chemin.
+- **UNE HISTOIRE BORNÉE SE COMPTE PAR SON TOTAL, JAMAIS PAR SA LONGUEUR
+  (v474).** Une liste qui garde les N derniers ne grandit plus une fois pleine :
+  `rattraper`, `distant` et `rapprocher` comparaient sa longueur à ce qui était
+  appliqué, et le 25e choc n'enfonçait plus rien (30 chocs, 24 enfoncements,
+  mesuré). `etat.total` (et `h.n` pour la rue) compte tout ; le n-ième choc
+  rejoué est `chocs[longueur − (total − n)]`. Ce que les derniers ne suffisent
+  plus à refaire voyage à part, seulement quand l'histoire a débordé : la santé
+  (`s`) et le total (`n`) dans `p.v.d`, absents sinon (le message garde sa
+  forme d'avant).
 
 ## Celui qui part dit au revoir (v393) — un commentaire de départ se relit dans `stop()`
 

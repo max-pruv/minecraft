@@ -3465,7 +3465,7 @@ const VRAIES_KM = [
       const socles = m.LIEUX.filter((p) => p.socle && AVEC_RUE.includes(p.nom))
         .map((p) => ({ nom: p.nom, u: p.u, v: p.v, bu: p.socle[0] + 1, bv: p.socle[1] + 1 }));
       const solDe = (x, z) => (w.coteRoulable ? w.coteRoulable(x, z) : w.terrainHeight(x, z));
-      // LE TÉMOIN LIT LA VOIE, PAS L'AXE (v474). Depuis la v395 un convoi
+      // LE TÉMOIN LIT LA VOIE, PAS L'AXE (v475). Depuis la v395 un convoi
       // d'avenue roule à 1,3 bloc à droite de son tracé (main.js,
       // `decalerADroite`) : sur l'axe, ce témoin rendait zéro pendant que la
       // voiture de la voie extérieure entrait de vingt et un pas dans les
