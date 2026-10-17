@@ -5,7 +5,7 @@ import { buildVillandry } from './villandry.js';
 import { aUnModeleHD, porteeHD } from './paris-monuments-hd.js';
 import { echelleDe, etirerBatisseur } from './echelle-monuments.js';
 import { carrefoursDeVoies } from './voies.js';
-import { buildAeroport, buildAerodrome, AEROPORTS, AEROPORTS_AVANT_V306, tronconsDePiste } from './aeroport.js';
+import { buildAeroport, buildAerodrome, AEROPORTS, AEROPORTS_AVANT_V306, NES_APRES_V306, tronconsDePiste } from './aeroport.js';
 import {
   USINE, hauteurUsine, solUsine, buildUsine, buildParcUsine, dansLUsine,
 } from './usine.js';
@@ -61,7 +61,7 @@ import {
 import {
   WASHINGTON, WASHINGTON_R, surTerreWashington, dansEauWashington, hauteurWashington, solWashington,
   batirColonneWashington, MONUMENTS_DC, QUAIS_METRO, pontWashington, COTE_PONT_DC,
-  VOIES_CIRCUITS_DC,
+  VOIES_CIRCUITS_DC, creuserMetroWashington, ZONE_WASHINGTON, EMPRISE_METRO_DC,
 } from './washington.js';
 import {
   buildCapitole, buildObelisque, buildLincoln, buildMemorialGuerre, buildMaisonBlanche,
@@ -113,8 +113,9 @@ export const NEIGE_TOUNDRA = 46;
 const DENSITE_MAX = 0.08;
 // L'HEURE DE LA RÈGLE DES CLIMATS (v345), relue à la fusion (v309) : un bloc
 // posé avant a été posé sur le monde d'avant, et son morceau garde ses arbres.
-// Relue à la fusion de la v469 (le climat méditerranéen ajoute des arbres).
-export const DATE_CLIMATS = Date.parse('2026-10-16T09:22:00Z');
+// Relue à la fusion de la v469 (le climat méditerranéen ajoute des arbres),
+// puis de la v485 (la savane en ajoute et en retire).
+export const DATE_CLIMATS = Date.parse('2026-10-17T17:27:00Z');
 export function solDeToundra(x, z, h) {
   if (h >= NEIGE_TOUNDRA) return BLOCK.SNOW;
   return fbm(x * 0.07, z * 0.07, SEED + 941) > 0.64 ? BLOCK.GRAVEL : BLOCK.GRASS;
@@ -1361,7 +1362,7 @@ const LANDMARKS_V317 = [
   { name: 'Château médiéval', x: CASTLE.x, z: CASTLE.z, box: 30, build: buildCastle },
   { name: 'Base martienne', x: MARS.x, z: MARS.z, box: 26, build: buildBaseMartienne },
   { name: 'Château de Villandry', x: VILLANDRY.x, z: VILLANDRY.z, box: 80, build: buildVillandry },
-  // Les dix-neuf aérodromes. Roissy garde son bâtisseur à lui — le tambour de
+  // Les vingt aérodromes. Roissy garde son bâtisseur à lui — le tambour de
   // 1974 et ses sept satellites ne ressemblent à aucun autre aéroport au monde ;
   // les dix-huit autres passent par le bâtisseur générique, qui lit leur profil.
   // LA BOÎTE SUIT LE DISQUE PAVÉ, ET IL A GRANDI EN v280. La plate-forme est
@@ -1537,6 +1538,8 @@ const PLACES_AVANT = PLACES.map((p) => (p === GAULOIS ? GAULOIS_AVANT : p === VO
 const NOMS_MONUMENTS_PARIS = new Set(['Tour Eiffel', 'Arc de Triomphe', 'Pyramide du Louvre', 'Panthéon',
   'Invalides', 'Opéra', 'Montparnasse', 'Bastille', 'Moulin Rouge', 'Sacré-Cœur', 'Notre-Dame']);
 const AEROPORT_AVANT = new Map(AEROPORTS_AVANT_V306.map((a) => [a.nom, a]));
+// Les aérodromes nés après la v306 (Changi, v486) ne sont pas dans ce monde-là.
+const NES_APRES_V306_NOMS = new Set(AEROPORTS.filter((a) => NES_APRES_V306.has(a.cle)).map((a) => a.nom));
 function repereAvant(lm) {
   if (NOMS_MONUMENTS_PARIS.has(lm.name) && Math.hypot(lm.x - PARIS.x, lm.z - PARIS.z) < PARIS.r) {
     if (lm.name === 'Notre-Dame') return { ...lm, x: PARIS_AVANT_POS.x + PARIS_V302.CITE.u, z: PARIS_V302.zCite() };
@@ -1570,7 +1573,7 @@ export const CONF_NEUF = {
 export const CONF_V308 = { ...CONF_NEUF, reperes: LANDMARKS_V317, fonduDoux: false, mursDeQuai: false, falaises: false, villesAvant: true, climat: false, sansTrameLondres: false, metroParis: false };
 export const CONF_AVANT = {
   cle: 'avant-v306', villes: CITIES_AVANT, aeroports: AEROPORTS_AVANT_V306, gaulois: GAULOIS_AVANT,
-  volcan: VOLCANO_AVANT, places: PLACES_AVANT, reperes: LANDMARKS_V317.map(repereAvant),
+  volcan: VOLCANO_AVANT, places: PLACES_AVANT, reperes: LANDMARKS_V317.filter((lm) => !NES_APRES_V306_NOMS.has(lm.name)).map(repereAvant),
   hauteurParis: PARIS_V302.hauteurParis, parisAvant: true, fonduDoux: false, villesAvant: true,
 };
 
@@ -2153,6 +2156,25 @@ function dansTrameLondres(x, z, t) {
   return du * du + dv * dv <= r * r;
 }
 const DC_NEUF = { solWashington, batirColonneWashington, VOIES_CIRCUITS_DC };
+// LE MÉTRO SOUS TOUTE LA BOÎTE DE WASHINGTON (v485). La ville s'arrête au
+// cercle du registre (187 blocs) ; la boîte va jusqu'au coin de Georgetown, à
+// Arlington et au Pentagone. Hors du cercle, rien ne creusait : les quais
+// d'Arlington Cemetery et de Pentagon étaient de la pierre, et 309 points de
+// la Bleue sur 986 avaient un bloc plein dans le gabarit. On y creuse le
+// métro SEUL (`creuserMetroWashington`, jamais une maison). Ce qui touche la
+// surface — les bouches, la rampe de la Jaune — n'y touche pas une colonne
+// où un enfant a posé ou creusé un bloc avant cette date (ni ses huit
+// voisines) : sous elle, on ne creuse qu'à trois blocs et plus sous le sol,
+// et sa maison garde le terrain qui la portait. La date se relit à la fusion
+// (v309).
+export const DATE_METRO_BOITE_DC = Date.UTC(2026, 9, 17, 16, 40, 0);
+const SURFACE_METRO_DC = -3;   // sous une colonne gardée : rien au-dessus de h − 3
+function dansMetroBoiteDC(x, z, t) {
+  if (!(t <= DATE_METRO_BOITE_DC)) return false;
+  if (x < ZONE_WASHINGTON.x0 || x > ZONE_WASHINGTON.x1 || z < ZONE_WASHINGTON.z0 || z > ZONE_WASHINGTON.z1) return false;
+  const du = x - WASHINGTON.x, dv = z - WASHINGTON.z, r = WASHINGTON_R - 2;
+  return du * du + dv * dv >= r * r;
+}
 function dansVilleAvant(x, z, t) {
   if (!(t <= DATE_FIGEE_MAX)) return false;
   for (const f of VILLES_FIGEES) {
@@ -2722,6 +2744,7 @@ export class World {
     this.morceauxAvantClimat = new Set(); // les morceaux (et leurs voisins) bâtis avant les climats (v345)
     this.colonnesCedees = new Set();    // les colonnes de Paris où la ville cède à ce qu'un enfant a bâti (v306)
     this.colonnesTrameLondres = new Set(); // les colonnes de Londres où la trame générique d'avant reste (v447)
+    this.colonnesMetroDC = new Set();     // celles de la boîte de Washington où le métro ne touche pas la surface (v485)
     this.colonnesVilleAvant = new Set();  // celles de Londres, de Nice, de San Francisco, de Lille et de Washington où la ville d'avant le kit reste (v339, v359, v361, v370, v370)
     this.cacheSol = new Map();          // "x,z" -> { nat, cote } : la fiche d'une colonne (sol continu, v297)
     this.sansSolContinu = false;        // ?solcontinu=0 : la mesure A/B, jamais un réglage
@@ -3169,7 +3192,35 @@ export class World {
     if (cl === 'steppe') return f * 0.05;
     if (cl === 'tropiques') return Math.max(f, 0.6);
     if (cl === 'mediterranee') return f * 0.45;
+    if (cl === 'savane') return f * 0.15;
     return f;
+  }
+
+  // Le métro de Washington ouvre-t-il la surface à un bloc de cette colonne ?
+  // (une bouche, la rampe de la Jaune). Mémorisé : `treeAt` le redemande.
+  metroOuvertDC(x, z) {
+    if (!this.memoMetroDC) this.memoMetroDC = new Map();
+    const cle = cleColonneParis(x, z);
+    let r = this.memoMetroDC.get(cle);
+    if (r !== undefined) return r;
+    r = false;
+    for (let dx = -1; dx <= 1 && !r; dx++) for (let dz = -1; dz <= 1 && !r; dz++) {
+      const h = this.terrainHeight(x + dx, z + dz);
+      creuserMetroWashington(x + dx, z + dz, h, (dy, id) => { if (dy >= 0 && id === BLOCK.AIR) r = true; });
+    }
+    this.memoMetroDC.set(cle, r);
+    return r;
+  }
+
+  // Un arbre dont la couronne porte (à trois blocs près) un bloc posé ou
+  // creusé avant `DATE_METRO_BOITE_DC` reste : une cabane dans ses branches
+  // garde ses branches.
+  arbreGardeDC(x, z) {
+    if (this.colonnesMetroDC.size === 0) return false;
+    for (let dx = -3; dx <= 3; dx++) for (let dz = -3; dz <= 3; dz++) {
+      if (this.colonnesMetroDC.has(cleColonneParis(x + dx, z + dz))) return true;
+    }
+    return false;
   }
 
   treeAt(x, z) {
@@ -3188,6 +3239,11 @@ export class World {
       return { h: hp, trunk: 4 + Math.floor(hash2i(x, z, SEED + 778) * 3), kind: roll < 0.7 ? 0 : 1 };
     }
     if (this.cityAt(x, z)) return null; // no wild trees downtown
+    // ni dans une bouche ou la tranchée du métro de Washington hors du
+    // cercle (v485) : un tronc y poussait au milieu de l'ouvrage
+    if (!this.conf.villesAvant && x >= EMPRISE_METRO_DC.x0 - 1 && x <= EMPRISE_METRO_DC.x1 + 1
+      && z >= EMPRISE_METRO_DC.z0 - 1 && z <= EMPRISE_METRO_DC.z1 + 1 && this.metroOuvertDC(x, z)
+      && !this.arbreGardeDC(x, z)) return null;
     // Ni dans les villes de la machine : elles plantent leurs parcs
     // elles-mêmes. Sans ce garde, une ville posée sur du bruit de forêt dense
     // (Marseille, Lyon) disparaissait sous les feuillages sauvages.
@@ -3244,6 +3300,9 @@ export class World {
     // et des pins parasols épars — moins de bois que la forêt tempérée, un
     // peu plus d'arbres isolés dans la plaine
     else if (cl === 'mediterranee') density = forest > 0.62 ? 0.03 : forest > 0.48 ? 0.012 : 0.006;
+    // la savane (v485) : des arbres isolés partout dans les hautes herbes,
+    // quelques bosquets le long des creux — jamais de bois fermé
+    else if (cl === 'savane') density = forest > 0.62 ? 0.012 : 0.004;
     if (tirage >= density) return null;
     const h = this.terrainHeight(x, z);
     if (h <= WATER_LEVEL + 1 || h >= 58) return null; // only on grass
@@ -3268,6 +3327,9 @@ export class World {
     // sous le soleil méditerranéen (v469) : des oliviers, trapus, et un pin
     // parasol sur trois, haut fût nu et couronne plate
     if (cl === 'mediterranee') return roll < 0.65 ? { h, trunk: 2 + Math.floor(hash2i(x, z, SEED + 787) * 2), kind: 5 } : { h, trunk: trunk + 1, kind: 4 };
+    // dans la savane (v485) : des acacias en parasol, et un buisson épineux
+    // sur cinq (la silhouette trapue de l'olivier, sur un tronc d'un bloc)
+    if (cl === 'savane') return roll < 0.8 ? { h, trunk: 3 + Math.floor(hash2i(x, z, SEED + 788) * 2), kind: 6 } : { h, trunk: 1, kind: 5 };
     const kind = roll < 0.55 ? 0 : roll < 0.85 ? 1 : 2;
     return { h, trunk: kind === 2 ? trunk + 1 : trunk, kind };
   }
@@ -3660,6 +3722,17 @@ export class World {
           });
           continue;
         }
+        // Hors du cercle, dans la boîte : le métro seul (v485). Les mondes
+        // d'avant (`villesAvant`) ne creusaient pas ici, et ne creusent pas.
+        if (!city && !this.conf.villesAvant && wx >= ZONE_WASHINGTON.x0 && wx <= ZONE_WASHINGTON.x1
+          && wz >= ZONE_WASHINGTON.z0 && wz <= ZONE_WASHINGTON.z1) {
+          const garde = this.colonnesMetroDC.size > 0 && this.colonnesMetroDC.has(cleColonneParis(wx, wz));
+          creuserMetroWashington(wx, wz, h, (dy, id) => {
+            if (garde && dy > SURFACE_METRO_DC) return;
+            const wy = h + dy;
+            if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id;
+          });
+        }
 
         // Paris : le fleuve, ses quais, ses ponts, l'Étoile, les
         // Champs-Élysées, puis la trame de chaque quartier — ses rues tordues,
@@ -3993,6 +4066,22 @@ export class World {
               if (dx * dx + dz * dz > r * r + 1) continue;
               put(tx + dx, y, tz + dz, BLOCK.LEAVES, true);
             }
+          }
+        } else if (kind === 6) {
+          // acacia (v485) : le fût se fourche en deux branches obliques, et
+          // une ombrelle UNIQUE, mince et large, coiffe le tout — trois blocs
+          // de rayon au plus (le balayage déborde de trois), un petit dôme au
+          // milieu. Plus plat que le pin parasol, qui a deux étages.
+          const [bx, bz] = hash2i(tx, tz, SEED + 789) < 0.5 ? [1, 1] : [1, -1];
+          put(tx + bx, topY + 1, tz + bz, BLOCK.LOG, false);
+          put(tx - bx, topY + 1, tz - bz, BLOCK.LOG, false);
+          for (let dx = -3; dx <= 3; dx++) for (let dz = -3; dz <= 3; dz++) {
+            if (dx * dx + dz * dz > 10) continue;
+            put(tx + dx, topY + 2, tz + dz, BLOCK.LEAVES, true);
+          }
+          for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
+            if (dx && dz) continue;
+            put(tx + dx, topY + 3, tz + dz, BLOCK.LEAVES, true);
           }
         } else if (kind === 5) {
           // olivier (v469) : un tronc court, une couronne ronde et large
@@ -4382,6 +4471,7 @@ export class World {
     if (dansParisCede(x, z, t)) marquerParisCede(this.colonnesCedees, x, z);
     if (dansVilleAvant(x, z, t)) marquerParisCede(this.colonnesVilleAvant, x, z);
     if (dansTrameLondres(x, z, t)) marquerParisCede(this.colonnesTrameLondres, x, z);
+    if (dansMetroBoiteDC(x, z, t)) marquerParisCede(this.colonnesMetroDC, x, z);
     if (t <= DATE_CLIMATS) this.marquerAvantClimat(x, z);
     if (!remote && this.onOp) this.onOp(k, id, t);
     if (this.onBloc) this.onBloc(x, y, z, id);
@@ -4641,15 +4731,17 @@ export class World {
     this.colonnesCedees.clear();
     this.colonnesVilleAvant.clear();
     this.colonnesTrameLondres.clear();
+    this.colonnesMetroDC.clear();
     this.morceauxAvantClimat.clear();
     for (const [k, t] of this.editTimes) {
-      if (!(t <= DATE_PARIS_DOUBLE || t <= DATE_FIGEE_MAX || t <= DATE_CLIMATS || t <= DATE_TRAME_LONDRES)) continue;
+      if (!(t <= DATE_PARIS_DOUBLE || t <= DATE_FIGEE_MAX || t <= DATE_CLIMATS || t <= DATE_TRAME_LONDRES || t <= DATE_METRO_BOITE_DC)) continue;
       const virgule = k.indexOf(','), derniere = k.lastIndexOf(',');
       const x = +k.slice(0, virgule), z = +k.slice(derniere + 1);
       if (t <= DATE_CLIMATS) this.marquerAvantClimat(x, z);
       if (dansParisCede(x, z, t)) marquerParisCede(this.colonnesCedees, x, z);
       if (dansVilleAvant(x, z, t)) marquerParisCede(this.colonnesVilleAvant, x, z);
       if (dansTrameLondres(x, z, t)) marquerParisCede(this.colonnesTrameLondres, x, z);
+      if (dansMetroBoiteDC(x, z, t)) marquerParisCede(this.colonnesMetroDC, x, z);
     }
     this.monumentsTouches.clear();
     if (REPERES_HD.length === 0) return;
@@ -4781,6 +4873,7 @@ export class World {
     this.colonnesCedees.clear();
     this.colonnesVilleAvant.clear();
     this.colonnesTrameLondres.clear();
+    this.colonnesMetroDC.clear();
     this.loadEdits();
     this.allDirty = true;
   }
@@ -4797,6 +4890,7 @@ export class World {
     this.colonnesCedees.clear();
     this.colonnesVilleAvant.clear();
     this.colonnesTrameLondres.clear();
+    this.colonnesMetroDC.clear();
     this.chunks.clear();
     this.tops.clear();
     this.allDirty = true;

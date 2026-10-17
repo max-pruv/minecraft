@@ -7,6 +7,7 @@ import { liberer } from './liberer.js';
 import { BLOCK, isSolid as blockIsSolid, isSlab } from './blocks.js';
 import { WATER_LEVEL } from './world.js';
 import { MONTURES, MODELES_MONTURE } from './montures.js';
+import { chronoReel } from './cadence.js';
 
 const GRAVITY = 22;
 
@@ -441,6 +442,7 @@ export class AnimalManager {
     this.toast = toast;
     this.animals = [];
     this.spawnTimer = 1;
+    this.chronoNaissance = chronoReel(2);
     this.onHarvest = null; // hook(def) — set by main.js to award the meat
   }
 
@@ -475,7 +477,13 @@ export class AnimalManager {
   }
 
   update(dt) {
-    this.spawnTimer -= dt;
+    // LA NAISSANCE DES BÊTES EST UNE CADENCE DE MÉNAGE (v483) : elle décide si
+    // le monde est peuplé autour de l'enfant, pas comment une bête bouge. En
+    // `dt` (borné à un vingtième), 1,5 s de minuteur valaient onze secondes
+    // réelles à 2,7 images par seconde — le bestiaire se peuplait lentement au
+    // moment précis où l'enfant arrive quelque part. Le reste de la boucle
+    // (fuite, marche, cris) est de l'animation et garde `dt`.
+    this.spawnTimer -= this.chronoNaissance();
     if (this.spawnTimer <= 0) {
       this.spawnTimer = 1.5;
       this.trySpawn();

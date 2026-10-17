@@ -246,7 +246,7 @@ let fabriqueesChauffees = false;
 function chaufferLesFabriquees(renderer, scene, camera) {
   if (fabriqueesChauffees) return;
   fabriqueesChauffees = true;
-  // la flamme des réacteurs (v474, avions.js) : née cachée, elle compilait son
+  // la flamme des réacteurs (v487, avions.js) : née cachée, elle compilait son
   // programme au premier ✈️. Une scène à part, les lampes du monde.
   try {
     const ici = new THREE.Scene();
