@@ -172,7 +172,17 @@ export const PALIERS = {
   // de dessin inchangé (1 541/1 574 contre 1 650/1 709). C'est du relief, et
   // c'est ce que Max a demandé de pouvoir choisir. Il reste donc offert — mais
   // SUR CHOIX SEULEMENT, voir `palierRetenu`.
-  haut: { rr: 16, file: 8, hd: 6, hdMo: 128, surChoixSeulement: true },
+  //
+  // `loin` (v497) : la portée du paysage LOINTAIN, en blocs — une seconde
+  // grille, quatre fois plus lâche que la fine (horizon.js, `PAS_LOIN`), qui
+  // prolonge la vue de 848 à 2 560 blocs. Max : « que le mode Loin, quand on
+  // voit de loin, soit encore beaucoup plus loin. » Elle ne fabrique AUCUN
+  // morceau — elle lit `terrainHeight`, pure — et ne touche ni `rr`, ni la
+  // file, ni `hdMo`, ni `VITESSE_JET`, les trois chiffres que le dépôt a
+  // mesurés comme nuisibles sur cet appareil. Ce qu'elle coûte se borne en
+  // octets : 25 921 sommets, ~3,3 Mo, la taille de la grille fine d'un iPad.
+  // Seul `haut` la porte : `bas` et `moyen` rendent ce qu'ils rendaient.
+  haut: { rr: 16, file: 8, hd: 6, hdMo: 128, loin: 2560, surChoixSeulement: true },
 };
 
 export const PALIER_PAR_DEFAUT = 'moyen';
@@ -413,7 +423,7 @@ export const etendueRange = (choix) => !choix || choix === 'auto';
 // Une liste qui décide d'une règle se range avec la règle : c'est la discipline
 // de `postesAvion` — deux tables qui décrivent la même chose finissent par
 // diverger — et c'est ce qui permet à un témoin de la lire sous node.
-export const PARAMS_FORCANTS = ['rr', 'attente', 'dpr', 'qualite', 'ombres', 'maillage', 'hd', 'palier', 'facadesmo'];
+export const PARAMS_FORCANTS = ['rr', 'attente', 'dpr', 'qualite', 'ombres', 'maillage', 'hd', 'palier', 'facadesmo', 'loin'];
 
 // ── ET CE QUE VAUT « PAS DE PALIER » SE PUBLIE, IL NE SE RECOPIE PAS ─────────
 //
@@ -429,8 +439,8 @@ export const PARAMS_FORCANTS = ['rr', 'attente', 'dpr', 'qualite', 'ombres', 'ma
 // portable. Deux tables qui décrivent la même chose finissent par diverger —
 // discipline de `postesAvion`.
 export const reglageDe = (palier, tactile) => (palier
-  ? { rr: palier.rr, file: palier.file, hd: palier.hd, hdMo: palier.hdMo }
-  : { rr: tactile ? 12 : 16, file: 8, hd: PALIERS[PALIER_PAR_DEFAUT].hd, hdMo: PALIERS[PALIER_PAR_DEFAUT].hdMo });
+  ? { rr: palier.rr, file: palier.file, hd: palier.hd, hdMo: palier.hdMo, loin: palier.loin || 0 }
+  : { rr: tactile ? 12 : 16, file: 8, hd: PALIERS[PALIER_PAR_DEFAUT].hd, hdMo: PALIERS[PALIER_PAR_DEFAUT].hdMo, loin: 0 });
 
 // ── LE DÉTAIL A UN BUDGET D'OCTETS, PAS SEULEMENT UN RAYON (v299) ───────────
 //

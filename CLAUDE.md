@@ -86,6 +86,13 @@ travail est irrattrapable.
    se garde et se prouve (`CONF_V308`, empreinte relevée sur `origin/main`).
    Voir « Le fondu doux (v309) ».
 
+   **Elle a servi une ONZIÈME fois, en v486, pour Changi** — et c'est la
+   forme bornée, hors de la fenêtre d'empreinte : l'île de l'aérodrome est la
+   zone à terre de son repère (`box + 30`), rien d'autre. Un témoin de
+   `plafond.js` engendre le pays avec et sans Changi DANS LE MÊME CODE (zéro
+   colonne changée hors de la zone), et la même découpe a été mesurée sur
+   `origin/main` et la branche. Voir « Changi (v486) ».
+
    **Elle a servi une HUITIÈME fois, en v242, pour doubler le monde encore**
    — Max : « la ville de New York touche quasiment Montréal ». Manhattan,
    refaite en v240, est un rectangle de 480 × 2 300 blocs qui laissait 41
@@ -550,7 +557,7 @@ que « ne jamais relancer jusqu'au vert », par l'autre bout.
 
 ---
 
-## Le tempo du banc (v484) — une cadence se divise, une fenêtre calée sur le monde non
+## Le tempo du banc (v501) — une cadence se divise, une fenêtre calée sur le monde non
 
 `?tempo=N` (`src/tempo.js`, pur) divise les minuteries de synchronisation du
 jeu sur le banc, et seulement là. Trois règles.
@@ -798,6 +805,213 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les commandes simplifiées (v494) — une main pour bouger, une main pour agir
+
+Max : simplifier les commandes en jeu, puis sur la maquette « plus de
+transparence, moins de texte ». Cinq règles.
+
+- **UN MENU REMPLACE LES PETITS BOUTONS, IL NE LES RÉÉCRIT PAS.** Pause, sac,
+  réglages, maison, caméra, messages, joueurs, souvenirs, photo restent dans la
+  page avec leurs gestionnaires ; la classe `hud-simple` les ôte de l'écran, et
+  chaque ligne du menu (`LIGNES`, commandes.js) APPUIE le bouton d'avant après
+  avoir rendu la partie. Un témoin qui touche `#home-btn` ou `#cam-btn` par son
+  `id` les trouve toujours ; `REMPLACES` liste ce que le menu remplace, et un
+  témoin de maj.js exige une ligne par bouton. Une ligne que le jeu n'offrait
+  qu'en ligne (caméra, messages) ne s'offre que si son bouton était affiché :
+  un bouton qui ne fait rien est pire qu'un bouton qui refuse (v228).
+- **LE MENU MET EN PAUSE SANS QUITTER LA PARTIE.** Il pose `running` à faux,
+  sans l'accueil ; « Reprendre » le rend (au toucher et en glisser, `running` ;
+  sinon `startGame`, qui reprend la souris). Il ne s'ouvre ni pendant un quiz
+  ni pendant l'arrêt du jour (invariant 2).
+- **CONSTRUIRE EST UN MODE QU'ON CHOISIT.** Hors construction, sur tablette, la
+  barre de blocs, le réticule et la pioche s'effacent, et toucher l'écran ne
+  pose ni ne casse rien (`touchAction`) : on regarde autour de soi sans abîmer
+  le monde. Poser et Casser sont deux boutons ; `#mode-btn` reste caché, et sa
+  bascule les tient d'accord. Monter dans un véhicule termine la construction.
+  Le bureau (souris) ne change pas.
+- **QUATRE BOUTONS D'ACTION AU PLUS, UNE SEULE PILULE.** Explorer : la pilule,
+  Voler, Sauter, Construire ; en vol (`en-vol`) Descendre s'ajoute, et c'est
+  Construire qui se tait tant qu'une pilule est là — pas la pilule : un témoin
+  qui plane au-dessus d'une voie doit voir « Monter à bord » (mon premier jet
+  faisait taire la pilule en vol, et le portail l'a dit). En construction :
+  Poser, Casser, Sauter (et Descendre en vol). Monter passe devant « à bord », qui passe devant nourrir (`:has()`) :
+  deux pilules côte à côte se coupaient. Tout est à droite de 55 % de la vue
+  (v272) ; la barre de blocs vit dans la file du haut (v445), pas en bas — elle
+  mordait le quart du joystick.
+- **LE VERRE SE RÈGLE SUR LE CONTRASTE, PAS SUR L'ŒIL.** Un voile sombre à 0,30
+  (`--hud-voile`) est ce qu'il faut pour qu'une icône blanche tienne 3:1 sur le
+  ciel de midi ; les pilules qui portent du texte sont claires (encre sur verre
+  clair), lisibles le jour comme la nuit. Le témoin compose les fonds
+  translucides sur la couleur du ciel que le jeu dessine, à midi et à minuit
+  (v276). Le mot des boutons ronds vit dans `aria-label` et dans `.lb`,
+  VISUELLEMENT caché — jamais `display: none`, que des témoins lisent. Cette
+  décision annule « chaque bouton porte son mot » (v265) : c'est Max qui l'a
+  prise, sur la maquette.
+
+## On entre dans Sainte-Sophie (v493) — un monument visitable se choisit sur la carte du MONDE
+
+Deux règles.
+
+- **ON CARTOGRAPHIE LE MONDE BÂTI, PAS LE BÂTISSEUR, AVANT DE CHOISIR.** Le
+  Colisée se lisait très bien dans `monuments.js` (arcades, arène, gradins) ;
+  la carte ASCII des colonnes praticables autour du repère, dans le monde, a
+  montré l'inverse : ses trous sont des blocs NON POSÉS (`c.blocs.delete`), donc
+  la ville passe à travers — des immeubles dans l'arène —, et l'emprise du
+  catalogue, onze fois trop grande, contient le Forum. Déclaré dans `TASKS.md`.
+- **UN MONUMENT VISITABLE GARDE SON DEHORS AU BLOC PRÈS.** On vide l'intérieur
+  (`AIR` posé, jamais un bloc retiré) dans le `tour`, jamais dans le `build`
+  que lisent les mondes figés ; la table d'étirement fait la hauteur de la nef
+  (couches 1 à 5 → 1 à 11 à Sainte-Sophie). Retirer des cellules pleines aux
+  couches 1 à 3 peut ouvrir un anneau de voitures (`contreUnMonument`) : on
+  compare `anneauxDeVille` avant et après (identiques ici).
+
+## La flamme se chauffe (v491) — ce qui naît caché compile à son premier geste
+
+Une règle. three ne compile un programme qu'à la première image où il le
+DESSINE : un objet né invisible (la flamme des réacteurs, v264) compilait dans
+l'image du geste qui l'allume — le premier ✈️. Tout matériau neuf porté par un
+objet né caché se rend une fois pendant l'accueil (`flammeDeChauffe`, appelée
+par `chaufferLesFabriquees`, vehicules.js), et son témoin lit les CLÉS après le
+VRAI geste (la manette des gaz aux commandes), vérifié rouge chauffe désarmée.
+Un objet fait de `matiereVivante` (l'escalier, v389) ou des essaims des dégâts
+(l'épave) n'en a pas besoin : mesuré, zéro clé.
+
+## Cinq villes passent à la fiche (v492) — une ville du gabarit se détaille par-dessus son gabarit
+
+Lot 1 de « cinquante villes détaillées ». Quatre règles.
+
+- **LA FICHE DÉTAILLÉE SE POSE SUR LE GABARIT, ELLE NE LE REMPLACE PAS.**
+  `FICHES_DETAILLEES` (villesmonde.js) ajoute à `ficheGeneree` ce qui fait la
+  ville — fleuves, pierre, jardins, monuments, lieux, en latitude et longitude
+  réelles (`versFiche`, `local`) — et garde le reste : rayon du registre (la
+  découpe hors villes ne bouge pas), trame, anneaux, côte automatique. Tout
+  ce qui n'est pas écrit reste au bit près ; un `ang` ne s'écrit que s'il
+  diffère vraiment (Melbourne : la grille de Hoddle à 0,34, le gabarit tirait
+  déjà 0,35 — on ne change pas le sol pour un centième).
+- **UN MONUMENT DE VILLE ENGENDRÉE TIENT SA ZONE DANS CELLE DE LA VILLE.** La
+  zone à terre d'un repère (`box + 30`) entre dans `dansUneZoneATerre` : hors de
+  `r + 24`, elle change `terrainHeight` au-dehors du disque (invariant 1). Donc
+  `d + box + 30 ≤ r + 24`, et le témoin de `carteMonde.js` le lit. Un fleuve,
+  lui, ne touche le relief que sous `r + 14` par construction
+  (`hauteurVillesMonde`) : mesuré, 2 708 colonnes, toutes dans les disques.
+- **UNE ENCEINTE NE VIDE PAS SA COUR : UN JARDIN LE FAIT.** Un repère ne pose
+  que ses propres blocs ; les immeubles de la trame restaient debout dans le
+  château de Nantes (vu en capture, lu au bloc). Le sol se libère par un parc
+  de la fiche (`pelouse` pour des douves, sans un arbre sur quatre).
+- **UN RAYON DE VILLE SE LIT APRÈS `fabrique`.** J'ai d'abord compté les
+  disques en kilomètres sur le rayon de `villes200.js` divisé par l'échelle
+  (0,6 à 1,2 km) ; `f.rayon` vaut 1,8 fois ce rayon, et les disques font 1,1 à
+  2,2 km. Une contrainte de placement se mesure sur la fiche fabriquée, jamais
+  sur le registre brut — c'est la leçon de `r: 66` à San Francisco (v192).
+
+Et un bâtisseur générique ne dit vrai que pour sa forme (une arche, une
+enceinte, une aiguille) : le Capitole de Toulouse et Saint-Sernin restent des
+LIEUX tant qu'ils n'ont pas leur bâtisseur — jamais une coupole de gabarit
+(v369).
+
+## La couronne lointaine du palier « Loin » (v497) — on voit plus loin par une grille plus lâche, pas par plus de monde
+
+Deux règles.
+
+- **VOIR PLUS LOIN NE SE PAIE PAS EN MORCEAUX.** `rr`, la file, `hdMo` et
+  `VITESSE_JET` du palier `haut` sont des chiffres mesurés nuisibles (v269,
+  v291, v299) : on ne les touche pas pour la portée. Le paysage lointain lit
+  `terrainHeight`, pure ; une SECONDE grille (`PAS_LOIN` 32, horizon.js) le
+  prolonge jusqu'à `loin` (2 560 blocs, dans la fiche de `haut`, palier.js), et
+  le brouillard et le plan lointain de la caméra reculent avec elle. Tripler la
+  grille fine aurait coûté neuf fois ses sommets ; la couronne coûte ce que
+  coûte une grille fine d'iPad (3,4 Mo). Un palier qui ne porte pas `loin` ne
+  construit rien, et un témoin de `maj.js` lit la SCÈNE (brouillard, plan
+  lointain, objets nommés) pour le garder.
+- **DEUX GRILLES QUI SE RECOUVRENT : LA FINE GAGNE, PAR CONSTRUCTION.** La
+  couronne ne dessine aucune case entièrement dans le carré de la fine, et là
+  où elles se recouvrent (le pas de trente-deux ne tombe pas sur le bord) elle
+  est posée `ABAISSE_LOIN` blocs plus bas et dessinée après : jamais de trou
+  de ciel entre les deux, jamais la grossière par-dessus la fine. Au-delà de
+  sa portée le brouillard est plein, elle n'y dessine rien.
+
+## La fiche d'un garage suit ses murs (v487) — ce qui est rangé par position migre avec ses blocs
+
+Deux règles.
+
+- **TOUT CE QUI EST RANGÉ PAR POSITION À CÔTÉ DES BLOCS SUIT LA CHAÎNE DES
+  MARCHES.** Un garage (`garages.js`) est une fiche rangée par son origine ;
+  les marches de la carte emmenaient ses murs et laissaient la fiche. Chaque
+  marche des blocs a sa marche des garages (`suivreGarages*`, world.js), jugée
+  sur les blocs AVANT la marche correspondante : `migrerChaineCarte` les
+  enchaîne pour le nuage, `migrerLesBlocs` pour le stockage (carte 8). Une
+  marche de GROUPES (Paris doublé, fondu doux) se suit par le groupe, jamais
+  par la colonne de l'origine : l'écart entre l'origine et l'ancrage, doublé
+  par le plan, sortirait la voiture du garage. Le prochain objet rangé par
+  position se branche là le jour où il naît.
+- **UNE DATE DE BLOCS REND IDEMPOTENT CE QUI N'A PAS DE DATE.** La fiche n'a
+  pas de date de pose : elle bouge si sa boîte porte des blocs d'avant la date
+  (en avant), ou si elle est vide et que l'arrivée porte la date de la marche
+  (l'orpheline, dont on retrouve le groupe arrivé et son ancrage par le centre
+  arrondi). Dans le doute, elle reste — l'état d'avant, jamais pire.
+
+## Changi (v486) — une ville qui n'existe que par sa zone n'a pas de terre autour, et un aérodrome neuf ne touche pas aux mondes figés
+
+Deux règles.
+
+- **LÀ OÙ LE PLANISPHÈRE N'A PAS LA TERRE, L'AÉRODROME LA GAGNE SUR LA MER PAR
+  SA ZONE, ET C'EST TOUTE SA CASSE.** Singapour est un disque de terre au
+  milieu de la mer : la zone à terre de la ville. Un repère a la sienne
+  (`box + 30`) : celle de Changi fait son île, comme le vrai est bâti sur des
+  remblais. Les cinq promesses de la v223 se lisent SUR le monde qui porte la
+  zone (la sonde construit un `World` dont `conf` ajoute le repère) ; mesurées
+  sans elle, elles ne trouvent rien, et c'était la dette. Le prolongement de
+  piste vers le large est une digue dans les bornes du remblai (le fond de la
+  mer est à 21–27, la piste à 35).
+- **UN AÉRODROME NÉ APRÈS UNE CASSE N'ENTRE PAS DANS LE MONDE QUI LA JUGE.**
+  `NES_APRES_V306` (aeroport.js) le retire de `CONF_AVANT` (aérodromes ET
+  repères) : `hauteurBase` et les marches 1 → 2, 2 → 3 et 5 → 6 y lisent les
+  zones d'avant. `CONF_V308`, lui, le PORTE (il lit `AEROPORTS` et
+  `LANDMARKS_V317`, même clé de zones que `CONF_NEUF`) : la marche 6 → 7
+  compare ce monde à celui d'aujourd'hui, à portée du fondu de Singapour, et
+  ne doit y lire que le fondu, jamais l'île. Aucune marche ne déplace donc un
+  bloc à cause de Changi ; ce qu'un enfant aurait posé en mer à cet endroit
+  garde ses coordonnées — dette déclarée dans `TASKS.md`.
+
+## Les cubes orange du ciel (v484) — ce qui suit la caméra est UN objet, et il se trouve par le pixel
+
+Une règle. Les « cubes orange qui flottent dans le ciel » étaient les feuilles
+d'automne : un seul `Points` de cent soixante carrés, collé à `player.pos` de
+−3 à +23 blocs, donc monté avec l'enfant en vol. La sonde de la v237 cherchait
+« un petit maillage loin dans le champ » et ne pouvait pas le voir. Devant une
+chose qu'on voit à l'écran et qu'on ne nomme pas : capture, amas de pixels de
+sa couleur, lancer de rayon (`layers.enableAll()`) à travers chacun —
+`sonde` dans le brouillon de la v484, une exécution. Un effet d'ambiance se
+pose sur le MONDE (le sol, l'eau), jamais sur l'enfant : `BANDE_SAISON`
+(main.js), basse pour feuilles, pétales et lucioles, haute pour la neige.
+
+## Les voitures de la rue se rendent (v495) — un prototype se marque partagé là où il naît
+
+Trois règles.
+
+- **CE QUI NAÎT À LA DEMANDE SE REND QUAND IL QUITTE DURABLEMENT LE CHAMP.**
+  Une voiture de convoi (v235) restait en scène toute la session, cachée :
+  132 voitures et 3 595 maillages après quatre villes (`sonde-memoire-convois.cjs`).
+  `Convoi.rendre(i)` la retire et la `liberer` à `MARGE_RENDRE` (cent blocs)
+  au-delà de sa portée — la marge évite de rendre et refaire une voiture qui
+  longe la limite. La PLACE reste (la grille horaire, v305 ; `pris` n'est pas
+  touché) et se refait par tranches (v431) au retour. Un modèle qui arrive après
+  le rendu ne s'accroche pas (`userData.rendue`).
+- **UN PROTOTYPE CLONÉ SE MARQUE PARTAGÉ OÙ IL NAÎT, TEXTURES COMPRISES.**
+  `clone(true)` partage géométries et matériaux : sans la marque, `liberer` sur
+  une voiture (`retirer`, une monture qui s'en va) rendait la géométrie et les
+  matériaux de TOUT le modèle, recompilés à l'image suivante. `chargerVoitureFlotte`
+  appelle `partagerTout`, qui marque aussi les textures des matériaux ; tout
+  clone qui veut une ressource à lui pose `partagee: false` (`repeindre`,
+  `degats3d`). Le témoin exige les deux sens : tout ce qu'une voiture possède
+  est rendu, RIEN du prototype ne l'est.
+- **CE QU'ON REMPLACE DANS UN GROUPE SE REND.** La coque d'attente retirée à
+  l'arrivée du modèle n'était jamais rendue — `g.remove` n'est pas `liberer`.
+  `grep -n "g.remove(membre)" src/*.js` : la monture (`montures.js`) porte le
+  même défaut, déclaré. Et l'estimation du journal (v426) ne compte que ce que
+  la scène tient : une rue vide n'y montre plus les prototypes que le pilote
+  garde (bornés à la flotte).
+
 ## Le parapet sous la voie (v477) — une matière de tablier se lit sous la ligne qui roule
 
 Une règle. Aux coins des anneaux, la voie d'une voiture traversait la bande de
@@ -835,6 +1049,52 @@ Deux règles.
   garde son axe au milieu. Un circuit ajouté qui prend un tour à contresens le
   remet à deux voies tout seul — et le témoin le dira s'il touche une façade.
   Élargir la rue aurait changé le sol sous ce que les enfants ont bâti.
+## Liberty Island et les feux de Manhattan (v496) — un ouvrage hors du rectangle se déclare à trois lecteurs
+
+Quatre règles.
+
+- **UNE PLACE SUR UN PLAN COMPRIMÉ SE MESURE PAR UNE SIMILITUDE, PAS UNE
+  AFFINE.** Le plan de Manhattan n'a pas une échelle : le Midtown est comprimé
+  autrement que le bas de l'île. Une affine à six paramètres, ajustée sur les
+  repères du sud, plaçait la statue à 86 blocs d'écart selon qu'on prenait ou
+  non la 14e Rue : elle extrapolait. Une similitude (rotation, échelle unique)
+  sur les quatre repères du sud rend un résidu de 12 blocs ET l'angle de la
+  vraie grille (−29,8°) — c'est ce second chiffre, qu'on ne lui a pas donné,
+  qui la rend crédible. Le témoin refait la mesure (`ILE_LIBERTE`).
+- **UN OUVRAGE HORS DU RECTANGLE DE MANHATTAN SE DÉCLARE À TROIS LECTEURS.**
+  `generateChunk` le bâtit (`batirLiberte`, en blocs, `terrainHeight` intact) ;
+  `maillageLocal` le garde sur le fil principal, sinon le worker (un `World`
+  nu) maille la baie vide et ses blocs remplacent les nôtres (v251) ; la zone
+  `active` du rendu le couvre (`dansBoiteLiberte`), sinon l'éclairage de la
+  ville bascule à chaque pas sur l'île. Et ce que la portée des morceaux ne
+  montre pas de la Battery a une silhouette lointaine PLUS PETITE que les
+  blocs : ils la recouvrent en arrivant, sans rien à cacher.
+- **À MANHATTAN, LES FEUX SONT DU PLAN, ET LA RÈGLE EST CELLE DU MONDE.**
+  `feuxManhattan` (manhattan-plan.js) pose quatre feux par carrefour, sur les
+  coins piétons, chacun glissé le long de SA file jusqu'à ce que sa position
+  porte son axe (`axeDuFeu`) ; `ManhattanRenderer.feuxAutour` rend la liste
+  que `main.js` donne à la circulation et aux passants (`feuxProches`) et
+  allume les optiques avec `etatFeu`. Une nouvelle optique est un essaim AVEC
+  couleur par instance : sans `setColorAt`, la clé de programme diffère
+  (`instancingColor`) et l'entrée dans la ville compile (v246).
+- **UNE BOUCLE SYNCHRONE D'`update` NE VOIT PAS UNE ATTENTE EN TEMPS RÉEL.**
+  Le témoin de la marche au long cap (v354) fait avancer les passants de dix
+  secondes de jeu d'un seul tenant ; un passant qui attend au feu y compte son
+  attente en temps réel, qui n'avance pas — il restait au bord pour toujours et
+  le débit tombait (0,53). Il sort du débit, et le message dit combien. Et un
+  témoin de feu pose sa voiture HORS du carrefour d'avant : avec des rues à
+  19 blocs, à 15 blocs d'un feu elle était encore à moins de 5 du précédent,
+  où l'on dégage au lieu de s'arrêter.
+
+## Le bloc visé dit qui l'a posé (v490) — le diagnostic répond à « qui a posé ça ? »
+
+Une règle. `?diag=1` porte une ligne « visé » : le nom du bloc sous le
+réticule, ses coordonnées, et « posé par le jeu » ou « posé à la main » avec
+la date de `world.editTimes` (le journal de l'enfant est la seule origine
+d'un bloc qui n'est pas du générateur). La visée est celle de la surbrillance,
+retenue SEULEMENT sous `DIAG` ; l'identifiant se relit à l'image où l'on écrit
+la ligne, sinon un bloc posé entre deux images se nomme de l'ancien nom (vu à
+la sonde). Le témoin de `monte.js` lit le TEXTE affiché, jamais une variable.
 
 ## Les passages des avenues (v467) — un passage se mesure le long de SA rue
 
@@ -984,7 +1244,7 @@ Deux règles.
   Bleue sa branche : deux rames de branche à moins d'un tiers de tour se
   rattraperaient au bout — d'où trois rames de branche, pas six.
 
-## Le métro de Washington jusqu'au bout de la boîte (v478) — un ouvrage se creuse dans son emprise, pas dans le disque de la ville
+## Le métro de Washington jusqu'au bout de la boîte (v485) — un ouvrage se creuse dans son emprise, pas dans le disque de la ville
 
 Deux règles.
 
@@ -1028,6 +1288,49 @@ Trois règles.
   au-dessus avec un bloc de terre) ; une recherche bornée les sert ensemble.
   Ce qui touche la rue ne se pose que sur du trottoir : un témoin le lit sur
   le monde, contre les vingt circuits de Paris.
+
+## La ligne A sous Rome (v500) — un métro de ville engendrée lit sa fiche, et sa bouche suit la trame
+
+`src/metromonde.js` : la méthode de la v473, pour une ville qui n'a qu'une
+fiche. Une ligne de plus est une entrée de `LIGNES_DEF` (ville, stations en
+lat/lon réelles, teinte). Quatre règles.
+
+- **LA VILLE SE CHOISIT PAR LA MESURE, PAS PAR LA RENOMMÉE.** Stations dans le
+  disque, espacement en blocs, relief et eau sous l'emprise, monuments à moins
+  de `box + 14` d'une station : Tokyo (20 blocs/km) mettait ses stations à
+  huit blocs l'une de l'autre, Berlin avait la Spree et quatre monuments sur
+  la U5. La sonde se refait avant la prochaine ville.
+- **UN TROTTOIR ENGENDRÉ FAIT DEUX BLOCS ET DEMI : L'ESCALIER EN FAIT DEUX, ET
+  IL SUIT LA TRAME.** Une trémie de trois ne tenait sur aucun trottoir (six
+  stations sur douze sans bouche, toutes pour cette raison : `L.refus`). Les
+  directions candidates sont la ligne, sa perpendiculaire et les deux axes de
+  la trame ; ce qui touche la rue se compte COLONNE PAR COLONNE avec la règle
+  même du creuseur (`colonnesHautes`) — un échantillonnage par points laisse
+  passer la colonne de lot du bord.
+- **UN COIN DE CARREFOUR N'EST PAS UN TROTTOIR COMME UN AUTRE.** Un anneau de
+  voitures y coupe le virage, carrosserie sur le trottoir (une rambarde à 1,2
+  bloc de la voie d'un circuit, mesuré) : une colonne qui voit de la chaussée
+  selon les deux axes de la trame ne reçoit ni trémie, ni rambarde, ni mât. Et
+  jamais rien sur un feu (`RUE.FEUX`, que la circulation lit).
+- **UN CALCUL PUR ET CHER SE FAIT AU PREMIER MORCEAU QUI LE DEMANDE.** Le choix
+  des bouches coûte deux cents millisecondes ; au chargement du module, le jeu
+  les payait derrière « Jouer » et le worker aussi. `L.bouches` est un
+  accesseur : la zone d'une ligne (`ZONES`) le déclenche avant de creuser.
+  Pur, donc le worker et le fil principal trouvent les mêmes bouches.
+
+Et **« DANS LE TUNNEL » EST AUSSI UNE HAUTEUR.** `VU_SOUTERRAIN` (v162) ne
+regardait que le plan : debout dans la rue au-dessus d'une ligne, ses rames se
+dessinaient dans la roche (deux sur cinq `visible` à Rome). `montrer` les cache
+au-delà de `HAUT_TUNNEL` (huit blocs) au-dessus de la rame. Un témoin de
+passants l'a trouvé, pas un témoin de métro : on a séparé les causes par
+quatre variantes jouées chacune plusieurs fois (rames seules, creusement seul,
+rames déplacées loin, correction), jamais par une deuxième hypothèse.
+
+La preuve compare le monde DÉSARMÉ (`METRO_MONDE.actif = false`) bloc à bloc
+au-dessus de la rue (`sonde-metro-monde.mjs`) ; les deux mondes se lisent
+chacun sous SON réglage, parce qu'un morceau s'engendre à la première lecture
+et que l'interrupteur est celui du module — ma première sonde comparait deux
+mondes armés et rendait « zéro bloc posé ».
 
 ## La course et les bêtes en temps réel (v483) — un chrono qui écrit un record est une pendule
 
@@ -1540,6 +1843,15 @@ règles.
   dans l'image, et `sensations.js` reprend le suivi du bestiaire pour ne pas
   compter deux fois. Les avions gardent la poursuite d'avant à l'identique ;
   `?sensations=0` rejoue l'ancienne conduite, pour mesurer.
+
+**Dos à un mur, la caméra plonge (v498).** Rapprochée par un mur derrière le
+coffre, elle gardait l'assiette du regard libre et la voiture sortait par le
+bas du cadre (milieu projeté à −1,17) — ni le témoin du recul ni celui du
+flanc ne le voyaient, une capture l'a montré. `plongee` ajoute au tangage
+l'écart d'angle sous lequel on voit la caisse (zéro au recul de la fiche), et
+sous le plancher la caméra monte de `MONTEE_PRES` par bloc gagné. **Une
+caméra qu'on déplace pour éviter un obstacle se juge par ce qu'elle montre :
+on lit la projection de ce qu'elle doit filmer, pas sa position.**
 
 **La pente se dessine (v429).** La physique publie `player.tangage` (v408,
 nez en haut positif — le signe de `rotation.x` sur un modèle au nez en −z) et
@@ -2318,7 +2630,7 @@ fichier** : le diff montre ce qu'on retire à l'autre côté.
 
 Ce qui reste, déclaré dans `TASKS.md` : la vue de la séquence ne se juge que
 sur le banc, pas sur l'iPad ; les amis ne voient pas la porte d'un avion
-s'ouvrir.
+s'ouvrir, ni celle d'une rame (v489).
 
 ## Les coupoles ont leur édifice (v365) — un gabarit partagé se cherche dans toutes les villes, et le ciel se lit sur les modèles
 
@@ -2438,6 +2750,37 @@ celle de la High Roller ne tiendrait pas, et c'est déclaré.
 Et une empreinte d'identité qui change se PROUVE : celle des 490 morceaux
 (v352) couvre Marrakech et Tokyo ; la branche, bâtisseurs neufs désarmés, rend
 l'ancienne au bit près — c'est ce qui a permis de la remplacer.
+
+## On monte dans une rame par sa porte (v489) — la discipline de l'avion, une porte qui coulisse
+
+Trois règles.
+
+- **L'ACCÈS SE DÉCLARE AVEC LE MODÈLE, ET UNE PORTE QUI COULISSE EST UNE
+  TRANSLATION.** `construireRame` (vehicules.js) pose `userData.porte`
+  (`type: 'coulissante'`, membre `porte`, `axe`, `course`, seuil, les deux
+  flancs) ; la porte arrière des deux flancs est UN membre (un appel de dessin
+  de plus par voiture, même matériau, aucune clé neuve), une baie sombre
+  derrière. `coulisser` (embarquement.js) décale le membre, `ouvrant` (l'avion)
+  le fait tourner : deux gestes, une fiche qui dit lequel.
+- **LA SÉQUENCE NE JOUE QUE SI LA RAME EST À QUAI, ET ELLE SE TERMINE SI LA
+  RAME REPART.** fun.js lit la pause qui reste au convoi (`etat()[ci].attente`
+  ≥ `ATTENTE_RAME_MIN`, 2,5 s) et le maillage par le nom stable de la place
+  (`voitureNommee`, `clé#rang`), une fois par appui, sans rien ajouter à
+  `vehicules.js` hors du modèle. Pendant la séquence, une rame qui bouge de
+  plus de `BOUGE_RAME` la termine (à bord, ou posé sur le quai) : la porte ne
+  file jamais sous l'enfant. `bord` ne bascule qu'une fois entré (`fin`), et
+  il est nul dès le premier appui en descendant.
+- **LE QUAI EST PLUS HAUT QUE LE BALLAST.** Une gare pose son quai à 2,7 blocs
+  de la rame (`QUAI_DEDANS`) : on essaie les deux flancs à trois écarts et
+  l'on garde la place la plus HAUTE, la plus proche à hauteur égale, avec un
+  sol plein sous les pieds (`placeQuai` : « vide » est un refus, comme « mur »
+  et « eau »).
+
+Et **un témoin qui attend qu'un métro marque l'arrêt devant l'enfant est un
+tirage** : `sonde-porte-rame.cjs` pose sa propre ligne sur le couloir plat,
+un arrêt tous les vingt blocs et douze secondes de pause (v233). Elle est lue
+par `monte.js`, donc elle n'est pas isolée (`sondeIsolee`) : la retoucher
+rejoue le portail entier.
 
 ## L'arrivée n'engendre plus le monde (v472) — sur le fil principal, on lit ce qui est là, on ne le fabrique pas
 
@@ -3587,6 +3930,18 @@ Les deux rouges réseau récurrents du palier C. Trois règles.
   une voix restée au quart (`GAIN_APPEL`) et le régime qui varie ; vérifié
   rouge sur une copie où la voix reste au quart.
 
+## Un service worker vraiment coincé (v488) — un blocage qu'on provoque se fabrique dans le code, pas dans le réseau
+
+Une règle. Les deux témoins de la v220 bloquaient le RÉSEAU (une requête qui
+ne répond pas) : le navigateur finissait toujours par l'épuiser, et l'ancien
+code s'en sortait sans filet — verts des deux côtés. Un `install` dont la
+promesse ne se tient jamais, glissé dans le `sw.js` publié
+(`sonde-sw-coince.cjs`, par `publierVersion`), ne s'épuise pas dans la fenêtre
+du filet. Le témoin juge l'ÉTAT (rechargée, version neuve ou fichiers du
+serveur), et il est rouge sur une copie au filet désarmé comme sur une copie
+où `forcerMaj` attend `unregister()` sans borne. Avant de croire qu'une panne
+« ne se fabrique pas », on cherche la couche où le navigateur n'a pas de délai.
+
 ## Un freinage de la rue se date à l'heure de la rue (v481)
 
 Deux règles.
@@ -4250,6 +4605,15 @@ blocs autour du tronc** : `generateChunk` ne balaie les arbres que trois
 colonnes au-delà du morceau, et une couronne plus large serait coupée net au
 bord. Et le feuillage gris-vert s'est jugé en capture : à (82, 110, 62) il
 sortait presque noir, le témoin le trouvait très bien teint.
+**La savane (v485)** ferme la table, après TOUT le reste : le Kalahari, le
+Sahel, la Corne, les forêts humides du Congo et du Queensland et l'anneau
+semi-aride de l'Australie passent avant, ce qui laisse aux sept contours
+(soudanienne, Afrique de l'Est et australe, ouest de Madagascar, Cerrado,
+Llanos, nord de l'Australie) des bords grossiers sans risque. Un arbre neuf,
+`kind` 6, l'acacia : un fût fourchu et une ombrelle UNIQUE de trois blocs de
+rayon — plus plate que le pin parasol, qui a deux étages — et un buisson
+épineux sur cinq (l'olivier sur un tronc d'un bloc). Les sites du témoin
+tempéré (Kansas, Iowa, Pampa, Ukraine) restent hors zone, vérifié sous node.
 
 ## Les déserts chauds (v341) — le climat est une donnée de géographie, comme la côte
 
@@ -12712,3 +13076,58 @@ Depuis la v245 ce n'est plus un masquage à chaque capture mais une COUCHE
 sonde ne voient pas. `realisme.js` renouvelle les reflets quatre fois dans la
 vraie scène et vérifie le code WebGL ainsi que l'absence de maillage laissé
 caché.
+
+## Les vrais arbres (v499) — un arbre se reconnaît à la règle qui l'a planté
+
+Max : « Change tous les arbres pour avoir de vrais arbres, pas des arbres façon
+Minecraft. » `src/arbreshd.js` (pur, lu par le worker) : la couche HD dessine
+chaque arbre reconnu dans les blocs d'un morceau — fût qui s'effile, branches,
+cartes de feuilles, silhouette et couleur par essence et par climat — dans
+`facades`, et ses cubes partent dans `plat`. Le voxel reste le squelette : aucun
+bloc ne change, les deux empreintes de `plafond.js` et celle des 490 morceaux
+sont intactes (`world.arbres` n'est posé que par `main.js`, jamais sur
+`new World()`). Six règles.
+
+- **UN ARBRE SE RECONNAÎT À LA SIGNATURE EXACTE DE `treeAt`, JAMAIS À LA
+  SILHOUETTE DE SES CUBES.** Mon premier jet lisait l'essence dans la forme de
+  la couronne : en forêt dense, les couronnes se touchent et le flood en prend
+  plusieurs — 14 écarts sur 22, des chênes lus palmiers. On demande à la règle
+  qui a planté l'arbre (`treeAt(x, z)` : même base, même hauteur de fût, même
+  bloc) ; un fût que `treeAt` ne connaît pas n'est un arbre de ville que s'il
+  en a le motif strict (deux feuilles dans sa colonne, aucun bois adjacent à la
+  base, pas de débord à ±2). Une cabane de rondins posée par un enfant reste
+  en cubes (témoin) : c'est « on ne tait que ce que le modèle couvre » (v292)
+  du côté de la reconnaissance.
+- **LE CLIMAT SE DEMANDE UNE FOIS PAR MORCEAU, ET `treeAt` LE REÇOIT.** Appelé
+  colonne par colonne avec `this.climat(x, z)`, `treeAt` coûtait +18 ms par
+  morceau de taïga (`climatReel`, des polygones) : `treeAt(x, z, cm)` prend le
+  climat du morceau (`climatDuMorceau`, v345), et le générateur ne change pas
+  d'un bloc — c'est le témoin « blocs identiques » qui le garde.
+- **AU LOIN, ON NE RECONNAÎT PAS : LE MORCEAU SE DIT ARBORÉ (`arbres: -1`).**
+  La reconnaissance (flood à 26 voisins dans une bande en y, marque timbrée et
+  pile à plat) coûte 10 à 14 ms sur le morceau de forêt le plus dense ; faite
+  partout elle aurait coûté cela à chaque morceau du disque, détail ou pas. Un
+  morceau sans détail garde ses cubes dans `solid` et rend −1 : `main.js` sait
+  qu'il faudra le remailler à portée (`entry.hd`), et le prix au loin tombe à
+  0,3–1,4 ms. Ce qu'on ne montre pas, on ne le calcule pas (v296).
+- **LES UV D'UNE CARTE ALPHA SONT ABSOLUES DANS L'ATLAS, POUR L'OMBRE.** La
+  passe d'ombre de three copie `map` et `alphaTest` et échantillonne aux UV
+  BRUTS, pas repliés par le shader de la couche : des UV en unités du monde
+  tombent sur le bord vide de l'atlas et l'ombre est jetée entière. Rectangle
+  `NEUTRE`, UV absolues : l'ombre d'une carte de feuilles est découpée par ses
+  feuilles. (Les façades HD de Paris, en UV monde, portent ce défaut d'ombre
+  depuis la v287 : dette déclarée, hors sujet ici.)
+- **UNE TEINTE SE JUGE EN CAPTURE, LE TÉMOIN NE VOIT QU'UNE COULEUR POSÉE
+  (v345, v351).** Pin et parasol à (40, 90, 50) sortaient noirs en capture ;
+  éclaircis à (58, 118, 66) et (56, 108, 58). Et un pin de 650 sommets en sept
+  étages était trop lourd ET trop sombre : trois à cinq étages de quatre
+  cartes, et trois branches à trois côtés par verticille.
+- **UN TÉMOIN DE RAYON LIT L'ÉTENDUE DES SOMMETS D'UNE BANDE, PAS L'AXE.** Le
+  fût est courbe et porte des branches : mesurer « le rayon » le long de l'axe
+  d'auteur rendait n'importe quoi. On lit la demi-étendue en x des sommets
+  d'écorce d'une bande basse contre une bande haute, trois blocs sous les
+  branches (0,32 contre 0,15).
+
+Ce qui reste, déclaré dans `TASKS.md` : une demi-couronne possible à la
+frontière de `RAYON_HD` (un arbre à cheval sur deux morceaux dont un seul est
+détaillé), et l'ombre des façades HD de Paris.

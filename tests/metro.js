@@ -318,6 +318,22 @@ let RAYON = 38;
       }
     }
 
+    // --- LA LIGNE A DE ROME (v500) : SES RAMES MARQUENT SES STATIONS ---------
+    //
+    // La descente de chaque bouche, le gabarit, le Tibre et le trottoir se
+    // prouvent sous node (`sonde-metro-monde.mjs`, lue par plafond.js) ; ici, ce
+    // que seul le jeu dit : les rames de la ligne A existent, toutes, sous terre,
+    // et chacune marque les vingt-quatre arrêts (douze stations, deux voies).
+    const ligneA = await tab.evaluate(async () => {
+      const m = await import('./src/metromonde.js').catch(() => null);
+      const L = m && m.LIGNES_MONDE && m.LIGNES_MONDE.find((l) => l.def.cle === 'rome');
+      const rames = (window.__vehicules.etat() || []).filter((c) => c.nom === 'métro ligne A');
+      return { attendu: L ? L.arrets.length : null, rames: rames.map((c) => ({ arrets: c.nbArrets, longueur: c.longueur })) };
+    }).catch((e) => ({ erreur: String(e) }));
+    verifier('la ligne A de Rome roule sous la ville : cinq rames, et chacune marque ses vingt-quatre arrêts',
+      ligneA.attendu === 24 && ligneA.rames && ligneA.rames.length === 5 && ligneA.rames.every((r) => r.arrets === 24 && r.longueur > 400),
+      JSON.stringify(ligneA));
+
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
   } finally {

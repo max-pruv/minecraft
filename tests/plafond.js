@@ -388,7 +388,12 @@ const EMPREINTE_MORCEAUX_V414 = '863d4203a441e3fd029ce2404fc6d6e706799e7f64fe489
 // v473 : la ligne 1 du métro passe sous Paris, un des neuf lieux. Désarmée
 // (`METRO_PARIS.actif = false`, ville.js), la branche rend b3bb35e3…, la
 // constante de la v472, au bit près.
-const EMPREINTE_MORCEAUX_V357 = 'df0e4dfc95d47d80bcc916c18f23d91eb1bde39a5d266597a4443716cb58ae81';
+// v500 : la ligne A du métro passe sous Rome, un des neuf lieux. Désarmée
+// (`METRO_MONDE.actif = false`, metromonde.js), la branche rend df0e4dfc…, la
+// constante de la v473, au bit près.
+// l'écart d'une voie à l'axe du métro (metromonde.js, GABARIT.ecart)
+const MM_ECART = 2.2;
+const EMPREINTE_MORCEAUX_V357 = 'fe1e5a37a4619528e26defbc41485903b67da5616fac3da6a2b53391b7839d42';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -535,6 +540,44 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     }
     verifier('on entre dans le Panthéon de Rome : depuis la place, à pied, jusqu\'au centre de la rotonde, sous la coupole et l\'oculus ouvert',
       r.trouve && r.place && r.centre && r.ciel && r.voute, JSON.stringify(r));
+  }
+
+  // --- ON ENTRE DANS SAINTE-SOPHIE (v493) ------------------------------------
+  // La même marche que le Panthéon de Rome : depuis la place à l'ouest, de
+  // proche en proche, un sol plein et deux blocs d'air au-dessus, sans sauter
+  // une marche, jusqu'au centre de la nef sous la coupole (le centre de la
+  // calotte est à un bloc au sud du repère). Et ce que l'enfant voit en levant
+  // la tête : une nef haute (dix blocs d'air au moins) fermée par la coupole.
+  // Sur l'ancien bâtisseur, Sainte-Sophie est un bloc plein : le centre n'est
+  // jamais atteint, et il n'y a pas d'air au-dessus.
+  {
+    const { CONF_NEUF } = await import('../src/world.js');
+    const lm = CONF_NEUF.reperes.find((l) => l.name === 'Sainte-Sophie');
+    let r = { trouve: !!lm };
+    if (lm) {
+      const sol = w.terrainHeight(lm.x, lm.z);
+      const libre = (du, dv) => w.getBlock(lm.x + du, sol, lm.z + dv) !== 0
+        && w.getBlock(lm.x + du, sol + 1, lm.z + dv) === 0
+        && w.getBlock(lm.x + du, sol + 2, lm.z + dv) === 0;
+      const depart = [-lm.box - 4, 1];
+      const vus = new Set([depart.join(',')]);
+      const file = libre(...depart) ? [depart] : [];
+      while (file.length) {
+        const [du, dv] = file.shift();
+        for (const [eu, ev] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const nu = du + eu, nv = dv + ev;
+          if (Math.abs(nu) > lm.box + 6 || Math.abs(nv) > lm.box + 6) continue;
+          const k = `${nu},${nv}`;
+          if (vus.has(k) || !libre(nu, nv)) continue;
+          vus.add(k); file.push([nu, nv]);
+        }
+      }
+      let nef = 0;                   // l'air au-dessus du centre, jusqu'à la calotte
+      while (nef < 40 && w.getBlock(lm.x, sol + 1 + nef, lm.z + 1) === 0) nef++;
+      r = { trouve: true, place: libre(...depart), centre: vus.has('0,1'), cases: vus.size, nef, coupole: nef < 40 };
+    }
+    verifier('on entre dans Sainte-Sophie : depuis la place, à pied, de plain-pied, jusqu\'au centre de la nef, sous la coupole',
+      r.trouve && r.place && r.centre && r.nef >= 10 && r.coupole, JSON.stringify(r));
   }
 
   // --- UNE VOITURE TRAVERSE CHAQUE PONT D'AUTOROUTE (v430) -------------------
@@ -1580,6 +1623,41 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     surUneVille.length ? surUneVille.join(', ')
       : `la paire la plus serrée garde ${Math.round(pireVille)} blocs — ${pireQui}`);
 
+  // CHANGI, SUR UNE TERRE GAGNÉE SUR LA MER (v486) — la casse se borne, et la
+  // borne se mesure. Singapour n'existe que par la zone à terre de sa ville ;
+  // l'aérodrome fait de même avec la sienne (`box + 30`), et c'est tout ce qui
+  // bouge. On engendre le même pays avec et sans Changi, DANS LE MÊME CODE :
+  // hors du disque de sa zone, pas une colonne ne doit différer — et dedans,
+  // l'île doit exister (moins de six pour cent d'eau sous le disque). Mesuré à
+  // la livraison avec la même découpe sur `origin/main` et sur la branche :
+  // 242 980 colonnes, 03de9ee4… des deux côtés. Un témoin qui ne peut pas être
+  // satisfait en mettant une valeur à jour. Sur l'ancien code : Changi absent.
+  {
+    const W = await import('../src/world.js');
+    const sin = AERO.find((a) => a.cle === 'sin');
+    if (!sin) verifier('Changi : la terre gagnée sur la mer reste dans sa zone', false, 'Changi absent du registre');
+    else {
+      const avec = new W.World(), sans = new W.World();
+      sans.conf = { ...W.CONF_NEUF, cle: 'temoin-sans-changi',
+        aeroports: W.CONF_NEUF.aeroports.filter((a) => a.cle !== 'sin'),
+        reperes: W.CONF_NEUF.reperes.filter((l) => l.name !== sin.nom && !String(l.name).startsWith(sin.nom)) };
+      const zone = sin.r - 9 + 30;
+      let horsDiff = 0, hors = 0, dedansDiff = 0, eau = 0, disque = 0;
+      for (let x = sin.x - 400; x <= sin.x + 400; x += 2) {
+        for (let z = sin.z - 400; z <= sin.z + 400; z += 2) {
+          const d = Math.hypot(x - sin.x, z - sin.z);
+          const h1 = avec.terrainHeight(x, z);
+          if (d < sin.r) { disque++; if (h1 < W.WATER_LEVEL) eau++; }
+          const diff = h1 !== sans.terrainHeight(x, z);
+          if (d > zone + 1) { hors++; if (diff) horsDiff++; } else if (diff) dedansDiff++;
+        }
+      }
+      verifier('Changi : la terre gagnée sur la mer reste dans sa zone',
+        horsDiff === 0 && dedansDiff > 1000 && eau / disque < 0.06,
+        `hors de la zone ${horsDiff} colonne(s) changée(s) sur ${hors} · dans la zone ${dedansDiff} · eau sous le disque ${(100 * eau / disque).toFixed(1)} %`);
+    }
+  }
+
   // ET MÊME EXIGENCE POUR LES DEUX CENT SOIXANTE-NEUF VILLES ENGENDRÉES,
   // qui ont pris 1,8 fois leur emprise en v200.
   //
@@ -1967,7 +2045,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     };
     const sol = (q) => q !== BLOCK.AIR && q !== BLOCK.WATER && q !== BLOCK.LOG && q !== BLOCK.BIRCH && q !== BLOCK.LEAVES;
     const lire = (sites) => {
-      const r = { colonnes: 0, herbe: 0, roche: 0, neige: 0, forme: 0, arbres: 0, arbresSans: 0, pins: 0, palmiers: 0, oliviers: 0, parasols: 0, teints: 0, sommets: 0 };
+      const r = { colonnes: 0, herbe: 0, roche: 0, neige: 0, forme: 0, arbres: 0, arbresSans: 0, pins: 0, palmiers: 0, oliviers: 0, parasols: 0, acacias: 0, teints: 0, sommets: 0 };
       for (const [lat, lon] of sites) {
         const p = point(lat, lon);
         for (let cx = 0; cx < 4; cx++) for (let cz = 0; cz < 4; cz++) {
@@ -1987,6 +2065,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
             if (arbre && arbre.kind === 3) r.palmiers++;
             if (arbre && arbre.kind === 5) r.oliviers++;
             if (arbre && arbre.kind === 4) r.parasols++;
+            if (arbre && arbre.kind === 6) r.acacias++;
           }
           // la teinte : les sommets d'herbe que le mailleur a colorés
           if (cx === 1 && cz === 1) {
@@ -2008,6 +2087,9 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     // LE CLIMAT MÉDITERRANÉEN (v469) : l'Andalousie, la Toscane, le
     // Péloponnèse, la vallée centrale de Californie
     const mediterranee = lire([[37.6, -4.2], [43.1, 11.4], [37.5, 22.3], [37.2, -120.3]]);
+    // LA SAVANE (v485) : le Serengeti, la Zambie, le Cerrado, le Top End,
+    // la savane soudanienne du nord du Ghana
+    const savane = lire([[-2.3, 34.8], [-14.5, 27.5], [-13, -50], [-15.5, 133], [10.5, -1.5]]);
     // le Kansas, témoin de la campagne tempérée : rien n'y est teint
     const kansas = lire([[38.5, -98.5]]);
     // LE RACCOURCI DU MORCEAU : un climat déclaré certain pour un morceau
@@ -2041,7 +2123,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         for (let y = h + 1; y <= h + 9; y++) { if (m.getBlock(x, y, z) === sans.getBlock(x, y, z)) garde.pareil++; else garde.autres++; }
       }
     }
-    return { toundra, taiga, steppe, tropiques, mediterranee, kansas, certains, desaccords, garde };
+    return { toundra, taiga, steppe, tropiques, mediterranee, savane, kansas, certains, desaccords, garde };
   })();
   verifier('dans la toundra, du lichen, de la roche nue et la neige plus bas, presque sans arbre (Nunavut, Iamalie, Sibérie arctique)',
     climats.toundra.colonnes > 2000 && climats.toundra.forme === 0 && climats.toundra.roche + climats.toundra.neige >= climats.toundra.colonnes * 0.05
@@ -2065,6 +2147,11 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       && climats.mediterranee.parasols > 0 && climats.mediterranee.oliviers + climats.mediterranee.parasols >= climats.mediterranee.arbres * 0.9
       && climats.mediterranee.teints >= climats.mediterranee.sommets * 0.3,
     JSON.stringify(climats.mediterranee));
+  verifier('dans la savane, l\'herbe dorée et des acacias isolés, presque sans bois ; la même forme bloc pour bloc (Serengeti, Zambie, Cerrado, Top End, Ghana)',
+    climats.savane.colonnes > 2000 && climats.savane.forme === 0 && climats.savane.acacias > 0
+      && climats.savane.acacias >= climats.savane.arbres * 0.6 && climats.savane.arbres * 2 <= climats.savane.arbresSans
+      && climats.savane.teints >= climats.savane.sommets * 0.3,
+    JSON.stringify(climats.savane));
   verifier('le climat certain d\'un morceau est celui de toutes ses colonnes',
     climats.certains > 3000 && climats.desaccords === 0, `${climats.certains} morceaux certains, ${climats.desaccords} colonnes en désaccord`);
   verifier('là où un enfant a bâti avant la règle, les arbres d\'avant restent',
@@ -2340,6 +2427,91 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   verifier('et le nouveau Paris ne bâtit pas d\'immeuble sur ce qu\'un enfant avait bâti — mais bâtit sous ce qu\'on pose après',
     !double.absent && double.bati === 0 && double.lotBati,
     double.absent ? 'Paris n\'a pas doublé' : `autour de la maison : ${double.bati} bloc(s) de ville · lot après la date bâti : ${double.lotBati}`);
+
+  // --- LA FICHE D'UN GARAGE SUIT SES BLOCS (v487) ------------------------
+  //
+  // Un garage est rangé par POSITION (`garages.js`). Les marches de la carte
+  // emmenaient ses murs et laissaient sa fiche : la voiture garée ressortait
+  // à l'ancienne adresse. Sous node, sur des documents fabriqués :
+  //  1. Paris doublé : la fiche part avec le GROUPE de ses blocs (pas avec la
+  //     colonne de son origine), sur un document d'avant ET en orpheline (les
+  //     blocs déjà partis sans elle) — les deux au même endroit, le plancher
+  //     entier sous elle, ses places et sa voiture d'un même vecteur ;
+  //  2. un garage posé après la date ne bouge pas ; une seconde passe rend le
+  //     même objet ; un document sans garages reste sans garages (v189) ;
+  //  3. la carte 3 (Rome qui bouge) : en avant et en orpheline, même arrivée ;
+  //  4. le stockage de l'appareil : un appareil déjà à la carte 7, la fiche
+  //     restée derrière, la retrouve à la migration de stockage, une fois.
+  const garagesCarte = await (async () => {
+    const W = await import('../src/world.js');
+    if (!W.migrerChaineCarte) return { absent: true };
+    const A = await import('../src/paris-v302.js');
+    const M = await import('../src/mondes.js');
+    const av = new W.World({ avant: true });
+    const t = W.DATE_PARIS_DOUBLE - 86400000;
+    const [mx, mz] = A.adresseParis(-2.5, 1.5);
+    const gA = av.terrainHeight(mx, mz);
+    const L = {};
+    for (let dx = 0; dx < 9; dx++) for (let dz = 0; dz < 11; dz++) {
+      L[`${mx + dx},${gA + 1},${mz + dz}`] = [4, t];
+      if (dx === 0 || dx === 8 || dz === 0) for (let dy = 2; dy <= 4; dy++) L[`${mx + dx},${gA + dy},${mz + dz}`] = [5, t];
+    }
+    const [rx, rz] = A.adresseParis(1.5, 1.0), gR = av.terrainHeight(rx, rz);
+    for (let dx = -2; dx <= 2; dx++) for (let dz = -2; dz <= 2; dz++) L[`${rx + dx},${gR + 1},${rz + dz}`] = [4, W.DATE_PARIS_DOUBLE + 5000];
+    const idAp = `${rx},${gR + 1},${rz}`;
+    const garages = { local: {
+      [`${mx + 4},${gA + 1},${mz + 5}`]: { x: mx + 4, y: gA + 1, z: mz + 5, l: 9, p: 11, places: [[mx + 4, mz + 5]],
+        voiture: { flotte: 'x.glb', nom: 'V', x: mx + 4.3, y: gA + 1, z: mz + 5.2, yaw: 1 }, t: 0 },
+      [idAp]: { x: rx, y: gR + 1, z: rz, l: 5, p: 5, places: [], voiture: null, t: 0 },
+    } };
+    const doc = { local: L };
+    const avant = W.migrerChaineCarte(doc, garages);
+    const seuls = W.migrerChaineCarte(doc, undefined);
+    const orph = W.migrerChaineCarte(seuls.edits, garages);
+    const deux = W.migrerChaineCarte(avant.edits, avant.garages);
+    const lue = (r) => {
+      const f = Object.values(r.garages.local).find((x) => x.voiture);
+      const E = r.edits.local;
+      let plancher = 0;
+      for (let dx = -4; dx <= 4; dx++) for (let dz = -5; dz <= 5; dz++) if (E[`${f.x + dx},${f.y},${f.z + dz}`]?.[0] === 4) plancher++;
+      return { ou: [f.x, f.y, f.z], plancher, v: [+(f.voiture.x - f.x).toFixed(3), f.voiture.y - f.y, +(f.voiture.z - f.z).toFixed(3)],
+        place: [f.places[0][0] - f.x, f.places[0][1] - f.z], vieux: !!r.garages.local[`${mx + 4},${gA + 1},${mz + 5}`], apres: !!r.garages.local[idAp] };
+    };
+    // 3. la carte 3
+    const ro = M.positionDe('rome', 'terreV2');
+    const c3 = {}, t3 = W.DATE_CARTE_3 - 1e7;
+    for (let dx = 0; dx < 7; dx++) for (let dz = 0; dz < 7; dz++) c3[`${ro.x + 3 + dx},40,${ro.z + 3 + dz}`] = [4, t3];
+    const g3 = { local: { a: { x: ro.x + 6, y: 40, z: ro.z + 6, l: 7, p: 7, places: [], voiture: null, t: 0 } } };
+    const c3a = W.migrerChaineCarte({ local: c3 }, g3);
+    const c3o = W.migrerChaineCarte(W.migrerChaineCarte({ local: c3 }).edits, g3);
+    // 4. le stockage
+    const memoire = new Map([['web-minecraft-carte-v1', '7'], ['web-minecraft-garages-v1', JSON.stringify(garages)]]);
+    const avantLS = globalThis.localStorage;
+    globalThis.localStorage = { getItem: (k) => (memoire.has(k) ? memoire.get(k) : null), setItem: (k, v) => memoire.set(k, String(v)), removeItem: (k) => memoire.delete(k) };
+    let stock = null;
+    try {
+      let tout = JSON.parse(JSON.stringify(seuls.edits));
+      W.migrerLesBlocs(() => tout, (x) => { tout = x; });
+      const gs = JSON.parse(memoire.get('web-minecraft-garages-v1')).local;
+      const f = Object.values(gs).find((x) => x.voiture);
+      stock = { ou: f && [f.x, f.y, f.z], version: memoire.get('web-minecraft-carte-v1'), n: Object.keys(gs).length };
+    } finally { if (avantLS === undefined) delete globalThis.localStorage; else globalThis.localStorage = avantLS; }
+    return { av: lue(avant), or: lue(orph), deux: deux.garages === avant.garages && deux.deplacees === 0,
+      vide: seuls.garages === undefined, c3: [Object.keys(c3a.garages.local)[0], Object.keys(c3o.garages.local)[0], c3a.deplacees], stock };
+  })();
+  verifier('🅿️ la fiche d\'un garage de l\'ancien Paris part avec le groupe de ses murs — d\'un document d\'avant comme en orpheline',
+    !garagesCarte.absent && garagesCarte.av.plancher === 99 && !garagesCarte.av.vieux
+      && garagesCarte.or.ou.join() === garagesCarte.av.ou.join() && garagesCarte.or.plancher === 99
+      && garagesCarte.av.v.join() === '0.3,0,0.2' && garagesCarte.av.place.join() === '0,0',
+    garagesCarte.absent ? 'la fiche d\'un garage ne suit pas ses blocs' : JSON.stringify({ av: garagesCarte.av, or: garagesCarte.or }));
+  verifier('🅿️ et un garage posé après la date reste, une seconde passe ne fait rien, un document sans garages en reste sans',
+    !garagesCarte.absent && garagesCarte.av.apres && garagesCarte.deux && garagesCarte.vide,
+    garagesCarte.absent ? 'la fiche d\'un garage ne suit pas ses blocs' : JSON.stringify({ apres: garagesCarte.av.apres, deux: garagesCarte.deux, vide: garagesCarte.vide }));
+  verifier('🅿️ et un garage de Rome suit la carte 3 ; et l\'appareil qui a migré sans la fiche la retrouve à la migration de stockage',
+    !garagesCarte.absent && garagesCarte.c3[2] >= 1 && garagesCarte.c3[0] === garagesCarte.c3[1] && garagesCarte.c3[0] !== 'a'
+      && garagesCarte.stock && garagesCarte.stock.ou && garagesCarte.stock.ou.join() === garagesCarte.av.ou.join()
+      && garagesCarte.stock.version === '8' && garagesCarte.stock.n === 2,
+    garagesCarte.absent ? 'la fiche d\'un garage ne suit pas ses blocs' : JSON.stringify({ c3: garagesCarte.c3, stock: garagesCarte.stock }));
 
   // --- LONDRES À LA RÈGLE DU KIT (v339) : la ville d'avant reste sous ce ----
   // --- qu'un enfant y a bâti ------------------------------------------------
@@ -2677,6 +2849,40 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       r.absente ? 'aucune ligne 1' : JSON.stringify({ gabarit: r.gabarit, lus: r.lus, poches: r.poches, surChaussee: r.surChaussee, mure: r.mure, circuits: r.circuits }));
   }
 
+  // LA LIGNE A DE ROME SE PARCOURT COMME L'ENFANT LA VIT (v500), par la même
+  // sonde que la ligne 1 de Paris, recopiée pour une ville engendrée
+  // (`sonde-metro-monde.mjs`, lue telle quelle) : de chaque bouche au quai case
+  // par case, le passage des rames libre, aucune poche d'air dans le Tibre, rien
+  // de la bouche hors du trottoir, ni dans le passage d'un circuit, ni à la place
+  // d'un feu — le monde désarmé comparé bloc à bloc au-dessus de la rue. Rouge
+  // sur la v473 : aucune ville engendrée n'avait de métro.
+  {
+    const { mesurerMetrosMonde } = await import('./sonde-metro-monde.mjs');
+    const t0 = Date.now();
+    const r = await mesurerMetrosMonde();
+    const L = (r.lignes || []).find((l) => l.ville === 'rome');
+    const ratees = L ? L.descentes.filter((d) => !d.arrive).map((d) => d.nom) : [];
+    verifier('la ligne A de Rome : douze stations, une bouche par station, et de chaque bouche on descend au quai',
+      !!L && L.stations === 12 && L.bouches === 12 && ratees.length === 0,
+      !L ? 'aucune ligne A (metromonde.js absent)' : `${L.bouches}/${L.stations} bouches (sans : ${L.sansBouche.join(', ') || 'aucune'}), descentes ratées : ${ratees.join(', ') || 'aucune'}, ${Date.now() - t0} ms`);
+    verifier('rien ne barre les rames de Rome, le Tibre reste plein, et la bouche ne touche que le trottoir',
+      !!L && L.lus > 1000 && L.gabarit === 0 && L.poches === 0 && L.surChaussee === 0 && L.ailleurs === 0
+        && L.mure === 0 && L.trouSousVoie === 0 && L.feux === 0 && L.poses > 0 && L.circuits > 0,
+      !L ? 'aucune ligne A' : JSON.stringify({ gabarit: L.gabarit, lus: L.lus, poches: L.poches, surChaussee: L.surChaussee, ailleurs: L.ailleurs, mure: L.mure, trouSousVoie: L.trouSousVoie, feux: L.feux, poses: L.poses, circuits: L.circuits }));
+    // les rames s'arrêtent AUX quais : chaque rang d'arrêt donné à la rame est,
+    // sur le tracé des deux voies, à l'écart d'une voie du centre d'un quai
+    let arrets = null;
+    try {
+      const MM = await import('../src/metromonde.js');
+      const LA = MM.LIGNES_MONDE.find((l) => l.def.cle === 'rome');
+      const pts = MM.traceLigneMonde(LA);
+      arrets = LA.arrets.map((i) => Math.min(...LA.quais.map((q) => Math.hypot(pts[i].x - q.x, pts[i].z - q.z))));
+    } catch { /* absente : le verdict le dit */ }
+    verifier('les rames de la ligne A marquent leurs vingt-quatre arrêts au droit des quais',
+      !!arrets && arrets.length === 24 && arrets.every((d) => d < MM_ECART + 0.2),
+      arrets ? `écart au quai ${Math.max(...arrets).toFixed(2)} au plus, ${arrets.length} arrêts` : 'aucune ligne A');
+  }
+
   // UNE BAIE SE SOUDE (v467). La couche HD de Paris pesait jusqu'à onze
   // mégaoctets par morceau dense de l'ouest (v299 : l'iPhone de Max tué par la
   // mémoire), et c'est le NOMBRE DE SOMMETS qui décide. Un sommet sur six y
@@ -2894,6 +3100,134 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     verifier('le fil principal et le worker bâtissent le même Colisée',
       !!ici && ici === a[k] && ici === b[k],
       `ici ${ici && ici.slice(0, 10)}, fil 1 ${a[k] && a[k].slice(0, 10)}, fil 2 ${b[k] && b[k].slice(0, 10)}`);
+  }
+
+  // LES VRAIS ARBRES (v499, arbreshd.js). Max : « de vrais arbres, pas des
+  // arbres façon Minecraft ». Le voxel reste le squelette ; à portée du
+  // détail, chaque arbre RECONNU dans les blocs (un fût, ses feuilles
+  // connectées) est dessiné en relief dans `facades` et ses cubes partent dans
+  // `plat`. Six témoins, sous node, sur le morceau de forêt le plus dense près
+  // de (−1 500, −2 500) — cherché, pas écrit (v285) :
+  //  • le tronc s'EFFILE (le rayon à la base est plus grand qu'en haut) et il y
+  //    a des cartes de feuilles : ce n'est plus un cube sur un poteau ;
+  //  • on ne tait QUE ce que le modèle couvre (v292) : les faces qui quittent
+  //    `solid` sont exactement celles qui entrent dans `plat` — et une cabane
+  //    de rondins posée par un enfant, sans feuilles, reste dans `solid` ;
+  //  • les blocs du morceau sont identiques à l'octet, armé ou non (invariant
+  //    1, par construction et par mesure) ;
+  //  • deux mondes neufs, Math.random remplacé entre les deux, rendent les
+  //    mêmes tampons, et le module ne contient pas `Math.random` (v450) ;
+  //  • chaque essence a sa silhouette : le pin ses aiguilles, le palmier ses
+  //    palmes, le bouleau son écorce blanche, et des couleurs différentes ;
+  //  • sans `world.arbres`, les tampons sont ceux d'avant au bit près — c'est
+  //    ce qui garde l'empreinte des 490 morceaux sans la relever.
+  // Sur l'ancien code le module n'existe pas : on le dit, on ne s'effondre pas.
+  {
+    const W = await import('../src/world.js');
+    const { buildChunkTampons } = await import('../src/mesher.js');
+    const { BLOCK } = await import('../src/blocks.js');
+    const crypto = await import('crypto');
+    let A = null;
+    try { A = await import('../src/arbreshd.js'); } catch (e) { A = null; }
+    if (!A || typeof A.arbreVrai !== 'function') {
+      verifier('les vrais arbres : un tronc qui s\'effile et des cartes de feuilles (arbreshd.js)', false, 'arbreshd.js absent');
+    } else {
+      const { GeomBufferHD, rectHD } = await import('../src/facadeshd.js');
+      const t0 = Date.now();
+      // le morceau de forêt le plus dense : on compte les arbres de `treeAt`
+      const w0 = new W.World();
+      let best = null;
+      for (let dx = -12; dx <= 12; dx++) for (let dz = -12; dz <= 12; dz++) {
+        const cx = Math.floor(-1500 / W.CHUNK) + dx, cz = Math.floor(-2500 / W.CHUNK) + dz;
+        let n = 0;
+        for (let lx = 0; lx < W.CHUNK; lx++) for (let lz = 0; lz < W.CHUNK; lz++) if (w0.treeAt(cx * W.CHUNK + lx, cz * W.CHUNK + lz)) n++;
+        if (!best || n > best.n) best = { cx, cz, n };
+      }
+      const faces = (g) => (g ? g.indices.length / 6 : 0);
+      const sha = (t) => { const h = crypto.createHash('sha256'); for (const k of Object.keys(t).sort()) { const a = t[k]; if (a && a.buffer) h.update(Buffer.from(a.buffer, a.byteOffset, a.byteLength)); } return h.digest('hex'); };
+      const monde = (arbres) => { const w = new W.World(); w.arbres = arbres; return w; };
+      const wa = monde(1), ws = monde(0);
+      const arme = buildChunkTampons(wa, best.cx, best.cz, { detail: true });
+      const sans = buildChunkTampons(ws, best.cx, best.cz, { detail: true });
+      const desarme = buildChunkTampons(monde(1), best.cx, best.cz, { detail: true, vraisArbres: false });
+      const loin = buildChunkTampons(monde(1), best.cx, best.cz, { detail: false });
+      // (1) un tronc qui s'effile, des feuilles : un chêne seul, bâti par le module
+      const buf = new GeomBufferHD();
+      A.arbreVrai(buf, 3, 40, 3, 1000, 2000, 5, { x0: 1, x1: 5, y0: 43, y1: 46, z0: 1, z1: 5 }, 'chene', 0);
+      const dans = (u, v, nom) => { const r = rectHD(nom); return u >= r[0] && u <= r[0] + r[2] && v >= r[1] && v <= r[1] + r[3]; };
+      // le rayon d'un anneau du fût : la demi-étendue en x des sommets d'écorce
+      // d'une bande de hauteur — le fût se courbe, l'axe de l'arbre ne dit rien ;
+      // le haut se lit à trois blocs, SOUS le départ des branches
+      let feuilles = 0, ecorce = 0;
+      const bas = [Infinity, -Infinity], haut = [Infinity, -Infinity];
+      for (let i = 0; i < buf.positions.length / 3; i++) {
+        const x = buf.positions[i * 3], y = buf.positions[i * 3 + 1];
+        const u = buf.uvs[i * 2], v = buf.uvs[i * 2 + 1];
+        if (dans(u, v, 'ecorce')) {
+          ecorce++;
+          if (y <= 40.6) { bas[0] = Math.min(bas[0], x); bas[1] = Math.max(bas[1], x); }
+          if (y >= 43 && y <= 43.5) { haut[0] = Math.min(haut[0], x); haut[1] = Math.max(haut[1], x); }
+        }
+        if (dans(u, v, 'feuilles')) feuilles++;
+      }
+      const rBas = (bas[1] - bas[0]) / 2, rHaut = (haut[1] - haut[0]) / 2;
+      verifier('les vrais arbres : un chêne est un tronc qui s\'effile (plus large en bas qu\'en haut) et des cartes de feuilles, pas un cube sur un poteau',
+        ecorce > 40 && feuilles > 100 && rBas > 0.25 && rHaut > 0 && rHaut < rBas * 0.75,
+        `rayon à la base ${rBas.toFixed(2)}, à trois blocs ${rHaut.toFixed(2)}, ${ecorce} sommets d'écorce, ${feuilles} de feuilles`);
+      // (2) le morceau de forêt : des arbres reconnus et émis, et la conservation des faces
+      verifier('dans le morceau de forêt le plus dense, les arbres sont reconnus et dessinés en relief, et seuls leurs cubes partent dans le loin',
+        best.n >= 10 && arme.arbres >= best.n * 0.8 && arme.arbresEmis === arme.arbres && !!arme.facades && arme.facades.positions.length / 3 > 1000
+          && faces(arme.solid) + faces(arme.plat) === faces(sans.solid) && faces(arme.plat) > 0 && !sans.facades && !sans.plat,
+        `morceau (${best.cx}, ${best.cz}) : ${best.n} arbres de treeAt, ${arme.arbres} reconnus, ${arme.arbresEmis} émis, ${arme.facades ? arme.facades.positions.length / 3 : 0} sommets ; faces solid ${faces(arme.solid)} + plat ${faces(arme.plat)} = ${faces(sans.solid)} sans`);
+      // (3) les blocs ne bougent pas, et sans l'option ou sans détail, rien ne change
+      const da = wa.ensureChunk(best.cx, best.cz), ds = ws.ensureChunk(best.cx, best.cz);
+      let memes = da.length === ds.length;
+      for (let i = 0; memes && i < da.length; i++) if (da[i] !== ds[i]) memes = false;
+      verifier('les vrais arbres ne posent ni ne retirent aucun bloc, et `vraisArbres: false` comme un morceau sans détail rendent les tampons d\'avant au bit près',
+        memes && sha(desarme.solid) === sha(sans.solid) && !desarme.facades && !desarme.plat && sha(loin.solid) === sha(sans.solid) && !loin.facades && !loin.plat && loin.arbres === -1,
+        `blocs identiques ${memes} ; désarmé = avant ${sha(desarme.solid) === sha(sans.solid)} ; loin = avant ${sha(loin.solid) === sha(sans.solid)} (au loin, le morceau se dit arboré : ${loin.arbres})`);
+      // (4) une cabane de rondins sans feuilles n'est pas un arbre
+      const wc = monde(1);
+      const h0 = wc.terrainHeight(best.cx * W.CHUNK + 8, best.cz * W.CHUNK + 8);
+      for (let dx = 0; dx < 3; dx++) for (let dz = 0; dz < 3; dz++) for (let dy = 1; dy <= 3; dy++) wc.setBlock(best.cx * W.CHUNK + 7 + dx, h0 + dy, best.cz * W.CHUNK + 7 + dz, BLOCK.LOG, 1);
+      const cab = buildChunkTampons(wc, best.cx, best.cz, { detail: true });
+      const wc0 = monde(0);
+      for (let dx = 0; dx < 3; dx++) for (let dz = 0; dz < 3; dz++) for (let dy = 1; dy <= 3; dy++) wc0.setBlock(best.cx * W.CHUNK + 7 + dx, h0 + dy, best.cz * W.CHUNK + 7 + dz, BLOCK.LOG, 1);
+      const cab0 = buildChunkTampons(wc0, best.cx, best.cz, { detail: true });
+      verifier('une cabane de rondins posée par un enfant n\'est pas un arbre : elle reste dans `solid`, visible, et les arbres autour restent reconnus',
+        cab.arbres === arme.arbres && faces(cab.solid) + faces(cab.plat) === faces(cab0.solid) && faces(cab.solid) > faces(arme.solid),
+        `${cab.arbres} arbres (${arme.arbres} sans la cabane) ; faces solid ${faces(cab.solid)} + plat ${faces(cab.plat)} = ${faces(cab0.solid)} (${faces(arme.solid)} de solid sans la cabane)`);
+      // (5) déterminisme : Math.random remplacé, le même arbre ; et jamais Math.random dans le module
+      const vrai = Math.random;
+      let s = 123456789;
+      Math.random = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
+      const encore = buildChunkTampons(monde(1), best.cx, best.cz, { detail: true });
+      Math.random = vrai;
+      // (le code, pas ses commentaires, qui nomment la règle)
+      const source = require('fs').readFileSync(require('path').join(__dirname, '../src/arbreshd.js'), 'utf8').split('\n').filter((l) => !/^\s*\/\//.test(l)).join('\n');
+      verifier('deux mondes neufs, Math.random remplacé entre les deux, dessinent les mêmes arbres, et arbreshd.js ne tire jamais au hasard',
+        sha(encore.facades) === sha(arme.facades) && sha(encore.plat) === sha(arme.plat) && !/Math\.random/.test(source),
+        `facades ${sha(arme.facades).slice(0, 12)} / ${sha(encore.facades).slice(0, 12)}`);
+      // (6) chaque essence a sa silhouette et sa couleur
+      const silhouettes = {};
+      for (const ess of ['chene', 'pin', 'bouleau', 'palmier', 'parasol', 'olivier', 'acacia', 'feuillu', 'ville']) {
+        const b = new GeomBufferHD();
+        A.arbreVrai(b, 3, 40, 3, 1000, 2000, 5, { x0: 1, x1: 5, y0: 43, y1: 46, z0: 1, z1: 5 }, ess, 0);
+        const tuiles = {};
+        let couleur = null;
+        for (let i = 0; i < b.positions.length / 3; i++) {
+          const u = b.uvs[i * 2], v = b.uvs[i * 2 + 1];
+          for (const nom of ['ecorce', 'bouleau', 'feuilles', 'aiguilles', 'palme']) if (dans(u, v, nom)) { tuiles[nom] = (tuiles[nom] || 0) + 1; if (nom !== 'ecorce' && nom !== 'bouleau' && !couleur) couleur = [b.colors[i * 3], b.colors[i * 3 + 1], b.colors[i * 3 + 2]].map((c) => +c.toFixed(3)).join(','); }
+        }
+        silhouettes[ess] = { sommets: b.positions.length / 3, tuiles, couleur };
+      }
+      const S = silhouettes;
+      const couleurs = new Set(Object.values(S).map((x) => x.couleur));
+      verifier('chaque essence a sa silhouette : le pin et le pin parasol des aiguilles, le palmier des palmes, le bouleau son écorce blanche, les autres des feuilles — et neuf couleurs de feuillage',
+        Object.values(S).every((x) => x.sommets > 60) && S.pin.tuiles.aiguilles > 0 && !S.pin.tuiles.feuilles && S.parasol.tuiles.aiguilles > 0
+          && S.palmier.tuiles.palme > 0 && S.bouleau.tuiles.bouleau > 0 && !S.bouleau.tuiles.ecorce && S.chene.tuiles.feuilles > 0 && S.olivier.tuiles.feuilles > 0 && couleurs.size === 9,
+        `${Object.entries(S).map(([k, x]) => `${k} ${x.sommets}s ${JSON.stringify(x.tuiles)}`).join(' · ')} ; ${couleurs.size} couleurs ; ${Date.now() - t0} ms`);
+    }
   }
 
   // ÉDIMBOURG EST DE GRÈS GRIS, ET SYDNEY A DES FENÊTRES (v450). Deux
@@ -3493,6 +3827,65 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         Object.values(r).every((v) => v.n > 50 && v.hors === 0 && v.hmax >= 9), txt(r));
       verifier('le bâti lointain se retire devant le vrai monde maillé',
         Object.values(r).every((v) => v.retires === 0), Object.entries(r).map(([k, v]) => `${k} ${v.retires}`).join(', '));
+    }
+
+    // LA COURONNE LOINTAINE DU PALIER « LOIN » (v497). Une seconde grille,
+    // quatre fois plus lâche, prolonge la fine de 632 à 2 560 blocs. Ce qu'on
+    // éprouve, sur le vrai monde de la page, rien de maillé : elle porte
+    // vraiment jusque-là dans l'axe du regard ; elle ne dessine AUCUNE case
+    // entièrement dans le carré de la fine (la fine a le dernier mot) ; elle
+    // est posée sous la fine (`ABAISSE_LOIN`), pour gagner au tampon de
+    // profondeur là où elles se recouvrent ; au-delà de sa portée elle ne
+    // dessine rien (le brouillard y est plein) ; et elle tient en moins de
+    // quatre mégaoctets — la taille d'une grille fine d'iPad. Une grille fine
+    // tirée jusqu'à 2 560 blocs en tiendrait plus de vingt. Rouge sur l'ancien
+    // code : le constructeur ignore ses options.
+    {
+      const r = await tab.evaluate(async () => {
+        const H = await import('./src/horizon.js');
+        const w = window.__game.world;
+        const x = 1200, z = -900;   // de la campagne, loin des villes
+        const fine = new H.Horizon(w, 632);
+        const loin = new H.Horizon(w, 2560, { pas: H.PAS_LOIN || 32, interieur: fine, abaisse: H.ABAISSE_LOIN || 2, bords: false });
+        for (const h of [fine, loin]) while (h.maj(x, z, 1e9) > 0 && h.etat().manquantes > 0) { /* tout remplir */ }
+        fine.majDecoupe(() => false, x, z, 0, -1);
+        loin.majDecoupe(() => false, x, z, 0, -1);
+        const idx = loin.geo.index.array, pos = loin.geo.attributes.position.array, n = loin.geo.drawRange.count;
+        const f0x = fine.ox * 8, f1x = (fine.ox + fine.CASES) * 8, f0z = fine.oz * 8, f1z = (fine.oz + fine.CASES) * 8;
+        let portee = 0, dansFine = 0, auDela = 0;
+        const pasL = loin.pas || 8;
+        for (let k = 0; k < n; k += 6) {
+          const a = idx[k], d = idx[k + 4];   // les deux coins opposés de la case
+          const ax = pos[a * 3], az = pos[a * 3 + 2], dx = pos[d * 3], dz = pos[d * 3 + 2];
+          if (ax >= f0x && dx <= f1x && az >= f0z && dz <= f1z) dansFine++;
+          const cx = ax - x, cz = az - z;
+          if (Math.hypot(cx, cz) > 2560 + 2 * pasL) auDela++;
+          if (Math.abs(cx) < -cz * 0.6) portee = Math.max(portee, -cz);
+        }
+        // la hauteur : un sommet de la couronne contre la même colonne lue par la fine
+        let sous = 0, lus = 0;
+        for (let i = 0; i < fine.N * fine.N; i += 37) {
+          const px = fine.geo.attributes.position.array[i * 3], pz = fine.geo.attributes.position.array[i * 3 + 2];
+          if (px % 32 || pz % 32) continue;
+          const j = ((px / 32) - loin.ox) * loin.N + ((pz / 32) - loin.oz);
+          if (j < 0 || j >= loin.N * loin.N) continue;
+          lus++;
+          if (pos[j * 3 + 1] <= fine.geo.attributes.position.array[i * 3 + 1] - 1.5) sous++;
+        }
+        let octets = 0;
+        for (const a of Object.values(loin.geo.attributes)) octets += a.array.byteLength;
+        octets += loin.geo.index.array.byteLength + loin.bat.instanceMatrix.array.byteLength + loin.bat.instanceColor.array.byteLength;
+        for (const k of ['hauteurs', 'pret', 'bati', 'toits', 'estNY', 'climats']) octets += loin[k].byteLength;
+        const out = { pasFine: fine.pas, abaisseFine: fine.abaisse, pasLoin: loin.pas, cases: n / 6, portee: Math.round(portee),
+          dansFine, auDela, sous, lus, mo: +(octets / 1048576).toFixed(2) };
+        fine.geo.dispose(); loin.geo.dispose();
+        return out;
+      });
+      verifier('« Loin » : la couronne lointaine porte à 2 560 blocs et laisse son carré à la grille fine',
+        r.pasFine === 8 && r.abaisseFine === 0 && r.pasLoin === 32 && r.portee >= 2400
+          && r.dansFine === 0 && r.auDela === 0 && r.cases > 1000, JSON.stringify(r));
+      verifier('« Loin » : la couronne est posée sous la fine, et tient en moins de 4 Mo',
+        r.lus > 20 && r.sous === r.lus && r.mo < 4, JSON.stringify(r));
     }
 
     // LES FALAISES ET LES BERGES, VUES DE LOIN (v340). Le monde proche montre

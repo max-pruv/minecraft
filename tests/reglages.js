@@ -50,7 +50,7 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
 }
 
 (async () => {
-  // LE TEMPO, ET SON GARDE-FOU (v484, `src/tempo.js`). Cette suite attend le
+  // LE TEMPO, ET SON GARDE-FOU (v501, `src/tempo.js`). Cette suite attend le
   // battement des réglages (vingt secondes) et la relève (quinze) : à tempo 4,
   // le jeu et les attentes `enTempo` ci-dessous divisent le même délai. Mais
   // ces délais vivent dans `main.js`, que node ne charge pas (three) : on relit
@@ -86,7 +86,7 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
     verifier('le tempo ne se lit que sur le banc, et seulement pour accélérer',
       hors.length === 0, hors.map(([u, lu]) => `${u} → ${lu}`).join(' · ') || `${lus.length} adresses`);
     // Et le réseau n'en lit aucun : son silence toléré est calé sur des durées
-    // réelles (sonde-tempo-nuage.cjs, v484).
+    // réelles (sonde-tempo-nuage.cjs, v501).
     const net = fs.readFileSync(path.join(__dirname, '..', 'src', 'net.js'), 'utf8');
     verifier('le réseau ne passe pas sous tempo', !/from '\.\/tempo\.js'/.test(net)
       && /const STALE_MS = 20000;/.test(net) && /const HEARTBEAT_MS = 5000;/.test(net),

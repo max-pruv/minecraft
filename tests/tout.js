@@ -86,7 +86,7 @@ const GARDIENS = {
   'src/nouveautes.js': ['maj.js'],
   'src/cloud.js': ['reseau.js', 'reglages.js', 'manhattan.js', 'parent.js'],
   'src/relaisnuage.js': ['reseau.js'],
-  // Le tempo du banc (v484) : lu par `main.js`, donc gardé par ses gardiens ;
+  // Le tempo du banc (v501) : lu par `main.js`, donc gardé par ses gardiens ;
   // `reglages.js` est la suite qui le déclare et le relit sous node.
   'src/tempo.js': ['reglages.js', 'carte.js', 'monte.js', 'washington.js', 'manhattan.js', 'degats.js'],
   'src/sync.js': ['sauvegarde.js', 'reglages.js', 'manhattan.js'],
@@ -95,7 +95,7 @@ const GARDIENS = {
   // `horizon.js` lit `terrainHeight` et dessine ce que les morceaux n'ont pas
   // eu le temps de bâtir : `monte.js` l'éprouve en vol, `carte.js` garde le
   // rendu, `plafond.js` garde le sol qu'il lit.
-  'src/horizon.js': ['monte.js', 'carte.js', 'plafond.js'],
+  'src/horizon.js': ['monte.js', 'carte.js', 'plafond.js', 'maj.js'],
   'src/plafond-sol.js': ['monte.js', 'plafond.js', 'manhattan.js', 'carteMonde.js', 'washington.js', 'metro.js'],
   // LE PALIER DE L'APPAREIL (v284). Il décide la distance d'affichage, la
   // profondeur de file du mailleur et la vitesse des jets : `monte.js` garde le
@@ -111,6 +111,7 @@ const GARDIENS = {
   // La couche HD de Paris (v287) : ses tampons et son relais près/loin dans
   // `parishd.js` ; ce qu'elle coûte à la rue dans `monte.js`.
   'src/facadeshd.js': ['parishd.js', 'monte.js', 'plafond.js'],
+  'src/arbreshd.js': ['parishd.js', 'plafond.js'],
   // Les monuments en relief (v292) : la couche HD les dessine (`parishd.js`),
   // ils ne posent aucun bloc (`plafond.js`), et l'enfant marche autour d'eux
   // (`monte.js`). `carteMonde.js` garde les rues qui les longent.
@@ -165,6 +166,7 @@ const GARDIENS = {
   // La ville : c'est elle qui bâtit le métro de Paris, la caserne et le
   // commissariat.
   'src/ville.js': ['metro.js', 'carte.js', 'plafond.js'],
+  'src/metromonde.js': ['plafond.js', 'metro.js', 'monte.js', 'carteMonde.js'],
   'src/player.js': ['plafond.js', 'monte.js', 'manhattan.js'],
   'src/conduite.js': ['plafond.js', 'monte.js', 'manhattan.js', 'carteMonde.js', 'washington.js', 'metro.js'],
   'src/admin.js': ['parent.js', 'reglages.js'],
@@ -199,6 +201,8 @@ const GARDIENS = {
   'src/cap.js': ['monte.js', 'carte.js'],
   'src/approche.js': ['monte.js', 'carteMonde.js'],
   'src/gps.js': ['carte.js'],
+  // LES COMMANDES SIMPLIFIÉES : le menu unique, Construire, et les boutons ronds.
+  'src/commandes.js': ['maj.js', 'monte.js', 'manhattan.js', 'reglages.js', 'carte.js', 'fumee.js'],
   'src/fun.js': ['monte.js', 'carte.js', 'reglages.js', 'reseau.js', 'degats.js'],
   // LES DÉGÂTS DE LA VOITURE (v343) : la règle pure et ce qui se voit.
   'src/degats.js': ['degats.js'],
@@ -615,7 +619,7 @@ function lancer(fichier) {
 }
 
 (async () => {
-  // `--tempo=1` (v484) : le tour de nuit, minuteries du jeu à l'échelle
+  // `--tempo=1` (v501) : le tour de nuit, minuteries du jeu à l'échelle
   // réelle même dans les suites qui déclarent un tempo (`banc.fixerTempo`).
   // Une course révélée à tempo 4 peut ne pas exister dans le vrai jeu, et
   // l'inverse. Il rejoue tout : un acquis pris à tempo 4 ne vaut pas pour lui.

@@ -79,6 +79,11 @@ function peintre(img, fn) {
   fn(p, rempli, N);
 }
 
+// L'alpha des pixels vides des tuiles de feuillage (v499) : sous l'alphaTest
+// de la couche (0,5), donc coupé, mais une COULEUR que les mipmaps mélangent
+// sans frange noire.
+const ALPHA_VIDE = 76;
+
 const PEINTRES = {
   // La pierre de taille : quatre assises par étage, joints décalés, chaque
   // pierre sa nuance, et un voile de salissure qui monte du sol.
@@ -340,6 +345,106 @@ const PEINTRES = {
       const trou = amas < 0.42;
       const lum = 190 + (amas - 0.5) * 120 + (bruit(x, y, 74) - 0.5) * 30;
       p(x, y, lum, lum + 6, lum - 30, trou ? 0 : 255);
+    });
+  },
+  // LES VRAIS ARBRES (v499, arbreshd.js). Une carte de feuillage est un quad
+  // posé dans le volume de la couronne : ce qui compte est son BORD, qui doit
+  // s'effacer — un rectangle plein ferait des tôles. Les feuilles sont des
+  // petites ellipses semées dans un disque, de plus en plus rares vers le bord ;
+  // claires et presque grises, la couleur vient du sommet (par essence, par
+  // climat). Le disque est à 95 % du rayon de la tuile : rien ne touche le bord.
+  feuilles(p, rempli, N) {
+    const rng = mulberry32(474);
+    const c = N / 2, R = N * 0.47;
+    const fe = [];
+    for (let i = 0; i < 230; i++) {
+      const a = rng() * Math.PI * 2, d = Math.sqrt(rng()) * R * 0.92;
+      fe.push([c + Math.cos(a) * d, c + Math.sin(a) * d, 4 + rng() * 4, 2.6 + rng() * 2.4, rng() * Math.PI, rng()]);
+    }
+    const img = new Float32Array(N * N);
+    const lum = new Float32Array(N * N);
+    for (const [fx, fy, a, b, ang, l] of fe) {
+      const ca = Math.cos(ang), sa = Math.sin(ang);
+      for (let y = Math.floor(fy - 9); y <= fy + 9; y++) for (let x = Math.floor(fx - 9); x <= fx + 9; x++) {
+        if (x < 0 || y < 0 || x >= N || y >= N) continue;
+        const dx = x - fx, dy = y - fy, u = dx * ca + dy * sa, v = -dx * sa + dy * ca;
+        if ((u * u) / (a * a) + (v * v) / (b * b) <= 1) { img[y * N + x] = 1; lum[y * N + x] = l; }
+      }
+    }
+    rempli((x, y) => {
+      const i = y * N + x;
+      // Un pixel vide porte la COULEUR de la tuile, sous l'alphaTest (0,5) :
+      // les mipmaps mélangent les voisins, et du noir transparent y ferait
+      // une frange sombre autour de chaque feuille et sur le bord des cartes
+      // (la boîte noire vue en capture autour d'une couronne, elle, était le
+      // curseur de bloc du jeu sur un cube de feuilles visé).
+      if (!img[i]) { p(x, y, 222, 226, 216, ALPHA_VIDE); return; }
+      const v = 196 + lum[i] * 58 + (bruit(x, y, 81) - 0.5) * 20;
+      p(x, y, v - 4, v, v - 10, 255);
+    });
+  },
+  // Les aiguilles : des traits courts et fins, par bouquets, dans le même disque.
+  aiguilles(p, rempli, N) {
+    const rng = mulberry32(475);
+    const c = N / 2, R = N * 0.47;
+    const img = new Float32Array(N * N), lum = new Float32Array(N * N);
+    for (let i = 0; i < 160; i++) {
+      const a = rng() * Math.PI * 2, d = Math.sqrt(rng()) * R * 0.9;
+      const bx = c + Math.cos(a) * d, by = c + Math.sin(a) * d, dir = rng() * Math.PI * 2, l = rng();
+      for (let k = 0; k < 5; k++) {
+        const ang = dir + (k - 2) * 0.28, L = 7 + rng() * 6;
+        for (let t = 0; t < L; t += 0.5) {
+          const x = Math.round(bx + Math.cos(ang) * t), y = Math.round(by + Math.sin(ang) * t);
+          if (x < 0 || y < 0 || x >= N || y >= N) continue;
+          img[y * N + x] = 1; lum[y * N + x] = l;
+          if (t < L * 0.5) { const x2 = x + (Math.abs(Math.cos(ang)) < 0.5 ? 1 : 0), y2 = y + (Math.abs(Math.cos(ang)) >= 0.5 ? 1 : 0); if (x2 < N && y2 < N) { img[y2 * N + x2] = 1; lum[y2 * N + x2] = l; } }
+        }
+      }
+    }
+    rempli((x, y) => {
+      const i = y * N + x;
+      if (!img[i]) { p(x, y, 212, 218, 218, ALPHA_VIDE); return; }
+      const v = 190 + lum[i] * 56 + (bruit(x, y, 82) - 0.5) * 16;
+      p(x, y, v - 6, v, v, 255);
+    });
+  },
+  // La palme : une nervure du bas vers le haut, des folioles de part et
+  // d'autre. La carte fait trois blocs de long pour un de large : les folioles
+  // sont dessinées à vingt degrés de la nervure et s'ouvrent à cinquante sur
+  // la carte étirée.
+  palme(p, rempli, N) {
+    const rng = mulberry32(476);
+    const img = new Float32Array(N * N), lum = new Float32Array(N * N);
+    const c = N / 2;
+    for (let y = 2; y < N - 2; y++) for (let dx = -2; dx <= 2; dx++) { img[y * N + c + dx] = 1; lum[y * N + c + dx] = 0.3; }
+    for (let y = 6; y < N - 6; y += 3) {
+      for (const side of [-1, 1]) {
+        const L = 12 + rng() * 22, l = rng(), ang = 0.35 + rng() * 0.12;
+        for (let t = 0; t < L; t += 0.5) {
+          const x = Math.round(c + side * Math.cos(ang) * t), yy = Math.round(y - Math.sin(ang) * t * 0.9);
+          if (x < 0 || yy < 0 || x >= N || yy >= N) continue;
+          img[yy * N + x] = 1; lum[yy * N + x] = l;
+          if (t < L * 0.6 && yy + 1 < N) { img[(yy + 1) * N + x] = 1; lum[(yy + 1) * N + x] = l; }
+        }
+      }
+    }
+    rempli((x, y) => {
+      const i = y * N + x;
+      if (!img[i]) { p(x, y, 206, 216, 200, ALPHA_VIDE); return; }
+      const v = 186 + lum[i] * 60 + (bruit(x, y, 83) - 0.5) * 16;
+      p(x, y, v - 10, v, v - 16, 255);
+    });
+  },
+  // L'écorce du bouleau : blanc cassé, des lenticelles sombres en travers, une
+  // tache grise ici et là.
+  bouleau(p, rempli, N) {
+    rempli((x, y) => {
+      const n = (bruit(x, y, 84) - 0.5) * 14 + bruitLisse(x, y, 16, 85) * 16 - 8;
+      const len = bruitLisse(x * 0.2, y, 9, 86);
+      const tache = bruitLisse(x, y, 5, 87) > 0.78;
+      let v = 226 + n;
+      if (len > 0.82) v -= 150; else if (tache) v -= 60;
+      p(x, y, v, v - 2, v - 10);
     });
   },
   // La fonte peinte, vert sombre, presque unie, un peu de rouille au bord.

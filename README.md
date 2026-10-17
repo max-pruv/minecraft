@@ -21,7 +21,9 @@ rendering budgets, licensing and limitations.
   16×160×16 chunks as you walk. The sky reaches 160 blocks so landmarks can be
   built at something close to their real proportions; the ground is capped
   independently at 80 so raising the ceiling never shifts a saved world.
-- **Trees** with trunks and canopies that correctly span chunk borders.
+- **Trees** with trunks and canopies that correctly span chunk borders —
+  and, within the HD range, drawn as real trees (tapering trunk, branches,
+  leaf cards, one silhouette per species and climate) over the same blocks.
 - **Break & place blocks** — 31 block types: terrain blocks, sandstone, gravel,
   mossy cobble, three wood tones, ice, gold, diamond, obsidian, bookshelf, six
   wool colors, and four half-slabs (with true half-height physics — perfect for
@@ -55,8 +57,10 @@ rendering budgets, licensing and limitations.
   are all built with the Web Audio API, and the car radio plays three original
   stations written in scale degrees. One audio context for the whole game; the
   🔊 setting suspends it outright.
-- **Mobile support** — virtual joystick, drag-to-look, tap to mine/build with a
-  ⛏️/🧱 mode toggle, and jump/fly buttons.
+- **Mobile support** — one hand to move, one to act: a virtual joystick on the
+  left, a contextual action pill and at most three round buttons on the right,
+  and a single ☰ menu (bag, photos, friends, learn, settings, home) that pauses
+  the game. Building is a mode you switch on, with Place and Break buttons.
 - **Friendly NPCs** — Marlon, a child with a rigged, textured model who follows you
   around and chats in French, and Professeur Cornichon, who hosts the quiz.
 - **Educational mode** (always on — it cannot be disabled) — Professeur
@@ -174,8 +178,9 @@ the invariants a change must not break.
 | Esc | Pause |
 
 On touch devices: left thumb summons a joystick, right thumb looks around,
-tap mines or builds (⛏️/🧱 button toggles which), and the on-screen buttons
-handle jumping and flying.
+and the round buttons handle jumping, flying and building. Tapping the screen
+only mines or builds in Build mode (its button, then Place or Break); the ☰
+menu in the top-right corner pauses and gathers everything else.
 
 In a car the joystick is both accelerator and steering wheel — push forward to
 speed up, pull back to brake and then reverse — and the walking buttons step
@@ -223,6 +228,7 @@ src/washington.js  the capital: L'Enfant's plan, the Mall, and the Metro
 src/dcmonuments.js its 32 landmarks — real interiors, you walk in — and 3 bridges
 src/chine.js src/pole.js src/espace.js src/gaulois.js src/villandry.js
 src/aeroport.js src/circuit.js src/ville.js src/parc.js src/voies.js
+src/metromonde.js the metros of generated cities (Rome's line A): stations, stairs, tunnels
 src/routes.js     the interurban roads (A1 Paris–Lille, E429 Lille–Bruxelles, E19 Bruxelles–Amsterdam, A20 Montréal–Québec, BR-116 São Paulo–Rio, A-4 Madrid–Séville, A109 Nairobi–Mombasa, A3 Cologne–Francfort, E1 Kyoto–Nagoya, Autosole Bologne–Florence, A4 Milan–Turin, Yamuna Delhi–Agra, A1 Sud Rome–Naples, M1 Vienne–Budapest, A1 Nord Milan–Bologne, A24 Berlin–Hambourg, I-45 Dallas–Houston, A7 Lyon–Marseille, AP-2 Madrid–Barcelone, 401 Toronto–Montréal, Hansalinie Cologne–Hambourg, I-95 New York–Boston, I-95 Sud New York–Washington, Tōmei Tokyo–Nagoya, M40 Londres–Birmingham, A6 Paris–Lyon, A8 Marseille–Nice: profile, section, bridges, traffic)
 
   learning and parents

@@ -1,4 +1,4 @@
-// LA CADENCE DU BANC SUR LES MINUTERIES DU JEU (v484).
+// LA CADENCE DU BANC SUR LES MINUTERIES DU JEU (v501).
 //
 // Le portail passait des minutes à attendre des minuteries de production : le
 // battement de vingt secondes qui republie les réglages, la relève de quinze.

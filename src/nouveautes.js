@@ -6,11 +6,154 @@
 
 export const NOUVEAUTES = [
   {
-    v: 484,
+    v: 501,
     titre: 'Des essais plus rapides',
     puces: [
       'Les essais des réglages vont plus vite',
       'Rien ne change dans ton jeu',
+    ],
+  },
+  {
+    v: 500,
+    titre: 'Le métro sous Rome',
+    puces: [
+      'La ligne A orange passe sous Rome',
+      'Douze stations, de Cipro à Re di Roma',
+      'Cherche le mât rouge au M blanc',
+    ],
+  },
+  {
+    v: 499,
+    titre: 'De vrais arbres',
+    puces: [
+      'Les arbres ont un tronc et des branches',
+      'Sapins, palmiers, oliviers, bouleaux',
+      'Les blocs ne changent pas : grimpe dessus',
+    ],
+  },
+  {
+    v: 498,
+    titre: 'La caméra suit la voiture',
+    puces: [
+      'Dos à un mur, on voit la voiture',
+      'La caméra monte et regarde par-dessus',
+    ],
+  },
+  {
+    v: 497,
+    titre: 'En Loin, on voit très loin',
+    puces: [
+      'Les montagnes au loin, trois fois plus loin',
+      'Seulement si tu choisis « Loin »',
+    ],
+  },
+  {
+    v: 496,
+    titre: 'La statue de la Liberté',
+    puces: [
+      'Elle est sur son île, dans la baie',
+      'Manhattan a des feux tricolores',
+      'Voitures et passants attendent leur tour',
+    ],
+  },
+  {
+    v: 495,
+    titre: 'Les voitures rendent la mémoire',
+    puces: [
+      'Une rue quittée ne pèse plus rien',
+      'Les voitures reviennent quand tu reviens',
+    ],
+  },
+  {
+    v: 494,
+    titre: 'Des commandes plus simples',
+    puces: [
+      'Un seul menu en haut à droite',
+      'Construire devient un bouton à part',
+      'Des boutons transparents, sans texte',
+    ],
+  },
+  {
+    v: 493,
+    titre: 'On entre dans Sainte-Sophie',
+    puces: [
+      'Entre par la grande porte, à Istanbul',
+      'Lève la tête sous la coupole',
+    ],
+  },
+  {
+    v: 492,
+    titre: 'Cinq villes plus vraies',
+    puces: [
+      'Dublin, Toulouse, Melbourne, Nantes, Montpellier',
+      'Leurs fleuves, leur pierre, leurs monuments',
+      'Leurs lieux sur la carte',
+    ],
+  },
+  {
+    v: 491,
+    titre: 'Les réacteurs sans à-coup',
+    puces: [
+      'Les flammes sont prêtes dès l\'accueil',
+      'Le décollage ne fige plus l\'image',
+    ],
+  },
+  {
+    v: 490,
+    titre: 'Qui a posé ce bloc ?',
+    puces: [
+      'Le diagnostic nomme le bloc visé',
+      'Posé par le jeu, ou à la main',
+    ],
+  },
+  {
+    v: 489,
+    titre: 'On monte dans le métro',
+    puces: [
+      'Tu marches jusqu’à la porte du train',
+      'Elle coulisse, tu entres, elle se ferme',
+      'Tu descends debout sur le quai',
+    ],
+  },
+  {
+    v: 488,
+    titre: 'Une mise à jour jamais coincée',
+    puces: [
+      'Même bloquée, la mise à jour arrive',
+      'Le jeu repart tout seul, sans rien effacer',
+    ],
+  },
+  {
+    v: 487,
+    titre: 'La voiture suit son garage',
+    puces: [
+      'Ta voiture garée reste dans son garage',
+      'Même quand la carte a bougé dessous',
+    ],
+  },
+  {
+    v: 486,
+    titre: 'Un aéroport à Singapour',
+    puces: [
+      'Changi est né sur la mer',
+      'Deux longues pistes au bord de l\'eau',
+    ],
+  },
+  {
+    v: 485,
+    titre: 'La savane',
+    puces: [
+      'Herbe dorée en Afrique et au Brésil',
+      'Des acacias plats comme des parasols',
+      'Le nord de l\'Australie aussi',
+    ],
+  },
+  {
+    v: 484,
+    titre: 'Un ciel sans cubes orange',
+    puces: [
+      'Les feuilles d\'automne restent près des arbres',
+      'Plus de carrés orange autour de l\'avion',
     ],
   },
   {

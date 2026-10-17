@@ -15,6 +15,7 @@
 //     cd tests && npm run maj
 
 const { Banc, dormir, jusqua } = require('./banc.js');
+const { epreuve, juger } = require('./sonde-sw-coince.cjs');
 const fs = require('fs');
 const path = require('path');
 
@@ -350,6 +351,22 @@ function verifier(nom, ok, detail = '') {
       verifier('une mise à jour ne compte pas comme un plantage dans le journal de bord',
         !!bilan && bilan.compteur === 0 && bilan.confirmes === 0, JSON.stringify(bilan));
     }
+
+    // UN SERVICE WORKER VRAIMENT COINCÉ SE RATTRAPE (dette v220). Le filet de
+    // mise à jour et la borne de `forcerMaj` n'avaient aucun témoin : les deux
+    // de la v220 provoquaient un blocage que le navigateur finissait par
+    // épuiser, et l'ancien code s'en sortait sans filet. Ici l'installation ne
+    // finit JAMAIS (`sonde-sw-coince.cjs`, appelée telle quelle), et l'on juge
+    // un ÉTAT : la page rechargée, sous la version neuve ou sur les fichiers du
+    // serveur. Vérifié rouge deux fois sur une copie : filet désarmé (marque
+    // gardée, loader « 126 / 126 » à jamais) et `forcerMaj` sans borne (loader
+    // « On va chercher la dernière version… » à jamais).
+    const mCoince = await epreuve(banc, 'Anatole');
+    const vCoince = juger(mCoince);
+    verifier('une installation qui ne finit jamais : on repart de zéro, et l\'enfant tourne sur les fichiers du serveur',
+      mCoince.controle && vCoince.repart, JSON.stringify(mCoince));
+    verifier('et après ce départ, le loader s\'efface et « Jouer » est là', vCoince.jouable,
+      `${mCoince.msRecharge} ms jusqu'au rechargement`);
 
     // LE LOADER NE CACHE JAMAIS UN « JOUER » QUI EST DÉJÀ CLIQUABLE (v286).
     //
@@ -761,7 +778,32 @@ function verifier(nom, ok, detail = '') {
     const sansMesure = await banc.joueur('Gaspard', { rr: 12 });
     await sansMesure.waitForFunction(() => window.__game, null, { timeout: 90000 });
     const avant = await sansMesure.evaluate(() => window.__game.reglageApplique);
+    // LE PAYSAGE LOINTAIN TEL QUE LA PAGE LE REND (v497) : le brouillard, le plan
+    // lointain de la caméra, et ce qui porte un nom d'horizon dans la scène. Lu
+    // dans la SCÈNE, pas dans une table : c'est ce que l'écran montre.
+    const vueDe = (p) => p.evaluate(() => {
+      const g = window.__game;
+      const l = g.scene.getObjectByName('horizon-loin');
+      return { brouillard: g.scene.fog.far, planLointain: g.camera.far,
+        fine: g.horizon.rayon, pasFine: g.horizon.pas || 8, abaisseFine: g.horizon.abaisse || 0,
+        loin: l ? Math.round(g.horizonLoin.rayon) : 0, pasLoin: l ? g.horizonLoin.pas : 0 };
+    });
+    const vueSans = await vueDe(sansMesure);
     await sansMesure.close();
+    const moyen = await banc.joueur('Léontine', { rr: 12, params: '&palier=moyen' });
+    await moyen.waitForFunction(() => window.__game, null, { timeout: 90000 });
+    const vueMoyen = await vueDe(moyen);
+    await moyen.close();
+    // ET LES PALIERS QUI NE SONT PAS « LOIN » NE VOIENT PAS PLUS LOIN (v497).
+    // Sans palier comme au palier moyen, le paysage est celui de la v487 au bit
+    // près : la grille fine à 632 blocs (rr 12), le brouillard au même endroit,
+    // le plan lointain à 900, et aucune couronne lointaine. Vert des deux côtés
+    // à dessein (v220) : il garde ce qu'on ne veut pas casser — la mémoire que
+    // l'iPhone a déjà payée deux fois (v291, v299).
+    const vueInchangee = (v) => v.brouillard === 632 && v.planLointain === 900 && v.fine === 632
+      && v.pasFine === 8 && v.abaisseFine === 0 && v.loin === 0;
+    verifier('sans palier et au palier moyen, le paysage lointain est celui d\'avant',
+      vueInchangee(vueSans) && vueInchangee(vueMoyen), JSON.stringify({ sans: vueSans, moyen: vueMoyen }));
     verifier('sans mesure, le jeu est celui d\'avant — un appareil non mesuré ne perd rien',
       avant.palier === null && avant.file === 8 && avant.jet === 120,
       JSON.stringify(avant));
@@ -779,6 +821,7 @@ function verifier(nom, ok, detail = '') {
     const haut = await banc.joueur('Isaure', { rr: 12, params: '&palier=haut' });
     await haut.waitForFunction(() => window.__game, null, { timeout: 90000 });
     const applique = await haut.evaluate(() => window.__game.reglageApplique);
+    const vueHaut = await vueDe(haut);
     // ET LA RÈGLE EST PURE, donc elle se démonte sans navigateur : on lui donne
     // les chiffres de l'iPhone de Max et ceux de l'iPad de quatre ans.
     const regle = await haut.evaluate(() => ({
@@ -806,6 +849,17 @@ function verifier(nom, ok, detail = '') {
       applique.palier === 'haut' && applique.file === 8 && applique.jet === 120
         && applique.rr === 12 && regle.rrHaut === 16,
       JSON.stringify({ ...applique, rrDuPalierHaut: regle.rrHaut }));
+    // ET « LOIN » VOIT TROIS FOIS PLUS LOIN (v497). Max : « que le mode Loin,
+    // quand on voit de loin, soit encore beaucoup plus loin. » La couronne
+    // lointaine porte à 2 560 blocs, le brouillard recule avec elle et le plan
+    // lointain de la caméra aussi — sinon elle serait coupée net à 900. Et `rr`
+    // et la file ne bougent pas : ce sont les chiffres que le dépôt a mesurés
+    // comme nuisibles (v269, v291). Rouge sur l'ancien code : pas de couronne,
+    // brouillard à 632.
+    verifier('« Loin » voit beaucoup plus loin : une couronne lointaine à 2 560 blocs, sans toucher rr ni la file',
+      vueHaut.loin === 2560 && vueHaut.pasLoin === 32 && vueHaut.brouillard === 2560
+        && vueHaut.planLointain >= 2560 && vueHaut.fine === 632 && applique.file === 8 && applique.rr === 12,
+      JSON.stringify(vueHaut));
     // ET LA CHAÎNE ENTIÈRE SE SUIT : jouer, mesurer, ranger. La fenêtre vaut
     // trente secondes de JEU par défaut — `?palierms=` la raccourcit ici, et
     // c'est un réglage de banc qui se REJOUE (v277), pas un chiffre caché.
@@ -1079,6 +1133,212 @@ function verifier(nom, ok, detail = '') {
       apresChoix.palier === 'haut' && apresChoix.source === 'choix'
       && apresChoix.etendue === 'haut' && apresChoix.file === 8 && apresChoix.jet === 120,
       JSON.stringify(apresChoix));
+
+    // ================= LES COMMANDES SIMPLIFIÉES ============================
+    //
+    // Max : « une main pour bouger, une main pour agir », et sur la maquette
+    // « plus de transparence, moins de texte ». Les petits boutons dispersés
+    // (pause, sac, réglages, maison, caméra, messages, joueurs, souvenirs,
+    // photo) passent dans UN menu, Construire devient un mode qu'on choisit.
+    // Quatre choses se mesurent, chacune sur une page tactile, aux deux tailles
+    // (le banc et l'iPhone de Max), formulées sans dimension (v265, v445).
+    for (const vue of [{ width: 420, height: 760 }, { width: 430, height: 932 }]) {
+      const cmd = await banc.jouerSeul('Commandes' + vue.width, { viewport: vue, tactile: true, rr: 2 });
+      const r = await cmd.evaluate(async () => {
+        const att = (ms) => new Promise((f) => setTimeout(f, ms));
+        const g = window.__game, C = window.__commandes;
+        if (!C) return { err: 'pas de menu unique' };
+        const { REMPLACES, LIGNES } = await import('./src/commandes.js');
+        const vis = (el) => { if (!el) return null; const st = getComputedStyle(el), b = el.getBoundingClientRect();
+          return st.display === 'none' || st.visibility === 'hidden' || b.width === 0 ? null
+            : { x: Math.round(b.left), y: Math.round(b.top), w: Math.round(b.width), h: Math.round(b.height) }; };
+        const ACTIONS = ['jump-btn', 'fly-btn', 'down-btn', 'construire-btn', 'poser-btn', 'casser-btn', 'fm-btn', 'fun-target'];
+        const HUD = ['menu-btn', 'map-btn', 'minimap', 'gps', 'construction-pill', 'hotbar', ...ACTIONS];
+        const releve = () => {
+          const R = {};
+          for (const id of HUD) { const b = vis(document.getElementById(id)); if (b) R[id] = b; }
+          const lbs = [...document.querySelectorAll('#touch-ui .tbtn .lb')].map(vis).filter((b) => b && (b.w > 2 || b.h > 2));
+          return { R, actions: ACTIONS.filter((id) => R[id]), lbsVisibles: lbs.length };
+        };
+        // Explorer, au point d'apparition, une monture devant soi : la pilule
+        // d'action s'allume, c'est le cas le plus chargé à pied.
+        const am = g.animalManager;
+        for (const a of [...am.animals]) am.scene.remove(a.mesh);
+        am.animals.length = 0;
+        const P = g.player;
+        // ON ATTEND LE RÉSULTAT, BORNÉ (v270) : sous la charge d'un portail, la
+        // pilule s'allume plusieurs secondes plus tard, et le cheval broute —
+        // on le ramène devant l'enfant à chaque tour.
+        const devant = () => [P.pos.x - Math.sin(P.yaw) * 3, P.pos.z - Math.cos(P.yaw) * 3];
+        const cheval = am.invoquer('horse', ...devant());
+        const t0 = performance.now();
+        while (performance.now() - t0 < 20000 && !vis(document.getElementById('fun-target'))) {
+          await att(500);
+          if (cheval && cheval.pos) { const [x, z] = devant(); cheval.pos.x = x; cheval.pos.z = z; }
+        }
+        await att(300);
+        const explorer = releve();
+        explorer.attendu = Math.round(performance.now() - t0);
+        // UNE pilule, et son mot tient sur une ligne sans être coupé — y
+        // compris le plus long que le jeu écrive à pied.
+        const pilules = () => [...document.querySelectorAll('#fun-target button')].filter((b) => vis(b))
+          .map((b) => ({ t: b.textContent, coupe: b.scrollWidth > b.clientWidth + 1 || b.getBoundingClientRect().height > 50 }));
+        explorer.pilules = pilules();
+        const fb = document.getElementById('board-btn'), rb = document.getElementById('ride-btn'), fe = document.getElementById('feed-btn');
+        const sauve = [fb.textContent, fb.style.display, rb.style.display, fe.style.display];
+        fb.textContent = '🚗 Conduire cette voiture'; fb.style.display = 'block'; rb.style.display = 'none'; fe.style.display = 'none';
+        explorer.longue = pilules();
+        [fb.textContent, fb.style.display, rb.style.display, fe.style.display] = sauve;
+        // Inventaire : chaque bouton remplacé existe encore, n'est plus à
+        // l'écran, et le menu a une ligne qui l'appuie (le menu lui-même tient
+        // lieu de pause).
+        const inventaire = REMPLACES.map((sel) => {
+          const el = document.querySelector(sel);
+          const ligne = sel === '#pause-btn' ? '#menu-btn'
+            : document.querySelector(`.menu-ligne[data-cible='${sel}']`) ? 'ligne' : null;
+          return { sel, existe: !!el, cache: !vis(el), ligne };
+        });
+        // On ouvre : la partie s'arrête, le menu ne recouvre que lui-même.
+        document.getElementById('chat-btn').style.display = 'block';
+        document.getElementById('cam-btn').style.display = 'block';
+        document.getElementById('menu-btn').click();
+        await att(300);
+        const pause = { ouvert: C.estOuvert(), running: g.running, carte: vis(document.getElementById('menu-carte')) };
+        // Chaque ligne appuie le bouton d'avant : on remplace son `click` le
+        // temps du témoin, et l'on ferme/rouvre entre deux lignes.
+        const appuis = [];
+        for (const l of LIGNES) {
+          const el = l.cible ? document.querySelector(l.cible) : null;
+          if (!el) { appuis.push({ cle: l.cle, cible: l.cible, appuye: !!l.repli && !l.cible }); continue; }
+          const vrai = el.click; let vu = false;
+          el.click = () => { vu = true; };
+          if (!C.estOuvert()) document.getElementById('menu-btn').click();
+          const ligne = document.querySelector(`.menu-ligne[data-cle='${l.cle}']`);
+          const offerte = !!vis(ligne);
+          if (ligne && l.cle !== 'ami') ligne.click();
+          else if (ligne) { el.style.display = 'block'; C.majLignes(); ligne.click(); el.style.display = ''; }
+          el.click = vrai;
+          appuis.push({ cle: l.cle, offerte, appuye: vu });
+        }
+        if (C.estOuvert()) document.getElementById('menu-reprendre').click();
+        document.getElementById('chat-btn').style.display = 'none';
+        document.getElementById('cam-btn').style.display = 'none';
+        await att(200);
+        const repris = g.running;
+        // Construire : toucher l'écran hors construction ne casse rien ; en
+        // construction, si. On retire le cheval (casser ATTAQUE d'abord une bête
+        // à portée) et l'on vise un bloc de pierre posé devant les yeux — viser
+        // le sol pouvait tomber sur de l'eau, que rien ne casse.
+        for (const a of [...am.animals]) am.scene.remove(a.mesh);
+        am.animals.length = 0;
+        P.pitch = 0;
+        const bx = Math.floor(P.pos.x - Math.sin(P.yaw) * 2.5), bz = Math.floor(P.pos.z - Math.cos(P.yaw) * 2.5);
+        for (const dy of [0, 1, 2]) g.world.setBlock(bx, Math.floor(P.pos.y) + dy, bz, 3);
+        await att(600);
+        const tap = async () => {
+          const c = document.getElementById('game'), x = innerWidth * 0.62, y = innerHeight * 0.5;
+          const t = new Touch({ identifier: 7, target: c, clientX: x, clientY: y });
+          c.dispatchEvent(new TouchEvent('touchstart', { touches: [t], changedTouches: [t], cancelable: true, bubbles: true }));
+          await att(60);
+          c.dispatchEvent(new TouchEvent('touchend', { touches: [], changedTouches: [t], cancelable: true, bubbles: true }));
+          await att(400);
+          // casser un bloc qu'on vient de poser ne change pas le NOMBRE de
+          // modifications (même clé) : on compte les blocs visés devenus air
+          return [0, 1, 2].filter((dy) => g.world.getBlock(bx, Math.floor(P.pos.y) + dy, bz) === 0).length;
+        };
+        const n0 = 0;
+        const n1 = await tap();
+        C.construire(true); C.outil(true);
+        await att(400);
+        const construction = releve();
+        const n2 = await tap();
+        document.getElementById('construction-fin').click();
+        await att(300);
+        P.pitch = 0;
+        return { vue: [innerWidth, innerHeight], explorer, construction, inventaire, pause, appuis, repris,
+          gestes: { explorer: n1 - n0, construction: n2 - n1 }, enConstruction: C.enConstruction() };
+      });
+      await cmd.close();
+      const croise = (a, b) => Math.min(a.x + a.w, b.x + b.w) > Math.max(a.x, b.x) && Math.min(a.y + a.h, b.y + b.h) > Math.max(a.y, b.y);
+      const juge = (et) => {
+        const R = (et && et.R) || {}, k = Object.keys(R), recouvre = [];
+        for (let i = 0; i < k.length; i++) for (let j = i + 1; j < k.length; j++) if (croise(R[k[i]], R[k[j]])) recouvre.push(k[i] + '×' + k[j]);
+        const joy = k.filter((n) => R[n].x < r.vue[0] * 0.45 && R[n].y + R[n].h > r.vue[1] * 0.4);
+        const ronds = k.filter((n) => /-btn$/.test(n)).filter((n) => R[n].w !== R[n].h || R[n].w < 44 || R[n].w > 44);
+        return { recouvre, joy, ronds, actions: et ? et.actions.length : 99, lbs: et ? et.lbsVisibles : 99 };
+      };
+      const ex = juge(r.explorer), co = juge(r.construction);
+      verifier(`commandes (${vue.width} × ${vue.height}) : à pied, quatre boutons d'action au plus, ronds de 44 px, sans mot sous eux, rien ne se recouvre ni n'entre dans le quart du joystick`,
+        !r.err && ex.recouvre.length === 0 && ex.joy.length === 0 && ex.ronds.length === 0
+        && ex.actions >= 3 && ex.actions <= 4 && ex.lbs === 0 && !!r.explorer.R['fun-target'] && !r.explorer.R.hotbar,
+        `${r.err || ''} ${JSON.stringify(ex)} pilule attendue ${r.explorer && r.explorer.attendu} ms ${JSON.stringify(r.explorer && r.explorer.R)}`);
+      verifier(`commandes (${vue.width} × ${vue.height}) : une seule pilule d'action, et son mot tient sur une ligne sans être coupé`,
+        !r.err && r.explorer.pilules.length === 1 && !r.explorer.pilules[0].coupe
+        && r.explorer.longue.length === 1 && !r.explorer.longue[0].coupe,
+        `${r.err || ''} ${JSON.stringify({ pilules: r.explorer && r.explorer.pilules, longue: r.explorer && r.explorer.longue })}`);
+      verifier(`commandes (${vue.width} × ${vue.height}) : en construction, la barre de blocs, Poser et Casser — et toujours rien qui se recouvre`,
+        !r.err && co.recouvre.length === 0 && co.joy.length === 0 && co.actions <= 4
+        && !!r.construction.R.hotbar && !!r.construction.R['poser-btn'] && !!r.construction.R['casser-btn']
+        && !!r.construction.R['construction-pill'] && !r.construction.R['construire-btn'] && !r.enConstruction,
+        `${r.err || ''} ${JSON.stringify(co)} ${JSON.stringify(r.construction && r.construction.R)} terminé ${!r.enConstruction}`);
+      verifier(`commandes (${vue.width} × ${vue.height}) : toucher l'écran ne casse rien hors construction, et casse en construction`,
+        !r.err && r.gestes.explorer === 0 && r.gestes.construction > 0, JSON.stringify(r.gestes));
+      if (vue.width === 420) {
+        const manque = (r.inventaire || []).filter((i) => !i.existe || !i.cache || !i.ligne);
+        verifier('le menu unique remplace les petits boutons — chacun existe encore, hors de l\'écran, et une ligne du menu l\'appuie',
+          !r.err && r.inventaire.length >= 9 && manque.length === 0, JSON.stringify(manque.length ? manque : r.inventaire));
+        const rate = (r.appuis || []).filter((a) => !a.appuye || a.offerte === false);
+        verifier('ouvrir le menu met la partie en pause, chaque ligne appuie son bouton, et « Reprendre » rend la partie',
+          !r.err && r.pause.ouvert && r.pause.running === false && !!r.pause.carte && rate.length === 0 && r.repris === true,
+          JSON.stringify({ pause: r.pause, rate, repris: r.repris }));
+      }
+    }
+
+    // LE CONTRASTE DES COMMANDES, SUR LE CIEL DE MIDI ET SUR LA NUIT. Le verre
+    // est presque invisible (retour de Max) : c'est exactement ce qui casse un
+    // contraste. Le fond effectif se COMPOSE (v276) — les fonds translucides de
+    // l'élément et de ses ancêtres, posés sur la couleur du ciel que le jeu
+    // dessine. Une icône blanche tient 3:1 (WCAG, éléments graphiques), un
+    // texte de pilule 4,5:1.
+    const ciel = await banc.jouerSeul('CommandesCiel', { tactile: true, rr: 2 });
+    const cont = await ciel.evaluate(async () => {
+      const att = (ms) => new Promise((f) => setTimeout(f, ms));
+      const g = window.__game;
+      const nb = (c) => { const m = (c || '').match(/[\d.]+/g) || []; return m.length < 3 ? null : { r: +m[0], g: +m[1], b: +m[2], a: m.length > 3 ? +m[3] : 1 }; };
+      const lum = (c) => { const f = (v) => { const x = v / 255; return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); }; return 0.2126 * f(c.r) + 0.7152 * f(c.g) + 0.0722 * f(c.b); };
+      const sur = (haut, bas) => ({ r: haut.r * haut.a + bas.r * (1 - haut.a), g: haut.g * haut.a + bas.g * (1 - haut.a), b: haut.b * haut.a + bas.b * (1 - haut.a), a: 1 });
+      const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+      const fond = (el, sous) => {
+        const pile = [];
+        for (let n = el; n && n !== document.body; n = n.parentElement) { const c = nb(getComputedStyle(n).backgroundColor); if (c && c.a > 0) pile.push(c); }
+        let acc = sous;
+        for (const c of pile.reverse()) acc = sur(c, acc);
+        return acc;
+      };
+      const lire = async (fr) => {
+        window.__setDayTime(fr);
+        let avant = '', stable = 0;
+        for (let i = 0; i < 40 && stable < 3; i++) { await att(250); const h = g.scene.background.getHexString(); stable = h === avant ? stable + 1 : 0; avant = h; }
+        const h = g.scene.background.getHexString();
+        return { r: parseInt(h.slice(0, 2), 16), g: parseInt(h.slice(2, 4), 16), b: parseInt(h.slice(4, 6), 16), a: 1, hex: h };
+      };
+      const icones = ['menu-btn', 'map-btn', 'jump-btn', 'fly-btn', 'construire-btn'];
+      const textes = [['fun-target button', '#ride-btn'], ['construction-pill', '#construction-pill span'], ['gps', '#gps-texte']];
+      const out = {};
+      for (const [moment, fr] of [['midi', 0.25], ['minuit', 0.75]]) {
+        const s = await lire(fr);
+        const res = { ciel: s.hex, icones: {}, textes: {} };
+        for (const id of icones) { const el = document.getElementById(id); res.icones[id] = +ratio(nb(getComputedStyle(el).color), fond(el, s)).toFixed(2); }
+        for (const [nom, sel] of textes) { const el = document.querySelector(sel); res.textes[nom] = +ratio(nb(getComputedStyle(el).color), fond(el, s)).toFixed(2); }
+        out[moment] = res;
+      }
+      return out;
+    });
+    await ciel.close();
+    const bas = (o, barre) => Object.entries(o || {}).filter(([, v]) => !(v >= barre)).map(([k, v]) => `${k} ${v}`);
+    const fautes = ['midi', 'minuit'].flatMap((m) => [...bas(cont[m] && cont[m].icones, 3), ...bas(cont[m] && cont[m].textes, 4.5)].map((f) => `${m} : ${f}`));
+    verifier('les commandes se lisent sur le ciel de midi comme sur la nuit — icônes 3:1, textes des pilules 4,5:1, fonds translucides composés',
+      fautes.length === 0 && !!cont.midi && !!cont.minuit, `${fautes.join(' · ')} ${JSON.stringify(cont)}`);
 
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
