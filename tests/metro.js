@@ -318,7 +318,7 @@ let RAYON = 38;
       }
     }
 
-    // --- LA LIGNE A DE ROME (v482) : SES RAMES MARQUENT SES STATIONS ---------
+    // --- LA LIGNE A DE ROME (v498) : SES RAMES MARQUENT SES STATIONS ---------
     //
     // La descente de chaque bouche, le gabarit, le Tibre et le trottoir se
     // prouvent sous node (`sonde-metro-monde.mjs`, lue par plafond.js) ; ici, ce

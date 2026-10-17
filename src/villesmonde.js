@@ -1863,7 +1863,19 @@ function buildSaintMarc(poser) {
 // les deux demi-coupoles est et ouest, la grande coupole basse sur sa couronne
 // de quarante fenêtres, et les quatre minarets ottomans. Elle reste au sud de
 // Topkapi.
+//
+// ET ELLE SE VISITE (v493), sur la méthode du Panthéon de Rome (v458). Le
+// dehors est celui d'avant au bloc près — seul l'intérieur passe à l'air. On
+// entre de plain-pied par l'ouest (y = 0, la porte de trois blocs dans
+// l'exonarthex puis dans le mur du narthex), les bas-côtés sont voûtés à la
+// couche 4, et la nef centrale monte jusque sous la coupole, devenue une
+// coque : tambour en couronne, calotte creuse, fermée au sommet. Les quatre
+// grands piliers portent la coupole aux coins du carré central ; au fond, à
+// l'est, le mihrab doré et le minbar. Étirée par sa table (echelle-monuments,
+// couches 1 à 5 → 1 à 11, la coupole au-dessus), la nef fait une vingtaine
+// de blocs sous la calotte. Rien n'y est tiré au hasard (v450).
 function buildSainteSophie(poser) {
+  const AIR = BLOCK.AIR;
   for (let y = 1; y <= 4; y++) {
     plein(poser, y, -5, 5, -3, 6, OCRE);
     for (const [a, b] of [[-6, -3], [-6, 5], [6, -3], [6, 5]]) poser(a, y, b, OCRE);
@@ -1879,6 +1891,32 @@ function buildSainteSophie(poser) {
   tambour(P, 5, 5, 4, OCRE, BLANC);
   calotte(P, 6, 4, ACIER, 3);
   P(0, 9, 0, OR);
+  // l'intérieur : le dallage de marbre, les bas-côtés sous la voûte de la
+  // couche 4, la nef ouverte jusqu'à la coupole sous le cercle central
+  for (let x = -4; x <= 4; x++) for (let z = -2; z <= 5; z++) {
+    poser(x, 0, z, ((x + z) & 1) ? BLANC : PIERRE);
+    const sousLaCoupole = Math.hypot(x, z - 1) < 3.4;
+    for (let y = 1; y <= (sousLaCoupole ? 4 : 3); y++) poser(x, y, z, AIR);
+  }
+  // la coupole en coque : le tambour en couronne, la calotte creuse, et
+  // dedans le revêtement d'or des mosaïques — l'acier gris de la coque, vu
+  // d'en bas dans l'ombre, était un trou noir (vu en capture)
+  for (let x = -4; x <= 4; x++) for (let z = -4; z <= 4; z++) {
+    const d = Math.hypot(x, z);
+    if (d < 3.35) P(x, 5, z, d < 2.35 ? AIR : OR);
+    if (d < 3.31) P(x, 6, z, d < 2.31 ? AIR : OR);
+    if (d < 2.96) P(x, 7, z, OR);              // la calotte d'or se ferme ici
+  }
+  // les quatre grands piliers aux coins du carré central
+  for (const [a, b] of [[-3, -2], [3, -2], [-3, 4], [3, 4]]) for (let y = 1; y <= 4; y++) poser(a, y, b, PIERRE);
+  // la porte, dans l'axe, à travers l'exonarthex et le mur du narthex
+  for (const x of [-6, -5]) for (let z = 0; z <= 2; z++) {
+    poser(x, 0, z, PIERRE);
+    for (let y = 1; y <= 2; y++) poser(x, y, z, AIR);
+  }
+  // au fond, le mihrab doré dans sa niche, le minbar à sa droite
+  poser(4, 1, 1, OR); poser(4, 2, 1, OR);
+  poser(4, 1, 3, BLANC); poser(3, 1, 3, BLANC);
   for (const [a, b] of [[-7, -3], [-7, 7], [7, -3], [7, 7]]) minaretFin(poser, a, b, 20, PIERRE, ACIER, [12, 17]);
 }
 
@@ -2964,6 +3002,125 @@ const PALETTES_VILLES = {
   edimbourg: { murs: [uni(24), uni(23), uni(24), uni(22)], cheminee: uni(25) },
 };
 
+// LES VILLES QUI PASSENT DU GABARIT À LA FICHE (lot 1, v492). Max : « cinquante
+// villes détaillées ». Une ville engendrée garde ce que le gabarit lui donne de
+// juste — son rayon (le registre fait foi, donc la découpe « hors villes » ne
+// bouge pas), sa côte automatique, son tissu — et reçoit ici ce qu'une fiche
+// porte : son fleuve, sa pierre, ses monuments et ses lieux. TOUT EST EN
+// LATITUDE ET LONGITUDE RÉELLES, et la géométrie se CALCULE (`local` pour les
+// lieux et les monuments, `ficheGeneree` pour le fleuve) : rien n'est écrit en
+// unités de fiche, donc rien n'est à recopier le jour où l'échelle bouge.
+//
+// LE LOT SE CHOISIT, IL NE SE DEVINE PAS. Trois contraintes, mesurées :
+// - un monument ne se pose que si sa zone à terre (`box + 30`) reste dans celle
+//   de la ville (`r + 24`), soit à moins de `r − 6 − box` du centre ; au-delà
+//   il changerait `terrainHeight` hors du disque — l'invariant 1 ;
+// - les villes au bout d'une route ou d'une ligne de train (Marseille, Lyon,
+//   Milan, Naples, Montréal…) attendent : un monument devant l'entrée ferme
+//   l'avenue d'entrée (`murDeMonument`, v365), et un fleuve en travers ferait
+//   un pont dans le raccord ;
+// - un fleuve ou un monument ne doit retirer à la ville ni un anneau ni un
+//   tablier : le château de Nantes, à quatre blocs de demi-côté, coupait un
+//   des quatre anneaux de la ville (mesuré, 828 → 339 blocs de circuit).
+// Un disque de ville engendrée fait 1,1 à 2,2 km de rayon (le rayon du
+// registre en vingtièmes de kilomètre) : Genève a son jet d'eau dans le disque
+// mais pas son lac, et un lac change le relief bien plus qu'un fleuve.
+//
+// ET UN MONUMENT NE S'ÉCRIT QU'AVEC UN BÂTISSEUR QUI DIT VRAI. Les bâtisseurs
+// génériques de ce fichier (une arche, une enceinte, une aiguille) suffisent
+// pour un arc de triomphe, un château fort, le Spire de Dublin ; le Capitole
+// de Toulouse ou Saint-Sernin demandent le leur, et c'est un autre chantier :
+// ils restent des LIEUX (une étiquette sur la carte, une destination), pas
+// une coupole de gabarit (v369 : aucun repère ne garde `dome`).
+//
+// `fleuves` : `l` en unités de fiche (cinquante mètres), la demi-largeur du
+// VRAI fleuve, comme `FLEUVES_VILLES` (v280). `parcs` : un centre et un rayon
+// en MÈTRES — un jardin est du sol, il ne touche pas au relief.
+export const FICHES_DETAILLEES = {
+  // DUBLIN. La Liffey traverse la ville d'ouest en est, trois cents mètres au
+  // sud du Spire ; cent mètres de large au pont O'Connell. Le Spire (2003),
+  // aiguille d'acier de cent vingt mètres et de trois mètres à la base, est au
+  // milieu d'O'Connell Street — c'est le centre du registre.
+  dublin: {
+    fleuves: [{ nom: 'Liffey', l: 1, ll: [[53.3452, -6.2900], [53.3461, -6.2750], [53.3464, -6.2650],
+      [53.3471, -6.2593], [53.3473, -6.2500], [53.3468, -6.2400]] }],
+    monuments: [
+      // une colonne d'acier : à vingt-huit mètres par bloc au sol, trois mètres
+      // de base tiennent dans un bloc — c'est un fût dans la vraie ville aussi.
+      // Trente-huit blocs : la courbe du ciel (v342) pour 120 m sur une corniche
+      // de treize, la médiane des immeubles autour de lui (mesurée).
+      { nom: 'Le Spire', lat: 53.3498, lon: -6.2603, box: 2, build: statuette(37, ACIER, ACIER) },
+    ],
+    lieux: [["O'Connell Street", 53.3510, -6.2606], ["Ha'penny Bridge", 53.3464, -6.2630],
+      ['Temple Bar', 53.3455, -6.2643], ['Trinity College', 53.3438, -6.2546]],
+  },
+  // TOULOUSE, LA VILLE ROSE : la brique foraine, rose orangé — la brique
+  // « Saumon » de la palette de décor, avec un peu de rouge et de pierre. La
+  // Garonne coule au sud-ouest du Capitole, deux cents mètres de large au
+  // Pont-Neuf.
+  toulouse: {
+    murs: [brique(16), brique(16), brique(0), CREME], couleurToits: [190, 118, 92],
+    fleuves: [{ nom: 'Garonne', l: 2, ll: [[43.5850, 1.4410], [43.5935, 1.4398], [43.5994, 1.4374],
+      [43.6040, 1.4325], [43.6083, 1.4298], [43.6130, 1.4280]] }],
+    lieux: [['Le Capitole', 43.6045, 1.4432], ['Basilique Saint-Sernin', 43.6083, 1.4420],
+      ['Couvent des Jacobins', 43.6036, 1.4400], ['Pont-Neuf', 43.5994, 1.4374],
+      ['Place Wilson', 43.6055, 1.4483]],
+  },
+  // MELBOURNE. La Yarra longe le sud du centre, Flinders Street sur sa rive
+  // nord ; quatre-vingts mètres de large au pont des Princes. La grille de
+  // Hoddle est tournée de vingt degrés (Flinders Street monte vers l'est-nord-
+  // est, 1,4 km vers l'est pour 0,5 vers le nord, soit 0,34 rad) : l'angle
+  // que le gabarit lui tirait déjà au hasard (0,35). On ne le retouche pas
+  // pour un centième — ce serait changer le sol pour rien.
+  melbourne: {
+    fleuves: [{ nom: 'Yarra', l: 1, ll: [[-37.8228, 144.9470], [-37.8212, 144.9560], [-37.8198, 144.9680],
+      [-37.8203, 144.9760], [-37.8232, 144.9850]] }],
+    lieux: [['Flinders Street', -37.8183, 144.9671], ['Federation Square', -37.8180, 144.9691],
+      ['Queen Victoria Market', -37.8076, 144.9568], ['Cathédrale St Paul', -37.8170, 144.9675]],
+  },
+  // NANTES. Le tuffeau blanc et l'ardoise : la pierre de la Loire. Le château
+  // des ducs de Bretagne est une enceinte à tours d'environ deux cents mètres
+  // de côté : sept blocs à trente-six blocs par kilomètre, trois de demi-côté.
+  // Mesuré : à quatre de demi-côté, ses murs coupaient un des quatre anneaux
+  // de la ville (828 → 339 blocs de circuit) ; à trois, les quatre restent.
+  // L'éléphant des Machines est sur l'île de Nantes, de l'autre côté du bras.
+  nantes: {
+    murs: [BLANC, CREME, uni(23), CREME], toit: ARDOISE, couleurToits: [130, 134, 142],
+    // le bras de la Madeleine, cent cinquante mètres, un kilomètre au sud
+    fleuves: [{ nom: 'Loire', l: 1.5, ll: [[47.2112, -1.5800], [47.2102, -1.5680], [47.2090, -1.5560],
+      [47.2078, -1.5450], [47.2072, -1.5340]] }],
+    // le château dans ses douves en herbe : sans elles, les immeubles de la
+    // trame restaient debout DANS l'enceinte (vu en capture, lu au bloc) ; et
+    // une pelouse, pas un bois — un arbre sur quatre noyait les courtines
+    parcs: [{ ll: [47.2161, -1.5497], m: 170, pelouse: true }],
+    monuments: [
+      { nom: 'Château des ducs de Bretagne', lat: 47.2161, lon: -1.5497, box: 5, build: muraillesRect(3, 5, CREME) },
+    ],
+    lieux: [['Cathédrale Saint-Pierre', 47.2181, -1.5507], ['Passage Pommeraye', 47.2130, -1.5592],
+      ['Place Royale', 47.2152, -1.5577]],
+  },
+  // MONTPELLIER. La pierre blonde de l'Écusson. L'arc de triomphe de la porte
+  // du Peyrou (1691) ouvre la promenade du Peyrou, à l'ouest de la vieille
+  // ville : une porte, à la hauteur des toits de la rue Foch (mesuré, 13 et 13).
+  montpellier: {
+    murs: [CREME, uni(19), uni(20), BLANC],
+    // la promenade du Peyrou, plantée, juste à l'ouest de l'arc
+    parcs: [{ ll: [43.6110, 3.8702], m: 110 }],
+    monuments: [
+      { nom: 'Arc de triomphe', lat: 43.6111, lon: 3.8722, box: 3, seuil: 0.4, build: archePorte(1, 10, CREME) },
+    ],
+    lieux: [['Place de la Comédie', 43.6085, 3.8800], ['Promenade du Peyrou', 43.6110, 3.8700],
+      ['Cathédrale Saint-Pierre', 43.6140, 3.8730]],
+  },
+};
+
+// Une latitude-longitude en unités de fiche (vingt par kilomètre), autour de
+// l'ancre — la même conversion que `fabrique`, avant l'échelle du registre.
+const versFiche = (v) => ([lat, lon]) => [
+  (lon - v.lon) * 111.32 * Math.cos((v.lat * Math.PI) / 180) * 20,
+  -(lat - v.lat) * 111.19 * 20,
+];
+
 function ficheGeneree(v) {
   const arch = ARCHETYPES[v.style] || ARCHETYPES.europe;
   // L'angle de trame : déterministe par ville, pour que deux voisines ne
@@ -2991,6 +3148,26 @@ function ficheGeneree(v) {
     fiche.fleuves = fl.map((q) => ({
       pts: q.pts.map((pt) => pt.slice()), l: q.l, borne: q.borne,
     }));
+  }
+  const det = FICHES_DETAILLEES[v.cle];
+  if (det) {
+    if (det.ang != null) fiche.trame.ang = det.ang;
+    if (det.murs) fiche.palette = det.murs;
+    if (det.toit) fiche.toit = det.toit;
+    if (det.couleurToits) fiche.couleurToits = det.couleurToits;
+    if (det.fleuves) {
+      fiche.fleuves = (fiche.fleuves || []).concat(det.fleuves.map((q) => ({
+        pts: q.ll.map(versFiche(v)), l: q.l, borne: q.borne,
+      })));
+    }
+    if (det.parcs) {
+      fiche.parcs = det.parcs.map(({ ll, m, pelouse }) => {
+        const [cu, cv] = versFiche(v)(ll);
+        return { cu, cv, ru: m / 50, rv: m / 50, pelouse };
+      });
+    }
+    if (det.monuments) fiche.monuments = det.monuments.map((m) => ({ ...m }));
+    if (det.lieux) fiche.lieux = det.lieux.map((l) => l.slice());
   }
   return fiche;
 }
@@ -3388,6 +3565,7 @@ export function solVillesMonde(x, z) {
     for (const p of f.parcs || []) {
       if (((U - p.cu) / p.ru) ** 2 + ((V - p.cv) / p.rv) ** 2 < 1) {
         if (p.mosaique && ((u + v) & 1) === 0) return uni(((u * 7 + v * 13) & 3) * 5);
+        if (p.pelouse) return HERBE;                                // des douves en herbe, pas un bois
         return ((u + v) & 3) === 0 ? ARBRE : HERBE;
       }
     }

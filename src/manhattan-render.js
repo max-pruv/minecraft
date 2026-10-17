@@ -1,7 +1,12 @@
 import * as THREE from "three";
 import { WATER_LEVEL } from "./world.js";
 import { decor } from "./couches.js";
-import { ORIGINE_MANHATTAN, dansManhattan } from "./manhattan-world.js";
+import {
+  ORIGINE_MANHATTAN,
+  dansManhattan,
+  dansBoiteLiberte,
+} from "./manhattan-world.js";
+import { etatFeu } from "./feux.js";
 import {
   SOL,
   BORNES,
@@ -17,6 +22,9 @@ import {
   emprise,
   sommet,
   niveaux,
+  ILE_LIBERTE,
+  feuxSecteur,
+  feuxAutour,
 } from "./manhattan-plan.js";
 import {
   materiauxManhattan,
@@ -316,7 +324,58 @@ export class ManhattanRenderer {
     this.frames = [];
     this.lastFrame = 0;
     this.stats = { buildings: BATIMENTS.length, quality: this.quality };
+    // LES OPTIQUES ALLUMÉES DES FEUX (v496) : trois essaims, un par couleur,
+    // réécrits deux fois par seconde par `feuxAutour` — la même horloge et la
+    // même règle (`feux.js`) que les voitures et les passants qui s'y arrêtent.
+    this.feuxVifs = ["signalRouge", "signalOrange", "signal"].map((m) => {
+      const im = new THREE.InstancedMesh(this.geos.sphere, this.mats[m], 512);
+      // une couleur par instance, comme les essaims de `Lot` : sans elle la
+      // clé de programme diffère (`instancingColor`) et l'entrée dans la
+      // ville compilerait un programme de plus (v246)
+      const blanc = new THREE.Color(1, 1, 1);
+      for (let i = 0; i < 512; i++) im.setColorAt(i, blanc);
+      im.count = 0;
+      im.frustumCulled = false;
+      im.userData.feux = m;
+      this.root.add(decor(im));
+      return im;
+    });
     this.makeFar();
+  }
+  // Les feux à `r` blocs de (wx, wz) — coordonnées du MONDE — avec leur état
+  // à l'heure de la rue `t` (ms). Rend la liste que `main.js` donne à la
+  // circulation et aux passants (`feuxProches`), et allume leurs optiques.
+  feuxAutour(wx, wz, t, r) {
+    const O = ORIGINE_MANHATTAN,
+      obj = new THREE.Object3D(),
+      n = [0, 0, 0],
+      out = [];
+    for (const f of feuxAutour(wx - O.x, wz - O.z, r)) {
+      const etat = etatFeu(f.axe, t),
+        i = etat === "rouge" ? 0 : etat === "orange" ? 1 : 2;
+      if (n[i] < 512) {
+        obj.position.set(
+          f.x + f.fx * 0.27,
+          NIVEAU + 3.75 - i * 0.42,
+          f.z + f.fz * 0.27,
+        );
+        obj.scale.setScalar(0.27);
+        obj.updateMatrix();
+        this.feuxVifs[i].setMatrixAt(n[i]++, obj.matrix);
+      }
+      out.push({
+        x: f.x + O.x,
+        z: f.z + O.z,
+        axe: f.axe,
+        etat,
+        lampes: [0, 1, 2].map((k) => ({ visible: k === i })),
+      });
+    }
+    this.feuxVifs.forEach((im, i) => {
+      im.count = n[i];
+      im.instanceMatrix.needsUpdate = true;
+    });
+    return out;
   }
   makeFar() {
     // LOD de silhouette par secteur : peu d'appels et frustum culling natif.
@@ -341,6 +400,9 @@ export class ManhattanRenderer {
         const key = `${x},${z}`;
         if (!this.farGroups.has(key)) this.farGroups.set(key, []);
       }
+    // le secteur lointain de Liberty Island, hors du rectangle
+    const cleIle = `${Math.floor(ILE_LIBERTE.x / 256)},${Math.floor(ILE_LIBERTE.z / 256)}`;
+    if (!this.farGroups.has(cleIle)) this.farGroups.set(cleIle, []);
     this.farQueue = [...this.farGroups.keys()].sort((a, b) => {
       const d = (k) => {
         const [x, z] = k.split(",").map(Number);
@@ -472,6 +534,11 @@ export class ManhattanRenderer {
       );
       this.couronnement(lot, b);
     }
+    if (
+      key ===
+      `${Math.floor(ILE_LIBERTE.x / 256)},${Math.floor(ILE_LIBERTE.z / 256)}`
+    )
+      this.liberteLointaine(lot);
     const g = lot.finish();
     g.userData.key = key;
     this.root.add(decor(g));
@@ -1029,31 +1096,10 @@ export class ManhattanRenderer {
         this.lamp(lot, x + 5, z + 4.8, 1);
         lot.sign(0, x + 5, NIVEAU + 4.9, z + 4.8, 3, 0.55);
         lot.sign(1, x + 5, NIVEAU + 4.25, z + 4.8, 2, 0.5, Math.PI / 2);
-        // Feu sur potence, trois optiques avec visières.
-        lot.put(
-          "metal",
-          x + 5,
-          NIVEAU + 3.9,
-          z - 4,
-          0.12,
-          7.8,
-          0.12,
-          "cylinder",
-        );
-        lot.put("metal", x + 3, NIVEAU + 7.5, z - 4, 4, 0.12, 0.12);
-        lot.put("yellow", x + 1.6, NIVEAU + 6.8, z - 4, 0.48, 1.4, 0.45);
-        for (let i = 0; i < 3; i++)
-          lot.put(
-            i === 2 ? "signal" : "roof",
-            x + 1.6,
-            NIVEAU + 7.3 - i * 0.42,
-            z - 3.74,
-            0.25,
-            0.25,
-            0.07,
-            "sphere",
-          );
       }
+    // les feux, aux quatre coins de chaque carrefour du plan (v496)
+    for (const f of feuxSecteur(cx, cz))
+      if (this.world.groundAllowed(f.x, f.z)) this.feu(lot, f);
     for (let x = x0 + 6; x < x0 + 64; x += 16)
       for (let z = z0 + 6; z < z0 + 64; z += 16) {
         const s = surface(x, z);
@@ -1109,6 +1155,57 @@ export class ManhattanRenderer {
       }
     return lot.finish();
   }
+  // LA STATUE VUE DE LA BATTERY (v496). L'île est à deux cent cinquante blocs
+  // du bout de Manhattan, au-delà de la portée des morceaux de monde : sans sa
+  // silhouette, on ne la verrait que de tout près. Chaque pièce est un peu
+  // PLUS PETITE que les blocs de `statueLiberte` (plan) : quand les morceaux
+  // de l'île arrivent, la silhouette est dedans et ne se voit plus.
+  liberteLointaine(lot) {
+    const I = ILE_LIBERTE,
+      x = I.x + 0.5,
+      z = I.z + 0.5,
+      y = (dy) => NIVEAU + dy; // la rangée dy de la statue commence là
+    lot.put(
+      "grass",
+      x,
+      NIVEAU - 0.55,
+      z,
+      2 * I.b - 1.2,
+      1,
+      2 * I.a - 1.2,
+      "cylinder",
+      Math.atan2(I.ux, I.uz),
+    );
+    lot.put("trim", x, y(1.45), z, 13.6, 2.8, 13.6, "cylinder");
+    lot.put("limestone", x, y(5), z, 8.6, 3.8, 8.6);
+    lot.put("limestone", x, y(13), z, 6.6, 11.8, 6.6);
+    lot.put("limestone", x, y(19.5), z, 4.6, 0.8, 4.6);
+    lot.put("copper", x, y(22.5), z, 5.4, 4.8, 5.4, "cylinder");
+    lot.put("copper", x, y(29.5), z, 3.6, 8.8, 3.6, "cylinder");
+    lot.put("copper", x, y(35.5), z, 2.6, 2.8, 2.6);
+    lot.put("copper", x, y(35.5), z + 3, 0.6, 8.8, 0.6);
+    lot.put("glow", x, y(41), z + 3, 0.7, 1.8, 0.7);
+  }
+  // Un feu de coin : un mât, le boîtier, trois optiques éteintes tournées
+  // vers les voitures qui arrivent ; celle qui est allumée est un essaim à
+  // part (`feuxAutour`).
+  feu(lot, f) {
+    this.noterObstacle(f.x, f.z, 0.2);
+    const a = Math.atan2(f.fx, f.fz);
+    lot.put("metal", f.x, NIVEAU + 1.9, f.z, 0.13, 3.8, 0.13, "cylinder");
+    lot.put("yellow", f.x, NIVEAU + 3.33, f.z, 0.46, 1.36, 0.42, "box", a);
+    for (let i = 0; i < 3; i++)
+      lot.put(
+        "roof",
+        f.x + f.fx * 0.22,
+        NIVEAU + 3.75 - i * 0.42,
+        f.z + f.fz * 0.22,
+        0.25,
+        0.25,
+        0.25,
+        "sphere",
+      );
+  }
   lamp(lot, x, z, side) {
     this.noterObstacle(x, z, 0.2);
     lot.put("metal", x, NIVEAU + 3.5, z, 0.14, 7, 0.14, "cylinder");
@@ -1163,7 +1260,11 @@ export class ManhattanRenderer {
       actual.z - ORIGINE_MANHATTAN.z,
     );
     this.player.yaw = this.realPlayer.yaw;
-    const active = dansManhattan(actual.x, actual.z, 180);
+    // l'île est hors du rectangle : sans elle, marcher sur sa pointe sud
+    // ferait basculer l'éclairage de la ville à chaque pas (v496)
+    const active =
+      dansManhattan(actual.x, actual.z, 180) ||
+      dansBoiteLiberte(actual.x, actual.z, 60);
     this.root.visible = active;
     if (this.ownsLamps) this.lamps.forEach((l) => { l.visible = active; });
     if (active !== this.active) {

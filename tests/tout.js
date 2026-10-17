@@ -92,7 +92,7 @@ const GARDIENS = {
   // `horizon.js` lit `terrainHeight` et dessine ce que les morceaux n'ont pas
   // eu le temps de bâtir : `monte.js` l'éprouve en vol, `carte.js` garde le
   // rendu, `plafond.js` garde le sol qu'il lit.
-  'src/horizon.js': ['monte.js', 'carte.js', 'plafond.js'],
+  'src/horizon.js': ['monte.js', 'carte.js', 'plafond.js', 'maj.js'],
   'src/plafond-sol.js': ['monte.js', 'plafond.js', 'manhattan.js', 'carteMonde.js', 'washington.js', 'metro.js'],
   // LE PALIER DE L'APPAREIL (v284). Il décide la distance d'affichage, la
   // profondeur de file du mailleur et la vitesse des jets : `monte.js` garde le
@@ -192,11 +192,13 @@ const GARDIENS = {
   // vie de rue (fumée + monte) et dans les durées (maj).
   // `education.js` en est client depuis la v234 : ses deux gardiens rejoignent
   // la liste, sinon un changement d'horloge ne réveille pas l'espace parent.
-  'src/cadence.js': ['monte.js', 'maj.js', 'carte.js', 'parent.js', 'reglages.js'],
+  'src/cadence.js': ['monte.js', 'maj.js', 'carte.js', 'parent.js', 'reglages.js', 'manhattan.js', 'degats.js', 'reseau.js'],
   // Le cadran de cap lit le registre et s'affiche aux commandes : la monte le garde.
   'src/cap.js': ['monte.js', 'carte.js'],
   'src/approche.js': ['monte.js', 'carteMonde.js'],
   'src/gps.js': ['carte.js'],
+  // LES COMMANDES SIMPLIFIÉES : le menu unique, Construire, et les boutons ronds.
+  'src/commandes.js': ['maj.js', 'monte.js', 'manhattan.js', 'reglages.js', 'carte.js', 'fumee.js'],
   'src/fun.js': ['monte.js', 'carte.js', 'reglages.js', 'reseau.js', 'degats.js'],
   // LES DÉGÂTS DE LA VOITURE (v343) : la règle pure et ce qui se voit.
   'src/degats.js': ['degats.js'],

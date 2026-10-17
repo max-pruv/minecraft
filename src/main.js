@@ -30,7 +30,7 @@ import { materiauHD, geometrieHD } from './matierehd.js';
 import { Carte, MAP_COLORS } from './carte.js';
 import { toast } from './bandeau.js';
 import { creerGuides, DUREE_PANNEAU_MS } from './guides.js';
-import { Horizon, rayonHorizon } from './horizon.js';
+import { Horizon, rayonHorizon, rayonLoin, PAS_LOIN, ABAISSE_LOIN } from './horizon.js';
 import { fileDeMaillage, VITESSE_CONE, estUnSaut, FENETRE_ARRIVEE_MS, trouDevant, debitRecent } from './plafond-sol.js';
 import { mondeDevant, ligneDiagConduite } from './conduite.js';
 import { PALIERS, PALIER_CLE, choisirPalier, VITESSE_JET,
@@ -74,6 +74,7 @@ import { CloudSave } from './cloud.js';
 import { EducationMode, GRADES, todayKey } from './education.js';
 import { lienDuJeu, dessinerQR, partagerLien, lienWhatsApp, lienSMS } from './partage.js';
 import { jouerLeSon, arreterLeSon, surSonEnAttente, Photographe, micOuvert } from './visio.js';
+import { initCommandes } from './commandes.js';
 
 // New York appartient à la Terre. Les anciennes adresses deviennent un lieu de départ.
 const VISITE_MANHATTAN = ['manhattan'].includes(new URLSearchParams(location.search).get('lieu')) || new URLSearchParams(location.search).get('carte') === 'manhattan';
@@ -243,6 +244,18 @@ const PORTEE_LAMPE_RUE = 18;
 const INTENSITE_LAMPE_RUE = 28;
 // La portée du paysage lointain suit la distance d'affichage (voir horizon.js).
 const RAYON_HORIZON = rayonHorizon(RENDER_RADIUS, CHUNK);
+// ET AU PALIER « LOIN », UNE COURONNE LOINTAINE LA PROLONGE (v497) : le
+// palier `haut` porte `loin` (palier.js), une seconde grille quatre fois plus
+// lâche jusqu'à 2 560 blocs. Aucun autre palier ne la porte, et sans elle rien
+// ne change ici — ni le brouillard, ni le plan lointain de la caméra.
+// `?loin=0` l'éteint, `?loin=3000` la force (mesures, captures).
+const LOIN_FORCE = new URLSearchParams(location.search).get('loin');
+const RAYON_LOIN = (() => {
+  const voulu = LOIN_FORCE != null ? Number(LOIN_FORCE) || 0 : (PALIER && PALIER.loin) || 0;
+  const r = rayonLoin(voulu);
+  return r > RAYON_HORIZON + PAS_LOIN ? r : 0;
+})();
+const PORTEE_VUE = RAYON_LOIN || RAYON_HORIZON;
 // Millisecondes maximum consacrées par frame à construire des chunks.
 //
 // LE BUDGET ÉTAIT SOUS LE COÛT D'UN SEUL MORCEAU (v229). Mesuré dans la boucle
@@ -436,9 +449,12 @@ scene.background = DAY_SKY.clone();
 // six blocs — pour fondre le bord du monde chargé dans le ciel. Il n'y a plus
 // de bord à fondre, et à cent six blocs le paysage lointain arrivait déjà
 // délavé. Il commence au bout du monde proche et fond jusqu'à l'horizon.
-scene.fog = new THREE.Fog(scene.background, RENDER_RADIUS * CHUNK, RAYON_HORIZON);
+scene.fog = new THREE.Fog(scene.background, RENDER_RADIUS * CHUNK, PORTEE_VUE);
 
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 900);
+// Le plan lointain recule avec la couronne lointaine (v497) — de quoi voir son
+// bord depuis le ciel — et reste à 900 partout ailleurs, au bit près.
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1,
+  RAYON_LOIN ? RAYON_LOIN + 300 : 900);
 // La caméra de l'enfant voit toutes les couches (couches.js) : le décor que
 // la sonde des reflets dessine, et la carrosserie qu'elle ne dessine pas.
 voirTout(camera);
@@ -609,6 +625,14 @@ function materiauDeParis() {
 // morceaux par seconde quand voler en réclame cent soixante-cinq.
 const horizon = new Horizon(world, RAYON_HORIZON);
 scene.add(decor(horizon.objet()));
+// La couronne lointaine du palier « Loin » (v497) : `null` partout ailleurs.
+const horizonLoin = RAYON_LOIN ? new Horizon(world, RAYON_LOIN,
+  { pas: PAS_LOIN, interieur: horizon, abaisse: ABAISSE_LOIN, bords: false }) : null;
+if (horizonLoin) {
+  horizonLoin.mesh.name = 'horizon-loin';
+  horizonLoin.mesh.renderOrder = 2;          // après la grille fine, qui gagne au recouvrement
+  scene.add(decor(horizonLoin.objet()));
+}
 // LE BÂTI LOINTAIN SE COUPE EN RENDU LOGICIEL, COMME LES OMBRES ET LA COUCHE
 // HD (v331). Mesuré en A/B sur la même page, en vol vers Paris à rr=12, ordre
 // alterné : 4,8 · 5,8 · 5,7 images par seconde avec, 15,0 · 17,6 · 11,6 sans
@@ -619,6 +643,7 @@ scene.add(decor(horizon.objet()));
 {
   const voulu = new URLSearchParams(location.search).get('batiloin');
   horizon.bat.visible = voulu != null ? voulu !== '0' : !renduLogiciel();
+  if (horizonLoin) horizonLoin.bat.visible = horizon.bat.visible;
 }
 
 // LA MIGRATION AVANT LE CHARGEMENT, jamais après : `loadEdits` lit ce que le
@@ -1939,7 +1964,8 @@ function updateChunks() {
     return n > 0 && oui === n;
   };
   world.passagePieton = (x, z, cap) => {
-    if (renduDansManhattan) return null;
+    // À Manhattan aussi (v496) : ses carrefours ont leurs feux, et son sol
+    // porte les blocs de chaussée et de trottoir que `solPieton` lit.
     let feu = null;
     for (const f of feuxProches) if ((f.x - x) * (f.x - x) + (f.z - z) * (f.z - z) <= 25) { feu = f; break; }
     const paris = !feu && (x - PARIS_ANCRE.x) * (x - PARIS_ANCRE.x) + (z - PARIS_ANCRE.z) * (z - PARIS_ANCRE.z) < PARIS_ANCRE.r * PARIS_ANCRE.r;
@@ -2147,7 +2173,7 @@ function updateChunks() {
     nb: 4, vitesse: 10, rames: 8, pause: 3, arretsIndex: arretsLigne1Paris(),
     souterrain: true,
   });
-  // Les métros des villes engendrées (v482, metromonde.js), après la ligne 1 :
+  // Les métros des villes engendrées (v498, metromonde.js), après la ligne 1 :
   // la ligne A de Rome, douze stations de Cipro à Re di Roma. Un tour fait près
   // de six cents blocs (deux voies et les tiroirs) à dix blocs par seconde, plus
   // vingt-quatre arrêts de trois secondes : 130 s, cinq rames, 26 s d'attente.
@@ -2604,6 +2630,7 @@ const joyBase = document.getElementById('joy-base');
 const joyKnob = document.getElementById('joy-knob');
 const JOY_RADIUS = 50;
 let breakMode = true;
+let commandes = null;   // commandes.js, branché après initFun
 
 const touch = {
   joyId: null, joyX: 0, joyY: 0,
@@ -2611,7 +2638,11 @@ const touch = {
   holdTimer: null, repeatTimer: null,
 };
 
+// HORS CONSTRUCTION, TOUCHER L'ÉCRAN NE POSE NI NE CASSE RIEN (commandes
+// simplifiées) : on regarde autour de soi sans abîmer le monde. Construire
+// est un mode qu'on choisit, avec son bouton et sa pilule « Terminer ».
 function touchAction() {
+  if (commandes && !commandes.enConstruction()) return;
   (breakMode ? breakBlock : placeBlock)();
 }
 
@@ -2706,6 +2737,7 @@ document.getElementById('mode-btn').addEventListener('touchstart', (e) => {
   e.preventDefault();
   breakMode = !breakMode;
   e.target.textContent = breakMode ? '⛏️' : '🧱';
+  if (commandes) commandes.outil(breakMode);
 }, { passive: false });
 
 // Une voiture ne vole pas — et l'enfant doit savoir POURQUOI le bouton ne
@@ -2829,11 +2861,20 @@ let etatVehicule = '';
 function majBoutonsVehicule() {
   const enAvion = running && !!player.pilote;
   const enVehicule = running && (enAvion || player.gabarit > 1);
-  const cle = `${enVehicule}|${enAvion}`;
+  // `en-jeu` : la partie est à l'écran (le menu ouvert la met en pause sans
+  // la quitter) ; `en-vol` : l'enfant vole à pied.
+  const enJeu = overlay.style.display === 'none' && pauseBtn.style.display === 'block';
+  const enVol = !enVehicule && !!player.flying;
+  const cle = `${enVehicule}|${enAvion}|${enJeu}|${enVol}`;
   if (cle !== etatVehicule) {
     etatVehicule = cle;
     document.body.classList.toggle('en-vehicule', enVehicule);
     document.body.classList.toggle('en-avion', enAvion);
+    document.body.classList.toggle('en-jeu', enJeu);
+    document.body.classList.toggle('en-vol', enVol);
+    // On ne construit pas au volant : monter dans un véhicule termine la
+    // construction, et l'on revient à pied en mode Explorer.
+    if (enVehicule && commandes) commandes.construire(false);
   }
   if (!enVehicule) return;
   // LA MANETTE ET LE COMPTEUR NE S'ÉCRIVENT QU'EN AVION (v272). Ils ne sont
@@ -3150,7 +3191,7 @@ function texteEtendue() {
   const prochain = palierRetenu({ choix, mesure: mesureRangee() });
   const a = reglageDe(prochain, IS_TOUCH);
   const b = reglageDe(PALIER, IS_TOUCH);
-  const suite = (a.rr !== b.rr || a.file !== b.file || a.hd !== b.hd)
+  const suite = (a.rr !== b.rr || a.file !== b.file || a.hd !== b.hd || a.loin !== b.loin)
     ? ' ⏳ Ça s\'applique au prochain lancement : reviens au menu 🏠 puis rejoue.'
     : '';
   return `Jusqu'où tu vois le paysage, et les détails des rues de Paris. ${base}${suite}`;
@@ -3179,7 +3220,7 @@ function renderEtendue() {
         // rechoisir ce qui tourne déjà ne doit pas faire croire à une attente.
         const a = reglageDe(palierRetenu({ choix: e.cle, mesure: mesureRangee() }), IS_TOUCH);
         const b = reglageDe(PALIER, IS_TOUCH);
-        const change = a.rr !== b.rr || a.file !== b.file || a.hd !== b.hd;
+        const change = a.rr !== b.rr || a.file !== b.file || a.hd !== b.hd || a.loin !== b.loin;
         toast(change ? `${e.mot} — reviens au menu 🏠 et rejoue` : `Graphismes : ${e.mot}`);
       });
       etendueChoix.appendChild(b);
@@ -7702,11 +7743,16 @@ function eclairerLaRue() {
 const feuxPrets = cadence(500);
 let feuxProches = [];
 function reglerLesFeux() {
-  if (renduDansManhattan || !feuxPrets()) return;
+  if (!feuxPrets()) return;
   // l'heure de la rue, pas celle de la page (v305) : deux amis au même
   // carrefour voient le même feu, et les voitures qu'il arrête sont les mêmes
   const t = vehicules ? vehicules.horloge() * 1000 : performance.now();
   const px = player.pos.x, pz = player.pos.z;
+  // À MANHATTAN (v496), les feux ne sont pas des blocs de morceau : le plan
+  // les pose aux coins de ses carrefours, et le rendu de la ville allume leurs
+  // optiques. Même règle (`feux.js`), même horloge, même liste pour la
+  // circulation et pour les passants.
+  if (renduDansManhattan) { feuxProches = villeRealiste.feuxAutour(px, pz, t, PORTEE_FEU); return; }
   const pcx = Math.floor(px / CHUNK), pcz = Math.floor(pz / CHUNK);
   const proches = [];
   for (let dx = -7; dx <= 7; dx++) {
@@ -7779,6 +7825,7 @@ function feuRougeDevant(x, z, cap) {
   if (!proche || proche.etat === 'vert') return null;
   return { s: Math.max(0, proche.devant - ARRET_FEU_VISE), orange: proche.etat === 'orange' };
 }
+window.__feuRougeDevant = feuRougeDevant;   // ce que lit la voiture (témoins)
 window.__feux = () => feuxProches.map((f) => ({ x: Math.round(f.x), z: Math.round(f.z), axe: f.axe, etat: f.etat,
   vives: f.lampes.map((l) => l.visible) }));
 
@@ -7852,8 +7899,18 @@ const SEASON = (() => {
   if (m >= 2 && m <= 4) return { label: 'le printemps', emoji: '🌸', color: 0xf0a8c8, fall: 1.6 };
   if (m >= 5 && m <= 7) return { label: "l'été", emoji: '✨', color: 0xf2e07a, fall: -0.4 };
   if (m >= 8 && m <= 10) return { label: "l'automne", emoji: '🍂', color: 0xd8843a, fall: 2.2 };
-  return { label: "l'hiver", emoji: '❄️', color: 0xffffff, fall: 3 };
+  return { label: "l'hiver", emoji: '❄️', color: 0xffffff, fall: 3, duCiel: true };
 })();
+
+// LE NUAGE DE SAISON EST POSÉ SUR LE SOL, PAS SUR L'ENFANT (v484). Il suivait
+// `player.pos` de −3 à +23 blocs : en vol, cent soixante carrés orange
+// flottaient autour de l'avion à cent blocs du sol — les « cubes orange dans
+// le ciel » vus sur les captures de Max et du banc depuis la v237, que la sonde
+// de scène ne trouvait pas parce que c'est UN objet `Points` collé à la caméra.
+// La neige tombe du ciel (bande haute) ; feuilles, pétales et lucioles restent
+// à hauteur d'arbre (bande basse). Au-dessus de la bande, rien ne se dessine.
+const BANDE_SAISON = SEASON.duCiel ? [-3, 23] : [-1, 9];
+const HAUT_SAISON = BANDE_SAISON[1] - BANDE_SAISON[0];
 
 const SEASON_COUNT = 160;
 const seasonGeo = new THREE.BufferGeometry();
@@ -7861,7 +7918,7 @@ const seasonGeo = new THREE.BufferGeometry();
   const pts = new Float32Array(SEASON_COUNT * 3);
   for (let i = 0; i < SEASON_COUNT; i++) {
     pts[i * 3] = (Math.random() - 0.5) * 60;
-    pts[i * 3 + 1] = Math.random() * 26 - 3;
+    pts[i * 3 + 1] = BANDE_SAISON[0] + Math.random() * HAUT_SAISON;
     pts[i * 3 + 2] = (Math.random() - 0.5) * 60;
   }
   seasonGeo.setAttribute('position', new THREE.BufferAttribute(pts, 3));
@@ -7882,13 +7939,18 @@ function updateSeasons(dt) {
   const pos = seasonGeo.attributes.position;
   for (let i = 0; i < SEASON_COUNT; i++) {
     let y = pos.getY(i) - SEASON.fall * dt;
-    if (y < -3) y += 26;
-    if (y > 23) y -= 26;
+    if (y < BANDE_SAISON[0]) y += HAUT_SAISON;
+    if (y > BANDE_SAISON[1]) y -= HAUT_SAISON;
     pos.setY(i, y);
     pos.setX(i, pos.getX(i) + Math.sin(seasonTime * 1.3 + i) * dt * 0.8); // flutter
   }
   pos.needsUpdate = true;
-  seasonPoints.position.set(player.pos.x, player.pos.y, player.pos.z);
+  // au-dessus d'un lac ou de la mer, c'est la surface de l'eau qui porte le nuage
+  const sol = Math.max(world.terrainHeight(Math.floor(player.pos.x), Math.floor(player.pos.z)), WATER_LEVEL) + 1;
+  seasonPoints.position.set(player.pos.x, sol, player.pos.z);
+  // plus haut que la bande (en vol), on ne voit le nuage que par en dessous :
+  // on ne le dessine pas
+  if (player.pos.y > sol + BANDE_SAISON[1] + 6) seasonPoints.visible = false;
 }
 
 const clouds = [];
@@ -8091,7 +8153,7 @@ function updateHud(dt) {
   debugEl.textContent =
     `${mediane ? (1000 / mediane).toFixed(0) : '–'} i/s médiane · pire image ${pire.toFixed(0)} ms · ${info.render.calls} appels · ${(info.render.triangles / 1000).toFixed(0)}k tri · ${info.programs ? info.programs.length : '?'} prog\n`
     + `graphismes ${graphismes()} · dpr ${renderer.getPixelRatio().toFixed(2)} (${canvas.width}×${canvas.height}) · ombres ${renderer.shadowMap.enabled ? 'ON' : 'off'} · reflets ${REFLETS_ACTIFS ? 'ON' : 'off'} · lampes ${LAMPES_ACTIVES ? 'ON' : 'off'}\n`
-    + `palier ${motDuPalier()} · étendue ${ETENDUE_CHOISIE} · rr ${RENDER_RADIUS} · file ${EN_ATTENTE_MAX} · hd ${RAYON_HD}`
+    + `palier ${motDuPalier()} · étendue ${ETENDUE_CHOISIE} · rr ${RENDER_RADIUS} · file ${EN_ATTENTE_MAX} · hd ${RAYON_HD} · horizon ${PORTEE_VUE}`
     // ET LE MESSAGE DIT SI LA MESURE SERA RANGÉE. Sous une étendue choisie à la
     // main, elle est prise pour informer et JETÉE (v290, règle de la v284) :
     // taire cette différence ferait croire à un classement qui n'arrivera pas.
@@ -8110,7 +8172,33 @@ function updateHud(dt) {
       roueLibre: player.roueLibre, pente: player.pente, atterrissage: player.atterrissage, suivi: player.suivi, derapage: player.derapage }) : '')
     + texteRoulage()
     + texteDegats()
-    + texteEmbarquement();
+    + texteEmbarquement()
+    + texteBlocVise();
+}
+
+// LE BLOC VISÉ SE NOMME, ET DIT QUI L'A POSÉ (v490). Le nom sous le réticule
+// est celui du bloc EN MAIN ; devant « des trucs bizarres dans Paris » (v295,
+// v298), la question était « qui a posé ÇA ? », et il a fallu le journal de
+// bord pour y répondre. Le monde le sait : un bloc du journal de l'enfant est
+// dans `world.edits`, avec sa date dans `world.editTimes` ; tout le reste, le
+// générateur l'a écrit. La visée est celle de la surbrillance — calculée à
+// chaque image de toute façon — retenue SEULEMENT sous `?diag=1` : hors
+// diagnostic, rien de plus ne se calcule ni ne s'écrit.
+let blocVise = null;
+function dateDuBloc(t) {
+  if (!t) return 'date inconnue';
+  const d = new Date(t), z = (n) => String(n).padStart(2, '0');
+  return `le ${z(d.getDate())}/${z(d.getMonth() + 1)}/${d.getFullYear()} à ${z(d.getHours())}h${z(d.getMinutes())}`;
+}
+function texteBlocVise() {
+  const h = blocVise;
+  if (!h) return '\nvisé : rien';
+  // l'identifiant se relit ici, à l'image du journal : la visée date de
+  // l'image d'avant, et un bloc posé entre les deux se nommerait de travers
+  const k = `${h.x},${h.y},${h.z}`, id = world.getBlock(h.x, h.y, h.z);
+  const nom = (BLOCK_INFO[id] && BLOCK_INFO[id].name) || `bloc ${id}`;
+  const origine = world.edits.has(k) ? `posé à la main ${dateDuBloc(world.editTimes.get(k))}` : 'posé par le jeu';
+  return `\nvisé : ${nom} (${h.x}, ${h.y}, ${h.z}) · ${origine}`;
 }
 
 // La dernière montée ou descente (v396) : c'est la ligne que Max lit sur la
@@ -8184,6 +8272,45 @@ fun.degats.brancherReseau((m) => { if (net && net.active) net.broadcast(m); });
 fun.brancherAvatar({ obtenir: obtenirAvatarLocal, placeAssise, pose: POSE_AU_VOLANT });
 fun.brancherPortieres((m) => { if (net && net.active) net.broadcast(m); });   // v377
 
+// LES COMMANDES SIMPLIFIÉES : un menu unique qui met le jeu en pause sans
+// quitter la partie, et le mode Construire. Les boutons d'avant restent dans
+// la page ; le menu les appuie.
+let menuTournait = false;
+commandes = initCommandes({
+  peutOuvrir: () => running && !edu.quizActive && !edu.hardStopActive,
+  pauser: () => { menuTournait = running; running = false; },
+  reprendre: () => {
+    if (!menuTournait || overlay.style.display !== 'none') return;
+    menuTournait = false;
+    if (IS_TOUCH || dragLook) running = true; else startGame();
+  },
+  lieu: () => {
+    const v = world.cityAt ? world.cityAt(player.pos.x, player.pos.z) : null;
+    return [myName(), v && v.name].filter(Boolean).join(' · ');
+  },
+  apprendre: () => edu.togglePanel(),
+  // Seul, « Jouer avec un ami » mène à l'écran des mondes en ligne — le
+  // chemin qu'un enfant prenait par l'accueil.
+  jouerAvecUnAmi: () => {
+    if (edu.quizActive || edu.hardStopActive) return;
+    leaveToMainMenu();
+    document.getElementById('online-btn')?.click();
+  },
+  outilCasse: () => breakMode,
+  choisirOutil: (casser) => {
+    breakMode = !!casser;
+    const mb = document.getElementById('mode-btn');
+    if (mb) mb.textContent = breakMode ? '⛏️' : '🧱';
+  },
+});
+if (IS_TOUCH) {
+  document.body.classList.add('tactile');
+  // la barre de blocs rejoint la file du haut, sous la pilule « Terminer »
+  const fc = document.getElementById('file-centre'), hb = document.getElementById('hotbar');
+  if (fc && hb) fc.insertBefore(hb, document.getElementById('construction-pill').nextSibling);
+}
+window.__commandes = commandes;
+
 // --- main loop -------------------------------------------------------------------------
 
 // console/debug handle
@@ -8240,7 +8367,7 @@ window.__game = { fileMaillage: (m) => { fileDemandee = m; lastPlayerChunk = nul
   rechargeMaillage: (m) => { rechargeForcee = m || null; }, get fileDeMorceaux() { return meshQueue; },
   // la règle de la recharge, garde du rendu logiciel mise à part (v379) : un témoin
   // la lit au banc, où le rendu est toujours logiciel
-  get rechargeRegle() { return { arrivee: enArrivee(), rapide: fileRapide, regle: rechargeParRegle(), active: rechargeALArrivee() }; }, villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage, PALIERS, choisirPalier, mesurePalier, journal, memoireGPU,
+  get rechargeRegle() { return { arrivee: enArrivee(), rapide: fileRapide, regle: rechargeParRegle(), active: rechargeALArrivee() }; }, villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage, horizonLoin, PORTEE_VUE, PALIERS, choisirPalier, mesurePalier, journal, memoireGPU,
   RAYON_HD, BUDGET_FACADES, detailTenu, planDetail, get atlasHD() { return hd ? hd.atlas : null; },
   palierRetenu, palierPropose, etendueRange, reglageDe, PARAMS_FORCANTS,
   // CE QUE LE PALIER A RÉELLEMENT APPLIQUÉ, pas ce qu'il déclare : un témoin
@@ -8251,6 +8378,7 @@ window.__game = { fileMaillage: (m) => { fileDemandee = m; lastPlayerChunk = nul
     const jet = MONTURES.find((m) => m.key === 'chasseur');
     return { palier: PALIER ? PALIER.nom : null, source: PALIER ? PALIER.source : null,
       etendue: ETENDUE_CHOISIE, hd: RAYON_HD, facadesMo: BUDGET_FACADES / 1048576, rr: RENDER_RADIUS, file: EN_ATTENTE_MAX,
+      horizon: RAYON_HORIZON, loin: RAYON_LOIN, brouillard: scene.fog.far, planLointain: camera.far,
       ombres: renderer.shadowMap.enabled, jet: jet && jet.pilote ? jet.pilote.max : null,
       seRange: PALIER_SE_RANGE };
   }, get maillageDistant() { return !!maillageDistant; }, get avatarLocal() { return avatarLocal; }, get vehicules() { return vehicules; }, get passants() { return passants; }, get poissons() { return poissons; }, __archi: ARCHI, __paris: { PARIS: PARIS_ANCRE }, animalManager, edu, cloud, identity, admin, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), __presenceNow: presenceNow, __reprendreMonde: rememberWorld, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
@@ -8365,6 +8493,12 @@ function frame(now) {
   // va à la préparation (corps, programmes, fond de carte)
   horizon.raffinerPermis = running;
   horizon.maj(player.pos.x, player.pos.z, 6);
+  // la couronne lointaine (v497) prend ce que la fine laisse : trois
+  // millisecondes au plus, et rien tant que la fine a des trous à boucher
+  if (horizonLoin) {
+    horizonLoin.sansNY = renduDansManhattan;
+    horizonLoin.maj(player.pos.x, player.pos.z, horizon.complet ? 3 : 0.5);
+  }
   // La découpe se refait à une cadence en TEMPS RÉEL, et tout de suite si le
   // joueur a franchement tourné la tête — sinon le cône de vision découvrirait
   // un quart de seconde de ciel vide au milieu d'un virage.
@@ -8373,6 +8507,12 @@ function frame(now) {
     horizonCap = player.yaw;
     horizon.majDecoupe((cx, cz) => chunkMeshes.has(World.key(cx, cz)),
       player.pos.x, player.pos.z, vise, viseZ);
+    if (horizonLoin) {
+      const tl = performance.now();
+      horizonLoin.majDecoupe((cx, cz) => chunkMeshes.has(World.key(cx, cz)),
+        player.pos.x, player.pos.z, vise, viseZ);
+      horizonLoin.msDecoupe = performance.now() - tl;
+    }
   }
   updateSky(dt);
   updateWeather(dt);
@@ -8429,6 +8569,7 @@ function frame(now) {
   // la visée lit jusqu'à huit blocs devant les yeux : elle se tait tant que
   // le monde autour n'est pas rendu (v436)
   const hit = running && !attenteJoueur && (!world.arriveeEnCours() || mondePretAutour(8)) ? getTarget() : null;
+  if (DIAG) blocVise = hit;
   highlight.visible = !!hit;
   if (hit) highlight.position.set(hit.x + 0.5, hit.y + 0.5, hit.z + 0.5);
 

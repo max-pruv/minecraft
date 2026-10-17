@@ -28,7 +28,8 @@ import { moteurDemarre, moteurRegime, moteurCoupe, radioDemarre, radioCoupe } fr
 import { creerDegats } from './degats3d.js';
 import { sensationsAuVolant, sensationsAPied, reposerVoiture } from './sensations.js';
 import { brancherTraces, avancerTraces, chaufferTraces } from './traces.js';
-import { creerEmbarquement } from './embarquement.js';
+import { creerEmbarquement, ATTENTE_RAME_MIN } from './embarquement.js';
+import { chronoReel } from './cadence.js';
 
 // Le sac (`web-minecraft-bag-v1`), la quête (`web-minecraft-quest-v1`), le
 // coffre (`web-minecraft-chest-v1::…`) et le chantier
@@ -420,10 +421,32 @@ export function initFun(ctx) {
 
   function debarquer(silencieux = false) {
     if (!bord) return;
-    const nom = bord.nom;
-    bord = null;
+    const { nom, id } = bord;
+    bord = null;               // plus à bord dès le premier appui (v489, comme v366)
     player.vel.set(0, 0, 0);
-    if (!silencieux) toast(`🚶 Tu descends du ${nom}.`, 0xd8c9a4);
+    if (silencieux) return;
+    toast(`🚶 Tu descends du ${nom}.`, 0xd8c9a4);
+    // PAR LA PORTE, SI LA RAME EST À QUAI (v489) : sinon l'ancien geste
+    const r = rameDe(id);
+    if (r && r.aQuai) embarquement.descendreRame(r);
+  }
+
+  // LA RAME D'UNE PLACE (v489) : son maillage (par le nom stable de la place,
+  // `clé#rang`, v305) et si elle est À QUAI — la pause qui lui reste au
+  // quai (`attente`, la grille du convoi) couvre toute la séquence. Lu une
+  // fois par appui, jamais par image : `etat()` parcourt tous les convois.
+  function rameDe(id) {
+    const v = getVehicules && getVehicules();
+    if (!v || !v.etat || !v.voitureNommee) return null;
+    const [ci, i] = String(id).split(':').map(Number);
+    const e = v.etat()[ci];
+    if (!e || !e.cle) return null;
+    const mesh = v.voitureNommee(`${e.cle}#${i}`);
+    if (!mesh || !mesh.userData || !mesh.userData.porte) return null;
+    return {
+      mesh, aQuai: e.attente >= ATTENTE_RAME_MIN,
+      encore: () => !!(v.place(id) && v.voitureNommee(`${e.cle}#${i}`) === mesh),
+    };
   }
 
   // ON PREND LE VOLANT, ON NE SE LAISSE PLUS PORTER.
@@ -474,9 +497,17 @@ export function initFun(ctx) {
     if (riding) toggleRide(null);
     // Une voiture se conduit ; un métro se prend.
     if (place.nom === 'voiture' && conduireLaVoiture(place)) return;
-    bord = { id: place.id, nom: place.nom, emoji: place.emoji };
-    toast(`${place.emoji} Tu montes dans le ${place.nom} ! Il t'emmène — appuie encore pour descendre.`, 0xa8d8ff);
-    emojiBurst([place.emoji, '💨'], 8);
+    const aBord = () => {
+      bord = { id: place.id, nom: place.nom, emoji: place.emoji };
+      toast(`${place.emoji} Tu montes dans le ${place.nom} ! Il t'emmène — appuie encore pour descendre.`, 0xa8d8ff);
+      emojiBurst([place.emoji, '💨'], 8);
+    };
+    // PAR LA PORTE, SI LA RAME EST À QUAI (v489) : l'enfant marche jusqu'à la
+    // porte, elle coulisse, il entre — et `bord` ne bascule qu'une fois
+    // dedans. Sinon (rame qui roule, monoplace, `embarq=0`), d'un coup.
+    const r = rameDe(place.id);
+    if (r && r.aQuai && embarquement.monterRame({ ...r, fin: aBord })) return;
+    aBord();
   }
 
   function updateBord() {
@@ -902,15 +933,20 @@ export function initFun(ctx) {
   const PODIUM = { x: PARK.x + 16, z: PARK.z + 20 };
   let parkourDone = false;
 
-  function updatePark(dt) {
-    raceCooldown -= dt;
+  // LE CHRONOMÈTRE DE LA COURSE EST EN TEMPS RÉEL (v483). Il écrit
+  // `records.bestRace`, que Marlon et Alice comparent : compté en `dt` borné,
+  // il récompensait la tablette qui rame (à cinq images par seconde, vingt
+  // secondes de montre en comptaient cinq). Les records déjà écrits ne sont
+  // pas touchés — les remettre à zéro est une décision de Max (`TASKS.md`).
+  function updatePark(dtr) {
+    raceCooldown -= dtr;
     const ds = Math.hypot(player.pos.x - RACE_START.x - 0.5, player.pos.z - RACE_START.z - 0.5);
     const de = Math.hypot(player.pos.x - RACE_END.x - 0.5, player.pos.z - RACE_END.z - 0.5);
     if (raceTime === null && ds < 2.5 && raceCooldown <= 0) {
       raceTime = 0;
       toast('🏁 COURSE ! File jusqu\'au drapeau à damier !', 0x6ee06e);
     } else if (raceTime !== null) {
-      raceTime += dt;
+      raceTime += dtr;
       if (de < 2.5) {
         const t = raceTime;
         raceTime = null; raceCooldown = 5;
@@ -1002,8 +1038,8 @@ export function initFun(ctx) {
   // aucune n'occupe déjà sa place : la boucle passe toutes les trois secondes,
   // et sans cette garde le garage se remplirait à l'infini.
   let garageTimer = 0;
-  function veillerLesGarages(dt) {
-    garageTimer -= dt;
+  function veillerLesGarages(dtr) {
+    garageTimer -= dtr;
     if (garageTimer > 0) return;
     garageTimer = 3;
     const ctxJeu = world.ctx;
@@ -1240,7 +1276,7 @@ export function initFun(ctx) {
     boardB.style.display = bord || v ? 'block' : 'none';
     if (etat && targetRow.style.display === 'none') targetRow.style.display = 'flex';
   }
-  function updateTargetButtons(dt) {
+  function updateTargetButtons(dtr) {
     // DEUX RYTHMES, PAS UN.
     //
     // Chercher la bête devant soi coûte cher : on parcourt tout le bestiaire,
@@ -1268,7 +1304,7 @@ export function initFun(ctx) {
     // vide. L'enfant appuie, rien ne se passe. Et `majBoutonBord` sort tout
     // seul quand l'état n'a pas changé — la garde n'économisait donc rien.
     majBoutonBord(v);
-    targetTimer -= dt;
+    targetTimer -= dtr;   // temps réel : un bouton qui tarde à 3 im/s, l'enfant le rate
     if (targetTimer > 0) return;
     targetTimer = 0.25;
     const a = animalManager.targeted();
@@ -1313,9 +1349,18 @@ export function initFun(ctx) {
   let lastCtxKey = null;
   let derniereMonture = null;
 
+  // CE QUI SE COMPTE EN SECONDES DE LA VRAIE VIE (v483). `dt` est borné à un
+  // vingtième de seconde : à cinq images par seconde, une seconde de jeu en
+  // dure quatre de montre. Une animation suit le jeu ; un chronomètre de
+  // course, un délai, une veille de garage ou le rythme des défis de calcul,
+  // non. Lu à CHAQUE image, en pause comme en jeu : une pause n'entre donc
+  // jamais dans le chronomètre (seuls les tours `isRunning` le dépensent).
+  const chronoFun = chronoReel(2);
+
   function update(dt) {
+    const dtr = chronoFun();
     updateEmotes(dt);
-    if (isRunning()) veillerLesGarages(dt);
+    if (isRunning()) veillerLesGarages(dtr);
     if (!isRunning()) {
       // paused (or back at a menu without a full leaveToMainMenu): the
       // floating buttons must not float on top of the menu underneath
@@ -1340,10 +1385,10 @@ export function initFun(ctx) {
     embarquement.update(dt);   // APRÈS updateRide : la caméra de poursuite est posée, on s'y fond
     updateBord();
     updatePassager();
-    updateTargetButtons(dt);
+    updateTargetButtons(dtr);
     updateTreasure(dt);
-    updatePark(dt);
-    mathTimer -= dt;
+    updatePark(dtr);
+    mathTimer -= dtr;
     if (mathTimer <= 0) {
       mathTimer = 200 + Math.random() * 120;
       if (Math.random() < 0.55) showMathPop();
@@ -1402,6 +1447,8 @@ export function initFun(ctx) {
     // Chez qui l'enfant est passager (ou null) : la position réseau
     // l'emporte, et main.js l'assied sur le siège de la voiture de l'ami.
     passagerDe: () => passager,
+    // à bord d'une rame (ou null) : un témoin lit l'état, pas le texte d'un bouton (v252)
+    bordDe: () => bord,
     monterAvec, vehiculeAmiProche,
     // La bibliothèque de bâtiments vit désormais dans l'inventaire (le +),
     // mais la POSE — devant soi, sol cherché sous chaque colonne, un seul
@@ -1409,6 +1456,10 @@ export function initFun(ctx) {
     poserBati,
     poserMonument,
     decoratePlayersPanel,
+    // La course du parc, EN LECTURE (v483) : le témoin du chronomètre en temps
+    // réel pose l'enfant au départ, puis à l'arrivée, et lit ce qui a compté.
+    courseEtat: () => ({ depart: RACE_START, arrivee: RACE_END, chrono: raceTime,
+      delai: raceCooldown, record: records.bestRace ?? null }),
     onBlockPlaced() {
       records.blocks++;
       saveRecords();
