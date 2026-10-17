@@ -8117,7 +8117,7 @@ function updateHud(dt) {
     + texteBlocVise();
 }
 
-// LE BLOC VISÉ SE NOMME, ET DIT QUI L'A POSÉ (v489). Le nom sous le réticule
+// LE BLOC VISÉ SE NOMME, ET DIT QUI L'A POSÉ (v490). Le nom sous le réticule
 // est celui du bloc EN MAIN ; devant « des trucs bizarres dans Paris » (v295,
 // v298), la question était « qui a posé ÇA ? », et il a fallu le journal de
 // bord pour y répondre. Le monde le sait : un bloc du journal de l'enfant est
