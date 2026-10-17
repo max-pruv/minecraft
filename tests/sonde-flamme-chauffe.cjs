@@ -1,4 +1,4 @@
-// Les programmes nés au premier geste dans un avion (v487) : après la chauffe
+// Les programmes nés au premier geste dans un avion (v491) : après la chauffe
 // de l'accueil, combien de CLÉS de programme neuves pour (1) l'appareil posé,
 // (2) ses flammes allumées, (3) l'épave en feu, (4) l'escalier et l'échelle.
 // Usage : node sonde-flamme-chauffe.cjs <dossier tests>

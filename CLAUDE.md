@@ -777,7 +777,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## La flamme se chauffe (v487) — ce qui naît caché compile à son premier geste
+## La flamme se chauffe (v491) — ce qui naît caché compile à son premier geste
 
 Une règle. three ne compile un programme qu'à la première image où il le
 DESSINE : un objet né invisible (la flamme des réacteurs, v264) compilait dans
@@ -787,6 +787,26 @@ par `chaufferLesFabriquees`, vehicules.js), et son témoin lit les CLÉS après 
 VRAI geste (la manette des gaz aux commandes), vérifié rouge chauffe désarmée.
 Un objet fait de `matiereVivante` (l'escalier, v389) ou des essaims des dégâts
 (l'épave) n'en a pas besoin : mesuré, zéro clé.
+
+## La fiche d'un garage suit ses murs (v487) — ce qui est rangé par position migre avec ses blocs
+
+Deux règles.
+
+- **TOUT CE QUI EST RANGÉ PAR POSITION À CÔTÉ DES BLOCS SUIT LA CHAÎNE DES
+  MARCHES.** Un garage (`garages.js`) est une fiche rangée par son origine ;
+  les marches de la carte emmenaient ses murs et laissaient la fiche. Chaque
+  marche des blocs a sa marche des garages (`suivreGarages*`, world.js), jugée
+  sur les blocs AVANT la marche correspondante : `migrerChaineCarte` les
+  enchaîne pour le nuage, `migrerLesBlocs` pour le stockage (carte 8). Une
+  marche de GROUPES (Paris doublé, fondu doux) se suit par le groupe, jamais
+  par la colonne de l'origine : l'écart entre l'origine et l'ancrage, doublé
+  par le plan, sortirait la voiture du garage. Le prochain objet rangé par
+  position se branche là le jour où il naît.
+- **UNE DATE DE BLOCS REND IDEMPOTENT CE QUI N'A PAS DE DATE.** La fiche n'a
+  pas de date de pose : elle bouge si sa boîte porte des blocs d'avant la date
+  (en avant), ou si elle est vide et que l'arrivée porte la date de la marche
+  (l'orpheline, dont on retrouve le groupe arrivé et son ancrage par le centre
+  arrondi). Dans le doute, elle reste — l'état d'avant, jamais pire.
 
 ## Changi (v486) — une ville qui n'existe que par sa zone n'a pas de terre autour, et un aérodrome neuf ne touche pas aux mondes figés
 
@@ -822,6 +842,7 @@ sa couleur, lancer de rayon (`layers.enableAll()`) à travers chacun —
 `sonde` dans le brouillon de la v484, une exécution. Un effet d'ambiance se
 pose sur le MONDE (le sol, l'eau), jamais sur l'enfant : `BANDE_SAISON`
 (main.js), basse pour feuilles, pétales et lucioles, haute pour la neige.
+
 ## Le parapet sous la voie (v477) — une matière de tablier se lit sous la ligne qui roule
 
 Une règle. Aux coins des anneaux, la voie d'une voiture traversait la bande de
@@ -859,6 +880,16 @@ Deux règles.
   garde son axe au milieu. Un circuit ajouté qui prend un tour à contresens le
   remet à deux voies tout seul — et le témoin le dira s'il touche une façade.
   Élargir la rue aurait changé le sol sous ce que les enfants ont bâti.
+
+## Le bloc visé dit qui l'a posé (v490) — le diagnostic répond à « qui a posé ça ? »
+
+Une règle. `?diag=1` porte une ligne « visé » : le nom du bloc sous le
+réticule, ses coordonnées, et « posé par le jeu » ou « posé à la main » avec
+la date de `world.editTimes` (le journal de l'enfant est la seule origine
+d'un bloc qui n'est pas du générateur). La visée est celle de la surbrillance,
+retenue SEULEMENT sous `DIAG` ; l'identifiant se relit à l'image où l'on écrit
+la ligne, sinon un bloc posé entre deux images se nomme de l'ancien nom (vu à
+la sonde). Le témoin de `monte.js` lit le TEXTE affiché, jamais une variable.
 
 ## Les passages des avenues (v467) — un passage se mesure le long de SA rue
 
@@ -2342,7 +2373,7 @@ fichier** : le diff montre ce qu'on retire à l'autre côté.
 
 Ce qui reste, déclaré dans `TASKS.md` : la vue de la séquence ne se juge que
 sur le banc, pas sur l'iPad ; les amis ne voient pas la porte d'un avion
-s'ouvrir.
+s'ouvrir, ni celle d'une rame (v489).
 
 ## Les coupoles ont leur édifice (v365) — un gabarit partagé se cherche dans toutes les villes, et le ciel se lit sur les modèles
 
@@ -2462,6 +2493,37 @@ celle de la High Roller ne tiendrait pas, et c'est déclaré.
 Et une empreinte d'identité qui change se PROUVE : celle des 490 morceaux
 (v352) couvre Marrakech et Tokyo ; la branche, bâtisseurs neufs désarmés, rend
 l'ancienne au bit près — c'est ce qui a permis de la remplacer.
+
+## On monte dans une rame par sa porte (v489) — la discipline de l'avion, une porte qui coulisse
+
+Trois règles.
+
+- **L'ACCÈS SE DÉCLARE AVEC LE MODÈLE, ET UNE PORTE QUI COULISSE EST UNE
+  TRANSLATION.** `construireRame` (vehicules.js) pose `userData.porte`
+  (`type: 'coulissante'`, membre `porte`, `axe`, `course`, seuil, les deux
+  flancs) ; la porte arrière des deux flancs est UN membre (un appel de dessin
+  de plus par voiture, même matériau, aucune clé neuve), une baie sombre
+  derrière. `coulisser` (embarquement.js) décale le membre, `ouvrant` (l'avion)
+  le fait tourner : deux gestes, une fiche qui dit lequel.
+- **LA SÉQUENCE NE JOUE QUE SI LA RAME EST À QUAI, ET ELLE SE TERMINE SI LA
+  RAME REPART.** fun.js lit la pause qui reste au convoi (`etat()[ci].attente`
+  ≥ `ATTENTE_RAME_MIN`, 2,5 s) et le maillage par le nom stable de la place
+  (`voitureNommee`, `clé#rang`), une fois par appui, sans rien ajouter à
+  `vehicules.js` hors du modèle. Pendant la séquence, une rame qui bouge de
+  plus de `BOUGE_RAME` la termine (à bord, ou posé sur le quai) : la porte ne
+  file jamais sous l'enfant. `bord` ne bascule qu'une fois entré (`fin`), et
+  il est nul dès le premier appui en descendant.
+- **LE QUAI EST PLUS HAUT QUE LE BALLAST.** Une gare pose son quai à 2,7 blocs
+  de la rame (`QUAI_DEDANS`) : on essaie les deux flancs à trois écarts et
+  l'on garde la place la plus HAUTE, la plus proche à hauteur égale, avec un
+  sol plein sous les pieds (`placeQuai` : « vide » est un refus, comme « mur »
+  et « eau »).
+
+Et **un témoin qui attend qu'un métro marque l'arrêt devant l'enfant est un
+tirage** : `sonde-porte-rame.cjs` pose sa propre ligne sur le couloir plat,
+un arrêt tous les vingt blocs et douze secondes de pause (v233). Elle est lue
+par `monte.js`, donc elle n'est pas isolée (`sondeIsolee`) : la retoucher
+rejoue le portail entier.
 
 ## L'arrivée n'engendre plus le monde (v472) — sur le fil principal, on lit ce qui est là, on ne le fabrique pas
 
@@ -3610,6 +3672,18 @@ Les deux rouges réseau récurrents du palier C. Trois règles.
   gain de sortie rendu, plus un niveau au-dessus de la MOITIÉ — milieu entre
   une voix restée au quart (`GAIN_APPEL`) et le régime qui varie ; vérifié
   rouge sur une copie où la voix reste au quart.
+
+## Un service worker vraiment coincé (v488) — un blocage qu'on provoque se fabrique dans le code, pas dans le réseau
+
+Une règle. Les deux témoins de la v220 bloquaient le RÉSEAU (une requête qui
+ne répond pas) : le navigateur finissait toujours par l'épuiser, et l'ancien
+code s'en sortait sans filet — verts des deux côtés. Un `install` dont la
+promesse ne se tient jamais, glissé dans le `sw.js` publié
+(`sonde-sw-coince.cjs`, par `publierVersion`), ne s'épuise pas dans la fenêtre
+du filet. Le témoin juge l'ÉTAT (rechargée, version neuve ou fichiers du
+serveur), et il est rouge sur une copie au filet désarmé comme sur une copie
+où `forcerMaj` attend `unregister()` sans borne. Avant de croire qu'une panne
+« ne se fabrique pas », on cherche la couche où le navigateur n'a pas de délai.
 
 ## Un freinage de la rue se date à l'heure de la rue (v481)
 

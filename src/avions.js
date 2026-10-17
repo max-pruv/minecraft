@@ -305,7 +305,7 @@ function flamme(t) {
   return groupe;
 }
 
-// LA FLAMME SE CHAUFFE À L'ACCUEIL (v487). Ses deux cônes naissent cachés, et
+// LA FLAMME SE CHAUFFE À L'ACCUEIL (v491). Ses deux cônes naissent cachés, et
 // three ne compile un programme qu'à la première image où il est RENDU : le
 // sien se compilait donc dans l'image du premier ✈️ — deux programmes neufs,
 // mesurés après la chauffe de l'accueil (`sonde-flamme-chauffe.cjs`), la

@@ -8501,7 +8501,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         const a = await poser('concorde', 30);
         bouton(); await images(2);
         res.concorde = { porte: a.mesh.userData.porte === undefined ? 'absent' : a.mesh.userData.porte, auVolant: auVolant(), ph: g.player.embarquement ? g.player.embarquement.phase : null };
-        // LA FLAMME EST CHAUFFÉE À L'ACCUEIL (v487) : aux commandes, on pousse
+        // LA FLAMME EST CHAUFFÉE À L'ACCUEIL (v491) : aux commandes, on pousse
         // la manette des gaz comme le premier geste le ferait (`fun.js` allume
         // alors les tuyères), et l'on lit les CLÉS (v363). Chauffe désarmée,
         // deux clés neuves (`sonde-flamme-chauffe.cjs`).
@@ -8549,6 +8549,15 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         g.player.pos.set(x, g.world.terrainHeight(x, z) + 1, z); g.player.vel.set(0, 0, 0);
         await new Promise((r) => setTimeout(r, 4000));
       });
+      juger(await emb.evaluate(passage), verifier);
+    }
+    // ON MONTE DANS UNE RAME PAR SA PORTE (v489). `bord` collait l'enfant au
+    // siège d'un coup. Le passage vit dans `sonde-porte-rame.cjs` (rejouable
+    // seul en trente secondes, rouge sous `EMBARQ=0`) : il pose sa propre
+    // ligne sur le couloir plat, avec une pause à chaque arrêt — on provoque
+    // la rame à quai au lieu de l'attendre (v233).
+    {
+      const { passage, juger } = require('./sonde-porte-rame.cjs');
       juger(await emb.evaluate(passage), verifier);
     }
     verifier('aucune erreur JavaScript pendant l\'embarquement', emb.erreurs.length === 0, JSON.stringify(emb.erreurs));
@@ -8612,6 +8621,42 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       verifier('avec ?diag=1, en roulant, la tablette affiche le trou devant soi et le débit de morceaux',
         !lu.arret && /^roulage : \d+ b\/s · trou devant \d+ blocs · débit \d+ morceaux\/s/.test(lu.ligne),
         JSON.stringify(lu));
+
+      // LE BLOC VISÉ SE NOMME, ET DIT QUI L'A POSÉ (v490). On lit ce que la
+      // tablette affiche, pas une variable : l'enfant regarde le sol à ses
+      // pieds (le jeu l'a écrit), puis le même bloc remplacé par une brique
+      // datée (le journal de l'enfant). Sur l'ancien code la ligne « visé »
+      // n'existe pas : rouge, et le message montre ce qui était affiché.
+      const B = (await import('../src/blocks.js')).BLOCK;
+      const vise = await diagPage.evaluate(async ({ EAU, BRIQUE }) => {
+        const g = window.__game, p = g.player, w = g.world;
+        const patienter = (ms) => new Promise((fin) => {
+          const t0 = performance.now();
+          const tic = () => (performance.now() - t0 < ms ? requestAnimationFrame(tic) : fin());
+          requestAnimationFrame(tic);
+        });
+        const ligne = () => (((document.getElementById('debug') || {}).textContent || '').split('\n').find((l) => l.startsWith('visé')) || '');
+        const bx = Math.floor(p.pos.x), bz = Math.floor(p.pos.z);
+        let by = -1;
+        for (let y = Math.floor(p.pos.y) + 2; y > 0; y--) { const id = w.getBlock(bx, y, bz); if (id !== 0 && id !== EAU) { by = y; break; } }
+        p.pos.set(bx + 0.5, by + 1.05, bz + 0.5); p.vel.set(0, 0, 0); p.flying = true; p.pitch = -Math.PI / 2 + 0.01;
+        const attendre = async (motif) => {
+          const t0 = performance.now(); let l = '';
+          while (performance.now() - t0 < 10000) { await patienter(200); l = ligne(); if (motif.test(l)) break; }
+          return l;
+        };
+        const cible = `(${bx}, ${by}, ${bz})`;
+        const jeu = await attendre(new RegExp('\\(' + bx + ', ' + by + ', ' + bz + '\\)'));
+        const t = new Date(2026, 9, 17, 15, 42).getTime();
+        w.setBlock(bx, by, bz, BRIQUE, t);
+        const main = await attendre(/^visé : Bricks .*posé à la main/);
+        p.flying = false;
+        return { cible, jeu, main };
+      }, { EAU: B.WATER, BRIQUE: B.BRICK });
+      verifier('avec ?diag=1, le bloc visé se nomme et dit qui l\'a posé — le jeu, ou la main avec sa date',
+        vise.jeu.includes(vise.cible) && /· posé par le jeu$/.test(vise.jeu)
+          && vise.main.includes(vise.cible) && vise.main.startsWith('visé : Bricks ') && /· posé à la main le 17\/10\/2026 à 15h42$/.test(vise.main),
+        JSON.stringify(vise));
       await diagPage.close();
     }
 
@@ -8711,7 +8756,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // bouts) et s'y arrêter. Sur l'ancien code il touche à l'aplomb de son
     // départ. La durée de jeu est bornée par une durée de montre (le banc rend
     // quelques images par seconde) et entre dans le message.
-    // CE QUI BORDE LE SEUIL ET CE QUI FLOTTE AU-DESSUS DE LA PISTE (v480).
+    // CE QUI BORDE LE SEUIL ET CE QUI FLOTTE AU-DESSUS DE LA PISTE (v489).
     // Sous node, par la sonde de l'approche (même règle de contact : un bloc
     // dans la boîte de l'avion est un heurt, le sol est sous les roues). Le
     // Concorde venu de l'ouest à Los Angeles entrait dans le mur d'une colonne

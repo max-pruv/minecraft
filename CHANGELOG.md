@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v487 — Les réacteurs s'allument sans à-coup
+## v491 — Les réacteurs s'allument sans à-coup
 
 **Pourquoi.** Les flammes des réacteurs (v264) naissent cachées, et le moteur
 de rendu ne compile un programme qu'à la première image où il le dessine : les
@@ -42,6 +42,116 @@ pousse la manette des gaz, les quatre tuyères s'allument, et l'on lit les CLÉS
 de programme (v363) — zéro neuve ; chauffe désarmée, deux. La sonde
 `sonde-flamme-chauffe.cjs` sépare les quatre cas (appareil, flammes, accès,
 épave) : 0 · 2 · 0 · 0 avant, 0 · 0 · 0 · 0 après.
+
+---
+
+## v490 — Le bloc visé dit qui l'a posé
+
+**Pourquoi.** Devant les constructions suspendues dans le ciel de Paris (v295,
+v298), la seule question qui comptait était « qui a posé ça ? » — et la
+tablette ne savait pas y répondre : le nom sous le réticule est celui du bloc
+EN MAIN, jamais celui qu'on regarde. Il a fallu lire le journal de bord dans le
+nuage pour trancher.
+
+**Ce que ça change.** Avec `?diag=1`, une ligne de plus dans le diagnostic du
+haut de l'écran : « visé : Bricks (x, y, z) · posé à la main le 17/10/2026 à
+15h42 », ou « · posé par le jeu » pour un bloc que le générateur a écrit. Le
+monde le sait déjà : un bloc d'enfant est dans son journal, avec sa date. Hors
+`?diag=1`, rien de plus ne se calcule ni ne s'affiche, et rien n'entre dans le
+quart bas-gauche.
+
+**Ce qui le prouve.** Un témoin de `monte.js`, dans la page `?diag=1` qui
+existait déjà : il lit le texte affiché, sol à ses pieds (« posé par le jeu »)
+puis le même bloc remplacé par une brique datée (« posé à la main » avec la
+date). Rouge sur `origin/main` (aucune ligne « visé »), vert ici.
+
+---
+
+## v489 — On monte dans le métro par sa porte
+
+**Pourquoi.** Dans une voiture (v366) et dans un avion (v389, v400), l'enfant
+marche jusqu'à la porte, elle s'ouvre, il entre. Dans un train ou un métro,
+rien de tout cela : « Monter à bord » le collait au siège d'un coup, et
+« Descendre » le laissait debout là où était le siège, au milieu de la rame.
+La tâche était déclarée depuis la v400 et attendait la porte du modèle.
+
+**Ce que ça change.** Quand la rame est à quai, l'enfant marche jusqu'à la
+porte du flanc où il se trouve (celui du quai), elle coulisse, il entre d'un
+pas, et la porte se referme derrière lui. En descendant, la porte s'ouvre, il
+sort et se pose debout SUR LE QUAI — la place la plus haute et la plus proche
+des deux flancs, jamais dans un mur, jamais dans l'eau, jamais dans le vide.
+Un second appui termine tout de suite (à bord, ou sur le quai). Une rame qui
+roule, ou dont l'arrêt finit avant la séquence, se prend d'un coup, comme
+avant : la porte ne file jamais sous l'enfant, et une rame qui repart pendant
+la séquence la termine.
+
+**Ce qui le prouve.** Quatre témoins dans `monte.js`, sur une page qui joue la
+séquence et une ligne d'essai posée sur le couloir plat — la rame à quai est
+provoquée, pas attendue (`sonde-porte-rame.cjs`, rejouable seule en trente
+secondes) : les phases (marche, ouverture, entrée), « à bord » faux pendant
+toute la marche et vrai seulement une fois dedans, la porte qui coulisse de
+0,86 bloc puis se referme, la descente posée debout à 1,65 bloc du flanc ; le
+second appui et la rame qui roule ; aucun programme compilé, aucun bloc écrit.
+Rouges sous `embarq=0` (l'ancien geste, rejoué au bit près). Ce qui ne se
+juge que sur l'iPad (la vue, une vraie gare, un vrai quai de Washington) est
+dans `TASKS.md`.
+
+---
+
+## v488 — Un service worker vraiment coincé a son témoin
+
+**Pourquoi.** La v220 avait réparé le filet de mise à jour (une minuterie armée
+APRÈS l'installation qu'elle devait sauver) et borné `forcerMaj`, le dernier
+recours, qui attendait `unregister()` derrière l'installation bloquée. Mais rien
+ne gardait ces deux remèdes : les deux témoins écrits alors étaient verts des
+deux côtés, parce que leur blocage finissait toujours par rendre la main et que
+l'ancien code s'en sortait sans filet. C'est la mise à jour de toute la
+famille : si elle se recasse, plus aucune tablette ne reçoit rien.
+
+**Ce que ça change.** Pour la famille, rien de visible : les deux remèdes
+tenaient. Une installation qui ne finit JAMAIS est désormais éprouvée à chaque
+portail : au bout de quarante-cinq secondes la page repart de zéro et tourne sur
+les fichiers du serveur, puis le loader s'efface et « Jouer » est là.
+
+**Ce qui le prouve.** Deux témoins dans `maj.js`, qui appellent
+`sonde-sw-coince.cjs` telle quelle. Le blocage ne s'épuise pas : le service
+worker publié porte un `install` dont la promesse ne se tient jamais (Chromium
+borne un événement à cinq minutes). Mesuré : rechargée à 49,6 s, `main.js`
+redemandé au serveur, l'installation toujours coincée. Vérifiés ROUGES sur deux
+copies : filet désarmé (loader « 126 / 126 fichiers » à jamais) et `forcerMaj`
+sans borne (loader « On va chercher la dernière version… » à jamais).
+
+---
+
+## v487 — La voiture garée suit son garage
+
+**Pourquoi.** Un garage est rangé par sa position. Quand la carte a bougé sous
+les constructions des enfants — les villes qui s'écartent (v242), les toits de
+Paris relevés (v301), Paris doublé et déplacé (v306), le fondu doux (v309) —
+les murs du garage partaient avec leur quartier, mais sa fiche restait à
+l'ancienne adresse : la voiture garée ressortait au milieu de nulle part, et le
+garage arrivé ne la reconnaissait plus. Rien ne dit qu'un enfant en ait posé un
+là (la session ne lit pas les profils) : c'est une promesse qu'on remet debout,
+pas une panne vue.
+
+**Ce que ça change.** La fiche d'un garage, ses places et la voiture qui y dort
+suivent désormais leurs murs, à chaque marche de la carte : d'un seul tenant
+avec le groupe de blocs qui les porte pour Paris doublé et le fondu doux, avec
+leur colonne pour la carte 3 et les toits. Sur un document d'une tablette
+restée en arrière comme sur un appareil qui a déjà emmené les murs sans la
+fiche — dans ce cas la fiche retrouve son groupe à l'arrivée. Un garage posé
+après une refonte ne bouge pas ; dans le doute, la fiche reste où elle était.
+
+**Ce qui le prouve.** Quatre témoins neufs, rouges sur l'ancien code. Trois
+dans `plafond.js`, sous node : un garage de l'ancien Paris arrive au même
+endroit d'un document d'avant et en orpheline, le plancher entier (99 blocs)
+sous sa fiche, sa voiture et sa place au même écart ; un garage posé après la
+date reste, une seconde passe rend le même objet, un document sans garages en
+reste sans ; un garage de Rome suit la carte 3, et un appareil déjà à la
+carte 7 retrouve sa fiche à la migration de stockage (carte 8). Un dans
+`sauvegarde.js`, par la vraie fusion du nuage, pour les deux documents. Et la
+découpe des deux marches de groupes en un plan et une écriture rend, sur un
+document fabriqué, des blocs identiques à l'octet à ceux d'`origin/main`.
 
 ---
 
@@ -291,6 +401,9 @@ gardée par un bloc d'enfant garde son sol tandis que le tunnel passe dessous
 (vérifié rouge garde désarmée). L'empreinte des 490 morceaux est identique
 (Washington en fait partie) et les deux empreintes du relief ne bougent pas :
 creuser n'écrit que des blocs.
+
+---
+
 ## v477 — Les voitures ne roulent plus sur le parapet des ponts
 
 **Pourquoi.** Aux coins des anneaux de circulation des villes engendrées, la
