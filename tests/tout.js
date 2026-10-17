@@ -84,7 +84,7 @@ const GARDIENS = {
   'vendor/humains/fille.glb': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
   'src/net.js': ['reseau.js', 'visio.js', 'hote.js', 'manhattan.js', 'degats.js'],
   'src/nouveautes.js': ['maj.js'],
-  'src/cloud.js': ['reseau.js', 'reglages.js', 'manhattan.js'],
+  'src/cloud.js': ['reseau.js', 'reglages.js', 'manhattan.js', 'parent.js'],
   'src/relaisnuage.js': ['reseau.js'],
   'src/sync.js': ['sauvegarde.js', 'reglages.js', 'manhattan.js'],
   // `monte.js` depuis la v236 : c'est lui qui éprouve l'oubli des morceaux
@@ -191,7 +191,7 @@ const GARDIENS = {
   // vie de rue (fumée + monte) et dans les durées (maj).
   // `education.js` en est client depuis la v234 : ses deux gardiens rejoignent
   // la liste, sinon un changement d'horloge ne réveille pas l'espace parent.
-  'src/cadence.js': ['monte.js', 'maj.js', 'carte.js', 'parent.js', 'reglages.js'],
+  'src/cadence.js': ['monte.js', 'maj.js', 'carte.js', 'parent.js', 'reglages.js', 'manhattan.js', 'degats.js', 'reseau.js'],
   // Le cadran de cap lit le registre et s'affiche aux commandes : la monte le garde.
   'src/cap.js': ['monte.js', 'carte.js'],
   'src/approche.js': ['monte.js', 'carteMonde.js'],

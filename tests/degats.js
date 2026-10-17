@@ -149,6 +149,23 @@ function verifier(nom, ok, detail = '') {
     verifier('le champ réseau rejoue la même voiture chez l\'ami (santé, zones, feu)',
       Math.abs(r.sante - feu.sante) < 0.02 && r.zones.avant === feu.zones.avant && r.eteint === feu.eteint,
       `${JSON.stringify(D.publier(r))} contre ${JSON.stringify(D.publier(feu))}`);
+
+    // AU-DELÀ DE L'HISTOIRE (v474) : quarante chocs moyens de face, plus que
+    // les vingt-quatre que l'ami rejoue. Sur l'ancien code il refaisait la
+    // santé sur les vingt-quatre derniers (0,52) et voyait rouler une voiture
+    // que le conducteur a en panne (0,2) ; la santé et le total voyagent.
+    const longue = D.etatNeuf();
+    for (let i = 0; i < 40; i++) D.subirChoc(longue, { force: 0.5, lx: (i % 5 - 2) * 0.3, lz: -D.DEMI_LONG });
+    const rl = D.depuisReseau(JSON.parse(JSON.stringify(D.versReseau(longue))));
+    verifier('au-delà de l\'histoire (MAX_CHOCS), l\'ami voit la même santé et la même panne que le conducteur, et le même total de chocs',
+      longue.chocs.length === D.MAX_CHOCS && Math.abs(rl.sante - longue.sante) < 0.01 && rl.enPanne === longue.enPanne
+        && longue.enPanne && rl.total === 40,
+      `conducteur ${JSON.stringify(D.publier(longue))} total ${longue.total} · ami ${JSON.stringify(D.publier(rl))} total ${rl.total}`);
+    // et l'histoire courte ne change pas de forme : ni `n` ni `s` (une
+    // tablette restée sur l'ancienne version reçoit le même message)
+    const court = D.versReseau(feu);
+    verifier('… et tant qu\'elle n\'a pas débordé, le message réseau garde sa forme d\'avant (ni total ni santé)',
+      court && !('n' in court) && !('s' in court), JSON.stringify(Object.keys(court || {})));
   }
 
   // ----------------------------------------------------------- dans le jeu
@@ -941,6 +958,49 @@ function verifier(nom, ok, detail = '') {
       !prise.err && prise.memesChocs && prise.sante === prise.santeRue && prise.sante < 1 && prise.froissees > 0
         && prise.publie && prise.publie.sante < 1,
       JSON.stringify(prise));
+
+    // 6 sexies. AU-DELÀ DE VINGT-QUATRE CHOCS, LA TÔLE SE FROISSE ENCORE
+    // (v474). La liste des chocs se borne à `MAX_CHOCS` ; ce qui rejouait
+    // « ce qui n'est pas encore appliqué » comparait sa LONGUEUR, qui ne
+    // grandit plus une fois pleine : sur l'ancien code, trente chocs ne
+    // faisaient que vingt-quatre enfoncements — la voiture qu'on conduit
+    // comme celle de la rue qu'un ami percute (`rue_choc`, ici reçu à la main).
+    const longue = await tab.evaluate(async () => {
+      const g = window.__game, d = g.fun.degats, R = window.__rue, p = g.player;
+      if (!d || !d.chemins) return { err: 'pas de compteur' };
+      const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      const a = g.animalManager.invoquer('voiture', p.pos.x + 8, p.pos.z + 8, false, { flotte: 'ferrari-f40.glb' });
+      const t0 = performance.now();
+      while (performance.now() - t0 < 30000 && !(a && a.mesh.userData.roues)) await dodo(300);
+      if (!a || !a.mesh.userData.roues) return { err: 'pas de modèle' };
+      const versions = (m) => (d.pieces(m) || []).reduce((n, pc) => n + pc.mesh.geometry.attributes.position.version, 0);
+      const e0 = d.chemins().enfoncements;
+      let v24 = 0;
+      for (let i = 0; i < 30; i++) {
+        d.choc(a.mesh, { force: 0.2, lx: (i % 5 - 2) * 0.3, lz: -2.2 });
+        if (i === 23) v24 = versions(a.mesh);
+      }
+      const conduite = { enfoncements: d.chemins().enfoncements - e0, apres24: versions(a.mesh) - v24,
+        chocs: d.etat(a.mesh).chocs.length };
+      g.animalManager.scene.remove(a.mesh);
+      g.animalManager.animals = g.animalManager.animals.filter((b) => b !== a);
+      // une voiture de la rue, dessinée, libre : trente chocs reçus d'un ami
+      let rue = { err: 'pas de rue d\'essai' };
+      if (R && R.conv) {
+        const i = R.conv.elements.findIndex((m, k) => m && m.parent && m.userData.roues && !R.conv.pris.has(k));
+        if (i >= 0) {
+          const m = R.conv.elements[i], nom = `${R.conv.cle}#${i}`;
+          const e1 = d.chemins().enfoncements, deja = d.etat(m) ? d.etat(m).chocs.length : 0;
+          for (let k = 0; k < 30; k++) d.recevoirRue({ o: nom, c: [0.2, (k % 5 - 2) * 0.3, -2.2] });
+          rue = { enfoncements: d.chemins().enfoncements - e1, deja, chocs: d.etat(m) ? d.etat(m).chocs.length : 0 };
+        } else rue = { err: 'aucune voiture de la rue dessinée et libre' };
+      }
+      return { conduite, rue };
+    });
+    verifier('au-delà de vingt-quatre chocs (MAX_CHOCS), la tôle se froisse encore : trente chocs, trente enfoncements — la voiture qu\'on conduit, et celle de la rue qu\'un ami percute',
+      !longue.err && longue.conduite.enfoncements === 30 && longue.conduite.apres24 > 0 && longue.conduite.chocs === 24
+        && !longue.rue.err && longue.rue.enfoncements === 30,
+      JSON.stringify(longue));
 
     verifier('aucune erreur JavaScript de bout en bout', erreurs.length === 0, JSON.stringify(erreurs.slice(0, 4)));
     await tab.close();
