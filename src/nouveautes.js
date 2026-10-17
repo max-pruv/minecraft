@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 478,
+    titre: 'Le métro jusqu’au Pentagone',
+    puces: [
+      'Les rames ne roulent plus dans la roche',
+      'On descend au quai d’Arlington Cemetery',
+      'Et à celui de Pentagon',
+    ],
+  },
+  {
     v: 477,
     titre: 'La route traverse les ponts',
     puces: [

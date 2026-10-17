@@ -20,6 +20,34 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v478 — Le métro de Washington creusé jusqu'au bout
+
+**Pourquoi.** Washington est une BOÎTE, mais la ville s'arrête au cercle du
+registre (187 blocs) : au-delà, le bâtisseur ne passait pas, et le métro
+n'était pas creusé. Mesuré sur `origin/main` : les quais d'Arlington Cemetery
+et de Pentagon étaient de la pierre, 309 points de la Bleue sur 986, 79 de
+l'Orange et de l'Argent, 49 de la Jaune et 20 de la Rouge avaient un bloc
+plein dans le gabarit — les rames roulaient dans la roche, y compris dans les
+tiroirs des terminus, qui font leur demi-tour jusqu'à huit blocs hors de la
+boîte. Et la bouche de Pentagon, si on l'avait creusée telle quelle, serait
+sortie DANS le Pentagone.
+
+**Ce que ça change.** Hors du cercle, le métro seul est creusé — tunnels,
+quais, tiroirs, bouches, jamais une maison. On descend à Arlington Cemetery et
+à Pentagon, et les rames roulent dans leurs tunnels jusqu'au bout. La bouche
+de Pentagon sort à l'air libre au sud de l'esplanade. Là où un enfant a posé
+ou creusé un bloc avant cette version, le métro ne touche pas la surface (on
+ne creuse qu'à trois blocs et plus sous le sol, et l'arbre qui portait une
+cabane reste) ; ses blocs, eux, l'emportent toujours. Les mondes d'avant ne
+changent pas.
+
+**Ce qui le prouve.** Trois témoins neufs dans `washington.js`, rouges sur
+`origin/main` : aucun point de voie des six lignes avec un bloc dans le
+gabarit (309 → 0 pour la Bleue), les vingt quais praticables, et une colonne
+gardée par un bloc d'enfant garde son sol tandis que le tunnel passe dessous
+(vérifié rouge garde désarmée). L'empreinte des 490 morceaux est identique
+(Washington en fait partie) et les deux empreintes du relief ne bougent pas :
+creuser n'écrit que des blocs.
 ## v477 — Les voitures ne roulent plus sur le parapet des ponts
 
 **Pourquoi.** Aux coins des anneaux de circulation des villes engendrées, la
