@@ -86,6 +86,13 @@ travail est irrattrapable.
    se garde et se prouve (`CONF_V308`, empreinte relevée sur `origin/main`).
    Voir « Le fondu doux (v309) ».
 
+   **Elle a servi une ONZIÈME fois, en v486, pour Changi** — et c'est la
+   forme bornée, hors de la fenêtre d'empreinte : l'île de l'aérodrome est la
+   zone à terre de son repère (`box + 30`), rien d'autre. Un témoin de
+   `plafond.js` engendre le pays avec et sans Changi DANS LE MÊME CODE (zéro
+   colonne changée hors de la zone), et la même découpe a été mesurée sur
+   `origin/main` et la branche. Voir « Changi (v486) ».
+
    **Elle a servi une HUITIÈME fois, en v242, pour doubler le monde encore**
    — Max : « la ville de New York touche quasiment Montréal ». Manhattan,
    refaite en v240, est un rectangle de 480 × 2 300 blocs qui laissait 41
@@ -770,7 +777,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## La fiche d'un garage suit ses murs (v486) — ce qui est rangé par position migre avec ses blocs
+## La fiche d'un garage suit ses murs (v487) — ce qui est rangé par position migre avec ses blocs
 
 Deux règles.
 
@@ -789,6 +796,29 @@ Deux règles.
   (en avant), ou si elle est vide et que l'arrivée porte la date de la marche
   (l'orpheline, dont on retrouve le groupe arrivé et son ancrage par le centre
   arrondi). Dans le doute, elle reste — l'état d'avant, jamais pire.
+
+## Changi (v486) — une ville qui n'existe que par sa zone n'a pas de terre autour, et un aérodrome neuf ne touche pas aux mondes figés
+
+Deux règles.
+
+- **LÀ OÙ LE PLANISPHÈRE N'A PAS LA TERRE, L'AÉRODROME LA GAGNE SUR LA MER PAR
+  SA ZONE, ET C'EST TOUTE SA CASSE.** Singapour est un disque de terre au
+  milieu de la mer : la zone à terre de la ville. Un repère a la sienne
+  (`box + 30`) : celle de Changi fait son île, comme le vrai est bâti sur des
+  remblais. Les cinq promesses de la v223 se lisent SUR le monde qui porte la
+  zone (la sonde construit un `World` dont `conf` ajoute le repère) ; mesurées
+  sans elle, elles ne trouvent rien, et c'était la dette. Le prolongement de
+  piste vers le large est une digue dans les bornes du remblai (le fond de la
+  mer est à 21–27, la piste à 35).
+- **UN AÉRODROME NÉ APRÈS UNE CASSE N'ENTRE PAS DANS LE MONDE QUI LA JUGE.**
+  `NES_APRES_V306` (aeroport.js) le retire de `CONF_AVANT` (aérodromes ET
+  repères) : `hauteurBase` et les marches 1 → 2, 2 → 3 et 5 → 6 y lisent les
+  zones d'avant. `CONF_V308`, lui, le PORTE (il lit `AEROPORTS` et
+  `LANDMARKS_V317`, même clé de zones que `CONF_NEUF`) : la marche 6 → 7
+  compare ce monde à celui d'aujourd'hui, à portée du fondu de Singapour, et
+  ne doit y lire que le fondu, jamais l'île. Aucune marche ne déplace donc un
+  bloc à cause de Changi ; ce qu'un enfant aurait posé en mer à cet endroit
+  garde ses coordonnées — dette déclarée dans `TASKS.md`.
 
 ## Les cubes orange du ciel (v484) — ce qui suit la caméra est UN objet, et il se trouve par le pixel
 

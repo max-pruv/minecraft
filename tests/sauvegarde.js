@@ -323,7 +323,7 @@ const BLOCS = 40000;
       copieDFaite, double.absent ? 'Paris n\'a pas doublé'
         : `${double.copie} · ${Date.now() - departCopieD} ms`);
 
-    // ET LA FICHE D'UN GARAGE PART AVEC SES MURS (v486). Un garage posé dans
+    // ET LA FICHE D'UN GARAGE PART AVEC SES MURS (v487). Un garage posé dans
     // l'ancien Paris, une voiture garée dedans : ses blocs partaient avec le
     // quartier, sa fiche (rangée par position) restait à l'ancienne adresse,
     // et la voiture ressortait là. Deux documents reçus : celui d'une tablette

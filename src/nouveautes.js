@@ -6,11 +6,19 @@
 
 export const NOUVEAUTES = [
   {
-    v: 486,
+    v: 487,
     titre: 'La voiture suit son garage',
     puces: [
       'Ta voiture garée reste dans son garage',
       'Même quand la carte a bougé dessous',
+    ],
+  },
+  {
+    v: 486,
+    titre: 'Un aéroport à Singapour',
+    puces: [
+      'Changi est né sur la mer',
+      'Deux longues pistes au bord de l\'eau',
     ],
   },
   {

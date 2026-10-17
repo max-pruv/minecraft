@@ -6,7 +6,7 @@ import { aUnModeleHD, porteeHD } from './paris-monuments-hd.js';
 import { echelleDe, etirerBatisseur } from './echelle-monuments.js';
 import { carrefoursDeVoies } from './voies.js';
 import { idGarage, CLE_GARAGES } from './garages.js';
-import { buildAeroport, buildAerodrome, AEROPORTS, AEROPORTS_AVANT_V306, tronconsDePiste } from './aeroport.js';
+import { buildAeroport, buildAerodrome, AEROPORTS, AEROPORTS_AVANT_V306, NES_APRES_V306, tronconsDePiste } from './aeroport.js';
 import {
   USINE, hauteurUsine, solUsine, buildUsine, buildParcUsine, dansLUsine,
 } from './usine.js';
@@ -1363,7 +1363,7 @@ const LANDMARKS_V317 = [
   { name: 'Château médiéval', x: CASTLE.x, z: CASTLE.z, box: 30, build: buildCastle },
   { name: 'Base martienne', x: MARS.x, z: MARS.z, box: 26, build: buildBaseMartienne },
   { name: 'Château de Villandry', x: VILLANDRY.x, z: VILLANDRY.z, box: 80, build: buildVillandry },
-  // Les dix-neuf aérodromes. Roissy garde son bâtisseur à lui — le tambour de
+  // Les vingt aérodromes. Roissy garde son bâtisseur à lui — le tambour de
   // 1974 et ses sept satellites ne ressemblent à aucun autre aéroport au monde ;
   // les dix-huit autres passent par le bâtisseur générique, qui lit leur profil.
   // LA BOÎTE SUIT LE DISQUE PAVÉ, ET IL A GRANDI EN v280. La plate-forme est
@@ -1539,6 +1539,8 @@ const PLACES_AVANT = PLACES.map((p) => (p === GAULOIS ? GAULOIS_AVANT : p === VO
 const NOMS_MONUMENTS_PARIS = new Set(['Tour Eiffel', 'Arc de Triomphe', 'Pyramide du Louvre', 'Panthéon',
   'Invalides', 'Opéra', 'Montparnasse', 'Bastille', 'Moulin Rouge', 'Sacré-Cœur', 'Notre-Dame']);
 const AEROPORT_AVANT = new Map(AEROPORTS_AVANT_V306.map((a) => [a.nom, a]));
+// Les aérodromes nés après la v306 (Changi, v486) ne sont pas dans ce monde-là.
+const NES_APRES_V306_NOMS = new Set(AEROPORTS.filter((a) => NES_APRES_V306.has(a.cle)).map((a) => a.nom));
 function repereAvant(lm) {
   if (NOMS_MONUMENTS_PARIS.has(lm.name) && Math.hypot(lm.x - PARIS.x, lm.z - PARIS.z) < PARIS.r) {
     if (lm.name === 'Notre-Dame') return { ...lm, x: PARIS_AVANT_POS.x + PARIS_V302.CITE.u, z: PARIS_V302.zCite() };
@@ -1572,7 +1574,7 @@ export const CONF_NEUF = {
 export const CONF_V308 = { ...CONF_NEUF, reperes: LANDMARKS_V317, fonduDoux: false, mursDeQuai: false, falaises: false, villesAvant: true, climat: false, sansTrameLondres: false, metroParis: false };
 export const CONF_AVANT = {
   cle: 'avant-v306', villes: CITIES_AVANT, aeroports: AEROPORTS_AVANT_V306, gaulois: GAULOIS_AVANT,
-  volcan: VOLCANO_AVANT, places: PLACES_AVANT, reperes: LANDMARKS_V317.map(repereAvant),
+  volcan: VOLCANO_AVANT, places: PLACES_AVANT, reperes: LANDMARKS_V317.filter((lm) => !NES_APRES_V306_NOMS.has(lm.name)).map(repereAvant),
   hauteurParis: PARIS_V302.hauteurParis, parisAvant: true, fonduDoux: false, villesAvant: true,
 };
 
@@ -1733,7 +1735,7 @@ export function hauteurBase(x, z, mondeId = 'terre') {
 // la date de la refonte, pour qu'aucune passe ne le redéplace et pour qu'il
 // l'emporte sur sa copie d'avant. C'est la règle du receveur qui cède :
 // l'ancienne version ne peut pas apprendre la règle neuve.
-export const CARTE_VERSION = 8;   // 4 : le ménage du ciel de Paris (v298) ; 5 : les toits de Paris relevés (v301) ; 6 : Paris doublé (v306) ; 7 : le fondu doux des villes (v309) ; 8 : les fiches des garages suivent leurs blocs (v486)
+export const CARTE_VERSION = 8;   // 4 : le ménage du ciel de Paris (v298) ; 5 : les toits de Paris relevés (v301) ; 6 : Paris doublé (v306) ; 7 : le fondu doux des villes (v309) ; 8 : les fiches des garages suivent leurs blocs (v487)
 const CLE_CARTE = 'web-minecraft-carte-v1';
 const ECART_MAX = 24;          // au-delà, on ne déplace plus : on laisse et on dit
 // L'heure de la refonte ×2. Un bloc daté d'avant a été posé sur la carte de
@@ -2293,7 +2295,7 @@ export function migrerParisDouble(map) {
 
 // Les groupes que la marche 5 → 6 emmène, et où : [[groupe, d]], un groupe
 // étant une liste de [x, y, z, clé]. Séparé de la migration pour que la fiche
-// d'un garage (v486) suive exactement le groupe de ses blocs.
+// d'un garage (v487) suive exactement le groupe de ses blocs.
 function planParisDouble(map) {
   const cle3 = (x, y, z) => ((x + 131072) * 256 + y) * 262144 + (z + 131072);
   const candidats = new Map();      // clé -> [x, y, z, k] : touchable, d'avant la date
@@ -2567,7 +2569,7 @@ export function releverPositionsParis(pos) {
   return { pos: out, deplaces };
 }
 
-// LA FICHE D'UN GARAGE SUIT SES BLOCS (v486).
+// LA FICHE D'UN GARAGE SUIT SES BLOCS (v487).
 //
 // Un garage est une ligne de sauvegarde rangée par POSITION (`garages.js`) :
 // son origine, sa boîte, ses places, et la voiture qui y dort. Les quatre
@@ -2844,7 +2846,7 @@ export function migrerLesBlocs(lire, ecrire, lirePos = null, ecrirePos = null) {
     }
   }
 
-  // 7 → 8 : les fiches des garages (v486). Chaque marche des garages juge
+  // 7 → 8 : les fiches des garages (v487). Chaque marche des garages juge
   // sur les blocs tels qu'ils étaient AVANT la marche des blocs qu'elle suit :
   // sur un appareil qui n'a pas encore migré, la fiche part avec son groupe ;
   // sur un appareil qui a migré sans elle, elle retrouve ses murs.
