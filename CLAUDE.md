@@ -777,7 +777,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Les commandes simplifiées (v493) — une main pour bouger, une main pour agir
+## Les commandes simplifiées (v494) — une main pour bouger, une main pour agir
 
 Max : simplifier les commandes en jeu, puis sur la maquette « plus de
 transparence, moins de texte ». Cinq règles.
@@ -819,6 +819,23 @@ transparence, moins de texte ». Cinq règles.
   VISUELLEMENT caché — jamais `display: none`, que des témoins lisent. Cette
   décision annule « chaque bouton porte son mot » (v265) : c'est Max qui l'a
   prise, sur la maquette.
+
+## On entre dans Sainte-Sophie (v493) — un monument visitable se choisit sur la carte du MONDE
+
+Deux règles.
+
+- **ON CARTOGRAPHIE LE MONDE BÂTI, PAS LE BÂTISSEUR, AVANT DE CHOISIR.** Le
+  Colisée se lisait très bien dans `monuments.js` (arcades, arène, gradins) ;
+  la carte ASCII des colonnes praticables autour du repère, dans le monde, a
+  montré l'inverse : ses trous sont des blocs NON POSÉS (`c.blocs.delete`), donc
+  la ville passe à travers — des immeubles dans l'arène —, et l'emprise du
+  catalogue, onze fois trop grande, contient le Forum. Déclaré dans `TASKS.md`.
+- **UN MONUMENT VISITABLE GARDE SON DEHORS AU BLOC PRÈS.** On vide l'intérieur
+  (`AIR` posé, jamais un bloc retiré) dans le `tour`, jamais dans le `build`
+  que lisent les mondes figés ; la table d'étirement fait la hauteur de la nef
+  (couches 1 à 5 → 1 à 11 à Sainte-Sophie). Retirer des cellules pleines aux
+  couches 1 à 3 peut ouvrir un anneau de voitures (`contreUnMonument`) : on
+  compare `anneauxDeVille` avant et après (identiques ici).
 
 ## La flamme se chauffe (v491) — ce qui naît caché compile à son premier geste
 

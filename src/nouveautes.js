@@ -6,12 +6,20 @@
 
 export const NOUVEAUTES = [
   {
-    v: 493,
+    v: 494,
     titre: 'Des commandes plus simples',
     puces: [
       'Un seul menu en haut à droite',
       'Construire devient un bouton à part',
       'Des boutons transparents, sans texte',
+    ],
+  },
+  {
+    v: 493,
+    titre: 'On entre dans Sainte-Sophie',
+    puces: [
+      'Entre par la grande porte, à Istanbul',
+      'Lève la tête sous la coupole',
     ],
   },
   {
