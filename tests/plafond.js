@@ -1967,7 +1967,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     };
     const sol = (q) => q !== BLOCK.AIR && q !== BLOCK.WATER && q !== BLOCK.LOG && q !== BLOCK.BIRCH && q !== BLOCK.LEAVES;
     const lire = (sites) => {
-      const r = { colonnes: 0, herbe: 0, roche: 0, neige: 0, forme: 0, arbres: 0, arbresSans: 0, pins: 0, palmiers: 0, oliviers: 0, parasols: 0, teints: 0, sommets: 0 };
+      const r = { colonnes: 0, herbe: 0, roche: 0, neige: 0, forme: 0, arbres: 0, arbresSans: 0, pins: 0, palmiers: 0, oliviers: 0, parasols: 0, acacias: 0, teints: 0, sommets: 0 };
       for (const [lat, lon] of sites) {
         const p = point(lat, lon);
         for (let cx = 0; cx < 4; cx++) for (let cz = 0; cz < 4; cz++) {
@@ -1987,6 +1987,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
             if (arbre && arbre.kind === 3) r.palmiers++;
             if (arbre && arbre.kind === 5) r.oliviers++;
             if (arbre && arbre.kind === 4) r.parasols++;
+            if (arbre && arbre.kind === 6) r.acacias++;
           }
           // la teinte : les sommets d'herbe que le mailleur a colorés
           if (cx === 1 && cz === 1) {
@@ -2008,6 +2009,9 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     // LE CLIMAT MÉDITERRANÉEN (v469) : l'Andalousie, la Toscane, le
     // Péloponnèse, la vallée centrale de Californie
     const mediterranee = lire([[37.6, -4.2], [43.1, 11.4], [37.5, 22.3], [37.2, -120.3]]);
+    // LA SAVANE (v485) : le Serengeti, la Zambie, le Cerrado, le Top End,
+    // la savane soudanienne du nord du Ghana
+    const savane = lire([[-2.3, 34.8], [-14.5, 27.5], [-13, -50], [-15.5, 133], [10.5, -1.5]]);
     // le Kansas, témoin de la campagne tempérée : rien n'y est teint
     const kansas = lire([[38.5, -98.5]]);
     // LE RACCOURCI DU MORCEAU : un climat déclaré certain pour un morceau
@@ -2041,7 +2045,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         for (let y = h + 1; y <= h + 9; y++) { if (m.getBlock(x, y, z) === sans.getBlock(x, y, z)) garde.pareil++; else garde.autres++; }
       }
     }
-    return { toundra, taiga, steppe, tropiques, mediterranee, kansas, certains, desaccords, garde };
+    return { toundra, taiga, steppe, tropiques, mediterranee, savane, kansas, certains, desaccords, garde };
   })();
   verifier('dans la toundra, du lichen, de la roche nue et la neige plus bas, presque sans arbre (Nunavut, Iamalie, Sibérie arctique)',
     climats.toundra.colonnes > 2000 && climats.toundra.forme === 0 && climats.toundra.roche + climats.toundra.neige >= climats.toundra.colonnes * 0.05
@@ -2065,6 +2069,11 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       && climats.mediterranee.parasols > 0 && climats.mediterranee.oliviers + climats.mediterranee.parasols >= climats.mediterranee.arbres * 0.9
       && climats.mediterranee.teints >= climats.mediterranee.sommets * 0.3,
     JSON.stringify(climats.mediterranee));
+  verifier('dans la savane, l\'herbe dorée et des acacias isolés, presque sans bois ; la même forme bloc pour bloc (Serengeti, Zambie, Cerrado, Top End, Ghana)',
+    climats.savane.colonnes > 2000 && climats.savane.forme === 0 && climats.savane.acacias > 0
+      && climats.savane.acacias >= climats.savane.arbres * 0.6 && climats.savane.arbres * 2 <= climats.savane.arbresSans
+      && climats.savane.teints >= climats.savane.sommets * 0.3,
+    JSON.stringify(climats.savane));
   verifier('le climat certain d\'un morceau est celui de toutes ses colonnes',
     climats.certains > 3000 && climats.desaccords === 0, `${climats.certains} morceaux certains, ${climats.desaccords} colonnes en désaccord`);
   verifier('là où un enfant a bâti avant la règle, les arbres d\'avant restent',
@@ -2341,7 +2350,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     !double.absent && double.bati === 0 && double.lotBati,
     double.absent ? 'Paris n\'a pas doublé' : `autour de la maison : ${double.bati} bloc(s) de ville · lot après la date bâti : ${double.lotBati}`);
 
-  // --- LA FICHE D'UN GARAGE SUIT SES BLOCS (v478) ------------------------
+  // --- LA FICHE D'UN GARAGE SUIT SES BLOCS (v486) ------------------------
   //
   // Un garage est rangé par POSITION (`garages.js`). Les marches de la carte
   // emmenaient ses murs et laissaient sa fiche : la voiture garée ressortait
@@ -2796,6 +2805,37 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     verifier('une baie soudée dessine les mêmes triangles, des mêmes valeurs, bit à bit',
       res.every((x) => x.ok && x.coins > 0) && res.some((x) => x.sommets.split('→')[0] !== x.sommets.split('→')[1]),
       JSON.stringify(res));
+  }
+
+  // LE SOL SE SOUDE AUSSI (v482). Le sol HD reste fabriqué pour TOUT le disque
+  // de Paris — la tuile plate et la rue du loin ne changent pas d'un pixel
+  // (v296) — et c'était, mesuré sur le disque entier, 69 Mo de tampons sur
+  // 1 754 morceaux : un sommet sur quatre y est le double d'un autre (le coin
+  // commun de deux pavés, de deux bandes de marquage). Même preuve que les
+  // baies : le POIDS baisse d'un cinquième au moins contre `solSoude: false`
+  // (sur l'ancien code l'option n'existe pas, les deux pèsent pareil : rouge),
+  // et chaque coin de chaque triangle garde ses dix-huit mots, bit à bit.
+  {
+    const { memesTriangles } = await import('./sonde-baies.mjs');
+    const { World, CHUNK } = await import('../src/world.js');
+    const { buildChunkTampons } = await import('../src/mesher.js');
+    const { positionDe } = await import('../src/mondes.js');
+    const P = positionDe('paris'), w = new World(); w.hd = 1;
+    const c0x = Math.floor(P.x / CHUNK), c0z = Math.floor(P.z / CHUNK), R = Math.ceil(P.r / CHUNK);
+    const o = (t) => t ? Object.values(t).reduce((n, v) => n + (v.byteLength || 0), 0) : 0;
+    let neuf = 0, vieux = 0, lus = 0, coins = 0, ecarts = 0, fautes = 0;
+    const t0 = Date.now();
+    for (let dx = -R; dx <= R; dx += 4) for (let dz = -R; dz <= R; dz += 4) {
+      const a = buildChunkTampons(w, c0x + dx, c0z + dz, { detail: false }).sol;
+      if (!a) continue;
+      const b = buildChunkTampons(w, c0x + dx, c0z + dz, { detail: false, solSoude: false }).sol;
+      lus++; neuf += o(a); vieux += o(b);
+      const m = memesTriangles(a, b); coins += m.coins; ecarts += Math.max(0, m.ecarts); if (!m.ok) fautes++;
+    }
+    const Mo = (x) => (x / 1048576).toFixed(2);
+    verifier('le sol HD se soude : un cinquième de moins, les mêmes triangles des mêmes valeurs',
+      lus > 50 && neuf < 0.8 * vieux && fautes === 0 && coins > 0,
+      `${lus} morceaux, ${Mo(vieux)} → ${Mo(neuf)} Mo, ${coins} coins, ${fautes} morceau(x) en écart (${ecarts} coins), ${Date.now() - t0} ms`);
   }
 
   // UNE BAIE, PAS DEUX (v457). Les villes engendrées posaient deux blocs

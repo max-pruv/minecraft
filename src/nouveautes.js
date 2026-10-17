@@ -6,11 +6,77 @@
 
 export const NOUVEAUTES = [
   {
-    v: 478,
+    v: 486,
     titre: 'La voiture suit son garage',
     puces: [
       'Ta voiture garée reste dans son garage',
       'Même quand la carte a bougé dessous',
+    ],
+  },
+  {
+    v: 485,
+    titre: 'La savane',
+    puces: [
+      'Herbe dorée en Afrique et au Brésil',
+      'Des acacias plats comme des parasols',
+      'Le nord de l\'Australie aussi',
+    ],
+  },
+  {
+    v: 484,
+    titre: 'Un ciel sans cubes orange',
+    puces: [
+      'Les feuilles d\'automne restent près des arbres',
+      'Plus de carrés orange autour de l\'avion',
+    ],
+  },
+  {
+    v: 483,
+    titre: 'Le chrono dit vrai',
+    puces: [
+      'La course compte les vraies secondes',
+      'Les animaux arrivent même quand ça rame',
+    ],
+  },
+  {
+    v: 482,
+    titre: 'Paris plus léger',
+    puces: [
+      'Le sol de Paris prend moins de mémoire',
+      'Rien ne change à l\'écran',
+    ],
+  },
+  {
+    v: 481,
+    titre: 'Les feux mieux surveillés',
+    puces: [
+      "L'essai du feu lit l'heure de la rue",
+      'Plus de faux coups de frein comptés',
+    ],
+  },
+  {
+    v: 480,
+    titre: 'L’avion évite le mur',
+    puces: [
+      'Se poser à Los Angeles ne cogne plus',
+      'L’avion survole les arbres au-dessus des pistes',
+    ],
+  },
+  {
+    v: 479,
+    titre: 'Le journal se range seul',
+    puces: [
+      'Les vieux journaux sans panne s’effacent',
+      'Les plantages restent pour les parents',
+    ],
+  },
+  {
+    v: 478,
+    titre: 'Le métro jusqu’au Pentagone',
+    puces: [
+      'Les rames ne roulent plus dans la roche',
+      'On descend au quai d’Arlington Cemetery',
+      'Et à celui de Pentagon',
     ],
   },
   {
