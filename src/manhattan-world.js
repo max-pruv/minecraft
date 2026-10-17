@@ -34,7 +34,7 @@ export const lieuxManhattan = LIEUX.map((q) => ({
   ...q,
   ...versTerre(q.x, q.z),
 }));
-// LIBERTY ISLAND EST UN OUVRAGE, PAS UN RELIEF (v488). Hors du rectangle,
+// LIBERTY ISLAND EST UN OUVRAGE, PAS UN RELIEF (v496). Hors du rectangle,
 // `terrainHeight` reste celui de la Terre (la baie, à 23) ; l'île et sa statue
 // sont des blocs écrits par `generateChunk` — la règle des pistes (v280) et de
 // la voie ferrée (v213) : l'invariant 1 tient par construction.

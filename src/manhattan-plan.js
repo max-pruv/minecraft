@@ -520,7 +520,7 @@ export function circuitsManhattan() {
   return traces;
 }
 
-// ---- LIBERTY ISLAND (v488) ----------------------------------------------
+// ---- LIBERTY ISLAND (v496) ----------------------------------------------
 // L'EMPLACEMENT SE MESURE (v223) : la statue de l'ancienne Manhattan (v186)
 // est restée dans `world.js` à (-64, 177) — sous le Midtown du plan d'aujourd'hui,
 // enterrée par `TerreUrbaine`. Sa vraie place se demande au PLAN : une
@@ -635,7 +635,7 @@ export function statueLiberte(set) {
   }
 }
 
-// ---- LES FEUX DE MANHATTAN (v488) -----------------------------------------
+// ---- LES FEUX DE MANHATTAN (v496) -----------------------------------------
 // LA MÊME RÈGLE QUE LE RESTE DU MONDE (`feux.js`, v273, v274) : un feu a un
 // AXE, et cet axe se lit dans sa POSITION (`axeDuFeu`). Quatre feux par
 // carrefour, un par coin, sur le trottoir : les coins en diagonale regardent

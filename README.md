@@ -55,8 +55,10 @@ rendering budgets, licensing and limitations.
   are all built with the Web Audio API, and the car radio plays three original
   stations written in scale degrees. One audio context for the whole game; the
   🔊 setting suspends it outright.
-- **Mobile support** — virtual joystick, drag-to-look, tap to mine/build with a
-  ⛏️/🧱 mode toggle, and jump/fly buttons.
+- **Mobile support** — one hand to move, one to act: a virtual joystick on the
+  left, a contextual action pill and at most three round buttons on the right,
+  and a single ☰ menu (bag, photos, friends, learn, settings, home) that pauses
+  the game. Building is a mode you switch on, with Place and Break buttons.
 - **Friendly NPCs** — Marlon, a child with a rigged, textured model who follows you
   around and chats in French, and Professeur Cornichon, who hosts the quiz.
 - **Educational mode** (always on — it cannot be disabled) — Professeur
@@ -174,8 +176,9 @@ the invariants a change must not break.
 | Esc | Pause |
 
 On touch devices: left thumb summons a joystick, right thumb looks around,
-tap mines or builds (⛏️/🧱 button toggles which), and the on-screen buttons
-handle jumping and flying.
+and the round buttons handle jumping, flying and building. Tapping the screen
+only mines or builds in Build mode (its button, then Place or Break); the ☰
+menu in the top-right corner pauses and gathers everything else.
 
 In a car the joystick is both accelerator and steering wheel — push forward to
 speed up, pull back to brake and then reverse — and the walking buttons step

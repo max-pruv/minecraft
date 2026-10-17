@@ -49,7 +49,16 @@ export function partagerTout(objet) {
   objet.traverse((o) => {
     if (o.geometry) partager(o.geometry);
     const m = o.material;
-    if (Array.isArray(m)) m.forEach(partager); else if (m) partager(m);
+    // ET LES TEXTURES DE SES MATÉRIAUX (v495) : un matériau cloné partage
+    // sa carte avec le prototype, et `liberer` rend la carte d'un matériau
+    // qu'il rend — sans cette marque, une voiture repeinte qui s'en va
+    // emportait la texture de tout son modèle.
+    const marquer = (mat) => {
+      if (!mat) return;
+      partager(mat);
+      for (const k in mat) { const t = mat[k]; if (t && t.isTexture) partager(t); }
+    };
+    if (Array.isArray(m)) m.forEach(marquer); else marquer(m);
   });
   return objet;
 }

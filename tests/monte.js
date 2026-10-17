@@ -11,6 +11,7 @@
 //     cd tests && npm install && npm run monte
 
 const { Banc, dormir, souffler } = require('./banc.js');
+const { passage: passageRendre, juger: jugerRendre } = require('./sonde-rendre-convois.cjs');
 const { mesurerSensations } = require('./sensations-mesure.js');
 const { mesurerTraces } = require('./traces-mesure.js');
 const { mesurerDeriveDessinee } = require('./derive-mesure.js');
@@ -5495,6 +5496,32 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !rendu.err && rendu.nees >= 5 && rendu.prises >= 20 && rendu.perdues <= 10,
       `barre 10 géométries perdues · ${JSON.stringify(rendu)}`);
 
+    // LES VOITURES DE LA RUE SE RENDENT QUAND L'ENFANT S'EN VA (v495).
+    //
+    // La pousse de mémoire qui restait après la v238 venait des convois : une
+    // voiture de la rue naît à la demande (v235) et n'était JAMAIS détruite —
+    // cachée au-delà de sa portée, elle restait en scène pour la session.
+    // Mesuré (`sonde-memoire-convois.cjs`) après quatre villes, loin de tout :
+    // 132 voitures, 3 595 maillages, aucune visible.
+    //
+    // UNITAIRE, ET SUR LE MÉCANISME DU JEU (v238). On laisse Rome fabriquer ses
+    // voitures, on écoute la fin de vie de chaque géométrie qu'elles portent,
+    // puis on part loin et l'on laisse `montrer` décider. On compte ce que les
+    // voitures possèdent EN PROPRE — pas ce qu'elles tiennent du prototype de
+    // la flotte, marqué partagé — et l'on exige deux choses : tout ce qui est à
+    // elles est rendu, et RIEN du prototype ne l'est (sinon toutes les voitures
+    // du modèle repartiraient à la carte graphique). Puis l'on revient : la rue
+    // se refait, la grille horaire n'a pas bougé (v305).
+    await souffler();
+    const convois = await passageRendre(ciel);
+    // BORNES DE GARDE (v237) : la mesure a eu lieu — au moins quatre voitures,
+    // quelques géométries à elles — et se pose loin sous le relevé. Le verdict
+    // ne tolère rien : ce qu'une voiture possède part avec elle, rien du
+    // prototype ne part, aucune voiture partie ne reste en scène, et la rue
+    // revient quand on revient.
+    verifier('les voitures de la rue rendent leur mémoire quand on s\'en va',
+      jugerRendre(convois), JSON.stringify(convois));
+
     // LA MINICARTE NE RESTE PLUS EN ARRIÈRE PENDANT QU'ON VOLE (v233).
     //
     // Max, capture en vol : « pas dingue la carte en retard ». Mesuré à la
@@ -6270,7 +6297,10 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 400)); }
         await new Promise((f) => setTimeout(f, 300));
         const vis = (id) => getComputedStyle(document.getElementById(id)).display;
-        return { saut: vis('jump-btn'), pioche: vis('mode-btn'), gaz: vis('gaz-base'), barre: vis('hotbar'), frein: document.getElementById('fm-btn') ? vis('fm-btn') : 'none', gazJoueur: g.player.gaz, auVolant: auVolant() };
+        // LES COMMANDES SIMPLIFIÉES : à pied, la pioche et la barre de blocs ne
+        // reviennent qu'en construction ; c'est le bouton Construire qui revient.
+        const outil = document.getElementById('construire-btn') ? 'construire-btn' : 'mode-btn';
+        return { saut: vis('jump-btn'), pioche: vis(outil), outil, gaz: vis('gaz-base'), barre: outil === 'mode-btn' ? vis('hotbar') : 'block', frein: document.getElementById('fm-btn') ? vis('fm-btn') : 'none', gazJoueur: g.player.gaz, auVolant: auVolant() };
       });
       const journal = await tab.evaluate(() => {
         const P = window.__game.player, j = window.__journalPiste;
@@ -8501,6 +8531,16 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         const a = await poser('concorde', 30);
         bouton(); await images(2);
         res.concorde = { porte: a.mesh.userData.porte === undefined ? 'absent' : a.mesh.userData.porte, auVolant: auVolant(), ph: g.player.embarquement ? g.player.embarquement.phase : null };
+        // LA FLAMME EST CHAUFFÉE À L'ACCUEIL (v491) : aux commandes, on pousse
+        // la manette des gaz comme le premier geste le ferait (`fun.js` allume
+        // alors les tuyères), et l'on lit les CLÉS (v363). Chauffe désarmée,
+        // deux clés neuves (`sonde-flamme-chauffe.cjs`).
+        const avantFlamme = cles(), tuyeres = a.mesh.userData.tuyeres || [];
+        g.player.gaz = 0.4;
+        await images(6);
+        res.flamme = { tuyeres: tuyeres.length, allumees: tuyeres.filter((f) => f.visible).length,
+          cles: [...cles()].filter((k) => !avantFlamme.has(k)).map((k) => k.slice(0, 24)) };
+        g.player.gaz = null;
       }
       await descendre(); vider();
       g.player.pilote = null; g.player.avionEtat = undefined; g.player.avionEnVol = undefined; g.player.flying = false;
@@ -8521,6 +8561,8 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       verifier('monter dans un avion ne compile aucun programme et n\'écrit aucun bloc',
         r.clesNeuves === 0 && r.blocs === 0 && r.avionligne && r.avionligne.clesNeuves === 0,
         JSON.stringify({ cles: r.clesNeuves, blocs: r.blocs, parAvion: [r.avionligne && r.avionligne.clesNeuves, r.chasseur && r.chasseur.clesNeuves] }));
+      verifier('allumer les réacteurs ne compile aucun programme : la flamme est chauffée à l\'accueil',
+        r.flamme && r.flamme.allumees > 0 && r.flamme.cles.length === 0, JSON.stringify(r.flamme));
     }
     // ON DESCEND D'UN AVION PAR SON ESCALIER (v400). Les avions descendaient
     // d'un coup, au milieu du fuselage. Le passage vit dans
@@ -8537,6 +8579,15 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         g.player.pos.set(x, g.world.terrainHeight(x, z) + 1, z); g.player.vel.set(0, 0, 0);
         await new Promise((r) => setTimeout(r, 4000));
       });
+      juger(await emb.evaluate(passage), verifier);
+    }
+    // ON MONTE DANS UNE RAME PAR SA PORTE (v489). `bord` collait l'enfant au
+    // siège d'un coup. Le passage vit dans `sonde-porte-rame.cjs` (rejouable
+    // seul en trente secondes, rouge sous `EMBARQ=0`) : il pose sa propre
+    // ligne sur le couloir plat, avec une pause à chaque arrêt — on provoque
+    // la rame à quai au lieu de l'attendre (v233).
+    {
+      const { passage, juger } = require('./sonde-porte-rame.cjs');
       juger(await emb.evaluate(passage), verifier);
     }
     verifier('aucune erreur JavaScript pendant l\'embarquement', emb.erreurs.length === 0, JSON.stringify(emb.erreurs));
@@ -8600,6 +8651,42 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       verifier('avec ?diag=1, en roulant, la tablette affiche le trou devant soi et le débit de morceaux',
         !lu.arret && /^roulage : \d+ b\/s · trou devant \d+ blocs · débit \d+ morceaux\/s/.test(lu.ligne),
         JSON.stringify(lu));
+
+      // LE BLOC VISÉ SE NOMME, ET DIT QUI L'A POSÉ (v490). On lit ce que la
+      // tablette affiche, pas une variable : l'enfant regarde le sol à ses
+      // pieds (le jeu l'a écrit), puis le même bloc remplacé par une brique
+      // datée (le journal de l'enfant). Sur l'ancien code la ligne « visé »
+      // n'existe pas : rouge, et le message montre ce qui était affiché.
+      const B = (await import('../src/blocks.js')).BLOCK;
+      const vise = await diagPage.evaluate(async ({ EAU, BRIQUE }) => {
+        const g = window.__game, p = g.player, w = g.world;
+        const patienter = (ms) => new Promise((fin) => {
+          const t0 = performance.now();
+          const tic = () => (performance.now() - t0 < ms ? requestAnimationFrame(tic) : fin());
+          requestAnimationFrame(tic);
+        });
+        const ligne = () => (((document.getElementById('debug') || {}).textContent || '').split('\n').find((l) => l.startsWith('visé')) || '');
+        const bx = Math.floor(p.pos.x), bz = Math.floor(p.pos.z);
+        let by = -1;
+        for (let y = Math.floor(p.pos.y) + 2; y > 0; y--) { const id = w.getBlock(bx, y, bz); if (id !== 0 && id !== EAU) { by = y; break; } }
+        p.pos.set(bx + 0.5, by + 1.05, bz + 0.5); p.vel.set(0, 0, 0); p.flying = true; p.pitch = -Math.PI / 2 + 0.01;
+        const attendre = async (motif) => {
+          const t0 = performance.now(); let l = '';
+          while (performance.now() - t0 < 10000) { await patienter(200); l = ligne(); if (motif.test(l)) break; }
+          return l;
+        };
+        const cible = `(${bx}, ${by}, ${bz})`;
+        const jeu = await attendre(new RegExp('\\(' + bx + ', ' + by + ', ' + bz + '\\)'));
+        const t = new Date(2026, 9, 17, 15, 42).getTime();
+        w.setBlock(bx, by, bz, BRIQUE, t);
+        const main = await attendre(/^visé : Bricks .*posé à la main/);
+        p.flying = false;
+        return { cible, jeu, main };
+      }, { EAU: B.WATER, BRIQUE: B.BRICK });
+      verifier('avec ?diag=1, le bloc visé se nomme et dit qui l\'a posé — le jeu, ou la main avec sa date',
+        vise.jeu.includes(vise.cible) && /· posé par le jeu$/.test(vise.jeu)
+          && vise.main.includes(vise.cible) && vise.main.startsWith('visé : Bricks ') && /· posé à la main le 17\/10\/2026 à 15h42$/.test(vise.main),
+        JSON.stringify(vise));
       await diagPage.close();
     }
 
@@ -8699,7 +8786,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // bouts) et s'y arrêter. Sur l'ancien code il touche à l'aplomb de son
     // départ. La durée de jeu est bornée par une durée de montre (le banc rend
     // quelques images par seconde) et entre dans le message.
-    // CE QUI BORDE LE SEUIL ET CE QUI FLOTTE AU-DESSUS DE LA PISTE (v480).
+    // CE QUI BORDE LE SEUIL ET CE QUI FLOTTE AU-DESSUS DE LA PISTE (v489).
     // Sous node, par la sonde de l'approche (même règle de contact : un bloc
     // dans la boîte de l'avion est un heurt, le sol est sous les roues). Le
     // Concorde venu de l'ouest à Los Angeles entrait dans le mur d'une colonne

@@ -324,7 +324,7 @@ export class ManhattanRenderer {
     this.frames = [];
     this.lastFrame = 0;
     this.stats = { buildings: BATIMENTS.length, quality: this.quality };
-    // LES OPTIQUES ALLUMÉES DES FEUX (v488) : trois essaims, un par couleur,
+    // LES OPTIQUES ALLUMÉES DES FEUX (v496) : trois essaims, un par couleur,
     // réécrits deux fois par seconde par `feuxAutour` — la même horloge et la
     // même règle (`feux.js`) que les voitures et les passants qui s'y arrêtent.
     this.feuxVifs = ["signalRouge", "signalOrange", "signal"].map((m) => {
@@ -1097,7 +1097,7 @@ export class ManhattanRenderer {
         lot.sign(0, x + 5, NIVEAU + 4.9, z + 4.8, 3, 0.55);
         lot.sign(1, x + 5, NIVEAU + 4.25, z + 4.8, 2, 0.5, Math.PI / 2);
       }
-    // les feux, aux quatre coins de chaque carrefour du plan (v488)
+    // les feux, aux quatre coins de chaque carrefour du plan (v496)
     for (const f of feuxSecteur(cx, cz))
       if (this.world.groundAllowed(f.x, f.z)) this.feu(lot, f);
     for (let x = x0 + 6; x < x0 + 64; x += 16)
@@ -1155,7 +1155,7 @@ export class ManhattanRenderer {
       }
     return lot.finish();
   }
-  // LA STATUE VUE DE LA BATTERY (v488). L'île est à deux cent cinquante blocs
+  // LA STATUE VUE DE LA BATTERY (v496). L'île est à deux cent cinquante blocs
   // du bout de Manhattan, au-delà de la portée des morceaux de monde : sans sa
   // silhouette, on ne la verrait que de tout près. Chaque pièce est un peu
   // PLUS PETITE que les blocs de `statueLiberte` (plan) : quand les morceaux
@@ -1261,7 +1261,7 @@ export class ManhattanRenderer {
     );
     this.player.yaw = this.realPlayer.yaw;
     // l'île est hors du rectangle : sans elle, marcher sur sa pointe sud
-    // ferait basculer l'éclairage de la ville à chaque pas (v488)
+    // ferait basculer l'éclairage de la ville à chaque pas (v496)
     const active =
       dansManhattan(actual.x, actual.z, 180) ||
       dansBoiteLiberte(actual.x, actual.z, 60);

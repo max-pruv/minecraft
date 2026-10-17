@@ -214,7 +214,7 @@ function verifier(nom, ok, detail = "") {
         preuves.routes.collisions === 0,
       JSON.stringify(preuves.routes),
     );
-    // ---- LA STATUE DE LA LIBERTÉ SUR LIBERTY ISLAND (v488) ----------------
+    // ---- LA STATUE DE LA LIBERTÉ SUR LIBERTY ISLAND (v496) ----------------
     // Celle de l'ancienne Manhattan (v186) était restée à (-64, 177) dans
     // `world.js`, c'est-à-dire sous le Midtown du plan d'aujourd'hui, enterrée
     // par `TerreUrbaine` ; et la carte y envoyait l'enfant. Le témoin REFAIT la
@@ -299,7 +299,7 @@ function verifier(nom, ok, detail = "") {
       JSON.stringify(liberte),
     );
 
-    // ---- LES FEUX COMMANDENT LA CIRCULATION DE MANHATTAN (v488) -----------
+    // ---- LES FEUX COMMANDENT LA CIRCULATION DE MANHATTAN (v496) -----------
     // Les feux de Manhattan étaient des potences de décor, toujours vertes, et
     // `reglerLesFeux` ne tournait pas dans la ville : aucune voiture ne s'y
     // arrêtait, aucun passant n'y traversait (`passagePieton` rendait null).
@@ -423,7 +423,7 @@ function verifier(nom, ok, detail = "") {
           c += Math.hypot(h.pos.x - px, h.pos.z - pz);
           px = h.pos.x; pz = h.pos.z;
         }
-        // DEPUIS LA v488 un passant attend au feu : l'attente et la traversée
+        // DEPUIS LA v496 un passant attend au feu : l'attente et la traversée
         // se comptent en temps RÉEL, qui n'avance pas dans cette boucle
         // synchrone — il resterait au bord pour toujours. Il n'entre pas
         // dans le débit, et l'on dit combien.
@@ -509,8 +509,13 @@ function verifier(nom, ok, detail = "") {
           ville: [...vr.buildings.values()].reduce((n, x) => n + (x.userData.instances || 0), 0) };
       }, hit);
       const geometrieAvant = avant.ville;
+      // LES COMMANDES SIMPLIFIÉES : toucher l'écran ne casse qu'en construction.
+      await p.evaluate(() => { if (window.__commandes) { window.__commandes.construire(true); window.__commandes.outil(true); } });
       await p.touchscreen.tap(350, 230);
       await dormir(1400);
+      // et l'on referme la construction : elle cache la pilule d'action, que
+      // le témoin du taxi attend plus bas (le portail l'a dit).
+      await p.evaluate(() => { if (window.__commandes) window.__commandes.construire(false); });
       verifier(
         "le geste tactile détruit le bloc visé",
         await p.evaluate(
@@ -583,9 +588,18 @@ function verifier(nom, ok, detail = "") {
       return { vu, ms: Date.now() - t0 };
     };
     const avant = await p.evaluate(() => __game.world.edits.size);
-    await p.locator("#mode-btn").tap();
+    // LES COMMANDES SIMPLIFIÉES : la pioche est devenue « Poser » et
+    // « Casser », visibles en construction (le témoin d'avant basculait
+    // `#mode-btn` de casser à poser).
+    // Le bouton s'appuie par le document : à 0,4 image par seconde, `tap`
+    // attend deux images identiques (v427).
+    const avecCommandes = await p.evaluate(() => !!window.__commandes);
+    if (avecCommandes) {
+      await p.evaluate(() => { window.__commandes.construire(true); document.getElementById("poser-btn").click(); });
+    } else await p.locator("#mode-btn").tap();
     await p.touchscreen.tap(350, 230);
     await dormir(400);
+    if (avecCommandes) await p.evaluate(() => window.__commandes.construire(false));
     verifier(
       "le geste tactile construit sur la Terre",
       await p.evaluate((n) => __game.world.edits.size > n, avant),
