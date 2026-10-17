@@ -165,7 +165,7 @@ export async function empreinteJournal(src) {
       h.update(c); h.update(Buffer.from(d.buffer, d.byteOffset, d.byteLength)); morceaux++;
     }
   };
-  // bosquets désarmés (v488) : un contenu neuf, pas un chemin d'écriture
+  // bosquets désarmés (v503) : un contenu neuf, pas un chemin d'écriture
   const w = new World(); w.conf = { ...w.conf, clairieres: false };
   w.installerEdits(m, t, 'local');
   lire(w);
