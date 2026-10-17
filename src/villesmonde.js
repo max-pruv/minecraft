@@ -1864,7 +1864,7 @@ function buildSaintMarc(poser) {
 // de quarante fenêtres, et les quatre minarets ottomans. Elle reste au sud de
 // Topkapi.
 //
-// ET ELLE SE VISITE (v474), sur la méthode du Panthéon de Rome (v458). Le
+// ET ELLE SE VISITE (v488), sur la méthode du Panthéon de Rome (v458). Le
 // dehors est celui d'avant au bloc près — seul l'intérieur passe à l'air. On
 // entre de plain-pied par l'ouest (y = 0, la porte de trois blocs dans
 // l'exonarthex puis dans le mur du narthex), les bas-côtés sont voûtés à la

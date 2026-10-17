@@ -537,7 +537,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       r.trouve && r.place && r.centre && r.ciel && r.voute, JSON.stringify(r));
   }
 
-  // --- ON ENTRE DANS SAINTE-SOPHIE (v474) ------------------------------------
+  // --- ON ENTRE DANS SAINTE-SOPHIE (v488) ------------------------------------
   // La même marche que le Panthéon de Rome : depuis la place à l'ouest, de
   // proche en proche, un sol plein et deux blocs d'air au-dessus, sans sauter
   // une marche, jusqu'au centre de la nef sous la coupole (le centre de la
