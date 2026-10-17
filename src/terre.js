@@ -311,7 +311,7 @@ const CLIMATS = [
   ['mediterranee', 'australie-sud-ouest', [114.8, -28, 116.5, -29, 117.5, -31.5, 119, -33.5, 118, -35, 116, -35,
     115, -34.3, 115.5, -32, 114.8, -29.5]],
   ['mediterranee', 'adelaide', [137.5, -33, 139, -33.2, 139.5, -35, 138.5, -35.8, 136.5, -35.8, 137.5, -34.5]],
-  // LA SAVANE (v478) : les hautes herbes dorées de la saison sèche et les
+  // LA SAVANE (v485) : les hautes herbes dorées de la saison sèche et les
   // arbres isolés, entre les forêts humides et les steppes. La bande
   // soudanienne (sous le Sahel, de la Casamance au Nil Blanc), les savanes
   // d'Afrique de l'Est (Serengeti, Masai Mara, Ouganda), le miombo et le
@@ -397,7 +397,7 @@ export function climatCertain(lat, lon, marge) {
 // Le climat méditerranéen (v469) → (165, 150, 72), l'herbe sèche de l'été,
 // plus olive que la paille de la steppe ; le feuillage gris-vert des
 // oliviers (110, 128, 90) — à (82, 110, 62) il sortait presque noir en capture.
-// La savane (v478) → (200, 172, 78), l'or des hautes herbes sèches, plus
+// La savane (v485) → (200, 172, 78), l'or des hautes herbes sèches, plus
 // chaud et plus jaune que la steppe ; le feuillage des acacias (86, 120, 44).
 export const CLIMATS_TEINTES = ['', 'toundra', 'taiga', 'steppe', 'tropiques', 'mediterranee', 'savane'];
 export const INDICE_CLIMAT = { toundra: 1, taiga: 2, steppe: 3, tropiques: 4, mediterranee: 5, savane: 6 };
