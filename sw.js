@@ -99,6 +99,7 @@ const ASSETS = [
   './src/gaulois.js',
   './src/espace.js',
   './src/ville.js',
+  './src/metromonde.js',
   './src/circuit.js',
   './src/circulation.js',
   './src/vehicules.js',

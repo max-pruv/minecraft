@@ -20,6 +20,42 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v474 — La ligne A du métro passe sous Rome
+
+**Pourquoi.** Aucune des deux cent soixante villes engendrées n'avait de
+métro : le creuseur de Washington et de Paris ne savait lire qu'un plan écrit à
+la main, et une ville engendrée n'a qu'une fiche. La tâche était déclarée
+depuis les trains intervilles.
+
+**Ce que ça change.** Rome a sa ligne A, l'orange, de Cipro à Re di Roma :
+douze stations aux vraies latitudes et longitudes (Ottaviano, Flaminio,
+Spagna, Barberini, Repubblica, Termini, San Giovanni…), un passage sous le
+Tibre, des quais carrelés avec la plaque rouge et la bande jaune, deux voies et
+un tiroir à chaque bout. Douze bouches sur le trottoir : un escalier de deux
+blocs de large qui descend jusqu'au quai, sa rambarde et le mât rouge au « M »
+blanc. Cinq rames, une toutes les vingt-six secondes, trois secondes à chaque
+quai. Rien ne bouge au-dessus de la rue : ni le relief, ni un immeuble, ni un
+feu, ni ce que les enfants ont bâti.
+
+Rome a été choisie par la mesure, parmi les trois villes que la tâche
+nommait : relief plat sous toute la ligne, 4 % d'eau, aucun monument près d'une
+station. Tokyo a ses stations de la Ginza à huit blocs l'une de l'autre (moins
+qu'un quai), Berlin a la Spree le long de la U5 et quatre monuments sur ses
+stations.
+
+**Ce qui le prouve.** Quatre témoins neufs, rouges sur la v473 (aucune ville
+engendrée n'avait de métro). Sous node (`plafond.js`, par
+`sonde-metro-monde.mjs`) : de chacune des douze bouches on descend au quai case
+par case ; le passage des rames est libre sur 1 467 points ; le Tibre reste
+plein ; et le monde DÉSARMÉ, comparé bloc à bloc au-dessus de la rue autour de
+chaque bouche, ne diffère que sur le trottoir — zéro bloc sur la chaussée, zéro
+dans le passage d'un circuit, zéro trou sous une voiture, zéro feu retiré. Les
+vingt-quatre arrêts de la rame sont au droit des quais. Au banc (`metro.js`) :
+cinq rames de la ligne A roulent, chacune marque ses vingt-quatre arrêts.
+L'empreinte des 490 morceaux (Rome est un des neuf lieux) change, et désarmée
+(`METRO_MONDE.actif = false`) la branche rend celle de la v473 au bit près ;
+les deux empreintes du relief ne bougent pas.
+
 ## v473 — La ligne 1 du métro passe sous Paris
 
 **Pourquoi.** Paris n'avait plus de métro. L'anneau souterrain de la v163 a

@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 474,
+    titre: 'Le métro sous Rome',
+    puces: [
+      'La ligne A orange passe sous Rome',
+      'Douze stations, de Cipro à Re di Roma',
+      'Cherche le mât rouge au M blanc',
+    ],
+  },
+  {
     v: 473,
     titre: 'Le métro sous Paris',
     puces: [

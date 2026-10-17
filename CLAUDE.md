@@ -933,6 +933,41 @@ Trois règles.
   Ce qui touche la rue ne se pose que sur du trottoir : un témoin le lit sur
   le monde, contre les vingt circuits de Paris.
 
+## La ligne A sous Rome (v474) — un métro de ville engendrée lit sa fiche, et sa bouche suit la trame
+
+`src/metromonde.js` : la méthode de la v473, pour une ville qui n'a qu'une
+fiche. Une ligne de plus est une entrée de `LIGNES_DEF` (ville, stations en
+lat/lon réelles, teinte). Quatre règles.
+
+- **LA VILLE SE CHOISIT PAR LA MESURE, PAS PAR LA RENOMMÉE.** Stations dans le
+  disque, espacement en blocs, relief et eau sous l'emprise, monuments à moins
+  de `box + 14` d'une station : Tokyo (20 blocs/km) mettait ses stations à
+  huit blocs l'une de l'autre, Berlin avait la Spree et quatre monuments sur
+  la U5. La sonde se refait avant la prochaine ville.
+- **UN TROTTOIR ENGENDRÉ FAIT DEUX BLOCS ET DEMI : L'ESCALIER EN FAIT DEUX, ET
+  IL SUIT LA TRAME.** Une trémie de trois ne tenait sur aucun trottoir (six
+  stations sur douze sans bouche, toutes pour cette raison : `L.refus`). Les
+  directions candidates sont la ligne, sa perpendiculaire et les deux axes de
+  la trame ; ce qui touche la rue se compte COLONNE PAR COLONNE avec la règle
+  même du creuseur (`colonnesHautes`) — un échantillonnage par points laisse
+  passer la colonne de lot du bord.
+- **UN COIN DE CARREFOUR N'EST PAS UN TROTTOIR COMME UN AUTRE.** Un anneau de
+  voitures y coupe le virage, carrosserie sur le trottoir (une rambarde à 1,2
+  bloc de la voie d'un circuit, mesuré) : une colonne qui voit de la chaussée
+  selon les deux axes de la trame ne reçoit ni trémie, ni rambarde, ni mât. Et
+  jamais rien sur un feu (`RUE.FEUX`, que la circulation lit).
+- **UN CALCUL PUR ET CHER SE FAIT AU PREMIER MORCEAU QUI LE DEMANDE.** Le choix
+  des bouches coûte deux cents millisecondes ; au chargement du module, le jeu
+  les payait derrière « Jouer » et le worker aussi. `L.bouches` est un
+  accesseur : la zone d'une ligne (`ZONES`) le déclenche avant de creuser.
+  Pur, donc le worker et le fil principal trouvent les mêmes bouches.
+
+La preuve compare le monde DÉSARMÉ (`METRO_MONDE.actif = false`) bloc à bloc
+au-dessus de la rue (`sonde-metro-monde.mjs`) ; les deux mondes se lisent
+chacun sous SON réglage, parce qu'un morceau s'engendre à la première lecture
+et que l'interrupteur est celui du module — ma première sonde comparait deux
+mondes armés et rendait « zéro bloc posé ».
+
 ## La rue sans à-coups (v453) — le bus a une place, un circuit se prépare, une suiveuse freine
 
 Quatre sujets, une livraison. Cinq règles.

@@ -46,6 +46,7 @@ import { createVehicules, lancerReflets, avancerReflets, refletsVoiture, chauffe
 import { decor, voirTout } from './couches.js';
 import { contexteAudio, sortieAudio, reglerSon, sonActif, etatSon, radioEnCours, generationAudio } from './sons.js';
 import { traceAnneau, traceLigne1Paris, arretsLigne1Paris } from './ville.js';
+import { LIGNES_MONDE, traceLigneMonde } from './metromonde.js';
 import { traceCourse } from './circuit.js';
 import { USINE, PARC, traceChaine, POSTES, posteSousLesPieds } from './usine.js';
 import { circulationsAPlier, tracesCirculationMain, avenueDEntree, villeMondeEn } from './villesmonde.js';
@@ -2146,6 +2147,17 @@ function updateChunks() {
     nb: 4, vitesse: 10, rames: 8, pause: 3, arretsIndex: arretsLigne1Paris(),
     souterrain: true,
   });
+  // Les métros des villes engendrées (v474, metromonde.js), après la ligne 1 :
+  // la ligne A de Rome, douze stations de Cipro à Re di Roma. Un tour fait près
+  // de six cents blocs (deux voies et les tiroirs) à dix blocs par seconde, plus
+  // vingt-quatre arrêts de trois secondes : 130 s, cinq rames, 26 s d'attente.
+  for (const L of LIGNES_MONDE) {
+    vehicules.metro(traceLigneMonde(L), {
+      nom: L.def.nom, emoji: L.def.emoji, teinte: L.def.teinte,
+      nb: 3, vitesse: 10, rames: 5, pause: 3, arretsIndex: L.arrets,
+      souterrain: true,
+    });
+  }
 })();
 
 // --- block highlight -----------------------------------------------------------

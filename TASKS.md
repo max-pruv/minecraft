@@ -7417,7 +7417,20 @@ l'embarquement a eu lieu, pas par une hypothèse.
   l'autre sens.
 
 - [ ] **Les métros des grandes villes générées** — le creuseur de Washington
-  sait faire ; après les trains intervilles.
+  sait faire ; après les trains intervilles. **Rome fait (v474, la ligne A,
+  `src/metromonde.js`).** La suite, et ce qui reste déclaré :
+  - les autres villes : une entrée de `LIGNES_DEF`. Refaire d'abord la sonde
+    de choix (espacement, eau, monuments). Tokyo (20 blocs/km) ne tient pas
+    une station par vraie station de la Ginza (huit blocs) : une station sur
+    deux, ou un quai plus court — décision de contenu. Berlin : la U5 longe la
+    Spree et passe sous quatre monuments, à mesurer contre leurs boîtes.
+  - une construction d'enfant posée sur le trottoir AVANT la v474, là où
+    s'ouvre désormais une trémie, garde ses blocs (réappliqués) mais peut
+    surplomber le trou — comme à Paris (v473). Rien ne le mesure encore.
+  - aucun témoin de banc ne prend la rame de Rome (descente, montée, station
+    suivante) : `metro.js` vérifie les cinq rames et leurs arrêts ; le trajet
+    se prouve sous node. Le trajet complet coûterait une téléportation à Rome
+    et ~45 s de jeu dans une suite qui a déjà celui de Paris.
 
 - [ ] **Le tour du monde, approfondissements** — DEUX CENT SOIXANTE-DIX-HUIT
   lieux au registre (v173) : Londres à la main, les autres par la machine.
