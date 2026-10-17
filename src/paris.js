@@ -31,7 +31,7 @@
 // villes, avec ses îlots, ses cours et sa ligne de corniche.
 
 import { BLOCK, CITY_BLOCK, DECOR_START, ARCHI } from './blocks.js';
-import { rangerVoies, solDesVoies, fabriqueCircuits, contournerRonds, contournerBlocs, circuitSurRue, densifierCircuit } from './voies.js';
+import { rangerVoies, solDesVoies, fabriqueCircuits, contournerRonds, contournerBlocs, circuitSurRue, densifierCircuit, chainerVoies } from './voies.js';
 import { positionDe } from './mondes.js';
 import { entreesDe } from './routes.js';
 import { sectionDeRue } from './voirie.js';
@@ -718,7 +718,67 @@ const RONDS = LIEUX.filter((p) => p.r).map((p) => ({ u: p.u, v: p.v, r: p.r - an
 // Mesuré, écrit, retiré. Symétrique, le tour garde ses choix de côté.
 const TOURS = SOCLES.filter((p) => p.tour)
   .map((p) => ({ u: p.u, v: p.v, hu: p.bu + AXE_TOUR + 0.5, hv: p.bv + AXE_TOUR + 0.5 }));
-export const contournerPlaces = (pts) => contournerBlocs(contournerRonds(pts, RONDS), TOURS);
+
+// ET LA VOITURE ROULE À DROITE DE L'AXE, PAS SUR L'AXE (v475). Depuis la v395
+// un convoi d'avenue roule à `VOIE_DE_DROITE` blocs à droite du tracé (main.js,
+// `DECALAGE_AVENUE`, appliqué par `decalerADroite`). Le tour d'un monument fait
+// quatre blocs : axé à son milieu, la voiture de la voie extérieure en sort de
+// 0,93 bloc côté −, et son aile entre dans la vitrine d'en face. Mesuré sur le
+// tracé que la voiture roule vraiment : vingt et un pas de carrosserie dans
+// les façades du tour de l'Opéra, six dans celles des Invalides — que le
+// témoin, qui lisait l'AXE, ne pouvait pas voir (zéro). Deux voies de 2,26
+// blocs ne tiennent pas dans quatre ; élargir le tour, c'est changer le sol
+// de la ville sous ce que les enfants ont bâti. Ce qui tient, c'est que tous
+// les circuits qui font le tour d'un même monument le font DANS LE MÊME SENS
+// (mesuré : l'Opéra, le Louvre, la Tour Eiffel, les Invalides, la Bastille) :
+// on déplace alors l'axe de ce qu'il faut pour que la voiture reste dans la
+// rue. Le socle à droite (la Bastille), l'axe sort de `VOIE_DE_DROITE` et la
+// voiture roule au milieu. Le socle à gauche, seuls les côtés − rentrent : la
+// rue s'y arrête un bloc plus tôt (colonnes entières, v325) ; côté +, la
+// voiture tient déjà. MON PREMIER JET rentrait les quatre côtés : le virage
+// resserré autour de l'Opéra coûtait sa jumelle au circuit de Rivoli (deux
+// voies sur les boulevards : 446 blocs → 260, `sonde-rue-dense.cjs
+// boulevards`), et le portail l'a dit. Un tour que
+// deux circuits prennent en sens contraires (l'Arc, Montparnasse) garde son
+// axe au milieu : deux voies, une par sens, et c'est ce qu'il lui faut.
+export const VOIE_DE_DROITE = 1.3;
+// Le sens d'un tour : +1 si le socle est à DROITE de la marche (la voie de
+// droite est alors du côté du monument), −1 s'il est à gauche. La droite d'une
+// direction (fx, fz) est (−fz, fx) (v271).
+function sensDesTours(pts) {
+  const sens = new Map();
+  for (const t of TOURS) {
+    const sur = (p) => Math.abs(Math.max(Math.abs(p[0] - t.u) - t.hu, Math.abs(p[1] - t.v) - t.hv)) < 1e-6;
+    let o = 0;
+    for (let k = 0; k < pts.length; k++) {
+      const a = pts[k], b = pts[(k + 1) % pts.length];
+      if (!sur(a) || !sur(b)) continue;
+      o += Math.sign((b[0] - a[0]) * (t.v - a[1]) - (b[1] - a[1]) * (t.u - a[0]));
+    }
+    if (o) sens.set(t, Math.sign(o));
+  }
+  return sens;
+}
+const contournerAxes = (pts) => contournerBlocs(contournerRonds(pts, RONDS), TOURS);
+const SENS_TOURS = new Map();
+for (const noms of CIRCUITS) {
+  const pts = chainerVoies(VOIES, noms);
+  if (!pts) continue;
+  for (const [t, s] of sensDesTours(contournerAxes(pts))) SENS_TOURS.set(t, SENS_TOURS.has(t) && SENS_TOURS.get(t) !== s ? 0 : s);
+}
+const TOURS_VOIE = TOURS.map((t) => {
+  const s = SENS_TOURS.get(t) || 0;
+  if (s > 0) return { ...t, hu: t.hu + VOIE_DE_DROITE, hv: t.hv + VOIE_DE_DROITE };
+  if (s < 0) {
+    // seuls les côtés − rentrent : leur rue finit un bloc plus tôt
+    const d = VOIE_DE_DROITE / 2;
+    return { u: t.u + d, v: t.v + d, hu: t.hu - d, hv: t.hv - d };
+  }
+  return t;
+});
+export const SENS_TOURS_PARIS = LIEUX.filter((p) => p.socle && !p.sansTour)
+  .map((p, i) => ({ nom: p.nom, sens: SENS_TOURS.get(TOURS[i]) || 0 }));
+export const contournerPlaces = (pts) => contournerBlocs(contournerRonds(pts, RONDS), TOURS_VOIE);
 
 export const circuitsParis = fabriqueCircuits({
   cle: 'paris', ancre: PARIS, chaines: CIRCUITS, roulant: ROULANT,

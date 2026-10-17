@@ -5437,6 +5437,32 @@ export function coteDeVille(f) {
   return Math.floor(f.sol || 33);
 }
 
+// `reglageParapets.voie` à faux rejoue les parapets d'avant la v477, au bit
+// près : c'est ce que lit l'empreinte des 490 morceaux (plafond.js). Jamais un
+// réglage du jeu.
+export const reglageParapets = { voie: true };
+const cleColonne = (X, Z) => X * 1048576 + Z;
+// Les colonnes que parcourt la ligne d'une voie de cette ville — la règle du
+// témoin de carteMonde.js, au demi-bloc, `Math.floor`. Pure fonction des
+// anneaux de la ville : le worker et le fil principal tirent la même.
+const VOIES_COLONNES = new WeakMap();
+function colonnesDeVoie(f, a) {
+  let s = VOIES_COLONNES.get(a);
+  if (s) return s;
+  s = new Set();
+  const t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
+  for (const forme of a.formes) {
+    const pts = forme.pts.map(([P, Q]) => [f.ancre.x + P * co + Q * si, f.ancre.z + (-P * si + Q * co)]);
+    for (let i = 0; i < pts.length; i++) {
+      const [ax, az] = pts[i], [bx, bz] = pts[(i + 1) % pts.length];
+      const m = Math.ceil(Math.hypot(bx - ax, bz - az) / 0.5);
+      for (let k = 0; k < m; k++) s.add(cleColonne(Math.floor(ax + (bx - ax) * k / m), Math.floor(az + (bz - az) * k / m)));
+    }
+  }
+  VOIES_COLONNES.set(a, s);
+  return s;
+}
+
 // Ce point est-il sur un tablier de cette ville ? Rend le bloc à poser —
 // bitume au milieu, pierre aux parapets — ou `null`.
 function pontDeVille(f, u, v, allongement = true) {
@@ -5479,7 +5505,18 @@ function pontDeVille(f, u, v, allongement = true) {
     // au premier regard, refais-le » : une route posée sur l'eau sans rien
     // dessous n'est pas un pont. Une pile tous les sept blocs, sous l'axe.
     const pile = d < 1.5 && ((Math.round(le) % 7) + 7) % 7 === 0;
-    return { id: d > q.demi - PARAPET ? PIERRE : BITUME, pile };
+    // UN PARAPET SOUS UNE VOIE EST DE LA CHAUSSÉE (v477). Aux coins, la voie
+    // d'un anneau traverse la bande de pierre d'un tablier voisin : 79 pas de
+    // voie sur un parapet dans vingt-sept villes, mesurés. Le parapet est à la
+    // cote du tablier — seule sa MATIÈRE change, jamais la forme — et
+    // seulement sous la ligne qu'une voiture parcourt (`colonnesDeVoie`) : le
+    // tablier ne perd pas une colonne, et le parapet reste partout ailleurs.
+    if (d > q.demi - PARAPET) {
+      const sousLaVoie = reglageParapets.voie
+        && colonnesDeVoie(f, a).has(cleColonne(Math.round(f.ancre.x + u), Math.round(f.ancre.z + v)));
+      return { id: sousLaVoie ? BITUME : PIERRE, pile };
+    }
+    return { id: BITUME, pile };
   }
   return null;
 }
