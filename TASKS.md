@@ -3584,12 +3584,20 @@
   piste suivante est les neuf corps réalisables (8,2 Mo compressés, bien plus
   décodés) et les textures : à mesurer avec `sonde-memoire-paris.cjs` élargie
   aux textures.
-- [ ] **`sol` ET `plat` RESTENT FABRIQUÉS POUR TOUT LE DISQUE** (v296). Le sol
-  HD (marquages, bordures, trottoir relevé) et les faces plates pèsent 0,02 à
-  0,06 Mo par morceau, soit 10 à 30 Mo pour la ville entière : gardés partout
-  pour que le loin ne change pas d'un pixel. Si un appareil le paie encore, la
-  piste est de ne fabriquer `sol` qu'à `RAYON_HD × 2` et de laisser le voxel
-  de rue au-delà — au prix d'une couture visible sur la chaussée.
+- [ ] **`sol` ET `plat` RESTENT FABRIQUÉS POUR TOUT LE DISQUE** (v296,
+  remesuré en v482). Sous node, sur les 1 754 morceaux du disque de Paris,
+  détail éteint : sol HD 69,4 Mo, faces plates 303 Mo — mais celles-ci
+  REMPLACENT les faces du voxel (454 Mo sans couche HD, 432 avec) ; le surcoût
+  réel hors de portée était de 47,7 Mo pour la ville, soit ~16 Mo dans les 625
+  morceaux d'une fenêtre `rr 12`. La v482 a soudé le sol (69,4 → 51,7 Mo, même
+  image) : il reste ~30 Mo pour la ville, ~10 Mo par fenêtre. Les faces plates
+  et le voxel n'ont aucun sommet doublé (0 % sur 216 008) : rien à souder là.
+  La piste « `sol` seulement à `RAYON_HD × 2`, le voxel de rue au-delà »
+  rendrait au plus ~8 Mo à `rr 12` (~16 à `rr 16`) au prix d'une couture
+  visible sur la chaussée : NON livrée, la mesure ne le justifie pas tant que
+  le budget des façades (128 Mo) domine. À reprendre si le journal de bord
+  montre un appareil tué avec moins de détail que cela (décision de Max, sur
+  capture avant/après de la couture).
 - [x] **UN JOURNAL S'ENVOIE À CHAQUE FERMETURE — TAILLÉ EN v479, CÔTÉ
   SERVEUR.** Mesuré avant : 98 lignes, 264 Ko (index compris), 1,2 Ko par
   session et 1,6 Ko par plantage une fois compressés par Postgres — bien loin

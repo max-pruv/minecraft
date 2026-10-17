@@ -20,6 +20,34 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v482 — Le sol de Paris se soude
+
+**Pourquoi.** Depuis la v296, le détail des façades n'est fabriqué qu'à portée
+de l'enfant, mais le sol HD de Paris — pavés, bordures de granit, marquages,
+trottoir relevé — et les faces plates restent fabriqués pour TOUT le disque,
+pour que le loin ne change pas d'un pixel. La dette demandait de remesurer ce
+qu'ils coûtent encore, après le budget en mégaoctets (v299) et les baies
+soudées (v469). Mesuré sous node, sur les 1 754 morceaux du disque : le sol HD
+pèse 69,4 Mo et les faces plates 303 Mo, mais ces faces REMPLACENT celles du
+voxel (454 Mo sans la couche HD, 432 avec) : le surcoût réel de la couche hors
+de portée est de 47,7 Mo pour la ville entière, environ 16 Mo dans les 625
+morceaux qu'un appareil tient à la fois. Et un sommet du sol sur quatre était
+le double exact d'un autre — le coin commun de deux pavés.
+
+**Ce que ça change.** Rien à l'écran : le sol HD est soudé comme les baies,
+mêmes triangles, mêmes valeurs. 69,4 → 51,7 Mo sur le disque de Paris (Rome
+12,4 → 8,1, Londres 3,4 → 2,2), un dixième de milliseconde par morceau dans le
+worker. Le palier bas ne reçoit rien de neuf (il n'a pas de couche HD). La
+piste « sol seulement à deux fois la portée HD » n'est PAS livrée : elle ne
+rendrait plus que huit mégaoctets environ et coûterait une couture visible sur
+la chaussée — déclarée dans `TASKS.md` avec ses chiffres.
+
+**Ce qui le prouve.** Un témoin neuf dans `plafond.js` sur 106 morceaux de
+Paris : un quart d'octets en moins (4,34 → 3,25 Mo, rapport 0,749) et zéro coin
+de triangle en écart, bit à bit ; rouge sur l'ancien code (rapport 1,000).
+L'empreinte des 490 morceaux, soudure désarmée (`solSoude: false`), rend la
+constante d'avant au bit près. Et les faces plates et le voxel n'ont AUCUN
+sommet doublé (0 % sur 216 008, mesuré) : rien à souder là.
 ## v481 — Au feu, le témoin lit l'heure de la rue
 
 **Pourquoi.** Le témoin « au feu, la voiture freine sur plusieurs relevés au
