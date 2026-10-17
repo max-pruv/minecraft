@@ -73,6 +73,7 @@ import { CloudSave } from './cloud.js';
 import { EducationMode, GRADES, todayKey } from './education.js';
 import { lienDuJeu, dessinerQR, partagerLien, lienWhatsApp, lienSMS } from './partage.js';
 import { jouerLeSon, arreterLeSon, surSonEnAttente, Photographe, micOuvert } from './visio.js';
+import { initCommandes } from './commandes.js';
 
 // New York appartient à la Terre. Les anciennes adresses deviennent un lieu de départ.
 const VISITE_MANHATTAN = ['manhattan'].includes(new URLSearchParams(location.search).get('lieu')) || new URLSearchParams(location.search).get('carte') === 'manhattan';
@@ -2592,6 +2593,7 @@ const joyBase = document.getElementById('joy-base');
 const joyKnob = document.getElementById('joy-knob');
 const JOY_RADIUS = 50;
 let breakMode = true;
+let commandes = null;   // commandes.js, branché après initFun
 
 const touch = {
   joyId: null, joyX: 0, joyY: 0,
@@ -2599,7 +2601,11 @@ const touch = {
   holdTimer: null, repeatTimer: null,
 };
 
+// HORS CONSTRUCTION, TOUCHER L'ÉCRAN NE POSE NI NE CASSE RIEN (commandes
+// simplifiées) : on regarde autour de soi sans abîmer le monde. Construire
+// est un mode qu'on choisit, avec son bouton et sa pilule « Terminer ».
 function touchAction() {
+  if (commandes && !commandes.enConstruction()) return;
   (breakMode ? breakBlock : placeBlock)();
 }
 
@@ -2694,6 +2700,7 @@ document.getElementById('mode-btn').addEventListener('touchstart', (e) => {
   e.preventDefault();
   breakMode = !breakMode;
   e.target.textContent = breakMode ? '⛏️' : '🧱';
+  if (commandes) commandes.outil(breakMode);
 }, { passive: false });
 
 // Une voiture ne vole pas — et l'enfant doit savoir POURQUOI le bouton ne
@@ -2817,11 +2824,20 @@ let etatVehicule = '';
 function majBoutonsVehicule() {
   const enAvion = running && !!player.pilote;
   const enVehicule = running && (enAvion || player.gabarit > 1);
-  const cle = `${enVehicule}|${enAvion}`;
+  // `en-jeu` : la partie est à l'écran (le menu ouvert la met en pause sans
+  // la quitter) ; `en-vol` : l'enfant vole à pied.
+  const enJeu = overlay.style.display === 'none' && pauseBtn.style.display === 'block';
+  const enVol = !enVehicule && !!player.flying;
+  const cle = `${enVehicule}|${enAvion}|${enJeu}|${enVol}`;
   if (cle !== etatVehicule) {
     etatVehicule = cle;
     document.body.classList.toggle('en-vehicule', enVehicule);
     document.body.classList.toggle('en-avion', enAvion);
+    document.body.classList.toggle('en-jeu', enJeu);
+    document.body.classList.toggle('en-vol', enVol);
+    // On ne construit pas au volant : monter dans un véhicule termine la
+    // construction, et l'on revient à pied en mode Explorer.
+    if (enVehicule && commandes) commandes.construire(false);
   }
   if (!enVehicule) return;
   // LA MANETTE ET LE COMPTEUR NE S'ÉCRIVENT QU'EN AVION (v272). Ils ne sont
@@ -8212,6 +8228,45 @@ fun.degats.brancherReseau((m) => { if (net && net.active) net.broadcast(m); });
 // place assise que main.js calcule : un seul corps, une seule assise.
 fun.brancherAvatar({ obtenir: obtenirAvatarLocal, placeAssise, pose: POSE_AU_VOLANT });
 fun.brancherPortieres((m) => { if (net && net.active) net.broadcast(m); });   // v377
+
+// LES COMMANDES SIMPLIFIÉES : un menu unique qui met le jeu en pause sans
+// quitter la partie, et le mode Construire. Les boutons d'avant restent dans
+// la page ; le menu les appuie.
+let menuTournait = false;
+commandes = initCommandes({
+  peutOuvrir: () => running && !edu.quizActive && !edu.hardStopActive,
+  pauser: () => { menuTournait = running; running = false; },
+  reprendre: () => {
+    if (!menuTournait || overlay.style.display !== 'none') return;
+    menuTournait = false;
+    if (IS_TOUCH || dragLook) running = true; else startGame();
+  },
+  lieu: () => {
+    const v = world.cityAt ? world.cityAt(player.pos.x, player.pos.z) : null;
+    return [myName(), v && v.name].filter(Boolean).join(' · ');
+  },
+  apprendre: () => edu.togglePanel(),
+  // Seul, « Jouer avec un ami » mène à l'écran des mondes en ligne — le
+  // chemin qu'un enfant prenait par l'accueil.
+  jouerAvecUnAmi: () => {
+    if (edu.quizActive || edu.hardStopActive) return;
+    leaveToMainMenu();
+    document.getElementById('online-btn')?.click();
+  },
+  outilCasse: () => breakMode,
+  choisirOutil: (casser) => {
+    breakMode = !!casser;
+    const mb = document.getElementById('mode-btn');
+    if (mb) mb.textContent = breakMode ? '⛏️' : '🧱';
+  },
+});
+if (IS_TOUCH) {
+  document.body.classList.add('tactile');
+  // la barre de blocs rejoint la file du haut, sous la pilule « Terminer »
+  const fc = document.getElementById('file-centre'), hb = document.getElementById('hotbar');
+  if (fc && hb) fc.insertBefore(hb, document.getElementById('construction-pill').nextSibling);
+}
+window.__commandes = commandes;
 
 // --- main loop -------------------------------------------------------------------------
 

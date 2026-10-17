@@ -6270,7 +6270,10 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 400)); }
         await new Promise((f) => setTimeout(f, 300));
         const vis = (id) => getComputedStyle(document.getElementById(id)).display;
-        return { saut: vis('jump-btn'), pioche: vis('mode-btn'), gaz: vis('gaz-base'), barre: vis('hotbar'), frein: document.getElementById('fm-btn') ? vis('fm-btn') : 'none', gazJoueur: g.player.gaz, auVolant: auVolant() };
+        // LES COMMANDES SIMPLIFIÉES : à pied, la pioche et la barre de blocs ne
+        // reviennent qu'en construction ; c'est le bouton Construire qui revient.
+        const outil = document.getElementById('construire-btn') ? 'construire-btn' : 'mode-btn';
+        return { saut: vis('jump-btn'), pioche: vis(outil), outil, gaz: vis('gaz-base'), barre: outil === 'mode-btn' ? vis('hotbar') : 'block', frein: document.getElementById('fm-btn') ? vis('fm-btn') : 'none', gazJoueur: g.player.gaz, auVolant: auVolant() };
       });
       const journal = await tab.evaluate(() => {
         const P = window.__game.player, j = window.__journalPiste;

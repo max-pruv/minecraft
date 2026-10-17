@@ -1,5 +1,24 @@
 # Ce qui est en cours
 
+- [ ] **Rouges de portail mesurés des deux côtés au portail de la v494 (les
+  commandes simplifiées)** — double mesure de la v195, suites rejouées SEULES
+  sur la branche et sur `origin/main` v487 (`git worktree`). `carte.js` : verte
+  des deux côtés (au portail, « la flèche du GPS », gauche 1,92 rad, la famille
+  déclarée plus bas). `monte.js` : branche 232 verts, 6 rouges ; `origin/main`
+  234 verts, 4 rouges. Des deux côtés : « un flâneur posé au milieu de la
+  chaussée » (Rome, 17 s sur la chaussée sur un essai) et « rue vide » (vus
+  `[0,0,8,3,0,0,0,26]` ici, `[0,4,2,0,0,0,1,30]` là). Branche seule : « à Rome,
+  en biais, passage peint » (déclaré), « la rue roule à l'allure d'une ville »
+  (tirage v472), « au feu, la voiture freine » (déclaré) et, NEUF dans ce
+  fichier, « à Londres, un passant traverse sur le passage peint » (1 sur 3
+  traversées sur le passage, 10 poses) — même famille de tirage que celui de
+  Rome. `origin/main` seul : « un mur pris de face » (rebond −1,88, déclaré)
+  et « les passants se posent quand le monde est là » (un passant dans un
+  mur). Preuve structurelle : la livraison ne change que le HUD (classes du
+  `body`, CSS, un menu) et le geste du doigt sur tablette ; aucune page de
+  `monte.js` n'est tactile pour ces témoins, et ni passants, ni feux, ni
+  circulation ne lisent le HUD.
+
 - [ ] **Rouges de portail mesurés des deux côtés au portail de la v492 (cinq
   villes à la fiche)** — double mesure de la v195, `monte.js` rejouée SEULE sur
   la branche et sur `origin/main` v473 (`git worktree`) : « au feu, la voiture
