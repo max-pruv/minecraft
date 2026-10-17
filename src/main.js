@@ -2147,7 +2147,7 @@ function updateChunks() {
     nb: 4, vitesse: 10, rames: 8, pause: 3, arretsIndex: arretsLigne1Paris(),
     souterrain: true,
   });
-  // Les métros des villes engendrées (v474, metromonde.js), après la ligne 1 :
+  // Les métros des villes engendrées (v482, metromonde.js), après la ligne 1 :
   // la ligne A de Rome, douze stations de Cipro à Re di Roma. Un tour fait près
   // de six cents blocs (deux voies et les tiroirs) à dix blocs par seconde, plus
   // vingt-quatre arrêts de trois secondes : 130 s, cinq rames, 26 s d'attente.

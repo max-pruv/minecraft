@@ -6,12 +6,77 @@
 
 export const NOUVEAUTES = [
   {
-    v: 474,
+    v: 482,
     titre: 'Le métro sous Rome',
     puces: [
       'La ligne A orange passe sous Rome',
       'Douze stations, de Cipro à Re di Roma',
       'Cherche le mât rouge au M blanc',
+    ],
+  },
+  {
+    v: 481,
+    titre: 'Les feux mieux surveillés',
+    puces: [
+      "L'essai du feu lit l'heure de la rue",
+      'Plus de faux coups de frein comptés',
+    ],
+  },
+  {
+    v: 480,
+    titre: 'L’avion évite le mur',
+    puces: [
+      'Se poser à Los Angeles ne cogne plus',
+      'L’avion survole les arbres au-dessus des pistes',
+    ],
+  },
+  {
+    v: 479,
+    titre: 'Le journal se range seul',
+    puces: [
+      'Les vieux journaux sans panne s’effacent',
+      'Les plantages restent pour les parents',
+    ],
+  },
+  {
+    v: 478,
+    titre: 'Le métro jusqu’au Pentagone',
+    puces: [
+      'Les rames ne roulent plus dans la roche',
+      'On descend au quai d’Arlington Cemetery',
+      'Et à celui de Pentagon',
+    ],
+  },
+  {
+    v: 477,
+    titre: 'La route traverse les ponts',
+    puces: [
+      'Les voitures roulent sur la route du pont',
+      'Plus de pierre sous les roues aux coins',
+    ],
+  },
+  {
+    v: 476,
+    titre: 'On retrouve son ami sans erreur',
+    puces: [
+      'Rejoindre un ami ne crée plus de double',
+      'Tes amis voient ton avion et son épave',
+    ],
+  },
+  {
+    v: 475,
+    titre: 'Les voitures contournent l\'Opéra',
+    puces: [
+      'Elles roulent au milieu de la rue',
+      'Autour de l\'Opéra et des Invalides',
+    ],
+  },
+  {
+    v: 474,
+    titre: 'Chaque bosse compte',
+    puces: [
+      'La tôle se froisse à chaque choc',
+      'Ton ami voit la même panne que toi',
     ],
   },
   {
@@ -84,7 +149,7 @@ export const NOUVEAUTES = [
     v: 465,
     titre: 'Le train passe sur un pont',
     puces: [
-      'Sur la mer, le train roule sur un viaduc',
+      'Sur la mer, le train passe en viaduc',
       'On voit l\'eau passer sous les rails',
     ],
   },
