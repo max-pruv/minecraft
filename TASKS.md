@@ -19,6 +19,12 @@
   voitures l'une dans l'autre monte à 2–18 % (0 à 2 avec les passants) :
   probablement la même suiveuse qui rattrape sa tête. Le témoin reste rouge,
   il garde une vraie panne. Sonde : `tests/sonde-rue-feu.cjs` (`VIDE=1`).
+- [ ] **« ET L'ON NE MARCHE PAS DANS UNE RUE VIDE » (`monte.js`) ROUGE DES DEUX
+  CÔTÉS (mesuré en v474).** Rejouée SEULE : branche `vus [0,2,14,1,0,0,2,28]`
+  moyenne 5,9 pour 44 attendus ; `origin/main` v473 `[0,3,4,0,0,0,0,24]`
+  moyenne 3,9 pour 49. Au portail de la v474, `[0,3,4,0,0,0,0,31]`. La v474
+  ne touche que la chauffe de la flamme : en production, à démonter par une
+  sonde (passants nés, posés, visibles — la leçon v223).
 - [ ] **L'AVION DE L'AMI ET SON ÉPAVE (v453) — SANS TÉMOIN À DEUX TABLETTES.**
   `p.v` porte désormais un avion (fiche `pilote`) et ses dégâts ; aucun témoin
   de `reseau.js` ne vérifie encore que l'autre tablette voit l'appareil, puis
