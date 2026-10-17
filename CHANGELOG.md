@@ -20,6 +20,48 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v474 — Cinq villes passent du gabarit à la fiche
+
+**Pourquoi.** Max a demandé « cinquante villes détaillées ». Le monde a 269
+villes : 46 ont une fiche (leur fleuve, leur pierre, leurs monuments aux vraies
+coordonnées), 223 sortent encore d'un gabarit — la même ville à un angle près,
+sans un nom de lieu. Dublin n'avait pas la Liffey, Toulouse pas la Garonne ni
+sa brique rose, Nantes ni la Loire ni son château.
+
+**Ce que ça change.** Un premier lot de cinq villes passe à la fiche :
+**Dublin** (la Liffey, le Spire au milieu d'O'Connell Street, Temple Bar,
+Trinity College, le Ha'penny Bridge), **Toulouse** (la ville rose en brique,
+la Garonne, le Capitole, Saint-Sernin, les Jacobins, le Pont-Neuf),
+**Melbourne** (la Yarra, Flinders Street, Federation Square, le Queen Victoria
+Market), **Nantes** (le tuffeau et l'ardoise, la Loire, le château des ducs de
+Bretagne dans ses douves, le passage Pommeraye) et **Montpellier** (la pierre
+blonde, l'arc de triomphe et la promenade du Peyrou, la Comédie). Chaque lieu
+devient une étiquette de la carte et une destination. Tout est écrit en
+latitude et longitude réelles, et la géométrie se calcule.
+
+Ce qui ne change pas, à dessein : le rayon de chaque ville (celui du registre),
+sa trame de rues, ses anneaux de voitures. Ce qui change sous les pieds : le
+relief, sous les quatre fleuves neufs seulement — 2 708 colonnes, toutes dans
+le disque de leur ville et son fondu, aucune au-delà (mesuré colonne par
+colonne, avant et après). Les villes au bout d'une route ou d'une ligne de
+train (Marseille, Lyon, Milan…) attendent : un monument devant l'entrée
+fermerait l'avenue d'entrée.
+
+**Ce qui le prouve.** Un témoin neuf dans `carteMonde.js` (rouge sur l'ancien
+code) : chaque ville du lot garde le rayon du registre et ses anneaux de la
+v473, son ancre au sec, n'est ni dans la fenêtre d'empreinte ni au bout d'une
+route, chaque monument tient sa zone à terre dans celle de la ville (sinon il
+changerait le relief au-dehors), chaque lieu est dans la ville et chaque fleuve
+y met de l'eau. Mesurés à part : zéro tablier perdu (1 243 colonnes gagnées,
+toutes sous les ponts des fleuves neufs) ; le château de Nantes, à quatre blocs
+de demi-côté, coupait un anneau (828 → 339 blocs de circuit) — il en a trois,
+sa vraie taille, et les quatre anneaux restent. Les témoins de `plafond.js` sur
+les monuments (hauteur contre les immeubles, ciel de chaque ville, perches)
+lisent les trois monuments neufs, déclarés là où il le faut avec leur raison.
+Captures de rue et de ciel des cinq villes, avant et après.
+
+---
+
 ## v473 — La ligne 1 du métro passe sous Paris
 
 **Pourquoi.** Paris n'avait plus de métro. L'anneau souterrain de la v163 a
