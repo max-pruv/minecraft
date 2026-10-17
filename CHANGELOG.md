@@ -20,6 +20,32 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v474 — Changi, l'aéroport de Singapour, sur une terre gagnée sur la mer
+
+**Pourquoi.** Il manquait Changi parmi les grands aéroports. Singapour, dans
+le jeu, est un disque de terre au milieu de la mer — le planisphère n'a pas
+l'île — et la sonde de la v223 ne trouvait aucun disque de soixante-dix blocs
+au sec dans les trois cents blocs autour : Delhi avait pris sa place.
+
+**Ce que ça change.** Changi est là, à l'est-nord-est de la ville, sur une
+île à lui — comme le vrai, bâti sur des remblais gagnés sur la mer. Un grand
+aéroport à deux pistes, son terminal meublé, trois avions au poste, et deux
+pistes de trois cents blocs qui finissent à l'est en digue sur la mer. On y
+atterrit avec ✈️ comme partout ailleurs.
+
+**Ce qui le prouve.** Un témoin neuf (`plafond.js`) engendre le même pays
+avec et sans Changi dans le même code : hors de la zone de l'aérodrome, zéro
+colonne changée sur 152 956, et l'île existe (0,8 % d'eau sous le disque).
+Mesuré à la livraison avec la même découpe sur `origin/main` et sur la
+branche : 242 980 colonnes, le même relief (03de9ee4…) des deux côtés. Le
+monde d'avant la v306, qui juge les anciennes marches de migration, est
+identique à la production autour de Changi. Les témoins des pistes, de
+l'ouvrage, des postes et des terminaux, qui bouclent sur tous les aérodromes,
+lisent Changi sans une ligne de plus : pistes 300 et 300, sans un trou ;
+remblai 4 et décaissé 3 sur la bande.
+
+---
+
 ## v473 — La ligne 1 du métro passe sous Paris
 
 **Pourquoi.** Paris n'avait plus de métro. L'anneau souterrain de la v163 a

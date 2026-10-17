@@ -6973,9 +6973,14 @@ l'embarquement a eu lieu, pas par une hypothèse.
   réel a dû céder cinq fois faute de terre ferme : JFK (115° → 30°), Fiumicino
   (245° → 325°), Haneda (160° → 250°), Los Angeles (245° → 305°), Roissy
   (43° → 0°, le nord-est de Paris étant le quartier des enfants). Le jour où
-  la carte gagnera des côtes plus fines, ces cinq-là se replaceront. Et il
-  manque Changi : aucun disque de soixante-dix blocs au sec dans les trois
-  cents blocs autour de Singapour — Delhi a pris sa place dans la quinzaine.
+  la carte gagnera des côtes plus fines, ces cinq-là se replaceront. Changi
+  est FAIT en v474 : sur une île gagnée sur la mer (la zone à terre de son
+  repère), cap réel 70° → 82°, 201 blocs, casse bornée à la zone et mesurée
+  des deux côtés. Reste, déclaré : aucune marche de migration ne suit un bloc
+  qu'un enfant aurait posé en mer à cet endroit avant la v474 (la terre monte
+  autour de lui, ses coordonnées ne bougent pas) ; et le cap réel (70°) ne tenait pas
+  deux pistes de trois cents blocs près de la ville : 82° est le plus proche qui
+  les tienne (sonde, pas d'un degré sur deux, de 180 à 270 blocs).
 
 - [x] **Un terminal n'a ni sièges, ni comptoirs, ni tapis à bagages.** FAIT en
   v330 sur les dix-neuf (`amenagerHall`, aeroport.js), halls de Roissy ouverts
