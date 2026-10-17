@@ -159,7 +159,7 @@ export function materiauxManhattan(renderer) {
     wood: physique(0x6e5341, brick, 2, 0.97),
     glow: physique(0xffdc98, null, 1, 0.38),
     signal: physique(0x71d3a4, null, 1, 0.4),
-    // les deux autres optiques des feux (v474) : mêmes réglages que le vert,
+    // les deux autres optiques des feux (v488) : mêmes réglages que le vert,
     // donc le même programme — seule la couleur change
     signalRouge: physique(0xd8584f, null, 1, 0.4),
     signalOrange: physique(0xe0a24a, null, 1, 0.4),

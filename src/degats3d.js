@@ -412,15 +412,25 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
     // LE MODÈLE ARRIVE APRÈS LA COQUE D'ATTENTE (montures.js) : quand les
     // enfants du maillage changent, on relève les pièces neuves et l'on
     // rejoue tous les chocs dessus.
+    //
+    // `appliques` compte en TOTAL de chocs (D.MAX_CHOCS, v474) : la liste ne
+    // garde que les vingt-quatre derniers, et sa longueur ne grandit plus une
+    // fois pleine — comparée à elle, le 25e choc n'enfonçait plus rien. Une
+    // préparation neuve rejoue ce que la liste garde.
     const nb = rec.root.children.length;
-    if (rec.prep && rec.appliques >= chocs.length && nb === rec.nbEnfants) return null;
+    const total = Math.max(rec.etat.total || 0, chocs.length);
+    if (rec.prep && rec.appliques >= total && nb === rec.nbEnfants) return null;
     if (!rec.prep || nb !== rec.nbEnfants) {
       rec.prep = preparer(rec.root);
       rec.nbEnfants = nb;
-      rec.appliques = 0;
+      rec.appliques = total - chocs.length;
     }
     let mesure = null;
-    for (; rec.appliques < chocs.length; rec.appliques++) { mesure = enfoncer(rec.prep, chocs[rec.appliques]); chemins.enfoncements++; }
+    rec.appliques = Math.max(rec.appliques, total - chocs.length);
+    for (; rec.appliques < total; rec.appliques++) {
+      mesure = enfoncer(rec.prep, chocs[chocs.length - (total - rec.appliques)]);
+      chemins.enfoncements++;
+    }
     appliquerPieces(rec, scene);
     rec.derniereMesure = mesure || rec.derniereMesure;
     if (mesure) noterCout(mesure);
@@ -553,8 +563,10 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
     if (!h) {
       if (histoire.size >= 64) histoire.delete(histoire.keys().next().value);
       histoire.set(nom, h = []);
+      h.n = 0;
     }
     h.push(c);
+    h.n++;            // le total, comme `etat.total` (v474) : la liste se borne
     if (h.length > D.MAX_CHOCS) h.shift();
   }
 
@@ -615,7 +627,10 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
       const m = nommer(nom);
       if (!m || !m.parent) continue;
       const rec = suivies.get(m);
-      for (let n = rec ? rec.etat.chocs.length : 0; n < h.length; n++) {
+      // ce que la voiture n'a pas encore subi, compté en total (v474) : au-delà
+      // de vingt-quatre chocs, une comparaison de longueurs ne voyait plus rien
+      const vu = rec ? (rec.etat.total || rec.etat.chocs.length) : 0;
+      for (let n = Math.max(0, h.length - (h.n - vu)); n < h.length; n++) {
         choc(m, { force: h[n][0], lx: h[n][1], lz: h[n][2] }, true);
       }
     }
@@ -669,10 +684,10 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
     const rec = fiche(a.mesh);
     rec.animal = a;
     const e = rec.etat;
-    if (!e.chocs.length) e.chocs.push({ f: 1, x: 0, z: -D.DEMI_LONG });
+    if (!e.chocs.length) { e.chocs.push({ f: 1, x: 0, z: -D.DEMI_LONG }); e.total = Math.max(e.total || 0, 1); }
     e.sante = 0; e.moteur = 0; e.enPanne = true; e.enFeu = true; e.eteint = false;
     e.feu = Math.max(e.feu || 0, D.DELAI_SORTIE);   // l'enfant sort tout de suite
-    rec.appliques = e.chocs.length;
+    rec.appliques = Math.max(e.total || 0, e.chocs.length);
     rec.prep = rec.prep || preparer(rec.root);
     rec.nbEnfants = rec.root.children.length;
     rec.tReel = performance.now();
@@ -890,9 +905,10 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
     const rec = fiche(root);
     rec.distant = true;
     const cible = D.depuisReseau(d);
-    // les impacts déjà appliqués restent ; on ne rejoue que les nouveaux
-    if (cible.chocs.length < rec.etat.chocs.length) { reparer(root); return distant(root, d); }
-    rec.etat.chocs = cible.chocs;
+    // les impacts déjà appliqués restent ; on ne rejoue que les nouveaux —
+    // comptés en total (v474), la liste ne grandit plus une fois pleine
+    if (cible.total < (rec.etat.total || rec.etat.chocs.length)) { reparer(root); return distant(root, d); }
+    rec.etat.chocs = cible.chocs; rec.etat.total = cible.total;
     rec.etat.zones = cible.zones; rec.etat.sante = cible.sante;
     rec.etat.moteur = cible.moteur; rec.etat.direction = cible.direction;
     rec.etat.enPanne = cible.enPanne; rec.etat.enFeu = cible.enFeu; rec.etat.eteint = cible.eteint;

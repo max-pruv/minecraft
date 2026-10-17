@@ -1580,6 +1580,41 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     surUneVille.length ? surUneVille.join(', ')
       : `la paire la plus serrée garde ${Math.round(pireVille)} blocs — ${pireQui}`);
 
+  // CHANGI, SUR UNE TERRE GAGNÉE SUR LA MER (v486) — la casse se borne, et la
+  // borne se mesure. Singapour n'existe que par la zone à terre de sa ville ;
+  // l'aérodrome fait de même avec la sienne (`box + 30`), et c'est tout ce qui
+  // bouge. On engendre le même pays avec et sans Changi, DANS LE MÊME CODE :
+  // hors du disque de sa zone, pas une colonne ne doit différer — et dedans,
+  // l'île doit exister (moins de six pour cent d'eau sous le disque). Mesuré à
+  // la livraison avec la même découpe sur `origin/main` et sur la branche :
+  // 242 980 colonnes, 03de9ee4… des deux côtés. Un témoin qui ne peut pas être
+  // satisfait en mettant une valeur à jour. Sur l'ancien code : Changi absent.
+  {
+    const W = await import('../src/world.js');
+    const sin = AERO.find((a) => a.cle === 'sin');
+    if (!sin) verifier('Changi : la terre gagnée sur la mer reste dans sa zone', false, 'Changi absent du registre');
+    else {
+      const avec = new W.World(), sans = new W.World();
+      sans.conf = { ...W.CONF_NEUF, cle: 'temoin-sans-changi',
+        aeroports: W.CONF_NEUF.aeroports.filter((a) => a.cle !== 'sin'),
+        reperes: W.CONF_NEUF.reperes.filter((l) => l.name !== sin.nom && !String(l.name).startsWith(sin.nom)) };
+      const zone = sin.r - 9 + 30;
+      let horsDiff = 0, hors = 0, dedansDiff = 0, eau = 0, disque = 0;
+      for (let x = sin.x - 400; x <= sin.x + 400; x += 2) {
+        for (let z = sin.z - 400; z <= sin.z + 400; z += 2) {
+          const d = Math.hypot(x - sin.x, z - sin.z);
+          const h1 = avec.terrainHeight(x, z);
+          if (d < sin.r) { disque++; if (h1 < W.WATER_LEVEL) eau++; }
+          const diff = h1 !== sans.terrainHeight(x, z);
+          if (d > zone + 1) { hors++; if (diff) horsDiff++; } else if (diff) dedansDiff++;
+        }
+      }
+      verifier('Changi : la terre gagnée sur la mer reste dans sa zone',
+        horsDiff === 0 && dedansDiff > 1000 && eau / disque < 0.06,
+        `hors de la zone ${horsDiff} colonne(s) changée(s) sur ${hors} · dans la zone ${dedansDiff} · eau sous le disque ${(100 * eau / disque).toFixed(1)} %`);
+    }
+  }
+
   // ET MÊME EXIGENCE POUR LES DEUX CENT SOIXANTE-NEUF VILLES ENGENDRÉES,
   // qui ont pris 1,8 fois leur emprise en v200.
   //
@@ -1967,7 +2002,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     };
     const sol = (q) => q !== BLOCK.AIR && q !== BLOCK.WATER && q !== BLOCK.LOG && q !== BLOCK.BIRCH && q !== BLOCK.LEAVES;
     const lire = (sites) => {
-      const r = { colonnes: 0, herbe: 0, roche: 0, neige: 0, forme: 0, arbres: 0, arbresSans: 0, pins: 0, palmiers: 0, oliviers: 0, parasols: 0, teints: 0, sommets: 0 };
+      const r = { colonnes: 0, herbe: 0, roche: 0, neige: 0, forme: 0, arbres: 0, arbresSans: 0, pins: 0, palmiers: 0, oliviers: 0, parasols: 0, acacias: 0, teints: 0, sommets: 0 };
       for (const [lat, lon] of sites) {
         const p = point(lat, lon);
         for (let cx = 0; cx < 4; cx++) for (let cz = 0; cz < 4; cz++) {
@@ -1987,6 +2022,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
             if (arbre && arbre.kind === 3) r.palmiers++;
             if (arbre && arbre.kind === 5) r.oliviers++;
             if (arbre && arbre.kind === 4) r.parasols++;
+            if (arbre && arbre.kind === 6) r.acacias++;
           }
           // la teinte : les sommets d'herbe que le mailleur a colorés
           if (cx === 1 && cz === 1) {
@@ -2008,6 +2044,9 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     // LE CLIMAT MÉDITERRANÉEN (v469) : l'Andalousie, la Toscane, le
     // Péloponnèse, la vallée centrale de Californie
     const mediterranee = lire([[37.6, -4.2], [43.1, 11.4], [37.5, 22.3], [37.2, -120.3]]);
+    // LA SAVANE (v485) : le Serengeti, la Zambie, le Cerrado, le Top End,
+    // la savane soudanienne du nord du Ghana
+    const savane = lire([[-2.3, 34.8], [-14.5, 27.5], [-13, -50], [-15.5, 133], [10.5, -1.5]]);
     // le Kansas, témoin de la campagne tempérée : rien n'y est teint
     const kansas = lire([[38.5, -98.5]]);
     // LE RACCOURCI DU MORCEAU : un climat déclaré certain pour un morceau
@@ -2041,7 +2080,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         for (let y = h + 1; y <= h + 9; y++) { if (m.getBlock(x, y, z) === sans.getBlock(x, y, z)) garde.pareil++; else garde.autres++; }
       }
     }
-    return { toundra, taiga, steppe, tropiques, mediterranee, kansas, certains, desaccords, garde };
+    return { toundra, taiga, steppe, tropiques, mediterranee, savane, kansas, certains, desaccords, garde };
   })();
   verifier('dans la toundra, du lichen, de la roche nue et la neige plus bas, presque sans arbre (Nunavut, Iamalie, Sibérie arctique)',
     climats.toundra.colonnes > 2000 && climats.toundra.forme === 0 && climats.toundra.roche + climats.toundra.neige >= climats.toundra.colonnes * 0.05
@@ -2065,6 +2104,11 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       && climats.mediterranee.parasols > 0 && climats.mediterranee.oliviers + climats.mediterranee.parasols >= climats.mediterranee.arbres * 0.9
       && climats.mediterranee.teints >= climats.mediterranee.sommets * 0.3,
     JSON.stringify(climats.mediterranee));
+  verifier('dans la savane, l\'herbe dorée et des acacias isolés, presque sans bois ; la même forme bloc pour bloc (Serengeti, Zambie, Cerrado, Top End, Ghana)',
+    climats.savane.colonnes > 2000 && climats.savane.forme === 0 && climats.savane.acacias > 0
+      && climats.savane.acacias >= climats.savane.arbres * 0.6 && climats.savane.arbres * 2 <= climats.savane.arbresSans
+      && climats.savane.teints >= climats.savane.sommets * 0.3,
+    JSON.stringify(climats.savane));
   verifier('le climat certain d\'un morceau est celui de toutes ses colonnes',
     climats.certains > 3000 && climats.desaccords === 0, `${climats.certains} morceaux certains, ${climats.desaccords} colonnes en désaccord`);
   verifier('là où un enfant a bâti avant la règle, les arbres d\'avant restent',
@@ -2340,6 +2384,91 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   verifier('et le nouveau Paris ne bâtit pas d\'immeuble sur ce qu\'un enfant avait bâti — mais bâtit sous ce qu\'on pose après',
     !double.absent && double.bati === 0 && double.lotBati,
     double.absent ? 'Paris n\'a pas doublé' : `autour de la maison : ${double.bati} bloc(s) de ville · lot après la date bâti : ${double.lotBati}`);
+
+  // --- LA FICHE D'UN GARAGE SUIT SES BLOCS (v487) ------------------------
+  //
+  // Un garage est rangé par POSITION (`garages.js`). Les marches de la carte
+  // emmenaient ses murs et laissaient sa fiche : la voiture garée ressortait
+  // à l'ancienne adresse. Sous node, sur des documents fabriqués :
+  //  1. Paris doublé : la fiche part avec le GROUPE de ses blocs (pas avec la
+  //     colonne de son origine), sur un document d'avant ET en orpheline (les
+  //     blocs déjà partis sans elle) — les deux au même endroit, le plancher
+  //     entier sous elle, ses places et sa voiture d'un même vecteur ;
+  //  2. un garage posé après la date ne bouge pas ; une seconde passe rend le
+  //     même objet ; un document sans garages reste sans garages (v189) ;
+  //  3. la carte 3 (Rome qui bouge) : en avant et en orpheline, même arrivée ;
+  //  4. le stockage de l'appareil : un appareil déjà à la carte 7, la fiche
+  //     restée derrière, la retrouve à la migration de stockage, une fois.
+  const garagesCarte = await (async () => {
+    const W = await import('../src/world.js');
+    if (!W.migrerChaineCarte) return { absent: true };
+    const A = await import('../src/paris-v302.js');
+    const M = await import('../src/mondes.js');
+    const av = new W.World({ avant: true });
+    const t = W.DATE_PARIS_DOUBLE - 86400000;
+    const [mx, mz] = A.adresseParis(-2.5, 1.5);
+    const gA = av.terrainHeight(mx, mz);
+    const L = {};
+    for (let dx = 0; dx < 9; dx++) for (let dz = 0; dz < 11; dz++) {
+      L[`${mx + dx},${gA + 1},${mz + dz}`] = [4, t];
+      if (dx === 0 || dx === 8 || dz === 0) for (let dy = 2; dy <= 4; dy++) L[`${mx + dx},${gA + dy},${mz + dz}`] = [5, t];
+    }
+    const [rx, rz] = A.adresseParis(1.5, 1.0), gR = av.terrainHeight(rx, rz);
+    for (let dx = -2; dx <= 2; dx++) for (let dz = -2; dz <= 2; dz++) L[`${rx + dx},${gR + 1},${rz + dz}`] = [4, W.DATE_PARIS_DOUBLE + 5000];
+    const idAp = `${rx},${gR + 1},${rz}`;
+    const garages = { local: {
+      [`${mx + 4},${gA + 1},${mz + 5}`]: { x: mx + 4, y: gA + 1, z: mz + 5, l: 9, p: 11, places: [[mx + 4, mz + 5]],
+        voiture: { flotte: 'x.glb', nom: 'V', x: mx + 4.3, y: gA + 1, z: mz + 5.2, yaw: 1 }, t: 0 },
+      [idAp]: { x: rx, y: gR + 1, z: rz, l: 5, p: 5, places: [], voiture: null, t: 0 },
+    } };
+    const doc = { local: L };
+    const avant = W.migrerChaineCarte(doc, garages);
+    const seuls = W.migrerChaineCarte(doc, undefined);
+    const orph = W.migrerChaineCarte(seuls.edits, garages);
+    const deux = W.migrerChaineCarte(avant.edits, avant.garages);
+    const lue = (r) => {
+      const f = Object.values(r.garages.local).find((x) => x.voiture);
+      const E = r.edits.local;
+      let plancher = 0;
+      for (let dx = -4; dx <= 4; dx++) for (let dz = -5; dz <= 5; dz++) if (E[`${f.x + dx},${f.y},${f.z + dz}`]?.[0] === 4) plancher++;
+      return { ou: [f.x, f.y, f.z], plancher, v: [+(f.voiture.x - f.x).toFixed(3), f.voiture.y - f.y, +(f.voiture.z - f.z).toFixed(3)],
+        place: [f.places[0][0] - f.x, f.places[0][1] - f.z], vieux: !!r.garages.local[`${mx + 4},${gA + 1},${mz + 5}`], apres: !!r.garages.local[idAp] };
+    };
+    // 3. la carte 3
+    const ro = M.positionDe('rome', 'terreV2');
+    const c3 = {}, t3 = W.DATE_CARTE_3 - 1e7;
+    for (let dx = 0; dx < 7; dx++) for (let dz = 0; dz < 7; dz++) c3[`${ro.x + 3 + dx},40,${ro.z + 3 + dz}`] = [4, t3];
+    const g3 = { local: { a: { x: ro.x + 6, y: 40, z: ro.z + 6, l: 7, p: 7, places: [], voiture: null, t: 0 } } };
+    const c3a = W.migrerChaineCarte({ local: c3 }, g3);
+    const c3o = W.migrerChaineCarte(W.migrerChaineCarte({ local: c3 }).edits, g3);
+    // 4. le stockage
+    const memoire = new Map([['web-minecraft-carte-v1', '7'], ['web-minecraft-garages-v1', JSON.stringify(garages)]]);
+    const avantLS = globalThis.localStorage;
+    globalThis.localStorage = { getItem: (k) => (memoire.has(k) ? memoire.get(k) : null), setItem: (k, v) => memoire.set(k, String(v)), removeItem: (k) => memoire.delete(k) };
+    let stock = null;
+    try {
+      let tout = JSON.parse(JSON.stringify(seuls.edits));
+      W.migrerLesBlocs(() => tout, (x) => { tout = x; });
+      const gs = JSON.parse(memoire.get('web-minecraft-garages-v1')).local;
+      const f = Object.values(gs).find((x) => x.voiture);
+      stock = { ou: f && [f.x, f.y, f.z], version: memoire.get('web-minecraft-carte-v1'), n: Object.keys(gs).length };
+    } finally { if (avantLS === undefined) delete globalThis.localStorage; else globalThis.localStorage = avantLS; }
+    return { av: lue(avant), or: lue(orph), deux: deux.garages === avant.garages && deux.deplacees === 0,
+      vide: seuls.garages === undefined, c3: [Object.keys(c3a.garages.local)[0], Object.keys(c3o.garages.local)[0], c3a.deplacees], stock };
+  })();
+  verifier('🅿️ la fiche d\'un garage de l\'ancien Paris part avec le groupe de ses murs — d\'un document d\'avant comme en orpheline',
+    !garagesCarte.absent && garagesCarte.av.plancher === 99 && !garagesCarte.av.vieux
+      && garagesCarte.or.ou.join() === garagesCarte.av.ou.join() && garagesCarte.or.plancher === 99
+      && garagesCarte.av.v.join() === '0.3,0,0.2' && garagesCarte.av.place.join() === '0,0',
+    garagesCarte.absent ? 'la fiche d\'un garage ne suit pas ses blocs' : JSON.stringify({ av: garagesCarte.av, or: garagesCarte.or }));
+  verifier('🅿️ et un garage posé après la date reste, une seconde passe ne fait rien, un document sans garages en reste sans',
+    !garagesCarte.absent && garagesCarte.av.apres && garagesCarte.deux && garagesCarte.vide,
+    garagesCarte.absent ? 'la fiche d\'un garage ne suit pas ses blocs' : JSON.stringify({ apres: garagesCarte.av.apres, deux: garagesCarte.deux, vide: garagesCarte.vide }));
+  verifier('🅿️ et un garage de Rome suit la carte 3 ; et l\'appareil qui a migré sans la fiche la retrouve à la migration de stockage',
+    !garagesCarte.absent && garagesCarte.c3[2] >= 1 && garagesCarte.c3[0] === garagesCarte.c3[1] && garagesCarte.c3[0] !== 'a'
+      && garagesCarte.stock && garagesCarte.stock.ou && garagesCarte.stock.ou.join() === garagesCarte.av.ou.join()
+      && garagesCarte.stock.version === '8' && garagesCarte.stock.n === 2,
+    garagesCarte.absent ? 'la fiche d\'un garage ne suit pas ses blocs' : JSON.stringify({ c3: garagesCarte.c3, stock: garagesCarte.stock }));
 
   // --- LONDRES À LA RÈGLE DU KIT (v339) : la ville d'avant reste sous ce ----
   // --- qu'un enfant y a bâti ------------------------------------------------
@@ -2713,6 +2842,37 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       JSON.stringify(res));
   }
 
+  // LE SOL SE SOUDE AUSSI (v482). Le sol HD reste fabriqué pour TOUT le disque
+  // de Paris — la tuile plate et la rue du loin ne changent pas d'un pixel
+  // (v296) — et c'était, mesuré sur le disque entier, 69 Mo de tampons sur
+  // 1 754 morceaux : un sommet sur quatre y est le double d'un autre (le coin
+  // commun de deux pavés, de deux bandes de marquage). Même preuve que les
+  // baies : le POIDS baisse d'un cinquième au moins contre `solSoude: false`
+  // (sur l'ancien code l'option n'existe pas, les deux pèsent pareil : rouge),
+  // et chaque coin de chaque triangle garde ses dix-huit mots, bit à bit.
+  {
+    const { memesTriangles } = await import('./sonde-baies.mjs');
+    const { World, CHUNK } = await import('../src/world.js');
+    const { buildChunkTampons } = await import('../src/mesher.js');
+    const { positionDe } = await import('../src/mondes.js');
+    const P = positionDe('paris'), w = new World(); w.hd = 1;
+    const c0x = Math.floor(P.x / CHUNK), c0z = Math.floor(P.z / CHUNK), R = Math.ceil(P.r / CHUNK);
+    const o = (t) => t ? Object.values(t).reduce((n, v) => n + (v.byteLength || 0), 0) : 0;
+    let neuf = 0, vieux = 0, lus = 0, coins = 0, ecarts = 0, fautes = 0;
+    const t0 = Date.now();
+    for (let dx = -R; dx <= R; dx += 4) for (let dz = -R; dz <= R; dz += 4) {
+      const a = buildChunkTampons(w, c0x + dx, c0z + dz, { detail: false }).sol;
+      if (!a) continue;
+      const b = buildChunkTampons(w, c0x + dx, c0z + dz, { detail: false, solSoude: false }).sol;
+      lus++; neuf += o(a); vieux += o(b);
+      const m = memesTriangles(a, b); coins += m.coins; ecarts += Math.max(0, m.ecarts); if (!m.ok) fautes++;
+    }
+    const Mo = (x) => (x / 1048576).toFixed(2);
+    verifier('le sol HD se soude : un cinquième de moins, les mêmes triangles des mêmes valeurs',
+      lus > 50 && neuf < 0.8 * vieux && fautes === 0 && coins > 0,
+      `${lus} morceaux, ${Mo(vieux)} → ${Mo(neuf)} Mo, ${coins} coins, ${fautes} morceau(x) en écart (${ecarts} coins), ${Date.now() - t0} ms`);
+  }
+
   // UNE BAIE, PAS DEUX (v457). Les villes engendrées posaient deux blocs
   // `ETAGE` l'un sur l'autre par étage : deux fenêtres dessinées l'une sur
   // l'autre (38 719 piles, 259 villes sur 269). Elles posent les bandes de
@@ -2751,6 +2911,49 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     verifier('les bandes ne changent pas la forme d\'une façade : ce qu\'un enfant a bâti devant reste devant',
       !!reg && formes === 0 && ailleurs === 0,
       reg ? `${formes} couches de solidité différente, ${ailleurs} blocs changés hors des bandes` : 'pas de reglageBaies (ancien code)');
+  }
+
+  // UN PARAPET SOUS UNE VOIE EST DE LA CHAUSSÉE (v477). Aux coins, la voie
+  // d'un anneau traversait la bande de pierre d'un tablier voisin : 66 pas de
+  // voie sur un parapet dans vingt-sept villes (mesuré sur `origin/main`,
+  // v473). Seule la MATIÈRE change, et seulement sous la ligne d'une voie. On
+  // lit chaque colonne du disque de chaque ville à pont, `reglageParapets.voie`
+  // à vrai puis à faux : aucun tablier gagné ni perdu, aucune colonne changée
+  // hors de l'eau ni ailleurs que du parapet à la chaussée, et la sélection
+  // des anneaux identique (les mêmes points, au bit près).
+  {
+    const VM = await import('../src/villesmonde.js');
+    const WO = await import('../src/world.js');
+    const B = await import('../src/blocks.js');
+    const reg = VM.reglageParapets;
+    const W = new WO.World();
+    const tracer = () => VM.tracesCirculation(() => 35).map((tr) => tr.pts.map((p) => `${p.x},${p.z}`).join(';')).join('|');
+    let changees = 0, horsEau = 0, autres = 0, tabliers = 0, villes = new Set(), memes = true;
+    if (reg) {
+      reg.voie = true; const avec = tracer();
+      reg.voie = false; const sans = tracer();
+      memes = avec === sans;
+      for (const f of VM.VILLES_MONDE) {
+        if (!f.trame || f.trame.ruelles || !VM.anneauxDeVille(f).ponts.length) continue;
+        const R = Math.ceil(f.rayon);
+        for (let du = -R; du <= R; du++) for (let dv = -R; dv <= R; dv++) {
+          if (du * du + dv * dv > f.rayon * f.rayon) continue;
+          const X = Math.floor(f.ancre.x) + du, Z = Math.floor(f.ancre.z) + dv;
+          reg.voie = true; const s1 = VM.solVillesMonde(X, Z), p1 = VM.pontVillesMonde(X, Z);
+          reg.voie = false; const s0 = VM.solVillesMonde(X, Z), p0 = VM.pontVillesMonde(X, Z);
+          if (!!p1 !== !!p0) tabliers++;
+          if (s1 === s0) continue;
+          changees++; villes.add(f.cle);
+          if (W.terrainHeight(X, Z) >= WO.WATER_LEVEL) horsEau++;
+          if (!(B.isSolid(s1) && B.isSolid(s0) && WO.CHAUSSEE.has(s1) && !WO.CHAUSSEE.has(s0))) autres++;
+        }
+      }
+      reg.voie = true;
+    }
+    verifier('un parapet sous la voie d\'un anneau devient chaussée, et rien d\'autre ne change',
+      !!reg && memes && tabliers === 0 && horsEau === 0 && autres === 0 && changees >= 33 && changees <= 132,
+      reg ? `${changees} colonnes de parapet passées à la chaussée dans ${villes.size} villes (66 mesurées), ${horsEau} hors de l'eau, ${autres} autres, ${tabliers} tabliers gagnés ou perdus, sélection ${memes ? 'identique' : 'CHANGÉE'}`
+        : 'pas de reglageParapets (ancien code)');
   }
 
   // UN BÂTISSEUR NE TIRE PAS AU HASARD (v450). Le Colisée du catalogue

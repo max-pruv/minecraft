@@ -735,7 +735,7 @@ export class Carte {
       ...PLACES.map((ancien) => { const c = nouveauxLieux.get(ancien.name) || ancien;
         return { c, fort: true, seuil: majeur(c) ? 99 : 1.9 }; }),
       // un repère que le monde redéclare sous le même nom (la statue de la
-      // Liberté de l'ancienne Manhattan, v474) prend la place que le monde
+      // Liberté de l'ancienne Manhattan, v488) prend la place que le monde
       // lui donne, comme les lieux juste au-dessus
       ...REPERES.map((c) => ({ c: nouveauxLieux.get(c.name) || c, fort: false, seuil: c.seuil || 1.6 })),
       // Les quartiers de Manhattan, à courte distance seulement. Sur un plan

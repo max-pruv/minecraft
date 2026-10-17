@@ -214,7 +214,7 @@ function verifier(nom, ok, detail = "") {
         preuves.routes.collisions === 0,
       JSON.stringify(preuves.routes),
     );
-    // ---- LA STATUE DE LA LIBERTÉ SUR LIBERTY ISLAND (v474) ----------------
+    // ---- LA STATUE DE LA LIBERTÉ SUR LIBERTY ISLAND (v488) ----------------
     // Celle de l'ancienne Manhattan (v186) était restée à (-64, 177) dans
     // `world.js`, c'est-à-dire sous le Midtown du plan d'aujourd'hui, enterrée
     // par `TerreUrbaine` ; et la carte y envoyait l'enfant. Le témoin REFAIT la
@@ -299,7 +299,7 @@ function verifier(nom, ok, detail = "") {
       JSON.stringify(liberte),
     );
 
-    // ---- LES FEUX COMMANDENT LA CIRCULATION DE MANHATTAN (v474) -----------
+    // ---- LES FEUX COMMANDENT LA CIRCULATION DE MANHATTAN (v488) -----------
     // Les feux de Manhattan étaient des potences de décor, toujours vertes, et
     // `reglerLesFeux` ne tournait pas dans la ville : aucune voiture ne s'y
     // arrêtait, aucun passant n'y traversait (`passagePieton` rendait null).
@@ -423,7 +423,7 @@ function verifier(nom, ok, detail = "") {
           c += Math.hypot(h.pos.x - px, h.pos.z - pz);
           px = h.pos.x; pz = h.pos.z;
         }
-        // DEPUIS LA v474 un passant attend au feu : l'attente et la traversée
+        // DEPUIS LA v488 un passant attend au feu : l'attente et la traversée
         // se comptent en temps RÉEL, qui n'avance pas dans cette boucle
         // synchrone — il resterait au bord pour toujours. Il n'entre pas
         // dans le débit, et l'on dit combien.
