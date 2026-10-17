@@ -84,7 +84,7 @@ const GARDIENS = {
   'vendor/humains/fille.glb': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
   'src/net.js': ['reseau.js', 'visio.js', 'hote.js', 'manhattan.js', 'degats.js', 'reglages.js'],
   'src/nouveautes.js': ['maj.js'],
-  'src/cloud.js': ['reseau.js', 'reglages.js', 'manhattan.js'],
+  'src/cloud.js': ['reseau.js', 'reglages.js', 'manhattan.js', 'parent.js'],
   'src/relaisnuage.js': ['reseau.js'],
   // Le tempo du banc (v474) : lu par `main.js`, donc gardé par ses gardiens ;
   // `reglages.js` est la suite qui le déclare et le relit sous node.
