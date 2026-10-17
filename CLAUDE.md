@@ -770,6 +770,47 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les commandes simplifiées (vVERSION) — une main pour bouger, une main pour agir
+
+Max : simplifier les commandes en jeu, puis sur la maquette « plus de
+transparence, moins de texte ». Cinq règles.
+
+- **UN MENU REMPLACE LES PETITS BOUTONS, IL NE LES RÉÉCRIT PAS.** Pause, sac,
+  réglages, maison, caméra, messages, joueurs, souvenirs, photo restent dans la
+  page avec leurs gestionnaires ; la classe `hud-simple` les ôte de l'écran, et
+  chaque ligne du menu (`LIGNES`, commandes.js) APPUIE le bouton d'avant après
+  avoir rendu la partie. Un témoin qui touche `#home-btn` ou `#cam-btn` par son
+  `id` les trouve toujours ; `REMPLACES` liste ce que le menu remplace, et un
+  témoin de maj.js exige une ligne par bouton. Une ligne que le jeu n'offrait
+  qu'en ligne (caméra, messages) ne s'offre que si son bouton était affiché :
+  un bouton qui ne fait rien est pire qu'un bouton qui refuse (v228).
+- **LE MENU MET EN PAUSE SANS QUITTER LA PARTIE.** Il pose `running` à faux,
+  sans l'accueil ; « Reprendre » le rend (au toucher et en glisser, `running` ;
+  sinon `startGame`, qui reprend la souris). Il ne s'ouvre ni pendant un quiz
+  ni pendant l'arrêt du jour (invariant 2).
+- **CONSTRUIRE EST UN MODE QU'ON CHOISIT.** Hors construction, sur tablette, la
+  barre de blocs, le réticule et la pioche s'effacent, et toucher l'écran ne
+  pose ni ne casse rien (`touchAction`) : on regarde autour de soi sans abîmer
+  le monde. Poser et Casser sont deux boutons ; `#mode-btn` reste caché, et sa
+  bascule les tient d'accord. Monter dans un véhicule termine la construction.
+  Le bureau (souris) ne change pas.
+- **QUATRE BOUTONS D'ACTION AU PLUS, UNE SEULE PILULE.** Explorer : la pilule,
+  Voler, Sauter, Construire ; en vol la pilule se tait (`en-vol`) et Descendre
+  prend sa place ; en construction : Poser, Casser, Sauter (et Descendre en
+  vol). Monter passe devant « à bord », qui passe devant nourrir (`:has()`) :
+  deux pilules côte à côte se coupaient. Tout est à droite de 55 % de la vue
+  (v272) ; la barre de blocs vit dans la file du haut (v445), pas en bas — elle
+  mordait le quart du joystick.
+- **LE VERRE SE RÈGLE SUR LE CONTRASTE, PAS SUR L'ŒIL.** Un voile sombre à 0,30
+  (`--hud-voile`) est ce qu'il faut pour qu'une icône blanche tienne 3:1 sur le
+  ciel de midi ; les pilules qui portent du texte sont claires (encre sur verre
+  clair), lisibles le jour comme la nuit. Le témoin compose les fonds
+  translucides sur la couleur du ciel que le jeu dessine, à midi et à minuit
+  (v276). Le mot des boutons ronds vit dans `aria-label` et dans `.lb`,
+  VISUELLEMENT caché — jamais `display: none`, que des témoins lisent. Cette
+  décision annule « chaque bouton porte son mot » (v265) : c'est Max qui l'a
+  prise, sur la maquette.
+
 ## Les passages des avenues (v467) — un passage se mesure le long de SA rue
 
 Une règle. Dans une ville bâtie à la main, un carrefour est le croisement de

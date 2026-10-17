@@ -323,6 +323,8 @@ function verifier(nom, ok, detail = "") {
           ville: [...vr.buildings.values()].reduce((n, x) => n + (x.userData.instances || 0), 0) };
       }, hit);
       const geometrieAvant = avant.ville;
+      // LES COMMANDES SIMPLIFIÉES : toucher l'écran ne casse qu'en construction.
+      await p.evaluate(() => { if (window.__commandes) { window.__commandes.construire(true); window.__commandes.outil(true); } });
       await p.touchscreen.tap(350, 230);
       await dormir(1400);
       verifier(
@@ -397,7 +399,13 @@ function verifier(nom, ok, detail = "") {
       return { vu, ms: Date.now() - t0 };
     };
     const avant = await p.evaluate(() => __game.world.edits.size);
-    await p.locator("#mode-btn").tap();
+    // LES COMMANDES SIMPLIFIÉES : la pioche est devenue « Poser » et
+    // « Casser », visibles en construction (le témoin d'avant basculait
+    // `#mode-btn` de casser à poser).
+    if (await p.evaluate(() => !!window.__commandes)) {
+      await p.evaluate(() => window.__commandes.construire(true));
+      await p.locator("#poser-btn").tap();
+    } else await p.locator("#mode-btn").tap();
     await p.touchscreen.tap(350, 230);
     await dormir(400);
     verifier(

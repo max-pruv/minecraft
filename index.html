@@ -1993,6 +1993,236 @@
       #overlay h1 { font-size: clamp(32px, 11vw, 42px); }
     }
 
+    /* ══════════════════════════════════════════════════════════════════
+       LES COMMANDES SIMPLIFIÉES (Max, octobre 2026)
+
+       « Une main pour bouger, une main pour agir. » À gauche le joystick,
+       dessiné en anneau fin même au repos ; à droite une pilule d'action
+       et trois boutons ronds au plus ; en haut à droite UN menu. Retour de
+       Max sur la maquette : « plus de transparence, moins de texte » — le
+       verre est presque invisible, les icônes sont au trait, blanches, et
+       aucun mot sous un bouton. Le mot vit dans `aria-label`, et ce que des
+       témoins lisent (`.lb`) reste dans la page, VISUELLEMENT caché, jamais
+       en `display: none`.
+
+       Comme la v276, c'est une SURCHARGE en fin de feuille : elle ne
+       touche que ce que la classe `hud-simple` du body désigne (posée par
+       commandes.js), et rien de la mise en page de l'accueil.
+       ══════════════════════════════════════════════════════════════════ */
+    :root {
+      /* Le verre des boutons ronds. Le fond est un voile sombre, assez
+         dense pour qu'une icône blanche tienne 3:1 sur le ciel de midi
+         (témoin de maj.js, fonds composés), et rien de plus. */
+      --hud-voile: rgba(12, 16, 24, 0.30);
+      --hud-liseré: rgba(255, 255, 255, 0.55);
+      --hud-flou: blur(6px) saturate(1.2);
+      /* Les pilules portent du TEXTE : un verre clair et de l'encre, lisible
+         sur le ciel comme sur la nuit. */
+      --hud-pilule: rgba(255, 255, 255, 0.86);
+      --hud-taille: 44px;
+    }
+    #menu-btn, #menu-jeu, #construire-btn, #poser-btn, #casser-btn, #construction-pill, #joy-repos { display: none; }
+    body.hud-simple #pause-btn, body.hud-simple #inv-btn, body.hud-simple #settings-btn,
+    body.hud-simple #cam-btn, body.hud-simple #home-btn, body.hud-simple #chat-btn,
+    body.hud-simple #chat-badge, body.hud-simple #players-btn,
+    body.hud-simple .fun-btn[title="Souvenirs"], body.hud-simple .fun-btn[title="Photo"],
+    body.hud-simple #mode-btn { display: none !important; }
+
+    /* LE BOUTON ROND, PARTOUT LE MÊME. */
+    body.hud-simple #menu-btn, body.hud-simple #map-btn, body.hud-simple .tbtn {
+      width: var(--hud-taille); height: var(--hud-taille); border-radius: 50%; padding: 0;
+      background: var(--hud-voile); border: 1px solid var(--hud-liseré); color: #fff;
+      -webkit-backdrop-filter: var(--hud-flou); backdrop-filter: var(--hud-flou);
+      box-shadow: none; font-size: 0; align-items: center; justify-content: center;
+      -webkit-tap-highlight-color: transparent; cursor: pointer;
+    }
+    body.hud-simple #map-btn { border-radius: 14px; display: flex; }
+    body.hud-simple .ico { width: 20px; height: 20px; display: block;
+      filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.55)); }
+    body.hud-simple .tbtn .ic { font-size: 0; line-height: 0; display: flex; }
+    /* Le mot reste lisible par un lecteur d'écran et par les témoins, pas
+       par l'œil. */
+    body.hud-simple .tbtn .lb, body.hud-simple #ride-btn .lb {
+      display: block; position: absolute; width: 1px; height: 1px; overflow: hidden;
+      clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; margin: 0;
+    }
+    body.hud-simple .tbtn:active, body.hud-simple #menu-btn:active { transform: scale(0.94); }
+    /* Le rendu logiciel paie le flou au processeur (v276) : on le coupe. */
+    :root.rendu-logiciel body.hud-simple #menu-btn, :root.rendu-logiciel body.hud-simple #map-btn,
+    :root.rendu-logiciel body.hud-simple .tbtn, :root.rendu-logiciel #construction-pill,
+    :root.rendu-logiciel body.hud-simple #fun-target button, :root.rendu-logiciel #menu-carte {
+      -webkit-backdrop-filter: none; backdrop-filter: none;
+    }
+
+    /* LE MENU : un bouton en haut à droite, un petit panneau dans le coin. */
+    body.hud-simple.en-jeu #menu-btn {
+      display: flex; position: fixed; top: calc(8px + var(--safe-top)); right: 8px; z-index: 12;
+    }
+    body.hud-simple #menu-btn.non-lu::after {
+      content: ''; position: absolute; top: 4px; right: 4px; width: 10px; height: 10px;
+      border-radius: 50%; background: var(--corail-fonce, #E8562A); border: 2px solid #fff;
+    }
+    #menu-jeu.ouvert {
+      display: block; position: fixed; inset: 0; z-index: 25; background: rgba(8, 12, 20, 0.28);
+    }
+    #menu-carte {
+      position: absolute; top: calc(8px + var(--safe-top)); right: 8px; width: min(268px, calc(100vw - 16px));
+      box-sizing: border-box; padding: 8px; border-radius: 22px;
+      background: rgba(255, 255, 255, 0.88); border: 1px solid rgba(255, 255, 255, 0.95);
+      box-shadow: 0 18px 50px rgba(17, 26, 46, 0.22);
+      -webkit-backdrop-filter: blur(20px) saturate(1.4); backdrop-filter: blur(20px) saturate(1.4);
+      color: var(--encre, #111A2E); font-family: var(--corps, system-ui, sans-serif);
+      max-height: calc(100vh - 16px - var(--safe-top) - var(--safe-bottom)); overflow-y: auto;
+    }
+    #menu-tete { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 4px 8px 12px; }
+    #menu-tete b { display: block; font-size: 15px; }
+    #menu-lieu { display: block; font-size: 12px; color: #4A5470; margin-top: 2px; }
+    #menu-reprendre {
+      display: flex; align-items: center; gap: 6px; height: var(--hud-taille); padding: 0 16px 0 12px;
+      border: 0; border-radius: 22px; background: var(--encre, #111A2E); color: #fff;
+      font: 700 14px/1 var(--corps, system-ui, sans-serif); cursor: pointer; white-space: nowrap;
+    }
+    #menu-reprendre .ico { width: 16px; height: 16px; filter: none; }
+    .menu-sep { height: 1px; background: rgba(17, 26, 46, 0.1); margin: 2px 10px 4px; }
+    .menu-ligne {
+      display: flex; align-items: center; gap: 12px; width: 100%; min-height: var(--hud-taille);
+      padding: 0 12px; border: 0; border-radius: 14px; background: transparent; text-align: left;
+      color: var(--encre, #111A2E); font: 600 15px/1.2 var(--corps, system-ui, sans-serif); cursor: pointer;
+    }
+    .menu-ligne:active { background: rgba(17, 26, 46, 0.07); }
+    .menu-ico { width: 30px; height: 30px; flex: none; border-radius: 10px; display: flex;
+      align-items: center; justify-content: center; background: rgba(17, 26, 46, 0.07); }
+    .menu-ico .ico { width: 18px; height: 18px; filter: none; }
+    .menu-note { margin-left: auto; font-size: 12px; font-weight: 600; color: #4A5470; white-space: nowrap; }
+
+    /* LA COLONNE DE GAUCHE NE DESCEND PLUS DANS LE QUART DU JOYSTICK (v272) :
+       les émotes et la pastille de viande montent sous la carte. */
+    body.hud-simple #left-rail-bottom { bottom: auto; top: calc(34px + 52px + var(--safe-top)); }
+    @media (max-width: 700px) { body.hud-simple #left-rail-bottom { top: calc(8px + 52px + var(--safe-top)); } }
+
+    /* LE JOYSTICK, UN ANNEAU FIN — même au repos, pour qu'un enfant sache
+       où poser le pouce. Il s'efface quand le vrai se dessine sous le doigt. */
+    body.hud-simple #joy-base { border: 1.5px solid rgba(255, 255, 255, 0.6); background: transparent; }
+    body.hud-simple #joy-knob { background: rgba(255, 255, 255, 0.72); }
+    body.hud-simple #joy-repos {
+      display: block; position: fixed; left: 28px; bottom: calc(64px + var(--safe-bottom));
+      width: 112px; height: 112px; border-radius: 50%; box-sizing: border-box;
+      border: 1.5px solid rgba(255, 255, 255, 0.55); pointer-events: none; z-index: 5;
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
+    }
+    body.hud-simple #joy-base[style*="block"] ~ #joy-repos { display: none; }
+
+    /* EXPLORER : la pilule d'action au-dessus de Voler, Sauter et
+       Construire. Tout est à droite de 55 % de la vue — rien dans le quart
+       du joystick (v272). */
+    body.hud-simple #construire-btn { display: flex; right: 20px; bottom: calc(28px + var(--safe-bottom)); }
+    body.hud-simple #jump-btn { right: 76px; bottom: calc(52px + var(--safe-bottom)); }
+    body.hud-simple #fly-btn { right: 20px; bottom: calc(84px + var(--safe-bottom)); }
+    body.hud-simple #down-btn { right: 76px; bottom: calc(108px + var(--safe-bottom)); }
+    body.hud-simple.en-vol #down-btn { display: flex !important; }
+    body.hud-simple .fun-target {
+      left: auto; right: 20px; transform: none; bottom: calc(144px + var(--safe-bottom));
+      max-width: calc(55vw - 24px); justify-content: flex-end;
+    }
+    /* En vol, la pilule se tait : on se pose avant de monter sur quoi que ce
+       soit, et c'est ce qui garde quatre boutons d'action au plus. */
+    body.hud-simple.en-vol:not(.en-vehicule) .fun-target { display: none !important; }
+    /* UNE SEULE PILULE À LA FOIS : monter passe devant « à bord », qui passe
+       devant nourrir. Deux pilules côte à côte se coupaient l'une l'autre
+       (« Nour… », « Mont… », vu en capture) et faisaient cinq actions. */
+    body.hud-simple .fun-target:has(#ride-btn[style*="block"]) #feed-btn,
+    body.hud-simple .fun-target:has(#ride-btn[style*="block"]) #board-btn,
+    body.hud-simple .fun-target:has(#board-btn[style*="block"]) #feed-btn { display: none !important; }
+    body.hud-simple .fun-target button {
+      height: var(--hud-taille); padding: 0 14px; letter-spacing: -0.01em; border-radius: 22px; border: 1px solid rgba(255, 255, 255, 0.95);
+      background: var(--hud-pilule); color: var(--encre, #111A2E); white-space: nowrap; overflow: hidden;
+      text-overflow: ellipsis; max-width: 100%; font: 700 13px/1 var(--corps, system-ui, sans-serif);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18); text-shadow: none;
+      -webkit-backdrop-filter: var(--hud-flou); backdrop-filter: var(--hud-flou);
+    }
+
+    /* CONSTRUIRE : Poser, Casser, Sauter — et la pilule « Terminer » en haut. */
+    body.hud-simple.construction #construire-btn, body.hud-simple.construction #fly-btn,
+    body.hud-simple.construction .fun-target { display: none !important; }
+    body.hud-simple.construction #poser-btn { display: flex; right: 20px; bottom: calc(28px + var(--safe-bottom)); }
+    body.hud-simple.construction #casser-btn { display: flex; right: 76px; bottom: calc(52px + var(--safe-bottom)); }
+    body.hud-simple.construction #jump-btn { right: 20px; bottom: calc(84px + var(--safe-bottom)); }
+    body.hud-simple #poser-btn.actif, body.hud-simple #casser-btn.actif {
+      background: rgba(255, 255, 255, 0.92); color: var(--encre, #111A2E); border-color: #fff;
+    }
+    body.hud-simple #poser-btn.actif .ico, body.hud-simple #casser-btn.actif .ico { filter: none; }
+    body.hud-simple.construction.en-jeu #construction-pill { display: flex; }
+    #construction-pill {
+      align-items: center; gap: 10px; height: 36px; padding: 0 4px 0 14px; border-radius: 18px;
+      background: var(--hud-pilule); color: var(--encre, #111A2E); border: 1px solid rgba(255, 255, 255, 0.95);
+      font: 700 13px/1 var(--corps, system-ui, sans-serif); white-space: nowrap;
+      -webkit-backdrop-filter: var(--hud-flou); backdrop-filter: var(--hud-flou);
+    }
+    #construction-fin {
+      height: 28px; padding: 0 12px; border: 0; border-radius: 14px; background: var(--encre, #111A2E);
+      color: #fff; font: 700 12px/1 var(--corps, system-ui, sans-serif); cursor: pointer;
+    }
+    /* Sur tablette, la barre de blocs ne se montre qu'en construction, et
+       elle vit dans la file du haut : posée en bas au milieu, elle mordait
+       le quart du joystick. */
+    body.hud-simple.tactile:not(.construction) #hotbar,
+    body.hud-simple.tactile:not(.construction) #block-name,
+    body.hud-simple.tactile:not(.construction) #crosshair { display: none !important; }
+    body.hud-simple.tactile #file-centre > #hotbar {
+      gap: 4px; padding: 4px; border-radius: 14px; background: var(--hud-voile); border: 1px solid var(--hud-liseré);
+      overflow-x: auto; flex-wrap: nowrap;
+    }
+    body.hud-simple.tactile #file-centre > #hotbar .slot { width: 30px; height: 30px; border-width: 2px; border-radius: 8px; flex: none; }
+    body.hud-simple.tactile #file-centre > #hotbar .slot canvas { width: 22px; height: 22px; }
+    body.hud-simple.tactile #file-centre > #hotbar .slot .num { display: none; }
+    body.hud-simple.tactile #block-name { pointer-events: none; bottom: auto; top: 40%; }
+
+    /* AU VOLANT : le joystick, « Descendre » et le frein à main. */
+    body.hud-simple.en-vehicule:not(.en-avion) #construire-btn { display: none !important; }
+    body.hud-simple.en-vehicule:not(.en-avion) #fm-btn { right: 20px; bottom: calc(28px + var(--safe-bottom)); }
+    body.hud-simple.en-vehicule:not(.en-avion) .fun-target { bottom: calc(84px + var(--safe-bottom)); }
+
+    /* AUX COMMANDES : la colonne de bord de la v445 reste, au même endroit ;
+       seule sa peau change. */
+    body.hud-simple.en-avion #construire-btn { display: none !important; }
+    body.hud-simple.en-avion #fly-btn, body.hud-simple.en-avion #train-btn { right: 84px; width: 56px; height: 56px; }
+    body.hud-simple.en-avion #fly-btn { bottom: calc(198px + var(--safe-bottom)); }
+    body.hud-simple #train-btn.sorti { background: rgba(14, 146, 104, 0.55); border-color: #fff; }
+    body.hud-simple.en-avion .fun-target button#ride-btn {
+      width: 56px; height: 56px; padding: 0; border-radius: 50%; background: var(--hud-voile);
+      border: 1px solid var(--hud-liseré); color: #fff; box-shadow: none; font-size: 0;
+    }
+    /* fun.js écrit « ⬇️ Descendre » dans ce bouton rond ; l'icône au trait
+       se pose par-dessus le pictogramme, le mot reste (visuellement caché). */
+    body.hud-simple.en-avion #ride-btn .ic {
+      font-size: 0; display: block; width: 20px; height: 20px; margin: auto;
+      background: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 4H5v16h5M14 8l4 4-4 4M18 12H9'/%3E%3C/svg%3E");
+      filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.55));
+    }
+    body.hud-simple #gaz-base, body.hud-simple #cmd-vol { background: var(--hud-voile); border: 1px solid var(--hud-liseré); }
+    body.hud-simple #gaz-fill { background: rgba(232, 86, 42, 0.78); }
+
+    /* LES PILULES DU HAUT : GPS et cadran de cap, sur une ligne. */
+    body.hud-simple #gps, body.hud-simple #cap-avion {
+      background: var(--hud-pilule); color: var(--encre, #111A2E); text-shadow: none;
+      border: 1px solid rgba(255, 255, 255, 0.95); border-radius: 20px; white-space: nowrap;
+      font-family: var(--corps, system-ui, sans-serif);
+      -webkit-backdrop-filter: var(--hud-flou); backdrop-filter: var(--hud-flou);
+    }
+    body.hud-simple #gps { padding: 4px 6px 4px 12px; gap: 8px; }
+    body.hud-simple #gps-fleche { font-size: 20px; color: var(--corail-texte, #B83B16); }
+    body.hud-simple #gps-texte { font-size: 14px; }
+    /* la consigne (« tourne à gauche ») se lit sur la flèche : une ligne */
+    body.hud-simple #gps-texte br, body.hud-simple #gps-texte small { display: none; }
+    body.hud-simple #gps-stop { width: 30px; height: 30px; border-radius: 15px; border: 0;
+      background: rgba(17, 26, 46, 0.08); color: var(--encre, #111A2E); }
+    body.hud-simple #cap-avion { padding: 6px 14px 7px; }
+    body.hud-simple #cap-degres, body.hud-simple #cap-ville { display: inline; font-size: 14px; }
+    body.hud-simple #cap-degres { opacity: 1; color: #4A5470; margin-right: 8px; letter-spacing: 0.04em; }
+    body.hud-simple #cap-ville small { color: #4A5470; }
+    body.hud-simple #cap-regle { background: linear-gradient(90deg, rgba(17,26,46,0.08), rgba(17,26,46,0.3), rgba(17,26,46,0.08)); }
+    body.hud-simple #cap-regle::before { background: var(--encre, #111A2E); }
+
 </style>
 </head>
 <!-- `prepare` : pas de flou tant que l'accueil travaille — voir `verreQuandPret`
@@ -2012,9 +2242,22 @@
   <div id="hotbar"></div>
   <div id="creature-label"></div>
   <button id="pause-btn">⏸</button>
+  <!-- LE MENU UNIQUE (commandes simplifiées) : il remplace les petits boutons
+       dispersés, qui restent dans la page et que ses lignes appuient. -->
+  <button id="menu-btn" aria-label="Menu" aria-haspopup="dialog" aria-expanded="false"></button>
+  <div id="menu-jeu" role="dialog" aria-label="Menu du jeu">
+    <div id="menu-carte">
+      <div id="menu-tete">
+        <div><b>En pause</b><span id="menu-lieu"></span></div>
+        <button id="menu-reprendre">Reprendre</button>
+      </div>
+      <div class="menu-sep"></div>
+      <div id="menu-lignes"></div>
+    </div>
+  </div>
   <button id="inv-btn" title="Inventaire de blocs (E)">🎒</button>
   <!-- Colonne de gauche : tout ce qui s'y ajoute se range à la suite. -->
-  <div id="left-rail"><button id="map-btn" title="Mini-carte">🗺️</button></div>
+  <div id="left-rail"><button id="map-btn" title="Mini-carte" aria-label="Carte">🗺️</button></div>
   <div id="left-rail-bottom">
     <div id="meat-counter"></div>
   </div>
@@ -2181,6 +2424,7 @@
   <!-- LA FILE CENTRALE (aviation) : tout ce qui s'affiche en haut au milieu s'y
        range l'un sous l'autre — elle ne peut donc rien recouvrir par construction. -->
   <div id="file-centre">
+    <div id="construction-pill"><span>Construction</span><button id="construction-fin">Terminer</button></div>
     <div id="cap-avion"><div id="cap-degres"></div><div id="cap-ville"></div><div id="cap-regle"><div id="cap-repere"></div></div></div>
     <div id="gps"><span id="gps-fleche">⬆</span><div id="gps-texte"></div><button id="gps-stop" title="Arrêter le GPS">✕</button></div>
     <div id="gps-ami"><span id="gps-ami-texte"></span><button id="gps-ami-oui">🧭 Y aller</button><button id="gps-ami-non" title="Non merci">✕</button></div>
@@ -2244,17 +2488,21 @@
 
   <div id="touch-ui">
     <div id="joy-base"><div id="joy-knob"></div></div>
-    <button class="tbtn" id="jump-btn">⤒</button>
+    <div id="joy-repos" aria-hidden="true"></div>
+    <button class="tbtn" id="jump-btn" aria-label="Sauter">⤒</button>
     <button class="tbtn" id="mode-btn">⛏️</button>
-    <button class="tbtn" id="fly-btn"><span class="ic">✈️</span><span class="lb" id="fly-lb">VOLER</span></button>
-    <button class="tbtn" id="down-btn">▼</button>
-    <button class="tbtn" id="fm-btn" title="Frein à main"><span class="ic">🛑</span><span class="lb">DÉRAPER</span></button>
+    <button class="tbtn" id="construire-btn" aria-label="Construire" aria-pressed="false"></button>
+    <button class="tbtn" id="poser-btn" aria-label="Poser un bloc"></button>
+    <button class="tbtn" id="casser-btn" aria-label="Casser un bloc"></button>
+    <button class="tbtn" id="fly-btn" aria-label="Voler"><span class="ic">✈️</span><span class="lb" id="fly-lb">VOLER</span></button>
+    <button class="tbtn" id="down-btn" aria-label="Descendre">▼</button>
+    <button class="tbtn" id="fm-btn" title="Frein à main" aria-label="Frein à main"><span class="ic">🛑</span><span class="lb">DÉRAPER</span></button>
     <!-- La manette des gaz (v262) : au volant ou aux commandes, à droite, on
          la monte et on la baisse — en même temps que le joystick à gauche. -->
     <div id="gaz-base"><div id="gaz-fill"></div><div id="gaz-knob"></div></div>
     <div id="cmd-vol"></div>
     <div id="gaz-val"></div>
-    <button class="tbtn" id="train-btn" title="Train d'atterrissage"><span class="ic">🛞</span><span class="lb" id="train-lb">TRAIN</span></button>
+    <button class="tbtn" id="train-btn" title="Train d'atterrissage" aria-label="Train d'atterrissage"><span class="ic">🛞</span><span class="lb" id="train-lb">TRAIN</span></button>
   </div>
 
   <div id="overlay">

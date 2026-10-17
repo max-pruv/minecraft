@@ -95,6 +95,7 @@ const ASSETS = [
   './src/cap.js',
   './src/approche.js',
   './src/gps.js',
+  './src/commandes.js',
   './src/feux.js',
   './src/gaulois.js',
   './src/espace.js',
