@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 490,
+    titre: 'Qui a posé ce bloc ?',
+    puces: [
+      'Le diagnostic nomme le bloc visé',
+      'Posé par le jeu, ou à la main',
+    ],
+  },
+  {
     v: 489,
     titre: 'On monte dans le métro',
     puces: [

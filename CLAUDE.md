@@ -870,6 +870,16 @@ Deux règles.
   remet à deux voies tout seul — et le témoin le dira s'il touche une façade.
   Élargir la rue aurait changé le sol sous ce que les enfants ont bâti.
 
+## Le bloc visé dit qui l'a posé (v490) — le diagnostic répond à « qui a posé ça ? »
+
+Une règle. `?diag=1` porte une ligne « visé » : le nom du bloc sous le
+réticule, ses coordonnées, et « posé par le jeu » ou « posé à la main » avec
+la date de `world.editTimes` (le journal de l'enfant est la seule origine
+d'un bloc qui n'est pas du générateur). La visée est celle de la surbrillance,
+retenue SEULEMENT sous `DIAG` ; l'identifiant se relit à l'image où l'on écrit
+la ligne, sinon un bloc posé entre deux images se nomme de l'ancien nom (vu à
+la sonde). Le témoin de `monte.js` lit le TEXTE affiché, jamais une variable.
+
 ## Les passages des avenues (v467) — un passage se mesure le long de SA rue
 
 Une règle. Dans une ville bâtie à la main, un carrefour est le croisement de

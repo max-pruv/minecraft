@@ -20,6 +20,28 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v490 — Le bloc visé dit qui l'a posé
+
+**Pourquoi.** Devant les constructions suspendues dans le ciel de Paris (v295,
+v298), la seule question qui comptait était « qui a posé ça ? » — et la
+tablette ne savait pas y répondre : le nom sous le réticule est celui du bloc
+EN MAIN, jamais celui qu'on regarde. Il a fallu lire le journal de bord dans le
+nuage pour trancher.
+
+**Ce que ça change.** Avec `?diag=1`, une ligne de plus dans le diagnostic du
+haut de l'écran : « visé : Bricks (x, y, z) · posé à la main le 17/10/2026 à
+15h42 », ou « · posé par le jeu » pour un bloc que le générateur a écrit. Le
+monde le sait déjà : un bloc d'enfant est dans son journal, avec sa date. Hors
+`?diag=1`, rien de plus ne se calcule ni ne s'affiche, et rien n'entre dans le
+quart bas-gauche.
+
+**Ce qui le prouve.** Un témoin de `monte.js`, dans la page `?diag=1` qui
+existait déjà : il lit le texte affiché, sol à ses pieds (« posé par le jeu »)
+puis le même bloc remplacé par une brique datée (« posé à la main » avec la
+date). Rouge sur `origin/main` (aucune ligne « visé »), vert ici.
+
+---
+
 ## v489 — On monte dans le métro par sa porte
 
 **Pourquoi.** Dans une voiture (v366) et dans un avion (v389, v400), l'enfant

@@ -3738,7 +3738,27 @@
   bas au lancement suivant). À mesurer sur SON appareil, `?diag=1` : le tas et
   les tampons au moment où le disque de Paris est plein — le relevé du journal
   n'a pas de `tas` sur iOS (`performance.memory` absent).
-- [ ] **LE BLOC VISÉ SE NOMME, ET DIT QUI L'A POSÉ.** Le nom sous le réticule
+- [ ] **LES ROUGES DU PORTAIL DE LA v490 — AUCUN N'ATTEINT LE CODE NEUF.**
+  Portail (8 suites, 94 min) : `maj.js` 3, `carte.js` 2, `monte.js` 7. Rejouées
+  SEULES, une à la fois, des deux côtés (v195) :
+  - `maj.js` : branche 40 ✅ / 1 ❌ (le loader compte ses fichiers, dette
+    connue) ; `origin/main` 38 ✅ / 3 ❌ (la puce de la v465 à neuf mots —
+    corrigée ici — et deux témoins du palier, verts sur la branche).
+  - `carte.js` : branche tout vert (fond 318 / 111 ms) ; `origin/main` 4 ❌
+    (fond à froid 470 ms, appui long, proposition « Téléporter », flèche du GPS).
+  - `monte.js` : branche 225 ✅ / 9 ❌, `origin/main` 223 ✅ / 10 ❌. Identiques
+    des deux côtés : la rue fabriquée par tranches, le feu qui pile, la rue
+    vide, Moscou sans voitures (et ses livrées, qui en dépendent), le trou
+    devant l'avion au-dessus des villes, le mur pris de face. Branche seule :
+    le flâneur de Rome (déjà déclaré plus bas) et « deux voisines d'un convoi
+    gardent leur longueur d'écart » (3,64 blocs). `origin/main` seul : le
+    personnage au volant, l'allure d'une avenue, la voiture heurtée qui repart.
+  Preuve STRUCTURELLE en plus de la mesure : le code neuf de `main.js` n'est
+  lu que sous `DIAG`, et seule la page du témoin neuf ouvre `?diag=1`.
+  « Deux voisines d'un convoi » n'était pas déclaré : zone conduite, à reprendre
+  avec ses chiffres.
+
+- [x] **LE BLOC VISÉ SE NOMME, ET DIT QUI L'A POSÉ.** *(fait en v490 : ligne « visé » de `?diag=1`, témoin dans `monte.js`.)* Le nom sous le réticule
   est celui du bloc EN MAIN. En `?diag=1`, afficher le bloc sous le réticule
   et son origine — « posé par le jeu », ou « posé à la main » avec la date que
   `world.editTimes` connaît. C'est ce qui aurait répondu à « qui l'a posé ? »
