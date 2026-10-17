@@ -5125,24 +5125,28 @@ l'embarquement a eu lieu, pas par une hypothèse.
   et le « flanc frôlé » de la v397, rouge à l'identique sur `origin/main`).
   PREUVE STRUCTURELLE en plus : le code neuf n'est atteint que sous
   `embarq: 1` en descendant d'un avion au sol ; aucune de ces pages ne le fait.
-- [ ] **MONTER DANS UN TRAIN OU UN MÉTRO PAR SA PORTE — DÉCLARÉ, PAS LIVRÉ
-  (session embarquement, v400 ; relu en v407, rien n'a bougé côté
-  `construireRame` : POUR LA SESSION CIRCULATION-VIVANTE, l'étape (1)
-  ci-dessous est le seul verrou).** `bord` (fun.js) colle encore l'enfant au
-  siège d'une rame d'un coup. La même discipline que l'avion (v389) le
-  ferait : l'accès se déclare avec le MODÈLE (`userData.porte` posé par
-  `construireRame`, une porte coulissante en MEMBRE, aucune clé de programme
-  neuve), la séquence ne joue que si le convoi est ARRÊTÉ au quai (`arrets`,
-  `pause` : sinon la porte file sous l'enfant), et `embarq=0` rend l'ancien
-  geste au bit près. Pourquoi ce n'est pas fait : `construireRame` et la
-  pause aux quais vivent dans `vehicules.js`, zone de la session
-  circulation-vivante ; la séquence, elle, est prête à suivre un modèle qui
-  déclare sa porte (`monterAvion` lit `userData.porte` et un membre
-  `porte.ouvrant`). Marche : (1) la session circulation ajoute le membre et
-  `userData.porte` à la rame de tête et publie dans `place()` si le convoi
-  est à l'arrêt ; (2) l'embarquement ajoute `monterRame` (marche sur le quai,
-  la porte glisse, il entre, `bord` bascule ICI) et `descendreRame` ; (3)
-  témoins dans `washington.js` (le métro) et `monte.js` (le train).
+- [x] **MONTER DANS UN TRAIN OU UN MÉTRO PAR SA PORTE — LIVRÉ EN v480.**
+  `construireRame` déclare `userData.porte` (porte arrière coulissante des
+  deux flancs, un membre) ; `monterRame` / `descendreRame` (embarquement.js),
+  branchées dans `embarquer` / `debarquer` (fun.js), ne jouent que si la rame
+  est à quai (`attente` ≥ `ATTENTE_RAME_MIN`). Témoin : `sonde-porte-rame.cjs`
+  lu par `monte.js`. Ce qui reste, déclaré :
+  - [ ] **Une vraie gare et un vrai quai de Washington, sur l'iPad.** Le témoin
+    pose sa propre ligne sur une prairie : sur une gare de train le quai est à
+    2,7 blocs de la rame (`QUAI_DEDANS`), la descente garde la place la plus
+    haute à 1,65 / 2,45 / 3,25 blocs du flanc — non mesuré sur une vraie gare
+    ni sous terre à Washington. Geste : monter à quai, descendre à la station
+    suivante, `?diag=1` doit dire `monter (rame)` puis `descendre (rame)`.
+  - [ ] **Les amis ne voient pas la porte d'une rame s'ouvrir**, pas plus que
+    celle d'un avion (v389) : il faudrait un message court comme `portiere`,
+    donc `net.js`.
+  - [ ] **Au portail de la v480, rouges qui ne sont pas la livraison** (preuve
+    structurelle, v291 : la séquence ne joue que sur un appui au bouton près
+    d'une rame) : `visio.js` la radio pendant l'appel (avant 0,0089, pendant
+    0,0057 — déjà déclaré) ; `maj.js` le loader d'installation (déclaré) ;
+    `monte.js` la rue à l'allure d'une ville, le feu qui pile (déclaré en tête
+    de ce fichier), la rue vide (déclaré). Et la puce de la v465 de plus de
+    huit mots, en production : raccourcie dans cette livraison.
 - [ ] **POUR MAX, SUR LA TABLETTE — valider la montée et la descente (v366,
   v377, v384, v389).** Le banc saute la séquence (`embarq=0`) et rend en
   logiciel : ce qui suit ne se juge QUE sur l'iPad. Ouvrir

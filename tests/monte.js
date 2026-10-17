@@ -8527,7 +8527,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       });
       juger(await emb.evaluate(passage), verifier);
     }
-    // ON MONTE DANS UNE RAME PAR SA PORTE (v474). `bord` collait l'enfant au
+    // ON MONTE DANS UNE RAME PAR SA PORTE (v480). `bord` collait l'enfant au
     // siège d'un coup. Le passage vit dans `sonde-porte-rame.cjs` (rejouable
     // seul en trente secondes, rouge sous `EMBARQ=0`) : il pose sa propre
     // ligne sur le couloir plat, avec une pause à chaque arrêt — on provoque

@@ -1070,7 +1070,7 @@ function construireRame(motrice, couleur = 0x2a6ad8) {
     a.boite(0x9fd8ee, { p: [s * larg * 0.5, y0 + h * 0.62, 0], e: [0.06, 0.42, L * 0.86] });
   }
   // les portes, deux par flanc. Celle de l'arrière (dz +1,9) COULISSE : c'est
-  // par elle que l'enfant monte (v474, embarquement.js). Elle vit dans un
+  // par elle que l'enfant monte (v480, embarquement.js). Elle vit dans un
   // MEMBRE à part, sur les deux flancs à la fois (un seul appel de dessin de
   // plus par voiture, même matériau, même programme) ; derrière elle, la baie
   // sombre que l'ouverture découvre.
@@ -1104,7 +1104,7 @@ function construireRame(motrice, couleur = 0x2a6ad8) {
     }
   }
   const g = a.finir();
-  // L'ACCÈS SE DÉCLARE AVEC LE MODÈLE (v474), comme celui d'un avion (v381) :
+  // L'ACCÈS SE DÉCLARE AVEC LE MODÈLE (v480), comme celui d'un avion (v381) :
   // le seuil dans le repère de la voiture (nez en −z), les deux flancs, le
   // membre qui coulisse le long de z et de combien. Le pied de l'enfant à bord
   // est à `assise` (1,1) au-dessus de la voie : c'est aussi le seuil.

@@ -421,16 +421,16 @@ export function initFun(ctx) {
   function debarquer(silencieux = false) {
     if (!bord) return;
     const { nom, id } = bord;
-    bord = null;               // plus à bord dès le premier appui (v474, comme v366)
+    bord = null;               // plus à bord dès le premier appui (v480, comme v366)
     player.vel.set(0, 0, 0);
     if (silencieux) return;
     toast(`🚶 Tu descends du ${nom}.`, 0xd8c9a4);
-    // PAR LA PORTE, SI LA RAME EST À QUAI (v474) : sinon l'ancien geste
+    // PAR LA PORTE, SI LA RAME EST À QUAI (v480) : sinon l'ancien geste
     const r = rameDe(id);
     if (r && r.aQuai) embarquement.descendreRame(r);
   }
 
-  // LA RAME D'UNE PLACE (v474) : son maillage (par le nom stable de la place,
+  // LA RAME D'UNE PLACE (v480) : son maillage (par le nom stable de la place,
   // `clé#rang`, v305) et si elle est À QUAI — la pause qui lui reste au
   // quai (`attente`, la grille du convoi) couvre toute la séquence. Lu une
   // fois par appui, jamais par image : `etat()` parcourt tous les convois.
@@ -501,7 +501,7 @@ export function initFun(ctx) {
       toast(`${place.emoji} Tu montes dans le ${place.nom} ! Il t'emmène — appuie encore pour descendre.`, 0xa8d8ff);
       emojiBurst([place.emoji, '💨'], 8);
     };
-    // PAR LA PORTE, SI LA RAME EST À QUAI (v474) : l'enfant marche jusqu'à la
+    // PAR LA PORTE, SI LA RAME EST À QUAI (v480) : l'enfant marche jusqu'à la
     // porte, elle coulisse, il entre — et `bord` ne bascule qu'une fois
     // dedans. Sinon (rame qui roule, monoplace, `embarq=0`), d'un coup.
     const r = rameDe(place.id);

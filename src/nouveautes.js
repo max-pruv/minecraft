@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 480,
+    titre: 'On monte dans le métro',
+    puces: [
+      'Tu marches jusqu’à la porte du train',
+      'Elle coulisse, tu entres, elle se ferme',
+      'Tu descends debout sur le quai',
+    ],
+  },
+  {
     v: 479,
     titre: 'Le journal se range seul',
     puces: [

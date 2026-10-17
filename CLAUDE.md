@@ -2251,7 +2251,7 @@ fichier** : le diff montre ce qu'on retire à l'autre côté.
 
 Ce qui reste, déclaré dans `TASKS.md` : la vue de la séquence ne se juge que
 sur le banc, pas sur l'iPad ; les amis ne voient pas la porte d'un avion
-s'ouvrir.
+s'ouvrir, ni celle d'une rame (v480).
 
 ## Les coupoles ont leur édifice (v365) — un gabarit partagé se cherche dans toutes les villes, et le ciel se lit sur les modèles
 
@@ -2371,6 +2371,37 @@ celle de la High Roller ne tiendrait pas, et c'est déclaré.
 Et une empreinte d'identité qui change se PROUVE : celle des 490 morceaux
 (v352) couvre Marrakech et Tokyo ; la branche, bâtisseurs neufs désarmés, rend
 l'ancienne au bit près — c'est ce qui a permis de la remplacer.
+
+## On monte dans une rame par sa porte (v480) — la discipline de l'avion, une porte qui coulisse
+
+Trois règles.
+
+- **L'ACCÈS SE DÉCLARE AVEC LE MODÈLE, ET UNE PORTE QUI COULISSE EST UNE
+  TRANSLATION.** `construireRame` (vehicules.js) pose `userData.porte`
+  (`type: 'coulissante'`, membre `porte`, `axe`, `course`, seuil, les deux
+  flancs) ; la porte arrière des deux flancs est UN membre (un appel de dessin
+  de plus par voiture, même matériau, aucune clé neuve), une baie sombre
+  derrière. `coulisser` (embarquement.js) décale le membre, `ouvrant` (l'avion)
+  le fait tourner : deux gestes, une fiche qui dit lequel.
+- **LA SÉQUENCE NE JOUE QUE SI LA RAME EST À QUAI, ET ELLE SE TERMINE SI LA
+  RAME REPART.** fun.js lit la pause qui reste au convoi (`etat()[ci].attente`
+  ≥ `ATTENTE_RAME_MIN`, 2,5 s) et le maillage par le nom stable de la place
+  (`voitureNommee`, `clé#rang`), une fois par appui, sans rien ajouter à
+  `vehicules.js` hors du modèle. Pendant la séquence, une rame qui bouge de
+  plus de `BOUGE_RAME` la termine (à bord, ou posé sur le quai) : la porte ne
+  file jamais sous l'enfant. `bord` ne bascule qu'une fois entré (`fin`), et
+  il est nul dès le premier appui en descendant.
+- **LE QUAI EST PLUS HAUT QUE LE BALLAST.** Une gare pose son quai à 2,7 blocs
+  de la rame (`QUAI_DEDANS`) : on essaie les deux flancs à trois écarts et
+  l'on garde la place la plus HAUTE, la plus proche à hauteur égale, avec un
+  sol plein sous les pieds (`placeQuai` : « vide » est un refus, comme « mur »
+  et « eau »).
+
+Et **un témoin qui attend qu'un métro marque l'arrêt devant l'enfant est un
+tirage** : `sonde-porte-rame.cjs` pose sa propre ligne sur le couloir plat,
+un arrêt tous les vingt blocs et douze secondes de pause (v233). Elle est lue
+par `monte.js`, donc elle n'est pas isolée (`sondeIsolee`) : la retoucher
+rejoue le portail entier.
 
 ## L'arrivée n'engendre plus le monde (v472) — sur le fil principal, on lit ce qui est là, on ne le fabrique pas
 
