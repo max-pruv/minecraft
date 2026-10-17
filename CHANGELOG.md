@@ -20,6 +20,40 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v491 — ✈️ se pose devant, pas derrière
+
+**Pourquoi.** Max : « quand on est en avion et qu'on clique sur se poser, il
+devrait se poser sur la direction qu'on vise dans le radar et pas sur là où on
+vient initialement ». L'approche assistée (v452) prenait la piste la plus
+proche — juste après un décollage, c'est l'aéroport de départ, derrière
+l'avion. Mesuré sous node sur tous les trajets entre deux aérodromes à moins de
+4 000 blocs, trois appareils, juste après le décollage, cap sur la
+destination : ✈️ faisait demi-tour vers l'aéroport de départ **87 fois sur
+126**.
+
+**Ce que ça change.** ✈️ « Se poser » va à l'aéroport le plus proche DEVANT le
+nez, dans le cône du cadran de cap (±45°, la même règle que le cadran), jusqu'à
+4 000 blocs ; le bandeau dit « cap sur la piste devant toi » et le cadran nomme
+la piste pendant toute l'approche. Sans aéroport devant, rien ne change : la
+piste la plus proche, ou la pose sur place sans piste à portée. Le joystick qui
+corrige, le second ✈️ qui remet les gaz, la remise des gaz trop long ou de
+travers, l'arrondi qui ne casse pas l'avion sur une piste : tout reste. Et en
+arrivant de loin et de biais, cap sur une piste, l'avion ne tourne plus sans
+fin avant de s'aligner : il s'éloigne assez pour avoir la place de rejoindre
+l'axe.
+
+**Ce qui le prouve.** Deux témoins de `monte.js`, rouges sur l'ancien code :
+zéro demi-tour sur les 126 trajets (87 avant), avec le repli vers la piste la
+plus proche quand rien n'est devant ; et le trajet de l'enfant au bouton —
+décollé de Roissy cap sur Saint-Dizier, ✈️ vise Saint-Dizier (Roissy avant),
+le cadran le nomme, un second appui remet les gaz. La sonde de l'approche
+(`tests/sonde-approche.cjs`) lit la même règle que le jeu : **195 approches sur
+195** posées sur la piste et arrêtées dessus, vitesse de descente 2 blocs/s au
+pire, 32 pistes sur 33 éprouvées (29 avant ; la seconde piste intérieure de
+Roissy perd toujours contre sa jumelle). Sans le correctif du ralliement, six
+des nouvelles arrivées « cap sur la piste » tournaient deux cents secondes sans
+toucher.
+
 ## v490 — Le bloc visé dit qui l'a posé
 
 **Pourquoi.** Devant les constructions suspendues dans le ciel de Paris (v295,

@@ -2723,7 +2723,7 @@ function refuserOuVoler() {
   }
   if (aBord === 'approche') {
     const ap = player.approche;
-    toast(`🛬 Cap sur la piste de ${ap.piste.nom} (${distanceLisible(Math.hypot(player.pos.x - ap.seuil, player.pos.z - ap.piste.z))}) — l'avion se pose tout seul. Le joystick corrige, ✈️ remet les gaz.`, 0x9fd8ff, 4200);
+    toast(`🛬 Cap sur la piste ${ap.devant ? 'devant toi, ' : ''}de ${ap.piste.nom} (${distanceLisible(Math.hypot(player.pos.x - ap.seuil, player.pos.z - ap.piste.z))}) — l'avion se pose tout seul. Le joystick corrige, ✈️ remet les gaz.`, 0x9fd8ff, 4200);
     return true;
   }
   if (aBord === 'pasDePiste') {
