@@ -5657,6 +5657,12 @@ l'embarquement a eu lieu, pas par une hypothèse.
   haut. Preuve structurelle : la livraison ne change que le TANGAGE de la
   caméra de poursuite (`plongee`) et sa hauteur sous le plancher de recul ;
   rien du réseau ni de la circulation ne la lit.
+  Après la fusion de la v496, `monte.js` rejouée seule : branche 240 / 6,
+  `origin/main` v496 240 / 5. Commun : « une voiture de la rue heurtée par
+  l'enfant s'arrête » (`{"id":null}` des deux côtés, jamais trouvée) et « la
+  rue vide ». « La rue se fabrique par tranches » rouge une fois sur la branche
+  (`vues: 5` voitures en vue à l'arrivée), vert aux cinq autres passages des
+  deux côtés (5 à 14 vues) : un tirage du nombre de voitures dans le cadre.
 
 - [x] **LE RECUL DE LA CAMÉRA N'A ÉTÉ JUGÉ QUE SUR LE BANC (v279) — captures
   prises en v497** (`tests/sonde-captures-camera-volant.cjs`, envoyées à Max) :
