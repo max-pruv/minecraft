@@ -20,6 +20,32 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v474 — Les voitures ne roulent plus sur le parapet des ponts
+
+**Pourquoi.** Aux coins des anneaux de circulation des villes engendrées, la
+voie d'une voiture traversait la bande de pierre d'un tablier voisin : 66 pas
+de voie sur un parapet, dans vingt-sept villes (Gênes, Munich, Shanghai,
+Porto, Lyon, Dublin, Hambourg, Budapest…). C'était toute la traîne de la
+dette « les anneaux d'avant roulent parfois hors de la chaussée » — et aucune
+recherche de contour ne la voyait, parce que la règle interne compte ce pas
+« sur un tablier », donc propre.
+
+**Ce que ça change.** Là où une voie traverse le parapet, la colonne de pierre
+devient de la chaussée : la voiture roule sur du bitume d'un bout à l'autre du
+pont. Le parapet est à la cote du tablier — seule sa matière change, jamais la
+forme —, et il reste partout ailleurs. Aucun tablier n'est retiré ni allongé,
+et les anneaux sont les mêmes au bit près.
+
+**Ce qui le prouve.** Deux témoins neufs : `plafond.js` lit chaque colonne de
+chaque ville à pont avec et sans la règle (66 colonnes changées, toutes sur
+l'eau, toutes de parapet à chaussée, aucun tablier gagné ni perdu, sélection
+identique) ; `carteMonde.js` compte les pas de voie sur un parapet (66 sur
+`origin/main`, 0 ici), et la barre des pas hors de la chaussée descend (772 →
+706 pas, 58 → 18 anneaux). L'empreinte des 490 morceaux ne bouge pas, règle
+armée comme désarmée.
+
+---
+
 ## v473 — La ligne 1 du métro passe sous Paris
 
 **Pourquoi.** Paris n'avait plus de métro. L'anneau souterrain de la v163 a

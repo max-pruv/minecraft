@@ -1287,7 +1287,17 @@
   200 blocs, donc hors de la livraison par construction (elle ne change que le
   sol de Las Vegas et des contours d'anneaux).
 - [ ] **LES ANNEAUX D'AVANT ROULENT PARFOIS HORS DE LA CHAUSSÉE (mesuré v387,
-  repris v404, v418, v432, v435, remesuré sur la v454, 16 oct. 2026).** Remesure (sous node,
+  repris v404, v418, v432, v435, remesuré sur la v454, 16 oct. 2026 ; v474,
+  17 oct.).** v474 : LE PARAPET SOUS LA VOIE EST DE LA CHAUSSÉE — les 66 pas sur
+  un parapet (27 villes) passent à 0, 772 → 706 pas, 58 → 18 anneaux, sélection
+  et empreinte des 490 morceaux identiques ; seule la matière de 66 colonnes de
+  tablier change, toutes sur l'eau, toutes sous la ligne d'une voie (la forme ne
+  bouge pas : règle v457). Ce qui reste (706 pas, 18 anneaux) est la liste
+  ci-dessous, inchangée : herbe 218, feuillage 154, pavé de place 125, sable
+  136 (dont 12 au pied d'un tablier), pierre 49, eau sans tablier 18, autres 6
+  — tout est de géométrie (contour impossible sous les trois
+  promesses) ou de SOL, donc décision de Max ; rien ne se règle sans toucher au
+  sol ni à la sélection. Remesure (sous node,
   `sonde-anneaux-villes.cjs` puis classement colonne par colonne) : 772 pas, 58
   anneaux, inchangé depuis la v435, et TOUTE la cause se nomme — herbe 218,
   feuillage 154, sable 136, pavé de place 125, pierre (fontaine, roche) 49,
