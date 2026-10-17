@@ -7250,6 +7250,15 @@ l'embarquement a eu lieu, pas par une hypothèse.
   10, Nice 0. La piste qui reste est la seconde de la v210 : ne pas poser
   d'arbre ni de mobilier sur un tracé de circuit.
 
+- [ ] **PORTAIL DE LA v474, DOUBLE MESURE FAITE (v195).** Second portail : un
+  seul rouge, `carte.js` « le rendu suivant, cache chaud » 168 ms pour 150 (une
+  durée ; déjà vu à 152 en v399). Rejouée SEULE : 70 ms sur la branche, 74 sur
+  `origin/main` — vert des deux côtés. Rejouée seule, la suite rend en revanche
+  un rouge IDENTIQUE des deux côtés : « la flèche du GPS pointe vers la
+  destination » — `{face 0, droite 1.57, gauche 1.92}` (attendu ≈ −1,57 à
+  gauche : la flèche tourne dans le mauvais sens, ou le témoin lit l'angle
+  pendant la transition CSS, v306). En production, sans rapport avec la v474 ;
+  à démonter par une sonde qui lit le style écrit après la transition.
 - [ ] **Trois témoins de Paris lisent encore l'AXE des circuits, pas la voie
   (v474).** « les circuits de Paris roulent sur la chaussée DANS LE MONDE »
   (`carteMonde.js`), le partage de la v211 et « aucune bouche ne mure un
