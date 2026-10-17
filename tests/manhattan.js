@@ -327,6 +327,9 @@ function verifier(nom, ok, detail = "") {
       await p.evaluate(() => { if (window.__commandes) { window.__commandes.construire(true); window.__commandes.outil(true); } });
       await p.touchscreen.tap(350, 230);
       await dormir(1400);
+      // et l'on referme la construction : elle cache la pilule d'action, que
+      // le témoin du taxi attend plus bas (le portail l'a dit).
+      await p.evaluate(() => { if (window.__commandes) window.__commandes.construire(false); });
       verifier(
         "le geste tactile détruit le bloc visé",
         await p.evaluate(
@@ -402,12 +405,15 @@ function verifier(nom, ok, detail = "") {
     // LES COMMANDES SIMPLIFIÉES : la pioche est devenue « Poser » et
     // « Casser », visibles en construction (le témoin d'avant basculait
     // `#mode-btn` de casser à poser).
-    if (await p.evaluate(() => !!window.__commandes)) {
-      await p.evaluate(() => window.__commandes.construire(true));
-      await p.locator("#poser-btn").tap();
+    // Le bouton s'appuie par le document : à 0,4 image par seconde, `tap`
+    // attend deux images identiques (v427).
+    const avecCommandes = await p.evaluate(() => !!window.__commandes);
+    if (avecCommandes) {
+      await p.evaluate(() => { window.__commandes.construire(true); document.getElementById("poser-btn").click(); });
     } else await p.locator("#mode-btn").tap();
     await p.touchscreen.tap(350, 230);
     await dormir(400);
+    if (avecCommandes) await p.evaluate(() => window.__commandes.construire(false));
     verifier(
       "le geste tactile construit sur la Terre",
       await p.evaluate((n) => __game.world.edits.size > n, avant),

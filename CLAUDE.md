@@ -795,9 +795,11 @@ transparence, moins de texte ». Cinq règles.
   bascule les tient d'accord. Monter dans un véhicule termine la construction.
   Le bureau (souris) ne change pas.
 - **QUATRE BOUTONS D'ACTION AU PLUS, UNE SEULE PILULE.** Explorer : la pilule,
-  Voler, Sauter, Construire ; en vol la pilule se tait (`en-vol`) et Descendre
-  prend sa place ; en construction : Poser, Casser, Sauter (et Descendre en
-  vol). Monter passe devant « à bord », qui passe devant nourrir (`:has()`) :
+  Voler, Sauter, Construire ; en vol (`en-vol`) Descendre s'ajoute, et c'est
+  Construire qui se tait tant qu'une pilule est là — pas la pilule : un témoin
+  qui plane au-dessus d'une voie doit voir « Monter à bord » (mon premier jet
+  faisait taire la pilule en vol, et le portail l'a dit). En construction :
+  Poser, Casser, Sauter (et Descendre en vol). Monter passe devant « à bord », qui passe devant nourrir (`:has()`) :
   deux pilules côte à côte se coupaient. Tout est à droite de 55 % de la vue
   (v272) ; la barre de blocs vit dans la file du haut (v445), pas en bas — elle
   mordait le quart du joystick.

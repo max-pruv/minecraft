@@ -2124,9 +2124,10 @@
       left: auto; right: 20px; transform: none; bottom: calc(144px + var(--safe-bottom));
       max-width: calc(55vw - 24px); justify-content: flex-end;
     }
-    /* En vol, la pilule se tait : on se pose avant de monter sur quoi que ce
-       soit, et c'est ce qui garde quatre boutons d'action au plus. */
-    body.hud-simple.en-vol:not(.en-vehicule) .fun-target { display: none !important; }
+    /* En vol, Descendre s'ajoute : c'est Construire qui se tait tant qu'une
+       pilule est là — pas la pilule (un enfant qui plane au-dessus du quai doit
+       voir « Monter à bord »). Quatre boutons d'action au plus. */
+    body.hud-simple.en-vol:has(#fun-target[style*="flex"]) #construire-btn { display: none !important; }
     /* UNE SEULE PILULE À LA FOIS : monter passe devant « à bord », qui passe
        devant nourrir. Deux pilules côte à côte se coupaient l'une l'autre
        (« Nour… », « Mont… », vu en capture) et faisaient cinq actions. */

@@ -1112,9 +1112,19 @@ function verifier(nom, ok, detail = '') {
         for (const a of [...am.animals]) am.scene.remove(a.mesh);
         am.animals.length = 0;
         const P = g.player;
-        am.invoquer('horse', P.pos.x - Math.sin(P.yaw) * 3, P.pos.z - Math.cos(P.yaw) * 3);
-        await att(1500);
+        // ON ATTEND LE RÉSULTAT, BORNÉ (v270) : sous la charge d'un portail, la
+        // pilule s'allume plusieurs secondes plus tard, et le cheval broute —
+        // on le ramène devant l'enfant à chaque tour.
+        const devant = () => [P.pos.x - Math.sin(P.yaw) * 3, P.pos.z - Math.cos(P.yaw) * 3];
+        const cheval = am.invoquer('horse', ...devant());
+        const t0 = performance.now();
+        while (performance.now() - t0 < 20000 && !vis(document.getElementById('fun-target'))) {
+          await att(500);
+          if (cheval && cheval.pos) { const [x, z] = devant(); cheval.pos.x = x; cheval.pos.z = z; }
+        }
+        await att(300);
         const explorer = releve();
+        explorer.attendu = Math.round(performance.now() - t0);
         // UNE pilule, et son mot tient sur une ligne sans être coupé — y
         // compris le plus long que le jeu écrive à pied.
         const pilules = () => [...document.querySelectorAll('#fun-target button')].filter((b) => vis(b))
@@ -1207,7 +1217,7 @@ function verifier(nom, ok, detail = '') {
       verifier(`commandes (${vue.width} × ${vue.height}) : à pied, quatre boutons d'action au plus, ronds de 44 px, sans mot sous eux, rien ne se recouvre ni n'entre dans le quart du joystick`,
         !r.err && ex.recouvre.length === 0 && ex.joy.length === 0 && ex.ronds.length === 0
         && ex.actions >= 3 && ex.actions <= 4 && ex.lbs === 0 && !!r.explorer.R['fun-target'] && !r.explorer.R.hotbar,
-        `${r.err || ''} ${JSON.stringify(ex)} ${JSON.stringify(r.explorer && r.explorer.R)}`);
+        `${r.err || ''} ${JSON.stringify(ex)} pilule attendue ${r.explorer && r.explorer.attendu} ms ${JSON.stringify(r.explorer && r.explorer.R)}`);
       verifier(`commandes (${vue.width} × ${vue.height}) : une seule pilule d'action, et son mot tient sur une ligne sans être coupé`,
         !r.err && r.explorer.pilules.length === 1 && !r.explorer.pilules[0].coupe
         && r.explorer.longue.length === 1 && !r.explorer.longue[0].coupe,
