@@ -4,6 +4,9 @@ import { secondeVoieParis, secondeVoieVilleMonde, voiesAutoroute, allureDuTronco
 import * as THREE from 'three';
 import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp, MEUBLE_ITEMS, MEUBLE_START, isMeuble, RUE_ITEMS, RUE_START, RUE, isRue, ARCHI, CITY_BLOCK, ROUTE_BLOCK } from './blocks.js';
 import { passageEn } from './passages.js';
+// Les cadences de la synchronisation, sous tempo (`tempo.js`, v501) : au banc,
+// `?tempo=4` les divise par quatre ; en production elles valent leur valeur.
+import { t as enTempo, TEMPO } from './tempo.js';
 import { mobilierTrottoir, MOBILIER_OBSTACLE, villeHD } from './facadeshd.js';
 import { PARIS as PARIS_ANCRE, circuitsParis, circuitsQuartiersParis, marquageParis } from './paris.js';
 import { circuitsLondres } from './londres.js';
@@ -4153,7 +4156,7 @@ async function envoyerPrefs() {
 setInterval(() => {
   if (!playerProfile.name || !cloud.configured || !navigator.onLine) return;
   envoyerPrefs().catch(() => {});
-}, 20000);
+}, enTempo(20000));
 
 function saveProfile() {
   try { localStorage.setItem(PROFILE_KEY, JSON.stringify(playerProfile)); } catch { /* ignore */ }
@@ -4591,7 +4594,7 @@ function refreshEduMenuBtn() {
   const el = document.getElementById('edu-today');
   if (el) el.textContent = `· ${edu.formatDuration(todayPlay)}`;
 }
-setInterval(refreshEduMenuBtn, 10000);
+setInterval(refreshEduMenuBtn, enTempo(10000));
 queueMicrotask(refreshEduMenuBtn); // after edu is constructed below
 
 // --- partager le jeu ---------------------------------------------------------------
@@ -6141,9 +6144,13 @@ async function pullPlayTime() {
 })();
 
 pullPlayTime();
-setInterval(() => { pushPlayTime(); pushPrefsToCloud(); }, 15000);
+setInterval(() => { pushPlayTime(); pushPrefsToCloud(); }, enTempo(15000));
 
-setInterval(pullPlayTime, 60000);
+setInterval(pullPlayTime, enTempo(60000));
+// Le banc vérifie que le tempo qu'il a demandé est arrivé dans la page :
+// sans cela, une suite « accélérée » mesurerait le jeu à l'échelle réelle
+// en annonçant le contraire.
+window.__tempo = TEMPO;
 window.addEventListener('pagehide', () => pushPlayTime(true));
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') pushPlayTime(true);

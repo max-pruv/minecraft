@@ -82,10 +82,13 @@ const GARDIENS = {
   'vendor/humains/femme-manteau.glb': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
   'vendor/humains/garcon.glb': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
   'vendor/humains/fille.glb': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
-  'src/net.js': ['reseau.js', 'visio.js', 'hote.js', 'manhattan.js', 'degats.js'],
+  'src/net.js': ['reseau.js', 'visio.js', 'hote.js', 'manhattan.js', 'degats.js', 'reglages.js'],
   'src/nouveautes.js': ['maj.js'],
   'src/cloud.js': ['reseau.js', 'reglages.js', 'manhattan.js', 'parent.js'],
   'src/relaisnuage.js': ['reseau.js'],
+  // Le tempo du banc (v501) : lu par `main.js`, donc gardé par ses gardiens ;
+  // `reglages.js` est la suite qui le déclare et le relit sous node.
+  'src/tempo.js': ['reglages.js', 'carte.js', 'monte.js', 'washington.js', 'manhattan.js', 'degats.js'],
   'src/sync.js': ['sauvegarde.js', 'reglages.js', 'manhattan.js'],
   // `monte.js` depuis la v236 : c'est lui qui éprouve l'oubli des morceaux
   // dépassés, la seule chose qui garde la mémoire d'un iPad en vol.
@@ -616,7 +619,13 @@ function lancer(fichier) {
 }
 
 (async () => {
-  const depuisZero = process.argv.includes('--depuis-zero');
+  // `--tempo=1` (v501) : le tour de nuit, minuteries du jeu à l'échelle
+  // réelle même dans les suites qui déclarent un tempo (`banc.fixerTempo`).
+  // Une course révélée à tempo 4 peut ne pas exister dans le vrai jeu, et
+  // l'inverse. Il rejoue tout : un acquis pris à tempo 4 ne vaut pas pour lui.
+  const argTempo = process.argv.find((a) => a.startsWith('--tempo='));
+  if (argTempo) process.env.BANC_TEMPO = argTempo.slice('--tempo='.length);
+  const depuisZero = process.argv.includes('--depuis-zero') || !!argTempo;
 
   // `--voie` : on demande au dépôt ce qu'il faut rejouer pour ce changement.
   // `--long` force les huit suites, toujours disponible sans discuter.

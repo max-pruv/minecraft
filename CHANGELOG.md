@@ -20,6 +20,32 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v501 — Les essais des réglages n'attendent plus vingt secondes réelles
+
+**Pourquoi.** Max veut un portail plus rapide à qualité égale. `reglages.js`
+passait l'essentiel de son temps à attendre des minuteries de production : le
+battement de vingt secondes qui republie les réglages, la relève de quinze —
+104 s pour le seul témoin « l'autre tablette ne défait pas le choix ».
+
+**Ce que ça change.** Rien pour la famille : en production chaque délai vaut
+sa valeur, au bit près. Sur le banc, `?tempo=4` (`src/tempo.js`, refusé hors
+de 127.0.0.1/localhost) divise le battement des réglages, la republication, la
+relève du temps de jeu et le bouton Éducation par quatre, et la suite divise
+ses attentes d'autant (`banc.fixerTempo`, `banc.enTempo`). `BANC_TEMPO=1` ou
+`npm run long -- --tempo=1` rejoue à l'échelle réelle. `reglages.js` seule :
+**519 s → 403 s puis 383 s**, tous verts. Le réseau, lui, ne passe PAS sous
+tempo, et c'est mesuré : le silence toléré divisé par quatre, deux tablettes
+sans courtier ne se retrouvaient plus (0 couple sur 4, contre 4 sur 4) et le
+passager ne s'asseyait plus chez son ami (0/3 contre 3/3) — une page qui
+charge son monde se tait des secondes réelles.
+
+**Ce qui le prouve.** Quatre témoins neufs dans `reglages.js` : chaque cadence
+relue à sa valeur réelle sous node (désarmée, rouge), le tempo refusé sur sept
+adresses (publique, réseau local, < 1, > 8), le réseau qui n'en lit aucun
+(désarmé, rouge), et le tempo vérifié dans la page. La sonde
+`sonde-tempo-nuage.cjs` porte la mesure qui écarte le réseau, et `reglages.js`
+passe aussi à `BANC_TEMPO=1`.
+
 ## v500 — La ligne A du métro passe sous Rome
 
 **Pourquoi.** Aucune des deux cent soixante villes engendrées n'avait de
@@ -368,7 +394,6 @@ sa vraie taille, et les quatre anneaux restent. Les témoins de `plafond.js` sur
 les monuments (hauteur contre les immeubles, ciel de chaque ville, perches)
 lisent les trois monuments neufs, déclarés là où il le faut avec leur raison.
 Captures de rue et de ciel des cinq villes, avant et après.
-=======
 
 ## v491 — Les réacteurs s'allument sans à-coup
 

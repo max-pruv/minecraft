@@ -50,6 +50,50 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
 }
 
 (async () => {
+  // LE TEMPO, ET SON GARDE-FOU (v501, `src/tempo.js`). Cette suite attend le
+  // battement des réglages (vingt secondes) et la relève (quinze) : à tempo 4,
+  // le jeu et les attentes `enTempo` ci-dessous divisent le même délai. Mais
+  // ces délais vivent dans `main.js`, que node ne charge pas (three) : on relit
+  // donc son TEXTE — chaque cadence de synchronisation passe par le tempo, sa
+  // valeur réelle en clair — et la règle du module, qui rend chaque délai au
+  // bit près hors du banc.
+  {
+    const fs = require('fs');
+    const path = require('path');
+    const src = fs.readFileSync(path.join(__dirname, '..', 'src', 'main.js'), 'utf8');
+    const { t, TEMPO, lireTempo } = await import('../src/tempo.js');
+    const ATTENDUS = [
+      ['le battement des réglages', /envoyerPrefs\(\)\.catch\(\(\) => \{\}\);\n\}, enTempo\((\d+)\)\);/, 20000],
+      ['la republication du temps et des réglages', /pushPrefsToCloud\(\); \}, enTempo\((\d+)\)\);/, 15000],
+      ['la relève du temps de jeu', /setInterval\(pullPlayTime, enTempo\((\d+)\)\);/, 60000],
+      ['le bouton Éducation du menu', /setInterval\(refreshEduMenuBtn, enTempo\((\d+)\)\);/, 10000],
+    ];
+    const faux = ATTENDUS.map(([nom, re, v]) => { const m = src.match(re); return [nom, m ? Number(m[1]) : null, v]; })
+      .filter(([, lu, v]) => lu !== v).map(([nom, lu, v]) => `${nom} : ${lu} au lieu de ${v}`);
+    verifier('en production, les cadences de synchronisation valent leur valeur réelle',
+      faux.length === 0 && TEMPO === 1 && t(20000) === 20000,
+      faux.join(' · ') || `${ATTENDUS.length} cadences relues, tempo ${TEMPO}`);
+    const lus = [
+      ['https://minecraft-fam.vercel.app/index.html?tempo=4', 1],
+      ['http://192.168.1.12:8321/index.html?tempo=4', 1],
+      ['http://127.0.0.1:8321/index.html', 1],
+      ['http://127.0.0.1:8321/index.html?tempo=0.25', 1],
+      ['http://127.0.0.1:8321/index.html?tempo=40', 1],
+      ['http://127.0.0.1:8321/index.html?tempo=4', 4],
+      ['http://localhost:8321/index.html?tempo=2', 2],
+    ].map(([u, attendu]) => [u, lireTempo(u), attendu]);
+    const hors = lus.filter(([, lu, attendu]) => lu !== attendu);
+    verifier('le tempo ne se lit que sur le banc, et seulement pour accélérer',
+      hors.length === 0, hors.map(([u, lu]) => `${u} → ${lu}`).join(' · ') || `${lus.length} adresses`);
+    // Et le réseau n'en lit aucun : son silence toléré est calé sur des durées
+    // réelles (sonde-tempo-nuage.cjs, v501).
+    const net = fs.readFileSync(path.join(__dirname, '..', 'src', 'net.js'), 'utf8');
+    verifier('le réseau ne passe pas sous tempo', !/from '\.\/tempo\.js'/.test(net)
+      && /const STALE_MS = 20000;/.test(net) && /const HEARTBEAT_MS = 5000;/.test(net),
+      (net.match(/const (STALE|HEARTBEAT)_MS = [^;]*;/g) || []).join(' · '));
+  }
+  banc.fixerTempo(4);
+  const enTempo = banc.enTempo;
   const PORT_JEU = 8322, PORT_NUAGE = 9322, PORT_PAIRS = 9522;
   const nuage = await servirLeNuage(PORT_NUAGE);
   const jeu = await banc.servirLeJeuPour(PORT_JEU);
@@ -67,7 +111,7 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
     // ce paramètre, le clic sur un bouton grisé ne fait rien, et l'attente de
     // `running` a tué le portail (30 s). Même règle que `banc.joueur`.
     + `?cloud=http://127.0.0.1:${PORT_NUAGE}&cloudkey=test&stay=1&rr=2&prep=0&embarq=0`
-    + `&peerhost=127.0.0.1:${PORT_PAIRS}`;
+    + `&peerhost=127.0.0.1:${PORT_PAIRS}` + banc.paramTempo();
 
   async function joueur(prenom) {
     // DE L'AIR AVANT CHAQUE PAGE.
@@ -131,6 +175,10 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
     nuage.poserReglages('Marlon', { lang: 'both', grade: 1 });
     nuage.poserReglages('Marlon~parent', { sessionMin: 5 });
     const marlon = await joueur('Marlon');
+    // Cette suite écrit son adresse elle-même : le tempo y est-il arrivé ?
+    const tempoPage = await marlon.evaluate(() => window.__tempo);
+    verifier('la tablette joue au tempo que la suite a demandé', tempoPage === banc.tempoBanc(),
+      `${tempoPage} pour ${banc.tempoBanc()}`);
     await jusqua(async () => (await marlon.evaluate(() => window.__game.edu.sessionMinutes())) === 5);
     verifier('le rythme du serveur est appliqué au lancement',
       (await marlon.evaluate(() => window.__game.edu.sessionMinutes())) === 5);
@@ -237,14 +285,15 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
       route.continue();
     });
     const tGuet = Date.now();
-    while (Date.now() - tGuet < 60000 && !ecrituresSeules.length) await dormir(250);
-    let attente = 'aucune écriture sans lecture en 60 s';
+    // Trois battements de vingt secondes, sous tempo comme eux.
+    while (Date.now() - tGuet < enTempo(60000) && !ecrituresSeules.length) await dormir(250);
+    let attente = `aucune écriture sans lecture en ${enTempo(60)} s`;
     if (ecrituresSeules.length) {
       // le battement suivant tombe vingt secondes après ; on clique six
       // secondes avant, le temps que le choix soit écrit
-      const prochain = ecrituresSeules[ecrituresSeules.length - 1] + 20000;
-      attente = `battement vu, clic ${((prochain - 6000 - Date.now()) / 1000).toFixed(1)} s plus tard`;
-      while (Date.now() < prochain - 6000) await dormir(100);
+      const prochain = ecrituresSeules[ecrituresSeules.length - 1] + enTempo(20000);
+      attente = `battement vu, clic ${((prochain - enTempo(6000) - Date.now()) / 1000).toFixed(1)} s plus tard`;
+      while (Date.now() < prochain - enTempo(6000)) await dormir(100);
     }
     await marlon.evaluate(() => document.querySelector('.pb-toggle[data-lang="en"]').click());
     // ON OBSERVE TOUTE LA FENÊTRE (v270) : une fois « en » arrivé au serveur,
@@ -252,7 +301,7 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
     // jeu a gardé mon choix ».
     let vuEn = false, retours = 0, prec = null;
     const tClic = Date.now();
-    while (Date.now() - tClic < 25000) {
+    while (Date.now() - tClic < enTempo(25000)) {   // plus d'un battement
       const v = (nuage.reglages('Marlon') || {}).lang;
       if (v === 'en') vuEn = true;
       else if (vuEn && prec === 'en') retours++;
@@ -263,7 +312,7 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
     verifier('un choix fait sur une tablette part au serveur, et l\'autre tablette ne le défait pas un instant', tientAdeux,
       `${attente} ; vu « en » : ${vuEn}, retours à l'ancienne langue : ${retours}, serveur : ${JSON.stringify((nuage.reglages('Marlon') || {}).lang)}`);
     // on laisse largement le temps à l'autre appareil de pousser sa version
-    await dormir(20000);
+    await dormir(enTempo(20000));   // un battement complet, sous tempo comme lui
     verifier('et l\'autre tablette ne le défait pas',
       (nuage.reglages('Marlon') || {}).lang === 'en',
       `serveur : ${JSON.stringify((nuage.reglages('Marlon') || {}).lang)}`);
@@ -323,7 +372,7 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
     // secondes, c'est un battement complet de sa republication. Ce qu'on
     // regarde, c'est la consigne du parent — intacte — ET ce que la tablette
     // republie de son côté, qui doit s'y être aligné.
-    await dormir(20000);
+    await dormir(enTempo(20000));
     const consigne = nuage.reglages('Marlon~parent') || {};
     const sien = nuage.reglages('Marlon') || {};
     verifier('et la tablette ne le défait pas ensuite',
