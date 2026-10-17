@@ -289,7 +289,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
   let facades = detail ? new GeomBufferHD() : null;
   let plat = hd ? new GeomBuffer() : null;
   const platLumineux = hd ? new GeomBuffer() : null;
-  // LES VRAIS ARBRES (v497, arbreshd.js) : quand le monde les demande
+  // LES VRAIS ARBRES (v499, arbreshd.js) : quand le monde les demande
   // (`world.arbres`, à portée de `RAYON_HD` comme le détail de Paris) et que le
   // morceau porte du bois ou des feuilles, les arbres RECONNUS partent dans
   // `plat` (leurs cubes, le loin) et dans `facades` (le modèle, le près). Sans
@@ -631,7 +631,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
     }
   }
 
-  // LES VRAIS ARBRES (v497) : un modèle par fût reconnu dont la base est dans
+  // LES VRAIS ARBRES (v499) : un modèle par fût reconnu dont la base est dans
   // le morceau, dans `facades`, avec l'essence que `treeAt` a plantée
   let arbresEmis = 0;
   if (arbresDetail) arbresEmis = emettreArbres(facades, arbres, ox, oz, CHUNK, teintes);
@@ -669,7 +669,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
     facadesDetaillees,
     monumentsDetailles: detailles,
     hd,
-    // les arbres du morceau (v497) : combien en sont reconnus ici, et si le
+    // les arbres du morceau (v499) : combien en sont reconnus ici, et si le
     // morceau a été maillé AVEC leurs modèles — `main.js` le relaie comme le
     // détail de Paris
     // (seulement quand les arbres sont armés : l'empreinte des 490 morceaux

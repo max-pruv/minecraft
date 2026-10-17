@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v497 — De vrais arbres, le voxel reste le squelette
+## v499 — De vrais arbres, le voxel reste le squelette
 
 **Pourquoi.** Max : « Change tous les arbres pour avoir de vrais arbres, pas
 des arbres façon Minecraft. » Un arbre du jeu était un fût d'un bloc et une
@@ -66,7 +66,82 @@ ciel ; taïga ; tropiques ; Méditerranée ; Champs-Élysées du trottoir et en 
 Portail complet sur le code fusionné à la v487 : treize suites vertes, et les
 rouges de `carte`, `manhattan`, `monte` et `reseau` tous déjà déclarés dans
 `TASKS.md` avec leur double mesure (le détail y est, sous « Portail de la
-v497 »).
+v499 »).
+## v498 — Dos à un mur, la caméra voit encore la voiture
+
+**Pourquoi.** Max : « la zoomer out un petit peu et faire comme dans GTA :
+quand la voiture tourne, on voit le flanc ». Le recul (6,4, v279), le cap en
+retard (v278) et la visée sur la voiture (v422) étaient livrés, mais jugés
+seulement au banc, et personne n'avait regardé la caméra contre un mur. Une
+sonde de captures (virage à gauche, à droite, rue étroite, mur derrière le
+coffre) l'a montré : rapprochée par le mur, la caméra gardait l'assiette du
+regard, et la voiture sortait par le BAS de l'écran (milieu projeté à −1,17) —
+on ne voyait que l'intérieur de la carrosserie.
+
+**Ce que ça change.** Dos à un mur, la caméra monte d'un bloc par bloc gagné
+et plonge vers la voiture juste assez pour la garder à sa place habituelle
+dans le cadre : on la voit en entier, par-dessus. En ligne droite, en virage
+et dans une rue étroite, rien ne bouge (mêmes chiffres au centième).
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js` pose un mur à 3,2 blocs
+derrière la voiture et lit la projection du milieu de la caisse : −1,17 avant,
+−0,29 après (barre 0,9). Et `sonde-captures-camera-volant.cjs` lit dans la
+matrice le flanc que la caméra regarde : virage à gauche → flanc gauche
+(β 10,8°), à droite → flanc droit (β −13°), un seul signe chacun.
+## v497 — En « Loin », on voit trois fois plus loin
+
+**Pourquoi.** Max : « Je voudrais que le mode Loin, quand on voit de loin, soit
+encore beaucoup plus loin. » Au palier « Loin », le paysage lointain s'arrêtait
+à 848 blocs (rr 16 × 16 × 3,3) et le brouillard le fermait là. Le pousser par
+les chiffres évidents était interdit : `rr`, la file de maillage, `hdMo` et la
+vitesse des jets sont les chiffres que le dépôt a mesurés comme nuisibles et
+qui ont fait planter l'iPhone de Max (v269, v291, v299). Et tripler la grille
+fine du paysage (un sommet tous les huit blocs) aurait multiplié ses sommets
+par neuf — plus de vingt mégaoctets.
+
+**Ce que ça change.** Au palier « Loin » seulement, une **couronne lointaine**
+prolonge le paysage de 848 à **2 560 blocs** : une seconde grille, quatre fois
+plus lâche (un sommet tous les trente-deux blocs), qui commence là où la fine
+s'arrête, avec les villes, les lacs et les montagnes au loin. Le brouillard
+recule avec elle et le plan lointain de la caméra aussi (900 → 2 860). Elle ne
+fabrique aucun morceau de monde : elle lit `terrainHeight`, pure, et le relief
+ne bouge pas d'un bloc. Les étendues « Normal » et « Court », et un appareil
+sans palier, rendent exactement ce qu'ils rendaient. `?loin=0` l'éteint,
+`?loin=3000` la force ; `?diag=1` affiche la portée (« horizon 2560 »).
+
+Mesuré au banc (`tests/sonde-horizon-loin.cjs`, deux passages, en vol et au
+sommet d'une colline près de Zurich ; « sans » est `?loin=0`, le chemin de la
+v496) :
+
+| | portée visible | octets du paysage | découpe (4 fois/s) | remplissage complet |
+| --- | --- | --- | --- | --- |
+| Loin, sans couronne | 846 à 848 | 4,97 Mo | 3,1 à 4,4 ms | 117 à 159 ms |
+| **Loin, avec couronne** | **2 550 à 2 576** | **4,97 + 3,36 Mo** | **+2,1 à 4,0 ms** | **+68 à 82 ms** |
+| Normal (rr 12) | 630 à 632 | 3,31 Mo | 2,0 à 4,0 ms | 68 à 102 ms |
+
+La couronne coûte ce que coûte la grille fine d'un iPad au palier moyen
+(25 921 sommets, 21 872 triangles dessinés), et son remplissage se fait par
+tranches de trois millisecondes par image au plus — une demi-milliseconde tant
+que la grille fine a des trous. **Ce que le banc ne peut pas dire** : le coût
+de REMPLISSAGE des pixels (2 → 1,2 images par seconde des deux côtés au banc,
+sans écart mesurable) est du rendu LOGICIEL (SwiftShader) et ne se transpose
+pas à la tablette (v237). Sur l'iPhone, c'est `?palier=haut&diag=1` qui le
+dira ; `?loin=0` reste la porte de sortie.
+
+**Ce qui le prouve.** Quatre témoins neufs. Dans `maj.js` : « Loin » voit
+beaucoup plus loin — couronne à 2 560, brouillard à 2 560, plan lointain
+au-delà, `rr` et la file inchangés (rouge sur l'ancien code : brouillard à
+632, pas de couronne) ; et sans palier comme au palier moyen, le paysage
+lointain est celui d'avant (632, plan lointain à 900, aucune couronne — vert
+des deux côtés à dessein, il garde ce qu'on ne veut pas casser). Dans
+`plafond.js` : la couronne porte à 2 560 blocs dans l'axe du regard et ne
+dessine aucune case dans le carré de la grille fine ; elle est posée sous la
+fine (pour que la fine gagne au tampon de profondeur) et tient en moins de
+quatre mégaoctets (rouge sur l'ancien code : le constructeur ignorait ses
+options).
+
+---
+
 ## v496 — La statue de la Liberté, et les feux de Manhattan
 
 Deux sujets, deux lignes au journal du jeu, deux témoins.

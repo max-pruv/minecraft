@@ -39,7 +39,7 @@ self.onmessage = (e) => {
     // refait l'index des monuments touchés (v292). Un journal installé à la
     // main laisserait le worker dessiner un monument qu'un enfant a creusé.
     monde.hd = m.hd || 0;
-    monde.arbres = m.arbres || 0;   // les vrais arbres (v497), à portée du détail
+    monde.arbres = m.arbres || 0;   // les vrais arbres (v499), à portée du détail
     monde.sansSolContinu = !!m.sansSolContinu;
     monde.installerEdits(m.edits, m.temps, m.ctx || 'local');
     return;

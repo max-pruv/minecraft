@@ -1,4 +1,4 @@
-// LES VRAIS ARBRES (v497) : des captures pour juger sur image — une forêt
+// LES VRAIS ARBRES (v499) : des captures pour juger sur image — une forêt
 // tempérée de près et en vol, la taïga, les palmiers des tropiques, les
 // oliviers et pins parasols, une rue plantée de Paris.
 //   node tests/sonde-captures-vrais-arbres.cjs <dossier> <étiquette> [nom,nom]

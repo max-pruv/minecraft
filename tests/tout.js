@@ -92,7 +92,7 @@ const GARDIENS = {
   // `horizon.js` lit `terrainHeight` et dessine ce que les morceaux n'ont pas
   // eu le temps de bâtir : `monte.js` l'éprouve en vol, `carte.js` garde le
   // rendu, `plafond.js` garde le sol qu'il lit.
-  'src/horizon.js': ['monte.js', 'carte.js', 'plafond.js'],
+  'src/horizon.js': ['monte.js', 'carte.js', 'plafond.js', 'maj.js'],
   'src/plafond-sol.js': ['monte.js', 'plafond.js', 'manhattan.js', 'carteMonde.js', 'washington.js', 'metro.js'],
   // LE PALIER DE L'APPAREIL (v284). Il décide la distance d'affichage, la
   // profondeur de file du mailleur et la vitesse des jets : `monte.js` garde le

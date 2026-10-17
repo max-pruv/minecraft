@@ -6,12 +6,28 @@
 
 export const NOUVEAUTES = [
   {
-    v: 497,
+    v: 499,
     titre: 'De vrais arbres',
     puces: [
       'Les arbres ont un tronc et des branches',
       'Sapins, palmiers, oliviers, bouleaux',
       'Les blocs ne changent pas : grimpe dessus',
+    ],
+  },
+  {
+    v: 498,
+    titre: 'La caméra suit la voiture',
+    puces: [
+      'Dos à un mur, on voit la voiture',
+      'La caméra monte et regarde par-dessus',
+    ],
+  },
+  {
+    v: 499,
+    titre: 'En Loin, on voit très loin',
+    puces: [
+      'Les montagnes au loin, trois fois plus loin',
+      'Seulement si tu choisis « Loin »',
     ],
   },
   {

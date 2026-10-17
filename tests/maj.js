@@ -778,7 +778,32 @@ function verifier(nom, ok, detail = '') {
     const sansMesure = await banc.joueur('Gaspard', { rr: 12 });
     await sansMesure.waitForFunction(() => window.__game, null, { timeout: 90000 });
     const avant = await sansMesure.evaluate(() => window.__game.reglageApplique);
+    // LE PAYSAGE LOINTAIN TEL QUE LA PAGE LE REND (v497) : le brouillard, le plan
+    // lointain de la caméra, et ce qui porte un nom d'horizon dans la scène. Lu
+    // dans la SCÈNE, pas dans une table : c'est ce que l'écran montre.
+    const vueDe = (p) => p.evaluate(() => {
+      const g = window.__game;
+      const l = g.scene.getObjectByName('horizon-loin');
+      return { brouillard: g.scene.fog.far, planLointain: g.camera.far,
+        fine: g.horizon.rayon, pasFine: g.horizon.pas || 8, abaisseFine: g.horizon.abaisse || 0,
+        loin: l ? Math.round(g.horizonLoin.rayon) : 0, pasLoin: l ? g.horizonLoin.pas : 0 };
+    });
+    const vueSans = await vueDe(sansMesure);
     await sansMesure.close();
+    const moyen = await banc.joueur('Léontine', { rr: 12, params: '&palier=moyen' });
+    await moyen.waitForFunction(() => window.__game, null, { timeout: 90000 });
+    const vueMoyen = await vueDe(moyen);
+    await moyen.close();
+    // ET LES PALIERS QUI NE SONT PAS « LOIN » NE VOIENT PAS PLUS LOIN (v497).
+    // Sans palier comme au palier moyen, le paysage est celui de la v487 au bit
+    // près : la grille fine à 632 blocs (rr 12), le brouillard au même endroit,
+    // le plan lointain à 900, et aucune couronne lointaine. Vert des deux côtés
+    // à dessein (v220) : il garde ce qu'on ne veut pas casser — la mémoire que
+    // l'iPhone a déjà payée deux fois (v291, v299).
+    const vueInchangee = (v) => v.brouillard === 632 && v.planLointain === 900 && v.fine === 632
+      && v.pasFine === 8 && v.abaisseFine === 0 && v.loin === 0;
+    verifier('sans palier et au palier moyen, le paysage lointain est celui d\'avant',
+      vueInchangee(vueSans) && vueInchangee(vueMoyen), JSON.stringify({ sans: vueSans, moyen: vueMoyen }));
     verifier('sans mesure, le jeu est celui d\'avant — un appareil non mesuré ne perd rien',
       avant.palier === null && avant.file === 8 && avant.jet === 120,
       JSON.stringify(avant));
@@ -796,6 +821,7 @@ function verifier(nom, ok, detail = '') {
     const haut = await banc.joueur('Isaure', { rr: 12, params: '&palier=haut' });
     await haut.waitForFunction(() => window.__game, null, { timeout: 90000 });
     const applique = await haut.evaluate(() => window.__game.reglageApplique);
+    const vueHaut = await vueDe(haut);
     // ET LA RÈGLE EST PURE, donc elle se démonte sans navigateur : on lui donne
     // les chiffres de l'iPhone de Max et ceux de l'iPad de quatre ans.
     const regle = await haut.evaluate(() => ({
@@ -823,6 +849,17 @@ function verifier(nom, ok, detail = '') {
       applique.palier === 'haut' && applique.file === 8 && applique.jet === 120
         && applique.rr === 12 && regle.rrHaut === 16,
       JSON.stringify({ ...applique, rrDuPalierHaut: regle.rrHaut }));
+    // ET « LOIN » VOIT TROIS FOIS PLUS LOIN (v497). Max : « que le mode Loin,
+    // quand on voit de loin, soit encore beaucoup plus loin. » La couronne
+    // lointaine porte à 2 560 blocs, le brouillard recule avec elle et le plan
+    // lointain de la caméra aussi — sinon elle serait coupée net à 900. Et `rr`
+    // et la file ne bougent pas : ce sont les chiffres que le dépôt a mesurés
+    // comme nuisibles (v269, v291). Rouge sur l'ancien code : pas de couronne,
+    // brouillard à 632.
+    verifier('« Loin » voit beaucoup plus loin : une couronne lointaine à 2 560 blocs, sans toucher rr ni la file',
+      vueHaut.loin === 2560 && vueHaut.pasLoin === 32 && vueHaut.brouillard === 2560
+        && vueHaut.planLointain >= 2560 && vueHaut.fine === 632 && applique.file === 8 && applique.rr === 12,
+      JSON.stringify(vueHaut));
     // ET LA CHAÎNE ENTIÈRE SE SUIT : jouer, mesurer, ranger. La fenêtre vaut
     // trente secondes de JEU par défaut — `?palierms=` la raccourcit ici, et
     // c'est un réglage de banc qui se REJOUE (v277), pas un chiffre caché.

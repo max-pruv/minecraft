@@ -1,6 +1,6 @@
 # Ce qui est en cours
 
-- [ ] **PORTAIL DE LA v497 (les vrais arbres), sur le code fusionné à la
+- [ ] **PORTAIL DE LA v499 (les vrais arbres), sur le code fusionné à la
   v487 : dix-sept suites, aucun rouge de la livraison.** Les deux premiers
   passages (avant la fusion) ont rendu deux rouges qui étaient à moi, corrigés
   avant le troisième : l'empreinte des 490 morceaux (`756ed744…` pour
@@ -43,7 +43,7 @@
   La couche est inerte sur ces pages : `world.arbres` ne vaut 1 que si
   `RAYON_HD > 0`, et le banc rend en logiciel — seules les pages `hd=` de
   `parishd.js` et `plafond.js` (node) l'arment, et elles sont vertes.
-- [ ] **LES VRAIS ARBRES (v497) : UNE DEMI-COURONNE À LA FRONTIÈRE DE
+- [ ] **LES VRAIS ARBRES (v499) : UNE DEMI-COURONNE À LA FRONTIÈRE DE
   `RAYON_HD`.** Un arbre dont la couronne déborde sur le morceau voisin est
   émis par le morceau qui porte son fût ; ses feuilles DANS le voisin sont
   cachées (`plat`) seulement si ce voisin est détaillé lui aussi. Au bord
@@ -56,9 +56,26 @@
   la v287).** La passe d'ombre de three échantillonne `map` aux UV bruts ;
   les façades portent des UV en unités du monde repliées par le shader de la
   couche, hors de l'atlas pour la passe d'ombre : alpha nul, ombre absente là
-  où `alphaTest` coupe. Vu en préparant les arbres (v497), dont les cartes
+  où `alphaTest` coupe. Vu en préparant les arbres (v499), dont les cartes
   ont des UV absolues pour cette raison. À mesurer en capture d'ombre portée
   à Paris avant de toucher `facadeshd.js` (session hd-fabrique).
+- [ ] **LA COURONNE LOINTAINE DU PALIER « LOIN » (v497) SE MESURE SUR
+  L'IPHONE.** Au banc (rendu logiciel) : +3,36 Mo, découpe +2 à 4 ms quatre
+  fois par seconde, remplissage complet 68 à 82 ms par tranches de 3 ms. Le
+  coût de REMPLISSAGE des pixels ne se transpose pas (v237). À relever sur
+  l'iPhone de Max : `?palier=haut&diag=1` contre `?palier=haut&loin=0&diag=1`
+  (cadence, pire image), en vol et au sol. Si le jeu plante encore sous
+  « Loin », `?loin=0` est la porte de sortie et `loin` se baisse dans la fiche.
+  Au portail de la v497, `monte.js` a rendu cinq rouges tous DÉJÀ déclarés
+  ci-dessous (« deux voisines d'un convoi », « au feu… au lieu de piler »,
+  « feux de détresse », « rue vide », « un mur pris de face ») — preuve
+  STRUCTURELLE (v291) : aucune page de `monte.js` ne demande `?palier=haut`,
+  donc `RAYON_LOIN` y vaut 0 et la couronne n'existe pas ; le reste du chemin
+  (grille fine sans options, brouillard, plan lointain) est celui d'avant.
+  Second portail, rebasé sur la v495 (puis sur la v496) : sept suites vertes (`maj.js` 46
+  témoins, ceux de la couronne compris) ; `monte.js` trois des cinq (convoi,
+  feu, rue vide) et `manhattan.js` « sans erreur de jeu » (PeerJS, déclaré).
+
 - [ ] **Rouges de portail mesurés des deux côtés au portail de la v494 (les
   commandes simplifiées)** — double mesure de la v195, suites rejouées SEULES
   sur la branche et sur `origin/main` v487 (`git worktree`). `carte.js` : verte
@@ -5701,13 +5718,33 @@ l'embarquement a eu lieu, pas par une hypothèse.
   lecture-là. Rien ne le garde aujourd'hui : les deux témoins de la v279
   mesurent la ville que le banc peuple, qui n'est pas Manhattan.
 
-- [ ] **LE RECUL DE LA CAMÉRA N'A ÉTÉ JUGÉ QUE SUR LE BANC (v279).** 6,4 au lieu
-  de 5,2, choisi sur trois captures du boulevard Voltaire depuis le même point.
-  Max juge sur captures, et il n'a pas encore vu celles-ci ; s'il le trouve trop
-  loin ou trop près, c'est une ligne de `montures.js`
-  (`poursuite: { recul, hauteur }`, la hauteur suivant la distance à 0,404).
-  Les vues de poursuite des AVIONS (18, 22, 13) n'ont pas été touchées : la
-  demande portait sur la voiture.
+- [ ] **AU PORTAIL DE LA v498 (caméra dos à un mur), DEUX SUITES ROUGES, AUCUNE
+  DE LA LIVRAISON (règle v195).** Deux portails, puis chaque suite rejouée SEULE
+  des deux côtés (`origin/main` v478 dans un arbre détaché). `monte.js` :
+  branche 226 verts / 8 rouges, `origin/main` 226 / 7 ; communs aux deux : « au
+  feu, la voiture freine », « on ne marche pas dans une rue vide », les deux de
+  Moscou ; le reste (voisines d'un convoi, flâneur et passage de Rome, l'avatar
+  `{"avatar":false}` déjà déclaré plus haut, « la rue roule ») sort d'un côté
+  ou de l'autre selon le passage — la famille de la circulation. `reseau.js` :
+  branche 86 / 4 (« deux enfants se retrouvent sans courtier », son passager,
+  « un hôte sans courtier est trouvé », « il le REJOINT » : `[[],[]]`),
+  `origin/main` 78 / 2 puis coupé par la borne de temps (« seule après le
+  départ de l'hôte », la reconnexion) — l'intermittence du relais déclarée plus
+  haut. Preuve structurelle : la livraison ne change que le TANGAGE de la
+  caméra de poursuite (`plongee`) et sa hauteur sous le plancher de recul ;
+  rien du réseau ni de la circulation ne la lit.
+  Après la fusion de la v496, `monte.js` rejouée seule : branche 240 / 6,
+  `origin/main` v496 240 / 5. Commun : « une voiture de la rue heurtée par
+  l'enfant s'arrête » (`{"id":null}` des deux côtés, jamais trouvée) et « la
+  rue vide ». « La rue se fabrique par tranches » rouge une fois sur la branche
+  (`vues: 5` voitures en vue à l'arrivée), vert aux cinq autres passages des
+  deux côtés (5 à 14 vues) : un tirage du nombre de voitures dans le cadre.
+
+- [x] **LE RECUL DE LA CAMÉRA N'A ÉTÉ JUGÉ QUE SUR LE BANC (v279) — captures
+  prises en v498** (`tests/sonde-captures-camera-volant.cjs`, envoyées à Max) :
+  arrêt, ligne droite, virage à gauche et à droite, rue étroite, mur derrière.
+  Le recul reste à 6,4 ; s'il le trouve trop loin ou trop près, c'est toujours
+  une ligne de `montures.js`. Les vues des AVIONS n'ont pas été touchées.
 
 - [ ] **LES CINQ ROUGES DE `manhattan.js` AU PORTAIL DE LA v279 — QUATRE
   MESURÉS SUR `origin/main`, ET LE CINQUIÈME RESTE OUVERT.** Rejoué SEUL des
@@ -5979,36 +6016,12 @@ l'embarquement a eu lieu, pas par une hypothèse.
   témoin mesure ce que l'enfant obtient : marcher droit sur une voiture garée,
   et s'arrêter devant au lieu de ressortir de l'autre côté.
 
-- [ ] **LA VUE EN VOITURE EST TROP SERRÉE, ET ELLE NE MONTRE PAS LE VIRAGE
-  (Max, après v276).** « La vue de la voiture, je la trouve pas très cool. Il
-  faudrait la zoomer out un petit peu et faire comme dans GTA : quand la
-  voiture tourne, on voit vraiment la voiture qui tourne, on voit le flanc de
-  la voiture sur le côté. »
-
-  La vue de poursuite EXISTE déjà (`poursuite` dans la fiche, montures.js,
-  décidée par Max après deux essais de vue intérieure) — elle est seulement
-  trop près et trop rigide :
-
-  ```
-  montures.js   voiture … poursuite: { recul: 5.2, hauteur: 2.1 }
-  fun.js:1293   if (a.def.poursuite) { … cos(player.yaw), sin(player.yaw) … }
-  ```
-
-  Deux défauts distincts, et le second est le vrai sujet. **Le recul** se
-  règle dans la fiche, comme pour les avions (13, 18, 22 selon l'appareil) :
-  c'est un chiffre, il se mesure sur captures. **La rigidité** est
-  structurelle : la caméra lit `player.yaw` à l'image même, donc elle tourne
-  EXACTEMENT avec la voiture et l'on ne voit jamais le flanc. Il lui faut un
-  cap PROPRE qui rattrape celui du véhicule avec du retard — c'est ce retard,
-  et lui seul, qui fait qu'on voit la voiture s'inscrire dans son virage.
-
-  Deux pièges connus du dépôt à reprendre ici : le retard se compte en TEMPS
-  RÉEL et non en `dt` (v226), sinon la caméra traîne deux fois plus sur une
-  tablette qui rame ; et **un signe se regarde, il ne se déduit pas** (v231,
-  v249) — une caméra qui retarde du mauvais côté montre le flanc opposé au
-  virage, et aucune mesure d'amplitude ne l'en distingue. Deux captures, un
-  virage à gauche et un à droite, AVANT d'écrire le témoin.
-
+- [x] **LA VUE EN VOITURE EST TROP SERRÉE, ET ELLE NE MONTRE PAS LE VIRAGE
+  (Max, après v276).** Fait par la v278 (cap en retard), la v279 (recul 6,4),
+  la v422 (visée sur la voiture, retard borné, mur cherché cellule par cellule)
+  et la v498 (dos à un mur, la caméra monte et plonge : la voiture ne sort plus
+  par le bas du cadre). Mesuré dans la matrice : virage à gauche → flanc gauche
+  (β 10,8°), à droite → flanc droit (β −13°). Reste à la juger sur l'iPad.
 
 - [ ] **LE TÉMOIN DES REDÉMARRAGES AU VERT COMPTE UN INSTANT, PAS UN
   ÉVÉNEMENT (v275).** « Et la circulation s'arrête au feu rouge, puis repart

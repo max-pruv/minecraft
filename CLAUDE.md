@@ -881,6 +881,27 @@ enceinte, une aiguille) : le Capitole de Toulouse et Saint-Sernin restent des
 LIEUX tant qu'ils n'ont pas leur bâtisseur — jamais une coupole de gabarit
 (v369).
 
+## La couronne lointaine du palier « Loin » (v497) — on voit plus loin par une grille plus lâche, pas par plus de monde
+
+Deux règles.
+
+- **VOIR PLUS LOIN NE SE PAIE PAS EN MORCEAUX.** `rr`, la file, `hdMo` et
+  `VITESSE_JET` du palier `haut` sont des chiffres mesurés nuisibles (v269,
+  v291, v299) : on ne les touche pas pour la portée. Le paysage lointain lit
+  `terrainHeight`, pure ; une SECONDE grille (`PAS_LOIN` 32, horizon.js) le
+  prolonge jusqu'à `loin` (2 560 blocs, dans la fiche de `haut`, palier.js), et
+  le brouillard et le plan lointain de la caméra reculent avec elle. Tripler la
+  grille fine aurait coûté neuf fois ses sommets ; la couronne coûte ce que
+  coûte une grille fine d'iPad (3,4 Mo). Un palier qui ne porte pas `loin` ne
+  construit rien, et un témoin de `maj.js` lit la SCÈNE (brouillard, plan
+  lointain, objets nommés) pour le garder.
+- **DEUX GRILLES QUI SE RECOUVRENT : LA FINE GAGNE, PAR CONSTRUCTION.** La
+  couronne ne dessine aucune case entièrement dans le carré de la fine, et là
+  où elles se recouvrent (le pas de trente-deux ne tombe pas sur le bord) elle
+  est posée `ABAISSE_LOIN` blocs plus bas et dessinée après : jamais de trou
+  de ciel entre les deux, jamais la grossière par-dessus la fine. Au-delà de
+  sa portée le brouillard est plein, elle n'y dessine rien.
+
 ## La fiche d'un garage suit ses murs (v487) — ce qui est rangé par position migre avec ses blocs
 
 Deux règles.
@@ -1751,6 +1772,15 @@ règles.
   dans l'image, et `sensations.js` reprend le suivi du bestiaire pour ne pas
   compter deux fois. Les avions gardent la poursuite d'avant à l'identique ;
   `?sensations=0` rejoue l'ancienne conduite, pour mesurer.
+
+**Dos à un mur, la caméra plonge (v498).** Rapprochée par un mur derrière le
+coffre, elle gardait l'assiette du regard libre et la voiture sortait par le
+bas du cadre (milieu projeté à −1,17) — ni le témoin du recul ni celui du
+flanc ne le voyaient, une capture l'a montré. `plongee` ajoute au tangage
+l'écart d'angle sous lequel on voit la caisse (zéro au recul de la fiche), et
+sous le plancher la caméra monte de `MONTEE_PRES` par bloc gagné. **Une
+caméra qu'on déplace pour éviter un obstacle se juge par ce qu'elle montre :
+on lit la projection de ce qu'elle doit filmer, pas sa position.**
 
 **La pente se dessine (v429).** La physique publie `player.tangage` (v408,
 nez en haut positif — le signe de `rotation.x` sur un modèle au nez en −z) et
@@ -12976,7 +13006,7 @@ sonde ne voient pas. `realisme.js` renouvelle les reflets quatre fois dans la
 vraie scène et vérifie le code WebGL ainsi que l'absence de maillage laissé
 caché.
 
-## Les vrais arbres (v497) — un arbre se reconnaît à la règle qui l'a planté
+## Les vrais arbres (v499) — un arbre se reconnaît à la règle qui l'a planté
 
 Max : « Change tous les arbres pour avoir de vrais arbres, pas des arbres façon
 Minecraft. » `src/arbreshd.js` (pur, lu par le worker) : la couche HD dessine

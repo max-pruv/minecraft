@@ -1275,7 +1275,7 @@ function verifier(nom, ok, detail = '') {
     verifier('à Londres, aucune erreur JavaScript', lon.erreurs.length === 0, JSON.stringify(lon.erreurs.slice(0, 3)));
     await lon.close();
 
-    // LES VRAIS ARBRES À L'ÉCRAN (v497). Deux pages dans la forêt la plus
+    // LES VRAIS ARBRES À L'ÉCRAN (v499). Deux pages dans la forêt la plus
     // dense près de (−1 500, −2 500), la couche forcée (`hd=2`) : l'une avec
     // les arbres en relief, l'autre avec `?arbres=0`. Ce que l'enfant voit :
     //  • à portée, un morceau de forêt porte ses arbres dans `facades` (visible)
