@@ -6803,6 +6803,23 @@ l'embarquement a eu lieu, pas par une hypothèse.
   cède en dernier — c'est la règle — mais le jour où le plan de Manhattan
   gagne Brooklyn et Queens, JFK doit revenir à sa vraie place.
 
+- [ ] **PORTAIL DE LA v474 (Liberty Island, feux de Manhattan) — DOUBLE
+  MESURE (règle v195).** Onze suites vertes, dont `manhattan.js` (34 verts).
+  Rouges : `maj.js` une puce de la v465 en neuf mots (corrigée, rejouée seule
+  42 verts) ; `carte.js` la flèche du GPS (dette v321) ; `monte.js` quatre.
+  Rejouée SEULE : branche 230 verts, `origin/main` (v473) 230 verts. Mêmes
+  rouges des deux côtés : « au feu, la voiture freine au lieu de piler »
+  (déclaré en tête, v471) et « on ne marche pas dans une rue vide »
+  (`[0,4,12,2,0,0,0,21]` contre `[0,3,8,1,0,0,1,18]`). « Un mur pris de
+  face » (rebond −1,89) : rouge sur `origin/main` seul et au portail de la
+  branche. « Au frein à main, les pneus crissent — même tout droit »
+  (`droit.posees: 0`) : une fois, branche seule, dans le couloir d'essai à
+  (41 000, 41 000). Preuve STRUCTURELLE (v291) : hors de Manhattan, la v474
+  ne change aucun chemin — `reglerLesFeux` et `passagePieton` n'ont changé
+  que sous `renduDansManhattan`, l'île ne se bâtit que dans sa boîte, et les
+  essaims d'optiques sont dans la racine cachée du rendu de la ville. Une
+  intermittence à suivre si un portail la rend encore.
+
 - [ ] **Manhattan sur la Terre : suite du réalisme.** Faits en v474 : la
   Statue de la Liberté sur Liberty Island, et la circulation commandée par les
   feux. Restent : berges et ponts raccordés au relief, intérieurs, diversité
