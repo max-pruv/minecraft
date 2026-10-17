@@ -70,6 +70,26 @@ export const PAS_HORIZON = 8;   // un sommet tous les huit blocs
 export const rayonHorizon = (rayonRendu, chunk) =>
   Math.round(rayonRendu * chunk * 3.3 / PAS_HORIZON) * PAS_HORIZON;
 
+// LA COURONNE LOINTAINE DU PALIER « LOIN » (v497). Max : « que le mode Loin,
+// quand on voit de loin, soit encore beaucoup plus loin. » Tripler la portée
+// de la grille fine (un sommet tous les huit blocs) multiplierait ses sommets
+// par NEUF — 45 000 → 400 000, une dizaine de mégaoctets et une découpe de
+// 390 000 cases quatre fois par seconde. On fait comme une carte : une SECONDE
+// grille, quatre fois plus lâche, qui commence là où la fine s'arrête. À mille
+// blocs, une case de trente-deux blocs fait moins d'un pixel de plus qu'une
+// case de huit, et le brouillard la délave déjà. Le prix est celui d'une
+// grille fine à rr 12 : 25 921 sommets, ~3,3 Mo, rien de fabriqué.
+//
+// Elle ne vit QUE dans la fiche du palier `haut` (`loin`, palier.js) : `bas`,
+// `moyen` et le chemin sans palier n'en construisent pas, et rendent donc ce
+// qu'ils rendaient au sommet près.
+export const PAS_LOIN = 32;
+export const rayonLoin = (blocs) => Math.round(blocs / PAS_LOIN) * PAS_LOIN;
+// Elle est posée SOUS la grille fine là où les deux se recouvrent, pour que
+// la fine gagne toujours au tampon de profondeur (même règle que le demi-bloc
+// sous la vraie surface, un étage plus loin).
+export const ABAISSE_LOIN = 2;
+
 // Le contenu se déplace de (−dix, −diz) cases. Même figure que `decalerCarte`
 // dans `main.js` : les lignes se parcourent dans le sens qui évite d'écraser ce
 // qu'on n'a pas encore lu, et `copyWithin` fait le reste.
@@ -243,10 +263,18 @@ export function urbainEn(world, x, z, villesMain) {
 }
 
 export class Horizon {
-  constructor(world, rayon) {
+  // `opts` (v497) ne sert qu'à la couronne lointaine du palier « Loin » :
+  // `pas` (l'écart entre sommets), `interieur` (la grille fine dont elle
+  // évite le carré), `abaisse` (ce qu'elle cède en hauteur), `bords` (la
+  // règle des falaises, inutile à mille blocs). Sans options, la grille de
+  // toujours, au sommet près.
+  constructor(world, rayon, opts = {}) {
     this.world = world;
     this.rayon = rayon;
-    const N = this.N = (rayon * 2) / PAS_HORIZON + 1;
+    const pas = this.pas = opts.pas || PAS_HORIZON;
+    this.interieur = opts.interieur || null;
+    this.abaisse = opts.abaisse || 0;
+    const N = this.N = (rayon * 2) / pas + 1;
     this.CASES = N - 1;
     this.ox = null; this.oz = null;          // l'origine de la grille, en CASES
     this.hauteurs = new Float32Array(N * N);
@@ -256,7 +284,7 @@ export class Horizon {
     this.aRaffiner = false;                  // reste-t-il un sommet à relire ?
     // le jeu l'éteint à l'accueil : la préparation garde toutes ses images
     this.raffinerPermis = true;
-    this.falaises = !!world.conf?.falaises;
+    this.falaises = opts.bords !== false && !!world.conf?.falaises;
     // La ville sous chaque sommet : la hauteur de bâti (0 = aucun) et la
     // couleur des toits. Elles DÉFILENT avec les hauteurs, comme tout le reste.
     this.bati = new Float32Array(N * N);
@@ -344,7 +372,7 @@ export class Horizon {
   // donné, et rend le nombre de colonnes calculées.
   maj(px, pz, budgetMs = 6) {
     const N = this.N;
-    const ncx = Math.round(px / PAS_HORIZON), ncz = Math.round(pz / PAS_HORIZON);
+    const ncx = Math.round(px / this.pas), ncz = Math.round(pz / this.pas);
     const nox = ncx - (N - 1) / 2, noz = ncz - (N - 1) / 2;
     if (this.ox === null) { this.ox = nox; this.oz = noz; this.pret.fill(0); this.curseur = 0; }
     else if (nox !== this.ox || noz !== this.oz) {
@@ -385,16 +413,20 @@ export class Horizon {
     const t0 = performance.now();
     let faites = 0;
     const total = N * N;
+    // `complet` (v497) : la couronne lointaine ne prend son budget plein que
+    // quand la grille fine n'a plus de trou à boucher.
+    this.complet = true;
     for (let n = 0; n < total; n++) {
       const i = (this.curseur + n) % total;
       if (this.pret[i]) continue;
       const ix = (i / N) | 0, iz = i - ix * N;
-      const x = (this.ox + ix) * PAS_HORIZON, z = (this.oz + iz) * PAS_HORIZON;
+      const x = (this.ox + ix) * this.pas, z = (this.oz + iz) * this.pas;
       this.hauteurs[i] = this.world.coteHorizon(x, z);   // le relief, ou la route qui le creuse (v300)
       this.ecrireSommet(i, x, z, this.hauteurs[i]);
       faites++;
       if ((faites & 255) === 0 && performance.now() - t0 > budgetMs) {
         this.curseur = (i + 1) % total;
+        this.complet = false;
         break;
       }
     }
@@ -417,7 +449,7 @@ export class Horizon {
     // Un demi-bloc SOUS la vraie surface : là où le monde chargé et le paysage
     // lointain se touchent, c'est toujours le vrai terrain qui gagne.
     pos[o] = x;
-    pos[o + 1] = id === BLOCK.WATER ? WATER_LEVEL + 0.4 : h + 0.5;
+    pos[o + 1] = (id === BLOCK.WATER ? WATER_LEVEL + 0.4 : h + 0.5) - this.abaisse;
     pos[o + 2] = z;
     let c = MAP_COLORS[id] || [140, 140, 140];
     // Sous une ville, hors de l'eau : le gris des rues mêlé aux toits.
@@ -465,7 +497,7 @@ export class Horizon {
       const i = (this.curseurRegle + n) % total;
       if (this.pret[i] !== A_RAFFINER) continue;
       const ix = (i / N) | 0, iz = i - ix * N;
-      const x = (this.ox + ix) * PAS_HORIZON, z = (this.oz + iz) * PAS_HORIZON;
+      const x = (this.ox + ix) * this.pas, z = (this.oz + iz) * this.pas;
       const h = this.hauteurs[i];
       const c = couleurDuBord(herbeDuClimat(this.climats[i]),
         matiereDuBord(h, th(x + 1, z), th(x - 1, z), th(x, z + 1), th(x, z - 1)));
@@ -507,15 +539,24 @@ export class Horizon {
     let n = 0;
     const mat = this.bat.instanceMatrix.array, col = this.bat.instanceColor.array, cap = this.capacite;
     let nb = 0;
+    // La couronne lointaine (v497) : le carré de la grille fine est à elle,
+    // et au-delà de sa portée le brouillard est plein — on n'y dessine rien.
+    const pas = this.pas, k8 = pas / 8;
+    const fine = this.interieur && this.interieur.ox !== null ? this.interieur : null;
+    const fx0 = fine ? fine.ox * fine.pas : 0, fx1 = fine ? (fine.ox + fine.CASES) * fine.pas : 0;
+    const fz0 = fine ? fine.oz * fine.pas : 0, fz1 = fine ? (fine.oz + fine.CASES) * fine.pas : 0;
+    const portee2 = this.interieur ? (this.rayon + pas) * (this.rayon + pas) : Infinity;
     for (let ix = 0; ix < CASES; ix++) {
-      const wx = (this.ox + ix) * PAS_HORIZON;
+      const wx = (this.ox + ix) * this.pas;
       const cxA = Math.floor(wx / CHUNK);
       for (let iz = 0; iz < CASES; iz++) {
-        const wz = (this.oz + iz) * PAS_HORIZON;
+        const wz = (this.oz + iz) * this.pas;
         const cz = Math.floor(wz / CHUNK);
         if (estDessine(cxA, cz)) continue;
+        if (fine && wx >= fx0 && wx + pas <= fx1 && wz >= fz0 && wz + pas <= fz1) continue;
         const dx = wx - px, dz = wz - pz;
         const d2 = dx * dx + dz * dz;
+        if (d2 > portee2) continue;
         if (d2 > 100 * 100 && dx * vx + dz * vz < -0.34 * Math.sqrt(d2)) continue;
         // LE SENS DE PARCOURS SE CALCULE, IL NE SE DEVINE PAS. Écrits
         // (a, c, b) — l'ordre qui vient sous les doigts — les deux triangles
@@ -534,10 +575,10 @@ export class Horizon {
           const pos = this.geo.attributes.position.array;
           const y0 = Math.min(pos[a * 3 + 1], pos[b * 3 + 1], pos[c * 3 + 1], pos[d * 3 + 1]) - 0.5;
           const m = mat, k = nb * 16;
-          m[k] = 6; m[k + 1] = 0; m[k + 2] = 0; m[k + 3] = 0;
-          m[k + 4] = 0; m[k + 5] = this.bati[a] + 0.5; m[k + 6] = 0; m[k + 7] = 0;
-          m[k + 8] = 0; m[k + 9] = 0; m[k + 10] = 6; m[k + 11] = 0;
-          m[k + 12] = wx + 1; m[k + 13] = y0; m[k + 14] = wz + 1; m[k + 15] = 1;
+          m[k] = 6 * k8; m[k + 1] = 0; m[k + 2] = 0; m[k + 3] = 0;
+          m[k + 4] = 0; m[k + 5] = this.bati[a] + 0.5 + this.abaisse; m[k + 6] = 0; m[k + 7] = 0;
+          m[k + 8] = 0; m[k + 9] = 0; m[k + 10] = 6 * k8; m[k + 11] = 0;
+          m[k + 12] = wx + k8; m[k + 13] = y0; m[k + 14] = wz + k8; m[k + 15] = 1;
           col[nb * 3] = this.toits[a * 3]; col[nb * 3 + 1] = this.toits[a * 3 + 1]; col[nb * 3 + 2] = this.toits[a * 3 + 2];
           nb++;
         }
@@ -564,7 +605,7 @@ export class Horizon {
       if (!this.pret[i]) manquantes++;
       else if (this.pret[i] === A_RAFFINER) aRaffiner++;
     }
-    return { pas: PAS_HORIZON, rayon: this.rayon, colonnes: this.N * this.N, manquantes, aRaffiner,
+    return { pas: this.pas, rayon: this.rayon, colonnes: this.N * this.N, manquantes, aRaffiner,
       triangles: this.geo.drawRange.count / 3, bati: this.bat.count };
   }
 }

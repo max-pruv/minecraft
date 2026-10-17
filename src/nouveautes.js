@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 497,
+    titre: 'En Loin, on voit très loin',
+    puces: [
+      'Les montagnes au loin, trois fois plus loin',
+      'Seulement si tu choisis « Loin »',
+    ],
+  },
+  {
     v: 496,
     titre: 'La statue de la Liberté',
     puces: [

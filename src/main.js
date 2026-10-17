@@ -30,7 +30,7 @@ import { materiauHD, geometrieHD } from './matierehd.js';
 import { Carte, MAP_COLORS } from './carte.js';
 import { toast } from './bandeau.js';
 import { creerGuides, DUREE_PANNEAU_MS } from './guides.js';
-import { Horizon, rayonHorizon } from './horizon.js';
+import { Horizon, rayonHorizon, rayonLoin, PAS_LOIN, ABAISSE_LOIN } from './horizon.js';
 import { fileDeMaillage, VITESSE_CONE, estUnSaut, FENETRE_ARRIVEE_MS, trouDevant, debitRecent } from './plafond-sol.js';
 import { mondeDevant, ligneDiagConduite } from './conduite.js';
 import { PALIERS, PALIER_CLE, choisirPalier, VITESSE_JET,
@@ -243,6 +243,18 @@ const PORTEE_LAMPE_RUE = 18;
 const INTENSITE_LAMPE_RUE = 28;
 // La portée du paysage lointain suit la distance d'affichage (voir horizon.js).
 const RAYON_HORIZON = rayonHorizon(RENDER_RADIUS, CHUNK);
+// ET AU PALIER « LOIN », UNE COURONNE LOINTAINE LA PROLONGE (v497) : le
+// palier `haut` porte `loin` (palier.js), une seconde grille quatre fois plus
+// lâche jusqu'à 2 560 blocs. Aucun autre palier ne la porte, et sans elle rien
+// ne change ici — ni le brouillard, ni le plan lointain de la caméra.
+// `?loin=0` l'éteint, `?loin=3000` la force (mesures, captures).
+const LOIN_FORCE = new URLSearchParams(location.search).get('loin');
+const RAYON_LOIN = (() => {
+  const voulu = LOIN_FORCE != null ? Number(LOIN_FORCE) || 0 : (PALIER && PALIER.loin) || 0;
+  const r = rayonLoin(voulu);
+  return r > RAYON_HORIZON + PAS_LOIN ? r : 0;
+})();
+const PORTEE_VUE = RAYON_LOIN || RAYON_HORIZON;
 // Millisecondes maximum consacrées par frame à construire des chunks.
 //
 // LE BUDGET ÉTAIT SOUS LE COÛT D'UN SEUL MORCEAU (v229). Mesuré dans la boucle
@@ -436,9 +448,12 @@ scene.background = DAY_SKY.clone();
 // six blocs — pour fondre le bord du monde chargé dans le ciel. Il n'y a plus
 // de bord à fondre, et à cent six blocs le paysage lointain arrivait déjà
 // délavé. Il commence au bout du monde proche et fond jusqu'à l'horizon.
-scene.fog = new THREE.Fog(scene.background, RENDER_RADIUS * CHUNK, RAYON_HORIZON);
+scene.fog = new THREE.Fog(scene.background, RENDER_RADIUS * CHUNK, PORTEE_VUE);
 
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 900);
+// Le plan lointain recule avec la couronne lointaine (v497) — de quoi voir son
+// bord depuis le ciel — et reste à 900 partout ailleurs, au bit près.
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1,
+  RAYON_LOIN ? RAYON_LOIN + 300 : 900);
 // La caméra de l'enfant voit toutes les couches (couches.js) : le décor que
 // la sonde des reflets dessine, et la carrosserie qu'elle ne dessine pas.
 voirTout(camera);
@@ -609,6 +624,14 @@ function materiauDeParis() {
 // morceaux par seconde quand voler en réclame cent soixante-cinq.
 const horizon = new Horizon(world, RAYON_HORIZON);
 scene.add(decor(horizon.objet()));
+// La couronne lointaine du palier « Loin » (v497) : `null` partout ailleurs.
+const horizonLoin = RAYON_LOIN ? new Horizon(world, RAYON_LOIN,
+  { pas: PAS_LOIN, interieur: horizon, abaisse: ABAISSE_LOIN, bords: false }) : null;
+if (horizonLoin) {
+  horizonLoin.mesh.name = 'horizon-loin';
+  horizonLoin.mesh.renderOrder = 2;          // après la grille fine, qui gagne au recouvrement
+  scene.add(decor(horizonLoin.objet()));
+}
 // LE BÂTI LOINTAIN SE COUPE EN RENDU LOGICIEL, COMME LES OMBRES ET LA COUCHE
 // HD (v331). Mesuré en A/B sur la même page, en vol vers Paris à rr=12, ordre
 // alterné : 4,8 · 5,8 · 5,7 images par seconde avec, 15,0 · 17,6 · 11,6 sans
@@ -619,6 +642,7 @@ scene.add(decor(horizon.objet()));
 {
   const voulu = new URLSearchParams(location.search).get('batiloin');
   horizon.bat.visible = voulu != null ? voulu !== '0' : !renduLogiciel();
+  if (horizonLoin) horizonLoin.bat.visible = horizon.bat.visible;
 }
 
 // LA MIGRATION AVANT LE CHARGEMENT, jamais après : `loadEdits` lit ce que le
@@ -3155,7 +3179,7 @@ function texteEtendue() {
   const prochain = palierRetenu({ choix, mesure: mesureRangee() });
   const a = reglageDe(prochain, IS_TOUCH);
   const b = reglageDe(PALIER, IS_TOUCH);
-  const suite = (a.rr !== b.rr || a.file !== b.file || a.hd !== b.hd)
+  const suite = (a.rr !== b.rr || a.file !== b.file || a.hd !== b.hd || a.loin !== b.loin)
     ? ' ⏳ Ça s\'applique au prochain lancement : reviens au menu 🏠 puis rejoue.'
     : '';
   return `Jusqu'où tu vois le paysage, et les détails des rues de Paris. ${base}${suite}`;
@@ -3184,7 +3208,7 @@ function renderEtendue() {
         // rechoisir ce qui tourne déjà ne doit pas faire croire à une attente.
         const a = reglageDe(palierRetenu({ choix: e.cle, mesure: mesureRangee() }), IS_TOUCH);
         const b = reglageDe(PALIER, IS_TOUCH);
-        const change = a.rr !== b.rr || a.file !== b.file || a.hd !== b.hd;
+        const change = a.rr !== b.rr || a.file !== b.file || a.hd !== b.hd || a.loin !== b.loin;
         toast(change ? `${e.mot} — reviens au menu 🏠 et rejoue` : `Graphismes : ${e.mot}`);
       });
       etendueChoix.appendChild(b);
@@ -8117,7 +8141,7 @@ function updateHud(dt) {
   debugEl.textContent =
     `${mediane ? (1000 / mediane).toFixed(0) : '–'} i/s médiane · pire image ${pire.toFixed(0)} ms · ${info.render.calls} appels · ${(info.render.triangles / 1000).toFixed(0)}k tri · ${info.programs ? info.programs.length : '?'} prog\n`
     + `graphismes ${graphismes()} · dpr ${renderer.getPixelRatio().toFixed(2)} (${canvas.width}×${canvas.height}) · ombres ${renderer.shadowMap.enabled ? 'ON' : 'off'} · reflets ${REFLETS_ACTIFS ? 'ON' : 'off'} · lampes ${LAMPES_ACTIVES ? 'ON' : 'off'}\n`
-    + `palier ${motDuPalier()} · étendue ${ETENDUE_CHOISIE} · rr ${RENDER_RADIUS} · file ${EN_ATTENTE_MAX} · hd ${RAYON_HD}`
+    + `palier ${motDuPalier()} · étendue ${ETENDUE_CHOISIE} · rr ${RENDER_RADIUS} · file ${EN_ATTENTE_MAX} · hd ${RAYON_HD} · horizon ${PORTEE_VUE}`
     // ET LE MESSAGE DIT SI LA MESURE SERA RANGÉE. Sous une étendue choisie à la
     // main, elle est prise pour informer et JETÉE (v290, règle de la v284) :
     // taire cette différence ferait croire à un classement qui n'arrivera pas.
@@ -8331,7 +8355,7 @@ window.__game = { fileMaillage: (m) => { fileDemandee = m; lastPlayerChunk = nul
   rechargeMaillage: (m) => { rechargeForcee = m || null; }, get fileDeMorceaux() { return meshQueue; },
   // la règle de la recharge, garde du rendu logiciel mise à part (v379) : un témoin
   // la lit au banc, où le rendu est toujours logiciel
-  get rechargeRegle() { return { arrivee: enArrivee(), rapide: fileRapide, regle: rechargeParRegle(), active: rechargeALArrivee() }; }, villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage, PALIERS, choisirPalier, mesurePalier, journal, memoireGPU,
+  get rechargeRegle() { return { arrivee: enArrivee(), rapide: fileRapide, regle: rechargeParRegle(), active: rechargeALArrivee() }; }, villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage, horizonLoin, PORTEE_VUE, PALIERS, choisirPalier, mesurePalier, journal, memoireGPU,
   RAYON_HD, BUDGET_FACADES, detailTenu, planDetail, get atlasHD() { return hd ? hd.atlas : null; },
   palierRetenu, palierPropose, etendueRange, reglageDe, PARAMS_FORCANTS,
   // CE QUE LE PALIER A RÉELLEMENT APPLIQUÉ, pas ce qu'il déclare : un témoin
@@ -8342,6 +8366,7 @@ window.__game = { fileMaillage: (m) => { fileDemandee = m; lastPlayerChunk = nul
     const jet = MONTURES.find((m) => m.key === 'chasseur');
     return { palier: PALIER ? PALIER.nom : null, source: PALIER ? PALIER.source : null,
       etendue: ETENDUE_CHOISIE, hd: RAYON_HD, facadesMo: BUDGET_FACADES / 1048576, rr: RENDER_RADIUS, file: EN_ATTENTE_MAX,
+      horizon: RAYON_HORIZON, loin: RAYON_LOIN, brouillard: scene.fog.far, planLointain: camera.far,
       ombres: renderer.shadowMap.enabled, jet: jet && jet.pilote ? jet.pilote.max : null,
       seRange: PALIER_SE_RANGE };
   }, get maillageDistant() { return !!maillageDistant; }, get avatarLocal() { return avatarLocal; }, get vehicules() { return vehicules; }, get passants() { return passants; }, get poissons() { return poissons; }, __archi: ARCHI, __paris: { PARIS: PARIS_ANCRE }, animalManager, edu, cloud, identity, admin, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), __presenceNow: presenceNow, __reprendreMonde: rememberWorld, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
@@ -8456,6 +8481,12 @@ function frame(now) {
   // va à la préparation (corps, programmes, fond de carte)
   horizon.raffinerPermis = running;
   horizon.maj(player.pos.x, player.pos.z, 6);
+  // la couronne lointaine (v497) prend ce que la fine laisse : trois
+  // millisecondes au plus, et rien tant que la fine a des trous à boucher
+  if (horizonLoin) {
+    horizonLoin.sansNY = renduDansManhattan;
+    horizonLoin.maj(player.pos.x, player.pos.z, horizon.complet ? 3 : 0.5);
+  }
   // La découpe se refait à une cadence en TEMPS RÉEL, et tout de suite si le
   // joueur a franchement tourné la tête — sinon le cône de vision découvrirait
   // un quart de seconde de ciel vide au milieu d'un virage.
@@ -8464,6 +8495,12 @@ function frame(now) {
     horizonCap = player.yaw;
     horizon.majDecoupe((cx, cz) => chunkMeshes.has(World.key(cx, cz)),
       player.pos.x, player.pos.z, vise, viseZ);
+    if (horizonLoin) {
+      const tl = performance.now();
+      horizonLoin.majDecoupe((cx, cz) => chunkMeshes.has(World.key(cx, cz)),
+        player.pos.x, player.pos.z, vise, viseZ);
+      horizonLoin.msDecoupe = performance.now() - tl;
+    }
   }
   updateSky(dt);
   updateWeather(dt);
