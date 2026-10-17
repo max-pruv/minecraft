@@ -86,12 +86,12 @@ travail est irrattrapable.
    se garde et se prouve (`CONF_V308`, empreinte relevée sur `origin/main`).
    Voir « Le fondu doux (v309) ».
 
-   **Elle a servi une ONZIÈME fois, en v485, pour Changi** — et c'est la
+   **Elle a servi une ONZIÈME fois, en v486, pour Changi** — et c'est la
    forme bornée, hors de la fenêtre d'empreinte : l'île de l'aérodrome est la
    zone à terre de son repère (`box + 30`), rien d'autre. Un témoin de
    `plafond.js` engendre le pays avec et sans Changi DANS LE MÊME CODE (zéro
    colonne changée hors de la zone), et la même découpe a été mesurée sur
-   `origin/main` et la branche. Voir « Changi (v485) ».
+   `origin/main` et la branche. Voir « Changi (v486) ».
 
    **Elle a servi une HUITIÈME fois, en v242, pour doubler le monde encore**
    — Max : « la ville de New York touche quasiment Montréal ». Manhattan,
@@ -777,7 +777,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Changi (v485) — une ville qui n'existe que par sa zone n'a pas de terre autour, et un aérodrome neuf ne touche pas aux mondes figés
+## Changi (v486) — une ville qui n'existe que par sa zone n'a pas de terre autour, et un aérodrome neuf ne touche pas aux mondes figés
 
 Deux règles.
 
@@ -997,7 +997,7 @@ Deux règles.
   Bleue sa branche : deux rames de branche à moins d'un tiers de tour se
   rattraperaient au bout — d'où trois rames de branche, pas six.
 
-## Le métro de Washington jusqu'au bout de la boîte (v478) — un ouvrage se creuse dans son emprise, pas dans le disque de la ville
+## Le métro de Washington jusqu'au bout de la boîte (v485) — un ouvrage se creuse dans son emprise, pas dans le disque de la ville
 
 Deux règles.
 
@@ -4263,6 +4263,15 @@ blocs autour du tronc** : `generateChunk` ne balaie les arbres que trois
 colonnes au-delà du morceau, et une couronne plus large serait coupée net au
 bord. Et le feuillage gris-vert s'est jugé en capture : à (82, 110, 62) il
 sortait presque noir, le témoin le trouvait très bien teint.
+**La savane (v485)** ferme la table, après TOUT le reste : le Kalahari, le
+Sahel, la Corne, les forêts humides du Congo et du Queensland et l'anneau
+semi-aride de l'Australie passent avant, ce qui laisse aux sept contours
+(soudanienne, Afrique de l'Est et australe, ouest de Madagascar, Cerrado,
+Llanos, nord de l'Australie) des bords grossiers sans risque. Un arbre neuf,
+`kind` 6, l'acacia : un fût fourchu et une ombrelle UNIQUE de trois blocs de
+rayon — plus plate que le pin parasol, qui a deux étages — et un buisson
+épineux sur cinq (l'olivier sur un tronc d'un bloc). Les sites du témoin
+tempéré (Kansas, Iowa, Pampa, Ukraine) restent hors zone, vérifié sous node.
 
 ## Les déserts chauds (v341) — le climat est une donnée de géographie, comme la côte
 

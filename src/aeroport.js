@@ -113,7 +113,7 @@ export const AEROPORTS = [
   { cle: 'sfo', nom: 'San Francisco', x: -38774, z: 7120, r: 72, sol: 44, profil: 'ville' },          // San Francisco, cap 155° — même écart qu'en v223, 384 blocs
   { cle: 'lax', nom: 'Los Angeles', x: -37536, z: 9087, r: 78, sol: 38, profil: 'hub' },              // Los Angeles, cap 245° SO — exact, 254 blocs · 14 blocs du disque de la ville
   { cle: 'ist', nom: 'Istanbul', x: 9945, z: 4500, r: 78, sol: 33, profil: 'hub' },                   // Istanbul, cap 330° NNO — exact, 409 blocs · eau 5 %
-  // CHANGI, SUR UNE TERRE GAGNÉE SUR LA MER (v485) — comme le vrai, bâti sur des
+  // CHANGI, SUR UNE TERRE GAGNÉE SUR LA MER (v486) — comme le vrai, bâti sur des
   // remblais au bout de l'île. Singapour n'existe dans le jeu que par la zone à
   // terre de sa ville (un disque de terre au milieu de la mer : le planisphère
   // n'a pas l'île) : aucun disque au sec dans les trois cents blocs, et c'était

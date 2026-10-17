@@ -113,8 +113,9 @@ export const NEIGE_TOUNDRA = 46;
 const DENSITE_MAX = 0.08;
 // L'HEURE DE LA RÈGLE DES CLIMATS (v345), relue à la fusion (v309) : un bloc
 // posé avant a été posé sur le monde d'avant, et son morceau garde ses arbres.
-// Relue à la fusion de la v469 (le climat méditerranéen ajoute des arbres).
-export const DATE_CLIMATS = Date.parse('2026-10-16T09:22:00Z');
+// Relue à la fusion de la v469 (le climat méditerranéen ajoute des arbres),
+// puis de la v485 (la savane en ajoute et en retire).
+export const DATE_CLIMATS = Date.parse('2026-10-17T17:27:00Z');
 export function solDeToundra(x, z, h) {
   if (h >= NEIGE_TOUNDRA) return BLOCK.SNOW;
   return fbm(x * 0.07, z * 0.07, SEED + 941) > 0.64 ? BLOCK.GRAVEL : BLOCK.GRASS;
@@ -1537,7 +1538,7 @@ const PLACES_AVANT = PLACES.map((p) => (p === GAULOIS ? GAULOIS_AVANT : p === VO
 const NOMS_MONUMENTS_PARIS = new Set(['Tour Eiffel', 'Arc de Triomphe', 'Pyramide du Louvre', 'Panthéon',
   'Invalides', 'Opéra', 'Montparnasse', 'Bastille', 'Moulin Rouge', 'Sacré-Cœur', 'Notre-Dame']);
 const AEROPORT_AVANT = new Map(AEROPORTS_AVANT_V306.map((a) => [a.nom, a]));
-// Les aérodromes nés après la v306 (Changi, v485) ne sont pas dans ce monde-là.
+// Les aérodromes nés après la v306 (Changi, v486) ne sont pas dans ce monde-là.
 const NES_APRES_V306_NOMS = new Set(AEROPORTS.filter((a) => NES_APRES_V306.has(a.cle)).map((a) => a.nom));
 function repereAvant(lm) {
   if (NOMS_MONUMENTS_PARIS.has(lm.name) && Math.hypot(lm.x - PARIS.x, lm.z - PARIS.z) < PARIS.r) {
@@ -2155,7 +2156,7 @@ function dansTrameLondres(x, z, t) {
   return du * du + dv * dv <= r * r;
 }
 const DC_NEUF = { solWashington, batirColonneWashington, VOIES_CIRCUITS_DC };
-// LE MÉTRO SOUS TOUTE LA BOÎTE DE WASHINGTON (v478). La ville s'arrête au
+// LE MÉTRO SOUS TOUTE LA BOÎTE DE WASHINGTON (v485). La ville s'arrête au
 // cercle du registre (187 blocs) ; la boîte va jusqu'au coin de Georgetown, à
 // Arlington et au Pentagone. Hors du cercle, rien ne creusait : les quais
 // d'Arlington Cemetery et de Pentagon étaient de la pierre, et 309 points de
@@ -2743,7 +2744,7 @@ export class World {
     this.morceauxAvantClimat = new Set(); // les morceaux (et leurs voisins) bâtis avant les climats (v345)
     this.colonnesCedees = new Set();    // les colonnes de Paris où la ville cède à ce qu'un enfant a bâti (v306)
     this.colonnesTrameLondres = new Set(); // les colonnes de Londres où la trame générique d'avant reste (v447)
-    this.colonnesMetroDC = new Set();     // celles de la boîte de Washington où le métro ne touche pas la surface (v478)
+    this.colonnesMetroDC = new Set();     // celles de la boîte de Washington où le métro ne touche pas la surface (v485)
     this.colonnesVilleAvant = new Set();  // celles de Londres, de Nice, de San Francisco, de Lille et de Washington où la ville d'avant le kit reste (v339, v359, v361, v370, v370)
     this.cacheSol = new Map();          // "x,z" -> { nat, cote } : la fiche d'une colonne (sol continu, v297)
     this.sansSolContinu = false;        // ?solcontinu=0 : la mesure A/B, jamais un réglage
@@ -3191,6 +3192,7 @@ export class World {
     if (cl === 'steppe') return f * 0.05;
     if (cl === 'tropiques') return Math.max(f, 0.6);
     if (cl === 'mediterranee') return f * 0.45;
+    if (cl === 'savane') return f * 0.15;
     return f;
   }
 
@@ -3238,7 +3240,7 @@ export class World {
     }
     if (this.cityAt(x, z)) return null; // no wild trees downtown
     // ni dans une bouche ou la tranchée du métro de Washington hors du
-    // cercle (v478) : un tronc y poussait au milieu de l'ouvrage
+    // cercle (v485) : un tronc y poussait au milieu de l'ouvrage
     if (!this.conf.villesAvant && x >= EMPRISE_METRO_DC.x0 - 1 && x <= EMPRISE_METRO_DC.x1 + 1
       && z >= EMPRISE_METRO_DC.z0 - 1 && z <= EMPRISE_METRO_DC.z1 + 1 && this.metroOuvertDC(x, z)
       && !this.arbreGardeDC(x, z)) return null;
@@ -3298,6 +3300,9 @@ export class World {
     // et des pins parasols épars — moins de bois que la forêt tempérée, un
     // peu plus d'arbres isolés dans la plaine
     else if (cl === 'mediterranee') density = forest > 0.62 ? 0.03 : forest > 0.48 ? 0.012 : 0.006;
+    // la savane (v485) : des arbres isolés partout dans les hautes herbes,
+    // quelques bosquets le long des creux — jamais de bois fermé
+    else if (cl === 'savane') density = forest > 0.62 ? 0.012 : 0.004;
     if (tirage >= density) return null;
     const h = this.terrainHeight(x, z);
     if (h <= WATER_LEVEL + 1 || h >= 58) return null; // only on grass
@@ -3322,6 +3327,9 @@ export class World {
     // sous le soleil méditerranéen (v469) : des oliviers, trapus, et un pin
     // parasol sur trois, haut fût nu et couronne plate
     if (cl === 'mediterranee') return roll < 0.65 ? { h, trunk: 2 + Math.floor(hash2i(x, z, SEED + 787) * 2), kind: 5 } : { h, trunk: trunk + 1, kind: 4 };
+    // dans la savane (v485) : des acacias en parasol, et un buisson épineux
+    // sur cinq (la silhouette trapue de l'olivier, sur un tronc d'un bloc)
+    if (cl === 'savane') return roll < 0.8 ? { h, trunk: 3 + Math.floor(hash2i(x, z, SEED + 788) * 2), kind: 6 } : { h, trunk: 1, kind: 5 };
     const kind = roll < 0.55 ? 0 : roll < 0.85 ? 1 : 2;
     return { h, trunk: kind === 2 ? trunk + 1 : trunk, kind };
   }
@@ -3714,7 +3722,7 @@ export class World {
           });
           continue;
         }
-        // Hors du cercle, dans la boîte : le métro seul (v478). Les mondes
+        // Hors du cercle, dans la boîte : le métro seul (v485). Les mondes
         // d'avant (`villesAvant`) ne creusaient pas ici, et ne creusent pas.
         if (!city && !this.conf.villesAvant && wx >= ZONE_WASHINGTON.x0 && wx <= ZONE_WASHINGTON.x1
           && wz >= ZONE_WASHINGTON.z0 && wz <= ZONE_WASHINGTON.z1) {
@@ -4058,6 +4066,22 @@ export class World {
               if (dx * dx + dz * dz > r * r + 1) continue;
               put(tx + dx, y, tz + dz, BLOCK.LEAVES, true);
             }
+          }
+        } else if (kind === 6) {
+          // acacia (v485) : le fût se fourche en deux branches obliques, et
+          // une ombrelle UNIQUE, mince et large, coiffe le tout — trois blocs
+          // de rayon au plus (le balayage déborde de trois), un petit dôme au
+          // milieu. Plus plat que le pin parasol, qui a deux étages.
+          const [bx, bz] = hash2i(tx, tz, SEED + 789) < 0.5 ? [1, 1] : [1, -1];
+          put(tx + bx, topY + 1, tz + bz, BLOCK.LOG, false);
+          put(tx - bx, topY + 1, tz - bz, BLOCK.LOG, false);
+          for (let dx = -3; dx <= 3; dx++) for (let dz = -3; dz <= 3; dz++) {
+            if (dx * dx + dz * dz > 10) continue;
+            put(tx + dx, topY + 2, tz + dz, BLOCK.LEAVES, true);
+          }
+          for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
+            if (dx && dz) continue;
+            put(tx + dx, topY + 3, tz + dz, BLOCK.LEAVES, true);
           }
         } else if (kind === 5) {
           // olivier (v469) : un tronc court, une couronne ronde et large

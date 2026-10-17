@@ -1,6 +1,6 @@
 # Ce qui est en cours
 
-- [ ] **Rouges de portail mesurés des deux côtés au portail de la v485 (Changi)**
+- [ ] **Rouges de portail mesurés des deux côtés au portail de la v486 (Changi)**
   — double mesure de la v195, `monte.js` rejouée SEULE sur la branche et sur
   `origin/main` v473 (`git worktree`) : « à Moscou, les rues sont pleines de
   voitures » (moins de six voitures en 45 s) et son dépendant « modèles ET
@@ -312,6 +312,23 @@
   piétons (v351) et le balayage des voitures (v395). Le témoin « un train
   s'arrête devant la voiture de l'enfant » reste rouge tant que ce n'est pas
   fait : il garde une vraie panne.
+- [ ] **AU PORTAIL DE LA v485 (la savane), TROIS ROUGES DE `monte.js` QUI NE
+  SONT PAS LA LIVRAISON — preuve STRUCTURELLE (v291).** « deux voisines d'un
+  convoi gardent leur longueur d'écart » (minVrai 3,69, à Paris (−330, 310)),
+  « une voiture de la rue heurtée… feux de détresse » (`id: null` : aucune
+  voiture trouvée) et « l'on ne marche pas dans une rue vide »
+  (`[0, 7, 12, 1, 0, 0, 2, 10]`, 3 arrêts vides). Les deux derniers sont déjà
+  déclarés comme intermittences de portail (v408, v426). La v474 ne change
+  rien hors des sept contours de savane : `climat` vaut null à Paris des deux
+  côtés, et `DATE_CLIMATS` ne marque que des blocs posés AVANT elle — le banc
+  n'en pose aucun. `monte.js` n'a pas été rejouée seule (budget de Max) :
+  la double mesure reste à faire si l'écart du convoi revient.
+  Second portail (après la fusion de la v477, la livraison étant alors la v478) : toutes les suites vertes sauf
+  `monte.js`, cinq rouges tous DÉJÀ déclarés (le passant au feu à Rome, 1 au
+  vert sur 8 ; la voiture qui pile au feu, v471 ; la rue vide ; les voitures
+  de Moscou et leur livrée), et aucun du premier portail ne revient : une
+  distribution d'intermittences. Rome (méditerranéenne), Paris et Moscou
+  n'ont pas changé de climat.
 - [ ] **PORTAIL DU JOURNAL DE BORD (v426) — DOUBLE MESURE (règle v195).**
   Deux portails (bases v408 et v411) rouges sur `maj.js`, `carte.js`,
   `manhattan.js`, `monte.js`. Déclarés plus bas : la flèche du GPS et le
@@ -7176,10 +7193,10 @@ l'embarquement a eu lieu, pas par une hypothèse.
   (245° → 325°), Haneda (160° → 250°), Los Angeles (245° → 305°), Roissy
   (43° → 0°, le nord-est de Paris étant le quartier des enfants). Le jour où
   la carte gagnera des côtes plus fines, ces cinq-là se replaceront. Changi
-  est FAIT en v485 : sur une île gagnée sur la mer (la zone à terre de son
+  est FAIT en v486 : sur une île gagnée sur la mer (la zone à terre de son
   repère), cap réel 70° → 82°, 201 blocs, casse bornée à la zone et mesurée
   des deux côtés. Reste, déclaré : aucune marche de migration ne suit un bloc
-  qu'un enfant aurait posé en mer à cet endroit avant la v485 (la terre monte
+  qu'un enfant aurait posé en mer à cet endroit avant la v486 (la terre monte
   autour de lui, ses coordonnées ne bougent pas) ; et le cap réel (70°) ne tenait pas
   deux pistes de trois cents blocs près de la ville : 82° est le plus proche qui
   les tienne (sonde, pas d'un degré sur deux, de 180 à 270 blocs).

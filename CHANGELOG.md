@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v485 — Changi, l'aéroport de Singapour, sur une terre gagnée sur la mer
+## v486 — Changi, l'aéroport de Singapour, sur une terre gagnée sur la mer
 
 **Pourquoi.** Il manquait Changi parmi les grands aéroports. Singapour, dans
 le jeu, est un disque de terre au milieu de la mer — le planisphère n'a pas
@@ -43,6 +43,36 @@ identique à la production autour de Changi. Les témoins des pistes, de
 l'ouvrage, des postes et des terminaux, qui bouclent sur tous les aérodromes,
 lisent Changi sans une ligne de plus : pistes 300 et 300, sans un trou ;
 remblai 4 et décaissé 3 sur la bande.
+
+---
+
+## v485 — La savane : herbe dorée et acacias
+
+**Pourquoi.** Après les déserts, la toundra, la taïga, les steppes, les
+forêts tropicales et le climat méditerranéen, la savane restait la prairie
+verte de Normandie, avec ses chênes et ses sapins : au Serengeti, en Zambie,
+dans le Cerrado et dans le nord de l'Australie.
+
+**Ce que ça change.** Sept régions réelles (la bande soudanienne sous le
+Sahel, l'Afrique de l'Est, l'Afrique australe, l'ouest de Madagascar, le
+Cerrado, les Llanos, le nord de l'Australie) ont les hautes herbes dorées de
+la saison sèche et des arbres isolés : des acacias, un arbre neuf et
+original au fût fourchu et à l'ombrelle plate, et quelques buissons
+épineux. La carte et le paysage lointain prennent la même couleur. Le
+relief ne bouge pas d'un bloc ; là où un enfant a bâti avant la règle, les
+arbres d'avant restent.
+
+**Ce qui le prouve.** Un témoin neuf de `plafond.js` lit vingt morceaux au
+Serengeti, en Zambie, dans le Cerrado, dans le Top End et au nord du Ghana
+contre le même monde sans la règle : 0 bloc de forme différente, 98 acacias
+pour 119 arbres (308 sans la règle), 7 460 sommets d'herbe teints sur
+12 032 ; sur `origin/main`, zéro acacia (rouge). Les sites tempérés
+(Kansas, Iowa, Pampa, Ukraine) restent hors zone, les deux empreintes du
+relief et celle des 490 morceaux ne bougent pas, `plafond.js` 160 verts. La
+teinte a été jugée en capture, au sol et du ciel.
+
+---
+
 
 ---
 
