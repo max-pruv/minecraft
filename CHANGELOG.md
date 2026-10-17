@@ -20,6 +20,44 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v475 — Des commandes plus simples
+
+**Pourquoi.** L'écran de jeu d'un téléphone portait jusqu'à quinze boutons :
+pause, sac, réglages, maison, caméra, messages, joueurs, souvenirs, photo, la
+pioche, la barre de blocs, saut, vol… — des emojis dans des carrés sombres
+éparpillés sur les quatre bords, et pas de règle pour dire lequel sert à quoi.
+Toucher l'écran pour regarder autour de soi cassait un bloc. Max a demandé de
+simplifier, puis, sur la maquette : « plus de transparence, moins de texte ».
+
+**Ce que ça change.** Une main pour bouger, une main pour agir. À gauche le
+joystick, dessiné en anneau fin même au repos ; à droite une seule pilule
+d'action (« Monter », « Conduire cette voiture », « Descendre »…) et trois
+boutons ronds au plus — Voler, Sauter, Construire. En haut à droite, UN bouton
+☰ ouvre un petit menu qui met la partie en pause : Mon sac, Mes photos, Prendre
+une photo, Carte du monde, Jouer avec un ami, Messages et Caméra quand on est en
+ligne, Apprendre, Réglages, Retour à l'accueil, et Reprendre. Construire devient
+un mode qu'on choisit : la barre de blocs (en haut, sous la pilule
+« Construction · Terminer »), Poser, Casser, Sauter — et hors de ce mode,
+toucher l'écran ne casse plus rien. Au volant : le joystick, Descendre et le
+frein à main ; aux commandes d'un avion, la colonne de bord reste où elle est.
+Les boutons sont en verre presque transparent, les icônes au trait fin et
+blanches, sans mot dessous ; seules les pilules portent du texte, sur une ligne.
+Aucune fonction ne disparaît : chaque ancien bouton est encore dans le menu.
+
+**Ce qui le prouve.** Sept témoins neufs dans `maj.js`, joués à 420 × 760 et à
+430 × 932 : à pied quatre boutons d'action au plus, ronds de 44 px, sans mot
+visible, rien qui se recouvre ni n'entre dans le quart du joystick ; une seule
+pilule, dont le mot le plus long tient sans être coupé ; en construction la
+barre, Poser et Casser, toujours sans recouvrement ; toucher l'écran ne casse
+rien hors construction et casse en construction ; chaque bouton remplacé existe
+encore, hors de l'écran, avec sa ligne de menu qui l'appuie ; le menu met en
+pause et « Reprendre » rend la partie ; et le contraste des icônes (3:1) et des
+pilules (4,5:1), fonds translucides composés sur le ciel de midi ET de minuit.
+Deux témoins repointés : le geste tactile de Manhattan passe par Construire,
+et « ils reviennent à pied » attend le bouton Construire au lieu de la pioche.
+Une sonde (`sonde-commandes.cjs`) rend les cinq états, jour et nuit, sur iPhone
+et iPad.
+
 ## v474 — Les dégâts n'oublient plus après vingt-quatre chocs
 
 **Pourquoi.** Une voiture garde l'histoire de ses vingt-quatre derniers chocs

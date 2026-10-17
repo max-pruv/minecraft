@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 475,
+    titre: 'Des commandes plus simples',
+    puces: [
+      'Un seul menu en haut à droite',
+      'Construire devient un bouton à part',
+      'Des boutons transparents, sans texte',
+    ],
+  },
+  {
     v: 474,
     titre: 'Chaque bosse compte',
     puces: [

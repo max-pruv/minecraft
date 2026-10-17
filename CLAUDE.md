@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Les commandes simplifiées (vVERSION) — une main pour bouger, une main pour agir
+## Les commandes simplifiées (v475) — une main pour bouger, une main pour agir
 
 Max : simplifier les commandes en jeu, puis sur la maquette « plus de
 transparence, moins de texte ». Cinq règles.
