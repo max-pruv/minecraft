@@ -73,6 +73,7 @@ import { CloudSave } from './cloud.js';
 import { EducationMode, GRADES, todayKey } from './education.js';
 import { lienDuJeu, dessinerQR, partagerLien, lienWhatsApp, lienSMS } from './partage.js';
 import { jouerLeSon, arreterLeSon, surSonEnAttente, Photographe, micOuvert } from './visio.js';
+import { initCommandes } from './commandes.js';
 
 // New York appartient à la Terre. Les anciennes adresses deviennent un lieu de départ.
 const VISITE_MANHATTAN = ['manhattan'].includes(new URLSearchParams(location.search).get('lieu')) || new URLSearchParams(location.search).get('carte') === 'manhattan';
@@ -589,7 +590,7 @@ activerTuilage(litMaterial);
 
 const world = new urbain.TerreUrbaine();
 world.hd = RAYON_HD > 0 ? 1 : 0;
-// LES VRAIS ARBRES (v488, arbreshd.js) : à portée de `RAYON_HD`, les arbres
+// LES VRAIS ARBRES (v497, arbreshd.js) : à portée de `RAYON_HD`, les arbres
 // d'un morceau — campagne, villes, Paris — sont dessinés en relief (tronc qui
 // s'effile, branches, cartes de feuilles) dans le tampon `facades`, et leurs
 // cubes partent dans `plat`, le loin. Même portée, même budget, même matériau
@@ -1182,7 +1183,7 @@ function installerMorceau(cx, cz, tampons) {
   const water = geometrieDepuisTampons(tampons.water);
   const lumineux = geometrieDepuisTampons(tampons.lumineux);
   const entry = { solid: null, water: null, lumineux: null, props: null, sol: null, facades: null, plat: null, platLumineux: null,
-    // ce morceau touche la couche HD (ou porte des arbres, v488), et il a été
+    // ce morceau touche la couche HD (ou porte des arbres, v497), et il a été
     // maillé AVEC ses façades détaillées (v296)
     hd: !!tampons.hd || !!tampons.arbres, detail: !!tampons.detail, arbres: Math.max(0, tampons.arbres || 0) };
   const pcx = Math.floor(player.pos.x / CHUNK), pcz = Math.floor(player.pos.z / CHUNK);
@@ -1341,7 +1342,7 @@ function montrerLeDetail(entry, cx, cz, pcx, pcz) {
   // morceau montre ses faces plates, quelle que soit la distance.
   // (un morceau détaillé dont le détail est vide — les feuilles d'un arbre
   // voisin, sans fût ici — cache quand même ses cubes : le voisin dessine
-  // l'arbre, v488)
+  // l'arbre, v497)
   const pres = entry.detail && Math.abs(cx - pcx) <= RAYON_HD && Math.abs(cz - pcz) <= RAYON_HD;
   if (entry.facades) entry.facades.visible = pres;
   if (entry.plat) entry.plat.visible = !pres;
@@ -1951,7 +1952,8 @@ function updateChunks() {
     return n > 0 && oui === n;
   };
   world.passagePieton = (x, z, cap) => {
-    if (renduDansManhattan) return null;
+    // À Manhattan aussi (v496) : ses carrefours ont leurs feux, et son sol
+    // porte les blocs de chaussée et de trottoir que `solPieton` lit.
     let feu = null;
     for (const f of feuxProches) if ((f.x - x) * (f.x - x) + (f.z - z) * (f.z - z) <= 25) { feu = f; break; }
     const paris = !feu && (x - PARIS_ANCRE.x) * (x - PARIS_ANCRE.x) + (z - PARIS_ANCRE.z) * (z - PARIS_ANCRE.z) < PARIS_ANCRE.r * PARIS_ANCRE.r;
@@ -2605,6 +2607,7 @@ const joyBase = document.getElementById('joy-base');
 const joyKnob = document.getElementById('joy-knob');
 const JOY_RADIUS = 50;
 let breakMode = true;
+let commandes = null;   // commandes.js, branché après initFun
 
 const touch = {
   joyId: null, joyX: 0, joyY: 0,
@@ -2612,7 +2615,11 @@ const touch = {
   holdTimer: null, repeatTimer: null,
 };
 
+// HORS CONSTRUCTION, TOUCHER L'ÉCRAN NE POSE NI NE CASSE RIEN (commandes
+// simplifiées) : on regarde autour de soi sans abîmer le monde. Construire
+// est un mode qu'on choisit, avec son bouton et sa pilule « Terminer ».
 function touchAction() {
+  if (commandes && !commandes.enConstruction()) return;
   (breakMode ? breakBlock : placeBlock)();
 }
 
@@ -2707,6 +2714,7 @@ document.getElementById('mode-btn').addEventListener('touchstart', (e) => {
   e.preventDefault();
   breakMode = !breakMode;
   e.target.textContent = breakMode ? '⛏️' : '🧱';
+  if (commandes) commandes.outil(breakMode);
 }, { passive: false });
 
 // Une voiture ne vole pas — et l'enfant doit savoir POURQUOI le bouton ne
@@ -2830,11 +2838,20 @@ let etatVehicule = '';
 function majBoutonsVehicule() {
   const enAvion = running && !!player.pilote;
   const enVehicule = running && (enAvion || player.gabarit > 1);
-  const cle = `${enVehicule}|${enAvion}`;
+  // `en-jeu` : la partie est à l'écran (le menu ouvert la met en pause sans
+  // la quitter) ; `en-vol` : l'enfant vole à pied.
+  const enJeu = overlay.style.display === 'none' && pauseBtn.style.display === 'block';
+  const enVol = !enVehicule && !!player.flying;
+  const cle = `${enVehicule}|${enAvion}|${enJeu}|${enVol}`;
   if (cle !== etatVehicule) {
     etatVehicule = cle;
     document.body.classList.toggle('en-vehicule', enVehicule);
     document.body.classList.toggle('en-avion', enAvion);
+    document.body.classList.toggle('en-jeu', enJeu);
+    document.body.classList.toggle('en-vol', enVol);
+    // On ne construit pas au volant : monter dans un véhicule termine la
+    // construction, et l'on revient à pied en mode Explorer.
+    if (enVehicule && commandes) commandes.construire(false);
   }
   if (!enVehicule) return;
   // LA MANETTE ET LE COMPTEUR NE S'ÉCRIVENT QU'EN AVION (v272). Ils ne sont
@@ -7703,11 +7720,16 @@ function eclairerLaRue() {
 const feuxPrets = cadence(500);
 let feuxProches = [];
 function reglerLesFeux() {
-  if (renduDansManhattan || !feuxPrets()) return;
+  if (!feuxPrets()) return;
   // l'heure de la rue, pas celle de la page (v305) : deux amis au même
   // carrefour voient le même feu, et les voitures qu'il arrête sont les mêmes
   const t = vehicules ? vehicules.horloge() * 1000 : performance.now();
   const px = player.pos.x, pz = player.pos.z;
+  // À MANHATTAN (v496), les feux ne sont pas des blocs de morceau : le plan
+  // les pose aux coins de ses carrefours, et le rendu de la ville allume leurs
+  // optiques. Même règle (`feux.js`), même horloge, même liste pour la
+  // circulation et pour les passants.
+  if (renduDansManhattan) { feuxProches = villeRealiste.feuxAutour(px, pz, t, PORTEE_FEU); return; }
   const pcx = Math.floor(px / CHUNK), pcz = Math.floor(pz / CHUNK);
   const proches = [];
   for (let dx = -7; dx <= 7; dx++) {
@@ -7780,6 +7802,7 @@ function feuRougeDevant(x, z, cap) {
   if (!proche || proche.etat === 'vert') return null;
   return { s: Math.max(0, proche.devant - ARRET_FEU_VISE), orange: proche.etat === 'orange' };
 }
+window.__feuRougeDevant = feuRougeDevant;   // ce que lit la voiture (témoins)
 window.__feux = () => feuxProches.map((f) => ({ x: Math.round(f.x), z: Math.round(f.z), axe: f.axe, etat: f.etat,
   vives: f.lampes.map((l) => l.visible) }));
 
@@ -8126,7 +8149,33 @@ function updateHud(dt) {
       roueLibre: player.roueLibre, pente: player.pente, atterrissage: player.atterrissage, suivi: player.suivi, derapage: player.derapage }) : '')
     + texteRoulage()
     + texteDegats()
-    + texteEmbarquement();
+    + texteEmbarquement()
+    + texteBlocVise();
+}
+
+// LE BLOC VISÉ SE NOMME, ET DIT QUI L'A POSÉ (v490). Le nom sous le réticule
+// est celui du bloc EN MAIN ; devant « des trucs bizarres dans Paris » (v295,
+// v298), la question était « qui a posé ÇA ? », et il a fallu le journal de
+// bord pour y répondre. Le monde le sait : un bloc du journal de l'enfant est
+// dans `world.edits`, avec sa date dans `world.editTimes` ; tout le reste, le
+// générateur l'a écrit. La visée est celle de la surbrillance — calculée à
+// chaque image de toute façon — retenue SEULEMENT sous `?diag=1` : hors
+// diagnostic, rien de plus ne se calcule ni ne s'écrit.
+let blocVise = null;
+function dateDuBloc(t) {
+  if (!t) return 'date inconnue';
+  const d = new Date(t), z = (n) => String(n).padStart(2, '0');
+  return `le ${z(d.getDate())}/${z(d.getMonth() + 1)}/${d.getFullYear()} à ${z(d.getHours())}h${z(d.getMinutes())}`;
+}
+function texteBlocVise() {
+  const h = blocVise;
+  if (!h) return '\nvisé : rien';
+  // l'identifiant se relit ici, à l'image du journal : la visée date de
+  // l'image d'avant, et un bloc posé entre les deux se nommerait de travers
+  const k = `${h.x},${h.y},${h.z}`, id = world.getBlock(h.x, h.y, h.z);
+  const nom = (BLOCK_INFO[id] && BLOCK_INFO[id].name) || `bloc ${id}`;
+  const origine = world.edits.has(k) ? `posé à la main ${dateDuBloc(world.editTimes.get(k))}` : 'posé par le jeu';
+  return `\nvisé : ${nom} (${h.x}, ${h.y}, ${h.z}) · ${origine}`;
 }
 
 // La dernière montée ou descente (v396) : c'est la ligne que Max lit sur la
@@ -8199,6 +8248,45 @@ fun.degats.brancherReseau((m) => { if (net && net.active) net.broadcast(m); });
 // place assise que main.js calcule : un seul corps, une seule assise.
 fun.brancherAvatar({ obtenir: obtenirAvatarLocal, placeAssise, pose: POSE_AU_VOLANT });
 fun.brancherPortieres((m) => { if (net && net.active) net.broadcast(m); });   // v377
+
+// LES COMMANDES SIMPLIFIÉES : un menu unique qui met le jeu en pause sans
+// quitter la partie, et le mode Construire. Les boutons d'avant restent dans
+// la page ; le menu les appuie.
+let menuTournait = false;
+commandes = initCommandes({
+  peutOuvrir: () => running && !edu.quizActive && !edu.hardStopActive,
+  pauser: () => { menuTournait = running; running = false; },
+  reprendre: () => {
+    if (!menuTournait || overlay.style.display !== 'none') return;
+    menuTournait = false;
+    if (IS_TOUCH || dragLook) running = true; else startGame();
+  },
+  lieu: () => {
+    const v = world.cityAt ? world.cityAt(player.pos.x, player.pos.z) : null;
+    return [myName(), v && v.name].filter(Boolean).join(' · ');
+  },
+  apprendre: () => edu.togglePanel(),
+  // Seul, « Jouer avec un ami » mène à l'écran des mondes en ligne — le
+  // chemin qu'un enfant prenait par l'accueil.
+  jouerAvecUnAmi: () => {
+    if (edu.quizActive || edu.hardStopActive) return;
+    leaveToMainMenu();
+    document.getElementById('online-btn')?.click();
+  },
+  outilCasse: () => breakMode,
+  choisirOutil: (casser) => {
+    breakMode = !!casser;
+    const mb = document.getElementById('mode-btn');
+    if (mb) mb.textContent = breakMode ? '⛏️' : '🧱';
+  },
+});
+if (IS_TOUCH) {
+  document.body.classList.add('tactile');
+  // la barre de blocs rejoint la file du haut, sous la pilule « Terminer »
+  const fc = document.getElementById('file-centre'), hb = document.getElementById('hotbar');
+  if (fc && hb) fc.insertBefore(hb, document.getElementById('construction-pill').nextSibling);
+}
+window.__commandes = commandes;
 
 // --- main loop -------------------------------------------------------------------------
 
@@ -8445,6 +8533,7 @@ function frame(now) {
   // la visée lit jusqu'à huit blocs devant les yeux : elle se tait tant que
   // le monde autour n'est pas rendu (v436)
   const hit = running && !attenteJoueur && (!world.arriveeEnCours() || mondePretAutour(8)) ? getTarget() : null;
+  if (DIAG) blocVise = hit;
   highlight.visible = !!hit;
   if (hit) highlight.position.set(hit.x + 0.5, hit.y + 0.5, hit.z + 0.5);
 

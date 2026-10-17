@@ -3497,7 +3497,7 @@ export class World {
     return false;
   }
 
-  // `cm` (v488) : le climat du morceau s'il est certain (`climatDuMorceau`),
+  // `cm` (v497) : le climat du morceau s'il est certain (`climatDuMorceau`),
   // pour ne pas redemander `climatReel` — des polygones — à chaque colonne :
   // la couche des vrais arbres demande la signature de chaque fût reconnu.
   // Sans lui, la colonne demande son climat elle-même, comme avant.

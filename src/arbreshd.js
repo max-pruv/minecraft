@@ -1,4 +1,4 @@
-// LES VRAIS ARBRES (v488) — le relief des arbres, en tampons.
+// LES VRAIS ARBRES (v497) — le relief des arbres, en tampons.
 //
 // Max : « Change tous les arbres pour avoir de vrais arbres, pas des arbres
 // façon Minecraft. » Un arbre du jeu est un fût d'un bloc et une couronne de

@@ -1,6 +1,6 @@
 # Ce qui est en cours
 
-- [ ] **PORTAIL DE LA v488 (les vrais arbres), sur le code fusionné à la
+- [ ] **PORTAIL DE LA v497 (les vrais arbres), sur le code fusionné à la
   v487 : dix-sept suites, aucun rouge de la livraison.** Les deux premiers
   passages (avant la fusion) ont rendu deux rouges qui étaient à moi, corrigés
   avant le troisième : l'empreinte des 490 morceaux (`756ed744…` pour
@@ -36,7 +36,7 @@
   La couche est inerte sur ces pages : `world.arbres` ne vaut 1 que si
   `RAYON_HD > 0`, et le banc rend en logiciel — seules les pages `hd=` de
   `parishd.js` et `plafond.js` (node) l'arment, et elles sont vertes.
-- [ ] **LES VRAIS ARBRES (v488) : UNE DEMI-COURONNE À LA FRONTIÈRE DE
+- [ ] **LES VRAIS ARBRES (v497) : UNE DEMI-COURONNE À LA FRONTIÈRE DE
   `RAYON_HD`.** Un arbre dont la couronne déborde sur le morceau voisin est
   émis par le morceau qui porte son fût ; ses feuilles DANS le voisin sont
   cachées (`plat`) seulement si ce voisin est détaillé lui aussi. Au bord
@@ -49,9 +49,57 @@
   la v287).** La passe d'ombre de three échantillonne `map` aux UV bruts ;
   les façades portent des UV en unités du monde repliées par le shader de la
   couche, hors de l'atlas pour la passe d'ombre : alpha nul, ombre absente là
-  où `alphaTest` coupe. Vu en préparant les arbres (v488), dont les cartes
+  où `alphaTest` coupe. Vu en préparant les arbres (v497), dont les cartes
   ont des UV absolues pour cette raison. À mesurer en capture d'ombre portée
   à Paris avant de toucher `facadeshd.js` (session hd-fabrique).
+- [ ] **Rouges de portail mesurés des deux côtés au portail de la v494 (les
+  commandes simplifiées)** — double mesure de la v195, suites rejouées SEULES
+  sur la branche et sur `origin/main` v487 (`git worktree`). `carte.js` : verte
+  des deux côtés (au portail, « la flèche du GPS », gauche 1,92 rad, la famille
+  déclarée plus bas). `monte.js` : branche 232 verts, 6 rouges ; `origin/main`
+  234 verts, 4 rouges. Des deux côtés : « un flâneur posé au milieu de la
+  chaussée » (Rome, 17 s sur la chaussée sur un essai) et « rue vide » (vus
+  `[0,0,8,3,0,0,0,26]` ici, `[0,4,2,0,0,0,1,30]` là). Branche seule : « à Rome,
+  en biais, passage peint » (déclaré), « la rue roule à l'allure d'une ville »
+  (tirage v472), « au feu, la voiture freine » (déclaré) et, NEUF dans ce
+  fichier, « à Londres, un passant traverse sur le passage peint » (1 sur 3
+  traversées sur le passage, 10 poses) — même famille de tirage que celui de
+  Rome. `origin/main` seul : « un mur pris de face » (rebond −1,88, déclaré)
+  et « les passants se posent quand le monde est là » (un passant dans un
+  mur). Preuve structurelle : la livraison ne change que le HUD (classes du
+  `body`, CSS, un menu) et le geste du doigt sur tablette ; aucune page de
+  `monte.js` n'est tactile pour ces témoins, et ni passants, ni feux, ni
+  circulation ne lisent le HUD.
+
+- [ ] **Rouges de portail mesurés des deux côtés au portail de la v492 (cinq
+  villes à la fiche)** — double mesure de la v195, `monte.js` rejouée SEULE sur
+  la branche et sur `origin/main` v473 (`git worktree`) : « au feu, la voiture
+  freine sur plusieurs relevés » (déjà déclaré) et « l'on ne marche pas dans une
+  rue vide » rouges des deux côtés (vus `[0,0,13,2,0,0,0,20]` ici,
+  `[0,3,13,2,0,0,0,25]` sur `origin/main`) ; `origin/main` rend en plus « un
+  flâneur posé au milieu de la chaussée en sort » et « au frein à main, les
+  pneus crissent ». Au portail complet, la branche rendait aussi « la rue roule
+  à l'allure d'une ville » et « un mur pris de face », absents rejouée seule :
+  les intermittences déjà déclarées plus bas. Preuve structurelle : la v492 ne
+  touche que cinq villes engendrées (Dublin, Toulouse, Melbourne, Nantes,
+  Montpellier), aucune n'est sur le trajet de `monte.js`. Second portail
+  (après fusion de la v487) : huit suites vertes, `monte.js` rouge sur quatre
+  témoins tous déjà déclarés — « à Rome aussi, en biais » (passage peint),
+  « deux voisines d'un convoi gardent leur écart » (minVrai 3,61 à Paris
+  (−330, 310), comme en v485), « l'on ne marche pas dans une rue vide » (vus
+  `[0,9,8,0,0,0,2,17]`) et « un mur pris de face » (rebond 0).
+- [ ] **`monte.js` « deux voisines d'un convoi gardent leur longueur d'écart »
+  ROUGE au portail de la v488 — sans rapport avec la livraison.** Mesuré :
+  `minTrace` 3,59 pour une barre à 4,4 (une longueur de voiture), `minVrai`
+  3,26, 140 relevés, 1 429 paires, à Paris vers (−330, 310), voiture 2 du
+  convoi. Preuve STRUCTURELLE que ce n'est pas la v488 (règle v291) : son diff
+  ne touche que `tests/maj.js`, sa sonde (lue par `maj.js` seule), la chaîne de
+  `CACHE_VERSION` et les textes de `nouveautes.js` (lus au clic sur le badge) ;
+  `monte.js` joue sans service worker un code identique à la v487. Au même
+  portail, « au feu, la voiture freine » et « l'on ne marche pas dans une rue
+  vide » rougissent comme déclaré plus bas. À rejouer SEUL des deux côtés
+  avant d'expliquer : la piste la plus proche est la voiture de file qui pile
+  derrière le feu (entrée ci-dessous), qui rapproche aussi deux voisines.
 - [ ] **Rouges de portail mesurés des deux côtés au portail de la v486 (Changi)**
   — double mesure de la v195, `monte.js` rejouée SEULE sur la branche et sur
   `origin/main` v473 (`git worktree`) : « à Moscou, les rues sont pleines de
@@ -156,6 +204,17 @@
   voitures l'une dans l'autre monte à 2–18 % (0 à 2 avec les passants) :
   probablement la même suiveuse qui rattrape sa tête. Le témoin reste rouge,
   il garde une vraie panne. Sonde : `tests/sonde-rue-feu.cjs` (`VIDE=1`).
+- [ ] **« ET L'ON NE MARCHE PAS DANS UNE RUE VIDE » (`monte.js`) ROUGE DES DEUX
+  CÔTÉS (mesuré en v491).** Rejouée SEULE : branche `vus [0,2,14,1,0,0,2,28]`
+  moyenne 5,9 pour 44 attendus ; `origin/main` v473 `[0,3,4,0,0,0,0,24]`
+  moyenne 3,9 pour 49. Au portail de la v491, `[0,3,4,0,0,0,0,31]`. La v491
+  ne touche que la chauffe de la flamme : en production, à démonter par une
+  sonde (passants nés, posés, visibles — la leçon v223).
+  Au second portail de la v491 : `reseau.js` vert ; trois rouges déjà déclarés
+  comme intermittences, tous verts au premier portail et au rejeu seul de la
+  même branche — « le loader dit combien de fichiers sont rangés » (`maj.js`),
+  « un mur pris de face » et « la caméra laisse la voiture glisser »
+  (`monte.js`).
 - [x] **L'AVION DE L'AMI ET SON ÉPAVE (v453) — témoin écrit en v476.** Trois
   verdicts dans `reseau.js` (l'ami voit l'appareil, il le voit prendre feu,
   l'épave reste là où il s'est écrasé), verts ; rouges tous trois quand `p.v`
@@ -1946,6 +2005,25 @@
   appelé pour ce morceau de campagne ; l'écart se prend désormais par paire
   alternée (désarmé de 6 ms : rouge, 7,2).
 
+- [ ] **AU PORTAIL DE LA v495 (règle de la v195), DEUX ROUGES NON DÉCLARÉS,
+  AUCUN DE LA LIVRAISON.** Les autres (`degats.js` l'élan, `maj.js` le loader,
+  `carte.js` la flèche du GPS, `manhattan.js` le taxi, `monte.js` le passant au
+  feu, le freinage au feu, la rue vide, le mur de face) sont déclarés plus bas.
+  - `monte.js` « deux voisines d'un convoi gardent leur longueur d'écart » :
+    `minTrace` 4,01 puis 3,65 aux deux portails, sur un convoi dont `ecart`
+    vaut 2,28 (Paris, −330, 310). Rejoué SEUL, trois passages de chaque côté
+    (`tests/sonde-ecart-convoi.cjs`, le passage de `monte.js` recopié) :
+    branche 5,40 · 5,40 · 5,44, `origin/main` (v479) 5,40 · 5,44 · 5,56 — même
+    distribution, vert partout. Le rouge dépend de ce que les témoins d'avant
+    laissent dans la rue (v279) : le convoi fautif n'est pas celui que la page
+    neuve voit (`ecart` 17,61). Piste : publier la clé du convoi dans
+    `ouTrace`, et vider la rue (ou relire le convoi visé) avant de mesurer.
+  - `reseau.js` « et deux enfants se retrouvent sans courtier du tout »
+    (`[[],[]]`) et, en découlant, « sans courtier, le conducteur voit son
+    passager assis ». `reseau.js` rejouée SEULE : verte sur la branche, verte
+    sur `origin/main` (v479). Rouge de portail.
+
+- [ ] **AU PORTAIL DE LA v474 (règle de la v195), DEUX ROUGES, AUCUN DE LA
 - [ ] **AU PORTAIL DE LA v484 (règle de la v195), DEUX ROUGES, AUCUN DE LA
   LIVRAISON.** `maj.js` « il couvre toutes les versions du journal » : la puce
   de la v465 (« Sur la mer, le train roule sur un viaduc ») dépasse la barre —
@@ -3778,7 +3856,27 @@
   bas au lancement suivant). À mesurer sur SON appareil, `?diag=1` : le tas et
   les tampons au moment où le disque de Paris est plein — le relevé du journal
   n'a pas de `tas` sur iOS (`performance.memory` absent).
-- [ ] **LE BLOC VISÉ SE NOMME, ET DIT QUI L'A POSÉ.** Le nom sous le réticule
+- [ ] **LES ROUGES DU PORTAIL DE LA v490 — AUCUN N'ATTEINT LE CODE NEUF.**
+  Portail (8 suites, 94 min) : `maj.js` 3, `carte.js` 2, `monte.js` 7. Rejouées
+  SEULES, une à la fois, des deux côtés (v195) :
+  - `maj.js` : branche 40 ✅ / 1 ❌ (le loader compte ses fichiers, dette
+    connue) ; `origin/main` 38 ✅ / 3 ❌ (la puce de la v465 à neuf mots —
+    corrigée ici — et deux témoins du palier, verts sur la branche).
+  - `carte.js` : branche tout vert (fond 318 / 111 ms) ; `origin/main` 4 ❌
+    (fond à froid 470 ms, appui long, proposition « Téléporter », flèche du GPS).
+  - `monte.js` : branche 225 ✅ / 9 ❌, `origin/main` 223 ✅ / 10 ❌. Identiques
+    des deux côtés : la rue fabriquée par tranches, le feu qui pile, la rue
+    vide, Moscou sans voitures (et ses livrées, qui en dépendent), le trou
+    devant l'avion au-dessus des villes, le mur pris de face. Branche seule :
+    le flâneur de Rome (déjà déclaré plus bas) et « deux voisines d'un convoi
+    gardent leur longueur d'écart » (3,64 blocs). `origin/main` seul : le
+    personnage au volant, l'allure d'une avenue, la voiture heurtée qui repart.
+  Preuve STRUCTURELLE en plus de la mesure : le code neuf de `main.js` n'est
+  lu que sous `DIAG`, et seule la page du témoin neuf ouvre `?diag=1`.
+  « Deux voisines d'un convoi » n'était pas déclaré : zone conduite, à reprendre
+  avec ses chiffres.
+
+- [x] **LE BLOC VISÉ SE NOMME, ET DIT QUI L'A POSÉ.** *(fait en v490 : ligne « visé » de `?diag=1`, témoin dans `monte.js`.)* Le nom sous le réticule
   est celui du bloc EN MAIN. En `?diag=1`, afficher le bloc sous le réticule
   et son origine — « posé par le jeu », ou « posé à la main » avec la date que
   `world.editTimes` connaît. C'est ce qui aurait répondu à « qui l'a posé ? »
@@ -5326,24 +5424,33 @@ l'embarquement a eu lieu, pas par une hypothèse.
   et le « flanc frôlé » de la v397, rouge à l'identique sur `origin/main`).
   PREUVE STRUCTURELLE en plus : le code neuf n'est atteint que sous
   `embarq: 1` en descendant d'un avion au sol ; aucune de ces pages ne le fait.
-- [ ] **MONTER DANS UN TRAIN OU UN MÉTRO PAR SA PORTE — DÉCLARÉ, PAS LIVRÉ
-  (session embarquement, v400 ; relu en v407, rien n'a bougé côté
-  `construireRame` : POUR LA SESSION CIRCULATION-VIVANTE, l'étape (1)
-  ci-dessous est le seul verrou).** `bord` (fun.js) colle encore l'enfant au
-  siège d'une rame d'un coup. La même discipline que l'avion (v389) le
-  ferait : l'accès se déclare avec le MODÈLE (`userData.porte` posé par
-  `construireRame`, une porte coulissante en MEMBRE, aucune clé de programme
-  neuve), la séquence ne joue que si le convoi est ARRÊTÉ au quai (`arrets`,
-  `pause` : sinon la porte file sous l'enfant), et `embarq=0` rend l'ancien
-  geste au bit près. Pourquoi ce n'est pas fait : `construireRame` et la
-  pause aux quais vivent dans `vehicules.js`, zone de la session
-  circulation-vivante ; la séquence, elle, est prête à suivre un modèle qui
-  déclare sa porte (`monterAvion` lit `userData.porte` et un membre
-  `porte.ouvrant`). Marche : (1) la session circulation ajoute le membre et
-  `userData.porte` à la rame de tête et publie dans `place()` si le convoi
-  est à l'arrêt ; (2) l'embarquement ajoute `monterRame` (marche sur le quai,
-  la porte glisse, il entre, `bord` bascule ICI) et `descendreRame` ; (3)
-  témoins dans `washington.js` (le métro) et `monte.js` (le train).
+- [x] **MONTER DANS UN TRAIN OU UN MÉTRO PAR SA PORTE — LIVRÉ EN v489.**
+  `construireRame` déclare `userData.porte` (porte arrière coulissante des
+  deux flancs, un membre) ; `monterRame` / `descendreRame` (embarquement.js),
+  branchées dans `embarquer` / `debarquer` (fun.js), ne jouent que si la rame
+  est à quai (`attente` ≥ `ATTENTE_RAME_MIN`). Témoin : `sonde-porte-rame.cjs`
+  lu par `monte.js`. Ce qui reste, déclaré :
+  - [ ] **Une vraie gare et un vrai quai de Washington, sur l'iPad.** Le témoin
+    pose sa propre ligne sur une prairie : sur une gare de train le quai est à
+    2,7 blocs de la rame (`QUAI_DEDANS`), la descente garde la place la plus
+    haute à 1,65 / 2,45 / 3,25 blocs du flanc — non mesuré sur une vraie gare
+    ni sous terre à Washington. Geste : monter à quai, descendre à la station
+    suivante, `?diag=1` doit dire `monter (rame)` puis `descendre (rame)`.
+  - [ ] **Les amis ne voient pas la porte d'une rame s'ouvrir**, pas plus que
+    celle d'un avion (v389) : il faudrait un message court comme `portiere`,
+    donc `net.js`.
+  - [ ] **Au portail de la v489, rouges qui ne sont pas la livraison** (preuve
+    structurelle, v291 : la séquence ne joue que sur un appui au bouton près
+    d'une rame) : `visio.js` la radio pendant l'appel (avant 0,0089, pendant
+    0,0057 — déjà déclaré) ; `maj.js` le loader d'installation (déclaré) ;
+    `monte.js` la rue à l'allure d'une ville, le feu qui pile (déclaré en tête
+    de ce fichier), la rue vide (déclaré). Et la puce de la v465 de plus de
+    huit mots, en production : raccourcie depuis sur `main` par une autre session. Second
+    portail (code fusionné sur la v479) : `visio.js` et `maj.js` verts ;
+    rouges, tous déjà déclarés — `carte.js` la flèche du GPS, `monte.js` le
+    feu qui pile, la rue vide, « un mur pris de face » (rebond −1,88, le
+    même chiffre qu'à la ligne de la v443). Les quatre témoins de la porte de
+    rame, verts aux deux portails une fois la sonde corrigée.
 - [ ] **POUR MAX, SUR LA TABLETTE — valider la montée et la descente (v366,
   v377, v384, v389).** Le banc saute la séquence (`embarq=0`) et rend en
   logiciel : ce qui suit ne se juge QUE sur l'iPad. Ouvrir
@@ -6088,7 +6195,10 @@ l'embarquement a eu lieu, pas par une hypothèse.
   propre : une sonde qui distingue les cas plutôt qu'une hypothèse — Nina
   est-elle inscrite chez l'hôte, ses messages arrivent-ils, l'hôte les
   relaie-t-il ? — et non le témoin qu'on rejoue.
-- [ ] **Le programme de la flamme se compile au DÉCOLLAGE (v264).** Les deux
+- [x] **Le programme de la flamme se compile au DÉCOLLAGE (v264).** FAIT en
+  v491 : chauffée avec la flotte (`flammeDeChauffe`, avions.js), deux clés
+  neuves → zéro ; appareil, escalier et épave mesurés à zéro des deux côtés.
+  Le texte d'origine : Les deux
   cônes additifs de `flamme()` (avions.js) naissent invisibles : three ne
   compile leur programme qu'à la première image où ils sont RENDUS, c'est-à-
   dire quand l'enfant appuie sur ✈️. Un seul programme, mais c'est une
@@ -7063,17 +7173,66 @@ l'embarquement a eu lieu, pas par une hypothèse.
   cède en dernier — c'est la règle — mais le jour où le plan de Manhattan
   gagne Brooklyn et Queens, JFK doit revenir à sa vraie place.
 
-- [ ] **Manhattan sur la Terre : suite du réalisme.** Priorités : circulation
-  commandée par les feux, berges et ponts raccordés au relief, intérieurs,
-  Statue de la Liberté, diversité des façades et transitions LOD plus douces.
+- [ ] **PORTAIL DE LA v496 (Liberty Island, feux de Manhattan) — DOUBLE
+  MESURE (règle v195).** Onze suites vertes, dont `manhattan.js` (34 verts).
+  Rouges : `maj.js` une puce de la v465 en neuf mots (corrigée, rejouée seule
+  42 verts) ; `carte.js` la flèche du GPS (dette v321) ; `monte.js` quatre.
+  Rejouée SEULE : branche 230 verts, `origin/main` (v473) 230 verts. Mêmes
+  rouges des deux côtés : « au feu, la voiture freine au lieu de piler »
+  (déclaré en tête, v471) et « on ne marche pas dans une rue vide »
+  (`[0,4,12,2,0,0,0,21]` contre `[0,3,8,1,0,0,1,18]`). « Un mur pris de
+  face » (rebond −1,89) : rouge sur `origin/main` seul et au portail de la
+  branche. « Au frein à main, les pneus crissent — même tout droit »
+  (`droit.posees: 0`) : une fois, branche seule, dans le couloir d'essai à
+  (41 000, 41 000). Preuve STRUCTURELLE (v291) : hors de Manhattan, la v496
+  ne change aucun chemin — `reglerLesFeux` et `passagePieton` n'ont changé
+  que sous `renduDansManhattan`, l'île ne se bâtit que dans sa boîte, et les
+  essaims d'optiques sont dans la racine cachée du rendu de la ville. Une
+  intermittence à suivre si un portail la rend encore.
+  Second portail, après la fusion de la v487 (puis de la v495 : la livraison est la
+  v496) : onze vertes ; `maj.js` le loader qui compte ses fichiers (déclaré,
+  vert seul) ; `manhattan.js` le taxi tactile (7,82 blocs en 3,05 s de jeu,
+  302 s de montre — déclaré) ; `monte.js` l'allure d'une ville, le feu, la rue
+  vide (les trois ci-dessus). `manhattan.js` rejouée SEULE sur l'arbre
+  fusionné : 34 verts sur 34, taxi compris (10,58 blocs).
+
+- [ ] **Manhattan sur la Terre : suite du réalisme.** Faits en v496 : la
+  Statue de la Liberté sur Liberty Island, et la circulation commandée par les
+  feux. Restent : berges et ponts raccordés au relief, intérieurs, diversité
+  des façades et transitions LOD plus douces. Ce que la v496 laisse, déclaré :
+  - **Le repère de l'ancienne statue est toujours dans `world.js`** (`LIBERTE`
+    de `manhattan.js`, (-64, 177) : sous le Midtown du plan d'aujourd'hui,
+    écrasé par `TerreUrbaine`, et sa bosse de relief aussi). La carte ne
+    l'affiche plus (le monde redéclare le nom), mais le `World` nu du worker
+    le bâtit encore. Le retirer touche `terrainHeight` du `World` nu et la
+    liste `LANDMARKS` : hors de la zone de cette livraison, à faire avec une
+    mesure des migrations qui lisent ce relief.
+  - **Quinze coins de circuit sur 316 n'ont pas de feu** : les carrefours dont
+    un coin tombe dans Central Park, sur Broadway en biais ou dans Times
+    Square (pas quatre coins piétons). Le circuit de la 7e Avenue (le tracé
+    écrit à la main, x -100/-120) en fait partie.
+  - **À 0,4 image par seconde, la voiture lit un état de feu vieux d'une
+    image** (`f.etat`, rafraîchi par `reglerLesFeux` deux fois par seconde
+    AU PLUS) quand le passant lit l'heure de la rue : sous une tablette qui
+    rame, un passant peut partir au tout début du rouge pendant qu'une voiture
+    voit encore l'orange. Vrai partout dans le monde, pas seulement ici.
+  - **La statue ne se visite pas** (ni escalier dans le socle, ni couronne) :
+    on monte sur la terrasse du fort.
+
   Les publicités restent fixes et les voitures sont des interprétations
   géométriques, pas des modèles constructeur. Mesurer Safari sur iPad physique.
   Réconcilier les emplacements de secours si deux appareils importent hors
   ligne la même archive contre des journaux Terre différents. Les journaux
   d'origine sont conservés ; ne jamais les supprimer pour « nettoyer ».
 
-- [ ] **Une pousse de mémoire graphique subsiste après la v238, et elle ne vient
-  PAS des créatures.** Mesuré, dix allers-retours de cent cinquante blocs qui
+- [x] **Une pousse de mémoire graphique subsiste après la v238, et elle ne vient
+  PAS des créatures.** *(fait en v495 : les voitures de convoi se rendent à
+  `MARGE_RENDRE` au-delà de leur portée, la coque d'attente se rend quand le
+  modèle arrive, et le prototype de la flotte est marqué partagé — mesuré après
+  quatre villes puis loin de tout, 132 voitures et 3 595 maillages gardés → 0,
+  estimation du journal 62 → 26 Mo de géométries en scène ; témoin dans
+  `monte.js`, passage dans `sonde-rendre-convois.cjs`. Les passants, gardés par
+  ville visitée, restent à mesurer.)* Mesuré, dix allers-retours de cent cinquante blocs qui
   forcent le renouvellement : `origin/main` +459 géométries, la branche corrigée
   +348. Le remède de la v238 est pourtant COMPLET pour les bêtes — à l'unité,
   dix créatures prennent 157 géométries et en rendent 157, zéro perdue. Le
@@ -7087,6 +7246,25 @@ l'embarquement a eu lieu, pas par une hypothèse.
   principal est inactif 81 % du temps, il ne peut pas subir cette panne. On
   mesure des géométries.
 
+- [ ] **La monture voiture garde sa coque d'attente (`montures.js`, v495).**
+  Même défaut que la rue avant la v495 : quand le modèle de la flotte arrive,
+  `voitureNeuve` retire du groupe les membres `caisse`, `verriere` et `tronc`
+  de la coque sans les rendre — trois géométries fusionnées et deux matériaux
+  par voiture invoquée. Une ligne (`liberer(membre)` après `g.remove`), comme
+  dans `voitureDeVille`. Hors de la zone de la session des convois : déclaré.
+  Le prototype, lui, est désormais marqué partagé : la monture qui s'en va ne
+  rend plus la géométrie de tout son modèle.
+
+- [ ] **Le prototype de la flotte et ses textures restent sur la carte
+  graphique toute la session.** C'est voulu et BORNÉ (cinquante modèles au plus,
+  cinq images distinctes depuis la v413) — mais l'estimation du journal de bord
+  (`estimerMemoire`) ne compte que ce que la scène tient : quand la rue est
+  vide, elle ne voit plus ces prototypes alors que le pilote les garde. Un
+  relevé `?diag=1` loin de toute ville sous-estime donc la mémoire de ce que
+  la flotte a déjà chargé.
+
+- [ ] **`animals.js` et `creatures.js` comptent leur cadence de naissance en
+  `dt`.** `this.spawnTimer -= dt` avec un `dt` borné à un vingtième : à trois
 - [x] **`animals.js` et `creatures.js` comptent leur cadence de naissance en
   `dt`.** *(fait en v483 : `creatures.js` n'existe plus (v285) ; la naissance
   des bêtes compte en `chronoReel`. Mesuré à 4,7 images par seconde provoquées :
@@ -7285,16 +7463,30 @@ l'embarquement a eu lieu, pas par une hypothèse.
   marche lit. Le tambour de l'aérogare 1 reste plein.
 
 - [ ] **Cinquante villes détaillées.** Demandé par Max. Le monde a 269 villes :
-  47 avec une fiche (fleuve, trame, palette, monuments aux vraies coordonnées),
-  222 engendrées depuis onze gabarits. Il s'agit d'en faire passer cinquante du
-  gabarit à la fiche. Trois choses établies : seules Bruxelles et Cologne sont
-  dans la fenêtre d'empreinte (laisser Cologne générique suffit à ne rien
-  casser) ; une fiche qui garde le rayon du registre ne change pas la découpe
-  « hors villes » ; et la géométrie se CALCULE depuis de vraies latitudes et
-  longitudes — un générateur de brouillon le fait et vérifie que chaque
-  monument tombe dans le disque de sa ville (il a déjà attrapé quatre erreurs).
-  À livrer par lots d'une douzaine : Max juge sur captures, et une fiche fausse
-  est pire qu'une fiche absente.
+  46 avec une fiche, 223 engendrées depuis onze gabarits (recompté en v492 ; on
+  en annonçait 47 et 222). **Lot 1 livré en v492** : Dublin, Toulouse,
+  Melbourne, Nantes, Montpellier, par `FICHES_DETAILLEES` (villesmonde.js) —
+  une fiche détaillée posée SUR le gabarit, qui garde rayon, trame et anneaux.
+  Ce qui reste, et pourquoi :
+  - **Les villes au bout d'une route ou d'une ligne** (Marseille, Lyon, Milan,
+    Naples, Bologne, Montréal, Québec, Boston, Budapest, Hambourg…) : un
+    monument ou un fleuve près de l'entrée ferme l'avenue d'entrée ou met un
+    pont dans le raccord. Chacune se fait avec `entrees.mjs` et le témoin des
+    entrées rejoués, ville par ville.
+  - **Les monuments sans bâtisseur** : le Capitole et Saint-Sernin
+    (Toulouse), la cathédrale de Nantes, la Bonne Mère, Notre-Dame de
+    Strasbourg, la tour Eureka (Melbourne). Ils sont des LIEUX ; il leur faut
+    un bâtisseur chacun (zone des bâtisseurs de monuments, une autre session).
+  - **Bordeaux a sa Garonne au mauvais endroit** (v280) : à 0,5 km à l'est
+    de l'ancre quand la vraie est à 1,3 km — la place de la Bourse tomberait
+    dans le fleuve. La déplacer retirerait les tabliers d'aujourd'hui (« un
+    tablier ne se retire pas », v404) : **décision de Max**.
+  - **Genève sans son lac** : le jet d'eau est dans le disque, le Léman non ;
+    un lac change le relief bien plus qu'un fleuve. **Décision de Max.**
+  - **Le relief sous les fleuves neufs** : 2 708 colonnes changent dans les
+    disques de Dublin, Toulouse, Melbourne et Nantes (aucune au-delà du
+    fondu), comme pour les onze fleuves de la v280. Un bloc d'enfant posé là
+    avant la v492 n'est pas migré ; aucun sanctuaire n'est à portée.
 
 - [x] **POURQUOI `maj.js` rougissait-elle dans le portail et pas seule ? —
   RÉPONDU en v220, et ce n'était ni la charge ni un état qui traverse.** La
@@ -7307,7 +7499,18 @@ l'embarquement a eu lieu, pas par une hypothèse.
   demande pas un seul fichier au serveur pendant cinquante-huit secondes.
   Corrigé ; le témoin est vert.
 
-- [ ] **Un service worker vraiment coincé n'a aucun témoin.** Le blocage de
+- [x] **Un service worker vraiment coincé a son témoin — FAIT en v488.**
+  Le blocage qui ne s'épuise pas se fabrique dans le CODE que le navigateur
+  exécute, pas dans le réseau : le service worker publié porte un `install`
+  dont la promesse ne se tient jamais. `sonde-sw-coince.cjs` (appelée par
+  `maj.js`) juge un état — page rechargée, sous la version neuve ou sur les
+  fichiers du serveur. Rouge sur deux copies (filet désarmé, `forcerMaj` sans
+  borne). Ce qu'on attendait et qui n'existe pas : le retour suivant ne
+  rebloque pas l'enfant (`register()` reste suspendu, la vérification au
+  retour n'est pas posée). Ce qui reste vrai, et déclaré : pendant le
+  blocage, le badge annonce l'ancienne version alors que les fichiers sont
+  neufs. Constat d'origine :
+  Un service worker vraiment coincé n'avait aucun témoin. Le blocage de
   `forcerMaj` est établi par la sonde — le filet l'appelle à vingt secondes,
   `wm-maj-forcee` passe à 1, et plus rien pendant vingt-huit secondes — mais
   rien ne le garde. Deux témoins ont été écrits et retirés : verts des deux
@@ -7864,7 +8067,23 @@ l'embarquement a eu lieu, pas par une hypothèse.
 - [ ] **Intérieurs** — les monuments se visitent. *(v458 : le Panthéon de
   Rome, creux, portique de plain-pied, oculus ouvert — le premier hors de Paris
   et de Londres. Méthode et témoin à reprendre pour les suivants : `plafond.js`,
-  « on entre dans le Panthéon de Rome ».)*
+  « on entre dans le Panthéon de Rome ». v493 : Sainte-Sophie, même méthode.)*
+  **Le Colisée de Rome ne se visite pas sans une décision de plan** (mesuré
+  v493) : il vient du catalogue (`depuisCatalogue('colisee')`, 77 × 63 blocs à
+  2,5 m par bloc — onze fois sa taille à l'échelle de Rome), son emprise
+  contient le Forum romain (à 0,62 du demi-axe, au bord de l'arène), et son
+  arène, ses arcades et ses gradins (posés en damier, sans rien dessous) ne
+  recouvrent pas la ville : des immeubles poussent dans l'arène. Le rendre
+  visitable veut un `tour` à lui ; le réduire change la boîte, donc les zones
+  du relief (`boiteDuMonument`) — décision de Max.
+- [ ] **`monte.js`, rouges de la rue au portail de la v493, mesurés des deux
+  côtés** (rejouée seule, branche puis `origin/main` v473) : fabrication de la
+  rue par tranches à l'arrivée (12 et 11 voitures dans une image), « on ne
+  marche pas dans une rue vide », Moscou (moins de six voitures, livrées non
+  publiées), freinage au feu — sur les DEUX ; la branche 7 rouges, `origin/main`
+  9 (en plus : le flâneur au milieu de la chaussée, la voiture heurtée qui
+  repart, le vol au-dessus d'une ville, l'écart de convoi). Aucun ne lit
+  Istanbul : la livraison ne change que le bâtisseur de Sainte-Sophie.
 
 ---
 

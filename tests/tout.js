@@ -197,6 +197,8 @@ const GARDIENS = {
   'src/cap.js': ['monte.js', 'carte.js'],
   'src/approche.js': ['monte.js', 'carteMonde.js'],
   'src/gps.js': ['carte.js'],
+  // LES COMMANDES SIMPLIFIÉES : le menu unique, Construire, et les boutons ronds.
+  'src/commandes.js': ['maj.js', 'monte.js', 'manhattan.js', 'reglages.js', 'carte.js', 'fumee.js'],
   'src/fun.js': ['monte.js', 'carte.js', 'reglages.js', 'reseau.js', 'degats.js'],
   // LES DÉGÂTS DE LA VOITURE (v343) : la règle pure et ce qui se voit.
   'src/degats.js': ['degats.js'],

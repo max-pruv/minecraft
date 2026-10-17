@@ -85,7 +85,7 @@ export const TUILES_HD = [
   'croisee',       // le châssis d'une fenêtre (alpha) : montants, meneau, traverse, petits bois
   // v398 : les villes du reste du monde
   'bardage',       // les clins de bois des maisons victoriennes de San Francisco
-  // v488 : les vrais arbres (arbreshd.js) — des cartes de feuillage et de l'écorce
+  // v497 : les vrais arbres (arbreshd.js) — des cartes de feuillage et de l'écorce
   'feuilles',      // un amas de feuilles (alpha), clair : la couleur vient du sommet
   'aiguilles',     // un amas d'aiguilles de pin (alpha)
   'palme',         // une palme entière, la nervure au milieu (alpha)

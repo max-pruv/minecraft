@@ -6,12 +6,88 @@
 
 export const NOUVEAUTES = [
   {
-    v: 488,
+    v: 497,
     titre: 'De vrais arbres',
     puces: [
       'Les arbres ont un tronc et des branches',
       'Sapins, palmiers, oliviers, bouleaux',
       'Les blocs ne changent pas : grimpe dessus',
+    ],
+  },
+  {
+    v: 496,
+    titre: 'La statue de la Liberté',
+    puces: [
+      'Elle est sur son île, dans la baie',
+      'Manhattan a des feux tricolores',
+      'Voitures et passants attendent leur tour',
+    ],
+  },
+  {
+    v: 495,
+    titre: 'Les voitures rendent la mémoire',
+    puces: [
+      'Une rue quittée ne pèse plus rien',
+      'Les voitures reviennent quand tu reviens',
+    ],
+  },
+  {
+    v: 494,
+    titre: 'Des commandes plus simples',
+    puces: [
+      'Un seul menu en haut à droite',
+      'Construire devient un bouton à part',
+      'Des boutons transparents, sans texte',
+    ],
+  },
+  {
+    v: 493,
+    titre: 'On entre dans Sainte-Sophie',
+    puces: [
+      'Entre par la grande porte, à Istanbul',
+      'Lève la tête sous la coupole',
+    ],
+  },
+  {
+    v: 492,
+    titre: 'Cinq villes plus vraies',
+    puces: [
+      'Dublin, Toulouse, Melbourne, Nantes, Montpellier',
+      'Leurs fleuves, leur pierre, leurs monuments',
+      'Leurs lieux sur la carte',
+    ],
+  },
+  {
+    v: 491,
+    titre: 'Les réacteurs sans à-coup',
+    puces: [
+      'Les flammes sont prêtes dès l\'accueil',
+      'Le décollage ne fige plus l\'image',
+    ],
+  },
+  {
+    v: 490,
+    titre: 'Qui a posé ce bloc ?',
+    puces: [
+      'Le diagnostic nomme le bloc visé',
+      'Posé par le jeu, ou à la main',
+    ],
+  },
+  {
+    v: 489,
+    titre: 'On monte dans le métro',
+    puces: [
+      'Tu marches jusqu’à la porte du train',
+      'Elle coulisse, tu entres, elle se ferme',
+      'Tu descends debout sur le quai',
+    ],
+  },
+  {
+    v: 488,
+    titre: 'Une mise à jour jamais coincée',
+    puces: [
+      'Même bloquée, la mise à jour arrive',
+      'Le jeu repart tout seul, sans rien effacer',
     ],
   },
   {
