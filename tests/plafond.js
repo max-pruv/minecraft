@@ -537,6 +537,44 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       r.trouve && r.place && r.centre && r.ciel && r.voute, JSON.stringify(r));
   }
 
+  // --- ON ENTRE DANS SAINTE-SOPHIE (v493) ------------------------------------
+  // La même marche que le Panthéon de Rome : depuis la place à l'ouest, de
+  // proche en proche, un sol plein et deux blocs d'air au-dessus, sans sauter
+  // une marche, jusqu'au centre de la nef sous la coupole (le centre de la
+  // calotte est à un bloc au sud du repère). Et ce que l'enfant voit en levant
+  // la tête : une nef haute (dix blocs d'air au moins) fermée par la coupole.
+  // Sur l'ancien bâtisseur, Sainte-Sophie est un bloc plein : le centre n'est
+  // jamais atteint, et il n'y a pas d'air au-dessus.
+  {
+    const { CONF_NEUF } = await import('../src/world.js');
+    const lm = CONF_NEUF.reperes.find((l) => l.name === 'Sainte-Sophie');
+    let r = { trouve: !!lm };
+    if (lm) {
+      const sol = w.terrainHeight(lm.x, lm.z);
+      const libre = (du, dv) => w.getBlock(lm.x + du, sol, lm.z + dv) !== 0
+        && w.getBlock(lm.x + du, sol + 1, lm.z + dv) === 0
+        && w.getBlock(lm.x + du, sol + 2, lm.z + dv) === 0;
+      const depart = [-lm.box - 4, 1];
+      const vus = new Set([depart.join(',')]);
+      const file = libre(...depart) ? [depart] : [];
+      while (file.length) {
+        const [du, dv] = file.shift();
+        for (const [eu, ev] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const nu = du + eu, nv = dv + ev;
+          if (Math.abs(nu) > lm.box + 6 || Math.abs(nv) > lm.box + 6) continue;
+          const k = `${nu},${nv}`;
+          if (vus.has(k) || !libre(nu, nv)) continue;
+          vus.add(k); file.push([nu, nv]);
+        }
+      }
+      let nef = 0;                   // l'air au-dessus du centre, jusqu'à la calotte
+      while (nef < 40 && w.getBlock(lm.x, sol + 1 + nef, lm.z + 1) === 0) nef++;
+      r = { trouve: true, place: libre(...depart), centre: vus.has('0,1'), cases: vus.size, nef, coupole: nef < 40 };
+    }
+    verifier('on entre dans Sainte-Sophie : depuis la place, à pied, de plain-pied, jusqu\'au centre de la nef, sous la coupole',
+      r.trouve && r.place && r.centre && r.nef >= 10 && r.coupole, JSON.stringify(r));
+  }
+
   // --- UNE VOITURE TRAVERSE CHAQUE PONT D'AUTOROUTE (v430) -------------------
   // Max, capture d'iPhone : « Une voiture ne roule pas dans l'eau — fais
   // demi-tour » sur une autoroute, pas une goutte en vue. Le générateur

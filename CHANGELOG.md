@@ -20,6 +20,33 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v493 — On entre dans Sainte-Sophie
+
+**Pourquoi.** Hors de Paris et de Londres, un seul monument se visitait : le
+Panthéon de Rome (v458). Sainte-Sophie, à Istanbul, était un bloc plein — on
+en faisait le tour, jamais l'intérieur. Et le premier candidat, le Colisée,
+s'est révélé impraticable à la mesure : le Colisée du catalogue fait
+soixante-seize blocs de long (onze fois sa taille à l'échelle de Rome), son
+emprise contient le Forum romain, et son arène est pleine des immeubles de la
+ville, qu'il ne recouvre pas.
+
+**Ce que ça change.** On entre dans Sainte-Sophie de plain-pied, par l'ouest,
+à travers l'exonarthex : les bas-côtés sous leur voûte, quatre grands piliers,
+et au centre la nef qui monte treize blocs jusque sous la coupole, devenue
+une coque tapissée d'or. Au fond, le mihrab doré et le minbar. Le dehors est celui d'avant
+au bloc près.
+
+**Ce qui le prouve.** Un témoin de `plafond.js` marche de proche en proche
+depuis la place jusqu'au centre de la nef et lit la hauteur sous la coupole —
+rouge sur l'ancien bâtisseur (centre jamais atteint, zéro bloc d'air). Les
+anneaux de voitures d'Istanbul sont identiques au bit près, et le témoin des
+deux fils garde le bâtisseur sans hasard. `maj.js`, `carte.js` et
+`monte.js` ont rougi au portail : `carte.js` est verte rejouée seule des deux
+côtés, et `monte.js` rejouée seule rend la même famille de rouges sur la
+branche (7) et sur `origin/main` (9) — dette déclarée dans `TASKS.md`.
+
+---
+
 ## v492 — Cinq villes passent du gabarit à la fiche
 
 **Pourquoi.** Max a demandé « cinquante villes détaillées ». Le monde a 269

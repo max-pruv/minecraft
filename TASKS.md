@@ -7909,7 +7909,23 @@ l'embarquement a eu lieu, pas par une hypothèse.
 - [ ] **Intérieurs** — les monuments se visitent. *(v458 : le Panthéon de
   Rome, creux, portique de plain-pied, oculus ouvert — le premier hors de Paris
   et de Londres. Méthode et témoin à reprendre pour les suivants : `plafond.js`,
-  « on entre dans le Panthéon de Rome ».)*
+  « on entre dans le Panthéon de Rome ». v493 : Sainte-Sophie, même méthode.)*
+  **Le Colisée de Rome ne se visite pas sans une décision de plan** (mesuré
+  v493) : il vient du catalogue (`depuisCatalogue('colisee')`, 77 × 63 blocs à
+  2,5 m par bloc — onze fois sa taille à l'échelle de Rome), son emprise
+  contient le Forum romain (à 0,62 du demi-axe, au bord de l'arène), et son
+  arène, ses arcades et ses gradins (posés en damier, sans rien dessous) ne
+  recouvrent pas la ville : des immeubles poussent dans l'arène. Le rendre
+  visitable veut un `tour` à lui ; le réduire change la boîte, donc les zones
+  du relief (`boiteDuMonument`) — décision de Max.
+- [ ] **`monte.js`, rouges de la rue au portail de la v493, mesurés des deux
+  côtés** (rejouée seule, branche puis `origin/main` v473) : fabrication de la
+  rue par tranches à l'arrivée (12 et 11 voitures dans une image), « on ne
+  marche pas dans une rue vide », Moscou (moins de six voitures, livrées non
+  publiées), freinage au feu — sur les DEUX ; la branche 7 rouges, `origin/main`
+  9 (en plus : le flâneur au milieu de la chaussée, la voiture heurtée qui
+  repart, le vol au-dessus d'une ville, l'écart de convoi). Aucun ne lit
+  Istanbul : la livraison ne change que le bâtisseur de Sainte-Sophie.
 
 ---
 

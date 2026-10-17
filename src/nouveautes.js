@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 493,
+    titre: 'On entre dans Sainte-Sophie',
+    puces: [
+      'Entre par la grande porte, à Istanbul',
+      'Lève la tête sous la coupole',
+    ],
+  },
+  {
     v: 492,
     titre: 'Cinq villes plus vraies',
     puces: [
