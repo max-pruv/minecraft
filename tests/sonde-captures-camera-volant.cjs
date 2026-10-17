@@ -1,4 +1,4 @@
-// CAPTURES DE LA CAMÉRA DE POURSUITE (v474) : virage à gauche, virage à
+// CAPTURES DE LA CAMÉRA DE POURSUITE (v479) : virage à gauche, virage à
 // droite, rue étroite (deux murs à 2,5 blocs de l'axe) et mur derrière le
 // coffre. Chaque vue publie ce qui se LIT dans la matrice : l'angle signé de
 // la caméra derrière la voiture (β), le flanc que la caméra regarde (produit
