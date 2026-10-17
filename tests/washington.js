@@ -169,7 +169,7 @@ const descendre = async (p, ms) => {
     bouchesNoyees.length === 0 && D.BOUCHES_METRO.length === 20,
     bouchesNoyees.map((b) => b.nom).join(', ') || `${D.BOUCHES_METRO.length} bouches`);
 
-  // --- Le métro sous toute la boîte, pas seulement le cercle (v474) --------
+  // --- Le métro sous toute la boîte, pas seulement le cercle (v478) --------
   // La ville s'arrête au cercle du registre (187 blocs) ; la boîte et les
   // tiroirs des terminus vont au-delà. Sur l'ancien code, rien n'y était
   // creusé : 309 points de la Bleue sur 986 avaient un bloc plein dans le

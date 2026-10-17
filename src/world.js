@@ -2153,7 +2153,7 @@ function dansTrameLondres(x, z, t) {
   return du * du + dv * dv <= r * r;
 }
 const DC_NEUF = { solWashington, batirColonneWashington, VOIES_CIRCUITS_DC };
-// LE MÉTRO SOUS TOUTE LA BOÎTE DE WASHINGTON (v474). La ville s'arrête au
+// LE MÉTRO SOUS TOUTE LA BOÎTE DE WASHINGTON (v478). La ville s'arrête au
 // cercle du registre (187 blocs) ; la boîte va jusqu'au coin de Georgetown, à
 // Arlington et au Pentagone. Hors du cercle, rien ne creusait : les quais
 // d'Arlington Cemetery et de Pentagon étaient de la pierre, et 309 points de
@@ -2164,7 +2164,7 @@ const DC_NEUF = { solWashington, batirColonneWashington, VOIES_CIRCUITS_DC };
 // voisines) : sous elle, on ne creuse qu'à trois blocs et plus sous le sol,
 // et sa maison garde le terrain qui la portait. La date se relit à la fusion
 // (v309).
-export const DATE_METRO_BOITE_DC = Date.UTC(2026, 9, 17, 20, 0, 0);
+export const DATE_METRO_BOITE_DC = Date.UTC(2026, 9, 17, 16, 40, 0);
 const SURFACE_METRO_DC = -3;   // sous une colonne gardée : rien au-dessus de h − 3
 function dansMetroBoiteDC(x, z, t) {
   if (!(t <= DATE_METRO_BOITE_DC)) return false;
@@ -2741,7 +2741,7 @@ export class World {
     this.morceauxAvantClimat = new Set(); // les morceaux (et leurs voisins) bâtis avant les climats (v345)
     this.colonnesCedees = new Set();    // les colonnes de Paris où la ville cède à ce qu'un enfant a bâti (v306)
     this.colonnesTrameLondres = new Set(); // les colonnes de Londres où la trame générique d'avant reste (v447)
-    this.colonnesMetroDC = new Set();     // celles de la boîte de Washington où le métro ne touche pas la surface (v474)
+    this.colonnesMetroDC = new Set();     // celles de la boîte de Washington où le métro ne touche pas la surface (v478)
     this.colonnesVilleAvant = new Set();  // celles de Londres, de Nice, de San Francisco, de Lille et de Washington où la ville d'avant le kit reste (v339, v359, v361, v370, v370)
     this.cacheSol = new Map();          // "x,z" -> { nat, cote } : la fiche d'une colonne (sol continu, v297)
     this.sansSolContinu = false;        // ?solcontinu=0 : la mesure A/B, jamais un réglage
@@ -3236,7 +3236,7 @@ export class World {
     }
     if (this.cityAt(x, z)) return null; // no wild trees downtown
     // ni dans une bouche ou la tranchée du métro de Washington hors du
-    // cercle (v474) : un tronc y poussait au milieu de l'ouvrage
+    // cercle (v478) : un tronc y poussait au milieu de l'ouvrage
     if (!this.conf.villesAvant && x >= EMPRISE_METRO_DC.x0 - 1 && x <= EMPRISE_METRO_DC.x1 + 1
       && z >= EMPRISE_METRO_DC.z0 - 1 && z <= EMPRISE_METRO_DC.z1 + 1 && this.metroOuvertDC(x, z)
       && !this.arbreGardeDC(x, z)) return null;
@@ -3712,7 +3712,7 @@ export class World {
           });
           continue;
         }
-        // Hors du cercle, dans la boîte : le métro seul (v474). Les mondes
+        // Hors du cercle, dans la boîte : le métro seul (v478). Les mondes
         // d'avant (`villesAvant`) ne creusaient pas ici, et ne creusent pas.
         if (!city && !this.conf.villesAvant && wx >= ZONE_WASHINGTON.x0 && wx <= ZONE_WASHINGTON.x1
           && wz >= ZONE_WASHINGTON.z0 && wz <= ZONE_WASHINGTON.z1) {

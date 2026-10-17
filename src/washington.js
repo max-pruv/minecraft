@@ -1287,9 +1287,9 @@ export const BOUCHES_METRO = QUAIS_METRO.map((q) => {
   const marches = Math.max(4, sol - 1 - (q.y + 1));
   const paliers = Math.floor(marches / 6);
   const longueur = DEMI_VOUTE + 1 + marches + paliers * 2;
-  // UNE STATION HORS DU CERCLE (v474) — Arlington Cemetery, Pentagon — n'a
+  // UNE STATION HORS DU CERCLE (v478) — Arlington Cemetery, Pentagon — n'a
   // jamais été creusée avant : sa bouche se choisit avec la règle entière.
-  // Elle peut sortir dans la marge de la zone (le métro y est creusé, v474)
+  // Elle peut sortir dans la marge de la zone (le métro y est creusé, v478)
   // si la boîte n'a rien de mieux, et TOUT ce qui est au-dessus de la mezzanine compte contre un monument :
   // posé après le creusement, il bouche l'escalier. Sur l'ancienne règle,
   // celle de Pentagon débouchait dans le Pentagone. Celles du cercle gardent
@@ -1660,7 +1660,7 @@ function creuserMetro(u, v, h, poser) {
   return true;
 }
 
-// LE MÉTRO SEUL, sous toute la BOÎTE (v474). La ville s'arrête au cercle du
+// LE MÉTRO SEUL, sous toute la BOÎTE (v478). La ville s'arrête au cercle du
 // registre (`cityAt`, 187 blocs), mais la boîte va jusqu'au coin de
 // Georgetown et au Pentagone : hors du cercle, le bâtisseur ne passait pas,
 // et la Bleue roulait dans la roche jusqu'à Arlington. `world.js` appelle
