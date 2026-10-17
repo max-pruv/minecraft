@@ -84,7 +84,7 @@ const GARDIENS = {
   'vendor/humains/fille.glb': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
   'src/net.js': ['reseau.js', 'visio.js', 'hote.js', 'manhattan.js', 'degats.js'],
   'src/nouveautes.js': ['maj.js'],
-  'src/cloud.js': ['reseau.js', 'reglages.js', 'manhattan.js'],
+  'src/cloud.js': ['reseau.js', 'reglages.js', 'manhattan.js', 'parent.js'],
   'src/relaisnuage.js': ['reseau.js'],
   'src/sync.js': ['sauvegarde.js', 'reglages.js', 'manhattan.js'],
   // `monte.js` depuis la v236 : c'est lui qui éprouve l'oubli des morceaux

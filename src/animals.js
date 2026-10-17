@@ -477,7 +477,7 @@ export class AnimalManager {
   }
 
   update(dt) {
-    // LA NAISSANCE DES BÊTES EST UNE CADENCE DE MÉNAGE (v474) : elle décide si
+    // LA NAISSANCE DES BÊTES EST UNE CADENCE DE MÉNAGE (v483) : elle décide si
     // le monde est peuplé autour de l'enfant, pas comment une bête bouge. En
     // `dt` (borné à un vingtième), 1,5 s de minuteur valaient onze secondes
     // réelles à 2,7 images par seconde — le bestiaire se peuplait lentement au

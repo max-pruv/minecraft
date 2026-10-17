@@ -1,4 +1,4 @@
-// CE QUI SE COMPTE EN SECONDES DE LA VRAIE VIE, À CINQ IMAGES PAR SECONDE (v474).
+// CE QUI SE COMPTE EN SECONDES DE LA VRAIE VIE, À CINQ IMAGES PAR SECONDE (v483).
 //
 // `main.js` borne `dt` à un vingtième de seconde. Un minuteur écrit
 // `minuteur -= dt` hérite de la borne : à cinq images par seconde, une seconde

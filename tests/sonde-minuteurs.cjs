@@ -1,4 +1,4 @@
-// LES MINUTEURS DE LA VRAIE VIE À CINQ IMAGES PAR SECONDE (v474) : la naissance
+// LES MINUTEURS DE LA VRAIE VIE À CINQ IMAGES PAR SECONDE (v483) : la naissance
 // des bêtes et le chronomètre de la course, mesurés par la MÊME fonction que le
 // témoin de `monte.js` (`minuteurs-mesure.js`). Elle imprime, elle ne juge pas.
 // `PASSES=3 node tests/sonde-minuteurs.cjs` rejoue la mesure sur des pages neuves.

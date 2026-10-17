@@ -3362,6 +3362,17 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         await dodo(100);
         if (mode === 'feu') viderLesPassants();
         const tout = [];
+        // L'HEURE DE LA RUE, PAS CELLE DE LA PAGE (feu-file). La rue avance en
+        // temps RÉEL par image (v305) : au banc une image dure jusqu'à une
+        // seconde, et les relevés tombent tous les dixièmes de seconde ENTRE
+        // les images. Deux relevés à 112 ms d'écart encadraient donc une image
+        // de 0,7 s : la voiture y perdait 7,5 b/s² × 0,7 s, et le témoin
+        // divisait par 0,112 — « 38 b/s² », une voiture qui freinait au
+        // freinage d'urgence. Mesuré (`sonde-feu-horloge.cjs`) : les 7 paires
+        // au-delà de 10 b/s² à l'horloge de la page en valent 1,5 à 7,5 à
+        // celle de la rue ; freinage désarmé à 100 b/s², 14 paires au-delà de
+        // 10 (pire 32,8) — la mesure voit encore un vrai coup de frein.
+        const heure = g.vehicules.horloge ? g.vehicules.horloge() * 1000 : performance.now();
         g.vehicules.etat().forEach((c, ci) => {
           if (!c.routier || c.nom !== 'voiture') return;
           if (c.voie === 'avenue' && c.croisiere) croisiere = Math.max(croisiere || 0, c.croisiere);
@@ -3372,7 +3383,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
             const k = ci + ':' + p[3]; const s = suites.get(k) || []; s.push(v); suites.set(k, s);
             // ce qui la retient (`causes`, v372) : un arrêt AU FEU se juge seul ;
             // l'ancien code ne le publie pas, et tout arrêt y compte
-            const ts = tempsS.get(k) || []; ts.push(performance.now()); tempsS.set(k, ts);
+            const ts = tempsS.get(k) || []; ts.push(heure); tempsS.set(k, ts);
             // LA CAUSE RACINE (banc-lot3). `causes` vaut 1 pour « un feu OU LA
             // FILE d'un feu », et une file est légitime derrière un feu,
             // l'enfant, un piéton ou un train (v395) : la voiture qui suit une
@@ -8688,6 +8699,24 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // bouts) et s'y arrêter. Sur l'ancien code il touche à l'aplomb de son
     // départ. La durée de jeu est bornée par une durée de montre (le banc rend
     // quelques images par seconde) et entre dans le message.
+    // CE QUI BORDE LE SEUIL ET CE QUI FLOTTE AU-DESSUS DE LA PISTE (v480).
+    // Sous node, par la sonde de l'approche (même règle de contact : un bloc
+    // dans la boîte de l'avion est un heurt, le sol est sous les roues). Le
+    // Concorde venu de l'ouest à Los Angeles entrait dans le mur d'une colonne
+    // au seuil, que le balayage par pas de trois enjambait (heurt à s 0 sur
+    // l'ancien code) ; le chasseur à Andrews passe au-dessus des couronnes
+    // flottantes au lieu d'y entrer.
+    {
+      const { mesurer } = require('./sonde-approche.cjs');
+      const src = require('path').join(__dirname, '..', 'src');
+      const cas = [];
+      for (const [piste, k] of [['lax', 'concorde'], ['bas-adw', 'chasseur']]) {
+        const r = await mesurer(src, { piste, k, dep: '-900/0/2.5' });
+        for (const e of r.resultats) cas.push({ piste: e.cle + e.z, k, issue: e.issue, vy: e.vy, s: e.sTouche, arretOk: e.arretOk });
+      }
+      verifier('✈️ venu de l\'ouest, l\'approche assistée passe le mur du seuil de Los Angeles et au-dessus des couronnes d\'Andrews',
+        cas.length >= 2 && cas.every((c) => c.issue === 'piste' && c.vy >= -3 && c.arretOk), JSON.stringify(cas));
+    }
     for (const [espece, cle] of [['chasseur', 'bas-sd'], ['avionligne', 'orly']]) {
       if (!tab.isClosed()) await banc.mettreDeCote(tab);
       const apPage = await banc.jouerSeul('MonteApproche' + espece, { rr: 2 });
@@ -8743,7 +8772,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     }
 
     // CE QUI SE COMPTE EN SECONDES DE LA VRAIE VIE NE RALENTIT PAS AVEC
-    // L'IMAGE (v474). La naissance des bêtes (une cadence de ménage, v226) et
+    // L'IMAGE (v483). La naissance des bêtes (une cadence de ménage, v226) et
     // le chronomètre de la course du parc — qui écrit un RECORD que Marlon et
     // Alice comparent — comptaient en `dt` borné : à cinq images par seconde,
     // la tablette qui rame peuplait quatre fois moins vite et courait quatre

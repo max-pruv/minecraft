@@ -903,7 +903,7 @@ export function initFun(ctx) {
   const PODIUM = { x: PARK.x + 16, z: PARK.z + 20 };
   let parkourDone = false;
 
-  // LE CHRONOMÈTRE DE LA COURSE EST EN TEMPS RÉEL (v474). Il écrit
+  // LE CHRONOMÈTRE DE LA COURSE EST EN TEMPS RÉEL (v483). Il écrit
   // `records.bestRace`, que Marlon et Alice comparent : compté en `dt` borné,
   // il récompensait la tablette qui rame (à cinq images par seconde, vingt
   // secondes de montre en comptaient cinq). Les records déjà écrits ne sont
@@ -1319,7 +1319,7 @@ export function initFun(ctx) {
   let lastCtxKey = null;
   let derniereMonture = null;
 
-  // CE QUI SE COMPTE EN SECONDES DE LA VRAIE VIE (v474). `dt` est borné à un
+  // CE QUI SE COMPTE EN SECONDES DE LA VRAIE VIE (v483). `dt` est borné à un
   // vingtième de seconde : à cinq images par seconde, une seconde de jeu en
   // dure quatre de montre. Une animation suit le jeu ; un chronomètre de
   // course, un délai, une veille de garage ou le rythme des défis de calcul,
@@ -1424,7 +1424,7 @@ export function initFun(ctx) {
     poserBati,
     poserMonument,
     decoratePlayersPanel,
-    // La course du parc, EN LECTURE (v474) : le témoin du chronomètre en temps
+    // La course du parc, EN LECTURE (v483) : le témoin du chronomètre en temps
     // réel pose l'enfant au départ, puis à l'arrivée, et lit ce qui a compté.
     courseEtat: () => ({ depart: RACE_START, arrivee: RACE_END, chrono: raceTime,
       delai: raceCooldown, record: records.bestRace ?? null }),
