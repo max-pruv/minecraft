@@ -8771,6 +8771,42 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         `${r.err || ''} ${JSON.stringify(r)}`);
     }
 
+    // --- LES CUBES ORANGE DU CIEL (v484) --------------------------------------
+    // Le nuage de saison (feuilles d'automne, pétales, lucioles, neige) suivait
+    // l'enfant de −3 à +23 blocs : en vol, cent soixante carrés de couleur
+    // flottaient autour de lui dans le ciel. On le trouve par sa forme (un
+    // `Points` de taille 0,24, le seul du jeu), sans rien demander au module,
+    // pour mesurer la même chose sur l'ancien code. Page à part, fermée après.
+    if (!tab.isClosed()) await banc.mettreDeCote(tab);
+    const saisonPage = await banc.jouerSeul('MonteSaison', { rr: 2 });
+    const saison = await saisonPage.evaluate(async () => {
+      const g = window.__game, P = g.player;
+      let nuage = null;
+      g.scene.traverse((o) => { if (o.isPoints && o.material && Math.abs(o.material.size - 0.24) < 1e-6) nuage = o; });
+      if (!nuage) return { err: 'pas de nuage de saison' };
+      const images = (n) => new Promise((fin) => { const i0 = g.renderer.info.render.frame; const pas = () => (g.renderer.info.render.frame - i0 >= n ? fin() : requestAnimationFrame(pas)); requestAnimationFrame(pas); });
+      const x = 30000.5, z = 30000.5, sol = Math.max(g.world.terrainHeight(30000, 30000), 30) + 1; // le couloir de la v237 est en mer : l'eau (30) porte le nuage
+      const mesurer = () => {
+        nuage.updateMatrixWorld(true);
+        const pos = nuage.geometry.attributes.position, v = new nuage.position.constructor();
+        let haut = -Infinity;
+        for (let i = 0; i < pos.count; i++) { v.fromBufferAttribute(pos, i).applyMatrix4(nuage.matrixWorld); haut = Math.max(haut, v.y - sol); }
+        return { visible: nuage.visible, haut: +haut.toFixed(1) };
+      };
+      P.flying = true; P.vel.set(0, 0, 0);
+      P.pos.set(x, sol + 60, z); await images(6);
+      const enVol = mesurer();
+      P.pos.set(x, sol + 0.1, z); await images(6);
+      const auSol = mesurer();
+      const m = new Date().getMonth();
+      return { enVol, auSol, hiver: !(m >= 2 && m <= 10) };
+    });
+    await saisonPage.close();
+    if (!tab.isClosed()) await banc.ramener(tab);
+    verifier('en vol à soixante blocs du sol, aucune particule de saison ne flotte dans le ciel autour de l\'enfant',
+      !saison.err && (!saison.enVol.visible || saison.enVol.haut < 30), JSON.stringify(saison));
+    verifier('au sol, feuilles, pétales et lucioles restent à hauteur d\'arbre (la neige seule tombe du ciel)',
+      !saison.err && saison.auSol.visible && (saison.hiver || saison.auSol.haut <= 10), JSON.stringify(saison));
     // CE QUI SE COMPTE EN SECONDES DE LA VRAIE VIE NE RALENTIT PAS AVEC
     // L'IMAGE (v483). La naissance des bêtes (une cadence de ménage, v226) et
     // le chronomètre de la course du parc — qui écrit un RECORD que Marlon et

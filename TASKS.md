@@ -1,5 +1,15 @@
 # Ce qui est en cours
 
+- [ ] **PORTAIL DE LA v484 (les cubes orange) : cinq rouges, aucun de la
+  livraison** (qui ne déplace qu'un `Points` d'ambiance, lu par rien d'autre).
+  `maj.js` : la puce v465 à neuf mots, rouge sur `origin/main` (corrigée depuis en amont).
+  `degats.js` « percuter une voiture de la rue l'abîme AUSSI » : vert seul des
+  deux côtés. `monte.js` rejouée SEULE des deux côtés : `origin/main` 229 verts,
+  4 rouges (« deux voisines d'un convoi », « au feu… au lieu de piler », « rue
+  vide », « un mur pris de face ») ; branche 233 verts, 2 rouges (« la rue roule
+  à l'allure d'une ville », le tirage 1 sur 3 déclaré en v472 ; « rue vide »).
+  Tous des tirages de circulation vus des deux côtés.
+
 - [ ] **PORTAILS DE LA v481 (le feu à l'heure de la rue).** Deux passages
   (fumée, `maj.js`, `monte.js`). Le témoin du feu : rouge au premier (39,4,
   un des mécanismes rares décrits juste en dessous), VERT au second (4 259
@@ -1850,7 +1860,7 @@
   appelé pour ce morceau de campagne ; l'écart se prend désormais par paire
   alternée (désarmé de 6 ms : rouge, 7,2).
 
-- [ ] **AU PORTAIL DE LA v474 (règle de la v195), DEUX ROUGES, AUCUN DE LA
+- [ ] **AU PORTAIL DE LA v484 (règle de la v195), DEUX ROUGES, AUCUN DE LA
   LIVRAISON.** `maj.js` « il couvre toutes les versions du journal » : la puce
   de la v465 (« Sur la mer, le train roule sur un viaduc ») dépasse la barre —
   telle quelle sur `origin/main`, zone de la session du viaduc. `degats.js`
@@ -7000,7 +7010,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   prairie. `cityAt` pourrait teinter les cases d'une ville en gris urbain pour
   quelques microsecondes par colonne — non mesuré, non fait.
 
-- [ ] **Des cubes orange isolés flottent dans le ciel**, visibles sur les
+- [x] **Des cubes orange isolés flottent dans le ciel**, *(fait en v484 : c'étaient les feuilles d'automne, `seasonPoints` de main.js, collées à l'enfant de −3 à +23 blocs ; le nuage de saison est désormais posé sur le sol, bande basse hors neige, caché en vol — aucun bloc d'enfant en cause)* visibles sur les
   captures de Max comme sur celles du banc, avant comme après la v237. Ma sonde
   de scène ne les a pas trouvés (aucun petit maillage loin dans le champ) :
   c'est donc que je n'ai pas cherché au bon endroit. À reprendre par un lancer

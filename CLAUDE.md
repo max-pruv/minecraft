@@ -770,6 +770,17 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les cubes orange du ciel (v484) — ce qui suit la caméra est UN objet, et il se trouve par le pixel
+
+Une règle. Les « cubes orange qui flottent dans le ciel » étaient les feuilles
+d'automne : un seul `Points` de cent soixante carrés, collé à `player.pos` de
+−3 à +23 blocs, donc monté avec l'enfant en vol. La sonde de la v237 cherchait
+« un petit maillage loin dans le champ » et ne pouvait pas le voir. Devant une
+chose qu'on voit à l'écran et qu'on ne nomme pas : capture, amas de pixels de
+sa couleur, lancer de rayon (`layers.enableAll()`) à travers chacun —
+`sonde` dans le brouillon de la v484, une exécution. Un effet d'ambiance se
+pose sur le MONDE (le sol, l'eau), jamais sur l'enfant : `BANDE_SAISON`
+(main.js), basse pour feuilles, pétales et lucioles, haute pour la neige.
 ## Le parapet sous la voie (v477) — une matière de tablier se lit sous la ligne qui roule
 
 Une règle. Aux coins des anneaux, la voie d'une voiture traversait la bande de
