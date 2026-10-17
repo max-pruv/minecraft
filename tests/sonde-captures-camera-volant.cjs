@@ -6,7 +6,7 @@
 // monde du maillage), le recul et la place de la voiture dans le cadre.
 // CAPTURES=dossier ; SENS=0 rejoue `?sensations=0`.
 const { Banc, souffler } = require('./banc.js');
-const DOSSIER = process.env.CAPTURES || require('path').join(__dirname, '..', 'captures-camera');
+const DOSSIER = process.env.CAPTURES || require('os').tmpdir() + '/captures-camera';
 require('fs').mkdirSync(DOSSIER, { recursive: true });
 (async () => {
   const banc = new Banc({ portJeu: 8417, portPairs: 9417 });
