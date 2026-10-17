@@ -19,11 +19,10 @@
   voitures l'une dans l'autre monte à 2–18 % (0 à 2 avec les passants) :
   probablement la même suiveuse qui rattrape sa tête. Le témoin reste rouge,
   il garde une vraie panne. Sonde : `tests/sonde-rue-feu.cjs` (`VIDE=1`).
-- [ ] **L'AVION DE L'AMI ET SON ÉPAVE (v453) — SANS TÉMOIN À DEUX TABLETTES.**
-  `p.v` porte désormais un avion (fiche `pilote`) et ses dégâts ; aucun témoin
-  de `reseau.js` ne vérifie encore que l'autre tablette voit l'appareil, puis
-  l'épave en feu après un crash. À écrire sur le modèle de la v344 (l'ami voit
-  la voiture froissée) : deux pages, l'une s'écrase, l'autre lit le maillage.
+- [x] **L'AVION DE L'AMI ET SON ÉPAVE (v453) — témoin écrit en v474.** Trois
+  verdicts dans `reseau.js` (l'ami voit l'appareil, il le voit prendre feu,
+  l'épave reste là où il s'est écrasé), verts ; rouges tous trois quand `p.v`
+  ne porte plus que ce qui a un siège (l'état d'avant la v462).
 
 - [ ] **L'APPROCHE ASSISTÉE (v452) : QUATRE POSÉS SUR 148 À REPRENDRE.**
   `node tests/sonde-approche.cjs src` : trois touchers à 5,7 · 6,2 · 6,7 blocs
@@ -126,11 +125,12 @@
     été vu ; `origin/main` : « le monde est bien là » et pas de lien), « seul,
     le bouton d'émotes se range ». `origin/main` seul ajoute la veille sans
     retour, « seule après le départ de l'hôte » et le passager sans courtier.
-    Piste du jumeau : le sondage du phare, pas le bus — `net.js` ne donne
-    que TROIS secondes à `relaisHoteRecent` (`Promise.race`, ~ligne 319) ;
-    une requête qui tarde (banc chargé, Wi-Fi lent) rend « introuvable » et
-    l'invité OUVRE le monde par-dessus l'hôte. À sonder comme
-    `sonde-relais-amorce.mjs`, avant de toucher à la borne.
+    Le jumeau, réglé en v474 : `tests/sonde-phare.cjs` a mesuré le sondage du
+    phare à 2,9 · 3,4 · 4,2 · 3,5 s sur un banc AU REPOS (nuage local, verdict
+    « tenu » chaque fois) — le fil principal de l'invité gèle jusqu'à 15 s en
+    entrant. La borne de trois secondes perdait la course 3 fois sur 4 et
+    l'invité ouvrait par-dessus l'hôte (2 jumeaux ou refus sur 4) ; à dix
+    secondes (`PHARE_MS`), 4 invités sur 4. Reste à revoir au portail.
   - **Le vol au-dessus de Paris** (`monte.js`) : vert seul depuis la v440
     (252 blocs en 12,8 s) ; son message dit la cadence (`sonde-vol-paris.cjs`).
   - **Le taxi** (`manhattan.js`) : compte du temps de JEU, fenêtre de côté

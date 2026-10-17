@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 474,
+    titre: 'On retrouve son ami sans erreur',
+    puces: [
+      'Rejoindre un ami ne crée plus de double',
+      'Tes amis voient ton avion et son épave',
+    ],
+  },
+  {
     v: 473,
     titre: 'Le métro sous Paris',
     puces: [
