@@ -1580,6 +1580,41 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     surUneVille.length ? surUneVille.join(', ')
       : `la paire la plus serrée garde ${Math.round(pireVille)} blocs — ${pireQui}`);
 
+  // CHANGI, SUR UNE TERRE GAGNÉE SUR LA MER (v486) — la casse se borne, et la
+  // borne se mesure. Singapour n'existe que par la zone à terre de sa ville ;
+  // l'aérodrome fait de même avec la sienne (`box + 30`), et c'est tout ce qui
+  // bouge. On engendre le même pays avec et sans Changi, DANS LE MÊME CODE :
+  // hors du disque de sa zone, pas une colonne ne doit différer — et dedans,
+  // l'île doit exister (moins de six pour cent d'eau sous le disque). Mesuré à
+  // la livraison avec la même découpe sur `origin/main` et sur la branche :
+  // 242 980 colonnes, 03de9ee4… des deux côtés. Un témoin qui ne peut pas être
+  // satisfait en mettant une valeur à jour. Sur l'ancien code : Changi absent.
+  {
+    const W = await import('../src/world.js');
+    const sin = AERO.find((a) => a.cle === 'sin');
+    if (!sin) verifier('Changi : la terre gagnée sur la mer reste dans sa zone', false, 'Changi absent du registre');
+    else {
+      const avec = new W.World(), sans = new W.World();
+      sans.conf = { ...W.CONF_NEUF, cle: 'temoin-sans-changi',
+        aeroports: W.CONF_NEUF.aeroports.filter((a) => a.cle !== 'sin'),
+        reperes: W.CONF_NEUF.reperes.filter((l) => l.name !== sin.nom && !String(l.name).startsWith(sin.nom)) };
+      const zone = sin.r - 9 + 30;
+      let horsDiff = 0, hors = 0, dedansDiff = 0, eau = 0, disque = 0;
+      for (let x = sin.x - 400; x <= sin.x + 400; x += 2) {
+        for (let z = sin.z - 400; z <= sin.z + 400; z += 2) {
+          const d = Math.hypot(x - sin.x, z - sin.z);
+          const h1 = avec.terrainHeight(x, z);
+          if (d < sin.r) { disque++; if (h1 < W.WATER_LEVEL) eau++; }
+          const diff = h1 !== sans.terrainHeight(x, z);
+          if (d > zone + 1) { hors++; if (diff) horsDiff++; } else if (diff) dedansDiff++;
+        }
+      }
+      verifier('Changi : la terre gagnée sur la mer reste dans sa zone',
+        horsDiff === 0 && dedansDiff > 1000 && eau / disque < 0.06,
+        `hors de la zone ${horsDiff} colonne(s) changée(s) sur ${hors} · dans la zone ${dedansDiff} · eau sous le disque ${(100 * eau / disque).toFixed(1)} %`);
+    }
+  }
+
   // ET MÊME EXIGENCE POUR LES DEUX CENT SOIXANTE-NEUF VILLES ENGENDRÉES,
   // qui ont pris 1,8 fois leur emprise en v200.
   //

@@ -5,7 +5,7 @@ import { buildVillandry } from './villandry.js';
 import { aUnModeleHD, porteeHD } from './paris-monuments-hd.js';
 import { echelleDe, etirerBatisseur } from './echelle-monuments.js';
 import { carrefoursDeVoies } from './voies.js';
-import { buildAeroport, buildAerodrome, AEROPORTS, AEROPORTS_AVANT_V306, tronconsDePiste } from './aeroport.js';
+import { buildAeroport, buildAerodrome, AEROPORTS, AEROPORTS_AVANT_V306, NES_APRES_V306, tronconsDePiste } from './aeroport.js';
 import {
   USINE, hauteurUsine, solUsine, buildUsine, buildParcUsine, dansLUsine,
 } from './usine.js';
@@ -1362,7 +1362,7 @@ const LANDMARKS_V317 = [
   { name: 'Château médiéval', x: CASTLE.x, z: CASTLE.z, box: 30, build: buildCastle },
   { name: 'Base martienne', x: MARS.x, z: MARS.z, box: 26, build: buildBaseMartienne },
   { name: 'Château de Villandry', x: VILLANDRY.x, z: VILLANDRY.z, box: 80, build: buildVillandry },
-  // Les dix-neuf aérodromes. Roissy garde son bâtisseur à lui — le tambour de
+  // Les vingt aérodromes. Roissy garde son bâtisseur à lui — le tambour de
   // 1974 et ses sept satellites ne ressemblent à aucun autre aéroport au monde ;
   // les dix-huit autres passent par le bâtisseur générique, qui lit leur profil.
   // LA BOÎTE SUIT LE DISQUE PAVÉ, ET IL A GRANDI EN v280. La plate-forme est
@@ -1538,6 +1538,8 @@ const PLACES_AVANT = PLACES.map((p) => (p === GAULOIS ? GAULOIS_AVANT : p === VO
 const NOMS_MONUMENTS_PARIS = new Set(['Tour Eiffel', 'Arc de Triomphe', 'Pyramide du Louvre', 'Panthéon',
   'Invalides', 'Opéra', 'Montparnasse', 'Bastille', 'Moulin Rouge', 'Sacré-Cœur', 'Notre-Dame']);
 const AEROPORT_AVANT = new Map(AEROPORTS_AVANT_V306.map((a) => [a.nom, a]));
+// Les aérodromes nés après la v306 (Changi, v486) ne sont pas dans ce monde-là.
+const NES_APRES_V306_NOMS = new Set(AEROPORTS.filter((a) => NES_APRES_V306.has(a.cle)).map((a) => a.nom));
 function repereAvant(lm) {
   if (NOMS_MONUMENTS_PARIS.has(lm.name) && Math.hypot(lm.x - PARIS.x, lm.z - PARIS.z) < PARIS.r) {
     if (lm.name === 'Notre-Dame') return { ...lm, x: PARIS_AVANT_POS.x + PARIS_V302.CITE.u, z: PARIS_V302.zCite() };
@@ -1571,7 +1573,7 @@ export const CONF_NEUF = {
 export const CONF_V308 = { ...CONF_NEUF, reperes: LANDMARKS_V317, fonduDoux: false, mursDeQuai: false, falaises: false, villesAvant: true, climat: false, sansTrameLondres: false, metroParis: false };
 export const CONF_AVANT = {
   cle: 'avant-v306', villes: CITIES_AVANT, aeroports: AEROPORTS_AVANT_V306, gaulois: GAULOIS_AVANT,
-  volcan: VOLCANO_AVANT, places: PLACES_AVANT, reperes: LANDMARKS_V317.map(repereAvant),
+  volcan: VOLCANO_AVANT, places: PLACES_AVANT, reperes: LANDMARKS_V317.filter((lm) => !NES_APRES_V306_NOMS.has(lm.name)).map(repereAvant),
   hauteurParis: PARIS_V302.hauteurParis, parisAvant: true, fonduDoux: false, villesAvant: true,
 };
 

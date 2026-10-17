@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 486,
+    titre: 'Un aéroport à Singapour',
+    puces: [
+      'Changi est né sur la mer',
+      'Deux longues pistes au bord de l\'eau',
+    ],
+  },
+  {
     v: 485,
     titre: 'La savane',
     puces: [

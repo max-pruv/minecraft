@@ -1,5 +1,22 @@
 # Ce qui est en cours
 
+- [ ] **Rouges de portail mesurés des deux côtés au portail de la v486 (Changi)**
+  — double mesure de la v195, `monte.js` rejouée SEULE sur la branche et sur
+  `origin/main` v473 (`git worktree`) : « à Moscou, les rues sont pleines de
+  voitures » (moins de six voitures en 45 s) et son dépendant « modèles ET
+  couleurs différents » rouges des deux côtés ; « l'on ne marche pas dans une
+  rue vide » rouge des deux côtés (vus `[0,3,3,0,0,0,3,23]` ici,
+  `[0,4,14,2,0,0,1,19]` sur `origin/main`) ; « au feu, la voiture freine »
+  déjà déclaré. Rejouée seule, la branche rend en plus « un passant change de
+  trottoir au feu » et « deux voisines d'un convoi gardent leur écart » ;
+  `origin/main` rend « un mur pris de face » : intermittences de cadence, la
+  même distribution. Preuve structurelle : Changi ne change que le relief
+  dans sa zone (à 40 000 blocs de Moscou) et ajoute un repère, des pistes et
+  un aérodrome que rien de la rue ne lit. Au portail aussi : `maj.js` « il
+  couvre toutes les versions du journal » rouge pour la puce de la v465
+  (« Sur la mer, le train roule sur un viaduc », sur `origin/main`), et
+  `manhattan.js` « sans erreur de jeu » (PeerJS, déjà déclaré).
+
 - [ ] **PORTAIL DE LA v484 (les cubes orange) : cinq rouges, aucun de la
   livraison** (qui ne déplace qu'un `Points` d'ambiance, lu par rien d'autre).
   `maj.js` : la puce v465 à neuf mots, rouge sur `origin/main` (corrigée depuis en amont).
@@ -7175,9 +7192,14 @@ l'embarquement a eu lieu, pas par une hypothèse.
   réel a dû céder cinq fois faute de terre ferme : JFK (115° → 30°), Fiumicino
   (245° → 325°), Haneda (160° → 250°), Los Angeles (245° → 305°), Roissy
   (43° → 0°, le nord-est de Paris étant le quartier des enfants). Le jour où
-  la carte gagnera des côtes plus fines, ces cinq-là se replaceront. Et il
-  manque Changi : aucun disque de soixante-dix blocs au sec dans les trois
-  cents blocs autour de Singapour — Delhi a pris sa place dans la quinzaine.
+  la carte gagnera des côtes plus fines, ces cinq-là se replaceront. Changi
+  est FAIT en v486 : sur une île gagnée sur la mer (la zone à terre de son
+  repère), cap réel 70° → 82°, 201 blocs, casse bornée à la zone et mesurée
+  des deux côtés. Reste, déclaré : aucune marche de migration ne suit un bloc
+  qu'un enfant aurait posé en mer à cet endroit avant la v486 (la terre monte
+  autour de lui, ses coordonnées ne bougent pas) ; et le cap réel (70°) ne tenait pas
+  deux pistes de trois cents blocs près de la ville : 82° est le plus proche qui
+  les tienne (sonde, pas d'un degré sur deux, de 180 à 270 blocs).
 
 - [x] **Un terminal n'a ni sièges, ni comptoirs, ni tapis à bagages.** FAIT en
   v330 sur les dix-neuf (`amenagerHall`, aeroport.js), halls de Roissy ouverts
