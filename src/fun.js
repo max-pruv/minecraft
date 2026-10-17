@@ -28,7 +28,7 @@ import { moteurDemarre, moteurRegime, moteurCoupe, radioDemarre, radioCoupe } fr
 import { creerDegats } from './degats3d.js';
 import { sensationsAuVolant, sensationsAPied, reposerVoiture } from './sensations.js';
 import { brancherTraces, avancerTraces, chaufferTraces } from './traces.js';
-import { creerEmbarquement } from './embarquement.js';
+import { creerEmbarquement, ATTENTE_RAME_MIN } from './embarquement.js';
 import { chronoReel } from './cadence.js';
 
 // Le sac (`web-minecraft-bag-v1`), la quête (`web-minecraft-quest-v1`), le
@@ -421,10 +421,32 @@ export function initFun(ctx) {
 
   function debarquer(silencieux = false) {
     if (!bord) return;
-    const nom = bord.nom;
-    bord = null;
+    const { nom, id } = bord;
+    bord = null;               // plus à bord dès le premier appui (v489, comme v366)
     player.vel.set(0, 0, 0);
-    if (!silencieux) toast(`🚶 Tu descends du ${nom}.`, 0xd8c9a4);
+    if (silencieux) return;
+    toast(`🚶 Tu descends du ${nom}.`, 0xd8c9a4);
+    // PAR LA PORTE, SI LA RAME EST À QUAI (v489) : sinon l'ancien geste
+    const r = rameDe(id);
+    if (r && r.aQuai) embarquement.descendreRame(r);
+  }
+
+  // LA RAME D'UNE PLACE (v489) : son maillage (par le nom stable de la place,
+  // `clé#rang`, v305) et si elle est À QUAI — la pause qui lui reste au
+  // quai (`attente`, la grille du convoi) couvre toute la séquence. Lu une
+  // fois par appui, jamais par image : `etat()` parcourt tous les convois.
+  function rameDe(id) {
+    const v = getVehicules && getVehicules();
+    if (!v || !v.etat || !v.voitureNommee) return null;
+    const [ci, i] = String(id).split(':').map(Number);
+    const e = v.etat()[ci];
+    if (!e || !e.cle) return null;
+    const mesh = v.voitureNommee(`${e.cle}#${i}`);
+    if (!mesh || !mesh.userData || !mesh.userData.porte) return null;
+    return {
+      mesh, aQuai: e.attente >= ATTENTE_RAME_MIN,
+      encore: () => !!(v.place(id) && v.voitureNommee(`${e.cle}#${i}`) === mesh),
+    };
   }
 
   // ON PREND LE VOLANT, ON NE SE LAISSE PLUS PORTER.
@@ -475,9 +497,17 @@ export function initFun(ctx) {
     if (riding) toggleRide(null);
     // Une voiture se conduit ; un métro se prend.
     if (place.nom === 'voiture' && conduireLaVoiture(place)) return;
-    bord = { id: place.id, nom: place.nom, emoji: place.emoji };
-    toast(`${place.emoji} Tu montes dans le ${place.nom} ! Il t'emmène — appuie encore pour descendre.`, 0xa8d8ff);
-    emojiBurst([place.emoji, '💨'], 8);
+    const aBord = () => {
+      bord = { id: place.id, nom: place.nom, emoji: place.emoji };
+      toast(`${place.emoji} Tu montes dans le ${place.nom} ! Il t'emmène — appuie encore pour descendre.`, 0xa8d8ff);
+      emojiBurst([place.emoji, '💨'], 8);
+    };
+    // PAR LA PORTE, SI LA RAME EST À QUAI (v489) : l'enfant marche jusqu'à la
+    // porte, elle coulisse, il entre — et `bord` ne bascule qu'une fois
+    // dedans. Sinon (rame qui roule, monoplace, `embarq=0`), d'un coup.
+    const r = rameDe(place.id);
+    if (r && r.aQuai && embarquement.monterRame({ ...r, fin: aBord })) return;
+    aBord();
   }
 
   function updateBord() {
@@ -1417,6 +1447,8 @@ export function initFun(ctx) {
     // Chez qui l'enfant est passager (ou null) : la position réseau
     // l'emporte, et main.js l'assied sur le siège de la voiture de l'ami.
     passagerDe: () => passager,
+    // à bord d'une rame (ou null) : un témoin lit l'état, pas le texte d'un bouton (v252)
+    bordDe: () => bord,
     monterAvec, vehiculeAmiProche,
     // La bibliothèque de bâtiments vit désormais dans l'inventaire (le +),
     // mais la POSE — devant soi, sol cherché sous chaque colonne, un seul
