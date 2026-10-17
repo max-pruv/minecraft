@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 481,
+    titre: 'Les feux mieux surveillés',
+    puces: [
+      "L'essai du feu lit l'heure de la rue",
+      'Plus de faux coups de frein comptés',
+    ],
+  },
+  {
     v: 480,
     titre: 'L’avion évite le mur',
     puces: [

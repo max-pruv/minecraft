@@ -1,5 +1,63 @@
 # Ce qui est en cours
 
+- [ ] **PORTAILS DE LA v481 (le feu à l'heure de la rue).** Deux passages
+  (fumée, `maj.js`, `monte.js`). Le témoin du feu : rouge au premier (39,4,
+  un des mécanismes rares décrits juste en dessous), VERT au second (4 259
+  paires, aucune au-delà de 10). Rouges, tous déjà déclarés ici : `maj.js`
+  « le loader dit combien de fichiers » ; `monte.js` le flâneur de Rome, « à
+  Rome aussi, en biais », « un passant change de trottoir au feu » (2 hors
+  feu), « la rue roule à l'allure d'une ville » (médiane 0, le bouchon), « on
+  ne marche pas dans une rue vide », « un mur pris de face ». La livraison ne
+  touche à `src/` que par `nouveautes.js` (données) : aucun de ces chemins
+  n'a bougé. La puce trop longue que `maj.js` a vue (v465, puis la mienne) est
+  raccourcie et vérifiée par la règle même du témoin, sous node.
+- [ ] **AU FEU, LA VOITURE DE FILE PERD ENCORE PLUS DE 10 B/S² — RAREMENT, ET
+  CE N'EST PAS L'URGENCE (v481, zone conduite).** Le témoin « au feu, la
+  voiture freine sur plusieurs relevés » date désormais ses relevés à
+  l'horloge de la rue : la plupart de ses anciens « coups de frein » étaient
+  une image de 0,7 s divisée par les 112 ms entre deux relevés. Il en reste un
+  peu moins d'une paire sur deux cents (dix passages de
+  `sonde-feu-horloge.cjs`), assez pour le faire rougir une fois sur quelques
+  portails (39,4 b/s² vu au portail de la v481). Un journal des huit dernières
+  images de chaque voiture, vidé au moment de la chute, a nommé trois
+  mécanismes — `urgence` valait 0 dans tous :
+  1. **la borne de la v450 ne s'arme qu'en cause 1** : une voiture de cause 2
+     (retenue par une autre voiture) qui devient cause 1 est coupée d'un coup
+     (12,53 → 7,98 b/s dans l'image suivante ; reste 2,09 bloc derrière une
+     voiture à 5,68). Piste : armer la borne dès qu'il y a une voiture devant
+     dans la file et une `cible` finie — elle est RELATIVE, donc ne ralentit
+     pas une file qui roule (règle v453) ; à mesurer sur Moscou (voitures en
+     vue) avant de livrer.
+  2. **le plancher (v283) recolle** pendant que la voiture freine déjà au
+     freinage d'urgence (`fin` sous `borne` : 11,80 → 11,12 dans une image de
+     0,178 s, reste 14,9 au plancher de la file — donc probablement le
+     plancher de la LIGNE, `devantSurLaLigne`). À instrumenter.
+  3. **4,6 → 0 en moins de 0,35 s** (125:18, cause 1, cible 0) : le journal
+     de huit images ne remontait pas jusqu'au début de la chute. À reprendre
+     avec un journal plus long.
+  Et deux défauts trouvés en chemin, corrigés puis retirés faute de pouvoir
+  prouver qu'ils changent le témoin (portail complet exigé, budget) :
+  - **la grille va par escalier** : `distanceA` interpole la distance
+    linéairement entre deux points du profil (un bloc), donc la vitesse est
+    constante sur le bloc et saute à sa fin — à 3 b/s, une marche de
+    1,2 b/s (4,58 → 3,82 en 28 ms, mesuré). Remède écrit et mesuré sous node
+    sur un profil de rue : garder `prof.vs` dans `_horaire` et poser une
+    accélération constante sur le bloc (d = v0·τ + ½·a·τ², `tempsA` inversé
+    par la racine) — pire décélération sur 100 ms 5,9 → 3,5 (le freinage de
+    confort exact), position déplacée de 0,008 bloc au plus, mêmes points aux
+    mêmes heures (v305). Les sondes de géométrie (`nbSansChevauchement`,
+    `jumelleSansContact`, `croisementsDe`) échantillonnent à 0,25 s : sous
+    leur résolution.
+  - **le rattrapage finit d'un coup** : une voiture qui rattrape à 1,3 fois
+    l'allure est recollée à sa grille, donc à l'allure de la grille, dans
+    l'image où son retard s'annule (3,74 → 2,87 b/s en 25 ms). Remède :
+    `libre = vConv + min(0,3·vConv, 3, 1,5·retard)`, l'excès s'éteint avec le
+    retard.
+- [ ] **L'AVION DE L'AMI ET SON ÉPAVE (v453) — SANS TÉMOIN À DEUX TABLETTES.**
+  `p.v` porte désormais un avion (fiche `pilote`) et ses dégâts ; aucun témoin
+  de `reseau.js` ne vérifie encore que l'autre tablette voit l'appareil, puis
+  l'épave en feu après un crash. À écrire sur le modèle de la v344 (l'ami voit
+  la voiture froissée) : deux pages, l'une s'écrase, l'autre lit le maillage.
 - [ ] **AU FEU, LA VOITURE DE FILE PILE DERRIÈRE CELLE QUI S'ARRÊTE (vraie
   panne, zone conduite — trouvée par la session banc-lot3).** Le témoin
   « au feu, la voiture freine sur plusieurs relevés » de `monte.js` comptait

@@ -3532,6 +3532,28 @@ Les deux rouges réseau récurrents du palier C. Trois règles.
   une voix restée au quart (`GAIN_APPEL`) et le régime qui varie ; vérifié
   rouge sur une copie où la voix reste au quart.
 
+## Un freinage de la rue se date à l'heure de la rue (v481)
+
+Deux règles.
+
+- **CE QUI AVANCE EN TEMPS RÉEL PAR IMAGE SE MESURE À SA PROPRE HORLOGE.** La
+  rue avance par image de `dtReel` (v305) ; au banc une image dure jusqu'à une
+  seconde, et des relevés posés tous les dixièmes de seconde tombent ENTRE les
+  images. Une perte de vitesse divisée par l'écart entre deux relevés divise
+  ce qu'une image de 0,7 s a fait par 0,112 s : « 38 b/s² » pour une voiture
+  qui freinait à 7,5. Un témoin qui juge une DÉRIVÉE (décélération, débit) de
+  la rue date ses relevés à `vehicules.horloge()`, jamais à
+  `performance.now()`. Contrôle fait : freinage désarmé à 100 b/s², la mesure
+  à l'horloge de la rue le voit (pire 32,8).
+- **UNE CAUSE ÉCRITE DANS `TASKS.md` SE MESURE AVANT D'ÊTRE CORRIGÉE.** La
+  dette accusait l'arrêt d'urgence au contact ; le code l'excluait déjà dans
+  une même file (`memeLigne`), et un journal des huit dernières images de
+  chaque voiture, vidé par la sonde au moment de la chute, a nommé ce qui
+  restait — la borne de la v450 qui ne s'arme qu'en cause 1, le plancher, un
+  arrêt sans témoin — sans un seul arrêt d'urgence. Corriger le jeu sur la foi
+  de la dette aurait touché la conduite pour le mauvais mécanisme (v291).
+  **Et un mécanisme rare ne se démonte pas par un compteur : il se démonte par
+  ce journal circulaire**, lu à l'instant exact où le témoin voit la chute.
 ## Le phare se lit sur dix secondes (v476) — une borne de requête mesure le fil, pas le réseau
 
 Une règle. Une requête au nuage bornée par `Promise.race` contre un minuteur
