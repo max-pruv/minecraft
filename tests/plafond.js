@@ -2341,7 +2341,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     !double.absent && double.bati === 0 && double.lotBati,
     double.absent ? 'Paris n\'a pas doublé' : `autour de la maison : ${double.bati} bloc(s) de ville · lot après la date bâti : ${double.lotBati}`);
 
-  // --- LA FICHE D'UN GARAGE SUIT SES BLOCS (v474) ------------------------
+  // --- LA FICHE D'UN GARAGE SUIT SES BLOCS (v478) ------------------------
   //
   // Un garage est rangé par POSITION (`garages.js`). Les marches de la carte
   // emmenaient ses murs et laissaient sa fiche : la voiture garée ressortait
@@ -2836,6 +2836,49 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     verifier('les bandes ne changent pas la forme d\'une façade : ce qu\'un enfant a bâti devant reste devant',
       !!reg && formes === 0 && ailleurs === 0,
       reg ? `${formes} couches de solidité différente, ${ailleurs} blocs changés hors des bandes` : 'pas de reglageBaies (ancien code)');
+  }
+
+  // UN PARAPET SOUS UNE VOIE EST DE LA CHAUSSÉE (v477). Aux coins, la voie
+  // d'un anneau traversait la bande de pierre d'un tablier voisin : 66 pas de
+  // voie sur un parapet dans vingt-sept villes (mesuré sur `origin/main`,
+  // v473). Seule la MATIÈRE change, et seulement sous la ligne d'une voie. On
+  // lit chaque colonne du disque de chaque ville à pont, `reglageParapets.voie`
+  // à vrai puis à faux : aucun tablier gagné ni perdu, aucune colonne changée
+  // hors de l'eau ni ailleurs que du parapet à la chaussée, et la sélection
+  // des anneaux identique (les mêmes points, au bit près).
+  {
+    const VM = await import('../src/villesmonde.js');
+    const WO = await import('../src/world.js');
+    const B = await import('../src/blocks.js');
+    const reg = VM.reglageParapets;
+    const W = new WO.World();
+    const tracer = () => VM.tracesCirculation(() => 35).map((tr) => tr.pts.map((p) => `${p.x},${p.z}`).join(';')).join('|');
+    let changees = 0, horsEau = 0, autres = 0, tabliers = 0, villes = new Set(), memes = true;
+    if (reg) {
+      reg.voie = true; const avec = tracer();
+      reg.voie = false; const sans = tracer();
+      memes = avec === sans;
+      for (const f of VM.VILLES_MONDE) {
+        if (!f.trame || f.trame.ruelles || !VM.anneauxDeVille(f).ponts.length) continue;
+        const R = Math.ceil(f.rayon);
+        for (let du = -R; du <= R; du++) for (let dv = -R; dv <= R; dv++) {
+          if (du * du + dv * dv > f.rayon * f.rayon) continue;
+          const X = Math.floor(f.ancre.x) + du, Z = Math.floor(f.ancre.z) + dv;
+          reg.voie = true; const s1 = VM.solVillesMonde(X, Z), p1 = VM.pontVillesMonde(X, Z);
+          reg.voie = false; const s0 = VM.solVillesMonde(X, Z), p0 = VM.pontVillesMonde(X, Z);
+          if (!!p1 !== !!p0) tabliers++;
+          if (s1 === s0) continue;
+          changees++; villes.add(f.cle);
+          if (W.terrainHeight(X, Z) >= WO.WATER_LEVEL) horsEau++;
+          if (!(B.isSolid(s1) && B.isSolid(s0) && WO.CHAUSSEE.has(s1) && !WO.CHAUSSEE.has(s0))) autres++;
+        }
+      }
+      reg.voie = true;
+    }
+    verifier('un parapet sous la voie d\'un anneau devient chaussée, et rien d\'autre ne change',
+      !!reg && memes && tabliers === 0 && horsEau === 0 && autres === 0 && changees >= 33 && changees <= 132,
+      reg ? `${changees} colonnes de parapet passées à la chaussée dans ${villes.size} villes (66 mesurées), ${horsEau} hors de l'eau, ${autres} autres, ${tabliers} tabliers gagnés ou perdus, sélection ${memes ? 'identique' : 'CHANGÉE'}`
+        : 'pas de reglageParapets (ancien code)');
   }
 
   // UN BÂTISSEUR NE TIRE PAS AU HASARD (v450). Le Colisée du catalogue

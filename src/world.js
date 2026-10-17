@@ -1732,7 +1732,7 @@ export function hauteurBase(x, z, mondeId = 'terre') {
 // la date de la refonte, pour qu'aucune passe ne le redéplace et pour qu'il
 // l'emporte sur sa copie d'avant. C'est la règle du receveur qui cède :
 // l'ancienne version ne peut pas apprendre la règle neuve.
-export const CARTE_VERSION = 8;   // 4 : le ménage du ciel de Paris (v298) ; 5 : les toits de Paris relevés (v301) ; 6 : Paris doublé (v306) ; 7 : le fondu doux des villes (v309) ; 8 : les fiches des garages suivent leurs blocs (v474)
+export const CARTE_VERSION = 8;   // 4 : le ménage du ciel de Paris (v298) ; 5 : les toits de Paris relevés (v301) ; 6 : Paris doublé (v306) ; 7 : le fondu doux des villes (v309) ; 8 : les fiches des garages suivent leurs blocs (v478)
 const CLE_CARTE = 'web-minecraft-carte-v1';
 const ECART_MAX = 24;          // au-delà, on ne déplace plus : on laisse et on dit
 // L'heure de la refonte ×2. Un bloc daté d'avant a été posé sur la carte de
@@ -2273,7 +2273,7 @@ export function migrerParisDouble(map) {
 
 // Les groupes que la marche 5 → 6 emmène, et où : [[groupe, d]], un groupe
 // étant une liste de [x, y, z, clé]. Séparé de la migration pour que la fiche
-// d'un garage (v474) suive exactement le groupe de ses blocs.
+// d'un garage (v478) suive exactement le groupe de ses blocs.
 function planParisDouble(map) {
   const cle3 = (x, y, z) => ((x + 131072) * 256 + y) * 262144 + (z + 131072);
   const candidats = new Map();      // clé -> [x, y, z, k] : touchable, d'avant la date
@@ -2547,7 +2547,7 @@ export function releverPositionsParis(pos) {
   return { pos: out, deplaces };
 }
 
-// LA FICHE D'UN GARAGE SUIT SES BLOCS (v474).
+// LA FICHE D'UN GARAGE SUIT SES BLOCS (v478).
 //
 // Un garage est une ligne de sauvegarde rangée par POSITION (`garages.js`) :
 // son origine, sa boîte, ses places, et la voiture qui y dort. Les quatre
@@ -2824,7 +2824,7 @@ export function migrerLesBlocs(lire, ecrire, lirePos = null, ecrirePos = null) {
     }
   }
 
-  // 7 → 8 : les fiches des garages (v474). Chaque marche des garages juge
+  // 7 → 8 : les fiches des garages (v478). Chaque marche des garages juge
   // sur les blocs tels qu'ils étaient AVANT la marche des blocs qu'elle suit :
   // sur un appareil qui n'a pas encore migré, la fiche part avec son groupe ;
   // sur un appareil qui a migré sans elle, elle retrouve ses murs.

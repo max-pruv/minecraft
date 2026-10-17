@@ -770,7 +770,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## La fiche d'un garage suit ses murs (v474) — ce qui est rangé par position migre avec ses blocs
+## La fiche d'un garage suit ses murs (v478) — ce qui est rangé par position migre avec ses blocs
 
 Deux règles.
 
@@ -789,6 +789,44 @@ Deux règles.
   (en avant), ou si elle est vide et que l'arrivée porte la date de la marche
   (l'orpheline, dont on retrouve le groupe arrivé et son ancrage par le centre
   arrondi). Dans le doute, elle reste — l'état d'avant, jamais pire.
+
+## Le parapet sous la voie (v477) — une matière de tablier se lit sous la ligne qui roule
+
+Une règle. Aux coins des anneaux, la voie d'une voiture traversait la bande de
+pierre d'un tablier voisin (66 pas, vingt-sept villes) ; `pasHorsChaussee` les
+compte « sur un tablier », donc aucune recherche de contour ne les voyait. Le
+parapet est à la cote du tablier : là où la LIGNE d'une voie le traverse
+(`colonnesDeVoie`, la règle du témoin, au demi-bloc), sa colonne est du bitume
+— c'est la règle de la v457 (un changement de DESSIN qui garde la forme se
+prouve par la forme), et elle précise la v414 : un tablier ne se retire pas, et
+sa matière ne change que sous une voie. La sélection n'en dépend pas
+(`EN_CALCUL`, les tabliers sont nuls pendant le calcul) ; le témoin de
+`plafond.js` le prouve colonne par colonne, `reglageParapets.voie` à faux.
+
+## Les tours de monument sur la voie de droite (v475) — un témoin de circuit lit la voie, pas l'axe
+
+Deux règles.
+
+- **UNE VOITURE D'AVENUE ROULE À 1,3 BLOC À DROITE DE SON TRACÉ, ET TOUT CE
+  QUI JUGE UN CIRCUIT SE JUGE LÀ.** Depuis la v395 (`decalerADroite`,
+  `DECALAGE_AVENUE` de main.js, `VOIE_DE_DROITE` de paris.js), le tracé d'un
+  circuit n'est plus le chemin d'aucune voiture. Le témoin des monuments de
+  Paris lisait l'axe et rendait zéro pendant que vingt-sept pas de carrosserie
+  entraient dans les vitrines du tour de l'Opéra et des Invalides. Un témoin de
+  circuit décale le tracé avec les fonctions de `vehicules.js`, jamais une
+  copie ; trois autres lisent encore l'axe, déclarés dans `TASKS.md`.
+- **UNE RUE TROP ÉTROITE POUR DEUX VOIES PREND UN SENS.** Le tour d'un monument
+  fait quatre blocs ; deux voies de 2,26 en demandent près de cinq. Quand tous
+  les circuits qui le prennent le font dans le même sens (`SENS_TOURS_PARIS`,
+  calculé au chargement sur `CIRCUITS`), l'axe se déplace de ce qu'il faut
+  pour que la voiture reste dans la rue — et pas plus : rentrer les quatre
+  côtés de l'Opéra resserrait le virage et coûtait sa seconde voie au circuit
+  de Rivoli (446 → 260 blocs de deux voies). Une retouche de tracé se remesure
+  aussi en voies doubles (`sonde-rue-dense.cjs boulevards`), en raccords et en
+  bus, pas seulement en pas de carrosserie. Un tour pris dans les deux sens
+  garde son axe au milieu. Un circuit ajouté qui prend un tour à contresens le
+  remet à deux voies tout seul — et le témoin le dira s'il touche une façade.
+  Élargir la rue aurait changé le sol sous ce que les enfants ont bâti.
 
 ## Les passages des avenues (v467) — un passage se mesure le long de SA rue
 
@@ -3441,6 +3479,15 @@ dix bordures (force 0,3) mettaient la voiture en feu. Quatre règles.
   voit la voiture de l'ami en panne plus tôt : le receveur cède, et c'est
   accepté. Et une ancienne tablette ignore une histoire `rc` de plus de douze
   chocs : `rue_choc` reste son chemin.
+- **UNE HISTOIRE BORNÉE SE COMPTE PAR SON TOTAL, JAMAIS PAR SA LONGUEUR
+  (v474).** Une liste qui garde les N derniers ne grandit plus une fois pleine :
+  `rattraper`, `distant` et `rapprocher` comparaient sa longueur à ce qui était
+  appliqué, et le 25e choc n'enfonçait plus rien (30 chocs, 24 enfoncements,
+  mesuré). `etat.total` (et `h.n` pour la rue) compte tout ; le n-ième choc
+  rejoué est `chocs[longueur − (total − n)]`. Ce que les derniers ne suffisent
+  plus à refaire voyage à part, seulement quand l'histoire a débordé : la santé
+  (`s`) et le total (`n`) dans `p.v.d`, absents sinon (le message garde sa
+  forme d'avant).
 
 ## Celui qui part dit au revoir (v393) — un commentaire de départ se relit dans `stop()`
 
@@ -3471,6 +3518,21 @@ Les deux rouges réseau récurrents du palier C. Trois règles.
   gain de sortie rendu, plus un niveau au-dessus de la MOITIÉ — milieu entre
   une voix restée au quart (`GAIN_APPEL`) et le régime qui varie ; vérifié
   rouge sur une copie où la voix reste au quart.
+
+## Le phare se lit sur dix secondes (v476) — une borne de requête mesure le fil, pas le réseau
+
+Une règle. Une requête au nuage bornée par `Promise.race` contre un minuteur
+ne mesure pas le réseau : le minuteur et la lecture de la réponse attendent
+TOUS DEUX le fil principal, et une tablette qui entre dans un monde le gèle
+jusqu'à quinze secondes (`sonde-phare.cjs`). Le sondage du phare, contre un
+nuage local au repos, rendait 2,9 à 4,2 s — verdict « tenu » chaque fois —
+et la borne de trois secondes le perdait trois fois sur quatre : l'invité
+concluait « introuvable » et OUVRAIT le monde par-dessus l'hôte. Une borne
+dont l'échec mène à une action irréversible (un monde jumeau) se pose bien
+au-dessus de ce qu'on mesure (`PHARE_MS`, dix secondes) ; celle de
+`tenterDevenirHote` reste à trois, parce que son échec ne bouscule rien.
+Et l'avion de l'ami a son témoin à deux tablettes (`reseau.js`), rouge quand
+`p.v` ne porte plus que ce qui a un siège.
 
 ## Le lot 3 des témoins (v471) — un compteur se lit sur ce qu'il compte vraiment
 
