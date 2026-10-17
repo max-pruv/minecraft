@@ -11,6 +11,7 @@
 //     cd tests && npm install && npm run monte
 
 const { Banc, dormir, souffler } = require('./banc.js');
+const { passage: passageRendre, juger: jugerRendre } = require('./sonde-rendre-convois.cjs');
 const { mesurerSensations } = require('./sensations-mesure.js');
 const { mesurerTraces } = require('./traces-mesure.js');
 const { mesurerDeriveDessinee } = require('./derive-mesure.js');
@@ -5494,6 +5495,32 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('ce qu\'on retire de la scène se rend à la carte graphique',
       !rendu.err && rendu.nees >= 5 && rendu.prises >= 20 && rendu.perdues <= 10,
       `barre 10 géométries perdues · ${JSON.stringify(rendu)}`);
+
+    // LES VOITURES DE LA RUE SE RENDENT QUAND L'ENFANT S'EN VA (v495).
+    //
+    // La pousse de mémoire qui restait après la v238 venait des convois : une
+    // voiture de la rue naît à la demande (v235) et n'était JAMAIS détruite —
+    // cachée au-delà de sa portée, elle restait en scène pour la session.
+    // Mesuré (`sonde-memoire-convois.cjs`) après quatre villes, loin de tout :
+    // 132 voitures, 3 595 maillages, aucune visible.
+    //
+    // UNITAIRE, ET SUR LE MÉCANISME DU JEU (v238). On laisse Rome fabriquer ses
+    // voitures, on écoute la fin de vie de chaque géométrie qu'elles portent,
+    // puis on part loin et l'on laisse `montrer` décider. On compte ce que les
+    // voitures possèdent EN PROPRE — pas ce qu'elles tiennent du prototype de
+    // la flotte, marqué partagé — et l'on exige deux choses : tout ce qui est à
+    // elles est rendu, et RIEN du prototype ne l'est (sinon toutes les voitures
+    // du modèle repartiraient à la carte graphique). Puis l'on revient : la rue
+    // se refait, la grille horaire n'a pas bougé (v305).
+    await souffler();
+    const convois = await passageRendre(ciel);
+    // BORNES DE GARDE (v237) : la mesure a eu lieu — au moins quatre voitures,
+    // quelques géométries à elles — et se pose loin sous le relevé. Le verdict
+    // ne tolère rien : ce qu'une voiture possède part avec elle, rien du
+    // prototype ne part, aucune voiture partie ne reste en scène, et la rue
+    // revient quand on revient.
+    verifier('les voitures de la rue rendent leur mémoire quand on s\'en va',
+      jugerRendre(convois), JSON.stringify(convois));
 
     // LA MINICARTE NE RESTE PLUS EN ARRIÈRE PENDANT QU'ON VOLE (v233).
     //

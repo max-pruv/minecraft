@@ -15,7 +15,7 @@ import { SIGNATURES_GLB, SIGNATURES_JEU, EST_PEINTURE } from './signatures.js';
 import { construireTaxi } from './taxis.js';
 import { construireUtilitaire, construirePickup } from './utilitaires.js';
 import { Atelier } from './modeles.js';
-import { liberer } from './liberer.js';
+import { liberer, partagerTout } from './liberer.js';
 import { profilVitesse, grilleDuProfil, rapprocher, allureDevant, passeAOrange, FREIN, FREIN_URGENCE, ALLURE_VOIE, allureDuConducteur } from './circulation.js';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
 import { CLASSES, MARCHE } from './conduite.js';
@@ -722,6 +722,7 @@ export function chargerVoitureFlotte(entree) {
   if(entree.fabrique){
     const modele=entree.fabrique(),rt=refletsVoiture();
     if(rt)modele.traverse(o=>{if(o.isMesh&&(o.material.isMeshStandardMaterial||o.material.isMeshPhysicalMaterial))refleter(o,o.material,.75);});
+    partagerTout(modele);   // le prototype ne se rend jamais (v495)
     const p=Promise.resolve(modele);chargementsFlotte.set(entree.fichier,p);return p;
   }
   const chargement = new GLTFLoader().register(partageDesTextures).loadAsync('./vendor/voitures/' + entree.fichier)
@@ -761,6 +762,14 @@ export function chargerVoitureFlotte(entree) {
       const rayon = boite ? (boite.max.y - boite.min.y) / 2 : 0;
       porteur.userData.rayonRoue = rayon > 0.1 ? rayon : 0.34;
       porteur.userData.forme = forme;      // « manifeste » ou « mesuré » : le témoin le lit
+      // LE PROTOTYPE EST À TOUTE LA FLOTTE (v495). Chaque voiture du modèle en
+      // est un clone (`clone(true)` partage géométries et matériaux) : rendre
+      // au pilote ce qu'une voiture qui s'en va porte ne doit jamais toucher
+      // à ce qu'elle tient du prototype. Sans cette marque, `retirer` (un ami
+      // a pris la voiture) et le retrait d'une monture rendaient la géométrie
+      // et les matériaux de TOUT le modèle — renvoyés à la carte graphique et
+      // recompilés à l'image suivante, pour chaque voiture de la rue.
+      partagerTout(porteur);
       return porteur;
     }).catch(() => null);
   chargementsFlotte.set(entree.fichier, chargement);
@@ -781,6 +790,21 @@ const VU = 150;                 // au-delà, le convoi s'efface et se fige
 export const FAB_MS = 5;
 export const FAB_PROCHE = 18;
 const fabrication = { fin: Infinity, faites: 0, differees: 0 };
+
+// CE QUI QUITTE DURABLEMENT LE CHAMP SE REND (v495). Une voiture de convoi
+// naît à la demande (v235) et n'était jamais détruite : cachée au-delà de sa
+// portée, elle restait dans la scène pour toute la session, avec ses trente
+// maillages, ses matériaux repeints et — avant qu'on la rende aussi — la coque
+// d'attente que son modèle avait remplacée. Mesuré (`sonde-memoire-convois.cjs`)
+// après Paris, Rome, Londres et Berlin puis loin de tout : 132 voitures, 3 595
+// maillages et 1 105 géométries toujours en scène, aucune visible. Le rang ne
+// change pas : la place reste au convoi et la grille horaire aussi (v305) ;
+// seul le maillage part, et se refait par tranches (v431) quand la place
+// revient dans le champ. La marge évite qu'une voiture qui longe la limite se
+// rende et se refasse à chaque tour : il faut être passé cent blocs AU-DELÀ de
+// la portée. `rendues` et `ressources` sont lues par le témoin de `monte.js`.
+export const MARGE_RENDRE = 100;
+const rendus = { voitures: 0, ressources: 0 };
 
 // MAIS CENT CINQUANTE BLOCS, C'EST LA PORTÉE DU REGARD À CIEL OUVERT.
 //
@@ -1487,6 +1511,20 @@ class Convoi {
     this.elements = new Array(opts.nb).fill(null);
   }
 
+  // Rend au pilote le maillage de la voiture i, et vide sa place — la place,
+  // elle, reste (v495). Ce que le maillage tient du prototype de la flotte
+  // est marqué partagé et ne part pas (`partagerTout`).
+  rendre(i) {
+    const m = this.elements[i];
+    if (!m) return 0;
+    this.scene.remove(m);
+    m.userData.rendue = true;     // un modèle qui arrive après ne s'y accroche pas
+    const n = liberer(m);
+    this.elements[i] = null;
+    rendus.voitures++; rendus.ressources += n;
+    return n;
+  }
+
   // La voiture numéro i, fabriquée si c'est la première fois qu'on la voit.
   element(i) {
     let m = this.elements[i];
@@ -2050,19 +2088,27 @@ class Convoi {
     const tete = this.parcours.a(this.distance);
     const portee = (this.decouvert && this.decouvert(tete)) ? VU : this.vu;
     const trainee = this.etendue();
-    if (Math.hypot(tete.x - joueur.x, tete.z - joueur.z) > portee + trainee) {
-      for (const m of this.elements) if (m && m.visible) m.visible = false;
+    const dTete = Math.hypot(tete.x - joueur.x, tete.z - joueur.z);
+    if (dTete > portee + trainee) {
+      // tout le convoi est loin : au-delà de la marge, il rend ses maillages
+      if (dTete > portee + trainee + MARGE_RENDRE) {
+        for (let i = 0; i < this.elements.length; i++) if (this.elements[i]) this.rendre(i);
+      } else for (const m of this.elements) if (m && m.visible) m.visible = false;
       return;
     }
     const portee2 = portee * portee;
+    const rendre2 = (portee + MARGE_RENDRE) ** 2;
     for (let i = 0; i < this.nb; i++) {
       if (this.pris && this.pris.has(i)) continue;
       const p = this.parcours.a(this.dElement(i));
-      const dedans = (p.x - joueur.x) ** 2 + (p.z - joueur.z) ** 2 < portee2;
-      // Hors du champ : on ne fabrique rien, et l'on cache ce qui existe déjà.
+      const d2 = (p.x - joueur.x) ** 2 + (p.z - joueur.z) ** 2;
+      const dedans = d2 < portee2;
+      // Hors du champ : on ne fabrique rien, et l'on cache ce qui existe déjà
+      // — ou, loin au-delà, on le rend (v495).
       if (!dedans) {
         const dejaLa = this.elements[i];
-        if (dejaLa && dejaLa.visible) dejaLa.visible = false;
+        if (dejaLa && d2 > rendre2) this.rendre(i);
+        else if (dejaLa && dejaLa.visible) dejaLa.visible = false;
         continue;
       }
       if (!this.elements[i] && performance.now() > fabrication.fin
@@ -2485,10 +2531,14 @@ export function createVehicules({ scene, player }) {
     const chargement = chargerVoitureFlotte(entree);
     if (chargement) {
       chargement.then((proto) => {
-        if (!proto || !g.userData.membres) return;
+        // rendue avant que son modèle n'arrive (v495) : on n'y accroche rien
+        if (!proto || !g.userData.membres || g.userData.rendue) return;
         for (const nom of ['caisse', 'verriere', 'tronc']) {
           const membre = g.userData.membres[nom];
-          if (membre) g.remove(membre);
+          // LA COQUE D'ATTENTE SE REND AUSSI (v495) : trois géométries
+          // fusionnées et deux matériaux à elle, par voiture, qu'on retirait
+          // du groupe sans jamais les rendre au pilote.
+          if (membre) { g.remove(membre); liberer(membre); }
         }
         const modele = proto.clone(true);
         // UNE LAQUE PAR VOITURE (v246). Max : « assure-toi que toutes les
@@ -3563,6 +3613,9 @@ export function createVehicules({ scene, player }) {
     // pour une voiture restée dans sa livrée d'origine.
     const peinture = mesh.userData ? (mesh.userData.peinture ?? null) : null;
     scene.remove(mesh);
+    // le maillage de la rue est remplacé par une monture neuve (v194) : on le
+    // rend au pilote, comme `retirer` (v495)
+    liberer(mesh);
     c.elements[i] = null;
     // LA PLACE RESTE, VIDE (v305). Depuis la v194 on RETIRAIT la place du
     // convoi (`splice`) : toutes les voitures de derrière avançaient d'un rang,
@@ -3605,7 +3658,8 @@ export function createVehicules({ scene, player }) {
     adopterHorloge, horloge: () => horloge,
     // la fabrication par tranches (v431) : combien de voitures fabriquées et
     // différées depuis le lancement — ce qu'un témoin compte à l'arrivée
-    fabrication: () => ({ faites: fabrication.faites, differees: fabrication.differees }),
+    fabrication: () => ({ faites: fabrication.faites, differees: fabrication.differees,
+      rendues: rendus.voitures, ressources: rendus.ressources }),
     // le crochet des feux tricolores (v273), branché par main.js
     brancherFeux: (f) => { feuRouge = f; },
     // les amis de la partie (v305), branchés par main.js : où ils sont, leur cap,

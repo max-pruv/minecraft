@@ -1953,6 +1953,25 @@
   appelé pour ce morceau de campagne ; l'écart se prend désormais par paire
   alternée (désarmé de 6 ms : rouge, 7,2).
 
+- [ ] **AU PORTAIL DE LA v495 (règle de la v195), DEUX ROUGES NON DÉCLARÉS,
+  AUCUN DE LA LIVRAISON.** Les autres (`degats.js` l'élan, `maj.js` le loader,
+  `carte.js` la flèche du GPS, `manhattan.js` le taxi, `monte.js` le passant au
+  feu, le freinage au feu, la rue vide, le mur de face) sont déclarés plus bas.
+  - `monte.js` « deux voisines d'un convoi gardent leur longueur d'écart » :
+    `minTrace` 4,01 puis 3,65 aux deux portails, sur un convoi dont `ecart`
+    vaut 2,28 (Paris, −330, 310). Rejoué SEUL, trois passages de chaque côté
+    (`tests/sonde-ecart-convoi.cjs`, le passage de `monte.js` recopié) :
+    branche 5,40 · 5,40 · 5,44, `origin/main` (v479) 5,40 · 5,44 · 5,56 — même
+    distribution, vert partout. Le rouge dépend de ce que les témoins d'avant
+    laissent dans la rue (v279) : le convoi fautif n'est pas celui que la page
+    neuve voit (`ecart` 17,61). Piste : publier la clé du convoi dans
+    `ouTrace`, et vider la rue (ou relire le convoi visé) avant de mesurer.
+  - `reseau.js` « et deux enfants se retrouvent sans courtier du tout »
+    (`[[],[]]`) et, en découlant, « sans courtier, le conducteur voit son
+    passager assis ». `reseau.js` rejouée SEULE : verte sur la branche, verte
+    sur `origin/main` (v479). Rouge de portail.
+
+- [ ] **AU PORTAIL DE LA v474 (règle de la v195), DEUX ROUGES, AUCUN DE LA
 - [ ] **AU PORTAIL DE LA v484 (règle de la v195), DEUX ROUGES, AUCUN DE LA
   LIVRAISON.** `maj.js` « il couvre toutes les versions du journal » : la puce
   de la v465 (« Sur la mer, le train roule sur un viaduc ») dépasse la barre —
@@ -7111,8 +7130,14 @@ l'embarquement a eu lieu, pas par une hypothèse.
   ligne la même archive contre des journaux Terre différents. Les journaux
   d'origine sont conservés ; ne jamais les supprimer pour « nettoyer ».
 
-- [ ] **Une pousse de mémoire graphique subsiste après la v238, et elle ne vient
-  PAS des créatures.** Mesuré, dix allers-retours de cent cinquante blocs qui
+- [x] **Une pousse de mémoire graphique subsiste après la v238, et elle ne vient
+  PAS des créatures.** *(fait en v495 : les voitures de convoi se rendent à
+  `MARGE_RENDRE` au-delà de leur portée, la coque d'attente se rend quand le
+  modèle arrive, et le prototype de la flotte est marqué partagé — mesuré après
+  quatre villes puis loin de tout, 132 voitures et 3 595 maillages gardés → 0,
+  estimation du journal 62 → 26 Mo de géométries en scène ; témoin dans
+  `monte.js`, passage dans `sonde-rendre-convois.cjs`. Les passants, gardés par
+  ville visitée, restent à mesurer.)* Mesuré, dix allers-retours de cent cinquante blocs qui
   forcent le renouvellement : `origin/main` +459 géométries, la branche corrigée
   +348. Le remède de la v238 est pourtant COMPLET pour les bêtes — à l'unité,
   dix créatures prennent 157 géométries et en rendent 157, zéro perdue. Le
@@ -7126,6 +7151,25 @@ l'embarquement a eu lieu, pas par une hypothèse.
   principal est inactif 81 % du temps, il ne peut pas subir cette panne. On
   mesure des géométries.
 
+- [ ] **La monture voiture garde sa coque d'attente (`montures.js`, v495).**
+  Même défaut que la rue avant la v495 : quand le modèle de la flotte arrive,
+  `voitureNeuve` retire du groupe les membres `caisse`, `verriere` et `tronc`
+  de la coque sans les rendre — trois géométries fusionnées et deux matériaux
+  par voiture invoquée. Une ligne (`liberer(membre)` après `g.remove`), comme
+  dans `voitureDeVille`. Hors de la zone de la session des convois : déclaré.
+  Le prototype, lui, est désormais marqué partagé : la monture qui s'en va ne
+  rend plus la géométrie de tout son modèle.
+
+- [ ] **Le prototype de la flotte et ses textures restent sur la carte
+  graphique toute la session.** C'est voulu et BORNÉ (cinquante modèles au plus,
+  cinq images distinctes depuis la v413) — mais l'estimation du journal de bord
+  (`estimerMemoire`) ne compte que ce que la scène tient : quand la rue est
+  vide, elle ne voit plus ces prototypes alors que le pilote les garde. Un
+  relevé `?diag=1` loin de toute ville sous-estime donc la mémoire de ce que
+  la flotte a déjà chargé.
+
+- [ ] **`animals.js` et `creatures.js` comptent leur cadence de naissance en
+  `dt`.** `this.spawnTimer -= dt` avec un `dt` borné à un vingtième : à trois
 - [x] **`animals.js` et `creatures.js` comptent leur cadence de naissance en
   `dt`.** *(fait en v483 : `creatures.js` n'existe plus (v285) ; la naissance
   des bêtes compte en `chronoReel`. Mesuré à 4,7 images par seconde provoquées :

@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 495,
+    titre: 'Les voitures rendent la mémoire',
+    puces: [
+      'Une rue quittée ne pèse plus rien',
+      'Les voitures reviennent quand tu reviens',
+    ],
+  },
+  {
     v: 494,
     titre: 'Des commandes plus simples',
     puces: [
