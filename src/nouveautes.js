@@ -83,7 +83,7 @@ export const NOUVEAUTES = [
     v: 465,
     titre: 'Le train passe sur un pont',
     puces: [
-      'Sur la mer, le train roule sur un viaduc',
+      'Le train roule sur un viaduc en mer',
       'On voit l\'eau passer sous les rails',
     ],
   },
