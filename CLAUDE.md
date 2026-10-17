@@ -1147,7 +1147,7 @@ finale sur un plan, arrondi. Quatre règles.
   dans l'aérogare de Roissy (on monte tout droit avant de virer), Fiumicino
   qui tournait sans fin (deux tours manqués : une autre piste), et un toucher
   avant le seuil de Los Angeles (`TOUCHER` 8).
-- **UNE SONDE DE CONTACT JUGE LA BOÎTE, PAS LE SOMMET DE LA COLONNE (v488).**
+- **UNE SONDE DE CONTACT JUGE LA BOÎTE, PAS LE SOMMET DE LA COLONNE (v480).**
   Trois des quatre « posés à reprendre » de la v452 étaient la sonde : elle
   touchait le sommet d'une couronne d'arbre qui flotte à dix blocs au-dessus
   d'une piste, sous laquelle l'avion vole. Un bloc dans la boîte (la hauteur
