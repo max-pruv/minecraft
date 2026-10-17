@@ -1,5 +1,22 @@
 # Ce qui est en cours
 
+- [ ] **Rouges de portail mesurés des deux côtés au portail de la v492 (cinq
+  villes à la fiche)** — double mesure de la v195, `monte.js` rejouée SEULE sur
+  la branche et sur `origin/main` v473 (`git worktree`) : « au feu, la voiture
+  freine sur plusieurs relevés » (déjà déclaré) et « l'on ne marche pas dans une
+  rue vide » rouges des deux côtés (vus `[0,0,13,2,0,0,0,20]` ici,
+  `[0,3,13,2,0,0,0,25]` sur `origin/main`) ; `origin/main` rend en plus « un
+  flâneur posé au milieu de la chaussée en sort » et « au frein à main, les
+  pneus crissent ». Au portail complet, la branche rendait aussi « la rue roule
+  à l'allure d'une ville » et « un mur pris de face », absents rejouée seule :
+  les intermittences déjà déclarées plus bas. Preuve structurelle : la v492 ne
+  touche que cinq villes engendrées (Dublin, Toulouse, Melbourne, Nantes,
+  Montpellier), aucune n'est sur le trajet de `monte.js`. Second portail
+  (après fusion de la v487) : huit suites vertes, `monte.js` rouge sur quatre
+  témoins tous déjà déclarés — « à Rome aussi, en biais » (passage peint),
+  « deux voisines d'un convoi gardent leur écart » (minVrai 3,61 à Paris
+  (−330, 310), comme en v485), « l'on ne marche pas dans une rue vide » (vus
+  `[0,9,8,0,0,0,2,17]`) et « un mur pris de face » (rebond 0).
 - [ ] **`monte.js` « deux voisines d'un convoi gardent leur longueur d'écart »
   ROUGE au portail de la v488 — sans rapport avec la livraison.** Mesuré :
   `minTrace` 3,59 pour une barre à 4,4 (une longueur de voiture), `minVrai`
@@ -7288,16 +7305,30 @@ l'embarquement a eu lieu, pas par une hypothèse.
   marche lit. Le tambour de l'aérogare 1 reste plein.
 
 - [ ] **Cinquante villes détaillées.** Demandé par Max. Le monde a 269 villes :
-  47 avec une fiche (fleuve, trame, palette, monuments aux vraies coordonnées),
-  222 engendrées depuis onze gabarits. Il s'agit d'en faire passer cinquante du
-  gabarit à la fiche. Trois choses établies : seules Bruxelles et Cologne sont
-  dans la fenêtre d'empreinte (laisser Cologne générique suffit à ne rien
-  casser) ; une fiche qui garde le rayon du registre ne change pas la découpe
-  « hors villes » ; et la géométrie se CALCULE depuis de vraies latitudes et
-  longitudes — un générateur de brouillon le fait et vérifie que chaque
-  monument tombe dans le disque de sa ville (il a déjà attrapé quatre erreurs).
-  À livrer par lots d'une douzaine : Max juge sur captures, et une fiche fausse
-  est pire qu'une fiche absente.
+  46 avec une fiche, 223 engendrées depuis onze gabarits (recompté en v492 ; on
+  en annonçait 47 et 222). **Lot 1 livré en v492** : Dublin, Toulouse,
+  Melbourne, Nantes, Montpellier, par `FICHES_DETAILLEES` (villesmonde.js) —
+  une fiche détaillée posée SUR le gabarit, qui garde rayon, trame et anneaux.
+  Ce qui reste, et pourquoi :
+  - **Les villes au bout d'une route ou d'une ligne** (Marseille, Lyon, Milan,
+    Naples, Bologne, Montréal, Québec, Boston, Budapest, Hambourg…) : un
+    monument ou un fleuve près de l'entrée ferme l'avenue d'entrée ou met un
+    pont dans le raccord. Chacune se fait avec `entrees.mjs` et le témoin des
+    entrées rejoués, ville par ville.
+  - **Les monuments sans bâtisseur** : le Capitole et Saint-Sernin
+    (Toulouse), la cathédrale de Nantes, la Bonne Mère, Notre-Dame de
+    Strasbourg, la tour Eureka (Melbourne). Ils sont des LIEUX ; il leur faut
+    un bâtisseur chacun (zone des bâtisseurs de monuments, une autre session).
+  - **Bordeaux a sa Garonne au mauvais endroit** (v280) : à 0,5 km à l'est
+    de l'ancre quand la vraie est à 1,3 km — la place de la Bourse tomberait
+    dans le fleuve. La déplacer retirerait les tabliers d'aujourd'hui (« un
+    tablier ne se retire pas », v404) : **décision de Max**.
+  - **Genève sans son lac** : le jet d'eau est dans le disque, le Léman non ;
+    un lac change le relief bien plus qu'un fleuve. **Décision de Max.**
+  - **Le relief sous les fleuves neufs** : 2 708 colonnes changent dans les
+    disques de Dublin, Toulouse, Melbourne et Nantes (aucune au-delà du
+    fondu), comme pour les onze fleuves de la v280. Un bloc d'enfant posé là
+    avant la v492 n'est pas migré ; aucun sanctuaire n'est à portée.
 
 - [x] **POURQUOI `maj.js` rougissait-elle dans le portail et pas seule ? —
   RÉPONDU en v220, et ce n'était ni la charge ni un état qui traverse.** La
