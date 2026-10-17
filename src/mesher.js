@@ -667,8 +667,10 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
     // les arbres du morceau (v474) : combien en sont reconnus ici, et si le
     // morceau a été maillé AVEC leurs modèles — `main.js` le relaie comme le
     // détail de Paris
-    arbres: arbres ? arbres.liste.length : (vraisArbres && vegetal ? -1 : 0),
-    arbresEmis,
+    // (seulement quand les arbres sont armés : l'empreinte des 490 morceaux
+    // hache aussi les champs scalaires du retour, et un champ neuf la change
+    // sans qu'un sommet bouge — v421, le contenu neuf se retire par l'option)
+    ...(vraisArbres ? { arbres: arbres ? arbres.liste.length : (vegetal ? -1 : 0), arbresEmis } : {}),
     detail: detail || arbresDetail,
   };
 }
