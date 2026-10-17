@@ -26,7 +26,7 @@ const PUSH_INTERVAL = 15000;
 
 // Ce que la purge du journal de bord garde, recopié du SQL ci-dessous
 // (`journal_appareil_purger`) pour que l'espace parent le dise et qu'un témoin
-// compare les deux : un plantage n'y figure jamais (v474).
+// compare les deux : un plantage n'y figure jamais (v475).
 export const JOURNAL_GARDE_JOURS = 30;
 export const JOURNAL_FINS_PURGEABLES = ['fermeture', 'mise-a-jour', 'arriere-plan'];
 
@@ -303,7 +303,7 @@ export class CloudSave {
   //   create policy "anon read"  on journal_appareil for select using (true);
   //   create policy "anon write" on journal_appareil for insert with check (true);
   //
-  // LA TABLE SE TAILLE TOUTE SEULE (v474). Une ligne par session, jamais
+  // LA TABLE SE TAILLE TOUTE SEULE (v475). Une ligne par session, jamais
   // effacée : la purge vit CÔTÉ SERVEUR, parce qu'une tablette n'a aucun droit
   // d'effacer (pas de politique `delete` pour anon, et il n'en faut pas) et
   // qu'une purge au lancement dépendrait d'une tablette à jour. Chaque

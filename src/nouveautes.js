@@ -6,11 +6,19 @@
 
 export const NOUVEAUTES = [
   {
-    v: 474,
+    v: 475,
     titre: 'Le journal se range seul',
     puces: [
       'Les vieux journaux sans panne s’effacent',
       'Les plantages restent pour les parents',
+    ],
+  },
+  {
+    v: 474,
+    titre: 'Chaque bosse compte',
+    puces: [
+      'La tôle se froisse à chaque choc',
+      'Ton ami voit la même panne que toi',
     ],
   },
   {
@@ -83,7 +91,7 @@ export const NOUVEAUTES = [
     v: 465,
     titre: 'Le train passe sur un pont',
     puces: [
-      'Sur la mer, le train roule sur un viaduc',
+      'Sur la mer, le train roule en viaduc',
       'On voit l\'eau passer sous les rails',
     ],
   },

@@ -459,7 +459,7 @@ async function panneau(p) {
       vuJournal.lignes >= 2 && vuJournal.plantage && vuJournal.paris && vuJournal.fermeture && vuJournal.gpu,
       JSON.stringify(vuJournal));
 
-    // v474 : la table `journal_appareil` se taille côté serveur (un déclencheur,
+    // v475 : la table `journal_appareil` se taille côté serveur (un déclencheur,
     // cloud.js). Le parent doit savoir ce qui part, et ce que le SQL recopié
     // dans cloud.js efface doit être ce que les constantes disent — avec un
     // plantage qui ne part JAMAIS. Sur l'ancien code, ni avis ni constantes.

@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v474 — Le journal de bord se taille tout seul
+## v475 — Le journal de bord se taille tout seul
 
 **Pourquoi.** Chaque tablette envoie une ligne à `journal_appareil` à chaque
 fin de session (v296), et rien ne l'effaçait jamais. Mesuré : 98 lignes,
@@ -43,6 +43,33 @@ lignes fabriquées, les trois vieilles fins propres partent, le plantage de
 purge. Un témoin de `parent.js` lit l'avis dans l'espace parent et exige que le
 SQL recopié dans `cloud.js` efface exactement les fins que le jeu déclare,
 jamais `plantage`.
+
+La même fusion raccourcit une puce de la v465 dans le journal du jeu (neuf
+mots pour une barre à huit, rouge de `maj.js` déjà en production).
+
+---
+
+## v474 — Les dégâts n'oublient plus après vingt-quatre chocs
+
+**Pourquoi.** Une voiture garde l'histoire de ses vingt-quatre derniers chocs
+(`MAX_CHOCS`), pour que l'ami rejoue la même tôle. Tout ce qui cherchait « les
+chocs pas encore appliqués » comparait la LONGUEUR de cette liste, qui ne
+grandit plus une fois pleine : au 25e choc, la carrosserie ne se froissait plus
+— chez le conducteur, chez l'ami, et sur une voiture de la rue percutée à
+plusieurs. Et l'ami, qui refaisait la santé sur les vingt-quatre derniers chocs
+seulement, voyait rouler une voiture que le conducteur avait en panne.
+
+**Ce que ça change.** Chaque choc froisse la tôle, même après des dizaines de
+bosses. L'ami voit la même santé et la même panne que le conducteur. Le
+frôlement rasant pleins gaz, déclaré à 0,6 mur en v405, a été remesuré : 0,084
+mur depuis la v424, rien à corriger.
+
+**Ce qui le prouve.** Trois témoins neufs dans `degats.js`, deux rouges sur
+`origin/main` : trente chocs font trente enfoncements (24 avant), sur la voiture
+qu'on conduit et sur celle de la rue reçue d'un ami ; quarante chocs, l'ami lit
+la santé 0,2 et la panne du conducteur (0,52 et roulante avant). Le troisième
+garde la forme du message tant que l'histoire n'a pas débordé (vert des deux
+côtés, à dessein). Suite `degats.js` verte, 46 témoins.
 
 ---
 
