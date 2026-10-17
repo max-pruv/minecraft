@@ -1420,7 +1420,11 @@ export function createGuidesVilles({ scene, world, player, toast, npcs, lieux })
       if (nes.has(l.id) || echecs.has(l.id) || !l.guide) continue;
       if (Math.hypot(player.pos.x - l.x, player.pos.z - l.z) > PORTEE_GUIDE) continue;
       const m = l.r + 2;
-      if (world.morceauxPrets && !world.morceauxPrets(l.x - m, l.z - m, l.x + m, l.z + m)) continue;
+      // Manhattan n'a pas de morceaux engendrés là où rien n'a été posé : son
+      // plan répond sans eux (`piedPieton`), on n'attend donc pas des blocs
+      // qui ne viendront jamais — mesuré, l'Empire State attendait sans fin.
+      const plan = world.piedPieton?.(l.x, l.z) !== undefined;
+      if (!plan && world.morceauxPrets && !world.morceauxPrets(l.x - m, l.z - m, l.x + m, l.z + m)) continue;
       // À Manhattan, le plan n'est pas fait de blocs : on demande le trottoir
       // au monde (`trottoirA`, `piedPieton`), comme les passants (v354).
       const parBlocs = essaiParBlocs((x, y, z) => world.getBlock(x, y, z),
