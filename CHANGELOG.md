@@ -23,27 +23,26 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 ## v474 — Au feu, le témoin lit l'heure de la rue
 
 **Pourquoi.** Le témoin « au feu, la voiture freine sur plusieurs relevés au
-lieu de piler » (`monte.js`) était rouge : une voiture de file passait de
-4,3 blocs par seconde à zéro « en 112 ms », 38 b/s² — et `TASKS.md` en
-accusait l'arrêt d'urgence au contact. Mesuré, ce n'était pas lui : la rue
-avance en temps réel par image (v305), une image de banc dure jusqu'à une
-seconde, et les relevés du témoin tombent tous les dixièmes de seconde ENTRE
-les images. Deux relevés à 112 ms d'écart encadraient une image de 0,7 s ; la
-voiture y freinait à 7,5 b/s², son freinage d'urgence, et le témoin divisait
-par 0,112.
+lieu de piler » (`monte.js`) était rouge, et `TASKS.md` en accusait l'arrêt
+d'urgence au contact. Mesuré, la plupart de ses « coups de frein » n'en
+étaient pas : la rue avance en temps réel par image (v305), une image de banc
+dure jusqu'à une seconde, et les relevés tombent tous les dixièmes de seconde
+ENTRE les images. Deux relevés à 112 ms d'écart encadraient une image de
+0,7 s ; la voiture y freinait à 7,5 b/s², et le témoin divisait par 0,112.
 
-**Ce que ça change.** Rien dans le jeu : les voitures freinaient déjà comme il
-faut au feu. Le témoin date chaque relevé à l'horloge de la rue
-(`vehicules.horloge()`), sa barre reste à 10 b/s².
+**Ce que ça change.** Rien dans le jeu. Le témoin date chaque relevé à
+l'horloge de la rue (`vehicules.horloge()`) ; sa barre reste à 10 b/s². Il
+reste rouge de temps en temps, et cette fois pour de vrai : trois mécanismes
+rares, aucun d'eux l'arrêt d'urgence, sont décrits et chiffrés dans
+`TASKS.md`, avec deux défauts de la grille trouvés en chemin.
 
 **Ce qui le prouve.** `tests/sonde-feu-horloge.cjs`, même pose que le témoin :
 sur 142 paires de relevés d'une voiture retenue par un feu, 7 dépassent
 10 b/s² à l'horloge de la page et 0 à celle de la rue (les 7 y valent 1,5 à
-7,5). Contrôle, freinage désarmé à 100 b/s² : 14 paires au-delà de 10 à
-l'horloge de la rue, pire 32,8 — le témoin voit encore un vrai coup de frein.
-Une instrumentation de `Convoi.updateProfil` (retirée) n'a vu aucun arrêt
-d'urgence ni aucun recollement au plancher en une image, à cadence normale
-comme à une image freinée de 90 ms.
+7,5). Contrôle, freinage désarmé à 100 b/s² : 14 paires sur 166 au-delà de 10
+à l'horloge de la rue (pire 32,8) — la mesure voit un vrai coup de frein. Sur
+dix passages d'une minute, il en reste un peu moins d'une paire sur deux cents
+au-delà de 10 : ce sont elles que la dette décrit.
 
 ---
 

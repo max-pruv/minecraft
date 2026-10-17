@@ -3467,10 +3467,13 @@ Deux règles.
   à l'horloge de la rue le voit (pire 32,8).
 - **UNE CAUSE ÉCRITE DANS `TASKS.md` SE MESURE AVANT D'ÊTRE CORRIGÉE.** La
   dette accusait l'arrêt d'urgence au contact ; le code l'excluait déjà dans
-  une même file (`memeLigne`), et une instrumentation de `updateProfil` n'a vu
-  aucun arrêt en une image. Corriger le jeu sur la foi de la dette aurait
-  touché la conduite pour un défaut d'instrument (v291, « une dette déclarée
-  sans mesure est lue comme un fait »).
+  une même file (`memeLigne`), et un journal des huit dernières images de
+  chaque voiture, vidé par la sonde au moment de la chute, a nommé ce qui
+  restait — la borne de la v450 qui ne s'arme qu'en cause 1, le plancher, un
+  arrêt sans témoin — sans un seul arrêt d'urgence. Corriger le jeu sur la foi
+  de la dette aurait touché la conduite pour le mauvais mécanisme (v291).
+  **Et un mécanisme rare ne se démonte pas par un compteur : il se démonte par
+  ce journal circulaire**, lu à l'instant exact où le témoin voit la chute.
 
 ## Le lot 3 des témoins (v471) — un compteur se lit sur ce qu'il compte vraiment
 

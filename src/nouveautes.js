@@ -9,8 +9,8 @@ export const NOUVEAUTES = [
     v: 474,
     titre: 'Les feux mieux surveillés',
     puces: [
-      'Les voitures freinaient déjà bien au feu',
-      "L'essai mesure enfin à la bonne heure",
+      "L'essai du feu lit l'heure de la rue",
+      'Il ne compte plus les faux coups de frein',
     ],
   },
   {
@@ -83,7 +83,7 @@ export const NOUVEAUTES = [
     v: 465,
     titre: 'Le train passe sur un pont',
     puces: [
-      'Sur la mer, le train roule sur un viaduc',
+      'Le train passe la mer sur un viaduc',
       'On voit l\'eau passer sous les rails',
     ],
   },

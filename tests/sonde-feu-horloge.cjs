@@ -10,11 +10,14 @@
 // 0 à celle de la rue. Contrôle : `rapprocher` désarmé à 100 b/s² dans
 // circulation.js, 14 paires sur 166 au-delà de 10 à l'horloge de la rue
 // (pire 32,8) — la mesure voit un vrai coup de frein.
+// Il en reste de vrais, rares (moins d'une paire sur deux cents sur dix
+// passages) : `TASKS.md` les décrit. `PASSES=n` rejoue n pages neuves.
 const { Banc } = require('./banc.js');
 (async () => {
   const banc = new Banc({ portJeu: 8474, portPairs: 9474 }); await banc.ouvrir();
   try {
-    const p = await banc.jouerSeul('RueFeuHorloge', { tactile: true });
+    for (let passe = 0; passe < Number(process.env.PASSES || 1); passe++) {
+    const p = await banc.jouerSeul('RueFeuHorloge' + passe, { tactile: true });
     const r = await p.evaluate(async () => {
       const m = await import('./src/mondes.js'); const P = m.positionDe('paris'); const g = window.__game;
       g.player.pos.set(P.x + 30, 70, P.z - 10); g.player.vel.set(0, 0, 0); g.player.flying = true;
@@ -42,7 +45,8 @@ const { Banc } = require('./banc.js');
       }
       return { pairesF, gros: gros.slice(0, 30), n: gros.length, nH: gros.filter((x) => x.decH > 10).length };
     });
-    console.log(JSON.stringify(r));
+    console.log('passe', passe, JSON.stringify(r));
     await p.close();
+    }
   } catch (e) { console.log('ERREUR', e.message); } finally { process.exit(0); }
 })();
