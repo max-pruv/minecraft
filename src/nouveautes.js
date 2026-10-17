@@ -10,7 +10,7 @@ export const NOUVEAUTES = [
     titre: 'Les feux mieux surveillés',
     puces: [
       "L'essai du feu lit l'heure de la rue",
-      'Il ne compte plus les faux coups de frein',
+      'Plus de faux coups de frein comptés',
     ],
   },
   {

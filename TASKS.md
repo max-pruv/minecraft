@@ -1,5 +1,16 @@
 # Ce qui est en cours
 
+- [ ] **PORTAILS DE LA v474 (le feu à l'heure de la rue).** Deux passages
+  (fumée, `maj.js`, `monte.js`). Le témoin du feu : rouge au premier (39,4,
+  un des mécanismes rares décrits juste en dessous), VERT au second (4 259
+  paires, aucune au-delà de 10). Rouges, tous déjà déclarés ici : `maj.js`
+  « le loader dit combien de fichiers » ; `monte.js` le flâneur de Rome, « à
+  Rome aussi, en biais », « un passant change de trottoir au feu » (2 hors
+  feu), « la rue roule à l'allure d'une ville » (médiane 0, le bouchon), « on
+  ne marche pas dans une rue vide », « un mur pris de face ». La livraison ne
+  touche à `src/` que par `nouveautes.js` (données) : aucun de ces chemins
+  n'a bougé. La puce trop longue que `maj.js` a vue (v465, puis la mienne) est
+  raccourcie et vérifiée par la règle même du témoin, sous node.
 - [ ] **AU FEU, LA VOITURE DE FILE PERD ENCORE PLUS DE 10 B/S² — RAREMENT, ET
   CE N'EST PAS L'URGENCE (v474, zone conduite).** Le témoin « au feu, la
   voiture freine sur plusieurs relevés » date désormais ses relevés à
