@@ -1777,6 +1777,24 @@
   appelé pour ce morceau de campagne ; l'écart se prend désormais par paire
   alternée (désarmé de 6 ms : rouge, 7,2).
 
+- [ ] **AU PORTAIL DE LA v480 (règle de la v195), DEUX ROUGES NON DÉCLARÉS,
+  AUCUN DE LA LIVRAISON.** Les autres (`degats.js` l'élan, `maj.js` le loader,
+  `carte.js` la flèche du GPS, `manhattan.js` le taxi, `monte.js` le passant au
+  feu, le freinage au feu, la rue vide, le mur de face) sont déclarés plus bas.
+  - `monte.js` « deux voisines d'un convoi gardent leur longueur d'écart » :
+    `minTrace` 4,01 puis 3,65 aux deux portails, sur un convoi dont `ecart`
+    vaut 2,28 (Paris, −330, 310). Rejoué SEUL, trois passages de chaque côté
+    (`tests/sonde-ecart-convoi.cjs`, le passage de `monte.js` recopié) :
+    branche 5,40 · 5,40 · 5,44, `origin/main` (v479) 5,40 · 5,44 · 5,56 — même
+    distribution, vert partout. Le rouge dépend de ce que les témoins d'avant
+    laissent dans la rue (v279) : le convoi fautif n'est pas celui que la page
+    neuve voit (`ecart` 17,61). Piste : publier la clé du convoi dans
+    `ouTrace`, et vider la rue (ou relire le convoi visé) avant de mesurer.
+  - `reseau.js` « et deux enfants se retrouvent sans courtier du tout »
+    (`[[],[]]`) et, en découlant, « sans courtier, le conducteur voit son
+    passager assis ». `reseau.js` rejouée SEULE : verte sur la branche, verte
+    sur `origin/main` (v479). Rouge de portail.
+
 - [ ] **AU PORTAIL DE LA v474 (règle de la v195), DEUX ROUGES, AUCUN DE LA
   LIVRAISON.** `maj.js` « il couvre toutes les versions du journal » : la puce
   de la v465 (« Sur la mer, le train roule sur un viaduc ») dépasse la barre —
