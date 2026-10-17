@@ -2104,7 +2104,7 @@ function verifier(nom, ok, detail = '') {
       `contrôlée ${controle} · ${atteint} requête(s) au serveur · lu ${version2}`);
     await sonde.close();
 
-    // --- L'AVION DE L'AMI, PUIS SON ÉPAVE (v474) ---------------------------
+    // --- L'AVION DE L'AMI, PUIS SON ÉPAVE (v476) ---------------------------
     //
     // Depuis la v462, `p.v` porte tout ce qui a une fiche `pilote`, avec ses
     // dégâts (`d`, v344) : l'ami doit voir l'APPAREIL, puis l'épave en feu

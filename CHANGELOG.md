@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v474 — On retrouve son ami du premier coup, et il voit ton avion
+## v476 — On retrouve son ami du premier coup, et il voit ton avion
 
 **Pourquoi.** Deux sujets. (1) Quand l'hôte joue sans courtier (par le nuage)
 et que l'invité, lui, en a un, l'invité ouvrait parfois un DEUXIÈME monde sous
@@ -42,6 +42,66 @@ jumeaux) ; après, 4 sur 4, le fil principal gelé jusqu'à 15 s pendant
 l'entrée. Trois témoins neufs dans `reseau.js` (l'ami voit l'appareil, il le
 voit prendre feu, l'épave reste là où il s'est écrasé et fume), verts, et
 rouges tous trois quand la position ne porte plus l'avion.
+
+---
+
+## v475 — Les voitures font le tour des monuments au milieu de leur rue
+
+**Pourquoi.** Depuis qu'on roule à droite (v395), une voiture d'avenue roule
+1,3 bloc à droite du tracé de son circuit. La rue qui fait le tour d'un
+monument fait quatre blocs : axée en son milieu, la voiture de la voie
+extérieure en sortait, et son aile entrait dans les vitrines d'en face —
+vingt et un pas de carrosserie autour de l'Opéra, six autour des Invalides.
+Le témoin qui devait le voir lisait le tracé, pas la voie : il rendait zéro.
+
+**Ce que ça change.** Tous les circuits qui font le tour d'un même monument le
+font dans le même sens (l'Opéra, le Louvre, la Tour Eiffel, les Invalides, la
+Bastille) : le tracé s'y déplace juste assez pour que la voiture reste dans la
+rue du tour — sur les côtés où cette rue finit un bloc plus tôt. L'Arc
+de Triomphe et Montparnasse, que deux circuits prennent en sens contraires,
+gardent leurs deux voies. Le sol ne bouge pas d'un bloc. Et les cinq dettes de
+Paris sont remesurées sur le Paris doublé : la couverture est à 96,4 % (seuls
+les deux bois restent sans voiture en vue), les tours du Louvre et de l'Opéra
+sont libres, et ce qui reste dans la carrosserie — les jardins traversés par
+Rivoli, Belleville et la place des Vosges, la butte et le Moulin Rouge posé sur
+le boulevard de Clichy — demande de déplacer une rue ou un monument : écrit
+dans `TASKS.md`, pour Max.
+
+**Ce qui le prouve.** Le témoin « aucune voiture ne traverse un monument de
+Paris » lit désormais la voie, décalée par les fonctions mêmes de
+`vehicules.js` : 27 pas sur l'ancien code, zéro ici. Mesuré sous node : sur
+toute la voie des vingt circuits de Paris, 110 pas de carrosserie → 83, les
+monuments à zéro ; partage de la v211 inchangé (13 blocs au pire) ; tenue de
+rue 94 · 99 · 100 · 99 · 95 · 100 · 100 · 100 ; la seconde voie des boulevards
+garde 449 blocs (446 sur `origin/main`), la table des raccords et le bus sont
+inchangés. Un premier jet qui rentrait les quatre côtés de l'Opéra faisait
+perdre sa seconde voie au circuit de Rivoli (260 blocs) : le portail l'a rendu
+rouge, il est retiré. Et une puce de la v465 trop longue pour le journal du
+jeu est raccourcie.
+
+---
+
+## v474 — Les dégâts n'oublient plus après vingt-quatre chocs
+
+**Pourquoi.** Une voiture garde l'histoire de ses vingt-quatre derniers chocs
+(`MAX_CHOCS`), pour que l'ami rejoue la même tôle. Tout ce qui cherchait « les
+chocs pas encore appliqués » comparait la LONGUEUR de cette liste, qui ne
+grandit plus une fois pleine : au 25e choc, la carrosserie ne se froissait plus
+— chez le conducteur, chez l'ami, et sur une voiture de la rue percutée à
+plusieurs. Et l'ami, qui refaisait la santé sur les vingt-quatre derniers chocs
+seulement, voyait rouler une voiture que le conducteur avait en panne.
+
+**Ce que ça change.** Chaque choc froisse la tôle, même après des dizaines de
+bosses. L'ami voit la même santé et la même panne que le conducteur. Le
+frôlement rasant pleins gaz, déclaré à 0,6 mur en v405, a été remesuré : 0,084
+mur depuis la v424, rien à corriger.
+
+**Ce qui le prouve.** Trois témoins neufs dans `degats.js`, deux rouges sur
+`origin/main` : trente chocs font trente enfoncements (24 avant), sur la voiture
+qu'on conduit et sur celle de la rue reçue d'un ami ; quarante chocs, l'ami lit
+la santé 0,2 et la panne du conducteur (0,52 et roulante avant). Le troisième
+garde la forme du message tant que l'histoire n'a pas débordé (vert des deux
+côtés, à dessein). Suite `degats.js` verte, 46 témoins.
 
 ---
 

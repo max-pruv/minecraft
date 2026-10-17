@@ -78,7 +78,7 @@ const PRESENTATION_MS = 20000;
 // promesse d'ouverture en suspens pour toujours : l'enfant restait devant
 // « Ouverture du monde… » sans erreur, sans monde, et sans rien à faire.
 const OUVERTURE_MS = 9000;
-// LE PHARE SE LIT SUR DIX SECONDES, PAS TROIS (v474). Une seule requête au
+// LE PHARE SE LIT SUR DIX SECONDES, PAS TROIS (v476). Une seule requête au
 // nuage, et pourtant la sonde (`tests/sonde-phare.cjs`) l'a mesurée à 2,9 ·
 // 3,4 · 4,2 · 3,5 s sur un banc AU REPOS, contre un nuage local : ce n'est pas
 // le réseau, c'est le fil principal de l'invité, occupé à préparer son monde,

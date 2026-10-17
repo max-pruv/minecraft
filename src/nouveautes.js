@@ -6,11 +6,27 @@
 
 export const NOUVEAUTES = [
   {
-    v: 474,
+    v: 476,
     titre: 'On retrouve son ami sans erreur',
     puces: [
       'Rejoindre un ami ne crée plus de double',
       'Tes amis voient ton avion et son épave',
+    ],
+  },
+  {
+    v: 475,
+    titre: 'Les voitures contournent l\'Opéra',
+    puces: [
+      'Elles roulent au milieu de la rue',
+      'Autour de l\'Opéra et des Invalides',
+    ],
+  },
+  {
+    v: 474,
+    titre: 'Chaque bosse compte',
+    puces: [
+      'La tôle se froisse à chaque choc',
+      'Ton ami voit la même panne que toi',
     ],
   },
   {
@@ -83,7 +99,7 @@ export const NOUVEAUTES = [
     v: 465,
     titre: 'Le train passe sur un pont',
     puces: [
-      'Sur la mer, le train passe un viaduc',
+      'Sur la mer, le train passe en viaduc',
       'On voit l\'eau passer sous les rails',
     ],
   },

@@ -1,4 +1,4 @@
-// SONDE (v474) : « un hôte sans courtier est trouvé » rend parfois un monde
+// SONDE (v476) : « un hôte sans courtier est trouvé » rend parfois un monde
 // JUMEAU (`hote: true`) chez l'invité. Piste écrite : le sondage du phare
 // (`relaisHoteRecent`) n'a que trois secondes (`Promise.race`, net.js), et une
 // requête lente rend « introuvable ». Mesuré au repos : 2,9 à 4,2 s, verdict
