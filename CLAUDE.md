@@ -785,8 +785,12 @@ Deux règles.
 - **UNE RUE TROP ÉTROITE POUR DEUX VOIES PREND UN SENS.** Le tour d'un monument
   fait quatre blocs ; deux voies de 2,26 en demandent près de cinq. Quand tous
   les circuits qui le prennent le font dans le même sens (`SENS_TOURS_PARIS`,
-  calculé au chargement sur `CIRCUITS`), l'axe se pose à `VOIE_DE_DROITE` de
-  l'autre côté et la voiture roule au milieu ; un tour pris dans les deux sens
+  calculé au chargement sur `CIRCUITS`), l'axe se déplace de ce qu'il faut
+  pour que la voiture reste dans la rue — et pas plus : rentrer les quatre
+  côtés de l'Opéra resserrait le virage et coûtait sa seconde voie au circuit
+  de Rivoli (446 → 260 blocs de deux voies). Une retouche de tracé se remesure
+  aussi en voies doubles (`sonde-rue-dense.cjs boulevards`), en raccords et en
+  bus, pas seulement en pas de carrosserie. Un tour pris dans les deux sens
   garde son axe au milieu. Un circuit ajouté qui prend un tour à contresens le
   remet à deux voies tout seul — et le témoin le dira s'il touche une façade.
   Élargir la rue aurait changé le sol sous ce que les enfants ont bâti.

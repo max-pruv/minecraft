@@ -9,7 +9,7 @@ export const NOUVEAUTES = [
     v: 474,
     titre: 'Les voitures contournent l\'Opéra',
     puces: [
-      'Au milieu de la rue, plus dans les vitrines',
+      'Elles roulent au milieu de la rue',
       'Autour de l\'Opéra et des Invalides',
     ],
   },
@@ -83,7 +83,7 @@ export const NOUVEAUTES = [
     v: 465,
     titre: 'Le train passe sur un pont',
     puces: [
-      'Sur la mer, le train roule sur un viaduc',
+      'Sur la mer, le train passe en viaduc',
       'On voit l\'eau passer sous les rails',
     ],
   },

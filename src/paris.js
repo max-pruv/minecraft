@@ -731,8 +731,14 @@ const TOURS = SOCLES.filter((p) => p.tour)
 // de la ville sous ce que les enfants ont bâti. Ce qui tient, c'est que tous
 // les circuits qui font le tour d'un même monument le font DANS LE MÊME SENS
 // (mesuré : l'Opéra, le Louvre, la Tour Eiffel, les Invalides, la Bastille) :
-// on pose alors l'axe à `VOIE_DE_DROITE` de l'autre côté, et la voiture roule
-// au MILIEU de la rue du tour, 1,37 bloc de marge de chaque côté. Un tour que
+// on déplace alors l'axe de ce qu'il faut pour que la voiture reste dans la
+// rue. Le socle à droite (la Bastille), l'axe sort de `VOIE_DE_DROITE` et la
+// voiture roule au milieu. Le socle à gauche, seuls les côtés − rentrent : la
+// rue s'y arrête un bloc plus tôt (colonnes entières, v325) ; côté +, la
+// voiture tient déjà. MON PREMIER JET rentrait les quatre côtés : le virage
+// resserré autour de l'Opéra coûtait sa jumelle au circuit de Rivoli (deux
+// voies sur les boulevards : 446 blocs → 260, `sonde-rue-dense.cjs
+// boulevards`), et le portail l'a dit. Un tour que
 // deux circuits prennent en sens contraires (l'Arc, Montparnasse) garde son
 // axe au milieu : deux voies, une par sens, et c'est ce qu'il lui faut.
 export const VOIE_DE_DROITE = 1.3;
@@ -762,7 +768,13 @@ for (const noms of CIRCUITS) {
 }
 const TOURS_VOIE = TOURS.map((t) => {
   const s = SENS_TOURS.get(t) || 0;
-  return s ? { ...t, hu: t.hu + s * VOIE_DE_DROITE, hv: t.hv + s * VOIE_DE_DROITE } : t;
+  if (s > 0) return { ...t, hu: t.hu + VOIE_DE_DROITE, hv: t.hv + VOIE_DE_DROITE };
+  if (s < 0) {
+    // seuls les côtés − rentrent : leur rue finit un bloc plus tôt
+    const d = VOIE_DE_DROITE / 2;
+    return { u: t.u + d, v: t.v + d, hu: t.hu - d, hv: t.hv - d };
+  }
+  return t;
 });
 export const SENS_TOURS_PARIS = LIEUX.filter((p) => p.socle && !p.sansTour)
   .map((p, i) => ({ nom: p.nom, sens: SENS_TOURS.get(TOURS[i]) || 0 }));

@@ -31,8 +31,8 @@ Le témoin qui devait le voir lisait le tracé, pas la voie : il rendait zéro.
 
 **Ce que ça change.** Tous les circuits qui font le tour d'un même monument le
 font dans le même sens (l'Opéra, le Louvre, la Tour Eiffel, les Invalides, la
-Bastille) : le tracé y est posé à 1,3 bloc de l'autre côté, et la voiture roule
-au milieu de la rue du tour, avec plus d'un bloc de marge de chaque côté. L'Arc
+Bastille) : le tracé s'y déplace juste assez pour que la voiture reste dans la
+rue du tour — sur les côtés où cette rue finit un bloc plus tôt. L'Arc
 de Triomphe et Montparnasse, que deux circuits prennent en sens contraires,
 gardent leurs deux voies. Le sol ne bouge pas d'un bloc. Et les cinq dettes de
 Paris sont remesurées sur le Paris doublé : la couverture est à 96,4 % (seuls
@@ -47,7 +47,12 @@ Paris » lit désormais la voie, décalée par les fonctions mêmes de
 `vehicules.js` : 27 pas sur l'ancien code, zéro ici. Mesuré sous node : sur
 toute la voie des vingt circuits de Paris, 110 pas de carrosserie → 83, les
 monuments à zéro ; partage de la v211 inchangé (13 blocs au pire) ; tenue de
-rue 94 · 99 · 100 · 99 · 95 · 100 · 100 · 100.
+rue 94 · 99 · 100 · 99 · 95 · 100 · 100 · 100 ; la seconde voie des boulevards
+garde 449 blocs (446 sur `origin/main`), la table des raccords et le bus sont
+inchangés. Un premier jet qui rentrait les quatre côtés de l'Opéra faisait
+perdre sa seconde voie au circuit de Rivoli (260 blocs) : le portail l'a rendu
+rouge, il est retiré. Et une puce de la v465 trop longue pour le journal du
+jeu est raccourcie.
 
 ---
 
