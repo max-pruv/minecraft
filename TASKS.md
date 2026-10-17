@@ -33,6 +33,13 @@
   `reseau.js:1293`, une attente qui JETTE au lieu de rendre un verdict —
   v291) ; `origin/main` seule l'a passé. C'est le scénario déclaré en v473
   (rouge des deux côtés au portail), hors de tout ce que la couche touche.
+  Second rejeu seul de la branche : le VPN vert encore (3 sur 3 avec `main`),
+  « sans courtier » rouge (0 sur 2 sur la branche, 1 sur 1 vert sur `main`),
+  et des rouges qui n'étaient ni au portail ni au premier rejeu (le passager
+  par la portière, la voiture de l'ami refaite en marche, la voiture de la
+  rue derrière l'enfant chez l'ami, le compteur après le départ de l'hôte) :
+  neuf défauts, aucun deux fois de suite — la suite tire au sort sur ce banc,
+  et rien de la livraison n'entre dans `net.js` ni dans le nuage.
   La couche est inerte sur ces pages : `world.arbres` ne vaut 1 que si
   `RAYON_HD > 0`, et le banc rend en logiciel — seules les pages `hd=` de
   `parishd.js` et `plafond.js` (node) l'arment, et elles sont vertes.
