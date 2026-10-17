@@ -1,5 +1,22 @@
 # Ce qui est en cours
 
+- [ ] **Rouges de portail mesurés des deux côtés au portail de la v474 (Changi)**
+  — double mesure de la v195, `monte.js` rejouée SEULE sur la branche et sur
+  `origin/main` v473 (`git worktree`) : « à Moscou, les rues sont pleines de
+  voitures » (moins de six voitures en 45 s) et son dépendant « modèles ET
+  couleurs différents » rouges des deux côtés ; « l'on ne marche pas dans une
+  rue vide » rouge des deux côtés (vus `[0,3,3,0,0,0,3,23]` ici,
+  `[0,4,14,2,0,0,1,19]` sur `origin/main`) ; « au feu, la voiture freine »
+  déjà déclaré. Rejouée seule, la branche rend en plus « un passant change de
+  trottoir au feu » et « deux voisines d'un convoi gardent leur écart » ;
+  `origin/main` rend « un mur pris de face » : intermittences de cadence, la
+  même distribution. Preuve structurelle : Changi ne change que le relief
+  dans sa zone (à 40 000 blocs de Moscou) et ajoute un repère, des pistes et
+  un aérodrome que rien de la rue ne lit. Au portail aussi : `maj.js` « il
+  couvre toutes les versions du journal » rouge pour la puce de la v465
+  (« Sur la mer, le train roule sur un viaduc », sur `origin/main`), et
+  `manhattan.js` « sans erreur de jeu » (PeerJS, déjà déclaré).
+
 - [ ] **AU FEU, LA VOITURE DE FILE PILE DERRIÈRE CELLE QUI S'ARRÊTE (vraie
   panne, zone conduite — trouvée par la session banc-lot3).** Le témoin
   « au feu, la voiture freine sur plusieurs relevés » de `monte.js` comptait
