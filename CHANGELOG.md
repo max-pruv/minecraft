@@ -20,6 +20,38 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v487 — La voiture garée suit son garage
+
+**Pourquoi.** Un garage est rangé par sa position. Quand la carte a bougé sous
+les constructions des enfants — les villes qui s'écartent (v242), les toits de
+Paris relevés (v301), Paris doublé et déplacé (v306), le fondu doux (v309) —
+les murs du garage partaient avec leur quartier, mais sa fiche restait à
+l'ancienne adresse : la voiture garée ressortait au milieu de nulle part, et le
+garage arrivé ne la reconnaissait plus. Rien ne dit qu'un enfant en ait posé un
+là (la session ne lit pas les profils) : c'est une promesse qu'on remet debout,
+pas une panne vue.
+
+**Ce que ça change.** La fiche d'un garage, ses places et la voiture qui y dort
+suivent désormais leurs murs, à chaque marche de la carte : d'un seul tenant
+avec le groupe de blocs qui les porte pour Paris doublé et le fondu doux, avec
+leur colonne pour la carte 3 et les toits. Sur un document d'une tablette
+restée en arrière comme sur un appareil qui a déjà emmené les murs sans la
+fiche — dans ce cas la fiche retrouve son groupe à l'arrivée. Un garage posé
+après une refonte ne bouge pas ; dans le doute, la fiche reste où elle était.
+
+**Ce qui le prouve.** Quatre témoins neufs, rouges sur l'ancien code. Trois
+dans `plafond.js`, sous node : un garage de l'ancien Paris arrive au même
+endroit d'un document d'avant et en orpheline, le plancher entier (99 blocs)
+sous sa fiche, sa voiture et sa place au même écart ; un garage posé après la
+date reste, une seconde passe rend le même objet, un document sans garages en
+reste sans ; un garage de Rome suit la carte 3, et un appareil déjà à la
+carte 7 retrouve sa fiche à la migration de stockage (carte 8). Un dans
+`sauvegarde.js`, par la vraie fusion du nuage, pour les deux documents. Et la
+découpe des deux marches de groupes en un plan et une écriture rend, sur un
+document fabriqué, des blocs identiques à l'octet à ceux d'`origin/main`.
+
+---
+
 ## v486 — Changi, l'aéroport de Singapour, sur une terre gagnée sur la mer
 
 **Pourquoi.** Il manquait Changi parmi les grands aéroports. Singapour, dans
@@ -266,6 +298,9 @@ gardée par un bloc d'enfant garde son sol tandis que le tunnel passe dessous
 (vérifié rouge garde désarmée). L'empreinte des 490 morceaux est identique
 (Washington en fait partie) et les deux empreintes du relief ne bougent pas :
 creuser n'écrit que des blocs.
+
+---
+
 ## v477 — Les voitures ne roulent plus sur le parapet des ponts
 
 **Pourquoi.** Aux coins des anneaux de circulation des villes engendrées, la
