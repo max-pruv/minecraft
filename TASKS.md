@@ -5146,7 +5146,12 @@ l'embarquement a eu lieu, pas par une hypothèse.
     0,0057 — déjà déclaré) ; `maj.js` le loader d'installation (déclaré) ;
     `monte.js` la rue à l'allure d'une ville, le feu qui pile (déclaré en tête
     de ce fichier), la rue vide (déclaré). Et la puce de la v465 de plus de
-    huit mots, en production : raccourcie dans cette livraison.
+    huit mots, en production : raccourcie dans cette livraison. Second
+    portail (code fusionné sur la v479) : `visio.js` et `maj.js` verts ;
+    rouges, tous déjà déclarés — `carte.js` la flèche du GPS, `monte.js` le
+    feu qui pile, la rue vide, « un mur pris de face » (rebond −1,88, le
+    même chiffre qu'à la ligne de la v443). Les quatre témoins de la porte de
+    rame, verts aux deux portails une fois la sonde corrigée.
 - [ ] **POUR MAX, SUR LA TABLETTE — valider la montée et la descente (v366,
   v377, v384, v389).** Le banc saute la séquence (`embarq=0`) et rend en
   logiciel : ce qui suit ne se juge QUE sur l'iPad. Ouvrir
