@@ -223,6 +223,12 @@
   côtés, et `DATE_CLIMATS` ne marque que des blocs posés AVANT elle — le banc
   n'en pose aucun. `monte.js` n'a pas été rejouée seule (budget de Max) :
   la double mesure reste à faire si l'écart du convoi revient.
+  Second portail (après la fusion de la v477) : toutes les suites vertes sauf
+  `monte.js`, cinq rouges tous DÉJÀ déclarés (le passant au feu à Rome, 1 au
+  vert sur 8 ; la voiture qui pile au feu, v471 ; la rue vide ; les voitures
+  de Moscou et leur livrée), et aucun du premier portail ne revient : une
+  distribution d'intermittences. Rome (méditerranéenne), Paris et Moscou
+  n'ont pas changé de climat.
 - [ ] **PORTAIL DU JOURNAL DE BORD (v426) — DOUBLE MESURE (règle v195).**
   Deux portails (bases v408 et v411) rouges sur `maj.js`, `carte.js`,
   `manhattan.js`, `monte.js`. Déclarés plus bas : la flèche du GPS et le
