@@ -114,7 +114,7 @@ const DENSITE_MAX = 0.08;
 // L'HEURE DE LA RÈGLE DES CLIMATS (v345), relue à la fusion (v309) : un bloc
 // posé avant a été posé sur le monde d'avant, et son morceau garde ses arbres.
 // Relue à la fusion de la v469 (le climat méditerranéen ajoute des arbres),
-// puis de la v474 (la savane en ajoute et en retire).
+// puis de la v478 (la savane en ajoute et en retire).
 export const DATE_CLIMATS = Date.parse('2026-10-17T16:08:00Z');
 export function solDeToundra(x, z, h) {
   if (h >= NEIGE_TOUNDRA) return BLOCK.SNOW;
@@ -3246,7 +3246,7 @@ export class World {
     // et des pins parasols épars — moins de bois que la forêt tempérée, un
     // peu plus d'arbres isolés dans la plaine
     else if (cl === 'mediterranee') density = forest > 0.62 ? 0.03 : forest > 0.48 ? 0.012 : 0.006;
-    // la savane (v474) : des arbres isolés partout dans les hautes herbes,
+    // la savane (v478) : des arbres isolés partout dans les hautes herbes,
     // quelques bosquets le long des creux — jamais de bois fermé
     else if (cl === 'savane') density = forest > 0.62 ? 0.012 : 0.004;
     if (tirage >= density) return null;
@@ -3273,7 +3273,7 @@ export class World {
     // sous le soleil méditerranéen (v469) : des oliviers, trapus, et un pin
     // parasol sur trois, haut fût nu et couronne plate
     if (cl === 'mediterranee') return roll < 0.65 ? { h, trunk: 2 + Math.floor(hash2i(x, z, SEED + 787) * 2), kind: 5 } : { h, trunk: trunk + 1, kind: 4 };
-    // dans la savane (v474) : des acacias en parasol, et un buisson épineux
+    // dans la savane (v478) : des acacias en parasol, et un buisson épineux
     // sur cinq (la silhouette trapue de l'olivier, sur un tronc d'un bloc)
     if (cl === 'savane') return roll < 0.8 ? { h, trunk: 3 + Math.floor(hash2i(x, z, SEED + 788) * 2), kind: 6 } : { h, trunk: 1, kind: 5 };
     const kind = roll < 0.55 ? 0 : roll < 0.85 ? 1 : 2;
@@ -4003,7 +4003,7 @@ export class World {
             }
           }
         } else if (kind === 6) {
-          // acacia (v474) : le fût se fourche en deux branches obliques, et
+          // acacia (v478) : le fût se fourche en deux branches obliques, et
           // une ombrelle UNIQUE, mince et large, coiffe le tout — trois blocs
           // de rayon au plus (le balayage déborde de trois), un petit dôme au
           // milieu. Plus plat que le pin parasol, qui a deux étages.

@@ -6,12 +6,44 @@
 
 export const NOUVEAUTES = [
   {
-    v: 474,
+    v: 478,
     titre: 'La savane',
     puces: [
       'Herbe dorée en Afrique et au Brésil',
       'Des acacias plats comme des parasols',
       'Le nord de l\'Australie aussi',
+    ],
+  },
+  {
+    v: 477,
+    titre: 'La route traverse les ponts',
+    puces: [
+      'Les voitures roulent sur la route du pont',
+      'Plus de pierre sous les roues aux coins',
+    ],
+  },
+  {
+    v: 476,
+    titre: 'On retrouve son ami sans erreur',
+    puces: [
+      'Rejoindre un ami ne crée plus de double',
+      'Tes amis voient ton avion et son épave',
+    ],
+  },
+  {
+    v: 475,
+    titre: 'Les voitures contournent l\'Opéra',
+    puces: [
+      'Elles roulent au milieu de la rue',
+      'Autour de l\'Opéra et des Invalides',
+    ],
+  },
+  {
+    v: 474,
+    titre: 'Chaque bosse compte',
+    puces: [
+      'La tôle se froisse à chaque choc',
+      'Ton ami voit la même panne que toi',
     ],
   },
   {

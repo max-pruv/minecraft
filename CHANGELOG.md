@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v474 — La savane : herbe dorée et acacias
+## v478 — La savane : herbe dorée et acacias
 
 **Pourquoi.** Après les déserts, la toundra, la taïga, les steppes, les
 forêts tropicales et le climat méditerranéen, la savane restait la prairie
@@ -44,6 +44,117 @@ pour 119 arbres (308 sans la règle), 7 460 sommets d'herbe teints sur
 (Kansas, Iowa, Pampa, Ukraine) restent hors zone, les deux empreintes du
 relief et celle des 490 morceaux ne bougent pas, `plafond.js` 160 verts. La
 teinte a été jugée en capture, au sol et du ciel.
+
+---
+
+## v477 — Les voitures ne roulent plus sur le parapet des ponts
+
+**Pourquoi.** Aux coins des anneaux de circulation des villes engendrées, la
+voie d'une voiture traversait la bande de pierre d'un tablier voisin : 66 pas
+de voie sur un parapet, dans vingt-sept villes (Gênes, Munich, Shanghai,
+Porto, Lyon, Dublin, Hambourg, Budapest…). C'était toute la traîne de la
+dette « les anneaux d'avant roulent parfois hors de la chaussée » — et aucune
+recherche de contour ne la voyait, parce que la règle interne compte ce pas
+« sur un tablier », donc propre.
+
+**Ce que ça change.** Là où une voie traverse le parapet, la colonne de pierre
+devient de la chaussée : la voiture roule sur du bitume d'un bout à l'autre du
+pont. Le parapet est à la cote du tablier — seule sa matière change, jamais la
+forme —, et il reste partout ailleurs. Aucun tablier n'est retiré ni allongé,
+et les anneaux sont les mêmes au bit près.
+
+**Ce qui le prouve.** Deux témoins neufs : `plafond.js` lit chaque colonne de
+chaque ville à pont avec et sans la règle (66 colonnes changées, toutes sur
+l'eau, toutes de parapet à chaussée, aucun tablier gagné ni perdu, sélection
+identique) ; `carteMonde.js` compte les pas de voie sur un parapet (66 sur
+`origin/main`, 0 ici), et la barre des pas hors de la chaussée descend (772 →
+706 pas, 58 → 18 anneaux). L'empreinte des 490 morceaux ne bouge pas, règle
+armée comme désarmée.
+
+---
+
+## v476 — On retrouve son ami du premier coup, et il voit ton avion
+
+**Pourquoi.** Deux sujets. (1) Quand l'hôte joue sans courtier (par le nuage)
+et que l'invité, lui, en a un, l'invité ouvrait parfois un DEUXIÈME monde sous
+le même code au lieu de rejoindre son ami — le « monde jumeau », chacun bâtit
+dans sa copie sans voir l'autre. Le témoin « un hôte sans courtier est trouvé »
+rougissait une fois sur deux des deux côtés. (2) Depuis la v462 l'ami voit
+l'avion de son ami et son épave, mais aucun témoin à deux tablettes ne le
+gardait.
+
+**Ce que ça change.** (1) L'invité lit le phare de l'hôte sur dix secondes au
+lieu de trois : il le trouve et le rejoint. La cause n'était pas le réseau :
+en entrant dans un monde, la tablette se fige plusieurs secondes et lisait la
+réponse — pourtant arrivée — trop tard. (2) Rien de neuf à l'écran : ce que
+l'ami voyait déjà est désormais gardé.
+
+**Ce qui le prouve.** `tests/sonde-phare.cjs` rejoue la scène quatre fois :
+avant, sondages de 2,9 à 4,2 s, tous « tenu », 2 invités sur 4 (deux refus ou
+jumeaux) ; après, 4 sur 4, le fil principal gelé jusqu'à 15 s pendant
+l'entrée. Trois témoins neufs dans `reseau.js` (l'ami voit l'appareil, il le
+voit prendre feu, l'épave reste là où il s'est écrasé et fume), verts, et
+rouges tous trois quand la position ne porte plus l'avion.
+
+---
+
+## v475 — Les voitures font le tour des monuments au milieu de leur rue
+
+**Pourquoi.** Depuis qu'on roule à droite (v395), une voiture d'avenue roule
+1,3 bloc à droite du tracé de son circuit. La rue qui fait le tour d'un
+monument fait quatre blocs : axée en son milieu, la voiture de la voie
+extérieure en sortait, et son aile entrait dans les vitrines d'en face —
+vingt et un pas de carrosserie autour de l'Opéra, six autour des Invalides.
+Le témoin qui devait le voir lisait le tracé, pas la voie : il rendait zéro.
+
+**Ce que ça change.** Tous les circuits qui font le tour d'un même monument le
+font dans le même sens (l'Opéra, le Louvre, la Tour Eiffel, les Invalides, la
+Bastille) : le tracé s'y déplace juste assez pour que la voiture reste dans la
+rue du tour — sur les côtés où cette rue finit un bloc plus tôt. L'Arc
+de Triomphe et Montparnasse, que deux circuits prennent en sens contraires,
+gardent leurs deux voies. Le sol ne bouge pas d'un bloc. Et les cinq dettes de
+Paris sont remesurées sur le Paris doublé : la couverture est à 96,4 % (seuls
+les deux bois restent sans voiture en vue), les tours du Louvre et de l'Opéra
+sont libres, et ce qui reste dans la carrosserie — les jardins traversés par
+Rivoli, Belleville et la place des Vosges, la butte et le Moulin Rouge posé sur
+le boulevard de Clichy — demande de déplacer une rue ou un monument : écrit
+dans `TASKS.md`, pour Max.
+
+**Ce qui le prouve.** Le témoin « aucune voiture ne traverse un monument de
+Paris » lit désormais la voie, décalée par les fonctions mêmes de
+`vehicules.js` : 27 pas sur l'ancien code, zéro ici. Mesuré sous node : sur
+toute la voie des vingt circuits de Paris, 110 pas de carrosserie → 83, les
+monuments à zéro ; partage de la v211 inchangé (13 blocs au pire) ; tenue de
+rue 94 · 99 · 100 · 99 · 95 · 100 · 100 · 100 ; la seconde voie des boulevards
+garde 449 blocs (446 sur `origin/main`), la table des raccords et le bus sont
+inchangés. Un premier jet qui rentrait les quatre côtés de l'Opéra faisait
+perdre sa seconde voie au circuit de Rivoli (260 blocs) : le portail l'a rendu
+rouge, il est retiré. Et une puce de la v465 trop longue pour le journal du
+jeu est raccourcie.
+
+---
+
+## v474 — Les dégâts n'oublient plus après vingt-quatre chocs
+
+**Pourquoi.** Une voiture garde l'histoire de ses vingt-quatre derniers chocs
+(`MAX_CHOCS`), pour que l'ami rejoue la même tôle. Tout ce qui cherchait « les
+chocs pas encore appliqués » comparait la LONGUEUR de cette liste, qui ne
+grandit plus une fois pleine : au 25e choc, la carrosserie ne se froissait plus
+— chez le conducteur, chez l'ami, et sur une voiture de la rue percutée à
+plusieurs. Et l'ami, qui refaisait la santé sur les vingt-quatre derniers chocs
+seulement, voyait rouler une voiture que le conducteur avait en panne.
+
+**Ce que ça change.** Chaque choc froisse la tôle, même après des dizaines de
+bosses. L'ami voit la même santé et la même panne que le conducteur. Le
+frôlement rasant pleins gaz, déclaré à 0,6 mur en v405, a été remesuré : 0,084
+mur depuis la v424, rien à corriger.
+
+**Ce qui le prouve.** Trois témoins neufs dans `degats.js`, deux rouges sur
+`origin/main` : trente chocs font trente enfoncements (24 avant), sur la voiture
+qu'on conduit et sur celle de la rue reçue d'un ami ; quarante chocs, l'ami lit
+la santé 0,2 et la panne du conducteur (0,52 et roulante avant). Le troisième
+garde la forme du message tant que l'histoire n'a pas débordé (vert des deux
+côtés, à dessein). Suite `degats.js` verte, 46 témoins.
 
 ---
 
