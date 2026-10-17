@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 513,
+    titre: 'On roule dans la forêt',
+    puces: [
+      'Les bois poussent en bosquets',
+      'De grandes clairières pour passer en voiture',
+      'Taïga et jungle aussi',
+    ],
+  },
+  {
     v: 512,
     titre: 'Les voitures de Montmartre roulent mieux',
     puces: [
