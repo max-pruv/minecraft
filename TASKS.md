@@ -336,11 +336,21 @@
   la pointe) ne coûte plus qu'un demi-mur — si Max trouve la voiture trop
   solide en ville, c'est `POINTE_PLEINE` (conduite.js) qu'on descend, jusqu'à
   0,78 au plus bas (sinon un frôlement repasse au-dessus d'un dixième de mur).
-  (3) Au-delà de 24 chocs
-  (`MAX_CHOCS`), l'ami ne rejoue que les 24 derniers : il peut voir une
-  voiture moins abîmée que le conducteur (le feu voyage à part, la panne non).
-  Et `rattraper` (degats3d.js) ne rejoue plus la tôle une fois l'historique
-  plein — défaut d'avant, invisible tant que le feu venait au 3e choc.
+  REMESURÉ en v474 (`sonde-force-chocs.cjs`) : le frôlement à 15° pleins gaz
+  publie 0,29, soit 0,084 mur dans les huit classes — la « 0,6 mur » de la v405
+  n'existe plus. La saturation au-delà de 85 % de la pointe est une règle de
+  `conduite.js` (`POINTE_PLEINE`), pas des dégâts : décision de Max, inchangée.
+  (3) ~~Au-delà de 24 chocs (`MAX_CHOCS`), l'ami rejoue les 24 derniers et
+  `rattraper` ne rejoue plus la tôle~~ — FAIT en v474 : un compteur `total`
+  (degats.js) remplace la longueur de la liste partout où l'on demandait « quels
+  chocs ne sont pas encore appliqués » (`rattraper`, `distant`, `rapprocher`) ;
+  au-delà de l'histoire, la santé (`s`) et le total (`n`) voyagent dans `p.v.d`
+  (mesuré : ami 0,52 sur l'ancien code pour un conducteur en panne à 0,2 ;
+  30 chocs → 24 enfoncements, 30 ici). Reste, déclaré : les ZONES (donc le
+  biais de direction) de l'ami se refont sur les 24 derniers chocs ; une
+  histoire de rue qui passe par l'ancien hôte (`rc`, comparaison de préfixe) ne
+  s'adopte plus une fois pleine — `rue_choc` reste le chemin ; et une tablette
+  restée sur la v473 ignore `n` et `s` (le receveur cède).
 
 - [x] **UN ÉCART QUI FAIT TRAVERSER LA RUE (v402) — doublon, réglé en v411,
   REMESURÉ le 16 octobre 2026 sur la v454.** Le témoin du feu de `monte.js`
@@ -1757,6 +1767,16 @@
   appelé pour ce morceau de campagne ; l'écart se prend désormais par paire
   alternée (désarmé de 6 ms : rouge, 7,2).
 
+- [ ] **AU PORTAIL DE LA v474 (règle de la v195), DEUX ROUGES, AUCUN DE LA
+  LIVRAISON.** `maj.js` « il couvre toutes les versions du journal » : la puce
+  de la v465 (« Sur la mer, le train roule sur un viaduc ») dépasse la barre —
+  telle quelle sur `origin/main`, zone de la session du viaduc. `degats.js`
+  « percuter une voiture de la rue l'abîme AUSSI » : `ecart` 17,9 pour une
+  barre de 20, relevé AVANT tout choc (le recul à 26 blocs de la v450, la
+  voiture de la rue repart pendant les 0,2 s) ; rejouée seule, branche 1 rouge
+  sur 2 (22,5 vert), `origin/main` 1 sur 1 (15,9). Piste : relire l'écart après
+  que la voiture visée est vraiment arrêtée, ou recaler le recul sur sa
+  position relue.
 - [ ] **LES DÉGÂTS (v343) : CE QUI RESTE, DÉCLARÉ.**
   - ~~Cinquante-quatre appels de dessin pendant un feu~~ — **fait en v348** :
     deux `InstancedMesh`, 30 → 2 appels mesurés, gardé par un témoin. Le coût

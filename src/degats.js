@@ -68,8 +68,17 @@ export const CHOCS_AVANT_FEU = 12;
 // voiture de la rue garde (degats3d.js). Douze suffisaient quand trois murs
 // faisaient brûler la voiture ; il en faut deux fois plus pour que l'ami
 // retrouve la même santé que le conducteur jusqu'au feu, dès que les chocs
-// valent 0,7 ou plus (0,95 / (0,08 × 0,7²) ≈ 24). Au-delà, l'ami voit les
-// vingt-quatre derniers (le feu, lui, voyage à part : `f`).
+// valent 0,7 ou plus (0,95 / (0,08 × 0,7²) ≈ 24). Au-delà, l'ami rejoue les
+// vingt-quatre derniers pour la TÔLE, et la santé voyage à part (`s`, v474),
+// comme le feu (`f`).
+//
+// UNE HISTOIRE BORNÉE SE COMPTE PAR SON TOTAL, PAS PAR SA LONGUEUR (v474).
+// Tout ce qui demandait « quels chocs n'ai-je pas encore rejoués ? » comparait
+// la LONGUEUR de la liste à ce qui était déjà appliqué : à vingt-quatre la
+// liste ne grandit plus (le plus ancien s'en va quand le neuf arrive), et le
+// 25e choc n'enfonçait plus rien — ni chez le conducteur, ni chez l'ami, ni
+// sur une voiture de la rue. `total` compte tous les chocs subis ; la liste
+// en garde les derniers, et le n-ième rejoué est `chocs[longueur − (total − n)]`.
 export const MAX_CHOCS = 24;
 // Le feu, en secondes RÉELLES (v226 : un feu ne doit pas durer trois fois plus
 // longtemps parce que la tablette rame). L'enfant a d'abord le temps de lire
@@ -92,6 +101,7 @@ export function etatNeuf() {
     feu: 0,          // secondes depuis que le feu a pris
     carcasse: 0,     // secondes depuis qu'il s'est éteint
     chocs: [],       // les impacts, pour rejouer la déformation (réseau)
+    total: 0,        // tous les chocs subis — `chocs` n'en garde que les derniers
   };
 }
 
@@ -145,6 +155,7 @@ export function subirChoc(e, { force, lx = 0, lz = -DEMI_LONG }, dims = {}) {
   e.sante = borner(e.sante - PERTE_SANTE * usure);
   e.chocs.push({ f: Math.round(f * 100) / 100, x: Math.round(lx * 100) / 100, z: Math.round(lz * 100) / 100 });
   if (e.chocs.length > MAX_CHOCS) e.chocs.shift();
+  e.total = (e.total || 0) + 1;
   deriver(e);
   return zone;
 }
@@ -206,15 +217,24 @@ export function avancerFeu(e, dtReel, conduite = false) {
 // LE RÉSEAU (palier 2) : un champ COURT dans le message `pos` (`p.v.d`), que
 // une tablette restée sur l'ancienne version ignore — le receveur cède. On
 // envoie les impacts (pour que l'ami rejoue la même déformation) et l'état du
-// feu ; rien de plus.
+// feu ; et depuis la v474, quand l'histoire a débordé, le total des chocs
+// (`n`, pour que l'ami sache lesquels sont neufs) et la santé (`s`, que les
+// vingt-quatre derniers ne suffisent plus à refaire). Une tablette restée sur
+// l'ancienne version ignore `n` et `s` : elle voit ce qu'elle voyait.
 export function versReseau(e) {
   if (!e || !e.chocs.length) return null;
-  return { c: e.chocs.map((k) => [k.f, k.x, k.z]), f: e.enFeu ? 1 : e.eteint ? 2 : 0 };
+  const d = { c: e.chocs.map((k) => [k.f, k.x, k.z]), f: e.enFeu ? 1 : e.eteint ? 2 : 0 };
+  if ((e.total || 0) > e.chocs.length) { d.n = e.total; d.s = Math.round(e.sante * 1000) / 1000; }
+  return d;
 }
 export function depuisReseau(d) {
   const e = etatNeuf();
   if (!d || !Array.isArray(d.c)) return e;
   for (const [f, x, z] of d.c) subirChoc(e, { force: f, lx: x, lz: z });
+  if (Number.isFinite(d.n) && d.n > e.total) {
+    e.total = Math.floor(d.n);
+    if (Number.isFinite(d.s)) { e.sante = Math.min(e.sante, borner(d.s)); deriver(e); }
+  }
   if (d.f === 1) { e.enFeu = true; e.eteint = false; }
   else if (d.f === 2) { e.enFeu = false; e.eteint = true; }
   else e.enFeu = false;
