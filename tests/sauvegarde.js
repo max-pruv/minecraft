@@ -323,6 +323,51 @@ const BLOCS = 40000;
       copieDFaite, double.absent ? 'Paris n\'a pas doublé'
         : `${double.copie} · ${Date.now() - departCopieD} ms`);
 
+    // ET LA FICHE D'UN GARAGE PART AVEC SES MURS (v487). Un garage posé dans
+    // l'ancien Paris, une voiture garée dedans : ses blocs partaient avec le
+    // quartier, sa fiche (rangée par position) restait à l'ancienne adresse,
+    // et la voiture ressortait là. Deux documents reçus : celui d'une tablette
+    // restée en arrière (les blocs d'avant), et celui d'une tablette qui a
+    // migré les blocs sans la fiche — l'orpheline. Les deux doivent poser la
+    // fiche, ses places et sa voiture sur le plancher arrivé, et nulle part
+    // ailleurs.
+    const garageD = await tab.evaluate(async () => {
+      const ps = window.__game.profileSync;
+      const W = await import('./src/world.js');
+      if (!W.migrerChaineCarte) return { absent: true };
+      const A = await import('./src/paris-v302.js');
+      const wa = new W.World({ avant: true });
+      const [mx, mz] = A.adresseParis(-2.5, 1.5);
+      const g = wa.terrainHeight(mx, mz), t = W.DATE_PARIS_DOUBLE - 86400000;
+      const blocs = {};
+      for (let dx = 0; dx < 9; dx++) for (let dz = 0; dz < 11; dz++) {
+        blocs[`${mx + dx},${g + 1},${mz + dz}`] = [4, t];
+        if (dx === 0 || dx === 8 || dz === 0) for (let dy = 2; dy <= 4; dy++) blocs[`${mx + dx},${g + dy},${mz + dz}`] = [5, t];
+      }
+      const id = `${mx + 4},${g + 1},${mz + 5}`;
+      const garages = { local: { [id]: { x: mx + 4, y: g + 1, z: mz + 5, l: 9, p: 11, places: [[mx + 4, mz + 5]],
+        voiture: { flotte: null, nom: 'Voiture', x: mx + 4.5, y: g + 1, z: mz + 5.5, yaw: 0 }, t: t + 1000 } } };
+      const local = ps.snapshot();
+      const lire = (remote) => {
+        const r = ps.merge(local, remote);
+        const gl = ((r.state.garages || {}).local) || {};
+        const e = (r.state.edits || {}).local || {};
+        const f = Object.values(gl).find((x) => x.voiture && x.voiture.nom === 'Voiture');
+        let plancher = 0;
+        if (f) for (let dx = -4; dx <= 4; dx++) for (let dz = -5; dz <= 5; dz++) if (e[`${f.x + dx},${f.y},${f.z + dz}`]?.[0] === 4) plancher++;
+        return { vieux: !!gl[id], plancher, voiture: f ? [f.voiture.x - f.x, f.voiture.y - f.y, f.voiture.z - f.z] : null };
+      };
+      const enArriere = { ...JSON.parse(JSON.stringify(local)), edits: { local: blocs }, garages };
+      const migres = W.migrerChaineCarte({ local: blocs }).edits;
+      const orpheline = { ...JSON.parse(JSON.stringify(local)), edits: migres, garages };
+      return { arriere: lire(enArriere), orpheline: lire(orpheline) };
+    });
+    const garageBon = (r) => r && !r.vieux && r.plancher === 99 && r.voiture && r.voiture[1] === 0
+      && Math.abs(r.voiture[0] - 0.5) < 1e-9 && Math.abs(r.voiture[2] - 0.5) < 1e-9;
+    verifier('🅿️ un garage de l\'ancien Paris reçu du nuage arrive avec ses murs, la voiture sur son plancher — même quand les murs sont partis sans lui',
+      !garageD.absent && garageBon(garageD.arriere) && garageBon(garageD.orpheline),
+      garageD.absent ? 'la fiche d\'un garage ne suit pas ses blocs' : JSON.stringify(garageD));
+
     // ET PAR LE FONDU DOUX DES VILLES (v309), APRÈS PARIS DOUBLÉ. Une cabane
     // posée au sol dans la couronne de Salvador, là où le pays a descendu : la
     // fusion la pose sur le sol neuf, d'un seul tenant, sans fantôme à la cote

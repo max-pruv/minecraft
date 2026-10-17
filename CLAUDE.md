@@ -86,6 +86,13 @@ travail est irrattrapable.
    se garde et se prouve (`CONF_V308`, empreinte relevée sur `origin/main`).
    Voir « Le fondu doux (v309) ».
 
+   **Elle a servi une ONZIÈME fois, en v486, pour Changi** — et c'est la
+   forme bornée, hors de la fenêtre d'empreinte : l'île de l'aérodrome est la
+   zone à terre de son repère (`box + 30`), rien d'autre. Un témoin de
+   `plafond.js` engendre le pays avec et sans Changi DANS LE MÊME CODE (zéro
+   colonne changée hors de la zone), et la même découpe a été mesurée sur
+   `origin/main` et la branche. Voir « Changi (v486) ».
+
    **Elle a servi une HUITIÈME fois, en v242, pour doubler le monde encore**
    — Max : « la ville de New York touche quasiment Montréal ». Manhattan,
    refaite en v240, est un rectangle de 480 × 2 300 blocs qui laissait 41
@@ -770,6 +777,61 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## La fiche d'un garage suit ses murs (v487) — ce qui est rangé par position migre avec ses blocs
+
+Deux règles.
+
+- **TOUT CE QUI EST RANGÉ PAR POSITION À CÔTÉ DES BLOCS SUIT LA CHAÎNE DES
+  MARCHES.** Un garage (`garages.js`) est une fiche rangée par son origine ;
+  les marches de la carte emmenaient ses murs et laissaient la fiche. Chaque
+  marche des blocs a sa marche des garages (`suivreGarages*`, world.js), jugée
+  sur les blocs AVANT la marche correspondante : `migrerChaineCarte` les
+  enchaîne pour le nuage, `migrerLesBlocs` pour le stockage (carte 8). Une
+  marche de GROUPES (Paris doublé, fondu doux) se suit par le groupe, jamais
+  par la colonne de l'origine : l'écart entre l'origine et l'ancrage, doublé
+  par le plan, sortirait la voiture du garage. Le prochain objet rangé par
+  position se branche là le jour où il naît.
+- **UNE DATE DE BLOCS REND IDEMPOTENT CE QUI N'A PAS DE DATE.** La fiche n'a
+  pas de date de pose : elle bouge si sa boîte porte des blocs d'avant la date
+  (en avant), ou si elle est vide et que l'arrivée porte la date de la marche
+  (l'orpheline, dont on retrouve le groupe arrivé et son ancrage par le centre
+  arrondi). Dans le doute, elle reste — l'état d'avant, jamais pire.
+
+## Changi (v486) — une ville qui n'existe que par sa zone n'a pas de terre autour, et un aérodrome neuf ne touche pas aux mondes figés
+
+Deux règles.
+
+- **LÀ OÙ LE PLANISPHÈRE N'A PAS LA TERRE, L'AÉRODROME LA GAGNE SUR LA MER PAR
+  SA ZONE, ET C'EST TOUTE SA CASSE.** Singapour est un disque de terre au
+  milieu de la mer : la zone à terre de la ville. Un repère a la sienne
+  (`box + 30`) : celle de Changi fait son île, comme le vrai est bâti sur des
+  remblais. Les cinq promesses de la v223 se lisent SUR le monde qui porte la
+  zone (la sonde construit un `World` dont `conf` ajoute le repère) ; mesurées
+  sans elle, elles ne trouvent rien, et c'était la dette. Le prolongement de
+  piste vers le large est une digue dans les bornes du remblai (le fond de la
+  mer est à 21–27, la piste à 35).
+- **UN AÉRODROME NÉ APRÈS UNE CASSE N'ENTRE PAS DANS LE MONDE QUI LA JUGE.**
+  `NES_APRES_V306` (aeroport.js) le retire de `CONF_AVANT` (aérodromes ET
+  repères) : `hauteurBase` et les marches 1 → 2, 2 → 3 et 5 → 6 y lisent les
+  zones d'avant. `CONF_V308`, lui, le PORTE (il lit `AEROPORTS` et
+  `LANDMARKS_V317`, même clé de zones que `CONF_NEUF`) : la marche 6 → 7
+  compare ce monde à celui d'aujourd'hui, à portée du fondu de Singapour, et
+  ne doit y lire que le fondu, jamais l'île. Aucune marche ne déplace donc un
+  bloc à cause de Changi ; ce qu'un enfant aurait posé en mer à cet endroit
+  garde ses coordonnées — dette déclarée dans `TASKS.md`.
+
+## Les cubes orange du ciel (v484) — ce qui suit la caméra est UN objet, et il se trouve par le pixel
+
+Une règle. Les « cubes orange qui flottent dans le ciel » étaient les feuilles
+d'automne : un seul `Points` de cent soixante carrés, collé à `player.pos` de
+−3 à +23 blocs, donc monté avec l'enfant en vol. La sonde de la v237 cherchait
+« un petit maillage loin dans le champ » et ne pouvait pas le voir. Devant une
+chose qu'on voit à l'écran et qu'on ne nomme pas : capture, amas de pixels de
+sa couleur, lancer de rayon (`layers.enableAll()`) à travers chacun —
+`sonde` dans le brouillon de la v484, une exécution. Un effet d'ambiance se
+pose sur le MONDE (le sol, l'eau), jamais sur l'enfant : `BANDE_SAISON`
+(main.js), basse pour feuilles, pétales et lucioles, haute pour la neige.
+
 ## Le parapet sous la voie (v477) — une matière de tablier se lit sous la ligne qui roule
 
 Une règle. Aux coins des anneaux, la voie d'une voiture traversait la bande de
@@ -831,6 +893,15 @@ même image par construction. `baiesSoudees: false` rejoue l'ancien tampon pour
 l'empreinte des 490 morceaux. Avant d'alléger une géométrie en changeant sa
 forme, on cherche ce qui se fusionne sans la changer.
 
+## Le sol se soude (v482) — ce qui reste fabriqué partout se mesure contre ce qu'il remplace
+
+Une règle. Le sol HD et les faces plates de Paris restent fabriqués pour tout
+le disque (v296) ; le coût se compte contre le VOXEL qu'ils remplacent (plat +
+solid 432 Mo contre 454 sans couche), pas en valeur brute (372 Mo). Le seul
+surcoût réel était le sol (47,7 Mo pour la ville), et un sommet sur quatre y
+était doublé : `sol` passe par `souderTampons` comme les façades (v469),
+`solSoude: false` pour l'empreinte des 490 morceaux. Le voxel et `plat` n'ont
+aucun sommet doublé (UV d'atlas par face) : ne pas y chercher.
 ## Le viaduc de la Manche (v465) — un ouvrage de voie se déclare au contact, et un profil relevé se borne aux gares
 
 Deux règles.
@@ -947,7 +1018,7 @@ Deux règles.
   Bleue sa branche : deux rames de branche à moins d'un tiers de tour se
   rattraperaient au bout — d'où trois rames de branche, pas six.
 
-## Le métro de Washington jusqu'au bout de la boîte (v478) — un ouvrage se creuse dans son emprise, pas dans le disque de la ville
+## Le métro de Washington jusqu'au bout de la boîte (v485) — un ouvrage se creuse dans son emprise, pas dans le disque de la ville
 
 Deux règles.
 
@@ -991,6 +1062,24 @@ Trois règles.
   au-dessus avec un bloc de terre) ; une recherche bornée les sert ensemble.
   Ce qui touche la rue ne se pose que sur du trottoir : un témoin le lit sur
   le monde, contre les vingt circuits de Paris.
+
+## La course et les bêtes en temps réel (v483) — un chrono qui écrit un record est une pendule
+
+Deux règles.
+
+- **CE QUI ÉCRIT UN RECORD, OU DÉCIDE SI LE MONDE EST PEUPLÉ, COMPTE EN
+  `chronoReel`.** La naissance des bêtes (`animals.js`) et le chronomètre de la
+  course du parc (`fun.js`, `records.bestRace`) comptaient en `dt` borné : à
+  cinq images par seconde, la tablette qui rame peuplait quatre fois moins vite
+  et « courait » quatre fois plus vite. Mesuré 2,3 s de record pour 8,6 s
+  réelles. Le relevé des `-= dt` restants est dans `TASKS.md`, classé ;
+  une animation reste en temps de jeu.
+- **LE CHRONO SE LIT À CHAQUE IMAGE, PAUSE COMPRISE, ET SE DÉPENSE EN JEU
+  SEULEMENT.** `chronoFun()` est appelé en tête de `fun.update`, que `main.js`
+  appelle même en pause : l'écart d'une pause est absorbé là et n'entre jamais
+  dans `raceTime`. Un chrono lu seulement en jeu rendrait, au retour d'un quiz,
+  deux secondes de plus au coureur. Le témoin lit une fonction partagée
+  (`minuteurs-mesure.js`) que la sonde lit aussi (v400).
 
 ## La rue sans à-coups (v453) — le bus a une place, un circuit se prépare, une suiveuse freine
 
@@ -1058,6 +1147,18 @@ finale sur un plan, arrondi. Quatre règles.
   dans l'aérogare de Roissy (on monte tout droit avant de virer), Fiumicino
   qui tournait sans fin (deux tours manqués : une autre piste), et un toucher
   avant le seuil de Los Angeles (`TOUCHER` 8).
+- **UNE SONDE DE CONTACT JUGE LA BOÎTE, PAS LE SOMMET DE LA COLONNE (v488).**
+  Trois des quatre « posés à reprendre » de la v452 étaient la sonde : elle
+  touchait le sommet d'une couronne d'arbre qui flotte à dix blocs au-dessus
+  d'une piste, sous laquelle l'avion vole. Un bloc dans la boîte (la hauteur
+  du joueur) est un heurt, le sol est le premier bloc plein SOUS les roues.
+  Et la dette disait « l'état du monde » : rejoué seul dans un monde neuf, le
+  défaut se reproduisait — on démonte avant de croire une cause écrite. Le
+  vrai défaut était un balayage d'obstacles par pas de trois, qui enjambait
+  le mur d'une colonne du seuil de Los Angeles : un obstacle d'une colonne se
+  lit une colonne à la fois. Au-dessus de la piste, seul ce qui croise la
+  boîte sur le plan compte (`plein`) — le sommet de chaque colonne y ferait
+  reculer le toucher jusqu'au bout (mesuré : 238 sur 300).
 - **UNE APPROCHE ASSISTÉE NE FINIT JAMAIS AU BOUT DE LA PISTE.** Trop long
   pour s'arrêter (`freinage` de la fiche plus dix blocs) ou trop de travers :
   elle remet les gaz d'elle-même. Près du seuil la descente se borne à la
@@ -2251,7 +2352,7 @@ fichier** : le diff montre ce qu'on retire à l'autre côté.
 
 Ce qui reste, déclaré dans `TASKS.md` : la vue de la séquence ne se juge que
 sur le banc, pas sur l'iPad ; les amis ne voient pas la porte d'un avion
-s'ouvrir, ni celle d'une rame (v480).
+s'ouvrir, ni celle d'une rame (v488).
 
 ## Les coupoles ont leur édifice (v365) — un gabarit partagé se cherche dans toutes les villes, et le ciel se lit sur les modèles
 
@@ -2372,7 +2473,7 @@ Et une empreinte d'identité qui change se PROUVE : celle des 490 morceaux
 (v352) couvre Marrakech et Tokyo ; la branche, bâtisseurs neufs désarmés, rend
 l'ancienne au bit près — c'est ce qui a permis de la remplacer.
 
-## On monte dans une rame par sa porte (v480) — la discipline de l'avion, une porte qui coulisse
+## On monte dans une rame par sa porte (v488) — la discipline de l'avion, une porte qui coulisse
 
 Trois règles.
 
@@ -3551,6 +3652,28 @@ Les deux rouges réseau récurrents du palier C. Trois règles.
   une voix restée au quart (`GAIN_APPEL`) et le régime qui varie ; vérifié
   rouge sur une copie où la voix reste au quart.
 
+## Un freinage de la rue se date à l'heure de la rue (v481)
+
+Deux règles.
+
+- **CE QUI AVANCE EN TEMPS RÉEL PAR IMAGE SE MESURE À SA PROPRE HORLOGE.** La
+  rue avance par image de `dtReel` (v305) ; au banc une image dure jusqu'à une
+  seconde, et des relevés posés tous les dixièmes de seconde tombent ENTRE les
+  images. Une perte de vitesse divisée par l'écart entre deux relevés divise
+  ce qu'une image de 0,7 s a fait par 0,112 s : « 38 b/s² » pour une voiture
+  qui freinait à 7,5. Un témoin qui juge une DÉRIVÉE (décélération, débit) de
+  la rue date ses relevés à `vehicules.horloge()`, jamais à
+  `performance.now()`. Contrôle fait : freinage désarmé à 100 b/s², la mesure
+  à l'horloge de la rue le voit (pire 32,8).
+- **UNE CAUSE ÉCRITE DANS `TASKS.md` SE MESURE AVANT D'ÊTRE CORRIGÉE.** La
+  dette accusait l'arrêt d'urgence au contact ; le code l'excluait déjà dans
+  une même file (`memeLigne`), et un journal des huit dernières images de
+  chaque voiture, vidé par la sonde au moment de la chute, a nommé ce qui
+  restait — la borne de la v450 qui ne s'arme qu'en cause 1, le plancher, un
+  arrêt sans témoin — sans un seul arrêt d'urgence. Corriger le jeu sur la foi
+  de la dette aurait touché la conduite pour le mauvais mécanisme (v291).
+  **Et un mécanisme rare ne se démonte pas par un compteur : il se démonte par
+  ce journal circulaire**, lu à l'instant exact où le témoin voit la chute.
 ## Le phare se lit sur dix secondes (v476) — une borne de requête mesure le fil, pas le réseau
 
 Une règle. Une requête au nuage bornée par `Promise.race` contre un minuteur
@@ -4192,6 +4315,15 @@ blocs autour du tronc** : `generateChunk` ne balaie les arbres que trois
 colonnes au-delà du morceau, et une couronne plus large serait coupée net au
 bord. Et le feuillage gris-vert s'est jugé en capture : à (82, 110, 62) il
 sortait presque noir, le témoin le trouvait très bien teint.
+**La savane (v485)** ferme la table, après TOUT le reste : le Kalahari, le
+Sahel, la Corne, les forêts humides du Congo et du Queensland et l'anneau
+semi-aride de l'Australie passent avant, ce qui laisse aux sept contours
+(soudanienne, Afrique de l'Est et australe, ouest de Madagascar, Cerrado,
+Llanos, nord de l'Australie) des bords grossiers sans risque. Un arbre neuf,
+`kind` 6, l'acacia : un fût fourchu et une ombrelle UNIQUE de trois blocs de
+rayon — plus plate que le pin parasol, qui a deux étages — et un buisson
+épineux sur cinq (l'olivier sur un tronc d'un bloc). Les sites du témoin
+tempéré (Kansas, Iowa, Pampa, Ukraine) restent hors zone, vérifié sous node.
 
 ## Les déserts chauds (v341) — le climat est une donnée de géographie, comme la côte
 
