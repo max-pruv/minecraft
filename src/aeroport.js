@@ -113,6 +113,16 @@ export const AEROPORTS = [
   { cle: 'sfo', nom: 'San Francisco', x: -38774, z: 7120, r: 72, sol: 44, profil: 'ville' },          // San Francisco, cap 155° — même écart qu'en v223, 384 blocs
   { cle: 'lax', nom: 'Los Angeles', x: -37536, z: 9087, r: 78, sol: 38, profil: 'hub' },              // Los Angeles, cap 245° SO — exact, 254 blocs · 14 blocs du disque de la ville
   { cle: 'ist', nom: 'Istanbul', x: 9945, z: 4500, r: 78, sol: 33, profil: 'hub' },                   // Istanbul, cap 330° NNO — exact, 409 blocs · eau 5 %
+  // CHANGI, SUR UNE TERRE GAGNÉE SUR LA MER (v486) — comme le vrai, bâti sur des
+  // remblais au bout de l'île. Singapour n'existe dans le jeu que par la zone à
+  // terre de sa ville (un disque de terre au milieu de la mer : le planisphère
+  // n'a pas l'île) : aucun disque au sec dans les trois cents blocs, et c'était
+  // la dette. La zone à terre de l'aérodrome (`box + 30`, comme tout repère)
+  // fait la même chose pour lui, et c'est TOUTE sa casse — bornée à ce disque,
+  // mesurée des deux côtés (`plafond.js`). La sonde a lu les cinq promesses SUR
+  // le monde qui porte la zone : cap réel 70° → 82°, 201 blocs, eau 0,8 %,
+  // écart 11, sol 35 (médiane) ; les deux îles se touchent (99 + 103 ≥ 201).
+  { cle: 'sin', nom: 'Singapour–Changi', x: 39562, z: 28381, r: 78, sol: 35, profil: 'hub' },
   // Les bases militaires : c'est de là que partent les chasseurs.
   { cle: 'bas-sd', nom: 'Base aérienne de Saint-Dizier', x: 57, z: 472, r: 56, sol: 34, profil: 'base' },      // à l'est de Paris, cap 110° — exact ; v306, Paris doublé la recouvrait : 444 blocs du centre, eau 0,5 %, écart 6
   { cle: 'bas-adw', nom: "Base aérienne d'Andrews", x: -21126, z: 6381, r: 56, sol: 36, profil: 'base' },      // au sud de Washington, cap 160° — même écart qu'en v223
@@ -130,7 +140,14 @@ const AVANT_V306 = {
   orly: { x: -322, z: 504, sol: 41 },
   'bas-sd': { x: 33, z: 300, sol: 33 },
 };
-export const AEROPORTS_AVANT_V306 = AEROPORTS.map((a) => (AVANT_V306[a.cle] ? { ...a, ...AVANT_V306[a.cle] } : a));
+// Et ce qui est né APRÈS n'y est pas : le monde d'avant la v306 juge les marches
+// 1 → 2, 2 → 3 et 5 → 6 (`hauteurBase`, `CONF_AVANT`), et une zone à terre de
+// plus y changerait le relief sous un bloc d'avant. Le monde de la v308, lui,
+// porte Changi (`CONF_V308` lit `AEROPORTS`) : la marche 6 → 7 compare ce monde
+// à celui d'aujourd'hui, et doit n'y lire que le fondu doux, jamais l'île neuve.
+export const NES_APRES_V306 = new Set(['sin']);
+export const AEROPORTS_AVANT_V306 = AEROPORTS.filter((a) => !NES_APRES_V306.has(a.cle))
+  .map((a) => (AVANT_V306[a.cle] ? { ...a, ...AVANT_V306[a.cle] } : a));
 
 // L'aéroport le plus proche d'un point, s'il est à portée.
 export function aeroportPres(x, z, portee = 140) {
@@ -334,6 +351,9 @@ export const PROLONGEMENTS = {
   sfo: { 0: [17, 54] },
   lax: { 0: [35, 20], 15: [32, 34] },
   ist: { 0: [82, 82], 15: [84, 84] },
+  // Changi : à l'ouest l'île de Singapour (et la crête de sa zone, plus haute
+  // que la tranchée), à l'est une digue sur la mer, dans le remblai.
+  sin: { 0: [15, 149], 15: [21, 147] },
   'bas-sd': { 0: [17, 111] },
   'bas-adw': { 0: [64, 64] },
   'bas-llv': { 0: [64, 64] },
