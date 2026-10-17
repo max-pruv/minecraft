@@ -2086,7 +2086,12 @@
   `minTrace` 3,35 pour une borne à 4,4 (une longueur de voiture), 1 498 paires,
   `ou` (−330, 310), Paris.
   À rejouer seul des deux côtés par la session des voitures. `carte.js` : la
-  flèche du GPS (gauche 1,92 rad), déclarée.
+  flèche du GPS (gauche 1,92 rad), déclarée. Au SECOND portail, après la
+  fusion d'`origin/main` (v475 à v477), un rouge de plus : « au frein à main,
+  les pneus crissent — même tout droit » (`monte.js`, `droit.posees: 0`,
+  `derive.posees: 38`) — VERT au premier portail sur le même code de
+  livraison : seul le code fusionné d'`origin/main` a changé entre les deux.
+  Zone conduite (traces, sensations) : à rejouer seul des deux côtés.
 - [ ] **AU PORTAIL DE LA v437 (le frein à main crisse), UN ROUGE NEUF QUI N'EST
   PAS LA LIVRAISON — preuve structurelle (v291).** « à Rome aussi, en biais, un
   passant traverse sur le passage peint d'un carrefour sans feu » (`monte.js`,
