@@ -1069,12 +1069,19 @@ function construireRame(motrice, couleur = 0x2a6ad8) {
   for (const s of [-1, 1]) {
     a.boite(0x9fd8ee, { p: [s * larg * 0.5, y0 + h * 0.62, 0], e: [0.06, 0.42, L * 0.86] });
   }
-  // les portes, deux par flanc
+  // les portes, deux par flanc. Celle de l'arrière (dz +1,9) COULISSE : c'est
+  // par elle que l'enfant monte (v474, embarquement.js). Elle vit dans un
+  // MEMBRE à part, sur les deux flancs à la fois (un seul appel de dessin de
+  // plus par voiture, même matériau, même programme) ; derrière elle, la baie
+  // sombre que l'ouverture découvre.
   for (const s of [-1, 1]) {
-    for (const dz of [-1.9, 1.9]) {
-      a.boite(0x1a2a44, { p: [s * larg * 0.51, y0 + h * 0.42, dz], e: [0.06, 1.0, 0.9] });
-    }
+    a.boite(0x1a2a44, { p: [s * larg * 0.51, y0 + h * 0.42, -1.9], e: [0.06, 1.0, 0.9] });
+    a.boite(0x0c1016, { p: [s * larg * 0.5, y0 + h * 0.42, 1.9], e: [0.04, 0.98, 0.88] });
   }
+  const yPorte = y0 + h * 0.42;
+  a.membre('porte', [0, yPorte, 1.9]);
+  for (const s of [-1, 1]) a.boite(0x1a2a44, { p: [s * larg * 0.51, yPorte, 1.9], e: [0.06, 1.0, 0.9] });
+  a.membre('tronc');
   // la bande de livrée
   a.cylindre(0xf0f0ea, { p: [0, y0 + 0.28, 0], r: [Math.PI / 2, 0, 0], e: [larg * 1.01, L * 0.98, 0.22], haut: 0.5, bas: 0.5, seg: 12 });
   // le pare-brise et les feux de la motrice
@@ -1096,7 +1103,16 @@ function construireRame(motrice, couleur = 0x2a6ad8) {
       }
     }
   }
-  return a.finir();
+  const g = a.finir();
+  // L'ACCÈS SE DÉCLARE AVEC LE MODÈLE (v474), comme celui d'un avion (v381) :
+  // le seuil dans le repère de la voiture (nez en −z), les deux flancs, le
+  // membre qui coulisse le long de z et de combien. Le pied de l'enfant à bord
+  // est à `assise` (1,1) au-dessus de la voie : c'est aussi le seuil.
+  g.userData.porte = {
+    type: 'coulissante', ouvrant: 'porte', axe: 'z', z: 1.9, course: 0.86,
+    x: larg / 2, y: 1.1, demiLong: L / 2 + (motrice ? 0.75 : 0.4), cotes: [-1, 1],
+  };
+  return g;
 }
 
 // Une monoplace : museau pointu, ailerons avant et arrière, roues à l'air libre,
