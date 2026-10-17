@@ -2753,7 +2753,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       reg ? `${formes} couches de solidité différente, ${ailleurs} blocs changés hors des bandes` : 'pas de reglageBaies (ancien code)');
   }
 
-  // UN PARAPET SOUS UNE VOIE EST DE LA CHAUSSÉE (v474). Aux coins, la voie
+  // UN PARAPET SOUS UNE VOIE EST DE LA CHAUSSÉE (v476). Aux coins, la voie
   // d'un anneau traversait la bande de pierre d'un tablier voisin : 66 pas de
   // voie sur un parapet dans vingt-sept villes (mesuré sur `origin/main`,
   // v473). Seule la MATIÈRE change, et seulement sous la ligne d'une voie. On

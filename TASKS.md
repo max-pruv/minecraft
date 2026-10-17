@@ -336,11 +336,21 @@
   la pointe) ne coûte plus qu'un demi-mur — si Max trouve la voiture trop
   solide en ville, c'est `POINTE_PLEINE` (conduite.js) qu'on descend, jusqu'à
   0,78 au plus bas (sinon un frôlement repasse au-dessus d'un dixième de mur).
-  (3) Au-delà de 24 chocs
-  (`MAX_CHOCS`), l'ami ne rejoue que les 24 derniers : il peut voir une
-  voiture moins abîmée que le conducteur (le feu voyage à part, la panne non).
-  Et `rattraper` (degats3d.js) ne rejoue plus la tôle une fois l'historique
-  plein — défaut d'avant, invisible tant que le feu venait au 3e choc.
+  REMESURÉ en v474 (`sonde-force-chocs.cjs`) : le frôlement à 15° pleins gaz
+  publie 0,29, soit 0,084 mur dans les huit classes — la « 0,6 mur » de la v405
+  n'existe plus. La saturation au-delà de 85 % de la pointe est une règle de
+  `conduite.js` (`POINTE_PLEINE`), pas des dégâts : décision de Max, inchangée.
+  (3) ~~Au-delà de 24 chocs (`MAX_CHOCS`), l'ami rejoue les 24 derniers et
+  `rattraper` ne rejoue plus la tôle~~ — FAIT en v474 : un compteur `total`
+  (degats.js) remplace la longueur de la liste partout où l'on demandait « quels
+  chocs ne sont pas encore appliqués » (`rattraper`, `distant`, `rapprocher`) ;
+  au-delà de l'histoire, la santé (`s`) et le total (`n`) voyagent dans `p.v.d`
+  (mesuré : ami 0,52 sur l'ancien code pour un conducteur en panne à 0,2 ;
+  30 chocs → 24 enfoncements, 30 ici). Reste, déclaré : les ZONES (donc le
+  biais de direction) de l'ami se refont sur les 24 derniers chocs ; une
+  histoire de rue qui passe par l'ancien hôte (`rc`, comparaison de préfixe) ne
+  s'adopte plus une fois pleine — `rue_choc` reste le chemin ; et une tablette
+  restée sur la v473 ignore `n` et `s` (le receveur cède).
 
 - [x] **UN ÉCART QUI FAIT TRAVERSER LA RUE (v402) — doublon, réglé en v411,
   REMESURÉ le 16 octobre 2026 sur la v454.** Le témoin du feu de `monte.js`
@@ -1287,8 +1297,8 @@
   200 blocs, donc hors de la livraison par construction (elle ne change que le
   sol de Las Vegas et des contours d'anneaux).
 - [ ] **LES ANNEAUX D'AVANT ROULENT PARFOIS HORS DE LA CHAUSSÉE (mesuré v387,
-  repris v404, v418, v432, v435, remesuré sur la v454, 16 oct. 2026 ; v474,
-  17 oct.).** v474 : LE PARAPET SOUS LA VOIE EST DE LA CHAUSSÉE — les 66 pas sur
+  repris v404, v418, v432, v435, remesuré sur la v454, 16 oct. 2026 ; v476,
+  17 oct.).** v476 : LE PARAPET SOUS LA VOIE EST DE LA CHAUSSÉE — les 66 pas sur
   un parapet (27 villes) passent à 0, 772 → 706 pas, 58 → 18 anneaux, sélection
   et empreinte des 490 morceaux identiques ; seule la matière de 66 colonnes de
   tablier change, toutes sur l'eau, toutes sous la ligne d'une voie (la forme ne
@@ -1767,6 +1777,16 @@
   appelé pour ce morceau de campagne ; l'écart se prend désormais par paire
   alternée (désarmé de 6 ms : rouge, 7,2).
 
+- [ ] **AU PORTAIL DE LA v474 (règle de la v195), DEUX ROUGES, AUCUN DE LA
+  LIVRAISON.** `maj.js` « il couvre toutes les versions du journal » : la puce
+  de la v465 (« Sur la mer, le train roule sur un viaduc ») dépasse la barre —
+  telle quelle sur `origin/main`, zone de la session du viaduc. `degats.js`
+  « percuter une voiture de la rue l'abîme AUSSI » : `ecart` 17,9 pour une
+  barre de 20, relevé AVANT tout choc (le recul à 26 blocs de la v450, la
+  voiture de la rue repart pendant les 0,2 s) ; rejouée seule, branche 1 rouge
+  sur 2 (22,5 vert), `origin/main` 1 sur 1 (15,9). Piste : relire l'écart après
+  que la voiture visée est vraiment arrêtée, ou recaler le recul sur sa
+  position relue.
 - [ ] **LES DÉGÂTS (v343) : CE QUI RESTE, DÉCLARÉ.**
   - ~~Cinquante-quatre appels de dessin pendant un feu~~ — **fait en v348** :
     deux `InstancedMesh`, 30 → 2 appels mesurés, gardé par un témoin. Le coût
@@ -7066,7 +7086,12 @@ l'embarquement a eu lieu, pas par une hypothèse.
   rapatrie désormais à 64 blocs — juste au-delà de la portée de rendu, donc
   jamais sous les yeux de l'enfant — et chaque ville a 18 habitants au lieu de
   10. Pire de la traversée : 0 → 11.
-- [ ] **La moitié de Paris n'a aucune voiture en vue.** Mesuré : 51 % de la
+- [x] **La moitié de Paris n'a aucune voiture en vue — FAIT en v322,
+  remesuré en v475 sur Paris doublé** : 96,4 % du disque (9 386 points, un tous
+  les six blocs) à moins de `VU_VOITURE` d'un circuit d'avenue ou d'un tour de
+  quartier. Ce qui reste hors de vue, ce sont les deux bois (Boulogne 286
+  points, Vincennes 41) et une poignée de points isolés : pas de rue à y faire
+  rouler. Le texte d'origine, gardé : Mesuré : 51 % de la
   ville est à moins de 45 blocs d'un circuit (la portée de rendu d'une
   voiture), et sur les 21 lieux où la carte dépose l'enfant, un seul n'en a
   aucune (le bois de Vincennes). C'est ce qui a fait dire à Max « il a fallu
@@ -7205,7 +7230,15 @@ l'embarquement a eu lieu, pas par une hypothèse.
   **49 → 0**. Tenue de rue 95 98 100 99 96 100 100 100 → 94 100 100 100 96 100
   100 100. Témoin dans `carteMonde.js`, rouge sur `origin/main`.
 
-- [ ] **Onze pas de voiture restent dans la butte** — neuf sous le Sacré-Cœur,
+- [ ] **REMESURÉ en v475 sur la voie que la voiture roule (1,3 bloc à droite
+  de l'axe) : 49 pas, tous sur le circuit du nord (La Fayette… Clichy,
+  Rochechouart)** — trente dans la pente de la butte (le boulevard de Clichy
+  passe à vingt blocs de son sommet, la carrosserie touche le pavé d'une
+  colonne voisine plus haute d'un bloc), dix-sept DANS le Moulin Rouge, dont le
+  socle (−53, −113, ±5) est posé en travers du boulevard (axe v ≈ −112 ; le
+  vrai Moulin Rouge borde le boulevard au nord), deux sur le Sacré-Cœur.
+  Déplacer le Moulin Rouge déplace sa boîte, qui entre dans les zones du relief
+  (`terrainHeight`) : décision de Max. Ancien texte : **Onze pas de voiture restent dans la butte** — neuf sous le Sacré-Cœur,
   deux au Moulin Rouge. Ces deux-là sont déclarés `sansTour` : l'anneau y
   traverserait douze et dix-huit blocs de dénivelée, et l'essayer a été mesuré
   PIRE que le défaut (dix-neuf pas de carrosserie dans le coteau). Le vrai
@@ -7215,7 +7248,13 @@ l'embarquement a eu lieu, pas par une hypothèse.
   plus bas, sur les boulevards, et rétrécir le socle du Sacré-Cœur, qui fait
   seize blocs en v et descend donc jusqu'à Rochechouart.
 
-- [ ] **Le Louvre et l'Opéra bâtissent au-delà de leur socle déclaré.** Mesuré
+- [x] **Le Louvre et l'Opéra bâtissent au-delà de leur socle déclaré —
+  RÉSOLU depuis Paris doublé, remesuré en v475** : sur les huit tours de
+  monument (quatre blocs autour du socle), zéro colonne portant un bloc plein à
+  hauteur de carrosserie — Louvre 0/272, Opéra 0/320. Le bâtisseur de l'Opéra
+  tient dans ±7 × ±4 pour un socle de 7 × 6. Ce qui touchait l'Opéra en v475
+  n'était pas son bâtiment mais les vitrines d'EN FACE : voir « les tours de
+  monument sur la voie de droite » (v475). Ancien texte : Mesuré
   sur l'anneau de chaque monument : vingt-neuf colonnes bâties sur les 192 du
   tour du Louvre (15 %), six sur les 228 de l'Opéra (3 %) ; les six autres
   anneaux sont libres à 100 %. Le socle sert à deux choses — rien d'ordinaire
@@ -7224,7 +7263,15 @@ l'embarquement a eu lieu, pas par une hypothèse.
   défaut que l'escalier du Sacré-Cœur, qui descendait à quinze blocs quand sa
   boîte en annonçait douze.
 
-- [ ] **Des voitures traversent encore du BÂTI ORDINAIRE.** Mesuré en pas de
+- [ ] **REMESURÉ en v475 pour Paris, sur la voie de droite** : 34 pas hors
+  monuments et hors butte, et ce n'est plus du bâti — ce sont des JARDINS, qui
+  passent avant les rues dans `solParis` : les troncs des Tuileries (onze pas,
+  la rue de Rivoli, voir plus bas), la place des Vosges (deux, circuit de la
+  Bastille), les Buttes-Chaumont (douze, rue de Belleville et Ménilmontant
+  traversent le parc) et neuf pas au bord du bois de Vincennes, où un tour de
+  quartier longe une marche d'un bloc entre le trottoir (34) et le bois (33).
+  Les monuments : zéro sur la voie depuis la v475 (vingt-sept avant). Ancien
+  texte : **Des voitures traversent encore du BÂTI ORDINAIRE.** Mesuré en pas de
   carrosserie dans un bloc solide, à la cote où la voiture roule : Paris 82
   après la v221 (contre 117 avant), dont 71 dans la ville ordinaire et 11 dans
   la butte. Ailleurs, non remesuré depuis la v210 : Londres 94 (dont 41 sur les
@@ -7233,7 +7280,33 @@ l'embarquement a eu lieu, pas par une hypothèse.
   10, Nice 0. La piste qui reste est la seconde de la v210 : ne pas poser
   d'arbre ni de mobilier sur un tracé de circuit.
 
-- [ ] **La rue de Rivoli traverse le jardin des Tuileries.** `pt('Tuileries')`
+- [ ] **PORTAIL DE LA v475, DOUBLE MESURE FAITE (v195).** Second portail : un
+  seul rouge, `carte.js` « le rendu suivant, cache chaud » 168 ms pour 150 (une
+  durée ; déjà vu à 152 en v399). Rejouée SEULE : 70 ms sur la branche, 74 sur
+  `origin/main` — vert des deux côtés. Rejouée seule, la suite rend en revanche
+  un rouge IDENTIQUE des deux côtés : « la flèche du GPS pointe vers la
+  destination » — `{face 0, droite 1.57, gauche 1.92}` (attendu ≈ −1,57 à
+  gauche : la flèche tourne dans le mauvais sens, ou le témoin lit l'angle
+  pendant la transition CSS, v306). En production, sans rapport avec la v475 ;
+  à démonter par une sonde qui lit le style écrit après la transition.
+- [ ] **Trois témoins de Paris lisent encore l'AXE des circuits, pas la voie
+  (v475).** « les circuits de Paris roulent sur la chaussée DANS LE MONDE »
+  (`carteMonde.js`), le partage de la v211 et « aucune bouche ne mure un
+  circuit » (`sonde-metro-paris.mjs`) mesurent le tracé, quand la voiture roule
+  1,3 bloc à sa droite (v395). Le premier a caché les vingt-sept pas de
+  l'Opéra et des Invalides. À repointer un par un, chacun vérifié rouge sur
+  l'ancien code comme la v475 l'a fait pour les monuments.
+- [ ] **REMESURÉ en v475 — et c'est une décision, pas un réglage.** Sur la
+  voie que la voiture roule, onze pas de carrosserie dans les troncs des
+  Tuileries (u −68 à −80, v −2 à −4 depuis Notre-Dame) ; le circuit de Rivoli
+  est à 94 %. Le carton ASCII du sol autour du jardin (v475) : au nord de la
+  grille, aucune chaussée continue — la place de la Concorde (pavés) jusqu'à
+  u −71, puis trottoirs ET deux colonnes de lot. Le circuit ne peut donc pas
+  longer le jardin sans qu'une rue bouge, et déplacer `pt('Tuileries')` change
+  le SOL de colonnes de lot (la ville neuve sous ce qu'un enfant a pu bâtir) :
+  c'est la machinerie de `VILLES_FIGEES` (une Paris figée, `world.js`), hors de
+  la zone de cette livraison. Même cause pour la place des Vosges et les
+  Buttes-Chaumont. Ancien texte : **La rue de Rivoli traverse le jardin des Tuileries.** `pt('Tuileries')`
   est le CENTRE du jardin, et les places passent avant les rues dans
   `solParis` : la chaussée y disparaît sur une trentaine de blocs, ce qui
   coûte trois points au plus long circuit de Paris (97 % au lieu de 100). La
