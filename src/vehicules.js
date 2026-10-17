@@ -19,6 +19,7 @@ import { liberer } from './liberer.js';
 import { profilVitesse, grilleDuProfil, rapprocher, allureDevant, passeAOrange, FREIN, FREIN_URGENCE, ALLURE_VOIE, allureDuConducteur } from './circulation.js';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
 import { CLASSES, MARCHE } from './conduite.js';
+import { flammeDeChauffe } from './avions.js';
 
 // --- les reflets --------------------------------------------------------------
 //
@@ -245,6 +246,13 @@ let fabriqueesChauffees = false;
 function chaufferLesFabriquees(renderer, scene, camera) {
   if (fabriqueesChauffees) return;
   fabriqueesChauffees = true;
+  // la flamme des réacteurs (v491, avions.js) : née cachée, elle compilait son
+  // programme au premier ✈️. Une scène à part, les lampes du monde.
+  try {
+    const ici = new THREE.Scene();
+    ici.add(flammeDeChauffe());
+    renderer.compile(ici, camera, scene);
+  } catch (e) { console.warn('chauffe de la flamme', e); }
   for (const entree of FLOTTE) {
     if (!entree.fabrique) continue;
     const chargement = chargerVoitureFlotte(entree);

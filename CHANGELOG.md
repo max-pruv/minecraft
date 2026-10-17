@@ -20,6 +20,31 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v491 — Les réacteurs s'allument sans à-coup
+
+**Pourquoi.** Les flammes des réacteurs (v264) naissent cachées, et le moteur
+de rendu ne compile un programme qu'à la première image où il le dessine : les
+deux programmes de la flamme se compilaient donc dans l'image du premier ✈️ —
+une compilation dans l'image d'un geste, la famille du gel de la v246. Sur
+l'iPad, où Safari compile en centaines de millisecondes, c'est un à-coup au
+moment précis où l'enfant décolle. La dette attendait dans `TASKS.md` depuis la
+v264.
+
+**Ce que ça change.** La flamme se chauffe pendant l'accueil, avec la flotte :
+on en rend une, visible, dans une scène à part, avec les lampes du monde. Le
+premier décollage ne compile plus rien. Mesuré au passage pour les autres
+premiers gestes dans un avion : l'appareil posé, l'escalier et l'échelle
+d'embarquement (v389) et l'épave en feu (v462) n'apportaient aucun programme
+neuf — ils lisent des matériaux déjà chauffés.
+
+**Ce qui le prouve.** Un témoin de `monte.js` : aux commandes du Concorde, on
+pousse la manette des gaz, les quatre tuyères s'allument, et l'on lit les CLÉS
+de programme (v363) — zéro neuve ; chauffe désarmée, deux. La sonde
+`sonde-flamme-chauffe.cjs` sépare les quatre cas (appareil, flammes, accès,
+épave) : 0 · 2 · 0 · 0 avant, 0 · 0 · 0 · 0 après.
+
+---
+
 ## v490 — Le bloc visé dit qui l'a posé
 
 **Pourquoi.** Devant les constructions suspendues dans le ciel de Paris (v295,

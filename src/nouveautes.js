@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 491,
+    titre: 'Les réacteurs sans à-coup',
+    puces: [
+      'Les flammes sont prêtes dès l\'accueil',
+      'Le décollage ne fige plus l\'image',
+    ],
+  },
+  {
     v: 490,
     titre: 'Qui a posé ce bloc ?',
     puces: [
