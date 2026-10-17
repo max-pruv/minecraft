@@ -7334,6 +7334,11 @@ l'embarquement a eu lieu, pas par une hypothèse.
     correspondances). La 4 croise la Seine deux fois : la profondeur de
     seize blocs sous la rue la passe déjà sous le lit (27).
   - **La caserne et le commissariat**, restés en halles de béton.
+  - **Portail de la v474 : deux rouges, aucun des deux sujets.** `degats.js`
+    « percuter une voiture de la rue l'abîme AUSSI » (déclaré ci-dessus, rouge
+    aussi au portail de la v473, zone dégâts) ; `maj.js` : la puce de la v465
+    faisait neuf mots — raccourcie dans la même livraison. `reseau.js` 100 %
+    vert, « un hôte sans courtier est trouvé » et « il le REJOINT » compris.
   - **Portail de la v473 : cinq rouges, aucun de cette livraison.** Quatre
     déjà déclarés (`degats.js` « percuter une voiture de la rue l'abîme
     AUSSI », `reseau.js` « un hôte sans courtier est trouvé » et « il le
