@@ -770,6 +770,26 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## La fiche d'un garage suit ses murs (v474) — ce qui est rangé par position migre avec ses blocs
+
+Deux règles.
+
+- **TOUT CE QUI EST RANGÉ PAR POSITION À CÔTÉ DES BLOCS SUIT LA CHAÎNE DES
+  MARCHES.** Un garage (`garages.js`) est une fiche rangée par son origine ;
+  les marches de la carte emmenaient ses murs et laissaient la fiche. Chaque
+  marche des blocs a sa marche des garages (`suivreGarages*`, world.js), jugée
+  sur les blocs AVANT la marche correspondante : `migrerChaineCarte` les
+  enchaîne pour le nuage, `migrerLesBlocs` pour le stockage (carte 8). Une
+  marche de GROUPES (Paris doublé, fondu doux) se suit par le groupe, jamais
+  par la colonne de l'origine : l'écart entre l'origine et l'ancrage, doublé
+  par le plan, sortirait la voiture du garage. Le prochain objet rangé par
+  position se branche là le jour où il naît.
+- **UNE DATE DE BLOCS REND IDEMPOTENT CE QUI N'A PAS DE DATE.** La fiche n'a
+  pas de date de pose : elle bouge si sa boîte porte des blocs d'avant la date
+  (en avant), ou si elle est vide et que l'arrivée porte la date de la marche
+  (l'orpheline, dont on retrouve le groupe arrivé et son ancrage par le centre
+  arrondi). Dans le doute, elle reste — l'état d'avant, jamais pire.
+
 ## Les passages des avenues (v467) — un passage se mesure le long de SA rue
 
 Une règle. Dans une ville bâtie à la main, un carrefour est le croisement de

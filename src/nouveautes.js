@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 474,
+    titre: 'La voiture suit son garage',
+    puces: [
+      'Ta voiture garée reste dans son garage',
+      'Même quand la carte a bougé dessous',
+    ],
+  },
+  {
     v: 473,
     titre: 'Le métro sous Paris',
     puces: [

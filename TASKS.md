@@ -2298,12 +2298,17 @@
   jouerait encore sur l'ancienne version APRÈS la publication poserait dans
   l'ancien Paris des blocs datés d'après `DATE_PARIS_DOUBLE` : la marche 5 → 6
   ne les suivra pas (même limite que la carte 3). (2) Un GARAGE posé dans
-  l'ancien Paris : ses blocs partent avec leur quartier, sa fiche
-  (`garages.js`, rangée par position) reste à l'ancienne adresse — la voiture
-  garée ressortirait là. Remède : migrer la fiche avec le groupe qui contient
-  son origine, et changer son identifiant. Rien ne dit qu'un garage y existe (la
-  lecture des profils d'enfants est refusée à la session) ; à mesurer dans
-  l'espace parent. (3) Une construction de campagne dans le nouveau disque (ou
+  l'ancien Paris : ~~sa fiche reste à l'ancienne adresse~~ — **fait en v474**,
+  pour les quatre marches qui déplacent des blocs (carte 3, toits, Paris
+  doublé, fondu doux) : la fiche suit ses murs, en avant comme en orpheline
+  (`suivreGarages*`, `migrerChaineCarte`, world.js). Reste, déclaré : une
+  orpheline dont le groupe arrivé a été retouché depuis (un bloc changé
+  déplace son centre), ou collé à un autre groupe emmené, ou perché à une
+  hauteur que la marche ne permet pas de retrouver (le cas « au-dessus du sol »
+  de Paris doublé), reste à l'ancienne adresse ; un garage que le ménage du
+  ciel (v298) a retiré garde sa fiche ; la fiche déplacée n'a pas de copie
+  d'avant sur le nuage (les blocs en ont une). Rien ne dit qu'un garage y
+  existe : à mesurer dans l'espace parent. (3) Une construction de campagne dans le nouveau disque (ou
   sur un ancien aérodrome) dont le sol a bougé de plus de vingt-quatre blocs
   reste où elle est. (4) Le monde d'avant (`CONF_AVANT`) porte tout ce que la
   v306 a déplacé SAUF les ouvrages globaux : l'ancienne A1 près de l'ancienne

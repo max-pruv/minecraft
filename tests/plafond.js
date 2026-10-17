@@ -2341,6 +2341,91 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     !double.absent && double.bati === 0 && double.lotBati,
     double.absent ? 'Paris n\'a pas doublé' : `autour de la maison : ${double.bati} bloc(s) de ville · lot après la date bâti : ${double.lotBati}`);
 
+  // --- LA FICHE D'UN GARAGE SUIT SES BLOCS (v474) ------------------------
+  //
+  // Un garage est rangé par POSITION (`garages.js`). Les marches de la carte
+  // emmenaient ses murs et laissaient sa fiche : la voiture garée ressortait
+  // à l'ancienne adresse. Sous node, sur des documents fabriqués :
+  //  1. Paris doublé : la fiche part avec le GROUPE de ses blocs (pas avec la
+  //     colonne de son origine), sur un document d'avant ET en orpheline (les
+  //     blocs déjà partis sans elle) — les deux au même endroit, le plancher
+  //     entier sous elle, ses places et sa voiture d'un même vecteur ;
+  //  2. un garage posé après la date ne bouge pas ; une seconde passe rend le
+  //     même objet ; un document sans garages reste sans garages (v189) ;
+  //  3. la carte 3 (Rome qui bouge) : en avant et en orpheline, même arrivée ;
+  //  4. le stockage de l'appareil : un appareil déjà à la carte 7, la fiche
+  //     restée derrière, la retrouve à la migration de stockage, une fois.
+  const garagesCarte = await (async () => {
+    const W = await import('../src/world.js');
+    if (!W.migrerChaineCarte) return { absent: true };
+    const A = await import('../src/paris-v302.js');
+    const M = await import('../src/mondes.js');
+    const av = new W.World({ avant: true });
+    const t = W.DATE_PARIS_DOUBLE - 86400000;
+    const [mx, mz] = A.adresseParis(-2.5, 1.5);
+    const gA = av.terrainHeight(mx, mz);
+    const L = {};
+    for (let dx = 0; dx < 9; dx++) for (let dz = 0; dz < 11; dz++) {
+      L[`${mx + dx},${gA + 1},${mz + dz}`] = [4, t];
+      if (dx === 0 || dx === 8 || dz === 0) for (let dy = 2; dy <= 4; dy++) L[`${mx + dx},${gA + dy},${mz + dz}`] = [5, t];
+    }
+    const [rx, rz] = A.adresseParis(1.5, 1.0), gR = av.terrainHeight(rx, rz);
+    for (let dx = -2; dx <= 2; dx++) for (let dz = -2; dz <= 2; dz++) L[`${rx + dx},${gR + 1},${rz + dz}`] = [4, W.DATE_PARIS_DOUBLE + 5000];
+    const idAp = `${rx},${gR + 1},${rz}`;
+    const garages = { local: {
+      [`${mx + 4},${gA + 1},${mz + 5}`]: { x: mx + 4, y: gA + 1, z: mz + 5, l: 9, p: 11, places: [[mx + 4, mz + 5]],
+        voiture: { flotte: 'x.glb', nom: 'V', x: mx + 4.3, y: gA + 1, z: mz + 5.2, yaw: 1 }, t: 0 },
+      [idAp]: { x: rx, y: gR + 1, z: rz, l: 5, p: 5, places: [], voiture: null, t: 0 },
+    } };
+    const doc = { local: L };
+    const avant = W.migrerChaineCarte(doc, garages);
+    const seuls = W.migrerChaineCarte(doc, undefined);
+    const orph = W.migrerChaineCarte(seuls.edits, garages);
+    const deux = W.migrerChaineCarte(avant.edits, avant.garages);
+    const lue = (r) => {
+      const f = Object.values(r.garages.local).find((x) => x.voiture);
+      const E = r.edits.local;
+      let plancher = 0;
+      for (let dx = -4; dx <= 4; dx++) for (let dz = -5; dz <= 5; dz++) if (E[`${f.x + dx},${f.y},${f.z + dz}`]?.[0] === 4) plancher++;
+      return { ou: [f.x, f.y, f.z], plancher, v: [+(f.voiture.x - f.x).toFixed(3), f.voiture.y - f.y, +(f.voiture.z - f.z).toFixed(3)],
+        place: [f.places[0][0] - f.x, f.places[0][1] - f.z], vieux: !!r.garages.local[`${mx + 4},${gA + 1},${mz + 5}`], apres: !!r.garages.local[idAp] };
+    };
+    // 3. la carte 3
+    const ro = M.positionDe('rome', 'terreV2');
+    const c3 = {}, t3 = W.DATE_CARTE_3 - 1e7;
+    for (let dx = 0; dx < 7; dx++) for (let dz = 0; dz < 7; dz++) c3[`${ro.x + 3 + dx},40,${ro.z + 3 + dz}`] = [4, t3];
+    const g3 = { local: { a: { x: ro.x + 6, y: 40, z: ro.z + 6, l: 7, p: 7, places: [], voiture: null, t: 0 } } };
+    const c3a = W.migrerChaineCarte({ local: c3 }, g3);
+    const c3o = W.migrerChaineCarte(W.migrerChaineCarte({ local: c3 }).edits, g3);
+    // 4. le stockage
+    const memoire = new Map([['web-minecraft-carte-v1', '7'], ['web-minecraft-garages-v1', JSON.stringify(garages)]]);
+    const avantLS = globalThis.localStorage;
+    globalThis.localStorage = { getItem: (k) => (memoire.has(k) ? memoire.get(k) : null), setItem: (k, v) => memoire.set(k, String(v)), removeItem: (k) => memoire.delete(k) };
+    let stock = null;
+    try {
+      let tout = JSON.parse(JSON.stringify(seuls.edits));
+      W.migrerLesBlocs(() => tout, (x) => { tout = x; });
+      const gs = JSON.parse(memoire.get('web-minecraft-garages-v1')).local;
+      const f = Object.values(gs).find((x) => x.voiture);
+      stock = { ou: f && [f.x, f.y, f.z], version: memoire.get('web-minecraft-carte-v1'), n: Object.keys(gs).length };
+    } finally { if (avantLS === undefined) delete globalThis.localStorage; else globalThis.localStorage = avantLS; }
+    return { av: lue(avant), or: lue(orph), deux: deux.garages === avant.garages && deux.deplacees === 0,
+      vide: seuls.garages === undefined, c3: [Object.keys(c3a.garages.local)[0], Object.keys(c3o.garages.local)[0], c3a.deplacees], stock };
+  })();
+  verifier('🅿️ la fiche d\'un garage de l\'ancien Paris part avec le groupe de ses murs — d\'un document d\'avant comme en orpheline',
+    !garagesCarte.absent && garagesCarte.av.plancher === 99 && !garagesCarte.av.vieux
+      && garagesCarte.or.ou.join() === garagesCarte.av.ou.join() && garagesCarte.or.plancher === 99
+      && garagesCarte.av.v.join() === '0.3,0,0.2' && garagesCarte.av.place.join() === '0,0',
+    garagesCarte.absent ? 'la fiche d\'un garage ne suit pas ses blocs' : JSON.stringify({ av: garagesCarte.av, or: garagesCarte.or }));
+  verifier('🅿️ et un garage posé après la date reste, une seconde passe ne fait rien, un document sans garages en reste sans',
+    !garagesCarte.absent && garagesCarte.av.apres && garagesCarte.deux && garagesCarte.vide,
+    garagesCarte.absent ? 'la fiche d\'un garage ne suit pas ses blocs' : JSON.stringify({ apres: garagesCarte.av.apres, deux: garagesCarte.deux, vide: garagesCarte.vide }));
+  verifier('🅿️ et un garage de Rome suit la carte 3 ; et l\'appareil qui a migré sans la fiche la retrouve à la migration de stockage',
+    !garagesCarte.absent && garagesCarte.c3[2] >= 1 && garagesCarte.c3[0] === garagesCarte.c3[1] && garagesCarte.c3[0] !== 'a'
+      && garagesCarte.stock && garagesCarte.stock.ou && garagesCarte.stock.ou.join() === garagesCarte.av.ou.join()
+      && garagesCarte.stock.version === '8' && garagesCarte.stock.n === 2,
+    garagesCarte.absent ? 'la fiche d\'un garage ne suit pas ses blocs' : JSON.stringify({ c3: garagesCarte.c3, stock: garagesCarte.stock }));
+
   // --- LONDRES À LA RÈGLE DU KIT (v339) : la ville d'avant reste sous ce ----
   // --- qu'un enfant y a bâti ------------------------------------------------
   //
