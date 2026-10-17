@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 474,
+    titre: 'Les feux mieux surveillés',
+    puces: [
+      'Les voitures freinaient déjà bien au feu',
+      "L'essai mesure enfin à la bonne heure",
+    ],
+  },
+  {
     v: 473,
     titre: 'Le métro sous Paris',
     puces: [

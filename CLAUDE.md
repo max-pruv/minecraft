@@ -3452,6 +3452,26 @@ Les deux rouges réseau récurrents du palier C. Trois règles.
   une voix restée au quart (`GAIN_APPEL`) et le régime qui varie ; vérifié
   rouge sur une copie où la voix reste au quart.
 
+## Un freinage de la rue se date à l'heure de la rue (v474)
+
+Deux règles.
+
+- **CE QUI AVANCE EN TEMPS RÉEL PAR IMAGE SE MESURE À SA PROPRE HORLOGE.** La
+  rue avance par image de `dtReel` (v305) ; au banc une image dure jusqu'à une
+  seconde, et des relevés posés tous les dixièmes de seconde tombent ENTRE les
+  images. Une perte de vitesse divisée par l'écart entre deux relevés divise
+  ce qu'une image de 0,7 s a fait par 0,112 s : « 38 b/s² » pour une voiture
+  qui freinait à 7,5. Un témoin qui juge une DÉRIVÉE (décélération, débit) de
+  la rue date ses relevés à `vehicules.horloge()`, jamais à
+  `performance.now()`. Contrôle fait : freinage désarmé à 100 b/s², la mesure
+  à l'horloge de la rue le voit (pire 32,8).
+- **UNE CAUSE ÉCRITE DANS `TASKS.md` SE MESURE AVANT D'ÊTRE CORRIGÉE.** La
+  dette accusait l'arrêt d'urgence au contact ; le code l'excluait déjà dans
+  une même file (`memeLigne`), et une instrumentation de `updateProfil` n'a vu
+  aucun arrêt en une image. Corriger le jeu sur la foi de la dette aurait
+  touché la conduite pour un défaut d'instrument (v291, « une dette déclarée
+  sans mesure est lue comme un fait »).
+
 ## Le lot 3 des témoins (v471) — un compteur se lit sur ce qu'il compte vraiment
 
 Cinq rouges récurrents du portail, chacun démonté par une sonde. Six règles.
