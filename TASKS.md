@@ -1,5 +1,19 @@
 # Ce qui est en cours
 
+- [ ] **`monte.js` « à l'arrivée d'une téléportation, le fil principal
+  n'engendre pas les morceaux que le worker va rendre » INTERMITTENT au portail
+  de la v501.** Vert au premier portail (1 morceau, `Player.update`), rouge au
+  second (3 pour une barre à 2 : `Player.update` 1, `posteAutour`
+  (passants.js:208) 2), vert sur `origin/main` v490 rejouée SEULE. Une
+  intermittence ne se juge pas sur un passage de chaque côté (v269), mais la
+  preuve est STRUCTURELLE (v291) : la v501 ne change que le choix de la piste
+  au second ✈️ (`pisteVisee`, `decollerOuSePoser`) et le ralliement de
+  l'approche ; le témoin se téléporte à pied à Berlin, sans avion, et les deux
+  morceaux en trop viennent de `passants.js`, intouché. Au même portail, les
+  rouges déjà déclarés : le loader de `maj.js` (2, identiques sur
+  `origin/main`), le flâneur, les voisines d'un convoi et la rue vide de
+  `monte.js` (identiques sur `origin/main`, qui rend en plus le feu et le mur
+  pris de face).
 - [ ] **PORTAIL DE LA v499 (les vrais arbres), sur le code fusionné à la
   v487 : dix-sept suites, aucun rouge de la livraison.** Les deux premiers
   passages (avant la fusion) ont rendu deux rouges qui étaient à moi, corrigés
