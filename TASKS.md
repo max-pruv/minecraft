@@ -8001,7 +8001,35 @@ l'embarquement a eu lieu, pas par une hypothèse.
   l'autre sens.
 
 - [ ] **Les métros des grandes villes générées** — le creuseur de Washington
-  sait faire ; après les trains intervilles.
+  sait faire ; après les trains intervilles. **Rome fait (v500, la ligne A,
+  `src/metromonde.js`).** La suite, et ce qui reste déclaré :
+  - les autres villes : une entrée de `LIGNES_DEF`. Refaire d'abord la sonde
+    de choix (espacement, eau, monuments). Tokyo (20 blocs/km) ne tient pas
+    une station par vraie station de la Ginza (huit blocs) : une station sur
+    deux, ou un quai plus court — décision de contenu. Berlin : la U5 longe la
+    Spree et passe sous quatre monuments, à mesurer contre leurs boîtes.
+  - une construction d'enfant posée sur le trottoir AVANT la v500, là où
+    s'ouvre désormais une trémie, garde ses blocs (réappliqués) mais peut
+    surplomber le trou — comme à Paris (v473). Rien ne le mesure encore.
+  - **LES PORTAILS DE LA v500.** Second portail (code fusionné sur la v481) :
+    13 suites vertes, 9 rouges, tous déjà déclarés — `degats.js` « percuter
+    une voiture de la rue l'abîme AUSSI » ; `maj.js` « le loader dit combien
+    de fichiers » ; `carte.js` la flèche du GPS ; `monte.js` « deux voisines
+    d'un convoi », « au feu, la voiture freine », « l'on ne marche pas dans
+    une rue vide » (ces trois rouges aussi sur `origin/main` rejouée SEULE
+    le même jour), « une voiture de la rue heurtée… feux de détresse » et « un
+    mur pris de face » (cascade de la v414), et « un flâneur posé au milieu de
+    la chaussée » à Rome — rejoué seul, `sonde-flaneur-rome.cjs` : 5/5 verts
+    sur la branche ET sur `origin/main`. Le PREMIER portail avait rendu rouge
+    « à Rome aussi, en biais, un passant traverse sur le passage peint » : 8
+    verts sur 14 avec les rames, 13 sur 13 sur `origin/main`
+    (`sonde-passage-rome.cjs`) — c'était la livraison, corrigée (les rames se
+    dessinaient dans la roche sous la rue, `HAUT_TUNNEL`), 8 sur 8 après, vert
+    au second portail.
+  - aucun témoin de banc ne prend la rame de Rome (descente, montée, station
+    suivante) : `metro.js` vérifie les cinq rames et leurs arrêts ; le trajet
+    se prouve sous node. Le trajet complet coûterait une téléportation à Rome
+    et ~45 s de jeu dans une suite qui a déjà celui de Paris.
 
 - [ ] **Le tour du monde, approfondissements** — DEUX CENT SOIXANTE-DIX-HUIT
   lieux au registre (v173) : Londres à la main, les autres par la machine.

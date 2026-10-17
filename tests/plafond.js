@@ -388,7 +388,12 @@ const EMPREINTE_MORCEAUX_V414 = '863d4203a441e3fd029ce2404fc6d6e706799e7f64fe489
 // v473 : la ligne 1 du métro passe sous Paris, un des neuf lieux. Désarmée
 // (`METRO_PARIS.actif = false`, ville.js), la branche rend b3bb35e3…, la
 // constante de la v472, au bit près.
-const EMPREINTE_MORCEAUX_V357 = 'df0e4dfc95d47d80bcc916c18f23d91eb1bde39a5d266597a4443716cb58ae81';
+// v500 : la ligne A du métro passe sous Rome, un des neuf lieux. Désarmée
+// (`METRO_MONDE.actif = false`, metromonde.js), la branche rend df0e4dfc…, la
+// constante de la v473, au bit près.
+// l'écart d'une voie à l'axe du métro (metromonde.js, GABARIT.ecart)
+const MM_ECART = 2.2;
+const EMPREINTE_MORCEAUX_V357 = 'fe1e5a37a4619528e26defbc41485903b67da5616fac3da6a2b53391b7839d42';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -2842,6 +2847,40 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     verifier('rien ne barre les rames, la Seine reste pleine, et aucune bouche ne mure une rue ni un circuit',
       !r.absente && r.lus > 1000 && r.gabarit === 0 && r.poches === 0 && r.surChaussee === 0 && r.mure === 0 && r.circuits > 0,
       r.absente ? 'aucune ligne 1' : JSON.stringify({ gabarit: r.gabarit, lus: r.lus, poches: r.poches, surChaussee: r.surChaussee, mure: r.mure, circuits: r.circuits }));
+  }
+
+  // LA LIGNE A DE ROME SE PARCOURT COMME L'ENFANT LA VIT (v500), par la même
+  // sonde que la ligne 1 de Paris, recopiée pour une ville engendrée
+  // (`sonde-metro-monde.mjs`, lue telle quelle) : de chaque bouche au quai case
+  // par case, le passage des rames libre, aucune poche d'air dans le Tibre, rien
+  // de la bouche hors du trottoir, ni dans le passage d'un circuit, ni à la place
+  // d'un feu — le monde désarmé comparé bloc à bloc au-dessus de la rue. Rouge
+  // sur la v473 : aucune ville engendrée n'avait de métro.
+  {
+    const { mesurerMetrosMonde } = await import('./sonde-metro-monde.mjs');
+    const t0 = Date.now();
+    const r = await mesurerMetrosMonde();
+    const L = (r.lignes || []).find((l) => l.ville === 'rome');
+    const ratees = L ? L.descentes.filter((d) => !d.arrive).map((d) => d.nom) : [];
+    verifier('la ligne A de Rome : douze stations, une bouche par station, et de chaque bouche on descend au quai',
+      !!L && L.stations === 12 && L.bouches === 12 && ratees.length === 0,
+      !L ? 'aucune ligne A (metromonde.js absent)' : `${L.bouches}/${L.stations} bouches (sans : ${L.sansBouche.join(', ') || 'aucune'}), descentes ratées : ${ratees.join(', ') || 'aucune'}, ${Date.now() - t0} ms`);
+    verifier('rien ne barre les rames de Rome, le Tibre reste plein, et la bouche ne touche que le trottoir',
+      !!L && L.lus > 1000 && L.gabarit === 0 && L.poches === 0 && L.surChaussee === 0 && L.ailleurs === 0
+        && L.mure === 0 && L.trouSousVoie === 0 && L.feux === 0 && L.poses > 0 && L.circuits > 0,
+      !L ? 'aucune ligne A' : JSON.stringify({ gabarit: L.gabarit, lus: L.lus, poches: L.poches, surChaussee: L.surChaussee, ailleurs: L.ailleurs, mure: L.mure, trouSousVoie: L.trouSousVoie, feux: L.feux, poses: L.poses, circuits: L.circuits }));
+    // les rames s'arrêtent AUX quais : chaque rang d'arrêt donné à la rame est,
+    // sur le tracé des deux voies, à l'écart d'une voie du centre d'un quai
+    let arrets = null;
+    try {
+      const MM = await import('../src/metromonde.js');
+      const LA = MM.LIGNES_MONDE.find((l) => l.def.cle === 'rome');
+      const pts = MM.traceLigneMonde(LA);
+      arrets = LA.arrets.map((i) => Math.min(...LA.quais.map((q) => Math.hypot(pts[i].x - q.x, pts[i].z - q.z))));
+    } catch { /* absente : le verdict le dit */ }
+    verifier('les rames de la ligne A marquent leurs vingt-quatre arrêts au droit des quais',
+      !!arrets && arrets.length === 24 && arrets.every((d) => d < MM_ECART + 0.2),
+      arrets ? `écart au quai ${Math.max(...arrets).toFixed(2)} au plus, ${arrets.length} arrêts` : 'aucune ligne A');
   }
 
   // UNE BAIE SE SOUDE (v467). La couche HD de Paris pesait jusqu'à onze

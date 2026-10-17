@@ -13,6 +13,7 @@ import {
 import { buildGaulois } from './gaulois.js';
 import { buildEspace } from './espace.js';
 import { buildVille, creuserMetroParis } from './ville.js';
+import { creuserMetroMonde, metroMondePres } from './metromonde.js';
 import { buildCircuit } from './circuit.js';
 import { POLE, buildPole } from './pole.js';
 import { PARC_ATTRACTIONS, buildParc, lieuxDuParc } from './parc.js';
@@ -1561,7 +1562,7 @@ export const CONF_NEUF = {
   cle: 'neuf', villes: CITIES, aeroports: AEROPORTS, gaulois: GAULOIS, volcan: VOLCANO,
   places: PLACES, reperes: LANDMARKS, hauteurParis, parisAvant: false, fonduDoux: true,
   mursDeQuai: true, falaises: true, villesAvant: false, climat: true, sansTrameLondres: true,
-  metroParis: true,
+  metroParis: true, metroMonde: true,
 };
 // LE MONDE DE LA v306 À LA v308 — celui d'aujourd'hui sans le fondu doux des
 // villes (v309). La marche 6 → 7 juge sur lui ce qui y a été posé, et la marche
@@ -1571,7 +1572,7 @@ export const CONF_NEUF = {
 // Et ces deux mondes-là ont les villes d'avant leur passe au kit (Londres
 // v339, `londres-v332.js` ; Nice v359, `nice-v340.js`) : c'est celles qu'on y
 // voyait (`villesAvant`).
-export const CONF_V308 = { ...CONF_NEUF, reperes: LANDMARKS_V317, fonduDoux: false, mursDeQuai: false, falaises: false, villesAvant: true, climat: false, sansTrameLondres: false, metroParis: false };
+export const CONF_V308 = { ...CONF_NEUF, reperes: LANDMARKS_V317, fonduDoux: false, mursDeQuai: false, falaises: false, villesAvant: true, climat: false, sansTrameLondres: false, metroParis: false, metroMonde: false };
 export const CONF_AVANT = {
   cle: 'avant-v306', villes: CITIES_AVANT, aeroports: AEROPORTS_AVANT_V306, gaulois: GAULOIS_AVANT,
   volcan: VOLCANO_AVANT, places: PLACES_AVANT, reperes: LANDMARKS_V317.filter((lm) => !NES_APRES_V306_NOMS.has(lm.name)).map(repereAvant),
@@ -4274,6 +4275,24 @@ export class World {
             }
             data[World.index(x, h, z)] = id;
           }
+        }
+      }
+    }
+
+    // LES MÉTROS DES VILLES ENGENDRÉES (v500, metromonde.js) : creusés sous la
+    // ville, après elle, comme la ligne 1 de Paris. Seulement dans le monde
+    // d'aujourd'hui (`CONF_V308` et `CONF_AVANT` ne les portent pas : on juge un
+    // bloc d'avant sur le monde où il a été posé). Une case de huit sans métro
+    // ne coûte qu'une question.
+    if (this.conf.metroMonde) {
+      for (let z = 0; z < CHUNK; z++) {
+        for (let x = 0; x < CHUNK; x++) {
+          const wx = baseX + x, wz = baseZ + z;
+          if (!metroMondePres(wx, wz)) continue;
+          const h = reliefs ? reliefs[(x + 1) + (z + 1) * N2] : this.terrainHeight(wx, wz);
+          creuserMetroMonde(wx, wz, h, (wy, id) => {
+            if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id;
+          });
         }
       }
     }

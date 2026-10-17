@@ -821,6 +821,7 @@ const rendus = { voitures: 0, ressources: 0 };
 // lui — assez loin pour le voir arriver le long du quai, pas assez pour le
 // dessiner à travers la ville.
 const VU_SOUTERRAIN = 40;
+const HAUT_TUNNEL = 8;
 
 // --- le tracé ----------------------------------------------------------------
 
@@ -1418,6 +1419,7 @@ class Convoi {
     // surface. `decouvert(p)` répond « ce point est-il à l'air libre ? » —
     // c'est main.js qui le branche, car lui seul connaît le monde.
     this.decouvert = opts.decouvert || null;
+    this.souterrain = !!opts.souterrain;
     this.freine = !!opts.freine;
     this.allureMin = opts.allureMin ?? 0.35;
     // UN VÉHICULE ROUTIER CÈDE LE PASSAGE ET S'INCLINE DANS LE VIRAGE (v244).
@@ -2086,8 +2088,19 @@ class Convoi {
     // à la position d'aujourd'hui (v322). Trois nombres, aucune allocation.
     this.vuX = joueur.x; this.vuZ = joueur.z; this.vuT = performance.now();
     const tete = this.parcours.a(this.distance);
-    const portee = (this.decouvert && this.decouvert(tete)) ? VU : this.vu;
+    const aLAir = this.decouvert && this.decouvert(tete);
+    const portee = aLAir ? VU : this.vu;
     const trainee = this.etendue();
+    // ET « DANS LE TUNNEL » EST AUSSI UNE HAUTEUR (v500). La portée de quarante
+    // blocs ne regardait que le plan : debout dans la rue, au-dessus de la
+    // ligne A de Rome ou de la 1 de Paris, on dessinait les wagons dans la
+    // roche — mesuré à Rome, deux rames sur cinq `visible` à dix-sept blocs
+    // sous les pieds de l'enfant. Plus haut que `HAUT_TUNNEL` au-dessus de la
+    // rame (le quai, la voûte, le bas d'un escalier y tiennent), rien ne se voit.
+    if (this.souterrain && !aLAir && joueur.y !== undefined && joueur.y - tete.y > HAUT_TUNNEL) {
+      for (const m of this.elements) if (m && m.visible) m.visible = false;
+      return;
+    }
     const dTete = Math.hypot(tete.x - joueur.x, tete.z - joueur.z);
     if (dTete > portee + trainee) {
       // tout le convoi est loin : au-delà de la marge, il rend ses maillages
