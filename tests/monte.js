@@ -8692,7 +8692,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // dans la boîte de l'avion est un heurt, le sol est sous les roues). Le
     // Concorde venu de l'ouest à Los Angeles entrait dans le mur d'une colonne
     // au seuil, que le balayage par pas de trois enjambait (heurt à s 0 sur
-    // l'ancien code) ; le chasseur à Andrews passe sous les couronnes
+    // l'ancien code) ; le chasseur à Andrews passe au-dessus des couronnes
     // flottantes au lieu d'y entrer.
     {
       const { mesurer } = require('./sonde-approche.cjs');
@@ -8702,7 +8702,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         const r = await mesurer(src, { piste, k, dep: '-900/0/2.5' });
         for (const e of r.resultats) cas.push({ piste: e.cle + e.z, k, issue: e.issue, vy: e.vy, s: e.sTouche, arretOk: e.arretOk });
       }
-      verifier('✈️ venu de l\'ouest, l\'approche assistée passe le mur du seuil de Los Angeles et sous les couronnes d\'Andrews',
+      verifier('✈️ venu de l\'ouest, l\'approche assistée passe le mur du seuil de Los Angeles et au-dessus des couronnes d\'Andrews',
         cas.length >= 2 && cas.every((c) => c.issue === 'piste' && c.vy >= -3 && c.arretOk), JSON.stringify(cas));
     }
     for (const [espece, cle] of [['chasseur', 'bas-sd'], ['avionligne', 'orly']]) {

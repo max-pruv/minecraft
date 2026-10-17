@@ -25,6 +25,21 @@
   l'épave en feu après un crash. À écrire sur le modèle de la v344 (l'ami voit
   la voiture froissée) : deux pages, l'une s'écrase, l'autre lit le maillage.
 
+- [ ] **PORTAIL DE LA v474 (l'approche voit le mur du seuil) — PREUVE
+  STRUCTURELLE (v291).** Dix-sept suites ; arrêté à la limite de deux heures
+  pendant `reseau.js`. Ce que la livraison change n'est lu que pendant un
+  atterrissage assisté (`guiderApproche`, branche `atterrissage` de
+  `player.js` avec `this.approche`) : aucun des rouges ne pose un avion. Ses
+  trois témoins d'approche de `monte.js` sont verts. Rouges : `maj.js`
+  « combien de fichiers » (déclaré) et « toutes les versions du journal »
+  (`v465: Sur la mer, le train roule sur un viaduc`, neuf mots, entrée déjà
+  sur `main`) ; `manhattan.js` taxi (déclaré) ; `monte.js` flâneur, feu, rue
+  vide (déclarés) et « deux voisines d'un convoi gardent leur longueur
+  d'écart » (`minVrai 3.54`, NON déclaré jusqu'ici, zone conduite) ;
+  `reseau.js` portière droite à l'entrée et à la descente (déclarés) et « la
+  voiture de l'ami se refait pendant la marche » (non déclaré, même page que
+  la portière, `phases: []` : la séquence n'a pas commencé).
+
 - [ ] **DES COURONNES D'ARBRES SANS TRONC FLOTTENT AU-DESSUS DES PISTES (vu en
   v474).** Roissy (piste z 47, s 18 à 28, feuilles à y 43-44 pour une piste à
   34) et Andrews (s 11, y 46 pour 37) : un arbre dont le tronc a été effacé par
