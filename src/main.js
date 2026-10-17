@@ -7856,8 +7856,18 @@ const SEASON = (() => {
   if (m >= 2 && m <= 4) return { label: 'le printemps', emoji: '🌸', color: 0xf0a8c8, fall: 1.6 };
   if (m >= 5 && m <= 7) return { label: "l'été", emoji: '✨', color: 0xf2e07a, fall: -0.4 };
   if (m >= 8 && m <= 10) return { label: "l'automne", emoji: '🍂', color: 0xd8843a, fall: 2.2 };
-  return { label: "l'hiver", emoji: '❄️', color: 0xffffff, fall: 3 };
+  return { label: "l'hiver", emoji: '❄️', color: 0xffffff, fall: 3, duCiel: true };
 })();
+
+// LE NUAGE DE SAISON EST POSÉ SUR LE SOL, PAS SUR L'ENFANT (v484). Il suivait
+// `player.pos` de −3 à +23 blocs : en vol, cent soixante carrés orange
+// flottaient autour de l'avion à cent blocs du sol — les « cubes orange dans
+// le ciel » vus sur les captures de Max et du banc depuis la v237, que la sonde
+// de scène ne trouvait pas parce que c'est UN objet `Points` collé à la caméra.
+// La neige tombe du ciel (bande haute) ; feuilles, pétales et lucioles restent
+// à hauteur d'arbre (bande basse). Au-dessus de la bande, rien ne se dessine.
+const BANDE_SAISON = SEASON.duCiel ? [-3, 23] : [-1, 9];
+const HAUT_SAISON = BANDE_SAISON[1] - BANDE_SAISON[0];
 
 const SEASON_COUNT = 160;
 const seasonGeo = new THREE.BufferGeometry();
@@ -7865,7 +7875,7 @@ const seasonGeo = new THREE.BufferGeometry();
   const pts = new Float32Array(SEASON_COUNT * 3);
   for (let i = 0; i < SEASON_COUNT; i++) {
     pts[i * 3] = (Math.random() - 0.5) * 60;
-    pts[i * 3 + 1] = Math.random() * 26 - 3;
+    pts[i * 3 + 1] = BANDE_SAISON[0] + Math.random() * HAUT_SAISON;
     pts[i * 3 + 2] = (Math.random() - 0.5) * 60;
   }
   seasonGeo.setAttribute('position', new THREE.BufferAttribute(pts, 3));
@@ -7886,13 +7896,18 @@ function updateSeasons(dt) {
   const pos = seasonGeo.attributes.position;
   for (let i = 0; i < SEASON_COUNT; i++) {
     let y = pos.getY(i) - SEASON.fall * dt;
-    if (y < -3) y += 26;
-    if (y > 23) y -= 26;
+    if (y < BANDE_SAISON[0]) y += HAUT_SAISON;
+    if (y > BANDE_SAISON[1]) y -= HAUT_SAISON;
     pos.setY(i, y);
     pos.setX(i, pos.getX(i) + Math.sin(seasonTime * 1.3 + i) * dt * 0.8); // flutter
   }
   pos.needsUpdate = true;
-  seasonPoints.position.set(player.pos.x, player.pos.y, player.pos.z);
+  // au-dessus d'un lac ou de la mer, c'est la surface de l'eau qui porte le nuage
+  const sol = Math.max(world.terrainHeight(Math.floor(player.pos.x), Math.floor(player.pos.z)), WATER_LEVEL) + 1;
+  seasonPoints.position.set(player.pos.x, sol, player.pos.z);
+  // plus haut que la bande (en vol), on ne voit le nuage que par en dessous :
+  // on ne le dessine pas
+  if (player.pos.y > sol + BANDE_SAISON[1] + 6) seasonPoints.visible = false;
 }
 
 const clouds = [];

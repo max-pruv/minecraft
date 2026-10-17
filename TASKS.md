@@ -1,5 +1,90 @@
 # Ce qui est en cours
 
+- [ ] **Rouges de portail mesurés des deux côtés au portail de la v486 (Changi)**
+  — double mesure de la v195, `monte.js` rejouée SEULE sur la branche et sur
+  `origin/main` v473 (`git worktree`) : « à Moscou, les rues sont pleines de
+  voitures » (moins de six voitures en 45 s) et son dépendant « modèles ET
+  couleurs différents » rouges des deux côtés ; « l'on ne marche pas dans une
+  rue vide » rouge des deux côtés (vus `[0,3,3,0,0,0,3,23]` ici,
+  `[0,4,14,2,0,0,1,19]` sur `origin/main`) ; « au feu, la voiture freine »
+  déjà déclaré. Rejouée seule, la branche rend en plus « un passant change de
+  trottoir au feu » et « deux voisines d'un convoi gardent leur écart » ;
+  `origin/main` rend « un mur pris de face » : intermittences de cadence, la
+  même distribution. Preuve structurelle : Changi ne change que le relief
+  dans sa zone (à 40 000 blocs de Moscou) et ajoute un repère, des pistes et
+  un aérodrome que rien de la rue ne lit. Au portail aussi : `maj.js` « il
+  couvre toutes les versions du journal » rouge pour la puce de la v465
+  (« Sur la mer, le train roule sur un viaduc », sur `origin/main`), et
+  `manhattan.js` « sans erreur de jeu » (PeerJS, déjà déclaré).
+
+- [ ] **PORTAIL DE LA v484 (les cubes orange) : cinq rouges, aucun de la
+  livraison** (qui ne déplace qu'un `Points` d'ambiance, lu par rien d'autre).
+  `maj.js` : la puce v465 à neuf mots, rouge sur `origin/main` (corrigée depuis en amont).
+  `degats.js` « percuter une voiture de la rue l'abîme AUSSI » : vert seul des
+  deux côtés. `monte.js` rejouée SEULE des deux côtés : `origin/main` 229 verts,
+  4 rouges (« deux voisines d'un convoi », « au feu… au lieu de piler », « rue
+  vide », « un mur pris de face ») ; branche 233 verts, 2 rouges (« la rue roule
+  à l'allure d'une ville », le tirage 1 sur 3 déclaré en v472 ; « rue vide »).
+  Tous des tirages de circulation vus des deux côtés.
+
+- [ ] **PORTAILS DE LA v481 (le feu à l'heure de la rue).** Deux passages
+  (fumée, `maj.js`, `monte.js`). Le témoin du feu : rouge au premier (39,4,
+  un des mécanismes rares décrits juste en dessous), VERT au second (4 259
+  paires, aucune au-delà de 10). Rouges, tous déjà déclarés ici : `maj.js`
+  « le loader dit combien de fichiers » ; `monte.js` le flâneur de Rome, « à
+  Rome aussi, en biais », « un passant change de trottoir au feu » (2 hors
+  feu), « la rue roule à l'allure d'une ville » (médiane 0, le bouchon), « on
+  ne marche pas dans une rue vide », « un mur pris de face ». La livraison ne
+  touche à `src/` que par `nouveautes.js` (données) : aucun de ces chemins
+  n'a bougé. La puce trop longue que `maj.js` a vue (v465, puis la mienne) est
+  raccourcie et vérifiée par la règle même du témoin, sous node.
+- [ ] **AU FEU, LA VOITURE DE FILE PERD ENCORE PLUS DE 10 B/S² — RAREMENT, ET
+  CE N'EST PAS L'URGENCE (v481, zone conduite).** Le témoin « au feu, la
+  voiture freine sur plusieurs relevés » date désormais ses relevés à
+  l'horloge de la rue : la plupart de ses anciens « coups de frein » étaient
+  une image de 0,7 s divisée par les 112 ms entre deux relevés. Il en reste un
+  peu moins d'une paire sur deux cents (dix passages de
+  `sonde-feu-horloge.cjs`), assez pour le faire rougir une fois sur quelques
+  portails (39,4 b/s² vu au portail de la v481). Un journal des huit dernières
+  images de chaque voiture, vidé au moment de la chute, a nommé trois
+  mécanismes — `urgence` valait 0 dans tous :
+  1. **la borne de la v450 ne s'arme qu'en cause 1** : une voiture de cause 2
+     (retenue par une autre voiture) qui devient cause 1 est coupée d'un coup
+     (12,53 → 7,98 b/s dans l'image suivante ; reste 2,09 bloc derrière une
+     voiture à 5,68). Piste : armer la borne dès qu'il y a une voiture devant
+     dans la file et une `cible` finie — elle est RELATIVE, donc ne ralentit
+     pas une file qui roule (règle v453) ; à mesurer sur Moscou (voitures en
+     vue) avant de livrer.
+  2. **le plancher (v283) recolle** pendant que la voiture freine déjà au
+     freinage d'urgence (`fin` sous `borne` : 11,80 → 11,12 dans une image de
+     0,178 s, reste 14,9 au plancher de la file — donc probablement le
+     plancher de la LIGNE, `devantSurLaLigne`). À instrumenter.
+  3. **4,6 → 0 en moins de 0,35 s** (125:18, cause 1, cible 0) : le journal
+     de huit images ne remontait pas jusqu'au début de la chute. À reprendre
+     avec un journal plus long.
+  Et deux défauts trouvés en chemin, corrigés puis retirés faute de pouvoir
+  prouver qu'ils changent le témoin (portail complet exigé, budget) :
+  - **la grille va par escalier** : `distanceA` interpole la distance
+    linéairement entre deux points du profil (un bloc), donc la vitesse est
+    constante sur le bloc et saute à sa fin — à 3 b/s, une marche de
+    1,2 b/s (4,58 → 3,82 en 28 ms, mesuré). Remède écrit et mesuré sous node
+    sur un profil de rue : garder `prof.vs` dans `_horaire` et poser une
+    accélération constante sur le bloc (d = v0·τ + ½·a·τ², `tempsA` inversé
+    par la racine) — pire décélération sur 100 ms 5,9 → 3,5 (le freinage de
+    confort exact), position déplacée de 0,008 bloc au plus, mêmes points aux
+    mêmes heures (v305). Les sondes de géométrie (`nbSansChevauchement`,
+    `jumelleSansContact`, `croisementsDe`) échantillonnent à 0,25 s : sous
+    leur résolution.
+  - **le rattrapage finit d'un coup** : une voiture qui rattrape à 1,3 fois
+    l'allure est recollée à sa grille, donc à l'allure de la grille, dans
+    l'image où son retard s'annule (3,74 → 2,87 b/s en 25 ms). Remède :
+    `libre = vConv + min(0,3·vConv, 3, 1,5·retard)`, l'excès s'éteint avec le
+    retard.
+- [ ] **L'AVION DE L'AMI ET SON ÉPAVE (v453) — SANS TÉMOIN À DEUX TABLETTES.**
+  `p.v` porte désormais un avion (fiche `pilote`) et ses dégâts ; aucun témoin
+  de `reseau.js` ne vérifie encore que l'autre tablette voit l'appareil, puis
+  l'épave en feu après un crash. À écrire sur le modèle de la v344 (l'ami voit
+  la voiture froissée) : deux pages, l'une s'écrase, l'autre lit le maillage.
 - [ ] **AU FEU, LA VOITURE DE FILE PILE DERRIÈRE CELLE QUI S'ARRÊTE (vraie
   panne, zone conduite — trouvée par la session banc-lot3).** Le témoin
   « au feu, la voiture freine sur plusieurs relevés » de `monte.js` comptait
@@ -24,15 +109,30 @@
   l'épave reste là où il s'est écrasé), verts ; rouges tous trois quand `p.v`
   ne porte plus que ce qui a un siège (l'état d'avant la v462).
 
-- [ ] **L'APPROCHE ASSISTÉE (v452) : QUATRE POSÉS SUR 148 À REPRENDRE.**
-  `node tests/sonde-approche.cjs src` : trois touchers à 5,7 · 6,2 · 6,7 blocs
-  par seconde (Roissy 47 pour l'avion de ligne et le Concorde, Andrews pour le
-  chasseur, tous venus de l'ouest en virant), et le Concorde à Los Angeles qui
-  touche au seuil même (s 0, un demi-bloc avant la bande). Une première trace
-  du même départ rejouée seule se pose bien (s 82, 2 blocs/s) : la différence
-  tient à l'état du monde déjà engendré par les approches précédentes — à
-  démonter par une sonde qui rejoue UNE approche dans un monde neuf, puis la
-  même après les autres.
+- [ ] **PORTAIL DE LA v480 (l'approche voit le mur du seuil) — PREUVE
+  STRUCTURELLE (v291).** Dix-sept suites ; arrêté à la limite de deux heures
+  pendant `reseau.js`. Ce que la livraison change n'est lu que pendant un
+  atterrissage assisté (`guiderApproche`, branche `atterrissage` de
+  `player.js` avec `this.approche`) : aucun des rouges ne pose un avion. Ses
+  trois témoins d'approche de `monte.js` sont verts. Rouges : `maj.js`
+  « combien de fichiers » (déclaré) et « toutes les versions du journal »
+  (`v465: Sur la mer, le train roule sur un viaduc`, neuf mots, entrée déjà
+  sur `main`) ; `manhattan.js` taxi (déclaré) ; `monte.js` flâneur, feu, rue
+  vide (déclarés) et « deux voisines d'un convoi gardent leur longueur
+  d'écart » (`minVrai 3.54`, NON déclaré jusqu'ici, zone conduite) ;
+  `reseau.js` portière droite à l'entrée et à la descente (déclarés) et « la
+  voiture de l'ami se refait pendant la marche » (non déclaré, même page que
+  la portière, `phases: []` : la séquence n'a pas commencé).
+
+- [ ] **DES COURONNES D'ARBRES SANS TRONC FLOTTENT AU-DESSUS DES PISTES (vu en
+  v480).** Roissy (piste z 47, s 18 à 28, feuilles à y 43-44 pour une piste à
+  34) et Andrews (s 11, y 46 pour 37) : un arbre dont le tronc a été effacé par
+  le revêtement garde sa couronne. L'approche assistée les survole désormais
+  (`plein` de `guiderApproche`), mais un avion qui roule dessous les traverse
+  visuellement (son modèle est plus haut que sa boîte de 1,8). Le remède est
+  dans la génération des aérodromes (`aeroport.js`, zone d'une autre session) :
+  dégager l'air au-dessus de toute colonne de piste. Mesure : balayer
+  `sommetColonne` sur chaque piste de `pistesDuMonde()` contre `p.sol`.
 
 - [ ] **SEPT PISTES SOUS LEUR CIBLE (v448) — DÉCLARÉES, LE REMÈDE EST UNE
   DÉCISION.** Prolongées autant que leur place le permet, mesurées par sonde :
@@ -212,6 +312,23 @@
   piétons (v351) et le balayage des voitures (v395). Le témoin « un train
   s'arrête devant la voiture de l'enfant » reste rouge tant que ce n'est pas
   fait : il garde une vraie panne.
+- [ ] **AU PORTAIL DE LA v485 (la savane), TROIS ROUGES DE `monte.js` QUI NE
+  SONT PAS LA LIVRAISON — preuve STRUCTURELLE (v291).** « deux voisines d'un
+  convoi gardent leur longueur d'écart » (minVrai 3,69, à Paris (−330, 310)),
+  « une voiture de la rue heurtée… feux de détresse » (`id: null` : aucune
+  voiture trouvée) et « l'on ne marche pas dans une rue vide »
+  (`[0, 7, 12, 1, 0, 0, 2, 10]`, 3 arrêts vides). Les deux derniers sont déjà
+  déclarés comme intermittences de portail (v408, v426). La v474 ne change
+  rien hors des sept contours de savane : `climat` vaut null à Paris des deux
+  côtés, et `DATE_CLIMATS` ne marque que des blocs posés AVANT elle — le banc
+  n'en pose aucun. `monte.js` n'a pas été rejouée seule (budget de Max) :
+  la double mesure reste à faire si l'écart du convoi revient.
+  Second portail (après la fusion de la v477, la livraison étant alors la v478) : toutes les suites vertes sauf
+  `monte.js`, cinq rouges tous DÉJÀ déclarés (le passant au feu à Rome, 1 au
+  vert sur 8 ; la voiture qui pile au feu, v471 ; la rue vide ; les voitures
+  de Moscou et leur livrée), et aucun du premier portail ne revient : une
+  distribution d'intermittences. Rome (méditerranéenne), Paris et Moscou
+  n'ont pas changé de climat.
 - [ ] **PORTAIL DU JOURNAL DE BORD (v426) — DOUBLE MESURE (règle v195).**
   Deux portails (bases v408 et v411) rouges sur `maj.js`, `carte.js`,
   `manhattan.js`, `monte.js`. Déclarés plus bas : la flèche du GPS et le
@@ -1777,7 +1894,7 @@
   appelé pour ce morceau de campagne ; l'écart se prend désormais par paire
   alternée (désarmé de 6 ms : rouge, 7,2).
 
-- [ ] **AU PORTAIL DE LA v474 (règle de la v195), DEUX ROUGES, AUCUN DE LA
+- [ ] **AU PORTAIL DE LA v484 (règle de la v195), DEUX ROUGES, AUCUN DE LA
   LIVRAISON.** `maj.js` « il couvre toutes les versions du journal » : la puce
   de la v465 (« Sur la mer, le train roule sur un viaduc ») dépasse la barre —
   telle quelle sur `origin/main`, zone de la session du viaduc. `degats.js`
@@ -2073,6 +2190,25 @@
   DÉCLARÉ), la chauffe de New York, et dans `visio.js` « pendant l'appel la
   radio parle plus bas » (avant 0,0000 des deux côtés : la radio ne joue pas
   avant l'appel — NEUF ET DÉCLARÉ). `reseau.js` : la famille « sans courtier ».
+- [ ] **AU PORTAIL DE LA v487 (la fiche d'un garage suit ses murs), QUATRE
+  ROUGES DE `monte.js` QUI NE SONT PAS LA LIVRAISON — preuve structurelle
+  (v291).** La livraison ne change que les marches de migration (stockage au
+  démarrage, documents du nuage) : sur une page du banc, sans garage et sans
+  blocs d'avant, elles rendent les mêmes blocs (plans de Paris doublé et du
+  fondu doux identiques à l'octet, mesuré contre `origin/main`) et ne touchent
+  ni la circulation ni les passants. Trois sont déjà déclarés (passage peint
+  hors de Paris, Kyoto 4/6 sur le passage ; l'arrêt au feu, `pireFeu` 13,2 ;
+  la rue vide, `[0, 3, 12, 0, 0, 2, 3, 13]`). Le quatrième est NEUF ici :
+  « deux voisines d'un convoi gardent leur longueur d'écart » —
+  `minTrace` 3,35 pour une borne à 4,4 (une longueur de voiture), 1 498 paires,
+  `ou` (−330, 310), Paris.
+  À rejouer seul des deux côtés par la session des voitures. `carte.js` : la
+  flèche du GPS (gauche 1,92 rad), déclarée. Au SECOND portail, après la
+  fusion d'`origin/main` (v475 à v477), un rouge de plus : « au frein à main,
+  les pneus crissent — même tout droit » (`monte.js`, `droit.posees: 0`,
+  `derive.posees: 38`) — VERT au premier portail sur le même code de
+  livraison : seul le code fusionné d'`origin/main` a changé entre les deux.
+  Zone conduite (traces, sensations) : à rejouer seul des deux côtés.
 - [ ] **AU PORTAIL DE LA v437 (le frein à main crisse), UN ROUGE NEUF QUI N'EST
   PAS LA LIVRAISON — preuve structurelle (v291).** « à Rome aussi, en biais, un
   passant traverse sur le passage peint d'un carrefour sans feu » (`monte.js`,
@@ -2328,12 +2464,17 @@
   jouerait encore sur l'ancienne version APRÈS la publication poserait dans
   l'ancien Paris des blocs datés d'après `DATE_PARIS_DOUBLE` : la marche 5 → 6
   ne les suivra pas (même limite que la carte 3). (2) Un GARAGE posé dans
-  l'ancien Paris : ses blocs partent avec leur quartier, sa fiche
-  (`garages.js`, rangée par position) reste à l'ancienne adresse — la voiture
-  garée ressortirait là. Remède : migrer la fiche avec le groupe qui contient
-  son origine, et changer son identifiant. Rien ne dit qu'un garage y existe (la
-  lecture des profils d'enfants est refusée à la session) ; à mesurer dans
-  l'espace parent. (3) Une construction de campagne dans le nouveau disque (ou
+  l'ancien Paris : ~~sa fiche reste à l'ancienne adresse~~ — **fait en v487**,
+  pour les quatre marches qui déplacent des blocs (carte 3, toits, Paris
+  doublé, fondu doux) : la fiche suit ses murs, en avant comme en orpheline
+  (`suivreGarages*`, `migrerChaineCarte`, world.js). Reste, déclaré : une
+  orpheline dont le groupe arrivé a été retouché depuis (un bloc changé
+  déplace son centre), ou collé à un autre groupe emmené, ou perché à une
+  hauteur que la marche ne permet pas de retrouver (le cas « au-dessus du sol »
+  de Paris doublé), reste à l'ancienne adresse ; un garage que le ménage du
+  ciel (v298) a retiré garde sa fiche ; la fiche déplacée n'a pas de copie
+  d'avant sur le nuage (les blocs en ont une). Rien ne dit qu'un garage y
+  existe : à mesurer dans l'espace parent. (3) Une construction de campagne dans le nouveau disque (ou
   sur un ancien aérodrome) dont le sol a bougé de plus de vingt-quatre blocs
   reste où elle est. (4) Le monde d'avant (`CONF_AVANT`) porte tout ce que la
   v306 a déplacé SAUF les ouvrages globaux : l'ancienne A1 près de l'ancienne
@@ -3511,12 +3652,20 @@
   piste suivante est les neuf corps réalisables (8,2 Mo compressés, bien plus
   décodés) et les textures : à mesurer avec `sonde-memoire-paris.cjs` élargie
   aux textures.
-- [ ] **`sol` ET `plat` RESTENT FABRIQUÉS POUR TOUT LE DISQUE** (v296). Le sol
-  HD (marquages, bordures, trottoir relevé) et les faces plates pèsent 0,02 à
-  0,06 Mo par morceau, soit 10 à 30 Mo pour la ville entière : gardés partout
-  pour que le loin ne change pas d'un pixel. Si un appareil le paie encore, la
-  piste est de ne fabriquer `sol` qu'à `RAYON_HD × 2` et de laisser le voxel
-  de rue au-delà — au prix d'une couture visible sur la chaussée.
+- [ ] **`sol` ET `plat` RESTENT FABRIQUÉS POUR TOUT LE DISQUE** (v296,
+  remesuré en v482). Sous node, sur les 1 754 morceaux du disque de Paris,
+  détail éteint : sol HD 69,4 Mo, faces plates 303 Mo — mais celles-ci
+  REMPLACENT les faces du voxel (454 Mo sans couche HD, 432 avec) ; le surcoût
+  réel hors de portée était de 47,7 Mo pour la ville, soit ~16 Mo dans les 625
+  morceaux d'une fenêtre `rr 12`. La v482 a soudé le sol (69,4 → 51,7 Mo, même
+  image) : il reste ~30 Mo pour la ville, ~10 Mo par fenêtre. Les faces plates
+  et le voxel n'ont aucun sommet doublé (0 % sur 216 008) : rien à souder là.
+  La piste « `sol` seulement à `RAYON_HD × 2`, le voxel de rue au-delà »
+  rendrait au plus ~8 Mo à `rr 12` (~16 à `rr 16`) au prix d'une couture
+  visible sur la chaussée : NON livrée, la mesure ne le justifie pas tant que
+  le budget des façades (128 Mo) domine. À reprendre si le journal de bord
+  montre un appareil tué avec moins de détail que cela (décision de Max, sur
+  capture avant/après de la couture).
 - [x] **UN JOURNAL S'ENVOIE À CHAQUE FERMETURE — TAILLÉ EN v479, CÔTÉ
   SERVEUR.** Mesuré avant : 98 lignes, 264 Ko (index compris), 1,2 Ko par
   session et 1,6 Ko par plantage une fois compressés par Postgres — bien loin
@@ -6886,8 +7035,10 @@ l'embarquement a eu lieu, pas par une hypothèse.
   principal est inactif 81 % du temps, il ne peut pas subir cette panne. On
   mesure des géométries.
 
-- [ ] **`animals.js` et `creatures.js` comptent leur cadence de naissance en
-  `dt`.** `this.spawnTimer -= dt` avec un `dt` borné à un vingtième : à trois
+- [x] **`animals.js` et `creatures.js` comptent leur cadence de naissance en
+  `dt`.** *(fait en v483 : `creatures.js` n'existe plus (v285) ; la naissance
+  des bêtes compte en `chronoReel`. Mesuré à 4,7 images par seconde provoquées :
+  0,25 → 0,87 de la cadence prévue, témoin dans `monte.js`.)* `this.spawnTimer -= dt` avec un `dt` borné à un vingtième : à trois
   images par seconde, 1,2 s de minuteur en réclame 2,4 réelles. C'est la
   cinquième occurrence du piège de `dt`, et elle est NOMMÉE ici plutôt que
   laissée à un futur grep — `src/cadence.js` porte déjà le remède
@@ -6917,7 +7068,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   prairie. `cityAt` pourrait teinter les cases d'une ville en gris urbain pour
   quelques microsecondes par colonne — non mesuré, non fait.
 
-- [ ] **Des cubes orange isolés flottent dans le ciel**, visibles sur les
+- [x] **Des cubes orange isolés flottent dans le ciel**, *(fait en v484 : c'étaient les feuilles d'automne, `seasonPoints` de main.js, collées à l'enfant de −3 à +23 blocs ; le nuage de saison est désormais posé sur le sol, bande basse hors neige, caché en vol — aucun bloc d'enfant en cause)* visibles sur les
   captures de Max comme sur celles du banc, avant comme après la v237. Ma sonde
   de scène ne les a pas trouvés (aucun petit maillage loin dans le champ) :
   c'est donc que je n'ai pas cherché au bon endroit. À reprendre par un lancer
@@ -6968,8 +7119,16 @@ l'embarquement a eu lieu, pas par une hypothèse.
   côté-là : onze maillages par personnage, chacun avec sa matrice, recalculés
   à chaque image.
 
-- [ ] **Quatre minuteurs de plus comptent en `dt`, et deux comptent vraiment
-  (relevé fait en v234).** Le grep enfin passé — `grep -rn -- "-= dt\|+= dt"
+- [x] **Quatre minuteurs de plus comptent en `dt`, et deux comptent vraiment
+  (relevé fait en v234).** *(fait en v483 pour `animals.js` et `fun.js` :
+  naissance des bêtes, `raceTime`, `raceCooldown`, et en plus `garageTimer`
+  (veille des garages, ménage), `mathTimer` (rythme des défis de Cornichon,
+  durée de la vraie vie) et `targetTimer` (le bouton « Monter » tardait 1,7 s
+  à trois images par seconde). Restent en temps de jeu, à dessein : `dying`,
+  `fleeTime`, `stateTime`, `animTime`, `cryTimer` (animals.js), les émotes et le
+  trésor qui tourne (fun.js). Record mesuré : 2,3 s pour 8,6 s réelles sur
+  `origin/main`, 8,5 ici. Le reste du relevé, hors de cette zone, est l'entrée
+  « Les cadences de ménage hors de `animals.js` et `fun.js` ».)* Le grep enfin passé — `grep -rn -- "-= dt\|+= dt"
   src/*.js` — rend **quarante-neuf** minuteurs hors `education.js`. La grande
   majorité sont des ANIMATIONS et doivent rester en temps de jeu (une bête qui
   fuit, une balle qui rebondit, une flamme qui s'éteint). Quatre ne le doivent
@@ -6991,6 +7150,31 @@ l'embarquement a eu lieu, pas par une hypothèse.
   Chacun se corrige par `chronoReel` (cadence.js) et demande son témoin. À
   faire en une livraison à part : trois fichiers de plus, et le record de la
   course mérite d'être regardé avec Max avant d'être remis à zéro ou pas.
+
+  Portail de la v483 (coupé à la limite de deux heures pendant `reseau.js`,
+  rejouée SEULE ensuite : 88 verts) : les deux témoins neufs verts (0,98 et
+  1,00) ; rouges, tous déjà déclarés — `maj.js` les deux loaders, `monte.js`
+  Rome en biais, « freine au feu », la rue vide, Moscou ; et la puce trop
+  longue de la v465 (« Sur la mer, le train roule sur un viaduc »), présente
+  sur `origin/main`, donc en production.
+
+- [ ] **DÉCISION DE MAX : les records de course écrits avant la v483.** Le
+  chronomètre comptait en temps de jeu : sur une tablette qui ramait, un
+  record pouvait valoir le quart du temps réellement couru (mesuré 2,3 s pour
+  8,6 s à cinq images par seconde). La v483 compte juste à partir de
+  maintenant et ne touche pas `records.bestRace`. Les remettre à zéro (pour
+  Marlon et Alice) ou les garder : à trancher par Max, pas par le code.
+
+- [ ] **Les cadences de ménage hors de `animals.js` et `fun.js` (relevé v483).**
+  Le grep (`grep -rn -- "-= dt\|+= dt" src/*.js`) rend soixante et une
+  lignes. Hors de la zone de la v483, quatre candidats ressemblent à du
+  MÉNAGE, sans mesure ni témoin : `poissons.js:118` (`entretien`, naissances
+  du banc de poissons, même famille que les bêtes), `main.js:7968`
+  (`planeTimer`, les avions qui passent), `main.js:7812` (`weatherTimer`, le
+  changement de temps) et `siege.js:177` (`reste`, les phases du siège). Les
+  autres sont des animations ou déjà en temps réel (`dtReel` de marlon.js,
+  degats.js, vehicules.js). Chacun se corrige par `chronoReel` et demande son
+  témoin, à cadence provoquée (`minuteurs-mesure.js` montre la forme).
 
 - [x] **Les minuteurs de `education.js` comptaient en `dt` — FAIT en v234.**
   La question posée était « qu'est-ce qui est JUSTE ». Réponse : tout ce que
@@ -7032,9 +7216,14 @@ l'embarquement a eu lieu, pas par une hypothèse.
   réel a dû céder cinq fois faute de terre ferme : JFK (115° → 30°), Fiumicino
   (245° → 325°), Haneda (160° → 250°), Los Angeles (245° → 305°), Roissy
   (43° → 0°, le nord-est de Paris étant le quartier des enfants). Le jour où
-  la carte gagnera des côtes plus fines, ces cinq-là se replaceront. Et il
-  manque Changi : aucun disque de soixante-dix blocs au sec dans les trois
-  cents blocs autour de Singapour — Delhi a pris sa place dans la quinzaine.
+  la carte gagnera des côtes plus fines, ces cinq-là se replaceront. Changi
+  est FAIT en v486 : sur une île gagnée sur la mer (la zone à terre de son
+  repère), cap réel 70° → 82°, 201 blocs, casse bornée à la zone et mesurée
+  des deux côtés. Reste, déclaré : aucune marche de migration ne suit un bloc
+  qu'un enfant aurait posé en mer à cet endroit avant la v486 (la terre monte
+  autour de lui, ses coordonnées ne bougent pas) ; et le cap réel (70°) ne tenait pas
+  deux pistes de trois cents blocs près de la ville : 82° est le plus proche qui
+  les tienne (sonde, pas d'un degré sur deux, de 180 à 270 blocs).
 
 - [x] **Un terminal n'a ni sièges, ni comptoirs, ni tapis à bagages.** FAIT en
   v330 sur les dix-neuf (`amenagerHall`, aeroport.js), halls de Roissy ouverts
