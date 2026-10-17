@@ -24,15 +24,30 @@
   l'épave reste là où il s'est écrasé), verts ; rouges tous trois quand `p.v`
   ne porte plus que ce qui a un siège (l'état d'avant la v462).
 
-- [ ] **L'APPROCHE ASSISTÉE (v452) : QUATRE POSÉS SUR 148 À REPRENDRE.**
-  `node tests/sonde-approche.cjs src` : trois touchers à 5,7 · 6,2 · 6,7 blocs
-  par seconde (Roissy 47 pour l'avion de ligne et le Concorde, Andrews pour le
-  chasseur, tous venus de l'ouest en virant), et le Concorde à Los Angeles qui
-  touche au seuil même (s 0, un demi-bloc avant la bande). Une première trace
-  du même départ rejouée seule se pose bien (s 82, 2 blocs/s) : la différence
-  tient à l'état du monde déjà engendré par les approches précédentes — à
-  démonter par une sonde qui rejoue UNE approche dans un monde neuf, puis la
-  même après les autres.
+- [ ] **PORTAIL DE LA v480 (l'approche voit le mur du seuil) — PREUVE
+  STRUCTURELLE (v291).** Dix-sept suites ; arrêté à la limite de deux heures
+  pendant `reseau.js`. Ce que la livraison change n'est lu que pendant un
+  atterrissage assisté (`guiderApproche`, branche `atterrissage` de
+  `player.js` avec `this.approche`) : aucun des rouges ne pose un avion. Ses
+  trois témoins d'approche de `monte.js` sont verts. Rouges : `maj.js`
+  « combien de fichiers » (déclaré) et « toutes les versions du journal »
+  (`v465: Sur la mer, le train roule sur un viaduc`, neuf mots, entrée déjà
+  sur `main`) ; `manhattan.js` taxi (déclaré) ; `monte.js` flâneur, feu, rue
+  vide (déclarés) et « deux voisines d'un convoi gardent leur longueur
+  d'écart » (`minVrai 3.54`, NON déclaré jusqu'ici, zone conduite) ;
+  `reseau.js` portière droite à l'entrée et à la descente (déclarés) et « la
+  voiture de l'ami se refait pendant la marche » (non déclaré, même page que
+  la portière, `phases: []` : la séquence n'a pas commencé).
+
+- [ ] **DES COURONNES D'ARBRES SANS TRONC FLOTTENT AU-DESSUS DES PISTES (vu en
+  v480).** Roissy (piste z 47, s 18 à 28, feuilles à y 43-44 pour une piste à
+  34) et Andrews (s 11, y 46 pour 37) : un arbre dont le tronc a été effacé par
+  le revêtement garde sa couronne. L'approche assistée les survole désormais
+  (`plein` de `guiderApproche`), mais un avion qui roule dessous les traverse
+  visuellement (son modèle est plus haut que sa boîte de 1,8). Le remède est
+  dans la génération des aérodromes (`aeroport.js`, zone d'une autre session) :
+  dégager l'air au-dessus de toute colonne de piste. Mesure : balayer
+  `sommetColonne` sur chaque piste de `pistesDuMonde()` contre `p.sol`.
 
 - [ ] **SEPT PISTES SOUS LEUR CIBLE (v448) — DÉCLARÉES, LE REMÈDE EST UNE
   DÉCISION.** Prolongées autant que leur place le permet, mesurées par sonde :

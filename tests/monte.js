@@ -8687,6 +8687,24 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // bouts) et s'y arrêter. Sur l'ancien code il touche à l'aplomb de son
     // départ. La durée de jeu est bornée par une durée de montre (le banc rend
     // quelques images par seconde) et entre dans le message.
+    // CE QUI BORDE LE SEUIL ET CE QUI FLOTTE AU-DESSUS DE LA PISTE (v480).
+    // Sous node, par la sonde de l'approche (même règle de contact : un bloc
+    // dans la boîte de l'avion est un heurt, le sol est sous les roues). Le
+    // Concorde venu de l'ouest à Los Angeles entrait dans le mur d'une colonne
+    // au seuil, que le balayage par pas de trois enjambait (heurt à s 0 sur
+    // l'ancien code) ; le chasseur à Andrews passe au-dessus des couronnes
+    // flottantes au lieu d'y entrer.
+    {
+      const { mesurer } = require('./sonde-approche.cjs');
+      const src = require('path').join(__dirname, '..', 'src');
+      const cas = [];
+      for (const [piste, k] of [['lax', 'concorde'], ['bas-adw', 'chasseur']]) {
+        const r = await mesurer(src, { piste, k, dep: '-900/0/2.5' });
+        for (const e of r.resultats) cas.push({ piste: e.cle + e.z, k, issue: e.issue, vy: e.vy, s: e.sTouche, arretOk: e.arretOk });
+      }
+      verifier('✈️ venu de l\'ouest, l\'approche assistée passe le mur du seuil de Los Angeles et au-dessus des couronnes d\'Andrews',
+        cas.length >= 2 && cas.every((c) => c.issue === 'piste' && c.vy >= -3 && c.arretOk), JSON.stringify(cas));
+    }
     for (const [espece, cle] of [['chasseur', 'bas-sd'], ['avionligne', 'orly']]) {
       if (!tab.isClosed()) await banc.mettreDeCote(tab);
       const apPage = await banc.jouerSeul('MonteApproche' + espece, { rr: 2 });
