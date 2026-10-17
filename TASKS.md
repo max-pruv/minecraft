@@ -1,5 +1,17 @@
 # Ce qui est en cours
 
+- [ ] **`monte.js` « deux voisines d'un convoi gardent leur longueur d'écart »
+  ROUGE au portail de la v474 — sans rapport avec la livraison.** Mesuré :
+  `minTrace` 3,59 pour une barre à 4,4 (une longueur de voiture), `minVrai`
+  3,26, 140 relevés, 1 429 paires, à Paris vers (−330, 310), voiture 2 du
+  convoi. Preuve STRUCTURELLE que ce n'est pas la v474 (règle v291) : son diff
+  ne touche que `tests/maj.js`, sa sonde (lue par `maj.js` seule), la chaîne de
+  `CACHE_VERSION` et les textes de `nouveautes.js` (lus au clic sur le badge) ;
+  `monte.js` joue sans service worker un code identique à la v473. Au même
+  portail, « au feu, la voiture freine » et « l'on ne marche pas dans une rue
+  vide » rougissent comme déclaré plus bas. À rejouer SEUL des deux côtés
+  avant d'expliquer : la piste la plus proche est la voiture de file qui pile
+  derrière le feu (entrée ci-dessous), qui rapproche aussi deux voisines.
 - [ ] **AU FEU, LA VOITURE DE FILE PILE DERRIÈRE CELLE QUI S'ARRÊTE (vraie
   panne, zone conduite — trouvée par la session banc-lot3).** Le témoin
   « au feu, la voiture freine sur plusieurs relevés » de `monte.js` comptait
