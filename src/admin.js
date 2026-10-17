@@ -626,7 +626,7 @@ export class AdminPanel {
       return m ? m[0] : 'appareil';
     };
     const mots = { plantage: 'PLANTAGE présumé', fermeture: 'au revoir', 'arriere-plan': 'arrière-plan', 'mise-a-jour': 'mise à jour' };
-    // v475 : la table se taille côté serveur (cloud.js) — on dit ce qui part.
+    // v479 : la table se taille côté serveur (cloud.js) — on dit ce qui part.
     const garde = `<div class="adm-dim adm-jr-garde">Les sessions terminées normalement s'effacent après ${JOURNAL_GARDE_JOURS} jours ; les plantages restent.</div>`;
     zone.innerHTML = '<h3>Journal de bord des appareils</h3>' + garde + lignes.map((l) => {
       const doc = l.doc || {};

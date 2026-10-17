@@ -6,11 +6,44 @@
 
 export const NOUVEAUTES = [
   {
-    v: 475,
+    v: 479,
     titre: 'Le journal se range seul',
     puces: [
       'Les vieux journaux sans panne s’effacent',
       'Les plantages restent pour les parents',
+    ],
+  },
+  {
+    v: 478,
+    titre: 'Le métro jusqu’au Pentagone',
+    puces: [
+      'Les rames ne roulent plus dans la roche',
+      'On descend au quai d’Arlington Cemetery',
+      'Et à celui de Pentagon',
+    ],
+  },
+  {
+    v: 477,
+    titre: 'La route traverse les ponts',
+    puces: [
+      'Les voitures roulent sur la route du pont',
+      'Plus de pierre sous les roues aux coins',
+    ],
+  },
+  {
+    v: 476,
+    titre: 'On retrouve son ami sans erreur',
+    puces: [
+      'Rejoindre un ami ne crée plus de double',
+      'Tes amis voient ton avion et son épave',
+    ],
+  },
+  {
+    v: 475,
+    titre: 'Les voitures contournent l\'Opéra',
+    puces: [
+      'Elles roulent au milieu de la rue',
+      'Autour de l\'Opéra et des Invalides',
     ],
   },
   {
@@ -91,7 +124,7 @@ export const NOUVEAUTES = [
     v: 465,
     titre: 'Le train passe sur un pont',
     puces: [
-      'Sur la mer, le train roule en viaduc',
+      'Sur la mer, le train passe en viaduc',
       'On voit l\'eau passer sous les rails',
     ],
   },
