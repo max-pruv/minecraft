@@ -7843,7 +7843,7 @@ const SEASON = (() => {
   return { label: "l'hiver", emoji: '❄️', color: 0xffffff, fall: 3, duCiel: true };
 })();
 
-// LE NUAGE DE SAISON EST POSÉ SUR LE SOL, PAS SUR L'ENFANT (v474). Il suivait
+// LE NUAGE DE SAISON EST POSÉ SUR LE SOL, PAS SUR L'ENFANT (v484). Il suivait
 // `player.pos` de −3 à +23 blocs : en vol, cent soixante carrés orange
 // flottaient autour de l'avion à cent blocs du sol — les « cubes orange dans
 // le ciel » vus sur les captures de Max et du banc depuis la v237, que la sonde

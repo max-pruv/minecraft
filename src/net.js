@@ -78,6 +78,16 @@ const PRESENTATION_MS = 20000;
 // promesse d'ouverture en suspens pour toujours : l'enfant restait devant
 // « Ouverture du monde… » sans erreur, sans monde, et sans rien à faire.
 const OUVERTURE_MS = 9000;
+// LE PHARE SE LIT SUR DIX SECONDES, PAS TROIS (v476). Une seule requête au
+// nuage, et pourtant la sonde (`tests/sonde-phare.cjs`) l'a mesurée à 2,9 ·
+// 3,4 · 4,2 · 3,5 s sur un banc AU REPOS, contre un nuage local : ce n'est pas
+// le réseau, c'est le fil principal de l'invité, occupé à préparer son monde,
+// qui lit la réponse en retard — et le minuteur de trois secondes gagnait la
+// course trois fois sur quatre. « Introuvable » faisait alors OUVRIR le monde
+// par-dessus l'hôte : le monde jumeau, la pire panne possible. Dix secondes
+// restent une borne (« configuré n'est pas joignable ») ; le verdict, lui, ne
+// change pas quand elle tombe.
+const PHARE_MS = 10000;
 // On garde la trace des appareils écartés, cf. le cas 'hello'. Le plafond n'est
 // qu'un garde-fou : on n'écarte quelqu'un qu'en cas de prénom déjà pris.
 const EVINCES_MAX = 50;
@@ -314,11 +324,11 @@ export class NetSession {
             // c'est une adresse écrite dans la page, pas une garantie. Sans
             // délai limite, ce sondage pendait pour toujours sur un réseau qui
             // avale les requêtes, et l'enfant restait devant « Ouverture du
-            // monde… » sans verdict. Trois secondes, puis on tranche comme
-            // avant : introuvable.
+            // monde… » sans verdict. Une borne (`PHARE_MS`), puis on tranche
+            // comme avant : introuvable.
             Promise.race([
               cloud.relaisHoteRecent(this.channel, ID_PREFIX + this.channel.replace(':','-')),
-              new Promise((ok) => setTimeout(() => ok(false), 3000)),
+              new Promise((ok) => setTimeout(() => ok(false), PHARE_MS)),
             ])
               .then((tenu) => {
                 if (!this.active) return;
