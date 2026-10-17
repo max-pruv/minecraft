@@ -6803,9 +6803,29 @@ l'embarquement a eu lieu, pas par une hypothèse.
   cède en dernier — c'est la règle — mais le jour où le plan de Manhattan
   gagne Brooklyn et Queens, JFK doit revenir à sa vraie place.
 
-- [ ] **Manhattan sur la Terre : suite du réalisme.** Priorités : circulation
-  commandée par les feux, berges et ponts raccordés au relief, intérieurs,
-  Statue de la Liberté, diversité des façades et transitions LOD plus douces.
+- [ ] **Manhattan sur la Terre : suite du réalisme.** Faits en v474 : la
+  Statue de la Liberté sur Liberty Island, et la circulation commandée par les
+  feux. Restent : berges et ponts raccordés au relief, intérieurs, diversité
+  des façades et transitions LOD plus douces. Ce que la v474 laisse, déclaré :
+  - **Le repère de l'ancienne statue est toujours dans `world.js`** (`LIBERTE`
+    de `manhattan.js`, (-64, 177) : sous le Midtown du plan d'aujourd'hui,
+    écrasé par `TerreUrbaine`, et sa bosse de relief aussi). La carte ne
+    l'affiche plus (le monde redéclare le nom), mais le `World` nu du worker
+    le bâtit encore. Le retirer touche `terrainHeight` du `World` nu et la
+    liste `LANDMARKS` : hors de la zone de cette livraison, à faire avec une
+    mesure des migrations qui lisent ce relief.
+  - **Quinze coins de circuit sur 316 n'ont pas de feu** : les carrefours dont
+    un coin tombe dans Central Park, sur Broadway en biais ou dans Times
+    Square (pas quatre coins piétons). Le circuit de la 7e Avenue (le tracé
+    écrit à la main, x -100/-120) en fait partie.
+  - **À 0,4 image par seconde, la voiture lit un état de feu vieux d'une
+    image** (`f.etat`, rafraîchi par `reglerLesFeux` deux fois par seconde
+    AU PLUS) quand le passant lit l'heure de la rue : sous une tablette qui
+    rame, un passant peut partir au tout début du rouge pendant qu'une voiture
+    voit encore l'orange. Vrai partout dans le monde, pas seulement ici.
+  - **La statue ne se visite pas** (ni escalier dans le socle, ni couronne) :
+    on monte sur la terrasse du fort.
+
   Les publicités restent fixes et les voitures sont des interprétations
   géométriques, pas des modèles constructeur. Mesurer Safari sur iPad physique.
   Réconcilier les emplacements de secours si deux appareils importent hors

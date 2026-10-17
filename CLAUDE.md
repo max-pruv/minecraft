@@ -770,6 +770,43 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Liberty Island et les feux de Manhattan (v474) — un ouvrage hors du rectangle se déclare à trois lecteurs
+
+Quatre règles.
+
+- **UNE PLACE SUR UN PLAN COMPRIMÉ SE MESURE PAR UNE SIMILITUDE, PAS UNE
+  AFFINE.** Le plan de Manhattan n'a pas une échelle : le Midtown est comprimé
+  autrement que le bas de l'île. Une affine à six paramètres, ajustée sur les
+  repères du sud, plaçait la statue à 86 blocs d'écart selon qu'on prenait ou
+  non la 14e Rue : elle extrapolait. Une similitude (rotation, échelle unique)
+  sur les quatre repères du sud rend un résidu de 12 blocs ET l'angle de la
+  vraie grille (−29,8°) — c'est ce second chiffre, qu'on ne lui a pas donné,
+  qui la rend crédible. Le témoin refait la mesure (`ILE_LIBERTE`).
+- **UN OUVRAGE HORS DU RECTANGLE DE MANHATTAN SE DÉCLARE À TROIS LECTEURS.**
+  `generateChunk` le bâtit (`batirLiberte`, en blocs, `terrainHeight` intact) ;
+  `maillageLocal` le garde sur le fil principal, sinon le worker (un `World`
+  nu) maille la baie vide et ses blocs remplacent les nôtres (v251) ; la zone
+  `active` du rendu le couvre (`dansBoiteLiberte`), sinon l'éclairage de la
+  ville bascule à chaque pas sur l'île. Et ce que la portée des morceaux ne
+  montre pas de la Battery a une silhouette lointaine PLUS PETITE que les
+  blocs : ils la recouvrent en arrivant, sans rien à cacher.
+- **À MANHATTAN, LES FEUX SONT DU PLAN, ET LA RÈGLE EST CELLE DU MONDE.**
+  `feuxManhattan` (manhattan-plan.js) pose quatre feux par carrefour, sur les
+  coins piétons, chacun glissé le long de SA file jusqu'à ce que sa position
+  porte son axe (`axeDuFeu`) ; `ManhattanRenderer.feuxAutour` rend la liste
+  que `main.js` donne à la circulation et aux passants (`feuxProches`) et
+  allume les optiques avec `etatFeu`. Une nouvelle optique est un essaim AVEC
+  couleur par instance : sans `setColorAt`, la clé de programme diffère
+  (`instancingColor`) et l'entrée dans la ville compile (v246).
+- **UNE BOUCLE SYNCHRONE D'`update` NE VOIT PAS UNE ATTENTE EN TEMPS RÉEL.**
+  Le témoin de la marche au long cap (v354) fait avancer les passants de dix
+  secondes de jeu d'un seul tenant ; un passant qui attend au feu y compte son
+  attente en temps réel, qui n'avance pas — il restait au bord pour toujours et
+  le débit tombait (0,53). Il sort du débit, et le message dit combien. Et un
+  témoin de feu pose sa voiture HORS du carrefour d'avant : avec des rues à
+  19 blocs, à 15 blocs d'un feu elle était encore à moins de 5 du précédent,
+  où l'on dégage au lieu de s'arrêter.
+
 ## Les passages des avenues (v467) — un passage se mesure le long de SA rue
 
 Une règle. Dans une ville bâtie à la main, un carrefour est le croisement de

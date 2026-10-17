@@ -1,7 +1,7 @@
 // Une seule Terre. Manhattan est un quartier du générateur, ancré sur New York.
 // Le journal de blocs, les codes de partie et les coordonnées restent ceux du monde.
 import { World, CHUNK, HEIGHT, WATER_LEVEL } from "./world.js";
-import { BLOCK } from "./blocks.js";
+import { BLOCK, CITY_BLOCK } from "./blocks.js";
 import { positionDe } from "./mondes.js";
 import {
   MANHATTAN_ID,
@@ -14,6 +14,11 @@ import {
   sommet,
   emprise,
   couleurPlan,
+  BOITE_LIBERTE,
+  ILE_LIBERTE,
+  SOL_ILE,
+  dansIleLiberte,
+  statueLiberte,
 } from "./manhattan-plan.js";
 
 export const ORIGINE_MANHATTAN = positionDe("ny");
@@ -29,6 +34,19 @@ export const lieuxManhattan = LIEUX.map((q) => ({
   ...q,
   ...versTerre(q.x, q.z),
 }));
+// LIBERTY ISLAND EST UN OUVRAGE, PAS UN RELIEF (v474). Hors du rectangle,
+// `terrainHeight` reste celui de la Terre (la baie, à 23) ; l'île et sa statue
+// sont des blocs écrits par `generateChunk` — la règle des pistes (v280) et de
+// la voie ferrée (v213) : l'invariant 1 tient par construction.
+export function dansBoiteLiberte(x, z, marge = 0) {
+  const p = versManhattan(x, z);
+  return (
+    p.x >= BOITE_LIBERTE.x0 - marge &&
+    p.x < BOITE_LIBERTE.x1 + marge &&
+    p.z >= BOITE_LIBERTE.z0 - marge &&
+    p.z < BOITE_LIBERTE.z1 + marge
+  );
+}
 export function dansManhattan(x, z, marge = 0) {
   const p = versManhattan(x, z);
   return (
@@ -344,6 +362,8 @@ export class TerreUrbaine extends World {
   maillageLocal(cx, cz) {
     const ox = cx * CHUNK, oz = cz * CHUNK;
     if (dansManhattan(ox, oz, CHUNK)) return true;
+    // le worker ne connaît pas l'île (un `World` nu) : elle se maille ici
+    if (dansBoiteLiberte(ox, oz, CHUNK)) return true;
     for (let z = oz; z < oz + CHUNK; z++)
       for (let x = ox; x < ox + CHUNK; x++)
         if (this.protectedColumns.has(`${x},${z}`)) return true;
@@ -361,8 +381,11 @@ export class TerreUrbaine extends World {
           protege = true;
           break;
         }
-    if (!dansManhattan(ox, oz, CHUNK) && !protege)
-      return super.generateChunk(cx, cz);
+    if (!dansManhattan(ox, oz, CHUNK) && !protege) {
+      const data = super.generateChunk(cx, cz);
+      if (dansBoiteLiberte(ox, oz, CHUNK)) this.batirLiberte(data, ox, oz);
+      return data;
+    }
     const data =
       entier && !protege
         ? new Uint16Array(CHUNK * CHUNK * HEIGHT)
@@ -382,6 +405,10 @@ export class TerreUrbaine extends World {
                 : BLOCK.AIR
               : this.originalBlock(wx, y, wz);
       }
+    if (dansBoiteLiberte(ox, oz, CHUNK)) {
+      this.batirLiberte(data, ox, oz);
+      return data;
+    }
     // les blocs de l'enfant de CE morceau, par l'index du journal (v403)
     const blocsEnfant = this.edits.duMorceau(Math.floor(ox / CHUNK), Math.floor(oz / CHUNK));
     if (blocsEnfant) for (const [k, i] of blocsEnfant) {
@@ -389,6 +416,40 @@ export class TerreUrbaine extends World {
       if (y >= 0 && y < HEIGHT) data[i] = this.edits.get(k);
     }
     return data;
+  }
+  // L'île, puis la statue, puis — par-dessus tout — les blocs de l'enfant.
+  // Sous la surface de l'eau on comble jusqu'au sol de l'île ; ce qui était
+  // de la baie au-dessus de son terrain devient de la pierre, rien d'autre.
+  batirLiberte(data, ox, oz) {
+    const O = ORIGINE_MANHATTAN;
+    for (let z = 0; z < CHUNK; z++)
+      for (let x = 0; x < CHUNK; x++) {
+        const lx = ox + x - O.x,
+          lz = oz + z - O.z;
+        if (!dansIleLiberte(lx + 0.5, lz + 0.5)) continue;
+        const h = super.terrainHeight(ox + x, oz + z),
+          bord = !dansIleLiberte(lx + 0.5, lz + 0.5, -1.5);
+        for (let y = Math.max(1, h + 1); y < SOL_ILE; y++)
+          data[World.index(x, y, z)] = BLOCK.STONE;
+        // le quai de granit au bord, l'esplanade autour du fort, la pelouse
+        data[World.index(x, SOL_ILE, z)] =
+          bord ||
+          Math.hypot(lx + 0.5 - ILE_LIBERTE.x, lz + 0.5 - ILE_LIBERTE.z) < 12.5
+            ? CITY_BLOCK.GRANITE
+            : BLOCK.GRASS;
+      }
+    statueLiberte((dx, dy, dz, id) => {
+      const x = Math.floor(O.x + ILE_LIBERTE.x + dx) - ox,
+        z = Math.floor(O.z + ILE_LIBERTE.z + dz) - oz,
+        y = SOL_ILE + 1 + dy;
+      if (x < 0 || z < 0 || x >= CHUNK || z >= CHUNK || y >= HEIGHT) return;
+      data[World.index(x, y, z)] = id;
+    });
+    const blocs = this.edits.duMorceau(Math.floor(ox / CHUNK), Math.floor(oz / CHUNK));
+    if (blocs) for (const [k, i] of blocs) {
+      const y = Number(k.split(",")[1]);
+      if (y >= 0 && y < HEIGHT) data[i] = this.edits.get(k);
+    }
   }
   setBlock(x, y, z, id, ts, remote = false) {
     const key = `${x},${y},${z}`;
