@@ -4604,7 +4604,10 @@ que la v269 exige, et elle est complète :
 | portail 1 | branche | ✅ |
 | portail 2 | branche | ❌ |
 
-Un rouge et un vert de CHAQUE côté : la livraison n'y est pour rien. Ce qu'il
+Un rouge et un vert de CHAQUE côté : la livraison n'y est pour rien.
+Revu en v475 (`claude/journal-purge`, diff sans `index.html` ni logique de
+`sw.js`) : vert au premier portail, rouge au second (« 📦 Mise à jour du
+jeu… il faut la dernière version » vu, pas le compte) — même distribution. Ce qu'il
 lit est une suite de textes de loader pendant une installation qui prend moins
 d'une seconde au banc — il attrape « Chargement du monde… » au lieu des
 « 📦 Mise à jour du jeu… n / 97 fichiers ». **La piste est un échantillonnage
