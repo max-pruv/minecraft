@@ -159,6 +159,12 @@ export function materiauxManhattan(renderer) {
     wood: physique(0x6e5341, brick, 2, 0.97),
     glow: physique(0xffdc98, null, 1, 0.38),
     signal: physique(0x71d3a4, null, 1, 0.4),
+    // les deux autres optiques des feux (v496) : mêmes réglages que le vert,
+    // donc le même programme — seule la couleur change
+    signalRouge: physique(0xd8584f, null, 1, 0.4),
+    signalOrange: physique(0xe0a24a, null, 1, 0.4),
+    // le cuivre oxydé de la statue de la Liberté, vue de loin
+    copper: physique(0x6aa58f, null, 1, 0.62),
     water: physique(0x355d69, null, 1, 0.18, 0.58),
   };
   for (const m of [
@@ -173,6 +179,10 @@ export function materiauxManhattan(renderer) {
   }
   mats.signal.emissive.set(0x28ff83);
   mats.signal.emissiveIntensity = 1.2;
+  mats.signalRouge.emissive.set(0xff2a1c);
+  mats.signalRouge.emissiveIntensity = 1.2;
+  mats.signalOrange.emissive.set(0xffa21c);
+  mats.signalOrange.emissiveIntensity = 1.2;
   mats.glassLit.emissive.set(0xffcb82);
   mats.glassLit.emissiveIntensity = 0;
   mats.glow.emissive.set(0xffcb83);

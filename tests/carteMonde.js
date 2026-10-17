@@ -277,10 +277,17 @@ const VRAIES_KM = [
           // boîte impaire (R = 3), -3, -1, 1, 3 ne lit jamais 0 — et un
           // beffroi planté au centre exact d'une place dégagée passait pour
           // couché. La leçon du fleuron du Taj, version place publique.
-          for (let a = -R + (R & 1); a <= R; a += 2) {
-            for (let b = -R + (R & 1); b <= R; b += 2) {
-              for (let y = sol + 115; y > sol; y--) {
-                if (w.getBlock(x + a, y, z + b)) { hMax = Math.max(hMax, y - sol); break; }
+          // ET UNE ENCEINTE AUX MURS IMPAIRS PASSE ENTRE LES COLONNES LUES
+          // (v492) : le château de Nantes a ses courtines à ±3, le pas de deux
+          // ne lit que les colonnes paires, et il était « couché » à 0. Rien
+          // trouvé ? on relit chaque colonne de la boîte.
+          for (const pas of [2, 1]) {
+            if (hMax >= (m.hmin || 3)) break;
+            for (let a = pas === 2 ? -R + (R & 1) : -R; a <= R; a += pas) {
+              for (let b = pas === 2 ? -R + (R & 1) : -R; b <= R; b += pas) {
+                for (let y = sol + 115; y > sol; y--) {
+                  if (w.getBlock(x + a, y, z + b)) { hMax = Math.max(hMax, y - sol); break; }
+                }
               }
             }
           }
@@ -321,8 +328,11 @@ const VRAIES_KM = [
     // fontaine de Dubaï — porte sa hauteur minimale dans sa fiche (hmin) ;
     // pour tous les autres, moins de trois blocs, c'est un monument couché.
     const couches = tour.monuments.filter((m) => m.hMax < m.hMin);
-    verifier('les cent quarante-deux monuments des quarante-six villes se dressent, chacun chez lui',
-      tour.monuments.length === 142 && couches.length === 0,
+    // 142 dans les quarante-six fiches, et trois de plus dans les villes
+    // passées à la fiche en v492 (le Spire, le château de Nantes, l'arc de
+    // Montpellier).
+    verifier('les cent quarante-cinq monuments des villes à fiche se dressent, chacun chez lui',
+      tour.monuments.length === 145 && couches.length === 0,
       couches.map((m) => `${m.nom} (${m.ville}) : ${m.hMax}`).join(' · ')
         || `${tour.monuments.length} monuments debout`);
     const tronques = tour.monuments.filter((m) => m.attendu > 3 && !m.fleche);
@@ -5914,6 +5924,64 @@ const VRAIES_KM = [
       fleuves.ponts.length > 5 && fleuves.ponts.every((p) => p.parLaRoute === 0),
       `${fleuves.ponts.length} villes à pont lues · creusés par une route : `
       + (fleuves.ponts.filter((p) => p.parLaRoute).map((p) => `${p.cle} ${p.parLaRoute}`).join(', ') || 'aucun'));
+
+    // LES VILLES QUI PASSENT DU GABARIT À LA FICHE (v492, lot 1). Max :
+    // « cinquante villes détaillées ». Une fiche fausse est pire qu'une fiche
+    // absente : chaque ville du lot garde le rayon du registre (la découpe
+    // « hors villes » ne bouge pas), son ancre au sec, n'est ni Cologne ni
+    // Bruxelles (la fenêtre d'empreinte), ni le bout d'une route ou d'une
+    // ligne (un monument fermerait l'avenue d'entrée) ; chaque monument tient
+    // sa zone à terre dans celle de la ville (`box + 30` dans `r + 24` : sinon
+    // il change le relief hors du disque) ; chaque lieu est dans la ville ;
+    // chaque fleuve déclaré met de l'eau dans le disque ; et la ville garde
+    // au moins les anneaux de circulation qu'elle avait sur la v473 (mesurés
+    // sur `origin/main`). Rouge sur l'ancien code : la table n'existe pas.
+    {
+      const VM = await import('../src/villesmonde.js');
+      const { VILLES_GENEREES } = await import('../src/villes200.js');
+      const { positionDe } = await import('../src/mondes.js');
+      const { ROUTES } = await import('../src/routes.js');
+      const { LIGNES_TRAIN } = await import('../src/trains.js');
+      const ANNEAUX_V473 = { dublin: 3, toulouse: 4, melbourne: 2, nantes: 4, montpellier: 4 };
+      const FD = VM.FICHES_DETAILLEES || {};
+      const bouts = new Set([...ROUTES.flatMap((r) => r.villes), ...LIGNES_TRAIN.flatMap((l) => l.villes)]);
+      const generees = new Set(VILLES_GENEREES.map((v) => v.cle));
+      const fautes = [], vus = [];
+      for (const cle of Object.keys(FD)) {
+        const f = VM.VILLES_MONDE.find((x) => x.cle === cle);
+        if (!f) { fautes.push(`${cle} introuvable`); continue; }
+        const det = FD[cle];
+        if (!generees.has(cle)) fautes.push(`${cle} n'est pas une ville du gabarit`);
+        if (cle === 'cologne' || cle === 'bruxelles') fautes.push(`${cle} est dans la fenêtre d'empreinte`);
+        if (bouts.has(cle)) fautes.push(`${cle} est au bout d'une route ou d'une ligne`);
+        if (f.rayon !== positionDe(cle).r) fautes.push(`${cle} rayon ${f.rayon} pour ${positionDe(cle).r}`);
+        if (VM.eauVillesMonde(f.ancre.x, f.ancre.z)) fautes.push(`${cle} ancre dans l'eau`);
+        for (const m of det.monuments || []) {
+          const [du, dv] = f.local(m.lat, m.lon);
+          const d = Math.hypot(du, dv);
+          if (d + m.box + 30 > f.rayon + 24) fautes.push(`${cle}|${m.nom} déborde la zone de la ville (${d.toFixed(0)} + ${m.box} + 30 > ${f.rayon} + 24)`);
+        }
+        for (const [nom, la, lo] of det.lieux || []) {
+          const [du, dv] = f.local(la, lo);
+          if (Math.hypot(du, dv) > f.rayon) fautes.push(`${cle}|${nom} hors de la ville`);
+        }
+        for (const fl of det.fleuves || []) {
+          let eau = 0;
+          for (const [la, lo] of fl.ll) {
+            const [du, dv] = f.local(la, lo);
+            if (Math.hypot(du, dv) < f.rayon && VM.eauVillesMonde(f.ancre.x + du, f.ancre.z + dv)) eau++;
+          }
+          if (!eau) fautes.push(`${cle}|${fl.nom} ne met pas d'eau dans la ville`);
+        }
+        const n = VM.anneauxDeVille(f).formes.length;
+        if (n < (ANNEAUX_V473[cle] || 1)) fautes.push(`${cle} ${n} anneau(x) pour ${ANNEAUX_V473[cle] || 1}`);
+        vus.push(`${cle} ${n} anneaux, ${(det.monuments || []).length} monument(s), ${(det.lieux || []).length} lieux, ${(det.fleuves || []).length} fleuve(s)`);
+      }
+      verifier('les villes passées à la fiche gardent leur rayon, leurs anneaux, et leurs monuments dans leur zone',
+        Object.keys(FD).length >= 5 && fautes.length === 0,
+        Object.keys(FD).length ? `${vus.join(' · ')}${fautes.length ? ' — EN FAUTE : ' + fautes.join(' · ') : ''}`
+          : 'aucune ville passée à la fiche (FICHES_DETAILLEES absente)');
+    }
 
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));

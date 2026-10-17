@@ -101,7 +101,7 @@ export function segmentLibre(isSolid, a, b) {
 
 const TOIT = 1.4, PLANCHER_RECUL = 3.2;
 
-// DOS À UN MUR, LA CAMÉRA PLONGE VERS LA VOITURE (v479). Rapprochée par un mur
+// DOS À UN MUR, LA CAMÉRA PLONGE VERS LA VOITURE (v497). Rapprochée par un mur
 // derrière le coffre, elle gardait l'assiette du regard libre : jugé en
 // capture, la voiture sortait par le BAS du cadre (centre projeté à −1,17,
 // hors de l'écran) et l'on ne voyait que l'intérieur de la carrosserie. On
