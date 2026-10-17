@@ -3493,7 +3493,7 @@ dix bordures (force 0,3) mettaient la voiture en feu. Quatre règles.
   accepté. Et une ancienne tablette ignore une histoire `rc` de plus de douze
   chocs : `rue_choc` reste son chemin.
 - **UNE HISTOIRE BORNÉE SE COMPTE PAR SON TOTAL, JAMAIS PAR SA LONGUEUR
-  (v480).** Une liste qui garde les N derniers ne grandit plus une fois pleine :
+  (v474).** Une liste qui garde les N derniers ne grandit plus une fois pleine :
   `rattraper`, `distant` et `rapprocher` comparaient sa longueur à ce qui était
   appliqué, et le 25e choc n'enfonçait plus rien (30 chocs, 24 enfoncements,
   mesuré). `etat.total` (et `h.n` pour la rue) compte tout ; le n-ième choc
