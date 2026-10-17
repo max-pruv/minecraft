@@ -305,6 +305,22 @@ function flamme(t) {
   return groupe;
 }
 
+// LA FLAMME SE CHAUFFE À L'ACCUEIL (v474). Ses deux cônes naissent cachés, et
+// three ne compile un programme qu'à la première image où il est RENDU : le
+// sien se compilait donc dans l'image du premier ✈️ — deux programmes neufs,
+// mesurés après la chauffe de l'accueil (`sonde-flamme-chauffe.cjs`), la
+// famille du gel de la v246. On en rend une, visible, dans une scène à part,
+// avec les lampes et le brouillard du monde (`compile(t, camera, n)` : les
+// matériaux de `t`, les lumières de `n`, v306). L'appareil lui-même, l'escalier
+// et l'épave n'apportaient aucun programme : ils lisent `matiereVivante` et les
+// essaims des dégâts, déjà chauffés.
+export function flammeDeChauffe() {
+  const f = flamme({ x: 0, y: 0, z: 0, rayon: 0.3 });
+  f.visible = true;
+  f.scale.z = 1;
+  return f;
+}
+
 // `porte` (v381) : où l'on monte à bord, dans le repère du modèle (nez en −z,
 // gauche en −x) — le seuil (x, y, z), le type d'accès (`escalier` pour une
 // porte de cabine, `echelle` pour un cockpit), le membre qui s'ouvre et de

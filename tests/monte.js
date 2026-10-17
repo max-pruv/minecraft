@@ -8489,6 +8489,16 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         const a = await poser('concorde', 30);
         bouton(); await images(2);
         res.concorde = { porte: a.mesh.userData.porte === undefined ? 'absent' : a.mesh.userData.porte, auVolant: auVolant(), ph: g.player.embarquement ? g.player.embarquement.phase : null };
+        // LA FLAMME EST CHAUFFÉE À L'ACCUEIL (v474) : aux commandes, on pousse
+        // la manette des gaz comme le premier geste le ferait (`fun.js` allume
+        // alors les tuyères), et l'on lit les CLÉS (v363). Chauffe désarmée,
+        // deux clés neuves (`sonde-flamme-chauffe.cjs`).
+        const avantFlamme = cles(), tuyeres = a.mesh.userData.tuyeres || [];
+        g.player.gaz = 0.4;
+        await images(6);
+        res.flamme = { tuyeres: tuyeres.length, allumees: tuyeres.filter((f) => f.visible).length,
+          cles: [...cles()].filter((k) => !avantFlamme.has(k)).map((k) => k.slice(0, 24)) };
+        g.player.gaz = null;
       }
       await descendre(); vider();
       g.player.pilote = null; g.player.avionEtat = undefined; g.player.avionEnVol = undefined; g.player.flying = false;
@@ -8509,6 +8519,8 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       verifier('monter dans un avion ne compile aucun programme et n\'écrit aucun bloc',
         r.clesNeuves === 0 && r.blocs === 0 && r.avionligne && r.avionligne.clesNeuves === 0,
         JSON.stringify({ cles: r.clesNeuves, blocs: r.blocs, parAvion: [r.avionligne && r.avionligne.clesNeuves, r.chasseur && r.chasseur.clesNeuves] }));
+      verifier('allumer les réacteurs ne compile aucun programme : la flamme est chauffée à l\'accueil',
+        r.flamme && r.flamme.allumees > 0 && r.flamme.cles.length === 0, JSON.stringify(r.flamme));
     }
     // ON DESCEND D'UN AVION PAR SON ESCALIER (v400). Les avions descendaient
     // d'un coup, au milieu du fuselage. Le passage vit dans

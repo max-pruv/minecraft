@@ -5828,7 +5828,10 @@ l'embarquement a eu lieu, pas par une hypothèse.
   propre : une sonde qui distingue les cas plutôt qu'une hypothèse — Nina
   est-elle inscrite chez l'hôte, ses messages arrivent-ils, l'hôte les
   relaie-t-il ? — et non le témoin qu'on rejoue.
-- [ ] **Le programme de la flamme se compile au DÉCOLLAGE (v264).** Les deux
+- [x] **Le programme de la flamme se compile au DÉCOLLAGE (v264).** FAIT en
+  v474 : chauffée avec la flotte (`flammeDeChauffe`, avions.js), deux clés
+  neuves → zéro ; appareil, escalier et épave mesurés à zéro des deux côtés.
+  Le texte d'origine : Les deux
   cônes additifs de `flamme()` (avions.js) naissent invisibles : three ne
   compile leur programme qu'à la première image où ils sont RENDUS, c'est-à-
   dire quand l'enfant appuie sur ✈️. Un seul programme, mais c'est une

@@ -770,6 +770,17 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## La flamme se chauffe (v474) — ce qui naît caché compile à son premier geste
+
+Une règle. three ne compile un programme qu'à la première image où il le
+DESSINE : un objet né invisible (la flamme des réacteurs, v264) compilait dans
+l'image du geste qui l'allume — le premier ✈️. Tout matériau neuf porté par un
+objet né caché se rend une fois pendant l'accueil (`flammeDeChauffe`, appelée
+par `chaufferLesFabriquees`, vehicules.js), et son témoin lit les CLÉS après le
+VRAI geste (la manette des gaz aux commandes), vérifié rouge chauffe désarmée.
+Un objet fait de `matiereVivante` (l'escalier, v389) ou des essaims des dégâts
+(l'épave) n'en a pas besoin : mesuré, zéro clé.
+
 ## Les passages des avenues (v467) — un passage se mesure le long de SA rue
 
 Une règle. Dans une ville bâtie à la main, un carrefour est le croisement de
