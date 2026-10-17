@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 488,
+    titre: 'Cinq villes plus vraies',
+    puces: [
+      'Dublin, Toulouse, Melbourne, Nantes, Montpellier',
+      'Leurs fleuves, leur pierre, leurs monuments',
+      'Leurs lieux sur la carte',
+    ],
+  },
+  {
     v: 487,
     titre: 'La voiture suit son garage',
     puces: [

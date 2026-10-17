@@ -391,6 +391,8 @@ export const BAS_DECLARES = Object.freeze({
   'Washington|Musée de l\'Indien d\'Amérique': { vrai: 'une trentaine de mètres au pied du Capitole, sous les tours du château du Smithsonian' },
   'Washington|Le Trésor': { vrai: 'quatre étages de colonnades, plus bas que les bureaux de 15th Street plafonnés par la loi de 1910' },
   'Washington|Théâtre Ford': { vrai: 'un théâtre de trois étages entre les immeubles de bureaux de 10th Street' },
+  // Le lot 1 des fiches détaillées (v488).
+  'Nantes|Château des ducs de Bretagne': { vrai: 'une forteresse aux courtines basses, au pied des immeubles du quartier Bouffay' },
 });
 
 // L'ÉCHELLE DU CIEL : un bloc pour un mètre jusqu'à la corniche, puis une
@@ -457,6 +459,10 @@ export const VILLES_SANS_CIEL = Object.freeze({
   Seattle: { vrai: 'la Space Needle est un modèle du catalogue ; la grande roue ne s\'étire pas' },
   'Dubaï': { vrai: 'le Burj Khalifa est bâti à sa hauteur, bien au-dessus de son ciel' },
   'Le Cap': { vrai: 'son seul repère est une forteresse aux murs bas' },
+  // Le lot 1 des fiches détaillées (v488).
+  Dublin: { vrai: 'son seul repère est le Spire, une aiguille d\'acier déjà au-dessus de ses toits (38 blocs, la courbe du ciel pour 120 m sur une corniche de 13)' },
+  Nantes: { vrai: 'son seul repère est un château fort aux courtines basses' },
+  Montpellier: { vrai: 'son seul repère est une porte, à la hauteur des toits de la rue Foch' },
 });
 // LES FÛTS QUI SONT DES FÛTS DANS LA VRAIE VILLE AUSSI (v357). Le témoin de
 // `tests/plafond.js` exige qu'aucun repère qui domine ses toits (une fois et
@@ -468,6 +474,7 @@ export const PERCHES_VRAIES = Object.freeze({
   'Londres|Colonne Nelson': 'c\'est une colonne',
   'Barcelone|Colonne de Colom': 'c\'est une colonne',
   'Buenos Aires|L\'Obélisque': 'c\'est un obélisque',
+  'Dublin|Le Spire': 'une aiguille d\'acier de trois mètres à la base',
 });
 export const blocsDuCiel = (m, c = CORNICHE, k = 1) => (m <= c ? m : c + k * K_CIEL * (c / CORNICHE) * Math.log(m / c));
 

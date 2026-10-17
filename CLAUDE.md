@@ -777,6 +777,39 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Cinq villes passent à la fiche (v488) — une ville du gabarit se détaille par-dessus son gabarit
+
+Lot 1 de « cinquante villes détaillées ». Quatre règles.
+
+- **LA FICHE DÉTAILLÉE SE POSE SUR LE GABARIT, ELLE NE LE REMPLACE PAS.**
+  `FICHES_DETAILLEES` (villesmonde.js) ajoute à `ficheGeneree` ce qui fait la
+  ville — fleuves, pierre, jardins, monuments, lieux, en latitude et longitude
+  réelles (`versFiche`, `local`) — et garde le reste : rayon du registre (la
+  découpe hors villes ne bouge pas), trame, anneaux, côte automatique. Tout
+  ce qui n'est pas écrit reste au bit près ; un `ang` ne s'écrit que s'il
+  diffère vraiment (Melbourne : la grille de Hoddle à 0,34, le gabarit tirait
+  déjà 0,35 — on ne change pas le sol pour un centième).
+- **UN MONUMENT DE VILLE ENGENDRÉE TIENT SA ZONE DANS CELLE DE LA VILLE.** La
+  zone à terre d'un repère (`box + 30`) entre dans `dansUneZoneATerre` : hors de
+  `r + 24`, elle change `terrainHeight` au-dehors du disque (invariant 1). Donc
+  `d + box + 30 ≤ r + 24`, et le témoin de `carteMonde.js` le lit. Un fleuve,
+  lui, ne touche le relief que sous `r + 14` par construction
+  (`hauteurVillesMonde`) : mesuré, 2 708 colonnes, toutes dans les disques.
+- **UNE ENCEINTE NE VIDE PAS SA COUR : UN JARDIN LE FAIT.** Un repère ne pose
+  que ses propres blocs ; les immeubles de la trame restaient debout dans le
+  château de Nantes (vu en capture, lu au bloc). Le sol se libère par un parc
+  de la fiche (`pelouse` pour des douves, sans un arbre sur quatre).
+- **UN RAYON DE VILLE SE LIT APRÈS `fabrique`.** J'ai d'abord compté les
+  disques en kilomètres sur le rayon de `villes200.js` divisé par l'échelle
+  (0,6 à 1,2 km) ; `f.rayon` vaut 1,8 fois ce rayon, et les disques font 1,1 à
+  2,2 km. Une contrainte de placement se mesure sur la fiche fabriquée, jamais
+  sur le registre brut — c'est la leçon de `r: 66` à San Francisco (v192).
+
+Et un bâtisseur générique ne dit vrai que pour sa forme (une arche, une
+enceinte, une aiguille) : le Capitole de Toulouse et Saint-Sernin restent des
+LIEUX tant qu'ils n'ont pas leur bâtisseur — jamais une coupole de gabarit
+(v369).
+
 ## La fiche d'un garage suit ses murs (v487) — ce qui est rangé par position migre avec ses blocs
 
 Deux règles.
