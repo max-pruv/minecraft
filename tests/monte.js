@@ -8941,13 +8941,17 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         am.animals.length = 0;
         const yaw = Math.atan2(-(dst.x - dep.x), -(dst.z - dep.z));
         const x0 = dep.x - Math.sin(yaw) * (dep.r + 40), z0 = dep.z - Math.cos(yaw) * (dep.r + 40);
-        P.pos.set(x0, g.world.sommetColonne(Math.floor(x0), Math.floor(z0)) + 1.5, z0);
+        // on monte à bord en campagne (l'endroit du témoin de Saint-Dizier, où
+        // la monte est éprouvée) : autour de Roissy, le sol est un aérogare
+        const xb = dst.x - 520, zb = dst.z + 160;
+        P.pos.set(xb, g.world.sommetColonne(Math.floor(xb), Math.floor(zb)) + 1.5, zb);
+        P.yaw = -Math.PI / 2;
         await att(1500);
-        am.invoquer('chasseur', x0 + 3, z0);
+        am.invoquer('chasseur', xb + 3, zb);
         await att(800);
         for (let e = 0; e < 8 && !P.pilote; e++) { document.getElementById('ride-btn').click(); await att(500); }
         if (!P.pilote) return { err: 'pas aux commandes' };
-        P.pos.y = Math.max(dep.sol + 60, g.world.sommetColonne(Math.floor(x0), Math.floor(z0)) + 40);
+        P.pos.set(x0, Math.max(dep.sol + 60, g.world.sommetColonne(Math.floor(x0), Math.floor(z0)) + 40), z0);
         P.avionEtat = 'vol'; P.avionEnVol = true; P.vitesseAvion = P.pilote.max * 0.8; P.yaw = yaw;
         P.touchMove = { f: 0, s: 0 };
         await att(300);
