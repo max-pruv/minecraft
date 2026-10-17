@@ -714,7 +714,7 @@ export function chargerVoitureFlotte(entree) {
   if(entree.fabrique){
     const modele=entree.fabrique(),rt=refletsVoiture();
     if(rt)modele.traverse(o=>{if(o.isMesh&&(o.material.isMeshStandardMaterial||o.material.isMeshPhysicalMaterial))refleter(o,o.material,.75);});
-    partagerTout(modele);   // le prototype ne se rend jamais (v474)
+    partagerTout(modele);   // le prototype ne se rend jamais (v480)
     const p=Promise.resolve(modele);chargementsFlotte.set(entree.fichier,p);return p;
   }
   const chargement = new GLTFLoader().register(partageDesTextures).loadAsync('./vendor/voitures/' + entree.fichier)
@@ -754,7 +754,7 @@ export function chargerVoitureFlotte(entree) {
       const rayon = boite ? (boite.max.y - boite.min.y) / 2 : 0;
       porteur.userData.rayonRoue = rayon > 0.1 ? rayon : 0.34;
       porteur.userData.forme = forme;      // « manifeste » ou « mesuré » : le témoin le lit
-      // LE PROTOTYPE EST À TOUTE LA FLOTTE (v474). Chaque voiture du modèle en
+      // LE PROTOTYPE EST À TOUTE LA FLOTTE (v480). Chaque voiture du modèle en
       // est un clone (`clone(true)` partage géométries et matériaux) : rendre
       // au pilote ce qu'une voiture qui s'en va porte ne doit jamais toucher
       // à ce qu'elle tient du prototype. Sans cette marque, `retirer` (un ami
@@ -783,7 +783,7 @@ export const FAB_MS = 5;
 export const FAB_PROCHE = 18;
 const fabrication = { fin: Infinity, faites: 0, differees: 0 };
 
-// CE QUI QUITTE DURABLEMENT LE CHAMP SE REND (v474). Une voiture de convoi
+// CE QUI QUITTE DURABLEMENT LE CHAMP SE REND (v480). Une voiture de convoi
 // naît à la demande (v235) et n'était jamais détruite : cachée au-delà de sa
 // portée, elle restait dans la scène pour toute la session, avec ses trente
 // maillages, ses matériaux repeints et — avant qu'on la rende aussi — la coque
@@ -1488,7 +1488,7 @@ class Convoi {
   }
 
   // Rend au pilote le maillage de la voiture i, et vide sa place — la place,
-  // elle, reste (v474). Ce que le maillage tient du prototype de la flotte
+  // elle, reste (v480). Ce que le maillage tient du prototype de la flotte
   // est marqué partagé et ne part pas (`partagerTout`).
   rendre(i) {
     const m = this.elements[i];
@@ -2080,7 +2080,7 @@ class Convoi {
       const d2 = (p.x - joueur.x) ** 2 + (p.z - joueur.z) ** 2;
       const dedans = d2 < portee2;
       // Hors du champ : on ne fabrique rien, et l'on cache ce qui existe déjà
-      // — ou, loin au-delà, on le rend (v474).
+      // — ou, loin au-delà, on le rend (v480).
       if (!dedans) {
         const dejaLa = this.elements[i];
         if (dejaLa && d2 > rendre2) this.rendre(i);
@@ -2507,11 +2507,11 @@ export function createVehicules({ scene, player }) {
     const chargement = chargerVoitureFlotte(entree);
     if (chargement) {
       chargement.then((proto) => {
-        // rendue avant que son modèle n'arrive (v474) : on n'y accroche rien
+        // rendue avant que son modèle n'arrive (v480) : on n'y accroche rien
         if (!proto || !g.userData.membres || g.userData.rendue) return;
         for (const nom of ['caisse', 'verriere', 'tronc']) {
           const membre = g.userData.membres[nom];
-          // LA COQUE D'ATTENTE SE REND AUSSI (v474) : trois géométries
+          // LA COQUE D'ATTENTE SE REND AUSSI (v480) : trois géométries
           // fusionnées et deux matériaux à elle, par voiture, qu'on retirait
           // du groupe sans jamais les rendre au pilote.
           if (membre) { g.remove(membre); liberer(membre); }
@@ -3590,7 +3590,7 @@ export function createVehicules({ scene, player }) {
     const peinture = mesh.userData ? (mesh.userData.peinture ?? null) : null;
     scene.remove(mesh);
     // le maillage de la rue est remplacé par une monture neuve (v194) : on le
-    // rend au pilote, comme `retirer` (v474)
+    // rend au pilote, comme `retirer` (v480)
     liberer(mesh);
     c.elements[i] = null;
     // LA PLACE RESTE, VIDE (v305). Depuis la v194 on RETIRAIT la place du

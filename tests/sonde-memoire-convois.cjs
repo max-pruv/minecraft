@@ -1,4 +1,4 @@
-// CE QUE LES VOITURES DE CONVOI GARDENT QUAND L'ENFANT S'EN VA (v474).
+// CE QUE LES VOITURES DE CONVOI GARDENT QUAND L'ENFANT S'EN VA (v480).
 //
 // On traverse trois villes (Paris, Rome, Londres), puis l'on part loin de
 // toute ville. On compte ce que la scène tient encore de voitures de la rue :

@@ -5484,7 +5484,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !rendu.err && rendu.nees >= 5 && rendu.prises >= 20 && rendu.perdues <= 10,
       `barre 10 géométries perdues · ${JSON.stringify(rendu)}`);
 
-    // LES VOITURES DE LA RUE SE RENDENT QUAND L'ENFANT S'EN VA (v474).
+    // LES VOITURES DE LA RUE SE RENDENT QUAND L'ENFANT S'EN VA (v480).
     //
     // La pousse de mémoire qui restait après la v238 venait des convois : une
     // voiture de la rue naît à la demande (v235) et n'était JAMAIS détruite —

@@ -2104,6 +2104,95 @@ function verifier(nom, ok, detail = '') {
       `contrôlée ${controle} · ${atteint} requête(s) au serveur · lu ${version2}`);
     await sonde.close();
 
+    // --- L'AVION DE L'AMI, PUIS SON ÉPAVE (v476) ---------------------------
+    //
+    // Depuis la v462, `p.v` porte tout ce qui a une fiche `pilote`, avec ses
+    // dégâts (`d`, v344) : l'ami doit voir l'APPAREIL, puis l'épave en feu
+    // quand il s'écrase, et la garder là où elle s'est posée une fois le
+    // pilote déposé (v356). Aucun témoin à deux tablettes ne le gardait. Le
+    // crash est le verdict de la physique elle-même (`ecraserAvion`), et tout
+    // ce qui suit — le feu, la descente, la position sans véhicule — est le
+    // trajet du jeu.
+    await souffler();
+    const { p: pilote, code: codeAvion } = await banc.creerMonde('Hugo');
+    const temoinAvion = await banc.rejoindre('Clara', codeAvion);
+    const aBord = await pilote.evaluate(async () => {
+      const g = window.__game; const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+      g.animalManager.animals.length = 0;
+      const fx = -Math.sin(g.player.yaw), fz = -Math.cos(g.player.yaw);
+      const avion = g.animalManager.invoquer('avionligne',
+        Math.round(g.player.pos.x + fx * 3), Math.round(g.player.pos.z + fz * 3));
+      if (!avion) return { err: 'aucun avion posé' };
+      for (let e = 0; e < 8 && !g.player.pilote; e++) { document.getElementById('ride-btn').click(); await dodo(600); }
+      return { pilote: !!g.player.pilote, x: g.player.pos.x, y: g.player.pos.y, z: g.player.pos.z };
+    });
+    await temoinAvion.evaluate((p) => {
+      const g = window.__game;
+      for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+      g.animalManager.animals.length = 0;
+      if (p && p.x != null) { g.player.pos.set(p.x + 14, p.y, p.z); g.player.vel.set(0, 0, 0); }
+    }, aBord);
+    const vuParClara = () => temoinAvion.evaluate(() => {
+      const g = window.__game, d = g.fun.degats;
+      for (const rp of g.remotePlayers.values()) {
+        if (rp.name !== 'Hugo') continue;
+        if (!rp.vehicule) return { vehicule: false };
+        const e = d ? d.etat(rp.vehicule.mesh) : null;
+        return { vehicule: true, cle: rp.vehicule.cle, pilote: !!(rp.vehicule.def && rp.vehicule.def.pilote),
+          dansLaScene: !!rp.vehicule.mesh.parent, enFeu: !!(e && e.enFeu) };
+      }
+      return { absent: true };
+    });
+    const tAvion = Date.now();
+    await jusqua(async () => { const v = await vuParClara(); return v.vehicule && v.pilote && v.dansLaScene; }, 40000);
+    const avionVu = await vuParClara();
+    avionVu.ms = Date.now() - tAvion;
+    verifier('à plusieurs, l\'ami voit l\'AVION de son ami, pas un enfant à pied',
+      !aBord.err && aBord.pilote && avionVu.vehicule && avionVu.pilote && /^avionligne\|/.test(avionVu.cle || ''),
+      JSON.stringify({ aBord, avionVu }));
+    // Le lieu de l'appareil, et le crash : la physique juge, fun.js met le feu
+    // et dépose l'enfant une seconde plus tard.
+    const lieuAvion = await pilote.evaluate(() => {
+      const g = window.__game, a = g.fun.montureConduite && g.fun.montureConduite();
+      if (!a) return null;
+      g.player.ecraserAvion('sol');
+      return { x: a.pos.x, z: a.pos.z };
+    });
+    const tFeu = Date.now();
+    await jusqua(async () => { const v = await vuParClara(); return v.vehicule && v.enFeu; }, 8000);
+    const enFeuVu = await vuParClara();
+    enFeuVu.ms = Date.now() - tFeu;
+    // Et ce qui reste quand Hugo est déposé : chez Clara, l'épave à l'endroit
+    // du crash, encore en feu ou calcinée, fumée ou flammes visibles.
+    const depose = await jusqua(async () => pilote.evaluate(
+      () => !window.__game.player.pilote && !(window.__game.fun.montureConduite && window.__game.fun.montureConduite())), 15000);
+    await jusqua(async () => temoinAvion.evaluate(() => {
+      for (const rp of window.__game.remotePlayers.values()) if (rp.name === 'Hugo') return !rp.vehicule;
+      return false;
+    }), 10000);
+    await dormir(1500);
+    const epaveAvion = await temoinAvion.evaluate((l) => {
+      const g = window.__game, d = g.fun.degats;
+      let hugo = null;
+      for (const rp of g.remotePlayers.values()) if (rp.name === 'Hugo') hugo = rp;
+      const eps = d && d.epaves ? d.epaves() : [];
+      const ici = l ? eps.filter((ep) => Math.hypot(ep.root.position.x - l.x, ep.root.position.z - l.z) < 4) : [];
+      const e = ici[0] && d ? d.etat(ici[0].root) : null;
+      const vis = d ? d.particulesVisibles() : { fumee: 0, flammes: 0 };
+      return { aVehicule: !!(hugo && hugo.vehicule), epaves: eps.length, ici: ici.length,
+        dansLaScene: !!(ici[0] && ici[0].root.parent), enFeu: !!(e && e.enFeu), eteint: !!(e && e.eteint),
+        fumee: vis.fumee, flammes: vis.flammes };
+    }, lieuAvion);
+    verifier('il le voit s\'écraser : l\'appareil de l\'ami prend feu chez lui',
+      !!lieuAvion && enFeuVu.vehicule && enFeuVu.enFeu, JSON.stringify({ lieuAvion, enFeuVu }));
+    verifier('le pilote déposé, l\'épave de l\'avion reste chez l\'ami, là où il s\'est écrasé, et elle fume',
+      depose && !epaveAvion.aVehicule && epaveAvion.ici > 0 && epaveAvion.dansLaScene
+        && (epaveAvion.enFeu || epaveAvion.eteint) && epaveAvion.fumee + epaveAvion.flammes > 0,
+      JSON.stringify({ depose, ...epaveAvion }));
+    await temoinAvion.close();
+    await pilote.close();
+
     // Filet final : rien ne doit avoir cassé en silence pendant tout ce parcours.
     const bruit = banc.pages.flatMap((p) => fautes(p).map((e) => `${p.prenom}: ${e}`));
     verifier('aucune erreur JavaScript de bout en bout', bruit.length === 0, JSON.stringify(bruit));
