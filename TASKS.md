@@ -6858,7 +6858,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   prairie. `cityAt` pourrait teinter les cases d'une ville en gris urbain pour
   quelques microsecondes par colonne — non mesuré, non fait.
 
-- [ ] **Des cubes orange isolés flottent dans le ciel**, visibles sur les
+- [x] **Des cubes orange isolés flottent dans le ciel**, *(fait en v474 : c'étaient les feuilles d'automne, `seasonPoints` de main.js, collées à l'enfant de −3 à +23 blocs ; le nuage de saison est désormais posé sur le sol, bande basse hors neige, caché en vol — aucun bloc d'enfant en cause)* visibles sur les
   captures de Max comme sur celles du banc, avant comme après la v237. Ma sonde
   de scène ne les a pas trouvés (aucun petit maillage loin dans le champ) :
   c'est donc que je n'ai pas cherché au bon endroit. À reprendre par un lancer

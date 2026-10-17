@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 474,
+    titre: 'Un ciel sans cubes orange',
+    puces: [
+      'Les feuilles d\'automne restent près des arbres',
+      'Plus de carrés orange autour de l\'avion',
+    ],
+  },
+  {
     v: 473,
     titre: 'Le métro sous Paris',
     puces: [

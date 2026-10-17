@@ -20,6 +20,30 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v474 — Plus de cubes orange dans le ciel
+
+**Pourquoi.** Des carrés orange flottaient dans le ciel, sur les captures de Max
+comme sur celles du banc, depuis la v237 au moins. C'étaient les feuilles
+d'automne : cent soixante points collés à l'enfant, de trois blocs sous ses
+pieds à vingt-trois au-dessus. En vol, ils montaient avec lui — un essaim de
+carrés autour de l'avion à cent blocs du sol. Une sonde de scène cherchait
+« un petit maillage loin dans le champ » et ne pouvait pas les voir : c'est UN
+objet `Points` à trois blocs de la caméra. Une capture à 100 blocs d'altitude,
+les pixels orange regroupés en amas et un lancer de rayon à travers chacun les
+a nommés en une exécution.
+
+**Ce que ça change.** Le nuage de saison est posé sur le sol (ou sur l'eau),
+plus sur l'enfant. Feuilles, pétales et lucioles restent à hauteur d'arbre (un
+bloc sous le sol à neuf au-dessus) ; la neige seule tombe du ciel. En vol,
+au-dessus de la bande, rien ne se dessine.
+
+**Ce qui le prouve.** Deux témoins de `monte.js`, page à part : à soixante
+blocs du sol, aucune particule de saison visible plus haut que trente blocs
+(sur `origin/main` : visible, jusqu'à 82,9) ; au sol, hors hiver, aucune plus
+haut que dix (sur `origin/main` : 23).
+
+---
+
 ## v473 — La ligne 1 du métro passe sous Paris
 
 **Pourquoi.** Paris n'avait plus de métro. L'anneau souterrain de la v163 a
