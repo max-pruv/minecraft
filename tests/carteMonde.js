@@ -5223,7 +5223,7 @@ const VRAIES_KM = [
       for (const tr of traces) (parVille.get(tr.cle) || parVille.set(tr.cle, []).get(tr.cle)).push(tr);
       const fiches = new Map(vm.VILLES_MONDE.map((f) => [f.cle, f]));
       const { CITY_BLOCK, BLOCK } = await import('./src/blocks.js');
-      let anneaux = 0, pas = 0, fontaine = 0;
+      let anneaux = 0, pas = 0, fontaine = 0, parapet = 0;
       const pires = [], parCle = {};
       for (const tr of traces) {
         const f = fiches.get(tr.cle), t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
@@ -5246,6 +5246,10 @@ const VRAIES_KM = [
               || (f.cote && f.cote.quais && U < f.cote.base + f.cote.pente * V + 2);
             if (s === CITY_BLOCK.GRANITE && quai) continue;
             if (s === BLOCK.WATER) fontaine++;
+            // v477 : le parapet d'un tablier (la colonne d'eau porte la pierre
+            // du tablier) compté à part.
+            const pt = vm.pontVillesMonde(X, Z);
+            if (pt && pt.id === s) parapet++;
             n++;
           }
         }
@@ -5280,7 +5284,7 @@ const VRAIES_KM = [
       }
       pires.sort((a, b) => b[0] - a[0]);
       const disputee = Object.fromEntries(['toronto', 'dublin', 'lima'].map((c) => [c, parCle[c] || 0]));
-      return { total: traces.length, anneaux, pas, fontaine, seuls, surLaPlace, disputee, pires: pires.slice(0, 5).map(([n, c]) => `${c} ${n}`),
+      return { total: traces.length, anneaux, pas, fontaine, parapet, seuls, surLaPlace, disputee, pires: pires.slice(0, 5).map(([n, c]) => `${c} ${n}`),
         lv: { pas: parCle.lasvegas || 0, circuits: (parVille.get('lasvegas') || []).length, desertLots, desertRues } };
     });
     verifier('un anneau qui sortait de la chaussée contourne la place, la fontaine ou le parc',
@@ -5288,10 +5292,17 @@ const VRAIES_KM = [
       // rues du Strip, 75 et 1 228 après. v432 (la vue sur la voie, la
       // couverture à la règle de ce fichier, plusieurs ordres, une rangée
       // d'un coup) : 61 et 840. v435 (la recherche conjointe) : 58 et 772.
-      // Barres au milieu.
-      contour.anneaux <= 59 && contour.pas <= 806 && contour.total >= 809,
+      // v477 (le parapet sous la voie devient chaussée) : 18 et 706. Barres
+      // au milieu.
+      contour.anneaux <= 38 && contour.pas <= 739 && contour.total >= 809,
       `${contour.anneaux}/${contour.total} anneaux, ${contour.pas} pas hors de la chaussée`
-      + ` (dont ${contour.fontaine} dans une fontaine) · les pires : ${contour.pires.join(', ')}`);
+      + ` (dont ${contour.fontaine} dans une fontaine, ${contour.parapet} sur un parapet) · les pires : ${contour.pires.join(', ')}`);
+    // UN PARAPET SOUS LA VOIE EST DE LA CHAUSSÉE (v477). La voie d'un anneau
+    // traversait aux coins la bande de pierre d'un tablier voisin : 66 pas
+    // sur un parapet dans vingt-sept villes sur `origin/main` (v473), zéro ici.
+    verifier('aucune voie d\'anneau ne roule sur le parapet d\'un tablier',
+      contour.parapet === 0,
+      `${contour.parapet} pas de voie sur un parapet`);
     // v416 : San Diego gagne son contresens (3 → 2) ; restent San José et
     // Guayaquil, dont le seul cycle a sa voie extérieure sur la mer ou la
     // plage — un remède de SOL, déclaré dans TASKS.md.

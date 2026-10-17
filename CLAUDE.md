@@ -770,6 +770,19 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Le parapet sous la voie (v477) — une matière de tablier se lit sous la ligne qui roule
+
+Une règle. Aux coins des anneaux, la voie d'une voiture traversait la bande de
+pierre d'un tablier voisin (66 pas, vingt-sept villes) ; `pasHorsChaussee` les
+compte « sur un tablier », donc aucune recherche de contour ne les voyait. Le
+parapet est à la cote du tablier : là où la LIGNE d'une voie le traverse
+(`colonnesDeVoie`, la règle du témoin, au demi-bloc), sa colonne est du bitume
+— c'est la règle de la v457 (un changement de DESSIN qui garde la forme se
+prouve par la forme), et elle précise la v414 : un tablier ne se retire pas, et
+sa matière ne change que sous une voie. La sélection n'en dépend pas
+(`EN_CALCUL`, les tabliers sont nuls pendant le calcul) ; le témoin de
+`plafond.js` le prouve colonne par colonne, `reglageParapets.voie` à faux.
+
 ## Les tours de monument sur la voie de droite (v475) — un témoin de circuit lit la voie, pas l'axe
 
 Deux règles.

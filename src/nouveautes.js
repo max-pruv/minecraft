@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 477,
+    titre: 'La route traverse les ponts',
+    puces: [
+      'Les voitures roulent sur la route du pont',
+      'Plus de pierre sous les roues aux coins',
+    ],
+  },
+  {
     v: 476,
     titre: 'On retrouve son ami sans erreur',
     puces: [
