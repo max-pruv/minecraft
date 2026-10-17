@@ -8,7 +8,7 @@
 // sept ans n'y arrive pas, et il n'a aucune raison d'y arriver : un vrai pilote
 // a un ILS.
 //
-// Ce module est PUR (aucun three, aucun document, un seul import pur) : la
+// Ce module est PUR (aucun three, aucun document, deux imports purs) : la
 // liste des pistes du monde, le choix de la piste, et la loi de guidage. Le
 // joueur (`player.js`) l'applique, le cadran de cap l'affiche, et les témoins
 // le lisent sous node. Une seule règle, trois lecteurs (discipline de
@@ -30,6 +30,7 @@
 // gaz — la porte de sortie de toute séquence imposée (v290, v366).
 
 import { AEROPORTS, pistesDe } from './aeroport.js';
+import { CONE, capVers, ecartDeCap } from './cap.js';
 
 // À quelle distance une piste se propose. Un chasseur à 120 b/s la rejoint en
 // une vingtaine de secondes ; au-delà, le jeu dit où est la plus proche.
@@ -102,6 +103,43 @@ export function pisteLaPlusProche(x, z, yaw, portee = PORTEE_PISTE, fiche = null
     }
   }
   return best;
+}
+
+// LA PISTE QU'ON VISE (Max : « quand on clique sur se poser, il devrait se
+// poser sur la direction qu'on vise dans le radar et pas sur là où on vient
+// initialement »). La piste la plus proche, c'est presque toujours l'aéroport
+// d'où l'on vient de décoller, DERRIÈRE l'avion : ✈️ faisait faire demi-tour.
+//
+// LA RÈGLE : parmi les aérodromes dont le centre tombe dans le cône du cadran
+// de cap (`CONE`, ±45° — le même cône, la même convention de cap que
+// `cap.js`, jamais une seconde), on prend le PLUS PROCHE, jusqu'à
+// `PORTEE_DEVANT` ; puis, dans cet aérodrome, la piste et le sens que le coût
+// d'entrée de `pisteLaPlusProche` préfère. « Le plus proche devant » et non
+// « le mieux aligné » : c'est la règle du cadran (v263), et un enfant
+// comprend « le prochain aéroport devant moi ». Un aérodrome qu'on survole
+// (à moins de son rayon) n'est pas « devant » : son centre est sous l'avion,
+// le cap vers lui ne veut rien dire, et c'est celui d'où l'on vient.
+//
+// Sans aérodrome devant (ou sans piste assez longue pour CET appareil) : la
+// règle d'avant, la piste la plus proche — et sans rien à portée, on se pose
+// sur place (v261). `devant` dit au jeu laquelle des deux a servi.
+export const PORTEE_DEVANT = 4000;   // ≈ 35 à 40 s de vol, Roissy–Francfort (2 637) y tient
+export function pisteVisee(x, z, yaw, fiche = null, portee = PORTEE_DEVANT) {
+  const candidats = [];
+  for (const a of AEROPORTS) {
+    const dx = a.x - x, dz = a.z - z, d = Math.hypot(dx, dz);
+    if (d <= a.r || d > portee) continue;
+    if (Math.abs(ecartDeCap(yaw, capVers(dx, dz))) > CONE) continue;
+    candidats.push({ a, d });
+  }
+  candidats.sort((u, v) => u.d - v.d);
+  for (const { a } of candidats) {
+    const exclues = new Set(pistesDuMonde().filter((p) => p.cle !== a.cle));
+    const c = pisteLaPlusProche(x, z, yaw, portee + 400, fiche, exclues);
+    if (c) return { ...c, devant: true };
+  }
+  const c = pisteLaPlusProche(x, z, yaw, PORTEE_PISTE, fiche);
+  return c ? { ...c, devant: false } : null;
 }
 
 // L'aérodrome le plus proche, à toute distance : ce que le jeu montre quand
@@ -213,13 +251,23 @@ export function guiderApproche(ap, pos, yaw, v, fiche, solA, entree = {}, plein 
     // s'ÉLOIGNE d'abord (un point loin derrière l'entrée, de son côté de
     // l'axe), puis l'on rejoint l'axe à 45° au plus, et la finale commence
     // quand on y est, dans le bon sens.
+    //
+    // ET L'ON NE REJOINT L'AXE QUE S'IL RESTE LA PLACE DE S'Y ALIGNER (v502).
+    // Rejoindre à 45° depuis un écart `lat` demande `lat / tan 0,8` blocs le
+    // long de l'axe, plus un virage, avant l'entrée. Un avion arrivé de loin,
+    // de biais, cap sur la piste — le cas même de « ✈️ va là où l'on vise » —
+    // passait au rejoint avec cent cinquante blocs d'écart à trois cents de
+    // l'entrée, ratait l'alignement et tournait sans fin (sonde : six essais
+    // sur deux cents, deux cents secondes sans toucher). Le point d'éloignement
+    // recule donc d'autant, et le rejoint attend d'avoir la place.
     const sLoin = -D_ENTREE - 2 * R;
+    const sRejoint = -D_ENTREE * 0.6 - Math.abs(lat) / Math.tan(0.8) - 1.5 * R;
     if (ap.monter && pos.y - yPiste < H_ENTREE) {
       capVise = capPiste;
-    } else if (!ap.loin && s > sLoin + 10) {
+    } else if (!ap.loin && (s > sLoin + 10 || s > sRejoint)) {
       ap.monter = false;
       if (!ap.cote) ap.cote = Math.abs(lat) > 5 ? Math.sign(lat) : 1;
-      const P = versMonde(sLoin - R, ap.cote * 2.5 * R);
+      const P = versMonde(Math.min(sLoin - R, -D_ENTREE * 0.6 - 2.5 * R / Math.tan(0.8) - 2.5 * R), ap.cote * 2.5 * R);
       capVise = Math.atan2(-(P.x - pos.x), -(P.z - pos.z));
     } else {
       ap.loin = true;

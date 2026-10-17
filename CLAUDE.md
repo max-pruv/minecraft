@@ -557,7 +557,7 @@ que « ne jamais relancer jusqu'au vert », par l'autre bout.
 
 ---
 
-## Le tempo du banc (v501) — une cadence se divise, une fenêtre calée sur le monde non
+## Le tempo du banc (v502) — une cadence se divise, une fenêtre calée sur le monde non
 
 `?tempo=N` (`src/tempo.js`, pur) divise les minuteries de synchronisation du
 jeu sur le banc, et seulement là. Trois règles.
@@ -929,6 +929,23 @@ Deux règles.
   est posée `ABAISSE_LOIN` blocs plus bas et dessinée après : jamais de trou
   de ciel entre les deux, jamais la grossière par-dessus la fine. Au-delà de
   sa portée le brouillard est plein, elle n'y dessine rien.
+## ✈️ se pose devant (v502) — une approche assistée va là où le nez pointe
+
+Max : « quand on clique sur se poser, il devrait se poser sur la direction
+qu'on vise dans le radar et pas sur là où on vient ». Une règle.
+
+- **LA PISTE CHOISIE EST CELLE QU'ON VISE, PAS LA PLUS PROCHE.** La plus
+  proche, juste après un décollage, c'est l'aéroport de départ, derrière
+  l'avion (87 trajets sur 126 entre aérodromes voisins faisaient demi-tour,
+  mesuré). `pisteVisee` (approche.js, pure) prend l'aérodrome le plus proche
+  dont le centre tombe dans le cône du cadran (`CONE` et `capVers` de cap.js,
+  jamais une seconde convention), jusqu'à `PORTEE_DEVANT` ; un aérodrome
+  qu'on survole n'est pas « devant ». Sans rien devant, la règle d'avant
+  (`pisteLaPlusProche`), puis la pose sur place (v261). Le jeu, la sonde
+  (`sonde-approche.cjs`, départs rejoués cap sur la piste quand le nez en vise
+  une autre, `/vise`) et le témoin lisent la même fonction. Le choix se fait
+  une fois, à l'appui : il ne peut pas papillonner, et le cadran montre la
+  piste de l'approche (v452).
 
 ## La fiche d'un garage suit ses murs (v487) — ce qui est rangé par position migre avec ses blocs
 

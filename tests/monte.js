@@ -8562,7 +8562,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         const a = await poser('concorde', 30);
         bouton(); await images(2);
         res.concorde = { porte: a.mesh.userData.porte === undefined ? 'absent' : a.mesh.userData.porte, auVolant: auVolant(), ph: g.player.embarquement ? g.player.embarquement.phase : null };
-        // LA FLAMME EST CHAUFFÉE À L'ACCUEIL (v491) : aux commandes, on pousse
+        // LA FLAMME EST CHAUFFÉE À L'ACCUEIL (v502) : aux commandes, on pousse
         // la manette des gaz comme le premier geste le ferait (`fun.js` allume
         // alors les tuyères), et l'on lit les CLÉS (v363). Chauffe désarmée,
         // deux clés neuves (`sonde-flamme-chauffe.cjs`).
@@ -8887,6 +8887,84 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       verifier(`✈️ en vol près de ${cle} : l'approche assistée pose le ${espece} SUR la piste et l'y arrête`,
         !r.err && r.surPisteToucher && r.surPisteArret && r.etat === 'sol' && r.pilote,
         `${r.err || ''} ${JSON.stringify(r)}`);
+    }
+
+    // ✈️ SE POSE LÀ OÙ L'ON VISE (v502). Max : « quand on clique sur se poser,
+    // il devrait se poser sur la direction qu'on vise dans le radar et pas sur
+    // là où on vient initialement ». La piste la plus proche, c'était presque
+    // toujours l'aéroport qu'on venait de quitter, derrière l'avion. Deux
+    // mesures. Sous node, la règle du jeu (`pisteVisee`, ou sur l'ancien code
+    // celle qu'il appliquait, `pisteLaPlusProche`) sur tous les trajets entre
+    // deux aérodromes à moins de 4 000 blocs, trois appareils, juste après le
+    // décollage, cap sur la destination : combien de fois ✈️ fait demi-tour
+    // vers l'aéroport de départ (87 sur 126 sur l'ancien code). Puis le trajet
+    // de l'enfant, au bouton : décollé de Roissy, cap sur Saint-Dizier, ✈️ doit
+    // viser Saint-Dizier, et le cadran le nommer.
+    {
+      const src = require('path').join(__dirname, '..', 'src');
+      const url = (f) => require('url').pathToFileURL(require('path').join(src, f)).href;
+      const Ap = await import(url('approche.js'));
+      const { AEROPORTS } = await import(url('aeroport.js'));
+      const capVers = (dx, dz) => Math.atan2(-dx, -dz);
+      const F = { avionligne: { max: 95, poussee: 18, decrochage: 30, virage: 0.55, rotation: 42, approche: 45, frein: 30 },
+        concorde: { max: 120, poussee: 34, decrochage: 55, virage: 0.40, rotation: 62, approche: 62, frein: 45 },
+        chasseur: { max: 120, poussee: 90, decrochage: 40, virage: 1.30, rotation: 48, approche: 50, frein: 60 } };
+      const choisir = (x, z, yaw, f) => (Ap.pisteVisee ? Ap.pisteVisee(x, z, yaw, f) : Ap.pisteLaPlusProche(x, z, yaw, undefined, f));
+      let trajets = 0, demiTours = 0, sansPiste = 0;
+      const exemples = [];
+      for (const dep of AEROPORTS) for (const dst of AEROPORTS) {
+        if (dep === dst || Math.hypot(dst.x - dep.x, dst.z - dep.z) > 4000) continue;
+        for (const f of Object.values(F)) {
+          const yaw = capVers(dst.x - dep.x, dst.z - dep.z);
+          const x = dep.x - Math.sin(yaw) * (dep.r + 40), z = dep.z - Math.cos(yaw) * (dep.r + 40);
+          const c = choisir(x, z, yaw, f);
+          trajets++;
+          if (!c) sansPiste++;
+          else if (c.piste.cle === dep.cle) { demiTours++; if (exemples.length < 4) exemples.push(`${dep.cle}→${dst.cle}`); }
+        }
+      }
+      // Sans aérodrome devant : la règle d'avant — la piste la plus proche.
+      const cdg = AEROPORTS.find((a) => a.cle === 'cdg');
+      const repli = choisir(cdg.x - 200, cdg.z, Math.PI / 2 + 0.0, F.chasseur);   // cap à l'ouest, vers l'Atlantique
+      verifier('✈️ « Se poser » vise la piste devant le nez, jamais l\'aéroport qu\'on vient de quitter derrière soi',
+        trajets > 100 && demiTours === 0 && sansPiste === 0 && repli && repli.piste.cle === 'cdg',
+        `${demiTours} demi-tour(s) sur ${trajets} trajets (${exemples.join(', ')}), ${sansPiste} sans piste, repli vers l'ouest : ${repli && repli.piste.cle}`);
+
+      if (!tab.isClosed()) await banc.mettreDeCote(tab);
+      const visPage = await banc.jouerSeul('MonteVisee', { rr: 2 });
+      const r = await visPage.evaluate(async () => {
+        const g = window.__game, am = g.animalManager, P = g.player;
+        const att = (ms) => new Promise((f) => setTimeout(f, ms));
+        const { AEROPORTS } = await import('./src/aeroport.js');
+        const dep = AEROPORTS.find((q) => q.cle === 'cdg'), dst = AEROPORTS.find((q) => q.cle === 'bas-sd');
+        for (const b of [...am.animals]) am.scene.remove(b.mesh);
+        am.animals.length = 0;
+        const yaw = Math.atan2(-(dst.x - dep.x), -(dst.z - dep.z));
+        const x0 = dep.x - Math.sin(yaw) * (dep.r + 40), z0 = dep.z - Math.cos(yaw) * (dep.r + 40);
+        P.pos.set(x0, g.world.sommetColonne(Math.floor(x0), Math.floor(z0)) + 1.5, z0);
+        await att(1500);
+        am.invoquer('chasseur', x0 + 3, z0);
+        await att(800);
+        for (let e = 0; e < 8 && !P.pilote; e++) { document.getElementById('ride-btn').click(); await att(500); }
+        if (!P.pilote) return { err: 'pas aux commandes' };
+        P.pos.y = Math.max(dep.sol + 60, g.world.sommetColonne(Math.floor(x0), Math.floor(z0)) + 40);
+        P.avionEtat = 'vol'; P.avionEnVol = true; P.vitesseAvion = P.pilote.max * 0.8; P.yaw = yaw;
+        P.touchMove = { f: 0, s: 0 };
+        await att(300);
+        document.getElementById('fly-btn').dispatchEvent(new TouchEvent('touchstart', { cancelable: true, bubbles: true }));
+        await att(1200);
+        const c = window.__cadranDeCap ? window.__cadranDeCap() : null;
+        const vise = P.approche ? P.approche.piste.cle : null, nom = P.approche ? P.approche.piste.nom : null;
+        // le second appui remet les gaz (porte de sortie, v290)
+        document.getElementById('fly-btn').dispatchEvent(new TouchEvent('touchstart', { cancelable: true, bubbles: true }));
+        await att(300);
+        return { vise, nom, cadran: c && c.ville, remise: P.avionEtat, approcheApres: !!P.approche };
+      });
+      await visPage.close();
+      if (!tab.isClosed()) await banc.ramener(tab);
+      verifier('✈️ décollé de Roissy cap sur Saint-Dizier : « Se poser » va à Saint-Dizier, le cadran le nomme, un second appui remet les gaz',
+        !r.err && r.vise === 'bas-sd' && r.cadran && r.cadran.includes(r.nom) && r.remise === 'decollage' && !r.approcheApres,
+        JSON.stringify(r));
     }
 
     // --- LES CUBES ORANGE DU CIEL (v484) --------------------------------------
