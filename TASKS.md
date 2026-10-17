@@ -7027,6 +7027,12 @@ l'embarquement a eu lieu, pas par une hypothèse.
   que sous `renduDansManhattan`, l'île ne se bâtit que dans sa boîte, et les
   essaims d'optiques sont dans la racine cachée du rendu de la ville. Une
   intermittence à suivre si un portail la rend encore.
+  Second portail, après la fusion de la v487 (la livraison devient la
+  v488) : onze vertes ; `maj.js` le loader qui compte ses fichiers (déclaré,
+  vert seul) ; `manhattan.js` le taxi tactile (7,82 blocs en 3,05 s de jeu,
+  302 s de montre — déclaré) ; `monte.js` l'allure d'une ville, le feu, la rue
+  vide (les trois ci-dessus). `manhattan.js` rejouée SEULE sur l'arbre
+  fusionné : 34 verts sur 34, taxi compris (10,58 blocs).
 
 - [ ] **Manhattan sur la Terre : suite du réalisme.** Faits en v488 : la
   Statue de la Liberté sur Liberty Island, et la circulation commandée par les
