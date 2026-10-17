@@ -878,7 +878,8 @@ export class Player {
       let guide = null;
       if (etat === 'atterrissage' && this.approche) {
         guide = guiderApproche(this.approche, this.pos, this.yaw, this.vitesseAvion || 0, p,
-          (x, z) => this.world.sommetColonne(Math.floor(x), Math.floor(z)), { strafe, forward, dt });
+          (x, z) => this.world.sommetColonne(Math.floor(x), Math.floor(z)), { strafe, forward, dt },
+          (x, y, z) => this.world.isSolid(Math.floor(x), y, Math.floor(z)));
         this.guideApproche = guide;
         if (this.approche.remise) {
           this.approche.remise = false;

@@ -278,7 +278,7 @@ const VRAIES_KM = [
           // beffroi planté au centre exact d'une place dégagée passait pour
           // couché. La leçon du fleuron du Taj, version place publique.
           // ET UNE ENCEINTE AUX MURS IMPAIRS PASSE ENTRE LES COLONNES LUES
-          // (v474) : le château de Nantes a ses courtines à ±3, le pas de deux
+          // (v488) : le château de Nantes a ses courtines à ±3, le pas de deux
           // ne lit que les colonnes paires, et il était « couché » à 0. Rien
           // trouvé ? on relit chaque colonne de la boîte.
           for (const pas of [2, 1]) {
@@ -329,7 +329,7 @@ const VRAIES_KM = [
     // pour tous les autres, moins de trois blocs, c'est un monument couché.
     const couches = tour.monuments.filter((m) => m.hMax < m.hMin);
     // 142 dans les quarante-six fiches, et trois de plus dans les villes
-    // passées à la fiche en v474 (le Spire, le château de Nantes, l'arc de
+    // passées à la fiche en v488 (le Spire, le château de Nantes, l'arc de
     // Montpellier).
     verifier('les cent quarante-cinq monuments des villes à fiche se dressent, chacun chez lui',
       tour.monuments.length === 145 && couches.length === 0,
@@ -3475,7 +3475,17 @@ const VRAIES_KM = [
       const socles = m.LIEUX.filter((p) => p.socle && AVEC_RUE.includes(p.nom))
         .map((p) => ({ nom: p.nom, u: p.u, v: p.v, bu: p.socle[0] + 1, bv: p.socle[1] + 1 }));
       const solDe = (x, z) => (w.coteRoulable ? w.coteRoulable(x, z) : w.terrainHeight(x, z));
-      const circuits = m.circuitsParis(solDe);
+      // LE TÉMOIN LIT LA VOIE, PAS L'AXE (v475). Depuis la v395 un convoi
+      // d'avenue roule à 1,3 bloc à droite de son tracé (main.js,
+      // `decalerADroite`) : sur l'axe, ce témoin rendait zéro pendant que la
+      // voiture de la voie extérieure entrait de vingt et un pas dans les
+      // vitrines du tour de l'Opéra et de six dans celles des Invalides. Il
+      // décale donc chaque circuit comme `vehicules.js` le fait, avec ses
+      // propres fonctions, et la bande s'élargit d'autant.
+      const ve = await import('./src/vehicules.js');
+      const VOIE = typeof m.VOIE_DE_DROITE === 'number' ? m.VOIE_DE_DROITE : 1.3;
+      const circuits = m.circuitsParis(solDe)
+        .map((c) => ({ ...c, pts: ve.sansEpis(ve.decalerADroite(ve.sansEpis(c.pts.map((p) => ({ ...p }))), VOIE)) }));
       // LE TÉMOIN LIT LA BANDE QUE LE TOUR EMPRUNTE, PAS LE SOCLE (v318). Il
       // ne jugeait que les points de circuit tombés DANS la boîte d'un socle ;
       // depuis que les circuits font le tour à `AXE_TOUR` (v221), aucun n'y
@@ -3488,7 +3498,7 @@ const VRAIES_KM = [
       // points en travers de la marche, aux deux hauteurs d'une voiture. Et un
       // compte de pas lus nul est ROUGE : c'est toute la panne d'avant.
       const DEMI = 1.13;                       // la demi-largeur d'une voiture
-      const AXE = typeof m.AXE_TOUR === 'number' ? m.AXE_TOUR : 2;
+      const AXE = (typeof m.AXE_TOUR === 'number' ? m.AXE_TOUR : 2) + 0.5 + VOIE;
       const par = {}, lusPar = {}, exemples = [];
       let dur = 0, lus = 0;
       for (const c of circuits) {
@@ -3519,9 +3529,9 @@ const VRAIES_KM = [
           }
         }
       }
-      return { dur, lus, par, lusPar, exemples, circuits: circuits.length };
+      return { dur, lus, par, lusPar, exemples, circuits: circuits.length, sens: m.SENS_TOURS_PARIS || 'absent' };
     });
-    verifier('aucune voiture ne traverse un monument de Paris',
+    verifier('aucune voiture ne traverse un monument de Paris, sur la voie qu\'elle roule',
       !monuments.absent && monuments.circuits === 8 && monuments.lus > 0 && monuments.dur === 0,
       JSON.stringify(monuments));
 
@@ -5223,7 +5233,7 @@ const VRAIES_KM = [
       for (const tr of traces) (parVille.get(tr.cle) || parVille.set(tr.cle, []).get(tr.cle)).push(tr);
       const fiches = new Map(vm.VILLES_MONDE.map((f) => [f.cle, f]));
       const { CITY_BLOCK, BLOCK } = await import('./src/blocks.js');
-      let anneaux = 0, pas = 0, fontaine = 0;
+      let anneaux = 0, pas = 0, fontaine = 0, parapet = 0;
       const pires = [], parCle = {};
       for (const tr of traces) {
         const f = fiches.get(tr.cle), t = f.trame, co = Math.cos(t.ang), si = Math.sin(t.ang);
@@ -5246,6 +5256,10 @@ const VRAIES_KM = [
               || (f.cote && f.cote.quais && U < f.cote.base + f.cote.pente * V + 2);
             if (s === CITY_BLOCK.GRANITE && quai) continue;
             if (s === BLOCK.WATER) fontaine++;
+            // v477 : le parapet d'un tablier (la colonne d'eau porte la pierre
+            // du tablier) compté à part.
+            const pt = vm.pontVillesMonde(X, Z);
+            if (pt && pt.id === s) parapet++;
             n++;
           }
         }
@@ -5280,7 +5294,7 @@ const VRAIES_KM = [
       }
       pires.sort((a, b) => b[0] - a[0]);
       const disputee = Object.fromEntries(['toronto', 'dublin', 'lima'].map((c) => [c, parCle[c] || 0]));
-      return { total: traces.length, anneaux, pas, fontaine, seuls, surLaPlace, disputee, pires: pires.slice(0, 5).map(([n, c]) => `${c} ${n}`),
+      return { total: traces.length, anneaux, pas, fontaine, parapet, seuls, surLaPlace, disputee, pires: pires.slice(0, 5).map(([n, c]) => `${c} ${n}`),
         lv: { pas: parCle.lasvegas || 0, circuits: (parVille.get('lasvegas') || []).length, desertLots, desertRues } };
     });
     verifier('un anneau qui sortait de la chaussée contourne la place, la fontaine ou le parc',
@@ -5288,10 +5302,17 @@ const VRAIES_KM = [
       // rues du Strip, 75 et 1 228 après. v432 (la vue sur la voie, la
       // couverture à la règle de ce fichier, plusieurs ordres, une rangée
       // d'un coup) : 61 et 840. v435 (la recherche conjointe) : 58 et 772.
-      // Barres au milieu.
-      contour.anneaux <= 59 && contour.pas <= 806 && contour.total >= 809,
+      // v477 (le parapet sous la voie devient chaussée) : 18 et 706. Barres
+      // au milieu.
+      contour.anneaux <= 38 && contour.pas <= 739 && contour.total >= 809,
       `${contour.anneaux}/${contour.total} anneaux, ${contour.pas} pas hors de la chaussée`
-      + ` (dont ${contour.fontaine} dans une fontaine) · les pires : ${contour.pires.join(', ')}`);
+      + ` (dont ${contour.fontaine} dans une fontaine, ${contour.parapet} sur un parapet) · les pires : ${contour.pires.join(', ')}`);
+    // UN PARAPET SOUS LA VOIE EST DE LA CHAUSSÉE (v477). La voie d'un anneau
+    // traversait aux coins la bande de pierre d'un tablier voisin : 66 pas
+    // sur un parapet dans vingt-sept villes sur `origin/main` (v473), zéro ici.
+    verifier('aucune voie d\'anneau ne roule sur le parapet d\'un tablier',
+      contour.parapet === 0,
+      `${contour.parapet} pas de voie sur un parapet`);
     // v416 : San Diego gagne son contresens (3 → 2) ; restent San José et
     // Guayaquil, dont le seul cycle a sa voie extérieure sur la mer ou la
     // plage — un remède de SOL, déclaré dans TASKS.md.
@@ -5904,7 +5925,7 @@ const VRAIES_KM = [
       `${fleuves.ponts.length} villes à pont lues · creusés par une route : `
       + (fleuves.ponts.filter((p) => p.parLaRoute).map((p) => `${p.cle} ${p.parLaRoute}`).join(', ') || 'aucun'));
 
-    // LES VILLES QUI PASSENT DU GABARIT À LA FICHE (v474, lot 1). Max :
+    // LES VILLES QUI PASSENT DU GABARIT À LA FICHE (v488, lot 1). Max :
     // « cinquante villes détaillées ». Une fiche fausse est pire qu'une fiche
     // absente : chaque ville du lot garde le rayon du registre (la découpe
     // « hors villes » ne bouge pas), son ancre au sec, n'est ni Cologne ni
