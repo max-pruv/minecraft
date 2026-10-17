@@ -16,7 +16,9 @@ import { BaseNPC } from './marlon.js';
 import { CASTLE, VILLANDRY, GAULOIS, ESPACE, VILLE, CHAUSSEE, TROTTOIR } from './world.js';
 import { BLOCK, DECOR_START, isSolid as blockIsSolid, isSlab } from './blocks.js';
 import { construireHumain } from './personnages.js';
+import { Atelier } from './modeles.js';
 import { construireBete, BETES } from './betes.js';
+import { posteDuGuide, essaiParBlocs } from './guidesvilles.js';
 import { feuPieton, ALLURE_TRAVERSEE, ATTENTE_MAX_S, ENVIE_TRAVERSER } from './pietons.js';
 
 const PORTEE = 120;          // au-delà, le site entier est en sommeil
@@ -1344,4 +1346,97 @@ export function createVie({ scene, world, player, toast }) {
       betes: sites.reduce((n, s) => n + s.troupeau.length, 0),
     }),
   };
+}
+
+// --- les guides des villes (v474) --------------------------------------------
+//
+// Un guide n'est pas un passant. Le passant ne s'arrête pas pour l'enfant
+// (v243) ; le guide, si : c'est son métier. Il tient son poste au pied du
+// monument, ne s'en écarte pas, et se tourne vers l'enfant qui arrive — la
+// seule exception à la v243, et elle se déclare ici, dans sa classe, pas dans
+// `Habitant`. Ce qu'il raconte passe par la règle des panneaux (`guides.js`),
+// une fois par visite ; lui ne dit rien d'autre (pas de phrases au hasard qui
+// couperaient le panneau).
+
+const PORTEE_GUIDE = 150;   // il naît quand l'enfant passe à cette distance du monument
+const REGARD_GUIDE = 16;    // il se tourne vers l'enfant à moins de seize blocs
+
+function fanion() {
+  const a = new Atelier();
+  a.cylindre(0x5a4632, { p: [0.36, 1.45, 0.05], e: [0.035, 2.2, 0.035] });
+  a.boite(0xf07a1e, { p: [0.36 + 0.26, 2.38, 0.05], e: [0.5, 0.32, 0.03] });
+  a.boite(0xffffff, { p: [0.36 + 0.26, 2.38, 0.07], e: [0.18, 0.12, 0.01] });
+  const g = a.finir();
+  g.name = 'fanion-guide';
+  return g;
+}
+
+export class Guide extends BaseNPC {
+  constructor(scene, world, player, toast, lieu, poste) {
+    super(scene, world, player, toast, {
+      name: lieu.guide, label: `${lieu.guide} — guide`, walkSpeed: 0,
+      firstSpeech: Infinity, phrases: [], hauteur: 1.8, largeur: 0.55,
+      build: () => construireHumain({
+        tenue: 'passant', modeleHumain: lieu.id.length % 2 ? 'femme-chemise' : 'homme-chemise',
+        teint: TEINTS[lieu.id.length % TEINTS.length], cheveux: CHEVEUX[lieu.id.charCodeAt(0) % CHEVEUX.length],
+      }),
+    });
+    // LE FANION DES GUIDES : un bâton levé à côté de lui, une flamme orange au
+    // bout — ce qu'on cherche des yeux devant un monument. Fabriqué par
+    // l'atelier, donc avec `matiereVivante` : le programme des corps sculptés,
+    // déjà chauffé à l'accueil (v246), rien ne se compile à l'arrivée.
+    this.mesh.add(fanion());
+    this.lieu = lieu;
+    this.estGuide = true;
+    this.poste = poste;
+    // il regarde le monument tant que personne ne vient
+    this.yaw = Math.atan2(-(lieu.x - poste.x), -(lieu.z - poste.z));
+    this.placeAt(poste.x, poste.z, poste.y ?? 40);
+  }
+
+  think() {
+    const dx = this.player.pos.x - this.pos.x, dz = this.player.pos.z - this.pos.z;
+    if (dx * dx + dz * dz < REGARD_GUIDE * REGARD_GUIDE) return { speed: 0, yaw: Math.atan2(-dx, -dz) };
+    return { speed: 0, yaw: this.yaw };
+  }
+}
+
+// Où poser le guide : `posteDuGuide` (guidesvilles.js, pure, lue sous node).
+
+// Les guides naissent à l'approche, un par lieu, et ne s'en vont plus : ils
+// sont au plus une vingtaine pour tout le monde, et la présence (main.js) les
+// efface au loin comme tout personnage. On ne lit le sol que quand les morceaux
+// autour du monument sont là (`morceauxPrets`, v472) : sinon la pose
+// engendrerait le monde sur le fil principal.
+export function createGuidesVilles({ scene, world, player, toast, npcs, lieux }) {
+  const nes = new Map();      // id → Guide
+  const echecs = new Set();   // lieux où aucun sol praticable n'a été trouvé
+  let prochain = 0;
+  function update() {
+    const t = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    if (t < prochain) return;
+    prochain = t + 500;        // une cadence de ménage, en temps réel (v226)
+    for (const l of lieux) {
+      if (nes.has(l.id) || echecs.has(l.id) || !l.guide) continue;
+      if (Math.hypot(player.pos.x - l.x, player.pos.z - l.z) > PORTEE_GUIDE) continue;
+      const m = l.r + 2;
+      if (world.morceauxPrets && !world.morceauxPrets(l.x - m, l.z - m, l.x + m, l.z + m)) continue;
+      // À Manhattan, le plan n'est pas fait de blocs : on demande le trottoir
+      // au monde (`trottoirA`, `piedPieton`), comme les passants (v354).
+      const parBlocs = essaiParBlocs((x, y, z) => world.getBlock(x, y, z),
+        (x, z) => world.terrainHeight(x, z), (id) => id !== BLOCK.WATER && blockIsSolid(id));
+      const essai = (x, z) => {
+        const p = world.piedPieton?.(x + 0.5, z + 0.5);
+        if (p !== undefined && p !== null) return world.trottoirA?.(x + 0.5, z + 0.5) ? p : null;
+        return parBlocs(x, z);
+      };
+      const poste = posteDuGuide(l, essai);
+      if (!poste) { echecs.add(l.id); continue; }
+      const g = new Guide(scene, world, player, toast, l, poste);
+      g.apparitionDouce = true;
+      nes.set(l.id, g);
+      npcs.push(g);
+    }
+  }
+  return { update, nes, echecs };
 }

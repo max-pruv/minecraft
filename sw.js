@@ -49,6 +49,7 @@ const ASSETS = [
   './src/plafond-sol.js',
   './src/bandeau.js',
   './src/guides.js',
+  './src/guidesvilles.js',
   './src/journal.js',
   './src/solcontinu.js',
   './src/routes.js',

@@ -1,0 +1,52 @@
+// LES GUIDES DES VILLES, AU NAVIGATEUR (v474).
+//   node tests/sonde-guides-villes.cjs [lieu…]   → une ligne par lieu
+// On se pose au-dessus du monument (le banc ne charge que deux morceaux autour de l'enfant), on attend que le guide naisse
+// (borné), puis l'on marche jusqu'à lui : où il est, s'il est dessiné, s'il
+// regarde l'enfant, et ce que le panneau a dit. Manhattan ne se juge qu'ici :
+// son plan n'est pas fait de blocs, la pose sous node ne le voit pas.
+const { Banc } = require('./banc.js');
+const ids = process.argv.slice(2);
+module.exports.visiter = async function visiter(tab, id, borneMs = 60000) {
+  return tab.evaluate(async ({ id, borneMs }) => {
+    const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
+    const g = window.__game, gv = window.__guidesVilles();
+    const l = gv && (await import('./src/guidesvilles.js')).TOUS_LES_GUIDES.find((x) => x.id === id);
+    if (!l) return { id, erreur: 'lieu ou guides absents' };
+    g.player.flying = true; g.player.vel.set(0, 0, 0);
+    g.player.pos.set(l.x + 6, 80, l.z);
+    const t0 = performance.now();
+    while (!gv.nes.has(id) && !gv.echecs.has(id) && performance.now() - t0 < borneMs) await dormir(250);
+    const ne = Math.round(performance.now() - t0);
+    const guide = gv.nes.get(id);
+    if (!guide) return { id, ne, echec: gv.echecs.has(id) };
+    // on se pose à trois blocs du guide, au sol, et l'on attend le panneau
+    g.player.flying = false;
+    g.player.pos.set(guide.pos.x + 3, guide.pos.y + 0.5, guide.pos.z);
+    const el = document.getElementById('toast');
+    let dit = '';
+    const t1 = performance.now();
+    while (performance.now() - t1 < 15000) {
+      await dormir(250);
+      const j = window.__guides.journal.filter((e) => e.id === id);
+      if (j.length) { dit = j[j.length - 1].texte; break; }
+    }
+    await dormir(1500);
+    const dx = g.player.pos.x - guide.pos.x, dz = g.player.pos.z - guide.pos.z;
+    const regard = Math.cos(guide.yaw - Math.atan2(-dx, -dz));
+    return {
+      id, ne, d: Math.round(Math.hypot(guide.pos.x - l.x, guide.pos.z - l.z) * 10) / 10,
+      y: Math.round(guide.pos.y * 10) / 10, visible: guide.mesh.visible,
+      regard: Math.round(regard * 100) / 100, dit, toast: el ? el.textContent.slice(0, 80) : null,
+    };
+  }, { id, borneMs });
+};
+if (require.main === module) (async () => {
+  const banc = new Banc({ portJeu: 8391, portPairs: 9391 });
+  await banc.ouvrir();
+  try {
+    const tab = await banc.jouerSeul('Sondeur');
+    for (const id of ids.length ? ids : ['eiffel', 'empire']) {
+      console.log(JSON.stringify(await module.exports.visiter(tab, id)));
+    }
+  } finally { await banc.fermer(); process.exit(0); }
+})();

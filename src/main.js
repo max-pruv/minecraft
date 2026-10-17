@@ -41,7 +41,8 @@ import { liberer } from './liberer.js';
 import { createEffects } from './effects.js';
 import { createSky } from './sky.js';
 import { createSiege } from './siege.js';
-import { createVie } from './vie.js';
+import { createVie, createGuidesVilles } from './vie.js';
+import { TOUS_LES_GUIDES } from './guidesvilles.js';
 import { createVehicules, lancerReflets, avancerReflets, refletsVoiture, chaufferLesProgrammes, programmesChauffes, programmesAChauffer, graineDeVille, construireVoitureRoute, signaturesAChauffer, materielDeSignature, FLOTTE, chargerVoitureFlotte } from './vehicules.js';
 import { decor, voirTout } from './couches.js';
 import { contexteAudio, sortieAudio, reglerSon, sonActif, etatSon, radioEnCours, generationAudio } from './sons.js';
@@ -1027,6 +1028,7 @@ let circulationsEnAttente = [];
 // cents blocs, ne se voit pas.
 const circulationPrete = cadence(125);
 let passants = null;
+let guidesVilles = null;   // les guides au pied des monuments (v474)
 let poissons = null;
 
 // Spawn on land near the origin.
@@ -1625,6 +1627,8 @@ function updateChunks() {
   npcs.push(...vie.npcs);
   // Les passants des villes : fabriqués à l'approche, jamais avant.
   passants = createPassants({ scene, world, player, toast: say, npcs });
+  // Les guides des villes : un par monument, nés à l'approche (v474).
+  guidesVilles = createGuidesVilles({ scene, world, player, toast: say, npcs, lieux: TOUS_LES_GUIDES });
   // Les poissons : un petit banc entretenu autour de l'enfant, partout où
   // il y a de l'eau — océans du planisphère, fleuves des villes, lacs.
   poissons = createPoissons({ scene, world, player });
@@ -3339,6 +3343,7 @@ const CIRCULATION_MS_PAR_SECONDE = 120;
 let circulationEnCours = null, circulationT = 0;
 function animerLesVilles(dt) {
   if (passants) passants.update(dt);
+  if (guidesVilles) guidesVilles.update();
   if (poissons) poissons.update(dt);
   if (!vehicules) return;
   const t0 = performance.now(), ecoule = circulationT ? (t0 - circulationT) / 1000 : 0;
@@ -8218,11 +8223,16 @@ window.__lumiere = () => ({
 window.__proposerNotifs = proposerNotifs;
 window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
 // Les panneaux à lire sur place : une fois par visite, en temps réel (v460).
+// Depuis la v474, dans les cinq grandes villes, dans la langue du profil, et
+// raconté par le guide posé au pied du monument (`createGuidesVilles`).
 const guides = creerGuides({
   dire: (texte) => toast(texte, 0xffe8a3, DUREE_PANNEAU_MS),
   maintenant: () => performance.now(),
+  guides: TOUS_LES_GUIDES,
+  langue: () => playerProfile.lang,
 });
 window.__guides = guides;
+window.__guidesVilles = () => guidesVilles;
 window.__game = { fileMaillage: (m) => { fileDemandee = m; lastPlayerChunk = null; },
   // l'A/B de la recharge dans UNE page (v360) : 'arrivee', 'image', ou null (la règle)
   rechargeMaillage: (m) => { rechargeForcee = m || null; }, get fileDeMorceaux() { return meshQueue; },
@@ -8384,7 +8394,7 @@ function frame(now) {
   fun.update(dt);
   majBoutonsVehicule();
   if (running) majGPS();   // à pied comme au volant (v306)
-  if (running) guides.update(player.pos.x, player.pos.z);   // les panneaux de Washington (v460)
+  if (running) guides.update(player.pos.x, player.pos.z);   // les panneaux des guides (v460, v474)
   majGPSAmi();             // la proposition d'un ami s'efface seule (v388)
   asseoirLeConducteur(dt);
   effects.update(dt);

@@ -770,6 +770,29 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les guides des villes (v474) — un guide est un rôle à part, et il se pose à ciel ouvert
+
+Trois règles.
+
+- **LE GUIDE EST LA SEULE EXCEPTION À LA v243, ET ELLE VIT DANS SA CLASSE.**
+  `Guide` (vie.js) tient son poste, ne marche pas, et se tourne vers l'enfant
+  à moins de seize blocs — c'est son métier. `Habitant` ne change pas : un
+  passant ne s'arrête toujours pas. Ce que dit le guide passe par la règle des
+  panneaux (`creerGuides`, guides.js : une fois par visite, jamais en rafale,
+  en temps réel), dans la langue du profil (`texteDuGuide` : `fr`, `en`, et
+  `both` alterne d'une visite à l'autre). Ses positions se demandent au
+  registre des repères (`REPERES`, `villeDuRepere`) ; ses faits sont vérifiés.
+- **UN CENTRE DE MONUMENT EST SOUVENT CREUX.** La rotonde du Capitole, la nef
+  de Notre-Dame, le dessous de la tour Eiffel sont au niveau de la rue et
+  praticables : le premier jet y posait douze guides sur dix-neuf, invisibles
+  du dehors. `essaiParBlocs` (guidesvilles.js, pure) exige le sol au niveau du
+  relief ET `CIEL` blocs d'air au-dessus ; à Manhattan, dont le plan n'est pas
+  fait de blocs, on demande le trottoir au monde (`trottoirA`).
+- **UN ACCESSOIRE DE PERSONNAGE SE FABRIQUE À L'ATELIER.** Le fanion du guide
+  est fait avec `Atelier` (`matiereVivante`) : le programme des corps sculptés,
+  chauffé à l'accueil (v246). Un matériau neuf aurait compilé à l'arrivée au
+  monument — et la présence (v241) en fait une variante transparente de plus.
+
 ## Les passages des avenues (v467) — un passage se mesure le long de SA rue
 
 Une règle. Dans une ville bâtie à la main, un carrefour est le croisement de

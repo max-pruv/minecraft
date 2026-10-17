@@ -7494,7 +7494,17 @@ l'embarquement a eu lieu, pas par une hypothèse.
   pied bute (sonde v470) : le rendre plat exige que `colonneNaturelle` sache
   qu'un dessus a été posé, zone du sol continu.
 
-- [ ] **Apprendre** — guides dans les villes, questions audio.
+- [ ] **Apprendre** — questions audio. *(Les guides dans les villes : v474,
+  vingt-deux guides au pied des monuments de Paris, Londres, Rome, New York et
+  Washington, en français et en anglais.)* Ce qui reste des guides : la Statue
+  de la Liberté, le Golden Gate et les monuments du catalogue qui attendent
+  leur adresse (ci-dessus) n'en ont pas, faute de repère ; les villes
+  engendrées (Berlin, Tokyo…) non plus — une liste de faits vérifiés par
+  ville est un travail de rédaction à part, pas un réglage. Le guide ne fait
+  pas de geste (les corps Rocketbox ne se pilotent qu'en pose complète) : il
+  se tourne et lève son fanion, c'est tout. Et la voix : un guide qui PARLE
+  (synthèse vocale du navigateur) serait l'autre moitié de « questions
+  audio », à décider avec Max (une voix de synthèse dans un jeu d'enfant).
 
 - [ ] **Notifications push** — l'invitation atteint l'application fermée.
 

@@ -20,6 +20,38 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v474 — Des guides au pied des monuments
+
+**Pourquoi.** Apprendre dans les villes s'arrêtait à Washington : sept panneaux
+(v460), en français seulement, et personne pour les dire. Paris, Londres, Rome
+et New York ne racontaient rien de ce qu'on y regarde — la tour Eiffel, Big
+Ben, le Colisée, l'Empire State n'étaient que des formes.
+
+**Ce que ça change.** Vingt-deux guides, un par grand monument : cinq à Paris
+(tour Eiffel, Arc de Triomphe, Louvre, Notre-Dame, Sacré-Cœur), quatre à
+Londres, trois à Rome, trois à New York, et les sept lieux de Washington. Chacun
+est un personnage original — Capucine, Wilfred, Livia, Jasmine… — debout au
+pied du monument, à ciel ouvert, un fanion orange levé ; il se tourne vers
+l'enfant qui arrive (un rôle à part : le passant, lui, ne s'arrête toujours
+pas). En arrivant, son panneau passe une fois : deux ou trois phrases pour un
+enfant de sept à dix ans, des faits vérifiés (hauteurs, années, usages), et sa
+signature. Dans la langue du profil — français, anglais, ou les deux en
+alternance d'une visite à l'autre. Le mode éducatif reste toujours actif : les
+guides ne se coupent pas.
+
+**Ce qui le prouve.** Quatre témoins neufs dans `washington.js`, rouges sur
+l'ancien code (le module n'existe pas) : chaque ville a au moins trois guides
+trouvés dans le registre des repères, chaque panneau a son français et son
+anglais en trois phrases au plus ; la langue du profil choisit et « les deux »
+alterne ; aucun rayon n'en recouvre un autre et chaque guide hors Manhattan a
+un sol au niveau de la rue, à ciel ouvert, dans le rayon de son panneau
+(mesuré sous node : douze guides sur dix-neuf tombaient d'abord DANS leur
+monument, sous une voûte) ; et au navigateur, à la tour Eiffel, le guide naît,
+se tourne vers l'enfant, et le panneau signé de Capucine passe. Le témoin du
+Lincoln (v460) reste vert.
+
+---
+
 ## v473 — La ligne 1 du métro passe sous Paris
 
 **Pourquoi.** Paris n'avait plus de métro. L'anneau souterrain de la v163 a
