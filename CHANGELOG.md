@@ -20,6 +20,38 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v474 — La course et les bêtes comptent les vraies secondes
+
+**Pourquoi.** Le jeu borne le temps d'une image à un vingtième de seconde, pour
+que rien ne traverse les murs quand une tablette rame. Les minuteurs écrits
+`-= dt` héritaient de cette borne. À cinq images par seconde, une seconde de
+jeu durait quatre secondes de montre. Le bestiaire se peuplait quatre fois
+moins vite au moment où l'enfant arrive quelque part. Le chronomètre de la
+course du parc donnait 2,3 s pour 8,6 s réelles : sur une tablette qui rame,
+on battait donc son record sans courir plus vite. C'était la dernière famille
+du piège de `dt` déclarée dans `TASKS.md` (v226, v234).
+
+**Ce que ça change.** La naissance des bêtes, le chronomètre et le délai de la
+course, la veille des garages, le rythme des défis de calcul de Cornichon et
+le rafraîchissement du bouton « Monter » comptent désormais en temps réel
+(`chronoReel`, cadence.js). Ces durées sont bornées à deux secondes par image,
+et une pause n'entre jamais dans le chronomètre. Les animations (une bête qui
+fuit, une émote qui flotte, une roue qui tourne) restent en temps de jeu. Les
+records déjà écrits ne bougent pas : les remettre à zéro est une décision de
+Max, déclarée dans `TASKS.md`.
+
+**Ce qui le prouve.** Deux témoins dans `monte.js`, sur une page à part, à
+cadence basse PROVOQUÉE (190 ms de fil brûlées par image, 4,7 images par
+seconde). Ils lisent une fenêtre de temps réel connue grâce à la fonction
+partagée `minuteurs-mesure.js`, que lit aussi `sonde-minuteurs.cjs` :
+- naissances : 0,25 de la cadence prévue sur `origin/main`, 0,87 ici
+  (barre 0,6) ;
+- record : 0,27 du temps réel sur `origin/main`, 0,99 ici (barre 0,8).
+
+La table des gardiens de `cadence.js` gagne ceux de ses deux nouveaux clients.
+
+---
+
 ## v473 — La ligne 1 du métro passe sous Paris
 
 **Pourquoi.** Paris n'avait plus de métro. L'anneau souterrain de la v163 a

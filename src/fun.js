@@ -29,6 +29,7 @@ import { creerDegats } from './degats3d.js';
 import { sensationsAuVolant, sensationsAPied, reposerVoiture } from './sensations.js';
 import { brancherTraces, avancerTraces, chaufferTraces } from './traces.js';
 import { creerEmbarquement } from './embarquement.js';
+import { chronoReel } from './cadence.js';
 
 // Le sac (`web-minecraft-bag-v1`), la quête (`web-minecraft-quest-v1`), le
 // coffre (`web-minecraft-chest-v1::…`) et le chantier
@@ -902,15 +903,20 @@ export function initFun(ctx) {
   const PODIUM = { x: PARK.x + 16, z: PARK.z + 20 };
   let parkourDone = false;
 
-  function updatePark(dt) {
-    raceCooldown -= dt;
+  // LE CHRONOMÈTRE DE LA COURSE EST EN TEMPS RÉEL (v474). Il écrit
+  // `records.bestRace`, que Marlon et Alice comparent : compté en `dt` borné,
+  // il récompensait la tablette qui rame (à cinq images par seconde, vingt
+  // secondes de montre en comptaient cinq). Les records déjà écrits ne sont
+  // pas touchés — les remettre à zéro est une décision de Max (`TASKS.md`).
+  function updatePark(dtr) {
+    raceCooldown -= dtr;
     const ds = Math.hypot(player.pos.x - RACE_START.x - 0.5, player.pos.z - RACE_START.z - 0.5);
     const de = Math.hypot(player.pos.x - RACE_END.x - 0.5, player.pos.z - RACE_END.z - 0.5);
     if (raceTime === null && ds < 2.5 && raceCooldown <= 0) {
       raceTime = 0;
       toast('🏁 COURSE ! File jusqu\'au drapeau à damier !', 0x6ee06e);
     } else if (raceTime !== null) {
-      raceTime += dt;
+      raceTime += dtr;
       if (de < 2.5) {
         const t = raceTime;
         raceTime = null; raceCooldown = 5;
@@ -1002,8 +1008,8 @@ export function initFun(ctx) {
   // aucune n'occupe déjà sa place : la boucle passe toutes les trois secondes,
   // et sans cette garde le garage se remplirait à l'infini.
   let garageTimer = 0;
-  function veillerLesGarages(dt) {
-    garageTimer -= dt;
+  function veillerLesGarages(dtr) {
+    garageTimer -= dtr;
     if (garageTimer > 0) return;
     garageTimer = 3;
     const ctxJeu = world.ctx;
@@ -1240,7 +1246,7 @@ export function initFun(ctx) {
     boardB.style.display = bord || v ? 'block' : 'none';
     if (etat && targetRow.style.display === 'none') targetRow.style.display = 'flex';
   }
-  function updateTargetButtons(dt) {
+  function updateTargetButtons(dtr) {
     // DEUX RYTHMES, PAS UN.
     //
     // Chercher la bête devant soi coûte cher : on parcourt tout le bestiaire,
@@ -1268,7 +1274,7 @@ export function initFun(ctx) {
     // vide. L'enfant appuie, rien ne se passe. Et `majBoutonBord` sort tout
     // seul quand l'état n'a pas changé — la garde n'économisait donc rien.
     majBoutonBord(v);
-    targetTimer -= dt;
+    targetTimer -= dtr;   // temps réel : un bouton qui tarde à 3 im/s, l'enfant le rate
     if (targetTimer > 0) return;
     targetTimer = 0.25;
     const a = animalManager.targeted();
@@ -1313,9 +1319,18 @@ export function initFun(ctx) {
   let lastCtxKey = null;
   let derniereMonture = null;
 
+  // CE QUI SE COMPTE EN SECONDES DE LA VRAIE VIE (v474). `dt` est borné à un
+  // vingtième de seconde : à cinq images par seconde, une seconde de jeu en
+  // dure quatre de montre. Une animation suit le jeu ; un chronomètre de
+  // course, un délai, une veille de garage ou le rythme des défis de calcul,
+  // non. Lu à CHAQUE image, en pause comme en jeu : une pause n'entre donc
+  // jamais dans le chronomètre (seuls les tours `isRunning` le dépensent).
+  const chronoFun = chronoReel(2);
+
   function update(dt) {
+    const dtr = chronoFun();
     updateEmotes(dt);
-    if (isRunning()) veillerLesGarages(dt);
+    if (isRunning()) veillerLesGarages(dtr);
     if (!isRunning()) {
       // paused (or back at a menu without a full leaveToMainMenu): the
       // floating buttons must not float on top of the menu underneath
@@ -1340,10 +1355,10 @@ export function initFun(ctx) {
     embarquement.update(dt);   // APRÈS updateRide : la caméra de poursuite est posée, on s'y fond
     updateBord();
     updatePassager();
-    updateTargetButtons(dt);
+    updateTargetButtons(dtr);
     updateTreasure(dt);
-    updatePark(dt);
-    mathTimer -= dt;
+    updatePark(dtr);
+    mathTimer -= dtr;
     if (mathTimer <= 0) {
       mathTimer = 200 + Math.random() * 120;
       if (Math.random() < 0.55) showMathPop();
@@ -1409,6 +1424,10 @@ export function initFun(ctx) {
     poserBati,
     poserMonument,
     decoratePlayersPanel,
+    // La course du parc, EN LECTURE (v474) : le témoin du chronomètre en temps
+    // réel pose l'enfant au départ, puis à l'arrivée, et lit ce qui a compté.
+    courseEtat: () => ({ depart: RACE_START, arrivee: RACE_END, chrono: raceTime,
+      delai: raceCooldown, record: records.bestRace ?? null }),
     onBlockPlaced() {
       records.blocks++;
       saveRecords();
