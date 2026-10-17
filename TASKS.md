@@ -1,5 +1,41 @@
 # Ce qui est en cours
 
+- [ ] **PORTAIL DE LA v488 (les vrais arbres), sur le code fusionné à la
+  v487 : dix-sept suites, aucun rouge de la livraison.** Les deux premiers
+  passages (avant la fusion) ont rendu deux rouges qui étaient à moi, corrigés
+  avant le troisième : l'empreinte des 490 morceaux (`756ed744…` pour
+  `df0e4dfc…`), parce que le retour du mailleur portait `arbres: 0` et
+  `arbresEmis: 0` et que l'empreinte hache aussi les champs scalaires — les
+  champs ne sont présents que quand les arbres sont armés, et la constante
+  revient des deux côtés ; et `maj.js` « la version installée en tête », le
+  bump n'étant pas encore fait. Au troisième passage, tous déjà déclarés ici
+  avec leur double mesure : `carte.js` « la flèche du GPS pointe vers la
+  destination » (gauche 1,92 rad, l'intermittence de la v321) et « le fond
+  de carte entier se rend vite » (414 ms pour 400, la charge du portail) ;
+  `manhattan.js` « le taxi roule avec les contrôles tactiles » (3,6 blocs en
+  2,95 s de jeu pour 399 s de montre : la cadence de Manhattan, rouge des deux
+  côtés) ; `monte.js` « au volant, le personnage est assis » (`avatar:false`,
+  l'intermittence de la zone conduite), « deux voisines d'un convoi », « rue
+  vide » (vus `[0,7,14,3,0,0,0,14]`), Moscou « pleines de voitures » et « modèles
+  ET couleurs » (tous mesurés des deux côtés aux portails des v484 et v486), et
+  « en dérapage, la caisse est dessinée de travers du bon côté » (zéro relevé,
+  5,8 blocs/s : la voiture n'a pas pris sa vitesse sous la charge) — rejouée
+  SEULE sur la branche par `sonde-derive-signe.cjs` : 25 relevés, rapport 1,00,
+  comme au portail de la v473 ; `reseau.js` « un hôte sans courtier est trouvé »
+  et « il le REJOINT » (déclarés en v473), et « et le message dit quoi faire » /
+  « un réseau qui bloque tout renvoie vers un autre réseau » (le scénario du VPN
+  rend « Le serveur de jeu ne répond pas », le message du courtier muet — après
+  l'avertissement du banc sur le prénom « Lou » resservi) : rejouée SEULE,
+  les deux sont VERTS sur la branche ET sur `origin/main` (le message du Wi-Fi
+  qui bloque, code du monde compris) — la charge du portail, même distribution
+  des deux côtés. Sur la branche seule, le banc a ensuite lâché dans « un hôte
+  sans courtier est trouvé » (`net` nul après les 90 s d'attente,
+  `reseau.js:1293`, une attente qui JETTE au lieu de rendre un verdict —
+  v291) ; `origin/main` seule l'a passé. C'est le scénario déclaré en v473
+  (rouge des deux côtés au portail), hors de tout ce que la couche touche.
+  La couche est inerte sur ces pages : `world.arbres` ne vaut 1 que si
+  `RAYON_HD > 0`, et le banc rend en logiciel — seules les pages `hd=` de
+  `parishd.js` et `plafond.js` (node) l'arment, et elles sont vertes.
 - [ ] **LES VRAIS ARBRES (v488) : UNE DEMI-COURONNE À LA FRONTIÈRE DE
   `RAYON_HD`.** Un arbre dont la couronne déborde sur le morceau voisin est
   émis par le morceau qui porte son fût ; ses feuilles DANS le voisin sont

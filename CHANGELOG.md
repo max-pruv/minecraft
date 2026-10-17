@@ -63,6 +63,10 @@ pixels à travers un tronc fait 67 pixels en relief contre 166 en cubes ; un
 morceau de forêt tient sous un mégaoctet et demi. Les trois sont rouges avec
 `?arbres=0`. Captures envoyées à Max : forêt au sol, de près, en vol et du
 ciel ; taïga ; tropiques ; Méditerranée ; Champs-Élysées du trottoir et en vol.
+Portail complet sur le code fusionné à la v487 : treize suites vertes, et les
+rouges de `carte`, `manhattan`, `monte` et `reseau` tous déjà déclarés dans
+`TASKS.md` avec leur double mesure (le détail y est, sous « Portail de la
+v488 »).
 ## v487 — La voiture garée suit son garage
 
 **Pourquoi.** Un garage est rangé par sa position. Quand la carte a bougé sous
