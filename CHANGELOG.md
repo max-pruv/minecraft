@@ -32,8 +32,8 @@ ville, qu'il ne recouvre pas.
 
 **Ce que ça change.** On entre dans Sainte-Sophie de plain-pied, par l'ouest,
 à travers l'exonarthex : les bas-côtés sous leur voûte, quatre grands piliers,
-et au centre la nef qui monte quatorze blocs jusque sous la coupole, devenue
-une coque. Au fond, le mihrab doré et le minbar. Le dehors est celui d'avant
+et au centre la nef qui monte treize blocs jusque sous la coupole, devenue
+une coque tapissée d'or. Au fond, le mihrab doré et le minbar. Le dehors est celui d'avant
 au bloc près.
 
 **Ce qui le prouve.** Un témoin de `plafond.js` marche de proche en proche

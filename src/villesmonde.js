@@ -1898,12 +1898,14 @@ function buildSainteSophie(poser) {
     const sousLaCoupole = Math.hypot(x, z - 1) < 3.4;
     for (let y = 1; y <= (sousLaCoupole ? 4 : 3); y++) poser(x, y, z, AIR);
   }
-  // la coupole en coque : le tambour en couronne, la calotte creuse
+  // la coupole en coque : le tambour en couronne, la calotte creuse, et
+  // dedans le revêtement d'or des mosaïques — l'acier gris de la coque, vu
+  // d'en bas dans l'ombre, était un trou noir (vu en capture)
   for (let x = -4; x <= 4; x++) for (let z = -4; z <= 4; z++) {
     const d = Math.hypot(x, z);
-    if (d < 3.35) P(x, 5, z, AIR);
-    if (d < 3.31) P(x, 6, z, AIR);
-    if (d < 2.96) P(x, 7, z, AIR);
+    if (d < 3.35) P(x, 5, z, d < 2.35 ? AIR : OR);
+    if (d < 3.31) P(x, 6, z, d < 2.31 ? AIR : OR);
+    if (d < 2.96) P(x, 7, z, OR);              // la calotte d'or se ferme ici
   }
   // les quatre grands piliers aux coins du carré central
   for (const [a, b] of [[-3, -2], [3, -2], [-3, 4], [3, 4]]) for (let y = 1; y <= 4; y++) poser(a, y, b, PIERRE);
