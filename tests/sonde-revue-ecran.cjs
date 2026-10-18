@@ -1,4 +1,4 @@
-// LA REVUE D'ÉCRAN (v505) — ce que l'enfant voit, avant que Max ne le voie.
+// LA REVUE D'ÉCRAN (v506) — ce que l'enfant voit, avant que Max ne le voie.
 //
 // Pourquoi elle existe. En une matinée, Max a signalé lui-même, depuis son
 // iPhone, sept défauts qu'une capture montrait au premier regard : monter et
