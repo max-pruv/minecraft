@@ -6,6 +6,13 @@
 
 export const NOUVEAUTES = [
   {
+    v: 506,
+    titre: 'On vérifie chaque écran',
+    puces: [
+      'Chaque écran est photographié avant la sortie',
+    ],
+  },
+  {
     v: 504,
     titre: 'Des icônes claires, moins de messages',
     puces: [

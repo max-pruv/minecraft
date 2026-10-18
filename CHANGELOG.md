@@ -20,6 +20,38 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v506 — La revue d'écran : trouver les défauts avant Max
+
+**Pourquoi.** En une matinée, Max a dû signaler lui-même, depuis son iPhone,
+sept défauts qu'une capture montrait au premier regard : boutons monter et
+descendre inversés en vol, coche illisible pour sortir de la construction,
+roue du train méconnaissable, cubes orange dans le ciel, feux de détresse qui
+flottent, minicarte décalée, approche sans le nom de la ville. Le portail était
+vert chaque fois. « C'est vraiment des choses que tu devrais anticiper. »
+
+**Ce que ça change.** Pour la famille, rien encore : cette livraison ne corrige
+aucun défaut, elle les trouve. Elle apporte trois choses. Une sonde,
+`tests/sonde-revue-ecran.cjs`, met le jeu dans quinze états (accueil, menu, à
+pied en campagne et dans Paris, minicarte, carte du monde, volant à l'arrêt et
+en roulant, voiture de la rue percutée, vol libre, avion au sol, en vol et en
+approche, construction, métro, et deux tablettes en ligne). Elle capture chacun
+à la taille de l'iPhone de Max et de l'iPad, de jour et de nuit, avec la couche
+HD et les ombres. Un rapport, `docs/revue-ecran.md`, donne la grille de lecture
+et dix-huit constats, triés par gravité, chacun avec sa capture et son
+remède. Les trois plus graves : les blocs de base s'appellent « Grass » et
+« Stone » en anglais, la pilule « Monter · Âne » passe par-dessus la carte du
+monde, et à bord du métro la caméra est sur le toit de la rame. Enfin, une règle
+dans `CLAUDE.md` : toute livraison qui touche ce que l'enfant voit joue la sonde
+sur les états concernés et met les captures dans la PR avant de fusionner.
+
+**Ce qui le prouve.** Quatre-vingt-dix captures, aucun état en échec (`journal.txt` de la
+sonde : au volant, aux commandes, en approche « ralliement », à bord). La sonde
+s'est corrigée elle-même : sa première passe prenait 0,0 pour minuit, et les
+captures ont montré un ciel rose de lever du soleil. Aucun fichier du jeu ne
+change. Le portail est en voie courte (la sonde est isolée).
+
+---
+
 ## v504 — Des icônes claires, et plus de messages pendant le jeu
 
 Deux sujets, deux lignes au journal du jeu, des témoins pour chacun.
