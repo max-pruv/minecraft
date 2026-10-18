@@ -31,12 +31,12 @@ aller et retour, en sautant chaque marche qui monte) :
 
 | | quais atteints | rues retrouvées | cases sous 4 blocs d'air (par station) |
 | --- | --- | --- | --- |
-| Paris, v490 | 14 / 15 | 14 / 15 | 21 à 43 |
-| Paris, v491 | **15 / 15** | **15 / 15** | **2 à 6** |
-| Washington, v490 | 2 / 20 | 2 / 20 | 8 à 10 (plafond à 2 à Capitol South) |
-| Washington, v491 | **20 / 20** | **20 / 20** | **1 à 3** |
+| Paris, v528 | 14 / 15 | 14 / 15 | 21 à 43 |
+| Paris, v529 | **15 / 15** | **15 / 15** | **2 à 6** |
+| Washington, v528 | 2 / 20 | 2 / 20 | 8 à 10 (plafond à 2 à Capitol South) |
+| Washington, v529 | **20 / 20** | **20 / 20** | **1 à 3** |
 
-Station par station en v490 : à Paris, Hôtel de Ville sans chemin (sa trémie
+Station par station en v528 : à Paris, Hôtel de Ville sans chemin (sa trémie
 débouchait dans le parvis de Notre-Dame, que le monument recouvre), et dans
 toutes les autres un escalier et un couloir à trois blocs de haut — la tête de
 l'enfant cogne au sommet de chaque saut. À Washington, seuls Capitol South et
@@ -71,7 +71,7 @@ intactes. Les bouches gardent leur place sauf deux (Hôtel de Ville, Saint-Paul)
 la clef de la voûte de Paris reste sous le lit de la Seine (v473), et le
 passage des rames se creuse en dernier (zéro bloc dans leur gabarit sur 12 701
 points). Sous ce qu'un enfant a bâti avant `DATE_STATIONS`, ce qui est à moins
-de trois blocs du sol reste au bloc près celui de la v490 (la règle de la v485).
+de trois blocs du sol reste au bloc près celui de la v528 (la règle de la v485).
 
 **Ce qui le prouve.** Quatre témoins de `plafond.js`, lus sur la sonde : les
 trente-cinq stations aller et retour par le vrai joueur, la tête qui passe
