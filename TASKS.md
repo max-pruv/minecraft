@@ -1,12 +1,12 @@
 # Ce qui est en cours
 
-- [ ] **Deux rouges de DURÉE non déclarés au portail de la v511 (l'icône du
+- [ ] **Deux rouges de DURÉE non déclarés au portail de la v514 (l'icône du
   train).** `manhattan.js` « les passants de Manhattan marchent au long cap »
   (débit 0,52, déjà vu à 0,53 sous la v354, un tirage de cadence) et `monte.js`
   « à quatre-vingts blocs par seconde dans Paris, le worker ne reste pas à
   sec » (débit × 0,26), sur un portail chargé (`monte.js` 58 min contre 40 au
   portail précédent du même code, où les deux étaient verts). Preuve
-  structurelle, pas de double mesure : la v511 ne change que le dessin, la
+  structurelle, pas de double mesure : la v514 ne change que le dessin, la
   taille et l'`aria-label` de `#train-btn`, et le bloc de `main.js` qui les
   écrit s'arrête à `if (!enAvion) return` — aucun de ces deux témoins n'est
   aux commandes d'un avion. `carte.js` « ouvrir la carte ne fige pas l'image »
