@@ -1335,8 +1335,12 @@ function verifier(nom, ok, detail = '') {
         while (g0 > 0 && ecorce(g0 - 1)) g0--;
         while (g1 < W - 1 && ecorce(g1 + 1)) g1++;
         const largeur = ecorce(c) ? g1 - g0 + 1 : 0;
+        // (des cubes CACHÉS : jusqu'à la v510 ils partaient dans `plat`, caché
+        // de près ; depuis la v528 ils ne s'émettent plus nulle part, et un
+        // morceau qui porte les modèles lointains de ses arbres, `arbresLoin`,
+        // a tu les cubes de ces arbres)
         let dessines = 0, caches = 0, mo = 0, n = 0;
-        for (const m of g.chunkMeshes.values()) { if (m.facades && m.facades.visible) { dessines++; mo += m.octetsFacades || 0; n++; } if (m.plat && !m.plat.visible) caches++; }
+        for (const m of g.chunkMeshes.values()) { if (m.facades && m.facades.visible) { dessines++; mo += m.octetsFacades || 0; n++; } if (m.arbresLoin || (m.plat && !m.plat.visible)) caches++; }
         return { x, z, trunk: t.trunk, arbres: w.arbres, largeur, W, dessines, caches, moParMorceau: n ? +(mo / n / 1048576).toFixed(2) : 0, pireMo: +(Math.max(0, ...[...g.chunkMeshes.values()].map((m) => m.octetsFacades || 0)) / 1048576).toFixed(2), appels: g.renderer.info.render.calls, attente: Math.round(performance.now() - t0) };
       });
       const sylvestre = await banc.jouerSeul('Sylvestre', { rr: 4, params: '&hd=2' });

@@ -81,7 +81,7 @@ self.onmessage = (e) => {
       // sol : on lui en donne une copie, transférée, pas recopiée.
       const copie = data.slice();
       const transfert = [copie.buffer];
-      for (const g of [t.solid, t.water, t.lumineux, t.plat, t.platLumineux, t.sol, t.facades]) {
+      for (const g of [t.solid, t.water, t.lumineux, t.plat, t.platLumineux, t.sol, t.facades, t.arbresLoin]) {
         if (!g) continue;
         transfert.push(g.positions.buffer, g.normals.buffer, g.uvs.buffer, g.colors.buffer, g.tiles.buffer, g.indices.buffer);
         if (g.matiere) transfert.push(g.matiere.buffer, g.lueur.buffer);
@@ -89,7 +89,7 @@ self.onmessage = (e) => {
       self.postMessage({ type: 'morceau', cx, cz, generation: m.generation, data: copie, ms, inactif, envoye: performance.timeOrigin + performance.now(),
         cumul: { ms: cumulMs, hors: cumulHors },
         top: monde.chunkTop(cx, cz), solid: t.solid, water: t.water, lumineux: t.lumineux, props: t.props,
-        sol: t.sol, facades: t.facades, plat: t.plat, platLumineux: t.platLumineux, hd: t.hd, detail: t.detail, arbres: t.arbres, arbresEmis: t.arbresEmis }, transfert);
+        sol: t.sol, facades: t.facades, plat: t.plat, platLumineux: t.platLumineux, hd: t.hd, detail: t.detail, arbres: t.arbres, arbresEmis: t.arbresEmis, arbresLoin: t.arbresLoin, facesArbresTues: t.facesArbresTues }, transfert);
       inactif = 0;
       cumulHors += performance.now() - t0 - ms;
     }

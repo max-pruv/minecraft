@@ -1,5 +1,38 @@
 # Ce qui est en cours
 
+- [ ] **Rouges de portail de la v528 (les arbres au loin) : aucun de la
+  livraison.** Seul rouge à moi : `parishd.js` lisait « cubes cachés » sur
+  `plat` caché — repointé sur `arbresLoin`, vert. Restent `degats.js` (percuter
+  une voiture de la rue), `monte.js` (huit, dont la rue par tranches, le
+  convoi, la rue vide, « la recharge à l'arrivée garde la cadence » à 0,68 pour
+  0,75, le monde devant l'avion à Paris@120, le mur de face, le passage peint
+  de Rome) et `reseau.js`. PREUVE STRUCTURELLE (v291) : aucune de ces suites ne
+  force `hd=`, donc en rendu logiciel `RAYON_HD` vaut 0, `world.arbres` aussi,
+  et le mailleur rend les tampons de la v510 (aucun arbre reconnu, pas
+  d'`arbresLoin`). Et `reseau.js` rejouée SEULE : branche 4 verts / 23 rouges,
+  `origin/main` (v510) 2 verts / 15 rouges puis le banc lâche (« à trois,
+  chacun voit les deux autres » : `[[],[],[]]`) — le jeu à plusieurs ne tourne
+  plus sur ce banc, des deux côtés. Portail de la v528 après rebase sur la
+  v518 (durées normales, reprise de cinq suites) : verts `metro`, `parent`,
+  `parishd`, `carteMonde`, `sauvegarde`, `plafond`, `degats`, `visio`,
+  `realisme`, `carte`, `hote`, `washington`, `reglages` ; rouges déjà déclarés
+  `maj.js` (le loader et les fichiers rangés), `manhattan.js` (le taxi au
+  tactile), `monte.js` (convois, rue vide), `reseau.js` (le banc lâche) ; un
+  rouge neuf de `monte.js`, « là où l'ancienne visée ne trouvait rien, la monte
+  la voit » — même preuve structurelle (pas de `hd=`, arbres non atteints), à
+  rejouer seul sur `origin/main`.
+
+- [ ] **Les arbres beaux partout (v528) : ce qui reste.** (1) Au bord du
+  disque chargé, la part de couronne d'un arbre dont la base est dans un
+  morceau pas encore maillé manque (ses cubes se taisent dans le voisin) —
+  dans le brouillard, mais à regarder en vol rapide. (2) Le paysage lointain
+  (horizon.js) n'a aucun arbre : une forêt au-delà des morceaux maillés est
+  une prairie verte ; des silhouettes instanciées par `treeAt` y seraient la
+  suite. (3) Le palier bas et le rendu logiciel gardent les cubes (pas de
+  couche HD). (4) Coût worker de la reconnaissance partout : dans le bruit
+  sous node (1,6 à 6,9 ms par morceau des deux côtés) — à relire sur l'iPhone
+  (`?diag=1`, débit de maillage en vol au-dessus d'une forêt).
+
 ## LES ROUGES DU PORTAIL DE LA v522 — intermittents de `monte.js`, aucun causé par la livraison
 
 La v522 ne change que des TEXTES affichés (noms de blocs, bandeau « Donne le

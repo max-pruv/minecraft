@@ -13477,3 +13477,37 @@ sont intactes (`world.arbres` n'est posé que par `main.js`, jamais sur
 Ce qui reste, déclaré dans `TASKS.md` : une demi-couronne possible à la
 frontière de `RAYON_HD` (un arbre à cheval sur deux morceaux dont un seul est
 détaillé), et l'ombre des façades HD de Paris.
+
+## Les arbres beaux partout (v528) — un niveau de détail lointain se mesure contre ce qu'il remplace
+
+Max, en vol : « Au loin, les arbres sont moches, ils sont en forme Minecraft. »
+Au-delà du détail (v499), un morceau ne reconnaissait pas ses arbres et gardait
+leurs cubes. Quatre règles.
+
+- **LE LOIN SE MESURE CONTRE LES CUBES QU'IL REMPLACE, PAS EN VALEUR BRUTE.**
+  Les cubes d'arbre d'un morceau de forêt dense pesaient 200 Ko ; les cartes
+  lointaines (`arbreLoin`, trois cartes debout, deux couchées, un fût à trois
+  pans : 32 sommets par chêne, contre 304 de près) en pèsent 40. Sur le disque
+  du palier moyen (rr 12, détail à 4), mesuré sous node, bosquets de la v513
+  compris : forêt tempérée 74,4 → 69,2 Mo de tampons, tropiques 111,2 → 78,8,
+  taïga 89,2 → 74,7. Le loin coûte MOINS que les cubes : il ne passe donc pas
+  sous `hdMo`, qui borne le proche. La reconnaissance (≈ 2 ms par morceau de
+  forêt dense) se fait désormais partout ; le temps de maillage par morceau
+  reste dans le bruit (1,6 à 6,9 ms des deux côtés, passages alternés). Copier
+  la fenêtre de blocs à plat avant la reconnaissance est un non-résultat mesuré.
+- **LE PROCHE ET LE LOIN LISENT LA MÊME COURONNE.** `couronne` (arbreshd.js)
+  rend centre, demi-axes, normales du volume et nuance ; un témoin de
+  `plafond.js` exige, essence par essence, la même boîte de feuillage (centre
+  à 0,7 bloc, étendues de 0,7 à 1,35 fois), la même couleur moyenne (15 %) et
+  moins d'un quart des sommets. La tuile de feuilles est un DISQUE : une carte
+  à la taille de la couronne en est la silhouette ronde, sans tuile neuve.
+- **LES CUBES D'UN ARBRE RECONNU NE S'ÉMETTENT NULLE PART.** Plus dans
+  `plat` : ce tampon se montre quand le détail est rendu (budget, marge de
+  `RAYON_HD`), et les cubes y reviendraient à côté des cartes. Le mailleur
+  compte ce qu'il tait (`facesArbresTues`) : c'est sur ce compte que se lit
+  « on ne tait que ce que le modèle couvre » (v292), cabane de rondins
+  comprise. `montrerLeDetail` relaie `facades` et `arbresLoin`, jamais les deux.
+- **CE QUI RESTE, DÉCLARÉ** : au bord du disque chargé, la part de couronne
+  d'un arbre dont la base est dans un morceau pas encore maillé manque (dans
+  le brouillard) ; le palier bas et le rendu logiciel gardent les cubes (pas de
+  couche HD) ; le paysage lointain (horizon.js) n'a pas d'arbres du tout.

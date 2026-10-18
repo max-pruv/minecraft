@@ -20,6 +20,36 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v528 — Les arbres sont beaux partout, même au loin
+
+**Pourquoi.** Max, en vol au-dessus d'une forêt, sur iPhone : « Au loin, les
+arbres sont moches, ils sont en forme Minecraft. Au proche, ils sont beaux. Il
+faut qu'ils soient beaux partout. » Les vrais arbres de la v499 ne vivaient
+qu'à portée du détail (trois morceaux autour de l'enfant) ; au-delà, chaque
+morceau gardait ses arbres en cubes de feuilles, et la frontière se voyait
+nettement depuis le ciel.
+
+**Ce que ça change.** Plus un arbre en cubes, à aucune distance (paliers moyen
+et haut). Au loin, chaque arbre garde sa couronne — même place, même taille,
+même essence, même couleur que de près — en quelques grandes cartes de
+feuillage : une boule ronde pour le chêne, des étages pour le pin, une ombrelle
+pour le pin parasol et l'acacia, des palmes pour le palmier. En approchant, il
+passe au vrai arbre de la v499 sans saut. Et c'est plus léger qu'avant : les
+cartes d'un morceau de forêt pèsent 40 Ko, les cubes qu'elles remplacent en
+pesaient 200.
+
+**Ce qui le prouve.** Mesuré sous node sur le disque du palier moyen (rr 12),
+bosquets de la v513 compris : tampons 74,4 → 69,2 Mo en forêt tempérée,
+111,2 → 78,8 aux tropiques, 89,2 → 74,7 en taïga ; le temps de maillage par
+morceau reste dans le bruit de la mesure (1,6 à 6,9 ms des deux côtés, passages
+alternés). Avant les bosquets : 106,7 → 85,1, 163,8 → 89,5, 177,1 → 107,8. Deux témoins neufs dans `plafond.js`, rouges sur
+l'ancien code : au loin, les cubes d'arbre se taisent et chaque arbre a son
+modèle lointain à moins d'un quart des sommets du proche ; et, essence par
+essence, le proche et le lointain ont la même boîte de feuillage et la même
+couleur. Les cinq témoins des vrais arbres repointés : on ne tait que ce que
+le modèle couvre (compté par `facesArbresTues`), une cabane de rondins reste en
+cubes, aucun bloc ne bouge.
+
 ## v522 — Les blocs parlent français, et deux bandeaux se lisent
 
 **Pourquoi.** La revue d'écran de la v506 a relevé trois textes qu'un enfant de

@@ -626,9 +626,10 @@ world.hd = RAYON_HD > 0 ? 1 : 0;
 // LES VRAIS ARBRES (v499, arbreshd.js) : à portée de `RAYON_HD`, les arbres
 // d'un morceau — campagne, villes, Paris — sont dessinés en relief (tronc qui
 // s'effile, branches, cartes de feuilles) dans le tampon `facades`, et leurs
-// cubes partent dans `plat`, le loin. Même portée, même budget, même matériau
-// que le détail de Paris : rien de neuf à compiler, un appel de dessin par
-// morceau. Coupés avec la couche (rendu logiciel, palier bas) ; `?arbres=0`
+// cubes se taisent ; au-delà, chaque arbre garde sa couronne en quelques
+// cartes (`arbresLoin`, v528) — plus un cube d'arbre à aucune distance.
+// Même portée, même budget, même matériau que le détail de Paris : rien de
+// neuf à compiler, un appel de dessin par morceau. Coupés avec la couche (rendu logiciel, palier bas) ; `?arbres=0`
 // les coupe seuls, pour mesurer ; `?hd=N&arbres=1` les force au banc.
 const ARBRES_DEMANDES = new URLSearchParams(location.search).get('arbres');
 world.arbres = RAYON_HD > 0 && ARBRES_DEMANDES !== '0' ? 1 : 0;
@@ -1186,7 +1187,7 @@ function rebuildQueue() {
 
 function disposeChunkMesh(entry) {
   if (entry.facades) { detailTenu.octets -= entry.octetsFacades || 0; detailTenu.n--; }
-  for (const mesh of [entry.solid, entry.water, entry.lumineux, entry.sol, entry.facades, entry.plat, entry.platLumineux]) {
+  for (const mesh of [entry.solid, entry.water, entry.lumineux, entry.sol, entry.facades, entry.plat, entry.platLumineux, entry.arbresLoin]) {
     if (!mesh) continue;
     scene.remove(mesh);
     mesh.geometry.dispose();
@@ -1234,7 +1235,7 @@ function installerMorceau(cx, cz, tampons) {
   const solid = geometrieDepuisTampons(tampons.solid);
   const water = geometrieDepuisTampons(tampons.water);
   const lumineux = geometrieDepuisTampons(tampons.lumineux);
-  const entry = { solid: null, water: null, lumineux: null, props: null, sol: null, facades: null, plat: null, platLumineux: null,
+  const entry = { solid: null, water: null, lumineux: null, props: null, sol: null, facades: null, plat: null, platLumineux: null, arbresLoin: null,
     // ce morceau touche la couche HD (ou porte des arbres, v499), et il a été
     // maillé AVEC ses façades détaillées (v296)
     hd: !!tampons.hd || !!tampons.arbres, detail: !!tampons.detail, arbres: Math.max(0, tampons.arbres || 0) };
@@ -1254,15 +1255,18 @@ function installerMorceau(cx, cz, tampons) {
   // LA COUCHE HD DE PARIS (v287). Le sol HD est toujours montré ; le détail
   // des façades et leur tuile plate se relaient selon la distance — c'est
   // `montrerLeDetail` qui tranche, ici et à chaque changement de morceau.
-  if (tampons.sol || tampons.facades) {
+  // LES ARBRES AU LOIN (v528) : chaque arbre du morceau en quelques cartes de
+  // sa couronne, dans le même matériau que la couche HD (aucune clé de
+  // programme neuve), montrés quand le détail ne l'est pas (`montrerLeDetail`).
+  if (tampons.sol || tampons.facades || tampons.arbresLoin) {
     const materiau = materiauDeParis();
-    for (const [nom, t] of [['sol', tampons.sol], ['facades', tampons.facades]]) {
+    for (const [nom, t] of [['sol', tampons.sol], ['facades', tampons.facades], ['arbresLoin', tampons.arbresLoin]]) {
       const g = geometrieHD(t);
       if (!g) continue;
       if (nom === 'facades') { entry.octetsFacades = octetsDeTampons(t); detailTenu.octets += entry.octetsFacades; detailTenu.n++; }
       const m = new THREE.Mesh(g, materiau);
       m.position.set(cx * CHUNK, 0, cz * CHUNK);
-      m.castShadow = ombre && nom === 'facades';
+      m.castShadow = ombre && (nom === 'facades' || nom === 'arbresLoin');
       m.receiveShadow = true;
       entry[nom] = m;
       scene.add(decor(m));
@@ -1332,7 +1336,7 @@ function installerMorceau(cx, cz, tampons) {
   // morceau arrivé entre deux images y ajoute. APRÈS l'eau, les vitres et les
   // props : cette boucle passait avant leur création, et l'eau d'un morceau
   // arrivé entre deux images comptait pour une balle (fumée rouge, v300).
-  for (const m of [entry.solid, entry.water, entry.lumineux, entry.sol, entry.facades, entry.plat, entry.platLumineux, entry.props]) {
+  for (const m of [entry.solid, entry.water, entry.lumineux, entry.sol, entry.facades, entry.plat, entry.platLumineux, entry.arbresLoin, entry.props]) {
     if (m) m.userData.morceau = true;
   }
   chunkMeshes.set(key, entry);
@@ -1367,6 +1371,7 @@ function rendreLeDetail(entry) {
   entry.detail = false; entry.octetsFacades = 0;
   if (entry.plat) entry.plat.visible = true;
   if (entry.platLumineux) entry.platLumineux.visible = true;
+  if (entry.arbresLoin) entry.arbresLoin.visible = true;
 }
 // LE BUDGET S'APPLIQUE DU PLUS PROCHE AU PLUS LOIN (v299, `planDetail`) : ce
 // qui dépasse se rend, les candidats les plus proches se demandent, un tenu
@@ -1389,7 +1394,7 @@ function appliquerLeBudget(pcx, pcz, candidats) {
 // montre le relief, au-delà la tuile — et jamais les deux, sinon la face
 // plate au nu du mur cacherait la baie en retrait.
 function montrerLeDetail(entry, cx, cz, pcx, pcz) {
-  if (!entry.facades && !entry.plat && !entry.platLumineux) return;
+  if (!entry.facades && !entry.plat && !entry.platLumineux && !entry.arbresLoin) return;
   // Sans façades détaillées — pas encore fabriquées, ou rendues (v296) — le
   // morceau montre ses faces plates, quelle que soit la distance.
   // (un morceau détaillé dont le détail est vide — les feuilles d'un arbre
@@ -1399,6 +1404,9 @@ function montrerLeDetail(entry, cx, cz, pcx, pcz) {
   if (entry.facades) entry.facades.visible = pres;
   if (entry.plat) entry.plat.visible = !pres;
   if (entry.platLumineux) entry.platLumineux.visible = !pres;
+  // les arbres du loin (v528) se relaient avec leurs modèles proches, qui
+  // vivent dans `facades` : jamais les deux à la fois
+  if (entry.arbresLoin) entry.arbresLoin.visible = !pres;
 }
 
 // Faut-il fabriquer les façades détaillées de ce morceau ? (v296)
@@ -1584,6 +1592,7 @@ function updateChunks() {
         if (entry.solid) entry.solid.castShadow = ombre;
         if (entry.facades) entry.facades.castShadow = ombre;
         if (entry.plat) entry.plat.castShadow = ombre;
+        if (entry.arbresLoin) entry.arbresLoin.castShadow = ombre;
         montrerLeDetail(entry, cx, cz, pcx, pcz);
         gererLeDetail(entry, key, cx, cz, pcx, pcz, candidats);
       }

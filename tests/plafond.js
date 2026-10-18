@@ -3323,7 +3323,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         if (!best || n > best.n) best = { cx, cz, n };
       }
       const faces = (g) => (g ? g.indices.length / 6 : 0);
-      const sha = (t) => { const h = crypto.createHash('sha256'); for (const k of Object.keys(t).sort()) { const a = t[k]; if (a && a.buffer) h.update(Buffer.from(a.buffer, a.byteOffset, a.byteLength)); } return h.digest('hex'); };
+      const sha = (t) => { const h = crypto.createHash('sha256'); for (const k of Object.keys(t || {}).sort()) { const a = t[k]; if (a && a.buffer) h.update(Buffer.from(a.buffer, a.byteOffset, a.byteLength)); } return h.digest('hex'); };
       const monde = (arbres) => { const w = sansBosquets(new W.World()); w.arbres = arbres; return w; };
       const wa = monde(1), ws = monde(0);
       const arme = buildChunkTampons(wa, best.cx, best.cz, { detail: true });
@@ -3354,17 +3354,32 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         ecorce > 40 && feuilles > 100 && rBas > 0.25 && rHaut > 0 && rHaut < rBas * 0.75,
         `rayon à la base ${rBas.toFixed(2)}, à trois blocs ${rHaut.toFixed(2)}, ${ecorce} sommets d'écorce, ${feuilles} de feuilles`);
       // (2) le morceau de forêt : des arbres reconnus et émis, et la conservation des faces
-      verifier('dans le morceau de forêt le plus dense, les arbres sont reconnus et dessinés en relief, et seuls leurs cubes partent dans le loin',
+      // (depuis la v528 les cubes d'un arbre reconnu ne s'émettent plus nulle
+      // part — le loin a ses cartes, `arbresLoin` — et le mailleur compte les
+      // faces qu'il tait : `facesArbresTues`, à défaut de `plat` sur l'ancien code)
+      const tues = (t) => (t.facesArbresTues !== undefined ? t.facesArbresTues : faces(t.plat));
+      verifier('dans le morceau de forêt le plus dense, les arbres sont reconnus et dessinés en relief, et seuls leurs cubes se taisent',
         best.n >= 10 && arme.arbres >= best.n * 0.8 && arme.arbresEmis === arme.arbres && !!arme.facades && arme.facades.positions.length / 3 > 1000
-          && faces(arme.solid) + faces(arme.plat) === faces(sans.solid) && faces(arme.plat) > 0 && !sans.facades && !sans.plat,
-        `morceau (${best.cx}, ${best.cz}) : ${best.n} arbres de treeAt, ${arme.arbres} reconnus, ${arme.arbresEmis} émis, ${arme.facades ? arme.facades.positions.length / 3 : 0} sommets ; faces solid ${faces(arme.solid)} + plat ${faces(arme.plat)} = ${faces(sans.solid)} sans`);
+          && faces(arme.solid) + tues(arme) === faces(sans.solid) && tues(arme) > 0 && !sans.facades && !sans.plat,
+        `morceau (${best.cx}, ${best.cz}) : ${best.n} arbres de treeAt, ${arme.arbres} reconnus, ${arme.arbresEmis} émis, ${arme.facades ? arme.facades.positions.length / 3 : 0} sommets ; faces solid ${faces(arme.solid)} + tues ${tues(arme)} = ${faces(sans.solid)} sans`);
       // (3) les blocs ne bougent pas, et sans l'option ou sans détail, rien ne change
       const da = wa.ensureChunk(best.cx, best.cz), ds = ws.ensureChunk(best.cx, best.cz);
       let memes = da.length === ds.length;
       for (let i = 0; memes && i < da.length; i++) if (da[i] !== ds[i]) memes = false;
-      verifier('les vrais arbres ne posent ni ne retirent aucun bloc, et `vraisArbres: false` comme un morceau sans détail rendent les tampons d\'avant au bit près',
-        memes && sha(desarme.solid) === sha(sans.solid) && !desarme.facades && !desarme.plat && sha(loin.solid) === sha(sans.solid) && !loin.facades && !loin.plat && loin.arbres === -1,
-        `blocs identiques ${memes} ; désarmé = avant ${sha(desarme.solid) === sha(sans.solid)} ; loin = avant ${sha(loin.solid) === sha(sans.solid)} (au loin, le morceau se dit arboré : ${loin.arbres})`);
+      verifier('les vrais arbres ne posent ni ne retirent aucun bloc, et `vraisArbres: false` rend les tampons d\'avant au bit près',
+        memes && sha(desarme.solid) === sha(sans.solid) && !desarme.facades && !desarme.plat && !desarme.arbresLoin,
+        `blocs identiques ${memes} ; désarmé = avant ${sha(desarme.solid) === sha(sans.solid)}`);
+      // (3 bis, v528) AU LOIN AUSSI, PLUS UN CUBE D'ARBRE. Max, en vol : « au
+      // loin, les arbres sont en forme Minecraft ». Un morceau sans détail
+      // reconnaît ses arbres comme un morceau proche : son `solid` est celui du
+      // proche (les cubes tus), et chaque arbre a son modèle LOINTAIN dans
+      // `arbresLoin`, quelques cartes, à moins d'un quart des sommets du proche.
+      // Sur l'ancien code, le loin gardait ses cubes (`solid` = celui d'avant).
+      const vLoin = loin.arbresLoin ? loin.arbresLoin.positions.length / 3 : 0;
+      const vPres = arme.facades ? arme.facades.positions.length / 3 : 0;
+      verifier('au loin, les arbres ne sont plus des cubes : leurs cubes se taisent et chacun a son modèle lointain, à moins d\'un quart des sommets du proche',
+        loin.arbres === arme.arbres && sha(loin.solid) === sha(arme.solid) && !loin.facades && vLoin > loin.arbres * 12 && vLoin * 4 < vPres,
+        `${loin.arbres} arbres au loin (${arme.arbres} de près) ; solid du loin = solid du proche ${sha(loin.solid) === sha(arme.solid)} ; ${vLoin} sommets au loin, ${vPres} de près`);
       // (4) une cabane de rondins sans feuilles n'est pas un arbre
       const wc = monde(1);
       const h0 = wc.terrainHeight(best.cx * W.CHUNK + 8, best.cz * W.CHUNK + 8);
@@ -3374,8 +3389,8 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       for (let dx = 0; dx < 3; dx++) for (let dz = 0; dz < 3; dz++) for (let dy = 1; dy <= 3; dy++) wc0.setBlock(best.cx * W.CHUNK + 7 + dx, h0 + dy, best.cz * W.CHUNK + 7 + dz, BLOCK.LOG, 1);
       const cab0 = buildChunkTampons(wc0, best.cx, best.cz, { detail: true });
       verifier('une cabane de rondins posée par un enfant n\'est pas un arbre : elle reste dans `solid`, visible, et les arbres autour restent reconnus',
-        cab.arbres === arme.arbres && faces(cab.solid) + faces(cab.plat) === faces(cab0.solid) && faces(cab.solid) > faces(arme.solid),
-        `${cab.arbres} arbres (${arme.arbres} sans la cabane) ; faces solid ${faces(cab.solid)} + plat ${faces(cab.plat)} = ${faces(cab0.solid)} (${faces(arme.solid)} de solid sans la cabane)`);
+        cab.arbres === arme.arbres && faces(cab.solid) + tues(cab) === faces(cab0.solid) && faces(cab.solid) > faces(arme.solid),
+        `${cab.arbres} arbres (${arme.arbres} sans la cabane) ; faces solid ${faces(cab.solid)} + tues ${tues(cab)} = ${faces(cab0.solid)} (${faces(arme.solid)} de solid sans la cabane)`);
       // (5) déterminisme : Math.random remplacé, le même arbre ; et jamais Math.random dans le module
       const vrai = Math.random;
       let s = 123456789;
@@ -3385,7 +3400,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       // (le code, pas ses commentaires, qui nomment la règle)
       const source = require('fs').readFileSync(require('path').join(__dirname, '../src/arbreshd.js'), 'utf8').split('\n').filter((l) => !/^\s*\/\//.test(l)).join('\n');
       verifier('deux mondes neufs, Math.random remplacé entre les deux, dessinent les mêmes arbres, et arbreshd.js ne tire jamais au hasard',
-        sha(encore.facades) === sha(arme.facades) && sha(encore.plat) === sha(arme.plat) && !/Math\.random/.test(source),
+        sha(encore.facades) === sha(arme.facades) && sha(encore.plat) === sha(arme.plat) && sha(encore.arbresLoin) === sha(arme.arbresLoin) && !/Math\.random/.test(source),
         `facades ${sha(arme.facades).slice(0, 12)} / ${sha(encore.facades).slice(0, 12)}`);
       // (6) chaque essence a sa silhouette et sa couleur
       const silhouettes = {};
@@ -3406,6 +3421,42 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         Object.values(S).every((x) => x.sommets > 60) && S.pin.tuiles.aiguilles > 0 && !S.pin.tuiles.feuilles && S.parasol.tuiles.aiguilles > 0
           && S.palmier.tuiles.palme > 0 && S.bouleau.tuiles.bouleau > 0 && !S.bouleau.tuiles.ecorce && S.chene.tuiles.feuilles > 0 && S.olivier.tuiles.feuilles > 0 && couleurs.size === 9,
         `${Object.entries(S).map(([k, x]) => `${k} ${x.sommets}s ${JSON.stringify(x.tuiles)}`).join(' · ')} ; ${couleurs.size} couleurs ; ${Date.now() - t0} ms`);
+      // (7, v528) LE RELAIS PROCHE → LOIN NE SE VOIT PAS : pour chaque
+      // essence, le modèle lointain (`arbreLoin`) occupe la même boîte que le
+      // proche (centre du feuillage à moins de 0,7 bloc — le relais se fait à
+      // quarante-huit blocs et plus —, chaque étendue entre
+      // 0,7 et 1,35 fois) et porte la même couleur moyenne (à 15 % près), en
+      // moins d'un quart de ses sommets. Les deux lisent `couronne`.
+      if (typeof A.arbreLoin === 'function') {
+        const lire = (fn, ess) => {
+          const b = new GeomBufferHD();
+          fn(b, 3, 40, 3, 1000, 2000, 5, { x0: 1, x1: 5, y0: 43, y1: 46, z0: 1, z1: 5 }, ess, 0);
+          const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity], c = [0, 0, 0];
+          let n = 0;
+          for (let i = 0; i < b.positions.length / 3; i++) {
+            const u = b.uvs[i * 2], v = b.uvs[i * 2 + 1];
+            if (dans(u, v, 'ecorce') || dans(u, v, 'bouleau')) continue;
+            for (let k = 0; k < 3; k++) { const q = b.positions[i * 3 + k]; lo[k] = Math.min(lo[k], q); hi[k] = Math.max(hi[k], q); c[k] += b.colors[i * 3 + k]; }
+            n++;
+          }
+          return { sommets: b.positions.length / 3, centre: lo.map((l, k) => (l + hi[k]) / 2), ext: lo.map((l, k) => hi[k] - l), couleur: c.map((x) => x / Math.max(1, n)) };
+        };
+        const ecarts = [];
+        let bon = true;
+        for (const ess of ['chene', 'pin', 'bouleau', 'palmier', 'parasol', 'olivier', 'acacia', 'feuillu', 'ville']) {
+          const P = lire(A.arbreVrai, ess), L = lire(A.arbreLoin, ess);
+          const dc = Math.hypot(P.centre[0] - L.centre[0], P.centre[1] - L.centre[1], P.centre[2] - L.centre[2]);
+          const re = L.ext.map((e, k) => e / P.ext[k]);
+          const rc = L.couleur.map((x, k) => x / P.couleur[k]);
+          const ok = dc < 0.7 && re.every((r) => r > 0.7 && r < 1.35) && rc.every((r) => r > 0.85 && r < 1.15) && L.sommets * 4 < P.sommets;
+          if (!ok) bon = false;
+          ecarts.push(`${ess}${ok ? '' : ' ✗'} Δ${dc.toFixed(2)} ×${re.map((r) => r.toFixed(2)).join('/')} c×${rc.map((r) => r.toFixed(2)).join('/')} ${L.sommets}/${P.sommets}s`);
+        }
+        verifier('le relais proche → loin d\'un arbre ne se voit pas : même boîte, même couleur, moins d\'un quart des sommets, pour chaque essence',
+          bon, ecarts.join(' · '));
+      } else {
+        verifier('le relais proche → loin d\'un arbre ne se voit pas : même boîte, même couleur, moins d\'un quart des sommets, pour chaque essence', false, 'pas de modèle lointain (arbreLoin)');
+      }
     }
   }
 
