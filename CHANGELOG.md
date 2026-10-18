@@ -38,10 +38,11 @@ passe au vrai arbre de la v499 sans saut. Et c'est plus léger qu'avant : les
 cartes d'un morceau de forêt pèsent 40 Ko, les cubes qu'elles remplacent en
 pesaient 200.
 
-**Ce qui le prouve.** Mesuré sous node sur le disque du palier moyen (rr 12) :
-tampons 106,7 → 85,1 Mo en forêt tempérée, 163,8 → 89,5 aux tropiques,
-177,1 → 107,8 en taïga ; temps de maillage par morceau 2,0–2,5 → 2,1–2,2 ms,
-2,5 → 2,8 et 2,8 → 3,3 ms. Deux témoins neufs dans `plafond.js`, rouges sur
+**Ce qui le prouve.** Mesuré sous node sur le disque du palier moyen (rr 12),
+bosquets de la v513 compris : tampons 74,4 → 69,2 Mo en forêt tempérée,
+111,2 → 78,8 aux tropiques, 89,2 → 74,7 en taïga ; le temps de maillage par
+morceau reste dans le bruit de la mesure (1,6 à 6,9 ms des deux côtés, passages
+alternés). Avant les bosquets : 106,7 → 85,1, 163,8 → 89,5, 177,1 → 107,8. Deux témoins neufs dans `plafond.js`, rouges sur
 l'ancien code : au loin, les cubes d'arbre se taisent et chaque arbre a son
 modèle lointain à moins d'un quart des sommets du proche ; et, essence par
 essence, le proche et le lointain ont la même boîte de feuillage et la même

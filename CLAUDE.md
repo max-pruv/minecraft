@@ -13488,13 +13488,13 @@ leurs cubes. Quatre règles.
   Les cubes d'arbre d'un morceau de forêt dense pesaient 200 Ko ; les cartes
   lointaines (`arbreLoin`, trois cartes debout, deux couchées, un fût à trois
   pans : 32 sommets par chêne, contre 304 de près) en pèsent 40. Sur le disque
-  du palier moyen (rr 12, détail à 4), mesuré sous node : forêt tempérée
-  106,7 → 85,1 Mo de tampons, tropiques 163,8 → 89,5, taïga 177,1 → 107,8. Le
-  loin coûte MOINS que les cubes : il ne passe donc pas sous `hdMo`, qui borne
-  le proche. Le prix est au worker : la reconnaissance (≈ 2 ms par morceau de
-  forêt dense) se fait désormais partout — 2,0–2,5 → 2,1–2,2 ms par morceau en
-  forêt tempérée, 2,5 → 2,8 aux tropiques, 2,8 → 3,3 en taïga. Copier la
-  fenêtre de blocs à plat avant la reconnaissance est un non-résultat mesuré.
+  du palier moyen (rr 12, détail à 4), mesuré sous node, bosquets de la v513
+  compris : forêt tempérée 74,4 → 69,2 Mo de tampons, tropiques 111,2 → 78,8,
+  taïga 89,2 → 74,7. Le loin coûte MOINS que les cubes : il ne passe donc pas
+  sous `hdMo`, qui borne le proche. La reconnaissance (≈ 2 ms par morceau de
+  forêt dense) se fait désormais partout ; le temps de maillage par morceau
+  reste dans le bruit (1,6 à 6,9 ms des deux côtés, passages alternés). Copier
+  la fenêtre de blocs à plat avant la reconnaissance est un non-résultat mesuré.
 - **LE PROCHE ET LE LOIN LISENT LA MÊME COURONNE.** `couronne` (arbreshd.js)
   rend centre, demi-axes, normales du volume et nuance ; un témoin de
   `plafond.js` exige, essence par essence, la même boîte de feuillage (centre
