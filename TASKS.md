@@ -1,5 +1,29 @@
 # Ce qui est en cours
 
+- [ ] **Rouges du portail de la v525 (la sûreté garde le lointain)** — 15 suites
+  vertes, `maj.js` et `monte.js` rouges. Rejouées SEULES (branche, puis
+  `origin/main` v518 dans un arbre détaché) : `maj.js` 71 verts et ZÉRO rouge
+  des deux côtés (ses deux rouges de portail, « le loader dit combien de
+  fichiers » et « le loader ne s'efface… », sont ceux déclarés ci-dessous).
+  `monte.js` branche 248 verts / 9 rouges, `origin/main` 249 / 8 : des deux
+  côtés « la rue se fabrique par tranches », « un flâneur posé au milieu »,
+  « deux voisines d'un convoi », « au feu la voiture freine », « rue vide » ;
+  branche seule les tirages de passants déjà déclarés (Rome en biais, Londres,
+  « hors de Paris aussi », « un passant lancé sur la voiture de l'enfant ») ;
+  `origin/main` seul « la recharge à l'arrivée garde la cadence », « un mur
+  pris de face », « Atterrissage vers <ville> ». Preuve STRUCTURELLE (v291) :
+  ce que la v525 change n'est lu que sous une sûreté RANGÉE avec une étendue
+  choisie, et aucune page de `maj.js` ni de `monte.js` n'en range (le banc met
+  `rr=` dans toute adresse). Ses deux témoins (`parent.js`) sont verts.
+- [ ] **Trou de ciel au bord des morceaux maillés, en vol** (revue d'écran
+  v525, relevé n° 19 de `docs/revue-ecran.md`) — visible avec et sans couronne ;
+  le brouillard reculé de « Loin » le rend plus visible. À sonder colonne par
+  colonne (découpe de la grille fine contre `chunkMeshes`).
+- [ ] **POUR MAX : la sûreté de son iPhone** — « Loin » choisi, il joue
+  « Normal » par sûreté depuis deux plantages de la v406–v411 ; aucun
+  plantage depuis (journal_appareil). Retoucher « Loin » dans les Réglages
+  lève la sûreté (v509) et rend `rr 16` et la HD 6 ; la v525 lui rend déjà le
+  paysage lointain sans cela.
 ## LES ROUGES DU PORTAIL DE LA v522 — intermittents de `monte.js`, aucun causé par la livraison
 
 La v522 ne change que des TEXTES affichés (noms de blocs, bandeau « Donne le
