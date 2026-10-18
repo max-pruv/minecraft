@@ -86,6 +86,34 @@ async function passage() {
     porteMax: Math.max(...r.map((x) => x.porte)), avatarPendant: r.some((x) => x.avatar),
     fin: r[r.length - 1], vise: viseMonter };
 
+  // 1 bis. À BORD (v507, revue d'écran #3, #5, #6) : la caméra est DANS la
+  // voiture (sous son toit, entre ses flancs), les boutons de la marche sont
+  // cachés, et la pilule « Descendre » n'est pas coupée.
+  if (bord()) {
+    await images(3);
+    m.updateMatrixWorld(true);
+    const c = m.worldToLocal(g.player.camera.position.clone());
+    const bb = new THREE.Box3().setFromObject(m);
+    // la page du banc est un bureau : l'interface tactile y est masquée, et le
+    // témoin serait vert des deux côtés. On la montre le temps de la lire, et
+    // l'on exige qu'à pied (classe `a-bord` retirée) Voler soit visible.
+    const ui = document.getElementById('touch-ui'), uiAvant = ui ? ui.style.display : null;
+    if (ui) ui.style.display = 'block';
+    const cache = (id) => { const el = document.getElementById(id); return !el || getComputedStyle(el).display === 'none' || el.getBoundingClientRect().width === 0; };
+    const temoinDuTemoin = (() => { const a = document.body.classList.contains('a-bord'); document.body.classList.remove('a-bord');
+      const v = !cache('fly-btn'); if (a) document.body.classList.add('a-bord'); return v; })();
+    const pil = document.getElementById('board-btn');
+    // le regard dans l'axe de la marche : le nez du modèle est en −z
+    const nez = new THREE.Vector3(0, 0, -1).applyQuaternion(m.getWorldQuaternion(new THREE.Quaternion()));
+    const vue = new THREE.Vector3(); g.player.camera.getWorldDirection(vue);
+    res.aBord = { axe: +Math.abs(nez.x * vue.x + nez.z * vue.z).toFixed(2), cam: { x: +c.x.toFixed(2), y: +c.y.toFixed(2), z: +c.z.toFixed(2) },
+      toit: +(bb.max.y - m.position.y).toFixed(2), plancher: 0.75,
+      caches: Object.fromEntries(['fly-btn', 'construire-btn', 'jump-btn', 'down-btn'].map((id) => [id, cache(id)])),
+      pilule: { texte: pil.textContent, sw: pil.scrollWidth, cw: pil.clientWidth, vue: getComputedStyle(pil).display !== 'none' },
+      voitAPied: temoinDuTemoin };
+    if (ui) ui.style.display = uiAvant;
+  }
+
   // 2. DESCENDRE : l'état bascule au premier appui, la porte s'ouvre, l'enfant
   // se pose sur le quai, la porte se referme
   m = await aQuai();
@@ -145,6 +173,14 @@ function juger(r, verifier) {
     r.second && r.second.avant === 'approche' && !r.second.apres && r.second.bord && r.second.porte < 0.02 && !r.second.avatar
       && r.roule && r.roule.bord && !r.roule.ph,
     JSON.stringify({ second: r.second, roule: r.roule }));
+  const a = r.aBord;
+  verifier('à bord d\'une rame, la caméra est dans la voiture (sous son toit, entre ses flancs, au-dessus du plancher) et regarde dans l\'axe de la marche',
+    !!a && a.cam.y > a.plancher && a.cam.y < a.toit - 0.15 && Math.abs(a.cam.x) < 0.7 && Math.abs(a.cam.z) < 3.6 && a.axe > 0.9,
+    JSON.stringify(a || r.err));
+  verifier('à bord, Voler, Construire, Sauter et Descendre (le vol) sont cachés',
+    !!a && a.voitAPied && Object.values(a.caches).every(Boolean), JSON.stringify(a && { caches: a.caches, voitAPied: a.voitAPied }));
+  verifier('à bord, la pilule « Descendre » n\'est pas coupée',
+    !!a && a.pilule.vue && /Descendre/.test(a.pilule.texte) && a.pilule.sw <= a.pilule.cw + 1, JSON.stringify(a && a.pilule));
   verifier('monter dans une rame ne compile aucun programme et n\'écrit aucun bloc',
     r.clesNeuves === 0 && r.blocs === 0, JSON.stringify({ cles: r.clesNeuves, blocs: r.blocs }));
 }

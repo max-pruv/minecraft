@@ -489,6 +489,10 @@ export function initFun(ctx) {
     if (place.nom === 'voiture' && conduireLaVoiture(place)) return;
     const aBord = () => {
       bord = { id: place.id, nom: place.nom, emoji: place.emoji };
+      // ON REGARDE DANS L'AXE DE LA MARCHE (v507) : le nez du modèle est en −z
+      // et sa rotation vaut cap + π, le regard du joueur va en (−sin, −cos).
+      const q = getVehicules && getVehicules().place(place.id);
+      if (q && Number.isFinite(q.capCaisse)) { player.yaw = q.capCaisse + Math.PI; player.pitch = 0; bord.cap = q.capCaisse; }
       emojiBurst([place.emoji, '💨'], 8);
     };
     // PAR LA PORTE, SI LA RAME EST À QUAI (v489) : l'enfant marche jusqu'à la
@@ -510,6 +514,24 @@ export function initFun(ctx) {
     // sans ce rappel, on verrait le paysage avec une image de retard, ce qui
     // suffit à donner mal au cœur sur une tablette.
     player.camera.position.copy(player.eyePosition());
+    // DANS LA VOITURE, PAS SUR SON TOIT (v507, revue d'écran #3). L'œil d'un
+    // enfant debout (1,62 au-dessus de l'assise) passait le toit d'une rame :
+    // on voyait une dalle et un plafond de pierre, jamais le quai. Le convoi
+    // dit où sont les yeux d'un voyageur (`oeil`), comme l'habitacle d'une
+    // voiture (v230) ; sans `oeil` (une monoplace, à ciel ouvert), rien ne change.
+    if (Number.isFinite(place.oeil)) {
+      player.camera.position.y = place.oeil;
+      // ET LE REGARD TOURNE AVEC LA RAME : sans cela, dans une courbe, la
+      // caisse tourne sous un regard figé et l'on finit le nez dans la vitre
+      // (mesuré à Washington : 0,86 puis 0,22 d'alignement en six secondes).
+      // On ajoute au regard ce que la caisse a tourné ; ce que l'enfant a
+      // tourné lui-même reste à lui.
+      const c = place.capCaisse;
+      if (Number.isFinite(c)) {
+        if (Number.isFinite(bord.cap)) player.yaw += Math.atan2(Math.sin(c - bord.cap), Math.cos(c - bord.cap));
+        bord.cap = c;
+      }
+    }
   }
 
   document.addEventListener('keydown', (e) => {
@@ -1258,12 +1280,19 @@ export function initFun(ctx) {
     // PLUS D'EMOJI SUR UN BOUTON (v504) : une icône dessinée dit le geste,
     // le mot dit quoi ; la ligne d'un métro garde sa pastille de couleur, et
     // `data-quoi` nomme ce qu'on prend, pour les témoins.
-    boardB.innerHTML = bord ? avecIcone('sortir', `Descendre du ${bord.nom}`)
+    // À BORD, « DESCENDRE » ET LA PASTILLE DE LA LIGNE (v507, revue d'écran
+    // #5) : « Descendre du métro Bl… » coupait justement la couleur, qui était
+    // tout le sens du mot. Le nom complet seulement s'il tient (mesuré
+    // ci-dessous, une fois par changement d'état).
+    boardB.innerHTML = bord ? avecIcone(pastille(bord.emoji) || 'sortir', `Descendre du ${bord.nom}`)
       : v && v.nom === 'voiture' ? avecIcone('volant', 'Conduire cette voiture')
         : avecIcone((v && pastille(v.emoji)) || 'monter', 'Monter à bord');
     boardB.dataset.quoi = bord ? bord.nom : v ? v.nom : '';
     boardB.style.display = bord || v ? 'block' : 'none';
     if (etat && targetRow.style.display === 'none') targetRow.style.display = 'flex';
+    if (bord && boardB.scrollWidth > boardB.clientWidth + 1) {
+      boardB.innerHTML = avecIcone(pastille(bord.emoji) || 'sortir', 'Descendre');
+    }
   }
   function updateTargetButtons(dtr) {
     // DEUX RYTHMES, PAS UN.

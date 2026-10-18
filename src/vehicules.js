@@ -1085,6 +1085,9 @@ export function jumelleSansContact(pA, pB, grille, nb, rangB, nbB, avecBus) {
 
 // Une voiture de métro : caisse arrondie, bandeau vitré continu, portes, bogies.
 // Le nez est plus arrondi sur la motrice que sur les remorques.
+// L'œil d'un voyageur assis dans une rame, au-dessus de la voie (v507) : le
+// milieu du bandeau vitré de `construireRame`, sous son toit.
+export const OEIL_RAME = 1.75;
 function construireRame(motrice, couleur = 0x2a6ad8) {
   const a = new Atelier();
   const L = 7.2, larg = 1.5, h = 1.6;
@@ -1408,6 +1411,10 @@ class Convoi {
     this.emoji = opts.emoji || '🚗';
     // À quelle hauteur, au-dessus du tracé, on est assis dedans.
     this.assise = opts.assise ?? 1.2;
+    // L'ŒIL D'UN VOYAGEUR (v507) : la hauteur des yeux au-dessus de la voie,
+    // dans le volume de la voiture. Sans lui, l'œil est celui d'un enfant
+    // debout sur la place (`assise` + 1,62) — au-dessus du toit d'une rame.
+    this.oeil = opts.oeil ?? null;
     // `freine` : la vitesse suit le tracé. Une rame de métro garde la sienne —
     // elle roule sur des rails — mais une monoplace ralentit en épingle et
     // relance en ligne droite. `allureMin` est la part de vitesse qu'il lui
@@ -1561,8 +1568,11 @@ class Convoi {
   }
 
   place(i, avance = 0) {
-    const p = this.parcours.a(this.dElement(i) + avance);
-    return { x: p.x, y: p.y + this.assise, z: p.z, cap: p.cap };
+    const d = this.dElement(i) + avance, par = this.parcours;
+    const p = par.a(d);
+    // `capCaisse` : le cap que la caisse dessine (celui de l'empattement, v244)
+    return { x: p.x, y: p.y + this.assise, z: p.z, cap: p.cap, oeil: this.oeil === null ? null : p.y + this.oeil,
+      get capCaisse() { return this._c ?? (this._c = par.capLisse(d)); }, _c: undefined };
   }
 
   // LA GRILLE HORAIRE DU CONVOI (v305). Max, en ligne : « les utilisateurs ne
@@ -2481,6 +2491,9 @@ export function createVehicules({ scene, player }) {
         depart: phaseFraction !== null ? phaseFraction * p.longueur : (k * p.longueur) / rames,
         phaseFraction, pausesParArret,
         nom, emoji: opts.emoji || '🚇', assise: 1.1,
+        // à hauteur du bandeau vitré (1,53 à 1,95), sous le toit (2,35) :
+        // on voit le quai par la fenêtre (revue d'écran #3)
+        oeil: OEIL_RAME,
         arrets, pause: opts.pause, souterrain: opts.souterrain, decouvert: opts.decouvert, rail: true,
         modele: (i) => construireRame(i === 0, teintes[k % teintes.length]),
       });

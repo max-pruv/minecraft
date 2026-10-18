@@ -2862,17 +2862,25 @@ function majBoutonsVehicule() {
   // `en-jeu` : la partie est à l'écran (le menu ouvert la met en pause sans
   // la quitter) ; `en-vol` : l'enfant vole à pied.
   const enJeu = overlay.style.display === 'none' && pauseBtn.style.display === 'block';
-  const enVol = !enVehicule && !!player.flying;
-  const cle = `${enVehicule}|${enAvion}|${enJeu}|${enVol}`;
+  // À BORD D'UNE RAME OU D'UN TRAIN (v507, revue d'écran #6) : on est porté,
+  // comme au volant — Voler, Construire, Sauter et Descendre n'y ont pas de
+  // sens. Une classe à part, `a-bord` : le frein à main et la colonne de bord
+  // restent ceux du volant et de l'avion.
+  let aBord = false;
+  // `fun` naît plus bas (initFun) : avant lui, sa zone morte jetterait
+  try { aBord = running && !enVehicule && !!(fun && fun.bordDe && fun.bordDe()); } catch { aBord = false; }
+  const enVol = !enVehicule && !aBord && !!player.flying;
+  const cle = `${enVehicule}|${enAvion}|${enJeu}|${enVol}|${aBord}`;
   if (cle !== etatVehicule) {
     etatVehicule = cle;
     document.body.classList.toggle('en-vehicule', enVehicule);
     document.body.classList.toggle('en-avion', enAvion);
     document.body.classList.toggle('en-jeu', enJeu);
     document.body.classList.toggle('en-vol', enVol);
+    document.body.classList.toggle('a-bord', aBord);
     // On ne construit pas au volant : monter dans un véhicule termine la
     // construction, et l'on revient à pied en mode Explorer.
-    if (enVehicule && commandes) commandes.construire(false);
+    if ((enVehicule || aBord) && commandes) commandes.construire(false);
   }
   // À pied comme au volant, le bouton redevient Voler — son mot ET son aile.
   if (!enAvion && dernierMotVol !== 'VOLER') {

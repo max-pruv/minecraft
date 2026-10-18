@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 515,
+    titre: 'Assis dans le métro',
+    puces: [
+      'On voit le quai par la fenêtre',
+      'Descendre montre la couleur de la ligne',
+      'Moins de boutons à bord',
+    ],
+  },
+  {
     v: 514,
     titre: 'Le train est une roue',
     puces: [
