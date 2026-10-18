@@ -20,6 +20,48 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v512 — Les voitures de Montmartre roulent mieux
+
+**Pourquoi.** Deux dettes de Paris, remesurées en v475 sur la voie que la
+voiture roule (1,3 bloc à droite de l'axe) et confiées par Max (« sur les
+décisions fais au mieux »). Remesurées ici sous node sur `origin/main` :
+**74 pas de carrosserie dans un bloc plein** sur les huit circuits — 32 sur le
+pavé d'une colonne plus haute d'un bloc le long des boulevards de Clichy et de
+Rochechouart, 17 dans les murs du Moulin Rouge, posé en travers du boulevard
+de Clichy, 25 dans les troncs des jardins que les rues traversent (Tuileries
+11, Buttes-Chaumont 12, place des Vosges 2). Les neuf pas du bois de Vincennes
+de la v475 n'existent plus.
+
+**Ce que ça change.**
+- Le Moulin Rouge borde le boulevard au nord, façade, porte et ailes tournées
+  vers lui, dans la même boîte : le relief ne bouge pas. Les mondes figés
+  gardent l'ancien bâtisseur.
+- Sur la pente de la butte, la voiture ne mord plus le pavé : sa hauteur se lit
+  sous sa carrosserie, dans sa voie, et plus sous l'axe de la rue. Rien du
+  monde ne bouge. C'est vrai dans les six villes bâties à la main (San
+  Francisco 233 → 63 pas, Nice 110 → 59), d'une marche au plus.
+- La rue de Belleville, le boulevard de Ménilmontant et le boulevard
+  Beaumarchais traversent les Buttes-Chaumont et la place des Vosges sur leur
+  chaussée, sans changer un lot. Sous une colonne où un enfant a bâti avant la
+  date, le jardin d'avant reste.
+- **Pas les Tuileries**, et c'est déclaré : pour que la rue de Rivoli longe la
+  grille, il faut déplacer la rue, ce qui change 171 colonnes de lot.
+
+**Ce qui le prouve.** 74 → 11 pas dans un bloc plein à Paris, les onze dans
+les Tuileries (`sonde.mjs` dans le brouillon, les deux arbres). Quatre témoins
+neufs : `carteMonde.js` lit tous les pas de tous les circuits sur la voie, hors
+Tuileries (0 ici, 63 sur `origin/main`) ; `plafond.js` lit le disque entier
+des deux façons (267 colonnes de jardin passées à la rue, zéro lot changé, zéro
+hors des jardins déclarés), pose une cabane avant et après la date, et vérifie
+que le Moulin Rouge tient dans sa boîte, hors de la chaussée, et que le monde
+figé garde l'ancien. L'empreinte des 490 morceaux change (la place des Vosges
+est dans les morceaux de Paris) : désarmée, elle rend la constante de la v504
+au bit près. Le prix, déclaré : sur les pentes, une voiture peut flotter
+au-dessus du pavé sous son centre là où son flanc touche la marche (25 pas sur
+5 809 au-dessus d'un bloc à Paris, contre 6).
+
+---
+
 ## v510 — En vol, Monter est au-dessus de Descendre
 
 **Pourquoi.** Max, sur iPhone, en vol : « Ça serait bien d'inverser les boutons

@@ -393,7 +393,11 @@ const EMPREINTE_MORCEAUX_V414 = '863d4203a441e3fd029ce2404fc6d6e706799e7f64fe489
 // constante de la v473, au bit près.
 // l'écart d'une voie à l'axe du métro (metromonde.js, GABARIT.ecart)
 const MM_ECART = 2.2;
-const EMPREINTE_MORCEAUX_V357 = 'fe1e5a37a4619528e26defbc41485903b67da5616fac3da6a2b53391b7839d42';
+// v512 : à Paris, un des neuf lieux, le boulevard Beaumarchais traverse la
+// place des Vosges sur sa chaussée (`traverse`). `reglageJardins.voies` à faux
+// et le Moulin Rouge neuf retiré (le champ `tour`), la branche rend fe1e5a37…,
+// la constante de la v504, au bit près.
+const EMPREINTE_MORCEAUX_V357 = '713d47041321fa80d68a54f7e1e3c501c108f6d548f291ef3ee1a218b2cb49d1';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -2988,6 +2992,76 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     verifier('les bandes ne changent pas la forme d\'une façade : ce qu\'un enfant a bâti devant reste devant',
       !!reg && formes === 0 && ailleurs === 0,
       reg ? `${formes} couches de solidité différente, ${ailleurs} blocs changés hors des bandes` : 'pas de reglageBaies (ancien code)');
+  }
+
+  // LA VOIE NOMMÉE TRAVERSE LE JARDIN, SUR SA CHAUSSÉE (v512). Les jardins
+  // passaient avant les rues dans `solParis` : les voitures de la rue de
+  // Belleville, du boulevard de Ménilmontant et du boulevard Beaumarchais
+  // roulaient dans les troncs des Buttes-Chaumont et de la place des Vosges.
+  // Le témoin lit le disque entier des deux façons (`reglageJardins.voies`) :
+  // AUCUNE colonne de lot ne change, et seuls les jardins déclarés `traverse`
+  // changent. Puis il pose une cabane avant la date à côté d'une colonne qui
+  // devient chaussée : elle garde son jardin ; posée après, la rue passe.
+  {
+    const PA = await import('../src/paris.js');
+    const WO = await import('../src/world.js');
+    const BL = await import('../src/blocks.js');
+    const reg = PA.reglageJardins;
+    const P = PA.PARIS, J = PA.LIEUX.filter((l) => l.jardin);
+    let lots = 0, changes = 0, horsTraverse = 0, cible = null;
+    for (let u = -P.r; u <= P.r && reg; u++) for (let v = -P.r; v <= P.r; v++) {
+      if (u * u + v * v > P.r * P.r) continue;
+      const x = P.x + u, z = P.z + v;
+      reg.voies = false; const a = PA.solParis(x, z), la = PA.lotParisLibre(x, z);
+      reg.voies = true; const b = PA.solParis(x, z), lb = PA.lotParisLibre(x, z);
+      if (la !== lb) lots++;
+      if (a === b) continue;
+      changes++;
+      const j = J.find((l) => (u - l.u) ** 2 / (l.ru * l.ru) + (v - l.v) ** 2 / (l.rv * l.rv) < 1);
+      if (!j || !j.traverse) horsTraverse++;
+      else if (!cible && j.nom === 'Buttes-Chaumont' && a === BL.BLOCK.GRASS) cible = { x, z, a, b };
+    }
+    verifier('une voie nommée traverse un jardin déclaré sur sa chaussée, sans changer un lot',
+      !!reg && changes > 100 && lots === 0 && horsTraverse === 0,
+      reg ? `${changes} colonnes de jardin passées à la rue, ${horsTraverse} hors des jardins déclarés, ${lots} lots changés` : 'pas de reglageJardins (ancien code)');
+    let garde = 'pas de colonne cible';
+    if (cible && typeof WO.DATE_JARDINS_PARIS === 'number') {
+      const lire = (ts) => {
+        const w = new WO.World();
+        const h = w.terrainHeight(cible.x, cible.z);
+        // le journal s'installe AVANT que le morceau ne s'engendre, comme au
+        // chargement d'une partie : `setBlock` engendrerait d'abord le morceau
+        const k = `${cible.x + 1},${h + 6},${cible.z}`;
+        w.edits.set(k, BL.BLOCK.STONE); w.editTimes.set(k, ts); w.indexerMonumentsTouches();
+        return w.getBlock(cible.x, h, cible.z);
+      };
+      const avant = lire(WO.DATE_JARDINS_PARIS - 86400000), apres = lire(WO.DATE_JARDINS_PARIS + 86400000);
+      garde = { avant, apres, attendu: [cible.a, cible.b] };
+      garde.bon = avant === cible.a && apres === cible.b;
+    }
+    verifier('sous une cabane posée avant la date, le jardin d\'avant reste ; après, la rue passe',
+      garde && garde.bon === true, JSON.stringify(garde));
+  }
+
+  // LE MOULIN ROUGE BORDE LE BOULEVARD AU NORD (v512). Son bâtisseur posait la
+  // salle en travers du boulevard de Clichy, dont l'axe passe par le repère :
+  // dix-sept pas de carrosserie dans ses murs. Le bâtisseur neuf (`tour`) tient
+  // dans la même boîte, sa moitié nord, et laisse libres les rangées que la
+  // voie de droite roule ; le monde figé (`CONF_V308`) garde l'ancien.
+  {
+    const PA = await import('../src/paris.js');
+    const WO = await import('../src/world.js');
+    const pose = new Map();
+    if (PA.buildMoulinRougeNord) PA.buildMoulinRougeNord((dx, dy, dz, id) => pose.set(dx + ',' + dy + ',' + dz, id));
+    const blocs = [...pose].filter(([, id]) => id).map(([k]) => k.split(',').map(Number));
+    const horsBoite = blocs.filter(([dx, , dz]) => Math.abs(dx) > 4 || Math.abs(dz) > 4).length;
+    const surLaVoie = blocs.filter(([, dy, dz]) => dz > -2 && dy <= 6).length;
+    const lm = (WO.CONF_NEUF.reperes || []).find((r) => r.name === 'Moulin Rouge');
+    const fige = (WO.CONF_V308.reperes || []).find((r) => r.name === 'Moulin Rouge');
+    verifier('le Moulin Rouge borde le boulevard de Clichy au nord, dans sa boîte',
+      blocs.length > 100 && horsBoite === 0 && surLaVoie === 0 && !!lm && lm.build === PA.buildMoulinRougeNord
+        && !!fige && fige.build === PA.buildMoulinRouge,
+      `${blocs.length} blocs, ${horsBoite} hors de la boîte, ${surLaVoie} sur la chaussée sous six blocs, aujourd'hui ${lm && lm.build && lm.build.name}, monde figé ${fige && fige.build && fige.build.name}`);
   }
 
   // UN PARAPET SOUS UNE VOIE EST DE LA CHAUSSÉE (v477). Aux coins, la voie

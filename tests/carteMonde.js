@@ -3535,6 +3535,61 @@ const VRAIES_KM = [
       !monuments.absent && monuments.circuits === 8 && monuments.lus > 0 && monuments.dur === 0,
       JSON.stringify(monuments));
 
+    // ET NI LA BUTTE, NI LE MOULIN ROUGE, NI LES JARDINS TRAVERSÉS (v512). Sur
+    // la voie que la voiture roule, 74 pas de carrosserie dans un bloc plein
+    // (mesuré sous node sur `origin/main`) : trente-deux sur le pavé d'une
+    // colonne plus haute d'un bloc le long des boulevards de Clichy et de
+    // Rochechouart (la cote se lisait sous l'AXE), dix-sept dans le Moulin
+    // Rouge posé en travers du boulevard, quatorze dans les troncs des
+    // Buttes-Chaumont et de la place des Vosges. Le témoin lit TOUS les pas de
+    // tous les circuits, sauf les Tuileries — la rue de Rivoli ne peut longer
+    // leur grille sans changer cent soixante et onze colonnes de lot : dette
+    // déclarée dans `TASKS.md`, et nommée dans le message.
+    const butte = await tab.evaluate(async () => {
+      const w = window.__game.world;
+      const b = await import('./src/blocks.js');
+      const m = await import('./src/paris.js');
+      const ve = await import('./src/vehicules.js');
+      if (typeof m.circuitsParis !== 'function') return { absent: true };
+      const solDe = (x, z) => (w.coteRoulable ? w.coteRoulable(x, z) : w.terrainHeight(x, z));
+      const VOIE = typeof m.VOIE_DE_DROITE === 'number' ? m.VOIE_DE_DROITE : 1.3;
+      const circuits = m.circuitsParis(solDe)
+        .map((c) => ve.sansEpis(ve.decalerADroite(ve.sansEpis(c.pts.map((p) => ({ ...p }))), VOIE)));
+      const tui = m.LIEUX.find((l) => l.nom === 'Tuileries');
+      const DEMI = 1.13;
+      let dur = 0, lus = 0, tuileries = 0;
+      const ex = [];
+      for (const P of circuits) {
+        const n = P.length;
+        for (let k = 0; k < n; k++) {
+          const a = P[k], q = P[(k + 1) % n];
+          const L = Math.hypot(q.x - a.x, q.z - a.z);
+          if (!(L > 1e-6)) continue;
+          const lx = -(q.z - a.z) / L, lz = (q.x - a.x) / L;
+          for (let s = 0; s < L; s += 0.5) {
+            const t = s / L;
+            const x = a.x + (q.x - a.x) * t, z = a.z + (q.z - a.z) * t, y = a.y + (q.y - a.y) * t;
+            let bloque = null;
+            for (const d of [-DEMI, -DEMI / 2, 0, DEMI / 2, DEMI]) for (const dy of [0, 1]) {
+              const bx = Math.floor(x + lx * d), by = Math.floor(y + dy), bz = Math.floor(z + lz * d);
+              const id = w.getBlock(bx, by, bz);
+              if (!bloque && id && b.isSolid(id)) bloque = [Math.round(x - m.PARIS.x), by, Math.round(z - m.PARIS.z), id];
+            }
+            const u = x - m.PARIS.x, v = z - m.PARIS.z;
+            if (tui && Math.abs(u - tui.u) <= tui.ru + 3 && Math.abs(v - tui.v) <= tui.rv + 3) { if (bloque) tuileries++; continue; }
+            lus++;
+            if (!bloque) continue;
+            dur++;
+            if (ex.length < 6) ex.push(bloque);
+          }
+        }
+      }
+      return { circuits: circuits.length, lus, dur, tuileries, ex };
+    });
+    verifier('les voitures de Paris ne roulent ni dans la butte, ni dans le Moulin Rouge, ni dans un jardin traversé',
+      !butte.absent && butte.circuits === 8 && butte.lus > 4000 && butte.dur === 0,
+      JSON.stringify(butte));
+
     // ET LES CIRCUITS ROULENT SUR LA CHAUSSÉE **DANS LE MONDE**, PAS DANS LE
     // PLAN (v293). Le témoin d'au-dessus ne regarde que les monuments DÉCLARÉS
     // par `paris.js` ; `circuitSurRue`, lui, mesure `solParis`, c'est-à-dire ce

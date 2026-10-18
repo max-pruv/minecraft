@@ -821,6 +821,38 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Montmartre et les jardins (v512) — une cote se lit sous la voiture, et une voie traverse un jardin déclaré
+
+Trois règles.
+
+- **LA COTE D'UN CONVOI SE LIT SOUS SA CARROSSERIE, DANS SA VOIE.** Depuis la
+  v372 la voiture roule `VOIE_CIRCUIT` (1,3) blocs à droite du tracé, mais sa
+  cote restait celle de l'axe et de ses quatre voisins (v210) : en dévers, la
+  carrosserie mordait le pavé d'une colonne plus haute (32 pas sur la butte,
+  233 à San Francisco). `coteSousLaVoie` (voies.js) prend aussi le plus haut
+  sol sous l'emprise (cinq points en travers, cinq le long), UNE MARCHE au plus
+  au-dessus de l'axe — au-delà c'est un mur, et San Francisco flottait à sept
+  blocs (le témoin « le convoi suit le sol » l'a dit). C'est la règle de
+  la v475 (« un circuit se juge sur la voie ») appliquée à la hauteur ; le
+  relief ne bouge pas. Le prix : un flanc qui flotte au-dessus d'une marche.
+- **UNE VOIE NOMMÉE TRAVERSE UN JARDIN DÉCLARÉ, SUR SA CHAUSSÉE.** Les
+  jardins passent avant les rues dans `solParis` ; un jardin marqué
+  `traverse` dans sa fiche laisse la voie (chaussée et trottoir) passer, sans
+  qu'un lot change — le témoin le lit sur le disque entier. Sous une colonne
+  où un enfant a bâti avant `DATE_JARDINS_PARIS`, le jardin d'avant reste
+  (`colonnesJardinsParis`, `solParis(x, z, jardinsAvant)`), et `CONF_V308` ne
+  porte pas la règle. Un jardin dont le remède changerait des lots (les
+  Tuileries : 171 colonnes) se déclare, il ne se force pas. Et un témoin qui
+  pose un bloc d'avant la date installe le journal AVANT d'engendrer le
+  morceau : `setBlock` engendre d'abord, puis marque.
+- **UN MONUMENT EN TRAVERS D'UNE RUE SE CORRIGE PAR SON BÂTISSEUR, PAS PAR SA
+  BOÎTE.** Le Moulin Rouge était posé au centre de sa boîte, sur l'axe du
+  boulevard de Clichy ; sa boîte entre dans les zones du relief. Le bâtisseur
+  neuf (`tour`) tient dans la moitié nord ; `LANDMARKS_V317` garde l'ancien.
+  Et avant de croire « dix-sept pas DANS le Moulin Rouge », on lit l'IDENTIFIANT
+  du bloc touché : une boîte de zone autour d'un repère compte aussi le pavé
+  de la pente voisine.
+
 ## Les commandes simplifiées (v494) — une main pour bouger, une main pour agir
 
 Max : simplifier les commandes en jeu, puis sur la maquette « plus de
