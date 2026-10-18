@@ -267,16 +267,20 @@ function coteEn(solDe, x, z) {
 export const VOIE_CIRCUIT = 1.3;
 const DEMI_VOITURE = 1.13;
 function coteSousLaVoie(solDe, x, z, fx, fz, voie) {
-  let m = coteEn(solDe, Math.round(x), Math.round(z));
+  const m = coteEn(solDe, Math.round(x), Math.round(z));
   if (!voie) return m;
+  // Une MARCHE au plus : au-delà, ce que l'emprise touche est un mur ou une
+  // terrasse, pas un dévers, et l'y hisser la ferait flotter (sept blocs au
+  // pire à San Francisco, mesuré). Sous elle, rien ne change.
+  let haut = m;
   const rx = -fz, rz = fx;
   for (const d of [voie - DEMI_VOITURE, voie - DEMI_VOITURE / 2, voie, voie + DEMI_VOITURE / 2, voie + DEMI_VOITURE]) {
     for (const t of [-1.5, -0.75, 0, 0.75, 1.5]) {
       const h = solDe(Math.floor(x + rx * d + fx * t), Math.floor(z + rz * d + fz * t));
-      if (h > m) m = h;
+      if (h > haut) haut = h;
     }
   }
-  return m;
+  return Math.min(haut, m + 1);
 }
 
 export function fabriqueCircuits({ cle, ancre, voies, roulant, chaines, seuil = 0.9, ajuster = null, voie = VOIE_CIRCUIT }) {
