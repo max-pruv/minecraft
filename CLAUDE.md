@@ -557,7 +557,7 @@ que « ne jamais relancer jusqu'au vert », par l'autre bout.
 
 ---
 
-## Le tempo du banc (v502) — une cadence se divise, une fenêtre calée sur le monde non
+## Le tempo du banc (v501) — une cadence se divise, une fenêtre calée sur le monde non
 
 `?tempo=N` (`src/tempo.js`, pur) divise les minuteries de synchronisation du
 jeu sur le banc, et seulement là. Trois règles.
