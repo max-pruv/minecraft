@@ -1,5 +1,17 @@
 # Ce qui est en cours
 
+- [ ] **v531 (les vraies feuilles d'automne) : portail À REFAIRE, le banc
+  était hors d'usage le 18 octobre 2026 (encore 1,77 s le 19 à 3 h 16 UTC ; rebasée sur la v530 des pistes, renumérotée v531).** Portail complet rouge sur cinq
+  suites, dont `monte.js` et `reseau.js` mortes sur un démarrage de page
+  (`waitForFunction` 90 s) avant d'atteindre les témoins des saisons. Mesuré
+  ensuite : une page met 37 à 63 s à démarrer et rend 0,3 à 2,2 images par
+  seconde, À L'IDENTIQUE sur la branche et sur `origin/main` ; une boucle
+  node de 3·10⁸ tours prend 4,2 s (dont 1,1 s de noyau) — la machine est
+  ralentie d'un ordre de grandeur. Les quatre témoins neufs, joués par la
+  sonde `sonde-saison-ciel.cjs` avant la dégradation : verts sur la branche
+  (silhouette 63 %, écart 2,95, 0 pixel de ciel), trois rouges sur
+  `origin/main`. À faire : relancer `npm test` sur une machine saine, puis
+  le bump de `CACHE_VERSION` au prochain numéro libre et la fusion.
 - [ ] **Les rouges du portail de la v529, double mesure (rejoués seuls, branche
   contre `origin/main` v522).** `monte.js` : 7 rouges des deux côtés, tous de la
   rue et de la circulation (voisines d'un convoi, freinage au feu, rue vide,

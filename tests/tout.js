@@ -265,6 +265,8 @@ const GARDIENS = {
   'src/sons.js': ['monte.js', 'reglages.js', 'reseau.js'],
   'src/sensations.js': ['monte.js', 'reglages.js', 'reseau.js'],
   'src/traces.js': ['monte.js', 'reglages.js', 'reseau.js'],
+  // les effets de saison en vraies formes (v505) : le témoin des cubes du ciel
+  'src/saisons.js': ['monte.js'],
   // Le socle du rendu : un registre de blocs, un atlas ou un mailleur faux
   // n'abîme pas une ville, il les abîme toutes.
   'src/blocks.js': SUITES,
