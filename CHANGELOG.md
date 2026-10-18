@@ -20,6 +20,42 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v513 — On roule à travers la forêt
+
+**Pourquoi.** Max : « moins de densité d'arbres pour être capable de rouler dans
+la nature comme dans GTA ». Mesuré au volant, en ligne droite à plein gaz : un
+arbre arrêtait la voiture tous les dix blocs en forêt tempérée, cinq en taïga,
+quatre sous les tropiques, vingt-six dans le maquis méditerranéen. La forêt
+était un mur à peu près partout où elle poussait.
+
+**Ce que ça change.** Les bois poussent désormais en bosquets : des massifs
+aussi denses qu'avant, séparés de clairières où ne restent que quelques arbres
+isolés, avec une lisière entre les deux, et de grandes prairies là où la forêt
+s'ouvre. On traverse la campagne en voiture en contournant les massifs. Même
+règle dans la taïga, la jungle et le maquis ; la steppe, la savane et la
+toundra, déjà clairsemées, ne changent pas. Le relief ne bouge pas d'un bloc,
+et autour de ce qu'un enfant a bâti avant cette version, les arbres restent
+ceux d'avant.
+
+**Ce qui le prouve.** Cinq témoins neufs dans `plafond.js`, tous rouges sur la
+v502. Le vrai joueur au volant (`sonde-rouler-foret.cjs`) : un arrêt d'arbre
+tous les 53 blocs en forêt tempérée (10 avant), 42 en taïga (5), 32 sous les
+tropiques (4), 84 dans le maquis (26) ; la steppe et la savane rendent les
+mêmes chiffres qu'avant. Contre le même monde sans la règle : aucun arbre
+ajouté nulle part, les massifs identiques arbre pour arbre, le sol identique
+bloc pour bloc ; un bloc posé avant la date garde les arbres d'avant dans son
+morceau. Les deux empreintes du relief et celle des 490 morceaux (bosquets
+désarmés) sont inchangées. Deux témoins des vrais arbres (v499) choisissaient
+leur arbre sur la densité d'avant : la caméra du fût de `parishd.js` se pose
+sous la couronne de SON chêne, et le témoin de la cabane de `plafond.js` se
+joue bosquets désarmés — son nouveau morceau rate la conservation des faces
+d'une, sur `origin/main` aussi (déclaré). `plafond.js` 185 verts, `parishd.js`
+157, seules ; `monte.js` et `reseau.js` rejouées seules sur la branche et sur
+`origin/main` v502 rendent la même répartition de rouges, tous en ville ou sur
+le réseau, déclarés dans `TASKS.md`.
+
+---
+
 ## v512 — Les voitures de Montmartre roulent mieux
 
 **Pourquoi.** Deux dettes de Paris, remesurées en v475 sur la voie que la

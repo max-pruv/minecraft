@@ -52,6 +52,10 @@ export async function empreinteMorceaux(src) {
     const C = lieu(nom, pos);
     for (const hd of nom === 'paris' ? [0, 1] : [0]) {
       const w = new World(); w.hd = hd;
+      // les bosquets (v513) sont un contenu neuf, pas une optimisation : ils
+      // retirent des arbres. Désarmés, la branche rend la constante d'avant
+      // (l'ancien code ignore le drapeau).
+      w.conf = { ...w.conf, clairieres: false };
       h.update(`${nom}/${hd}`);
       const c0x = Math.floor(C.x / CHUNK), c0z = Math.floor(C.z / CHUNK);
       for (let dx = -3; dx <= 3; dx++) for (let dz = -3; dz <= 3; dz++) {
@@ -161,10 +165,11 @@ export async function empreinteJournal(src) {
       h.update(c); h.update(Buffer.from(d.buffer, d.byteOffset, d.byteLength)); morceaux++;
     }
   };
-  const w = new World();
+  // bosquets désarmés (v503) : un contenu neuf, pas un chemin d'écriture
+  const w = new World(); w.conf = { ...w.conf, clairieres: false };
   w.installerEdits(m, t, 'local');
   lire(w);
-  const w2 = new World();
+  const w2 = new World(); w2.conf = { ...w2.conf, clairieres: false };
   let i = 0;
   for (const [k, id] of m) { if (i++ % 7) continue; const [x, y, z] = k.split(',').map(Number); w2.setBlock(x, y, z, id, 1.95e12); }
   for (const [k] of m) { if (i++ % 11) continue; const [x, y, z] = k.split(',').map(Number); w2.setBlock(x, y, z, 0, 1.96e12); }

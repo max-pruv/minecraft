@@ -118,6 +118,16 @@ const DENSITE_MAX = 0.08;
 // Relue à la fusion de la v469 (le climat méditerranéen ajoute des arbres),
 // puis de la v485 (la savane en ajoute et en retire).
 export const DATE_CLIMATS = Date.parse('2026-10-17T17:27:00Z');
+// LES BOSQUETS (v513) : la part de massif, la lisière, et ce qui reste dans
+// une clairière (un arbre isolé par colonne, à ce tirage). Mesurés par
+// `sonde-rouler-foret.cjs`, pas choisis.
+const BOSQUET_SEUIL = 0.62;
+const BOSQUET_LISIERE = 0.05;
+const BOSQUET_LARGE = 0.4;
+const ISOLE = 0.001;
+// L'HEURE DES BOSQUETS (v513), relue à la fusion (v309) : un bloc posé avant
+// garde les arbres d'avant dans son morceau et ses huit voisins.
+export const DATE_CLAIRIERES = Date.parse('2026-10-18T13:20:00Z');
 export function solDeToundra(x, z, h) {
   if (h >= NEIGE_TOUNDRA) return BLOCK.SNOW;
   return fbm(x * 0.07, z * 0.07, SEED + 941) > 0.64 ? BLOCK.GRAVEL : BLOCK.GRASS;
@@ -1564,7 +1574,7 @@ export const CONF_NEUF = {
   cle: 'neuf', villes: CITIES, aeroports: AEROPORTS, gaulois: GAULOIS, volcan: VOLCANO,
   places: PLACES, reperes: LANDMARKS, hauteurParis, parisAvant: false, fonduDoux: true,
   mursDeQuai: true, falaises: true, villesAvant: false, climat: true, sansTrameLondres: true,
-  metroParis: true, metroMonde: true, voiesJardinsParis: true,
+  metroParis: true, metroMonde: true, voiesJardinsParis: true, clairieres: true,
 };
 // LE MONDE DE LA v306 À LA v308 — celui d'aujourd'hui sans le fondu doux des
 // villes (v309). La marche 6 → 7 juge sur lui ce qui y a été posé, et la marche
@@ -1574,7 +1584,7 @@ export const CONF_NEUF = {
 // Et ces deux mondes-là ont les villes d'avant leur passe au kit (Londres
 // v339, `londres-v332.js` ; Nice v359, `nice-v340.js`) : c'est celles qu'on y
 // voyait (`villesAvant`).
-export const CONF_V308 = { ...CONF_NEUF, reperes: LANDMARKS_V317, fonduDoux: false, mursDeQuai: false, falaises: false, villesAvant: true, climat: false, sansTrameLondres: false, metroParis: false, metroMonde: false, voiesJardinsParis: false };
+export const CONF_V308 = { ...CONF_NEUF, reperes: LANDMARKS_V317, fonduDoux: false, mursDeQuai: false, falaises: false, villesAvant: true, climat: false, sansTrameLondres: false, metroParis: false, metroMonde: false, voiesJardinsParis: false, clairieres: false };
 export const CONF_AVANT = {
   cle: 'avant-v306', villes: CITIES_AVANT, aeroports: AEROPORTS_AVANT_V306, gaulois: GAULOIS_AVANT,
   volcan: VOLCANO_AVANT, places: PLACES_AVANT, reperes: LANDMARKS_V317.filter((lm) => !NES_APRES_V306_NOMS.has(lm.name)).map(repereAvant),
@@ -3034,6 +3044,7 @@ export class World {
     this.edits = new JournalBlocs();  // "x,y,z" -> block id (player modifications), rangé par morceau (v403)
     this.monumentsTouches = new Set();  // les monuments HD qu'un enfant a modifiés (v292)
     this.morceauxAvantClimat = new Set(); // les morceaux (et leurs voisins) bâtis avant les climats (v345)
+    this.morceauxAvantClairieres = new Set(); // … et avant les bosquets (v513)
     this.colonnesCedees = new Set();    // les colonnes de Paris où la ville cède à ce qu'un enfant a bâti (v306)
     this.colonnesTrameLondres = new Set(); // les colonnes de Londres où la trame générique d'avant reste (v447)
     this.colonnesJardinsParis = new Set(); // les colonnes de Paris où le jardin d'avant reste sous une voie (v512)
@@ -3480,13 +3491,34 @@ export class World {
     // le climat (v345) : la taïga est une forêt presque partout, la toundra
     // et le désert n'en ont pas — ce que `treeAt` y plante
     const cl = this.conf.climat ? this.climat(x, z) : null;
-    if (cl === 'taiga') return Math.max(f, 0.55);
+    // les bosquets (v513) : la forêt se dessine en massifs, les clairières
+    // entre eux sont de la prairie — demandés seulement là où il y a une
+    // forêt à découper (la carte appelle ceci pour chaque point)
+    const bq = () => (this.conf.clairieres ? 0.15 + 0.85 * this.bosquet(x, z) : 1);
+    if (cl === 'taiga') return Math.max(f, 0.55) * bq();
     if (cl === 'toundra' || cl === 'desert') return 0;
     if (cl === 'steppe') return f * 0.05;
-    if (cl === 'tropiques') return Math.max(f, 0.6);
-    if (cl === 'mediterranee') return f * 0.45;
+    if (cl === 'tropiques') return Math.max(f, 0.6) * bq();
     if (cl === 'savane') return f * 0.15;
-    return f;
+    if (f === 0) return 0;
+    if (cl === 'mediterranee') return f * 0.45 * bq();
+    return f * bq();
+  }
+
+  // LES BOSQUETS ET LES CLAIRIÈRES (v513). Max : « moins de densité d'arbres
+  // pour être capable de rouler dans la nature comme dans GTA ». La forêt
+  // tempérée arrêtait la voiture tous les quatorze blocs, la taïga tous les
+  // trois (`sonde-rouler-foret.cjs`). Un bruit de plus basse fréquence que
+  // les arbres découpe les bois en MASSIFS (1 : la densité du climat) séparés
+  // de CLAIRIÈRES (0 : quelques arbres isolés, `ISOLE`) où l'on roule, et la
+  // lisière est une rampe. Un second bruit, plus large encore, ouvre de
+  // grandes prairies en relevant le seuil des massifs. Pur et déterministe,
+  // à la position : deux tablettes plantent la même forêt (v450).
+  bosquet(x, z) {
+    const large = fbm(x * 0.0045, z * 0.0045, SEED + 723, 2);
+    const seuil = BOSQUET_SEUIL + (0.5 - large) * BOSQUET_LARGE;
+    const b = fbm(x * 0.024, z * 0.024, SEED + 719, 3);
+    return Math.max(0, Math.min(1, (b - seuil) / BOSQUET_LISIERE));
   }
 
   // Le métro de Washington ouvre-t-il la surface à un bloc de cette colonne ?
@@ -3584,7 +3616,8 @@ export class World {
     // maison, un arbre d'avant n'y disparaît pas sous sa cabane.
     if (tirage >= DENSITE_MAX) return null;
     let cl = cm !== undefined ? cm : this.climat(x, z);
-    if (cl && cl !== 'desert' && this.morceauxAvantClimat.has(World.key(Math.floor(x / CHUNK), Math.floor(z / CHUNK)))) cl = null;
+    const avantClimat = cl && cl !== 'desert' && this.morceauxAvantClimat.has(World.key(Math.floor(x / CHUNK), Math.floor(z / CHUNK)));
+    if (avantClimat) cl = null;
     if (cl === 'taiga') density = forest > 0.48 ? 0.06 : 0.025;
     else if (cl === 'toundra') density = 0.0006;
     // la steppe (v347) : un arbre isolé là où la forêt tempérée en aurait
@@ -3600,6 +3633,13 @@ export class World {
     // la savane (v485) : des arbres isolés partout dans les hautes herbes,
     // quelques bosquets le long des creux — jamais de bois fermé
     else if (cl === 'savane') density = forest > 0.62 ? 0.012 : 0.004;
+    // les bosquets (v513) : hors des massifs, la forêt s'ouvre en clairières
+    // — sauf là où un enfant a bâti avant la règle (`morceauxAvantClairieres`)
+    if (this.conf.clairieres && (cl === null || cl === 'taiga' || cl === 'tropiques' || cl === 'mediterranee') && !avantClimat
+      && !this.morceauxAvantClairieres.has(World.key(Math.floor(x / CHUNK), Math.floor(z / CHUNK)))) {
+      const m = this.bosquet(x, z);
+      density = m * density + (1 - m) * Math.min(density, ISOLE);
+    }
     if (tirage >= density) return null;
     const h = this.terrainHeight(x, z);
     if (h <= WATER_LEVEL + 1 || h >= 58) return null; // only on grass
@@ -4792,6 +4832,7 @@ export class World {
     if (dansJardinsParis(x, z, t)) marquerParisCede(this.colonnesJardinsParis, x, z);
     if (dansMetroBoiteDC(x, z, t)) marquerParisCede(this.colonnesMetroDC, x, z);
     if (t <= DATE_CLIMATS) this.marquerAvantClimat(x, z);
+    if (t <= DATE_CLAIRIERES) this.marquerAvantClairieres(x, z);
     if (!remote && this.onOp) this.onOp(k, id, t);
     if (this.onBloc) this.onBloc(x, y, z, id);
 
@@ -5033,6 +5074,11 @@ export class World {
     for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) this.morceauxAvantClimat.add(World.key(cx + dx, cz + dz));
   }
 
+  marquerAvantClairieres(x, z) {
+    const cx = Math.floor(x / CHUNK), cz = Math.floor(z / CHUNK);
+    for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) this.morceauxAvantClairieres.add(World.key(cx + dx, cz + dz));
+  }
+
   // Un lot de la trame générique de Londres reste-t-il ? (v447) Oui si une de
   // ses colonnes est marquée — le marquage couvre déjà les huit voisines d'un
   // bloc d'enfant.
@@ -5053,11 +5099,13 @@ export class World {
     this.colonnesJardinsParis.clear();
     this.colonnesMetroDC.clear();
     this.morceauxAvantClimat.clear();
+    this.morceauxAvantClairieres.clear();
     for (const [k, t] of this.editTimes) {
-      if (!(t <= DATE_PARIS_DOUBLE || t <= DATE_FIGEE_MAX || t <= DATE_CLIMATS || t <= DATE_TRAME_LONDRES || t <= DATE_METRO_BOITE_DC || t <= DATE_JARDINS_PARIS)) continue;
+      if (!(t <= DATE_PARIS_DOUBLE || t <= DATE_FIGEE_MAX || t <= DATE_CLIMATS || t <= DATE_TRAME_LONDRES || t <= DATE_METRO_BOITE_DC || t <= DATE_JARDINS_PARIS || t <= DATE_CLAIRIERES)) continue;
       const virgule = k.indexOf(','), derniere = k.lastIndexOf(',');
       const x = +k.slice(0, virgule), z = +k.slice(derniere + 1);
       if (t <= DATE_CLIMATS) this.marquerAvantClimat(x, z);
+      if (t <= DATE_CLAIRIERES) this.marquerAvantClairieres(x, z);
       if (dansParisCede(x, z, t)) marquerParisCede(this.colonnesCedees, x, z);
       if (dansVilleAvant(x, z, t)) marquerParisCede(this.colonnesVilleAvant, x, z);
       if (dansTrameLondres(x, z, t)) marquerParisCede(this.colonnesTrameLondres, x, z);

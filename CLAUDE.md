@@ -853,6 +853,34 @@ Trois règles.
   du bloc touché : une boîte de zone autour d'un repère compte aussi le pavé
   de la pente voisine.
 
+## Les bosquets (v513) — une densité d'arbres se mesure au volant, et elle se répartit
+
+Max : « moins de densité d'arbres pour rouler dans la nature comme dans GTA ».
+Trois règles.
+
+- **CE QUI DÉCIDE SI L'ON ROULE N'EST PAS LA DENSITÉ MOYENNE, C'EST SA
+  RÉPARTITION.** `bosquet(x, z)` (world.js, pur, à la position) découpe la
+  forêt tempérée, la taïga, les tropiques et le maquis en massifs (1 : la
+  densité du climat, inchangée) et clairières (0 : `ISOLE`, quelques arbres
+  isolés), lisière en rampe, un bruit large qui ouvre des prairies. Abaisser
+  la densité partout ferait un bois clairsemé où l'on bute encore ; les
+  massifs gardent la forêt lisible du ciel. Les seuils (`BOSQUET_SEUIL`,
+  `ISOLE`) sont le résultat de `sonde-rouler-foret.cjs` (le vrai joueur, en
+  ligne droite, arrêts par cause) : seuls les arrêts DANS les massifs restent,
+  et c'est voulu — on les contourne. Steppe, savane et toundra n'y passent
+  pas. `foret()` (la carte) lit la même fonction.
+- **UNE RÈGLE QUI RETIRE DES ARBRES SE PROUVE PAR CE QU'ELLE NE FAIT PAS** :
+  aucun arbre ajouté, les massifs identiques arbre pour arbre, le sol bloc
+  pour bloc, contre `clairieres: false` (drapeau de `CONF_NEUF` seule ;
+  `CONF_V308` le porte à faux, `CONF_AVANT` ne le connaît pas).
+- **UNE NOUVELLE RÈGLE D'ARBRES A SA DATE À ELLE, PAS CELLE D'AVANT.**
+  Relever `DATE_CLIMATS` aurait rendu aux morceaux bâtis entre la v345 et
+  aujourd'hui les arbres d'AVANT les climats — donc AJOUTÉ des arbres en
+  steppe, savane et maquis près de ce qu'un enfant a bâti. `DATE_CLAIRIERES`
+  et `morceauxAvantClairieres` gardent les arbres du jour même ; la date se
+  relit à la fusion (v309). L'empreinte des 490 morceaux se prouve bosquets
+  désarmés.
+
 ## Les commandes simplifiées (v494) — une main pour bouger, une main pour agir
 
 Max : simplifier les commandes en jeu, puis sur la maquette « plus de

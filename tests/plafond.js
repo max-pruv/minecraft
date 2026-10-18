@@ -1935,8 +1935,12 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const { dansVilleMonde } = await import('../src/villesmonde.js');
     const { lieuxDuMonde } = await import('../src/mondes.js');
     const W = await import('../src/world.js');
+    // ce témoin garde les falaises, pas les bosquets (v513) : les deux mondes
+    // sans eux, sinon il compte trois fois moins d'arbres et ne prouve plus rien
+    const w = new W.World();
+    w.conf = { ...W.CONF_NEUF, clairieres: false };
     const sans = new W.World();
-    sans.conf = { ...W.CONF_NEUF, falaises: false };
+    sans.conf = { ...W.CONF_NEUF, falaises: false, clairieres: false };
     const lieux = lieuxDuMonde().filter((l) => Number.isFinite(l.x));
     let g = 23; const alea = () => (g = (g * 1103515245 + 12345) % 2147483648) / 2147483648;
     const enVille = (x, z) => !!w.cityAt(x, z) || dansVilleMonde(x, z);
@@ -2039,8 +2043,12 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const { cielDe, zDeLatitude } = await import('../src/mondes.js');
     const W = await import('../src/world.js');
     const { buildChunkTampons } = await import('../src/mesher.js');
+    // ces témoins gardent les climats, pas les bosquets (v513) : on les
+    // compare sur le monde sans bosquets, qui est celui où ils ont été mesurés
+    const w = new W.World();
+    w.conf = { ...W.CONF_NEUF, clairieres: false };
     const sans = new W.World();
-    sans.conf = { ...W.CONF_NEUF, climat: false };
+    sans.conf = { ...W.CONF_NEUF, climat: false, clairieres: false };
     const point = (lat, lon) => {
       const z = Math.round(zDeLatitude(lat));
       let a = -80000, b = 80000;
@@ -2161,6 +2169,100 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   verifier('là où un enfant a bâti avant la règle, les arbres d\'avant restent',
     climats.garde !== null && climats.garde.autres === 0 && climats.garde.pareil > 2000,
     climats.garde ? `${climats.garde.pareil} blocs pareils au monde d'avant, ${climats.garde.autres} différents` : 'pas de DATE_CLIMATS');
+
+  // LES BOSQUETS ET LES CLAIRIÈRES (v513) — sous node. Max : « moins de
+  // densité d'arbres pour être capable de rouler dans la nature comme dans
+  // GTA ». Le vrai joueur au volant roule en ligne droite à travers chaque
+  // biome boisé (`sonde-rouler-foret.cjs`, lue telle quelle) : sur la v502, un
+  // arbre l'arrêtait tous les 10 blocs en forêt tempérée, 5 en taïga, 4 sous
+  // les tropiques, 26 dans le maquis. Puis la règle se prouve par ce qu'elle
+  // NE fait PAS, contre le même monde sans elle : aucun arbre ajouté nulle
+  // part, les massifs identiques arbre pour arbre, la steppe, la savane et la
+  // toundra inchangées, et ce qu'un enfant a bâti avant la date garde les
+  // arbres d'avant dans son morceau et ses voisins.
+  {
+    let rf = null, err = null;
+    try { rf = await require('./sonde-rouler-foret.cjs').mesurer(require('path').resolve(__dirname, '../src'), { lignes: 8 }); } catch (e) { err = String(e && e.message || e); }
+    const e = (k) => rf && rf[k] && rf[k].entreArbres;
+    verifier('on roule à travers la forêt sans être arrêté par un arbre tous les trois blocs (forêt tempérée, taïga, tropiques, maquis)',
+      !!rf && e('foret') >= 30 && e('taiga') >= 20 && e('tropiques') >= 15 && e('mediterranee') >= 50
+        && ['foret', 'taiga', 'tropiques', 'mediterranee'].every((k) => rf[k].lignes >= 8),
+      err || JSON.stringify(rf));
+  }
+  const bosquets = await (async () => {
+    const W = await import('../src/world.js');
+    const { BLOCK } = await import('../src/blocks.js');
+    const avec = new W.World();
+    const sans = new W.World();
+    sans.conf = { ...W.CONF_NEUF, clairieres: false };
+    const r = {};
+    let g = 31; const rnd = () => ((g = (Math.imul(g, 1103515245) + 12345) >>> 0) / 2 ** 32);
+    const cibles = { foret: 0, taiga: 0, tropiques: 0, mediterranee: 0, steppe: 0, savane: 0, toundra: 0 };
+    for (const k of Object.keys(cibles)) r[k] = { zones: 0, avec: 0, sans: 0, ajoutes: 0, massif: 0, massifChanges: 0 };
+    for (let essai = 0; essai < 60000 && Object.values(r).some((o) => o.zones < 6); essai++) {
+      const x0 = Math.round(-55000 + rnd() * 110000), z0 = Math.round(-16000 + rnd() * 56000);
+      const cl = avec.climat(x0, z0);
+      const brut = sans.foret(x0, z0);   // le bruit de forêt, sans les bosquets
+      const k = cl === null ? (brut > 0.55 ? 'foret' : null) : cl;
+      if (!k || !r[k] || r[k].zones >= 6 || avec.cityAt(x0, z0) || avec.terrainHeight(x0, z0) <= 31) continue;
+      r[k].zones++;
+      for (let z = z0; z < z0 + 48; z++) for (let x = x0; x < x0 + 48; x++) {
+        const a = avec.treeAt(x, z), b = sans.treeAt(x, z);
+        if (a) r[k].avec++;
+        if (b) r[k].sans++;
+        if (a && (!b || a.kind !== b.kind || a.trunk !== b.trunk || a.h !== b.h)) r[k].ajoutes++;
+        if (avec.bosquet && avec.bosquet(x, z) >= 1) { r[k].massif++; if (!!a !== !!b) r[k].massifChanges++; }
+      }
+    }
+    // la forme : le sol d'un morceau de forêt, bloc pour bloc, hors des arbres
+    let forme = 0, lus = 0;
+    const bois = (q) => q === BLOCK.LOG || q === BLOCK.BIRCH || q === BLOCK.LEAVES;
+    for (let i = 0; i < 6; i++) {
+      const cx = 400 + i * 37, cz = -300 + i * 23;
+      const da = avec.ensureChunk(cx, cz), db = sans.ensureChunk(cx, cz);
+      for (let n = 0; n < da.length; n++) {
+        const pa = bois(da[n]) ? 0 : da[n], pb = bois(db[n]) ? 0 : db[n];
+        lus++; if (pa !== pb) forme++;
+      }
+    }
+    // ce qu'un enfant a bâti avant la règle : un bloc posé en forêt tempérée
+    // avant `DATE_CLAIRIERES` garde les arbres d'avant dans son morceau
+    let garde = null;
+    if (W.DATE_CLAIRIERES) {
+      let px = 0, pz = 0;
+      for (let k = 0; k < 20000; k++) {
+        const x = Math.round(-20000 + ((k * 7919) % 40000)), z = Math.round(-9000 + ((k * 104729) % 9000));
+        if (avec.climat(x, z) === null && sans.foret(x, z) > 0.7 && !avec.cityAt(x, z) && avec.terrainHeight(x, z) > 33) { px = x; pz = z; break; }
+      }
+      const cx = Math.floor(px / 16), cz = Math.floor(pz / 16);
+      const m = new W.World();
+      const hb = m.terrainHeight(cx * 16 + 8, cz * 16 + 8);
+      const cle = `${cx * 16 + 8},${hb + 1},${cz * 16 + 8}`;
+      m.installerEdits(new Map([[cle, BLOCK.PLANK]]), new Map([[cle, W.DATE_CLAIRIERES - 86400000]]));
+      garde = { pareil: 0, autres: 0, arbresSans: 0, arbresAvec: 0 };
+      for (let z = cz * 16; z < (cz + 1) * 16; z++) for (let x = cx * 16; x < (cx + 1) * 16; x++) {
+        if (x === cx * 16 + 8 && z === cz * 16 + 8) continue;
+        const h = m.terrainHeight(x, z);
+        for (let y = h + 1; y <= h + 9; y++) { if (m.getBlock(x, y, z) === sans.getBlock(x, y, z)) garde.pareil++; else garde.autres++; }
+        if (sans.treeAt(x, z)) garde.arbresSans++;
+        if (avec.treeAt(x, z)) garde.arbresAvec++;
+      }
+    }
+    return { r, forme, lus, garde };
+  })();
+  {
+    const { r, forme, lus, garde } = bosquets;
+    verifier('les bosquets retirent des arbres et n\'en ajoutent aucun ; les massifs restent arbre pour arbre, le sol bloc pour bloc',
+      ['foret', 'taiga', 'tropiques', 'mediterranee'].every((k) => r[k].zones >= 6 && r[k].avec * 2 <= r[k].sans && r[k].massif > 0 && r[k].massifChanges === 0)
+        && Object.values(r).every((o) => o.ajoutes === 0) && forme === 0 && lus > 100000,
+      JSON.stringify({ r, forme }));
+    verifier('la steppe, la savane et la toundra, déjà clairsemées, gardent leurs arbres',
+      ['steppe', 'savane', 'toundra'].every((k) => r[k].zones >= 6 && r[k].avec === r[k].sans),
+      JSON.stringify({ steppe: r.steppe, savane: r.savane, toundra: r.toundra }));
+    verifier('là où un enfant a bâti avant les bosquets, les arbres d\'avant restent',
+      garde !== null && garde.autres === 0 && garde.pareil > 2000 && garde.arbresAvec < garde.arbresSans,
+      garde ? JSON.stringify(garde) : 'pas de DATE_CLAIRIERES');
+  }
 
   // LE MÉNAGE DU CIEL DE PARIS (v298) — PUR, sur un document fabriqué.
   //
@@ -3208,8 +3310,11 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     } else {
       const { GeomBufferHD, rectHD } = await import('../src/facadeshd.js');
       const t0 = Date.now();
-      // le morceau de forêt le plus dense : on compte les arbres de `treeAt`
-      const w0 = new W.World();
+      // le morceau de forêt le plus dense : on compte les arbres de `treeAt`.
+      // Ces témoins gardent le DESSIN des arbres, pas leur densité : ils se
+      // jouent bosquets désarmés (v503), sur la forêt où ils ont été mesurés.
+      const sansBosquets = (w) => { w.conf = { ...w.conf, clairieres: false }; return w; };
+      const w0 = sansBosquets(new W.World());
       let best = null;
       for (let dx = -12; dx <= 12; dx++) for (let dz = -12; dz <= 12; dz++) {
         const cx = Math.floor(-1500 / W.CHUNK) + dx, cz = Math.floor(-2500 / W.CHUNK) + dz;
@@ -3219,7 +3324,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       }
       const faces = (g) => (g ? g.indices.length / 6 : 0);
       const sha = (t) => { const h = crypto.createHash('sha256'); for (const k of Object.keys(t).sort()) { const a = t[k]; if (a && a.buffer) h.update(Buffer.from(a.buffer, a.byteOffset, a.byteLength)); } return h.digest('hex'); };
-      const monde = (arbres) => { const w = new W.World(); w.arbres = arbres; return w; };
+      const monde = (arbres) => { const w = sansBosquets(new W.World()); w.arbres = arbres; return w; };
       const wa = monde(1), ws = monde(0);
       const arme = buildChunkTampons(wa, best.cx, best.cz, { detail: true });
       const sans = buildChunkTampons(ws, best.cx, best.cz, { detail: true });
