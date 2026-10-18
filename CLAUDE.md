@@ -929,7 +929,7 @@ transparence, moins de texte ». Cinq règles.
   décision annule « chaque bouton porte son mot » (v265) : c'est Max qui l'a
   prise, sur la maquette.
 
-## Les feux de détresse sur la tôle (v507) — une lumière de modèle se pose par un rayon, jamais par une cote
+## Les feux de détresse sur la tôle (v519) — une lumière de modèle se pose par un rayon, jamais par une cote
 
 Max, capture de Lille de nuit : des boules orange autour d'une voiture de la
 rue heurtée. Trois règles.

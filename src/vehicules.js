@@ -253,7 +253,7 @@ function chaufferLesFabriquees(renderer, scene, camera) {
     ici.add(flammeDeChauffe());
     renderer.compile(ici, camera, scene);
   } catch (e) { console.warn('chauffe de la flamme', e); }
-  // la lentille des feux de détresse (v507) : elle naît au premier choc d'une
+  // la lentille des feux de détresse (v519) : elle naît au premier choc d'une
   // voiture de la rue, son programme se compile ici
   try {
     materielDetresse();
@@ -2243,7 +2243,7 @@ export function decalerADroite(pts, e) {
 }
 
 // LES FEUX DE DÉTRESSE D'UNE VOITURE HEURTÉE (v372), POSÉS SUR SA CARROSSERIE
-// (v507). Max, capture de Lille de nuit : « les warnings qui s'affichent en
+// (v519). Max, capture de Lille de nuit : « les warnings qui s'affichent en
 // dehors de la voiture, ça fait aucun sens ». Quatre sphères à cotes fixes
 // (±0,85 ; 0,85 ; ±2,1) pour cinquante-sept modèles de tailles différentes :
 // au-dessus du capot d'une voiture basse, à côté d'une étroite, au-delà du
@@ -2352,7 +2352,7 @@ export function feuxDeDetresse(m, allumes) {
   }
   g.visible = detresseAllumee();
 }
-// LE FEU DE DÉTRESSE QUE L'AMI A ALLUMÉ (v507). Un choc de la rue reçu par le
+// LE FEU DE DÉTRESSE QUE L'AMI A ALLUMÉ (v519). Un choc de la rue reçu par le
 // réseau (`degats3d.recevoirRue`) marque la voiture de ce nom ; le convoi la
 // lit comme son propre choc : elle s'arrête et clignote aussi chez l'ami.
 function heurteRecu(c, i) {

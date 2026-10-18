@@ -1,4 +1,4 @@
-// LES FEUX DE DÉTRESSE, MODÈLE PAR MODÈLE (v507). Pour chaque modèle de la
+// LES FEUX DE DÉTRESSE, MODÈLE PAR MODÈLE (v519). Pour chaque modèle de la
 // flotte : la boîte de la carrosserie, où les feux de détresse se posent, et
 // combien ne sont pas SUR la tôle (un rayon le long de leur normale) ; et les maillages ou matériaux qui portent un feu.
 const { Banc } = require('./banc.js');

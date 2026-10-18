@@ -1002,7 +1002,7 @@ function verifier(nom, ok, detail = '') {
         && !longue.rue.err && longue.rue.enfoncements === 30,
       JSON.stringify(longue));
 
-    // 6 ter. LES FEUX DE DÉTRESSE SONT SUR LA CARROSSERIE (v507). Max, capture
+    // 6 ter. LES FEUX DE DÉTRESSE SONT SUR LA CARROSSERIE (v519). Max, capture
     // de Lille de nuit : des boules orange qui flottent autour d'une voiture de
     // la rue heurtée, « ça fait aucun sens ». Pour des modèles de la flotte,
     // des plus petits (Cayman, F40) aux plus grands (Spectre, fourgonnette,
@@ -1237,7 +1237,7 @@ function verifier(nom, ok, detail = '') {
       pose.auVolant && cles[0] === cles[1] && !coup.err && vue && JSON.stringify(vue.chocs) === JSON.stringify(coup.chocs) && vue.froissees > 0,
       JSON.stringify({ memeConvoi: cles[0] === cles[1], rang, coup, vue }));
 
-    // 9 bis. ET CHEZ ALICE, ELLE S'ARRÊTE FEUX DE DÉTRESSE ALLUMÉS (v507) :
+    // 9 bis. ET CHEZ ALICE, ELLE S'ARRÊTE FEUX DE DÉTRESSE ALLUMÉS (v519) :
     // le choc reçu marque la voiture de ce nom, que le convoi lit comme le sien.
     const detAlice = coup.err ? { err: coup.err } : await alice.evaluate((r) => {
       // le convoi a lu le choc reçu (`detresseRecue`, compté par vehicules.js) :
