@@ -10,7 +10,7 @@ export const NOUVEAUTES = [
     titre: 'Les blocs parlent français',
     puces: [
       'Herbe, Terre, Pierre : des noms en français',
-      'Le code à donner à ton ami, en clair',
+      'Le code à donner à ton ami',
       'Le temps libre dit son heure de fin',
     ],
   },

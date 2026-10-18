@@ -8744,13 +8744,13 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         const jeu = await attendre(new RegExp('\\(' + bx + ', ' + by + ', ' + bz + '\\)'));
         const t = new Date(2026, 9, 17, 15, 42).getTime();
         w.setBlock(bx, by, bz, BRIQUE, t);
-        const main = await attendre(/^visé : Bricks .*posé à la main/);
+        const main = await attendre(/^visé : Briques .*posé à la main/);
         p.flying = false;
         return { cible, jeu, main };
       }, { EAU: B.WATER, BRIQUE: B.BRICK });
       verifier('avec ?diag=1, le bloc visé se nomme et dit qui l\'a posé — le jeu, ou la main avec sa date',
         vise.jeu.includes(vise.cible) && /· posé par le jeu$/.test(vise.jeu)
-          && vise.main.includes(vise.cible) && vise.main.startsWith('visé : Bricks ') && /· posé à la main le 17\/10\/2026 à 15h42$/.test(vise.main),
+          && vise.main.includes(vise.cible) && vise.main.startsWith('visé : Briques ') && /· posé à la main le 17\/10\/2026 à 15h42$/.test(vise.main),
         JSON.stringify(vise));
       await diagPage.close();
     }
