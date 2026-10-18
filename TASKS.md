@@ -13,7 +13,13 @@
   `monte.js` branche 243 / 3 (flâneur de Rome, « au feu… au lieu de piler »,
   « rue vide », tous déclarés plus bas), `origin/main` 241 / 5 (les mêmes
   feu et rue vide, plus « deux voisines d'un convoi », « la rue se fabrique
-  par tranches », « un mur pris de face »).
+  par tranches », « un mur pris de face »). Portail final, sur le code rebasé
+  sur la v502 : `degats`, `maj` (construction verte aux deux tailles),
+  `washington`, `reglages` verts ; rouges `carte.js` « la flèche du GPS »
+  (gauche 1,92 rad, l'intermittence de la v321, déclarée), `manhattan.js`
+  « sans erreur de jeu » (PeerJS, déclaré), `monte.js` « la rue se fabrique
+  par tranches », « deux voisines », « au feu… piler », « rue vide » — les
+  quatre rouges sur `origin/main` rejouée seule ci-dessus.
 
 - [ ] **`monte.js` « à l'arrivée d'une téléportation, le fil principal
   n'engendre pas les morceaux que le worker va rendre » INTERMITTENT au portail
