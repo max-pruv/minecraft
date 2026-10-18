@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { BLOCK, isSolid as blockIsSolid, isSlab } from './blocks.js';
 import { HEIGHT, WATER_LEVEL } from './world.js';
-import { pisteLaPlusProche, guiderApproche, aerodromeLePlusProche, angle as angleAp, surUnePiste } from './approche.js';
+import { pisteVisee, guiderApproche, aerodromeLePlusProche, angle as angleAp, surUnePiste } from './approche.js';
 import { jugerToucher } from './degats.js';
 import { ficheDeVitesse, pasVoiture, reponseChoc, casesSousBoite, pointDImpact, DERIVE_MAX, boiteVoiture, chocContreVoiture, vitessePleine, normaleDeMur, sousLaCaisse, forceAtterrissage, DEBATTEMENT, RAPPEL, ENFONCE, vitesseDeSuivi, freinDeSuivi, PORTEE_SUIVI, SUIVI_DELTA } from './conduite.js';
 
@@ -193,11 +193,13 @@ export class Player {
     if (!this.pilote) return null;
     const etat = this.avionEtat || (this.avionEnVol ? 'vol' : 'sol');
     if (etat === 'vol' || (etat === 'decollage' && this.rotationFaite)) {
-      // L'APPROCHE ASSISTÉE (aviation) : ✈️ va chercher la piste la plus
-      // proche ASSEZ LONGUE pour cet appareil, et l'avion s'y pose tout seul.
-      const choix = pisteLaPlusProche(this.pos.x, this.pos.z, this.yaw, undefined, this.pilote);
+      // L'APPROCHE ASSISTÉE (aviation) : ✈️ va chercher une piste ASSEZ
+      // LONGUE pour cet appareil, et l'avion s'y pose tout seul. Celle qu'on
+      // VISE — l'aérodrome le plus proche devant le nez, dans le cône du
+      // cadran (v502) — et la plus proche seulement s'il n'y en a aucune.
+      const choix = pisteVisee(this.pos.x, this.pos.z, this.yaw, this.pilote);
       if (choix) {
-        this.approche = { piste: choix.piste, sens: choix.sens, seuil: choix.seuil, phase: 'ralliement' };
+        this.approche = { piste: choix.piste, sens: choix.sens, seuil: choix.seuil, phase: 'ralliement', devant: choix.devant };
         this.sansPiste = 0;
         this.avionEtat = 'atterrissage';
         return 'approche';

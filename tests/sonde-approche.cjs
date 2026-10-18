@@ -30,12 +30,21 @@ for (const [k, f] of Object.entries(FICHES)) {
     if (SEUL_PISTE && p.cle !== SEUL_PISTE) continue;
     if (k !== 'chasseur' && p.cle.startsWith('bas-')) continue;
     for (const dep of [[0, 900, 0], [700, -600, 1.2], [-900, 0, 2.5], [1500, 1500, -2]]) {
-      if (SEUL_DEP && dep.join('/') !== SEUL_DEP) continue;
+      if (SEUL_DEP && dep.join('/') !== SEUL_DEP.replace('/vise', '')) continue;
       const trace = [];
       const pos = { x: (p.x0 + p.x1) / 2 + dep[0], y: p.sol + 80, z: p.z + dep[1] };
       pos.y = Math.max(pos.y, solA(pos.x, pos.z) + 40);
       let yaw = dep[2], v = f.max * 0.9;
-      const choix = Ap.pisteLaPlusProche(pos.x, pos.z, yaw, Ap.PORTEE_PISTE, f);
+      // LE CHOIX EST CELUI DU JEU (v502) : la piste qu'on vise, devant le nez
+      // (`pisteVisee`), et la plus proche seulement s'il n'y en a aucune. Un
+      // départ dont le nez pointe vers un autre aérodrome se rejoue cap sur
+      // CETTE piste (`dep` suivi de `/vise`) : chaque piste reste éprouvée.
+      const choisir = (y) => (Ap.pisteVisee ? Ap.pisteVisee(pos.x, pos.z, y, f) : Ap.pisteLaPlusProche(pos.x, pos.z, y, Ap.PORTEE_PISTE, f));
+      let choix = choisir(yaw), tag = dep.join('/');
+      if (choix && choix.piste !== p && Ap.pisteVisee) {
+        yaw = Math.atan2(-((p.x0 + p.x1) / 2 - pos.x), -(p.z - pos.z));
+        choix = choisir(yaw); tag += '/vise';
+      }
       if (!choix || choix.piste !== p) continue;
       const ap = { piste: choix.piste, sens: choix.sens, seuil: choix.seuil, phase: 'ralliement' };
       const dt = 1 / 20;
@@ -61,7 +70,7 @@ for (const [k, f] of Object.entries(FICHES)) {
         let sb = Math.min(Math.floor(pos.y - 0.4), solA(pos.x, pos.z));
         while (sb > 0 && !w.isSolid(bx, sb, bz)) sb--;
         const sol = heurt ? Infinity : sb + 1;
-        if (bavard) trace.push([+t.toFixed(2), g.phase, Math.round(g.s), +pos.y.toFixed(1), heurt ? 'heurt' : sol, +vy.toFixed(1), +v.toFixed(0)]);
+        if (bavard) trace.push([+t.toFixed(2), g.phase, Math.round(g.s), Math.round(g.lat), +angle(yaw - Ap.capDuSens(ap.sens)).toFixed(2), ap.loin ? 'L' : '-', +pos.y.toFixed(1), heurt ? 'heurt' : sol, +vy.toFixed(1), +v.toFixed(0)]);
         if (pos.y <= sol) {
           const r = Ap.repereDePiste(ap, pos.x, pos.z);
           vyTouche = vy; sTouche = r.s; latTouche = r.lat;
@@ -74,8 +83,8 @@ for (const [k, f] of Object.entries(FICHES)) {
       // freinage : approche²/(2 frein) depuis le toucher
       const arret = sTouche + v * v / (2 * f.frein);
       const longueur = finale.x1 - finale.x0; const arretOk = (ap.sens > 0 ? finale.x0 + arret <= finale.x1 : finale.x1 - arret >= finale.x0);
-      if (bavard) for (const l of trace.slice(-30)) console.log(JSON.stringify(l));
-      resultats.push({ arretOk, change: finale.cle + finale.z, tours: ap.tours || 0, k, cle: p.cle, z: p.z, dep: dep.join('/'), issue: issue || 'temps', t: +t.toFixed(1), vy: +vyTouche.toFixed(1),
+      if (bavard) for (const l of trace.slice(-(+process.env.TRACE || 30))) console.log(JSON.stringify(l));
+      resultats.push({ arretOk, change: finale.cle + finale.z, tours: ap.tours || 0, k, cle: p.cle, z: p.z, dep: tag, devant: !!choix.devant, issue: issue || 'temps', t: +t.toFixed(1), vy: +vyTouche.toFixed(1),
         sTouche: Math.round(sTouche), lat: +latTouche.toFixed(1), arret: Math.round(arret), longueur });
     }
   }
