@@ -12,7 +12,15 @@
   d'`arbresLoin`). Et `reseau.js` rejouée SEULE : branche 4 verts / 23 rouges,
   `origin/main` (v510) 2 verts / 15 rouges puis le banc lâche (« à trois,
   chacun voit les deux autres » : `[[],[],[]]`) — le jeu à plusieurs ne tourne
-  plus sur ce banc, des deux côtés.
+  plus sur ce banc, des deux côtés. Portail de la v519 après rebase sur la
+  v518 (durées normales, reprise de cinq suites) : verts `metro`, `parent`,
+  `parishd`, `carteMonde`, `sauvegarde`, `plafond`, `degats`, `visio`,
+  `realisme`, `carte`, `hote`, `washington`, `reglages` ; rouges déjà déclarés
+  `maj.js` (le loader et les fichiers rangés), `manhattan.js` (le taxi au
+  tactile), `monte.js` (convois, rue vide), `reseau.js` (le banc lâche) ; un
+  rouge neuf de `monte.js`, « là où l'ancienne visée ne trouvait rien, la monte
+  la voit » — même preuve structurelle (pas de `hd=`, arbres non atteints), à
+  rejouer seul sur `origin/main`.
 
 - [ ] **Les arbres beaux partout (v519) : ce qui reste.** (1) Au bord du
 
