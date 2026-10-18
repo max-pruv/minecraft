@@ -1188,13 +1188,19 @@ function verifier(nom, ok, detail = '') {
       g.player.keys.delete('KeyW');
       const fin = abs();
       if (g.fun.montureConduite && g.fun.montureConduite()) document.getElementById('ride-btn').click();
-      return { monte, depart: +a0.toFixed(2), plusPres: +plusPres.toFixed(2), fin: +fin.toFixed(2), parcouru: +(a0 - fin).toFixed(2), secondes: +((performance.now() - t0) / 1000).toFixed(1), site, devant, contact: g.player.contact || null };
+      // LANCÉE, LA VOITURE L'ÉCRASE (v519) : la terrasse quitte le registre de
+      // ce qui arrête, et son morceau se remaille sans elle
+      const ecrasee = !!(g.mobilierCasse && g.mobilierCasse.casses.has('h' + site.bx + ',' + site.bz));
+      return { monte, depart: +a0.toFixed(2), plusPres: +plusPres.toFixed(2), fin: +fin.toFixed(2), parcouru: +(a0 - fin).toFixed(2), secondes: +((performance.now() - t0) / 1000).toFixed(1), site, devant, ecrasee, contact: g.player.contact || null };
     });
     // la voiture fait 4,4 blocs de long : son pare-chocs avant est à 2,2 du
     // centre ; arrêtée devant la terrasse, le centre reste à plus de 2,2 de la
     // colonne (dont le bord est à 0,5 du centre de la terrasse)
-    verifier('au volant, la voiture de l\'enfant s\'arrête devant une terrasse de café au lieu de la traverser',
-      !auVolant.err && auVolant.monte && auVolant.parcouru > 1.5 && auVolant.plusPres > 2.2,
+    // Depuis la v519, lancée au-delà de cinq blocs par seconde, la voiture
+    // ÉCRASE la terrasse (le morceau se remaille sans elle) ; ce qu'elle ne
+    // fait jamais, c'est la traverser intacte — ni s'arrêter dedans.
+    verifier('au volant, la voiture de l\'enfant ne traverse pas une terrasse de café : elle l\'écrase lancée, ou s\'arrête devant',
+      !auVolant.err && auVolant.monte && auVolant.parcouru > 1.5 && (auVolant.ecrasee ? auVolant.plusPres < 2.2 : auVolant.plusPres > 2.2),
       JSON.stringify(auVolant));
     verifier('aucune erreur JavaScript de bout en bout', tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
     await tab.close();
