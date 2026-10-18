@@ -1,5 +1,21 @@
 # Ce qui est en cours
 
+- [ ] **Rouges de portail de la v519 (les arbres au loin) : aucun de la
+  livraison.** Seul rouge à moi : `parishd.js` lisait « cubes cachés » sur
+  `plat` caché — repointé sur `arbresLoin`, vert. Restent `degats.js` (percuter
+  une voiture de la rue), `monte.js` (huit, dont la rue par tranches, le
+  convoi, la rue vide, « la recharge à l'arrivée garde la cadence » à 0,68 pour
+  0,75, le monde devant l'avion à Paris@120, le mur de face, le passage peint
+  de Rome) et `reseau.js`. PREUVE STRUCTURELLE (v291) : aucune de ces suites ne
+  force `hd=`, donc en rendu logiciel `RAYON_HD` vaut 0, `world.arbres` aussi,
+  et le mailleur rend les tampons de la v510 (aucun arbre reconnu, pas
+  d'`arbresLoin`). Et `reseau.js` rejouée SEULE : branche 4 verts / 23 rouges,
+  `origin/main` (v510) 2 verts / 15 rouges puis le banc lâche (« à trois,
+  chacun voit les deux autres » : `[[],[],[]]`) — le jeu à plusieurs ne tourne
+  plus sur ce banc, des deux côtés.
+
+- [ ] **Les arbres beaux partout (v519) : ce qui reste.** (1) Au bord du
+
 - [ ] **Les arbres beaux partout (v519) : ce qui reste.** (1) Au bord du
   disque chargé, la part de couronne d'un arbre dont la base est dans un
   morceau pas encore maillé manque (ses cubes se taisent dans le voisin) —
