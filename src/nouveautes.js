@@ -6,12 +6,19 @@
 
 export const NOUVEAUTES = [
   {
-    v: 505,
+    v: 508,
     titre: 'Les voitures de Montmartre roulent mieux',
     puces: [
       'Le Moulin Rouge borde le boulevard',
       'Les voitures ne touchent plus la pente',
       'Des rues traversent les Buttes-Chaumont',
+    ],
+  },
+  {
+    v: 506,
+    titre: 'On vérifie chaque écran',
+    puces: [
+      'Chaque écran est photographié avant la sortie',
     ],
   },
   {

@@ -3535,7 +3535,7 @@ const VRAIES_KM = [
       !monuments.absent && monuments.circuits === 8 && monuments.lus > 0 && monuments.dur === 0,
       JSON.stringify(monuments));
 
-    // ET NI LA BUTTE, NI LE MOULIN ROUGE, NI LES JARDINS TRAVERSÉS (v505). Sur
+    // ET NI LA BUTTE, NI LE MOULIN ROUGE, NI LES JARDINS TRAVERSÉS (v508). Sur
     // la voie que la voiture roule, 74 pas de carrosserie dans un bloc plein
     // (mesuré sous node sur `origin/main`) : trente-deux sur le pavé d'une
     // colonne plus haute d'un bloc le long des boulevards de Clichy et de

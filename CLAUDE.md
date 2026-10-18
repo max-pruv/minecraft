@@ -266,6 +266,22 @@ une version qu'on ne saura pas déboguer.
 6. **Corriger le `README`** s'il vient de devenir faux — une dimension, une
    durée, un fichier. Un README périmé induit en erreur plus longtemps qu'il
    n'informe.
+
+   **6 bis. UN PORTAIL VERT NE PROUVE PAS QU'UN ÉCRAN EST CLAIR (v506).** En
+   une matinée, Max a signalé depuis son iPhone sept défauts qu'une capture
+   montrait au premier regard : monter et descendre inversés en vol, une coche
+   illisible, une roue méconnaissable, des cubes orange dans le ciel, des feux
+   de détresse qui flottent, une minicarte décalée, une approche sans le nom de
+   la ville. « C'est vraiment des choses que tu devrais anticiper. » Toute
+   livraison qui touche ce que l'enfant voit — interface, HUD, effets,
+   véhicules, rendu — joue donc `tests/sonde-revue-ecran.cjs` sur les états
+   concernés (`--etats=`), à la taille de l'iPhone ET de l'iPad, de jour ET de
+   nuit (minuit vaut 0,75 ; 0,0 est le lever du soleil). On regarde les
+   captures selon la grille de `docs/revue-ecran.md`, comme un enfant de sept
+   ans qui ne lit pas de mode d'emploi, et on les met dans la PR AVANT de
+   fusionner. Ce qu'on y voit de travers et qu'on ne corrige pas entre dans le
+   relevé du même fichier. La sonde est isolée (aucune suite ne l'importe) :
+   elle ne coûte rien au portail, elle coûte le temps de regarder.
 7. PR **prête, jamais en brouillon**, fusionnée immédiatement (squash). Consigne
    permanente de Max : « une manière continue constante ». Le corps de la PR
    reprend la structure de l'entrée du journal.
@@ -805,7 +821,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Montmartre et les jardins (v505) — une cote se lit sous la voiture, et une voie traverse un jardin déclaré
+## Montmartre et les jardins (v508) — une cote se lit sous la voiture, et une voie traverse un jardin déclaré
 
 Trois règles.
 

@@ -1256,7 +1256,7 @@ export function solParis(x, z, jardinsAvant = false) {
     if (p.jardin) {
       if (du > p.ru || du < -p.ru || dv > p.rv || dv < -p.rv) continue;
       if (du * du * p.iru + dv * dv * p.irv < 1) {
-        // LA VOIE NOMMÉE L'EMPORTE SUR LE JARDIN, SUR SA CHAUSSÉE (v505).
+        // LA VOIE NOMMÉE L'EMPORTE SUR LE JARDIN, SUR SA CHAUSSÉE (v508).
         if (p.traverse && reglageJardins.voies && !jardinsAvant) { const rue = solDesVoies(BANDES, u, v, BITUME, PAVE); if (rue !== null) return rue; }
         // une allée en croix, et des arbres en bordure
         if (du < 0.6 && du > -0.6) return PAVE;
@@ -1825,7 +1825,7 @@ export function buildMoulinRouge(poser) {
   set(0, 12, 0, uni(18));
 }
 
-// LE MOULIN ROUGE BORDE LE BOULEVARD AU NORD (v505). Le bâtisseur d'avant
+// LE MOULIN ROUGE BORDE LE BOULEVARD AU NORD (v508). Le bâtisseur d'avant
 // posait la salle au CENTRE de sa boîte (dz −2 à 2), c'est-à-dire en travers
 // du boulevard de Clichy, dont l'axe passe par le repère : dix-sept pas de
 // carrosserie dans ses murs, mesurés sur la voie de droite. Le vrai Moulin
