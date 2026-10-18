@@ -76,6 +76,32 @@
   « sans erreur de jeu » (PeerJS, déclaré), `monte.js` « la rue se fabrique
   par tranches », « deux voisines », « au feu… piler », « rue vide » — les
   quatre rouges sur `origin/main` rejouée seule ci-dessus.
+- [ ] **LES VRAIS ARBRES (v499) : un défaut latent mis au jour par les bosquets
+  (v503).** Le témoin de `plafond.js` « une cabane de rondins posée par un
+  enfant n'est pas un arbre » choisit le morceau le plus dense de sa fenêtre ;
+  avec les bosquets c'est le morceau (-87, -147), et la conservation des faces
+  y rate d'UNE : `solid` 597 + `plat` 795 = 1 392 pour 1 391 cubes sans arbres.
+  Le même témoin imposé sur ce morceau rend le même écart sur `origin/main`
+  v502 (code des vrais arbres, densité d'avant) : ce n'est pas la densité,
+  c'est le dessin, à cet endroit-là. Le témoin se joue désormais bosquets
+  désarmés (son morceau d'avant, vert) ; la sonde pour rejouer :
+  le brouillon `cab.mjs` de la v503 (forêt de `treeAt` autour de (-1500,
+  -2500), cabane 3 × 3 × 3 de rondins au centre du morceau). Zone vrais arbres.
+
+- [ ] **PORTAILS DE LA v503 (les bosquets) : rouges mesurés des deux côtés.**
+  Rejouées SEULES (branche, puis `origin/main` v487 dans un arbre détaché) :
+  `visio.js` et `maj.js` vertes sur la branche ; `monte.js` 233 verts des deux
+  côtés, rouges des deux côtés « l'on ne marche pas dans une rue vide », « à
+  Moscou, les rues sont pleines de voitures » et son dépendant « modèles ET
+  couleurs » ; sur `origin/main` seul « la rue se fabrique par tranches » et
+  « au feu, la voiture freine » ; sur la branche seule « deux voisines d'un
+  convoi » (déclaré) et « à Londres, un passant traverse sur le passage
+  peint » (en ville, où `treeAt` rend null avant le bosquet : non atteint).
+  `reseau.js` trois fois de chaque côté : des rouges dispersés et différents
+  à chaque passage, des deux côtés (hôte sans courtier, seule après le départ
+  de l'hôte, reprise après veille, portières du passager, « le serveur de jeu
+  ne répond pas ») — la même distribution, 79 à 87 verts sur la branche, 39
+  (coupée) à 87 sur `origin/main`. Intermittences réseau, pas la livraison.
 
 - [ ] **`monte.js` « à l'arrivée d'une téléportation, le fil principal
   n'engendre pas les morceaux que le worker va rendre » INTERMITTENT au portail

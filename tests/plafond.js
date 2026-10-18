@@ -3310,8 +3310,11 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     } else {
       const { GeomBufferHD, rectHD } = await import('../src/facadeshd.js');
       const t0 = Date.now();
-      // le morceau de forêt le plus dense : on compte les arbres de `treeAt`
-      const w0 = new W.World();
+      // le morceau de forêt le plus dense : on compte les arbres de `treeAt`.
+      // Ces témoins gardent le DESSIN des arbres, pas leur densité : ils se
+      // jouent bosquets désarmés (v503), sur la forêt où ils ont été mesurés.
+      const sansBosquets = (w) => { w.conf = { ...w.conf, clairieres: false }; return w; };
+      const w0 = sansBosquets(new W.World());
       let best = null;
       for (let dx = -12; dx <= 12; dx++) for (let dz = -12; dz <= 12; dz++) {
         const cx = Math.floor(-1500 / W.CHUNK) + dx, cz = Math.floor(-2500 / W.CHUNK) + dz;
@@ -3321,7 +3324,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       }
       const faces = (g) => (g ? g.indices.length / 6 : 0);
       const sha = (t) => { const h = crypto.createHash('sha256'); for (const k of Object.keys(t).sort()) { const a = t[k]; if (a && a.buffer) h.update(Buffer.from(a.buffer, a.byteOffset, a.byteLength)); } return h.digest('hex'); };
-      const monde = (arbres) => { const w = new W.World(); w.arbres = arbres; return w; };
+      const monde = (arbres) => { const w = sansBosquets(new W.World()); w.arbres = arbres; return w; };
       const wa = monde(1), ws = monde(0);
       const arme = buildChunkTampons(wa, best.cx, best.cz, { detail: true });
       const sans = buildChunkTampons(ws, best.cx, best.cz, { detail: true });
