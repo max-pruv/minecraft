@@ -524,7 +524,7 @@ export class Cornichon extends Wanderer {
         'Réponds bien à mon quiz pour jouer plus longtemps !',
         'Le métro de Washington passe sous le Potomac.',
         'Un cornichon par jour, en pleine forme toujours !',
-        'Reviens me voir quand tu auras tout attrapé !',
+        'Le monde est grand : pars l\'explorer !',
       ],
     }, homeX, homeZ);
   }
@@ -573,7 +573,7 @@ export function createHeroes(scene, world, player, toast, cx, cz) {
       'Boum ! Supernova !',
       'Les vrais héros lisent bien avant de répondre !',
       'Ensemble, on est plus forts !',
-      'Attrape-les tous, jeune héros !',
+      'Explore le monde, jeune héros !',
       'Ma cape brille même la nuit.',
     ],
   }, cx + 11, cz - 6);
@@ -670,7 +670,7 @@ export function createAstronautes(scene, world, player, toast, cx, cz) {
     firstSpeech: 20,
     look: commun(0x4a90d9),
     phrases: [
-      'La fusée est prête à repartir quand tu veux.',
+      'Notre fusée nous a amenés de la Terre jusqu\'ici.',
       'Les panneaux solaires alimentent tout le dôme.',
       'Mars est rouge à cause du fer rouillé dans son sol.',
       'Il n\'y a presque pas d\'air ici — d\'où le casque !',

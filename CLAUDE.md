@@ -1001,6 +1001,17 @@ Deux règles.
   Les icônes de la fiche viennent d'`ICONES` (`chercher`, `appui`), posées par
   `main.js` ; la légende dessine ses repères en CSS, aux couleurs du canvas.
 
+## Le ménage des restes (v517) — on inventorie avant de retirer, et un mot retiré se garde
+
+Max : « supprimer toutes les musiques inutiles… les trucs qu'on a supprimés ».
+L'inventaire (main.js et sons.js sont les seuls à faire du son) n'a trouvé
+aucun son orphelin : on ne retire pas un son dont le déclencheur vit, et le cor
+du siège, qui sonne encore sans bandeau depuis la v504, est une question posée
+à Max, pas un retrait. Les restes étaient des PHRASES de personnages. Un témoin
+de `fumee.js` lit les chaînes du jeu (une chaîne sans espace est une clé, pas
+un texte) contre une liste de mots de fonctionnalités retirées : un mot neuf
+s'y ajoute le jour où l'on retire la fonctionnalité qu'il nomme.
+
 ## La barre de blocs en bas (v503) — une décision de Max annule une règle, et la règle se redit en relatif
 
 Max : « le mode construction, ça va pas du tout. On affiche les briques dans une

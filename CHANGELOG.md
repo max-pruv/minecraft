@@ -20,6 +20,34 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v517 — Les restes des fonctionnalités retirées : un inventaire, et trois phrases
+
+**Pourquoi.** Max : « supprimer toutes les musiques inutiles, du style les trucs
+liés au Pokémon, etc., qu'on a supprimés ». Les créatures à attraper (v285), les
+feux d'artifice, le coffre, la quête, l'atelier, le chantier, les records, les
+chapeaux (v256) sont partis ; restait-il de quoi les entendre ou les lire ?
+
+**Ce que ça change.** L'inventaire complet des sons du jeu (main.js et sons.js,
+les deux seuls fichiers qui en produisent) n'a trouvé AUCUN son qui ne serve
+qu'une fonctionnalité retirée : le carillon des messages, les trois notes d'une
+arrivée, les bruits de blocs, le cliquetis et le cor du siège, le moteur, la
+radio et ses trois stations, les pneus, le feu et les chocs servent tous un jeu
+vivant. Rien n'est donc retiré côté son. Côté textes, trois bulles de
+personnages promettaient encore ce qui n'existe plus et sont réécrites :
+Cornichon (« Reviens me voir quand tu auras tout attrapé ! »), Super Nova
+(« Attrape-les tous, jeune héros ! ») et Samir (« La fusée est prête à repartir
+quand tu veux » : aucune fusée ne se pilote).
+
+**Ce qui le prouve.** Un témoin de `fumee.js` lit toutes les chaînes du jeu
+(hors commentaires, journal des nouveautés et vocabulaire d'education.js) et
+rougit sur un mot de fonctionnalité retirée ; rouge sur `origin/main` (les deux
+bulles d'attrape), vert ici. Le portail a rendu cinq rouges dans `monte.js` et
+`manhattan.js`, rejoués seuls des deux côtés : mêmes familles sur `origin/main`
+(9 rouges contre 6 sur la branche), et la livraison ne change que trois chaînes
+de bulles — déclarés dans `TASKS.md`.
+
+---
+
 ## v516 — L'avion dit vers quelle ville il se pose
 
 **Pourquoi.** Max : « Quand on lance un atterrissage depuis l'avion, ce serait

@@ -1,5 +1,19 @@
 # Ce qui est en cours
 
+- [ ] **Rouges de portail vus en v517, rejoués SEULS des deux côtés.** `monte.js`
+  « au-dessus d'une ville aussi, le monde se charge devant l'avion » (rouge sur
+  `origin/main` v506 ET la branche : trou 58 et 16 pour une barre à 47,5/60),
+  « l'écran ne se fige pas en arrivant sur une ville » et « le worker ne reste
+  pas à sec » (rouges des deux côtés), « à l'arrivée, la rue se fabrique par
+  tranches » (portail seulement : 1 voiture par image au plus, mais rendu
+  rouge — non reproduit seul) ; `manhattan.js` « le taxi roule avec les
+  contrôles tactiles » (3,36 blocs en 332 s de montre : la cadence du banc).
+  Et au dernier portail, quatre suites mortes au démarrage (`#play-btn`,
+  `locator.click` à 30 s, « personnages 0/9 ») : `manhattan.js` rejouée SEULE
+  meurt au même endroit sur `origin/main` v512 ET sur la branche — le banc
+  rendait trop peu d'images ce jour-là (v427 : `locator.click` attend deux
+  images identiques).
+  La livraison ne touchait que trois chaînes de bulles de `marlon.js`.
 - [ ] **Rouges de portail mesurés des deux côtés au portail de la v516
   (« Atterrissage vers <ville> »)** — `monte.js` rejouée SEULE sur la branche
   et sur `origin/main` v504 (`git worktree`). Branche 23 rouges, `origin/main`
