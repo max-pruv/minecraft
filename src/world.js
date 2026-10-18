@@ -57,7 +57,7 @@ import {
 import {
   PARIS, adresseParis, BUTTE, CITE, zCite, hauteurParis, solParis, lotParisLibre, batirColonneParis, gabaritParis, versSeine, pontParis, murDeQuaiParis,
   LIEUX, buildNotreDame, buildSacreCoeur, buildPantheon, buildInvalides, buildOpera,
-  buildMontparnasse, buildColonneBastille, buildMoulinRouge,
+  buildMontparnasse, buildColonneBastille, buildMoulinRouge, buildMoulinRougeNord,
   VOIES_PARIS, PORTEE_FEUX_PARIS,
 } from './paris.js';
 import {
@@ -1225,6 +1225,8 @@ const LANDMARKS_V317 = [
     return {
       name: nom === 'Louvre' ? 'Pyramide du Louvre' : nom,
       x: PARIS.x + p.u, z: PARIS.z + p.v, box: Math.max(p.socle[0], p.socle[1]), build,
+      // le Moulin Rouge du monde d'aujourd'hui borde le boulevard (v504)
+      ...(nom === 'Moulin Rouge' ? { tour: buildMoulinRougeNord } : {}),
       // v306 : Paris doublé se lit à 1,7 bloc par pixel quand il tient entier
       // sur un téléphone ; ses monuments restent sur le plan (carte.js)
       seuil: 2.2,
@@ -1562,7 +1564,7 @@ export const CONF_NEUF = {
   cle: 'neuf', villes: CITIES, aeroports: AEROPORTS, gaulois: GAULOIS, volcan: VOLCANO,
   places: PLACES, reperes: LANDMARKS, hauteurParis, parisAvant: false, fonduDoux: true,
   mursDeQuai: true, falaises: true, villesAvant: false, climat: true, sansTrameLondres: true,
-  metroParis: true, metroMonde: true,
+  metroParis: true, metroMonde: true, voiesJardinsParis: true,
 };
 // LE MONDE DE LA v306 À LA v308 — celui d'aujourd'hui sans le fondu doux des
 // villes (v309). La marche 6 → 7 juge sur lui ce qui y a été posé, et la marche
@@ -1572,7 +1574,7 @@ export const CONF_NEUF = {
 // Et ces deux mondes-là ont les villes d'avant leur passe au kit (Londres
 // v339, `londres-v332.js` ; Nice v359, `nice-v340.js`) : c'est celles qu'on y
 // voyait (`villesAvant`).
-export const CONF_V308 = { ...CONF_NEUF, reperes: LANDMARKS_V317, fonduDoux: false, mursDeQuai: false, falaises: false, villesAvant: true, climat: false, sansTrameLondres: false, metroParis: false, metroMonde: false };
+export const CONF_V308 = { ...CONF_NEUF, reperes: LANDMARKS_V317, fonduDoux: false, mursDeQuai: false, falaises: false, villesAvant: true, climat: false, sansTrameLondres: false, metroParis: false, metroMonde: false, voiesJardinsParis: false };
 export const CONF_AVANT = {
   cle: 'avant-v306', villes: CITIES_AVANT, aeroports: AEROPORTS_AVANT_V306, gaulois: GAULOIS_AVANT,
   volcan: VOLCANO_AVANT, places: PLACES_AVANT, reperes: LANDMARKS_V317.filter((lm) => !NES_APRES_V306_NOMS.has(lm.name)).map(repereAvant),
@@ -2155,6 +2157,21 @@ export const DATE_TRAME_LONDRES = Date.UTC(2026, 9, 11, 19, 11, 0);
 function dansTrameLondres(x, z, t) {
   if (!(t <= DATE_TRAME_LONDRES)) return false;
   const du = x - LONDRES.x, dv = z - LONDRES.z, r = LONDRES.r + 16;
+  return du * du + dv * dv <= r * r;
+}
+// LA VOIE NOMMÉE TRAVERSE LE JARDIN SUR SA CHAUSSÉE (v504). La rue de
+// Belleville et le boulevard de Ménilmontant traversaient les Buttes-Chaumont,
+// le boulevard Beaumarchais la place des Vosges : les jardins passaient avant
+// les rues dans `solParis`, et les voitures roulaient dans les troncs (quatorze
+// pas de carrosserie, mesurés sur la voie de droite). Sur la chaussée d'une
+// voie nommée, la rue l'emporte désormais (`traverse` dans la fiche du
+// jardin) — sauf sous une colonne où un enfant a posé ou creusé un bloc avant
+// cette date (et ses huit voisines) : elle garde son jardin, et ce qui portait
+// sa cabane. La date se relit à la fusion (v309).
+export const DATE_JARDINS_PARIS = Date.UTC(2026, 9, 18, 12, 0, 0);
+function dansJardinsParis(x, z, t) {
+  if (!(t <= DATE_JARDINS_PARIS)) return false;
+  const du = x - PARIS.x, dv = z - PARIS.z, r = PARIS.r + 2;
   return du * du + dv * dv <= r * r;
 }
 const DC_NEUF = { solWashington, batirColonneWashington, VOIES_CIRCUITS_DC };
@@ -3019,6 +3036,7 @@ export class World {
     this.morceauxAvantClimat = new Set(); // les morceaux (et leurs voisins) bâtis avant les climats (v345)
     this.colonnesCedees = new Set();    // les colonnes de Paris où la ville cède à ce qu'un enfant a bâti (v306)
     this.colonnesTrameLondres = new Set(); // les colonnes de Londres où la trame générique d'avant reste (v447)
+    this.colonnesJardinsParis = new Set(); // les colonnes de Paris où le jardin d'avant reste sous une voie (v504)
     this.colonnesMetroDC = new Set();     // celles de la boîte de Washington où le métro ne touche pas la surface (v485)
     this.colonnesVilleAvant = new Set();  // celles de Londres, de Nice, de San Francisco, de Lille et de Washington où la ville d'avant le kit reste (v339, v359, v361, v370, v370)
     this.cacheSol = new Map();          // "x,z" -> { nat, cote } : la fiche d'une colonne (sol continu, v297)
@@ -4024,7 +4042,10 @@ export class World {
           // enfant avait bâti avant la date (`DATE_PARIS_DOUBLE`)
           const PV = this.conf.parisAvant ? PARIS_AVANT : PARIS_NEUF;
           const cede = !this.conf.parisAvant && this.colonnesCedees.size > 0 && this.colonnesCedees.has(cleColonneParis(wx, wz));
-          const sp = PV.solParis(wx, wz);
+          // le jardin d'avant la v504 sous une colonne où un enfant a bâti
+          const jAvant = !this.conf.voiesJardinsParis
+            || (this.colonnesJardinsParis.size > 0 && this.colonnesJardinsParis.has(cleColonneParis(wx, wz)));
+          const sp = PV.solParis(wx, wz, jAvant);
           // Le mur du quai en pierre sous la margelle (v316). Le monde d'avant
           // (`PARIS_AVANT`) n'a pas cette règle et n'en a pas besoin : la
           // terre et la pierre arrêtent un bloc de la même façon.
@@ -4037,8 +4058,8 @@ export class World {
           // pour les colonnes qui peuvent être AU PIED d'un arbre (trottoir,
           // pelouse), jamais pour une chaussée ou une façade.
           const souche = (sp === CITY_BLOCK.SIDEWALK || sp === BLOCK.GRASS)
-            && (PV.solParis(wx + 1, wz) === BLOCK.LEAVES || PV.solParis(wx - 1, wz) === BLOCK.LEAVES
-              || PV.solParis(wx, wz + 1) === BLOCK.LEAVES || PV.solParis(wx, wz - 1) === BLOCK.LEAVES);
+            && (PV.solParis(wx + 1, wz, jAvant) === BLOCK.LEAVES || PV.solParis(wx - 1, wz, jAvant) === BLOCK.LEAVES
+              || PV.solParis(wx, wz + 1, jAvant) === BLOCK.LEAVES || PV.solParis(wx, wz - 1, jAvant) === BLOCK.LEAVES);
           if (souche) {
             data[World.index(x, h, z)] = sp;
             for (const dy of [3, 4]) {
@@ -4768,6 +4789,7 @@ export class World {
     if (dansParisCede(x, z, t)) marquerParisCede(this.colonnesCedees, x, z);
     if (dansVilleAvant(x, z, t)) marquerParisCede(this.colonnesVilleAvant, x, z);
     if (dansTrameLondres(x, z, t)) marquerParisCede(this.colonnesTrameLondres, x, z);
+    if (dansJardinsParis(x, z, t)) marquerParisCede(this.colonnesJardinsParis, x, z);
     if (dansMetroBoiteDC(x, z, t)) marquerParisCede(this.colonnesMetroDC, x, z);
     if (t <= DATE_CLIMATS) this.marquerAvantClimat(x, z);
     if (!remote && this.onOp) this.onOp(k, id, t);
@@ -5028,16 +5050,18 @@ export class World {
     this.colonnesCedees.clear();
     this.colonnesVilleAvant.clear();
     this.colonnesTrameLondres.clear();
+    this.colonnesJardinsParis.clear();
     this.colonnesMetroDC.clear();
     this.morceauxAvantClimat.clear();
     for (const [k, t] of this.editTimes) {
-      if (!(t <= DATE_PARIS_DOUBLE || t <= DATE_FIGEE_MAX || t <= DATE_CLIMATS || t <= DATE_TRAME_LONDRES || t <= DATE_METRO_BOITE_DC)) continue;
+      if (!(t <= DATE_PARIS_DOUBLE || t <= DATE_FIGEE_MAX || t <= DATE_CLIMATS || t <= DATE_TRAME_LONDRES || t <= DATE_METRO_BOITE_DC || t <= DATE_JARDINS_PARIS)) continue;
       const virgule = k.indexOf(','), derniere = k.lastIndexOf(',');
       const x = +k.slice(0, virgule), z = +k.slice(derniere + 1);
       if (t <= DATE_CLIMATS) this.marquerAvantClimat(x, z);
       if (dansParisCede(x, z, t)) marquerParisCede(this.colonnesCedees, x, z);
       if (dansVilleAvant(x, z, t)) marquerParisCede(this.colonnesVilleAvant, x, z);
       if (dansTrameLondres(x, z, t)) marquerParisCede(this.colonnesTrameLondres, x, z);
+      if (dansJardinsParis(x, z, t)) marquerParisCede(this.colonnesJardinsParis, x, z);
       if (dansMetroBoiteDC(x, z, t)) marquerParisCede(this.colonnesMetroDC, x, z);
     }
     this.monumentsTouches.clear();
@@ -5170,6 +5194,7 @@ export class World {
     this.colonnesCedees.clear();
     this.colonnesVilleAvant.clear();
     this.colonnesTrameLondres.clear();
+    this.colonnesJardinsParis.clear();
     this.colonnesMetroDC.clear();
     this.loadEdits();
     this.allDirty = true;
@@ -5187,6 +5212,7 @@ export class World {
     this.colonnesCedees.clear();
     this.colonnesVilleAvant.clear();
     this.colonnesTrameLondres.clear();
+    this.colonnesJardinsParis.clear();
     this.colonnesMetroDC.clear();
     this.chunks.clear();
     this.tops.clear();

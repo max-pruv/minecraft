@@ -254,7 +254,32 @@ function coteEn(solDe, x, z) {
   return m;
 }
 
-export function fabriqueCircuits({ cle, ancre, voies, roulant, chaines, seuil = 0.9, ajuster = null }) {
+// LA COTE SE LIT SOUS LA VOITURE, PAS SOUS L'AXE (v504). Depuis la v372 un
+// convoi d'avenue roule `VOIE_CIRCUIT` blocs à droite de son tracé ; sa cote,
+// elle, restait celle de l'AXE et de ses quatre voisins. En dévers — le
+// boulevard de Clichy et le boulevard de Rochechouart longent la pente de la
+// butte —, la carrosserie de la voie de droite touchait le pavé d'une colonne
+// voisine plus haute d'un bloc : trente-deux pas mesurés, sans qu'une ligne du
+// relief soit en cause. La cote d'un point prend donc aussi le plus haut sol
+// sous l'emprise de la voiture dans sa voie (cinq points en travers, cinq le
+// long), la règle du plus haut voisin (v210) posée là où l'on roule. Rien du
+// monde ne bouge : seule la hauteur du convoi.
+export const VOIE_CIRCUIT = 1.3;
+const DEMI_VOITURE = 1.13;
+function coteSousLaVoie(solDe, x, z, fx, fz, voie) {
+  let m = coteEn(solDe, Math.round(x), Math.round(z));
+  if (!voie) return m;
+  const rx = -fz, rz = fx;
+  for (const d of [voie - DEMI_VOITURE, voie - DEMI_VOITURE / 2, voie, voie + DEMI_VOITURE / 2, voie + DEMI_VOITURE]) {
+    for (const t of [-1.5, -0.75, 0, 0.75, 1.5]) {
+      const h = solDe(Math.floor(x + rx * d + fx * t), Math.floor(z + rz * d + fz * t));
+      if (h > m) m = h;
+    }
+  }
+  return m;
+}
+
+export function fabriqueCircuits({ cle, ancre, voies, roulant, chaines, seuil = 0.9, ajuster = null, voie = VOIE_CIRCUIT }) {
   return (solDe) => {
     const est = (x, z) => roulant.has(voies.sol ? voies.sol(x, z) : null);
     const out = [];
@@ -275,7 +300,7 @@ export function fabriqueCircuits({ cle, ancre, voies, roulant, chaines, seuil = 
       // trajet. Max, sur capture : « les voitures rentrent dans les murs ».
       out.push({
         cle, x: ancre.x, z: ancre.z, rang: out.length, part: Math.round(verdict.part * 100),
-        pts: densifierCircuit(pts, ancre, solDe),
+        pts: densifierCircuit(pts, ancre, solDe, voie),
       });
     }
     return out;
@@ -284,15 +309,17 @@ export function fabriqueCircuits({ cle, ancre, voies, roulant, chaines, seuil = 
 
 // Le tracé d'un circuit, densifié au pas de cote et posé sur le sol — la même
 // règle pour les avenues chaînées et pour le tour d'un pâté de quartier (v322).
-export function densifierCircuit(pts, ancre, solDe) {
+export function densifierCircuit(pts, ancre, solDe, voie = 0) {
   const dense = [];
   for (let i = 0; i < pts.length; i++) {
     const a = pts[i], b = pts[(i + 1) % pts.length];
-    const n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / PAS_COTE));
+    const L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    const n = Math.max(1, Math.ceil(L / PAS_COTE));
+    const fx = L > 1e-9 ? (b[0] - a[0]) / L : 0, fz = L > 1e-9 ? (b[1] - a[1]) / L : 0;
     for (let k = 0; k < n; k++) {
       const u = a[0] + ((b[0] - a[0]) * k) / n, v = a[1] + ((b[1] - a[1]) * k) / n;
       const x = ancre.x + u, z = ancre.z + v;
-      dense.push({ x, y: coteEn(solDe, Math.round(x), Math.round(z)) + 1.05, z });
+      dense.push({ x, y: coteSousLaVoie(solDe, x, z, fx, fz, L > 1e-9 ? voie : 0) + 1.05, z });
     }
   }
   return dense;

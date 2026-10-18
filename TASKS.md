@@ -7795,8 +7795,21 @@ l'embarquement a eu lieu, pas par une hypothèse.
   **49 → 0**. Tenue de rue 95 98 100 99 96 100 100 100 → 94 100 100 100 96 100
   100 100. Témoin dans `carteMonde.js`, rouge sur `origin/main`.
 
-- [ ] **REMESURÉ en v475 sur la voie que la voiture roule (1,3 bloc à droite
-  de l'axe) : 49 pas, tous sur le circuit du nord (La Fayette… Clichy,
+- [x] **RÉSOLU en v504 : la butte et le Moulin Rouge.** Remesuré sous node
+  sur `origin/main` : 32 pas sur le pavé d'une colonne plus haute d'un bloc
+  (Clichy, Rochechouart) et 17 dans les murs du Moulin Rouge. La pente n'était
+  pas le relief mais la COTE du convoi, lue sous l'axe quand la voiture roule
+  1,3 bloc à droite : elle se lit désormais sous l'emprise de la voiture dans
+  sa voie (`coteSousLaVoie`, voies.js) — 0 pas. Le Moulin Rouge a un bâtisseur
+  neuf (`buildMoulinRougeNord`, champ `tour`) dans la moitié nord de sa boîte —
+  0 pas ; les mondes figés gardent l'ancien. Reste déclaré : la salle occupe la
+  voie NORD du boulevard sur neuf blocs (aucun circuit n'y roule, la voiture de
+  l'enfant qui y descend vers l'ouest la contourne par la voie sud), et sur les
+  pentes une voiture flotte au-dessus du pavé sous son centre là où son flanc
+  touche la marche (25 pas sur 5 809 à plus d'un bloc, 6 avant ; San Francisco
+  451 pas à plus d'un demi-bloc contre 181). Ancien texte :
+- [ ] ~~**REMESURÉ en v475 sur la voie que la voiture roule (1,3 bloc à droite
+  de l'axe) : 49 pas, tous sur le circuit du nord~~ (La Fayette… Clichy,
   Rochechouart)** — trente dans la pente de la butte (le boulevard de Clichy
   passe à vingt blocs de son sommet, la carrosserie touche le pavé d'une
   colonne voisine plus haute d'un bloc), dix-sept DANS le Moulin Rouge, dont le
@@ -7828,7 +7841,18 @@ l'embarquement a eu lieu, pas par une hypothèse.
   défaut que l'escalier du Sacré-Cœur, qui descendait à quinze blocs quand sa
   boîte en annonçait douze.
 
-- [ ] **REMESURÉ en v475 pour Paris, sur la voie de droite** : 34 pas hors
+- [x] **RÉSOLU en v504 pour les Buttes-Chaumont et la place des Vosges ;
+  DÉCLARÉ pour les Tuileries.** La voie nommée l'emporte sur le jardin sur sa
+  chaussée et son trottoir dans les jardins déclarés `traverse` (paris.js) :
+  267 colonnes, zéro lot changé ; sous une colonne où un enfant a bâti avant
+  `DATE_JARDINS_PARIS`, le jardin d'avant reste (`colonnesJardinsParis`).
+  Mesuré : Buttes-Chaumont 12 → 0, place des Vosges 2 → 0, Vincennes déjà 0.
+  Les Tuileries restent (11 pas) : la rue de Rivoli passe au centre du jardin
+  (`pt('Tuileries')`), la faire passer au centre serait la faire ENTRER, et la
+  faire longer la grille nord (points (−62, −9) et (−40, −9)) change 171
+  colonnes de lot entre la Concorde et le Louvre — décision de Max, avec une
+  Paris figée sous ce qu'un enfant a bâti. Ancien texte :
+- [ ] ~~**REMESURÉ en v475 pour Paris, sur la voie de droite** : 34 pas hors~~
   monuments et hors butte, et ce n'est plus du bâti — ce sont des JARDINS, qui
   passent avant les rues dans `solParis` : les troncs des Tuileries (onze pas,
   la rue de Rivoli, voir plus bas), la place des Vosges (deux, circuit de la

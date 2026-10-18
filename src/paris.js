@@ -31,7 +31,7 @@
 // villes, avec ses îlots, ses cours et sa ligne de corniche.
 
 import { BLOCK, CITY_BLOCK, DECOR_START, ARCHI } from './blocks.js';
-import { rangerVoies, solDesVoies, fabriqueCircuits, contournerRonds, contournerBlocs, circuitSurRue, densifierCircuit, chainerVoies } from './voies.js';
+import { rangerVoies, solDesVoies, fabriqueCircuits, contournerRonds, contournerBlocs, circuitSurRue, densifierCircuit, chainerVoies, VOIE_CIRCUIT } from './voies.js';
 import { positionDe } from './mondes.js';
 import { entreesDe } from './routes.js';
 import { sectionDeRue } from './voirie.js';
@@ -307,11 +307,11 @@ export const LIEUX = [
   L('Luxembourg', -0.6, 1.1, { rive: 'g', ru: 12, rv: 8.4, jardin: true }),
   L('Panthéon', 0.1, 0.9, { rive: 'g', r: 2.2, sol: PAVE, socle: [6, 7] }),
   L('Bastille', 1.5, -0.2, { rive: 'd', r: 3, sol: PAVE, socle: [2, 2] }),
-  L('Place des Vosges', 0.9, -0.3, { discret: true, rive: 'd', ru: 3.6, rv: 3.6, jardin: true }),
+  L('Place des Vosges', 0.9, -0.3, { discret: true, rive: 'd', ru: 3.6, rv: 3.6, jardin: true, traverse: true }),
   L('République', 0.9, -1.5, { r: 3, sol: PAVE }),
   L('Nation', 3.0, 0.5, { rive: 'd', r: 2.6, sol: PAVE }),
   L('Père-Lachaise', 3.3, -0.6, { ru: 17, rv: 14, jardin: true }),
-  L('Buttes-Chaumont', 2.8, -2.8, { ru: 14, rv: 11, jardin: true }),
+  L('Buttes-Chaumont', 2.8, -2.8, { ru: 14, rv: 11, jardin: true, traverse: true }),
   // LA BUTTE N'A PAS DE RUE DE CEINTURE, ET C'EST MESURÉ. L'anneau de
   // chaussée qui fait le tour d'un monument (`autourDUnSocle`) suppose un sol
   // qui puisse le porter. Sur l'anneau du Sacré-Cœur le terrain va de 37 à 49
@@ -356,7 +356,7 @@ const lieu = (nom) => LIEUX.find((p) => p.nom === nom);
 // une seule division.
 const PLACES = LIEUX.filter((p) => p.jardin || p.r).map((p) => ({
   u: p.u, v: p.v,
-  jardin: !!p.jardin,
+  jardin: !!p.jardin, traverse: !!p.traverse,
   ru: p.ru || 0, rv: p.rv || 0,
   iru: p.ru ? 1 / (p.ru * p.ru) : 0, irv: p.rv ? 1 / (p.rv * p.rv) : 0,
   r: p.r || 0, sol: p.sol || 0,
@@ -838,7 +838,7 @@ export function circuitsQuartiersParis(solDe) {
     let dense = null;
     out.push({ cle: 'paris', x: PARIS.x + cu / pts.length, z: PARIS.z + cv / pts.length, rang: 100 + out.length,
       part: Math.round(verdict.part * 100), quartier: true,
-      get pts() { return dense || (dense = densifierCircuit(pts, PARIS, solDe)); } });
+      get pts() { return dense || (dense = densifierCircuit(pts, PARIS, solDe, VOIE_CIRCUIT)); } });
   }
   return out;
 }
@@ -1182,7 +1182,8 @@ export function marquageParis(x, z) {
 
 // Ce qu'il faut poser au sol, ou null si la trame ordinaire de la ville doit
 // reprendre la main.
-export function solParis(x, z) {
+export const reglageJardins = { voies: true };
+export function solParis(x, z, jardinsAvant = false) {
   const u = x - PARIS.x, v = z - PARIS.z;
   // Le rejet le plus fréquent, et donc le plus pressé : un carré avant un
   // cercle, et un carré avant une racine.
@@ -1255,6 +1256,8 @@ export function solParis(x, z) {
     if (p.jardin) {
       if (du > p.ru || du < -p.ru || dv > p.rv || dv < -p.rv) continue;
       if (du * du * p.iru + dv * dv * p.irv < 1) {
+        // LA VOIE NOMMÉE L'EMPORTE SUR LE JARDIN, SUR SA CHAUSSÉE (v504).
+        if (p.traverse && reglageJardins.voies && !jardinsAvant) { const rue = solDesVoies(BANDES, u, v, BITUME, PAVE); if (rue !== null) return rue; }
         // une allée en croix, et des arbres en bordure
         if (du < 0.6 && du > -0.6) return PAVE;
         if (dv < 0.6 && dv > -0.6) return PAVE;
@@ -1820,4 +1823,31 @@ export function buildMoulinRouge(poser) {
     set(0, 12 + k, k, BLOCK.GOLD); set(0, 12 - k, -k, BLOCK.GOLD);
   }
   set(0, 12, 0, uni(18));
+}
+
+// LE MOULIN ROUGE BORDE LE BOULEVARD AU NORD (v504). Le bâtisseur d'avant
+// posait la salle au CENTRE de sa boîte (dz −2 à 2), c'est-à-dire en travers
+// du boulevard de Clichy, dont l'axe passe par le repère : dix-sept pas de
+// carrosserie dans ses murs, mesurés sur la voie de droite. Le vrai Moulin
+// Rouge est sur le trottoir nord. La boîte ne bouge pas — elle entre dans les
+// zones du relief — : c'est le bâtisseur qui se replie dans sa moitié nord
+// (dz −4 à −2), façade et porte sur le boulevard, les ailes tournées vers lui.
+// La voiture de la voie de droite roule entre dz 0 et 2,3 ; la rangée dz −1
+// reste libre. Les mondes figés (`LANDMARKS_V317`) gardent l'ancien
+// (`buildMoulinRouge`), c'est le champ `tour` du repère qui porte celui-ci.
+export function buildMoulinRougeNord(poser) {
+  const { set, bloc } = boite(poser);
+  bloc(-4, 4, 0, 5, -4, -2, uni(0));
+  bloc(-3, 3, 0, 4, -3, -3, BLOCK.AIR);
+  for (let dx = -3; dx <= 3; dx += 2) set(dx, 3, -2, BLOCK.GOLD);   // les lampions de la façade
+  for (let y = 0; y <= 1; y++) set(0, y, -2, BLOCK.AIR);           // la porte, sur le boulevard
+  bloc(-4, 4, 6, 6, -4, -2, uni(18));
+  // la tour du moulin, posée sur le toit côté nord, et ses quatre ailes en
+  // croix de Saint-André dans le plan de la façade
+  for (let y = 7; y <= 12; y++) for (const [dx, dz] of [[0, -4], [1, -4], [0, -3], [1, -3]]) set(dx, y, dz, uni(0));
+  for (let k = 1; k <= 4; k++) {
+    set(k, 13 + k, -2, BLOCK.GOLD); set(-k, 13 - k, -2, BLOCK.GOLD);
+    set(k, 13 - k, -2, BLOCK.GOLD); set(-k, 13 + k, -2, BLOCK.GOLD);
+  }
+  set(0, 13, -2, uni(18));
 }
