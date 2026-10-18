@@ -2162,8 +2162,8 @@
       -webkit-backdrop-filter: var(--hud-flou); backdrop-filter: var(--hud-flou);
     }
 
-    /* CONSTRUIRE : Poser, Casser, Sauter, et un petit « Terminer » rond en
-       haut. LA BARRE DE BLOCS EST EN BAS, sur toute la largeur — décision de
+    /* CONSTRUIRE : Poser, Casser, Sauter, et « Terminer » à la place de
+       Construire, au bout de la barre (v520). LA BARRE DE BLOCS EST EN BAS, sur toute la largeur — décision de
        Max (v503), qui annule celle de la v445/v494 : en haut, ses cases
        faisaient trente pixels, une « toute petite zone ». Elle mord donc le
        bas du quart du joystick, et ce qui compte se dit en relatif : le
@@ -2186,20 +2186,31 @@
     }
     body.hud-simple #poser-btn.actif .ico, body.hud-simple #casser-btn.actif .ico { filter: none; }
     body.hud-simple.construction.en-jeu #construction-pill { display: flex; }
-    #construction-pill { align-items: center; justify-content: center; background: none; border: 0; padding: 0; }
-    /* « Terminer » est un bouton rond comme les autres : une coche, le mot
-       dans `aria-label` et `.lb` (visuellement caché, jamais `display: none`). */
+    /* « TERMINER » EST LÀ OÙ ÉTAIT « CONSTRUIRE » (v520, décision de Max, qui
+       annule le bouton rond à coche en haut de la v503 : « pas très clair, et
+       mal placé »). On sort par là où l'on est entré : une tuile au bout de la
+       barre de blocs, à la place du cube, le cube barré d'une croix ET le mot
+       écrit. Elle porte du texte, donc elle est claire (encre sur verre clair,
+       v494). La barre de blocs lui laisse sa place (`--fin-l`). */
+    body.hud-simple.construction { --fin-l: 56px; }
+    #construction-pill {
+      position: fixed; z-index: 9; right: calc(8px + env(safe-area-inset-right, 0px));
+      bottom: calc(6px + var(--safe-bottom, 0px)); width: var(--fin-l, 56px); height: 62px;
+      align-items: stretch; justify-content: stretch; background: none; border: 0; padding: 0;
+    }
     #construction-fin {
-      position: relative; display: flex; align-items: center; justify-content: center;
-      width: var(--hud-taille, 44px); height: var(--hud-taille, 44px); border-radius: 50%; padding: 0;
-      background: var(--hud-voile); border: 1px solid var(--hud-liseré); color: #fff; font-size: 0;
+      flex: 1; display: grid; grid-template-rows: 30px auto; place-items: center; align-content: center; row-gap: 3px;
+      padding: 0 2px; font-size: 0; overflow: hidden; border-radius: 16px; background: var(--hud-pilule, rgba(255, 255, 255, 0.86));
+      border: 1px solid rgba(255, 255, 255, 0.95); color: var(--encre, #111A2E);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
       -webkit-backdrop-filter: var(--hud-flou); backdrop-filter: var(--hud-flou);
       -webkit-tap-highlight-color: transparent; cursor: pointer;
     }
-    #construction-fin .ic { display: flex; line-height: 0; }
+    #construction-fin .ic { display: block; width: 30px; height: 30px; line-height: 0; }
+    #construction-fin .ico { width: 30px; height: 30px; filter: none; }
     #construction-fin .lb {
-      display: block; position: absolute; width: 1px; height: 1px; overflow: hidden;
-      clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; margin: 0;
+      display: block; font: 800 10.5px/1 var(--corps, system-ui, sans-serif); letter-spacing: -0.02em;
+      white-space: nowrap; overflow: hidden; max-width: 100%;
     }
     #construction-fin:active { transform: scale(0.94); }
     :root.rendu-logiciel #construction-fin { -webkit-backdrop-filter: none; backdrop-filter: none; }
@@ -2208,7 +2219,7 @@
     body.hud-simple.tactile:not(.construction) #block-name,
     body.hud-simple.tactile:not(.construction) #crosshair { display: none !important; }
     body.hud-simple.tactile.construction #hotbar {
-      left: calc(8px + env(safe-area-inset-left, 0px)); right: calc(8px + env(safe-area-inset-right, 0px));
+      left: calc(8px + env(safe-area-inset-left, 0px)); right: calc(14px + var(--fin-l, 0px) + env(safe-area-inset-right, 0px));
       bottom: calc(6px + var(--safe-bottom)); transform: none;
       gap: 6px; padding: 5px; border-radius: 16px; background: var(--hud-voile); border: 1px solid var(--hud-liseré);
       overflow-x: auto; overflow-y: hidden; flex-wrap: nowrap; touch-action: pan-x;
@@ -2545,7 +2556,6 @@
   <!-- LA FILE CENTRALE (aviation) : tout ce qui s'affiche en haut au milieu s'y
        range l'un sous l'autre — elle ne peut donc rien recouvrir par construction. -->
   <div id="file-centre">
-    <div id="construction-pill"><button id="construction-fin" aria-label="Terminer la construction"><span class="ic"></span><span class="lb">Terminer</span></button></div>
     <div id="cap-avion"><div id="cap-degres"></div><div id="cap-ville"></div><div id="cap-regle"><div id="cap-repere"></div></div></div>
     <div id="etat-pose" role="status" aria-live="polite"></div>
     <div id="gps"><span id="gps-fleche">⬆</span><div id="gps-texte"></div><button id="gps-stop" title="Arrêter le GPS">✕</button></div>
@@ -2608,6 +2618,10 @@
   </div>
   <div id="confetti"></div>
 
+  <!-- On sort de la construction par là où l'on est entré (v520, décision de
+       Max) : en construction, ce bouton prend la place de Construire, au bout
+       de la barre de blocs, avec son mot écrit. -->
+  <div id="construction-pill"><button id="construction-fin" aria-label="Terminer la construction"><span class="ic"></span><span class="lb">Terminer</span></button></div>
   <div id="touch-ui">
     <div id="joy-base"><div id="joy-knob"></div></div>
     <div id="joy-repos" aria-hidden="true"></div>
