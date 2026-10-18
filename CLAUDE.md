@@ -929,6 +929,28 @@ transparence, moins de texte ». Cinq règles.
   décision annule « chaque bouton porte son mot » (v265) : c'est Max qui l'a
   prise, sur la maquette.
 
+## Les feux de détresse sur la tôle (v519) — une lumière de modèle se pose par un rayon, jamais par une cote
+
+Max, capture de Lille de nuit : des boules orange autour d'une voiture de la
+rue heurtée. Trois règles.
+
+- **CE QUI S'ACCROCHE À UNE VOITURE DE LA FLOTTE SE MESURE SUR LE MODÈLE
+  (v230).** Quatre sphères à cotes fixes pour cinquante-sept modèles : 172 feux
+  sur 228 dans le vide. `posesDetresse` (vehicules.js) lit les blocs optiques
+  nommés (`RE_FEU`), sinon la boîte, puis un rayon venu de l'extérieur trouve
+  la tôle ; la lentille est plate, à fleur, redressée vers l'axe, et rien ne
+  doit la masquer de face (sous un aileron, on cherche ailleurs). Mémorisé par
+  modèle. Le prochain objet posé sur une carrosserie se pose ainsi.
+- **UNE BOÎTE ENGLOBANTE NE DIT PAS SI UNE LUMIÈRE FLOTTE.** Ma première sonde
+  rendait 12 modèles sur 57 « hors de la boîte » : une sphère au-dessus du capot
+  d'une voiture basse est DANS la boîte. La grandeur juste est le rayon le long
+  de la normale du feu jusqu'à la tôle (`sonde-detresse.cjs`, et le témoin de
+  `degats.js` le refait).
+- **CE QUE LA RUE FAIT D'UNE VOITURE HEURTÉE, L'AMI LE FAIT AUSSI.** Un
+  `rue_choc` reçu marque la voiture de ce nom (`userData.heurteRecu`), que le
+  convoi lit comme son propre choc : elle s'arrête et clignote chez lui. La
+  lentille se chauffe à l'accueil (`chaufferLesFabriquees`).
+
 ## Des icônes, pas d'emojis, et un jeu qui se tait (v504) — un message en jeu est une exception déclarée
 
 Max : « les icônes ne sont pas suffisamment claires… enlève les emojis sur les

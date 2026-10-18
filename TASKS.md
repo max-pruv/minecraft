@@ -102,6 +102,27 @@
   (430 × 932) : toucher l'écran… casse en construction » (vert au rejeu
   précédent, rouge au portail de la v503) — la construction n'est pas touchée.
 
+- [ ] **Rouges de portail mesurés au portail de la v519 (les feux de détresse
+  sur la carrosserie)** — `degats.js` entièrement vert (les deux témoins neufs
+  compris, rouges sur `origin/main`). `maj.js` : « le loader dit combien de
+  fichiers sont rangés », déjà déclaré. `monte.js` rejouée SEULE : `origin/main`
+  (v504) 7 puis 8 rouges, branche 13, 14 et 14 (le deuxième passage a partagé
+  la machine une minute avec `reseau.js`, par erreur). Les rouges propres à la
+  branche sont des témoins de passants (flâneur, écart en biais, piéton devant
+  la voiture, sursaut) et de la rue ; preuve STRUCTURELLE (v291) : avant le
+  premier choc d'une voiture de la rue, `feuxDeDetresse` fait exactement ce que
+  faisait la v372 (`if (g) g.visible = false`), et `heurteRecu` ne vaut rien
+  hors réseau — aucun de ces chemins n'est atteint. Portail final, rebasé sur
+  la v518 : `monte.js` 5 rouges — la rue par tranches, deux voisines, le feu, la
+  rue vide (tous vus sur `origin/main`) et « un mur pris de face… petit
+  rebond » (`rebond` −1,89), rouge aussi au premier portail de la branche, vert
+  sur les trois passages seuls : la physique du mur (`player.js`) n'est pas
+  touchée. Le témoin « une voiture de la rue heurtée… feux de détresse » a
+  rendu `clignote: false` une fois, dans le passage contaminé (la voiture a mis
+  5,7 s à s'arrêter pour un arrêt de 5,4 s : une ou deux images pendant tout
+  l'arrêt) ; vert aux trois autres. `reseau.js` et `manhattan.js` verts seuls
+  des deux côtés.
+
 - [ ] **Rouges de portail mesurés des deux côtés au portail de la v504 (les
   icônes et le jeu qui se tait)** — double mesure de la v195, `monte.js`
   rejouée SEULE sur la branche et sur `origin/main` v502 (`git worktree`).
