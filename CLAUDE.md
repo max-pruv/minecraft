@@ -1022,6 +1022,22 @@ Deux règles.
   le canvas garde ses couleurs, que les témoins de `carte.js` lisent en pixels.
   Les icônes de la fiche viennent d'`ICONES` (`chercher`, `appui`), posées par
   `main.js` ; la légende dessine ses repères en CSS, aux couleurs du canvas.
+## Les textes de la revue d'écran (v517) — un nom affiché est en français, un état n'est pas une alerte
+
+Trois règles.
+
+- **UN NOM DE BLOC SE TRADUIT, SON IDENTIFIANT JAMAIS.** `BLOCK_INFO[id].name`
+  n'est lu que pour l'affichage (titre de case, nom sous le réticule, ligne
+  « visé » du diagnostic) ; aucune sauvegarde, aucun message réseau ne le porte.
+  Un témoin de la fumée refuse tout nom anglais de la palette.
+- **UN ÉTAT CALME PREND LE VERRE CLAIR.** Le bandeau de lien a trois tons :
+  `grave`, ocre par défaut, et `calme` (encre sombre sur verre clair, une ligne)
+  pour ce qui n'est pas une panne — seul dans un monde en ligne. Il garde sa
+  croix et reste un bandeau d'état, hors de `PERMIS` (v504).
+- **UN TEMPS LIBRE SE DIT EN HEURE DE FIN, JAMAIS EN MINUTES.** `texteLibre`
+  (education.js, pur) arrondit au quart d'heure INFÉRIEUR — on ne promet pas
+  plus que ce qui reste —, borné par la limite du jour. Le décompte reste en
+  temps joué (invariant 2). Une croix de badge fait 44 px.
 
 ## Le ménage des restes (v517) — on inventorie avant de retirer, et un mot retiré se garde
 

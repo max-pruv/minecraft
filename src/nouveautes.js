@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 517,
+    titre: 'Les blocs parlent français',
+    puces: [
+      'Herbe, Terre, Pierre : des noms en français',
+      'Le code à donner à ton ami, en clair',
+      'Le temps libre dit son heure de fin',
+    ],
+  },
+  {
     v: 520,
     titre: 'Finir de construire, plus simple',
     puces: [

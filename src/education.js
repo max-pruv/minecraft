@@ -8,6 +8,8 @@
 // l'espace parent doit afficher LA MÊME pour un enfant jamais configuré :
 // chacun avait sa copie, elles ont divergé (6 ici, 10 là-bas), et un parent
 // lisait « toutes les 10 min » pendant que la tablette tournait sur 6.
+import { ICONES } from './commandes.js';
+
 export const SESSION_MIN_USINE = 10;
 const SESSION_SECONDS = SESSION_MIN_USINE * 60;
 const SESSION_MIN_BOUNDS = [3, 30];  // garde-fou : ni harcèlement, ni oubli
@@ -1316,6 +1318,19 @@ for (const cat of CATEGORIES) {
 
 // ============================ MODE =========================================
 
+// « Libre jusqu'à 18 h » : un enfant lit une heure, pas « 1440 min sans quiz »
+// (revue d'écran, ligne 13). L'heure de fin se calcule sur l'horloge murale, en
+// supposant qu'on joue d'une traite, arrondie AU-DESSOUS au quart d'heure pour
+// ne jamais promettre plus que ce qui reste. Si elle passe minuit, c'est toute
+// la journée. Seul l'affichage change : le répit se compte toujours en temps
+// joué (invariant 2).
+export function texteLibre(secondes, maintenant = new Date()) {
+  const fin = new Date(maintenant.getTime() + Math.max(0, secondes) * 1000);
+  if (fin.toDateString() !== maintenant.toDateString()) return 'Libre toute la journée';
+  const q = Math.floor(fin.getMinutes() / 15) * 15;
+  return `Libre jusqu’à ${fin.getHours()} h${q ? ' ' + String(q).padStart(2, '0') : ''}`;
+}
+
 export class EducationMode {
   // hooks: { onPause(), onResume(), toast(msg, color) }
   constructor(hooks) {
@@ -1693,7 +1708,7 @@ export class EducationMode {
     let text = this.quizArrete()
       ? '🎨 Temps libre'
       : this.quizFree()
-        ? `🔑 ${Math.max(0, Math.ceil((this.today().libreJusqua - this.today().play) / 60))} min sans quiz`
+        ? texteLibre(Math.min(this.today().libreJusqua - this.today().play, this.allowance() - this.today().play))
         : `⏱ ${m}:${String(s).padStart(2, '0')}`;
     const dailyLeft = this.allowance() - this.today().play;
     if (dailyLeft <= 600) text += ` · ⏰ ${Math.max(0, Math.ceil(dailyLeft / 60))} min`;
@@ -1705,6 +1720,14 @@ export class EducationMode {
     const urgent = t <= 60;
     if (this.timerMasque && (urgent || text !== this.timerMasque)) this.timerMasque = null;
     document.getElementById('edu-timer-txt').textContent = text;
+    // L'icône du temps libre est dessinée (v504), jamais un emoji ; on ne la
+    // réécrit que quand le mode change.
+    const ico = document.getElementById('edu-timer-ico');
+    const libre = !this.quizArrete() && this.quizFree();
+    if (ico && ico.dataset.libre !== String(libre)) {
+      ico.dataset.libre = String(libre);
+      ico.innerHTML = libre ? ICONES.libre : '';
+    }
     this.el.timer.classList.toggle('urgent', urgent);
     this.el.timer.style.visibility = this.timerMasque ? 'hidden' : 'visible';
   }

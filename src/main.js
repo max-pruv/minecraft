@@ -3650,7 +3650,7 @@ function updatePlayersBtn() {
   // ordinateur, alors que l'enfant, lui, joue déjà.
   const dansLeMonde = overlay.style.display === 'none';
   alerte('monde-seul', dansLeMonde && n === 1,
-    `🕐 Seul·e dans le monde ${net.code} — donne ce code à ton ami·e`);
+    `Donne le code ${net.code} à ton ami`);
 }
 
 function openPlayersPanel() {
@@ -3881,7 +3881,10 @@ const ALERTES = {
   // Seul dans un monde en ligne : ce n'est pas une panne, mais il faut le dire.
   // Un compteur « 🌐 1 » sur un petit bouton ne se lit pas quand on a sept ans,
   // et c'est ainsi qu'un enfant jouait dix minutes en croyant être avec l'autre.
-  'monde-seul': { rang: 0, cls: '', txt: '🕐 Tu es seul·e dans ce monde' },
+  // Un état, pas une alerte : encre sombre sur verre clair (v494), une ligne,
+  // et le geste à faire plutôt qu'une écriture inclusive qu'on ne lit pas à
+  // sept ans (revue d'écran, ligne 12).
+  'monde-seul': { rang: 0, cls: 'calme', txt: 'Personne d’autre dans ce monde' },
 };
 const alertes = new Map(); // clé -> texte affiché
 // La place réservée est mesurée sur le bandeau lui-même : un texte long passe
@@ -3917,7 +3920,8 @@ function refreshBanner() {
   const garde = actifs.slice(0, 2);
   montrerBandeau(
     garde.map(([k, txt]) => txt || ALERTES[k].txt).join('  ·  '),
-    garde.some(([k]) => ALERTES[k].cls === 'grave') ? 'grave' : '',
+    garde.some(([k]) => ALERTES[k].cls === 'grave') ? 'grave'
+      : garde.every(([k]) => ALERTES[k].cls === 'calme') ? 'calme' : '',
   );
 }
 function alerte(cle, actif, texte) {
@@ -5147,7 +5151,7 @@ async function openWorld(code) {
     return;
   }
   // Le monde vide ne s'annonce plus en grand (v504) : le bandeau de lien
-  // (« Seul·e dans le monde … — donne ce code ») le dit dès qu'on y est.
+  // (« Donne le code … à ton ami ») le dit dès qu'on y est.
   rememberWorld(code);
   cloud.attach(contexteCarte(code));
   onlineStatus.textContent = '';
