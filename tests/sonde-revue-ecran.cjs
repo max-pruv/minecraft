@@ -19,7 +19,7 @@
 // échoue NOMME son échec et la sonde passe au suivant (v288 : une sonde qui
 // avale ses erreurs prend trois vues sur cinq et se dit verte).
 //
-//     cd tests && node sonde-revue-ecran.cjs [dossier] [--etats=a,b] [--vues=iphone,ipad] [--sans-nuit] [--en-ligne]
+//     cd tests && node sonde-revue-ecran.cjs [dossier] [--etats=a,b] [--vues=iphone,ipad] [--sans-nuit|--sans-jour] [--en-ligne]
 //
 // Le dossier par défaut est HORS du dépôt. La grille de lecture des captures
 // est dans docs/revue-ecran.md, et CLAUDE.md dit quand la jouer.
@@ -37,7 +37,10 @@ const VUES = {
   iphone: { width: 430, height: 932 },
   ipad: { width: 820, height: 1180 },
 };
-const HEURES = args.includes('--sans-nuit') ? [['jour', 0.42]] : [['jour', 0.42], ['nuit', 0.0]];
+// 0,75 est minuit (0,0 est le lever du soleil : un ciel rose et des façades en
+// plein jour — c'est la première passe de cette sonde qui l'a montré).
+const HEURES = [['jour', 0.42], ['nuit', 0.75]]
+  .filter(([n]) => !(n === 'nuit' && args.includes('--sans-nuit')) && !(n === 'jour' && args.includes('--sans-jour')));
 
 // ——— les gestes, dans la page ———————————————————————————————————————————————
 
