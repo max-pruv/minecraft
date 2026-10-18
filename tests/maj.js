@@ -1252,7 +1252,7 @@ function verifier(nom, ok, detail = '') {
         await att(400);
         const construction = releve();
         const n2 = await tap();
-        // LA BARRE EST EN BAS, ET LE JOYSTICK GARDE LE QUART AU-DESSUS (v502,
+        // LA BARRE EST EN BAS, ET LE JOYSTICK GARDE LE QUART AU-DESSUS (v503,
         // décision de Max). Trois gestes de l'enfant, dans la même page :
         // le doigt posé dans le quart du joystick tombe sur le canvas (on
         // sonde une grille, `elementFromPoint` ignore ce qui ne prend pas le
@@ -1301,7 +1301,7 @@ function verifier(nom, ok, detail = '') {
       });
       await cmd.close();
       const croise = (a, b) => Math.min(a.x + a.w, b.x + b.w) > Math.max(a.x, b.x) && Math.min(a.y + a.h, b.y + b.h) > Math.max(a.y, b.y);
-      // En construction, la barre de blocs vit en bas (v502) : le quart du
+      // En construction, la barre de blocs vit en bas (v503) : le quart du
       // joystick s'arrête au-dessus d'elle, et rien d'autre n'y entre.
       const juge = (et) => {
         const R = (et && et.R) || {}, k = Object.keys(R), recouvre = [];
@@ -1380,7 +1380,7 @@ function verifier(nom, ok, detail = '') {
         const h = g.scene.background.getHexString();
         return { r: parseInt(h.slice(0, 2), 16), g: parseInt(h.slice(2, 4), 16), b: parseInt(h.slice(4, 6), 16), a: 1, hex: h };
       };
-      // « Terminer » est une icône depuis la v502 : il se juge à 3:1, comme
+      // « Terminer » est une icône depuis la v503 : il se juge à 3:1, comme
       // les autres boutons ronds.
       const icones = ['menu-btn', 'map-btn', 'jump-btn', 'fly-btn', 'construire-btn', 'construction-fin'];
       const textes = [['fun-target button', '#ride-btn'], ['gps', '#gps-texte']];

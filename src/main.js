@@ -8325,7 +8325,7 @@ commandes = initCommandes({
 });
 if (IS_TOUCH) {
   // la barre de blocs reste en bas, sur toute la largeur, en construction
-  // (v502, décision de Max) : la feuille de style la pose, le DOM ne bouge pas
+  // (v503, décision de Max) : la feuille de style la pose, le DOM ne bouge pas
   document.body.classList.add('tactile');
 }
 window.__commandes = commandes;

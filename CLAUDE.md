@@ -836,7 +836,7 @@ transparence, moins de texte ». Cinq règles.
   faisait taire la pilule en vol, et le portail l'a dit). En construction :
   Poser, Casser, Sauter (et Descendre en vol). Monter passe devant « à bord », qui passe devant nourrir (`:has()`) :
   deux pilules côte à côte se coupaient. Tout est à droite de 55 % de la vue
-  (v272). *(La barre de blocs vivait dans la file du haut (v445) ; la v502,
+  (v272). *(La barre de blocs vivait dans la file du haut (v445) ; la v503,
   décision de Max, la remet EN BAS — voir « La barre de blocs en bas ».)*
 - **LE VERRE SE RÈGLE SUR LE CONTRASTE, PAS SUR L'ŒIL.** Un voile sombre à 0,30
   (`--hud-voile`) est ce qu'il faut pour qu'une icône blanche tienne 3:1 sur le
@@ -848,7 +848,7 @@ transparence, moins de texte ». Cinq règles.
   décision annule « chaque bouton porte son mot » (v265) : c'est Max qui l'a
   prise, sur la maquette.
 
-## La barre de blocs en bas (v502) — une décision de Max annule une règle, et la règle se redit en relatif
+## La barre de blocs en bas (v503) — une décision de Max annule une règle, et la règle se redit en relatif
 
 Max : « le mode construction, ça va pas du tout. On affiche les briques dans une
 toute petite zone. Ça devrait être en bas. Et le bouton terminer prend beaucoup

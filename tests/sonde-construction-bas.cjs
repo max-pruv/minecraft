@@ -1,4 +1,4 @@
-// LA BARRE DE BLOCS EN CONSTRUCTION, MESURÉE ET PHOTOGRAPHIÉE (v502).
+// LA BARRE DE BLOCS EN CONSTRUCTION, MESURÉE ET PHOTOGRAPHIÉE (v503).
 //   node tests/sonde-construction-bas.cjs <dossier> <étiquette>
 // Aux deux tailles (le banc, l'iPhone de Max), page tactile : la boîte de la
 // barre, le nombre de cases visibles en entier, leur taille, la boîte de
