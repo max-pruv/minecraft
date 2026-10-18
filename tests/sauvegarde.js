@@ -222,6 +222,29 @@ const BLOCS = 40000;
     verifier('un bloc du ciel de Paris reçu du nuage ne revient pas par la fusion, et la brique au sol, si',
       !menage.absent && !menage.ciel && menage.sol,
       menage.absent ? 'le ménage du ciel de Paris n\'existe pas' : JSON.stringify(menage));
+    // LES RECORDS DE COURSE D'AVANT LA v483 (v509, décision déléguée par Max) :
+    // un document tel qu'une tablette restée sur l'ancienne version l'écrirait
+    // porte `bestRace` (vieux chrono, 2,3 s pour 8,6 courues). La fusion le
+    // garde à part, montré comme ancien record, et le record à battre reste le
+    // juste. Rien d'effacé, et un `bestRace` encore rangé ici ne fait pas
+    // relancer la page. Sur l'ancien code : `bestRace` revient, rien à part.
+    const recs = await tab.evaluate(async () => {
+      const ps = window.__game.profileSync;
+      const S = await import('./src/sync.js');
+      const local = ps.snapshot();
+      const base = JSON.parse(JSON.stringify(local));
+      const remote = { ...base, records: { ...(base.records || {}), bestRace: 2.3, courseJuste: 9.4 } };
+      const r = ps.merge(local, remote).state.records || {};
+      const localVieux = { ...base, records: { ...(base.records || {}), bestRace: 2.3 } };
+      const r2 = ps.merge(localVieux, ps.merge(localVieux, localVieux).state);
+      const m = S.migrerRecordsCourse ? S.migrerRecordsCourse({ bestRace: 2.3, blocks: 4 }) : null;
+      return { r, vieux2: r2.state.records && r2.state.records.courseVieuxChrono, changed2: r2.changed,
+        idem: !!(m && S.migrerRecordsCourse(m) === m), m };
+    });
+    verifier('un record de course d’avant la v483 reçu du nuage est gardé à part, et le record à battre reste le juste',
+      !('bestRace' in recs.r) && recs.r.courseVieuxChrono === 2.3 && recs.r.courseJuste === 9.4
+        && recs.vieux2 === 2.3 && recs.changed2 === false && recs.idem && recs.m.blocks === 4,
+      JSON.stringify(recs));
     const departCopieM = Date.now();
     const copieMFaite = !menage.absent && await jusqua(async () => {
       const a = nuage.etatDe('Marlon~avant-menage-paris');

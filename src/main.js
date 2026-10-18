@@ -39,7 +39,7 @@ import { mondeDevant, ligneDiagConduite } from './conduite.js';
 import { PALIERS, PALIER_CLE, choisirPalier, VITESSE_JET,
   ETENDUE_CLE, ETENDUE_PAR_DEFAUT, ETENDUES, palierRetenu, palierPropose, etendueRange, reglageDe, planDetail,
   PARAMS_FORCANTS } from './palier.js';
-import { Journal, suretePalier, PLANTAGES_SURETE, BATTEMENT_MS, estimerMemoire } from './journal.js';
+import { Journal, suretePalier, PLANTAGES_SURETE, PLANTAGES_CLE, BATTEMENT_MS, estimerMemoire } from './journal.js';
 import { liberer } from './liberer.js';
 import { createEffects } from './effects.js';
 import { createSky } from './sky.js';
@@ -172,9 +172,13 @@ const SURETE = (() => {
   if (PALIER_FORCE) return null;
   // ET SOUS QUELLE ÉTENDUE ÇA A PLANTÉ (v299) : deux morts de suite sous
   // « Loin » passent devant « Loin », et devant lui seul (`palierRetenu`).
-  const s = suretePalier(BILAN_JOURNAL.plantages, BILAN_JOURNAL.etendue);
+  const s = suretePalier(BILAN_JOURNAL.plantages, BILAN_JOURNAL.etendue, BILAN_JOURNAL.palierEnCours);
   if (s && !PARAMS_FORCANTS.some((c) => new URLSearchParams(location.search).has(c))) {
     try { localStorage.setItem(PALIER_CLE, JSON.stringify(s)); } catch { /* mode privé */ }
+    // ET LE COMPTE REPART DE ZÉRO (v509) : un cran plus bas, « deux plantages
+    // de suite » se comptent sous le palier neuf, sinon le premier plantage
+    // sous Normal redescendrait déjà à bas.
+    journal.ecrire(PLANTAGES_CLE, '0');
   }
   return s;
 })();
@@ -3186,9 +3190,13 @@ function texteEtendue() {
       base = 'Auto : le jeu mesure ta tablette pendant une partie, puis choisit.';
     }
   } else {
-    base = PALIER && PALIER.source === 'sûreté' && PALIER.sousChoix === choix
-      ? `« ${mot(choix)} » a arrêté le jeu ${PLANTAGES_SURETE} fois de suite sur cette tablette : il joue en « ${mot(PALIER.nom)} » par sûreté. Choisis une autre étendue.`
-      : `Tu as choisi « ${mot(choix)} ».`;
+    // LA SÛRETÉ SE DIT EN PREMIER, ET ELLE DIT QUOI FAIRE (v509). En jeu, plus
+    // aucun message (décision de Max, les commandes à icônes) : c'est ici
+    // qu'on l'apprend. Toucher la même étendue la lève (`renderEtendue`).
+    if (PALIER && PALIER.source === 'sûreté' && PALIER.sousChoix === choix) {
+      return `⚠️ « ${mot(choix)} » a arrêté le jeu ${PLANTAGES_SURETE} fois : il joue en « ${mot(PALIER.nom)} » pour l'instant. Touche « ${mot(choix)} » pour réessayer, ou garde ça.`;
+    }
+    base = `Tu as choisi « ${mot(choix)} ».`;
   }
   const prochain = palierRetenu({ choix, mesure: mesureRangee() });
   const a = reglageDe(prochain, IS_TOUCH);
@@ -3211,11 +3219,12 @@ function renderEtendue() {
       b.addEventListener('click', () => {
         try {
           localStorage.setItem(ETENDUE_CLE, e.cle);
-          // CHOISIR UNE AUTRE ÉTENDUE LÈVE LA SÛRETÉ QUI VISAIT L'ANCIENNE (v299) :
-          // c'est la décision explicite qui rouvre la porte — l'enfant pourra
-          // rechoisir « Loin » plus tard, et le disjoncteur rejugera.
+          // TOUCHER UNE ÉTENDUE LÈVE LA SÛRETÉ QUI VISAIT UN CHOIX (v299) : c'est
+          // la décision explicite qui rouvre la porte. Depuis la v509, retoucher
+          // l'étendue même la lève aussi — c'est le « réessayer » que l'aide
+          // propose — et le disjoncteur rejugera.
           const deja = mesureRangee();
-          if (deja && deja.surete && deja.sousChoix && deja.sousChoix !== e.cle) localStorage.removeItem(PALIER_CLE);
+          if (deja && deja.surete && deja.sousChoix) localStorage.removeItem(PALIER_CLE);
         } catch { /* mode privé */ }
         renderEtendue();
         // Le bandeau ne parle que si le choix change vraiment quelque chose :

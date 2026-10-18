@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 509,
+    titre: 'Les arbres reviennent, records justes',
+    puces: [
+      'Après deux pannes, un cran plus bas seulement',
+      'Les Réglages disent comment réessayer « Loin »',
+      'Ton ancien record est gardé à part',
+      'Le nouveau record se gagne au vrai chrono',
+    ],
+  },
+  {
     v: 508,
     titre: 'Une carte claire',
     puces: [

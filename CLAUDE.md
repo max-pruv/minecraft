@@ -6103,6 +6103,8 @@ répondu en une requête : iPhone, en vol à l'ouest de Paris, 1 089 morceaux
   morte) ; `palierRetenu` ne l'oppose qu'à ce choix-là, « Normal » passe, et
   choisir une autre étendue lève le verdict — c'est la décision explicite qui
   rouvre la porte. Et le jeu le dit, avec le nom de l'étendue.
+  **Depuis la v509, la sûreté descend d'UN cran depuis le palier qui tournait
+  (Loin → Normal → bas), pas au fond** — voir « La sûreté d'un cran (v509) ».
 - **UN BUDGET SE POSE SUR CE QU'ON A VU SURVIVRE, ET IL SE DIT.** 128 Mo :
   au-dessus des 98 que le vieil iPad de la v296 a tenus au centre, très
   au-dessous des cinq cents et plus sous lesquels l'iPhone est mort. Ce
@@ -13191,6 +13193,41 @@ Depuis la v245 ce n'est plus un masquage à chaque capture mais une COUCHE
 sonde ne voient pas. `realisme.js` renouvelle les reflets quatre fois dans la
 vraie scène et vérifie le code WebGL ainsi que l'absence de maillage laissé
 caché.
+
+## La sûreté d'un cran (v509) — un disjoncteur ne coupe pas plus que la panne
+
+Max : « les arbres ont pas changé ». Son iPhone jouait au palier `bas` par
+sûreté depuis deux plantages sous « Loin » : `hd 0`, donc ni les vrais arbres,
+ni les façades de Paris, ni la couronne lointaine — trois livraisons qui ne
+l'atteignaient pas, la régression de RÉGLAGE de la v291 une fois de plus.
+Trois règles.
+
+- **SOUS UNE ÉTENDUE CHOISIE, ON DESCEND D'UN CRAN DEPUIS LE PALIER QUI
+  TOURNAIT.** `suretePalier(plantages, sousChoix, palierEnCours)` (journal.js)
+  lit le palier de la fiche de la session morte (`reglage.palier`) : sous une
+  sûreté l'étendue reste « Loin » pendant que le jeu joue Normal, et c'est
+  Normal qu'on descend. Sans étendue choisie (« Auto »), le fond, comme avant.
+  Et le compteur repart de zéro quand un verdict est RANGÉ : deux plantages de
+  suite se comptent au palier neuf.
+- **UN VERDICT RANGÉ SOUS L'ANCIENNE RÈGLE SE RELIT, IL NE SE REMPLACE PAS.**
+  Le verdict neuf porte `cran` ; sans lui, un « bas sous Loin » se lit Normal
+  (`palierDeSurete`, palier.js). La correction atteint l'appareil de Max sans
+  qu'il touche à rien, et sans changer de clé de rangement (v290 : la clé
+  change quand le SENS de la règle change ; ici seule sa lecture change).
+- **CE QU'ON NE DIT PLUS EN JEU SE DIT DANS LES RÉGLAGES, AVEC LE GESTE.** Les
+  messages en jeu partent (les commandes à icônes, décision de Max) : la rangée
+  de l'étendue dit la sûreté en premier (« Touche « Loin » pour réessayer, ou
+  garde ça »), et retoucher l'étendue même lève la sûreté. Le témoin de
+  `parent.js` rejoue l'appareil : verdict rangé, rechargement, configuration
+  lue (`reglageApplique`) et phrase lue.
+
+Et les records de course d'avant la v483 (même livraison) : on n'efface rien.
+`bestRace` n'est plus écrit ; `migrerRecordsCourse` (sync.js, pure,
+idempotente) le range en `courseVieuxChrono`, gardé à part (plus annoncé en jeu, v504),
+et le record à battre est `courseJuste`. Appliquée au chargement (fun.js) et à
+chaque document reçu du nuage ; les temps se fusionnent par le plus petit
+positif, et la comparaison « la fusion a-t-elle rapporté quelque chose ? » se
+fait sur les records MIGRÉS (sinon un ancien champ relancerait la page, v189).
 
 ## Les vrais arbres (v499) — un arbre se reconnaît à la règle qui l'a planté
 

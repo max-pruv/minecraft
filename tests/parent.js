@@ -284,12 +284,33 @@ async function panneau(p) {
       const rn = PAL.palierRetenu({ choix: 'moyen', mesure: sh });
       const ra = PAL.palierRetenu({ choix: 'auto', mesure: sh });
       const sa = J.suretePalier(2, 'auto');
-      verifier('deux plantages sous « Loin » : la sûreté passe devant « Loin », et devant lui seul',
+      verifier('deux plantages sous « Loin » : la sûreté passe devant « Loin », un cran dessous, et devant lui seul',
         bh.etendue === 'haut' && bh.plantages === 2 && !!(sh && sh.sousChoix === 'haut')
-          && !!(rh && rh.nom === 'bas' && rh.source === 'sûreté' && rh.sousChoix === 'haut')
+          && !!(rh && rh.nom === 'moyen' && rh.source === 'sûreté' && rh.sousChoix === 'haut')
           && !!(rn && rn.nom === 'moyen' && rn.source === 'choix') && !!(ra && ra.source === 'sûreté')
           && !!(sa && !('sousChoix' in sa)),
         JSON.stringify({ etendue: bh.etendue, sh, rh: rh && { nom: rh.nom, source: rh.source, sousChoix: rh.sousChoix }, rn: rn && rn.source, ra: ra && ra.source, sa }));
+      // UN CRAN SOUS CE QUI A PLANTÉ, PAS LE FOND (v509). Max : « les arbres ont
+      // pas changé » — son iPhone, mort deux fois sous « Loin », jouait au
+      // palier bas (`hd 0`) depuis. Loin → Normal ; deux plantages sous Normal
+      // (le palier qui tournait, lu dans la fiche) → bas ; « Auto » → bas comme
+      // avant. Et l'ANCIEN verdict, « bas sous Loin » sans `cran`, se relit
+      // Normal ; le neuf « bas » sous Normal-de-sûreté reste bas.
+      {
+        const bm = J.bilanPrecedent({ drapeau: '1', journalBrut: JSON.stringify({ fiche: { reglage: { etendue: 'haut', palier: 'moyen', source: 'sûreté' } }, releves: [], evenements: [] }), plantages: 1 });
+        const sm = J.suretePalier(bm.plantages, bm.etendue, bm.palierEnCours);
+        const rm2 = PAL.palierRetenu({ choix: 'haut', mesure: sm });
+        const sn = J.suretePalier(2, 'moyen', 'moyen');
+        const ancien = { palier: 'bas', raison: '2 plantages de suite', surete: true, le: 1, sousChoix: 'haut' };
+        const rAncien = PAL.palierRetenu({ choix: 'haut', mesure: ancien });
+        const rAuto = PAL.palierRetenu({ choix: 'auto', mesure: J.suretePalier(2, null, 'moyen') });
+        verifier('la sûreté descend d’un cran : Loin → Normal → bas, et un ancien « bas sous Loin » se relit Normal',
+          sh.palier === 'moyen' && bm.palierEnCours === 'moyen' && sm && sm.palier === 'bas' && sm.cran === true
+            && !!(rm2 && rm2.nom === 'bas') && sn && sn.palier === 'bas'
+            && !!(rAncien && rAncien.nom === 'moyen' && rAncien.source === 'sûreté')
+            && !!(rAuto && rAuto.nom === 'bas'),
+          JSON.stringify({ sh: sh.palier, sm, rm2: rm2 && rm2.nom, sn: sn && sn.palier, rAncien: rAncien && rAncien.nom, rAuto: rAuto && rAuto.nom }));
+      }
       // DEUX PAGES SUR LE MÊME STOCKAGE NE SE DÉCLARENT PAS PLANTÉES (v426).
       // L'iPhone de la famille a déclaré « plantée » une session qui a envoyé
       // sa fermeture propre trois minutes plus tard (lignes 82 et 83 de
@@ -444,6 +465,28 @@ async function panneau(p) {
         vuCache.ouvert === false && !vuCache.dansTable && vuCache.compteur === vuCache.avant && vuCache.avant >= 1,
         JSON.stringify(vuCache));
       await cache.close();
+    }
+    // LA SITUATION EXACTE DE L'IPHONE DE MAX (v509) : un verdict rangé avant la
+    // v509 — « bas » par sûreté sous « Loin », sans `cran` —, l'étendue « Loin »,
+    // un rechargement. Le jeu doit jouer Normal (palier `moyen`, source sûreté),
+    // et l'aide des Réglages le dire avec le geste. Sur l'ancien code : `bas`.
+    {
+      await tab.evaluate(() => {
+        localStorage.setItem('web-minecraft-palier-v2', JSON.stringify({ palier: 'bas', raison: '2 plantages de suite', surete: true, le: Date.now() - 86400000, sousChoix: 'haut' }));
+        localStorage.setItem('web-minecraft-etendue-v1', 'haut');
+      });
+      await tab.reload({ waitUntil: 'load', timeout: 90000 });
+      await tab.waitForFunction(() => window.__game, null, { timeout: 90000 });
+      const vu = await tab.evaluate(() => {
+        const r = window.__game.reglageApplique;
+        const h = document.getElementById('etendue-hint');
+        return { palier: r.palier, source: r.source, etendue: r.etendue, aide: h ? h.textContent : null };
+      });
+      verifier('un ancien verdict « bas sous Loin » rechargé joue Normal, et les Réglages disent quoi faire',
+        vu.palier === 'moyen' && vu.source === 'sûreté' && vu.etendue === 'haut'
+          && !!(vu.aide && vu.aide.includes('Normal') && vu.aide.includes('réessayer')),
+        JSON.stringify(vu));
+      await tab.evaluate(() => { localStorage.removeItem('web-minecraft-palier-v2'); localStorage.removeItem('web-minecraft-etendue-v1'); });
     }
     await tab.close();
 

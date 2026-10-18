@@ -148,11 +148,40 @@ function mergeCounts(a = {}, b = {}) {
   return out;
 }
 
+// LES RECORDS DE COURSE D'AVANT LA v483 (v509, décision déléguée par Max).
+// Le chronomètre comptait en temps de JEU : sur une tablette qui ramait, un
+// record pouvait valoir le quart du temps couru. On n'efface rien — l'ancien
+// record passe à part (`courseVieuxChrono`, montré comme « ancien record »), et
+// le record à battre (`courseJuste`) repart de la première course chronométrée
+// juste. UN CHAMP QUI CHANGE DE SENS CHANGE DE NOM : `bestRace` n'est plus
+// jamais écrit. Pure et idempotente (sans `bestRace`, rien ne bouge),
+// appliquée au stockage (fun.js, au chargement) et à chaque document reçu du
+// nuage — une tablette restée sur une ancienne version republie `bestRace`, et
+// la fusion le range encore en ancien record. Le prix déclaré : une course
+// gagnée entre la v483 et la v503 était déjà juste, et devient « ancienne ».
+export function migrerRecordsCourse(r) {
+  if (!r || typeof r !== 'object' || !('bestRace' in r)) return r;
+  const out = { ...r };
+  delete out.bestRace;
+  const vieux = Number(r.bestRace);
+  if (vieux > 0) out.courseVieuxChrono = minPositif(out.courseVieuxChrono, vieux);
+  return out;
+}
+// Un temps de course : le plus petit qui existe (zéro veut dire « aucun »).
+const COURSES = new Set(['courseJuste', 'courseVieuxChrono']);
+function minPositif(a, b) {
+  const x = Number(a) > 0 ? Number(a) : Infinity, y = Number(b) > 0 ? Number(b) : Infinity;
+  const m = Math.min(x, y);
+  return m === Infinity ? 0 : m;
+}
+
 function mergeRecords(a = {}, b = {}, aNewer) {
   const out = {};
+  a = migrerRecordsCourse(a); b = migrerRecordsCourse(b);
   for (const k of new Set([...Object.keys(a || {}), ...Object.keys(b || {})])) {
     const av = (a || {})[k], bv = (b || {})[k];
-    if (k === 'hats') out[k] = [...new Set([...(av || []), ...(bv || [])])];
+    if (COURSES.has(k)) out[k] = minPositif(av, bv);
+    else if (k === 'hats') out[k] = [...new Set([...(av || []), ...(bv || [])])];
     else if (k === 'hat' || k === 'treasureDate') out[k] = (aNewer ? av : bv) ?? av ?? bv;
     else if (typeof av === 'number' || typeof bv === 'number') out[k] = Math.max(num(av), num(bv));
     else out[k] = av ?? bv;
@@ -365,8 +394,12 @@ export class ProfileSync {
     // device did not already have — that is what justifies a reload. Compared
     // field by field so a mere difference in key order never triggers one.
     let changed = false;
+    // Les records se comparent MIGRÉS : sans cela, un `bestRace` encore rangé
+    // sur l'appareil ferait croire à la première fusion qu'elle a rapporté
+    // quelque chose, et la page se relancerait pour rien (v189).
+    const avant = { ...local, records: migrerRecordsCourse(local.records) };
     for (const [, field] of FIELDS) {
-      if (JSON.stringify(out[field] ?? null) !== JSON.stringify(local[field] ?? null)) {
+      if (JSON.stringify(out[field] ?? null) !== JSON.stringify(avant[field] ?? null)) {
         changed = true;
         break;
       }

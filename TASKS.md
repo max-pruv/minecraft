@@ -1,5 +1,24 @@
 # Ce qui est en cours
 
+- [ ] **Rouges de portail de la v509 (la sûreté d'un cran, les records) :
+  aucun de la livraison.** Le portail complet a tapé sa borne de deux heures
+  pendant `reseau.js` (`monte.js` seule 42 min). Un seul rouge était à moi —
+  une puce du journal à neuf mots, corrigée. Le reste, rejoué SEUL : `carte.js`
+  branche 103 verts / 0 rouge, `origin/main` (v504) 101 / 1 (« la flèche du
+  GPS », l'intermittence de la v321) — l'appui long et le GPS du portail étaient
+  la charge ; `maj.js` branche 65 / 1, « le loader dit combien de fichiers sont
+  rangés », rouge sur `origin/main` au portail de la v503 (déclaré plus bas) ;
+  `reseau.js` branche 88 / 2, « un hôte sans courtier est trouvé » et « il le
+  REJOINT », la famille du nuage déclarée plus bas — `net.js`, `relaisnuage.js`
+  et `cloud.js` n'ont pas bougé. `monte.js` au portail : « la rue se fabrique
+  par tranches », « deux voisines d'un convoi », « la rue roule à l'allure
+  d'une ville », « rue vide », « frein à main », « un mur pris de face » — tous
+  déjà mesurés des deux côtés aux portails des v503 et v504 (ci-dessous) ; la
+  livraison ne touche dans `fun.js` que le nom du champ du record de course.
+  Rejeu de `maj.js` sur le code rebasé : 65 verts, 1 rouge, « commandes
+  (430 × 932) : toucher l'écran… casse en construction » (vert au rejeu
+  précédent, rouge au portail de la v503) — la construction n'est pas touchée.
+
 - [ ] **Rouges de portail mesurés des deux côtés au portail de la v504 (les
   icônes et le jeu qui se tait)** — double mesure de la v195, `monte.js`
   rejouée SEULE sur la branche et sur `origin/main` v502 (`git worktree`).
@@ -7503,12 +7522,43 @@ l'embarquement a eu lieu, pas par une hypothèse.
   longue de la v465 (« Sur la mer, le train roule sur un viaduc »), présente
   sur `origin/main`, donc en production.
 
-- [ ] **DÉCISION DE MAX : les records de course écrits avant la v483.** Le
+- [x] **DÉCISION DE MAX : les records de course écrits avant la v483.**
+  *Décidé (décision déléguée par Max, 18 octobre 2026), fait en v509 : on
+  n'efface rien ; l'ancien record passe à part (`courseVieuxChrono`, « ancien
+  record (vieux chrono) » — gardé, PAS ENCORE AFFICHÉ : aucun écran ne montre
+  les records depuis la v255 et les messages en jeu sont partis en v504 ; à
+  montrer le jour où un écran des records existe) et le record à battre
+  (`courseJuste`) repart de la première course chronométrée juste. Migration
+  pure, idempotente, au stockage et à chaque document du nuage
+  (`migrerRecordsCourse`, sync.js). Prix déclaré : une course gagnée entre la
+  v483 et la v503 était juste et devient « ancienne ».* Le
   chronomètre comptait en temps de jeu : sur une tablette qui ramait, un
   record pouvait valoir le quart du temps réellement couru (mesuré 2,3 s pour
   8,6 s à cinq images par seconde). La v483 compte juste à partir de
   maintenant et ne touche pas `records.bestRace`. Les remettre à zéro (pour
   Marlon et Alice) ou les garder : à trancher par Max, pas par le code.
+
+- [x] **La sûreté du palier coupait trop (v509).** Décision déléguée par Max,
+  18 octobre 2026. L'iPhone de Max jouait en `bas` (`hd 0`) depuis deux
+  plantages sous « Loin » : ni les vrais arbres, ni les façades de Paris, ni
+  la couronne lointaine. La sûreté descend désormais d'UN cran depuis le
+  palier qui tournait (Loin → Normal → bas ; « Auto » → bas comme avant), un
+  ancien « bas sous Loin » se relit Normal, et les Réglages le disent avec le
+  geste. **Reste à voir sur l'iPhone** : que Normal tienne là où Loin
+  plantait (`?diag=1`, `journal_appareil`) ; s'il replante deux fois, il
+  redescend à `bas` tout seul.
+- [x] **Les anneaux de Tokyo et de Dubaï restent tels quels.** Décision
+  déléguée par Max, 18 octobre 2026 : aucun remède sans toucher le sol ou la
+  sélection des anneaux (la carte des segments bloqués de la v435 le montre),
+  et le défaut est mineur.
+- [x] **Les sept pistes courtes restent telles quelles** (`PISTES_COURTES`).
+  Décision déléguée par Max, 18 octobre 2026 : toutes sont au-dessus de ce
+  que l'approche assistée demande, sauf Los Angeles pour le Concorde, de
+  justesse — pas de déplacement d'aérodrome.
+- [x] **Le programme des autoroutes est en pause.** Décision déléguée par Max,
+  18 octobre 2026 : les trois corridors restants (Séoul–Busan, Los
+  Angeles–San Diego, Manchester–Liverpool) sont barrés par le relief ; un
+  tunnel écrit en blocs serait un projet à part, à proposer plus tard.
 
 - [ ] **Les cadences de ménage hors de `animals.js` et `fun.js` (relevé v483).**
   Le grep (`grep -rn -- "-= dt\|+= dt" src/*.js`) rend soixante et une
