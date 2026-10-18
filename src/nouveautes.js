@@ -7,7 +7,7 @@
 export const NOUVEAUTES = [
   {
     v: 507,
-    titre: 'Les feux de détresse sur la voiture',
+    titre: 'Les feux sur la voiture',
     puces: [
       'Ils clignotent sur la carrosserie',
       'Aux quatre coins, là où sont les feux',
