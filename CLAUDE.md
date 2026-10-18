@@ -854,6 +854,11 @@ transparence, moins de texte ». Cinq règles.
   deux pilules côte à côte se coupaient. Tout est à droite de 55 % de la vue
   (v272). *(La barre de blocs vivait dans la file du haut (v445) ; la v503,
   décision de Max, la remet EN BAS — voir « La barre de blocs en bas ».)*
+  **En vol, Monter est au-dessus de Descendre (v508, Max)** : à pied comme
+  en construction, Sauter (qui fait monter) prend la place haute de sa
+  colonne et Descendre la basse ; un témoin de `maj.js` compare leurs hauts.
+  Tout bouton qui gagne un contraire (monter/descendre) se range dans le sens
+  du geste.
 - **LE VERRE SE RÈGLE SUR LE CONTRASTE, PAS SUR L'ŒIL.** Un voile sombre à 0,30
   (`--hud-voile`) est ce qu'il faut pour qu'une icône blanche tienne 3:1 sur le
   ciel de midi ; les pilules qui portent du texte sont claires (encre sur verre

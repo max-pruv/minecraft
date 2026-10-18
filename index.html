@@ -2120,6 +2120,12 @@
     body.hud-simple #fly-btn { right: 20px; bottom: calc(84px + var(--safe-bottom)); }
     body.hud-simple #down-btn { right: 76px; bottom: calc(108px + var(--safe-bottom)); }
     body.hud-simple.en-vol #down-btn { display: flex !important; }
+    /* EN VOL, MONTER EST AU-DESSUS DE DESCENDRE (v508). Max : « le bouton
+       pour monter est en bas, et le bouton pour descendre est en haut. C'est
+       contre-intuitif. » Sauter fait monter en vol ; il prend la place haute
+       de la colonne, Descendre la place basse. Hors vol, rien ne bouge. */
+    body.hud-simple.en-vol:not(.construction) #jump-btn { bottom: calc(108px + var(--safe-bottom)); }
+    body.hud-simple.en-vol:not(.construction) #down-btn { bottom: calc(52px + var(--safe-bottom)); }
     body.hud-simple .fun-target {
       left: auto; right: 20px; transform: none; bottom: calc(144px + var(--safe-bottom));
       max-width: calc(55vw - 24px); justify-content: flex-end;
@@ -2156,7 +2162,10 @@
     body.hud-simple.construction #poser-btn { display: flex; right: 20px; bottom: calc(16px + var(--bande-blocs, 12px)); }
     body.hud-simple.construction #casser-btn { display: flex; right: 76px; bottom: calc(40px + var(--bande-blocs, 12px)); }
     body.hud-simple.construction #jump-btn { right: 20px; bottom: calc(72px + var(--bande-blocs, 12px)); }
-    body.hud-simple.construction.en-vol #down-btn { right: 76px; bottom: calc(96px + var(--bande-blocs, 12px)); }
+    /* En vol, Sauter (monter) prend la place haute à côté de Casser, et
+       Descendre passe sous lui, au-dessus de Poser (v508). */
+    body.hud-simple.construction.en-vol #jump-btn { right: 76px; bottom: calc(96px + var(--bande-blocs, 12px)); }
+    body.hud-simple.construction.en-vol #down-btn { right: 20px; bottom: calc(72px + var(--bande-blocs, 12px)); }
     body.hud-simple.tactile.construction #joy-repos { bottom: calc(40px + var(--bande-blocs, 12px)); }
     body.hud-simple #poser-btn.actif, body.hud-simple #casser-btn.actif {
       background: rgba(255, 255, 255, 0.92); color: var(--encre, #111A2E); border-color: #fff;

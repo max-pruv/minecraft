@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 510,
+    titre: 'Monter en haut, descendre en bas',
+    puces: [
+      'En vol, la flèche du haut fait monter',
+      'Celle du bas fait descendre',
+    ],
+  },
+  {
     v: 509,
     titre: 'Les arbres reviennent, records justes',
     puces: [

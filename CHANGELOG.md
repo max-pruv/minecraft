@@ -20,6 +20,26 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v510 — En vol, Monter est au-dessus de Descendre
+
+**Pourquoi.** Max, sur iPhone, en vol : « Ça serait bien d'inverser les boutons
+pour voler. Le bouton pour monter est en bas, et le bouton pour descendre est
+en haut. C'est contre-intuitif. » Mesuré : à pied en vol, Descendre était 56 px
+au-dessus de Sauter (qui fait monter) ; en construction, 24 px au-dessus.
+
+**Ce que ça change.** En vol, le bouton qui fait monter prend la place haute,
+celui qui fait descendre la place basse — à pied comme en construction. Hors
+vol rien ne bouge ; ids, gestionnaires et `aria-label` sont les mêmes. Aux
+commandes d'un avion, la colonne de bord n'a pas ce défaut (« Descendre » y
+veut dire quitter l'appareil, pas perdre de l'altitude) : inchangée.
+
+**Ce qui le prouve.** Deux témoins de `maj.js`, joués à 420 × 760 et à
+430 × 932, formulés sans dimension : le haut de Monter est au-dessus du haut de
+Descendre (rouge sur l'ancien code, mesuré par `sonde-vol-boutons.cjs`), et en
+vol rien ne se recouvre ni n'entre dans le quart du joystick.
+
+---
+
 ## v509 — Les arbres reviennent, et les records de course comptent juste
 
 Deux sujets, deux décisions que Max a déléguées (« sur les décisions fais au
