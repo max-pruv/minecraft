@@ -1,5 +1,25 @@
 # Ce qui est en cours
 
+## LES ROUGES DU PORTAIL DE LA v507 — intermittents de `monte.js`, aucun causé par la livraison
+
+La v507 ne change que des TEXTES affichés (noms de blocs, bandeau « Donne le
+code », badge « Libre jusqu'à ») : rien sur les chemins de la circulation, du
+worker ou de l'avion. Preuve structurelle, plus trois passages de `monte.js` :
+
+| témoin | portail branche | seule branche | seule `origin/main` |
+| --- | --- | --- | --- |
+| et l'on ne marche pas dans une rue vide | ❌ | ❌ | ❌ (vus 0,7,7,1,0,0,1,19) |
+| deux voisines d'un convoi gardent leur longueur d'écart | ❌ | ✅ | ✅ |
+| au feu, la voiture freine sur plusieurs relevés | ❌ | ❌ | ✅ |
+| à l'arrivée, la rue se fabrique par tranches (vues 5 pour 6) | ✅ | ❌ | ✅ |
+| à 80 b/s dans Paris, le worker ne reste pas à sec (× 1,07) | ✅ | ❌ | ✅ |
+| ✈️ près d'Orly, l'approche pose l'avion de ligne sur la piste | ✅ | ❌ | ✅ |
+
+Et au premier portail (coupé à deux heures), `maj.js` « toucher l'écran casse
+en construction » (`{"explorer":0,"construction":0}`) : vert au portail
+suivant. La distribution n'est pas faite au sens de la v269 (trois passages de
+plus de trente minutes) : à reprendre si l'un d'eux revient sur une livraison
+qui touche ces chemins.
 - [ ] **Rouges de portail mesurés des deux côtés au portail de la v518 (Loin,
   garde-manger, minicarte)** — double mesure de la v195, chaque suite rejouée
   SEULE sur la branche et sur `origin/main` v506 (`git worktree`). `maj.js` :
