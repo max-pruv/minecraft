@@ -8277,6 +8277,7 @@ const fun = initFun({
   remotePlayers: () => remotePlayers,
   isRunning: () => running,
   isNight: () => Math.sin((dayTime / DAY_LENGTH) * Math.PI * 2) < -0.05,
+  nuitDehors: () => nuitDehors,
   getWeather: () => weather,
   getPosCtx: () => posCtx,
   // Les convois n'existent qu'une fois le monde bâti : on les demande au

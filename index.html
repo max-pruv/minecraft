@@ -735,6 +735,25 @@
       position: absolute; left: 0; right: 0; bottom: 0; height: 0%;
       background: linear-gradient(to top, rgba(88,176,76,0.85), rgba(255,215,94,0.85));
     }
+    /* LA MANETTE DIT CE QU'ELLE EST (v529). Revue d'écran, ligne 7 : « un
+       rectangle blanc vide, un rond tout en bas » — un enfant ne devine pas
+       qu'il faut la pousser vers le haut. Un mot en haut, des chevrons dans la
+       course. Enfants de la manette et `pointer-events: none` : le doigt touche
+       toujours `#gaz-base`, qui capture son pointeur (v262) — rien entre elle
+       et le doigt. */
+    /* une pastille sombre : lisible sur le voile, sur l'orange et sur le
+       curseur blanc, qui passe dessous à pleins gaz */
+    #gaz-mot {
+      position: absolute; left: 50%; top: 8px; transform: translateX(-50%); pointer-events: none;
+      padding: 3px 6px; border-radius: 9px; background: rgba(17, 26, 46, 0.78);
+      color: #fff; font: 800 12px/1 var(--corps, system-ui, sans-serif); letter-spacing: 0.04em; z-index: 2;
+    }
+    #gaz-chevrons {
+      position: absolute; left: 50%; top: 34%; width: 22px; height: 56px; margin-left: -11px;
+      color: rgba(255, 255, 255, 0.85); pointer-events: none;
+      filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5));
+    }
+    #gaz-fill, #gaz-knob { pointer-events: none; }
     #gaz-knob {
       position: absolute; left: 6px; right: 6px; bottom: 0; height: 22px; border-radius: 11px;
       background: rgba(255,255,255,0.9); box-shadow: 0 1px 4px rgba(0,0,0,0.5);
@@ -2185,18 +2204,25 @@
     body.hud-simple.construction { --bande-blocs: calc(72px + var(--safe-bottom)); }
     body.hud-simple.construction #construire-btn, body.hud-simple.construction #fly-btn,
     body.hud-simple.construction .fun-target { display: none !important; }
+    /* POSER, CASSER, SAUTER DANS UNE SEULE COLONNE (v529). Casser vivait à
+       76 px du bord, un cran plus haut : sur l'iPhone il sortait de la colonne
+       (x 310 au lieu de 366, revue d'écran, ligne 4). Les trois ont le même x,
+       du bas vers le haut. */
     body.hud-simple.construction #poser-btn { display: flex; right: 20px; bottom: calc(16px + var(--bande-blocs, 12px)); }
-    body.hud-simple.construction #casser-btn { display: flex; right: 76px; bottom: calc(40px + var(--bande-blocs, 12px)); }
-    body.hud-simple.construction #jump-btn { right: 20px; bottom: calc(72px + var(--bande-blocs, 12px)); }
-    /* En vol, Sauter (monter) prend la place haute à côté de Casser, et
-       Descendre passe sous lui, au-dessus de Poser (v510). */
-    body.hud-simple.construction.en-vol #jump-btn { right: 76px; bottom: calc(96px + var(--bande-blocs, 12px)); }
-    body.hud-simple.construction.en-vol #down-btn { right: 20px; bottom: calc(72px + var(--bande-blocs, 12px)); }
+    body.hud-simple.construction #casser-btn { display: flex; right: 20px; bottom: calc(72px + var(--bande-blocs, 12px)); }
+    body.hud-simple.construction #jump-btn { right: 20px; bottom: calc(128px + var(--bande-blocs, 12px)); }
+    /* En vol, Sauter (monter) reste en haut et Descendre passe sous lui (v510),
+       dans la même colonne que Poser et Casser (v529). */
+    body.hud-simple.construction.en-vol #jump-btn { right: 20px; bottom: calc(184px + var(--bande-blocs, 12px)); }
+    body.hud-simple.construction.en-vol #down-btn { right: 20px; bottom: calc(128px + var(--bande-blocs, 12px)); }
     body.hud-simple.tactile.construction #joy-repos { bottom: calc(40px + var(--bande-blocs, 12px)); }
+    /* L'OUTIL CHOISI GARDE LA PALETTE DES AUTRES BOUTONS (v529) : le même
+       voile, l'icône blanche, et un ANNEAU corail autour. Le fond blanc d'avant
+       le faisait passer pour un autre genre de bouton, et l'icône encre sur
+       blanc se distinguait mal de Poser. */
     body.hud-simple #poser-btn.actif, body.hud-simple #casser-btn.actif {
-      background: rgba(255, 255, 255, 0.92); color: var(--encre, #111A2E); border-color: #fff;
+      border: 2px solid #fff; box-shadow: 0 0 0 3px rgba(232, 86, 42, 0.95);
     }
-    body.hud-simple #poser-btn.actif .ico, body.hud-simple #casser-btn.actif .ico { filter: none; }
     body.hud-simple.construction.en-jeu #construction-pill { display: flex; }
     /* « TERMINER » EST LÀ OÙ ÉTAIT « CONSTRUIRE » (v520, décision de Max, qui
        annule le bouton rond à coche en haut de la v503 : « pas très clair, et
@@ -2647,7 +2673,7 @@
     <button class="tbtn" id="fm-btn" title="Frein à main" aria-label="Frein à main"><span class="ic"></span><span class="lb">DÉRAPER</span></button>
     <!-- La manette des gaz (v262) : au volant ou aux commandes, à droite, on
          la monte et on la baisse — en même temps que le joystick à gauche. -->
-    <div id="gaz-base"><div id="gaz-fill"></div><div id="gaz-knob"></div></div>
+    <div id="gaz-base"><div id="gaz-fill"></div><svg id="gaz-chevrons" viewBox="0 0 24 60" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 14 12 7l7 7M5 32l7-7 7 7M5 50l7-7 7 7"/></svg><div id="gaz-knob"></div><span id="gaz-mot">Gaz</span></div>
     <div id="cmd-vol"></div>
     <div id="gaz-val"></div>
     <button class="tbtn" id="train-btn" title="Train d'atterrissage" aria-label="Train d'atterrissage"><span class="ic"></span><span class="lb" id="train-lb">TRAIN</span></button>

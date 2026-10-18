@@ -33,6 +33,28 @@
   sous node (1,6 à 6,9 ms par morceau des deux côtés) — à relire sur l'iPhone
   (`?diag=1`, débit de maillage en vol au-dessus d'une forêt).
 
+## LES ROUGES DU PORTAIL DE LA v529 — tous déjà déclarés, ou intermittents mesurés des deux côtés
+
+La v529 (phares, feux de navigation, manette, pioche) a rendu au portail
+complet treize suites vertes sur dix-sept. Les quatre rouges, un par un :
+
+| suite | témoin rouge | déjà là |
+| --- | --- | --- |
+| `carte.js` | la flèche du GPS | déclaré plus bas |
+| `reglages.js` | un choix fait sur une tablette part au serveur | déclaré (course de battement, v374) |
+| `manhattan.js` | passants de Manhattan au long cap (débit 0,54) | déclaré (v496) |
+| `monte.js` | feu, rue vide, 60 b/s dans Paris, worker à sec (× 1,48), au-dessus d'une ville | déclarés (portails v516, v522) |
+| `monte.js` | ✈️ « Atterrissage vers <ville> » | **neuf ici** — voir ci-dessous |
+
+- [ ] **« Atterrissage vers <ville> » est une intermittence de portail.**
+  Rejoué SEUL trois fois sur `origin/main` v520 (`git worktree`) et trois fois
+  sur la branche : 6 verts sur 6. La v529 ne touche ni l'approche ni le
+  bandeau ; elle allume des feux sur le maillage de l'avion. À rejouer en
+  distribution (v269) le jour où il revient, avec la cadence dans le message.
+- `reseau.js`, rejouée SEULE : verte sur la branche ; sur `origin/main` v506 le
+  trio « à trois, chacun voit les deux autres », ses dépendants et le GPS
+  relayé sont rouges, puis la suite meurt (`null.peer`).
+
 ## LES ROUGES DU PORTAIL DE LA v522 — intermittents de `monte.js`, aucun causé par la livraison
 
 La v522 ne change que des TEXTES affichés (noms de blocs, bandeau « Donne le

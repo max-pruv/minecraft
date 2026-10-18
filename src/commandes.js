@@ -45,7 +45,11 @@ export const ICONES = {
   construire: T('<path d="M12 3.2 20 7.6l-8 4.4-8-4.4z" fill="currentColor" fill-opacity=".45"/><path d="M12 3.2 20 7.6v8.8L12 20.8l-8-4.4V7.6zM12 12v8.8M4 7.6 12 12l8-4.4"/>', 2.2),
   poser: T('<path d="M12 4.5v15M4.5 12h15"/>', 3.2),
   // CASSER : une pioche — le geste qu'un enfant connaît des jeux de blocs.
-  casser: T('<path d="M4.5 19.5 14.6 9.4"/><path d="M8 4.6Q20.2 3.2 19.4 16"/>', 2.8),
+  // Un trait et un arc se lisaient « télécharger » (revue d'écran, ligne 4,
+  // v529) : le fer est désormais PLEIN, un croissant aux deux pointes en
+  // travers du manche, et le manche finit sur un pommeau. Rien d'une flèche.
+  casser: T('<path d="M4.2 19.8 15.4 8.6"/><circle cx="4.2" cy="19.8" r="1.6" fill="currentColor" stroke="none"/>'
+    + '<path fill="currentColor" stroke="none" d="M9.2 2.4Q20.6 1.2 21.6 14.8Q16.6 7.4 9.2 2.4z"/>', 2.8),
   pause: T('<path d="M8.5 5v14M15.5 5v14"/>', 3),
   sac: T('<path d="M5.5 9.5h13l-1.2 10.5H6.7z"/><path d="M9 9.5V7a3 3 0 0 1 6 0v2.5"/>', 2.2),
   photos: T('<rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="m3.5 16.5 5-5 4 4 2.5-2.5 5 5"/><circle cx="15.5" cy="9.3" r="1.4" fill="currentColor" stroke="none"/>', 2.2),

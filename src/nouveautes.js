@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 529,
+    titre: 'Phares, feux et manette',
+    puces: [
+      'La voiture allume ses phares la nuit',
+      'L\'avion a ses feux rouge et vert',
+      'La manette des gaz dit « Gaz »',
+      'Une vraie pioche pour casser',
+    ],
+  },
+  {
     v: 528,
     titre: 'De beaux arbres, même au loin',
     puces: [
