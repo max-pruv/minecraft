@@ -836,8 +836,8 @@ transparence, moins de texte ». Cinq règles.
   faisait taire la pilule en vol, et le portail l'a dit). En construction :
   Poser, Casser, Sauter (et Descendre en vol). Monter passe devant « à bord », qui passe devant nourrir (`:has()`) :
   deux pilules côte à côte se coupaient. Tout est à droite de 55 % de la vue
-  (v272) ; la barre de blocs vit dans la file du haut (v445), pas en bas — elle
-  mordait le quart du joystick.
+  (v272). *(La barre de blocs vivait dans la file du haut (v445) ; la v503,
+  décision de Max, la remet EN BAS — voir « La barre de blocs en bas ».)*
 - **LE VERRE SE RÈGLE SUR LE CONTRASTE, PAS SUR L'ŒIL.** Un voile sombre à 0,30
   (`--hud-voile`) est ce qu'il faut pour qu'une icône blanche tienne 3:1 sur le
   ciel de midi ; les pilules qui portent du texte sont claires (encre sur verre
@@ -847,6 +847,31 @@ transparence, moins de texte ». Cinq règles.
   VISUELLEMENT caché — jamais `display: none`, que des témoins lisent. Cette
   décision annule « chaque bouton porte son mot » (v265) : c'est Max qui l'a
   prise, sur la maquette.
+
+## La barre de blocs en bas (v503) — une décision de Max annule une règle, et la règle se redit en relatif
+
+Max : « le mode construction, ça va pas du tout. On affiche les briques dans une
+toute petite zone. Ça devrait être en bas. Et le bouton terminer prend beaucoup
+trop de place. » Mesuré avant : cases de 30 px dans la file du haut, une pilule
+« Construction · Terminer » de 188 px. **Cette décision annule celle de la
+v445/v494 pour la barre de blocs** (« en haut, elle mordait le quart du
+joystick »). Trois règles.
+
+- **EN CONSTRUCTION, LA BARRE EST UNE BANDE EN BAS, PLEINE LARGEUR.** Cases de
+  50 px (au moins 44, un doigt d'enfant), défilement au doigt (`overflow-x`,
+  `touch-action: pan-x`) ; le DOM ne bouge plus (main.js ne la déplace plus
+  dans `#file-centre`), seule la feuille de style la pose, et seulement sur
+  tablette (`tactile.construction`). Le bureau ne change pas.
+- **LE JOYSTICK GARDE LE QUART AU-DESSUS DE LA BARRE.** La règle de la v272 se
+  dit désormais : en construction, rien du DOM qui prend le doigt entre 40 % de
+  la hauteur et le haut de la barre, à gauche de 45 % — c'est le canvas qui
+  reçoit le doigt (sonde `elementFromPoint` en grille), et ce doigt fait
+  marcher l'enfant. Tout ce qui vivait au ras du bas (Poser, Casser, Sauter,
+  Descendre, l'anneau du joystick au repos) monte de `--bande-blocs`. Un
+  élément neuf posé en bas en construction se cote sur cette variable.
+- **« TERMINER » EST UN BOUTON ROND À ICÔNE** (une coche, 44 px, en haut au
+  milieu), son mot dans `aria-label` et `.lb` ; il se juge à 3:1 comme les
+  autres icônes. Il garde son id `#construction-fin`.
 
 ## On entre dans Sainte-Sophie (v493) — un monument visitable se choisit sur la carte du MONDE
 

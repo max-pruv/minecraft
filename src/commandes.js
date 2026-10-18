@@ -33,6 +33,7 @@ export const ICONES = {
   reglages: T('<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>'),
   accueil: T('<path d="M4 11l8-7 8 7v9H4z"/>'),
   reprendre: T('<path d="M8 5.5v13l11-6.5z"/>', 2),
+  terminer: T('<path d="M5 12.5l4.5 4.5L19 7.5"/>', 2.4),
 };
 
 // Les lignes du menu, dans l'ordre de la maquette. `cible` est le bouton
@@ -78,6 +79,7 @@ export function initCommandes(h) {
   };
   icone('#jump-btn', 'sauter'); icone('#down-btn', 'descendre'); icone('#fly-btn', 'voler');
   icone('#fm-btn', 'frein'); icone('#train-btn', 'train'); icone('#construire-btn', 'construire');
+  icone('#construction-fin', 'terminer');
   icone('#poser-btn', 'poser'); icone('#casser-btn', 'casser'); icone('#map-btn', 'carte');
 
   for (const l of LIGNES) {

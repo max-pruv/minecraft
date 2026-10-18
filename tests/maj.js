@@ -1252,18 +1252,62 @@ function verifier(nom, ok, detail = '') {
         await att(400);
         const construction = releve();
         const n2 = await tap();
+        // LA BARRE EST EN BAS, ET LE JOYSTICK GARDE LE QUART AU-DESSUS (v503,
+        // décision de Max). Trois gestes de l'enfant, dans la même page :
+        // le doigt posé dans le quart du joystick tombe sur le canvas (on
+        // sonde une grille, `elementFromPoint` ignore ce qui ne prend pas le
+        // doigt), ce doigt fait marcher l'enfant, et une case de la barre se
+        // touche et se choisit.
+        const cv = document.getElementById('game'), hb = document.getElementById('hotbar');
+        const bande = hb.getBoundingClientRect();
+        const horsCanvas = [];
+        const y0 = innerHeight * 0.42, y1 = bande.top - 4;
+        for (let i = 0; i <= 5; i++) for (let j = 0; j <= 5; j++) {
+          const x = innerWidth * (0.04 + 0.08 * i), y = y0 + (y1 - y0) * j / 5;
+          const el = document.elementFromPoint(x, y);
+          if (el !== cv) horsCanvas.push([Math.round(x), Math.round(y), el ? el.id || String(el.className) : null]);
+        }
+        // on recule : devant, il y a la colonne de pierre du témoin d'avant
+        const jx = innerWidth * 0.2, jy = (innerHeight * 0.4 + bande.top) / 2;
+        const p0 = [P.pos.x, P.pos.z];
+        const ta = new Touch({ identifier: 11, target: cv, clientX: jx, clientY: jy });
+        cv.dispatchEvent(new TouchEvent('touchstart', { touches: [ta], changedTouches: [ta], cancelable: true, bubbles: true }));
+        const tb = new Touch({ identifier: 11, target: cv, clientX: jx, clientY: jy + 50 });
+        cv.dispatchEvent(new TouchEvent('touchmove', { touches: [tb], changedTouches: [tb], cancelable: true, bubbles: true }));
+        const tm = performance.now(); let marche = 0;
+        while (performance.now() - tm < 10000 && (marche = Math.hypot(P.pos.x - p0[0], P.pos.z - p0[1])) < 1.2) await att(200);
+        const marcheMs = Math.round(performance.now() - tm);
+        cv.dispatchEvent(new TouchEvent('touchend', { touches: [], changedTouches: [tb], cancelable: true, bubbles: true }));
+        const cases = [...hb.querySelectorAll('.slot:not(.slot-more)')], cible = cases[3];
+        const cb = cible.getBoundingClientRect();
+        const dessus = document.elementFromPoint(cb.left + cb.width / 2, cb.top + cb.height / 2);
+        const atteinte = !!dessus && dessus.closest('.slot') === cible;
+        cible.click();
+        const choisie = cible.classList.contains('selected');
+        const entieres = [...hb.querySelectorAll('.slot')].filter((c) => { const b = c.getBoundingClientRect(); return b.left >= bande.left - 0.5 && b.right <= bande.right + 0.5; }).length;
+        const deborde = hb.scrollWidth > hb.clientWidth + 1;
+        hb.scrollLeft = 120; const glisse = hb.scrollLeft > 0; hb.scrollLeft = 0;
+        const fin = document.getElementById('construction-fin');
+        const barre = { bande: { x: Math.round(bande.left), y: Math.round(bande.top), w: Math.round(bande.width), h: Math.round(bande.height) },
+          caseMin: Math.round(Math.min(cb.width, cb.height)), entieres, deborde, glisse, defile: getComputedStyle(hb).overflowX,
+          horsCanvas, marche: +marche.toFixed(2), marcheMs, atteinte, choisie,
+          fin: vis(fin), finMot: (fin.getAttribute('aria-label') || '') + '|' + ((fin.querySelector('.lb') || {}).textContent || ''),
+          finLb: vis(fin.querySelector('.lb')) };
         document.getElementById('construction-fin').click();
         await att(300);
         P.pitch = 0;
-        return { vue: [innerWidth, innerHeight], explorer, construction, inventaire, pause, appuis, repris,
+        return { vue: [innerWidth, innerHeight], explorer, construction, barre, inventaire, pause, appuis, repris,
           gestes: { explorer: n1 - n0, construction: n2 - n1 }, enConstruction: C.enConstruction() };
       });
       await cmd.close();
       const croise = (a, b) => Math.min(a.x + a.w, b.x + b.w) > Math.max(a.x, b.x) && Math.min(a.y + a.h, b.y + b.h) > Math.max(a.y, b.y);
+      // En construction, la barre de blocs vit en bas (v503) : le quart du
+      // joystick s'arrête au-dessus d'elle, et rien d'autre n'y entre.
       const juge = (et) => {
         const R = (et && et.R) || {}, k = Object.keys(R), recouvre = [];
         for (let i = 0; i < k.length; i++) for (let j = i + 1; j < k.length; j++) if (croise(R[k[i]], R[k[j]])) recouvre.push(k[i] + '×' + k[j]);
-        const joy = k.filter((n) => R[n].x < r.vue[0] * 0.45 && R[n].y + R[n].h > r.vue[1] * 0.4);
+        const bas = R.hotbar ? R.hotbar.y : r.vue[1];
+        const joy = k.filter((n) => n !== 'hotbar' && R[n].x < r.vue[0] * 0.45 && R[n].y + R[n].h > r.vue[1] * 0.4 && R[n].y < bas);
         const ronds = k.filter((n) => /-btn$/.test(n)).filter((n) => R[n].w !== R[n].h || R[n].w < 44 || R[n].w > 44);
         return { recouvre, joy, ronds, actions: et ? et.actions.length : 99, lbs: et ? et.lbsVisibles : 99 };
       };
@@ -1281,6 +1325,20 @@ function verifier(nom, ok, detail = '') {
         && !!r.construction.R.hotbar && !!r.construction.R['poser-btn'] && !!r.construction.R['casser-btn']
         && !!r.construction.R['construction-pill'] && !r.construction.R['construire-btn'] && !r.enConstruction,
         `${r.err || ''} ${JSON.stringify(co)} ${JSON.stringify(r.construction && r.construction.R)} terminé ${!r.enConstruction}`);
+      const B = r.barre || {}, bd = B.bande || {}, F = B.fin || {};
+      const R2 = (r.construction && r.construction.R) || {};
+      const finCroise = ['hotbar', 'poser-btn', 'casser-btn', 'jump-btn'].filter((n) => R2[n] && B.fin && croise(B.fin, R2[n]));
+      verifier(`commandes (${vue.width} × ${vue.height}) : en construction, la barre de blocs est EN BAS, sur presque toute la largeur, des cases d'au moins 44 px, et elle défile au doigt`,
+        !r.err && bd.y + bd.h >= r.vue[1] * 0.95 && bd.w >= r.vue[0] * 0.9 && B.caseMin >= 44 && B.entieres >= 6
+        && (!B.deborde || (B.defile === 'auto' && B.glisse)),
+        `${r.err || ''} ${JSON.stringify({ bande: bd, caseMin: B.caseMin, entieres: B.entieres, deborde: B.deborde, defile: B.defile, glisse: B.glisse })}`);
+      verifier(`commandes (${vue.width} × ${vue.height}) : en construction, on marche au joystick ET l'on choisit un bloc dans la barre`,
+        !r.err && (B.horsCanvas || [1]).length === 0 && B.marche >= 1.2 && B.atteinte && B.choisie,
+        `${r.err || ''} ${JSON.stringify({ horsCanvas: B.horsCanvas, marche: B.marche, ms: B.marcheMs, atteinte: B.atteinte, choisie: B.choisie })}`);
+      verifier(`commandes (${vue.width} × ${vue.height}) : « Terminer » est un petit bouton rond, son mot dans aria-label et .lb, et il ne recouvre ni la barre ni Poser/Casser`,
+        !r.err && F.w === 44 && F.h === 44 && finCroise.length === 0 && /Terminer/.test(B.finMot || '') && /\|Terminer/.test(B.finMot || '')
+        && (!B.finLb || (B.finLb.w <= 2 && B.finLb.h <= 2)),
+        `${r.err || ''} ${JSON.stringify({ fin: F, finCroise, mot: B.finMot, lb: B.finLb })}`);
       verifier(`commandes (${vue.width} × ${vue.height}) : toucher l'écran ne casse rien hors construction, et casse en construction`,
         !r.err && r.gestes.explorer === 0 && r.gestes.construction > 0, JSON.stringify(r.gestes));
       if (vue.width === 420) {
@@ -1322,8 +1380,10 @@ function verifier(nom, ok, detail = '') {
         const h = g.scene.background.getHexString();
         return { r: parseInt(h.slice(0, 2), 16), g: parseInt(h.slice(2, 4), 16), b: parseInt(h.slice(4, 6), 16), a: 1, hex: h };
       };
-      const icones = ['menu-btn', 'map-btn', 'jump-btn', 'fly-btn', 'construire-btn'];
-      const textes = [['fun-target button', '#ride-btn'], ['construction-pill', '#construction-pill span'], ['gps', '#gps-texte']];
+      // « Terminer » est une icône depuis la v503 : il se juge à 3:1, comme
+      // les autres boutons ronds.
+      const icones = ['menu-btn', 'map-btn', 'jump-btn', 'fly-btn', 'construire-btn', 'construction-fin'];
+      const textes = [['fun-target button', '#ride-btn'], ['gps', '#gps-texte']];
       const out = {};
       for (const [moment, fr] of [['midi', 0.25], ['minuit', 0.75]]) {
         const s = await lire(fr);
