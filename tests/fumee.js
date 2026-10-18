@@ -328,6 +328,29 @@ function verifier(nom, ok, detail = '') {
     verifier('les seuls bandeaux qui restent sont déclarés, fichier par fichier',
       ecarts.length === 0, ecarts.join(' · ') || JSON.stringify(compte));
 
+    // ET CE QUI A ÉTÉ RETIRÉ NE S'ANNONCE PLUS (v505). Max : « supprimer tout ce
+    // qui reste des trucs qu'on a supprimés ». Les créatures à attraper (v285),
+    // les feux d'artifice, le coffre, la quête, les chapeaux (v256) n'existent
+    // plus ; un personnage qui les promet est pire que muet (v285). On lit les
+    // chaînes du jeu — jamais les commentaires, ni le journal des nouveautés
+    // (c'est de l'histoire), ni education.js (« chapeau » et « coffre » y sont du
+    // vocabulaire) — et seulement celles qui portent une phrase : une chaîne sans
+    // espace est une clé de stockage (`web-minecraft-dex-v1`), pas un texte.
+    const INTERDITS = /pok[eé]|\bdex\b|dresseu|attrap|feux? d'artifice|🎆|🎇|\bqu[êe]tes?\b|\bchapeaux?\b|\bcoffres?\b|planter un panneau|\bcollectionn/i;
+    const restes = [];
+    for (const f of fs.readdirSync(dossier).filter((n) => n.endsWith('.js') && !['nouveautes.js', 'education.js'].includes(n))
+      .map((n) => path.join(dossier, n)).concat(path.join(__dirname, '..', 'index.html'))) {
+      fs.readFileSync(f, 'utf8').split('\n').forEach((l, i) => {
+        if (/^\s*(\/\/|\*|\/\*|<!--)/.test(l)) return;
+        for (const m of l.replace(/\/\/.*$/, '').matchAll(/'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)"|`([^`]*)`|>([^<>]+)</g)) {
+          const s = m[1] ?? m[2] ?? m[3] ?? m[4];
+          if (s && (/\s/.test(s) || /[🎆🎇]/u.test(s)) && INTERDITS.test(s)) restes.push(`${path.basename(f)}:${i + 1} « ${s.slice(0, 60)} »`);
+        }
+      });
+    }
+    verifier('aucun texte du jeu ne promet une fonctionnalité retirée (créatures, feux d\'artifice, coffre, quête, chapeaux)',
+      restes.length === 0, restes.join(' · ') || 'aucun');
+
     // GRAPHISMES NORMAL / AVANCÉ (v257). Max : « dans les settings, un mode
     // normal ou un mode avancé ». Le réglage est une ligne des Réglages, il
     // bascule au toucher, il vit sur l'appareil, et le jeu le lit (ombres,

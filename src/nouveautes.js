@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 517,
+    titre: 'Les personnages à jour',
+    puces: [
+      'Plus personne ne parle d\'attraper',
+      'Samir parle de la vraie fusée',
+    ],
+  },
+  {
     v: 516,
     titre: 'L\'avion dit où il se pose',
     puces: [
