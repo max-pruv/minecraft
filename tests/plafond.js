@@ -3354,7 +3354,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         ecorce > 40 && feuilles > 100 && rBas > 0.25 && rHaut > 0 && rHaut < rBas * 0.75,
         `rayon à la base ${rBas.toFixed(2)}, à trois blocs ${rHaut.toFixed(2)}, ${ecorce} sommets d'écorce, ${feuilles} de feuilles`);
       // (2) le morceau de forêt : des arbres reconnus et émis, et la conservation des faces
-      // (depuis la v519 les cubes d'un arbre reconnu ne s'émettent plus nulle
+      // (depuis la v526 les cubes d'un arbre reconnu ne s'émettent plus nulle
       // part — le loin a ses cartes, `arbresLoin` — et le mailleur compte les
       // faces qu'il tait : `facesArbresTues`, à défaut de `plat` sur l'ancien code)
       const tues = (t) => (t.facesArbresTues !== undefined ? t.facesArbresTues : faces(t.plat));
@@ -3369,7 +3369,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       verifier('les vrais arbres ne posent ni ne retirent aucun bloc, et `vraisArbres: false` rend les tampons d\'avant au bit près',
         memes && sha(desarme.solid) === sha(sans.solid) && !desarme.facades && !desarme.plat && !desarme.arbresLoin,
         `blocs identiques ${memes} ; désarmé = avant ${sha(desarme.solid) === sha(sans.solid)}`);
-      // (3 bis, v519) AU LOIN AUSSI, PLUS UN CUBE D'ARBRE. Max, en vol : « au
+      // (3 bis, v526) AU LOIN AUSSI, PLUS UN CUBE D'ARBRE. Max, en vol : « au
       // loin, les arbres sont en forme Minecraft ». Un morceau sans détail
       // reconnaît ses arbres comme un morceau proche : son `solid` est celui du
       // proche (les cubes tus), et chaque arbre a son modèle LOINTAIN dans
@@ -3421,7 +3421,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         Object.values(S).every((x) => x.sommets > 60) && S.pin.tuiles.aiguilles > 0 && !S.pin.tuiles.feuilles && S.parasol.tuiles.aiguilles > 0
           && S.palmier.tuiles.palme > 0 && S.bouleau.tuiles.bouleau > 0 && !S.bouleau.tuiles.ecorce && S.chene.tuiles.feuilles > 0 && S.olivier.tuiles.feuilles > 0 && couleurs.size === 9,
         `${Object.entries(S).map(([k, x]) => `${k} ${x.sommets}s ${JSON.stringify(x.tuiles)}`).join(' · ')} ; ${couleurs.size} couleurs ; ${Date.now() - t0} ms`);
-      // (7, v519) LE RELAIS PROCHE → LOIN NE SE VOIT PAS : pour chaque
+      // (7, v526) LE RELAIS PROCHE → LOIN NE SE VOIT PAS : pour chaque
       // essence, le modèle lointain (`arbreLoin`) occupe la même boîte que le
       // proche (centre du feuillage à moins de 0,7 bloc — le relais se fait à
       // quarante-huit blocs et plus —, chaque étendue entre

@@ -393,7 +393,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
   // est certain : redemandé par colonne, `climatReel` coûtait dix-huit
   // millisecondes par morceau de taïga)
   const climatArbres = vraisArbres && vegetal && world.climatDuMorceau ? world.climatDuMorceau(cx, cz) : undefined;
-  // LES ARBRES SONT BEAUX PARTOUT (v519). Jusqu'à la v510, un morceau maillé
+  // LES ARBRES SONT BEAUX PARTOUT (v526). Jusqu'à la v510, un morceau maillé
   // SANS détail (le loin) ne reconnaissait rien et ses arbres restaient des
   // cubes dans `solid` — Max, en vol : « au loin, ils sont en forme
   // Minecraft ». Tout morceau qui porte du bois ou des feuilles reconnaît ses

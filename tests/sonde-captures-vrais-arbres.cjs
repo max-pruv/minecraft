@@ -14,7 +14,7 @@ const TOUTES = [
   { nom: 'foret-pres', x: -1560, z: -2488, h: 1.6, pitch: 0.35, yaw: -0.6 },
   { nom: 'foret-vol', x: -1560, z: -2470, h: 22, pitch: -0.55, yaw: 0.2 },
   { nom: 'foret-ciel', x: -1560, z: -2440, h: 60, pitch: -0.9, yaw: 0.0 },
-  // (v519) en vol, le regard vers l'horizon : la forêt AU LOIN, au-delà du
+  // (v526) en vol, le regard vers l'horizon : la forêt AU LOIN, au-delà du
   // détail — là où Max voyait encore des cubes
   { nom: 'foret-loin', x: -1560, z: -2440, h: 34, pitch: -0.22, yaw: 0.6 },
   { nom: 'taiga-loin', lat: 52, lon: -72, h: 34, pitch: -0.22, yaw: 0.6 },

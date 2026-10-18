@@ -1,6 +1,6 @@
 # Ce qui est en cours
 
-- [ ] **Rouges de portail de la v519 (les arbres au loin) : aucun de la
+- [ ] **Rouges de portail de la v526 (les arbres au loin) : aucun de la
   livraison.** Seul rouge à moi : `parishd.js` lisait « cubes cachés » sur
   `plat` caché — repointé sur `arbresLoin`, vert. Restent `degats.js` (percuter
   une voiture de la rue), `monte.js` (huit, dont la rue par tranches, le
@@ -12,7 +12,7 @@
   d'`arbresLoin`). Et `reseau.js` rejouée SEULE : branche 4 verts / 23 rouges,
   `origin/main` (v510) 2 verts / 15 rouges puis le banc lâche (« à trois,
   chacun voit les deux autres » : `[[],[],[]]`) — le jeu à plusieurs ne tourne
-  plus sur ce banc, des deux côtés. Portail de la v519 après rebase sur la
+  plus sur ce banc, des deux côtés. Portail de la v526 après rebase sur la
   v518 (durées normales, reprise de cinq suites) : verts `metro`, `parent`,
   `parishd`, `carteMonde`, `sauvegarde`, `plafond`, `degats`, `visio`,
   `realisme`, `carte`, `hote`, `washington`, `reglages` ; rouges déjà déclarés
@@ -22,9 +22,7 @@
   la voit » — même preuve structurelle (pas de `hd=`, arbres non atteints), à
   rejouer seul sur `origin/main`.
 
-- [ ] **Les arbres beaux partout (v519) : ce qui reste.** (1) Au bord du
-
-- [ ] **Les arbres beaux partout (v519) : ce qui reste.** (1) Au bord du
+- [ ] **Les arbres beaux partout (v526) : ce qui reste.** (1) Au bord du
   disque chargé, la part de couronne d'un arbre dont la base est dans un
   morceau pas encore maillé manque (ses cubes se taisent dans le voisin) —
   dans le brouillard, mais à regarder en vol rapide. (2) Le paysage lointain

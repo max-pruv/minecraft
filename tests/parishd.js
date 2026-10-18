@@ -1336,7 +1336,7 @@ function verifier(nom, ok, detail = '') {
         while (g1 < W - 1 && ecorce(g1 + 1)) g1++;
         const largeur = ecorce(c) ? g1 - g0 + 1 : 0;
         // (des cubes CACHÉS : jusqu'à la v510 ils partaient dans `plat`, caché
-        // de près ; depuis la v519 ils ne s'émettent plus nulle part, et un
+        // de près ; depuis la v526 ils ne s'émettent plus nulle part, et un
         // morceau qui porte les modèles lointains de ses arbres, `arbresLoin`,
         // a tu les cubes de ces arbres)
         let dessines = 0, caches = 0, mo = 0, n = 0;

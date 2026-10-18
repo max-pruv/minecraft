@@ -13478,7 +13478,7 @@ Ce qui reste, déclaré dans `TASKS.md` : une demi-couronne possible à la
 frontière de `RAYON_HD` (un arbre à cheval sur deux morceaux dont un seul est
 détaillé), et l'ombre des façades HD de Paris.
 
-## Les arbres beaux partout (v519) — un niveau de détail lointain se mesure contre ce qu'il remplace
+## Les arbres beaux partout (v526) — un niveau de détail lointain se mesure contre ce qu'il remplace
 
 Max, en vol : « Au loin, les arbres sont moches, ils sont en forme Minecraft. »
 Au-delà du détail (v499), un morceau ne reconnaissait pas ses arbres et gardait
