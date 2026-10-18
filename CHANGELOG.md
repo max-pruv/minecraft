@@ -20,6 +20,51 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v529 — Un choc a de l'élan
+
+**Pourquoi.** Max : « Quand on fonce dans une voiture avec une autre voiture,
+la voiture s'arrête immédiatement alors qu'elle aurait été propulsée sur
+quelques mètres. Idem sur d'autres types d'objets. » Mesuré sous node avec le
+vrai joueur (`sonde-elan-chocs.cjs`), une hypercar contre un mur, un mur pris à
+30°, une voiture garée, une voiture de la rue, un réverbère : à 21 blocs/s
+contre un mur, **zéro bloc de rebond** (le filet de la v272, qui ramène la
+vitesse au déplacement de l'image, mangeait le rebond dans l'image du choc) ;
+joystick tenu, le frein reprenait tout en un quart de seconde (0,3 à 4 blocs) ;
+un mur pris à 30° était un choc de face — la voiture plantée contre lui ; un
+second choc était publié 0,15 s après le premier. Et une voiture garée ou
+invoquée n'était **pas un obstacle du tout** pour la voiture de l'enfant : on
+la traversait.
+
+**Ce que ça change.** Un choc renvoie la voiture : de face, un rebond court
+et franc ; en biais, elle est déviée et glisse le long du mur ou de la
+voiture, quelques mètres, en perdant sa vitesse, et la caisse tourne si on
+tape un coin. Pendant ces quelques dixièmes de seconde le joystick n'agit
+plus — les pneus ripent —, puis la main revient. Une voiture garée ou invoquée
+se pousse : on la propulse sur quelques mètres (6 blocs à 80 km/h, 28 à
+180 km/h) et la nôtre continue sur sa lancée. Une voiture de la rue ne se
+pousse pas (la rue est la même sur toutes les tablettes) : on rebondit dessus.
+Une voiture de la rue qui arrive EN FACE s'arrête au choc : elle ne nous
+emporte plus en arrière (39 à 51 blocs sur `origin/main`, un taxi de
+Manhattan rejeté de sept blocs au premier jet de cette livraison).
+Un rebond qui mènerait vers un passant ou dans l'eau s'arrête net, comme
+avant. Les dégâts reçoivent exactement la même force pour un même choc.
+
+**Ce qui le prouve.** Sept témoins neufs. Dans `plafond.js`, sous node,
+barres calculées sur la règle (rebond, frottement de glissade, partage de deux
+masses égales) : le rebond de face à trois vitesses et trois obstacles,
+joystick lâché ou tenu (rouge sur `origin/main` : 0 bloc à 21 blocs/s) ; le
+mur à 30° (0 bloc avant, 16,7 après) ; la voiture garée propulsée (0 bloc
+avant) ; aucun second choc dans la glissade (+0,15 s avant) ; la force
+inchangée et le piéton jamais touché, verts des deux côtés à dessein. Dans
+`monte.js`, le trajet de l'enfant : il fonce dans une berline invoquée par le
+vrai crochet du jeu, elle part, la sienne continue. Deux témoins voisins
+repointés, chacun mesuré sur `origin/main` : la voiture de la rue percutée
+(`degats.js`) juge à la vitesse du choc et non à un élan de vingt blocs que
+la rue, en temps réel, défait (rouge 1 sur 3 sur `origin/main`) ; le virage
+de la caméra (`monte.js`) ne compte pas les images d'une glissade.
+
+---
+
 ## v528 — Les arbres sont beaux partout, même au loin
 
 **Pourquoi.** Max, en vol au-dessus d'une forêt, sur iPhone : « Au loin, les

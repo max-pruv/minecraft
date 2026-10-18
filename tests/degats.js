@@ -753,8 +753,14 @@ function verifier(nom, ok, detail = '') {
         clones: propres.length, communs: propres.filter((pc) => pc.mesh.geometry === pc.geoOrig).length, partagees,
         notreSante: nous ? Math.round(nous.sante * 10000) / 10000 : 1 };
     });
+    // L'ÉLAN SE JUGE À LA VITESSE DU CHOC, PAS À LA DISTANCE (v529). Reculé à
+    // vingt-six blocs, l'enfant libère la voiture de la rue, qui roule en temps
+    // RÉEL (v305) : une image de 517 ms (mesurée) la fait avancer de sept blocs
+    // pendant les deux dixièmes de seconde du témoin, et l'écart tombait à 18 —
+    // des deux côtés (`origin/main` 1 fois sur 3). Ce que l'écart gardait,
+    // c'est l'élan : on le lit là où il se prend, dix blocs/s au moins.
     verifier('percuter une voiture de la rue l\'abîme AUSSI : sa tôle à elle, clonée, jamais la géométrie que la rue partage',
-      !rue.err && rue.ecart >= 20 && rue.cibleTouchee && rue.sante < 1 && rue.clones > 0 && rue.communs === 0 && rue.partagees > 0 && rue.notreSante < 1,
+      !rue.err && rue.vChoc >= 10 && rue.cibleTouchee && rue.sante < 1 && rue.clones > 0 && rue.communs === 0 && rue.partagees > 0 && rue.notreSante < 1,
       JSON.stringify(rue));
     const rue2 = await tab.evaluate(async () => {
       const g = window.__game, d = g.fun.degats, R = window.__rue;

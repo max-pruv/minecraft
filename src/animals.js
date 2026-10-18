@@ -8,6 +8,7 @@ import { BLOCK, isSolid as blockIsSolid, isSlab } from './blocks.js';
 import { WATER_LEVEL } from './world.js';
 import { MONTURES, MODELES_MONTURE } from './montures.js';
 import { chronoReel } from './cadence.js';
+import { FROTTEMENT_POUSSEE } from './conduite.js';
 
 const GRAVITY = 22;
 
@@ -277,6 +278,17 @@ class Animal {
     this.mesh.scale.setScalar(this.scale);
   }
 
+  // POUSSÉE PAR LA VOITURE DE L'ENFANT (v529) : une voiture garée ou invoquée
+  // part avec ce que le choc lui donne (`chocPoussable`, conduite.js) et glisse
+  // en perdant sa vitesse, frein à main serré (FROTTEMENT_POUSSEE).
+  // (vx, vz) est sa vitesse d'APRÈS le choc, pas une impulsion à ajouter :
+  // dans l'image du choc, les pas suivants de la voiture de l'enfant la
+  // touchent encore (elle n'a pas bougé) et la relançaient à chaque pas —
+  // mesuré, 63 blocs pour 18 annoncés par la règle.
+  pousser(vx, vz) {
+    this.elan = { vx, vz };
+  }
+
   // A hit from the player: flash red, flee away, and eventually poof. Le
   // garde-manger (🍖 × N) est retiré (v518, décision de Max) : la bête ne
   // « donne » plus rien, et plus rien ne compte ce qu'on a récolté.
@@ -332,6 +344,12 @@ class Animal {
 
     this.vel.x = Math.sin(this.yaw) * speed;
     this.vel.z = Math.cos(this.yaw) * speed;
+    if (this.elan) {
+      const sp = Math.hypot(this.elan.vx, this.elan.vz), n = Math.max(0, sp - FROTTEMENT_POUSSEE * dt);
+      this.vel.x += this.elan.vx; this.vel.z += this.elan.vz;
+      if (n < 0.05) this.elan = null;
+      else { this.elan.vx *= n / sp; this.elan.vz *= n / sp; }
+    }
     this.vel.y -= GRAVITY * dt;
     this.vel.y = Math.max(this.vel.y, -30);
     if (this.def.hopper && speed > 0 && this.onGround) this.vel.y = 4.5;
@@ -341,6 +359,8 @@ class Animal {
     const blockedX = this.sweep(world, 0, this.vel.x * dt);
     this.sweep(world, 1, this.vel.y * dt);
     const blockedZ = this.sweep(world, 2, this.vel.z * dt);
+    // une voiture poussée contre un mur s'y arrête
+    if (this.elan) { if (blockedX) this.elan.vx = 0; if (blockedZ) this.elan.vz = 0; }
     // Une bête marche sur la même surface que l'enfant (sol continu, v297).
     if (world.accrocherAuSol) {
       const r = world.accrocherAuSol(this.pos, this.vel, {
