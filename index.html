@@ -2259,7 +2259,7 @@
     body.hud-simple #cap-regle { background: linear-gradient(90deg, rgba(17,26,46,0.08), rgba(17,26,46,0.3), rgba(17,26,46,0.08)); }
     body.hud-simple #cap-regle::before { background: var(--encre, #111A2E); }
 
-    /* LA CARTE DU MONDE EN MATIÈRE CLAIRE (v507, revue d'écran #14). Couche de
+    /* LA CARTE DU MONDE EN MATIÈRE CLAIRE (v508, revue d'écran #14). Couche de
        surcharge (v276) : on ne touche qu'à la peau de la fiche — le dessin de
        la carte (le canvas) garde ses couleurs, que les témoins lisent en
        pixels. Le voile du fond est clair et SANS flou : un flou plein écran
@@ -2304,7 +2304,7 @@
     #map-legend .rep.betes { background: #ffd75e; }
     #map-choix { background: rgba(255, 255, 255, 0.94) !important; box-shadow: 0 8px 20px rgba(17, 26, 46, 0.2) !important; }
 
-    /* RIEN DU JEU NE PASSE PAR-DESSUS LA CARTE (v507, revue d'écran #2). La
+    /* RIEN DU JEU NE PASSE PAR-DESSUS LA CARTE (v508, revue d'écran #2). La
        pilule « Monter · Âne » (z-index 30) recouvrait la carte (14) : elle
        cachait des boutons, et toucher la carte faisait monter sur la bête. On
        cache tout le HUD de jeu tant que la carte est ouverte — `visibility`,
@@ -2312,11 +2312,11 @@
     body.carte-ouverte :is(#touch-ui, .fun-target, .fun-btn, #hotbar, #menu-btn, #file-centre) {
       visibility: hidden !important; }
 
-    /* LE MENU OUVERT VOILE LE HUD (v507, revue d'écran #16). Le jeu est en
+    /* LE MENU OUVERT VOILE LE HUD (v508, revue d'écran #16). Le jeu est en
        pause : le joystick et les boutons nets derrière le menu faisaient
        croire qu'on jouait encore. Une opacité, pas un flou (rendu logiciel).
        La pilule, au-dessus du menu (30 contre 25), se tait. */
-    body:has(#menu-jeu.ouvert) :is(#touch-ui, #hotbar, #file-centre, .fun-btn) { opacity: 0.22 !important; }
+    body:has(#menu-jeu.ouvert) :is(#touch-ui, #hotbar, #file-centre, #left-rail, .fun-btn) { opacity: 0.22 !important; }
     body:has(#menu-jeu.ouvert) .fun-target { visibility: hidden !important; }
 
 </style>

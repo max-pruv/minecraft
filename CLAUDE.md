@@ -898,7 +898,7 @@ boutons… enlève les messages qui s'affichent dans le jeu ». Cinq règles.
   `/Orange/.test(quoi)` : on cherche l'emoji retiré dans `tests/` avant de
   lancer le portail, et l'on repointe vers le mot.
 
-## La carte du monde se ferme au jeu (v507) — un panneau plein écran cache le HUD, il ne compte pas sur son z-index
+## La carte du monde se ferme au jeu (v508) — un panneau plein écran cache le HUD, il ne compte pas sur son z-index
 
 Deux règles.
 

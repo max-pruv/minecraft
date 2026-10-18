@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v507 — La carte du monde passe au verre clair, et rien ne la recouvre
+## v508 — La carte du monde passe au verre clair, et rien ne la recouvre
 
 **Pourquoi.** La revue d'écran (v506) a relevé trois défauts autour de la carte
 et du menu. Près d'une bête, la pilule « Monter · Âne » passait par-dessus la

@@ -6,7 +6,7 @@
 
 export const NOUVEAUTES = [
   {
-    v: 507,
+    v: 508,
     titre: 'Une carte claire',
     puces: [
       'La carte du monde est claire',

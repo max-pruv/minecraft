@@ -56,7 +56,7 @@ export const ICONES = {
   piloter: T(`<path fill="currentColor" stroke="none" transform="translate(12 12) rotate(45) scale(.9) translate(-12 -12)" d="${AVION}"/>`),
   nourrir: T('<path d="M12 8.2c-1.2-1-3-1.4-4.6-.8-2.8 1.1-3.4 4.8-1.8 8.3 1.2 2.7 3.4 5 5.2 4.3.6-.2.9-.4 1.2-.4s.6.2 1.2.4c1.8.7 4-1.6 5.2-4.3 1.6-3.5 1-7.2-1.8-8.3-1.6-.6-3.4-.2-4.6.8z"/><path d="M12 8.2c0-2.2.9-3.7 2.6-4.4"/>', 2.2),
   emotes: T('<circle cx="12" cy="12" r="8.6"/><path d="M8.3 14.2c2 2.3 5.4 2.3 7.4 0"/><path d="M9 9.6v.6M15 9.6v.6"/>', 2.4),
-  // LA CARTE DU MONDE (v507) : une loupe pour la recherche, et le doigt qui
+  // LA CARTE DU MONDE (v508) : une loupe pour la recherche, et le doigt qui
   // appuie longtemps — un point et l'anneau qui grandit sous lui, comme la
   // cible que la carte dessine pendant l'appui.
   chercher: T('<circle cx="10.5" cy="10.5" r="6"/><path d="m15 15 5.5 5.5"/>', 2.6),

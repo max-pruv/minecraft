@@ -100,7 +100,7 @@ const position = (p) => p.evaluate(() => ({
     verifier('le menu du jeu ne recouvre pas la carte',
       (await tab.evaluate(() => getComputedStyle(document.getElementById('overlay')).display)) === 'none');
 
-    // LA REVUE D'ÉCRAN (v507), LIGNES #2, #14 ET #16. Une bête devant soi
+    // LA REVUE D'ÉCRAN (v508), LIGNES #2, #14 ET #16. Une bête devant soi
     // allume la pilule « Monter · Âne » (z-index 30), et la carte (14)
     // passait SOUS elle : un doigt qui visait un bouton de la carte montait
     // sur l'âne. On pose la bête, on attend la pilule, on rouvre la carte, et
