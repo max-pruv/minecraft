@@ -1305,7 +1305,12 @@ function verifier(nom, ok, detail = '') {
         if (!cible) return { erreur: 'aucun chêne au bord d\'une clairière' };
         const { x, z, t } = cible;
         g.player.flying = true;
-        g.player.pos.set(x + 0.5, t.h + 2.2, z + 0.5 + 3.5);
+        // l'œil (1,6 au-dessus des pieds) sous la couronne, qui commence à
+        // h + fût − 2 : h + 2,2 pour un fût de six, comme avant. Écrit pour un
+        // fût de six, il passait dans les feuilles d'un fût de cinq — et en
+        // cubes la ligne de vue ne voyait plus l'écorce (v503, quand les
+        // bosquets ont fait choisir un autre chêne)
+        g.player.pos.set(x + 0.5, t.h + t.trunk - 3.8, z + 0.5 + 3.5);
         g.player.vel.set(0, 0, 0);
         g.player.yaw = 0; g.player.pitch = 0;
         window.__setDayTime(0.42);
